@@ -91,6 +91,17 @@ documents those changes that are of interest to users and administrators.
  -- Fix "squeue -S P" not sorting by partition name.
  -- Fix segfault in slurmctld if group resolution fails during job credential
     creation.
+ -- sacctmgr - Honor PreserveCaseUser when creating users with load command.
+ -- Avoid attempting to schedule jobs on magnetic reservations when they aren't
+    allowed.
+ -- Always make sure we clear the magnetic flag from a job.
+ -- In backfill avoid NULL pointer dereference.
+ -- Fix Segfault at end of slurmctld if you have a magnetic reservation and
+    you shutdown the slurmctld.
+ -- Silence security warning when a Slurm is trying a job for a
+    magnetic reservation.
+ -- Have sacct exit correctly when a user/group id isn't valid.
+ -- Remove extra \n from invalid user/group id error message.
 
 * Changes in Slurm 20.02.5
 ==========================

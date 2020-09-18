@@ -189,7 +189,13 @@ static void _destroy_sacctmgr_file_opts(void *object)
 	}
 }
 
-static sacctmgr_file_opts_t *_parse_options(char *options)
+/*
+ * NOTE: make_lower only applies to the first parsed option. This is needed
+ * for parsing the User column, which may be case-sensitive if the slurmdbd
+ * reports PERSIST_FLAG_P_USER_CASE on the connection. All other options
+ * are currently case-insensitive, and will be normalized to lowercase.
+ */
+static sacctmgr_file_opts_t *_parse_options(char *options, bool make_lower)
 {
 	int start=0, i=0, end=0, quote = 0;
  	char *sub = NULL;
@@ -237,7 +243,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 			end++;
 		}
 
-		option = strip_quotes(sub+end, NULL, 1);
+		option = strip_quotes(sub+end, NULL, make_lower);
 
 		if (!end) {
 			if (file_opts->name) {
@@ -248,6 +254,9 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				break;
 			}
 			file_opts->name = xstrdup(option);
+
+			/* remaining options should be converted to lowercase */
+			make_lower = true;
 		} else if (end && !strlen(option)) {
 			debug("blank field given for %s discarding", sub);
 		} else if (!xstrncasecmp(sub, "AdminLevel",
@@ -1767,7 +1776,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 				break;
 			}
 
-			file_opts = _parse_options(line+start);
+			file_opts = _parse_options(line + start, true);
 
 			if (!file_opts) {
 				exit_code = 1;
@@ -1953,7 +1962,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 		}
 
 		if (!xstrcasecmp("Parent", object)) {
-			file_opts = _parse_options(line+start);
+			file_opts = _parse_options(line + start, true);
 			xfree(parent);
 
 			if (!file_opts) {
@@ -1988,7 +1997,7 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 
 		if (!xstrcasecmp("Project", object)
 		    || !xstrcasecmp("Account", object)) {
-			file_opts = _parse_options(line+start);
+			file_opts = _parse_options(line + start, true);
 
 			if (!file_opts) {
 				exit_code=1;
@@ -2085,7 +2094,8 @@ extern void load_sacctmgr_cfg_file (int argc, char **argv)
 			file_opts = NULL;
 			continue;
 		} else if (!xstrcasecmp("User", object)) {
-			file_opts = _parse_options(line+start);
+			file_opts = _parse_options(line + start,
+						   user_case_norm);
 
 			if (!file_opts) {
 				exit_code=1;

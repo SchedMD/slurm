@@ -99,7 +99,7 @@ static char *_convert_to_id(char *name, bool gid)
 	if (gid) {
 		gid_t gid;
 		if (gid_from_string( name, &gid )) {
-			error("Invalid group id: %s\n", name);
+			error("Invalid group id: %s", name);
 			return NULL;
 		}
 		xfree(name);
@@ -107,7 +107,7 @@ static char *_convert_to_id(char *name, bool gid)
 	} else {
 		uid_t uid;
 		if (uid_from_string( name, &uid )) {
-			error("Invalid user id: %s\n", name);
+			error("Invalid user id: %s", name);
 			return NULL;
 		}
 		xfree(name);

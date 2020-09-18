@@ -470,7 +470,12 @@ static void _del_resv_rec(void *x)
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) x;
 
 	if (resv_ptr) {
-		if (resv_ptr->flags & RESERVE_FLAG_MAGNETIC)
+		/*
+		 * If shutting down magnetic_resv_list is already freed, meaning
+		 * we don't need to remove anything from it.
+		 */
+		if (magnetic_resv_list &&
+		    (resv_ptr->flags & RESERVE_FLAG_MAGNETIC))
 			(void)list_remove_first(
 				magnetic_resv_list, _find_resv_ptr, resv_ptr);
 
@@ -531,7 +536,9 @@ static int _queue_magnetic_resv(void *x, void *key)
 
 	xassert(resv_ptr->magic == RESV_MAGIC);
 
-	if (!(resv_ptr->flags & RESERVE_FLAG_MAGNETIC))
+	if (!(resv_ptr->flags & RESERVE_FLAG_MAGNETIC) ||
+	    (_valid_job_access_resv(job_queue_req->job_ptr, resv_ptr) !=
+	     SLURM_SUCCESS))
 		return 0;
 
 	job_queue_req->resv_ptr = resv_ptr;
@@ -5561,9 +5568,14 @@ no_assocs:	if ((resv_ptr->user_cnt == 0) ||
 	}
 
 end_it:
-	info("Security violation, uid=%u account=%s attempt to use "
-	     "reservation %s",
-	     job_ptr->user_id, job_ptr->account, resv_ptr->name);
+	/*
+	 * If we are trying to run in a magnetic reservation
+	 * (the job didn't request it), don't print a security error.
+	 */
+	if (job_ptr->resv_name)
+		info("Security violation, uid=%u account=%s attempt to use reservation %s",
+		     job_ptr->user_id, job_ptr->account, resv_ptr->name);
+
 	return ESLURM_RESERVATION_ACCESS;
 }
 

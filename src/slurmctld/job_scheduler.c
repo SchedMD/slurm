@@ -1931,6 +1931,8 @@ fail_this_part:	if (fail_by_part) {
 	if (bb_wait_cnt)
 		(void) bb_g_job_try_stage_in();
 
+	if (job_ptr)
+		job_resv_clear_magnetic_flag(job_ptr);
 	save_last_part_update = last_part_update;
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	avail_node_bitmap = save_avail_node_bitmap;

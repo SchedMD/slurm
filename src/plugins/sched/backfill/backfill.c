@@ -2737,9 +2737,12 @@ skip_start:
 		}
 	}
 
-	/* Restore preemption state if needed. */
-	_restore_preempt_state(job_ptr, &tmp_preempt_start_time,
-			       &tmp_preempt_in_progress);
+	if (job_ptr) {
+		/* Restore preemption state if needed. */
+		_restore_preempt_state(job_ptr, &tmp_preempt_start_time,
+				       &tmp_preempt_in_progress);
+		job_resv_clear_magnetic_flag(job_ptr);
+	}
 
 	_het_job_deadlock_fini();
 	if (!bf_hetjob_immediate &&
