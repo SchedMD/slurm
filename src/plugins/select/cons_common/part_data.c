@@ -96,7 +96,7 @@ extern void part_data_add_job_to_row(struct job_resources *job,
 		clear_core_array(r_ptr->row_bitmap);
 	}
 
-	job_res_add_cores(job, &r_ptr->row_bitmap);
+	job_res_add_cores(job, r_ptr);
 
 	/*  add the job to the job_list */
 	if (r_ptr->num_jobs >= r_ptr->job_list_size) {
@@ -135,13 +135,13 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 			if (job_ptr) { /* just remove the job */
 				xassert(job_ptr->job_resrcs);
 				job_res_rm_cores(job_ptr->job_resrcs,
-						 &this_row->row_bitmap);
+						 this_row);
 			} else { /* totally rebuild the bitmap */
 				clear_core_array(this_row->row_bitmap);
 				for (j = 0; j < this_row->num_jobs; j++) {
 					job_res_add_cores(
 						this_row->job_list[j],
-						&this_row->row_bitmap);
+						this_row);
 				}
 			}
 		}
@@ -259,7 +259,7 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 				continue;
 			for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
 				job_res_add_cores(p_ptr->row[i].job_list[j],
-						  &p_ptr->row[i].row_bitmap);
+						  &p_ptr->row[i]);
 			}
 		}
 	}

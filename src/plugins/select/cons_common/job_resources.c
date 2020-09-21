@@ -75,12 +75,14 @@ static bitstr_t *_create_core_bitmap(int node_inx)
 /*
  * Handle job resource allocation to record of resources allocated to all nodes
  * IN job_resrcs_ptr - resources allocated to a job
- * IN/OUT sys_resrcs_ptr - bitmap of available CPUs, allocate as needed
+ * IN r_ptr - row we are trying to fit
+ *            IN/OUT r_ptr->row_bitmap - bitmap array (one per node) of
+ *                                       available cores, allocated as needed
  * IN type - add/rem/test
  * RET 1 on success, 0 otherwise
  */
 static int _handle_job_res(job_resources_t *job_resrcs_ptr,
-			   bitstr_t ***sys_resrcs_ptr,
+			   part_row_data_t *r_ptr,
 			   handle_job_res_t type)
 {
 	int i, i_first, i_last;
@@ -90,9 +92,12 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 	uint32_t core_begin;
 	uint32_t core_end;
 	uint16_t cores_per_node;
+	bitstr_t ***sys_resrcs_ptr;
 
 	if (!job_resrcs_ptr->core_bitmap)
 		return 1;
+
+	sys_resrcs_ptr = &r_ptr->row_bitmap;
 
 	/* create row_bitmap data structure as needed */
 	if (*sys_resrcs_ptr == NULL) {
@@ -238,14 +243,15 @@ extern char *job_res_job_action_string(job_res_job_action_t action)
 /*
  * Add job resource allocation to record of resources allocated to all nodes
  * IN job_resrcs_ptr - resources allocated to a job
- * IN/OUT sys_resrcs_ptr - bitmap array (one per node) of available cores,
- *			   allocated as needed
+ * IN r_ptr - row we are trying to fit
+ *            IN/OUT r_ptr->row_bitmap - bitmap array (one per node) of
+ *                                       available cores, allocated as needed
  * NOTE: Patterned after add_job_to_cores() in src/common/job_resources.c
  */
 extern void job_res_add_cores(job_resources_t *job_resrcs_ptr,
-			      bitstr_t ***sys_resrcs_ptr)
+			      part_row_data_t *r_ptr)
 {
-	(void)_handle_job_res(job_resrcs_ptr, sys_resrcs_ptr,
+	(void)_handle_job_res(job_resrcs_ptr, r_ptr,
 			      HANDLE_JOB_RES_ADD);
 }
 
@@ -253,12 +259,14 @@ extern void job_res_add_cores(job_resources_t *job_resrcs_ptr,
 /*
  * Remove job resource allocation to record of resources allocated to all nodes
  * IN job_resrcs_ptr - resources allocated to a job
- * IN/OUT full_bitmap - bitmap of available CPUs, allocate as needed
+ * IN r_ptr - row we are trying to fit
+ *            IN/OUT r_ptr->row_bitmap - bitmap array (one per node) of
+ *                                       available cores, allocated as needed
  */
 extern void job_res_rm_cores(job_resources_t *job_resrcs_ptr,
-			     bitstr_t ***sys_resrcs_ptr)
+			     part_row_data_t *r_ptr)
 {
-	(void)_handle_job_res(job_resrcs_ptr, sys_resrcs_ptr,
+	(void)_handle_job_res(job_resrcs_ptr, r_ptr,
 			      HANDLE_JOB_RES_REM);
 }
 
@@ -275,7 +283,7 @@ extern int job_res_fit_in_row(job_resources_t *job_resrcs_ptr,
 	if ((r_ptr->num_jobs == 0) || !r_ptr->row_bitmap)
 		return 1;
 
-	return _handle_job_res(job_resrcs_ptr, &r_ptr->row_bitmap,
+	return _handle_job_res(job_resrcs_ptr, r_ptr,
 			       HANDLE_JOB_RES_TEST);
 }
 

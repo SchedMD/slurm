@@ -59,21 +59,24 @@ extern char *job_res_job_action_string(job_res_job_action_t action);
 /*
  * Add job resource allocation to record of resources allocated to all nodes
  * IN job_resrcs_ptr - resources allocated to a job
- * IN/OUT sys_resrcs_ptr - bitmap array (one per node) of available cores,
- *			   allocated as needed
+ * IN r_ptr - row we are trying to fit
+ *            IN/OUT r_ptr->node_bitmap - bitmap array (one per node) of
+ *                                        available cores, allocated as needed
  * NOTE: Patterned after add_job_to_cores() in src/common/job_resources.c
  */
 extern void job_res_add_cores(job_resources_t *job_resrcs_ptr,
-			      bitstr_t ***sys_resrcs_ptr);
+			      part_row_data_t *r_ptr);
 
 /*
  * Remove job resource allocation to record of resources allocated to all nodes
  * IN job_resrcs_ptr - resources allocated to a job
- * IN/OUT full_bitmap - bitmap of available CPUs, allocate as needed
+ * IN r_ptr - row we are trying to fit
+ *            IN/OUT r_ptr->node_bitmap - bitmap array (one per node) of
+ *                                        available cores, allocated as needed
  * NOTE: Patterned after remove_job_from_cores() in src/common/job_resources.c
  */
 extern void job_res_rm_cores(job_resources_t *job_resrcs_ptr,
-			     bitstr_t ***sys_resrcs_ptr);
+			     part_row_data_t *r_ptr);
 
 /*
  * Test if job can fit into the given set of core_bitmaps
