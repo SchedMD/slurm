@@ -500,6 +500,7 @@ static void _opt_default(void)
 	 * of the job/step. Do not use xfree() as the pointers have been copied.
 	 * See initialize_and_process_args() above.
 	 */
+	sropt.exclusive = true;
 	opt.job_flags			= 0;
 	sropt.multi_prog_cmds		= 0;
 	sropt.het_group			= NULL;
@@ -578,6 +579,7 @@ env_vars_t env_vars[] = {
   { "SLURM_NTASKS_PER_NODE", LONG_OPT_NTASKSPERNODE },
   { "SLURM_OPEN_MODE", LONG_OPT_OPEN_MODE },
   { "SLURM_OVERCOMMIT", 'O' },
+  { "SLURM_OVERLAP", LONG_OPT_OVERLAP },
   { "SLURM_PARTITION", 'p' },
   { "SLURM_POWER", LONG_OPT_POWER },
   { "SLURM_PROFILE", LONG_OPT_PROFILE },
@@ -1402,7 +1404,7 @@ static void _usage(void)
  	printf(
 "Usage: srun [-N nnodes] [-n ntasks] [-i in] [-o out] [-e err]\n"
 "            [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
-"            [-D path] [--immediate[=secs]] [--overcommit] [--no-kill]\n"
+"            [-D path] [--immediate[=secs]] [--overcommit] [--overlap] [--no-kill]\n"
 "            [--oversubscribe] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
 "            [--jobid=id] [--verbose] [--slurmd_debug=#] [--gres=list]\n"
 "            [-T threads] [-W sec] [--gres-flags=opts]\n"
@@ -1497,6 +1499,7 @@ static void _help(void)
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
 "  -o, --output=out            location of stdout redirection\n"
 "  -O, --overcommit            overcommit resources\n"
+"      --overlap               Allow other steps to overlap this step\n"
 "      --het-group=value       hetjob component allocation(s) in which to launch\n"
 "                              application\n"
 "  -p, --partition=partition   partition requested\n"

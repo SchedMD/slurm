@@ -65,9 +65,9 @@ make_bash_script $file_in "
 $bin_sleep 5
 ulimit -u `ulimit -u -H`
 for ((inx=0; inx < $task_cnt; inx++)) ; do
-$srun -N1 -n1 --mem=0 $bin_sleep $sleep_time &
+$srun -N1 -n1 --mem=0 --overlap $bin_sleep $sleep_time &
 done
-$srun -N1 -n1 --mem=0 $bin_sleep $sleep_time
+$srun -N1 -n1 --mem=0 --overlap $bin_sleep $sleep_time
 "
 
 #

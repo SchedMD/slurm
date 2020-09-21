@@ -157,9 +157,9 @@ if {$real_memory < 100} {
 # Build input script file1
 #
 make_bash_script $file_in1 "
-  $srun $step_mem_opt --gres=craynetwork:0 sleep 60 &
-  $srun $step_mem_opt --gres=craynetwork:0 sleep 60 &
-  $srun $step_mem_opt --gres=craynetwork:0 sleep 60
+  $srun $step_mem_opt --gres=craynetwork:0 --overlap sleep 60 &
+  $srun $step_mem_opt --gres=craynetwork:0 --overlap sleep 60 &
+  $srun $step_mem_opt --gres=craynetwork:0 --overlap sleep 60
 "
 #
 # Spawn a job via srun using this account

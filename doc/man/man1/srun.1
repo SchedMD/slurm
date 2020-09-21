@@ -367,10 +367,6 @@ mask/CPU as the parent.  Alternatively, fat masks (masks which specify more
 than one allowed CPU) could be used for the tasks in order to provide
 multiple CPUs for the multithreaded tasks.
 
-By default, a job step has access to every CPU allocated to the job.
-To ensure that distinct CPUs are allocated to each job step, use the
-\fB\-\-exclusive\fR option.
-
 Note that a job step can be allocated different numbers of CPUs on each node
 or be allocated CPUs not starting at location zero. Therefore one of the
 options which automatically generate the task binding is recommended.
@@ -622,9 +618,6 @@ per node, a job request for 4 nodes and 3 CPUs per task may be
 allocated 3 or 6 CPUs per node (1 or 2 tasks per node) depending
 upon resource consumption by other jobs. Such a job may be
 unable to execute more than a total of 4 tasks.
-This option may also be useful to spawn tasks without allocating
-resources to the job step from the job's allocation when running
-multiple job steps with the \fB\-\-exclusive\fR option.
 
 \fBWARNING\fR: There are configurations and options interpreted differently by
 job and job step requests which can result in inconsistencies for this option.
@@ -783,22 +776,9 @@ available to initiate the job step, it will be deferred. This can
 be thought of as providing a mechanism for resource management to the job
 within its allocation.
 
-The exclusive allocation of CPUs only applies to job steps explicitly invoked
-with the \fB\-\-exclusive\fR option.
-For example, a job might be allocated one node with four CPUs and a remote
-shell invoked on the allocated node. If that shell is not invoked with the
-\fB\-\-exclusive\fR option, then it may create a job step with four tasks
-using the \fB\-\-exclusive\fR option and not conflict with the remote shell's
-resource allocation.
-Use the \fB\-\-exclusive\fR option to invoke every job step to ensure distinct
-resources for each step.
+The exclusive allocation of CPUs applies to job steps by default. In order to
+share the resources use the \fB\-\-overlap\fR option.
 
-Note that all CPUs allocated to a job are available
-to each job step unless the \fB\-\-exclusive\fR option is used plus
-task affinity is configured. Since resource management is provided by
-processor, the \fB\-\-ntasks\fR option must be specified, but the
-following options should NOT be specified
-\fB\-\-relative\fR, \fB\-\-distribution\fR=\fIarbitrary\fR.
 See \fBEXAMPLE\fR below.
 
 .TP
@@ -1688,8 +1668,9 @@ PerfCnts.  These nodes are still available for other jobs not using NPC.
 
 .br
 .br
-In all cases the job or step allocation request \fBmust specify the
-\-\-exclusive option\fR.  Otherwise the request will be denied.
+In all cases the job allocation request \fBmust specify the
+\-\-exclusive option\fR and the step cannot specify the \-\-overlap option.
+Otherwise the request will be denied.
 
 .br
 .br
@@ -1874,6 +1855,11 @@ process per CPU. However no more than \fBMAX_TASKS_PER_NODE\fR tasks are
 permitted to execute per node.  NOTE: \fBMAX_TASKS_PER_NODE\fR is
 defined in the file \fIslurm.h\fR and is not a variable, it is set at
 Slurm build time.
+
+.TP
+\fB\-\-overlap\fR
+Allow steps to overlap each other on the same resources. By default steps
+do not share resources with other parallel steps.
 
 .TP
 \fB\-o\fR, \fB\-\-output\fR=<\fIfilename pattern\fR>
@@ -2112,7 +2098,7 @@ partition's \fBOverSubscribe\fR option takes precedence over the job's option.
 This option may result in the allocation being granted sooner than if the
 \-\-oversubscribe option was not set and allow higher system utilization, but
 application performance will likely suffer due to competition for resources.
-Also see the \-\-exclusive option. This option applies to step allocations.
+This option applies to step allocations.
 
 .TP
 \fB\-S\fR, \fB\-\-core\-spec\fR=<\fInum\fR>
@@ -2784,6 +2770,8 @@ Same as \fB\-\-open\-mode\fR
 .TP
 \fBSLURM_OVERCOMMIT\fR
 Same as \fB\-O, \-\-overcommit\fR
+\fBSLURM_OVERLAP\fR
+Same as \fB\-\-overlap\fR
 .TP
 \fBSLURM_PARTITION\fR
 Same as \fB\-p, \-\-partition\fR
@@ -3326,10 +3314,10 @@ become available for their dedicated use.
 
 > cat my.script
 #!/bin/bash
-srun \-\-exclusive \-n4 prog1 &
-srun \-\-exclusive \-n3 prog2 &
-srun \-\-exclusive \-n1 prog3 &
-srun \-\-exclusive \-n1 prog4 &
+srun \-n4 prog1 &
+srun \-n3 prog2 &
+srun \-n1 prog3 &
+srun \-n1 prog4 &
 wait
 .fi
 

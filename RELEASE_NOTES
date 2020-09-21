@@ -54,6 +54,10 @@ HIGHLIGHTS
     NodeAddr and NodeHostname set from slurmd registration.
  -- SlurmctldParameters=power_save[_min]_interval - Configure how often the
     power save module looks to do work.
+ -- By default a step started with srun will get --exclusive behavior meaning
+    no other parallel step will be allowed to run on the same resources at
+    the same time.  To get the previous default behavior which allowed
+    parallel steps to share all resources use the new srun '--overlap' option.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
