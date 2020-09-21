@@ -84,6 +84,11 @@ static void _swap_rows(part_row_data_t *a, part_row_data_t *b)
 	memcpy(b, &tmprow, sizeof(part_row_data_t));
 }
 
+static void _reset_part_row_bitmap(part_row_data_t *r_ptr)
+{
+	clear_core_array(r_ptr->row_bitmap);
+}
+
 /*
  * Add job resource use to the partition data structure
  */
@@ -93,7 +98,7 @@ extern void part_data_add_job_to_row(struct job_resources *job,
 	/* add the job to the row_bitmap */
 	if (r_ptr->row_bitmap && (r_ptr->num_jobs == 0)) {
 		/* if no jobs, clear the existing row_bitmap first */
-		clear_core_array(r_ptr->row_bitmap);
+		_reset_part_row_bitmap(r_ptr);
 	}
 
 	job_res_add_cores(job, r_ptr);
@@ -130,14 +135,14 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 	if (p_ptr->num_rows == 1) {
 		this_row = p_ptr->row;
 		if (this_row->num_jobs == 0) {
-			clear_core_array(this_row->row_bitmap);
+			_reset_part_row_bitmap(this_row);
 		} else {
 			if (job_ptr) { /* just remove the job */
 				xassert(job_ptr->job_resrcs);
 				job_res_rm_cores(job_ptr->job_resrcs,
 						 this_row);
 			} else { /* totally rebuild the bitmap */
-				clear_core_array(this_row->row_bitmap);
+				_reset_part_row_bitmap(this_row);
 				for (j = 0; j < this_row->num_jobs; j++) {
 					job_res_add_cores(
 						this_row->job_list[j],
@@ -155,7 +160,7 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 	}
 	if (num_jobs == 0) {
 		for (i = 0; i < p_ptr->num_rows; i++)
-			clear_core_array(p_ptr->row[i].row_bitmap);
+			_reset_part_row_bitmap(&p_ptr->row[i]);
 		return;
 	}
 
@@ -183,7 +188,7 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 			x++;
 		}
 		p_ptr->row[i].num_jobs = 0;
-		clear_core_array(p_ptr->row[i].row_bitmap);
+		_reset_part_row_bitmap(&p_ptr->row[i]);
 	}
 
 	/*
@@ -254,7 +259,7 @@ extern void part_data_build_row_bitmaps(part_res_record_t *p_ptr,
 
 		/* still need to rebuild row_bitmaps */
 		for (i = 0; i < p_ptr->num_rows; i++) {
-			clear_core_array(p_ptr->row[i].row_bitmap);
+			_reset_part_row_bitmap(&p_ptr->row[i]);
 			if (p_ptr->row[i].num_jobs == 0)
 				continue;
 			for (j = 0; j < p_ptr->row[i].num_jobs; j++) {
