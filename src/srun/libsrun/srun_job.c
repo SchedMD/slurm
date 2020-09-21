@@ -148,7 +148,6 @@ static int  _shepherd_spawn(srun_job_t *job, List srun_job_list,
 			     bool got_alloc);
 static void *_srun_signal_mgr(void *no_data);
 static void _srun_cli_filter_post_submit(uint32_t jobid, uint32_t stepid);
-static void _step_opt_exclusive(slurm_opt_t *opt_local);
 static int  _validate_relative(resource_allocation_response_msg_t *resp,
 			       slurm_opt_t *opt_local);
 
@@ -1349,8 +1348,6 @@ extern void create_srun_job(void **p_job, bool *got_alloc,
 						bit_fmt_hexmask(g_het_grp_bits);
 				}
 
-				if (srun_opt->exclusive)
-					_step_opt_exclusive(opt_local);
 				_set_env_vars(resp, het_step_offset);
 				if (_validate_relative(resp, opt_local))
 					exit(error_exit);
@@ -2358,26 +2355,6 @@ static void *_srun_signal_mgr(void *job_ptr)
 		}
 	}
 	return NULL;
-}
-
-/* if srun_opt->exclusive is set, disable user task layout controls */
-static void _step_opt_exclusive(slurm_opt_t *opt_local)
-{
-	srun_opt_t *srun_opt = opt_local->srun_opt;
-	xassert(srun_opt);
-
-	if (!opt_local->ntasks_set) {
-		error("--ntasks must be set with --exclusive");
-		exit(error_exit);
-	}
-	if (srun_opt->relative != NO_VAL) {
-		error("--relative disabled, incompatible with --exclusive");
-		exit(error_exit);
-	}
-	if (opt_local->exclude) {
-		error("--exclude is incompatible with --exclusive");
-		exit(error_exit);
-	}
 }
 
 static int _validate_relative(resource_allocation_response_msg_t *resp,
