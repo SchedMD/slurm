@@ -92,23 +92,20 @@ static int _handle_job_res(job_resources_t *job_resrcs_ptr,
 	uint32_t core_begin;
 	uint32_t core_end;
 	uint16_t cores_per_node;
-	bitstr_t ***sys_resrcs_ptr;
 
 	if (!job_resrcs_ptr->core_bitmap)
 		return 1;
 
-	sys_resrcs_ptr = &r_ptr->row_bitmap;
-
 	/* create row_bitmap data structure as needed */
-	if (*sys_resrcs_ptr == NULL) {
+	if (!r_ptr->row_bitmap) {
 		if (type == HANDLE_JOB_RES_TEST)
 			return 1;
 		core_array = build_core_array();
-		*sys_resrcs_ptr = core_array;
+		r_ptr->row_bitmap = core_array;
 		for (int i = 0; i < core_array_size; i++)
 			core_array[i] = _create_core_bitmap(i);
 	} else
-		core_array = *sys_resrcs_ptr;
+		core_array = r_ptr->row_bitmap;
 
 	i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
 	if (i_first != -1)
