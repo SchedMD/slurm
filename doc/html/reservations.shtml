@@ -197,7 +197,7 @@ $ scontrol create reservation StartTime=now Duration=60 \
 users, but specific accounts and/or users can be prevented from using them.
 In the following example, a reservation is created for account "foo", but user
 "alan" is prevented from using the reservation even when using the account
-"foo".<p>
+"foo".</p>
 
 <pre>
 $ scontrol create reservation account=foo \
@@ -212,6 +212,35 @@ ReservationName=alan_9 StartTime=2011-12-05T13:00:00
    Features=(null) PartitionName=pdebug
    Flags= Licenses=(null) BurstBuffers=(null)
    Users=-alan Accounts=foo
+</pre>
+
+<p>When creating a reservation, you can request that Slurm include all the
+nodes in a partition by specifying the <b>PartitionName</b> option.
+If you only want a certain number of nodes or CPUs from that partition
+you can combine <b>PartitionName</b> with the <b>CoreCnt</b>, <b>NodeCnt</b>
+or <b>TRES</b> options to specify how many of a resource you want.
+In the following example, a reservation is created in the 'gpu' partition
+that uses the <b>TRES</b> option to limit the reservation to 24 processors,
+divided among 4 nodes.</p>
+
+<pre>
+$ scontrol create reservationname=test start=now duration=1 \
+   user=user1 partition=gpu tres=cpu=24,node=4
+Reservation created: test
+
+$ scontrol show res
+ReservationName=test StartTime=2020-08-28T11:07:09
+   EndTime=2020-08-28T11:08:09 Duration=00:01:00
+   Nodes=node[01-04] NodeCnt=4 CoreCnt=24
+   Features=(null) PartitionName=gpu
+     NodeName=node01 CoreIDs=0-5
+     NodeName=node02 CoreIDs=0-5
+     NodeName=node03 CoreIDs=0-5
+     NodeName=node04 CoreIDs=0-5
+   TRES=cpu=24
+   Users=user1 Accounts=(null) Licenses=(null)
+   State=ACTIVE BurstBuffer=(null) Watts=n/a
+   MaxStartDelay=(null)
 </pre>
 
 <h2>Reservation Use</h2>
@@ -499,7 +528,7 @@ considering the initiation of jobs.
 This will prevent the initiation of some jobs which would complete execution
 before a reservation given fewer jobs to time-slice with.</p>
 
-<p style="text-align: center;">Last modified 20 August 2020</p>
+<p style="text-align: center;">Last modified 28 August 2020</p>
 
 <!--#include virtual="footer.txt"-->
 

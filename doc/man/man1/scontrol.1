@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "July 2020" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "August 2020" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -1763,10 +1763,12 @@ second values are rounded up to the next minute. Output format is always
 
 .TP
 \fIPartitionName\fP=<name>
-Partition used to reserve nodes from. Jobs will be allowed to use this
-reservation even if running in a different partition. There only needs to be
-overlapping nodes from that different partition and the nodes used in the
-reservation.
+Partition used to reserve nodes from. This will attempt to allocate all
+nodes in the specified partition unless you request fewer resources than
+are available with \fICoreCnt\fR, \fINodeCnt\fR or \fITRES\fR. Jobs will be
+allowed to use this reservation even if running in a different partition. There
+only needs to be overlapping nodes from that different partition and the nodes
+used in the reservation.
 
 .TP
 \fIFlags\fP=<flags>
