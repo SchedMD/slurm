@@ -411,7 +411,7 @@ extern int slurm_init_msg_engine(slurm_addr_t *addr)
 	const int one = 1;
 	const size_t sz1 = sizeof(one);
 
-	if ((fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+	if ((fd = socket(addr->ss_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
 		error("Error creating slurm stream socket: %m");
 		return fd;
 	}

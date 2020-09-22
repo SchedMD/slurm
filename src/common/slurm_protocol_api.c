@@ -715,12 +715,15 @@ int slurm_init_msg_engine_port(uint16_t port)
  */
 int slurm_init_msg_engine_ports(uint16_t *ports)
 {
+	slurm_addr_t addr;
 	int cc;
 	int val;
 	int s;
 	int port;
 
-	s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	slurm_setup_sockaddr(&addr, 0);
+
+	s = socket(addr.ss_family, SOCK_STREAM, IPPROTO_TCP);
 	if (s < 0)
 		return -1;
 

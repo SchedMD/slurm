@@ -94,7 +94,7 @@ int net_stream_listen(int *fd, uint16_t *port)
 	/* bind ephemeral port */
 	slurm_setup_sockaddr(&sin, 0);
 
-	if ((*fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+	if ((*fd = socket(sin.ss_family, SOCK_STREAM, IPPROTO_TCP)) < 0)
 		return -1;
 
 	if (setsockopt(*fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) < 0)
@@ -192,10 +192,13 @@ extern int net_set_keep_alive(int sock)
  */
 int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local)
 {
+	slurm_addr_t sin;
 	int cc;
 	int val;
 
-	if ((*fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+	slurm_setup_sockaddr(&sin, 0); /* Decide on IPv4 or IPv6 */
+
+	if ((*fd = socket(sin.ss_family, SOCK_STREAM, IPPROTO_TCP)) < 0)
 		return -1;
 
 	val = 1;
