@@ -164,10 +164,18 @@ if {[wait_for_job $tmp_id "RUNNING"] != 0} {
 	set exit_code 1
 }
 
+set allocated_count 0
 spawn $sinfo --Node --node=$node_list_str --long --exact --state=allocated -p$partition
 expect {
 	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
-		if ([string compare $expect_out(5,string) "allocated"]) {
+		set node $expect_out(2,string)
+		set state $expect_out(5,string)
+		if {(![string compare $expect_out(5,string) "allocated"]) &&
+		    ((![string compare $node $node_list(0)]) ||
+		     (![string compare $node $node_list(1)]))} {
+			incr allocated_cnt
+		} else {
+			log_debug "$node:$state"
 			incr mismatches
 		}
 		exp_continue
@@ -189,6 +197,9 @@ expect {
 }
 if {$mismatches != 0} {
 	fail "sinfo node filtering error"
+}
+if {$allocated_cnt != 2} {
+	fail "allocated_cnt($allocated_cnt) != 2"
 }
 
 cancel_job $tmp_id
@@ -203,10 +214,26 @@ change_state drain $node_list(6),$node_list(7)
 # Change node state to idle and use state filter to filter node
 #
 log_info "Testing IDLE state"
+set idle_cnt 0
+set idle_drain_cnt 0
 spawn $sinfo --Node --node=$node_list_str --long --exact --state=idle -p$partition
 expect {
 	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
-		if ([string compare $expect_out(5,string) "idle"]) {
+		set node $expect_out(2,string)
+		set state $expect_out(5,string)
+		if {(![string compare $expect_out(5,string) "idle"]) &&
+		    ((![string compare $node $node_list(0)]) ||
+		     (![string compare $node $node_list(1)]) ||
+		     (![string compare $node $node_list(2)]) ||
+		     (![string compare $node $node_list(3)]))} {
+			incr idle_cnt
+		# NOTE: drained nodes can be idle as well.
+		} elseif {(![string compare $expect_out(5,string) "drained"]) &&
+			  ((![string compare $node $node_list(6)]) ||
+			   (![string compare $node $node_list(7)]))} {
+			incr idle_drain_cnt
+		} else {
+			log_debug "$node:$state"
 			incr mismatches
 		}
 		exp_continue
@@ -228,16 +255,30 @@ expect {
 }
 if {$mismatches != 0} {
 	fail "sinfo node filtering error"
+}
+if {$idle_cnt != 4} {
+	fail "idle($idle_cnt) != 4"
+}
+if {$idle_drain_cnt != 2} {
+	fail "idle_drain_cnt($idle_drain_cnt) != 2"
 }
 
 #
 # Change node state to down and use state filter to filter node
 #
 log_info "Testing DOWN state"
+set down_cnt 0
 spawn $sinfo --Node --node=$node_list_str --long --exact --state=down -p$partition
 expect {
 	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
-		if ([string compare $expect_out(5,string) "down"]) {
+		set node $expect_out(2,string)
+		set state $expect_out(5,string)
+		if {(![string compare $expect_out(5,string) "down"]) &&
+		    ((![string compare $node $node_list(4)]) ||
+		     (![string compare $node $node_list(5)]))} {
+			incr down_cnt
+		} else {
+			log_debug "$node:$state"
 			incr mismatches
 		}
 		exp_continue
@@ -259,16 +300,27 @@ expect {
 }
 if {$mismatches != 0} {
 	fail "sinfo node filtering error"
+}
+if {$down_cnt != 2} {
+	fail "down_cnt($down_cnt) != 2"
 }
 
 #
 # Change node state to drain and use state filter to filter node
 #
 log_info "Testing DRAIN state"
+set drain_cnt 0
 spawn $sinfo --Node --node=$node_list_str --long --exact --state=drain -p$partition
 expect {
 	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
-		if ([string compare $expect_out(5,string) "drained"]) {
+		set node $expect_out(2,string)
+		set state $expect_out(5,string)
+		if {(![string compare $expect_out(5,string) "drained"]) &&
+		    ((![string compare $node $node_list(6)]) ||
+		     (![string compare $node $node_list(7)]))} {
+			incr drain_cnt
+		} else {
+			log_debug "$node:$state"
 			incr mismatches
 		}
 		exp_continue
@@ -290,6 +342,9 @@ expect {
 }
 if {$mismatches != 0} {
 	fail "sinfo node filtering error"
+}
+if {$drain_cnt != 2} {
+	fail "drain_cnt($drain_cnt) != 2"
 }
 
 #
