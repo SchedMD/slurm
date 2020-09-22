@@ -348,13 +348,103 @@ if {$drain_cnt != 2} {
 }
 
 #
+# Test for finding drain AND down states.
+#
+log_info "Testing DOWN,DRAIN state"
+set drain_cnt 0
+set down_cnt 0
+spawn $sinfo --Node --node=$node_list_str --long --exact --state=down,drain -p$partition
+expect {
+	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
+		set node $expect_out(2,string)
+		set state $expect_out(5,string)
+		if {(![string compare $expect_out(5,string) "down"]) &&
+		    ((![string compare $node $node_list(4)]) ||
+		     (![string compare $node $node_list(5)]))} {
+			incr down_cnt
+		} elseif {(![string compare $expect_out(5,string) "drained"]) &&
+			  ((![string compare $node $node_list(6)]) ||
+			   (![string compare $node $node_list(7)]))} {
+			incr drain_cnt
+		} else {
+			log_debug "$node:$state"
+			incr mismatches
+		}
+		exp_continue
+	}
+	-re "error:" {
+		log_error "Unexpected error from sinfo"
+		set exit_code 1
+	}
+	-re "Unable to contact" {
+		fail "Slurm appears to be down"
+	}
+	timeout {
+		log_error "sinfo not responding"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$mismatches != 0} {
+	fail "sinfo node filtering error ($mismatches)"
+}
+if {$down_cnt != 2} {
+	fail "down_cnt($down_cnt) != 2"
+}
+if {$drain_cnt != 2} {
+	fail "drain_cnt($drain_cnt) != 2"
+}
+
+#
+# Test for finding drain AND down states.
+#
+log_info "Testing \"DOWN&DRAIN\" state"
+set drain_cnt 0
+change_state drain $node_list(4),$node_list(5)
+spawn $sinfo --Node --node=$node_list_str --long --exact --state=down&drain -p$partition
+expect {
+	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
+		set node $expect_out(2,string)
+		set state $expect_out(5,string)
+		if {(![string compare $expect_out(5,string) "drained"]) &&
+		    ((![string compare $node $node_list(4)]) ||
+		     (![string compare $node $node_list(5)]))} {
+			incr drain_cnt
+		} else {
+			log_debug "$node:$state"
+			incr mismatches
+		}
+		exp_continue
+	}
+	-re "error:" {
+		log_error "Unexpected error from sinfo"
+		set exit_code 1
+	}
+	-re "Unable to contact" {
+		fail "Slurm appears to be down"
+	}
+	timeout {
+		log_error "sinfo not responding"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$mismatches != 0} {
+	fail "sinfo node filtering error ($mismatches)"
+}
+if {$drain_cnt != 2} {
+	fail "drain_cnt($drain_cnt) != 2"
+}
+
+#
 # Reset node states back to idle
 #
 reset_state
 
-if {$mismatches != 0} {
-	fail "sinfo node filtering error"
-}
 if {$exit_code == 0} {
 	file delete $tmp_sc
 } else {
