@@ -129,6 +129,8 @@ if {$i != 8} {
 	skip "Unable to get all the required nodes ($i != 8)"
 }
 
+set node_list_str [join [dict values [array get node_list]] ","]
+
 #
 # Submit a job to filter for allocated job state
 #
@@ -162,7 +164,7 @@ if {[wait_for_job $tmp_id "RUNNING"] != 0} {
 	set exit_code 1
 }
 
-spawn $sinfo --Node --node=$node_list(0),$node_list(1) --long --exact --state=allocated -p$partition
+spawn $sinfo --Node --node=$node_list_str --long --exact --state=allocated -p$partition
 expect {
 	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
 		if ([string compare $expect_out(5,string) "allocated"]) {
@@ -201,7 +203,7 @@ change_state drain $node_list(6),$node_list(7)
 # Change node state to idle and use state filter to filter node
 #
 log_info "Testing IDLE state"
-spawn $sinfo --Node --node=$node_list(2),$node_list(3) --long --exact --state=idle -p$partition
+spawn $sinfo --Node --node=$node_list_str --long --exact --state=idle -p$partition
 expect {
 	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
 		if ([string compare $expect_out(5,string) "idle"]) {
@@ -232,7 +234,7 @@ if {$mismatches != 0} {
 # Change node state to down and use state filter to filter node
 #
 log_info "Testing DOWN state"
-spawn $sinfo --Node --node=$node_list(4),$node_list(5) --long --exact --state=down -p$partition
+spawn $sinfo --Node --node=$node_list_str --long --exact --state=down -p$partition
 expect {
 	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
 		if ([string compare $expect_out(5,string) "down"]) {
@@ -263,7 +265,7 @@ if {$mismatches != 0} {
 # Change node state to drain and use state filter to filter node
 #
 log_info "Testing DRAIN state"
-spawn $sinfo --Node --node=$node_list(6),$node_list(7) --long --exact --state=drain -p$partition
+spawn $sinfo --Node --node=$node_list_str --long --exact --state=drain -p$partition
 expect {
 	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
 		if ([string compare $expect_out(5,string) "drained"]) {
