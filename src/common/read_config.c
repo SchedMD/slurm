@@ -3535,7 +3535,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			    "AcctGatherNodeFreq", hashtbl))
 		conf->acct_gather_node_freq = 0;
 
-	conf->conf_flags = 0;
 	if (s_p_get_boolean(&truth, "AllowSpecResourcesUsage", hashtbl)) {
 		if (truth)
 			conf->conf_flags |= CTL_CONF_ASRU;
@@ -3620,7 +3619,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			 conf->cred_type = xstrdup(DEFAULT_CRED_TYPE);
 	}
 
-	conf->def_mem_per_cpu = 0;
 	if (s_p_get_uint64(&conf->def_mem_per_cpu, "DefMemPerCPU", hashtbl))
 		conf->def_mem_per_cpu |= MEM_PER_CPU;
 	else if (!s_p_get_uint64(&conf->def_mem_per_cpu, "DefMemPerNode",
@@ -3949,7 +3947,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		}
 	}
 
-	conf->max_mem_per_cpu = 0;
 	if (s_p_get_uint64(&conf->max_mem_per_cpu,
 			   "MaxMemPerCPU", hashtbl)) {
 		conf->max_mem_per_cpu |= MEM_PER_CPU;
