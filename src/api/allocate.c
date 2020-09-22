@@ -1193,8 +1193,6 @@ _accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp)
 	int	     conn_fd;
 	slurm_msg_t  *msg = NULL;
 	slurm_addr_t cli_addr;
-	char         host[256];
-	uint16_t     port;
 	int          rc = 0;
 
 	conn_fd = slurm_accept_msg_conn(listen_fd, &cli_addr);
@@ -1203,8 +1201,7 @@ _accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp)
 		return rc;
 	}
 
-	slurm_get_addr(&cli_addr, &port, host, sizeof(host));
-	debug2("got message connection from %s:%hu", host, port);
+	debug2("got message connection from %pA", &cli_addr);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
 	slurm_msg_t_init(msg);
@@ -1218,7 +1215,7 @@ _accept_msg_connection(int listen_fd, uint16_t msg_type, void **resp)
 			return 0;
 		}
 
-		error("%s[%s]: %m", __func__, host);
+		error("%s[%pA]: %m", __func__, &cli_addr);
 		close(conn_fd);
 		return SLURM_ERROR;
 	}
