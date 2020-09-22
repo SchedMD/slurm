@@ -645,8 +645,7 @@ static void _parse_pbs_resource_list(char *rl)
 			i += 14;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (temp) {
-				slurm_process_option(&opt, 'G', temp,
-						     false, false);
+				gpus = parse_int("naccelerators", temp, true);
 				xfree(temp);
 			}
 		} else if (!xstrncasecmp(rl+i, "ncpus=", 6)) {
