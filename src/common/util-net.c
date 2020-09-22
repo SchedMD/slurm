@@ -299,6 +299,7 @@ get_addr_info(const char *hostname)
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_flags = AI_CANONNAME;
+	hints.ai_socktype = SOCK_STREAM;
 
 	err = getaddrinfo(hostname, NULL, &hints, &result);
 	if (err == EAI_SYSTEM) {
