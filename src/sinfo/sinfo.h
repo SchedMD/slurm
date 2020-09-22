@@ -194,6 +194,7 @@ struct sinfo_parameters {
 	List  part_list;
 	List  format_list;
 	List  state_list;
+	bool  state_list_and;
 
 	slurmdb_federation_rec_t *fed;
 };

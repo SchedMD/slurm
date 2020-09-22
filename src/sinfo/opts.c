@@ -418,13 +418,18 @@ _build_state_list (char *state_str)
 	orig = str = xstrdup (state_str);
 	state_ids = list_create (NULL);
 
-	while ((state = _next_tok (",", &str))) {
+	if (xstrstr(state_str, "&"))
+	    params.state_list_and = true;
+
+	state = strtok_r(state_str, ",&", &str);
+	while (state) {
 		int *id = xmalloc (sizeof (*id));
 		if ((*id = _node_state_id (state)) < 0) {
 			error ("Bad state string: \"%s\"", state);
 			return (NULL);
 		}
 		list_append (state_ids, id);
+		state = strtok_r(NULL, ",&", &str);
 	}
 
 	xfree (orig);
@@ -500,6 +505,8 @@ _node_state_list (void)
 
 	xstrcat(all_states,
 		",DRAIN,DRAINED,DRAINING,NO_RESPOND,RESERVED,PERFCTRS");
+	xstrcat(all_states, ",");
+	xstrcat(all_states, node_state_string(NODE_STATE_CLOUD));
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_COMPLETING));
 	xstrcat(all_states, ",");
@@ -579,6 +586,8 @@ _node_state_id (char *str)
 		return NODE_STATE_MAINT;
 	if (_node_state_equal (NODE_STATE_REBOOT, str))
 		return NODE_STATE_REBOOT;
+	if (_node_state_equal(NODE_STATE_CLOUD, str))
+		return NODE_STATE_CLOUD;
 
 	return (-1);
 }

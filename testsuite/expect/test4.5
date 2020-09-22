@@ -129,6 +129,8 @@ if {$i != 8} {
 	skip "Unable to get all the required nodes ($i != 8)"
 }
 
+set node_list_str [join [dict values [array get node_list]] ","]
+
 #
 # Submit a job to filter for allocated job state
 #
@@ -162,10 +164,18 @@ if {[wait_for_job $tmp_id "RUNNING"] != 0} {
 	set exit_code 1
 }
 
-spawn $sinfo --Node --node=$node_list(0),$node_list(1) --long --exact --state=allocated -p$partition
+set allocated_count 0
+spawn $sinfo --Node --node=$node_list_str --long --exact --state=allocated -p$partition
 expect {
 	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
-		if ([string compare $expect_out(5,string) "allocated"]) {
+		set node $expect_out(2,string)
+		set state $expect_out(5,string)
+		if {(![string compare $expect_out(5,string) "allocated"]) &&
+		    ((![string compare $node $node_list(0)]) ||
+		     (![string compare $node $node_list(1)]))} {
+			incr allocated_cnt
+		} else {
+			log_debug "$node:$state"
 			incr mismatches
 		}
 		exp_continue
@@ -184,6 +194,12 @@ expect {
 	eof {
 		wait
 	}
+}
+if {$mismatches != 0} {
+	fail "sinfo node filtering error"
+}
+if {$allocated_cnt != 2} {
+	fail "allocated_cnt($allocated_cnt) != 2"
 }
 
 cancel_job $tmp_id
@@ -198,10 +214,26 @@ change_state drain $node_list(6),$node_list(7)
 # Change node state to idle and use state filter to filter node
 #
 log_info "Testing IDLE state"
-spawn $sinfo --Node --node=$node_list(2),$node_list(3) --long --exact --state=idle -p$partition
+set idle_cnt 0
+set idle_drain_cnt 0
+spawn $sinfo --Node --node=$node_list_str --long --exact --state=idle -p$partition
 expect {
 	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
-		if ([string compare $expect_out(5,string) "idle"]) {
+		set node $expect_out(2,string)
+		set state $expect_out(5,string)
+		if {(![string compare $expect_out(5,string) "idle"]) &&
+		    ((![string compare $node $node_list(0)]) ||
+		     (![string compare $node $node_list(1)]) ||
+		     (![string compare $node $node_list(2)]) ||
+		     (![string compare $node $node_list(3)]))} {
+			incr idle_cnt
+		# NOTE: drained nodes can be idle as well.
+		} elseif {(![string compare $expect_out(5,string) "drained"]) &&
+			  ((![string compare $node $node_list(6)]) ||
+			   (![string compare $node $node_list(7)]))} {
+			incr idle_drain_cnt
+		} else {
+			log_debug "$node:$state"
 			incr mismatches
 		}
 		exp_continue
@@ -220,16 +252,33 @@ expect {
 	eof {
 		wait
 	}
+}
+if {$mismatches != 0} {
+	fail "sinfo node filtering error"
+}
+if {$idle_cnt != 4} {
+	fail "idle($idle_cnt) != 4"
+}
+if {$idle_drain_cnt != 2} {
+	fail "idle_drain_cnt($idle_drain_cnt) != 2"
 }
 
 #
 # Change node state to down and use state filter to filter node
 #
 log_info "Testing DOWN state"
-spawn $sinfo --Node --node=$node_list(4),$node_list(5) --long --exact --state=down -p$partition
+set down_cnt 0
+spawn $sinfo --Node --node=$node_list_str --long --exact --state=down -p$partition
 expect {
 	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
-		if ([string compare $expect_out(5,string) "down"]) {
+		set node $expect_out(2,string)
+		set state $expect_out(5,string)
+		if {(![string compare $expect_out(5,string) "down"]) &&
+		    ((![string compare $node $node_list(4)]) ||
+		     (![string compare $node $node_list(5)]))} {
+			incr down_cnt
+		} else {
+			log_debug "$node:$state"
 			incr mismatches
 		}
 		exp_continue
@@ -249,15 +298,29 @@ expect {
 		wait
 	}
 }
+if {$mismatches != 0} {
+	fail "sinfo node filtering error"
+}
+if {$down_cnt != 2} {
+	fail "down_cnt($down_cnt) != 2"
+}
 
 #
 # Change node state to drain and use state filter to filter node
 #
 log_info "Testing DRAIN state"
-spawn $sinfo --Node --node=$node_list(6),$node_list(7) --long --exact --state=drain -p$partition
+set drain_cnt 0
+spawn $sinfo --Node --node=$node_list_str --long --exact --state=drain -p$partition
 expect {
 	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
-		if ([string compare $expect_out(5,string) "drained"]) {
+		set node $expect_out(2,string)
+		set state $expect_out(5,string)
+		if {(![string compare $expect_out(5,string) "drained"]) &&
+		    ((![string compare $node $node_list(6)]) ||
+		     (![string compare $node $node_list(7)]))} {
+			incr drain_cnt
+		} else {
+			log_debug "$node:$state"
 			incr mismatches
 		}
 		exp_continue
@@ -276,6 +339,105 @@ expect {
 	eof {
 		wait
 	}
+}
+if {$mismatches != 0} {
+	fail "sinfo node filtering error"
+}
+if {$drain_cnt != 2} {
+	fail "drain_cnt($drain_cnt) != 2"
+}
+
+#
+# Test for finding drain AND down states.
+#
+log_info "Testing DOWN,DRAIN state"
+set drain_cnt 0
+set down_cnt 0
+spawn $sinfo --Node --node=$node_list_str --long --exact --state=down,drain -p$partition
+expect {
+	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
+		set node $expect_out(2,string)
+		set state $expect_out(5,string)
+		if {(![string compare $expect_out(5,string) "down"]) &&
+		    ((![string compare $node $node_list(4)]) ||
+		     (![string compare $node $node_list(5)]))} {
+			incr down_cnt
+		} elseif {(![string compare $expect_out(5,string) "drained"]) &&
+			  ((![string compare $node $node_list(6)]) ||
+			   (![string compare $node $node_list(7)]))} {
+			incr drain_cnt
+		} else {
+			log_debug "$node:$state"
+			incr mismatches
+		}
+		exp_continue
+	}
+	-re "error:" {
+		log_error "Unexpected error from sinfo"
+		set exit_code 1
+	}
+	-re "Unable to contact" {
+		fail "Slurm appears to be down"
+	}
+	timeout {
+		log_error "sinfo not responding"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$mismatches != 0} {
+	fail "sinfo node filtering error ($mismatches)"
+}
+if {$down_cnt != 2} {
+	fail "down_cnt($down_cnt) != 2"
+}
+if {$drain_cnt != 2} {
+	fail "drain_cnt($drain_cnt) != 2"
+}
+
+#
+# Test for finding drain AND down states.
+#
+log_info "Testing \"DOWN&DRAIN\" state"
+set drain_cnt 0
+change_state drain $node_list(4),$node_list(5)
+spawn $sinfo --Node --node=$node_list_str --long --exact --state=down&drain -p$partition
+expect {
+	-re "($eol)($name_string) *($number_with_suffix) *($name_string) *($re_word_str)" {
+		set node $expect_out(2,string)
+		set state $expect_out(5,string)
+		if {(![string compare $expect_out(5,string) "drained"]) &&
+		    ((![string compare $node $node_list(4)]) ||
+		     (![string compare $node $node_list(5)]))} {
+			incr drain_cnt
+		} else {
+			log_debug "$node:$state"
+			incr mismatches
+		}
+		exp_continue
+	}
+	-re "error:" {
+		log_error "Unexpected error from sinfo"
+		set exit_code 1
+	}
+	-re "Unable to contact" {
+		fail "Slurm appears to be down"
+	}
+	timeout {
+		log_error "sinfo not responding"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$mismatches != 0} {
+	fail "sinfo node filtering error ($mismatches)"
+}
+if {$drain_cnt != 2} {
+	fail "drain_cnt($drain_cnt) != 2"
 }
 
 #
@@ -283,9 +445,6 @@ expect {
 #
 reset_state
 
-if {$mismatches != 0} {
-	fail "sinfo node filtering error"
-}
 if {$exit_code == 0} {
 	file delete $tmp_sc
 } else {
