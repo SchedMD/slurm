@@ -475,10 +475,13 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 	for (entry = args->entries; entry->type; entry++)
 		count++;
 
-	xassert(!method->entries);
-	method->entries = xcalloc((count + 1), sizeof(entry_t));
-	/* count is already bounded */
-	memcpy(method->entries, args->entries, (count * sizeof(entry_t)));
+	if (!method->entries) {
+		/* only add entries on first method parse */
+		method->entries = xcalloc((count + 1), sizeof(entry_t));
+		/* count is already bounded */
+		memcpy(method->entries, args->entries,
+		       (count * sizeof(entry_t)));
+	}
 
 	/* clone over any strings */
 	for (entry = method->entries; entry->type; entry++) {
