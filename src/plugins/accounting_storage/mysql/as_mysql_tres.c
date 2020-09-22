@@ -95,7 +95,8 @@ extern int as_mysql_add_tres(mysql_conn_t *mysql_conn,
 
 		xstrfmtcat(query,
 			   "insert into %s (%s) values (%s) "
-			   "on duplicate key update deleted=0;",
+			   "on duplicate key update deleted=0, "
+			   "id=LAST_INSERT_ID(id);",
 			   tres_table, cols, vals);
 
 		DB_DEBUG(DB_TRES, mysql_conn->conn, "query\n%s", query);
