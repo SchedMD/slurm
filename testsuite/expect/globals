@@ -2807,14 +2807,14 @@ proc get_suffix { hostname } {
 #	Use sacctmgr to check associations
 #
 # RETURN VALUE
-#	0 on any error
+#	true if no error is found, false otherwise
 #
 ################################################################
 
 proc check_acct_associations { } {
 	global sacctmgr number re_word_str exit_code
 
-	set rc 1
+	set rc true
 	log_user 0
 	log_debug "Sanity-Checking Associations"
 	#
@@ -2839,10 +2839,10 @@ proc check_acct_associations { } {
 		      #log_debug "$first=$num1 $sec=$num2"
 		      if { $first } {
 			     log_error "$cluster found lft $num1 again"
-			     set rc 0
+			     set rc false
 		      } elseif { $sec } {
 			     log_error "$cluster found rgt $num2 again"
-			     set rc 0
+			     set rc false
 		      } else {
 			     set found($cluster,$num1) 1
 			     set found($cluster,$num2) 1
@@ -2872,7 +2872,7 @@ proc check_acct_associations { } {
 		for {set inx $c_min($cluster)} {$inx < $c_max($cluster)} {incr inx} {
 			if { ![info exists found($cluster,$inx)] } {
 				log_error "$cluster No index at $inx"
-				set rc 0
+				set rc false
 			}
 		}
 	}
@@ -2927,30 +2927,27 @@ proc get_job_acct_freq { } {
 ################################################################
 #
 # NAME
-#	check_accounting_admin_level - gets the admin_level for the current user
+#	get_admin_level - gets the AdminLevel for the current user
 #
 # SYNOPSIS
-#	check_accounting_admin_level
+#	get_admin_level
 #
 # RETURN VALUE
-#	admin_level for the current user
+#	AdminLevel for the current user
 #
 ################################################################
 
-proc check_accounting_admin_level { } {
+proc get_admin_level { } {
 	global sacctmgr re_word_str re_word_str bin_id exit_code
 
 	set admin_level ""
 	set user_name ""
-
-	log_user 0
 
 	if {[is_super_user]} {
 		return "Administrator"
 	}
 
 	set user_name [get_my_user_name]
-
 	if { ![string length $user_name] } {
 		log_error "No name returned from id"
 		return ""
@@ -2959,6 +2956,7 @@ proc check_accounting_admin_level { } {
 	#
 	# Use sacctmgr to check admin_level
 	#
+	log_user 0
 	set s_pid [spawn $sacctmgr -n -P list user $user_name format=admin]
 	expect {
 		-re "($re_word_str)" {
@@ -2973,8 +2971,8 @@ proc check_accounting_admin_level { } {
 		      wait
 	       }
 	}
-
 	log_user 1
+
 	return $admin_level
 }
 
@@ -3293,40 +3291,31 @@ proc scale_to_ks { value factor } {
 ############################################################
 #
 # NAME
-#	check_node_mem - checks that the nodes have memory configured
+#	check_config_node_mem - checks that the nodes have memory configured
 #
 # SYNOPSIS
-#	check_node_mem
+#	check_config_node_mem
 #
 # RETURN VALUE
-#	1 if the nodes have memory, 0 otherwise
+#	true if all nodes have memory, false otherwise
 #
 ############################################################
 
-proc check_node_mem { } {
-	global scontrol number
+proc check_config_node_mem { } {
 
-	log_user 0
-	set mem_size 0
-
-	spawn $scontrol show node
-	expect {
-		-re "RealMemory=($number)" {
-			set mem_size $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
+	set nodes_dict [get_nodes]
+	dict for {node_name node_dict} $nodes_dict {
+		if [dict exists $node_dict $node_name "RealMemory"] {
+			if {[dict get $node_dict $node_name "RealMemory"] == 1} {
+				return false
+			}
+		} else {
+			log_warn "Parameter RealMemory not found on node $node_name"
+			return false
 		}
 	}
 
-	if {$mem_size == 1} {
-		return 0
-	} else {
-		return 1
-	}
-	log_user 1
-
+	return true
 }
 
 
@@ -4462,19 +4451,18 @@ proc in_fed {} {
 #		job is a hetjob.
 #
 # RETURN VALUE
-#	1 if job was on the desired state, or the number of job components
-#	on that state if it's a hetjob and het_job option enabled. 0 otherwise.
+#	true if job was on the desired state, or the number of job components
+#	on that state if it's a hetjob and het_job option enabled, false
+#	otherwise.
 #
 # ENVIRONMENT
-#	Also sets exit_code to 1 if job (or component) if there are some
-#	error in the called commands.
+#	Also sets exit_code to 1 if there are some error in the called commands.
 #
 ################################################################
 
 proc check_job_state { job state {het_job 0}} {
 	global scontrol exit_code
 
-	set rc 0
 	set jid_list ""
 	if { $het_job } {
 		set jid_list [get_het_job_ids $job 1]
@@ -4495,21 +4483,20 @@ proc check_job_state { job state {het_job 0}} {
 			timeout {
 				log_error "scontrol not responding"
 				set exit_code 1
+				return false
 			}
 			eof {
 				wait
 			}
 		}
 
-		incr rc $state_match
 		if {$state_match != 1} {
 			log_error "job $jid should be in $state state, but is not"
-			set exit_code 1
-			break
+			return false
 		}
 	}
 
-	return $rc
+	return true
 }
 
 

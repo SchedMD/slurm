@@ -65,7 +65,7 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test can't be run on a front-end system"
 }
 
-if { [string compare [check_accounting_admin_level] "Administrator"] } {
+if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
