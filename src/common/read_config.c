@@ -4838,6 +4838,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	}
 #endif
 
+	conf->task_plugin_param = 0;
 	if (s_p_get_string(&temp_str, "TaskPluginParam", hashtbl)) {
 		char *last = NULL, *tok;
 		bool set_unit = false, set_auto = false;
