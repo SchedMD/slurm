@@ -135,20 +135,6 @@ extern int slurm_send_timeout(int open_fd, char *buffer, size_t size,
 extern int slurm_recv_timeout(int open_fd, char *buffer, size_t size,
 			      uint32_t flags, int timeout);
 
-/***************************/
-/* slurm address functions */
-/***************************/
-
-/* given a slurm_address it returns its port and hostname
- * IN slurm_address	- slurm_addr_t to be queried
- * OUT port		- port number
- * OUT host		- hostname
- * IN buf_len		- length of hostname buffer
- */
-extern void slurm_get_addr ( slurm_addr_t * slurm_address ,
-			     uint16_t * port , char * host ,
-			     uint32_t buf_len ) ;
-
 /*****************************/
 /* slurm addr pack functions */
 /*****************************/

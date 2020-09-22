@@ -710,8 +710,6 @@ int slurmctld_msg_init(void)
 		exit(error_exit);
 	}
 	fd_set_nonblocking(slurmctld_fd);
-	/* hostname is not set,  so slurm_get_addr fails
-	   slurm_get_addr(&slurm_address, &port, hostname, sizeof(hostname)); */
 	slurmctld_comm_port = ntohs(slurm_address.sin_port);
 	debug2("srun PMI messages to port=%u", slurmctld_comm_port);
 

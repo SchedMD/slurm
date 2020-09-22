@@ -691,29 +691,6 @@ extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 #endif
 }
 
-extern void slurm_get_addr (slurm_addr_t *addr, uint16_t *port, char *host,
-			    unsigned int buflen )
-{
-	struct hostent *he;
-	char   h_buf[4096];
-	int    h_err  = 0;
-	char * tmp_s_addr = (char *) &addr->sin_addr.s_addr;
-	int    len    = sizeof(addr->sin_addr.s_addr);
-
-	he = get_host_by_addr( tmp_s_addr, len, AF_INET,
-			       (void *) &h_buf, sizeof(h_buf), &h_err );
-
-	if (he != NULL) {
-		*port = ntohs(addr->sin_port);
-		strlcpy(host, he->h_name, buflen);
-	} else {
-		error("Lookup failed: %s", host_strerror(h_err));
-		*port = 0;
-		host[0] = '\0';
-	}
-	return;
-}
-
 extern void slurm_pack_slurm_addr(slurm_addr_t *addr, Buf buffer)
 {
 	pack32( ntohl( addr->sin_addr.s_addr ), buffer );

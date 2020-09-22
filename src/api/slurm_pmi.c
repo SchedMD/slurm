@@ -246,8 +246,6 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 		error("slurm_get_stream_addr: %m");
 		return SLURM_ERROR;
 	}
-	/* hostname is not set here, so slurm_get_addr fails
-	slurm_get_addr(&slurm_addr, &port, hostname, sizeof(hostname)); */
 	port = ntohs(slurm_addr.sin_port);
 	if ((env_pmi_ifhn = getenv("SLURM_PMI_RESP_IFHN")))
 		strlcpy(hostname, env_pmi_ifhn, sizeof(hostname));
