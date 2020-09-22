@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
  -- Have sacct exit correctly when a user/group id isn't valid.
  -- Remove extra \n from invalid user/group id error message.
  -- Detect when extern steps trigger OOM events and mark extern step correctly.
+ -- Reset TaskPluginParam on reconfigure correctly.
 
 * Changes in Slurm 20.02.5
 ==========================
