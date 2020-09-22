@@ -20,9 +20,10 @@ documents those changes that are of interest to users and administrators.
  -- Have sacct exit correctly when a user/group id isn't valid.
  -- Remove extra \n from invalid user/group id error message.
  -- Detect when extern steps trigger OOM events and mark extern step correctly.
- -- Reset TaskPluginParam on reconfigure correctly.
  -- pam_slurm_adopt - permit root access to the node before reading the config
     file, which will give root a chance to fix the config if missing or broken.
+ -- Reset DefMemPerCPU, MaxMemPerCPU, and TaskPluginParam (among other minor
+    flags) on reconfigure.
 
 * Changes in Slurm 20.02.5
 ==========================
