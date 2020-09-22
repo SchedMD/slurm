@@ -77,7 +77,7 @@ static struct io_buf *_alloc_io_buf(void);
 static void	_init_stdio_eio_objs(slurm_step_io_fds_t fds,
 				     client_io_t *cio);
 static void	_handle_io_init_msg(int fd, client_io_t *cio);
-static int      _read_io_init_msg(int fd, client_io_t *cio, char *host);
+static int _read_io_init_msg(int fd, client_io_t *cio, slurm_addr_t *host);
 static int      _wid(int n);
 static bool     _incoming_buf_free(client_io_t *cio);
 static bool     _outgoing_buf_free(client_io_t *cio);
@@ -831,8 +831,7 @@ _create_listensock_eio(int fd, client_io_t *cio)
 	return eio;
 }
 
-static int
-_read_io_init_msg(int fd, client_io_t *cio, char *host)
+static int _read_io_init_msg(int fd, client_io_t *cio, slurm_addr_t *host)
 {
 	struct slurm_io_init_msg msg;
 
@@ -844,10 +843,10 @@ _read_io_init_msg(int fd, client_io_t *cio, char *host)
 		goto fail;
 	}
 	if (msg.nodeid >= cio->num_nodes) {
-		error ("Invalid nodeid %d from %s", msg.nodeid, host);
+		error ("Invalid nodeid %d from %pA", msg.nodeid, host);
 		goto fail;
 	}
-	debug2("Validated IO connection from %s, node rank %u, sd=%d",
+	debug2("Validated IO connection from %pA, node rank %u, sd=%d",
 	       host, msg.nodeid, fd);
 
 	net_set_low_water(fd, 1);
@@ -909,10 +908,7 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 
 	for (j = 0; j < 15; j++) {
 		int sd;
-		struct sockaddr addr;
-		struct sockaddr_in *sin;
-		socklen_t size = sizeof(addr);
-		char buf[INET_ADDRSTRLEN];
+		slurm_addr_t addr;
 
 		/*
 		 * Return early if fd is not now ready
@@ -920,7 +916,7 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 		if (!_is_fd_ready(fd))
 			return;
 
-		while ((sd = accept(fd, &addr, &size)) < 0) {
+		while ((sd = slurm_accept_msg_conn(fd, &addr)) < 0) {
 			if (errno == EINTR)
 				continue;
 			if (errno == EAGAIN)	/* No more connections */
@@ -933,10 +929,7 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 			return;
 		}
 
-		sin = (struct sockaddr_in *) &addr;
-		inet_ntop(AF_INET, &sin->sin_addr, buf, INET_ADDRSTRLEN);
-
-		debug3("Accepted IO connection: ip=%s sd=%d", buf, sd);
+		debug3("Accepted IO connection: ip=%pA sd=%d", &addr, sd);
 
 		/*
 		 * On AIX the new socket [sd] seems to inherit the O_NONBLOCK
@@ -950,7 +943,7 @@ _handle_io_init_msg(int fd, client_io_t *cio)
 		/*
 		 * Read IO header and update cio structure appropriately
 		 */
-		if (_read_io_init_msg(sd, cio, buf) < 0)
+		if (_read_io_init_msg(sd, cio, &addr) < 0)
 			continue;
 
 		fd_set_nonblocking(sd);

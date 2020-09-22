@@ -162,20 +162,15 @@ bool eio_message_socket_readable(eio_obj_t *obj)
 int eio_message_socket_accept(eio_obj_t *obj, List objs)
 {
 	int fd;
-	unsigned char *uc;
-	unsigned short port;
-	struct sockaddr_in addr;
+	slurm_addr_t addr;
 	slurm_msg_t *msg = NULL;
-	int len = sizeof(addr);
 
 	debug3("%s: start", __func__);
 
 	xassert(obj);
 	xassert(obj->ops->handle_msg);
 
-	bzero(&addr, sizeof(struct sockaddr_in));      /* Prevent CLANG error */
-	while ((fd = accept(obj->fd, (struct sockaddr *)&addr,
-			    (socklen_t *)&len)) < 0) {
+	while ((fd = slurm_accept_msg_conn(obj->fd, &addr)) < 0) {
 		if (errno == EINTR)
 			continue;
 		if ((errno == EAGAIN) ||
@@ -198,10 +193,7 @@ int eio_message_socket_accept(eio_obj_t *obj, List objs)
 	fd_set_close_on_exec(fd);
 	fd_set_blocking(fd);
 
-	uc = (unsigned char *)&addr.sin_addr.s_addr;
-	port = addr.sin_port;
-	debug2("%s: got message connection from %u.%u.%u.%u:%hu %d",
-	       __func__, uc[0], uc[1], uc[2], uc[3], ntohs(port), fd);
+	debug2("%s: got message connection from %pA %d", __func__, &addr, fd);
 	fflush(stdout);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
@@ -210,8 +202,7 @@ again:
 	if (slurm_receive_msg(fd, msg, obj->ops->timeout) != 0) {
 		if (errno == EINTR)
 			goto again;
-		error("%s: slurm_receive_msg[%u.%u.%u.%u]: %m",
-		      __func__, uc[0], uc[1], uc[2], uc[3]);
+		error("%s: slurm_receive_msg[%pA]: %m", __func__, &addr);
 		goto cleanup;
 	}
 
