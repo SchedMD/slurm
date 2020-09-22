@@ -456,8 +456,6 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 {
 	int retry_cnt;
 	int fd;
-	uint16_t port;
-	char ip[32];
 
 #ifdef HAVE_NATIVE_CRAY
 	static int check_quiesce = -1;
@@ -531,9 +529,7 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 	return fd;
 
 error:
-	slurm_get_ip_str(addr, &port, ip, sizeof(ip));
-	debug2("Error connecting slurm stream socket at %s:%d: %m",
-	       ip, ntohs(port));
+	debug2("Error connecting slurm stream socket at %pA: %m", addr);
 	(void) close(fd);
 	return SLURM_ERROR;
 }
