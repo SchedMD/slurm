@@ -669,8 +669,6 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 
 	_log_init(opts.log_level);
 
-	slurm_conf_init(NULL);
-
 	switch (opts.action_generic_failure) {
 	case CALLERID_ACTION_DENY:
 		rc = PAM_PERM_DENIED;
@@ -739,6 +737,12 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 			info("Danger!!! This is a connection attempt by root (user id 0) and ignore_root=0 is set! Hope for the best!");
 		}
 	}
+
+	/*
+	 * Initialize after root has been permitted access, which is critical
+	 * in case the config file won't load on this node for some reason.
+	 */
+	slurm_conf_init(NULL);
 
 	/*
 	 * Check if there are any steps on the node from any user. A failure here
