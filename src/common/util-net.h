@@ -88,7 +88,6 @@ extern char *make_full_path(const char *);
 /* Wrapper functions for name and address resolution routines.
  */
 extern struct addrinfo *get_addr_info(const char *);
-extern int get_name_info(struct sockaddr *, socklen_t, char *);
 extern void free_addr_info(struct addrinfo *);
 
 #endif /* !_UTIL_NET_H */

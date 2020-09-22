@@ -315,21 +315,6 @@ get_addr_info(const char *hostname)
 	return result;
 }
 
-int
-get_name_info(struct sockaddr *sa, socklen_t len, char *host)
-{
-	int err;
-
-        err = getnameinfo(sa, len, host, NI_MAXHOST, NULL, 0, 0);
-	if (err != 0) {
-		error("%s: getnameinfo() failed: %s", __func__,
-		      gai_strerror(err));
-		return -1;
-	}
-
-	return 0;
-}
-
 void
 free_addr_info(struct addrinfo *info)
 {
