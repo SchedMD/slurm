@@ -135,6 +135,7 @@ extern int read_slurmdbd_conf(void)
 		{"AuthInfo", S_P_STRING},
 		{"AuthType", S_P_STRING},
 		{"CommitDelay", S_P_UINT16},
+		{"CommunicationParameters", S_P_STRING},
 		{"DbdAddr", S_P_STRING},
 		{"DbdBackupHost", S_P_STRING},
 		{"DbdHost", S_P_STRING},
@@ -237,6 +238,8 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_string(&slurm_conf.authtype, "AuthType", tbl);
 		s_p_get_uint16(&slurmdbd_conf->commit_delay,
 			       "CommitDelay", tbl);
+		s_p_get_string(&slurm_conf.comm_params,
+			       "CommunicationParameters", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_backup,
 			       "DbdBackupHost", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_host, "DbdHost", tbl);
@@ -655,6 +658,7 @@ extern void log_config(void)
 	debug2("AuthInfo          = %s", slurm_conf.authinfo);
 	debug2("AuthType          = %s", slurm_conf.authtype);
 	debug2("CommitDelay       = %u", slurmdbd_conf->commit_delay);
+	debug2("CommunicationParameters	= %s", slurm_conf.comm_params);
 	debug2("DbdAddr           = %s", slurmdbd_conf->dbd_addr);
 	debug2("DbdBackupHost     = %s", slurmdbd_conf->dbd_backup);
 	debug2("DbdHost           = %s", slurmdbd_conf->dbd_host);
@@ -816,6 +820,11 @@ extern List dump_config(void)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("CommitDelay");
 	key_pair->value = xstrdup(slurmdbd_conf->commit_delay ? "Yes" : "No");
+	list_append(my_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("CommunicationParameters");
+	key_pair->value = xstrdup(slurm_conf.comm_params);
 	list_append(my_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));

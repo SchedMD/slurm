@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "June 2020" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "September 2020" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -159,6 +159,10 @@ committed could be lost.  While this situation should be very rare,
 it does present an extremely small risk, but may be the only way to run in
 extremely heavy environments.  In all honesty, the risk is quite low, but still
 present.
+
+.TP
+\fBCommunicationParameters\fR
+Comma separated options identifying communication options.
 
 .TP
 \fBDbdBackupHost\fR
