@@ -141,7 +141,7 @@ void pack_header(header_t *header, Buf buffer)
 				       header->ret_cnt, buffer,
 				       header->version);
 		}
-		slurm_pack_slurm_addr(&header->orig_addr, buffer);
+		slurm_pack_addr(&header->orig_addr, buffer);
 	} else if (header->version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack16(header->flags, buffer);
 		pack16(header->msg_index, buffer);
@@ -202,7 +202,7 @@ unpack_header(header_t * header, Buf buffer)
 		} else {
 			header->ret_list = NULL;
 		}
-		slurm_unpack_slurm_addr_no_alloc(&header->orig_addr, buffer);
+		slurm_unpack_addr_no_alloc(&header->orig_addr, buffer);
 	} else if (header->version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&header->flags, buffer);
 		safe_unpack16(&header->msg_index, buffer);
@@ -1408,8 +1408,8 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 		/* pack node_addr after node_cnt -- need it for unpacking */
 		if (msg->node_addr && msg->node_cnt > 0) {
 			pack8(1, buffer); /* non-null node_addr */
-			slurm_pack_slurm_addr_array(msg->node_addr,
-						    msg->node_cnt, buffer);
+			slurm_pack_addr_array(msg->node_addr, msg->node_cnt,
+					      buffer);
 		} else {
 			pack8(0, buffer);
 		}
@@ -1519,8 +1519,8 @@ _unpack_resource_allocation_response_msg(
 		/* unpack node_addr after node_cnt -- need it to unpack */
 		safe_unpack8(&uint8_tmp, buffer);
 		if (uint8_tmp) {
-			if (slurm_unpack_slurm_addr_array(&tmp_ptr->node_addr,
-							  &uint32_tmp, buffer))
+			if (slurm_unpack_addr_array(&tmp_ptr->node_addr,
+						    &uint32_tmp, buffer))
 				goto unpack_error;
 			if (uint32_tmp != tmp_ptr->node_cnt)
 				goto unpack_error;
@@ -7678,7 +7678,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack16(msg->num_resp_port, buffer);
 		for (i = 0; i < msg->num_resp_port; i++)
 			pack16(msg->resp_port[i], buffer);
-		slurm_pack_slurm_addr(&msg->orig_addr, buffer);
+		slurm_pack_addr(&msg->orig_addr, buffer);
 		packstr_array(msg->env, msg->envc, buffer);
 		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
 			      buffer);
@@ -7926,7 +7926,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 			for (i = 0; i < msg->num_resp_port; i++)
 				safe_unpack16(&msg->resp_port[i], buffer);
 		}
-		slurm_unpack_slurm_addr_no_alloc(&msg->orig_addr, buffer);
+		slurm_unpack_addr_no_alloc(&msg->orig_addr, buffer);
 		safe_unpackstr_array(&msg->env, &msg->envc, buffer);
 		safe_unpackstr_array(&msg->spank_job_env,
 				     &msg->spank_job_env_size, buffer);
