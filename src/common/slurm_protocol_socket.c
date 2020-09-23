@@ -630,35 +630,6 @@ done:
 
 extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 {
-#if 1
-/* NOTE: gethostbyname() is obsolete, but the alternative function (below)
- * does not work reliably. See bug 2186. */
-	struct hostent * he    = NULL;
-	int	   h_err = 0;
-	char *	   h_buf[4096];
-
-	/*
-	 * If NULL hostname passed in, we only update the port of addr
-	 */
-	addr->sin_family = AF_INET;
-	addr->sin_port   = htons(port);
-	if (host == NULL)
-		return;
-
-	he = get_host_by_name(host, (void *)&h_buf, sizeof(h_buf), &h_err);
-
-	if (he != NULL)
-		memcpy (&addr->sin_addr.s_addr, he->h_addr, he->h_length);
-	else {
-		error("Unable to resolve \"%s\": %s", host, hstrerror(h_err));
-		addr->sin_family = 0;
-		addr->sin_port = 0;
-	}
-	return;
-#else
-/* NOTE: getaddrinfo() currently does not support aliases and is failing with
- * EAGAIN repeatedly in some cases. Comment out this logic until the function
- * works as designed. See bug 2186. */
 	struct addrinfo *addrs;
 	struct addrinfo *addr_ptr;
 
@@ -688,7 +659,6 @@ extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 
 	if (addrs)
 		free_addr_info(addrs);
-#endif
 }
 
 extern void slurm_pack_slurm_addr(slurm_addr_t *addr, Buf buffer)
