@@ -3169,8 +3169,6 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 
 		memset(&job_info_resp_msg, 0, sizeof(job_info_resp_msg));
 		job_info_resp_msg.job_id         = job_ptr->job_id;
-		job_info_resp_msg.node_addr      = node_addr;
-		job_info_resp_msg.node_cnt       = node_cnt;
 		job_info_resp_msg.node_list      = xstrdup(node_list);
 		job_info_resp_msg.sbcast_cred    = sbcast_cred;
 		unlock_slurmctld(job_read_lock);

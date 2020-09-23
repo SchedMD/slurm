@@ -145,9 +145,7 @@ static int _get_job_info(struct bcast_parameters *params)
 		return rc;
 	}
 	verbose("jobid      = %s", job_id_str);
-	verbose("node_cnt   = %u", sbcast_cred->node_cnt);
 	verbose("node_list  = %s", sbcast_cred->node_list);
-	/* also see sbcast_cred->node_addr (array) */
 
 	if (params->verbose)
 		print_sbcast_cred(sbcast_cred->sbcast_cred);

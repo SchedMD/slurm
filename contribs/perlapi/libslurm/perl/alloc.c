@@ -255,19 +255,7 @@ submit_response_msg_to_hv(submit_response_msg_t *resp_msg, HV* hv)
 int
 job_sbcast_cred_msg_to_hv(job_sbcast_cred_msg_t *msg, HV *hv)
 {
-	AV *av;
-	int i;
-
 	STORE_FIELD(hv, msg, job_id, uint32_t);
-	STORE_FIELD(hv, msg, node_cnt, uint32_t);
-	if(msg->node_cnt) {
-		av = newAV();
-		for(i = 0; i < msg->node_cnt; i ++) {
-			/* XXX: This is a packed inet address */
-			av_store(av, i, newSVpvn((char*)(msg->node_addr + i), sizeof(slurm_addr_t)));
-		}
-		hv_store_sv(hv, "node_addr", newRV_noinc((SV*)av));
-	}
 	if (msg->node_list)
 		STORE_FIELD(hv, msg, node_list, charp);
 	STORE_PTR_FIELD(hv, msg, sbcast_cred, "Slurm::sbcast_cred_t");
