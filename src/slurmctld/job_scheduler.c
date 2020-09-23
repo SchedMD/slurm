@@ -819,8 +819,6 @@ extern int schedule(uint32_t job_limit)
 		delta_t +=  now.tv_usec - sched_last.tv_usec;
 	}
 
-	if (job_limit == NO_VAL)
-		job_limit = 0;			/* use system default */
 	slurm_mutex_lock(&sched_mutex);
 	if (sched_job_limit == INFINITE)
 		;				/* leave unlimited */
