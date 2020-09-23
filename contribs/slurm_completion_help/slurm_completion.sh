@@ -1034,15 +1034,53 @@ _squeue()
 
     local shortoptions="-A -a -h -i -j -l -L -M -n -O -o -P -p -q -R -r -S -s\
 			-t -u -V -v -w"
-    local longoptions="--account<account_list> --all --array --noheader --help
-		       --hide --iterate<seconds> --jobs<job_id_list> --long\
-		       --licenses=<license_list> --clusters<string>\
-		       --name=<name_list> --format<fmtstring>\
-		       --Format<fmtstring> --partition<part_list>\
-		       --priotity --qos<qos_list>\
-		       --reservation=<reservation_name> --steps\
-		       --sort<sort_list> --start --state<state_list> --usage\
-		       --verbose --version --nodelist<hostlist>"
+    local longoptions="--account=<account_list> --all --array --array-unique\
+		       --clusters=<string> --federation --format=<fmtstring>\
+		       --Format=<fmtstring> --help --hide --iterate=<seconds>\
+		       --jobs=<job_id_list> --json --licenses=<license_list>\
+		       --local --long --me --name=<name_list> --noconvert\
+		       --nodelist=<hostlist> --noheader --partition=<part_list>\
+		       --priority --qos=<qos_list> --reservation=<res_name>\
+		       --sibling --sort=<sort_list> --start\
+		       --states=<state_list> --steps --usage --user=<user_list>\
+		       --verbose --version --yaml"
+
+    local jobstates="pending running suspended completed cancelled failed\
+		     timeout node_fail preempted boot_fail deadline\
+		     out_of_memory completing configuring resizing\
+		     revoked special_exit"
+
+    local formatlong="Account AccrueTime admin_comment AllocNodes AllocSID\
+		      ArrayJobID ArrayTaskID AssocID BatchFlag BatchHost\
+		      BoardsPerNode BurstBuffer BurstBufferState Cluster\
+		      ClusterFeature Command Comment Contiguous Cores\
+		      CoreSpec CPUFreq cpus-per-task cpus-per-tres Deadline\
+		      DelayBoot Dependency DerivedEC EligibleTime EndTime\
+		      exit_code Feature GroupID GroupName HetJobID HetJobIDSet\
+		      JetJobOffset JobArrayID JobID LastSchedEval Licenses\
+		      MaxCPUs MaxNodes MCSLabel mem-per-tres MinCPUs MinMemory\
+		      MinTime MinTmpDisk Name Network Nice NodeList Nodes\
+		      NTPerBoard NTPerCore NTPerNode NTPerSocket NumCPUs\
+		      NumNodes NumTasks Origin OriginRAW OverSubscribe\
+		      Partition PreemptTime Priority PriorityLong Profile QOS\
+		      Reason ReasonList Reboot ReqNodes ReqSwitch Requeue\
+		      Reservation ResizeTime RestartCnt ResvPort SchedNodes\
+		      SCT SelectJobInfo SiblingsActive SiblingsActiveRaw\
+		      SiblingsViable SiblingsViableRaw Sockets SPerBoard\
+		      StartTime State StateCompact STDERR STDIN STDOUT\
+		      StepID StepName StepState SubmitTime system_comment\
+		      Threads TimeLeft TimeLimit TimeUsed tres-alloc tres-bind\
+		      tres-freq tres-per-job tres-per-node tres-per-socket\
+		      tres-per-step tres-per-task UserID UserName Wait4Switch\
+		      WCKey WorkDir"
+
+    local sortoptions="B(BatchHost) C(NumCPUs) d(TmpDisk) D(NumNodes)\
+		       e(EndTime) g(Group) G(gID) H(Sockets) i(JobID)\
+		       I(Cores) j(name) J(Threads) l(TimeLimit) L(TimeLeft)\
+		       m(Mem) M(TimeUsed) N(AllocNodes) p(Priority)\
+		       P(Partition) Q(Priority) S(StartTime) t(StateCompact)\
+		       T(State) u(User) U(uID) v(Reservation) V(TimeSubmit)\
+		       z(S:C:T)"
 
     [[ $cur == - ]] && { offer "$shortoptions" ; return ; }
     [[ $cur == -- ]] && { offer "$longoptions" ; return ; }
@@ -1050,13 +1088,18 @@ _squeue()
 
     if [[ $cur == *% ]] ;
     then
-	offer "%a(Account) %A(NTasks) %b(gres) %c(mincpu) %C(Ncpus) %d(minTmp) \
-	       %D(NNodes) %e(end) %E(dependency) %f(features) %g(group) %G(gID)\
-	       %h(shared) %H(Nsockets) %i(id) %I(Ncores/socket) %j(name)\
-	       %k(comment) %l(limit) %L(timeleft) %m(mem) %M(time) %n(reqnodes)\
-	       %N(alloc_nodes) %O(contiguous) %p(priority) %r(reason)\
-	       %R(reason) %s(selecplugin) %t(state) %T(state) \
-	       %u(user) %U(uID) %v(reservation) %x(excnodes)" ;
+	offer "%all %a(Account) %A(NTasks/JobID) %B(BatchHost) %c(mincpu)\
+	       %C(Ncpus) %d(minTmp) %D(NNodes) %e(end) %E(dependency)\
+	       %f(features) %F(ArrayJobID) %g(Group) %G(gID) %h(shared)\
+	       %H(Nsockets) %i(JobID) %I(Ncores/socket) %j(name)\
+	       %J(threads/core) %k(comment) %K(arrayindex) %l(timelimit)\
+	       %L(timeleft) %m(mem) %M(time) %n(reqnodes) %N(alloc_nodes)\
+	       %o(command) %O(contiguous) %p(priority) %P(partition) %q(QOS)\
+	       %Q(priority) %r(reason) %R(nodelist/reason) %s(selecplugin)\
+	       %S(starttime) %t(state) %T(state) %u(user) %U(uID)\
+	       %v(reservation) %V(submittime) %w(wckey) %W(license)\
+	       %x(exclnodes) %X(corespec) %y(nice) %Y(schednodes) %z(S:C:T)\
+	       %Z(workdir)" ;
 	return;
     fi
 
@@ -1064,15 +1107,17 @@ _squeue()
     --account|-A) offer_list "$(_accounts)" ;;
     --jobs|-j) offer_list "$(_jobs)" ;;
     --clusters|-M) offer_list "$(_clusters)" ;;
-    --name|-n) offer_list "$(_jobname)" ;;
-    --qos) offer_list "$(_qos)" ;;
+    --name|-n) offer_list "$(_jobnames)" ;;
+    --qos|-q) offer_list "$(_qos)" ;;
     --user|-u) offer_list "$(_users)" ;;
-    --state|-t) offer_list "pending running suspended completing completed" ;;
-    --format|-o|--Format|-O) offer "\\\"%" ;;
+    --states|-t) offer_list "$jobstates" ;;
+    --format|-o) offer "\\\"%" ;;
+    --Format|-O) offer "$formatlong" ;;
     --partition|-p) offer_list "$(_partitions)" ;;
-    --reservation|-R) offer_list "$(_reservation)" ;;
-    --sort|-S) offer_list "\\\"%" ;;
+    --reservation|-R) offer_list "$(_reservations)" ;;
+    --sort|-S) offer_list "$sortoptions" ;;
     --nodelist|-w) offer_list "$(_nodes)" ;;
+    --licenses|-L) offer_list "$(_licenses)" ;;
     esac
 }
 complete -F _squeue squeue
