@@ -5636,6 +5636,9 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	persist_init_req_msg_t *persist_init = msg->data;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 
+	if (msg->conn)
+		error("We already have a persistent connect, this should never happen");
+
 	START_TIMER;
 
 	if (persist_init->version > SLURM_PROTOCOL_VERSION)
@@ -6227,8 +6230,6 @@ void slurmctld_req(slurm_msg_t *msg)
 		_slurm_rpc_assoc_mgr_info(msg);
 		break;
 	case REQUEST_PERSIST_INIT:
-		if (msg->conn)
-			error("We already have a persistent connect, this should never happen");
 		_slurm_rpc_persist_init(msg);
 		break;
 	case REQUEST_EVENT_LOG:
