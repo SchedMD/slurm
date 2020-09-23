@@ -684,6 +684,9 @@ static void _handle_read(void *x)
 	} else {
 		log_flag(NET, "%s: [%s] read %zd bytes with %u bytes to process already in buffer",
 			 __func__, con->name, read_c, get_buf_offset(con->in));
+		log_flag_hex(NET_RAW,
+			     (get_buf_data(con->in) + get_buf_offset(con->in)),
+			     read_c, "%s: [%s] read", __func__, con->name);
 
 		get_buf_offset(con->in) += read_c;
 	}
