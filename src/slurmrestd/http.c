@@ -235,6 +235,11 @@ static int _on_header_value(http_parser *parser, const char *at, size_t length)
 	/* trim header field-name per rfc2616:4.2 */
 	xstrtrim(buffer->name);
 
+	list_append(request->headers, buffer);
+	debug2("%s: [%s] Header: %s Value: %s",
+	       __func__, request->context->con->name, buffer->name,
+	       buffer->value);
+
 	/* Watch for connection headers */
 	if (!xstrcasecmp(buffer->name, "Connection")) {
 		if (!xstrcasecmp(buffer->value, "Keep-Alive")) {
@@ -264,11 +269,6 @@ static int _on_header_value(http_parser *parser, const char *at, size_t length)
 		request->accept = xstrdup(buffer->value);
 	}
 
-	list_append(request->headers, buffer);
-
-	debug2("%s: [%s] Header: %s Value: %s",
-	       __func__, request->context->con->name, buffer->name,
-	       buffer->value);
 	return 0;
 }
 
