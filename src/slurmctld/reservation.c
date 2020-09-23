@@ -2978,6 +2978,21 @@ static void _clear_job_resv(slurmctld_resv_t *resv_ptr)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
+		if ((resv_ptr->flags & RESERVE_FLAG_MAINT) &&
+		    (job_ptr->state_reason == WAIT_NODE_NOT_AVAIL) &&
+		    !xstrcmp(job_ptr->state_desc,
+			    "ReqNodeNotAvail, Reserved for maintenance")) {
+			/*
+			 * In case of cluster maintenance many jobs may get this
+			 * state set. If we wait for scheduler to update
+			 * the reason it may take long time after the
+			 * reservation completion. Instead of that clear it
+			 * when MAIN reservation ends.
+			 */
+			job_ptr->state_reason = WAIT_NO_REASON;
+			xfree(job_ptr->state_desc);
+		    }
+
 		if (job_ptr->resv_ptr != resv_ptr)
 			continue;
 		if (!IS_JOB_FINISHED(job_ptr)) {
