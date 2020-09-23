@@ -141,9 +141,9 @@ proc test_it {} {
 		set domain_str "@$domain"
 	}
 
-	submit "-H" "MailUser=\\(null\\) MailType=NONE"
+	submit "-H" "MailUser=$user$domain_str MailType=NONE"
 	submit "-H --mail-type=begin,end" "MailUser=$user$domain_str MailType=BEGIN,END"
-	submit "-H --mail-user=blah" "MailUser=\\(null\\) MailType=NONE"
+	submit "-H --mail-user=blah" "MailUser=blah MailType=NONE"
 
 	spawn $sbatch -J "test$test_id" --wrap=hostname -H
 	expect {
@@ -163,7 +163,10 @@ proc test_it {} {
 	update $job_id "mailuser= mailtype=begin,end" "MailUser=$user$domain_str MailType=BEGIN,END"
 	update $job_id "mailtype=begin" "MailUser=$user$domain_str MailType=BEGIN"
 	update $job_id "mailuser=blah mailtype=begin" "MailUser=blah MailType=BEGIN"
-	update $job_id "mailuser=blah mailtype=none" "MailUser=\\(null\\) MailType=NONE"
+	update $job_id "mailuser=blah mailtype=none" "MailUser=blah MailType=NONE"
+
+	update $job_id "mailuser=blah mailtype=begin" "MailUser=blah MailType=BEGIN"
+	update $job_id "mailtype=none" "MailUser=blah MailType=NONE"
 
 	cancel_job $job_id
 }
