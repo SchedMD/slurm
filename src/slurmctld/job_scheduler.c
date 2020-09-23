@@ -112,7 +112,7 @@ static bool	_job_runnable_test1(job_record_t *job_ptr, bool clear_start);
 static bool	_job_runnable_test2(job_record_t *job_ptr, bool check_min_time);
 static bool	_scan_depend(List dependency_list, uint32_t job_id);
 static void *	_sched_agent(void *args);
-static int	_schedule(uint32_t job_limit);
+static int	_schedule(bool full_queue);
 static int	_valid_batch_features(job_record_t *job_ptr, bool can_reboot);
 static int	_valid_feature_list(job_record_t *job_ptr, bool can_reboot);
 static int	_valid_node_feature(char *feature, bool can_reboot);
@@ -837,7 +837,7 @@ extern int schedule(uint32_t job_limit)
 		sched_job_limit = NO_VAL;
 		slurm_mutex_unlock(&sched_mutex);
 
-		job_count = _schedule(job_limit);
+		job_count = _schedule((job_limit == INFINITE));
 
 		slurm_mutex_lock(&sched_mutex);
 		gettimeofday(&now, NULL);
@@ -1004,7 +1004,7 @@ extern void job_queue_append_internal(job_queue_req_t *job_queue_req)
 	list_append(job_queue_req->job_queue, job_queue_rec);
 }
 
-static int _schedule(uint32_t job_limit)
+static int _schedule(bool full_queue)
 {
 	ListIterator job_iterator = NULL, part_iterator = NULL;
 	List job_queue = NULL;
@@ -1264,9 +1264,6 @@ static int _schedule(uint32_t job_limit)
 		goto out;
 	}
 
-	if (job_limit == 0)
-		job_limit = def_job_limit;
-
 	lock_slurmctld(job_write_lock);
 	now = time(NULL);
 	sched_start = now;
@@ -1523,7 +1520,7 @@ next_task:
 				continue;
 			}
 		}
-		if (job_depth++ > job_limit) {
+		if (!full_queue && (job_depth++ > def_job_limit)) {
 			sched_debug("already tested %u jobs, breaking out",
 				    job_depth);
 			break;
