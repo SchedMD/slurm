@@ -628,8 +628,7 @@ static void _handle_read(void *x)
 {
 	con_mgr_fd_t *con = x;
 	ssize_t read_c;
-	/* default to at least 512 available in buffer */
-	int readable = 512;
+	int readable;
 
 	_check_magic_fd(con);
 	_check_magic_mgr(con->mgr);
@@ -639,6 +638,13 @@ static void _handle_read(void *x)
 	if (ioctl(con->input_fd, FIONREAD, &readable))
 		log_flag(NET, "%s: [%s] unable to call FIONREAD: %m",
 			 __func__, con->name);
+	else if (readable == 0) {
+		/* Didn't fail but buffer is empty so this may be EOF */
+		readable = 1;
+	}
+#else
+	/* default to at least 512 available in buffer */
+	readable = 512;
 #endif /* FIONREAD */
 
 	/* Grow buffer as needed to handle the incoming data */
@@ -672,9 +678,7 @@ static void _handle_read(void *x)
 		error("%s: [%s] error while reading: %m", __func__, con->name);
 		_close_con(false, con);
 		return;
-	}
-
-	if (read_c == 0) {
+	} else if (read_c == 0) {
 		log_flag(NET, "%s: [%s] read %zd bytes and EOF with %u bytes to process already in buffer",
 			 __func__, con->name, read_c, get_buf_offset(con->in));
 
