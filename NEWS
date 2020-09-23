@@ -70,6 +70,7 @@ documents those changes that are of interest to users and administrators.
     subsystem instead.
  -- slurmrestd - use memmove() instead of memcpy() in string manipulation
     to avoid bugs related to overlapping memory regions.
+ -- slurmrestd - avoid xassert() failure on duplicated headers in request.
 
 * Changes in Slurm 20.02.5
 ==========================
