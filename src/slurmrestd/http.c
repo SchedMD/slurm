@@ -101,30 +101,18 @@ static void _destroy_headers_list(void *list)
 /* only clears the values that should change between requests */
 static void _reinit_request_t(request_t *request, bool create)
 {
-	if (request->headers) {
-		list_destroy(request->headers);
-		request->headers = NULL;
-	}
+	FREE_NULL_LIST(request->headers);
 	xfree(request->path);
-	request->path = NULL;
 	xfree(request->query);
-	request->query = NULL;
 	xfree(request->last_header);
-	request->last_header = NULL;
 	xfree(request->content_type);
-	request->content_type = NULL;
 	xfree(request->accept);
-	request->accept = NULL;
 	xfree(request->body);
-	request->body = NULL;
 	xfree(request->body_encoding);
-	request->body_encoding = NULL;
 	request->body_length = 0;
 
 	if (create)
 		request->headers = list_create(_destroy_headers_list);
-	else
-		request->headers = NULL;
 }
 
 static void _http_parser_url_init(struct http_parser_url *url)
