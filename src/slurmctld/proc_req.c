@@ -4463,6 +4463,12 @@ static void _slurm_rpc_resv_show(slurm_msg_t * msg)
 	}
 }
 
+static void _slurm_rpc_node_registration_status(slurm_msg_t *msg)
+{
+	error("slurmctld is talking with itself. SlurmctldPort == SlurmdPort");
+	slurm_send_rc_msg(msg, EINVAL);
+}
+
 /* determine of nodes are ready for the job */
 static void _slurm_rpc_job_ready(slurm_msg_t * msg)
 {
@@ -6144,9 +6150,7 @@ void slurmctld_req(slurm_msg_t *msg)
 		_slurm_rpc_resv_show(msg);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
-		error("slurmctld is talking with itself. "
-		      "SlurmctldPort == SlurmdPort");
-		slurm_send_rc_msg(msg, EINVAL);
+		_slurm_rpc_node_registration_status(msg);
 		break;
 	case REQUEST_SUSPEND:
 		_slurm_rpc_suspend(msg);
