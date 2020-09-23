@@ -739,6 +739,8 @@ static void _handle_write(void *x)
 
 	log_flag(NET, "%s: [%s] wrote %zu/%u bytes",
 		 __func__, con->name, wrote, get_buf_offset(con->out));
+	log_flag_hex(NET_RAW, get_buf_data(con->out), wrote,
+		     "%s: [%s] wrote", __func__, con->name);
 
 	if (wrote != get_buf_offset(con->out)) {
 		/*
