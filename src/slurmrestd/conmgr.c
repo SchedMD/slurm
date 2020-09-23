@@ -1315,9 +1315,10 @@ static void _poll_connections(void *x)
 		    con->input_fd == -1)
 			continue;
 
-		log_flag(NET, "%s: [%s] poll read_eof=%s input=%u output=%u",
+		log_flag(NET, "%s: [%s] poll read_eof=%s input=%u output=%u has_work=%c",
 			 __func__, con->name, (con->read_eof ? "T" : "F"),
-			 get_buf_offset(con->in), get_buf_offset(con->out));
+			 get_buf_offset(con->in), get_buf_offset(con->out),
+			 (con->has_work ? 'T' : 'F'));
 
 		if (con->input_fd == con->output_fd) {
 			/* if fd is same, only poll it */
