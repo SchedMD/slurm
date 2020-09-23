@@ -1823,6 +1823,7 @@ the first identified component of the job with the highest order PreemptMode
 (\fBSUSPEND\fR (highest), \fBREQUEUE\fR, \fBCANCEL\fR (lowest)) will be
 used to set the PreemptMode for all components. The \fBGraceTime\fR and user
 warning signal for each component of the heterogeneous job remain unique.
+Heterogeneous jobs are excluded from GANG scheduling operations.
 .RS
 .TP 12
 \fBOFF\fR
@@ -1848,6 +1849,9 @@ PriorityTier partitions you will need overlapping partitions, and
 \fBPreemptMode=SUSPEND,GANG\fR to use the Gang scheduler to resume the suspended
 jobs(s).
 In any case, time-slicing won't happen between jobs on different partitions.
+
+\fBNOTE:\fR
+Heterogeneous jobs are excluded from GANG scheduling operations.
 .TP
 \fBREQUEUE\fR
 Preempts jobs by requeuing them (if possible) or canceling them.

@@ -1017,6 +1017,10 @@ static void _scan_slurm_job_list(void)
 		log_flag(GANG, "gang: %s: checking %pJ",
 			 __func__, job_ptr);
 
+		/* Exclude HetJobs from gang operation. */
+		if (job_ptr->het_job_id)
+			continue;
+
 		if (IS_JOB_PENDING(job_ptr))
 			continue;
 		if (IS_JOB_SUSPENDED(job_ptr) && (job_ptr->priority == 0))
@@ -1166,6 +1170,10 @@ extern void gs_job_start(job_record_t *job_ptr)
 	if (!(slurm_conf.preempt_mode & PREEMPT_MODE_GANG))
 		return;
 
+	/* Exclude HetJobs from gang operation. */
+	if (job_ptr->het_job_id)
+		return;
+
 	log_flag(GANG, "gang: entering %s for %pJ", __func__, job_ptr);
 	/* add job to partition */
 	if (job_ptr->part_ptr && job_ptr->part_ptr->name)
@@ -1210,6 +1218,10 @@ extern void gs_wake_jobs(void)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
+		/* Exclude HetJobs from gang operation. */
+		if (job_ptr->het_job_id)
+			continue;
+
 		if (IS_JOB_SUSPENDED(job_ptr) && (job_ptr->priority != 0)) {
 			info("gang waking preempted %pJ", job_ptr);
 			_resume_job(job_ptr);
@@ -1226,6 +1238,10 @@ extern void gs_job_fini(job_record_t *job_ptr)
 	char *part_name;
 
 	if (!(slurm_conf.preempt_mode & PREEMPT_MODE_GANG))
+		return;
+
+	/* Exclude HetJobs from gang operation. */
+	if (job_ptr->het_job_id)
 		return;
 
 	log_flag(GANG, "gang: entering %s for %pJ", __func__, job_ptr);

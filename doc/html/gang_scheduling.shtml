@@ -33,6 +33,9 @@ Then it will suspend the running job and let the new job make use of the
 resources for a <I>SchedulerTimeslice</I> interval.
 This will continue until one of the jobs terminates.
 </P>
+<P>
+NOTE: Heterogeneous jobs are excluded from gang scheduling operations.
+</P>
 
 <H2>Configuration</H2>
 

@@ -626,6 +626,8 @@ The more frequently executed scheduling logic only starts jobs on a first-in
 first-out (FIFO) basis and lacks logic for concurrently scheduling all
 components of a heterogeneous job.</p>
 
+<p>Heterogeneous jobs are not supported on GANG scheduling operations.</p>
+
 <p>Heterogeneous jobs are not supported on Cray ALPS systems.</p>
 
 <p>Heterogeneous jobs are not supported on IBM PE systems.</p>
