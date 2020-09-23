@@ -2141,7 +2141,6 @@ static void *_slurmctld_background(void *no_data)
 		job_limit = NO_VAL;
 		if (difftime(now, last_full_sched_time) >= sched_interval) {
 			slurm_mutex_lock(&sched_cnt_mutex);
-			/* job_limit = job_sched_cnt;	Ignored */
 			job_limit = INFINITE;
 			job_sched_cnt = 0;
 			slurm_mutex_unlock(&sched_cnt_mutex);
