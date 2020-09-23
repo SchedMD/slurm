@@ -74,6 +74,8 @@ typedef struct {
 	char *last_header;
 	/* client requested to keep_alive header or -1 to disable */
 	int keep_alive;
+	/* RFC7230-6.1 "Connection: Close" */
+	bool connection_close;
 	int expect; /* RFC7231-5.1.1 expect requested */
 	/* Connection context */
 	http_context_t *context;
@@ -238,6 +240,8 @@ static int _on_header_value(http_parser *parser, const char *at, size_t length)
 		if (!xstrcasecmp(buffer->value, "Keep-Alive")) {
 			if (request->keep_alive == -1)
 				request->keep_alive = DEFAULT_KEEP_ALIVE;
+		} else if (!xstrcasecmp(buffer->value, "Close")) {
+			request->connection_close = true;
 		} else {
 			error("%s: [%s] ignoring unsupported header request: %s",
 			      __func__, request->context->con->name,
@@ -286,6 +290,10 @@ static int _on_headers_complete(http_parser *parser)
 	if (parser->http_major == 1 && parser->http_minor == 0) {
 		debug3("%s: [%s] HTTP/1.0 connection",
 		       __func__, request->context->con->name);
+
+		/* 1.0 defaults to close w/o keep_alive */
+		if (!request->keep_alive)
+			request->connection_close = true;
 	} else if (parser->http_major == 1 && parser->http_minor == 1) {
 		debug3("%s: [%s] HTTP/1.1 connection",
 		       __func__, request->context->con->name);
@@ -636,7 +644,24 @@ static int _on_message_complete(http_parser *parser)
 		       __func__, request->context->con->name);
 	}
 
-	_reinit_request_t(request, true);
+	if (!request->connection_close) {
+		/*
+		 * Create a new HTTP request to allow persistent connections to
+		 * continue but without inheirting previous requests.
+		 */
+		request_t *nrequest = xmalloc(sizeof(*request));
+		request->context->request = nrequest;
+		parser->data = nrequest;
+		_free_request_t(request);
+	} else {
+		/* Notify client that this connection will be closed now */
+		if (request->connection_close)
+			send_http_connection_close(request->context);
+
+		request->context->request = NULL;
+		_free_request_t(request);
+		parser->data = NULL;
+	}
 
 	return 0;
 }
@@ -677,7 +702,14 @@ extern int parse_http(con_mgr_fd_t *con, void *x)
 	xassert(con->name[0] != '\0');
 	xassert(size_buf(buffer));
 
-	_reinit_request_t(request, true);
+	if (!request) {
+		/* Connection has already been closed */
+		rest_auth_context_clear();
+		debug("%s: [%s] Rejecting continued HTTP connection",
+		      __func__, con->name);
+		return SLURM_UNEXPECTED_MSG_ERROR;
+	}
+
 	if (request->context)
 		xassert(request->context == context);
 	request->context = context;
