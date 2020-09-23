@@ -1752,7 +1752,7 @@ skip_start:
 		fail_by_part = false;
 		if ((error_code != SLURM_SUCCESS) && deadline_time_limit)
 			job_ptr->time_limit = save_time_limit;
-		if ((error_code == ESLURM_NODES_BUSY)) {
+		if (error_code == ESLURM_NODES_BUSY) {
 			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u. Partition=%s.",
 				     job_ptr,
 				     job_state_string(job_ptr->job_state),

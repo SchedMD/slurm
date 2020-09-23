@@ -519,7 +519,7 @@ static int _unpack_job_start_msg(void **msg,
 	uint32_t uint32_tmp;
 	dbd_job_start_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_start_msg_t));
 	*msg = msg_ptr;
-	void * tmp_ptr;
+	void *tmp_ptr = NULL;
 
 	msg_ptr->array_job_id = 0;
 	msg_ptr->array_task_id = NO_VAL;

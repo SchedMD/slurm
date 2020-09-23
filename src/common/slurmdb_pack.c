@@ -4251,7 +4251,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 	slurmdb_step_rec_t *step = NULL;
 	uint32_t count = 0;
 	uint32_t uint32_tmp;
-	void *tmp_ptr;
+	void *tmp_ptr = NULL;
 
 	*job = job_ptr;
 
