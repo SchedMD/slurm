@@ -152,9 +152,7 @@ slurmapi_add = 			 \
 
 libslurmhelper_la_SOURCES = $(slurmapi_src)
 libslurmhelper_la_LIBADD = $(slurmapi_add)
-libslurmhelper_la_LDFLAGS = \
-	$(LIB_LDFLAGS) \
-	-version-info $(current):$(rev):$(age)
+libslurmhelper_la_LDFLAGS = $(LIB_LDFLAGS)
 
 convenience_libs = \
 	$(top_builddir)/src/api/libslurmhelper.la
