@@ -656,6 +656,7 @@ static void _handle_read(void *x)
 		grow_buf(con->in, need);
 	}
 
+	xassert(fcntl(con->input_fd, F_GETFL) & O_NONBLOCK);
 	xassert(con->input_fd != -1);
 	/* check for errors with a NULL read */
 	read_c = read(con->input_fd,
@@ -709,6 +710,7 @@ static void _handle_write(void *x)
 	log_flag(NET, "%s: [%s] attempting to write %u bytes to fd %u",
 		 __func__, con->name, get_buf_offset(con->out), con->output_fd);
 
+	xassert(fcntl(con->output_fd, F_GETFL) & O_NONBLOCK);
 	xassert(con->output_fd != -1);
 	/* write in non-blocking fashion as we can always continue later */
 	if (con->is_socket)
