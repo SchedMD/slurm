@@ -73,6 +73,7 @@ typedef struct {
 	char *last_header;
 	/* client requested to keep_alive header or -1 to disable */
 	int keep_alive;
+	int expect; /* RFC7231-5.1.1 expect requested */
 	/* Connection context */
 	http_context_t *context;
 	/* Body of request (may be NULL) */
@@ -85,6 +86,9 @@ typedef struct {
 
 /* default keep_alive value which appears to be implementation specific */
 static int DEFAULT_KEEP_ALIVE = 5; //default to 5s to match apache2
+
+static int _send_reject(const http_parser *parser,
+			http_status_code_t status_code);
 
 static void _destroy_headers_list(void *list)
 {
@@ -267,6 +271,12 @@ static int _on_header_value(http_parser *parser, const char *at, size_t length)
 	} else if (!xstrcasecmp(buffer->name, "Accept")) {
 		xassert(request->accept == NULL);
 		request->accept = xstrdup(buffer->value);
+	} else if (!xstrcasecmp(buffer->name, "Expect")) {
+		if (!xstrcasecmp(buffer->value, "100-continue"))
+			request->expect = 100;
+		else
+			return _send_reject(parser,
+				HTTP_STATUS_CODE_ERROR_EXPECTATION_FAILED);
 	}
 
 	return 0;
@@ -300,6 +310,19 @@ static int _on_headers_complete(http_parser *parser)
 		      parser->http_major, parser->http_minor);
 		/* notify http_parser of failure */
 		return 10;
+	}
+
+	if (request->expect) {
+		send_http_response_args_t args = {
+			.con = request->context->con,
+			.http_major = parser->http_major,
+			.http_minor = parser->http_minor,
+			.status_code = request->expect,
+			.body_length = 0,
+		};
+
+		if (send_http_response(&args))
+			return 10;
 	}
 
 	return 0;
