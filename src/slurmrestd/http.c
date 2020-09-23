@@ -47,6 +47,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -77,7 +78,7 @@ typedef struct {
 	/* Connection context */
 	http_context_t *context;
 	/* Body of request (may be NULL) */
-	const char *body;
+	char *body;
 	size_t body_length;
 	const char *body_encoding; //TODO: implement detection of this
 	const char *content_type;
@@ -318,27 +319,46 @@ static int _on_headers_complete(http_parser *parser)
 	return 0;
 }
 
+#define MAX_BODY_BYTES 52428800 /* 50MB */
 static int _on_body(http_parser *parser, const char *at, size_t length)
 {
-	char *buffer = NULL;
-
 	request_t *request = parser->data;
-	xassert(!request->body);
-	xfree(request->body);
 
-	/* Add NULL to the end to make sure strlen() never overruns */
-	buffer = xmalloc(length + 1);
-	request->body_length = length + 1;
-	request->body = buffer;
-	memcpy(buffer, at, length);
-	buffer[length] = '\0';
+	log_flag_hex(NET_RAW, at, length, "%s: [%s] received HTTP body",
+	       __func__, request->context->con->name);
 
-	debug2("%s: [%s] received HTTP body length: %zu",
-	       __func__, request->context->con->name, length);
-	debug5("%s: [%s] received HTTP body: %s",
-	       __func__, request->context->con->name, buffer);
+	if (request->body) {
+		size_t nlength = (length + request->body_length + 1);
+
+		xassert(request->body_length > 0);
+
+		if ((nlength > MAX_BODY_BYTES) ||
+		    !try_xrealloc(request->body, nlength))
+			goto no_mem;
+
+		memmove((request->body + (request->body_length - 1)),
+		       at, length);
+		request->body_length += length;
+		request->body[nlength] = '\0';
+	} else {
+		if ((length > MAX_BODY_BYTES) ||
+		    !(request->body = try_xmalloc(length + 1)))
+			goto no_mem;
+
+		request->body_length = (length + 1);
+		memmove(request->body, at, length);
+		request->body[length] = '\0';
+	}
+
+	debug2("%s: [%s] received %zu bytes for HTTP body length %zu/%zu bytes",
+	       __func__, request->context->con->name, length,
+	       request->body_length);
 
 	return 0;
+
+no_mem:
+	/* total body was way too large to store */
+	return _send_reject(parser, HTTP_STATUS_CODE_ERROR_ENTITY_TOO_LARGE);
 }
 
 /*
