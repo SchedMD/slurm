@@ -630,6 +630,7 @@ static void _handle_read(void *x)
 	ssize_t read_c;
 	int readable;
 
+	con->can_read = false;
 	_check_magic_fd(con);
 	_check_magic_mgr(con->mgr);
 
