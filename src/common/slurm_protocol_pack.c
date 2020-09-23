@@ -1539,10 +1539,7 @@ _pack_job_sbcast_cred_msg(job_sbcast_cred_msg_t * msg, Buf buffer,
 	pack32(msg->job_id, buffer);
 	packstr(msg->node_list, buffer);
 
-	pack32(msg->node_cnt, buffer);
-	if (msg->node_cnt > 0)
-		slurm_pack_slurm_addr_array(msg->node_addr, msg->node_cnt,
-					    buffer);
+	pack32(0, buffer); /* was node_cnt */
 	pack_sbcast_cred(msg->sbcast_cred, buffer, protocol_version);
 }
 
@@ -1562,15 +1559,7 @@ _unpack_job_sbcast_cred_msg(job_sbcast_cred_msg_t ** msg, Buf buffer,
 	safe_unpack32(&tmp_ptr->job_id, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp, buffer);
 
-	safe_unpack32(&tmp_ptr->node_cnt, buffer);
-	if (tmp_ptr->node_cnt > 0) {
-		if (slurm_unpack_slurm_addr_array(&tmp_ptr->node_addr,
-						  &uint32_tmp, buffer))
-			goto unpack_error;
-		if (uint32_tmp != tmp_ptr->node_cnt)
-			goto unpack_error;
-	} else
-		tmp_ptr->node_addr = NULL;
+	safe_unpack32(&uint32_tmp, buffer); /* was node_cnt */
 
 	tmp_ptr->sbcast_cred = unpack_sbcast_cred(buffer, protocol_version);
 	if (tmp_ptr->sbcast_cred == NULL)
