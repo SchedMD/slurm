@@ -707,3 +707,47 @@ extern int slurm_unpack_slurm_addr_no_alloc(slurm_addr_t *addr, Buf buffer)
 unpack_error:
 	return SLURM_ERROR;
 }
+
+extern void slurm_pack_addr(slurm_addr_t *addr, buf_t *buffer)
+{
+	pack16(addr->ss_family, buffer);
+
+	if (addr->ss_family == AF_INET6) {
+		struct sockaddr_in6 *in6 = (struct sockaddr_in6 *) addr;
+		packmem(in6->sin6_addr.s6_addr, 16, buffer);
+		pack16(in6->sin6_port, buffer);
+	} else if (addr->ss_family == AF_INET) {
+		struct sockaddr_in *in = (struct sockaddr_in *) addr;
+		pack32(in->sin_addr.s_addr, buffer);
+		pack16(in->sin_port, buffer);
+	}
+}
+
+extern int slurm_unpack_addr_no_alloc(slurm_addr_t *addr, Buf buffer)
+{
+	safe_unpack16(&addr->ss_family, buffer);
+
+	if (addr->ss_family == AF_INET6) {
+		uint32_t size;
+		char *buffer_addr;
+		struct sockaddr_in6 *in6 = (struct sockaddr_in6 *) addr;
+
+		safe_unpackmem_ptr(&buffer_addr, &size, buffer);
+		if (size != 16)
+			goto unpack_error;
+		memcpy(&in6->sin6_addr.s6_addr, buffer_addr, 16);
+
+		safe_unpack16(&in6->sin6_port, buffer);
+	} else if (addr->ss_family == AF_INET) {
+		struct sockaddr_in *in = (struct sockaddr_in *) addr;
+
+		safe_unpack32(&in->sin_addr.s_addr, buffer);
+		safe_unpack16(&in->sin_port, buffer);
+	} else {
+		memset(addr, 0, sizeof(*addr));
+	}
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}

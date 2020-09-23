@@ -407,7 +407,7 @@ extern int slurm_get_peer_addr(int fd, slurm_addr_t * slurm_address);
 \**********************************************************************/
 
 /* slurm_pack_slurm_addr_array
- * packs an array of slurm_addrs into a buffer
+ * packs an array of slurm_addrs into a buffer (pre-20.11 protocol)
  * OUT slurm_address	- slurm_addr_t to pack
  * IN size_val  	- how many to pack
  * IN/OUT buffer	- buffer to pack the slurm_addr_t from
@@ -416,7 +416,7 @@ extern int slurm_get_peer_addr(int fd, slurm_addr_t * slurm_address);
 extern void slurm_pack_slurm_addr_array(slurm_addr_t * slurm_address,
 					uint32_t size_val, Buf buffer);
 /* slurm_unpack_slurm_addr_array
- * unpacks an array of slurm_addrs from a buffer
+ * unpacks an array of slurm_addrs from a buffer (pre-20.11 protocol)
  * OUT slurm_address	- slurm_addr_t to unpack to
  * IN size_val  	- how many to unpack
  * IN/OUT buffer	- buffer to upack the slurm_addr_t from
@@ -424,6 +424,26 @@ extern void slurm_pack_slurm_addr_array(slurm_addr_t * slurm_address,
  */
 extern int slurm_unpack_slurm_addr_array(slurm_addr_t ** slurm_address,
 					 uint32_t * size_val, Buf buffer);
+
+/* slurm_pack_addr_array
+ * packs an array of slurm_addrs into a buffer
+ * OUT addr_array	- slurm_addr_t[] to pack
+ * IN size_val  	- how many to pack
+ * IN/OUT buffer	- buffer to pack the slurm_addr_t from
+ * returns		- Slurm error code
+ */
+extern void slurm_pack_addr_array(slurm_addr_t *addr_array, uint32_t size_val,
+				  buf_t *buffer);
+
+/* slurm_unpack_addr_array
+ * unpacks an array of slurm_addrs from a buffer
+ * OUT addr_array_ptr	- slurm_addr_t[] to unpack to
+ * IN/OUT size_val  	- how many to unpack
+ * IN/OUT buffer	- buffer to upack the slurm_addr_t from
+ * returns		- Slurm error code
+ */
+extern int slurm_unpack_addr_array(slurm_addr_t **addr_array_ptr,
+				   uint32_t *size_val, buf_t *buffer);
 
 /**********************************************************************\
  * simplified communication routines

@@ -1742,7 +1742,7 @@ int slurm_get_peer_addr(int fd, slurm_addr_t * slurm_address)
 \**********************************************************************/
 
 /* slurm_pack_slurm_addr_array
- * packs an array of slurm_addrs into a buffer
+ * packs an array of slurm_addrs into a buffer (pre-20.11 protocol)
  * OUT slurm_address	- slurm_addr_t to pack
  * IN size_val  	- how many to pack
  * IN/OUT buffer	- buffer to pack the slurm_addr_t from
@@ -1762,7 +1762,7 @@ void slurm_pack_slurm_addr_array(slurm_addr_t * slurm_address,
 }
 
 /* slurm_unpack_slurm_addr_array
- * unpacks an array of slurm_addrs from a buffer
+ * unpacks an array of slurm_addrs from a buffer (pre-20.11 protocol)
  * OUT slurm_address	- slurm_addr_t to unpack to
  * IN size_val  	- how many to unpack
  * IN/OUT buffer	- buffer to upack the slurm_addr_t from
@@ -1792,6 +1792,52 @@ int slurm_unpack_slurm_addr_array(slurm_addr_t ** slurm_address,
 unpack_error:
 	xfree(*slurm_address);
 	*slurm_address = NULL;
+	return SLURM_ERROR;
+}
+
+
+/* slurm_pack_addr_array
+ * packs an array of slurm_addrs into a buffer
+ * OUT addr_array	- slurm_addr_t[] to pack
+ * IN size_val  	- how many to pack
+ * IN/OUT buffer	- buffer to pack the slurm_addr_t from
+ * returns		- Slurm error code
+ */
+extern void slurm_pack_addr_array(slurm_addr_t *addr_array, uint32_t size_val,
+				  buf_t *buffer)
+{
+	pack32(size_val, buffer);
+
+	for (int i = 0; i < size_val; i++)
+		slurm_pack_addr(&addr_array[i], buffer);
+}
+
+/* slurm_unpack_addr_array
+ * unpacks an array of slurm_addrs from a buffer
+ * OUT addr_array_ptr	- slurm_addr_t[] to unpack to
+ * IN/OUT size_val  	- how many to unpack
+ * IN/OUT buffer	- buffer to upack the slurm_addr_t from
+ * returns		- Slurm error code
+ */
+extern int slurm_unpack_addr_array(slurm_addr_t **addr_array_ptr,
+				   uint32_t *size_val, buf_t *buffer)
+{
+	slurm_addr_t *addr_array = NULL;
+
+	safe_unpack32(size_val, buffer);
+	addr_array = xcalloc(*size_val, sizeof(slurm_addr_t));
+
+	for (int i = 0; i < *size_val; i++) {
+		if (slurm_unpack_addr_no_alloc(&addr_array[i], buffer))
+			goto unpack_error;
+	}
+
+	*addr_array_ptr = addr_array;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	*size_val = 0;
+	xfree(*addr_array);
 	return SLURM_ERROR;
 }
 
