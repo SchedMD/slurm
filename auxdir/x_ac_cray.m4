@@ -18,7 +18,7 @@
 #    Tests for DataWarp files
 #*****************************************************************************
 #
-# Copyright 2013 Cray Inc. All Rights Reserved.
+# Copyright 2013 Hewlett Packard Enterprise Development LP
 #
 
 AC_DEFUN([X_AC_CRAY],

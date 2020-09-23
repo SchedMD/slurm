@@ -2,7 +2,7 @@
  *  ccm.h
  *****************************************************************************
  *  Copyright (C) 2016 SchedMD LLC
- *  Copyright 2016 Cray Inc. All Rights Reserved.
+ *  Copyright 2016 Hewlett Packard Enterprise Development LP
  *  Written by Marlys Kohnke
  *
  *  This file is part of Slurm, a resource management program.

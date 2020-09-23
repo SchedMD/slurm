@@ -1,7 +1,7 @@
 ---
 
 # Slurm ansible playbook for Cray systems
-# Copyright 2017 Cray Inc. All Rights Reserved.
+# Copyright 2017 Hewlett Packard Enterprise Development LP
 #
 # Licensed under the GPL. See 'LICENSE.OpenSSL'.
 

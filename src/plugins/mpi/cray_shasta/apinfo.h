@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  apinfo.h - Cray Shasta PMI apinfo file creation header file
  *****************************************************************************
- *  Copyright 2019 Cray Inc. All Rights Reserved.
+ *  Copyright 2019 Hewlett Packard Enterprise Development LP
  *  Written by David Gloe <dgloe@cray.com>
  *
  *  This file is part of Slurm, a resource management program.

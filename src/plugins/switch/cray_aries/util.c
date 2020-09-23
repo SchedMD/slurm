@@ -2,7 +2,7 @@
  *  util.c - Library for managing a switch on a Cray system.
  *****************************************************************************
  *  Copyright (C) 2013 SchedMD LLC
- *  Copyright 2013 Cray Inc. All Rights Reserved.
+ *  Copyright 2013 Hewlett Packard Enterprise Development LP
  *  Written by David Gloe
  *
  *  This file is part of Slurm, a resource management program.

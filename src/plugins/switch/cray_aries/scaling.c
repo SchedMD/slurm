@@ -2,7 +2,7 @@
  *  scaling.c - Library for managing a switch on a Cray system.
  *****************************************************************************
  *  Copyright (C) 2014 SchedMD LLC
- *  Copyright 2014 Cray Inc. All Rights Reserved.
+ *  Copyright 2014 Hewlett Packard Enterprise Development LP
  *  Written by David Gloe <c16817@cray.com>
  *
  *  This file is part of Slurm, a resource management program.

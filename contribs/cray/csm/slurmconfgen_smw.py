@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2015-2016 Cray Inc. All Rights Reserved.
+# Copyright 2015-2016 Hewlett Packard Enterprise Development LP
 """ A script to generate slurm.conf and gres.conf for a
     Cray system on the smw """
 

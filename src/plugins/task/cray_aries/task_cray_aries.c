@@ -3,7 +3,7 @@
  *                      functions on a Cray/Aries system
  *****************************************************************************
  *  Copyright (C) 2013 SchedMD LLC
- *  Copyright 2013 Cray Inc. All Rights Reserved.
+ *  Copyright 2013 Hewlett Packard Enterprise Development LP
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.

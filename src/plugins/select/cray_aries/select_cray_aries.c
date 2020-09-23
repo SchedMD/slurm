@@ -2,7 +2,7 @@
  *  select_cray_aries.c - node selection plugin for cray systems with Aries.
  *****************************************************************************
  *  Copyright (C) 2013-2014 SchedMD LLC
- *  Copyright 2013 Cray Inc. All Rights Reserved.
+ *  Copyright 2013 Hewlett Packard Enterprise Development LP
  *  Written by Danny Auble <da@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.

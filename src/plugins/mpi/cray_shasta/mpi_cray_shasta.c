@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  mpi_cray_shasta.c - Cray Shasta MPI plugin
  *****************************************************************************
- *  Copyright 2019 Cray Inc. All Rights Reserved.
+ *  Copyright 2019 Hewlett Packard Enterprise Development LP
  *  Written by David Gloe <dgloe@cray.com>
  *
  *  This file is part of Slurm, a resource management program.

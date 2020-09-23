@@ -3,7 +3,7 @@
  *                            Cray/Aries computers
  *****************************************************************************
  *  Copyright (C) 2013 SchedMD LLC.
- *  Copyright (C) 2014 Cray Inc. All Rights Reserved.
+ *  Copyright 2014 Hewlett Packard Enterprise Development LP
  *  Written by Morris Jette <jette@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
