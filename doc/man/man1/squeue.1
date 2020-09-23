@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "June 2020" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "September 2020" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -98,7 +98,7 @@ The license list consists of a comma separated list of license names.
 Equivalent to \fB\-\-user=<my username>\fR.
 
 .TP
-\fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
+\fB\-M\fR, \fB\-\-clusters=<cluster_name>\fR
 Clusters to issue commands to.  Multiple cluster names may be comma separated.
 A value of of '\fIall\fR' will query to run on all clusters.
 This option implicitly sets the \fB\-\-local\fR option.
@@ -1042,7 +1042,7 @@ Specify the qos(s) of the jobs or steps to view. Accepts a comma
 separated list of qos's.
 
 .TP
-\fB\-R\fR, \fB\-\-reservation\fR=\fIreservation_name\fR
+\fB\-R\fR, \fB\-\-reservation=<reservation_name>\fR
 Specify the reservation of the jobs to view.
 
 .TP
