@@ -216,4 +216,13 @@ char *xstrcasestr(const char *haystack, const char *needle);
  */
 void xstrtrim(char *string);
 
+/*
+ * Dump byte string to hex
+ * IN string - byte string to dump as hex
+ * IN len - number of bytes to dump
+ * IN delimiter - delimiter between each hex byte (may be NULL)
+ * RET hex string (must xfree()) or NULL on error
+ */
+extern char *bytes_to_hex(const char *string, int len, const char *delimiter);
+
 #endif /* !_XSTRING_H */

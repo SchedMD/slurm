@@ -722,3 +722,21 @@ extern void xstrtrim(char *string)
 	if (end != start)
 		memcpy(string, start, (ptr - start + 1));
 }
+
+extern char *bytes_to_hex(const char *string, int len, const char *delimiter)
+{
+	char *hex = NULL, *pos = NULL;
+
+	if (len <= 0)
+		return NULL;
+
+	for (int i = 0; i < len; i++) {
+		if (hex && delimiter)
+			xstrfmtcatat(hex, &pos, "%s", delimiter);
+
+		/* convert each char into equiv hex */
+		xstrfmtcatat(hex, &pos, "%02x", string[i]);
+	}
+
+	return hex;
+}
