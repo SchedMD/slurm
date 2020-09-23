@@ -128,7 +128,6 @@ static int          _is_prolog_finished(uint32_t job_id);
 static int          _make_step_cred(step_record_t *step_rec,
 				    slurm_cred_t **slurm_cred,
 				    uint16_t protocol_version);
-inline static void  _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg);
 static int          _route_msg_to_origin(slurm_msg_t *msg, char *job_id_str,
 					 uint32_t job_id, uid_t uid);
 static void         _throttle_fini(int *active_rpc_cnt);
@@ -1957,7 +1956,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 
 /* _slurm_rpc_job_step_kill - process RPC to cancel an entire job or
  * an individual job step */
-static void _slurm_rpc_job_step_kill(uint32_t uid, slurm_msg_t * msg)
+static void _slurm_rpc_job_step_kill(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
@@ -1968,7 +1967,7 @@ static void _slurm_rpc_job_step_kill(uint32_t uid, slurm_msg_t * msg)
 		 &job_step_kill_msg->step_id);
 	_throttle_start(&active_rpc_cnt);
 
-	error_code = kill_job_step(job_step_kill_msg, uid);
+	error_code = kill_job_step(job_step_kill_msg, msg->auth_uid);
 
 	_throttle_fini(&active_rpc_cnt);
 
@@ -5709,14 +5708,14 @@ end_it:
 	//slurm_persist_conn_destroy(persist_conn);
 }
 
-static void _slurm_rpc_sib_job_lock(uint32_t uid, slurm_msg_t *msg)
+static void _slurm_rpc_sib_job_lock(slurm_msg_t *msg)
 {
 	int rc;
 	sib_msg_t *sib_msg = msg->data;
 
 	if (!msg->conn) {
-		error("Security violation, SIB_JOB_LOCK RPC from uid=%d",
-		      uid);
+		error("Security violation, SIB_JOB_LOCK RPC from uid=%u",
+		      msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
 		return;
 	}
@@ -5726,14 +5725,14 @@ static void _slurm_rpc_sib_job_lock(uint32_t uid, slurm_msg_t *msg)
 	slurm_send_rc_msg(msg, rc);
 }
 
-static void _slurm_rpc_sib_job_unlock(uint32_t uid, slurm_msg_t *msg)
+static void _slurm_rpc_sib_job_unlock(slurm_msg_t *msg)
 {
 	int rc;
 	sib_msg_t *sib_msg = msg->data;
 
 	if (!msg->conn) {
-		error("Security violation, SIB_JOB_UNLOCK RPC from uid=%d",
-		      uid);
+		error("Security violation, SIB_JOB_UNLOCK RPC from uid=%u",
+		      msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
 		return;
 	}
@@ -5803,7 +5802,7 @@ static void _ctld_free_list_msg(void *x)
 	FREE_NULL_BUFFER(x);
 }
 
-static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
+static void _proc_multi_msg(slurm_msg_t *msg)
 {
 	slurm_msg_t sub_msg, response_msg;
 	ctld_list_msg_t *ctld_req_msg, ctld_resp_msg;
@@ -5814,8 +5813,8 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 	int rc;
 
 	if (!msg->conn) {
-		error("Security violation, REQUEST_CTLD_MULT_MSG RPC from uid=%d",
-		      rpc_uid);
+		error("Security violation, REQUEST_CTLD_MULT_MSG RPC from uid=%u",
+		      msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
 		return;
 	}
@@ -5847,17 +5846,18 @@ static void _proc_multi_msg(uint32_t rpc_uid, slurm_msg_t *msg)
 			ret_buf = _build_rc_buf(rc, msg->protocol_version);
 			break;
 		case REQUEST_SIB_MSG:
-			_slurm_rpc_sib_msg(rpc_uid, &sub_msg);
+			_slurm_rpc_sib_msg(msg->auth_uid, &sub_msg);
 			ret_buf = _build_rc_buf(SLURM_SUCCESS,
 						msg->protocol_version);
 			break;
 		case REQUEST_SEND_DEP:
-			_slurm_rpc_dependency_msg(rpc_uid, &sub_msg);
+			_slurm_rpc_dependency_msg(msg->auth_uid, &sub_msg);
 			ret_buf = _build_rc_buf(SLURM_SUCCESS,
 						msg->protocol_version);
 			break;
 		case REQUEST_UPDATE_ORIGIN_DEP:
-			_slurm_rpc_update_origin_dep_msg(rpc_uid, &sub_msg);
+			_slurm_rpc_update_origin_dep_msg(msg->auth_uid,
+							 &sub_msg);
 			ret_buf = _build_rc_buf(SLURM_SUCCESS,
 						msg->protocol_version);
 			break;
@@ -6047,7 +6047,7 @@ void slurmctld_req(slurm_msg_t *msg)
 		_slurm_rpc_epilog_complete(msg, &run_scheduler, 0);
 		break;
 	case REQUEST_CANCEL_JOB_STEP:
-		_slurm_rpc_job_step_kill(msg->auth_uid, msg);
+		_slurm_rpc_job_step_kill(msg);
 		break;
 	case REQUEST_COMPLETE_JOB_ALLOCATION:
 		_slurm_rpc_complete_job_allocation(msg);
@@ -6068,13 +6068,13 @@ void slurmctld_req(slurm_msg_t *msg)
 		_slurm_rpc_job_will_run(msg);
 		break;
 	case REQUEST_SIB_JOB_LOCK:
-		_slurm_rpc_sib_job_lock(msg->auth_uid, msg);
+		_slurm_rpc_sib_job_lock(msg);
 		break;
 	case REQUEST_SIB_JOB_UNLOCK:
-		_slurm_rpc_sib_job_unlock(msg->auth_uid, msg);
+		_slurm_rpc_sib_job_unlock(msg);
 		break;
 	case REQUEST_CTLD_MULT_MSG:
-		_proc_multi_msg(msg->auth_uid, msg);
+		_proc_multi_msg(msg);
 		break;
 	case MESSAGE_NODE_REGISTRATION_STATUS:
 		_slurm_rpc_node_registration(msg, 0);
