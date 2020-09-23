@@ -909,6 +909,8 @@ extern http_context_t *setup_http_context(con_mgr_fd_t *con,
 	request_t *request = xmalloc(sizeof(*request));
 
 	xassert(context->magic == MAGIC);
+	xassert(!context->con);
+	xassert(!context->request);
 	context->con = con;
 	context->on_http_request = on_http_request;
 	context->request = request;
