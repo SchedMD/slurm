@@ -540,6 +540,38 @@ proc dict_getdef {D args} {
 ################################################################
 #
 # NAME
+#	_line_trace - returns an abbreviated call stack trace with line numbers
+#
+# SYNOPSIS
+#	_line_trace
+#
+################################################################
+
+proc _line_trace {} {
+	set line_trace ""
+	for {set f [expr [info frame] - 3]} {$f >= 1} {incr f -1} {
+		set frame_dict [info frame $f]
+		if [dict exists $frame_dict proc] {
+			set proc [namespace tail [dict get $frame_dict proc]]
+			if {$proc ne ""} {
+				append line_trace "$proc\@"
+			}
+		}
+		if [dict exists $frame_dict file] {
+			append line_trace [file tail [dict get $frame_dict file]]
+		}
+		if [dict exists $frame_dict line] {
+			append line_trace ":[dict get $frame_dict line]"
+		}
+		if {$f > 1} { append line_trace "," }
+	}
+	return $line_trace
+}
+
+
+################################################################
+#
+# NAME
 #	run_command - executes a command and returns a dictionary result
 #
 # SYNOPSIS
@@ -583,8 +615,7 @@ proc dict_getdef {D args} {
 #		command    - The command that was invoked
 #		exit_code  - Exit code
 #		output     - The combined standard output and standard error
-#		start_time - The time (epoch with milliseconds) the command was
-#		             executed
+#		start_time - The time (with ms) the command was executed
 #		duration   - The duration (seconds and milliseconds) the
 #		             command took to run
 #
@@ -626,7 +657,7 @@ proc run_command args {
 	log_user 0
 
 	log_alias "Invoking command \"$command\""
-	set start_time [format "%.3f" [expr [clock milliseconds] / 1000.000]]
+	set start_clock_ms [clock milliseconds]
 	set stty_init raw ; # Prevent the terminal from inserting \r
 	set expect_pid [spawn -noecho $bin_bash -c "$command"]
 	expect {
@@ -644,13 +675,15 @@ proc run_command args {
 			set exit_status [expr $errno > 128 ? $errno - 256 : $errno]
 		}
 	}
+	set start_time [format "%.3f" [expr $start_clock_ms / 1000.000]]
+	set start_hms [format "%s.%03d" [clock format [expr int($start_clock_ms / 1000.000)] -format %H:%M:%S] [expr int(fmod($start_clock_ms, 1000))]]
 	set end_time [format "%.3f" [expr [clock milliseconds] / 1000.000]]
 	set duration [format "%.3f" [expr $end_time - $start_time]]
 
 	log_alias "Command Results:"
-	log_alias "	Start Time: $start_time"
-	log_alias "	Duration: $duration"
-	log_alias "	Exit Code: $exit_status"
+	log_alias "	Start Time: $start_hms"
+	log_alias "	Duration:   $duration"
+	log_alias "	Exit Code:  $exit_status"
 	if {[info exists output]} {
 		log_alias "	Output: $output"
 	}
@@ -728,6 +761,7 @@ proc run_command args {
 #	A string containing the combined standard output and standard error
 #
 ################################################################
+
 proc run_command_output args {
 	global exit_code
 
@@ -784,6 +818,7 @@ proc run_command_output args {
 #	The exit code for the invoked command
 #
 ################################################################
+
 proc run_command_status args {
 	global exit_code
 
@@ -2246,7 +2281,7 @@ proc test_topology { } {
 #
 # NAME
 #	get_config - returns a dictionary of slurm configuration parameters
-
+#
 # SYNOPSIS
 #	get_config
 #
@@ -8251,6 +8286,9 @@ proc assert_or_skip { condition message } {
 #			loglevel
 #				The log level that triggers the log_<log_level>
 #				procedure to be called
+#			backtrace
+#				An abbreviated call stack trace with line
+#				numbers
 #	testsuite_time_format
 #		Used as a template for the timestamp. See the format groups
 #		for the tcl clock format command.
@@ -8291,6 +8329,8 @@ proc _log_format { log_level message } {
 			lappend format_args $milliseconds
 		} elseif {$format_field eq "%{loglevel}" || $format_field eq "%{levelname}"} {
 			lappend format_args [string totitle $log_level]
+		} elseif {$format_field eq "%{backtrace}"} {
+			lappend format_args [_line_trace]
 		} else {
 			fail "Invalid field ($format_field) specified in testsuite_log_format"
 		}
