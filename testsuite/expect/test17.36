@@ -58,6 +58,17 @@ if {[test_select_type_params "CR_CPU"]} {
 	set cr_cpu 1
 }
 
+set node_name [get_nodes_by_request "-N1 --exclusive -t1"]
+if { [llength $node_name] != 1 } {
+	skip "This test need to be able to submit jobs with at least -N1 --exclusive -t1"
+}
+if {[get_node_param $node_name "CoreSpecCount"] != "MISSING"} {
+	skip "This test is incompatible with nodes that have a CoreSpecCount (e.g. $node_name)"
+}
+if {[get_node_param $node_name "CPUSpecList"] != "MISSING"} {
+	skip "This test is incompatible with nodes that have a CPUSpecList (e.g. $node_name)"
+}
+
 log_user 0
 set job_mem_opt  "--comment=no_mem"
 spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectTypeParameters"
@@ -289,54 +300,6 @@ check_part
 exec $bin_rm -f $file_in
 
 make_bash_script $file_in "sleep 10"
-
-spawn $sbatch -N1 -t1 -o/dev/null --exclusive $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		log_error "sbatch is not reponding"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "sbatch did not submit job"
-}
-
-# Wait a bit for job to start
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-	log_error "Error waiting for job $job_id to start"
-	cancel_job $job_id
-	set exit_code 1
-}
-
-# Identify node to use for testing
-set got_node 0
-spawn $scontrol show job $job_id
-expect {
-	-re "NodeList=($re_word_str)" {
-		set node_name $expect_out(1,string)
-		set got_node 1
-		exp_continue
-	}
-	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$got_node != 1} {
-	fail "No node was set for job"
-}
-
-cancel_job $job_id
 
 ####################################
 #
