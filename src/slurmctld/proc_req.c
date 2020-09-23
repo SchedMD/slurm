@@ -2955,46 +2955,6 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t * msg)
 	FREE_NULL_LIST(resp);
 }
 
-#ifndef HAVE_FRONT_END
-static slurm_addr_t *_build_node_addr(char *node_list, uint32_t node_cnt,
-				      uint32_t het_job_id)
-{
-	hostlist_t host_list = NULL;
-	node_record_t *node_ptr;
-	slurm_addr_t *node_addr;
-	char *this_node_name;
-	int error_code = SLURM_SUCCESS, node_inx = 0;
-
-	if ((host_list = hostlist_create(node_list)) == NULL) {
-		error("%s hostlist_create error for hetjob JobId=%u (%s): %m",
-		      __func__, het_job_id, node_list);
-		return NULL;
-	}
-
-
-	node_addr = xmalloc(sizeof(slurm_addr_t) * node_cnt);
-	while ((this_node_name = hostlist_shift(host_list))) {
-		if ((node_ptr = find_node_record(this_node_name))) {
-			memcpy(node_addr + node_inx,
-			       &node_ptr->slurm_addr, sizeof(slurm_addr_t));
-			node_inx++;
-		} else {
-			error("%s: Invalid node %s in hetjob JobId=%u",
-			      __func__, this_node_name, het_job_id);
-			error_code = SLURM_ERROR;
-		}
-		free(this_node_name);
-		if (error_code != SLURM_SUCCESS)
-			break;
-	}
-	hostlist_destroy(host_list);
-
-	if (error_code != SLURM_SUCCESS)
-		xfree(node_addr);
-	return node_addr;
-}
-#endif
-
 /* _slurm_rpc_job_sbcast_cred - process RPC to get details on existing job
  *	plus sbcast credential */
 static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
@@ -3007,12 +2967,6 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 	job_record_t *job_ptr = NULL, *het_job_ptr;
 	step_record_t *step_ptr;
 	char *local_node_list = NULL, *node_list = NULL;
-	node_record_t *node_ptr;
-	slurm_addr_t *node_addr = NULL;
-	hostlist_t host_list = NULL;
-	char *this_node_name;
-	int node_inx = 0;
-	uint32_t node_cnt = 0;
 	DEF_TIMERS;
 	step_alloc_info_msg_t *job_info_msg =
 		(step_alloc_info_msg_t *) msg->data;
@@ -3052,14 +3006,8 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 			}
 			list_iterator_destroy(iter);
 			if (!error_code) {
-				node_cnt = bit_set_count(node_bitmap);
 				local_node_list = bitmap2node_name(node_bitmap);
 				node_list = local_node_list;
-				node_addr = _build_node_addr(node_list,
-							     node_cnt,
-							     job_ptr->job_id);
-				if (!node_addr)
-					error_code = SLURM_ERROR;
 			}
 			FREE_NULL_BITMAP(node_bitmap);
 		}
@@ -3088,37 +3036,11 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 		} else if (step_ptr->step_layout &&
 			   (step_ptr->step_layout->node_cnt !=
 			    job_ptr->node_cnt)) {
-			node_cnt  = step_ptr->step_layout->node_cnt;
 			node_list = step_ptr->step_layout->node_list;
-			if ((host_list = hostlist_create(node_list)) == NULL) {
-				fatal("hostlist_create error for %s: %m",
-				      node_list);
-				return;	/* Avoid CLANG false positive */
-			}
-			node_addr = xmalloc(sizeof(slurm_addr_t) * node_cnt);
-			while ((this_node_name = hostlist_shift(host_list))) {
-				if ((node_ptr =
-				     find_node_record(this_node_name))) {
-					memcpy(&node_addr[node_inx++],
-					       &node_ptr->slurm_addr,
-					       sizeof(slurm_addr_t));
-				} else {
-					error("Invalid node %s in %pS",
-					      this_node_name, step_ptr);
-				}
-				free(this_node_name);
-			}
-			hostlist_destroy(host_list);
 		}
 	}
-	if ((error_code == SLURM_SUCCESS) && job_ptr && !node_addr) {
-		node_addr = job_ptr->node_addr;
-		node_cnt  = job_ptr->node_cnt;
+	if ((error_code == SLURM_SUCCESS) && job_ptr && !node_list)
 		node_list = job_ptr->nodes;
-		node_addr = xmalloc(sizeof(slurm_addr_t) * node_cnt);
-		memcpy(node_addr, job_ptr->node_addr,
-		       (sizeof(slurm_addr_t) * node_cnt));
-	}
 	END_TIMER2("_slurm_rpc_job_sbcast_cred");
 
 	/* return result */
@@ -3134,7 +3056,6 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 		       slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 		xfree(local_node_list);
-		xfree(node_addr);
 		return ;
 	}
 
@@ -3178,13 +3099,10 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 		response_msg.data        = &job_info_resp_msg;
 
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		/* job_info_resp_msg.node_addr is pointer,
-		 * xfree(node_addr) is below */
 		xfree(job_info_resp_msg.node_list);
 		delete_sbcast_cred(sbcast_cred);
 	}
 	xfree(local_node_list);
-	xfree(node_addr);
 #endif
 }
 
