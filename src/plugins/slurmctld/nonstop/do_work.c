@@ -217,39 +217,48 @@ static void _pack_job_state(job_failures_t *job_fail_ptr, Buf buffer)
 	pack32(job_fail_ptr->user_id, buffer);
 }
 
-static int _unpack_job_state(job_failures_t **job_pptr, Buf buffer)
+static int _unpack_job_state(job_failures_t **job_pptr, Buf buffer,
+			     uint16_t protocol_version)
 {
 	job_failures_t *job_fail_ptr;
 	uint32_t dummy32;
 	int i;
 
 	job_fail_ptr = xmalloc(sizeof(job_failures_t));
-	if (slurm_unpack_slurm_addr_no_alloc(&job_fail_ptr->callback_addr,
-					     buffer))
-		goto unpack_error;
-	safe_unpack32(&job_fail_ptr->callback_flags, buffer);
-	safe_unpack16(&job_fail_ptr->callback_port, buffer);
-	safe_unpack32(&job_fail_ptr->job_id, buffer);
-	safe_unpack32(&job_fail_ptr->fail_node_cnt, buffer);
-	safe_xcalloc(job_fail_ptr->fail_node_cpus,job_fail_ptr->fail_node_cnt,
-		     sizeof(uint32_t));
-	safe_xcalloc(job_fail_ptr->fail_node_names, job_fail_ptr->fail_node_cnt,
-		     sizeof(char *));
-	for (i = 0; i < job_fail_ptr->fail_node_cnt; i++) {
-		safe_unpack32(&job_fail_ptr->fail_node_cpus[i], buffer);
-		safe_unpackstr_xmalloc(&job_fail_ptr->fail_node_names[i],
+
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (slurm_unpack_slurm_addr_no_alloc(
+			&job_fail_ptr->callback_addr, buffer))
+			goto unpack_error;
+		safe_unpack32(&job_fail_ptr->callback_flags, buffer);
+		safe_unpack16(&job_fail_ptr->callback_port, buffer);
+		safe_unpack32(&job_fail_ptr->job_id, buffer);
+		safe_unpack32(&job_fail_ptr->fail_node_cnt, buffer);
+		safe_xcalloc(job_fail_ptr->fail_node_cpus,
+			     job_fail_ptr->fail_node_cnt, sizeof(uint32_t));
+		safe_xcalloc(job_fail_ptr->fail_node_names,
+		             job_fail_ptr->fail_node_cnt, sizeof(char *));
+		for (i = 0; i < job_fail_ptr->fail_node_cnt; i++) {
+			safe_unpack32(&job_fail_ptr->fail_node_cpus[i], buffer);
+			safe_unpackstr_xmalloc(
+				&job_fail_ptr->fail_node_names[i], &dummy32,
+				buffer);
+		}
+		job_fail_ptr->magic = FAILURE_MAGIC;
+		safe_unpack16(&job_fail_ptr->pending_job_delay, buffer);
+		safe_unpack32(&job_fail_ptr->pending_job_id, buffer);
+		safe_unpackstr_xmalloc(&job_fail_ptr->pending_node_name,
 				       &dummy32, buffer);
+		safe_unpack32(&job_fail_ptr->replace_node_cnt, buffer);
+		safe_unpack32(&job_fail_ptr->time_extend_avail, buffer);
+		safe_unpack32(&job_fail_ptr->user_id, buffer);
+		_job_fail_log(job_fail_ptr);
+		*job_pptr = job_fail_ptr;
+	} else {
+		xfree(job_fail_ptr);
+		return SLURM_ERROR;
 	}
-	job_fail_ptr->magic = FAILURE_MAGIC;
-	safe_unpack16(&job_fail_ptr->pending_job_delay, buffer);
-	safe_unpack32(&job_fail_ptr->pending_job_id, buffer);
-	safe_unpackstr_xmalloc(&job_fail_ptr->pending_node_name,
-			       &dummy32, buffer);
-	safe_unpack32(&job_fail_ptr->replace_node_cnt, buffer);
-	safe_unpack32(&job_fail_ptr->time_extend_avail, buffer);
-	safe_unpack32(&job_fail_ptr->user_id, buffer);
-	_job_fail_log(job_fail_ptr);
-	*job_pptr = job_fail_ptr;
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -399,7 +408,8 @@ extern int restore_nonstop_state(void)
 	safe_unpack32(&job_cnt, buffer);
 	slurm_mutex_lock(&job_fail_mutex);
 	for (i = 0; i < job_cnt; i++) {
-		error_code = _unpack_job_state(&job_fail_ptr, buffer);
+		error_code = _unpack_job_state(&job_fail_ptr, buffer,
+					       protocol_version);
 		if (error_code)
 			break;
 		job_fail_ptr->job_ptr = find_job_record(job_fail_ptr->job_id);
