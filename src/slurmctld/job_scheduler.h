@@ -216,9 +216,7 @@ extern void rebuild_job_part_list(job_record_t *job_ptr);
  * schedule - attempt to schedule all pending jobs
  *	pending jobs for each partition will be scheduled in priority
  *	order until a request fails
- * IN job_limit - maximum number of jobs to test now, avoid testing the full
- *		  queue on every job submit (0 means to use the system default,
- *		  SchedulerParameters for default_queue_depth)
+ * IN full_queue - test the full queue, or only default_queue_depth jobs
  * RET count of jobs scheduled
  * Note: If the scheduler has executed recently, rather than executing again
  *	right away, a thread will be spawned to execute later in an effort
@@ -228,7 +226,7 @@ extern void rebuild_job_part_list(job_record_t *job_ptr);
  *	changed with the update_job RPC. In general nodes will be in priority
  *	order (by submit time), so the sorting should be pretty fast.
  */
-extern int schedule(uint32_t job_limit);
+extern int schedule(bool full_queue);
 
 /*
  * set_job_elig_time - set the eligible time for pending jobs once their

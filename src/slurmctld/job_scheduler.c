@@ -799,9 +799,9 @@ static bool _all_partition_priorities_same(void)
  *	order (by submit time), so the sorting should be pretty fast.
  * Note: job_write_lock must be unlocked before calling this.
  */
-extern int schedule(uint32_t job_limit)
+extern int schedule(bool full_queue)
 {
-	static uint32_t sched_job_limit = NO_VAL;
+	static bool sched_full_queue = false;
 	int job_count = 0;
 	struct timeval now;
 	long delta_t;
@@ -820,12 +820,12 @@ extern int schedule(uint32_t job_limit)
 	}
 
 	slurm_mutex_lock(&sched_mutex);
-	if (sched_job_limit == INFINITE)
-		;				/* leave unlimited */
-	else if (job_limit == INFINITE)
-		sched_job_limit = INFINITE;	/* set unlimited */
-	else if (sched_job_limit == NO_VAL)
-		sched_job_limit = job_limit;	/* set initial value */
+	/*
+	 * A thread may not get its scheduling request immediately satisfied.
+	 * If any of those requests were for full_queue, the next thread that
+	 * launches _schedule() will ensure that is honored eventually.
+	 */
+	sched_full_queue |= full_queue;
 
 	if (delta_t >= sched_min_interval) {
 		/* Temporarily set time in the future until we get the real
@@ -833,11 +833,10 @@ extern int schedule(uint32_t job_limit)
 		sched_last.tv_sec  = now.tv_sec;
 		sched_last.tv_usec = now.tv_usec;
 		sched_running = true;
-		job_limit = sched_job_limit;
-		sched_job_limit = NO_VAL;
+		sched_full_queue = false;
 		slurm_mutex_unlock(&sched_mutex);
 
-		job_count = _schedule((job_limit == INFINITE));
+		job_count = _schedule(sched_full_queue);
 
 		slurm_mutex_lock(&sched_mutex);
 		gettimeofday(&now, NULL);

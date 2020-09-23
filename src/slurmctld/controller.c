@@ -1874,7 +1874,6 @@ static void *_slurmctld_background(void *no_data)
 	time_t now;
 	int no_resp_msg_interval, ping_interval, purge_job_interval;
 	int i;
-	uint32_t job_limit;
 	DEF_TIMERS;
 
 	/* Locks: Read config */
@@ -1929,6 +1928,8 @@ static void *_slurmctld_background(void *no_data)
 	debug3("_slurmctld_background pid = %u", getpid());
 
 	while (1) {
+		bool call_schedule = false, full_queue = false;
+
 		for (i = 0; ((i < 10) && (slurmctld_config.shutdown_time == 0));
 		     i++) {
 			usleep(100000);
@@ -2138,10 +2139,10 @@ static void *_slurmctld_background(void *no_data)
 			slurm_mutex_unlock(&check_bf_running_lock);
 		}
 
-		job_limit = NO_VAL;
 		if (difftime(now, last_full_sched_time) >= sched_interval) {
 			slurm_mutex_lock(&sched_cnt_mutex);
-			job_limit = INFINITE;
+			call_schedule = true;
+			full_queue = true;
 			job_sched_cnt = 0;
 			slurm_mutex_unlock(&sched_cnt_mutex);
 			last_full_sched_time = now;
@@ -2150,18 +2151,18 @@ static void *_slurmctld_background(void *no_data)
 			if (job_sched_cnt &&
 			    (difftime(now, last_sched_time) >=
 			     batch_sched_delay)) {
-				job_limit = 0;	/* Default depth */
+				call_schedule = true;
 				job_sched_cnt = 0;
 			}
 			slurm_mutex_unlock(&sched_cnt_mutex);
 		}
-		if (job_limit != NO_VAL) {
+		if (call_schedule) {
 			lock_slurmctld(job_write_lock2);
 			now = time(NULL);
 			last_sched_time = now;
 			bb_g_load_state(false);	/* May alter job nice/prio */
 			unlock_slurmctld(job_write_lock2);
-			if (schedule(job_limit))
+			if (schedule(full_queue))
 				last_checkpoint_time = 0; /* force state save */
 			set_job_elig_time();
 		}
