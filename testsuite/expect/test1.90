@@ -30,7 +30,6 @@ source ./globals
 
 set exit_code   0
 set file_prog   "test$test_id.prog"
-set prompt      "PROMPT:"
 
 #
 # Test if memory affinity support is supported.
@@ -84,17 +83,18 @@ set salloc_pid [spawn $salloc -N1 --exclusive --verbose -t2 $bin_bash]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		send "export PS1=\"$prompt\"\r"
+		send "$reset_bash_prompt\r"
 		exp_continue
 	}
-	-re "export PS1=\"$prompt\"" {
+	-re "\"$test_prompt\"" {
+		# skip this, just echo of setting test_prompt
 		exp_continue
+	}
+	-re $test_prompt {
 	}
 	timeout {
 		slow_kill $salloc_pid
 		log_error "salloc not responding or failure to recognize prompt"
-	}
-	-re $prompt {
 	}
 }
 
@@ -103,7 +103,7 @@ expect {
 #
 set timeout 1
 expect {
-	-re $prompt {
+	-re $test_prompt {
 		exp_continue
 	}
 	timeout {
@@ -135,7 +135,7 @@ expect {
 		log_error "salloc not responding or failure to recognize prompt"
 		set exit_code 1
 	}
-	-re $prompt {
+	-re $test_prompt {
 	}
 }
 
@@ -184,7 +184,7 @@ expect {
 		log_error "salloc not responding or failure to recognize prompt"
 		set exit_code 1
 	}
-	-re $prompt
+	-re $test_prompt
 }
 if {$mem_mask != $full_mask} {
 	log_error "Memory affinity mask inconsistency ($mem_mask,$full_mask)"
@@ -213,7 +213,7 @@ expect {
 		set exit_code 1
 		exp_continue
 	}
-	-re $prompt
+	-re $test_prompt
 }
 
 #
@@ -236,7 +236,7 @@ expect {
 		log_error "salloc not responding or failure to recognize prompt"
 		set exit_code 1
 	}
-	-re $prompt
+	-re $test_prompt
 }
 if {$task_mask != $task_cnt} {
 	log_error "Affinity mask inconsistent ($task_mask,$task_cnt)"
@@ -258,7 +258,7 @@ expect {
 		log_error "salloc not responding or failure to recognize prompt"
 		set exit_code 1
 	}
-	-re $prompt
+	-re $test_prompt
 }
 if {$verbose_cnt != $task_cnt} {
 	log_error "Verbose messages count inconsistent ($verbose_cnt,$task_cnt)"
@@ -288,7 +288,7 @@ while {$cpu_cnt < $task_cnt} {
 			set exit_code 1
 			exp_continue
 		}
-		-re $prompt
+		-re $test_prompt
 	}
 	if {$mask_sum != $task_cnt * $mask} {
 		log_error "Affinity mask inconsistent ($mask_sum,$task_cnt)"
@@ -321,7 +321,7 @@ while {$cpu_cnt < $task_cnt} {
 			set exit_code 1
 			exp_continue
 		}
-		-re $prompt
+		-re $test_prompt
 	}
 	if {$mask_sum != $task_cnt * $mask} {
 		log_error "Affinity mask inconsistent ($mask_sum,$task_cnt)"
@@ -395,7 +395,7 @@ expect {
 		set exit_code 1
 		exp_continue
 	}
-	-re $prompt
+	-re $test_prompt
 }
 if {$task_mask != $full_mask} {
 	log_error "Affinity mask inconsistent ($task_mask,$full_mask)"
@@ -422,7 +422,7 @@ expect {
 		set exit_code 1
 		exp_continue
 	}
-	-re $prompt
+	-re $test_prompt
 }
 if {$task_mask != $full_mask} {
 	log_error "Affinity mask inconsistent ($task_mask,$full_mask)"
@@ -449,7 +449,7 @@ expect {
 		set exit_code 1
 		exp_continue
 	}
-	-re $prompt
+	-re $test_prompt
 }
 if {$task_mask != $full_mask} {
 	log_error "Affinity mask inconsistent ($task_mask,$full_mask)"
@@ -476,7 +476,7 @@ expect {
 		set exit_code 1
 		exp_continue
 	}
-	-re $prompt
+	-re $test_prompt
 }
 if {$task_mask != $full_mask} {
 	log_error "Affinity mask inconsistent ($task_mask,$full_mask)"
@@ -503,7 +503,7 @@ expect {
 		set exit_code 1
 		exp_continue
 	}
-	-re $prompt
+	-re $test_prompt
 }
 if {$task_mask != $full_mask} {
 	log_error "Affinity mask inconsistent ($task_mask,$full_mask)"
@@ -530,7 +530,7 @@ expect {
 		set exit_code 1
 		exp_continue
 	}
-	-re $prompt
+	-re $test_prompt
 }
 if {$task_mask != $full_mask} {
 	log_error "Affinity mask inconsistent ($task_mask,$full_mask)"

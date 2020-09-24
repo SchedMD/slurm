@@ -30,7 +30,6 @@ source ./globals
 
 set exit_code   0
 set file_prog   "test$test_id.prog"
-set prompt      "PROMPT:"
 
 #
 # Test if CPU affinity support is supported.
@@ -72,17 +71,18 @@ set salloc_pid [spawn $salloc -N1 --exclusive -t5 $bin_bash]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		send "export PS1=\"$prompt\"\r"
+		send "$reset_bash_prompt\r"
 		exp_continue
 	}
-	-re "export PS1=\"$prompt\"\r" {
+	-re "\"$test_prompt\"" {
+		# skip this, just echo of setting test_prompt
 		exp_continue
+	}
+	-re $test_prompt {
 	}
 	timeout {
 		slow_kill $salloc_pid
 		fail "salloc not responding or failure to recognize prompt"
-	}
-	-re $prompt {
 	}
 }
 
@@ -91,7 +91,7 @@ expect {
 #
 set timeout 1
 expect {
-	-re $prompt {
+	-re $test_prompt {
 		exp_continue
 	}
 	timeout {
@@ -120,7 +120,7 @@ expect {
 		cancel_job $job_id
 		fail "salloc not responding or failure to recognize prompt"
 	}
-	-re $prompt {
+	-re $test_prompt {
 	}
 }
 
@@ -169,7 +169,7 @@ expect {
 		cancel_job $job_id
 		fail "salloc not responding or failure to recognize prompt"
 	}
-	-re $prompt {
+	-re $test_prompt {
 	}
 }
 if {$task_mask != $expected_mask} {
@@ -196,7 +196,7 @@ expect {
 		cancel_job $job_id
 		fail "salloc not responding or failure to recognize prompt"
 	}
-	-re $prompt {
+	-re $test_prompt {
 	}
 }
 if {$task_mask != $task_cnt} {
@@ -219,7 +219,7 @@ expect {
 		cancel_job $job_id
 		fail "salloc not responding or failure to recognize prompt"
 	}
-	-re $prompt {
+	-re $test_prompt {
 	}
 }
 # Both task/affinity and task/cpu will generate verbose message,
@@ -251,7 +251,7 @@ while {$cpu_cnt < $task_cnt} {
 			cancel_job $job_id
 			fail "salloc not responding or failure to recognize prompt"
 		}
-		-re $prompt {
+		-re $test_prompt {
 		}
 	}
 	if {$mask_sum != $task_cnt * $mask} {
@@ -284,7 +284,7 @@ while {$cpu_cnt < $task_cnt} {
 			cancel_job $job_id
 			fail "salloc not responding or failure to recognize prompt"
 		}
-		-re $prompt {
+		-re $test_prompt {
 		}
 	}
 	if {$mask_sum != $task_cnt * $mask} {
@@ -358,7 +358,7 @@ expect {
 		cancel_job $job_id
 		fail "salloc not responding or failure to recognize prompt"
 	}
-	-re $prompt {
+	-re $test_prompt {
 	}
 }
 if {$task_mask != $full_mask} {
@@ -384,7 +384,7 @@ expect {
 		cancel_job $job_id
 		fail "salloc not responding or failure to recognize prompt"
 	}
-	-re $prompt {
+	-re $test_prompt {
 	}
 }
 if {$task_mask != $full_mask} {
@@ -411,7 +411,7 @@ expect {
 		cancel_job $job_id
 		fail "salloc not responding or failure to recognize prompt"
 	}
-	-re $prompt {
+	-re $test_prompt {
 	}
 }
 if {$task_mask != $full_mask} {
@@ -438,7 +438,7 @@ expect {
 		cancel_job $job_id
 		fail "salloc not responding or failure to recognize prompt"
 	}
-	-re $prompt {
+	-re $test_prompt {
 	}
 }
 if {$task_mask != $full_mask} {
@@ -465,7 +465,7 @@ expect {
 		cancel_job $job_id
 		fail "salloc not responding or failure to recognize prompt"
 	}
-	-re $prompt {
+	-re $test_prompt {
 	}
 }
 if {$task_mask != $full_mask} {
@@ -492,7 +492,7 @@ expect {
 		cancel_job $job_id
 		fail "salloc not responding or failure to recognize prompt"
 	}
-	-re $prompt {
+	-re $test_prompt {
 	}
 }
 if {$task_mask != $full_mask} {

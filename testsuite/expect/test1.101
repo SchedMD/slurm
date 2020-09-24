@@ -28,7 +28,6 @@ source ./globals
 set exit_code   0
 set file_in     "test$test_id.input"
 set job_id      0
-set prompt      "PROMPT: "
 set timeout $max_job_delay
 
 if {[slurmd_user_root] == 0} {
@@ -40,14 +39,14 @@ set salloc_pid [spawn $salloc -N1-5 -t1 bash]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		send "export PS1=\"$prompt\"\r"
+		send "$reset_bash_prompt\r"
 		exp_continue
 	}
-	-re "\"$prompt" {
-		# skip this, just echo of setting prompt"
+	-re "\"$test_prompt\"" {
+		# skip this, just echo of setting test_prompt
 		exp_continue
 	}
-	-re "$prompt" {
+	-re "$test_prompt" {
 		#log_debug "Job initiated"
 	}
 	timeout {
@@ -64,7 +63,7 @@ if {$job_id == 0} {
 
 send "$srun rm -f /tmp/test$test_id\r"
 expect {
-	-re "$prompt" {
+	-re "$test_prompt" {
 		#break
 	}
 	timeout {
@@ -82,7 +81,7 @@ expect {
 		}
 		exp_continue
 	}
-	-re "$prompt" {
+	-re "$test_prompt" {
 		#break
 	}
 	timeout {
@@ -103,7 +102,7 @@ expect {
 		incr exec_cnt
 		exp_continue
 	}
-	-re "$prompt" {
+	-re "$test_prompt" {
 		#break
 	}
 	timeout {
@@ -114,7 +113,7 @@ expect {
 
 send "$srun -l rm -v /tmp/test$test_id\r"
 expect {
-	-re "$prompt" {
+	-re "$test_prompt" {
 		#break
 	}
 	timeout {

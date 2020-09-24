@@ -41,7 +41,7 @@ set layout "static"
 set select_type ""
 
 proc scontrol_test { node proc_cnt } {
-	global scontrol number prompt
+	global scontrol number test_prompt
 	upvar spawn_id spawn_id
 
 	set found 0
@@ -58,7 +58,7 @@ proc scontrol_test { node proc_cnt } {
 			}
 			exp_continue
 		}
-		-re $prompt {
+		-re $test_prompt {
 		}
 		timeout {
 			log_error "scontrol not responding"
@@ -79,19 +79,13 @@ proc scontrol_test { node proc_cnt } {
 }
 
 proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
-	global float number prompt sinfo slash
+	global float number test_prompt sinfo slash
 	upvar spawn_id spawn_id
 
 	set found 0
 	set rc 0
 
 	send "$sinfo -o \"%C %A %N\" -h -n $node\r"
-	# make sure we get by the sinfo command so we don't
-	# think the %'s are a prompt
-	expect {
-		"%C %A %N" {
-		}
-	}
 	expect {
 		-re "($float)(K?)($slash)($float)(K?)($slash)($float)(K?)($slash)($float)(K?) ($number)($slash)($number) $node" {
 			set found 1
@@ -124,7 +118,7 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 			}
 			exp_continue
 		}
-		-re $prompt {
+		-re $test_prompt {
 		}
 		timeout {
 			log_error "sinfo not responding"
@@ -145,7 +139,7 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 }
 
 proc sinfo_test_2 { node proc_cnt total_procs } {
-	global sinfo number prompt
+	global sinfo number test_prompt
 	upvar spawn_id spawn_id
 
 	set rc 0
@@ -157,12 +151,6 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 	set idle_nodes [expr $total_nodes - $alloc_nodes]
 
 	send "$sinfo -o \"%t %D %N\" -h -n $node\r"
-	# make sure we get by the sinfo command so we don't
-	# think the %'s are a prompt
-	expect {
-		"%t %D %N" {
-		}
-	}
 	expect {
 		-re "alloc ($number)(K?) $node" {
 			set num_alloc $expect_out(1,string)
@@ -185,7 +173,7 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 			}
 			exp_continue
 		}
-		-re $prompt {
+		-re $test_prompt {
 		}
 		timeout {
 			log_error "sinfo not responding"
@@ -211,7 +199,8 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 # allocate a set of nodes (node_cnt) and the quit right after
 proc allocate_and_quit { node proc_cnt total_procs } {
 	global bin_bash salloc scontrol sinfo number re_word_str
-	global prompt select_type procs_per_node test_id bin_rm
+	global test_prompt select_type procs_per_node test_id bin_rm
+	global reset_bash_prompt
 
 	set file_in "test$test_id.input"
 	set job_id 0
@@ -222,7 +211,7 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 	set idle_cpus [expr $total_procs - $proc_cnt]
 
 	make_bash_script $file_in "
-	  export PS1=\"$prompt\"
+	  $reset_bash_prompt
 	  $bin_bash --norc
 	"
 
@@ -233,7 +222,7 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 			exp_continue
 		}
 
-		-re $prompt {
+		-re $test_prompt {
 			# test for scontrol to give me the correct cpu count
 			if { [scontrol_test $node $proc_cnt] } {
 				send "exit\r"

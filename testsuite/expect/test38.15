@@ -27,7 +27,6 @@ source ./globals
 
 set exit_code	0
 set file_in	"test$test_id.input"
-set prompt	"PROMPT: "
 set timeout	60
 
 if {[test_front_end]} {
@@ -65,14 +64,14 @@ spawn $salloc -t1 -N1 : -N1 : -N1 $bin_bash
 expect {
 	-re "job ($number) has been allocated resources" {
 		set het_job_id $expect_out(1,string)
-		send "export PS1=\"$prompt\"\r"
+		send "$reset_bash_prompt\r"
 		exp_continue
 	}
-	-re "\"$prompt" {
-		# skip this, just echo of setting prompt"
+	-re "\"$test_prompt\"" {
+		# skip this, just echo of setting test_prompt
 		exp_continue
 	}
-	-re "$prompt" {
+	-re "$test_prompt" {
 		#log_debug "Job initiated"
 	}
 	timeout {
@@ -102,7 +101,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "$prompt" {
+	-re "$test_prompt" {
 		#break
 	}
 	timeout {
@@ -132,7 +131,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "$prompt" {
+	-re "$test_prompt" {
 		#break
 	}
 	timeout {
