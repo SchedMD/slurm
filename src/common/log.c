@@ -692,11 +692,12 @@ static void _set_idbuf(char *idbuf, size_t size)
 }
 
 /*
- * _addr2fmt() - print an IPv4 slurm_addr_t
+ * _addr2fmt() - print an IP address from slurm_addr_t
  */
 static char *_addr2fmt(slurm_addr_t *addr_ptr, char *buf, int buf_size)
 {
-	char addrbuf[INET_ADDRSTRLEN];
+	char addrbuf[INET6_ADDRSTRLEN];
+	uint16_t port = 0;
 
 	/*
 	 * NOTE: You will notice we put a %.0s in front of the string.
@@ -707,10 +708,17 @@ static char *_addr2fmt(slurm_addr_t *addr_ptr, char *buf, int buf_size)
 	if (addr_ptr == NULL)
 		return "%.0sNULL";
 
-	inet_ntop(AF_INET, &addr_ptr->sin_addr, addrbuf, INET_ADDRSTRLEN);
+	if (((struct sockaddr_storage *) addr_ptr)->ss_family == AF_INET6) {
+		struct sockaddr_in6 *in6 = (struct sockaddr_in6 *) addr_ptr;
+		inet_ntop(AF_INET6, &in6->sin6_addr, addrbuf, INET6_ADDRSTRLEN);
+		port = ntohs(in6->sin6_port);
+	} else {
+		struct sockaddr_in *in = (struct sockaddr_in *) addr_ptr;
+		inet_ntop(AF_INET, &in->sin_addr, addrbuf, INET_ADDRSTRLEN);
+		port = ntohs(in->sin_port);
+	}
 
-	snprintf(buf, buf_size, "%%.0s%s:%d",
-		 addrbuf, ntohs(addr_ptr->sin_port));
+	snprintf(buf, buf_size, "%%.0s%s:%d", addrbuf, port);
 
 	return buf;
 }
