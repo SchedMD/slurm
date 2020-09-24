@@ -225,4 +225,14 @@ void xstrtrim(char *string);
  */
 extern char *bytes_to_hex(const char *string, int len, const char *delimiter);
 
+/*
+ * Dump byte string printable format
+ * IN string - byte string to dump as printable format
+ * IN len - number of bytes to dump
+ * IN replace - character to replace printable characters
+ * RET loggable string (must xfree()) or NULL on error
+ */
+extern char *bytes_to_printable(const char *string, int len,
+				const char replace);
+
 #endif /* !_XSTRING_H */
