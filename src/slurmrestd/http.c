@@ -62,8 +62,10 @@
 /* return magic number 2 to close the connection */
 #define HTTP_PARSER_RETURN_ERROR 1
 
+#define MAGIC_REQUEST_T 0xdbadaaaf
 /* Data to handed around by http_parser to call backs */
 typedef struct {
+	int magic;
 	/* URL path requested by client */
 	const char *path;
 	/* URL query parameters by client */
@@ -107,6 +109,8 @@ static void _free_http_header(void *header)
 
 static void _free_request_t(request_t *request)
 {
+	xassert(request->magic == MAGIC_REQUEST_T);
+	xassert(request->magic = ~MAGIC_REQUEST_T);
 	FREE_NULL_LIST(request->headers);
 	xfree(request->path);
 	xfree(request->query);
@@ -143,6 +147,7 @@ static int _on_url(http_parser *parser, const char *at, size_t length)
 {
 	struct http_parser_url url;
 	request_t *request = parser->data;
+	xassert(request->magic == MAGIC_REQUEST_T);
 	xassert(request->path == NULL);
 
 	_http_parser_url_init(&url);
@@ -200,6 +205,7 @@ static int _on_status(http_parser *parser, const char *at, size_t length)
 static int _on_header_field(http_parser *parser, const char *at, size_t length)
 {
 	request_t *request = parser->data;
+	xassert(request->magic == MAGIC_REQUEST_T);
 	xassert(request->last_header == NULL);
 	xfree(request->last_header);
 	request->last_header = xstrndup(at, length);
@@ -210,6 +216,8 @@ static int _on_header_value(http_parser *parser, const char *at, size_t length)
 {
 	request_t *request = parser->data;
 	http_header_entry_t *buffer;
+
+	xassert(request->magic == MAGIC_REQUEST_T);
 
 	if (!request->last_header) {
 		error("%s: [%s] received invalid empty header",
@@ -281,6 +289,7 @@ static int _on_header_value(http_parser *parser, const char *at, size_t length)
 static int _on_headers_complete(http_parser *parser)
 {
 	request_t *request = parser->data;
+	xassert(request->magic == MAGIC_REQUEST_T);
 
 	if (parser->http_major == 1 && parser->http_minor == 0) {
 		debug3("%s: [%s] HTTP/1.0 connection",
@@ -326,6 +335,7 @@ static int _on_headers_complete(http_parser *parser)
 static int _on_body(http_parser *parser, const char *at, size_t length)
 {
 	request_t *request = parser->data;
+	xassert(request->magic == MAGIC_REQUEST_T);
 
 	log_flag_hex(NET_RAW, at, length, "%s: [%s] received HTTP body",
 	       __func__, request->context->con->name);
@@ -488,6 +498,7 @@ static int _send_reject(const http_parser *parser,
 			http_status_code_t status_code)
 {
 	request_t *request = parser->data;
+	xassert(request->magic == MAGIC_REQUEST_T);
 
 	send_http_response_args_t args = {
 		.con = request->context->con,
@@ -580,6 +591,8 @@ static int _on_message_complete_request(http_parser *parser,
 		.body_encoding = request->body_encoding
 	};
 
+	xassert(request->magic == MAGIC_REQUEST_T);
+
 	if ((rc = request->context->on_http_request(&args))) {
 		debug2("%s: [%s] on_http_request rejected: %s",
 		       __func__, request->context->con->name,
@@ -594,6 +607,8 @@ static int _on_message_complete(http_parser *parser)
 	int rc;
 	request_t *request = parser->data;
 	http_request_method_t method = HTTP_REQUEST_INVALID;
+
+	xassert(request->magic == MAGIC_REQUEST_T);
 
 	/* skip if there is already an known error */
 	if (parser->http_errno)
@@ -657,6 +672,7 @@ static int _on_message_complete(http_parser *parser)
 		 * continue but without inheirting previous requests.
 		 */
 		request_t *nrequest = xmalloc(sizeof(*request));
+		xassert((nrequest->magic = MAGIC_REQUEST_T));
 		nrequest->headers = list_create(_free_http_header);
 		request->context->request = nrequest;
 		parser->data = nrequest;
@@ -709,6 +725,7 @@ extern int parse_http(con_mgr_fd_t *con, void *x)
 	xassert(con->name);
 	xassert(con->name[0] != '\0');
 	xassert(size_buf(buffer));
+	xassert(context->magic == MAGIC);
 
 	if (!request) {
 		/* Connection has already been closed */
@@ -718,6 +735,7 @@ extern int parse_http(con_mgr_fd_t *con, void *x)
 		return SLURM_UNEXPECTED_MSG_ERROR;
 	}
 
+	xassert(request->magic == MAGIC_REQUEST_T);
 	if (request->context)
 		xassert(request->context == context);
 	request->context = context;
@@ -964,6 +982,7 @@ extern http_context_t *setup_http_context(con_mgr_fd_t *con,
 	xassert(context->magic == MAGIC);
 	xassert(!context->con);
 	xassert(!context->request);
+	xassert((request->magic = MAGIC_REQUEST_T));
 	context->con = con;
 	context->on_http_request = on_http_request;
 	context->request = request;
