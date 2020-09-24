@@ -1156,9 +1156,11 @@ static void _inspect_connections(void *x)
 	_check_magic_mgr(mgr);
 
 	slurm_mutex_lock(&mgr->mutex);
-	list_delete_all(mgr->connections, _handle_connection, NULL);
+
+	if (list_delete_all(mgr->connections, _handle_connection, NULL))
+		slurm_cond_broadcast(&mgr->cond);
 	mgr->inspecting = false;
-	slurm_cond_broadcast(&mgr->cond);
+
 	slurm_mutex_unlock(&mgr->mutex);
 }
 
