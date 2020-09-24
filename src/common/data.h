@@ -212,6 +212,19 @@ extern data_t *data_set_string(data_t *data, const char *value);
 extern data_t *data_set_string_own(data_t *data, char *value);
 
 /*
+ * Set data to string type with given formatted value.
+ * IN data structure to modify
+ * IN fmt - printf format field
+ */
+#define data_set_string_fmt(data, fmt, ...)          \
+	do {                                         \
+		char *str = NULL;                    \
+		xstrfmtcat(str, fmt, ##__VA_ARGS__); \
+		if (!data_set_string_own(data, str)) \
+			xfree(str);                  \
+	} while (0)
+
+/*
  * Detect data type and if possible, change to correct type.
  * WARNING: command is currently only useful for to/from DATA_TYPE_STRING.
  * WARNING: Does not work on dict or list types
