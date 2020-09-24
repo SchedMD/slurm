@@ -912,7 +912,7 @@ extern int slurm_persist_send_msg(
 	return SLURM_SUCCESS;
 }
 
-extern Buf slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
+static Buf _slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
 {
 	uint32_t msg_size, nw_size;
 	char *msg;
@@ -996,6 +996,11 @@ endit:
 	}
 
 	return NULL;
+}
+
+extern Buf slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
+{
+	return _slurm_persist_recv_msg(persist_conn);
 }
 
 extern Buf slurm_persist_msg_pack(slurm_persist_conn_t *persist_conn,
