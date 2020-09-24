@@ -200,7 +200,7 @@ static void _pack_job_state(job_failures_t *job_fail_ptr, Buf buffer)
 {
 	int i;
 
-	slurm_pack_slurm_addr(&job_fail_ptr->callback_addr, buffer);
+	slurm_pack_addr(&job_fail_ptr->callback_addr, buffer);
 	pack32(job_fail_ptr->callback_flags, buffer);
 	pack16(job_fail_ptr->callback_port, buffer);
 	pack32(job_fail_ptr->job_id, buffer);
@@ -227,8 +227,8 @@ static int _unpack_job_state(job_failures_t **job_pptr, Buf buffer,
 	job_fail_ptr = xmalloc(sizeof(job_failures_t));
 
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
-		if (slurm_unpack_slurm_addr_no_alloc(
-			&job_fail_ptr->callback_addr, buffer))
+		if (slurm_unpack_addr_no_alloc(&job_fail_ptr->callback_addr,
+					       buffer))
 			goto unpack_error;
 		safe_unpack32(&job_fail_ptr->callback_flags, buffer);
 		safe_unpack16(&job_fail_ptr->callback_port, buffer);
