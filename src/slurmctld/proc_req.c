@@ -133,7 +133,7 @@ static int          _route_msg_to_origin(slurm_msg_t *msg, char *job_id_str,
 static void         _throttle_fini(int *active_rpc_cnt);
 static void         _throttle_start(int *active_rpc_cnt);
 
-inline static void  _update_cred_key(void);
+static void _update_cred_key(void);
 
 extern diag_stats_t slurmctld_diag_stats;
 
@@ -4567,7 +4567,7 @@ static void _update_cred_key(void)
 	                          slurm_conf.job_credential_private_key);
 }
 
-inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
+static void _slurm_rpc_suspend(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
@@ -4660,7 +4660,7 @@ inline static void _slurm_rpc_suspend(slurm_msg_t * msg)
 	}
 }
 
-inline static void _slurm_rpc_top_job(slurm_msg_t * msg)
+static void _slurm_rpc_top_job(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
@@ -4686,7 +4686,7 @@ inline static void _slurm_rpc_top_job(slurm_msg_t * msg)
 	}
 }
 
-inline static void _slurm_rpc_auth_token(slurm_msg_t *msg)
+static void _slurm_rpc_auth_token(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	token_request_msg_t *request_msg = (token_request_msg_t *) msg->data;
@@ -4732,7 +4732,7 @@ inline static void _slurm_rpc_auth_token(slurm_msg_t *msg)
 	slurm_free_token_response_msg(resp_data);
 }
 
-inline static void _slurm_rpc_requeue(slurm_msg_t * msg)
+static void _slurm_rpc_requeue(slurm_msg_t *msg)
 {
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
@@ -4794,7 +4794,7 @@ xduparray(uint32_t size, char ** array)
 	return result;
 }
 
-inline static void  _slurm_rpc_trigger_clear(slurm_msg_t * msg)
+static void _slurm_rpc_trigger_clear(slurm_msg_t *msg)
 {
 	int rc;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
@@ -4808,7 +4808,7 @@ inline static void  _slurm_rpc_trigger_clear(slurm_msg_t * msg)
 	slurm_send_rc_msg(msg, rc);
 }
 
-inline static void  _slurm_rpc_trigger_get(slurm_msg_t * msg)
+static void _slurm_rpc_trigger_get(slurm_msg_t *msg)
 {
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	trigger_info_msg_t *resp_data;
@@ -4827,7 +4827,7 @@ inline static void  _slurm_rpc_trigger_get(slurm_msg_t * msg)
 	slurm_free_trigger_msg(resp_data);
 }
 
-inline static void  _slurm_rpc_trigger_set(slurm_msg_t * msg)
+static void _slurm_rpc_trigger_set(slurm_msg_t *msg)
 {
 	int rc;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
@@ -4850,7 +4850,7 @@ inline static void  _slurm_rpc_trigger_set(slurm_msg_t * msg)
 	slurm_send_rc_msg(msg, rc);
 }
 
-inline static void  _slurm_rpc_trigger_pull(slurm_msg_t * msg)
+static void _slurm_rpc_trigger_pull(slurm_msg_t *msg)
 {
 	int rc;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
@@ -4872,7 +4872,7 @@ inline static void  _slurm_rpc_trigger_pull(slurm_msg_t * msg)
 	slurm_send_rc_msg(msg, rc);
 }
 
-inline static void  _slurm_rpc_get_topo(slurm_msg_t * msg)
+static void _slurm_rpc_get_topo(slurm_msg_t *msg)
 {
 	topo_info_response_msg_t *topo_resp_msg;
 	slurm_msg_t response_msg;
@@ -4910,7 +4910,7 @@ inline static void  _slurm_rpc_get_topo(slurm_msg_t * msg)
 	slurm_free_topo_info_msg(topo_resp_msg);
 }
 
-inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg)
+static void _slurm_rpc_job_notify(slurm_msg_t *msg)
 {
 	int error_code;
 	/* Locks: read job */
@@ -4974,7 +4974,7 @@ inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg)
 	slurm_send_rc_msg(msg, error_code);
 }
 
-inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
+static void _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 {
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	slurmctld_lock_t config_write_lock =
@@ -5010,7 +5010,7 @@ inline static void  _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
-inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg)
+static void _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 {
 	int debug_level;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
@@ -5062,7 +5062,7 @@ inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
-inline static void  _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
+static void _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
 {
 	int schedlog_level;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
@@ -5120,7 +5120,7 @@ static int _find_update_object_in_list(void *x, void *key)
 	return 0;
 }
 
-inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
+static void _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
 	int rc = SLURM_SUCCESS;
@@ -5185,7 +5185,7 @@ inline static void  _slurm_rpc_accounting_update_msg(slurm_msg_t *msg)
 }
 
 /* _slurm_rpc_reboot_nodes - process RPC to schedule nodes reboot */
-inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
+static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 {
 	int rc;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
@@ -5282,7 +5282,7 @@ inline static void _slurm_rpc_reboot_nodes(slurm_msg_t * msg)
 	slurm_send_rc_msg(msg, rc);
 }
 
-inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg)
+static void _slurm_rpc_accounting_first_reg(slurm_msg_t *msg)
 {
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	time_t event_time = time(NULL);
@@ -5301,7 +5301,7 @@ inline static void  _slurm_rpc_accounting_first_reg(slurm_msg_t *msg)
 	END_TIMER2("_slurm_rpc_accounting_first_reg");
 }
 
-inline static void  _slurm_rpc_accounting_register_ctld(slurm_msg_t *msg)
+static void _slurm_rpc_accounting_register_ctld(slurm_msg_t *msg)
 {
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 
@@ -5371,7 +5371,7 @@ static void _pack_rpc_stats(int resp, char **buffer_ptr, int *buffer_size,
 	buffer_ptr[0] = xfer_buf_data(buffer);
 }
 
-inline static void _slurm_rpc_burst_buffer_status(slurm_msg_t *msg)
+static void _slurm_rpc_burst_buffer_status(slurm_msg_t *msg)
 {
 	slurm_msg_t response_msg;
 	bb_status_resp_msg_t status_resp_msg;
@@ -5391,7 +5391,7 @@ inline static void _slurm_rpc_burst_buffer_status(slurm_msg_t *msg)
 }
 
 /* _slurm_rpc_dump_stats - process RPC for statistics information */
-inline static void _slurm_rpc_dump_stats(slurm_msg_t * msg)
+static void _slurm_rpc_dump_stats(slurm_msg_t *msg)
 {
 	char *dump;
 	int dump_size;
@@ -5434,12 +5434,7 @@ inline static void _slurm_rpc_dump_stats(slurm_msg_t * msg)
 	xfree(dump);
 }
 
-/* _slurm_rpc_dump_licenses()
- *
- * Pack the io buffer and send it back to the library.
- */
-inline static void
-_slurm_rpc_dump_licenses(slurm_msg_t * msg)
+static void _slurm_rpc_dump_licenses(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
 	char *dump;
@@ -5474,11 +5469,7 @@ _slurm_rpc_dump_licenses(slurm_msg_t * msg)
 	xfree(dump);
 }
 
-/*
- * _slurm_rpc_kill_job()
- */
-inline static void
-_slurm_rpc_kill_job(slurm_msg_t *msg)
+static void _slurm_rpc_kill_job(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
 	DEF_TIMERS;
@@ -5938,7 +5929,7 @@ static int _route_msg_to_origin(slurm_msg_t *msg, char *src_job_id_str,
 	return SLURM_ERROR;
 }
 
-inline static void  _slurm_rpc_set_fs_dampening_factor(slurm_msg_t *msg)
+static void _slurm_rpc_set_fs_dampening_factor(slurm_msg_t *msg)
 {
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	slurmctld_lock_t config_write_lock =
