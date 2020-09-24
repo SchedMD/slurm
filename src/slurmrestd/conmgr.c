@@ -1042,7 +1042,7 @@ static int _handle_connection(void *x, void *arg)
 			log_flag(NET, "%s: [%s] waiting to write %u bytes",
 				 __func__, con->name, get_buf_offset(con->out));
 		}
-		return SLURM_SUCCESS;
+		return 0;
 	}
 
 	/* read as much data as possible before processing */
