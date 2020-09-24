@@ -34,7 +34,13 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
 #include <inttypes.h>
+
+#if HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
 
 #include "src/common/list.h"
 #include "src/common/macros.h"
@@ -55,6 +61,14 @@ static void *_rpc_queue_worker(void *arg)
 	slurmctld_rpc_t *q = (slurmctld_rpc_t *) arg;
 	slurm_msg_t *msg;
 	int processed = 0;
+
+#if HAVE_SYS_PRCTL_H
+	char *name = xstrdup_printf("rpcq-%u", q->msg_type);
+	if (prctl(PR_SET_NAME, name, NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__, "sstate");
+	}
+	xfree(name);
+#endif
 
 	/*
 	 * Acquire on init to simplify the inner loop.
