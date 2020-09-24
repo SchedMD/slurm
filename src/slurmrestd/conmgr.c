@@ -952,14 +952,13 @@ extern int con_mgr_process_fd_unix_listen(con_mgr_t *mgr, int fd,
 static inline void _handle_poll_event(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 				      short revents)
 {
-	if (fd == con->input_fd)
-		con->can_read = revents & POLLIN || revents & POLLHUP;
-	if (fd == con->output_fd)
-		con->can_write = revents & POLLOUT;
+	con->can_read = false;
+	con->can_write = false;
 
 	if (revents & POLLNVAL) {
 		error("%s: [%s] connection invalid", __func__, con->name);
-		goto close;
+		_close_con(true, con);
+		return;
 	}
 	if (revents & POLLERR) {
 		int err = SLURM_ERROR;
@@ -971,17 +970,18 @@ static inline void _handle_poll_event(con_mgr_t *mgr, int fd, con_mgr_fd_t *con,
 		error("%s: [%s] poll error: %s",
 		      __func__, con->name, slurm_strerror(err));
 
-		goto close;
+		_close_con(true, con);
+		return;
 	}
+
+	if (fd == con->input_fd)
+		con->can_read = revents & POLLIN || revents & POLLHUP;
+	if (fd == con->output_fd)
+		con->can_write = revents & POLLOUT;
 
 	log_flag(NET, "%s: [%s] fd=%u can_read=%s can_write=%s",
 		 __func__, con->name, fd, (con->can_read ? "T" : "F"),
 		 (con->can_write ? "T" : "F"));
-	return;
-close:
-	con->can_read = false;
-	con->can_write = false;
-	_close_con(true, con);
 }
 
 /*
