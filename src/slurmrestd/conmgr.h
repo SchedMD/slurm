@@ -259,6 +259,14 @@ extern int con_mgr_queue_write_fd(con_mgr_fd_t *con, const void *buffer,
 				  const size_t bytes);
 
 /*
+ * Request soft close of connection
+ * NOTE: only call from within a callback
+ * IN con connection manager connection struct
+ * RET SLURM_SUCCESS or error
+ */
+extern void con_mgr_queue_close_fd(con_mgr_fd_t *con);
+
+/*
  * create sockets based on requested SOCKET_LISTEN
  * IN  mgr assigned connection manager
  * to accepted connections.

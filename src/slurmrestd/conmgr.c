@@ -1721,6 +1721,12 @@ extern int con_mgr_queue_write_fd(con_mgr_fd_t *con, const void *buffer,
 	return SLURM_SUCCESS;
 }
 
+extern void con_mgr_queue_close_fd(con_mgr_fd_t *con)
+{
+	_check_magic_fd(con);
+	_close_con(false, con);
+}
+
 typedef struct {
 	con_mgr_events_t events;
 	con_mgr_t *mgr;
