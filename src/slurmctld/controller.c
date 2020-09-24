@@ -2576,10 +2576,6 @@ int slurmctld_shutdown(void)
 	}
 }
 
-/* Variables for commandline passing using getopt */
-extern char *optarg;
-extern int optind, opterr, optopt;
-
 /*
  * _parse_commandline - parse and process any command line arguments
  * IN argc - number of command line arguments
