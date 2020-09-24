@@ -1852,9 +1852,10 @@ extern void step_alloc_lps(step_record_t *step_ptr)
 	if (step_ptr->core_bitmap_job) {
 		/* "scontrol reconfig" of live system */
 		pick_step_cores = false;
-	} else if (step_ptr->cpu_count == job_ptr->total_cpus) {
+	} else if (!(step_ptr->flags & SSF_OVERCOMMIT) &&
+		   (step_ptr->cpu_count == job_ptr->total_cpus)) {
 		/*
-		 * Step uses all of job's cores
+		 * If the step isn't overcommitting and uses all of job's cores
 		 * Just copy the bitmap to save time
 		 */
 		step_ptr->core_bitmap_job = bit_copy(
@@ -2390,22 +2391,14 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	if (job_ptr->next_step_id >= slurm_conf.max_step_cnt)
 		return ESLURM_STEP_LIMIT;
 
-	/* if the overcommit flag is checked, we 0 set cpu_count=0
+	/*
+	 * If the overcommit flag is checked, we set cpu_count=0
 	 * which makes it so we don't check to see the available cpus
 	 */
 	orig_cpu_count =  step_specs->cpu_count;
 
-	if (step_specs->flags & SSF_OVERCOMMIT) {
-		if (step_specs->flags & SSF_EXCLUSIVE) {
-			/*
-			 * Not really a legitimate combination,
-			 * try to exclusively allocate one CPU per task
-			 */
-			step_specs->flags &= ~SSF_OVERCOMMIT;
-			step_specs->cpu_count = step_specs->num_tasks;
-		} else
-			step_specs->cpu_count = 0;
-	}
+	if (step_specs->flags & SSF_OVERCOMMIT)
+		step_specs->cpu_count = 0;
 
 	/* determine cpus_per_task value by reversing what srun does */
 	if (step_specs->num_tasks < 1)
