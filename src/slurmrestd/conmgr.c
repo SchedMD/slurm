@@ -1481,9 +1481,9 @@ static inline int _watch(con_mgr_t *mgr)
 	char buf[100]; /* buffer for event_read */
 	bool work; /* is there any work to do? */
 
-watch:
 	_check_magic_mgr(mgr);
 	slurm_mutex_lock(&mgr->mutex);
+watch:
 
 	if (mgr->shutdown) {
 		slurm_mutex_unlock(&mgr->mutex);
@@ -1570,8 +1570,7 @@ watch:
 	if (work) {
 		/* wait until something happens */
 		slurm_cond_wait(&mgr->cond, &mgr->mutex);
-		slurm_mutex_unlock(&mgr->mutex);
-
+		_check_magic_mgr(mgr);
 		goto watch;
 	}
 
