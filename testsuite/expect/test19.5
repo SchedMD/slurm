@@ -210,12 +210,12 @@ if {[wait_for_file $file_out_fini] != 0} {
 	}
 	if {$job_fini == 0} {
 		if {$job_purge == 1} {
-			set min_job_age [get_min_job_age]
+			regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
 		}
 		if {$job_purge == 1 && $min_job_age < 60} {
 			log_warn "MinJobAge ($min_job_age) configured too low to capture job state after completion"
-		} elseif {[test_power_save] == 0} {
-			fail "File $file_out_fini contents are bad, CD run time"
+		} elseif [regexp {^(?:NONE|0 sec)$} [get_config_param "SuspendTime"]] {
+			fail "Power save mode is enabled. File $file_out_fini contents are bad, CD run time"
 		} else {
 			log_warn "Job timeout bad, possibly due to power save mode"
 		}

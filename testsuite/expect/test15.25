@@ -35,10 +35,10 @@ set job_id2     0
 set job_acct    "TEST_ACCT"
 set job_acct_lc "test_acct"
 
-if {[test_assoc_enforced]} {
+if [param_contains [get_config_param "AccountingStorageEnforce"] "associations"] {
 	skip "This test will not work when associations are enforced"
 }
-if {[test_account_storage]} {
+if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"} {
 	skip "This test will not work when invalid account names are subject to change"
 }
 

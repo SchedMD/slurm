@@ -216,17 +216,15 @@ proc test_out_file { file_out target } {
 	}
 }
 
-set store_tres [string tolower [get_acct_store_tres]]
+set store_tres [string tolower [get_config_param "AccountingStorageTRES"]]
 set store_mps [string first "gres/mps" $store_tres]
 if {$store_mps == -1} {
 	skip "This test requires accounting for MPS"
-} elseif {[test_front_end]} {
+} elseif {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
 
-if {[test_cons_tres]} {
-	log_debug "Valid configuration, using select/cons_tres"
-} else {
+if {![check_config_select "cons_tres"]} {
 	skip "This test is only compatible with select/cons_tres"
 }
 

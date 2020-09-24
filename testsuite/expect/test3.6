@@ -92,7 +92,7 @@ if {$found == 1} {
 # We only reach this point if a hidden partition must be
 # created to test this feature, which only super users can do
 #
-if {[test_super_user] == 0} {
+if {![is_super_user]} {
 	skip "Can not test more unless SlurmUser"
 }
 

@@ -35,10 +35,10 @@ set job_id          0
 set job_list        {}
 set test_script     "test$test_id\.sh"
 
-if { [test_super_user] == 0 } {
+if {![is_super_user]} {
 	skip "Test can only be run as SlurmUser"
 }
-if {[test_front_end] != 0} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
         skip "This test is incompatible with front-end systems"
 }
 

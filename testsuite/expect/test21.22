@@ -193,11 +193,11 @@ set timeout     120
 #
 # Check accounting config and bail if not found.
 #
-if { [test_account_storage] == 0 } {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without a usable AccountStorageType"
 }
 
-if { [string compare [check_accounting_admin_level] "Administrator"] } {
+if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
@@ -320,7 +320,7 @@ proc _remove_cluster {name} {
 		incr exit_code 1
 	}
 	if { !$nothing } {
-		if { ![check_acct_associations] } {
+		if {![check_acct_associations]} {
 			log_error "Our associations don't line up"
 			incr exit_code 1
 		}
@@ -395,7 +395,7 @@ proc _remove_acct { cluster name } {
 	}
 
 	if { !$nothing } {
-		if { ![check_acct_associations] } {
+		if {![check_acct_associations]} {
 			log_error "Our associations don't line up"
 			incr exit_code 1
 		}
@@ -470,7 +470,7 @@ proc _remove_user { acct user } {
 	}
 
 	if { !$nothing } {
-		if { ![check_acct_associations] } {
+		if {![check_acct_associations]} {
 			log_error "Our associations don't line up"
 			incr exit_code 1
 		}

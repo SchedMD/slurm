@@ -30,7 +30,7 @@ set exit_code     0
 set array_size    3
 set top_array_task_id [expr $array_size - 1]
 
-if {$array_size > [get_array_config]} {
+if {$array_size > [get_config_param "MaxArraySize"]} {
 	skip "MaxArraySize is too small"
 }
 

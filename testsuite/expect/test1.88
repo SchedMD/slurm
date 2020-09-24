@@ -44,7 +44,7 @@ if {[info exists mpicc] == 0} {
 if {[file executable $mpicc] == 0} {
 	skip "$mpicc does not exists"
 }
-if {[test_front_end]} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
 
@@ -83,7 +83,7 @@ file delete $file_out $file_err
 # for a variation of this test that will work with OpenMPI and multi-slurmd
 # mode.
 #
-if {[test_multiple_slurmd]} {
+if {[get_config_param "MULTIPLE_SLURMD"] eq "Yes"} {
 	log_warn "This test is limited with multiple slurmd systems"
 	set tasks_over_nodes 1
 } else {

@@ -51,14 +51,14 @@ set cluster(MaxNodes)      300
 set cluster(MaxWall)       01:00:00
 set access_err  0
 
-if { [test_account_storage] == 0 } {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without a usable AccountStorageType"
 }
 
 #
 # Verify if Administrator privileges
 #
- if { [string compare [check_accounting_admin_level] "Administrator"] } {
+if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
@@ -119,7 +119,7 @@ expect {
 if {$dmatches != 4} {
 	fail "sacctmgr had a problem deleting cluster"
 }
-if { ![check_acct_associations] } {
+if {![check_acct_associations]} {
 	fail "Our associations don't line up"
 }
 

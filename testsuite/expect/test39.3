@@ -29,9 +29,7 @@ source ./globals
 set exit_code   0
 set file_in     "test$test_id.input"
 
-if {[test_cons_tres]} {
-    log_debug "Valid configuration, using select/cons_tres"
-} else {
+if {![check_config_select "cons_tres"]} {
     skip "This test is only compatible with select/cons_tres"
 }
 

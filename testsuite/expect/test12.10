@@ -126,7 +126,7 @@ proc get_time { } {
 #
 ############################################################################
 
-if { [test_account_storage] == 0 } {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without a usable AccountStorageType."
 }
 

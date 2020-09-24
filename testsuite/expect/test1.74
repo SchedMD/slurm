@@ -30,7 +30,7 @@ source ./globals
 source ./globals_accounting
 
 set node_cnt    0
-set cluster     [get_cluster_name]
+set cluster     [get_config_param "ClusterName"]
 set node_name   ""
 set user        ""
 set acct        "test$test_id\_acct"
@@ -45,14 +45,14 @@ array set mod_acct_vals {}
 array set mod_acct_assoc_vals {}
 set mod_acct_assoc_vals(qos) $qos
 
-if { [test_using_slurmdbd] == 0 } {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without AccountStorageType=slurmdbd"
-} elseif { [test_enforce_limits] == 0 } {
+} elseif {![param_contains [get_config_param "AccountingStorageEnforce"] "limits"]} {
 	skip "This test can't be run without AccountingStorageEnforce=limits"
-} elseif { [test_enforce_qos_set] == 0 } {
+} elseif {![param_contains [get_config_param "AccountingStorageEnforce"] "qos"]} {
 	skip "This test can't be run without AccountingStorageEnforce=qos"
 }
-if {[string compare [check_accounting_admin_level] "Administrator"]} {
+if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator"
 }
 

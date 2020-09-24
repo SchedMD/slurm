@@ -36,7 +36,7 @@ set bad_job         "$test_id\_bad_job_sc"
 set timeout         [expr $max_job_delay + 500]
 set exit_code       0
 
-if {[is_super_user] == 0} {
+if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
 }
 

@@ -31,9 +31,9 @@ set test_acct    "test$test_id\_acct"
 set test_user    ""
 set exit_code    0
 
-if {![test_super_user]} {
+if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser or root"
-} elseif {![test_limits_enforced]} {
+} elseif {![param_contains [get_config_param "AccountingStorageEnforce"] "limits"]} {
 	skip "AccountingStorageEnforce limits must be set"
 }
 
@@ -113,10 +113,10 @@ delete_test_acct
 # Get username
 set test_user [get_my_user_name]
 
-if {[test_using_slurmdbd]} {
+if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"} {
 	# Add test Account
 	set acct_added 0
-	set cluster [get_cluster_name]
+	set cluster [get_config_param "ClusterName"]
 	spawn $sacctmgr add -i account $test_acct cluster=$cluster
 	expect {
 		-re "Adding Account" {

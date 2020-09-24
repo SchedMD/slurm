@@ -835,7 +835,7 @@ if {$err_msg != 1} {
 }
 
 # Must be root and no NodeFeaturesPlugin to proceed */
-if {[test_super_user] == 0 || [string compare [test_node_features_plugin] ""]} {
+if {![is_super_user] || [get_config_param "NodeFeaturesPlugins"] ne "(null)"} {
 	exec $bin_rm -f $file_in
 	skip "Configuration not compatible with additional tests"
 }
@@ -1015,7 +1015,7 @@ log_info "==========Test mix of AND and XOR=========="
 sub_job_and_xor 3 1
 
 # Test batch host
-if {[test_front_end] == 0} {
+if {[get_config_param "FrontendName"] eq "MISSING"} {
 	log_info "==========Test batch host=========="
 	sub_batch_host 3
 }

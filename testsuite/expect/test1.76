@@ -242,10 +242,10 @@ proc test_case {opt expmin expcur expmax expgov} {
 }
 
 # Check environment
-if {[test_cpu_affinity_or_cgroup] == 0} {
+if {![param_contains [get_affinity_types] "affinity"] && [get_config_param "TaskAffinity"] ne "yes"} {
 	skip "This test requires some form of task affinity"
 }
-if {[test_config_overrides]} {
+if {[param_contains [get_config_param "SlurmdParameters"] "config_overrides"]} {
 	log_warn "SlurmdParameters=config_overrides is discouraged. Proceeding assuming that the number of CPUs declared is accurate."
 }
 log_user 0

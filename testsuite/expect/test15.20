@@ -107,7 +107,7 @@ if {[string compare $host_2 ""] == 0} {
 	log_error "Did not get hostname of task 2"
 	set exit_code   1
 }
-if {[test_front_end] != 0} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "Additional testing is incompatible with front-end systems"
 }
 if {[string compare $host_3 ""] != 0} {

@@ -32,7 +32,7 @@ if {[file executable $lsid] == 0} {
 	skip "$lsid does not exist"
 }
 
-set cluster_name [get_cluster_name]
+set cluster_name [get_config_param "ClusterName"]
 set control_machine [get_control_machine]
 set lsid_cluster_name ""
 set lsid_control_machine ""

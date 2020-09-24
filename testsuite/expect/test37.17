@@ -1027,7 +1027,7 @@ proc test_remote_and_dependencies { } {
 # Begin test
 ###############################################################################
 
-if { [test_account_storage] == 0 } {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without a usable AccountStorageType"
 }
 
@@ -1043,7 +1043,7 @@ if {![test_federation_setup]} {
 	}
 } else {
 	log_warn "Not running remote dependency tests"
-	set c1 [get_cluster_name]
+	set c1 [get_config_param "ClusterName"]
 	set all_clusters "$c1"
 	set my_scancel $scancel
 	set my_scontrol $scontrol
@@ -1054,11 +1054,11 @@ if {![test_federation_setup]} {
 make_bash_script $file_in_long "$bin_sleep 60"
 make_bash_script $file_in_short "$bin_sleep 5"
 
-set permit_job_expansion [test_scheduler_params "permit_job_expansion"]
+set permit_job_expansion [param_contains [get_config_param "ClusterName"] "permit_job_expansion"]
 log_info "permit_job_expansion: $permit_job_expansion"
 
-set kill_invalid_depend [test_dependency_params "kill_invalid_depend"]
-set disable_remote_singleton [test_dependency_params "disable_remote_singleton"]
+set kill_invalid_depend [param_contains [get_config_param "DependencyParameters"] "kill_invalid_depend"]
+set disable_remote_singleton [param_contains [get_config_param "DependencyParameters"]  "disable_remote_singleton"]
 log_info "kill_invalid_depend: $kill_invalid_depend; disable_remote_singleton: $disable_remote_singleton\n"
 
 cancel_federation_jobs

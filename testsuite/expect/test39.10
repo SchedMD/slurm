@@ -105,12 +105,10 @@ proc run_gpu_per_task { mem_per_gpu gpu_cnt } {
 	}
 }
 
-if {[test_cons_tres]} {
-        log_debug "Valid configuration, using select/cons_tres"
-} else {
+if {![check_config_select "cons_tres"]} {
         skip "This test is only compatible with select/cons_tres"
 }
-if {![test_select_type_params "MEMORY"]} {
+if {![param_contains [get_config_param "SelectTypeParameters"] "*MEMORY"]} {
         skip "This test requires memory allocation management"
 }
 

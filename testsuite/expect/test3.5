@@ -32,14 +32,14 @@ set authorized     1
 set exit_code      0
 set part_name      "QA_TEST"
 
-if {[test_super_user] == 0} {
+if {![is_super_user]} {
 	skip "Can not test more unless SlurmUser or root"
 }
 
 #
 # Cannot run the test if OverTimeLimit is set, since we test time limits.
 #
-set overtimelim [get_over_time_limit]
+regexp "($number)" [get_config_param "OverTimeLimit"] {} overtimelim
 if {$overtimelim != 0} {
 	skip "Cannot run this test when OverTimeLimit is set. Exiting now"
 }

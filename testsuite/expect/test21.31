@@ -85,18 +85,18 @@ set timeout 60
 #
 # Check accounting config and bail if not found.
 #
-if { [test_account_storage] == 0 } {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without a usable AccountStorageType"
 }
 
 #
 # Check that current user is root or SlurmUser
 #
-if {[test_super_user] == 0} {
+if {![is_super_user]} {
 	skip "Test can only be ran as SlurmUser"
 }
 
-#if { [string compare [check_accounting_admin_level] "Administrator"] } {
+#if {[string compare [get_admin_level] "Administrator"]} {
 #	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 #}
 
@@ -118,7 +118,7 @@ if { $exit_code } {
 #
 # get name of this cluster
 #
-set cluster [get_cluster_name]
+set cluster [get_config_param "ClusterName"]
 set resource1(cluster) "$cluster,$tc2"
 
 #

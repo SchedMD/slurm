@@ -47,17 +47,17 @@ set running_state   "RUNNING"
 
 set eligible_now_job_directive "EligibleTime=now"
 
-if {[test_preempttype_qos] == 0} {
+if {[get_config_param "PreemptType"] ne "preempt/qos"} {
 	skip "This test requires that PreemptType=preempt/qos"
 }
-if {[test_using_slurmdbd] == 0} {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test requires use of Slurmdbd"
 }
 if {$nodes < 2} {
 	skip "Not enough available nodes ($nodes < 2)"
 }
 
-set min_job_age [get_min_job_age]
+regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
 if {$min_job_age < 10} {
 	skip "MinJobAge configured too low for this test ($min_job_age < 10)"
 }

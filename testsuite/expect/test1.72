@@ -29,14 +29,14 @@ source ./globals
 set freq_val  0
 set exit_code 0
 
-if {[test_cray]} {
+if {[get_config_param "SwitchType"] eq "switch/cray"} {
         set timeout 60
 }
 
 if {[get_job_acct_freq] == 0} {
 	skip "This test requires JobAcctGatherFrequency to be set"
 }
-if {[check_node_mem] == 0} {
+if {![check_config_node_mem]} {
 	skip "This test requires that the nodes have memory"
 }
 

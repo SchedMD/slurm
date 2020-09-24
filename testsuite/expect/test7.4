@@ -70,7 +70,7 @@ if {[info exists totalviewcli] == 0} {
 if {[file executable $totalviewcli] == 0} {
 	skip "$totalviewcli does not exists"
 }
-if {[test_front_end] != 0} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
     skip "This test is incompatible with front-end systems"
 }
 

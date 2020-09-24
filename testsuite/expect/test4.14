@@ -32,7 +32,7 @@ set test_part_2    "test$test_id\_partition_2"
 set test_node      ""
 set exit_code      0
 
-if {[test_super_user] == 0} {
+if {![is_super_user]} {
 	skip "Can not test more unless SlurmUser or root"
 }
 

@@ -41,7 +41,7 @@ set limit_nproc      34500
 set limit_stack      5021
 set matches          0
 
-if {[test_front_end] != 0 && [test_super_user] == 0} {
+if {[get_config_param "FrontendName"] ne "MISSING" && ![is_super_user]} {
 	skip "This test is incompatible with front-end systems"
 }
 

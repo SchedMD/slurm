@@ -69,7 +69,7 @@ expect {
 if {[string compare $nodelist_name ""] == 0} {
 	fail "Did not get hostname of task 0"
 }
-if {[test_front_end] != 0} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "Additional testing is incompatible with front-end systems"
 }
 

@@ -31,7 +31,7 @@ set exit_code  0
 set job_cnt    100
 set target     200
 
-if {[test_cray]} {
+if {[get_config_param "SwitchType"] eq "switch/cray"} {
 	set target 65
 }
 

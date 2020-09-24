@@ -32,7 +32,7 @@ source ./globals
 set exit_code            0
 set ld_preload           "ld_preload"
 
-if {[test_super_user] == 1} {
+if [is_super_user] {
 	skip "This test can't be run as SlurmUser"
 }
 

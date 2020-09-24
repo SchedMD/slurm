@@ -61,10 +61,10 @@ wait
 exit 0
 "
 
-set proctracktype [test_proctrack]
+set proctracktype [get_config_param "ProctrackType"]
 log_debug "Proctrack: $proctracktype"
-if {$proctracktype != "cgroup" && $proctracktype != "linuxproc" && $proctracktype != "pgid"} {
-	skip "This test only works for proctracktype/cgroup, proctracktype/linuxproc or proctracktype/pgid."
+if {$proctracktype ne "proctrack/cgroup" && $proctracktype ne "proctrack/linuxproc" && $proctracktype ne "proctrack/pgid"} {
+	skip "This test only works for proctrack/cgroup, proctrack/linuxproc or proctrack/pgid"
 }
 
 #
@@ -162,7 +162,7 @@ proc test_signaling { batch full } {
 		set expected_script_signaled 1
 	} elseif {!$batch && !$full} {
 		set expected_parent_step_signaled 1
-		if {$proctracktype == "linuxproc" || $proctracktype == "pgid"} {
+		if {$proctracktype == "proctrack/linuxproc" || $proctracktype == "proctrack/pgid"} {
 			set expected_child_step_signaled 1
 		}
 	} else {
@@ -170,7 +170,7 @@ proc test_signaling { batch full } {
 		set expected_parent_step_signaled 1
 		set expected_parent_command_signaled 1
 		set expected_child_command_signaled 1
-		if {$proctracktype == "linuxproc" || $proctracktype == "pgid"} {
+		if {$proctracktype == "proctrack/linuxproc" || $proctracktype == "proctrack/pgid"} {
 			set expected_child_step_signaled 1
 		}
 	}

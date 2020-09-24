@@ -39,7 +39,7 @@ set file_flag_4   "test$test_id.run.4"
 set job_id        0
 set node_cnt 1-4
 
-if {[is_super_user] == 0} {
+if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
 }
 

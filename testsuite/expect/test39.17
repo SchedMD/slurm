@@ -32,12 +32,10 @@ set file_in2       "test$test_id.input2"
 set file_out       "test$test_id.output"
 set number_commas  "\[0-9_,\]+"
 
-if {[test_cons_tres]} {
-	log_debug "Valid configuration, using select/cons_tres"
-} else {
+if {![check_config_select "cons_tres"]} {
 	skip "This test is only compatible with select/cons_tres"
 }
-if {[test_front_end]} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
 
@@ -51,7 +49,7 @@ if {$gpu_cnt < 2} {
 	skip "This test requires 2 or more GPUs on $nb_nodes nodes of the default partition"
 }
 
-set constrain_devices [test_constrain_devices]
+set constrain_devices [expr {[get_config_param "ConstrainDevices"] eq "yes"}]
 if {$constrain_devices} {
 	log_info "Devices files are constrained by cgroups"
 } else {

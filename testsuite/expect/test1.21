@@ -75,7 +75,7 @@ if {$matches != 1} {
 	set exit_code 1
 }
 
-if {[test_front_end]} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
     skip "Additional portions of this test are incompatible with front-end systems"
 }
 

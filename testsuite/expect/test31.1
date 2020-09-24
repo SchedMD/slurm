@@ -34,19 +34,19 @@ set make_file        0
 set exit_code        0
 set pcmd_prog        "/opt/cray/nodehealth/default/bin/pcmd"
 
-if {[test_cray]} {
+if {[get_config_param "SwitchType"] eq "switch/cray"} {
 	set make_file 1
 	if { ![file exists $pcmd_prog] } {
 		skip "The file $pcmd_prog was not found"
 	}
 }
-if { [string compare [test_launch_type] "slurm"] } {
+if {[get_config_param "LaunchType"] ne "launch/slurm"} {
 	skip "This test is only compatible with systems using launch/slurm"
 }
-if { ![test_super_user] } {
+if {![is_super_user]} {
 	skip "Test can only be run as SlurmUser"
 }
-if { [test_front_end] } {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "Test can not be run with front-end configuration"
 }
 

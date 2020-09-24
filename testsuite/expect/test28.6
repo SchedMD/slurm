@@ -34,9 +34,9 @@ set script	 "$test_name\_script"
 set array_size	 2
 set exit_code	 0
 
-if {[get_array_config] < [expr $array_size + 1]} {
+if {[get_config_param "MaxArraySize"] < [expr $array_size + 1]} {
 	skip "MaxArraySize is to small for this test"
-} elseif {[test_super_user] == 0} {
+} elseif {![is_super_user]} {
 	skip "This test must be done from a super-user"
 }
 

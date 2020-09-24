@@ -109,7 +109,7 @@ expect {
 	}
 }
 if {$match_jobid == 0} {
-	set min_job_age [get_min_job_age]
+	regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
 	if {$min_job_age < 60} {
 		log_warn "MinJobAge ($min_job_age) configured too low to capture job state after completion"
 	} else {
@@ -250,7 +250,7 @@ if {$is_done == 0} {
 	set exit_code 1
 }
 if {$purged_job == 1} {
-	set min_job_age [get_min_job_age]
+	regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
 	if {$min_job_age < 60} {
 		log_warn "MinJobAge ($min_job_age) configured too low to capture job state after completion"
 	} else {
