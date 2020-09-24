@@ -331,19 +331,28 @@ static int _on_headers_complete(http_parser *parser)
 		return 10;
 	}
 
-	if ((((parser->http_major == 1) && (parser->http_minor >= 1)) ||
-	     (parser->http_major > 1)) &&
-	    request->expect) {
-		send_http_response_args_t args = {
-			.con = request->context->con,
-			.http_major = parser->http_major,
-			.http_minor = parser->http_minor,
-			.status_code = request->expect,
-			.body_length = 0,
-		};
-
-		if (send_http_response(&args))
+	if (((parser->http_major == 1) && (parser->http_minor >= 1)) ||
+	     (parser->http_major > 1)) {
+		if ((parser->method == HTTP_REQUEST_POST) &&
+		    (request->expected_body_length <= 0)) {
+			(void) _send_reject(parser,
+				HTTP_STATUS_CODE_ERROR_LENGTH_REQUIRED);
+			/* notify http_parser of failure */
 			return 10;
+		}
+
+		if (request->expect) {
+			send_http_response_args_t args = {
+				.con = request->context->con,
+				.http_major = parser->http_major,
+				.http_minor = parser->http_minor,
+				.status_code = request->expect,
+				.body_length = 0,
+			};
+
+			if (send_http_response(&args))
+				return 10;
+		}
 	}
 
 	return 0;
@@ -365,7 +374,7 @@ static int _on_body(http_parser *parser, const char *at, size_t length)
 
 		if ((nlength > MAX_BODY_BYTES) ||
 		    (request->expected_body_length &&
-		     ((nlength - 1) > request->expected_body_length)) ||
+		     ((nlength - 1) > (request->expected_body_length + 1))) ||
 		    !try_xrealloc(request->body, nlength))
 			goto no_mem;
 
