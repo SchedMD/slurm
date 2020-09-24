@@ -75,6 +75,9 @@ static pthread_mutex_t thread_count_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  thread_count_cond = PTHREAD_COND_INITIALIZER;
 static int             shutdown_time = 0;
 
+static Buf _slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn,
+                                   bool reopen);
+
 /* Return time in msec since "start time" */
 static int _tot_wait (struct timeval *start_time)
 {
@@ -620,7 +623,7 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 		      __func__, persist_conn->rem_host, persist_conn->rem_port);
 		_close_fd(&persist_conn->fd);
 	} else {
-		Buf buffer = slurm_persist_recv_msg(persist_conn);
+		Buf buffer = _slurm_persist_recv_msg(persist_conn, false);
 		persist_msg_t msg;
 		slurm_persist_conn_t persist_conn_tmp;
 
@@ -912,7 +915,8 @@ extern int slurm_persist_send_msg(
 	return SLURM_SUCCESS;
 }
 
-static Buf _slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
+static Buf _slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn,
+				   bool reopen)
 {
 	uint32_t msg_size, nw_size;
 	char *msg;
@@ -987,11 +991,10 @@ endit:
 	 * on the other end we can't rely on it after this point since we didn't
 	 * listen long enough for this response.
 	 */
-	if (!(*persist_conn->shutdown) &&
-	    (persist_conn->flags & PERSIST_FLAG_RECONNECT)) {
+	if (reopen && !(*persist_conn->shutdown) &&
+	    persist_conn->flags & PERSIST_FLAG_RECONNECT) {
 		log_flag(NET, "%s: reopening persistent connection after error",
 			 __func__);
-
 		slurm_persist_conn_reopen(persist_conn, true);
 	}
 
@@ -1000,7 +1003,7 @@ endit:
 
 extern Buf slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
 {
-	return _slurm_persist_recv_msg(persist_conn);
+	return _slurm_persist_recv_msg(persist_conn, true);
 }
 
 extern Buf slurm_persist_msg_pack(slurm_persist_conn_t *persist_conn,
