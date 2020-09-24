@@ -83,6 +83,8 @@ typedef struct {
 	http_context_t *context;
 	/* Body of request (may be NULL) */
 	char *body;
+	/* if provided: expected body length to process or 0 */
+	size_t expected_body_length;
 	size_t body_length;
 	const char *body_encoding; //TODO: implement detection of this
 	const char *content_type;
@@ -264,6 +266,15 @@ static int _on_header_value(http_parser *parser, const char *at, size_t length)
 	} else if (!xstrcasecmp(buffer->name, "Content-Type")) {
 		xfree(request->content_type);
 		request->content_type = xstrdup(buffer->value);
+	} else if (!xstrcasecmp(buffer->name, "Content-Type")) {
+		xfree(request->content_type);
+		request->content_type = xstrdup(buffer->value);
+	} else if (!xstrcasecmp(buffer->name, "Content-Length")) {
+		if ((sscanf(buffer->value, "%zu",
+			    &request->expected_body_length) != 1) ||
+		    (request->expected_body_length < 0))
+			return _send_reject(
+				parser, HTTP_STATUS_CODE_ERROR_NOT_ACCEPTABLE);
 	} else if (!xstrcasecmp(buffer->name, "Accept")) {
 		xfree(request->accept);
 		request->accept = xstrdup(buffer->value);
@@ -353,6 +364,8 @@ static int _on_body(http_parser *parser, const char *at, size_t length)
 		xassert(request->body_length > 0);
 
 		if ((nlength > MAX_BODY_BYTES) ||
+		    (request->expected_body_length &&
+		     ((nlength - 1) > request->expected_body_length)) ||
 		    !try_xrealloc(request->body, nlength))
 			goto no_mem;
 
@@ -362,6 +375,8 @@ static int _on_body(http_parser *parser, const char *at, size_t length)
 		request->body[nlength] = '\0';
 	} else {
 		if ((length > MAX_BODY_BYTES) ||
+		    (request->expected_body_length &&
+		     (length > request->expected_body_length)) ||
 		    !(request->body = try_xmalloc(length + 1)))
 			goto no_mem;
 
@@ -372,7 +387,7 @@ static int _on_body(http_parser *parser, const char *at, size_t length)
 
 	debug2("%s: [%s] received %zu bytes for HTTP body length %zu/%zu bytes",
 	       __func__, request->context->con->name, length,
-	       request->body_length);
+	       request->body_length, request->expected_body_length);
 
 	return 0;
 
@@ -669,6 +684,14 @@ static int _on_message_complete(http_parser *parser)
 
 		return _send_reject(parser,
 				    HTTP_STATUS_CODE_ERROR_METHOD_NOT_ALLOWED);
+	}
+
+	if ((request->expected_body_length > 0) &&
+	    (request->expected_body_length != (request->body_length - 1))) {
+		error("%s: [%s] Content-Length %zu and received body length %zu mismatch",
+		      __func__, request->context->con->name,
+		      request->expected_body_length, request->body_length);
+		return _send_reject(parser, HTTP_STATUS_CODE_ERROR_BAD_REQUEST);
 	}
 
 	if ((rc = _on_message_complete_request(parser, method, request)))
