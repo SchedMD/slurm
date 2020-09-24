@@ -354,8 +354,9 @@ static void _close_con(bool locked, con_mgr_fd_t *con)
 		_check_magic_mgr(con->mgr);
 	}
 
-	/* unlink socket to avoid leaving ghost socket */
-	if (con->unix_socket && (unlink(con->unix_socket) == -1))
+	/* unlink listener sockets to avoid leaving ghost socket */
+	if (con->is_listen && con->unix_socket &&
+	    (unlink(con->unix_socket) == -1))
 		error("%s: unable to unlink %s: %m",
 		      __func__, con->unix_socket);
 
