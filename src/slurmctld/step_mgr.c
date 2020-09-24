@@ -2003,7 +2003,7 @@ extern void step_alloc_lps(step_record_t *step_ptr)
 	if (step_ptr->core_bitmap_job) {
 		/* "scontrol reconfig" of live system */
 		pick_step_cores = false;
-	} else if ((step_ptr->exclusive == 0) ||
+	} else if (!(step_ptr->flags & SSF_EXCLUSIVE) ||
 		   (step_ptr->cpu_count == job_ptr->total_cpus)) {
 		/*
 		 * Step uses all of job's cores
@@ -2684,8 +2684,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->pn_min_memory = step_specs->pn_min_memory;
 	step_ptr->cpu_count = orig_cpu_count;
 	step_ptr->exit_code = NO_VAL;
-	step_ptr->exclusive = (step_specs->flags & SSF_EXCLUSIVE) ? 1 : 0;
-	step_ptr->no_kill = (step_specs->flags & SSF_NO_KILL) ? 1 : 0;
+	step_ptr->flags = step_specs->flags;
 	step_ptr->ext_sensors = ext_sensors_alloc();
 
 	step_ptr->cpus_per_tres = xstrdup(step_specs->cpus_per_tres);
@@ -3063,7 +3062,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 					cpus_task_reps[cpus_task_inx]++;
 			}
 
-			if (step_ptr->exclusive) {
+			if (step_ptr->flags & SSF_EXCLUSIVE) {
 				usable_cpus = cpus - cpus_used;
 			} else
 				usable_cpus = cpus;
@@ -3497,7 +3496,7 @@ extern int kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
 		req.jobacct = NULL;	/* No accounting */
 		(void) step_partial_comp(&req, 0, false, &rem, &step_rc);
 
-		if (node_fail && !step_ptr->no_kill) {
+		if (node_fail && !(step_ptr->flags & SSF_NO_KILL)) {
 			info("Killing %pS due to failed node %s", step_ptr,
 			     node_ptr->name);
 
@@ -3943,7 +3942,7 @@ extern int dump_job_step_state(void *x, void *arg)
 	pack16(step_ptr->state, buffer);
 	pack16(step_ptr->start_protocol_ver, buffer);
 
-	pack8(step_ptr->no_kill, buffer);
+	pack32(step_ptr->flags, buffer);
 
 	pack32(step_ptr->cpu_count, buffer);
 	pack64(step_ptr->pn_min_memory, buffer);
@@ -4010,11 +4009,11 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 {
 	step_record_t *step_ptr = NULL;
 	bitstr_t *exit_node_bitmap = NULL, *core_bitmap_job = NULL;
-	uint8_t no_kill, uint8_tmp;
+	uint8_t uint8_tmp;
 	uint16_t cyclic_alloc, port, batch_step;
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
 	uint16_t cpus_per_task, resv_port_cnt, state;
-	uint32_t cpu_count, exit_code, name_len, srun_pid = 0;
+	uint32_t cpu_count, exit_code, name_len, srun_pid = 0, flags = 0;
 	uint32_t time_limit, cpu_freq_min, cpu_freq_max, cpu_freq_gov;
 	uint64_t pn_min_memory;
 	time_t start_time, pre_sus_time, tot_sus_time;
@@ -4042,7 +4041,7 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 		safe_unpack16(&state, buffer);
 		safe_unpack16(&start_protocol_ver, buffer);
 
-		safe_unpack8(&no_kill, buffer);
+		safe_unpack32(&flags, buffer);
 
 		safe_unpack32(&cpu_count, buffer);
 		safe_unpack64(&pn_min_memory, buffer);
@@ -4109,7 +4108,9 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 		safe_unpack16(&state, buffer);
 		safe_unpack16(&start_protocol_ver, buffer);
 
-		safe_unpack8(&no_kill, buffer);
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp)
+			flags |= SSF_NO_KILL;
 
 		safe_unpack32(&cpu_count, buffer);
 		safe_unpack64(&pn_min_memory, buffer);
@@ -4181,7 +4182,9 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 		safe_unpack16(&state, buffer);
 		safe_unpack16(&start_protocol_ver, buffer);
 
-		safe_unpack8(&no_kill, buffer);
+		safe_unpack8(&uint8_tmp, buffer);
+		if (uint8_tmp)
+			flags |= SSF_NO_KILL;
 
 		safe_unpack32(&cpu_count, buffer);
 		safe_unpack64(&pn_min_memory, buffer);
@@ -4263,11 +4266,6 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 		      job_ptr, step_id.step_id, cyclic_alloc);
 		goto unpack_error;
 	}
-	if (no_kill > 1) {
-		error("Invalid data for %pJ StepId=%u: no_kill=%u",
-		      job_ptr, step_id.step_id, no_kill);
-		goto unpack_error;
-	}
 
 	step_ptr = find_step_record(job_ptr, &step_id);
 	if (step_ptr == NULL)
@@ -4285,7 +4283,7 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 	step_ptr->resv_ports   = resv_ports;
 	step_ptr->name         = name;
 	step_ptr->network      = network;
-	step_ptr->no_kill      = no_kill;
+	step_ptr->flags        = flags;
 	step_ptr->gres_list    = gres_list;
 	step_ptr->srun_pid     = srun_pid;
 	step_ptr->port         = port;

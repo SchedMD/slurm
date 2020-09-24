@@ -934,10 +934,10 @@ typedef struct {
 	char *cpus_per_tres;		/* semicolon delimited list of TRES=# values */
 	uint16_t cyclic_alloc;		/* set for cyclic task allocation
 					 * across nodes */
-	uint16_t exclusive;		/* dedicated resources for the step */
 	uint32_t exit_code;		/* highest exit code from any task */
 	bitstr_t *exit_node_bitmap;	/* bitmap of exited nodes */
 	ext_sensors_data_t *ext_sensors; /* external sensors plugin data */
+	uint32_t flags;		        /* flags from step_spec_flags_t */
 	List gres_list;			/* generic resource allocation detail */
 	char *host;			/* host for srun communications */
 	job_record_t *job_ptr;		/* ptr to the job that owns the step */
@@ -946,7 +946,6 @@ typedef struct {
 	char *mem_per_tres;		/* semicolon delimited list of TRES=# values */
 	char *name;			/* name of job step */
 	char *network;			/* step's network specification */
-	uint8_t no_kill;		/* 1 if no kill on node failure */
 	uint64_t pn_min_memory;		/* minimum real memory per node OR
 					 * real memory per CPU | MEM_PER_CPU,
 					 * default=0 (use job limit) */
