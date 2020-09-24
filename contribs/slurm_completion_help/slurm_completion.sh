@@ -205,8 +205,14 @@ echo $(sacctmgr -p -n list wckeys | cut -d'|' -f1) ;
 function _qos() {
 echo $(sacctmgr -p -n list qos | cut -d'|' -f1) ;
 }
+function _qos_id() {
+echo $(sacctmgr -Pn list qos format=id | sort) ;
+}
 function _clusters() {
 echo $(sacctmgr -p -n list clusters | cut -d'|' -f1) ;
+}
+function _clus_rpc() {
+echo $(sacctmgr -Pn list clusters format=rpc | sort | uniq) ;
 }
 function _jobnames() {
 echo $( scontrol -o show jobs | cut -d' ' -f 2 | cut -d'=' -f 2 ) ;
@@ -219,6 +225,12 @@ echo $(scontrol show nodes | grep NodeName | cut -c 10- | cut -f 1 -d' ' | paste
 }
 function _accounts() {
 echo $(sacctmgr -pn list accounts | cut -d'|' -f1 | paste -s -d' ') ;
+}
+function _acct_org() {
+echo $(sacctmgr show account format=org -nP | sort | uniq) ;
+}
+function _acct_desc() {
+echo $(sacctmgr show account format=desc -nP | sort | uniq) ;
 }
 function _licenses() {
 echo $(scontrol show config| grep Licenses | sed 's/Licenses *=//'| paste -s -d' ') ;
@@ -244,8 +256,14 @@ echo $(scontrol show -o jobs | cut -d' ' -f 2 | sed 's/Name=//')
 function _resource() {
 echo $(sacctmgr -pn list resource | cut -d'|' -f1 | paste -s -d' ')
 }
+function _resource_server() {
+echo $(sacctmgr -pn list resource | cut -d'|' -f2 | paste -s -d' ')
+}
 function _step() {
 echo $( scontrol -o show step | cut -d' ' -f 1 | cut -d'=' -f 2 ) ;
+}
+function _federation() {
+echo $(sacctmgr -p -n list federation | cut -d'|' -f1) ;
 }
 
 _sacctmgr()
@@ -254,23 +272,26 @@ _sacctmgr()
     _split_long_opt
 
     local subopts=""
-    local commands="add archive create delete dump list load modify show "
+    local commands="add archive clear create delete dump help list load\
+		    modify reconfigure remove show shutdown version"
     local shortoptions="-h -i -n -p -P -Q -r -s -v -V"
-    local longoptions="--help --immediate --noheader --parsable \
-	--parsable2 --quiet --readonly --associations --verbose --version"
+    local longoptions="--help --immediate --noheader --parsable	--parsable2\
+		       --quiet --readonly --associations --verbose --version"
 
+    local adminlevel="none admin coordinator operator"
+    local assocparams="cluster= account= user= partition= qos="
 
-    local assocparams="clusters= accounts= users= partition= "
+    local assocbasedparams="defaultqos= fairshare= share= grptresmins=\
+			    grptresrunmins= grptres= grpjobs= grpjobsaccrue=\
+			    grpnodes= grpsubmitjobs= grpwall= maxtres=\
+			    maxtresmins= maxtresperjob= maxtresminsperjob=\
+			    maxtrespernode= maxjobs= maxjobsaccrue= maxnodes=\
+			    maxsubmitjobs= maxwall= priority="
 
-    local assocbasedparams="defaultqos= fairshare= gracetime=\
-			    grpcpumins= grpcpurunmins= grpcpus=\
-			    grpjobs= grpmemory= grpnodes= grpsubmitjobs=\
-			    grpwall= maxcpumins= maxcpus= maxjobs= maxnodes=\
-			    maxsubmitjobs= maxwall= qoslevel="
-
-    local qosflags="DenyOneLimit EnforceUsageThreshold NoReserve\
-		    PartitionMaxNodes PartitionMinNodes PartitionQos\
-		    PartitionTimeLimit"
+    local qosflags="DenyOnLimit EnforceUsageThreshold NoReserve\
+		    PartitionMaxNodes PartitionMinNodes OverPartQos\
+		    PartitionTimeLimit RequiresReservation\
+		    NoDecay UsageFactorSafe"
     local qospreempt="cluster cancel requeue suspend"
 
     local clusflags="frontend multipleslurmd"
@@ -292,20 +313,19 @@ _sacctmgr()
 
     case $command in
     add|create)
-	objects="account cluster coordinator qos user "
+	objects="account cluster coordinator federation qos resource user"
 	object=$(find_first_occurence "${COMP_WORDS[*]}" "$objects")
 	case $object in
 	account)
-	    params="cluster= description= name= organization= parent=\
-		    rawusage= withassoc withcoord withdeleted"
+	    params="cluster= description= name= organization= parent="
 	    if param "cluster" ; then  offer_list "$(_clusters)" ;
 	    elif param "parent" ; then  offer_list "$(_accounts)" ;
 	    else offer "$params"
 	    fi
 	    ;;
 	cluster)
-	    params="classification= flags= name= rpc= wolimits"
-	    if param "flags" ; then  offer_list "$clusflags" ;
+	    params="classification= name= features= federation= fedstate="
+	    if param "federation" ; then  offer_list "$(_federation)" ;
 	    else offer "$params"
 	    fi
 	    ;;
@@ -316,28 +336,45 @@ _sacctmgr()
 	    else offer "$params"
 	    fi
 	    ;;
+	federation)
+	    params="clusters= name="
+	    if param "clusters" ; then offer_list "$(_clusters)" ;
+	    else offer "$params"
+	    fi
+	    ;;
 	qos)
-	    params="flags= gracetime= grpcpumins= grpcpurunmins= grpcpus=\
-		    grpjobs= grpnodes= grpsubmitjobs= grpwall= maxcpumins=\
-		    maxcpus= maxcpusperuser= maxjobs= maxnodes= mincpus=\
-		    maxnodesperuser= maxsubmitjobs= maxwall= name= preempt=\
-		    preemptmode= priority= usagefactor= usagethreshold=\
-		    withdeleted"
+	    params="flags= gracetime= grptresmins= grptresrunmins= grptres=\
+		    grpjobs= grpjobsaccrue= grpsubmitjobs= grpwall=\
+		    maxtresmins= maxtresperaccount= maxtres= maxtrespernode=\
+		    maxtresperuser= maxjobspu= maxjobspa= maxjobsaccruepu=\
+		    maxjobsaccruepa= maxsubmitjobspu= maxsubmitjobspa=\
+		    maxwall= minpriothres= mintres= name= preempt=\
+		    preemptmode= preemptexempttime= priority= usagefactor=\
+		    usagethres="
 	    if param "preemptmode" ; then  offer_list "$qospreempt" ;
 	    elif param "flags" ; then  offer_list "$qosflags" ;
 	    elif param "preempt" ; then  offer_list "$(_qos)" ;
 	    else offer "$params"
 	    fi
 	    ;;
+	resource)
+	    params="clusters= count= description= servertype= name=\
+		    percentallowed= server= type="
+	    if param "clusters" ; then offer_list "$(_clusters)" ;
+	    elif param "type" ; then offer_list "license" ;
+	    else offer "$params"
+	    fi
+	    ;;
 	user)
 	    params="account= adminlevel= cluster= defaultaccount=\
-	       defaultwckey= name= partition= rawusage= wckey= withassoc
-	       withcoord withdeleted"
+		    defaultwckey= name= partition= wckey="
 	    if param "defaultaccount" ; then  offer_list "$(_accounts)" ;
 	    elif param "account" ; then  offer_list "$(_accounts)";
-	    elif param "adminlevel" ; then  offer_list "none operator admin" ;
-	    elif param "cluster" ; then  offer_list "$(_cluster)" ;
-	    elif param "defaultwckey" ; then  offer_list "$(_wckey)" ;
+	    elif param "adminlevel" ; then  offer_list "$adminlevel" ;
+	    elif param "cluster" ; then  offer_list "$(_clusters)" ;
+	    elif param "defaultwckey" ; then  offer_list "$(_wckeys)" ;
+	    elif param "partition" ; then offer_list "$(_partitions)" ;
+	    elif param "wckey" ; then offer_list "$(_wckeys)" ;
 	    else offer "$params"
 	    fi
 	    ;;
@@ -349,21 +386,31 @@ _sacctmgr()
 	object=$(find_first_occurence "${COMP_WORDS[*]}" "$objects")
 	case $object in
 	dump)
-            _filedir
+	    params="directory= events jobs purgeeventafter=\
+		    purgejobafter= purgestepafter= purgesuspendafter=\
+		    script= steps suspend"
+	    if param "directory" ; then _filedir ;
+	    elif param "script" ; then _filedir ;
+	    else offer "$params"
+	    fi
 	    ;;
 	load)
-            _filedir
+	    params="file= insert="
+	    if param "file" ; then _filedir ;
+	    else offer "$params"
+	    fi
 	    ;;
 	*) offer "$objects"
 	    ;;
 	esac
 	;;
-    delete)
-	objects="account cluster coordinator qos user"
+    delete|remove)
+	objects="account cluster coordinator federation qos resource user"
 	object=$(find_first_occurence "${COMP_WORDS[*]}" "$objects")
 	case $object in
 	account)
-	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ; return ;fi
+	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
+		    return ;fi
 	    params="cluster= description= name= organization= parent="
 	    if param "cluster" ; then  offer_list "$(_clusters)" ;
 	    elif param "parent" ; then  offer_list "$(_accounts)" ;
@@ -374,9 +421,9 @@ _sacctmgr()
 	cluster)
 	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
 		    return ;fi
-	    params="classification= flags= name= rpc= $assocbasedparams"
-	    if param "flags" ; then  offer_list "$clusflags" ;
-	    elif param "defaultqos" ; then  offer_list "$(_qos)" ;
+	    params="name= federation= rpc="
+	    if param "name" ; then offer_list "$(_clusters)" ;
+	    elif param "federation" ; then offer_list "$(_federation)" ;
 	    else offer "$params"
 	    fi
 	    ;;
@@ -389,17 +436,44 @@ _sacctmgr()
 	    else offer "$params"
 	    fi
 	    ;;
+	federation)
+	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
+		    return ;fi
+	    params="name="
+	    if param "name" ; then offer_list "$(_federation)" ;
+	    else offer "$params"
+	    fi
+	    ;;
+	qos)
+	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
+		    return ;fi
+	    params="name="
+	    if param "name" ; then offer_list "$(_qos)" ;
+	    else offer "$params"
+	    fi
+	    ;;
+	resource)
+	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
+		    return ;fi
+	    params="name= server="
+	    if param "name" ; then offer_list "$(_resource)" ;
+	    elif param "server" ; then offer_list "$(_resource_server)" ;
+	    else offer "$params"
+	    fi
+	    ;;
 	user)
 	    params="account= adminlevel= cluster= defaultaccount=\
-		    defaultwckey= name= wckeys= withassoc"
+		    defaultwckey= name= partition= wckeys="
 	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
 		    return ;fi
 	    if param "defaultaccount" ; then  offer_list "$(_accounts)" ;
 	    elif param "account" ; then  offer_list "$(_accounts)";
-	    elif param "adminlevel" ; then  offer_list "none operator admin" ;
-	    elif param "cluster" ; then  offer_list "$(_cluster)" ;
+	    elif param "adminlevel" ; then  offer_list "$adminlevel" ;
+	    elif param "cluster" ; then  offer_list "$(_clusters)" ;
+	    elif param "defaultwckey" ; then  offer_list "$(_wckeys)" ;
+	    elif param "name" ; then offer_list "$(_users)" ;
+	    elif param "partition" ; then offer_list "$(_partitions)" ;
 	    elif param "wckeys" ; then  offer_list "$(_wckeys)" ;
-	    elif param "defaultwckey" ; then  offer_list "$(_wckey)" ;
 	    else offer "$params" ;
 	    fi
 	    ;;
@@ -408,56 +482,64 @@ _sacctmgr()
 	esac
 	;;
     list|show)
-	objects="account association cluster configuration \
-	    event problem qos resource transaction user wckey"
+	objects="account association cluster configuration event federation\
+		 problem qos resource reservation runawayjobs stats\
+		 transaction tres user wckey"
 	object=$(find_first_occurence "${COMP_WORDS[*]}" "$objects")
 	case $object in
 	account)
 	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
 		    return ;fi
-	    params="cluster= description= name= organization= parent=\
-		    withassoc withcoord withdeleted $assocparams\
-		    $assocbasedparams"
-	    if param "cluster" ; then  offer_list "$(_clusters)" ;
+	    params="name= account= organization= description= withassoc\
+		    withcoord withdeleted cluster= parent= partition=\
+		    qos= defaultqos= user="
+	    if param "name" ; then  offer_list "$(_accounts)" ;
+	    elif param "account" ; then  offer_list "$(_accounts)" ;
+	    elif param "organization" ; then offer_list "$(_acct_org)" ;
+	    elif param "description" ; then offer_list "$(_acct_desc)" ;
+	    elif param "cluster" ; then  offer_list "$(_clusters)" ;
 	    elif param "parent" ; then  offer_list "$(_accounts)" ;
-	    elif param "users" ; then  offer_list "$(_users)" ;
-	    elif param "partition" ; then  offer_list "$(_partition)" ;
+	    elif param "partition" ; then  offer_list "$(_partitions)" ;
 	    elif param "defaultqos" ; then  offer_list "$(_qos)" ;
-	    elif param "name" ; then  offer_list "$(_accounts)" ;
+	    elif param "qos" ; then  offer_list "$(_qos)" ;
+	    elif param "user" ; then  offer_list "$(_users)" ;
 	    else offer "$params"
 	    fi
 	    ;;
 	association)
 	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
 		    return ;fi
-	    params="$assocparams onlydefaults tree withdeleted withsubaccounts\
-		    wolimits wopinfo woplimits"
-	    if param "clusters" ; then  offer_list "$(_clusters)" ;
-	    elif param "accounts" ; then  offer_list "$(_accounts)" ;
-	    elif param "users" ; then  offer_list "$(_users)" ;
+	    params="$assocparams onlydefaults tree withdeleted\
+		    withsubaccounts wolimits wopinfo woplimits"
+	    if param "cluster" ; then  offer_list "$(_clusters)" ;
+	    elif param "account" ; then  offer_list "$(_accounts)" ;
+	    elif param "user" ; then  offer_list "$(_users)" ;
 	    elif param "partition" ; then  offer_list "$(_partitions)" ;
+	    elif param "qos" ; then offer_list "$(_qos)" ;
 	    else offer "$params"
 	    fi
 	    ;;
 	cluster)
 	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
 		    return ;fi
-	    params="classification= flags= name= rpc= $assocbasedparams\
-		    wolimits"
-	    if param "flags" ; then  offer_list "$clusflags" ;
-	    elif param "defaultqos" ; then  offer_list "$(_qos)" ;
+	    params="name= cluster= flags= federation= rpc= withfed wolimits"
+	    if param "name" ; then offer_list "$(_clusters)" ;
+	    elif param "cluster" ; then  offer_list "$(_clusters)" ;
+	    elif param "flags" ; then  offer_list "$clusflags" ;
+	    elif param "federation" ; then  offer_list "$(_federation)" ;
+	    elif param "rpc" ; then offer_list "$(_clus_rpc)" ;
 	    else offer "$params"
 	    fi
 	    ;;
 	event)
 	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
 		    return ;fi
-	    params="all_clusters all_time clusters= end= event= maxcpu=\
-		    mincpus= nodes= reason= start= states= user= "
+	    params="all_clusters all_time clusters= end= event=\
+		    nodes= reason= start= state= user= "
 	    if param "clusters" ; then  offer_list "$(_clusters)" ;
 	    elif param "nodes" ; then  offer_list "$(_nodes)" ;
 	    elif param "event" ; then  offer_list "cluster node" ;
-	    elif param "states" ; then  offer_list "alloc allocated down drain\
+	    elif param "state" ; then  offer_list "alloc allocated down drain\
 			fail failing idle mixed maint power_down power_up\
 			resume" ;
 	    elif param "users" ; then  offer_list "$(_users)" ;
@@ -467,25 +549,18 @@ _sacctmgr()
 	qos)
 	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
 		    return ;fi
-	    params="flags= gracetime= grpcpumins= grpcpus= grpcpurunmins=\
-		    grpjobs= grpnodes= grpsubmitjobs= grpwall= id= maxcpumins=\
-		    maxcpusmins= maxcpus= maxjobs= maxnodes= mincpus=\
-		    maxnodesperuser= maxsubmitjobs= maxwall= name= preempt=\
-		    preemptmode= priority= rawusage= usagefactor=\
-		   usagethreshold= withdeleted"
-	    if param "preemptmode" ; then  offer_list "cluster cancel\
-							 requeue\
-							 suspend" ;
-	    elif param "flags" ; then  offer_list "$qosflags" ;
-	    elif param "preempt" ; then  offer_list "$(_qos)" ;
+	    params="name= qos= id= withdeleted"
+	    if param "name" ; then  offer_list "$(_qos)" ;
+	    elif param "qos" ; then  offer_list "$(_qos)" ;
+	    elif param "id" ; then  offer_list "$(_qos_id)" ;
 	    else offer "$params"
 	    fi
 	    ;;
 	resource)
 	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
 		    return ;fi
-	    params="cluster= count= description= flags= servertype= name=\
-		    precentallowed= server= type="
+	    params="cluster= description= servertype= name=\
+		    percentallowed= server="
 	    if param "name" ; then  offer_list "$(_resource)" ;
 	    elif param "cluster" ; then offer_list "$(_clusters)" ;
 	    else offer "$params"
@@ -494,11 +569,12 @@ _sacctmgr()
 	transaction)
 	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
 		    return ;fi
-	    params="accounts= action= actor= clusters= endtime= startime=\
-		users= withassoc"
+	    params="accounts= action= actor= clusters= end= start= users=\
+		    withassoc"
 	    if param "accounts" ; then  offer_list "$(_accounts)" ;
 	    elif param "actor" ; then  offer_list "$(_users)" ;
 	    elif param "clusters" ; then  offer_list "$(_clusters)" ;
+	    elif param "users" ; then offer_list "$(_users)" ;
 	    else offer "$params"
 	    fi
 	    ;;
@@ -506,16 +582,19 @@ _sacctmgr()
 	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
 		    return ;fi
 	    params="account= adminlevel= cluster= defaultaccount=\
-		    defaultwckey= name= partition= wckeys= withassoc withcoord \
-		    withdelted"
+		    defaultwckey= name= user= partition= wckeys= withassoc\
+		    withcoord withdelted"
 	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
 		    return ;fi
 	    if param "defaultaccount" ; then  offer_list "$(_accounts)" ;
 	    elif param "account" ; then  offer_list "$(_accounts)";
-	    elif param "adminlevel" ; then  offer_list "none operator admin" ;
-	    elif param "cluster" ; then  offer_list "$(_cluster)" ;
+	    elif param "adminlevel" ; then  offer_list "$adminlevel" ;
+	    elif param "cluster" ; then  offer_list "$(_clusters)" ;
+	    elif param "name" ; then offer_list "$(_users)" ;
+	    elif param "user" ; then offer_list "$(_users)" ;
+	    elif param "partition" ; then offer_list "$(_partitions)" ;
 	    elif param "wckeys" ; then  offer_list "$(_wckeys)" ;
-	    elif param "defaultwckey" ; then  offer_list "$(_wckey)" ;
+	    elif param "defaultwckey" ; then  offer_list "$(_wckeys)" ;
 	    else offer "$params" ;
 	    fi
 	    ;;
@@ -523,38 +602,64 @@ _sacctmgr()
 	esac
 	;;
     modify)
-	objects="account cluster job qos user"
+	objects="account cluster federation job qos resource user"
 	object=$(find_first_occurence "${COMP_WORDS[*]}" "$objects")
 	case $object in
 	account)
 	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
 		    return ;fi
-	    params="cluster= description= name= organization= parent=\
-		rawusage= $assocbasedparams"
-	    if param "cluster" ; then  offer_list "$(_clusters)" ;
+	    params="$assocparams name= description= organization=\
+		    parent= rawusage= $assocbasedparams"
+	    if param "account" ; then offer_list "$(_accounts)" ;
+	    elif param "name" ; then offer_list "$(_accounts)" ;
+	    elif param "cluster" ; then  offer_list "$(_clusters)" ;
 	    elif param "parent" ; then  offer_list "$(_accounts)" ;
-	    elif param "name" ; then  offer_list "$(_accounts)" ;
+	    elif param "user" ; then offer_list "$(_users)" ;
+	    elif param "partition" ; then offer_list "$(_partitions)" ;
+	    elif param "qos" ; then offer_list "$(_qos)" ;
+	    elif param "defaultqos" ; then offer_list "$(_qos)" ;
 	    else offer "$params set"
 	    fi
 	    ;;
 	cluster)
 	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
 		    return ;fi
-	    params="classification= flags= name= rpc= $assocbasedparams"
-	    if param "flags" ; then  offer_list "$clusflags" ;
+	    params="cluster= name= features= federation= fedstate= rpc=\
+		    qos= defaultqos= fairshare= share= features= grpjobs=\
+		    grpjobsaccrue= grpnodes= grpsubmitjobs= grptres=\
+		    maxjobs= maxjobsaccrue= maxnodes= maxsubmitjobs=\
+		    maxtres= maxtresmins= maxtresminsperjob= maxtresperjob=\
+		    maxtrespernode= maxwall= priority= withfed wolimits"
+	    if param "name" ; then offer_list "$(_clusters)" ;
+	    elif param "cluster" ; then offer_list "$(_clusters)" ;
+	    elif param "federation" ; then  offer_list "$(_federation)" ;
+	    elif param "qos" ; then  offer_list "$(_qos)" ;
 	    elif param "defaultqos" ; then  offer_list "$(_qos)" ;
+	    else offer "$params set"
+	    fi
+	    ;;
+	federation)
+	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
+		    return ;fi
+	    params="federation= name= cluster="
+	    # No flags currently available.  May need to add "flags=" later
+	    if param "federation" ; then offer_list "$(_federation)" ;
+	    elif param "name" ; then offer_list "$(_federation)" ;
+	    elif param "cluster" ; then offer_list "$(_clusters)" ;
 	    else offer "$params set"
 	    fi
 	    ;;
 	qos)
 	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
 		    return ;fi
-	    params="flags= gracetime= grpcpumins= grpcpurunmins= grpcpus=\
-		    grpjobs= grpnodes= grpsubmitjobs= grpwall= maxcpumins=\
-		    maxcpus= maxcpusperuser= maxjobs= maxnodes= mincpus=\
-		    maxnodesperuser= maxsubmitjobs= maxwall= name= preempt=\
-		    preemptmode= priority= rawusage= usagefactor=\
-		    usagethreshold= withdeleted"
+	    params="flags= gracetime= grptresmins= grptresrunmins= grptres=\
+		    grpjobs= grpjobsaccrue= grpsubmitjobs= grpwall=\
+		    maxtresmins= maxtresperaccount= maxtres= maxtrespernode=\
+		    maxtresperuser= maxjobspu= maxjobspa= maxjobsaccruepu=\
+		    maxjobsaccruepa= maxsubmitjobspu= maxsubmitjobspa=\
+		    maxwall= minpriothres= mintres= name= preempt=\
+		    preemptmode= preemptexempttime= priority= rawusage=\
+		    usagefactor= usagethres="
 	    if param "flags" ; then  offer_list "$qosflags" ;
 	    elif param "name" ; then offer_list "$(_qos)" ;
 	    elif param "preemptmode" ; then  offer_list "$qospreempt" ;
@@ -565,17 +670,16 @@ _sacctmgr()
 	user)
 	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
 		    return ;fi
-	    params="account= adminlevel= cluster= defaultaccount=\
-		    defaultwckey= name= partition= rawusage= wckeys= withassoc"
+	    params="adminlevel= cluster= defaultaccount= defaultwckey=\
+		    name= newname= withassoc withcoord withdeleted"
 	    if [[ "${COMP_WORDS[*]}" != *where* ]] ; then offer "where" ;
 		    return ;fi
-	    if param "defaultaccount" ; then  offer_list "$(_accounts)" ;
-	    elif param "account" ; then  offer_list "$(_accounts)";
+	    if param "name" ; then  offer_list "$(_users)" ;
+	    elif param "defaultaccount" ; then  offer_list "$(_accounts)" ;
 	    elif param "adminlevel" ; then  offer_list "none operator admin" ;
-	    elif param "cluster" ; then  offer_list "$(_cluster)" ;
-	    elif param "wckeys" ; then  offer_list "$(_wckeys)" ;
-	    elif param "defaultwckey" ; then  offer_list "$(_wckey)" ;
-	    else offer "$params" ;
+	    elif param "cluster" ; then  offer_list "$(_clusters)" ;
+	    elif param "defaultwckey" ; then  offer_list "$(_wckeys)" ;
+	    else offer "$params set" ;
 	    fi
 	    ;;
 	*) offer "$objects"
