@@ -554,7 +554,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 
 	/* send cli address over to slurmstepd */
 	buffer = init_buf(0);
-	slurm_pack_slurm_addr(cli, buffer);
+	slurm_pack_addr(cli, buffer);
 	len = get_buf_offset(buffer);
 	safe_write(fd, &len, sizeof(int));
 	safe_write(fd, get_buf_data(buffer), len);
@@ -564,7 +564,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 	/* send self address over to slurmstepd */
 	if (self) {
 		buffer = init_buf(0);
-		slurm_pack_slurm_addr(self, buffer);
+		slurm_pack_addr(self, buffer);
 		len = get_buf_offset(buffer);
 		safe_write(fd, &len, sizeof(int));
 		safe_write(fd, get_buf_data(buffer), len);
