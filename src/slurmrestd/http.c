@@ -501,6 +501,14 @@ static int _send_reject(const http_parser *parser,
 	/* Ignore response since this connection is already dead */
 	(void) send_http_response(&args);
 
+	if (request->connection_close ||
+	    ((parser->http_major == 1) && (parser->http_minor >= 1)) ||
+	     (parser->http_major > 1))
+		send_http_connection_close(request->context);
+
+	/* ensure connection gets closed */
+	(void) con_mgr_queue_close_fd(request->context->con);
+
 	return HTTP_PARSER_RETURN_ERROR;
 }
 

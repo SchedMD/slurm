@@ -210,8 +210,11 @@ static int _operations_router_reject(const on_http_request_args_t *args,
 		.body_length = err ? strlen(err) : 0
 	};
 
-	//TODO: should this be a return?
-	send_http_response(&send_args);
+	(void) send_http_response(&send_args);
+	(void) send_http_connection_close(args->context);
+
+	/* close connection on error */
+	con_mgr_queue_close_fd(args->context->con);
 
 	return SLURM_ERROR;
 }
