@@ -1567,17 +1567,14 @@ watch:
 		work = true;
 	}
 
-	if (!work)
-		/* nothing to do! */
-		goto cleanup;
+	if (work) {
+		/* wait until something happens */
+		slurm_cond_wait(&mgr->cond, &mgr->mutex);
+		slurm_mutex_unlock(&mgr->mutex);
 
-	/* wait until something happens */
-	slurm_cond_wait(&mgr->cond, &mgr->mutex);
-	slurm_mutex_unlock(&mgr->mutex);
+		goto watch;
+	}
 
-	goto watch;
-
-cleanup:
 	_signal_change(mgr, true);
 	slurm_mutex_unlock(&mgr->mutex);
 
