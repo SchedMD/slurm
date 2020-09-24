@@ -273,7 +273,7 @@ static int _get_query(on_http_request_args_t *args, data_t **query,
 		fatal_abort("%s: unknown read mime type", __func__);
 	}
 
-	if (!query)
+	if (!*query)
 		return _operations_router_reject(
 			args, "Unable to parse query.",
 			HTTP_STATUS_CODE_ERROR_BAD_REQUEST);
