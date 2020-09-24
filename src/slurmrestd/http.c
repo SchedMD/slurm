@@ -312,7 +312,9 @@ static int _on_headers_complete(http_parser *parser)
 		return 10;
 	}
 
-	if (request->expect) {
+	if ((((parser->http_major == 1) && (parser->http_minor >= 1)) ||
+	     (parser->http_major > 1)) &&
+	    request->expect) {
 		send_http_response_args_t args = {
 			.con = request->context->con,
 			.http_major = parser->http_major,
