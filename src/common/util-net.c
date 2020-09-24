@@ -56,12 +56,6 @@
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 
-
-#ifndef INET_ADDRSTRLEN
-#  define INET_ADDRSTRLEN 16
-#endif /* !INET_ADDRSTRLEN */
-
-
 static pthread_mutex_t hostentLock = PTHREAD_MUTEX_INITIALIZER;
 
 
