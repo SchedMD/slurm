@@ -1726,6 +1726,8 @@ extern int con_mgr_queue_write_fd(con_mgr_fd_t *con, const void *buffer,
 	log_flag(NET, "%s: [%s] queued %zu/%u bytes in outgoing buffer",
 		 __func__, con->name, bytes, get_buf_offset(con->out));
 
+	_signal_change(con->mgr, false);
+
 	return SLURM_SUCCESS;
 }
 
