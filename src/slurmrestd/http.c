@@ -696,6 +696,8 @@ static int _on_message_complete(http_parser *parser)
 		if (request->connection_close)
 			send_http_connection_close(request->context);
 
+		con_mgr_queue_close_fd(request->context->con);
+
 		request->context->request = NULL;
 		_free_request_t(request);
 		parser->data = NULL;
