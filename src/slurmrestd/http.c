@@ -273,8 +273,15 @@ static int _on_header_value(http_parser *parser, const char *at, size_t length)
 		else
 			return _send_reject(parser,
 				HTTP_STATUS_CODE_ERROR_EXPECTATION_FAILED);
+	} else if (!xstrcasecmp(buffer->name, "Transfer-Encoding")) {
+		/* Transfer encoding is not allowed */
+		return _send_reject(parser,
+				    HTTP_STATUS_CODE_ERROR_NOT_ACCEPTABLE);
+	} else if (!xstrcasecmp(buffer->name, "Content-Encoding")) {
+		/* Content encoding is not allowed */
+		return _send_reject(parser,
+				    HTTP_STATUS_CODE_ERROR_NOT_ACCEPTABLE);
 	}
-
 	return 0;
 }
 
