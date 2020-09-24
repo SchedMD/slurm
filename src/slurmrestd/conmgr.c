@@ -1326,8 +1326,7 @@ static void _poll_connections(void *x)
 	while ((con = list_next(itr))) {
 		_check_magic_fd(con);
 
-		if (con->has_work || con->output_fd == -1 ||
-		    con->input_fd == -1)
+		if (con->has_work)
 			continue;
 
 		log_flag(NET, "%s: [%s] poll read_eof=%s input=%u output=%u has_work=%c",
@@ -1338,8 +1337,10 @@ static void _poll_connections(void *x)
 		if (con->input_fd == con->output_fd) {
 			/* if fd is same, only poll it */
 			fds_ptr->fd = con->input_fd;
+			fds_ptr->events = 0;
 
-			fds_ptr->events = POLLIN;
+			if (con->input_fd != -1)
+				fds_ptr->events |= POLLIN;
 			if (get_buf_offset(con->out))
 				fds_ptr->events |= POLLOUT;
 
