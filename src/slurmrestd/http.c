@@ -469,9 +469,16 @@ extern int send_http_response(const send_http_response_args_t *args)
 	}
 
 	if (args->body && args->body_length) {
-		if ((rc = _write_fmt_num_header(args->con, "Content-Length",
-						args->body_length)))
-			return rc;
+		/* RFC7230-3.3.2 limits response of Content-Length */
+		if ((args->status_code < 100) ||
+		    ((args->status_code >= 200) &&
+		     (args->status_code != 204))) {
+			if ((rc = _write_fmt_num_header(args->con,
+				"Content-Length", args->body_length))) {
+				return rc;
+			}
+		}
+
 		if (args->body_encoding &&
 		    (rc = _write_fmt_header(
 			     args->con, "Content-Type", args->body_encoding)))
