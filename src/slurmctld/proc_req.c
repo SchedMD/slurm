@@ -1754,18 +1754,21 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 		return;
 	}
 
-	lock_slurmctld(node_write_lock);
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+		lock_slurmctld(node_write_lock);
 
 	select_g_select_nodeinfo_set_all();
 
 	if ((node_req_msg->last_update - 1) >= last_node_update) {
-		unlock_slurmctld(node_write_lock);
+		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+			unlock_slurmctld(node_write_lock);
 		debug3("_slurm_rpc_dump_nodes, no change");
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
 		pack_all_node(&dump, &dump_size, node_req_msg->show_flags,
 			      msg->auth_uid, msg->protocol_version);
-		unlock_slurmctld(node_write_lock);
+		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+			unlock_slurmctld(node_write_lock);
 		END_TIMER2("_slurm_rpc_dump_nodes");
 #if 0
 		info("_slurm_rpc_dump_nodes, size=%d %s", dump_size, TIME_STR);
@@ -6145,6 +6148,12 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_NODE_INFO,
 		.func = _slurm_rpc_dump_nodes,
+		.queue_enabled = true,
+		.locks = {
+			.conf = READ_LOCK,
+			.node = WRITE_LOCK,
+			.part = READ_LOCK,
+		},
 	},{
 		.msg_type = REQUEST_NODE_INFO_SINGLE,
 		.func = _slurm_rpc_dump_node_single,
