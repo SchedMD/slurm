@@ -602,6 +602,7 @@ int main(int argc, char **argv)
 		/* initialization for each primary<->backup switch */
 		slurmctld_config.shutdown_time = (time_t) 0;
 		slurmctld_config.resume_backup = false;
+		control_time = 0;
 
 		/* start in primary or backup mode */
 		if (!slurmctld_primary) {
@@ -3480,9 +3481,9 @@ static void _run_primary_prog(bool primary_on)
 }
 
 /*
- * Respond to request for backup slurmctld status
+ * Respond to request for primary/backup slurmctld status
  */
-extern void slurm_rpc_control_status(slurm_msg_t *msg, time_t control_time)
+extern void slurm_rpc_control_status(slurm_msg_t *msg)
 {
 	slurm_msg_t response_msg;
 	control_status_msg_t data;
@@ -3496,4 +3497,3 @@ extern void slurm_rpc_control_status(slurm_msg_t *msg, time_t control_time)
 	data.control_time = control_time;
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 }
-

@@ -216,7 +216,6 @@ extern uint16_t accounting_enforce;
 extern int   association_based_accounting;
 extern int   backup_inx;		/* BackupController# index */
 extern int   batch_sched_delay;
-extern time_t control_time;		/* Time when became primary controller */
 extern uint32_t   cluster_cpus;
 extern bool disable_remote_singleton;
 extern int max_depend_depth;
@@ -2757,7 +2756,7 @@ extern bool job_overlap_and_running(bitstr_t *node_map, job_record_t *job_ptr);
 /*
  * Respond to request for backup slurmctld status
  */
-extern void slurm_rpc_control_status(slurm_msg_t *msg, time_t control_time);
+extern void slurm_rpc_control_status(slurm_msg_t *msg);
 
 /*
  * Callbacks to let the PrEp plugins signal completion if running async.

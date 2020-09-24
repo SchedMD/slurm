@@ -446,7 +446,7 @@ static int _background_process_msg(slurm_msg_t *msg)
 			error_code = ESLURM_DISABLED;
 			last_controller_response = time(NULL);
 		} else if (msg->msg_type == REQUEST_CONTROL_STATUS) {
-			slurm_rpc_control_status(msg, 0);
+			slurm_rpc_control_status(msg);
 			send_rc = false;
 		} else {
 			error("Invalid RPC received %d while in standby mode",

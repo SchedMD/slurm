@@ -6234,7 +6234,7 @@ void slurmctld_req(slurm_msg_t *msg)
 		_slurm_rpc_set_fs_dampening_factor(msg);
 		break;
 	case REQUEST_CONTROL_STATUS:
-		slurm_rpc_control_status(msg, control_time);
+		slurm_rpc_control_status(msg);
 		break;
 	case REQUEST_BURST_BUFFER_STATUS:
 		_slurm_rpc_burst_buffer_status(msg);
