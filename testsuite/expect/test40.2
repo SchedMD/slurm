@@ -27,6 +27,7 @@
 source ./globals
 
 set exit_code   0
+set skips       0
 set file_in1   "test$test_id.input1"
 set file_in2   "test$test_id.input2"
 set file_out1  "test$test_id.output1"
@@ -42,7 +43,8 @@ if {[test_cons_tres]} {
 	skip "This test is only compatible with select/cons_tres"
 }
 
-if {[llength [get_nodes_by_request "--gres=mps:100 -t1"]] == 0} {
+set node_with_mps [get_nodes_by_request "--gres=mps:100 -t1"]
+if {[llength $node_with_mps] != 1} {
 	skip "This test requires being able to submit job with --gres=mps:100"
 }
 
@@ -68,7 +70,7 @@ set host "unknown"
 set matches 0
 set percentage -1
 set target_job  [expr $mps_cnt / 2]
-set srun_pid [spawn $srun --gres=mps:$target_job -n1 -t1 -J "test$test_id" $file_in1]
+set srun_pid [spawn $srun --gres=mps:$target_job -w $node_with_mps -n1 -t1 -J "test$test_id" $file_in1]
 expect {
 	-re "HOST:($re_word_str)" {
 		incr matches
@@ -121,7 +123,7 @@ $bin_date
 exit 0"
 exec $bin_rm -f $file_out1
 set job_id 0
-set sbatch_pid [spawn $sbatch --gres=mps:$target_job -n1 -t1 -o $file_out1 -J "test$test_id" $file_in2]
+set sbatch_pid [spawn $sbatch --gres=mps:$target_job -w $node_with_mps -n1 -t1 -o $file_out1 -J "test$test_id" $file_in2]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -185,7 +187,7 @@ if {$match != 3} {
 #
 log_info "==== TEST 3 ===="
 set match 0
-set salloc_pid [spawn $salloc --gres=mps:$target_job -n1 -t1 -J "test$test_id" ./$file_in2]
+set salloc_pid [spawn $salloc --gres=mps:$target_job -w $node_with_mps -n1 -t1 -J "test$test_id" ./$file_in2]
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number) CUDA_MPS_ACTIVE_THREAD_PERCENTAGE:($number)" {
 		if {$expect_out(1,string) != 0} {
@@ -243,7 +245,7 @@ $bin_date
 exit 0"
 exec $bin_rm -f $file_out1
 set job_id 0
-set sbatch_pid [spawn $sbatch --gres=mps:$target_job -n1 -t1 -o $file_out1 -J "test$test_id" $file_in2]
+set sbatch_pid [spawn $sbatch --gres=mps:$target_job -w $node_with_mps -n1 -t1 -o $file_out1 -J "test$test_id" $file_in2]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -326,7 +328,7 @@ $srun --mem=0 --gres=mps:$target_step $file_in1
 exit 0"
 exec $bin_rm -f $file_out1
 set job_id 0
-set sbatch_pid [spawn $sbatch --gres=mps:$target_job -n1 -t1 -o $file_out1 -J "test$test_id" $file_in2]
+set sbatch_pid [spawn $sbatch --gres=mps:$target_job -w $node_with_mps -n1 -t1 -o $file_out1 -J "test$test_id" $file_in2]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -385,7 +387,13 @@ $bin_sleep 5
 exit 0"
 set match 0
 set hostname "NO_VAL"
-set srun_pid [spawn $srun --gres=mps:$target_job -N$node_cnt -t1 -J "test$test_id" $file_in1]
+set subtest6_nodes [get_nodes_by_request "--gres=mps:$target_job -N$node_cnt -t1"]
+if {[llength $subtest6_nodes] != $node_cnt} {
+	log_warn "SKIP: Subtest 6 requires being able to submit job with --gres=mps:$target_job -N$node_cnt"
+	incr skips
+}
+
+set srun_pid [spawn $srun --gres=mps:$target_job -N$node_cnt -w[join $subtest6_nodes ","] -t1 -J "test$test_id" $file_in1]
 expect {
 	-re "HOST:($re_word_str)" {
 		incr match
@@ -416,7 +424,10 @@ if {$match != $node_cnt} {
 # Make sure that gres/gpu and gres/mps jobs either do not share the same GPU
 # or run at different times
 #
-if {[test_front_end] == 0} {
+if {[test_front_end]} {
+	log_warn "SKIP: Subtest 7 doesn't work with front_end"
+	incr skips
+} else {
 	log_info "==== TEST 7 ===="
 	set target_job [expr $mps_cnt / 2]
 	make_bash_script $file_in1 "
@@ -434,7 +445,7 @@ if {[test_front_end] == 0} {
 
 	exec $bin_rm -f $file_out1 $file_out2
 	set job_id1 0
-	set sbatch_pid [spawn $sbatch --gres=gpu:1 -n1 -t1 -o $file_out1 -J "test$test_id" $file_in1]
+	set sbatch_pid [spawn $sbatch --gres=gpu:1 -w $node_with_mps -n1 -t1 -o $file_out1 -J "test$test_id" $file_in1]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id1 $expect_out(1,string)
@@ -548,4 +559,7 @@ if {[test_front_end] == 0} {
 #
 if {$failure_count != 0} {
 	fail "Test failed due to previous errors (\$failure_count = $failure_count)"
+}
+if {$skips != 0} {
+	skip "Some subtest was skipped ($skips)"
 }
