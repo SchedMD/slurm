@@ -1066,7 +1066,14 @@ static int _handle_connection(void *x, void *arg)
 	if (!con->read_eof) {
 		xassert(con->input_fd != -1);
 		/* must wait until poll allows read from this socket */
-		log_flag(NET, "%s: [%s] waiting to read", __func__, con->name);
+		if (con->is_listen)
+			log_flag(NET, "%s: [%s] waiting for new connection",
+				 __func__, con->name);
+		else
+			log_flag(NET, "%s: [%s] waiting to read pending_read=%u pending_write=%u has_work=%c",
+				 __func__, con->name, get_buf_offset(con->in),
+				 get_buf_offset(con->out),
+				 (con->has_work ? 'T' : 'F'));
 		return 0;
 	}
 
