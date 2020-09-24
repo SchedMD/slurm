@@ -32,7 +32,6 @@
 source ./globals
 
 set exit_code   0
-set prompt      "PROMPT: "
 
 # spawn an allocation to run on 2
 # hosts with 4 tasks.
@@ -49,14 +48,14 @@ expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		log_debug "Allocation started"
-		send "export PS1=\"$prompt\"\r"
+		send "$reset_bash_prompt\r"
 		exp_continue
 	}
-	-re "\"$prompt" {
-		# skip this, just echo of setting prompt"
+	-re "\"$test_prompt\"" {
+		# skip this, just echo of setting test_prompt"
 		exp_continue
 	}
-	-re "$prompt" {
+	-re "$test_prompt" {
 	}
 	timeout {
 		slow_kill $salloc_id
@@ -66,7 +65,6 @@ expect {
 if {$job_id == 0} {
 	fail "salloc failed to allocate a job"
 }
-
 # srun the nodelist allocated by slurm.
 set host_num 0
 set host_list ""
@@ -81,7 +79,7 @@ expect {
 		log_error "srun not responding"
 		set exit_code 1
 	}
-	-re $prompt {
+	-re $test_prompt {
 	}
 }
 
@@ -107,7 +105,7 @@ expect {
 		log_error "scontrol not responding"
 		set exit_code 1
 	}
-	-re $prompt {
+	-re $test_prompt {
 	}
 }
 log_debug "Got exec hosts $host1 $host2"
@@ -121,7 +119,7 @@ expect {
 		set hostname $expect_out(2,string)
 		exp_continue
 	}
-	-re $prompt {
+	-re $test_prompt {
 	}
 	timeout {
 		log_error "srun not responding"
@@ -142,7 +140,7 @@ expect {
 		set hostname $expect_out(2,string)
 		exp_continue
 	}
-	-re $prompt {
+	-re $test_prompt {
 		send "exit\r"
 	}
 	timeout {

@@ -31,7 +31,6 @@ source ./globals
 
 set exit_code   0
 set file_prog   "test$test_id.prog"
-set prompt      "PROMPT:"
 
 if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
 	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
@@ -150,35 +149,27 @@ set salloc_pid [spawn $salloc -w $node_name -N1 --exclusive --verbose -t2 $bin_b
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		send "export PS1=\"$prompt\"\r"
+		send "$reset_bash_prompt\r"
 		exp_continue
 	}
-	-re "export PS1=\"$prompt\"\r" {
+	-re "\"$test_prompt\"" {
+		# skip this, just echo of setting test_prompt
 		exp_continue
+	}
+	-re $test_prompt {
 	}
 	timeout {
 		slow_kill $salloc_pid
 		fail "salloc not responding or failure to recognize prompt"
 	}
-	-re $prompt {
-	}
 }
-set timeout 1
-expect {
-	-re $prompt {
-		exp_continue
-	}
-	timeout {
-	}
-}
-set timeout 30
 
 #
 # Reading a second prompt is required by some versions of Expect
 #
 set timeout 1
 expect {
-	-re $prompt {
+	-re $test_prompt {
 		exp_continue
 	}
 	timeout {
@@ -212,7 +203,7 @@ expect {
 		# just so we don't grab the srun call
 		exp_continue
 	}
-	-re $prompt
+	-re $test_prompt
 }
 #############################################################################
 #
@@ -239,7 +230,7 @@ expect {
 		# just so we don't grab the srun call
 		exp_continue
 	}
-	-re $prompt
+	-re $test_prompt
 }
 if {$task_mask != $expected_mask} {
 	log_error "Affinity mask inconsistency ($task_mask,$expected_mask)"
@@ -284,7 +275,7 @@ while {$this_cnt <= $num_sockets} {
 			# just so we don't grab the srun call
 			exp_continue
 		}
-		-re $prompt
+		-re $test_prompt
 	}
 
 	if {$num_tasks != $expected_tasks} {
@@ -337,7 +328,7 @@ while {$this_cnt <= $num_cores} {
 			# just so we don't grab the srun call
 			exp_continue
 		}
-		-re $prompt
+		-re $test_prompt
 	}
 
 	if {$num_tasks != $expected_tasks} {
@@ -390,7 +381,7 @@ while {$this_cnt <= $num_threads} {
 			# just so we don't grab the srun call
 			exp_continue
 		}
-		-re $prompt
+		-re $test_prompt
 	}
 
 	if {$num_tasks != $expected_tasks} {
@@ -442,7 +433,7 @@ while {$this_cnt <= $task_cnt} {
 			# just so we don't grab the srun call
 			exp_continue
 		}
-		-re $prompt
+		-re $test_prompt
 	}
 
 	if {$num_tasks != $expected_tasks} {
@@ -482,7 +473,7 @@ expect {
 		# just so we don't grab the srun call
 		exp_continue
 	}
-	-re $prompt
+	-re $test_prompt
 }
 
 if {$task_mask != $expected_mask} {

@@ -32,7 +32,6 @@ source ./globals
 
 set exit_code   0
 set file_in     "test$test_id.input"
-set prompt      "QA_PROMPT: "
 
 if {[test_front_end] != 0} {
 	skip "This test is incompatible with front-end systems"
@@ -48,7 +47,7 @@ if { $node_count < 4 } {
 # Build input script file
 #
 make_bash_script $file_in "
-  export PS1=\"$prompt\"
+  $reset_bash_prompt
   $bin_bash -norc
 "
 
@@ -78,7 +77,7 @@ expect {
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
 	}
-	"$prompt" {
+	"$test_prompt" {
 #		Printing this message seems to damage expect's buffers
 #		log_debug "Job initiated"
 	}
@@ -120,7 +119,7 @@ expect {
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
 	}
-	"$prompt" {
+	"$test_prompt" {
 #		Printing this message seems to damage expect's buffers
 #		log_debug "Srun completed"
 	}
@@ -191,7 +190,7 @@ expect {
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
 	}
-	"$prompt" {
+	"$test_prompt" {
 #		Printing this message seems to damage expect's buffers
 #		log_debug "srun completed"
 	}
@@ -241,7 +240,7 @@ expect {
 	 -re "Unable to contact" {
 		fail "Slurm appears to be down"
 	}
-	"$prompt" {
+	"$test_prompt" {
 #		Printing this message seems to damage expect's buffers
 #		log_debug "srun completed"
 	}
@@ -278,7 +277,7 @@ expect {
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
 	}
-	"$prompt" {
+	"$test_prompt" {
 #		Printing this message seems to damage expect's buffers
 #		log_debug "srun completed"
 	}

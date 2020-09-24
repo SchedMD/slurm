@@ -57,7 +57,7 @@ set node4 0
 # Build input script file
 #
 make_bash_script $file_in "
-  export PS1=\"$prompt\"
+  $reset_bash_prompt
   $bin_bash --norc
 "
 
@@ -68,7 +68,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re $prompt {
+	-re $test_prompt {
 		#log_debug "Job initiated"
 	}
 	timeout {
@@ -94,7 +94,7 @@ for {set i 0} {$i<4} {incr i} {
 		}
 		send "export SLURM_HOSTFILE=$hostfile\r"
 		expect {
-			-re $prompt {
+			-re $test_prompt {
 				#log_debug "Srun completed"
 			}
 		}
@@ -162,7 +162,7 @@ for {set i 0} {$i<4} {incr i} {
 			}
 			exp_continue
 		}
-		-re $prompt {
+		-re $test_prompt {
 			#log_debug "Srun completed"
 		}
 		-re "Granted job allocation ($number)" {
@@ -226,7 +226,7 @@ for {set i 0} {$i<4} {incr i} {
 }
 send "unset SLURM_HOSTFILE\r"
 expect {
-	-re $prompt {
+	-re $test_prompt {
 		#log_debug "Srun completed"
 	}
 }
@@ -312,7 +312,7 @@ for {set i 0} {$i<5} {incr i} {
 			}
 			exp_continue
 		}
-		-re $prompt {
+		-re $test_prompt {
 			#log_debug "Srun completed"
 		}
 		-re "slurm job ($number)" {
