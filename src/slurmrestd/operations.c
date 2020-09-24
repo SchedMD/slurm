@@ -359,20 +359,27 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		      callback_tag, resp, &auth);
 	xassert((auth.magic = ~AUTH_MAGIC));
 
-	if (data_get_type(resp) == DATA_TYPE_NULL) {
-		rc = _operations_router_reject(
-			args, body, HTTP_STATUS_CODE_SRVERR_NOT_IMPLEMENTED);
-		goto cleanup;
-	}
-
-	if (write_mime == MIME_YAML)
+	if (data_get_type(resp) == DATA_TYPE_NULL)
+		/* no op */;
+	else if (write_mime == MIME_YAML)
 		body = dump_yaml(resp);
 	else if (write_mime == MIME_JSON)
 		body = dump_json(resp, DUMP_JSON_FLAGS_PRETTY);
 	else
 		fatal_abort("%s: unexpected mime type", __func__);
 
-	if (!rc) {
+	if (rc) {
+		http_status_code_t e = HTTP_STATUS_CODE_SRVERR_INTERNAL;
+
+		if (rc == ESLURM_REST_INVALID_QUERY)
+			e = HTTP_STATUS_CODE_ERROR_BAD_REQUEST;
+		else if (rc == ESLURM_REST_FAIL_PARSING)
+			e = HTTP_STATUS_CODE_ERROR_BAD_REQUEST;
+		else if (rc == ESLURM_REST_INVALID_JOBS_DESC)
+			e = HTTP_STATUS_CODE_ERROR_BAD_REQUEST;
+
+		rc = _operations_router_reject(args, body, e);
+	} else {
 		send_http_response_args_t send_args = {
 			.con = args->context->con,
 			.http_major = args->http_major,
@@ -389,12 +396,8 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		}
 
 		rc = send_http_response(&send_args);
-	} else {
-		rc = _operations_router_reject(
-			args, body, HTTP_STATUS_CODE_SRVERR_INTERNAL);
 	}
 
-cleanup:
 	xfree(body);
 	FREE_NULL_DATA(resp);
 
