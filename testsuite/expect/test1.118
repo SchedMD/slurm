@@ -58,8 +58,8 @@ proc mutual_error_tests {} {
 	global sbatch salloc srun test_id number job_id
 
 	set clients [list "$sbatch" "$salloc" "$srun"]
-	set options [list "--threads-per-core=1" "--ntasks-per-core=1"]
-	set error "fatal: --hint cannot be used together with --ntasks-per-core or --threads-per-core."
+	set options [list "--threads-per-core=1" "--ntasks-per-core=1" "-B1"]
+	set error "fatal: Following options are mutually exclusive: --hint, --ntasks-per-core, --threads-per-core, -B."
 
 	foreach client $clients {
 		set prog "hostname"
