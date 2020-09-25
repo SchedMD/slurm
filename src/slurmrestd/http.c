@@ -494,13 +494,16 @@ static int _send_reject(const http_parser *parser,
 {
 	request_t *request = parser->data;
 
-	send_http_response_args_t args = { .con = request->context->con,
-					   .http_major = parser->http_major,
-					   .http_minor = parser->http_minor,
-					   .status_code = status_code,
-					   .body_length = 0 };
+	send_http_response_args_t args = {
+		.con = request->context->con,
+		.http_major = parser->http_major,
+		.http_minor = parser->http_minor,
+		.status_code = status_code,
+		.body_length = 0,
+	};
 
-	send_http_response(&args);
+	/* Ignore response since this connection is already dead */
+	(void) send_http_response(&args);
 
 	return HTTP_PARSER_RETURN_ERROR;
 }
