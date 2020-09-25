@@ -135,6 +135,14 @@ This configuration can be useful if one wants to schedule multiple physical
 clusters as a single logical cluster under the control of a single slurmctld
 daemon.</p>
 
+<p>If you have nodes that are in separate networks and are associated with
+unique switches in your <b>topology.conf</b> file, it's possible that you
+could get in a situation where a job isn't able to run.  If a job requests
+nodes that are in the different networks, either by requesting the nodes
+directly or by requesting a feature, the job will fail because the requested
+nodes can't communicate with each other.  We recommend placing nodes in
+separate network segments in disjoint partitions.</p>
+
 <p>For systems with a dragonfly network, configure Slurm with
 <i>TopologyPlugin=topology/tree</i> plus <i>TopologyParam=dragonfly</i>.
 If a single job can not be entirely placed within a single network leaf
@@ -186,6 +194,6 @@ The value will be set component types listed in SLURM_TOPOLOGY_ADDR.
 Each component will be identified as either "switch" or "node".
 A period is used to separate each hardware component type.</p>
 
-<p style="text-align:center;">Last modified 14 June 2018</p>
+<p style="text-align:center;">Last modified 25 September 2020</p>
 
 <!--#include virtual="footer.txt"-->
