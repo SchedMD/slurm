@@ -635,6 +635,13 @@ static void _handle_read(void *x)
 	_check_magic_fd(con);
 	_check_magic_mgr(con->mgr);
 
+	if (con->input_fd < 0) {
+		xassert(con->read_eof);
+		log_flag(NET, "%s: [%s] called on closed connection",
+			 __func__, con->name);
+		return;
+	}
+
 #ifdef FIONREAD
 	/* request kernel tell us the size of the incoming buffer */
 	if (ioctl(con->input_fd, FIONREAD, &readable))
@@ -665,7 +672,6 @@ static void _handle_read(void *x)
 	}
 
 	xassert(fcntl(con->input_fd, F_GETFL) & O_NONBLOCK);
-	xassert(con->input_fd != -1);
 	/* check for errors with a NULL read */
 	read_c = read(con->input_fd,
 		      (get_buf_data(con->in) + get_buf_offset(con->in)),
