@@ -4233,7 +4233,6 @@ extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr,
  * IN msg - msg that contains packed job_desc msg to send to siblings.
  * IN job_desc - original job_desc msg.
  * IN alloc_only - true if requesting just an allocation (srun/salloc).
- * IN uid - uid of user requesting allocation.
  * IN protocol_version - version of the code the caller is using
  * OUT job_id_ptr - job_id of allocated job
  * OUT alloc_code - error_code returned from job_allocate
@@ -4242,7 +4241,7 @@ extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr,
  * 	otherwise.
  */
 extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
-				bool alloc_only, uid_t uid,
+				bool alloc_only,
 				uint16_t protocol_version,
 				uint32_t *job_id_ptr, int *alloc_code,
 				char **err_msg)
@@ -4260,7 +4259,7 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	if (job_desc->job_id != NO_VAL) {
 		error("attempt by uid %u to set JobId=%u. "
 		      "specifying a job_id is not allowed when in a federation",
-		      uid, job_desc->job_id);
+		      msg->auth_uid, job_desc->job_id);
 		*alloc_code = ESLURM_INVALID_JOB_ID;
 		return SLURM_ERROR;
 	}
@@ -4293,7 +4292,7 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	 */
 	job_desc->het_job_offset = NO_VAL;
 	*alloc_code = job_allocate(job_desc, job_desc->immediate, false, NULL,
-				   alloc_only, uid, &job_ptr, err_msg,
+				   alloc_only, msg->auth_uid, &job_ptr, err_msg,
 				   protocol_version);
 
 	if (!job_ptr || (*alloc_code && job_ptr->job_state == JOB_FAILED)) {

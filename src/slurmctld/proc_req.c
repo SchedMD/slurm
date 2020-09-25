@@ -1334,7 +1334,6 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		if (fed_mgr_fed_rec) {
 			uint32_t job_id;
 			if (fed_mgr_job_allocate(msg, job_desc_msg, true,
-						 msg->auth_uid,
 						 msg->protocol_version, &job_id,
 						 &error_code, &err_msg)) {
 				reject_job = true;
@@ -3588,7 +3587,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	START_TIMER;	/* Restart after we have locks */
 
 	if (fed_mgr_fed_rec) {
-		if (fed_mgr_job_allocate(msg, job_desc_msg, false, uid,
+		if (fed_mgr_job_allocate(msg, job_desc_msg, false,
 					 msg->protocol_version, &job_id,
 					 &error_code, &err_msg))
 			reject_job = true;
