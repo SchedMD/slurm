@@ -1479,7 +1479,6 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 	/* Locks: Read config job part */
 	slurmctld_lock_t job_read_lock = {
 		READ_LOCK, READ_LOCK, NO_LOCK, READ_LOCK, READ_LOCK };
-	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 
 	START_TIMER;
 	lock_slurmctld(job_read_lock);
@@ -1492,12 +1491,14 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 		if (job_info_request_msg->job_ids) {
 			pack_spec_jobs(&dump, &dump_size,
 				       job_info_request_msg->job_ids,
-				       job_info_request_msg->show_flags, uid,
-				       NO_VAL, msg->protocol_version);
+				       job_info_request_msg->show_flags,
+				       msg->auth_uid, NO_VAL,
+				       msg->protocol_version);
 		} else {
 			pack_all_jobs(&dump, &dump_size,
-				      job_info_request_msg->show_flags, uid,
-				      NO_VAL, msg->protocol_version);
+				      job_info_request_msg->show_flags,
+				      msg->auth_uid, NO_VAL,
+				      msg->protocol_version);
 		}
 		unlock_slurmctld(job_read_lock);
 		END_TIMER2("_slurm_rpc_dump_jobs");
