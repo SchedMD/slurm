@@ -994,7 +994,6 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
 	uint32_t job_uid = NO_VAL;
 	job_record_t *job_ptr, *first_job_ptr = NULL;
@@ -1017,28 +1016,28 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 		goto send_msg;
 	}
 	if (!_sched_backfill()) {
-		info("REQUEST_HET_JOB_ALLOCATION from uid=%d rejected as sched/backfill is not configured",
-		     uid);
+		info("REQUEST_HET_JOB_ALLOCATION from uid=%u rejected as sched/backfill is not configured",
+		     msg->auth_uid);
 		error_code = ESLURM_NOT_SUPPORTED;
 		goto send_msg;
 	}
 	if (!job_req_list || (list_count(job_req_list) == 0)) {
-		info("REQUEST_HET_JOB_ALLOCATION from uid=%d with empty job list",
-		     uid);
+		info("REQUEST_HET_JOB_ALLOCATION from uid=%u with empty job list",
+		     msg->auth_uid);
 		error_code = SLURM_ERROR;
 		goto send_msg;
 	}
 	if (slurm_get_peer_addr(msg->conn_fd, &resp_addr) == 0) {
 		slurm_get_ip_str(&resp_addr, resp_host, sizeof(resp_host));
 	} else {
-		info("REQUEST_HET_JOB_ALLOCATION from uid=%d , can't get peer addr",
-		     uid);
+		info("REQUEST_HET_JOB_ALLOCATION from uid=%u, can't get peer addr",
+		     msg->auth_uid);
 		error_code = SLURM_ERROR;
 		goto send_msg;
 	}
 
 	sched_debug3("Processing RPC: REQUEST_HET_JOB_ALLOCATION from uid=%u",
-		     uid);
+		     msg->auth_uid);
 
 	/*
 	 * If any job component has required nodes, those nodes must be excluded
@@ -1058,7 +1057,8 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 			job_uid = job_desc_msg->user_id;
 
 		if ((error_code = _valid_id("REQUEST_HET_JOB_ALLOCATION",
-					    job_desc_msg, uid, gid))) {
+					    job_desc_msg, msg->auth_uid,
+					    gid))) {
 			break;
 		}
 
@@ -1067,8 +1067,8 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
 			error_code = ESLURM_INVALID_NODE_NAME;
-			error("REQUEST_HET_JOB_ALLOCATION lacks alloc_node from uid=%d",
-			      uid);
+			error("REQUEST_HET_JOB_ALLOCATION lacks alloc_node from uid=%u",
+			      msg->auth_uid);
 			break;
 		}
 
@@ -1084,7 +1084,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 
 		/* Locks are for job_submit plugin use */
 		job_desc_msg->het_job_offset = het_job_offset;
-		error_code = validate_job_create_req(job_desc_msg, uid,
+		error_code = validate_job_create_req(job_desc_msg, msg->auth_uid,
 						     &job_submit_user_msg[inx++]);
 		if (error_code)
 			break;
@@ -1104,8 +1104,8 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 		}
 		job_desc_msg->het_job_offset = het_job_offset;
 		error_code = job_allocate(job_desc_msg, false, false, NULL,
-					  true, uid, &job_ptr, &err_msg,
-					  msg->protocol_version);
+					  true, msg->auth_uid, &job_ptr,
+					  &err_msg, msg->protocol_version);
 		if (!job_ptr) {
 			if (error_code == SLURM_SUCCESS)
 				error_code = SLURM_ERROR;
