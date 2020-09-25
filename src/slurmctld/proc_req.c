@@ -1259,7 +1259,6 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
 	int immediate = job_desc_msg->immediate;
 	bool do_unlock = false;
@@ -1278,13 +1277,13 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	}
 
 	if ((error_code = _valid_id("REQUEST_RESOURCE_ALLOCATION",
-				    job_desc_msg, uid, gid))) {
+				    job_desc_msg, msg->auth_uid, gid))) {
 		reject_job = true;
 		goto send_msg;
 	}
 
 	sched_debug3("Processing RPC: REQUEST_RESOURCE_ALLOCATION from uid=%u",
-		     uid);
+		     msg->auth_uid);
 
 	_set_hostname(msg, &job_desc_msg->alloc_node);
 
@@ -1292,15 +1291,16 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	if ((job_desc_msg->alloc_node == NULL) ||
 	    (job_desc_msg->alloc_node[0] == '\0')) {
 		error_code = ESLURM_INVALID_NODE_NAME;
-		error("REQUEST_RESOURCE_ALLOCATE lacks alloc_node from uid=%d",
-		      uid);
+		error("REQUEST_RESOURCE_ALLOCATE lacks alloc_node from uid=%u",
+		      msg->auth_uid);
 	}
 
 	if (error_code == SLURM_SUCCESS) {
 		/* Locks are for job_submit plugin use */
 		lock_slurmctld(job_read_lock);
 		job_desc_msg->het_job_offset = NO_VAL;
-		error_code = validate_job_create_req(job_desc_msg,uid,&err_msg);
+		error_code = validate_job_create_req(job_desc_msg,
+						     msg->auth_uid, &err_msg);
 		unlock_slurmctld(job_read_lock);
 	}
 
@@ -1333,7 +1333,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		lock_slurmctld(job_write_lock);
 		if (fed_mgr_fed_rec) {
 			uint32_t job_id;
-			if (fed_mgr_job_allocate(msg, job_desc_msg, true, uid,
+			if (fed_mgr_job_allocate(msg, job_desc_msg, true,
+						 msg->auth_uid,
 						 msg->protocol_version, &job_id,
 						 &error_code, &err_msg)) {
 				reject_job = true;
@@ -1346,7 +1347,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		} else {
 			job_desc_msg->het_job_offset = NO_VAL;
 			error_code = job_allocate(job_desc_msg, immediate,
-						  false, NULL, true, uid,
+						  false, NULL, true,
+						  msg->auth_uid,
 						  &job_ptr, &err_msg,
 						  msg->protocol_version);
 			/* unlock after finished using the job structure
