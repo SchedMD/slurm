@@ -529,6 +529,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Failure during parsing"},
 	{ ESLURM_REST_INVALID_JOBS_DESC,
 	  "Jobs description entry not found, empty or not dictionary or list"},
+	{ ESLURM_REST_EMPTY_RESULT,
+	  "Nothing found with query"},
 };
 
 /*
