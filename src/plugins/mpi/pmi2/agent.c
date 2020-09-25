@@ -161,7 +161,7 @@ static int
 _tree_listen_read(eio_obj_t *obj, List objs)
 {
 	int sd;
-	struct sockaddr addr;
+	slurm_addr_t addr;
 	struct sockaddr_in *sin;
 	socklen_t size = sizeof(addr);
 	char buf[INET_ADDRSTRLEN];
@@ -175,7 +175,8 @@ _tree_listen_read(eio_obj_t *obj, List objs)
 		if (!_is_fd_ready(obj->fd))
 			return 0;
 
-		while ((sd = accept(obj->fd, &addr, &size)) < 0) {
+		while ((sd = accept(obj->fd, (struct sockaddr *)&addr,
+				    &size)) < 0) {
 			if (errno == EINTR)
 				continue;
 			if (errno == EAGAIN)    /* No more connections */
