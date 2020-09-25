@@ -1120,12 +1120,14 @@ static listen_t *_create_allocation_response_socket(void)
 
 	if (listen->fd < 0) {
 		error("slurm_init_msg_engine_port error %m");
+		xfree(listen);
 		return NULL;
 	}
 
 	if (slurm_get_stream_addr(listen->fd, &listen->address) < 0) {
 		error("slurm_get_stream_addr error %m");
 		close(listen->fd);
+		xfree(listen);
 		return NULL;
 	}
 	listen->hostname = xshort_hostname();
