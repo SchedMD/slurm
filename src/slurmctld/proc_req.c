@@ -132,7 +132,7 @@ static int          _make_step_cred(step_record_t *step_rec,
 				    slurm_cred_t **slurm_cred,
 				    uint16_t protocol_version);
 static int          _route_msg_to_origin(slurm_msg_t *msg, char *job_id_str,
-					 uint32_t job_id, uid_t uid);
+					 uint32_t job_id);
 static void         _throttle_fini(int *active_rpc_cnt);
 static void         _throttle_start(int *active_rpc_cnt);
 
@@ -3959,7 +3959,7 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 
 	lock_slurmctld(fed_read_lock);
 	if (!_route_msg_to_origin(msg, job_desc_msg->job_id_str,
-				  job_desc_msg->job_id, uid)) {
+				  job_desc_msg->job_id)) {
 		unlock_slurmctld(fed_read_lock);
 		return;
 	}
@@ -4598,8 +4598,7 @@ static void _slurm_rpc_suspend(slurm_msg_t *msg)
 	 * route it to the origin, otherwise try to suspend the job. If it's
 	 * pending an error should be returned. If it's running then it should
 	 * suspend the job. */
-	if (!job_ptr &&
-	    !_route_msg_to_origin(msg, NULL, sus_ptr->job_id, msg->auth_uid)) {
+	if (!job_ptr && !_route_msg_to_origin(msg, NULL, sus_ptr->job_id)) {
 		unlock_slurmctld(job_write_lock);
 		return;
 	}
@@ -4741,8 +4740,7 @@ static void _slurm_rpc_requeue(slurm_msg_t *msg)
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, READ_LOCK };
 
 	lock_slurmctld(fed_read_lock);
-	if (!_route_msg_to_origin(msg, req_ptr->job_id_str, req_ptr->job_id,
-				  msg->auth_uid)) {
+	if (!_route_msg_to_origin(msg, req_ptr->job_id_str, req_ptr->job_id)) {
 		unlock_slurmctld(fed_read_lock);
 		return;
 	}
@@ -4919,8 +4917,7 @@ static void _slurm_rpc_job_notify(slurm_msg_t *msg)
 	 * cluster, or running on the sibling cluster. If it's not there then
 	 * route it to the origin. */
 	if (!job_ptr &&
-	    !_route_msg_to_origin(msg, NULL, notify_msg->step_id.job_id,
-				  msg->auth_uid)) {
+	    !_route_msg_to_origin(msg, NULL, notify_msg->step_id.job_id)) {
 		unlock_slurmctld(job_read_lock);
 		return;
 	}
@@ -5875,7 +5872,7 @@ static void _proc_multi_msg(slurm_msg_t *msg)
  * RET returns SLURM_SUCCESS if the msg was routed.
  */
 static int _route_msg_to_origin(slurm_msg_t *msg, char *src_job_id_str,
-				uint32_t src_job_id, uid_t uid)
+				uint32_t src_job_id)
 {
 	xassert(msg);
 
@@ -5900,9 +5897,9 @@ static int _route_msg_to_origin(slurm_msg_t *msg, char *src_job_id_str,
 				slurm_send_rc_msg(msg, SLURM_ERROR);
 			} else {
 				slurm_send_reroute_msg(msg, dst);
-				info("%s: %s JobId=%u uid %d routed to %s",
+				info("%s: %s JobId=%u uid %u routed to %s",
 				     __func__, rpc_num2string(msg->msg_type),
-				     job_id, uid, dst->name);
+				     job_id, msg->auth_uid, dst->name);
 			}
 
 			return SLURM_SUCCESS;
