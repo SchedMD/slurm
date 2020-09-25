@@ -287,7 +287,7 @@ int setup_env(env_t *env, bool preserve_env)
 {
 	int rc = SLURM_SUCCESS;
 	char *addr, *dist = NULL, *lllp_dist = NULL;
-	char addrbuf[INET_ADDRSTRLEN];
+	char addrbuf[INET6_ADDRSTRLEN];
 
 	if (env == NULL)
 		return SLURM_ERROR;
@@ -723,7 +723,7 @@ int setup_env(env_t *env, bool preserve_env)
 
 	if (env->cli) {
 		uint16_t port;
-		slurm_get_ip_str(env->cli, &port, addrbuf, INET_ADDRSTRLEN);
+		slurm_get_ip_str(env->cli, &port, addrbuf, INET6_ADDRSTRLEN);
 		setenvf(&env->env, "SLURM_LAUNCH_NODE_IPADDR", "%s", addrbuf);
 	}
 
