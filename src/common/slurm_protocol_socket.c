@@ -635,6 +635,9 @@ extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 	struct addrinfo *addrs;
 	struct addrinfo *addr_ptr;
 
+	log_flag(NET, "%s: called with port='%u' host='%s'",
+		__func__, port, host);
+
 	/*
 	 * If NULL hostname passed in, we only update the port of addr
 	 */
@@ -642,6 +645,8 @@ extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 		if (!addr->ss_family)
 			addr->ss_family = AF_INET;
 		slurm_set_port(addr, port);
+		log_flag(NET, "%s: updated port info. addr='%pA'",
+			 __func__, addr);
 		return;
 	}
 
@@ -666,6 +671,7 @@ extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 			struct sockaddr_in *dst = (struct sockaddr_in *) addr;
 			memcpy(&dst->sin_addr, &src->sin_addr, 4);
 		}
+		log_flag(NET, "%s: update addr. addr='%pA'", __func__, addr);
 	} else {
 		error("%s: Unable to resolve \"%s\"", __func__, host);
 		addr->ss_family = AF_UNSPEC;
