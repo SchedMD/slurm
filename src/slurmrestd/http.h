@@ -174,6 +174,7 @@ typedef struct {
 	char *name;
 	char *value;
 } http_header_entry_t;
+extern void free_http_header(http_header_entry_t *);
 
 /* find http header from header list
  * IN headers List of http_header_entry_t

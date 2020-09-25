@@ -93,16 +93,19 @@ static int DEFAULT_KEEP_ALIVE = 5; //default to 5s to match apache2
 static int _send_reject(const http_parser *parser,
 			http_status_code_t status_code);
 
-static void _destroy_headers_list(void *list)
+extern void free_http_header(http_header_entry_t *header)
 {
-	http_header_entry_t *const buffer = (http_header_entry_t *)list;
-	xfree(buffer->name);
-	xfree(buffer->value);
-	xfree(buffer);
+	xfree(header->name);
+	xfree(header->value);
+	xfree(header);
 }
 
-/* only clears the values that should change between requests */
-static void _reinit_request_t(request_t *request, bool create)
+static void _free_http_header(void *header)
+{
+	free_http_header(header);
+}
+
+static void _free_request_t(request_t *request)
 {
 	FREE_NULL_LIST(request->headers);
 	xfree(request->path);
@@ -113,9 +116,7 @@ static void _reinit_request_t(request_t *request, bool create)
 	xfree(request->body);
 	xfree(request->body_encoding);
 	request->body_length = 0;
-
-	if (create)
-		request->headers = list_create(_destroy_headers_list);
+	xfree(request);
 }
 
 static void _http_parser_url_init(struct http_parser_url *url)
@@ -130,12 +131,6 @@ static void _http_parser_url_init(struct http_parser_url *url)
 	 */
 	memset(url, 0, sizeof(*url));
 #endif
-}
-
-static void _free_request_t(request_t *request)
-{
-	_reinit_request_t(request, false);
-	xfree(request);
 }
 
 static int _on_message_begin(http_parser *parser)
@@ -500,6 +495,7 @@ static int _send_reject(const http_parser *parser,
 		.http_minor = parser->http_minor,
 		.status_code = status_code,
 		.body_length = 0,
+		.headers = list_create(_free_http_header),
 	};
 
 	/* Ignore response since this connection is already dead */
@@ -653,6 +649,7 @@ static int _on_message_complete(http_parser *parser)
 		 * continue but without inheirting previous requests.
 		 */
 		request_t *nrequest = xmalloc(sizeof(*request));
+		nrequest->headers = list_create(_free_http_header);
 		request->context->request = nrequest;
 		parser->data = nrequest;
 		_free_request_t(request);
@@ -962,6 +959,7 @@ extern http_context_t *setup_http_context(con_mgr_fd_t *con,
 	context->con = con;
 	context->on_http_request = on_http_request;
 	context->request = request;
+	request->headers = list_create(_free_http_header);
 
 	return context;
 }
