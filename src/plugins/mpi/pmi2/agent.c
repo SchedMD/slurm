@@ -162,9 +162,7 @@ _tree_listen_read(eio_obj_t *obj, List objs)
 {
 	int sd;
 	slurm_addr_t addr;
-	struct sockaddr_in *sin;
 	socklen_t size = sizeof(addr);
-	char buf[INET_ADDRSTRLEN];
 
 	debug2("mpi/pmi2: _tree_listen_read");
 
@@ -190,10 +188,8 @@ _tree_listen_read(eio_obj_t *obj, List objs)
 		}
 
 		if (! in_stepd()) {
-			sin = (struct sockaddr_in *) &addr;
-			inet_ntop(AF_INET, &sin->sin_addr, buf, INET_ADDRSTRLEN);
-			debug3("mpi/pmi2: accepted tree connection: ip=%s sd=%d",
-			       buf, sd);
+			debug3("mpi/pmi2: accepted tree connection: ip=%pA sd=%d",
+			       &addr, sd);
 		}
 
 		/* read command from socket and handle it */
