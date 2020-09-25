@@ -56,6 +56,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/strlcpy.h"
+#include "src/common/timers.h"
 #include "src/common/workq.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -245,15 +246,19 @@ extern con_mgr_t *init_con_mgr(int thread_count)
  */
 static void _signal_change(con_mgr_t *mgr, bool locked)
 {
+	DEF_TIMERS;
 	char buf[] = "1";
+	int rc;
 
 	_check_magic_mgr(mgr);
 
 	log_flag(NET, "%s: sending", __func__);
-
 try_again:
+	START_TIMER;
 	/* send 1 byte of trash */
-	if (write(mgr->event_fd[1], buf, 1) != 1) {
+	rc = write(mgr->event_fd[1], buf, 1);
+	END_TIMER2("write to event_fd");
+	if (rc != 1) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
 			log_flag(NET, "%s: trying again: %m", __func__);
 			goto try_again;
@@ -261,6 +266,8 @@ try_again:
 
 		fatal("%s: unable to signal connection manager: %m", __func__);
 	}
+
+	log_flag(NET, "%s: sent in %s", __func__, TIME_STR);
 
 	if (!locked)
 		slurm_mutex_lock(&mgr->mutex);
