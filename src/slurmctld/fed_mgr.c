@@ -4242,7 +4242,6 @@ extern int fed_mgr_submit_remote_dependencies(job_record_t *job_ptr,
  */
 extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 				bool alloc_only,
-				uint16_t protocol_version,
 				uint32_t *job_id_ptr, int *alloc_code,
 				char **err_msg)
 {
@@ -4293,7 +4292,7 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	job_desc->het_job_offset = NO_VAL;
 	*alloc_code = job_allocate(job_desc, job_desc->immediate, false, NULL,
 				   alloc_only, msg->auth_uid, &job_ptr, err_msg,
-				   protocol_version);
+				   msg->protocol_version);
 
 	if (!job_ptr || (*alloc_code && job_ptr->job_state == JOB_FAILED)) {
 		/* There may be an rc but the job won't be failed. Will sit in

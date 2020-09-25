@@ -1334,8 +1334,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		if (fed_mgr_fed_rec) {
 			uint32_t job_id;
 			if (fed_mgr_job_allocate(msg, job_desc_msg, true,
-						 msg->protocol_version, &job_id,
-						 &error_code, &err_msg)) {
+						 &job_id, &error_code,
+						 &err_msg)) {
 				reject_job = true;
 			} else if (!(job_ptr = find_job_record(job_id))) {
 				error("%s: can't find fed job that was just created. this should never happen",
@@ -3588,8 +3588,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 
 	if (fed_mgr_fed_rec) {
 		if (fed_mgr_job_allocate(msg, job_desc_msg, false,
-					 msg->protocol_version, &job_id,
-					 &error_code, &err_msg))
+					 &job_id, &error_code, &err_msg))
 			reject_job = true;
 	} else {
 		/* Create new job allocation */
