@@ -2679,9 +2679,9 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 			if (msg->conn_fd >= 0 &&
 			    !slurm_get_peer_addr(msg->conn_fd, &addr)) {
 				uint16_t port = 0;
-				comm_name = xmalloc(INET_ADDRSTRLEN);
+				comm_name = xmalloc(INET6_ADDRSTRLEN);
 				slurm_get_ip_str(&addr, &port, comm_name,
-						 INET_ADDRSTRLEN);
+						 INET6_ADDRSTRLEN);
 			}
 
 			set_node_comm_name(
