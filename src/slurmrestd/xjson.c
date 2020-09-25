@@ -61,8 +61,8 @@ static json_object *_try_parse(const char *buffer, size_t stringlen,
 
 	if (jobj == NULL) {
 		enum json_tokener_error jerr = json_tokener_get_error(tok);
-		error("%s: JSON parsing error: %s",
-		      __func__, json_tokener_error_desc(jerr));
+		error("%s: JSON parsing error %zu bytes: %s",
+		      __func__, stringlen, json_tokener_error_desc(jerr));
 		return NULL;
 	}
 	if (tok->char_offset < stringlen)
