@@ -58,7 +58,8 @@
 List license_list = (List) NULL;
 time_t last_license_update = 0;
 static pthread_mutex_t license_mutex = PTHREAD_MUTEX_INITIALIZER;
-static void _pack_license(struct licenses *lic, Buf buffer, uint16_t protocol_version);
+static void _pack_license(struct licenses *lic, Buf buffer,
+			  uint16_t protocol_version);
 
 /* Print all licenses on a list */
 static void _licenses_print(char *header, List licenses, job_record_t *job_ptr)
@@ -924,18 +925,8 @@ extern void license_set_job_tres_cnt(List license_list,
 	return;
 }
 
-/* pack_license()
- *
- * Encode the licenses data structure.
- *
- *	char *		name;
- *	uint32_t	total;
- *	uint32_t	used;
- *	uint8_t 	remote;
- *
- */
-static void
-_pack_license(struct licenses *lic, Buf buffer, uint16_t protocol_version)
+static void _pack_license(struct licenses *lic, Buf buffer,
+			  uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(lic->name, buffer);
@@ -943,7 +934,7 @@ _pack_license(struct licenses *lic, Buf buffer, uint16_t protocol_version)
 		pack32(lic->used, buffer);
 		pack8(lic->remote, buffer);
 	} else {
-		error("\
-%s: protocol_version %hu not supported", __func__, protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 	}
 }

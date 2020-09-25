@@ -11491,65 +11491,55 @@ _pack_license_info_msg(slurm_msg_t *msg, Buf buffer)
 	_pack_buffer_msg(msg, buffer);
 }
 
-/* _unpack_license_info_msg()
- *
- * Decode the array of license as it comes from the
- * controller and build the API licenses structures
- * as defined in slurm.h
- *
+/*
+ * Decode the array of licenses as it comes from the
+ * controller and build the API licenses structures.
  */
-static int
-_unpack_license_info_msg(license_info_msg_t **msg,
-			 Buf buffer,
-			 uint16_t protocol_version)
+static int _unpack_license_info_msg(license_info_msg_t **msg_ptr,
+				    Buf buffer,
+				    uint16_t protocol_version)
 {
-	int i;
-	uint32_t zz;
+	uint32_t uint32_tmp;
+	license_info_msg_t *msg = xmalloc(sizeof(*msg));
 
-	xassert(msg);
-	*msg = xmalloc(sizeof(license_info_msg_t));
+	xassert(msg_ptr);
+	*msg_ptr = msg;
 
-	/* load buffer's header (data structure version and time)
-	 */
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->num_lic, buffer);
+		safe_unpack_time(&msg->last_update, buffer);
 
-		safe_unpack32(&((*msg)->num_lic), buffer);
-		safe_unpack_time(&((*msg)->last_update), buffer);
-
-		safe_xcalloc((*msg)->lic_array, (*msg)->num_lic,
+		safe_xcalloc(msg->lic_array, msg->num_lic,
 			     sizeof(slurm_license_info_t));
 
-		/* Decode individual license data.
-		 */
-		for (i = 0; i < (*msg)->num_lic; i++) {
-			safe_unpackstr_xmalloc(&((*msg)->lic_array[i]).name,
-					       &zz, buffer);
-			safe_unpack32(&((*msg)->lic_array[i]).total, buffer);
-			safe_unpack32(&((*msg)->lic_array[i]).in_use, buffer);
+		/* Decode individual license data */
+		for (int i = 0; i < msg->num_lic; i++) {
+			safe_unpackstr_xmalloc(&msg->lic_array[i].name,
+					       &uint32_tmp, buffer);
+			safe_unpack32(&msg->lic_array[i].total, buffer);
+			safe_unpack32(&msg->lic_array[i].in_use, buffer);
 			/* The total number of licenses can decrease
 			 * at runtime.
 			 */
-			if ((*msg)->lic_array[i].total <
-			    (*msg)->lic_array[i].in_use)
-				(*msg)->lic_array[i].available = 0;
+			if (msg->lic_array[i].total < msg->lic_array[i].in_use)
+				msg->lic_array[i].available = 0;
 			else
-				(*msg)->lic_array[i].available =
-					(*msg)->lic_array[i].total -
-					(*msg)->lic_array[i].in_use;
-			safe_unpack8(&((*msg)->lic_array[i]).remote, buffer);
+				msg->lic_array[i].available =
+					msg->lic_array[i].total -
+					msg->lic_array[i].in_use;
+			safe_unpack8(&msg->lic_array[i].remote, buffer);
 		}
-
 	} else {
-		error("_unpack_license_info_msg: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 		goto unpack_error;
 	}
 
 	return SLURM_SUCCESS;
 
 unpack_error:
-	slurm_free_license_info_msg(*msg);
-	*msg = NULL;
+	slurm_free_license_info_msg(msg);
+	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
 
