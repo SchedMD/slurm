@@ -37,7 +37,7 @@ set job_id         0
 set nodes          ""
 set file_in        "test$test_id\_sc"
 
-if {[test_preempttype_part] == 0} {
+if {[get_config_param "PreemptType"] ne "preempt/partition_prio"} {
 	skip "This test requires that PreemptType=preempt/partition_prio"
 }
 
@@ -208,7 +208,7 @@ proc clean_up { rc } {
 	}
 }
 
-if {[is_super_user] == 0} {
+if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
 }
 
@@ -287,7 +287,7 @@ cancel_job $part_id_2
 cancel_job $part_id_1
 
 ###################### Test preempt suspend ######################
-if { [test_gang] == 1 } {
+if [param_contains [get_config_param "PreemptMode"] "GANG"] {
 	log_info "*** TEST PREEMPT SUSPEND ***"
 
 	mod_part $part_name_1 suspend

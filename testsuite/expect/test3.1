@@ -35,8 +35,8 @@ set file_in     "test$test_id.input"
 # This test must be run as a Slurm administrator, root, or SlurmUser in order to
 # issue scontrol reconfigure.
 #
-if {(![is_super_user]) && ([check_accounting_admin_level] != "Administrator")} {
-	skip "This test can't be run except as SlurmUser or Admin"
+if {[string compare [get_admin_level] "Administrator"]} {
+	skip "This test can be run only for Administrators"
 }
 
 #

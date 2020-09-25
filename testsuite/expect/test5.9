@@ -86,10 +86,10 @@ set sq_format(partition)     [default_partition]
 # comment
 set sq_format(comment)       1234567890
 
-if { [test_using_slurmdbd] == 0 } {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without AccountStorageType=slurmdbd"
 }
-if {[string compare [check_accounting_admin_level] "Administrator"]} {
+if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator"
 }
 set available [available_nodes idle]
@@ -97,7 +97,7 @@ if {$available < 2} {
     skip "Not enough nodes currently available ($available avail, 2 needed)"
 }
 
-remove_acct [get_cluster_name] $test_acct
+remove_acct [get_config_param "ClusterName"] $test_acct
 
 # Run a job to get a usable node to test
 set tmp_sc  "tmp_sc"

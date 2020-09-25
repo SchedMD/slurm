@@ -47,10 +47,11 @@ set max_time_error 5
 set max_mem_error 4300
 set step_id	0
 
-if {[test_front_end]} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
-if {![test_accting_steps]} {
+set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
+if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $accounting_storage_enforce "nojobs"]} {
 	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
 }
 
@@ -316,7 +317,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 sleep 10
 
 set expected_state "FAILED"
-if {[test_killonbadexit]} {
+if {[get_config_param "KillOnBadExit"] == 1} {
 	set expected_state "CANCELLED"
 	set ret_code "0:15"
 }

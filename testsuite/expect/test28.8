@@ -36,13 +36,13 @@ set file_script    "test$test_id.bash"
 set job_id         0
 set not_supported  0
 
-if {[get_array_config] < [expr $array_size + 1]} {
+if {[get_config_param "MaxArraySize"] < [expr $array_size + 1]} {
 	skip "MaxArraySize is to small for this test"
 }
-if {[test_gang] != 0} {
+if [param_contains [get_config_param "PreemptMode"] "GANG"] {
 	skip "This test can't be run with gang scheduling"
 }
-if {[is_super_user] == 0} {
+if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
 }
 

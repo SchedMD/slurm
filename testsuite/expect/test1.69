@@ -34,7 +34,7 @@ set run_timer   2
 set exit_code   0
 
 set nb_nodes [get_node_cnt_in_part]
-if {[test_linear]} {
+if {[check_config_select "linear"]} {
 	if {$nb_nodes < 2} {
 		skip "This test is incompatible with select/linear and only one node"
 	}
@@ -44,7 +44,7 @@ if {[test_linear]} {
 	}
 }
 
-if {[test_select_type_params "Memory"]} {
+if {[param_contains [get_config_param "SelectTypeParameters"] "CR_*MEMORY"]} {
 	set mem_opt "--mem=10"
 } else {
 	set mem_opt "--comment=no_mem"

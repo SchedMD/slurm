@@ -269,7 +269,8 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 # test starts here
 ############################################################################
 
-if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
+set select_type_parameters [get_config_param "SelectTypeParameters"]
+if {[param_contains $select_type_parameters "CR_ONE_TASK_PER_CORE"]} {
 	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
@@ -372,18 +373,18 @@ if {!$inode_procs} {
 log_debug "Found idle node $inode_name with $inode_procs processors"
 
 # figure out the select plugin we are using
-if {[test_linear]} {
+if {[check_config_select "linear"]} {
 	 set smallest $inode_procs
 } else {
 	if {$part_exclusive == 1} {
 		set smallest $inode_procs
-	} elseif {[test_select_type_params "CR_CPU"]} {
+	} elseif [param_contains $select_type_parameters "CR_CPU*"] {
 		set smallest $inode_threads_per_core
-	} elseif {[test_select_type_params "NONE"]} {
+	} elseif [param_contains $select_type_parameters "NONE"] {
 		set smallest $inode_threads_per_core
-	} elseif {[test_select_type_params "CR_CORE"]} {
+	} elseif [param_contains $select_type_parameters "CR_CORE*"] {
 		set smallest $inode_threads_per_core
-	} elseif {[test_select_type_params "CR_SOCKET"]} {
+	} elseif [param_contains $select_type_parameters "CR_SOCKET*"] {
 		set smallest [expr $inode_cores_per_socket *$inode_threads_per_core]
 	} else {
 		log_warn "Failed to parse SelectTypeParameters '$select_params'"

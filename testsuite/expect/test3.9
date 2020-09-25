@@ -30,7 +30,7 @@ source ./globals
 
 set exit_code   0
 
-if { [string compare [test_launch_type] "slurm"] } {
+if {[get_config_param "LaunchType"] ne "launch/slurm"} {
 	skip "This test is only compatible with systems using launch/slurm"
 }
 

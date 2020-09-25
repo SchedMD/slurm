@@ -55,7 +55,7 @@ set bb_types [get_bb_types]
 if {[string first "datawarp" $bb_types] == -1} {
 	skip "This test can only be run with the burst_buffer/datawarp plugin"
 }
-if {[get_bb_persistent] == 0} {
+if {[get_config_param "EnablePersistent"] eq "MISSING"} {
 	skip "This test can only be run if persistent burst_buffers can be created/deleted"
 }
 

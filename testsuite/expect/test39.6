@@ -99,9 +99,7 @@ proc multi_socket_gres { gres_string } {
 	return 0
 }
 
-if {[test_cons_tres]} {
-    log_debug "Valid configuration, using select/cons_tres"
-} else {
+if {![check_config_select "cons_tres"]} {
     skip "This test is only compatible with select/cons_tres"
 }
 

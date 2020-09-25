@@ -38,7 +38,7 @@ set job_name     "test$test_id"
 set sleep_time   300
 set task_cnt     60
 
-if {![test_select_type_params "Memory"]} {
+if {![param_contains [get_config_param "SelectTypeParameters"] "CR_*MEMORY"]} {
 	set mem_per_step 0
 } else {
 	set mem_per_step 8
@@ -48,7 +48,7 @@ if {![test_select_type_params "Memory"]} {
 # A single slurmd can't handle a large task count without
 # running out of memory and pthreads
 #
-if {[test_front_end] != 0 || $enable_memory_leak_debug != 0} {
+if {[get_config_param "FrontendName"] ne "MISSING" || $enable_memory_leak_debug != 0} {
 	set task_cnt 2
 }
 

@@ -38,7 +38,7 @@ set node_list     [get_idle_node_in_part $partition]
 
 # Default for LSF is KB, but Slurm is in MB
 # Check values in MB, but set them in KB in the batch script.
-if {[test_select_type_params "MEMORY"]} {
+if {[param_contains [get_config_param "SelectTypeParameters"] "CR_*MEMORY"]} {
 	set job_mem 4
 } else {
 	set job_mem 1
@@ -94,7 +94,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 
 foreach option [array names check_list] {
 	#log_debug "$option=$check_list($option)"
-	if {[string compare $option "BatchHost"] == 0 && [test_front_end] != 0} {
+	if {[string compare $option "BatchHost"] == 0 && [get_config_param "FrontendName"] ne "MISSING"} {
 		continue
 	}
 

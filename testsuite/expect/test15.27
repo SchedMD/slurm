@@ -111,8 +111,8 @@ proc check_alloc { } {
 	}
 }
 
-if {[test_using_slurmdbd] == 0 } {
-	skip "Test invalid with slurmdbd"
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "Test invalid without slurmdbd"
 }
 
 set node_name [get_nodes_by_request "--gres=gpu:2 -n1 -t1"]

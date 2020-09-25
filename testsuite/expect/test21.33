@@ -89,9 +89,9 @@ proc check_val { res_name } {
 	return $rc
 }
 
-if { [test_using_slurmdbd] == 0 } {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
     skip "This test can't be run without AccountStorageType=slurmdbd"
-} elseif { [test_super_user] == 0} {
+} elseif {![is_super_user]} {
     skip "This test can't be run without superuser permissions"
 }
 

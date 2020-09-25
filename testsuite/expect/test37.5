@@ -49,15 +49,15 @@ set dbd_delay           10
 #
 # Check accounting config and bail if not found.
 #
-if { [test_account_storage] == 0 } {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without a usable AccountStorageType"
 }
 
-if { [string compare [check_accounting_admin_level] "Administrator"] } {
+if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
 }
 
-set min_age [get_min_job_age]
+regexp "($number)" [get_config_param "MinJobAge"] {} min_age
 if {$min_age < 10} {
 	skip "MinJobAge too low for this test ($min_age < 10)"
 }
@@ -383,8 +383,8 @@ if {[setup_federation $fed_name]} {
 	end_it 1
 }
 
-set requeue_exit_num [get_requeue_exit]
-set requeue_exithold_num [get_requeue_exit_hold]
+set requeue_exit_num [get_config_param "RequeueExit"]
+set requeue_exithold_num [get_config_param "RequeueExitHold"]
 
 make_bash_script $long_script     "sleep 9000"
 make_bash_script $complete_script "env; $bin_sleep 25"
@@ -393,12 +393,12 @@ make_bash_script $prolog_script    "exit 0"
 make_bash_script $prologctl_script "exit 0"
 make_bash_script $epilog_script    "exit 0"
 
-if {$requeue_exit_num} {
+if {$requeue_exit_num ne "(null)"} {
 	make_bash_script $exit_script     "env; $bin_sleep 25; exit $requeue_exit_num"
 } else {
 	log_warn "Configure RequeueExit=# to test."
 }
-if {$requeue_exithold_num} {
+if {$requeue_exithold_num ne "(null)"} {
 	make_bash_script $exithold_script "env; $bin_sleep 25; exit $requeue_exithold_num"
 } else {
 	log_warn "Configure RequeueExitHold=# to test."
@@ -409,7 +409,7 @@ if {$requeue_exithold_num} {
 # get number of nodes per cluster
 set node_count [available_nodes]
 
-set origin_cluster [get_cluster_name]
+set origin_cluster [get_config_param "ClusterName"]
 set all_cluster_list [list $fedc1 $fedc2 $fedc3]
 set non_origin_cluster_list [lsearch -all -inline -not -exact $all_cluster_list $origin_cluster]
 set non_origin_clusters [join $non_origin_cluster_list ","]
@@ -1362,7 +1362,7 @@ if {[cancel_job $job_id]} {
 	end_it 1
 }
 
-if {$requeue_exit_num} {
+if {$requeue_exit_num ne "(null)"} {
 	log_info "################################################################"
 	log_info "Test RequeueExit=#"
 	log_info "################################################################"
@@ -1437,7 +1437,7 @@ if {$requeue_exit_num} {
 	}
 }
 
-if {$requeue_exit_num} {
+if {$requeue_exit_num ne "(null)"} {
 	log_info "################################################################"
 	log_info "Test RequeueExitHold=#"
 	log_info "################################################################"

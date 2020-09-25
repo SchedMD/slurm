@@ -36,7 +36,7 @@ set job_id      ""
 set min_task_id 5
 set max_task_id 8
 
-set array_size  [get_array_config]
+set array_size [get_config_param "MaxArraySize"]
 if {$array_size < $min_task_id} {
 	skip "MaxArraySize is too small"
 }

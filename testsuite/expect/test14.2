@@ -31,7 +31,7 @@ source ./globals
 set exit_code   0
 set matches     0
 
-if {[test_front_end] != 0} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
 

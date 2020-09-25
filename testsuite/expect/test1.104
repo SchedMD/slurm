@@ -34,7 +34,7 @@ set exit_code      0
 set part_name      "QA_TEST"
 set test_script    "./test$test_id.bash"
 
-if {[test_super_user] == 0} {
+if {![is_super_user]} {
 	skip "Can not test more unless SlurmUser or root"
 }
 
@@ -125,7 +125,7 @@ if {$found != 1} {
 set found 0
 
 # Check EnforcePartLimits value
-set enforcepartlimits [test_enforce_part_limits]
+set enforcepartlimits [get_config_param "EnforcePartLimits"]
 log_debug "EnforcePartLimits=$enforcepartlimits"
 
 #

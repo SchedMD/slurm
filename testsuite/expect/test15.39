@@ -31,7 +31,7 @@ set needed_nodes 2
 set matches 0
 set ncpus ""
 
-if {[test_select_type_params "CR_ONE_TASK_PER_CORE"]} {
+if {[param_contains [get_config_param "SelectTypeParameters"] "CR_ONE_TASK_PER_CORE"]} {
 	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 

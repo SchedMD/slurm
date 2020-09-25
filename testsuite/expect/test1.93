@@ -109,7 +109,7 @@ proc end_test { } {
 	pass
 }
 
-if {![test_super_user]} {
+if {![is_super_user]} {
 	skip "This test is only suitable for a super user (to restore down nodes)"
 }
 
@@ -122,7 +122,7 @@ if {$nb_nodes < 2} {
 #
 # Test if CPU affinity support is supported.
 #
-if {![test_cpu_affinity]} {
+if {![param_contains [get_affinity_types] "affinity"]} {
 	skip "CPU affinity not supported on this system"
 }
 log_debug "Task affinity plugin installed"

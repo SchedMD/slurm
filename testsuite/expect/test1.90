@@ -34,12 +34,12 @@ set file_prog   "test$test_id.prog"
 #
 # Test if memory affinity support is supported.
 #
-set affinity [test_mem_affinity]
+set affinity [param_contains [get_affinity_types] "affinity"]
 
 spawn ls /usr/include/numa.h
 expect {
 	-nocase "no such file" {
-		set affinity 0
+		set affinity false
 		exp_continue
 	}
 	eof {
@@ -47,7 +47,7 @@ expect {
 	}
 }
 log_user 1
-if {$affinity == 0} {
+if {!$affinity} {
 	skip "Memory affinity not supported on this system"
 }
 log_info "Task affinity plugin installed with numa support"

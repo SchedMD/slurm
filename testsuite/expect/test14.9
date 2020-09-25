@@ -33,9 +33,9 @@ set file_err    "test$test_id.error"
 set exit_code            0
 set job_id               0
 
-if {[test_front_end] != 0} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
-} elseif {[test_super_user] != 0} {
+} elseif [is_super_user] {
 	skip "This test can not be run as SlurmUser or root"
 }
 

@@ -40,10 +40,10 @@ set job_id2        0
 set host_name      ""
 set not_supported  0
 
-if {[test_gang] != 0} {
+if [param_contains [get_config_param "PreemptMode"] "GANG"] {
 	skip "This test can't be run with gang scheduling"
 }
-if {[is_super_user] == 0} {
+if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
 }
 
@@ -120,10 +120,10 @@ if { ![string compare [get_affinity_types] "none"] } {
 } else {
 	set affinity_mem 1
 }
-if {[test_select_type_params "MEMORY"] || $affinity_mem} {
-	set job_mem  16
+if {[param_contains [get_config_param "SelectTypeParameters"] "*Memory"] || $affinity_mem} {
+	set job_mem 16
 } else {
-	set job_mem  1
+	set job_mem 1
 }
 
 #

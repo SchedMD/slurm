@@ -34,7 +34,7 @@ set new_conf      ""
 set opt_cnt       0
 set exit_code     0
 
-if {[is_super_user] == 0} {
+if {![is_super_user]} {
 	skip "This test requires that the user be root or the SlurmUser"
 }
 

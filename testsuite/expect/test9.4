@@ -44,7 +44,7 @@ set job_name      "test$test_id"
 
 set cycle_count [get_cycle_count]
 set task_cnt    $max_stress_tasks
-if { [string compare [test_launch_type] "slurm"] } {
+if {[get_config_param "LaunchType"] ne "launch/slurm"} {
 	skip "This test is only compatible with systems using launch/slurm"
 } else {
 	set node_cnt 1-4

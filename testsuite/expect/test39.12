@@ -36,12 +36,10 @@ proc cleanup {} {
 	exec $bin_rm -f $file_in
 }
 
-if {[test_cons_tres]} {
-	log_debug "Valid configuration, using select/cons_tres"
-} else {
+if {![check_config_select "cons_tres"]} {
 	skip "This test is only compatible with select/cons_tres"
 }
-if {[test_front_end]} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
 
@@ -69,7 +67,7 @@ set cores_per_socket  [get_node_param $node_name "CoresPerSocket"]
 set cpus_per_socket   [expr $cpus_per_node / $sockets_per_node]
 set sockets_with_gpus [get_gpu_socket_count $gpu_cnt $sockets_per_node]
 set cores_per_node    [expr $sockets_per_node * $cores_per_socket]
-set one_task_per_core [test_select_type_params "CR_ONE_TASK_PER_CORE"]
+set one_task_per_core [param_contains [get_config_param "SelectTypeParameters"] "CR_ONE_TASK_PER_CORE"]
 
 log_debug "GPU count is $gpu_cnt"
 log_debug "Sockets with GPUs $sockets_with_gpus"
@@ -79,7 +77,7 @@ log_debug "CPUs per socket is $cpus_per_socket"
 log_debug "gres/craynetwork count is $craynetwork_count"
 log_debug "CR_ONE_TASK_PER_CORE is $one_task_per_core"
 
-if {$one_task_per_core > 0} {
+if {$one_task_per_core} {
 	if {$gpu_cnt > $cores_per_node} {
 		set gpu_cnt $cores_per_node
 	}

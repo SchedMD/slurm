@@ -32,9 +32,7 @@ set file_out    "test$test_id.output"
 set file_prog   "test$test_id.prog"
 set job_id      0
 
-if {[test_cons_tres]} {
-    log_debug "Valid configuration, using select/cons_tres"
-} else {
+if {![check_config_select "cons_tres"]} {
     skip "This test is only compatible with select/cons_tres"
 }
 

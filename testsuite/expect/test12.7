@@ -31,10 +31,11 @@ set job_id     0
 set node       ""
 set file_in    "test$test_id\_sc"
 
-if {![test_accting_steps]} {
+set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
+if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $accounting_storage_enforce "nojobs"]} {
 	skip "This test can not be run with nosteps or nojobs (AccountingStorageEnforce)"
 }
-if { [test_super_user] == 0 } {
+if {![is_super_user]} {
 	skip "Test can only be run as SlurmUser"
 }
 
@@ -147,7 +148,7 @@ proc check_sacct_states { states log_it } {
 	return $state_num
 }
 
-if {[test_using_slurmdbd] != 1} {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "Not using accounting_storage/slurmdbd"
 }
 

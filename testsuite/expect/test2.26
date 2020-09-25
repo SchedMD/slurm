@@ -123,7 +123,7 @@ proc end_it { } {
 	pass
 }
 
-if {[test_super_user] == 0 && [top_enabled] == 0} {
+if {![is_super_user] && [top_enabled] == 0} {
 	skip "Scontrol top operation disabled for this user"
 }
 

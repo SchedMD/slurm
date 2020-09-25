@@ -33,7 +33,7 @@ set tmp_job      "test$test_id\_tmp_job"
 set file_in	 "test${test_id}.in"
 set file_out     "test${test_id}.out"
 
-if {[is_super_user] == 0} {
+if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
 }
 

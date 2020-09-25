@@ -109,7 +109,7 @@ proc add_cluster { name clus_req_in } {
 		set exit_code $::RETURN_ERROR
 	}
 
-	if { ![check_acct_associations] } {
+	if {![check_acct_associations]} {
 		log_error "Our associations don't line up"
 		set exit_code $::RETURN_ERROR
 	}
@@ -185,7 +185,7 @@ proc remove_cluster {name} {
 		set exit_code $::RETURN_ERROR
 	}
 	if { !$nothing } {
-		if { ![check_acct_associations] } {
+		if {![check_acct_associations]} {
 			log_error "Our associations don't line up"
 			set exit_code $::RETURN_ERROR
 		}
@@ -260,7 +260,7 @@ proc mod_cluster { name clus_req_in } {
 		set exit_code $::RETURN_ERROR
 	}
 
-	if { ![check_acct_associations] } {
+	if {![check_acct_associations]} {
 		log_error "Our associations don't line up"
 		set exit_code $::RETURN_ERROR
 	}
@@ -341,7 +341,7 @@ proc add_acct { name acct_req_in } {
 		set exit_code $::RETURN_ERROR
 	}
 
-	if { ![check_acct_associations] } {
+	if {![check_acct_associations]} {
 		log_error "Our associations don't line up"
 		set exit_code $::RETURN_ERROR
 	}
@@ -419,7 +419,7 @@ proc remove_acct { cluster name } {
 	}
 
 	if { !$nothing } {
-		if { ![check_acct_associations] } {
+		if {![check_acct_associations]} {
 			log_error "Our associations don't line up"
 			set exit_code $::RETURN_ERROR
 		}
@@ -558,7 +558,7 @@ proc mod_acct { name acct_mod_desc_in acct_mod_assoc_vals_in acct_mod_acct_vals_
 		set exit_code $::RETURN_ERROR
 	}
 
-	if { ![check_acct_associations] } {
+	if {![check_acct_associations]} {
 		log_error "Our associations don't line up"
 		set exit_code $::RETURN_ERROR
 	}
@@ -642,7 +642,7 @@ proc add_user { name user_req_in } {
 		set exit_code $::RETURN_ERROR
 	}
 
-	if { ![check_acct_associations] } {
+	if {![check_acct_associations]} {
 		log_error "Our associations don't line up"
 		set exit_code $::RETURN_ERROR
 	}
@@ -726,7 +726,7 @@ proc remove_user { cluster acct user } {
 	}
 
 	if { !$nothing } {
-		if { ![check_acct_associations] } {
+		if {![check_acct_associations]} {
 			log_error "Our associations don't line up"
 			set exit_code $::RETURN_ERROR
 		}
@@ -866,7 +866,7 @@ proc mod_user { name user_mod_info_req user_mod_acct_req user_mod_assoc_req} {
 		set exit_code $::RETURN_ERROR
 	}
 
-	if { ![check_acct_associations] } {
+	if {![check_acct_associations]} {
 		log_error "Our associations don't line up"
 		set exit_code $::RETURN_ERROR
 	}
@@ -939,7 +939,7 @@ proc add_qos {name qos_req_in} {
 		set exit_code $::RETURN_ERROR
 	}
 
-	if { ![check_acct_associations] } {
+	if {![check_acct_associations]} {
 		log_error "Our associations don't line up"
 		set exit_code $::RETURN_ERROR
 	}
@@ -1067,7 +1067,7 @@ proc remove_qos {name} {
 		set exit_code $::RETURN_ERROR
 	}
 	if { !$nothing } {
-		if { ![check_acct_associations] } {
+		if {![check_acct_associations]} {
 			log_error "Our associations don't line up"
 			set exit_code $::RETURN_ERROR
 		}
@@ -1146,7 +1146,7 @@ proc add_coor { accounts names } {
 		set exit_code $::RETURN_ERROR
 	}
 
-	if { ![check_acct_associations] } {
+	if {![check_acct_associations]} {
 		log_error "Our associations don't line up"
 		set exit_code $::RETURN_ERROR
 	}
@@ -1223,7 +1223,7 @@ proc remove_coor { accounts names } {
 	}
 
 	if { !$nothing } {
-		if { ![check_acct_associations] } {
+		if {![check_acct_associations]} {
 			log_error "Our associations don't line up"
 			set exit_code $::RETURN_ERROR
 		}
@@ -1647,7 +1647,7 @@ proc reset_account_usage { cluster acct } {
 	global sacctmgr exit_code
 
 	if { ![string compare $cluster ""] } {
-		set cluster [get_cluster_name]
+		set cluster [get_config_param "ClusterName"]
 	}
 
 	set my_pid [eval spawn $sacctmgr -i mod account $acct cluster=$cluster set RawUsage=0]
@@ -1686,7 +1686,7 @@ proc reset_qos_usage { cluster qos } {
 	global sacctmgr exit_code
 
 	if { ![string compare $cluster ""] } {
-		set cluster [get_cluster_name]
+		set cluster [get_config_param "ClusterName"]
 	}
 
 	set my_pid [eval spawn $sacctmgr -i mod qos $qos cluster=$cluster set RawUsage=0]

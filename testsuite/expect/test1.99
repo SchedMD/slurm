@@ -28,7 +28,7 @@
 source ./globals
 
 set exit_code    0
-set chk_ports    [get_srun_ports]
+set chk_ports    [get_config_param "SrunPortRange"]
 set cwd          "[$bin_pwd]"
 set port_dir     "test$test_id\_port_conf"
 set config_path  ""
@@ -36,10 +36,10 @@ set file_in      "test$test_id\_sc"
 set tmp_job      "test$test_id\_tmp_job"
 array set ports {}
 
-if { ![test_super_user] } {
+if {![is_super_user]} {
     skip "This test can't be run without being a super user of the cluster"
 }
-if {$chk_ports == 0} {
+if {$chk_ports eq "MISSING"} {
 	skip "This test requires SrunPortRange to be configured"
 }
 

@@ -34,7 +34,7 @@ set file_prog   "test$test_id.prog"
 #
 # Test if CPU affinity support is supported.
 #
-if {![test_cpu_affinity_or_cgroup]} {
+if {![param_contains [get_affinity_types] "affinity"] && [get_config_param "TaskAffinity"] ne "yes"} {
 	skip "CPU affinity not supported on this system"
 }
 log_info "Task affinity plugin installed"

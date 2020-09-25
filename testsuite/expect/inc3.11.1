@@ -80,7 +80,7 @@ proc inc3_11_1 {} {
 		}
 	}
 
-	if {[test_super_user] == 0} {
+	if {![is_super_user]} {
 		skip "Can not test more unless SlurmUser or root (Within: inc3.11.1)"
 	}
 

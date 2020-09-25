@@ -46,7 +46,7 @@ proc endit { } {
 # We must be SlurmUser or root in order to change the partition MaxTime limit,
 # otherwise this test may fail.
 #
-if {[test_super_user] == 0} {
+if {![is_super_user]} {
 	skip "You must be SlurmUser or root to run this test."
 }
 

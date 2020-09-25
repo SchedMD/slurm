@@ -31,7 +31,7 @@ set lic_a           "lic_a_test$test_id"
 set lic_b           "lic_b_test$test_id"
 set lic_c           "lic_c_test$test_id"
 
-set cluster [get_cluster_name]
+set cluster [get_config_param "ClusterName"]
 
 proc add_lic { license } {
 
@@ -86,9 +86,9 @@ proc delete_lic { license } {
 	}
 }
 
-if { [test_using_slurmdbd] == 0 } {
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
         skip "This test can't be run without AccountStorageType=slurmdbd"
-} elseif { [test_super_user] == 0} {
+} elseif {![is_super_user]} {
         skip "This test can't be run without superuser permissions"
 }
 

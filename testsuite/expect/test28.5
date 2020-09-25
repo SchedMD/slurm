@@ -33,7 +33,7 @@ set array_in     2
 set array_size   4
 set file_script  "test$test_id.sh"
 
-if {[get_array_config] < [expr $array_size + 1]} {
+if {[get_config_param "MaxArraySize"] < [expr $array_size + 1]} {
 	skip "MaxArraySize is to small for this test"
 }
 

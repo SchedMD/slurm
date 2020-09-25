@@ -33,7 +33,7 @@ set file_out    "test$test_id.output"
 set file_prog   "test$test_id.prog"
 set job_id      0
 
-if {[test_front_end]} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
 

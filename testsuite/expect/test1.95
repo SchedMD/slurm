@@ -44,7 +44,7 @@ if {[info exists upcc] == 0} {
 if {[file executable $upcc] == 0} {
 	skip "$upcc does not exists"
 }
-if {[test_front_end]} {
+if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
 

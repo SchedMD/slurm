@@ -42,19 +42,20 @@ set job_id        0
 set node_name     ""
 set exit_code     0
 
-if {[test_linear]} {
+if {[check_config_select "linear"]} {
 	skip "Test is not compatible with a config of SelectType=select/linear"
 }
-if {[is_super_user] == 0} {
+if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
 }
-if {[test_select_type_params "CR_SOCKET"]} {
+set select_type_parameters [get_config_param "SelectTypeParameters"]
+if {[param_contains $select_type_parameters "CR_SOCKET*"]} {
 	skip "This test is incompatible with CR_SOCKET allocations"
 }
-if {[test_select_type_params "CR_CORE"]} {
+if {[param_contains $select_type_parameters "CR_CORE*"]} {
 	set cr_core 1
 }
-if {[test_select_type_params "CR_CPU"]} {
+if {[param_contains $select_type_parameters "CR_CPU*"]} {
 	set cr_cpu 1
 }
 
@@ -337,7 +338,7 @@ delete_part $test_part_1
 #
 ####################################
 set new_job_limit [expr $num_jobs * 2]
-if { [test_gang] == 1 } {
+if [param_contains [get_config_param "PreemptMode"] "GANG"] {
 	log_info "Test partition with oversubscribe=YES:2 incompatible with gang scheduling"
 } elseif { $new_job_limit >= $job_start } {
         skip "default_queue_depth less than desired job count ($new_job_limit < $job_start), can not run oversubscribe=YES:2"
