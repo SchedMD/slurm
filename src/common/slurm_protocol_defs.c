@@ -5014,7 +5014,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_CONTROL:
 	case REQUEST_CONTROL_STATUS:
 	case REQUEST_TAKEOVER:
-	case REQUEST_SHUTDOWN_IMMEDIATE:
 	case RESPONSE_FORWARD_FAILED:
 	case REQUEST_DAEMON_STATUS:
 	case REQUEST_HEALTH_CHECK:
@@ -5279,8 +5278,6 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_RECONFIGURE_WITH_CONFIG";
 	case REQUEST_SHUTDOWN:					/* 1005 */
 		return "REQUEST_SHUTDOWN";
-	case REQUEST_SHUTDOWN_IMMEDIATE:
-		return "REQUEST_SHUTDOWN_IMMEDIATE";
 
 	case REQUEST_PING:					/* 1008 */
 		return "REQUEST_PING";

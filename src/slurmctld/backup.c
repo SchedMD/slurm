@@ -347,7 +347,6 @@ static void *_background_rpc_mgr(void *no_data)
 	int newsockfd, sockfd;
 	slurm_addr_t cli_addr;
 	slurm_msg_t msg;
-	int error_code;
 
 	/* Read configuration only */
 	slurmctld_lock_t config_read_lock = {
@@ -394,11 +393,7 @@ static void *_background_rpc_mgr(void *no_data)
 		if (slurm_receive_msg(newsockfd, &msg, 0) != 0)
 			error("slurm_receive_msg: %m");
 
-		error_code = _background_process_msg(&msg);
-		if ((error_code == SLURM_SUCCESS)			&&
-		    (msg.msg_type == REQUEST_SHUTDOWN_IMMEDIATE)	&&
-		    (slurmctld_config.shutdown_time == 0))
-			slurmctld_config.shutdown_time = time(NULL);
+		_background_process_msg(&msg);
 
 		slurm_free_msg_members(&msg);
 
@@ -426,12 +421,7 @@ static int _background_process_msg(slurm_msg_t *msg)
 		if (validate_slurm_user(uid))
 			super_user = true;
 
-		if (super_user &&
-		    (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE)) {
-			info("Performing RPC: REQUEST_SHUTDOWN_IMMEDIATE");
-			send_rc = false;
-		} else if (super_user &&
-			   (msg->msg_type == REQUEST_SHUTDOWN)) {
+		if (super_user && (msg->msg_type == REQUEST_SHUTDOWN)) {
 			info("Performing RPC: REQUEST_SHUTDOWN");
 			pthread_kill(slurmctld_config.thread_id_sig, SIGTERM);
 		} else if (super_user &&

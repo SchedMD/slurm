@@ -3283,7 +3283,6 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 		else {
 			error("thread_id_sig undefined, hard shutdown");
 			slurmctld_config.shutdown_time = now;
-			/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
 			slurmctld_shutdown();
 		}
 	}
@@ -3326,25 +3325,6 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 	if ((error_code == SLURM_SUCCESS) && (options == 1) &&
 	    (slurmctld_config.thread_id_sig))
 		pthread_kill(slurmctld_config.thread_id_sig, SIGABRT);
-}
-
-/* _slurm_rpc_shutdown_controller_immediate - process RPC to shutdown
- *	slurmctld */
-static void _slurm_rpc_shutdown_controller_immediate(slurm_msg_t * msg)
-{
-	int error_code = SLURM_SUCCESS;
-	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
-
-	if (!validate_super_user(uid)) {
-		error("Security violation, SHUTDOWN_IMMEDIATE RPC from uid=%d",
-		      uid);
-		error_code = ESLURM_USER_ID_MISSING;
-	}
-
-	/* do RPC call */
-	/* No op: just used to knock loose accept RPC thread */
-	if (error_code == SLURM_SUCCESS)
-		debug("Performing RPC: REQUEST_SHUTDOWN_IMMEDIATE");
 }
 
 /* _slurm_rpc_step_complete - process step completion RPC to note the
@@ -6102,9 +6082,6 @@ void slurmctld_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_SHUTDOWN:
 		_slurm_rpc_shutdown_controller(msg);
-		break;
-	case REQUEST_SHUTDOWN_IMMEDIATE:
-		_slurm_rpc_shutdown_controller_immediate(msg);
 		break;
 	case REQUEST_SUBMIT_BATCH_JOB:
 		_slurm_rpc_submit_batch_job(msg);
