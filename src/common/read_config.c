@@ -3127,8 +3127,7 @@ _destroy_slurm_conf(void)
 	free_slurm_conf(conf_ptr, true);
 	conf_initialized = false;
 
-	/* Clear all other non-pointer data (not on heap, so can't xfree) */
-	memset(conf_ptr, 0, sizeof(*conf_ptr));
+	/* xfree(conf_ptr); */
 }
 
 /*
