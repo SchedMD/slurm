@@ -252,7 +252,22 @@ static void _signal_change(con_mgr_t *mgr, bool locked)
 
 	_check_magic_mgr(mgr);
 
-	log_flag(NET, "%s: sending", __func__);
+	if (!locked)
+		slurm_mutex_lock(&mgr->mutex);
+
+	if (mgr->event_signaled) {
+		mgr->event_signaled++;
+		log_flag(NET, "%s: sent %d times",
+			 __func__, mgr->event_signaled);
+		goto done;
+	} else {
+		log_flag(NET, "%s: sending", __func__);
+		mgr->event_signaled = 1;
+	}
+
+	if (!locked)
+		slurm_mutex_unlock(&mgr->mutex);
+
 try_again:
 	START_TIMER;
 	/* send 1 byte of trash */
@@ -272,6 +287,8 @@ try_again:
 	if (!locked)
 		slurm_mutex_lock(&mgr->mutex);
 
+done:
+	/* wake up _watch() */
 	slurm_cond_broadcast(&mgr->cond);
 
 	if (!locked)
@@ -1497,7 +1514,6 @@ static inline int _watch(con_mgr_t *mgr)
 	_check_magic_mgr(mgr);
 	slurm_mutex_lock(&mgr->mutex);
 watch:
-
 	if (mgr->shutdown) {
 		slurm_mutex_unlock(&mgr->mutex);
 		_close_all_connections(mgr);
@@ -1516,6 +1532,7 @@ watch:
 		if (event_read > 0) {
 			log_flag(NET, "%s: detected %u events from event fd",
 				 __func__, event_read);
+			mgr->event_signaled = 0;
 		} else if (event_read == 0)
 			log_flag(NET, "%s: nothing to read from event fd", __func__);
 		else if (errno == EAGAIN || errno == EWOULDBLOCK ||

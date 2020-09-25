@@ -185,6 +185,8 @@ struct con_mgr_s {
 	workq_t *workq;
 	/* will inspect connections (not listeners */
 	bool inspecting;
+	/* if an event signal has already been sent */
+	int event_signaled;
 	/* Event PIPE used to break out of poll */
 	int event_fd[2];
 	/* Signal PIPE to catch SIGINT */
