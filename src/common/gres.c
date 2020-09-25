@@ -8301,8 +8301,6 @@ static void *_step_state_dup(void *gres_data)
 	return new_gres_ptr;
 }
 
-uint64_t *gres_cnt_node_alloc;	/* Per node GRES allocated, */
-
 static void *_step_state_dup2(void *gres_data, int node_index)
 {
 
