@@ -44,7 +44,7 @@
  * IN buf string buffer containing YAML formatted data
  * RET structured data or NULL on error
  */
-extern data_t *parse_yaml(const char *buf);
+extern data_t *parse_yaml(const char *buf, size_t len);
 
 /*
  * read YAML formatted buffer

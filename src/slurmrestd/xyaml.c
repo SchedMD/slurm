@@ -554,10 +554,12 @@ static int _parse_yaml(const char *buffer, yaml_parser_t *parser, data_t *data)
 	return _yaml_to_data(0, parser, data, YAML_PARSE_NONE);
 }
 
-data_t *parse_yaml(const char *buffer)
+data_t *parse_yaml(const char *buffer, size_t len)
 {
 	data_t *data = data_new();
 	yaml_parser_t parser;
+
+	xassert(len < strlen(buffer));
 
 	if (_parse_yaml(buffer, &parser, data)) {
 		FREE_NULL_DATA(data);
@@ -863,7 +865,7 @@ extern char *dump_yaml(const data_t *data)
 
 #else /* HAVE_YAML */
 
-extern data_t *parse_yaml(const char *buf)
+extern data_t *parse_yaml(const char *buf, size_t len)
 {
 	error("%s: YAML support not compiled", __func__);
 	return NULL;

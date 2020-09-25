@@ -114,7 +114,7 @@ static data_t *_json_to_data(json_object *jobj, data_t *d)
 	return d;
 }
 
-extern data_t *parse_json(const char *buffer)
+extern data_t *parse_json(const char *buffer, size_t len)
 {
 	json_object *jobj = NULL;
 	data_t *data = NULL;
@@ -124,12 +124,16 @@ extern data_t *parse_json(const char *buffer)
 		return NULL;
 
 	/* json-c has hard limit of 32 bits */
-	xassert(strlen(buffer) < INT32_MAX);
+	if (len >= INT32_MAX) {
+		error("%s: unable to parse JSON: too large",
+		      __func__);
+		return NULL;
+	}
 
 	if (!tok)
 		return NULL;
 
-	jobj = _try_parse(buffer, strlen(buffer), tok);
+	jobj = _try_parse(buffer, len, tok);
 	if (jobj) {
 		data = _json_to_data(jobj, NULL);
 		json_object_put(jobj);
@@ -238,7 +242,7 @@ extern char *dump_json(const data_t *data, dump_json_flags_t flags)
 
 #else /* HAVE_JSON */
 
-extern data_t *parse_json(const char *buf)
+extern data_t *parse_json(const char *buf, size_t len)
 {
 	error("%s: JSON support not compiled", __func__);
 	return NULL;

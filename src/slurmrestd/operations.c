@@ -248,7 +248,7 @@ static int _get_query(on_http_request_args_t *args, data_t **query,
 	/* post will have query in the body otherwise it is in the URL */
 	switch (read_mime) {
 	case MIME_JSON:
-		*query = parse_json(args->body);
+		*query = parse_json(args->body, (args->body_length - 1));
 		break;
 	case MIME_URL_ENCODED:
 		/* everything but POST must be urlencoded */
@@ -258,7 +258,7 @@ static int _get_query(on_http_request_args_t *args, data_t **query,
 			*query = parse_url_query(args->query, true);
 		break;
 	case MIME_YAML:
-		*query = parse_yaml(args->body);
+		*query = parse_yaml(args->body, args->body_length);
 		break;
 	default:
 		fatal_abort("%s: unknown read mime type", __func__);

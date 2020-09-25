@@ -78,7 +78,8 @@
 	do {                                                \
 		char *json_data_ptr;                        \
 		static_ref_to_cstring(json_data_ptr, name); \
-		data = parse_json(json_data_ptr);           \
+		data = parse_json(json_data_ptr,            \
+				  static_ref_size(name));   \
 		xfree(json_data_ptr);                       \
 	} while (0);
 
