@@ -401,6 +401,11 @@ static char *_fmt_header_num(const char *name, size_t value)
 	return xstrdup_printf("%s: %zu" CRLF, name, value);
 }
 
+extern int send_http_connection_close(http_context_t *ctxt)
+{
+	return _write_fmt_header(ctxt->con, "Connection", "Close");
+}
+
 /*
  * Create and write formatted numerical header
  * IN request HTTP request
