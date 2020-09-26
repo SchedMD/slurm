@@ -198,7 +198,8 @@ extern int unbind_operation_handler(operation_handler_t callback)
 
 static int _operations_router_reject(const on_http_request_args_t *args,
 				     const char *err,
-				     http_status_code_t err_code)
+				     http_status_code_t err_code,
+				     const char *body_encoding)
 {
 	send_http_response_args_t send_args = {
 		.con = args->context->con,
@@ -206,8 +207,8 @@ static int _operations_router_reject(const on_http_request_args_t *args,
 		.http_minor = args->http_minor,
 		.status_code = err_code,
 		.body = err,
-		.body_encoding = "text/plain",
-		.body_length = err ? strlen(err) : 0
+		.body_encoding = (body_encoding ? body_encoding : "text/plain"),
+		.body_length = (err ? strlen(err) : 0),
 	};
 
 	(void) send_http_response(&send_args);
@@ -226,7 +227,7 @@ static int _resolve_path(on_http_request_args_t *args, int *path_tag,
 	if (!path)
 		return _operations_router_reject(
 			args, "Unable to parse URL path.",
-			HTTP_STATUS_CODE_ERROR_BAD_REQUEST);
+			HTTP_STATUS_CODE_ERROR_BAD_REQUEST, NULL);
 
 	/* attempt to identify path leaf types */
 	(void) data_convert_tree(path, DATA_TYPE_NONE);
@@ -239,7 +240,7 @@ static int _resolve_path(on_http_request_args_t *args, int *path_tag,
 		return _operations_router_reject(
 			args,
 			"Unable find requested URL. Please view /openapi/v3 for API reference.",
-			HTTP_STATUS_CODE_ERROR_NOT_FOUND);
+			HTTP_STATUS_CODE_ERROR_NOT_FOUND, NULL);
 
 	return SLURM_SUCCESS;
 }
@@ -252,7 +253,7 @@ static int _get_query(on_http_request_args_t *args, data_t **query,
 	    args->body_length == 0)
 		return _operations_router_reject(
 			args, "Unable to parse empty HTML body.",
-			HTTP_STATUS_CODE_ERROR_BAD_REQUEST);
+			HTTP_STATUS_CODE_ERROR_BAD_REQUEST, NULL);
 
 	/* post will have query in the body otherwise it is in the URL */
 	switch (read_mime) {
@@ -276,7 +277,7 @@ static int _get_query(on_http_request_args_t *args, data_t **query,
 	if (!*query)
 		return _operations_router_reject(
 			args, "Unable to parse query.",
-			HTTP_STATUS_CODE_ERROR_BAD_REQUEST);
+			HTTP_STATUS_CODE_ERROR_BAD_REQUEST, NULL);
 	else
 		return SLURM_SUCCESS;
 
@@ -321,19 +322,19 @@ static int _resolve_mime(on_http_request_args_t *args, mime_types_t *read_mime,
 	if (*write_mime == MIME_UNKNOWN)
 		return _operations_router_reject(
 			args, "Accept content type is unknown",
-			HTTP_STATUS_CODE_ERROR_BAD_REQUEST);
+			HTTP_STATUS_CODE_ERROR_BAD_REQUEST, NULL);
 
 	if (args->method != HTTP_REQUEST_POST && *read_mime != MIME_URL_ENCODED)
 		return _operations_router_reject(
 			args,
 			"only application/x-www-form-urlencoded is accepted as content-type non-POST methods.",
-			HTTP_STATUS_CODE_ERROR_BAD_REQUEST);
+			HTTP_STATUS_CODE_ERROR_BAD_REQUEST, NULL);
 
 	if (args->method != HTTP_REQUEST_POST && args->body_length > 0)
 		return _operations_router_reject(
 			args,
 			"Unexpected http body provided for non-POST method",
-			HTTP_STATUS_CODE_ERROR_BAD_REQUEST);
+			HTTP_STATUS_CODE_ERROR_BAD_REQUEST, NULL);
 
 	debug3("%s: [%s] mime read: %s write: %s",
 	       __func__, args->context->con->name,
@@ -378,7 +379,8 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		else if (rc == ESLURM_REST_INVALID_JOBS_DESC)
 			e = HTTP_STATUS_CODE_ERROR_BAD_REQUEST;
 
-		rc = _operations_router_reject(args, body, e);
+		rc = _operations_router_reject(args, body, e,
+					       get_mime_type_str(write_mime));
 	} else {
 		send_http_response_args_t send_args = {
 			.con = args->context->con,
@@ -422,7 +424,8 @@ extern int operations_router(on_http_request_args_t *args)
 
 	if ((rc = rest_authenticate_http_request(args))) {
 		_operations_router_reject(args, "Authentication failure",
-					  HTTP_STATUS_CODE_ERROR_UNAUTHORIZED);
+					  HTTP_STATUS_CODE_ERROR_UNAUTHORIZED,
+					  NULL);
 		return rc;
 	}
 
