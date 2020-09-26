@@ -46,6 +46,7 @@ typedef struct licenses {
 	char *		name;		/* name associated with a license */
 	uint32_t	total;		/* total license configued */
 	uint32_t	used;		/* used licenses */
+	uint32_t	reserved;	/* currently reserved licenses */
 	uint8_t         remote;	        /* non-zero if remote (from database) */
 } licenses_t;
 

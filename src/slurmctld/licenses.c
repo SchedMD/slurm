@@ -802,6 +802,7 @@ get_all_license_info(char **buffer_ptr,
 	if (license_list) {
 		iter = list_iterator_create(license_list);
 		while ((lic_entry = list_next(iter))) {
+			set_reserved_license_count(lic_entry);
 			/* Now encode the license data structure.
 			 */
 			_pack_license(lic_entry, buffer, protocol_version);
@@ -932,6 +933,7 @@ static void _pack_license(struct licenses *lic, Buf buffer,
 		packstr(lic->name, buffer);
 		pack32(lic->total, buffer);
 		pack32(lic->used, buffer);
+		pack32(lic->reserved, buffer);
 		pack8(lic->remote, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(lic->name, buffer);

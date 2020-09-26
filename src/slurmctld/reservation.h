@@ -44,6 +44,7 @@
 
 #include "slurm/slurm.h"
 #include "src/common/bitstring.h"
+#include "src/slurmctld/licenses.h"
 #include "src/slurmctld/slurmctld.h"
 
 /* Create a resource reservation */
@@ -248,5 +249,7 @@ extern void reservation_update_groups(int force);
  * NOTE: Caller must free err_part
  */
 extern List get_resv_list(char *name, char **err_resv);
+
+extern void set_reserved_license_count(licenses_t *license);
 
 #endif /* !_RESERVATION_H */

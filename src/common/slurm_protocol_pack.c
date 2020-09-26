@@ -11518,6 +11518,7 @@ static int _unpack_license_info_msg(license_info_msg_t **msg_ptr,
 					       &uint32_tmp, buffer);
 			safe_unpack32(&msg->lic_array[i].total, buffer);
 			safe_unpack32(&msg->lic_array[i].in_use, buffer);
+			safe_unpack32(&msg->lic_array[i].reserved, buffer);
 			/* The total number of licenses can decrease
 			 * at runtime.
 			 */

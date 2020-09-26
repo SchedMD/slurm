@@ -135,12 +135,13 @@ static void _print_license_info(const char *name, license_info_msg_t *msg)
 	for (cc = 0; cc < msg->num_lic; cc++) {
 		if (name && xstrcmp((sorted_lic[cc])->name, name))
 			continue;
-		printf("LicenseName=%s%sTotal=%d Used=%u Free=%u Remote=%s\n",
+		printf("LicenseName=%s%sTotal=%d Used=%u Free=%u Reserved=%u Remote=%s\n",
 		       (sorted_lic[cc])->name,
 		       one_liner ? " " : "\n    ",
 		       (sorted_lic[cc])->total,
 		       (sorted_lic[cc])->in_use,
 		       (sorted_lic[cc])->available,
+		       (sorted_lic[cc])->reserved,
 		       (sorted_lic[cc])->remote ? "yes" : "no");
 		if (name)
 			break;

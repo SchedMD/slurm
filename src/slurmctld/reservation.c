@@ -7288,3 +7288,57 @@ extern void reservation_update_groups(int force)
 
 	END_TIMER2("reservation_update_groups");
 }
+
+/*
+ * The following functions all deal with calculating the count of reserved
+ * licenses for a given license. (Iterating across all licenses is handled
+ * upstream of this function.)
+ * This is done by iterating across all reservations, checking if the
+ * reservation is currently active, and then if it matches the license to
+ * update we add the reserved license count in. This is O(reservations *
+ * licenses) which is not ideal, but the count of reservation and licenses on a
+ * system tends to be low enough to ignore this overhead, and go with the
+ * straightforward iterative solution presented here.
+ */
+static int _foreach_reservation_license(void *x, void *key)
+{
+	licenses_t *resv_license = (licenses_t *) x;
+	licenses_t *license = (licenses_t *) key;
+
+	if (!xstrcmp(resv_license->name, license->name))
+		license->reserved += resv_license->total;
+
+	return 0;
+}
+
+static int _foreach_reservation_license_list(void *x, void *key)
+{
+	slurmctld_resv_t *reservation = (slurmctld_resv_t *) x;
+	time_t now = time(NULL);
+
+	if (reservation->flags & RESERVE_FLAG_FLEX) {
+		/*
+		 * Treat FLEX reservations as always active
+		 * and skip time bounds checks.
+		 */
+		;
+	} else if (now < reservation->start_time) {
+		/* reservation starts later */
+		return 0;
+	} else if (now > reservation->end_time) {
+		/* reservation ended earlier */
+		return 0;
+	}
+
+	list_for_each(reservation->license_list, _foreach_reservation_license,
+		      key);
+
+	return 0;
+}
+
+extern void set_reserved_license_count(licenses_t *license)
+{
+	license->reserved = 0;
+	list_for_each(resv_list, _foreach_reservation_license_list,
+		      license);
+}
