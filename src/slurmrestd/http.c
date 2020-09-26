@@ -473,6 +473,11 @@ extern int send_http_response(const send_http_response_args_t *args)
 	xassert(args->status_code != HTTP_STATUS_NONE);
 	xassert(args->body_length == 0 || (args->body_length && args->body));
 
+	log_flag(NET, "%s: [%s] sending response %u: %s",
+	       __func__, args->con->name,
+	       args->status_code,
+	       get_http_status_code_string(args->status_code));
+
 	/* send rfc2616 response */
 	xstrfmtcat(buffer, "HTTP/%d.%d %d %s"CRLF,
 		   args->http_major, args->http_minor, args->status_code,
