@@ -111,6 +111,9 @@ static void _free_http_header(void *header)
 
 static void _free_request_t(request_t *request)
 {
+	if (!request)
+		return;
+
 	xassert(request->magic == MAGIC_REQUEST_T);
 	xassert(request->magic = ~MAGIC_REQUEST_T);
 	FREE_NULL_LIST(request->headers);
