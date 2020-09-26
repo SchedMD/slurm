@@ -531,6 +531,11 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Jobs description entry not found, empty or not dictionary or list"},
 	{ ESLURM_REST_EMPTY_RESULT,
 	  "Nothing found with query"},
+
+	/* data_t errors */
+	{ ESLURM_DATA_PATH_NOT_FOUND,
+	  "Unable to resolve path"},
+
 };
 
 /*

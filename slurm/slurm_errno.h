@@ -296,6 +296,9 @@ enum {
 	ESLURM_REST_FAIL_PARSING,
 	ESLURM_REST_INVALID_JOBS_DESC,
 	ESLURM_REST_EMPTY_RESULT,
+
+	/* data_t errors */
+	ESLURM_DATA_PATH_NOT_FOUND = 9200,
 };
 
 /* look up an errno value */

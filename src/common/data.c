@@ -1703,7 +1703,7 @@ extern int data_retrieve_dict_path_string(const data_t *data, const char *path,
 
 	_check_magic(data);
 	if (!(d = data_resolve_dict_path(data, path)))
-		return SLURM_ERROR;
+		return ESLURM_DATA_PATH_NOT_FOUND;
 
 	rc = data_get_string_converted(d, ptr_buffer);
 
@@ -1721,7 +1721,7 @@ extern int data_retrieve_dict_path_bool(const data_t *data, const char *path,
 
 	_check_magic(data);
 	if (!(d = data_resolve_dict_path(data, path)))
-		return SLURM_ERROR;
+		return ESLURM_DATA_PATH_NOT_FOUND;
 
 	rc = data_copy_bool_converted(d, ptr_buffer);
 
@@ -1740,7 +1740,7 @@ extern int data_retrieve_dict_path_int(const data_t *data, const char *path,
 
 	_check_magic(data);
 	if (!(d = data_resolve_dict_path(data, path)))
-		return SLURM_ERROR;
+		return ESLURM_DATA_PATH_NOT_FOUND;
 
 	rc = data_get_int_converted(d, ptr_buffer);
 
