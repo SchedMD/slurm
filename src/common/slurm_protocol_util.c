@@ -192,3 +192,28 @@ void slurm_print_launch_task_msg(launch_tasks_request_msg_t *msg, char *name)
 		       msg->global_task_ids[node_id][i]);
 	}
 }
+
+/* Get the port number from a slurm_addr_t */
+uint16_t slurm_get_port(slurm_addr_t *addr)
+{
+	if (((struct sockaddr_storage *) addr)->ss_family == AF_INET6)
+		return ntohs(((struct sockaddr_in6 *) addr)->sin6_port);
+	else if (((struct sockaddr_storage *) addr)->ss_family == AF_INET)
+		return ntohs(((struct sockaddr_in *) addr)->sin_port);
+
+	error("%s: Address family '%d' not supported", __func__,
+	      ((struct sockaddr_storage *) addr)->ss_family);
+	return 0;
+}
+
+/* Set the port number in a slurm_addr_t */
+void slurm_set_port(slurm_addr_t *addr, uint16_t port)
+{
+	if (((struct sockaddr_storage *) addr)->ss_family == AF_INET6)
+		((struct sockaddr_in6 *) addr)->sin6_port = htons(port);
+	else if (((struct sockaddr_storage *) addr)->ss_family == AF_INET)
+		((struct sockaddr_in *) addr)->sin_port = htons(port);
+	else
+		error("%s: attempting to set port without address family",
+		      __func__);
+}

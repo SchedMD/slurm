@@ -78,4 +78,10 @@ update_header(header_t * header, uint32_t msg_length);
 extern void slurm_print_launch_task_msg(launch_tasks_request_msg_t * msg,
 					char *name);
 
+/* Get the port number from a slurm_addr_t */
+extern uint16_t slurm_get_port(slurm_addr_t *addr);
+
+/* Set the port number in a slurm_addr_t */
+extern void slurm_set_port(slurm_addr_t *addr, uint16_t port);
+
 #endif /* !_SLURM_PROTOCOL_UTIL_H */
