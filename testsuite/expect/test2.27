@@ -165,8 +165,13 @@ proc test_it {} {
 	update $job_id "mailuser=blah mailtype=begin" "MailUser=blah MailType=BEGIN"
 	update $job_id "mailuser=blah mailtype=none" "MailUser=blah MailType=NONE"
 
-	update $job_id "mailuser=blah mailtype=begin" "MailUser=blah MailType=BEGIN"
+	update $job_id "mailtype=begin" "MailUser=blah MailType=BEGIN"
 	update $job_id "mailtype=none" "MailUser=blah MailType=NONE"
+	update $job_id "mailtype=END" "MailUser=blah MailType=END"
+
+	update $job_id "mailuser=" "MailUser=$user$domain_str MailType=END"
+	update $job_id "mailtype=BEGIN" "MailUser=$user$domain_str MailType=BEGIN"
+	update $job_id "mailuser=blah" "MailUser=blah MailType=BEGIN"
 
 	cancel_job $job_id
 }
