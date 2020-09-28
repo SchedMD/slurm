@@ -31,8 +31,6 @@ set file_in     "test$test_id.input"
 set number_commas  "\[0-9_,\]+"
 
 if {![check_config_select "cons_tres"]} {
-    log_debug "Valid configuration, using select/cons_tres"
-} else {
     skip "This test is only compatible with select/cons_tres"
 }
 
