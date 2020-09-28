@@ -10652,6 +10652,7 @@ static void _pack_default_job_details(job_record_t *job_ptr, Buf buffer,
 
 			pack16(detail_ptr->requeue,   buffer);
 			pack16(detail_ptr->ntasks_per_node, buffer);
+			pack16(detail_ptr->ntasks_per_tres, buffer);
 			if (detail_ptr->num_tasks)
 				pack32(detail_ptr->num_tasks, buffer);
 			else if (IS_JOB_PENDING(job_ptr))

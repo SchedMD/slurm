@@ -1662,6 +1662,7 @@ typedef struct job_info {
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	uint16_t ntasks_per_core;/* number of tasks to invoke on each core */
+	uint16_t ntasks_per_tres;/* number of tasks that can access each gpu */
 	uint16_t ntasks_per_node;/* number of tasks to invoke on each node */
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on each socket*/
 	uint16_t ntasks_per_board; /* number of tasks to invoke on each board */
