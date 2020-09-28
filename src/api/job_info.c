@@ -1010,11 +1010,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrfmtcat(out, "TresPerTask=%s", job_ptr->tres_per_task);
 	}
 
-	/****** Line ******/
-	xstrcat(out, line_end);
-	xstrfmtcat(out, "MailUser=%s MailType=%s",
-		   job_ptr->mail_user,
-		   print_mail_type(job_ptr->mail_type));
+	/****** Line (optional) ******/
+	if (job_ptr->mail_type && job_ptr->mail_user) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "MailUser=%s MailType=%s",
+			   job_ptr->mail_user,
+			   print_mail_type(job_ptr->mail_type));
+	}
 
 	/****** END OF JOB RECORD ******/
 	if (one_liner)
