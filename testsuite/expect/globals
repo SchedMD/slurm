@@ -2434,6 +2434,7 @@ proc get_total_cpus {} {
 ################################################################
 
 proc is_super_user { } {
+	global number
 
 	set user [get_my_user_name]
 
@@ -2444,7 +2445,7 @@ proc is_super_user { } {
 
 	# Check if user is SlurmUser
 	set slurm_user [get_config_param "SlurmUser"]
-	if {[string compare $user $slurm_user] == 0} {
+	if {[regexp "${user}\\($number\\)" $slurm_user match]} {
 		return true
 	}
 
