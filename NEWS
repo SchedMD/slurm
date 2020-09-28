@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
     file, which will give root a chance to fix the config if missing or broken.
  -- Reset DefMemPerCPU, MaxMemPerCPU, and TaskPluginParam (among other minor
     flags) on reconfigure.
+ -- Fix incorrect memory handling of mail_user when updating mail_type=none.
+ -- Handle mail_user and mail_type independently.
 
 * Changes in Slurm 20.02.5
 ==========================

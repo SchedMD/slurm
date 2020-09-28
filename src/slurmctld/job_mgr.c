@@ -2364,7 +2364,7 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 	xfree(job_ptr->mail_user);
 	if (mail_user)
 		job_ptr->mail_user    = mail_user;
-	else if (mail_type)
+	else
 		job_ptr->mail_user = _get_mail_user(NULL, user_id);
 	mail_user             = NULL;	/* reused, nothing left to free */
 	xfree(job_ptr->mcs_label);
@@ -8175,11 +8175,11 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->derived_ec = 0;
 
 	job_ptr->licenses  = xstrdup(job_desc->licenses);
+	job_ptr->mail_user = _get_mail_user(job_desc->mail_user,
+					    job_ptr->user_id);
 	if (job_desc->mail_type &&
 	    (job_desc->mail_type != NO_VAL16)) {
 		job_ptr->mail_type = job_desc->mail_type;
-		job_ptr->mail_user = _get_mail_user(job_desc->mail_user,
-						    job_ptr->user_id);
 	}
 
 	job_ptr->bit_flags = job_desc->bitflags;
@@ -13967,24 +13967,14 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 
 	if (job_specs->mail_type != NO_VAL16) {
 		job_ptr->mail_type = job_specs->mail_type;
-		if (!job_specs->mail_user) {
-			char *tmp = job_ptr->mail_user;
-			if (job_ptr->mail_type) {
-				job_ptr->mail_user =
-					_get_mail_user(tmp, job_ptr->user_id);
-			}
-			xfree(tmp);
-		}
 		sched_info("%s: setting mail_type to %u for %pJ",
 			   __func__, job_ptr->mail_type, job_ptr);
 	}
 
 	if (job_specs->mail_user) {
 		xfree(job_ptr->mail_user);
-		if (job_ptr->mail_type)
-			job_ptr->mail_user =
-				_get_mail_user(job_specs->mail_user,
-					       job_ptr->user_id);
+		job_ptr->mail_user = _get_mail_user(job_specs->mail_user,
+						    job_ptr->user_id);
 		sched_info("%s: setting mail_user to %s for %pJ",
 			   __func__, job_ptr->mail_user, job_ptr);
 	}
