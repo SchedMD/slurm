@@ -3034,6 +3034,7 @@ extern slurmdb_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
 	ListIterator itr = NULL;
 	slurmdb_user_rec_t * found_user = NULL;
 	assoc_mgr_lock_t locks = { .user = READ_LOCK };
+	slurmdb_admin_level_t level = SLURMDB_ADMIN_NOTSET;
 
 	if (!assoc_mgr_user_list)
 		if (_get_assoc_mgr_user_list(db_conn, 0) == SLURM_ERROR)
@@ -3051,12 +3052,13 @@ extern slurmdb_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
 			break;
 	}
 	list_iterator_destroy(itr);
-	assoc_mgr_unlock(&locks);
 
 	if (found_user)
-		return found_user->admin_level;
+		level = found_user->admin_level;
 
-	return SLURMDB_ADMIN_NOTSET;
+	assoc_mgr_unlock(&locks);
+
+	return level;
 }
 
 extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
