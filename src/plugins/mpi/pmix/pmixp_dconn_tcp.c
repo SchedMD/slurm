@@ -105,6 +105,7 @@ static int _tcp_connect(void *_priv, void *ep_data, size_t ep_len,
 	slurm_addr_t address;
 	int fd, i, conn_timeout = 5;
 	char *nodename = pmixp_info_job_host(priv->nodeid);
+	uint16_t port;
 
 	if (slurm_conf_get_addr(nodename, &address, 0) == SLURM_ERROR) {
 		PMIXP_ERROR("Can't find address for host "
@@ -118,9 +119,9 @@ static int _tcp_connect(void *_priv, void *ep_data, size_t ep_len,
 	 * the provided stepd's
 	* TODO: check carefully if there is an appropriate api for that
 	*/
-	xassert(sizeof(address.sin_port) == ep_len);
-	memcpy(&address.sin_port, ep_data, ep_len);
-	address.sin_port = htons(address.sin_port);
+	xassert(sizeof(port) == ep_len);
+	memcpy(&port, ep_data, ep_len);
+	slurm_set_port(&address, port);
 
 	for (i = 0; i <= conn_timeout; i++) {
 		if (i) {

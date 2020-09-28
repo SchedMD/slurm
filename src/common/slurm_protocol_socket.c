@@ -124,7 +124,7 @@ static void _sock_bind_wild(int sockfd)
 		rc = bind(sockfd, (struct sockaddr *) &sin, sizeof(sin));
 		if (rc >= 0)
 			break;
-		sin.sin_port  = htons(RANDOM_USER_PORT);
+		slurm_set_port(&sin, RANDOM_USER_PORT);
 	}
 	return;
 }
@@ -491,9 +491,9 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 	}
 #endif
 
-	if ( (addr->sin_family == 0) || (addr->sin_port  == 0) ) {
+	if ( (addr->sin_family == 0) || (slurm_get_port(addr) == 0) ) {
 		error("Error connecting, bad data: family = %u, port = %u",
-			addr->sin_family, addr->sin_port);
+			addr->sin_family, slurm_get_port(addr));
 		return SLURM_ERROR;
 	}
 
@@ -637,7 +637,7 @@ extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 	 * If NULL hostname passed in, we only update the port of addr
 	 */
 	addr->sin_family = AF_INET;
-	addr->sin_port   = htons(port);
+	slurm_set_port(addr, port);
 	if (host == NULL)
 		return;
 

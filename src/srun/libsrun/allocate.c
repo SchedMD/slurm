@@ -710,7 +710,7 @@ int slurmctld_msg_init(void)
 		exit(error_exit);
 	}
 	fd_set_nonblocking(slurmctld_fd);
-	slurmctld_comm_port = ntohs(slurm_address.sin_port);
+	slurmctld_comm_port = slurm_get_port(&slurm_address);
 	debug2("srun PMI messages to port=%u", slurmctld_comm_port);
 
 	return slurmctld_fd;

@@ -1544,10 +1544,7 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *job,
 	debug4 ("adding IO connection (logical node rank %d)", job->nodeid);
 
 	if (srun->ioaddr.sin_addr.s_addr) {
-		char         ip[256];
-		uint16_t     port;
-		slurm_get_ip_str(&srun->ioaddr, &port, ip, sizeof(ip));
-		if (ntohs(port) == 0) {
+		if (slurm_get_port(&srun->ioaddr) == 0) {
 			debug3("No IO connection requested");
 			return SLURM_SUCCESS;
 		}

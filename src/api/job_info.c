@@ -1863,7 +1863,7 @@ slurm_network_callerid (network_callerid_msg_t req, uint32_t *job_id,
 		memcpy(&target_slurmd, req.ip_src, 4);
 
 	addr.sin_addr.s_addr = target_slurmd;
-	addr.sin_port = htons(slurm_conf.slurmd_port);
+	slurm_set_port(&addr, slurm_conf.slurmd_port);
 	req_msg.address = addr;
 
 	req_msg.msg_type = REQUEST_NETWORK_CALLERID;

@@ -148,7 +148,7 @@ static slurm_protocol_config_t *_slurm_api_get_comm_config(void)
 	memset(&controller_addr, 0, sizeof(slurm_addr_t));
 	slurm_set_addr(&controller_addr, conf->slurmctld_port,
 		       conf->control_addr[0]);
-	if (controller_addr.sin_port == 0) {
+	if (slurm_get_port(&controller_addr) == 0) {
 		error("Unable to establish control machine address");
 		goto cleanup;
 	}
@@ -701,7 +701,7 @@ int slurm_init_msg_engine_port(uint16_t port)
 	if ((cc < 0) && (port == 0) && (errno == EADDRINUSE)) {
 		/* All ephemeral ports are in use, test other ports */
 		for (i = 10001; i < 65536; i++) {
-			slurm_setup_sockaddr(&addr, i);
+			slurm_set_port(&addr, i);
 			cc = slurm_init_msg_engine(&addr);
 			if (cc >= 0)
 				break;
@@ -780,6 +780,7 @@ extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
 	int fd = -1;
 	slurm_protocol_config_t *proto_conf = NULL;
 	int i, retry, max_retry_period;
+	uint16_t port;
 
 	if (!comm_cluster_rec) {
 		/* This means the addr wasn't set up already */
@@ -787,17 +788,17 @@ extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
 			return SLURM_ERROR;
 
 		for (i = 0; i < proto_conf->control_cnt; i++) {
-			proto_conf->controller_addr[i].sin_port =
-				htons(slurm_conf.slurmctld_port +
-				(((time(NULL) + getpid()) %
-				 slurm_conf.slurmctld_port_count)));
+			port = slurm_conf.slurmctld_port +
+				((time(NULL) + getpid()) %
+				 slurm_conf.slurmctld_port_count);
+			slurm_set_port(&(proto_conf->controller_addr[i]), port);
 		}
 
 		if (proto_conf->vip_addr_set) {
-			proto_conf->vip_addr.sin_port =
-				htons(slurm_conf.slurmctld_port +
-				(((time(NULL) + getpid()) %
-				 slurm_conf.slurmctld_port_count)));
+			port = slurm_conf.slurmctld_port +
+				((time(NULL) + getpid()) %
+				 slurm_conf.slurmctld_port_count);
+			slurm_set_port(&(proto_conf->vip_addr), port);
 		}
 	}
 
@@ -810,7 +811,8 @@ extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
 		if (retry)
 			sleep(1);
 		if (comm_cluster_rec) {
-			if (comm_cluster_rec->control_addr.sin_port == 0) {
+			if (slurm_get_port(&comm_cluster_rec->control_addr)
+			    == 0) {
 				slurm_set_addr(
 					&comm_cluster_rec->control_addr,
 					comm_cluster_rec->control_port,
@@ -881,7 +883,7 @@ extern int slurm_open_controller_conn_spec(int dest,
 	int rc;
 
 	if (comm_cluster_rec) {
-		if (comm_cluster_rec->control_addr.sin_port == 0) {
+		if (slurm_get_port(&comm_cluster_rec->control_addr) == 0) {
 			slurm_set_addr(
 				&comm_cluster_rec->control_addr,
 				comm_cluster_rec->control_port,
@@ -1707,7 +1709,7 @@ void slurm_get_ip_str(slurm_addr_t * slurm_address, uint16_t * port,
 		      char *ip, unsigned int buf_len)
 {
 	unsigned char *uc = (unsigned char *)&slurm_address->sin_addr.s_addr;
-	*port = slurm_address->sin_port;
+	*port = slurm_get_port(slurm_address);
 	snprintf(ip, buf_len, "%u.%u.%u.%u", uc[0], uc[1], uc[2], uc[3]);
 }
 
@@ -2842,7 +2844,7 @@ extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
 
 	memset(sin, 0, sizeof(struct sockaddr_in));
 	sin->sin_family = AF_INET;
-	sin->sin_port = htons(port);
+	slurm_set_port(sin, port);
 
 	if (s_addr == NO_VAL) {
 		/* On systems with multiple interfaces we might not

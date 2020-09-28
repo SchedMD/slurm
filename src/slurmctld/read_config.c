@@ -432,7 +432,7 @@ static void _set_slurmd_addr(void)
 			node_ptr->port = slurm_conf.slurmd_port;
 		slurm_set_addr(&node_ptr->slurm_addr, node_ptr->port,
 			       node_ptr->comm_name);
-		if (node_ptr->slurm_addr.sin_port)
+		if (slurm_get_port(&node_ptr->slurm_addr))
 			continue;
 		error("%s: failure on %s", __func__, node_ptr->comm_name);
 		node_ptr->node_state = NODE_STATE_FUTURE;

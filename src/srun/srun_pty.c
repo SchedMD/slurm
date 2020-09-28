@@ -108,7 +108,7 @@ void pty_thread_create(srun_job_t *job)
 		error("slurm_get_stream_addr: %m");
 		return;
 	}
-	job->pty_port = ntohs(((struct sockaddr_in) pty_addr).sin_port);
+	job->pty_port = slurm_get_port(&pty_addr);
 	debug2("initialized job control port %hu", job->pty_port);
 
 	slurm_thread_create_detached(NULL, _pty_thread, job);

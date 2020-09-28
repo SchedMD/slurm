@@ -312,7 +312,7 @@ extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 	slurm_set_addr(&cluster_rec->control_addr,
 		       cluster_rec->control_port,
 		       cluster_rec->control_host);
-	if (cluster_rec->control_addr.sin_port == 0) {
+	if (slurm_get_port(&(cluster_rec->control_addr)) == 0) {
 		error("Unable to establish control "
 		      "machine address for '%s'(%s:%u)",
 		      cluster_rec->name,

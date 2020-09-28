@@ -1738,8 +1738,8 @@ static void _send_event_callbacks(void)
 				     job_fail_ptr->callback_flags);
 			}
 			callback_addr = job_fail_ptr->callback_addr;
-			callback_addr.sin_port =
-				htons(job_fail_ptr->callback_port);
+			slurm_set_port(&callback_addr,
+				       job_fail_ptr->callback_port);
 			callback_flags = job_fail_ptr->callback_flags;
 			debug("%s: job_id %d flags 0x%x", __func__,
 			      job_fail_ptr->job_id,

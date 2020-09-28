@@ -93,7 +93,7 @@ static short _sock_bind_wild(int sockfd)
 	len = sizeof(sin);
 	if (getsockname(sockfd, (struct sockaddr *) &sin, &len) < 0)
 		return (-1);
-	return ntohs(sin.sin_port);
+	return slurm_get_port(&sin);
 }
 
 /* open a stream socket on an ephemereal port and put it into

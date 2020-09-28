@@ -220,7 +220,6 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 	slurm_msg_t msg_send, msg_rcv;
 	slurm_addr_t slurm_addr, srun_reply_addr;
 	char hostname[64];
-	uint16_t port;
 	kvs_get_msg_t data;
 	char *env_pmi_ifhn;
 
@@ -246,7 +245,6 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 		error("slurm_get_stream_addr: %m");
 		return SLURM_ERROR;
 	}
-	port = ntohs(slurm_addr.sin_port);
 	if ((env_pmi_ifhn = getenv("SLURM_PMI_RESP_IFHN")))
 		strlcpy(hostname, env_pmi_ifhn, sizeof(hostname));
 	else
@@ -255,7 +253,7 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 	memset(&data, 0, sizeof(data));
 	data.task_id = pmi_rank;
 	data.size = pmi_size;
-	data.port = port;
+	data.port = slurm_get_port(&slurm_addr);
 	data.hostname = hostname;
 	slurm_msg_t_init(&msg_send);
 	slurm_msg_t_init(&msg_rcv);
