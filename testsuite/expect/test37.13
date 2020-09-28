@@ -148,12 +148,12 @@ proc end_it { exit_code } {
 
 #start test
 
-if {[test_federation_setup]} {
+if {![check_federation_setup]} {
 	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
 }
 
-if {[test_all_up]} {
-	pass
+if {![check_federation_up]} {
+	skip "This test can't be run without all clusters up"
 }
 
 set user_name [get_my_user_name]

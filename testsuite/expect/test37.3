@@ -133,12 +133,12 @@ proc test_fed_status {cname fed_flags cluster_list} {
 	}
 }
 
-if {[test_federation_setup]} {
+if {![check_federation_setup]} {
 	skip "This test can't be run without fed_slurm_base, fedc1, fedc2, fedc3 setup in globals.local"
 }
 
-if {[test_all_up]} {
-	skip "All of the clusters in the federation must be up"
+if {![check_federation_up]} {
+	skip "This test can't be run without all clusters up"
 }
 
 # Remove existing setup
