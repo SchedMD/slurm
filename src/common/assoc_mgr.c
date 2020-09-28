@@ -665,6 +665,16 @@ static int _local_update_assoc_qos_list(slurmdb_assoc_rec_t *assoc,
 	return SLURM_SUCCESS;
 }
 
+static int _list_find_uid(void *x, void *key)
+{
+	slurmdb_user_rec_t *user = (slurmdb_user_rec_t *) x;
+	uint32_t uid = *(uint32_t *) key;
+
+	if (user->uid == uid)
+		return 1;
+	return 0;
+}
+
 /* locks should be put in place before calling this function USER_WRITE */
 static void _set_user_default_acct(slurmdb_assoc_rec_t *assoc)
 {
@@ -674,24 +684,21 @@ static void _set_user_default_acct(slurmdb_assoc_rec_t *assoc)
 
 	/* set up the default if this is it */
 	if ((assoc->is_def == 1) && (assoc->uid != NO_VAL)) {
-		slurmdb_user_rec_t *user = NULL;
-		ListIterator user_itr =
-			list_iterator_create(assoc_mgr_user_list);
-		while ((user = list_next(user_itr))) {
-			if (user->uid != assoc->uid)
-				continue;
-			if (!user->default_acct
-			    || xstrcmp(user->default_acct, assoc->acct)) {
-				xfree(user->default_acct);
-				user->default_acct = xstrdup(assoc->acct);
-				debug2("user %s default acct is %s",
-				       user->name, user->default_acct);
-			}
-			/* cache user rec reference for backfill*/
-			assoc->user_rec = user;
-			break;
+		slurmdb_user_rec_t *user = list_find_first(
+			assoc_mgr_user_list, _list_find_uid, &assoc->uid);
+
+		if (!user)
+			return;
+
+		if (!user->default_acct
+		    || xstrcmp(user->default_acct, assoc->acct)) {
+			xfree(user->default_acct);
+			user->default_acct = xstrdup(assoc->acct);
+			debug2("user %s default acct is %s",
+			       user->name, user->default_acct);
 		}
-		list_iterator_destroy(user_itr);
+		/* cache user rec reference for backfill*/
+		assoc->user_rec = user;
 	}
 }
 
@@ -704,22 +711,18 @@ static void _set_user_default_wckey(slurmdb_wckey_rec_t *wckey)
 
 	/* set up the default if this is it */
 	if ((wckey->is_def == 1) && (wckey->uid != NO_VAL)) {
-		slurmdb_user_rec_t *user = NULL;
-		ListIterator user_itr =
-			list_iterator_create(assoc_mgr_user_list);
-		while ((user = list_next(user_itr))) {
-			if (user->uid != wckey->uid)
-				continue;
-			if (!user->default_wckey
-			    || xstrcmp(user->default_wckey, wckey->name)) {
-				xfree(user->default_wckey);
-				user->default_wckey = xstrdup(wckey->name);
-				debug2("user %s default wckey is %s",
-				       user->name, user->default_wckey);
-			}
-			break;
+		slurmdb_user_rec_t *user = list_find_first(
+			assoc_mgr_user_list, _list_find_uid, &wckey->uid);
+
+		if (!user)
+			return;
+		if (!user->default_wckey
+		    || xstrcmp(user->default_wckey, wckey->name)) {
+			xfree(user->default_wckey);
+			user->default_wckey = xstrdup(wckey->name);
+			debug2("user %s default wckey is %s",
+			       user->name, user->default_wckey);
 		}
-		list_iterator_destroy(user_itr);
 	}
 }
 
@@ -2984,9 +2987,8 @@ extern int assoc_mgr_fill_in_wckey(void *db_conn, slurmdb_wckey_rec_t *wckey,
 extern slurmdb_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
 						       uint32_t uid)
 {
-	ListIterator itr = NULL;
-	slurmdb_user_rec_t * found_user = NULL;
 	assoc_mgr_lock_t locks = { .user = READ_LOCK };
+	slurmdb_user_rec_t *found_user = NULL;
 	slurmdb_admin_level_t level = SLURMDB_ADMIN_NOTSET;
 
 	if (!assoc_mgr_user_list)
@@ -2999,12 +3001,7 @@ extern slurmdb_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
 		return SLURMDB_ADMIN_NOTSET;
 	}
 
-	itr = list_iterator_create(assoc_mgr_user_list);
-	while ((found_user = list_next(itr))) {
-		if (uid == found_user->uid)
-			break;
-	}
-	list_iterator_destroy(itr);
+	found_user = list_find_first(assoc_mgr_user_list, _list_find_uid, &uid);
 
 	if (found_user)
 		level = found_user->admin_level;
@@ -3036,12 +3033,8 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
 		return false;
 	}
 
-	itr = list_iterator_create(assoc_mgr_user_list);
-	while ((found_user = list_next(itr))) {
-		if (uid == found_user->uid)
-			break;
-	}
-	list_iterator_destroy(itr);
+	found_user = list_find_first(assoc_mgr_user_list, _list_find_uid,
+				     &uid);
 
 	if (!found_user || !found_user->coord_accts) {
 		assoc_mgr_unlock(&locks);
