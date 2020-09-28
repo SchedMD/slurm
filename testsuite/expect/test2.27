@@ -51,7 +51,7 @@ proc cleanup { } {
 	reconfigure
 }
 
-proc submit { args regex } {
+proc submit { args regex {negate_match 0} } {
 	global sbatch scontrol number
 	set matches 0
 	set jobid 0
@@ -88,14 +88,18 @@ proc submit { args regex } {
 		}
 	}
 
-	if {!$matches} {
+	if {$negate_match} {
+		if {$matches} {
+			fail "scontrol show job $jobid matched '$regex' and it shouldn't have"
+		}
+	} elseif {!$matches} {
 		fail "scontrol show job $jobid failed to match '$regex'"
 	}
 
 	cancel_job $jobid
 }
 
-proc update { job_id args regex } {
+proc update { job_id args regex {negate_match 0}} {
 	global scontrol
 	set matches 0
 
@@ -123,8 +127,12 @@ proc update { job_id args regex } {
 		}
 	}
 
-	if {!$matches} {
-		fail "scontrol update job $args failed to match '$regex'"
+	if {$negate_match} {
+		if {$matches} {
+			fail "scontrol show job $jobid matched '$regex' and it shouldn't have"
+		}
+	} elseif {!$matches} {
+		fail "scontrol show job $jobid failed to match '$regex'"
 	}
 }
 
@@ -141,9 +149,9 @@ proc test_it {} {
 		set domain_str "@$domain"
 	}
 
-	submit "-H" "MailUser=$user$domain_str MailType=NONE"
+	submit "-H" "MailUser=$user$domain_str MailType=NONE" 1
 	submit "-H --mail-type=begin,end" "MailUser=$user$domain_str MailType=BEGIN,END"
-	submit "-H --mail-user=blah" "MailUser=blah MailType=NONE"
+	submit "-H --mail-user=blah" "MailUser=blah MailType=NONE" 1
 
 	spawn $sbatch -J "test$test_id" --wrap=hostname -H
 	expect {
@@ -163,10 +171,10 @@ proc test_it {} {
 	update $job_id "mailuser= mailtype=begin,end" "MailUser=$user$domain_str MailType=BEGIN,END"
 	update $job_id "mailtype=begin" "MailUser=$user$domain_str MailType=BEGIN"
 	update $job_id "mailuser=blah mailtype=begin" "MailUser=blah MailType=BEGIN"
-	update $job_id "mailuser=blah mailtype=none" "MailUser=blah MailType=NONE"
+	update $job_id "mailuser=blah mailtype=none" "MailUser=blah MailType=NONE" 1
 
 	update $job_id "mailtype=begin" "MailUser=blah MailType=BEGIN"
-	update $job_id "mailtype=none" "MailUser=blah MailType=NONE"
+	update $job_id "mailtype=none" "MailUser=blah MailType=NONE" 1
 	update $job_id "mailtype=END" "MailUser=blah MailType=END"
 
 	update $job_id "mailuser=" "MailUser=$user$domain_str MailType=END"

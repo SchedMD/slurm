@@ -86,6 +86,7 @@ documents those changes that are of interest to users and administrators.
  -- Add CLOUD state to sinfo --state filter list.
  -- Add ability for sinfo state filtering to require all listed states.
  -- Add the "Reserved" license count to 'scontrol show licenses'.
+ -- Don't display MailUser/MailType in scontrol show jobs if mail won't be sent.
 
 * Changes in Slurm 20.02.6
 ==========================
