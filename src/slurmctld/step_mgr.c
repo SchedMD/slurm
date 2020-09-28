@@ -3037,7 +3037,6 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	step_layout_req.cpus_task_reps = cpus_task_reps;
 	step_layout_req.num_hosts = node_count;
 	step_layout_req.num_tasks = num_tasks;
-	step_layout_req.cpus_per_task = cpus_per_task_array;
 	step_layout_req.task_dist = task_dist;
 	step_layout_req.plane_size = plane_size;
 
