@@ -159,7 +159,7 @@ if {[param_contains [get_config_param "SelectTypeParameters"] "CR_SOCKET"]} {
 	skip "This test is incompatible with CR_SOCKET allocations"
 }
 
-if {[get_config_param "AllowSpecResourcesUsage"] == 0} {
+if {![get_config_param "AllowSpecResourcesUsage"]} {
 	skip "AllowSpecResourcesUsage not configured to permit core specialization"
 }
 
