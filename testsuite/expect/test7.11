@@ -266,7 +266,7 @@ expect {
 }
 
 $bin_sleep 30
-if {[test_configless_slurmd] == 0} {
+if {![param_contains [get_config_param "SlurmctldParameters"] "enable_configless"]} {
 	make_bash_script $file_in "
 	$srun --test_suite_srun=5 $bin_sum $spank_conf_file
 	"
