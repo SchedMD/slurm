@@ -302,7 +302,7 @@ static data_for_each_cmd_t _match_server_override(const data_t *data,
 	data_t *spath;
 	data_for_each_cmd_t rc = DATA_FOR_EACH_CONT;
 
-	surl = data_resolve_dict_path(data, "url");
+	surl = data_resolve_dict_path_const(data, "url");
 
 	if (!surl)
 		fatal("%s: server %s lacks url field required per OASv3.0.3 section 4.7.5",
@@ -366,7 +366,7 @@ static data_for_each_cmd_t _match_server_path_string(const data_t *data,
 	data_t *spath = NULL;
 	data_for_each_cmd_t rc = DATA_FOR_EACH_CONT;
 
-	surl = data_resolve_dict_path(data, "url");
+	surl = data_resolve_dict_path_const(data, "url");
 
 	if (!surl)
 		fatal("%s: server %s lacks url field required per OASv3.0.3 section 4.7.5",
@@ -392,8 +392,10 @@ static const data_t *_find_spec_path(const char *str_path)
 	args.path = path;
 
 	for (size_t i = 0; spec[i]; i++) {
-		const data_t *servers = data_resolve_dict_path(spec[i], "/servers");
-		args.path_list = data_resolve_dict_path(spec[i], "/paths");
+		const data_t *servers =
+			data_resolve_dict_path_const(spec[i], "/servers");
+		args.path_list =
+			data_resolve_dict_path_const(spec[i], "/paths");
 
 		if (!args.path_list ||
 		    (data_get_type(args.path_list) != DATA_TYPE_DICT) ||

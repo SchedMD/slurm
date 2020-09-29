@@ -470,8 +470,16 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask);
  * IN path /key/path/to/value to search
  * RET ptr to data of value or NULL if not found
  */
-extern const data_t *
-	data_resolve_dict_path(const data_t *data, const char *path);
+extern data_t *data_resolve_dict_path(data_t *data, const char *path);
+
+/*
+ * resolve out path based on data object full of dictionary keys
+ * IN data dictionary of dictionaries to search
+ * IN path /key/path/to/value to search
+ * RET const ptr to data of value or NULL if not found
+ */
+extern const data_t *data_resolve_dict_path_const(const data_t *data,
+						   const char *path);
 
 /*
  * create (or resolve) out path based on data object full of dictionary keys

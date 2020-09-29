@@ -1577,7 +1577,41 @@ extern bool data_check_match(const data_t *a, const data_t *b, bool mask)
 	}
 }
 
-extern const data_t *data_resolve_dict_path(const data_t *data, const char *path)
+extern data_t *data_resolve_dict_path(data_t *data, const char *path)
+{
+	data_t *found = data;
+	char *save_ptr = NULL;
+	char *token = NULL;
+	char *str = xstrdup(path);
+
+	_check_magic(data);
+
+	token = strtok_r(str, "/", &save_ptr);
+	while (token && found) {
+		xstrtrim(token);
+
+		if (data_get_type(found) != DATA_TYPE_DICT)
+			found = NULL;
+
+		if (found) {
+			found = data_key_get(found, token);
+			token = strtok_r(NULL, "/", &save_ptr);
+		}
+	}
+	xfree(str);
+
+	if (found)
+		log_flag(DATA, "%s: data (0x%"PRIXPTR") resolved dictionary path \"%s\" to (0x%"PRIXPTR")",
+			 __func__, (uintptr_t) data, path, (uintptr_t) found);
+	else
+		log_flag(DATA, "%s: data (0x%"PRIXPTR") failed to resolve dictionary path \"%s\"",
+			 __func__, (uintptr_t) data, path);
+
+	return found;
+}
+
+extern const data_t *data_resolve_dict_path_const(const data_t *data,
+						  const char *path)
 {
 	const data_t *found = data;
 	char *save_ptr = NULL;
@@ -1706,7 +1740,7 @@ extern int data_retrieve_dict_path_string(const data_t *data, const char *path,
 	int rc;
 
 	_check_magic(data);
-	if (!(d = data_resolve_dict_path(data, path)))
+	if (!(d = data_resolve_dict_path_const(data, path)))
 		return ESLURM_DATA_PATH_NOT_FOUND;
 
 	rc = data_get_string_converted(d, ptr_buffer);
@@ -1724,7 +1758,7 @@ extern int data_retrieve_dict_path_bool(const data_t *data, const char *path,
 	int rc;
 
 	_check_magic(data);
-	if (!(d = data_resolve_dict_path(data, path)))
+	if (!(d = data_resolve_dict_path_const(data, path)))
 		return ESLURM_DATA_PATH_NOT_FOUND;
 
 	rc = data_copy_bool_converted(d, ptr_buffer);
@@ -1743,7 +1777,7 @@ extern int data_retrieve_dict_path_int(const data_t *data, const char *path,
 	int rc;
 
 	_check_magic(data);
-	if (!(d = data_resolve_dict_path(data, path)))
+	if (!(d = data_resolve_dict_path_const(data, path)))
 		return ESLURM_DATA_PATH_NOT_FOUND;
 
 	rc = data_get_int_converted(d, ptr_buffer);
