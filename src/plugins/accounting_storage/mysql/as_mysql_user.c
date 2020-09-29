@@ -308,6 +308,10 @@ extern int as_mysql_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			rc = SLURM_ERROR;
 			continue;
 		}
+
+		if (object->coord_accts)
+			debug("Adding coordinators with users is not supported, ignored, use as_mysql_add_coord() separately instead.");
+
 		xstrcat(cols, "creation_time, mod_time, name");
 		xstrfmtcat(vals, "%ld, %ld, '%s'",
 			   (long)now, (long)now, object->name);
