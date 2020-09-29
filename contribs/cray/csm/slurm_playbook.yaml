@@ -15,7 +15,6 @@
       - persistent_data
       - simple_sync
 
-    atp_spank_plugin:       /opt/cray/pe/atp/libAtpSLaunch.so
     mcgroup_hierarchy_file: /sys/fs/cgroup/memory/memory.use_hierarchy
     slurm_default_dir:      /opt/slurm/default
     slurmctld_spooldir:     /var/spool/slurm
@@ -87,15 +86,6 @@
     - name: Determine sysconfdir availability
       stat: path={{ slurm_sysconfdir }}
       register: sysconfdir
-
-    # Remove this task if Cray PE is not installed on the system
-    - name: Configure ATP SPANK plugin
-      lineinfile:
-        dest={{ slurm_sysconfdir }}/plugstack.conf
-        line="optional {{ atp_spank_plugin }}"
-        regexp={{ atp_spank_plugin }}
-        create=yes backup=yes owner=root mode=0644
-      when: sysconfdir.stat.exists and sysconfdir.stat.isdir
 
     # Disable Slurm so it's started by cray-ansible, not systemd
     - name: Disable Slurm systemd startup
