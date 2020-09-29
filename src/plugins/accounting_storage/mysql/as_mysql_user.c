@@ -1245,11 +1245,13 @@ extern List as_mysql_get_users(mysql_conn_t *mysql_conn, uid_t uid,
 	/* if this changes you will need to edit the corresponding enum */
 	char *user_req_inx[] = {
 		"name",
-		"admin_level"
+		"admin_level",
+		"deleted",
 	};
 	enum {
 		USER_REQ_NAME,
 		USER_REQ_AL,
+		USER_REQ_DELETED,
 		USER_REQ_COUNT
 	};
 
@@ -1359,6 +1361,9 @@ empty:
 
 		user->name =  xstrdup(row[USER_REQ_NAME]);
 		user->admin_level = slurm_atoul(row[USER_REQ_AL]);
+
+		if (slurm_atoul(row[USER_REQ_DELETED]))
+			user->flags |= SLURMDB_USER_FLAG_DELETED;
 
 		if (user_cond && user_cond->with_coords)
 			_get_user_coords(mysql_conn, user);

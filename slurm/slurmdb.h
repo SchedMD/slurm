@@ -1169,6 +1169,11 @@ typedef struct {
 	uint16_t without_defaults;
 } slurmdb_user_cond_t;
 
+enum {
+	SLURMDB_USER_FLAG_NONE		= 0,
+	SLURMDB_USER_FLAG_DELETED	= (1 << 0),
+};
+
 struct slurmdb_user_rec {
 	uint16_t admin_level; /* really slurmdb_admin_level_t but for
 				 packing purposes needs to be uint16_t */
@@ -1178,6 +1183,7 @@ struct slurmdb_user_rec {
 	List coord_accts; /* list of slurmdb_coord_rec_t *'s */
 	char *default_acct;
 	char *default_wckey;
+	uint32_t flags;		/* SLURMDB_USER_FLAG_* */
 	char *name;
 	char *old_name;
 	uint32_t uid;

@@ -257,6 +257,7 @@ extern void slurmdb_pack_user_rec(void *in, uint16_t protocol_version,
 			pack32(NO_VAL, buffer);
 			packnull(buffer);
 			packnull(buffer);
+			pack32(0, buffer);
 			packnull(buffer);
 			packnull(buffer);
 			pack32(0, buffer);
@@ -274,6 +275,7 @@ extern void slurmdb_pack_user_rec(void *in, uint16_t protocol_version,
 
 		packstr(object->default_acct, buffer);
 		packstr(object->default_wckey, buffer);
+		pack32(object->flags, buffer);
 		packstr(object->name, buffer);
 		packstr(object->old_name, buffer);
 
@@ -370,6 +372,7 @@ extern int slurmdb_unpack_user_rec(void **object, uint16_t protocol_version,
 				       buffer);
 		safe_unpackstr_xmalloc(&object_ptr->default_wckey, &uint32_tmp,
 				       buffer);
+		safe_unpack32(&object_ptr->flags, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&object_ptr->old_name,
 				       &uint32_tmp, buffer);
@@ -389,7 +392,6 @@ extern int slurmdb_unpack_user_rec(void **object, uint16_t protocol_version,
 				list_append(object_ptr->wckey_list, wckey);
 			}
 		}
-
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&object_ptr->admin_level, buffer);
 		safe_unpack32(&count, buffer);
