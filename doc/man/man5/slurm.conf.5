@@ -1730,7 +1730,7 @@ By default, no power plugin is loaded.
 
 .TP
 \fBPreemptMode\fR
-Mechanism used to preempt jobs or enable gang scheudling. When the
+Mechanism used to preempt jobs or enable gang scheduling. When the
 \fBPreemptType\fR parameter is set to enable preemption, the
 \fBPreemptMode\fR selects the default mechanism used to preempt the eligible
 jobs for the cluster.
@@ -5171,13 +5171,13 @@ The default value is "NO".
 For more information see the following web pages:
 .br
 .na
-\fIhttps://slurm.schedmd.com/cons_res.html\fR,
+\fIhttps://slurm.schedmd.com/cons_res.html\fR
 .br
-\fIhttps://slurm.schedmd.com/cons_res_share.html\fR,
+\fIhttps://slurm.schedmd.com/cons_res_share.html\fR
 .br
-\fIhttps://slurm.schedmd.com/gang_scheduling.html\fR, and
+\fIhttps://slurm.schedmd.com/gang_scheduling.html\fR
 .br
-\fIhttps://slurm.schedmd.com/preempt.html\fR.
+\fIhttps://slurm.schedmd.com/preempt.html\fR
 .ad
 
 .RS
@@ -5185,7 +5185,7 @@ For more information see the following web pages:
 \fBEXCLUSIVE\fR
 Allocates entire nodes to jobs even with \fBSelectType=select/cons_res\fR or
 \fBSelectType=select/cons_tres\fR configured.
-Jobs that run in partitions with "OverSubscribe=EXCLUSIVE" will have
+Jobs that run in partitions with \fBOverSubscribe=EXCLUSIVE\fR will have
 exclusive access to all allocated nodes.
 .TP
 \fBFORCE\fR
@@ -5193,10 +5193,9 @@ Makes all resources in the partition available for oversubscription without
 any means for users to disable it.
 May be followed with a colon and maximum number of jobs in
 running or suspended state.
-For example "OverSubscribe=FORCE:4" enables each node, socket or
+For example \fBOverSubscribe=FORCE:4\fR enables each node, socket or
 core to oversubscribe each resource four ways.
-Recommended only for systems running with gang scheduling
-(\fBPreemptMode=suspend,gang\fR).
+Recommended only for systems using \fBPreemptMode=suspend,gang\fR.
 
 \fBNOTE\fR: If you are using \fBOverSubscribe=FORCE:1\fR, it will permit one
 additional job to be run on the partition if started due to job preemption for
