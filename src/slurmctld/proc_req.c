@@ -601,9 +601,9 @@ static void _set_hostname(slurm_msg_t *msg, job_desc_msg_t *job_desc_msg)
 		/* use remote host IP */
 		uint16_t port;
 
-		job_desc_msg->alloc_node = xmalloc(32);
+		job_desc_msg->alloc_node = xmalloc(INET6_ADDRSTRLEN);
 		slurm_get_ip_str(&addr, &port,
-				 job_desc_msg->alloc_node, 32);
+				 job_desc_msg->alloc_node, INET6_ADDRSTRLEN);
 		debug3("%s: Using requester IP for alloc_node: %s",
 		       __func__, job_desc_msg->alloc_node);
 	} else {
