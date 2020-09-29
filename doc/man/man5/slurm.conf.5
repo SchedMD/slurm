@@ -1769,7 +1769,9 @@ warning signal for each component of the heterogeneous job remain unique.
 .TP 12
 \fBOFF\fR
 Is the default value and disables job preemption and gang scheduling.
-It is only compatible with \fBPreemptType=preempt/none\fR.
+It is only compatible with \fBPreemptType=preempt/none\fR at a global level.
+A common use case for this parameter is to set it on a partition to disable
+preemption for that partition.
 .TP
 \fBCANCEL\fR
 The preempted job will be cancelled.
@@ -5196,13 +5198,13 @@ core to oversubscribe each resource four ways.
 Recommended only for systems running with gang scheduling
 (\fBPreemptMode=suspend,gang\fR).
 
-NOTE: \fIPreemptType=preempt/qos\fR will permit one additional job to be run
-on the partition if started due to job preemption. For example, a configuration
-of \fIOverSubscribe=FORCE:1\fR will only permit one job per resources normally,
-but a second job can be started if done so through preemption based upon QOS.
-The use of \fIPreemptType=preempt/qos\fR and \fIPreemptMode=SUSPEND\fR only
-applies with \fBSelectType=select/cons_res\fR or
-\fBSelectType=select/cons_tres\fR.
+\fBNOTE\fR: If you are using \fBOverSubscribe=FORCE:1\fR, it will permit one
+additional job to be run on the partition if started due to job preemption for
+both Partition and QOS based preemption.
+If using \fBPreemptType=preempt/qos\fR you can specify a value for \fBFORCE\fR
+that is greater than 1. For example, \fBOverSubscribe=FORCE:2\fR will permit two
+jobs per resource normally, but a third job can be started if done so through
+preemption based upon QOS.
 .TP
 \fBYES\fR
 Makes all resources in the partition available for sharing upon request by
@@ -5219,6 +5221,10 @@ Recommended only for systems running with gang scheduling
 \fBNO\fR
 Selected resources are allocated to a single job. No resource will be
 allocated to more than one job.
+\fBNOTE\fR: If using \fBPreemptType=preempt/qos\fR with
+\fBOverSubscribe=NO\fR and \fBPreemptMode=suspend,gang\fR, it will prevent
+the preemption of jobs in a preemptable QOS if the jobs are in the same
+partition.
 .RE
 
 .TP
