@@ -1047,9 +1047,12 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		FREE_NULL_BITMAP(exc_bitmap);
 	}
 
-	if (step_spec->features) {
+	if (step_spec->features &&
+	    (!job_ptr->details ||
+	     xstrcmp(step_spec->features, job_ptr->details->features))) {
 		/*
 		 * We only select for a single feature name here.
+		 * Ignore step features if equal to job features.
 		 * FIXME: Add support for AND, OR, etc. here if desired
 		 */
 		node_feature_t *feat_ptr;
