@@ -250,7 +250,38 @@ extern void slurmdb_pack_user_rec(void *in, uint16_t protocol_version,
 
 	xassert(buffer);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		if (!object) {
+			pack16(0, buffer);
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			pack32(0, buffer);
+			pack32(NO_VAL, buffer);
+			return;
+		}
+
+		pack16(object->admin_level, buffer);
+
+		slurm_pack_list(object->assoc_list, slurmdb_pack_assoc_rec,
+				buffer, protocol_version);
+
+		slurm_pack_list(object->coord_accts, slurmdb_pack_coord_rec,
+				buffer, protocol_version);
+
+		packstr(object->default_acct, buffer);
+		packstr(object->default_wckey, buffer);
+		packstr(object->name, buffer);
+		packstr(object->old_name, buffer);
+
+		pack32(object->uid, buffer);
+
+		slurm_pack_list(object->wckey_list, slurmdb_pack_wckey_rec,
+				buffer, protocol_version);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			pack16(0, buffer);
 			pack32(NO_VAL, buffer);
@@ -303,7 +334,63 @@ extern int slurmdb_unpack_user_rec(void **object, uint16_t protocol_version,
 
 	*object = object_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpack16(&object_ptr->admin_level, buffer);
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL)
+			goto unpack_error;
+		if (count != NO_VAL) {
+			object_ptr->assoc_list =
+				list_create(slurmdb_destroy_assoc_rec);
+			for (i = 0; i < count; i++) {
+				if (slurmdb_unpack_assoc_rec(
+					    (void *)&assoc, protocol_version,
+					    buffer)
+				    == SLURM_ERROR)
+					goto unpack_error;
+				list_append(object_ptr->assoc_list, assoc);
+			}
+		}
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL)
+			goto unpack_error;
+		if (count != NO_VAL) {
+			object_ptr->coord_accts =
+				list_create(slurmdb_destroy_coord_rec);
+			for (i = 0; i < count; i++) {
+				if (slurmdb_unpack_coord_rec(
+					    (void *)&coord, protocol_version,
+					    buffer)
+				    == SLURM_ERROR)
+					goto unpack_error;
+				list_append(object_ptr->coord_accts, coord);
+			}
+		}
+		safe_unpackstr_xmalloc(&object_ptr->default_acct, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&object_ptr->default_wckey, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->old_name,
+				       &uint32_tmp, buffer);
+		safe_unpack32(&object_ptr->uid, buffer);
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL)
+			goto unpack_error;
+		if (count != NO_VAL) {
+			object_ptr->wckey_list =
+				list_create(slurmdb_destroy_wckey_rec);
+			for (i = 0; i < count; i++) {
+				if (slurmdb_unpack_wckey_rec(
+					    (void *)&wckey, protocol_version,
+					    buffer)
+				    == SLURM_ERROR)
+					goto unpack_error;
+				list_append(object_ptr->wckey_list, wckey);
+			}
+		}
+
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack16(&object_ptr->admin_level, buffer);
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL)
