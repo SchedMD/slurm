@@ -50,6 +50,7 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 
+#include "src/common/read_config.h"
 #include "src/common/strlcpy.h"
 #include "src/common/util-net.h"
 #include "src/common/macros.h"
@@ -286,12 +287,22 @@ get_addr_info(const char *hostname)
 	struct addrinfo* result = NULL;
 	struct addrinfo hints;
 	int err;
+	bool v4_enabled = slurm_conf.conf_flags & CTL_CONF_IPV4_ENABLED;
+	bool v6_enabled = slurm_conf.conf_flags & CTL_CONF_IPV6_ENABLED;
 
 	if (hostname == NULL)
 		return NULL;
 
 	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_family = AF_UNSPEC;
+
+	/* use configured IP support to hint at what address types to return */
+	if (v4_enabled && !v6_enabled)
+		hints.ai_family = AF_INET;
+	else if (!v4_enabled && v6_enabled)
+		hints.ai_family = AF_INET6;
+	else
+		hints.ai_family = AF_UNSPEC;
+
 	hints.ai_flags = AI_CANONNAME;
 	hints.ai_socktype = SOCK_STREAM;
 

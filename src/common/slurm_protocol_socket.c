@@ -632,8 +632,7 @@ done:
 
 extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 {
-	struct addrinfo *addrs;
-	struct addrinfo *addr_ptr;
+	struct addrinfo *ai_ptr;
 
 	log_flag(NET, "%s: called with port='%u' host='%s'",
 		__func__, port, host);
@@ -642,43 +641,44 @@ extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 	 * If NULL hostname passed in, we only update the port of addr
 	 */
 	if (!host) {
-		if (!addr->ss_family)
-			addr->ss_family = AF_INET;
+		if (!addr->ss_family) {
+			if (slurm_conf.conf_flags & CTL_CONF_IPV6_ENABLED)
+				addr->ss_family = AF_INET6;
+			else
+				addr->ss_family = AF_INET;
+		}
 		slurm_set_port(addr, port);
 		log_flag(NET, "%s: updated port info. addr='%pA'",
 			 __func__, addr);
 		return;
 	}
 
-	addrs = get_addr_info(host);
-	/* ignore anything but IPv4 addresses for now */
-	for (addr_ptr = addrs; addr_ptr != NULL; addr_ptr = addr_ptr->ai_next) {
-		if (addr_ptr->ai_family == AF_INET)
-			break;
-	}
+	/*
+	 * get_addr_info uses hints from our config to determine what address
+	 * families to return
+	 */
+	ai_ptr = get_addr_info(host);
 
-	if (addr_ptr) {
-		addr->ss_family = addr_ptr->ai_family;
+	if (ai_ptr) {
+		addr->ss_family = ai_ptr->ai_family;
 		slurm_set_port(addr, port);
-		if (addr_ptr->ai_family == AF_INET6) {
-			struct sockaddr_in6 *src =
-				(struct sockaddr_in6 *) addr_ptr->ai_addr;
-			struct sockaddr_in6 *dst = (struct sockaddr_in6 *) addr;
+		if (ai_ptr->ai_family == AF_INET6) {
+			struct sockaddr_in6 *src, *dst;
+			src = (struct sockaddr_in6 *) ai_ptr->ai_addr;
+			dst = (struct sockaddr_in6 *) addr;
 			memcpy(&dst->sin6_addr, &src->sin6_addr, 16);
 		} else {
-			struct sockaddr_in *src =
-				(struct sockaddr_in *) addr_ptr->ai_addr;
-			struct sockaddr_in *dst = (struct sockaddr_in *) addr;
+			struct sockaddr_in *src, *dst;
+			src = (struct sockaddr_in *) ai_ptr->ai_addr;
+			dst = (struct sockaddr_in *) addr;
 			memcpy(&dst->sin_addr, &src->sin_addr, 4);
 		}
 		log_flag(NET, "%s: update addr. addr='%pA'", __func__, addr);
+		freeaddrinfo(ai_ptr);
 	} else {
 		error("%s: Unable to resolve \"%s\"", __func__, host);
 		addr->ss_family = AF_UNSPEC;
 	}
-
-	if (addrs)
-		freeaddrinfo(addrs);
 }
 
 extern void slurm_pack_slurm_addr(slurm_addr_t *addr, Buf buffer)
