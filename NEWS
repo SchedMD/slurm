@@ -61,6 +61,7 @@ documents those changes that are of interest to users and administrators.
  -- MySQL - Correctly handle QOS deletion from assocation tables.
  -- Fix update of First_Cores flag in a reservation.
  -- Fix parsing of update reservation flags.
+ -- Fix --switches for cons_tres.
 
 * Changes in Slurm 20.02.5
 ==========================
