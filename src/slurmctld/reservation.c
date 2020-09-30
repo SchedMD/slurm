@@ -4350,6 +4350,11 @@ static int _validate_job_resv_internal(job_record_t *job_ptr,
 	int rc = _valid_job_access_resv(job_ptr, resv_ptr);
 
 	if (rc == SLURM_SUCCESS) {
+		if ((resv_ptr->flags & RESERVE_FLAG_PURGE_COMP)
+		    && resv_ptr->idle_start_time) {
+			log_flag(RESERVATION, "Resetting idle start time to zero on PURGE_COMP reservation %s due to associated %pJ",
+				 resv_ptr->name, job_ptr);
+		}
 		resv_ptr->idle_start_time = 0;
 		_validate_node_choice(resv_ptr);
 	}
@@ -6821,10 +6826,18 @@ extern void job_resv_check(void)
 	iter = list_iterator_create(resv_list);
 	while ((resv_ptr = list_next(iter))) {
 		if (resv_ptr->start_time <= now) {
-			if (resv_ptr->job_run_cnt || resv_ptr->job_pend_cnt)
+			if (resv_ptr->job_run_cnt || resv_ptr->job_pend_cnt) {
+				if ((resv_ptr->flags & RESERVE_FLAG_PURGE_COMP)
+				    && resv_ptr->idle_start_time)
+					log_flag(RESERVATION, "Resetting idle start time to zero on PURGE_COMP reservation %s due to active associated jobs",
+						 resv_ptr->name);
 				resv_ptr->idle_start_time = 0;
-			else if (!resv_ptr->idle_start_time)
+			} else if (!resv_ptr->idle_start_time) {
+				if (resv_ptr->flags & RESERVE_FLAG_PURGE_COMP)
+					log_flag(RESERVATION, "Marking idle start time to now on PURGE_COMP reservation %s",
+						 resv_ptr->name);
 				resv_ptr->idle_start_time = now;
+			}
 		}
 
 		if ((resv_ptr->flags & RESERVE_FLAG_PURGE_COMP) &&
