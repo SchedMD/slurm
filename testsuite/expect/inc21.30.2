@@ -88,7 +88,10 @@ proc inc21_30_2 { wait_reason } {
 	}
 
 	# Checks the state of the job
-	check_job_state $job_id2 PENDING
+	if {![check_job_state $job_id2 PENDING]} {
+		log_error "Job was not on the desired state (Within: inc21.30.2)"
+		set exit_code 1
+	}
 
 	if {![check_reason $job_id2 $wait_reason]} {
 		log_error "Bad job wait reason. (Within: inc21.30.2)"

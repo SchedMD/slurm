@@ -137,10 +137,16 @@ if {[wait_for_job $dep_id RUNNING]} {
 	set exit_code 1
 }
 
-check_job_state $dep_id RUNNING
+if {![check_job_state $dep_id RUNNING]} {
+	log_error "Job was not on the desired state"
+	set exit_code 1
+}
 
 # Slow job should still be running
-check_job_state $slow_id RUNNING
+if {![check_job_state $slow_id RUNNING]} {
+	log_error "Job was not on the desired state"
+	set exit_code 1
+}
 
 # Cancel leftover jobs
 cancel_job $fast_id

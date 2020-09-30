@@ -250,26 +250,18 @@ foreach preempt_mode $preempt_mode_list {
 		}
 
 		if { $preempt_mode == $preempt_mode_cancel } {
-			set jobs_ok 0
-			wait_for { $jobs_ok > 0 } {
+			set jobs_ok false
+			wait_for {$jobs_ok} {
 				set jobs_ok [check_job_state $qos_1_id $preempted_state $have_het_job]
 			}
-			if {$have_het_job} {
-				assert_or_fail {$jobs_ok == 2} "HetJob $qos_1_id was not on $preempted_state ($jobs_ok != 2)"
-			} else {
-				assert_or_fail {$jobs_ok == 1} "Job $qos_1_id was not on $preempted_state"
-			}
+			assert_or_fail {$jobs_ok} "Job $qos_1_id was not (fully) on $preempted_state"
 		} else {
 			# requeue state
-			set jobs_ok 0
-			wait_for { $jobs_ok > 0 } {
+			set jobs_ok false
+			wait_for {$jobs_ok} {
 				set jobs_ok [check_job_state $qos_1_id $pending_state $have_het_job]
 			}
-			if {$have_het_job} {
-				assert_or_fail {$jobs_ok == 2} "HetJob $qos_1_id was not on $pending_state ($jobs_ok != 2)"
-			} else {
-				assert_or_fail {$jobs_ok == 1} "Job $qos_1_id was not on $pending_state"
-			}
+			assert_or_fail {$jobs_ok} "Job $qos_1_id was not (fully) on $pending_state"
 
 			# make job eligible to run now to avoid delay
 			run_command "$scontrol update job $qos_2_id $eligible_now_job_directive"
@@ -284,15 +276,11 @@ foreach preempt_mode $preempt_mode_list {
 				fail "Job $qos_1_id failed to start"
 			}
 
-			set jobs_ok 0
-			wait_for { $jobs_ok > 0 } {
+			set jobs_ok false
+			wait_for {$jobs_ok} {
 				set jobs_ok [check_job_state $qos_1_id $running_state $have_het_job]
 			}
-			if {$have_het_job} {
-				assert_or_fail {$jobs_ok == 2} "HetJob $qos_1_id was not on $running_state ($jobs_ok != 2)"
-			} else {
-				assert_or_fail {$jobs_ok == 1} "Job $qos_1_id was not on $running_state"
-			}
+			assert_or_fail {$jobs_ok} "Job $qos_1_id was not (fully) on $running_state"
 		}
 
 		wait_for_account_done $acct_1,$acct_2

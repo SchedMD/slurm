@@ -132,7 +132,10 @@ expect {
 check_hold $job_id
 
 # Check that the job state is pending after released
-check_job_state $job_id PENDING
+if {![check_job_state $job_id PENDING]} {
+	log_error "Job was not on the desired state"
+	set exit_code 1
+}
 
 spawn $scontrol release $job_id
 expect {
