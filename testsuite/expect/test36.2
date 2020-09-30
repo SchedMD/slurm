@@ -38,6 +38,13 @@ if {[file executable $bjobs] == 0} {
 	skip "$bjobs does not exist"
 }
 
+proc cleanup {} {
+	global bin_rm file_in job_id
+
+	cancel_job $job_id
+	exec $bin_rm -f $file_in
+}
+
 spawn $bjobs
 expect {
 	-re "No unfinished job found" {
@@ -70,9 +77,7 @@ expect {
                 exp_continue
         }
         timeout {
-                log_error "sbatch not responding"
-                set exit_code 1
-                exp_continue
+                fail "sbatch not responding"
         }
         eof {
                 wait
@@ -89,31 +94,9 @@ if {[string length $job_id] > 7} {
 #
 # Test bjobs <jobid> wrapper
 #
-set job_found 0
-spawn $bjobs $job_id
-expect {
-	-re "$job_id" {
-		set job_found 1
-		exp_continue
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		fail "bjobs not responding"
-	}
-	eof {
-		wait
-	}
+if [wait_for -pollinterval .1 -timeout 2 {$matches == 1} {
+	set matches [regexp $job_id [run_command_output "$bjobs $job_id"]]
+}] {
+	fail "bjobs $job_id does not work"
 }
 
-cancel_job $job_id
-if {$exit_code == 0} {
-	if {$job_found == 1} {
-		exec $bin_rm -f $file_in
-	} else {
-		fail "bjobs $job_id does not work"
-	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
