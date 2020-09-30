@@ -1694,8 +1694,12 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		for (i = 0; i < node_set_size; i++) {
 			int count1 = 0, count2 = 0;
 			if (!has_xand &&
-			    !bit_test(node_set_ptr[i].feature_bits, j))
-				continue;
+			    !bit_test(node_set_ptr[i].feature_bits, j)) {
+				if ((i+1) < node_set_size || !avail_bitmap)
+					continue;
+				else
+					goto try_sched;
+			}
 
 			if (total_bitmap) {
 				bit_or(total_bitmap,
@@ -1776,7 +1780,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				 * most lightly loaded nodes */
 				continue;
 			}
-
+try_sched:
 			/* NOTE: select_g_job_test() is destructive of
 			 * avail_bitmap, so save a backup copy */
 			backup_bitmap = bit_copy(avail_bitmap);
