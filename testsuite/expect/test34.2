@@ -240,7 +240,11 @@ if { [wait_for_job $qos_2_id "RUNNING"] != 0} {
 }
 
 sleep 2
-check_job_state $qos_1_id PREEMPTED
+if {![check_job_state $qos_1_id PREEMPTED]} {
+	log_error "Job was not on the desired state"
+	clean_up 1
+}
+
 
 wait_for_account_done $acct_1,$acct_2
 
@@ -262,7 +266,11 @@ if { [wait_for_job $qos_2_id "RUNNING"] != 0} {
 }
 
 sleep 2
-check_job_state $qos_1_id PENDING
+if {![check_job_state $qos_1_id PENDING]} {
+	log_error "Job was not on the desired state"
+	clean_up 1
+}
+
 
 # Wait for requeued job to restart
 if { [wait_for_job $qos_2_id "DONE"] != 0} {
@@ -275,7 +283,10 @@ if { [wait_for_job $qos_1_id "RUNNING"] != 0} {
 }
 
 sleep 2
-check_job_state $qos_1_id "RUNNING"
+if {![check_job_state $qos_1_id "RUNNING"]} {
+	log_error "Job was not on the desired state"
+	clean_up 1
+}
 
 wait_for_account_done $acct_1,$acct_2
 

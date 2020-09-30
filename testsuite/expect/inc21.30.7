@@ -103,7 +103,10 @@ proc inc21_30_7 { wait_reason } {
 
 	# Checks the job state
 	if [info exists job_id($check_num)] {
-		check_job_state $job_id($check_num) PENDING
+		if {![check_job_state $job_id($check_num) PENDING]} {
+			log_error "Job was not on the desired state (Within: inc21.30.7)"
+			set exit_code 1
+		}
 	} else {
 		log_error "Didn't attempt to start enough jobs. (Within: inc21.30.7)"
 		set exit_code 1

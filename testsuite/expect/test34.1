@@ -282,7 +282,10 @@ if { [wait_for_job $part_id_2 "RUNNING"] != 0} {
 }
 
 sleep 5
-check_job_state $part_id_1 PREEMPTED
+if {![check_job_state $part_id_1 PREEMPTED]} {
+	log_error "Job was not on the desired state"
+	set exit_code 1
+}
 cancel_job $part_id_2
 cancel_job $part_id_1
 
@@ -305,7 +308,10 @@ if [param_contains [get_config_param "PreemptMode"] "GANG"] {
 	}
 
 	sleep 5
-	check_job_state $part_id_1 SUSPENDED
+	if {![check_job_state $part_id_1 SUSPENDED]} {
+		log_error "Job was not on the desired state"
+		clean_up 1
+	}
 
 	if { [wait_for_job $part_id_2 "DONE"] != 0} {
 		log_error "Job $part_id_2 failed to complete"
@@ -337,7 +343,10 @@ if { [wait_for_job $part_id_2 "RUNNING"] != 0} {
 }
 
 sleep 5
-check_job_state $part_id_1 PENDING
+if {![check_job_state $part_id_1 PENDING]} {
+	log_error "Job was not on the desired state"
+	clean_up 1
+}
 
 # Wait for job 1 to be requeued
 if { [wait_for_job $part_id_2 "DONE"] != 0} {
@@ -350,7 +359,10 @@ if { [wait_for_job $part_id_1 "RUNNING"] != 0} {
 }
 
 sleep 5
-check_job_state $part_id_1 RUNNING
+if {![check_job_state $part_id_1 RUNNING]} {
+	log_error "Job was not on the desired state"
+	clean_up 1
+}
 
 clean_up 0
 
