@@ -86,8 +86,9 @@ Add an entity.
 Identical to the \fBcreate\fR command.
 
 .TP
-\fBassociations\fR
-Use with show or list to display associations with the entity.
+\fBarchive\fR {\fBdump\fR|\fBload\fR} <\fISPECS\fR>
+Write database information to a flat file or load information that has
+previously been written to a file.
 
 .TP
 \fBclear\fR stats
@@ -127,10 +128,6 @@ not load archive data, see the sacctmgr archive load option instead.
 .TP
 \fBmodify\fR <\fIENTITY\fR> \fbwhere\fR <\fISPECS\fR> \fbset\fR <\fISPECS\fR>
 Modify an entity.
-
-.TP
-\fBproblem\fP
-Use with show or list to display entity problems.
 
 .TP
 \fBreconfigure\fR
@@ -233,8 +230,17 @@ Used to modify specific fields of a job: Derived Exit Code,
 the Comment String, or wckey.
 
 .TP
+\fBproblem\fR
+Use with \fBshow\fR or \fBlist\fR to display entity problems.
+
+.TP
 \fIqos\fR
 Quality of Service.
+
+.TP
+\fBreservation\fR
+A collection of resources set apart for use by a particular account, user
+or group of users for a given period of time.
 
 .TP
 \fIResource\fP
@@ -259,6 +265,11 @@ fields. By default, sorts on increasing RPC count field.
 .TP
 \fItransaction\fR
 List of transactions that have occurred during a given time period.
+
+.TP
+\fBtres\fR
+Used with \fBlist\fR or \fBshow\fR command to view a list of Trackable
+RESources configured on the system.
 
 .TP
 \fIuser\fR
