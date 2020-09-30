@@ -92,7 +92,10 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 requeue_job $job_id
 
 # Check to see if the job state is PENDING after the requeue
-check_job_state $job_id PENDING|RUNNING
+if {![check_job_state $job_id PENDING|RUNNING]} {
+	log_error "Job was not on the desired state"
+	set exit_code 1
+}
 
 cancel_job $job_id
 
@@ -130,7 +133,10 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 requeue_job $job_id
 
 # Check to see if the job state is PENDING after the requeue
-check_job_state $job_id PENDING|RUNNING
+if {![check_job_state $job_id PENDING|RUNNING]} {
+	log_error "Job was not on the desired state"
+	set exit_code 1
+}
 
 cancel_job $job_id
 

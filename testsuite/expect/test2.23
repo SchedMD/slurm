@@ -103,7 +103,10 @@ expect {
 	}
 }
 
-check_job_state $job_id SPECIAL_EXIT
+if {![check_job_state $job_id SPECIAL_EXIT]} {
+	log_error "Job was not on the desired state"
+	set exit_code 1
+}
 
 spawn $scontrol release $job_id
 expect {

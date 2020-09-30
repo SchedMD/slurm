@@ -87,7 +87,10 @@ proc inc21_30_1 { wait_reason } {
 		set exit_code 1
 	} else {
 		# checks the state of the job
-		check_job_state $job_id2 PENDING
+		if {![check_job_state $job_id2 PENDING]} {
+			log_error "Job was not on the desired state (Within: inc21.30.1)"
+			set exit_code 1
+		}
 	}
 
 	if {![check_reason $job_id2 $wait_reason]} {
