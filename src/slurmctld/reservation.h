@@ -198,9 +198,12 @@ extern void job_claim_resv(job_record_t *job_ptr);
  * Determine the time of the first reservation to end after some time.
  * return zero of no reservation ends after that time.
  * IN start_time - look for reservations ending after this time
+ * IN resolution - return end_time with the given resolution, this is important
+ * to avoid additional try_later attempts from backfill when we have multiple
+ * reservations with very close end time.
  * RET the reservation end time or zero of none found
  */
-extern time_t find_resv_end(time_t start_time);
+extern time_t find_resv_end(time_t start_time, int resolution);
 
 /*
  * Determine if a job can start now based only upon its reservations

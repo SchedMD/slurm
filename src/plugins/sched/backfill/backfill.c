@@ -2120,7 +2120,8 @@ next_task:
 		if (end_time < now)	/* Overflow 32-bits */
 			end_time = INFINITE;
 		if (resv_overlap)
-			resv_end = find_resv_end(start_res);
+			resv_end = find_resv_end(start_res,
+						 backfill_resolution);
 		/* Identify usable nodes for this job */
 		bit_and(avail_bitmap, part_ptr->node_bitmap);
 		bit_and(avail_bitmap, up_node_bitmap);
@@ -2258,7 +2259,9 @@ next_task:
 					  &tmp_node_bitmap, &tmp_core_bitmap,
 					  &resv_overlap, true);
 			if (resv_overlap)
-				resv_end = find_resv_end(start_res);
+				resv_end = find_resv_end(start_res,
+							 backfill_resolution);
+
 			if (resv_end && (++resv_end < window_end) &&
 			    ((later_start == 0) || (resv_end < later_start))) {
 				later_start = resv_end;

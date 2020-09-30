@@ -6563,9 +6563,12 @@ static int _update_resv_group_uid_access_list(void *x, void *arg)
  * Determine the time of the first reservation to end after some time.
  * return zero of no reservation ends after that time.
  * IN start_time - look for reservations ending after this time
+ * IN resolution - return end_time with the given resolution, this is important
+ * to avoid additional try_later attempts from backfill when we have multiple
+ * reservations with very close end time.
  * RET the reservation end time or zero of none found
  */
-extern time_t find_resv_end(time_t start_time)
+extern time_t find_resv_end(time_t start_time, int resolution)
 {
 	ListIterator iter;
 	slurmctld_resv_t *resv_ptr;
@@ -6582,6 +6585,14 @@ extern time_t find_resv_end(time_t start_time)
 			end_time = resv_ptr->end_time;
 	}
 	list_iterator_destroy(iter);
+
+	/* Round-up returned time to given resolution */
+	if (resolution > 0) {
+		end_time += resolution - 1;
+		end_time /= resolution;
+		end_time *= resolution;
+	}
+
 	return end_time;
 }
 
