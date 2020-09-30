@@ -5,7 +5,10 @@
 <p>Slurm provides a RFC7519 compliant implementation of
 <a href="https://jwt.io/">JSON Web Tokens (JWT)</a>. This authentication can
 be used as an <b>AuthAltType</b>, usually alongside <b>auth/munge</b> as the
-<b>AuthType</b>.</p>
+<b>AuthType</b>. The only supported communication direction is from a client
+connecting to <b>slurmctld</b>, which means that certain commands (specifically
+interactive jobs using <b>srun</b>) are currently not supported for hosts with
+only auth/jwt enabled.</p>
 
 <h2>Prerequisites</h2>
 <p>JWT requires <a href="https://github.com/benmcollins/libjwt">libjwt</a>.
@@ -45,6 +48,6 @@ scontrol token
 command.</li>
 </ol>
 
-<p style="text-align:center;">Last modified 21 February 2020</p>
+<p style="text-align:center;">Last modified 30 September 2020</p>
 
 <!--#include virtual="footer.txt"-->
