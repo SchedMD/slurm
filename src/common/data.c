@@ -167,27 +167,32 @@ extern int data_init_static(void)
 
 	if (!rc && (reg_rc = regcomp(&bool_pattern_null_re, bool_pattern_null,
 			      REG_EXTENDED)) != 0) {
-		rc = _dump_regex_error(reg_rc, &bool_pattern_null_re);
+		_dump_regex_error(reg_rc, &bool_pattern_null_re);
+		rc = ESLURM_DATA_REGEX_COMPILE;
 	}
 
 	if (!rc && (reg_rc = regcomp(&bool_pattern_true_re, bool_pattern_true,
 			      REG_EXTENDED)) != 0) {
-		rc = _dump_regex_error(reg_rc, &bool_pattern_true_re);
+		_dump_regex_error(reg_rc, &bool_pattern_true_re);
+		rc = ESLURM_DATA_REGEX_COMPILE;
 	}
 
 	if (!rc && (reg_rc = regcomp(&bool_pattern_false_re, bool_pattern_false,
 			      REG_EXTENDED)) != 0) {
-		rc = _dump_regex_error(reg_rc, &bool_pattern_false_re);
+		_dump_regex_error(reg_rc, &bool_pattern_false_re);
+		rc = ESLURM_DATA_REGEX_COMPILE;
 	}
 
 	if (!rc && (reg_rc = regcomp(&bool_pattern_int_re, bool_pattern_int,
 			      REG_EXTENDED)) != 0) {
-		rc = _dump_regex_error(reg_rc, &bool_pattern_int_re);
+		_dump_regex_error(reg_rc, &bool_pattern_int_re);
+		rc = ESLURM_DATA_REGEX_COMPILE;
 	}
 
 	if (!rc && (reg_rc = regcomp(&bool_pattern_float_re, bool_pattern_float,
 			      REG_EXTENDED)) != 0) {
-		rc = _dump_regex_error(reg_rc, &bool_pattern_float_re);
+		_dump_regex_error(reg_rc, &bool_pattern_float_re);
+		rc = ESLURM_DATA_REGEX_COMPILE;
 	}
 
 cleanup:

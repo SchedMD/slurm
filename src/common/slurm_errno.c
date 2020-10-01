@@ -539,6 +539,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Data pointer is NULL"},
 	{ ESLURM_DATA_CONV_FAILED,
 	  "Unable to convert Data type"},
+	{ ESLURM_DATA_REGEX_COMPILE,
+	  "Unable to compile regex"},
 
 };
 
