@@ -3964,7 +3964,7 @@ extern void slurmdb_tres_list_from_string(
 			      remove_found, removed);
 	}
 
-	if (flags & TRES_STR_FLAG_SORT_ID)
+	if (*tres_list && (flags & TRES_STR_FLAG_SORT_ID))
 		list_sort(*tres_list, (ListCmpF)slurmdb_sort_tres_by_id_asc);
 
 	return;
