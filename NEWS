@@ -95,6 +95,7 @@ documents those changes that are of interest to users and administrators.
     reverse behavior.
  -- Add --whole option to srun to allocate all resources on a node
     in an allocation.
+ -- Allow --threads-per-core to influence task layout/binding.
 
 * Changes in Slurm 20.02.6
 ==========================
