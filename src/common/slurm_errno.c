@@ -537,6 +537,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Unable to resolve path"},
 	{ ESLURM_DATA_PTR_NULL,
 	  "Data pointer is NULL"},
+	{ ESLURM_DATA_CONV_FAILED,
+	  "Unable to convert Data type"},
 
 };
 

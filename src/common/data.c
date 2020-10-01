@@ -882,13 +882,13 @@ int data_get_string_converted(const data_t *d, char **buffer)
 		return SLURM_SUCCESS;
 	}
 
-	return SLURM_ERROR;
+	return ESLURM_DATA_CONV_FAILED;
 }
 
 extern int data_copy_bool_converted(const data_t *d, bool *buffer)
 {
 	_check_magic(d);
-	int rc = SLURM_ERROR;
+	int rc = ESLURM_DATA_CONV_FAILED;
 
 	if (!d || !buffer)
 		return ESLURM_DATA_PTR_NULL;
@@ -941,7 +941,7 @@ extern int data_get_int_converted(const data_t *d, int64_t *buffer)
 		    DATA_TYPE_INT_64)
 			*buffer = data_get_int(dclone);
 		else
-			rc = SLURM_ERROR;
+			rc = ESLURM_DATA_CONV_FAILED;
 		FREE_NULL_DATA(dclone);
 	} else {
 		*buffer = data_get_int(d);
@@ -1194,10 +1194,10 @@ static int _convert_data_string(data_t *data)
 		return SLURM_SUCCESS;
 	}
 	default:
-		return SLURM_ERROR;
+		return ESLURM_DATA_CONV_FAILED;
 	}
 
-	return SLURM_ERROR;
+	return ESLURM_DATA_CONV_FAILED;
 }
 
 
@@ -1238,10 +1238,10 @@ static int _convert_data_force_bool(data_t *data)
 		data_set_bool(data, data->data.int_u != 0);
 		return SLURM_SUCCESS;
 	default:
-		return SLURM_ERROR;
+		return ESLURM_DATA_CONV_FAILED;
 	}
 
-	return SLURM_ERROR;
+	return ESLURM_DATA_CONV_FAILED;
 }
 
 static int _convert_data_null(data_t *data)
@@ -1258,15 +1258,15 @@ static int _convert_data_null(data_t *data)
 			data_set_null(data);
 			return SLURM_SUCCESS;
 		} else {
-			return SLURM_ERROR;
+			return ESLURM_DATA_CONV_FAILED;
 		}
 	case DATA_TYPE_NULL:
 		return SLURM_SUCCESS;
 	default:
-		return SLURM_ERROR;
+		return ESLURM_DATA_CONV_FAILED;
 	}
 
-	return SLURM_ERROR;
+	return ESLURM_DATA_CONV_FAILED;
 }
 
 static int _convert_data_bool(data_t *data)
@@ -1290,15 +1290,15 @@ static int _convert_data_bool(data_t *data)
 			data_set_bool(data, false);
 			return SLURM_SUCCESS;
 		} else {
-			return SLURM_ERROR;
+			return ESLURM_DATA_CONV_FAILED;
 		}
 	case DATA_TYPE_BOOL:
 		return SLURM_SUCCESS;
 	default:
-		return SLURM_ERROR;
+		return ESLURM_DATA_CONV_FAILED;
 	}
 
-	return SLURM_ERROR;
+	return ESLURM_DATA_CONV_FAILED;
 }
 
 static int _convert_data_int(data_t *data)
@@ -1319,18 +1319,18 @@ static int _convert_data_int(data_t *data)
 			} else { /* failed */
 				debug2("%s: sscanf of int failed: %s", __func__,
 				       data->data.string_u);
-				return SLURM_ERROR;
+				return ESLURM_DATA_CONV_FAILED;
 			}
 		} else {
-			return SLURM_ERROR;
+			return ESLURM_DATA_CONV_FAILED;
 		}
 	case DATA_TYPE_INT_64:
 		return SLURM_SUCCESS;
 	default:
-		return SLURM_ERROR;
+		return ESLURM_DATA_CONV_FAILED;
 	}
 
-	return SLURM_ERROR;
+	return ESLURM_DATA_CONV_FAILED;
 }
 
 static int _convert_data_float(data_t *data)
@@ -1351,18 +1351,18 @@ static int _convert_data_float(data_t *data)
 			} else { /* failed */
 				error("%s: sscanf of double failed: %s",
 				      __func__, data->data.string_u);
-				return SLURM_ERROR;
+				return ESLURM_DATA_CONV_FAILED;
 			}
 		} else {
-			return SLURM_ERROR;
+			return ESLURM_DATA_CONV_FAILED;
 		}
 	case DATA_TYPE_FLOAT:
 		return SLURM_SUCCESS;
 	default:
-		return SLURM_ERROR;
+		return ESLURM_DATA_CONV_FAILED;
 	}
 
-	return SLURM_ERROR;
+	return ESLURM_DATA_CONV_FAILED;
 }
 
 extern data_type_t data_convert_type(data_t *data, data_type_t match)
