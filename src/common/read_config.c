@@ -823,14 +823,14 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			n->threads = 1;
 		}
 
-		if (!no_sockets_per_board && sockets_per_board==0) {
+		if (sockets_per_board == 0) {
 			/* make sure sockets_per_boards is non-zero */
 			error("NodeNames=%s SocketsPerBoards=0 is invalid, "
 			      "reset to 1", n->nodenames);
 			sockets_per_board = 1;
 		}
 
-		if (!no_sockets && n->tot_sockets==0) {
+		if (n->tot_sockets == 0) {
 			/* make sure tot_sockets is non-zero */
 			error("NodeNames=%s Sockets=0 is invalid, reset to 1", n->nodenames);
 			n->tot_sockets = 1;
@@ -840,10 +840,9 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			error("NodeNames=%s Sockets=# and SocketsPerBoard=# is invalid , using SocketsPerBoard",
 			      n->nodenames);
 			no_sockets = true;
-			n->tot_sockets = 0;
 		}
 
-		if (!no_boards && n->boards == 0) {
+		if (n->boards == 0) {
 			/* make sure boards is non-zero */
 			error("NodeNames=%s Boards=0 is invalid, reset to 1",
 			      n->nodenames);
