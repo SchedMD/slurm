@@ -94,14 +94,14 @@ static void _check_magic(const data_t *data);
 static void _release(data_t *data);
 static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn);
 
-static int _dump_regex_error(int rc, const regex_t *preg)
+static void _dump_regex_error(int rc, const regex_t *preg)
 {
 	char *buffer = NULL;
 	size_t len = regerror(rc, preg, NULL, 0);
 
 	if (len == 0) {
 		error("%s: unknown regex error code: %d", __func__, rc);
-		return SLURM_ERROR;
+		return;
 	}
 
 	buffer = xmalloc(len);
@@ -113,7 +113,6 @@ static int _dump_regex_error(int rc, const regex_t *preg)
 		error("%s: unexpected failure to get regex error", __func__);
 
 	xfree(buffer);
-	return SLURM_ERROR;
 }
 
 static bool _regex_quick_match(const char *str, const regex_t *preg)
