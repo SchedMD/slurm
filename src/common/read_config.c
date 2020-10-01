@@ -647,8 +647,7 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 	if (xstrcasecmp(value, "DEFAULT") == 0) {
 		char *tmp;
 		if (s_p_get_string(&tmp, "NodeHostname", tbl)) {
-			error("NodeHostname not allowed with "
-			      "NodeName=DEFAULT");
+			error("NodeHostname not allowed with NodeName=DEFAULT");
 			xfree(tmp);
 			s_p_hashtbl_destroy(tbl);
 			return -1;
