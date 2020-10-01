@@ -864,7 +864,7 @@ int data_get_string_converted(const data_t *d, char **buffer)
 	char *_buffer = NULL;
 
 	if (!d || !buffer)
-		return SLURM_ERROR;
+		return ESLURM_DATA_PTR_NULL;
 
 	if (data_get_type(d) != DATA_TYPE_STRING) {
 		/* copy the data and then convert it to a string type */
@@ -891,7 +891,7 @@ extern int data_copy_bool_converted(const data_t *d, bool *buffer)
 	int rc = SLURM_ERROR;
 
 	if (!d || !buffer)
-		return rc;
+		return ESLURM_DATA_PTR_NULL;
 
 	if (data_get_type(d) != DATA_TYPE_BOOL) {
 		data_t *dclone = data_new();
@@ -916,7 +916,7 @@ extern int data_get_bool_converted(data_t *d, bool *buffer)
 	_check_magic(d);
 
 	if (!d || !buffer)
-		return SLURM_ERROR;
+		return ESLURM_DATA_PTR_NULL;
 
 	/* assign value if converted successfully */
 	rc = data_copy_bool_converted(d, buffer);
@@ -932,7 +932,7 @@ extern int data_get_int_converted(const data_t *d, int64_t *buffer)
 	int rc = SLURM_SUCCESS;
 
 	if (!d || !buffer)
-		return SLURM_ERROR;
+		return ESLURM_DATA_PTR_NULL;
 
 	if (data_get_type(d) != DATA_TYPE_INT_64) {
 		data_t *dclone = data_new();

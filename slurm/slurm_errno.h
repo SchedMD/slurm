@@ -299,6 +299,7 @@ enum {
 
 	/* data_t errors */
 	ESLURM_DATA_PATH_NOT_FOUND = 9200,
+	ESLURM_DATA_PTR_NULL,
 };
 
 /* look up an errno value */

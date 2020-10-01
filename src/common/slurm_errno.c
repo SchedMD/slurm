@@ -535,6 +535,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	/* data_t errors */
 	{ ESLURM_DATA_PATH_NOT_FOUND,
 	  "Unable to resolve path"},
+	{ ESLURM_DATA_PTR_NULL,
+	  "Data pointer is NULL"},
 
 };
 
