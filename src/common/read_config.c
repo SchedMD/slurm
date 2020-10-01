@@ -852,7 +852,9 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		if (no_sockets) {
 			if (!no_sockets_per_board) {
 				n->tot_sockets = n->boards * sockets_per_board;
-			} else if (!no_cpus) {
+			} else if (!no_cpus &&
+			           (n->cpus / (n->cores * n->threads)) &&
+				   !(n->cpus % (n->cores * n->threads))) {
 				/* infer missing Sockets= based on cpus */
 				n->tot_sockets = n->cpus / (n->cores *
 							    n->threads);
