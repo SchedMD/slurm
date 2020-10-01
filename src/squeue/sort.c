@@ -743,8 +743,6 @@ static int _sort_job_by_time_submit(void *void1, void *void2)
 
 static time_t _get_start_time(job_info_t *job)
 {
-	if (job->start_time == (time_t) 0)
-		return (now + 100);
 	if ((job->job_state == JOB_PENDING) && (job->start_time < now))
 		return now;
 	return job->start_time;
@@ -758,6 +756,11 @@ static int _sort_job_by_time_start(void *void1, void *void2)
 	time_t start_time1, start_time2;
 
 	_get_job_info_from_void(&job1, &job2, void1, void2);
+
+	if (job1->start_time == (time_t)0)
+		return 1;
+	if (job2->start_time == (time_t)0)
+		return -1;
 
 	start_time1 = _get_start_time(job1);
 	start_time2 = _get_start_time(job2);
