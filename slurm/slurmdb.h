@@ -1172,7 +1172,7 @@ typedef struct {
 struct slurmdb_user_rec {
 	uint16_t admin_level; /* really slurmdb_admin_level_t but for
 				 packing purposes needs to be uint16_t */
-	List assoc_list; /* list of slurmdb_association_rec_t *'s */
+	List assoc_list; /* list of slurmdb_assoc_rec_t *'s */
 	slurmdb_bf_usage_t *bf_usage; /* data for backfill scheduler,
 				       * (DON'T PACK) */
 	List coord_accts; /* list of slurmdb_coord_rec_t *'s */
