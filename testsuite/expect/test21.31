@@ -144,7 +144,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "Total=$ect1 Used=0 Free=$ect1 Remote=yes" {
+	-re "Total=$ect1 Used=0 Free=$ect1 Reserved=0 Remote=yes" {
 		incr matches
 		exp_continue
 	}
@@ -157,7 +157,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	log_error "License output is incorrect ($matches != 2). Expected: LicenseName=$sr1@$resource1(Server). Expected: Total=$ect1 Used=0 Free=$ect1 Remote=yes"
+	log_error "License output is incorrect ($matches != 2). Expected: LicenseName=$sr1@$resource1(Server). Expected: Total=$ect1 Used=0 Free=$ect1 Reserved=0 Remote=yes"
 	incr exit_code 1
 }
 
@@ -190,7 +190,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "Total=$ect1a Used=0 Free=$ect1a Remote=yes" {
+	-re "Total=$ect1a Used=0 Free=$ect1a Reserved=0 Remote=yes" {
 		incr matches
 		exp_continue
 	}
@@ -203,7 +203,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	log_error "License output is incorrect ($matches != 2). Expected: LicenseName=$sr1@$resource1(Server). Expected: Total=$ect1 Used=0 Free=$ect1 Remote=yes"
+	log_error "License output is incorrect ($matches != 2). Expected: LicenseName=$sr1@$resource1(Server). Expected: Total=$ect1 Used=0 Free=$ect1 Reserved=0 Remote=yes"
 	incr exit_code 1
 }
 
