@@ -41,14 +41,14 @@ cset fedc1 		""
 cset fedc2 		""
 cset fedc3 		""
 
-proc test_federation_setup { } {
+proc check_federation_setup { } {
 	global fed_slurm_base fedc1 fedc2 fedc3
-	set rc 0
+	set rc true
 	if {![string compare $fed_slurm_base ""] ||
 	    ![string compare $fedc1 ""] ||
 	    ![string compare $fedc2 ""] ||
 	    ![string compare $fedc3 ""]} {
-		set rc 1
+		set rc false
 	}
 
 	return $rc
@@ -133,8 +133,8 @@ proc setup_federation { fed_name } {
 }
 
 
-proc test_cluster_up { cname } {
-	set rc 0
+proc check_cluster_up { cname } {
+	set rc true
 	set matches 0
 	set timeout 2
 	global fed_slurm_base fedc1 fedc2 fedc3
@@ -148,31 +148,31 @@ proc test_cluster_up { cname } {
 		timeout {
 			log_warn "$cname not responding"
 			slow_kill $my_pid
-			set rc 1
+			set rc false
 		}
 		eof {
 			wait
 		}
 	}
-	if {!$rc && $matches != 1} {
+	if {$matches != 1} {
 		log_error "$cname not responding"
-		set rc 1
+		set rc false
 	}
 	log_user 1
 	return $rc
 }
 
 
-proc test_all_up {} {
-	set rc 0
+proc check_federation_up {} {
+	set rc true
 	global fedc1 fedc2 fedc3
 
-	if {[test_cluster_up $fedc1] ||
-	    [test_cluster_up $fedc2] ||
-	    [test_cluster_up $fedc3]} {
+	if {![check_cluster_up $fedc1] ||
+	    ![check_cluster_up $fedc2] ||
+	    ![check_cluster_up $fedc3]} {
 		log_warn "This test can't be run if any clusters--$fedc1,\
 			$fedc2, or $fedc3--are down"
-		set rc 1
+		set rc false
 	}
 
 	return $rc
