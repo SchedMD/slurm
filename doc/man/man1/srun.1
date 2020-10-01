@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "September 2020" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "October 2020" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -2257,10 +2257,12 @@ applies to job allocations.
 .TP
 \fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
 Restrict node selection to nodes with at least the specified number of
-threads per core.  NOTE: "Threads" refers to the number of processing units on
-each core rather than the number of application tasks to be launched per core.
-See additional information under \fB\-B\fR option above when task/affinity
-plugin is enabled. This option applies to job allocations.
+threads per core. In task layout, use the specified maximum number of threads
+per core. Implies \fB\-\-cpu\-bind=threads\fR. NOTE: "Threads" refers to the
+number of processing units on each core rather than the number of application
+tasks to be launched per core. See additional information under \fB\-B\fR
+option above when task/affinity plugin is enabled. This option applies to job
+and step allocations.
 
 .TP
 \fB\-\-time\-min\fR=<\fItime\fR>
@@ -2859,6 +2861,9 @@ Same as \fB\-\-thread\-spec\fR
 .TP
 \fBSLURM_THREADS\fR
 Same as \fB\-T, \-\-threads\fR
+.TP
+\fBSLURM_THREADS_PER_CORE\fR
+Same as \fB\-T, \-\-threads\-per\-core\fR
 .TP
 \fBSLURM_TIMELIMIT\fR
 Same as \fB\-t, \-\-time\fR
