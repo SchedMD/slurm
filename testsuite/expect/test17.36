@@ -239,24 +239,16 @@ proc check_job { exp_num_jobs } {
 		set exit_code 1
 	}
 
-	set job_cnt 0
-	# If gang scheduling is configured, some jobs will be suspended
-	spawn $squeue --job=$job_id --state=RUNNING,SUSPENDED -Oname --noheader
-	expect {
-		-re "$file_in" {
-			incr job_cnt 1
-			exp_continue
+	# Wait for the expected number of jobs to be running
+	if [
+		wait_for {$job_cnt == $exp_num_jobs} {
+			set job_cnt [
+				regexp -all "$file_in" [
+					run_command_output -fail "$squeue --job=$job_id --state=RUNNING,SUSPENDED -Oname --noheader"
+				]
+			]
 		}
-		timeout {
-			log_error "squeue is not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if { $job_cnt != $exp_num_jobs } {
+	] {
 		log_error "The number of possible jobs that could run were not reached ($job_cnt != $exp_num_jobs). This could be due to memory or other limits."
 		set exit_code 1
 	}
