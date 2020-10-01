@@ -506,4 +506,12 @@ extern bool slurm_option_get_next_set(slurm_opt_t *opt, char **name,
  */
 extern void validate_memory_options(slurm_opt_t *opt);
 
+/*
+ * Validate that conflicting optons (--hint, --ntasks-per-core,
+ * --nthreads-per-core) are not used together.
+ *
+ * Based on validate_memory_options()
+ */
+extern void validate_hint_option(slurm_opt_t *opt);
+
 #endif	/* _SLURM_OPT_H_ */

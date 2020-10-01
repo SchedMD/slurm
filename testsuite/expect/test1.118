@@ -1,0 +1,148 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test --hint mutual exclusive properties
+############################################################################
+# Copyright (C) 2021 SchedMD LLC
+# Written by Brian Christiansen <brian@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set job_id 0
+
+proc cleanup {} {
+	global job_id
+	cancel_job $job_id
+}
+
+proc check_error {client option prog error} {
+	global sbatch salloc srun test_id
+	set cmd "$client -H -Jtest$test_id -t1 --hint=nomultithread $option $prog"
+
+		set matches 0
+		set pid [spawn {*}$cmd]
+		expect {
+			$error {
+				incr matches
+					exp_continue
+			}
+			timeout {
+				fail "$client not responding"
+			}
+			eof {
+				wait
+			}
+		}
+	assert_or_fail {$matches == 1} "Didn't match '$error'"
+}
+
+
+proc mutual_error_tests {} {
+	global sbatch salloc srun test_id number job_id
+
+	set clients [list "$sbatch" "$salloc" "$srun"]
+	set options [list "--threads-per-core=1" "--ntasks-per-core=1" "-B1"]
+	set error "fatal: Following options are mutually exclusive: --hint, --ntasks-per-core, --threads-per-core, -B."
+
+	foreach client $clients {
+		set prog "hostname"
+		if {$client == $sbatch} {
+			set prog "--wrap=hostname"
+		}
+		foreach option $options {
+			check_error $client $option $prog $error
+		}
+	}
+
+	# Test srun --hint only with works with --cpu-bind=verbose
+	set options [list "--cpu-bind=threads" "--cpu-bind=threads,verbose"]
+	set error "fatal: --hint and --cpu-bind (other than --cpu-bind=verbose) are mutually exclusive."
+	foreach option $options {
+		check_error $client $option "hostname" $error
+	}
+
+	set options [list "--cpu-bind=verbose"]
+	foreach option $options {
+		set cmd "$client -H -Jtest$test_id -t1 --begin=now+1 --hint=nomultithread $option $prog"
+
+		set job_id 0
+		set matches 0
+		set pid [spawn {*}$cmd]
+		expect {
+			"fatal" {
+				incr matches
+				exp_continue
+			}
+			-re "job ($number)" {
+				set job_id $expect_out(1,string)
+			}
+			timeout {
+				fail "$client not responding"
+			}
+			eof {
+				wait
+			}
+		}
+		cancel_job $job_id
+		assert_or_fail {$matches == 0} "$cmd failed when it shouldn't have ($matches)"
+	}
+}
+
+mutual_error_tests
+
+# Test SLURM_HINT env variable
+set env(SLURM_HINT) "nomultithread"
+mutual_error_tests
+
+set client "$sbatch"
+set prog "--wrap=hostname"
+set options [list "--threads-per-core=2 --ntasks-per-core=3"]
+foreach option $options {
+	set cmd "$client -H -Jtest$test_id -t1 $option $prog"
+
+	set job_id 0
+	set matches 0
+	set pid [spawn {*}$cmd]
+	expect {
+		"fatal" {
+			incr matches
+			exp_continue
+		}
+		-re "job ($number)" {
+			set job_id $expect_out(1,string)
+		}
+		timeout {
+			fail "$client not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	assert_or_fail {$matches == 0} "$cmd failed when it shouldn't have ($matches)"
+
+	set threads_req [get_job_param $job_id "ReqB:S:C:T"]
+	set tasks_req [get_job_param $job_id "NtasksPerN:B:S:C"]
+	set threads_match "0:0:*:2"
+	set tasks_match "0:0:*:3"
+	assert_or_fail {[string compare $threads_match $threads_req] == 0} "$threads_req doesn't match $threads_match"
+	assert_or_fail {[string compare $tasks_match $tasks_req] == 0} "$tasks_req doesn't match $tasks_match"
+	cancel_job $job_id
+}
+

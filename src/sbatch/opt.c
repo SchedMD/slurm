@@ -662,9 +662,10 @@ static bool _opt_verify(void)
 	 * than in salloc/srun, there is not a missing chunk of code here.
 	 */
 
-	if (opt.hint &&
-	    (opt.ntasks_per_core == NO_VAL) &&
-	    (opt.threads_per_core == NO_VAL)) {
+	validate_hint_option(&opt);
+	if (opt.hint) {
+		xassert(opt.ntasks_per_core == NO_VAL);
+		xassert(opt.threads_per_core == NO_VAL);
 		if (verify_hint(opt.hint,
 				&opt.sockets_per_node,
 				&opt.cores_per_socket,

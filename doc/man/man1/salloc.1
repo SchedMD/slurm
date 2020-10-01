@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "August 2020" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "September 2020" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -148,6 +148,8 @@ CR_Core, CR_Core_Memory, CR_Socket, or CR_Socket_Memory for this option
 to be honored.
 If not specified, the scontrol show job will display 'ReqS:C:T=*:*:*'. This
 option applies to job allocations.
+\fBNOTE:\fR This option is mutually exclusive with \fB\-\-hint\fR,
+\fB\-\-threads\-per\-core\fR and \fB\-\-ntasks\-per\-core\fR.
 
 .TP
 \fB\-\-bb\fR=<\fIspec\fR>
@@ -756,6 +758,11 @@ Display help information and exit.
 .TP
 \fB\-\-hint\fR=<\fItype\fR>
 Bind tasks according to application hints.
+.br
+\fBNOTE\fR: This option cannot be used in conjunction with
+\fB\-\-ntasks\-per\-core\fR, \fB\-\-threads\-per\-core\fR or \fB\-B\fR. If
+\fB\-\-hint\fR is specified as a command line argument, it will take
+precedence over the environment.
 .RS
 .TP
 .B compute_bound

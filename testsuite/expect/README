@@ -229,6 +229,7 @@ test1.114  Test of srun --spread-job option.
 test1.115  Test of srun not hanging on ignored stdin.
 test1.116  Extended MPI functionality tests via srun.
 test1.117  Test of standalone srun not ignoring --mem-per-cpu
+test1.118  Test --hint mutual exclusion properties.
 
 test2.#    Testing of scontrol options (to be run as unprivileged user).
 ========================================================================
