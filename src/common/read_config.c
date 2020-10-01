@@ -812,6 +812,11 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 			      "reset to 1", n->nodenames);
 			n->cores = 1;
 		}
+		if (n->cpus == 0) {	/* make sure cpus is non-zero */
+			error("NodeNames=%s CPUs=0 is invalid, "
+			      "reset to 1", n->nodenames);
+			n->cpus = 1;
+		}
 		if (n->threads == 0) {	/* make sure threads is non-zero */
 			error("NodeNames=%s ThreadsPerCore=0 is invalid, "
 			      "reset to 1", n->nodenames);
