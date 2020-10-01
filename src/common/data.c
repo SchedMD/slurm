@@ -1368,6 +1368,10 @@ static int _convert_data_float(data_t *data)
 extern data_type_t data_convert_type(data_t *data, data_type_t match)
 {
 	_check_magic(data);
+
+	if (!data)
+		return DATA_TYPE_NONE;
+
 	/*
 	 * This currently only works on primitive types and doesn't
 	 * apply to dictionaries or lists.
