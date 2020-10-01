@@ -1156,7 +1156,7 @@ proc wait_for args {
 		# Check condition
 		if {[uplevel expr [format "{%s}" $condition]]} {
 			set now [format "%.3f" [expr [clock milliseconds] / 1000.000]]
-			log_debug "Condition ($condition) was met at [clock format [expr int($now)] -format %Y-%m-%dT%X].[lindex [split $now '.'] 1]"
+			log_debug "Condition ($condition) was met"
 			return $::RETURN_SUCCESS
 		} else {
 			log_trace "Condition ($condition) was not met"
@@ -5620,7 +5620,6 @@ proc get_node_param { node_name parameter_name } {
 	if [dict exists $nodes_dict $node_name $parameter_name] {
 		return [dict get $nodes_dict $node_name $parameter_name]
 	} else {
-		log_warn "Parameter $parameter_name not found on node $node_name"
 		return "MISSING"
 	}
 }
