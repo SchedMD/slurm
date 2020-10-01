@@ -117,6 +117,7 @@ documents those changes that are of interest to users and administrators.
  -- Handle mail_user and mail_type independently.
  -- Fix thread-safety issue with assoc_mgr_get_admin_level().
  -- Ignore step features if equal to job features
+ -- Fix slurmstepd segfault caused by incorrect strtok() usage.
 
 * Changes in Slurm 20.02.5
 ==========================
