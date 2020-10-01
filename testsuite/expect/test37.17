@@ -99,7 +99,7 @@ proc submit_job { options cdir file_in } {
 
 	set job_id 0
 	set my_sbatch "${fed_slurm_base}/$cdir/bin/sbatch"
-	if {[test_federation_setup]} {
+	if {![check_federation_setup]} {
 		set my_sbatch $sbatch
 	}
 	set command "$my_sbatch --job-name=test$test_id\_job -t1 \
@@ -1031,9 +1031,8 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 	skip "This test can't be run without a usable AccountStorageType"
 }
 
-if {![test_federation_setup]} {
-
-	if {[test_all_up]} {
+if {[check_federation_setup]} {
+	if {![check_all_up]} {
 		skip "All of the clusters in the federation must be up"
 	}
 
@@ -1074,7 +1073,9 @@ test_local_or_dependencies
 test_local_and_dependencies
 # test --depend=expand in another test.
 
-if {![test_federation_setup]} {
+if {![check_federation_setup]} {
+	skip "Subtests with federations cannot be run"
+} else {
 	test_remote_after
 	test_remote_afterany
 	test_remote_aftercorr
