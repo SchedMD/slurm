@@ -241,49 +241,15 @@ if {![param_contains [get_config_param "AccountingStorageEnforce"] "limits"]} {
 }
 
 # Verify cluster is able to run largest test job
-set got_uid 0
-set srun_pid [spawn $srun -t1 -J $job_name --mpi=none --ntasks-per-node=5 -N 3 $bin_id]
-expect {
-	-re "(uid=.*\n)" {
-		set got_uid 1
-		exp_continue
-	}
-
-	timeout {
-		slow_kill $srun_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-if { $got_uid == 0 } {
-	skip "System too small for test"
-}
-
-set config_dir ""
-log_user 0
-spawn $scontrol show config
-expect {
-	-re "SLURM_CONF *= (\\S+)$eol" {
-		set config_dir [file dirname $expect_out(1,string)]
-		exp_continue
-	}
-	timeout {
-		fail "scontrol is not responding"
-	}
-	eof {
-		wait
-	}
-}
-log_user 1
-if { $config_dir == "" } {
-	fail "scontrol did not provide SLURM_CONF"
+set nodes [get_nodes_by_request "--ntasks-per-node=5 -N3"]
+if { [llength $nodes] != 3 } {
+	skip "System too small for test, it needs '--ntasks-per-node=5 -N3'"
 }
 
 cleanup_accounts
 create_accounts
 
+set config_dir [get_conf_path]
 save_conf $config_dir/job_submit.lua
 save_conf $config_dir/slurm.conf
 
