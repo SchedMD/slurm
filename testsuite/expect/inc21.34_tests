@@ -701,7 +701,7 @@ proc qos_test { } {
 	mod_qos $job_qos [array get mod_job_qos]
 	mod_qos $part_qos [array get mod_part_qos]
 	sleep $time_spacing
-	inc21_30_16 "QOSMaxNodesPerUserLimit|PartitionConfig"
+	inc21_30_16 "QOSMaxNodePerUserLimit|PartitionConfig"
 	if {$exit_code != 0} {
 		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 	}
