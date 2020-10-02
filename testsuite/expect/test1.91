@@ -181,13 +181,11 @@ set timeout 30
 #
 # Run a job step to get allocated processor count and affinity
 #
-set mask 0
 set task_cnt 0
 send "$srun -c1 ./$file_prog\r"
 expect {
 	-re "TASK_ID:($number),MASK:($number)" {
 		incr task_cnt
-		set mask $expect_out(2,string)
 		exp_continue
 	}
 	-re "error" {
