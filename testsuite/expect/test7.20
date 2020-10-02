@@ -115,46 +115,12 @@ proc do_copy { src dst } {
 	}
 }
 
-proc take_backup { file } {
-	global cwd bin_cp
-	set bfile [lindex [file split $file] end]
-	log_info "Taking backup of $file -> $bfile"
-
-	if { [file exists $cwd/$bfile ] } {
-		exec unlink $cwd/$bfile
-	}
-	if { [file exists $file ] } {
-		do_copy $file $cwd/$bfile.orig
-	} else {
-		log_info "skipping backup of non-existent $file"
-	}
-}
-
-proc restore_backup { file } {
-	global cwd bin_cp
-	set bfile [lindex [file split $file] end]
-
-	if { [file exists $cwd/$bfile.orig ] } {
-		if { [file exists $file ] } {
-			spawn unlink $file
-		}
-
-		do_copy $cwd/$bfile.orig $file
-	} else {
-		log_info "skipping restore of non-existent $file"
-	}
-
-	if { [file exists $cwd/$bfile.orig ] } {
-		exec unlink $cwd/$bfile.orig
-	}
-}
-
 proc endit { exit_code } {
 	global test_id config_dir exit_code_skip is_skip
 
 	cleanup_accounts
-	restore_backup $config_dir/job_submit.lua
-	restore_backup $config_dir/slurm.conf
+	restore_conf $config_dir/job_submit.lua
+	restore_conf $config_dir/slurm.conf
 	reconfigure
 
 	if {$exit_code == $exit_code_skip} {
@@ -362,8 +328,8 @@ if { $config_dir == "" } {
 cleanup_accounts
 create_accounts
 
-take_backup $config_dir/job_submit.lua
-take_backup $config_dir/slurm.conf
+save_conf $config_dir/job_submit.lua
+save_conf $config_dir/slurm.conf
 
 # Activate lua plugin
 exec $bin_sed -i {s/^\(JobSubmitPlugins\)/#\1/gI} $config_dir/slurm.conf
