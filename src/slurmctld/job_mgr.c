@@ -14527,7 +14527,7 @@ static void _notify_srun_missing_step(job_record_t *job_ptr, int node_inx,
 			 * job as needed */
 			srun_step_missing(step_ptr, node_name);
 		} else if ((step_ptr->start_time < node_boot_time) &&
-			   (step_ptr->no_kill == 0)) {
+			   !(step_ptr->flags & SSF_NO_KILL)) {
 			/* There is a risk that the job step's tasks completed
 			 * on this node before its reboot, but that should be
 			 * very rare and there is no srun to work with (POE) */

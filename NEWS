@@ -91,6 +91,10 @@ documents those changes that are of interest to users and administrators.
     of number of CPUs size.
  -- Validate at submission that --hint is mutully exclusive with --cpu-bind,
     --ntasks-per-core, --threads-per-core or -B.
+ -- Make --exclusive the default with srun as a step adding --overlap to
+    reverse behavior.
+ -- Add --whole option to srun to allocate all resources on a node
+    in an allocation.
 
 * Changes in Slurm 20.02.6
 ==========================

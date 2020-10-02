@@ -500,6 +500,7 @@ static void _opt_default(void)
 	 * of the job/step. Do not use xfree() as the pointers have been copied.
 	 * See initialize_and_process_args() above.
 	 */
+	sropt.exclusive = true;
 	opt.job_flags			= 0;
 	sropt.multi_prog_cmds		= 0;
 	sropt.het_group			= NULL;
@@ -578,6 +579,7 @@ env_vars_t env_vars[] = {
   { "SLURM_NTASKS_PER_NODE", LONG_OPT_NTASKSPERNODE },
   { "SLURM_OPEN_MODE", LONG_OPT_OPEN_MODE },
   { "SLURM_OVERCOMMIT", 'O' },
+  { "SLURM_OVERLAP", LONG_OPT_OVERLAP },
   { "SLURM_PARTITION", 'p' },
   { "SLURM_POWER", LONG_OPT_POWER },
   { "SLURM_PROFILE", LONG_OPT_PROFILE },
@@ -603,6 +605,7 @@ env_vars_t env_vars[] = {
   { "SLURM_WAIT", 'W' },
   { "SLURM_WAIT4SWITCH", LONG_OPT_SWITCH_WAIT },
   { "SLURM_WCKEY", LONG_OPT_WCKEY },
+  { "SLURM_WHOLE", LONG_OPT_WHOLE },
   { "SLURM_WORKING_DIR", 'D' },
   { "SLURMD_DEBUG", LONG_OPT_SLURMD_DEBUG },
   { NULL }
@@ -1402,7 +1405,7 @@ static void _usage(void)
  	printf(
 "Usage: srun [-N nnodes] [-n ntasks] [-i in] [-o out] [-e err]\n"
 "            [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
-"            [-D path] [--immediate[=secs]] [--overcommit] [--no-kill]\n"
+"            [-D path] [--immediate[=secs]] [--overcommit] [--overlap] [--no-kill]\n"
 "            [--oversubscribe] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
 "            [--jobid=id] [--verbose] [--slurmd_debug=#] [--gres=list]\n"
 "            [-T threads] [-W sec] [--gres-flags=opts]\n"
@@ -1414,7 +1417,7 @@ static void _usage(void)
 "            [--cpu-bind=...] [--mem-bind=...] [--network=type]\n"
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n] [reservation=name]\n"
 "            [--ntasks-per-core=n] [--mem-per-cpu=MB] [--preserve-env]\n"
-"            [--profile=...]\n"
+"            [--profile=...] [--whole]\n"
 "            [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
 "            [--prolog=fname] [--epilog=fname]\n"
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
@@ -1497,6 +1500,7 @@ static void _help(void)
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
 "  -o, --output=out            location of stdout redirection\n"
 "  -O, --overcommit            overcommit resources\n"
+"      --overlap               Allow other steps to overlap this step\n"
 "      --het-group=value       hetjob component allocation(s) in which to launch\n"
 "                              application\n"
 "  -p, --partition=partition   partition requested\n"
@@ -1535,6 +1539,8 @@ static void _help(void)
 "  -W, --wait=sec              seconds to wait after first task exits\n"
 "                              before killing job\n"
 "      --wckey=wckey           wckey to run job under\n"
+"      --whole                 Use entire node(s) in the allocation\n"
+"                              for the step\n"
 "  -X, --disable-status        Disable Ctrl-C status feature\n"
 "\n"
 "Constraint options:\n"

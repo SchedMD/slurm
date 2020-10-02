@@ -1514,7 +1514,7 @@ static char *arg_get_exclusive(slurm_opt_t *opt)
 static void arg_reset_shared(slurm_opt_t *opt)
 {
 	if (opt->srun_opt)
-		opt->srun_opt->exclusive = false;
+		opt->srun_opt->exclusive = true;
 	opt->shared = NO_VAL16;
 }
 static slurm_cli_opt_t slurm_opt_exclusive = {
@@ -3255,6 +3255,35 @@ static slurm_cli_opt_t slurm_opt_overcommit = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_overlap(slurm_opt_t *opt, const char *arg)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->exclusive = false;
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_overlap(slurm_opt_t *opt)
+{
+	if (!opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	return xstrdup(opt->srun_opt->exclusive ? "unset" : "set");
+}
+static void arg_reset_overlap(slurm_opt_t *opt)
+{
+	if (opt->srun_opt)
+		opt->srun_opt->exclusive = true;
+}
+
+static slurm_cli_opt_t slurm_opt_overlap = {
+	.name = "overlap",
+	.has_arg = no_argument,
+	.val = LONG_OPT_OVERLAP,
+	.set_func_srun = arg_set_overlap,
+	.get_func = arg_get_overlap,
+	.reset_func = arg_reset_overlap,
+};
+
 /*
  * This option is directly tied to --exclusive. Both use the same output
  * function, and the string arguments are designed to mirror one another.
@@ -4737,6 +4766,16 @@ static slurm_cli_opt_t slurm_opt_wckey = {
 	.reset_func = arg_reset_wckey,
 };
 
+COMMON_SRUN_BOOL_OPTION(whole);
+static slurm_cli_opt_t slurm_opt_whole = {
+	.name = "whole",
+	.has_arg = no_argument,
+	.val = LONG_OPT_WHOLE,
+	.set_func_srun = arg_set_whole,
+	.get_func = arg_get_whole,
+	.reset_func = arg_reset_whole,
+};
+
 COMMON_SBATCH_STRING_OPTION(wrap);
 static slurm_cli_opt_t slurm_opt_wrap = {
 	.name = "wrap",
@@ -4876,6 +4915,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_open_mode,
 	&slurm_opt_output,
 	&slurm_opt_overcommit,
+	&slurm_opt_overlap,
 	&slurm_opt_oversubscribe,
 	&slurm_opt_pack_group,
 	&slurm_opt_parsable,
@@ -4922,6 +4962,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_wait_all_nodes,
 	&slurm_opt_wait_srun,
 	&slurm_opt_wckey,
+	&slurm_opt_whole,
 	&slurm_opt_wrap,
 	&slurm_opt_x11,
 	NULL /* END */

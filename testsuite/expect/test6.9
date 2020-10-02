@@ -40,9 +40,9 @@ set job_id      0
 # The "sleep 1" ensures the background tasks is step 0 and foreground tasks is step 1
 #
 make_bash_script $file_in "
-  $srun --mem=10 $bin_sleep $max_job_delay &
+  $srun --mem=10 --overlap $bin_sleep $max_job_delay &
   $bin_sleep 1
-  $srun --mem=10 $bin_sleep $max_job_delay
+  $srun --mem=10 --overlap $bin_sleep $max_job_delay
 "
 
 #
