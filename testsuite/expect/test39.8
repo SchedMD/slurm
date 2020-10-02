@@ -33,6 +33,9 @@ set number_commas  "\[0-9_,\]+"
 if {![check_config_select "cons_tres"]} {
     skip "This test is only compatible with select/cons_tres"
 }
+if {![get_config_param "ConstrainDevices"]} {
+	skip "This test is only compatible with ConstrainDevices=Yes in cgroup.conf"
+}
 
 set gpu_cnt [get_highest_gres_count 1 "gpu"]
 if {$gpu_cnt < 2} {
