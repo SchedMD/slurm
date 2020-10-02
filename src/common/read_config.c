@@ -683,7 +683,6 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		return 0;
 	} else {
 		bool no_cpus    = false;
-		bool no_boards  = false;
 		bool no_sockets = false;
 		bool no_sockets_per_board = false;
 		uint16_t sockets_per_board = 0;
@@ -704,10 +703,8 @@ static int _parse_nodename(void **dest, slurm_parser_enum_t type,
 		s_p_get_string(&n->bcast_addresses, "BcastAddr", tbl);
 
 		if (!s_p_get_uint16(&n->boards, "Boards", tbl)
-		    && !s_p_get_uint16(&n->boards, "Boards", dflt)) {
+		    && !s_p_get_uint16(&n->boards, "Boards", dflt))
 			n->boards = 1;
-			no_boards = true;
-		}
 
 		if (s_p_get_string(&cpu_bind, "CpuBind", tbl) ||
 		    s_p_get_string(&cpu_bind, "CpuBind", dflt)) {
