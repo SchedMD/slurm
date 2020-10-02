@@ -208,22 +208,10 @@ if {$totcpus == 0} {
 
 
 
-# Get the number of nodes in the default partition
-set num_nodes 0
-spawn $scontrol show partition $partition
-expect {
-	-re "TotalNodes=($number)" {
-		set num_nodes [expr $expect_out(1,string) - 1]
-		exp_continue
-	}
-	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+# Get the number of nodes in the default partition, minus one.
+# $maxnode_num is used as MaxNodes in QOS and we will test requests of
+# $maxnode_num + 1. If not EnforcePartLimits could interfere.
+set num_nodes [expr [available_nodes "idle"] -1]
 
 if {$num_nodes == 0} {
 	fail "No cpus were found"
