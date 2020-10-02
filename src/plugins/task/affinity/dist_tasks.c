@@ -1000,8 +1000,13 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	offset = hw_cores * hw_threads;
 	s = 0;
 	while (taskcount < max_tasks) {
-		if (taskcount == last_taskcount)
-			fatal("_task_layout_lllp_cyclic failure");
+		if (taskcount == last_taskcount) {
+			error("_task_layout_lllp_cyclic failure");
+			FREE_NULL_BITMAP(avail_map);
+			xfree(core_tasks);
+			xfree(socket_last_pu);
+			return SLURM_ERROR;
+		}
 		last_taskcount = taskcount;
 		for (i = 0; i < size; i++) {
 			bool already_switched = false;
@@ -1210,8 +1215,13 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	/* block distribution with oversubsciption */
 	c = 0;
 	while (taskcount < max_tasks) {
-		if (taskcount == last_taskcount)
-			fatal("_task_layout_lllp_block infinite loop");
+		if (taskcount == last_taskcount) {
+			error("_task_layout_lllp_block infinite loop");
+			FREE_NULL_BITMAP(avail_map);
+			xfree(core_tasks);
+			xfree(socket_tasks);
+			return SLURM_ERROR;
+		}
 		if (taskcount > 0) {
 			/* Clear counters to over-subscribe, if necessary */
 			memset(core_tasks, 0,
