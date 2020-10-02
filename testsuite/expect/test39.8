@@ -31,7 +31,7 @@ set file_in     "test$test_id.input"
 set number_commas  "\[0-9_,\]+"
 
 if {![check_config_select "cons_tres"]} {
-    skip "This test is only compatible with select/cons_tres"
+	skip "This test is only compatible with select/cons_tres"
 }
 if {![get_config_param "ConstrainDevices"]} {
 	skip "This test is only compatible with ConstrainDevices=Yes in cgroup.conf"
@@ -57,6 +57,11 @@ log_debug "CPUs per node is $cpus_per_node"
 
 if {$cpus_per_node < 2} {
 	skip "This test requires 2 or more CPUs per node in the default partition"
+}
+
+proc cleanup {} {
+	global bin_rm file_in
+	exec $bin_rm -f $file_in
 }
 
 #
@@ -201,8 +206,6 @@ if {$matches != $match_goal} {
 	fail "--gpu-bind=$mask_gpu not respected ($matches != $match_goal)"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
