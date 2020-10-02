@@ -88,33 +88,6 @@ proc cleanup_accounts {} {
 	remove_acct "" $ta1
 }
 
-proc do_copy { src dst } {
-	global bin_cp
-	set rc 12345
-
-	if { [file exists $dst ] } {
-		spawn unlink $dst
-	}
-	if { [file exists $src ] } {
-		spawn $bin_cp -v $src $dst
-		expect {
-			timeout {
-				fail "$file was not copied"
-			}
-			eof {
-				lassign [wait] pid spawnid os_error_flag rc
-			}
-		}
-
-		if { $rc != 0 } {
-			log_error "$file was not copied: $rc"
-			endit $rc
-		}
-	} else {
-		log_info "skipping backup of non-existant $file"
-	}
-}
-
 proc endit { exit_code } {
 	global test_id config_dir exit_code_skip is_skip
 
@@ -336,7 +309,8 @@ exec $bin_sed -i {s/^\(JobSubmitPlugins\)/#\1/gI} $config_dir/slurm.conf
 exec $bin_echo "\n### test7.20 additions####\nJobSubmitPlugins=lua" >> $config_dir/slurm.conf
 reconfigure
 
-do_copy $test_lua_reject $config_dir/job_submit.lua
+run_command "$bin_rm $config_dir/job_submit.lua"
+run_command -fail "$bin_cp $test_lua_reject $config_dir/job_submit.lua"
 # Sleep for 1 second to make sure that modify time is different from last copy.
 sleep 1
 file mtime $config_dir/job_submit.lua [timestamp]
@@ -351,7 +325,7 @@ test_bin_fail "R6" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 
 test_bin_fail "R7" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq2 -n5 : -n3 : -n1 --wrap /bin/true} 1 1
 test_bin_fail "R8" $sbatch {-t1 -J $job_name --comment=PASS -o /dev/null -W -A $ta1 --qos $tq2 -n1 : --comment=ERROR -n3 : --comment=ERROR -n5 --wrap /bin/true} 1 2
 
-do_copy $test_lua_pass $config_dir/job_submit.lua
+run_command -fail "$bin_cp $test_lua_pass $config_dir/job_submit.lua"
 # Sleep for 1 second to make sure that modify time is different from last copy.
 sleep 1
 file mtime $config_dir/job_submit.lua [timestamp]
