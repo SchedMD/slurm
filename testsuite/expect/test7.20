@@ -29,7 +29,6 @@ source ./globals_accounting
 set test_lua_reject	"test$test_id\_scripts/reject.lua"
 set test_lua_pass	"test$test_id\_scripts/pass.lua"
 set exit_code		 0
-set exit_code_skip	 -123123
 set cwd			"[$bin_pwd]"
 set job_name		"test$test_id"
 set is_skip              0
@@ -88,24 +87,13 @@ proc cleanup_accounts {} {
 	remove_acct "" $ta1
 }
 
-proc endit { exit_code } {
-	global test_id config_dir exit_code_skip is_skip
+proc cleanup {} {
+	global config_dir
 
 	cleanup_accounts
 	restore_conf $config_dir/job_submit.lua
 	restore_conf $config_dir/slurm.conf
 	reconfigure
-
-	if {$exit_code == $exit_code_skip} {
-		skip "Unable to run test with available nodes"
-	}
-	if {$is_skip} {
-		skip "Some subtests were skipped"
-	}
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
 }
 
 proc check_rc { exit_code } {
@@ -159,9 +147,8 @@ proc test_bin_pass { num bin args het_job count } {
 			exp_continue
 		}
 		timeout {
-			log_error "$bin not responding"
 			slow_kill [expr 0 - $pid]
-			endit 1
+			fail "$bin not responding"
 		}
 		eof {
 			lassign [wait] pid spawnid os_error_flag rc
@@ -174,8 +161,7 @@ proc test_bin_pass { num bin args het_job count } {
 	    ($got_sub1 != $count) ||
 	    ($got_sub2 != $count) ||
 	    ($got_sub3 != $count)} {
-			log_error "Invalid $bin response"
-			endit 1
+			fail "Invalid $bin response"
 	}
 }
 
@@ -225,9 +211,8 @@ proc test_bin_fail { num bin args het_job count } {
 			exp_continue
 		}
 		timeout {
-			log_error "$bin not responding"
 			slow_kill [expr 0 - $pid]
-			endit 1
+			fail "$bin not responding"
 		}
 		eof {
 			lassign [wait] pid spawnid os_error_flag rc
@@ -240,8 +225,7 @@ proc test_bin_fail { num bin args het_job count } {
 	    ($got_sub1 != $count) ||
 	    ($got_sub2 != $count) ||
 	    ($got_sub3 != $count)} {
-		log_error "Invalid $bin response"
-		endit 1
+		fail "Invalid $bin response"
 	}
 }
 
@@ -286,8 +270,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		endit 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -348,6 +331,9 @@ test_bin_fail "F5" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq1 
 test_bin_fail "F6" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq1 -n5 --array 10 --wrap /bin/true} 0 1
 test_bin_fail "F7" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq1 -n5 : -n3 : -n1 --wrap /bin/true} 1 3
 
-check_rc $exit_code
-
-endit 0
+if {$exit_code} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}
+if {$is_skip} {
+	skip "Some subtests were skipped"
+}
