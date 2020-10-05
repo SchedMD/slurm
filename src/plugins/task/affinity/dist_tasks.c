@@ -951,6 +951,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	bitstr_t **masks = NULL;
 	int *socket_last_pu = NULL;
 	int core_inx, pu_per_core, *core_tasks = NULL, *core_threads = NULL;
+	int req_threads_per_core = 0;
 
 	info ("_task_layout_lllp_cyclic ");
 
@@ -958,17 +959,19 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	if (!avail_map)
 		return SLURM_ERROR;
 
+	if (req->threads_per_core && (req->threads_per_core != NO_VAL16))
+		req_threads_per_core = req->threads_per_core;
+	else if (req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
+		req_threads_per_core = 1;
+
 	size = bit_set_count(avail_map);
-	if ((req->threads_per_core && (req->threads_per_core != NO_VAL16)) ||
-	    (req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)) {
-		uint16_t threads_per_core =
-			req->threads_per_core ? req->threads_per_core : 1;
+	if (req_threads_per_core) {
 		if (size < (req->cpus_per_task * (hw_threads /
-						  threads_per_core))) {
-			error("only %d bits in avail_map, CPU_BIND_ONE_THREAD_PER_CORE/threads_per_core requires %d!",
+						  req_threads_per_core))) {
+			error("only %d bits in avail_map, threads_per_core requires %d!",
 			      size,
 			      (req->cpus_per_task * (hw_threads /
-						     threads_per_core)));
+						     req_threads_per_core)));
 			FREE_NULL_BITMAP(avail_map);
 			return SLURM_ERROR;
 		}
@@ -1055,13 +1058,9 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 			if ((req->ntasks_per_core != 0) &&
 			    (core_tasks[core_inx] >= req->ntasks_per_core))
 				continue;
-			if (req->threads_per_core &&
-			    (req->threads_per_core != NO_VAL16) &&
-			    (core_threads[core_inx] >= req->threads_per_core))
+			if (req_threads_per_core &&
+			    (core_threads[core_inx] >= req_threads_per_core))
 				continue;
-			/* skip unrequested threads */
-			if (req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
-				socket_last_pu[s] += hw_threads - 1;
 
 			if (!masks[taskcount])
 				masks[taskcount] =
@@ -1089,9 +1088,8 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 			core_tasks[core_inx]++;
 
 			/* Binding to cores, skip remaining of the threads */
-			if (!(req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
-			    && ((req->cpu_bind_type & CPU_BIND_TO_CORES)
-				|| (req->ntasks_per_core == 1))) {
+			if ((req->cpu_bind_type & CPU_BIND_TO_CORES) ||
+			    (req->ntasks_per_core == 1)) {
 				int threads_not_used;
 				if (req->cpus_per_task < hw_threads)
 					threads_not_used =
@@ -1158,6 +1156,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	bitstr_t **masks = NULL;
 	int core_inx, pu_per_core, *core_tasks = NULL, *core_threads = NULL;
 	int sock_inx, pu_per_socket, *socket_tasks = NULL;
+	int req_threads_per_core = 0;
 
 	info("_task_layout_lllp_block ");
 
@@ -1166,17 +1165,19 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 		return SLURM_ERROR;
 	}
 
+	if (req->threads_per_core && (req->threads_per_core != NO_VAL16))
+		req_threads_per_core = req->threads_per_core;
+	else if (req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
+		req_threads_per_core = 1;
+
 	size = bit_set_count(avail_map);
-	if ((req->threads_per_core && (req->threads_per_core != NO_VAL16)) ||
-	    (req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)) {
-		uint16_t threads_per_core =
-			req->threads_per_core ? req->threads_per_core : 1;
+	if (req_threads_per_core) {
 		if (size < (req->cpus_per_task * (hw_threads /
-						  threads_per_core))) {
-			error("only %d bits in avail_map, CPU_BIND_ONE_THREAD_PER_CORE/threads_per_core requires %d!",
+						  req_threads_per_core))) {
+			error("only %d bits in avail_map, threads_per_core requires %d!",
 			      size,
 			      (req->cpus_per_task * (hw_threads /
-						     threads_per_core)));
+						     req_threads_per_core)));
 			FREE_NULL_BITMAP(avail_map);
 			return SLURM_ERROR;
 		}
@@ -1241,9 +1242,8 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			if ((req->ntasks_per_socket != 0) &&
 			    (socket_tasks[sock_inx] >= req->ntasks_per_socket))
 				continue;
-			if (req->threads_per_core &&
-			    (req->threads_per_core != NO_VAL16) &&
-			    (core_threads[core_inx] >= req->threads_per_core))
+			if (req_threads_per_core &&
+			    (core_threads[core_inx] >= req_threads_per_core))
 				continue;
 
 			if (!masks[taskcount])
@@ -1251,10 +1251,6 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 					conf->block_map_size);
 			//info("setting %d %d", taskcount, i);
 			bit_set(masks[taskcount], i);
-
-			/* skip unrequested threads */
-			if (req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
-				i += hw_threads - 1;
 
 			core_threads[core_inx]++;
 
@@ -1266,9 +1262,8 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			socket_tasks[sock_inx]++;
 
 			/* Binding to cores, skip remaining of the threads */
-			if (!(req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
-			    && ((req->cpu_bind_type & CPU_BIND_TO_CORES)
-				|| (req->ntasks_per_core == 1))) {
+			if ((req->cpu_bind_type & CPU_BIND_TO_CORES) ||
+			    (req->ntasks_per_core == 1)) {
 				int threads_not_used;
 				if (req->cpus_per_task < hw_threads)
 					threads_not_used =
