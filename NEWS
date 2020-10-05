@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix core selection for exclusive step on nodes where CPUs == Cores.
  -- Fix topology aware scheduling reservations.
  -- Fix loading cpus_per_task on a job from state file.
+ -- When a partition has no nodes fix estimate of max cpus possible on a job
+    trying to run there.
 
 * Changes in Slurm 20.02.5
 ==========================

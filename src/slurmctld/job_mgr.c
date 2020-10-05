@@ -10622,20 +10622,27 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, Buf buffer,
 static void _find_node_config(int *cpu_cnt_ptr, int *core_cnt_ptr)
 {
 	static int max_cpu_cnt = -1, max_core_cnt = -1;
+	static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 	int i;
 	node_record_t *node_ptr = node_record_table_ptr;
+
+	slurm_mutex_lock(&lock);
+	if (max_cpu_cnt == -1) {
+		for (i = 0; i < node_record_count; i++, node_ptr++) {
+			/* Only data from config_record used for scheduling */
+			max_cpu_cnt = MAX(max_cpu_cnt,
+					  node_ptr->config_ptr->cpus);
+			max_core_cnt = MAX(max_core_cnt,
+					   node_ptr->config_ptr->cores);
+		}
+	}
+	slurm_mutex_unlock(&lock);
 
 	*cpu_cnt_ptr  = max_cpu_cnt;
 	*core_cnt_ptr = max_core_cnt;
 
-	if (max_cpu_cnt != -1)
-		return;
+	return;
 
-	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		/* Only data from config_record used for scheduling */
-		max_cpu_cnt = MAX(max_cpu_cnt, node_ptr->config_ptr->cpus);
-		max_core_cnt = MAX(max_core_cnt, node_ptr->config_ptr->cores);
-	}
 }
 
 /* pack default job details for "get_job_info" RPC */
