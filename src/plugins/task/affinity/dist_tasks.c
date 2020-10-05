@@ -1196,13 +1196,6 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	}
 	size = bit_size(avail_map);
 
-	if ((req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE) &&
-	    (max_cpus > (hw_sockets * hw_cores))) {
-		/* More CPUs requested than available cores,
-		 * disable core-level binding */
-		req->cpu_bind_type &= (~CPU_BIND_ONE_THREAD_PER_CORE);
-	}
-
 	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
 	masks = *masks_p;
 
