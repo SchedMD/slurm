@@ -2386,54 +2386,76 @@ extern char *slurm_conf_get_nodeaddr(const char *node_hostname)
 	return NULL;
 }
 
+
+/*
+ * This is a fallback function to search aliases if we can't
+ * determine the nodename using getaddrinfo()/getnameinfo().
+ */
+static char *_get_aliased_nodename_fallback(char *hostname)
+{
+	struct hostent *he = NULL;
+	char h_buf[4096];
+	char *nodename = NULL;
+	int h_err;
+
+	he = get_host_by_name(hostname, (void *) &h_buf, sizeof(h_buf), &h_err);
+	if (!he)
+		return NULL;
+
+	/* hunt throught the aliases list hoping for a match */
+	for (int i = 0; he->h_aliases[i]; i++) {
+		if ((nodename = slurm_conf_get_nodename(he->h_aliases[i])))
+			break;
+	}
+
+	return nodename;
+}
+
 /*
  * slurm_conf_get_aliased_nodename - Return the NodeName for the
  * complete hostname string returned by gethostname if there is
  * such a match, otherwise iterate through any aliases returned
- * by get_host_by_name
+ * by get_host_by_name.
  */
 extern char *slurm_conf_get_aliased_nodename()
 {
-	char hostname_full[1024];
-	int error_code;
-	char *nodename;
+	struct addrinfo *addrs, *addr_ptr;
+	char hostname_full[NI_MAXHOST];
+	char *nodename, *tmp_name = NULL;
 
-	error_code = gethostname(hostname_full, sizeof(hostname_full));
-	/* we shouldn't have any problem here since by the time
-	 * this function has been called, gethostname_short,
-	 * which invokes gethostname, has probably already been called
-	 * successfully, so just return NULL if something weird
-	 * happens at this point
-	 */
-	if (error_code)
+	if (gethostname(hostname_full, sizeof(hostname_full)))
 		return NULL;
 
 	nodename = slurm_conf_get_nodename(hostname_full);
-	/* if the full hostname did not match a nodename */
-	if (nodename == NULL) {
-		/* use get_host_by_name; buffer sizes, semantics, etc.
-		 * copied from slurm_protocol_socket_implementation.c
-		 */
-		struct hostent * he = NULL;
-		char * h_buf[4096];
-		int h_err;
+	/* hostname matched a nodename, so return now */
+	if (nodename)
+		return nodename;
 
-		he = get_host_by_name(hostname_full, (void *)&h_buf,
-				      sizeof(h_buf), &h_err);
-		if (he != NULL) {
-			unsigned int i = 0;
-			/* check the "official" host name first */
-			nodename = slurm_conf_get_nodename(he->h_name);
-			while ((nodename == NULL) &&
-			       (he->h_aliases[i] != NULL)) {
-				/* the "official" name still didn't match --
-				 * iterate through the aliases */
-				nodename =
-				     slurm_conf_get_nodename(he->h_aliases[i]);
-				i++;
-			}
+	/*
+	 * We can't get a list of aliases anymore, do a lookup for every
+	 * address we do get to try to avoid the old logic.
+	 */
+	addrs = get_addr_info(hostname_full);
+	addr_ptr = addrs;
+	for(addr_ptr = addrs; addr_ptr; addr_ptr = addr_ptr->ai_next) {
+		if (addr_ptr->ai_canonname) {
+			nodename =
+				slurm_conf_get_nodename(addr_ptr->ai_canonname);
+		} else {
+			tmp_name = get_name_info(addr_ptr->ai_addr,
+						 addr_ptr->ai_addrlen, 0);
+			nodename = slurm_conf_get_nodename(tmp_name);
+			xfree(tmp_name);
 		}
+		if (nodename)
+			break;
 	}
+
+	if (addrs)
+		freeaddrinfo(addrs);
+
+	if (!nodename)
+		nodename = _get_aliased_nodename_fallback(hostname_full);
 
 	return nodename;
 }
