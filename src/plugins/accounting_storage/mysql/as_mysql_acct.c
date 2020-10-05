@@ -564,12 +564,14 @@ extern List as_mysql_get_accts(mysql_conn_t *mysql_conn, uid_t uid,
 	char *acct_req_inx[] = {
 		"name",
 		"description",
-		"organization"
+		"organization",
+		"deleted",
 	};
 	enum {
 		SLURMDB_REQ_NAME,
 		SLURMDB_REQ_DESC,
 		SLURMDB_REQ_ORG,
+		SLURMDB_REQ_DELETED,
 		SLURMDB_REQ_COUNT
 	};
 
@@ -710,6 +712,9 @@ empty:
 		acct->name =  xstrdup(row[SLURMDB_REQ_NAME]);
 		acct->description = xstrdup(row[SLURMDB_REQ_DESC]);
 		acct->organization = xstrdup(row[SLURMDB_REQ_ORG]);
+
+		if (slurm_atoul(row[SLURMDB_REQ_DELETED]))
+			acct->flags |= SLURMDB_ACCT_FLAG_DELETED;
 
 		if (acct_cond && acct_cond->with_coords) {
 			_get_account_coords(mysql_conn, acct);

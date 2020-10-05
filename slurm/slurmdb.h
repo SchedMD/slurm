@@ -365,10 +365,16 @@ typedef struct {
 	uint16_t with_deleted;
 } slurmdb_account_cond_t;
 
+enum {
+	SLURMDB_ACCT_FLAG_NONE          = 0,
+	SLURMDB_ACCT_FLAG_DELETED       = (1 << 0),
+};
+
 typedef struct {
 	List assoc_list; /* list of slurmdb_assoc_rec_t *'s */
 	List coordinators; /* list of slurmdb_coord_rec_t *'s */
 	char *description;
+	uint32_t flags; /* SLURMDB_ACCT_FLAG_* */
 	char *name;
 	char *organization;
 } slurmdb_account_rec_t;
