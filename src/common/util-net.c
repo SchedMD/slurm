@@ -309,6 +309,30 @@ get_addr_info(const char *hostname)
 	return result;
 }
 
+/*
+ * Get the short hostname using "nameinfo" for an address.
+ * NOTE: caller is responsible for freeing the resulting address.
+ * Returns NULL on error.
+ */
+char *get_name_info(struct sockaddr *addr, socklen_t addrlen, int flags)
+{
+	char hbuf[NI_MAXHOST];
+	int err = getnameinfo(addr, addrlen, hbuf, sizeof(hbuf), NULL, 0,
+			      (NI_NAMEREQD | flags));
+
+	if (err == EAI_SYSTEM) {
+		error("%s: getnameinfo() failed: %s: %m",
+		      __func__, gai_strerror(err));
+		return NULL;
+	} else if (err) {
+		error("%s: getnameinfo() failed: %s",
+		      __func__, gai_strerror(err));
+		return NULL;
+	}
+
+	return xstrdup(hbuf);
+}
+
 void
 free_addr_info(struct addrinfo *info)
 {
