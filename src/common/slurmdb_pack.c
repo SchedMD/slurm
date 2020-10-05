@@ -537,7 +537,25 @@ extern void slurmdb_pack_account_rec(void *in, uint16_t protocol_version,
 
 	xassert(buffer);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		if (!object) {
+			pack32(NO_VAL, buffer);
+			pack32(NO_VAL, buffer);
+			packnull(buffer);
+			packnull(buffer);
+			packnull(buffer);
+			return;
+		}
+
+		slurm_pack_list(object->assoc_list, slurmdb_pack_assoc_rec,
+				buffer, protocol_version);
+		slurm_pack_list(object->coordinators, slurmdb_pack_coord_rec,
+				buffer, protocol_version);
+
+		packstr(object->description, buffer);
+		packstr(object->name, buffer);
+		packstr(object->organization, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);
 			pack32(NO_VAL, buffer);
@@ -577,7 +595,39 @@ extern int slurmdb_unpack_account_rec(void **object, uint16_t protocol_version,
 
 	*object = object_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			object_ptr->assoc_list =
+				list_create(slurmdb_destroy_assoc_rec);
+			for(i=0; i<count; i++) {
+				if (slurmdb_unpack_assoc_rec(
+					    (void *)&assoc, protocol_version,
+					    buffer)
+				    == SLURM_ERROR)
+					goto unpack_error;
+				list_append(object_ptr->assoc_list, assoc);
+			}
+		}
+		safe_unpack32(&count, buffer);
+		if (count != NO_VAL) {
+			object_ptr->coordinators =
+				list_create(slurmdb_destroy_coord_rec);
+			for(i=0; i<count; i++) {
+				if (slurmdb_unpack_coord_rec(
+					    (void *)&coord, protocol_version,
+					    buffer)
+				    == SLURM_ERROR)
+					goto unpack_error;
+				list_append(object_ptr->coordinators, coord);
+			}
+		}
+		safe_unpackstr_xmalloc(&object_ptr->description,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&object_ptr->organization,
+				       &uint32_tmp, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count != NO_VAL) {
 			object_ptr->assoc_list =
