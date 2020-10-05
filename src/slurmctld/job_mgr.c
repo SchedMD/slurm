@@ -2936,7 +2936,10 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 	job_ptr->details->cpu_freq_min = cpu_freq_min;
 	job_ptr->details->cpu_freq_max = cpu_freq_max;
 	job_ptr->details->cpu_freq_gov = cpu_freq_gov;
-	job_ptr->details->cpus_per_task = cpus_per_task;
+	if (cpus_per_task != NO_VAL16)
+		job_ptr->details->cpus_per_task = cpus_per_task;
+	else
+		job_ptr->details->cpus_per_task = 1;
 	job_ptr->details->orig_cpus_per_task = cpus_per_task;
 	job_ptr->details->depend_list = depend_list;
 	job_ptr->details->dependency = dependency;
