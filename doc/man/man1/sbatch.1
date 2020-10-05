@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "September 2020" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "October 2020" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -1768,7 +1768,8 @@ This option can not be used with the \fB\-\-core\-spec\fR option.
 .TP
 \fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
 Restrict node selection to nodes with at least the specified number of
-threads per core.  NOTE: "Threads" refers to the number of processing units on
+threads per core. In task layout, use the specified maximum number of threads
+per core. NOTE: "Threads" refers to the number of processing units on
 each core rather than the number of application tasks to be launched per core.
 See additional information under \fB\-B\fR option above when task/affinity
 plugin is enabled.

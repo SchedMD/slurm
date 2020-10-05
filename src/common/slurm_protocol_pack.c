@@ -2498,6 +2498,7 @@ extern void _pack_job_step_create_request_msg(
 		pack32(msg->num_tasks, buffer);
 		pack64(msg->pn_min_memory, buffer);
 		pack32(msg->time_limit, buffer);
+		pack16(msg->threads_per_core, buffer);
 
 		pack16(msg->relative, buffer);
 		pack32(msg->task_dist, buffer);
@@ -2600,6 +2601,7 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpack32(&tmp_ptr->num_tasks, buffer);
 		safe_unpack64(&tmp_ptr->pn_min_memory, buffer);
 		safe_unpack32(&tmp_ptr->time_limit, buffer);
+		safe_unpack16(&tmp_ptr->threads_per_core, buffer);
 
 		safe_unpack16(&tmp_ptr->relative, buffer);
 		safe_unpack32(&tmp_ptr->task_dist, buffer);
@@ -7660,6 +7662,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 
 		pack32(msg->nnodes, buffer);
 		pack16(msg->cpus_per_task, buffer);
+		pack16(msg->threads_per_core, buffer);
 		pack32(msg->task_dist, buffer);
 		pack16(msg->node_cpus, buffer);
 		pack16(msg->job_core_spec, buffer);
@@ -7894,6 +7897,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		if (msg->nnodes >= NO_VAL)
 			goto unpack_error;
 		safe_unpack16(&msg->cpus_per_task, buffer);
+		safe_unpack16(&msg->threads_per_core, buffer);
 		safe_unpack32(&msg->task_dist, buffer);
 		safe_unpack16(&msg->node_cpus, buffer);
 		safe_unpack16(&msg->job_core_spec, buffer);

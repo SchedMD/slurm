@@ -784,12 +784,8 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		j->sockets_per_node    = opt_local->sockets_per_node;
 	if (opt_local->cores_per_socket != NO_VAL)
 		j->cores_per_socket      = opt_local->cores_per_socket;
-	if (opt_local->threads_per_core != NO_VAL) {
+	if (opt_local->threads_per_core != NO_VAL)
 		j->threads_per_core    = opt_local->threads_per_core;
-		/* if 1 always make sure affinity knows about it */
-		if (j->threads_per_core == 1)
-			srun_opt->cpu_bind_type |= CPU_BIND_ONE_THREAD_PER_CORE;
-	}
 	j->user_id        = opt_local->uid;
 	j->dependency     = opt_local->dependency;
 	if (opt_local->nice != NO_VAL)

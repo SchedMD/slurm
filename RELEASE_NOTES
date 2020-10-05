@@ -63,6 +63,7 @@ HIGHLIGHTS
     step access to all resources of a node in a job allocation.  This will
     allocate all resources on a node allocated the step. No other parallel
     step will have access to those unless \-\-overlap is used.
+ -- --threads-per-core now influences task layout/binding, not just allocation.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

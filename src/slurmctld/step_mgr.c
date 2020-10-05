@@ -1929,9 +1929,21 @@ extern void step_alloc_lps(step_record_t *step_ptr)
 			 *
 			 * TODO: move cpus_per_core to slurm_step_layout_t
 			 */
-			if (!_use_one_thread_per_core(job_ptr))
-				cpus_per_core =
-					node_record_table_ptr[i_node].threads;
+			if (!_use_one_thread_per_core(job_ptr)) {
+				multi_core_data_t *mc_ptr;
+				mc_ptr = job_ptr->details->mc_ptr;
+				if (step_ptr->threads_per_core != NO_VAL16)
+					cpus_per_core =
+						step_ptr->threads_per_core;
+				else if (mc_ptr->threads_per_core != NO_VAL16)
+					cpus_per_core =
+						mc_ptr->threads_per_core;
+				else {
+					node_record_t *n_ptr;
+					n_ptr = &node_record_table_ptr[i_node];
+					cpus_per_core = n_ptr->threads;
+				}
+			}
 			_pick_step_cores(step_ptr, job_resrcs_ptr,
 					 job_node_inx,
 					 step_ptr->step_layout->
@@ -2556,6 +2568,8 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->tres_per_socket = xstrdup(step_specs->tres_per_socket);
 	step_ptr->tres_per_task = xstrdup(step_specs->tres_per_task);
 
+	step_ptr->threads_per_core = step_specs->threads_per_core;
+
 	/*
 	 * step's name and network default to job's values if not
 	 * specified in the step specification
@@ -2895,8 +2909,17 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 				 * array.
 				 */
 				uint16_t threads_per_core;
-				threads_per_core =
-					node_ptr->config_ptr->threads;
+				multi_core_data_t *mc_ptr;
+				mc_ptr = job_ptr->details->mc_ptr;
+				if (step_ptr->threads_per_core != NO_VAL16)
+					threads_per_core =
+						step_ptr->threads_per_core;
+				else if (mc_ptr->threads_per_core != NO_VAL16)
+					threads_per_core =
+						mc_ptr->threads_per_core;
+				else
+					threads_per_core =
+						node_ptr->config_ptr->threads;
 				if (ntasks_per_socket == 1) {
 					uint16_t threads_per_socket;
 					threads_per_socket =
@@ -3014,7 +3037,6 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	step_layout_req.cpus_task_reps = cpus_task_reps;
 	step_layout_req.num_hosts = node_count;
 	step_layout_req.num_tasks = num_tasks;
-	step_layout_req.cpus_per_task = cpus_per_task_array;
 	step_layout_req.task_dist = task_dist;
 	step_layout_req.plane_size = plane_size;
 

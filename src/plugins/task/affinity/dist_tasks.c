@@ -950,7 +950,8 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	bitstr_t *avail_map;
 	bitstr_t **masks = NULL;
 	int *socket_last_pu = NULL;
-	int core_inx, pu_per_core, *core_tasks = NULL;
+	int core_inx, pu_per_core, *core_tasks = NULL, *core_threads = NULL;
+	int req_threads_per_core = 0;
 
 	info ("_task_layout_lllp_cyclic ");
 
@@ -958,7 +959,23 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	if (!avail_map)
 		return SLURM_ERROR;
 
+	if (req->threads_per_core && (req->threads_per_core != NO_VAL16))
+		req_threads_per_core = req->threads_per_core;
+	else if (req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
+		req_threads_per_core = 1;
+
 	size = bit_set_count(avail_map);
+	if (req_threads_per_core) {
+		if (size < (req->cpus_per_task * (hw_threads /
+						  req_threads_per_core))) {
+			error("only %d bits in avail_map, threads_per_core requires %d!",
+			      size,
+			      (req->cpus_per_task * (hw_threads /
+						     req_threads_per_core)));
+			FREE_NULL_BITMAP(avail_map);
+			return SLURM_ERROR;
+		}
+	}
 	if (size < max_tasks) {
 		error("only %d bits in avail_map for %d tasks!",
 		      size, max_tasks);
@@ -975,6 +992,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 
 	pu_per_core = hw_threads;
 	core_tasks = xmalloc(sizeof(int) * hw_sockets * hw_cores);
+	core_threads = xmalloc(sizeof(int) * hw_sockets * hw_cores);
 	socket_last_pu = xmalloc(hw_sockets * sizeof(int));
 
 	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
@@ -985,8 +1003,13 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 	offset = hw_cores * hw_threads;
 	s = 0;
 	while (taskcount < max_tasks) {
-		if (taskcount == last_taskcount)
-			fatal("_task_layout_lllp_cyclic failure");
+		if (taskcount == last_taskcount) {
+			error("_task_layout_lllp_cyclic failure");
+			FREE_NULL_BITMAP(avail_map);
+			xfree(core_tasks);
+			xfree(socket_last_pu);
+			return SLURM_ERROR;
+		}
 		last_taskcount = taskcount;
 		for (i = 0; i < size; i++) {
 			bool already_switched = false;
@@ -1012,6 +1035,9 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 					memset(core_tasks, 0,
 					       (sizeof(int) *
 					        hw_sockets * hw_cores));
+					memset(core_threads, 0,
+					       (sizeof(int) *
+					        hw_sockets * hw_cores));
 					memset(socket_last_pu, 0,
 					       (sizeof(int) * hw_sockets));
 				}
@@ -1024,9 +1050,6 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 
 			/* set up for the next one */
 			socket_last_pu[s]++;
-			/* skip unrequested threads */
-			if (req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
-				socket_last_pu[s] += hw_threads - 1;
 
 			if (!bit_test(avail_map, bit))
 				continue;
@@ -1034,6 +1057,9 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 			core_inx = bit / pu_per_core;
 			if ((req->ntasks_per_core != 0) &&
 			    (core_tasks[core_inx] >= req->ntasks_per_core))
+				continue;
+			if (req_threads_per_core &&
+			    (core_threads[core_inx] >= req_threads_per_core))
 				continue;
 
 			if (!masks[taskcount])
@@ -1054,15 +1080,16 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 				already_switched = true;
 			}
 
+			core_threads[core_inx]++;
+
 			if (++p < req->cpus_per_task)
 				continue;
 
 			core_tasks[core_inx]++;
 
 			/* Binding to cores, skip remaining of the threads */
-			if (!(req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
-			    && ((req->cpu_bind_type & CPU_BIND_TO_CORES)
-				|| (req->ntasks_per_core == 1))) {
+			if ((req->cpu_bind_type & CPU_BIND_TO_CORES) ||
+			    (req->ntasks_per_core == 1)) {
 				int threads_not_used;
 				if (req->cpus_per_task < hw_threads)
 					threads_not_used =
@@ -1127,8 +1154,9 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	int max_cpus = max_tasks * req->cpus_per_task;
 	bitstr_t *avail_map;
 	bitstr_t **masks = NULL;
-	int core_inx, pu_per_core, *core_tasks = NULL;
+	int core_inx, pu_per_core, *core_tasks = NULL, *core_threads = NULL;
 	int sock_inx, pu_per_socket, *socket_tasks = NULL;
+	int req_threads_per_core = 0;
 
 	info("_task_layout_lllp_block ");
 
@@ -1137,13 +1165,22 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 		return SLURM_ERROR;
 	}
 
+	if (req->threads_per_core && (req->threads_per_core != NO_VAL16))
+		req_threads_per_core = req->threads_per_core;
+	else if (req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
+		req_threads_per_core = 1;
+
 	size = bit_set_count(avail_map);
-	if ((req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE) &&
-	    (size < (req->cpus_per_task * hw_threads))) {
-		error("only %d bits in avail_map, CPU_BIND_ONE_THREAD_PER_CORE requires %d!",
-		      size, (req->cpus_per_task * hw_threads));
-		FREE_NULL_BITMAP(avail_map);
-		return SLURM_ERROR;
+	if (req_threads_per_core) {
+		if (size < (req->cpus_per_task * (hw_threads /
+						  req_threads_per_core))) {
+			error("only %d bits in avail_map, threads_per_core requires %d!",
+			      size,
+			      (req->cpus_per_task * (hw_threads /
+						     req_threads_per_core)));
+			FREE_NULL_BITMAP(avail_map);
+			return SLURM_ERROR;
+		}
 	}
 	if (size < max_tasks) {
 		error("only %d bits in avail_map for %d tasks!",
@@ -1160,29 +1197,30 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	}
 	size = bit_size(avail_map);
 
-	if ((req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE) &&
-	    (max_cpus > (hw_sockets * hw_cores))) {
-		/* More CPUs requested than available cores,
-		 * disable core-level binding */
-		req->cpu_bind_type &= (~CPU_BIND_ONE_THREAD_PER_CORE);
-	}
-
 	*masks_p = xmalloc(max_tasks * sizeof(bitstr_t*));
 	masks = *masks_p;
 
 	pu_per_core = hw_threads;
 	core_tasks = xmalloc(sizeof(int) * hw_sockets * hw_cores);
+	core_threads = xmalloc(sizeof(int) * hw_sockets * hw_cores);
 	pu_per_socket = hw_cores * hw_threads;
 	socket_tasks = xmalloc(sizeof(int) * hw_sockets);
 
 	/* block distribution with oversubsciption */
 	c = 0;
 	while (taskcount < max_tasks) {
-		if (taskcount == last_taskcount)
-			fatal("_task_layout_lllp_block infinite loop");
+		if (taskcount == last_taskcount) {
+			error("_task_layout_lllp_block infinite loop");
+			FREE_NULL_BITMAP(avail_map);
+			xfree(core_tasks);
+			xfree(socket_tasks);
+			return SLURM_ERROR;
+		}
 		if (taskcount > 0) {
 			/* Clear counters to over-subscribe, if necessary */
 			memset(core_tasks, 0,
+			       (sizeof(int) * hw_sockets * hw_cores));
+			memset(core_threads, 0,
 			       (sizeof(int) * hw_sockets * hw_cores));
 			memset(socket_tasks, 0,
 			       (sizeof(int) * hw_sockets));
@@ -1204,6 +1242,9 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			if ((req->ntasks_per_socket != 0) &&
 			    (socket_tasks[sock_inx] >= req->ntasks_per_socket))
 				continue;
+			if (req_threads_per_core &&
+			    (core_threads[core_inx] >= req_threads_per_core))
+				continue;
 
 			if (!masks[taskcount])
 				masks[taskcount] = bit_alloc(
@@ -1211,9 +1252,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			//info("setting %d %d", taskcount, i);
 			bit_set(masks[taskcount], i);
 
-			/* skip unrequested threads */
-			if (req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
-				i += hw_threads - 1;
+			core_threads[core_inx]++;
 
 			if (++c < req->cpus_per_task)
 				continue;
@@ -1223,9 +1262,8 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			socket_tasks[sock_inx]++;
 
 			/* Binding to cores, skip remaining of the threads */
-			if (!(req->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)
-			    && ((req->cpu_bind_type & CPU_BIND_TO_CORES)
-				|| (req->ntasks_per_core == 1))) {
+			if ((req->cpu_bind_type & CPU_BIND_TO_CORES) ||
+			    (req->ntasks_per_core == 1)) {
 				int threads_not_used;
 				if (req->cpus_per_task < hw_threads)
 					threads_not_used =

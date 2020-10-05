@@ -707,6 +707,13 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_ERROR;
 	}
 
+	if (!preserve_env && env->threads_per_core &&
+	    setenvf(&env->env, "SLURM_THREADS_PER_CORE", "%d",
+		    env->threads_per_core)) {
+		error("Can't set SLURM_THREADS_PER_CORE env variable");
+		rc = SLURM_ERROR;
+	}
+
 	if (env->comm_port
 	    && setenvf (&env->env, "SLURM_SRUN_COMM_PORT", "%u",
 			env->comm_port)) {
@@ -973,6 +980,11 @@ extern int env_array_for_job(char ***dest,
 	env_array_overwrite_het_fmt(dest, "SLURM_JOB_CPUS_PER_NODE",
 				    het_job_offset, "%s", tmp);
 	xfree(tmp);
+
+	if (desc->threads_per_core != NO_VAL16)
+		env_array_overwrite_het_fmt(dest, "SLURM_THREADS_PER_CORE",
+					    het_job_offset, "%d",
+					    desc->threads_per_core);
 
 	if (alloc->pn_min_memory & MEM_PER_CPU) {
 		uint64_t tmp_mem = alloc->pn_min_memory & (~MEM_PER_CPU);
