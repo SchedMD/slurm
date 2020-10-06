@@ -64,6 +64,8 @@ HIGHLIGHTS
     allocate all resources on a node allocated the step. No other parallel
     step will have access to those unless \-\-overlap is used.
  -- --threads-per-core now influences task layout/binding, not just allocation.
+ -- AutoDetect in gres.conf can now be specified for some nodes while not for
+    others via the NodeName option.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
