@@ -110,10 +110,8 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 				   uint32_t node_cnt, uint32_t *core_cnt,
 				   bitstr_t ***exc_cores)
 {
-#if _DEBUG
 	char tmp[128];
 	bitstr_t **tmp_cores;
-#endif
 	bitstr_t **avail_cores;
 	bitstr_t *picked_node_bitmap = NULL;
 	bitstr_t *tmp_core_bitmap;
@@ -125,28 +123,31 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 		return picked_node_bitmap;
 
 	if (*exc_cores == NULL) {	/* Exclude no cores by default */
-#if _DEBUG
-		bit_fmt(tmp, sizeof(tmp), avail_node_bitmap);
-		info("avail_nodes:%s", tmp);
-		info("exc_cores: NULL");
-#endif
+		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
+			bit_fmt(tmp, sizeof(tmp), avail_node_bitmap);
+			log_flag(RESERVATION, "exc_cores:NULL avail_nodes:%s",
+				 tmp);
+		}
+
 		c = select_node_record[select_node_cnt-1].cume_cores;
 		tmp_core_bitmap = bit_alloc(c);
 		bit_not(tmp_core_bitmap);
 		avail_cores = core_bitmap_to_array(tmp_core_bitmap);
 		FREE_NULL_BITMAP(tmp_core_bitmap);
 	} else {
-#if _DEBUG
-		tmp_cores = *exc_cores;
-		bit_fmt(tmp, sizeof(tmp), avail_node_bitmap);
-		info("avail_nodes:%s", tmp);
-		for (i = 0; i < select_node_cnt; i++) {
-			if (!tmp_cores[i])
-				continue;
-			bit_fmt(tmp, sizeof(tmp), tmp_cores[i]);
-			info("exc_cores[%d]: %s", i, tmp);
+		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
+			tmp_cores = *exc_cores;
+			bit_fmt(tmp, sizeof(tmp), avail_node_bitmap);
+			log_flag(RESERVATION, "avail_nodes:%s",
+				 tmp);
+			for (i = 0; i < select_node_cnt; i++) {
+				if (!tmp_cores[i])
+					continue;
+				bit_fmt(tmp, sizeof(tmp), tmp_cores[i]);
+				log_flag(RESERVATION, "exc_cores[%d]: %s",
+					 i, tmp);
+			}
 		}
-#endif
 		/*
 		 * Ensure all nodes in avail_node_bitmap are represented
 		 * in exc_cores. For now include ALL nodes.
@@ -185,20 +186,22 @@ static bitstr_t *_pick_first_cores(bitstr_t *avail_node_bitmap,
 	}
 
 	if (!fini) {
-		info("reservation request can not be satisfied");
+		log_flag(RESERVATION, "reservation request can not be satisfied");
 		FREE_NULL_BITMAP(picked_node_bitmap);
 		free_core_array(&avail_cores);
 	} else {
 		free_core_array(exc_cores);
 		*exc_cores = avail_cores;
-#if _DEBUG
-		for (i = 0; i < select_node_cnt; i++) {
-			if (!avail_cores[i])
-				continue;
-			bit_fmt(tmp, sizeof(tmp), avail_cores[i]);
-			error("selected cores[%d] %s", i, tmp);
+
+		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
+			for (i = 0; i < select_node_cnt; i++) {
+				if (!avail_cores[i])
+					continue;
+				bit_fmt(tmp, sizeof(tmp), avail_cores[i]);
+				log_flag(RESERVATION, "selected cores[%d] %s",
+					 i, tmp);
+			}
 		}
-#endif
 	}
 
 	return picked_node_bitmap;

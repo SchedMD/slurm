@@ -186,8 +186,8 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	if ((node_cnt) && (core_cnt)) {
 		total_core_cnt = core_cnt[0];
 		cores_per_node = core_cnt[0] / MAX(node_cnt, 1);
-		debug2("Reserving %u cores across %d nodes",
-			total_core_cnt, node_cnt);
+		log_flag(RESERVATION, "Reserving %u cores across %d nodes",
+			 total_core_cnt, node_cnt);
 		extra_cores_needed = total_core_cnt -
 				     (cores_per_node * node_cnt);
 	}
@@ -195,13 +195,17 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 		int num_nodes = bit_set_count(avail_bitmap);
 		int i;
 		bit_fmt(str, (sizeof(str) - 1), avail_bitmap);
-		debug2("Reserving cores from nodes: %s", str);
+		log_flag(RESERVATION, "Reserving cores from nodes: %s",
+			 str);
 		for (i = 0; (i < num_nodes) && core_cnt[i]; i++)
 			total_core_cnt += core_cnt[i];
 	}
 
-	debug2("Reservations requires %d cores (%u each on %d nodes, plus %u)",
-	       total_core_cnt, cores_per_node, node_cnt, extra_cores_needed);
+	log_flag(RESERVATION, "Reservations requires %d cores (%u each on %d nodes, plus %u)",
+		 total_core_cnt,
+		 cores_per_node,
+		 node_cnt,
+		 extra_cores_needed);
 
 	sp_avail_bitmap = bit_alloc(bit_size(avail_bitmap));
 	bit_fmt(str, (sizeof(str) - 1), avail_bitmap);
@@ -210,7 +214,7 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	if (core_cnt) { /* Reservation is using partial nodes */
 		int node_list_inx = 0;
 
-		debug2("Reservation is using partial nodes");
+		log_flag(RESERVATION, "Reservation is using partial nodes");
 
 		xassert(core_bitmap);
 
@@ -236,7 +240,7 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			inx = bit_ffs(avail_bitmap);
 			if (inx < 0)
 				break;
-			debug2("Using node %d", inx);
+			log_flag(RESERVATION, "Using node %d", inx);
 
 			coff = cr_get_coremap_offset(inx);
 			coff2 = cr_get_coremap_offset(inx + 1);
@@ -245,8 +249,8 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			bit_clear(avail_bitmap, inx);
 
 			if (local_cores < cores_per_node) {
-				debug2("Skip node %d (local: %d, needed: %d)",
-					inx, local_cores, cores_per_node);
+				log_flag(RESERVATION, "Skip node %d (local: %d, needed: %d)",
+					 inx, local_cores, cores_per_node);
 				continue;
 			}
 
@@ -259,13 +263,15 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 					cores_in_node++;
 			}
 			if (cores_in_node < cores_per_node) {
-				debug2("Skip node %d (avail: %d, needed: %d)",
-					inx, cores_in_node, cores_per_node);
+				log_flag(RESERVATION, "Skip node %d (avail: %d, needed: %d)",
+					 inx,
+					 cores_in_node,
+					 cores_per_node);
 				continue;
 			}
 
-			debug2("Using node %d (avail: %d, needed: %d)",
-				inx, cores_in_node, cores_per_node);
+			log_flag(RESERVATION, "Using node %d (avail: %d, needed: %d)",
+				 inx, cores_in_node, cores_per_node);
 
 			cores_in_node = 0;
 			for (i = 0; i < local_cores; i++) {
@@ -284,18 +290,19 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 			if (cores_in_node) {
 				/* Add this node to the final node bitmap */
-				debug2("Reservation using %d cores in node %d",
-				       cores_in_node, inx);
+				log_flag(RESERVATION, "Reservation using %d cores in node %d",
+					 cores_in_node, inx);
 				bit_set(sp_avail_bitmap, inx);
 			} else {
-				debug2("Reservation NOT using node %d", inx);
+				log_flag(RESERVATION, "Reservation NOT using node %d",
+					 inx);
 			}
 			node_list_inx++;
 		}
 		FREE_NULL_BITMAP(tmpcore);
 
 		if (total_core_cnt) {
-			info("reservation request can not be satisfied");
+			log_flag(RESERVATION, "reservation request can not be satisfied");
 			FREE_NULL_BITMAP(sp_avail_bitmap);
 			return NULL;
 		}
@@ -320,13 +327,13 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 		}
 
 		if (node_cnt) {
-			info("reservation request can not be satisfied");
+			log_flag(RESERVATION, "reservation request can not be satisfied");
 			FREE_NULL_BITMAP(sp_avail_bitmap);
 			return NULL;
 		}
 
 		bit_fmt(str, (sizeof(str) - 1), sp_avail_bitmap);
-		debug2("sequential pick using nodemap: %s", str);
+		log_flag(RESERVATION, "sequential pick using nodemap: %s", str);
 	}
 
 	return sp_avail_bitmap;
@@ -386,7 +393,7 @@ bitstr_t *_pick_first_cores(bitstr_t *avail_bitmap, uint32_t node_cnt,
 
 	FREE_NULL_BITMAP(tmpcore);
 	if (core_cnt[node_offset]) {
-		info("reservation request can not be satisfied");
+		log_flag(RESERVATION, "reservation request can not be satisfied");
 		FREE_NULL_BITMAP(sp_avail_bitmap);
 	}
 

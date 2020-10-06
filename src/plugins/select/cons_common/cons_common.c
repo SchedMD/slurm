@@ -2219,8 +2219,10 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 		}
 		switches_core_cnt[i] =
 			count_core_array_set(switches_core_bitmap[i]);
-		debug2("switch:%d nodes:%d cores:%d",
-		       i, switches_node_cnt[i], switches_core_cnt[i]);
+		log_flag(RESERVATION, "switch:%d nodes:%d cores:%d",
+			 i,
+			 switches_node_cnt[i],
+			 switches_core_cnt[i]);
 	}
 
 	/* Remove nodes with fewer available cores than needed */
@@ -2295,7 +2297,7 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 			best_fit_inx = j;
 	}
 	if (best_fit_inx == -1) {
-		debug("could not find resources for reservation");
+		log_flag(RESERVATION, "could not find resources for reservation");
 		goto fini;
 	}
 
@@ -2366,8 +2368,8 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 				                             exc_core_bitmap);
 				if (c < cores_per_node)
 					continue;
-				debug2("Using node %d with %d cores available",
-				       i, c);
+				log_flag(RESERVATION, "Using node %d with %d cores available",
+					 i, c);
 				rem_cores -= c;
 			}
 			bit_set(avail_nodes_bitmap, i);
@@ -2419,8 +2421,8 @@ fini:	for (i = 0; i < switch_record_cnt; i++) {
 			if (inx < 0)
 				break;
 
-			debug2("Using node inx:%d cores_per_node:%d rem_cores:%u",
-			       inx, cores_per_node, rem_cores);
+			log_flag(RESERVATION, "Using node inx:%d cores_per_node:%d rem_cores:%u",
+				 inx, cores_per_node, rem_cores);
 
 			/* Clear this node from the initial available bitmap */
 			bit_clear(avail_nodes_bitmap, inx);
@@ -2430,8 +2432,8 @@ fini:	for (i = 0; i < switch_record_cnt; i++) {
 			avail_cores_in_node =
 				_get_avail_cores_on_node(inx, exc_core_bitmap);
 
-			debug2("Node inx:%d has %d available cores", inx,
-			       avail_cores_in_node);
+			log_flag(RESERVATION, "Node inx:%d has %d available cores",
+				 inx, avail_cores_in_node);
 			if (avail_cores_in_node < cores_per_node)
 				continue;
 
@@ -2487,7 +2489,7 @@ fini:	for (i = 0; i < switch_record_cnt; i++) {
 		free_core_array(&exc_core_bitmap);
 
 		if (rem_cores) {
-			info("reservation request can not be satisfied");
+			log_flag(RESERVATION, "reservation request can not be satisfied");
 			FREE_NULL_BITMAP(picked_node_bitmap);
 			picked_node_bitmap = NULL;
 		} else {
