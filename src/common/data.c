@@ -36,6 +36,8 @@
 
 #include "config.h"
 
+#define _ISOC99_SOURCE	/* needed for lrint */
+
 #include <math.h>
 #include <regex.h>
 
@@ -1328,6 +1330,9 @@ static int _convert_data_int(data_t *data)
 		} else {
 			return ESLURM_DATA_CONV_FAILED;
 		}
+	case DATA_TYPE_FLOAT:
+		data_set_int(data, lrint(data_get_float(data)));
+		return SLURM_SUCCESS;
 	case DATA_TYPE_INT_64:
 		return SLURM_SUCCESS;
 	default:
@@ -1360,6 +1365,14 @@ static int _convert_data_float(data_t *data)
 		} else {
 			return ESLURM_DATA_CONV_FAILED;
 		}
+	case DATA_TYPE_INT_64:
+		if (data_get_int(data) == INFINITE64)
+			data_set_float(data, HUGE_VAL);
+		else if (data_get_int(data) == NO_VAL64)
+			data_set_float(data, NAN);
+		else /* attempt normal fp conversion */
+			data_set_float(data, data_get_int(data));
+		return SLURM_SUCCESS;
 	case DATA_TYPE_FLOAT:
 		return SLURM_SUCCESS;
 	default:
