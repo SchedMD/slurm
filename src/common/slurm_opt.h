@@ -109,6 +109,7 @@ enum {
 	LONG_OPT_GRES_FLAGS,
 	LONG_OPT_HINT,
 	LONG_OPT_IGNORE_PBS,
+	LONG_OPT_INTERACTIVE,
 	LONG_OPT_JOBID,
 	LONG_OPT_KILL_INV_DEP,
 	LONG_OPT_LAUNCH_CMD,
@@ -238,6 +239,7 @@ typedef struct {
 	char *epilog;			/* --epilog			*/
 	bool exclusive;			/* --exclusive			*/
 	char *export_env;		/* --export			*/
+	bool interactive;		/* --interactive		*/
 	uint32_t jobid;			/* --jobid			*/
 	int32_t kill_bad_exit;		/* --kill-on-bad-exit		*/
 	bool labelio;			/* --label-output		*/

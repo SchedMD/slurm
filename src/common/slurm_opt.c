@@ -2170,6 +2170,16 @@ static slurm_cli_opt_t slurm_opt_input = {
 	.reset_func = arg_reset_ifname,
 };
 
+COMMON_SRUN_BOOL_OPTION(interactive);
+static slurm_cli_opt_t slurm_opt_interactive = {
+	.name = "interactive",
+	.has_arg = no_argument,
+	.val = LONG_OPT_INTERACTIVE,
+	.set_func_srun = arg_set_interactive,
+	.get_func = arg_get_interactive,
+	.reset_func = arg_reset_interactive,
+};
+
 static int arg_set_jobid(slurm_opt_t *opt, const char *arg)
 {
 	if (!opt->srun_opt)
@@ -4887,6 +4897,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_ignore_pbs,
 	&slurm_opt_immediate,
 	&slurm_opt_input,
+	&slurm_opt_interactive,
 	&slurm_opt_jobid,
 	&slurm_opt_job_name,
 	&slurm_opt_kill_command,
