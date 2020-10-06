@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "August 2020" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "October 2020" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -964,8 +964,7 @@ Default value is calculated by the Plugin mcs if it's enabled.
 .TP
 \fB\-\-mem\fR=<\fIsize[units]\fR>
 Specify the real memory required per node.
-Default units are megabytes unless the SchedulerParameters configuration
-parameter includes the "default_gbytes" option for gigabytes.
+Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerNode\fR and the maximum value is
 \fBMaxMemPerNode\fR. If configured, both of parameters can be
@@ -993,8 +992,7 @@ the next periodic accounting sample.
 .TP
 \fB\-\-mem\-per\-cpu\fR=<\fIsize[units]\fR>
 Minimum memory required per allocated CPU.
-Default units are megabytes unless the SchedulerParameters configuration
-parameter includes the "default_gbytes" option for gigabytes.
+Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
 The default value is \fBDefMemPerCPU\fR and the maximum value is
 \fBMaxMemPerCPU\fR (see exception below). If configured, both parameters can be
@@ -1026,8 +1024,7 @@ node.
 .TP
 \fB\-\-mem\-per\-gpu\fR=<\fIsize[units]\fR>
 Minimum memory required per allocated GPU.
-Default units are megabytes unless the SchedulerParameters configuration
-parameter includes the "default_gbytes" option for gigabytes.
+Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
 Default value is \fBDefMemPerGPU\fR and is available on both a global and
 per partition basis.
@@ -1590,8 +1587,7 @@ Acceptable time formats include "minutes", "minutes:seconds",
 .TP
 \fB\-\-tmp\fR=<\fIsize[units]\fR>
 Specify a minimum amount of temporary disk space per node.
-Default units are megabytes unless the SchedulerParameters configuration
-parameter includes the "default_gbytes" option for gigabytes.
+Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
 
 .TP
