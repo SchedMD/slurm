@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "September 2020" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "October 2020" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -2962,11 +2962,6 @@ nodes which already have the specified features.
 The argument is in units of minutes.
 Individual jobs may override this default value with the \fB\-\-delay\-boot\fR
 option.
-.TP
-\fBdefault_gbytes\fR
-The default units in job submission memory and temporary disk size specification
-will be gigabytes rather than megabytes.
-Users can override the default by using a suffix of "M" for megabytes.
 .TP
 \fBdisable_job_shrink\fR
 Deny user requests to shrink the side of running jobs. (However, running jobs

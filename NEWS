@@ -125,6 +125,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix thread-safety issue with assoc_mgr_get_admin_level().
  -- Ignore step features if equal to job features
  -- Fix slurmstepd segfault caused by incorrect strtok() usage.
+ -- CRAY - Remove unneeded ATP spank plugin from ansible playbook.
 
 * Changes in Slurm 20.02.5
 ==========================
