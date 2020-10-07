@@ -329,7 +329,7 @@ COMMON_OPTION_RESET(field, NO_VAL64)
 #define COMMON_MBYTES_OPTION_SET(field, option)			\
 static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
 {								\
-	if ((opt->field = str_to_mbytes2(arg)) == NO_VAL64) {	\
+	if ((opt->field = str_to_mbytes(arg)) == NO_VAL64) {	\
 		error("Invalid " #option " specification");	\
 		exit(-1);					\
 	}							\
@@ -345,7 +345,7 @@ static int arg_set_data_##field(slurm_opt_t *opt, const data_t *arg,	\
 	if ((rc = data_get_string_converted(arg, &str)))		\
 		ADD_DATA_ERROR("Invalid " #option " specification string", \
 			       rc);					\
-	else if ((opt->field = str_to_mbytes2(str)) == NO_VAL64)	\
+	else if ((opt->field = str_to_mbytes(str)) == NO_VAL64)		\
 		ADD_DATA_ERROR("Invalid " #option " specification",	\
 			       (rc = SLURM_ERROR));			\
 	xfree(str);							\
@@ -2463,7 +2463,7 @@ static slurm_cli_opt_t slurm_opt_mcs_label = {
 
 static int arg_set_mem(slurm_opt_t *opt, const char *arg)
 {
-	if ((opt->pn_min_memory = str_to_mbytes2(arg)) == NO_VAL64) {
+	if ((opt->pn_min_memory = str_to_mbytes(arg)) == NO_VAL64) {
 		error("Invalid --mem specification");
 		exit(-1);
 	}
@@ -2484,7 +2484,7 @@ static int arg_set_data_mem(slurm_opt_t *opt, const data_t *arg, data_t *errors)
 
 	if ((rc = data_get_string_converted(arg, &str)))
 		ADD_DATA_ERROR("Unable to read string", rc);
-	else if ((opt->pn_min_memory = str_to_mbytes2(str)) == NO_VAL64) {
+	else if ((opt->pn_min_memory = str_to_mbytes(str)) == NO_VAL64) {
 		rc = SLURM_ERROR;
 		ADD_DATA_ERROR("Invalid memory specification", rc);
 	}
