@@ -2189,10 +2189,8 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 		rem_cores = core_cnt[0];
 		cores_per_node = core_cnt[0] / MAX(node_cnt, 1);
 		aggr_core_cnt = true;
-	} else if (cr_node_num_cores)
-		cores_per_node = cr_node_num_cores[0];
-	else
-		cores_per_node = 1;
+	}
+
 	rem_cores_save = rem_cores;
 
 	/*
