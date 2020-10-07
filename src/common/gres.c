@@ -1147,10 +1147,6 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		if (xcpuinfo_ops.xcpuinfo_abs_to_mac) {
 			i = (xcpuinfo_ops.xcpuinfo_abs_to_mac)
 				(p->cpus, &local_cpus);
-			/*
-			 * Only executed by slurmstepd and we don't want
-			 * fatal here. Ignore bad Core/CPU configuration.
-			 */
 			if (i != SLURM_SUCCESS) {
 				error("Invalid GRES data for %s, %s=%s",
 				      p->name, type_str, p->cpus);
