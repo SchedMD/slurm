@@ -1155,6 +1155,9 @@ extern int delete_step_record(job_record_t *job_ptr, step_record_t *step_ptr);
  */
 extern void delete_step_records(job_record_t *job_ptr);
 
+/* free_step_record - delete a step record's data structures */
+extern void free_step_record(void *x);
+
 /*
  * Copy a job's dependency list
  * IN depend_list_src - a job's depend_lst
@@ -2353,12 +2356,6 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 					       uint16_t cpus_per_task,
 					       uint32_t task_dist,
 					       uint16_t plane_size);
-
-/*
- * step_list_purge - Simple purge of a job's step list records.
- * IN job_ptr - pointer to job table entry to have step records removed
- */
-extern void step_list_purge(job_record_t *job_ptr);
 
 /*
  * step_epilog_complete - note completion of epilog on some node and

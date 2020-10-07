@@ -2137,7 +2137,7 @@ static void _end_null_job(job_record_t *job_ptr)
 	xfree(job_ptr->state_desc);
 	job_ptr->time_last_active = now;
 	if (!job_ptr->step_list)
-		job_ptr->step_list = list_create(NULL);
+		job_ptr->step_list = list_create(free_step_record);
 
 	(void) job_array_post_sched(job_ptr);
 	(void) bb_g_job_begin(job_ptr);
@@ -2549,7 +2549,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	job_ptr->exit_code = 0;
 	gres_plugin_job_clear(job_ptr->gres_list);
 	if (!job_ptr->step_list)
-		job_ptr->step_list = list_create(NULL);
+		job_ptr->step_list = list_create(free_step_record);
 
 	job_ptr->node_bitmap = select_bitmap;
 	select_bitmap = NULL;	/* nothing left to free */

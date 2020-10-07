@@ -93,7 +93,6 @@ static int  _count_cpus(job_record_t *job_ptr, bitstr_t *bitmap,
 static step_record_t *_create_step_record(job_record_t *job_ptr,
 					  uint16_t protocol_version);
 static void _dump_step_layout(step_record_t *step_ptr);
-static void _free_step_rec(step_record_t *step_ptr);
 static bool _is_mem_resv(void);
 static int  _opt_cpu_cnt(uint32_t step_min_cpus, bitstr_t *node_bitmap,
 			 uint32_t *usable_cpu_cnt);
@@ -222,7 +221,7 @@ static int _purge_duplicate_steps(job_record_t *job_ptr,
 		    (step_ptr->srun_pid	== step_specs->srun_pid) &&
 		    (xstrcmp(step_ptr->host, step_specs->host) == 0)) {
 			list_remove (step_iterator);
-			_free_step_rec(step_ptr);
+			free_step_record(step_ptr);
 			break;
 		}
 
@@ -416,39 +415,16 @@ extern void delete_step_records(job_record_t *job_ptr)
 		} else {
 			_internal_step_complete(job_ptr, step_ptr);
 			list_remove (step_iterator);
-			_free_step_rec(step_ptr);
+			free_step_record(step_ptr);
 		}
 	}
 	list_iterator_destroy(step_iterator);
 }
 
-/*
- * step_list_purge - Simple purge of a job's step list records. No testing is
- *	performed to ensure the step records has no active references.
- *	**ONLY CALL WHEN FREEING MEMORY AT END OF JOB**
- * IN job_ptr - pointer to job table entry to have step records removed
- */
-extern void step_list_purge(job_record_t *job_ptr)
+/* free_step_record - delete a step record's data structures */
+extern void free_step_record(void *x)
 {
-	ListIterator step_iterator;
-	step_record_t *step_ptr;
-
-	xassert(job_ptr);
-	if (job_ptr->step_list == NULL)
-		return;
-
-	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator))) {
-		list_remove (step_iterator);
-		_free_step_rec(step_ptr);
-	}
-	list_iterator_destroy(step_iterator);
-	FREE_NULL_LIST(job_ptr->step_list);
-}
-
-/* _free_step_rec - delete a step record's data structures */
-static void _free_step_rec(step_record_t *step_ptr)
-{
+	step_record_t *step_ptr = (step_record_t *) x;
 	xassert(step_ptr);
 	xassert(step_ptr->magic == STEP_MAGIC);
 /*
@@ -523,7 +499,7 @@ int delete_step_record(job_record_t *job_ptr, step_record_t *step_ptr_in)
 		if (cleaning)	/* Step clean-up in progress. */
 			break;
 		list_remove(step_iterator);
-		_free_step_rec(step_ptr);
+		free_step_record(step_ptr);
 		break;
 	}
 	list_iterator_destroy(step_iterator);
@@ -824,7 +800,7 @@ static void _wake_pending_steps(job_record_t *job_ptr)
 			list_remove(step_iterator);
 			/* Step never started, no need to check
 			 * SELECT_JOBDATA_CLEANING. */
-			_free_step_rec(step_ptr);
+			free_step_record(step_ptr);
 			start_count++;
 		}
 	}
@@ -4538,7 +4514,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 		 * This was a temporary step record, never linked to the job,
 		 * so there is no need to check SELECT_JOBDATA_CLEANING.
 		 */
-		_free_step_rec(step_ptr);
+		free_step_record(step_ptr);
 	}
 
 	return SLURM_SUCCESS;

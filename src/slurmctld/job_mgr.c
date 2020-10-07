@@ -610,7 +610,7 @@ static job_record_t *_create_job_record(uint32_t num_jobs)
 	job_ptr->details = detail_ptr;
 	job_ptr->prio_factors = xmalloc(sizeof(priority_factors_object_t));
 	job_ptr->site_factor = NICE_OFFSET;
-	job_ptr->step_list = list_create(NULL);
+	job_ptr->step_list = list_create(free_step_record);
 
 	detail_ptr->magic = DETAILS_MAGIC;
 	detail_ptr->submit_time = time(NULL);
@@ -9450,6 +9450,7 @@ static void _list_delete_job(void *job_entry)
 		xfree(job_ptr->spank_job_env[i]);
 	xfree(job_ptr->spank_job_env);
 	xfree(job_ptr->state_desc);
+	FREE_NULL_LIST(job_ptr->step_list);
 	xfree(job_ptr->system_comment);
 	xfree(job_ptr->tres_alloc_cnt);
 	xfree(job_ptr->tres_alloc_str);
@@ -9463,7 +9464,6 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->tres_req_cnt);
 	xfree(job_ptr->tres_req_str);
 	xfree(job_ptr->tres_fmt_req_str);
-	step_list_purge(job_ptr);
 	select_g_select_jobinfo_free(job_ptr->select_jobinfo);
 	xfree(job_ptr->user_name);
 	xfree(job_ptr->wckey);
