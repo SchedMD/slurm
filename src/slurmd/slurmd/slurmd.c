@@ -1149,7 +1149,7 @@ _reconfigure(void)
 		conf->gres = xstrdup(node_rec->config_ptr->gres);
 	}
 	(void) gres_plugin_node_config_load(cpu_cnt, conf->node_name, gres_list,
-					    (void *)&xcpuinfo_mac_to_abs);
+					    NULL, (void *)&xcpuinfo_mac_to_abs);
 	FREE_NULL_LIST(gres_list);
 
 	_build_conf_buf();
@@ -1363,7 +1363,7 @@ static void _print_gres(void)
 					     &gres_list);
 
 		gres_plugin_node_config_load(1024, /*Do not need real #CPU*/
-					     conf->node_name, gres_list,
+					     conf->node_name, gres_list, NULL,
 					     (void *)&xcpuinfo_mac_to_abs);
 		FREE_NULL_LIST(gres_list);
 	} else {
@@ -1734,7 +1734,7 @@ _slurmd_init(void)
 		conf->gres = xstrdup(node_rec->config_ptr->gres);
 	}
 	rc = gres_plugin_node_config_load(cpu_cnt, conf->node_name, gres_list,
-					  (void *)&xcpuinfo_mac_to_abs);
+					  NULL, (void *)&xcpuinfo_mac_to_abs);
 	FREE_NULL_LIST(gres_list);
 	if (rc != SLURM_SUCCESS)
 		return SLURM_ERROR;
