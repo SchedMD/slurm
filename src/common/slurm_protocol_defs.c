@@ -762,6 +762,8 @@ extern slurm_selected_step_t *slurm_parse_step_str(char *name)
 			selected_step->step_id.step_id = SLURM_BATCH_SCRIPT;
 		else if (!xstrcmp(dot, "extern"))
 			selected_step->step_id.step_id = SLURM_EXTERN_CONT;
+		else if (!xstrcmp(dot, "interactive"))
+			selected_step->step_id.step_id = SLURM_INTERACTIVE_STEP;
 		else if (isdigit(*dot))
 			selected_step->step_id.step_id = atoi(dot);
 		else

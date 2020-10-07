@@ -1357,7 +1357,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			 * looking for "idle" nodes.
 			 */
 			if ((step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) ||
-			    (step_ptr->step_id.step_id == SLURM_EXTERN_CONT))
+			    (step_ptr->step_id.step_id == SLURM_EXTERN_CONT) ||
+			    (step_ptr->step_id.step_id == SLURM_INTERACTIVE_STEP))
 				continue;
 
 			if (!step_ptr->step_node_bitmap) {

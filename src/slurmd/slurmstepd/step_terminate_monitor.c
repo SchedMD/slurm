@@ -136,6 +136,10 @@ static void *_monitor(void *arg)
 		} else if (job->step_id.step_id == SLURM_EXTERN_CONT) {
 			snprintf(entity, sizeof(entity),
 				 "EXTERN STEP FOR %u", job->step_id.job_id);
+		} else if (job->step_id.step_id == SLURM_INTERACTIVE_STEP) {
+			snprintf(entity, sizeof(entity),
+				 "INTERACTIVE STEP FOR %u",
+				 job->step_id.job_id);
 		} else {
 			char tmp_char[33];
 			log_build_step_id_str(&job->step_id, tmp_char,

@@ -1193,12 +1193,14 @@ job_manager(stepd_step_rec_t *job)
 		goto fail1;
 	}
 	if (!job->batch && (job->step_id.step_id != SLURM_EXTERN_CONT) &&
+	    (job->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
 	    (mpi_hook_slurmstepd_init(&job->env) != SLURM_SUCCESS)) {
 		rc = SLURM_MPI_PLUGIN_NAME_INVALID;
 		goto fail1;
 	}
 
 	if (!job->batch && (job->step_id.step_id != SLURM_EXTERN_CONT) &&
+	    (job->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
 	    (switch_g_job_preinit(job->switch_job) < 0)) {
 		rc = ESLURM_INTERCONNECT_FAILURE;
 		goto fail1;
@@ -1223,14 +1225,15 @@ job_manager(stepd_step_rec_t *job)
 	debug2("After call to spank_init()");
 
 	/* Call switch_g_job_init() before becoming user */
-	if (!job->batch && job->argv && (switch_g_job_init(job) < 0)) {
+	if (!job->batch && (job->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
+	    job->argv && (switch_g_job_init(job) < 0)) {
 		/* error("switch_g_job_init: %m"); already logged */
 		rc = ESLURM_INTERCONNECT_FAILURE;
 		goto fail2;
 	}
 
 	/* fork necessary threads for MPI */
-	if (!job->batch && (job->step_id.step_id != SLURM_EXTERN_CONT) &&
+	if (!job->batch && (job->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
 	    (mpi_hook_slurmstepd_prefork(job, &job->env) != SLURM_SUCCESS)) {
 		error("Failed mpi_hook_slurmstepd_prefork");
 		rc = SLURM_ERROR;
@@ -1242,12 +1245,14 @@ job_manager(stepd_step_rec_t *job)
 		goto fail3;
 	}
 
-	if (!job->batch && (job->node_tasks <= 1) &&
+	if (!job->batch && (job->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
+	    (job->node_tasks <= 1) &&
 	    (job->accel_bind_type || job->tres_bind)) {
 		job->accel_bind_type = 0;
 		xfree(job->tres_bind);
 	}
-	if (!job->batch && (job->node_tasks > 1) &&
+	if (!job->batch && (job->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
+	    (job->node_tasks > 1) &&
 	    (job->accel_bind_type || job->tres_bind)) {
 		uint64_t gpu_cnt, mic_cnt, nic_cnt;
 		gpu_cnt = gres_plugin_step_count(job->step_gres_list, "gpu");
@@ -1310,7 +1315,7 @@ job_manager(stepd_step_rec_t *job)
 	_set_job_state(job, SLURMSTEPD_STEP_ENDING);
 
 fail3:
-	if (!job->batch &&
+	if (!job->batch && (job->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
 	    (switch_g_job_fini(job->switch_job) < 0)) {
 		error("switch_g_job_fini: %m");
 	}
@@ -1334,7 +1339,7 @@ fail2:
 		proctrack_g_wait(job->cont_id);
 	}
 	step_terminate_monitor_stop();
-	if (!job->batch) {
+	if (!job->batch && (job->step_id.step_id != SLURM_INTERACTIVE_STEP)) {
 		/* This sends a SIGKILL to the pgid */
 		if (switch_g_job_postfini(job) < 0)
 			error("switch_g_job_postfini: %m");
@@ -1371,7 +1376,8 @@ fail2:
 	 * Reset GRES hardware, if needed. This is where GPU frequency is reset.
 	 * Make sure stepd is root. If not, emit error.
 	 */
-	if (!job->batch && job->tres_freq) {
+	if (!job->batch && (job->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
+	    job->tres_freq) {
 		if (getuid() == (uid_t) 0)
 			gres_plugin_step_hardware_fini();
 		else
@@ -1418,7 +1424,8 @@ fail1:
 		stepd_send_step_complete_msgs(job);
 	}
 
-	if (!job->batch && core_spec_g_clear(job->cont_id))
+	if (!job->batch && (job->step_id.step_id != SLURM_INTERACTIVE_STEP)
+	    && core_spec_g_clear(job->cont_id))
 		error("core_spec_g_clear: %m");
 
 	return(rc);
@@ -1698,7 +1705,8 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 	 * config options). Make sure stepd is root. If not, emit error.
 	 * TODO: generic "settings" parameter rather than tres_freq
 	 */
-	if (!job->batch && job->tres_freq) {
+	if (!job->batch && (job->step_id.step_id != SLURM_INTERACTIVE_STEP)
+	    && job->tres_freq) {
 		if (getuid() == (uid_t) 0) {
 			gres_plugin_step_hardware_init(job->step_gres_list,
 						       job->nodeid,
@@ -1904,7 +1912,8 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 #endif
 	if (container_g_add_cont(jobid, job->cont_id) != SLURM_SUCCESS)
 		error("container_g_add_cont(%u): %m", job->step_id.job_id);
-	if (!job->batch && core_spec_g_set(job->cont_id, job->job_core_spec) &&
+	if (!job->batch && (job->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
+	    core_spec_g_set(job->cont_id, job->job_core_spec) &&
 	    (job->step_id.step_id == 0))
 		error("core_spec_g_set: %m");
 

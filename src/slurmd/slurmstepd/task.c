@@ -414,7 +414,8 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 
 	xfree(job->envtp->task_count);
 
-	if (!job->batch && (job->step_id.step_id != SLURM_EXTERN_CONT)) {
+	if (!job->batch && (job->step_id.step_id != SLURM_EXTERN_CONT) &&
+	    (job->step_id.step_id != SLURM_INTERACTIVE_STEP)) {
 		if (switch_g_job_attach(job->switch_job, &job->env,
 					job->nodeid, (uint32_t) local_proc_id,
 					job->nnodes, job->ntasks,

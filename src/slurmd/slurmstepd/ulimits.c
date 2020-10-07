@@ -188,6 +188,7 @@ set_umask(stepd_step_rec_t *job)
 
 	mask = strtol(val, (char **)NULL, 8);
 	if ((job->step_id.step_id == SLURM_EXTERN_CONT) ||
+	    (job->step_id.step_id == SLURM_INTERACTIVE_STEP) ||
 	    (job->step_id.step_id == SLURM_BATCH_SCRIPT))
 		unsetenvp(job->env, "SLURM_UMASK");
 	umask(mask);

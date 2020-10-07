@@ -445,6 +445,7 @@ cpu_freq_cpuset_validate(stepd_step_rec_t *job)
 	}
 
 	if (((job->step_id.step_id == SLURM_BATCH_SCRIPT) && !set_batch_freq) ||
+	    (job->step_id.step_id == SLURM_INTERACTIVE_STEP) ||
 	    (job->step_id.step_id == SLURM_EXTERN_CONT))
 		return;
 
@@ -547,6 +548,7 @@ cpu_freq_cgroup_validate(stepd_step_rec_t *job, char *step_alloc_cores)
 	}
 
 	if (((job->step_id.step_id == SLURM_BATCH_SCRIPT) && !set_batch_freq) ||
+	    (job->step_id.step_id == SLURM_INTERACTIVE_STEP) ||
 	    (job->step_id.step_id == SLURM_EXTERN_CONT))
 		return;
 

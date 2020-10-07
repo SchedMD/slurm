@@ -256,7 +256,8 @@ static int _cgroup_create_callback(const char *calling_func,
 	}
 
 	if ((job->step_id.step_id != SLURM_BATCH_SCRIPT) &&
-	    (job->step_id.step_id != SLURM_EXTERN_CONT)) {
+	    (job->step_id.step_id != SLURM_EXTERN_CONT) &&
+	    (job->step_id.step_id != SLURM_INTERACTIVE_STEP)) {
 		/*
 		 * with the current cgroup devices subsystem design (whitelist
 		 * only supported) we need to allow all different devices that
