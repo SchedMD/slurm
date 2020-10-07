@@ -1145,9 +1145,8 @@ extern int delete_partition(delete_part_msg_t *part_desc_ptr);
  *	and step_id
  * IN job_ptr - pointer to job table entry to have step record removed
  * IN step_ptr - pointer to step table entry of the desired job step
- * RET 0 on success, errno otherwise
  */
-extern int delete_step_record(job_record_t *job_ptr, step_record_t *step_ptr);
+extern void delete_step_record(job_record_t *job_ptr, step_record_t *step_ptr);
 
 /*
  * delete_step_records - delete step record for specified job_ptr

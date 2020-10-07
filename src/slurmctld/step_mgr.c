@@ -472,39 +472,23 @@ extern void free_step_record(void *x)
  *	and step_id
  * IN job_ptr - pointer to job table entry to have step record removed
  * IN step_ptr - pointer to step table entry of the desired job step
- * RET 0 on success, errno otherwise
  */
-int delete_step_record(job_record_t *job_ptr, step_record_t *step_ptr_in)
+void delete_step_record(job_record_t *job_ptr, step_record_t *step_ptr)
 {
-	ListIterator step_iterator;
-	step_record_t *step_ptr;
-	int error_code;
 	uint16_t cleaning = 0;
 
 	xassert(job_ptr);
-	error_code = ENOENT;
-	if (!job_ptr->step_list)
-		return error_code;
+	xassert(job_ptr->step_list);
+	xassert(step_ptr);
 
 	last_job_update = time(NULL);
-	step_iterator = list_iterator_create (job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator))) {
-		if (step_ptr != step_ptr_in)
-			continue;
+	select_g_select_jobinfo_get(step_ptr->select_jobinfo,
+				    SELECT_JOBDATA_CLEANING,
+				    &cleaning);
+	if (cleaning) /* Step clean-up in progress. */
+		return;
 
-		error_code = 0;
-		select_g_select_jobinfo_get(step_ptr->select_jobinfo,
-					    SELECT_JOBDATA_CLEANING,
-					    &cleaning);
-		if (cleaning)	/* Step clean-up in progress. */
-			break;
-		list_remove(step_iterator);
-		free_step_record(step_ptr);
-		break;
-	}
-	list_iterator_destroy(step_iterator);
-
-	return error_code;
+	list_delete_ptr(job_ptr->step_list, step_ptr);
 }
 
 
@@ -4604,7 +4588,6 @@ extern void rebuild_step_bitmaps(job_record_t *job_ptr,
 extern int post_job_step(step_record_t *step_ptr)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
-	int error_code;
 
 	_step_dealloc_lps(step_ptr);
 	gres_plugin_step_dealloc(step_ptr->gres_list,
@@ -4614,11 +4597,7 @@ extern int post_job_step(step_record_t *step_ptr)
 	/* Don't need to set state. Will be destroyed in next steps. */
 	/* step_ptr->state = JOB_COMPLETE; */
 
-	error_code = delete_step_record(job_ptr, step_ptr);
-	if (error_code == ENOENT) {
-		info("remove_job_step %pS not found", step_ptr);
-		return ESLURM_ALREADY_DONE;
-	}
+	delete_step_record(job_ptr, step_ptr);
 	_wake_pending_steps(job_ptr);
 
 	return SLURM_SUCCESS;
