@@ -357,7 +357,7 @@ COMMON_OPTION_RESET(field, NO_VAL64)
 #define COMMON_MBYTES_OPTION_GET(field)				\
 static char *arg_get_##field(slurm_opt_t *opt)			\
 {								\
-	return mbytes2_to_str(opt->field);			\
+	return mbytes_to_str(opt->field);			\
 }
 
 #define COMMON_TIME_DURATION_OPTION_GET_AND_RESET(field)	\

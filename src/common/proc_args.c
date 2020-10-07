@@ -559,7 +559,7 @@ uint64_t str_to_mbytes2(const char *arg)
 	return _str_to_mbytes(arg, use_gbytes);
 }
 
-extern char *mbytes2_to_str(uint64_t mbytes)
+extern char *mbytes_to_str(uint64_t mbytes)
 {
 	int i = 0;
 	char *unit = "MGTP?";
