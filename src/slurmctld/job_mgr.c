@@ -9636,27 +9636,31 @@ static bool _hide_job(job_record_t *job_ptr, uid_t uid, uint16_t show_flags)
 	return false;
 }
 
-static void _pack_job(job_record_t *job_ptr,
-		      _foreach_pack_job_info_t *pack_info)
+static int _pack_job(void *object, void *arg)
 {
+	job_record_t *job_ptr = (job_record_t *)object;
+	_foreach_pack_job_info_t *pack_info = (_foreach_pack_job_info_t *)arg;
+
 	xassert (job_ptr->magic == JOB_MAGIC);
 
 	if ((pack_info->filter_uid != NO_VAL) &&
 	    (pack_info->filter_uid != job_ptr->user_id))
-		return;
+		return SLURM_SUCCESS;
 
 	if (((pack_info->show_flags & SHOW_ALL) == 0) &&
 	    (pack_info->uid != 0) &&
 	    _all_parts_hidden(job_ptr, pack_info->uid))
-		return;
+		return SLURM_SUCCESS;
 
 	if (_hide_job(job_ptr, pack_info->uid, pack_info->show_flags))
-		return;
+		return SLURM_SUCCESS;
 
 	pack_job(job_ptr, pack_info->show_flags, pack_info->buffer,
 		 pack_info->protocol_version, pack_info->uid);
 
 	(*pack_info->jobs_packed)++;
+
+	return SLURM_SUCCESS;
 }
 
 static int _foreach_pack_jobid(void *object, void *arg)
@@ -9668,9 +9672,7 @@ static int _foreach_pack_jobid(void *object, void *arg)
 	if (!(job_ptr = find_job_record(job_id)))
 		return SLURM_SUCCESS;
 
-	_pack_job(job_ptr, info);
-
-	return SLURM_SUCCESS;
+	return _pack_job(job_ptr, info);
 }
 
 /*
@@ -9693,8 +9695,6 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	uint32_t jobs_packed = 0, tmp_offset;
 	_foreach_pack_job_info_t pack_info = {0};
 	Buf buffer;
-	ListIterator itr;
-	job_record_t *job_ptr = NULL;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -9714,11 +9714,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	pack_info.show_flags       = show_flags;
 	pack_info.uid              = uid;
 
-	itr = list_iterator_create(job_list);
-	while ((job_ptr = list_next(itr))) {
-		_pack_job(job_ptr, &pack_info);
-	}
-	list_iterator_destroy(itr);
+	list_for_each(job_list, _pack_job, &pack_info);
 
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);
