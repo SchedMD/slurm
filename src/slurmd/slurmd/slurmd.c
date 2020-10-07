@@ -110,7 +110,6 @@
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/run_script.h"
 #include "src/slurmd/common/set_oomadj.h"
-#include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/slurmd_cgroup.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/task_plugin.h"
@@ -309,7 +308,6 @@ main (int argc, char **argv)
 		      "If you want to run as this user add SlurmdUser=%s to the slurm.conf file.",
 		      slurmd_user, slurm_conf.slurm_user_id, curr_user);
 	}
-	init_setproctitle(argc, argv);
 
 	xsignal(SIGTERM, slurmd_shutdown);
 	xsignal(SIGINT,  slurmd_shutdown);
@@ -1916,7 +1914,6 @@ _slurmd_fini(void)
 	prep_plugin_fini();
 	slurm_topo_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
-	fini_setproctitle();
 	slurm_select_fini();
 	spank_slurmd_exit();
 	cpu_freq_fini();
