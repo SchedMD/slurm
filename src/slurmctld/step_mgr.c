@@ -116,6 +116,10 @@ static hostlist_t _step_range_to_hostlist(step_record_t *step_ptr,
 					  uint32_t range_last);
 static int _step_hostname_to_inx(step_record_t *step_ptr, char *node_name);
 static void _step_dealloc_lps(step_record_t *step_ptr);
+static step_record_t *_build_interactive_step(
+	job_record_t *job_ptr_in,
+	job_step_create_request_msg_t *step_specs,
+	uint16_t protocol_version);
 
 /* Determine how many more CPUs are required for a job step */
 static int  _opt_cpu_cnt(uint32_t step_min_cpus, bitstr_t *node_bitmap,
@@ -2323,6 +2327,13 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	    ((job_ptr->end_time <= time(NULL)) && !IS_JOB_CONFIGURING(job_ptr)))
 		return ESLURM_ALREADY_DONE;
 
+	if (step_specs->flags & SSF_INTERACTIVE) {
+		debug("%s: interactive step requested", __func__);
+		*new_step_record = _build_interactive_step(job_ptr, step_specs,
+							   protocol_version);
+		return SLURM_SUCCESS;
+	}
+
 	task_dist = step_specs->task_dist & SLURM_DIST_STATE_BASE;
 	/* Set to block in the case that mem is 0. srun leaves the dist
 	 * set to unknown if mem is 0. */
@@ -3576,7 +3587,8 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 	if (!assoc_mgr_locked)
 		assoc_mgr_lock(&locks);
 
-	if ((step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) &&
+	if (((step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) ||
+	     (step_ptr->step_id.step_id == SLURM_INTERACTIVE_STEP)) &&
 	    step_ptr->job_ptr->job_resrcs) {
 		/*
 		 * FIXME: This is hardcoded to be the first node in the
@@ -4704,6 +4716,73 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 	step_ptr->step_id.step_id = SLURM_BATCH_SCRIPT;
 	step_ptr->step_id.step_het_comp = NO_VAL;
 	step_ptr->batch_step = 1;
+
+#ifndef HAVE_FRONT_END
+	if (node_name2bitmap(job_ptr->batch_host, false,
+			     &step_ptr->step_node_bitmap)) {
+		error("%s: %pJ has invalid node list (%s)",
+		      __func__, job_ptr, job_ptr->batch_host);
+	}
+#endif
+
+	step_ptr->time_last_active = time(NULL);
+	step_set_alloc_tres(step_ptr, 1, false, false);
+
+	jobacct_storage_g_step_start(acct_db_conn, step_ptr);
+
+	return step_ptr;
+}
+
+static step_record_t *_build_interactive_step(
+	job_record_t *job_ptr_in,
+	job_step_create_request_msg_t *step_specs,
+	uint16_t protocol_version)
+{
+	job_record_t *job_ptr;
+	step_record_t *step_ptr;
+	char *host = NULL;
+
+	if (job_ptr_in->het_job_id) {
+		job_ptr = find_job_record(job_ptr_in->het_job_id);
+		if (!job_ptr) {
+			error("%s: hetjob leader is corrupt! This should never happen",
+			      __func__);
+			job_ptr = job_ptr_in;
+		}
+	} else
+		job_ptr = job_ptr_in;
+
+	step_ptr = _create_step_record(job_ptr, protocol_version);
+
+#ifdef HAVE_FRONT_END
+	front_end_record_t *front_end_ptr =
+				find_front_end_record(job_ptr->batch_host);
+	if (front_end_ptr && front_end_ptr->name)
+		host = front_end_ptr->name;
+	else {
+		error("%s: could not find front-end node for %pJ",__func__,
+		      job_ptr);
+		host = job_ptr->batch_host;
+	}
+#else
+		host = job_ptr->batch_host;
+#endif
+	step_ptr->step_layout = fake_slurm_step_layout_create(
+		host, NULL, NULL, 1, 1);
+	step_ptr->ext_sensors = ext_sensors_alloc();
+	step_ptr->name = xstrdup("interactive");
+	step_ptr->select_jobinfo = select_g_select_jobinfo_alloc();
+	step_ptr->state = JOB_RUNNING;
+	step_ptr->start_time = job_ptr->start_time;
+	step_ptr->step_id.job_id = job_ptr->job_id;
+	step_ptr->step_id.step_id = SLURM_INTERACTIVE_STEP;
+	step_ptr->step_id.step_het_comp = NO_VAL;
+
+	step_ptr->port = step_specs->port;
+	step_ptr->srun_pid = step_specs->srun_pid;
+	step_ptr->host = xstrdup(step_specs->host);
+
+	step_ptr->core_bitmap_job = bit_copy(job_ptr->job_resrcs->core_bitmap);
 
 #ifndef HAVE_FRONT_END
 	if (node_name2bitmap(job_ptr->batch_host, false,
