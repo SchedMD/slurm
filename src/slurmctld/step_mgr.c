@@ -2869,12 +2869,16 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 				 * array.
 				 */
 				uint16_t threads_per_core;
-				multi_core_data_t *mc_ptr;
-				mc_ptr = job_ptr->details->mc_ptr;
+				multi_core_data_t *mc_ptr = NULL;
+
+				if (job_ptr->details)
+					mc_ptr = job_ptr->details->mc_ptr;
+
 				if (step_ptr->threads_per_core != NO_VAL16)
 					threads_per_core =
 						step_ptr->threads_per_core;
-				else if (mc_ptr->threads_per_core != NO_VAL16)
+				else if (mc_ptr &&
+					 (mc_ptr->threads_per_core != NO_VAL16))
 					threads_per_core =
 						mc_ptr->threads_per_core;
 				else
