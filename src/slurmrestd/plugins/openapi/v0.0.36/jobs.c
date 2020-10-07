@@ -1418,6 +1418,10 @@ static int _op_handler_submit_job_post(const char *context_id,
 			data_set_string(data_key_set(d, "step_id"),
 					"EXTERN");
 			break;
+		case SLURM_INTERACTIVE_STEP:
+			data_set_string(data_key_set(d, "step_id"),
+					"INTERACTIVE");
+			break;
 		default:
 			data_set_int(data_key_set(d, "step_id"),
 				     resp->step_id);
