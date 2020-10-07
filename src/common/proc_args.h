@@ -70,13 +70,6 @@ char *base_name(const char *command);
 uint64_t str_to_mbytes(const char *arg);
 
 /*
- * str_to_mbytes2(): verify that arg is numeric with optional "K", "M", "G"
- * or "T" at end and return the number in mega-bytes. Default units are GB
- * if ???, otherwise MB.
- */
-uint64_t str_to_mbytes2(const char *arg);
-
-/*
  * Reverse the above conversion. Returns an xmalloc()'d string.
  */
 extern char *mbytes_to_str(uint64_t mbytes);
