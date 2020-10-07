@@ -1,0 +1,301 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of SPANK error codes
+############################################################################
+# Copyright (C) 2021 SchedMD LLC
+# Written by Nathan Rini <nate@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_in         "${test_dir}/${test_name}.in"
+set file_out        "${test_dir}/${test_name}.out"
+set file_prog       "[$bin_pwd]/${test_name}.prog"
+set shared_lib      "${file_prog}.so"
+set new_spank_conf  "${test_dir}/${test_name}.new_conf"
+set spank_out       "${test_dir}/${test_name}.spank.out"
+set spank_conf_file "[get_conf_path]/plugstack.conf"
+
+set pgid     [param_contains [get_config_param -slurm "ProctrackType"] "*pgid"]
+set testnode [get_nodes_by_request "-N1"]
+
+if {[llength $testnode] != 1} {
+	skip "Test needs to be able to submit jobs to 1 node"
+}
+
+if {![is_super_user]} {
+	skip "This test must be run as SlurmUser"
+}
+if {[get_config_param "FrontendName"] ne "MISSING"} {
+	skip "This test is incompatible with front-end systems"
+}
+#
+# Verify the slurmctld and local slurm version are the same
+#
+set slurmctld_version [get_config_param "SLURM_VERSION"]
+set scontrol_V_output [run_command_output -fail "$scontrol -V"]
+if {![regexp "slurm ($re_word_str)" $scontrol_V_output {} local_slurm_version]} {
+	fail "Unable to determine local slurm version"
+}
+
+if {[string compare $slurmctld_version $local_slurm_version]} {
+	skip "slurmctld ($slurmctld_version) and local Slurm ($local_slurm_version) versions are not the same. Cannot continue."
+}
+
+
+proc is_node_drain {} {
+	global testnode
+
+	if {$testnode == ""} {
+		return 0
+	}
+
+	set node_state [get_node_param $testnode "State"]
+
+	return [regexp {DRAIN} $node_state]
+}
+
+proc resume_node {} {
+	global testnode scontrol test_name
+
+	if [is_node_drain] {
+		run_command -fail "$scontrol update nodename=$testnode state=resume reason=$test_name"
+	}
+}
+
+proc cleanup { } {
+	global shared_lib spank_conf_file
+
+	resume_node
+
+	# Restore the original plugstack
+	restore_conf $spank_conf_file
+	reconfigure
+
+	file delete $shared_lib
+}
+
+#
+# Build the plugin
+#
+cd $test_dir
+log_debug "Using slurm_dir $slurm_dir"
+compile_against_libslurm -shared "$file_prog" "-ggdb3 -Wall"
+
+#
+# Copy the original plugstack.conf file
+# and create an updated one using our new plugin
+#
+save_conf $spank_conf_file
+
+# create the output file with lower permissions to avoid root umask issues
+exec $bin_touch "${spank_out}"
+
+exec $bin_echo "required $shared_lib ${spank_out}" > $new_spank_conf
+run_command_output -fail "$bin_cp -f $new_spank_conf $spank_conf_file"
+reconfigure
+
+# Ensure that SPANK will not kill the test jobs yet
+if {[info exists env(TEST_FUNC)]} {unset env(TEST_FUNC)}
+if {[info exists env(TEST_CTXT)]} {unset env(TEST_CTXT)}
+
+proc process_result {function context expected_rc reports drains fails job_id_assigned job_id rc output} {
+
+	subtest {$rc == $expected_rc} "Verify return code reported:$rc == expected:$expected_rc"
+
+	# Look for api failure like:
+	# srun: error: spank: required plugin test7.24.prog.so: init() failed with rc=-3000
+	set short_function [string replace $function 0 [expr {[string length "slurm_spank_"]-1}]]
+
+	set rc 0
+	set reported [regexp "error: spank: required plugin \\S+: $short_function\\\(\\\) failed with rc=(-?\\d+)" $output wholematch rc]
+	subtest {$rc == $reports} \
+		[concat "SPANK API failure report expected rc:$reports == rc:$rc" ]
+
+	if {$job_id_assigned} {
+		if {[subtest {$job_id > 0} "jobid != 0"]} {
+			set jobs_dict [get_jobs $job_id]
+			set job_state [dict get $jobs_dict $job_id "JobState"]
+			set failed [expr {$job_state eq "FAILED"}]
+
+			subtest {$fails == $failed} [concat "JobId=$job_id state: " \
+				[expr {$fails ?  "FAILED" : "!FAILED"}] \
+				" == $job_state" ]
+		}
+	} else {
+		subtest {$job_id == 0} "jobid should not have been assigned"
+	}
+
+	set drained [is_node_drain]
+	subtest {$drains == $drained} \
+		[concat "expect node to drain: " \
+			[expr {$drains ? "should drain" : "should not drain"}] \
+			"  == " \
+			[expr {$drained ? "drained" : "did not drain"}]]
+}
+
+proc test_interactive {command function context expected_rc reports drains fails job_id_assigned} {
+	global scontrol number test_name
+	global env
+
+	resume_node
+
+	# Invoke command
+	set env(TEST_FUNC) "$function"
+	set env(TEST_CTXT) "$context"
+	set result [run_command -timeout 15 -none "$command"]
+	set rc [dict get $result exit_code]
+	set output [dict get $result output]
+
+	# Extract job id from api output
+	if {[subtest {[regexp "\\\[Job: ($number)\\\] Found \\\($function,$context\\\)" $output {} job_id]} "verify SPANK plugin printed debug logs"]} {
+		wait_for_job $job_id "DONE"
+
+		return [process_result $function $context $expected_rc $reports $drains $fails $job_id_assigned $job_id $rc $output]
+	} else {
+		return $::RETURN_ERROR
+	}
+}
+
+proc test_batch {function context expected_rc sbatch_rc sbatch_reports reports drains fails job_id_assigned outputs} {
+	global re_word_str scontrol bin_bash number test_name sbatch file_out file_in bin_cat number bin_rm
+	global env sbatch_test
+
+	resume_node
+
+	# Execute command
+	set env(TEST_FUNC) "$function"
+	set env(TEST_CTXT) "$context"
+	set result [run_command -timeout 15 -none "$sbatch_test"]
+	set rc [dict get $result exit_code]
+	set output [dict get $result output]
+	set job_id 0
+
+	subtest {$rc == $sbatch_rc} "Verify sbatch return code:$rc == expected:$sbatch_rc"
+
+	# Extract job id from command output
+	regexp "Submitted batch job ($number)" $output {} job_id
+	subtest {$job_id_assigned == [expr $job_id != 0]} "job_id != 0"
+
+	# Look for api failure
+	set short_function [string replace $function 0 [expr {[string length "slurm_spank_"]-1}]]
+	set reported [regexp "error: spank: required plugin \\S+: $short_function\\\(\\\) failed with rc=(-?\\d+)" $output wholematch rc]
+	subtest {$rc == $sbatch_reports} \
+		"SPANK API failure report expected sbatch rc:$sbatch_reports == reported:$rc"
+
+	wait_for_job $job_id "DONE"
+
+	unset output
+
+	# Job must run to produce file output, which in some cases it should not
+	if {$outputs} {
+		set output ""
+
+		if {![wait_for_file -timeout 5 -pollinterval .1 $file_out]} {
+			set output [run_command_output -fail "$bin_cat $file_out"]
+
+			# Remove the output file so we don't use it in the next tuple
+			exec $bin_rm -f $file_out
+
+			if {[subtest {$output != ""} "verify output made"]} {
+				return [process_result $function $context $expected_rc $reports $drains $fails $job_id_assigned $job_id $rc $output]
+			}
+		} else {
+			subfail "verify output mode" "output missing"
+		}
+	} else {
+		subtest {![file exists $file_out]} "verify output not made"
+
+		return [process_result $function $context $expected_rc $reports $drains $fails $job_id_assigned $job_id $rc ""]
+	}
+
+}
+
+# Listing args at the end of the line to make it easier to edit:
+#                                                                                expected_rc       reports
+#                                                                                                        drains
+#                                                                                                          fails
+#                                                                                                            job_id_assigned
+log_info "Testing srun.........."
+set srun_test "$srun -K -I10 -W10 -w $testnode -t1 true"
+testproc test_interactive "$srun_test" slurm_spank_init local                    $::RETURN_ERROR   -3000 0 1 0
+testproc test_interactive "$srun_test" slurm_spank_init_post_opt local           $::RETURN_ERROR   -3000 0 1 0
+testproc test_interactive "$srun_test" slurm_spank_local_user_init local         $::RETURN_ERROR   -3000 0 0 1
+testproc test_interactive "$srun_test" slurm_spank_user_init remote              $::RETURN_SUCCESS -3000 0 0 1
+testproc test_interactive "$srun_test" slurm_spank_task_init_privileged remote   $::RETURN_ERROR   -3000 0 1 1
+if {$pgid} {
+testproc test_interactive "$srun_test" slurm_spank_task_post_fork remote         $::RETURN_TIMEOUT -3000 0 0 1
+} else {
+testproc test_interactive "$srun_test" slurm_spank_task_post_fork remote         $::RETURN_SUCCESS -3000 0 0 1
+}
+testproc test_interactive "$srun_test" slurm_spank_task_init remote              $::RETURN_ERROR   -3000 0 1 1
+testproc test_interactive "$srun_test" slurm_spank_task_exit remote              $::RETURN_SUCCESS -3000 0 0 1
+testproc test_interactive "$srun_test" slurm_spank_exit local                    $::RETURN_SUCCESS -3000 0 1 0
+
+log_info "Testing salloc.........."
+set salloc_test "$salloc -I10 -w$testnode -t1 $srun true"
+testproc test_interactive "$salloc_test" slurm_spank_init allocator              $::RETURN_ERROR   -3000 0 1 0
+testproc test_interactive "$salloc_test" slurm_spank_init_post_opt allocator     $::RETURN_ERROR   -3000 0 1 0
+testproc test_interactive "$salloc_test" slurm_spank_init local                  $::RETURN_ERROR   -3000 0 1 0
+testproc test_interactive "$salloc_test" slurm_spank_init_post_opt local         $::RETURN_ERROR   -3000 0 1 0
+testproc test_interactive "$salloc_test" slurm_spank_local_user_init local       $::RETURN_ERROR   -3000 0 1 1
+testproc test_interactive "$salloc_test" slurm_spank_user_init remote            $::RETURN_SUCCESS -3000 0 0 1
+testproc test_interactive "$salloc_test" slurm_spank_task_init_privileged remote $::RETURN_ERROR   -3000 0 1 1
+if {$pgid} {
+testproc test_interactive "$salloc_test" slurm_spank_task_post_fork remote       $::RETURN_TIMEOUT -3000 0 0 1
+} else {
+testproc test_interactive "$salloc_test" slurm_spank_task_post_fork remote       $::RETURN_SUCCESS -3000 0 0 1
+}
+testproc test_interactive "$salloc_test" slurm_spank_task_init remote            $::RETURN_ERROR   -3000 0 1 1
+testproc test_interactive "$salloc_test" slurm_spank_task_exit remote            $::RETURN_SUCCESS -3000 0 0 1
+testproc test_interactive "$salloc_test" slurm_spank_exit local                  $::RETURN_SUCCESS -3000 0 1 0
+testproc test_interactive "$salloc_test" slurm_spank_exit allocator              $::RETURN_SUCCESS -3000 0 1 0
+
+# Listing args at the end of the line to make it easier to edit:
+#                                                                                expected_rc       sbatch_rc
+#                                                                                                        sbatch_reports
+#                                                                                                               reports error
+#                                                                                                                   drains
+#                                                                                                                     fails
+#                                                                                                                       job_id_assigned
+#                                                                                                                         outputs
+log_info "Testing sbatch.........."
+make_bash_script $file_in "$srun $bin_echo IT_RAN"
+set sbatch_test "$sbatch -W -w $testnode -t1 -o $file_out -e $file_out $file_in"
+testproc test_batch slurm_spank_init allocator                                   -3000              1    -3000  0    0 1 0 0
+testproc test_batch slurm_spank_init_post_opt allocator                          -3000              1    -3000  0    0 1 0 0
+testproc test_batch slurm_spank_init local                                        1                 1     1    -3000 0 1 1 1
+testproc test_batch slurm_spank_init_post_opt local                              $::RETURN_ERROR    1     1    -3000 0 1 1 1
+testproc test_batch slurm_spank_local_user_init local                            $::RETURN_ERROR    1     1    -3000 0 1 1 1
+if {!$pgid} {
+	testproc test_batch slurm_spank_user_init remote                         $::RETURN_SUCCESS  0     0    -3000 1 0 1 1
+} else {
+	testproc test_batch slurm_spank_user_init remote                         $::RETURN_SUCCESS  0     0    -3000 0 0 1 1
+}
+testproc test_batch slurm_spank_task_init_privileged remote                      $::RETURN_ERROR    1     1    -3000 0 1 1 1
+if {!$pgid} {
+	testproc test_batch slurm_spank_task_post_fork remote                    $::RETURN_SUCCESS  0     0    -3000 1 0 1 1
+} else {
+	testproc test_batch slurm_spank_task_post_fork remote                    $::RETURN_TIMEOUT  0     0    -3000 1 0 1 1
+}
+testproc test_batch slurm_spank_task_init remote                                 $::RETURN_ERROR    1     1    -3000 0 1 1 1
+testproc test_batch slurm_spank_task_exit remote                                 $::RETURN_SUCCESS  0     0    -3000 0 0 1 1
+testproc test_batch slurm_spank_exit local                                       $::RETURN_SUCCESS  0     0    -3000 0 0 1 1
+testproc test_batch slurm_spank_exit allocator                                   -3000              0    -3000  0    0 0 1 1
