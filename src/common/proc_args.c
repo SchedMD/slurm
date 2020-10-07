@@ -493,7 +493,11 @@ char *base_name(const char *command)
 	return xstrdup(char_ptr);
 }
 
-static uint64_t _str_to_mbytes(const char *arg, int use_gbytes)
+/*
+ * str_to_mbytes(): verify that arg is numeric with optional "K", "M", "G"
+ * or "T" at end and return the number in mega-bytes. Default units are MB.
+ */
+uint64_t str_to_mbytes(const char *arg)
 {
 	long long result;
 	char *endptr;
@@ -507,8 +511,6 @@ static uint64_t _str_to_mbytes(const char *arg, int use_gbytes)
 
 	if (result < 0)
 		return NO_VAL64;
-	else if ((endptr[0] == '\0') && (use_gbytes == 1))  /* GB default */
-		result *= 1024;
 	else if (endptr[0] == '\0')	/* MB default */
 		;
 	else if (((endptr[0] == 'k') || (endptr[0] == 'K')) &&
@@ -527,15 +529,6 @@ static uint64_t _str_to_mbytes(const char *arg, int use_gbytes)
 		return NO_VAL64;
 
 	return (uint64_t) result;
-}
-
-/*
- * str_to_mbytes(): verify that arg is numeric with optional "K", "M", "G"
- * or "T" at end and return the number in mega-bytes. Default units are MB.
- */
-uint64_t str_to_mbytes(const char *arg)
-{
-	return _str_to_mbytes(arg, 0);
 }
 
 extern char *mbytes_to_str(uint64_t mbytes)
