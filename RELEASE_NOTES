@@ -78,6 +78,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- The JobCompLoc URL endpoint when the JobCompType=jobcomp/elasticsearch
     plugin is enabled is now fully configurable and the plugin no longer appends
     a hardcoded "/slurm/jobcomp" index and type suffix to it.
+ -- Removed support for "default_gbytes" option in SchedulerParameters.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

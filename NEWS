@@ -96,6 +96,7 @@ documents those changes that are of interest to users and administrators.
  -- Add --whole option to srun to allocate all resources on a node
     in an allocation.
  -- Allow --threads-per-core to influence task layout/binding.
+ -- Remove support for "default_gbytes" option from SchedulerParameters.
 
 * Changes in Slurm 20.02.6
 ==========================
