@@ -1164,8 +1164,8 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		}
 		if (i == SLURM_SUCCESS) {
 			p->cpus_bitmap = bit_alloc(gres_cpu_cnt);
-			if ((bit_size(p->cpus_bitmap) == 0) ||
-			    bit_unfmt(p->cpus_bitmap, local_cpus) != 0) {
+			if (!bit_size(p->cpus_bitmap) ||
+			    bit_unfmt(p->cpus_bitmap, local_cpus)) {
 				fatal("Invalid GRES data for %s, %s=%s (only %u CPUs are available)",
 				      p->name, type_str, p->cpus, gres_cpu_cnt);
 			}
