@@ -1119,9 +1119,13 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				    job_resrcs_ptr->cpus_used[node_inx]) {
 					log_flag(STEPS, "%s: %pJ Node requested --whole node while other step running here.",
 						 __func__, job_ptr);
+					job_blocked_cpus += total_cpus;
+					job_blocked_nodes++;
 					total_cpus = 0;
 				} else {
 					total_cpus -= job_resrcs_ptr->
+						cpus_used[node_inx];
+					job_blocked_cpus += job_resrcs_ptr->
 						cpus_used[node_inx];
 				}
 			}
