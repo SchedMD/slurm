@@ -90,8 +90,10 @@ typedef struct gres_slurmd_conf {
 
 	/* Specific CPUs associated with this configuration record */
 	uint32_t cpu_cnt;
+	/* abstract/logical mapping range of cores (gres.conf) or CPUs (NVML) */
 	char *cpus;
-	bitstr_t *cpus_bitmap;	/* Using LOCAL mapping */
+	/* machine/local/physical CPU mapping */
+	bitstr_t *cpus_bitmap;
 
 	/* Device file associated with this configuration record */
 	char *file;
