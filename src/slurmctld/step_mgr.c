@@ -1104,6 +1104,11 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 
 			total_cpus = job_resrcs_ptr->cpus[node_inx];
 
+			log_flag(STEPS, "%s: %pJ Currently running steps use %d of allocated %d CPUs on node %s",
+				 __func__, job_ptr,
+				 job_resrcs_ptr->cpus_used[node_inx],
+				 total_cpus, node_record_table_ptr[i].name);
+
 			if (step_spec->flags & SSF_EXCLUSIVE) {
 				/*
 				 * If whole is given and
@@ -1111,15 +1116,21 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				 * we can't use this node.
 				 */
 				if ((step_spec->flags & SSF_WHOLE) &&
-				    job_resrcs_ptr->cpus_used[node_inx])
+				    job_resrcs_ptr->cpus_used[node_inx]) {
+					log_flag(STEPS, "%s: %pJ Node requested --whole node while other step running here.",
+						 __func__, job_ptr);
 					total_cpus = 0;
-				else
+				} else {
 					total_cpus -= job_resrcs_ptr->
 						cpus_used[node_inx];
+				}
 			}
 
-			if (!total_cpus)
+			if (!total_cpus) {
+				log_flag(STEPS, "%s: %pJ Skipping node. Not enough CPUs to run step here.",
+					 __func__, job_ptr);
 				continue;
+			}
 
 			usable_cpu_cnt[i] = avail_cpus = total_cpus;
 			if (_is_mem_resv() &&
@@ -1140,6 +1151,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 					usable_cpu_cnt[i] = avail_cpus;
 					fail_mode = ESLURM_INVALID_TASK_MEMORY;
 				}
+				log_flag(STEPS, "%s: %pJ Based on --mem-per-cpu=%"PRIu64" we have %d usable cpus on node, usable memory was: %"PRIu64,
+					 __func__, job_ptr, mem_use, tmp_cpus,
+					 tmp_mem);
 			} else if (_is_mem_resv() && step_spec->pn_min_memory) {
 				uint64_t mem_use = step_spec->pn_min_memory;
 				/* ignore current step allocations */
@@ -1151,6 +1165,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				tmp_mem   -= job_resrcs_ptr->
 					     memory_used[node_inx];
 				if ((tmp_mem < mem_use) && (avail_cpus > 0)) {
+					log_flag(STEPS, "%s: %pJ Usable memory on node: %"PRIu64" is less than requested %"PRIu64" skipping the node",
+						 __func__, job_ptr, tmp_mem,
+						 mem_use);
 					avail_cpus = 0;
 					usable_cpu_cnt[i] = avail_cpus;
 					fail_mode = ESLURM_INVALID_TASK_MEMORY;
@@ -1183,6 +1200,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				total_tasks /= cpus_per_task;
 			}
 			if (avail_tasks == 0) {
+				log_flag(STEPS, "%s: %pJ No task can start on node",
+					 __func__, job_ptr);
 				if ((step_spec->min_nodes == INFINITE) ||
 				    (step_spec->min_nodes ==
 				     job_ptr->node_cnt)) {
