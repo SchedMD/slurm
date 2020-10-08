@@ -78,24 +78,6 @@
 strong_alias(net_stream_listen,		slurm_net_stream_listen);
 strong_alias(net_set_low_water,		slurm_net_set_low_water);
 
-/*
- * Returns the port number in host byte order.
- */
-static short _sock_bind_wild(int sockfd)
-{
-	socklen_t len;
-	struct sockaddr_in sin;
-
-	slurm_setup_sockaddr(&sin, 0); /* bind ephemeral port */
-
-	if (bind(sockfd, (struct sockaddr *) &sin, sizeof(sin)) < 0)
-		return (-1);
-	len = sizeof(sin);
-	if (getsockname(sockfd, (struct sockaddr *) &sin, &len) < 0)
-		return (-1);
-	return slurm_get_port(&sin);
-}
-
 /* open a stream socket on an ephemereal port and put it into
  * the listen state. fd and port are filled in with the new
  * socket's file descriptor and port #.
@@ -105,7 +87,12 @@ static short _sock_bind_wild(int sockfd)
  */
 int net_stream_listen(int *fd, uint16_t *port)
 {
+	struct sockaddr_in sin;
+	socklen_t len = sizeof(sin);
 	int rc, val;
+
+	/* bind ephemeral port */
+	slurm_setup_sockaddr(&sin, 0);
 
 	if ((*fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
 		return -1;
@@ -114,8 +101,12 @@ int net_stream_listen(int *fd, uint16_t *port)
 	rc = setsockopt(*fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(int));
 	if (rc < 0)
 		goto cleanup;
+	if (bind(*fd, (struct sockaddr *) &sin, len) < 0)
+		goto cleanup;
+	if (getsockname(*fd, (struct sockaddr *) &sin, &len) < 0)
+		goto cleanup;
 
-	*port = _sock_bind_wild(*fd);
+	*port = slurm_get_port(&sin);
 	rc = listen(*fd, SLURM_DEFAULT_LISTEN_BACKLOG);
 	if (rc < 0)
 		goto cleanup;
