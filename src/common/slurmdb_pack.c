@@ -2466,7 +2466,38 @@ extern void slurmdb_pack_wckey_rec(void *in, uint16_t protocol_version,
 {
 	slurmdb_wckey_rec_t *object = (slurmdb_wckey_rec_t *)in;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		if (!object) {
+			pack32(NO_VAL, buffer);
+
+			packnull(buffer);
+
+			pack32(NO_VAL, buffer);
+
+			packnull(buffer);
+
+			pack32(NO_VAL, buffer);
+
+			packnull(buffer);
+			return;
+		}
+
+		slurm_pack_list(object->accounting_list,
+				slurmdb_pack_accounting_rec,
+				buffer, protocol_version);
+
+		packstr(object->cluster, buffer);
+
+		pack32(object->id, buffer);
+
+		pack16(object->is_def, buffer);
+
+		packstr(object->name, buffer);
+
+		pack32(object->uid, buffer);
+
+		packstr(object->user, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			pack32(NO_VAL, buffer);
 
@@ -2512,7 +2543,37 @@ extern int slurmdb_unpack_wckey_rec(void **object, uint16_t protocol_version,
 
 	*object = object_ptr;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpack32(&count, buffer);
+		if (count > NO_VAL)
+			goto unpack_error;
+		if (count != NO_VAL) {
+			object_ptr->accounting_list =
+				list_create(slurmdb_destroy_accounting_rec);
+			for (i = 0; i < count; i++) {
+				if (slurmdb_unpack_accounting_rec(
+					    (void **)&slurmdb_info,
+					    protocol_version,
+					    buffer) == SLURM_ERROR)
+					goto unpack_error;
+				list_append(object_ptr->accounting_list,
+					    slurmdb_info);
+			}
+		}
+
+		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
+				       buffer);
+
+		safe_unpack32(&object_ptr->id, buffer);
+
+		safe_unpack16(&object_ptr->is_def, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+
+		safe_unpack32(&object_ptr->uid, buffer);
+
+		safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL)
 			goto unpack_error;
