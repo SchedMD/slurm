@@ -89,7 +89,7 @@ int net_stream_listen(int *fd, uint16_t *port)
 {
 	struct sockaddr_in sin;
 	socklen_t len = sizeof(sin);
-	int rc, val;
+	int val = 1;
 
 	/* bind ephemeral port */
 	slurm_setup_sockaddr(&sin, 0);
@@ -97,9 +97,7 @@ int net_stream_listen(int *fd, uint16_t *port)
 	if ((*fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
 		return -1;
 
-	val = 1;
-	rc = setsockopt(*fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(int));
-	if (rc < 0)
+	if (setsockopt(*fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)) < 0)
 		goto cleanup;
 	if (bind(*fd, (struct sockaddr *) &sin, len) < 0)
 		goto cleanup;
@@ -107,13 +105,12 @@ int net_stream_listen(int *fd, uint16_t *port)
 		goto cleanup;
 
 	*port = slurm_get_port(&sin);
-	rc = listen(*fd, SLURM_DEFAULT_LISTEN_BACKLOG);
-	if (rc < 0)
+	if (listen(*fd, SLURM_DEFAULT_LISTEN_BACKLOG) < 0)
 		goto cleanup;
 
 	return 1;
 
-  cleanup:
+cleanup:
 	close(*fd);
 	return -1;
 }
