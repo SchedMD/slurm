@@ -2912,7 +2912,10 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 	job_ptr->details->cpu_freq_min = cpu_freq_min;
 	job_ptr->details->cpu_freq_max = cpu_freq_max;
 	job_ptr->details->cpu_freq_gov = cpu_freq_gov;
-	job_ptr->details->cpus_per_task = cpus_per_task;
+	if (cpus_per_task != NO_VAL16)
+		job_ptr->details->cpus_per_task = cpus_per_task;
+	else
+		job_ptr->details->cpus_per_task = 1;
 	job_ptr->details->orig_cpus_per_task = cpus_per_task;
 	job_ptr->details->depend_list = depend_list;
 	job_ptr->details->dependency = dependency;
@@ -10390,20 +10393,27 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, Buf buffer,
 static void _find_node_config(int *cpu_cnt_ptr, int *core_cnt_ptr)
 {
 	static int max_cpu_cnt = -1, max_core_cnt = -1;
+	static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 	int i;
 	node_record_t *node_ptr = node_record_table_ptr;
+
+	slurm_mutex_lock(&lock);
+	if (max_cpu_cnt == -1) {
+		for (i = 0; i < node_record_count; i++, node_ptr++) {
+			/* Only data from config_record used for scheduling */
+			max_cpu_cnt = MAX(max_cpu_cnt,
+					  node_ptr->config_ptr->cpus);
+			max_core_cnt = MAX(max_core_cnt,
+					   node_ptr->config_ptr->cores);
+		}
+	}
+	slurm_mutex_unlock(&lock);
 
 	*cpu_cnt_ptr  = max_cpu_cnt;
 	*core_cnt_ptr = max_core_cnt;
 
-	if (max_cpu_cnt != -1)
-		return;
+	return;
 
-	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		/* Only data from config_record used for scheduling */
-		max_cpu_cnt = MAX(max_cpu_cnt, node_ptr->config_ptr->cpus);
-		max_core_cnt = MAX(max_core_cnt, node_ptr->config_ptr->cores);
-	}
 }
 
 /* pack default job details for "get_job_info" RPC */
