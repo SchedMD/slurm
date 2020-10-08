@@ -45,6 +45,7 @@ char *wckey_req_inx[] = {
 	"is_def",
 	"wckey_name",
 	"user",
+	"deleted",
 };
 
 enum {
@@ -52,6 +53,7 @@ enum {
 	WCKEY_REQ_DEFAULT,
 	WCKEY_REQ_NAME,
 	WCKEY_REQ_USER,
+	WCKEY_REQ_DELETED,
 	WCKEY_REQ_COUNT
 };
 
@@ -461,6 +463,9 @@ static int _cluster_get_wckeys(mysql_conn_t *mysql_conn,
 		wckey->id = slurm_atoul(row[WCKEY_REQ_ID]);
 		wckey->is_def = slurm_atoul(row[WCKEY_REQ_DEFAULT]);
 		wckey->user = xstrdup(row[WCKEY_REQ_USER]);
+
+		if (slurm_atoul(row[WCKEY_REQ_DELETED]))
+			wckey->flags |= SLURMDB_WCKEY_FLAG_DELETED;
 
 		/* we want a blank wckey if the name is null */
 		if (row[WCKEY_REQ_NAME])

@@ -1209,10 +1209,15 @@ typedef struct {
 	uint16_t with_deleted;  /* return deleted associations */
 } slurmdb_wckey_cond_t;
 
+enum {
+	SLURMDB_WCKEY_FLAG_NONE          = 0,
+	SLURMDB_WCKEY_FLAG_DELETED       = (1 << 0),
+};
+
 typedef struct {
 	List accounting_list; /* list of slurmdb_accounting_rec_t *'s */
 	char *cluster;		/* cluster associated */
-
+	uint32_t flags;		/* SLURMDB_WCKEY_FLAG_* */
 	uint32_t id;		/* id identifing a combination of
 				 * user-wckey-cluster */
 	uint16_t is_def;        /* Is this the users default wckey */

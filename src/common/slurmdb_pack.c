@@ -2609,13 +2609,16 @@ extern void slurmdb_pack_wckey_rec(void *in, uint16_t protocol_version,
 
 			packnull(buffer);
 
-			pack32(NO_VAL, buffer);
-
-			packnull(buffer);
+			pack32(0, buffer);
 
 			pack32(NO_VAL, buffer);
 
 			packnull(buffer);
+
+			pack32(NO_VAL, buffer);
+
+			packnull(buffer);
+
 			return;
 		}
 
@@ -2624,6 +2627,8 @@ extern void slurmdb_pack_wckey_rec(void *in, uint16_t protocol_version,
 				buffer, protocol_version);
 
 		packstr(object->cluster, buffer);
+
+		pack32(object->flags, buffer);
 
 		pack32(object->id, buffer);
 
@@ -2700,6 +2705,8 @@ extern int slurmdb_unpack_wckey_rec(void **object, uint16_t protocol_version,
 
 		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
 				       buffer);
+
+		safe_unpack32(&object_ptr->flags, buffer);
 
 		safe_unpack32(&object_ptr->id, buffer);
 
