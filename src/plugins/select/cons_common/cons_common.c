@@ -2192,10 +2192,8 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 		rem_cores = core_cnt[0];
 		cores_per_node = core_cnt[0] / MAX(node_cnt, 1);
 		aggr_core_cnt = true;
-	} else if (cr_node_num_cores)
-		cores_per_node = cr_node_num_cores[0];
-	else
-		cores_per_node = 1;
+	}
+
 	rem_cores_save = rem_cores;
 
 	/*
@@ -2363,13 +2361,16 @@ extern bitstr_t *select_p_resv_test(resv_desc_msg_t *resv_desc_ptr,
 				continue;
 			}
 
-			c = _get_avail_cores_on_node(i, exc_core_bitmap);
-
-			if (c < cores_per_node)
-				continue;
-			debug2("Using node %d with %d cores available", i, c);
+			if (core_cnt) {
+				c = _get_avail_cores_on_node(i,
+				                             exc_core_bitmap);
+				if (c < cores_per_node)
+					continue;
+				debug2("Using node %d with %d cores available",
+				       i, c);
+				rem_cores -= c;
+			}
 			bit_set(avail_nodes_bitmap, i);
-			rem_cores -= c;
 			if (--rem_nodes <= 0)
 				break;
 		}
