@@ -1129,9 +1129,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				/* ignore current step allocations */
 				tmp_mem    = job_resrcs_ptr->
 					     memory_allocated[node_inx];
-				if (step_spec->flags & SSF_EXCLUSIVE)
-					tmp_mem -= job_resrcs_ptr->
-						memory_used[node_inx];
 				tmp_cpus   = tmp_mem / mem_use;
 				total_cpus = MIN(total_cpus, tmp_cpus);
 				/* consider current step allocations */
@@ -1148,9 +1145,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				/* ignore current step allocations */
 				tmp_mem    = job_resrcs_ptr->
 					     memory_allocated[node_inx];
-				if (step_spec->flags & SSF_EXCLUSIVE)
-					tmp_mem -= job_resrcs_ptr->
-						memory_used[node_inx];
 				if (tmp_mem < mem_use)
 					total_cpus = 0;
 				/* consider current step allocations */
