@@ -5197,13 +5197,16 @@ For example \fBOverSubscribe=FORCE:4\fR enables each node, socket or
 core to oversubscribe each resource four ways.
 Recommended only for systems using \fBPreemptMode=suspend,gang\fR.
 
-\fBNOTE\fR: If you are using \fBOverSubscribe=FORCE:1\fR, it will permit one
-additional job to be run on the partition if started due to job preemption for
-both Partition and QOS based preemption.
-If using \fBPreemptType=preempt/qos\fR you can specify a value for \fBFORCE\fR
-that is greater than 1. For example, \fBOverSubscribe=FORCE:2\fR will permit two
-jobs per resource normally, but a third job can be started if done so through
-preemption based upon QOS.
+\fBNOTE\fR: \fBOverSubscribe=FORCE:1\fR is a special case that is not exactly
+equivalent to \fBOverSubscribe=NO\fR. \fBOverSubscribe=FORCE:1\fR disables
+the regular oversubscription of resources in the same partition but it will
+still allow oversubscription due to preemption. Setting \fBOverSubscribe=NO\fR
+will prevent oversubscription from happening due to preemption as well.
+
+\fBNOTE\fR: If using \fBPreemptType=preempt/qos\fR you can specify a value for
+\fBFORCE\fR that is greater than 1. For example, \fBOverSubscribe=FORCE:2\fR
+will permit two jobs per resource normally, but a third job can be started
+only if done so through preemption based upon QOS.
 .TP
 \fBYES\fR
 Makes all resources in the partition available for sharing upon request by
@@ -5220,10 +5223,11 @@ Recommended only for systems running with gang scheduling
 \fBNO\fR
 Selected resources are allocated to a single job. No resource will be
 allocated to more than one job.
-\fBNOTE\fR: If using \fBPreemptType=preempt/qos\fR with
-\fBOverSubscribe=NO\fR and \fBPreemptMode=suspend,gang\fR, it will prevent
-the preemption of jobs in a preemptable QOS if the jobs are in the same
-partition.
+
+\fBNOTE\fR: Even if you are using \fBPreemptMode=suspend,gang\fR, setting
+\fBOverSubscribe=NO\fR will disable preemption on that partition. Use
+\fBOverSubscribe=FORCE:1\fR if you want to disable normal oversubscription
+but still allow suspension due to preemption.
 .RE
 
 .TP
