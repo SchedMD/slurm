@@ -1889,7 +1889,10 @@ extern void step_alloc_lps(step_record_t *step_ptr)
 			 *
 			 * TODO: move cpus_per_core to slurm_step_layout_t
 			 */
-			if (!_use_one_thread_per_core(job_ptr)) {
+			if (!_use_one_thread_per_core(job_ptr) &&
+			    (!(node_record_table_ptr[i_node].cpus ==
+			      (node_record_table_ptr[i_node].tot_sockets *
+			       node_record_table_ptr[i_node].cores)))) {
 				multi_core_data_t *mc_ptr;
 				mc_ptr = job_ptr->details->mc_ptr;
 				if (step_ptr->threads_per_core != NO_VAL16)
