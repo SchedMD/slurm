@@ -1105,8 +1105,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			total_cpus = job_resrcs_ptr->cpus[node_inx];
 
 			if (step_spec->flags & SSF_EXCLUSIVE) {
-				total_cpus -= job_resrcs_ptr->
-					cpus_used[node_inx];
 				/*
 				 * If whole is given and
 				 * job_resrcs_ptr->cpus_used[node_inx]
