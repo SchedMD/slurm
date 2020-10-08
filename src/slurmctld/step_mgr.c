@@ -1510,7 +1510,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				int pick_node_cnt = bit_set_count(nodes_avail);
 				pick_node_cnt += nodes_picked_cnt;
 				if ((step_spec->max_nodes <= pick_node_cnt) &&
-				    (mem_blocked_cpus == 0)) {
+				    (mem_blocked_cpus == 0) &&
+				    (job_blocked_cpus == 0)) {
 					*return_code =
 						ESLURM_TOO_MANY_REQUESTED_CPUS;
 				} else if ((mem_blocked_cpus > 0) ||
@@ -1530,7 +1531,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			nodes_picked_cnt = step_spec->min_nodes;
 		} else if (nodes_needed > 0) {
 			if ((step_spec->max_nodes <= nodes_picked_cnt) &&
-			    (mem_blocked_cpus == 0)) {
+			    (mem_blocked_cpus == 0) &&
+			    (job_blocked_cpus == 0)) {
 				*return_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
 			} else if ((mem_blocked_cpus > 0) ||
 				   (step_spec->min_nodes <=
