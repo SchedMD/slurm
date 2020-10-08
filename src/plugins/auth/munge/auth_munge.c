@@ -295,10 +295,8 @@ gid_t slurm_auth_get_gid(slurm_auth_credential_t *cred)
  */
 char *slurm_auth_get_host(slurm_auth_credential_t *cred)
 {
+	slurm_addr_t addr;
 	char *hostname = NULL;
-	struct hostent *he;
-	char h_buf[4096];
-	int h_err  = 0;
 
 	if (!cred || !cred->verified) {
 		/*
@@ -312,22 +310,19 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred)
 
 	xassert(cred->magic == MUNGE_MAGIC);
 
-	he = get_host_by_addr((char *)&cred->addr.s_addr,
-			      sizeof(cred->addr.s_addr),
-			      AF_INET, (void *)&h_buf, sizeof(h_buf), &h_err);
-	if (he && he->h_name) {
-		/* Truncate the hostname to a short name */
-		char *sep = strchr(he->h_name, '.');
-		if (sep)
-			*sep = '\0';
-		hostname = xstrdup(he->h_name);
-	} else {
-		slurm_addr_t addr = { .sin_addr.s_addr = cred->addr.s_addr };
+	/* FIXME: this will need updates when MUNGE supports IPv6 addresses. */
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = cred->addr.s_addr;
+
+	hostname = get_name_info((struct sockaddr *) &addr, sizeof(addr),
+				 NI_NOFQDN);
+
+	if (!hostname) {
+		/* at this point, the name lookup failed */
 		uint16_t port;
-		hostname = xmalloc(16);
-		slurm_get_ip_str(&addr, &port, hostname, 16);
-		error("%s: Lookup failed for %s: %s",
-		      __func__, hostname, host_strerror(h_err));
+		hostname = xmalloc(INET_ADDRSTRLEN);
+		slurm_get_ip_str(&addr, &port, hostname, INET_ADDRSTRLEN);
+		error("%s: Lookup failed for %s", __func__, hostname);
 	}
 
 	return hostname;
