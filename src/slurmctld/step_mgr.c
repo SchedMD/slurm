@@ -1104,24 +1104,37 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 
 			total_cpus = job_resrcs_ptr->cpus[node_inx];
 
+			log_flag(STEPS, "%s: %pJ Currently running steps use %d of allocated %d CPUs on node %s",
+				 __func__, job_ptr,
+				 job_resrcs_ptr->cpus_used[node_inx],
+				 total_cpus, node_record_table_ptr[i].name);
+
 			if (step_spec->flags & SSF_EXCLUSIVE) {
-				total_cpus -= job_resrcs_ptr->
-					cpus_used[node_inx];
 				/*
 				 * If whole is given and
 				 * job_resrcs_ptr->cpus_used[node_inx]
 				 * we can't use this node.
 				 */
 				if ((step_spec->flags & SSF_WHOLE) &&
-				    job_resrcs_ptr->cpus_used[node_inx])
+				    job_resrcs_ptr->cpus_used[node_inx]) {
+					log_flag(STEPS, "%s: %pJ Node requested --whole node while other step running here.",
+						 __func__, job_ptr);
+					job_blocked_cpus += total_cpus;
+					job_blocked_nodes++;
 					total_cpus = 0;
-				else
+				} else {
 					total_cpus -= job_resrcs_ptr->
 						cpus_used[node_inx];
+					job_blocked_cpus += job_resrcs_ptr->
+						cpus_used[node_inx];
+				}
 			}
 
-			if (!total_cpus)
+			if (!total_cpus) {
+				log_flag(STEPS, "%s: %pJ Skipping node. Not enough CPUs to run step here.",
+					 __func__, job_ptr);
 				continue;
+			}
 
 			usable_cpu_cnt[i] = avail_cpus = total_cpus;
 			if (_is_mem_resv() &&
@@ -1131,9 +1144,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				/* ignore current step allocations */
 				tmp_mem    = job_resrcs_ptr->
 					     memory_allocated[node_inx];
-				if (step_spec->flags & SSF_EXCLUSIVE)
-					tmp_mem -= job_resrcs_ptr->
-						memory_used[node_inx];
 				tmp_cpus   = tmp_mem / mem_use;
 				total_cpus = MIN(total_cpus, tmp_cpus);
 				/* consider current step allocations */
@@ -1145,20 +1155,23 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 					usable_cpu_cnt[i] = avail_cpus;
 					fail_mode = ESLURM_INVALID_TASK_MEMORY;
 				}
+				log_flag(STEPS, "%s: %pJ Based on --mem-per-cpu=%"PRIu64" we have %d usable cpus on node, usable memory was: %"PRIu64,
+					 __func__, job_ptr, mem_use, tmp_cpus,
+					 tmp_mem);
 			} else if (_is_mem_resv() && step_spec->pn_min_memory) {
 				uint64_t mem_use = step_spec->pn_min_memory;
 				/* ignore current step allocations */
 				tmp_mem    = job_resrcs_ptr->
 					     memory_allocated[node_inx];
-				if (step_spec->flags & SSF_EXCLUSIVE)
-					tmp_mem -= job_resrcs_ptr->
-						memory_used[node_inx];
 				if (tmp_mem < mem_use)
 					total_cpus = 0;
 				/* consider current step allocations */
 				tmp_mem   -= job_resrcs_ptr->
 					     memory_used[node_inx];
 				if ((tmp_mem < mem_use) && (avail_cpus > 0)) {
+					log_flag(STEPS, "%s: %pJ Usable memory on node: %"PRIu64" is less than requested %"PRIu64" skipping the node",
+						 __func__, job_ptr, tmp_mem,
+						 mem_use);
 					avail_cpus = 0;
 					usable_cpu_cnt[i] = avail_cpus;
 					fail_mode = ESLURM_INVALID_TASK_MEMORY;
@@ -1191,6 +1204,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				total_tasks /= cpus_per_task;
 			}
 			if (avail_tasks == 0) {
+				log_flag(STEPS, "%s: %pJ No task can start on node",
+					 __func__, job_ptr);
 				if ((step_spec->min_nodes == INFINITE) ||
 				    (step_spec->min_nodes ==
 				     job_ptr->node_cnt)) {
@@ -1495,7 +1510,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				int pick_node_cnt = bit_set_count(nodes_avail);
 				pick_node_cnt += nodes_picked_cnt;
 				if ((step_spec->max_nodes <= pick_node_cnt) &&
-				    (mem_blocked_cpus == 0)) {
+				    (mem_blocked_cpus == 0) &&
+				    (job_blocked_cpus == 0)) {
 					*return_code =
 						ESLURM_TOO_MANY_REQUESTED_CPUS;
 				} else if ((mem_blocked_cpus > 0) ||
@@ -1515,7 +1531,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			nodes_picked_cnt = step_spec->min_nodes;
 		} else if (nodes_needed > 0) {
 			if ((step_spec->max_nodes <= nodes_picked_cnt) &&
-			    (mem_blocked_cpus == 0)) {
+			    (mem_blocked_cpus == 0) &&
+			    (job_blocked_cpus == 0)) {
 				*return_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
 			} else if ((mem_blocked_cpus > 0) ||
 				   (step_spec->min_nodes <=
