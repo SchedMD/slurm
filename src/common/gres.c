@@ -1986,8 +1986,14 @@ unpack_error:
  * IN cpu_cnt - Number of CPUs configured on this node
  * IN node_name - Name of this node
  * IN gres_list - Node's GRES information as loaded from slurm.conf by slurmd
- * IN xcpuinfo_abs_to_mac - Pointer to xcpuinfo_abs_to_mac() funct, if available
- * IN xcpuinfo_mac_to_abs - Pointer to xcpuinfo_mac_to_abs() funct, if available
+ * IN xcpuinfo_abs_to_mac - Pointer to xcpuinfo_abs_to_mac() funct. If
+ * 	specified, Slurm will convert gres_slurmd_conf->cpus_bitmap (a bitmap
+ * 	derived from gres.conf's "Cores" range string) into machine format
+ * 	(normal slrumd/stepd operation). If not, it will remain unconverted (for
+ * 	testing purposes or when unused).
+ * IN xcpuinfo_mac_to_abs - Pointer to xcpuinfo_mac_to_abs() funct. Used to
+ * 	convert CPU affinities from machine format (as collected from NVML and
+ * 	others) into abstract format, for sanity checking purposes.
  * NOTE: Called from slurmd and slurmstepd
  */
 extern int gres_plugin_node_config_load(uint32_t cpu_cnt, char *node_name,
