@@ -811,7 +811,7 @@ int unpackbool(bool * valp, Buf buffer)
  * size_val to network byte order and store at buffer followed by
  * the data at valp. Adjust buffer counters.
  */
-void packmem(char *valp, uint32_t size_val, Buf buffer)
+extern void packmem(void *valp, uint32_t size_val, buf_t *buffer)
 {
 	uint32_t ns = htonl(size_val);
 
