@@ -129,7 +129,11 @@ static int _node_weight_sort(void *x, void *y)
 {
 	node_weight_type *nwt1 = *(node_weight_type **) x;
 	node_weight_type *nwt2 = *(node_weight_type **) y;
-	return (int) (nwt1->weight - nwt2->weight);
+	if (nwt1->weight < nwt2->weight)
+		return -1;
+	if (nwt1->weight > nwt2->weight)
+		return 1;
+	return 0;
 }
 
 /*
@@ -1424,7 +1428,11 @@ static int _topo_weight_sort(void *x, void *y)
 {
 	topo_weight_info_t *nwt1 = *(topo_weight_info_t **) x;
 	topo_weight_info_t *nwt2 = *(topo_weight_info_t **) y;
-	return (int) (nwt1->weight - nwt2->weight);
+	if (nwt1->weight < nwt2->weight)
+		return -1;
+	if (nwt1->weight > nwt2->weight)
+		return 1;
+	return 0;
 }
 
 /*

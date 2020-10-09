@@ -134,6 +134,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix loading cpus_per_task on a job from state file.
  -- When a partition has no nodes fix estimate of max cpus possible on a job
     trying to run there.
+ -- In cons_tres fix sorting functions to handle node/topo weight
+    correctly.
 
 * Changes in Slurm 20.02.5
 ==========================
