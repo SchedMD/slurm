@@ -270,7 +270,7 @@ cset testsuite_color_failure   $COLOR_RED
 cset testsuite_color_skipped   $COLOR_ORANGE
 
 # To automatically call cleanup or not when ending the test
-cset testsuite_cleanup_on_failure false
+cset testsuite_cleanup_on_failure true
 if {[info exists env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)]} {
 	set testsuite_cleanup_on_failure $env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)
 }
