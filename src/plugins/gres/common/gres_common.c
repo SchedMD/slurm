@@ -196,7 +196,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				char **local_list, char **global_list,
 				bool reset, bool is_job, int *global_id)
 {
-	int i, len, first_inx = -1;
+	int len, first_inx = -1;
 	bitstr_t *bit_alloc = NULL;
 	bool use_local_dev_index = common_use_local_device_index();
 	bool alloc_cnt = false, set_global_id = false;
@@ -256,21 +256,10 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 
 	if (bit_alloc) {
 		len = bit_size(bit_alloc);
-		i = -1;
 		itr = list_iterator_create(gres_devices);
 		while ((gres_device = list_next(itr))) {
 			int index;
-			i++;
-			if (i >= len) {
-				/*
-				 * This can happen if GRES count in slurm.conf
-				 * and gres.conf differ
-				 */
-				error("%s: gres_list size different from count of gres_devices",
-				      __func__);
-				break;
-			}
-			if (!bit_test(bit_alloc, i))
+			if (!bit_test(bit_alloc, gres_device->index))
 				continue;
 
 			index = use_local_dev_index ?
@@ -283,7 +272,8 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				}
 
 				if (!bit_test(usable_gres,
-					      use_local_dev_index ? index : i))
+					      use_local_dev_index ?
+					      index : gres_device->index))
 					continue;
 			}
 
@@ -295,7 +285,8 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 			xstrfmtcat(new_local_list, "%s%s%d", local_prefix,
 				   prefix, index);
 			local_prefix = ",";
-			//info("looking at %d and %d", i, gres_device->dev_num);
+			//info("looking at %d and %d",
+			//     gres_device->index, gres_device->dev_num);
 			xstrfmtcat(new_global_list, "%s%s%d", global_prefix,
 				   prefix, gres_device->dev_num);
 			global_prefix = ",";
