@@ -32,7 +32,7 @@ configure several testsuite variables, for example:
 
 slurm_dir:                    slurm installation directory (prefix) [/usr]
 build_dir:                    slurm build directory [../..]
-testsuite_cleanup_on_failure: run cleanup and remove test_dir on failure [false]
+testsuite_cleanup_on_failure: run cleanup and remove test_dir on failure [true]
 testsuite_shared_dir:         cluster-wide shared directory [.]
 testsuite_log_level:          logging threshold [$LOG_LEVEL_DEBUG]
 testsuite_log_format:         specifies the tracing fields used in logging
