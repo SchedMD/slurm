@@ -78,6 +78,11 @@
 #define MAX_SERVER_THREADS 256
 #endif
 
+/* Maximum number of threads to service emails (see MailProg) */
+#ifndef MAX_MAIL_THREADS
+#define MAX_MAIL_THREADS 64
+#endif
+
 /* Perform full slurmctld's state every PERIODIC_CHECKPOINT seconds */
 #ifndef PERIODIC_CHECKPOINT
 #define	PERIODIC_CHECKPOINT	300
