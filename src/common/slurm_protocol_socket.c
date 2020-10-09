@@ -537,7 +537,7 @@ error:
 /* Put the local address of FD into *ADDR and its length in *LEN.  */
 extern int slurm_get_stream_addr(int fd, slurm_addr_t *addr )
 {
-	socklen_t size = sizeof(addr);
+	socklen_t size = sizeof(*addr);
 	return getsockname(fd, (struct sockaddr *)addr, &size);
 }
 
