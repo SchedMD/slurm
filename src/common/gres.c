@@ -11705,7 +11705,7 @@ static int _find_device(void *x, void *key)
 
 extern List gres_plugin_get_allocated_devices(List gres_list, bool is_job)
 {
-	int i, j;
+	int j;
 	ListIterator gres_itr, dev_itr;
 	gres_state_t *gres_ptr;
 	bitstr_t **local_bit_alloc = NULL;
@@ -11793,9 +11793,8 @@ extern List gres_plugin_get_allocated_devices(List gres_list, bool is_job)
 		}
 
 		dev_itr = list_iterator_create(gres_devices);
-		i = 0;
 		while ((gres_device = list_next(dev_itr))) {
-			if (bit_test(local_bit_alloc[0], i)) {
+			if (bit_test(local_bit_alloc[0], gres_device->index)) {
 				gres_device_t *gres_device2;
 				/*
 				 * search for the device among the unique
@@ -11814,8 +11813,6 @@ extern List gres_plugin_get_allocated_devices(List gres_list, bool is_job)
 				if (gres_device2)
 					gres_device2->alloc = 1;
 			}
-			//info("%d is %d", i, gres_device->alloc);
-			i++;
 		}
 		list_iterator_destroy(dev_itr);
 	}

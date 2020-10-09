@@ -57,6 +57,7 @@ enum {
 };
 
 typedef struct {
+	int index;
 	int alloc;
 	int dev_num;
 	char *major;

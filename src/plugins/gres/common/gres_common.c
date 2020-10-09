@@ -70,6 +70,7 @@ extern int common_node_config_load(List gres_conf_list,
 	gres_device_t *gres_device;
 	List names_list;
 	int max_dev_num = -1;
+	int index = 0;
 
 	xassert(gres_conf_list);
 	xassert(gres_devices);
@@ -97,6 +98,7 @@ extern int common_node_config_load(List gres_conf_list,
 			gres_device = xmalloc(sizeof(gres_device_t));
 			list_append(*gres_devices, gres_device);
 
+			gres_device->index = index;
 			gres_device->path = xstrdup(one_name);
 
 			gres_device->major = gres_device_major(
@@ -126,8 +128,19 @@ extern int common_node_config_load(List gres_conf_list,
 			}
 
 			(void) list_append(names_list, one_name);
+
+			/*
+			 * If count == 1, but there are multiple files then
+			 * this is a MultipleFile device. Don't touch the
+			 * index then, as the index keys into the allocation
+			 * bitmap.
+			 */
+			if (gres_slurmd_conf->count != 1)
+				index++;
 		}
 		hostlist_destroy(hl);
+		if (gres_slurmd_conf->count == 1)
+			index++;
 	}
 	list_iterator_destroy(itr);
 	list_destroy(names_list);
@@ -345,6 +358,7 @@ extern void common_send_stepd(Buf buffer, List gres_devices)
 	itr = list_iterator_create(gres_devices);
 	while ((gres_device = list_next(itr))) {
 		/* DON'T PACK gres_device->alloc */
+		pack32(gres_device->index, buffer);
 		pack32(gres_device->dev_num, buffer);
 		packstr(gres_device->major, buffer);
 		packstr(gres_device->path, buffer);
@@ -375,6 +389,8 @@ extern void common_recv_stepd(Buf buffer, List *gres_devices)
 		 * Since we are pulling from a list we need to append here
 		 * instead of push.
 		 */
+		safe_unpack32(&uint32_tmp, buffer);
+		gres_device->index = uint32_tmp;
 		safe_unpack32(&uint32_tmp, buffer);
 		gres_device->dev_num = uint32_tmp;
 		safe_unpackstr_xmalloc(&gres_device->major,
