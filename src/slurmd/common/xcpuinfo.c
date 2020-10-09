@@ -1060,7 +1060,7 @@ end_it:
 	FREE_NULL_BITMAP(macmap);
 
 	if (rc != SLURM_SUCCESS)
-		info("_abs_to_mac failed");
+		error("%s: failed", __func__);
 
 	return rc;
 }
