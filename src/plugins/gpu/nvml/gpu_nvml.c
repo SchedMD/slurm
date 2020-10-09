@@ -1313,8 +1313,10 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		if (minor_number != i)
 			debug("Note: GPU index %u is different from minor "
 			      "number %u", i, minor_number);
-		debug2("    CPU Affinity Range: %s", cpu_aff_mac_range);
-		debug2("    CPU Affinity Range Abstract: %s",cpu_aff_abs_range);
+		debug2("    CPU Affinity Range - Machine: %s",
+		       cpu_aff_mac_range);
+		debug2("    Core Affinity Range - Abstract: %s",
+		       cpu_aff_abs_range);
 		// Print out possible memory frequencies for this device
 		_nvml_print_freqs(device, LOG_LEVEL_DEBUG2);
 

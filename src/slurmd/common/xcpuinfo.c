@@ -75,7 +75,6 @@ static int _chk_cpuinfo_str(char *buffer, char *keyword, char **valptr);
 static int _chk_cpuinfo_uint32(char *buffer, char *keyword, uint32_t *val);
 #endif
 
-static int _ranges_conv(char* lrange, char** prange, int mode);
 static int _range_to_map(char* range, uint16_t *map, uint16_t map_size,
 			 int add_threads);
 static int _map_to_range(uint16_t *map, uint16_t map_size, char** prange);
@@ -941,16 +940,6 @@ static int _compute_block_map(uint16_t numproc,
 }
 #endif
 
-int _ranges_conv(char* lrange,char** prange,int mode);
-
-/* for testing purpose */
-/* uint16_t procs=8, sockets=2, cores=2, threads=2; */
-/* uint16_t block_map_size=8; */
-/* uint16_t block_map[] = { 0, 4, 2, 6, 1, 5, 3, 7 }; */
-/* uint16_t block_map_inv[] = { 0, 4, 2, 6, 1, 5, 3, 7 }; */
-/* xcpuinfo_abs_to_mac("0,2,4,6",&mach); */
-/* xcpuinfo_mac_to_abs(mach,&abs); */
-
 int
 xcpuinfo_init(void)
 {
@@ -1065,10 +1054,90 @@ end_it:
 	return rc;
 }
 
-int
-xcpuinfo_mac_to_abs(char* lrange,char** prange)
+/*
+ * Convert a machine-specific CPU range string into an abstract core range
+ * string. Machine id to abstract id conversion is done using block_map_inv.
+ * When a single thread in a core is set in the input, the corresponding core
+ * will be set in its output.
+ *
+ * Inverse of xcpuinfo_abs_to_mac.
+ *
+ * Input:  in_range - machine/local/physical CPU range string.
+ * Output: out_range - abstract/logical core range string. Caller should xfree()
+ *         return code - SLURM_SUCCESS if no error, otherwise SLURM_ERROR.
+ */
+int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 {
-	return _ranges_conv(lrange,prange,1);
+	uint16_t total_cores, total_cpus;
+	bitstr_t *macmap = NULL;
+	bitstr_t *absmap = NULL;
+	bitstr_t *absmap_core = NULL;
+	int rc = SLURM_SUCCESS;
+
+	/* init internal data if not already done */
+	if (xcpuinfo_init() != XCPUINFO_SUCCESS)
+		return SLURM_ERROR;
+
+	total_cores = sockets * cores;
+	total_cpus = block_map_size;
+
+	/* allocate bitmaps */
+	macmap = bit_alloc(total_cpus);
+	absmap = bit_alloc(total_cpus);
+	absmap_core = bit_alloc(total_cores);
+
+	if (!macmap || !absmap) {
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	/* string to bitmap conversion */
+	if (bit_unfmt(macmap, in_range)) {
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	/* mapping machine id to abstract id using block_map_inv */
+	for (int icore = 0; icore < total_cores; icore++) {
+		for (int ithread = 0; ithread < threads; ithread++) {
+			int absid, macid;
+			macid = (icore * threads) + ithread;
+			macid %= total_cpus;
+
+			absid = block_map_inv[macid];
+			absid %= total_cpus;
+
+			bit_set(absmap, absid);
+		}
+	}
+
+	/* condense abstract CPU bitmap into an abstract core bitmap */
+	for (int icore = 0; icore < total_cores; icore++) {
+		for (int ithread = 0; ithread < threads; ithread++) {
+			int icpu = (icore * threads) + ithread;
+			icpu %= total_cpus;
+
+			if (bit_test(absmap, icpu)) {
+				bit_set(absmap_core, icore);
+				break;
+			}
+		}
+	}
+
+	/* convert abstract core bitmap to range string */
+	*out_range = (char*)xmalloc(total_cores * 6);
+	bit_fmt(*out_range, total_cores * 6, absmap_core);
+
+	/* free unused bitmaps */
+end_it:
+	FREE_NULL_BITMAP(macmap);
+	FREE_NULL_BITMAP(absmap);
+	FREE_NULL_BITMAP(absmap_core);
+
+	if (rc != SLURM_SUCCESS)
+		error("%s failed", __func__);
+
+	return rc;
 }
 
 int
@@ -1272,56 +1341,4 @@ _map_to_range(uint16_t *map,uint16_t map_size,char** prange)
 		xfree(str);
 
 	return XCPUINFO_SUCCESS;
-}
-
-/*
- * convert a range into an other one according to
- * a modus operandi being 0 or 1 for abstract to machine
- * or machine to abstract representation of cores
- */
-static int
-_ranges_conv(char* lrange,char** prange,int mode)
-{
-	int fstatus;
-	int i;
-	uint16_t *amap;
-	uint16_t *map;
-	uint16_t *map_out;
-
-	/* init internal data if not already done */
-	if ( xcpuinfo_init() != XCPUINFO_SUCCESS )
-		return XCPUINFO_ERROR;
-
-	if ( mode ) {
-		/* machine to abstract conversion */
-		amap = block_map_inv;
-	}
-	else {
-		/* abstract to machine conversion */
-		amap = block_map;
-	}
-
-	/* allocate map for local work */
-	map = (uint16_t*) xmalloc(block_map_size*sizeof(uint16_t));
-	map_out = (uint16_t*) xmalloc(block_map_size*sizeof(uint16_t));
-
-	/* extract the input map */
-	fstatus = _range_to_map(lrange,map,block_map_size,!mode);
-	if ( fstatus ) {
-		goto exit;
-	}
-
-	/* do the conversion (see src/slurmd/slurmd/get_mach_stat.c) */
-	for( i = 0 ; i < block_map_size ; i++) {
-		if ( map[i] )
-			map_out[amap[i]]=1;
-	}
-
-	/* build the ouput range */
-	fstatus = _map_to_range(map_out,block_map_size,prange);
-
-exit:
-	xfree(map);
-	xfree(map_out);
-	return fstatus;
 }
