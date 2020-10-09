@@ -114,24 +114,21 @@ extern int init (void)
 		if (task_cgroup_cpuset_init() != SLURM_SUCCESS) {
 			return SLURM_ERROR;
 		}
-		debug("%s: now constraining jobs allocated cores",
-		      plugin_type);
+		debug("core enforcement enabled");
 	}
 
 	if (use_memory) {
 		if (task_cgroup_memory_init() != SLURM_SUCCESS) {
 			return SLURM_ERROR;
 		}
-		debug("%s: now constraining jobs allocated memory",
-		      plugin_type);
+		debug("memory enforcement enabled");
 	}
 
 	if (use_devices) {
 		if (task_cgroup_devices_init() != SLURM_SUCCESS) {
 			return SLURM_ERROR;
 		}
-		debug("%s: now constraining jobs allocated devices",
-		      plugin_type);
+		debug("device enforcement enabled");
 	}
 
 	debug("%s: loaded", plugin_type);
