@@ -844,6 +844,11 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("InteractiveStepOptions");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->interactive_step_opts);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("JobAcctGatherFrequency");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->job_acct_gather_freq);
 	list_append(ret_list, key_pair);

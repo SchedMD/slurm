@@ -267,6 +267,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"HealthCheckInterval", S_P_UINT16},
 	{"HealthCheckNodeState", S_P_STRING},
 	{"HealthCheckProgram", S_P_STRING},
+	{"InteractiveStepOptions", S_P_STRING},
 	{"InactiveLimit", S_P_UINT16},
 	{"JobAcctGatherType", S_P_STRING},
 	{"JobAcctGatherFrequency", S_P_STRING},
@@ -2782,6 +2783,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->gres_plugins);
 	xfree (ctl_conf_ptr->gpu_freq_def);
 	xfree (ctl_conf_ptr->health_check_program);
+	xfree (ctl_conf_ptr->interactive_step_opts);
 	xfree (ctl_conf_ptr->job_acct_gather_freq);
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_acct_gather_params);
@@ -2940,6 +2942,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->health_check_interval	= 0;
 	xfree(ctl_conf_ptr->health_check_program);
 	ctl_conf_ptr->inactive_limit		= NO_VAL16;
+	xfree(ctl_conf_ptr->interactive_step_opts);
 	xfree (ctl_conf_ptr->job_acct_gather_freq);
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_acct_gather_params);
@@ -3740,6 +3743,11 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (!s_p_get_uint16(&conf->inactive_limit, "InactiveLimit", hashtbl))
 		conf->inactive_limit = DEFAULT_INACTIVE_LIMIT;
+
+	if (!s_p_get_string(&conf->interactive_step_opts,
+			   "InteractiveStepOptions", hashtbl))
+		conf->interactive_step_opts =
+			xstrdup(DEFAULT_INTERACTIVE_STEP_OPTS);
 
 	if (!s_p_get_string(&conf->job_acct_gather_freq,
 			    "JobAcctGatherFrequency", hashtbl))

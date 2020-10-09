@@ -4169,6 +4169,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->health_check_program, buffer);
 
 		pack16(build_ptr->inactive_limit, buffer);
+		packstr(build_ptr->interactive_step_opts, buffer);
 
 		packstr(build_ptr->job_acct_gather_freq, buffer);
 		packstr(build_ptr->job_acct_gather_type, buffer);
@@ -5072,6 +5073,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		                       &uint32_tmp, buffer);
 
 		safe_unpack16(&build_ptr->inactive_limit, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->interactive_step_opts,
+		                       &uint32_tmp, buffer);
 
 		safe_unpackstr_xmalloc(&build_ptr->job_acct_gather_freq,
 		                       &uint32_tmp, buffer);

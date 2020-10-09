@@ -2722,6 +2722,7 @@ typedef struct {
 	char * health_check_program;	/* pathname of health check program */
 	uint16_t inactive_limit;/* seconds of inactivity before a
 				 * inactive resource allocation is released */
+	char *interactive_step_opts; /* InteractiveStepOptions */
 	char *job_acct_gather_freq; /* poll frequency for job accounting
 					* gather plugins */
 	char *job_acct_gather_type; /* job accounting gather type */
