@@ -66,7 +66,7 @@ extern int common_node_config_load(List gres_conf_list,
 	ListIterator itr;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	hostlist_t hl;
-	char *root_path, *one_name;
+	char *one_name;
 	gres_device_t *gres_device;
 	List names_list;
 	int max_dev_num = -1;
@@ -81,15 +81,13 @@ extern int common_node_config_load(List gres_conf_list,
 		    !gres_slurmd_conf->file ||
 		    xstrcmp(gres_slurmd_conf->name, gres_name))
 			continue;
-		root_path = xstrdup(gres_slurmd_conf->file);
 
-		hl = hostlist_create(root_path);
-		if (!hl) {
+		if (!(hl = hostlist_create(gres_slurmd_conf->file))) {
 			error("can't parse gres.conf file record (%s)",
 			      gres_slurmd_conf->file);
-			xfree(root_path);
 			continue;
 		}
+
 		while ((one_name = hostlist_shift(hl))) {
 			int digit = -1;
 			if (!*gres_devices) {
@@ -130,7 +128,6 @@ extern int common_node_config_load(List gres_conf_list,
 			(void) list_append(names_list, one_name);
 		}
 		hostlist_destroy(hl);
-		xfree(root_path);
 	}
 	list_iterator_destroy(itr);
 	list_destroy(names_list);
