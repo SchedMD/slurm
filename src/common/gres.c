@@ -1152,6 +1152,13 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 				      p->name, type_str, p->cpus);
 			}
 		} else {
+			/*
+			 * Not converting Cores into machine format is only for
+			 * testing or if we don't care about cpus_bitmap. The
+			 * slurmd should always convert to machine format.
+			 */
+			debug("%s: %s=%s is not being converted to machine-local format",
+			      __func__, type_str, p->cpus);
 			local_cpus = xstrdup(p->cpus);
 			i = SLURM_SUCCESS;
 		}
