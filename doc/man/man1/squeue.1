@@ -139,7 +139,7 @@ The default formats with various options are
 .RE
 
 .IP
-The format of each field is "%[[.]size]type".
+The format of each field is "%[[.]size]type[suffix]"
 .RS
 .TP 8
 \fIsize\fR
@@ -149,6 +149,9 @@ If no size is specified, whatever is needed to print the information will be use
 \fI .\fR
 indicates the output should be right justified and size must be specified.
 By default, output is left justified.
+.TP
+\fIsuffix\fR
+Arbitrary string to append to the end of the field.
 .RE
 
 .IP
@@ -449,7 +452,7 @@ does not support access to all fields because we ran out of letters).
 Requests a comma separated list of job information to be displayed.
 
 .IP
-The format of each field is "type[:[.]size]"
+The format of each field is "type[:[.][size][sufix]]"
 .RS
 .TP 8
 \fIsize\fR
@@ -459,6 +462,9 @@ If no size is specified, 20 characters will be allocated to print the informatio
 \fI .\fR
 indicates the output should be right justified and size must be specified.
 By default, output is left justified.
+.TP
+\fIsufix\fR
+Arbitrary string to append to the end of the field.
 .RE
 
 .IP

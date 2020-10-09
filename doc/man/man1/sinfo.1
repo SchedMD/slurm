@@ -135,6 +135,23 @@ to align the sinfo output, then a second pass is made over the records to
 print them.
 Note that the literal character "#" itself is not a valid field length
 specification, but is only used to document this behaviour.
+
+.IP
+The format of each field is "%[[.]size]type[suffix]"
+.RS 10
+.TP
+\fIsize\fR
+Minimum field size. If no size is specified, whatever is needed to print the
+information will be used.
+.TP
+\fI.\fR
+Indicates the output should be right justified and size must be specified.
+By default output is left justified.
+.TP
+\fIsuffix\fR
+Arbitrary string to append to the end of the field.
+.RE
+
 .IP
 The field specifications available include:
 .RS
@@ -293,7 +310,7 @@ does not support access to all fields because we ran out of letters).
 Requests a comma separated list of job information to be displayed.
 
 .IP
-The format of each field is "type[:[.]size]"
+The format of each field is "type[:[.][size][suffix]]"
 .RS
 .TP 8
 \fIsize\fR
@@ -303,6 +320,9 @@ If no size is specified, 20 characters will be allocated to print the informatio
 \fI .\fR
 Indicates the output should be right justified and size must be specified.
 By default, output is left justified.
+.TP
+\fIsuffix\fR
+Arbitrary string to append to the end of the field.
 .RE
 
 .IP
