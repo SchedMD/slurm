@@ -11783,13 +11783,6 @@ extern List gres_plugin_get_allocated_devices(List gres_list, bool is_job)
 		if (!gres_devices) {
 			error("We should had got gres_devices, but for some reason none were set in the plugin.");
 			continue;
-		} else if ((int)bit_size(local_bit_alloc[0]) !=
-			   list_count(gres_devices)) {
-			error("We got %d gres devices when we were only told about %d.  This should never happen.",
-			      list_count(gres_devices),
-			      (int)bit_size(local_bit_alloc[0]));
-			continue;
-
 		}
 
 		dev_itr = list_iterator_create(gres_devices);
