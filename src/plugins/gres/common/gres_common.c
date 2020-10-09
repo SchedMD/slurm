@@ -196,7 +196,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				char **local_list, char **global_list,
 				bool reset, bool is_job, int *global_id)
 {
-	int len, first_inx = -1;
+	int first_inx = -1;
 	bitstr_t *bit_alloc = NULL;
 	bool use_local_dev_index = common_use_local_device_index();
 	bool alloc_cnt = false, set_global_id = false;
@@ -255,7 +255,6 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		return;
 
 	if (bit_alloc) {
-		len = bit_size(bit_alloc);
 		itr = list_iterator_create(gres_devices);
 		while ((gres_device = list_next(itr))) {
 			int index;
