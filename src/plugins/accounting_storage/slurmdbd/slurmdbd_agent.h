@@ -40,6 +40,8 @@
 #ifndef _SLURMDBD_AGENT_H
 #define _SLURMDBD_AGENT_H
 
+#include "src/common/assoc_mgr.h"
+
 /* Open a socket connection to SlurmDbd
  * persist_conn_flags OUT - fill in from response of slurmdbd
  * Returns SLURM_SUCCESS or an error code */

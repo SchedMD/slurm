@@ -53,7 +53,7 @@ int exit_code = 0;
 sshare_time_format_t time_format = SSHARE_TIME_MINS;
 char *time_format_string = "Minutes";
 time_t last_job_update = (time_t) 0;
-uint16_t running_cache = 0;
+uint16_t running_cache = RUNNING_CACHE_STATE_NOTRUNNING;
 
 List   job_list = NULL;		/* job_record list */
 static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -85,7 +85,7 @@ int _setup_assoc_list(void)
 	 * we are running off cache */
 	memset(&assoc_init_arg, 0, sizeof(assoc_init_args_t));
 	assoc_init_arg.running_cache = &running_cache;
-	running_cache = 1;
+	running_cache = RUNNING_CACHE_STATE_RUNNING;
 	assoc_mgr_init(NULL, &assoc_init_arg, SLURM_SUCCESS);
 
 	/* Here we make the tres we want to add to the system.

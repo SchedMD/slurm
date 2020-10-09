@@ -187,7 +187,7 @@ int   slurmctld_tres_cnt = 0;
 slurmdb_cluster_rec_t *response_cluster_rec = NULL;
 bool    test_config = false;
 int     test_config_rc = 0;
-uint16_t running_cache = 0;
+uint16_t running_cache = RUNNING_CACHE_STATE_NOTRUNNING;
 pthread_mutex_t assoc_cache_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t assoc_cache_cond = PTHREAD_COND_INITIALIZER;
 
@@ -691,7 +691,7 @@ int main(int argc, char **argv)
 			 */
 			if (assoc_mgr_init(acct_db_conn, NULL, errno) &&
 			    (accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
-			    !running_cache) {
+			    (running_cache == RUNNING_CACHE_STATE_NOTRUNNING)) {
 				trigger_primary_dbd_fail();
 				error("assoc_mgr_init failure");
 				fatal("slurmdbd and/or database must be up at "
@@ -797,7 +797,7 @@ int main(int argc, char **argv)
 		slurm_mcs_fini();
 		fed_mgr_fini();
 
-		if (running_cache) {
+		if (running_cache != RUNNING_CACHE_STATE_NOTRUNNING) {
 			/* break out and end the association cache
 			 * thread since we are shutting down, no reason
 			 * to wait for current info from the database */
@@ -2348,7 +2348,7 @@ extern void ctld_assoc_mgr_init(void)
 	/* This thread is looking for when we get correct data from
 	   the database so we can update the assoc_ptr's in the jobs
 	*/
-	if (running_cache || num_jobs) {
+	if ((running_cache != RUNNING_CACHE_STATE_NOTRUNNING) || num_jobs) {
 		slurm_thread_create(&assoc_cache_thread,
 				    _assoc_cache_mgr, NULL);
 	}
@@ -3011,11 +3011,11 @@ static void *_assoc_cache_mgr(void *no_data)
 		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = WRITE_LOCK,
 		  .user = READ_LOCK };
 
-	while (running_cache == 1) {
+	while (running_cache == RUNNING_CACHE_STATE_RUNNING) {
 		slurm_mutex_lock(&assoc_cache_mutex);
 		slurm_cond_wait(&assoc_cache_cond, &assoc_cache_mutex);
-		/* This is here to see if we are exiting.  If we get
-		   NO_VAL then just return since we are closing down.
+		/* This is here to see if we are exiting.  If so then
+		   just return since we are closing down.
 		*/
 		if (running_cache == NO_VAL16) {
 			slurm_mutex_unlock(&assoc_cache_mutex);
@@ -3035,7 +3035,7 @@ static void *_assoc_cache_mgr(void *no_data)
 			     g_tres_count, slurmctld_tres_cnt);
 			_init_tres();
 		}
-		if (running_cache == 1)
+		if (running_cache == RUNNING_CACHE_STATE_RUNNING)
 			unlock_slurmctld(job_write_lock);
 
 		slurm_mutex_unlock(&assoc_cache_mutex);

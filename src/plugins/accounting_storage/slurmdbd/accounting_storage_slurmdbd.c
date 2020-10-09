@@ -75,7 +75,7 @@ extern int node_record_count __attribute__((weak_import));
 #else
 slurm_conf_t slurm_conf;
 List job_list = NULL;
-uint16_t running_cache = 0;
+uint16_t running_cache = RUNNING_CACHE_STATE_NOTRUNNING;
 pthread_mutex_t assoc_cache_mutex;
 pthread_cond_t assoc_cache_cond;
 int node_record_count;

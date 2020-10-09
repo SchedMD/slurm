@@ -60,6 +60,11 @@
 #define ASSOC_MGR_CACHE_TRES  0x0020
 #define ASSOC_MGR_CACHE_ALL   0xffff
 
+enum {
+	RUNNING_CACHE_STATE_NOTRUNNING = 0,
+	RUNNING_CACHE_STATE_RUNNING,
+};
+
 /* to lock or not */
 typedef struct {
 	lock_level_t assoc;

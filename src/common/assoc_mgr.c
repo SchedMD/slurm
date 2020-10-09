@@ -79,7 +79,8 @@ static int *assoc_mgr_tres_old_pos = NULL;
 
 static bool _running_cache(void)
 {
-	if (init_setup.running_cache && *init_setup.running_cache)
+	if (init_setup.running_cache &&
+	    (*init_setup.running_cache != RUNNING_CACHE_STATE_NOTRUNNING))
 		return true;
 
 	return false;
@@ -2088,7 +2089,7 @@ extern int assoc_mgr_fini(bool save_state)
 	assoc_mgr_root_assoc = NULL;
 
 	if (_running_cache())
-		*init_setup.running_cache = 0;
+		*init_setup.running_cache = RUNNING_CACHE_STATE_NOTRUNNING;
 
 	xfree(assoc_hash_id);
 	xfree(assoc_hash);
@@ -6009,7 +6010,7 @@ extern int load_assoc_mgr_state(bool only_tres)
 	}
 
 	if (!only_tres && init_setup.running_cache)
-		*init_setup.running_cache = 1;
+		*init_setup.running_cache = RUNNING_CACHE_STATE_RUNNING;
 
 	free_buf(buffer);
 	assoc_mgr_unlock(&locks);
@@ -6069,7 +6070,7 @@ extern int assoc_mgr_refresh_lists(void *db_conn, uint16_t cache_level)
 			return SLURM_ERROR;
 
 	if (!partial_list && _running_cache())
-		*init_setup.running_cache = 0;
+		*init_setup.running_cache = RUNNING_CACHE_STATE_NOTRUNNING;
 
 	return SLURM_SUCCESS;
 }

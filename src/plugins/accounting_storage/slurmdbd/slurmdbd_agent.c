@@ -838,7 +838,8 @@ static void *_agent(void *x)
 			slurm_mutex_unlock(&slurmdbd_lock);
 
 			slurm_mutex_lock(&assoc_cache_mutex);
-			if (slurmdbd_conn->fd >= 0 && running_cache)
+			if (slurmdbd_conn->fd >= 0 &&
+			    (running_cache != RUNNING_CACHE_STATE_NOTRUNNING))
 				slurm_cond_signal(&assoc_cache_cond);
 			slurm_mutex_unlock(&assoc_cache_mutex);
 
@@ -873,7 +874,8 @@ static void *_agent(void *x)
 		}
 		slurm_mutex_unlock(&slurmdbd_lock);
 		slurm_mutex_lock(&assoc_cache_mutex);
-		if (slurmdbd_conn->fd >= 0 && running_cache)
+		if (slurmdbd_conn->fd >= 0 &&
+		    (running_cache != RUNNING_CACHE_STATE_NOTRUNNING))
 			slurm_cond_signal(&assoc_cache_cond);
 		slurm_mutex_unlock(&assoc_cache_mutex);
 
