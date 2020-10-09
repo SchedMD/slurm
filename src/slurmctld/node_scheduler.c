@@ -3073,19 +3073,6 @@ extern int valid_feature_counts(job_record_t *job_ptr, bool use_active,
 		last_op = job_feat_ptr->op_code;
 		last_paren_cnt = job_feat_ptr->paren;
 
-		if (job_feat_ptr->count && !(*has_xor)) {
-			/* simple AND/OR features should never have counts */
-			rc = ESLURM_INVALID_FEATURE;
-			if (job_ptr->job_id) {
-				error("%s: %pJ has feature count requested: %s",
-				      __func__, job_ptr, detail_ptr->features);
-			} else {
-				error("%s: Reservation has feature count requested: %s",
-				      __func__, detail_ptr->features);
-			}
-			break;
-		}
-
 		if (slurm_conf.debug_flags & DEBUG_FLAG_NODE_FEATURES) {
 			char *tmp_f, *tmp_w, *tmp_t;
 			tmp_f = bitmap2node_name(feature_bitmap);

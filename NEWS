@@ -136,6 +136,8 @@ documents those changes that are of interest to users and administrators.
     trying to run there.
  -- In cons_tres fix sorting functions to handle node/topo weight
     correctly.
+ -- Fix regression in 20.02.5 where you couldn't request contraints with a
+    simple & and a count.
 
 * Changes in Slurm 20.02.5
 ==========================
