@@ -6070,7 +6070,7 @@ extern int assoc_mgr_refresh_lists(void *db_conn, uint16_t cache_level)
 			return SLURM_ERROR;
 
 	if (!partial_list && _running_cache())
-		*init_setup.running_cache = RUNNING_CACHE_STATE_NOTRUNNING;
+		*init_setup.running_cache = RUNNING_CACHE_STATE_LISTS_REFRESHED;
 
 	return SLURM_SUCCESS;
 }
