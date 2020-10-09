@@ -993,8 +993,18 @@ xcpuinfo_fini(void)
 	return XCPUINFO_SUCCESS;
 }
 
-int
-xcpuinfo_abs_to_mac(char* lrange,char** prange)
+/*
+ * Convert an abstract core range string into a machine-specific CPU range
+ * string. Abstract id to machine id conversion is done using block_map.
+ * When a core is set in the input, all its threads will be set in the output.
+ *
+ * Inverse of xcpuinfo_mac_to_abs.
+ *
+ * Input:  lrange - abstract/logical core spec string.
+ * Output: prange - machine/local/physical CPU spec string.
+ *         return code - SLURM_SUCCESS if no error, otherwise SLURM_ERROR.
+ */
+int xcpuinfo_abs_to_mac(char *lrange, char **prange)
 {
 	static int total_cores = -1, total_cpus = -1;
 	bitstr_t* absmap = NULL;

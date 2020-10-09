@@ -85,18 +85,17 @@ int xcpuinfo_init(void);
 int xcpuinfo_fini(void);
 
 /*
- * Use xcpuinfo internal data to convert an abstract range
- * of cores (slurm internal format) into the machine one
+ * Convert an abstract core range string into a machine-specific CPU range
+ * string. Abstract id to machine id conversion is done using block_map.
+ * When a core is set in the input, all its threads will be set in the output.
  *
- * range is of the form 0-1,4-5
+ * Inverse of xcpuinfo_mac_to_abs.
  *
- * on success, the output range must be freed using xfree
- *
- * returned values:
- *  - XCPUINFO_ERROR
- *  - XCPUINFO_SUCCESS
+ * Input:  lrange - abstract/logical core spec string.
+ * Output: prange - machine/local/physical CPU spec string.
+ *         return code - SLURM_SUCCESS if no error, otherwise SLURM_ERROR.
  */
-int xcpuinfo_abs_to_mac(char* lrange,char** prange);
+int xcpuinfo_abs_to_mac(char *lrange,char **prange);
 
 /*
  * Use xcpuinfo internal data to convert a machine range
