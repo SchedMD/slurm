@@ -238,10 +238,8 @@ static int _cgroup_create_callback(const char *calling_func,
 	 * to be allowed by* default.
 	 */
 	for (k = 0; k < allow_lines; k++) {
-		/* allowed_devices is no longer needed */
-		xfree(allowed_devices[k]);
-		debug2("Default access allowed to device %s for job",
-		       allowed_dev_major[k]);
+		debug2("Default access allowed to device %s(%s) for job",
+		       allowed_dev_major[k], allowed_devices[k]);
 		xcgroup_set_param(&job_devices_cg, "devices.allow",
 				  allowed_dev_major[k]);
 	}
@@ -265,8 +263,8 @@ static int _cgroup_create_callback(const char *calling_func,
 		 * are supposed to be allowed by default.
 		 */
 		for (k = 0; k < allow_lines; k++) {
-			debug2("Default access allowed to device %s for step",
-			     allowed_dev_major[k]);
+			debug2("Default access allowed to device %s(%s) for step",
+			       allowed_dev_major[k], allowed_devices[k]);
 			xcgroup_set_param(&step_devices_cg, "devices.allow",
 					  allowed_dev_major[k]);
 		}
@@ -285,8 +283,10 @@ static int _cgroup_create_callback(const char *calling_func,
 		}
 	}
 
-	for (k = 0; k < allow_lines; k++)
+	for (k = 0; k < allow_lines; k++) {
 		xfree(allowed_dev_major[k]);
+		xfree(allowed_devices[k]);
+	}
 
 	/* attach the slurmstepd to the step devices cgroup */
 	pid = getpid();
