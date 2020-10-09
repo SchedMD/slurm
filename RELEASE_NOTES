@@ -66,6 +66,8 @@ HIGHLIGHTS
  -- --threads-per-core now influences task layout/binding, not just allocation.
  -- AutoDetect in gres.conf can now be specified for some nodes while not for
     others via the NodeName option.
+ -- gres.conf - Add new MultipleFiles configuration entry to allow a single
+    GRES to manage multiple device files simultaneously.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

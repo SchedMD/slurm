@@ -97,6 +97,8 @@ documents those changes that are of interest to users and administrators.
     in an allocation.
  -- Allow --threads-per-core to influence task layout/binding.
  -- Remove support for "default_gbytes" option from SchedulerParameters.
+ -- gres.conf - Add new MultipleFiles configuration entry to allow a single
+    GRES to manage multiple device files simultaneously.
 
 * Changes in Slurm 20.02.6
 ==========================

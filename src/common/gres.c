@@ -1080,6 +1080,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		{"Flags", S_P_STRING},	/* GRES Flags */
 		{"Link",  S_P_STRING},	/* Communication link IDs */
 		{"Links", S_P_STRING},	/* Communication link IDs */
+		{"MultipleFiles", S_P_STRING}, /* list of GRES device files */
 		{"Name",  S_P_STRING},	/* Gres name */
 		{"Type",  S_P_STRING},	/* Gres type (e.g. model name) */
 		{NULL}
@@ -1147,6 +1148,14 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	if (s_p_get_string(&p->file, "File", tbl) ||
 	    s_p_get_string(&p->file, "Files", tbl)) {
 		p->count = _validate_file(p->file, p->name);
+		p->config_flags |= GRES_CONF_HAS_FILE;
+	}
+
+	if (s_p_get_string(&p->file, "MultipleFiles", tbl)) {
+		if (p->config_flags & GRES_CONF_HAS_FILE)
+			fatal("File and MultipleFiles options are mutually exclusive");
+		p->count = 1;
+		_validate_file(p->file, p->name);
 		p->config_flags |= GRES_CONF_HAS_FILE;
 	}
 
@@ -1224,6 +1233,7 @@ static int _parse_gres_config2(void **dest, slurm_parser_enum_t type,
 		{"Flags", S_P_STRING},	/* GRES Flags */
 		{"Link",  S_P_STRING},	/* Communication link IDs */
 		{"Links", S_P_STRING},	/* Communication link IDs */
+		{"MultipleFiles", S_P_STRING}, /* list of GRES device files */
 		{"Name",  S_P_STRING},	/* Gres name */
 		{"Type",  S_P_STRING},	/* Gres type (e.g. model name) */
 		{NULL}
