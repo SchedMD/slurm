@@ -1744,7 +1744,7 @@ By default, no power plugin is loaded.
 
 .TP
 \fBPreemptMode\fR
-Mechanism used to preempt jobs or enable gang scheudling. When the
+Mechanism used to preempt jobs or enable gang scheduling. When the
 \fBPreemptType\fR parameter is set to enable preemption, the
 \fBPreemptMode\fR selects the default mechanism used to preempt the eligible
 jobs for the cluster.
@@ -1783,7 +1783,9 @@ warning signal for each component of the heterogeneous job remain unique.
 .TP 12
 \fBOFF\fR
 Is the default value and disables job preemption and gang scheduling.
-It is only compatible with \fBPreemptType=preempt/none\fR.
+It is only compatible with \fBPreemptType=preempt/none\fR at a global level.
+A common use case for this parameter is to set it on a partition to disable
+preemption for that partition.
 .TP
 \fBCANCEL\fR
 The preempted job will be cancelled.
@@ -5214,13 +5216,13 @@ The default value is "NO".
 For more information see the following web pages:
 .br
 .na
-\fIhttps://slurm.schedmd.com/cons_res.html\fR,
+\fIhttps://slurm.schedmd.com/cons_res.html\fR
 .br
-\fIhttps://slurm.schedmd.com/cons_res_share.html\fR,
+\fIhttps://slurm.schedmd.com/cons_res_share.html\fR
 .br
-\fIhttps://slurm.schedmd.com/gang_scheduling.html\fR, and
+\fIhttps://slurm.schedmd.com/gang_scheduling.html\fR
 .br
-\fIhttps://slurm.schedmd.com/preempt.html\fR.
+\fIhttps://slurm.schedmd.com/preempt.html\fR
 .ad
 
 .RS
@@ -5228,7 +5230,7 @@ For more information see the following web pages:
 \fBEXCLUSIVE\fR
 Allocates entire nodes to jobs even with \fBSelectType=select/cons_res\fR or
 \fBSelectType=select/cons_tres\fR configured.
-Jobs that run in partitions with "OverSubscribe=EXCLUSIVE" will have
+Jobs that run in partitions with \fBOverSubscribe=EXCLUSIVE\fR will have
 exclusive access to all allocated nodes.
 .TP
 \fBFORCE\fR
@@ -5236,18 +5238,20 @@ Makes all resources in the partition available for oversubscription without
 any means for users to disable it.
 May be followed with a colon and maximum number of jobs in
 running or suspended state.
-For example "OverSubscribe=FORCE:4" enables each node, socket or
+For example \fBOverSubscribe=FORCE:4\fR enables each node, socket or
 core to oversubscribe each resource four ways.
-Recommended only for systems running with gang scheduling
-(\fBPreemptMode=suspend,gang\fR).
+Recommended only for systems using \fBPreemptMode=suspend,gang\fR.
 
-NOTE: \fIPreemptType=preempt/qos\fR will permit one additional job to be run
-on the partition if started due to job preemption. For example, a configuration
-of \fIOverSubscribe=FORCE:1\fR will only permit one job per resources normally,
-but a second job can be started if done so through preemption based upon QOS.
-The use of \fIPreemptType=preempt/qos\fR and \fIPreemptMode=SUSPEND\fR only
-applies with \fBSelectType=select/cons_res\fR or
-\fBSelectType=select/cons_tres\fR.
+\fBNOTE\fR: \fBOverSubscribe=FORCE:1\fR is a special case that is not exactly
+equivalent to \fBOverSubscribe=NO\fR. \fBOverSubscribe=FORCE:1\fR disables
+the regular oversubscription of resources in the same partition but it will
+still allow oversubscription due to preemption. Setting \fBOverSubscribe=NO\fR
+will prevent oversubscription from happening due to preemption as well.
+
+\fBNOTE\fR: If using \fBPreemptType=preempt/qos\fR you can specify a value for
+\fBFORCE\fR that is greater than 1. For example, \fBOverSubscribe=FORCE:2\fR
+will permit two jobs per resource normally, but a third job can be started
+only if done so through preemption based upon QOS.
 .TP
 \fBYES\fR
 Makes all resources in the partition available for sharing upon request by
@@ -5264,6 +5268,11 @@ Recommended only for systems running with gang scheduling
 \fBNO\fR
 Selected resources are allocated to a single job. No resource will be
 allocated to more than one job.
+
+\fBNOTE\fR: Even if you are using \fBPreemptMode=suspend,gang\fR, setting
+\fBOverSubscribe=NO\fR will disable preemption on that partition. Use
+\fBOverSubscribe=FORCE:1\fR if you want to disable normal oversubscription
+but still allow suspension due to preemption.
 .RE
 
 .TP
