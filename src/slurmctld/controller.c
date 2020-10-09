@@ -802,7 +802,7 @@ int main(int argc, char **argv)
 			 * thread since we are shutting down, no reason
 			 * to wait for current info from the database */
 			slurm_mutex_lock(&assoc_cache_mutex);
-			running_cache = NO_VAL16;
+			running_cache = RUNNING_CACHE_STATE_EXITING;
 			slurm_cond_signal(&assoc_cache_cond);
 			slurm_mutex_unlock(&assoc_cache_mutex);
 			pthread_join(assoc_cache_thread, NULL);
@@ -3017,7 +3017,7 @@ static void *_assoc_cache_mgr(void *no_data)
 		/* This is here to see if we are exiting.  If so then
 		   just return since we are closing down.
 		*/
-		if (running_cache == NO_VAL16) {
+		if (running_cache == RUNNING_CACHE_STATE_EXITING) {
 			slurm_mutex_unlock(&assoc_cache_mutex);
 			return NULL;
 		}
