@@ -44,6 +44,10 @@ source ./inc21.30.15
 source ./inc21.30.16
 source ./inc21.30.17
 
+if {[param_contains [get_config_param "SchedulerParameters"] "defer"]} {
+	skip "This test is not compatible with SchedulerParameters containing defer"
+}
+
 set exit_code	0
 set skips       0
 set test_node   ""

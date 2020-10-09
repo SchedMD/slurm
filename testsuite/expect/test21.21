@@ -101,6 +101,10 @@ if {[check_config_select "linear"]} {
 	}
 }
 
+if {[param_contains [get_config_param "SchedulerParameters"] "defer"]} {
+	skip "This test is not compatible with SchedulerParameters containing defer"
+}
+
 # Determine what the selecttype param is
 set select_type_parameters [get_config_param "SelectTypeParameters"]
 if {[param_contains $select_type_parameters "CR_CORE*"]} {
