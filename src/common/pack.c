@@ -877,14 +877,14 @@ int unpackmem_ptr(char **valp, uint32_t * size_valp, Buf buffer)
 
 
 /*
- * Given a buffer containing a network byte order 16-bit integer,
- * and an arbitrary data string, copy the data string into the location
- * specified by valp.  Also return the sizes of 'valp' in bytes.
+ * Given a buffer containing a network byte order uint32_t and an arbitrary
+ * data string, copy the data string into the location specified by valp.
+ * Also return the sizes of 'valp' in bytes.
  * Adjust buffer counters.
  * NOTE: The caller is responsible for the management of valp and
  * insuring it has sufficient size
  */
-int unpackmem(char *valp, uint32_t * size_valp, Buf buffer)
+extern int unpackmem(void *valp, uint32_t *size_valp, buf_t *buffer)
 {
 	uint32_t ns;
 
@@ -899,14 +899,16 @@ int unpackmem(char *valp, uint32_t * size_valp, Buf buffer)
 		error("%s: Buffer to be unpacked is too large (%u > %u)",
 		      __func__, *size_valp, MAX_ARRAY_LEN_LARGE);
 		return SLURM_ERROR;
-	}
-	else if (*size_valp > 0) {
+	} else if (*size_valp > 0) {
 		if (remaining_buf(buffer) < *size_valp)
 			return SLURM_ERROR;
 		memcpy(valp, &buffer->head[buffer->processed], *size_valp);
 		buffer->processed += *size_valp;
-	} else
-		*valp = 0;
+	} else {
+		/* ensure valp is NUL terminated if treated as a string */
+		memset(valp, 0, 1);
+	}
+
 	return SLURM_SUCCESS;
 }
 

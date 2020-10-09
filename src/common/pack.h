@@ -130,7 +130,7 @@ int	unpacklongdouble_array(long double **valp, uint32_t* size_val,
 			       Buf buffer);
 
 extern void packmem(void *valp, uint32_t size_val, buf_t *buffer);
-int	unpackmem(char *valp, uint32_t *size_valp, Buf buffer);
+extern int unpackmem(void *valp, uint32_t *size_valp, buf_t *buffer);
 int	unpackmem_ptr(char **valp, uint32_t *size_valp, Buf buffer);
 int	unpackmem_xmalloc(char **valp, uint32_t *size_valp, Buf buffer);
 int	unpackmem_malloc(char **valp, uint32_t *size_valp, Buf buffer);
