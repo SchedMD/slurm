@@ -282,8 +282,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		break;
 	default:
 		/* Leave distribution set to unknown if taskcount <= nodes and
-		 * memory is set to 0. step_mgr will handle the 0mem case.
-		 * ex. SallocDefaultCommand=srun -n1 -N1 --mem=0 ... */
+		 * memory is set to 0. step_mgr will handle the mem=0 case. */
 		if (!opt_local->mem_per_cpu || !opt_local->pn_min_memory)
 			base_dist = SLURM_DIST_UNKNOWN;
 		else

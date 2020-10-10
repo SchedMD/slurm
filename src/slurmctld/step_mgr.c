@@ -2325,8 +2325,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 
 	task_dist = step_specs->task_dist & SLURM_DIST_STATE_BASE;
 	/* Set to block in the case that mem is 0. srun leaves the dist
-	 * set to unknown if mem is 0.
-	 * ex. SallocDefaultCommand=srun -n1 -N1 --mem=0 ... */
+	 * set to unknown if mem is 0. */
 	if ((task_dist == SLURM_DIST_UNKNOWN) &&
 	    (!(step_specs->pn_min_memory &(~MEM_PER_CPU)))) {
 		step_specs->task_dist &= SLURM_DIST_STATE_FLAGS;

@@ -360,7 +360,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"ResvProlog", S_P_STRING},
 	{"ReturnToService", S_P_UINT16},
 	{"RoutePlugin", S_P_STRING},
-	{"SallocDefaultCommand", S_P_STRING},
 	{"SbcastParameters", S_P_STRING},
 	{"SchedulerAuth", S_P_STRING, _defunct_option},
 	{"SchedulerParameters", S_P_STRING},
@@ -2834,7 +2833,6 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->resv_epilog);
 	xfree (ctl_conf_ptr->resv_prolog);
 	xfree (ctl_conf_ptr->route_plugin);
-	xfree (ctl_conf_ptr->salloc_default_command);
 	xfree (ctl_conf_ptr->sbcast_parameters);
 	xfree (ctl_conf_ptr->sched_logfile);
 	xfree (ctl_conf_ptr->sched_params);
@@ -3013,7 +3011,6 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->resv_prolog);
 	ctl_conf_ptr->ret2service		= NO_VAL16;
 	xfree (ctl_conf_ptr->route_plugin);
-	xfree( ctl_conf_ptr->salloc_default_command);
 	xfree( ctl_conf_ptr->sbcast_parameters);
 	xfree( ctl_conf_ptr->sched_params );
 	ctl_conf_ptr->sched_time_slice		= NO_VAL16;
@@ -4600,8 +4597,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_string(&conf->route_plugin, "RoutePlugin", hashtbl))
 		conf->route_plugin = xstrdup(DEFAULT_ROUTE_PLUGIN);
 
-	(void) s_p_get_string(&conf->salloc_default_command,
-			      "SallocDefaultCommand", hashtbl);
 	(void) s_p_get_string(&conf->sbcast_parameters,
 			      "SbcastParameters", hashtbl);
 

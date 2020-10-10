@@ -53,7 +53,6 @@ PropagateResourceLimitsExcept=AS
 #RebootProgram=
 # ReturnToService 2 will let rebooted nodes come back up immediately
 ReturnToService=2
-#SallocDefaultCommand=
 SlurmctldPidFile=/var/spool/slurm/slurmctld.pid
 SlurmctldPort=6817
 SlurmdPidFile=/var/spool/slurmd/slurmd.pid

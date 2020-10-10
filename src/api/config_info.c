@@ -1425,11 +1425,6 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("SallocDefaultCommand");
-	key_pair->value = xstrdup(slurm_ctl_conf_ptr->salloc_default_command);
-	list_append(ret_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SbcastParameters");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->sbcast_parameters);
 	list_append(ret_list, key_pair);
@@ -2083,8 +2078,6 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 			    (!xstrcasecmp(key_pair->name, "ResumeProgram")) ||
 			    (!xstrcasecmp(key_pair->name, "ResvEpilog")) ||
 			    (!xstrcasecmp(key_pair->name, "ResvProlog")) ||
-			    (!xstrcasecmp(key_pair->name,
-					  "SallocDefaultCommand")) ||
 			    (!xstrcasecmp(key_pair->name, "SrunEpilog")) ||
 			    (!xstrcasecmp(key_pair->name, "SrunProlog")) ||
 			    (!xstrcasecmp(key_pair->name, "SuspendProgram")) ||
