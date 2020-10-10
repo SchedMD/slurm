@@ -321,19 +321,26 @@ static char *_get_shell(void)
 	return pw_ent_ptr->pw_shell;
 }
 
-static int _salloc_default_command(int *argcp, char **argvp[])
+static void _salloc_default_command(int *argcp, char **argvp[])
 {
-	slurm_conf_t *cf = slurm_conf_lock();
-
-	if (cf->salloc_default_command) {
+	if (xstrstr(slurm_conf.launch_params, "use_interactive_step")) {
 		/*
-		 *  Set argv to "/bin/sh -c 'salloc_default_command'"
+		 * Use srun out of the same directory as this process.
 		 */
+		char *command, *pos;
+		command = xstrdup(argvzero);
+		if ((pos = xstrrchr(command, '/')))
+			*(++pos) = '\0';
+		else
+			*command = '\0';
+		xstrcat(command, "srun ");
+		xstrcat(command, slurm_conf.interactive_step_opts);
+
 		*argcp = 3;
-		*argvp = xmalloc(sizeof (char *) * 4);
+		*argvp = xcalloc(4, sizeof (char *));
 		(*argvp)[0] = "/bin/sh";
 		(*argvp)[1] = "-c";
-		(*argvp)[2] = xstrdup (cf->salloc_default_command);
+		(*argvp)[2] = command;
 		(*argvp)[3] = NULL;
 	} else {
 		*argcp = 1;
@@ -341,9 +348,6 @@ static int _salloc_default_command(int *argcp, char **argvp[])
 		(*argvp)[0] = _get_shell();
 		(*argvp)[1] = NULL;
 	}
-
-	slurm_conf_unlock();
-	return (0);
 }
 
 /*

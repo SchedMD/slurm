@@ -43,6 +43,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+extern char *argvzero;
 extern char **  command_argv;
 extern int      command_argc;
 extern pid_t    command_pid;

@@ -82,6 +82,7 @@ extern pid_t getpgid(pid_t pid);
 #define MAX_RETRIES	10
 #define POLL_SLEEP	3	/* retry interval in seconds  */
 
+char *argvzero = NULL;
 char **command_argv;
 int command_argc;
 pid_t command_pid = -1;
@@ -179,6 +180,7 @@ int main(int argc, char **argv)
 
 	slurm_conf_init(NULL);
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
+	argvzero = argv[0];
 	_set_exit_code();
 
 	if (spank_init_allocator() < 0) {
