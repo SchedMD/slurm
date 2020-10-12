@@ -2805,11 +2805,11 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 					continue;
 				avail_cpu_per_node[i] = avail_cpus;
 				if ((max_cpu_idx == -1) ||
-				    (avail_cpu_per_node[max_cpu_idx] <
-				     avail_cpu_per_node[i])) {
+				    (avail_res_array[max_cpu_idx]->max_cpus <
+				     avail_res_array[i]->max_cpus)) {
 					max_cpu_idx = i;
-					if (avail_cpu_per_node[max_cpu_idx] ==
-					    last_max_cpu_cnt)
+					if (avail_res_array[max_cpu_idx]->
+					    max_cpus == last_max_cpu_cnt)
 						break;
 				}
 			}
@@ -2819,7 +2819,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 				break;
 			}
 			i = max_cpu_idx;
-			last_max_cpu_cnt = avail_cpus;
+			last_max_cpu_cnt = avail_res_array[i]->max_cpus;
 			total_cpus += avail_cpus;
 			if ((details_ptr->max_cpus != NO_VAL) &&
 			    (total_cpus > details_ptr->max_cpus)) {

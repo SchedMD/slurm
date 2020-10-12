@@ -934,10 +934,10 @@ static int _eval_nodes_lln(job_record_t *job_ptr, bitstr_t *node_map,
 			if (bit_test(node_map, i))
 				continue;
 			if ((max_cpu_idx == -1) ||
-			    (avail_res_array[max_cpu_idx]->avail_cpus <
-			     avail_res_array[i]->avail_cpus)) {
+			    (avail_res_array[max_cpu_idx]->max_cpus <
+			     avail_res_array[i]->max_cpus)) {
 				max_cpu_idx = i;
-				if (avail_res_array[max_cpu_idx]->avail_cpus ==
+				if (avail_res_array[max_cpu_idx]->max_cpus ==
 				    last_max_cpu_cnt)
 					break;
 			}
@@ -945,7 +945,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr, bitstr_t *node_map,
 		if ((max_cpu_idx == -1) ||
 		    (avail_res_array[max_cpu_idx]->avail_cpus == 0))
 			break;
-		last_max_cpu_cnt = avail_res_array[max_cpu_idx]->avail_cpus;
+		last_max_cpu_cnt = avail_res_array[max_cpu_idx]->max_cpus;
 		avail_cpus = avail_res_array[max_cpu_idx]->avail_cpus;
 		if (avail_cpus) {
 			rem_cpus -= avail_cpus;
