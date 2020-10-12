@@ -3306,8 +3306,8 @@ proc check_config_node_mem { } {
 
 	set nodes_dict [get_nodes]
 	dict for {node_name node_dict} $nodes_dict {
-		if [dict exists $node_dict $node_name "RealMemory"] {
-			if {[dict get $node_dict $node_name "RealMemory"] == 1} {
+		if [dict exists $node_dict "RealMemory"] {
+			if {[dict get $node_dict "RealMemory"] == 1} {
 				return false
 			}
 		} else {
