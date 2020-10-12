@@ -4989,9 +4989,9 @@ proc save_conf { file_name } {
 	#
 	set conf_dir [file dirname $file_name]
 	set dir_files [glob -nocomplain -directory $conf_dir *]
-	set backup_file [lsearch -inline -regexp $dir_files "$file_name\.\\d+\.\\d+"]
-	if {$backup_file ne ""} {
-		log_warn "Backup file already exists: ($backup_file), not saving a new one."
+	set preexisting_backup_file [lsearch -inline -regexp $dir_files "$file_name\\\.test\\d+\\\.\\d+\$"]
+	if {$preexisting_backup_file ne ""} {
+		log_warn "Backup file already exists: ($preexisting_backup_file)"
 		return
 	}
 
@@ -5001,15 +5001,16 @@ proc save_conf { file_name } {
 	# the sticky bit set and allow the test to continue.
 	# restore_conf will remove the file.
 	#
+	set new_backup_file "$file_name.test$test_id"
 	if {![file exists $file_name]} {
-		log_debug "Backup of a nonexistent file requested: $file_name"
-		run_command -fail -nolog "$bin_touch $file_name.$test_id"
-		run_command -fail -nolog "$bin_chmod +t $file_name.$test_id"
+		log_warn "Backup of a nonexistent file requested: $file_name"
+		run_command -fail -nolog "$bin_touch $new_backup_file"
+		run_command -fail -nolog "$bin_chmod +t $new_backup_file"
 		return
 	}
 
-	run_command -fail -nolog "$bin_mv $file_name $file_name.$test_id"
-	run_command -fail -nolog "$bin_cp $file_name.$test_id $file_name"
+	run_command -fail -nolog "$bin_mv $file_name $new_backup_file"
+	run_command -fail -nolog "$bin_cp $new_backup_file $file_name"
 }
 
 
@@ -5040,7 +5041,7 @@ proc restore_conf { file_name } {
 
 	set conf_dir [file dirname $file_name]
 	set dir_files [glob -nocomplain -directory $conf_dir *]
-	set backup_file [lsearch -inline -regexp $dir_files "$file_name\.\\d+\.\\d+"]
+	set backup_file [lsearch -inline -regexp $dir_files "$file_name\\\.test\\d+\\\.\\d+\$"]
 	if {$backup_file ne ""} {
 		file stat $backup_file stat
 
