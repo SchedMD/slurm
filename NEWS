@@ -139,6 +139,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression in 20.02.5 where you couldn't request contraints with a
     simple & and a count.
  -- Limit the number of threads for servicing emails.
+ -- Avoid possible double init race condition in assoc_mgr_lock().
 
 * Changes in Slurm 20.02.5
 ==========================
