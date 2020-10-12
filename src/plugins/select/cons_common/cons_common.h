@@ -47,11 +47,12 @@
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct avail_res {	/* Per-node resource availability */
-	uint16_t avail_cpus;	/* Count of available CPUs */
+	uint16_t avail_cpus;	/* Count of available CPUs for this job
+				   limited by options like --ntasks-per-node */
 	uint16_t avail_gpus;	/* Count of available GPUs */
 	uint16_t avail_res_cnt;	/* Count of available CPUs + GPUs */
 	uint16_t *avail_cores_per_sock;	/* Per-socket available core count */
-	uint16_t max_cpus;	/* Maximum available CPUs */
+	uint16_t max_cpus;	/* Maximum available CPUs on the node */
 	uint16_t min_cpus;	/* Minimum allocated CPUs */
 	uint16_t sock_cnt;	/* Number of sockets on this node */
 	List sock_gres_list;	/* Per-socket GRES availability, sock_gres_t */

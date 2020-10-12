@@ -198,7 +198,7 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	uint16_t free_cores[sockets];
 	uint16_t used_cores[sockets];
 	uint32_t used_cpu_array[sockets];
-	avail_res_t *avail_res;
+	avail_res_t *avail_res = xmalloc(sizeof(avail_res_t));
 
 
 	if (is_cons_tres) {
@@ -334,6 +334,7 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 		if (used_cpu_array[i])
 			used_cpu_count += used_cores[i] * threads_per_core;
 	}
+	avail_res->max_cpus = free_cpu_count;
 
 	/* Enforce partition CPU limit, but do not pick specific cores yet */
 	if ((job_ptr->part_ptr->max_cpus_per_node != INFINITE) &&
@@ -595,7 +596,6 @@ fini:
 	}
 	cpu_count -= spec_threads;
 
-	avail_res = xmalloc(sizeof(avail_res_t));
 	avail_res->avail_cpus = MIN(cpu_count, part_cpu_limit);
 
 	if (is_cons_tres) {
