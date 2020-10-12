@@ -38,6 +38,14 @@ if {![is_super_user]} {
 	skip "This test requires that the user be root or the SlurmUser"
 }
 
+proc cleanup {} {
+	global bin_rm new_conf
+
+	if {$new_conf ne ""} {
+		run_command "$bin_rm -f $new_conf"
+	}
+}
+
 #
 # User scontrol show config to get some values to check
 # against the new created file
@@ -86,23 +94,9 @@ expect {
 log_user 1
 
 #
-# Execute scontrol write config and get the path and filename of the
-# created file
+# Execute scontrol write config and get the filename of the created file
 #
-spawn $scontrol write config
-expect {
-	-re "(/.*)/*($re_word_str)*$eol" {
-		set new_conf $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+regexp {Slurm config saved to (\S+)} [run_command_output -fail "$scontrol write config"] {} new_conf
 
 #
 # Loop through the hash and check that the parameters exist within
@@ -145,8 +139,6 @@ if {$tot_match != $opt_cnt} {
 	fail "Not all the values in the new config file were found ($tot_match != $opt_cnt)"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $new_conf
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
