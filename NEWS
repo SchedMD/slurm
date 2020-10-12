@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
  -- Correctly detect when a step requests bad gres inside an allocation.
  -- slurmstepd - Correct possible deadlock when UnkillableStepTimeout triggers.
  -- srun - use maximum number of open files while handling job I/O.
+ -- Fix writing to Xauthority files on root_squash NFS exports, which was
+    preventing X11 forwarding from completing setup.
 
 * Changes in Slurm 21.08.4
 ==========================
