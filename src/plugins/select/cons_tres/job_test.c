@@ -3300,7 +3300,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 				    &cpu_alloc_size, req_sock_map, cr_type);
 
 	FREE_NULL_BITMAP(req_sock_map);
-	if (!avail_res || (avail_res->max_cpus == 0)) {
+	if (!avail_res || (avail_res->avail_cpus == 0)) {
 		common_free_avail_res(avail_res);
 #if _DEBUG
 		info("Test fail on node %d: _allocate_cores/sockets",
@@ -3324,10 +3324,10 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 				  job_ptr->details->max_nodes;
 	}
 	min_cpus_per_node = ntasks_per_node * job_ptr->details->cpus_per_task;
-	if (avail_res->max_cpus < min_cpus_per_node) {
+	if (avail_res->avail_cpus < min_cpus_per_node) {
 #if _DEBUG
-		info("Test fail on node %d: max_cpus < min_cpus_per_node (%u < %u)",
-		     node_i, avail_res->max_cpus, min_cpus_per_node);
+		info("Test fail on node %d: avail_cpus < min_cpus_per_node (%u < %u)",
+		     node_i, avail_res->avail_cpus, min_cpus_per_node);
 #endif
 		FREE_NULL_LIST(sock_gres_list);
 		common_free_avail_res(avail_res);
@@ -3347,7 +3347,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 		/* Disable GRES that can't be used with remaining cores */
 		rc = gres_plugin_job_core_filter2(
 					sock_gres_list, avail_mem,
-					avail_res->max_cpus,
+					avail_res->avail_cpus,
 					enforce_binding, core_map[node_i],
 					select_node_record[node_i].tot_sockets,
 					select_node_record[node_i].cores,
@@ -3371,7 +3371,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 			(0xff - near_gpu_cnt);
 	}
 
-	cpus = avail_res->max_cpus;
+	cpus = avail_res->avail_cpus;
 
 	if (cr_type & CR_MEMORY) {
 		/*

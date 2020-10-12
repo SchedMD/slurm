@@ -596,7 +596,7 @@ fini:
 	cpu_count -= spec_threads;
 
 	avail_res = xmalloc(sizeof(avail_res_t));
-	avail_res->max_cpus = MIN(cpu_count, part_cpu_limit);
+	avail_res->avail_cpus = MIN(cpu_count, part_cpu_limit);
 
 	if (is_cons_tres) {
 		avail_res->min_cpus = *cpu_alloc_size;

@@ -2126,7 +2126,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 				    node_i, &cpu_alloc_size, NULL, cr_type);
 
 	if (avail_res)
-		cpus = avail_res->max_cpus;
+		cpus = avail_res->avail_cpus;
 	else
 		cpus = 0;
 
