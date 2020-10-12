@@ -2819,7 +2819,6 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 				break;
 			}
 			i = max_cpu_idx;
-			avail_cpus = avail_cpu_per_node[i];
 			last_max_cpu_cnt = avail_cpus;
 			total_cpus += avail_cpus;
 			if ((details_ptr->max_cpus != NO_VAL) &&
