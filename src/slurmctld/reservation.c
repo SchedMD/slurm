@@ -2598,6 +2598,8 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			resv_ptr->flags |= RESERVE_FLAG_STATIC;
 		if (resv_desc_ptr->flags & RESERVE_FLAG_NO_STATIC)
 			resv_ptr->flags &= (~RESERVE_FLAG_STATIC);
+		if (resv_desc_ptr->flags & RESERVE_FLAG_FIRST_CORES)
+			resv_ptr->flags |= RESERVE_FLAG_FIRST_CORES;
 		if ((resv_desc_ptr->flags & RESERVE_FLAG_REPLACE) ||
 		    (resv_desc_ptr->flags & RESERVE_FLAG_REPLACE_DOWN)) {
 			if ((resv_ptr->flags & RESERVE_FLAG_SPEC_NODES) ||
