@@ -448,8 +448,8 @@ error:
  * new socket's descriptor, or -1 for errors.  */
 extern int slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 {
-	socklen_t len = sizeof(slurm_addr_t);
-	return accept(fd, (struct sockaddr *)addr, &len);
+	socklen_t len = sizeof(*addr);
+	return accept(fd, (struct sockaddr *) addr, &len);
 }
 
 extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
@@ -540,7 +540,7 @@ error:
 extern int slurm_get_stream_addr(int fd, slurm_addr_t *addr )
 {
 	socklen_t size = sizeof(*addr);
-	return getsockname(fd, (struct sockaddr *)addr, &size);
+	return getsockname(fd, (struct sockaddr *) addr, &size);
 }
 
 /* Open a connection on socket FD to peer at ADDR (which LEN bytes long).
