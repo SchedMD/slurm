@@ -33,7 +33,7 @@ set number_commas  "\[0-9_,\]+"
 if {![check_config_select "cons_tres"]} {
 	skip "This test is only compatible with select/cons_tres"
 }
-if {![get_config_param "ConstrainDevices"]} {
+if {[get_config_param "ConstrainDevices"] ne "yes"} {
 	skip "This test is only compatible with ConstrainDevices=Yes in cgroup.conf"
 }
 
