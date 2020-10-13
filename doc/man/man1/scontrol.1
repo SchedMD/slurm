@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "August 2020" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "October 2020" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -1811,7 +1811,8 @@ nodes with a specific feature reserved for a specific account so users in this
 account may use this nodes plus possibly other nodes without this feature.
 .TP
 \fIFIRST_CORES\fR
-Use the lowest numbered cores on a node only.
+Use the lowest numbered cores on a node only. Flag removal with '-=' is not
+supported.
 .TP
 \fIIGNORE_JOBS\fR
 Ignore currently running jobs when creating the reservation.
@@ -1834,11 +1835,11 @@ request it.
 By default, when a reservation ends the reservation request will be removed from
 any pending jobs submitted to the reservation and will be put into a held state.
 Use this flag to let jobs run outside of the reservation after the reservation
-is gone.
+is gone. Flag removal with '-=' is not supported.
 .TP
 \fIOVERLAP\fR
 This reservation can be allocated resources that are already in another
-reservation.
+reservation. Flag removal with '-=' is not supported.
 .TP
 \fIPART_NODES\fR
 This flag can be used to reserve all nodes within the specified
@@ -1859,7 +1860,8 @@ replenished using idle resources.
 This option can be used to maintain a constant number of idle resources
 available for pending jobs (subject to availability of idle resources).
 This should be used with the \fINodeCnt\fP reservation option; do not identify
-specific nodes to be included in the reservation.
+specific nodes to be included in the reservation. Flag removal with '-=' is
+not supported.
 
 \fBNOTE\fR: Removing a node from the cluster while in a reservation with the
 \fIREPLACE\fR flag will not cause it to be replaced.
@@ -1869,13 +1871,14 @@ Nodes which are DOWN or DRAINED are automatically replenished using idle resourc
 This option can be used to maintain a constant sized pool of resources
 available for pending jobs (subject to availability of idle resources).
 This should be used with the \fINodeCnt\fP reservation option; do not identify
-specific nodes to be included in the reservation.
+specific nodes to be included in the reservation. Flag removal with '-=' is
+not supported.
 
 \fBNOTE\fR: Removing a node from the cluster while in a reservation with the
 \fIREPLACE_DOWN\fR flag will not cause it to be replaced.
 .TP
 \fISPEC_NODES\fR
-Reservation is for specific nodes (output only)
+Reservation is for specific nodes (output only).
 .TP
 \fISTATIC_ALLOC\fR
 Make it so after the nodes are selected for a reservation they don't
@@ -1885,7 +1888,8 @@ and one goes down the reservation will select a new node to fill the spot.
 \fITIME_FLOAT\fR
 The reservation start time is relative to the current time and moves forward
 through time (e.g. a StartTime=now+10minutes will always be 10 minutes in the
-future). Repeating (e.g. DAILY) floating reservations are not supported.
+future). Repeating (e.g. DAILY) floating reservations are not supported. Flag
+cannot be added to or removed from an existing reservation.
 .TP
 \fIWEEKDAY\fR
 Repeat the reservation at the same time on every weekday (Monday, Tuesday,
