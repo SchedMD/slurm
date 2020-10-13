@@ -1,4 +1,4 @@
-.TH sinfo "1" "Slurm Commands" "July 2020" "Slurm Commands"
+.TH sinfo "1" "Slurm Commands" "October 2020" "Slurm Commands"
 
 .SH "NAME"
 sinfo \- View information about Slurm nodes and partitions.
@@ -153,7 +153,7 @@ Arbitrary string to append to the end of the field.
 .RE
 
 .IP
-The field specifications available include:
+Valid \fItype\fR specifications include:
 .RS
 .TP 6
 \fB%all\fR
@@ -293,12 +293,6 @@ Number of threads per core.
 .TP
 \fB%z\fR
 Extended processor information: number of sockets, cores, threads (S:C:T) per node.
-.TP
-\fB%.<*>\fR
-Right justification of the field.
-.TP
-\fB%<Number><*>\fR
-Size of the field.
 .RE
 
 .TP
@@ -311,13 +305,13 @@ Requests a comma separated list of job information to be displayed.
 
 .IP
 The format of each field is "type[:[.][size][suffix]]"
-.RS
-.TP 8
+.RS 10
+.TP
 \fIsize\fR
 The minimum field size.
 If no size is specified, 20 characters will be allocated to print the information.
 .TP
-\fI .\fR
+\fI.\fR
 Indicates the output should be right justified and size must be specified.
 By default, output is left justified.
 .TP

@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "September 2020" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "October 2020" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -124,8 +124,8 @@ If the command is executed in an federated cluster environment and information
 about more than one cluster is to be displayed and the \fB\-h, \-\-noheader\fR
 option is used, then the cluster name will be displayed before the default
 output formats shown below.
-The default formats with various options are
 
+The default formats with various options are:
 .RS
 .TP 15
 \fIdefault\fR
@@ -140,15 +140,15 @@ The default formats with various options are
 
 .IP
 The format of each field is "%[[.]size]type[suffix]"
-.RS
-.TP 8
-\fIsize\fR
-is the minimum field size.
-If no size is specified, whatever is needed to print the information will be used.
+.RS 10
 .TP
-\fI .\fR
-indicates the output should be right justified and size must be specified.
-By default, output is left justified.
+\fIsize\fR
+Minimum field size. If no size is specified, whatever is needed to print the
+information will be used.
+.TP
+\fI.\fR
+Indicates the output should be right justified and size must be specified.
+By default output is left justified.
 .TP
 \fIsuffix\fR
 Arbitrary string to append to the end of the field.
@@ -453,15 +453,15 @@ Requests a comma separated list of job information to be displayed.
 
 .IP
 The format of each field is "type[:[.][size][sufix]]"
-.RS
-.TP 8
-\fIsize\fR
-is the minimum field size.
-If no size is specified, 20 characters will be allocated to print the information.
+.RS 10
 .TP
-\fI .\fR
-indicates the output should be right justified and size must be specified.
-By default, output is left justified.
+\fIsize\fR
+Minimum field size. If no size is specified, 20 characters will be allocated
+to print the information.
+.TP
+\fI.\fR
+Indicates the output should be right justified and size must be specified.
+By default output is left justified.
 .TP
 \fIsufix\fR
 Arbitrary string to append to the end of the field.
