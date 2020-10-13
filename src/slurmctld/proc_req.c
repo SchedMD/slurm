@@ -118,6 +118,8 @@ static config_response_msg_t *config_for_clients = NULL;
 
 static pthread_mutex_t throttle_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t throttle_cond = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t  reconfig_cond = PTHREAD_COND_INITIALIZER;
+static pthread_mutex_t reconfig_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void         _create_het_job_id_set(hostset_t jobid_hostset,
 					    uint32_t het_job_offset,
@@ -3164,6 +3166,9 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 
+	/* Reconfigure RPCs must be serially served. */
+	slurm_mutex_lock(&reconfig_mutex);
+
 	START_TIMER;
 	if (!validate_super_user(uid)) {
 		error("Security violation, RECONFIGURE RPC from uid=%d", uid);
@@ -3215,6 +3220,8 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		save_all_state();		/* has its own locks */
 		queue_job_scheduler();
 	}
+	slurm_mutex_unlock(&reconfig_mutex);
+	slurm_cond_broadcast(&reconfig_cond);
 }
 
 /* _slurm_rpc_takeover - process takeover RPC */
