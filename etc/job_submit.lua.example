@@ -1,0 +1,172 @@
+--[[
+--Example job_submit.lua file for Slurm
+--For more information check:
+-- https://slurm.schedmd.com/job_submit_plugins.html
+--For the list of available fields check:
+-- src/plugins/job_submit/lua/job_submit_lua.c
+--]]
+
+log_prefix = 'slurm_job_submit'
+
+function _find_in_str(str, arg)
+	if str ~= nil then
+		return string.find(str,arg)
+	else
+		return false
+	end
+end
+
+function _log_user_and_debug(fmt, ...)
+--[[Implicit definition of arg was removed in Lua 5.2]]--
+	local arg = {...}
+	slurm.log_user(fmt, unpack(arg))
+	slurm.log_debug(fmt, unpack(arg))
+end
+
+
+function slurm_job_submit(job_desc, part_list, submit_uid)
+
+	--[[
+	   Don't block any activity from root.
+	   This may make reproduction of user errors difficult
+	]]--
+	if submit_uid == 0 then
+		return slurm.SUCCESS
+	end
+
+	--[[
+	-- Change partition to GPU if job requested any GPU
+	-- depending on option used this may be visible in
+	-- different job_desc field:
+	-- --gres=gpu: -> tres_per_node
+	-- --gpus-per-task -> tres_per_task
+	-- --gpus-per-socket -> tres_per_socket
+	-- --gpus -> tres_per_job
+	--]]
+
+	if _find_in_str(job_desc['tres_per_node'], "gpu") or
+	   _find_in_str(job_desc['tres_per_task'], "gpu") or
+	   _find_in_str(job_desc['tres_per_socket'], "gpu") or
+	   _find_in_str(job_desc['tres_per_job'], "gpu") then
+		job_desc.partition = 'gpu'
+		_log_user_and_debug("%s: Set partition to: %s",
+			            log_prefix,
+				    job_desc.partition)
+	end
+
+
+	--[[ Forbid unlimited --mem if memory specified ]]--
+	if job_desc['min_mem_per_node'] ~= nil then
+		if job_desc['min_mem_per_node'] == 0 then
+			slurm.log_user("%s: --mem=0 is not allowed",
+				       log_prefix);
+			return slurm.ESLURM_ACCOUNTING_POLICY;
+		end
+	else
+		--[[ Enforce --mem specification ]]--
+		if job_desc['min_mem_per_cpu'] == nil then
+			_log_user_and_debug("%s: Neither --mem nor --mem-per-cpu specified",
+				            log_prefix);
+				return slurm.ESLURM_ACCOUNTING_POLICY;
+		else
+			if job_desc['min_mem_per_cpu'] == 0 then
+				_log_user_and_debug("%s: --mem-per-cpu=0 is not allowed",
+					            log_prefix);
+				return slurm.ESLURM_ACCOUNTING_POLICY;
+			end
+		end
+	end
+
+       --[[ Forbid usage of MAINT job name ]]--
+	if job_desc['name'] == "MAINT" then
+	       _log_user_and_debug("%s: JobName=MAINT reserved. Please use other name.",
+			           log_prefix);
+	       return slurm.ERROR
+	end
+
+	--[[
+	-- If no default partition, set to the highest
+	-- priority partition this user has access to
+	--]]
+	if job_desc['partition'] == nil then
+		local new_partition = nil
+		local top_priority  = -1
+		local last_priority = -1
+		local inx = 0
+		for name, part in pairs(part_list) do
+			slurm.log_debug2("%s: part name[%d]:%s",
+				        log_prefix,
+				        inx,
+					part['name'])
+			inx = inx + 1
+			--[[
+			-- Don't change partition if the default
+			-- is defined in the slurm.conf
+			--]]
+			if part['flag_default'] ~= 0 then
+				top_priority = -1
+				break
+			end
+
+			if part['priority_job_factor'] ~= nil then
+				slurm.log_debug3("%s: last priority is %d",
+					        log_prefix,
+						part['priority_job_factor'])
+				last_priority = part['priority_job_factor']
+				if last_priority > top_priority then
+					top_priority = last_priority
+					new_partition = part.name
+				end
+			end
+		end
+
+		if top_priority >= 0 then
+			_log_user_and_debug("%s: setting default partition value: %s",
+				            log_prefix,
+					    new_partition)
+			job_desc.partition = new_partition
+		end
+	end
+
+	return slurm.SUCCESS
+end
+
+function  slurm_job_modify(job_desc, job_ptr, part_list, modify_uid)
+
+	--[[ Don't block/modify any update from root ]]--
+	if modify_uid == 0 then
+		return slurm.SUCCESS
+	end
+
+	--[[
+	-- Forbid unlimited --mem in update
+	-- for instance: scontrol update job=XX MinMemoryNode=0
+	--]]
+	if job_desc['min_mem_per_node'] ~= nil then
+		if job_desc['min_mem_per_node'] == 0 then
+			_log_user_and_debug("%s: Updating MinMemPerNode=0 is not allowed",
+				            log_prefix)
+			return slurm.ESLURM_ACCOUNTING_POLICY;
+		end
+	end
+	if job_desc['min_mem_per_cpu'] ~= nil then
+		if job_desc['min_mem_per_cpu'] == 0 then
+			_log_user_and_debug("%s: Updating MinMemoryCPU=0 is not allowed",
+				            log_prefix)
+			return slurm.ESLURM_ACCOUNTING_POLICY;
+		end
+	end
+
+       --[[ Forbid usage of MAINT job name ]]--
+	if job_desc['name'] == "MAINT" then
+		_log_user_and_debug("%s: Updating JobName to MAINT is not allowed from non-root user",
+			            log_prefix);
+		--[[
+		-- This will show 'Unspecified error' but use of
+		-- slurm.log_user is limited to job_submit
+		--]]
+	       return slurm.ERROR
+	end
+
+	return slurm.SUCCESS
+end
