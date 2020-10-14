@@ -2605,8 +2605,7 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
 		if (!p->bcast_addr_initialized) {
 			slurm_set_addr(&p->bcast_addr, p->port,
 				       p->bcast_address);
-			if (p->bcast_addr.sin_family == 0 &&
-			    p->bcast_addr.sin_port == 0) {
+			if (p->bcast_addr.ss_family == AF_UNSPEC) {
 				slurm_conf_unlock();
 				return SLURM_ERROR;
 			}
@@ -2620,7 +2619,7 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr_t *address,
 
 	if (!p->addr_initialized) {
 		slurm_set_addr(&p->addr, p->port, p->address);
-		if (p->addr.sin_family == 0 && p->addr.sin_port == 0) {
+		if (p->addr.ss_family == AF_UNSPEC) {
 			slurm_conf_unlock();
 			return SLURM_ERROR;
 		}

@@ -43,6 +43,7 @@
 
 /* GLOBAL INCLUDES */
 
+#include <arpa/inet.h>
 #include <ctype.h>
 #include <errno.h>
 #include <poll.h>
@@ -1397,7 +1398,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	 * came from if this is a forward else we set the
 	 * header.orig_addr to our addr just in case we need to send it off.
 	 */
-	if (header.orig_addr.sin_addr.s_addr != 0) {
+	if (header.orig_addr.ss_family != AF_UNSPEC) {
 		memcpy(&msg->orig_addr, &header.orig_addr, sizeof(slurm_addr_t));
 	} else {
 		memcpy(&header.orig_addr, orig_addr, sizeof(slurm_addr_t));
@@ -1705,12 +1706,18 @@ size_t slurm_read_stream(int open_fd, char *buffer, size_t size)
  * OUT ip		- ip address in dotted-quad string form
  * IN buf_len		- length of ip buffer
  */
-void slurm_get_ip_str(slurm_addr_t * slurm_address, uint16_t * port,
+void slurm_get_ip_str(slurm_addr_t *addr, uint16_t *port,
 		      char *ip, unsigned int buf_len)
 {
-	unsigned char *uc = (unsigned char *)&slurm_address->sin_addr.s_addr;
-	*port = slurm_get_port(slurm_address);
-	snprintf(ip, buf_len, "%u.%u.%u.%u", uc[0], uc[1], uc[2], uc[3]);
+	if (addr->ss_family == AF_INET6) {
+		struct sockaddr_in6 *sin = (struct sockaddr_in6 *) addr;
+		inet_ntop(AF_INET6, &sin->sin6_addr, ip, buf_len);
+	} else {
+		struct sockaddr_in *sin = (struct sockaddr_in *) addr;
+		inet_ntop(AF_INET, &sin->sin_addr, ip, buf_len);
+	}
+
+	*port = slurm_get_port(addr);
 }
 
 /* slurm_get_peer_addr
@@ -1720,11 +1727,11 @@ void slurm_get_ip_str(slurm_addr_t * slurm_address, uint16_t * port,
  */
 int slurm_get_peer_addr(int fd, slurm_addr_t * slurm_address)
 {
-	struct sockaddr name;
-	socklen_t namelen = (socklen_t) sizeof(struct sockaddr);
+	slurm_addr_t name;
+	socklen_t namelen = (socklen_t) sizeof(name);
 	int rc;
 
-	if ((rc = getpeername((int) fd, &name, &namelen)))
+	if ((rc = getpeername((int) fd, (struct sockaddr *) &name, &namelen)))
 		return rc;
 	memcpy(slurm_address, &name, sizeof(slurm_addr_t));
 	return 0;
@@ -2838,19 +2845,19 @@ extern int slurm_forward_data(
 	return rc;
 }
 
-extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
+extern void slurm_setup_sockaddr(struct sockaddr_storage *sin, uint16_t port)
 {
-	static uint32_t s_addr = NO_VAL;
+	static uint8_t s_addr[16];
+	static uint32_t s_family = NO_VAL;
 
-	memset(sin, 0, sizeof(struct sockaddr_in));
-	sin->sin_family = AF_INET;
-	slurm_set_port(sin, port);
+	memset(sin, 0, sizeof(*sin));
 
-	if (s_addr == NO_VAL) {
+	if (s_family == NO_VAL) {
 		/* On systems with multiple interfaces we might not
 		 * want to get just any address.  This is the case on
 		 * a Cray system with RSIP.
 		 */
+		char host[MAXHOSTNAMELEN];
 		char *var;
 
 		if (running_in_slurmctld())
@@ -2858,20 +2865,46 @@ extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port)
 		else
 			var = "NoInAddrAny";
 
-		if (xstrcasestr(slurm_conf.comm_params, var)) {
-			char host[MAXHOSTNAMELEN];
-
-			if (!gethostname(host, MAXHOSTNAMELEN)) {
-				slurm_set_addr(sin, port, host);
-				s_addr = sin->sin_addr.s_addr;
-			} else
-				fatal("slurm_setup_sockaddr: "
-				      "Can't get hostname or addr: %m");
+		/* do this lookup to determine if we should be IPv6 or IPv4 */
+		if (!gethostname(host, MAXHOSTNAMELEN)) {
+			slurm_set_addr(sin, port, host);
+			s_family = sin->ss_family;
 		} else
-			s_addr = htonl(INADDR_ANY);
+			fatal("slurm_setup_sockaddr: "
+			      "Can't get hostname or addr: %m");
+
+		if (xstrcasestr(slurm_conf.comm_params, var)) {
+			if (s_family == AF_INET6) {
+				struct sockaddr_in6 *in6 =
+					(struct sockaddr_in6 *) sin;
+				memcpy(s_addr, &(in6->sin6_addr.s6_addr), 16);
+			} else {
+				struct sockaddr_in *in =
+					(struct sockaddr_in *) sin;
+				memcpy(s_addr, &(in->sin_addr.s_addr), 4);
+			}
+		} else {
+			if (s_family == AF_INET6) {
+				struct in6_addr tmp_addr = IN6ADDR_ANY_INIT;
+				memcpy(s_addr, &tmp_addr, sizeof(tmp_addr));
+			} else {
+				uint32_t tmp_addr = htonl(INADDR_ANY);
+				memcpy(s_addr, &tmp_addr, sizeof(tmp_addr));
+			}
+		}
 	}
 
-	sin->sin_addr.s_addr = s_addr;
+	if (s_family == AF_INET6) {
+		struct sockaddr_in6 *in6 = (struct sockaddr_in6 *) sin;
+		in6->sin6_family = s_family;
+		in6->sin6_port = htons(port);
+		memcpy(&(in6->sin6_addr.s6_addr), s_addr, 16);
+	} else {
+		struct sockaddr_in *in = (struct sockaddr_in *) sin;
+		in->sin_family = s_family;
+		in->sin_port = htons(port);
+		memcpy(&(in->sin_addr.s_addr), s_addr, 4);
+	}
 }
 
 /*
@@ -2925,14 +2958,24 @@ int sock_bind_range(int s, uint16_t *range, bool local)
  */
 static bool _is_port_ok(int s, uint16_t port, bool local)
 {
-	struct sockaddr_in sin;
+	slurm_addr_t addr;
+	slurm_setup_sockaddr(&addr, port);
 
-	slurm_setup_sockaddr(&sin, port);
+	if (!local) {
+		debug3("%s: requesting non-local port", __func__);
+	} else if (addr.ss_family == AF_INET) {
+		struct sockaddr_in *sin = (struct sockaddr_in *) &addr;
+		sin->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	} else if (addr.ss_family == AF_INET6) {
+		struct sockaddr_in6 *sin = (struct sockaddr_in6 *) &addr;
+		sin->sin6_addr = in6addr_loopback;
+	} else {
+		error("%s: protocal family %u unsupported",
+		      __func__, addr.ss_family);
+		return false;
+	}
 
-	if (local)
-		sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-
-	if (bind(s, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+	if (bind(s, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
 		log_flag(NET, "%s: bind() failed on port:%d fd:%d: %m",
 			 __func__, port, s);
 		return false;

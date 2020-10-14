@@ -152,8 +152,21 @@ extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src)
 	dest->forward = src->forward;
 	dest->ret_list = src->ret_list;
 	dest->forward_struct = src->forward_struct;
-	dest->orig_addr.sin_addr.s_addr = 0;
-	return;
+
+#if 0
+	/* explicitly blow away the address. probably redundant */
+	if (dest->orig_addr.ss_family == AF_INET6) {
+		struct sockaddr_in6 *sin =
+			(struct sockaddr_in6 *) &dest->orig_addr;
+		memset(&sin->sin6_addr, 0, 16);
+	} else {
+		struct sockaddr_in *sin =
+			(struct sockaddr_in *) &dest->orig_addr;
+		sin->sin_addr.s_addr = 0;
+	}
+#endif
+
+	dest->orig_addr.ss_family = AF_UNSPEC;
 }
 
 /* here to add \\ to all \" in a string this needs to be xfreed later */

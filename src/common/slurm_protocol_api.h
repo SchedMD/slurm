@@ -344,8 +344,7 @@ extern int slurm_open_controller_conn_spec(int dest,
 /* In the bsd socket implementation it creates a SOCK_STREAM socket
  *	and calls connect on it a SOCK_DGRAM socket called with connect
  *	is defined to only receive messages from the address/port pair
- *	argument of the connect call slurm_address - for now it is
- *	really just a sockaddr_in
+ *	argument of the connect call slurm_address
  * IN slurm_address 	- slurm_addr_t of the connection destination
  * RET slurm_fd		- file descriptor of the connection created
  */
@@ -388,12 +387,12 @@ extern void slurm_set_addr(slurm_addr_t * slurm_address,
 
 /* slurm_get_ip_str
  * given a slurm_address it returns its port and ip address string
- * IN slurm_address	- slurm_addr_t to be queried
+ * IN addr		- slurm_addr_t to be queried
  * OUT port		- port number
  * OUT ip		- ip address in dotted-quad string form
  * IN buf_len		- length of ip buffer
  */
-extern void slurm_get_ip_str(slurm_addr_t * slurm_address, uint16_t * port,
+extern void slurm_get_ip_str(slurm_addr_t *addr, uint16_t *port,
 			     char *ip, unsigned int buf_len);
 
 /* slurm_get_peer_addr
@@ -622,15 +621,15 @@ extern int slurm_forward_data(
 	char **nodelist, char *address, uint32_t len, const char *data);
 
 /*
- * slurm_setup_sockaddr - setup a sockaddr_in struct to be used for
+ * slurm_setup_sockaddr - setup a sockaddr_storage struct to be used for
  *                        communication. If TopologyParameters has
  *                        NoInAddrAny set it will work of the
  *                        interface given from gethostname from the
  *                        hostname of the node.
- * OUT sin - uninitialized sockaddr_in
+ * OUT sin - uninitialized sockaddr_storage
  * IN  port - port to used, we will call htons on it
  */
-extern void slurm_setup_sockaddr(struct sockaddr_in *sin, uint16_t port);
+extern void slurm_setup_sockaddr(struct sockaddr_storage *sin, uint16_t port);
 
 /*
  * slurm_val_to_char - convert an int value (0-16) to a hex value (0-F) char.

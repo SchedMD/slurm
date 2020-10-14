@@ -1543,7 +1543,7 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *job,
 
 	debug4 ("adding IO connection (logical node rank %d)", job->nodeid);
 
-	if (srun->ioaddr.sin_addr.s_addr) {
+	if (srun->ioaddr.ss_family != AF_UNSPEC) {
 		if (slurm_get_port(&srun->ioaddr) == 0) {
 			debug3("No IO connection requested");
 			return SLURM_SUCCESS;
@@ -1601,7 +1601,7 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *job)
 
 	debug4 ("adding IO connection (logical node rank %d)", job->nodeid);
 
-	if (srun->ioaddr.sin_addr.s_addr) {
+	if (srun->ioaddr.ss_family != AF_UNSPEC) {
 		debug4("connecting IO back to %pA", &srun->ioaddr);
 	}
 

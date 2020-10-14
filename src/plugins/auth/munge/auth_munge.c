@@ -296,6 +296,7 @@ gid_t slurm_auth_get_gid(slurm_auth_credential_t *cred)
 char *slurm_auth_get_host(slurm_auth_credential_t *cred)
 {
 	slurm_addr_t addr;
+	struct sockaddr_in *sin = (struct sockaddr_in *) &addr;
 	char *hostname = NULL;
 
 	if (!cred || !cred->verified) {
@@ -311,8 +312,8 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred)
 	xassert(cred->magic == MUNGE_MAGIC);
 
 	/* FIXME: this will need updates when MUNGE supports IPv6 addresses. */
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = cred->addr.s_addr;
+	addr.ss_family = AF_INET;
+	sin->sin_addr.s_addr = cred->addr.s_addr;
 
 	hostname = get_name_info((struct sockaddr *) &addr, sizeof(addr),
 				 NI_NOFQDN);

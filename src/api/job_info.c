@@ -1835,8 +1835,7 @@ slurm_network_callerid (network_callerid_msg_t req, uint32_t *job_id,
 	slurm_msg_t resp_msg;
 	slurm_msg_t req_msg;
 	network_callerid_resp_t *resp;
-	struct sockaddr_in addr;
-	uint32_t target_slurmd; /* change for IPv6 support */
+	slurm_addr_t addr;
 
 	debug("slurm_network_callerid RPC: start");
 
@@ -1846,24 +1845,18 @@ slurm_network_callerid (network_callerid_msg_t req, uint32_t *job_id,
 	/* ip_src is the IP we want to talk to. Hopefully there's a slurmd
 	 * listening there */
 	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = req.af;
+	addr.ss_family = req.af;
 
-	/* TODO: until IPv6 support is added to Slurm, we must hope that the
-	 * other end is IPv4 */
-	if (req.af == AF_INET6) {
-		error("IPv6 is not yet supported in Slurm");
-		/* For testing IPv6 callerid prior to Slurm IPv6 RPC support,
-		 * set a sane target, uncomment the following and comment out
-		 * the return code:
-		addr.sin_family = AF_INET;
-		target_slurmd = inet_addr("127.0.0.1"); //choose a test target
-		*/
-		return SLURM_ERROR;
-	} else
-		memcpy(&target_slurmd, req.ip_src, 4);
+	if (addr.ss_family == AF_INET6) {
+		struct sockaddr_in6 *in6 = (struct sockaddr_in6 *) &addr;
+		memcpy(&(in6->sin6_addr.s6_addr), req.ip_src, 16);
+	        in6->sin6_port = htons(slurm_conf.slurmd_port);
+	} else {
+		struct sockaddr_in *in = (struct sockaddr_in *) &addr;
+		memcpy(&(in->sin_addr.s_addr), req.ip_src, 4);
+		in->sin_port = htons(slurm_conf.slurmd_port);
+	}
 
-	addr.sin_addr.s_addr = target_slurmd;
-	slurm_set_port(&addr, slurm_conf.slurmd_port);
 	req_msg.address = addr;
 
 	req_msg.msg_type = REQUEST_NETWORK_CALLERID;

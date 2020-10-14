@@ -653,9 +653,7 @@ _send_exit_msg(stepd_step_rec_t *job, uint32_t *tid, int n, int status)
 	i = list_iterator_create(job->sruns);
 	while ((srun = list_next(i))) {
 		resp.address = srun->resp_addr;
-		if ((resp.address.sin_family == 0) &&
-		    (resp.address.sin_port == 0)   &&
-		    (resp.address.sin_addr.s_addr == 0))
+		if (resp.address.ss_family == AF_UNSPEC)
 			continue;	/* no srun or sattach here */
 
 		/* This should always be set to something else we have a bug. */

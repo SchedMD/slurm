@@ -62,7 +62,7 @@ extern "C" {
 #include <unistd.h>
 
 /* Define slurm_addr_t below to avoid including extraneous slurm headers */
-typedef struct sockaddr_in slurm_addr_t;
+typedef struct sockaddr_storage slurm_addr_t;
 
 #ifndef __slurmdb_cluster_rec_t_defined
 #  define __slurmdb_cluster_rec_t_defined

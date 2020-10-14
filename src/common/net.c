@@ -87,7 +87,7 @@ strong_alias(net_set_low_water,		slurm_net_set_low_water);
  */
 int net_stream_listen(int *fd, uint16_t *port)
 {
-	struct sockaddr_in sin;
+	slurm_addr_t sin;
 	socklen_t len = sizeof(sin);
 	int val = 1;
 

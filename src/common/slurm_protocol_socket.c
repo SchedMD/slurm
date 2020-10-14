@@ -491,15 +491,17 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 	}
 #endif
 
-	if ( (addr->sin_family == 0) || (slurm_get_port(addr) == 0) ) {
+	if ((addr->ss_family == AF_UNSPEC) || (slurm_get_port(addr) == 0)) {
 		error("Error connecting, bad data: family = %u, port = %u",
-			addr->sin_family, slurm_get_port(addr));
+		      addr->ss_family, slurm_get_port(addr));
 		return SLURM_ERROR;
 	}
 
 	for (retry_cnt=0; ; retry_cnt++) {
 		int rc;
-		if ((fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+
+		fd = socket(addr->ss_family, SOCK_STREAM, IPPROTO_TCP);
+		if (fd < 0) {
 			error("Error creating slurm stream socket: %m");
 			slurm_seterrno(errno);
 			return SLURM_ERROR;
@@ -636,25 +638,37 @@ extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 	/*
 	 * If NULL hostname passed in, we only update the port of addr
 	 */
-	addr->sin_family = AF_INET;
-	slurm_set_port(addr, port);
-	if (host == NULL)
+	if (!host) {
+		if (!addr->ss_family)
+			addr->ss_family = AF_INET;
+		slurm_set_port(addr, port);
 		return;
+	}
 
 	addrs = get_addr_info(host);
+	/* ignore anything but IPv4 addresses for now */
 	for (addr_ptr = addrs; addr_ptr != NULL; addr_ptr = addr_ptr->ai_next) {
 		if (addr_ptr->ai_family == AF_INET)
 			break;
 	}
+
 	if (addr_ptr) {
-		struct sockaddr_in *addr2;
-		addr2 = (struct sockaddr_in *)addr_ptr->ai_addr;
-		memcpy(&addr->sin_addr.s_addr,
-		       &addr2->sin_addr.s_addr, sizeof(addr2->sin_addr.s_addr));
+		addr->ss_family = addr_ptr->ai_family;
+		slurm_set_port(addr, port);
+		if (addr_ptr->ai_family == AF_INET6) {
+			struct sockaddr_in6 *src =
+				(struct sockaddr_in6 *) addr_ptr->ai_addr;
+			struct sockaddr_in6 *dst = (struct sockaddr_in6 *) addr;
+			memcpy(&dst->sin6_addr, &src->sin6_addr, 16);
+		} else {
+			struct sockaddr_in *src =
+				(struct sockaddr_in *) addr_ptr->ai_addr;
+			struct sockaddr_in *dst = (struct sockaddr_in *) addr;
+			memcpy(&dst->sin_addr, &src->sin_addr, 4);
+		}
 	} else {
 		error("%s: Unable to resolve \"%s\"", __func__, host);
-		addr->sin_family = 0;
-		addr->sin_port = 0;
+		addr->ss_family = AF_UNSPEC;
 	}
 
 	if (addrs)
@@ -663,20 +677,33 @@ extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 
 extern void slurm_pack_slurm_addr(slurm_addr_t *addr, Buf buffer)
 {
-	pack32( ntohl( addr->sin_addr.s_addr ), buffer );
-	pack16( ntohs( addr->sin_port ), buffer );
+	if (addr->ss_family == AF_INET6) {
+		error("%s: cannot pack IPv6 addresses", __func__);
+	} else {
+		struct sockaddr_in *in = (struct sockaddr_in *) addr;
+		pack32(ntohl(in->sin_addr.s_addr), buffer);
+		pack16(ntohs(in->sin_port), buffer);
+	}
 }
 
 extern int slurm_unpack_slurm_addr_no_alloc(slurm_addr_t *addr, Buf buffer)
 {
-	addr->sin_family = AF_INET;
-	safe_unpack32(&addr->sin_addr.s_addr, buffer);
-	safe_unpack16(&addr->sin_port, buffer);
+	addr->ss_family = AF_INET;
+	struct sockaddr_in *in = (struct sockaddr_in *) addr;
+	safe_unpack32(&in->sin_addr.s_addr, buffer);
+	safe_unpack16(&in->sin_port, buffer);
 
-	addr->sin_addr.s_addr = htonl(addr->sin_addr.s_addr);
-	addr->sin_port = htons(addr->sin_port);
+	in->sin_addr.s_addr = htonl(in->sin_addr.s_addr);
+	in->sin_port = htons(in->sin_port);
+	/*
+	 * This is to accomodate updated logic that checks for a valid address
+	 * family instead of an address and port that are 0.
+	 */
+	if ((in->sin_addr.s_addr == 0) && (in->sin_port == 0))
+		addr->ss_family = AF_UNSPEC;
+
 	return SLURM_SUCCESS;
 
-    unpack_error:
+unpack_error:
 	return SLURM_ERROR;
 }

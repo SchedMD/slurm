@@ -1131,7 +1131,16 @@ static listen_t *_create_allocation_response_socket(void)
 		return NULL;
 	}
 	listen->hostname = xshort_hostname();
-	listen->port = slurm_get_port(&listen->address);
+
+	if ((listen->address.ss_family == AF_INET) ||
+	    (listen->address.ss_family == AF_INET6)) {
+		listen->port = slurm_get_port(&listen->address);
+	} else {
+		error("%s: address family not supported", __func__);
+		_destroy_allocation_response_socket(listen);
+		return NULL;
+	}
+
 	fd_set_nonblocking(listen->fd);
 
 	return listen;
