@@ -672,7 +672,7 @@ extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 	}
 
 	if (addrs)
-		free_addr_info(addrs);
+		freeaddrinfo(addrs);
 }
 
 extern void slurm_pack_slurm_addr(slurm_addr_t *addr, Buf buffer)

@@ -332,12 +332,3 @@ char *get_name_info(struct sockaddr *addr, socklen_t addrlen, int flags)
 
 	return xstrdup(hbuf);
 }
-
-void
-free_addr_info(struct addrinfo *info)
-{
-	if (info == NULL)
-		return;
-
-	freeaddrinfo(info);
-}

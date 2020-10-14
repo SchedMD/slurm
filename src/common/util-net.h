@@ -89,6 +89,5 @@ extern char *make_full_path(const char *);
  */
 extern struct addrinfo *get_addr_info(const char *);
 char *get_name_info(struct sockaddr *addr, socklen_t addrlen, int flags);
-extern void free_addr_info(struct addrinfo *);
 
 #endif /* !_UTIL_NET_H */
