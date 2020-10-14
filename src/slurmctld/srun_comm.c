@@ -138,7 +138,7 @@ extern void srun_allocate(job_record_t *job_ptr)
 		return;
 
 	if (job_ptr->het_job_id == 0) {
-		addr = xmalloc(sizeof(struct sockaddr_in));
+		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, job_ptr->alloc_resp_port,
 			job_ptr->resp_host);
 
@@ -149,7 +149,7 @@ extern void srun_allocate(job_record_t *job_ptr)
 	} else if (_pending_het_jobs(job_ptr)) {
 		return;
 	} else if ((het_job_leader = find_job_record(job_ptr->het_job_id))) {
-		addr = xmalloc(sizeof(struct sockaddr_in));
+		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, het_job_leader->alloc_resp_port,
 			       het_job_leader->resp_host);
 		job_resp_list = list_create(_free_srun_alloc);
@@ -186,7 +186,7 @@ extern void srun_allocate_abort(job_record_t *job_ptr)
 	    job_ptr->resp_host) {
 		slurm_addr_t * addr;
 		srun_job_complete_msg_t *msg_arg;
-		addr = xmalloc(sizeof(struct sockaddr_in));
+		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, job_ptr->alloc_resp_port,
 			       job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
@@ -241,7 +241,7 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 		     (step_ptr->batch_step)      ||
 		     (step_ptr->host[0] == '\0') )
 			continue;
-		addr = xmalloc(sizeof(struct sockaddr_in));
+		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
 		msg_arg = xmalloc(sizeof(srun_node_fail_msg_t));
 		memcpy(&msg_arg->step_id, &step_ptr->step_id,
@@ -253,7 +253,7 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 	list_iterator_destroy(step_iterator);
 
 	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
-		addr = xmalloc(sizeof(struct sockaddr_in));
+		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_node_fail_msg_t));
 		msg_arg->step_id.job_id = job_ptr->job_id;
@@ -291,7 +291,7 @@ extern void srun_ping (void)
 
 		if ((job_ptr->time_last_active <= old) && job_ptr->other_port
 		    &&  job_ptr->alloc_node && job_ptr->resp_host) {
-			addr = xmalloc(sizeof(struct sockaddr_in));
+			addr = xmalloc(sizeof(slurm_addr_t));
 			slurm_set_addr(addr, job_ptr->other_port,
 				job_ptr->resp_host);
 			msg_arg = xmalloc(sizeof(srun_ping_msg_t));
@@ -321,7 +321,7 @@ extern void srun_step_timeout(step_record_t *step_ptr, time_t timeout_val)
 	    || !step_ptr->host || (step_ptr->host[0] == '\0'))
 		return;
 
-	addr = xmalloc(sizeof(struct sockaddr_in));
+	addr = xmalloc(sizeof(slurm_addr_t));
 	slurm_set_addr(addr, step_ptr->port, step_ptr->host);
 	msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
 	memcpy(&msg_arg->step_id, &step_ptr->step_id, sizeof(msg_arg->step_id));
@@ -346,7 +346,7 @@ extern void srun_timeout(job_record_t *job_ptr)
 		return;
 
 	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
-		addr = xmalloc(sizeof(struct sockaddr_in));
+		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
 		msg_arg->step_id.job_id   = job_ptr->job_id;
@@ -378,7 +378,7 @@ extern int srun_user_message(job_record_t *job_ptr, char *msg)
 
 	if (job_ptr->other_port &&
 	    job_ptr->resp_host && job_ptr->resp_host[0]) {
-		addr = xmalloc(sizeof(struct sockaddr_in));
+		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_user_msg_t));
 		msg_arg->job_id = job_ptr->job_id;
@@ -445,7 +445,7 @@ extern void srun_job_complete(job_record_t *job_ptr)
 	xassert(job_ptr);
 
 	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
-		addr = xmalloc(sizeof(struct sockaddr_in));
+		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_job_complete_msg_t));
 		msg_arg->job_id = job_ptr->job_id;
@@ -480,7 +480,7 @@ extern bool srun_job_suspend(job_record_t *job_ptr, uint16_t op)
 	xassert(job_ptr);
 
 	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
-		addr = xmalloc(sizeof(struct sockaddr_in));
+		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(suspend_msg_t));
 		msg_arg->job_id  = job_ptr->job_id;
@@ -504,7 +504,7 @@ extern void srun_step_complete(step_record_t *step_ptr)
 
 	xassert(step_ptr);
 	if (step_ptr->port && step_ptr->host && step_ptr->host[0]) {
-		addr = xmalloc(sizeof(struct sockaddr_in));
+		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
 		msg_arg = xmalloc(sizeof(srun_job_complete_msg_t));
 		memcpy(&msg_arg->step_id, &step_ptr->step_id,
@@ -527,7 +527,7 @@ extern void srun_step_missing(step_record_t *step_ptr, char *node_list)
 
 	xassert(step_ptr);
 	if (step_ptr->port && step_ptr->host && step_ptr->host[0]) {
-		addr = xmalloc(sizeof(struct sockaddr_in));
+		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
 		msg_arg = xmalloc(sizeof(srun_step_missing_msg_t));
 		memcpy(&msg_arg->step_id, &step_ptr->step_id,
@@ -551,7 +551,7 @@ extern void srun_step_signal(step_record_t *step_ptr, uint16_t signal)
 
 	xassert(step_ptr);
 	if (step_ptr->port && step_ptr->host && step_ptr->host[0]) {
-		addr = xmalloc(sizeof(struct sockaddr_in));
+		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
 		msg_arg = xmalloc(sizeof(job_step_kill_msg_t));
 		memcpy(&msg_arg->step_id, &step_ptr->step_id,
@@ -579,7 +579,7 @@ extern void srun_exec(step_record_t *step_ptr, char **argv)
 	if (step_ptr->port && step_ptr->host && step_ptr->host[0]) {
 		for (i=0; argv[i]; i++)
 			cnt++;	/* start at 1 to include trailing NULL */
-		addr = xmalloc(sizeof(struct sockaddr_in));
+		addr = xmalloc(sizeof(slurm_addr_t));
 		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
 		msg_arg = xmalloc(sizeof(srun_exec_msg_t));
 		memcpy(&msg_arg->step_id, &step_ptr->step_id,
