@@ -1,4 +1,4 @@
-.TH sinfo "1" "Slurm Commands" "September 2020" "Slurm Commands"
+.TH sinfo "1" "Slurm Commands" "October 2020" "Slurm Commands"
 
 .SH "NAME"
 sinfo \- View information about Slurm nodes and partitions.
@@ -135,8 +135,25 @@ to align the sinfo output, then a second pass is made over the records to
 print them.
 Note that the literal character "#" itself is not a valid field length
 specification, but is only used to document this behaviour.
+
 .IP
-The field specifications available include:
+The format of each field is "%[[.]size]type[suffix]"
+.RS 10
+.TP
+\fIsize\fR
+Minimum field size. If no size is specified, whatever is needed to print the
+information will be used.
+.TP
+\fI.\fR
+Indicates the output should be right justified and size must be specified.
+By default output is left justified.
+.TP
+\fIsuffix\fR
+Arbitrary string to append to the end of the field.
+.RE
+
+.IP
+Valid \fItype\fR specifications include:
 .RS
 .TP 6
 \fB%all\fR
@@ -276,12 +293,6 @@ Number of threads per core.
 .TP
 \fB%z\fR
 Extended processor information: number of sockets, cores, threads (S:C:T) per node.
-.TP
-\fB%.<*>\fR
-Right justification of the field.
-.TP
-\fB%<Number><*>\fR
-Size of the field.
 .RE
 
 .TP
@@ -293,16 +304,19 @@ does not support access to all fields because we ran out of letters).
 Requests a comma separated list of job information to be displayed.
 
 .IP
-The format of each field is "type[:[.]size]"
-.RS
-.TP 8
+The format of each field is "type[:[.][size][suffix]]"
+.RS 10
+.TP
 \fIsize\fR
 The minimum field size.
 If no size is specified, 20 characters will be allocated to print the information.
 .TP
-\fI .\fR
+\fI.\fR
 Indicates the output should be right justified and size must be specified.
 By default, output is left justified.
+.TP
+\fIsuffix\fR
+Arbitrary string to append to the end of the field.
 .RE
 
 .IP
