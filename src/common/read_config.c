@@ -3586,6 +3586,20 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	(void) s_p_get_string(&conf->comm_params, "CommunicationParameters",
 			      hashtbl);
 
+	/*
+	 * IPv4 on by default, can be disabled.
+	 * IPv6 off by default, can be turned on.
+	 */
+	conf->conf_flags |= CTL_CONF_IPV4_ENABLED;
+	if (xstrcasestr(slurm_conf.comm_params, "EnableIPv6"))
+		conf->conf_flags |= CTL_CONF_IPV6_ENABLED;
+	if (xstrcasestr(slurm_conf.comm_params, "DisableIPv4"))
+		conf->conf_flags &= ~CTL_CONF_IPV4_ENABLED;
+
+	if (!(conf->conf_flags & CTL_CONF_IPV4_ENABLED) &&
+	    !(conf->conf_flags & CTL_CONF_IPV6_ENABLED))
+		fatal("Both IPv4 and IPv6 support disabled, cannot communicate");
+
 	if (!s_p_get_string(&conf->core_spec_plugin, "CoreSpecPlugin",
 	    hashtbl)) {
 		conf->core_spec_plugin =

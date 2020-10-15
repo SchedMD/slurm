@@ -2639,6 +2639,8 @@ typedef struct reservation_name_msg {
 #define CTL_CONF_ASRU           0x00000008 /* AllowSpecResourcesUsage */
 #define CTL_CONF_PAM            0x00000010 /* UsePam */
 #define CTL_CONF_WCKEY          0x00000020 /* TrackWCKey */
+#define CTL_CONF_IPV4_ENABLED	0x00000040 /* IPv4 is enabled */
+#define CTL_CONF_IPV6_ENABLED	0x00000080 /* IPv6 is enabled */
 
 #define LOG_FMT_ISO8601_MS      0
 #define LOG_FMT_ISO8601         1

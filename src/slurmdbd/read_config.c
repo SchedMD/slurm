@@ -240,6 +240,21 @@ extern int read_slurmdbd_conf(void)
 			       "CommitDelay", tbl);
 		s_p_get_string(&slurm_conf.comm_params,
 			       "CommunicationParameters", tbl);
+
+		/*
+		 * IPv4 on by default, can be disabled.
+		 * IPv6 off by default, can be turned on.
+		 */
+		slurm_conf.conf_flags |= CTL_CONF_IPV4_ENABLED;
+		if (xstrcasestr(slurm_conf.comm_params, "EnableIPv6"))
+			slurm_conf.conf_flags |= CTL_CONF_IPV6_ENABLED;
+		if (xstrcasestr(slurm_conf.comm_params, "DisableIPv4"))
+			slurm_conf.conf_flags &= ~CTL_CONF_IPV4_ENABLED;
+
+		if (!(slurm_conf.conf_flags & CTL_CONF_IPV4_ENABLED) &&
+		    !(slurm_conf.conf_flags & CTL_CONF_IPV6_ENABLED))
+			fatal("Both IPv4 and IPv6 support disabled, cannot communicate");
+
 		s_p_get_string(&slurmdbd_conf->dbd_backup,
 			       "DbdBackupHost", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_host, "DbdHost", tbl);
