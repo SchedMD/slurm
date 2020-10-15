@@ -2049,9 +2049,11 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	for (j = min_feature; j <= max_feature; j++) {
 		if (job_ptr->details->req_node_bitmap) {
 			bool missing_required_nodes = false;
+			bool feature_found = false;
 			for (i = 0; i < node_set_size; i++) {
 				if (!bit_test(node_set_ptr[i].feature_bits, j))
 					continue;
+				feature_found = true;
 				node_set_map =
 					bit_copy(node_set_ptr[i].my_bitmap);
 
@@ -2069,6 +2071,8 @@ static int _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				}
 
 			}
+			if (!feature_found)
+				continue;
 			if (!bit_super_set(job_ptr->details->req_node_bitmap,
 					   avail_bitmap))
 				missing_required_nodes = true;

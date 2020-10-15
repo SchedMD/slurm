@@ -51,6 +51,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - request detailed job information to populate GRES fields.
  -- Fix job license update bug on array tasks or hetjob components.
  -- Fix job partition update bug on array tasks or hetjob components.
+ -- Fix slurmctld segfault on _pick_best_nodes() when processing a job request
+    with XOR'd constraints and no nodeset has the feature.
 
 * Changes in Slurm 20.02.5
 ==========================
