@@ -708,7 +708,7 @@ static char *_addr2fmt(slurm_addr_t *addr_ptr, char *buf, int buf_size)
 	if (addr_ptr == NULL)
 		return "%.0sNULL";
 
-	if (((struct sockaddr_storage *) addr_ptr)->ss_family == AF_INET6) {
+	if (addr_ptr->ss_family == AF_INET6) {
 		struct sockaddr_in6 *in6 = (struct sockaddr_in6 *) addr_ptr;
 		inet_ntop(AF_INET6, &in6->sin6_addr, addrbuf, INET6_ADDRSTRLEN);
 		port = ntohs(in6->sin6_port);
