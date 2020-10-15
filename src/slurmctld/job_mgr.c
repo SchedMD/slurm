@@ -11764,7 +11764,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 	bool tres_changed = false;
 	int tres_pos;
 	uint64_t tres_req_cnt[slurmctld_tres_cnt];
-	bool tres_req_cnt_set = false;
+	bool tres_req_cnt_set = false, valid_licenses = false;
 	List gres_list = NULL;
 	List license_list = NULL;
 	List part_ptr_list = NULL;
@@ -12351,15 +12351,14 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 					    job_ptr->licenses)) {
 		sched_debug("%s: new licenses identical to old licenses \"%s\"",
 			    __func__, job_ptr->licenses);
-		xfree(job_specs->licenses);
 	} else if (job_specs->licenses) {
-		bool valid, pending = IS_JOB_PENDING(job_ptr);
+		bool pending = IS_JOB_PENDING(job_ptr);
 		license_list = license_validate(job_specs->licenses, true, true,
 						pending ?
 						job_specs->tres_req_cnt : NULL,
-						&valid);
+						&valid_licenses);
 
-		if (!valid) {
+		if (!valid_licenses) {
 			sched_info("%s: invalid licenses: %s",
 				   __func__, job_specs->licenses);
 			error_code = ESLURM_INVALID_LICENSES;
@@ -13693,7 +13692,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 		}
 	}
 
-	if (job_specs->licenses) {
+	if (valid_licenses) {
 		if (IS_JOB_PENDING(job_ptr)) {
 			FREE_NULL_LIST(job_ptr->license_list);
 			job_ptr->license_list = license_list;
