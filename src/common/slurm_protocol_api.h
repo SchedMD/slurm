@@ -386,14 +386,13 @@ extern void slurm_set_addr(slurm_addr_t * slurm_address,
 			   uint16_t port, char *host);
 
 /* slurm_get_ip_str
- * given a slurm_address it returns its port and ip address string
+ * given a slurm_address it returns its ip address as a string
  * IN addr		- slurm_addr_t to be queried
- * OUT port		- port number
  * OUT ip		- ip address in dotted-quad string form
  * IN buf_len		- length of ip buffer
  */
-extern void slurm_get_ip_str(slurm_addr_t *addr, uint16_t *port,
-			     char *ip, unsigned int buf_len);
+extern void slurm_get_ip_str(slurm_addr_t *addr, char *ip,
+			     unsigned int buf_len);
 
 /* slurm_get_peer_addr
  * get the slurm address of the peer connection, similar to getpeeraddr

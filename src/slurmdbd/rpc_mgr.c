@@ -69,7 +69,6 @@ extern void *rpc_mgr(void *no_data)
 {
 	int sockfd, newsockfd;
 	int i;
-	uint16_t port;
 	slurm_addr_t cli_addr;
 	slurmdbd_conn_t *conn_arg = NULL;
 
@@ -112,8 +111,8 @@ extern void *rpc_mgr(void *no_data)
 		conn_arg->conn->rem_host = xmalloc(INET6_ADDRSTRLEN);
 		/* Don't fill in the rem_port here.  It will be filled in
 		 * later if it is a slurmctld connection. */
-		slurm_get_ip_str(&cli_addr, &port,
-				 conn_arg->conn->rem_host, INET6_ADDRSTRLEN);
+		slurm_get_ip_str(&cli_addr, conn_arg->conn->rem_host,
+				 INET6_ADDRSTRLEN);
 
 		slurm_persist_conn_recv_thread_init(
 			conn_arg->conn, i, conn_arg);

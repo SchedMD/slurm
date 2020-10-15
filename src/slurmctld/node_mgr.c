@@ -2748,10 +2748,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		/* Get IP of slurmd */
 		if (slurm_msg->conn_fd >= 0 &&
 		    !slurm_get_peer_addr(slurm_msg->conn_fd, &addr)) {
-			uint16_t port = 0;
 			comm_name = xmalloc(INET6_ADDRSTRLEN);
-			slurm_get_ip_str(&addr, &port, comm_name,
-					 INET6_ADDRSTRLEN);
+			slurm_get_ip_str(&addr, comm_name, INET6_ADDRSTRLEN);
 		}
 
 		hostname = g_slurm_auth_get_host(slurm_msg->auth_cred);

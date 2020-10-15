@@ -1391,7 +1391,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		goto done;
 	}
 
-	slurm_get_ip_str(cli, &port, host, sizeof(host));
+	slurm_get_ip_str(cli, host, sizeof(host));
+	port = slurm_get_port(cli);
 	if (req->het_job_id && (req->het_job_id != NO_VAL)) {
 		info("launch task %u+%u.%u (%ps) request from UID:%u GID:%u HOST:%s PORT:%hu",
 		     req->het_job_id, req->het_job_offset, req->step_id.step_id,

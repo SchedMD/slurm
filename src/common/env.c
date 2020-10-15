@@ -722,8 +722,7 @@ int setup_env(env_t *env, bool preserve_env)
 	}
 
 	if (env->cli) {
-		uint16_t port;
-		slurm_get_ip_str(env->cli, &port, addrbuf, INET6_ADDRSTRLEN);
+		slurm_get_ip_str(env->cli, addrbuf, INET6_ADDRSTRLEN);
 		setenvf(&env->env, "SLURM_LAUNCH_NODE_IPADDR", "%s", addrbuf);
 	}
 

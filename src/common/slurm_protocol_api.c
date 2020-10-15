@@ -1703,14 +1703,12 @@ size_t slurm_read_stream(int open_fd, char *buffer, size_t size)
 \**********************************************************************/
 
 /* slurm_get_ip_str
- * given a slurm_address it returns its port and ip address string
+ * given a slurm_address it returns its ip address as a string
  * IN slurm_address	- slurm_addr_t to be queried
- * OUT port		- port number
  * OUT ip		- ip address in dotted-quad string form
  * IN buf_len		- length of ip buffer
  */
-void slurm_get_ip_str(slurm_addr_t *addr, uint16_t *port,
-		      char *ip, unsigned int buf_len)
+void slurm_get_ip_str(slurm_addr_t *addr, char *ip, unsigned int buf_len)
 {
 	if (addr->ss_family == AF_INET6) {
 		struct sockaddr_in6 *sin = (struct sockaddr_in6 *) addr;
@@ -1719,8 +1717,6 @@ void slurm_get_ip_str(slurm_addr_t *addr, uint16_t *port,
 		struct sockaddr_in *sin = (struct sockaddr_in *) addr;
 		inet_ntop(AF_INET, &sin->sin_addr, ip, buf_len);
 	}
-
-	*port = slurm_get_port(addr);
 }
 
 /* slurm_get_peer_addr

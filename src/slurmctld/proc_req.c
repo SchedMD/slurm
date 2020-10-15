@@ -601,11 +601,9 @@ static void _set_hostname(slurm_msg_t *msg, job_desc_msg_t *job_desc_msg)
 	} else if (msg->conn_fd >= 0 &&
 		   !slurm_get_peer_addr(msg->conn_fd, &addr)) {
 		/* use remote host IP */
-		uint16_t port;
-
 		job_desc_msg->alloc_node = xmalloc(INET6_ADDRSTRLEN);
-		slurm_get_ip_str(&addr, &port,
-				 job_desc_msg->alloc_node, INET6_ADDRSTRLEN);
+		slurm_get_ip_str(&addr, job_desc_msg->alloc_node,
+				 INET6_ADDRSTRLEN);
 		debug3("%s: Using requester IP for alloc_node: %s",
 		       __func__, job_desc_msg->alloc_node);
 	} else {
@@ -1006,7 +1004,6 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 	List resp = NULL;
 	slurm_addr_t resp_addr;
 	char resp_host[INET6_ADDRSTRLEN];
-	uint16_t port;	/* dummy value */
 	char *het_job_id_set = NULL;
 
 	START_TIMER;
@@ -1029,7 +1026,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 		goto send_msg;
 	}
 	if (slurm_get_peer_addr(msg->conn_fd, &resp_addr) == 0) {
-		slurm_get_ip_str(&resp_addr, &port,resp_host,sizeof(resp_host));
+		slurm_get_ip_str(&resp_addr, resp_host, sizeof(resp_host));
 	} else {
 		info("REQUEST_HET_JOB_ALLOCATION from uid=%d , can't get peer addr",
 		     uid);
@@ -1265,7 +1262,6 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	bool do_unlock = false;
 	bool reject_job = false;
 	job_record_t *job_ptr = NULL;
-	uint16_t port;	/* dummy value */
 	slurm_addr_t resp_addr;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 
@@ -1324,8 +1320,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		/* resp_host could already be set from a federated cluster */
 		if (!job_desc_msg->resp_host) {
 			job_desc_msg->resp_host = xmalloc(INET6_ADDRSTRLEN);
-			slurm_get_ip_str(&resp_addr, &port,
-					 job_desc_msg->resp_host,
+			slurm_get_ip_str(&resp_addr, job_desc_msg->resp_host,
 					 INET6_ADDRSTRLEN);
 		}
 		dump_job_desc(job_desc_msg);
@@ -2503,7 +2498,6 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
-	uint16_t port;	/* dummy value */
 	slurm_addr_t resp_addr;
 	will_run_response_msg_t *resp = NULL;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
@@ -2540,8 +2534,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 
 	if (!slurm_get_peer_addr(msg->conn_fd, &resp_addr)) {
 		job_desc_msg->resp_host = xmalloc(INET6_ADDRSTRLEN);
-		slurm_get_ip_str(&resp_addr, &port,
-				 job_desc_msg->resp_host, INET6_ADDRSTRLEN);
+		slurm_get_ip_str(&resp_addr, job_desc_msg->resp_host,
+				 INET6_ADDRSTRLEN);
 		dump_job_desc(job_desc_msg);
 		if (error_code == SLURM_SUCCESS) {
 			lock_slurmctld(job_write_lock);
@@ -2680,9 +2674,8 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 			/* Get IP of slurmd */
 			if (msg->conn_fd >= 0 &&
 			    !slurm_get_peer_addr(msg->conn_fd, &addr)) {
-				uint16_t port = 0;
 				comm_name = xmalloc(INET6_ADDRSTRLEN);
-				slurm_get_ip_str(&addr, &port, comm_name,
+				slurm_get_ip_str(&addr, comm_name,
 						 INET6_ADDRSTRLEN);
 			}
 
