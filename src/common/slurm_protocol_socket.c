@@ -118,7 +118,7 @@ static void _sock_bind_wild(int sockfd)
 		srand48((long int) (time(NULL) + getpid()));
 	}
 
-	slurm_setup_sockaddr(&sin, RANDOM_USER_PORT);
+	slurm_setup_addr(&sin, RANDOM_USER_PORT);
 
 	for (retry=0; retry < PORT_RETRIES ; retry++) {
 		rc = bind(sockfd, (struct sockaddr *) &sin, sizeof(sin));

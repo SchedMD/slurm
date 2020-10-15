@@ -697,7 +697,7 @@ int slurm_init_msg_engine_port(uint16_t port)
 	slurm_addr_t addr;
 	int i;
 
-	slurm_setup_sockaddr(&addr, port);
+	slurm_setup_addr(&addr, port);
 	cc = slurm_init_msg_engine(&addr);
 	if ((cc < 0) && (port == 0) && (errno == EADDRINUSE)) {
 		/* All ephemeral ports are in use, test other ports */
@@ -721,7 +721,7 @@ int slurm_init_msg_engine_ports(uint16_t *ports)
 	int s;
 	int port;
 
-	slurm_setup_sockaddr(&addr, 0);
+	slurm_setup_addr(&addr, 0);
 
 	s = socket(addr.ss_family, SOCK_STREAM, IPPROTO_TCP);
 	if (s < 0)
@@ -2890,7 +2890,7 @@ extern int slurm_forward_data(
 	return rc;
 }
 
-extern void slurm_setup_sockaddr(struct sockaddr_storage *sin, uint16_t port)
+extern void slurm_setup_addr(slurm_addr_t *sin, uint16_t port)
 {
 	static uint8_t s_addr[16];
 	static uint32_t s_family = NO_VAL;
@@ -3003,7 +3003,7 @@ int sock_bind_range(int s, uint16_t *range, bool local)
 static bool _is_port_ok(int s, uint16_t port, bool local)
 {
 	slurm_addr_t addr;
-	slurm_setup_sockaddr(&addr, port);
+	slurm_setup_addr(&addr, port);
 
 	if (!local) {
 		debug3("%s: requesting non-local port", __func__);

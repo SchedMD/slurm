@@ -640,15 +640,13 @@ extern int slurm_forward_data(
 	char **nodelist, char *address, uint32_t len, const char *data);
 
 /*
- * slurm_setup_sockaddr - setup a sockaddr_storage struct to be used for
- *                        communication. If TopologyParameters has
- *                        NoInAddrAny set it will work of the
- *                        interface given from gethostname from the
- *                        hostname of the node.
- * OUT sin - uninitialized sockaddr_storage
- * IN  port - port to used, we will call htons on it
+ * Setup a slurm_addr_t to be used for communication.
+ * If TopologyParameters has NoInAddrAny set it will work off the interface
+ * given from gethostname from the hostname of the node.
+ * IN/OUT sin - uninitialized slurm_addr_t to initialize
+ * IN port - port to use, we will call htons on it
  */
-extern void slurm_setup_sockaddr(struct sockaddr_storage *sin, uint16_t port);
+extern void slurm_setup_addr(slurm_addr_t *sin, uint16_t port);
 
 /*
  * slurm_val_to_char - convert an int value (0-16) to a hex value (0-F) char.
