@@ -606,7 +606,8 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushstring(L, job_desc->reservation);
 	} else if (!xstrcmp(name, "script")) {
 		lua_pushstring(L, job_desc->script);
-	} else if (!xstrcmp(name, "shared")) {
+	} else if (!xstrcmp(name, "shared") ||
+		   !xstrcmp(name, "oversubscribe")) {
 		lua_pushnumber(L, job_desc->shared);
 	} else if (!xstrcmp(name, "site_factor")) {
 		if (job_desc->site_factor == NO_VAL)
@@ -888,7 +889,8 @@ static int _set_job_req_field(lua_State *L)
 		xfree(job_desc->script);
 		if (strlen(value_str))
 			job_desc->script = xstrdup(value_str);
-	} else if (!xstrcmp(name, "shared")) {
+	} else if (!xstrcmp(name, "shared") ||
+		   !xstrcmp(name, "oversubscribe")) {
 		job_desc->shared = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "site_factor")) {
 		job_desc->site_factor = luaL_checknumber(L, 3);
@@ -1056,7 +1058,8 @@ static int _part_rec_field(const part_record_t *part_ptr, const char *name)
 		lua_pushnumber(L, part_ptr->max_nodes);
 	} else if (!xstrcmp(name, "max_nodes_orig")) {
 		lua_pushnumber(L, part_ptr->max_nodes_orig);
-	} else if (!xstrcmp(name, "max_share")) {
+	} else if (!xstrcmp(name, "max_share") ||
+		   !xstrcmp(name, "max_oversubscribe")) {
 		lua_pushnumber(L, part_ptr->max_share);
 	} else if (!xstrcmp(name, "max_time")) {
 		lua_pushnumber(L, part_ptr->max_time);

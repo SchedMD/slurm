@@ -2267,8 +2267,8 @@ static int  _restore_part_state(List old_part_list, char *old_def_part_name,
 							   max_nodes_orig;
 			}
 			if (part_ptr->max_share != old_part_ptr->max_share) {
-				error("Partition %s Shared differs from "
-				      "slurm.conf", part_ptr->name);
+				error("Partition %s OverSubscribe differs from slurm.conf",
+				      part_ptr->name);
 				part_ptr->max_share = old_part_ptr->max_share;
 			}
 			if (part_ptr->max_time != old_part_ptr->max_time) {

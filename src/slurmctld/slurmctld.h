@@ -264,8 +264,8 @@ extern List avail_feature_list;	/* list of available node features */
  *  power_node_bitmap       Set for nodes which are powered down
  *  share_node_bitmap       Set if no jobs allocated exclusive access to
  *                          resources on that node (cleared if --exclusive
- *                          option specified by job or Shared=NO configured for
- *                          the job's partition)
+ *                          option specified by job or OverSubscribe=NO
+ *                          configured for the job's partition)
  *  up_node_bitmap          Set if the node's state is not DOWN
 \*****************************************************************************/
 extern bitstr_t *avail_node_bitmap;	/* bitmap of available nodes,

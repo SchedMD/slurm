@@ -207,10 +207,10 @@ static uint16_t _get_job_node_req(job_record_t *job_ptr)
 {
 	int max_share = job_ptr->part_ptr->max_share;
 
-	if (max_share == 0)		    /* Partition Shared=EXCLUSIVE */
+	if (max_share == 0)	/* Partition OverSubscribe=EXCLUSIVE */
 		return NODE_CR_RESERVED;
 
-	/* Partition is Shared=FORCE */
+	/* Partition is OverSubscribe=FORCE */
 	if (max_share & SHARED_FORCE)
 		return NODE_CR_AVAILABLE;
 
@@ -1038,8 +1038,8 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	if ((gang_mode == 0) && (job_node_req == NODE_CR_ONE_ROW)) {
 		/*
 		 * This job CANNOT share CPUs regardless of priority,
-		 * so we fail here. Note that Shared=EXCLUSIVE was already
-		 * addressed in _verify_node_state() and
+		 * so we fail here. Note that OverSubscribe=EXCLUSIVE was
+		 * already addressed in _verify_node_state() and
 		 * job preemption removes jobs from simulated resource
 		 * allocation map before this point.
 		 */

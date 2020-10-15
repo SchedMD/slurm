@@ -55,4 +55,4 @@ CpuFreqDef=performance
 {% endfor %}#
 #
 # PARTITIONS
-PartitionName=workq Nodes={{ nodelist }} Shared=EXCLUSIVE Priority=1 Default=YES DefaultTime=60 MaxTime=24:00:00 State=UP
+PartitionName=workq Nodes={{ nodelist }} OverSubscribe=EXCLUSIVE Priority=1 Default=YES DefaultTime=60 MaxTime=24:00:00 State=UP

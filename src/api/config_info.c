@@ -387,11 +387,11 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 		force = p[i].max_share & SHARED_FORCE;
 		val = p[i].max_share & (~SHARED_FORCE);
 		if (val == 0)
-		        fprintf(fp, " Shared=EXCLUSIVE");
+		        fprintf(fp, " OverSubscribe=EXCLUSIVE");
 		else if (force) {
-		        fprintf(fp, " Shared=FORCE:%u", val);
+		        fprintf(fp, " OverSubscribe=FORCE:%u", val);
 		} else if (val != 1)
-		        fprintf(fp, " Shared=YES:%u", val);
+		        fprintf(fp, " OverSubscribe=YES:%u", val);
 
 		if (p[i].state_up == PARTITION_UP)
 	                fprintf(fp, " State=UP");

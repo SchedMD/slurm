@@ -10442,11 +10442,11 @@ static void _pack_default_job_details(job_record_t *job_ptr, Buf buffer,
 			shared = JOB_SHARED_USER;
 		else if ((job_ptr->part_ptr->max_share & SHARED_FORCE) &&
 			 ((job_ptr->part_ptr->max_share & (~SHARED_FORCE)) > 1))
-			shared = 1;		/* Partition Shared=force */
+			shared = 1; /* Partition OverSubscribe=force */
 		else if (job_ptr->part_ptr->max_share == 0)
-			shared = 0;		/* Partition Shared=exclusive */
+			shared = 0; /* Partition OverSubscribe=exclusive */
 		else
-			shared = NO_VAL16;  /* Part Shared=yes or no */
+			shared = NO_VAL16;  /* Part OverSubscribe=yes or no */
 	} else
 		shared = NO_VAL16;	/* No user or partition info */
 
