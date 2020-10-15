@@ -1073,15 +1073,11 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 				      bool label, uint32_t het_job_offset,
 				      uint32_t het_job_task_offset)
 {
-	client_io_t *cio;
 	int i;
 	uint32_t siglen;
 	char *sig;
 	uint16_t *ports;
-
-	cio = (client_io_t *)xmalloc(sizeof(client_io_t));
-	if (cio == NULL)
-		return NULL;
+	client_io_t *cio = xmalloc(sizeof(*cio));
 
 	cio->num_tasks   = num_tasks;
 	cio->num_nodes   = num_nodes;
