@@ -4229,7 +4229,6 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	slurm_msg_t                    resp_msg;
 	int          rc   = SLURM_SUCCESS;
 	uint16_t     port = 0;
-	char         host[MAXHOSTNAMELEN];
 	slurm_addr_t   ioaddr;
 	void        *job_cred_sig;
 	uint32_t     len;
@@ -4286,7 +4285,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	}
 
 	memset(resp, 0, sizeof(reattach_tasks_response_msg_t));
-	slurm_get_ip_str(cli, &port, host, sizeof(host));
+	port = slurm_get_port(cli);
 
 	/*
 	 * Set response address by resp_port and client address
