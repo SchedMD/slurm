@@ -2863,7 +2863,6 @@ extern void slurm_setup_addr(slurm_addr_t *sin, uint16_t port)
 		 * want to get just any address.  This is the case on
 		 * a Cray system with RSIP.
 		 */
-		char host[MAXHOSTNAMELEN];
 		char *var;
 
 		if (running_in_slurmctld())
@@ -2871,14 +2870,17 @@ extern void slurm_setup_addr(slurm_addr_t *sin, uint16_t port)
 		else
 			var = "NoInAddrAny";
 
-		/* do this lookup to determine if we should be IPv6 or IPv4 */
-		if (!gethostname(host, MAXHOSTNAMELEN)) {
-			slurm_set_addr(sin, port, host);
-			s_family = sin->ss_family;
-		} else
-			fatal("%s: Can't get hostname or addr: %m", __func__);
-
 		if (xstrcasestr(slurm_conf.comm_params, var)) {
+			char host[MAXHOSTNAMELEN];
+
+			if (!gethostname(host, MAXHOSTNAMELEN)) {
+				slurm_set_addr(sin, port, host);
+				s_family = sin->ss_family;
+			} else
+				fatal("%s: Can't get hostname or addr: %m",
+				      __func__);
+
+			/* Pick IPv6 or IPv4 based on the DNS lookup */
 			if (s_family == AF_INET6) {
 				struct sockaddr_in6 *in6 =
 					(struct sockaddr_in6 *) sin;
@@ -2889,12 +2891,14 @@ extern void slurm_setup_addr(slurm_addr_t *sin, uint16_t port)
 				memcpy(s_addr, &(in->sin_addr.s_addr), 4);
 			}
 		} else {
-			if (s_family == AF_INET6) {
+			if (slurm_conf.conf_flags & CTL_CONF_IPV6_ENABLED) {
 				struct in6_addr tmp_addr = IN6ADDR_ANY_INIT;
 				memcpy(s_addr, &tmp_addr, sizeof(tmp_addr));
+				s_family = AF_INET6;
 			} else {
 				uint32_t tmp_addr = htonl(INADDR_ANY);
 				memcpy(s_addr, &tmp_addr, sizeof(tmp_addr));
+				s_family = AF_INET;
 			}
 		}
 	}
