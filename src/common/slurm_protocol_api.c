@@ -2915,8 +2915,7 @@ extern void slurm_setup_sockaddr(struct sockaddr_storage *sin, uint16_t port)
 			slurm_set_addr(sin, port, host);
 			s_family = sin->ss_family;
 		} else
-			fatal("slurm_setup_sockaddr: "
-			      "Can't get hostname or addr: %m");
+			fatal("%s: Can't get hostname or addr: %m", __func__);
 
 		if (xstrcasestr(slurm_conf.comm_params, var)) {
 			if (s_family == AF_INET6) {
