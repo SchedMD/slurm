@@ -315,8 +315,14 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred)
 	addr.ss_family = AF_INET;
 	sin->sin_addr.s_addr = cred->addr.s_addr;
 
-	hostname = get_name_info((struct sockaddr *) &addr, sizeof(addr),
-				 NI_NOFQDN);
+	/*
+	 * For IPv6-native systems, MUNGE always reports the host as 0.0.0.0
+	 * which will never resolve successfully. So don't even bother trying.
+	 */
+	if (sin->sin_addr.s_addr != 0) {
+		hostname = get_name_info((struct sockaddr *) &addr,
+					 sizeof(addr), NI_NOFQDN);
+	}
 
 	if (!hostname) {
 		/* at this point, the name lookup failed */
