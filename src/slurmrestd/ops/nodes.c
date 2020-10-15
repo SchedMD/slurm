@@ -161,7 +161,7 @@ static int _op_handler_nodes(const char *context_id,
 	node_info_msg_t *node_info_ptr = NULL;
 
 	if (tag == URL_TAG_NODES)
-		rc = slurm_load_node(0, &node_info_ptr, SHOW_ALL);
+		rc = slurm_load_node(0, &node_info_ptr, SHOW_ALL|SHOW_DETAIL);
 	else if (tag == URL_TAG_NODE) {
 		const data_t *node_name = data_key_get_const(parameters,
 							     "node_name");
@@ -171,7 +171,7 @@ static int _op_handler_nodes(const char *context_id,
 			rc = ESLURM_INVALID_NODE_NAME;
 		else
 			rc = slurm_load_node_single(&node_info_ptr, name,
-						       SHOW_ALL);
+						       SHOW_ALL|SHOW_DETAIL);
 
 		xfree(name);
 	} else
