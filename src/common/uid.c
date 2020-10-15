@@ -299,17 +299,29 @@ int gid_from_string(const char *name, gid_t *gidp)
 	return 0;
 }
 
-char *
-gid_to_string (gid_t gid)
+char *gid_to_string(gid_t gid)
+{
+	char *result = gid_to_string_or_null(gid);
+
+	if (!result)
+		return xstrdup("nobody");
+
+	return result;
+}
+
+/*
+ * Return an xmalloc'd string, or null on error.
+ * Caller must xfree() eventually.
+ */
+char *gid_to_string_or_null(gid_t gid)
 {
 	struct group grp, *result;
-	char buffer[PW_BUF_SIZE], *gstring;
+	char buffer[PW_BUF_SIZE];
 	int rc;
 
 	rc = _getgrgid_r(gid, &grp, buffer, PW_BUF_SIZE, &result);
 	if (rc == 0 && result)
-		gstring = xstrdup(result->gr_name);
-	else
-		gstring = xstrdup("nobody");
-	return gstring;
+		return xstrdup(result->gr_name);
+
+	return NULL;
 }

@@ -106,4 +106,11 @@ extern char *uid_to_string_cached(uid_t uid);
  */
 char *gid_to_string (gid_t gid);
 
+/*
+ * Translate gid to user name.
+ * Will return NULL on error.
+ * NOTE: xfree the return value.
+ */
+char *gid_to_string_or_null(gid_t gid);
+
 #endif /*__SLURM_UID_UTILITY_H__*/
