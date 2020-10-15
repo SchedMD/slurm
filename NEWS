@@ -50,6 +50,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - request detailed node information to populate GRES fields.
  -- slurmrestd - request detailed job information to populate GRES fields.
  -- Fix job license update bug on array tasks or hetjob components.
+ -- Fix job partition update bug on array tasks or hetjob components.
 
 * Changes in Slurm 20.02.5
 ==========================
