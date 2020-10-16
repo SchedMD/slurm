@@ -454,6 +454,10 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_NUM_HOSTS,
 			   &job->nhosts);
 
+	slurm_step_layout_t *step_layout =
+		launch_common_get_slurm_step_layout(job);
+	if (job->ntasks != step_layout->task_cnt)
+		job->ntasks = step_layout->task_cnt;
 	/*
 	 * Recreate filenames which may depend upon step id
 	 */
