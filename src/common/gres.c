@@ -5271,6 +5271,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 		while ((job_gres_data = _get_next_job_gres(in_val, &cnt,
 							   *gres_list,
 							   &save_ptr, &rc))) {
+			job_gres_data->ntasks_per_gres = *ntasks_per_tres;
 			/* Simulate a tres_per_job specification */
 			job_gres_data->gres_per_job = cnt;
 			job_gres_data->total_gres =
@@ -8248,6 +8249,10 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 
 		if (job_specs->cpus_per_gres)
 			cpus_per_gres = job_specs->cpus_per_gres;
+		else if (job_specs->ntasks_per_gres &&
+			 (job_specs->ntasks_per_gres != NO_VAL64))
+			cpus_per_gres = job_specs->ntasks_per_gres *
+				mc_ptr->cpus_per_task;
 		else
 			cpus_per_gres = job_specs->def_cpus_per_gres;
 
@@ -8648,6 +8653,7 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
 	int *cores_on_sock = NULL, alloc_gres_cnt = 0;
 	int max_gres, pick_gres, total_cores = 0;
 	int fini = 0;
+	uint16_t cpus_per_gres = 0;
 
 	job_specs = sock_gres->job_specs;
 	node_specs = sock_gres->node_specs;
@@ -8689,9 +8695,16 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
 		}
 	}
 	if (job_specs->cpus_per_gres) {
+		cpus_per_gres = job_specs->cpus_per_gres;
+	} else if (job_specs->ntasks_per_gres &&
+		   (job_specs->ntasks_per_gres != NO_VAL64)) {
+		cpus_per_gres = job_specs->ntasks_per_gres *
+				tres_mc_ptr->cpus_per_task;
+	}
+	if (cpus_per_gres) {
 		max_gres = MIN(max_gres,
 			       ((total_cores * cpus_per_core) /
-				job_specs->cpus_per_gres));
+				cpus_per_gres));
 	}
 	if ((max_gres > 1) && (node_specs->link_len == gres_cnt))
 		pick_gres  = NO_VAL16;
