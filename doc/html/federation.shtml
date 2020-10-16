@@ -247,8 +247,7 @@ the SlurmdSpooldir to be the same on the host where the srun is being run as it
 is on the compute nodes in the allocation. If they aren’t, a workaround is to
 get an allocation that puts the user on the actual compute node. Then the sruns
 on the compute nodes will be using the slurm.conf that corresponds to the
-correct cluster. For example, putting <b>SallocDefaultCommand="srun -n1 -N1
-	--mem-per-cpu=0 --pty --preserve-env --mpi=none $SHELL"</b> in the
+correct cluster. Setting <b>LaunchParameters=use_interactive_step</b>
 slurm.conf will put the user on an actual compute node when using salloc.
 </p>
 
@@ -461,6 +460,6 @@ issuing the command on the cluster or using the <b>--cluster/-M</b>  option.
 	<li>sview grid is disabled in a federated view.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 24 Jun 2020</p>
+<p style="text-align:center;">Last modified 15 October 2020</p>
 
 <!--#include virtual="footer.txt"-->

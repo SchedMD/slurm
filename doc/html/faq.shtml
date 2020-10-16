@@ -412,10 +412,10 @@ mode?</b></a><br>
 <i>srun --pty bash -i</i><br/>
 Srun's <i>--pty</i> option runs task zero in pseudo terminal mode.
 Bash's <i>-i</i> option tells it to run in interactive mode (with prompts).
-<br/>You can also configure <i>SallocDefaultCommand</i> in <i>slurm.conf</i>
+<br/>You can also configure <i>use_interactive_step</i> in <i>slurm.conf</i>
 to automatically launch a shell, e.g.:
 <pre>
-SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --cpu-bind=no --mpi=none $SHELL"
+LaunchParameters=use_interactive_step
 </pre>
 <p>And then run <i>salloc</i> directly which will provide you an allocation with
 an interactive shell console.</p>
@@ -471,12 +471,9 @@ The simplest method is to make use of srun's <i>--pty</i> option,
 (e.g. <i>srun --pty bash -i</i>).
 Srun's <i>--pty</i> option runs task zero in pseudo terminal mode. Bash's
 <i>-i</i> option instructs it to run in interactive mode (with prompts).<br>
-In addition to that method you have the option to define the
-<i>SallocDefaultCommand</i> to run a task in pseudo terminal mode directly,
-so you get the prompt just invoking salloc:
-<pre>SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --cpu-bind=no --mpi=none $SHELL"</pre>
-<p>Finally you can make use of X11 feature and run a graphical terminal.
-(e.g. <i>srun xterm</i>).</p>
+In addition to that method you have the option to automatically have salloc
+place terminals on the compute nodes by setting "use_interactive_step" as
+an option in LaunchParameters.</p>
 
 <p><a name="force"><b>What does &quot;srun: Force Terminated job&quot;
 indicate?</b></a><br>
@@ -1825,18 +1822,8 @@ reserve licenses and remove them from being available to jobs on the system
 
 <p><a name="salloc_default_command"><b>Can the salloc command be configured to
 launch a shell on a node in the job's allocation?</b></a></br>
-Yes, just use the SallocDefaultCommand configuration parameter in your
-slurm.conf file as shown below.</p>
-<pre>
-SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --pty --preserve-env --cpu-bind=no --mpi=none $SHELL"
-</pre>
-
-<p>
-For Cray systems, add --gres=craynetwork:0 to the options.
-<pre>
-SallocDefaultCommand="srun -n1 -N1 --mem-per-cpu=0 --gres=craynetwork:0 --pty --preserve-env --mpi=none $SHELL"
-</pre>
-</p>
+Yes, just set "use_interactive_step" as part of the LaunchParameters
+configuration option in slurm.conf.</p>
 
 <p><a name="upgrade"><b>What should I be aware of when upgrading Slurm?</b></a></br>
 See the Quick Start Administrator Guide <a href="quickstart_admin.html#upgrade">Upgrade</a>
@@ -2263,6 +2250,6 @@ memory allocations but may cause application issues.
 </ul>
 </p>
 
-<p style="text-align:center;">Last modified 17 July 2020</p>
+<p style="text-align:center;">Last modified 15 October 2020</p>
 
 <!--#include virtual="footer.txt"-->

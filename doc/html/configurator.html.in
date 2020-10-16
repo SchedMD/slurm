@@ -124,7 +124,6 @@ function displayfile()
    "#PropagateResourceLimitsExcept= <br>" +
    "#RebootProgram= <br>" +
    "ReturnToService=" + get_radio_value(document.config.return_to_service) + "<br>" +
-   "#SallocDefaultCommand= <br>" +
    "SlurmctldPidFile=" + document.config.slurmctld_pid_file.value + "<br>" +
    "SlurmctldPort=" + document.config.slurmctld_port.value + "<br>" +
    "SlurmdPidFile=" + document.config.slurmd_pid_file.value + "<br>" +

@@ -21,10 +21,8 @@ complete, salloc relinquishes the job allocation.
 
 The command may be any program the user wishes.  Some typical commands are
 xterm, a shell script containing srun commands, and srun (see the EXAMPLES
-section). If no command is specified, then the value of
-\fBSallocDefaultCommand\fR in slurm.conf is used. If
-\fBSallocDefaultCommand\fR is not set, then \fBsalloc\fR runs the
-user's default shell.
+section). If no command is specified, then \fBsalloc\fR runs the user's default
+shell.
 
 The following document describes the influence of various options on the
 allocation of cpus to jobs and tasks.
@@ -155,9 +153,7 @@ option applies to job allocations.
 \fB\-\-bb\fR=<\fIspec\fR>
 Burst buffer specification. The form of the specification is system dependent.
 Note the burst buffer may not be accessible from a login node, but require
-that salloc spawn a shell on one of its allocated compute nodes. See the
-description of SallocDefaultCommand in the slurm.conf man page for more
-information about how to spawn a remote shell.
+that salloc spawn a shell on one of its allocated compute nodes.
 
 .TP
 \fB\-\-bbf\fR=<\fIfile_name\fR>
@@ -165,9 +161,7 @@ Path of file containing burst buffer specification.
 The form of the specification is system dependent.
 Also see \fB\-\-bb\fR.
 Note the burst buffer may not be accessible from a login node, but require
-that salloc spawn a shell on one of its allocated compute nodes. See the
-description of SallocDefaultCommand in the slurm.conf man page for more
-information about how to spawn a remote shell.
+that salloc spawn a shell on one of its allocated compute nodes.
 
 .TP
 \fB\-\-begin\fR=<\fItime\fR>

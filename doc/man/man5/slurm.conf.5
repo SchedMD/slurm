@@ -1079,6 +1079,13 @@ responsible for the job).
 The default value is unlimited (zero) and may not exceed 65533 seconds.
 
 .TP
+\fBInteractiveStepOptions\fR
+When LaunchParameters=use_interactive_step is enabled, launching salloc will
+automatically start an srun process with InteractiveStepOptions to launch
+a terminal on a node in the job allocation.
+The default value is "--interactive --pty $SHELL".
+
+.TP
 \fBJobAcctGatherType\fR
 The job accounting mechanism type.
 Acceptable values at present include "jobacct_gather/linux" (for Linux
@@ -1396,6 +1403,11 @@ Lock the slurmstepd process's current and future memory in RAM.
 Have srun verify existence of the executable program along with user
 execute permission on the node where srun was called before attempting to
 launch it on nodes in the step.
+.TP
+\fBuse_interactive_step\fR
+Have salloc use the Interactive Step to launch a shell on an allocated compute
+node rather than locally to wherever salloc was invoked. This is accomplished
+by launching the srun command with InteractiveStepOptions as options.
 .RE
 
 .TP
@@ -2561,52 +2573,6 @@ default, use TreeWidth.
 use the switch hierarchy defined in a \fItopology.conf\fR file.
 TopologyPlugin=topology/tree is required.
 .RE
-
-.TP
-\fBSallocDefaultCommand\fR
-Normally, \fBsalloc\fR(1) will run the user's default shell when
-a command to execute is not specified on the \fBsalloc\fR command line.
-If \fBSallocDefaultCommand\fR is specified, \fBsalloc\fR will instead
-run the configured command. The command is passed to '/bin/sh \-c', so
-shell metacharacters are allowed, and commands with multiple arguments
-should be quoted. For instance:
-
-.nf
-    SallocDefaultCommand = "$SHELL"
-.fi
-
-would run the shell in the user's $SHELL environment variable.
-and
-
-.nf
-    SallocDefaultCommand = "srun \-n1 \-N1 \-\-mem\-per\-cpu=0 \-\-pty \-\-preserve\-env \-\-mpi=none $SHELL"
-.fi
-
-would run spawn the user's default shell on the allocated resources, but not
-consume any of the CPU or memory resources, configure it as a pseudo\-terminal,
-and preserve all of the job's environment variables (i.e. and not over\-write
-them with the job step's allocation information).
-
-For systems with generic resources (GRES) defined, the \fBSallocDefaultCommand\fR
-value should explicitly specify a zero count for the configured GRES.
-Failure to do so will result in the launched shell consuming those GRES and
-preventing subsequent srun commands from using them, you can achieve that by:
-.nf
-    SallocDefaultCommand = "srun \-n1 \-N1 \-\-mem\-per\-cpu=0 \-\-gres=NONE \-\-pty \-\-preserve\-env \-\-mpi=none $SHELL"
-.fi
-
-For systems configured with \fBSelectPlugin=cons_tres\fR GPU resources may be
-requested on a per job, socket, task or node basis. To make sure that none
-is used when the \fBSallocDefaultCommand\fR requests job resources, you
-need to use a command like:
-.nf
-    SallocDefaultCommand = "srun \-n1 \-N1 \-\-mem\-per\-cpu=0 \-\-gres=NONE \-\-gpus=0 \-\-gpus-per-socket=0 \-\-gpus\-per\-task=0 \-\-pty \-\-preserve\-env \-\-mpi=none $SHELL"
-.fi
-
-For systems with TaskPlugin set, adding an option of "\-\-cpu\-bind=no" is
-recommended if the default shell should have access to all of the CPUs
-allocated to the job on that node, otherwise the shell may be limited to a
-single cpu or core.
 
 .TP
 \fBSbcastParameters\fR
@@ -5806,10 +5772,6 @@ The file must be accessible by the primary and backup control machines.
 \fBResumeProgram\fR
 Must be executable by user \fBSlurmUser\fR.
 The file must be accessible by the primary and backup control machines.
-.TP
-\fBSallocDefaultCommand\fR
-Must be executable by all users.
-The file must exist on every login and compute node.
 .TP
 \fBslurm.conf\fR
 Readable to all users on all nodes.
