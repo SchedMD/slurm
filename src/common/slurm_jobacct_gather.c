@@ -381,6 +381,8 @@ static void _jobacctinfo_aggregate_tres_usage(jobacctinfo_t *dest,
 {
 	uint32_t i = 0;
 
+	xassert(dest->tres_count == from->tres_count);
+
 	for (i = 0; i < dest->tres_count; i++) {
 		if (from->tres_usage_in_max[i] != INFINITE64) {
 			if ((dest->tres_usage_in_max[i] == INFINITE64) ||
