@@ -8090,6 +8090,8 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				sock_gres->total_cnt =
 					MIN(i, sock_gres->total_cnt);
 			}
+			log_flag(GRES, "%s: max_tasks_this_node is set to NO_VAL, won't clear non-needed cores",
+				 __func__);
 			continue;
 		}
 
