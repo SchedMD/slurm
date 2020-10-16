@@ -1334,6 +1334,25 @@ configured (either directly or indirectly on Cray systems)
 along with the node's core count.
 
 .TP
+\fB\-\-ntasks\-per\-gpu\fR=<\fIntasks\fR>
+Request that there are \fIntasks\fR tasks invoked for every GPU.
+This option can work in two ways: 1) either specify \fB\-\-ntasks\fR in
+addition, in which case a type-less GPU specification will be automatically
+determined to satisfy \fB\-\-ntasks\-per\-gpu\fR, or 2) specify the GPUs wanted
+(e.g. via \fB\-\-gpus\fR or \fB\-\-gres\fR) without specifying \fB\-\-ntasks\fR,
+and the total task count will be automatically determined.
+The number of CPUs needed will be automatically increased if necessary to allow
+for any calculated task count.
+This option will implicitly set \fB\-\-gpu-bind=single:<ntasks>\fR, but that
+can be overridden with an explicit \fB\-\-gpu-bind\fR specification.
+This option is not compatible with a node range
+(i.e. \-N<\fIminnodes\fR\-\fImaxnodes\fR>).
+This option is not compatible with \fB\-\-gpus-per-task\fR or
+\fB\-\-gpus-per-socket\fR.
+This option is not supported unless \fISelectType=cons_tres\fR is
+configured (either directly or indirectly on Cray systems).
+
+.TP
 \fB\-\-ntasks\-per\-node\fR=<\fIntasks\fR>
 Request that \fIntasks\fR be invoked on each node.
 If used with the \fB\-\-ntasks\fR option, the \fB\-\-ntasks\fR option will take
@@ -1978,6 +1997,9 @@ Same as \fB\-n, \-\-ntasks\fR
 .TP
 \fBSLURM_NTASKS_PER_CORE\fR
 Set to value of the \-\-ntasks\-per\-core\fR option, if specified.
+.TP
+\fBSLURM_NTASKS_PER_GPU\fR
+Set to value of the \-\-ntasks\-per\-gpu\fR option, if specified.
 .TP
 \fBSLURM_NTASKS_PER_NODE\fR
 Set to value of the \-\-ntasks\-per\-node\fR option, if specified.

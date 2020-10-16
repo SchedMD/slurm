@@ -3142,6 +3142,21 @@ static slurm_cli_opt_t slurm_opt_ntasks_per_tres = {
 	.reset_each_pass = true,
 };
 
+COMMON_INT_OPTION_SET(ntasks_per_gpu, "--ntasks-per-gpu");
+COMMON_INT_OPTION_SET_DATA(ntasks_per_gpu);
+COMMON_INT_OPTION_GET(ntasks_per_gpu);
+COMMON_OPTION_RESET(ntasks_per_gpu, NO_VAL);
+static slurm_cli_opt_t slurm_opt_ntasks_per_gpu = {
+	.name = "ntasks-per-gpu",
+	.has_arg = required_argument,
+	.val = LONG_OPT_NTASKSPERGPU,
+	.set_func = arg_set_ntasks_per_gpu,
+	.set_func_data = arg_set_data_ntasks_per_gpu,
+	.get_func = arg_get_ntasks_per_gpu,
+	.reset_func = arg_reset_ntasks_per_gpu,
+	.reset_each_pass = true,
+};
+
 static int arg_set_open_mode(slurm_opt_t *opt, const char *arg)
 {
 	uint8_t tmp = 0;
@@ -4962,6 +4977,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_nodes,
 	&slurm_opt_ntasks,
 	&slurm_opt_ntasks_per_core,
+	&slurm_opt_ntasks_per_gpu,
 	&slurm_opt_ntasks_per_node,
 	&slurm_opt_ntasks_per_socket,
 	&slurm_opt_ntasks_per_tres,

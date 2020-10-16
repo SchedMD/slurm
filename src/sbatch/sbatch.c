@@ -539,6 +539,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->ntasks_per_node = opt.ntasks_per_node;
 	if (opt.ntasks_per_tres != NO_VAL)
 		desc->ntasks_per_tres = opt.ntasks_per_tres;
+	else if (opt.ntasks_per_gpu != NO_VAL)
+		desc->ntasks_per_tres = opt.ntasks_per_gpu;
 	desc->user_id = opt.uid;
 	desc->group_id = opt.gid;
 	if (opt.dependency)

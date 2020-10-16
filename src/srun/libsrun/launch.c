@@ -213,6 +213,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 	if (opt_local->ntasks_per_tres != NO_VAL)
 		job->ctx_params.ntasks_per_tres = opt_local->ntasks_per_tres;
+	else if (opt_local->ntasks_per_gpu != NO_VAL)
+		job->ctx_params.ntasks_per_tres = opt_local->ntasks_per_gpu;
 
 	if (!opt_local->ntasks_set && (opt_local->ntasks_per_node != NO_VAL))
 		job->ntasks = opt_local->ntasks = job->nhosts *

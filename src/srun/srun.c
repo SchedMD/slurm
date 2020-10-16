@@ -615,6 +615,8 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 		env->ntasks_per_core = opt_local->ntasks_per_core;
 	if (opt_local->ntasks_per_tres != NO_VAL)
 		env->ntasks_per_tres = opt_local->ntasks_per_tres;
+	else if (opt_local->ntasks_per_gpu != NO_VAL)
+		env->ntasks_per_tres = opt_local->ntasks_per_gpu;
 	if (opt_local->threads_per_core != NO_VAL)
 		env->threads_per_core = opt_local->threads_per_core;
 	env->distribution = opt_local->distribution;

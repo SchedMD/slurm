@@ -136,6 +136,7 @@ enum {
 	LONG_OPT_NO_REQUEUE,
 	LONG_OPT_NO_SHELL,
 	LONG_OPT_NTASKSPERCORE,
+	LONG_OPT_NTASKSPERGPU,
 	LONG_OPT_NTASKSPERNODE,
 	LONG_OPT_NTASKSPERSOCKET,
 	LONG_OPT_NTASKSPERTRES,
@@ -309,6 +310,7 @@ typedef struct {
 	uint32_t job_flags;		/* --kill_invalid_dep, --gres-flags */
 	int threads_per_core;		/* --threads-per-core=n		*/
 	int ntasks_per_node;		/* --ntasks-per-node=n		*/
+	int ntasks_per_gpu;		/* --ntasks-per-gpu=n		*/
 	int ntasks_per_socket;		/* --ntasks-per-socket=n	*/
 	int ntasks_per_core;		/* --ntasks-per-core=n		*/
 	int ntasks_per_tres;		/* --ntasks-per-gpu=n	*/

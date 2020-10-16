@@ -627,6 +627,12 @@ static bool _opt_verify(void)
 			opt.ntasks_per_core);
 	}
 
+	if ((opt.ntasks_per_gpu != NO_VAL) &&
+	    (getenv("SLURM_NTASKS_PER_GPU") == NULL)) {
+		setenvf(NULL, "SLURM_NTASKS_PER_GPU", "%d",
+			opt.ntasks_per_gpu);
+	}
+
 	if ((opt.ntasks_per_node > 0) &&
 	    (getenv("SLURM_NTASKS_PER_NODE") == NULL)) {
 		setenvf(NULL, "SLURM_NTASKS_PER_NODE", "%d",

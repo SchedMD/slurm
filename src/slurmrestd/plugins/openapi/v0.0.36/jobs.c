@@ -214,10 +214,12 @@ const params_t job_params[] = {
 	{ "ntasks", 'n' },
 	{ "tasks_per_core", LONG_OPT_NTASKSPERCORE },
 	{ "ntasks_per_core", LONG_OPT_NTASKSPERCORE },
+	{ "ntasks_per_gpu", LONG_OPT_NTASKSPERGPU },
 	{ "tasks_per_node", LONG_OPT_NTASKSPERNODE },
 	{ "ntasks_per_node", LONG_OPT_NTASKSPERNODE },
 	{ "tasks_per_socket", LONG_OPT_NTASKSPERSOCKET },
 	{ "ntasks_per_socket", LONG_OPT_NTASKSPERSOCKET },
+	{ "ntasks_per_tres", LONG_OPT_NTASKSPERTRES },
 	{ "temporary_disk_per_node", LONG_OPT_TMP },
 	{ "test_only", LONG_OPT_TEST_ONLY },
 	{ "thread_specification", LONG_OPT_THREAD_SPEC },
@@ -373,6 +375,11 @@ static int _fill_job_desc_from_sbatch_opts(slurm_opt_t *opt,
 		desc->min_nodes = 0;
 	if (opt->ntasks_per_node)
 		desc->ntasks_per_node = opt->ntasks_per_node;
+	if (opt->ntasks_per_tres != NO_VAL)
+		desc->ntasks_per_tres = opt->ntasks_per_tres;
+	else if (opt->ntasks_per_gpu != NO_VAL)
+		desc->ntasks_per_tres = opt->ntasks_per_gpu;
+
 	/* Disable sending uid/gid as it is handled by auth layer */
 	/* desc->user_id = opt->uid; */
 	/* desc->group_id = opt->gid; */

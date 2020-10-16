@@ -817,6 +817,8 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		j->ntasks_per_core   = opt_local->ntasks_per_core;
 	if (opt_local->ntasks_per_tres != NO_VAL)
 		j->ntasks_per_tres = opt_local->ntasks_per_tres;
+	else if (opt_local->ntasks_per_gpu != NO_VAL)
+		j->ntasks_per_tres = opt_local->ntasks_per_gpu;
 
 	if (opt_local->mail_user)
 		j->mail_user = opt_local->mail_user;

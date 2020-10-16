@@ -896,6 +896,8 @@ static bool _opt_verify(void)
 
 	if (opt.ntasks_per_tres != NO_VAL)
 		het_job_env.ntasks_per_tres = opt.ntasks_per_tres;
+	else if (opt.ntasks_per_gpu != NO_VAL)
+		het_job_env.ntasks_per_gpu = opt.ntasks_per_gpu;
 
 	if (opt.ntasks_per_node != NO_VAL)
 		het_job_env.ntasks_per_node = opt.ntasks_per_node;
@@ -1288,6 +1290,7 @@ extern void init_envs(sbatch_env_t *local_env)
 	local_env->mem_bind_verbose	= NULL;
 	local_env->ntasks		= NO_VAL;
 	local_env->ntasks_per_core	= NO_VAL;
+	local_env->ntasks_per_gpu	= NO_VAL;
 	local_env->ntasks_per_node	= NO_VAL;
 	local_env->ntasks_per_socket	= NO_VAL;
 	local_env->ntasks_per_tres	= NO_VAL;
@@ -1349,6 +1352,12 @@ extern void set_envs(char ***array_ptr, sbatch_env_t *local_env,
 					 het_job_offset, "%u",
 					 local_env->ntasks_per_core)) {
 		error("Can't set SLURM_NTASKS_PER_CORE env variable");
+	}
+	if ((local_env->ntasks_per_gpu  != NO_VAL) &&
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_NTASKS_PER_GPU",
+					 het_job_offset, "%u",
+					 local_env->ntasks_per_gpu)) {
+		error("Can't set SLURM_NTASKS_PER_GPU env variable");
 	}
 	if ((local_env->ntasks_per_node != NO_VAL) &&
 	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_NTASKS_PER_NODE",

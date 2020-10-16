@@ -326,6 +326,13 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_ERROR;
 	}
 
+	if (env->ntasks_per_gpu &&
+	    setenvf(&env->env, "SLURM_NTASKS_PER_GPU", "%d",
+		    env->ntasks_per_gpu)) {
+		error("Unable to set SLURM_NTASKS_PER_GPU");
+		rc = SLURM_ERROR;
+	}
+
 	if (env->ntasks_per_node
 	   && setenvf(&env->env, "SLURM_NTASKS_PER_NODE", "%d",
 		      env->ntasks_per_node) ) {
