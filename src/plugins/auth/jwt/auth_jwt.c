@@ -115,7 +115,7 @@ __thread char *thread_username = NULL;
 
 extern int init(void)
 {
-	if (running_in_slurmctld()) {
+	if (running_in_slurmctld() || running_in_slurmdbd()) {
 		char *key_file = xstrdup(slurm_conf.state_save_location);
 		xstrcat(key_file, "/jwt_hs256.key");
 		key = create_mmap_buf(key_file);
