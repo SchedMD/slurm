@@ -92,7 +92,7 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 	const char *key, *user_name;
 
 	key = find_http_header(args->headers, HTTP_HEADER_USER_TOKEN);
-	user_name = find_http_header(args->headers, HTTP_HEADER_USER_TOKEN);
+	user_name = find_http_header(args->headers, HTTP_HEADER_USER_NAME);
 
 	if (!key && !user_name) {
 		debug3("%s: [%s] skipping token authentication",
