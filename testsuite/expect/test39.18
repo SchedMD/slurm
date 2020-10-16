@@ -129,9 +129,9 @@ touch_file $dev8
 
 # Build test program
 if {$use_valgrind} {
-	set rc [compile_against_libslurm ${test_prog} 1 "-DUSING_VALGRIND"]
+	set rc [compile_against_libslurm -full $test_prog "-DUSING_VALGRIND"]
 } else {
-	set rc [compile_against_libslurm ${test_prog} 1]
+	set rc [compile_against_libslurm -full $test_prog]
 }
 if {$rc} {
 	fail "Cannot compile test program"

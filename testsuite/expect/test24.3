@@ -54,9 +54,9 @@ if {$damp != 1} {
 #
 file delete $test_prog
 
-if [compile_against_libslurm ${test_prog} 1 "-ldl -lm -export-dynamic \
-					 ${build_dir}/src/slurmctld/locks.o \
-					 ${build_dir}/src/sshare/process.o"] {
+if [compile_against_libslurm -full $test_prog "-ldl -lm -export-dynamic \
+				   ${build_dir}/src/slurmctld/locks.o \
+				   ${build_dir}/src/sshare/process.o"] {
 	fail "Cannot compile test program"
 }
 
