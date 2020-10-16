@@ -1183,7 +1183,8 @@ static int _op_handler_jobs(const char *context_id,
 	data_set_list(resp);
 	debug4("%s: jobs handler called by %s", __func__, context_id);
 
-	rc = slurm_load_jobs((time_t)NULL, &job_info_ptr, SHOW_ALL);
+	rc = slurm_load_jobs((time_t)NULL, &job_info_ptr,
+			     SHOW_ALL|SHOW_DETAIL);
 
 	if (rc == SLURM_SUCCESS && job_info_ptr &&
 	    job_info_ptr->record_count)
@@ -1219,7 +1220,7 @@ static int _handle_job_get(const char *context_id, http_request_method_t method,
 {
 	int rc = SLURM_SUCCESS;
 	job_info_msg_t *job_info_ptr = NULL;
-	rc = slurm_load_job(&job_info_ptr, job_id, SHOW_ALL);
+	rc = slurm_load_job(&job_info_ptr, job_id, SHOW_ALL|SHOW_DETAIL);
 
 	if (rc == SLURM_SUCCESS && job_info_ptr &&
 	    job_info_ptr->record_count)

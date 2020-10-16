@@ -48,6 +48,7 @@ documents those changes that are of interest to users and administrators.
  -- Use _exit() instead exit() after fork().
  -- Perl API - fix hang reading config in configless environments.
  -- slurmrestd - request detailed node information to populate GRES fields.
+ -- slurmrestd - request detailed job information to populate GRES fields.
 
 * Changes in Slurm 20.02.5
 ==========================
