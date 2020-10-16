@@ -894,6 +894,9 @@ static bool _opt_verify(void)
 	if (opt.ntasks_per_core != NO_VAL)
 		het_job_env.ntasks_per_core = opt.ntasks_per_core;
 
+	if (opt.ntasks_per_tres != NO_VAL)
+		het_job_env.ntasks_per_tres = opt.ntasks_per_tres;
+
 	if (opt.ntasks_per_node != NO_VAL)
 		het_job_env.ntasks_per_node = opt.ntasks_per_node;
 
@@ -1287,6 +1290,7 @@ extern void init_envs(sbatch_env_t *local_env)
 	local_env->ntasks_per_core	= NO_VAL;
 	local_env->ntasks_per_node	= NO_VAL;
 	local_env->ntasks_per_socket	= NO_VAL;
+	local_env->ntasks_per_tres	= NO_VAL;
 	local_env->plane_size		= NO_VAL;
 	local_env->threads_per_core	= NO_VAL16;
 }
@@ -1357,6 +1361,12 @@ extern void set_envs(char ***array_ptr, sbatch_env_t *local_env,
 					 het_job_offset, "%u",
 					 local_env->ntasks_per_socket)) {
 		error("Can't set SLURM_NTASKS_PER_SOCKET env variable");
+	}
+	if ((local_env->ntasks_per_tres != NO_VAL) &&
+	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_NTASKS_PER_TRES",
+					 het_job_offset, "%u",
+					 local_env->ntasks_per_tres)) {
+		error("Can't set SLURM_NTASKS_PER_TRES env variable");
 	}
 	if ((local_env->plane_size != NO_VAL) &&
 	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_DIST_PLANESIZE",

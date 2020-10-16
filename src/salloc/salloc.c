@@ -911,6 +911,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->ntasks_per_socket = opt.ntasks_per_socket;
 	if (opt.ntasks_per_core > -1)
 		desc->ntasks_per_core = opt.ntasks_per_core;
+	if (opt.ntasks_per_tres != NO_VAL)
+		desc->ntasks_per_tres = opt.ntasks_per_tres;
 
 	/* node constraints */
 	if (opt.sockets_per_node != NO_VAL)

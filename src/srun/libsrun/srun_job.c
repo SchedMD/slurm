@@ -94,6 +94,7 @@ typedef struct allocation_info {
 	char                   *nodelist;
 	uint16_t ntasks_per_board;/* number of tasks to invoke on each board */
 	uint16_t ntasks_per_core; /* number of tasks to invoke on each core */
+	uint16_t ntasks_per_tres; /* number of tasks that can access each gpu */
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on
 				    * each socket */
 	uint32_t                num_cpu_groups;

@@ -1447,6 +1447,7 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *msg,
 		packstr(msg->node_list, buffer);
 		pack16(msg->ntasks_per_board, buffer);
 		pack16(msg->ntasks_per_core, buffer);
+		pack16(msg->ntasks_per_tres, buffer);
 		pack16(msg->ntasks_per_socket, buffer);
 		pack32(msg->num_cpu_groups, buffer);
 		if (msg->num_cpu_groups) {
@@ -1562,6 +1563,7 @@ _unpack_resource_allocation_response_msg(
 				       buffer);
 		safe_unpack16(&tmp_ptr->ntasks_per_board, buffer);
 		safe_unpack16(&tmp_ptr->ntasks_per_core, buffer);
+		safe_unpack16(&tmp_ptr->ntasks_per_tres, buffer);
 		safe_unpack16(&tmp_ptr->ntasks_per_socket, buffer);
 		safe_unpack32(&tmp_ptr->num_cpu_groups, buffer);
 		if (tmp_ptr->num_cpu_groups > 0) {
@@ -2619,6 +2621,7 @@ extern void _pack_job_step_create_request_msg(
 
 		packstr(msg->cpus_per_tres, buffer);
 		packstr(msg->mem_per_tres, buffer);
+		pack16(msg->ntasks_per_tres, buffer);
 		packstr(msg->tres_bind, buffer);
 		packstr(msg->tres_freq, buffer);
 		packstr(msg->tres_per_step, buffer);
@@ -2729,6 +2732,7 @@ extern int _unpack_job_step_create_request_msg(
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->mem_per_tres, &uint32_tmp,
 				       buffer);
+		safe_unpack16(&tmp_ptr->ntasks_per_tres, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->tres_bind, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->tres_freq, &uint32_tmp,
@@ -6883,6 +6887,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		pack16(job_desc_ptr->ntasks_per_board, buffer);
 		pack16(job_desc_ptr->ntasks_per_socket, buffer);
 		pack16(job_desc_ptr->ntasks_per_core, buffer);
+		pack16(job_desc_ptr->ntasks_per_tres, buffer);
 
 		pack16(job_desc_ptr->plane_size, buffer);
 		pack16(job_desc_ptr->cpu_bind_type, buffer);
@@ -7214,6 +7219,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 		safe_unpack16(&job_desc_ptr->ntasks_per_board, buffer);
 		safe_unpack16(&job_desc_ptr->ntasks_per_socket, buffer);
 		safe_unpack16(&job_desc_ptr->ntasks_per_core, buffer);
+		safe_unpack16(&job_desc_ptr->ntasks_per_tres, buffer);
 
 		safe_unpack16(&job_desc_ptr->plane_size, buffer);
 		safe_unpack16(&job_desc_ptr->cpu_bind_type, buffer);
@@ -8274,6 +8280,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		pack32(msg->ntasks, buffer);
 		pack16(msg->ntasks_per_board, buffer);
 		pack16(msg->ntasks_per_core, buffer);
+		pack16(msg->ntasks_per_tres, buffer);
 		pack16(msg->ntasks_per_socket, buffer);
 		packstr(msg->partition, buffer);
 		pack64(msg->job_mem_lim, buffer);
@@ -8507,6 +8514,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpack32(&msg->ntasks, buffer);
 		safe_unpack16(&msg->ntasks_per_board, buffer);
 		safe_unpack16(&msg->ntasks_per_core, buffer);
+		safe_unpack16(&msg->ntasks_per_tres, buffer);
 		safe_unpack16(&msg->ntasks_per_socket, buffer);
 		safe_unpackstr_xmalloc(&msg->partition, &uint32_tmp, buffer);
 		safe_unpack64(&msg->job_mem_lim, buffer);

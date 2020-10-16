@@ -740,6 +740,12 @@ extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
 	}
 
 	if (job_ptr->details
+	    && (job_ptr->details->ntasks_per_tres != NO_VAL16)) {
+		xstrfmtcat(json_str, ",\"ntasks_per_tres\":%hu",
+			   job_ptr->details->ntasks_per_tres);
+	}
+
+	if (job_ptr->details
 	    && (job_ptr->details->cpus_per_task != NO_VAL16)) {
 		xstrfmtcat(json_str, ",\"cpus_per_task\":%hu",
 			   job_ptr->details->cpus_per_task);

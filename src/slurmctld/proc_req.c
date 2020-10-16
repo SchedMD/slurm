@@ -849,6 +849,7 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 		alloc_msg->cpu_freq_min = job_ptr->details->cpu_freq_min;
 		alloc_msg->cpu_freq_max = job_ptr->details->cpu_freq_max;
 		alloc_msg->cpu_freq_gov = job_ptr->details->cpu_freq_gov;
+		alloc_msg->ntasks_per_tres = job_ptr->details->ntasks_per_tres;
 		if (job_ptr->details->mc_ptr) {
 			alloc_msg->ntasks_per_board =
 				job_ptr->details->mc_ptr->ntasks_per_board;
@@ -871,6 +872,7 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 		/* alloc_msg->pn_min_memory = 0; */
 		alloc_msg->ntasks_per_board  = NO_VAL16;
 		alloc_msg->ntasks_per_core   = NO_VAL16;
+		alloc_msg->ntasks_per_tres    = NO_VAL16;
 		alloc_msg->ntasks_per_socket = NO_VAL16;
 	}
 	if (job_ptr->account)

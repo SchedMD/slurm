@@ -5068,6 +5068,7 @@ static bool _generic_job_state(gres_job_state_t *job_state)
  *		      provide consistent gres_per_socket/node values
  * IN/OUT cpus_per_task - requested cpus_per_task count, may be reset to
  *		      provide consistent gres_per_task/cpus_per_gres values
+ * IN/OUT ntasks_per_tres - requested ntasks_per_tres count
  * OUT gres_list - List of GRES records for this job to track usage
  * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
@@ -5085,6 +5086,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 					  uint16_t *ntasks_per_socket,
 					  uint16_t *sockets_per_node,
 					  uint16_t *cpus_per_task,
+					  uint16_t *ntasks_per_tres,
 					  List *gres_list)
 {
 	typedef struct overlap_check {

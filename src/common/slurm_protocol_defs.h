@@ -743,6 +743,7 @@ typedef struct job_step_specs {
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_min;  /* Minimum cpu frequency  */
 	char *cpus_per_tres;	/* semicolon delimited list of TRES=# values */
+	uint16_t ntasks_per_tres;/* number of tasks that can access each gpu */
 	char *exc_nodes;	/* comma separated list of nodes excluded
 				 * from step's allocation, default NONE */
 	char *features;		/* required node features, default NONE */
@@ -825,6 +826,7 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  ntasks;	/* number of tasks in this job step   */
 	uint16_t  ntasks_per_board;/* number of tasks to invoke on each board */
 	uint16_t  ntasks_per_core; /* number of tasks to invoke on each core */
+	uint16_t  ntasks_per_tres; /* number of tasks that can access each gpu */
 	uint16_t  ntasks_per_socket;/* number of tasks to invoke on
 				     * each socket */
 	uint32_t  uid;

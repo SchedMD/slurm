@@ -566,10 +566,14 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushnumber(L, job_desc->ntasks_per_board);
 	} else if (!xstrcmp(name, "ntasks_per_core")) {
 		lua_pushnumber(L, job_desc->ntasks_per_core);
+	} else if (!xstrcmp(name, "ntasks_per_gpu")) {
+		lua_pushnumber(L, job_desc->ntasks_per_tres);
 	} else if (!xstrcmp(name, "ntasks_per_node")) {
 		lua_pushnumber(L, job_desc->ntasks_per_node);
 	} else if (!xstrcmp(name, "ntasks_per_socket")) {
 		lua_pushnumber(L, job_desc->ntasks_per_socket);
+	} else if (!xstrcmp(name, "ntasks_per_tres")) {
+		lua_pushnumber(L, job_desc->ntasks_per_tres);
 	} else if (!xstrcmp(name, "num_tasks")) {
 		lua_pushnumber(L, job_desc->num_tasks);
 		/* Continue support for old hetjob terminology. */
@@ -838,10 +842,14 @@ static int _set_job_req_field(lua_State *L)
 			job_desc->name = xstrdup(value_str);
 	} else if (!xstrcmp(name, "nice")) {
 		job_desc->nice = luaL_checknumber(L, 3);
+	} else if (!xstrcmp(name, "ntasks_per_gpu")) {
+		job_desc->ntasks_per_tres = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "ntasks_per_node")) {
 		job_desc->ntasks_per_node = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "ntasks_per_socket")) {
 		job_desc->ntasks_per_socket = luaL_checknumber(L, 3);
+	} else if (!xstrcmp(name, "ntasks_per_tres")) {
+		job_desc->ntasks_per_tres = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "num_tasks")) {
 		job_desc->num_tasks = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "partition")) {

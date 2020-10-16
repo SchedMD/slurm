@@ -565,6 +565,7 @@ struct job_details {
 	uint32_t nice;			/* requested priority change,
 					 * NICE_OFFSET == no change */
 	uint16_t ntasks_per_node;	/* number of tasks on each node */
+	uint16_t ntasks_per_tres;	/* number of tasks on each GPU */
 	uint32_t num_tasks;		/* number of tasks to start */
 	uint8_t open_mode;		/* stdout/err append or truncate */
 	uint8_t overcommit;		/* processors being over subscribed */

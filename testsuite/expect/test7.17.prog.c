@@ -80,6 +80,7 @@ int main(int argc, char *argv[])
 	uint16_t ntasks_per_socket = NO_VAL16;
 	uint16_t sockets_per_node = NO_VAL16;
 	uint16_t cpus_per_task = NO_VAL16;
+	uint16_t ntasks_per_tres = NO_VAL16;
 	int core_count, sock_count;
 
 	/* Setup slurm.conf and gres.conf test paths */
@@ -162,6 +163,7 @@ int main(int argc, char *argv[])
 					    &ntasks_per_socket,
 					    &sockets_per_node,
 					    &cpus_per_task,
+					    &ntasks_per_tres,
 					    &job_gres_list);
 	if (rc)
 		fatal("failure: gres_plugin_job_state_validate: %s",

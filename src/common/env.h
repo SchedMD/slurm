@@ -73,6 +73,7 @@ typedef struct env_options {
 	int ntasks_per_node;	/* --ntasks-per-node=n		*/
 	int ntasks_per_socket;	/* --ntasks-per-socket=n	*/
 	int ntasks_per_core;	/* --ntasks-per-core=n		*/
+	int ntasks_per_tres;	/* --ntasks-per-tres		*/
 	uint16_t threads_per_core; /* --threads-per-core=n	*/
 	int cpus_on_node;
 	pid_t task_pid;

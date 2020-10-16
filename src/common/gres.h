@@ -312,6 +312,7 @@ typedef struct gres_mc_data {
 	uint16_t ntasks_per_board;  /* number of tasks to invoke on each board */
 	uint16_t ntasks_per_socket; /* number of tasks to invoke on each socket */
 	uint16_t ntasks_per_core;   /* number of tasks to invoke on each core */
+	uint16_t ntasks_per_tres; /* number of tasks that can access each gpu */
 	uint8_t overcommit;         /* processors being over subscribed */
 	uint16_t plane_size;        /* plane size for SLURM_DIST_PLANE */
 	uint32_t task_dist;         /* task distribution directives */
@@ -640,6 +641,7 @@ extern void gres_plugin_epilog_set_env(char ***epilog_env_ptr,
  *		      provide consistent gres_per_socket/node values
  * IN/OUT cpus_per_task - requested ntasks_per_socket count, may be reset to
  *		      provide consistent gres_per_task/cpus_per_gres values
+ * IN/OUT ntasks_per_tres - requested ntasks_per_tres count
  * OUT gres_list - List of GRES records for this job to track usage
  * RET SLURM_SUCCESS or ESLURM_INVALID_GRES
  */
@@ -657,6 +659,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 					  uint16_t *ntasks_per_socket,
 					  uint16_t *sockets_per_node,
 					  uint16_t *cpus_per_task,
+					  uint16_t *ntasks_per_tres,
 					  List *gres_list);
 
 /*

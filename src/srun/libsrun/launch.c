@@ -211,6 +211,9 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	    (opt_local->max_nodes < job->ctx_params.max_nodes))
 		job->ctx_params.max_nodes = opt_local->max_nodes;
 
+	if (opt_local->ntasks_per_tres != NO_VAL)
+		job->ctx_params.ntasks_per_tres = opt_local->ntasks_per_tres;
+
 	if (!opt_local->ntasks_set && (opt_local->ntasks_per_node != NO_VAL))
 		job->ntasks = opt_local->ntasks = job->nhosts *
 						  opt_local->ntasks_per_node;

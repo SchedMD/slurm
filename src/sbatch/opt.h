@@ -71,6 +71,7 @@ typedef struct sbatch_env_opts {
 	uint32_t ntasks_per_core;
 	uint32_t ntasks_per_node;
 	uint32_t ntasks_per_socket;
+	uint32_t ntasks_per_tres;
 	uint32_t plane_size;
 	uint16_t threads_per_core;
 } sbatch_env_t;

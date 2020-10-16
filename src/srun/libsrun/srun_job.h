@@ -97,6 +97,7 @@ typedef struct srun_job {
 	uint32_t ntasks;	/* task count */
 	uint16_t ntasks_per_board;/* number of tasks to invoke on each board */
 	uint16_t ntasks_per_core; /* number of tasks to invoke on each core */
+	uint16_t ntasks_per_tres; /* number of tasks that can access each gpu */
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on
 				    * each socket */
 

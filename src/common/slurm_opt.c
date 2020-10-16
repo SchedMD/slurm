@@ -3127,6 +3127,21 @@ static slurm_cli_opt_t slurm_opt_ntasks_per_socket = {
 	.reset_each_pass = true,
 };
 
+COMMON_INT_OPTION_SET(ntasks_per_tres, "--ntasks-per-tres");
+COMMON_INT_OPTION_SET_DATA(ntasks_per_tres);
+COMMON_INT_OPTION_GET(ntasks_per_tres);
+COMMON_OPTION_RESET(ntasks_per_tres, NO_VAL);
+static slurm_cli_opt_t slurm_opt_ntasks_per_tres = {
+	.name = "ntasks-per-tres",
+	.has_arg = required_argument,
+	.val = LONG_OPT_NTASKSPERTRES,
+	.set_func = arg_set_ntasks_per_tres,
+	.set_func_data = arg_set_data_ntasks_per_tres,
+	.get_func = arg_get_ntasks_per_tres,
+	.reset_func = arg_reset_ntasks_per_tres,
+	.reset_each_pass = true,
+};
+
 static int arg_set_open_mode(slurm_opt_t *opt, const char *arg)
 {
 	uint8_t tmp = 0;
@@ -4949,6 +4964,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_ntasks_per_core,
 	&slurm_opt_ntasks_per_node,
 	&slurm_opt_ntasks_per_socket,
+	&slurm_opt_ntasks_per_tres,
 	&slurm_opt_open_mode,
 	&slurm_opt_output,
 	&slurm_opt_overcommit,

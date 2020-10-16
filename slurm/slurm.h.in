@@ -1558,6 +1558,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				    * each socket */
 	uint16_t ntasks_per_core;/* number of tasks to invoke on each core */
 	uint16_t ntasks_per_board;/* number of tasks to invoke on each board */
+	uint16_t ntasks_per_tres;/* number of tasks that can access each gpu */
 	uint16_t pn_min_cpus;    /* minimum # CPUs per node, default=0 */
 	uint64_t pn_min_memory;  /* minimum real memory per node OR
 				  * real memory per CPU | MEM_PER_CPU,
@@ -1916,6 +1917,7 @@ typedef struct {
 	uint32_t cpu_freq_min;	/* Minimum cpu frequency  */
 	uint32_t cpu_freq_max;	/* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;	/* cpu frequency governor */
+	uint16_t ntasks_per_tres;/*  number of tasks that can access each gpu*/
 	char *cpus_per_tres;	/* semicolon delimited list of TRES=# values */
 	char *exc_nodes;	/* comma separated list of nodes excluded
 				 * from step's allocation, default NONE */
@@ -1971,6 +1973,7 @@ typedef struct {
 	uint32_t msg_timeout; /* timeout set for sending message */
 	uint16_t ntasks_per_board;/* number of tasks to invoke on each board */
 	uint16_t ntasks_per_core; /* number of tasks to invoke on each core */
+	uint16_t ntasks_per_tres;/* number of tasks that can access each gpu */
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on
 				    * each socket */
 
@@ -2352,6 +2355,7 @@ typedef struct resource_allocation_response_msg {
 	char *node_list;	/* assigned list of nodes */
 	uint16_t ntasks_per_board;/* number of tasks to invoke on each board */
 	uint16_t ntasks_per_core; /* number of tasks to invoke on each core */
+	uint16_t ntasks_per_tres;/* number of tasks that can access each gpu */
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on
 				    * each socket */
 	uint32_t num_cpu_groups;/* size of cpus_per_node and cpu_count_reps */

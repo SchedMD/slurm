@@ -4238,6 +4238,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	long kill_on_node_fail, shared, immediate, wait_all_nodes;
 	long cpus_per_task, requeue, num_tasks, overcommit;
 	long ntasks_per_node, ntasks_per_socket, ntasks_per_core;
+	long ntasks_per_tres;
 	int spec_count;
 	char *mem_type, buf[100], *signal_flags, *spec_type, *job_id;
 
@@ -4427,9 +4428,11 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		(long) job_specs->ntasks_per_socket : -1L;
 	ntasks_per_core = (job_specs->ntasks_per_core != NO_VAL16) ?
 		(long) job_specs->ntasks_per_core : -1L;
-	debug3("   ntasks_per_node=%ld ntasks_per_socket=%ld "
-	       "ntasks_per_core=%ld",
-	       ntasks_per_node, ntasks_per_socket, ntasks_per_core);
+	ntasks_per_tres = (job_specs->ntasks_per_tres != NO_VAL16) ?
+		(long) job_specs->ntasks_per_tres : -1L;
+	debug3("   ntasks_per_node=%ld ntasks_per_socket=%ld ntasks_per_core=%ld ntasks_per_tres=%ld",
+	       ntasks_per_node, ntasks_per_socket, ntasks_per_core,
+	       ntasks_per_tres);
 
 	debug3("   mem_bind=%u:%s plane_size:%u",
 	       job_specs->mem_bind_type, job_specs->mem_bind,
@@ -6996,6 +6999,7 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 		job_desc.max_cpus = detail_ptr->orig_max_cpus;
 		job_desc.shared = (uint16_t)detail_ptr->share_res;
 		job_desc.ntasks_per_node = detail_ptr->ntasks_per_node;
+		job_desc.ntasks_per_tres = detail_ptr->ntasks_per_tres;
 		job_desc.pn_min_cpus = detail_ptr->orig_pn_min_cpus;
 		job_desc.job_id = job_ptr->job_id;
 		if (!_valid_pn_min_mem(&job_desc, part_ptr)) {
@@ -7192,6 +7196,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 						&job_desc->ntasks_per_socket,
 						&job_desc->sockets_per_node,
 						&job_desc->cpus_per_task,
+						&job_desc->ntasks_per_tres,
 						&gres_list)))
 		goto cleanup_fail;
 
@@ -8367,6 +8372,8 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 				     detail_ptr->ntasks_per_node));
 		}
 	}
+	if (job_desc->ntasks_per_tres != NO_VAL16)
+		detail_ptr->ntasks_per_tres = job_desc->ntasks_per_tres;
 	detail_ptr->pn_min_cpus = MAX(detail_ptr->pn_min_cpus,
 				      detail_ptr->cpus_per_task);
 	detail_ptr->orig_pn_min_cpus = detail_ptr->pn_min_cpus;
@@ -12259,6 +12266,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 						&job_specs->ntasks_per_socket,
 						&job_specs->sockets_per_node,
 						&job_specs->cpus_per_task,
+						&job_specs->ntasks_per_tres,
 						&gres_list))) {
 			sched_info("%s: invalid GRES for %pJ",
 				   __func__, job_ptr);
@@ -15443,6 +15451,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 				&job_ptr->details->mc_ptr->ntasks_per_socket,
 				&job_ptr->details->mc_ptr->sockets_per_node,
 				&job_ptr->details->cpus_per_task,
+				&job_ptr->details->ntasks_per_tres,
 				&job_ptr->gres_list);
 		}
 	}

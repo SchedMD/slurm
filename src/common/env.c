@@ -347,6 +347,13 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_ERROR;
 	}
 
+	if (env->ntasks_per_tres
+	    && setenvf(&env->env, "SLURM_NTASKS_PER_TRES", "%d",
+		      env->ntasks_per_tres) ) {
+		error("Unable to set SLURM_NTASKS_PER_TRES");
+		rc = SLURM_ERROR;
+	}
+
 	if (env->cpus_on_node
 	   && setenvf(&env->env, "SLURM_CPUS_ON_NODE", "%d",
 		      env->cpus_on_node) ) {

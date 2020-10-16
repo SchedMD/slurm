@@ -321,6 +321,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.threads_per_core	= params->threads_per_core;
 	launch.ntasks_per_board = params->ntasks_per_board;
 	launch.ntasks_per_core  = params->ntasks_per_core;
+	launch.ntasks_per_tres  = params->ntasks_per_tres;
 	launch.ntasks_per_socket= params->ntasks_per_socket;
 
 	if (params->no_alloc)

@@ -3368,6 +3368,7 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 				&sockets_per_node,
 				&job_ptr->details->
 				cpus_per_task,
+				&job_ptr->details->ntasks_per_tres,
 				&job_ptr->gres_list);
 			if (mc_ptr && (sockets_per_node != NO_VAL16)) {
 				mc_ptr->sockets_per_node =

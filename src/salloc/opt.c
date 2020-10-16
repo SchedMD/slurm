@@ -639,6 +639,12 @@ static bool _opt_verify(void)
 			opt.ntasks_per_socket);
 	}
 
+	if ((opt.ntasks_per_tres != NO_VAL) &&
+	    (getenv("SLURM_NTASKS_PER_TRES") == NULL)) {
+		setenvf(NULL, "SLURM_NTASKS_PER_TRES", "%d",
+			opt.ntasks_per_tres);
+	}
+
 	if (opt.profile)
 		setenvfs("SLURM_PROFILE=%s",
 			 acct_gather_profile_to_string(opt.profile));

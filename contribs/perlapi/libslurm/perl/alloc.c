@@ -164,6 +164,7 @@ hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc)
 	FETCH_FIELD(hv, job_desc, threads_per_core, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, ntasks_per_node, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, ntasks_per_socket, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc, ntasks_per_tres, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, ntasks_per_core, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, pn_min_cpus, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc, pn_min_memory, uint64_t, FALSE);
