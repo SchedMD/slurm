@@ -712,6 +712,16 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	if (opt.cpus_per_gpu)
 		xstrfmtcat(desc->cpus_per_tres, "gpu:%d", opt.cpus_per_gpu);
+	if (!opt.tres_bind && ((opt.ntasks_per_tres != NO_VAL) ||
+			       (opt.ntasks_per_gpu != NO_VAL))) {
+		/* Implicit single GPU binding with ntasks-per-tres/gpu */
+		if (opt.ntasks_per_tres != NO_VAL)
+			xstrfmtcat(opt.tres_bind, "gpu:single:%d",
+				   opt.ntasks_per_tres);
+		else
+			xstrfmtcat(opt.tres_bind, "gpu:single:%d",
+				   opt.ntasks_per_gpu);
+	}
 	desc->tres_bind = xstrdup(opt.tres_bind);
 	desc->tres_freq = xstrdup(opt.tres_freq);
 	xfmt_tres(&desc->tres_per_job,    "gpu", opt.gpus);

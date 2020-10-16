@@ -327,6 +327,17 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		xstrfmtcat(job->ctx_params.cpus_per_tres, "gpu:%d",
 			   opt_local->cpus_per_gpu);
 	}
+	if (!opt_local->tres_bind &&
+	    ((opt_local->ntasks_per_tres != NO_VAL) ||
+	     (opt_local->ntasks_per_gpu != NO_VAL))) {
+		/* Implicit single GPU binding with ntasks-per-tres/gpu */
+		if (opt_local->ntasks_per_tres != NO_VAL)
+			xstrfmtcat(opt_local->tres_bind, "gpu:single:%d",
+				   opt_local->ntasks_per_tres);
+		else
+			xstrfmtcat(opt_local->tres_bind, "gpu:single:%d",
+				   opt_local->ntasks_per_gpu);
+	}
 	job->ctx_params.tres_bind = xstrdup(opt_local->tres_bind);
 	job->ctx_params.tres_freq = xstrdup(opt_local->tres_freq);
 	xfmt_tres(&job->ctx_params.tres_per_step, "gpu", opt_local->gpus);
