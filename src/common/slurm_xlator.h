@@ -228,7 +228,6 @@
 
 /* net.[ch] functions */
 #define net_stream_listen	slurm_net_stream_listen
-#define net_set_low_water	slurm_net_set_low_water
 
 /* node_conf.[ch] functions */
 #define init_node_conf          slurm_init_node_conf

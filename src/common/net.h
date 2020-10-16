@@ -54,10 +54,6 @@
  */
 extern int net_stream_listen(int *fd, uint16_t *port);
 
-/* set low water mark on socket
- */
-extern int net_set_low_water(int sock, socklen_t size);
-
 /* set keep alive time on socket */
 extern int net_set_keep_alive(int sock);
 

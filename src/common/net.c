@@ -76,7 +76,6 @@
  * for details.
  */
 strong_alias(net_stream_listen,		slurm_net_stream_listen);
-strong_alias(net_set_low_water,		slurm_net_set_low_water);
 
 /* open a stream socket on an ephemereal port and put it into
  * the listen state. fd and port are filled in with the new
@@ -113,17 +112,6 @@ int net_stream_listen(int *fd, uint16_t *port)
 cleanup:
 	close(*fd);
 	return -1;
-}
-
-int net_set_low_water(int sock, socklen_t size)
-{
-	if (setsockopt(sock, SOL_SOCKET, SO_RCVLOWAT,
-		       (const void *) &size, sizeof(size)) < 0) {
-		error("Unable to set low water socket option: %m");
-		return -1;
-	}
-
-	return 0;
 }
 
 /* set keep alive time on socket */

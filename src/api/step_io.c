@@ -849,7 +849,6 @@ static int _read_io_init_msg(int fd, client_io_t *cio, slurm_addr_t *host)
 	debug2("Validated IO connection from %pA, node rank %u, sd=%d",
 	       host, msg.nodeid, fd);
 
-	net_set_low_water(fd, 1);
 	debug3("msg.stdout_objs = %d", msg.stdout_objs);
 	debug3("msg.stderr_objs = %d", msg.stderr_objs);
 	/* sanity checks, just print warning */
@@ -1132,7 +1131,6 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 		}
 		debug("initialized stdio listening socket, port %d",
 		      cio->listenport[i]);
-		/*net_set_low_water(cio->listensock[i], 140);*/
 		obj = _create_listensock_eio(cio->listensock[i], cio);
 		eio_new_initial_obj(cio->eio, obj);
 	}
