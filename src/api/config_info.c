@@ -2066,8 +2066,7 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 			      key_pair->name,
 			      key_pair->value);
 		} else {
-			if ((!xstrcasecmp(key_pair->name, "ChosLoc")) ||
-			    (!xstrcasecmp(key_pair->name, "Epilog")) ||
+			if ((!xstrcasecmp(key_pair->name, "Epilog")) ||
 			    (!xstrcasecmp(key_pair->name, "EpilogSlurmctld")) ||
 			    (!xstrcasecmp(key_pair->name,
 					  "HealthCheckProgram")) ||

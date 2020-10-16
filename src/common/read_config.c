@@ -223,7 +223,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"BurstBufferType", S_P_STRING},
 	{"CacheGroups", S_P_UINT16},
 	{"CheckpointType", S_P_STRING},
-	{"ChosLoc", S_P_STRING},
 	{"CoreSpecPlugin", S_P_STRING},
 	{"CliFilterPlugins", S_P_STRING},
 	{"ClusterName", S_P_STRING},
