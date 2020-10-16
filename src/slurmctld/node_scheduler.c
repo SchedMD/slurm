@@ -3761,6 +3761,14 @@ static int _build_node_list(job_record_t *job_ptr,
 			}
 			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		}
+		if (resv_overlap && bit_ffs(usable_node_mask) < 0) {
+			job_ptr->state_reason = WAIT_NODE_NOT_AVAIL;
+			xfree(job_ptr->state_desc);
+			xstrfmtcat(job_ptr->state_desc,
+				   "ReqNodeNotAvail, Reserved for maintenance");
+			FREE_NULL_BITMAP(usable_node_mask);
+			return ESLURM_RESERVATION_BUSY; /* All reserved */
+		}
 	}
 
 

@@ -53,6 +53,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix job partition update bug on array tasks or hetjob components.
  -- Fix slurmctld segfault on _pick_best_nodes() when processing a job request
     with XOR'd constraints and no nodeset has the feature.
+ -- Fix job requests rejected with incorrect NODE_CONFIG_UNAVAIL when nodes are
+    actually only busy due to an overlapping MAINT reservation.
 
 * Changes in Slurm 20.02.5
 ==========================
