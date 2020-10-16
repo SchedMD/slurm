@@ -101,6 +101,9 @@ documents those changes that are of interest to users and administrators.
     GRES to manage multiple device files simultaneously.
  -- Fix scontrol write config to output OverSubscribe intead of Shared.
  -- job_submit/lua - print/access oversubscribe variable with "oversubscribe".
+ -- Remove SallocDefaultCommand option.
+ -- Add support for an "Interactive Step", designed to be used with salloc to
+    launch a terminal on an allocated compute node automatically.
 
 * Changes in Slurm 20.02.6
 ==========================

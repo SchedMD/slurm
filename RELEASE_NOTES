@@ -68,6 +68,10 @@ HIGHLIGHTS
     others via the NodeName option.
  -- gres.conf - Add new MultipleFiles configuration entry to allow a single
     GRES to manage multiple device files simultaneously.
+ -- Remove SallocDefaultCommand option.
+ -- Add support for an "Interactive Step", designed to be used with salloc to
+    launch a terminal on an allocated compute node automatically. Enable by
+    setting "use_interactive_step" as part of LaunchParameters.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
