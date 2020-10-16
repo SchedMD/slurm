@@ -173,7 +173,7 @@ static int _op_handler_ping(const char *context_id,
 		data_key_set(data_set_dict(resp_ptr), "errors"));
 
 	if (slurm_load_ctl_conf((time_t) NULL, &slurm_ctl_conf_ptr))
-		_ping_error("%s: slurmctl config is unable to load: %m",
+		_ping_error("%s: slurmctld config is unable to load: %m",
 			    __func__);
 
 	if (slurm_ctl_conf_ptr) {
