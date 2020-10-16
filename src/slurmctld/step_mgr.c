@@ -3876,6 +3876,8 @@ extern int dump_job_step_state(void *x, void *arg)
 	packstr(step_ptr->tres_per_node, buffer);
 	packstr(step_ptr->tres_per_socket, buffer);
 	packstr(step_ptr->tres_per_task, buffer);
+	jobacctinfo_pack(step_ptr->jobacct, SLURM_PROTOCOL_VERSION,
+	                 PROTOCOL_TYPE_SLURM, buffer);
 	return 0;
 }
 
@@ -3909,6 +3911,7 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 	slurm_step_layout_t *step_layout = NULL;
 	List gres_list = NULL;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
+	jobacctinfo_t *jobacct = NULL;
 	slurm_step_id_t step_id = { .job_id = job_ptr->job_id,
 				    .step_het_comp = NO_VAL };
 
@@ -3979,6 +3982,8 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&tres_per_node, &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_per_socket, &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_per_task, &name_len, buffer);
+		jobacctinfo_unpack(&jobacct, protocol_version,
+		                   PROTOCOL_TYPE_SLURM, buffer, true);
 	} else if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id.step_id, buffer);
 		convert_old_step_id(&step_id.step_id);
@@ -4250,6 +4255,10 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 	if (step_ptr->step_layout && switch_tmp)
 		switch_g_job_step_allocated(switch_tmp,
 					    step_ptr->step_layout->node_list);
+	if (jobacct) {
+		jobacctinfo_destroy(step_ptr->jobacct);
+		step_ptr->jobacct = jobacct;
+	}
 
 	info("recovered %pS", step_ptr);
 	return SLURM_SUCCESS;
