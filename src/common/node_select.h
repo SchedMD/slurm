@@ -170,6 +170,12 @@ extern int select_char2coord(char coord);
  */
 extern char *select_plugin_id_to_string(int plugin_id);
 
+/*
+ * Convert string name to plugin_id
+ * RET plugin_id or 0 on failure
+ */
+extern int select_string_to_plugin_id(const char *plugin);
+
 /*******************************************\
  * GLOBAL SELECT STATE MANAGEMENT FUNCIONS *
 \*******************************************/

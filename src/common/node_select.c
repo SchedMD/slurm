@@ -143,6 +143,17 @@ extern char *select_plugin_id_to_string(int plugin_id)
 	return NULL;
 }
 
+extern int select_string_to_plugin_id(const char *plugin)
+{
+	for (int i = 0; i < ARRAY_SIZE(plugin_ids); i++)
+		if (xstrcasecmp(plugin, plugin_ids[i].name))
+			return plugin_ids[i].id;
+
+	error("%s: unknown select plugin: %s",
+	      __func__, plugin);
+	return 0;
+}
+
 static int _load_plugins(void *x, void *arg)
 {
 	char *plugin_name     = (char *)x;
