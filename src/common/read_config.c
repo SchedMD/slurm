@@ -3163,10 +3163,16 @@ static int _establish_config_source(char **config_file, int *memfd)
 	 * or the SLURM_CONF variable is set we will always respect those,
 	 * and leave s_p_parse_file() to see if it can actually load the file.
 	 */
-	if (*config_file)
+	if (*config_file) {
+		debug2("%s: using config_file=%s (provided)",
+		       __func__, *config_file);
 		return SLURM_SUCCESS;
-	if ((*config_file = xstrdup(getenv("SLURM_CONF"))))
+	}
+	if ((*config_file = xstrdup(getenv("SLURM_CONF")))) {
+		debug("%s: using config_file=%s (environment)",
+		      __func__, *config_file);
 		return SLURM_SUCCESS;
+	}
 
 	/*
 	 * Use default_slurm_config_file iff the file exists.
@@ -3177,6 +3183,8 @@ static int _establish_config_source(char **config_file, int *memfd)
 	 */
 	if (!stat(default_slurm_config_file, &stat_buf)) {
 		*config_file = xstrdup(default_slurm_config_file);
+		debug2("%s: using config_file=%s (default)",
+		       __func__, *config_file);
 		return SLURM_SUCCESS;
 	}
 
@@ -3186,6 +3194,8 @@ static int _establish_config_source(char **config_file, int *memfd)
 	 */
 	if (!stat("/run/slurm/conf/slurm.conf", &stat_buf)) {
 		*config_file = xstrdup("/run/slurm/conf/slurm.conf");
+		debug2("%s: using config_file=%s (cached)",
+		       __func__, *config_file);
 		return SLURM_SUCCESS;
 	}
 
@@ -3218,6 +3228,7 @@ static int _establish_config_source(char **config_file, int *memfd)
 					    config->topology_config,
 					    &topology_conf);
 	slurm_free_config_response_msg(config);
+	debug2("%s: using config_file=%s (fetched)", __func__, *config_file);
 
 	return SLURM_SUCCESS;
 }
@@ -3252,6 +3263,7 @@ slurm_conf_init(const char *file_name)
 		xfree(config_file);
 		return SLURM_ERROR;
 	}
+	debug("%s: using config_file=%s", __func__, config_file);
 
 	/*
 	 * Ensure this determination is propagated throughout. A number of
