@@ -165,6 +165,11 @@ extern const char *node_select_syms[];
  * '0' = 0; '9' = 9; 'A' = 10; etc. */
 extern int select_char2coord(char coord);
 
+/*
+ * Give string name for plugin_id
+ */
+extern char *select_plugin_id_to_string(int plugin_id);
+
 /*******************************************\
  * GLOBAL SELECT STATE MANAGEMENT FUNCIONS *
 \*******************************************/

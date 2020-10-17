@@ -117,26 +117,30 @@ typedef struct _plugin_args {
 	char *default_plugin;
 } _plugin_args_t;
 
-static char *_plugin_id2name(int plugin_id)
-{
-	static char id_str[16];
+typedef struct {
+	int id;
+	char *name;
+} plugin_id_name;
 
-	if (plugin_id == SELECT_PLUGIN_CONS_RES)
-		return "cons_res";
-	if (plugin_id == SELECT_PLUGIN_LINEAR)
-		return "linear";
-	if (plugin_id == SELECT_PLUGIN_SERIAL)
-		return "serial";
-	if (plugin_id == SELECT_PLUGIN_CRAY_LINEAR)
-		return "cray_aries+linear";
-	if (plugin_id == SELECT_PLUGIN_CRAY_CONS_RES)
-		return "cray_aries+cons_res";
-	if (plugin_id == SELECT_PLUGIN_CONS_TRES)
-		return "cons_tres";
-	if (plugin_id == SELECT_PLUGIN_CRAY_CONS_TRES)
-		return "cray_aries+cons_tres";
-	snprintf(id_str, sizeof(id_str), "%d", plugin_id);
-	return id_str;
+const plugin_id_name plugin_ids[] = {
+	{ SELECT_PLUGIN_CONS_RES, "cons_res" },
+	{ SELECT_PLUGIN_LINEAR, "linear" },
+	{ SELECT_PLUGIN_SERIAL, "serial" },
+	{ SELECT_PLUGIN_CRAY_LINEAR, "cray_aries+linear" },
+	{ SELECT_PLUGIN_CRAY_CONS_RES, "cray_aries+cons_res" },
+	{ SELECT_PLUGIN_CONS_TRES, "cons_tres" },
+	{ SELECT_PLUGIN_CRAY_CONS_TRES, "cray_aries+cons_tres" },
+};
+
+extern char *select_plugin_id_to_string(int plugin_id)
+{
+	for (int i = 0; i < ARRAY_SIZE(plugin_ids); i++)
+		if (plugin_id == plugin_ids[i].id)
+			return plugin_ids[i].name;
+
+	error("%s: unknown select plugin id: %d",
+	      __func__, plugin_id);
+	return NULL;
 }
 
 static int _load_plugins(void *x, void *arg)
@@ -742,7 +746,7 @@ extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
 		safe_unpack32(&plugin_id, buffer);
 		if ((i = select_get_plugin_id_pos(plugin_id)) == SLURM_ERROR) {
 			error("%s: select plugin %s not found", __func__,
-			      _plugin_id2name(plugin_id));
+			      select_plugin_id_to_string(plugin_id));
 			goto unpack_error;
 		} else {
 			 nodeinfo_ptr->plugin_id = i;
@@ -1011,7 +1015,7 @@ extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
 		safe_unpack32(&plugin_id, buffer);
 		if ((i = select_get_plugin_id_pos(plugin_id)) == SLURM_ERROR) {
 			error("%s: select plugin %s not found", __func__,
-			      _plugin_id2name(plugin_id));
+			      select_plugin_id_to_string(plugin_id));
 			goto unpack_error;
 		} else
 			jobinfo_ptr->plugin_id = i;
