@@ -430,6 +430,7 @@ AC_CONFIG_FILES([Makefile
 		 src/sattach/Makefile
 		 src/scancel/Makefile
 		 src/scontrol/Makefile
+		 src/scrontab/Makefile
 		 src/sdiag/Makefile
 		 src/sinfo/Makefile
 		 src/slurmctld/Makefile

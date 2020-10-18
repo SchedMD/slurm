@@ -13,6 +13,7 @@ SUBDIRS =		\
 	sbcast		\
 	scancel		\
 	scontrol	\
+	scrontab	\
 	sdiag		\
 	sinfo		\
 	slurmctld	\
