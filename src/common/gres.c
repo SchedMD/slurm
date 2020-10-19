@@ -7918,8 +7918,6 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 			if ((*max_tasks_this_node == NO_VAL) ||
 			    (*max_tasks_this_node > max_tasks))
 				*max_tasks_this_node = max_gres;
-			if (*min_tasks_this_node < max_gres)
-				*min_tasks_this_node = max_gres;
 		}
 
 		min_core_cnt = MAX(*min_tasks_this_node, 1) *
