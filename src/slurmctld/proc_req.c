@@ -4333,19 +4333,36 @@ static void _slurm_rpc_resv_update(slurm_msg_t * msg)
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 
 	START_TIMER;
+	lock_slurmctld(node_write_lock);
 	if (!validate_operator(uid)) {
-		error_code = ESLURM_USER_ID_MISSING;
-		error("Security violation, UPDATE_RESERVATION RPC from uid=%d",
-		      uid);
+		if (!validate_resv_uid(resv_desc_ptr->name, uid) ||
+		    !(resv_desc_ptr->flags & RESERVE_FLAG_SKIP)) {
+			error_code = ESLURM_USER_ID_MISSING;
+			error("Security violation, UPDATE_RESERVATION RPC from uid=%d",
+			      uid);
+		} else {
+			resv_desc_msg_t *resv_desc_ptr2 =
+				xmalloc_nz(sizeof(*resv_desc_ptr2));
+			slurm_init_resv_desc_msg(resv_desc_ptr2);
+			/*
+			 * Santitize the structure since a regular user is doing
+			 * this and is only allowed to skip the reservation and
+			 * not update anything else.
+			 */
+			resv_desc_ptr2->name = resv_desc_ptr->name;
+			resv_desc_ptr->name = NULL;
+			resv_desc_ptr2->flags = RESERVE_FLAG_SKIP;
+			slurm_free_resv_desc_msg(resv_desc_ptr);
+			resv_desc_ptr = msg->data = resv_desc_ptr2;
+		}
 	}
 
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
-		lock_slurmctld(node_write_lock);
 		error_code = update_resv(resv_desc_ptr);
-		unlock_slurmctld(node_write_lock);
 		END_TIMER2("_slurm_rpc_resv_update");
 	}
+	unlock_slurmctld(node_write_lock);
 
 	/* return result */
 	if (error_code) {
