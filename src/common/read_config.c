@@ -2354,15 +2354,18 @@ extern char *slurm_conf_get_aliases(const char *node_hostname)
 }
 
 /*
- * slurm_conf_get_nodeaddr - Return the NodeAddr for given NodeHostname
+ * slurm_conf_get_nodeaddr - Return the NodeAddr for given
+ * NodeHostname or NodeName
  *
  * NOTE: Call xfree() to release returned value's memory.
  * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
-extern char *slurm_conf_get_nodeaddr(const char *node_hostname)
+extern char *slurm_conf_get_nodeaddr(const char *node_hostname,
+				     const char *node_name)
 {
 	int idx;
 	names_ll_t *p;
+	char *nodeaddr = NULL;
 
 	slurm_conf_lock();
 	_init_slurmd_nodehash();
@@ -2370,20 +2373,16 @@ extern char *slurm_conf_get_nodeaddr(const char *node_hostname)
 
 	p = host_to_node_hashtbl[idx];
 	while (p) {
-		if (xstrcmp(p->hostname, node_hostname) == 0) {
-			char *nodeaddr;
-			if (p->address != NULL)
-				nodeaddr = xstrdup(p->address);
-			else
-				nodeaddr = NULL;
-			slurm_conf_unlock();
-			return nodeaddr;
+		if (!xstrcmp(p->hostname, node_hostname) ||
+		    !xstrcmp(p->alias, node_name)) {
+			nodeaddr = xstrdup(p->address);
+			break;
 		}
 		p = p->next_hostname;
 	}
 	slurm_conf_unlock();
 
-	return NULL;
+	return nodeaddr;
 }
 
 
