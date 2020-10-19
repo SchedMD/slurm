@@ -1830,7 +1830,7 @@ extern int slurm_unpack_addr_array(slurm_addr_t **addr_array_ptr,
 
 unpack_error:
 	*size_val = 0;
-	xfree(*addr_array);
+	xfree(addr_array);
 	return SLURM_ERROR;
 }
 
