@@ -800,7 +800,7 @@ extern int slurm_persist_conn_writeable(slurm_persist_conn_t *persist_conn)
 	ufds.fd     = persist_conn->fd;
 	ufds.events = POLLOUT;
 	gettimeofday(&tstart, NULL);
-	while ((*persist_conn->shutdown) == 0) {
+	while (persist_conn && !*persist_conn->shutdown) {
 		time_left = write_timeout - _tot_wait(&tstart);
 		rc = poll(&ufds, 1, time_left);
 		if (rc == -1) {
