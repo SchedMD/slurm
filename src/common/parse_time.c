@@ -493,6 +493,13 @@ extern time_t parse_time(const char *time_str, int past)
 						goto prob;
 					break;
 				}
+				if (time_str[i] == '-') {
+					pos += i;
+					if (_get_delta(time_str, &pos, &delta))
+						goto prob;
+					delta = -delta;
+					break;
+				}
 				if (isblank((int)time_str[i]))
 					continue;
 				if ((time_str[i] == '\0')

@@ -104,6 +104,7 @@ documents those changes that are of interest to users and administrators.
  -- Remove SallocDefaultCommand option.
  -- Add support for an "Interactive Step", designed to be used with salloc to
     launch a terminal on an allocated compute node automatically.
+ -- Add time specification: "now-<x>" (i.e. subtract from the present)
 
 * Changes in Slurm 20.02.6
 ==========================
