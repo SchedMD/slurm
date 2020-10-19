@@ -144,7 +144,7 @@ close to 0.0.</p>
 <h2>Nice Factor</h2></a>
 <P> Users can adjust the priority of their own jobs by setting the nice value
 on their jobs. Like the system nice, positive values negatively impact a job's
-priority and positive values increase a job's priority. Only privileged users
+priority and negative values increase a job's priority. Only privileged users
 can specify a negative value. The adjustment range is +/-2147483645.
 </P>
 
@@ -431,6 +431,6 @@ PriorityWeightPartition=1000
 PriorityWeightQOS=0 # don't use the qos factor
 </PRE>
 
-<p style="text-align:center;">Last modified 25 June 2020</p>
+<p style="text-align:center;">Last modified 19 October 2020</p>
 
 <!--#include virtual="footer.txt"-->
