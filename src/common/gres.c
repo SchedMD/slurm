@@ -8157,10 +8157,10 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 					 __func__,
 					 *max_tasks_this_node,
 					 job_specs->gres_per_task);
-			} else if (sock_gres->total_cnt) {
-				i = sock_gres->total_cnt;
-				log_flag(GRES, "%s: estimating req_cores total_cnt=%"PRIu64,
-					 __func__, sock_gres->total_cnt);
+			} else if (cnt_avail_total) {
+				i = cnt_avail_total;
+				log_flag(GRES, "%s: estimating req_cores cnt_avail_total=%"PRIu64,
+					 __func__, cnt_avail_total);
 			} else {
 				i = 1;
 				log_flag(GRES, "%s: estimating req_cores default to 1 task",
