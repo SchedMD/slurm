@@ -841,6 +841,7 @@ static int _send_slurmctld_register_req(slurmdb_cluster_rec_t *cluster_rec)
 	int fd;
 	int rc = SLURM_SUCCESS;
 
+	memset(&ctld_address, 0, sizeof(ctld_address));
 	slurm_set_addr(&ctld_address, cluster_rec->control_port,
 		       cluster_rec->control_host);
 	fd = slurm_open_msg_conn(&ctld_address);
