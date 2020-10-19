@@ -901,10 +901,6 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 							  "memory"),
 					     j->memory_allocated[node_inx]);
 
-			data_set_int(data_key_set(node, "sockets"),
-				     j->sockets_per_node[node_inx]);
-			data_set_int(data_key_set(node, "cores"),
-				     j->cores_per_socket[node_inx]);
 			data_set_int(data_key_set(node, "cpus"),
 				     j->cpus[node_inx]);
 
