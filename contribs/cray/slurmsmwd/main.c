@@ -609,7 +609,7 @@ static int _start_xtconsumer(char **xtc_argv, pid_t *pid)
 		setpgid(0, 0);
 		execv(xtconsumer_path, xtc_argv);
 		error("execv(): %s", slurm_strerror(slurm_get_errno()));
-		exit(127);
+		_exit(127);
 	} else if (cpid < 0) {
 		close(pfd[0]);
 		close(pfd[1]);

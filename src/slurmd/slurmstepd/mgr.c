@@ -996,7 +996,7 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 			while (true) /* in case of interrupted sleep */
 				sleep(100000);
 
-			exit(1);
+			_exit(1);
 		} else {
 			/*
 			 * Need to exec() something for proctrack/linuxproc to
@@ -1006,7 +1006,7 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 			execl(SLEEP_CMD, "sleep", "100000000", NULL);
 			error("execl: %m");
 			sleep(1);
-			exit(0);
+			_exit(0);
 		}
 	} else if (pid < 0) {
 		error("fork: %m");
@@ -1783,12 +1783,12 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 			 * and belong in the child.
 			 */
 			if (_pre_task_child_privileged(job, i, &sprivs) < 0)
-				exit(1);
+				_exit(1);
 
  			if (_become_user(job, &sprivs) < 0) {
  				error("_become_user failed: %m");
 				/* child process, should not return */
-				exit(1);
+				_exit(1);
  			}
 
 			/* log_fini(); */ /* note: moved into exec_task() */
@@ -1813,7 +1813,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 			 *   before they make a call to exec(2).
 			 */
 			if (_exec_wait_child_wait_for_parent (ei) < 0)
-				exit (1);
+				_exit(1);
 
 			exec_task(job, i);
 		}
@@ -2826,7 +2826,7 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 				break;
 			}
 		}
-		exit(127);
+		_exit(127);
 	}
 
 	if (exec_wait_signal_child (ei) < 0)

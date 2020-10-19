@@ -1879,7 +1879,7 @@ static void *_mail_proc(void *arg)
 		execle(slurm_conf.mail_prog, "mail", "-s", mi->message,
 		       mi->user_name, NULL, my_env);
 		error("Failed to exec %s: %m", slurm_conf.mail_prog);
-		exit(1);
+		_exit(1);
 	} else {		/* parent */
 		waitpid(pid, NULL, 0);
 	}
@@ -2266,7 +2266,7 @@ static void _reboot_from_ctld(agent_arg_t *agent_arg_ptr)
 			(void) close(i);
 		(void) setpgid(0, 0);
 		(void) execv(slurm_conf.reboot_program, argv);
-		exit(1);
+		_exit(1);
 	} else if (child < 0) {
 		error("fork: %m");
 	} else {

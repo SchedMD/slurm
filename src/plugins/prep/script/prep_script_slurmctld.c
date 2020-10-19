@@ -109,7 +109,7 @@ static void *_run_script(void *arg)
 			(void) close(i);
 		setpgid(0, 0);
 		execve(argv[0], argv, script_arg->my_env);
-		exit(127);
+		_exit(127);
 	}
 
 	/* Start tracking this new process */

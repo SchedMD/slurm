@@ -148,7 +148,7 @@ _run_one_script(const char *name, const char *path, uint32_t job_id,
 		setpgid(0, 0);
 		execve(path, argv, env);
 		error("execve(%s): %m", path);
-		exit(127);
+		_exit(127);
 	}
 
 	if (waitpid_timeout(name, cpid, &status, max_wait) < 0)

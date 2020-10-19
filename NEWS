@@ -149,6 +149,7 @@ documents those changes that are of interest to users and administrators.
  -- Add missing locks in slurm_cred_revoked().
  -- Fix slurmctld segfault due to tight reconfigure RPC requests by serializing
     the RPC handler processing logic.
+ -- Use _exit() instead exit() after fork().
 
 * Changes in Slurm 20.02.5
 ==========================

@@ -491,16 +491,16 @@ static void _jobcomp_child (char * script, struct jobcomp_info *job)
 	log_reinit ();
 
 	if (_redirect_stdio () < 0)
-		exit (1);
+		_exit (1);
 
 	if (chdir (tmpdir) != 0) {
 		error ("jobcomp/script: chdir (%s): %m", tmpdir);
-		exit(1);
+		_exit(1);
 	}
 
 	if (!(env = _create_environment (job))) {
 		error ("jobcomp/script: Failed to create env!");
-		exit (1);
+		_exit (1);
 	}
 
 	execve(script, args, env);
@@ -509,7 +509,7 @@ static void _jobcomp_child (char * script, struct jobcomp_info *job)
 	 * Failure of execve implies error
 	 */
 	error ("jobcomp/script: execve(%s): %m", script);
-	exit (1);
+	_exit (1);
 }
 
 static int _jobcomp_exec_child (char *script, struct jobcomp_info *job)

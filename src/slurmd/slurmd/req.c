@@ -822,7 +822,7 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 			error("%s: Unable to fork grandchild: %m", __func__);
 			failed = 2;
 		} else if (pid > 0) { /* child */
-			exit(0);
+			_exit(0);
 		}
 
 		/*
@@ -856,19 +856,19 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 		(void) close(STDIN_FILENO); /* ignore return */
 		if (dup2(to_stepd[0], STDIN_FILENO) == -1) {
 			error("dup2 over STDIN_FILENO: %m");
-			exit(1);
+			_exit(1);
 		}
 		fd_set_close_on_exec(to_stepd[0]);
 		(void) close(STDOUT_FILENO); /* ignore return */
 		if (dup2(to_slurmd[1], STDOUT_FILENO) == -1) {
 			error("dup2 over STDOUT_FILENO: %m");
-			exit(1);
+			_exit(1);
 		}
 		fd_set_close_on_exec(to_slurmd[1]);
 		(void) close(STDERR_FILENO); /* ignore return */
 		if (dup2(devnull, STDERR_FILENO) == -1) {
 			error("dup2 /dev/null to STDERR_FILENO: %m");
-			exit(1);
+			_exit(1);
 		}
 		fd_set_noclose_on_exec(STDERR_FILENO);
 		log_fini();
@@ -876,7 +876,7 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 			execvp(argv[0], argv);
 			error("exec of slurmstepd failed: %m");
 		}
-		exit(2);
+		_exit(2);
 	}
 }
 
@@ -1638,7 +1638,7 @@ static int _open_as_other(char *path_name, int flags, int mode,
 	 * to the container in the parent of the fork. */
 	if (container_g_join(jobid, uid)) {
 		error("%s container_g_join(%u): %m", __func__, jobid);
-		exit(SLURM_ERROR);
+		_exit(SLURM_ERROR);
 	}
 
 	/* The child actually performs the I/O and exits with
@@ -1657,23 +1657,23 @@ static int _open_as_other(char *path_name, int flags, int mode,
 
 	if (setgroups(ngids, gids) < 0) {
 		error("%s: uid: %u setgroups failed: %m", __func__, uid);
-		exit(errno);
+		_exit(errno);
 	}
 
 	if (setgid(gid) < 0) {
 		error("%s: uid:%u setgid(%u): %m", __func__, uid, gid);
-		exit(errno);
+		_exit(errno);
 	}
 	if (setuid(uid) < 0) {
 		error("%s: getuid(%u): %m", __func__, uid);
-		exit(errno);
+		_exit(errno);
 	}
 
 	*fd = open(path_name, flags, mode);
 	if (*fd == -1) {
 		 error("%s: uid:%u can't open `%s`: %m code %d",
 			__func__, uid, path_name, errno);
-		 exit(errno);
+		 _exit(errno);
 	}
 	send_fd_over_pipe(pipe[0], *fd);
 	close(*fd);

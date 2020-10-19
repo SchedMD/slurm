@@ -727,7 +727,7 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id)
 		if (job_id)
 			setenv("SLURM_JOB_ID", job_id_str, 1);
 		execv(prog, argv);
-		exit(1);
+		_exit(1);
 	} else if (child < 0) {
 		error("fork: %m");
 	} else {
