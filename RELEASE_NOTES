@@ -96,6 +96,7 @@ COMMAND CHANGES (see man pages for details)
  -- sacct - AllocGres and ReqGres were removed. Alloc/ReqTres should be used
     instead.
  -- scontrol - added the "Reserved" license count to 'scontrol show licenses'.
+ -- Add time specification: "now-<x>" (i.e. subtract from the present)
 
 API CHANGES
 ===========

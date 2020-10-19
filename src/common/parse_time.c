@@ -71,6 +71,8 @@ typedef struct unit_names {
 	int multiplier;
 } unit_names_t;
 static unit_names_t un[] = {
+	{"seconds",	7,	1},
+	{"second",	6,	1},
 	{"minutes",	7,	60},
 	{"minute",	6,	60},
 	{"hours",	5,	(60*60)},
@@ -400,8 +402,7 @@ static int _get_date(const char *time_str, int *pos, int *month, int *mday,
  *   MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]
  *   MM/DD[/YY]-HH:MM[:SS]
  *   YYYY-MM-DD[THH:MM[:SS]]
- *
- *   now + count [minutes | hours | days | weeks]
+ *   now[{+|-}count[seconds(default)|minutes|hours|days|weeks]]
  *
  * Invalid input results in message to stderr and return value of zero
  * NOTE: not thread safe
@@ -490,6 +491,13 @@ extern time_t parse_time(const char *time_str, int past)
 					pos += i;
 					if (_get_delta(time_str, &pos, &delta))
 						goto prob;
+					break;
+				}
+				if (time_str[i] == '-') {
+					pos += i;
+					if (_get_delta(time_str, &pos, &delta))
+						goto prob;
+					delta = -delta;
 					break;
 				}
 				if (isblank((int)time_str[i]))
