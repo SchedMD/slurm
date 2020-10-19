@@ -8144,18 +8144,34 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 		if (cpus_per_gres) {
 			if (job_specs->gres_per_node) {
 				i = job_specs->gres_per_node;
+				log_flag(GRES, "%s: estimating req_cores gres_per_node=%"PRIu64,
+					 __func__, job_specs->gres_per_node);
 			} else if (job_specs->gres_per_socket) {
 				i = job_specs->gres_per_socket * sock_cnt;
+				log_flag(GRES, "%s: estimating req_cores gres_per_socket=%"PRIu64,
+					 __func__, job_specs->gres_per_socket);
 			} else if (job_specs->gres_per_task) {
 				i = job_specs->gres_per_task *
 				    *max_tasks_this_node;
+				log_flag(GRES, "%s: estimating req_cores max_tasks_this_node=%u gres_per_task=%"PRIu64,
+					 __func__,
+					 *max_tasks_this_node,
+					 job_specs->gres_per_task);
 			} else if (sock_gres->total_cnt) {
 				i = sock_gres->total_cnt;
+				log_flag(GRES, "%s: estimating req_cores total_cnt=%"PRIu64,
+					 __func__, sock_gres->total_cnt);
 			} else {
 				i = 1;
+				log_flag(GRES, "%s: estimating req_cores default to 1 task",
+					 __func__);
 			}
 			i *= cpus_per_gres;
 			i = (i + cpus_per_core - 1) / cpus_per_core;
+			if (req_cores < i)
+				log_flag(GRES, "%s: Increasing req_cores=%d from cpus_per_gres=%d cpus_per_core=%"PRIu16,
+					 __func__, i, cpus_per_gres,
+					 cpus_per_core);
 			req_cores = MAX(req_cores, i);
 		}
 
