@@ -8108,7 +8108,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 		 */
 		req_cores = *max_tasks_this_node;
 		if (mc_ptr->cpus_per_task) {
-			int threads_per_core;
+			int threads_per_core, removed_tasks = 0;
 
 			if (mc_ptr->threads_per_core)
 				threads_per_core =
@@ -8119,14 +8119,27 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 
 			req_cores *= mc_ptr->cpus_per_task;
 
-			/* round up by full threads per core */
-			req_cores += threads_per_core - 1;
-			req_cores /= threads_per_core;
-
-			log_flag(GRES, "%s: settings required_cores=%d by max_tasks_this_node=%d cpus_per_task=%d cpus_per_core=%d threads_per_core:%d",
-				 __func__, req_cores,
-				 *max_tasks_this_node, mc_ptr->cpus_per_task,
-				 cpus_per_core, mc_ptr->threads_per_core);
+			while (*max_tasks_this_node >= *min_tasks_this_node) {
+				/* round up by full threads per core */
+				req_cores += threads_per_core - 1;
+				req_cores /= threads_per_core;
+				if (req_cores <= avail_cores_tot) {
+					if (removed_tasks)
+						log_flag(GRES, "%s: settings required_cores=%d by max_tasks_this_node=%u(reduced=%d) cpus_per_task=%d cpus_per_core=%d threads_per_core:%d",
+							 __func__,
+							 req_cores,
+							 *max_tasks_this_node,
+							 removed_tasks,
+							 mc_ptr->cpus_per_task,
+							 cpus_per_core,
+							 mc_ptr->
+							 threads_per_core);
+					break;
+				}
+				removed_tasks++;
+				(*max_tasks_this_node)--;
+				req_cores = *max_tasks_this_node;
+			}
 		}
 		if (cpus_per_gres) {
 			if (job_specs->gres_per_node) {
