@@ -467,6 +467,7 @@ sacct [<OPTION>]                                                            \n \
 	           MMDD[YY] or MM/DD[/YY] or MM.DD[.YY]                     \n\
 	           MM/DD[/YY]-HH:MM[:SS]                                    \n\
 	           YYYY-MM-DD[THH:MM[:SS]]                                  \n\
+	           now[{+|-}count[seconds(default)|minutes|hours|days|weeks]]\n\
 \n");
 
 	return;
