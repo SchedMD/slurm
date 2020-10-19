@@ -107,6 +107,7 @@ documents those changes that are of interest to users and administrators.
  -- Add time specification: "now-<x>" (i.e. subtract from the present)
  -- Add IPv6 support. Must be explicitly enabled with EnableIPv6 in
     CommunicationParameters.
+ -- Add LaunchParameters=mpir_use_nodeaddr configuration option.
 
 * Changes in Slurm 20.02.6
 ==========================
@@ -153,7 +154,6 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmctld segfault due to tight reconfigure RPC requests by serializing
     the RPC handler processing logic.
  -- Use _exit() instead exit() after fork().
- -- Add LaunchParameters=mpir_use_nodeaddr configuration option.
 
 * Changes in Slurm 20.02.5
 ==========================
