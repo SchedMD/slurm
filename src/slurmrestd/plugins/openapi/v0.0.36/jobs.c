@@ -880,7 +880,7 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 		data_t *nodes = data_key_set(jrsc, "allocated_nodes");
 		data_set_dict(nodes);
 		for (size_t node_inx = 0; node_inx < j->nhosts; node_inx++) {
-			data_t *node = data_key_set_int(jrsc, node_inx);
+			data_t *node = data_key_set_int(nodes, node_inx);
 			data_set_dict(node);
 			data_t *sockets = data_key_set(node, "sockets");
 			data_t *cores = data_key_set(node, "cores");
