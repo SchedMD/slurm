@@ -2960,7 +2960,7 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 	int error_code = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
 	job_record_t *job_ptr = NULL, *het_job_ptr;
-	step_record_t *step_ptr;
+	step_record_t *step_ptr = NULL;
 	char *local_node_list = NULL, *node_list = NULL;
 	DEF_TIMERS;
 	step_alloc_info_msg_t *job_info_msg =
@@ -3061,7 +3061,10 @@ static void _slurm_rpc_job_sbcast_cred(slurm_msg_t * msg)
 	memset(&sbcast_arg, 0, sizeof(sbcast_arg));
 	sbcast_arg.job_id = job_ptr->job_id;
 	sbcast_arg.het_job_id = job_ptr->het_job_id;
-	sbcast_arg.step_id = job_ptr->next_step_id;
+	if (step_ptr)
+		sbcast_arg.step_id = step_ptr->step_id.step_id;
+	else
+		sbcast_arg.step_id = job_ptr->next_step_id;
 	sbcast_arg.uid = job_ptr->user_id;
 	sbcast_arg.gid = job_ptr->group_id;
 	sbcast_arg.nodes = node_list; /* avoid extra copy */

@@ -4066,7 +4066,6 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 
 	key.uid = g_slurm_auth_get_uid(msg->auth_cred);
 	key.gid = g_slurm_auth_get_gid(msg->auth_cred);
-	key.fname = req->fname;
 
 	cred_arg = _valid_sbcast_cred(req, key.uid, key.gid,
 				      msg->protocol_version);
@@ -4096,6 +4095,18 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 	     req->block[0], (unsigned long) &req->block);
 #endif
 #endif
+
+	/*
+	 * "srun --bcast" was called with a target directory instead of a
+	 * filename, and we have to append the default filename to req->fname.
+	 * This same file name has to be recreated by exec_task().
+	 */
+	if (req->fname[strlen(req->fname) - 1] == '/') {
+		xstrfmtcat(req->fname, "slurm_bcast_%"PRIu32".%"PRIu32"_%s",
+			   cred_arg->job_id, cred_arg->step_id,
+			   conf->node_name);
+	}
+	key.fname = req->fname;
 
 	if (req->block_no == 1) {
 		info("sbcast req_uid=%u job_id=%u fname=%s block_no=%u",

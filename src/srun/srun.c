@@ -745,13 +745,10 @@ static int _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	params = xmalloc(sizeof(struct bcast_parameters));
 	params->block_size = 8 * 1024 * 1024;
 	params->compress = srun_opt->compress;
-	if (srun_opt->bcast_file) {
+	if (srun_opt->bcast_file)
 		params->dst_fname = xstrdup(srun_opt->bcast_file);
-	} else {
-		xstrfmtcat(params->dst_fname, "%s/slurm_bcast_%u.%u",
-			   opt_local->chdir, job->step_id.job_id,
-			   job->step_id.step_id);
-	}
+	else
+		xstrfmtcat(params->dst_fname, "%s/", opt_local->chdir);
 	params->fanout = 0;
 	params->selected_step = xmalloc(sizeof(*params->selected_step));
 	params->selected_step->array_task_id = NO_VAL;

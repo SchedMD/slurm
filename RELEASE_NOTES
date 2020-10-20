@@ -74,6 +74,8 @@ HIGHLIGHTS
     setting "use_interactive_step" as part of LaunchParameters.
  -- Add IPv6 support. Must be explicitly enabled with EnableIPv6 in
     CommunicationParameters. IPv4 support can be disabled with DisableIPv4.
+ -- Allow use of a target directory with "srun --bcast", and change the default
+    filename to include the node name as well.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

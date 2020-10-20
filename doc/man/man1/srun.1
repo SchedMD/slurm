@@ -174,8 +174,11 @@ Also see \fB\-\-bb\fR. This option applies to job allocations.
 \fB\-\-bcast\fR[=<\fIdest_path\fR>]
 Copy executable file to allocated compute nodes.
 If a file name is specified, copy the executable to the specified destination
-file path. If no path is specified, copy the file to a file named
-"slurm_bcast_<job_id>.<step_id>" in the current working.
+file path.
+If the path specified ends with '/' it is treated as a target directory, and
+the destination file name will be slurm_bcast_<job_id>.<step_id>_<nodename>.
+If no dest_path is specified, then the current working directory is used, and
+the filename follows the above pattern.
 For example, "srun \-\-bcast=/tmp/mine \-N3 a.out" will copy the file "a.out"
 from your current directory to the file "/tmp/mine" on each of the three
 allocated compute nodes and execute that file. This option applies to step
