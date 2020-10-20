@@ -4700,6 +4700,14 @@ static void _slurm_rpc_auth_token(slurm_msg_t *msg)
 	int lifespan = 0;
 
 	START_TIMER;
+	if (xstrstr(slurm_conf.authalt_params, "disable_token_creation") &&
+	    !validate_slurm_user(uid)) {
+		error("%s: attempt to retrieve a token while token creation disabled UID=%u",
+		      __func__, uid);
+		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
+		return;
+	}
+
 	if (request_msg->username) {
 		if (validate_slurm_user(uid))
 			username = request_msg->username;
