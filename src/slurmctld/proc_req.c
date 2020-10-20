@@ -5973,6 +5973,50 @@ static void _slurm_rpc_set_fs_dampening_factor(slurm_msg_t *msg)
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
+static void _slurm_rpc_request_crontab(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+	int rc = SLURM_SUCCESS;
+	crontab_request_msg_t *req_msg = (crontab_request_msg_t *) msg->data;
+	buf_t *crontab = NULL;
+	slurm_msg_t response_msg;
+	crontab_response_msg_t resp_msg;
+	slurmctld_lock_t job_read_lock = { .job = READ_LOCK };
+
+	START_TIMER;
+	debug3("Processing RPC details: REQUEST_CRONTAB for uid=%u",
+	       req_msg->uid);
+
+	lock_slurmctld(job_read_lock);
+
+	if ((req_msg->uid != msg->auth_uid) &&
+	    !validate_operator(msg->auth_uid)) {
+		rc = ESLURM_USER_ID_MISSING;
+	} else {
+		char *file = NULL;
+		xstrfmtcat(file, "%s/crontab/crontab.%u",
+			   slurm_conf.state_save_location, req_msg->uid);
+
+		if (!(crontab = create_mmap_buf(file)))
+			rc = ESLURM_JOB_SCRIPT_MISSING;
+	}
+
+	unlock_slurmctld(job_read_lock);
+	END_TIMER2(__func__);
+
+	if (rc != SLURM_SUCCESS) {
+		slurm_send_rc_msg(msg, rc);
+	} else {
+		response_init(&response_msg, msg);
+		response_msg.msg_type = RESPONSE_CRONTAB;
+		response_msg.data = &resp_msg;
+		resp_msg.crontab = crontab->head;
+		resp_msg.disabled_lines = NULL;
+		slurm_send_node_msg(msg->conn_fd, &response_msg);
+		free_buf(crontab);
+	}
+}
+
 /*
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
@@ -6252,6 +6296,9 @@ void slurmctld_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_BURST_BUFFER_STATUS:
 		_slurm_rpc_burst_buffer_status(msg);
+		break;
+	case REQUEST_CRONTAB:
+		_slurm_rpc_request_crontab(msg);
 		break;
 	default:
 		error("invalid RPC msg_type=%u", msg->msg_type);
