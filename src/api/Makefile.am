@@ -111,6 +111,7 @@ slurmapi_src =           \
 	cancel.c         \
 	complete.c       \
 	config_info.c    \
+	crontab.c        \
 	federation_info.c \
 	front_end_info.c \
 	init.c           \
