@@ -880,7 +880,7 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 		data_t *nodes = data_key_set(jrsc, "allocated_nodes");
 		data_set_dict(nodes);
 		for (size_t node_inx = 0; node_inx < j->nhosts; node_inx++) {
-			data_t *node = data_key_set_int(jrsc, node_inx);
+			data_t *node = data_key_set_int(nodes, node_inx);
 			data_set_dict(node);
 			data_t *sockets = data_key_set(node, "sockets");
 			data_t *cores = data_key_set(node, "cores");
@@ -901,10 +901,6 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 							  "memory"),
 					     j->memory_allocated[node_inx]);
 
-			data_set_int(data_key_set(node, "sockets"),
-				     j->sockets_per_node[node_inx]);
-			data_set_int(data_key_set(node, "cores"),
-				     j->cores_per_socket[node_inx]);
 			data_set_int(data_key_set(node, "cpus"),
 				     j->cpus[node_inx]);
 
@@ -1151,7 +1147,8 @@ static int _op_handler_jobs(const char *context_id,
 	data_set_list(resp);
 	debug4("%s: jobs handler called by %s", __func__, context_id);
 
-	rc = slurm_load_jobs((time_t)NULL, &job_info_ptr, SHOW_ALL);
+	rc = slurm_load_jobs((time_t)NULL, &job_info_ptr,
+			     SHOW_ALL|SHOW_DETAIL);
 
 	if (rc == SLURM_SUCCESS && job_info_ptr &&
 	    job_info_ptr->record_count)
@@ -1187,7 +1184,7 @@ static int _handle_job_get(const char *context_id, http_request_method_t method,
 {
 	int rc = SLURM_SUCCESS;
 	job_info_msg_t *job_info_ptr = NULL;
-	rc = slurm_load_job(&job_info_ptr, job_id, SHOW_ALL);
+	rc = slurm_load_job(&job_info_ptr, job_id, SHOW_ALL|SHOW_DETAIL);
 
 	if (rc == SLURM_SUCCESS && job_info_ptr &&
 	    job_info_ptr->record_count)
