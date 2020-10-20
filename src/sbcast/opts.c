@@ -203,6 +203,11 @@ extern void parse_command_line(int argc, char **argv)
 		free(tmp);
 	}
 
+	if (params.dst_fname[strlen(params.dst_fname) - 1] == '/') {
+		error("Target filename cannot be a directory.");
+		exit(1);
+	}
+
 	if (params.verbose)
 		_print_options();
 }
