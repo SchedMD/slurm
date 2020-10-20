@@ -11530,7 +11530,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 	bool tres_changed = false;
 	int tres_pos;
 	uint64_t tres_req_cnt[slurmctld_tres_cnt];
-	bool tres_req_cnt_set = false;
+	bool tres_req_cnt_set = false, valid_licenses = false;
 	List gres_list = NULL;
 	List license_list = NULL;
 	List part_ptr_list = NULL;
@@ -11714,7 +11714,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 	    !xstrcmp(job_specs->partition, job_ptr->partition)) {
 		sched_debug("%s: new partition identical to old partition %pJ",
 			    __func__, job_ptr);
-		xfree(job_specs->partition);
 	} else if (job_specs->partition) {
 		if (!IS_JOB_PENDING(job_ptr)) {
 			error_code = ESLURM_JOB_NOT_PENDING;
@@ -11733,7 +11732,6 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			 !xstrcmp(new_part_ptr->name, job_ptr->partition)) {
 			sched_debug("%s: 2 new partition identical to old partition %pJ",
 				    __func__, job_ptr);
-			xfree(job_specs->partition);
 			new_part_ptr = NULL;
 		}
 		if (error_code != SLURM_SUCCESS)
@@ -11743,7 +11741,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 	use_part_ptr = new_part_ptr ? new_part_ptr : job_ptr->part_ptr;
 
 	/* Check the account and the partition as both affect the association */
-	if (job_specs->account || job_specs->partition) {
+	if (job_specs->account || new_part_ptr) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_JOB_NOT_PENDING;
 		else {
@@ -12120,15 +12118,14 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 					    job_ptr->licenses)) {
 		sched_debug("%s: new licenses identical to old licenses \"%s\"",
 			    __func__, job_ptr->licenses);
-		xfree(job_specs->licenses);
 	} else if (job_specs->licenses) {
-		bool valid, pending = IS_JOB_PENDING(job_ptr);
+		bool pending = IS_JOB_PENDING(job_ptr);
 		license_list = license_validate(job_specs->licenses, true, true,
 						pending ?
 						job_specs->tres_req_cnt : NULL,
-						&valid);
+						&valid_licenses);
 
-		if (!valid) {
+		if (!valid_licenses) {
 			sched_info("%s: invalid licenses: %s",
 				   __func__, job_specs->licenses);
 			error_code = ESLURM_INVALID_LICENSES;
@@ -12288,7 +12285,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 				     new_req_bitmap :
 				     job_ptr->details->req_node_bitmap,
 				     use_part_ptr,
-				     job_specs->partition ?
+				     new_part_ptr ?
 				     part_ptr_list : job_ptr->part_ptr_list,
 				     use_assoc_ptr, use_qos_ptr)))
 				goto fini;
@@ -13465,7 +13462,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 		}
 	}
 
-	if (job_specs->licenses) {
+	if (valid_licenses) {
 		if (IS_JOB_PENDING(job_ptr)) {
 			FREE_NULL_LIST(job_ptr->license_list);
 			job_ptr->license_list = license_list;
