@@ -33,3 +33,42 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include "slurm/slurm.h"
+
+#include "src/common/slurm_protocol_api.h"
+
+extern int slurm_request_crontab(uid_t uid, char **crontab,
+				 char **disabled_lines)
+{
+	crontab_request_msg_t req;
+	crontab_response_msg_t *resp;
+	slurm_msg_t request, response;
+	int rc = SLURM_SUCCESS;
+
+	slurm_msg_t_init(&request);
+	slurm_msg_t_init(&response);
+
+	req.uid = uid;
+	request.msg_type = REQUEST_CRONTAB;
+	request.data = &req;
+
+	if (slurm_send_recv_controller_msg(&request, &response,
+					   working_cluster_rec) < 0)
+		return SLURM_ERROR;
+
+	if (response.msg_type == RESPONSE_CRONTAB) {
+		resp = (crontab_response_msg_t *) response.data;
+		*crontab = resp->crontab;
+		resp->crontab = NULL;
+		*disabled_lines = resp->disabled_lines;
+		resp->disabled_lines = NULL;
+	} else if (response.msg_type == RESPONSE_SLURM_RC) {
+		rc = ((return_code_msg_t *) response.data)->return_code;
+	} else {
+		rc = SLURM_ERROR;
+	}
+
+	slurm_free_msg_data(response.msg_type, response.data);
+	return rc;
+}

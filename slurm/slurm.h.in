@@ -4973,6 +4973,13 @@ extern void slurm_print_federation(void *fed);
  */
 extern void slurm_destroy_federation_rec(void *fed);
 
+/*****************************************************************************\
+ *      SLURM CRONTAB FUNCTIONS
+\*****************************************************************************/
+
+extern int slurm_request_crontab(uid_t uid, char **crontab,
+				 char **disabled_lines);
+
 #ifdef __cplusplus
 }
 #endif
