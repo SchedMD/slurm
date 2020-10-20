@@ -13156,6 +13156,47 @@ static bitstr_t * _get_usable_gres(int context_inx)
 }
 
 /*
+ * If ntasks_per_gres is > 0, modify usable_gres so that this task can only use
+ * one GPU. This will make it so only one GPU can be bound to this task later
+ * on. Use local_proc_id (task rank) and ntasks_per_gres to determine which GPU
+ * to bind to. Assign out tasks to GPUs in a block-like distribution.
+ * TODO: This logic needs improvement when tasks and GPUs span sockets.
+ *
+ * IN/OUT - usable_gres
+ * IN - ntasks_per_gres
+ * IN - local_proc_id
+ */
+static void _filter_usable_gres(bitstr_t *usable_gres, int ntasks_per_gres,
+				int local_proc_id)
+{
+	int gpu_count, n, idx;
+
+	if (ntasks_per_gres <= 0)
+		return;
+
+	/* # of GPUs this task has an affinity to */
+	gpu_count = bit_set_count(usable_gres);
+
+	/* No need to filter if no usable_gres or already only 1 to use */
+	if ((gpu_count == 0) || (gpu_count == 1))
+		return;
+
+	/* Map task rank to one of the GPUs (block distribution) */
+	n = (local_proc_id / ntasks_per_gres) % gpu_count;
+	/* Find the nth set bit in usable_gres */
+	idx = bit_get_bit_num(usable_gres, n);
+	if (idx == -1) {
+		error("%s: (task %d) usable_gres did not have >= %d set GPUs, so can't do a single bind on set GPU #%d. Defaulting back to the original usable_gres.",
+		      __func__, local_proc_id, n + 1, n);
+		return;
+	}
+
+	/* Return a bitmap with this as the only usable GRES */
+	bit_clear_all(usable_gres);
+	bit_set(usable_gres, idx);
+}
+
+/*
  * Configure the GRES hardware allocated to the current step while privileged
  *
  * IN step_gres_list - Step's GRES specification
@@ -13350,6 +13391,7 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 	bitstr_t *usable_gres = NULL;
 	bool found;
 	gres_internal_flags_t gres_internal_flags = GRES_INTERNAL_FLAG_NONE;
+	int tasks_per_gres = 0;
 
 	if (!bind_gpu && tres_bind && (sep = strstr(tres_bind, "gpu:"))) {
 		sep += 4;
@@ -13357,7 +13399,17 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 			gres_internal_flags |= GRES_INTERNAL_FLAG_VERBOSE;
 			sep += 8;
 		}
-		if (!strncasecmp(sep, "closest", 7))
+		if (!strncasecmp(sep, "single:", 7)) {
+			sep += 7;
+			tasks_per_gres = strtol(sep, NULL, 0);
+			if ((tasks_per_gres <= 0) ||
+			    (tasks_per_gres == LONG_MAX)) {
+				error("%s: single:%s does not specify a valid number. Defaulting to 1.",
+				      __func__, sep);
+				tasks_per_gres = 1;
+			}
+			bind_gpu = true;
+		} else if (!strncasecmp(sep, "closest", 7))
 			bind_gpu = true;
 		else if (!strncasecmp(sep, "map_gpu:", 8))
 			map_gpu = sep + 8;
@@ -13378,8 +13430,12 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 				} else if (mask_gpu) {
 					usable_gres = _get_gres_mask(mask_gpu,
 								local_proc_id);
-				} else if (bind_gpu)
+				} else if (bind_gpu) {
 					usable_gres = _get_usable_gres(i);
+					_filter_usable_gres(usable_gres,
+							    tasks_per_gres,
+							    local_proc_id);
+				}
 				else
 					continue;
 			} else if (!xstrcmp(gres_context[i].gres_name,

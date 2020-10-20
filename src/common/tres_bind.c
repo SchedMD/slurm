@@ -41,6 +41,14 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+static int _valid_num(const char *arg)
+{
+	long int val = strtol(arg, NULL, 0);
+	if ((val < 0) || (val == LONG_MAX))
+		return -1;
+	return 0;
+}
+
 /*
  * Test for valid comma-delimited set of numbers
  * RET - -1 on error, else 0
@@ -85,6 +93,8 @@ static int _valid_gpu_bind(char *arg)
 		arg += 8;
 	if (!strcmp(arg, "closest"))
 		return 0;
+	if (!strncmp(arg, "single:", 7))
+		return _valid_num(arg + 7);
 	if (!strncmp(arg, "map_gpu:", 8))
 		return _valid_num_list(arg + 8);
 	if (!strncmp(arg, "mask_gpu:", 9))
@@ -100,6 +110,7 @@ static int _valid_gpu_bind(char *arg)
  * RET - -1 on error, else 0
  *
  * Example: gpu:closest
+ *          gpu:single:2
  *          gpu:map_gpu:0,1
  *          gpu:mask_gpu:0x3,0x3
  *          gpu:map_gpu:0,1;nic:closest
