@@ -4802,6 +4802,24 @@ extern void slurm_free_bb_status_resp_msg(bb_status_resp_msg_t *msg)
 	}
 }
 
+extern void slurm_free_crontab_request_msg(crontab_request_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg);
+}
+
+extern void slurm_free_crontab_response_msg(crontab_response_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->crontab);
+	xfree(msg->disabled_lines);
+	xfree(msg);
+}
+
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 {
 	if (!data)
@@ -5173,6 +5191,12 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_BURST_BUFFER_STATUS:
 		slurm_free_bb_status_resp_msg(data);
 		break;
+	case REQUEST_CRONTAB:
+		slurm_free_crontab_request_msg(data);
+		break;
+	case RESPONSE_CRONTAB:
+		slurm_free_crontab_response_msg(data);
+		break;
 	default:
 		error("invalid type trying to be freed %u", type);
 		break;
@@ -5437,6 +5461,11 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_BURST_BUFFER_STATUS";
 	case RESPONSE_BURST_BUFFER_STATUS:
 		return "RESPONSE_BURST_BUFFER_STATUS";
+
+	case REQUEST_CRONTAB:					/* 2200 */
+		return "REQUEST_CRONTAB";
+	case RESPONSE_CRONTAB:
+		return "RESPONSE_CRONTAB";
 
 	case REQUEST_UPDATE_JOB:				/* 3001 */
 		return "REQUEST_UPDATE_JOB";

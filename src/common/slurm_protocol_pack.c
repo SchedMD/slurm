@@ -12548,6 +12548,62 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_crontab_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	crontab_request_msg_t *msg = (crontab_request_msg_t *) smsg->data;
+
+	if (smsg->protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		pack32(msg->uid, buffer);
+	}
+}
+
+static int _unpack_crontab_request_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	crontab_request_msg_t *msg = xmalloc(sizeof(*msg));
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->uid, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_crontab_request_msg(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_crontab_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	crontab_response_msg_t *msg = (crontab_response_msg_t *) smsg->data;
+
+	if (smsg->protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		packstr(msg->crontab, buffer);
+		packstr(msg->disabled_lines, buffer);
+	}
+}
+
+static int _unpack_crontab_response_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	uint32_t uint32_tmp;
+	crontab_response_msg_t *msg = xmalloc(sizeof(*msg));
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&msg->crontab, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->disabled_lines, &uint32_tmp,
+				       buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_crontab_response_msg(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
 /* pack_msg
  * packs a generic slurm protocol message body
  * IN msg - the body structure to pack (note: includes message type)
@@ -13171,6 +13227,12 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case RESPONSE_BURST_BUFFER_STATUS:
 		_pack_bb_status_resp_msg((bb_status_resp_msg_t *)(msg->data),
 					 buffer, msg->protocol_version);
+		break;
+	case REQUEST_CRONTAB:
+		_pack_crontab_request_msg(msg, buffer);
+		break;
+	case RESPONSE_CRONTAB:
+		_pack_crontab_response_msg(msg, buffer);
 		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
@@ -13862,6 +13924,12 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_bb_status_resp_msg(
 			(bb_status_resp_msg_t **)&(msg->data), buffer,
 			msg->protocol_version);
+		break;
+	case REQUEST_CRONTAB:
+		rc = _unpack_crontab_request_msg(msg, buffer);
+		break;
+	case RESPONSE_CRONTAB:
+		rc = _unpack_crontab_response_msg(msg, buffer);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);
