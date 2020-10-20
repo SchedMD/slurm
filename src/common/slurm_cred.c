@@ -2511,10 +2511,10 @@ unpack_error:
 
 void  print_sbcast_cred(sbcast_cred_t *sbcast_cred)
 {
-	info("Sbcast_cred: Jobid   %u", sbcast_cred->jobid         );
+	info("Sbcast_cred: JobId   %u", sbcast_cred->jobid);
 	info("Sbcast_cred: StepId  %u", sbcast_cred->step_id);
-	info("Sbcast_cred: Nodes   %s", sbcast_cred->nodes         );
-	info("Sbcast_cred: ctime   %s", slurm_ctime2(&sbcast_cred->ctime) );
+	info("Sbcast_cred: Nodes   %s", sbcast_cred->nodes);
+	info("Sbcast_cred: ctime   %s", slurm_ctime2(&sbcast_cred->ctime));
 	info("Sbcast_cred: Expire  %s", slurm_ctime2(&sbcast_cred->expiration));
 }
 
