@@ -115,17 +115,45 @@ __thread char *thread_username = NULL;
 
 static int _init_key(void)
 {
-	char *key_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(key_file, "/jwt_hs256.key");
-	key = create_mmap_buf(key_file);
-	if (!key) {
+	char *key_file = NULL;
+
+	if (slurm_conf.authalt_params && slurm_conf.authalt_params[0]) {
+		const char *jwt_key_field = "jwt_key=";
+		char *begin = xstrcasestr(slurm_conf.authalt_params,
+					  jwt_key_field);
+
+		/* find the begin and ending offsets of the jwt_key */
+		if (begin) {
+			char *start = begin + sizeof(jwt_key_field);
+			char *end = NULL;
+
+			if ((end = xstrstr(start, ",")))
+				key_file = xstrndup(start, (end - start));
+			else
+				key_file = xstrdup(start);
+		}
+	}
+
+	if (!key_file && slurm_conf.state_save_location) {
+		const char *default_key = "jwt_hs256.key";
+		/* default to state_save_location for slurmctld */
+		xstrfmtcat(key_file, "%s/%s",
+			   slurm_conf.state_save_location, default_key);
+	}
+
+	if (!key_file)
+		return ESLURM_AUTH_SKIP;
+
+	debug("%s: Loading key: %s", __func__, key_file);
+
+	if (!(key = create_mmap_buf(key_file))) {
 		error("%s: Could not load key file (%s)",
 		      plugin_type, key_file);
 		xfree(key_file);
-		return SLURM_ERROR;
+		return ESLURM_AUTH_FOPEN_ERROR;
 	}
-	xfree(key_file);
 
+	xfree(key_file);
 	return SLURM_SUCCESS;
 }
 

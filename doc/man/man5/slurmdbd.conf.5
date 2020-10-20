@@ -138,6 +138,12 @@ will permit for communication.
 \fBAuthAltParameters\fR
 Used to define alternative authentication plugins options. Multiple options may
 be comma separated.
+.RS
+.TP 15
+\fBjwt_key=\fR
+Absolute path to JWT key file. Key must be HS256, and should only be accessible
+by SlurmUser.
+.RE
 
 .TP
 \fBAuthType\fR
