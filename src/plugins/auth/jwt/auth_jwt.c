@@ -458,6 +458,8 @@ char *slurm_auth_token_generate(const char *username, int lifespan)
 
 	jwt_free(jwt);
 
+	info("created token for %s for %d seconds", username, lifespan);
+
 	return xtoken;
 
 fail:
