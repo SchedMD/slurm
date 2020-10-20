@@ -113,19 +113,29 @@ __thread char *thread_username = NULL;
  *		requestor for a given username and duration.
  */
 
+static int _init_key(void)
+{
+	char *key_file = xstrdup(slurm_conf.state_save_location);
+	xstrcat(key_file, "/jwt_hs256.key");
+	key = create_mmap_buf(key_file);
+	if (!key) {
+		error("%s: Could not load key file (%s)",
+		      plugin_type, key_file);
+		xfree(key_file);
+		return SLURM_ERROR;
+	}
+	xfree(key_file);
+
+	return SLURM_SUCCESS;
+}
+
 extern int init(void)
 {
 	if (running_in_slurmctld() || running_in_slurmdbd()) {
-		char *key_file = xstrdup(slurm_conf.state_save_location);
-		xstrcat(key_file, "/jwt_hs256.key");
-		key = create_mmap_buf(key_file);
-		if (!key) {
-			error("%s: Could not load key file (%s)",
-			      plugin_type, key_file);
-			xfree(key_file);
-			return SLURM_ERROR;
-		}
-		xfree(key_file);
+		int rc;
+
+		if ((rc = _init_key()))
+			return rc;
 	} else {
 		/* we must be in a client command */
 		token = getenv("SLURM_JWT");
