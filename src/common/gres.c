@@ -11549,19 +11549,17 @@ extern void gres_plugin_job_set_defs(List job_gres_list, char *gres_name,
 			continue;
 		job_gres_data->def_cpus_per_gres = cpu_per_gpu;
 		job_gres_data->def_mem_per_gres = mem_per_gpu;
-		if (!job_gres_data->cpus_per_gres && cpu_per_gpu) {
+		if (!job_gres_data->cpus_per_gres) {
 			xfree(*cpus_per_tres);
-			xstrfmtcat(*cpus_per_tres, "gpu:%"PRIu64,
-				   cpu_per_gpu);
-		} else if (!cpu_per_gpu) {
-			xfree(*cpus_per_tres);
+			if (cpu_per_gpu)
+				xstrfmtcat(*cpus_per_tres, "gpu:%"PRIu64,
+					   cpu_per_gpu);
 		}
-		if (!job_gres_data->mem_per_gres && mem_per_gpu) {
+		if (!job_gres_data->mem_per_gres) {
 			xfree(*mem_per_tres);
-			xstrfmtcat(*mem_per_tres, "gpu:%"PRIu64,
-				   mem_per_gpu);
-		} else if (!mem_per_gpu) {
-			xfree(*mem_per_tres);
+			if (mem_per_gpu)
+				xstrfmtcat(*mem_per_tres, "gpu:%"PRIu64,
+					   mem_per_gpu);
 		}
 	}
 	list_iterator_destroy(gres_iter);
