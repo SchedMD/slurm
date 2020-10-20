@@ -110,6 +110,7 @@ documents those changes that are of interest to users and administrators.
  -- Add LaunchParameters=mpir_use_nodeaddr configuration option.
  -- Allow use of a target directory with "srun --bcast", and change the default
     filename to include the node name as well.
+ -- Set -fno-omit-frame-pointer compiler flag.
 
 * Changes in Slurm 20.02.6
 ==========================

@@ -134,6 +134,11 @@ dnl Check for C99 compatibility
 dnl
 X_AC_C99
 
+dnl Force -fno-omit-frame-pointer compiler flag if available
+dnl
+AX_CHECK_COMPILE_FLAG([-fno-omit-frame-pointer],
+		      [CFLAGS="$CFLAGS -fno-omit-frame-pointer"])
+
 dnl check for presumed size of uid_t and gid_t
 X_AC_UID_GID_SIZE_CHECK
 
