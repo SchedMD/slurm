@@ -120,6 +120,7 @@ static int	_valid_node_feature(char *feature, bool can_reboot);
 static void *	_wait_boot(void *arg);
 #endif
 static int	build_queue_timeout = BUILD_TIMEOUT;
+static int	correspond_after_task_cnt = CORRESPOND_ARRAY_TASK_CNT;
 static int	save_last_part_update = 0;
 
 static pthread_mutex_t sched_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -529,7 +530,7 @@ extern List build_job_queue(bool clear_start, bool backfill)
 		if (!dep_corr)
 			continue;
 		pend_cnt = num_pending_job_array_tasks(job_ptr->array_job_id);
-		if (pend_cnt >= CORRESPOND_ARRAY_TASK_CNT)
+		if (pend_cnt >= correspond_after_task_cnt)
 			continue;
 		if (job_ptr->array_recs->task_cnt < 1)
 			continue;
@@ -1117,6 +1118,22 @@ static int _schedule(bool full_queue)
 		} else {
 			build_queue_timeout = BUILD_TIMEOUT;
 		}
+
+		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
+					   "correspond_after_task_cnt="))) {
+			correspond_after_task_cnt = atoi(tmp_ptr + 26);
+			if (correspond_after_task_cnt <
+			    CORRESPOND_ARRAY_TASK_CNT) {
+				error("Invalid correspond_after_task_cnt: %d, the value can't be lower than %d",
+				      correspond_after_task_cnt,
+				      CORRESPOND_ARRAY_TASK_CNT);
+				correspond_after_task_cnt =
+					CORRESPOND_ARRAY_TASK_CNT;
+			}
+		} else {
+			correspond_after_task_cnt = CORRESPOND_ARRAY_TASK_CNT;
+		}
+
 
 		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 					   "default_queue_depth="))) {

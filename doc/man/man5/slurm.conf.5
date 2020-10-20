@@ -2937,6 +2937,12 @@ job queue can take so much time as to adversely impact overall system
 performance and this parameter can be adjusted as needed.
 The default value is 2,000,000 microseconds (2 seconds).
 .TP
+\fBcorrespond_after_task_cnt=#\fR
+Defines the number of array tasks that get split for potential aftercorr
+dependency check. Low number may result in dependent task check failures when
+the job one depends on gets purged before the split.
+Default: 10.
+.TP
 \fBdefault_queue_depth=#\fR
 The default number of jobs to attempt scheduling (i.e. the queue depth) when a
 running job completes or other routine actions occur, however the frequency
