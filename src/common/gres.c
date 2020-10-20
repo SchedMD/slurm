@@ -13170,21 +13170,33 @@ static void _filter_usable_gres(bitstr_t *usable_gres, int ntasks_per_gres,
 				int local_proc_id)
 {
 	int gpu_count, n, idx;
-
+	char *str;
 	if (ntasks_per_gres <= 0)
 		return;
 
 	/* # of GPUs this task has an affinity to */
 	gpu_count = bit_set_count(usable_gres);
 
+	str = bit_fmt_hexmask_trim(usable_gres);
+	log_flag(GRES, "%s: local_proc_id = %d; usable_gres (ALL): %s",
+		 __func__, local_proc_id, str);
+	xfree(str);
+
 	/* No need to filter if no usable_gres or already only 1 to use */
-	if ((gpu_count == 0) || (gpu_count == 1))
+	if ((gpu_count == 0) || (gpu_count == 1)) {
+		log_flag(GRES, "%s: (task %d) No need to filter since usable_gres count is 0 or 1",
+			 __func__, local_proc_id);
 		return;
+	}
 
 	/* Map task rank to one of the GPUs (block distribution) */
 	n = (local_proc_id / ntasks_per_gres) % gpu_count;
 	/* Find the nth set bit in usable_gres */
 	idx = bit_get_bit_num(usable_gres, n);
+
+	log_flag(GRES, "%s: local_proc_id = %d; n = %d; ntasks_per_gres = %d; idx = %d",
+		 __func__, local_proc_id, n, ntasks_per_gres, idx);
+
 	if (idx == -1) {
 		error("%s: (task %d) usable_gres did not have >= %d set GPUs, so can't do a single bind on set GPU #%d. Defaulting back to the original usable_gres.",
 		      __func__, local_proc_id, n + 1, n);
@@ -13194,6 +13206,10 @@ static void _filter_usable_gres(bitstr_t *usable_gres, int ntasks_per_gres,
 	/* Return a bitmap with this as the only usable GRES */
 	bit_clear_all(usable_gres);
 	bit_set(usable_gres, idx);
+	str = bit_fmt_hexmask_trim(usable_gres);
+	log_flag(GRES, "%s: local_proc_id = %d; usable_gres (single filter): %s",
+		 __func__, local_proc_id, str);
+	xfree(str);
 }
 
 /*
