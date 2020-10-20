@@ -281,6 +281,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->authinfo            = xstrdup(conf->authinfo);
 	conf_ptr->authtype            = xstrdup(conf->authtype);
 	conf_ptr->authalttypes        = xstrdup(conf->authalttypes);
+	conf_ptr->authalt_params      = xstrdup(conf->authalt_params);
 
 	conf_ptr->batch_start_timeout = conf->batch_start_timeout;
 	conf_ptr->boot_time           = slurmctld_config.boot_time;

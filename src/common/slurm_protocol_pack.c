@@ -4208,6 +4208,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		packstr(build_ptr->acct_gather_profile_type, buffer);
 
 		packstr(build_ptr->authalttypes, buffer);
+		packstr(build_ptr->authalt_params, buffer);
 		packstr(build_ptr->authinfo, buffer);
 		packstr(build_ptr->authtype, buffer);
 
@@ -5090,6 +5091,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		                       &uint32_tmp, buffer);
 
 		safe_unpackstr_xmalloc(&build_ptr->authalttypes,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->authalt_params,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->authinfo,
 		                       &uint32_tmp, buffer);

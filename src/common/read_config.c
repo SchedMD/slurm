@@ -214,6 +214,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"AcctGatherFilesystemType", S_P_STRING},
 	{"AllowSpecResourcesUsage", S_P_BOOLEAN},
 	{"AuthAltTypes", S_P_STRING},
+	{"AuthAltParameters", S_P_STRING},
 	{"AuthInfo", S_P_STRING},
 	{"AuthType", S_P_STRING},
 	{"BackupAddr", S_P_STRING},
@@ -2776,6 +2777,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->acct_gather_interconnect_type);
 	xfree (ctl_conf_ptr->acct_gather_filesystem_type);
 	xfree(ctl_conf_ptr->authalttypes);
+	xfree(ctl_conf_ptr->authalt_params);
 	xfree (ctl_conf_ptr->authinfo);
 	xfree (ctl_conf_ptr->authtype);
 	xfree (ctl_conf_ptr->bb_type);
@@ -2919,6 +2921,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->accounting_storage_type);
 	xfree (ctl_conf_ptr->accounting_storage_user);
 	xfree(ctl_conf_ptr->authalttypes);
+	xfree(ctl_conf_ptr->authalt_params);
 	xfree (ctl_conf_ptr->authinfo);
 	xfree (ctl_conf_ptr->authtype);
 	ctl_conf_ptr->batch_start_timeout	= 0;
@@ -3605,6 +3608,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			      "JobCredentialPublicCertificate", hashtbl);
 
 	(void) s_p_get_string(&conf->authalttypes, "AuthAltTypes", hashtbl);
+	(void) s_p_get_string(&conf->authalt_params, "AuthAltParameters", hashtbl);
 
 	(void) s_p_get_string(&conf->authinfo, "AuthInfo", hashtbl);
 
