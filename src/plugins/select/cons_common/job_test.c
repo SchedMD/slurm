@@ -1372,6 +1372,11 @@ alloc_job:
 	job_res->ncpus            = job_res->nhosts;
 	if (job_ptr->details->ntasks_per_node)
 		job_res->ncpus   *= details_ptr->ntasks_per_node;
+	/* See if # of cpus increases with ntasks_per_tres */
+	i = gres_plugin_job_min_tasks(job_res->nhosts, sockets_per_node,
+				      details_ptr->ntasks_per_tres, "gpu",
+				      job_ptr->gres_list);
+	job_res->ncpus            = MAX(job_res->ncpus, i);
 	job_res->ncpus            = MAX(job_res->ncpus,
 					details_ptr->min_cpus);
 	job_res->ncpus            = MAX(job_res->ncpus,
