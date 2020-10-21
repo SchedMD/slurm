@@ -54,6 +54,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/cron.h"
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
@@ -6017,6 +6018,44 @@ static void _slurm_rpc_request_crontab(slurm_msg_t *msg)
 	}
 }
 
+static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+	crontab_update_request_msg_t *req_msg =
+		(crontab_update_request_msg_t *) msg->data;
+	slurm_msg_t response_msg;
+	crontab_update_response_msg_t resp_msg;
+	/* probably need to mirror _slurm_rpc_dump_batch_script() */
+	slurmctld_lock_t job_write_lock =
+		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
+
+	START_TIMER;
+	debug3("Processing RPC details: REQUEST_UPDATE_CRONTAB for uid=%u",
+	       req_msg->uid);
+
+	resp_msg.err_msg = NULL;
+	resp_msg.failed_lines = NULL;
+	resp_msg.return_code = SLURM_SUCCESS;
+
+	lock_slurmctld(job_write_lock);
+
+	if (((req_msg->uid != msg->auth_uid) || (req_msg->gid != gid)) &&
+	    !validate_slurm_user(msg->auth_uid)) {
+		resp_msg.return_code = ESLURM_USER_ID_MISSING;
+	} else {
+		crontab_submit(req_msg, &resp_msg, msg->protocol_version);
+	}
+
+	unlock_slurmctld(job_write_lock);
+	END_TIMER2(__func__);
+
+	response_init(&response_msg, msg);
+	response_msg.msg_type = RESPONSE_UPDATE_CRONTAB;
+	response_msg.data = &resp_msg;
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+}
+
 /*
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
@@ -6299,6 +6338,9 @@ void slurmctld_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_CRONTAB:
 		_slurm_rpc_request_crontab(msg);
+		break;
+	case REQUEST_UPDATE_CRONTAB:
+		_slurm_rpc_update_crontab(msg);
 		break;
 	default:
 		error("invalid RPC msg_type=%u", msg->msg_type);
