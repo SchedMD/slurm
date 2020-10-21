@@ -12280,7 +12280,8 @@ extern int gres_plugin_step_state_validate(char *cpus_per_tres,
 					   char *mem_per_tres,
 					   List *step_gres_list,
 					   List job_gres_list, uint32_t job_id,
-					   uint32_t step_id)
+					   uint32_t step_id,
+					   uint32_t *num_tasks)
 {
 	int rc;
 	gres_step_state_t *step_gres_data;
@@ -12309,6 +12310,8 @@ extern int gres_plugin_step_state_validate(char *cpus_per_tres,
 							    &save_ptr, &rc))) {
 			step_gres_data->gres_per_step = cnt;
 			in_val = NULL;
+			step_gres_data->total_gres =
+				MAX(step_gres_data->total_gres, cnt);
 		}
 	}
 	if (tres_per_node) {
@@ -12318,6 +12321,9 @@ extern int gres_plugin_step_state_validate(char *cpus_per_tres,
 							    &save_ptr, &rc))) {
 			step_gres_data->gres_per_node = cnt;
 			in_val = NULL;
+			/* Step only has 1 node, always */
+			step_gres_data->total_gres =
+				MAX(step_gres_data->total_gres, cnt);
 		}
 	}
 	if (tres_per_socket) {
@@ -12327,6 +12333,16 @@ extern int gres_plugin_step_state_validate(char *cpus_per_tres,
 							    &save_ptr, &rc))) {
 			step_gres_data->gres_per_socket = cnt;
 			in_val = NULL;
+			// TODO: What is sockets_per_node and ntasks_per_socket?
+			// if (*sockets_per_node != NO_VAL16) {
+			// 	cnt *= *sockets_per_node;
+			// } else if ((*num_tasks != NO_VAL) &&
+			// 	   (*ntasks_per_socket != NO_VAL16)) {
+			// 	cnt *= ((*num_tasks + *ntasks_per_socket - 1) /
+			// 	        *ntasks_per_socket);
+			// }
+			// step_gres_data->total_gres =
+			// 	MAX(step_gres_data->total_gres, cnt);
 		}
 	}
 	if (tres_per_task) {
@@ -12336,6 +12352,10 @@ extern int gres_plugin_step_state_validate(char *cpus_per_tres,
 							    &save_ptr, &rc))) {
 			step_gres_data->gres_per_task = cnt;
 			in_val = NULL;
+			if (*num_tasks != NO_VAL)
+				cnt *= *num_tasks;
+			step_gres_data->total_gres =
+				MAX(step_gres_data->total_gres, cnt);
 		}
 	}
 	if (mem_per_tres) {

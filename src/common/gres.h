@@ -1140,7 +1140,8 @@ extern int gres_plugin_step_state_validate(char *cpus_per_tres,
 					   char *mem_per_tres,
 					   List *step_gres_list,
 					   List job_gres_list, uint32_t job_id,
-					   uint32_t step_id);
+					   uint32_t step_id,
+					   uint32_t *num_tasks);
 
 /*
  * Create a copy of a step's gres state
