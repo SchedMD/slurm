@@ -1097,7 +1097,7 @@ The default value is unlimited (zero) and may not exceed 65533 seconds.
 When LaunchParameters=use_interactive_step is enabled, launching salloc will
 automatically start an srun process with InteractiveStepOptions to launch
 a terminal on a node in the job allocation.
-The default value is "--interactive --pty $SHELL".
+The default value is "--interactive --preserve-env --pty $SHELL".
 
 .TP
 \fBJobAcctGatherType\fR
