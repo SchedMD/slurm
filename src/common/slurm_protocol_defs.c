@@ -4820,6 +4820,28 @@ extern void slurm_free_crontab_response_msg(crontab_response_msg_t *msg)
 	xfree(msg);
 }
 
+extern void slurm_free_crontab_update_request_msg(
+	crontab_update_request_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->crontab);
+	FREE_NULL_LIST(msg->jobs);
+	xfree(msg);
+}
+
+extern void slurm_free_crontab_update_response_msg(
+	crontab_update_response_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->err_msg);
+	xfree(msg->failed_lines);
+	xfree(msg);
+}
+
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 {
 	if (!data)
@@ -5197,6 +5219,12 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_CRONTAB:
 		slurm_free_crontab_response_msg(data);
 		break;
+	case REQUEST_UPDATE_CRONTAB:
+		slurm_free_crontab_update_request_msg(data);
+		break;
+	case RESPONSE_UPDATE_CRONTAB:
+		slurm_free_crontab_update_response_msg(data);
+		break;
 	default:
 		error("invalid type trying to be freed %u", type);
 		break;
@@ -5466,6 +5494,10 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_CRONTAB";
 	case RESPONSE_CRONTAB:
 		return "RESPONSE_CRONTAB";
+	case REQUEST_UPDATE_CRONTAB:
+		return "REQUEST_UPDATE_CRONTAB";
+	case RESPONSE_UPDATE_CRONTAB:
+		return "RESPONSE_UPDATE_CRONTAB";
 
 	case REQUEST_UPDATE_JOB:				/* 3001 */
 		return "REQUEST_UPDATE_JOB";

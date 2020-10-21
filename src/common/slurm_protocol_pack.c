@@ -45,6 +45,7 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
+#include "src/common/cron.h"
 #include "src/common/forward.h"
 #include "src/common/gres.h"
 #include "src/common/job_options.h"
@@ -12604,6 +12605,77 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_crontab_update_request_msg(const slurm_msg_t *smsg,
+					     buf_t *buffer)
+{
+	crontab_update_request_msg_t *msg =
+		(crontab_update_request_msg_t *) smsg->data;
+
+	if (smsg->protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		packstr(msg->crontab, buffer);
+		_pack_job_desc_list_msg(msg->jobs, buffer,
+					smsg->protocol_version);
+		pack32(msg->uid, buffer);
+		pack32(msg->gid, buffer);
+	}
+}
+
+static int _unpack_crontab_update_request_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	uint32_t uint32_tmp;
+	crontab_update_request_msg_t *msg = xmalloc(sizeof(*msg));
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&msg->crontab, &uint32_tmp, buffer);
+		if (_unpack_job_desc_list_msg(&msg->jobs, buffer,
+					      smsg->protocol_version))
+			goto unpack_error;
+		safe_unpack32(&msg->uid, buffer);
+		safe_unpack32(&msg->gid, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_crontab_update_request_msg(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_crontab_update_response_msg(const slurm_msg_t *smsg,
+					      buf_t *buffer)
+{
+	crontab_update_response_msg_t *msg =
+		(crontab_update_response_msg_t *) smsg->data;
+
+	if (smsg->protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		packstr(msg->err_msg, buffer);
+		packstr(msg->failed_lines, buffer);
+		pack32(msg->return_code, buffer);
+	}
+}
+
+static int _unpack_crontab_update_response_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	uint32_t uint32_tmp;
+	crontab_update_response_msg_t *msg = xmalloc(sizeof(*msg));
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&msg->err_msg, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->failed_lines, &uint32_tmp, buffer);
+		safe_unpack32(&msg->return_code, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_crontab_update_response_msg(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
 /* pack_msg
  * packs a generic slurm protocol message body
  * IN msg - the body structure to pack (note: includes message type)
@@ -13233,6 +13305,12 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case RESPONSE_CRONTAB:
 		_pack_crontab_response_msg(msg, buffer);
+		break;
+	case REQUEST_UPDATE_CRONTAB:
+		_pack_crontab_update_request_msg(msg, buffer);
+		break;
+	case RESPONSE_UPDATE_CRONTAB:
+		_pack_crontab_update_response_msg(msg, buffer);
 		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
@@ -13930,6 +14008,12 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	case RESPONSE_CRONTAB:
 		rc = _unpack_crontab_response_msg(msg, buffer);
+		break;
+	case REQUEST_UPDATE_CRONTAB:
+		rc = _unpack_crontab_update_request_msg(msg, buffer);
+		break;
+	case RESPONSE_UPDATE_CRONTAB:
+		rc = _unpack_crontab_update_response_msg(msg, buffer);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);

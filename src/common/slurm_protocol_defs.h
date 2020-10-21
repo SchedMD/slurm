@@ -299,6 +299,8 @@ typedef enum {
 
 	REQUEST_CRONTAB = 2200,
 	RESPONSE_CRONTAB,
+	REQUEST_UPDATE_CRONTAB,
+	RESPONSE_UPDATE_CRONTAB,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
@@ -1234,6 +1236,13 @@ typedef struct {
 	char *disabled_lines;
 } crontab_response_msg_t;
 
+typedef struct {
+	char *crontab;
+	List jobs;
+	uint32_t uid;
+	uint32_t gid;
+} crontab_update_request_msg_t;
+
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
@@ -1550,6 +1559,10 @@ extern void slurm_free_bb_status_resp_msg(bb_status_resp_msg_t *msg);
 
 extern void slurm_free_crontab_request_msg(crontab_request_msg_t *msg);
 extern void slurm_free_crontab_response_msg(crontab_response_msg_t *msg);
+extern void slurm_free_crontab_update_request_msg(
+	crontab_update_request_msg_t *msg);
+extern void slurm_free_crontab_update_response_msg(
+	crontab_update_response_msg_t *msg);
 
 extern const char *preempt_mode_string(uint16_t preempt_mode);
 extern uint16_t preempt_mode_num(const char *preempt_mode);
