@@ -319,41 +319,31 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 					if (!names[i+1])
 						break;
 
-					/*
-					 * Only add the non-blank names to the
-					 * list
-					 */
-					if (i != start) {
-						name = xstrndup(names+start,
-								(i-start));
-						/*
-						* If we get a duplicate remove
-						* the first one and tack this on
-						* the end. This is needed for
-						* get associations with QOS.
-						*/
-						if (list_find(
-							itr,
-							slurm_find_char_in_list,
-							name)) {
-							list_delete_item(itr);
-						} else
-							count++;
-						if (lower_case_normalization)
-							xstrtolower(name);
-						list_append(char_list, name);
-
-						list_iterator_reset(itr);
-					}
+					name = xstrndup(names+start,
+							(i-start));
+					//info("got %s %d", name, i-start);
 
 					/*
-					 * This line used to be "start = ++i".
-					 * If we increment i too early, we will
-					 * get issues with a list such as
-					 * ",,this".
+					 * If we get a duplicate remove the
+					 * first one and tack this on the end.
+					 * This is needed for get associations
+					 * with QOS.
 					 */
-					start = i + 1;
-					if (!names[i + 1]) {
+					if (list_find(itr,
+						      slurm_find_char_in_list,
+						      name)) {
+						list_delete_item(itr);
+					} else
+						count++;
+					if (lower_case_normalization)
+						xstrtolower(name);
+					list_append(char_list, name);
+
+					list_iterator_reset(itr);
+
+					i++;
+					start = i;
+					if (!names[i]) {
 						info("There is a problem "
 						     "with your request. "
 						     "It appears you have "

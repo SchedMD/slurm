@@ -112,7 +112,6 @@ documents those changes that are of interest to users and administrators.
     filename to include the node name as well.
  -- Set -fno-omit-frame-pointer compiler flag.
  -- Add --mail-type=INVALID_DEPEND option to salloc, sbatch, and srun.
- -- Fix passing names with commas to the slurmdbd.
 
 * Changes in Slurm 20.02.6
 ==========================
