@@ -58,6 +58,7 @@
 #include "src/common/plugrack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/ref.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/uid.h"
@@ -68,7 +69,6 @@
 #include "src/slurmrestd/http.h"
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
-#include "src/slurmrestd/ref.h"
 #include "src/slurmrestd/rest_auth.h"
 
 decl_static_data(usage_txt);

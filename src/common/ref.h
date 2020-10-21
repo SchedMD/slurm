@@ -34,8 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef SLURMRESTD_REF_H
-#define SLURMRESTD_REF_H
+#ifndef _COMMON_REF_H_
+#define _COMMON_REF_H_
 
 /*
  * any ld static data will always have 3 symbols defined (start, end, size).
@@ -83,4 +83,4 @@
 		xfree(json_data_ptr);                       \
 	} while (0);
 
-#endif /* SLURMRESTD_REF_H */
+#endif /* _COMMON_REF_H_ */

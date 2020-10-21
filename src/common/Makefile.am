@@ -99,6 +99,7 @@ libcommon_la_SOURCES = 			\
 	slurm_topology.c slurm_topology.h \
 	switch.c switch.h		\
 	macros.h			\
+	ref.h				\
 	slurm_selecttype_info.c 	\
 	slurm_selecttype_info.h		\
 	slurm_resource_info.c 		\

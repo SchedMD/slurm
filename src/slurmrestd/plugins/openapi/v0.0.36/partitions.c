@@ -44,13 +44,13 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/ref.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
-#include "src/slurmrestd/ref.h"
 #include "src/slurmrestd/xjson.h"
 
 typedef enum {
