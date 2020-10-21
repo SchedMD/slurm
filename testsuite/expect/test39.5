@@ -342,6 +342,97 @@ if {$match != $expected_gpus} {
 	fail "srun --gpus-per-task failure ($match != $expected_gpus)"
 }
 
+#
+# Test --cpus-per-task with different gpu options (Bug 9937)
+#
+log_info "TEST: --cpus-per-task option with different gpu options(Bug 9937)"
+
+set match 0
+set expected_gpus 1
+set srun_pid [spawn $srun --gres=gpu:1 --ntasks-per-core=1 -c $cpus_per_node -t1 -J "test$test_id" -l ./$file_in1]
+expect {
+	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+		incr match [cuda_count $expect_out(1,string)]
+		exp_continue
+	}
+	timeout {
+		log_error "srun not responding"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != $expected_gpus} {
+	fail "srun --cpus-per-task with --gres=gpu:1 failure ($match != $expected_gpus)"
+}
+
+set match 0
+set expected_gpus 1
+set srun_pid [spawn $srun --gpus=1 --ntasks-per-core=1 -c $cpus_per_node -t1 -J "test$test_id" -l ./$file_in1]
+expect {
+	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+		incr match [cuda_count $expect_out(1,string)]
+		exp_continue
+	}
+	timeout {
+		log_error "srun not responding"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != $expected_gpus} {
+	fail "srun --cpus-per-task with --gpus failure ($match != $expected_gpus)"
+}
+
+set match 0
+set expected_gpus 1
+set srun_pid [spawn $srun -n1 --gpus-per-task=1 --ntasks-per-core=1 -c $cpus_per_node -t1 -J "test$test_id" -l ./$file_in1]
+expect {
+	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+		incr match [cuda_count $expect_out(1,string)]
+		exp_continue
+	}
+	timeout {
+		log_error "srun not responding"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != $expected_gpus} {
+	fail "srun --cpus-per-task with --gpus-per-task failure ($match != $expected_gpus)"
+}
+
+
+set match 0
+set expected_gpus $sockets_per_node
+set srun_pid [spawn $srun --sockets-per-node=1 --gpus-per-socket=1 --ntasks-per-core=1 -c $cpus_per_node -t1 -J "test$test_id" -l ./$file_in1]
+expect {
+	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
+		incr match [cuda_count $expect_out(1,string)]
+		exp_continue
+	}
+	timeout {
+		log_error "srun not responding"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$match != $expected_gpus} {
+	fail "srun --cpus-per-task with --gpus-per-socket failure ($match != $expected_gpus)"
+}
+##End of tests from Bug 9937
+
 fail_on_error "Test failed due to previous errors (\$exit_code = $exit_code)"
 if {[llength $skipped] != 0} {
 	skip "Some tests skipped:\n[join $skipped \n]"
