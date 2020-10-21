@@ -132,6 +132,7 @@ libcommon_la_SOURCES = 			\
 	site_factor.c site_factor.h	\
 	cli_filter.c cli_filter.h	\
 	tres_bind.c tres_bind.h		\
+	cron.c cron.h			\
 	tres_frequency.c tres_frequency.h
 
 EXTRA_libcommon_la_SOURCES = 		\
