@@ -957,8 +957,18 @@ no_user_table:
 
 	itr = list_iterator_create(ret_list);
 	while ((object = list_next(itr))) {
-		slurmdb_user_rec_t *user_rec =
-			xmalloc(sizeof(slurmdb_user_rec_t));
+		slurmdb_user_rec_t *user_rec;
+
+		/*
+		 * Skip empty names or else will select account associations
+		 * and remove all associations.
+		 */
+		if (!object[0]) {
+			list_delete_item(itr);
+			continue;
+		}
+
+		user_rec = xmalloc(sizeof(slurmdb_user_rec_t));
 		list_append(assoc_cond.user_list, object);
 
 		if (name_char) {
