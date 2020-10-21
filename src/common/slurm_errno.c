@@ -499,6 +499,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Query result exceeds size limit"			},
 	{ ESLURM_DB_QUERY_TOO_WIDE,
 	  "Too wide of a date range in query"			},
+	{ ESLURM_DB_CONNECTION_INVALID,
+	  "Database connection reference is invalid"		},
 
 	/* Federation Errors */
 	{ ESLURM_FED_CLUSTER_MAX_CNT,
