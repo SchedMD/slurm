@@ -2002,7 +2002,7 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 			printf("  %s\n", object);
 			if (cond_set & SA_SET_ASSOC) {
 				static const char *needle = "U = ";
-				int i = 4; /* strlen(needle) */
+				int i = 0;
 				char *tmp;
 
 				if (!(tmp = strstr(object, needle))) {
@@ -2013,6 +2013,7 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 					rc = SLURM_ERROR;
 					goto end_it;
 				}
+				tmp += 4; /* strlen(needle) */
 
 				/* If the association has a partition on
 				 * it we need to get only the name portion, so
