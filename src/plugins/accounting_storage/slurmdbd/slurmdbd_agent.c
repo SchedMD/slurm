@@ -110,8 +110,12 @@ static int _send_fini_msg(void)
 
 	/* If the connection is already gone, we don't need to send a
 	   fini. */
-	if (slurm_persist_conn_writeable(slurmdbd_conn) == -1)
+	if (slurm_persist_conn_writeable(slurmdbd_conn) == -1) {
+		log_flag(NET, "%s: unable to send DB_FINI msg to %s:%u",
+			 __func__, slurmdbd_conn->rem_host,
+			 slurmdbd_conn->rem_port);
 		return SLURM_SUCCESS;
+	}
 
 	buffer = init_buf(1024);
 	pack16((uint16_t) DBD_FINI, buffer);
@@ -121,6 +125,10 @@ static int _send_fini_msg(void)
 
 	rc = slurm_persist_send_msg(slurmdbd_conn, buffer);
 	free_buf(buffer);
+
+	log_flag(NET, "%s: sent DB_FINI msg to %s:%u rc(%d):%s",
+		 __func__, slurmdbd_conn->rem_host, slurmdbd_conn->rem_port,
+		 rc, slurm_strerror(rc));
 
 	return rc;
 }
