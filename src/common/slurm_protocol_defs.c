@@ -44,6 +44,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "src/common/cron.h"
 #include "src/common/forward.h"
 #include "src/common/job_options.h"
 #include "src/common/log.h"
@@ -1049,6 +1050,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->comment);
 		xfree(msg->cpu_bind);
 		xfree(msg->cpus_per_tres);
+		free_cron_entry(msg->crontab_entry);
 		xfree(msg->dependency);
 		env_array_free(msg->environment);
 		msg->environment = NULL;
