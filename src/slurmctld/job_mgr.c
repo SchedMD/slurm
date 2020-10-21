@@ -261,7 +261,6 @@ static bool _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
 					List part_list);
 static bool _valid_pn_min_mem(job_desc_msg_t * job_desc_msg,
 			      part_record_t *part_ptr);
-static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
 				      uint32_t size);
 
@@ -7668,7 +7667,7 @@ _copy_job_desc_to_file(job_desc_msg_t * job_desc, uint32_t job_id)
 	if (error_code == 0) {
 		/* Create script file */
 		file_name = xstrdup_printf("%s/script", dir_name);
-		error_code = _write_data_to_file(file_name, job_desc->script);
+		error_code = write_data_to_file(file_name, job_desc->script);
 		xfree(file_name);
 	}
 
@@ -7753,7 +7752,7 @@ _write_data_array_to_file(char *file_name, char **data, uint32_t size)
  * IN file_name - file to create and write to
  * IN data - pointer to string
  */
-static int _write_data_to_file(char *file_name, char *data)
+extern int write_data_to_file(char *file_name, char *data)
 {
 	int fd, pos, nwrite, amount;
 

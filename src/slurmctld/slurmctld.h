@@ -2771,4 +2771,12 @@ extern void prep_epilog_slurmctld_callback(int rc, uint32_t job_id);
 extern void set_node_comm_name(node_record_t *node_ptr, char *comm_name,
 			       char *hostname);
 
+/*
+ * Create a new file (file_name) and write (data) into it.
+ * The file will have a trailing '\0' written into it, this makes it
+ * easier to work with then loaded with create_mmap_buf as the string
+ * representation of the file will be NUL terminated for us already.
+ */
+extern int write_data_to_file(char *file_name, char *data);
+
 #endif /* !_HAVE_SLURMCTLD_H */
