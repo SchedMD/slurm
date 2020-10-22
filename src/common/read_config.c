@@ -3319,9 +3319,11 @@ slurm_conf_init(const char *file_name)
 		local_test_config_rc = 1;
 	}
 
-	slurm_mutex_unlock(&conf_lock);
-	if (memfd != -1)
+	if (memfd != -1) {
+		unsetenv("SLURM_CONF");
 		close(memfd);
+	}
+	slurm_mutex_unlock(&conf_lock);
 	xfree(config_file);
 	return SLURM_SUCCESS;
 }
