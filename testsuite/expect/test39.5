@@ -87,6 +87,7 @@ if { [llength $node_name] != 1 } {
 }
 set cpus_per_node     [get_node_param $node_name "CPUTot"]
 set sockets_per_node  [get_node_param $node_name "Sockets"]
+set threads_per_core  [get_node_param $node_name "ThreadsPerCore"]
 set cores_per_socket  [get_node_param $node_name "CoresPerSocket"]
 set cpus_per_socket   [expr $cpus_per_node / $sockets_per_node]
 
@@ -254,10 +255,20 @@ test_gpus_cnt "--gres=gpu:1 --ntasks-per-core=1 -c $cpus_per_node" 1
 test_gpus_cnt "--gpus=1 --ntasks-per-core=1 -c $cpus_per_node" 1
 test_gpus_cnt "-n1 --gpus-per-task=1 --ntasks-per-core=1 -c $cpus_per_node" 1
 test_gpus_cnt "--sockets-per-node=1 --gpus-per-socket=1 --ntasks-per-core=1 -c $cpus_per_node" $sockets_per_node
+test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 --threads-per-core=1 -c [expr $cpus_per_node / $threads_per_core]" $sockets_per_node
+if {$threads_per_core == 4} {
+	test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 --threads-per-core=2 -c [expr $cpus_per_node / $threads_per_core * 2]" $sockets_per_node
+	test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 --threads-per-core=2 -c [expr $cpus_per_node / $threads_per_core]" [expr $sockets_per_node / 2]
+}
 #Negative tests - srun is expected to fail
 test_gpus_cnt "--sockets-per-node=1 --gpus-per-socket=1 --ntasks-per-core=1 -c [expr $cpus_per_node * 2]" 0
 test_gpus_cnt "--gres=gpu:1 -c [expr $cpus_per_node * 2]" 0
-test_gpus_cnt "--gpus:1 -c [expr $cpus_per_node * 2]" 0
+test_gpus_cnt "--gpus=1 -c [expr $cpus_per_node * 2]" 0
+if {$threads_per_core > 1} {
+	test_gpus_cnt "--gpus=1 --threads-per-core=1 -c $cpus_per_node" 0
+} else {
+	test_gpus_cnt "--gpus=1 --threads-per-core=1 -c [expr $cpus_per_node]" 1
+}
 ##End of tests from Bug 9937
 
 test_gpus_cnt "--gres=gpu:1 --ntasks-per-node=1 -c $cpus_per_node" 1
