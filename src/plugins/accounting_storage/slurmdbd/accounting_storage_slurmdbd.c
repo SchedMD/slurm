@@ -467,10 +467,9 @@ extern int init ( void )
 
 		verbose("%s loaded", plugin_name);
 
-		if (job_list && !(slurm_conf.accounting_storage_enforce &
-				  ACCOUNTING_ENFORCE_NO_JOBS)) {
-			/* only do this when job_list is defined
-			 * (in the slurmctld) */
+		if (running_in_slurmctld() &&
+		    !(slurm_conf.accounting_storage_enforce &
+		      ACCOUNTING_ENFORCE_NO_JOBS)) {
 			slurm_thread_create(&db_inx_handler_thread,
 					    _set_db_inx_thread, NULL);
 		}
