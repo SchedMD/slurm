@@ -1159,28 +1159,29 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 	xfree(query);
 
-	/* remove this qos from all the users/accts that have it */
-	query = xstrdup_printf("update %s set mod_time=%ld %s where deleted=0;",
-			       assoc_table, now, extra);
-	xfree(extra);
-	if (debug_flags & DEBUG_FLAG_DB_QOS)
-		DB_DEBUG(mysql_conn->conn, "query\n%s", query);
-	rc = mysql_db_query(mysql_conn, query);
-	xfree(query);
-	if (rc != SLURM_SUCCESS) {
-		reset_mysql_conn(mysql_conn);
-		xfree(assoc_char);
-		xfree(name_char);
-		FREE_NULL_LIST(ret_list);
-		return NULL;
-	}
-
 	user_name = uid_to_string((uid_t) uid);
 
 	slurm_mutex_lock(&as_mysql_cluster_list_lock);
 	if (list_count(as_mysql_cluster_list)) {
 		itr = list_iterator_create(as_mysql_cluster_list);
 		while ((object = list_next(itr))) {
+			/*
+			 * remove this qos from all the associations
+			 * that have it
+			 */
+			query = xstrdup_printf("update \"%s_%s\" set mod_time=%ld %s where deleted=0;",
+					       object, assoc_table,
+					       now, extra);
+			if (debug_flags & DEBUG_FLAG_DB_QOS)
+				DB_DEBUG(mysql_conn->conn, "query\n%s", query);
+			rc = mysql_db_query(mysql_conn, query);
+			xfree(query);
+
+			if (rc != SLURM_SUCCESS) {
+				reset_mysql_conn(mysql_conn);
+				break;
+			}
+
 			if ((rc = remove_common(mysql_conn, DBD_REMOVE_QOS, now,
 						user_name, qos_table, name_char,
 						assoc_char, object, NULL, NULL))
@@ -1195,10 +1196,11 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 
+	xfree(extra);
 	xfree(assoc_char);
 	xfree(name_char);
 	xfree(user_name);
-	if (rc == SLURM_ERROR) {
+	if (rc != SLURM_SUCCESS) {
 		FREE_NULL_LIST(ret_list);
 		return NULL;
 	}
