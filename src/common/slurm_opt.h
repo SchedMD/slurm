@@ -217,6 +217,10 @@ typedef struct {
 	char *wrap;
 } sbatch_opt_t;
 
+typedef struct {
+	char *placeholder;
+} scron_opt_t;
+
 /*
  * options only processed by srun
  */
@@ -278,6 +282,7 @@ typedef struct {
 typedef struct {
 	salloc_opt_t *salloc_opt;
 	sbatch_opt_t *sbatch_opt;
+	scron_opt_t *scron_opt;
 	srun_opt_t *srun_opt;
 
 	slurm_opt_state_t *state;
@@ -444,8 +449,8 @@ extern void slurm_reset_all_options(slurm_opt_t *opt, bool first_pass);
 
 /*
  * Free all memory associated with opt members
- * Note: assumes that opt, opt->salloc_opt, opt->sbatch_opt, and
- * opt->srun_opt should not be xfreed.
+ * Note: assumes that opt, opt->salloc_opt, opt->sbatch_opt, opt->scron_opt,
+ * and opt->srun_opt should not be xfreed.
  */
 extern void slurm_free_options_members(slurm_opt_t *opt);
 

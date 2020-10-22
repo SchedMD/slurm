@@ -398,6 +398,7 @@ typedef struct {
 	int (*set_func)(slurm_opt_t *, const char *);
 	int (*set_func_salloc)(slurm_opt_t *, const char *);
 	int (*set_func_sbatch)(slurm_opt_t *, const char *);
+	int (*set_func_scron)(slurm_opt_t *, const char *);
 	int (*set_func_srun)(slurm_opt_t *, const char *);
 
 	/*
@@ -608,7 +609,9 @@ static slurm_cli_opt_t slurm_opt_bbf = {
 	.name = "bbf",
 	.has_arg = required_argument,
 	.val = LONG_OPT_BURST_BUFFER_FILE,
-	.set_func = arg_set_burst_buffer_file,
+	.set_func_salloc = arg_set_burst_buffer_file,
+	.set_func_sbatch = arg_set_burst_buffer_file,
+	.set_func_srun = arg_set_burst_buffer_file,
 	.set_func_data = arg_set_data_burst_buffer_file,
 	.get_func = arg_get_burst_buffer_file,
 	.reset_func = arg_reset_burst_buffer_file,
@@ -688,7 +691,9 @@ static slurm_cli_opt_t slurm_opt_begin = {
 	.name = "begin",
 	.has_arg = required_argument,
 	.val = 'b',
-	.set_func = arg_set_begin,
+	.set_func_salloc = arg_set_begin,
+	.set_func_sbatch = arg_set_begin,
+	.set_func_srun = arg_set_begin,
 	.set_func_data = arg_set_data_begin,
 	.get_func = arg_get_begin,
 	.reset_func = arg_reset_begin,
@@ -734,7 +739,9 @@ static slurm_cli_opt_t slurm_opt_bb = {
 	.name = "bb",
 	.has_arg = required_argument,
 	.val = LONG_OPT_BURST_BUFFER_SPEC,
-	.set_func = arg_set_burst_buffer,
+	.set_func_salloc = arg_set_burst_buffer,
+	.set_func_sbatch = arg_set_burst_buffer,
+	.set_func_srun = arg_set_burst_buffer,
 	.set_func_data = arg_set_data_burst_buffer,
 	.get_func = arg_get_burst_buffer,
 	.reset_func = arg_reset_burst_buffer,
@@ -746,7 +753,9 @@ static slurm_cli_opt_t slurm_opt_c_constraint = {
 	.name = "cluster-constraint",
 	.has_arg = required_argument,
 	.val = LONG_OPT_CLUSTER_CONSTRAINT,
-	.set_func = arg_set_c_constraint,
+	.set_func_salloc = arg_set_c_constraint,
+	.set_func_sbatch = arg_set_c_constraint,
+	.set_func_srun = arg_set_c_constraint,
 	.set_func_data = arg_set_data_c_constraint,
 	.get_func = arg_get_c_constraint,
 	.reset_func = arg_reset_c_constraint,
@@ -784,7 +793,7 @@ static void arg_reset_chdir(slurm_opt_t *opt)
 {
 	char buf[MAXPATHLEN + 1];
 	xfree(opt->chdir);
-	if (opt->salloc_opt)
+	if (opt->salloc_opt || opt->scron_opt)
 		return;
 
 	if (!(getcwd(buf, MAXPATHLEN))) {
@@ -809,7 +818,9 @@ static slurm_cli_opt_t slurm_opt_clusters = {
 	.name = "clusters",
 	.has_arg = required_argument,
 	.val = 'M',
-	.set_func = arg_set_clusters,
+	.set_func_salloc = arg_set_clusters,
+	.set_func_sbatch = arg_set_clusters,
+	.set_func_srun = arg_set_clusters,
 	.set_func_data = arg_set_data_clusters,
 	.get_func = arg_get_clusters,
 	.reset_func = arg_reset_clusters,
@@ -818,7 +829,9 @@ static slurm_cli_opt_t slurm_opt_cluster = {
 	.name = "cluster",
 	.has_arg = required_argument,
 	.val = LONG_OPT_CLUSTER,
-	.set_func = arg_set_clusters,
+	.set_func_salloc = arg_set_clusters,
+	.set_func_sbatch = arg_set_clusters,
+	.set_func_srun = arg_set_clusters,
 	.set_func_data = arg_set_data_clusters,
 	.get_func = arg_get_clusters,
 	.reset_func = arg_reset_clusters,
@@ -1401,7 +1414,7 @@ static slurm_cli_opt_t slurm_opt_epilog = {
 
 static int arg_set_efname(slurm_opt_t *opt, const char *arg)
 {
-	if (!opt->sbatch_opt && !opt->srun_opt)
+	if (!opt->sbatch_opt && !opt->scron_opt && !opt->srun_opt)
 		return SLURM_ERROR;
 
 	xfree(opt->efname);
@@ -1440,6 +1453,7 @@ static slurm_cli_opt_t slurm_opt_error = {
 	.has_arg = required_argument,
 	.val = 'e',
 	.set_func_sbatch = arg_set_efname,
+	.set_func_scron = arg_set_efname,
 	.set_func_srun = arg_set_efname,
 	.set_func_data = arg_set_data_efname,
 	.get_func = arg_get_efname,
@@ -1538,7 +1552,7 @@ static slurm_cli_opt_t slurm_opt_exclusive = {
 
 static int arg_set_export(slurm_opt_t *opt, const char *arg)
 {
-	if (!opt->sbatch_opt && !opt->srun_opt)
+	if (!opt->sbatch_opt && !opt->scron_opt && !opt->srun_opt)
 		return SLURM_ERROR;
 
 	opt->export_env = xstrdup(arg);
@@ -1547,7 +1561,7 @@ static int arg_set_export(slurm_opt_t *opt, const char *arg)
 }
 static char *arg_get_export(slurm_opt_t *opt)
 {
-	if (!opt->sbatch_opt && !opt->srun_opt)
+	if (!opt->sbatch_opt && !opt->scron_opt && !opt->srun_opt)
 		return xstrdup("invalid-context");
 
 	return xstrdup(opt->export_env);
@@ -1563,6 +1577,7 @@ static slurm_cli_opt_t slurm_opt_export = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_EXPORT,
 	.set_func_sbatch = arg_set_export,
+	.set_func_scron = arg_set_export,
 	.set_func_srun = arg_set_export,
 	.get_func = arg_get_export,
 	.reset_func = arg_reset_export,
@@ -2060,7 +2075,9 @@ static slurm_cli_opt_t slurm_opt_hold = {
 	.name = "hold",
 	.has_arg = no_argument,
 	.val = 'H',
-	.set_func = arg_set_hold,
+	.set_func_salloc = arg_set_hold,
+	.set_func_sbatch = arg_set_hold,
+	.set_func_srun = arg_set_hold,
 	.set_func_data = arg_set_data_hold,
 	.get_func = arg_get_hold,
 	.reset_func = arg_reset_hold,
@@ -2138,7 +2155,7 @@ static int arg_set_data_ifname(slurm_opt_t *opt, const data_t *arg,
 	int rc;
 	char *str = NULL;
 
-	if (!opt->sbatch_opt && !opt->srun_opt)
+	if (!opt->sbatch_opt && !opt->scron_opt && !opt->srun_opt)
 		return SLURM_ERROR;
 
 	if ((rc = data_get_string_converted(arg, &str)))
@@ -2163,6 +2180,7 @@ static slurm_cli_opt_t slurm_opt_input = {
 	.has_arg = required_argument,
 	.val = 'i',
 	.set_func_sbatch = arg_set_ifname,
+	.set_func_scron = arg_set_ifname,
 	.set_func_srun = arg_set_ifname,
 	.set_func_data = arg_set_data_ifname,
 	.get_func = arg_get_ifname,
@@ -3204,7 +3222,7 @@ static slurm_cli_opt_t slurm_opt_open_mode = {
 
 static int arg_set_ofname(slurm_opt_t *opt, const char *arg)
 {
-	if (!opt->sbatch_opt && !opt->srun_opt)
+	if (!opt->sbatch_opt && !opt->scron_opt && !opt->srun_opt)
 		return SLURM_ERROR;
 
 	xfree(opt->ofname);
@@ -3221,7 +3239,7 @@ static int arg_set_data_ofname(slurm_opt_t *opt, const data_t *arg,
 	int rc;
 	char *str = NULL;
 
-	if (!opt->sbatch_opt && !opt->srun_opt)
+	if (!opt->sbatch_opt && !opt->scron_opt && !opt->srun_opt)
 		return SLURM_ERROR;
 
 	if ((rc = data_get_string_converted(arg, &str)))
@@ -3246,6 +3264,7 @@ static slurm_cli_opt_t slurm_opt_output = {
 	.has_arg = required_argument,
 	.val = 'o',
 	.set_func_sbatch = arg_set_ofname,
+	.set_func_scron = arg_set_ofname,
 	.set_func_srun = arg_set_ofname,
 	.set_func_data = arg_set_data_ofname,
 	.get_func = arg_get_ofname,
@@ -5011,6 +5030,7 @@ struct option *slurm_option_table_create(slurm_opt_t *opt,
 		xassert((common_options[i]->set_func
 			 && !common_options[i]->set_func_salloc
 			 && !common_options[i]->set_func_sbatch
+			 && !common_options[i]->set_func_scron
 			 && !common_options[i]->set_func_srun) ||
 			!common_options[i]->set_func);
 		/*
@@ -5032,6 +5052,8 @@ struct option *slurm_option_table_create(slurm_opt_t *opt,
 		else if (opt->salloc_opt && common_options[i]->set_func_salloc)
 			optz_add(&optz, (struct option *) common_options[i]);
 		else if (opt->sbatch_opt && common_options[i]->set_func_sbatch)
+			optz_add(&optz, (struct option *) common_options[i]);
+		else if (opt->scron_opt && common_options[i]->set_func_scron)
 			optz_add(&optz, (struct option *) common_options[i]);
 		else if (opt->srun_opt && common_options[i]->set_func_srun)
 			optz_add(&optz, (struct option *) common_options[i]);
@@ -5137,6 +5159,7 @@ int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 		if (!common_options[i]->set_func &&
 		    !(opt->salloc_opt && common_options[i]->set_func_salloc) &&
 		    !(opt->sbatch_opt && common_options[i]->set_func_sbatch) &&
+		    !(opt->scron_opt && common_options[i]->set_func_scron) &&
 		    !(opt->srun_opt && common_options[i]->set_func_srun))
 			continue;
 
@@ -5239,6 +5262,13 @@ int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 		}
 	} else if (opt->sbatch_opt && common_options[i]->set_func_sbatch) {
 		if (!(common_options[i]->set_func_sbatch)(opt, setarg)) {
+			opt->state[i].set = true;
+			opt->state[i].set_by_data = false;
+			opt->state[i].set_by_env = set_by_env;
+			return SLURM_SUCCESS;
+		}
+	} else if (opt->scron_opt && common_options[i]->set_func_scron) {
+		if (!(common_options[i]->set_func_scron)(opt, setarg)) {
 			opt->state[i].set = true;
 			opt->state[i].set_by_data = false;
 			opt->state[i].set_by_env = set_by_env;
@@ -5441,6 +5471,8 @@ extern int slurm_option_set(slurm_opt_t *opt, const char *name,
 		rc = common_options[i]->set_func_salloc(opt, value);
 	else if (common_options[i]->set_func_sbatch && opt->sbatch_opt)
 		rc = common_options[i]->set_func_sbatch(opt, value);
+	else if (common_options[i]->set_func_scron && opt->scron_opt)
+		rc = common_options[i]->set_func_scron(opt, value);
 	else if (common_options[i]->set_func_srun && opt->srun_opt)
 		rc = common_options[i]->set_func_srun(opt, value);
 
