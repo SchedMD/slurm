@@ -55,6 +55,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="licenses.html">License Management</a></li>
 <li><a href="mcs.html">Multi-Category Security (MCS) Guide</a></li>
 <li><a href="nss_slurm.html">Name Service Caching Through NSS Slurm</a></li>
+<li><a href="network.html">Network Configuration Guide</a></li>
 <li><a href="power_mgmt.html">Power Management Guide (power capping)</a></li>
 <li><a href="power_save.html">Power Saving Guide (power down idle nodes)</a></li>
 <li><a href="prolog_epilog.html">Prolog and Epilog Guide</a></li>
@@ -150,6 +151,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 22 April 2020</p>
+<p style="text-align:center;">Last modified 21 October 2020</p>
 
 <!--#include virtual="footer.txt"-->

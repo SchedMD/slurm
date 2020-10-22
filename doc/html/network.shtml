@@ -1,0 +1,197 @@
+<!--#include virtual="header.txt"-->
+
+<h1>Network Configuration Guide</h1>
+
+<h2>Contents</h2>
+<a href="#overview">Overview</a><br>
+<a href="#slurmctld">Communication for slurmctld</a><br>
+<a href="#slurmdbd">Communication for slurmdbd</a><br>
+<a href="#slurmd">Communication for slurmd</a><br>
+<a href="#client">Communication for client commands</a><br>
+<a href="#failover">Communication for multiple controllers</a><br>
+<a href="#multi">Communication with multiple clusters</a><br>
+<a href="#federation">Communication in a federation</a><br>
+
+<h2><a name="overview">Overview</a></h2>
+
+<p>There are a lot of components in a Slurm cluster that need to be able
+to communicate with each other. Some sites have security requirements that
+prevent them from opening all communications between the machines and will
+need to be able to selectively open just the ports that are necessary.
+This document will go over what is needed for different components to be
+able to talk to each other.</p>
+
+<p>Below is a diagram of a fairly typical cluster, with <b>slurmctld</b>
+and <b>slurmdbd</b> on separate machines. In smaller clusters, MySQL can run
+on the same machine as the <b>slurmdbd</b>, but in most cases it is preferable
+to have it run on a dedicated machine. <b>slurmd</b> runs on the
+compute nodes and the client commands can be installed and run from machines
+of your choosing.</p>
+
+<div class="figure">
+  <img src="network_standard.gif" width="550"><br>
+  Typical configuration
+</div>
+
+<h2><a name="slurmctld">Communication for slurmctld</a></h2>
+
+<p>The default port used by <b>slurmctld</b> to listen for incoming requests
+is <u>6817</u>. This port can be changed with the
+<a href="slurm.conf.html#OPT_SlurmctldPort">SlurmctldPort</a> slurm.conf
+parameter. Slurmctld listens for incoming requests on that port and responds
+back on the same connection opened by the requestor.</p>
+
+<p>The machine running <b>slurmctld</b> needs to be able to establish
+outbound connections as well. It needs to communicate with <b>slurmdbd</b>
+on port <u>6819</u> by default (see the <a href="#slurmdbd">slurmdbd</a>
+section for information on how to change this). It also needs to communicate
+with <b>slurmd</b> on the compute nodes on port <u>6818</u> by default (see the
+<a href="#slurmd">slurmd</a> section for information on how to change
+this).</p>
+
+<h2><a name="slurmdbd">Communication for slurmdbd</a></h2>
+
+<p>The default port used by <b>slurmdbd</b> to listen for incoming requests
+is <u>6819</u>. This port can be changed with the
+<a href="slurmdbd.conf.html#OPT_DbdPort">DbdPort</a> slurmdbd.conf parameter.
+Slurmdbd listens for incoming requests on that port and responds back
+on the same connection opened by the requestor.</p>
+
+<p>The machine running <b>slurmdbd</b> needs to be able to reach the
+MySQL or MariaDB server on port <u>3306</u> by default (the port is
+configurable on the database side).
+This port can be changed with the
+<a href="slurmdbd.conf.html#OPT_StoragePort">StoragePort</a> slurmdbd.conf
+parameter. It also needs to be able to initiate
+a connection to <b>slurmctld</b> on port 6819 by default (see the
+<a href="#slurmctld">slurmctld</a> section for information on how to
+change this).</p>
+
+<h2><a name="slurmd">Communication for slurmd</a></h2>
+
+<p>The default port used by <b>slurmd</b> to listen for incoming requests
+from <b>slurmctld</b> is <u>6818</u>. This port can be changed with the
+<a href="slurm.conf.html#OPT_SlurmdPort">SlurmdPort</a> slurm.conf
+parameter.</p>
+
+<p>The machines running <b>srun</b> also use a range of ports to be able
+to communicate with <b>slurmstepd</b>. By default these ports are chosen
+at random from the ephemeral port range, but you can use the
+<a href="slurm.conf.html#OPT_SrunPortRange">SrunPortRange</a> to specify
+a range of ports from which they can be chosen. This is necessary
+for login nodes that are behind a firewall.</p>
+
+<p>The machines running <b>slurmd</b> need to be able to establish
+connections with <b>slurmctld</b> on port <u>6817</u> by default (see
+the <a href="#slurmctld">slurmctld</a> section for information on how to
+change this).</p>
+
+<h2><a name="client">Communication for client commands</a></h2>
+
+<p>The majority of the client commands will communicate with <b>slurmctld</b>
+on port <u>6817</u> by default (see the <a href="#slurmctld">slurmctld</a>
+section for information on how to change this) to get the information they
+need. This includes the following commands:</p>
+<dl>
+<dd>salloc
+<dd>sacctmgr
+<dd>sbatch
+<dd>sbcast
+<dd>scancel
+<dd>scontrol
+<dd>sdiag
+<dd>sinfo
+<dd>sprio
+<dd>squeue
+<dd>sshare
+<dd>sstat
+<dd>strigger
+<dd>sview
+</dl>
+
+<p>There are also commands that communicate directly with <b>slurmdbd</b> on
+port <u>6819</u> by default (see the <a href="#slurmdbd">slurmdbd</a> section
+for information on how to change this). The following commands get information
+from <b>slurmdbd</b>:</p>
+<dl>
+<dd>sacct
+<dd>sacctmgr
+<dd>sreport
+</dl>
+
+<p>When a user starts a job using <b>srun</b> there has to be a communication
+path from the machine where <b>srun</b> is called to the node(s) the job is
+allocated. Communication follows the sequence outlined below:</p>
+
+<dl>
+    <dd>1a. srun sends job allocation request to slurmctld
+    <dd>1b. slurmctld grants allocation and returns details
+    <dd>2a. srun sends step create request to slurmctld
+    <dd>2b. slurmctld responds with step credential
+    <dd>3.  srun opens sockets for I/O
+    <dd>4.  srun forwards credential with task info to slurmd
+    <dd>5.  slurmd forwards request as needed (per fanout)
+    <dd>6.  slurmd forks/execs slurmstepd
+    <dd>7.  slurmstepd connects I/O and launches tasks
+    <dd>8.  On task termination, slurmstepd notifies srun
+    <dd>9.  srun notifies slurmctld of job termination
+    <dd>10. slurmctld verifies termination of all processes via slurmd and
+            releases resources for next job
+</dl>
+
+<div class="figure">
+  <img src="network_srun.gif" width="550"><br>
+  srun communication
+</div>
+
+<h2><a name="failover">Communication with multiple controllers</a></h2>
+
+<p>You can configure a secondary <b>slurmctld</b> and/or <b>slurmdbd</b> to
+serve as a fallback if the primary should go down. The ports involved don't
+change, but there are additional communication paths that need to be taken
+into consideration. The client commands need to be able to reach both
+machines running <b>slurmctld</b> as well as both machines running
+<b>slurmdbd</b>. Both instances of <b>slurmctld</b> need to be able to
+reach both instances of <b>slurmdbd</b> and each <b>slurmdbd</b> needs
+to be able to reach the MySQL server.</p>
+
+<div class="figure">
+  <img src="network_failover.gif" width="550"><br>
+  Fallback slurmctld and slurmdbd
+</div>
+
+<h2><a name="multi">Communication with multiple clusters</a></h2>
+
+<p>In environments where multiple <b>slurmctld</b> instances share the same
+<b>slurmdbd</b> you can configure each cluster to stand on their own and allow
+users to specify a cluster to submit their jobs to. Ports
+used by the different daemons don't change, but all instances of
+<b>slurmctld</b> need to be able to communicate with the same instance of
+<b>slurmdbd</b>. You can read more about multi cluster configurations in the
+<a href="multi_cluster.html#OPT_SlurmdPort">Multi-Cluster Operation</a>
+documentation.</p>
+
+<div class="figure">
+  <img src="network_multi_cluster.gif" width="550"><br>
+  Multi-Cluster configuration
+</div>
+
+<h2><a name="federation">Communication in a federation</a></h2>
+
+<p>Slurm also provides the ability to schedule jobs in a peer-to-peer fashion
+between multiple clusters, allowing jobs to run on the cluster that has
+available resources first. The difference in communication needs between this
+and a multi-cluster configuration is that the two instances of <b>slurmctld</b>
+need to be able to communicate with each other. There are more details about
+using a
+<a href="federation.html#OPT_SlurmdPort">Federation</a> in the
+documentation.</p>
+
+<div class="figure">
+  <img src="network_federation.gif" width="550"><br>
+  Federation configuration
+</div>
+
+<p style="text-align:center;">Last modified 21 October 2020</p>
+
+<!--#include virtual="footer.txt"-->
