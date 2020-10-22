@@ -256,6 +256,22 @@ test_gpus_cnt "-n1 --gpus-per-task=1 --ntasks-per-core=1 -c $cpus_per_node" 1
 test_gpus_cnt "--sockets-per-node=1 --gpus-per-socket=1 --ntasks-per-core=1 -c $cpus_per_node" $sockets_per_node
 ##End of tests from Bug 9937
 
+test_gpus_cnt "--gres=gpu:1 --ntasks-per-node=1 -c $cpus_per_node" 1
+test_gpus_cnt "--gres=gpu:1 --ntasks-per-node=1 -c $cpus_per_socket" 1
+test_gpus_cnt "--gres=gpu:1 --ntasks-per-node=1 -c 1" 1
+test_gpus_cnt "--gres=gpu:1 --ntasks-per-socket=1 -c $cpus_per_node" 1
+test_gpus_cnt "--gres=gpu:1 --ntasks-per-socket=1 -c $cpus_per_node" 1
+
+test_gpus_cnt "--gpus=1 --ntasks-per-node=1 -c $cpus_per_node" 1
+test_gpus_cnt "--gpus=1 --ntasks-per-socket=1 -c $cpus_per_node" 1
+
+test_gpus_cnt "-n1 --gpus-per-task=1 --ntasks-per-node=1 -c $cpus_per_node" 1
+test_gpus_cnt "-n1 --gpus-per-task=1 --ntasks-per-socket=1 -c $cpus_per_node" 1
+
+test_gpus_cnt "--sockets-per-node=$sockets_per_node --gpus-per-socket=1 --ntasks-per-core=1 -c 1" $sockets_per_node
+test_gpus_cnt "--sockets-per-node=1 --gpus-per-socket=1 --ntasks-per-core=1 -c $cpus_per_socket" 1
+test_gpus_cnt "--sockets-per-node=$sockets_per_node --gpus-per-socket=1 --ntasks-per-core=1 -c $cpus_per_socket" $sockets_per_node
+
 fail_on_error "Test failed due to previous errors (\$exit_code = $exit_code)"
 if {[llength $skipped] != 0} {
 	skip "Some tests skipped:\n[join $skipped \n]"
