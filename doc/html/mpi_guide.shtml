@@ -136,8 +136,7 @@ script can be requested to point to the non default location. Here's an example:
 <pre>
 user@testbox:~/slurm/17.11/testbox/slurm$ ../../slurm/configure \
 &gt; --prefix=/home/user/slurm/17.11/testbox \
-&gt; <b>--with-pmix=/home/user/git/pmix/install/2.1</b> \
-&gt; --enable-multiple-slurmd
+&gt; <b>--with-pmix=/home/user/git/pmix/install/2.1</b>
 </pre>
 
 <p>Or the analogous with RPM based building:</p>
@@ -146,7 +145,6 @@ user@testbox:~/slurm/17.11/testbox/slurm$ ../../slurm/configure \
 [user@testbox Downloads]$ rpmbuild \
 &gt; --define '_prefix /home/user/slurm/17.11/testbox' \
 &gt; --define '_slurm_sysconfdir /home/user/slurm/17.11/testbox/etc' \
-&gt; --with multiple_slurmd \
 &gt; <b>--define '_with_pmix --with-pmix=/home/user/git/pmix/install/2.1'</b> \
 &gt; -ta slurm-17.11.1.tar.bz2
 </pre>
@@ -173,11 +171,6 @@ srun: none
 srun: pmix
 srun: pmix_v2
 </pre>
-
-<p>NOTE: There is no need to configure Slurm with the multiple-slurmd option,
-but if it is configured with it, additional steps will be required to make PMIx
-work. That case is covered a few paragraphs below.
-</p>
 
 <p>Continuing with the configuration, if Slurm is unable to locate the PMIx
 installation and/or finds it but considers it not usable, the configure output
@@ -238,12 +231,11 @@ locations like /usr/lib64 and the package manager erroring out and reporting
 the conflict. It is planned to alleviate that by putting these libraries in a
 separate libpmi-slurm package.</p>
 
-<p>NOTE: If support for multiple-slurmd is required, the TmpFS option in
-slurm.conf needs to be specified and as many directory paths as nodes be
-created. These directories are used by the Slurm PMIx plugin to create temporal
-files and/or UNIX sockets. Here's an example setup for two nodes named
-compute[1-2]:
-</p>
+<p>NOTE: If you are setting up a test environment using multiple-slurmd,
+the TmpFS option in your slurm.conf needs to be specified and the number of
+directory paths created needs to equal the number of nodes. These directories
+are used by the Slurm PMIx plugin to create temporal files and/or UNIX sockets.
+Here's an example setup for two nodes named compute[1-2]:</p>
 
 <pre>
 TmpFS=/home/user/slurm/17.11/testbox/spool/slurmd-tmpfs-%n
@@ -590,6 +582,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 18 December 2019</p>
+<p style="text-align:center;">Last modified 22 October 2020</p>
 
 <!--#include virtual="footer.txt"-->
