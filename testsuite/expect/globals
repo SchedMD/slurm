@@ -253,7 +253,7 @@ cset testsuite_shared_dir "[$bin_pwd]"
 
 # Testsuite log variables
 cset testsuite_log_level $LOG_LEVEL_DEBUG
-cset testsuite_log_format "\[%{timestamp}s.%{msecs}03d] \(%{filename}s:%{lineno}d) %{loglevel}-7s %{message}s"
+cset testsuite_log_format "\[%{timestamp}s.%{msecs}03d] %{loglevel}-7s %{message}s \(%{backtrace}s)"
 cset testsuite_time_format "%Y-%m-%d %H:%M:%S"
 
 # Default to using color if writing to a terminal and not if writing to a file
