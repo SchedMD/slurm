@@ -259,30 +259,6 @@ if {$use_gpus_per_node == 0} {
 }
 test_gpus_cnt "--gpus-per-task=1 --tasks-per-node=$use_tasks_per_node -N $nb_nodes" [expr $nb_nodes * $use_tasks_per_node * $use_tasks_per_node] [expr $use_tasks_per_node * $nb_nodes]
 
-log_info "TEST: -c1 and --cpus-per-gpu=\$cpus_per_socket implicit task count with one GPU"
-test_gpus_cnt "--gres=gpu:1 -c 1 --cpus-per-gpu=$cpus_per_socket" $cpus_per_socket 1
-test_gpus_cnt "--gpus=1 --sockets-per-node=1 -c 1 --cpus-per-gpu=$cpus_per_socket" $cpus_per_socket 1
-test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 -c 1 --cpus-per-gpu=$cpus_per_socket -mblock:cyclic" [expr $cpus_per_socket * $sockets_per_node] $sockets_per_node
-test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 -c 1 --cpus-per-gpu=$cpus_per_socket -mblock:block" $cpus_per_socket 1
-
-log_info "TEST -c1 --cpus-per-gpu=\$cpus_per_socket with 1 GPU per socket"
-if { $sockets_per_node <= $gpu_cnt } {
-	set target_gpus $sockets_per_node
-} else {
-	set target_gpus 0
-}
-test_gpus_cnt "--gres=gpu:$sockets_per_node -c 1 --cpus-per-gpu=$cpus_per_socket" [expr $target_gpus * $cpus_per_node] $target_gpus
-test_gpus_cnt "--gpus=$sockets_per_node -N1 -c 1 --cpus-per-gpu=$cpus_per_socket" [expr $target_gpus * $cpus_per_node] $target_gpus
-test_gpus_cnt "--gres=gpu:$sockets_per_node -c 1 --cpus-per-gpu=$cpus_per_socket" [expr $target_gpus * $cpus_per_node] $target_gpus
-
-if {$sockets_per_node <= $gpu_cnt} {
-	set target_gpus $sockets_per_node
-} else {
-	set target_gpus $gpu_cnt
-}
-#TODO This line should be uncommented after fix
-#test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=$sockets_per_node -c 1 --cpus-per-gpu=$cpus_per_socket" [expr $target_gpus * $cpus_per_node] $target_gpus
-
 #
 # Test --gpus-per-task option without task count
 #
@@ -293,6 +269,12 @@ if {$gpu_cnt > 1} {
 	set use_gpus_per_node $gpu_cnt
 }
 test_gpus_cnt "--gpus-per-task=$use_gpus_per_node -N $nb_nodes" [expr $nb_nodes * $use_gpus_per_node] [expr $nb_nodes * $use_gpus_per_node]
+
+if {$sockets_per_node <= $gpu_cnt} {
+	set target_gpus $sockets_per_node
+} else {
+	set target_gpus $gpu_cnt
+}
 
 #
 # Test --cpus-per-task with different gpu options (Bug 9937)
@@ -305,24 +287,6 @@ test_gpus_cnt "--sockets-per-node=1 --gpus-per-socket=1 --ntasks-per-core=1 -c $
 # Because we're doing one sockets worth of cpus and if there are two sockets we'll get two gpus.
 test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 --threads-per-core=1 -c [expr $cpus_per_node / $threads_per_core]" $sockets_per_node $target_gpus
 
-log_info "TEST: --cpus-per-gpu option requiring more CPUs than --cpus-per-task"
-test_gpus_cnt "--gres=gpu:1 -c 1 -n1 --cpus-per-gpu=$cpus_per_socket" 1 1
-test_gpus_cnt "--gres=gpu:1 -c 1 -n$sockets_per_node --cpus-per-gpu=$cpus_per_socket" $sockets_per_node 1
-test_gpus_cnt "--gpus=1 -c 1 -n1 --cpus-per-gpu=$cpus_per_socket" 1 1
-test_gpus_cnt "--gpus=1 -c 1 -n$sockets_per_node --cpus-per-gpu=$cpus_per_socket" $sockets_per_node 1
-# Because we're doing one sockets worth of cpus and if there are two sockets we'll get two gpus.
-test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 -c 1 -n1 --cpus-per-gpu=$cpus_per_socket" $sockets_per_node $target_gpus
-
-test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 -c 1 -n$sockets_per_node --cpus-per-gpu=$cpus_per_socket" [expr $target_gpus * $sockets_per_node] $target_gpus
-
-#Negative tests - number of CPUs reqired by (-n -c) doesn't match --gpus-per-task and --cpus-per-gpu results
-if {$cpus_per_socket > 1} {
-	test_gpus_cnt "--gpus-per-task=1 -c 1 -n1 --cpus-per-gpu=$cpus_per_socket" 0 0
-	test_gpus_cnt "--gpus-per-task=1 -c 1 -n$sockets_per_node --cpus-per-gpu=$cpus_per_socket" 0 0
-} else {
-	log_warn "Need more than one CPU per socket for subcheck, have $cpus_per_socket"
-}
-
 if {$threads_per_core == 4} {
 	log_info "Testing high thread count ThreadsPerCore = 4"
 	test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 --threads-per-core=2 -c [expr $cpus_per_node / 2]" $sockets_per_node $sockets_per_node
@@ -332,9 +296,7 @@ log_info "Negative tests - srun is expected to fail here"
 test_gpus_cnt "--sockets-per-node=1 --gpus-per-socket=1 --ntasks-per-core=1 -c [expr $cpus_per_node * 2]" 0 0
 test_gpus_cnt "--gres=gpu:1 -c [expr $cpus_per_node * 2]" 0 0
 test_gpus_cnt "--gpus=1 -c [expr $cpus_per_node * 2]" 0 0
-if {$sockets_per_node > 1} {
-	test_gpus_cnt "--sockets-per-node=1 --gpus-per-socket=1 -c $cpus_per_node --cpus-per-gpu=$cpus_per_node" 0 0
-}
+
 if {$threads_per_core > 1} {
 	test_gpus_cnt "--gpus=1 --threads-per-core=1 -c $cpus_per_node" 0 0
 } else {
