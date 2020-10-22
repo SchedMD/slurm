@@ -169,6 +169,7 @@ documents those changes that are of interest to users and administrators.
     with XOR'd constraints and no nodeset has the feature.
  -- Fix job requests rejected with incorrect NODE_CONFIG_UNAVAIL when nodes are
     actually only busy due to an overlapping MAINT reservation.
+ -- Fix sacctmgr allowing the deletion of a user's default account.
 
 * Changes in Slurm 20.02.5
 ==========================
