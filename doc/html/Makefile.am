@@ -62,6 +62,7 @@ generated_html = \
 	mpi_guide.html \
 	mpiplugins.html \
 	multi_cluster.html \
+	network.html \
 	news.html \
 	nss_slurm.html \
 	node_features_plugins.html \
@@ -129,6 +130,11 @@ html_DATA = \
 	jquery.min.js \
 	k_function.gif \
 	mc_support.gif \
+	network_failover.gif \
+	network_federation.gif \
+	network_multi_cluster.gif \
+	network_srun.gif \
+	network_standard.gif \
 	plane_ex1.gif \
 	plane_ex2.gif \
 	plane_ex3.gif \
