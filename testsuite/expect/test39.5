@@ -236,6 +236,14 @@ if {$use_gpus_per_node == 0} {
 }
 test_gpus_cnt "--gpus-per-task=1 --tasks-per-node=$use_tasks_per_node -N $nb_nodes" [expr $nb_nodes * $use_tasks_per_node * $use_tasks_per_node]
 
+log_info "TEST: -c and --cpus-per-gpu implicit task count"
+test_gpus_cnt "--gres=gpu:1 -c 1 --cpus-per-gpu=$cpus_per_socket" $cpus_per_socket
+test_gpus_cnt "--gres=gpu:$sockets_per_node -c 1 --cpus-per-gpu=$cpus_per_socket" [expr $sockets_per_node * $cpus_per_node]
+test_gpus_cnt "--gpus=1 --sockets-per-node=1 -c 1 --cpus-per-gpu=$cpus_per_socket" $cpus_per_socket
+test_gpus_cnt "--gpus=$sockets_per_node -N1 -c 1 --cpus-per-gpu=$cpus_per_socket" [expr $sockets_per_node * $cpus_per_node]
+test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 -c 1 --cpus-per-gpu=$cpus_per_socket" $cpus_per_socket
+test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=$sockets_per_node -c 1 --cpus-per-gpu=$cpus_per_socket" [expr $sockets_per_node * $cpus_per_node]
+
 #
 # Test --gpus-per-task option without task count
 #
