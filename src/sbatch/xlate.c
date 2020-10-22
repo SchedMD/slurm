@@ -374,7 +374,7 @@ static void _set_pbs_options(int argc, char **argv)
 			break;
 		case 'v':
 			xlate_val = LONG_OPT_EXPORT;
-			xlate_arg = xstrdup(sbopt.export_env);
+			xlate_arg = xstrdup(opt.export_env);
 			if (xlate_arg)
 				xstrcat(xlate_arg, ",");
 			xstrcat(xlate_arg, optarg);

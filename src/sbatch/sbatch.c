@@ -464,7 +464,7 @@ static void _env_merge_filter(job_desc_msg_t *desc)
 	int i, len;
 	char *save_env[2] = { NULL, NULL }, *tmp, *tok, *last = NULL;
 
-	tmp = xstrdup(sbopt.export_env);
+	tmp = xstrdup(opt.export_env);
 	tok = find_quote_token(tmp, ",", &last);
 	while (tok) {
 
@@ -642,11 +642,11 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		if (desc->environment == NULL)
 			exit(1);
 	}
-	if (sbopt.export_env == NULL) {
+	if (opt.export_env == NULL) {
 		env_array_merge(&desc->environment, (const char **) environ);
-	} else if (!xstrcasecmp(sbopt.export_env, "ALL")) {
+	} else if (!xstrcasecmp(opt.export_env, "ALL")) {
 		env_array_merge(&desc->environment, (const char **) environ);
-	} else if (!xstrcasecmp(sbopt.export_env, "NONE")) {
+	} else if (!xstrcasecmp(opt.export_env, "NONE")) {
 		desc->environment = env_array_create();
 		env_array_merge_slurm(&desc->environment,
 				      (const char **)environ);

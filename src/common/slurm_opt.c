@@ -1533,10 +1533,7 @@ static int arg_set_export(slurm_opt_t *opt, const char *arg)
 	if (!opt->sbatch_opt && !opt->srun_opt)
 		return SLURM_ERROR;
 
-	if (opt->sbatch_opt)
-		opt->sbatch_opt->export_env = xstrdup(arg);
-	if (opt->srun_opt)
-		opt->srun_opt->export_env = xstrdup(arg);
+	opt->export_env = xstrdup(arg);
 
 	return SLURM_SUCCESS;
 }
@@ -1545,19 +1542,13 @@ static char *arg_get_export(slurm_opt_t *opt)
 	if (!opt->sbatch_opt && !opt->srun_opt)
 		return xstrdup("invalid-context");
 
-	if (opt->sbatch_opt)
-		return xstrdup(opt->sbatch_opt->export_env);
-	if (opt->srun_opt)
-		return xstrdup(opt->srun_opt->export_env);
+	return xstrdup(opt->export_env);
 
 	return NULL;
 }
 static void arg_reset_export(slurm_opt_t *opt)
 {
-	if (opt->sbatch_opt)
-		xfree(opt->sbatch_opt->export_env);
-	if (opt->srun_opt)
-		xfree(opt->srun_opt->export_env);
+	xfree(opt->export_env);
 }
 static slurm_cli_opt_t slurm_opt_export = {
 	.name = "export",

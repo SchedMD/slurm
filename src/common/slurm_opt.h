@@ -201,7 +201,6 @@ typedef struct {
 
 	char *array_inx;		/* --array			*/
 	char *batch_features;		/* --batch			*/
-	char *export_env;		/* --export			*/
 	char *export_file;		/* --export-file=file		*/
 	bool ignore_pbs;		/* --ignore-pbs			*/
 	int minsockets;			/* --minsockets=n		*/
@@ -238,7 +237,6 @@ typedef struct {
 	bool disable_status;		/* --disable-status		*/
 	char *epilog;			/* --epilog			*/
 	bool exclusive;			/* --exclusive			*/
-	char *export_env;		/* --export			*/
 	bool interactive;		/* --interactive		*/
 	uint32_t jobid;			/* --jobid			*/
 	int32_t kill_bad_exit;		/* --kill-on-bad-exit		*/
@@ -400,9 +398,11 @@ typedef struct {
 	uint16_t x11_target_port;	/* target display TCP port on localhost */
 
 	/* used in both sbatch and srun, here for convenience */
+	char *export_env;		/* --export			*/
 	char *efname;			/* error file name		*/
 	char *ifname;			/* input file name		*/
 	char *ofname;			/* output file name		*/
+
 } slurm_opt_t;
 
 extern struct option *slurm_option_table_create(slurm_opt_t *opt,

@@ -921,9 +921,9 @@ static bool _opt_verify(void)
 	if (opt.dependency)
 		setenvfs("SLURM_JOB_DEPENDENCY=%s", opt.dependency);
 
-	if (sbopt.export_env && xstrcasecmp(sbopt.export_env, "ALL")) {
+	if (opt.export_env && xstrcasecmp(opt.export_env, "ALL")) {
 		/* srun ignores "ALL", it is the default */
-		setenv("SLURM_EXPORT_ENV", sbopt.export_env, 0);
+		setenv("SLURM_EXPORT_ENV", opt.export_env, 0);
 	}
 
 	if (opt.profile)

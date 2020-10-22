@@ -615,11 +615,11 @@ static char **_build_user_env(srun_job_t *job, slurm_opt_t *opt_local)
 	bool all;
 	xassert(srun_opt);
 
-	if (!srun_opt->export_env) {
+	if (!opt_local->export_env) {
 		all = true;
 	} else {
 		all = false;
-		tmp_env = xstrdup(srun_opt->export_env);
+		tmp_env = xstrdup(opt_local->export_env);
 		tok = find_quote_token(tmp_env, ",", &save_ptr);
 		while (tok) {
 			if (xstrcasecmp(tok, "ALL") == 0)

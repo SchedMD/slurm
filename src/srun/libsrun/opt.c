@@ -282,7 +282,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->efname = xstrdup(opt.efname);
 	opt_dup->srun_opt->epilog = xstrdup(sropt.epilog);
 	opt_dup->exclude = xstrdup(opt.exclude);
-	opt_dup->srun_opt->export_env = xstrdup(sropt.export_env);
+	opt_dup->export_env = xstrdup(opt.export_env);
 	opt_dup->extra = xstrdup(opt.extra);
 	opt.gres = NULL;		/* Moved by memcpy */
 	opt.gpu_bind = NULL;		/* Moved by memcpy */
