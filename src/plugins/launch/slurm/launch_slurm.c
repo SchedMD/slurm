@@ -609,11 +609,9 @@ extern int launch_p_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 static char **_build_user_env(srun_job_t *job, slurm_opt_t *opt_local)
 {
-	srun_opt_t *srun_opt = opt_local->srun_opt;
 	char **dest_array = NULL;
 	char *tmp_env, *tok, *save_ptr = NULL, *eq_ptr, *value;
 	bool all;
-	xassert(srun_opt);
 
 	if (!opt_local->export_env) {
 		all = true;
