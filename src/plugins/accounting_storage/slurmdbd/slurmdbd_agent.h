@@ -42,6 +42,16 @@
 
 #include "src/common/assoc_mgr.h"
 
+/*
+ * Global connection is not identified by a valid pointer but instead this
+ * constant.
+ *
+ * 1 is previously used returned db_conn value for connections.
+ *
+ * Must be !NULL or clients will assume connection is invalid.
+ */
+#define GLOBAL_DB_CONN ((void *)1)
+
 /* Open a socket connection to SlurmDbd
  * persist_conn_flags OUT - fill in from response of slurmdbd
  * Returns SLURM_SUCCESS or an error code */

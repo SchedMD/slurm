@@ -519,8 +519,8 @@ extern void *acct_storage_p_get_connection(
 
 	if (open_slurmdbd_conn(persist_conn_flags) == SLURM_SUCCESS)
 		errno = SLURM_SUCCESS;
-	/* send something back to make sure we don't run this again */
-	return (void *)1;
+
+	return GLOBAL_DB_CONN;
 }
 
 extern int acct_storage_p_close_connection(void **db_conn)
@@ -2524,7 +2524,7 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port)
 	msg.msg_type     = DBD_REGISTER_CTLD;
 	msg.data         = &req;
 
-	if (db_conn && (db_conn != (void *)1)) {
+	if (db_conn && (db_conn != GLOBAL_DB_CONN)) {
 		msg.conn = db_conn;
 		req.flags |= CLUSTER_FLAG_EXT;
 		info("Registering slurmctld at port %u with slurmdbd %s:%d",
