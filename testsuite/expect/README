@@ -37,6 +37,7 @@ testsuite_shared_dir:         cluster-wide shared directory [.]
 testsuite_log_level:          logging threshold [$LOG_LEVEL_DEBUG]
 testsuite_log_format:         specifies the tracing fields used in logging
 testsuite_colorize:           boolean that turns colorization on or off
+testsuite_subtest_fatal:      first failing subtest aborts the test [false]
 
 The testsuite needs at least one cluster-wide shared file system.
 By default, we assume that it's the testsuite/expect directory (i.e. ".").

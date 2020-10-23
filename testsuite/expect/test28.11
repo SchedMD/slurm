@@ -93,7 +93,9 @@ fail_on_error "Not able to reconfigure"
 
 # Verify that MinJobAge was set
 regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
-assert_or_fail {$min_job_age == 10} "Failed to set MinJobAge"
+if {$min_job_age != 10} {
+	fail "MinJobAge was not set"
+}
 
 set node_feature [get_single_node_feature]
 if { $node_feature == "" } {
@@ -139,7 +141,7 @@ wait_for { $count == $count_exp } {
 		}
 	}
 }
-assert_or_fail { $count == $count_exp } [format "Expected each of the %s jobs to have features=%s, but got %s" \
+subtest -fail { $count == $count_exp } "Jobs have requested feature $node_feature" [format "Expected each of the %s jobs to have features=%s, but got %s" \
                                                 $count_exp $node_feature $count]
 
 # Cancel the jobs and wait for them to purged from the controller
