@@ -940,6 +940,12 @@ static int _parse_long_format (char* format_long)
 						field_size,
 						right_justify,
 						suffix);
+		} else if (!xstrcasecmp(token, "comment")) {
+			params.match_flags.comment_flag = true;
+			format_add_comment(params.format_list,
+					   field_size,
+					   right_justify,
+					   suffix);
 		} else if (!xstrcasecmp(token, "cpus")) {
 			params.match_flags.cpus_flag = true;
 			format_add_cpus( params.format_list,
@@ -1311,6 +1317,8 @@ void _print_options( void )
 	printf("alloc_mem_flag  = %s\n", params.match_flags.alloc_mem_flag ?
 			"true" : "false");
 	printf("avail_flag      = %s\n", params.match_flags.avail_flag ?
+			"true" : "false");
+	printf("comment_flag    = %s\n", params.match_flags.comment_flag ?
 			"true" : "false");
 	printf("cpus_flag       = %s\n", params.match_flags.cpus_flag ?
 			"true" : "false");

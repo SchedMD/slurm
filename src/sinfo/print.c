@@ -452,6 +452,19 @@ int _print_avail(sinfo_data_t * sinfo_data, int width,
 	return SLURM_SUCCESS;
 }
 
+int _print_comment(sinfo_data_t *sinfo_data, int width,
+		   bool right_justify, char *suffix)
+{
+	if (sinfo_data)
+		_print_str(sinfo_data->comment, width, right_justify, true);
+	else
+		_print_str("COMMENT", width, right_justify, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_cpus(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {

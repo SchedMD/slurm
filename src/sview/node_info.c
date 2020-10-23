@@ -48,6 +48,7 @@ enum {
 	SORTID_CAP_WATTS,
 	SORTID_CLUSTER_NAME,
 	SORTID_COLOR,
+	SORTID_COMMENT,
 	SORTID_CPUS,
 	SORTID_CPU_LOAD,
 	SORTID_CORES,
@@ -152,6 +153,8 @@ static display_data_t display_data_node[] = {
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_CPU_LOAD, "CPU Load", false, EDIT_NONE,
 	 refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_COMMENT, "Comment", false,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_GRES, "Gres", false,
 	 EDIT_TEXTBOX, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_REASON, "Reason", false,
@@ -452,6 +455,11 @@ static void _layout_node_record(GtkTreeView *treeview,
 						 SORTID_CAP_WATTS),
 				   tmp_cap_watts);
 
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_COMMENT),
+				   node_ptr->comment);
+
 	if (node_ptr->version == NULL) {
 		snprintf(tmp_version, sizeof(tmp_version), "N/A");
 	} else {
@@ -589,6 +597,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_COLOR,
 				sview_colors[sview_node_info_ptr->pos
 				% sview_colors_cnt],
+			   SORTID_COMMENT,   node_ptr->comment,
 			   SORTID_CORES,     node_ptr->cores,
 			   SORTID_CPUS,      tmp_cpus,
 			   SORTID_CURRENT_WATTS, tmp_current_watts,

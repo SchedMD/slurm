@@ -828,6 +828,11 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		return false;
 
 	if (sinfo_ptr->nodes &&
+	    params.match_flags.comment_flag &&
+	    (xstrcmp(node_ptr->comment, sinfo_ptr->comment)))
+		return false;
+
+	if (sinfo_ptr->nodes &&
 	    params.match_flags.reason_flag &&
 	    (xstrcmp(node_ptr->reason, sinfo_ptr->reason)))
 		return false;
@@ -1003,6 +1008,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		sinfo_ptr->features_act = node_ptr->features_act;
 		sinfo_ptr->gres       = node_ptr->gres;
 		sinfo_ptr->gres_used  = node_ptr->gres_used;
+		sinfo_ptr->comment    = node_ptr->comment;
 		sinfo_ptr->reason     = node_ptr->reason;
 		sinfo_ptr->reason_time= node_ptr->reason_time;
 		sinfo_ptr->reason_uid = node_ptr->reason_uid;

@@ -127,6 +127,8 @@ void print_sinfo_reservation(reserve_info_msg_t *resv_ptr);
 	format_add_function(list,wid,right,suffix,_print_priority_job_factor)
 #define format_add_priority_tier(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_priority_tier)
+#define format_add_comment(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_comment)
 #define format_add_reason(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_reason)
 #define format_add_root(list,wid,right,prefix) \
@@ -175,6 +177,8 @@ void print_sinfo_reservation(reserve_info_msg_t *resv_ptr);
  *****************************************************************************/
 
 int _print_avail(sinfo_data_t * sinfo_data, int width,
+			bool right_justify, char *suffix);
+int _print_comment(sinfo_data_t *sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_cpus(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
