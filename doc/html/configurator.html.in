@@ -21,8 +21,10 @@ You should have received a copy of the GNU General Public License along
 with Slurm; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 -->
-<HTML>
-<HEAD><TITLE>Slurm System Configuration Tool</TITLE>
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<title>Slurm System Configuration Tool</title>
 <SCRIPT type="text/javascript">
 <!--
 function get_field(name,form)
@@ -266,9 +268,9 @@ function displayfile()
 -->
 </SCRIPT>
 <!-- <div style='visibility:hidden;text-align:left;background:#ccc;border:1px solid black;position: absolute;left:100;z-index:1;padding:5;' id='out_box'></div> -->
-</HEAD>
-<BODY>
-<FORM name=config>
+</head>
+<body>
+<form name=config>
 <H1>Slurm Version @SLURM_MAJOR@.@SLURM_MINOR@ Configuration Tool</H1>
 <P>This form can be used to create a Slurm configuration file with
 you controlling many of the important configuration parameters.</P>
@@ -704,9 +706,10 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 <BR>
 <input type=button value="Submit" onClick="javascript:displayfile()">
 <input type=reset value="Reset Form">
-<P>
-</FORM>
-<HR>
+</form>
+<hr>
+<p>
 <a href="disclaimer.html" target="_blank" class="privacy">Legal Notices</a><br>
-Last modified 17 June 2020</P>
-</BODY>
+Last modified 17 June 2020</p>
+</body>
+</html>
