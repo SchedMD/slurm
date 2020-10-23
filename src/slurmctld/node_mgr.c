@@ -4146,7 +4146,7 @@ extern void check_reboot_nodes()
 	}
 }
 
-extern bool waiting_for_node_boot(struct node_record *node_ptr)
+extern bool waiting_for_node_boot(node_record_t *node_ptr)
 {
 	xassert(node_ptr);
 

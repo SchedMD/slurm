@@ -2744,7 +2744,7 @@ extern void send_job_warn_signal(job_record_t *job_ptr, bool ignore_time);
  *
  * RET return true if still expecting the node to boot, false otherwise.
  */
-extern bool waiting_for_node_boot(struct node_record *node_ptr);
+extern bool waiting_for_node_boot(node_record_t *node_ptr);
 
 /*
  * Check if waiting for the node to still power down.
