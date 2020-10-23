@@ -360,6 +360,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"ResvProlog", S_P_STRING},
 	{"ReturnToService", S_P_UINT16},
 	{"RoutePlugin", S_P_STRING},
+	{"SallocDefaultCommand", S_P_STRING},
 	{"SbcastParameters", S_P_STRING},
 	{"SchedulerAuth", S_P_STRING, _defunct_option},
 	{"SchedulerParameters", S_P_STRING},
@@ -4648,6 +4649,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (!s_p_get_string(&conf->route_plugin, "RoutePlugin", hashtbl))
 		conf->route_plugin = xstrdup(DEFAULT_ROUTE_PLUGIN);
+
+	if (s_p_get_string(&temp_str, "SallocDefaultCommand", hashtbl))
+		fatal("SallocDefaultCommand has been removed. Please consider setting LaunchParameters=use_interactive_step instead.");
 
 	(void) s_p_get_string(&conf->sbcast_parameters,
 			      "SbcastParameters", hashtbl);
