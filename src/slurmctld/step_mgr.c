@@ -2418,9 +2418,11 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 					    step_specs->tres_per_socket,
 					    step_specs->tres_per_task,
 					    step_specs->mem_per_tres,
+					    step_specs->ntasks_per_tres,
 					    &step_gres_list,
 					    job_ptr->gres_list, job_ptr->job_id,
-					    NO_VAL, &step_specs->num_tasks);
+					    NO_VAL, &step_specs->num_tasks,
+					    &step_specs->cpu_count);
 	if (i != SLURM_SUCCESS) {
 		FREE_NULL_LIST(step_gres_list);
 		return i;

@@ -223,6 +223,8 @@ static void	_free_tasks_per_node_sock(uint32_t **tasks_per_node_socket,
 static void	_get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 			      char *gres_name, char *gres_name_colon,
 			      int gres_name_colon_len);
+static uint64_t _get_job_gres_list_cnt(List gres_list, char *gres_name,
+				       char *gres_type);
 static uint32_t	_get_task_cnt_node(uint32_t **tasks_per_node_socket,
 				   int node_inx, int sock_cnt);
 static uint64_t	_get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt,
@@ -5105,11 +5107,13 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 	ListIterator iter;
 
 	if (!cpus_per_tres && !tres_per_job && !tres_per_node &&
-	    !tres_per_socket && !tres_per_task && !mem_per_tres)
+	    !tres_per_socket && !tres_per_task && !mem_per_tres &&
+	    !ntasks_per_tres)
 		return SLURM_SUCCESS;
 
-	if (tres_per_task && (*num_tasks == NO_VAL) &&
-	    (*min_nodes != NO_VAL) && (*min_nodes == *max_nodes)) {
+	if ((tres_per_task || (*ntasks_per_tres != NO_VAL16)) &&
+	    (*num_tasks == NO_VAL) && (*min_nodes != NO_VAL) &&
+	    (*min_nodes == *max_nodes)) {
 		/* Implicitly set task count */
 		if (*ntasks_per_node != NO_VAL16)
 			*num_tasks = *min_nodes * *ntasks_per_node;
@@ -5241,6 +5245,47 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 			job_gres_data->ntasks_per_gres = *ntasks_per_tres;
 		}
 	}
+
+	if (!ntasks_per_tres || (*ntasks_per_tres == 0) ||
+	    (*ntasks_per_tres == NO_VAL16)) {
+		/* do nothing */
+	} else if (list_count(*gres_list) != 0) {
+		/* Set num_tasks = gpus * ntasks/gpu */
+		uint64_t gpus = _get_job_gres_list_cnt(*gres_list, "gpu", NULL);
+		if (gpus != NO_VAL64)
+			*num_tasks = gpus * *ntasks_per_tres;
+		else
+			error("%s: Can't set num_tasks = gpus * *ntasks_per_tres because there are no allocated GPUs",
+			      __func__);
+	} else if (*num_tasks != NO_VAL) { // list_count(*gres_list) == 0
+		/*
+		 * If job_gres_list empty, and ntasks_per_tres is specified,
+		 * then derive GPUs according to how many tasks there are.
+		 * GPU GRES = [ntasks / (ntasks_per_tres)]
+		 * For now, only generate type-less GPUs.
+		 */
+		uint32_t gpus = *num_tasks / *ntasks_per_tres;
+		char *save_ptr = NULL, *gres = NULL, *in_val;
+		xstrfmtcat(gres, "gpu:%u", gpus);
+		in_val = gres;
+		while ((job_gres_data = _get_next_job_gres(in_val, &cnt,
+							   *gres_list,
+							   &save_ptr, &rc))) {
+			/* Simulate a tres_per_job specification */
+			job_gres_data->gres_per_job = cnt;
+			job_gres_data->total_gres =
+				MAX(job_gres_data->total_gres, cnt);
+			in_val = NULL;
+		}
+		if (list_count(*gres_list) == 0)
+			error("%s: Failed to add generated GRES %s (via ntasks_per_tres) to gres_list",
+			      __func__, gres);
+		xfree(gres);
+	} else {
+		error("%s: --ntasks-per-tres needs either a GRES GPU specification or a node/ntask specification",
+		      __func__);
+	}
+
 	slurm_mutex_unlock(&gres_context_lock);
 
 	if (rc != SLURM_SUCCESS)
@@ -11887,8 +11932,87 @@ extern uint64_t gres_plugin_get_job_value_by_type(List job_gres_list,
 	list_iterator_destroy(job_gres_iter);
 
 	slurm_mutex_unlock(&gres_context_lock);
+	return gres_val;
+}
+
+/*
+ * Extract from the job/step gres_list the count of GRES of the specified name
+ * and (optionally) type. If no type is specified, then the count will include
+ * all GRES of that name, regardless of type.
+ *
+ * IN gres_list  - job/step record's gres_list.
+ * IN gres_name - the name of the GRES to query.
+ * IN gres_type - (optional) the type of the GRES to query.
+ * IN is_job - True if the GRES list is for the job, false if for the step.
+ * RET The number of GRES in the job/step gres_list or NO_VAL64 if not found.
+ */
+static uint64_t _get_gres_list_cnt(List gres_list, char *gres_name,
+				   char *gres_type, bool is_job)
+{
+	uint64_t gres_val = NO_VAL64;
+	uint32_t plugin_id;
+	ListIterator gres_iter;
+	gres_state_t *gres_ptr;
+	bool filter_type;
+
+	if ((gres_list == NULL) || (list_count(gres_list) == 0))
+		return gres_val;
+
+	plugin_id = gres_plugin_build_id(gres_name);
+
+	if (gres_type && (gres_type[0] != '\0'))
+		filter_type = true;
+	else
+		filter_type = false;
+
+	gres_iter = list_iterator_create(gres_list);
+	while ((gres_ptr = list_next(gres_iter))) {
+		uint64_t total_gres;
+		void *type_name;
+
+		if (gres_ptr->plugin_id != plugin_id)
+			continue;
+
+		if (is_job) {
+			gres_job_state_t *gres =
+				(gres_job_state_t *)gres_ptr->gres_data;
+			type_name = gres->type_name;
+			total_gres = gres->total_gres;
+		} else {
+			gres_step_state_t *gres =
+				(gres_step_state_t *)gres_ptr->gres_data;
+			type_name = gres->type_name;
+			total_gres = gres->total_gres;
+		}
+
+		/* If we are filtering on GRES type, ignore other types */
+		if (filter_type &&
+		    xstrcasecmp(gres_type, type_name))
+			continue;
+
+		if ((total_gres == NO_VAL64) || (total_gres == 0))
+			continue;
+
+		if (gres_val == NO_VAL64)
+			gres_val = total_gres;
+		else
+			gres_val += total_gres;
+	}
+	list_iterator_destroy(gres_iter);
 
 	return gres_val;
+}
+
+static uint64_t _get_job_gres_list_cnt(List gres_list, char *gres_name,
+				       char *gres_type)
+{
+	return _get_gres_list_cnt(gres_list, gres_name, gres_type, true);
+}
+
+static uint64_t _get_step_gres_list_cnt(List gres_list, char *gres_name,
+					char *gres_type)
+{
+	return _get_gres_list_cnt(gres_list, gres_name, gres_type, false);
 }
 
 /*
@@ -12325,6 +12449,53 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list,
 	list_iterator_destroy(iter);
 }
 
+
+static void _handle_ntasks_per_tres_step(List new_step_list,
+					 uint16_t ntasks_per_tres,
+					 uint32_t *num_tasks,
+					 uint32_t *cpu_count)
+{
+	gres_step_state_t *step_gres_data;
+	uint64_t cnt = 0;
+	int rc;
+
+	uint64_t tmp = _get_step_gres_list_cnt(new_step_list, "gpu", NULL);
+	if ((tmp == NO_VAL64) && (*num_tasks != NO_VAL)) {
+		/*
+		 * Generate GPUs from ntasks_per_tres when not specified
+		 * and ntasks is specified
+		 */
+		uint32_t gpus = *num_tasks / ntasks_per_tres;
+		/* For now, do type-less GPUs */
+		char *save_ptr = NULL, *gres = NULL, *in_val;
+		xstrfmtcat(gres, "gpu:%u", gpus);
+		in_val = gres;
+		while ((step_gres_data =
+				_get_next_step_gres(in_val, &cnt,
+						    new_step_list,
+						    &save_ptr, &rc))) {
+			/* Simulate a tres_per_job specification */
+			step_gres_data->gres_per_step = cnt;
+			step_gres_data->total_gres =
+				MAX(step_gres_data->total_gres, cnt);
+			in_val = NULL;
+		}
+		xfree(gres);
+		xassert(list_count(new_step_list) != 0);
+	} else if (tmp != NO_VAL64) {
+		tmp = tmp * ntasks_per_tres;
+		if (*num_tasks < tmp) {
+			*num_tasks = tmp;
+		}
+		if (*cpu_count < tmp) {
+			*cpu_count = tmp;
+		}
+	} else {
+		error("%s: ntasks_per_tres was specified, but there was either no task count or no GPU specification to go along with it, or both were already specified.",
+		      __func__);
+	}
+}
+
 /*
  * Given a step's requested gres configuration, validate it and build gres list
  * IN *tres* - step's requested gres input string
@@ -12339,10 +12510,12 @@ extern int gres_plugin_step_state_validate(char *cpus_per_tres,
 					   char *tres_per_socket,
 					   char *tres_per_task,
 					   char *mem_per_tres,
+					   uint16_t ntasks_per_tres,
 					   List *step_gres_list,
 					   List job_gres_list, uint32_t job_id,
 					   uint32_t step_id,
-					   uint32_t *num_tasks)
+					   uint32_t *num_tasks,
+					   uint32_t *cpu_count)
 {
 	int rc;
 	gres_step_state_t *step_gres_data;
@@ -12428,6 +12601,13 @@ extern int gres_plugin_step_state_validate(char *cpus_per_tres,
 			in_val = NULL;
 		}
 	}
+
+	if (ntasks_per_tres && (ntasks_per_tres != NO_VAL16) && num_tasks &&
+	    cpu_count) {
+		_handle_ntasks_per_tres_step(new_step_list, ntasks_per_tres,
+					     num_tasks, cpu_count);
+	}
+
 	if (list_count(new_step_list) == 0) {
 		FREE_NULL_LIST(new_step_list);
 	} else {
