@@ -364,16 +364,33 @@ if {![regexp -line "^\\S+\\|$ta2\\|$tu1\\|normal,$tq1" [run_command_output "$sac
 	fail "Test qos $tq1 has not been added to test account $ta2"
 }
 
-# Submit a delayed job that wants to run with the test qos and test account 2
-regexp {Submitted batch job (\d+)} [run_command_output -fail "$sbatch --begin=now+2 --qos=$tq1 -A $ta2 --wrap \"$srun sleep 10\""] {} job_id_1
+# We may have to try this multiple times since we are relying on a race
+# condition. If the idle job gets written to the job accounting records
+# before the account is deleted, the account deletion will fail saying
+# that it cannot delete an account with active jobs.
+wait_for -fail {$delete_account_status == 0} {
+	# Submit a delayed job that wants to run with the test qos and test account 2
+	regexp {Submitted batch job (\d+)} [run_command_output -fail "$sbatch --begin=now+2 --qos=$tq1 -A $ta2 --wrap \"$srun sleep 10\""] {} job_id_1
 
-# The first job should get queued
-if {[wait_for_job $job_id_1 "PENDING"] != 0} {
-	fail "Job $job_id_1 did not enter the pending state"
+	# The first job should get queued
+	if [wait_for_job $job_id_1 "PENDING"] {
+		fail "Job $job_id_1 did not enter the pending state"
+	}
+
+	# Remove the test account out from under the job
+	set delete_account_results [run_command "$sacctmgr -vi delete account name=$ta2"]
+	set delete_account_status [dict get $delete_account_results exit_code]
+	set delete_account_output [dict get $delete_account_results output]
+
+	# Mitigation if the account deletion fails
+	if {$delete_account_status != 0} {
+		if [regexp {Error with request: Job\(s\) active} $delete_account_output] {
+			cancel_job $job_id_1
+		} else {
+			fail "Failure deleting account ($ta2): $delete_account_output"
+		}
+	}
 }
-
-# Remove the test account out from under the job
-run_command -fail "$sacctmgr -vi delete account name=$ta2"
 
 # Submit a second delayed job requesting test account 2. It should be rejected
 if {![run_command_status -none "$sbatch --begin=now+2 --qos=$tq1 -A $ta2 --wrap \"$srun sleep 10\""]} {
