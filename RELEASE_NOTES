@@ -112,6 +112,7 @@ COMMAND CHANGES (see man pages for details)
  -- Add time specification: "now-<x>" (i.e. subtract from the present)
  -- squeue - put sorted start times of "N/A" or 0 at the end of the list.
  -- Change "scontrol reboot ASAP" to use next_state=resume logic.
+ -- scontrol - added an admin-settable "Comment" field to each Node.
 
 API CHANGES
 ===========

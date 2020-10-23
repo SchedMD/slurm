@@ -928,6 +928,7 @@ extern int hostlist2bitmap (hostlist_t hl, bool best_effort, bitstr_t **bitmap)
 extern void purge_node_rec(node_record_t *node_ptr)
 {
 	xfree(node_ptr->arch);
+	xfree(node_ptr->comment);
 	xfree(node_ptr->comm_name);
 	xfree(node_ptr->cpu_spec_list);
 	xfree(node_ptr->features);

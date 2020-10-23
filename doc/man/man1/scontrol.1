@@ -1152,6 +1152,11 @@ restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 active (i.e. remove them from \fIActiveFeatures\fP first).
 
 .TP
+\fIComment\fP=<comment>
+Arbitrary descriptive string.
+Use quotes to enclose a comment having more than one word
+
+.TP
 \fICpuBind\fP=<node>
 Specify the task binding mode to be used by default for this node.
 Supported options include: "none", "board", "socket", "ldom" (NUMA), "core",

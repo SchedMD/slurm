@@ -475,7 +475,12 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 			tok = strtok_r(NULL, "\n", &save_ptr);
 		}
 		xfree(reason_str);
+		xstrcat(out, line_end);
 	}
+
+	/****** Line ******/
+	xstrfmtcat(out, "Comment=%s", node_ptr->comment);
+
 	if (one_liner)
 		xstrcat(out, "\n");
 	else

@@ -121,6 +121,7 @@ documents those changes that are of interest to users and administrators.
  -- Exclude HetJobs from GANG scheduling operations.
  -- Add scrontab as a new command.
  -- Enable -lnodes=#:gpus=# in #PBS/qsub -l nodes syntax.
+ -- Add admin-settable "Comment" field to each Node.
 
 * Changes in Slurm 20.02.6
 ==========================

@@ -1352,6 +1352,7 @@ extern void slurm_free_update_front_end_msg(update_front_end_msg_t * msg)
 extern void slurm_free_update_node_msg(update_node_msg_t * msg)
 {
 	if (msg) {
+		xfree(msg->comment);
 		xfree(msg->features);
 		xfree(msg->features_act);
 		xfree(msg->gres);

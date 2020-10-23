@@ -140,6 +140,9 @@ scontrol_update_node (int argc, char **argv)
 			}
 			node_msg.weight = num;
 			update_cnt++;
+		} else if (!xstrncasecmp(tag, "Comment", MAX(tag_len, 2))) {
+			node_msg.comment = val;
+			update_cnt++;
 		} else if (xstrncasecmp(tag, "Reason", MAX(tag_len, 1)) == 0) {
 			int len;
 

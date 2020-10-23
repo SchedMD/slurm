@@ -225,6 +225,7 @@ static void _dump_node_state(node_record_t *dump_node_ptr, Buf buffer)
 	packstr (dump_node_ptr->comm_name, buffer);
 	packstr (dump_node_ptr->name, buffer);
 	packstr (dump_node_ptr->node_hostname, buffer);
+	packstr(dump_node_ptr->comment, buffer);
 	packstr (dump_node_ptr->reason, buffer);
 	packstr (dump_node_ptr->features, buffer);
 	packstr (dump_node_ptr->features_act, buffer);
@@ -285,7 +286,7 @@ static Buf _open_node_state_file(char **state_file)
 extern int load_all_node_state ( bool state_only )
 {
 	char *comm_name = NULL, *node_hostname = NULL;
-	char *node_name = NULL, *reason = NULL, *state_file;
+	char *node_name = NULL, *comment = NULL, *reason = NULL, *state_file;
 	char *features = NULL, *features_act = NULL;
 	char *gres = NULL, *cpu_spec_list = NULL;
 	char *mcs_label = NULL;
@@ -353,6 +354,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpackstr_xmalloc(&comm_name, &len, buffer);
 			safe_unpackstr_xmalloc(&node_name, &len, buffer);
 			safe_unpackstr_xmalloc(&node_hostname, &len, buffer);
+			safe_unpackstr_xmalloc(&comment, &len, buffer);
 			safe_unpackstr_xmalloc(&reason, &len, buffer);
 			safe_unpackstr_xmalloc(&features, &len, buffer);
 			safe_unpackstr_xmalloc(&features_act, &len,buffer);
@@ -527,6 +529,12 @@ extern int load_all_node_state ( bool state_only )
 						hs = hostset_create(node_name);
 				}
 			}
+
+			if (!node_ptr->comment) {
+				node_ptr->comment = comment;
+				comment = NULL;
+			}
+
 			if (node_ptr->reason == NULL) {
 				node_ptr->reason = reason;
 				reason = NULL;	/* Nothing to free */
@@ -561,6 +569,9 @@ extern int load_all_node_state ( bool state_only )
 				node_hostname = NULL;
 			}
 			node_ptr->node_state    = node_state;
+			xfree(node_ptr->comment);
+			node_ptr->comment = comment;
+			comment = NULL; /* Nothing to free */
 			xfree(node_ptr->reason);
 			node_ptr->reason	= reason;
 			reason			= NULL;	/* Nothing to free */
@@ -639,6 +650,7 @@ extern int load_all_node_state ( bool state_only )
 		xfree (comm_name);
 		xfree (node_hostname);
 		xfree (node_name);
+		xfree(comment);
 		xfree(reason);
 		xfree(cpu_spec_list);
 	}
@@ -673,6 +685,7 @@ unpack_error:
 	xfree(comm_name);
 	xfree(node_hostname);
 	xfree(node_name);
+	xfree(comment);
 	xfree(reason);
 	goto fini;
 }
@@ -966,6 +979,7 @@ static void _pack_node(node_record_t *dump_node_ptr, Buf buffer,
 		xfree(gres_used);
 
 		packstr(dump_node_ptr->os, buffer);
+		packstr(dump_node_ptr->comment, buffer);
 		packstr(dump_node_ptr->reason, buffer);
 		acct_gather_energy_pack(dump_node_ptr->energy, buffer,
 					protocol_version);
@@ -1356,6 +1370,13 @@ int update_node ( update_node_msg_t * update_node_msg )
 			if (update_node_msg->gres[0])
 				node_ptr->gres = xstrdup(update_node_msg->gres);
 			/* _update_node_gres() logs and updates config */
+		}
+
+		if (update_node_msg->comment) {
+			xfree(node_ptr->comment);
+			if (update_node_msg->comment[0])
+				node_ptr->comment =
+					xstrdup(update_node_msg->comment);
 		}
 
 		/* No accounting update if node state and reason are unchange */

@@ -1993,6 +1993,9 @@ static int _restore_node_state(int recover,
 		node_ptr->gres_list = old_node_ptr->gres_list;
 		old_node_ptr->gres_list = NULL;
 
+		node_ptr->comment = old_node_ptr->comment;
+		old_node_ptr->comment = NULL;
+
 		if (node_ptr->reason == NULL) {
 			/* Recover only if not explicitly set in slurm.conf */
 			node_ptr->reason = old_node_ptr->reason;

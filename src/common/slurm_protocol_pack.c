@@ -975,6 +975,7 @@ _pack_update_node_msg(update_node_msg_t * msg, Buf buffer,
 	xassert(msg);
 
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		packstr(msg->comment, buffer);
 		pack32(msg->cpu_bind, buffer);
 		packstr(msg->features, buffer);
 		packstr(msg->features_act, buffer);
@@ -1014,6 +1015,7 @@ _unpack_update_node_msg(update_node_msg_t ** msg, Buf buffer,
 	*msg = tmp_ptr;
 
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&tmp_ptr->comment, &uint32_tmp, buffer);
 		safe_unpack32(&tmp_ptr->cpu_bind, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->features, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->features_act, &uint32_tmp,
@@ -1865,6 +1867,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer,
 		safe_unpackstr_xmalloc(&node->gres_drain, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->gres_used, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->os, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&node->comment, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&node->reason, &uint32_tmp, buffer);
 		if (acct_gather_energy_unpack(&node->energy, buffer,
 					      protocol_version, 1)
