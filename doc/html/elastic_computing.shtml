@@ -155,7 +155,7 @@ slurmctld daemon on the SlurmctldHost.
 <li>Notify the slurmctld daemon of the node's hostname and network address:<br>
 <i>scontrol update nodename=ec0 nodeaddr=123.45.67.89 nodehostname=whatever</i><br>
 Note that the node address and hostname information set by the scontrol command
-are are preserved when the slurmctld daemon is restarted unless the "-c"
+are preserved when the slurmctld daemon is restarted unless the "-c"
 (cold-start) option is used.</li>
 <li>Start the slurmd daemon on the node</li>
 </ol>
@@ -186,6 +186,6 @@ expands (adds resources).</li>
 </ul>
 
 
-<p style="text-align:center;">Last modified 19 March 2020</p>
+<p style="text-align:center;">Last modified 23 October 2020</p>
 
 <!--#include virtual="footer.txt"-->
