@@ -95,6 +95,7 @@ struct node_record {
 	bool not_responding;		/* set if fails to respond,
 					 * clear after logging this */
 	time_t boot_req_time;		/* Time of node boot request */
+	time_t power_save_req_time;	/* Time of power_save request */
 	time_t boot_time;		/* Time of node boot,
 					 * computed from up_time */
 	uint32_t cpu_bind;		/* default CPU binding type */

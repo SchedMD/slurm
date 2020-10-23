@@ -1825,7 +1825,6 @@ static void _queue_reboot_msg(void)
 		bit_clear(idle_node_bitmap, i);
 
 		node_ptr->boot_req_time = now;
-		node_ptr->last_response = now + slurm_conf.resume_timeout;
 
 		if (node_ptr->reason &&
 		    !xstrstr(node_ptr->reason, "reboot issued"))

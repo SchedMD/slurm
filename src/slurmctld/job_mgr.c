@@ -14329,7 +14329,8 @@ validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 		      (uint32_t) now);
 	}
 
-	if (waiting_for_node_boot(node_ptr))
+	if (waiting_for_node_boot(node_ptr) ||
+	    waiting_for_node_power_down(node_ptr))
 		return;
 
 	node_inx = node_ptr - node_record_table_ptr;
