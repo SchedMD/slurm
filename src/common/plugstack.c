@@ -1180,7 +1180,7 @@ extern int spank_process_option(int optval, const char *arg)
 	List option_cache = get_global_option_cache();
 
 	if (option_cache == NULL || (list_count(option_cache) == 0)) {
-		error("No spank option cache");
+		debug("No spank option cache");
 		return (-1);
 	}
 

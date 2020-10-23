@@ -5151,7 +5151,7 @@ int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 	 */
 	if (!common_options[i] && !early_pass) {
 		if (spank_process_option(optval, arg))
-			exit(-1);
+			return SLURM_ERROR;
 		return SLURM_SUCCESS;
 	} else if (!common_options[i]) {
 		/* early pass, assume it is a SPANK option and skip */
