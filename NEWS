@@ -60,6 +60,7 @@ documents those changes that are of interest to users and administrators.
     terminal.
  -- MySQL - Correctly handle QOS deletion from assocation tables.
  -- Fix update of First_Cores flag in a reservation.
+ -- Fix parsing of update reservation flags.
 
 * Changes in Slurm 20.02.5
 ==========================

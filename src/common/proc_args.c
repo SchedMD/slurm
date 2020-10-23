@@ -1645,7 +1645,7 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg,
 			curr += taglen;
 			outflags |= RESERVE_FLAG_FIRST_CORES;
 		} else if (!xstrncasecmp(curr, "Time_Float", MAX(taglen,1)) &&
-			   op != RESV_REM) {
+			   op == RESV_NEW) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_TIME_FLOAT;
 		} else if (!xstrncasecmp(curr, "Replace", MAX(taglen, 1)) &&
