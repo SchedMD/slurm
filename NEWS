@@ -173,6 +173,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sacctmgr allowing the deletion of a user's default account.
  -- Fix srun and other Slurm commands running within a "configless" salloc
     terminal.
+ -- MySQL - Correctly handle QOS deletion from assocation tables.
 
 * Changes in Slurm 20.02.5
 ==========================
