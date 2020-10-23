@@ -64,6 +64,11 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+enum {
+	RESV_NEW, /* It is a new reservation */
+	RESV_ADD, /* It is a reservation update with += */
+	RESV_REM, /* It is an reservation  update with -= */
+};
 
 /* print this version of Slurm */
 void print_slurm_version(void)
@@ -1514,17 +1519,17 @@ void print_db_notok(const char *cname, bool isenv)
 extern uint64_t parse_resv_flags(const char *flagstr, const char *msg,
 				 resv_desc_msg_t  *resv_msg_ptr)
 {
-	int flip;
+	int op = RESV_NEW;
 	uint64_t outflags = 0;
 	char *curr = xstrdup(flagstr), *start = curr;
 	int taglen = 0;
 
 	while (*curr != '\0') {
-		flip = 0;
 		if (*curr == '+') {
+			op = RESV_ADD;
 			curr++;
 		} else if (*curr == '-') {
-			flip = 1;
+			op = RESV_REM;
 			curr++;
 		}
 		taglen = 0;
@@ -1534,12 +1539,12 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg,
 
 		if (xstrncasecmp(curr, "Maintenance", MAX(taglen,3)) == 0) {
 			curr += taglen;
-			if (flip)
+			if (op == RESV_REM)
 				outflags |= RESERVE_FLAG_NO_MAINT;
 			else
 				outflags |= RESERVE_FLAG_MAINT;
 		} else if ((xstrncasecmp(curr, "Overlap", MAX(taglen,1))
-			    == 0) && (!flip)) {
+			    == 0) && (op != RESV_REM)) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_OVERLAP;
 			/*
@@ -1549,66 +1554,66 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg,
 			 */
 		} else if (xstrncasecmp(curr, "Flex", MAX(taglen,1)) == 0) {
 			curr += taglen;
-			if (flip)
+			if (op == RESV_REM)
 				outflags |= RESERVE_FLAG_NO_FLEX;
 			else
 				outflags |= RESERVE_FLAG_FLEX;
 		} else if (xstrncasecmp(curr, "Ignore_Jobs", MAX(taglen,1))
 			   == 0) {
 			curr += taglen;
-			if (flip)
+			if (op == RESV_REM)
 				outflags |= RESERVE_FLAG_NO_IGN_JOB;
 			else
 				outflags |= RESERVE_FLAG_IGN_JOBS;
 		} else if (xstrncasecmp(curr, "Daily", MAX(taglen,1)) == 0) {
 			curr += taglen;
-			if (flip)
+			if (op == RESV_REM)
 				outflags |= RESERVE_FLAG_NO_DAILY;
 			else
 				outflags |= RESERVE_FLAG_DAILY;
 		} else if (xstrncasecmp(curr, "Weekday", MAX(taglen,1)) == 0) {
 			curr += taglen;
-			if (flip)
+			if (op == RESV_REM)
 				outflags |= RESERVE_FLAG_NO_WEEKDAY;
 			else
 				outflags |= RESERVE_FLAG_WEEKDAY;
 		} else if (xstrncasecmp(curr, "Weekend", MAX(taglen,1)) == 0) {
 			curr += taglen;
-			if (flip)
+			if (op == RESV_REM)
 				outflags |= RESERVE_FLAG_NO_WEEKEND;
 			else
 				outflags |= RESERVE_FLAG_WEEKEND;
 		} else if (xstrncasecmp(curr, "Weekly", MAX(taglen,1)) == 0) {
 			curr += taglen;
-			if (flip)
+			if (op == RESV_REM)
 				outflags |= RESERVE_FLAG_NO_WEEKLY;
 			else
 				outflags |= RESERVE_FLAG_WEEKLY;
 		} else if (!xstrncasecmp(curr, "Any_Nodes", MAX(taglen,1)) ||
 			   !xstrncasecmp(curr, "License_Only", MAX(taglen,1))) {
 			curr += taglen;
-			if (flip)
+			if (op == RESV_REM)
 				outflags |= RESERVE_FLAG_NO_ANY_NODES;
 			else
 				outflags |= RESERVE_FLAG_ANY_NODES;
 		} else if (xstrncasecmp(curr, "Static_Alloc", MAX(taglen,1))
 			   == 0) {
 			curr += taglen;
-			if (flip)
+			if (op == RESV_REM)
 				outflags |= RESERVE_FLAG_NO_STATIC;
 			else
 				outflags |= RESERVE_FLAG_STATIC;
 		} else if (xstrncasecmp(curr, "Part_Nodes", MAX(taglen, 2))
 			   == 0) {
 			curr += taglen;
-			if (flip)
+			if (op == RESV_REM)
 				outflags |= RESERVE_FLAG_NO_PART_NODES;
 			else
 				outflags |= RESERVE_FLAG_PART_NODES;
 		} else if (!xstrncasecmp(curr, "magnetic", MAX(taglen, 3)) ||
 			   !xstrncasecmp(curr, "promiscuous", MAX(taglen, 2))) {
 			curr += taglen;
-			if (flip)
+			if (op == RESV_REM)
 				outflags |= RESERVE_FLAG_NO_PROM;
 			else
 				outflags |= RESERVE_FLAG_PROM;
@@ -1631,28 +1636,28 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg,
 				taglen = num_end;
 			}
 			curr += taglen;
-			if (flip)
+			if (op == RESV_REM)
 				outflags |= RESERVE_FLAG_NO_PURGE_COMP;
 			else
 				outflags |= RESERVE_FLAG_PURGE_COMP;
 		} else if (!xstrncasecmp(curr, "First_Cores", MAX(taglen,1)) &&
-			   !flip) {
+			   op != RESV_REM) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_FIRST_CORES;
 		} else if (!xstrncasecmp(curr, "Time_Float", MAX(taglen,1)) &&
-			   !flip) {
+			   op != RESV_REM) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_TIME_FLOAT;
 		} else if (!xstrncasecmp(curr, "Replace", MAX(taglen, 1)) &&
-			   !flip) {
+			   op != RESV_REM) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_REPLACE;
 		} else if (!xstrncasecmp(curr, "Replace_Down", MAX(taglen, 8))
-			   && !flip) {
+			   && op != RESV_REM) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_REPLACE_DOWN;
 		} else if (!xstrncasecmp(curr, "NO_HOLD_JOBS_AFTER_END",
-					 MAX(taglen, 1)) && !flip) {
+					 MAX(taglen, 1)) && op != RESV_REM) {
 			curr += taglen;
 			outflags |= RESERVE_FLAG_NO_HOLD_JOBS;
 		} else {
