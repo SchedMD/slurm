@@ -530,10 +530,6 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->reason_uid = reason_uid;
 			}
 
-			if (IS_NODE_POWER_UP(node_ptr) ||
-			    IS_NODE_REBOOT(node_ptr))
-				node_ptr->boot_req_time = boot_req_time;
-
 			xfree(node_ptr->features_act);
 			node_ptr->features_act	= features_act;
 			features_act		= NULL;	/* Nothing to free */
@@ -610,18 +606,7 @@ extern int load_all_node_state ( bool state_only )
 			}
 
 			node_ptr->last_response = last_response;
-			if (!node_ptr->last_response) {
-				/*
-				 * last_response value not saved, make best
-				 * guess.
-				 */
-				if (IS_NODE_POWER_UP(node_ptr))
-					node_ptr->last_response = now +
-						slurm_conf.resume_timeout;
-				else if (IS_NODE_POWERING_DOWN(node_ptr))
-					node_ptr->last_response = now +
-						slurm_conf.suspend_timeout;
-			}
+			node_ptr->boot_req_time = boot_req_time;
 
 			if (obj_protocol_version &&
 			    (obj_protocol_version != NO_VAL16))
@@ -1434,8 +1419,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					node_ptr->node_state |=
 							NODE_STATE_NO_RESPOND;
 #endif
-					node_ptr->last_response = MAX(now,
-						node_ptr->last_response);
+					node_ptr->last_response = now;
 					node_ptr->boot_time = 0;
 					ping_nodes_now = true;
 				} else if (IS_NODE_FUTURE(node_ptr)) {
@@ -1455,9 +1439,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 #endif
 						bit_clear(future_node_bitmap,
 							  node_inx);
-						node_ptr->last_response =
-							MAX(now,
-							node_ptr->last_response);
+						node_ptr->last_response = now;
 						node_ptr->boot_time = 0;
 						ping_nodes_now = true;
 					} else {
@@ -1626,8 +1608,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				   (IS_NODE_POWER_UP(node_ptr))) {
 				/* Clear any reboot operation in progress */
 				node_ptr->node_state &= (~NODE_STATE_POWER_UP);
-				node_ptr->last_response = MAX(now,
-						node_ptr->last_response);
+				node_ptr->last_response = now;
 				state_val = base_state;
 			} else if (state_val == NODE_STATE_NO_RESPOND) {
 				node_ptr->node_state |= NODE_STATE_NO_RESPOND;
@@ -2837,7 +2818,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		memcpy(node_ptr->energy, reg_msg->energy,
 		       sizeof(acct_gather_energy_t));
 
-	node_ptr->last_response = MAX(now, node_ptr->last_response);
+	node_ptr->last_response = now;
 	node_ptr->boot_req_time = (time_t) 0;
 
 	*newly_up = (!orig_node_avail && bit_test(avail_node_bitmap, node_inx));
@@ -2892,7 +2873,7 @@ static front_end_record_t * _front_end_reg(
 		reg_msg->job_count = 0;
 	}
 
-	front_end_ptr->last_response = MAX(now, front_end_ptr->last_response);
+	front_end_ptr->last_response = now;
 	front_end_ptr->slurmd_start_time = reg_msg->slurmd_start_time;
 	state_base  = front_end_ptr->node_state & JOB_STATE_BASE;
 	state_flags = front_end_ptr->node_state & JOB_STATE_FLAGS;
@@ -3069,7 +3050,7 @@ extern int validate_nodes_via_front_end(
 		bool acct_updated = false;
 
 		config_ptr = node_ptr->config_ptr;
-		node_ptr->last_response = MAX(now, node_ptr->last_response);
+		node_ptr->last_response = now;
 
 		rc = gres_plugin_node_config_validate(
 			node_ptr->name,
@@ -3251,7 +3232,7 @@ static void _node_did_resp(front_end_record_t *fe_ptr)
 	uint32_t node_flags;
 	time_t now = time(NULL);
 
-	fe_ptr->last_response = MAX(now, fe_ptr->last_response);
+	fe_ptr->last_response = now;
 
 	if (IS_NODE_NO_RESPOND(fe_ptr)) {
 		info("Node %s now responding", fe_ptr->name);
@@ -3291,7 +3272,7 @@ static void _node_did_resp(node_record_t *node_ptr)
 	node_inx = node_ptr - node_record_table_ptr;
 	if (waiting_for_node_boot(node_ptr))
 		return;
-	node_ptr->last_response = MAX(now, node_ptr->last_response);
+	node_ptr->last_response = now;
 	if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_POWER_UP(node_ptr)) {
 		info("Node %s now responding", node_ptr->name);
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);

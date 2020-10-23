@@ -115,6 +115,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix passing names with commas to the slurmdbd.
  -- squeue - put sorted start times of "N/A" or 0 at the end of the list.
  -- Add correspond_after_task_cnt to SchedulerParameters
+ -- Fix node's not being considered unresponsive/down for ResumeTimeout after
+    reboot or power_up.
 
 * Changes in Slurm 20.02.6
 ==========================

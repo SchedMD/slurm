@@ -357,7 +357,6 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
 			bit_clear(power_node_bitmap, i);
 			node_ptr->boot_req_time = now;
-			node_ptr->last_response = now + resume_timeout;
 			bit_set(booting_node_bitmap, i);
 			bit_set(resume_node_bitmap,  i);
 			bit_set(wake_node_bitmap,    i);
@@ -434,7 +433,7 @@ static void _do_power_work(time_t now)
 		 * Down nodes as if not resumed by ResumeTimeout
 		 */
 		if (bit_test(booting_node_bitmap, i) &&
-		    (now > node_ptr->last_response)  &&
+		    (now > node_ptr->boot_req_time + resume_timeout)  &&
 		    IS_NODE_POWER_UP(node_ptr) &&
 		    IS_NODE_NO_RESPOND(node_ptr)) {
 			info("node %s not resumed by ResumeTimeout(%d) - marking down and power_save",
@@ -450,6 +449,7 @@ static void _do_power_work(time_t now)
 			bit_clear(booting_node_bitmap, i);
 			bit_clear(resume_node_bitmap, i);
 			node_ptr->last_idle = 0;
+			node_ptr->boot_req_time = 0;
 
 			if (resume_fail_prog) {
 				if (!failed_node_bitmap) {
@@ -557,7 +557,6 @@ extern int power_job_reboot(job_record_t *job_ptr)
 		bit_clear(power_node_bitmap, i);
 		bit_clear(avail_node_bitmap, i);
 		node_ptr->boot_req_time = now;
-		node_ptr->last_response = now + resume_timeout;
 		bit_set(booting_node_bitmap, i);
 		bit_set(resume_node_bitmap,  i);
 	}
