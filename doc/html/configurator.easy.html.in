@@ -21,8 +21,10 @@ You should have received a copy of the GNU General Public License along
 with Slurm; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 -->
-<HTML>
-<HEAD><TITLE>Slurm System Configuration Tool</TITLE>
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<title>Slurm System Configuration Tool</title>
 <SCRIPT type="text/javascript">
 <!--
 function get_field(name,form)
@@ -181,9 +183,9 @@ function displayfile()
 -->
 </SCRIPT>
 <!-- <div style='visibility:hidden;text-align:left;background:#ccc;border:1px solid black;position: absolute;left:100;z-index:1;padding:5;' id='out_box'></div> -->
-</HEAD>
-<BODY>
-<FORM name=config>
+</head>
+<body>
+<form name=config>
 <H1>Slurm Version @SLURM_MAJOR@.@SLURM_MINOR@ Configuration Tool - Easy Version</H1>
 <P>This form can be used to create a Slurm configuration file with
 you controlling many of the important configuration parameters.</P>
@@ -304,7 +306,7 @@ This must be a unique directory on each compute server (local disk).
 The use of a highly reliable file system (e.g. RAID) is recommended.
 <P>
 <input type="text" name="state_save_location" value="/var/spool"> <B>StateSaveLocation</B>:
-Slurmctld state save directory </B>
+Slurmctld state save directory
 <P>
 <input type="text" name="slurmd_spool_dir" value="/var/spool/slurmd"> <B>SlurmdSpoolDir</B>:
 Slurmd state save directory
@@ -426,7 +428,6 @@ CPU affinity support
 <input type="radio" name="task_plugin" value="cgroup"> <B>Cgroup</B>:
 Allocated resources constraints enforcement using Linux Control Groups
 (see cgroup.conf man page)
-</DL></DL>
 <P>
 
 <H2>Event Logging</H2>
@@ -482,9 +483,10 @@ Specify a specify the fully qualified pathname for the file.
 <BR>
 <input type=button value="Submit" onClick="javascript:displayfile()">
 <input type=reset value="Reset Form">
-<P>
-</FORM>
-<HR>
+</form>
+<hr>
+<p>
 <a href="disclaimer.html" target="_blank" class="privacy">Legal Notices</a><br>
-Last modified 10 April 2018</P>
-</BODY>
+Last modified 10 April 2018</p>
+</body>
+</html>
