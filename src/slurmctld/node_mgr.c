@@ -244,6 +244,7 @@ static void _dump_node_state(node_record_t *dump_node_ptr, Buf buffer)
 	pack32  (dump_node_ptr->reason_uid, buffer);
 	pack_time(dump_node_ptr->reason_time, buffer);
 	pack_time(dump_node_ptr->boot_req_time, buffer);
+	pack_time(dump_node_ptr->power_save_req_time, buffer);
 	pack_time(dump_node_ptr->last_response, buffer);
 	pack16  (dump_node_ptr->protocol_version, buffer);
 	packstr (dump_node_ptr->mcs_label, buffer);
@@ -296,6 +297,8 @@ extern int load_all_node_state ( bool state_only )
 	uint32_t tmp_disk, name_len;
 	uint32_t reason_uid = NO_VAL;
 	time_t boot_req_time = 0, reason_time = 0, last_response = 0;
+	time_t power_save_req_time = 0;
+
 	List gres_list = NULL;
 	node_record_t *node_ptr;
 	time_t time_stamp, now = time(NULL);
@@ -369,6 +372,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack32(&reason_uid, buffer);
 			safe_unpack_time(&reason_time, buffer);
 			safe_unpack_time(&boot_req_time, buffer);
+			safe_unpack_time(&power_save_req_time, buffer);
 			safe_unpack_time(&last_response, buffer);
 			safe_unpack16(&obj_protocol_version, buffer);
 			safe_unpackstr_xmalloc(&mcs_label, &name_len, buffer);
@@ -607,6 +611,7 @@ extern int load_all_node_state ( bool state_only )
 
 			node_ptr->last_response = last_response;
 			node_ptr->boot_req_time = boot_req_time;
+			node_ptr->power_save_req_time = power_save_req_time;
 
 			if (obj_protocol_version &&
 			    (obj_protocol_version != NO_VAL16))
@@ -1411,6 +1416,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 							node_ptr,
 							xstrdup(node_ptr->name),
 							xstrdup(node_ptr->name));
+
+					node_ptr->power_save_req_time = 0;
 				}
 
 				if (IS_NODE_DOWN(node_ptr)) {
@@ -2414,7 +2421,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	node_ptr->version = reg_msg->version;
 	reg_msg->version = NULL;
 
-	if (waiting_for_node_boot(node_ptr))
+	if (waiting_for_node_boot(node_ptr) ||
+	    waiting_for_node_power_down(node_ptr))
 		return SLURM_SUCCESS;
 	bit_clear(booting_node_bitmap, node_inx);
 
@@ -2820,6 +2828,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 
 	node_ptr->last_response = now;
 	node_ptr->boot_req_time = (time_t) 0;
+	node_ptr->power_save_req_time = (time_t) 0;
 
 	*newly_up = (!orig_node_avail && bit_test(avail_node_bitmap, node_inx));
 
@@ -3270,7 +3279,8 @@ static void _node_did_resp(node_record_t *node_ptr)
 	time_t now = time(NULL);
 
 	node_inx = node_ptr - node_record_table_ptr;
-	if (waiting_for_node_boot(node_ptr))
+	if (waiting_for_node_boot(node_ptr) ||
+	    waiting_for_node_power_down(node_ptr))
 		return;
 	node_ptr->last_response = now;
 	if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_POWER_UP(node_ptr)) {
@@ -4144,6 +4154,21 @@ extern bool waiting_for_node_boot(struct node_record *node_ptr)
 	     (IS_NODE_DOWN(node_ptr) && IS_NODE_REBOOT(node_ptr))) &&
 	    (node_ptr->boot_time < node_ptr->boot_req_time)) {
 		debug("Still waiting for boot of node %s", node_ptr->name);
+		return true;
+	}
+
+	return false;
+}
+
+extern bool waiting_for_node_power_down(node_record_t *node_ptr)
+{
+	xassert(node_ptr);
+
+	if (IS_NODE_POWERING_DOWN(node_ptr) &&
+	    node_ptr->power_save_req_time &&
+	    (node_ptr->boot_time < node_ptr->last_response)) {
+		debug("Still waiting for node '%s' to power off",
+		      node_ptr->name);
 		return true;
 	}
 

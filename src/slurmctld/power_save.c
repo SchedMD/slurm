@@ -387,7 +387,7 @@ static void _do_power_work(time_t now)
 
 			/* Don't allocate until after SuspendTimeout */
 			bit_clear(avail_node_bitmap, i);
-			node_ptr->last_response = now + suspend_timeout;
+			node_ptr->power_save_req_time = now;
 
 			if (idle_on_node_suspend) {
 				if (IS_NODE_DOWN(node_ptr)) {
@@ -410,7 +410,7 @@ static void _do_power_work(time_t now)
 		}
 
 		if (IS_NODE_POWERING_DOWN(node_ptr) &&
-		    (node_ptr->last_response < now)) {
+		    (node_ptr->power_save_req_time + suspend_timeout < now)) {
 
 			node_ptr->node_state &= (~NODE_STATE_POWERING_DOWN);
 
@@ -427,6 +427,7 @@ static void _do_power_work(time_t now)
 				make_node_avail(i);
 
 			node_ptr->last_idle = 0;
+			node_ptr->power_save_req_time = 0;
 		}
 
 		/*
