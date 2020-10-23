@@ -423,17 +423,23 @@ typedef struct {
  * These should be alphabetized by the slurm_cli_opt_t name.
  */
 
-static int arg_set__unknown_(slurm_opt_t *opt, const char *arg)
+static int arg_set__unknown_salloc(slurm_opt_t *opt, const char *arg)
 {
-	if (opt->salloc_opt)
-		fprintf(stderr,
-			"Try \"salloc --help\" for more information\n");
-	else if (opt->sbatch_opt)
-		fprintf(stderr,
-			"Try \"sbatch --help\" for more information\n");
-	else if (opt->srun_opt)
-		fprintf(stderr,
-			"Try \"srun --help\" for more information\n");
+	fprintf(stderr, "Try \"salloc --help\" for more information\n");
+
+	exit(-1);
+	return SLURM_SUCCESS;
+}
+static int arg_set__unknown_sbatch(slurm_opt_t *opt, const char *arg)
+{
+	fprintf(stderr,	"Try \"sbatch --help\" for more information\n");
+
+	exit(-1);
+	return SLURM_SUCCESS;
+}
+static int arg_set__unknown_srun(slurm_opt_t *opt, const char *arg)
+{
+	fprintf(stderr,	"Try \"srun --help\" for more information\n");
 
 	exit(-1);
 	return SLURM_SUCCESS;
@@ -450,7 +456,9 @@ static slurm_cli_opt_t slurm_opt__unknown_ = {
 	.name = NULL,
 	.has_arg = no_argument,
 	.val = '?',
-	.set_func = arg_set__unknown_,
+	.set_func_salloc = arg_set__unknown_salloc,
+	.set_func_sbatch = arg_set__unknown_sbatch,
+	.set_func_srun = arg_set__unknown_srun,
 	.get_func = arg_get__unknown_,
 	.reset_func = arg_reset__unknown_,
 };
