@@ -5259,8 +5259,15 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 				node_ptr->reason_uid = uid;
 			}
 			if (reboot_msg->flags & REBOOT_FLAGS_ASAP) {
+				if (node_ptr->next_state == NO_VAL)
+					node_ptr->next_state = NODE_RESUME;
+				if (!IS_NODE_DRAIN(node_ptr))
+					node_ptr->next_state |=
+						NODE_STATE_UNDRAIN;
+
 				node_ptr->node_state |= NODE_STATE_DRAIN;
 				bit_clear(avail_node_bitmap, i);
+
 				if (node_ptr->reason == NULL) {
 					node_ptr->reason =
 						xstrdup("Reboot ASAP");

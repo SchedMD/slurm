@@ -107,6 +107,7 @@ COMMAND CHANGES (see man pages for details)
  -- scontrol - added the "Reserved" license count to 'scontrol show licenses'.
  -- Add time specification: "now-<x>" (i.e. subtract from the present)
  -- squeue - put sorted start times of "N/A" or 0 at the end of the list.
+ -- Change "scontrol reboot ASAP" to use next_state=resume logic.
 
 API CHANGES
 ===========

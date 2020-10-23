@@ -117,6 +117,7 @@ documents those changes that are of interest to users and administrators.
  -- Add correspond_after_task_cnt to SchedulerParameters
  -- Fix node's not being considered unresponsive/down for ResumeTimeout after
     reboot or power_up.
+ -- Change "scontrol reboot ASAP" to use next_state=resume logic.
 
 * Changes in Slurm 20.02.6
 ==========================
