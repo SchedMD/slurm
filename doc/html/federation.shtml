@@ -64,7 +64,7 @@ removed cluster, will continue to run as non-federated jobs. If a job is pending
 on the origin cluster, the job will remain pending on the origin cluster as a
 non-federated job and the remaining sibling jobs will be removed. If the origin
 cluster is being removed and the job is pending and is only viable on one
-cluster then it it will remain pending on the viable cluster as a non-federated
+cluster then it will remain pending on the viable cluster as a non-federated
 job. If the origin cluster is being removed and the job is pending and viable on
 multiple clusters other than the origin cluster, then the remaining pending jobs
 will remain pending as a federated job and the remaining sibling clusters will
@@ -300,7 +300,7 @@ information is listed separately.
 <h3>squeue</h3>
 <p>
 squeue also has a new <b>--sibling</b> option that will show each sibling job
-rather than than merge them into one.
+rather than merge them into one.
 </p>
 
 <p>
@@ -443,7 +443,7 @@ issuing the command on the cluster or using the <b>--cluster/-M</b>  option.
 		features and state of the cluster (e.g. active, draining, etc.).
 	</li>
 	<li>
-		<b>Active Sibling:</b> a sibling job that that actively has a
+		<b>Active Sibling:</b> a sibling job that actively has a
 		sibling job and is able to schedule the job.
 	</li>
 </ul>
