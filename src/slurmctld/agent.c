@@ -172,6 +172,7 @@ typedef struct queued_request {
 typedef struct mail_info {
 	char *user_name;
 	char *message;
+	char **environment; /* MailProg environment variables */
 } mail_info_t;
 
 static void _agent_defer(void);
@@ -1840,6 +1841,7 @@ static void _mail_free(void *arg)
 	if (mi) {
 		xfree(mi->user_name);
 		xfree(mi->message);
+		env_array_free(mi->environment);
 		xfree(mi);
 	}
 }
@@ -1866,8 +1868,6 @@ static void *_mail_proc(void *arg)
 		error("fork(): %m");
 	} else if (pid == 0) {	/* child */
 		int fd_0, fd_1, fd_2, i;
-		char **my_env = NULL;
-		my_env = _build_mail_env();
 		for (i = 0; i < 1024; i++)
 			(void) close(i);
 		if ((fd_0 = open("/dev/null", O_RDWR)) == -1)	// fd = 0
@@ -1877,7 +1877,7 @@ static void *_mail_proc(void *arg)
 		if ((fd_2 = dup(fd_0)) == -1)			// fd = 2
 			error("Couldn't do a dup on fd 2 %m");
 		execle(slurm_conf.mail_prog, "mail", "-s", mi->message,
-		       mi->user_name, NULL, my_env);
+		       mi->user_name, NULL, mi->environment);
 		error("Failed to exec %s: %m", slurm_conf.mail_prog);
 		_exit(1);
 	} else {		/* parent */
@@ -2090,6 +2090,7 @@ extern void mail_job_info(job_record_t *job_ptr, uint16_t mail_type)
 					     _mail_type_str(mail_type),
 					     job_time, term_msg);
 	}
+	mi->environment = _build_mail_env();
 	info("email msg to %s: %s", mi->user_name, mi->message);
 
 	slurm_mutex_lock(&mail_mutex);
