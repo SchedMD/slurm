@@ -1850,9 +1850,25 @@ static char **_build_mail_env(job_record_t *job_ptr)
 {
 	char **my_env = xcalloc(2, sizeof(char *));
 
-	my_env[0] = xstrdup_printf("SLURM_CLUSTER_NAME=%s",
-	                           slurm_conf.cluster_name);
-	my_env[1] = NULL;
+        my_env = xmalloc(sizeof(char *));
+        my_env[0] = NULL;
+        if (slurm_conf.cluster_name)
+                setenvf(&my_env, "SLURM_CLUSTER_NAME", "%s",
+                        slurm_conf.cluster_name);
+	setenvf(&my_env, "SLURM_JOB_STATE", "%s",
+		job_state_string(job_ptr->job_state));
+	if (job_ptr->details->std_err)
+		setenvf(&my_env, "SLURM_STDERR", "%s",
+			job_ptr->details->std_err);
+	if (job_ptr->details->std_in)
+		setenvf(&my_env, "SLURM_STDIN", "%s",
+			job_ptr->details->std_in);
+	if (job_ptr->details->std_out)
+		setenvf(&my_env, "SLURM_STDOUT", "%s",
+			job_ptr->details->std_out);
+	if (job_ptr->details->work_dir)
+		setenvf(&my_env, "SLURM_WORK_DIR", "%s",
+			job_ptr->details->work_dir);
 
 	return my_env;
 }
