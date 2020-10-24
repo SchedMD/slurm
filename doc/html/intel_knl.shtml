@@ -73,7 +73,7 @@ on that KNL processor.</p>
 <p><a name="note"><b>NOTE</b></a>: Slurm can only
 support homogeneous nodes (e.g. the same number of cores per NUMA node).
 KNL processors with <u>68 cores</u> (a subset of KNL models) will not have
-homogeneous NUMA nodes in snc4 mode, but each each NUMA node will have
+homogeneous NUMA nodes in snc4 mode, but each NUMA node will have
 either 16 or 18 cores. This will result in Slurm using the lower core count,
 finding a total of 256 threads rather than 272 threads and setting the node
 to a DOWN state.</p>
