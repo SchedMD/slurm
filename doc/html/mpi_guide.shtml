@@ -470,7 +470,7 @@ The PATH must point to the Slurm installation directory, in other words the pare
 directory of bin and lib.
 In addition, if Slurm is not configured with <i>MpiDefault=pmi2</i>, then
 the srun command must be invoked with the option <i>--mpi=pmi2</i> as shown
-in the example below below.</p>
+in the example below.</p>
 <pre>
 srun -n4 --mpi=pmi2 ./a.out
 </pre>
@@ -543,7 +543,7 @@ to launch the tasks. A simple example is shown below.</p>
 
 <p>MVAPICH2 supports launching multithreaded programs by Slurm as well as
 mpirun_rsh.
-Please note that if you intend to use use srun, you need to build MVAPICH2
+Please note that if you intend to use srun, you need to build MVAPICH2
 with Slurm support with a command line of this sort:</p>
 <pre>
 $ ./configure --with-pmi=pmi2 --with-pm=slurm
