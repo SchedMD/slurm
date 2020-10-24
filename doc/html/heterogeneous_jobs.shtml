@@ -332,7 +332,7 @@ heterogeneous will return an error.</p>
 </ul>
 
 <p>The sbcast command supports heterogeneous job allocations. By default,
-sbcast will will copy files to all nodes in the job allocation. The -j/--jobid
+sbcast will copy files to all nodes in the job allocation. The -j/--jobid
 option can be used to copy files to individual components as shown below.</p>
 <pre>
 $ sbcast --jobid=123   data /tmp/data
