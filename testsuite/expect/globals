@@ -4539,26 +4539,56 @@ proc check_job_state { job state {het_job 0}} {
 ################################################################
 
 proc get_gres_count { gres_name {node_list ""} } {
+	set nodes_dict [get_nodes $node_list]
+	set nodes_gres_dict [dict create]
+	dict for {node_name node_dict} $nodes_dict {
+		if [dict exists $node_dict "Gres"] {
+			set gres_param [dict get $node_dict "Gres"]
+			set gres_dict  [count_gres $gres_param]
+		}
+		if [dict exists $gres_dict $gres_name] {
+			set gres_count [dict get $gres_dict $gres_name]
+			dict set nodes_gres_dict $node_name $gres_count
+		}
+	}
+	return $nodes_gres_dict
+}
+
+
+################################################################
+#
+# NAME
+#	count_gres - returns a dict of GRES names and their total counts
+#
+# SYNOPSIS
+#	count_gres gres_param
+#
+# DESCRIPTION
+#	Parses a GRES parameter string typically obtained from nodes or
+#	jobs info, and returns a dict of GRES names and their count
+#	aggregating all the types of each GRES.
+#
+# RETURN VALUE
+#	A dict of GRES names and their count aggregating all types of
+#	each GRES.
+#
+################################################################
+
+proc count_gres { gres_param } {
 	global gres_regex
 
-	set nodes_dict [get_nodes $node_list]
 	set gres_dict [dict create]
-	dict for {node_name node_dict} $nodes_dict {
-		set gres_count 0
-		if [dict exists $node_dict "Gres"] {
-			set gres_expression [dict get $node_dict "Gres"]
-			foreach gres [split $gres_expression ","] {
-				if {[regexp $gres_regex $gres {} name type count] == 1} {
-					if {$count eq ""} { set count $type }
-					if {$name eq $gres_name} {
-						incr gres_count $count
-					}
-				}
+	foreach gres [split $gres_param ","] {
+		if {[regexp $gres_regex $gres {} name type count] == 1} {
+			if {$count eq ""} { set count $type }
+
+			if {[dict exists $gres_dict $name]} {
+				dict set gres_dict $name [expr [dict get $gres_dict $name] + $count]
+			} else {
+				dict set gres_dict $name $count
 			}
 		}
-		dict set gres_dict $node_name $gres_count
 	}
-
 	return $gres_dict
 }
 
