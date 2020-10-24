@@ -45,7 +45,13 @@ set node_name [get_nodes_by_request "--gres=gpu:2 -n1 -t1"]
 if { [llength $node_name] != 1 } {
 	skip "This test need to be able to submit jobs with at least --gres=gpu:2"
 }
-set gpu_tot [dict get [get_gres_count "gpu" $node_name] $node_name]
+if {![param_contains [get_config_param "AccountingStorageTRES"] "gres/gpu"]} {
+	skip "This test requires AccountingStorageTRES=gres/gpu"
+}
+
+# Get the total number of GPUs in the test node
+set gres_node [get_node_param $node_name "Gres"]
+set gpu_tot   [dict get [count_gres $gres_node] "gpu"]
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
@@ -143,6 +149,8 @@ if {$waited == 0} {
 	fail "srun failed to wait for non-sharing job to complete"
 }
 
+cancel_job $job_id1
+
 #
 # Verify that all GPUs are allocated with the --exclusive flag
 #
@@ -161,31 +169,33 @@ expect {
 	}
 }
 if {$job_id2 == 0} {
-	log_error "sbatch failed to report jobid\n"
-	set exit_code 1
+	fail "sbatch failed to report jobid"
 }
 
 if {[wait_for_job $job_id2 "RUNNING"] != 0} {
-	log_error "waiting for job to start running\n"
-	set exit_code 1
+	fail "waiting for job to start running"
 }
 
-set job_gpu_cnt [get_job_gpu_cnt $job_id2]
+# Check all GRES of the node were allocated on the job
+set gres_dict_job  [count_gres [get_job_param  $job_id2   "JOB_GRES"]]
+set gres_dict_node [count_gres [get_node_param $node_name "Gres"]]
 
-if {$gpu_tot != $job_gpu_cnt} {
-	log_error "Job didn't allocate all GPUs ($gpu_tot != $job_gpu_cnt)"
-	set exit_code 1
-} else {
-	log_info "Node GPU count matches Job GPU count ($gpu_tot == $job_gpu_cnt)"
+dict for {gres_name gres_count} $gres_dict_node {
+	if {![dict exists $gres_dict_job $gres_name]} {
+		log_error "Gres $gres_name on node $node_name not allocated on job $job_id2 with --exclusive"
+		set exit_code 1
+	} else {
+		set gres_count_job [dict get $gres_dict_job $gres_name]
+		if { $gres_count_job != $gres_count } {
+			log_error "Gres $gres_name on node $node_name not fully allocated on job $job_id2 with --exclusive ($gres_count_job != $gres_count)"
+			set exit_code 1
+		}
+	}
 }
 
-if {[wait_for_job $job_id2 "DONE"] != 0} {
-	log_error "job wasn't able to complete\n"
-	cancel_job $job_id2
-	set exit_code 1
-}
+cancel_job $job_id2
 
-cancel_job $job_id1
+
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_err $file_in $file_out
 } else {
