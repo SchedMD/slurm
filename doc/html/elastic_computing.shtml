@@ -100,7 +100,7 @@ option.
 numeric suffix is recommended for convenience. The NodeAddr and NodeHostname
 should not be set, but will be configured later using scripts.
 <dt><b>State</b>
-<dd>Nodes which are to be be added on demand should have a state of "CLOUD".
+<dd>Nodes which are to be added on demand should have a state of "CLOUD".
 These nodes will not actually appear in Slurm commands until after they are
 configured for use.
 <dt><b>Weight</b>
