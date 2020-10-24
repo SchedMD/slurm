@@ -75,7 +75,7 @@ which can be preempted by a specific pending job.</p>
 pending job which is attempting to be started</p>
 <p style="margin-left:.2in"><b>Returns</b>: A list of pointers to
 jobs which may be preempted.
-The list should be be released using the <i>list_destroy</i> function when
+The list should be released using the <i>list_destroy</i> function when
 no longer required.
 This list should be sorted in order from most attractive to
 preempt to least attractive to preempt (e.g. lowest to highest priority).
