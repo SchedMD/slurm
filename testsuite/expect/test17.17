@@ -36,6 +36,10 @@ set file_out     "test$test_id.output"
 set job_id1      0
 set nodelist_name ""
 
+if {[get_config_param "FrontendName"] ne "MISSING"} {
+	skip "This test is incompatible with front-end systems"
+}
+
 #
 # Submit a job and get the node's NodeName from the nodelist
 #
@@ -57,9 +61,6 @@ expect {
 }
 if {[string compare $nodelist_name ""] == 0} {
 	fail "Did not get hostname of task 0"
-}
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "Additional testing is incompatible with front-end systems"
 }
 
 #
