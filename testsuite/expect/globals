@@ -5629,7 +5629,7 @@ proc get_nodes_by_request args {
 proc get_jobs { {job_id_in ""} } {
 	global scontrol
 
-	set command "$scontrol show job -o"
+	set command "$scontrol show job -d -o"
 	if {$job_id_in ne ""} {
 		append command " $job_id_in"
 	}
