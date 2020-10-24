@@ -200,7 +200,7 @@ static mail_info_t *_mail_alloc(void);
 static void  _mail_free(void *arg);
 static void *_mail_proc(void *arg);
 static char *_mail_type_str(uint16_t mail_type);
-static char **_build_mail_env(void);
+static char **_build_mail_env(job_record_t *job_ptr);
 
 static pthread_mutex_t defer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mail_mutex  = PTHREAD_MUTEX_INITIALIZER;
@@ -1846,7 +1846,7 @@ static void _mail_free(void *arg)
 	}
 }
 
-static char **_build_mail_env(void)
+static char **_build_mail_env(job_record_t *job_ptr)
 {
 	char **my_env = xcalloc(2, sizeof(char *));
 
@@ -2090,7 +2090,7 @@ extern void mail_job_info(job_record_t *job_ptr, uint16_t mail_type)
 					     _mail_type_str(mail_type),
 					     job_time, term_msg);
 	}
-	mi->environment = _build_mail_env();
+	mi->environment = _build_mail_env(job_ptr);
 	info("email msg to %s: %s", mi->user_name, mi->message);
 
 	slurm_mutex_lock(&mail_mutex);
