@@ -332,7 +332,7 @@ reservation.
 This might be used to ensure availability of resources for a specific
 user within a group having a reservation.
 Using the previous example of alan and brenda having a 10 node reservation
-for 60 minutes, we might want to reserve 4 nodes of that for for brenda
+for 60 minutes, we might want to reserve 4 nodes of that for brenda
 during the first 30 minutes of the time period.
 In this case, the creation of one overlapping reservation (for a total of
 two reservations) may be simpler than creating three separate reservations,
