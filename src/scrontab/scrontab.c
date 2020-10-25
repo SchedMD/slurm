@@ -402,6 +402,9 @@ extern int main(int argc, char **argv)
 	slurm_conf_init(NULL);
 	_parse_args(argc, argv);
 
+	if (!xstrcasestr(slurm_conf.scron_params, "enable"))
+		fatal("scrontab is disabled on this cluster");
+
 	if (remove_only) {
 		if ((rc = slurm_remove_crontab(uid, gid)))
 			fatal("slurm_remove_crontab failed: %s",

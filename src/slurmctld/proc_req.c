@@ -5989,6 +5989,12 @@ static void _slurm_rpc_request_crontab(slurm_msg_t *msg)
 	debug3("Processing RPC details: REQUEST_CRONTAB for uid=%u",
 	       req_msg->uid);
 
+	if (!xstrcasestr(slurm_conf.scron_params, "enable")) {
+		error("%s: scrontab is disabled on this cluster", __func__);
+		slurm_send_rc_msg(msg, SLURM_ERROR);
+		return;
+	}
+
 	lock_slurmctld(job_read_lock);
 
 	if ((req_msg->uid != msg->auth_uid) &&
@@ -6034,6 +6040,12 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 	START_TIMER;
 	debug3("Processing RPC details: REQUEST_UPDATE_CRONTAB for uid=%u",
 	       req_msg->uid);
+
+	if (!xstrcasestr(slurm_conf.scron_params, "enable")) {
+		error("%s: scrontab is disabled on this cluster", __func__);
+		slurm_send_rc_msg(msg, SLURM_ERROR);
+		return;
+	}
 
 	resp_msg.err_msg = NULL;
 	resp_msg.failed_lines = NULL;
