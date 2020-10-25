@@ -2788,4 +2788,12 @@ extern void set_node_comm_name(node_record_t *node_ptr, char *comm_name,
  */
 extern int write_data_to_file(char *file_name, char *data);
 
+/*
+ * Update a user's crontab entry, and submit new jobs as required.
+ * Will mark existing crontab-submitted jobs as complete.
+ */
+extern void crontab_submit(crontab_update_request_msg_t *req_msg,
+			   crontab_update_response_msg_t *response,
+			   uint16_t protocol_version);
+
 #endif /* !_HAVE_SLURMCTLD_H */
