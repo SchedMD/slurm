@@ -10642,6 +10642,12 @@ static void _pack_default_job_details(job_record_t *job_ptr, Buf buffer,
 			pack32(detail_ptr->cpu_freq_min, buffer);
 			pack32(detail_ptr->cpu_freq_max, buffer);
 			pack32(detail_ptr->cpu_freq_gov, buffer);
+
+			if (detail_ptr->crontab_entry)
+				packstr(detail_ptr->crontab_entry->cronspec,
+					buffer);
+			else
+				packnull(buffer);
 		} else {
 			packnull(buffer);
 			packnull(buffer);
@@ -10662,6 +10668,8 @@ static void _pack_default_job_details(job_record_t *job_ptr, Buf buffer,
 			pack32((uint32_t) 0, buffer);
 			pack32((uint32_t) 0, buffer);
 			pack32((uint32_t) 0, buffer);
+
+			packnull(buffer);
 		}
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (detail_ptr) {

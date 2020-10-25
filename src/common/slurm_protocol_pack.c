@@ -3878,6 +3878,8 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 		safe_unpack32(&job->cpu_freq_max, buffer);
 		safe_unpack32(&job->cpu_freq_gov, buffer);
 
+		safe_unpackstr_xmalloc(&job->cronspec, &uint32_tmp, buffer);
+
 		/*** unpack pending job details ***/
 		safe_unpack16(&job->contiguous, buffer);
 		safe_unpack16(&job->core_spec, buffer);
