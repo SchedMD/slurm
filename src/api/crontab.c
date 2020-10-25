@@ -36,7 +36,9 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/cron.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 
 extern int slurm_request_crontab(uid_t uid, char **crontab,
 				 char **disabled_lines)
@@ -71,4 +73,44 @@ extern int slurm_request_crontab(uid_t uid, char **crontab,
 
 	slurm_free_msg_data(response.msg_type, response.data);
 	return rc;
+}
+
+extern crontab_update_response_msg_t *slurm_update_crontab(uid_t uid, gid_t gid,
+							   char *crontab,
+							   List jobs)
+{
+	crontab_update_request_msg_t req;
+	crontab_update_response_msg_t *resp = NULL;
+	slurm_msg_t request, response;
+	int rc = SLURM_SUCCESS;
+
+	slurm_msg_t_init(&request);
+	slurm_msg_t_init(&response);
+
+	req.crontab = crontab;
+	req.jobs = jobs;
+	req.uid = uid;
+	req.gid = gid;
+	request.msg_type = REQUEST_UPDATE_CRONTAB;
+	request.data = &req;
+
+	if (slurm_send_recv_controller_msg(&request, &response,
+					   working_cluster_rec) < 0) {
+		rc = SLURM_ERROR;
+	} else if (response.msg_type == RESPONSE_UPDATE_CRONTAB) {
+		resp = (crontab_update_response_msg_t *) response.data;
+		if (!resp)
+			rc = SLURM_ERROR;
+	} else if (response.msg_type == RESPONSE_SLURM_RC) {
+		rc = ((return_code_msg_t *) response.data)->return_code;
+	} else {
+		rc = SLURM_ERROR;
+	}
+
+	if (rc) {
+		resp = xmalloc(sizeof(*resp));
+		resp->return_code = rc;
+	}
+
+	return resp;
 }
