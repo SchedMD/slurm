@@ -508,8 +508,7 @@ typedef struct job_feature {
 #define WHOLE_NODE_USER		0x02
 #define WHOLE_NODE_MCS		0x03
 
-/* job_details - specification of a job's constraints,
- * can be purged after initiation */
+/* job_details - specification of a job's constraints */
 struct job_details {
 	uint32_t magic;			/* magic cookie for data integrity */
 					/* DO NOT ALPHABETIZE */
