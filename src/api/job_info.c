@@ -541,6 +541,13 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrcat(out, line_end);
 
 	/****** Line ******/
+
+	if (job_ptr->cronspec) {
+		xstrfmtcat(out, "CrontabSpec=\"%s\"", job_ptr->cronspec);
+		xstrcat(out, line_end);
+	}
+
+	/****** Line ******/
 	/*
 	 * only print this line if preemption is enabled and job started
 	 * 	see src/slurmctld/job_mgr.c:pack_job, 'preemptable'
