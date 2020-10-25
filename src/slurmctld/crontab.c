@@ -112,6 +112,10 @@ static int _handle_job(void *x, void *y)
 			   ((cron_entry_t *) job->crontab_entry)->line_start,
 			   ((cron_entry_t *) job->crontab_entry)->line_end);
 		return 1;
+	} else {
+		xassert(job_ptr->details);
+		job_ptr->details->crontab_entry = job->crontab_entry;
+		job->crontab_entry = NULL;
 	}
 
 	return 0;
