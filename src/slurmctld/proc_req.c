@@ -455,6 +455,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->sched_log_level     = conf->sched_log_level;
 	conf_ptr->sched_time_slice    = conf->sched_time_slice;
 	conf_ptr->schedtype           = xstrdup(conf->schedtype);
+	conf_ptr->scron_params = xstrdup(conf->scron_params);
 	conf_ptr->select_type         = xstrdup(conf->select_type);
 	select_g_get_info_from_plugin(SELECT_CONFIG_INFO, NULL,
 				      &conf_ptr->select_conf_key_pairs);

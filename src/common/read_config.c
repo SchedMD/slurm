@@ -368,6 +368,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SchedulerRootFilter", S_P_UINT16},
 	{"SchedulerTimeSlice", S_P_UINT16},
 	{"SchedulerType", S_P_STRING},
+	{"ScronParameters", S_P_STRING},
 	{"SelectType", S_P_STRING},
 	{"SelectTypeParameters", S_P_STRING},
 	{"SlurmUser", S_P_STRING},
@@ -2860,6 +2861,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->sched_logfile);
 	xfree (ctl_conf_ptr->sched_params);
 	xfree (ctl_conf_ptr->schedtype);
+	xfree(ctl_conf_ptr->scron_params);
 	xfree (ctl_conf_ptr->select_type);
 	FREE_NULL_LIST(ctl_conf_ptr->select_conf_key_pairs);
 	xfree (ctl_conf_ptr->site_factor_params);
@@ -3039,6 +3041,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	xfree( ctl_conf_ptr->sched_params );
 	ctl_conf_ptr->sched_time_slice		= NO_VAL16;
 	xfree( ctl_conf_ptr->schedtype );
+	xfree(ctl_conf_ptr->scron_params);
 	xfree( ctl_conf_ptr->select_type );
 	ctl_conf_ptr->select_type_param         = NO_VAL16;
 	ctl_conf_ptr->slurm_user_id		= NO_VAL16;
@@ -4677,6 +4680,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (!s_p_get_string(&conf->schedtype, "SchedulerType", hashtbl))
 		conf->schedtype = xstrdup(DEFAULT_SCHEDTYPE);
+
+	s_p_get_string(&conf->scron_params, "ScronParameters", hashtbl);
 
 	if (!s_p_get_string(&conf->select_type, "SelectType", hashtbl))
 		conf->select_type = xstrdup(DEFAULT_SELECT_TYPE);

@@ -4566,6 +4566,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->sched_log_level, buffer);
 		pack16(build_ptr->sched_time_slice, buffer);
 		packstr(build_ptr->schedtype, buffer);
+		packstr(build_ptr->scron_params, buffer);
 		packstr(build_ptr->select_type, buffer);
 
 		pack_key_pair_list(build_ptr->select_conf_key_pairs,
@@ -5527,6 +5528,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->sched_log_level, buffer);
 		safe_unpack16(&build_ptr->sched_time_slice, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->schedtype,
+		                       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->scron_params,
 		                       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->select_type,
 		                       &uint32_tmp, buffer);

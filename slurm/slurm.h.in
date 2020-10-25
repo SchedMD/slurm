@@ -2845,6 +2845,7 @@ typedef struct {
 				 * contents of scheduler plugin config file */
 	uint16_t sched_time_slice;	/* gang scheduler slice time, secs */
 	char *schedtype;	/* type of scheduler to use */
+	char *scron_params;	/* ScronParameters */
 	char *select_type;	/* type of node selector to use */
 	void *select_conf_key_pairs; /* key-pair list which can be
 				      * listed with slurm_print_key_pairs() */
