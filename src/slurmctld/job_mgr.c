@@ -63,6 +63,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/cpu_frequency.h"
+#include "src/common/cron.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/gres.h"
@@ -651,6 +652,7 @@ static void _delete_job_details(job_record_t *job_entry)
 		xfree(job_entry->details->argv[i]);
 	xfree(job_entry->details->argv);
 	xfree(job_entry->details->cpu_bind);
+	free_cron_entry(job_entry->details->crontab_entry);
 	FREE_NULL_LIST(job_entry->details->depend_list);
 	xfree(job_entry->details->dependency);
 	xfree(job_entry->details->orig_dependency);
@@ -2706,6 +2708,9 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 			     SLURM_PROTOCOL_VERSION);
 	packstr_array(detail_ptr->argv, detail_ptr->argc, buffer);
 	packstr_array(detail_ptr->env_sup, detail_ptr->env_cnt, buffer);
+
+	pack_cron_entry(detail_ptr->crontab_entry, SLURM_PROTOCOL_VERSION,
+			buffer);
 }
 
 /* _load_job_details - Unpack a job details information from buffer */
@@ -2734,6 +2739,7 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 	int i;
 	List depend_list = NULL;
 	multi_core_data_t *mc_ptr;
+	cron_entry_t *crontab_entry = NULL;
 
 	/* unpack the job's details from the buffer */
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
@@ -2792,6 +2798,10 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 			goto unpack_error;
 		safe_unpackstr_array(&argv, &argc, buffer);
 		safe_unpackstr_array(&env_sup, &env_cnt, buffer);
+
+		if (unpack_cron_entry((void **) &crontab_entry,
+				      protocol_version, buffer))
+			goto unpack_error;
 	} else if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		safe_unpack32(&min_cpus, buffer);
 		safe_unpack32(&max_cpus, buffer);
@@ -2972,6 +2982,7 @@ static int _load_job_details(job_record_t *job_ptr, Buf buffer,
 	else
 		job_ptr->details->cpus_per_task = 1;
 	job_ptr->details->orig_cpus_per_task = cpus_per_task;
+	job_ptr->details->crontab_entry = crontab_entry;
 	job_ptr->details->depend_list = depend_list;
 	job_ptr->details->dependency = dependency;
 	job_ptr->details->orig_dependency = orig_dependency;
@@ -3021,6 +3032,7 @@ unpack_error:
 	xfree(acctg_freq);
 	xfree(argv);
 	xfree(cpu_bind);
+	free_cron_entry(crontab_entry);
 	xfree(dependency);
 	xfree(orig_dependency);
 /*	for (i=0; i<env_cnt; i++)

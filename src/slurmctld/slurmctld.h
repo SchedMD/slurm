@@ -53,6 +53,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/bitstring.h"
+#include "src/common/cron.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -535,6 +536,8 @@ struct job_details {
 	uint32_t cpu_freq_gov;  	/* cpu frequency governor */
 	uint16_t cpus_per_task;		/* number of processors required for
 					 * each task */
+	cron_entry_t *crontab_entry;	/* crontab entry (job submitted through
+					 * scrontab) */
 	uint16_t orig_cpus_per_task;	/* requested value of cpus_per_task */
 	List depend_list;		/* list of job_ptr:state pairs */
 	char *dependency;		/* wait for other jobs */
