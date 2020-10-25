@@ -153,9 +153,9 @@ am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
 am_slurmctld_OBJECTS = acct_policy.$(OBJEXT) agent.$(OBJEXT) \
 	backup.$(OBJEXT) burst_buffer.$(OBJEXT) controller.$(OBJEXT) \
-	fed_mgr.$(OBJEXT) front_end.$(OBJEXT) gang.$(OBJEXT) \
-	groups.$(OBJEXT) heartbeat.$(OBJEXT) job_mgr.$(OBJEXT) \
-	job_scheduler.$(OBJEXT) job_submit.$(OBJEXT) \
+	crontab.$(OBJEXT) fed_mgr.$(OBJEXT) front_end.$(OBJEXT) \
+	gang.$(OBJEXT) groups.$(OBJEXT) heartbeat.$(OBJEXT) \
+	job_mgr.$(OBJEXT) job_scheduler.$(OBJEXT) job_submit.$(OBJEXT) \
 	licenses.$(OBJEXT) locks.$(OBJEXT) node_mgr.$(OBJEXT) \
 	node_scheduler.$(OBJEXT) partition_mgr.$(OBJEXT) \
 	ping_nodes.$(OBJEXT) port_mgr.$(OBJEXT) power_save.$(OBJEXT) \
@@ -191,21 +191,22 @@ depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/acct_policy.Po ./$(DEPDIR)/agent.Po \
 	./$(DEPDIR)/backup.Po ./$(DEPDIR)/burst_buffer.Po \
-	./$(DEPDIR)/controller.Po ./$(DEPDIR)/fed_mgr.Po \
-	./$(DEPDIR)/front_end.Po ./$(DEPDIR)/gang.Po \
-	./$(DEPDIR)/groups.Po ./$(DEPDIR)/heartbeat.Po \
-	./$(DEPDIR)/job_mgr.Po ./$(DEPDIR)/job_scheduler.Po \
-	./$(DEPDIR)/job_submit.Po ./$(DEPDIR)/licenses.Po \
-	./$(DEPDIR)/locks.Po ./$(DEPDIR)/node_mgr.Po \
-	./$(DEPDIR)/node_scheduler.Po ./$(DEPDIR)/partition_mgr.Po \
-	./$(DEPDIR)/ping_nodes.Po ./$(DEPDIR)/port_mgr.Po \
-	./$(DEPDIR)/power_save.Po ./$(DEPDIR)/preempt.Po \
-	./$(DEPDIR)/prep_slurmctld.Po ./$(DEPDIR)/proc_req.Po \
-	./$(DEPDIR)/read_config.Po ./$(DEPDIR)/reservation.Po \
-	./$(DEPDIR)/rpc_queue.Po ./$(DEPDIR)/sched_plugin.Po \
-	./$(DEPDIR)/slurmctld_plugstack.Po ./$(DEPDIR)/srun_comm.Po \
-	./$(DEPDIR)/state_save.Po ./$(DEPDIR)/statistics.Po \
-	./$(DEPDIR)/step_mgr.Po ./$(DEPDIR)/trigger_mgr.Po
+	./$(DEPDIR)/controller.Po ./$(DEPDIR)/crontab.Po \
+	./$(DEPDIR)/fed_mgr.Po ./$(DEPDIR)/front_end.Po \
+	./$(DEPDIR)/gang.Po ./$(DEPDIR)/groups.Po \
+	./$(DEPDIR)/heartbeat.Po ./$(DEPDIR)/job_mgr.Po \
+	./$(DEPDIR)/job_scheduler.Po ./$(DEPDIR)/job_submit.Po \
+	./$(DEPDIR)/licenses.Po ./$(DEPDIR)/locks.Po \
+	./$(DEPDIR)/node_mgr.Po ./$(DEPDIR)/node_scheduler.Po \
+	./$(DEPDIR)/partition_mgr.Po ./$(DEPDIR)/ping_nodes.Po \
+	./$(DEPDIR)/port_mgr.Po ./$(DEPDIR)/power_save.Po \
+	./$(DEPDIR)/preempt.Po ./$(DEPDIR)/prep_slurmctld.Po \
+	./$(DEPDIR)/proc_req.Po ./$(DEPDIR)/read_config.Po \
+	./$(DEPDIR)/reservation.Po ./$(DEPDIR)/rpc_queue.Po \
+	./$(DEPDIR)/sched_plugin.Po ./$(DEPDIR)/slurmctld_plugstack.Po \
+	./$(DEPDIR)/srun_comm.Po ./$(DEPDIR)/state_save.Po \
+	./$(DEPDIR)/statistics.Po ./$(DEPDIR)/step_mgr.Po \
+	./$(DEPDIR)/trigger_mgr.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -521,6 +522,7 @@ slurmctld_SOURCES = \
 	burst_buffer.c	\
 	burst_buffer.h	\
 	controller.c 	\
+	crontab.c 	\
 	fed_mgr.c 	\
 	fed_mgr.h 	\
 	front_end.c	\
@@ -677,6 +679,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/backup.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/burst_buffer.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/controller.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/crontab.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fed_mgr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/front_end.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gang.Po@am__quote@ # am--include-marker
@@ -840,6 +843,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/backup.Po
 	-rm -f ./$(DEPDIR)/burst_buffer.Po
 	-rm -f ./$(DEPDIR)/controller.Po
+	-rm -f ./$(DEPDIR)/crontab.Po
 	-rm -f ./$(DEPDIR)/fed_mgr.Po
 	-rm -f ./$(DEPDIR)/front_end.Po
 	-rm -f ./$(DEPDIR)/gang.Po
@@ -919,6 +923,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/backup.Po
 	-rm -f ./$(DEPDIR)/burst_buffer.Po
 	-rm -f ./$(DEPDIR)/controller.Po
+	-rm -f ./$(DEPDIR)/crontab.Po
 	-rm -f ./$(DEPDIR)/fed_mgr.Po
 	-rm -f ./$(DEPDIR)/front_end.Po
 	-rm -f ./$(DEPDIR)/gang.Po
