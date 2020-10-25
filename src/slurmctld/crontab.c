@@ -116,6 +116,19 @@ static int _handle_job(void *x, void *y)
 		xassert(job_ptr->details);
 		job_ptr->details->crontab_entry = job->crontab_entry;
 		job->crontab_entry = NULL;
+
+		/*
+		 * Ignore user-provided value since this is not guaranteed
+		 * to be in sync with the bitstring data. Reconstruct,
+		 * even though the reconstructed version will be uglier.
+		 */
+		xfree(job_ptr->details->crontab_entry->cronspec);
+		job_ptr->details->crontab_entry->cronspec =
+			cronspec_from_cron_entry(
+				job_ptr->details->crontab_entry);
+
+		info("Added JobId=%pJ from crontab entry from uid=%u, next start is %lu",
+		     job_ptr, job->user_id, job->begin_time);
 	}
 
 	return 0;
