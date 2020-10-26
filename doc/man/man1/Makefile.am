@@ -9,6 +9,7 @@ man1_MANS = \
 	sbcast.1 \
 	scancel.1 \
 	scontrol.1 \
+	scrontab.1 \
 	sdiag.1	\
 	sinfo.1   \
 	slurm.1 \

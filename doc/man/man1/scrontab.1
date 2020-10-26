@@ -1,0 +1,89 @@
+.TH sview "1" "Slurm Commands" "October 2020" "Slurm Commands"
+
+.SH "NAME"
+.LP
+scrontab \- manage Slurm crontab files
+
+.SH "SYNOPSIS"
+.LP
+scrontab [-u user] [ -e | -l | -r ]
+
+.SH "DESCRIPTION"
+.LP
+scrontab is used to set, edit, and remove a user's Slurm-managed crontab.
+This file can define a number of recurring batch jobs to run on a scheduled
+interval.
+.LP
+Lines must be either comments starting with \#, whitespace, or valid crontab
+entries.
+.LP
+Lines starting with \#SCRON allow options to be defined for the single
+following crontab entry. Options are always reset in between each crontab entry.Options include most of those available to the \fBsbatch\fR command; details
+are available in \fBsbatch\fR(1).
+.LP
+Note that jobs are not guaranteed to execute at the preferred time. Jobs will
+run no more frequently than that requested, but are managed by setting the
+BeginTime field to the next valid iteration, and are then subject to queuing
+delays. The exact behavior will be dependent on the local site configuration.
+
+.SH "OPTIONS"
+
+.TP
+\fB\-e\fR
+Edit the crontab. If a crontab does not exist already, a default example
+(without any defined entries) will be provided in the editor.
+
+.TP
+\fB\-l\fR
+List the crontab. (Prints directly to stdout.)
+
+.TP
+\fB\-r\fR
+Remove the crontab. Any currently running crontab\-defined jobs will continue
+to run but will no longer recur. All other crontab\-defined jobs will be
+cancelled.
+
+.TP
+\fB\-u <\fIuser\fR>\fR
+Edit or view a different user's crontab. Listing is permitted for Operators and
+Admins. Editing/removal is only permitted for root and the \fISlurmUser\fR
+account.
+
+.SH "ENVIRONMENT VARIABLES"
+.TP 20
+\fBVISUAL\fR
+Used as the interactive editor if set.
+
+.TP
+\fBEDITOR\fR
+Used as the interfactive editor if set and \fBVISUAL\fR is not defined.
+
+.TP
+\fBSLURM_CONF\fR
+The location of the Slurm configuration file.
+
+.SH "NOTES"
+
+.TP
+scrontab is only available if \fBScronParameters=enable\fR option has been
+enabled in slurm.conf.
+
+.SH "COPYING"
+Copyright (C) 2020 SchedMD LLC.
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBsbatch\fR(1), \fBsqueue\fR(1), \fBslurm.conf\fR(5)

@@ -81,6 +81,9 @@ HIGHLIGHTS
     node vs configured in slurm.conf will now throw an error only when the node
     state is set to drain. Previously it was done on every node registration,
     those messages were demoted to debug level.
+ -- Added "scrontab", which permits crontab-compatible job scripts to be
+    defined. These scripts will recurr automatically (at most) on the intervals
+    described.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
