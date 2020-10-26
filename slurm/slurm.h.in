@@ -233,6 +233,7 @@ enum job_states {
 #define JOB_RESV_DEL_HOLD 0x00200000 /* Job is hold */
 #define JOB_SIGNALING     0x00400000 /* Outgoing signal is pending */
 #define JOB_STAGE_OUT     0x00800000 /* Staging out data (burst buffer) */
+#define JOB_REQUEUE_CRON  0x01000000 /* This is a cron job. */
 
 #define READY_JOB_FATAL	   -2	/* fatal error */
 #define READY_JOB_ERROR    -1	/* ordinary error */
@@ -1027,7 +1028,7 @@ enum ctx_keys {
 #define GRES_DISABLE_BIND  0x00080000	/* Disable CPU/GRES binding */
 #define JOB_WAS_RUNNING    0x00100000  /* Job was running */
 #define RESET_ACCRUE_TIME  0x00200000   /* Reset the job's accrue time */
-/*                         0x00400000      Unused */
+#define CRON_JOB           0x00400000   /* Job submitted through scrontab */
 #define JOB_MEM_SET        0x00800000	/* Memory limit explicity set by job */
 #define JOB_RESIZED        0x01000000	/* Running job added/removed nodes */
 #define USE_DEFAULT_ACCT   0x02000000	/* Job submitted to default account */
@@ -1441,6 +1442,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 	char *cpus_per_tres;	/* semicolon delimited list of TRES=# values */
+	void *crontab_entry;	/* really cron_entry_t */
 	time_t deadline;	/* deadline */
 	uint32_t delay_boot;	/* delay boot for desired node state */
 	char *dependency;	/* synchronize job execution with other jobs */
@@ -1614,6 +1616,7 @@ typedef struct job_info {
 	uint32_t cpu_freq_max;  /* Maximum cpu frequency  */
 	uint32_t cpu_freq_gov;  /* cpu frequency governor */
 	char *cpus_per_tres;	/* semicolon delimited list of TRES=# values */
+	char *cronspec;		/* cron time specification (scrontab jobs) */
 	time_t deadline;	/* deadline */
 	uint32_t delay_boot;	/* delay boot for desired node state */
 	char *dependency;	/* synchronize job execution with other jobs */
@@ -2844,6 +2847,7 @@ typedef struct {
 				 * contents of scheduler plugin config file */
 	uint16_t sched_time_slice;	/* gang scheduler slice time, secs */
 	char *schedtype;	/* type of scheduler to use */
+	char *scron_params;	/* ScronParameters */
 	char *select_type;	/* type of node selector to use */
 	void *select_conf_key_pairs; /* key-pair list which can be
 				      * listed with slurm_print_key_pairs() */
@@ -4971,6 +4975,25 @@ extern void slurm_print_federation(void *fed);
  *				  slurm_load_federation()
  */
 extern void slurm_destroy_federation_rec(void *fed);
+
+/*****************************************************************************\
+ *      SLURM CRONTAB FUNCTIONS
+\*****************************************************************************/
+
+extern int slurm_request_crontab(uid_t uid, char **crontab,
+				 char **disabled_lines);
+
+typedef struct {
+	char *err_msg;
+	char *failed_lines;
+	uint32_t return_code;
+} crontab_update_response_msg_t;
+
+extern crontab_update_response_msg_t *slurm_update_crontab(uid_t uid, gid_t gid,
+							   char *crontab,
+							   List jobs);
+
+extern int slurm_remove_crontab(uid_t uid, gid_t gid);
 
 #ifdef __cplusplus
 }

@@ -1,0 +1,6 @@
+usage:	scrontab [-u used] { -e | -l | -r }
+		(default operation is edit)
+	-e	(edit user's crontab)
+	-l	(list user's crontab)
+	-r	(delete user's crontab)
+	-v	(increase logging verbosity)

@@ -54,6 +54,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/cron.h"
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
@@ -454,6 +455,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->sched_log_level     = conf->sched_log_level;
 	conf_ptr->sched_time_slice    = conf->sched_time_slice;
 	conf_ptr->schedtype           = xstrdup(conf->schedtype);
+	conf_ptr->scron_params = xstrdup(conf->scron_params);
 	conf_ptr->select_type         = xstrdup(conf->select_type);
 	select_g_get_info_from_plugin(SELECT_CONFIG_INFO, NULL,
 				      &conf_ptr->select_conf_key_pairs);
@@ -586,27 +588,27 @@ extern bool validate_operator(uid_t uid)
 		return false;
 }
 
-static void _set_hostname(slurm_msg_t *msg, job_desc_msg_t *job_desc_msg)
+static void _set_hostname(slurm_msg_t *msg, char **alloc_node)
 {
 	slurm_addr_t addr;
 
-	xfree(job_desc_msg->alloc_node);
-	if ((job_desc_msg->alloc_node = g_slurm_auth_get_host(msg->auth_cred)))
+	xfree(*alloc_node);
+	if ((*alloc_node = g_slurm_auth_get_host(msg->auth_cred)))
 		debug3("%s: Using auth hostname for alloc_node: %s",
-		       __func__, job_desc_msg->alloc_node);
+		       __func__, *alloc_node);
 	else if (msg->conn) {
 		/* use remote host name if persistent connection */
-		job_desc_msg->alloc_node = xstrdup(msg->conn->rem_host);
+		*alloc_node = xstrdup(msg->conn->rem_host);
 		debug3("%s: Using remote hostname for alloc_node: %s",
 		       __func__, msg->conn->rem_host);
 	} else if (msg->conn_fd >= 0 &&
 		   !slurm_get_peer_addr(msg->conn_fd, &addr)) {
 		/* use remote host IP */
-		job_desc_msg->alloc_node = xmalloc(INET6_ADDRSTRLEN);
-		slurm_get_ip_str(&addr, job_desc_msg->alloc_node,
+		*alloc_node = xmalloc(INET6_ADDRSTRLEN);
+		slurm_get_ip_str(&addr, *alloc_node,
 				 INET6_ADDRSTRLEN);
 		debug3("%s: Using requester IP for alloc_node: %s",
-		       __func__, job_desc_msg->alloc_node);
+		       __func__, *alloc_node);
 	} else {
 		error("%s: Unable to determine alloc_node", __func__);
 	}
@@ -1060,7 +1062,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 			break;
 		}
 
-		_set_hostname(msg, job_desc_msg);
+		_set_hostname(msg, &job_desc_msg->alloc_node);
 
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
@@ -1284,7 +1286,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	sched_debug3("Processing RPC: REQUEST_RESOURCE_ALLOCATION from uid=%u",
 		     uid);
 
-	_set_hostname(msg, job_desc_msg);
+	_set_hostname(msg, &job_desc_msg->alloc_node);
 
 	/* do RPC call */
 	if ((job_desc_msg->alloc_node == NULL) ||
@@ -2514,7 +2516,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 				    job_desc_msg, uid, gid)))
 		goto send_reply;
 
-	_set_hostname(msg, job_desc_msg);
+	_set_hostname(msg, &job_desc_msg->alloc_node);
 
 	if ((job_desc_msg->alloc_node == NULL)
 	    ||  (job_desc_msg->alloc_node[0] == '\0')) {
@@ -3542,7 +3544,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		goto send_msg;
 	}
 
-	_set_hostname(msg, job_desc_msg);
+	_set_hostname(msg, &job_desc_msg->alloc_node);
 
 	if ((job_desc_msg->alloc_node == NULL) ||
 	    (job_desc_msg->alloc_node[0] == '\0')) {
@@ -3737,7 +3739,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 			break;
 		}
 
-		_set_hostname(msg, job_desc_msg);
+		_set_hostname(msg, &job_desc_msg->alloc_node);
 
 		if ((job_desc_msg->alloc_node == NULL) ||
 		    (job_desc_msg->alloc_node[0] == '\0')) {
@@ -5973,6 +5975,124 @@ static void _slurm_rpc_set_fs_dampening_factor(slurm_msg_t *msg)
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
+static void _slurm_rpc_request_crontab(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+	int rc = SLURM_SUCCESS;
+	crontab_request_msg_t *req_msg = (crontab_request_msg_t *) msg->data;
+	buf_t *crontab = NULL;
+	char *disabled_lines = NULL;
+	slurm_msg_t response_msg;
+	crontab_response_msg_t resp_msg;
+	slurmctld_lock_t job_read_lock = { .job = READ_LOCK };
+
+	START_TIMER;
+	debug3("Processing RPC details: REQUEST_CRONTAB for uid=%u",
+	       req_msg->uid);
+
+	if (!xstrcasestr(slurm_conf.scron_params, "enable")) {
+		error("%s: scrontab is disabled on this cluster", __func__);
+		slurm_send_rc_msg(msg, SLURM_ERROR);
+		return;
+	}
+
+	lock_slurmctld(job_read_lock);
+
+	if ((req_msg->uid != msg->auth_uid) &&
+	    !validate_operator(msg->auth_uid)) {
+		rc = ESLURM_USER_ID_MISSING;
+	} else {
+		char *file = NULL;
+		xstrfmtcat(file, "%s/crontab/crontab.%u",
+			   slurm_conf.state_save_location, req_msg->uid);
+
+		if (!(crontab = create_mmap_buf(file)))
+			rc = ESLURM_JOB_SCRIPT_MISSING;
+		else {
+			int len = strlen(crontab->head) + 1;
+			disabled_lines = xstrndup(crontab->head + len,
+						  crontab->size - len);
+			/*
+			 * Remove extra trailing command which would be
+			 * parsed as an extraneous 0.
+			 */
+			if (disabled_lines) {
+				len = strlen(disabled_lines) - 1;
+				disabled_lines[len] = '\0';
+			}
+		}
+	}
+
+	unlock_slurmctld(job_read_lock);
+	END_TIMER2(__func__);
+
+	if (rc != SLURM_SUCCESS) {
+		slurm_send_rc_msg(msg, rc);
+	} else {
+		response_init(&response_msg, msg);
+		response_msg.msg_type = RESPONSE_CRONTAB;
+		response_msg.data = &resp_msg;
+		resp_msg.crontab = crontab->head;
+		resp_msg.disabled_lines = disabled_lines;
+		slurm_send_node_msg(msg->conn_fd, &response_msg);
+		free_buf(crontab);
+		xfree(disabled_lines);
+	}
+}
+
+static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
+{
+	DEF_TIMERS;
+	crontab_update_request_msg_t *req_msg =
+		(crontab_update_request_msg_t *) msg->data;
+	slurm_msg_t response_msg;
+	crontab_update_response_msg_t resp_msg;
+	/* probably need to mirror _slurm_rpc_dump_batch_script() */
+	slurmctld_lock_t job_write_lock =
+		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
+
+	START_TIMER;
+	debug3("Processing RPC details: REQUEST_UPDATE_CRONTAB for uid=%u",
+	       req_msg->uid);
+
+	if (!xstrcasestr(slurm_conf.scron_params, "enable")) {
+		error("%s: scrontab is disabled on this cluster", __func__);
+		slurm_send_rc_msg(msg, SLURM_ERROR);
+		return;
+	}
+
+	resp_msg.err_msg = NULL;
+	resp_msg.failed_lines = NULL;
+	resp_msg.return_code = SLURM_SUCCESS;
+
+	lock_slurmctld(job_write_lock);
+
+	if (((req_msg->uid != msg->auth_uid) || (req_msg->gid != gid)) &&
+	    !validate_slurm_user(msg->auth_uid)) {
+		resp_msg.return_code = ESLURM_USER_ID_MISSING;
+	}
+
+	if (!resp_msg.return_code) {
+		char *alloc_node = NULL;
+		_set_hostname(msg, &alloc_node);
+		if (!alloc_node || (alloc_node[0] == '\0'))
+			resp_msg.return_code = ESLURM_INVALID_NODE_NAME;
+		else
+			crontab_submit(req_msg, &resp_msg, alloc_node,
+				       msg->protocol_version);
+		xfree(alloc_node);
+	}
+
+	unlock_slurmctld(job_write_lock);
+	END_TIMER2(__func__);
+
+	response_init(&response_msg, msg);
+	response_msg.msg_type = RESPONSE_UPDATE_CRONTAB;
+	response_msg.data = &resp_msg;
+	slurm_send_node_msg(msg->conn_fd, &response_msg);
+}
+
 /*
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
@@ -6252,6 +6372,12 @@ void slurmctld_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_BURST_BUFFER_STATUS:
 		_slurm_rpc_burst_buffer_status(msg);
+		break;
+	case REQUEST_CRONTAB:
+		_slurm_rpc_request_crontab(msg);
+		break;
+	case REQUEST_UPDATE_CRONTAB:
+		_slurm_rpc_update_crontab(msg);
 		break;
 	default:
 		error("invalid RPC msg_type=%u", msg->msg_type);

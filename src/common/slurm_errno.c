@@ -315,6 +315,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Burst Buffer request invalid"			},
 	{ ESLURM_PRIO_RESET_FAIL,
 	  "Changes to job priority are not persistent, change nice instead" },
+	{ ESLURM_CANNOT_MODIFY_CRON_JOB,
+	  "Cannot modify scrontab jobs through scontrol"	},
 	{ ESLURM_INVALID_MCS_LABEL,
 	  "Invalid mcs_label specified"				},
 	{ ESLURM_BURST_BUFFER_WAIT,

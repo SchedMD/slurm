@@ -37,4 +37,16 @@
 #ifndef _SCRONTAB_H_
 #define _SCRONTAB_H_
 
+#include "src/common/cron.h"
+#include "src/common/slurm_opt.h"
+
+extern slurm_opt_t opt;
+
+extern char **convert_file_to_line_array(char *file, int *line_count);
+extern char *next_line(const void *buf, int size, void **state);
+extern int parse_scron_line(char *line, int lineno);
+extern cron_entry_t *cronspec_to_bitstring(char *pos);
+
+extern void fill_job_desc_from_opts(job_desc_msg_t *desc);
+
 #endif

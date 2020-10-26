@@ -44,6 +44,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "src/common/cron.h"
 #include "src/common/forward.h"
 #include "src/common/job_options.h"
 #include "src/common/log.h"
@@ -1049,6 +1050,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->comment);
 		xfree(msg->cpu_bind);
 		xfree(msg->cpus_per_tres);
+		free_cron_entry(msg->crontab_entry);
 		xfree(msg->dependency);
 		env_array_free(msg->environment);
 		msg->environment = NULL;
@@ -2844,6 +2846,8 @@ extern char *job_state_string(uint32_t inx)
 		return "CONFIGURING";
 	if (inx & JOB_RESIZING)
 		return "RESIZING";
+	if (inx & JOB_REQUEUE_CRON)
+		return "REQUEUED_CRON";
 	if (inx & JOB_REQUEUE)
 		return "REQUEUED";
 	if (inx & JOB_REQUEUE_FED)
@@ -2903,6 +2907,8 @@ extern char *job_state_string_compact(uint32_t inx)
 		return "CF";
 	if (inx & JOB_RESIZING)
 		return "RS";
+	if (inx & JOB_REQUEUE_CRON)
+		return "RC";
 	if (inx & JOB_REQUEUE)
 		return "RQ";
 	if (inx & JOB_REQUEUE_FED)
@@ -3021,6 +3027,8 @@ extern char *job_state_string_complete(uint32_t state)
 		xstrcat(state_str, ",RECONFIG_FAIL");
 	if (state & JOB_RESIZING)
 		xstrcat(state_str, ",RESIZING");
+	if (state & JOB_REQUEUE_CRON)
+		xstrcat(state_str, ",REQUEUED_CRON");
 	if (state & JOB_REQUEUE)
 		xstrcat(state_str, ",REQUEUED");
 	if (state & JOB_REQUEUE_FED)
@@ -3069,6 +3077,8 @@ extern uint32_t job_state_num(const char *state_name)
 		return JOB_CONFIGURING;
 	if (_job_name_test(JOB_RESIZING, state_name))
 		return JOB_RESIZING;
+	if (_job_name_test(JOB_REQUEUE_CRON, state_name))
+		return JOB_REQUEUE_CRON;
 	if (_job_name_test(JOB_REQUEUE, state_name))
 		return JOB_REQUEUE;
 	if (_job_name_test(JOB_REQUEUE_FED, state_name))
@@ -4800,6 +4810,46 @@ extern void slurm_free_bb_status_resp_msg(bb_status_resp_msg_t *msg)
 	}
 }
 
+extern void slurm_free_crontab_request_msg(crontab_request_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg);
+}
+
+extern void slurm_free_crontab_response_msg(crontab_response_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->crontab);
+	xfree(msg->disabled_lines);
+	xfree(msg);
+}
+
+extern void slurm_free_crontab_update_request_msg(
+	crontab_update_request_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->crontab);
+	FREE_NULL_LIST(msg->jobs);
+	xfree(msg);
+}
+
+extern void slurm_free_crontab_update_response_msg(
+	crontab_update_response_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->err_msg);
+	xfree(msg->failed_lines);
+	xfree(msg);
+}
+
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 {
 	if (!data)
@@ -5171,6 +5221,18 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case RESPONSE_BURST_BUFFER_STATUS:
 		slurm_free_bb_status_resp_msg(data);
 		break;
+	case REQUEST_CRONTAB:
+		slurm_free_crontab_request_msg(data);
+		break;
+	case RESPONSE_CRONTAB:
+		slurm_free_crontab_response_msg(data);
+		break;
+	case REQUEST_UPDATE_CRONTAB:
+		slurm_free_crontab_update_request_msg(data);
+		break;
+	case RESPONSE_UPDATE_CRONTAB:
+		slurm_free_crontab_update_response_msg(data);
+		break;
 	default:
 		error("invalid type trying to be freed %u", type);
 		break;
@@ -5435,6 +5497,15 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_BURST_BUFFER_STATUS";
 	case RESPONSE_BURST_BUFFER_STATUS:
 		return "RESPONSE_BURST_BUFFER_STATUS";
+
+	case REQUEST_CRONTAB:					/* 2200 */
+		return "REQUEST_CRONTAB";
+	case RESPONSE_CRONTAB:
+		return "RESPONSE_CRONTAB";
+	case REQUEST_UPDATE_CRONTAB:
+		return "REQUEST_UPDATE_CRONTAB";
+	case RESPONSE_UPDATE_CRONTAB:
+		return "RESPONSE_UPDATE_CRONTAB";
 
 	case REQUEST_UPDATE_JOB:				/* 3001 */
 		return "REQUEST_UPDATE_JOB";

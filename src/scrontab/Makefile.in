@@ -14,7 +14,6 @@
 
 @SET_MAKE@
 
-# Makefile for scrontab
 
 VPATH = @srcdir@
 am__is_gnu_make = { \
@@ -150,13 +149,19 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_scrontab_OBJECTS = scrontab.$(OBJEXT)
-scrontab_OBJECTS = $(am_scrontab_OBJECTS)
-am__DEPENDENCIES_1 =
+LTLIBRARIES = $(noinst_LTLIBRARIES)
+libscrontab_ref_la_DEPENDENCIES = libscrontab_ref.lo
+am_libscrontab_ref_la_OBJECTS =
+libscrontab_ref_la_OBJECTS = $(am_libscrontab_ref_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+am__objects_1 = opt.$(OBJEXT) parse.$(OBJEXT) scrontab.$(OBJEXT)
+am_scrontab_OBJECTS = $(am__objects_1)
+scrontab_OBJECTS = $(am_scrontab_OBJECTS)
+am__DEPENDENCIES_1 =
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 scrontab_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(scrontab_LDFLAGS) $(LDFLAGS) -o $@
@@ -175,7 +180,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/scrontab.Po
+am__depfiles_remade = ./$(DEPDIR)/opt.Po ./$(DEPDIR)/parse.Po \
+	./$(DEPDIR)/scrontab.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -195,7 +201,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(scrontab_SOURCES)
+SOURCES = $(libscrontab_ref_la_SOURCES) $(scrontab_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -476,14 +482,27 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-AM_CPPFLAGS = -I$(top_srcdir)
-scrontab_SOURCES = \
-	scrontab.c	\
+CLEANFILES = core.* *.bino
+REF = default_crontab.txt usage.txt
+SRCS = \
+	opt.c \
+	parse.c \
+	scrontab.c \
 	scrontab.h
 
-scrontab_LDADD = $(LIB_SLURM) $(DL_LIBS)
-scrontab_DEPENDENCIES = $(LIB_SLURM_BUILD)
+AM_CPPFLAGS = -I$(top_srcdir)
+BIN_REF = $(REF:.txt=.bino)
+noinst_LTLIBRARIES = libscrontab_ref.la
+libscrontab_ref_la_SOURCES = 
+scrontab_SOURCES = $(SRCS)
+convenience_libs = $(LIB_SLURM) $(DL_LIBS)
+scrontab_DEPENDENCIES = $(LIB_SLURM_BUILD) libscrontab_ref.la
 scrontab_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+libscrontab_ref_la_LIBADD = libscrontab_ref.lo
+scrontab_LDADD = \
+	$(convenience_libs) \
+	libscrontab_ref.la
+
 all: all-am
 
 .SUFFIXES:
@@ -567,6 +586,20 @@ clean-binPROGRAMS:
 	echo " rm -f" $$list; \
 	rm -f $$list
 
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; \
+	locs=`for p in $$list; do echo $$p; done | \
+	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
+	      sort -u`; \
+	test -z "$$locs" || { \
+	  echo rm -f $${locs}; \
+	  rm -f $${locs}; \
+	}
+
+libscrontab_ref.la: $(libscrontab_ref_la_OBJECTS) $(libscrontab_ref_la_DEPENDENCIES) $(EXTRA_libscrontab_ref_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(LINK)  $(libscrontab_ref_la_OBJECTS) $(libscrontab_ref_la_LIBADD) $(LIBS)
+
 scrontab$(EXEEXT): $(scrontab_OBJECTS) $(scrontab_DEPENDENCIES) $(EXTRA_scrontab_DEPENDENCIES) 
 	@rm -f scrontab$(EXEEXT)
 	$(AM_V_CCLD)$(scrontab_LINK) $(scrontab_OBJECTS) $(scrontab_LDADD) $(LIBS)
@@ -577,6 +610,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opt.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scrontab.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -665,7 +700,7 @@ distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS)
+all-am: Makefile $(PROGRAMS) $(LTLIBRARIES)
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -692,6 +727,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -702,10 +738,13 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic clean-libtool \
+	clean-noinstLTLIBRARIES mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/scrontab.Po
+		-rm -f ./$(DEPDIR)/opt.Po
+	-rm -f ./$(DEPDIR)/parse.Po
+	-rm -f ./$(DEPDIR)/scrontab.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -751,7 +790,9 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/scrontab.Po
+		-rm -f ./$(DEPDIR)/opt.Po
+	-rm -f ./$(DEPDIR)/parse.Po
+	-rm -f ./$(DEPDIR)/scrontab.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -773,24 +814,43 @@ uninstall-am: uninstall-binPROGRAMS
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-am clean \
-	clean-binPROGRAMS clean-generic clean-libtool cscopelist-am \
-	ctags ctags-am distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags dvi dvi-am html html-am info \
-	info-am install install-am install-binPROGRAMS install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am uninstall-binPROGRAMS
+	clean-binPROGRAMS clean-generic clean-libtool \
+	clean-noinstLTLIBRARIES cscopelist-am ctags ctags-am distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags dvi dvi-am html html-am info info-am install \
+	install-am install-binPROGRAMS install-data install-data-am \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-html install-html-am install-info install-info-am \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
+	uninstall-am uninstall-binPROGRAMS
 
 .PRECIOUS: Makefile
 
 
+%.bino: %.txt
+	$(AM_V_GEN)pushd $(abs_srcdir); $(LD) -r -o "$(abs_builddir)/$*.bino" -z noexecstack --format=binary "$(notdir $<)"; popd
+	$(AM_V_at)@OBJCOPY@ --rename-section .data=.rodata,alloc,load,readonly,data,contents "$*.bino"
+
+libscrontab_ref.lo: $(BIN_REF)
+	$(AM_V_at)echo "# $@ - a libtool object file" >"$@"
+	$(AM_V_at)echo "# Generated by $(shell @LIBTOOL@ --version | head -n 1)" >>"$@"
+	$(AM_V_at)echo "#" >>"$@"
+	$(AM_V_at)echo "# Please DO NOT delete this file!" >>"$@"
+	$(AM_V_at)echo "# It is necessary for linking the library." >>"$@"
+	$(AM_V_at)echo >>"$@"
+	$(AM_V_at)echo "# Name of the PIC object." >>"$@"
+	$(AM_V_at)echo "pic_object='$(BIN_REF)'" >>"$@"
+	$(AM_V_at)echo >>"$@"
+	$(AM_V_at)echo "# Name of the non-PIC object" >>"$@"
+	$(AM_V_at)echo "non_pic_object=''" >>"$@"
+	$(AM_V_at)echo >>"$@"
+
 force:
-$(scrontab_DEPENDENCIES) : force
+$(convenience_libs) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

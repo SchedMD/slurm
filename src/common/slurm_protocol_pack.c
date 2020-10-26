@@ -45,6 +45,7 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
+#include "src/common/cron.h"
 #include "src/common/forward.h"
 #include "src/common/gres.h"
 #include "src/common/job_options.h"
@@ -3760,7 +3761,193 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 
 	job->ntasks_per_node = NO_VAL16;
 
-	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpack32(&job->array_job_id, buffer);
+		safe_unpack32(&job->array_task_id, buffer);
+		/* The array_task_str value is stored in slurmctld and passed
+		 * here in hex format for best scalability. Its format needs
+		 * to be converted to human readable form by the client. */
+		safe_unpackstr_xmalloc(&job->array_task_str, &uint32_tmp,
+				       buffer);
+		safe_unpack32(&job->array_max_tasks, buffer);
+		_xlate_task_str(job);
+
+		safe_unpack32(&job->assoc_id, buffer);
+		safe_unpack32(&job->delay_boot, buffer);
+		safe_unpack32(&job->job_id, buffer);
+		safe_unpack32(&job->user_id, buffer);
+		safe_unpack32(&job->group_id, buffer);
+		safe_unpack32(&job->het_job_id, buffer);
+		safe_unpackstr_xmalloc(&job->het_job_id_set, &uint32_tmp,
+				       buffer);
+		safe_unpack32(&job->het_job_offset, buffer);
+		safe_unpack32(&job->profile, buffer);
+
+		safe_unpack32(&job->job_state, buffer);
+		safe_unpack16(&job->batch_flag, buffer);
+		safe_unpack16(&job->state_reason, buffer);
+		safe_unpack8 (&job->power_flags, buffer);
+		safe_unpack8 (&job->reboot, buffer);
+		safe_unpack16(&job->restart_cnt, buffer);
+		safe_unpack16(&job->show_flags, buffer);
+		safe_unpack_time(&job->deadline, buffer);
+
+		safe_unpack32(&job->alloc_sid, buffer);
+		safe_unpack32(&job->time_limit, buffer);
+		safe_unpack32(&job->time_min, buffer);
+
+		safe_unpack32(&job->nice, buffer);
+
+		safe_unpack_time(&job->submit_time, buffer);
+		safe_unpack_time(&job->eligible_time, buffer);
+		safe_unpack_time(&job->accrue_time, buffer);
+		safe_unpack_time(&job->start_time, buffer);
+		safe_unpack_time(&job->end_time, buffer);
+		safe_unpack_time(&job->suspend_time, buffer);
+		safe_unpack_time(&job->pre_sus_time, buffer);
+		safe_unpack_time(&job->resize_time, buffer);
+		safe_unpack_time(&job->last_sched_eval, buffer);
+		safe_unpack_time(&job->preempt_time, buffer);
+		safe_unpack32(&job->priority, buffer);
+		safe_unpackdouble(&job->billable_tres, buffer);
+		safe_unpackstr_xmalloc(&job->cluster, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->nodes, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->sched_nodes, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->partition, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->account, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->admin_comment, &uint32_tmp,buffer);
+		safe_unpack32(&job->site_factor, buffer);
+		safe_unpackstr_xmalloc(&job->network, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->comment, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->batch_features, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&job->batch_host, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->burst_buffer, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->burst_buffer_state, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&job->system_comment,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->qos, &uint32_tmp, buffer);
+		safe_unpack_time(&job->preemptable_time, buffer);
+		safe_unpackstr_xmalloc(&job->licenses, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->state_desc, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->resv_name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->mcs_label, &uint32_tmp, buffer);
+
+		safe_unpack32(&job->exit_code, buffer);
+		safe_unpack32(&job->derived_ec, buffer);
+		safe_unpackstr_xmalloc(&job->gres_total, &uint32_tmp, buffer);
+		if (unpack_job_resources(&job->job_resrcs, buffer,
+					 protocol_version))
+			goto unpack_error;
+		safe_unpackstr_array(&job->gres_detail_str,
+				     &job->gres_detail_cnt, buffer);
+
+		safe_unpackstr_xmalloc(&job->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->user_name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->wckey, &uint32_tmp, buffer);
+		safe_unpack32(&job->req_switch, buffer);
+		safe_unpack32(&job->wait4switch, buffer);
+
+		safe_unpackstr_xmalloc(&job->alloc_node, &uint32_tmp, buffer);
+
+		unpack_bit_str_hex_as_inx(&job->node_inx, buffer);
+
+		if (select_g_select_jobinfo_unpack(&job->select_jobinfo,
+						   buffer, protocol_version))
+			goto unpack_error;
+
+		/*** unpack default job details ***/
+		safe_unpackstr_xmalloc(&job->features, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->cluster_features, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&job->work_dir, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->dependency, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->command, &uint32_tmp, buffer);
+
+		safe_unpack32(&job->num_cpus, buffer);
+		safe_unpack32(&job->max_cpus, buffer);
+		safe_unpack32(&job->num_nodes, buffer);
+		safe_unpack32(&job->max_nodes, buffer);
+		safe_unpack16(&job->requeue, buffer);
+		safe_unpack16(&job->ntasks_per_node, buffer);
+		safe_unpack32(&job->num_tasks, buffer);
+
+		safe_unpack16(&job->shared, buffer);
+		safe_unpack32(&job->cpu_freq_min, buffer);
+		safe_unpack32(&job->cpu_freq_max, buffer);
+		safe_unpack32(&job->cpu_freq_gov, buffer);
+
+		safe_unpackstr_xmalloc(&job->cronspec, &uint32_tmp, buffer);
+
+		/*** unpack pending job details ***/
+		safe_unpack16(&job->contiguous, buffer);
+		safe_unpack16(&job->core_spec, buffer);
+		safe_unpack16(&job->cpus_per_task, buffer);
+		safe_unpack16(&job->pn_min_cpus, buffer);
+
+		safe_unpack64(&job->pn_min_memory, buffer);
+		safe_unpack32(&job->pn_min_tmp_disk, buffer);
+		safe_unpackstr_xmalloc(&job->req_nodes, &uint32_tmp, buffer);
+
+		unpack_bit_str_hex_as_inx(&job->req_node_inx, buffer);
+
+		safe_unpackstr_xmalloc(&job->exc_nodes, &uint32_tmp, buffer);
+
+		unpack_bit_str_hex_as_inx(&job->exc_node_inx, buffer);
+
+		safe_unpackstr_xmalloc(&job->std_err, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->std_in, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->std_out, &uint32_tmp, buffer);
+
+		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
+			goto unpack_error;
+		if (mc_ptr) {
+			job->boards_per_node = mc_ptr->boards_per_node;
+			job->sockets_per_board = mc_ptr->sockets_per_board;
+			job->sockets_per_node = mc_ptr->sockets_per_node;
+			job->cores_per_socket = mc_ptr->cores_per_socket;
+			job->threads_per_core = mc_ptr->threads_per_core;
+			job->ntasks_per_board = mc_ptr->ntasks_per_board;
+			job->ntasks_per_socket = mc_ptr->ntasks_per_socket;
+			job->ntasks_per_core = mc_ptr->ntasks_per_core;
+			xfree(mc_ptr);
+		}
+		safe_unpack32(&job->bitflags, buffer);
+		safe_unpackstr_xmalloc(&job->tres_alloc_str, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&job->tres_req_str, &uint32_tmp, buffer);
+		safe_unpack16(&job->start_protocol_ver, buffer);
+
+		safe_unpackstr_xmalloc(&job->fed_origin_str, &uint32_tmp,
+				       buffer);
+		safe_unpack64(&job->fed_siblings_active, buffer);
+		safe_unpackstr_xmalloc(&job->fed_siblings_active_str,
+				       &uint32_tmp, buffer);
+		safe_unpack64(&job->fed_siblings_viable, buffer);
+		safe_unpackstr_xmalloc(&job->fed_siblings_viable_str,
+				       &uint32_tmp, buffer);
+
+		safe_unpackstr_xmalloc(&job->cpus_per_tres, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&job->mem_per_tres, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&job->tres_bind, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&job->tres_freq, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&job->tres_per_job, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&job->tres_per_node, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&job->tres_per_socket, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&job->tres_per_task, &uint32_tmp,
+				       buffer);
+
+		safe_unpack16(&job->mail_type, buffer);
+		safe_unpackstr_xmalloc(&job->mail_user, &uint32_tmp, buffer);
+	} else if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
 		/* The array_task_str value is stored in slurmctld and passed
@@ -4381,6 +4568,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer,
 		pack16(build_ptr->sched_log_level, buffer);
 		pack16(build_ptr->sched_time_slice, buffer);
 		packstr(build_ptr->schedtype, buffer);
+		packstr(build_ptr->scron_params, buffer);
 		packstr(build_ptr->select_type, buffer);
 
 		pack_key_pair_list(build_ptr->select_conf_key_pairs,
@@ -5342,6 +5530,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->sched_log_level, buffer);
 		safe_unpack16(&build_ptr->sched_time_slice, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->schedtype,
+		                       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->scron_params,
 		                       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->select_type,
 		                       &uint32_tmp, buffer);
@@ -6756,6 +6946,8 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer,
 		packstr(job_desc_ptr->tres_per_node, buffer);
 		packstr(job_desc_ptr->tres_per_socket, buffer);
 		packstr(job_desc_ptr->tres_per_task, buffer);
+		pack_cron_entry(job_desc_ptr->crontab_entry, protocol_version,
+				buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(job_desc_ptr->site_factor, buffer);
 		packstr(job_desc_ptr->batch_features, buffer);
@@ -7098,6 +7290,9 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->tres_per_task,
 				       &uint32_tmp, buffer);
+		if (unpack_cron_entry(&job_desc_ptr->crontab_entry,
+				      protocol_version, buffer))
+			goto unpack_error;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		char *temp_str;
 		uint16_t uint16_tmp;
@@ -12359,6 +12554,133 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_crontab_request_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	crontab_request_msg_t *msg = (crontab_request_msg_t *) smsg->data;
+
+	if (smsg->protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		pack32(msg->uid, buffer);
+	}
+}
+
+static int _unpack_crontab_request_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	crontab_request_msg_t *msg = xmalloc(sizeof(*msg));
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->uid, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_crontab_request_msg(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_crontab_response_msg(const slurm_msg_t *smsg, buf_t *buffer)
+{
+	crontab_response_msg_t *msg = (crontab_response_msg_t *) smsg->data;
+
+	if (smsg->protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		packstr(msg->crontab, buffer);
+		packstr(msg->disabled_lines, buffer);
+	}
+}
+
+static int _unpack_crontab_response_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	uint32_t uint32_tmp;
+	crontab_response_msg_t *msg = xmalloc(sizeof(*msg));
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&msg->crontab, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->disabled_lines, &uint32_tmp,
+				       buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_crontab_response_msg(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_crontab_update_request_msg(const slurm_msg_t *smsg,
+					     buf_t *buffer)
+{
+	crontab_update_request_msg_t *msg =
+		(crontab_update_request_msg_t *) smsg->data;
+
+	if (smsg->protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		packstr(msg->crontab, buffer);
+		_pack_job_desc_list_msg(msg->jobs, buffer,
+					smsg->protocol_version);
+		pack32(msg->uid, buffer);
+		pack32(msg->gid, buffer);
+	}
+}
+
+static int _unpack_crontab_update_request_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	uint32_t uint32_tmp;
+	crontab_update_request_msg_t *msg = xmalloc(sizeof(*msg));
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&msg->crontab, &uint32_tmp, buffer);
+		if (_unpack_job_desc_list_msg(&msg->jobs, buffer,
+					      smsg->protocol_version))
+			goto unpack_error;
+		safe_unpack32(&msg->uid, buffer);
+		safe_unpack32(&msg->gid, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_crontab_update_request_msg(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_crontab_update_response_msg(const slurm_msg_t *smsg,
+					      buf_t *buffer)
+{
+	crontab_update_response_msg_t *msg =
+		(crontab_update_response_msg_t *) smsg->data;
+
+	if (smsg->protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		packstr(msg->err_msg, buffer);
+		packstr(msg->failed_lines, buffer);
+		pack32(msg->return_code, buffer);
+	}
+}
+
+static int _unpack_crontab_update_response_msg(slurm_msg_t *smsg, buf_t *buffer)
+{
+	uint32_t uint32_tmp;
+	crontab_update_response_msg_t *msg = xmalloc(sizeof(*msg));
+	smsg->data = msg;
+
+	if (smsg->protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&msg->err_msg, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->failed_lines, &uint32_tmp, buffer);
+		safe_unpack32(&msg->return_code, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_crontab_update_response_msg(msg);
+	smsg->data = NULL;
+	return SLURM_ERROR;
+}
+
 /* pack_msg
  * packs a generic slurm protocol message body
  * IN msg - the body structure to pack (note: includes message type)
@@ -12982,6 +13304,18 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case RESPONSE_BURST_BUFFER_STATUS:
 		_pack_bb_status_resp_msg((bb_status_resp_msg_t *)(msg->data),
 					 buffer, msg->protocol_version);
+		break;
+	case REQUEST_CRONTAB:
+		_pack_crontab_request_msg(msg, buffer);
+		break;
+	case RESPONSE_CRONTAB:
+		_pack_crontab_response_msg(msg, buffer);
+		break;
+	case REQUEST_UPDATE_CRONTAB:
+		_pack_crontab_update_request_msg(msg, buffer);
+		break;
+	case RESPONSE_UPDATE_CRONTAB:
+		_pack_crontab_update_response_msg(msg, buffer);
 		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
@@ -13673,6 +14007,18 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_bb_status_resp_msg(
 			(bb_status_resp_msg_t **)&(msg->data), buffer,
 			msg->protocol_version);
+		break;
+	case REQUEST_CRONTAB:
+		rc = _unpack_crontab_request_msg(msg, buffer);
+		break;
+	case RESPONSE_CRONTAB:
+		rc = _unpack_crontab_response_msg(msg, buffer);
+		break;
+	case REQUEST_UPDATE_CRONTAB:
+		rc = _unpack_crontab_update_request_msg(msg, buffer);
+		break;
+	case RESPONSE_UPDATE_CRONTAB:
+		rc = _unpack_crontab_update_response_msg(msg, buffer);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);

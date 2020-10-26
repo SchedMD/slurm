@@ -53,6 +53,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/bitstring.h"
+#include "src/common/cron.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -508,8 +509,7 @@ typedef struct job_feature {
 #define WHOLE_NODE_USER		0x02
 #define WHOLE_NODE_MCS		0x03
 
-/* job_details - specification of a job's constraints,
- * can be purged after initiation */
+/* job_details - specification of a job's constraints */
 struct job_details {
 	uint32_t magic;			/* magic cookie for data integrity */
 					/* DO NOT ALPHABETIZE */
@@ -536,6 +536,8 @@ struct job_details {
 	uint32_t cpu_freq_gov;  	/* cpu frequency governor */
 	uint16_t cpus_per_task;		/* number of processors required for
 					 * each task */
+	cron_entry_t *crontab_entry;	/* crontab entry (job submitted through
+					 * scrontab) */
 	uint16_t orig_cpus_per_task;	/* requested value of cpus_per_task */
 	List depend_list;		/* list of job_ptr:state pairs */
 	char *dependency;		/* wait for other jobs */
@@ -2788,5 +2790,15 @@ extern void set_node_comm_name(node_record_t *node_ptr, char *comm_name,
  * representation of the file will be NUL terminated for us already.
  */
 extern int write_data_to_file(char *file_name, char *data);
+
+/*
+ * Update a user's crontab entry, and submit new jobs as required.
+ * Will mark existing crontab-submitted jobs as complete.
+ */
+extern void crontab_submit(crontab_update_request_msg_t *req_msg,
+			   crontab_update_response_msg_t *response,
+			   char *alloc_node, uint16_t protocol_version);
+
+extern void crontab_add_disabled_lines(uid_t uid, int line_start, int line_end);
 
 #endif /* !_HAVE_SLURMCTLD_H */
