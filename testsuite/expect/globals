@@ -252,7 +252,7 @@ cset testsuite_shared_dir "[$bin_pwd]"
 
 # Testsuite log variables
 cset testsuite_log_level $LOG_LEVEL_DEBUG
-cset testsuite_log_format "\[%{timestamp}s.%{msecs}03d] \(%{filename}s:%{lineno}d) %{loglevel}-7s %{message}s"
+cset testsuite_log_format "\[%{timestamp}s.%{msecs}03d] %{loglevel}-7s %{message}s \(%{backtrace}s)"
 cset testsuite_time_format "%Y-%m-%d %H:%M:%S"
 
 # Default to using color if writing to a terminal and not if writing to a file
@@ -503,22 +503,30 @@ proc dict_getdef {D args} {
 ################################################################
 
 proc _line_trace {} {
-	set line_trace ""
+	set line_trace  ""
+	set first_entry true
 	for {set f [expr [info frame] - 3]} {$f >= 1} {incr f -1} {
 		set frame_dict [info frame $f]
-		if [dict exists $frame_dict proc] {
-			set proc [namespace tail [dict get $frame_dict proc]]
-			if {$proc ne ""} {
-				append line_trace "$proc\@"
+		if [dict exists $frame_dict file] {
+			if [regexp uplevel [dict get $frame_dict cmd]] {
+				continue
+			}
+			if {$first_entry} {
+				set first_entry false
+			} else {
+				append line_trace ","
+			}
+			if [dict exists $frame_dict proc] {
+				set proc [namespace tail [dict get $frame_dict proc]]
+				if {$proc ne ""} {
+					append line_trace "$proc\@"
+				}
+			}
+			append line_trace [file tail [dict get $frame_dict file]]
+			if [dict exists $frame_dict line] {
+				append line_trace ":[dict get $frame_dict line]"
 			}
 		}
-		if [dict exists $frame_dict file] {
-			append line_trace [file tail [dict get $frame_dict file]]
-		}
-		if [dict exists $frame_dict line] {
-			append line_trace ":[dict get $frame_dict line]"
-		}
-		if {$f > 1} { append line_trace "," }
 	}
 	return $line_trace
 }
