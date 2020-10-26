@@ -120,6 +120,7 @@ documents those changes that are of interest to users and administrators.
  -- Change "scontrol reboot ASAP" to use next_state=resume logic.
  -- Exclude HetJobs from GANG scheduling operations.
  -- Add scrontab as a new command.
+ -- Enable -lnodes=#:gpus=# in #PBS/qsub -l nodes syntax.
 
 * Changes in Slurm 20.02.6
 ==========================
