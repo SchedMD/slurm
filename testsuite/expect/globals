@@ -1116,6 +1116,8 @@ proc kill_srun {  } {
 #	condition check occur every poll interval until a timeout is reached.
 #
 # OPTIONS
+#	-fail
+#		abort the test with failure if the condition is not met
 #	-timeout <float_number>
 #		time in seconds to wait for the command to complete before
 #		timing out (default is 60.0)
@@ -1136,10 +1138,12 @@ proc kill_srun {  } {
 ################################################################
 
 proc wait_for args {
+	set fatal         false
 	set timeout       60
 	set poll_interval 1
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
+			-fail   {set fatal true; set args [lrange $args 1 end]}
 			-time*  {set args [lassign $args - timeout]}
 			-poll*  {set args [lassign $args - poll_interval]}
 			-*      {fail "Unknown option: [lindex $args 0]"}
@@ -1178,8 +1182,13 @@ proc wait_for args {
 		set now [format "%.3f" [expr [clock milliseconds] / 1000.000]]
 		log_trace "Checking whether the current time ([clock format [expr int($now)] -format %Y-%m-%dT%X].[lindex [split $now '.'] 1]) is greater than the start time plus the timeout ([clock format [expr int($start_time + $timeout)] -format %Y-%m-%dT%X].[lindex [split [expr $start_time + $timeout] '.'] 1])"
 		if {$now > $start_time + $timeout} {
-			log_warn "Condition ($condition) did not occur before timeout ($timeout) seconds"
-			return $::RETURN_TIMEOUT
+			set message "Condition ($condition) did not occur before timeout ($timeout) seconds"
+			if {$fatal} {
+				fail $message
+			} else {
+				log_warn $message
+				return $::RETURN_TIMEOUT
+			}
 		}
 	}
 }
