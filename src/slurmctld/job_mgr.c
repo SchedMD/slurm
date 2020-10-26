@@ -15652,6 +15652,7 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 
 	if (!IS_JOB_RESIZING(job_ptr) &&
 	    !IS_JOB_PENDING(job_ptr)  &&
+	    !IS_JOB_REVOKED(job_ptr)  &&
 	    ((job_ptr->array_task_id == NO_VAL) ||
 	     (job_ptr->mail_type & MAIL_ARRAY_TASKS) ||
 	     (arr_finished = test_job_array_finished(job_ptr->array_job_id)))) {
