@@ -90,6 +90,7 @@ function displayfile()
    "# Put this file on all nodes of your cluster.<br>" +
    "# See the slurm.conf man page for more information.<br>" +
    "#<br>" +
+   get_field("ClusterName",document.config.cluster_name) + "<br>" +
    "SlurmctldHost=" + document.config.control_machine.value + "<br>" +
    get_field("SlurmctldHost",document.config.backup_controller) + "<br>" +
    "# <br>" +
@@ -200,7 +201,6 @@ function displayfile()
    "AccountingStorageType=accounting_storage/" + get_radio_value(document.config.accounting_storage_type) + "<br>" +
    get_field("AccountingStorageUser",document.config.accounting_storage_user) + "<br>" +
    get_field("AccountingStoreFlags",document.config.acctng_store_flags) + "<br>" +
-   get_field("ClusterName",document.config.cluster_name) + "<br>" +
    "#DebugFlags= <br>" +
    get_field("JobCompHost",document.config.job_comp_host) + "<br>" +
    get_field("JobCompLoc",document.config.job_comp_loc) + "<br>" +
@@ -302,6 +302,12 @@ as <I>slurm.conf</I> for use by Slurm.
 
 <P>For more information about Slurm, see
 <A HREF="https://slurm.schedmd.com/slurm.html">https://slurm.schedmd.com/slurm.html</A>
+
+<h2>Cluster Name</h2>
+<input type="text" name="cluster_name" value="cluster"> <b>ClusterName</b>:
+The name of your cluster. Using different names for each of your clusters is
+important when usign a single database to record information from multiple
+Slurm-managed clusters.
 
 <H2>Control Machines</H2>
 Define the hostname of the computer on which the Slurm controller and
@@ -653,11 +659,6 @@ would provide cluster-wide authentication only).<br>
 Comma separated list.  Options are 'job_comment' - store the job comment field
 in the database, 'job_script' - store the job batch script in the database,
 'job_env' - store a batch job's env in the database.<br>
-<input type="text" name="cluster_name" value="cluster"> <B>ClusterName</B>:
-Name to be recorded in database for jobs from this cluster.
-This is important if a single database is used to record information
-from multiple Slurm-managed clusters.<br>
-
 <P>
 
 <H2>Process ID Logging</H2>
