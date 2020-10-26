@@ -764,6 +764,7 @@ static void *_agent(void *x)
 	DEF_TIMERS;
 
 	list_req.msg_type = DBD_SEND_MULT_MSG;
+	list_req.conn = slurmdbd_conn;
 	list_req.data = &list_msg;
 	memset(&list_msg, 0, sizeof(dbd_list_msg_t));
 
