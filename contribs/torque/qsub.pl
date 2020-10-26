@@ -471,25 +471,24 @@ sub parse_resource_list {
 		   );
 	my @keys = keys(%opt);
 
-#	The select option uses a ":" separator rather than ","
-#	This wrapper currently does not support multiple select options
+	foreach my $item (split(',', $rl)) {
+		# The select option uses a ":" separator rather than ","
+		# This wrapper currently doesn't support multiple select options
+		my %parts;
+		if ($item =~ m/select=/g) {
+			# Split key,value pairs into hash
+			%parts = split(/[=:]/, $item);
+		} else {
+			%parts = split(/=/, $item, 2);
+		}
 
-#	Protect the colons used to separate elements in walltime=hh:mm:ss.
-#	Convert to NNhNNmNNs format.
-	$rl =~ s/(walltime|h_rt)=(\d{1,2}):(\d{2}):(\d{2})/$1=$2h$3m$4s/;
-
-	$rl =~ s/:/,/g;
-
-	foreach my $key (@keys) {
-		#print "$rl\n";
-		($opt{$key}) = $rl =~ m/$key=([\w:\+=+]+)/;
+		# Merge into opt hash -- overriding values.
+		@opt{keys(%parts)} = values(%parts);
 	}
 
 	$opt{walltime} = $opt{h_rt} if ($opt{h_rt} && !$opt{walltime});
 
-#	If needed, un-protect the walltime string.
 	if ($opt{walltime}) {
-		$opt{walltime} =~ s/(\d{1,2})h(\d{2})m(\d{2})s/$1:$2:$3/;
 #		Convert to minutes for Slurm.
 		$opt{walltime} = get_minutes($opt{walltime});
 	}
