@@ -241,7 +241,7 @@ function displayfile()
    get_field2(" ThreadsPerCore",document.config.threads_per_core) +
    " State=UNKNOWN <br>" +
    "PartitionName=" + document.config.partition_name.value +
-   " Nodes=" + document.config.node_name.value +
+   " Nodes=ALL" +
    " Default=YES"+
    " MaxTime=" + document.config.max_time.value +
    " State=UP"
