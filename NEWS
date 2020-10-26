@@ -15,6 +15,7 @@ documents those changes that are of interest to users and administrators.
  -- Avoid double free of step_record_t in the slurmctld when node is removed
     from config.
  -- Zero out step_record_t's magic when freed.
+ -- Fix sacctmgr clearing QosLevel when trailing comma is used.
 
 * Changes in Slurm 20.11.0rc1
 ==============================

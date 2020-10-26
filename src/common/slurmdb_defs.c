@@ -2911,7 +2911,7 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 						count++;
 					} else
 						xfree(name);
-				} else if (!(i-start)) {
+				} else if (!(i-start) && !option) {
 					list_append(char_list, xstrdup(""));
 					count++;
 				}
@@ -2985,7 +2985,7 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 				count++;
 			} else
 				xfree(name);
-		} else if (!(i-start)) {
+		} else if (!(i-start) && !option) {
 			list_append(char_list, xstrdup(""));
 			count++;
 		}
