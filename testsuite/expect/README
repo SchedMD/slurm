@@ -387,6 +387,10 @@ test7.20   Test lua JobSubmitPlugin
 test7.21   Test SPANK plugins that link against libslurm
 test7.23   Test time_str2secs parsing of different formats
 
+test8.#    Testing of advanced reservation functionality.
+=========================================================
+test8.12   Test reservation with flags=FLEX
+
 test9.#    System stress testing. Exercises all commands and daemons.
 =====================================================================
 test9.1    Stress test of stdin broadcast.

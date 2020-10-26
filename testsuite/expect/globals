@@ -5750,6 +5750,51 @@ proc check_reason { job_id reason } {
 }
 
 
+################################################################
+#
+# NAME
+#	submit_job - submits a job with sbatch and returns its job id
+#
+# SYNOPSIS
+#	submit_job ?options? job_args
+#
+# DESCRIPTION
+#	Submits a job with sbatch and returns its jobid, or 0 if error.
+#	It accepts all the options of run_command.
+#
+# OPTIONS
+#	It accpets and passes all the options of/to run_command.
+#
+# ARGUMENTS
+#	job_args
+#		a string containing all the arguments to pass to sbatch
+#
+# RETURN VALUE
+#	the job id, or 0 if an error happen
+#
+################################################################
+
+proc submit_job args {
+	global sbatch
+
+	set job_id 0
+
+	if {[llength $args] < 1} {
+		fail "Wrong number of parameters, should be >=1"
+	}
+	set job_options [lindex $args [expr [llength $args] - 1 ]]
+	set run_options   ""
+	if {[llength $args] > 1} {
+		set run_options [lrange $args 0 [expr [llength $args] - 2 ]]
+	}
+
+	set output [run_command_output {*}$run_options "$sbatch $job_options"]
+	regexp {Submitted \S+ job (\d+)} $output - job_id
+
+	return $job_id
+}
+
+
 ################################################################################
 #
 # NAME
