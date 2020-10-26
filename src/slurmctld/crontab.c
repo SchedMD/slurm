@@ -249,3 +249,31 @@ extern void crontab_submit(crontab_update_request_msg_t *request,
 
 	list_destroy(args.new_jobs);
 }
+
+extern void crontab_add_disabled_lines(uid_t uid, int line_start, int line_end)
+{
+	char *file = NULL, *lines = NULL;
+	int fd;
+
+	xstrfmtcat(file, "%s/crontab/crontab.%u",
+		   slurm_conf.state_save_location, uid);
+	xstrfmtcat(lines, "%d-%d,", line_start, line_end);
+
+	if ((fd = open(file, O_WRONLY | O_CLOEXEC | O_APPEND)) < 0) {
+		error("%s: failed to open file `%s`", __func__, file);
+		xfree(file);
+		return;
+	}
+
+	safe_write(fd, lines, strlen(lines));
+	xfree(file);
+	xfree(lines);
+	return;
+
+rwfail:
+	error("%s: failed to append failed lines %d-%d to file `%s`",
+	      __func__, line_start, line_end, file);
+	xfree(file);
+	xfree(lines);
+	return;
+}

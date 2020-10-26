@@ -5489,6 +5489,8 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 		job_ptr->bit_flags |= ~CRON_JOB;
 		error("cancelling cron job, lines %u %u",
 		      entry->line_start, entry->line_end);
+		crontab_add_disabled_lines(job_ptr->user_id, entry->line_start,
+					   entry->line_end);
 	}
 
 	/* save user ID of the one who requested the job be cancelled */

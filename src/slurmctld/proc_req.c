@@ -5981,6 +5981,7 @@ static void _slurm_rpc_request_crontab(slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS;
 	crontab_request_msg_t *req_msg = (crontab_request_msg_t *) msg->data;
 	buf_t *crontab = NULL;
+	char *disabled_lines = NULL;
 	slurm_msg_t response_msg;
 	crontab_response_msg_t resp_msg;
 	slurmctld_lock_t job_read_lock = { .job = READ_LOCK };
@@ -6007,6 +6008,19 @@ static void _slurm_rpc_request_crontab(slurm_msg_t *msg)
 
 		if (!(crontab = create_mmap_buf(file)))
 			rc = ESLURM_JOB_SCRIPT_MISSING;
+		else {
+			int len = strlen(crontab->head) + 1;
+			disabled_lines = xstrndup(crontab->head + len,
+						  crontab->size - len);
+			/*
+			 * Remove extra trailing command which would be
+			 * parsed as an extraneous 0.
+			 */
+			if (disabled_lines) {
+				len = strlen(disabled_lines) - 1;
+				disabled_lines[len] = '\0';
+			}
+		}
 	}
 
 	unlock_slurmctld(job_read_lock);
@@ -6019,9 +6033,10 @@ static void _slurm_rpc_request_crontab(slurm_msg_t *msg)
 		response_msg.msg_type = RESPONSE_CRONTAB;
 		response_msg.data = &resp_msg;
 		resp_msg.crontab = crontab->head;
-		resp_msg.disabled_lines = NULL;
+		resp_msg.disabled_lines = disabled_lines;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 		free_buf(crontab);
+		xfree(disabled_lines);
 	}
 }
 

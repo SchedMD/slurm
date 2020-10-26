@@ -2799,4 +2799,6 @@ extern void crontab_submit(crontab_update_request_msg_t *req_msg,
 			   crontab_update_response_msg_t *response,
 			   char *alloc_node, uint16_t protocol_version);
 
+extern void crontab_add_disabled_lines(uid_t uid, int line_start, int line_end);
+
 #endif /* !_HAVE_SLURMCTLD_H */
