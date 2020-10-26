@@ -1064,28 +1064,34 @@ extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
 	xassert(req);
 	xassert(resp);
 
-	/* To make sure we can get this to send instead of the agent
-	   sending stuff that can happen anytime we set halt_agent and
-	   then after we get into the mutex we unset.
-	*/
-	halt_agent = 1;
-	slurm_mutex_lock(&slurmdbd_lock);
-	halt_agent = 0;
-	if (!req->conn &&
-	    (!slurmdbd_conn || (slurmdbd_conn->fd < 0))) {
-		/* Either slurm_open_slurmdbd_conn() was not executed or
-		 * the connection to Slurm DBD has been closed */
-		if (req->msg_type == DBD_GET_CONFIG)
-			_open_slurmdbd_conn(0);
-		else
-			_open_slurmdbd_conn(1);
-		if (!slurmdbd_conn || (slurmdbd_conn->fd < 0)) {
-			rc = SLURM_ERROR;
-			goto end_it;
-		}
-	}
+	if (req->conn == GLOBAL_DB_CONN) {
+		use_conn = slurmdbd_conn;
 
-	use_conn = (req->conn) ? req->conn : slurmdbd_conn;
+		/* To make sure we can get this to send instead of the agent
+		   sending stuff that can happen anytime we set halt_agent and
+		   then after we get into the mutex we unset.
+		*/
+		halt_agent = 1;
+		slurm_mutex_lock(&slurmdbd_lock);
+		halt_agent = 0;
+
+		if (!slurmdbd_conn || (slurmdbd_conn->fd < 0)) {
+			/* Either slurm_open_slurmdbd_conn() was not executed or
+			 * the connection to Slurm DBD has been closed */
+			if (req->msg_type == DBD_GET_CONFIG)
+				_open_slurmdbd_conn(0);
+			else
+				_open_slurmdbd_conn(1);
+		}
+	} else if (req->conn)
+		use_conn = req->conn;
+	else
+		return ESLURM_DB_CONNECTION_INVALID;
+
+	if (use_conn->fd < 0) {
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
 
 	if (!(buffer = pack_slurmdbd_msg(req, rpc_version))) {
 		rc = SLURM_ERROR;
@@ -1116,8 +1122,10 @@ extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
 
 	free_buf(buffer);
 end_it:
-	slurm_cond_signal(&slurmdbd_cond);
-	slurm_mutex_unlock(&slurmdbd_lock);
+	if (use_conn == slurmdbd_conn) {
+		slurm_cond_signal(&slurmdbd_cond);
+		slurm_mutex_unlock(&slurmdbd_lock);
+	}
 
 	log_flag(PROTOCOL, "msg_type:%s protocol_version:%hu return_code:%d response_msg_type:%s",
 		 slurmdbd_msg_type_2_str(req->msg_type, 1),
