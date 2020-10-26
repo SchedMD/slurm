@@ -564,14 +564,18 @@ levels of logging verbosity from 0 (quiet) to 7 (extremely verbose).
 Each may also be configured to use debug files. Use fully qualified
 pathnames for the files.
 <P>
-<input type="text" name="slurmctld_debug" value="info"> <B>SlurmctldDebug</B> (default is info)
+<input type="text" name="slurmctld_debug" value="info"> <b>SlurmctldDebug</b>
+(default is info)
 <P>
-<input type="text" name="slurmctld_logfile" value=""> <B>SlurmctldLogFile</B> (default is none, log goes to syslog)
+<input type="text" name="slurmctld_logfile" value="/var/log/slurmctld.log">
+<b>SlurmctldLogFile</b> (if empty, log goes to syslog)
 <P>
-<input type="text" name="slurmd_debug" value="info"> <B>SlurmdDebug</B> (default is info)
+<input type="text" name="slurmd_debug" value="info"> <b>SlurmdDebug</b>
+(default is info)
 <P>
-<input type="text" name="slurmd_logfile" value=""> <B>SlurmdLogFile</B> (default is none,
-log goes to syslog, string "%h" in name gets replaced with hostname)
+<input type="text" name="slurmd_logfile" value="/var/log/slurmd.log">
+<b>SlurmdLogFile</b> (if empty, log goes to syslog. String "%h" in name gets
+replaced with hostname)
 <P>
 
 <H2>Job Completion Logging</H2>
