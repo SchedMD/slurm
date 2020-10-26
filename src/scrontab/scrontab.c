@@ -397,7 +397,7 @@ edit:
 extern int main(int argc, char **argv)
 {
 	int rc;
-	char *crontab = NULL, *disabled_lines;
+	char *crontab = NULL, *disabled_lines = NULL;
 
 	slurm_conf_init(NULL);
 	_parse_args(argc, argv);
