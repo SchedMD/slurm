@@ -691,7 +691,7 @@ to job allocations.
 \fBafter:job_id[[+time][:jobid[+time]...]]\fR
 After the specified jobs start or are cancelled and 'time' in minutes from job
 start or cancellation happens, this
-job can begin execution. If no 'time' is given then then there is no delay after
+job can begin execution. If no 'time' is given then there is no delay after
 start or cancellation.
 .TP
 \fBafterany:job_id[:jobid...]\fR
@@ -1255,10 +1255,10 @@ controls the nodes to be allocated to the job and not the allocation of
 CPUs on those nodes. This option is meant primarily to control a job step's
 task layout in an existing job allocation for the srun command.
 .br
-\fBNOTE:\fR If number of tasks is given and a list of requested nodes is also
-given the number of nodes used from that list will be reduced to match that of
-the number of tasks if the number of nodes in the list is greater than the
-number of tasks.
+\fBNOTE:\fR If the number of tasks is given and a list of requested nodes is
+also given, the number of nodes used from that list will be reduced to match
+that of the number of tasks if the number of nodes in the list is greater than
+the number of tasks.
 
 .TP
 Second distribution method (distribution of CPUs across sockets for binding):
@@ -1626,8 +1626,8 @@ behavior is to allocate enough nodes to satisfy the requirements of
 the \fB\-n\fR and \fB\-c\fR options.
 The job will be allocated as many nodes as possible within the range specified
 and without delaying the initiation of the job.
-If number of tasks is given and a number of requested nodes is also given the
-number of nodes used from that request will be reduced to match that of the
+If the number of tasks is given and a number of requested nodes is also given,
+the number of nodes used from that request will be reduced to match that of the
 number of tasks if the number of nodes in the request is greater than the number
 of tasks.
 The node count specification may include a numeric value followed by a suffix
@@ -1805,7 +1805,7 @@ This option applies to the job allocation, but not to step allocations.
 Meant to be used with the \fB\-\-ntasks\fR option.
 Related to \fB\-\-ntasks\-per\-node\fR except at the core level
 instead of the node level.  Masks will automatically be generated
-to bind the tasks to specific core unless \fB\-\-cpu\-bind=none\fR
+to bind the tasks to specific cores unless \fB\-\-cpu\-bind=none\fR
 is specified.
 NOTE: This option is not supported unless \fISelectType=cons_res\fR is
 configured (either directly or indirectly on Cray systems)
@@ -2349,8 +2349,8 @@ by the supplied host list, additional resources will be allocated on other
 nodes as needed.
 Rather than repeating a host name multiple times, an asterisk and
 a repetition count may be appended to a host name. For example
-"host1,host1" and "host1*2" are equivalent. If number of tasks is given and a
-list of requested nodes is also given the number of nodes used from that list
+"host1,host1" and "host1*2" are equivalent. If the number of tasks is given and
+a list of requested nodes is also given, the number of nodes used from that list
 will be reduced to match that of the number of tasks if the number of nodes in
 the list is greater than the number of tasks. This option applies to job and
 step allocations.
@@ -2691,7 +2691,7 @@ various Slurm error conditions.
 Also see \fBSLURM_EXIT_ERROR\fR.
 .TP
 \fBSLURM_EXPORT_ENV\fR
-Same as \-\-export\fR
+Same as \fB\-\-export\fR
 .TP
 \fBSLURM_GPUS\fR
 Same as \fB\-G, \-\-gpus\fR
@@ -2709,7 +2709,7 @@ Same as \fB\-\-gpus\-per\-node\fR
 Same as \fB\-\-gpus\-per\-task\fR
 .TP
 \fBSLURM_GRES_FLAGS\fR
-Same as \-\-gres\-flags\fR
+Same as \fB\-\-gres\-flags\fR
 .TP
 \fBSLURM_HINT\fR
 Same as \fB\-\-hint\fR
@@ -3337,7 +3337,7 @@ wait
 
 .PP
 This example shows how to launch an application called "server" with one task,
-8 CPUs and and 16 GB of memory (2 GB per CPU) plus another application called
+8 CPUs and 16 GB of memory (2 GB per CPU) plus another application called
 "client" with 16 tasks, 1 CPU per task (the default) and 1 GB of memory per
 task.
 

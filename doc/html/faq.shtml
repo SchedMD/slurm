@@ -2022,7 +2022,7 @@ jobs that reference the removed partitions.
    jobs?</b></a><br>
 First check that Slurm is configured to bind jobs to specific CPUs by
 making sure that TaskPlugin is configured to either affinity or cgroup.
-Next check that that your processor is configured to permit frequency
+Next check that your processor is configured to permit frequency
 control by examining the values in the file
 <i>/sys/devices/system/cpu/cpu0/cpufreq</i> where "cpu0" represents a CPU ID 0.
 Of particular interest is the file <i>scaling_available_governors</i>,

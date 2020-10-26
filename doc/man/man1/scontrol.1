@@ -37,7 +37,7 @@ group.
 Causes the \fIshow\fR command to provide additional details where available.
 .TP
 \fB\-\-federation\fR
-Report jobs from from federation if a member of one.
+Report jobs from federation if a member of one.
 .TP
 \fB\-F\fR, \fB\-\-future\fR
 Report nodes in FUTURE state.
@@ -1061,7 +1061,7 @@ the identified job will be modified.
 This specification is required.
 .TP
 \fICompFile\fP=<completion file>
-Update a step with information about a steps completion.  Can be
+Update a step with information about a step's completion.  Can be
 useful if step statistics aren't directly available through a
 jobacct_gather plugin.  The file is a space\-delimited file with
 format for Version 1 is as follows
@@ -1518,7 +1518,7 @@ each job's soft time limit.
 A partition\-specific \fIOverTimeLimit\fP will override any global
 \fIOverTimeLimit\fP value.
 If not specified, the global \fIOverTimeLimit\fP value will take precedence.
-May not exceed exceed 65533 minutes.
+May not exceed 65533 minutes.
 An input value of "UNLIMITED" will clear any previously configured
 partition\-specific \fIOverTimeLimit\fP value.
 

@@ -224,7 +224,7 @@ previously allocated for select plugin specific information about a node.</p>
 <span class="commandline"> nodeinfo</span>&nbsp; &nbsp;&nbsp;(input/output) The buffer to be freed.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
 
-<p class="commandline">int int select_p_select_nodeinfo_set(job_record_t *job_ptr);</p>
+<p class="commandline">int select_p_select_nodeinfo_set(job_record_t *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Reset select plugin specific
 information about a job. Called by slurmctld daemon after that job's state has
 been restored (at startup) or job has been scheduled.</p>

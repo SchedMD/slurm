@@ -38,7 +38,7 @@ any other steps.
 This is useful when the shell script has to trap the signal and take some
 application defined action.
 Note that most shells cannot handle signals while a command is running (child
-process of the batch step), the shell use to wait wait until the command ends to
+process of the batch step), the shell use to wait until the command ends to
 then handle the signal. Children of the batch step are not signaled with this
 option, use \fB\-f\fR, \fB\-\-full\fR instead.
 NOTE: If used with \fB\-f\fR, \fB\-\-full\fR, this option ignored.
