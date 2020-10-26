@@ -11775,6 +11775,12 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	/*
+	 * Block scontrol updates of scrontab jobs.
+	 */
+	if (job_ptr->bit_flags & CRON_JOB)
+		return ESLURM_CANNOT_MODIFY_CRON_JOB;
+
+	/*
 	 * This means we are in the middle of requesting the db_inx from the
 	 * database. So we can't update right now.  You should try again outside
 	 * the job_write lock in a second or so.
