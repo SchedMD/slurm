@@ -2369,14 +2369,17 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 			/*
 			 * This race should only happen for at most a second as
 			 * we are only waiting for the other rpc to get here.
-			 * If we are waiting for more that 50 trys something bad
-			 * happened.
+			 * We should wait here for msg_timeout * 2, in case of
+			 * REQUEST_LAUNCH_PROLOG lost in forwarding tree the
+			 * direct retry from slurmctld will happen after
+			 * MessageTimeout.
 			 */
-			if (retry_cnt > 50) {
+			if (retry_cnt > (slurm_conf.msg_timeout * 2)) {
 				rc = ESLURMD_PROLOG_FAILED;
 				slurm_mutex_unlock(&prolog_mutex);
-				error("Waiting for JobId=%u prolog has failed, giving up after 50 sec",
-				      req->job_id);
+				error("Waiting for JobId=%u REQUEST_LAUNCH_PROLOG notification failed, giving up after %u sec",
+				      req->job_id,
+				      slurm_conf.msg_timeout * 2);
 				goto done;
 			}
 

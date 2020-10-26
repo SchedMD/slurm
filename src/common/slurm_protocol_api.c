@@ -2437,7 +2437,7 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg, int timeout)
 List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 {
 	static pthread_mutex_t conn_lock = PTHREAD_MUTEX_INITIALIZER;
-	static uint16_t conn_timeout = NO_VAL16;
+	static uint16_t conn_timeout = NO_VAL16, tcp_timeout = 2;
 	List ret_list = NULL;
 	int fd = -1;
 	ret_data_info_t *ret_data_info = NULL;
@@ -2445,23 +2445,33 @@ List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 	int i;
 
 	slurm_mutex_lock(&conn_lock);
-	if (conn_timeout == NO_VAL16)
+
+	if (conn_timeout == NO_VAL16) {
 		conn_timeout = MIN(slurm_conf.msg_timeout, 10);
+		tcp_timeout = MAX(0, slurm_conf.tcp_timeout - 1);
+	}
 	slurm_mutex_unlock(&conn_lock);
 
 	/* This connect retry logic permits Slurm hierarchical communications
 	 * to better survive slurmd restarts */
 	for (i = 0; i <= conn_timeout; i++) {
-		if (i)
-			sleep(1);
 		fd = slurm_open_msg_conn(&msg->address);
-		if ((fd >= 0) || (errno != ECONNREFUSED))
+		if ((fd >= 0) || (errno != ECONNREFUSED && errno != ETIMEDOUT))
 			break;
-		if (i == 0)
-			log_flag(NET, "%s: connect refused, retrying",
-				 __func__);
+		if (errno == ETIMEDOUT) {
+			if (i == 0)
+				log_flag(NET, "Timed out connecting to %pA, retrying...",
+					 &msg->address);
+			i += tcp_timeout;
+		} else {
+			if (i == 0)
+				log_flag(NET, "Connection refused by %pA, retrying...",
+					 &msg->address);
+			sleep(1);
+		}
 	}
 	if (fd < 0) {
+		log_flag(NET, "Failed to connect to %pA, %m", &msg->address);
 		mark_as_failed_forward(&ret_list, name,
 				       SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 		errno = SLURM_COMMUNICATIONS_CONNECTION_ERROR;
