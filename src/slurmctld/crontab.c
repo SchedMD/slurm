@@ -51,6 +51,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 typedef struct {
+	char *alloc_node;
 	uid_t uid;
 	gid_t gid;
 	char **err_msg;
@@ -86,6 +87,9 @@ static int _handle_job(void *x, void *y)
 	 */
 	job->user_id = args->uid;
 	job->group_id = args->gid;
+
+	xfree(job->alloc_node);
+	job->alloc_node = xstrdup(args->alloc_node);
 
 	/* give job_submit a chance to play with it first */
 	args->return_code = validate_job_create_req(job, args->uid,
@@ -178,7 +182,7 @@ static int _set_requeue_cron(void *x, void *ignored)
 
 extern void crontab_submit(crontab_update_request_msg_t *request,
 			   crontab_update_response_msg_t *response,
-			   uint16_t protocol_version)
+			   char *alloc_node, uint16_t protocol_version)
 {
 	foreach_cron_job_args_t args;
 
@@ -218,6 +222,7 @@ extern void crontab_submit(crontab_update_request_msg_t *request,
 	/*
 	 * Already authenticated upstream.
 	 */
+	args.alloc_node = alloc_node;
 	args.uid = request->uid;
 	args.gid = request->gid;
 	args.err_msg = &response->err_msg;

@@ -6056,8 +6056,17 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 	if (((req_msg->uid != msg->auth_uid) || (req_msg->gid != gid)) &&
 	    !validate_slurm_user(msg->auth_uid)) {
 		resp_msg.return_code = ESLURM_USER_ID_MISSING;
-	} else {
-		crontab_submit(req_msg, &resp_msg, msg->protocol_version);
+	}
+
+	if (!resp_msg.return_code) {
+		char *alloc_node = NULL;
+		_set_hostname(msg, &alloc_node);
+		if (!alloc_node || (alloc_node[0] == '\0'))
+			resp_msg.return_code = ESLURM_INVALID_NODE_NAME;
+		else
+			crontab_submit(req_msg, &resp_msg, alloc_node,
+				       msg->protocol_version);
+		xfree(alloc_node);
 	}
 
 	unlock_slurmctld(job_write_lock);

@@ -2797,6 +2797,6 @@ extern int write_data_to_file(char *file_name, char *data);
  */
 extern void crontab_submit(crontab_update_request_msg_t *req_msg,
 			   crontab_update_response_msg_t *response,
-			   uint16_t protocol_version);
+			   char *alloc_node, uint16_t protocol_version);
 
 #endif /* !_HAVE_SLURMCTLD_H */
