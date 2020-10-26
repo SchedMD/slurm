@@ -2113,7 +2113,6 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	bool gres_per_job, sufficient = false;
 	uint16_t *avail_cpu_per_node = NULL;
 	time_t time_waiting = 0;
-	int leaf_switch_count = 0;
 	int top_switch_inx = -1;
 	int prev_rem_nodes;
 
@@ -2243,9 +2242,6 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		if (req_nodes_bitmap &&
 		    bit_overlap_any(req_nodes_bitmap, switch_node_bitmap[i])) {
 			switch_required[i] = 1;
-			if (switch_record_table[i].level == 0) {
-				leaf_switch_count++;
-			}
 			if ((top_switch_inx == -1) ||
 			    (switch_record_table[i].level >
 			     switch_record_table[top_switch_inx].level)) {
@@ -2442,9 +2438,6 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			if (bit_overlap_any(req2_nodes_bitmap,
 					    switch_node_bitmap[i])) {
 				switch_required[i] = 1;
-				if (switch_record_table[i].level == 0) {
-					leaf_switch_count++;
-				}
 			}
 		}
 		bit_or(node_map, req2_nodes_bitmap);
@@ -2497,17 +2490,6 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		}
 	}
 
-	/* Count up leaf switches. */
-	if (!req_nodes_bitmap) {
-		for (i = 0, switch_ptr = switch_record_table;
-		     i < switch_record_cnt; i++, switch_ptr++) {
-			if (switch_record_table[i].level != 0)
-				continue;
-			if (bit_overlap_any(switch_node_bitmap[i],
-					    best_nodes_bitmap))
-				leaf_switch_count++;
-		}
-	}
 
 	if (req_nodes_bitmap &&
 	    (!bit_super_set(req_nodes_bitmap, avail_nodes_bitmap))) {
@@ -2518,7 +2500,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	}
 
 	/* Add additional resources for already required leaf switches */
-	if (leaf_switch_count) {
+	if (req_nodes_bitmap || req2_nodes_bitmap) {
 		for (i = 0; i < switch_record_cnt; i++) {
 			if (!switch_required[i] || !switch_node_bitmap[i] ||
 			    (switch_record_table[i].level != 0))
@@ -2557,25 +2539,6 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 					goto fini;
 				}
 			}
-		}
-	}
-
-	if (job_ptr->req_switch > 0) {
-		if (time_waiting >= job_ptr->wait4switch) {
-			job_ptr->best_switch = true;
-			debug3("%pJ waited %ld sec for switches use=%d",
-				job_ptr, time_waiting, leaf_switch_count);
-		} else if (leaf_switch_count > job_ptr->req_switch) {
-			/*
-			 * Allocation is for more than requested number of
-			 * switches.
-			 */
-			job_ptr->best_switch = false;
-			debug3("%pJ waited %ld sec for switches=%u found=%d wait %u",
-				job_ptr, time_waiting, job_ptr->req_switch,
-				leaf_switch_count, job_ptr->wait4switch);
-		} else {
-			job_ptr->best_switch = true;
 		}
 	}
 
@@ -2646,7 +2609,37 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	}
 	rc = SLURM_ERROR;
 
-fini:	FREE_NULL_LIST(best_gres);
+fini:
+	if (job_ptr->req_switch > 0 && rc == SLURM_SUCCESS) {
+		int leaf_switch_count = 0;
+
+		/* Count up leaf switches. */
+		for (i = 0, switch_ptr = switch_record_table;
+		     i < switch_record_cnt; i++, switch_ptr++) {
+			if (switch_record_table[i].level != 0)
+				continue;
+			if (bit_overlap_any(switch_node_bitmap[i], node_map))
+				leaf_switch_count++;
+		}
+		if (time_waiting >= job_ptr->wait4switch) {
+			job_ptr->best_switch = true;
+			debug3("%pJ waited %ld sec for switches use=%d",
+				job_ptr, time_waiting, leaf_switch_count);
+		} else if (leaf_switch_count > job_ptr->req_switch) {
+			/*
+			 * Allocation is for more than requested number of
+			 * switches.
+			 */
+			job_ptr->best_switch = false;
+			debug3("%pJ waited %ld sec for switches=%u found=%d wait %u",
+				job_ptr, time_waiting, job_ptr->req_switch,
+				leaf_switch_count, job_ptr->wait4switch);
+		} else {
+			job_ptr->best_switch = true;
+		}
+	}
+
+	FREE_NULL_LIST(best_gres);
 	FREE_NULL_LIST(node_weight_list);
 	FREE_NULL_BITMAP(avail_nodes_bitmap);
 	FREE_NULL_BITMAP(req_nodes_bitmap);
