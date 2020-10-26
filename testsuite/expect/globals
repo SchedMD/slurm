@@ -4905,31 +4905,11 @@ proc cuda_count { cuda_string } {
 proc get_conf_path { } {
 	global scontrol re_word_str eol exit_code
 
-	set config_path ""
-	set got_config 0
-	log_user 0
-	spawn $scontrol show config
-	expect {
-		-re "SLURM_CONF.*= (/.*)/($re_word_str)${eol}SLURM_VERSION" {
-			set config_path $expect_out(1,string)
-			set got_config 1
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
+	if [regexp {(.*)/slurm.conf} [get_config_param "SLURM_CONF"] {} config_dir] {
+		return $config_dir
+	} else {
+		fail "Unable to determine config dir"
 	}
-	log_user 1
-
-	if {$got_config != 1} {
-		log_error "Did not get slurm.conf path"
-		set exit_code 1
-	}
-	return $config_path
 }
 
 
