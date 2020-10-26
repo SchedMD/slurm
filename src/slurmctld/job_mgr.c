@@ -5480,6 +5480,17 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 	select_g_job_signal(job_ptr, signal);
 	last_job_update = now;
 
+	/*
+	 * Handle jobs submitted through scrontab.
+	 */
+	if (job_ptr->bit_flags & CRON_JOB) {
+		cron_entry_t *entry =
+			(cron_entry_t *) job_ptr->details->crontab_entry;
+		job_ptr->bit_flags |= ~CRON_JOB;
+		error("cancelling cron job, lines %u %u",
+		      entry->line_start, entry->line_end);
+	}
+
 	/* save user ID of the one who requested the job be cancelled */
 	if (signal == SIGKILL)
 		job_ptr->requid = uid;
@@ -17654,6 +17665,13 @@ extern bool job_hold_requeue(job_record_t *job_ptr)
 	/* Check if the job exit with one of the
 	 * configured requeue values. */
 	_set_job_requeue_exit_value(job_ptr);
+
+	/* handle crontab jobs */
+	if (job_ptr->bit_flags & CRON_JOB) {
+		job_ptr->job_state |= JOB_REQUEUE;
+		job_ptr->details->begin_time =
+			calc_next_cron_start(job_ptr->details->crontab_entry);
+	}
 
 	state = job_ptr->job_state;
 

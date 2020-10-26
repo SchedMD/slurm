@@ -141,6 +141,41 @@ static int _purge_job(void *x, void *ignored)
 	return 0;
 }
 
+/*
+ * Clear the JOB_REQUEUE_CRON for all jobs by a given user.
+ */
+static int _clear_requeue_cron(void *x, void *y)
+{
+	job_record_t *job_ptr = (job_record_t *) x;
+	uid_t *uid = (uid_t *) y;
+
+	if ((job_ptr->user_id == *uid) &&
+	    (job_ptr->bit_flags & CRON_JOB)) {
+		job_ptr->bit_flags &= ~CRON_JOB;
+		job_ptr->job_state &= ~JOB_REQUEUE;
+
+		if (!IS_JOB_RUNNING(job_ptr)) {
+			time_t now = time(NULL);
+			job_ptr->job_state = JOB_CANCELLED;
+			job_ptr->start_time = now;
+			job_ptr->end_time = now;
+			job_ptr->exit_code = 1;
+			job_completion_logger(job_ptr, false);
+		}
+	}
+
+	return 0;
+}
+
+static int _set_requeue_cron(void *x, void *ignored)
+{
+	job_record_t *job_ptr = (job_record_t *) x;
+
+	job_ptr->bit_flags |= CRON_JOB;
+
+	return 0;
+}
+
 extern void crontab_submit(crontab_update_request_msg_t *request,
 			   crontab_update_response_msg_t *response,
 			   uint16_t protocol_version)
@@ -199,8 +234,13 @@ extern void crontab_submit(crontab_update_request_msg_t *request,
 		int purged = list_for_each(args.new_jobs, _purge_job, NULL);
 		debug("%s: failed crontab submission, purged %d records",
 		      __func__, purged);
-	}
-	list_destroy(args.new_jobs);
+	} else {
+		/* on success, kill/modify old jobs */
 
-	/* on success, kill/modify old jobs */
+		list_for_each(job_list, _clear_requeue_cron, &args.uid);
+
+		list_for_each(args.new_jobs, _set_requeue_cron, NULL);
+	}
+
+	list_destroy(args.new_jobs);
 }

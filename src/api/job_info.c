@@ -542,7 +542,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	/****** Line ******/
 
-	if (job_ptr->cronspec) {
+	if (job_ptr->bitflags & CRON_JOB || job_ptr->cronspec) {
+		if (job_ptr->bitflags & CRON_JOB)
+			xstrcat(out, "CronJob=Yes ");
 		xstrfmtcat(out, "CrontabSpec=\"%s\"", job_ptr->cronspec);
 		xstrcat(out, line_end);
 	}
