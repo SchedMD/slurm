@@ -53,6 +53,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/slurm_persist_conn.h"
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
@@ -510,26 +511,97 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
+/* partially based on _open_slurmdbd_conn() */
+static slurm_persist_conn_t *_conn_open(uint16_t *persist_conn_flags,
+					char *cluster_name)
+{
+	int rc;
+	char *backup_host = xstrdup(slurm_conf.accounting_storage_backup_host);
+	slurm_persist_conn_t *pc = xmalloc(sizeof(*pc));
+
+	if (persist_conn_flags)
+		pc->flags = *persist_conn_flags;
+	pc->flags |= (PERSIST_FLAG_DBD | PERSIST_FLAG_RECONNECT);
+	pc->persist_type = PERSIST_TYPE_DBD;
+	if (cluster_name)
+		pc->cluster_name = xstrdup(cluster_name);
+	else
+		pc->cluster_name = xstrdup(slurm_conf.cluster_name);
+	pc->timeout = (slurm_conf.msg_timeout + 35) * 1000;
+	pc->rem_host = xstrdup(slurm_conf.accounting_storage_host);
+	pc->rem_port = slurm_conf.accounting_storage_port;
+	pc->version = SLURM_PROTOCOL_VERSION;
+
+again:
+	// A connection failure is only an error if backup dne or also fails
+	if (backup_host)
+		pc->flags |= PERSIST_FLAG_SUPPRESS_ERR;
+	else
+		pc->flags &= (~PERSIST_FLAG_SUPPRESS_ERR);
+
+	if (((rc = slurm_persist_conn_open(pc))) && backup_host) {
+		xfree(pc->rem_host);
+		// Force the next error to display
+		pc->comm_fail_time = 0;
+		pc->rem_host = backup_host;
+		backup_host = NULL;
+		goto again;
+	}
+
+	xfree(backup_host);
+
+	if (!rc) {
+		debug("Sent PersistInit msg");
+		return pc;
+	} else {
+		error("%s: unable to open slurmdb persistent connection: %s",
+		      __func__, slurm_strerror(rc));
+		/* fail gracefully */
+		slurm_persist_conn_destroy(pc);
+		return NULL;
+	}
+}
+
 extern void *acct_storage_p_get_connection(
 	int conn_num, uint16_t *persist_conn_flags,
 	bool rollback, char *cluster_name)
 {
-	if (first)
-		init();
+	slurm_persist_conn_t *pc;
 
-	if (open_slurmdbd_conn(persist_conn_flags) == SLURM_SUCCESS)
-		errno = SLURM_SUCCESS;
+	if (running_in_slurmctld()) {
+		if (first)
+			init();
 
-	return GLOBAL_DB_CONN;
+		if (open_slurmdbd_conn(persist_conn_flags) == SLURM_SUCCESS)
+			errno = SLURM_SUCCESS;
+
+		return GLOBAL_DB_CONN;
+	}
+
+	pc = _conn_open(persist_conn_flags, cluster_name);
+
+	if (rollback)
+		debug5("%s: ignoring rollback=true",
+		       __func__);
+
+	if (pc && persist_conn_flags)
+		*persist_conn_flags = pc->flags;
+
+	return pc;
 }
 
 extern int acct_storage_p_close_connection(void **db_conn)
 {
-	if (db_conn)
-		*db_conn = NULL;
+	if (*db_conn == GLOBAL_DB_CONN) {
+		if (db_conn)
+			*db_conn = NULL;
 
-	first = 1;
-	return close_slurmdbd_conn();
+		first = 1;
+		return close_slurmdbd_conn();
+	}
+
+	slurm_persist_conn_destroy(*db_conn);
+	return SLURM_SUCCESS;
 }
 
 extern int acct_storage_p_commit(void *db_conn, bool commit)
