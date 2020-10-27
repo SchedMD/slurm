@@ -73,7 +73,7 @@ static persist_service_conn_t *persist_service_conn[MAX_THREAD_COUNT];
 static int             thread_count = 0;
 static pthread_mutex_t thread_count_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  thread_count_cond = PTHREAD_COND_INITIALIZER;
-static int             shutdown_time = 0;
+static time_t          shutdown_time = 0;
 
 static Buf _slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn,
                                    bool reopen);
