@@ -99,7 +99,7 @@ function displayfile()
    get_field("Epilog",document.config.epilog) + "<br>" +
    "#EpilogSlurmctld= <br>" +
    "#FirstJobId=1 <br>" +
-   "#MaxJobId=999999 <br>" +
+   "#MaxJobId=67043328 <br>" +
    "#GresTypes= <br>" +
    "#GroupUpdateForce=0 <br>" +
    "#GroupUpdateTime=600 <br>" +
@@ -110,9 +110,9 @@ function displayfile()
    "#LaunchType=launch/slurm <br>" +
    "#Licenses=foo*4,bar <br>" +
    "#MailProg=/bin/mail <br>" +
-   "#MaxJobCount=5000 <br>" +
+   "#MaxJobCount=10000 <br>" +
    "#MaxStepCount=40000 <br>" +
-   "#MaxTasksPerNode=128 <br>" +
+   "#MaxTasksPerNode=512 <br>" +
    "MpiDefault=" + get_radio_value(document.config.mpi_default) + "<br>" +
    "#MpiParams=ports=#-# <br>" +
    "#PluginDir= <br>" +
