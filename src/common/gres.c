@@ -5168,6 +5168,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 							   &save_ptr, &rc))) {
 			job_gres_data->cpus_per_gres = cnt;
 			in_val = NULL;
+			job_gres_data->ntasks_per_gres = *ntasks_per_tres;
 		}
 	}
 	if (tres_per_job) {
@@ -5179,6 +5180,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 			in_val = NULL;
 			job_gres_data->total_gres =
 				MAX(job_gres_data->total_gres, cnt);
+			job_gres_data->ntasks_per_gres = *ntasks_per_tres;
 		}
 	}
 	if (tres_per_node) {
@@ -5192,6 +5194,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 				cnt *= *min_nodes;
 			job_gres_data->total_gres =
 				MAX(job_gres_data->total_gres, cnt);
+			job_gres_data->ntasks_per_gres = *ntasks_per_tres;
 		}
 	}
 	if (tres_per_socket) {
@@ -5211,6 +5214,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 			}
 			job_gres_data->total_gres =
 				MAX(job_gres_data->total_gres, cnt);
+			job_gres_data->ntasks_per_gres = *ntasks_per_tres;
 		}
 	}
 	if (tres_per_task) {
@@ -5224,6 +5228,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 				cnt *= *num_tasks;
 			job_gres_data->total_gres =
 				MAX(job_gres_data->total_gres, cnt);
+			job_gres_data->ntasks_per_gres = *ntasks_per_tres;
 		}
 	}
 	if (mem_per_tres) {
@@ -5233,6 +5238,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 							   &save_ptr, &rc))) {
 			job_gres_data->mem_per_gres = cnt;
 			in_val = NULL;
+			job_gres_data->ntasks_per_gres = *ntasks_per_tres;
 		}
 	}
 	slurm_mutex_unlock(&gres_context_lock);
