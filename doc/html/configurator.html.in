@@ -105,7 +105,7 @@ function displayfile()
    "#GroupUpdateTime=600 <br>" +
    "#JobFileAppend=0 <br>" +
    "#JobRequeue=1 <br>" +
-   "#JobSubmitPlugins=1 <br>" +
+   "#JobSubmitPlugins=lua <br>" +
    "#KillOnBadExit=0 <br>" +
    "#LaunchType=launch/slurm <br>" +
    "#Licenses=foo*4,bar <br>" +
