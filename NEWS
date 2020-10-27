@@ -65,6 +65,9 @@ documents those changes that are of interest to users and administrators.
  -- Retry connection on ETIMEDOUT in slurm_send_addr_recv_msgs.
  -- Fix wait for RPC_PROLOG_LAUNCH notification 2*MessageTimeout.
  -- Have slurm_send_addr_recv_msgs conn_timeout to match rpc_wait in slurmd.
+ -- pam_slurm_adopt - operate correctly even if ConstrainRAMSpace is not
+    enabled on the node by falling back to the cpuset, devices, or freezer
+    subsystem instead.
 
 * Changes in Slurm 20.02.5
 ==========================
