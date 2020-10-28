@@ -73,6 +73,8 @@ AC_SEARCH_LIBS([gethostbyname], [nsl])
 AC_SEARCH_LIBS([hstrerror],     [resolv])
 AC_SEARCH_LIBS([kstat_open],    [kstat])
 AC_SEARCH_LIBS([ns_initparse],  [resolv])
+AC_SEARCH_LIBS([log],		[m])
+AC_SEARCH_LIBS([lrint],		[m])
 
 dnl Checks for header files.
 dnl

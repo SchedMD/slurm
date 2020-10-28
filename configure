@@ -18178,6 +18178,118 @@ if test "$ac_res" != no; then :
 
 fi
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing log" >&5
+$as_echo_n "checking for library containing log... " >&6; }
+if ${ac_cv_search_log+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char log ();
+int
+main ()
+{
+return log ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' m; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_log=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_log+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_log+:} false; then :
+
+else
+  ac_cv_search_log=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_log" >&5
+$as_echo "$ac_cv_search_log" >&6; }
+ac_res=$ac_cv_search_log
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing lrint" >&5
+$as_echo_n "checking for library containing lrint... " >&6; }
+if ${ac_cv_search_lrint+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char lrint ();
+int
+main ()
+{
+return lrint ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' m; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_lrint=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_lrint+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_lrint+:} false; then :
+
+else
+  ac_cv_search_lrint=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_lrint" >&5
+$as_echo "$ac_cv_search_lrint" >&6; }
+ac_res=$ac_cv_search_lrint
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
 
 for ac_header in mcheck.h values.h socket.h sys/socket.h  \
 		 stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
