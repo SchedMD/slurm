@@ -2597,8 +2597,8 @@ extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port)
 	msg.conn         = db_conn;
 	msg.data         = &req;
 
-	if (db_conn && (db_conn != GLOBAL_DB_CONN)) {
-		msg.conn = db_conn;
+	if (db_conn &&
+	    (((slurm_persist_conn_t *)db_conn)->flags & PERSIST_FLAG_EXT_DBD)) {
 		req.flags |= CLUSTER_FLAG_EXT;
 		info("Registering slurmctld at port %u with slurmdbd %s:%d",
 		     port,

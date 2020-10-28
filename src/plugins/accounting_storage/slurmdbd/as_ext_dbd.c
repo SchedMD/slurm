@@ -68,7 +68,7 @@ extern slurm_persist_conn_t *_create_slurmdbd_conn(char *host, int port)
 	dbd_conn = xmalloc(sizeof(slurm_persist_conn_t));
 	dbd_conn->cluster_name = xstrdup(slurm_conf.cluster_name);
 	dbd_conn->fd = -1;
-	dbd_conn->flags = PERSIST_FLAG_DBD;
+	dbd_conn->flags = PERSIST_FLAG_DBD | PERSIST_FLAG_EXT_DBD;
 	dbd_conn->persist_type = PERSIST_TYPE_DBD;
 	dbd_conn->rem_host = xstrdup(host);
 	dbd_conn->rem_port = port;
