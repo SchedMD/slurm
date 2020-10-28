@@ -17898,6 +17898,8 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+old_CFLAGS=$CFLAGS
+CFLAGS="$CFLAGS -Wno-builtin-declaration-mismatch"
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing socket" >&5
 $as_echo_n "checking for library containing socket... " >&6; }
 if ${ac_cv_search_socket+:} false; then :
@@ -18290,6 +18292,7 @@ if test "$ac_res" != no; then :
 
 fi
 
+CFLAGS=$old_CFLAGS
 
 for ac_header in mcheck.h values.h socket.h sys/socket.h  \
 		 stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \

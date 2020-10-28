@@ -67,7 +67,10 @@ AC_PATH_PROG([SUCMD], [su], [/bin/su])
 AC_DEFINE_UNQUOTED([SUCMD], ["$SUCMD"], [Define path to su command])
 
 dnl Checks for libraries
-dnl
+dnl Includes workaround to disable -Werror=builtin-declaration-mismatch which
+dnl will cause errors on newer GCC, and can then lead to incorrect results.
+old_CFLAGS=$CFLAGS
+CFLAGS="$CFLAGS -Wno-builtin-declaration-mismatch"
 AC_SEARCH_LIBS([socket],        [socket])
 AC_SEARCH_LIBS([gethostbyname], [nsl])
 AC_SEARCH_LIBS([hstrerror],     [resolv])
@@ -75,6 +78,7 @@ AC_SEARCH_LIBS([kstat_open],    [kstat])
 AC_SEARCH_LIBS([ns_initparse],  [resolv])
 AC_SEARCH_LIBS([log],		[m])
 AC_SEARCH_LIBS([lrint],		[m])
+CFLAGS=$old_CFLAGS
 
 dnl Checks for header files.
 dnl
