@@ -1829,30 +1829,35 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 	char *dump;
 	int dump_size;
 	slurm_msg_t response_msg;
-	part_info_request_msg_t  *part_req_msg;
+	part_info_request_msg_t *part_req_msg =
+		(part_info_request_msg_t *) msg->data;
 
 	/* Locks: Read configuration and partition */
 	slurmctld_lock_t part_read_lock = {
 		READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 
 	START_TIMER;
-	part_req_msg = (part_info_request_msg_t  *) msg->data;
-	lock_slurmctld(part_read_lock);
-
 	if ((slurm_conf.private_data & PRIVATE_DATA_PARTITIONS) &&
 	    !validate_operator(msg->auth_uid)) {
-		unlock_slurmctld(part_read_lock);
 		debug2("Security violation, PARTITION_INFO RPC from uid=%u",
 		       msg->auth_uid);
 		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
-	} else if ((part_req_msg->last_update - 1) >= last_part_update) {
-		unlock_slurmctld(part_read_lock);
+		return;
+	}
+
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+		lock_slurmctld(part_read_lock);
+
+	if ((part_req_msg->last_update - 1) >= last_part_update) {
+		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+			unlock_slurmctld(part_read_lock);
 		debug2("_slurm_rpc_dump_partitions, no change");
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
 		pack_all_part(&dump, &dump_size, part_req_msg->show_flags,
 			      msg->auth_uid, msg->protocol_version);
-		unlock_slurmctld(part_read_lock);
+		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+			unlock_slurmctld(part_read_lock);
 		END_TIMER2("_slurm_rpc_dump_partitions");
 		debug2("_slurm_rpc_dump_partitions, size=%d %s",
 		       dump_size, TIME_STR);
@@ -6099,6 +6104,11 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_PARTITION_INFO,
 		.func = _slurm_rpc_dump_partitions,
+		.queue_enabled = true,
+		.locks = {
+			.conf = READ_LOCK,
+			.part = READ_LOCK,
+		},
 	},{
 		.msg_type = MESSAGE_EPILOG_COMPLETE,
 		.func = _slurm_rpc_epilog_complete,
