@@ -720,7 +720,7 @@ extern void xstrtrim(char *string)
 
 	/* shift it over if necessary */
 	if (end != start)
-		memcpy(string, start, (ptr - start + 1));
+		memmove(string, start, (ptr - start + 1));
 }
 
 extern char *bytes_to_hex(const char *string, int len, const char *delimiter)

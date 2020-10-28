@@ -190,6 +190,8 @@ documents those changes that are of interest to users and administrators.
  -- pam_slurm_adopt - operate correctly even if ConstrainRAMSpace is not
     enabled on the node by falling back to the cpuset, devices, or freezer
     subsystem instead.
+ -- slurmrestd - use memmove() instead of memcpy() in string manipulation
+    to avoid bugs related to overlapping memory regions.
 
 * Changes in Slurm 20.02.5
 ==========================
