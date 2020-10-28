@@ -2047,9 +2047,11 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t * msg)
 	debug3("Processing RPC details: REQUEST_COMPLETE_PROLOG from JobId=%u",
 	       comp_msg->job_id);
 
-	lock_slurmctld(job_write_lock);
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+		lock_slurmctld(job_write_lock);
 	error_code = prolog_complete(comp_msg->job_id, comp_msg->prolog_rc);
-	unlock_slurmctld(job_write_lock);
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+		unlock_slurmctld(job_write_lock);
 
 	END_TIMER2("_slurm_rpc_complete_prolog");
 
@@ -6121,6 +6123,10 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_COMPLETE_PROLOG,
 		.func = _slurm_rpc_complete_prolog,
+		.queue_enabled = true,
+		.locks = {
+			.job = WRITE_LOCK,
+		},
 	},{
 		.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT,
 		.func = _slurm_rpc_complete_batch_script,
