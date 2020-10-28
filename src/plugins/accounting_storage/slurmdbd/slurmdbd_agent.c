@@ -1136,7 +1136,7 @@ extern int slurmdbd_agent_send_recv(uint16_t rpc_version,
  * will be queued and processed later if the SlurmDBD is not responding.
  *
  * Returns SLURM_SUCCESS or an error code */
-extern int send_slurmdbd_msg(uint16_t rpc_version, persist_msg_t *req)
+extern int slurmdbd_agent_send(uint16_t rpc_version, persist_msg_t *req)
 {
 	Buf buffer;
 	uint32_t cnt, rc = SLURM_SUCCESS;

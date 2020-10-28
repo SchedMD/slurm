@@ -822,7 +822,7 @@ extern int acct_storage_p_add_reservation(void *db_conn,
 	req.conn = db_conn;
 	req.data = &get_msg;
 
-	rc = send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req);
+	rc = slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &req);
 
 	return rc;
 }
@@ -1078,7 +1078,7 @@ extern List acct_storage_p_modify_job(void *db_conn, uint32_t uid,
 	 * slurmctld.
 	 */
 	if (job_cond && (job_cond->flags & JOBCOND_FLAG_NO_WAIT)) {
-		send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req);
+		slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &req);
 		goto end_it;
 	}
 
@@ -1278,7 +1278,7 @@ extern int acct_storage_p_modify_reservation(void *db_conn,
 	req.conn = db_conn;
 	req.data = &get_msg;
 
-	rc = send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req);
+	rc = slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &req);
 
 	return rc;
 }
@@ -1722,7 +1722,7 @@ extern int acct_storage_p_remove_reservation(void *db_conn,
 	req.conn = db_conn;
 	req.data = &get_msg;
 
-	rc = send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &req);
+	rc = slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &req);
 
 	return rc;
 }
@@ -2511,7 +2511,7 @@ extern int clusteracct_storage_p_node_down(void *db_conn,
 	msg.data       = &req;
 
 	//info("sending a down message here");
-	if (send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &msg) < 0)
+	if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg) < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -2533,7 +2533,7 @@ extern int clusteracct_storage_p_node_up(void *db_conn, node_record_t *node_ptr,
 	msg.data       = &req;
 
 	// info("sending an up message here");
-	if (send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &msg) < 0)
+	if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg) < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -2645,7 +2645,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 		if (!req.db_index)
 			job_ptr->db_index = NO_VAL64;
 
-		if (send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &msg) < 0) {
+		if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg) < 0) {
 			_partial_free_dbd_job_start(&req);
 			return SLURM_ERROR;
 		}
@@ -2657,7 +2657,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 	 */
 	rc = send_recv_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &msg, &msg_rc);
 	if (rc != SLURM_SUCCESS) {
-		if (send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &msg) < 0) {
+		if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg) < 0) {
 			_partial_free_dbd_job_start(&req);
 			return SLURM_ERROR;
 		}
@@ -2735,7 +2735,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn, job_record_t *job_ptr)
 	msg.conn        = db_conn;
 	msg.data        = &req;
 
-	if (send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &msg) < 0)
+	if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg) < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -2809,7 +2809,7 @@ extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 	msg.conn        = db_conn;
 	msg.data        = &req;
 
-	if (send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &msg) < 0)
+	if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg) < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -2884,7 +2884,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	msg.conn        = db_conn;
 	msg.data        = &req;
 
-	if (send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &msg) < 0)
+	if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg) < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -2915,7 +2915,7 @@ extern int jobacct_storage_p_suspend(void *db_conn, job_record_t *job_ptr)
 	msg.conn         = db_conn;
 	msg.data         = &req;
 
-	if (send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &msg) < 0)
+	if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg) < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -3077,7 +3077,7 @@ extern int acct_storage_p_flush_jobs_on_cluster(void *db_conn,
 	msg.conn         = db_conn;
 	msg.data         = &req;
 
-	if (send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &msg) < 0)
+	if (slurmdbd_agent_send(SLURM_PROTOCOL_VERSION, &msg) < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;

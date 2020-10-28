@@ -74,7 +74,7 @@ extern int slurmdbd_agent_send_recv(uint16_t rpc_version,
  * NOTE: slurm_open_slurmdbd_conn() must have been called with make_agent set
  *
  * Returns SLURM_SUCCESS or an error code */
-extern int send_slurmdbd_msg(uint16_t rpc_version, persist_msg_t *req);
+extern int slurmdbd_agent_send(uint16_t rpc_version, persist_msg_t *req);
 
 /* Return true if connection to slurmdbd is active, false otherwise. */
 extern bool slurmdbd_conn_active(void);
