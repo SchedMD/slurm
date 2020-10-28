@@ -41,11 +41,14 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/state_save.h"
+
+bool enabled = true;
 
 static void *_rpc_queue_worker(void *arg)
 {
@@ -124,6 +127,13 @@ static void *_rpc_queue_worker(void *arg)
 
 extern void rpc_queue_init(void)
 {
+	if (!xstrcasestr(slurm_conf.slurmctld_params, "enable_rpc_queue")) {
+		enabled = false;
+		return;
+	}
+
+	error("enabled experimental rpc queuing system");
+
 	for (slurmctld_rpc_t *q = slurmctld_rpcs; q->msg_type; q++) {
 		if (!q->queue_enabled)
 			continue;
@@ -142,6 +152,11 @@ extern void rpc_queue_init(void)
 
 extern void rpc_queue_shutdown(void)
 {
+	if (!enabled)
+		return;
+
+	enabled = false;
+
 	/* mark all as shut down */
 	for (slurmctld_rpc_t *q = slurmctld_rpcs; q->msg_type; q++) {
 		if (!q->queue_enabled)
@@ -165,6 +180,9 @@ extern void rpc_queue_shutdown(void)
 
 extern bool rpc_enqueue(slurm_msg_t *msg)
 {
+	if (!enabled)
+		return false;
+
 	for (slurmctld_rpc_t *q = slurmctld_rpcs; q->msg_type; q++) {
 		if (q->msg_type == msg->msg_type) {
 			if (!q->queue_enabled)
