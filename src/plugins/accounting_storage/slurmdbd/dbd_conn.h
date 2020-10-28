@@ -60,6 +60,9 @@ extern void dbd_conn_close(slurm_persist_conn_t **pc);
 
 /*
  * Send an RPC to the SlurmDBD and wait for an arbitrary reply message.
+ *
+ * No agent code is evaluated here
+ *
  * The RPC will not be queued if an error occurs.
  * The "resp" message must be freed by the caller.
  * Returns SLURM_SUCCESS or an error code
@@ -71,6 +74,9 @@ extern int dbd_conn_send_recv_direct(uint16_t rpc_version,
 
 /*
  * Send an RPC to the SlurmDBD and wait for the return code reply.
+ *
+ * This handles agent as well as normal connections
+ *
  * The RPC will not be queued if an error occurs.
  * Returns SLURM_SUCCESS or an error code
  */
@@ -80,6 +86,9 @@ extern int dbd_conn_send_recv_rc_msg(uint16_t rpc_version,
 
 /*
  * Send an RPC to the SlurmDBD and wait for an arbitrary reply message.
+ *
+ * This handles agent as well as normal connections
+ *
  * The RPC will not be queued if an error occurs.
  * The "resp" message must be freed by the caller.
  * Returns SLURM_SUCCESS or an error code
