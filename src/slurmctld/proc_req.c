@@ -2899,7 +2899,8 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t * msg)
 		READ_LOCK, READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 
 	START_TIMER;
-	lock_slurmctld(job_read_lock);
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+		lock_slurmctld(job_read_lock);
 	error_code = job_alloc_info(msg->auth_uid, job_info_msg->job_id,
 				    &job_ptr);
 	END_TIMER2("_slurm_rpc_job_het_job_alloc_info");
@@ -2909,7 +2910,8 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t * msg)
 	    (job_ptr->het_job_id && !job_ptr->het_job_list))
 		error_code = ESLURM_NOT_HET_JOB_LEADER;
 	if (error_code || (job_ptr == NULL) || (job_ptr->job_resrcs == NULL)) {
-		unlock_slurmctld(job_read_lock);
+		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+			unlock_slurmctld(job_read_lock);
 		debug2("%s: JobId=%u, uid=%u: %s",
 		       __func__, job_info_msg->job_id, msg->auth_uid,
 		       slurm_strerror(error_code));
@@ -2953,7 +2955,9 @@ static void _slurm_rpc_het_job_alloc_info(slurm_msg_t * msg)
 		}
 		list_iterator_destroy(iter);
 	}
-	unlock_slurmctld(job_read_lock);
+
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+		unlock_slurmctld(job_read_lock);
 
 	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_HET_JOB_ALLOCATION;
@@ -6209,6 +6213,13 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_HET_JOB_ALLOC_INFO,
 		.func = _slurm_rpc_het_job_alloc_info,
+		.queue_enabled = true,
+		.locks = {
+			.conf = READ_LOCK,
+			.job = READ_LOCK,
+			.node = READ_LOCK,
+			.part = NO_LOCK,
+		},
 	},{
 		.msg_type = REQUEST_JOB_SBCAST_CRED,
 		.func = _slurm_rpc_job_sbcast_cred,
