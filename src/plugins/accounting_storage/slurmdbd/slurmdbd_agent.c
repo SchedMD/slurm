@@ -1124,7 +1124,7 @@ extern int slurmdbd_agent_send_recv(uint16_t rpc_version,
 	slurm_mutex_lock(&slurmdbd_lock);
 	halt_agent = 0;
 
-	rc = dbd_conn_send_recv(rpc_version, req, resp);
+	rc = dbd_conn_send_recv_direct(rpc_version, req, resp);
 
 	slurm_cond_signal(&slurmdbd_cond);
 	slurm_mutex_unlock(&slurmdbd_lock);

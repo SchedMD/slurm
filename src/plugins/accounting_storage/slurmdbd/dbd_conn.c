@@ -198,9 +198,9 @@ extern void dbd_conn_close(slurm_persist_conn_t **pc)
  * The "resp" message must be freed by the caller.
  * Returns SLURM_SUCCESS or an error code
  */
-extern int dbd_conn_send_recv(uint16_t rpc_version,
-			      persist_msg_t *req,
-			      persist_msg_t *resp)
+extern int dbd_conn_send_recv_direct(uint16_t rpc_version,
+				     persist_msg_t *req,
+				     persist_msg_t *resp)
 {
 	int rc = SLURM_SUCCESS;
 	Buf buffer;
@@ -268,7 +268,7 @@ extern int dbd_conn_send_recv_rc_msg(uint16_t rpc_version,
 	xassert(resp_code);
 
 	memset(&resp, 0, sizeof(persist_msg_t));
-	rc = send_recv_slurmdbd_msg(rpc_version, req, &resp);
+	rc = dbd_conn_send_recv(rpc_version, req, &resp);
 	if (rc != SLURM_SUCCESS) {
 		;	/* error message already sent */
 	} else if (resp.msg_type != PERSIST_RC) {
@@ -317,15 +317,13 @@ extern int dbd_conn_send_recv_rc_msg(uint16_t rpc_version,
 	return rc;
 }
 
-
-
-extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
-				  persist_msg_t *req,
-				  persist_msg_t *resp)
+extern int dbd_conn_send_recv(uint16_t rpc_version,
+			      persist_msg_t *req,
+			      persist_msg_t *resp)
 {
 	if (running_in_slurmctld() &&
 	    (!req->conn || (req->conn == slurmdbd_conn)))
 		return slurmdbd_agent_send_recv(rpc_version, req, resp);
 	else
-		return dbd_conn_send_recv(rpc_version, req, resp);
+		return dbd_conn_send_recv_direct(rpc_version, req, resp);
 }
