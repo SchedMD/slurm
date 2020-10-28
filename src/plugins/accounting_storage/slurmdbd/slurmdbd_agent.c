@@ -44,8 +44,6 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmctld/trigger_mgr.h"
-
 #include "slurmdbd_agent.h"
 
 enum {
@@ -73,36 +71,6 @@ static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  slurmdbd_cond = PTHREAD_COND_INITIALIZER;
 
 static int max_dbd_msg_action = MAX_DBD_DEFAULT_ACTION;
-
-static void _acct_full(void)
-{
-	if (running_in_slurmctld())
-		trigger_primary_ctld_acct_full();
-}
-
-static void _dbd_fail(void)
-{
-	if (running_in_slurmctld())
-		trigger_primary_dbd_fail();
-}
-
-static void _dbd_res_op(void)
-{
-	if (running_in_slurmctld())
-		trigger_primary_dbd_res_op();
-}
-
-static void _db_fail(void)
-{
-	if (running_in_slurmctld())
-		trigger_primary_db_fail();
-}
-
-static void _db_res_op(void)
-{
-	if (running_in_slurmctld())
-		trigger_primary_db_res_op();
-}
 
 static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 {
@@ -581,97 +549,6 @@ static void _max_dbd_msg_action(uint32_t *msg_cnt)
 		*msg_cnt -= _purge_job_start_req();
 }
 
-/* Open a connection to the Slurm DBD and set slurmdbd_conn */
-static void _open_slurmdbd_conn(bool need_db)
-{
-	char *backup_host = NULL;
-	int rc;
-
-	if (slurmdbd_conn && slurmdbd_conn->fd >= 0) {
-		debug("Attempt to re-open slurmdbd socket");
-		/* clear errno (checked after this for errors) */
-		errno = 0;
-		return;
-	}
-
-	slurm_persist_conn_close(slurmdbd_conn);
-	if (!slurmdbd_conn) {
-		slurmdbd_conn = xmalloc(sizeof(slurm_persist_conn_t));
-		slurmdbd_conn->flags =
-			PERSIST_FLAG_DBD | PERSIST_FLAG_RECONNECT;
-		slurmdbd_conn->persist_type = PERSIST_TYPE_DBD;
-
-		slurmdbd_conn->cluster_name = xstrdup(slurm_conf.cluster_name);
-
-		slurmdbd_conn->timeout = (slurm_conf.msg_timeout + 35) * 1000;
-
-		slurmdbd_conn->rem_port = slurm_conf.accounting_storage_port;
-
-		/* Initialize the callback pointers */
-		memset(&slurmdbd_conn->trigger_callbacks, 0,
-		       sizeof(slurm_trigger_callbacks_t));
-		slurmdbd_conn->trigger_callbacks.acct_full = _acct_full;
-		slurmdbd_conn->trigger_callbacks.dbd_fail = _dbd_fail;
-		slurmdbd_conn->trigger_callbacks.dbd_resumed = _dbd_res_op;
-		slurmdbd_conn->trigger_callbacks.db_fail = _db_fail;
-		slurmdbd_conn->trigger_callbacks.db_resumed = _db_res_op;
-	}
-	slurmdbd_shutdown = 0;
-	slurmdbd_conn->shutdown = &slurmdbd_shutdown;
-	slurmdbd_conn->version  = SLURM_PROTOCOL_VERSION;
-
-	xfree(slurmdbd_conn->rem_host);
-	slurmdbd_conn->rem_host = xstrdup(slurm_conf.accounting_storage_host);
-
-	// See if a backup slurmdbd is configured
-	backup_host = xstrdup(slurm_conf.accounting_storage_backup_host);
-
-again:
-	// A connection failure is only an error if backup dne or also fails
-	if (backup_host)
-		slurmdbd_conn->flags |= PERSIST_FLAG_SUPPRESS_ERR;
-	else
-		slurmdbd_conn->flags &= (~PERSIST_FLAG_SUPPRESS_ERR);
-
-	if (((rc = slurm_persist_conn_open(slurmdbd_conn)) != SLURM_SUCCESS) &&
-	    backup_host) {
-		xfree(slurmdbd_conn->rem_host);
-		// Force the next error to display
-		slurmdbd_conn->comm_fail_time = 0;
-		slurmdbd_conn->rem_host = backup_host;
-		backup_host = NULL;
-		goto again;
-	}
-
-	xfree(backup_host);
-
-	if (rc == SLURM_SUCCESS) {
-		/* set the timeout to the timeout to be used for all other
-		 * messages */
-		slurmdbd_conn->timeout = SLURMDBD_TIMEOUT * 1000;
-		(slurmdbd_conn->trigger_callbacks.dbd_resumed)();
-		(slurmdbd_conn->trigger_callbacks.db_resumed)();
-	}
-
-	if ((!need_db && (rc == ESLURM_DB_CONNECTION)) ||
-	    (rc == SLURM_SUCCESS)) {
-		debug("Sent PersistInit msg");
-		/* clear errno (checked after this for
-		   errors)
-		*/
-		errno = 0;
-	} else {
-		if (rc == ESLURM_DB_CONNECTION)
-			(slurmdbd_conn->trigger_callbacks.db_fail)();
-		slurm_persist_conn_close(slurmdbd_conn);
-
-		/* This means errno was already set correctly */
-		if (rc != SLURM_ERROR)
-			errno = rc;
-		error("Sending PersistInit msg: %m");
-	}
-}
-
 static void _sig_handler(int signal)
 {
 }
@@ -989,61 +866,6 @@ extern void slurmdbd_agent_rem_conn(void)
 	slurm_mutex_lock(&slurmdbd_lock);
 	slurmdbd_conn = NULL;
 	slurm_mutex_unlock(&slurmdbd_lock);
-}
-
-
-/* Open a socket connection to SlurmDbd
- * callbacks IN - make agent to process RPCs and contains callback pointers
- * persist_conn_flags OUT - fill in from response of slurmdbd
- * Returns SLURM_SUCCESS or an error code */
-extern int open_slurmdbd_conn(uint16_t *persist_conn_flags)
-{
-	int tmp_errno = SLURM_SUCCESS;
-	/* we need to set this up before we make the agent or we will
-	 * get a threading issue. */
-
-	slurm_mutex_lock(&slurmdbd_lock);
-
-	if (!slurmdbd_conn) {
-		_open_slurmdbd_conn(1);
-		if (persist_conn_flags)
-			*persist_conn_flags = slurmdbd_conn->flags;
-		tmp_errno = errno;
-	}
-	slurm_mutex_unlock(&slurmdbd_lock);
-
-	if (running_in_slurmctld()) {
-		slurm_mutex_lock(&agent_lock);
-
-		if ((agent_tid == 0) || (agent_list == NULL))
-			_create_agent();
-		else if (agent_list)
-			_load_dbd_state();
-
-		slurm_mutex_unlock(&agent_lock);
-	}
-
-	if (tmp_errno) {
-		errno = tmp_errno;
-		return tmp_errno;
-	} else if (slurmdbd_conn->fd < 0)
-		return SLURM_ERROR;
-	else
-		return SLURM_SUCCESS;
-}
-
-/* Close the SlurmDBD socket connection */
-extern int close_slurmdbd_conn(void)
-{
-	/* NOTE: agent_lock not needed for _shutdown_agent() */
-	_shutdown_agent();
-
-	slurm_mutex_lock(&slurmdbd_lock);
-	slurm_persist_conn_destroy(slurmdbd_conn);
-	slurmdbd_conn = NULL;
-	slurm_mutex_unlock(&slurmdbd_lock);
-
-	return SLURM_SUCCESS;
 }
 
 
