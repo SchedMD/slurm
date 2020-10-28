@@ -73,6 +73,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - avoid xassert() failure on duplicated headers in request.
  -- Remove stale 'ReqNodeNotAvail, Reserved for maintenance' message from
     pending jobs after a maintenance reservation ended.
+ -- MySQL - Stop steps from printing when outside time range.
 
 * Changes in Slurm 20.02.5
 ==========================
