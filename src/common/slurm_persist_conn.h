@@ -38,6 +38,7 @@
 #define _SLURM_PERSIST_CONN_H
 
 #include "slurm/slurm.h"
+#include "pack.h"
 
 #define PERSIST_FLAG_NONE           0x0000
 #define PERSIST_FLAG_DBD            0x0001

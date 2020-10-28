@@ -596,7 +596,7 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 	persist_rc_msg_t *resp = NULL;
 
 	if (!persist_conn->shutdown)
-	    persist_conn->shutdown = &shutdown_time;
+		persist_conn->shutdown = &shutdown_time;
 
 	if (slurm_persist_conn_open_without_init(persist_conn) != SLURM_SUCCESS)
 		return rc;
