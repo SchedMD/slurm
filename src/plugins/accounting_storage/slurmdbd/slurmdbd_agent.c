@@ -53,6 +53,9 @@ enum {
 	MAX_DBD_ACTION_EXIT
 };
 
+slurm_persist_conn_t *slurmdbd_conn = NULL;
+
+
 #define DBD_MAGIC		0xDEAD3219
 #define SLURMDBD_TIMEOUT	900	/* Seconds SlurmDBD for response */
 #define DEBUG_PRINT_MAX_MSG_TYPES 10
@@ -66,7 +69,6 @@ static pthread_t agent_tid      = 0;
 static bool      halt_agent          = 0;
 static time_t    slurmdbd_shutdown   = 0;
 
-static slurm_persist_conn_t *slurmdbd_conn = NULL;
 static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  slurmdbd_cond = PTHREAD_COND_INITIALIZER;
 
