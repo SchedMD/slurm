@@ -38,7 +38,41 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/slurmctld/trigger_mgr.h"
+
 #include "slurmdbd_agent.h"
+
+#define SLURMDBD_TIMEOUT	900	/* Seconds SlurmDBD for response */
+
+static void _acct_full(void)
+{
+	if (running_in_slurmctld())
+		trigger_primary_ctld_acct_full();
+}
+
+static void _dbd_fail(void)
+{
+	if (running_in_slurmctld())
+		trigger_primary_dbd_fail();
+}
+
+static void _dbd_res_op(void)
+{
+	if (running_in_slurmctld())
+		trigger_primary_dbd_res_op();
+}
+
+static void _db_fail(void)
+{
+	if (running_in_slurmctld())
+		trigger_primary_db_fail();
+}
+
+static void _db_res_op(void)
+{
+	if (running_in_slurmctld())
+		trigger_primary_db_res_op();
+}
 
 /* partially based on _open_slurmdbd_conn() */
 extern slurm_persist_conn_t *dbd_conn_open(uint16_t *persist_conn_flags,
@@ -61,6 +95,14 @@ extern slurm_persist_conn_t *dbd_conn_open(uint16_t *persist_conn_flags,
 	pc->rem_port = slurm_conf.accounting_storage_port;
 	pc->version = SLURM_PROTOCOL_VERSION;
 
+	/* Initialize the callback pointers */
+	pc->trigger_callbacks.acct_full = _acct_full;
+	pc->trigger_callbacks.dbd_fail = _dbd_fail;
+	pc->trigger_callbacks.dbd_resumed = _dbd_res_op;
+	pc->trigger_callbacks.db_fail = _db_fail;
+	pc->trigger_callbacks.db_resumed = _db_res_op;
+
+
 again:
 	// A connection failure is only an error if backup dne or also fails
 	if (backup_host)
@@ -68,7 +110,8 @@ again:
 	else
 		pc->flags &= (~PERSIST_FLAG_SUPPRESS_ERR);
 
-	if (((rc = slurm_persist_conn_open(pc))) && backup_host) {
+	if (((rc = slurm_persist_conn_open(pc)) != SLURM_SUCCESS) &&
+	    backup_host) {
 		xfree(pc->rem_host);
 		// Force the next error to display
 		pc->comm_fail_time = 0;
@@ -79,16 +122,35 @@ again:
 
 	xfree(backup_host);
 
-	if (!rc) {
-		debug("Sent PersistInit msg");
-		return pc;
-	} else {
-		error("%s: unable to open slurmdb persistent connection: %s",
-		      __func__, slurm_strerror(rc));
-		/* fail gracefully */
-		slurm_persist_conn_destroy(pc);
-		return NULL;
+	if (rc == SLURM_SUCCESS) {
+		/*
+		 * Increase SLURMDBD_TIMEOUT to wait as long as we need for a
+		 * query to complete.
+		 */
+		pc->timeout = MAX(pc->timeout, SLURMDBD_TIMEOUT * 1000);
+		(pc->trigger_callbacks.dbd_resumed)();
+		(pc->trigger_callbacks.db_resumed)();
 	}
+
+	if (rc == SLURM_SUCCESS) {
+		debug("Sent PersistInit msg");
+		/* clear errno (checked after this for errors) */
+		errno = 0;
+	} else {
+		if (rc == ESLURM_DB_CONNECTION)
+			(pc->trigger_callbacks.db_fail)();
+		dbd_conn_close(&pc);
+
+		/* This means errno was already set correctly */
+		if (rc != SLURM_ERROR)
+			errno = rc;
+		error("Sending PersistInit msg: %m");
+	}
+
+	if (pc && persist_conn_flags)
+		*persist_conn_flags = pc->flags;
+
+	return pc;
 }
 
 extern void dbd_conn_close(slurm_persist_conn_t **pc)
