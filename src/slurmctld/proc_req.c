@@ -3567,11 +3567,13 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 
 	if (error_code == SLURM_SUCCESS) {
 		/* Locks are for job_submit plugin use */
-		lock_slurmctld(job_read_lock);
+		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+			lock_slurmctld(job_read_lock);
 		job_desc_msg->het_job_offset = NO_VAL;
 		error_code = validate_job_create_req(job_desc_msg,
 						     msg->auth_uid, &err_msg);
-		unlock_slurmctld(job_read_lock);
+		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+			unlock_slurmctld(job_read_lock);
 	}
 
 	/*
@@ -3592,8 +3594,10 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 		goto send_msg;
 	}
 
-	_throttle_start(&active_rpc_cnt);
-	lock_slurmctld(job_write_lock);
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
+		_throttle_start(&active_rpc_cnt);
+		lock_slurmctld(job_write_lock);
+	}
 	START_TIMER;	/* Restart after we have locks */
 
 	if (fed_mgr_fed_rec) {
@@ -3622,8 +3626,11 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 			reject_job = true;
 		}
 	}
-	unlock_slurmctld(job_write_lock);
-	_throttle_fini(&active_rpc_cnt);
+
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
+		unlock_slurmctld(job_write_lock);
+		_throttle_fini(&active_rpc_cnt);
+	}
 
 send_msg:
 	END_TIMER2("_slurm_rpc_submit_batch_job");
@@ -6241,6 +6248,14 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_SUBMIT_BATCH_JOB,
 		.func = _slurm_rpc_submit_batch_job,
+		.queue_enabled = true,
+		.locks = {
+			.conf = READ_LOCK,
+			.job = WRITE_LOCK,
+			.node = WRITE_LOCK,
+			.part = READ_LOCK,
+			.fed = READ_LOCK,
+		},
 	},{
 		.msg_type = REQUEST_SUBMIT_BATCH_HET_JOB,
 		.func = _slurm_rpc_submit_batch_het_job,
