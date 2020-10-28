@@ -50,10 +50,13 @@ AC_DEFUN([X_AC_SLURMRESTD],
       if test `expr match "$withval" '[[0-9]]*$'` -gt 0; then
         slurmrestdport="$withval"
       fi
+    ],
+    [
+      slurmrestdport=6820
     ]
   )
   AC_MSG_RESULT(${slurmrestdport=$1})
   AC_DEFINE_UNQUOTED(SLURMRESTD_PORT, [$slurmrestdport],
                      [Define the default port number for slurmrestd])
-  AC_SUBST(SLURMRESTD_PORT)
+  AC_SUBST(SLURMRESTD_PORT, $slurmrestdport)
 ])

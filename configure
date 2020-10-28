@@ -24040,6 +24040,10 @@ if test "${with_slurmrestd_port+set}" = set; then :
         slurmrestdport="$withval"
       fi
 
+else
+
+      slurmrestdport=6820
+
 
 fi
 
@@ -24050,6 +24054,7 @@ cat >>confdefs.h <<_ACEOF
 #define SLURMRESTD_PORT $slurmrestdport
 _ACEOF
 
+  SLURMRESTD_PORT=$slurmrestdport
 
 
 
