@@ -257,7 +257,7 @@ end_it:
 	return rc;
 }
 
-extern int send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
+extern int dbd_conn_send_recv_rc_msg(uint16_t rpc_version,
 				     persist_msg_t *req,
 				     int *resp_code)
 {
