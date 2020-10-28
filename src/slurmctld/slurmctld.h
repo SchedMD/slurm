@@ -131,11 +131,6 @@
  *  General configuration parameters and data structures
 \*****************************************************************************/
 
-typedef struct {
-	uint16_t msg_type;
-	void (*func)(slurm_msg_t *msg);
-} slurmctld_rpc_t;
-
 typedef struct slurmctld_config {
 	pthread_cond_t backup_finish_cond; /* use thread_count_lock */
 	time_t	boot_time;
@@ -218,7 +213,6 @@ enum {
 	TRES_ARRAY_TOTAL_CNT
 };
 
-extern slurmctld_rpc_t slurmctld_rpcs[];
 extern bool  preempt_send_user_signal;
 extern time_t	last_proc_req_start;
 extern diag_stats_t slurmctld_diag_stats;

@@ -43,6 +43,27 @@
 
 #include "src/common/slurm_protocol_api.h"
 
+#include "src/slurmctld/locks.h"
+
+typedef struct {
+	uint16_t msg_type;
+	void (*func)(slurm_msg_t *msg);
+	slurmctld_lock_t locks;
+
+	/* Queue structual elements */
+	char *msg_name; /* automatically derived from msg_type */
+
+	bool queue_enabled;
+	bool shutdown;
+
+	pthread_t thread;
+	pthread_cond_t cond;
+	pthread_mutex_t mutex;
+
+	List work;
+} slurmctld_rpc_t;
+
+extern slurmctld_rpc_t slurmctld_rpcs[];
 
 /*
  * slurmctld_req  - Process an individual RPC request
