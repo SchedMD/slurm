@@ -1871,7 +1871,6 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 /* _slurm_rpc_epilog_complete - process RPC noting the completion of
  * the epilog denoting the completion of a job it its entirety */
 static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
-					bool *run_scheduler,
 					bool running_composite)
 {
 	static int active_rpc_cnt = 0;
@@ -1884,6 +1883,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 	epilog_complete_msg_t *epilog_msg =
 		(epilog_complete_msg_t *) msg->data;
 	job_record_t *job_ptr;
+	bool run_scheduler = false;
 
 	START_TIMER;
 	if (!validate_slurm_user(msg->auth_uid)) {
@@ -1911,7 +1911,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 
 	if (job_epilog_complete(epilog_msg->job_id, epilog_msg->node_name,
 				epilog_msg->return_code))
-		*run_scheduler = true;
+		run_scheduler = true;
 
 	job_ptr = find_job_record(epilog_msg->job_id);
 
@@ -1931,7 +1931,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 	END_TIMER2("_slurm_rpc_epilog_complete");
 
 	/* Functions below provide their own locking */
-	if (!running_composite && *run_scheduler) {
+	if (!running_composite && run_scheduler) {
 		/*
 		 * In defer mode, avoid triggering the scheduler logic
 		 * for every epilog complete message.
@@ -6056,7 +6056,6 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 void slurmctld_req(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
-	bool run_scheduler = false;
 
 	if (msg->conn_fd >= 0)
 		fd_set_nonblocking(msg->conn_fd);
@@ -6137,7 +6136,7 @@ void slurmctld_req(slurm_msg_t *msg)
 		_slurm_rpc_dump_partitions(msg);
 		break;
 	case MESSAGE_EPILOG_COMPLETE:
-		_slurm_rpc_epilog_complete(msg, &run_scheduler, 0);
+		_slurm_rpc_epilog_complete(msg, 0);
 		break;
 	case REQUEST_CANCEL_JOB_STEP:
 		_slurm_rpc_job_step_kill(msg);
@@ -6149,7 +6148,7 @@ void slurmctld_req(slurm_msg_t *msg)
 		_slurm_rpc_complete_prolog(msg);
 		break;
 	case REQUEST_COMPLETE_BATCH_SCRIPT:
-		_slurm_rpc_complete_batch_script(msg, &run_scheduler, 0);
+		_slurm_rpc_complete_batch_script(msg, 0);
 		break;
 	case REQUEST_JOB_STEP_CREATE:
 		_slurm_rpc_job_step_create(msg);
