@@ -29,6 +29,15 @@ IFS=","
 array=($2)
 IFS=" "
 
+#### JOB_COMPLETION_TIME ###
+# The time needed for job to complete and synchronize accounting data with
+# slurmdbd. If you're running slurmctld under systemd control executing
+# `systemctl stop slurmctld` or `systemctl restart slurmctld` may hang for this
+# time. While slurmctld will be down systemd will still waits for all
+# descendant processes (in this case sleep executed from smail) to complete.
+# The default value is 5s (half of default MessageTimeout)
+JOB_COMPLETION_TIME=5
+
 # Get the ClusterName
 ClusterName=${SLURM_CLUSTER_NAME}
 subject="$ClusterName $2"
@@ -51,7 +60,7 @@ if [ -n "$status" ]; then
     jobid=${jobid%"_*"}
     # Fork a child so sleep is asynchronous.
     {
-        sleep 60
+        sleep $JOB_COMPLETION_TIME
         $SEFF $jobid | $MAIL -s "$subject" $recipient
     } &
 else

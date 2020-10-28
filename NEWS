@@ -36,6 +36,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix race that can prevent the prolog for a requeued job from running.
  -- cli_filter - add "type" to readily distinguish between the CLI command in
     use.
+ -- smail - reduce sleep before seff to 5 seconds.
 
 * Changes in Slurm 20.11.0
 ==========================
