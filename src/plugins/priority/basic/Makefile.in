@@ -176,7 +176,7 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-priority_basic_la_DEPENDENCIES =
+priority_basic_la_LIBADD =
 am_priority_basic_la_OBJECTS = priority_basic.lo
 priority_basic_la_OBJECTS = $(am_priority_basic_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -510,7 +510,6 @@ pkglib_LTLIBRARIES = priority_basic.la
 # basic priority logging plugin.
 priority_basic_la_SOURCES = priority_basic.c
 priority_basic_la_LDFLAGS = $(PLUGIN_FLAGS)
-priority_basic_la_LIBADD = -lm
 all: all-am
 
 .SUFFIXES:

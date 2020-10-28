@@ -12,4 +12,3 @@ pkglib_LTLIBRARIES = acct_gather_energy_ibmaem.la
 acct_gather_energy_ibmaem_la_SOURCES = acct_gather_energy_ibmaem.c
 
 acct_gather_energy_ibmaem_la_LDFLAGS = $(PLUGIN_FLAGS)
-acct_gather_energy_ibmaem_la_LIBADD  = -lm

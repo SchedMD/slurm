@@ -12,4 +12,3 @@ pkglib_LTLIBRARIES = acct_gather_energy_pm_counters.la
 acct_gather_energy_pm_counters_la_SOURCES = acct_gather_energy_pm_counters.c
 
 acct_gather_energy_pm_counters_la_LDFLAGS = $(PLUGIN_FLAGS)
-acct_gather_energy_pm_counters_la_LIBADD  = -lm

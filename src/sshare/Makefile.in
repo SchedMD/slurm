@@ -478,10 +478,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 AM_CPPFLAGS = -I$(top_srcdir)
-sshare_LDADD = \
-	$(LIB_SLURM) $(DL_LIBS) -lm \
-	$(READLINE_LIBS)
-
+sshare_LDADD = $(LIB_SLURM) $(DL_LIBS) $(READLINE_LIBS)
 sshare_DEPENDENCIES = $(LIB_SLURM_BUILD)
 sshare_SOURCES = \
 	process.c               \

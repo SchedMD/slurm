@@ -8,7 +8,7 @@ bin_PROGRAMS = sbcast
 
 depend_libs = $(top_builddir)/src/bcast/libfile_bcast.la
 
-sbcast_LDADD = 	$(depend_libs) $(LIB_SLURM) $(DL_LIBS) -lm
+sbcast_LDADD = 	$(depend_libs) $(LIB_SLURM) $(DL_LIBS)
 sbcast_DEPENDENCIES = $(depend_libs) $(LIB_SLURM_BUILD)
 
 noinst_HEADERS = sbcast.h

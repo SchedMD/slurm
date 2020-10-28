@@ -12,4 +12,3 @@ pkglib_LTLIBRARIES = acct_gather_energy_rsmi.la
 acct_gather_energy_rsmi_la_SOURCES = acct_gather_energy_rsmi.c
 
 acct_gather_energy_rsmi_la_LDFLAGS = $(PLUGIN_FLAGS)
-acct_gather_energy_rsmi_la_LIBADD  = -lm

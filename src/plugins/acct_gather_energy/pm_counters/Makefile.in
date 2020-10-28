@@ -176,7 +176,7 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-acct_gather_energy_pm_counters_la_DEPENDENCIES =
+acct_gather_energy_pm_counters_la_LIBADD =
 am_acct_gather_energy_pm_counters_la_OBJECTS =  \
 	acct_gather_energy_pm_counters.lo
 acct_gather_energy_pm_counters_la_OBJECTS =  \
@@ -512,7 +512,6 @@ pkglib_LTLIBRARIES = acct_gather_energy_pm_counters.la
 # cpu/core energy accounting plugin.
 acct_gather_energy_pm_counters_la_SOURCES = acct_gather_energy_pm_counters.c
 acct_gather_energy_pm_counters_la_LDFLAGS = $(PLUGIN_FLAGS)
-acct_gather_energy_pm_counters_la_LIBADD = -lm
 all: all-am
 
 .SUFFIXES:
