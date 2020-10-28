@@ -1531,11 +1531,13 @@ static void _slurm_rpc_dump_jobs_user(slurm_msg_t * msg)
 		READ_LOCK, READ_LOCK, NO_LOCK, READ_LOCK, READ_LOCK };
 
 	START_TIMER;
-	lock_slurmctld(job_read_lock);
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+		lock_slurmctld(job_read_lock);
 	pack_all_jobs(&dump, &dump_size, job_info_request_msg->show_flags,
 		      msg->auth_uid, job_info_request_msg->user_id,
 		      msg->protocol_version);
-	unlock_slurmctld(job_read_lock);
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+		unlock_slurmctld(job_read_lock);
 	END_TIMER2("_slurm_rpc_dump_job_user");
 #if 0
 	info("_slurm_rpc_dump_user_jobs, size=%d %s", dump_size, TIME_STR);
@@ -6076,6 +6078,13 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_JOB_USER_INFO,
 		.func = _slurm_rpc_dump_jobs_user,
+		.queue_enabled = true,
+		.locks = {
+			.conf = READ_LOCK,
+			.job = READ_LOCK,
+			.part = READ_LOCK,
+			.fed = READ_LOCK,
+		},
 	},{
 		.msg_type = REQUEST_JOB_INFO_SINGLE,
 		.func = _slurm_rpc_dump_job_single,
