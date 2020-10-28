@@ -6108,6 +6108,12 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT,
 		.func = _slurm_rpc_complete_batch_script,
+		.queue_enabled = true,
+		.locks = {
+			.job = WRITE_LOCK,
+			.node = WRITE_LOCK,
+			.fed = READ_LOCK,
+		},
 	},{
 		.msg_type = REQUEST_JOB_STEP_CREATE,
 		.func = _slurm_rpc_job_step_create,
@@ -6129,6 +6135,13 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = MESSAGE_NODE_REGISTRATION_STATUS,
 		.func = _slurm_rpc_node_registration,
+		.queue_enabled = true,
+		.locks = {
+			.conf = READ_LOCK,
+			.job = WRITE_LOCK,
+			.node = WRITE_LOCK,
+			.fed = READ_LOCK,
+		},
 	},{
 		.msg_type = REQUEST_JOB_ALLOCATION_INFO,
 		.func = _slurm_rpc_job_alloc_info,
@@ -6213,6 +6226,12 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_STEP_COMPLETE,
 		.func = _slurm_rpc_step_complete,
+		.queue_enabled = true,
+		.locks = {
+			.job = WRITE_LOCK,
+			.node = WRITE_LOCK,
+			.fed = READ_LOCK,
+		},
 	},{
 		.msg_type = REQUEST_STEP_LAYOUT,
 		.func = _slurm_rpc_step_layout,
