@@ -720,5 +720,5 @@ extern void xstrtrim(char *string)
 
 	/* shift it over if necessary */
 	if (end != start)
-		memcpy(string, start, (ptr - start + 1));
+		memmove(string, start, (ptr - start + 1));
 }
