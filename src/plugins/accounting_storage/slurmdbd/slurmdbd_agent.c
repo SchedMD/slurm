@@ -1099,9 +1099,10 @@ extern int close_slurmdbd_conn(void)
 	return SLURM_SUCCESS;
 }
 
-static int _agent_send_recv(uint16_t rpc_version,
-			    persist_msg_t *req,
-			    persist_msg_t *resp)
+
+extern int slurmdbd_agent_send_recv(uint16_t rpc_version,
+				    persist_msg_t *req,
+				    persist_msg_t *resp)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -1110,7 +1111,7 @@ static int _agent_send_recv(uint16_t rpc_version,
 	xassert(slurmdbd_conn);
 
 	if (req->conn && (req->conn != slurmdbd_conn))
-		info("We are overriding the connection!!!!!");
+		error("We are overriding the connection!!!!!");
 
 	req->conn = slurmdbd_conn;
 
@@ -1129,16 +1130,6 @@ static int _agent_send_recv(uint16_t rpc_version,
 	slurm_mutex_unlock(&slurmdbd_lock);
 
 	return rc;
-}
-
-extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
-				  persist_msg_t *req,
-				  persist_msg_t *resp)
-{
-	if (slurmdbd_conn)
-		return _agent_send_recv(rpc_version, req, resp);
-	else
-		return dbd_conn_send_recv(rpc_version, req, resp);
 }
 
 /* Send an RPC to the SlurmDBD and wait for the return code reply.

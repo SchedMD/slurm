@@ -58,20 +58,23 @@ extern int open_slurmdbd_conn(uint16_t *persist_conn_flags);
 /* Close the SlurmDBD socket connection */
 extern int close_slurmdbd_conn(void);
 
+/*
+ * Send an RPC to the SlurmDBD and wait for an arbitrary reply message.
+ * This stops the agent and sends the message.
+ * The RPC will not be queued if an error occurs.
+ * The "resp" message must be freed by the caller.
+ * Returns SLURM_SUCCESS or an error code
+ */
+extern int slurmdbd_agent_send_recv(uint16_t rpc_version,
+				    persist_msg_t *req,
+				    persist_msg_t *resp);
+
 /* Send an RPC to the SlurmDBD. Do not wait for the reply. The RPC
  * will be queued and processed later if the SlurmDBD is not responding.
  * NOTE: slurm_open_slurmdbd_conn() must have been called with make_agent set
  *
  * Returns SLURM_SUCCESS or an error code */
 extern int send_slurmdbd_msg(uint16_t rpc_version, persist_msg_t *req);
-
-/* Send an RPC to the SlurmDBD and wait for an arbitrary reply message.
- * The RPC will not be queued if an error occurs.
- * The "resp" message must be freed by the caller.
- * Returns SLURM_SUCCESS or an error code */
-extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
-				  persist_msg_t *req,
-				  persist_msg_t *resp);
 
 /* Send an RPC to the SlurmDBD and wait for the return code reply.
  * The RPC will not be queued if an error occurs.

@@ -67,3 +67,15 @@ extern void dbd_conn_close(slurm_persist_conn_t **pc);
 extern int dbd_conn_send_recv(uint16_t rpc_version,
 			      persist_msg_t *req,
 			      persist_msg_t *resp);
+
+
+
+/*
+ * Send an RPC to the SlurmDBD and wait for an arbitrary reply message.
+ * The RPC will not be queued if an error occurs.
+ * The "resp" message must be freed by the caller.
+ * Returns SLURM_SUCCESS or an error code
+ */
+extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
+				  persist_msg_t *req,
+				  persist_msg_t *resp);

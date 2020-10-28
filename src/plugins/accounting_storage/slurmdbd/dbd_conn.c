@@ -256,3 +256,14 @@ end_it:
 
 	return rc;
 }
+
+extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
+				  persist_msg_t *req,
+				  persist_msg_t *resp)
+{
+	if (running_in_slurmctld() &&
+	    (!req->conn || (req->conn == slurmdbd_conn)))
+		return slurmdbd_agent_send_recv(rpc_version, req, resp);
+	else
+		return dbd_conn_send_recv(rpc_version, req, resp);
+}
