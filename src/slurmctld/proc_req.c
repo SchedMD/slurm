@@ -2332,24 +2332,26 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	}
 #endif
 
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 #if defined HAVE_NATIVE_CRAY
-	slurm_mutex_lock(&slurmctld_config.thread_count_lock);
-	if (LOTS_OF_AGENTS || (slurmctld_config.server_thread_count >= 128)) {
-		/*
-		 * Don't start more steps if system is very busy right now.
-		 * Getting cray network switch cookie is slow and happens
-		 * with job write lock set.
-		 */
-		slurm_send_rc_msg(msg, EAGAIN);
+		slurm_mutex_lock(&slurmctld_config.thread_count_lock);
+		if (LOTS_OF_AGENTS ||
+		    (slurmctld_config.server_thread_count >= 128)) {
+			/*
+			 * Don't start more steps if system is very busy right
+			 * now. Getting cray network switch cookie is slow and
+			 * happens with job write lock set.
+			 */
+			slurm_send_rc_msg(msg, EAGAIN);
+			slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
+			return;
+		}
 		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
-		return;
-	}
-	slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 #endif
 
-	_throttle_start(&active_rpc_cnt);
-	lock_slurmctld(job_write_lock);
-
+		_throttle_start(&active_rpc_cnt);
+		lock_slurmctld(job_write_lock);
+	}
 	error_code = step_create(req_step_msg, &step_rec,
 				 msg->protocol_version);
 
@@ -2362,8 +2364,10 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 
 	/* return result */
 	if (error_code) {
-		unlock_slurmctld(job_write_lock);
-		_throttle_fini(&active_rpc_cnt);
+		if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
+			unlock_slurmctld(job_write_lock);
+			_throttle_fini(&active_rpc_cnt);
+		}
 		if ((error_code == ESLURM_PROLOG_RUNNING) ||
 		    (error_code == ESLURM_DISABLED))
 			log_flag(STEPS, "%s for suspended JobId=%u: %s",
@@ -2400,8 +2404,10 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		job_step_resp.select_jobinfo = step_rec->select_jobinfo;
 		job_step_resp.switch_job     = step_rec->switch_job;
 
-		unlock_slurmctld(job_write_lock);
-		_throttle_fini(&active_rpc_cnt);
+		if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
+			unlock_slurmctld(job_write_lock);
+			_throttle_fini(&active_rpc_cnt);
+		}
 		response_init(&resp, msg);
 		resp.msg_type = RESPONSE_JOB_STEP_CREATE;
 		resp.data = &job_step_resp;
@@ -6117,6 +6123,11 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_JOB_STEP_CREATE,
 		.func = _slurm_rpc_job_step_create,
+		.queue_enabled = true,
+		.locks = {
+			.job = WRITE_LOCK,
+			.node = READ_LOCK,
+		},
 	},{
 		.msg_type = REQUEST_JOB_STEP_INFO,
 		.func = _slurm_rpc_job_step_get_info,
