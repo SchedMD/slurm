@@ -37,5 +37,10 @@
 #ifndef _RPC_QUEUE_H_
 #define _RPC_QUEUE_H_
 
+extern void rpc_queue_init(void);
+
+extern void rpc_queue_shutdown(void);
+
+extern bool rpc_enqueue(slurm_msg_t *msg);
 
 #endif
