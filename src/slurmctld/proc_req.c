@@ -2064,7 +2064,6 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t * msg)
 /* _slurm_rpc_complete_batch - process RPC from slurmstepd to note the
  *	completion of a batch script */
 static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
-					     bool *run_scheduler,
 					     bool running_composite)
 {
 	static int active_rpc_cnt = 0;
@@ -2247,9 +2246,6 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 
-	/* If running composite lets not call this to avoid deadlock */
-	if (!running_composite && *run_scheduler)
-		(void) schedule(0);		/* Has own locking */
 	if (dump_job)
 		(void) schedule_job_save();	/* Has own locking */
 	if (dump_node)
