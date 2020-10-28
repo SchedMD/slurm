@@ -1870,8 +1870,7 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 
 /* _slurm_rpc_epilog_complete - process RPC noting the completion of
  * the epilog denoting the completion of a job it its entirety */
-static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
-					bool running_composite)
+static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
 	static time_t config_update = 0;
@@ -1894,7 +1893,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 
 	/* Only throttle on non-composite messages, the lock should
 	 * already be set earlier. */
-	if (!running_composite) {
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		if (config_update != slurm_conf.last_update) {
 			char *sched_params = slurm_get_sched_params();
 			defer_sched = (xstrcasestr(sched_params, "defer"));
@@ -1923,7 +1922,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 		debug2("%s: %pJ Node=%s %s",
 		       __func__, job_ptr, epilog_msg->node_name, TIME_STR);
 
-	if (!running_composite) {
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		unlock_slurmctld(job_write_lock);
 		_throttle_fini(&active_rpc_cnt);
 	}
@@ -1931,7 +1930,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg,
 	END_TIMER2("_slurm_rpc_epilog_complete");
 
 	/* Functions below provide their own locking */
-	if (!running_composite && run_scheduler) {
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING) && run_scheduler) {
 		/*
 		 * In defer mode, avoid triggering the scheduler logic
 		 * for every epilog complete message.
@@ -2063,8 +2062,7 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t * msg)
 
 /* _slurm_rpc_complete_batch - process RPC from slurmstepd to note the
  *	completion of a batch script */
-static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
-					     bool running_composite)
+static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS, i;
@@ -2093,7 +2091,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 		return;
 	}
 
-	if (!running_composite) {
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		_throttle_start(&active_rpc_cnt);
 		lock_slurmctld(job_write_lock);
 	}
@@ -2109,7 +2107,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 		error("Batch completion for JobId=%u sent from wrong node (%s rather than %s). Was the job requeued due to node failure?",
 		      comp_msg->job_id,
 		      comp_msg->node_name, job_ptr->batch_host);
-		if (!running_composite) {
+		if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 			unlock_slurmctld(job_write_lock);
 			_throttle_fini(&active_rpc_cnt);
 		}
@@ -2223,7 +2221,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg,
 	i = job_complete(comp_msg->job_id, msg->auth_uid, job_requeue, false,
 			 comp_msg->job_rc);
 	error_code = MAX(error_code, i);
-	if (!running_composite) {
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		unlock_slurmctld(job_write_lock);
 		_throttle_fini(&active_rpc_cnt);
 	}
@@ -2695,8 +2693,7 @@ static void _find_avail_future_node(slurm_msg_t *msg)
 
 /* _slurm_rpc_node_registration - process RPC to determine if a node's
  *	actual configuration satisfies the configured specification */
-static void _slurm_rpc_node_registration(slurm_msg_t * msg,
-					 bool running_composite)
+static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 {
 	/* init */
 	DEF_TIMERS;
@@ -2733,7 +2730,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg,
 			      "set DebugFlags=NO_CONF_HASH in your slurm.conf.",
 			      node_reg_stat_msg->node_name);
 		}
-		if (!running_composite)
+		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			lock_slurmctld(job_write_lock);
 
 		/*
@@ -2752,7 +2749,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg,
 		validate_jobs_on_node(node_reg_stat_msg);
 		error_code = validate_node_specs(msg, &newly_up);
 #endif
-		if (!running_composite)
+		if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 			unlock_slurmctld(job_write_lock);
 		END_TIMER2("_slurm_rpc_node_registration");
 		if (newly_up) {
@@ -3330,7 +3327,7 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
  *      completion of a job step on at least some nodes.
  *	If the job step is complete, it may
  *	represent the termination of an entire job step */
-static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
+static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 {
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS, rc, rem;
@@ -3348,7 +3345,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 		 &req->step_id, req->range_first, req->range_last,
 		 req->step_rc);
 
-	if (!running_composite) {
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		_throttle_start(&active_rpc_cnt);
 		lock_slurmctld(job_write_lock);
 	}
@@ -3357,7 +3354,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 
 	if (rc || rem) {	/* some error or not totally done */
 		/* Note: Error printed within step_partial_comp */
-		if (!running_composite) {
+		if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 			unlock_slurmctld(job_write_lock);
 			_throttle_fini(&active_rpc_cnt);
 		}
@@ -3367,7 +3364,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg, bool running_composite)
 		return;
 	}
 
-	if (!running_composite) {
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		unlock_slurmctld(job_write_lock);
 		_throttle_fini(&active_rpc_cnt);
 	}
