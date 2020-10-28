@@ -50,7 +50,20 @@
 extern slurm_persist_conn_t *dbd_conn_open(uint16_t *persist_conn_flags,
 					   char *cluster_name);
 
+/* reopen connection if needed */
+extern int dbd_conn_check_and_reopen(slurm_persist_conn_t *pc);
+
 /*
  * dbd_conn_close - Close and free memory of connection made from dbd_conn_open.
  */
 extern void dbd_conn_close(slurm_persist_conn_t **pc);
+
+/*
+ * Send an RPC to the SlurmDBD and wait for an arbitrary reply message.
+ * The RPC will not be queued if an error occurs.
+ * The "resp" message must be freed by the caller.
+ * Returns SLURM_SUCCESS or an error code
+ */
+extern int dbd_conn_send_recv(uint16_t rpc_version,
+			      persist_msg_t *req,
+			      persist_msg_t *resp);

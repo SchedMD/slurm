@@ -38,8 +38,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/slurmdbd_pack.h"
 #include "src/slurmctld/trigger_mgr.h"
-
 #include "slurmdbd_agent.h"
 
 #define SLURMDBD_TIMEOUT	900	/* Seconds SlurmDBD for response */
@@ -74,34 +74,13 @@ static void _db_res_op(void)
 		trigger_primary_db_res_op();
 }
 
-/* partially based on _open_slurmdbd_conn() */
-extern slurm_persist_conn_t *dbd_conn_open(uint16_t *persist_conn_flags,
-					   char *cluster_name)
+static int _connect_dbd_conn(slurm_persist_conn_t *pc)
 {
+
 	int rc;
 	char *backup_host = xstrdup(slurm_conf.accounting_storage_backup_host);
-	slurm_persist_conn_t *pc = xmalloc(sizeof(*pc));
 
-	if (persist_conn_flags)
-		pc->flags = *persist_conn_flags;
-	pc->flags |= (PERSIST_FLAG_DBD | PERSIST_FLAG_RECONNECT);
-	pc->persist_type = PERSIST_TYPE_DBD;
-	if (cluster_name)
-		pc->cluster_name = xstrdup(cluster_name);
-	else
-		pc->cluster_name = xstrdup(slurm_conf.cluster_name);
-	pc->timeout = (slurm_conf.msg_timeout + 35) * 1000;
-	pc->rem_host = xstrdup(slurm_conf.accounting_storage_host);
-	pc->rem_port = slurm_conf.accounting_storage_port;
-	pc->version = SLURM_PROTOCOL_VERSION;
-
-	/* Initialize the callback pointers */
-	pc->trigger_callbacks.acct_full = _acct_full;
-	pc->trigger_callbacks.dbd_fail = _dbd_fail;
-	pc->trigger_callbacks.dbd_resumed = _dbd_res_op;
-	pc->trigger_callbacks.db_fail = _db_fail;
-	pc->trigger_callbacks.db_resumed = _db_res_op;
-
+	xassert(pc);
 
 again:
 	// A connection failure is only an error if backup dne or also fails
@@ -147,10 +126,62 @@ again:
 		error("Sending PersistInit msg: %m");
 	}
 
+	return rc;
+}
+
+/* partially based on _open_slurmdbd_conn() */
+extern slurm_persist_conn_t *dbd_conn_open(uint16_t *persist_conn_flags,
+					   char *cluster_name)
+{
+	slurm_persist_conn_t *pc = xmalloc(sizeof(*pc));
+
+	if (persist_conn_flags)
+		pc->flags = *persist_conn_flags;
+	pc->flags |= (PERSIST_FLAG_DBD | PERSIST_FLAG_RECONNECT);
+	pc->persist_type = PERSIST_TYPE_DBD;
+	if (cluster_name)
+		pc->cluster_name = xstrdup(cluster_name);
+	else
+		pc->cluster_name = xstrdup(slurm_conf.cluster_name);
+	pc->timeout = (slurm_conf.msg_timeout + 35) * 1000;
+	pc->rem_host = xstrdup(slurm_conf.accounting_storage_host);
+	pc->rem_port = slurm_conf.accounting_storage_port;
+	pc->version = SLURM_PROTOCOL_VERSION;
+
+	/* Initialize the callback pointers */
+	pc->trigger_callbacks.acct_full = _acct_full;
+	pc->trigger_callbacks.dbd_fail = _dbd_fail;
+	pc->trigger_callbacks.dbd_resumed = _dbd_res_op;
+	pc->trigger_callbacks.db_fail = _db_fail;
+	pc->trigger_callbacks.db_resumed = _db_res_op;
+
+	(void)_connect_dbd_conn(pc);
+
 	if (pc && persist_conn_flags)
 		*persist_conn_flags = pc->flags;
 
 	return pc;
+}
+
+extern int dbd_conn_check_and_reopen(slurm_persist_conn_t *pc)
+{
+	xassert(pc);
+
+	if (pc && pc->fd >= 0) {
+		debug("Attempt to re-open slurmdbd socket");
+		/* clear errno (checked after this for errors) */
+		errno = 0;
+		return SLURM_SUCCESS;
+	}
+
+	/*
+	 * Reset the rem_host just in case we were connected to the backup
+	 * before.
+	 */
+	xfree(pc->rem_host);
+	pc->rem_host = xstrdup(slurm_conf.accounting_storage_host);
+
+	return _connect_dbd_conn(pc);
 }
 
 extern void dbd_conn_close(slurm_persist_conn_t **pc)
@@ -159,4 +190,69 @@ extern void dbd_conn_close(slurm_persist_conn_t **pc)
 		return;
 	slurm_persist_conn_destroy(*pc);
 	*pc = NULL;
+}
+
+/*
+ * Send an RPC to the SlurmDBD and wait for an arbitrary reply message.
+ * The RPC will not be queued if an error occurs.
+ * The "resp" message must be freed by the caller.
+ * Returns SLURM_SUCCESS or an error code
+ */
+extern int dbd_conn_send_recv(uint16_t rpc_version,
+			      persist_msg_t *req,
+			      persist_msg_t *resp)
+{
+	int rc = SLURM_SUCCESS;
+	Buf buffer;
+	slurm_persist_conn_t *use_conn = req->conn;
+
+	xassert(req);
+	xassert(resp);
+	xassert(use_conn);
+
+	if (use_conn->fd < 0) {
+		/* The connection has been closed, reopen */
+		rc = dbd_conn_check_and_reopen(use_conn);
+
+		if (rc != SLURM_SUCCESS || (use_conn->fd < 0)) {
+			rc = SLURM_ERROR;
+			goto end_it;
+		}
+	}
+
+	if (!(buffer = pack_slurmdbd_msg(req, rpc_version))) {
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	rc = slurm_persist_send_msg(use_conn, buffer);
+	free_buf(buffer);
+	if (rc != SLURM_SUCCESS) {
+		error("Sending message type %s: %d: %s",
+		      slurmdbd_msg_type_2_str(req->msg_type, 1), rc,
+		      slurm_strerror(rc));
+		goto end_it;
+	}
+
+	buffer = slurm_persist_recv_msg(use_conn);
+	if (buffer == NULL) {
+		error("Getting response to message type: %s",
+		      slurmdbd_msg_type_2_str(req->msg_type, 1));
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	rc = unpack_slurmdbd_msg(resp, rpc_version, buffer);
+	/* check for the rc of the start job message */
+	if (rc == SLURM_SUCCESS && resp->msg_type == DBD_ID_RC)
+		rc = ((dbd_id_rc_msg_t *)resp->data)->return_code;
+
+	free_buf(buffer);
+end_it:
+
+	log_flag(PROTOCOL, "msg_type:%s protocol_version:%hu return_code:%d response_msg_type:%s",
+		 slurmdbd_msg_type_2_str(req->msg_type, 1),
+		 rpc_version, rc, slurmdbd_msg_type_2_str(resp->msg_type, 1));
+
+	return rc;
 }

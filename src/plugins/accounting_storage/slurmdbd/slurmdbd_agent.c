@@ -1,5 +1,5 @@
 /****************************************************************************\
- *  slurmdbd_agent.c - functions to manage the connection to the SlurmDBD
+ *  slurmdbd_agent.c - functions to the agent talking to the SlurmDBD
  *****************************************************************************
  *  Copyright (C) 2011-2018 SchedMD LLC.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
@@ -790,7 +790,7 @@ static void *_agent(void *x)
 		if ((slurmdbd_conn->fd < 0) &&
 		    (difftime(time(NULL), fail_time) >= 10)) {
 			/* The connection to Slurm DBD is not open */
-			_open_slurmdbd_conn(1);
+			dbd_conn_check_and_reopen(slurmdbd_conn);
 			if (slurmdbd_conn->fd < 0) {
 				fail_time = time(NULL);
 
@@ -985,6 +985,53 @@ static void _shutdown_agent(void)
  * Socket open/close/read/write functions
  ****************************************************************************/
 
+extern void slurmdbd_agent_set_conn(slurm_persist_conn_t *pc)
+{
+	if (!running_in_slurmctld())
+		return;
+
+	slurm_mutex_lock(&slurmdbd_lock);
+	slurmdbd_conn = pc;
+
+	slurmdbd_shutdown = 0;
+	slurmdbd_conn->shutdown = &slurmdbd_shutdown;
+
+	slurm_mutex_unlock(&slurmdbd_lock);
+
+	slurm_mutex_lock(&agent_lock);
+
+	if ((agent_tid == 0) || (agent_list == NULL))
+		_create_agent();
+	else if (agent_list)
+		_load_dbd_state();
+
+	slurm_mutex_unlock(&agent_lock);
+}
+
+extern void slurmdbd_agent_rem_conn(void)
+{
+	if (!running_in_slurmctld())
+		return;
+
+	_shutdown_agent();
+
+	/*
+	 * Only send the FINI message if we haven't shutdown
+	 * (i.e. not slurmctld)
+	 */
+	if (!slurmdbd_shutdown) {
+		if (_send_fini_msg() != SLURM_SUCCESS)
+			error("Sending fini msg: %m");
+		else
+			debug("Sent fini msg");
+	}
+
+	slurm_mutex_lock(&slurmdbd_lock);
+	slurmdbd_conn = NULL;
+	slurm_mutex_unlock(&slurmdbd_lock);
+}
+
+
 /* Open a socket connection to SlurmDbd
  * callbacks IN - make agent to process RPCs and contains callback pointers
  * persist_conn_flags OUT - fill in from response of slurmdbd
@@ -1050,89 +1097,46 @@ extern int close_slurmdbd_conn(void)
 	return SLURM_SUCCESS;
 }
 
-/* Send an RPC to the SlurmDBD and wait for an arbitrary reply message.
- * The RPC will not be queued if an error occurs.
- * The "resp" message must be freed by the caller.
- * Returns SLURM_SUCCESS or an error code */
+static int _agent_send_recv(uint16_t rpc_version,
+			    persist_msg_t *req,
+			    persist_msg_t *resp)
+{
+	int rc = SLURM_SUCCESS;
+
+	xassert(req);
+	xassert(resp);
+	xassert(slurmdbd_conn);
+
+	if (req->conn && (req->conn != slurmdbd_conn))
+		info("We are overriding the connection!!!!!");
+
+	req->conn = slurmdbd_conn;
+
+	/*
+	 * To make sure we can get this to send instead of the agent
+	 * sending stuff that can happen anytime we set halt_agent and
+	 * then after we get into the mutex we unset.
+	 */
+	halt_agent = 1;
+	slurm_mutex_lock(&slurmdbd_lock);
+	halt_agent = 0;
+
+	rc = dbd_conn_send_recv(rpc_version, req, resp);
+
+	slurm_cond_signal(&slurmdbd_cond);
+	slurm_mutex_unlock(&slurmdbd_lock);
+
+	return rc;
+}
+
 extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
 				  persist_msg_t *req,
 				  persist_msg_t *resp)
 {
-	int rc = SLURM_SUCCESS;
-	Buf buffer;
-	slurm_persist_conn_t *use_conn;
-
-	xassert(req);
-	xassert(resp);
-
-	if (req->conn == GLOBAL_DB_CONN) {
-		use_conn = slurmdbd_conn;
-
-		/* To make sure we can get this to send instead of the agent
-		   sending stuff that can happen anytime we set halt_agent and
-		   then after we get into the mutex we unset.
-		*/
-		halt_agent = 1;
-		slurm_mutex_lock(&slurmdbd_lock);
-		halt_agent = 0;
-
-		if (!slurmdbd_conn || (slurmdbd_conn->fd < 0)) {
-			/* Either slurm_open_slurmdbd_conn() was not executed or
-			 * the connection to Slurm DBD has been closed */
-			if (req->msg_type == DBD_GET_CONFIG)
-				_open_slurmdbd_conn(0);
-			else
-				_open_slurmdbd_conn(1);
-		}
-	} else if (req->conn)
-		use_conn = req->conn;
+	if (slurmdbd_conn)
+		return _agent_send_recv(rpc_version, req, resp);
 	else
-		return ESLURM_DB_CONNECTION_INVALID;
-
-	if (use_conn->fd < 0) {
-		rc = SLURM_ERROR;
-		goto end_it;
-	}
-
-	if (!(buffer = pack_slurmdbd_msg(req, rpc_version))) {
-		rc = SLURM_ERROR;
-		goto end_it;
-	}
-
-	rc = slurm_persist_send_msg(use_conn, buffer);
-	free_buf(buffer);
-	if (rc != SLURM_SUCCESS) {
-		error("Sending message type %s: %d: %s",
-		      slurmdbd_msg_type_2_str(req->msg_type, 1), rc,
-		      slurm_strerror(rc));
-		goto end_it;
-	}
-
-	buffer = slurm_persist_recv_msg(use_conn);
-	if (buffer == NULL) {
-		error("Getting response to message type: %s",
-		      slurmdbd_msg_type_2_str(req->msg_type, 1));
-		rc = SLURM_ERROR;
-		goto end_it;
-	}
-
-	rc = unpack_slurmdbd_msg(resp, rpc_version, buffer);
-	/* check for the rc of the start job message */
-	if (rc == SLURM_SUCCESS && resp->msg_type == DBD_ID_RC)
-		rc = ((dbd_id_rc_msg_t *)resp->data)->return_code;
-
-	free_buf(buffer);
-end_it:
-	if (use_conn == slurmdbd_conn) {
-		slurm_cond_signal(&slurmdbd_cond);
-		slurm_mutex_unlock(&slurmdbd_lock);
-	}
-
-	log_flag(PROTOCOL, "msg_type:%s protocol_version:%hu return_code:%d response_msg_type:%s",
-		 slurmdbd_msg_type_2_str(req->msg_type, 1),
-		 rpc_version, rc, slurmdbd_msg_type_2_str(resp->msg_type, 1));
-
-	return rc;
+		return dbd_conn_send_recv(rpc_version, req, resp);
 }
 
 /* Send an RPC to the SlurmDBD and wait for the return code reply.

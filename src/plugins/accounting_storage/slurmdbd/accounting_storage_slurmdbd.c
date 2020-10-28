@@ -353,7 +353,6 @@ static void *_set_db_inx_thread(void *no_data)
 			send_msg.my_list = local_job_list;
 
 			req.msg_type = DBD_SEND_MULT_JOB_START;
-			req.conn = GLOBAL_DB_CONN;
 			req.data = &send_msg;
 			rc = send_recv_slurmdbd_msg(
 				SLURM_PROTOCOL_VERSION, &req, &resp);
@@ -518,21 +517,12 @@ extern void *acct_storage_p_get_connection(
 {
 	slurm_persist_conn_t *pc;
 
-	if (running_in_slurmctld()) {
-		if (first)
-			init();
-
-		if (open_slurmdbd_conn(persist_conn_flags) == SLURM_SUCCESS)
-			errno = SLURM_SUCCESS;
-
-		return GLOBAL_DB_CONN;
-	}
+	if (first)
+		init();
 
 	pc = dbd_conn_open(persist_conn_flags, cluster_name);
 
-	if (rollback)
-		debug5("%s: ignoring rollback=true",
-		       __func__);
+	slurmdbd_agent_set_conn(pc);
 
 	if (pc && persist_conn_flags)
 		*persist_conn_flags = pc->flags;
@@ -542,13 +532,7 @@ extern void *acct_storage_p_get_connection(
 
 extern int acct_storage_p_close_connection(void **db_conn)
 {
-	if (*db_conn == GLOBAL_DB_CONN) {
-		if (db_conn)
-			*db_conn = NULL;
-
-		first = 1;
-		return close_slurmdbd_conn();
-	}
+	slurmdbd_agent_rem_conn();
 
 	dbd_conn_close((slurm_persist_conn_t **)db_conn);
 
@@ -2523,6 +2507,7 @@ extern int clusteracct_storage_p_node_down(void *db_conn,
 	req.tres_str   = node_ptr->tres_str;
 
 	msg.msg_type   = DBD_NODE_STATE;
+	msg.conn       = db_conn;
 	msg.data       = &req;
 
 	//info("sending a down message here");
@@ -2544,6 +2529,7 @@ extern int clusteracct_storage_p_node_up(void *db_conn, node_record_t *node_ptr,
 	req.event_time = event_time;
 	req.reason     = NULL;
 	msg.msg_type   = DBD_NODE_STATE;
+	msg.conn       = db_conn;
 	msg.data       = &req;
 
 	// info("sending an up message here");
@@ -2573,6 +2559,7 @@ extern int clusteracct_storage_p_cluster_tres(void *db_conn,
 	req.tres_str      = tres_str_in;
 
 	msg.msg_type      = DBD_CLUSTER_TRES;
+	msg.conn          = db_conn;
 	msg.data          = &req;
 
 	send_slurmdbd_recv_rc_msg(SLURM_PROTOCOL_VERSION, &msg, &rc);
@@ -2639,6 +2626,7 @@ extern int jobacct_storage_p_job_start(void *db_conn, job_record_t *job_ptr)
 		return rc;
 
 	msg.msg_type      = DBD_JOB_START;
+	msg.conn          = db_conn;
 	msg.data          = &req;
 
 	/* If we already have the db_index don't wait around for it
@@ -2744,6 +2732,7 @@ extern int jobacct_storage_p_job_complete(void *db_conn, job_record_t *job_ptr)
 		req.tres_alloc_str = job_ptr->tres_alloc_str;
 
 	msg.msg_type    = DBD_JOB_COMPLETE;
+	msg.conn        = db_conn;
 	msg.data        = &req;
 
 	if (send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &msg) < 0)
@@ -2817,6 +2806,7 @@ extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 	req.req_cpufreq_gov = step_ptr->cpu_freq_gov;
 
 	msg.msg_type    = DBD_STEP_START;
+	msg.conn        = db_conn;
 	msg.data        = &req;
 
 	if (send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &msg) < 0)
@@ -2891,6 +2881,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	req.total_tasks = tasks;
 
 	msg.msg_type    = DBD_STEP_COMPLETE;
+	msg.conn        = db_conn;
 	msg.data        = &req;
 
 	if (send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &msg) < 0)
@@ -2921,6 +2912,7 @@ extern int jobacct_storage_p_suspend(void *db_conn, job_record_t *job_ptr)
 
 	req.suspend_time = job_ptr->suspend_time;
 	msg.msg_type     = DBD_JOB_SUSPEND;
+	msg.conn         = db_conn;
 	msg.data         = &req;
 
 	if (send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &msg) < 0)
@@ -3082,6 +3074,7 @@ extern int acct_storage_p_flush_jobs_on_cluster(void *db_conn,
 	req.tres_str     = NULL;
 
 	msg.msg_type     = DBD_FLUSH_JOBS;
+	msg.conn         = db_conn;
 	msg.data         = &req;
 
 	if (send_slurmdbd_msg(SLURM_PROTOCOL_VERSION, &msg) < 0)
