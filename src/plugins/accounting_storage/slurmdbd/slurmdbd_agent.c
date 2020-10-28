@@ -104,37 +104,6 @@ static void _db_res_op(void)
 		trigger_primary_db_res_op();
 }
 
-static int _send_fini_msg(void)
-{
-	int rc;
-	Buf buffer;
-	dbd_fini_msg_t req;
-
-	/* If the connection is already gone, we don't need to send a
-	   fini. */
-	if (slurm_persist_conn_writeable(slurmdbd_conn) == -1) {
-		log_flag(NET, "%s: unable to send DB_FINI msg to %s:%u",
-			 __func__, slurmdbd_conn->rem_host,
-			 slurmdbd_conn->rem_port);
-		return SLURM_SUCCESS;
-	}
-
-	buffer = init_buf(1024);
-	pack16((uint16_t) DBD_FINI, buffer);
-	req.commit  = 0;
-	req.close_conn   = 1;
-	slurmdbd_pack_fini_msg(&req, SLURM_PROTOCOL_VERSION, buffer);
-
-	rc = slurm_persist_send_msg(slurmdbd_conn, buffer);
-	free_buf(buffer);
-
-	log_flag(NET, "%s: sent DB_FINI msg to %s:%u rc(%d):%s",
-		 __func__, slurmdbd_conn->rem_host, slurmdbd_conn->rem_port,
-		 rc, slurm_strerror(rc));
-
-	return rc;
-}
-
 static int _unpack_return_code(uint16_t rpc_version, Buf buffer)
 {
 	uint16_t msg_type = -1;
@@ -1017,17 +986,6 @@ extern void slurmdbd_agent_rem_conn(void)
 
 	_shutdown_agent();
 
-	/*
-	 * Only send the FINI message if we haven't shutdown
-	 * (i.e. not slurmctld)
-	 */
-	if (!slurmdbd_shutdown) {
-		if (_send_fini_msg() != SLURM_SUCCESS)
-			error("Sending fini msg: %m");
-		else
-			debug("Sent fini msg");
-	}
-
 	slurm_mutex_lock(&slurmdbd_lock);
 	slurmdbd_conn = NULL;
 	slurm_mutex_unlock(&slurmdbd_lock);
@@ -1079,17 +1037,6 @@ extern int close_slurmdbd_conn(void)
 {
 	/* NOTE: agent_lock not needed for _shutdown_agent() */
 	_shutdown_agent();
-
-	/*
-	 * Only send the FINI message if we haven't shutdown
-	 * (i.e. not slurmctld)
-	 */
-	if (!slurmdbd_shutdown) {
-		if (_send_fini_msg() != SLURM_SUCCESS)
-			error("Sending fini msg: %m");
-		else
-			debug("Sent fini msg");
-	}
 
 	slurm_mutex_lock(&slurmdbd_lock);
 	slurm_persist_conn_destroy(slurmdbd_conn);

@@ -186,8 +186,45 @@ extern int dbd_conn_check_and_reopen(slurm_persist_conn_t *pc)
 
 extern void dbd_conn_close(slurm_persist_conn_t **pc)
 {
+	int rc;
+	Buf buffer;
+	dbd_fini_msg_t req;
+
 	if (!pc)
 		return;
+
+	/*
+	 * Only send the FINI message if we haven't shutdown
+	 * (i.e. not slurmctld)
+	 */
+	if (*(*pc)->shutdown) {
+		log_flag(NET, "We are shutdown, not sending DB_FINI to %s:%u",
+			 (*pc)->rem_host,
+			 (*pc)->rem_port);
+		return;
+	}
+
+	/* If the connection is already gone, we don't need to send a fini. */
+	if (slurm_persist_conn_writeable(*pc) == -1) {
+		log_flag(NET, "unable to send DB_FINI msg to %s:%u",
+			 (*pc)->rem_host,
+			 (*pc)->rem_port);
+		return;
+	}
+
+	buffer = init_buf(1024);
+	pack16((uint16_t) DBD_FINI, buffer);
+	req.commit = 0;
+	req.close_conn = 1;
+	slurmdbd_pack_fini_msg(&req, SLURM_PROTOCOL_VERSION, buffer);
+
+	rc = slurm_persist_send_msg(*pc, buffer);
+	free_buf(buffer);
+
+	log_flag(NET, "sent DB_FINI msg to %s:%u rc(%d):%s",
+		 (*pc)->rem_host, (*pc)->rem_port,
+		 rc, slurm_strerror(rc));
+
 	slurm_persist_conn_destroy(*pc);
 	*pc = NULL;
 }
