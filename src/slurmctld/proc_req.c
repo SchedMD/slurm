@@ -1672,7 +1672,8 @@ static void _slurm_rpc_get_fed(slurm_msg_t * msg)
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
 	START_TIMER;
-	lock_slurmctld(fed_read_lock);
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+		lock_slurmctld(fed_read_lock);
 
 	response_init(&response_msg, msg);
 	response_msg.msg_type = RESPONSE_FED_INFO;
@@ -1680,7 +1681,9 @@ static void _slurm_rpc_get_fed(slurm_msg_t * msg)
 
 	/* send message */
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
-	unlock_slurmctld(fed_read_lock);
+
+	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
+		unlock_slurmctld(fed_read_lock);
 
 	END_TIMER2("_slurm_rpc_get_fed");
 	debug2("%s %s", __func__, TIME_STR);
@@ -6111,6 +6114,10 @@ slurmctld_rpc_t slurmctld_rpcs[] =
 	},{
 		.msg_type = REQUEST_FED_INFO,
 		.func = _slurm_rpc_get_fed,
+		.queue_enabled = true,
+		.locks = {
+			.fed = READ_LOCK,
+		},
 	},{
 		.msg_type = REQUEST_FRONT_END_INFO,
 		.func = _slurm_rpc_dump_front_end,
