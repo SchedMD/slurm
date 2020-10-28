@@ -112,12 +112,17 @@ static void *_rpc_queue_worker(void *arg)
 				 __func__, q->msg_name);
 			lock_slurmctld(q->locks);
 		} else {
+			DEF_TIMERS;
+			START_TIMER;
+
 			msg->flags |= CTLD_QUEUE_PROCESSING;
 			q->func(msg);
 			if ((msg->conn_fd >= 0) && (close(msg->conn_fd) < 0))
 				error("close(%d): %m", msg->conn_fd);
 			slurm_free_msg(msg);
 
+			END_TIMER;
+			record_rpc_stats(msg, DELTA_TIMER);
 			processed++;
 		}
 	}
