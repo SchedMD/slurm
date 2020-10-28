@@ -6046,6 +6046,260 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 	slurm_send_node_msg(msg->conn_fd, &response_msg);
 }
 
+slurmctld_rpc_t slurmctld_rpcs[] =
+{
+	{
+		.msg_type = REQUEST_RESOURCE_ALLOCATION,
+		.func = _slurm_rpc_allocate_resources,
+	},{
+		.msg_type = REQUEST_HET_JOB_ALLOCATION,
+		.func = _slurm_rpc_allocate_het_job,
+	},{
+		.msg_type = REQUEST_BUILD_INFO,
+		.func = _slurm_rpc_dump_conf,
+	},{
+		.msg_type = REQUEST_JOB_INFO,
+		.func = _slurm_rpc_dump_jobs,
+	},{
+		.msg_type = REQUEST_JOB_USER_INFO,
+		.func = _slurm_rpc_dump_jobs_user,
+	},{
+		.msg_type = REQUEST_JOB_INFO_SINGLE,
+		.func = _slurm_rpc_dump_job_single,
+	},{
+		.msg_type = REQUEST_BATCH_SCRIPT,
+		.func = _slurm_rpc_dump_batch_script,
+	},{
+		.msg_type = REQUEST_SHARE_INFO,
+		.func = _slurm_rpc_get_shares,
+	},{
+		.msg_type = REQUEST_PRIORITY_FACTORS,
+		.func = _slurm_rpc_get_priority_factors,
+	},{
+		.msg_type = REQUEST_JOB_END_TIME,
+		.func = _slurm_rpc_end_time,
+	},{
+		.msg_type = REQUEST_FED_INFO,
+		.func = _slurm_rpc_get_fed,
+	},{
+		.msg_type = REQUEST_FRONT_END_INFO,
+		.func = _slurm_rpc_dump_front_end,
+	},{
+		.msg_type = REQUEST_NODE_INFO,
+		.func = _slurm_rpc_dump_nodes,
+	},{
+		.msg_type = REQUEST_NODE_INFO_SINGLE,
+		.func = _slurm_rpc_dump_node_single,
+	},{
+		.msg_type = REQUEST_PARTITION_INFO,
+		.func = _slurm_rpc_dump_partitions,
+	},{
+		.msg_type = MESSAGE_EPILOG_COMPLETE,
+		.func = _slurm_rpc_epilog_complete,
+	},{
+		.msg_type = REQUEST_CANCEL_JOB_STEP,
+		.func = _slurm_rpc_job_step_kill,
+	},{
+		.msg_type = REQUEST_COMPLETE_JOB_ALLOCATION,
+		.func = _slurm_rpc_complete_job_allocation,
+	},{
+		.msg_type = REQUEST_COMPLETE_PROLOG,
+		.func = _slurm_rpc_complete_prolog,
+	},{
+		.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT,
+		.func = _slurm_rpc_complete_batch_script,
+	},{
+		.msg_type = REQUEST_JOB_STEP_CREATE,
+		.func = _slurm_rpc_job_step_create,
+	},{
+		.msg_type = REQUEST_JOB_STEP_INFO,
+		.func = _slurm_rpc_job_step_get_info,
+	},{
+		.msg_type = REQUEST_JOB_WILL_RUN,
+		.func = _slurm_rpc_job_will_run,
+	},{
+		.msg_type = REQUEST_SIB_JOB_LOCK,
+		.func = _slurm_rpc_sib_job_lock,
+	},{
+		.msg_type = REQUEST_SIB_JOB_UNLOCK,
+		.func = _slurm_rpc_sib_job_unlock,
+	},{
+		.msg_type = REQUEST_CTLD_MULT_MSG,
+		.func = _proc_multi_msg,
+	},{
+		.msg_type = MESSAGE_NODE_REGISTRATION_STATUS,
+		.func = _slurm_rpc_node_registration,
+	},{
+		.msg_type = REQUEST_JOB_ALLOCATION_INFO,
+		.func = _slurm_rpc_job_alloc_info,
+	},{
+		.msg_type = REQUEST_HET_JOB_ALLOC_INFO,
+		.func = _slurm_rpc_het_job_alloc_info,
+	},{
+		.msg_type = REQUEST_JOB_SBCAST_CRED,
+		.func = _slurm_rpc_job_sbcast_cred,
+	},{
+		.msg_type = REQUEST_PING,
+		.func = _slurm_rpc_ping,
+	},{
+		.msg_type = REQUEST_RECONFIGURE,
+		.func = _slurm_rpc_reconfigure_controller,
+	},{
+		.msg_type = REQUEST_CONTROL,
+		.func = _slurm_rpc_shutdown_controller,
+	},{
+		.msg_type = REQUEST_TAKEOVER,
+		.func = _slurm_rpc_takeover,
+	},{
+		.msg_type = REQUEST_SHUTDOWN,
+		.func = _slurm_rpc_shutdown_controller,
+	},{
+		.msg_type = REQUEST_SUBMIT_BATCH_JOB,
+		.func = _slurm_rpc_submit_batch_job,
+	},{
+		.msg_type = REQUEST_SUBMIT_BATCH_HET_JOB,
+		.func = _slurm_rpc_submit_batch_het_job,
+	},{
+		.msg_type = REQUEST_UPDATE_FRONT_END,
+		.func = _slurm_rpc_update_front_end,
+	},{
+		.msg_type = REQUEST_UPDATE_JOB,
+		.func = _slurm_rpc_update_job,
+	},{
+		.msg_type = REQUEST_UPDATE_NODE,
+		.func = _slurm_rpc_update_node,
+	},{
+		.msg_type = REQUEST_CREATE_PARTITION,
+		.func = _slurm_rpc_update_partition,
+	},{
+		.msg_type = REQUEST_UPDATE_PARTITION,
+		.func = _slurm_rpc_update_partition,
+	},{
+		.msg_type = REQUEST_DELETE_PARTITION,
+		.func = _slurm_rpc_delete_partition,
+	},{
+		.msg_type = REQUEST_CREATE_RESERVATION,
+		.func = _slurm_rpc_resv_create,
+	},{
+		.msg_type = REQUEST_UPDATE_RESERVATION,
+		.func = _slurm_rpc_resv_update,
+	},{
+		.msg_type = REQUEST_DELETE_RESERVATION,
+		.func = _slurm_rpc_resv_delete,
+	},{
+		.msg_type = REQUEST_RESERVATION_INFO,
+		.func = _slurm_rpc_resv_show,
+	},{
+		.msg_type = REQUEST_NODE_REGISTRATION_STATUS,
+		.func = _slurm_rpc_node_registration_status,
+	},{
+		.msg_type = REQUEST_SUSPEND,
+		.func = _slurm_rpc_suspend,
+	},{
+		.msg_type = REQUEST_TOP_JOB,
+		.func = _slurm_rpc_top_job,
+	},{
+		.msg_type = REQUEST_AUTH_TOKEN,
+		.func = _slurm_rpc_auth_token,
+	},{
+		.msg_type = REQUEST_JOB_REQUEUE,
+		.func = _slurm_rpc_requeue,
+	},{
+		.msg_type = REQUEST_JOB_READY,
+		.func = _slurm_rpc_job_ready,
+	},{
+		.msg_type = REQUEST_BURST_BUFFER_INFO,
+		.func = _slurm_rpc_burst_buffer_info,
+	},{
+		.msg_type = REQUEST_STEP_COMPLETE,
+		.func = _slurm_rpc_step_complete,
+	},{
+		.msg_type = REQUEST_STEP_LAYOUT,
+		.func = _slurm_rpc_step_layout,
+	},{
+		.msg_type = REQUEST_UPDATE_JOB_STEP,
+		.func = _slurm_rpc_step_update,
+	},{
+		.msg_type = REQUEST_CONFIG,
+		.func = _slurm_rpc_config_request,
+	},{
+		.msg_type = REQUEST_TRIGGER_SET,
+		.func = _slurm_rpc_trigger_set,
+	},{
+		.msg_type = REQUEST_TRIGGER_GET,
+		.func = _slurm_rpc_trigger_get,
+	},{
+		.msg_type = REQUEST_TRIGGER_CLEAR,
+		.func = _slurm_rpc_trigger_clear,
+	},{
+		.msg_type = REQUEST_TRIGGER_PULL,
+		.func = _slurm_rpc_trigger_pull,
+	},{
+		.msg_type = REQUEST_JOB_NOTIFY,
+		.func = _slurm_rpc_job_notify,
+	},{
+		.msg_type = REQUEST_SET_DEBUG_FLAGS,
+		.func = _slurm_rpc_set_debug_flags,
+	},{
+		.msg_type = REQUEST_SET_DEBUG_LEVEL,
+		.func = _slurm_rpc_set_debug_level,
+	},{
+		.msg_type = REQUEST_SET_SCHEDLOG_LEVEL,
+		.func = _slurm_rpc_set_schedlog_level,
+	},{
+		.msg_type = ACCOUNTING_UPDATE_MSG,
+		.func = _slurm_rpc_accounting_update_msg,
+	},{
+		.msg_type = ACCOUNTING_FIRST_REG,
+		.func = _slurm_rpc_accounting_first_reg,
+	},{
+		.msg_type = ACCOUNTING_REGISTER_CTLD,
+		.func = _slurm_rpc_accounting_register_ctld,
+	},{
+		.msg_type = REQUEST_TOPO_INFO,
+		.func = _slurm_rpc_get_topo,
+	},{
+		.msg_type = REQUEST_REBOOT_NODES,
+		.func = _slurm_rpc_reboot_nodes,
+	},{
+		.msg_type = REQUEST_STATS_INFO,
+		.func = _slurm_rpc_dump_stats,
+	},{
+		.msg_type = REQUEST_LICENSE_INFO,
+		.func = _slurm_rpc_dump_licenses,
+	},{
+		.msg_type = REQUEST_KILL_JOB,
+		.func = _slurm_rpc_kill_job,
+	},{
+		.msg_type = REQUEST_ASSOC_MGR_INFO,
+		.func = _slurm_rpc_assoc_mgr_info,
+	},{
+		.msg_type = REQUEST_PERSIST_INIT,
+		.func = _slurm_rpc_persist_init,
+	},{
+		.msg_type = REQUEST_EVENT_LOG,
+		.func = _slurm_rpc_event_log,
+	},{
+		.msg_type = REQUEST_SET_FS_DAMPENING_FACTOR,
+		.func = _slurm_rpc_set_fs_dampening_factor,
+	},{
+		.msg_type = REQUEST_CONTROL_STATUS,
+		.func = slurm_rpc_control_status,
+	},{
+		.msg_type = REQUEST_BURST_BUFFER_STATUS,
+		.func = _slurm_rpc_burst_buffer_status,
+	},{
+		.msg_type = REQUEST_CRONTAB,
+		.func = _slurm_rpc_request_crontab,
+	},{
+		.msg_type = REQUEST_UPDATE_CRONTAB,
+		.func = _slurm_rpc_update_crontab,
+	},{	/* terminate the array. this must be last. */
+		.msg_type = 0,
+		.func = NULL,
+	}
+};
+
 /*
  * slurmctld_req  - Process an individual RPC request
  * IN/OUT msg - the request message, data associated with the message is freed
@@ -6053,6 +6307,7 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 void slurmctld_req(slurm_msg_t *msg)
 {
 	DEF_TIMERS;
+	slurmctld_rpc_t *this_rpc = NULL;
 
 	if (msg->conn_fd >= 0)
 		fd_set_nonblocking(msg->conn_fd);
@@ -6086,257 +6341,21 @@ void slurmctld_req(slurm_msg_t *msg)
 	debug2("Processing RPC: %s from UID=%u",
 	       rpc_num2string(msg->msg_type), msg->auth_uid);
 
-	switch (msg->msg_type) {
-	case REQUEST_RESOURCE_ALLOCATION:
-		_slurm_rpc_allocate_resources(msg);
-		break;
-	case REQUEST_HET_JOB_ALLOCATION:
-		_slurm_rpc_allocate_het_job(msg);
-		break;
-	case REQUEST_BUILD_INFO:
-		_slurm_rpc_dump_conf(msg);
-		break;
-	case REQUEST_JOB_INFO:
-		_slurm_rpc_dump_jobs(msg);
-		break;
-	case REQUEST_JOB_USER_INFO:
-		_slurm_rpc_dump_jobs_user(msg);
-		break;
-	case REQUEST_JOB_INFO_SINGLE:
-		_slurm_rpc_dump_job_single(msg);
-		break;
-	case REQUEST_BATCH_SCRIPT:
-		_slurm_rpc_dump_batch_script(msg);
-		break;
-	case REQUEST_SHARE_INFO:
-		_slurm_rpc_get_shares(msg);
-		break;
-	case REQUEST_PRIORITY_FACTORS:
-		_slurm_rpc_get_priority_factors(msg);
-		break;
-	case REQUEST_JOB_END_TIME:
-		_slurm_rpc_end_time(msg);
-		break;
-	case REQUEST_FED_INFO:
-		_slurm_rpc_get_fed(msg);
-		break;
-	case REQUEST_FRONT_END_INFO:
-		_slurm_rpc_dump_front_end(msg);
-		break;
-	case REQUEST_NODE_INFO:
-		_slurm_rpc_dump_nodes(msg);
-		break;
-	case REQUEST_NODE_INFO_SINGLE:
-		_slurm_rpc_dump_node_single(msg);
-		break;
-	case REQUEST_PARTITION_INFO:
-		_slurm_rpc_dump_partitions(msg);
-		break;
-	case MESSAGE_EPILOG_COMPLETE:
-		_slurm_rpc_epilog_complete(msg, 0);
-		break;
-	case REQUEST_CANCEL_JOB_STEP:
-		_slurm_rpc_job_step_kill(msg);
-		break;
-	case REQUEST_COMPLETE_JOB_ALLOCATION:
-		_slurm_rpc_complete_job_allocation(msg);
-		break;
-	case REQUEST_COMPLETE_PROLOG:
-		_slurm_rpc_complete_prolog(msg);
-		break;
-	case REQUEST_COMPLETE_BATCH_SCRIPT:
-		_slurm_rpc_complete_batch_script(msg, 0);
-		break;
-	case REQUEST_JOB_STEP_CREATE:
-		_slurm_rpc_job_step_create(msg);
-		break;
-	case REQUEST_JOB_STEP_INFO:
-		_slurm_rpc_job_step_get_info(msg);
-		break;
-	case REQUEST_JOB_WILL_RUN:
-		_slurm_rpc_job_will_run(msg);
-		break;
-	case REQUEST_SIB_JOB_LOCK:
-		_slurm_rpc_sib_job_lock(msg);
-		break;
-	case REQUEST_SIB_JOB_UNLOCK:
-		_slurm_rpc_sib_job_unlock(msg);
-		break;
-	case REQUEST_CTLD_MULT_MSG:
-		_proc_multi_msg(msg);
-		break;
-	case MESSAGE_NODE_REGISTRATION_STATUS:
-		_slurm_rpc_node_registration(msg, 0);
-		break;
-	case REQUEST_JOB_ALLOCATION_INFO:
-		_slurm_rpc_job_alloc_info(msg);
-		break;
-	case REQUEST_HET_JOB_ALLOC_INFO:
-		_slurm_rpc_het_job_alloc_info(msg);
-		break;
-	case REQUEST_JOB_SBCAST_CRED:
-		_slurm_rpc_job_sbcast_cred(msg);
-		break;
-	case REQUEST_PING:
-		_slurm_rpc_ping(msg);
-		break;
-	case REQUEST_RECONFIGURE:
-		_slurm_rpc_reconfigure_controller(msg);
-		break;
-	case REQUEST_CONTROL:
-		_slurm_rpc_shutdown_controller(msg);
-		break;
-	case REQUEST_TAKEOVER:
-		_slurm_rpc_takeover(msg);
-		break;
-	case REQUEST_SHUTDOWN:
-		_slurm_rpc_shutdown_controller(msg);
-		break;
-	case REQUEST_SUBMIT_BATCH_JOB:
-		_slurm_rpc_submit_batch_job(msg);
-		break;
-	case REQUEST_SUBMIT_BATCH_HET_JOB:
-		_slurm_rpc_submit_batch_het_job(msg);
-		break;
-	case REQUEST_UPDATE_FRONT_END:
-		_slurm_rpc_update_front_end(msg);
-		break;
-	case REQUEST_UPDATE_JOB:
-		_slurm_rpc_update_job(msg);
-		break;
-	case REQUEST_UPDATE_NODE:
-		_slurm_rpc_update_node(msg);
-		break;
-	case REQUEST_CREATE_PARTITION:
-	case REQUEST_UPDATE_PARTITION:
-		_slurm_rpc_update_partition(msg);
-		break;
-	case REQUEST_DELETE_PARTITION:
-		_slurm_rpc_delete_partition(msg);
-		break;
-	case REQUEST_CREATE_RESERVATION:
-		_slurm_rpc_resv_create(msg);
-		break;
-	case REQUEST_UPDATE_RESERVATION:
-		_slurm_rpc_resv_update(msg);
-		break;
-	case REQUEST_DELETE_RESERVATION:
-		_slurm_rpc_resv_delete(msg);
-		break;
-	case REQUEST_RESERVATION_INFO:
-		_slurm_rpc_resv_show(msg);
-		break;
-	case REQUEST_NODE_REGISTRATION_STATUS:
-		_slurm_rpc_node_registration_status(msg);
-		break;
-	case REQUEST_SUSPEND:
-		_slurm_rpc_suspend(msg);
-		break;
-	case REQUEST_TOP_JOB:
-		_slurm_rpc_top_job(msg);
-		break;
-	case REQUEST_AUTH_TOKEN:
-		_slurm_rpc_auth_token(msg);
-		break;
-	case REQUEST_JOB_REQUEUE:
-		_slurm_rpc_requeue(msg);
-		break;
-	case REQUEST_JOB_READY:
-		_slurm_rpc_job_ready(msg);
-		break;
-	case REQUEST_BURST_BUFFER_INFO:
-		_slurm_rpc_burst_buffer_info(msg);
-		break;
-	case REQUEST_STEP_COMPLETE:
-		_slurm_rpc_step_complete(msg, 0);
-		break;
-	case REQUEST_STEP_LAYOUT:
-		_slurm_rpc_step_layout(msg);
-		break;
-	case REQUEST_UPDATE_JOB_STEP:
-		_slurm_rpc_step_update(msg);
-		break;
-	case REQUEST_CONFIG:
-		_slurm_rpc_config_request(msg);
-		break;
-	case REQUEST_TRIGGER_SET:
-		_slurm_rpc_trigger_set(msg);
-		break;
-	case REQUEST_TRIGGER_GET:
-		_slurm_rpc_trigger_get(msg);
-		break;
-	case REQUEST_TRIGGER_CLEAR:
-		_slurm_rpc_trigger_clear(msg);
-		break;
-	case REQUEST_TRIGGER_PULL:
-		_slurm_rpc_trigger_pull(msg);
-		break;
-	case REQUEST_JOB_NOTIFY:
-		_slurm_rpc_job_notify(msg);
-		break;
-	case REQUEST_SET_DEBUG_FLAGS:
-		_slurm_rpc_set_debug_flags(msg);
-		break;
-	case REQUEST_SET_DEBUG_LEVEL:
-		_slurm_rpc_set_debug_level(msg);
-		break;
-	case REQUEST_SET_SCHEDLOG_LEVEL:
-		_slurm_rpc_set_schedlog_level(msg);
-		break;
-	case ACCOUNTING_UPDATE_MSG:
-		_slurm_rpc_accounting_update_msg(msg);
-		break;
-	case ACCOUNTING_FIRST_REG:
-		_slurm_rpc_accounting_first_reg(msg);
-		break;
-	case ACCOUNTING_REGISTER_CTLD:
-		_slurm_rpc_accounting_register_ctld(msg);
-		break;
-	case REQUEST_TOPO_INFO:
-		_slurm_rpc_get_topo(msg);
-		break;
-	case REQUEST_REBOOT_NODES:
-		_slurm_rpc_reboot_nodes(msg);
-		break;
-	case REQUEST_STATS_INFO:
-		_slurm_rpc_dump_stats(msg);
-		break;
-	case REQUEST_LICENSE_INFO:
-		_slurm_rpc_dump_licenses(msg);
-		break;
-	case REQUEST_KILL_JOB:
-		_slurm_rpc_kill_job(msg);
-		break;
-	case REQUEST_ASSOC_MGR_INFO:
-		_slurm_rpc_assoc_mgr_info(msg);
-		break;
-	case REQUEST_PERSIST_INIT:
-		_slurm_rpc_persist_init(msg);
-		break;
-	case REQUEST_EVENT_LOG:
-		_slurm_rpc_event_log(msg);
-		break;
-	case REQUEST_SET_FS_DAMPENING_FACTOR:
-		_slurm_rpc_set_fs_dampening_factor(msg);
-		break;
-	case REQUEST_CONTROL_STATUS:
-		slurm_rpc_control_status(msg);
-		break;
-	case REQUEST_BURST_BUFFER_STATUS:
-		_slurm_rpc_burst_buffer_status(msg);
-		break;
-	case REQUEST_CRONTAB:
-		_slurm_rpc_request_crontab(msg);
-		break;
-	case REQUEST_UPDATE_CRONTAB:
-		_slurm_rpc_update_crontab(msg);
-		break;
-	default:
-		error("invalid RPC msg_type=%u", msg->msg_type);
-		slurm_send_rc_msg(msg, EINVAL);
+	for (int i = 0; slurmctld_rpcs[i].msg_type; i++) {
+		if (slurmctld_rpcs[i].msg_type != msg->msg_type)
+			continue;
+
+		xassert(slurmctld_rpcs[i].func);
+		this_rpc = &slurmctld_rpcs[i];
 		break;
 	}
 
-	END_TIMER;
-	record_rpc_stats(msg, DELTA_TIMER);
+	if (this_rpc) {
+		(*(this_rpc->func))(msg);
+		END_TIMER;
+		record_rpc_stats(msg, DELTA_TIMER);
+	} else {
+		error("invalid RPC msg_type=%u", msg->msg_type);
+		slurm_send_rc_msg(msg, EINVAL);
+	}
 }
