@@ -1,9 +1,10 @@
 /****************************************************************************\
- *  slurmdbd_agent.c - functions to manage the connection to the SlurmDBD
+ *  dbd_conn.c - functions to manage the connection to the SlurmDBD
  *****************************************************************************
- *  Copyright (C) 2011-2018 SchedMD LLC.
+ *  Copyright (C) 2011-2020 SchedMD LLC.
  *  Copyright (C) 2008-2010 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Danny Auble <da@schedmd.com>
  *  Written by Morris Jette <jette1@llnl.gov>
  *  CODE-OCEC-09-009. All rights reserved.
  *
@@ -37,59 +38,63 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURMDBD_AGENT_H
-#define _SLURMDBD_AGENT_H
+#include "slurmdbd_agent.h"
 
-#include "dbd_conn.h"
-#include "src/common/assoc_mgr.h"
+/* partially based on _open_slurmdbd_conn() */
+extern slurm_persist_conn_t *dbd_conn_open(uint16_t *persist_conn_flags,
+					   char *cluster_name)
+{
+	int rc;
+	char *backup_host = xstrdup(slurm_conf.accounting_storage_backup_host);
+	slurm_persist_conn_t *pc = xmalloc(sizeof(*pc));
 
-/*
- * Global connection is not identified by a valid pointer but instead this
- * constant.
- *
- * 1 is previously used returned db_conn value for connections.
- *
- * Must be !NULL or clients will assume connection is invalid.
- */
-#define GLOBAL_DB_CONN ((void *)1)
+	if (persist_conn_flags)
+		pc->flags = *persist_conn_flags;
+	pc->flags |= (PERSIST_FLAG_DBD | PERSIST_FLAG_RECONNECT);
+	pc->persist_type = PERSIST_TYPE_DBD;
+	if (cluster_name)
+		pc->cluster_name = xstrdup(cluster_name);
+	else
+		pc->cluster_name = xstrdup(slurm_conf.cluster_name);
+	pc->timeout = (slurm_conf.msg_timeout + 35) * 1000;
+	pc->rem_host = xstrdup(slurm_conf.accounting_storage_host);
+	pc->rem_port = slurm_conf.accounting_storage_port;
+	pc->version = SLURM_PROTOCOL_VERSION;
 
-/* Open a socket connection to SlurmDbd
- * persist_conn_flags OUT - fill in from response of slurmdbd
- * Returns SLURM_SUCCESS or an error code */
-extern int open_slurmdbd_conn(uint16_t *persist_conn_flags);
+again:
+	// A connection failure is only an error if backup dne or also fails
+	if (backup_host)
+		pc->flags |= PERSIST_FLAG_SUPPRESS_ERR;
+	else
+		pc->flags &= (~PERSIST_FLAG_SUPPRESS_ERR);
 
-/* Close the SlurmDBD socket connection */
-extern int close_slurmdbd_conn(void);
+	if (((rc = slurm_persist_conn_open(pc))) && backup_host) {
+		xfree(pc->rem_host);
+		// Force the next error to display
+		pc->comm_fail_time = 0;
+		pc->rem_host = backup_host;
+		backup_host = NULL;
+		goto again;
+	}
 
-/* Send an RPC to the SlurmDBD. Do not wait for the reply. The RPC
- * will be queued and processed later if the SlurmDBD is not responding.
- * NOTE: slurm_open_slurmdbd_conn() must have been called with make_agent set
- *
- * Returns SLURM_SUCCESS or an error code */
-extern int send_slurmdbd_msg(uint16_t rpc_version, persist_msg_t *req);
+	xfree(backup_host);
 
-/* Send an RPC to the SlurmDBD and wait for an arbitrary reply message.
- * The RPC will not be queued if an error occurs.
- * The "resp" message must be freed by the caller.
- * Returns SLURM_SUCCESS or an error code */
-extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
-				  persist_msg_t *req,
-				  persist_msg_t *resp);
+	if (!rc) {
+		debug("Sent PersistInit msg");
+		return pc;
+	} else {
+		error("%s: unable to open slurmdb persistent connection: %s",
+		      __func__, slurm_strerror(rc));
+		/* fail gracefully */
+		slurm_persist_conn_destroy(pc);
+		return NULL;
+	}
+}
 
-/* Send an RPC to the SlurmDBD and wait for the return code reply.
- * The RPC will not be queued if an error occurs.
- * Returns SLURM_SUCCESS or an error code */
-extern int send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
-				     persist_msg_t *req,
-				     int *rc);
-
-/* Return true if connection to slurmdbd is active, false otherwise. */
-extern bool slurmdbd_conn_active(void);
-
-/* Return the number of messages waiting to be sent to the DBD */
-extern int slurmdbd_agent_queue_count(void);
-
-/* set up local variables based on slurm.conf params */
-extern void slurmdbd_agent_config_setup(void);
-
-#endif
+extern void dbd_conn_close(slurm_persist_conn_t **pc)
+{
+	if (!pc)
+		return;
+	slurm_persist_conn_destroy(*pc);
+	*pc = NULL;
+}

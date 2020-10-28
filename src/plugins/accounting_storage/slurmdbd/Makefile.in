@@ -178,7 +178,8 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 accounting_storage_slurmdbd_la_LIBADD =
 am_accounting_storage_slurmdbd_la_OBJECTS =  \
-	accounting_storage_slurmdbd.lo as_ext_dbd.lo slurmdbd_agent.lo
+	accounting_storage_slurmdbd.lo as_ext_dbd.lo dbd_conn.lo \
+	slurmdbd_agent.lo
 accounting_storage_slurmdbd_la_OBJECTS =  \
 	$(am_accounting_storage_slurmdbd_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -205,7 +206,8 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/accounting_storage_slurmdbd.Plo \
-	./$(DEPDIR)/as_ext_dbd.Plo ./$(DEPDIR)/slurmdbd_agent.Plo
+	./$(DEPDIR)/as_ext_dbd.Plo ./$(DEPDIR)/dbd_conn.Plo \
+	./$(DEPDIR)/slurmdbd_agent.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -513,6 +515,7 @@ pkglib_LTLIBRARIES = accounting_storage_slurmdbd.la
 # Null job completion logging plugin.
 accounting_storage_slurmdbd_la_SOURCES = accounting_storage_slurmdbd.c \
 	as_ext_dbd.c as_ext_dbd.h \
+	dbd_conn.c dbd_conn.h \
 	slurmdbd_agent.c slurmdbd_agent.h
 
 accounting_storage_slurmdbd_la_LDFLAGS = $(PLUGIN_FLAGS)
@@ -596,6 +599,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_slurmdbd.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/as_ext_dbd.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dbd_conn.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdbd_agent.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -727,6 +731,7 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/accounting_storage_slurmdbd.Plo
 	-rm -f ./$(DEPDIR)/as_ext_dbd.Plo
+	-rm -f ./$(DEPDIR)/dbd_conn.Plo
 	-rm -f ./$(DEPDIR)/slurmdbd_agent.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -775,6 +780,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/accounting_storage_slurmdbd.Plo
 	-rm -f ./$(DEPDIR)/as_ext_dbd.Plo
+	-rm -f ./$(DEPDIR)/dbd_conn.Plo
 	-rm -f ./$(DEPDIR)/slurmdbd_agent.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
