@@ -46,7 +46,7 @@
 
 static List ext_conns_list;
 static pthread_t ext_thread_tid = 0;
-static int ext_shutdown = 0;
+static time_t ext_shutdown = 0;
 
 static pthread_mutex_t ext_conns_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -210,7 +210,7 @@ static void _create_ext_thread(void)
 
 static void _destroy_ext_thread(void)
 {
-	ext_shutdown = 1;
+	ext_shutdown = time(NULL);
 
 	slurm_mutex_lock(&ext_thread_mutex);
 	slurm_cond_broadcast(&ext_thread_cond);
