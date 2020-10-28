@@ -257,6 +257,68 @@ end_it:
 	return rc;
 }
 
+extern int send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
+				     persist_msg_t *req,
+				     int *resp_code)
+{
+	int rc;
+	persist_msg_t resp;
+
+	xassert(req);
+	xassert(resp_code);
+
+	memset(&resp, 0, sizeof(persist_msg_t));
+	rc = send_recv_slurmdbd_msg(rpc_version, req, &resp);
+	if (rc != SLURM_SUCCESS) {
+		;	/* error message already sent */
+	} else if (resp.msg_type != PERSIST_RC) {
+		error("response is not type PERSIST_RC: %s(%u)",
+		      slurmdbd_msg_type_2_str(resp.msg_type, 1),
+		      resp.msg_type);
+		rc = SLURM_ERROR;
+	} else {	/* resp.msg_type == PERSIST_RC */
+		persist_rc_msg_t *msg = resp.data;
+		*resp_code = msg->rc;
+		if (msg->rc != SLURM_SUCCESS &&
+		    msg->rc != ACCOUNTING_FIRST_REG &&
+		    msg->rc != ACCOUNTING_TRES_CHANGE_DB &&
+		    msg->rc != ACCOUNTING_NODES_CHANGE_DB) {
+			char *comment = msg->comment;
+			if (!comment)
+				comment = slurm_strerror(msg->rc);
+			if (!req->conn &&
+			    (msg->ret_info == DBD_REGISTER_CTLD) &&
+			    slurm_conf.accounting_storage_enforce) {
+				error("Issue with call "
+				      "%s(%u): %u(%s)",
+				      slurmdbd_msg_type_2_str(
+					      msg->ret_info, 1),
+				      msg->ret_info, msg->rc,
+				      comment);
+				fatal("You need to add this cluster "
+				      "to accounting if you want to "
+				      "enforce associations, or no "
+				      "jobs will ever run.");
+			} else
+				debug("Issue with call "
+				      "%s(%u): %u(%s)",
+				      slurmdbd_msg_type_2_str(
+					      msg->ret_info, 1),
+				      msg->ret_info, msg->rc,
+				      comment);
+		}
+		slurm_persist_free_rc_msg(msg);
+	}
+
+	log_flag(PROTOCOL, "msg_type:%s protocol_version:%hu return_code:%d",
+		 slurmdbd_msg_type_2_str(req->msg_type, 1),
+		 rpc_version, rc);
+
+	return rc;
+}
+
+
+
 extern int send_recv_slurmdbd_msg(uint16_t rpc_version,
 				  persist_msg_t *req,
 				  persist_msg_t *resp)

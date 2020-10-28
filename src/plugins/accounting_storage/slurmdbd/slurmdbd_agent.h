@@ -76,13 +76,6 @@ extern int slurmdbd_agent_send_recv(uint16_t rpc_version,
  * Returns SLURM_SUCCESS or an error code */
 extern int send_slurmdbd_msg(uint16_t rpc_version, persist_msg_t *req);
 
-/* Send an RPC to the SlurmDBD and wait for the return code reply.
- * The RPC will not be queued if an error occurs.
- * Returns SLURM_SUCCESS or an error code */
-extern int send_slurmdbd_recv_rc_msg(uint16_t rpc_version,
-				     persist_msg_t *req,
-				     int *rc);
-
 /* Return true if connection to slurmdbd is active, false otherwise. */
 extern bool slurmdbd_conn_active(void);
 
