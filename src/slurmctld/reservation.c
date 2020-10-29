@@ -611,6 +611,26 @@ static int _foreach_clear_job_resv(void *x, void *key)
 	job_record_t *job_ptr = (job_record_t *) x;
 	slurmctld_resv_t *resv_ptr = (slurmctld_resv_t *) key;
 
+	/*
+	 * Do this before checking if we have the correct reservation or
+	 * not. Since this could be set whether or not the job requested a
+	 * reservation.
+	 */
+	if ((resv_ptr->flags & RESERVE_FLAG_MAINT) &&
+	    (job_ptr->state_reason == WAIT_NODE_NOT_AVAIL) &&
+	    !xstrcmp(job_ptr->state_desc,
+		     "ReqNodeNotAvail, Reserved for maintenance")) {
+		/*
+		 * In case of cluster maintenance many jobs may get this
+		 * state set. If we wait for scheduler to update
+		 * the reason it may take long time after the
+		 * reservation completion. Instead of that clear it
+		 * when MAINT reservation ends.
+		 */
+		job_ptr->state_reason = WAIT_NO_REASON;
+		xfree(job_ptr->state_desc);
+	}
+
 	if (!_find_job_with_resv_ptr(job_ptr, resv_ptr))
 		return 0;
 
