@@ -342,6 +342,7 @@ edit:
 	}
 
 	xfree(*lines);
+	xfree(lines);
 	xfree(script);
 
 	if (line_error != -1) {
