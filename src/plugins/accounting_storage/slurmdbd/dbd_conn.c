@@ -122,7 +122,7 @@ again:
 	} else {
 		if (rc == ESLURM_DB_CONNECTION)
 			(pc->trigger_callbacks.db_fail)();
-		dbd_conn_close(&pc);
+		slurm_persist_conn_close(pc);
 
 		/* This means errno was already set correctly */
 		if (rc != SLURM_ERROR)
