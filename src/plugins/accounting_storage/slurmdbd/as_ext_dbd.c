@@ -99,20 +99,31 @@ static void _create_ext_conns(void)
 	char *ext_hosts;
 	char *tok = NULL, *save_ptr = NULL;
 	List new_list = list_create(_destroy_external_host_conns);
-	slurm_persist_conn_t *old_conn;
 
 	if ((ext_hosts = xstrdup(slurm_conf.accounting_storage_ext_host)))
 		tok = strtok_r(ext_hosts, ",", &save_ptr);
 	while (ext_hosts && tok) {
-		slurm_persist_conn_t *dbd_conn;
+		slurm_persist_conn_t *dbd_conn, tmp_conn = { 0 };
 		char *colon = xstrstr(tok, ":");
-		int port = SLURMDBD_PORT;
+		int port = slurm_conf.accounting_storage_port;
 		if (colon) {
 			*(colon++) = '\0';
 			port = strtol(colon, NULL, 10);
 		}
 
-		dbd_conn = _create_slurmdbd_conn(tok, port);
+		tmp_conn.rem_host = tok;
+		tmp_conn.rem_port = port;
+
+		/*
+		 * Transfer existing connections to new list so that existing
+		 * connections are preserved and old can be removed.
+		 */
+		if (!ext_conns_list ||
+		    !(dbd_conn = list_remove_first(ext_conns_list,
+						   _find_ext_conn,
+						   &tmp_conn)))
+			dbd_conn = _create_slurmdbd_conn(tok, port);
+
 		if (dbd_conn)
 			list_append(new_list, dbd_conn);
 
@@ -120,23 +131,7 @@ static void _create_ext_conns(void)
 	}
 	xfree(ext_hosts);
 
-	/*
-	 * Transfer existing connections to new list so that existing
-	 * connections are preserved and old can be removed.
-	 */
-	if (ext_conns_list) {
-		while ((old_conn = list_pop(ext_conns_list))) {
-			slurm_persist_conn_t *new_conn;
-			if ((new_conn = list_remove_first(new_list,
-							  _find_ext_conn,
-							  old_conn))) {
-				_destroy_external_host_conns(new_conn);
-				list_append(new_list, old_conn);
-			} else
-				_destroy_external_host_conns(old_conn);
-		}
-	}
-
+	/* Remove old connections we don't service now by freeing the list */
 	FREE_NULL_LIST(ext_conns_list);
 	if (list_count(new_list))
 		ext_conns_list = new_list;
