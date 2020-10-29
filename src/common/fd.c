@@ -179,7 +179,6 @@ static pid_t fd_test_lock(int fd, int type)
 	return(lock.l_pid);
 }
 
-
 /* Wait for a file descriptor to be readable (up to time_limit seconds).
  * Return 0 when readable or -1 on error */
 extern int wait_fd_readable(int fd, int time_limit)
@@ -314,16 +313,21 @@ extern char *poll_revents_to_str(const short revents)
 	return txt;
 }
 
-/* pass an open file descriptor back to the parent process */
+/* pass an open file descriptor back to the requesting process */
 extern void send_fd_over_pipe(int socket, int fd)
 {
 	struct msghdr msg = { 0 };
 	struct cmsghdr *cmsg;
 	char buf[CMSG_SPACE(sizeof(fd))];
+	char c;
+	struct iovec iov[1];
+
 	memset(buf, '\0', sizeof(buf));
 
-	msg.msg_iov = NULL;
-	msg.msg_iovlen = 0;
+	iov[0].iov_base = &c;
+	iov[0].iov_len = sizeof(c);
+	msg.msg_iov = iov;
+	msg.msg_iovlen = sizeof(c);
 	msg.msg_control = buf;
 	msg.msg_controllen = sizeof(buf);
 
@@ -339,15 +343,20 @@ extern void send_fd_over_pipe(int socket, int fd)
 		error("%s: failed to send fd: %m", __func__);
 }
 
-/* receive an open file descriptor from fork()'d child over unix socket */
+/* receive an open file descriptor over unix socket */
 extern int receive_fd_over_pipe(int socket)
 {
 	struct msghdr msg = {0};
 	struct cmsghdr *cmsg;
 	int fd;
-	msg.msg_iov = NULL;
-	msg.msg_iovlen = 0;
 	char c_buffer[256];
+	char c;
+	struct iovec iov[1];
+
+	iov[0].iov_base = &c;
+	iov[0].iov_len = sizeof(c);
+	msg.msg_iov = iov;
+	msg.msg_iovlen = sizeof(c);
 	msg.msg_control = c_buffer;
 	msg.msg_controllen = sizeof(c_buffer);
 

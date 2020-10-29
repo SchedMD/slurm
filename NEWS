@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
  -- acct_gather_profile/influxdb - avoid segfault on plugin shutdown if setup
     has not completed successfully.
  -- Reduce delay in starting salloc allocations when running with prologs.
+ -- Fix issue passing open fd's with [send|recv]msg.
 
 * Changes in Slurm 20.11.4
 ==========================
