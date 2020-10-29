@@ -301,6 +301,21 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 		min_tasks_this_node = mc_ptr->ntasks_per_core;
 		max_tasks_this_node = mc_ptr->ntasks_per_core *
 				      select_node_record[node_inx].tot_cores;
+	} else if (details_ptr && details_ptr->ntasks_per_tres &&
+		   (details_ptr->ntasks_per_tres != NO_VAL16)) {
+		/* Node ranges not allowed with --ntasks-per-gpu */
+		if (details_ptr->min_nodes == 1) {
+			min_tasks_this_node = details_ptr->num_tasks;
+			max_tasks_this_node = min_tasks_this_node;
+		} else if ((details_ptr->min_nodes != NO_VAL) &&
+			   (details_ptr->min_nodes > 0)) {
+			min_tasks_this_node = details_ptr->num_tasks /
+				details_ptr->min_nodes;
+			max_tasks_this_node = min_tasks_this_node;
+		} else {
+			min_tasks_this_node = 1;
+			max_tasks_this_node = NO_VAL;
+		}
 	} else if (details_ptr && (details_ptr->max_nodes == 1)) {
 		if ((details_ptr->num_tasks == NO_VAL) ||
 		    (details_ptr->num_tasks == 0)) {
