@@ -522,6 +522,11 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("AccountingStorageExternalHost");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->accounting_storage_ext_host);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AccountingStorageParameters");
 	key_pair->value =
 		xstrdup(slurm_ctl_conf_ptr->accounting_storage_params);
