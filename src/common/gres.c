@@ -11482,6 +11482,8 @@ step2:	if (!from_job_gres_list)
 					gres_job_ptr->gres_per_task;
 			gres_job_ptr2->mem_per_gres =
 					gres_job_ptr->mem_per_gres;
+			gres_job_ptr2->ntasks_per_gres =
+					gres_job_ptr->ntasks_per_gres;
 			gres_job_ptr2->node_cnt = new_node_cnt;
 			gres_job_ptr2->gres_bit_alloc =
 				xcalloc(new_node_cnt, sizeof(bitstr_t *));
