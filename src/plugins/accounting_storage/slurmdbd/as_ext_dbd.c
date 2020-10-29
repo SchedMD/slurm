@@ -49,6 +49,8 @@ static List ext_conns_list;
 static pthread_t ext_thread_tid = 0;
 static time_t ext_shutdown = 0;
 
+extern int clusteracct_storage_p_register_ctld(void *db_conn, uint16_t port);
+
 static pthread_mutex_t ext_conns_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static pthread_cond_t  ext_thread_cond = PTHREAD_COND_INITIALIZER;
@@ -68,6 +70,14 @@ extern slurm_persist_conn_t *_create_slurmdbd_conn(char *host, int port)
 		dbd_conn_open(&persist_conn_flags, NULL, host, port);
 
 	dbd_conn->shutdown = &ext_shutdown;
+
+	if ((clusteracct_storage_p_register_ctld(dbd_conn,
+						 slurm_conf.slurmctld_port) ==
+	     ESLURM_ACCESS_DENIED)) {
+		error("Not allowed to register to external cluster, not going to try again.");
+		dbd_conn_close(&dbd_conn);
+		dbd_conn = NULL;
+	}
 
 	return dbd_conn;
 }
