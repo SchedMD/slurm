@@ -1906,7 +1906,6 @@ static void _pack_context_buf(void)
 		if (ctx->ops.send_stepd)
 			(*(ctx->ops.send_stepd))(gres_context_buf);
 	}
-	slurm_mutex_unlock(&gres_context_lock);
 }
 
 static int _unpack_context_buf(Buf buffer)
