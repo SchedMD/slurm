@@ -2750,6 +2750,10 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 	cluster.plugin_id_select = register_ctld_msg->plugin_id_select;
 	cluster.rpc_version = slurmdbd_conn->conn->version;
 
+	if ((cluster.flags != NO_VAL) &&
+	    (cluster.flags & CLUSTER_FLAG_EXT))
+		slurmdbd_conn->conn->flags |= PERSIST_FLAG_EXT_DBD;
+
 	cluster_list = acct_storage_g_get_clusters(slurmdbd_conn->db_conn, *uid,
 						   &cluster_q);
 	if (!cluster_list || errno) {
@@ -2771,8 +2775,7 @@ static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
 			comment = "Failed to add/register cluster.";
 		slurmdb_free_assoc_rec_members(&root_assoc);
 		FREE_NULL_LIST(add_list);
-	} else if ((cluster.flags != NO_VAL) &&
-		   (cluster.flags & CLUSTER_FLAG_EXT) &&
+	} else if ((slurmdbd_conn->conn->flags & PERSIST_FLAG_EXT_DBD) &&
 		   !(((slurmdb_cluster_rec_t *)list_peek(cluster_list))->flags &
 		     CLUSTER_FLAG_EXT)) {
 		comment = "Can't register to non-external cluster";
