@@ -67,6 +67,12 @@ extern int container_g_create(uint32_t job_id);
  * before container_g_add_cont() is called (see below). */
 extern int container_g_join(uint32_t job_id, uid_t uid);
 
+/*
+ * Allow external processes to join the job container
+ * (eg. via PAM)
+ */
+extern int container_g_join_external(uint32_t job_id);
+
 /* Add a proctrack container (PAGG) to the specified job's container
  * The PAGG will be the job's cont_id returned by proctrack/sgi_job */
 extern int container_g_add_cont(uint32_t job_id, uint64_t cont_id);

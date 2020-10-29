@@ -117,6 +117,12 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 	return SLURM_SUCCESS;
 }
 
+/* Allow external processes to join the job container */
+extern int container_p_join_external(uint32_t job_id)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int container_p_delete(uint32_t job_id)
 {
 	return SLURM_SUCCESS;

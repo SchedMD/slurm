@@ -132,6 +132,17 @@ Owning user ID.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
+<p class="commandline">int container_p_join_external(uint32_t job_id);</p>
+<p style="margin-left:.2in"><b>Description</b>: Add this external process
+to a given job's container. The process is first placed into a process tracking
+container (PAGG).</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> job_id</span>&nbsp; &nbsp;&nbsp;(input)
+Job ID.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
 <p class="commandline">void container_p_reconfig (void);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note change in configuration,
 especially the value of the DebugFlags with respect to JobContainer.</p>
