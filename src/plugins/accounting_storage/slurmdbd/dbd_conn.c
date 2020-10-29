@@ -129,9 +129,10 @@ again:
 	return rc;
 }
 
-/* partially based on _open_slurmdbd_conn() */
 extern slurm_persist_conn_t *dbd_conn_open(uint16_t *persist_conn_flags,
-					   char *cluster_name)
+					   char *cluster_name,
+					   char *rem_host,
+					   uint16_t rem_port)
 {
 	slurm_persist_conn_t *pc = xmalloc(sizeof(*pc));
 
@@ -144,8 +145,14 @@ extern slurm_persist_conn_t *dbd_conn_open(uint16_t *persist_conn_flags,
 	else
 		pc->cluster_name = xstrdup(slurm_conf.cluster_name);
 	pc->timeout = (slurm_conf.msg_timeout + 35) * 1000;
-	pc->rem_host = xstrdup(slurm_conf.accounting_storage_host);
-	pc->rem_port = slurm_conf.accounting_storage_port;
+	if (rem_host)
+		pc->rem_host = xstrdup(rem_host);
+	else
+		pc->rem_host = xstrdup(slurm_conf.accounting_storage_host);
+	if (rem_port)
+		pc->rem_port = rem_port;
+	else
+		pc->rem_port = slurm_conf.accounting_storage_port;
 	pc->version = SLURM_PROTOCOL_VERSION;
 
 	/* Initialize the callback pointers */

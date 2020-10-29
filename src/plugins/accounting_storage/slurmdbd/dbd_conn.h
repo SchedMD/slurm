@@ -45,10 +45,14 @@
  * IN/OUT - persist_conn_flags - Flags sent in, returns full set of flags on
  *                               success.
  * IN - cluster_name - Name of cluster you are coming from.
+ * IN - rem_host - Host of dbd we are connecting to.
+ * IN - rem_port - Port on host of DBD listening for connections.
  * RET - Nonnection to the dbd on SUCCESS, NULL otherwise.
  */
 extern slurm_persist_conn_t *dbd_conn_open(uint16_t *persist_conn_flags,
-					   char *cluster_name);
+					   char *cluster_name,
+					   char *rem_host,
+					   uint16_t rem_port);
 
 /* reopen connection if needed */
 extern int dbd_conn_check_and_reopen(slurm_persist_conn_t *pc);

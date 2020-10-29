@@ -520,7 +520,7 @@ extern void *acct_storage_p_get_connection(
 	if (first)
 		init();
 
-	pc = dbd_conn_open(persist_conn_flags, cluster_name);
+	pc = dbd_conn_open(persist_conn_flags, cluster_name, NULL, 0);
 
 	slurmdbd_agent_set_conn(pc);
 
