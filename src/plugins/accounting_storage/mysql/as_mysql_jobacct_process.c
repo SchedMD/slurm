@@ -888,9 +888,14 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		}
 
 		query =	xstrdup_printf("select %s from \"%s_%s\" as t1 "
-				       "where t1.job_db_inx=%s",
+				       "where t1.job_db_inx=%s && "
+				       "t1.time_start <= %ld && "
+				       "(!t1.time_end || t1.time_end >= %ld)",
 				       step_fields, cluster_name,
-				       step_table, db_inx_char);
+				       step_table, db_inx_char,
+				       job_cond->usage_end,
+				       job_cond->usage_start);
+
 		if (extra) {
 			xstrcat(query, extra);
 			xfree(extra);
