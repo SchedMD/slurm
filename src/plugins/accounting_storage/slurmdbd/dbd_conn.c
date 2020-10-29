@@ -168,7 +168,7 @@ extern slurm_persist_conn_t *dbd_conn_open(uint16_t *persist_conn_flags,
 
 	(void)_connect_dbd_conn(pc);
 
-	if (pc && persist_conn_flags)
+	if (persist_conn_flags)
 		*persist_conn_flags = pc->flags;
 
 	return pc;
