@@ -165,7 +165,10 @@ char *_load_script_from_fd(int fd)
 	int buf_size = 4096, buf_left, script_size = 0, tmp_size;
         buf = ptr = xmalloc(buf_size);
         buf_left = buf_size;
-	lseek(fd, 0, SEEK_SET);
+
+	if (lseek(fd, 0, SEEK_SET) < 0)
+		fatal("%s: lseek(0): %m", __func__);
+
         while((tmp_size = read(fd, ptr, buf_left)) > 0) {
                 buf_left -= tmp_size;
                 script_size += tmp_size;
