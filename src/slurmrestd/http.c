@@ -266,10 +266,10 @@ static int _on_header_value(http_parser *parser, const char *at, size_t length)
 			return 1;
 		}
 	} else if (!xstrcasecmp(buffer->name, "Content-Type")) {
-		xassert(request->content_type == NULL);
+		xfree(request->content_type);
 		request->content_type = xstrdup(buffer->value);
 	} else if (!xstrcasecmp(buffer->name, "Accept")) {
-		xassert(request->accept == NULL);
+		xfree(request->accept);
 		request->accept = xstrdup(buffer->value);
 	} else if (!xstrcasecmp(buffer->name, "Expect")) {
 		if (!xstrcasecmp(buffer->value, "100-continue"))
