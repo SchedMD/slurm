@@ -149,7 +149,7 @@ static int _for_each_check_ext_conn(void *x, void *arg)
 		slurm_persist_conn_reopen(dbd_conn, true);
 
 		/* slurm_persist_send_msg will reconnect */
-		rc = clusteracct_storage_g_register_ctld(
+		rc = clusteracct_storage_p_register_ctld(
 			dbd_conn, slurm_conf.slurmctld_port);
 		if (rc == ESLURM_ACCESS_DENIED) {
 			error("Not allowed to register to external cluster, not going to try again.");
