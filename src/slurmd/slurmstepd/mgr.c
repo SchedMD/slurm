@@ -1418,14 +1418,52 @@ fail1:
 static int _pre_task_child_privileged(
 	stepd_step_rec_t *job, int taskid, struct priv_state *sp)
 {
+	int setwd = 0; /* set working dir */
+	int rc = 0;
+
 	if (_reclaim_privileges(sp) < 0)
 		return SLURM_ERROR;
+
+#ifndef HAVE_NATIVE_CRAY
+	/* Add job's pid to job container */
+
+	if (container_g_join(job->step_id.job_id, job->uid)) {
+		error("container_g_join failed: %u", job->step_id.job_id);
+		exit(1);
+	}
+
+	/*
+	 * tmpfs job container plugin changes the working directory
+	 * back to root working directory, so change it back to users
+	 * but after dropping privillege
+	 */
+	setwd = 1;
+#endif
 
 	if (spank_task_privileged(job, taskid) < 0)
 		return error("spank_task_init_privileged failed");
 
 	/* sp->gid_list should already be initialized */
-	return (_drop_privileges(job, true, sp, false));
+	rc = _drop_privileges(job, true, sp, false);
+	if (rc) {
+		error ("_drop_privileges: %m");
+		return rc;
+	}
+
+	if (setwd) {
+		if (chdir(job->cwd) < 0) {
+			error("couldn't chdir to `%s': %m: going to /tmp instead",
+			      job->cwd);
+			if (chdir("/tmp") < 0) {
+				error("couldn't chdir to /tmp either. dying.");
+				return SLURM_ERROR;
+			}
+		}
+
+	}
+
+	return rc;
+
 }
 
 struct exec_wait_info {
@@ -1768,6 +1806,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 			 */
 			if (_pre_task_child_privileged(job, i, &sprivs) < 0)
 				_exit(1);
+
 
  			if (_become_user(job, &sprivs) < 0) {
  				error("_become_user failed: %m");
