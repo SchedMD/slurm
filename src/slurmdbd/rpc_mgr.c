@@ -147,6 +147,8 @@ static void _connection_fini_callback(void *arg)
 			cluster_rec.control_port = conn->conn->rem_port;
 			cluster_rec.rpc_version = conn->conn->version;
 			cluster_rec.tres_str = conn->tres_str;
+			if (conn->conn->flags & PERSIST_FLAG_EXT_DBD)
+				cluster_rec.flags = CLUSTER_FLAG_EXT;
 			debug("cluster %s has disconnected",
 			      conn->conn->cluster_name);
 
