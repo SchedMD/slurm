@@ -258,8 +258,7 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 
 extern int slurm_rest_auth_p_apply(rest_auth_context_t *context)
 {
-	plugin_data_t *data = context->plugin_data;
-	xassert(data->magic == MAGIC);
+	xassert(((plugin_data_t *) context->plugin_data)->magic == MAGIC);
 	xassert(context->plugin_id == plugin_id);
 
 	return g_slurm_auth_thread_config(NULL, context->user_name);
