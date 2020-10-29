@@ -266,6 +266,7 @@ extern void crontab_add_disabled_lines(uid_t uid, int line_start, int line_end)
 	}
 
 	safe_write(fd, lines, strlen(lines));
+	close(fd);
 	xfree(file);
 	xfree(lines);
 	return;
@@ -273,6 +274,7 @@ extern void crontab_add_disabled_lines(uid_t uid, int line_start, int line_end)
 rwfail:
 	error("%s: failed to append failed lines %d-%d to file `%s`",
 	      __func__, line_start, line_end, file);
+	close(fd);
 	xfree(file);
 	xfree(lines);
 	return;
