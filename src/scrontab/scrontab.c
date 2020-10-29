@@ -391,6 +391,7 @@ edit:
 		goto edit;
 	}
 
+	slurm_free_crontab_update_response_msg(response);
 	xfree(crontab);
 	list_destroy(jobs);
 }
