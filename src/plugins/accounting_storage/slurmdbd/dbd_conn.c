@@ -78,10 +78,14 @@ static int _connect_dbd_conn(slurm_persist_conn_t *pc)
 {
 
 	int rc;
-	char *backup_host = xstrdup(slurm_conf.accounting_storage_backup_host);
+	char *backup_host = NULL;
 
 	xassert(pc);
 
+	/* Only setup a backup host on a non ext_dbd connection */
+	if (!(pc->flags & PERSIST_FLAG_EXT_DBD))
+		backup_host =
+			xstrdup(slurm_conf.accounting_storage_backup_host);
 again:
 	// A connection failure is only an error if backup dne or also fails
 	if (backup_host)

@@ -42,6 +42,7 @@
 #  include <sys/prctl.h>
 #endif
 
+#include "dbd_conn.h"
 #include "as_ext_dbd.h"
 
 static List ext_conns_list;
@@ -56,25 +57,17 @@ static pthread_mutex_t ext_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 extern void _destroy_external_host_conns(void *object)
 {
 	slurm_persist_conn_t *conn = (slurm_persist_conn_t *)object;
-	xfree(conn->shutdown);
-	slurm_persist_conn_destroy(conn);
+	dbd_conn_close(&conn);
 }
 
 /* don't connect now as it will block the ctld */
 extern slurm_persist_conn_t *_create_slurmdbd_conn(char *host, int port)
 {
-	slurm_persist_conn_t *dbd_conn = NULL;
+	uint16_t persist_conn_flags = PERSIST_FLAG_EXT_DBD;
+	slurm_persist_conn_t *dbd_conn =
+		dbd_conn_open(&persist_conn_flags, NULL, host, port);
 
-	dbd_conn = xmalloc(sizeof(slurm_persist_conn_t));
-	dbd_conn->cluster_name = xstrdup(slurm_conf.cluster_name);
-	dbd_conn->fd = -1;
-	dbd_conn->flags = PERSIST_FLAG_DBD | PERSIST_FLAG_EXT_DBD;
-	dbd_conn->persist_type = PERSIST_TYPE_DBD;
-	dbd_conn->rem_host = xstrdup(host);
-	dbd_conn->rem_port = port;
-	dbd_conn->timeout = -1;
-	/* need to manually free as this isn't handled by the destroy function */
-	dbd_conn->shutdown = xmalloc(sizeof(time_t));
+	dbd_conn->shutdown = &ext_shutdown;
 
 	return dbd_conn;
 }
