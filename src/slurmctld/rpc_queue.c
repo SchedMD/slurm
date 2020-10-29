@@ -133,10 +133,10 @@ static void *_rpc_queue_worker(void *arg)
 			q->func(msg);
 			if ((msg->conn_fd >= 0) && (close(msg->conn_fd) < 0))
 				error("close(%d): %m", msg->conn_fd);
-			slurm_free_msg(msg);
 
 			END_TIMER;
 			record_rpc_stats(msg, DELTA_TIMER);
+			slurm_free_msg(msg);
 			processed++;
 		}
 	}
