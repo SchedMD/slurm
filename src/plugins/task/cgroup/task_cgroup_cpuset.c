@@ -1203,17 +1203,15 @@ again:
 	}
 
 	/*
-	 * check that user's cpuset cgroup is consistent and add the job cores
+	 * Check that user's cpuset cgroup is consistent and add the job cores.
+	 * This will set cpuset.mems and cpuset.cpus to the ancestor value and
+	 * after we'll set it to job's allocated cores.
 	 */
-	rc = xcgroup_get_param(&user_cpuset_cg, cpuset_meta, &cpus, &cpus_size);
-	if (rc != XCGROUP_SUCCESS || cpus_size == 1) {
-		/* initialize the cpusets as it was non-existent */
-		if (_xcgroup_cpuset_init(&user_cpuset_cg) != XCGROUP_SUCCESS) {
-			(void)xcgroup_delete(&user_cpuset_cg);
-			xcgroup_destroy(&user_cpuset_cg);
-			xfree(cpus);
-			goto error;
-		}
+	if (_xcgroup_cpuset_init(&user_cpuset_cg) != XCGROUP_SUCCESS) {
+		(void)xcgroup_delete(&user_cpuset_cg);
+		xcgroup_destroy(&user_cpuset_cg);
+		xfree(cpus);
+		goto error;
 	}
 	user_alloc_cores = xstrdup(job_alloc_cores);
 	if ((cpus != NULL) && (cpus_size > 1)) {

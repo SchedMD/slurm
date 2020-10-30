@@ -75,6 +75,7 @@ documents those changes that are of interest to users and administrators.
     pending jobs after a maintenance reservation ended.
  -- MySQL - Stop steps from printing when outside time range.
  -- Fixed kmem limit calculation to use MaxKmemPercent correctly.
+ -- Fix initialization of cpuset.mems/cpus on uid cgroup subdir.
 
 * Changes in Slurm 20.02.5
 ==========================
