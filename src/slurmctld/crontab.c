@@ -95,8 +95,12 @@ static int _handle_job(void *x, void *y)
 	args->return_code = validate_job_create_req(job, args->uid,
 						    args->err_msg);
 
-	if (args->return_code)
+	if (args->return_code) {
+		xstrfmtcat(*args->failed_lines, "%u-%u",
+			   ((cron_entry_t *) job->crontab_entry)->line_start,
+			   ((cron_entry_t *) job->crontab_entry)->line_end);
 		return 1;
+	}
 
 	args->return_code = job_allocate(job, 0, false, NULL, 0, args->uid,
 					 &job_ptr, args->err_msg,
