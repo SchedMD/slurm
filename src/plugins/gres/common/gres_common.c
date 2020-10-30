@@ -194,7 +194,8 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				bitstr_t *usable_gres, char *prefix,
 				int *local_inx, uint64_t *gres_per_node,
 				char **local_list, char **global_list,
-				bool reset, bool is_job, int *global_id)
+				bool reset, bool is_job, int *global_id,
+				gres_internal_flags_t flags)
 {
 	int first_inx = -1;
 	bitstr_t *bit_alloc = NULL;
@@ -318,6 +319,25 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 			xfree(*local_list);
 			*local_list = new_local_list;
 		}
+
+		if (flags & GRES_INTERNAL_FLAG_VERBOSE) {
+			char *usable_str;
+			char *alloc_str;
+			if (usable_gres)
+				usable_str = bit_fmt_hexmask_trim(usable_gres);
+			else
+				usable_str = xstrdup("NULL");
+			if (bit_alloc)
+				alloc_str = bit_fmt_hexmask_trim(bit_alloc);
+			else
+				alloc_str = xstrdup("NULL");
+			fprintf(stderr, "gpu-bind: usable_gres=%s; bit_alloc=%s; local_inx=%d; global_list=%s; local_list=%s\n",
+				usable_str, alloc_str, *local_inx, *global_list,
+				*local_list);
+			xfree(alloc_str);
+			xfree(usable_str);
+		}
+
 	} else if (alloc_cnt) {
 		/*
 		 * The gres.conf file must identify specific device files

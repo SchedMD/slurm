@@ -79,8 +79,10 @@ static int _valid_num_list(const char *arg)
  * Test for valid GPU binding specification
  * RET - -1 on error, else 0
  */
-static int _valid_gpu_bind(const char *arg)
+static int _valid_gpu_bind(char *arg)
 {
+	if (!strncasecmp(arg, "verbose,", 8))
+		arg += 8;
 	if (!strcmp(arg, "closest"))
 		return 0;
 	if (!strncmp(arg, "map_gpu:", 8))

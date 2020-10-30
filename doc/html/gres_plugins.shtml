@@ -103,7 +103,7 @@ upon GRES state information in that credential.
 <p style="margin-left:.2in"><b>Returns</b>: None.</p>
 
 <p class="commandline">
-void step_set_env(char ***job_env_ptr, void *gres_ptr)
+void step_set_env(char ***job_env_ptr, void *gres_ptr, uint32_t flags)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the <i>slurmd</i> daemon after the getting a job
 step credential and can be used to set environment variables for the job step
@@ -113,6 +113,9 @@ based upon GRES state information in that credential.
 (input/output) pointer to the job step's environment variable structure.<br>
 <span class="commandline">gres_ptr</span>
 (input) pointer to the step's GRES allocation information.<br>
+<span class="commandline">flags</span>
+(input) Various flags to alter behavior. Currently, only a verbose flag is used
+to print verbose GRES binding information to stderr for each task.<br>
 <p style="margin-left:.2in"><b>Returns</b>: None.</p>
 
 <p class="commandline">
@@ -263,6 +266,6 @@ environment variables.<br>
 identify the resources on a specific node allocated to this job.</p>
 <p style="margin-left:.2in"><b>Returns</b>: None.</p>
 
-<p style="text-align:center;">Last modified 5 March 2019</p>
+<p style="text-align:center;">Last modified 30 October 2020</p>
 
 <!--#include virtual="footer.txt"-->

@@ -56,6 +56,11 @@ enum {
 	GRES_VAL_TYPE_ALLOC  = 3
 };
 
+typedef enum {
+	GRES_INTERNAL_FLAG_NONE = 0,
+	GRES_INTERNAL_FLAG_VERBOSE = 1 << 0,
+} gres_internal_flags_t;
+
 typedef struct {
 	int index;
 	int alloc;

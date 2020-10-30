@@ -116,12 +116,15 @@ typedef struct slurm_gres_ops {
 	int		(*node_config_load)	( List gres_conf_list,
 						  node_config_load_t *node_conf);
 	void		(*job_set_env)		( char ***job_env_ptr,
-						  void *gres_ptr, int node_inx );
+						  void *gres_ptr, int node_inx,
+						  gres_internal_flags_t flags);
 	void		(*step_set_env)		( char ***job_env_ptr,
-						  void *gres_ptr );
+						  void *gres_ptr,
+						  gres_internal_flags_t flags);
 	void		(*step_reset_env)	( char ***job_env_ptr,
 						  void *gres_ptr,
-						  bitstr_t *usable_gres );
+						  bitstr_t *usable_gres,
+						  gres_internal_flags_t flags);
 	void		(*send_stepd)		( Buf buffer );
 	void		(*recv_stepd)		( Buf buffer );
 	int		(*job_info)		( gres_job_state_t *job_gres_data,
@@ -11473,7 +11476,8 @@ extern void gres_plugin_job_set_env(char ***job_env_ptr, List job_gres_list,
 					continue;
 				(*(gres_context[i].ops.job_set_env))
 					(job_env_ptr, gres_ptr->gres_data,
-					 node_inx);
+					 node_inx,
+					 GRES_INTERNAL_FLAG_NONE);
 				found = true;
 			}
 			list_iterator_destroy(gres_iter);
@@ -11486,7 +11490,8 @@ extern void gres_plugin_job_set_env(char ***job_env_ptr, List job_gres_list,
 		 */
 		if (!found) {
 			(*(gres_context[i].ops.job_set_env))
-				(job_env_ptr, NULL, node_inx);
+				(job_env_ptr, NULL, node_inx,
+				 GRES_INTERNAL_FLAG_NONE);
 		}
 	}
 	slurm_mutex_unlock(&gres_context_lock);
@@ -12941,9 +12946,14 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 	char *sep, *map_gpu = NULL, *mask_gpu = NULL;
 	bitstr_t *usable_gres = NULL;
 	bool found;
+	gres_internal_flags_t gres_internal_flags = GRES_INTERNAL_FLAG_NONE;
 
 	if (!bind_gpu && tres_bind && (sep = strstr(tres_bind, "gpu:"))) {
 		sep += 4;
+		if (!strncasecmp(sep, "verbose,", 8)) {
+			gres_internal_flags |= GRES_INTERNAL_FLAG_VERBOSE;
+			sep += 8;
+		}
 		if (!strncasecmp(sep, "closest", 7))
 			bind_gpu = true;
 		else if (!strncasecmp(sep, "map_gpu:", 8))
@@ -12997,11 +13007,13 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 					(*(gres_context[i].ops.step_reset_env))
 						(job_env_ptr,
 						 gres_ptr->gres_data,
-						 usable_gres);
+						 usable_gres,
+						 gres_internal_flags);
 				} else {
 					(*(gres_context[i].ops.step_set_env))
 						(job_env_ptr,
-						 gres_ptr->gres_data);
+						 gres_ptr->gres_data,
+						 gres_internal_flags);
 				}
 				found = true;
 			}
@@ -13010,10 +13022,12 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 		if (!found) { /* No data fond */
 			if (accel_bind_type || tres_bind) {
 				(*(gres_context[i].ops.step_reset_env))
-					(job_env_ptr, NULL, NULL);
+					(job_env_ptr, NULL, NULL,
+					 gres_internal_flags);
 			} else {
 				(*(gres_context[i].ops.step_set_env))
-					(job_env_ptr, NULL);
+					(job_env_ptr, NULL,
+					 gres_internal_flags);
 			}
 		}
 		FREE_NULL_BITMAP(usable_gres);

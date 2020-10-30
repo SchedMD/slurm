@@ -94,7 +94,7 @@ static List gres_devices = NULL;
 static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 		     bitstr_t *usable_gres,
 		     bool *already_seen, int *local_inx,
-		     bool reset, bool is_job)
+		     bool reset, bool is_job, gres_internal_flags_t flags)
 {
 	char *global_list = NULL, *local_list = NULL, *slurm_env_var = NULL;
 
@@ -111,7 +111,8 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 
 	common_gres_set_env(gres_devices, env_ptr, gres_ptr, node_inx,
 			    usable_gres, "", local_inx, NULL,
-			    &local_list, &global_list, reset, is_job, NULL);
+			    &local_list, &global_list, reset, is_job, NULL,
+			    flags);
 
 	if (global_list) {
 		env_array_overwrite(env_ptr, slurm_env_var, global_list);
@@ -165,7 +166,8 @@ extern int node_config_load(List gres_conf_list, node_config_load_t *config)
  * Set environment variables as appropriate for a job (i.e. all tasks) based
  * upon the job's GRES state.
  */
-extern void job_set_env(char ***job_env_ptr, void *gres_ptr, int node_inx)
+extern void job_set_env(char ***job_env_ptr, void *gres_ptr, int node_inx,
+			gres_internal_flags_t flags)
 {
 	/*
 	 * Variables are not static like in step_*_env since we could be calling
@@ -179,20 +181,21 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr, int node_inx)
 	bool already_seen = false;
 
 	_set_env(job_env_ptr, gres_ptr, node_inx, NULL,
-		 &already_seen, &local_inx, false, true);
+		 &already_seen, &local_inx, false, true, flags);
 }
 
 /*
  * Set environment variables as appropriate for a job (i.e. all tasks) based
  * upon the job step's GRES state.
  */
-extern void step_set_env(char ***step_env_ptr, void *gres_ptr)
+extern void step_set_env(char ***step_env_ptr, void *gres_ptr,
+			 gres_internal_flags_t flags)
 {
 	static int local_inx = 0;
 	static bool already_seen = false;
 
 	_set_env(step_env_ptr, gres_ptr, 0, NULL,
-		 &already_seen, &local_inx, false, false);
+		 &already_seen, &local_inx, false, false, flags);
 }
 
 /*
@@ -200,13 +203,13 @@ extern void step_set_env(char ***step_env_ptr, void *gres_ptr)
  * based upon the job step's GRES state and assigned CPUs.
  */
 extern void step_reset_env(char ***step_env_ptr, void *gres_ptr,
-			   bitstr_t *usable_gres)
+			   bitstr_t *usable_gres, gres_internal_flags_t flags)
 {
 	static int local_inx = 0;
 	static bool already_seen = false;
 
 	_set_env(step_env_ptr, gres_ptr, 0, usable_gres,
-		 &already_seen, &local_inx, true, false);
+		 &already_seen, &local_inx, true, false, flags);
 }
 
 /* Send GRES information to slurmstepd on the specified file descriptor */

@@ -68,7 +68,8 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				bitstr_t *usable_gres, char *prefix,
 				int *local_inx, uint64_t *gres_per_node,
 				char **local_list, char **global_list,
-				bool reset, bool is_job, int *global_id);
+				bool reset, bool is_job, int *global_id,
+				gres_internal_flags_t flags);
 
 /* Send GRES information from slurmd on the specified file descriptor */
 extern void common_send_stepd(Buf buffer, List gres_devices);
