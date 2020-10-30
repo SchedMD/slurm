@@ -90,6 +90,7 @@ HIGHLIGHTS
  -- select/linear will now allocate up to nodes RealMemory when configured with
     SelectTypeParameters=CR_Memory and --mem=0 specified. Previous behavior was
     no memory accouted and no memory limits implied to job.
+ -- slurmrestd - add API to interface with slurmdbd.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
