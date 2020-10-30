@@ -1787,7 +1787,7 @@ extern List acct_storage_p_get_accts(void *db_conn, uid_t uid,
 	rc = dbd_conn_send_recv(SLURM_PROTOCOL_VERSION, &req, &resp);
 
 	if (rc != SLURM_SUCCESS)
-		error("DBD_GET_ACCOUNTS failure: %m");
+		error("DBD_GET_ACCOUNTS failure: %s", slurm_strerror(rc));
 	else if (resp.msg_type == PERSIST_RC) {
 		persist_rc_msg_t *msg = resp.data;
 		if (msg->rc == SLURM_SUCCESS) {
