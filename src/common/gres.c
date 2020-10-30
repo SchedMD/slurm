@@ -2976,36 +2976,19 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			gres_data->topo_gres_cnt_avail[i] =
 					gres_slurmd_conf->count;
 			if (gres_slurmd_conf->cpus) {
-				bitstr_t *tmp_bitmap;
-				tmp_bitmap =
-					bit_alloc(gres_slurmd_conf->cpu_cnt);
-				bit_unfmt(tmp_bitmap, gres_slurmd_conf->cpus);
-				if (gres_slurmd_conf->cpu_cnt == core_cnt) {
+				/* NOTE: gres_slurmd_conf->cpus is cores */
+				bitstr_t *tmp_bitmap = bit_alloc(core_cnt);
+				int ret = bit_unfmt(tmp_bitmap,
+						    gres_slurmd_conf->cpus);
+				if (ret != SLURM_SUCCESS) {
+					error("%s: %s: invalid GRES core specification (%s) on node %s",
+					      __func__, context_ptr->gres_type,
+					      gres_slurmd_conf->cpus,
+					      node_name);
+					FREE_NULL_BITMAP(tmp_bitmap);
+				} else
 					gres_data->topo_core_bitmap[i] =
 						tmp_bitmap;
-					tmp_bitmap = NULL; /* Nothing to free */
-				} else if (gres_slurmd_conf->cpu_cnt ==
-					   cpu_cnt) {
-					/* Translate CPU to core bitmap */
-					int cpus_per_core = cpu_cnt / core_cnt;
-					int j, core_inx;
-					gres_data->topo_core_bitmap[i] =
-						bit_alloc(core_cnt);
-					for (j = 0; j < cpu_cnt; j++) {
-						if (!bit_test(tmp_bitmap, j))
-							continue;
-						core_inx = j / cpus_per_core;
-						bit_set(gres_data->
-							topo_core_bitmap[i],
-							core_inx);
-					}
-				} else if (i == 0) {
-					error("%s: %s: invalid GRES cpu count (%u) on node %s",
-					      __func__, context_ptr->gres_type,
-					      gres_slurmd_conf->cpu_cnt,
-					      node_name);
-				}
-				FREE_NULL_BITMAP(tmp_bitmap);
 				cpus_config = core_cnt;
 			} else if (cpus_config && !cpu_config_err) {
 				cpu_config_err = true;
@@ -3097,7 +3080,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 					if (gres_data->topo_core_bitmap[j])
 						continue;
 					gres_data->topo_core_bitmap[j] =
-						bit_alloc(cpus_config);
+						bit_alloc(core_cnt);
 					bit_set_all(gres_data->
 						    topo_core_bitmap[j]);
 				}
