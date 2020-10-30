@@ -363,11 +363,16 @@ Repeated failures should be reported to your system administrator in
 order to rectify the problem by cancelling the processes holding those
 ports.</p>
 
-<p>NOTE: Some kernels and system configurations have resulted in a locked memory
-too small for proper OpemMPI functionality, resulting in application failure
-with a segmentation fault. This may be fixed by configuring the slurmd daemon
-to execute with a larger limit. For example, add "LimitMEMLOCK=infinity" to
-your slurmd.service file.</p>
+<p><b>NOTE</b>: OpenMPI has a limitation that does not support calls to
+<i>MPI_Comm_spawn()</i> from within a Slurm allocation. If you need to
+use the <i>MPI_Comm_spawn()</i> function you will need to use another MPI
+implementation combined with PMI-2 since PMIx doesn't support it either.</p>
+
+<p><b>NOTE</b>: Some kernels and system configurations have resulted in a locked
+memory too small for proper OpemMPI functionality, resulting in application
+failure with a segmentation fault. This may be fixed by configuring the slurmd
+daemon to execute with a larger limit. For example, add "LimitMEMLOCK=infinity"
+to your slurmd.service file.</p>
 
 <hr size=4 width="100%">
 
@@ -582,6 +587,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 22 October 2020</p>
+<p style="text-align:center;">Last modified 30 October 2020</p>
 
 <!--#include virtual="footer.txt"-->
