@@ -88,9 +88,9 @@ typedef struct gres_slurmd_conf {
 	/* Count of gres available in this configuration record */
 	uint64_t count;
 
-	/* Specific CPUs associated with this configuration record */
+	/* The # of CPUs on the node */
 	uint32_t cpu_cnt;
-	/* abstract/logical mapping range of cores (gres.conf) or CPUs (NVML) */
+	/* abstract/logical mapping range of cores */
 	char *cpus;
 	/* machine/local/physical CPU mapping */
 	bitstr_t *cpus_bitmap;
