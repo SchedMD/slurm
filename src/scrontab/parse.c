@@ -109,7 +109,6 @@ extern cron_entry_t *cronspec_to_bitstring(char *pos)
 	cron_entry_t *entry = new_cron_entry();
 
 	if (*pos == '@') {
-		error("%s: at format", __func__);
 		pos++;
 		if (!strncasecmp(pos, "yearly", 6) ||
 		    !strncasecmp(pos, "annually", 8)) {
