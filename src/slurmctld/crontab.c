@@ -189,13 +189,19 @@ extern void crontab_submit(crontab_update_request_msg_t *request,
 			   char *alloc_node, uint16_t protocol_version)
 {
 	foreach_cron_job_args_t args;
-
 	char *dir = NULL, *file = NULL;
+
+	memset(&args, 0, sizeof(args));
+
 	xstrfmtcat(dir, "%s/crontab", slurm_conf.state_save_location);
 	xstrfmtcat(file, "%s/crontab.%u", dir, request->uid);
 
 	(void) mkdir(dir, 0700);
 	xfree(dir);
+
+	response->return_code = SLURM_SUCCESS;
+
+	debug("%s: updating crontab for uid=%u", __func__, request->uid);
 
 	if (!request->crontab) {
 		debug("%s: removing crontab for uid=%u",
@@ -203,40 +209,25 @@ extern void crontab_submit(crontab_update_request_msg_t *request,
 
 		(void) unlink(file);
 		xfree(file);
+	} else if (!request->jobs) {
+		debug("%s: no jobs submitted alongside crontab for uid=%u",
+		      __func__, request->uid);
+	} else {
+		/*
+		 * Already authenticated upstream.
+		 */
+		args.alloc_node = alloc_node;
+		args.uid = request->uid;
+		args.gid = request->gid;
+		args.err_msg = &response->err_msg;
+		args.failed_lines = &response->failed_lines;
+		args.new_jobs = list_create(NULL);
+		args.protocol_version = protocol_version;
+		args.return_code = SLURM_SUCCESS;
 
-		return;
+		list_for_each(request->jobs, _handle_job, &args);
+		response->return_code = args.return_code;
 	}
-
-	debug("%s: updating crontab for uid=%u", __func__, request->uid);
-
-	if (write_data_to_file(file, request->crontab)) {
-		error("%s: failed to save file", __func__);
-		xfree(file);
-
-		response->return_code = ESLURM_WRITING_TO_FILE;
-		return;
-	}
-	xfree(file);
-
-	if (!request->jobs) {
-		debug("%s: no jobs submitted alongside crontab", __func__);
-		return;
-	}
-
-	/*
-	 * Already authenticated upstream.
-	 */
-	args.alloc_node = alloc_node;
-	args.uid = request->uid;
-	args.gid = request->gid;
-	args.err_msg = &response->err_msg;
-	args.failed_lines = &response->failed_lines;
-	args.new_jobs = list_create(NULL);
-	args.protocol_version = protocol_version;
-	args.return_code = SLURM_SUCCESS;
-
-	list_for_each(request->jobs, _handle_job, &args);
-	response->return_code = args.return_code;
 
 	/* on submission failure kill all newly created jobs */
 	if (response->return_code) {
@@ -245,13 +236,27 @@ extern void crontab_submit(crontab_update_request_msg_t *request,
 		      __func__, purged);
 	} else {
 		/* on success, kill/modify old jobs */
+		list_for_each(job_list, _clear_requeue_cron, &request->uid);
 
-		list_for_each(job_list, _clear_requeue_cron, &args.uid);
+		/*
+		 * now set the flag. don't do this upfront to avoid finding
+		 * them with _clear_requeue_cron()
+		 */
+		if (args.new_jobs)
+			list_for_each(args.new_jobs, _set_requeue_cron, NULL);
 
-		list_for_each(args.new_jobs, _set_requeue_cron, NULL);
+		/*
+		 * save the new file (if defined)
+		 */
+		if (request->crontab &&
+		    write_data_to_file(file, request->crontab)) {
+			error("%s: failed to save file", __func__);
+			response->return_code = ESLURM_WRITING_TO_FILE;
+		}
 	}
 
-	list_destroy(args.new_jobs);
+	xfree(file);
+	FREE_NULL_LIST(args.new_jobs);
 }
 
 extern void crontab_add_disabled_lines(uid_t uid, int line_start, int line_end)
