@@ -261,7 +261,7 @@ static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 		      working_cluster_rec->name);
 		goto cleanup;
 	}
-	if (slurm_load_jobs((time_t)NULL, &clus_jobs, 0)) {
+	if (slurm_load_jobs((time_t)NULL, &clus_jobs, SHOW_ALL)) {
 		error("Failed to get jobs from requested clusters: %m");
 		goto cleanup;
 	}
