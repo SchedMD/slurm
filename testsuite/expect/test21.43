@@ -62,7 +62,7 @@ proc cleanup {} {
 	log_debug "Cleaning up"
 
 	# Cancel any lingering jobs
-	spawn $scancel $job_list
+	cancel_job $job_list
 
 	# Delete test account
 	remove_acct "" $test_acct
