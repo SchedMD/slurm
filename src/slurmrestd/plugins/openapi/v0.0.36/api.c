@@ -51,6 +51,8 @@
 #include "src/slurmrestd/operations.h"
 #include "src/slurmrestd/xjson.h"
 
+#include "src/slurmrestd/plugins/openapi/v0.0.36/api.h"
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -82,15 +84,6 @@ const uint32_t plugin_id = 100;
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 decl_static_data(openapi_json);
-
-extern void init_op_diag(void);
-extern void init_op_jobs(void);
-extern void init_op_nodes(void);
-extern void init_op_partitions(void);
-extern void destroy_op_diag(void);
-extern void destroy_op_jobs(void);
-extern void destroy_op_nodes(void);
-extern void destroy_op_partitions(void);
 
 extern data_t *slurm_openapi_p_get_specification(void)
 {

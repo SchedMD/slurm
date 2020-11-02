@@ -38,7 +38,7 @@ pkglib_LTLIBRARIES = openapi_v0_0_36.la
 noinst_LTLIBRARIES = libopenapi_ref.la
 
 openapi_v0_0_36_la_SOURCES = \
-	api.c diag.c jobs.c nodes.c partitions.c
+	api.c api.h diag.c jobs.c nodes.c partitions.c
 
 openapi_v0_0_36_la_DEPENDENCIES = $(LIB_SLURM_BUILD)
 openapi_v0_0_36_la_LDFLAGS = $(PLUGIN_FLAGS)
