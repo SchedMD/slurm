@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix duplicate key error on clean starts after slurmctld is killed.
  -- Avoid double free of step_record_t in the slurmctld when node is removed
     from config.
+ -- Zero out step_record_t's magic when freed.
 
 * Changes in Slurm 20.11.0rc1
 ==============================
