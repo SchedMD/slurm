@@ -61,7 +61,7 @@ typedef enum {
 
 static int _op_handler_diag(const char *context_id,
 			    http_request_method_t method, data_t *parameters,
-			    data_t *query, int tag, data_t *resp_ptr,
+			    data_t *query, int tag, data_t *p,
 			    operations_auth_t *auth)
 {
 	int rc;
@@ -69,8 +69,7 @@ static int _op_handler_diag(const char *context_id,
 	stats_info_request_msg_t *req = xmalloc(sizeof(*req));
 	req->command_id = STAT_COMMAND_GET;
 
-	data_t *p = data_set_dict(resp_ptr);
-	data_t *errors = data_set_list(data_key_set(p, "errors"));
+	data_t *errors = populate_response_format(p);
 	data_t *d = data_set_dict(data_key_set(p, "statistics"));
 	debug4("%s:[%s] diag handler called", __func__, context_id);
 
@@ -171,8 +170,7 @@ static int _op_handler_ping(const char *context_id,
 	int rc = SLURM_SUCCESS;
 	slurm_ctl_conf_info_msg_t *slurm_ctl_conf_ptr = NULL;
 
-	data_t *errors = data_set_list(
-		data_key_set(data_set_dict(resp_ptr), "errors"));
+	data_t *errors = populate_response_format(resp_ptr);
 
 	if (slurm_load_ctl_conf((time_t) NULL, &slurm_ctl_conf_ptr))
 		_ping_error("%s: slurmctld config is unable to load: %m",

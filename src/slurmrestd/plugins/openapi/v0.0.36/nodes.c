@@ -154,12 +154,11 @@ static int _dump_node(data_t *p, node_info_t *node)
 
 static int _op_handler_nodes(const char *context_id,
 			     http_request_method_t method, data_t *parameters,
-			     data_t *query, int tag, data_t *resp,
+			     data_t *query, int tag, data_t *d,
 			     operations_auth_t *auth)
 {
 	int rc = SLURM_SUCCESS;
-	data_t *d = data_set_dict(resp);
-	data_t *errors = data_set_list(data_key_set(d, "errors"));
+	data_t *errors = populate_response_format(d);
 	data_t *nodes = data_set_list(data_key_set(d, "nodes"));
 	node_info_msg_t *node_info_ptr = NULL;
 

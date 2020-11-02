@@ -1279,8 +1279,7 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 	int rc = SLURM_SUCCESS;
 	data_t *data_jobid;
 	uint32_t job_id = 0;
-	data_t *errors = data_set_list(
-		data_key_set(data_set_dict(resp), "errors"));
+	data_t *errors = populate_response_format(resp);
 	debug4("%s: job handler %s called by %s with tag %d",
 	       __func__, get_http_method_string(method), context_id, tag);
 
@@ -1469,8 +1468,7 @@ static int _op_handler_submit_job(const char *context_id,
 				  operations_auth_t *auth)
 {
 	int rc = SLURM_SUCCESS;
-	data_t *errors = data_set_list(
-		data_key_set(data_set_dict(resp), "errors"));
+	data_t *errors = populate_response_format(resp);
 
 	debug4("%s: job submit handler %s called by %s with tag %d",
 	       __func__, get_http_method_string(method), context_id, tag);

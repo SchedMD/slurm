@@ -167,12 +167,11 @@ static int _dump_part(data_t *p, partition_info_t *part)
 static int _op_handler_partitions(const char *context_id,
 				  http_request_method_t method,
 				  data_t *parameters, data_t *query,
-				  int tag, data_t *resp,
+				  int tag, data_t *d,
 				  operations_auth_t *auth)
 {
 	int rc = SLURM_SUCCESS;
-	data_t *d = data_set_dict(resp);
-	data_t *errors = data_set_list(data_key_set(d, "errors"));
+	data_t *errors = populate_response_format(d);
 	data_t *partitions = data_set_list(data_key_set(d, "partitions"));
 	char *name = NULL;
 	partition_info_msg_t *part_info_ptr = NULL;
