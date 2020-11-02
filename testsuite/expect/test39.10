@@ -132,21 +132,29 @@ if {![param_contains [get_config_param "SelectTypeParameters"] "*MEMORY"]} {
         skip "This test requires memory allocation management"
 }
 
-set gpu_cnt [get_highest_gres_count 1 "gpu"]
-if {$gpu_cnt < 1} {
-	skip "This test requires 1 or more GPUs on 1 node of the default partition"
+set nb_nodes  2
+set gpu_cnt   [get_highest_gres_count $nb_nodes "gpu"]
+if {$gpu_cnt < 2} {
+	skip "This test requires 2 or more GPUs on $nb_nodes nodes of the default partition"
 }
 
-set node_name [get_nodes_by_request "--gres=gpu:1 -n1 -t1"]
-if { [llength $node_name] != 1 } {
-	skip "This test need to be able to submit jobs with at least --gres=gpu:1"
+set nodes [get_nodes_by_request "--gres=gpu:$gpu_cnt -t1 -N $nb_nodes"]
+if { [llength $nodes] != $nb_nodes } {
+	skip "This test need to be able to submit jobs with at least --gres=gpu:$gpu_cnt to $nb_nodes nodes"
+}
+
+# Get the node with the maximum number of GPUs
+dict for {node gpus} [get_gres_count "gpu" [join $nodes ,]] {
+	if {$gpus >= $gpu_cnt} {
+		set node_name $node
+		set gpu_cnt   $gpus
+	}
 }
 set node_memory [get_node_param $node_name "RealMemory"]
 
-set nb_nodes [get_node_cnt_in_part]
 log_debug "GPU count is $gpu_cnt"
 log_debug "Memory Size is $node_memory"
-log_debug "Node count in partition default partition is $nb_nodes"
+log_debug "Node count used $nb_nodes"
 
 #
 # Build input script file
@@ -204,31 +212,29 @@ if {$gpu_cnt > 1} {
 }
 
 #
-# Test heterogeneous GPU allocation (2 GPUs on one node, 1 GPU on another node)
+# Test heterogeneous GPU allocation (gpu_cnt GPUs on one node, 1 GPU on another node)
 #
 if {$gpu_cnt > 1 && $nb_nodes > 1} {
-	set gpu_target 3
+	set gpu_target [expr $gpu_cnt + 1]
 	set mem_spec 13
 	set node_target 2
 	set mem_target [expr $mem_spec * $gpu_target]
-	run_gpu_check_mem "--gpus=$gpu_target -N2 --mem-per-gpu=$mem_spec" $mem_target $node_target
+	run_gpu_check_mem "--gpus=$gpu_target --mem-per-gpu=$mem_spec" $mem_target $node_target
 }
 
 #
 # Run test with --gpus=2 and mem_per_gpu value that pushed job to 2 nodes
 #
 if {$gpu_cnt > 1 && $nb_nodes > 1} {
-	set node_count 0
-	set mem_spec [expr $node_memory / 2 + 1]
+	set mem_spec [expr $node_memory / $gpu_cnt + 1]
 	set node_target 2
 	set mem_target [expr $mem_spec * $node_target]
-	run_gpu_check_mem "--gpus=2 --mem-per-gpu=$mem_spec" $mem_target $node_target
+	run_gpu_check_mem "--gpus=$gpu_cnt --mem-per-gpu=$mem_spec" $mem_target $node_target
 }
-
 
 log_info "Testing --mem-per-gpu with --exclusive and --gres=gpu:1"
 for {set inx 12} {$inx <= [expr $node_memory / $gpu_cnt]} {set inx [expr $inx * 10]} {
-	run_gpu_check_mem "--gres=gpu:1 --mem-per-gpu=$inx --exclusive" [expr $gpu_cnt * $inx] 1
+	run_gpu_check_mem "--gres=gpu:1 --mem-per-gpu=$inx --exclusive -w $node_name" [expr $gpu_cnt * $inx] 1
 	if {$exit_code != 0} {
 		break
 	}
@@ -236,7 +242,7 @@ for {set inx 12} {$inx <= [expr $node_memory / $gpu_cnt]} {set inx [expr $inx * 
 
 log_info "Testing --mem-per-gpu with --exclusie and --gpus=1"
 for {set inx 12} {$inx <= [expr $node_memory / $gpu_cnt]} {set inx [expr $inx * 10]} {
-	run_gpu_check_mem "--gpus=1 --mem-per-gpu=$inx --exclusive" [expr $gpu_cnt * $inx] 1
+	run_gpu_check_mem "--gpus=1 --mem-per-gpu=$inx --exclusive -w $node_name" [expr $gpu_cnt * $inx] 1
 	if {$exit_code != 0} {
 		break
 	}
@@ -244,7 +250,7 @@ for {set inx 12} {$inx <= [expr $node_memory / $gpu_cnt]} {set inx [expr $inx * 
 
 log_info "Testing --mem-per-gpu with --exclusie and --gpus-per-task=1"
 for {set inx 12} {$inx <= [expr $node_memory / $gpu_cnt]} {set inx [expr $inx * 10]} {
-	run_gpu_check_mem "--gpus-per-task=1 --ntasks-per-node=1 --mem-per-gpu=$inx --exclusive" [expr $gpu_cnt * $inx] 1
+	run_gpu_check_mem "--gpus-per-task=1 --ntasks-per-node=1 --mem-per-gpu=$inx --exclusive -w $node_name" [expr $gpu_cnt * $inx] 1
 	if {$exit_code != 0} {
 		break
 	}
@@ -252,7 +258,7 @@ for {set inx 12} {$inx <= [expr $node_memory / $gpu_cnt]} {set inx [expr $inx * 
 
 log_info "Testing --mem-per-gpu with --exclusie and --gpus-per-socket=1"
 for {set inx 12} {$inx <= [expr $node_memory / $gpu_cnt]} {set inx [expr $inx * 10]} {
-	run_gpu_check_mem "--gpus-per-socket=1 --sockets-per-node=1 --mem-per-gpu=$inx --exclusive" [expr $gpu_cnt * $inx] 1
+	run_gpu_check_mem "--gpus-per-socket=1 --sockets-per-node=1 --mem-per-gpu=$inx --exclusive -w $node_name" [expr $gpu_cnt * $inx] 1
 	if {$exit_code != 0} {
 		break
 	}
