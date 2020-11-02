@@ -719,6 +719,7 @@ static void _dump_job_int32_list(const int32_t *ptr, data_t *d)
 
 static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 {
+	xassert(data_get_type(jd) == DATA_TYPE_NULL);
 	data_set_dict(jd);
 	data_set_string(data_key_set(jd, "account"), job->account);
 	data_set_int(data_key_set(jd, "accrue_time"), job->accrue_time);
