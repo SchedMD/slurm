@@ -696,6 +696,7 @@ static void _set_idbuf(char *idbuf, size_t size)
  */
 static char *_addr2fmt(slurm_addr_t *addr_ptr, char *buf, int buf_size)
 {
+	struct sockaddr_in *in = (struct sockaddr_in *) addr_ptr;
 	char addrbuf[INET6_ADDRSTRLEN];
 	uint16_t port = 0;
 
@@ -712,12 +713,12 @@ static char *_addr2fmt(slurm_addr_t *addr_ptr, char *buf, int buf_size)
 		struct sockaddr_in6 *in6 = (struct sockaddr_in6 *) addr_ptr;
 		inet_ntop(AF_INET6, &in6->sin6_addr, addrbuf, INET6_ADDRSTRLEN);
 		port = ntohs(in6->sin6_port);
-	} else {
-		struct sockaddr_in *in = (struct sockaddr_in *) addr_ptr;
-		inet_ntop(AF_INET, &in->sin_addr, addrbuf, INET_ADDRSTRLEN);
-		port = ntohs(in->sin_port);
+		snprintf(buf, buf_size, "[%%.0s%s]:%d", addrbuf, port);
+		return buf;
 	}
 
+	inet_ntop(AF_INET, &in->sin_addr, addrbuf, INET_ADDRSTRLEN);
+	port = ntohs(in->sin_port);
 	snprintf(buf, buf_size, "%%.0s%s:%d", addrbuf, port);
 
 	return buf;
