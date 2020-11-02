@@ -76,6 +76,8 @@ documents those changes that are of interest to users and administrators.
  -- MySQL - Stop steps from printing when outside time range.
  -- Fixed kmem limit calculation to use MaxKmemPercent correctly.
  -- Fix initialization of cpuset.mems/cpus on uid cgroup subdir.
+ -- MySQL - Remove potential race condition when sending updates to a cluster
+    and commit_delay used.
 
 * Changes in Slurm 20.02.5
 ==========================
