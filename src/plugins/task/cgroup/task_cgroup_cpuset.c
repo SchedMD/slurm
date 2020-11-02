@@ -1023,6 +1023,11 @@ static int _cgroup_create_callback(const char *calling_func,
 	if (cpus)
 		xstrfmtcat(user_alloc_cores, ",%s", cpus);
 
+	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
+				&user_cpuset_cg) != XCGROUP_SUCCESS) {
+		xcgroup_destroy(&user_cpuset_cg);
+		goto endit;
+	}
 	xcgroup_set_param(&user_cpuset_cg, cpuset_meta, user_alloc_cores);
 
 	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
