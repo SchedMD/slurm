@@ -1153,18 +1153,21 @@ static int _op_handler_jobs(const char *context_id,
 {
 	int rc = SLURM_SUCCESS;
 	job_info_msg_t *job_info_ptr = NULL;
+	(void) populate_response_format(resp);
+	data_t *jobs = data_set_list(data_key_set(resp, "jobs"));
 
-	data_set_list(resp);
 	debug4("%s: jobs handler called by %s", __func__, context_id);
 
 	rc = slurm_load_jobs((time_t)NULL, &job_info_ptr,
 			     SHOW_ALL|SHOW_DETAIL);
 
 	if (rc == SLURM_SUCCESS && job_info_ptr &&
-	    job_info_ptr->record_count)
-		for (size_t i = 0; i < job_info_ptr->record_count; ++i)
+	    job_info_ptr->record_count) {
+		for (size_t i = 0; i < job_info_ptr->record_count; ++i) {
 			dump_job_info(job_info_ptr->job_array + i,
-				      data_list_append(resp));
+				      data_list_append(jobs));
+		}
+	}
 
 	slurm_free_job_info_msg(job_info_ptr);
 
@@ -1195,13 +1198,16 @@ static int _handle_job_get(const char *context_id, http_request_method_t method,
 	int rc = SLURM_SUCCESS;
 	job_info_msg_t *job_info_ptr = NULL;
 	rc = slurm_load_job(&job_info_ptr, job_id, SHOW_ALL|SHOW_DETAIL);
+	data_t *jobs = data_set_list(data_key_set(resp, "jobs"));
 
-	if (rc == SLURM_SUCCESS && job_info_ptr &&
-	    job_info_ptr->record_count)
-		for (size_t i = 0; i < job_info_ptr->record_count; ++i)
-			dump_job_info(job_info_ptr->job_array + i, resp);
-	else
+	if (!rc && job_info_ptr && job_info_ptr->record_count) {
+		for (size_t i = 0; i < job_info_ptr->record_count; ++i) {
+			dump_job_info(job_info_ptr->job_array + i,
+				      data_list_append(jobs));
+		}
+	} else {
 		_job_error("%s: unknown job %d", __func__, job_id);
+	}
 
 	slurm_free_job_info_msg(job_info_ptr);
 
