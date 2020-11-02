@@ -43,6 +43,8 @@
 
 #include "src/common/data.h"
 
+extern data_t *populate_response_format(data_t *resp);
+
 extern void init_op_diag(void);
 extern void init_op_jobs(void);
 extern void init_op_nodes(void);

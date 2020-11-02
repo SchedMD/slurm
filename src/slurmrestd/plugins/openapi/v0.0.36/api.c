@@ -85,6 +85,39 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 decl_static_data(openapi_json);
 
+extern data_t *populate_response_format(data_t *resp)
+{
+	data_t *plugin, *slurm, *slurmv, *meta;
+
+	if (data_get_type(resp) != DATA_TYPE_NULL) {
+		xassert(data_get_type(resp) == DATA_TYPE_DICT);
+		return data_key_get(resp, "errors");
+	}
+
+	data_set_dict(resp);
+
+	meta = data_set_dict(data_key_set(resp, "meta"));
+	plugin = data_set_dict(data_key_set(meta, "plugin"));
+	slurm = data_set_dict(data_key_set(meta, "Slurm"));
+	slurmv = data_set_dict(data_key_set(slurm, "version"));
+
+	data_set_string(data_key_set(slurm, "release"), SLURM_VERSION_STRING);
+	data_convert_type(data_set_string(data_key_set(slurmv, "major"),
+					  SLURM_MAJOR),
+			  DATA_TYPE_INT_64);
+	data_convert_type(data_set_string(data_key_set(slurmv, "micro"),
+					  SLURM_MICRO),
+			  DATA_TYPE_INT_64);
+	data_convert_type(data_set_string(data_key_set(slurmv, "minor"),
+					  SLURM_MINOR),
+			  DATA_TYPE_INT_64);
+
+	data_set_string(data_key_set(plugin, "type"), plugin_type);
+	data_set_string(data_key_set(plugin, "name"), plugin_name);
+
+	return data_set_list(data_key_set(resp, "errors"));
+}
+
 extern data_t *slurm_openapi_p_get_specification(void)
 {
 	data_t *spec = NULL;
