@@ -53,9 +53,7 @@ proc test_gpus_cnt {srun_opts expected_gpus_times_tasks expected_job_gpus} {
 			exp_continue
 		}
 		timeout {
-			log_error "srun not responding"
-			slow_kill $srun_pid
-			set exit_code 1
+			fail "srun not responding"
 		}
 		eof {
 			wait
@@ -186,9 +184,7 @@ if { [llength $node_list] != $nb_nodes } {
 			exp_continue
 		}
 		timeout {
-			log_error "srun not responding"
-			slow_kill $srun_pid
-			set exit_code 1
+			fail "srun not responding"
 		}
 		eof {
 			wait
@@ -201,8 +197,7 @@ if { [llength $node_list] != $nb_nodes } {
 		incr expected_gpus $gpus
 	}
 	if {$match < $expected_gpus} {
-		log_error "srun --gpus-per-task failure ($match < $expected_gpus)"
-		set exit_code 1
+		fail "srun --gpus-per-task failure ($match < $expected_gpus)"
 	}
 }
 
