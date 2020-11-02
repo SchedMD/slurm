@@ -3768,8 +3768,6 @@ _unpack_job_info_members(job_info_t * job, Buf buffer,
 	uint32_t uint32_tmp = 0;
 	multi_core_data_t *mc_ptr;
 
-	job->ntasks_per_node = NO_VAL16;
-
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);
