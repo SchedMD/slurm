@@ -6321,6 +6321,7 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 			safe_unpack64(&gres_job_ptr->gres_per_socket, buffer);
 			safe_unpack64(&gres_job_ptr->gres_per_task, buffer);
 			safe_unpack64(&gres_job_ptr->mem_per_gres, buffer);
+			gres_job_ptr->ntasks_per_gres = NO_VAL16;
 			safe_unpack64(&gres_job_ptr->total_gres, buffer);
 			safe_unpackstr_xmalloc(&gres_job_ptr->type_name,
 					       &utmp32, buffer);
