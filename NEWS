@@ -78,6 +78,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix initialization of cpuset.mems/cpus on uid cgroup subdir.
  -- MySQL - Remove potential race condition when sending updates to a cluster
     and commit_delay used.
+ -- Avoid double free of step_record_t in the slurmctld when node is removed
+    from config.
 
 * Changes in Slurm 20.02.5
 ==========================

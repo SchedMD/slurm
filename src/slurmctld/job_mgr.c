@@ -11270,8 +11270,7 @@ static void _reset_step_bitmaps(job_record_t *job_ptr)
 			error("Invalid step_node_list (%s) for %pS",
 			      step_ptr->step_layout->node_list, step_ptr);
 			delete_step_record (job_ptr, step_ptr->step_id);
-		}
-		if (step_ptr->step_node_bitmap == NULL) {
+		} else if (step_ptr->step_node_bitmap == NULL) {
 			error("Missing node_list for %pS", step_ptr);
 			delete_step_record (job_ptr, step_ptr->step_id);
 		}
