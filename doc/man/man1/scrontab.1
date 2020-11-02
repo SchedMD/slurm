@@ -1,4 +1,4 @@
-.TH sview "1" "Slurm Commands" "October 2020" "Slurm Commands"
+.TH scrontab "1" "Slurm Commands" "November 2020" "Slurm Commands"
 
 .SH "NAME"
 .LP
@@ -10,24 +10,51 @@ scrontab [-u user] [ -e | -l | -r ]
 
 .SH "DESCRIPTION"
 .LP
-scrontab is used to set, edit, and remove a user's Slurm-managed crontab.
+\fBscrontab\fR is used to set, edit, and remove a user's Slurm-managed crontab.
 This file can define a number of recurring batch jobs to run on a scheduled
 interval.
 .LP
-Lines must be either comments starting with \#, whitespace, or valid crontab
+Lines must be either comments starting with '#', whitespace, or valid crontab
 entries.
 .LP
-Lines starting with \#SCRON allow options to be defined for the single
-following crontab entry. Options are always reset in between each crontab entry.Options include most of those available to the \fBsbatch\fR command; details
-are available in \fBsbatch\fR(1).
+Lines starting with \fB#SCRON\fR allow options to be defined for the single
+following crontab entry. Options are always reset in between each crontab
+entry. Options include most of those available to the \fBsbatch\fR command;
+details are available in the \fBsbatch\fR(1) man page.
 .LP
 Note that jobs are not guaranteed to execute at the preferred time. Jobs will
-run no more frequently than that requested, but are managed by setting the
+run no more frequently than requested, but are managed by setting the
 BeginTime field to the next valid iteration, and are then subject to queuing
-delays. The exact behavior will be dependent on the local site configuration.
+delays. The exact behavior will depend on the local site configuration.
+.LP
+\fBscrontab\fR uses the same syntax for date and time specifiers as \fBcron\fR.
+Each line has five fields that have the following meanings:
+.RS
+field           allowed values
+.br
+-----           --------------
+.br
+minute          0-59
+.br
+hour            0-23
+.br
+day of month    1-31
+.br
+month           1-12 (or name)
+.br
+day of week     0-7 (0 and 7 are Sunday, or use name)
+.RE
+
+.LP
+A field can contain an asterisk (*) which means that it's valid for each of
+the allowed values for the given time period. Ranges are allowed where a range
+is two numbers with a hyphen between them.  The second number must be greater
+than the first. Lists are allowed, with commas separating the numbers or
+ranges being separated. Step values can be specified by entering a slash
+(/), followed by the step value, causing the job to run at the specified
+interval appropriate for that field.
 
 .SH "OPTIONS"
-
 .TP
 \fB\-e\fR
 Edit the crontab. If a crontab does not exist already, a default example
@@ -44,10 +71,34 @@ to run but will no longer recur. All other crontab\-defined jobs will be
 cancelled.
 
 .TP
-\fB\-u <\fIuser\fR>\fR
+\fB\-u\fR <\fIuser\fR>
 Edit or view a different user's crontab. Listing is permitted for Operators and
 Admins. Editing/removal is only permitted for root and the \fISlurmUser\fR
 account.
+
+.SH "SCRONTAB OPTIONS"
+.LP
+\fBscrontab\fR allows you to use shortcuts to specify some common time
+intervals for the specified script to run.  These include the following:
+.TP
+\fB@yearly\fR | \fB@annually\fR
+Job will become eligible at \fI00:00 Jan 01\fR each year.
+
+.TP
+\fB@monthly\fR
+Job will become eligible at \fI00:00\fR on the first day of each month.
+
+.TP
+\fB@weekly\fR
+Job will become eligible at \fI00:00 Sunday\fR of each week.
+
+.TP
+\fB@daily\fR | \fB@midnight\fR
+Job will become eligible at \fI00:00\fR each day.
+
+.TP
+\fB@hourly\fR
+Job will become eligible at the first minute of each hour.
 
 .SH "ENVIRONMENT VARIABLES"
 .TP 20
@@ -63,10 +114,35 @@ Used as the interfactive editor if set and \fBVISUAL\fR is not defined.
 The location of the Slurm configuration file.
 
 .SH "NOTES"
+.LP
+\fBscrontab\fR is only available if the \fBScronParameters=enable\fR option has
+been enabled in the \fBslurm.conf\fR.
 
-.TP
-scrontab is only available if \fBScronParameters=enable\fR option has been
-enabled in slurm.conf.
+.SH "EXAMPLES"
+.LP
+To create a job that would run at the beginning of each hour, using the 'high'
+partition, 'sub1' account and have a walltime of 1 minute, you would add the
+following to \fBscrontab\fR:
+
+.RS
+.nf
+#SCRON -p high
+#SCRON -A sub1
+#SCRON -t 1:00
+@hourly /home/user1/date.printer.job
+.fi
+.RE
+
+.LP
+To have a job run every Wednesday, every other hour during the work day, each
+of the first five minutes of the hour and again at the thirty minute mark,
+you would add the following to \fBscrontab\fR.
+
+.RS
+.nf
+1-5,30 8-17/2 * * wed /home/user1/example.job
+.fi
+.RE
 
 .SH "COPYING"
 Copyright (C) 2020 SchedMD LLC.
