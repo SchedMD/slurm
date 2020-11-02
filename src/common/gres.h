@@ -196,7 +196,7 @@ typedef struct gres_job_state {
 	uint64_t gres_per_socket;
 	uint64_t gres_per_task;
 	uint64_t mem_per_gres;
-	uint64_t ntasks_per_gres;
+	uint16_t ntasks_per_gres;
 
 	/*
 	 * Default GRES configuration parameters. These values are subject to

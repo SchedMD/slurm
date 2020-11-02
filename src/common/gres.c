@@ -6098,7 +6098,7 @@ extern int gres_plugin_job_state_pack(List gres_list, Buf buffer,
 			pack64(gres_job_ptr->gres_per_socket, buffer);
 			pack64(gres_job_ptr->gres_per_task, buffer);
 			pack64(gres_job_ptr->mem_per_gres, buffer);
-			pack64(gres_job_ptr->ntasks_per_gres, buffer);
+			pack16(gres_job_ptr->ntasks_per_gres, buffer);
 			pack64(gres_job_ptr->total_gres, buffer);
 			packstr(gres_job_ptr->type_name, buffer);
 			pack32(gres_job_ptr->node_cnt, buffer);
@@ -6258,7 +6258,7 @@ extern int gres_plugin_job_state_unpack(List *gres_list, Buf buffer,
 			safe_unpack64(&gres_job_ptr->gres_per_socket, buffer);
 			safe_unpack64(&gres_job_ptr->gres_per_task, buffer);
 			safe_unpack64(&gres_job_ptr->mem_per_gres, buffer);
-			safe_unpack64(&gres_job_ptr->ntasks_per_gres, buffer);
+			safe_unpack16(&gres_job_ptr->ntasks_per_gres, buffer);
 			safe_unpack64(&gres_job_ptr->total_gres, buffer);
 			safe_unpackstr_xmalloc(&gres_job_ptr->type_name,
 					       &utmp32, buffer);
@@ -8250,7 +8250,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 		if (job_specs->cpus_per_gres)
 			cpus_per_gres = job_specs->cpus_per_gres;
 		else if (job_specs->ntasks_per_gres &&
-			 (job_specs->ntasks_per_gres != NO_VAL64))
+			 (job_specs->ntasks_per_gres != NO_VAL16))
 			cpus_per_gres = job_specs->ntasks_per_gres *
 				mc_ptr->cpus_per_task;
 		else
@@ -8697,7 +8697,7 @@ static int _set_job_bits1(struct job_resources *job_res, int node_inx,
 	if (job_specs->cpus_per_gres) {
 		cpus_per_gres = job_specs->cpus_per_gres;
 	} else if (job_specs->ntasks_per_gres &&
-		   (job_specs->ntasks_per_gres != NO_VAL64)) {
+		   (job_specs->ntasks_per_gres != NO_VAL16)) {
 		cpus_per_gres = job_specs->ntasks_per_gres *
 				tres_mc_ptr->cpus_per_task;
 	}
@@ -11837,7 +11837,7 @@ static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
 	if (gres_ptr->mem_per_gres)
 		info("  mem_per_gres:%"PRIu64, gres_ptr->mem_per_gres);
 	if (gres_ptr->ntasks_per_gres)
-		info("  ntasks_per_gres:%"PRIu64, gres_ptr->ntasks_per_gres);
+		info("  ntasks_per_gres:%u", gres_ptr->ntasks_per_gres);
 	else if (gres_ptr->def_mem_per_gres)
 		info("  def_mem_per_gres:%"PRIu64, gres_ptr->def_mem_per_gres);
 
