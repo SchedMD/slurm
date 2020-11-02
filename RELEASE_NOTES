@@ -85,6 +85,8 @@ HIGHLIGHTS
     defined. These scripts will recurr automatically (at most) on the intervals
     described.
  -- Enable -lnodes=#:gpus=# in #PBS/qsub -l nodes syntax.
+ -- Any user >= Operator can see any hidden partition by default, as SlurmUser
+    or root already did.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

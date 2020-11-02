@@ -1050,7 +1050,7 @@ extern bool part_is_visible(part_record_t *part_ptr, uid_t uid)
 {
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
 
-	if (validate_slurm_user(uid))
+	if (validate_operator(uid))
 		return true;
 	if (part_ptr->flags & PART_FLAG_HIDDEN)
 		return false;
