@@ -5645,6 +5645,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	Buf ret_buf;
 	slurm_persist_conn_t *persist_conn = NULL, p_tmp;
 	persist_init_req_msg_t *persist_init = msg->data;
+	slurm_addr_t rem_addr;
 
 	if (msg->conn)
 		error("We already have a persistent connect, this should never happen");
@@ -5682,7 +5683,10 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 
 	persist_conn->persist_type = persist_init->persist_type;
 	persist_conn->rem_port = persist_init->port;
-	persist_conn->rem_host = xmalloc_nz(16);
+
+	persist_conn->rem_host = xmalloc(INET6_ADDRSTRLEN);
+	(void) slurm_get_peer_addr(persist_conn->fd, &rem_addr);
+	slurm_get_ip_str(&rem_addr, persist_conn->rem_host, INET6_ADDRSTRLEN);
 
 	/* info("got it from %d %s %s(%u)", persist_conn->fd, */
 	/*      persist_conn->cluster_name, */
