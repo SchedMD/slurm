@@ -42,7 +42,7 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 
 # Various configurations allocate nodes, sockets, cores, cpus or threads;
 # not all of which are compatible with this test
-if {![check_config_select "linear"]} {
+if {[check_config_select "linear"]} {
 	skip "This test is incompatible with select/linear"
 }
 
