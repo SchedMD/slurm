@@ -1458,7 +1458,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					slurm_set_addr(	&node_ptr->slurm_addr,
 							node_ptr->port,
 							node_ptr->comm_name);
-					if (slurm_get_port(
+					if (!slurm_addr_is_unspec(
 						&node_ptr->slurm_addr)) {
 						state_val = NODE_STATE_IDLE;
 #ifndef HAVE_FRONT_END

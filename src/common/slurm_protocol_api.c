@@ -142,7 +142,7 @@ static slurm_protocol_config_t *_slurm_api_get_comm_config(void)
 	memset(&controller_addr, 0, sizeof(slurm_addr_t));
 	slurm_set_addr(&controller_addr, conf->slurmctld_port,
 		       conf->control_addr[0]);
-	if (slurm_get_port(&controller_addr) == 0) {
+	if (slurm_addr_is_unspec(&controller_addr)) {
 		error("Unable to establish control machine address");
 		goto cleanup;
 	}
