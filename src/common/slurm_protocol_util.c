@@ -217,3 +217,8 @@ void slurm_set_port(slurm_addr_t *addr, uint16_t port)
 		error("%s: attempting to set port without address family",
 		      __func__);
 }
+
+bool slurm_addr_is_unspec(slurm_addr_t *addr)
+{
+	return (addr->ss_family == AF_UNSPEC);
+}

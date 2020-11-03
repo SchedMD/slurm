@@ -84,4 +84,7 @@ extern uint16_t slurm_get_port(slurm_addr_t *addr);
 /* Set the port number in a slurm_addr_t */
 extern void slurm_set_port(slurm_addr_t *addr, uint16_t port);
 
+/* Check if slurm_addr_t has an unspecified address type */
+extern bool slurm_addr_is_unspec(slurm_addr_t *addr);
+
 #endif /* !_SLURM_PROTOCOL_UTIL_H */
