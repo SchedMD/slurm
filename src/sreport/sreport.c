@@ -218,11 +218,13 @@ main (int argc, char **argv)
 		exit(1);
 	}
 
+
+	db_conn = slurmdb_connection_get(&persist_conn_flags);
+
 	if (federation_flag && !all_clusters_flag && !cluster_flag &&
 	    !local_flag)
 		cluster_flag = _build_cluster_string();
 
-	db_conn = slurmdb_connection_get(&persist_conn_flags);
 	if (errno) {
 		fatal("Problem connecting to the database: %m");
 		exit(1);
