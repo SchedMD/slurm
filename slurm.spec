@@ -373,7 +373,10 @@ make install-contrib DESTDIR=%{buildroot}
 install -D -m644 etc/slurmctld.service %{buildroot}/%{_unitdir}/slurmctld.service
 install -D -m644 etc/slurmd.service    %{buildroot}/%{_unitdir}/slurmd.service
 install -D -m644 etc/slurmdbd.service  %{buildroot}/%{_unitdir}/slurmdbd.service
+
+%if %{with slurmrestd}
 install -D -m644 etc/slurmrestd.service  %{buildroot}/%{_unitdir}/slurmrestd.service
+%endif
 
 # Do not package Slurm's version of libpmi on Cray systems in the usual location.
 # Cray's version of libpmi should be used. Move it elsewhere if the site still
