@@ -491,7 +491,7 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 	}
 #endif
 
-	if ((addr->ss_family == AF_UNSPEC) || (slurm_get_port(addr) == 0)) {
+	if ((slurm_addr_is_unspec(addr)) || (slurm_get_port(addr) == 0)) {
 		error("Error connecting, bad data: family = %u, port = %u",
 		      addr->ss_family, slurm_get_port(addr));
 		return SLURM_ERROR;

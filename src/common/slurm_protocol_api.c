@@ -1394,7 +1394,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	 * came from if this is a forward else we set the
 	 * header.orig_addr to our addr just in case we need to send it off.
 	 */
-	if (header.orig_addr.ss_family != AF_UNSPEC) {
+	if (!slurm_addr_is_unspec(&header.orig_addr)) {
 		memcpy(&msg->orig_addr, &header.orig_addr, sizeof(slurm_addr_t));
 	} else {
 		memcpy(&header.orig_addr, orig_addr, sizeof(slurm_addr_t));
