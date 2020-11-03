@@ -808,8 +808,8 @@ extern int slurm_open_controller_conn(slurm_addr_t *addr, bool *use_backup,
 		if (retry)
 			sleep(1);
 		if (comm_cluster_rec) {
-			if (slurm_get_port(&comm_cluster_rec->control_addr)
-			    == 0) {
+			if (slurm_addr_is_unspec(
+				&comm_cluster_rec->control_addr)) {
 				slurm_set_addr(
 					&comm_cluster_rec->control_addr,
 					comm_cluster_rec->control_port,
@@ -880,7 +880,7 @@ extern int slurm_open_controller_conn_spec(int dest,
 	int rc;
 
 	if (comm_cluster_rec) {
-		if (slurm_get_port(&comm_cluster_rec->control_addr) == 0) {
+		if (slurm_addr_is_unspec(&comm_cluster_rec->control_addr)) {
 			slurm_set_addr(
 				&comm_cluster_rec->control_addr,
 				comm_cluster_rec->control_port,
