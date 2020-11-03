@@ -5626,6 +5626,9 @@ static int _process_persist_conn(void *arg,
 	slurm_msg_t_init(&msg);
 
 	msg.auth_cred = persist_conn->auth_cred;
+	msg.auth_uid = *uid;
+	msg.auth_uid_set = true;
+
 	msg.conn = persist_conn;
 	msg.conn_fd = persist_conn->fd;
 
