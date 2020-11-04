@@ -1640,6 +1640,7 @@ int s_p_parse_line_expanded(const s_p_hashtbl_t *hashtbl,
 
 	/* create the adapted temporary hash table used for expansion */
 	strtbl = _parse_expline_adapt_table(hashtbl);
+	xassert(strtbl);
 
 	/* create hostlist and one iterator over it, since we will walk
 	 * through the list for each new attribute to create final expanded
@@ -1699,8 +1700,7 @@ cleanup:
 		free(value_str);
 	if (value_hl)
 		hostlist_destroy(value_hl);
-	if (strtbl)
-		s_p_hashtbl_destroy(strtbl);
+	s_p_hashtbl_destroy(strtbl);
 
 	if (status == SLURM_ERROR && tables) {
 		for (i = 0; i < tables_count; i++)
