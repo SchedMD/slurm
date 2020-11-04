@@ -1789,6 +1789,7 @@ _parse_long_token( char *token, char *sep, int *field_size, bool *right_justify,
 {
 	char *end_ptr = NULL, *ptr;
 
+	*suffix = NULL;
 	xassert(token);
 	ptr = strchr(token, ':');
 	if (ptr) {
