@@ -512,7 +512,6 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 	const gchar *name = gtk_action_get_name(action);
 	sview_search_info_t sview_search_info;
 	job_desc_msg_t *job_msg = NULL;
-	submit_response_msg_t *slurm_alloc_msg = NULL;
 	update_part_msg_t *part_msg = NULL;
 	resv_desc_msg_t *resv_msg = NULL;
 	char *res_name, *temp;
@@ -605,8 +604,6 @@ extern void create_create_popup(GtkAction *action, gpointer user_data)
 
 end_it:
 	gtk_widget_destroy(popup);
-	if (slurm_alloc_msg)
-		slurm_free_submit_response_response_msg(slurm_alloc_msg);
 	if (job_msg) {
 		for (i = 0; i < job_msg->argc; i++)
 			xfree(job_msg->argv[i]);
