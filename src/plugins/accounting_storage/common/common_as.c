@@ -181,11 +181,9 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 
 	update_object = xmalloc(sizeof(slurmdb_update_object_t));
 
-	list_append(update_list, update_object);
 
 	update_object->type = type;
 
-	list_sort(update_list, (ListCmpF)_sort_update_object_dec);
 
 	switch(type) {
 	case SLURMDB_MODIFY_USER:
@@ -279,11 +277,14 @@ extern int addto_update_list(List update_list, slurmdb_update_type_t type,
 		return SLURM_SUCCESS;
 	case SLURMDB_UPDATE_NOTSET:
 	default:
+		slurmdb_destroy_update_object(update_object);
 		error("unknown type set in update_object: %d", type);
 		return SLURM_ERROR;
 	}
 	debug4("XXX: update object with type %d added", type);
 	list_append(update_object->objects, object);
+	list_append(update_list, update_object);
+	list_sort(update_list, (ListCmpF)_sort_update_object_dec);
 	return SLURM_SUCCESS;
 }
 

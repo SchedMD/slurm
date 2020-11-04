@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 20.11.0rc2
 ==============================
+ -- MySQL - Remove potential race condition when sending updates to a cluster
+    and commit_delay used.
 
 * Changes in Slurm 20.11.0rc1
 ==============================
@@ -125,6 +127,7 @@ documents those changes that are of interest to users and administrators.
  -- Add scrontab as a new command.
  -- Enable -lnodes=#:gpus=# in #PBS/qsub -l nodes syntax.
  -- Add admin-settable "Comment" field to each Node.
+ -- Fix show runaway and/on hidden partitions for >= Operator.
 
 * Changes in Slurm 20.02.6
 ==========================
@@ -201,7 +204,8 @@ documents those changes that are of interest to users and administrators.
  -- MySQL - Stop steps from printing when outside time range.
  -- Fixed kmem limit calculation to use MaxKmemPercent correctly.
  -- Fix initialization of cpuset.mems/cpus on uid cgroup subdir.
- -- Fix show runaway and/on hidden partitions for >= Operator.
+ -- MySQL - Remove potential race condition when sending updates to a cluster
+    and commit_delay used.
 
 * Changes in Slurm 20.02.5
 ==========================
