@@ -785,7 +785,7 @@ extern int parse_http(con_mgr_fd_t *con, void *x)
 
 	if (!request) {
 		/* Connection has already been closed */
-		rest_auth_context_clear();
+		rest_auth_g_clear();
 		debug("%s: [%s] Rejecting continued HTTP connection",
 		      __func__, con->name);
 		return SLURM_UNEXPECTED_MSG_ERROR;
@@ -797,7 +797,7 @@ extern int parse_http(con_mgr_fd_t *con, void *x)
 	request->context = context;
 
 	/* make sure there is no auth context inherited */
-	rest_auth_context_clear();
+	rest_auth_g_clear();
 
 	parser->data = request;
 
@@ -823,7 +823,7 @@ extern int parse_http(con_mgr_fd_t *con, void *x)
 		rc = SLURM_UNEXPECTED_MSG_ERROR;
 	}
 
-	rest_auth_context_clear();
+	rest_auth_g_clear();
 
 	return rc;
 }
@@ -900,7 +900,7 @@ extern http_context_t *_http_context_new(void)
 	http_parser_init(parser, HTTP_REQUEST);
 	context->parser = parser;
 
-	context->auth = rest_auth_context_new();
+	context->auth = rest_auth_g_new();
 
 	return context;
 }
@@ -1057,7 +1057,7 @@ extern void on_http_connection_finish(void *ctxt)
 
 	xfree(context->parser);
 	_free_request_t(context->request);
-	rest_auth_context_free(context->auth);
+	rest_auth_g_free(context->auth);
 	context->magic = ~MAGIC;
 	xfree(context);
 }

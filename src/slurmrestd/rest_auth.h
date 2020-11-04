@@ -56,16 +56,16 @@ typedef struct {
 
 /*
  * Create new auth context.
- * Must free with rest_auth_context_free().
+ * Must free with rest_auth_g_free().
  * RET ptr to auth context
  */
-extern rest_auth_context_t *rest_auth_context_new(void);
+extern rest_auth_context_t *rest_auth_g_new(void);
 
 /*
  * Release auth context
  * IN context - ptr to context
  */
-extern void rest_auth_context_free(rest_auth_context_t *context);
+extern void rest_auth_g_free(rest_auth_context_t *context);
 
 /*
  * Attempt to authenticate HTTP request
@@ -80,20 +80,20 @@ extern int rest_authenticate_http_request(on_http_request_args_t *args);
  * IN context - security context to apply
  * RET SLURM_SUCCESS or error
  */
-extern int rest_auth_context_apply(rest_auth_context_t *context);
+extern int rest_auth_g_apply(rest_auth_context_t *context);
 
 /*
  * Retrieve db_conn for slurmdbd calls.
- * WARNING: pointer will be invalidated by next rest_auth_context_free()
+ * WARNING: pointer will be invalidated by next rest_auth_g_free()
  * RET NULL on error or db_conn pointer
  */
-extern void *rest_auth_context_get_db_conn(rest_auth_context_t *context);
+extern void *rest_auth_g_get_db_conn(rest_auth_context_t *context);
 
 /*
  * Clear current auth context
  * will fatal on error
  */
-extern void rest_auth_context_clear(void);
+extern void rest_auth_g_clear(void);
 
 /*
  * Setup locks and register REST authentication plugins.
