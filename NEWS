@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 20.02.7
 ==========================
  -- cons_tres - Fix DefCpuPerGPU
+ -- select/cray_aries - Correctly remove jobs/steps from blades using NPC.
 
 * Changes in Slurm 20.02.6
 ==========================
