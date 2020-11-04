@@ -327,10 +327,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				usable_str = bit_fmt_hexmask_trim(usable_gres);
 			else
 				usable_str = xstrdup("NULL");
-			if (bit_alloc)
-				alloc_str = bit_fmt_hexmask_trim(bit_alloc);
-			else
-				alloc_str = xstrdup("NULL");
+			alloc_str = bit_fmt_hexmask_trim(bit_alloc);
 			fprintf(stderr, "gpu-bind: usable_gres=%s; bit_alloc=%s; local_inx=%d; global_list=%s; local_list=%s\n",
 				usable_str, alloc_str, *local_inx, *global_list,
 				*local_list);
