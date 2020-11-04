@@ -485,11 +485,12 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 		       (count * sizeof(entry_t)));
 	}
 
-	/* clone over any strings */
-	for (entry = method->entries; entry->type; entry++) {
-		entry->entry = xstrdup(entry->entry);
-		entry->name = xstrdup(entry->name);
+	/* unlink strings from source */
+	for (entry = args->entries; entry->type; entry++) {
+		entry->entry = NULL;
+		entry->name = NULL;
 	}
+
 	/* point to new entries clone */
 	nargs.entries = method->entries;
 
