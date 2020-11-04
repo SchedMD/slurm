@@ -524,19 +524,23 @@ int main(int argc, char **argv)
 		plugrack_release_by_type(oas_rack, oas_plugin_types[i]);
 		xfree(oas_plugin_types[i]);
 	}
+	xfree(oas_plugin_types);
 	if ((rc = plugrack_destroy(oas_rack)))
 		fatal_abort("unable to clean up plugrack: %s",
 			    slurm_strerror(rc));
+	oas_rack = NULL;
+	xfree(oas_plugin_handles);
 	for (size_t i = 0; i < auth_plugin_count; i++) {
 		plugrack_release_by_type(auth_rack, auth_plugin_types[i]);
 		xfree(auth_plugin_types[i]);
 	}
+	xfree(auth_plugin_types);
 	if ((rc = plugrack_destroy(auth_rack)))
 		fatal_abort("unable to clean up plugrack: %s",
 			    slurm_strerror(rc));
-
-	oas_rack = NULL;
 	auth_rack = NULL;
+
+	xfree(auth_plugin_handles);
 	slurm_select_fini();
 	slurm_auth_fini();
 	slurm_conf_destroy();
