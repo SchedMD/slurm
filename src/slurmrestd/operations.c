@@ -358,7 +358,7 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 
 	rc = callback(args->context->con->name, args->method, params, query,
 		      callback_tag, resp, &auth);
-	xassert((auth.magic = ~AUTH_MAGIC));
+	auth.magic = ~AUTH_MAGIC;
 
 	if (data_get_type(resp) == DATA_TYPE_NULL)
 		/* no op */;

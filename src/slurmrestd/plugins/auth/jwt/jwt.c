@@ -125,7 +125,7 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 	xassert(!ctxt->plugin_id);
 
 	ctxt->plugin_data = data = xmalloc(sizeof(*data));
-	xassert(data->magic = MAGIC);
+	data->magic = MAGIC;
 	ctxt->user_name = xstrdup(user_name);
 	data->token = xstrdup(key);
 
@@ -147,7 +147,7 @@ extern void slurm_rest_auth_p_free(rest_auth_context_t *context)
 	plugin_data_t *data = context->plugin_data;
 	xassert(data->magic == MAGIC);
 	xassert(context->plugin_id == plugin_id);
-	xassert((data->magic = ~MAGIC));
+	data->magic = ~MAGIC;
 
 	if (data->db_conn)
 		slurmdb_connection_close(&data->db_conn);

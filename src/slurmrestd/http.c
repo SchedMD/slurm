@@ -115,7 +115,7 @@ static void _free_request_t(request_t *request)
 		return;
 
 	xassert(request->magic == MAGIC_REQUEST_T);
-	xassert(request->magic = ~MAGIC_REQUEST_T);
+	request->magic = ~MAGIC_REQUEST_T;
 	FREE_NULL_LIST(request->headers);
 	xfree(request->path);
 	xfree(request->query);
@@ -726,7 +726,7 @@ static int _on_message_complete(http_parser *parser)
 		 * continue but without inheirting previous requests.
 		 */
 		request_t *nrequest = xmalloc(sizeof(*request));
-		xassert((nrequest->magic = MAGIC_REQUEST_T));
+		nrequest->magic = MAGIC_REQUEST_T;
 		nrequest->headers = list_create(_free_http_header);
 		request->context->request = nrequest;
 		parser->data = nrequest;
@@ -1038,7 +1038,7 @@ extern http_context_t *setup_http_context(con_mgr_fd_t *con,
 	xassert(context->magic == MAGIC);
 	xassert(!context->con);
 	xassert(!context->request);
-	xassert((request->magic = MAGIC_REQUEST_T));
+	request->magic = MAGIC_REQUEST_T;
 	context->con = con;
 	context->on_http_request = on_http_request;
 	context->request = request;
