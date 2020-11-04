@@ -7940,6 +7940,7 @@ fini:	return avail_cores_by_sock;
  * IN cpus_per_core   - Count of CPUs per core on this node
  * IN sock_per_node   - sockets requested by job per node or NO_VAL
  * IN task_per_node   - tasks requested by job per node or NO_VAL16
+ * IN cpus_per_task   - Count of CPUs per task
  * IN whole_node      - we are requesting the whole node or not
  * OUT avail_gpus     - Count of available GPUs on this node
  * OUT near_gpus      - Count of GPUs available on sockets with available CPUs
@@ -7954,6 +7955,7 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 					uint16_t cpus_per_core,
 					uint32_t sock_per_node,
 					uint16_t task_per_node,
+					uint16_t cpus_per_task,
 					bool whole_node,
 					uint16_t *avail_gpus,
 					uint16_t *near_gpus)
@@ -7997,6 +7999,10 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 			cpus_per_gres = 0;
 		else if (sock_gres->job_specs->cpus_per_gres)
 			cpus_per_gres = sock_gres->job_specs->cpus_per_gres;
+		else if (sock_gres->job_specs->ntasks_per_gres &&
+			 (sock_gres->job_specs->ntasks_per_gres != NO_VAL16))
+			cpus_per_gres = sock_gres->job_specs->ntasks_per_gres *
+				cpus_per_task;
 		else
 			cpus_per_gres = sock_gres->job_specs->def_cpus_per_gres;
 		if (cpus_per_gres) {
