@@ -218,7 +218,7 @@ extern void free_con_mgr(con_mgr_t *mgr);
  */
 extern int con_mgr_process_fd(con_mgr_t *mgr, int input_fd, int output_fd,
 			      const con_mgr_events_t events,
-			      const struct sockaddr *addr, socklen_t addrlen);
+			      const slurm_addr_t *addr, socklen_t addrlen);
 
 /*
  * instruct connection manager to listen to fd (async)
@@ -231,7 +231,7 @@ extern int con_mgr_process_fd(con_mgr_t *mgr, int input_fd, int output_fd,
  */
 extern int con_mgr_process_fd_listen(con_mgr_t *mgr, int fd,
 				     const con_mgr_events_t events,
-				     const struct sockaddr *addr,
+				     const slurm_addr_t *addr,
 				     socklen_t addrlen);
 
 /*
@@ -246,7 +246,7 @@ extern int con_mgr_process_fd_listen(con_mgr_t *mgr, int fd,
  */
 extern int con_mgr_process_fd_unix_listen(con_mgr_t *mgr, int fd,
 					  const con_mgr_events_t events,
-					  const struct sockaddr *addr,
+					  const slurm_addr_t *addr,
 					  socklen_t addrlen, const char *path);
 
 /*

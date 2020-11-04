@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
     from config.
  -- Zero out step_record_t's magic when freed.
  -- Fix sacctmgr clearing QosLevel when trailing comma is used.
+ -- slurmrestd - fix a fatal() error when connecting over IPv6.
 
 * Changes in Slurm 20.11.0rc1
 ==============================

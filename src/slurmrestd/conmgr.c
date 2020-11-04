@@ -410,11 +410,12 @@ cleanup:
 		slurm_mutex_unlock(&con->mgr->mutex);
 }
 
-static inline con_mgr_fd_t *
-	_add_connection(con_mgr_t *mgr, con_mgr_fd_t *source, int input_fd,
-			int output_fd, const con_mgr_events_t events,
-			const struct sockaddr *addr, socklen_t addrlen,
-			bool is_listen, const char *unix_socket_path)
+static con_mgr_fd_t *_add_connection(con_mgr_t *mgr, con_mgr_fd_t *source,
+				     int input_fd, int output_fd,
+				     const con_mgr_events_t events,
+				     const slurm_addr_t *addr,
+				     socklen_t addrlen, bool is_listen,
+				     const char *unix_socket_path)
 {
 	struct stat fbuf = { 0 };
 	con_mgr_fd_t *con = NULL;
@@ -463,12 +464,11 @@ static inline con_mgr_fd_t *
 	/* listen on unix socket */
 	if (unix_socket_path) {
 		xassert(con->is_socket);
-		xassert(addr->sa_family == AF_LOCAL);
+		xassert(addr->ss_family == AF_LOCAL);
 		con->unix_socket = xstrdup(unix_socket_path);
 
 		/* try to resolve client directly if possible */
-		con->name = sockaddr_to_string((const slurm_addr_t *) addr,
-					       addrlen);
+		con->name = sockaddr_to_string(addr, addrlen);
 
 		if (!con->name) {
 			char *outfd = fd_resolve_path(output_fd);
@@ -489,8 +489,7 @@ static inline con_mgr_fd_t *
 
 	if (addr) {
 		xassert(con->is_socket);
-		con->name = sockaddr_to_string((const slurm_addr_t *) addr,
-					       addrlen);
+		con->name = sockaddr_to_string(addr, addrlen);
 
 		if (!con->name && source && source->unix_socket) {
 			/*
@@ -896,7 +895,7 @@ static void _wrap_on_connection(void *x)
 extern int _con_mgr_process_fd_internal(con_mgr_t *mgr, con_mgr_fd_t *source,
 					int input_fd, int output_fd,
 					const con_mgr_events_t events,
-					const struct sockaddr *addr,
+					const slurm_addr_t *addr,
 					socklen_t addrlen)
 {
 	con_mgr_fd_t *con;
@@ -918,7 +917,7 @@ extern int _con_mgr_process_fd_internal(con_mgr_t *mgr, con_mgr_fd_t *source,
 
 extern int con_mgr_process_fd(con_mgr_t *mgr, int input_fd, int output_fd,
 			      const con_mgr_events_t events,
-			      const struct sockaddr *addr, socklen_t addrlen)
+			      const slurm_addr_t *addr, socklen_t addrlen)
 {
 	con_mgr_fd_t *con;
 	_check_magic_mgr(mgr);
@@ -939,7 +938,7 @@ extern int con_mgr_process_fd(con_mgr_t *mgr, int input_fd, int output_fd,
 
 extern int con_mgr_process_fd_listen(con_mgr_t *mgr, int fd,
 				     const con_mgr_events_t events,
-				     const struct sockaddr *addr,
+				     const slurm_addr_t *addr,
 				     socklen_t addrlen)
 {
 	con_mgr_fd_t *con;
@@ -959,7 +958,7 @@ extern int con_mgr_process_fd_listen(con_mgr_t *mgr, int fd,
 
 extern int con_mgr_process_fd_unix_listen(con_mgr_t *mgr, int fd,
 					  const con_mgr_events_t events,
-					  const struct sockaddr *addr,
+					  const slurm_addr_t *addr,
 					  socklen_t addrlen, const char *path)
 {
 	con_mgr_fd_t *con;
@@ -1673,7 +1672,7 @@ static void _listen_accept(void *x)
 	con_mgr_fd_t *con = x;
 	con_mgr_t *mgr = con->mgr;
 	int rc;
-	struct sockaddr addr = {0};
+	slurm_addr_t addr = {0};
 	socklen_t addrlen = sizeof(addr);
 	int fd;
 
@@ -1689,7 +1688,8 @@ static void _listen_accept(void *x)
 			 __func__, con->name);
 
 	/* try to get the new file descriptor and retry on errors */
-	if ((fd = accept(con->input_fd, &addr, &addrlen)) < 0) {
+	if ((fd = accept(con->input_fd, (struct sockaddr *) &addr,
+			 &addrlen)) < 0) {
 		if (errno == EINTR) {
 			log_flag(NET, "%s: [%s] interrupt on accept()",
 				 __func__, con->name);
@@ -1815,7 +1815,7 @@ static int _create_socket(void *x, void *arg)
 
 		return con_mgr_process_fd_unix_listen(
 			init->mgr, fd, init->events,
-			(const struct sockaddr *) &addr, sizeof(addr),
+			(const slurm_addr_t *) &addr, sizeof(addr),
 			unixsock);
 	} else {
 		/* split up host and port */
@@ -1873,7 +1873,8 @@ static int _create_socket(void *x, void *arg)
 			      __func__, addrinfo_to_string(addr));
 
 		rc = con_mgr_process_fd_listen(init->mgr, fd, init->events,
-					       addr->ai_addr, addr->ai_addrlen);
+			(const slurm_addr_t *) addr->ai_addr,
+			addr->ai_addrlen);
 	}
 
 	freeaddrinfo(addrlist);
