@@ -45,6 +45,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
+#include <slurm/slurm.h>
+
 /* open a stream socket on an ephemereal port and put it into
  * the listen state. fd and port are filled in with the new
  * socket's file descriptor and port #.
@@ -65,7 +67,7 @@ extern int net_stream_listen_ports(int *, uint16_t *, uint16_t *, bool);
  * IN addrlen size of addr
  * RET ptr to string (must xfree) or NULL
  */
-extern char *sockaddr_to_string(const struct sockaddr *addr, socklen_t addrlen);
+extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen);
 
 /*
  * dump addrinfo into a string

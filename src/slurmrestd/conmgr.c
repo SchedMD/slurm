@@ -467,7 +467,8 @@ static inline con_mgr_fd_t *
 		con->unix_socket = xstrdup(unix_socket_path);
 
 		/* try to resolve client directly if possible */
-		con->name = sockaddr_to_string(addr, addrlen);
+		con->name = sockaddr_to_string((const slurm_addr_t *) addr,
+					       addrlen);
 
 		if (!con->name) {
 			char *outfd = fd_resolve_path(output_fd);
@@ -488,7 +489,8 @@ static inline con_mgr_fd_t *
 
 	if (addr) {
 		xassert(con->is_socket);
-		con->name = sockaddr_to_string(addr, addrlen);
+		con->name = sockaddr_to_string((const slurm_addr_t *) addr,
+					       addrlen);
 
 		if (!con->name && source && source->unix_socket) {
 			/*

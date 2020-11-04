@@ -212,14 +212,14 @@ int net_stream_listen_ports(int *fd, uint16_t *port, uint16_t *ports, bool local
 	return *fd;
 }
 
-extern char *sockaddr_to_string(const struct sockaddr *addr, socklen_t addrlen)
+extern char *sockaddr_to_string(const slurm_addr_t *addr, socklen_t addrlen)
 {
 	int rc, prev_errno = errno;
 	char *resp = NULL;
 	char host[NI_MAXHOST] = { 0 };
 	char serv[NI_MAXSERV] = { 0 };
 
-	if (addr->sa_family == AF_UNIX) {
+	if (addr->ss_family == AF_UNIX) {
 		const struct sockaddr_un *addr_un =
 			(const struct sockaddr_un *) addr;
 
@@ -231,8 +231,8 @@ extern char *sockaddr_to_string(const struct sockaddr *addr, socklen_t addrlen)
 	}
 
 	resp = xmalloc(NI_MAXHOST + NI_MAXSERV);
-	rc = getnameinfo(addr, addrlen, host, NI_MAXHOST, serv, NI_MAXSERV,
-			 NI_NUMERICSERV);
+	rc = getnameinfo((const struct sockaddr *) addr, addrlen, host,
+			 NI_MAXHOST, serv, NI_MAXSERV, NI_NUMERICSERV);
 	if (rc == EAI_SYSTEM) {
 		error("Unable to get address: %m");
 	} else if (rc) {
@@ -255,5 +255,6 @@ extern char *sockaddr_to_string(const struct sockaddr *addr, socklen_t addrlen)
 
 extern char *addrinfo_to_string(const struct addrinfo *addr)
 {
-	return sockaddr_to_string(addr->ai_addr, addr->ai_addrlen);
+	return sockaddr_to_string((const slurm_addr_t *) addr->ai_addr,
+				  addr->ai_addrlen);
 }
