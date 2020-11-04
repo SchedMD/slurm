@@ -1187,7 +1187,7 @@ restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 .TP
 \fINodeAddr\fP=<node address>
 Name that a node should be referred to in establishing a communications path.
-This name will be used as an argument to the gethostbyname() function for
+This name will be used as an argument to the getaddrinfo() function for
 identification. If a node range expression is used to designate multiple nodes,
 they must exactly match the entries in the \fINodeName\fP
 (e.g. "NodeName=lx[0\-7] NodeAddr=elx[0\-7]"). \fINodeAddr\fP may also contain

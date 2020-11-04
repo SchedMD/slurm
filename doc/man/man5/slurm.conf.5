@@ -4445,7 +4445,7 @@ By default, the \fBNodeHostname\fR will be identical in value to
 Name that a node should be referred to in establishing
 a communications path.
 This name will be used as an
-argument to the gethostbyname() function for identification.
+argument to the getaddrinfo() function for identification.
 If a node range expression is used to designate multiple nodes,
 they must exactly match the entries in the \fBNodeName\fR
 (e.g. "NodeName=lx[0\-7] NodeAddr=elx[0\-7]").
@@ -4456,7 +4456,7 @@ By default, the \fBNodeAddr\fR will be identical in value to
 .TP
 \fBBcastAddr\fR
 Alternate network path to be used for sbcast network traffic to a given node.
-This name will be used as an argument to the gethostbyname() function.
+This name will be used as an argument to the getaddrinfo() function.
 If a node range expression is used to designate multiple nodes,
 they must exactly match the entries in the \fBNodeName\fR
 (e.g. "NodeName=lx[0\-7] BcastAddr=elx[0\-7]").
@@ -4883,7 +4883,7 @@ without a hostlist expression (i.e. frontend00,frontend01" rather than
 \fBFrontendAddr\fR
 Name that a frontend node should be referred to in establishing
 a communications path. This name will be used as an
-argument to the gethostbyname() function for identification.
+argument to the getaddrinfo() function for identification.
 As with \fBFrontendName\fR, list the individual node addresses rather than
 using a hostlist expression.
 The number of \fBFrontendAddr\fR records per line must equal the number of
@@ -5943,8 +5943,8 @@ details.
 
 .SH "SEE ALSO"
 .LP
-\fBcgroup.conf\fR(5), \fBgethostbyname\fR (3),
-\fBgetrlimit\fR (2), \fBgres.conf\fR(5), \fBgroup\fR (5), \fBhostname\fR (1),
+\fBcgroup.conf\fR(5), \fBgetaddrinfo\fR(3),
+\fBgetrlimit\fR(2), \fBgres.conf\fR(5), \fBgroup\fR(5), \fBhostname\fR(1),
 \fBscontrol\fR(1), \fBslurmctld\fR(8), \fBslurmd\fR(8),
-\fBslurmdbd\fR(8), \fBslurmdbd.conf\fR(5), \fBsrun(1)\fR,
-\fBspank(8)\fR, \fBsyslog\fR (2), \fBtopology.conf\fR(5)
+\fBslurmdbd\fR(8), \fBslurmdbd.conf\fR(5), \fBsrun\fR(1),
+\fBspank\fR(8), \fBsyslog\fR(3), \fBtopology.conf\fR(5)
