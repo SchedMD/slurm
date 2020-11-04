@@ -251,9 +251,6 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 		      S_ISLNK(status.st_mode));
 		return ESLURM_AUTH_CRED_INVALID;
 	}
-
-	fatal("%s: local auth failed to reject or pass",
-	      __func__);
 }
 
 extern int slurm_rest_auth_p_apply(rest_auth_context_t *context)
