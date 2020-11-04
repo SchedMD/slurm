@@ -239,7 +239,6 @@ extern char *job_res_job_action_string(job_res_job_action_t action)
 	default:
 		return "unknown";
 	}
-	return "error";
 }
 
 /*
