@@ -69,12 +69,6 @@ typedef struct {
 	int callback_tag;
 } path_t;
 
-#define AUTH_MAGIC 0xAFFEAA2E
-struct operations_auth_s {
-	int magic;
-	rest_auth_context_t *context;
-};
-
 static void _check_path_magic(const path_t *path)
 {
 	xassert(path->magic == MAGIC);
@@ -351,14 +345,9 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	int rc;
 	data_t *resp = data_new();
 	const char *body = NULL;
-	operations_auth_t auth = {
-		.magic = AUTH_MAGIC,
-		.context = args->context->auth,
-	};
 
 	rc = callback(args->context->con->name, args->method, params, query,
-		      callback_tag, resp, &auth);
-	auth.magic = ~AUTH_MAGIC;
+		      callback_tag, resp, args->context->auth);
 
 	if (data_get_type(resp) == DATA_TYPE_NULL)
 		/* no op */;
@@ -466,14 +455,4 @@ cleanup:
 	FREE_NULL_DATA(params);
 
 	return rc;
-}
-
-extern void *get_operation_db_conn(operations_auth_t *auth)
-{
-	xassert(auth->magic == AUTH_MAGIC);
-
-	if (!auth || !auth->context)
-		return NULL;
-
-	return rest_auth_context_get_db_conn(auth->context);
 }

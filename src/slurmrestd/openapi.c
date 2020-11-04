@@ -788,7 +788,7 @@ static int _op_handler_openapi(const char *context_id,
 			       http_request_method_t method,
 			       data_t *parameters, data_t *query,
 			       int tag, data_t *resp,
-			       operations_auth_t *auth)
+			       rest_auth_context_t *auth)
 {
 	if (!spec)
 		return SLURM_ERROR;

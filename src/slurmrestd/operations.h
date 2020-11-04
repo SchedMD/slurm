@@ -39,6 +39,7 @@
 
 #include "src/common/data.h"
 #include "src/slurmrestd/http.h"
+#include "src/slurmrestd/rest_auth.h"
 
 /*
  * setup locks.
@@ -46,9 +47,6 @@
  */
 extern int init_operations(void);
 extern void destroy_operations(void);
-
-/* opaque type for auth */
-typedef struct operations_auth_s operations_auth_t;
 
 /*
  * Callback from operations manager.
@@ -62,7 +60,7 @@ typedef int (*operation_handler_t)(
 	data_t *query, /* query sent by client */
 	int tag, /* tag associated with path */
 	data_t *resp, /* data to populate with response */
-	operations_auth_t *auth /* authentication context */
+	rest_auth_context_t *auth /* authentication context */
 );
 
 /*
@@ -108,6 +106,6 @@ extern int operations_router(on_http_request_args_t *args);
  *
  * RET non-null pointer or NULL on failure
  */
-extern void *get_operation_db_conn(operations_auth_t *auth);
+extern void *get_operation_db_conn(rest_auth_context_t *auth);
 
 #endif /* SLURMRESTD_OPERATIONS_H */
