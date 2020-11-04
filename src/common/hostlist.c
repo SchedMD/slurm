@@ -1204,7 +1204,7 @@ static hostlist_t hostlist_new(void)
 	new->magic = HOSTLIST_MAGIC;
 	slurm_mutex_init(&new->mutex);
 
-	new->hr = malloc(HOSTLIST_CHUNK * sizeof(hostrange_t));
+	new->hr = malloc(HOSTLIST_CHUNK * sizeof(hostrange_t *));
 	if (!new->hr)
 		goto fail2;
 
