@@ -7745,8 +7745,10 @@ static void _pack_node_reg_resp(
 	List pack_list;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
+	xassert(msg);
+
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
-		if (msg && msg->tres_list)
+		if (msg->tres_list)
 			pack_list = msg->tres_list;
 		else
 			pack_list = assoc_mgr_tres_list;
@@ -7763,7 +7765,7 @@ static void _pack_node_reg_resp(
 
 		packstr(msg->node_name, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (msg && msg->tres_list)
+		if (msg->tres_list)
 			pack_list = msg->tres_list;
 		else
 			pack_list = assoc_mgr_tres_list;
