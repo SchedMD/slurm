@@ -166,7 +166,7 @@ static void _set_pmi_port(char ***env)
 	errno = 0;
 	pmi_port = strtoul(resv_ports, &endp, 10);
 	if ((errno != 0) || (pmi_port > 65535) ||
-	    ((*endp != '-') && (*endp != '\0'))) {
+	    ((*endp != '-') && (*endp != ',') && (*endp != '\0'))) {
 		error("%s: Couldn't parse reserved ports %s",
 		      plugin_type, resv_ports);
 		return;

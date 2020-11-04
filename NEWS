@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sacctmgr clearing QosLevel when trailing comma is used.
  -- slurmrestd - fix a fatal() error when connecting over IPv6.
  -- slurmrestd - add API to interface with slurmdbd.
+ -- mpi/cray_shasta - fix PMI port parsing for non-contiguous port ranges.
 
 * Changes in Slurm 20.11.0rc1
 ==============================
