@@ -1,7 +1,7 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 20.11.0pre1
+* Changes in Slurm 20.11.0rc1
 ==============================
  -- Fix corner case issue with interrupted resource allocation requests.
  -- Pack all gres information in the slurmd to send to the stepd to help
