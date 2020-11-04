@@ -4490,7 +4490,7 @@ static void *_start_prolog_slurmctld_thread(void *x)
  */
 extern void prolog_slurmctld(job_record_t *job_ptr)
 {
-	uint32_t *job_id = xmalloc(sizeof(*job_id));
+	uint32_t *job_id;
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 	xassert(verify_lock(NODE_LOCK, WRITE_LOCK));
 
@@ -4499,6 +4499,7 @@ extern void prolog_slurmctld(job_record_t *job_ptr)
 	job_ptr->details->prolog_running++;
 	job_ptr->job_state |= JOB_CONFIGURING;
 
+	job_id = xmalloc(sizeof(*job_id));
 	*job_id = job_ptr->job_id;
 	slurm_thread_create_detached(NULL, _start_prolog_slurmctld_thread, job_id);
 }
