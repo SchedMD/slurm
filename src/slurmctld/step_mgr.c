@@ -3984,8 +3984,9 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&tres_per_node, &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_per_socket, &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_per_task, &name_len, buffer);
-		jobacctinfo_unpack(&jobacct, protocol_version,
-		                   PROTOCOL_TYPE_SLURM, buffer, true);
+		if (jobacctinfo_unpack(&jobacct, protocol_version,
+				       PROTOCOL_TYPE_SLURM, buffer, true))
+			goto unpack_error;
 	} else if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id.step_id, buffer);
 		convert_old_step_id(&step_id.step_id);
