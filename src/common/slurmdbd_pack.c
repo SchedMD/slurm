@@ -519,7 +519,6 @@ static int _unpack_job_start_msg(void **msg,
 	uint32_t uint32_tmp;
 	dbd_job_start_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_start_msg_t));
 	*msg = msg_ptr;
-	void *tmp_ptr = NULL;
 
 	msg_ptr->array_job_id = 0;
 	msg_ptr->array_task_id = NO_VAL;
@@ -570,6 +569,7 @@ static int _unpack_job_start_msg(void **msg,
 		safe_unpackstr_xmalloc(&msg_ptr->wckey, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->work_dir, &uint32_tmp, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		char *tmp_ptr = NULL;
 		safe_unpackstr_xmalloc(&msg_ptr->account, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->alloc_nodes, buffer);
 		safe_unpack32(&msg_ptr->array_job_id, buffer);
@@ -585,9 +585,9 @@ static int _unpack_job_start_msg(void **msg,
 		safe_unpack64(&msg_ptr->db_index, buffer);
 		safe_unpack_time(&msg_ptr->eligible_time, buffer);
 		safe_unpack32(&msg_ptr->gid, buffer);
-		safe_unpackstr_xmalloc(tmp_ptr, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr, &uint32_tmp, buffer);
 		xfree(tmp_ptr);
-		safe_unpackstr_xmalloc(tmp_ptr, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr, &uint32_tmp, buffer);
 		xfree(tmp_ptr);
 		safe_unpackstr_xmalloc(&msg_ptr->gres_used, &uint32_tmp,
 				       buffer);
