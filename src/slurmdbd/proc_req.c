@@ -1849,15 +1849,24 @@ static int   _fini_conn(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	dbd_fini_msg_t *fini_msg = msg->data;
 	char *comment = NULL;
 	int rc = SLURM_SUCCESS;
+	bool locked = false;
 
 
 	debug2("DBD_FINI: CLOSE:%u COMMIT:%u",
 	       fini_msg->close_conn, fini_msg->commit);
+
+	if (slurmdbd_conn->conn->rem_port && slurmdbd_conf->commit_delay) {
+		slurm_mutex_lock(&registered_lock);
+		locked = true;
+	}
+
 	if (fini_msg->close_conn == 1)
 		rc = acct_storage_g_close_connection(&slurmdbd_conn->db_conn);
 	else
 		rc = acct_storage_g_commit(slurmdbd_conn->db_conn,
 					   fini_msg->commit);
+	if (locked)
+		slurm_mutex_unlock(&registered_lock);
 
 	*out_buffer = slurm_persist_make_rc_msg(slurmdbd_conn->conn,
 						rc, comment, DBD_FINI);

@@ -136,6 +136,7 @@ extern void rpc_mgr_wake(void)
 static void _connection_fini_callback(void *arg)
 {
 	slurmdbd_conn_t *conn = (slurmdbd_conn_t *) arg;
+	bool locked = false;
 
 	if (conn->conn->rem_port) {
 		if (!shutdown_time) {
@@ -164,12 +165,18 @@ static void _connection_fini_callback(void *arg)
 			}
 			list_iterator_destroy(itr);
 			slurm_mutex_unlock(&registered_lock);
+		} else if (slurmdbd_conf->commit_delay) {
+			slurm_mutex_lock(&registered_lock);
+			locked = true;
 		}
 		/* needs to be the last thing done */
 		acct_storage_g_commit(conn->db_conn, 1);
 	}
 
 	acct_storage_g_close_connection(&conn->db_conn);
+
+	if (locked)
+		slurm_mutex_unlock(&registered_lock);
 	/* handled directly in the internal persist_conn code */
 	//slurm_persist_conn_members_destroy(&conn->conn);
 	xfree(conn->tres_str);
