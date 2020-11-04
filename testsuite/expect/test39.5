@@ -111,9 +111,7 @@ if {$nb_nodes > 1} {
 }
 set gpus_per_node $gpu_cnt
 if {$gpus_per_node > 1 && $sockets_per_node > 1} {
-	set gpus_per_socket [expr $gpus_per_node / \
-	                          $sockets_per_node]
-set gpus_per_socket [expr $gpus_per_node / $sockets_per_node]
+	set gpus_per_socket [expr $gpus_per_node / $sockets_per_node]
 } else {
 	set gpus_per_socket $gpus_per_node
 }
