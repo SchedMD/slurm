@@ -1459,11 +1459,20 @@ extern int as_mysql_node_down(mysql_conn_t *mysql_conn,
 		"time_end=0 and node_name='%s';",
 		mysql_conn->cluster_name, event_table,
 		event_time, node_ptr->name);
+
+	/*
+	 * Reason for "on duplicate": slurmctld will send a time_start based on
+	 * the state of the "node_state" state file. If the the slurmctld is
+	 * "killed" before updating the state file, the slurmctld can send the
+	 * same time_start for the node and cause a "Duplicate entry" error.
+	 * This can particually happen when doing clean starts.
+	 */
 	xstrfmtcat(query,
 		   "insert into \"%s_%s\" "
 		   "(node_name, state, tres, time_start, "
 		   "reason, reason_uid) "
-		   "values ('%s', %u, '%s', %ld, '%s', %u);",
+		   "values ('%s', %u, '%s', %ld, '%s', %u) "
+		   "on duplicate key update time_end=0;",
 		   mysql_conn->cluster_name, event_table,
 		   node_ptr->name, node_ptr->node_state,
 		   node_ptr->tres_str, event_time, my_reason, reason_uid);
