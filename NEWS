@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==============================
  -- MySQL - Remove potential race condition when sending updates to a cluster
     and commit_delay used.
+ -- Fixed regression in rc1 where sinfo et al would not show a node in a resv
+    state.
 
 * Changes in Slurm 20.11.0rc1
 ==============================

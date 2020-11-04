@@ -7048,7 +7048,7 @@ extern int set_node_maint_mode(bool reset_all)
 			flags = NODE_STATE_RES;
 			if (resv_ptr->flags & RESERVE_FLAG_MAINT)
 				flags |= NODE_STATE_MAINT;
-			resv_ptr->ctld_flags &= (~RESV_CTLD_NODE_FLAGS_SET);
+			resv_ptr->ctld_flags |= RESV_CTLD_NODE_FLAGS_SET;
 			_set_nodes_flags(resv_ptr, now, flags, reset_all);
 			last_node_update = now;
 		}
