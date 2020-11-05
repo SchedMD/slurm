@@ -1007,6 +1007,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 			error("_task_layout_lllp_cyclic failure");
 			FREE_NULL_BITMAP(avail_map);
 			xfree(core_tasks);
+			xfree(core_threads);
 			xfree(socket_last_pu);
 			return SLURM_ERROR;
 		}
@@ -1118,6 +1119,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 		      hw_sockets, hw_cores, hw_threads, avail_map);
 	FREE_NULL_BITMAP(avail_map);
 	xfree(core_tasks);
+	xfree(core_threads);
 	xfree(socket_last_pu);
 
 	return SLURM_SUCCESS;
