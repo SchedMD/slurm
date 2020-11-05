@@ -3272,6 +3272,13 @@ Note that whole nodes can be allocated to jobs for selected
 partitions by using the \fIOverSubscribe=Exclusive\fR option.
 See the partition \fBOverSubscribe\fR parameter for more information.
 .TP
+\fBselect/cons_tres\fR
+The resources (cores, memory, GPUs and all other trackable resources) within
+a node are individually allocated as consumable resources.
+Note that whole nodes can be allocated to jobs for selected
+partitions by using the \fIOverSubscribe=Exclusive\fR option.
+See the partition \fBOverSubscribe\fR parameter for more information.
+.TP
 \fBselect/cray_aries\fR
 for a Cray system.
 The default value is "select/cray_aries" for all Cray systems.
@@ -3286,13 +3293,6 @@ configured. Use of other topology plugins with select/linear and heterogeneous
 nodes is not recommended and may result in valid job allocation requests being
 rejected.
 This is the default value.
-.TP
-\fBselect/cons_tres\fR
-The resources (cores, memory, GPUs and all other trackable resources) within
-a node are individually allocated as consumable resources.
-Note that whole nodes can be allocated to jobs for selected
-partitions by using the \fIOverSubscribe=Exclusive\fR option.
-See the partition \fBOverSubscribe\fR parameter for more information.
 .RE
 
 .TP
