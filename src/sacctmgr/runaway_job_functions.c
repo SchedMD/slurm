@@ -216,7 +216,7 @@ static List _get_runaway_jobs(slurmdb_job_cond_t *job_cond)
 		if (!job_cond->cluster_list)
 			job_cond->cluster_list = list_create(xfree_ptr);
 		slurm_addto_char_list(job_cond->cluster_list,
-				      xstrdup(slurm_conf.cluster_name));
+				      slurm_conf.cluster_name);
 	}
 
 	if (list_count(job_cond->cluster_list) != 1) {
