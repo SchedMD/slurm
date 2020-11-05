@@ -1057,9 +1057,16 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 			 && (host_index == (req->nnodes - 1)))
 			setup_x11 = true;
 
+		/*
+		 * Cannot complete x11 forwarding setup until after the prolog
+		 * has completed. But we need to make a decision while we
+		 * have convenient access to the credential args. So use
+		 * the x11 field to signal the remaining setup is needed.
+		 */
 		if (setup_x11)
-			_setup_x11_display(req->step_id.job_id, req->step_id.step_id,
-					   &req->env, &req->envc);
+			req->x11 = X11_FORWARD_ALL;
+		else
+			req->x11 = 0;
 
 		if (cpu_log) {
 			char *per_job = "", *per_step = "";
@@ -1484,6 +1491,11 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	} else {
 		slurm_mutex_unlock(&prolog_mutex);
 		_wait_for_job_running_prolog(req->step_id.job_id);
+
+		if (req->x11)
+			_setup_x11_display(req->step_id.job_id,
+					   req->step_id.step_id,
+					   &req->env, &req->envc);
 	}
 
 	/*
