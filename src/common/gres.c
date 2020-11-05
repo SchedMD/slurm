@@ -8239,8 +8239,6 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 			if ((*max_tasks_this_node == NO_VAL) ||
 			    (*max_tasks_this_node > max_tasks))
 				*max_tasks_this_node = max_gres;
-			if (*min_tasks_this_node < max_gres)
-				*min_tasks_this_node = max_gres;
 		}
 
 		min_core_cnt = MAX(*min_tasks_this_node, 1) *
@@ -8415,7 +8413,15 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 				sock_gres->total_cnt =
 					MIN(i, sock_gres->total_cnt);
 			}
+			log_flag(GRES, "%s: max_tasks_this_node is set to NO_VAL, won't clear non-needed cores",
+				 __func__);
 			continue;
+		}
+		if (*max_tasks_this_node < *min_tasks_this_node) {
+			error("%s: min_tasks_this_node:%u > max_tasks_this_node:%u",
+			      __func__,
+			      *min_tasks_this_node,
+			      *max_tasks_this_node);
 		}
 
 		/*
@@ -8425,7 +8431,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 		 */
 		req_cores = *max_tasks_this_node;
 		if (mc_ptr->cpus_per_task) {
-			int threads_per_core;
+			int threads_per_core, removed_tasks = 0;
 
 			if (mc_ptr->threads_per_core)
 				threads_per_core =
@@ -8436,30 +8442,59 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 
 			req_cores *= mc_ptr->cpus_per_task;
 
-			/* round up by full threads per core */
-			req_cores += threads_per_core - 1;
-			req_cores /= threads_per_core;
-
-			log_flag(GRES, "%s: settings required_cores=%d by max_tasks_this_node=%d cpus_per_task=%d cpus_per_core=%d threads_per_core:%d",
-				 __func__, req_cores,
-				 *max_tasks_this_node, mc_ptr->cpus_per_task,
-				 cpus_per_core, mc_ptr->threads_per_core);
+			while (*max_tasks_this_node >= *min_tasks_this_node) {
+				/* round up by full threads per core */
+				req_cores += threads_per_core - 1;
+				req_cores /= threads_per_core;
+				if (req_cores <= avail_cores_tot) {
+					if (removed_tasks)
+						log_flag(GRES, "%s: settings required_cores=%d by max_tasks_this_node=%u(reduced=%d) cpus_per_task=%d cpus_per_core=%d threads_per_core:%d",
+							 __func__,
+							 req_cores,
+							 *max_tasks_this_node,
+							 removed_tasks,
+							 mc_ptr->cpus_per_task,
+							 cpus_per_core,
+							 mc_ptr->
+							 threads_per_core);
+					break;
+				}
+				removed_tasks++;
+				(*max_tasks_this_node)--;
+				req_cores = *max_tasks_this_node;
+			}
 		}
 		if (cpus_per_gres) {
 			if (job_specs->gres_per_node) {
 				i = job_specs->gres_per_node;
+				log_flag(GRES, "%s: estimating req_cores gres_per_node=%"PRIu64,
+					 __func__, job_specs->gres_per_node);
 			} else if (job_specs->gres_per_socket) {
 				i = job_specs->gres_per_socket * sock_cnt;
+				log_flag(GRES, "%s: estimating req_cores gres_per_socket=%"PRIu64,
+					 __func__, job_specs->gres_per_socket);
 			} else if (job_specs->gres_per_task) {
 				i = job_specs->gres_per_task *
 				    *max_tasks_this_node;
-			} else if (sock_gres->total_cnt) {
-				i = sock_gres->total_cnt;
+				log_flag(GRES, "%s: estimating req_cores max_tasks_this_node=%u gres_per_task=%"PRIu64,
+					 __func__,
+					 *max_tasks_this_node,
+					 job_specs->gres_per_task);
+			} else if (cnt_avail_total) {
+				i = cnt_avail_total;
+				log_flag(GRES, "%s: estimating req_cores cnt_avail_total=%"PRIu64,
+					 __func__, cnt_avail_total);
 			} else {
 				i = 1;
+				log_flag(GRES, "%s: estimating req_cores default to 1 task",
+					 __func__);
 			}
 			i *= cpus_per_gres;
 			i = (i + cpus_per_core - 1) / cpus_per_core;
+			if (req_cores < i)
+				log_flag(GRES, "%s: Increasing req_cores=%d from cpus_per_gres=%d cpus_per_core=%"PRIu16,
+					 __func__, i, cpus_per_gres,
+					 cpus_per_core);
 			req_cores = MAX(req_cores, i);
 		}
 
