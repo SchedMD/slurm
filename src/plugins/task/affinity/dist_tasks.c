@@ -1213,6 +1213,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 			error("_task_layout_lllp_block infinite loop");
 			FREE_NULL_BITMAP(avail_map);
 			xfree(core_tasks);
+			xfree(core_threads);
 			xfree(socket_tasks);
 			return SLURM_ERROR;
 		}
@@ -1279,6 +1280,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 		}
 	}
 	xfree(core_tasks);
+	xfree(core_threads);
 	xfree(socket_tasks);
 
 	/* last step: expand the masks to bind each task
