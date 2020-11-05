@@ -414,7 +414,6 @@ void slurm_auth_thread_clear(void)
 
 char *slurm_auth_token_generate(const char *username, int lifespan)
 {
-	auth_token_t *cred = xmalloc(sizeof(*cred));
 	jwt_alg_t opt_alg = JWT_ALG_HS256;
 	time_t now = time(NULL);
 	jwt_t *jwt;
@@ -422,7 +421,6 @@ char *slurm_auth_token_generate(const char *username, int lifespan)
 
 	if (!key) {
 		error("%s: cannot issue tokens, no key loaded", __func__);
-		xfree(cred);
 		return NULL;
 	}
 
