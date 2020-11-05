@@ -38,6 +38,35 @@ proc cleanup {} {
 	exec $bin_rm -f $file_in1 $file_in2
 }
 
+proc test_gpus_cnt {srun_opts expected_gpus_times_tasks expected_job_gpus} {
+	global file_in1 test_id srun number_commas
+	set match 0
+	set job_gpus 0
+	set srun_pid [spawn /bin/sh -c "$srun $srun_opts -t1 -J test$test_id -l ./$file_in1"]
+	expect {
+		-re "JOB_GRES=gpu:(\[0-9\]+)|CUDA_VISIBLE_DEVICES:($number_commas)" {
+			if {[string first "JOB_GRES" $expect_out(0,string)] != -1} {
+				set job_gpus $expect_out(1,string)
+			} elseif {[string first "CUDA" $expect_out(0,string)] != -1} {
+				incr match [cuda_count $expect_out(2,string)]
+			}
+			exp_continue
+		}
+		timeout {
+			fail "srun not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	if {$match != $expected_gpus_times_tasks} {
+		fail "srun $srun_opts failure tasks*gpus ($match != $expected_gpus_times_tasks)"
+	}
+	if {$job_gpus != $expected_job_gpus} {
+		fail "srun $srun_opts failure job_gpus ($job_gpus != $expected_job_gpus)"
+	}
+}
+
 if {![check_config_select "cons_tres"]} {
 	skip "This test is only compatible with select/cons_tres"
 }
@@ -64,6 +93,7 @@ if { [llength $node_name] != 1 } {
 }
 set cpus_per_node     [get_node_param $node_name "CPUTot"]
 set sockets_per_node  [get_node_param $node_name "Sockets"]
+set threads_per_core  [get_node_param $node_name "ThreadsPerCore"]
 set cores_per_socket  [get_node_param $node_name "CoresPerSocket"]
 set cpus_per_socket   [expr $cpus_per_node / $sockets_per_node]
 
@@ -81,23 +111,20 @@ if {$nb_nodes > 1} {
 }
 set gpus_per_node $gpu_cnt
 if {$gpus_per_node > 1 && $sockets_per_node > 1} {
-	set sockets_per_node 2
-	set gpus_per_socket [expr $gpus_per_node / \
-	                          $sockets_per_node]
-set gpus_per_socket [expr $gpus_per_node / $sockets_per_node]
+	set gpus_per_socket [expr $gpus_per_node / $sockets_per_node]
 } else {
 	set gpus_per_socket $gpus_per_node
 }
-set sockets_per_node [expr $gpus_per_node / $gpus_per_socket]
 
 #
 # Build input script files
 #
 make_bash_script $file_in1 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
 if \[ \$SLURM_PROCID -eq 0 \]; then
-$scontrol -dd show job \$SLURM_JOB_ID | grep \"GRES=\"
+$scontrol -dd show job \$SLURM_JOB_ID | grep \"JOB_GRES=\"
 fi
 exit 0"
+
 make_bash_script $file_in2 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
 $scontrol show node \$SLURM_JOB_NODENAME | grep Gres
 exit 0"
@@ -117,53 +144,11 @@ if {$tot_gpus > 1} {
 if {$use_gpus_per_job < $nb_nodes} {
 	set nb_nodes $use_gpus_per_job
 }
-set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in1]
-expect {
-	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
-		incr match [cuda_count $expect_out(1,string)]
-		exp_continue
-	}
-	timeout {
-		log_error "srun not responding"
-		slow_kill $srun_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-set expected_gpus $use_gpus_per_job
-if {$match != $expected_gpus} {
-	log_error "srun --gpus failure ($match != $expected_gpus)"
-	set exit_code 1
-}
+test_gpus_cnt "--cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes" $use_gpus_per_job $use_gpus_per_job
 
 if {$use_gpus_per_job > 2} {
 	log_info "TEST: --gpus option, part 2"
-	set match 0
-	if {$use_gpus_per_job > $nb_nodes} {
-		incr use_gpus_per_job -1
-	}
-	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in1]
-	expect {
-		-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
-			incr match [cuda_count $expect_out(1,string)]
-			exp_continue
-		}
-		timeout {
-			log_error "srun not responding"
-			slow_kill $srun_pid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	set expected_gpus $use_gpus_per_job
-	if {$match != $expected_gpus} {
-		log_error "srun --gpus failure ($match != $expected_gpus)"
-		set exit_code 1
-	}
+	test_gpus_cnt "--cpus-per-gpu=1 --gpus=$use_gpus_per_job --nodes=$nb_nodes" $use_gpus_per_job $use_gpus_per_job
 }
 
 #
@@ -176,26 +161,7 @@ if {$gpus_per_node > 1} {
 } else {
 	set use_gpus_per_node $gpus_per_node
 }
-set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$use_gpus_per_node --nodes=$nb_nodes -t1 -J "test$test_id" -l ./$file_in2]
-expect {
-	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
-		incr match [cuda_count $expect_out(1,string)]
-		exp_continue
-	}
-	timeout {
-		log_error "srun not responding"
-		slow_kill $srun_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-set expected_gpus [expr $use_gpus_per_node * $nb_nodes]
-if {$match != $expected_gpus} {
-	log_error "srun --gpus-per-node failure ($match != $expected_gpus)"
-	set exit_code 1
-}
+test_gpus_cnt "--cpus-per-gpu=1 --gpus-per-node=$use_gpus_per_node --nodes=$nb_nodes" [expr $use_gpus_per_node * $nb_nodes] [expr $use_gpus_per_node * $nb_nodes]
 
 #
 # Test --gpus-per-socket options using a subset of GPUs actually available on the node
@@ -214,9 +180,7 @@ if { [llength $node_list] != $nb_nodes } {
 			exp_continue
 		}
 		timeout {
-			log_error "srun not responding"
-			slow_kill $srun_pid
-			set exit_code 1
+			fail "srun not responding"
 		}
 		eof {
 			wait
@@ -229,8 +193,7 @@ if { [llength $node_list] != $nb_nodes } {
 		incr expected_gpus $gpus
 	}
 	if {$match < $expected_gpus} {
-		log_error "srun --gpus-per-task failure ($match < $expected_gpus)"
-		set exit_code 1
+		fail "srun --gpus-per-socket failure ($match < $expected_gpus)"
 	}
 }
 
@@ -251,26 +214,7 @@ if {$one_task_pc && $cpus_per_node > $total_cores} {
 } else {
 	set extra_opt "-t1"
 }
-set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-task=1 -N1 --ntasks=$use_gpus_per_node $extra_opt -t1 -J "test$test_id" -l ./$file_in1]
-expect {
-	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
-		incr match [cuda_count $expect_out(1,string)]
-		exp_continue
-	}
-	timeout {
-		log_error "srun not responding"
-		slow_kill $srun_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-set expected_gpus [expr $use_gpus_per_node * $use_gpus_per_node]
-if {$match != $expected_gpus} {
-	log_error "srun --gpus-per-task failure ($match != $expected_gpus)"
-	set exit_code 1
-}
+test_gpus_cnt "--cpus-per-gpu=1 --gpus-per-task=1 -N1 --ntasks=$use_gpus_per_node $extra_opt" [expr $use_gpus_per_node * $use_gpus_per_node] $use_gpus_per_node
 
 #
 # Test --gpus-per-task option without task count
@@ -290,27 +234,30 @@ if {$use_gpus_per_node == 0} {
 	set use_tasks_per_node 1
 	set use_gpus_per_node $gpu_cnt
 }
-set match 0
-set srun_pid [spawn $srun --gpus-per-task=1 --tasks-per-node=$use_tasks_per_node -N $nb_nodes -t1 -J "test$test_id" -l ./$file_in1]
-expect {
-	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
-		incr match [cuda_count $expect_out(1,string)]
-		exp_continue
-	}
-	timeout {
-		log_error "srun not responding"
-		slow_kill $srun_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
+test_gpus_cnt "--gpus-per-task=1 --tasks-per-node=$use_tasks_per_node -N $nb_nodes" [expr $nb_nodes * $use_tasks_per_node * $use_tasks_per_node] [expr $use_tasks_per_node * $nb_nodes]
+
+log_info "TEST: -c1 and --cpus-per-gpu=\$cpus_per_socket implicit task count with one GPU"
+test_gpus_cnt "--gres=gpu:1 -c 1 --cpus-per-gpu=$cpus_per_socket" $cpus_per_socket 1
+test_gpus_cnt "--gpus=1 --sockets-per-node=1 -c 1 --cpus-per-gpu=$cpus_per_socket" $cpus_per_socket 1
+test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 -c 1 --cpus-per-gpu=$cpus_per_socket" $cpus_per_socket 1
+
+log_info "TEST -c1 --cpus-per-gpu=\$cpus_per_socket with 1 GPU per socket"
+if { $sockets_per_node <= $gpu_cnt } {
+	set target_gpus $sockets_per_node
+} else {
+	set target_gpus 0
 }
-set expected_gpus [expr $nb_nodes * $use_tasks_per_node * $use_tasks_per_node]
-if {$match != $expected_gpus} {
-	log_error "srun --gpus-per-task failure ($match != $expected_gpus)"
-	set exit_code 1
+test_gpus_cnt "--gres=gpu:$sockets_per_node -c 1 --cpus-per-gpu=$cpus_per_socket" [expr $target_gpus * $cpus_per_node] $target_gpus
+test_gpus_cnt "--gpus=$sockets_per_node -N1 -c 1 --cpus-per-gpu=$cpus_per_socket" [expr $target_gpus * $cpus_per_node] $target_gpus
+test_gpus_cnt "--gres=gpu:$sockets_per_node -c 1 --cpus-per-gpu=$cpus_per_socket" [expr $target_gpus * $cpus_per_node] $target_gpus
+
+if {$sockets_per_node <= $gpu_cnt} {
+	set target_gpus $sockets_per_node
+} else {
+	set target_gpus $gpu_cnt
 }
+#TODO This line should be uncommented after fix
+#test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=$sockets_per_node -c 1 --cpus-per-gpu=$cpus_per_socket" [expr $target_gpus * $cpus_per_node] $target_gpus
 
 #
 # Test --gpus-per-task option without task count
@@ -321,26 +268,73 @@ if {$gpu_cnt > 1} {
 } else {
 	set use_gpus_per_node $gpu_cnt
 }
-set match 0
-set srun_pid [spawn $srun --gpus-per-task=$use_gpus_per_node -N $nb_nodes -t1 -J "test$test_id" -l ./$file_in1]
-expect {
-	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
-		incr match [cuda_count $expect_out(1,string)]
-		exp_continue
-	}
-	timeout {
-		log_error "srun not responding"
-		slow_kill $srun_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
+test_gpus_cnt "--gpus-per-task=$use_gpus_per_node -N $nb_nodes" [expr $nb_nodes * $use_gpus_per_node] [expr $nb_nodes * $use_gpus_per_node]
+
+#
+# Test --cpus-per-task with different gpu options (Bug 9937)
+#
+log_info "TEST: --cpus-per-task option with different gpu options(Bug 9937)"
+test_gpus_cnt "--gres=gpu:1 --ntasks-per-core=1 -c $cpus_per_node" 1 1
+test_gpus_cnt "--gpus=1 --ntasks-per-core=1 -c $cpus_per_node" 1 1
+test_gpus_cnt "-n1 --gpus-per-task=1 --ntasks-per-core=1 -c $cpus_per_node" 1 1
+test_gpus_cnt "--sockets-per-node=1 --gpus-per-socket=1 --ntasks-per-core=1 -c $cpus_per_node" $target_gpus $target_gpus
+test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 --threads-per-core=1 -c [expr $cpus_per_node / $threads_per_core]" $target_gpus $target_gpus
+
+log_info "TEST: --cpus-per-gpu option requiring more CPUs than --cpus-per-task"
+test_gpus_cnt "--gres=gpu:1 -c 1 -n1 --cpus-per-gpu=$cpus_per_socket" 1 1
+test_gpus_cnt "--gres=gpu:1 -c 1 -n$sockets_per_node --cpus-per-gpu=$cpus_per_socket" $sockets_per_node 1
+test_gpus_cnt "--gpus=1 -c 1 -n1 --cpus-per-gpu=$cpus_per_socket" 1 1
+test_gpus_cnt "--gpus=1 -c 1 -n$sockets_per_node --cpus-per-gpu=$cpus_per_socket" $sockets_per_node 1
+test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 -c 1 -n1 --cpus-per-gpu=$cpus_per_socket" 1 1
+
+if {$cpus_per_socket > $sockets_per_node} {
+	set target_gpus 1
+} else {
+	set target_gpus [expr min($gpu_cnt,$sockets_per_node)]
 }
-set expected_gpus [expr $nb_nodes * $use_gpus_per_node]
-if {$match != $expected_gpus} {
-	fail "srun --gpus-per-task failure ($match != $expected_gpus)"
+test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 -c 1 -n$sockets_per_node --cpus-per-gpu=$cpus_per_socket" [expr $target_gpus * $sockets_per_node] $target_gpus
+
+#Negative tests - number of CPUs reqired by (-n -c) doesn't match --gpus-per-task and --cpus-per-gpu results
+if {$cpus_per_socket > 1} {
+	test_gpus_cnt "--gpus-per-task=1 -c 1 -n1 --cpus-per-gpu=$cpus_per_socket" 0 0
+	test_gpus_cnt "--gpus-per-task=1 -c 1 -n$sockets_per_node --cpus-per-gpu=$cpus_per_socket" 0 0
+} else {
+	log_warn "Need more than one CPU per socket for subcheck, have $cpus_per_socket"
 }
+
+if {$threads_per_core == 4} {
+	log_info "Testing high thread count ThreadsPerCore = 4"
+	test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 --threads-per-core=2 -c [expr $cpus_per_node / 2]" $sockets_per_node $sockets_per_node
+}
+#Negative tests - srun is expected to fail
+log_info "Negative tests - srun is expected to fail here"
+test_gpus_cnt "--sockets-per-node=1 --gpus-per-socket=1 --ntasks-per-core=1 -c [expr $cpus_per_node * 2]" 0 0
+test_gpus_cnt "--gres=gpu:1 -c [expr $cpus_per_node * 2]" 0 0
+test_gpus_cnt "--gpus=1 -c [expr $cpus_per_node * 2]" 0 0
+test_gpus_cnt "--sockets-per-node=1 --gpus-per-socket=1 -c $cpus_per_node --cpus-per-gpu=$cpus_per_node" 0 0
+if {$threads_per_core > 1} {
+	test_gpus_cnt "--gpus=1 --threads-per-core=1 -c $cpus_per_node" 0 0
+} else {
+	test_gpus_cnt "--gpus=1 --threads-per-core=1 -c [expr $cpus_per_node]" 1 1
+}
+##End of tests from Bug 9937
+
+test_gpus_cnt "--gres=gpu:1 --ntasks-per-node=1 -c $cpus_per_node" 1 1
+test_gpus_cnt "--gres=gpu:1 --ntasks-per-node=1 -c $cpus_per_socket" 1 1
+test_gpus_cnt "--gres=gpu:1 --ntasks-per-node=1 -c 1" 1 1
+test_gpus_cnt "--gres=gpu:1 --ntasks-per-socket=1 -c $cpus_per_node" 1 1
+test_gpus_cnt "--gres=gpu:1 --ntasks-per-socket=1 -c $cpus_per_node" 1 1
+
+test_gpus_cnt "--gpus=1 --ntasks-per-node=1 -c $cpus_per_node" 1 1
+test_gpus_cnt "--gpus=1 --ntasks-per-socket=1 -c $cpus_per_node" 1 1
+
+test_gpus_cnt "-n1 --gpus-per-task=1 --ntasks-per-node=1 -c $cpus_per_node" 1 1
+test_gpus_cnt "-n1 --gpus-per-task=1 --ntasks-per-socket=1 -c $cpus_per_node" 1 1
+
+test_gpus_cnt "--sockets-per-node=$sockets_per_node --gpus-per-socket=1 --ntasks-per-core=1 -c 1" 1 1
+test_gpus_cnt "--sockets-per-node=1 --gpus-per-socket=1 --ntasks-per-core=1 -c $cpus_per_socket" 1 1
+set target_gpus [expr min($sockets_per_node, $gpu_cnt)]
+test_gpus_cnt "--sockets-per-node=$sockets_per_node --gpus-per-socket=1 --ntasks-per-core=1 -c $cpus_per_node" $target_gpus $target_gpus
 
 fail_on_error "Test failed due to previous errors (\$exit_code = $exit_code)"
 if {[llength $skipped] != 0} {
