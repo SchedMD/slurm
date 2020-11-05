@@ -177,7 +177,7 @@ proc test_srun { local } {
 
 set ::env(PATH) "/bin:/usr/bin"
 
-make_bash_script $file_in "/bin/true"
+make_bash_script $file_in $bin_true
 
 # Test tools expecting bash to be used instead of our local 'bash' script
 if { [test_sbatch 0] } {
