@@ -80,6 +80,7 @@ documents those changes that are of interest to users and administrators.
     and commit_delay used.
  -- Avoid double free of step_record_t in the slurmctld when node is removed
     from config.
+ -- cons_tres - fix regression regarding gpus with --cpus-per-task.
 
 * Changes in Slurm 20.02.5
 ==========================
