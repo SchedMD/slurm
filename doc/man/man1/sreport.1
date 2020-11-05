@@ -1,4 +1,4 @@
-.TH sreport "1" "Slurm Commands" "May 2019" "Slurm Commands"
+.TH sreport "1" "Slurm Commands" "November 2020" "Slurm Commands"
 
 .SH "NAME"
 sreport \- Generate reports from the slurm accounting data.
@@ -198,10 +198,12 @@ hierarchical tree.  Starting with the specified account or the
 root account by default this report will list the underlying
 usage with a sum on each level.  Use the 'tree' option to span
 the tree for better visibility.
-NOTE: If there were reservations allowing a whole account any
-idle time in the reservation given to the association for the
-account, not the user associations in the account, so it can be
-possible a parent account can be larger than the sum of its children.
+
+\fBNOTE\fR: Idle reservation time will be split evenly among accounts/users
+given access to it. When a reservation is assigned to whole accounts, the
+time will be counted in the association for the accounts, not the user
+associations in the accounts. In this case, the usage of a parent account can
+be larger than the sum of its children.
 .TP
 .B cluster UserUtilizationByAccount
 This report will display users by account in order of utilization without
