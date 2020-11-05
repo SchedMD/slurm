@@ -150,6 +150,8 @@ documents those changes that are of interest to users and administrators.
  -- Enable -lnodes=#:gpus=# in #PBS/qsub -l nodes syntax.
  -- Add admin-settable "Comment" field to each Node.
  -- Fix show runaway and/on hidden partitions for >= Operator.
+ -- Add --ntasks-per-gpu option.
+ -- Add --gpu-bind=single option.
 
 * Changes in Slurm 20.02.6
 ==========================
