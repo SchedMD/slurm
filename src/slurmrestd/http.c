@@ -273,11 +273,14 @@ static int _on_header_value(http_parser *parser, const char *at, size_t length)
 		xfree(request->content_type);
 		request->content_type = xstrdup(buffer->value);
 	} else if (!xstrcasecmp(buffer->name, "Content-Length")) {
-		if ((sscanf(buffer->value, "%zu",
-			    &request->expected_body_length) != 1) ||
-		    (request->expected_body_length < 0))
+		/* Use signed buffer to catch if negative length is provided */
+		ssize_t cl;
+
+		if ((sscanf(buffer->value, "%zd", &cl) != 1) || (cl < 0))
 			return _send_reject(
 				parser, HTTP_STATUS_CODE_ERROR_NOT_ACCEPTABLE);
+
+		request->expected_body_length = cl;
 	} else if (!xstrcasecmp(buffer->name, "Accept")) {
 		xfree(request->accept);
 		request->accept = xstrdup(buffer->value);
