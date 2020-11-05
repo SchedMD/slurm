@@ -2,36 +2,36 @@
   "components": {
     "schemas": {
       "diag": {
-	"properties": {
-	  "errors": {
-	    "description": "slurm errors",
-	    "items": {
-	      "$ref": "#/components/schemas/error"
-	    },
-	    "type": "array"
-	  },
-	  "statistics": {
-	    "$ref": "#/components/schemas/statistics"
-	  }
-	},
-	"type": "object"
+        "properties": {
+          "errors": {
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            },
+            "type": "array"
+          },
+          "statistics": {
+            "$ref": "#/components/schemas/statistics"
+          }
+        },
+        "type": "object"
       },
       "error": {
-	"properties": {
-	  "errno": {
-	    "description": "error number",
-	    "type": "integer"
-	  },
-	  "error": {
-	    "description": "error message",
-	    "type": "string"
-	  }
-	},
-	"type": "object"
+        "properties": {
+          "errno": {
+            "description": "error number",
+            "type": "integer"
+          },
+          "error": {
+            "description": "error message",
+            "type": "string"
+          }
+        },
+        "type": "object"
       },
       "statistics": {
-	"properties": {},
-	"type": "object"
+        "properties": {},
+        "type": "object"
       }
     }
   },
@@ -54,1193 +54,1193 @@
   "paths": {
     "/job/{job_id}": {
       "get": {
-	"operationId": "get_job",
-	"summary": "get job info",
-	"parameters": [
-	  {
-	    "name": "job_id",
-	    "in": "path",
-	    "description": "Slurm Job ID",
-	    "required": true,
-	    "style": "label",
-	    "explode": false,
-	    "schema": {
-	      "type": "integer",
-	      "format": "int64"
-	    }
-	  }
-	],
-	"responses": {
-	  "200": {
-	    "description": "job information"
-	  },
-	  "500": {
-	    "description": "job not found"
-	  }
-	}
+        "operationId": "get_job",
+        "summary": "get job info",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "description": "Slurm Job ID",
+            "required": true,
+            "style": "label",
+            "explode": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "job information"
+          },
+          "500": {
+            "description": "job not found"
+          }
+        }
       }
     },
     "/config": {
       "get": {
-	"operationId": "get_db_config",
-	"summary": "dump all config",
-	"responses": {
-	  "200": {
-	    "description": "dump config",
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/node_info"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/node_info"
-		}
-	      }
-	    }
-	  },
-	  "500": {
-	    "description": "FIXME"
-	  }
-	}
+        "operationId": "get_db_config",
+        "summary": "dump all config",
+        "responses": {
+          "200": {
+            "description": "dump config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/node_info"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/node_info"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "FIXME"
+          }
+        }
       },
       "post": {
-	"operationId": "set_db_config",
-	"summary": "load all config",
-	"responses": {
-	  "200": {
-	    "description": "load config",
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/node_info"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/node_info"
-		}
-	      }
-	    }
-	  },
-	  "500": {
-	    "description": "FIXME"
-	  }
-	}
+        "operationId": "set_db_config",
+        "summary": "load all config",
+        "responses": {
+          "200": {
+            "description": "load config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/node_info"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/node_info"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "FIXME"
+          }
+        }
       }
     },
     "/tres/": {
       "post": {
-	"operationId": "update_tres",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/tres"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/tres"
-		}
-	      }
-	    },
-	    "description": "list of TRES"
-	  }
-	},
-	"summary": "get slurmdb TRES"
+        "operationId": "update_tres",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/tres"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/tres"
+                }
+              }
+            },
+            "description": "list of TRES"
+          }
+        },
+        "summary": "get slurmdb TRES"
       },
       "get": {
-	"operationId": "get_tres",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/tres"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/tres"
-		}
-	      }
-	    },
-	    "description": "list of TRES"
-	  }
-	},
-	"summary": "get slurmdb TRES"
+        "operationId": "get_tres",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/tres"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/tres"
+                }
+              }
+            },
+            "description": "list of TRES"
+          }
+        },
+        "summary": "get slurmdb TRES"
       }
     },
     "/qos/{qos_name}": {
       "delete": {
-	"operationId": "delete_qos",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/qos"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/qos"
-		}
-	      }
-	    },
-	    "description": "delete qos"
-	  },
-	  "parameters": [
-	    {
-	      "name": "qos_name",
-	      "in": "path",
-	      "description": "Slurm QOS Name",
-	      "required": true,
-	      "style": "simple",
-	      "explode": false,
-	      "schema": {
-		"type": "string"
-	      }
-	    }
-	  ]
-	}
+        "operationId": "delete_qos",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/qos"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/qos"
+                }
+              }
+            },
+            "description": "delete qos"
+          },
+          "parameters": [
+            {
+              "name": "qos_name",
+              "in": "path",
+              "description": "Slurm QOS Name",
+              "required": true,
+              "style": "simple",
+              "explode": false,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
       },
       "get": {
-	"operationId": "get_qos",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/qos"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/qos"
-		}
-	      }
-	    },
-	    "description": "list of QOS"
-	  },
-	  "parameters": [
-	    {
-	      "name": "qos_name",
-	      "in": "path",
-	      "description": "Slurm QOS Name",
-	      "required": true,
-	      "style": "simple",
-	      "explode": false,
-	      "schema": {
-		"type": "string"
-	      }
-	    }
-	  ]
-	}
+        "operationId": "get_qos",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/qos"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/qos"
+                }
+              }
+            },
+            "description": "list of QOS"
+          },
+          "parameters": [
+            {
+              "name": "qos_name",
+              "in": "path",
+              "description": "Slurm QOS Name",
+              "required": true,
+              "style": "simple",
+              "explode": false,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
       }
     },
     "/qos/": {
       "get": {
-	"operationId": "get_qos",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/qos"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/qos"
-		}
-	      }
-	    },
-	    "description": "list of qos"
-	  }
-	},
-	"summary": "get slurmdb qos"
+        "operationId": "get_qos",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/qos"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/qos"
+                }
+              }
+            },
+            "description": "list of qos"
+          }
+        },
+        "summary": "get slurmdb qos"
       }
     },
     "/associations/": {
       "get": {
-	"operationId": "get_associations",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/associations"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/associations"
-		}
-	      }
-	    },
-	    "description": "list of associations"
-	  }
-	},
-	"summary": "get slurmdb associations"
+        "operationId": "get_associations",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/associations"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/associations"
+                }
+              }
+            },
+            "description": "list of associations"
+          }
+        },
+        "summary": "get slurmdb associations"
       }
     },
     "/association/": {
       "get": {
-	"operationId": "get_association",
-	"parameters": [
-	  {
-	    "in": "query",
-	    "name": "cluster",
-	    "description": "cluster name",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "account",
-	    "description": "account name",
-	    "required": true,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "user",
-	    "description": "User name",
-	    "required": true,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "partition",
-	    "description": "Partition Name",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  }
-	],
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/diag"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/diag"
-		}
-	      }
-	    },
-	    "description": "dictionary of associations"
-	  }
-	},
-	"summary": "get slurmdb associations"
+        "operationId": "get_association",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cluster",
+            "description": "cluster name",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "account",
+            "description": "account name",
+            "required": true,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "user",
+            "description": "User name",
+            "required": true,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "partition",
+            "description": "Partition Name",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/diag"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/diag"
+                }
+              }
+            },
+            "description": "dictionary of associations"
+          }
+        },
+        "summary": "get slurmdb associations"
       },
       "delete": {
-	"operationId": "delete_association",
-	"parameters": [
-	  {
-	    "in": "query",
-	    "name": "cluster",
-	    "description": "cluster name",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "account",
-	    "description": "account name",
-	    "required": true,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "user",
-	    "description": "User name",
-	    "required": true,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "partition",
-	    "description": "Partition Name",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  }
-	],
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/diag"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/diag"
-		}
-	      }
-	    },
-	    "description": "dictionary of associations"
-	  }
-	},
-	"summary": "get slurmdb associations"
+        "operationId": "delete_association",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cluster",
+            "description": "cluster name",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "account",
+            "description": "account name",
+            "required": true,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "user",
+            "description": "User name",
+            "required": true,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "partition",
+            "description": "Partition Name",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/diag"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/diag"
+                }
+              }
+            },
+            "description": "dictionary of associations"
+          }
+        },
+        "summary": "get slurmdb associations"
       }
     },
     "/user/{user_name}": {
       "delete": {
-	"operationId": "delete_user",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/users"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/users"
-		}
-	      }
-	    },
-	    "description": "delete user"
-	  },
-	  "parameters": [
-	    {
-	      "name": "user_name",
-	      "in": "path",
-	      "description": "Slurm User Name",
-	      "required": true,
-	      "style": "simple",
-	      "explode": false,
-	      "schema": {
-		"type": "string"
-	      }
-	    }
-	  ]
-	}
+        "operationId": "delete_user",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/users"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/users"
+                }
+              }
+            },
+            "description": "delete user"
+          },
+          "parameters": [
+            {
+              "name": "user_name",
+              "in": "path",
+              "description": "Slurm User Name",
+              "required": true,
+              "style": "simple",
+              "explode": false,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
       },
       "get": {
-	"operationId": "get_user",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/users"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/users"
-		}
-	      }
-	    },
-	    "description": "list of users"
-	  },
-	  "parameters": [
-	    {
-	      "name": "user_name",
-	      "in": "path",
-	      "description": "Slurm User Name",
-	      "required": true,
-	      "style": "simple",
-	      "explode": false,
-	      "schema": {
-		"type": "string"
-	      }
-	    }
-	  ]
-	}
+        "operationId": "get_user",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/users"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/users"
+                }
+              }
+            },
+            "description": "list of users"
+          },
+          "parameters": [
+            {
+              "name": "user_name",
+              "in": "path",
+              "description": "Slurm User Name",
+              "required": true,
+              "style": "simple",
+              "explode": false,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
       }
     },
     "/users/": {
       "post": {
-	"operationId": "update_users",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/users"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/users"
-		}
-	      }
-	    },
-	    "description": "update users"
-	  }
-	}
+        "operationId": "update_users",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/users"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/users"
+                }
+              }
+            },
+            "description": "update users"
+          }
+        }
       },
       "get": {
-	"operationId": "get_users",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/users"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/users"
-		}
-	      }
-	    },
-	    "description": "list of users"
-	  }
-	}
+        "operationId": "get_users",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/users"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/users"
+                }
+              }
+            },
+            "description": "list of users"
+          }
+        }
       }
     },
     "/cluster/{cluster_name}": {
       "delete": {
-	"operationId": "delete_cluster",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/cluster"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/cluster"
-		}
-	      }
-	    },
-	    "description": "delete cluster"
-	  },
-	  "parameters": [
-	    {
-	      "name": "cluster_name",
-	      "in": "path",
-	      "description": "Slurm cluster name",
-	      "required": true,
-	      "style": "simple",
-	      "explode": false,
-	      "schema": {
-		"type": "string"
-	      }
-	    }
-	  ]
-	}
+        "operationId": "delete_cluster",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cluster"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/cluster"
+                }
+              }
+            },
+            "description": "delete cluster"
+          },
+          "parameters": [
+            {
+              "name": "cluster_name",
+              "in": "path",
+              "description": "Slurm cluster name",
+              "required": true,
+              "style": "simple",
+              "explode": false,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
       },
       "get": {
-	"operationId": "get_cluster",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/cluster"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/cluster"
-		}
-	      }
-	    },
-	    "description": "list of cluster"
-	  },
-	  "parameters": [
-	    {
-	      "name": "cluster_name",
-	      "in": "path",
-	      "description": "Slurm cluster name",
-	      "required": true,
-	      "style": "simple",
-	      "explode": false,
-	      "schema": {
-		"type": "string"
-	      }
-	    }
-	  ]
-	}
+        "operationId": "get_cluster",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/cluster"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/cluster"
+                }
+              }
+            },
+            "description": "list of cluster"
+          },
+          "parameters": [
+            {
+              "name": "cluster_name",
+              "in": "path",
+              "description": "Slurm cluster name",
+              "required": true,
+              "style": "simple",
+              "explode": false,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
       }
     },
     "/clusters/": {
       "get": {
-	"operationId": "get_clusters",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/clusters"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/clusters"
-		}
-	      }
-	    },
-	    "description": "list of clusters"
-	  }
-	},
-	"summary": "get slurmdb clusters"
+        "operationId": "get_clusters",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/clusters"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/clusters"
+                }
+              }
+            },
+            "description": "list of clusters"
+          }
+        },
+        "summary": "get slurmdb clusters"
       },
       "post": {
-	"operationId": "add_clusters",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/clusters"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/clusters"
-		}
-	      }
-	    },
-	    "description": "list of clusters"
-	  }
-	},
-	"summary": "add slurmdb clusters"
+        "operationId": "add_clusters",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/clusters"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/clusters"
+                }
+              }
+            },
+            "description": "list of clusters"
+          }
+        },
+        "summary": "add slurmdb clusters"
       }
     },
     "/wckey/{wckey}": {
       "delete": {
-	"operationId": "delete_wckey",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/wckey"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/wckey"
-		}
-	      }
-	    },
-	    "description": "delete wckey"
-	  },
-	  "parameters": [
-	    {
-	      "name": "wckey",
-	      "in": "path",
-	      "description": "Slurm wckey name",
-	      "required": true,
-	      "style": "simple",
-	      "explode": false,
-	      "schema": {
-		"type": "string"
-	      }
-	    }
-	  ]
-	}
+        "operationId": "delete_wckey",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/wckey"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/wckey"
+                }
+              }
+            },
+            "description": "delete wckey"
+          },
+          "parameters": [
+            {
+              "name": "wckey",
+              "in": "path",
+              "description": "Slurm wckey name",
+              "required": true,
+              "style": "simple",
+              "explode": false,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
       },
       "get": {
-	"operationId": "get_wckey",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/wckey"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/wckey"
-		}
-	      }
-	    },
-	    "description": "list of wckey"
-	  },
-	  "parameters": [
-	    {
-	      "name": "wckey",
-	      "in": "path",
-	      "description": "Slurm wckey name",
-	      "required": true,
-	      "style": "simple",
-	      "explode": false,
-	      "schema": {
-		"type": "string"
-	      }
-	    }
-	  ]
-	}
+        "operationId": "get_wckey",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/wckey"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/wckey"
+                }
+              }
+            },
+            "description": "list of wckey"
+          },
+          "parameters": [
+            {
+              "name": "wckey",
+              "in": "path",
+              "description": "Slurm wckey name",
+              "required": true,
+              "style": "simple",
+              "explode": false,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
       }
     },
     "/wckeys/": {
       "get": {
-	"operationId": "get_wckeys",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/wckeys"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/wckeys"
-		}
-	      }
-	    },
-	    "description": "list of wckeys"
-	  }
-	},
-	"summary": "get slurmdb wckeys"
+        "operationId": "get_wckeys",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/wckeys"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/wckeys"
+                }
+              }
+            },
+            "description": "list of wckeys"
+          }
+        },
+        "summary": "get slurmdb wckeys"
       },
       "post": {
-	"operationId": "add_wckeys",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/wckeys"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/wckeys"
-		}
-	      }
-	    },
-	    "description": "list of wckeys"
-	  }
-	},
-	"summary": "add slurmdb wckeys"
+        "operationId": "add_wckeys",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/wckeys"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/wckeys"
+                }
+              }
+            },
+            "description": "list of wckeys"
+          }
+        },
+        "summary": "add slurmdb wckeys"
       }
     },
     "/account/{account_name}": {
       "delete": {
-	"operationId": "delete_account",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/accounts"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/accounts"
-		}
-	      }
-	    },
-	    "description": "delete account"
-	  },
-	  "parameters": [
-	    {
-	      "name": "account_name",
-	      "in": "path",
-	      "description": "Slurm Account Name",
-	      "required": true,
-	      "style": "simple",
-	      "explode": false,
-	      "schema": {
-		"type": "string"
-	      }
-	    }
-	  ]
-	}
+        "operationId": "delete_account",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/accounts"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/accounts"
+                }
+              }
+            },
+            "description": "delete account"
+          },
+          "parameters": [
+            {
+              "name": "account_name",
+              "in": "path",
+              "description": "Slurm Account Name",
+              "required": true,
+              "style": "simple",
+              "explode": false,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
       },
       "get": {
-	"operationId": "get_account",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/accounts"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/accounts"
-		}
-	      }
-	    },
-	    "description": "list of account"
-	  },
-	  "parameters": [
-	    {
-	      "name": "account_name",
-	      "in": "path",
-	      "description": "Slurm Account Name",
-	      "required": true,
-	      "style": "simple",
-	      "explode": false,
-	      "schema": {
-		"type": "string"
-	      }
-	    }
-	  ]
-	}
+        "operationId": "get_account",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/accounts"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/accounts"
+                }
+              }
+            },
+            "description": "list of account"
+          },
+          "parameters": [
+            {
+              "name": "account_name",
+              "in": "path",
+              "description": "Slurm Account Name",
+              "required": true,
+              "style": "simple",
+              "explode": false,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ]
+        }
       }
     },
     "/accounts/": {
       "get": {
-	"operationId": "get_accounts",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/accounts"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/accounts"
-		}
-	      }
-	    },
-	    "description": "list of accounts"
-	  }
-	},
-	"summary": "get slurmdb accounts"
+        "operationId": "get_accounts",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/accounts"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/accounts"
+                }
+              }
+            },
+            "description": "list of accounts"
+          }
+        },
+        "summary": "get slurmdb accounts"
       }
     },
     "/jobs/": {
       "get": {
-	"operationId": "get_jobs",
-	"parameters": [
-	  {
-	    "in": "query",
-	    "name": "submit_time",
-	    "description": "filter by submission time\n Accepted formats:\n HH:MM[:SS] [AM|PM]\r\nMMDD[YY] or MM/DD[/YY] or MM.DD[.YY]\r\nMM/DD[/YY]-HH:MM[:SS]\r\nYYYY-MM-DD[THH:MM[:SS]]",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "start_time",
-	    "description": "filter by start time\n Accepted formats:\n HH:MM[:SS] [AM|PM]\r\nMMDD[YY] or MM/DD[/YY] or MM.DD[.YY]\r\nMM/DD[/YY]-HH:MM[:SS]\r\nYYYY-MM-DD[THH:MM[:SS]]",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "end_time",
-	    "description": "filter by end time\n Accepted formats:\n HH:MM[:SS] [AM|PM]\r\nMMDD[YY] or MM/DD[/YY] or MM.DD[.YY]\r\nMM/DD[/YY]-HH:MM[:SS]\r\nYYYY-MM-DD[THH:MM[:SS]]",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "account",
-	    "description": "Comma delimited list of accounts to match",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "association",
-	    "description": "Comma delimited list of associations to match",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "cluster",
-	    "description": "Comma delimited list of cluster to match",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "constraints",
-	    "description": "Comma delimited list of constraints to match",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "cpus_max",
-	    "description": "number of CPUs high range",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "cpus_min",
-	    "description": "number of CPUs low range",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "skip_steps",
-	    "description": "report job step information",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "boolean"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "disable_wait_for_result",
-	    "description": "disable waiting for result from slurmdbd",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "boolean"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "exit_code",
-	    "description": "exit code of job",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "format",
-	    "description": "Comma delimited list of formats to match",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "group",
-	    "description": "Comma delimited list of groups to match",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "job_name",
-	    "description": "Comma delimited list of job names to match",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "nodes_max",
-	    "description": "number of nodes high range",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "nodes_min",
-	    "description": "number of nodes low range",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "partition",
-	    "description": "Comma delimited list of partitions to match",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "qos",
-	    "description": "Comma delimited list of QOS to match",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "reason",
-	    "description": "Comma delimited list of job reasons to match",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "reservation",
-	    "description": "Comma delimited list of reservations to match",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "state",
-	    "description": "Comma delimited list of states to match",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "step",
-	    "description": "Comma delimited list of job steps to match",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "node",
-	    "description": "Comma delimited list of used nodes to match",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "users",
-	    "description": "Comma delimited list of users to match",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  },
-	  {
-	    "in": "query",
-	    "name": "wckey",
-	    "description": "Comma delimited list of wckeys to match",
-	    "required": false,
-	    "style": "form",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  }
-	],
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/diag"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/diag"
-		}
-	      }
-	    },
-	    "description": "dictionary of statistics"
-	  }
-	},
-	"summary": "get slurmdb diagnostics"
+        "operationId": "get_jobs",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "submit_time",
+            "description": "filter by submission time\n Accepted formats:\n HH:MM[:SS] [AM|PM]\r\nMMDD[YY] or MM/DD[/YY] or MM.DD[.YY]\r\nMM/DD[/YY]-HH:MM[:SS]\r\nYYYY-MM-DD[THH:MM[:SS]]",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "start_time",
+            "description": "filter by start time\n Accepted formats:\n HH:MM[:SS] [AM|PM]\r\nMMDD[YY] or MM/DD[/YY] or MM.DD[.YY]\r\nMM/DD[/YY]-HH:MM[:SS]\r\nYYYY-MM-DD[THH:MM[:SS]]",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "end_time",
+            "description": "filter by end time\n Accepted formats:\n HH:MM[:SS] [AM|PM]\r\nMMDD[YY] or MM/DD[/YY] or MM.DD[.YY]\r\nMM/DD[/YY]-HH:MM[:SS]\r\nYYYY-MM-DD[THH:MM[:SS]]",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "account",
+            "description": "Comma delimited list of accounts to match",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "association",
+            "description": "Comma delimited list of associations to match",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cluster",
+            "description": "Comma delimited list of cluster to match",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "constraints",
+            "description": "Comma delimited list of constraints to match",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cpus_max",
+            "description": "number of CPUs high range",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cpus_min",
+            "description": "number of CPUs low range",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "skip_steps",
+            "description": "report job step information",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "disable_wait_for_result",
+            "description": "disable waiting for result from slurmdbd",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "exit_code",
+            "description": "exit code of job",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "description": "Comma delimited list of formats to match",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "group",
+            "description": "Comma delimited list of groups to match",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "job_name",
+            "description": "Comma delimited list of job names to match",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "nodes_max",
+            "description": "number of nodes high range",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "nodes_min",
+            "description": "number of nodes low range",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "partition",
+            "description": "Comma delimited list of partitions to match",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "qos",
+            "description": "Comma delimited list of QOS to match",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "reason",
+            "description": "Comma delimited list of job reasons to match",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "reservation",
+            "description": "Comma delimited list of reservations to match",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "description": "Comma delimited list of states to match",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "step",
+            "description": "Comma delimited list of job steps to match",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "node",
+            "description": "Comma delimited list of used nodes to match",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "users",
+            "description": "Comma delimited list of users to match",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "wckey",
+            "description": "Comma delimited list of wckeys to match",
+            "required": false,
+            "style": "form",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/diag"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/diag"
+                }
+              }
+            },
+            "description": "dictionary of statistics"
+          }
+        },
+        "summary": "get slurmdb diagnostics"
       }
     },
     "/diag/": {
       "get": {
-	"operationId": "diag",
-	"responses": {
-	  "200": {
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/diag"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/diag"
-		}
-	      }
-	    },
-	    "description": "dictionary of statistics"
-	  }
-	},
-	"summary": "get slurmdb diagnostics"
+        "operationId": "diag",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/diag"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/diag"
+                }
+              }
+            },
+            "description": "dictionary of statistics"
+          }
+        },
+        "summary": "get slurmdb diagnostics"
       }
     },
     "/openapi": {
       "get": {
-	"responses": {
-	  "200": {
-	    "description": "OpenAPI Specification"
-	  }
-	},
-	"summary": "Retrieve OpenAPI Specification"
+        "responses": {
+          "200": {
+            "description": "OpenAPI Specification"
+          }
+        },
+        "summary": "Retrieve OpenAPI Specification"
       },
       "servers": [
-	{
-	  "url": "/"
-	}
+        {
+          "url": "/"
+        }
       ]
     },
     "/openapi.json": {
       "get": {
-	"responses": {
-	  "200": {
-	    "description": "OpenAPI Specification"
-	  }
-	},
-	"summary": "Retrieve OpenAPI Specification"
+        "responses": {
+          "200": {
+            "description": "OpenAPI Specification"
+          }
+        },
+        "summary": "Retrieve OpenAPI Specification"
       },
       "servers": [
-	{
-	  "url": "/"
-	}
+        {
+          "url": "/"
+        }
       ]
     },
     "/openapi.yaml": {
       "get": {
-	"responses": {
-	  "200": {
-	    "description": "OpenAPI Specification"
-	  }
-	},
-	"summary": "Retrieve OpenAPI Specification"
+        "responses": {
+          "200": {
+            "description": "OpenAPI Specification"
+          }
+        },
+        "summary": "Retrieve OpenAPI Specification"
       },
       "servers": [
-	{
-	  "url": "/"
-	}
+        {
+          "url": "/"
+        }
       ]
     },
     "/openapi/v3": {
       "get": {
-	"responses": {
-	  "200": {
-	    "description": "OpenAPI Specification"
-	  }
-	},
-	"summary": "Retrieve OpenAPI Specification"
+        "responses": {
+          "200": {
+            "description": "OpenAPI Specification"
+          }
+        },
+        "summary": "Retrieve OpenAPI Specification"
       },
       "servers": [
-	{
-	  "url": "/"
-	}
+        {
+          "url": "/"
+        }
       ]
     }
   }
