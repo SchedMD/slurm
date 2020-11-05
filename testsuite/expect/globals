@@ -6263,10 +6263,10 @@ proc _print_summary {status completed} {
 	append output [format "%s            : %s\n" $header  $test_name]
 	set subtest_count [expr $subtest_fail_count + $subtest_pass_count + $subtest_skip_count]
 	if {$subtest_count > 0} {
-		append output [format "  Subtests failed  : %d (%3d%%)\n" $subtest_fail_count [expr $subtest_fail_count * 100 / $subtest_count]]
-		append output [format "  Subtests skipped : %d (%3d%%)\n" $subtest_skip_count [expr $subtest_skip_count * 100 / $subtest_count]]
-		append output [format "  Subtests passed  : %d (%3d%%)\n" $subtest_pass_count [expr $subtest_pass_count * 100 / $subtest_count]]
-		append output [format "  Subtests total   : %d (%s)\n" $subtest_count [expr {$completed ? "COMPLETED" : "INCOMPLETE"}]]
+		append output [format "  Subtests failed  : %3d (%3d%%)\n" $subtest_fail_count [expr $subtest_fail_count * 100 / $subtest_count]]
+		append output [format "  Subtests skipped : %3d (%3d%%)\n" $subtest_skip_count [expr $subtest_skip_count * 100 / $subtest_count]]
+		append output [format "  Subtests passed  : %3d (%3d%%)\n" $subtest_pass_count [expr $subtest_pass_count * 100 / $subtest_count]]
+		append output [format "  Subtests total   : %3d (%s)\n" $subtest_count [expr {$completed ? "COMPLETED" : "INCOMPLETE"}]]
 	}
 	append output [string repeat = 78]
 
