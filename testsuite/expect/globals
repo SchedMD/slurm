@@ -6029,6 +6029,9 @@ proc compile_against_libslurm { test_prog {use_full 0} {build_args ""} } {
 #		A string providing additional diagnostic information that is
 #		only included in the log message on failure
 #
+# RETURN VALUE
+#	the boolean condition evaluated
+#
 # ENVIRONMENT
 #	testsuite_subtest_fatal
 #		Specifies whether first failing subtest aborts the test
@@ -6058,8 +6061,10 @@ proc subtest args {
 
 	if [uplevel 1 expr [format "{%s}" $condition]] {
 		subpass $description
+		return true
 	} else {
 		subfail {*}$options $description {*}$args
+		return false
 	}
 }
 
