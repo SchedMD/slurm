@@ -74,7 +74,7 @@ expect {
 if {$rpc_rec_cnt > 0} {
 	incr matches
 }
-assert_or_fail {$matches == 5} "sacctmgr show stats response bad ($matches != 5)"
+subtest {$matches == 5} "sacctmgr should show all expected sections" "($matches != 5)"
 
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"

@@ -218,7 +218,7 @@ expect {
 	}
 }
 
-assert_or_error {$priority != 0} "Job $job_id is held, while it shouldn't be"
+subtest {$priority != 0} "Job with nohold_on_prolog_fail should not be held"
 
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"

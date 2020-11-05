@@ -85,7 +85,7 @@ proc inc21_21_good { test_type limit } {
 		fail "Job $job_id did not complete [test_info $test_type \"inc21_21_good\"]"
 	}
 
-	assert_or_fail { $matches == 1 } "Job did not launch with correct limit [test_info $test_type \"inc21_21_good\"]"
+	subtest -fail { $matches == 1 } "Job launches with correct limit"
 }
 
 #
@@ -204,7 +204,9 @@ sleep 10"
 		}
 	}
 
-	assert_or_fail {$matches == [expr $val + 1]} "$matches != [expr $val + 1]"
+	if {$matches != [expr $val + 1]} {
+		fail "Only $matches out of [expr $val + 1] jobs were submitted"
+	}
 
 	#
 	# Wait for squeue to update
@@ -232,7 +234,7 @@ sleep 10"
 		}
 	}
 
-	assert_or_fail { $pending == 1 && $running == $val } "Found $pending jobs pending and $running jobs running (want 1 and $val) [test_info $test_type \"inc21_21_grp_test\"]"
+	subtest -fail { $pending == 1 && $running == $val } "$test_type limit" "Found $pending jobs pending and $running jobs running while expecting 1 and $val"
 
 	#
 	# Cancel test jobs
@@ -349,7 +351,7 @@ proc inc21_21_submit_test { limit } {
 			wait
 		}
 	}
-	assert_or_fail { $matches == 1 } "Message of policy violation not found"
+	subtest -fail { $matches == 1 } "Policy violation error detected"
 
 	set matches 0
 	set mypid [spawn $squeue -A$ta -h -o "\%i \%t \%r"]

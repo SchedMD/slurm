@@ -31,7 +31,6 @@ source ./globals
 
 set exit_code   0
 set test_prog   "test$test_id.prog"
-set matches     0
 
 #
 # Delete left-over programs and rebuild them
@@ -39,21 +38,8 @@ set matches     0
 file delete $test_prog
 
 compile_against_libslurm ${test_prog}
-
-set value -12345
-spawn ./$test_prog
-expect {
-	timeout {
-		log_error "spawn test unit not responding"
-		set exit_code 1
-	}
-	eof {
-		lassign [wait] pid spawnid os_error_flag value
-	}
+if {$exit_code} {
+	fail "Error compiling test_prog"
 }
 
-assert_or_fail {$value == 0} "test unit exited with error ($value != 0)"
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+run_command -fail "./$test_prog"
