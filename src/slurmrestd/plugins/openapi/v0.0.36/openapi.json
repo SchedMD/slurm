@@ -18,1045 +18,1045 @@
   "paths": {
     "/diag/": {
       "get": {
-	"operationId": "diag",
-	"summary": "get diagnostics",
-	"responses": {
-	  "200": {
-	    "description": "dictionary of statistics"
-	  }
-	}
+        "operationId": "diag",
+        "summary": "get diagnostics",
+        "responses": {
+          "200": {
+            "description": "dictionary of statistics"
+          }
+        }
       }
     },
     "/ping/": {
       "get": {
-	"operationId": "ping",
-	"summary": "ping test",
-	"responses": {
-	  "200": {
-	    "description": "results of ping test",
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/pings"
-		}
-	      }
-	    }
-	  }
-	}
+        "operationId": "ping",
+        "summary": "ping test",
+        "responses": {
+          "200": {
+            "description": "results of ping test",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/pings"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/jobs/": {
       "get": {
-	"operationId": "get_jobs",
-	"summary": "get list of jobs",
-	"responses": {
-	  "200": {
-	    "description": "array of all job information in slurmctld"
-	  }
-	}
+        "operationId": "get_jobs",
+        "summary": "get list of jobs",
+        "responses": {
+          "200": {
+            "description": "array of all job information in slurmctld"
+          }
+        }
       }
     },
     "/job/{job_id}": {
       "get": {
-	"operationId": "get_job",
-	"summary": "get job info",
-	"parameters": [
-	  {
-	    "name": "job_id",
-	    "in": "path",
-	    "description": "Slurm Job ID",
-	    "required": true,
-	    "style": "simple",
-	    "explode": false,
-	    "schema": {
-	      "type": "integer",
-	      "format": "int64"
-	    }
-	  }
-	],
-	"responses": {
-	  "200": {
-	    "description": "job information"
-	  },
-	  "500": {
-	    "description": "job not found"
-	  }
-	}
+        "operationId": "get_job",
+        "summary": "get job info",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "description": "Slurm Job ID",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "job information"
+          },
+          "500": {
+            "description": "job not found"
+          }
+        }
       },
       "post": {
-	"operationId": "update_job",
-	"summary": "update job",
-	"parameters": [
-	  {
-	    "name": "job_id",
-	    "in": "path",
-	    "description": "Slurm Job ID",
-	    "required": true,
-	    "style": "simple",
-	    "explode": false,
-	    "schema": {
-	      "type": "integer",
-	      "format": "int64"
-	    }
-	  }
-	],
-	"requestBody": {
-	  "description": "update job",
-	  "content": {
-	    "application/json": {
-	      "schema": {
-		"$ref": "#/components/schemas/job_properties"
-	      }
-	    },
-	    "application/x-yaml": {
-	      "schema": {
-		"$ref": "#/components/schemas/job_properties"
-	      }
-	    }
-	  },
-	  "required": true
-	},
-	"responses": {
-	  "200": {
-	    "description": "job information"
-	  },
-	  "500": {
-	    "description": "job not found"
-	  }
-	}
+        "operationId": "update_job",
+        "summary": "update job",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "description": "Slurm Job ID",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "update job",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/job_properties"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "#/components/schemas/job_properties"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "job information"
+          },
+          "500": {
+            "description": "job not found"
+          }
+        }
       },
       "delete": {
-	"operationId": "cancel_job",
-	"summary": "cancel or signal job",
-	"parameters": [
-	  {
-	    "name": "job_id",
-	    "in": "path",
-	    "description": "Slurm Job ID",
-	    "required": true,
-	    "style": "simple",
-	    "explode": false,
-	    "schema": {
-	      "type": "integer",
-	      "format": "int64"
-	    }
-	  },
-	  {
-	    "name": "signal",
-	    "in": "query",
-	    "description": "signal to send to job",
-	    "required": false,
-	    "style": "form",
-	    "explode": true,
-	    "schema": {
-	      "$ref": "#/components/schemas/signal"
-	    }
-	  }
-	],
-	"responses": {
-	  "200": {
-	    "description": "job cancelled or sent signal"
-	  },
-	  "500": {
-	    "description": "job not found"
-	  }
-	}
+        "operationId": "cancel_job",
+        "summary": "cancel or signal job",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "description": "Slurm Job ID",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "signal",
+            "in": "query",
+            "description": "signal to send to job",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "$ref": "#/components/schemas/signal"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "job cancelled or sent signal"
+          },
+          "500": {
+            "description": "job not found"
+          }
+        }
       }
     },
     "/job/submit": {
       "post": {
-	"operationId": "submit_job",
-	"summary": "submit new job",
-	"requestBody": {
-	  "description": "submit new job",
-	  "content": {
-	    "application/json": {
-	      "schema": {
-		"$ref": "#/components/schemas/job_properties"
-	      }
-	    },
-	    "application/x-yaml": {
-	      "schema": {
-		"$ref": "#/components/schemas/job_properties"
-	      }
-	    }
-	  },
-	  "required": true
-	},
-	"responses": {
-	  "200": {
-	    "description": "job submitted"
-	  },
-	  "500": {
-	    "description": "job rejected"
-	  }
-	}
+        "operationId": "submit_job",
+        "summary": "submit new job",
+        "requestBody": {
+          "description": "submit new job",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/job_properties"
+              }
+            },
+            "application/x-yaml": {
+              "schema": {
+                "$ref": "#/components/schemas/job_properties"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "job submitted"
+          },
+          "500": {
+            "description": "job rejected"
+          }
+        }
       }
     },
     "/nodes/": {
       "get": {
-	"operationId": "get_nodes",
-	"summary": "get all node info",
-	"responses": {
-	  "200": {
-	    "description": "node information",
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/node_info"
-		}
-	      },
-	      "application/x-yaml": {
-		"schema": {
-		  "$ref": "#/components/schemas/node_info"
-		}
-	      }
-	    }
-	  },
-	  "500": {
-	    "description": "no nodes in cluster"
-	  }
-	}
+        "operationId": "get_nodes",
+        "summary": "get all node info",
+        "responses": {
+          "200": {
+            "description": "node information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/node_info"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/node_info"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "no nodes in cluster"
+          }
+        }
       }
     },
     "/node/{node_name}": {
       "get": {
-	"operationId": "get_node",
-	"summary": "get node info",
-	"parameters": [
-	  {
-	    "name": "node_name",
-	    "in": "path",
-	    "description": "Slurm Node Name",
-	    "required": true,
-	    "style": "simple",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  }
-	],
-	"responses": {
-	  "200": {
-	    "description": "node information"
-	  },
-	  "500": {
-	    "description": "node not found"
-	  }
-	}
+        "operationId": "get_node",
+        "summary": "get node info",
+        "parameters": [
+          {
+            "name": "node_name",
+            "in": "path",
+            "description": "Slurm Node Name",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "node information"
+          },
+          "500": {
+            "description": "node not found"
+          }
+        }
       }
     },
     "/partitions/": {
       "get": {
-	"operationId": "get_partitions",
-	"summary": "get all partition info",
-	"responses": {
-	  "200": {
-	    "description": "partitions information"
-	  },
-	  "500": {
-	    "description": "no partitions in cluster"
-	  }
-	}
+        "operationId": "get_partitions",
+        "summary": "get all partition info",
+        "responses": {
+          "200": {
+            "description": "partitions information"
+          },
+          "500": {
+            "description": "no partitions in cluster"
+          }
+        }
       }
     },
     "/partition/{partition_name}": {
       "get": {
-	"operationId": "get_partition",
-	"summary": "get partition info",
-	"parameters": [
-	  {
-	    "name": "partition_name",
-	    "in": "path",
-	    "description": "Slurm Partition Name",
-	    "required": true,
-	    "style": "simple",
-	    "explode": false,
-	    "schema": {
-	      "type": "string"
-	    }
-	  }
-	],
-	"responses": {
-	  "200": {
-	    "description": "partitions information",
-	    "content": {
-	      "application/json": {
-		"schema": {
-		  "$ref": "#/components/schemas/partition_info"
-		}
-	      }
-	    }
-	  },
-	  "500": {
-	    "description": "partition not found"
-	  }
-	}
+        "operationId": "get_partition",
+        "summary": "get partition info",
+        "parameters": [
+          {
+            "name": "partition_name",
+            "in": "path",
+            "description": "Slurm Partition Name",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "partitions information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/partition_info"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "partition not found"
+          }
+        }
       }
     },
     "/openapi.yaml": {
       "get": {
-	"summary": "Retrieve OpenAPI Specification",
-	"responses": {
-	  "200": {
-	    "description": "OpenAPI Specification"
-	  }
-	}
+        "summary": "Retrieve OpenAPI Specification",
+        "responses": {
+          "200": {
+            "description": "OpenAPI Specification"
+          }
+        }
       },
       "servers": [
-	{
-	  "url": "/"
-	}
+        {
+          "url": "/"
+        }
       ]
     },
     "/openapi.json": {
       "get": {
-	"summary": "Retrieve OpenAPI Specification",
-	"responses": {
-	  "200": {
-	    "description": "OpenAPI Specification"
-	  }
-	}
+        "summary": "Retrieve OpenAPI Specification",
+        "responses": {
+          "200": {
+            "description": "OpenAPI Specification"
+          }
+        }
       },
       "servers": [
-	{
-	  "url": "/"
-	}
+        {
+          "url": "/"
+        }
       ]
     },
     "/openapi": {
       "get": {
-	"summary": "Retrieve OpenAPI Specification",
-	"responses": {
-	  "200": {
-	    "description": "OpenAPI Specification"
-	  }
-	}
+        "summary": "Retrieve OpenAPI Specification",
+        "responses": {
+          "200": {
+            "description": "OpenAPI Specification"
+          }
+        }
       },
       "servers": [
-	{
-	  "url": "/"
-	}
+        {
+          "url": "/"
+        }
       ]
     },
     "/openapi/v3": {
       "get": {
-	"summary": "Retrieve OpenAPI Specification",
-	"responses": {
-	  "200": {
-	    "description": "OpenAPI Specification"
-	  }
-	}
+        "summary": "Retrieve OpenAPI Specification",
+        "responses": {
+          "200": {
+            "description": "OpenAPI Specification"
+          }
+        }
       },
       "servers": [
-	{
-	  "url": "/"
-	}
+        {
+          "url": "/"
+        }
       ]
     }
   },
   "components": {
     "schemas": {
       "pings": {
-	"type": "object",
-	"properties": {
-	  "errors": {
-	    "type": "array",
-	    "description": "slurm errors",
-	    "items": {
-	      "$ref": "#/components/schemas/error"
-	    }
-	  },
-	  "pings": {
-	    "type": "array",
-	    "description": "slurm controller pings",
-	    "items": {
-	      "$ref": "#/components/schemas/ping"
-	    }
-	  }
-	}
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          },
+          "pings": {
+            "type": "array",
+            "description": "slurm controller pings",
+            "items": {
+              "$ref": "#/components/schemas/ping"
+            }
+          }
+        }
       },
       "ping": {
-	"type": "object",
-	"properties": {
-	  "hostname": {
-	    "type": "string",
-	    "description": "slurm controller hostname"
-	  },
-	  "ping": {
-	    "type": "string",
-	    "description": "slurm controller host up",
-	    "enum": [
-	      "UP",
-	      "DOWN"
-	    ]
-	  },
-	  "mode": {
-	    "type": "string",
-	    "description": "slurm controller mode"
-	  },
-	  "status": {
-	    "type": "integer",
-	    "description": "slurm controller status"
-	  }
-	}
+        "type": "object",
+        "properties": {
+          "hostname": {
+            "type": "string",
+            "description": "slurm controller hostname"
+          },
+          "ping": {
+            "type": "string",
+            "description": "slurm controller host up",
+            "enum": [
+              "UP",
+              "DOWN"
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "description": "slurm controller mode"
+          },
+          "status": {
+            "type": "integer",
+            "description": "slurm controller status"
+          }
+        }
       },
       "partition": {
-	"type": "object",
-	"properties": {
-	  "flags": {
-	    "type": "array",
-	    "description": "",
-	    "items": {
-	      "type": "string"
-	    }
-	  },
-	  "preemption_mode": {
-	    "type": "array",
-	    "description": "",
-	    "items": {
-	      "type": "string"
-	    }
-	  },
-	  "allowed_allocation_nodes": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "allowed_accounts": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "allowed_groups": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "allowed_qos": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "alternative": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "billing_weights": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "default_memory_per_cpu": {
-	    "type": "integer",
-	    "format": "int64",
-	    "description": ""
-	  },
-	  "default_time_limit": {
-	    "type": "integer",
-	    "format": "int64",
-	    "description": ""
-	  },
-	  "denied_accounts": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "denied_qos": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "preemption_grace_time": {
-	    "type": "integer",
-	    "format": "int64",
-	    "description": ""
-	  },
-	  "maximum_cpus_per_node": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "maximum_memory_per_node": {
-	    "type": "integer",
-	    "format": "int64",
-	    "description": ""
-	  },
-	  "maximum_nodes_per_job": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "max_time_limit": {
-	    "type": "integer",
-	    "format": "int64",
-	    "description": ""
-	  },
-	  "min_nodes_per_job": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "name": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "nodes": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "over_time_limit": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "priority_job_factor": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "priority_tier": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "qos": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "nodes_online": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "total_cpus": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "total_nodes": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "tres": {
-	    "type": "string",
-	    "description": ""
-	  }
-	}
+        "type": "object",
+        "properties": {
+          "flags": {
+            "type": "array",
+            "description": "",
+            "items": {
+              "type": "string"
+            }
+          },
+          "preemption_mode": {
+            "type": "array",
+            "description": "",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allowed_allocation_nodes": {
+            "type": "string",
+            "description": ""
+          },
+          "allowed_accounts": {
+            "type": "string",
+            "description": ""
+          },
+          "allowed_groups": {
+            "type": "string",
+            "description": ""
+          },
+          "allowed_qos": {
+            "type": "string",
+            "description": ""
+          },
+          "alternative": {
+            "type": "string",
+            "description": ""
+          },
+          "billing_weights": {
+            "type": "string",
+            "description": ""
+          },
+          "default_memory_per_cpu": {
+            "type": "integer",
+            "format": "int64",
+            "description": ""
+          },
+          "default_time_limit": {
+            "type": "integer",
+            "format": "int64",
+            "description": ""
+          },
+          "denied_accounts": {
+            "type": "string",
+            "description": ""
+          },
+          "denied_qos": {
+            "type": "string",
+            "description": ""
+          },
+          "preemption_grace_time": {
+            "type": "integer",
+            "format": "int64",
+            "description": ""
+          },
+          "maximum_cpus_per_node": {
+            "type": "integer",
+            "description": ""
+          },
+          "maximum_memory_per_node": {
+            "type": "integer",
+            "format": "int64",
+            "description": ""
+          },
+          "maximum_nodes_per_job": {
+            "type": "integer",
+            "description": ""
+          },
+          "max_time_limit": {
+            "type": "integer",
+            "format": "int64",
+            "description": ""
+          },
+          "min_nodes_per_job": {
+            "type": "integer",
+            "description": ""
+          },
+          "name": {
+            "type": "string",
+            "description": ""
+          },
+          "nodes": {
+            "type": "string",
+            "description": ""
+          },
+          "over_time_limit": {
+            "type": "integer",
+            "description": ""
+          },
+          "priority_job_factor": {
+            "type": "integer",
+            "description": ""
+          },
+          "priority_tier": {
+            "type": "integer",
+            "description": ""
+          },
+          "qos": {
+            "type": "string",
+            "description": ""
+          },
+          "nodes_online": {
+            "type": "integer",
+            "description": ""
+          },
+          "total_cpus": {
+            "type": "integer",
+            "description": ""
+          },
+          "total_nodes": {
+            "type": "integer",
+            "description": ""
+          },
+          "tres": {
+            "type": "string",
+            "description": ""
+          }
+        }
       },
       "partition_info": {
-	"type": "object",
-	"properties": {
-	  "errors": {
-	    "type": "array",
-	    "description": "slurm errors",
-	    "items": {
-	      "$ref": "#/components/schemas/error"
-	    }
-	  },
-	  "partitions": {
-	    "type": "array",
-	    "description": "partition info",
-	    "items": {
-	      "$ref": "#/components/schemas/partition"
-	    }
-	  }
-	}
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          },
+          "partitions": {
+            "type": "array",
+            "description": "partition info",
+            "items": {
+              "$ref": "#/components/schemas/partition"
+            }
+          }
+        }
       },
       "error": {
-	"type": "object",
-	"properties": {
-	  "error": {
-	    "type": "string",
-	    "description": "error message"
-	  },
-	  "errno": {
-	    "type": "integer",
-	    "description": "error number"
-	  }
-	}
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "error message"
+          },
+          "errno": {
+            "type": "integer",
+            "description": "error number"
+          }
+        }
       },
       "signal": {
-	"type": "string",
-	"description": "POSIX signal name",
-	"format": "int32",
-	"enum": [
-	  "HUP",
-	  "INT",
-	  "QUIT",
-	  "ABRT",
-	  "KILL",
-	  "ALRM",
-	  "TERM",
-	  "USR1",
-	  "USR2",
-	  "URG",
-	  "CONT",
-	  "STOP",
-	  "TSTP",
-	  "TTIN",
-	  "TTOU"
-	]
+        "type": "string",
+        "description": "POSIX signal name",
+        "format": "int32",
+        "enum": [
+          "HUP",
+          "INT",
+          "QUIT",
+          "ABRT",
+          "KILL",
+          "ALRM",
+          "TERM",
+          "USR1",
+          "USR2",
+          "URG",
+          "CONT",
+          "STOP",
+          "TSTP",
+          "TTIN",
+          "TTOU"
+        ]
       },
       "job_properties": {
-	"properties": {
-	  "account": {
-	    "type": "string",
-	    "description": "Charge resources used by this job to specified account."
-	  },
-	  "account_gather_freqency": {
-	    "type": "string",
-	    "description": "Define the job accounting and profiling sampling intervals."
-	  },
-	  "argv": {
-	    "type": "array",
-	    "description": "Arguments to the script.",
-	    "items": {
-	      "type": "string"
-	    }
-	  },
-	  "array": {
-	    "type": "string",
-	    "description": "Submit a job array, multiple jobs to be executed with identical parameters. The indexes specification identifies what array index values should be used."
-	  },
-	  "batch_features": {
-	    "type": "string",
-	    "description": "features required for batch script's node"
-	  },
-	  "begin_time": {
-	    "type": "string",
-	    "description": "Submit the batch script to the Slurm controller immediately, like normal, but tell the controller to defer the allocation of the job until the specified time."
-	  },
-	  "burst_buffer": {
-	    "type": "string",
-	    "description": "Burst buffer specification."
-	  },
-	  "cluster_constraints": {
-	    "type": "string",
-	    "description": "Specifies features that a federated cluster must have to have a sibling job submitted to it."
-	  },
-	  "comment": {
-	    "type": "string",
-	    "description": "An arbitrary comment."
-	  },
-	  "constraints": {
-	    "type": "string",
-	    "description": "node features required by job."
-	  },
-	  "core_specification": {
-	    "type": "integer",
-	    "description": "Count of specialized threads per node reserved by the job for system operations and not used by the application."
-	  },
-	  "cores_per_socket": {
-	    "type": "integer",
-	    "description": "Restrict node selection to nodes with at least the specified number of cores per socket."
-	  },
-	  "cpu_binding": {
-	    "type": "string",
-	    "description": "Cpu binding"
-	  },
-	  "cpu_binding_hint": {
-	    "type": "string",
-	    "description": "Cpu binding hint"
-	  },
-	  "cpu_frequency": {
-	    "type": "string",
-	    "description": "Request that job steps initiated by srun commands inside this sbatch script be run at some requested frequency if possible, on the CPUs selected for the step on the compute node(s)."
-	  },
-	  "cpus_per_gpu": {
-	    "type": "string",
-	    "description": "Number of CPUs requested per allocated GPU."
-	  },
-	  "cpus_per_task": {
-	    "type": "integer",
-	    "description": "Advise the Slurm controller that ensuing job steps will require ncpus number of processors per task."
-	  },
-	  "current_working_directory": {
-	    "type": "string",
-	    "description": "Instruct Slurm to connect the batch script's standard output directly to the file name."
-	  },
-	  "deadline": {
-	    "type": "string",
-	    "description": "Remove the job if no ending is possible before this deadline (start > (deadline - time[-min]))."
-	  },
-	  "delay_boot": {
-	    "type": "integer",
-	    "description": "Do not reboot nodes in order to satisfied this job's feature specification if the job has been eligible to run for less than this time period."
-	  },
-	  "dependency": {
-	    "type": "string",
-	    "description": "Defer the start of this job until the specified dependencies have been satisfied completed."
-	  },
-	  "distribution": {
-	    "type": "string",
-	    "description": "Specify alternate distribution methods for remote processes."
-	  },
-	  "environment": {
-	    "type": "object",
-	    "description": "Dictionary of environment entries."
-	  },
-	  "exclusive": {
-	    "type": "string",
-	    "description": "The job allocation can share nodes just other users with the \"user\" option or with the \"mcs\" option).",
-	    "enum": [
-	      "user",
-	      "mcs",
-	      "true",
-	      "false"
-	    ]
-	  },
-	  "get_user_environment": {
-	    "type": "boolean",
-	    "description": "Load new login environment for user on job node."
-	  },
-	  "gres": {
-	    "type": "string",
-	    "description": "Specifies a comma delimited list of generic consumable resources."
-	  },
-	  "gres_flags": {
-	    "type": "string",
-	    "description": "Specify generic resource task binding options.",
-	    "enum": [
-	      "disable-binding",
-	      "enforce-binding"
-	    ]
-	  },
-	  "gpu_binding": {
-	    "type": "string",
-	    "description": "Requested binding of tasks to GPU."
-	  },
-	  "gpu_frequency": {
-	    "type": "string",
-	    "description": "Requested GPU frequency."
-	  },
-	  "gpus": {
-	    "type": "string",
-	    "description": "GPUs per job."
-	  },
-	  "gpus_per_node": {
-	    "type": "string",
-	    "description": "GPUs per node."
-	  },
-	  "gpus_per_socket": {
-	    "type": "string",
-	    "description": "GPUs per socket."
-	  },
-	  "gpus_per_task": {
-	    "type": "string",
-	    "description": "GPUs per task."
-	  },
-	  "hold": {
-	    "type": "boolean",
-	    "description": "Specify the job is to be submitted in a held state (priority of zero)."
-	  },
-	  "kill_on_invalid_dependency": {
-	    "type": "boolean",
-	    "description": "If a job has an invalid dependency, then Slurm is to terminate it."
-	  },
-	  "licenses": {
-	    "type": "string",
-	    "description": "Specification of licenses (or other resources available on all nodes of the cluster) which must be allocated to this job."
-	  },
-	  "mail_type": {
-	    "type": "string",
-	    "description": "Notify user by email when certain event types occur."
-	  },
-	  "mail_user": {
-	    "type": "string",
-	    "description": "User to receive email notification of state changes as defined by mail_type."
-	  },
-	  "mcs_label": {
-	    "type": "string",
-	    "description": "This parameter is a group among the groups of the user."
-	  },
-	  "memory_binding": {
-	    "type": "string",
-	    "description": "Bind tasks to memory."
-	  },
-	  "memory_per_cpu": {
-	    "type": "integer",
-	    "description": "Minimum real memory per cpu (MB)."
-	  },
-	  "memory_per_gpu": {
-	    "type": "integer",
-	    "description": "Minimum memory required per allocated GPU."
-	  },
-	  "memory_per_node": {
-	    "type": "integer",
-	    "description": "Minimum real memory per node (MB)."
-	  },
-	  "minimum_cpus_per_node": {
-	    "type": "integer",
-	    "description": "Minimum number of CPUs per node."
-	  },
-	  "minimum_nodes": {
-	    "type": "boolean",
-	    "description": "If a range of node counts is given, prefer the smaller count."
-	  },
-	  "name": {
-	    "type": "string",
-	    "description": "Specify a name for the job allocation."
-	  },
-	  "nice": {
-	    "type": "string",
-	    "description": "Run the job with an adjusted scheduling priority within Slurm."
-	  },
-	  "no_kill": {
-	    "type": "boolean",
-	    "description": "Do not automatically terminate a job if one of the nodes it has been allocated fails."
-	  },
-	  "nodes": {
-	    "maxItems": 2,
-	    "minItems": 1,
-	    "type": "array",
-	    "description": "Request that a minimum of minnodes nodes and a maximum node count.",
-	    "items": {
-	      "type": "integer"
-	    }
-	  },
-	  "open_mode": {
-	    "type": "string",
-	    "description": "Open the output and error files using append or truncate mode as specified.",
-	    "default": "append",
-	    "enum": [
-	      "append",
-	      "truncate"
-	    ]
-	  },
-	  "partition": {
-	    "type": "string",
-	    "description": "Request a specific partition for the resource allocation."
-	  },
-	  "priority": {
-	    "type": "string",
-	    "description": "Request a specific job priority."
-	  },
-	  "qos": {
-	    "type": "string",
-	    "description": "Request a quality of service for the job."
-	  },
-	  "requeue": {
-	    "type": "boolean",
-	    "description": "Specifies that the batch job should eligible to being requeue."
-	  },
-	  "reservation": {
-	    "type": "string",
-	    "description": "Allocate resources for the job from the named reservation."
-	  },
-	  "signal": {
-	    "pattern": "[B:]<sig_num>[@<sig_time>]",
-	    "type": "string",
-	    "description": "When a job is within sig_time seconds of its end time, send it the signal sig_num."
-	  },
-	  "sockets_per_node": {
-	    "type": "integer",
-	    "description": "Restrict node selection to nodes with at least the specified number of sockets."
-	  },
-	  "spread_job": {
-	    "type": "boolean",
-	    "description": "Spread the job allocation over as many nodes as possible and attempt to evenly distribute tasks across the allocated nodes."
-	  },
-	  "standard_error": {
-	    "type": "string",
-	    "description": "Instruct Slurm to connect the batch script's standard error directly to the file name."
-	  },
-	  "standard_in": {
-	    "type": "string",
-	    "description": "Instruct Slurm to connect the batch script's standard input directly to the file name specified."
-	  },
-	  "standard_out": {
-	    "type": "string",
-	    "description": "Instruct Slurm to connect the batch script's standard output directly to the file name."
-	  },
-	  "tasks": {
-	    "type": "integer",
-	    "description": "Advises the Slurm controller that job steps run within the allocation will launch a maximum of number tasks and to provide for sufficient resources."
-	  },
-	  "tasks_per_core": {
-	    "type": "integer",
-	    "description": "Request the maximum ntasks be invoked on each core."
-	  },
-	  "tasks_per_node": {
-	    "type": "integer",
-	    "description": "Request the maximum ntasks be invoked on each node."
-	  },
-	  "tasks_per_socket": {
-	    "type": "integer",
-	    "description": "Request the maximum ntasks be invoked on each socket."
-	  },
-	  "thread_specification": {
-	    "type": "integer",
-	    "description": "Count of specialized threads per node reserved by the job for system operations and not used by the application."
-	  },
-	  "threads_per_core": {
-	    "type": "integer",
-	    "description": "Restrict node selection to nodes with at least the specified number of threads per core."
-	  },
-	  "time_limit": {
-	    "type": "integer",
-	    "description": "Step time limit."
-	  },
-	  "time_minimum": {
-	    "type": "integer",
-	    "description": "Minimum run time in minutes."
-	  },
-	  "wait_all_nodes": {
-	    "type": "boolean",
-	    "description": "Do not begin execution until all nodes are ready for use."
-	  },
-	  "wckey": {
-	    "type": "string",
-	    "description": "Specify wckey to be used with job."
-	  }
-	}
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "Charge resources used by this job to specified account."
+          },
+          "account_gather_freqency": {
+            "type": "string",
+            "description": "Define the job accounting and profiling sampling intervals."
+          },
+          "argv": {
+            "type": "array",
+            "description": "Arguments to the script.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "array": {
+            "type": "string",
+            "description": "Submit a job array, multiple jobs to be executed with identical parameters. The indexes specification identifies what array index values should be used."
+          },
+          "batch_features": {
+            "type": "string",
+            "description": "features required for batch script's node"
+          },
+          "begin_time": {
+            "type": "string",
+            "description": "Submit the batch script to the Slurm controller immediately, like normal, but tell the controller to defer the allocation of the job until the specified time."
+          },
+          "burst_buffer": {
+            "type": "string",
+            "description": "Burst buffer specification."
+          },
+          "cluster_constraints": {
+            "type": "string",
+            "description": "Specifies features that a federated cluster must have to have a sibling job submitted to it."
+          },
+          "comment": {
+            "type": "string",
+            "description": "An arbitrary comment."
+          },
+          "constraints": {
+            "type": "string",
+            "description": "node features required by job."
+          },
+          "core_specification": {
+            "type": "integer",
+            "description": "Count of specialized threads per node reserved by the job for system operations and not used by the application."
+          },
+          "cores_per_socket": {
+            "type": "integer",
+            "description": "Restrict node selection to nodes with at least the specified number of cores per socket."
+          },
+          "cpu_binding": {
+            "type": "string",
+            "description": "Cpu binding"
+          },
+          "cpu_binding_hint": {
+            "type": "string",
+            "description": "Cpu binding hint"
+          },
+          "cpu_frequency": {
+            "type": "string",
+            "description": "Request that job steps initiated by srun commands inside this sbatch script be run at some requested frequency if possible, on the CPUs selected for the step on the compute node(s)."
+          },
+          "cpus_per_gpu": {
+            "type": "string",
+            "description": "Number of CPUs requested per allocated GPU."
+          },
+          "cpus_per_task": {
+            "type": "integer",
+            "description": "Advise the Slurm controller that ensuing job steps will require ncpus number of processors per task."
+          },
+          "current_working_directory": {
+            "type": "string",
+            "description": "Instruct Slurm to connect the batch script's standard output directly to the file name."
+          },
+          "deadline": {
+            "type": "string",
+            "description": "Remove the job if no ending is possible before this deadline (start > (deadline - time[-min]))."
+          },
+          "delay_boot": {
+            "type": "integer",
+            "description": "Do not reboot nodes in order to satisfied this job's feature specification if the job has been eligible to run for less than this time period."
+          },
+          "dependency": {
+            "type": "string",
+            "description": "Defer the start of this job until the specified dependencies have been satisfied completed."
+          },
+          "distribution": {
+            "type": "string",
+            "description": "Specify alternate distribution methods for remote processes."
+          },
+          "environment": {
+            "type": "object",
+            "description": "Dictionary of environment entries."
+          },
+          "exclusive": {
+            "type": "string",
+            "description": "The job allocation can share nodes just other users with the \"user\" option or with the \"mcs\" option).",
+            "enum": [
+              "user",
+              "mcs",
+              "true",
+              "false"
+            ]
+          },
+          "get_user_environment": {
+            "type": "boolean",
+            "description": "Load new login environment for user on job node."
+          },
+          "gres": {
+            "type": "string",
+            "description": "Specifies a comma delimited list of generic consumable resources."
+          },
+          "gres_flags": {
+            "type": "string",
+            "description": "Specify generic resource task binding options.",
+            "enum": [
+              "disable-binding",
+              "enforce-binding"
+            ]
+          },
+          "gpu_binding": {
+            "type": "string",
+            "description": "Requested binding of tasks to GPU."
+          },
+          "gpu_frequency": {
+            "type": "string",
+            "description": "Requested GPU frequency."
+          },
+          "gpus": {
+            "type": "string",
+            "description": "GPUs per job."
+          },
+          "gpus_per_node": {
+            "type": "string",
+            "description": "GPUs per node."
+          },
+          "gpus_per_socket": {
+            "type": "string",
+            "description": "GPUs per socket."
+          },
+          "gpus_per_task": {
+            "type": "string",
+            "description": "GPUs per task."
+          },
+          "hold": {
+            "type": "boolean",
+            "description": "Specify the job is to be submitted in a held state (priority of zero)."
+          },
+          "kill_on_invalid_dependency": {
+            "type": "boolean",
+            "description": "If a job has an invalid dependency, then Slurm is to terminate it."
+          },
+          "licenses": {
+            "type": "string",
+            "description": "Specification of licenses (or other resources available on all nodes of the cluster) which must be allocated to this job."
+          },
+          "mail_type": {
+            "type": "string",
+            "description": "Notify user by email when certain event types occur."
+          },
+          "mail_user": {
+            "type": "string",
+            "description": "User to receive email notification of state changes as defined by mail_type."
+          },
+          "mcs_label": {
+            "type": "string",
+            "description": "This parameter is a group among the groups of the user."
+          },
+          "memory_binding": {
+            "type": "string",
+            "description": "Bind tasks to memory."
+          },
+          "memory_per_cpu": {
+            "type": "integer",
+            "description": "Minimum real memory per cpu (MB)."
+          },
+          "memory_per_gpu": {
+            "type": "integer",
+            "description": "Minimum memory required per allocated GPU."
+          },
+          "memory_per_node": {
+            "type": "integer",
+            "description": "Minimum real memory per node (MB)."
+          },
+          "minimum_cpus_per_node": {
+            "type": "integer",
+            "description": "Minimum number of CPUs per node."
+          },
+          "minimum_nodes": {
+            "type": "boolean",
+            "description": "If a range of node counts is given, prefer the smaller count."
+          },
+          "name": {
+            "type": "string",
+            "description": "Specify a name for the job allocation."
+          },
+          "nice": {
+            "type": "string",
+            "description": "Run the job with an adjusted scheduling priority within Slurm."
+          },
+          "no_kill": {
+            "type": "boolean",
+            "description": "Do not automatically terminate a job if one of the nodes it has been allocated fails."
+          },
+          "nodes": {
+            "maxItems": 2,
+            "minItems": 1,
+            "type": "array",
+            "description": "Request that a minimum of minnodes nodes and a maximum node count.",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "open_mode": {
+            "type": "string",
+            "description": "Open the output and error files using append or truncate mode as specified.",
+            "default": "append",
+            "enum": [
+              "append",
+              "truncate"
+            ]
+          },
+          "partition": {
+            "type": "string",
+            "description": "Request a specific partition for the resource allocation."
+          },
+          "priority": {
+            "type": "string",
+            "description": "Request a specific job priority."
+          },
+          "qos": {
+            "type": "string",
+            "description": "Request a quality of service for the job."
+          },
+          "requeue": {
+            "type": "boolean",
+            "description": "Specifies that the batch job should eligible to being requeue."
+          },
+          "reservation": {
+            "type": "string",
+            "description": "Allocate resources for the job from the named reservation."
+          },
+          "signal": {
+            "pattern": "[B:]<sig_num>[@<sig_time>]",
+            "type": "string",
+            "description": "When a job is within sig_time seconds of its end time, send it the signal sig_num."
+          },
+          "sockets_per_node": {
+            "type": "integer",
+            "description": "Restrict node selection to nodes with at least the specified number of sockets."
+          },
+          "spread_job": {
+            "type": "boolean",
+            "description": "Spread the job allocation over as many nodes as possible and attempt to evenly distribute tasks across the allocated nodes."
+          },
+          "standard_error": {
+            "type": "string",
+            "description": "Instruct Slurm to connect the batch script's standard error directly to the file name."
+          },
+          "standard_in": {
+            "type": "string",
+            "description": "Instruct Slurm to connect the batch script's standard input directly to the file name specified."
+          },
+          "standard_out": {
+            "type": "string",
+            "description": "Instruct Slurm to connect the batch script's standard output directly to the file name."
+          },
+          "tasks": {
+            "type": "integer",
+            "description": "Advises the Slurm controller that job steps run within the allocation will launch a maximum of number tasks and to provide for sufficient resources."
+          },
+          "tasks_per_core": {
+            "type": "integer",
+            "description": "Request the maximum ntasks be invoked on each core."
+          },
+          "tasks_per_node": {
+            "type": "integer",
+            "description": "Request the maximum ntasks be invoked on each node."
+          },
+          "tasks_per_socket": {
+            "type": "integer",
+            "description": "Request the maximum ntasks be invoked on each socket."
+          },
+          "thread_specification": {
+            "type": "integer",
+            "description": "Count of specialized threads per node reserved by the job for system operations and not used by the application."
+          },
+          "threads_per_core": {
+            "type": "integer",
+            "description": "Restrict node selection to nodes with at least the specified number of threads per core."
+          },
+          "time_limit": {
+            "type": "integer",
+            "description": "Step time limit."
+          },
+          "time_minimum": {
+            "type": "integer",
+            "description": "Minimum run time in minutes."
+          },
+          "wait_all_nodes": {
+            "type": "boolean",
+            "description": "Do not begin execution until all nodes are ready for use."
+          },
+          "wckey": {
+            "type": "string",
+            "description": "Specify wckey to be used with job."
+          }
+        }
       },
       "node": {
-	"type": "object",
-	"properties": {
-	  "architecture": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "burstbuffer_network_address": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "boards": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "boot_time": {
-	    "type": "integer",
-	    "format": "int64",
-	    "description": ""
-	  },
-	  "cores": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "cpu_binding": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "cpu_load": {
-	    "type": "integer",
-	    "format": "int64",
-	    "description": ""
-	  },
-	  "free_memory": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "cpus": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "features": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "active_features": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "gres": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "gres_drained": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "gres_used": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "mcs_label": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "name": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "next_state_after_reboot": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "address": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "hostname": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "state": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "operating_system": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "owner": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "port": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "real_memory": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "reason": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "reason_changed_at": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "reason_set_by_user": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "slurmd_start_time": {
-	    "type": "integer",
-	    "format": "int64",
-	    "description": ""
-	  },
-	  "sockets": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "threads": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "temporary_disk": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "weight": {
-	    "type": "integer",
-	    "description": ""
-	  },
-	  "tres": {
-	    "type": "string",
-	    "description": ""
-	  },
-	  "slurmd_version": {
-	    "type": "string",
-	    "description": ""
-	  }
-	}
+        "type": "object",
+        "properties": {
+          "architecture": {
+            "type": "string",
+            "description": ""
+          },
+          "burstbuffer_network_address": {
+            "type": "string",
+            "description": ""
+          },
+          "boards": {
+            "type": "integer",
+            "description": ""
+          },
+          "boot_time": {
+            "type": "integer",
+            "format": "int64",
+            "description": ""
+          },
+          "cores": {
+            "type": "integer",
+            "description": ""
+          },
+          "cpu_binding": {
+            "type": "integer",
+            "description": ""
+          },
+          "cpu_load": {
+            "type": "integer",
+            "format": "int64",
+            "description": ""
+          },
+          "free_memory": {
+            "type": "integer",
+            "description": ""
+          },
+          "cpus": {
+            "type": "integer",
+            "description": ""
+          },
+          "features": {
+            "type": "string",
+            "description": ""
+          },
+          "active_features": {
+            "type": "string",
+            "description": ""
+          },
+          "gres": {
+            "type": "string",
+            "description": ""
+          },
+          "gres_drained": {
+            "type": "string",
+            "description": ""
+          },
+          "gres_used": {
+            "type": "string",
+            "description": ""
+          },
+          "mcs_label": {
+            "type": "string",
+            "description": ""
+          },
+          "name": {
+            "type": "string",
+            "description": ""
+          },
+          "next_state_after_reboot": {
+            "type": "string",
+            "description": ""
+          },
+          "address": {
+            "type": "string",
+            "description": ""
+          },
+          "hostname": {
+            "type": "string",
+            "description": ""
+          },
+          "state": {
+            "type": "string",
+            "description": ""
+          },
+          "operating_system": {
+            "type": "string",
+            "description": ""
+          },
+          "owner": {
+            "type": "string",
+            "description": ""
+          },
+          "port": {
+            "type": "integer",
+            "description": ""
+          },
+          "real_memory": {
+            "type": "integer",
+            "description": ""
+          },
+          "reason": {
+            "type": "string",
+            "description": ""
+          },
+          "reason_changed_at": {
+            "type": "integer",
+            "description": ""
+          },
+          "reason_set_by_user": {
+            "type": "string",
+            "description": ""
+          },
+          "slurmd_start_time": {
+            "type": "integer",
+            "format": "int64",
+            "description": ""
+          },
+          "sockets": {
+            "type": "integer",
+            "description": ""
+          },
+          "threads": {
+            "type": "integer",
+            "description": ""
+          },
+          "temporary_disk": {
+            "type": "integer",
+            "description": ""
+          },
+          "weight": {
+            "type": "integer",
+            "description": ""
+          },
+          "tres": {
+            "type": "string",
+            "description": ""
+          },
+          "slurmd_version": {
+            "type": "string",
+            "description": ""
+          }
+        }
       },
       "node_info": {
-	"type": "object",
-	"properties": {
-	  "errors": {
-	    "type": "array",
-	    "description": "slurm errors",
-	    "items": {
-	      "$ref": "#/components/schemas/error"
-	    }
-	  },
-	  "nodes": {
-	    "type": "array",
-	    "description": "nodes info",
-	    "items": {
-	      "$ref": "#/components/schemas/node"
-	    }
-	  }
-	}
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          },
+          "nodes": {
+            "type": "array",
+            "description": "nodes info",
+            "items": {
+              "$ref": "#/components/schemas/node"
+            }
+          }
+        }
       }
     }
   }
