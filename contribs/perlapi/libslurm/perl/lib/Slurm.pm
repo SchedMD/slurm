@@ -155,7 +155,7 @@ Create a Slurm object. For now the object is just a hash reference with no membe
 
 =over 2
 
-=item * IN $conf_file: the Slurm configuration file. If omitted, the default Slurm configuration file will be used (file specified by environment variable SLURM_CONF or the file slurm.conf under directroy specified in compile time).
+=item * IN $conf_file: the Slurm configuration file. If omitted, the default Slurm configuration file will be used (file specified by environment variable SLURM_CONF or the file slurm.conf under directory specified in compile time).
 
 =item * RET: blessed opaque Slurm object. On error C<undef> is returned.
     
