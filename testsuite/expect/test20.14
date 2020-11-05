@@ -34,6 +34,10 @@ set job_id 0
 
 set file_in     "test$test_id.input"
 
+if {[file executable $qsub] == 0} {
+	skip "$qsub not found"
+}
+
 set nb_nodes [get_node_cnt_in_part]
 if {$nb_nodes > 1} {
 	set nb_nodes 2
