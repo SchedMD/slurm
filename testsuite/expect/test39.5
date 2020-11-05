@@ -193,7 +193,7 @@ if { [llength $node_list] != $nb_nodes } {
 		incr expected_gpus $gpus
 	}
 	if {$match < $expected_gpus} {
-		fail "srun --gpus-per-task failure ($match < $expected_gpus)"
+		fail "srun --gpus-per-socket failure ($match < $expected_gpus)"
 	}
 }
 
