@@ -439,9 +439,7 @@ again:
 #ifdef MULTIPLE_SLURMD
 		/*
 		 * In multiple slurmd mode this will happen all the time since
-		 * we are authenticating with the same munged. It can also
-		 * happen if slurmctld and slurmd are on the same node and
-		 * message aggregation is configured (error is recoverable).
+		 * we are authenticating with the same munged.
 		 */
 		if (err == EMUNGE_CRED_REPLAYED) {
 			debug2("We had a replayed cred, but this is expected in multiple slurmd mode.");
