@@ -4461,7 +4461,6 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 	slurmdb_step_rec_t *step = NULL;
 	uint32_t count = 0;
 	uint32_t uint32_tmp;
-	void *tmp_ptr = NULL;
 
 	*job = job_ptr;
 
@@ -4557,10 +4556,11 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->wckeyid, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->work_dir, &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+		char *tmp_ptr = NULL;
 		safe_unpackstr_xmalloc(&job_ptr->account, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->admin_comment, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(tmp_ptr, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr, &uint32_tmp, buffer);
 		xfree(tmp_ptr);
 		safe_unpack32(&job_ptr->alloc_nodes, buffer);
 		safe_unpack32(&job_ptr->array_job_id, buffer);
@@ -4599,7 +4599,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->priority, buffer);
 		safe_unpack32(&job_ptr->qosid, buffer);
 		safe_unpack32(&job_ptr->req_cpus, buffer);
-		safe_unpackstr_xmalloc(tmp_ptr, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr, &uint32_tmp, buffer);
 		xfree(tmp_ptr);
 		safe_unpack64(&job_ptr->req_mem, buffer);
 		safe_unpack32(&job_ptr->requid, buffer);
@@ -4653,10 +4653,11 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->wckeyid, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->work_dir, &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		char *tmp_ptr = NULL;
 		safe_unpackstr_xmalloc(&job_ptr->account, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->admin_comment, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(tmp_ptr, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr, &uint32_tmp, buffer);
 		xfree(tmp_ptr);
 		safe_unpack32(&job_ptr->alloc_nodes, buffer);
 		safe_unpack32(&job_ptr->array_job_id, buffer);
@@ -4694,7 +4695,7 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->priority, buffer);
 		safe_unpack32(&job_ptr->qosid, buffer);
 		safe_unpack32(&job_ptr->req_cpus, buffer);
-		safe_unpackstr_xmalloc(tmp_ptr, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr, &uint32_tmp, buffer);
 		xfree(tmp_ptr);
 		safe_unpack64(&job_ptr->req_mem, buffer);
 		safe_unpack32(&job_ptr->requid, buffer);
