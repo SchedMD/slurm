@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - add API to interface with slurmdbd.
  -- mpi/cray_shasta - fix PMI port parsing for non-contiguous port ranges.
  -- squeue and sinfo -O no longer repeat the last suffix specified.
+ -- cons_tres - fix regression regarding gpus with --cpus-per-task.
 
 * Changes in Slurm 20.11.0rc1
 ==============================
