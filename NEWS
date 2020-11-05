@@ -13,6 +13,9 @@ documents those changes that are of interest to users and administrators.
  -- Enforce invalid argument combinations with --ntasks-per-gpu
  -- slurmrestd/auth_local - Verify username on slurm_rest_auth_p_apply()
  -- Fix requeue of job on node failure.
+ -- Prevent a job from requesting too much memory if it
+    requests MEM_PER_CPUS and --threads-per-core < the number of threads
+    on a core.
 
 * Changes in Slurm 20.11.0rc2
 ==============================
