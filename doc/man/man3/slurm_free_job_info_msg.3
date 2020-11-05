@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "Slurm job information reporting functions" "April 2015" "Slurm job information reporting functions"
+.TH "Slurm API" "3" "Slurm job information reporting functions" "November 2020" "Slurm job information reporting functions"
 
 .SH "NAME"
 slurm_get_end_time, slurm_get_rem_time,
@@ -275,13 +275,13 @@ allocation response message.
 \fBslurm_load_jobs\fR function.
 .LP
 \fBslurm_get_end_time\fR Returns the expected termination time of a specified
-Slurm job. The time corresponds to the exhaustion of the job\'s or partition\'s
+Slurm job. The time corresponds to the exhaustion of the job's or partition's
 time limit. NOTE: The data is cached locally and only retrieved from the
 Slurm controller once per minute.
 .LP
 \fBslurm_get_rem_time\fR Returns the number of seconds remaining before the
 expected termination time of a specified Slurm job id. The time corresponds
-to the exhaustion of the job\'s or partition\'s time limit. NOTE: The data is
+to the exhaustion of the job's or partition's time limit. NOTE: The data is
 cached locally and only retrieved from the Slurm controller once per minute.
 .LP
 \fBslurm_job_cpus_allocated_on_node\fR and

@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "October 2020" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "November 2020" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -445,7 +445,7 @@ pending job.
 
 .TP
 \fIPriority\fP
-What priority will be added to a job\'s priority when using this association.
+What priority will be added to a job's priority when using this association.
 This is overridden if set directly on a user.
 Default is the cluster's limit.
 To clear a previously set value use the modify command with a new value of \-1.
@@ -733,13 +733,13 @@ Maximum wall clock time each job is able to use.
 .TP
 \fIQos\fP
 .RS
-Valid QOS\' for this association.
+Valid QOS' for this association.
 .RE
 
 .TP
 \fIQosRaw\fP
 .RS
-QOS\' ID.
+QOS' ID.
 .RE
 
 .TP
@@ -756,7 +756,7 @@ The name of a partition in the association.
 
 .TP
 \fIPriority\fP
-What priority will be added to a job\'s priority when using this association.
+What priority will be added to a job's priority when using this association.
 
 .TP
 \fIWithRawQOSLevel\fP
@@ -1375,7 +1375,7 @@ Name of the QOS.
 
 .TP
 \fIPreempt\fP
-Other QOS\' this QOS can preempt.
+Other QOS' this QOS can preempt.
 
 \fBNOTE\fP: The \fIPriority\fP of a QOS is NOT related to QOS preemption, only
 \fIPreempt\fP is used to define which QOS can preempt others.
@@ -1403,7 +1403,7 @@ global option in slurm.conf.
 
 .TP
 \fIPriority\fP
-What priority will be added to a job\'s priority when using this QOS.
+What priority will be added to a job's priority when using this QOS.
 
 \fBNOTE\fP: The \fIPriority\fP of a QOS is NOT related to QOS preemption, see
 \fIPreempt\fP instead.
@@ -1578,7 +1578,7 @@ Name of the QOS.  Needed for creation.
 
 .TP
 \fIPreempt\fP
-Other QOS\' this QOS can preempt.
+Other QOS' this QOS can preempt.
 Setting a Preempt to '' (two single
 quotes with nothing between them) restores its default setting.  You
 can also use the operator += and \-= to add or remove certain QOS's
@@ -1595,7 +1595,7 @@ PreemptMode=SUSPEND (i.e. preempted jobs must be removed from the resources).
 
 .TP
 \fIPriority\fP
-What priority will be added to a job\'s priority when using this QOS.
+What priority will be added to a job's priority when using this QOS.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
