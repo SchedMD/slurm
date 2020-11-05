@@ -38,6 +38,10 @@ testsuite_log_level:          logging threshold [$LOG_LEVEL_DEBUG]
 testsuite_log_format:         specifies the tracing fields used in logging
 testsuite_colorize:           boolean that turns colorization on or off
 testsuite_subtest_fatal:      first failing subtest aborts the test [false]
+testsuite_subtest_details:    add details of subtest in the summary [fail]
+                              possible values: all, fail, fail_skip or none
+testsuite_testproc_details:   add details of testprocs in the summary [fail]
+                              possible values: all, fail, fail_skip or none
 
 The testsuite needs at least one cluster-wide shared file system.
 By default, we assume that it's the testsuite/expect directory (i.e. ".").
@@ -66,6 +70,14 @@ test_dir:   a temporary subdirectory created within the testsuite_shared_dir *
 * The test_dir will get removed at the end of the test unless the test failed
   and testsuite_cleanup_on_failure was set to false. The test_dir will be
   (removed and) recreated the next time the test is run.
+
+A test can be run as normal executable (uses expect) and can read by default
+two main arguments:
+	-i : a comma-separated list of testproc ids to run
+	-e : a comma-separated list of testproc ids to skip
+These arguments will be removed and not available on argv on the tests.
+Test writers should use testproc to launch their testproc functions to
+take advantage of those arguments (see testproc function).
 
 The script "regression" will execute all of the tests and summarize the
 results. Standard output contains detailed logging of all events, which is
