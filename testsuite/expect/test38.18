@@ -51,7 +51,7 @@ proc submit_job_error {cmd expected_error} {
 			wait
 		}
 	}
-	assert_or_fail {$err_match == 1} "Didn't get expected error ($expected_error)"
+	subtest {$err_match == 1} "Job submission should return $expected_error"
 }
 
 proc submit_job {cmd} {
@@ -98,7 +98,7 @@ proc check_job {job_id grep re} {
 			wait
 		}
 	}
-	assert_or_fail {$matches == 1} "Didn't match $re ($matches != 1)"
+	subtest {$matches == 1} "Job info should contain $re"
 }
 
 proc test_gpu_bind {} {

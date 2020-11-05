@@ -50,7 +50,7 @@ proc check_error {client option prog error} {
 				wait
 			}
 		}
-	assert_or_fail {$matches == 1} "Didn't match '$error'"
+	subtest {$matches == 1} "Submission should return '$error'"
 }
 
 
@@ -101,7 +101,7 @@ proc mutual_error_tests {} {
 			}
 		}
 		cancel_job $job_id
-		assert_or_fail {$matches == 0} "$cmd failed when it shouldn't have ($matches)"
+		subtest {$matches == 0} "$cmd should not fail with fatal" "(got $matches fatals)"
 	}
 }
 
@@ -135,14 +135,14 @@ foreach option $options {
 			wait
 		}
 	}
-	assert_or_fail {$matches == 0} "$cmd failed when it shouldn't have ($matches)"
+	subtest {$matches == 0} "$cmd should not fail with fatal" "(got $matches fatals)"
 
 	set threads_req [get_job_param $job_id "ReqB:S:C:T"]
 	set tasks_req [get_job_param $job_id "NtasksPerN:B:S:C"]
 	set threads_match "0:0:*:2"
 	set tasks_match "0:0:*:3"
-	assert_or_fail {[string compare $threads_match $threads_req] == 0} "$threads_req doesn't match $threads_match"
-	assert_or_fail {[string compare $tasks_match $tasks_req] == 0} "$tasks_req doesn't match $tasks_match"
+	subtest {[string compare $threads_match $threads_req] == 0} "ReqB:S:C:T should be $threads_match" "($threads_req != $threads_match)"
+	subtest {[string compare $tasks_match $tasks_req] == 0} "NtasksPerN:B:S:C should be $tasks_match" "($tasks_req != $tasks_match)"
 	cancel_job $job_id
 }
 

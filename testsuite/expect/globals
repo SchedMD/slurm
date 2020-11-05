@@ -268,11 +268,18 @@ cset testsuite_color_success   $COLOR_GREEN
 cset testsuite_color_failure   $COLOR_RED
 cset testsuite_color_skipped   $COLOR_ORANGE
 
+# Set to true to cause the first subtest failure to immediately end the test
+cset testsuite_subtest_fatal false
+
 # To automatically call cleanup or not when ending the test
 cset testsuite_cleanup_on_failure true
 if {[info exists env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)]} {
 	set testsuite_cleanup_on_failure $env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)
 }
+
+set subtest_pass_count 0
+set subtest_skip_count 0
+set subtest_fail_count 0
 
 # Other common variables
 set re_word_str          "\\S+"
@@ -442,6 +449,149 @@ proc fail_on_error { message } {
 	if {$exit_code != 0} {
 		fail "$message"
 	}
+}
+
+
+################################################################
+#
+# NAME
+#	subpass - registers a passing subtest result
+#
+# SYNOPSIS
+#	subpass ?description?
+#
+# DESCRIPTION
+#	Increments the subtest pass count and logs a passing subtest message
+#
+# ARGUMENTS
+#	description
+#		A single-line string describing the subtest being verified
+#
+################################################################
+
+proc subpass args {
+	global subtest_fail_count subtest_pass_count subtest_skip_count
+
+	set description ""
+	set argument_count [llength $args]
+	if {$argument_count == 1} { set args [lassign $args description] }
+	if {$argument_count > 1} {
+		fail "Too many arguments ($argument_count): $args"
+	}
+
+	set subtest_count [expr $subtest_pass_count + $subtest_fail_count + $subtest_skip_count + 1]
+	incr subtest_pass_count
+	set message "Subtest $subtest_count passed"
+	if {$description ne ""} { append message ": $description" }
+	log_info $message
+}
+
+
+################################################################
+#
+# NAME
+#	subfail - registers a failing subtest result
+#
+# SYNOPSIS
+#	subfail ?options? ?description? ?diagnostics?
+#
+# DESCRIPTION
+#	Increments the subtest failure count and logs a failing subtest message
+#
+# OPTIONS
+#	-fatal
+#		Causes this subtest failure to be fatal, ending the test
+# ARGUMENTS
+#	description
+#		A single-line string describing the condition being verified
+#	diagnostics
+#		A string providing additional diagnostic information that will
+#		be included with the log message
+#
+# ENVIRONMENT
+#	testsuite_subtest_fatal
+#		Specifies whether first failing subtest aborts the test
+#
+################################################################
+
+proc subfail args {
+	global subtest_fail_count subtest_pass_count subtest_skip_count
+	global testsuite_subtest_fatal
+
+	set description ""
+	set fatal       false
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-fatal   {set fatal true; set args [lrange $args 1 end]}
+			-*       {fail "Unknown option: [lindex $args 0]"}
+			default  break
+		}
+	}
+	set argument_count [llength $args]
+	if {$argument_count >= 1} { set args [lassign $args description] }
+
+	set subtest_count [expr $subtest_pass_count + $subtest_fail_count + $subtest_skip_count + 1]
+	incr subtest_fail_count
+	set message "Subtest $subtest_count failed"
+	if {$description ne ""} { append message ": $description" }
+	if [llength $args] { append message " (" [join $args ", "] ")" }
+	if {$fatal || $testsuite_subtest_fatal} {
+		fail $message
+	} else {
+		log_error $message
+	}
+}
+
+
+################################################################
+#
+# NAME
+#	subskip - registers a skipped subtest result
+#
+# SYNOPSIS
+#	subskip ?options? ?description?
+#
+# DESCRIPTION
+#	Increments the subtest skip count and logs a skipped subtest message
+#
+# OPTIONS
+#	-count NUMBER
+#		When used with -skip, indicates the number of subtests that
+#		were skipped
+# ARGUMENTS
+#	description
+#		A single-line string describing the reason the subtest is
+#		being skipped
+#
+################################################################
+
+proc subskip args {
+	global subtest_fail_count subtest_pass_count subtest_skip_count
+
+	set description ""
+	set count       1
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-count   {set args [lassign $args - count]}
+			-*       {fail "Unknown option: [lindex $args 0]"}
+			default  break
+		}
+	}
+	set argument_count [llength $args]
+	if {$argument_count == 1} { set args [lassign $args description] }
+	if {$argument_count > 1} {
+		fail "Too many arguments ($argument_count): $args"
+	}
+
+	set subtest_count [expr $subtest_pass_count + $subtest_fail_count + $subtest_skip_count + 1]
+	incr subtest_skip_count $count
+	if {$count > 1} {
+		set message "$count subtests skipped"
+	} else {
+		set message "Subtest $subtest_count skipped"
+	}
+	if {$description ne ""} { append message ": $description" }
+	log_warn $message
 }
 
 
@@ -5853,152 +6003,62 @@ proc compile_against_libslurm { test_prog {use_full 0} {build_args ""} } {
 ################################################################
 #
 # NAME
-#	assert - tests a boolean expression
+#	subtest - tests a boolean condition and updates subtest tallies
 #
 # SYNOPSIS
-#	assert condition message ?action?
+#	subtest ?options? condition description ?diagnostics?
 #
 # DESCRIPTION
-#	Tests a boolean expression. If the condition is false, the
-#	function will take the designated action (error, fail, skip,
-#	or warn) using the specified message.
+#	Based on the results of testing a boolean expression, increments the
+#	relevant subtest count (pass, fail or skip) and logs a message.
+#
+# OPTIONS
+#	-fatal
+#		If the subtest fails, causes a fatal error ending the test
 #
 # ARGUMENTS
 #	condition
 #		The boolean expression to test
-#	message
-#		The message to print with the action
-#	action
-#		Specifies the action to take when false. The default is "error"
-#		The action will be one of the following:
-#		error - Prints an error if the boolean_expression is false
-#		fail  - Fails the test if the boolean_expression is false
-#		skip  - Skips the test if the boolean_expression is false
-#		warn  - Prints a warning if the boolean_expression is false
+#	description
+#		A single-line string describing what is being tested. This is
+#		a subtest "name" that is displayed with the log message
+#		whether the subtest passes or fails
+#	diagnostics
+#		A string providing additional diagnostic information that is
+#		only included in the log message on failure
+#
+# ENVIRONMENT
+#	testsuite_subtest_fatal
+#		Specifies whether first failing subtest aborts the test
 #
 ################################################################
 
-proc assert { condition message { action "error" } } {
+proc subtest args {
 
-	# We must skip two levels if being called by one of the assert_* helpers
-	set uplevel 1
-	if {[info level] > 1 && [string match "assert_*" [lindex [info level -1] 0] ]} {
-		incr uplevel
-	}
-
-	if {![uplevel $uplevel expr [format "{%s}" $condition]]} {
-		if {$action eq "fail"} {
-			fail "$message"
-		} elseif {$action eq "error"} {
-			log_error "$message"
-		} elseif {$action eq "warn"} {
-			log_warn "$message"
-		} elseif {$action eq "skip"} {
-			skip "$message"
-		} else {
-			fail "Invalid action ($action) with assert"
+	set options [list]
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-fatal -
+			-fail  {
+				lappend options -fatal
+				set args [lrange $args 1 end]
+			}
+			-*      {fail "Unknown option: [lindex $args 0]"}
+			default break
 		}
 	}
-}
+	set argument_count [llength $args]
+	if {$argument_count < 2} {
+		fail "Too few arguments ($argument_count): $args"
+	} else {
+		set args [lassign $args condition description]
+	}
 
-
-################################################################
-#
-# NAME
-#	assert_or_fail - tests a boolean condition, failing if false
-#
-# SYNOPSIS
-#	assert_or_fail condition message
-#
-# DESCRIPTION
-#	Tests a boolean condition. If the condition is false, the
-#	function will call fail with the specified message.
-#
-# ARGUMENTS
-#	condition
-#		The boolean expression to test
-#	message
-#		The message to print with the action
-#
-################################################################
-
-proc assert_or_fail { condition message } {
-	assert "$condition" "$message" "fail"
-}
-
-
-################################################################
-#
-# NAME
-#	assert_or_error - tests a boolean expression, logging an error if false
-#
-# SYNOPSIS
-#	assert_or_error condition message
-#
-# DESCRIPTION
-#	Tests a boolean condition. If the condition is false, the
-#	function will log_error with the specified message.
-#
-# ARGUMENTS
-#	condition
-#		The boolean expression to test
-#	message
-#		The message to print with the action
-#
-################################################################
-
-proc assert_or_error { condition message } {
-	assert "$condition" "$message" "error"
-}
-
-
-################################################################
-#
-# NAME
-#	assert_or_warn - tests a boolean expression, logging a warning if false
-#
-# SYNOPSIS
-#	assert_or_warn condition message
-#
-# DESCRIPTION
-#	Tests a boolean condition. If the condition is false, the
-#	function will log_warn with the specified message.
-#
-# ARGUMENTS
-#	condition
-#		The boolean expression to test
-#	message
-#		The message to print with the action
-#
-################################################################
-
-proc assert_or_warn { condition message } {
-	assert "$condition" "$message" "warn"
-}
-
-
-################################################################
-#
-# NAME
-#	assert_or_skip - tests a boolean expression, skipping the test if false
-#
-# SYNOPSIS
-#	assert_or_skip condition message
-#
-# DESCRIPTION
-#	Tests a boolean condition. If the condition is false, the
-#	function will call skip with the specified message.
-#
-# ARGUMENTS
-#	condition
-#		The boolean expression to test
-#	message
-#		The message to print with the action
-#
-################################################################
-
-proc assert_or_skip { condition message } {
-	assert "$condition" "$message" "skip"
+	if [uplevel 1 expr [format "{%s}" $condition]] {
+		subpass $description
+	} else {
+		subfail {*}$options $description {*}$args
+	}
 }
 
 
@@ -6147,10 +6207,21 @@ proc _print_header { } {
 ################################################################
 #
 # NAME
-#	_print_failure - prints FAILURE status with test name
+#	_print_summary - prints the final status summary
 #
 # SYNOPSIS
-#	_print_failure
+#	_print_summary status completed
+#
+# ARGUMENTS
+#	status
+#		The final status of the test.
+#		When status is zero, we print SUCCESS.
+#		When status is negative, we print SKIPPED.
+#		When status is positive, we print FAILURE.
+#
+#	completed
+#		A boolean value that is true if the test completed and false
+#		if aborted (ended early with exit status != 0)
 #
 # ENVIRONMENT
 #	testsuite_colorize
@@ -6160,84 +6231,42 @@ proc _print_header { } {
 #
 ################################################################
 
-proc _print_failure { } {
-	global test_name testsuite_color_failure testsuite_colorize COLOR_NONE
+proc _print_summary {status completed} {
+	global test_name testsuite_colorize COLOR_NONE
+	global testsuite_color_success testsuite_color_skipped
+	global testsuite_color_failure
+	global subtest_fail_count subtest_pass_count subtest_skip_count
+
+	if {$status == 0} {
+		set color $testsuite_color_success
+		set header "SUCCESS"
+	} elseif {$status < 0} {
+		set color $testsuite_color_skipped
+		set header "SKIPPED"
+	} elseif {$status > 0} {
+		set color $testsuite_color_failure;
+		set header "FAILURE"
+	}
 
 	if ($testsuite_colorize) {
-		append output $testsuite_color_failure
+		append output $color
 	}
+
 	append output [string repeat = 78]\n
-	append output [format "%-9s" "FAILURE:"]${test_name}\n
+	append output [format "%s            : %s\n" $header  $test_name]
+	set subtest_count [expr $subtest_fail_count + $subtest_pass_count + $subtest_skip_count]
+	if {$subtest_count > 0} {
+		append output [format "  Subtests failed  : %d (%3d%%)\n" $subtest_fail_count [expr $subtest_fail_count * 100 / $subtest_count]]
+		append output [format "  Subtests skipped : %d (%3d%%)\n" $subtest_skip_count [expr $subtest_skip_count * 100 / $subtest_count]]
+		append output [format "  Subtests passed  : %d (%3d%%)\n" $subtest_pass_count [expr $subtest_pass_count * 100 / $subtest_count]]
+		append output [format "  Subtests total   : %d (%s)\n" $subtest_count [expr {$completed ? "COMPLETED" : "INCOMPLETE"}]]
+	}
 	append output [string repeat = 78]
+
 	if ($testsuite_colorize) {
 		append output $COLOR_NONE
 	}
-	puts $output
-}
 
-
-################################################################
-#
-# NAME
-#	_print_skipped - prints SKIPPED status with test name
-#
-# SYNOPSIS
-#	_print_skipped
-#
-# ENVIRONMENT
-#	testsuite_colorize
-#		Boolean that turns colorization on or off
-#	testsuite_color_<test_status>
-#		Can be set to define the color used for each test status
-#
-################################################################
-
-proc _print_skipped { } {
-	global test_name testsuite_color_skipped testsuite_colorize COLOR_NONE
-
-
-	if ($testsuite_colorize) {
-		append output $testsuite_color_skipped
-	}
-	append output [string repeat = 78]\n
-	append output [format "%-9s" "SKIPPED:"]${test_name}\n
-	append output [string repeat = 78]
-	if ($testsuite_colorize) {
-		append output $COLOR_NONE
-	}
-	puts $output
-}
-
-
-################################################################
-#
-# NAME
-#	_print_success - prints SUCCESS status with test name
-#
-# SYNOPSIS
-#	_print_success
-#
-# ENVIRONMENT
-#	testsuite_colorize
-#		Boolean that turns colorization on or off
-#	testsuite_color_<test_status>
-#		Can be set to define the color used for each test status
-#
-################################################################
-
-proc _print_success { } {
-	global test_name testsuite_color_success testsuite_colorize COLOR_NONE
-
-
-	if ($testsuite_colorize) {
-		append output $testsuite_color_success
-	}
-	append output [string repeat = 78]\n
-	append output [format "%-9s" "SUCCESS:"]${test_name}\n
-	append output [string repeat = 78]
-	if ($testsuite_colorize) {
-		append output $COLOR_NONE
-	}
 	puts $output
 }
 
@@ -6361,10 +6390,6 @@ proc _test_init {} {
 #	It cleans up based on the status and the testsuite_cleanup_on_failure
 #	variable, prints the final test status/summary, and exits the test.
 #
-#	When status is zero, we print SUCCESS.
-#	When status is negative, we print SKIPPED.
-#	When status is positive, we print FAILURE.
-#
 #	We will always cleanup for SUCCESS or SKIPPED tests.
 #	Whether or not the cleanup procedure is called for FAILURE tests
 #	depends on the setting of the $testsuite_cleanup_on_failure variable
@@ -6375,23 +6400,25 @@ proc _test_init {} {
 
 proc _test_fini { status } {
 	global testsuite_cleanup_on_failure
+	global subtest_fail_count subtest_skip_count
 
-	if {$status == 0} {
-		# Successful test
-		_test_cleanup
-		_print_success
-	} elseif {$status < 0} {
-		# Skipped test
-		_test_cleanup
-		_print_skipped
-	} else {
-		# Failed test
-		# Only cleanup the test if configured to do so
-		if {$testsuite_cleanup_on_failure} {
-			_test_cleanup
+	# Determine if test completed or was aborted
+	set completed [expr $status == 0 ? true : false]
+
+	# Override status with subtest status if available and necessary
+	if {$status < 1} {
+		if {$subtest_fail_count > 0} {
+			set status 1
+		} elseif {$subtest_skip_count > 0} {
+			set status -1
 		}
-		_print_failure
 	}
+
+	# Only cleanup if test not failed or configured to do so
+	if {$status != 1 || $testsuite_cleanup_on_failure} {
+		_test_cleanup
+	}
+	_print_summary $status $completed
 
 	__exit $status
 }

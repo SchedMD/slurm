@@ -330,7 +330,7 @@ wait_for {$condition_matched} {
 		set condition_matched true
 	}
 }
-assert_or_fail {$condition_matched} "Job $job_id_1 did not pend on InvalidQOS as expected"
+subtest {$condition_matched} "Job $job_id_1 should be PD with Reason=InvalidQOS" "(JobState=$job_state, Reason=$reason)"
 
 # Add back the test qos
 run_command -fail "$sacctmgr -vi modify account name=$ta1 user=$tu1 set qos=normal,$tq1"
@@ -408,7 +408,7 @@ wait_for {$condition_matched} {
 		set condition_matched true
 	}
 }
-assert_or_fail {$condition_matched} "Job $job_id_1 did not pend on InvalidAccount as expected"
+subtest {$condition_matched} "Job $job_id_1 should be PD with Reason=InvalidAccount" "(JobState=$job_state, Reason=$reason)"
 
 # Add back the test account
 run_command -fail "$sacctmgr -vi add account name=$ta2 set qos=normal,$tq1"
