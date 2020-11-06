@@ -4960,8 +4960,11 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 						      &best_rc,
 						      &rc,
 						      &part_limits_rc) ==
-			    SLURM_SUCCESS)
-				break;
+			    SLURM_SUCCESS) {
+				if ((rc != ESLURM_RESERVATION_NOT_USABLE) &&
+				    (rc != ESLURM_RESERVATION_BUSY))
+					break;
+			}
 		}
 		list_iterator_destroy(iter);
 
