@@ -222,7 +222,9 @@ if {$match != 2} {
 	set exit_code 1
 }
 cancel_job $job_id1
-fail_on_error "Test failed due to previous errors (\$exit_code = $exit_code)"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}
 
 #
 # Test --gpus-per-node option by job (first job over limit, second job under limit)
@@ -307,7 +309,9 @@ if {$match != 2} {
 	set exit_code 1
 }
 cancel_job $job_id1
-fail_on_error "Test failed due to previous errors (\$exit_code = $exit_code)"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}
 
 #
 # Test --gpus-per-task option by job (first job over limit, second job under limit)
@@ -396,7 +400,9 @@ if {$match != 2} {
 	set exit_code 1
 }
 cancel_job $job_id1
-fail_on_error "Test failed due to previous errors (\$exit_code = $exit_code)"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out1 $file_out2

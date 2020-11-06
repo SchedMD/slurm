@@ -440,32 +440,6 @@ proc pass { } {
 ################################################################
 #
 # NAME
-#	fail_on_error - fails if exit_code is non-zero
-#
-# SYNOPSIS
-#	fail_on_error message
-#
-# DESCRIPTION
-#	If exit_code global variable is non-zero it calls fail with the
-#	message.
-#
-# NOTE
-#	DO NOT call this within your local cleanup procedure.
-#
-################################################################
-
-proc fail_on_error { message } {
-	global exit_code
-
-	if {$exit_code != 0} {
-		fail "$message"
-	}
-}
-
-
-################################################################
-#
-# NAME
 #	subpass - registers a passing subtest result
 #
 # SYNOPSIS

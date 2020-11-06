@@ -126,7 +126,9 @@ expect {
 	}
 }
 
-fail_on_error "Error submitting job"
+if {$exit_code != 0} {
+	fail "Error submitting job"
+}
 
 # Wait enough time for the jobs to be in the controller
 set count 0
@@ -144,8 +146,9 @@ subtest -fail { $count == $count_exp } "Jobs have requested feature $node_featur
                                                 $count_exp $node_feature $count]
 
 # Cancel the jobs and wait for them to purged from the controller
-set exit_code [cancel_job $job_id]
-fail_on_error "Problem cancelling job $job_id"
+if [cancel_job $job_id] {
+	fail "Problem cancelling job $job_id"
+}
 
 set exit_code 1
 set sleep_time $min_job_age

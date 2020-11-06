@@ -170,5 +170,6 @@ for {set ii 0} {$ii < [llength $job_map]} {incr ii} {
 	}
 }
 
-
-fail_on_error "Test failed due to previous errors (\$exit_code = $exit_code)"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

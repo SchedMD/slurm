@@ -340,7 +340,9 @@ if {$match_gpu != $expected_gpus} {
 	fail "srun --gpus-per-task failure ($match_gpu != $expected_gpus)"
 }
 
-fail_on_error "Test failed due to previous errors (\$exit_code = $exit_code)"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}
 if {[llength $skipped] != 0} {
 	skip "Some tests skipped:\n[join $skipped \n]"
 }

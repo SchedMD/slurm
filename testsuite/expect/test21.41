@@ -258,10 +258,13 @@ proc _run_test { update_str expected_jobs } {
 	incr exit_code [archive_load $sql_rem_clus2]
 	incr exit_code [archive_load $sql_in_clus1]
 	incr exit_code [archive_load $sql_in_clus2]
-	fail_on_error "Unable to load archive"
+	if {$exit_code != 0} {
+		fail "Unable to load archive"
+	}
 
-	incr exit_code [test_job_update $update_str $expected_jobs]
-	fail_on_error "Update failed with: $update_str"
+	if [test_job_update $update_str $expected_jobs] {
+		fail "Update failed with: $update_str"
+	}
 }
 
 #
@@ -308,15 +311,19 @@ remove_cluster $clusters
 # Add cluster
 incr exit_code [add_cluster $cluster1 [array get clus_req]]
 incr exit_code [add_cluster $cluster2 [array get clus_req]]
-fail_on_error "Unable to add clusters"
+if {$exit_code != 0} {
+	fail "Unable to add clusters"
+}
 
 # Add accounts
-incr exit_code [add_acct "$account1,$account2" [array get acct_req]]
-fail_on_error "Unable to add accounts"
+if [add_acct "$account1,$account2" [array get acct_req]] {
+	fail "Unable to add accounts"
+}
 
 # Add users
-incr exit_code [add_user $users [array get user_req]]
-fail_on_error "Unable to add users"
+if [add_user $users [array get user_req]] {
+	fail "Unable to add users"
+}
 
 #
 # Get the association ids
