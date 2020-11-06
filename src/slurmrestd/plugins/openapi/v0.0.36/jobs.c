@@ -1392,7 +1392,7 @@ static int _op_handler_submit_job_post(const char *context_id,
 		if (!jobs) {
 			error("%s: [%s] missing job specification field",
 			      __func__, context_id);
-			rc = ESLURM_INVALID_JOB_ID;
+			rc = ESLURM_REST_INVALID_JOBS_DESC;
 		} else if ((jobs_rc = _parse_job_list(jobs, script, errors,
 						      false))
 				   .rc) {
