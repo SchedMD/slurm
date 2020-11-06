@@ -428,9 +428,8 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 		job->envtp->comm_port =
 			msg->resp_port[nodeid % msg->num_resp_port];
 		memcpy(&resp_addr, &msg->orig_addr, sizeof(slurm_addr_t));
-		slurm_set_addr(&resp_addr,
-			       msg->resp_port[nodeid % msg->num_resp_port],
-			       NULL);
+		slurm_set_port(&resp_addr,
+			       msg->resp_port[nodeid % msg->num_resp_port]);
 	} else {
 		memset(&resp_addr, 0, sizeof(slurm_addr_t));
 	}
@@ -438,9 +437,8 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 		msg->flags |= LAUNCH_USER_MANAGED_IO;
 	if ((msg->flags & LAUNCH_USER_MANAGED_IO) == 0) {
 		memcpy(&io_addr,   &msg->orig_addr, sizeof(slurm_addr_t));
-		slurm_set_addr(&io_addr,
-			       msg->io_port[nodeid % msg->num_io_port],
-			       NULL);
+		slurm_set_port(&io_addr,
+			       msg->io_port[nodeid % msg->num_io_port]);
 	} else {
 		memset(&io_addr, 0, sizeof(slurm_addr_t));
 	}

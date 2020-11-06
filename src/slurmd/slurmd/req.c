@@ -4308,7 +4308,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	memcpy(&resp_msg.address, cli, sizeof(slurm_addr_t));
 	if (req->num_resp_port > 0) {
 		port = req->resp_port[nodeid % req->num_resp_port];
-		slurm_set_addr(&resp_msg.address, port, NULL);
+		slurm_set_port(&resp_msg.address, port);
 	}
 
 	/*
@@ -4318,7 +4318,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 
 	if (req->num_io_port > 0) {
 		port = req->io_port[nodeid % req->num_io_port];
-		slurm_set_addr(&ioaddr, port, NULL);
+		slurm_set_port(&ioaddr, port);
 	}
 
 	/*

@@ -2383,9 +2383,8 @@ _send_launch_failure(launch_tasks_request_msg_t *msg, slurm_addr_t *cli, int rc,
 
 	slurm_msg_t_init(&resp_msg);
 	memcpy(&resp_msg.address, cli, sizeof(slurm_addr_t));
-	slurm_set_addr(&resp_msg.address,
-		       msg->resp_port[nodeid % msg->num_resp_port],
-		       NULL);
+	slurm_set_port(&resp_msg.address,
+		       msg->resp_port[nodeid % msg->num_resp_port]);
 	resp_msg.data = &resp;
 	resp_msg.msg_type = RESPONSE_LAUNCH_TASKS;
 	resp_msg.protocol_version = protocol_version;
