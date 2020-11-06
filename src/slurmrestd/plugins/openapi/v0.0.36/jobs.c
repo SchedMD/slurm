@@ -1220,13 +1220,19 @@ static int _handle_job_delete(const char *context_id,
 			      data_t *resp, const uint32_t job_id,
 			      data_t *const errors, const int signal)
 {
-	int rc = slurm_kill_job(job_id, signal, KILL_FULL_JOB);
+	if (slurm_kill_job(job_id, signal, KILL_FULL_JOB)) {
+		int rc;
 
-	if (rc)
-		_job_error("%s: unable to kill job %d with signal %d: %m",
-			   __func__, job_id, signal);
+		/* Already signaled jobs are considered a success here */
+		if (errno == ESLURM_ALREADY_DONE)
+			return SLURM_SUCCESS;
 
-	return rc;
+		_job_error("%s: unable to kill job %d with signal %d: %s",
+			   __func__, job_id, signal, slurm_strerror(errno));
+		return rc;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 static int _handle_job_post(const char *context_id,
