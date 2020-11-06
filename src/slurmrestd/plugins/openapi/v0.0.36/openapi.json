@@ -82,9 +82,21 @@
         ],
         "responses": {
           "200": {
-            "description": "job information"
+            "description": "job(s) information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/jobs_response"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/jobs_response"
+                }
+              }
+            }
           },
-          "500": {
+          "default": {
             "description": "job not found"
           }
         }
@@ -655,6 +667,25 @@
           "jobs": {
             "description": "Properties of an HetJob",
             "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/job_properties"
+            }
+          }
+        }
+      },
+      "jobs_response": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          },
+          "jobs": {
+            "type": "array",
+            "description": "job descriptions",
             "items": {
               "$ref": "#/components/schemas/job_properties"
             }
