@@ -632,41 +632,43 @@ done:
 
 extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 {
-	struct addrinfo *ai_ptr;
+	struct addrinfo *ai_ptr, *ai_start;
 
 	log_flag(NET, "%s: called with port='%u' host='%s'",
 		__func__, port, host);
 
 	/*
-	 * If NULL hostname passed in, we only update the port of addr
+	 * get_addr_info uses hints from our config to determine what address
+	 * families to return
 	 */
-	if (!host) {
-		if (!addr->ss_family) {
-			if (slurm_conf.conf_flags & CTL_CONF_IPV6_ENABLED)
-				addr->ss_family = AF_INET6;
-			else
-				addr->ss_family = AF_INET;
-		}
-		slurm_set_port(addr, port);
-		log_flag(NET, "%s: updated port info. addr='%pA'",
-			 __func__, addr);
+	ai_start = get_addr_info(host, port);
+
+	if (!ai_start) {
+		error("%s: Unable to resolve \"%s\"", __func__, host);
+		addr->ss_family = AF_UNSPEC;
 		return;
 	}
 
 	/*
-	 * get_addr_info uses hints from our config to determine what address
-	 * families to return
+	 * When host is null, assume we are trying to bind here.
+	 * Make sure we return the v6 wildcard address first (when applicable)
+	 * since we want v6 to be the default.
 	 */
-	ai_ptr = get_addr_info(host, port);
-
-	if (ai_ptr) {
-		memcpy(addr, ai_ptr->ai_addr, ai_ptr->ai_addrlen);
-		log_flag(NET, "%s: update addr. addr='%pA'", __func__, addr);
-		freeaddrinfo(ai_ptr);
+	if (host || !(slurm_conf.conf_flags & CTL_CONF_IPV6_ENABLED)) {
+		ai_ptr = ai_start;
 	} else {
-		error("%s: Unable to resolve \"%s\"", __func__, host);
-		addr->ss_family = AF_UNSPEC;
+		for (ai_ptr = ai_start; ai_ptr; ai_ptr = ai_ptr->ai_next) {
+			if (ai_ptr->ai_family == AF_INET6)
+				break;
+		}
+		/* fall back to whatever was available */
+		if (!ai_ptr)
+			ai_ptr = ai_start;
 	}
+
+	memcpy(addr, ai_ptr->ai_addr, ai_ptr->ai_addrlen);
+	log_flag(NET, "%s: update addr. addr='%pA'", __func__, addr);
+	freeaddrinfo(ai_start);
 }
 
 extern void slurm_pack_slurm_addr(slurm_addr_t *addr, Buf buffer)
