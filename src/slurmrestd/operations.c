@@ -318,11 +318,24 @@ static int _resolve_mime(on_http_request_args_t *args, mime_types_t *read_mime,
 			args, "Accept content type is unknown",
 			HTTP_STATUS_CODE_ERROR_BAD_REQUEST, NULL);
 
-	if (args->method != HTTP_REQUEST_POST && *read_mime != MIME_URL_ENCODED)
-		return _operations_router_reject(
-			args,
-			"only application/x-www-form-urlencoded is accepted as content-type non-POST methods.",
-			HTTP_STATUS_CODE_ERROR_BAD_REQUEST, NULL);
+	if ((*read_mime != MIME_URL_ENCODED) && (args->body_length == 0)) {
+		/*
+		 * RFC7273#3.1.1.5 only specifies a sender SHOULD send
+		 * the correct content-type header but allows for them to be
+		 * wrong and expects the server to handle that gracefully.
+		 *
+		 * We will instead override the mime type if there is empty body
+		 * content to avoid unneccesssily rejecting otherwise compliant
+		 * requests.
+		 */
+		debug("%s: [%s] Overriding content type from %s to %s for %s",
+		      __func__, args->context->con->name,
+		      get_mime_type_str(*read_mime),
+		      get_mime_type_str(MIME_URL_ENCODED),
+		      get_http_method_string(args->method));
+
+		*read_mime = MIME_URL_ENCODED;
+	}
 
 	if (args->method != HTTP_REQUEST_POST && args->body_length > 0)
 		return _operations_router_reject(
