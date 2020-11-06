@@ -660,19 +660,7 @@ extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 	ai_ptr = get_addr_info(host, port);
 
 	if (ai_ptr) {
-		addr->ss_family = ai_ptr->ai_family;
-		slurm_set_port(addr, port);
-		if (ai_ptr->ai_family == AF_INET6) {
-			struct sockaddr_in6 *src, *dst;
-			src = (struct sockaddr_in6 *) ai_ptr->ai_addr;
-			dst = (struct sockaddr_in6 *) addr;
-			memcpy(&dst->sin6_addr, &src->sin6_addr, 16);
-		} else {
-			struct sockaddr_in *src, *dst;
-			src = (struct sockaddr_in *) ai_ptr->ai_addr;
-			dst = (struct sockaddr_in *) addr;
-			memcpy(&dst->sin_addr, &src->sin_addr, 4);
-		}
+		memcpy(addr, ai_ptr->ai_addr, ai_ptr->ai_addrlen);
 		log_flag(NET, "%s: update addr. addr='%pA'", __func__, addr);
 		freeaddrinfo(ai_ptr);
 	} else {
