@@ -2169,7 +2169,7 @@ proc get_config { } {
 	set output [run_command_output -fail -nolog "$scontrol show config"]
 
 	foreach line [split $output "\n"] {
-		if {[regexp {^(\w+) += (.*)$} $line {} param_name param_value] == 1} {
+		if {[regexp {^(\S+) += (.*)$} $line {} param_name param_value] == 1} {
 			dict set config_dict $param_name $param_value
 		}
 	}
