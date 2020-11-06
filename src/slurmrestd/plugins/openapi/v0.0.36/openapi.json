@@ -191,9 +191,21 @@
         },
         "responses": {
           "200": {
-            "description": "job submitted"
+            "description": "job submitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/job_submission_response"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/job_submission_response"
+                }
+              }
+            }
           },
-          "500": {
+          "default": {
             "description": "job rejected"
           }
         }
@@ -602,6 +614,30 @@
           "TTIN",
           "TTOU"
         ]
+      },
+      "job_submission_response": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          },
+          "job_id": {
+            "description": "new job ID",
+            "type": "integer"
+          },
+          "step_id": {
+            "description": "new job step ID",
+            "type": "string"
+          },
+          "job_submit_user_msg": {
+            "description": "Message to user from job_submit plugin",
+            "type": "string"
+          }
+        }
       },
       "job_submission": {
         "required": [
