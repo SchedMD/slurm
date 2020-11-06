@@ -178,12 +178,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/job_properties"
+                "$ref": "#/components/schemas/job_submission"
               }
             },
             "application/x-yaml": {
               "schema": {
-                "$ref": "#/components/schemas/job_properties"
+                "$ref": "#/components/schemas/job_submission"
               }
             }
           },
@@ -602,6 +602,28 @@
           "TTIN",
           "TTOU"
         ]
+      },
+      "job_submission": {
+        "required": [
+          "script"
+        ],
+        "properties": {
+          "script": {
+            "type": "string",
+            "description": "Executable script (full contents) to run in batch step"
+          },
+          "job": {
+            "description": "Properties of an array job or non-HetJob",
+            "$ref": "#/components/schemas/job_properties"
+          },
+          "jobs": {
+            "description": "Properties of an HetJob",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/job_properties"
+            }
+          }
+        }
       },
       "job_properties": {
         "type": "object",
