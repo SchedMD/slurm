@@ -97,20 +97,10 @@ jobacct_gather_cgroup_memory_fini(void)
 	    || jobstep_cgroup_path[0] == '\0'
 	    || task_cgroup_path[0] == '\0')
 		return SLURM_SUCCESS;
-	/*
-	 * Move the slurmstepd back to the root memory cg and force empty
-	 * the step cgroup to move its allocated pages to its parent.
-	 * The release_agent will be called asynchronously for the step
-	 * cgroup. It will do the necessary cleanup.
-	 * It should be good if this force_empty mech could be done directly
-	 * by the memcg implementation at the end of the last task managed
-	 * by a cgroup. It is too difficult and near impossible to handle
-	 * that cleanup correctly with current memcg.
-	 */
-	if (xcgroup_create(&memory_ns, &memory_cg, "", 0, 0) == XCGROUP_SUCCESS) {
+
+	/* Move the slurmstepd back to the root memory cg */
+	if (xcgroup_create(&memory_ns, &memory_cg, "", 0, 0) == XCGROUP_SUCCESS)
 		xcgroup_set_uint32_param(&memory_cg, "tasks", getpid());
-		xcgroup_set_param(&step_memory_cg, "memory.force_empty", "1");
-	}
 
 	/* Lock the root of the cgroup and remove the subdirectories
 	 * related to this job.
@@ -146,8 +136,15 @@ jobacct_gather_cgroup_memory_fini(void)
 		xfree(buf);
 	}
 
-	/* Clean the rest of the hierarchy.
+	/*
+	 * Clean the rest of the hierarchy.
+	 * Despite rmdir() offlines memcg, the memcg may still stay there due
+	 * to charged file caches. Some out-of-use page caches may keep charged
+	 * until memory pressure happens. Avoid this writting to 'force_empty'.
+	 * Note that when memory.kmem.limit_in_bytes is set the charges due to
+	 * kernel pages will still be seen.
 	 */
+	xcgroup_set_param(&step_memory_cg, "memory.force_empty", "1");
 	if (xcgroup_delete(&step_memory_cg) != XCGROUP_SUCCESS) {
 		debug2("%s: failed to delete %s %m", __func__,
 		       step_memory_cg.path);

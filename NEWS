@@ -24,6 +24,7 @@ documents those changes that are of interest to users and administrators.
  -- Avoid non-async-signal-safe functions calls in X11 fowarding which can
     lead to the extern step terminating unexpectedly.
  -- Don't send job completion email for revoked federation jobs.
+ -- Fix device or resource busy errors on cgroup cleanup on older kernels.
 
 * Changes in Slurm 20.11.0rc1
 ==============================
