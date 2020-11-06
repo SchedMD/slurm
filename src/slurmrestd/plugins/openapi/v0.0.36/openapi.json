@@ -604,6 +604,7 @@
         ]
       },
       "job_properties": {
+        "type": "object",
         "properties": {
           "account": {
             "type": "string",
