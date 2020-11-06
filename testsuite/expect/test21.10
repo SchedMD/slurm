@@ -284,7 +284,10 @@ add_acct $ta1 [array get acct]
 #
 # Use sacctmgr to list and check the test associations
 #
-check_assoc_limit 2 account $ta1 [array get acct]
+if {![check_assoc_limit 2 account $ta1 [array get acct]]} {
+	log_error "The association limits for account $ta1 are incorrect"
+	set exit_code 1
+}
 
 if {![check_acct_associations]} {
 	log_error "Our associations don't line up"

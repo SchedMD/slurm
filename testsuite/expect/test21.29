@@ -78,7 +78,7 @@ if {$access_err != 0} {
 add_qos $qos_name [array get qos]
 
 # Use sacctmgr list to verify the test qos fields
-set exit_code [check_qos_limits $qos_name  [array get qos]]
+incr exit_code [check_qos_limits $qos_name  [array get qos]]
 
 # Setup the qos array so that we clear all the limits
 foreach option [array name qos] {
@@ -92,10 +92,10 @@ set qos(Description) ""
 set qos(Priority) $priority_reset
 
 #modify qos
-set exit_code [mod_qos $qos_name [array get qos]]
+incr exit_code [mod_qos $qos_name [array get qos]]
 
 # Check that the modified QoS limits are correct
-set exit_code [check_qos_limits $qos_name [array get qos]]
+incr exit_code [check_qos_limits $qos_name [array get qos]]
 
 # Next is clean up and the end
 incr exit_code [remove_qos "$qos_name"]

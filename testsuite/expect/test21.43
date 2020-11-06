@@ -134,8 +134,9 @@ expect {
 #
 # Clear the usage statistics
 #
-reset_account_usage "$cluster" "$test_acct"
-fail_on_error "Unable to reset account usage"
+if [reset_account_usage "$cluster" "$test_acct"] {
+	fail "Unable to reset account usage"
+}
 
 #
 # Test Usage Factor Function
