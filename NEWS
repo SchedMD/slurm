@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
     lead to the extern step terminating unexpectedly.
  -- Don't send job completion email for revoked federation jobs.
  -- Fix device or resource busy errors on cgroup cleanup on older kernels.
+ -- Avoid binding to IPv6 wildcard address in slurmd if IPv6 is not explicitly
+    enabled.
 
 * Changes in Slurm 20.11.0rc1
 ==============================

@@ -2863,12 +2863,11 @@ extern int slurm_forward_data(
 
 extern void slurm_setup_addr(slurm_addr_t *sin, uint16_t port)
 {
-	static uint8_t s_addr[16];
-	static uint32_t s_family = NO_VAL;
+	static slurm_addr_t s_addr = { 0 };
 
 	memset(sin, 0, sizeof(*sin));
 
-	if (s_family == NO_VAL) {
+	if (slurm_addr_is_unspec(&s_addr)) {
 		/* On systems with multiple interfaces we might not
 		 * want to get just any address.  This is the case on
 		 * a Cray system with RSIP.
@@ -2884,46 +2883,18 @@ extern void slurm_setup_addr(slurm_addr_t *sin, uint16_t port)
 			char host[MAXHOSTNAMELEN];
 
 			if (!gethostname(host, MAXHOSTNAMELEN)) {
-				slurm_set_addr(sin, port, host);
-				s_family = sin->ss_family;
+				slurm_set_addr(&s_addr, port, host);
 			} else
 				fatal("%s: Can't get hostname or addr: %m",
 				      __func__);
-
-			/* Pick IPv6 or IPv4 based on the DNS lookup */
-			if (s_family == AF_INET6) {
-				struct sockaddr_in6 *in6 =
-					(struct sockaddr_in6 *) sin;
-				memcpy(s_addr, &(in6->sin6_addr.s6_addr), 16);
-			} else {
-				struct sockaddr_in *in =
-					(struct sockaddr_in *) sin;
-				memcpy(s_addr, &(in->sin_addr.s_addr), 4);
-			}
 		} else {
-			if (slurm_conf.conf_flags & CTL_CONF_IPV6_ENABLED) {
-				struct in6_addr tmp_addr = IN6ADDR_ANY_INIT;
-				memcpy(s_addr, &tmp_addr, sizeof(tmp_addr));
-				s_family = AF_INET6;
-			} else {
-				uint32_t tmp_addr = htonl(INADDR_ANY);
-				memcpy(s_addr, &tmp_addr, sizeof(tmp_addr));
-				s_family = AF_INET;
-			}
+			slurm_set_addr(&s_addr, port, NULL);
 		}
 	}
 
-	if (s_family == AF_INET6) {
-		struct sockaddr_in6 *in6 = (struct sockaddr_in6 *) sin;
-		in6->sin6_family = s_family;
-		in6->sin6_port = htons(port);
-		memcpy(&(in6->sin6_addr.s6_addr), s_addr, 16);
-	} else {
-		struct sockaddr_in *in = (struct sockaddr_in *) sin;
-		in->sin_family = s_family;
-		in->sin_port = htons(port);
-		memcpy(&(in->sin_addr.s_addr), s_addr, 4);
-	}
+	memcpy(sin, &s_addr, sizeof(*sin));
+	slurm_set_port(sin, port);
+	log_flag(NET, "%s: update address to %pA", __func__, sin);
 }
 
 /*
