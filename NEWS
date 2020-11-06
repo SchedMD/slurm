@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
  -- cons_tres - fix regression regarding gpus with --cpus-per-task.
  -- Avoid non-async-signal-safe functions calls in X11 fowarding which can
     lead to the extern step terminating unexpectedly.
+ -- Don't send job completion email for revoked federation jobs.
 
 * Changes in Slurm 20.11.0rc1
 ==============================
