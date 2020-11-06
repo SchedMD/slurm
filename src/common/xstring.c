@@ -735,7 +735,7 @@ extern char *bytes_to_hex(const char *string, int len, const char *delimiter)
 			xstrfmtcatat(hex, &pos, "%s", delimiter);
 
 		/* convert each char into equiv hex */
-		xstrfmtcatat(hex, &pos, "%02x", string[i]);
+		xstrfmtcatat(hex, &pos, "%02x", (unsigned char) string[i]);
 	}
 
 	return hex;
