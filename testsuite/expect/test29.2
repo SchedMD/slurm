@@ -11,7 +11,7 @@ source ./globals
 
 set exit_code  0
 
-if {![slurmctld_plug_stack_nonstop]} {
+if {![param_contains [get_config_param "SlurmctldPlugstack"] "nonstop"]} {
 	skip "This test is only compatible when SlurmctldPlugstack includes nonstop"
 }
 

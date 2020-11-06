@@ -78,8 +78,6 @@ if {![is_super_user]} {
 }
 
 set config_path [get_conf_path]
-fail_on_error "Not able to get config_path"
-
 set config_file $config_path/slurm.conf
 
 save_conf $config_file
@@ -88,8 +86,9 @@ save_conf $config_file
 exec $bin_sed -i /^\[\t\s\]*MinJobAge\[\t\s\]*=/Id $config_file
 exec $bin_echo -e "\nMinJobAge=10" >> $config_file
 
-reconfigure
-fail_on_error "Not able to reconfigure"
+if [reconfigure] {
+	fail "Not able to reconfigure"
+}
 
 # Verify that MinJobAge was set
 regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age

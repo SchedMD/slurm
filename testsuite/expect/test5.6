@@ -38,7 +38,7 @@ set job_name1    "test$test_id.job1"
 set job_name2    "test$test_id.job2"
 set node_cnt 1-1
 
-if {[job_submit_all_partitions] != 0} {
+if {[param_contains [get_config_param "JobSubmitPlugins"] "all_partitions"]} {
 	skip "This test is incompatible with JobSubmitPlugins=all_partitions"
 }
 

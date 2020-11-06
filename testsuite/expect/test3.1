@@ -72,7 +72,7 @@ if {[wait_for_job $job_id RUNNING] != 0} {
 #
 # Issue scontrol reconfigure
 #
-reconfigure
+incr exit_code [reconfigure]
 
 if {[wait_for_job $job_id RUNNING] != 0} {
 	fail "Job $job_id not running after reconfiguration"

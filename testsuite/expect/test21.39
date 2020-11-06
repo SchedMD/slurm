@@ -249,7 +249,6 @@ create_accounts
 
 # Get the location of the slurm.conf file
 set config_dir [get_conf_path]
-fail_on_error "Unable to determine configuration path"
 set config_file $config_dir/slurm.conf
 
 #

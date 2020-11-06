@@ -38,7 +38,6 @@ set wk3         "test$test_id-wckey3"
 set timeout 60
 
 set config_path [get_conf_path]
-fail_on_error "Error getting config path"
 set config_file $config_path/slurm.conf
 
 #
@@ -131,7 +130,7 @@ if {[get_config_param "TrackWCKey"] ne "Yes"} {
 
 	exec $bin_sed -i /^\[\t\s\]*TrackWCKey\[\t\s\]*=/Id $config_file
 	exec $bin_echo TrackWCKey=Yes >> $config_file
-	reconfigure
+	incr exit_code [reconfigure]
 	set reconfigured true
 }
 
@@ -449,7 +448,7 @@ expect {
 
 if {$reconfigured} {
 	restore_conf $config_file
-	reconfigure
+	incr exit_code [reconfigure]
 }
 
 if {$exit_code == 0} {

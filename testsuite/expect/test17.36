@@ -171,20 +171,6 @@ proc create_part {part oversubscribe node} {
 
 }
 
-proc delete_part {part} {
-	global scontrol exit_code
-
-	spawn $scontrol delete partitionname=$part
-	expect {
-		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-}
 
 proc sub_job { job oversubscribe part } {
 	global sbatch file_in number job_id exit_code job_mem_opt

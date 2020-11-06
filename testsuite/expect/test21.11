@@ -170,7 +170,6 @@ if {$almatches != 2} {
 }
 # Check that the Association was set correctly
 check_assoc_limit 2 account $ta1 [array get acct]
-
 check_assoc_limit 2 account $ta2 [array get acct]
 
 if {![check_acct_associations]} {

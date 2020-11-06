@@ -129,8 +129,6 @@ proc update { job_id args regex } {
 }
 
 set config_path [get_conf_path]
-fail_on_error "Unable to determine configuration path"
-
 save_conf $config_path/slurm.conf
 
 proc test_it {} {

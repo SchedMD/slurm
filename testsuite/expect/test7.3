@@ -46,8 +46,9 @@ file delete $io_prog $test_prog
 exec $bin_cc -O -o $io_prog ${io_prog}.c
 exec $bin_chmod 700 $io_prog
 
-compile_against_libslurm ${test_prog}
-fail_on_error "Cannot compile test program"
+if [compile_against_libslurm ${test_prog}] {
+	fail "Cannot compile test program"
+}
 
 #
 # Spawn initial program via srun

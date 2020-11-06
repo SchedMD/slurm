@@ -35,8 +35,9 @@ set test_prog   "test$test_id.prog"
 # Delete left-over programs and rebuild them.
 #
 exec $bin_rm -f $test_prog
-compile_against_libslurm ${test_prog}
-fail_on_error "Cannot compile test program"
+if [compile_against_libslurm ${test_prog}] {
+	fail "Cannot compile test program"
+}
 
 spawn ./$test_prog
 expect {

@@ -39,8 +39,9 @@ if {[get_config_param "SwitchType"] eq "switch/cray"} {
 #
 file delete $test_prog
 
-compile_against_libslurm ${test_prog} 1
-fail_on_error "Cannot compile test program"
+if [compile_against_libslurm ${test_prog} 1] {
+	fail "Cannot compile test program"
+}
 
 log_info "====test7.17.1===="
 set cpu_match 0

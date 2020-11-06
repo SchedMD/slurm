@@ -37,7 +37,7 @@ set exit_code     0
 set file_in       "test$test_id.input"
 set job_id        0
 
-if {[job_submit_all_partitions] != 0} {
+if {[param_contains [get_config_param "JobSubmitPlugins"] "all_partitions"]} {
 	skip "This test is incompatible with JobSubmitPlugins=all_partitions"
 }
 

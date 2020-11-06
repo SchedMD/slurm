@@ -58,7 +58,7 @@ proc end_it { exit_code } {
 	} else {
 		exec $bin_rm -f $spank_conf_file
 	}
-	reconfigure
+	incr exit_code [reconfigure]
 
 	if {$exit_code == 0} {
 		exec $bin_rm -f $orig_spank_conf $new_spank_conf $file_in $file_out $spank_out ${file_prog}.so
@@ -151,7 +151,7 @@ expect {
 		wait
 	}
 }
-reconfigure
+incr exit_code [reconfigure]
 
 #
 # Test of srun help message

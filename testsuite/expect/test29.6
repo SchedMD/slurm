@@ -16,7 +16,7 @@ set node_name   ""
 set time_limit  0
 set exit_code   0
 
-if {![slurmctld_plug_stack_nonstop]} {
+if {![param_contains [get_config_param "SlurmctldPlugstack"] "nonstop"]} {
 	skip "This test is only compatible when SlurmctldPlugstack includes nonstop"
 }
 if {![is_super_user]} {

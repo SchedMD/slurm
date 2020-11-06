@@ -40,7 +40,6 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 }
 
 set config_path [get_conf_path]
-fail_on_error "Unable to get config path"
 set config_file $config_path/slurm.conf
 save_conf $config_file
 
@@ -55,7 +54,7 @@ exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_file
 exec $bin_echo -e "\nMCSPlugin=mcs/account" >> $config_file
 exec $bin_echo MCSParameters=ondemand,select,privatedata >> $config_file
 exec $bin_echo PrivateData=jobs,nodes >> $config_file
-reconfigure
+incr exit_code [reconfigure]
 
 #
 # verify slurm conf parameters MCS

@@ -88,7 +88,7 @@ proc end_it { exit_code } {
 	clean_assocs
 
 	restore_conf $config_file
-	reconfigure
+	incr exit_code [reconfigure]
 
 	if {$exit_code != 0} {
 		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
@@ -259,7 +259,6 @@ if {[info exists env(SPRIO_FORMAT)]} {
 }
 
 set config_path [get_conf_path]
-fail_on_error "Unable to get config path"
 set config_file $config_path/slurm.conf
 
 save_conf $config_file
@@ -275,7 +274,7 @@ PriorityWeightTRES=cpu=1
 PriorityFlags=NO_NORMAL_ALL
 "
 exec $bin_echo $prio_conf >> $config_file
-reconfigure
+incr exit_code [reconfigure]
 
 
 # verify NO_NORMAL_ALL shows. It sets multiple flags but show be collapsed to

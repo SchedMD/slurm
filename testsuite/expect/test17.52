@@ -38,7 +38,6 @@ if {![is_super_user]} {
 }
 
 set config_path [get_conf_path]
-fail_on_error "Unable to get config path"
 set config_file $config_path/slurm.conf
 save_conf $config_file
 
@@ -65,7 +64,7 @@ exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_file
 exec $bin_echo -e "\nMCSPlugin=mcs/group" >> $config_file
 exec $bin_echo MCSParameters=ondemand,select,privatedata:$groups_name >> $config_file
 exec $bin_echo PrivateData=jobs,nodes >> $config_file
-reconfigure
+incr exit_code [reconfigure]
 
 
 #
@@ -292,7 +291,7 @@ exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_file
 exec $bin_echo -e "\nMCSPlugin=mcs/group" >> $config_file
 exec $bin_echo MCSParameters=enforced,noselect,privatedata:$groups_name >> $config_file
 exec $bin_echo PrivateData=jobs,nodes >> $config_file
-reconfigure
+incr exit_code [reconfigure]
 
 
 ###### Check that sbatch uses mcs-label=group ######
@@ -396,7 +395,7 @@ cancel_job $job_id
 
 # Clean up vestigial files and restore original slurm.conf file
 restore_conf $config_file
-reconfigure
+incr exit_code [reconfigure]
 
 if {$exit_code == 0} {
 	exec $bin_rm $tmp_job

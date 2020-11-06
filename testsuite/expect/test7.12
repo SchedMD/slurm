@@ -49,8 +49,9 @@ file delete $file_in $test_prog
 make_bash_script $file_in "
   $srun $bin_sleep 120
 "
-compile_against_libslurm ${test_prog}
-fail_on_error "Cannot compile test program"
+if [compile_against_libslurm ${test_prog}] {
+	fail "Cannot compile test program"
+}
 
 #
 # Spawn program via sbatch

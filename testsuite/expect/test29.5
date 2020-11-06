@@ -16,7 +16,7 @@ set exit_code   0
 
 # this test is for the nonstop --replace-node test
 
-if {![slurmctld_plug_stack_nonstop]} {
+if {![param_contains [get_config_param "SlurmctldPlugstack"] "nonstop"]} {
 	skip "This test is only compatible when SlurmctldPlugstack includes nonstop"
 }
 if {![is_super_user]} {

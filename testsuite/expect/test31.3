@@ -69,7 +69,6 @@ proc check_epilog { pattern } {
 
 # Get the location of the slurm.conf file
 set config_dir [get_conf_path]
-fail_on_error "Error getting the config path"
 
 #
 # Copy slurm.conf file
@@ -96,7 +95,7 @@ exec $bin_echo "" >> $config_dir/slurm.conf
 exec $bin_echo "Prolog=$cwd/$prolog" >> $config_dir/slurm.conf
 exec $bin_echo "Epilog=$cwd/$epilog" >> $config_dir/slurm.conf
 
-reconfigure
+incr exit_code [reconfigure]
 
 # Test whether env vars exist in Prolog and Epilog
 log_info "Checking for regular env vars"

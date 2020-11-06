@@ -77,8 +77,9 @@ proc run_config { test_config } {
 #
 file delete $test_prog
 
-compile_against_libslurm ${test_prog} 1
-fail_on_error "Cannot compile test program"
+if [compile_against_libslurm ${test_prog} 1] {
+	fail "Cannot compile test program"
+}
 
 log_user 0
 set cfgcount 0

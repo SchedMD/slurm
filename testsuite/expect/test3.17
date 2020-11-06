@@ -163,7 +163,7 @@ if {$match == 0} {
 }
 
 # Run "scontrol reconfig" to restore proper features on the node
-reconfigure
+incr exit_code [reconfigure]
 
 # Now run a job with that constraint and make sure it fails
 set match 0

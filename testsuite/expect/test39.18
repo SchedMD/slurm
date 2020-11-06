@@ -129,11 +129,13 @@ touch_file $dev8
 
 # Build test program
 if {$use_valgrind} {
-	compile_against_libslurm ${test_prog} 1 "-DUSING_VALGRIND"
+	set rc [compile_against_libslurm ${test_prog} 1 "-DUSING_VALGRIND"]
 } else {
-	compile_against_libslurm ${test_prog} 1
+	set rc [compile_against_libslurm ${test_prog} 1]
 }
-fail_on_error "Cannot compile test program"
+if {$rc} {
+	fail "Cannot compile test program"
+}
 
 # Build program to determine size of unsigned long in C
 set build_cmd "$bin_cc ${test_ulong_prog}.c -o ${test_ulong_prog}"

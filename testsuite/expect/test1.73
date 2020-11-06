@@ -83,8 +83,6 @@ proc check_rc { job } {
 # Get the slurm.conf path
 #
 set config_dir [get_conf_path]
-fail_on_error "Unable to get config path"
-
 set config_file $config_dir/slurm.conf
 
 #
@@ -121,7 +119,7 @@ expect {
 if {$match == 0} {
 	fail "slurm.conf was not updated"
 }
-reconfigure
+incr exit_code [reconfigure]
 
 set rc [check_rc $good_job]
 if {$rc != 0} {
@@ -135,7 +133,7 @@ if {$rc == 0} {
 
 # Restore the slurm.conf file back to original values
 restore_conf $config_file
-reconfigure
+incr exit_code [reconfigure]
 
 if {$exit_code == 0} {
 	exec $bin_rm -f $good_script $bad_script $good_job $bad_job

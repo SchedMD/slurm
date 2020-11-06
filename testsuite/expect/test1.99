@@ -59,7 +59,6 @@ if {[expr $ports(1) - $ports(0)] < 5} {
 # Copy the slurm.conf file
 #
 set config_path [get_conf_path]
-fail_on_error "Test failed due to previous errors (\$exit_code = $exit_code)"
 set config_file $config_path/slurm.conf
 
 save_conf $config_file
@@ -151,7 +150,7 @@ if {$out_of_range != 0} {
 exec $bin_sed -i "s/SrunPortRange=$slurm_conf_range/#SrunPortRange=$slurm_conf_range/Ig" $config_file
 exec $bin_echo SrunPortRange=$ports(0)-[expr $ports(0) + 5] > $config_path/$port_dir
 exec $bin_echo include $config_path/$port_dir >> $config_file
-reconfigure
+incr exit_code [reconfigure]
 
 ###### Check that srun produces an error when all ports are exhausted ######
 log_info "---Checking srun error when ports are exhausted---"
@@ -208,7 +207,7 @@ cancel_job $tmp_id
 
 # Clean up vestigial files and restore original slurm.conf file
 restore_conf $config_file
-reconfigure
+incr exit_code [reconfigure]
 
 if {$exit_code == 0} {
 	exec $bin_rm $file_in $tmp_job

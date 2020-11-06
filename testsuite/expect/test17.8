@@ -40,7 +40,7 @@ set time_get    0
 #
 proc endit { } {
 	global exit_code bin_rm file_in
-	reconfigure
+	incr exit_code [reconfigure]
 	if {$exit_code == 0} {
 		exec $bin_rm -f $file_in
 		pass
@@ -133,7 +133,7 @@ expect {
 		exp_continue
 	}
 	-re "time limit exceeds" {
-		reconfigure
+		incr exit_code [reconfigure]
 		log_warn "Unable to fully test time limits"
 		pass
 	}

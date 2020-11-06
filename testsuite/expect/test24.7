@@ -298,7 +298,6 @@ if {[info exists env(SPRIO_FORMAT)]} {
 }
 
 set config_path [get_conf_path]
-fail_on_error "Unable to get config path"
 set config_file $config_path/slurm.conf
 
 save_conf $config_file

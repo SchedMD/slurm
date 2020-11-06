@@ -279,5 +279,6 @@ test_license_count 8 7 1
 cancel_job $job_id1
 cancel_job $job_id2
 restore_conf $config_file
-reconfigure
-fail_on_error "Error restoring reconfiguration"
+if [reconfigure] {
+	fail "Error restoring reconfiguration"
+}

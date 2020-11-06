@@ -77,7 +77,6 @@ sleep 20
 
 # Get the location of the slurm.conf file
 set config_dir [get_conf_path]
-fail_on_error "Unable to determine configuration directory"
 set config_file $config_dir/slurm.conf
 
 #
@@ -93,7 +92,7 @@ exec $bin_sed -i {s/nohold_on_prolog_fail//gI; \
 
 # Append Prolog config to the slurm.conf
 exec $bin_echo "Prolog=$cwd/$good_prolog" >> $config_file
-reconfigure
+incr exit_code [reconfigure]
 
 spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script
 expect {
@@ -122,7 +121,7 @@ exec $bin_sed -i {s/^\(Prolog=\)/#\1/gI} $config_file
 
 # Append Prolog config to the slurm.conf
 exec $bin_echo "Prolog=$cwd/$bad_prolog" >> $config_file
-reconfigure
+incr exit_code [reconfigure]
 
 set job_id 0
 spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script
@@ -177,7 +176,7 @@ exec $bin_sed -i {s/^\(SchedulerParameters=\)/#\1/gI} $config_dir/slurm.conf
 #Append SchedulerParameters=nohold_on_prolog_fail to SchedulerParameters
 exec $bin_echo "SchedulerParameters=nohold_on_prolog_fail" \
 	 >> $config_dir/slurm.conf
-reconfigure
+incr exit_code [reconfigure]
 
 set job_id 0
 spawn $sbatch -t1 -N1 -w$test_node --exclusive -o/dev/null $test_script

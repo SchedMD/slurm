@@ -346,7 +346,7 @@ spawn $scontrol create partitionname=$test_part qos=$part_qos nodes=[available_n
 expect {
 	timeout {
 		log_error "scontrol is not responding"
-		set exit_code
+		set exit_code 1
 	}
 	eof {
 		wait
