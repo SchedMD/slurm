@@ -1464,8 +1464,8 @@ finish:
 		data_set_string(data_key_set(error, "error"),
 				slurm_strerror(rc));
 
-		debug5("%s: [%s] job submission failed with %d: %m",
-		       __func__, context_id, errno);
+		debug5("%s: [%s] job submission failed with %d: %s",
+		       __func__, context_id, rc, slurm_strerror(rc));
 	}
 
 	slurm_free_submit_response_response_msg(resp);
