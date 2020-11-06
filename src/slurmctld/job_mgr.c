@@ -4828,13 +4828,13 @@ static int _select_nodes_parts_resvs(job_record_t *job_ptr, bool *test_only,
 
 	if ((*part_limits_rc != WAIT_NO_REASON) &&
 	    (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ANY))
-		return SLURM_SUCCESS;
+		return SLURM_ERROR;
 
 	if ((*part_limits_rc != WAIT_NO_REASON) &&
 	    (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ALL)) {
 		if (*part_limits_rc != WAIT_PART_DOWN) {
 			*best_rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-			return SLURM_ERROR;
+			return SLURM_SUCCESS;
 		} else {
 			*best_rc = ESLURM_PARTITION_DOWN;
 		}
@@ -4857,7 +4857,7 @@ static int _select_nodes_parts_resvs(job_record_t *job_ptr, bool *test_only,
 	if ((*rc == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
 	    (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ALL)) {
 		*best_rc = *rc;	/* Job can not run */
-		return SLURM_ERROR;
+		return SLURM_SUCCESS;
 	}
 	if ((*rc != ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE) &&
 	    (*rc != ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) &&
@@ -4869,9 +4869,8 @@ static int _select_nodes_parts_resvs(job_record_t *job_ptr, bool *test_only,
 		    (slurm_conf.enforce_part_limits ==
 		     PARTITION_ENFORCE_NONE) ||
 		    (!*test_only &&
-		     (*part_limits_rc == WAIT_NO_REASON))) {
-			return SLURM_ERROR;
-		}
+		     (*part_limits_rc == WAIT_NO_REASON)))
+			return SLURM_SUCCESS;
 	}
 	if (((*rc == ESLURM_NODES_BUSY) ||
 	     (*rc == ESLURM_RESERVATION_BUSY)) &&
@@ -4879,7 +4878,8 @@ static int _select_nodes_parts_resvs(job_record_t *job_ptr, bool *test_only,
 	    ((slurm_conf.enforce_part_limits == PARTITION_ENFORCE_ANY) ||
 	     (slurm_conf.enforce_part_limits == PARTITION_ENFORCE_NONE))) {
 		if (*test_only)
-			return SLURM_ERROR;
+			return SLURM_SUCCESS;
+
 		*best_rc = *rc;	/* Keep looking for partition
 				 * where job can start now */
 	}
@@ -4891,7 +4891,7 @@ static int _select_nodes_parts_resvs(job_record_t *job_ptr, bool *test_only,
 		*test_only = true;
 	}
 
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
 
 /*
@@ -4931,7 +4931,7 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 						      err_msg,
 						      &best_rc,
 						      &rc,
-						      &part_limits_rc) !=
+						      &part_limits_rc) ==
 			    SLURM_SUCCESS)
 				break;
 		}
@@ -4959,11 +4959,12 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 						      err_msg,
 						      &best_rc,
 						      &rc,
-						      &part_limits_rc) !=
+						      &part_limits_rc) ==
 			    SLURM_SUCCESS)
 				break;
 		}
 		list_iterator_destroy(iter);
+
 		if (best_rc != -1)
 			rc = best_rc;
 		else if (part_limits_rc == WAIT_PART_DOWN)
