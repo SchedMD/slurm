@@ -290,9 +290,6 @@ struct addrinfo *get_addr_info(const char *hostname, uint16_t port)
 	bool v6_enabled = slurm_conf.conf_flags & CTL_CONF_IPV6_ENABLED;
 	char serv[6];
 
-	if (hostname == NULL)
-		return NULL;
-
 	memset(&hints, 0, sizeof(hints));
 
 	/* use configured IP support to hint at what address types to return */
@@ -303,7 +300,9 @@ struct addrinfo *get_addr_info(const char *hostname, uint16_t port)
 	else
 		hints.ai_family = AF_UNSPEC;
 
-	hints.ai_flags = AI_CANONNAME | AI_NUMERICSERV;
+	hints.ai_flags = AI_ADDRCONFIG | AI_NUMERICSERV | AI_PASSIVE;
+	if (hostname)
+		hints.ai_flags |= AI_CANONNAME;
 	hints.ai_socktype = SOCK_STREAM;
 
 	snprintf(serv, sizeof(serv), "%u", port);
