@@ -657,7 +657,7 @@ extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 	 * get_addr_info uses hints from our config to determine what address
 	 * families to return
 	 */
-	ai_ptr = get_addr_info(host);
+	ai_ptr = get_addr_info(host, port);
 
 	if (ai_ptr) {
 		addr->ss_family = ai_ptr->ai_family;

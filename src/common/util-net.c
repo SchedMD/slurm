@@ -281,14 +281,14 @@ extern char *make_full_path(const char *rpath)
 	return cwd2;
 }
 
-struct addrinfo *
-get_addr_info(const char *hostname)
+struct addrinfo *get_addr_info(const char *hostname, uint16_t port)
 {
 	struct addrinfo* result = NULL;
 	struct addrinfo hints;
 	int err;
 	bool v4_enabled = slurm_conf.conf_flags & CTL_CONF_IPV4_ENABLED;
 	bool v6_enabled = slurm_conf.conf_flags & CTL_CONF_IPV6_ENABLED;
+	char serv[6];
 
 	if (hostname == NULL)
 		return NULL;
@@ -303,10 +303,12 @@ get_addr_info(const char *hostname)
 	else
 		hints.ai_family = AF_UNSPEC;
 
-	hints.ai_flags = AI_CANONNAME;
+	hints.ai_flags = AI_CANONNAME | AI_NUMERICSERV;
 	hints.ai_socktype = SOCK_STREAM;
 
-	err = getaddrinfo(hostname, NULL, &hints, &result);
+	snprintf(serv, sizeof(serv), "%u", port);
+
+	err = getaddrinfo(hostname, serv, &hints, &result);
 	if (err == EAI_SYSTEM) {
 		error("%s: getaddrinfo() failed: %s: %m", __func__,
 		      gai_strerror(err));

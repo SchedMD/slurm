@@ -2437,7 +2437,7 @@ extern char *slurm_conf_get_aliased_nodename()
 	 * We can't get a list of aliases anymore, do a lookup for every
 	 * address we do get to try to avoid the old logic.
 	 */
-	addrs = get_addr_info(hostname_full);
+	addrs = get_addr_info(hostname_full, 0);
 	addr_ptr = addrs;
 	for(addr_ptr = addrs; addr_ptr; addr_ptr = addr_ptr->ai_next) {
 		if (addr_ptr->ai_canonname) {
