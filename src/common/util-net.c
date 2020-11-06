@@ -293,7 +293,7 @@ get_addr_info(const char *hostname)
 	if (hostname == NULL)
 		return NULL;
 
-	memset(&hints, 0, sizeof(struct addrinfo));
+	memset(&hints, 0, sizeof(hints));
 
 	/* use configured IP support to hint at what address types to return */
 	if (v4_enabled && !v6_enabled)
