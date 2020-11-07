@@ -45,6 +45,11 @@
                 "schema": {
                   "$ref": "#/components/schemas/pings"
                 }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/pings"
+                }
               }
             }
           }
