@@ -271,12 +271,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/node_info"
+                  "$ref": "#/components/schemas/nodes_response"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/node_info"
+                  "$ref": "#/components/schemas/nodes_response"
                 }
               }
             }
@@ -1850,7 +1850,7 @@
           }
         }
       },
-      "node_info": {
+      "nodes_response": {
         "type": "object",
         "properties": {
           "errors": {
