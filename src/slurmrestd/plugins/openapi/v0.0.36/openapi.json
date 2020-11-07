@@ -52,6 +52,9 @@
                 }
               }
             }
+          },
+          "default": {
+            "description": "unable to request ping test"
           }
         }
       }
