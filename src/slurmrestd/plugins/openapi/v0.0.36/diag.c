@@ -84,6 +84,8 @@ static int _op_handler_diag(const char *context_id,
 	data_set_int(data_key_set(d, "agent_queue_size"),
 		     resp->agent_queue_size);
 	data_set_int(data_key_set(d, "agent_count"), resp->agent_count);
+	data_set_int(data_key_set(d, "agent_thread_count"),
+		     resp->agent_thread_count);
 	data_set_int(data_key_set(d, "dbd_agent_queue_size"),
 		     resp->dbd_agent_queue_size);
 	data_set_int(data_key_set(d, "gettimeofday_latency"),
