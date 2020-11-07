@@ -4,6 +4,11 @@
     "title": "Slurm Rest API",
     "description": "API to access and control Slurm.",
     "termsOfService": "https://github.com/SchedMD/slurm/blob/master/DISCLAIMER",
+    "contact": {
+      "name": "SchedMD LLC",
+      "url": "https://www.schedmd.com/",
+      "email": "sales@schedmd.com"
+    },
     "license": {
       "name": "Apache 2.0",
       "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
