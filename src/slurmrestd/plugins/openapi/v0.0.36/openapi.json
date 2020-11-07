@@ -1711,41 +1711,41 @@
         "properties": {
           "architecture": {
             "type": "string",
-            "description": ""
+            "description": "computer architecture"
           },
           "burstbuffer_network_address": {
             "type": "string",
-            "description": ""
+            "description": "BcastAddr"
           },
           "boards": {
             "type": "integer",
-            "description": ""
+            "description": "total number of boards per node"
           },
           "boot_time": {
             "type": "integer",
             "format": "int64",
-            "description": ""
+            "description": "timestamp of node boot"
           },
           "cores": {
             "type": "integer",
-            "description": ""
+            "description": "number of cores per socket"
           },
           "cpu_binding": {
             "type": "integer",
-            "description": ""
+            "description": "Default task binding"
           },
           "cpu_load": {
             "type": "integer",
             "format": "int64",
-            "description": ""
+            "description": "CPU load * 100"
           },
           "free_memory": {
             "type": "integer",
-            "description": ""
+            "description": "free memory in MiB"
           },
           "cpus": {
             "type": "integer",
-            "description": ""
+            "description": "configured count of cpus running on the node"
           },
           "features": {
             "type": "string",
@@ -1753,27 +1753,27 @@
           },
           "active_features": {
             "type": "string",
-            "description": ""
+            "description": "list of a node's available features"
           },
           "gres": {
             "type": "string",
-            "description": ""
+            "description": "list of a node's generic resources"
           },
           "gres_drained": {
             "type": "string",
-            "description": ""
+            "description": "list of drained GRES"
           },
           "gres_used": {
             "type": "string",
-            "description": ""
+            "description": "list of GRES in current use"
           },
           "mcs_label": {
             "type": "string",
-            "description": ""
+            "description": "mcs label if mcs plugin in use"
           },
           "name": {
             "type": "string",
-            "description": ""
+            "description": "node name to slurm"
           },
           "next_state_after_reboot": {
             "type": "string",
@@ -1781,72 +1781,72 @@
           },
           "address": {
             "type": "string",
-            "description": ""
+            "description": "state after reboot"
           },
           "hostname": {
             "type": "string",
-            "description": ""
+            "description": "node's hostname"
           },
           "state": {
             "type": "string",
-            "description": ""
+            "description": "current node state"
           },
           "operating_system": {
             "type": "string",
-            "description": ""
+            "description": "operating system"
           },
           "owner": {
             "type": "string",
-            "description": ""
+            "description": "User allowed to use this node"
           },
           "port": {
             "type": "integer",
-            "description": ""
+            "description": "TCP port number of the slurmd"
           },
           "real_memory": {
             "type": "integer",
-            "description": ""
+            "description": "configured MB of real memory on the node"
           },
           "reason": {
             "type": "string",
-            "description": ""
+            "description": "reason for node being DOWN or DRAINING"
           },
           "reason_changed_at": {
             "type": "integer",
-            "description": ""
+            "description": "Time stamp when reason was set"
           },
           "reason_set_by_user": {
             "type": "string",
-            "description": ""
+            "description": "User that set the reason"
           },
           "slurmd_start_time": {
             "type": "integer",
             "format": "int64",
-            "description": ""
+            "description": "timestamp of slurmd startup"
           },
           "sockets": {
             "type": "integer",
-            "description": ""
+            "description": "total number of sockets per node"
           },
           "threads": {
             "type": "integer",
-            "description": ""
+            "description": "number of threads per core"
           },
           "temporary_disk": {
             "type": "integer",
-            "description": ""
+            "description": "configured MB of total disk in TMP_FS"
           },
           "weight": {
             "type": "integer",
-            "description": ""
+            "description": "arbitrary priority of node for scheduling"
           },
           "tres": {
             "type": "string",
-            "description": ""
+            "description": "TRES on node"
           },
           "slurmd_version": {
             "type": "string",
-            "description": ""
+            "description": "Slurmd version"
           }
         }
       },
