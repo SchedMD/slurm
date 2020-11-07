@@ -281,7 +281,7 @@
               }
             }
           },
-	  "default": {
+          "default": {
             "description": "no nodes in cluster"
           }
         }
@@ -306,9 +306,21 @@
         ],
         "responses": {
           "200": {
-            "description": "node information"
+            "description": "node information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/nodes_response"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/nodes_response"
+                }
+              }
+            }
           },
-          "500": {
+          "default": {
             "description": "node not found"
           }
         }
