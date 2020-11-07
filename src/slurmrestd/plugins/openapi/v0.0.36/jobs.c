@@ -1011,7 +1011,8 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 		data_set_null(data_key_set(jd, "memory_per_cpu"));
 	}
 	data_set_int(data_key_set(jd, "minimum_cpus_per_node"), job->pn_min_cpus);
-	data_set_int(data_key_set(jd, "pn_min_tmp_disk"), job->pn_min_tmp_disk);
+	data_set_int(data_key_set(jd, "minimum_tmp_disk_per_node"),
+		     job->pn_min_tmp_disk);
 	/* power_flags intentionally omitted */
 	data_set_int(data_key_set(jd, "preempt_time"), job->preempt_time);
 	data_set_int(data_key_set(jd, "pre_sus_time"), job->pre_sus_time);
