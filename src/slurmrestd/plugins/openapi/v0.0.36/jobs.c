@@ -600,7 +600,7 @@ static job_desc_msg_t *_parse_job_desc(const data_t *job, data_t *errors,
 		goto cleanup;
 	}
 
-	if (!req->environment || !req->env_size) {
+	if (!update_only && (!req->environment || !req->env_size)) {
 		/*
 		 * Jobs provided via data must have their environment
 		 * setup or they will simply be rejected. Error now instead of
