@@ -705,18 +705,6 @@ static job_parse_list_t _parse_job_list(const data_t *jobs, char *script,
 	return rc;
 }
 
-/* dump job integer list as data list
- * IN ptr to integer list (-1 is terminator)
- * IN d ptr to data to populate
- */
-static void _dump_job_int32_list(const int32_t *ptr, data_t *d)
-{
-	// based on _print_job_exc_node_inx
-	data_set_list(d);
-	while (*ptr != -1)
-		data_set_int(data_list_append(d), *(ptr++));
-}
-
 static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 {
 	xassert(data_get_type(jd) == DATA_TYPE_NULL);
@@ -1041,12 +1029,7 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 	data_set_string(data_key_set(jd, "qos"), job->qos);
 	data_set_bool(data_key_set(jd, "reboot"), job->reboot);
 	data_set_string(data_key_set(jd, "required_nodes"), job->req_nodes);
-	if (job->req_node_inx)
-		_dump_job_int32_list(job->req_node_inx,
-				     data_key_set(jd,
-						  "requested_node_by_index"));
-	else
-		data_set_null(data_key_set(jd, "requested_node_by_index"));
+	/* skipping req_node_inx */
 	data_set_bool(data_key_set(jd, "requeue"), job->requeue);
 	data_set_int(data_key_set(jd, "resize_time"), job->resize_time);
 	data_set_int(data_key_set(jd, "restart_cnt"), job->restart_cnt);
