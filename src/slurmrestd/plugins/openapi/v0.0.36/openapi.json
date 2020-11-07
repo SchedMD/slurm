@@ -28,7 +28,22 @@
         "summary": "get diagnostics",
         "responses": {
           "200": {
-            "description": "dictionary of statistics"
+            "description": "diagnostic results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/diag"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/diag"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "unable to request ping test"
           }
         }
       }
@@ -409,6 +424,180 @@
       }
     },
     "schemas": {
+      "diag": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          },
+          "statistics": {
+            "type": "object",
+            "description": "Slurm statistics",
+            "properties": {
+              "parts_packed": {
+                "type": "integer",
+                "description": "partition records packed"
+              },
+              "req_time": {
+                "type": "integer",
+                "description": "generation time"
+              },
+              "req_time_start": {
+                "type": "integer",
+                "description": "data since"
+              },
+              "server_thread_count": {
+                "type": "integer",
+                "description": "Server thread count"
+              },
+              "agent_queue_size": {
+                "type": "integer",
+                "description": "Agent queue size"
+              },
+              "agent_count": {
+                "type": "integer",
+                "description": "Agent count"
+              },
+              "agent_thread_count": {
+                "type": "integer",
+                "description": "Agent thread count"
+              },
+              "dbd_agent_queue_size": {
+                "type": "integer",
+                "description": "DBD Agent queue size"
+              },
+              "gettimeofday_latency": {
+                "type": "integer",
+                "description": "Latency for 1000 calls to gettimeofday()"
+              },
+              "schedule_cycle_max": {
+                "type": "integer",
+                "description": "Main Schedule max cycle"
+              },
+              "schedule_cycle_last": {
+                "type": "integer",
+                "description": "Main Schedule last cycle"
+              },
+              "schedule_cycle_total": {
+                "type": "integer",
+                "description": "Main Schedule cycle iterations"
+              },
+              "schedule_cycle_mean": {
+                "type": "integer",
+                "description": "Average time for Schedule Max cycle"
+              },
+              "schedule_cycle_mean_depth": {
+                "type": "integer",
+                "description": "Average depth for Schedule Max cycle"
+              },
+              "schedule_cycle_per_minute": {
+                "type": "integer",
+                "description": "Main Schedule Cycles per minute"
+              },
+              "schedule_queue_length": {
+                "type": "integer",
+                "description": "Main Schedule Last queue length"
+              },
+              "jobs_submitted": {
+                "type": "integer",
+                "description": "Job submitted"
+              },
+              "jobs_started": {
+                "type": "integer",
+                "description": "Job started"
+              },
+              "jobs_completed": {
+                "type": "integer",
+                "description": "Job completed"
+              },
+              "jobs_canceled": {
+                "type": "integer",
+                "description": "Job cancelled"
+              },
+              "jobs_failed": {
+                "type": "integer",
+                "description": "Job failed"
+              },
+              "jobs_pending": {
+                "type": "integer",
+                "description": "Job pending"
+              },
+              "jobs_running": {
+                "type": "integer",
+                "description": "Job running"
+              },
+              "job_states_ts": {
+                "type": "integer",
+                "description": "Job states timestamp"
+              },
+              "bf_backfilled_jobs": {
+                "type": "integer",
+                "description": "Total backfilled jobs (since last slurm start)"
+              },
+              "bf_last_backfilled_jobs": {
+                "type": "integer",
+                "description": "Total backfilled jobs (since last stats cycle start)"
+              },
+              "bf_backfilled_het_jobs": {
+                "type": "integer",
+                "description": "Total backfilled heterogeneous job components"
+              },
+              "bf_cycle_counter": {
+                "type": "integer",
+                "description": "Backfill Schedule Total cycles"
+              },
+              "bf_cycle_mean": {
+                "type": "integer",
+                "description": "Backfill Schedule Mean cycle"
+              },
+              "bf_cycle_max": {
+                "type": "integer",
+                "description": "Backfill Schedule Max cycle time"
+              },
+              "bf_last_depth": {
+                "type": "integer",
+                "description": "Backfill Schedule Last depth cycle"
+              },
+              "bf_last_depth_try": {
+                "type": "integer",
+                "description": "Backfill Schedule Mean cycle (try sched)"
+              },
+              "bf_depth_mean": {
+                "type": "integer",
+                "description": "Backfill Schedule Depth Mean"
+              },
+              "bf_depth_mean_try": {
+                "type": "integer",
+                "description": "Backfill Schedule Depth Mean (try sched)"
+              },
+              "bf_cycle_last": {
+                "type": "integer",
+                "description": "Backfill Schedule Last cycle time"
+              },
+              "bf_queue_len": {
+                "type": "integer",
+                "description": "Backfill Schedule Last queue length"
+              },
+              "bf_queue_len_mean": {
+                "type": "integer",
+                "description": "Backfill Schedule Mean queue length"
+              },
+              "bf_when_last_cycle": {
+                "type": "integer",
+                "description": "Last cycle timestamp"
+              },
+              "bf_active": {
+                "type": "boolean",
+                "description": "Backfill Schedule currently active"
+              }
+            }
+          }
+        }
+      },
       "pings": {
         "type": "object",
         "properties": {
