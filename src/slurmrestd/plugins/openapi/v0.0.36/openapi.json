@@ -15,6 +15,16 @@
     },
     "version": "0.0.36"
   },
+  "tags": [
+    {
+      "name": "slurm",
+      "description": "methods that query slurmctld"
+    },
+    {
+      "name": "openapi",
+      "description": "methods that query for OpenAPI specifications"
+    }
+  ],
   "servers": [
     {
       "url": "/slurm/v0.0.36/"
@@ -29,6 +39,9 @@
   "paths": {
     "/diag/": {
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "diag",
         "summary": "get diagnostics",
         "responses": {
@@ -55,6 +68,9 @@
     },
     "/ping/": {
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "ping",
         "summary": "ping test",
         "responses": {
@@ -81,6 +97,9 @@
     },
     "/jobs/": {
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_jobs",
         "summary": "get list of jobs",
         "responses": {
@@ -107,6 +126,9 @@
     },
     "/job/{job_id}": {
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_job",
         "summary": "get job info",
         "parameters": [
@@ -145,6 +167,9 @@
         }
       },
       "post": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "update_job",
         "summary": "update job",
         "parameters": [
@@ -187,6 +212,9 @@
         }
       },
       "delete": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "cancel_job",
         "summary": "cancel or signal job",
         "parameters": [
@@ -226,6 +254,9 @@
     },
     "/job/submit": {
       "post": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "submit_job",
         "summary": "submit new job",
         "requestBody": {
@@ -268,6 +299,9 @@
     },
     "/nodes/": {
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_nodes",
         "summary": "get all node info",
         "responses": {
@@ -294,6 +328,9 @@
     },
     "/node/{node_name}": {
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_node",
         "summary": "get node info",
         "parameters": [
@@ -333,6 +370,9 @@
     },
     "/partitions/": {
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_partitions",
         "summary": "get all partition info",
         "responses": {
@@ -359,6 +399,9 @@
     },
     "/partition/{partition_name}": {
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_partition",
         "summary": "get partition info",
         "parameters": [
@@ -398,6 +441,9 @@
     },
     "/openapi.yaml": {
       "get": {
+        "tags": [
+          "openapi"
+        ],
         "summary": "Retrieve OpenAPI Specification",
         "responses": {
           "200": {
@@ -413,6 +459,9 @@
     },
     "/openapi.json": {
       "get": {
+        "tags": [
+          "openapi"
+        ],
         "summary": "Retrieve OpenAPI Specification",
         "responses": {
           "200": {
@@ -428,6 +477,9 @@
     },
     "/openapi": {
       "get": {
+        "tags": [
+          "openapi"
+        ],
         "summary": "Retrieve OpenAPI Specification",
         "responses": {
           "200": {
@@ -443,6 +495,9 @@
     },
     "/openapi/v3": {
       "get": {
+        "tags": [
+          "openapi"
+        ],
         "summary": "Retrieve OpenAPI Specification",
         "responses": {
           "200": {
