@@ -969,11 +969,6 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 	else
 		data_set_int(data_key_set(jd, "nice"), job->nice - NICE_OFFSET);
 	/* node_index intentionally omitted */
-	if (job->node_inx)
-		_dump_job_int32_list(job->node_inx,
-				     data_key_set(jd, "node_index"));
-	else
-		data_set_null(data_key_set(jd, "node_index"));
 	if (job->ntasks_per_core == NO_VAL16 ||
 	    job->ntasks_per_core == INFINITE16)
 		data_set_null(data_key_set(jd, "tasks_per_core"));
