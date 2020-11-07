@@ -988,7 +988,7 @@ static data_t *dump_job_info(slurm_job_info_t *job, data_t *jd)
 		data_set_int(data_key_set(jd, "cpus"), job->num_cpus);
 	else
 		data_set_null(data_key_set(jd, "cpus"));
-	data_set_int(data_key_set(jd, "nodes"), job->num_nodes);
+	data_set_int(data_key_set(jd, "node_count"), job->num_nodes);
 	if (job->num_tasks != NO_VAL && job->num_tasks != INFINITE)
 		data_set_int(data_key_set(jd, "tasks"), job->num_tasks);
 	else
