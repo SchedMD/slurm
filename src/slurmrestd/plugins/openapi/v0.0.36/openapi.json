@@ -691,126 +691,123 @@
         "properties": {
           "flags": {
             "type": "array",
-            "description": "",
+            "description": "partition options",
             "items": {
               "type": "string"
             }
           },
           "preemption_mode": {
-            "type": "array",
-            "description": "",
-            "items": {
-              "type": "string"
-            }
+            "type": "string",
+            "description": "preemption type"
           },
           "allowed_allocation_nodes": {
             "type": "string",
-            "description": ""
+            "description": "list names of allowed allocating nodes"
           },
           "allowed_accounts": {
             "type": "string",
-            "description": ""
+            "description": "comma delimited list of accounts"
           },
           "allowed_groups": {
             "type": "string",
-            "description": ""
+            "description": "comma delimited list of groups"
           },
           "allowed_qos": {
             "type": "string",
-            "description": ""
+            "description": "comma delimited list of qos"
           },
           "alternative": {
             "type": "string",
-            "description": ""
+            "description": "name of alternate partition"
           },
           "billing_weights": {
             "type": "string",
-            "description": ""
+            "description": "TRES billing weights"
           },
           "default_memory_per_cpu": {
             "type": "integer",
             "format": "int64",
-            "description": ""
+            "description": "default MB memory per allocated CPU"
           },
           "default_time_limit": {
             "type": "integer",
             "format": "int64",
-            "description": ""
+            "description": "default time limit (minutes)"
           },
           "denied_accounts": {
             "type": "string",
-            "description": ""
+            "description": "comma delimited list of denied accounts"
           },
           "denied_qos": {
             "type": "string",
-            "description": ""
+            "description": "comma delimited list of denied qos"
           },
           "preemption_grace_time": {
             "type": "integer",
             "format": "int64",
-            "description": ""
+            "description": "preemption grace time (seconds)"
           },
           "maximum_cpus_per_node": {
             "type": "integer",
-            "description": ""
+            "description": "maximum allocated CPUs per node"
           },
           "maximum_memory_per_node": {
             "type": "integer",
             "format": "int64",
-            "description": ""
+            "description": "maximum memory per allocated CPU (MiB)"
           },
           "maximum_nodes_per_job": {
             "type": "integer",
-            "description": ""
+            "description": "Max nodes per job"
           },
           "max_time_limit": {
             "type": "integer",
             "format": "int64",
-            "description": ""
+            "description": "Max time limit per job"
           },
           "min_nodes_per_job": {
             "type": "integer",
-            "description": ""
+            "description": "Min number of nodes per job"
           },
           "name": {
             "type": "string",
-            "description": ""
+            "description": "Partition name"
           },
           "nodes": {
             "type": "string",
-            "description": ""
+            "description": "list names of nodes in partition"
           },
           "over_time_limit": {
             "type": "integer",
-            "description": ""
+            "description": "job's time limit can be exceeded by this number of minutes before cancellation"
           },
           "priority_job_factor": {
             "type": "integer",
-            "description": ""
+            "description": "job priority weight factor"
           },
           "priority_tier": {
             "type": "integer",
-            "description": ""
+            "description": "tier for scheduling and preemption"
           },
           "qos": {
             "type": "string",
-            "description": ""
+            "description": "partition QOS name"
           },
           "nodes_online": {
             "type": "integer",
-            "description": ""
+            "description": "Nodes online (ready for jobs)"
           },
           "total_cpus": {
             "type": "integer",
-            "description": ""
+            "description": "Total cpus in partition"
           },
           "total_nodes": {
             "type": "integer",
-            "description": ""
+            "description": "Total number of nodes in partition"
           },
           "tres": {
             "type": "string",
-            "description": ""
+            "description": "configured TRES in partition"
           }
         }
       },
