@@ -281,7 +281,7 @@
               }
             }
           },
-          "500": {
+	  "default": {
             "description": "no nodes in cluster"
           }
         }
