@@ -80,7 +80,22 @@
         "summary": "get list of jobs",
         "responses": {
           "200": {
-            "description": "array of all job information in slurmctld"
+            "description": "job(s) information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/jobs_response"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/jobs_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "job not found"
           }
         }
       }
