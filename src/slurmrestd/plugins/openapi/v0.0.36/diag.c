@@ -94,13 +94,21 @@ static int _op_handler_diag(const char *context_id,
 		     resp->schedule_cycle_max);
 	data_set_int(data_key_set(d, "schedule_cycle_last"),
 		     resp->schedule_cycle_last);
-	data_set_int(data_key_set(d, "schedule_cycle_sum"),
-		     resp->schedule_cycle_sum);
-	data_set_int(data_key_set(d, "schedule_cycle_counter"),
+	data_set_int(data_key_set(d, "schedule_cycle_total"),
 		     resp->schedule_cycle_counter);
-	data_set_int(data_key_set(d, "schedule_cycle_depth"),
-		     resp->schedule_cycle_depth);
-	data_set_int(data_key_set(d, "schedule_queue_len"),
+	data_set_int(data_key_set(d, "schedule_cycle_mean"),
+		     (resp->schedule_cycle_counter ?
+		      (resp->schedule_cycle_sum /
+		       resp->schedule_cycle_counter) : 0));
+	data_set_int(data_key_set(d, "schedule_cycle_mean_depth"),
+		     (resp->schedule_cycle_counter ?
+		      (resp->schedule_cycle_depth /
+		       resp->schedule_cycle_counter) : 0));
+	data_set_int(data_key_set(d, "schedule_cycle_per_minute"),
+		     (((resp->req_time - resp->req_time_start) > 60) ?
+		     ((uint32_t)(resp->schedule_cycle_counter /
+		      ((resp->req_time - resp->req_time_start) / 60))) : 0));
+	data_set_int(data_key_set(d, "schedule_queue_length"),
 		     resp->schedule_queue_len);
 	data_set_int(data_key_set(d, "jobs_submitted"), resp->jobs_submitted);
 	data_set_int(data_key_set(d, "jobs_started"), resp->jobs_started);
@@ -118,27 +126,29 @@ static int _op_handler_diag(const char *context_id,
 		     resp->bf_backfilled_het_jobs);
 	data_set_int(data_key_set(d, "bf_cycle_counter"),
 		     resp->bf_cycle_counter);
-	data_set_int(data_key_set(d, "bf_cycle_sum"), resp->bf_cycle_sum);
+	data_set_int(data_key_set(d, "bf_cycle_mean"),
+		     (resp->bf_cycle_counter > 0) ?
+		      (resp->bf_cycle_sum / resp->bf_cycle_counter) : 0);
+	data_set_int(data_key_set(d, "bf_depth_mean"),
+		     (resp->bf_cycle_counter > 0) ?
+		      (resp->bf_depth_sum / resp->bf_cycle_counter) : 0);
+	data_set_int(data_key_set(d, "bf_depth_mean_try"),
+		     (resp->bf_cycle_counter > 0) ?
+		      (resp->bf_depth_try_sum / resp->bf_cycle_counter) : 0);
 	data_set_int(data_key_set(d, "bf_cycle_last"), resp->bf_cycle_last);
 	data_set_int(data_key_set(d, "bf_cycle_max"), resp->bf_cycle_max);
-	data_set_int(data_key_set(d, "bf_last_depth"), resp->bf_last_depth);
-	data_set_int(data_key_set(d, "bf_last_depth_try"),
-		     resp->bf_last_depth_try);
-	data_set_int(data_key_set(d, "bf_depth_sum"), resp->bf_depth_sum);
-	data_set_int(data_key_set(d, "bf_depth_try_sum"),
-		     resp->bf_depth_try_sum);
 	data_set_int(data_key_set(d, "bf_queue_len"), resp->bf_queue_len);
-	data_set_int(data_key_set(d, "bf_queue_len_sum"),
-		     resp->bf_queue_len_sum);
+	data_set_int(data_key_set(d, "bf_queue_len_mean"),
+		     (resp->bf_cycle_counter > 0) ?
+		      (resp->bf_table_size_sum / resp->bf_cycle_counter) : 0);
 	data_set_int(data_key_set(d, "bf_when_last_cycle"),
 		     resp->bf_when_last_cycle);
-	data_set_int(data_key_set(d, "bf_active"), resp->bf_active);
+	data_set_bool(data_key_set(d, "bf_active"), (resp->bf_active != 0));
 
 cleanup:
 	if (rc) {
 		data_t *e = data_set_dict(data_list_append(errors));
-		data_set_string(data_key_set(e, "error"),
-				slurm_strerror(rc));
+		data_set_string(data_key_set(e, "error"), slurm_strerror(rc));
 		data_set_int(data_key_set(e, "errno"), rc);
 	}
 
