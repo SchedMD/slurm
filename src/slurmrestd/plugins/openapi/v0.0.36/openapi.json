@@ -332,10 +332,22 @@
         "summary": "get all partition info",
         "responses": {
           "200": {
-            "description": "partitions information"
+            "description": "partition information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/partitions_response"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/partitions_response"
+                }
+              }
+            }
           },
-          "500": {
-            "description": "no partitions in cluster"
+          "default": {
+            "description": "no partitions found"
           }
         }
       }
@@ -359,17 +371,22 @@
         ],
         "responses": {
           "200": {
-            "description": "partitions information",
+            "description": "partition information",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/partition_info"
+                  "$ref": "#/components/schemas/partitions_response"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/partitions_response"
                 }
               }
             }
           },
-          "500": {
-            "description": "partition not found"
+          "default": {
+            "description": "no partitions found"
           }
         }
       }
@@ -797,7 +814,7 @@
           }
         }
       },
-      "partition_info": {
+      "partitions_response": {
         "type": "object",
         "properties": {
           "errors": {
