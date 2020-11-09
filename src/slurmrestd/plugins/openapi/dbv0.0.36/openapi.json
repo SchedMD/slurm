@@ -1,4 +1,5 @@
 {
+  "openapi": "3.0.3",
   "info": {
     "description": "API to access and control Slurm DB.",
     "license": {
@@ -14,7 +15,6 @@
     "title": "Slurm Rest API",
     "version": "dbv0.0.36"
   },
-  "openapi": "3.0.3",
   "tags": [
     {
       "name": "slurm",
