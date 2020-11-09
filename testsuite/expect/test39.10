@@ -228,7 +228,7 @@ if {$gpu_cnt > 1 && $nb_nodes > 1} {
 if {$gpu_cnt > 1 && $nb_nodes > 1} {
 	set mem_spec [expr $node_memory / $gpu_cnt + 1]
 	set node_target 2
-	set mem_target [expr $mem_spec * $node_target]
+	set mem_target [expr $mem_spec * $gpu_cnt]
 	run_gpu_check_mem "--gpus=$gpu_cnt --mem-per-gpu=$mem_spec" $mem_target $node_target
 }
 
