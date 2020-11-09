@@ -46,6 +46,16 @@
     "version": "dbv0.0.36"
   },
   "openapi": "3.0.3",
+  "tags": [
+    {
+      "name": "slurm",
+      "description": "methods that query slurmdbd"
+    },
+    {
+      "name": "openapi",
+      "description": "methods that query for OpenAPI specifications"
+    }
+  ],
   "servers": [
     {
       "url": "/slurmdb/v0.0.36/"
@@ -54,6 +64,9 @@
   "paths": {
     "/job/{job_id}": {
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_job",
         "summary": "get job info",
         "parameters": [
@@ -82,6 +95,9 @@
     },
     "/config": {
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_db_config",
         "summary": "dump all config",
         "responses": {
@@ -106,6 +122,9 @@
         }
       },
       "post": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "set_db_config",
         "summary": "load all config",
         "responses": {
@@ -132,6 +151,9 @@
     },
     "/tres/": {
       "post": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "update_tres",
         "responses": {
           "200": {
@@ -153,6 +175,9 @@
         "summary": "get slurmdb TRES"
       },
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_tres",
         "responses": {
           "200": {
@@ -176,6 +201,9 @@
     },
     "/qos/{qos_name}": {
       "delete": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "delete_qos",
         "responses": {
           "200": {
@@ -209,6 +237,9 @@
         }
       },
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_qos",
         "responses": {
           "200": {
@@ -244,6 +275,9 @@
     },
     "/qos/": {
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_qos",
         "responses": {
           "200": {
@@ -267,6 +301,9 @@
     },
     "/associations/": {
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_associations",
         "responses": {
           "200": {
@@ -290,6 +327,9 @@
     },
     "/association/": {
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_association",
         "parameters": [
           {
@@ -357,6 +397,9 @@
         "summary": "get slurmdb associations"
       },
       "delete": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "delete_association",
         "parameters": [
           {
@@ -426,6 +469,9 @@
     },
     "/user/{user_name}": {
       "delete": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "delete_user",
         "responses": {
           "200": {
@@ -459,6 +505,9 @@
         }
       },
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_user",
         "responses": {
           "200": {
@@ -494,6 +543,9 @@
     },
     "/users/": {
       "post": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "update_users",
         "responses": {
           "200": {
@@ -514,6 +566,9 @@
         }
       },
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_users",
         "responses": {
           "200": {
@@ -536,6 +591,9 @@
     },
     "/cluster/{cluster_name}": {
       "delete": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "delete_cluster",
         "responses": {
           "200": {
@@ -569,6 +627,9 @@
         }
       },
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_cluster",
         "responses": {
           "200": {
@@ -604,6 +665,9 @@
     },
     "/clusters/": {
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_clusters",
         "responses": {
           "200": {
@@ -625,6 +689,9 @@
         "summary": "get slurmdb clusters"
       },
       "post": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "add_clusters",
         "responses": {
           "200": {
@@ -648,6 +715,9 @@
     },
     "/wckey/{wckey}": {
       "delete": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "delete_wckey",
         "responses": {
           "200": {
@@ -681,6 +751,9 @@
         }
       },
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_wckey",
         "responses": {
           "200": {
@@ -716,6 +789,9 @@
     },
     "/wckeys/": {
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_wckeys",
         "responses": {
           "200": {
@@ -737,6 +813,9 @@
         "summary": "get slurmdb wckeys"
       },
       "post": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "add_wckeys",
         "responses": {
           "200": {
@@ -760,6 +839,9 @@
     },
     "/account/{account_name}": {
       "delete": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "delete_account",
         "responses": {
           "200": {
@@ -793,6 +875,9 @@
         }
       },
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_account",
         "responses": {
           "200": {
@@ -828,6 +913,9 @@
     },
     "/accounts/": {
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_accounts",
         "responses": {
           "200": {
@@ -851,6 +939,9 @@
     },
     "/jobs/": {
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "get_jobs",
         "parameters": [
           {
@@ -1162,6 +1253,9 @@
     },
     "/diag/": {
       "get": {
+        "tags": [
+          "slurm"
+        ],
         "operationId": "diag",
         "responses": {
           "200": {
@@ -1185,6 +1279,9 @@
     },
     "/openapi": {
       "get": {
+        "tags": [
+          "openapi"
+        ],
         "responses": {
           "200": {
             "description": "OpenAPI Specification"
@@ -1200,6 +1297,9 @@
     },
     "/openapi.json": {
       "get": {
+        "tags": [
+          "openapi"
+        ],
         "responses": {
           "200": {
             "description": "OpenAPI Specification"
@@ -1215,6 +1315,9 @@
     },
     "/openapi.yaml": {
       "get": {
+        "tags": [
+          "openapi"
+        ],
         "responses": {
           "200": {
             "description": "OpenAPI Specification"
@@ -1230,6 +1333,9 @@
     },
     "/openapi/v3": {
       "get": {
+        "tags": [
+          "openapi"
+        ],
         "responses": {
           "200": {
             "description": "OpenAPI Specification"
