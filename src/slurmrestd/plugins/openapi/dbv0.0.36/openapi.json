@@ -224,7 +224,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_qos",
+        "operationId": "get_single_qos",
         "responses": {
           "200": {
             "content": {
