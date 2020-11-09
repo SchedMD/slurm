@@ -6,6 +6,11 @@
       "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
     },
     "termsOfService": "https://github.com/SchedMD/slurm/blob/master/DISCLAIMER",
+    "contact": {
+      "name": "SchedMD LLC",
+      "url": "https://www.schedmd.com/",
+      "email": "sales@schedmd.com"
+    },
     "title": "Slurm Rest API",
     "version": "dbv0.0.36"
   },
