@@ -1,40 +1,4 @@
 {
-  "components": {
-    "schemas": {
-      "diag": {
-        "properties": {
-          "errors": {
-            "description": "slurm errors",
-            "items": {
-              "$ref": "#/components/schemas/error"
-            },
-            "type": "array"
-          },
-          "statistics": {
-            "$ref": "#/components/schemas/statistics"
-          }
-        },
-        "type": "object"
-      },
-      "error": {
-        "properties": {
-          "errno": {
-            "description": "error number",
-            "type": "integer"
-          },
-          "error": {
-            "description": "error message",
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "statistics": {
-        "properties": {},
-        "type": "object"
-      }
-    }
-  },
   "info": {
     "description": "API to access and control Slurm DB.",
     "license": {
@@ -1348,6 +1312,42 @@
           "url": "/"
         }
       ]
+    }
+  },
+  "components": {
+    "schemas": {
+      "diag": {
+        "properties": {
+          "errors": {
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            },
+            "type": "array"
+          },
+          "statistics": {
+            "$ref": "#/components/schemas/statistics"
+          }
+        },
+        "type": "object"
+      },
+      "error": {
+        "properties": {
+          "errno": {
+            "description": "error number",
+            "type": "integer"
+          },
+          "error": {
+            "description": "error message",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "statistics": {
+        "properties": {},
+        "type": "object"
+      }
     }
   }
 }
