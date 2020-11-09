@@ -172,6 +172,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	unsigned long step_wait = 0;
 	uint16_t base_dist, slurmctld_timeout;
 	char *add_tres;
+	slurm_step_layout_t *step_layout;
+
 	xassert(srun_opt);
 
 	if (!job) {
@@ -470,8 +472,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_NUM_HOSTS,
 			   &job->nhosts);
 
-	slurm_step_layout_t *step_layout =
-		launch_common_get_slurm_step_layout(job);
+	step_layout = launch_common_get_slurm_step_layout(job);
 	if (job->ntasks != step_layout->task_cnt)
 		job->ntasks = step_layout->task_cnt;
 	/*
