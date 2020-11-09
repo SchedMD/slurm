@@ -4896,6 +4896,56 @@ static int _select_nodes_parts_resvs(job_record_t *job_ptr, bool *test_only,
 	return SLURM_ERROR;
 }
 
+static int _select_nodes_resvs(job_record_t *job_ptr, bool *test_only,
+			       bitstr_t **select_node_bitmap,
+			       char **err_msg,
+			       int *best_rc,
+			       int *rc,
+			       int *part_limits_rc)
+{
+	slurmctld_resv_t *resv_ptr;
+	ListIterator iter;
+	int loc_rc = SLURM_ERROR;
+
+	if (!job_ptr->resv_list)
+		return _select_nodes_parts_resvs(job_ptr,
+						 test_only,
+						 select_node_bitmap,
+						 err_msg,
+						 best_rc,
+						 rc,
+						 part_limits_rc);
+
+
+	iter = list_iterator_create(job_ptr->resv_list);
+	while ((resv_ptr = list_next(iter))) {
+		job_ptr->resv_ptr = resv_ptr;
+		job_ptr->resv_id = resv_ptr->resv_id;
+		if ((job_ptr->bit_flags & JOB_PART_ASSIGNED) &&
+		    resv_ptr->part_ptr)
+			job_ptr->part_ptr = resv_ptr->part_ptr;
+
+		debug2("Try %pJ on next reservation %s",
+		       job_ptr, resv_ptr->name);
+
+		if ((loc_rc = _select_nodes_parts_resvs(job_ptr,
+							test_only,
+							select_node_bitmap,
+							err_msg,
+							best_rc,
+							rc,
+							part_limits_rc)) ==
+		    SLURM_SUCCESS) {
+			if ((*rc != ESLURM_RESERVATION_NOT_USABLE) &&
+			    (*rc != ESLURM_RESERVATION_BUSY))
+				break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return loc_rc;
+}
+
 /*
  * Wrapper for select_nodes() function that will test all valid partitions
  * for a new job
@@ -4943,38 +4993,21 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 		else if (part_limits_rc == WAIT_PART_DOWN)
 			rc = ESLURM_PARTITION_DOWN;
 	} else if (job_ptr->resv_list) {
-		slurmctld_resv_t *resv_ptr;
-		iter = list_iterator_create(job_ptr->resv_list);
-		while ((resv_ptr = list_next(iter))) {
-			job_ptr->resv_ptr = resv_ptr;
-			job_ptr->resv_id = resv_ptr->resv_id;
-			if ((job_ptr->bit_flags & JOB_PART_ASSIGNED) &&
-			    resv_ptr->part_ptr)
-				job_ptr->part_ptr = resv_ptr->part_ptr;
-
-			debug2("Try %pJ on next reservation %s",
-			       job_ptr, resv_ptr->name);
-
-			if (_select_nodes_parts_resvs(job_ptr,
-						      &test_only,
-						      select_node_bitmap,
-						      err_msg,
-						      &best_rc,
-						      &rc,
-						      &part_limits_rc) ==
-			    SLURM_SUCCESS) {
-				if ((rc != ESLURM_RESERVATION_NOT_USABLE) &&
-				    (rc != ESLURM_RESERVATION_BUSY))
-					break;
-			}
-		}
-		list_iterator_destroy(iter);
-
+		/*
+		 * We don't need to check the return code of this as the rc we
+		 * are sending in is the rc we care about.
+		 */
+		(void)_select_nodes_resvs(job_ptr,
+					  &test_only,
+					  select_node_bitmap,
+					  err_msg,
+					  &best_rc,
+					  &rc,
+					  &part_limits_rc);
 		if (best_rc != -1)
 			rc = best_rc;
 		else if (part_limits_rc == WAIT_PART_DOWN)
 			rc = ESLURM_PARTITION_DOWN;
-
 	} else {
 		part_limits_rc = job_limits_check(&job_ptr, false);
 		if (part_limits_rc == WAIT_NO_REASON) {
