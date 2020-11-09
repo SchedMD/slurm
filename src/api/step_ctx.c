@@ -679,6 +679,7 @@ extern void slurm_step_ctx_params_t_init (slurm_step_ctx_params_t *ptr)
 	ptr->resv_port_cnt = NO_VAL16;
 	ptr->step_id.step_id = NO_VAL;
 	ptr->step_id.step_het_comp = NO_VAL;
+	ptr->ntasks_per_tres = NO_VAL16;
 
 	ptr->uid = getuid();
 
