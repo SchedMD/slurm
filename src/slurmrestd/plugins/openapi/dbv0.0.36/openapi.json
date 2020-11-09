@@ -196,20 +196,23 @@
             },
             "description": "delete qos"
           },
-          "parameters": [
-            {
-              "name": "qos_name",
-              "in": "path",
-              "description": "Slurm QOS Name",
-              "required": true,
-              "style": "simple",
-              "explode": false,
-              "schema": {
-                "type": "string"
-              }
+          "default": {
+            "description": "Unable to update TRES"
+          }
+        },
+        "parameters": [
+          {
+            "name": "qos_name",
+            "in": "path",
+            "description": "Slurm QOS Name",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "string"
             }
-          ]
-        }
+          }
+        ]
       },
       "get": {
         "tags": [
@@ -231,21 +234,21 @@
               }
             },
             "description": "list of QOS"
-          },
-          "parameters": [
-            {
-              "name": "qos_name",
-              "in": "path",
-              "description": "Slurm QOS Name",
-              "required": true,
-              "style": "simple",
-              "explode": false,
-              "schema": {
-                "type": "string"
-              }
+          }
+        },
+        "parameters": [
+          {
+            "name": "qos_name",
+            "in": "path",
+            "description": "Slurm QOS Name",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "string"
             }
-          ]
-        }
+          }
+        ]
       }
     },
     "/qos/": {
@@ -463,21 +466,21 @@
               }
             },
             "description": "delete user"
-          },
-          "parameters": [
-            {
-              "name": "user_name",
-              "in": "path",
-              "description": "Slurm User Name",
-              "required": true,
-              "style": "simple",
-              "explode": false,
-              "schema": {
-                "type": "string"
-              }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_name",
+            "in": "path",
+            "description": "Slurm User Name",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "string"
             }
-          ]
-        }
+          }
+        ]
       },
       "get": {
         "tags": [
@@ -499,21 +502,21 @@
               }
             },
             "description": "list of users"
-          },
-          "parameters": [
-            {
-              "name": "user_name",
-              "in": "path",
-              "description": "Slurm User Name",
-              "required": true,
-              "style": "simple",
-              "explode": false,
-              "schema": {
-                "type": "string"
-              }
+          }
+        },
+        "parameters": [
+          {
+            "name": "user_name",
+            "in": "path",
+            "description": "Slurm User Name",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "string"
             }
-          ]
-        }
+          }
+        ]
       }
     },
     "/users/": {
@@ -585,21 +588,21 @@
               }
             },
             "description": "delete cluster"
-          },
-          "parameters": [
-            {
-              "name": "cluster_name",
-              "in": "path",
-              "description": "Slurm cluster name",
-              "required": true,
-              "style": "simple",
-              "explode": false,
-              "schema": {
-                "type": "string"
-              }
+          }
+        },
+        "parameters": [
+          {
+            "name": "cluster_name",
+            "in": "path",
+            "description": "Slurm cluster name",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "string"
             }
-          ]
-        }
+          }
+        ]
       },
       "get": {
         "tags": [
@@ -621,21 +624,21 @@
               }
             },
             "description": "list of cluster"
-          },
-          "parameters": [
-            {
-              "name": "cluster_name",
-              "in": "path",
-              "description": "Slurm cluster name",
-              "required": true,
-              "style": "simple",
-              "explode": false,
-              "schema": {
-                "type": "string"
-              }
+          }
+        },
+        "parameters": [
+          {
+            "name": "cluster_name",
+            "in": "path",
+            "description": "Slurm cluster name",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "string"
             }
-          ]
-        }
+          }
+        ]
       }
     },
     "/clusters/": {
@@ -709,21 +712,21 @@
               }
             },
             "description": "delete wckey"
-          },
-          "parameters": [
-            {
-              "name": "wckey",
-              "in": "path",
-              "description": "Slurm wckey name",
-              "required": true,
-              "style": "simple",
-              "explode": false,
-              "schema": {
-                "type": "string"
-              }
+          }
+        },
+        "parameters": [
+          {
+            "name": "wckey",
+            "in": "path",
+            "description": "Slurm wckey name",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "string"
             }
-          ]
-        }
+          }
+        ]
       },
       "get": {
         "tags": [
@@ -745,21 +748,21 @@
               }
             },
             "description": "list of wckey"
-          },
-          "parameters": [
-            {
-              "name": "wckey",
-              "in": "path",
-              "description": "Slurm wckey name",
-              "required": true,
-              "style": "simple",
-              "explode": false,
-              "schema": {
-                "type": "string"
-              }
+          }
+        },
+        "parameters": [
+          {
+            "name": "wckey",
+            "in": "path",
+            "description": "Slurm wckey name",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "string"
             }
-          ]
-        }
+          }
+        ]
       }
     },
     "/wckeys/": {
@@ -833,21 +836,21 @@
               }
             },
             "description": "delete account"
-          },
-          "parameters": [
-            {
-              "name": "account_name",
-              "in": "path",
-              "description": "Slurm Account Name",
-              "required": true,
-              "style": "simple",
-              "explode": false,
-              "schema": {
-                "type": "string"
-              }
+          }
+        },
+        "parameters": [
+          {
+            "name": "account_name",
+            "in": "path",
+            "description": "Slurm Account Name",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "string"
             }
-          ]
-        }
+          }
+        ]
       },
       "get": {
         "tags": [
@@ -869,21 +872,21 @@
               }
             },
             "description": "list of account"
-          },
-          "parameters": [
-            {
-              "name": "account_name",
-              "in": "path",
-              "description": "Slurm Account Name",
-              "required": true,
-              "style": "simple",
-              "explode": false,
-              "schema": {
-                "type": "string"
-              }
+          }
+        },
+        "parameters": [
+          {
+            "name": "account_name",
+            "in": "path",
+            "description": "Slurm Account Name",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "string"
             }
-          ]
-        }
+          }
+        ]
       }
     },
     "/accounts/": {
