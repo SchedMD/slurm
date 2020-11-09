@@ -476,12 +476,13 @@ to see if the system is quiescing when sending a message, and if so, we wait
 until it is done before sending.
 .TP
 \fBDisableIPv4\fR
-Disable IPv4 only operation for all slurm daemons (except slurmdbd).
+Disable IPv4 only operation for all slurm daemons (except slurmdbd). This
+should also be set in your \fBslurmdbd.conf\fR file.
 .TP
 \fBEnableIPv6\fR
 Enable using IPv6 addresses for all slurm daemons (except slurmdbd). When
 using both IPv4 and IPv6, address family preferences will be based on your
-/etc/gai.conf file.
+/etc/gai.conf file. This should also be set in your \fBslurmdbd.conf\fR file.
 .TP
 \fBNoAddrCache\fR
 By default, Slurm will cache a node's network address after successfully

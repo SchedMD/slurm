@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "October 2020" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "November 2020" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -177,11 +177,13 @@ Comma separated options identifying communication options.
 .RS
 .TP 15
 \fBDisableIPv4\fR
-Disable IPv4 only operation for the slurmdbd.
+Disable IPv4 only operation for the slurmdbd. This should also be set in your
+\fBslurm.conf\fR file.
 .TP
 \fBEnableIPv6\fR
 Enable using IPv6 addresses for the slurmdbd. When using both IPv4 and IPv6,
-address family preferences will be based on your /etc/gai.conf file.
+address family preferences will be based on your /etc/gai.conf file. This
+should also be set in your \fBslurm.conf\fR file.
 .RE
 
 .TP
