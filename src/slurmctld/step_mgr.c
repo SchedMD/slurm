@@ -2404,6 +2404,9 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	if (step_specs->flags & SSF_OVERCOMMIT)
 		step_specs->cpu_count = 0;
 
+	if (!step_specs->ntasks_per_tres)
+		step_specs->ntasks_per_tres = NO_VAL16;
+
 	/* determine cpus_per_task value by reversing what srun does */
 	if (step_specs->num_tasks < 1)
 		return ESLURM_BAD_TASK_COUNT;

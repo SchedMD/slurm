@@ -5248,8 +5248,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 		}
 	}
 
-	if (!ntasks_per_tres || (*ntasks_per_tres == 0) ||
-	    (*ntasks_per_tres == NO_VAL16)) {
+	if (!ntasks_per_tres || (*ntasks_per_tres == NO_VAL16)) {
 		/* do nothing */
 	} else if (list_count(*gres_list) != 0) {
 		/* Set num_tasks = gpus * ntasks/gpu */
@@ -10250,7 +10249,7 @@ extern int gres_plugin_job_min_tasks(uint32_t node_count,
 	int tmp, min_tasks = 0;
 	uint32_t plugin_id = 0;
 
-	if ((ntasks_per_tres == NO_VAL16) || (ntasks_per_tres == 0))
+	if (ntasks_per_tres == NO_VAL16)
 		return 0;
 
 	if (!job_gres_list || (list_count(job_gres_list) == 0))
@@ -12659,8 +12658,7 @@ extern int gres_plugin_step_state_validate(char *cpus_per_tres,
 		}
 	}
 
-	if (ntasks_per_tres && (ntasks_per_tres != NO_VAL16) && num_tasks &&
-	    cpu_count) {
+	if ((ntasks_per_tres != NO_VAL16) && num_tasks && cpu_count) {
 		_handle_ntasks_per_tres_step(new_step_list, ntasks_per_tres,
 					     num_tasks, cpu_count);
 	}
