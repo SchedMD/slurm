@@ -1416,17 +1416,112 @@
       "diag": {
         "properties": {
           "errors": {
+            "type": "array",
             "description": "slurm errors",
             "items": {
               "$ref": "#/components/schemas/error"
-            },
-            "type": "array"
+            }
           },
-          "statistics": {
-            "$ref": "#/components/schemas/statistics"
+          "time_start": {
+            "type": "integer",
+            "description": "Unix timestamp of start time"
+          },
+          "rollups": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "rollup statistics",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "description": "Type of rollup"
+                },
+                "last_run": {
+                  "type": "integer",
+                  "description": "timestamp of last rollup"
+                },
+                "last_cycle": {
+                  "type": "integer",
+                  "description": "timestamp of last cycle"
+                },
+                "max_cycle": {
+                  "type": "integer",
+                  "description": "max time of all cycles"
+                },
+                "total_time": {
+                  "type": "integer",
+                  "description": "total time (s) spend doing rollup"
+                },
+                "mean_cycles": {
+                  "type": "integer",
+                  "description": "average time (s) of cycle"
+                }
+              }
+            }
+          },
+          "RPCs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "statistics by RPC type",
+              "properties": {
+                "rpc": {
+                  "type": "string",
+                  "description": "RPC type"
+                },
+                "count": {
+                  "type": "integer",
+                  "description": "number of RPCs"
+                },
+                "time": {
+                  "type": "object",
+                  "description": "time values",
+                  "properties": {
+                    "average": {
+                      "type": "integer",
+                      "description": "Average time spent processing this RPC type"
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "Total time spent processing this RPC type"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "statistics by user RPCs",
+              "properties": {
+                "user": {
+                  "type": "string",
+                  "description": "user name"
+                },
+                "count": {
+                  "type": "integer",
+                  "description": "number of RPCs"
+                },
+                "time": {
+                  "type": "object",
+                  "description": "time values",
+                  "properties": {
+                    "average": {
+                      "type": "integer",
+                      "description": "Average time spent processing each user RPC"
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "Total time spent processing each user RPC"
+                    }
+                  }
+                }
+              }
+            }
           }
-        },
-        "type": "object"
+        }
       },
       "error": {
         "properties": {
@@ -1439,10 +1534,6 @@
             "type": "string"
           }
         },
-        "type": "object"
-      },
-      "statistics": {
-        "properties": {},
         "type": "object"
       }
     }
