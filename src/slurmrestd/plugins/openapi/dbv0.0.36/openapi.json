@@ -30,6 +30,12 @@
       "url": "/slurmdb/v0.0.36/"
     }
   ],
+  "security": [
+    {
+      "user": [],
+      "token": []
+    }
+  ],
   "paths": {
     "/job/{job_id}": {
       "get": {
@@ -1320,6 +1326,20 @@
     }
   },
   "components": {
+    "securitySchemes": {
+      "user": {
+        "type": "apiKey",
+        "description": "User name",
+        "name": "X-SLURM-USER-NAME",
+        "in": "header"
+      },
+      "token": {
+        "type": "apiKey",
+        "description": "User access token",
+        "name": "X-SLURM-USER-TOKEN",
+        "in": "header"
+      }
+    },
     "schemas": {
       "diag": {
         "properties": {
