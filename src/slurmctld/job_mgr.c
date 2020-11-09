@@ -4977,13 +4977,13 @@ static int _select_nodes_parts(job_record_t *job_ptr, bool test_only,
 			debug2("Try %pJ on next partition %s",
 			       job_ptr, part_ptr->name);
 
-			if (_select_nodes_parts_resvs(job_ptr,
-						      &test_only,
-						      select_node_bitmap,
-						      err_msg,
-						      &best_rc,
-						      &rc,
-						      &part_limits_rc) ==
+			if (_select_nodes_resvs(job_ptr,
+						&test_only,
+						select_node_bitmap,
+						err_msg,
+						&best_rc,
+						&rc,
+						&part_limits_rc) ==
 			    SLURM_SUCCESS)
 				break;
 		}

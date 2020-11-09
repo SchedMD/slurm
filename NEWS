@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
     working within the new Interactive Step.
  -- Fix various Coverity issues.
  -- cons_tres - Fix DefCpuPerGPU
+ -- Make it so you can have a job with multiple partitions and multiple
+    reservations.
 
 * Changes in Slurm 20.11.0rc2
 ==============================
