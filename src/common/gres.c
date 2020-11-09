@@ -5115,7 +5115,9 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 	    (*num_tasks == NO_VAL) && (*min_nodes != NO_VAL) &&
 	    (*min_nodes == *max_nodes)) {
 		/* Implicitly set task count */
-		if (*ntasks_per_node != NO_VAL16)
+		if (*ntasks_per_tres != NO_VAL16)
+			*num_tasks = *min_nodes * *ntasks_per_tres;
+		else if (*ntasks_per_node != NO_VAL16)
 			*num_tasks = *min_nodes * *ntasks_per_node;
 		else if (*cpus_per_task == NO_VAL16)
 			*num_tasks = *min_nodes;

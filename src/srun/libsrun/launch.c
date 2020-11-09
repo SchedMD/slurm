@@ -216,9 +216,14 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	else if (opt_local->ntasks_per_gpu != NO_VAL)
 		job->ctx_params.ntasks_per_tres = opt_local->ntasks_per_gpu;
 
-	if (!opt_local->ntasks_set && (opt_local->ntasks_per_node != NO_VAL))
-		job->ntasks = opt_local->ntasks = job->nhosts *
-						  opt_local->ntasks_per_node;
+	if (!opt_local->ntasks_set) {
+		if (job->ctx_params.ntasks_per_tres != NO_VAL16) {
+			job->ntasks = opt_local->ntasks = job->nhosts *
+				job->ctx_params.ntasks_per_tres;
+		} else if (opt_local->ntasks_per_node != NO_VAL)
+			job->ntasks = opt_local->ntasks = job->nhosts *
+				opt_local->ntasks_per_node;
+	}
 	job->ctx_params.task_count = opt_local->ntasks;
 
 	if (opt_local->mem_per_cpu != NO_VAL64)
