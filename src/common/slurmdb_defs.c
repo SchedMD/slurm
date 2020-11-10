@@ -2919,13 +2919,14 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 								 name))
 							break;
 					}
-					list_iterator_reset(itr);
 
 					if (!tmp_char) {
 						list_append(char_list, name);
 						count++;
 					} else
 						xfree(name);
+
+					list_iterator_reset(itr);
 				}
 
 				i++;
