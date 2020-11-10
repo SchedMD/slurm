@@ -2846,7 +2846,10 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 	}
 
 	itr = list_iterator_create(char_list);
-	if (names) {
+	if (!xstrcmp(names, "")) {
+		list_append(char_list, xstrdup(""));
+		count = 1;
+	} else if (names) {
 		if (names[i] == '\"' || names[i] == '\'') {
 			quote_c = names[i];
 			quote = 1;
@@ -2923,9 +2926,6 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 						count++;
 					} else
 						xfree(name);
-				} else if (!(i-start) && !option) {
-					list_append(char_list, xstrdup(""));
-					count++;
 				}
 
 				i++;
@@ -2991,15 +2991,11 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 				if (!xstrcasecmp(tmp_char, name))
 					break;
 			}
-
 			if (!tmp_char) {
 				list_append(char_list, name);
 				count++;
 			} else
 				xfree(name);
-		} else if (!(i-start) && !option) {
-			list_append(char_list, xstrdup(""));
-			count++;
 		}
 	}
 	if (!count) {
