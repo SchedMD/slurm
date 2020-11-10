@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
  -- Make it so you can have a job with multiple partitions and multiple
     reservations.
  -- Fix primary controller assert when shutting down backup controllers.
+ -- Enforce invalid argument combinations with --ntasks-per-gpu
 
 * Changes in Slurm 20.11.0rc2
 ==============================

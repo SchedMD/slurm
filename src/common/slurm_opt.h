@@ -528,4 +528,9 @@ extern void validate_memory_options(slurm_opt_t *opt);
  */
 extern void validate_hint_option(slurm_opt_t *opt);
 
+/*
+ * Validate options that are common to salloc, sbatch, and srun.
+ */
+extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt);
+
 #endif	/* _SLURM_OPT_H_ */

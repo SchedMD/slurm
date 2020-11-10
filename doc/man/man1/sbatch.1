@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "October 2020" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "November 2020" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -1476,8 +1476,8 @@ This option will implicitly set \fB\-\-gpu-bind=single:<ntasks>\fR, but that
 can be overridden with an explicit \fB\-\-gpu-bind\fR specification.
 This option is not compatible with a node range
 (i.e. \-N<\fIminnodes\fR\-\fImaxnodes\fR>).
-This option is not compatible with \fB\-\-gpus-per-task\fR or
-\fB\-\-gpus-per-socket\fR.
+This option is not compatible with \fB\-\-gpus-per-task\fR,
+\fB\-\-gpus-per-socket\fR, or \fB\-\-ntasks-per-node\fR.
 This option is not supported unless \fISelectType=cons_tres\fR is
 configured (either directly or indirectly on Cray systems).
 

@@ -5607,3 +5607,50 @@ extern void validate_hint_option(slurm_opt_t *opt)
 		fatal("Following options are mutually exclusive: --hint, --ntasks-per-core, --threads-per-core, -B, but more than one set by environment variables.");
 	}
 }
+
+static void _validate_ntasks_per_gpu(slurm_opt_t *opt)
+{
+	bool tres = slurm_option_set_by_cli(opt, LONG_OPT_NTASKSPERTRES);
+	bool gpu = slurm_option_set_by_cli(opt, LONG_OPT_NTASKSPERGPU);
+	bool tres_env = slurm_option_set_by_env(opt, LONG_OPT_NTASKSPERTRES);
+	bool gpu_env = slurm_option_set_by_env(opt, LONG_OPT_NTASKSPERGPU);
+	bool any = (tres || gpu || tres_env || gpu_env);
+
+	if (!any)
+		return;
+
+	/* Validate --ntasks-per-gpu and --ntasks-per-gpu */
+	if (gpu && tres) {
+		fatal("--ntasks-per-gpu and --ntasks-per-tres are mutually exclusive");
+	} else if (gpu && tres_env) {
+		fatal("--ntasks-per-gpu and SLURM_NTASKS_PER_TRES are mutually exclusive");
+	} else if (tres && gpu_env) {
+		fatal("--ntasks-per-tres and SLURM_NTASKS_PER_GPU are mutually exclusive");
+	} else if (gpu_env && tres_env) {
+		fatal("SLURM_NTASKS_PER_GPU and SLURM_NTASKS_PER_TRES are mutually exclusive");
+	}
+
+	if (slurm_option_set_by_cli(opt, LONG_OPT_GPUS_PER_TASK))
+		fatal("--gpus-per-task is mutually exclusive with --ntasks-per-gpu and SLURM_NTASKS_PER_GPU");
+
+	if (slurm_option_set_by_env(opt, LONG_OPT_GPUS_PER_TASK))
+		fatal("SLURM_GPUS_PER_TASK is mutually exclusive with --ntasks-per-gpu and SLURM_NTASKS_PER_GPU");
+
+	if (slurm_option_set_by_cli(opt, LONG_OPT_GPUS_PER_SOCKET))
+		fatal("--gpus-per-socket is mutually exclusive with --ntasks-per-gpu and SLURM_NTASKS_PER_GPU");
+
+	if (slurm_option_set_by_env(opt, LONG_OPT_GPUS_PER_SOCKET))
+		fatal("SLURM_GPUS_PER_SOCKET is mutually exclusive with --ntasks-per-gpu and SLURM_NTASKS_PER_GPU");
+
+	if (slurm_option_set_by_cli(opt, LONG_OPT_NTASKSPERNODE))
+		fatal("--ntasks-per-node is mutually exclusive with --ntasks-per-gpu and SLURM_NTASKS_PER_GPU");
+
+	if (slurm_option_set_by_env(opt, LONG_OPT_NTASKSPERNODE))
+		fatal("SLURM_NTASKS_PER_NODE is mutually exclusive with --ntasks-per-gpu and SLURM_NTASKS_PER_GPU");
+}
+
+/* Validate shared options between srun, salloc, and sbatch */
+extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
+{
+	_validate_ntasks_per_gpu(opt);
+}

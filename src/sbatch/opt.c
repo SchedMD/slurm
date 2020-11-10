@@ -648,6 +648,8 @@ static bool _opt_verify(void)
 	hostlist_t hl = NULL;
 	int hl_cnt = 0;
 
+	validate_options_salloc_sbatch_srun(&opt);
+
 	if (opt.quiet && opt.verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
 		verified = false;

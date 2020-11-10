@@ -866,6 +866,8 @@ static bool _opt_verify(void)
 	hostlist_t hl = NULL;
 	int hl_cnt = 0;
 
+	validate_options_salloc_sbatch_srun(&opt);
+
 	/*
 	 *  Do not set slurmd debug level higher than DEBUG2,
 	 *   as DEBUG3 is used for slurmd IO operations, which
