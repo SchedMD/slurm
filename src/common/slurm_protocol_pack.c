@@ -3692,7 +3692,10 @@ static void _xlate_task_str(job_info_t *job_ptr)
 
 	i = strlen(in_buf);
 	task_bitmap = bit_alloc(i * 4);
-	bit_unfmt_hexmask(task_bitmap, in_buf);
+
+	if (bit_unfmt_hexmask(task_bitmap, in_buf) == -1)
+		error("%s: bit_unfmt_hexmask error on '%s'", __func__, in_buf);
+
 	job_ptr->array_bitmap = (void *) task_bitmap;
 
 	/* Check first for a step function */

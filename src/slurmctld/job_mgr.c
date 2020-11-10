@@ -2415,9 +2415,11 @@ static int _load_job_state(Buf buffer, uint16_t protocol_version)
 			job_ptr->array_recs->task_id_bitmap =
 				bit_alloc(task_id_size);
 			if (task_id_str) {
-				bit_unfmt_hexmask(
-					job_ptr->array_recs->task_id_bitmap,
-					task_id_str);
+				if (bit_unfmt_hexmask(
+					    job_ptr->array_recs->task_id_bitmap,
+					    task_id_str) == -1)
+					error("%s: bit_unfmt_hexmask error on '%s'",
+					      __func__, task_id_str);
 				job_ptr->array_recs->task_id_str = task_id_str;
 				task_id_str = NULL;
 			}
