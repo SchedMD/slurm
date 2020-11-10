@@ -2272,7 +2272,24 @@
       },
       "tres_list": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "TRES type"
+          },
+          "name": {
+            "type": "string",
+            "description": "TRES name (optional)"
+          },
+          "id": {
+            "type": "integer",
+            "description": "database id"
+          },
+          "count": {
+            "type": "integer",
+            "description": "count of TRES"
+          }
+        }
       },
       "job_info": {
         "type": "object",
