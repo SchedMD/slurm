@@ -303,7 +303,7 @@ sleep 10
 set matches 0
 spawn $scontrol show step
 expect {
-	-re "StepId=$job_id1\.$step_id " {
+	-re "StepId=$job_id1\\.$step_id " {
 		incr matches
 		exp_continue
 	}
@@ -326,7 +326,7 @@ if {$matches != 1} {
 set matches 0
 spawn $scontrol show step $job_id1.$step_id
 expect {
-	-re "StepId=$job_id1\.$step_id " {
+	-re "StepId=$job_id1\\.$step_id " {
 		incr matches
 		exp_continue
 	}
@@ -356,7 +356,7 @@ set matches 0
 set job_id3 [expr $job_id1 + 10000]
 spawn $scontrol show step $job_id3.$step_id
 expect {
-	-re "StepId=$job_id3\.$step_id " {
+	-re "StepId=$job_id3\\.$step_id " {
 		log_error "scontrol found unexpected job step"
 		end_it 1
 		exp_continue
@@ -391,7 +391,7 @@ if {$matches != 1} {
 set matches 0
 spawn $scontrol write batch_script $job_id1
 expect {
-	-re "batch script for job $job_id1 written to slurm-$job_id1\.sh" {
+	-re "batch script for job $job_id1 written to slurm-$job_id1\\.sh" {
 		incr matches
 		exp_continue
 	}
@@ -411,7 +411,7 @@ if {$matches != 1} {
 set matches 0
 spawn $scontrol write batch_script $job_id2 $test_id.sh
 expect {
-	-re "batch script for job $job_id2 written to $test_id\.sh" {
+	-re "batch script for job $job_id2 written to $test_id\\.sh" {
 		incr matches
 		exp_continue
 	}
@@ -434,7 +434,7 @@ expect {
 	-re "ls: cannot access" {
 		end_it 1
 	}
-	-re "slurm-$job_id1\.sh" {
+	-re "slurm-$job_id1\\.sh" {
 		incr matches
 		exp_continue
 	}
@@ -457,7 +457,7 @@ expect {
 	-re "ls: cannot access" {
 		end_it 1
 	}
-	-re "$test_id\.sh" {
+	-re "$test_id\\.sh" {
 		incr matches
 		exp_continue
 	}

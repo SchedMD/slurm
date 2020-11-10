@@ -68,7 +68,7 @@ proc inc21_21_good { test_type limit } {
 	spawn $srun -v -t1 $add [lindex $limit 0][lindex $limit 1] \
 	    --account=$ta $bin_id
 	expect {
-		-re "launching StepId=($number)\.$re_word_str" {
+		-re "launching StepId=($number)\\.$re_word_str" {
 			set job_id $expect_out(1,string)
 			incr matches
 			exp_continue
@@ -115,7 +115,7 @@ proc inc21_21_bad { test_type limit } {
 			log_info "This error is expected, not a problem [test_info $test_type \"inc21_21_bad\"]"
 			exp_continue
 		}
-		-re "launching StepId=($number)\.$re_word_str" {
+		-re "launching StepId=($number)\\.$re_word_str" {
 			set job_id $expect_out(1,string)
 			fail "Job ($job_id) should not have run [test_info $test_type \"inc21_21_bad\"]"
 		}
@@ -524,7 +524,7 @@ proc inc21_21_grpwall { test_type limit } {
 	spawn $srun -v [lindex $limit 0][lindex $limit 1] --account=$ta \
 	    -I $file_in
 	expect {
-		-re "launching StepId=($number)\.$re_word_str" {
+		-re "launching StepId=($number)\\.$re_word_str" {
 			set job_id $expect_out(1,string)
 			incr matches
 			exp_continue
@@ -553,7 +553,7 @@ proc inc21_21_grpwall { test_type limit } {
 			log_info "This error is expected, not a problem [test_info $test_type \"inc21_21_grpwall\"]"
 			exp_continue
 		}
-		-re "launching StepId=($number)\.$re_word_str" {
+		-re "launching StepId=($number)\\.$re_word_str" {
 			set job_id $expect_out(1,string)
 			fail "Job should not have run [test_info $test_type \"inc21_21_grpwall\"]"
 		}

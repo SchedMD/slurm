@@ -53,7 +53,7 @@ set stepid 0
 set job_running 0
 set srun_pid [spawn $srun --unbuffered -v -n1 -t1 ./$test_script]
 expect {
-	-re "launching StepId=(($number)\.$re_word_str)" {
+	-re "launching StepId=(($number)\\.$re_word_str)" {
 		set stepid $expect_out(1,string)
 		set jobid $expect_out(2,string)
 		exp_continue

@@ -276,7 +276,7 @@ proc sshare_opt { soption } {
 				set not_support 2
 				exp_continue
 			}
-			-re "slurm $number\.$number\.$number" {
+			-re "slurm $number\\.$number\\.$number" {
 				if {$debug} {log_debug "Match11"}
 				incr matches
 				exp_continue

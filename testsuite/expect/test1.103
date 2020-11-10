@@ -69,7 +69,7 @@ expect {
 		set exit_code 1
 		exp_continue
 	}
-	-re "launching StepId=($number)\.($re_word_str) on host" {
+	-re "launching StepId=($number)\\.($re_word_str) on host" {
 		set job_id $expect_out(1,string)
 		set exit_code 0
 		exp_continue

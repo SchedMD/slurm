@@ -308,7 +308,7 @@ exec $bin_sleep 10
 set job_found 0
 spawn $squeue --format=%i --steps $job_id1.$step_id
 expect {
-	-re "($number)\.($number)" {
+	-re "($number)\\.($number)" {
 		set tmp_id $expect_out(1,string)
 		if {$tmp_id == $job_id1} {
 			set job_found 1

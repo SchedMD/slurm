@@ -144,7 +144,7 @@ proc test_srun { local } {
 	}
 	spawn $srun -v -t1 $file_in_loc -c /bin/false
 	expect {
-		-re "launching StepId=($number)\.($re_word_str)" {
+		-re "launching StepId=($number)\\.($re_word_str)" {
 			set job_id $expect_out(1,string)
 			exp_continue
 		}

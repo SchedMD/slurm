@@ -138,7 +138,7 @@ set job_1_node(1) "TBD"
 set timeout $max_job_delay
 set srun_pid [spawn $srun -N2 -t1 -A $test_acct -J $job_name_1 -v $bin_id]
 expect {
-	-re "launching StepId=($number)\.$re_word_str on host ($re_word_str)," {
+	-re "launching StepId=($number)\\.$re_word_str on host ($re_word_str)," {
 		set job_id_1 $expect_out(1,string)
 		set job_1_node($job_1_node_inx) $expect_out(2,string)
 		incr job_1_node_inx
@@ -168,7 +168,7 @@ set job_2_node(1) "TBD"
 set srun_pid [spawn $srun -N2 -x $job_1_node(0) -t1 -A $test_acct -J $job_name_2 -v $bin_id]
 expect {
 
-	-re "launching StepId=($number)\.$re_word_str on host ($re_word_str)," {
+	-re "launching StepId=($number)\\.$re_word_str on host ($re_word_str)," {
 		set job_id_2 $expect_out(1,string)
 		set job_2_node($job_2_node_inx) $expect_out(2,string)
 		incr job_2_node_inx
@@ -198,7 +198,7 @@ set job_3_node(1) "TBD"
 set srun_pid [spawn $srun -w$job_1_node(0),$job_2_node(1) -t1 -A $test_acct -J $job_name_3 -v $bin_id]
 expect {
 
-	-re "launching StepId=($number)\.$re_word_str on host ($re_word_str)," {
+	-re "launching StepId=($number)\\.$re_word_str on host ($re_word_str)," {
 		set job_id_3 $expect_out(1,string)
 		set job_3_node($job_3_node_inx) $expect_out(2,string)
 		incr job_3_node_inx

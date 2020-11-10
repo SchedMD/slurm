@@ -123,7 +123,7 @@ exec $bin_sleep 5
 set found_step 0
 spawn $squeue --steps=$job_id.$step_id
 expect {
-	-re "($job_id)\.$step_id" {
+	-re "($job_id)\\.$step_id" {
 		set found_step 1
 		exp_continue
 	}
@@ -275,7 +275,7 @@ exec $bin_sleep 5
 set found_step 0
 spawn $squeue --steps=$job_id.$step_id
 expect {
-	-re "($job_id)\.$step_id" {
+	-re "($job_id)\\.$step_id" {
 		set found_step 1
 		exp_continue
 	}

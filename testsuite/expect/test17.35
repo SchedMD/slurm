@@ -54,14 +54,14 @@ expect {
 		incr match
 		exp_continue
 	}
-	-re "real *($number)\.($digit)($digit)" {
+	-re "real *($number)\\.($digit)($digit)" {
 		set secs       $expect_out(1,string)
 		set tenths     $expect_out(2,string)
 		set hundredths $expect_out(3,string)
 		set time_used [expr $secs * 1000 + $tenths * 100 + $hundredths * 10]
 		exp_continue
 	}
-	-re "real *($number)\.($digit)" {
+	-re "real *($number)\\.($digit)" {
 		set secs       $expect_out(1,string)
 		set tenths     $expect_out(2,string)
 		set time_used [expr $secs * 1000 + $tenths * 100]

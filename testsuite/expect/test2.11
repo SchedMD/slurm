@@ -88,7 +88,7 @@ set matches 0
 if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
-		-re "StepId=($number)\.10 does not exist on" {
+		-re "StepId=($number)\\.10 does not exist on" {
 			incr matches
 			exp_continue
 		}

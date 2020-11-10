@@ -158,7 +158,7 @@ if {$exit_code != 0} {
 set matches 0
 set my_pid [spawn $sacctmgr -i add federation $fed1 cluster=$tc1]
 expect {
-	-re "The cluster $tc1 doesn't exist\. Please add first\." {
+	-re "The cluster $tc1 doesn't exist\\. Please add first\\." {
 		incr matches
 		exp_continue
 	}
@@ -179,11 +179,11 @@ if {$exit_code || $matches == 0} {
 set matches 0
 set my_pid [spawn $sacctmgr -i add federation $fed1 cluster=$tc1,$tc2]
 expect {
-	-re "The cluster $tc1 doesn't exist\. Please add first\." {
+	-re "The cluster $tc1 doesn't exist\\. Please add first\\." {
 		incr matches
 		exp_continue
 	}
-	-re "The cluster $tc2 doesn't exist\. Please add first\." {
+	-re "The cluster $tc2 doesn't exist\\. Please add first\\." {
 		incr matches
 		exp_continue
 	}
@@ -207,7 +207,7 @@ if {$exit_code || $matches != 2} {
 set matches 0
 set my_pid [spawn $sacctmgr -i add cluster $tc1 federation=$fed1]
 expect {
-	-re "The federation $fed1 doesn't exist\." {
+	-re "The federation $fed1 doesn't exist\\." {
 		incr matches
 		exp_continue
 	}
@@ -284,7 +284,7 @@ if {$exit_code || $matches != 2} {
 set matches 0
 set my_pid [spawn $sacctmgr -i add federation $fed1]
 expect {
-	-re "This federation $fed1 already exists\.  Not adding\.$eol" {
+	-re "This federation $fed1 already exists\\.  Not adding\\.$eol" {
 		incr matches
 		exp_continue
 	}
@@ -619,7 +619,7 @@ if {$exit_code || $matches != 6} {
 set matches 0
 set my_pid [spawn $sacctmgr -i modify federation $fed1 $fed2 set clusters=$tc1]
 expect {
-	-re "Can't assign clusters to multiple federations\." {
+	-re "Can't assign clusters to multiple federations\\." {
 		incr matches
 		exp_continue
 	}
@@ -643,7 +643,7 @@ if {$exit_code || $matches != 1} {
 set matches 0
 set my_pid [spawn $sacctmgr -i modify federation set clusters=$tc1]
 expect {
-	-re "Can't assign clusters to multiple federations\." {
+	-re "Can't assign clusters to multiple federations\\." {
 		incr matches
 		exp_continue
 	}
@@ -664,7 +664,7 @@ if {$exit_code || $matches != 1} {
 set matches 0
 set my_pid [spawn $sacctmgr -i modify federation set clusters=$tc1 where cluster=$tc1]
 expect {
-	-re "Can't assign clusters to multiple federations\." {
+	-re "Can't assign clusters to multiple federations\\." {
 		incr matches
 		exp_continue
 	}

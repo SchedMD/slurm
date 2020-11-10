@@ -123,18 +123,18 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 			incr matches
 			exp_continue
 		}
-		-re "$job_id\.batch\\|0:0\\|\\|" {	# Batch script
+		-re "$job_id\\.batch\\|0:0\\|\\|" {	# Batch script
 			incr matches
 			exp_continue
 		}
-		-re "$job_id\.extern\\|0:0\\|\\|" {	# Container, optional
+		-re "$job_id\\.extern\\|0:0\\|\\|" {	# Container, optional
 			exp_continue
 		}
-		-re "$job_id\.($number)\\|0:0\\|\\|" {	# Step 0 record
+		-re "$job_id\\.($number)\\|0:0\\|\\|" {	# Step 0 record
 			incr matches
 			exp_continue
 		}
-		-re "$job_id\.($number)\\|123:0\\|\\|" {	# Step 1 record
+		-re "$job_id\\.($number)\\|123:0\\|\\|" {	# Step 1 record
 			incr matches
 			exp_continue
 		}
@@ -226,18 +226,18 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 			incr matches
 			exp_continue
 		}
-		-re "$job_id\.batch\\|33:0\\|\\|" {	# Batch script
+		-re "$job_id\\.batch\\|33:0\\|\\|" {	# Batch script
 			incr matches
 			exp_continue
 		}
-		-re "$job_id\.extern\\|0:0\\|\\|" {	# Container, optional
+		-re "$job_id\\.extern\\|0:0\\|\\|" {	# Container, optional
 			exp_continue
 		}
-		-re "$job_id\.($number)\\|0:0\\|\\|" {	# Step 0 record
+		-re "$job_id\\.($number)\\|0:0\\|\\|" {	# Step 0 record
 			incr matches
 			exp_continue
 		}
-		-re "$job_id\.($number)\\|0:0\\|\\|" {	# Step 1 record
+		-re "$job_id\\.($number)\\|0:0\\|\\|" {	# Step 1 record
 			incr matches
 			exp_continue
 		}
