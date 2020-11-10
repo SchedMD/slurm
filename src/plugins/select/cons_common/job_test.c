@@ -228,7 +228,8 @@ static void _set_gpu_defaults(job_record_t *job_ptr)
 	static uint64_t last_mem_per_gpu = NO_VAL64;
 	uint64_t cpu_per_gpu, mem_per_gpu;
 
-	if (!is_cons_tres || !job_ptr->gres_list)
+	xassert(is_cons_tres);
+	if (!job_ptr->gres_list)
 		return;
 
 	if (job_ptr->part_ptr != last_part_ptr) {
