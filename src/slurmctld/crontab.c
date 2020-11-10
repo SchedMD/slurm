@@ -69,8 +69,8 @@ static int _handle_job(void *x, void *y)
 
 	dump_job_desc(job);
 
-	if (!job->crontab_entry) {
-		error("crontab submission failed due to missing cron_entry_t");
+	if (!job->crontab_entry || !valid_cron_entry(job->crontab_entry)) {
+		error("crontab submission failed due to missing or invalid cron_entry_t");
 		args->return_code = SLURM_ERROR;
 		return 1;
 	}
