@@ -91,9 +91,10 @@ Backfill scheduling can optionally continue execution after the lock release
 and ignore newly submitted jobs (<B>SchedulerParameters=bf_continue</B>).
 Doing so will permit consideration of more jobs, but may result in the delayed
 scheduling of newly submitted jobs.
-A list of <B>SchedulerParameters</B> configuration parameters related to
+A partial list of <B>SchedulerParameters</B> configuration parameters related to
 backfill scheduling follows.
-See the <a href="slurm.conf.html">slurm.conf(5)</a> man page for more details.
+For more details and a complete list of the backfill related SchedulerParameters
+see the <a href="slurm.conf.html">slurm.conf(5)</a> man page.
 </P>
 
 <UL>
@@ -136,6 +137,6 @@ the locks are relinquished in microseconds. The default value is 500,000
 microseconds (0.5 seconds).  </LI>
 </UL>
 
-<p style="text-align:center;">Last modified 6 September 2019</p>
+<p style="text-align:center;">Last modified 10 November 2020</p>
 
 <!--#include virtual="footer.txt"-->
