@@ -2879,7 +2879,7 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 						      name, tmp);
 						xfree(tmp);
 						xfree(name);
-						break;
+						goto end_it;
 					}
 					xfree(name);
 
@@ -2892,7 +2892,7 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 							      "subtract from "
 							      "it in the same "
 							      "line");
-							break;
+							goto end_it;
 						}
 						add_set = 1;
 						name = xstrdup_printf(
@@ -2906,7 +2906,7 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 							      "subtract from "
 							      "it in the same "
 							      "line");
-							break;
+							goto end_it;
 						}
 						equal_set = 1;
 						name = xstrdup_printf("%u", id);
@@ -2934,7 +2934,7 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 					error("There is a problem with "
 					      "your request.  It appears you "
 					      "have spaces inside your list.");
-					break;
+					goto end_it;
 				}
 			}
 			i++;
