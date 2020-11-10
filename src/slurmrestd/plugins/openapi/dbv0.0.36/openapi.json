@@ -1540,6 +1540,75 @@
       },
       "account_info": {
         "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          },
+          "accounts": {
+            "type": "array",
+            "description": "list of accounts",
+            "items": {
+              "type": "object",
+              "description": "account description",
+              "properties": {
+                "associations": {
+                  "type": "array",
+                  "description": "list of assigned associations",
+                  "items": {
+                    "$ref": "#/components/schemas/association_short_info"
+                  }
+                },
+                "coordinators": {
+                  "type": "array",
+                  "description": "list of assigned coordinators",
+                  "items": {
+                    "$ref": "#/components/schemas/coordinator_info"
+                  }
+                },
+                "description": {
+                  "type": "string",
+                  "description": "description of account"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "name of account"
+                },
+                "organization": {
+                  "type": "string",
+                  "description": "assigned organization of account"
+                },
+                "flags": {
+                  "type": "array",
+                  "description": "List of properties of account",
+                  "items": {
+                    "type": "string",
+                    "description": "string of property name"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "coordinator_info": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "name of user"
+          },
+          "direct": {
+            "type": "integer",
+            "description": "if user is coordinator of this account directly or coordinator status was inheirted from a higher account in the tree"
+          }
+        }
+      },
+      "association_short_info": {
+        "type": "object",
         "properties": {}
       },
       "response_account_delete": {
