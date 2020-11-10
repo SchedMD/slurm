@@ -1609,7 +1609,24 @@
       },
       "association_short_info": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "account name"
+          },
+          "cluster": {
+            "type": "string",
+            "description": "cluster name"
+          },
+          "partition": {
+            "type": "string",
+            "description": "partition name (optional)"
+          },
+          "user": {
+            "type": "string",
+            "description": "user name"
+          }
+        }
       },
       "response_account_delete": {
         "type": "object",
