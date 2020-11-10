@@ -2293,6 +2293,368 @@
       },
       "job_info": {
         "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          },
+          "jobs": {
+            "type": "array",
+            "description": "array of jobs",
+            "items": {
+              "$ref": "#/components/schemas/job_description"
+            }
+          }
+        }
+      },
+      "job_description": {
+        "type": "object",
+        "description": "single job description",
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "account charged by job"
+          },
+          "comment": {
+            "type": "object",
+            "description": "job comments by type",
+            "properties": {
+              "administrator": {
+                "type": "string",
+                "description": "administrator set comment"
+              },
+              "job": {
+                "type": "string",
+                "description": "job comment"
+              },
+              "system": {
+                "type": "string",
+                "description": "system set comment"
+              }
+            }
+          },
+          "allocation_nodes": {
+            "type": "string",
+            "description": "nodes allocated to job"
+          },
+          "array": {
+            "type": "object",
+            "description": "array properties (optional)",
+            "properties": {
+              "job_id": {
+                "type": "integer",
+                "description": "job id of array"
+              },
+              "limits": {
+                "type": "object",
+                "description": "limits on array settings",
+                "properties": {
+                  "max": {
+                    "type": "object",
+                    "description": "limits on array settings",
+                    "properties": {
+                      "running": {
+                        "type": "object",
+                        "description": "limits on array settings",
+                        "properties": {
+                          "tasks": {
+                            "type": "integer",
+                            "description": "max running tasks in array at any one time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "task": {
+                "type": "string",
+                "description": "array task"
+              },
+              "task_id": {
+                "type": "integer",
+                "description": "array task id"
+              }
+            }
+          },
+          "time": {
+            "type": "object",
+            "description": "time properties",
+            "properties": {
+              "elapsed": {
+                "type": "integer",
+                "description": "total time elapsed"
+              },
+              "eligible": {
+                "type": "integer",
+                "description": "total time eligible to run"
+              },
+              "end": {
+                "type": "integer",
+                "description": "timestamp of when job ended"
+              },
+              "start": {
+                "type": "integer",
+                "description": "timestamp of when job started"
+              },
+              "submission": {
+                "type": "integer",
+                "description": "timestamp of when job submitted"
+              },
+              "suspended": {
+                "type": "integer",
+                "description": "timestamp of when job last suspended"
+              },
+              "system": {
+                "type": "object",
+                "description": "system time values",
+                "properties": {
+                  "seconds": {
+                    "type": "integer",
+                    "description": "Total number of CPU-seconds used by the system on behalf of the process (in kernel mode), in seconds"
+                  },
+                  "microseconds": {
+                    "type": "integer",
+                    "description": "Total number of CPU-seconds used by the system on behalf of the process (in kernel mode), in microseconds"
+                  }
+                }
+              },
+              "total": {
+                "type": "object",
+                "description": "system time values",
+                "properties": {
+                  "seconds": {
+                    "type": "integer",
+                    "description": "Total number of CPU-seconds used by the job, in seconds"
+                  },
+                  "microseconds": {
+                    "type": "integer",
+                    "description": "Total number of CPU-seconds used by the job, in microseconds"
+                  }
+                }
+              },
+              "user": {
+                "type": "object",
+                "description": "user land time values",
+                "properties": {
+                  "seconds": {
+                    "type": "integer",
+                    "description": "Total number of CPU-seconds used by the job in user land, in seconds"
+                  },
+                  "microseconds": {
+                    "type": "integer",
+                    "description": "Total number of CPU-seconds used by the job in user land, in microseconds"
+                  }
+                }
+              },
+              "limit": {
+                "type": "integer",
+                "description": "Job wall clock time limit"
+              }
+            }
+          },
+          "association": {
+            "$ref": "#/components/schemas/association_short_info"
+          },
+          "cluster": {
+            "type": "string",
+            "description": "assigned cluster"
+          },
+          "constraints": {
+            "type": "string",
+            "description": "constraints on job"
+          },
+          "derived_exit_code": {
+            "$ref": "#/components/schemas/job_exit_code"
+          },
+          "exit_code": {
+            "$ref": "#/components/schemas/job_exit_code"
+          },
+          "flags": {
+            "type": "array",
+            "description": "List of properties of job",
+            "items": {
+              "type": "string",
+              "description": "string of property name"
+            }
+          },
+          "group": {
+            "type": "string",
+            "description": "user's group to run job"
+          },
+          "het": {
+            "type": "object",
+            "description": "Heterogeneous Job details (optional)",
+            "properties": {
+              "job_id": {
+                "type": "object",
+                "description": "parent HetJob id"
+              },
+              "job_offset": {
+                "type": "object",
+                "description": "offset of this job to parent"
+              }
+            }
+          },
+          "job_id": {
+            "type": "integer",
+            "description": "job id"
+          },
+          "name": {
+            "type": "string",
+            "description": "assigned job name"
+          },
+          "mcs": {
+            "type": "object",
+            "description": "Multi-Category Security",
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "assigned MCS label"
+              }
+            }
+          },
+          "nodes": {
+            "type": "string",
+            "description": "List of nodes allocated for job"
+          },
+          "partition": {
+            "type": "string",
+            "description": "assigned job's partition"
+          },
+          "priority": {
+            "type": "integer",
+            "description": "priority"
+          },
+          "qos": {
+            "type": "string",
+            "description": "assigned qos name"
+          },
+          "required": {
+            "type": "object",
+            "description": "job run requirements",
+            "properties": {
+              "CPUs": {
+                "type": "integer",
+                "description": "required number of CPUs"
+              },
+              "memory": {
+                "type": "integer",
+                "description": "required amount of memory (MiB)"
+              }
+            }
+          },
+          "kill_request_user": {
+            "type": "string",
+            "description": "user who requested job killed"
+          },
+          "reservation": {
+            "type": "object",
+            "description": "reservation usage details",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "database id of reservation"
+              },
+              "name": {
+                "type": "integer",
+                "description": "name of reservation"
+              }
+            }
+          },
+          "state": {
+            "type": "object",
+            "description": "state properties of job",
+            "properties": {
+              "current": {
+                "type": "string",
+                "description": "current state of job"
+              },
+              "previous": {
+                "type": "string",
+                "description": "previous state of job"
+              }
+            }
+          },
+          "steps": {
+            "type": "array",
+            "description": "job step description",
+            "items": {
+              "$ref": "#/components/schemas/job_step"
+            }
+          },
+          "tres": {
+            "type": "object",
+            "description": "TRES settings",
+            "properties": {
+              "allocated": {
+                "$ref": "#/components/schemas/tres_list"
+              },
+              "requested": {
+                "$ref": "#/components/schemas/tres_list"
+              }
+            }
+          },
+          "user": {
+            "type": "string",
+            "description": "job user"
+          },
+          "wckey": {
+            "type": "object",
+            "description": "job assigned wckey details",
+            "properties": {
+              "wckey": {
+                "type": "string",
+                "description": "job assigned wckey"
+              },
+              "flags": {
+                "type": "array",
+                "description": "wckey flags",
+                "items": {
+                  "type": "string",
+                  "description": "flag string"
+                }
+              }
+            }
+          },
+          "working_directory": {
+            "type": "string",
+            "description": "directory where job was initially started"
+          }
+        }
+      },
+      "job_exit_code": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "job exit status"
+          },
+          "return_code": {
+            "type": "integer",
+            "description": "return code from parent process"
+          },
+          "signal": {
+            "type": "object",
+            "description": "signal details (if signaled)",
+            "properties": {
+              "signal_id": {
+                "type": "integer",
+                "description": "signal number process received"
+              },
+              "name": {
+                "type": "string",
+                "description": "name of signal received"
+              }
+            }
+          }
+        }
+      },
+      "job_step": {
+        "type": "object",
         "properties": {}
       },
       "config_info": {
