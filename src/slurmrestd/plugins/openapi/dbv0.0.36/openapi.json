@@ -2027,7 +2027,221 @@
       },
       "qos_info": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          },
+          "qos": {
+            "type": "array",
+            "description": "array of qos",
+            "items": {
+              "type": "object",
+              "description": "qos description",
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "description": "QOS description"
+                },
+                "flags": {
+                  "type": "array",
+                  "description": "List of properties of qos",
+                  "items": {
+                    "type": "string",
+                    "description": "string of property name"
+                  }
+                },
+                "id": {
+                  "type": "string",
+                  "description": "database id"
+                },
+                "limits": {
+                  "type": "object",
+                  "description": "assigned limits",
+                  "properties": {
+                    "max": {
+                      "type": "object",
+                      "description": "limits on max settings",
+                      "properties": {
+                        "wall_clock": {
+                          "type": "object",
+                          "description": "limit on wallclock settings",
+                          "properties": {
+                            "per": {
+                              "type": "object",
+                              "description": "limit on wallclock per settings",
+                              "properties": {
+                                "qos": {
+                                  "type": "integer",
+                                  "description": "max wallclock per QOS"
+                                },
+                                "job": {
+                                  "type": "integer",
+                                  "description": "max wallclock per job"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "jobs": {
+                          "type": "object",
+                          "description": "limits on jobs settings",
+                          "properties": {
+                            "per": {
+                              "type": "object",
+                              "description": "limits on jobs per settings",
+                              "properties": {
+                                "account": {
+                                  "type": "integer",
+                                  "description": "max jobs per account"
+                                },
+                                "user": {
+                                  "type": "integer",
+                                  "description": "max jobs per user"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "accruing": {
+                          "type": "object",
+                          "description": "limits on accruing priority",
+                          "properties": {
+                            "per": {
+                              "type": "object",
+                              "description": "max accuring priority per setting",
+                              "properties": {
+                                "account": {
+                                  "type": "integer",
+                                  "description": "max accuring priority per account"
+                                },
+                                "user": {
+                                  "type": "integer",
+                                  "description": "max accuring priority per user"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "tres": {
+                          "type": "object",
+                          "description": "limits on TRES",
+                          "properties": {
+                            "minutes": {
+                              "type": "object",
+                              "description": "max TRES minutes settings",
+                              "properties": {
+                                "per": {
+                                  "type": "object",
+                                  "description": "max TRES minutes per settings",
+                                  "properties": {
+                                    "job": {
+                                      "$ref": "#/components/schemas/tres_list"
+                                    },
+                                    "account": {
+                                      "$ref": "#/components/schemas/tres_list"
+                                    },
+                                    "user": {
+                                      "$ref": "#/components/schemas/tres_list"
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "per": {
+                              "type": "object",
+                              "description": "max TRES per settings",
+                              "properties": {
+                                "account": {
+                                  "$ref": "#/components/schemas/tres_list"
+                                },
+                                "job": {
+                                  "$ref": "#/components/schemas/tres_list"
+                                },
+                                "node": {
+                                  "$ref": "#/components/schemas/tres_list"
+                                },
+                                "user": {
+                                  "$ref": "#/components/schemas/tres_list"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "min": {
+                      "type": "object",
+                      "description": "min limit settings",
+                      "properties": {
+                        "priority_threshold": {
+                          "type": "integer",
+                          "description": "min priority threshold"
+                        },
+                        "tres": {
+                          "type": "object",
+                          "description": "min tres settings",
+                          "properties": {
+                            "per": {
+                              "type": "object",
+                              "description": "min tres per settings",
+                              "properties": {
+                                "job": {
+                                  "$ref": "#/components/schemas/tres_list"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "preempt": {
+                  "type": "object",
+                  "description": "pre-emption settings",
+                  "properties": {
+                    "list": {
+                      "type": "array",
+                      "description": "list of pre-emptable QOS",
+                      "items": {
+                        "type": "string",
+                        "description": "pre-emptable QOS"
+                      }
+                    },
+                    "mode": {
+                      "type": "array",
+                      "description": "list of pre-emption modes",
+                      "items": {
+                        "type": "string",
+                        "description": "pre-emption mode"
+                      }
+                    },
+                    "exempt_time": {
+                      "type": "integer",
+                      "description": "grace period (s) before jobs can pre-empted"
+                    }
+                  }
+                },
+                "priority": {
+                  "type": "integer",
+                  "description": "QOS priority"
+                },
+                "usage_factor": {
+                  "type": "number",
+                  "description": "usage factor"
+                },
+                "usage_threshold": {
+                  "type": "number",
+                  "description": "usage threshold"
+                }
+              }
+            }
+          }
+        }
       },
       "response_qos_delete": {
         "type": "object",
