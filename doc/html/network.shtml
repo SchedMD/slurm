@@ -49,6 +49,15 @@ with <b>slurmd</b> on the compute nodes on port <u>6818</u> by default (see the
 <a href="#slurmd">slurmd</a> section for information on how to change
 this).</p>
 
+<p>By default, the <b>slurmctld</b> will listen for IPv4 traffic.  IPv6
+communication can be enabled by adding <u>EnableIPv6</u> to the
+<a href="slurm.conf.html#OPT_CommunicationParameters">
+CommunicationParameters</a> in your slurm.conf. With IPv6 enabled, you can
+disable IPv4 by adding <u>DisableIPv4</u> to the
+<a href="slurm.conf.html#OPT_CommunicationParameters">
+CommunicationParameters</a>. These settings must match in both slurmdbd.conf
+and slurm.conf (see the <a href="#slurmdbd">slurmdbd</a> section).</p>
+
 <h2><a name="slurmdbd">Communication for slurmdbd</a></h2>
 
 <p>The default port used by <b>slurmdbd</b> to listen for incoming requests
@@ -66,6 +75,15 @@ parameter. It also needs to be able to initiate
 a connection to <b>slurmctld</b> on port 6819 by default (see the
 <a href="#slurmctld">slurmctld</a> section for information on how to
 change this).</p>
+
+<p>By default, the <b>slurmdbd</b> will listen for IPv4 traffic.  IPv6
+communication can be enabled by adding <u>EnableIPv6</u> to the
+<a href="slurmdbd.conf.html#OPT_CommunicationParameters">
+CommunicationParameters</a> in your slurmdbd.conf. With IPv6 enabled, you can
+disable IPv4 by adding <u>DisableIPv4</u> to the
+<a href="slurmdbd.conf.html#OPT_CommunicationParameters">
+CommunicationParameters</a>. These settings must match in both slurmdbd.conf
+and slurm.conf (see the <a href="#slurmctld">slurmctld</a> section).</p>
 
 <h2><a name="slurmd">Communication for slurmd</a></h2>
 
@@ -85,6 +103,10 @@ for login nodes that are behind a firewall.</p>
 connections with <b>slurmctld</b> on port <u>6817</u> by default (see
 the <a href="#slurmctld">slurmctld</a> section for information on how to
 change this).</p>
+
+<p>By default, the <b>slurmd</b> communicates over IPv4.  Please see the
+<a href="#slurmctld">slurmctld</a> section for details on how to change this
+as the slurm.conf parameter affects <b>slurmd</b> daemons as well.</p>
 
 <h2><a name="client">Communication for client commands</a></h2>
 
@@ -192,6 +214,33 @@ documentation.</p>
   Federation configuration
 </div>
 
-<p style="text-align:center;">Last modified 21 October 2020</p>
+<h2><a id="ipv6">Communication with IPv6</a></h2>
+
+<p>The <b>slurmctld</b>, <b>slurmdbd</b>, and <b>slurmd</b> daemons will,
+by default, communicate using IPv4, but they can be configured to use IPv6.
+This is handled by setting <b>CommunicationParameters=EnableIPv6</b>
+in your slurm.conf and slurmdbd.conf, then restarting all of the daemons.
+The <b>slurmd</b> may operate over IPv4 OR IPv6 in this mode. IPv4 can be
+disabled by setting <b>CommunicationParameters=EnableIPv6,DisableIPv4</b>.
+In is mode, everything must have a valid IPv6 address or the conection will
+fail.</p>
+
+<p>The <b>slurmctld</b> expects a node to map to a single IP address (which
+will be the first address returned when looking up the IP of the node with
+<b>getaddrinfo()</b>). If you enable IPv6 on an existing cluster and the
+nodes have IPv6 addresses, you must restart the <b>slurmd</b> daemons for
+communication over IPv6 to be established.</p>
+
+<p>The presence of <span>precedence ::ffff:0:0/96  100</span> in /etc/gai.conf
+will cause IPv4 addresses to be returned BEFORE an IPv6 address. This might
+cause a situation where you have enabled IPv6 for Slurm, but are still seeing nodes
+communicate with IPv4. If there is confusion as to which address is being used
+you can call <span>scontrol setdebugflags +NET</span> to enable network related
+debug logging in your slurmctld.log.</p>
+
+<p>If IPv4 and IPv6 are enabled, the loopback interface may still resolve to
+127.0.0.1. This is not necessarily an indication of a problem.</p>
+
+<p style="text-align:center;">Last modified 25 November 2020</p>
 
 <!--#include virtual="footer.txt"-->
