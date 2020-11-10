@@ -1285,13 +1285,14 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 			  NULL,			/* will_run response */
 			  1,			/* allocate */
 			  cmd_uid,		/* submit UID */
+			  false,		/* cron */
 			  &new_job_ptr,		/* pointer to new job */
 			  NULL,                 /* error message */
 			  SLURM_PROTOCOL_VERSION);
 	if (rc != SLURM_SUCCESS) {
 		/* Determine expected start time */
 		i = job_allocate(&job_alloc_req, 1, 1, &will_run, 1,
-				 cmd_uid, &new_job_ptr, NULL,
+				 cmd_uid, false, &new_job_ptr, NULL,
 				 SLURM_PROTOCOL_VERSION);
 		if (i == SLURM_SUCCESS) {
 			will_run_idle = will_run->start_time;
@@ -1312,12 +1313,12 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 			(void) update_resv(&resv_desc);
 			xfree(resv_desc.users);
 			rc = job_allocate(&job_alloc_req, 1, 0,	NULL, 1,
-					  cmd_uid, &new_job_ptr, NULL,
+					  cmd_uid, false, &new_job_ptr, NULL,
 					  SLURM_PROTOCOL_VERSION);
 			if (rc != SLURM_SUCCESS) {
 				/* Determine expected start time */
 				i = job_allocate(&job_alloc_req, 1, 1,
-						 &will_run, 1, cmd_uid,
+						 &will_run, 1, cmd_uid, false,
 						 &new_job_ptr, NULL,
 						 SLURM_PROTOCOL_VERSION);
 				if (i == SLURM_SUCCESS) {
@@ -1329,7 +1330,8 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 					/* Submit job in resv for later use */
 					i = job_allocate(&job_alloc_req, 0, 0,
 							 NULL, 1, cmd_uid,
-							 &new_job_ptr, NULL,
+							 false, &new_job_ptr,
+							 NULL,
 							 SLURM_PROTOCOL_VERSION);
 					if (i == SLURM_SUCCESS)
 						will_run_time = will_run_resv;
@@ -1344,7 +1346,7 @@ extern char *replace_node(char *cmd_ptr, uid_t cmd_uid,
 
 	if ((rc != SLURM_SUCCESS) && (will_run_time == 0) && will_run_idle) {
 		/* Submit job for later use without using reservation */
-		i = job_allocate(&job_alloc_req, 0, 0, NULL, 1, cmd_uid,
+		i = job_allocate(&job_alloc_req, 0, 0, NULL, 1, cmd_uid, false,
 				 &new_job_ptr, NULL, SLURM_PROTOCOL_VERSION);
 		if (i == SLURM_SUCCESS)
 			will_run_time = will_run_idle;

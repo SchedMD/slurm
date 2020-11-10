@@ -1698,8 +1698,8 @@ static int _fed_mgr_job_allocate_sib(char *sib_name, job_desc_msg_t *job_desc,
 	/* Create new job allocation */
 	job_desc->het_job_offset = NO_VAL;
 	error_code = job_allocate(job_desc, job_desc->immediate, false, NULL,
-				  interactive_job, uid, &job_ptr, &err_msg,
-				  sibling->rpc_version);
+				  interactive_job, uid, false, &job_ptr,
+				  &err_msg, sibling->rpc_version);
 	if (!job_ptr ||
 	    (error_code && job_ptr->job_state == JOB_FAILED))
 		reject_job = true;
@@ -4291,8 +4291,8 @@ extern int fed_mgr_job_allocate(slurm_msg_t *msg, job_desc_msg_t *job_desc,
 	 */
 	job_desc->het_job_offset = NO_VAL;
 	*alloc_code = job_allocate(job_desc, job_desc->immediate, false, NULL,
-				   alloc_only, msg->auth_uid, &job_ptr, err_msg,
-				   msg->protocol_version);
+				   alloc_only, msg->auth_uid, false, &job_ptr,
+				   err_msg, msg->protocol_version);
 
 	if (!job_ptr || (*alloc_code && job_ptr->job_state == JOB_FAILED)) {
 		/* There may be an rc but the job won't be failed. Will sit in

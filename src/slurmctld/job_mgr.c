@@ -201,7 +201,7 @@ static bool _get_whole_hetjob(void);
 static void _job_array_comp(job_record_t *job_ptr, bool was_running,
 			    bool requeue);
 static int  _job_create(job_desc_msg_t * job_specs, int allocate, int will_run,
-			job_record_t **job_rec_ptr, uid_t submit_uid,
+			bool cron, job_record_t **job_rec_ptr, uid_t submit_uid,
 			char **err_msg, uint16_t protocol_version);
 static void _job_timed_out(job_record_t *job_ptr, bool preempted);
 static void _kill_dependent(job_record_t *job_ptr);
@@ -254,8 +254,8 @@ static int  _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 			    slurmdb_assoc_rec_t *assoc_ptr,
 			    slurmdb_qos_rec_t *qos_ptr);
 static int  _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
-			       uid_t submit_uid, part_record_t *part_ptr,
-			       List part_list);
+			       bool cron, uid_t submit_uid,
+			       part_record_t *part_ptr, List part_list);
 static void _validate_job_files(List batch_dirs);
 static bool _validate_min_mem_partition(job_desc_msg_t *job_desc_msg,
 					part_record_t *part_ptr,
@@ -5050,7 +5050,7 @@ static inline bool _has_deadline(job_record_t *job_ptr)
  */
 extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			int will_run, will_run_response_msg_t **resp,
-			int allocate, uid_t submit_uid,
+			int allocate, uid_t submit_uid, bool cron,
 			job_record_t **job_pptr, char **err_msg,
 			uint16_t protocol_version)
 {
@@ -5108,7 +5108,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		return EAGAIN;
 	}
 
-	error_code = _job_create(job_specs, allocate, will_run,
+	error_code = _job_create(job_specs, allocate, will_run, cron,
 				 &job_ptr, submit_uid, err_msg,
 				 protocol_version);
 	*job_pptr = job_ptr;
@@ -7038,7 +7038,7 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
  */
 
 static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
-		       job_record_t **job_pptr, uid_t submit_uid,
+		       bool cron, job_record_t **job_pptr, uid_t submit_uid,
 		       char **err_msg, uint16_t protocol_version)
 {
 	int error_code = SLURM_SUCCESS, i, qos_error;
@@ -7162,8 +7162,9 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	if (error_code != SLURM_SUCCESS)
 		goto cleanup_fail;
 
-	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid,
-					     part_ptr, part_ptr_list))) {
+	if ((error_code = _validate_job_desc(job_desc, allocate, cron,
+					     submit_uid, part_ptr,
+					     part_ptr_list))) {
 		goto cleanup_fail;
 	}
 
@@ -9265,8 +9266,8 @@ static void _job_timed_out(job_record_t *job_ptr, bool preempted)
  * IN submit_uid - who request originated
  */
 static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
-			      uid_t submit_uid, part_record_t *part_ptr,
-			      List part_list)
+			      bool cron, uid_t submit_uid,
+			      part_record_t *part_ptr, List part_list)
 {
 	if ((job_desc_msg->min_cpus  == NO_VAL) &&
 	    (job_desc_msg->min_nodes == NO_VAL) &&
@@ -9353,6 +9354,8 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 	job_desc_msg->bitflags &= ~SIB_JOB_FLUSH;
 	job_desc_msg->bitflags &= ~TRES_STR_CALC;
 	job_desc_msg->bitflags &= ~JOB_WAS_RUNNING;
+	if (!cron)
+		job_desc_msg->bitflags &= ~CRON_JOB;
 
 	if (job_desc_msg->pn_min_memory == MEM_PER_CPU) {
 		/* Map --mem-per-cpu=0 to --mem=0 for simpler logic */

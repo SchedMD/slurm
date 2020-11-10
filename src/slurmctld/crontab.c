@@ -103,7 +103,7 @@ static int _handle_job(void *x, void *y)
 	}
 
 	args->return_code = job_allocate(job, 0, false, NULL, 0, args->uid,
-					 &job_ptr, args->err_msg,
+					 true, &job_ptr, args->err_msg,
 					 args->protocol_version);
 
 	/*

@@ -1412,6 +1412,7 @@ extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr);
  * OUT resp - will run response (includes start location, time, etc.)
  * IN allocate - resource allocation request only if set, batch job if zero
  * IN submit_uid -uid of user issuing the request
+ * IN cron - true if cron
  * OUT job_pptr - set to pointer to job record
  * OUT err_msg - Custom error message to the user, caller to xfree results
  * IN protocol_version - version of the code the caller is using
@@ -1428,7 +1429,7 @@ extern int job_alloc_info_ptr(uint32_t uid, job_record_t *job_ptr);
  */
 extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			int will_run, will_run_response_msg_t **resp,
-			int allocate, uid_t submit_uid,
+			int allocate, uid_t submit_uid, bool cron,
 			job_record_t **job_pptr,
 			char **err_msg, uint16_t protocol_version);
 
