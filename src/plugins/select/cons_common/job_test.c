@@ -317,7 +317,6 @@ static avail_res_t **_get_res_avail(job_record_t *job_ptr,
 
 	xassert(*cons_common_callbacks.can_job_run_on_node);
 
-	_set_gpu_defaults(job_ptr);
 	avail_res_array = xcalloc(select_node_cnt, sizeof(avail_res_t *));
 	i_first = bit_ffs(node_map);
 	if (i_first != -1)
@@ -866,6 +865,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		    details_ptr->mc_ptr->sockets_per_node)
 			sockets_per_node =
 				details_ptr->mc_ptr->sockets_per_node;
+		_set_gpu_defaults(job_ptr);
 		details_ptr->min_gres_cpu = gres_plugin_job_min_cpu_node(
 			sockets_per_node,
 			details_ptr->ntasks_per_node,
