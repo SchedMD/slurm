@@ -36,7 +36,7 @@ set version     0
 #
 spawn $sinfo --version
 expect {
-	-re "(slurm ($number)\.($number)\.($number).*\n)" {
+	-re "(slurm ($number)\\.($number)\\.($number).*\n)" {
 		incr version
 		exp_continue
 	}

@@ -327,7 +327,7 @@ if {[get_config_param "KillOnBadExit"] == 1} {
 spawn $sacct --noheader -P --job=$job_id.$step_id --format \
 	     jobid,jobname,state,exitcode --starttime=00:00
 expect {
-	-re "$job_id\.$step_id" {
+	-re "$job_id\\.$step_id" {
 		incr matches
 		exp_continue
 	}

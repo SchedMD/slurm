@@ -51,7 +51,7 @@ expect {
 		set exit_code 0
 		exp_continue
 	}
-	-re "launching ($number)\.0 on host" {
+	-re "launching ($number)\\.0 on host" {
 		set job_id $expect_out(1,string)
 		set exit_code 0
 		exp_continue

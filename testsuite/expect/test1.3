@@ -36,7 +36,7 @@ set version     0
 #
 set srun_pid [spawn $srun -V]
 expect {
-	-re "(slurm ($number)\.($number)\.($number).*\n)" {
+	-re "(slurm ($number)\\.($number)\\.($number).*\n)" {
 		incr version
 		exp_continue
 	}

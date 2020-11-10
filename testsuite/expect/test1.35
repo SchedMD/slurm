@@ -103,7 +103,7 @@ wait_for {$step_cnt == $steps_started} {
 	set step_cnt 0
 	spawn $squeue -s --state=RUNNING
 	expect {
-		-re "($job_id)\.($number)" {
+		-re "($job_id)\\.($number)" {
 			incr step_cnt
 			exp_continue
 		}

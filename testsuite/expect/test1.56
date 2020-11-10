@@ -55,7 +55,7 @@ close $file
 set timeout $max_job_delay
 set srun_pid [spawn $srun -v -n1 -t1 --input=$file_in --output=$file_out --error=- cat]
 expect {
-	-re {launching ($number)\.($number)} {
+	-re {launching ($number)\\.($number)} {
 		set jobid $expect_out(1,string)
 		set stepid $expect_out(2,string)
 	}

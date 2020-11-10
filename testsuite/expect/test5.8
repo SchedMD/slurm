@@ -36,7 +36,7 @@ set version     0
 #
 spawn $squeue --version
 expect {
-	-re "(slurm ($number)\.($number)\.($number).*\n)" {
+	-re "(slurm ($number)\\.($number)\\.($number).*\n)" {
 		incr version
 		exp_continue
 	}

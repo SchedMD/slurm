@@ -88,7 +88,7 @@ set matches 0
 if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
-		-re "Job step ($number)\.10 does not exist on this node." {
+		-re "Job step ($number)\\.10 does not exist on this node." {
 			incr matches
 			exp_continue
 		}
