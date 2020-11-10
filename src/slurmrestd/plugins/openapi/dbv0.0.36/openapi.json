@@ -1638,7 +1638,40 @@
       },
       "wckey_info": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "accounts": {
+            "type": "array",
+            "description": "list of assigned accounts",
+            "items": {
+              "type": "string",
+              "description": "account name"
+            }
+          },
+          "cluster": {
+            "type": "string",
+            "description": "cluster name"
+          },
+          "id": {
+            "type": "integer",
+            "description": "wckey database unique id"
+          },
+          "name": {
+            "type": "string",
+            "description": "wckey name"
+          },
+          "user": {
+            "type": "string",
+            "description": "wckey user"
+          },
+          "flags": {
+            "type": "array",
+            "description": "List of properties of wckey",
+            "items": {
+              "type": "string",
+              "description": "string of property name"
+            }
+          }
+        }
       },
       "response_wckey_delete": {
         "type": "object",
