@@ -2253,7 +2253,22 @@
       },
       "tres_info": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          },
+          "tres": {
+            "type": "array",
+            "description": "array of tres",
+            "items": {
+              "$ref": "#/components/schemas/tres_list"
+            }
+          }
+        }
       },
       "tres_list": {
         "type": "object",
