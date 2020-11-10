@@ -121,7 +121,7 @@ proc sstat_job { soption } {
 
 		spawn $sstat -$soption
 		expect {
-			-re "slurm ($number)\.($number)." {
+			-re "slurm ($number)\\.($number)." {
 				if {$debug} {log_debug "Match11"}
 				incr matches
 				exp_continue

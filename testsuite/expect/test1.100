@@ -83,7 +83,7 @@ expect {
 		lset tested_layout $index $value
 		exp_continue
 	}
-	-re "($number)\.($number):($re_word_str)" {
+	-re "($number)\\.($number):($re_word_str)" {
 		set index $expect_out(1,string)
 		set index2 $expect_out(2,string)
 		if { $index == 0 } {
@@ -135,7 +135,7 @@ expect {
 		lset tested_layout $index $value
 		exp_continue
 	}
-	-re "($number)\.($number):($re_word_str)" {
+	-re "($number)\\.($number):($re_word_str)" {
 		set index $expect_out(1,string)
 		set index2 $expect_out(2,string)
 		if { $index == 0 } {

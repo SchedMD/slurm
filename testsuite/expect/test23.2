@@ -241,12 +241,12 @@ proc sstat_job { soption job_id step_id } {
 				set not_support 1
 				exp_continue
 			}
-			-re "$job_id\.($number)" {
+			-re "$job_id\\.($number)" {
 				if {$debug} {log_debug "Match $expect_out(1,string)"}
 				incr matches
 				exp_continue
 			}
-			-re "$job_id\.batch" {
+			-re "$job_id\\.batch" {
 				if {$debug} {log_debug "Match batch"}
 				incr matches
 				exp_continue
@@ -321,7 +321,7 @@ proc sstat_job { soption job_id step_id } {
 				incr matches
 				exp_continue
 			}
-			-re "$job_id\.$step_id\\|" {
+			-re "$job_id\\.$step_id\\|" {
 				if {$debug} {log_debug "Match9"}
 				incr matches
 				exp_continue
@@ -362,7 +362,7 @@ proc sstat_job { soption job_id step_id } {
 				incr matches
 				exp_continue
 			}
-			-re "$job_id\.$step_id\\|" {
+			-re "$job_id\\.$step_id\\|" {
 				if {$debug} {log_debug "Match13"}
 				incr matches
 				exp_continue

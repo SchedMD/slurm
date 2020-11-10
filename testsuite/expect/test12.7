@@ -130,7 +130,7 @@ proc check_sacct_states { states log_it } {
 		spawn $sacct --job=$job_id --duplicates --parsable2 --start=today --end=tomorrow --noheader -o JobID,State
 	}
 	expect {
-		-re "(\[0-9_\.a-z\]+)\\|($states)" {
+		-re "(\[0-9_\\.a-z\]+)\\|($states)" {
 			if {[string first "extern" $expect_out(1,string)] == -1} {
 				incr state_num
 			}

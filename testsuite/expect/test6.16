@@ -76,17 +76,17 @@ exec $bin_sleep 3
 set matches 0
 spawn $scancel --interactive $job_id.0 $job_id.1 $job_id.2
 expect {
-	-re "Cancel step_id=$job_id\.0*\? " {
+	-re "Cancel step_id=$job_id\\.0*\? " {
 		send "y\r"
 		incr matches
 		exp_continue
 	}
-	-re "Cancel step_id=$job_id\.1*\? " {
+	-re "Cancel step_id=$job_id\\.1*\? " {
 		send "y\r"
 		incr matches
 		exp_continue
 	}
-	-re "Cancel step_id=$job_id\.2*\? " {
+	-re "Cancel step_id=$job_id\\.2*\? " {
 		send "y\r"
 		incr matches
 		exp_continue

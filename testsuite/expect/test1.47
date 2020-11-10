@@ -68,7 +68,7 @@ if {$job_id1 == 0} {
 set matches 0
 set srun_pid [spawn $srun -v --dependency=singleton --job-name=$job_name -t1 $scontrol show job $job_id1]
 expect {
-	-re "launching ($number)\.0" {
+	-re "launching ($number)\\.0" {
 		set job_id2 $expect_out(1,string)
 		exp_continue
 	}

@@ -207,7 +207,7 @@ if {[wait_job_reason $job_id] != 0} {
 set priority 0
 spawn $squeue -h -j$job_id -o%t.%Q
 expect {
-	-re "($re_word_str)\.($number)" {
+	-re "(\[A-Z\]+)\\.($number)" {
 		set priority $expect_out(2,string)
 	}
 	timeout {

@@ -40,7 +40,7 @@ if {[file exists $smap] == 0} {
 #
 spawn $smap --version
 expect {
-	-re "(slurm ($number)\.($number)\.($number).*\n)" {
+	-re "(slurm ($number)\\.($number)\\.($number).*\n)" {
 		incr version
 		exp_continue
 	}
