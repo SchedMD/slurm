@@ -9346,6 +9346,14 @@ static int _validate_job_desc(job_desc_msg_t *job_desc_msg, int allocate,
 		job_desc_msg->bitflags |= JOB_MEM_SET;
 	}
 
+	job_desc_msg->bitflags &= ~BACKFILL_TEST;
+	job_desc_msg->bitflags &= ~BF_WHOLE_NODE_TEST;
+	job_desc_msg->bitflags &= ~JOB_ACCRUE_OVER;
+	job_desc_msg->bitflags &= ~JOB_KILL_HURRY;
+	job_desc_msg->bitflags &= ~SIB_JOB_FLUSH;
+	job_desc_msg->bitflags &= ~TRES_STR_CALC;
+	job_desc_msg->bitflags &= ~JOB_WAS_RUNNING;
+
 	if (job_desc_msg->pn_min_memory == MEM_PER_CPU) {
 		/* Map --mem-per-cpu=0 to --mem=0 for simpler logic */
 		job_desc_msg->pn_min_memory = 0;
