@@ -1683,7 +1683,62 @@
       },
       "cluster_info": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "controller": {
+            "type": "object",
+            "description": "information about controller",
+            "properties": {
+              "host": {
+                "type": "string",
+                "description": "hostname"
+              },
+              "port": {
+                "type": "integer",
+                "description": "port number"
+              }
+            }
+          },
+          "flags": {
+            "type": "array",
+            "description": "List of properties of cluster",
+            "items": {
+              "type": "string",
+              "description": "string of property name"
+            }
+          },
+          "name": {
+            "type": "string",
+            "description": "cluster name"
+          },
+          "nodes": {
+            "type": "string",
+            "description": "assigned nodes"
+          },
+          "select_plugin": {
+            "type": "string",
+            "description": "configured select plugin"
+          },
+          "associations": {
+            "type": "object",
+            "description": "information about associations",
+            "properties": {
+              "root": {
+                "$ref": "#/components/schemas/association_short_info"
+              }
+            }
+          },
+          "rpc_version": {
+            "type": "integer",
+            "description": "number rpc version"
+          },
+          "tres": {
+            "type": "array",
+            "description": "list of TRES in cluster",
+            "items": {
+              "$ref": "#/components/schemas/response_tres"
+            }
+          }
+        }
       },
       "response_cluster_delete": {
         "type": "object",
