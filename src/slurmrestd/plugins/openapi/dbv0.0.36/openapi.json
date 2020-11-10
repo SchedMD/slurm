@@ -1750,7 +1750,63 @@
       },
       "user_info": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          },
+          "users": {
+            "type": "array",
+            "description": "array of users",
+            "items": {
+              "type": "object",
+              "description": "user description",
+              "properties": {
+                "administrator_level": {
+                  "type": "string",
+                  "description": "description of administrator level"
+                },
+                "associations": {
+                  "type": "object",
+                  "description": "assigned associations",
+                  "properties": {
+                    "root": {
+                      "$ref": "#/components/schemas/association_short_info"
+                    }
+                  }
+                },
+                "coordinators": {
+                  "type": "array",
+                  "description": "list of assigned coordinators",
+                  "items": {
+                    "$ref": "#/components/schemas/coordinator_info"
+                  }
+                },
+                "default": {
+                  "type": "object",
+                  "description": "default settings",
+                  "properties": {
+                    "account": {
+                      "type": "string",
+                      "description": "default account name"
+                    },
+                    "wckey": {
+                      "type": "string",
+                      "description": "default wckey"
+                    }
+                  }
+                },
+                "name": {
+                  "type": "string",
+                  "description": "user name"
+                }
+              }
+            }
+          }
+        }
       },
       "response_user_delete": {
         "type": "object",
