@@ -2160,8 +2160,8 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 				 */
 				while ((cpus > 0) &&
 				       ((req_mem *
-					 ((int) cpus *
-					  (int) select_node_record[node_i].vpus))
+					 ((uint64_t) cpus *
+					  (uint64_t) select_node_record[node_i].vpus))
 					 > avail_mem))
 					cpus -= 1;
 			} else {
