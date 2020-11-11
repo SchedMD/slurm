@@ -29,6 +29,8 @@ documents those changes that are of interest to users and administrators.
     enabled.
  -- Make ntasks_per_gres work with cpus_per_task.
  -- Various alterations in reference to ntasks_per_tres.
+ -- slurmrestd - multiple changes to make Slurm's OpenAPI spec compatible with
+    https://openapi-generator.tech/.
 
 * Changes in Slurm 20.11.0rc1
 ==============================
