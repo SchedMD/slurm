@@ -1633,11 +1633,27 @@
       },
       "response_account_delete": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          }
+        }
       },
       "response_wckey_add": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          }
+        }
       },
       "wckey_info": {
         "type": "object",
@@ -1697,11 +1713,27 @@
       },
       "response_wckey_delete": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          }
+        }
       },
       "response_cluster_add": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          }
+        }
       },
       "cluster_info": {
         "type": "object",
@@ -1764,11 +1796,27 @@
       },
       "response_cluster_delete": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          }
+        }
       },
       "response_user_update": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          }
+        }
       },
       "user": {
         "type": "object",
@@ -1835,11 +1883,27 @@
       },
       "response_user_delete": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          }
+        }
       },
       "response_association_delete": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          }
+        }
       },
       "association": {
         "type": "object",
@@ -2276,11 +2340,27 @@
       },
       "response_qos_delete": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          }
+        }
       },
       "response_tres": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          }
+        }
       },
       "tres_info": {
         "type": "object",
@@ -2985,7 +3065,15 @@
       },
       "config_response": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          }
+        }
       },
       "error": {
         "properties": {
