@@ -67,7 +67,7 @@
 	do {                                                         \
 		const size_t data_size = static_ref_size(name);      \
 		unsigned char *data_ptr = xmalloc(data_size + 1);    \
-		xassert(data_size < UINT16_MAX);                     \
+		xassert(data_size < UINT32_MAX);                     \
 		memcpy(data_ptr, static_ref_start(name), data_size); \
 		data_ptr[data_size] = '\0';                          \
 		src = (void *) data_ptr;                             \
