@@ -991,6 +991,33 @@
           }
         },
         "summary": "get slurmdb accounts"
+      },
+      "post": {
+        "tags": [
+          "slurmdbd"
+        ],
+        "operationId": "update_account",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/account_response"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/account_response"
+                }
+              }
+            },
+            "description": "add/update list of accounts"
+          },
+          "default": {
+            "description": "unable to add or update accounts"
+          }
+        },
+        "summary": "update slurmdb accounts"
       }
     },
     "/jobs/": {
@@ -3059,6 +3086,18 @@
             "description": "array of wckeys",
             "items": {
               "$ref": "#/components/schemas/wckey"
+            }
+          }
+        }
+      },
+      "account_response": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
             }
           }
         }
