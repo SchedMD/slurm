@@ -2655,7 +2655,248 @@
       },
       "job_step": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "time": {
+            "type": "object",
+            "description": "time properties",
+            "properties": {
+              "elapsed": {
+                "type": "integer",
+                "description": "total time elapsed"
+              },
+              "end": {
+                "type": "integer",
+                "description": "timestamp of when job ended"
+              },
+              "start": {
+                "type": "integer",
+                "description": "timestamp of when job started"
+              },
+              "suspended": {
+                "type": "integer",
+                "description": "timestamp of when job last suspended"
+              },
+              "system": {
+                "type": "object",
+                "description": "system time values",
+                "properties": {
+                  "seconds": {
+                    "type": "integer",
+                    "description": "Total number of CPU-seconds used by the system on behalf of the process (in kernel mode), in seconds"
+                  },
+                  "microseconds": {
+                    "type": "integer",
+                    "description": "Total number of CPU-seconds used by the system on behalf of the process (in kernel mode), in microseconds"
+                  }
+                }
+              },
+              "total": {
+                "type": "object",
+                "description": "system time values",
+                "properties": {
+                  "seconds": {
+                    "type": "integer",
+                    "description": "Total number of CPU-seconds used by the job, in seconds"
+                  },
+                  "microseconds": {
+                    "type": "integer",
+                    "description": "Total number of CPU-seconds used by the job, in microseconds"
+                  }
+                }
+              },
+              "user": {
+                "type": "object",
+                "description": "user land time values",
+                "properties": {
+                  "seconds": {
+                    "type": "integer",
+                    "description": "Total number of CPU-seconds used by the job in user land, in seconds"
+                  },
+                  "microseconds": {
+                    "type": "integer",
+                    "description": "Total number of CPU-seconds used by the job in user land, in microseconds"
+                  }
+                }
+              }
+            }
+          },
+          "exit_code": {
+            "$ref": "#/components/schemas/job_exit_code"
+          },
+          "nodes": {
+            "type": "object",
+            "description": "node details",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "description": "total number of nodes in step"
+              },
+              "range": {
+                "type": "string",
+                "description": "nodes in step"
+              }
+            }
+          },
+          "tasks": {
+            "type": "object",
+            "description": "task properties",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "description": "number of tasks in step"
+              }
+            }
+          },
+          "pid": {
+            "type": "string",
+            "description": "first process PID"
+          },
+          "CPU": {
+            "type": "object",
+            "description": "CPU properties",
+            "properties": {
+              "requested_frequency": {
+                "type": "object",
+                "description": "CPU frequency requested",
+                "properties": {
+                  "min": {
+                    "type": "integer",
+                    "description": "Min CPU frequency"
+                  },
+                  "max": {
+                    "type": "integer",
+                    "description": "Max CPU frequency"
+                  }
+                }
+              },
+              "governor": {
+                "type": "array",
+                "description": "CPU governor",
+                "items": {
+                  "type": "string",
+                  "description": "CPU governor type"
+                }
+              }
+            }
+          },
+          "kill_request_user": {
+            "type": "string",
+            "description": "user who requested job killed"
+          },
+          "state": {
+            "type": "string",
+            "description": "state of job step"
+          },
+          "statistics": {
+            "type": "object",
+            "description": "statistics of job step",
+            "properties": {
+              "CPU": {
+                "type": "object",
+                "description": "statistics of CPU",
+                "properties": {
+                  "actual_frequency": {
+                    "type": "integer",
+                    "description": "Actual frequency of CPU during step"
+                  }
+                }
+              },
+              "energy": {
+                "type": "object",
+                "description": "statistics of energy",
+                "properties": {
+                  "consumed": {
+                    "type": "integer",
+                    "description": "Energy consumed during step"
+                  }
+                }
+              }
+            }
+          },
+          "step": {
+            "type": "object",
+            "description": "step details",
+            "properties": {
+              "job_id": {
+                "type": "integer",
+                "description": "parent job id"
+              },
+              "het": {
+                "type": "object",
+                "description": "Heterogeneous job details",
+                "properties": {
+                  "component": {
+                    "type": "integer",
+                    "description": "parent HetJob component id"
+                  }
+                }
+              },
+              "id": {
+                "type": "integer",
+                "description": "step id"
+              },
+              "name": {
+                "type": "string",
+                "description": "step name"
+              },
+              "task": {
+                "type": "object",
+                "description": "task properties",
+                "properties": {
+                  "distribution": {
+                    "type": "string",
+                    "description": "task distribution type"
+                  }
+                }
+              },
+              "tres": {
+                "type": "object",
+                "description": "tres usage",
+                "properties": {
+                  "requested": {
+                    "type": "object",
+                    "description": "Tres requested for job",
+                    "properties": {
+                      "average": {
+                        "$ref": "#/components/schemas/tres_list"
+                      },
+                      "max": {
+                        "$ref": "#/components/schemas/tres_list"
+                      },
+                      "min": {
+                        "$ref": "#/components/schemas/tres_list"
+                      },
+                      "total": {
+                        "$ref": "#/components/schemas/tres_list"
+                      }
+                    }
+                  },
+                  "consumed": {
+                    "type": "object",
+                    "description": "Tres requested for job",
+                    "properties": {
+                      "average": {
+                        "$ref": "#/components/schemas/tres_list"
+                      },
+                      "max": {
+                        "$ref": "#/components/schemas/tres_list"
+                      },
+                      "min": {
+                        "$ref": "#/components/schemas/tres_list"
+                      },
+                      "total": {
+                        "$ref": "#/components/schemas/tres_list"
+                      }
+                    }
+                  },
+                  "allocated": {
+                    "$ref": "#/components/schemas/tres_list"
+                  }
+                }
+              }
+            }
+          }
+        }
       },
       "config_info": {
         "type": "object",
