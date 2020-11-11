@@ -266,7 +266,8 @@ static job_desc_msg_t *_entry_to_job(cron_entry_t *entry, char *script)
 static void _edit_and_update_crontab(char *crontab)
 {
 	char **lines;
-	int lineno, line_start, line_error;
+	char *badline = NULL;
+	int lineno, line_start;
 	char *line;
 	List jobs;
 	int line_count;
@@ -282,7 +283,6 @@ edit:
 
 	lineno = 0;
 	line_start = -1;
-	line_error = -1;
 	setup_next_entry = true;
 	while ((line = lines[lineno])) {
 		char *pos = line;
@@ -307,7 +307,7 @@ edit:
 			if (line_start == -1)
 				line_start = lineno;
 			if (parse_scron_line(line + 6, lineno)) {
-				line_error = lineno;
+				badline = xstrdup_printf("%d", lineno);
 				break;
 			}
 			lineno++;
@@ -319,7 +319,7 @@ edit:
 		}
 
 		if (!(entry = cronspec_to_bitstring(pos))) {
-			line_error = lineno;
+			badline = xstrdup_printf("%d", lineno);
 			break;
 		}
 
@@ -345,15 +345,14 @@ edit:
 	xfree(lines);
 	xfree(script);
 
-	if (line_error != -1) {
+	if (badline) {
 		char c = '\0';
-		char *badline = NULL;
 
 		list_destroy(jobs);
 
 		while (tolower(c) != 'y' && tolower(c) != 'n') {
 			printf("There are errors in your crontab.\n"
-			       "The failed line is commented out with #BAD:\n"
+			       "The failed line(s) is commented out with #BAD:\n"
 			       "Do you want to retry the edit? (y/n) ");
 			c = (char) getchar();
 		}
@@ -361,7 +360,6 @@ edit:
 		if (c == 'n')
 			exit(0);
 
-		xstrfmtcat(badline, "%d", line_error);
 		_update_crontab_with_disabled_lines(&crontab, badline,
 						    "#BAD: ");
 		xfree(badline);
