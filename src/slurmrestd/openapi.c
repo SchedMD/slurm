@@ -743,9 +743,298 @@ extern int find_path_tag(const data_t *dpath, data_t *params,
 	return tag;
 }
 
-extern const data_t *get_openapi_specification(void)
+data_for_each_cmd_t _merge_schema(const char *key, data_t *data, void *arg)
 {
-	return spec[0];
+	data_t *cs = arg;
+	data_t *e;
+
+	if (data_get_type(data) != DATA_TYPE_DICT)
+		return DATA_FOR_EACH_FAIL;
+
+	e = data_key_set(cs, key);
+
+	if (data_get_type(e) != DATA_TYPE_NULL)
+		debug("%s: WARNING: overwriting component schema %s",
+		      __func__, key);
+
+	data_copy(e, data);
+
+	return DATA_FOR_EACH_CONT;
+}
+
+typedef struct {
+	const char *name;
+	bool found;
+} list_find_dict_name_t;
+
+/* find matching value of name in list of dictionary with "name" entry */
+data_for_each_cmd_t _list_find_dict_name(data_t *data, void *arg)
+{
+	list_find_dict_name_t *args = arg;
+	data_t *name;
+
+	if (data_get_type(data) != DATA_TYPE_DICT)
+		return DATA_FOR_EACH_FAIL;
+
+	if (!(name = data_key_get(data, "name")))
+		return DATA_FOR_EACH_FAIL;
+
+	if (data_convert_type(name, DATA_TYPE_STRING) != DATA_TYPE_STRING)
+		return DATA_FOR_EACH_FAIL;
+
+	if (!xstrcmp(args->name, data_get_string(name))) {
+		args->found = true;
+		return DATA_FOR_EACH_STOP;
+	}
+
+	return DATA_FOR_EACH_CONT;
+}
+
+data_for_each_cmd_t _merge_tag(data_t *data, void *arg)
+{
+	data_t *tags = arg;
+	data_t *name, *desc, *e;
+	list_find_dict_name_t tag_name_args = { 0 };
+
+	if (data_get_type(data) != DATA_TYPE_DICT)
+		return DATA_FOR_EACH_FAIL;
+
+	name = data_key_get(data, "name");
+	desc = data_key_get(data, "description");
+
+	if (data_convert_type(name, DATA_TYPE_STRING) != DATA_TYPE_STRING)
+		return DATA_FOR_EACH_FAIL;
+	if (data_convert_type(desc, DATA_TYPE_STRING) != DATA_TYPE_STRING)
+		return DATA_FOR_EACH_FAIL;
+
+	/* only add if not already defined */
+	tag_name_args.name = data_get_string(name);
+	if (data_list_for_each(tags, _list_find_dict_name, &tag_name_args) < 0)
+		return DATA_FOR_EACH_FAIL;
+
+	if (tag_name_args.found)
+		return DATA_FOR_EACH_CONT;
+
+	e = data_set_dict(data_list_append(tags));
+	data_copy(data_key_set(e, "name"), name);
+	data_copy(data_key_set(e, "description"), desc);
+
+	return DATA_FOR_EACH_CONT;
+}
+
+typedef struct {
+	char *path;
+	char *at;
+} merge_path_strings_t;
+
+data_for_each_cmd_t _merge_path_strings(data_t *data, void *arg)
+{
+	merge_path_strings_t *args = arg;
+
+	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
+		return DATA_FOR_EACH_FAIL;
+
+	xstrfmtcatat(args->path, &args->at, "%s%s%s",
+		     (!args->path ? "/" : ""), (args->at ? "/" : ""),
+		     data_get_string(data));
+
+	return DATA_FOR_EACH_CONT;
+}
+
+typedef struct {
+	data_t *paths;
+	const char *server_path;
+} merge_path_t;
+
+data_for_each_cmd_t _merge_path(const char *key, data_t *data, void *arg)
+{
+	merge_path_t *args = arg;
+	data_t *e;
+	data_t *merge[3] = { 0 }, *merged;
+	merge_path_strings_t mp_args = { 0 };
+
+	if (data_get_type(data) != DATA_TYPE_DICT)
+		return DATA_FOR_EACH_FAIL;
+
+	/* merge the paths together cleanly */
+	if (!data_key_get(data, "servers")) {
+		merge[0] = parse_url_path(args->server_path, false, true);
+		merge[1] = parse_url_path(key, false, true);
+	} else {
+		/* servers is specified: only cleanup the path */
+		merge[0] = parse_url_path(key, false, true);
+	}
+	merged = data_list_join((const data_t **)merge, true);
+
+	if (data_list_for_each(merged, _merge_path_strings, &mp_args) < 0)
+		return DATA_FOR_EACH_FAIL;
+
+	e = data_key_set(args->paths, mp_args.path);
+	if (data_get_type(e) != DATA_TYPE_NULL) {
+		/*
+		 * path is going to be overwritten which should only happen for
+		 * /openapi/ paths which is fully expected.
+		 */
+		debug("%s: overwriting path %s", __func__, mp_args.path);
+	}
+	data_set_dict(e);
+
+	FREE_NULL_DATA(merged);
+	FREE_NULL_DATA(merge[0]);
+	FREE_NULL_DATA(merge[1]);
+	xfree(mp_args.path);
+
+	data_copy(e, data);
+
+	return DATA_FOR_EACH_CONT;
+}
+
+typedef struct {
+	data_t *src_paths;
+	data_t *dst_paths;
+} merge_path_server_t;
+
+data_for_each_cmd_t _merge_path_server(data_t *data, void *arg)
+{
+	merge_path_server_t *args = arg;
+	merge_path_t p_args = {
+		.paths = args->dst_paths,
+	};
+	data_t *url;
+
+	if (data_get_type(data) != DATA_TYPE_DICT)
+		return DATA_FOR_EACH_FAIL;
+
+	if (!(url = data_key_get(data, "url")))
+		return DATA_FOR_EACH_FAIL;
+
+	if (data_convert_type(url, DATA_TYPE_STRING) != DATA_TYPE_STRING)
+		return DATA_FOR_EACH_FAIL;
+
+	p_args.server_path = data_get_string(url);
+
+	if (args->src_paths &&
+	    (data_dict_for_each(args->src_paths, _merge_path, &p_args) < 0))
+		fatal("%s: unable to merge paths", __func__);
+
+	return DATA_FOR_EACH_CONT;
+}
+
+/*
+ * Joins all of the loaded specs into a single spec
+ */
+static int _get_openapi_specification(data_t *resp)
+{
+	data_t *j = data_set_dict(resp);
+	data_t *tags = data_set_list(data_key_set(j, "tags"));
+	data_t *paths = data_set_dict(data_key_set(j, "paths"));
+	data_t *components = data_set_dict(data_key_set(j, "components"));
+	data_t *components_schemas = data_set_dict(
+		data_key_set(components, "schemas"));
+
+	/* copy the generic info from the first spec with defined */
+	for (int i = 0; spec[i]; i++) {
+		data_t *src = data_key_get(spec[i], "openapi");
+
+		if (!src)
+			continue;
+
+		data_copy(data_key_set(j, "openapi"), src);
+		break;
+	}
+	for (int i = 0; spec[i]; i++) {
+		data_t *src = data_key_get(spec[i], "info");
+
+		if (!src)
+			continue;
+
+		data_copy(data_key_set(j, "info"), src);
+		break;
+	}
+	for (int i = 0; spec[i]; i++) {
+		data_t *src = data_key_get(spec[i], "security");
+
+		if (!src)
+			continue;
+
+		data_copy(data_key_set(j, "security"), src);
+		break;
+	}
+	for (int i = 0; spec[i]; i++) {
+		data_t *src = data_resolve_dict_path(
+			spec[i], "/components/securitySchemes");
+
+		if (!src)
+			continue;
+
+		data_copy(data_set_dict(
+				  data_key_set(components, "securitySchemes")),
+			  src);
+		break;
+	}
+
+	/* set single server at "/" */
+	data_set_string(
+		data_key_set(data_set_dict(data_list_append(data_set_list(
+				     data_key_set(j, "servers")))),
+			     "url"),
+		"/");
+
+	/* merge all the unique tags together */
+	for (int i = 0; spec[i]; i++) {
+		data_t *src_tags = data_key_get(spec[i], "tags");
+		if (src_tags &&
+		    (data_list_for_each(src_tags, _merge_tag, tags) < 0))
+			fatal("%s: unable to merge tags", __func__);
+	}
+
+	/* merge all the unique paths together */
+	for (int i = 0; spec[i]; i++) {
+		data_t *src_srvs = data_key_get(spec[i], "servers");
+
+		if (src_srvs) {
+			merge_path_server_t p_args = {
+				.dst_paths = paths,
+				.src_paths = data_key_get(spec[i], "paths"),
+			};
+
+			if (data_list_for_each(src_srvs, _merge_path_server,
+					       &p_args) < 0)
+				fatal("%s: unable to merge server paths",
+				      __func__);
+		} else {
+			/* servers is not populated, default to '/' */
+			merge_path_t p_args = {
+				.server_path = "/",
+				.paths = paths,
+			};
+			data_t *src_paths = data_key_get(spec[i], "paths");
+
+			if (src_paths &&
+			    (data_dict_for_each(src_paths, _merge_path,
+						&p_args) < 0))
+				fatal("%s: unable to merge paths", __func__);
+		}
+	}
+
+	/* merge all the unique component schemas together */
+	for (int i = 0; spec[i]; i++) {
+		data_t *src = data_resolve_dict_path(spec[i],
+						     "/components/schemas");
+
+		if (src && (data_dict_for_each(src, _merge_schema,
+					       components_schemas) < 0)) {
+			fatal("%s: unable to merge components schemas",
+			      __func__);
+		}
+	}
+
+	/*
+	 * We currently fatal instead of returning failure since openapi are
+	 * compile time static and we should not be failing to serve the specs
+	 * out
+	 */
+	return SLURM_SUCCESS;
 }
 
 static void _list_delete_path_t(void *x)
@@ -791,12 +1080,12 @@ static int _op_handler_openapi(const char *context_id,
 			       int tag, data_t *resp,
 			       rest_auth_context_t *auth)
 {
-	if (!spec)
+	if (!spec) {
+		/* not loaded yet */
 		return SLURM_ERROR;
+	}
 
-	resp = data_copy(resp, spec[0]);
-
-	return SLURM_SUCCESS;
+	return _get_openapi_specification(resp);
 }
 
 extern int init_openapi(const plugin_handle_t *plugin_handles,
