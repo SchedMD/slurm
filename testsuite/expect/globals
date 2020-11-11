@@ -6759,7 +6759,7 @@ proc exit { {status 0} } {
 	#
 	if {[info level] > 1} {
 		# exit was called from a function, and it shouldn't
-		log_error "Exit should not be directly called, use pass, skip or fail instead"
+		fail "Exit should not be directly called, use pass, skip or fail instead"
 	} else {
 		set frame_level 1
 		while { $frame_level <= [info frame] } {
@@ -6767,7 +6767,7 @@ proc exit { {status 0} } {
 				if { [file tail [dict get [info frame $frame_level] file]] eq $test_name } {
 					# exit was called explicitly from the
 					# test, and it shouldn't
-					log_error "Exit should not be directly called, use pass, skip or fail instead"
+					fail "Exit should not be directly called, use pass, skip or fail instead"
 				}
 				break
 			}
@@ -6775,9 +6775,13 @@ proc exit { {status 0} } {
 		}
 	}
 
+	if {$status != 0} {
+		fail "Some Expect/TCL exception happen"
+	}
+
 	# The exit was called implicitly when the test ends, allowed but
 	# _test_fini call enforced
-	_test_fini $status
+	pass
 }
 
 
