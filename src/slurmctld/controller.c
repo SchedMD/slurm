@@ -759,6 +759,8 @@ int main(int argc, char **argv)
 		 */
 		_slurmctld_background(NULL);
 
+		sched_g_fini();	/* Stop all scheduling */
+
 		/* termination of controller */
 		switch_g_save(slurm_conf.state_save_location);
 		priority_g_fini();
@@ -865,8 +867,6 @@ int main(int argc, char **argv)
 	}
 	if (cnt)
 		error("Left %d agent threads active", cnt);
-
-	sched_g_fini();	/* Stop all scheduling */
 
 	/* Purge our local data structures */
 	configless_clear();
