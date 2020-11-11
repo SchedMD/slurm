@@ -42,7 +42,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_job",
+        "operationId": "slurmdbd_get_job",
         "summary": "get job info",
         "parameters": [
           {
@@ -85,7 +85,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_db_config",
+        "operationId": "slurmdbd_get_db_config",
         "summary": "dump all config",
         "responses": {
           "200": {
@@ -112,7 +112,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "set_db_config",
+        "operationId": "slurmdbd_set_db_config",
         "summary": "load all config",
         "responses": {
           "200": {
@@ -141,7 +141,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "update_tres",
+        "operationId": "slurmdbd_update_tres",
         "responses": {
           "200": {
             "content": {
@@ -168,7 +168,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_tres",
+        "operationId": "slurmdbd_get_tres",
         "responses": {
           "200": {
             "content": {
@@ -197,7 +197,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "delete_qos",
+        "operationId": "slurmdbd_delete_qos",
         "responses": {
           "200": {
             "content": {
@@ -236,7 +236,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_single_qos",
+        "operationId": "slurmdbd_get_single_qos",
         "responses": {
           "200": {
             "content": {
@@ -277,7 +277,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_qos",
+        "operationId": "slurmdbd_get_qos",
         "responses": {
           "200": {
             "content": {
@@ -306,7 +306,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_associations",
+        "operationId": "slurmdbd_get_associations",
         "responses": {
           "200": {
             "content": {
@@ -335,7 +335,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_association",
+        "operationId": "slurmdbd_get_association",
         "parameters": [
           {
             "in": "query",
@@ -408,7 +408,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "delete_association",
+        "operationId": "slurmdbd_delete_association",
         "parameters": [
           {
             "in": "query",
@@ -483,7 +483,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "delete_user",
+        "operationId": "slurmdbd_delete_user",
         "responses": {
           "200": {
             "content": {
@@ -522,7 +522,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_user",
+        "operationId": "slurmdbd_get_user",
         "responses": {
           "200": {
             "content": {
@@ -563,7 +563,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "update_users",
+        "operationId": "slurmdbd_update_users",
         "responses": {
           "200": {
             "content": {
@@ -589,7 +589,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_users",
+        "operationId": "slurmdbd_get_users",
         "responses": {
           "200": {
             "content": {
@@ -617,7 +617,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "delete_cluster",
+        "operationId": "slurmdbd_delete_cluster",
         "responses": {
           "200": {
             "content": {
@@ -656,7 +656,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_cluster",
+        "operationId": "slurmdbd_get_cluster",
         "responses": {
           "200": {
             "content": {
@@ -697,7 +697,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_clusters",
+        "operationId": "slurmdbd_get_clusters",
         "responses": {
           "200": {
             "content": {
@@ -724,7 +724,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "add_clusters",
+        "operationId": "slurmdbd_add_clusters",
         "responses": {
           "200": {
             "content": {
@@ -753,7 +753,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "delete_wckey",
+        "operationId": "slurmdbd_delete_wckey",
         "responses": {
           "200": {
             "content": {
@@ -792,7 +792,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_wckey",
+        "operationId": "slurmdbd_get_wckey",
         "responses": {
           "200": {
             "content": {
@@ -833,7 +833,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_wckeys",
+        "operationId": "slurmdbd_get_wckeys",
         "responses": {
           "200": {
             "content": {
@@ -860,7 +860,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "add_wckeys",
+        "operationId": "slurmdbd_add_wckeys",
         "responses": {
           "200": {
             "content": {
@@ -889,7 +889,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "delete_account",
+        "operationId": "slurmdbd_delete_account",
         "responses": {
           "200": {
             "content": {
@@ -928,7 +928,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_account",
+        "operationId": "slurmdbd_get_account",
         "responses": {
           "200": {
             "content": {
@@ -969,7 +969,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_accounts",
+        "operationId": "slurmdbd_get_accounts",
         "responses": {
           "200": {
             "content": {
@@ -996,7 +996,7 @@
         "tags": [
           "slurmdbd"
         ],
-        "operationId": "update_account",
+        "operationId": "slurmdbd_update_account",
         "responses": {
           "200": {
             "content": {
@@ -1025,7 +1025,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_jobs",
+        "operationId": "slurmdbd_get_jobs",
         "parameters": [
           {
             "in": "query",
@@ -1342,7 +1342,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "diag",
+        "operationId": "slurmdbd_diag",
         "responses": {
           "200": {
             "content": {
