@@ -63,12 +63,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/job_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_job_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/job_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_job_info"
                 }
               }
             },
@@ -92,12 +92,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/config_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_config_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/config_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_config_info"
                 }
               }
             },
@@ -120,12 +120,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/config_response"
+                  "$ref": "#/components/schemas/dbv0.0.36_config_response"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/config_response"
+                  "$ref": "#/components/schemas/dbv0.0.36_config_response"
                 }
               }
             }
@@ -147,12 +147,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_tres"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_tres"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_tres"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_tres"
                 }
               }
             },
@@ -174,12 +174,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/tres_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_tres_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/tres_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_tres_info"
                 }
               }
             },
@@ -203,12 +203,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_qos_delete"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_qos_delete"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_qos_delete"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_qos_delete"
                 }
               }
             },
@@ -242,12 +242,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/qos_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_qos_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/qos_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_qos_info"
                 }
               }
             },
@@ -283,12 +283,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/qos_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_qos_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/qos_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_qos_info"
                 }
               }
             },
@@ -312,12 +312,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/associations_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_associations_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/associations_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_associations_info"
                 }
               }
             },
@@ -387,12 +387,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/associations_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_associations_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/associations_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_associations_info"
                 }
               }
             },
@@ -460,12 +460,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_association_delete"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_association_delete"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_association_delete"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_association_delete"
                 }
               }
             },
@@ -489,12 +489,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_user_delete"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_user_delete"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_user_delete"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_user_delete"
                 }
               }
             },
@@ -528,12 +528,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/user_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_user_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/user_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_user_info"
                 }
               }
             },
@@ -569,12 +569,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_user_update"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_user_update"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_user_update"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_user_update"
                 }
               }
             },
@@ -595,12 +595,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/user_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_user_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/user_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_user_info"
                 }
               }
             },
@@ -623,12 +623,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_cluster_delete"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_cluster_delete"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_cluster_delete"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_cluster_delete"
                 }
               }
             },
@@ -662,12 +662,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/cluster_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_cluster_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/cluster_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_cluster_info"
                 }
               }
             },
@@ -703,12 +703,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/cluster_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_cluster_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/cluster_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_cluster_info"
                 }
               }
             },
@@ -730,12 +730,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_cluster_add"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_cluster_add"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_cluster_add"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_cluster_add"
                 }
               }
             },
@@ -759,12 +759,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_wckey_delete"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_wckey_delete"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_wckey_delete"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_wckey_delete"
                 }
               }
             },
@@ -798,12 +798,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/wckey_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_wckey_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/wckey_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_wckey_info"
                 }
               }
             },
@@ -839,12 +839,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/wckey_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_wckey_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/wckey_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_wckey_info"
                 }
               }
             },
@@ -866,12 +866,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_wckey_add"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_wckey_add"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_wckey_add"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_wckey_add"
                 }
               }
             },
@@ -895,12 +895,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_account_delete"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_account_delete"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/response_account_delete"
+                  "$ref": "#/components/schemas/dbv0.0.36_response_account_delete"
                 }
               }
             },
@@ -934,12 +934,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/account_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_account_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/account_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_account_info"
                 }
               }
             },
@@ -975,12 +975,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/account_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_account_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/account_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_account_info"
                 }
               }
             },
@@ -1002,12 +1002,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/account_response"
+                  "$ref": "#/components/schemas/dbv0.0.36_account_response"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/account_response"
+                  "$ref": "#/components/schemas/dbv0.0.36_account_response"
                 }
               }
             },
@@ -1319,12 +1319,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/job_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_job_info"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/job_info"
+                  "$ref": "#/components/schemas/dbv0.0.36_job_info"
                 }
               }
             },
@@ -1348,12 +1348,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/diag"
+                  "$ref": "#/components/schemas/dbv0.0.36_diag"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/diag"
+                  "$ref": "#/components/schemas/dbv0.0.36_diag"
                 }
               }
             },
@@ -1455,13 +1455,13 @@
       }
     },
     "schemas": {
-      "diag": {
+      "dbv0.0.36_diag": {
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           },
           "time_start": {
@@ -1565,7 +1565,7 @@
           }
         }
       },
-      "account": {
+      "dbv0.0.36_account": {
         "type": "object",
         "description": "account description",
         "properties": {
@@ -1573,14 +1573,14 @@
             "type": "array",
             "description": "list of assigned associations",
             "items": {
-              "$ref": "#/components/schemas/association_short_info"
+              "$ref": "#/components/schemas/dbv0.0.36_association_short_info"
             }
           },
           "coordinators": {
             "type": "array",
             "description": "list of assigned coordinators",
             "items": {
-              "$ref": "#/components/schemas/coordinator_info"
+              "$ref": "#/components/schemas/dbv0.0.36_coordinator_info"
             }
           },
           "description": {
@@ -1605,26 +1605,26 @@
           }
         }
       },
-      "account_info": {
+      "dbv0.0.36_account_info": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           },
           "accounts": {
             "type": "array",
             "description": "list of accounts",
             "items": {
-              "$ref": "#/components/schemas/account"
+              "$ref": "#/components/schemas/dbv0.0.36_account"
             }
           }
         }
       },
-      "coordinator_info": {
+      "dbv0.0.36_coordinator_info": {
         "type": "object",
         "properties": {
           "name": {
@@ -1637,7 +1637,7 @@
           }
         }
       },
-      "association_short_info": {
+      "dbv0.0.36_association_short_info": {
         "type": "object",
         "properties": {
           "account": {
@@ -1658,50 +1658,50 @@
           }
         }
       },
-      "response_account_delete": {
+      "dbv0.0.36_response_account_delete": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           }
         }
       },
-      "response_wckey_add": {
+      "dbv0.0.36_response_wckey_add": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           }
         }
       },
-      "wckey_info": {
+      "dbv0.0.36_wckey_info": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           },
           "wckeys": {
             "type": "array",
             "description": "list of wckeys",
             "items": {
-              "$ref": "#/components/schemas/wckey"
+              "$ref": "#/components/schemas/dbv0.0.36_wckey"
             }
           }
         }
       },
-      "wckey": {
+      "dbv0.0.36_wckey": {
         "type": "object",
         "properties": {
           "accounts": {
@@ -1738,31 +1738,31 @@
           }
         }
       },
-      "response_wckey_delete": {
+      "dbv0.0.36_response_wckey_delete": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           }
         }
       },
-      "response_cluster_add": {
+      "dbv0.0.36_response_cluster_add": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           }
         }
       },
-      "cluster_info": {
+      "dbv0.0.36_cluster_info": {
         "type": "object",
         "properties": {
           "controller": {
@@ -1804,7 +1804,7 @@
             "description": "information about associations",
             "properties": {
               "root": {
-                "$ref": "#/components/schemas/association_short_info"
+                "$ref": "#/components/schemas/dbv0.0.36_association_short_info"
               }
             }
           },
@@ -1816,36 +1816,36 @@
             "type": "array",
             "description": "list of TRES in cluster",
             "items": {
-              "$ref": "#/components/schemas/response_tres"
+              "$ref": "#/components/schemas/dbv0.0.36_response_tres"
             }
           }
         }
       },
-      "response_cluster_delete": {
+      "dbv0.0.36_response_cluster_delete": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           }
         }
       },
-      "response_user_update": {
+      "dbv0.0.36_response_user_update": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           }
         }
       },
-      "user": {
+      "dbv0.0.36_user": {
         "type": "object",
         "description": "user description",
         "properties": {
@@ -1858,7 +1858,7 @@
             "description": "assigned associations",
             "properties": {
               "root": {
-                "$ref": "#/components/schemas/association_short_info"
+                "$ref": "#/components/schemas/dbv0.0.36_association_short_info"
               }
             }
           },
@@ -1866,7 +1866,7 @@
             "type": "array",
             "description": "list of assigned coordinators",
             "items": {
-              "$ref": "#/components/schemas/coordinator_info"
+              "$ref": "#/components/schemas/dbv0.0.36_coordinator_info"
             }
           },
           "default": {
@@ -1889,50 +1889,50 @@
           }
         }
       },
-      "user_info": {
+      "dbv0.0.36_user_info": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           },
           "users": {
             "type": "array",
             "description": "array of users",
             "items": {
-              "$ref": "#/components/schemas/user"
+              "$ref": "#/components/schemas/dbv0.0.36_user"
             }
           }
         }
       },
-      "response_user_delete": {
+      "dbv0.0.36_response_user_delete": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           }
         }
       },
-      "response_association_delete": {
+      "dbv0.0.36_response_association_delete": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           }
         }
       },
-      "association": {
+      "dbv0.0.36_association": {
         "type": "object",
         "description": "association description",
         "properties": {
@@ -2007,15 +2007,15 @@
                     "description": "max TRES per settings",
                     "properties": {
                       "job": {
-                        "$ref": "#/components/schemas/tres_list"
+                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                       },
                       "node": {
-                        "$ref": "#/components/schemas/tres_list"
+                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                       }
                     }
                   },
                   "total": {
-                    "$ref": "#/components/schemas/tres_list"
+                    "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                   },
                   "minutes": {
                     "type": "object",
@@ -2026,12 +2026,12 @@
                         "description": "max TRES minutes per settings",
                         "properties": {
                           "job": {
-                            "$ref": "#/components/schemas/tres_list"
+                            "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                           }
                         }
                       },
                       "total": {
-                        "$ref": "#/components/schemas/tres_list"
+                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                       }
                     }
                   }
@@ -2125,26 +2125,26 @@
           }
         }
       },
-      "associations_info": {
+      "dbv0.0.36_associations_info": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           },
           "associations": {
             "type": "array",
             "description": "array of associations",
             "items": {
-              "$ref": "#/components/schemas/association"
+              "$ref": "#/components/schemas/dbv0.0.36_association"
             }
           }
         }
       },
-      "qos": {
+      "dbv0.0.36_qos": {
         "type": "object",
         "description": "qos description",
         "properties": {
@@ -2245,13 +2245,13 @@
                             "description": "max TRES minutes per settings",
                             "properties": {
                               "job": {
-                                "$ref": "#/components/schemas/tres_list"
+                                "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                               },
                               "account": {
-                                "$ref": "#/components/schemas/tres_list"
+                                "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                               },
                               "user": {
-                                "$ref": "#/components/schemas/tres_list"
+                                "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                               }
                             }
                           }
@@ -2262,16 +2262,16 @@
                         "description": "max TRES per settings",
                         "properties": {
                           "account": {
-                            "$ref": "#/components/schemas/tres_list"
+                            "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                           },
                           "job": {
-                            "$ref": "#/components/schemas/tres_list"
+                            "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                           },
                           "node": {
-                            "$ref": "#/components/schemas/tres_list"
+                            "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                           },
                           "user": {
-                            "$ref": "#/components/schemas/tres_list"
+                            "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                           }
                         }
                       }
@@ -2296,7 +2296,7 @@
                         "description": "min tres per settings",
                         "properties": {
                           "job": {
-                            "$ref": "#/components/schemas/tres_list"
+                            "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                           }
                         }
                       }
@@ -2346,69 +2346,69 @@
           }
         }
       },
-      "qos_info": {
+      "dbv0.0.36_qos_info": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           },
           "qos": {
             "type": "array",
             "description": "array of qos",
             "items": {
-              "$ref": "#/components/schemas/qos"
+              "$ref": "#/components/schemas/dbv0.0.36_qos"
             }
           }
         }
       },
-      "response_qos_delete": {
+      "dbv0.0.36_response_qos_delete": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           }
         }
       },
-      "response_tres": {
+      "dbv0.0.36_response_tres": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           }
         }
       },
-      "tres_info": {
+      "dbv0.0.36_tres_info": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           },
           "tres": {
             "type": "array",
             "description": "array of tres",
             "items": {
-              "$ref": "#/components/schemas/tres_list"
+              "$ref": "#/components/schemas/dbv0.0.36_tres_list"
             }
           }
         }
       },
-      "tres_list": {
+      "dbv0.0.36_tres_list": {
         "type": "object",
         "properties": {
           "type": {
@@ -2429,26 +2429,26 @@
           }
         }
       },
-      "job_info": {
+      "dbv0.0.36_job_info": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           },
           "jobs": {
             "type": "array",
             "description": "array of jobs",
             "items": {
-              "$ref": "#/components/schemas/job"
+              "$ref": "#/components/schemas/dbv0.0.36_job"
             }
           }
         }
       },
-      "job": {
+      "dbv0.0.36_job": {
         "type": "object",
         "description": "single job description",
         "properties": {
@@ -2595,7 +2595,7 @@
             }
           },
           "association": {
-            "$ref": "#/components/schemas/association_short_info"
+            "$ref": "#/components/schemas/dbv0.0.36_association_short_info"
           },
           "cluster": {
             "type": "string",
@@ -2606,10 +2606,10 @@
             "description": "constraints on job"
           },
           "derived_exit_code": {
-            "$ref": "#/components/schemas/job_exit_code"
+            "$ref": "#/components/schemas/dbv0.0.36_job_exit_code"
           },
           "exit_code": {
-            "$ref": "#/components/schemas/job_exit_code"
+            "$ref": "#/components/schemas/dbv0.0.36_job_exit_code"
           },
           "flags": {
             "type": "array",
@@ -2721,7 +2721,7 @@
             "type": "array",
             "description": "job step description",
             "items": {
-              "$ref": "#/components/schemas/job_step"
+              "$ref": "#/components/schemas/dbv0.0.36_job_step"
             }
           },
           "tres": {
@@ -2729,10 +2729,10 @@
             "description": "TRES settings",
             "properties": {
               "allocated": {
-                "$ref": "#/components/schemas/tres_list"
+                "$ref": "#/components/schemas/dbv0.0.36_tres_list"
               },
               "requested": {
-                "$ref": "#/components/schemas/tres_list"
+                "$ref": "#/components/schemas/dbv0.0.36_tres_list"
               }
             }
           },
@@ -2764,7 +2764,7 @@
           }
         }
       },
-      "job_exit_code": {
+      "dbv0.0.36_job_exit_code": {
         "type": "object",
         "properties": {
           "status": {
@@ -2791,7 +2791,7 @@
           }
         }
       },
-      "job_step": {
+      "dbv0.0.36_job_step": {
         "type": "object",
         "properties": {
           "time": {
@@ -2859,7 +2859,7 @@
             }
           },
           "exit_code": {
-            "$ref": "#/components/schemas/job_exit_code"
+            "$ref": "#/components/schemas/dbv0.0.36_job_exit_code"
           },
           "nodes": {
             "type": "object",
@@ -2996,16 +2996,16 @@
                     "description": "Tres requested for job",
                     "properties": {
                       "average": {
-                        "$ref": "#/components/schemas/tres_list"
+                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                       },
                       "max": {
-                        "$ref": "#/components/schemas/tres_list"
+                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                       },
                       "min": {
-                        "$ref": "#/components/schemas/tres_list"
+                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                       },
                       "total": {
-                        "$ref": "#/components/schemas/tres_list"
+                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                       }
                     }
                   },
@@ -3014,21 +3014,21 @@
                     "description": "Tres requested for job",
                     "properties": {
                       "average": {
-                        "$ref": "#/components/schemas/tres_list"
+                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                       },
                       "max": {
-                        "$ref": "#/components/schemas/tres_list"
+                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                       },
                       "min": {
-                        "$ref": "#/components/schemas/tres_list"
+                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                       },
                       "total": {
-                        "$ref": "#/components/schemas/tres_list"
+                        "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                       }
                     }
                   },
                   "allocated": {
-                    "$ref": "#/components/schemas/tres_list"
+                    "$ref": "#/components/schemas/dbv0.0.36_tres_list"
                   }
                 }
               }
@@ -3036,85 +3036,85 @@
           }
         }
       },
-      "config_info": {
+      "dbv0.0.36_config_info": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           },
           "tres": {
             "type": "array",
             "description": "array of tres",
             "items": {
-              "$ref": "#/components/schemas/tres_list"
+              "$ref": "#/components/schemas/dbv0.0.36_tres_list"
             }
           },
           "accounts": {
             "type": "array",
             "description": "array of accounts",
             "items": {
-              "$ref": "#/components/schemas/account"
+              "$ref": "#/components/schemas/dbv0.0.36_account"
             }
           },
           "associations": {
             "type": "array",
             "description": "array of associations",
             "items": {
-              "$ref": "#/components/schemas/association"
+              "$ref": "#/components/schemas/dbv0.0.36_association"
             }
           },
           "users": {
             "type": "array",
             "description": "array of users",
             "items": {
-              "$ref": "#/components/schemas/user"
+              "$ref": "#/components/schemas/dbv0.0.36_user"
             }
           },
           "qos": {
             "type": "array",
             "description": "array of qos",
             "items": {
-              "$ref": "#/components/schemas/qos"
+              "$ref": "#/components/schemas/dbv0.0.36_qos"
             }
           },
           "wckeys": {
             "type": "array",
             "description": "array of wckeys",
             "items": {
-              "$ref": "#/components/schemas/wckey"
+              "$ref": "#/components/schemas/dbv0.0.36_wckey"
             }
           }
         }
       },
-      "account_response": {
+      "dbv0.0.36_account_response": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           }
         }
       },
-      "config_response": {
+      "dbv0.0.36_config_response": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/dbv0.0.36_error"
             }
           }
         }
       },
-      "error": {
+      "dbv0.0.36_error": {
         "properties": {
           "errno": {
             "description": "error number",
