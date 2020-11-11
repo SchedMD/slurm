@@ -49,7 +49,7 @@ if {[llength $node_with_mps] != 1} {
 proc cleanup {} {
 	global bin_rm file_in1 file_in2 file_out1 file_out2 job_list scancel
 
-	run_command -none "$scancel $job_list"
+	cancel_job $job_list
 	run_command -none "$bin_rm -f $file_in1 $file_in2 $file_out1 $file_out2"
 }
 
