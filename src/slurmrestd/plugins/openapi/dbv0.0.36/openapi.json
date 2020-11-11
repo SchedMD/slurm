@@ -1538,6 +1538,46 @@
           }
         }
       },
+      "account": {
+        "type": "object",
+        "description": "account description",
+        "properties": {
+          "associations": {
+            "type": "array",
+            "description": "list of assigned associations",
+            "items": {
+              "$ref": "#/components/schemas/association_short_info"
+            }
+          },
+          "coordinators": {
+            "type": "array",
+            "description": "list of assigned coordinators",
+            "items": {
+              "$ref": "#/components/schemas/coordinator_info"
+            }
+          },
+          "description": {
+            "type": "string",
+            "description": "description of account"
+          },
+          "name": {
+            "type": "string",
+            "description": "name of account"
+          },
+          "organization": {
+            "type": "string",
+            "description": "assigned organization of account"
+          },
+          "flags": {
+            "type": "array",
+            "description": "List of properties of account",
+            "items": {
+              "type": "string",
+              "description": "string of property name"
+            }
+          }
+        }
+      },
       "account_info": {
         "type": "object",
         "properties": {
@@ -1552,44 +1592,7 @@
             "type": "array",
             "description": "list of accounts",
             "items": {
-              "type": "object",
-              "description": "account description",
-              "properties": {
-                "associations": {
-                  "type": "array",
-                  "description": "list of assigned associations",
-                  "items": {
-                    "$ref": "#/components/schemas/association_short_info"
-                  }
-                },
-                "coordinators": {
-                  "type": "array",
-                  "description": "list of assigned coordinators",
-                  "items": {
-                    "$ref": "#/components/schemas/coordinator_info"
-                  }
-                },
-                "description": {
-                  "type": "string",
-                  "description": "description of account"
-                },
-                "name": {
-                  "type": "string",
-                  "description": "name of account"
-                },
-                "organization": {
-                  "type": "string",
-                  "description": "assigned organization of account"
-                },
-                "flags": {
-                  "type": "array",
-                  "description": "List of properties of account",
-                  "items": {
-                    "type": "string",
-                    "description": "string of property name"
-                  }
-                }
-              }
+              "$ref": "#/components/schemas/account"
             }
           }
         }
@@ -1637,6 +1640,25 @@
         "properties": {}
       },
       "wckey_info": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          },
+          "wckeys": {
+            "type": "array",
+            "description": "list of wckeys",
+            "items": {
+              "$ref": "#/components/schemas/wckey"
+            }
+          }
+        }
+      },
+      "wckey": {
         "type": "object",
         "properties": {
           "accounts": {
@@ -1748,6 +1770,50 @@
         "type": "object",
         "properties": {}
       },
+      "user": {
+        "type": "object",
+        "description": "user description",
+        "properties": {
+          "administrator_level": {
+            "type": "string",
+            "description": "description of administrator level"
+          },
+          "associations": {
+            "type": "object",
+            "description": "assigned associations",
+            "properties": {
+              "root": {
+                "$ref": "#/components/schemas/association_short_info"
+              }
+            }
+          },
+          "coordinators": {
+            "type": "array",
+            "description": "list of assigned coordinators",
+            "items": {
+              "$ref": "#/components/schemas/coordinator_info"
+            }
+          },
+          "default": {
+            "type": "object",
+            "description": "default settings",
+            "properties": {
+              "account": {
+                "type": "string",
+                "description": "default account name"
+              },
+              "wckey": {
+                "type": "string",
+                "description": "default wckey"
+              }
+            }
+          },
+          "name": {
+            "type": "string",
+            "description": "user name"
+          }
+        }
+      },
       "user_info": {
         "type": "object",
         "properties": {
@@ -1762,48 +1828,7 @@
             "type": "array",
             "description": "array of users",
             "items": {
-              "type": "object",
-              "description": "user description",
-              "properties": {
-                "administrator_level": {
-                  "type": "string",
-                  "description": "description of administrator level"
-                },
-                "associations": {
-                  "type": "object",
-                  "description": "assigned associations",
-                  "properties": {
-                    "root": {
-                      "$ref": "#/components/schemas/association_short_info"
-                    }
-                  }
-                },
-                "coordinators": {
-                  "type": "array",
-                  "description": "list of assigned coordinators",
-                  "items": {
-                    "$ref": "#/components/schemas/coordinator_info"
-                  }
-                },
-                "default": {
-                  "type": "object",
-                  "description": "default settings",
-                  "properties": {
-                    "account": {
-                      "type": "string",
-                      "description": "default account name"
-                    },
-                    "wckey": {
-                      "type": "string",
-                      "description": "default wckey"
-                    }
-                  }
-                },
-                "name": {
-                  "type": "string",
-                  "description": "user name"
-                }
-              }
+              "$ref": "#/components/schemas/user"
             }
           }
         }
@@ -1815,6 +1840,199 @@
       "response_association_delete": {
         "type": "object",
         "properties": {}
+      },
+      "association": {
+        "type": "object",
+        "description": "association description",
+        "properties": {
+          "account": {
+            "type": "string",
+            "description": "assigned account"
+          },
+          "cluster": {
+            "type": "string",
+            "description": "assigned cluster"
+          },
+          "default": {
+            "type": "object",
+            "description": "default settings",
+            "properties": {
+              "qos": {
+                "type": "string",
+                "description": "default QOS"
+              }
+            }
+          },
+          "flags": {
+            "type": "array",
+            "description": "List of properties of association",
+            "items": {
+              "type": "string",
+              "description": "string of property name"
+            }
+          },
+          "max": {
+            "type": "object",
+            "description": "max settings",
+            "properties": {
+              "jobs": {
+                "type": "object",
+                "description": "max jobs settings",
+                "properties": {
+                  "per": {
+                    "type": "object",
+                    "description": "max jobs per settings",
+                    "properties": {
+                      "wall_clock": {
+                        "type": "integer",
+                        "description": "max wallclock per job"
+                      }
+                    }
+                  }
+                }
+              },
+              "per": {
+                "type": "object",
+                "description": "max per settings",
+                "properties": {
+                  "account": {
+                    "type": "object",
+                    "description": "max per accounting settings",
+                    "properties": {
+                      "wall_clock": {
+                        "type": "integer",
+                        "description": "max wallclock per account"
+                      }
+                    }
+                  }
+                }
+              },
+              "tres": {
+                "type": "object",
+                "description": "max TRES settings",
+                "properties": {
+                  "per": {
+                    "type": "object",
+                    "description": "max TRES per settings",
+                    "properties": {
+                      "job": {
+                        "$ref": "#/components/schemas/tres_list"
+                      },
+                      "node": {
+                        "$ref": "#/components/schemas/tres_list"
+                      }
+                    }
+                  },
+                  "total": {
+                    "$ref": "#/components/schemas/tres_list"
+                  },
+                  "minutes": {
+                    "type": "object",
+                    "description": "max TRES minutes settings",
+                    "properties": {
+                      "per": {
+                        "type": "object",
+                        "description": "max TRES minutes per settings",
+                        "properties": {
+                          "job": {
+                            "$ref": "#/components/schemas/tres_list"
+                          }
+                        }
+                      },
+                      "total": {
+                        "$ref": "#/components/schemas/tres_list"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "min": {
+            "type": "object",
+            "description": "min settings",
+            "properties": {
+              "priority_threshold": {
+                "type": "integer",
+                "description": "min priority threshold"
+              }
+            }
+          },
+          "parent_account": {
+            "type": "string",
+            "description": "parent account name"
+          },
+          "partition": {
+            "type": "string",
+            "description": "assigned partition"
+          },
+          "priority": {
+            "type": "integer",
+            "description": "assigned priority"
+          },
+          "qos": {
+            "type": "array",
+            "description": "assigned QOS",
+            "items": {
+              "type": "string",
+              "description": "assigned single QOS name"
+            }
+          },
+          "shares_raw": {
+            "type": "integer",
+            "description": "raw fairshare shares"
+          },
+          "usage": {
+            "type": "object",
+            "description": "association usage",
+            "properties": {
+              "accrue_job_count": {
+                "type": "integer",
+                "description": "jobs accuring priority"
+              },
+              "group_used_wallclock": {
+                "type": "number",
+                "description": "group used wallclock time (s)"
+              },
+              "fairshare_factor": {
+                "type": "number",
+                "description": "fairshare factor"
+              },
+              "fairshare_shares": {
+                "type": "integer",
+                "description": "fairshare shares"
+              },
+              "normalized_priority": {
+                "type": "integer",
+                "description": "currently active jobs"
+              },
+              "normalized_shares": {
+                "type": "number",
+                "description": "normalized shares"
+              },
+              "effective_normalized_usage": {
+                "type": "number",
+                "description": "effective normalized usage"
+              },
+              "raw_usage": {
+                "type": "integer",
+                "description": "raw usage"
+              },
+              "job_count": {
+                "type": "integer",
+                "description": "total jobs submitted"
+              },
+              "fairshare_level": {
+                "type": "number",
+                "description": "fairshare level"
+              }
+            }
+          },
+          "user": {
+            "type": "string",
+            "description": "assigned user"
+          }
+        }
       },
       "associations_info": {
         "type": "object",
@@ -1830,198 +2048,210 @@
             "type": "array",
             "description": "array of associations",
             "items": {
-              "type": "object",
-              "description": "association description",
-              "properties": {
-                "account": {
-                  "type": "string",
-                  "description": "assigned account"
-                },
-                "cluster": {
-                  "type": "string",
-                  "description": "assigned cluster"
-                },
-                "default": {
-                  "type": "object",
-                  "description": "default settings",
-                  "properties": {
-                    "qos": {
-                      "type": "string",
-                      "description": "default QOS"
+              "$ref": "#/components/schemas/association"
+            }
+          }
+        }
+      },
+      "qos": {
+        "type": "object",
+        "description": "qos description",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "QOS description"
+          },
+          "flags": {
+            "type": "array",
+            "description": "List of properties of qos",
+            "items": {
+              "type": "string",
+              "description": "string of property name"
+            }
+          },
+          "id": {
+            "type": "string",
+            "description": "database id"
+          },
+          "limits": {
+            "type": "object",
+            "description": "assigned limits",
+            "properties": {
+              "max": {
+                "type": "object",
+                "description": "limits on max settings",
+                "properties": {
+                  "wall_clock": {
+                    "type": "object",
+                    "description": "limit on wallclock settings",
+                    "properties": {
+                      "per": {
+                        "type": "object",
+                        "description": "limit on wallclock per settings",
+                        "properties": {
+                          "qos": {
+                            "type": "integer",
+                            "description": "max wallclock per QOS"
+                          },
+                          "job": {
+                            "type": "integer",
+                            "description": "max wallclock per job"
+                          }
+                        }
+                      }
                     }
-                  }
-                },
-                "flags": {
-                  "type": "array",
-                  "description": "List of properties of association",
-                  "items": {
-                    "type": "string",
-                    "description": "string of property name"
-                  }
-                },
-                "max": {
-                  "type": "object",
-                  "description": "max settings",
-                  "properties": {
-                    "jobs": {
-                      "type": "object",
-                      "description": "max jobs settings",
-                      "properties": {
-                        "per": {
-                          "type": "object",
-                          "description": "max jobs per settings",
-                          "properties": {
-                            "wall_clock": {
-                              "type": "integer",
-                              "description": "max wallclock per job"
-                            }
+                  },
+                  "jobs": {
+                    "type": "object",
+                    "description": "limits on jobs settings",
+                    "properties": {
+                      "per": {
+                        "type": "object",
+                        "description": "limits on jobs per settings",
+                        "properties": {
+                          "account": {
+                            "type": "integer",
+                            "description": "max jobs per account"
+                          },
+                          "user": {
+                            "type": "integer",
+                            "description": "max jobs per user"
                           }
                         }
                       }
-                    },
-                    "per": {
-                      "type": "object",
-                      "description": "max per settings",
-                      "properties": {
-                        "account": {
-                          "type": "object",
-                          "description": "max per accounting settings",
-                          "properties": {
-                            "wall_clock": {
-                              "type": "integer",
-                              "description": "max wallclock per account"
-                            }
+                    }
+                  },
+                  "accruing": {
+                    "type": "object",
+                    "description": "limits on accruing priority",
+                    "properties": {
+                      "per": {
+                        "type": "object",
+                        "description": "max accuring priority per setting",
+                        "properties": {
+                          "account": {
+                            "type": "integer",
+                            "description": "max accuring priority per account"
+                          },
+                          "user": {
+                            "type": "integer",
+                            "description": "max accuring priority per user"
                           }
                         }
                       }
-                    },
-                    "tres": {
-                      "type": "object",
-                      "description": "max TRES settings",
-                      "properties": {
-                        "per": {
-                          "type": "object",
-                          "description": "max TRES per settings",
-                          "properties": {
-                            "job": {
-                              "$ref": "#/components/schemas/tres_list"
-                            },
-                            "node": {
-                              "$ref": "#/components/schemas/tres_list"
-                            }
-                          }
-                        },
-                        "total": {
-                          "$ref": "#/components/schemas/tres_list"
-                        },
-                        "minutes": {
-                          "type": "object",
-                          "description": "max TRES minutes settings",
-                          "properties": {
-                            "per": {
-                              "type": "object",
-                              "description": "max TRES minutes per settings",
-                              "properties": {
-                                "job": {
-                                  "$ref": "#/components/schemas/tres_list"
-                                }
+                    }
+                  },
+                  "tres": {
+                    "type": "object",
+                    "description": "limits on TRES",
+                    "properties": {
+                      "minutes": {
+                        "type": "object",
+                        "description": "max TRES minutes settings",
+                        "properties": {
+                          "per": {
+                            "type": "object",
+                            "description": "max TRES minutes per settings",
+                            "properties": {
+                              "job": {
+                                "$ref": "#/components/schemas/tres_list"
+                              },
+                              "account": {
+                                "$ref": "#/components/schemas/tres_list"
+                              },
+                              "user": {
+                                "$ref": "#/components/schemas/tres_list"
                               }
-                            },
-                            "total": {
-                              "$ref": "#/components/schemas/tres_list"
                             }
+                          }
+                        }
+                      },
+                      "per": {
+                        "type": "object",
+                        "description": "max TRES per settings",
+                        "properties": {
+                          "account": {
+                            "$ref": "#/components/schemas/tres_list"
+                          },
+                          "job": {
+                            "$ref": "#/components/schemas/tres_list"
+                          },
+                          "node": {
+                            "$ref": "#/components/schemas/tres_list"
+                          },
+                          "user": {
+                            "$ref": "#/components/schemas/tres_list"
                           }
                         }
                       }
                     }
                   }
-                },
-                "min": {
-                  "type": "object",
-                  "description": "min settings",
-                  "properties": {
-                    "priority_threshold": {
-                      "type": "integer",
-                      "description": "min priority threshold"
+                }
+              },
+              "min": {
+                "type": "object",
+                "description": "min limit settings",
+                "properties": {
+                  "priority_threshold": {
+                    "type": "integer",
+                    "description": "min priority threshold"
+                  },
+                  "tres": {
+                    "type": "object",
+                    "description": "min tres settings",
+                    "properties": {
+                      "per": {
+                        "type": "object",
+                        "description": "min tres per settings",
+                        "properties": {
+                          "job": {
+                            "$ref": "#/components/schemas/tres_list"
+                          }
+                        }
+                      }
                     }
                   }
-                },
-                "parent_account": {
-                  "type": "string",
-                  "description": "parent account name"
-                },
-                "partition": {
-                  "type": "string",
-                  "description": "assigned partition"
-                },
-                "priority": {
-                  "type": "integer",
-                  "description": "assigned priority"
-                },
-                "qos": {
-                  "type": "array",
-                  "description": "assigned QOS",
-                  "items": {
-                    "type": "string",
-                    "description": "assigned single QOS name"
-                  }
-                },
-                "shares_raw": {
-                  "type": "integer",
-                  "description": "raw fairshare shares"
-                },
-                "usage": {
-                  "type": "object",
-                  "description": "association usage",
-                  "properties": {
-                    "accrue_job_count": {
-                      "type": "integer",
-                      "description": "jobs accuring priority"
-                    },
-                    "group_used_wallclock": {
-                      "type": "number",
-                      "description": "group used wallclock time (s)"
-                    },
-                    "fairshare_factor": {
-                      "type": "number",
-                      "description": "fairshare factor"
-                    },
-                    "fairshare_shares": {
-                      "type": "integer",
-                      "description": "fairshare shares"
-                    },
-                    "normalized_priority": {
-                      "type": "integer",
-                      "description": "currently active jobs"
-                    },
-                    "normalized_shares": {
-                      "type": "number",
-                      "description": "normalized shares"
-                    },
-                    "effective_normalized_usage": {
-                      "type": "number",
-                      "description": "effective normalized usage"
-                    },
-                    "raw_usage": {
-                      "type": "integer",
-                      "description": "raw usage"
-                    },
-                    "job_count": {
-                      "type": "integer",
-                      "description": "total jobs submitted"
-                    },
-                    "fairshare_level": {
-                      "type": "number",
-                      "description": "fairshare level"
-                    }
-                  }
-                },
-                "user": {
-                  "type": "string",
-                  "description": "assigned user"
                 }
               }
             }
+          },
+          "preempt": {
+            "type": "object",
+            "description": "pre-emption settings",
+            "properties": {
+              "list": {
+                "type": "array",
+                "description": "list of pre-emptable QOS",
+                "items": {
+                  "type": "string",
+                  "description": "pre-emptable QOS"
+                }
+              },
+              "mode": {
+                "type": "array",
+                "description": "list of pre-emption modes",
+                "items": {
+                  "type": "string",
+                  "description": "pre-emption mode"
+                }
+              },
+              "exempt_time": {
+                "type": "integer",
+                "description": "grace period (s) before jobs can pre-empted"
+              }
+            }
+          },
+          "priority": {
+            "type": "integer",
+            "description": "QOS priority"
+          },
+          "usage_factor": {
+            "type": "number",
+            "description": "usage factor"
+          },
+          "usage_threshold": {
+            "type": "number",
+            "description": "usage threshold"
           }
         }
       },
@@ -2039,206 +2269,7 @@
             "type": "array",
             "description": "array of qos",
             "items": {
-              "type": "object",
-              "description": "qos description",
-              "properties": {
-                "description": {
-                  "type": "string",
-                  "description": "QOS description"
-                },
-                "flags": {
-                  "type": "array",
-                  "description": "List of properties of qos",
-                  "items": {
-                    "type": "string",
-                    "description": "string of property name"
-                  }
-                },
-                "id": {
-                  "type": "string",
-                  "description": "database id"
-                },
-                "limits": {
-                  "type": "object",
-                  "description": "assigned limits",
-                  "properties": {
-                    "max": {
-                      "type": "object",
-                      "description": "limits on max settings",
-                      "properties": {
-                        "wall_clock": {
-                          "type": "object",
-                          "description": "limit on wallclock settings",
-                          "properties": {
-                            "per": {
-                              "type": "object",
-                              "description": "limit on wallclock per settings",
-                              "properties": {
-                                "qos": {
-                                  "type": "integer",
-                                  "description": "max wallclock per QOS"
-                                },
-                                "job": {
-                                  "type": "integer",
-                                  "description": "max wallclock per job"
-                                }
-                              }
-                            }
-                          }
-                        },
-                        "jobs": {
-                          "type": "object",
-                          "description": "limits on jobs settings",
-                          "properties": {
-                            "per": {
-                              "type": "object",
-                              "description": "limits on jobs per settings",
-                              "properties": {
-                                "account": {
-                                  "type": "integer",
-                                  "description": "max jobs per account"
-                                },
-                                "user": {
-                                  "type": "integer",
-                                  "description": "max jobs per user"
-                                }
-                              }
-                            }
-                          }
-                        },
-                        "accruing": {
-                          "type": "object",
-                          "description": "limits on accruing priority",
-                          "properties": {
-                            "per": {
-                              "type": "object",
-                              "description": "max accuring priority per setting",
-                              "properties": {
-                                "account": {
-                                  "type": "integer",
-                                  "description": "max accuring priority per account"
-                                },
-                                "user": {
-                                  "type": "integer",
-                                  "description": "max accuring priority per user"
-                                }
-                              }
-                            }
-                          }
-                        },
-                        "tres": {
-                          "type": "object",
-                          "description": "limits on TRES",
-                          "properties": {
-                            "minutes": {
-                              "type": "object",
-                              "description": "max TRES minutes settings",
-                              "properties": {
-                                "per": {
-                                  "type": "object",
-                                  "description": "max TRES minutes per settings",
-                                  "properties": {
-                                    "job": {
-                                      "$ref": "#/components/schemas/tres_list"
-                                    },
-                                    "account": {
-                                      "$ref": "#/components/schemas/tres_list"
-                                    },
-                                    "user": {
-                                      "$ref": "#/components/schemas/tres_list"
-                                    }
-                                  }
-                                }
-                              }
-                            },
-                            "per": {
-                              "type": "object",
-                              "description": "max TRES per settings",
-                              "properties": {
-                                "account": {
-                                  "$ref": "#/components/schemas/tres_list"
-                                },
-                                "job": {
-                                  "$ref": "#/components/schemas/tres_list"
-                                },
-                                "node": {
-                                  "$ref": "#/components/schemas/tres_list"
-                                },
-                                "user": {
-                                  "$ref": "#/components/schemas/tres_list"
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                    },
-                    "min": {
-                      "type": "object",
-                      "description": "min limit settings",
-                      "properties": {
-                        "priority_threshold": {
-                          "type": "integer",
-                          "description": "min priority threshold"
-                        },
-                        "tres": {
-                          "type": "object",
-                          "description": "min tres settings",
-                          "properties": {
-                            "per": {
-                              "type": "object",
-                              "description": "min tres per settings",
-                              "properties": {
-                                "job": {
-                                  "$ref": "#/components/schemas/tres_list"
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                },
-                "preempt": {
-                  "type": "object",
-                  "description": "pre-emption settings",
-                  "properties": {
-                    "list": {
-                      "type": "array",
-                      "description": "list of pre-emptable QOS",
-                      "items": {
-                        "type": "string",
-                        "description": "pre-emptable QOS"
-                      }
-                    },
-                    "mode": {
-                      "type": "array",
-                      "description": "list of pre-emption modes",
-                      "items": {
-                        "type": "string",
-                        "description": "pre-emption mode"
-                      }
-                    },
-                    "exempt_time": {
-                      "type": "integer",
-                      "description": "grace period (s) before jobs can pre-empted"
-                    }
-                  }
-                },
-                "priority": {
-                  "type": "integer",
-                  "description": "QOS priority"
-                },
-                "usage_factor": {
-                  "type": "number",
-                  "description": "usage factor"
-                },
-                "usage_threshold": {
-                  "type": "number",
-                  "description": "usage threshold"
-                }
-              }
+              "$ref": "#/components/schemas/qos"
             }
           }
         }
@@ -2305,12 +2336,12 @@
             "type": "array",
             "description": "array of jobs",
             "items": {
-              "$ref": "#/components/schemas/job_description"
+              "$ref": "#/components/schemas/job"
             }
           }
         }
       },
-      "job_description": {
+      "job": {
         "type": "object",
         "description": "single job description",
         "properties": {
@@ -2900,7 +2931,57 @@
       },
       "config_info": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/error"
+            }
+          },
+          "tres": {
+            "type": "array",
+            "description": "array of tres",
+            "items": {
+              "$ref": "#/components/schemas/tres_list"
+            }
+          },
+          "accounts": {
+            "type": "array",
+            "description": "array of accounts",
+            "items": {
+              "$ref": "#/components/schemas/account"
+            }
+          },
+          "associations": {
+            "type": "array",
+            "description": "array of associations",
+            "items": {
+              "$ref": "#/components/schemas/association"
+            }
+          },
+          "users": {
+            "type": "array",
+            "description": "array of users",
+            "items": {
+              "$ref": "#/components/schemas/user"
+            }
+          },
+          "qos": {
+            "type": "array",
+            "description": "array of qos",
+            "items": {
+              "$ref": "#/components/schemas/qos"
+            }
+          },
+          "wckeys": {
+            "type": "array",
+            "description": "array of wckeys",
+            "items": {
+              "$ref": "#/components/schemas/wckey"
+            }
+          }
+        }
       },
       "config_response": {
         "type": "object",
