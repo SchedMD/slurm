@@ -42,7 +42,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "diag",
+        "operationId": "slurmctld_diag",
         "summary": "get diagnostics",
         "responses": {
           "200": {
@@ -71,7 +71,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "ping",
+        "operationId": "slurmctld_ping",
         "summary": "ping test",
         "responses": {
           "200": {
@@ -100,7 +100,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_jobs",
+        "operationId": "slurmctld_get_jobs",
         "summary": "get list of jobs",
         "responses": {
           "200": {
@@ -129,7 +129,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_job",
+        "operationId": "slurmctld_get_job",
         "summary": "get job info",
         "parameters": [
           {
@@ -170,7 +170,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "update_job",
+        "operationId": "slurmctld_update_job",
         "summary": "update job",
         "parameters": [
           {
@@ -215,7 +215,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "cancel_job",
+        "operationId": "slurmctld_cancel_job",
         "summary": "cancel or signal job",
         "parameters": [
           {
@@ -257,7 +257,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "submit_job",
+        "operationId": "slurmctld_submit_job",
         "summary": "submit new job",
         "requestBody": {
           "description": "submit new job",
@@ -302,7 +302,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_nodes",
+        "operationId": "slurmctld_get_nodes",
         "summary": "get all node info",
         "responses": {
           "200": {
@@ -331,7 +331,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_node",
+        "operationId": "slurmctld_get_node",
         "summary": "get node info",
         "parameters": [
           {
@@ -373,7 +373,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_partitions",
+        "operationId": "slurmctld_get_partitions",
         "summary": "get all partition info",
         "responses": {
           "200": {
@@ -402,7 +402,7 @@
         "tags": [
           "slurm"
         ],
-        "operationId": "get_partition",
+        "operationId": "slurmctld_get_partition",
         "summary": "get partition info",
         "parameters": [
           {
