@@ -326,7 +326,7 @@ static const parser_t parse_job[] = {
 	_add_parse(UINT32, array_max_tasks, "array/limits/max/running/tasks"),
 	_add_parse(STRING, array_task_str, "array/task"),
 	_add_parse(UINT32, array_task_id, "array/task_id"),
-	_add_parse(ASSOC_ID, array_task_id, "association"),
+	_add_parse(ASSOC_ID, associd, "association"),
 	/* skip blockid (deprecated bluegene) */
 	_add_parse(STRING, cluster, "cluster"),
 	_add_parse(STRING, constraints, "constraints"),
