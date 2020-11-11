@@ -31,6 +31,8 @@ documents those changes that are of interest to users and administrators.
  -- Various alterations in reference to ntasks_per_tres.
  -- slurmrestd - multiple changes to make Slurm's OpenAPI spec compatible with
     https://openapi-generator.tech/.
+ -- nss_slurm - avoid loading slurm.conf to avoid issues on configless systems,
+    or systems with config files loaded on shared storage.
 
 * Changes in Slurm 20.11.0rc1
 ==============================
