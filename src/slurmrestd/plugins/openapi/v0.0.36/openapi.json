@@ -50,12 +50,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/diag"
+                  "$ref": "#/components/schemas/v0.0.36_diag"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/diag"
+                  "$ref": "#/components/schemas/v0.0.36_diag"
                 }
               }
             }
@@ -79,12 +79,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/pings"
+                  "$ref": "#/components/schemas/v0.0.36_pings"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/pings"
+                  "$ref": "#/components/schemas/v0.0.36_pings"
                 }
               }
             }
@@ -108,12 +108,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/jobs_response"
+                  "$ref": "#/components/schemas/v0.0.36_jobs_response"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/jobs_response"
+                  "$ref": "#/components/schemas/v0.0.36_jobs_response"
                 }
               }
             }
@@ -151,12 +151,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/jobs_response"
+                  "$ref": "#/components/schemas/v0.0.36_jobs_response"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/jobs_response"
+                  "$ref": "#/components/schemas/v0.0.36_jobs_response"
                 }
               }
             }
@@ -191,12 +191,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/job_properties"
+                "$ref": "#/components/schemas/v0.0.36_job_properties"
               }
             },
             "application/x-yaml": {
               "schema": {
-                "$ref": "#/components/schemas/job_properties"
+                "$ref": "#/components/schemas/v0.0.36_job_properties"
               }
             }
           },
@@ -238,7 +238,7 @@
             "style": "form",
             "explode": true,
             "schema": {
-              "$ref": "#/components/schemas/signal"
+              "$ref": "#/components/schemas/v0.0.36_signal"
             }
           }
         ],
@@ -264,12 +264,12 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/job_submission"
+                "$ref": "#/components/schemas/v0.0.36_job_submission"
               }
             },
             "application/x-yaml": {
               "schema": {
-                "$ref": "#/components/schemas/job_submission"
+                "$ref": "#/components/schemas/v0.0.36_job_submission"
               }
             }
           },
@@ -281,12 +281,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/job_submission_response"
+                  "$ref": "#/components/schemas/v0.0.36_job_submission_response"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/job_submission_response"
+                  "$ref": "#/components/schemas/v0.0.36_job_submission_response"
                 }
               }
             }
@@ -310,12 +310,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/nodes_response"
+                  "$ref": "#/components/schemas/v0.0.36_nodes_response"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/nodes_response"
+                  "$ref": "#/components/schemas/v0.0.36_nodes_response"
                 }
               }
             }
@@ -352,12 +352,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/nodes_response"
+                  "$ref": "#/components/schemas/v0.0.36_nodes_response"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/nodes_response"
+                  "$ref": "#/components/schemas/v0.0.36_nodes_response"
                 }
               }
             }
@@ -381,12 +381,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/partitions_response"
+                  "$ref": "#/components/schemas/v0.0.36_partitions_response"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/partitions_response"
+                  "$ref": "#/components/schemas/v0.0.36_partitions_response"
                 }
               }
             }
@@ -423,12 +423,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/partitions_response"
+                  "$ref": "#/components/schemas/v0.0.36_partitions_response"
                 }
               },
               "application/x-yaml": {
                 "schema": {
-                  "$ref": "#/components/schemas/partitions_response"
+                  "$ref": "#/components/schemas/v0.0.36_partitions_response"
                 }
               }
             }
@@ -528,14 +528,14 @@
       }
     },
     "schemas": {
-      "diag": {
+      "v0.0.36_diag": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/v0.0.36_error"
             }
           },
           "statistics": {
@@ -702,26 +702,26 @@
           }
         }
       },
-      "pings": {
+      "v0.0.36_pings": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/v0.0.36_error"
             }
           },
           "pings": {
             "type": "array",
             "description": "slurm controller pings",
             "items": {
-              "$ref": "#/components/schemas/ping"
+              "$ref": "#/components/schemas/v0.0.36_ping"
             }
           }
         }
       },
-      "ping": {
+      "v0.0.36_ping": {
         "type": "object",
         "properties": {
           "hostname": {
@@ -746,7 +746,7 @@
           }
         }
       },
-      "partition": {
+      "v0.0.36_partition": {
         "type": "object",
         "properties": {
           "flags": {
@@ -871,26 +871,26 @@
           }
         }
       },
-      "partitions_response": {
+      "v0.0.36_partitions_response": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/v0.0.36_error"
             }
           },
           "partitions": {
             "type": "array",
             "description": "partition info",
             "items": {
-              "$ref": "#/components/schemas/partition"
+              "$ref": "#/components/schemas/v0.0.36_partition"
             }
           }
         }
       },
-      "error": {
+      "v0.0.36_error": {
         "type": "object",
         "properties": {
           "error": {
@@ -903,7 +903,7 @@
           }
         }
       },
-      "signal": {
+      "v0.0.36_signal": {
         "type": "string",
         "description": "POSIX signal name",
         "format": "int32",
@@ -925,14 +925,14 @@
           "TTOU"
         ]
       },
-      "job_submission_response": {
+      "v0.0.36_job_submission_response": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/v0.0.36_error"
             }
           },
           "job_id": {
@@ -949,7 +949,7 @@
           }
         }
       },
-      "job_submission": {
+      "v0.0.36_job_submission": {
         "required": [
           "script"
         ],
@@ -960,37 +960,37 @@
           },
           "job": {
             "description": "Properties of an array job or non-HetJob",
-            "$ref": "#/components/schemas/job_properties"
+            "$ref": "#/components/schemas/v0.0.36_job_properties"
           },
           "jobs": {
             "description": "Properties of an HetJob",
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/job_properties"
+              "$ref": "#/components/schemas/v0.0.36_job_properties"
             }
           }
         }
       },
-      "jobs_response": {
+      "v0.0.36_jobs_response": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/v0.0.36_error"
             }
           },
           "jobs": {
             "type": "array",
             "description": "job descriptions",
             "items": {
-              "$ref": "#/components/schemas/job_response_properties"
+              "$ref": "#/components/schemas/v0.0.36_job_response_properties"
             }
           }
         }
       },
-      "job_response_properties": {
+      "v0.0.36_job_response_properties": {
         "type": "object",
         "properties": {
           "account": {
@@ -1172,7 +1172,7 @@
             "description": "job ID"
           },
           "job_resources": {
-            "$ref": "#/components/schemas/job_resources"
+            "$ref": "#/components/schemas/v0.0.36_job_resources"
           },
           "job_state": {
             "type": "string",
@@ -1434,7 +1434,7 @@
           }
         }
       },
-      "job_resources": {
+      "v0.0.36_job_resources": {
         "type": "object",
         "properties": {
           "nodes": {
@@ -1453,12 +1453,12 @@
             "type": "array",
             "description": "node allocations",
             "items": {
-              "$ref": "#/components/schemas/node_allocation"
+              "$ref": "#/components/schemas/v0.0.36_node_allocation"
             }
           }
         }
       },
-      "node_allocation": {
+      "v0.0.36_node_allocation": {
         "type": "object",
         "properties": {
           "memory": {
@@ -1479,7 +1479,7 @@
           }
         }
       },
-      "job_properties": {
+      "v0.0.36_job_properties": {
         "type": "object",
         "properties": {
           "account": {
@@ -1792,7 +1792,7 @@
           }
         }
       },
-      "node": {
+      "v0.0.36_node": {
         "type": "object",
         "properties": {
           "architecture": {
@@ -1936,21 +1936,21 @@
           }
         }
       },
-      "nodes_response": {
+      "v0.0.36_nodes_response": {
         "type": "object",
         "properties": {
           "errors": {
             "type": "array",
             "description": "slurm errors",
             "items": {
-              "$ref": "#/components/schemas/error"
+              "$ref": "#/components/schemas/v0.0.36_error"
             }
           },
           "nodes": {
             "type": "array",
             "description": "nodes info",
             "items": {
-              "$ref": "#/components/schemas/node"
+              "$ref": "#/components/schemas/v0.0.36_node"
             }
           }
         }
