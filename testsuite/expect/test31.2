@@ -47,7 +47,7 @@ proc cleanup { } {
 	global scontrol test_node test_script test_id scancel job_list
 
 	# Cancel any lingering jobs
-	spawn $scancel $job_list
+	cancel_job $job_list
 
 	restore_conf $config_file
 	exec $bin_rm $test_script $good_prolog $bad_prolog
