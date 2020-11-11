@@ -2970,7 +2970,7 @@
                 }
               },
               "id": {
-                "type": "integer",
+                "type": "string",
                 "description": "step id"
               },
               "name": {
