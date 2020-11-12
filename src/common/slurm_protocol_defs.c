@@ -4848,6 +4848,7 @@ extern void slurm_free_crontab_update_response_msg(
 
 	xfree(msg->err_msg);
 	xfree(msg->failed_lines);
+	xfree(msg->jobids);
 	xfree(msg);
 }
 
