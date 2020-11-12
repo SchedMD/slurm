@@ -284,6 +284,7 @@ static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn)
 
 	if (dn == dl->begin) {
 		/* at the beginning */
+		xassert(!prev);
 		dl->begin = dn->next;
 
 		if (dl->end == dn) {
@@ -293,10 +294,12 @@ static void _release_data_list_node(data_list_t *dl, data_list_node_t *dn)
 	} else if (dn == dl->end) {
 		/* at the end */
 		xassert(!dn->next);
+		xassert(prev);
 		dl->end = prev;
 		prev->next = NULL;
 	} else {
 		/* somewhere in middle */
+		xassert(prev);
 		xassert(prev != dn);
 		xassert(prev->next == dn);
 		xassert(dl->begin != dn);
