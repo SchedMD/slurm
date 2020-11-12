@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
  -- nss_slurm - avoid loading slurm.conf to avoid issues on configless systems,
     or systems with config files loaded on shared storage.
  -- scrontab - add cli_filter hooks.
+ -- job_submit/lua - expose a "cron_job" flag to identify jobs submitted
+    through scrontab.
 
 * Changes in Slurm 20.11.0rc1
 ==============================

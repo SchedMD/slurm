@@ -507,6 +507,8 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushnumber(L, job_desc->cpus_per_task);
 	} else if (!xstrcmp(name, "cpus_per_tres")) {
 		lua_pushstring(L, job_desc->cpus_per_tres);
+	} else if (!xstrcmp(name, "cron_job")) {
+		lua_pushboolean(L, job_desc->bitflags & CRON_JOB);
 	} else if (!xstrcmp(name, "default_account")) {
 		lua_pushstring(L, _get_default_account(job_desc->user_id));
 	} else if (!xstrcmp(name, "default_qos")) {
