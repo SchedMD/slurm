@@ -197,6 +197,7 @@ static int _operations_router_reject(const on_http_request_args_t *args,
 {
 	send_http_response_args_t send_args = {
 		.con = args->context->con,
+		.headers = list_create(NULL),
 		.http_major = args->http_major,
 		.http_minor = args->http_minor,
 		.status_code = err_code,
@@ -204,12 +205,20 @@ static int _operations_router_reject(const on_http_request_args_t *args,
 		.body_encoding = (body_encoding ? body_encoding : "text/plain"),
 		.body_length = (err ? strlen(err) : 0),
 	};
+	http_header_entry_t close = {
+		.name = "Connection",
+		.value = "Close",
+	};
+
+	/* Always warn that connection will be closed after the body is sent */
+	list_append(send_args.headers, &close);
 
 	(void) send_http_response(&send_args);
-	(void) send_http_connection_close(args->context);
 
 	/* close connection on error */
 	con_mgr_queue_close_fd(args->context->con);
+
+	FREE_NULL_LIST(send_args.headers);
 
 	return SLURM_ERROR;
 }
