@@ -4317,6 +4317,12 @@ real memory limit).
 The default value is 0, which disables enforcement of virtual memory limits.
 The value may not exceed 65533 percent.
 
+\fBNOTE\fR: This parameter is dependent on \fBOverMemoryKill\fR being
+configured in \fBJobAcctGatherParams\fR. It is also possible
+to configure the \fBTaskPlugin\fR to use \fBtask/cgroup\fR for memory
+enforcement. \fBVSizeFactor\fR will not have an effect on memory enforcement
+done through cgroups.
+
 .TP
 \fBWaitTime\fR
 Specifies how many seconds the srun command should by default wait after
