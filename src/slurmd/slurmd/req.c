@@ -4777,6 +4777,12 @@ extern void record_launched_jobs(void)
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
 	while ((stepd = list_next(i))) {
+		int fd;
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   &stepd->step_id, &stepd->protocol_version);
+		if (fd == -1)
+			continue; /* step gone */
+		close(fd);
 		_launch_complete_add(stepd->step_id.job_id);
 	}
 	list_iterator_destroy(i);
