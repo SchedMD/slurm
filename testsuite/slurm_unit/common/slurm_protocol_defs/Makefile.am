@@ -1,0 +1,19 @@
+AUTOMAKE_OPTIONS = foreign
+
+AM_CPPFLAGS = -I$(top_srcdir) -ldl -lpthread
+LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
+
+check_PROGRAMS = \
+	$(TESTS)
+
+TESTS =
+
+if HAVE_CHECK
+MYCFLAGS  = @CHECK_CFLAGS@  #-Wall -ansi -pedantic -std=c99
+#MYCFLAGS += -D_ISO99_SOURCE -Wunused-but-set-variable
+TESTS += xlate_array_task_str-test
+
+xlate_array_task_str_test_CFLAGS = $(MYCFLAGS)
+xlate_array_task_str_test_LDADD  = $(LDADD) @CHECK_LIBS@
+
+endif
