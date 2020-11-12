@@ -191,6 +191,17 @@ static int _set_requeue_cron(void *x, void *y)
 	return 0;
 }
 
+static int _copy_jobids(void *x, void *y)
+{
+	job_record_t *job_ptr = (job_record_t *) x;
+	crontab_update_response_msg_t *response =
+		(crontab_update_response_msg_t *) y;
+
+	response->jobids[response->jobids_count++] = job_ptr->job_id;
+
+	return 0;
+}
+
 extern void crontab_submit(crontab_update_request_msg_t *request,
 			   crontab_update_response_msg_t *response,
 			   char *alloc_node, uint16_t protocol_version)
@@ -206,7 +217,7 @@ extern void crontab_submit(crontab_update_request_msg_t *request,
 	(void) mkdir(dir, 0700);
 	xfree(dir);
 
-	response->return_code = SLURM_SUCCESS;
+	memset(response, 0, sizeof(*response));
 
 	debug("%s: updating crontab for uid=%u", __func__, request->uid);
 
@@ -257,8 +268,12 @@ extern void crontab_submit(crontab_update_request_msg_t *request,
 		/*
 		 * Flip the flag on now that the old ones have been removed.
 		 */
-		if (args.new_jobs)
+		if (args.new_jobs) {
 			list_for_each(args.new_jobs, _set_requeue_cron, &on);
+			response->jobids = xcalloc(list_count(args.new_jobs),
+						   sizeof(uint32_t));
+			list_for_each(args.new_jobs, _copy_jobids, response);
+		}
 
 		/*
 		 * save the new file (if defined)
