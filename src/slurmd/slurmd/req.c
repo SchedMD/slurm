@@ -933,11 +933,11 @@ static void _setup_x11_display(uint32_t job_id, uint32_t step_id_in,
 static int _check_job_credential(launch_tasks_request_msg_t *req,
 				 uid_t auth_uid, gid_t auth_gid,
 				 int node_id, hostset_t *step_hset,
-				 uint16_t protocol_version)
+				 uint16_t protocol_version,
+				 bool super_user)
 {
 	slurm_cred_arg_t arg;
 	hostset_t	s_hset = NULL;
-	bool		user_ok = _slurm_authorized_user(auth_uid);
 	int		host_index = -1;
 	slurm_cred_t    *cred = req->cred;
 	uint32_t	jobid = req->step_id.job_id;
@@ -945,7 +945,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	int		tasks_to_launch = req->tasks_to_launch[node_id];
 	uint32_t	job_cpus = 0, step_cpus = 0;
 
-	if (user_ok && (req->flags & LAUNCH_NO_ALLOC)) {
+	if (super_user && (req->flags & LAUNCH_NO_ALLOC)) {
 		/* If we didn't allocate then the cred isn't valid, just skip
 		 * checking.  This is only cool for root or SlurmUser */
 		debug("%s: FYI, user %d is an authorized user running outside of an allocation.",
@@ -1419,7 +1419,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->step_id.job_id);
 #endif
 	if (_check_job_credential(req, msg->auth_uid, req_gid, node_id,
-				  &step_hset, msg->protocol_version) < 0) {
+				  &step_hset, msg->protocol_version,
+				  super_user) < 0) {
 		errnum = errno;
 		error("Invalid job credential from %u@%s: %m",
 		      msg->auth_uid, host);
