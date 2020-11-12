@@ -130,7 +130,6 @@ int	unpacklongdouble_array(long double **valp, uint32_t* size_val,
 			       Buf buffer);
 
 extern void packmem(void *valp, uint32_t size_val, buf_t *buffer);
-extern int unpackmem(void *valp, uint32_t *size_valp, buf_t *buffer);
 int	unpackmem_ptr(char **valp, uint32_t *size_valp, Buf buffer);
 int	unpackmem_xmalloc(char **valp, uint32_t *size_valp, Buf buffer);
 int	unpackmem_malloc(char **valp, uint32_t *size_valp, Buf buffer);
@@ -239,13 +238,6 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 	xassert(sizeof(*size_valp) == sizeof(uint32_t));\
 	xassert(buf->magic == BUF_MAGIC);		\
 	if (unpacklongdouble_array(valp,size_valp,buf))	\
-		goto unpack_error;			\
-} while (0)
-
-#define safe_unpackmem(valp,size_valp,buf) do {		\
-	xassert(sizeof(*size_valp) == sizeof(uint32_t));\
-	xassert(buf->magic == BUF_MAGIC);		\
-	if (unpackmem(valp,size_valp,buf))		\
 		goto unpack_error;			\
 } while (0)
 
