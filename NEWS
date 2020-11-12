@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- x11 forwarding: fix race on setup that prevented X11 forwarding from
     working within the new Interactive Step.
+ -- Fix various Coverity issues.
 
 * Changes in Slurm 20.11.0rc2
 ==============================

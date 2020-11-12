@@ -1403,11 +1403,13 @@ static void _lllp_generate_cpu_bind(launch_tasks_request_msg_t *req,
 	}
 	if (masks_str[0] != '\0') {
 		req->cpu_bind = masks_str;
+		masks_str = NULL;
 		req->cpu_bind_type |= CPU_BIND_MASK;
 	} else {
 		req->cpu_bind = NULL;
 		req->cpu_bind_type &= ~CPU_BIND_VERBOSE;
 	}
+	xfree(masks_str);
 
 	/* clear mask generation bits */
 	req->cpu_bind_type &= ~CPU_BIND_TO_THREADS;
@@ -1417,5 +1419,5 @@ static void _lllp_generate_cpu_bind(launch_tasks_request_msg_t *req,
 
 	slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 	info("_lllp_generate_cpu_bind jobid [%u]: %s, %s",
-	     req->step_id.job_id, buf_type, masks_str);
+	     req->step_id.job_id, buf_type, req->cpu_bind);
 }

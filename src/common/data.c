@@ -1466,10 +1466,10 @@ extern size_t data_convert_tree(data_t *data, const data_type_t match)
 
 	switch (data_get_type(data)) {
 	case DATA_TYPE_DICT:
-		data_dict_for_each(data, _convert_dict_entry, &args);
+		(void)data_dict_for_each(data, _convert_dict_entry, &args);
 		break;
 	case DATA_TYPE_LIST:
-		data_list_for_each(data, _convert_list_entry, &args);
+		(void)data_list_for_each(data, _convert_list_entry, &args);
 		break;
 	default:
 		if (match == data_convert_type(data, match))
