@@ -252,85 +252,6 @@ static uint64_t _get_tres_cnt(int type, void *object, int tres_pos,
 	return tmp_uint64;
 }
 
-/* Translate bitmap representation from hex to decimal format, replacing
- * array_task_str. */
-static void _xlate_task_str(slurmdb_job_rec_t *job_ptr)
-{
-	static int bitstr_len = -1;
-	int buf_size, len;
-	int i, i_first, i_last, i_prev, i_step = 0;
-	bitstr_t *task_bitmap;
-	char *in_buf = job_ptr->array_task_str;
-	char *out_buf = NULL;
-
-	if (!in_buf)
-		return;
-
-	i = strlen(in_buf);
-	if (i < 3 || in_buf[1] != 'x')
-		return;
-
-	task_bitmap = bit_alloc(i * 4);
-	(void)bit_unfmt_hexmask(task_bitmap, in_buf);
-
-	/* Check first for a step function */
-	i_first = bit_ffs(task_bitmap);
-	i_last  = bit_fls(task_bitmap);
-	if (((i_last - i_first) > 10) &&
-	    !bit_test(task_bitmap, i_first + 1)) {
-		bool is_step = true;
-		i_prev = i_first;
-		for (i = i_first + 1; i <= i_last; i++) {
-			if (!bit_test(task_bitmap, i))
-				continue;
-			if (i_step == 0) {
-				i_step = i - i_prev;
-			} else if ((i - i_prev) != i_step) {
-				is_step = false;
-				break;
-			}
-			i_prev = i;
-		}
-		if (is_step) {
-			xstrfmtcat(out_buf, "%d-%d:%d",
-				   i_first, i_last, i_step);
-		}
-	}
-
-	if (bitstr_len == -1) {
-		char *bitstr_len_str = getenv("SLURM_BITSTR_LEN");
-		if (bitstr_len_str)
-			bitstr_len = atoi(bitstr_len_str);
-		if (bitstr_len < 0)
-			bitstr_len = 64;
-		else
-			bitstr_len = MIN(bitstr_len, 4096);
-	}
-
-	if (bitstr_len > 0) {
-		/* Print the first bitstr_len bytes of the bitmap string */
-		buf_size = bitstr_len;
-		out_buf = xmalloc(buf_size);
-		bit_fmt(out_buf, buf_size, task_bitmap);
-		len = strlen(out_buf);
-		if (len > (buf_size - 3))
-			for (i = 0; i < 3; i++)
-				out_buf[buf_size - 2 - i] = '.';
-	} else {
-		/* Print the full bitmap's string representation.
-		 * For huge bitmaps this can take roughly one minute,
-		 * so let the client do the work */
-		out_buf = bit_fmt_full(task_bitmap);
-	}
-
-	if (job_ptr->array_max_tasks)
-		xstrfmtcat(out_buf, "%c%u", '%', job_ptr->array_max_tasks);
-
-	bit_free(task_bitmap);
-	xfree(job_ptr->array_task_str);
-	job_ptr->array_task_str = out_buf;
-}
-
 static void _print_tres_field(char *tres_in, char *nodes, bool convert,
 			      uint32_t tres_flags)
 {
@@ -1023,7 +944,9 @@ extern void print_fields(type_t type, void *object)
 
 			if (job) {
 				if (job->array_task_str) {
-					_xlate_task_str(job);
+					xlate_array_task_str(
+						&job->array_task_str,
+						job->array_max_tasks, NULL);
 					snprintf(id, FORMAT_STRING_SIZE,
 						 "%u_[%s]",
 						 job->array_job_id,

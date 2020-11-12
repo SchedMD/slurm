@@ -6055,3 +6055,98 @@ extern char *slurm_get_selected_step_id(
 endit:
 	return job_id_str;
 }
+
+extern void xlate_array_task_str(char **array_task_str,
+				 uint32_t array_max_tasks, void **array_bitmap)
+{
+	static int bitstr_len = -1;
+	int buf_size, len;
+	int i, i_first, i_last, i_prev, i_step = 0;
+	bitstr_t *task_bitmap;
+	char *out_buf = NULL;
+
+	xassert(array_task_str);
+
+	if (!array_task_str || !*array_task_str || !*array_task_str[0]) {
+		if (array_bitmap)
+			*array_bitmap = NULL;
+		return;
+	}
+
+	i = strlen(*array_task_str);
+	if ((i < 3) || ((*array_task_str)[1] != 'x')) {
+		if (array_bitmap)
+			*array_bitmap = NULL;
+		return;
+	}
+
+	task_bitmap = bit_alloc(i * 4);
+	if (bit_unfmt_hexmask(task_bitmap, *array_task_str) == -1)
+		error("%s: bit_unfmt_hexmask error on '%s'", __func__,
+		      *array_task_str);
+
+	if (array_bitmap)
+		*array_bitmap = (void *)task_bitmap;
+
+	/* Check first for a step function */
+	i_first = bit_ffs(task_bitmap);
+	i_last  = bit_fls(task_bitmap);
+	if (((i_last - i_first) > 10) && (bit_set_count(task_bitmap) > 5) &&
+	    !bit_test(task_bitmap, i_first + 1)) {
+		bool is_step = true;
+		i_prev = i_first;
+		for (i = i_first + 1; i <= i_last; i++) {
+			if (!bit_test(task_bitmap, i))
+				continue;
+			if (i_step == 0) {
+				i_step = i - i_prev;
+			} else if ((i - i_prev) != i_step) {
+				is_step = false;
+				break;
+			}
+			i_prev = i;
+		}
+		if (is_step) {
+			xstrfmtcat(out_buf, "%d-%d:%d",
+				   i_first, i_last, i_step);
+			goto out;
+		}
+	}
+
+	if (bitstr_len == -1) {
+		char *bitstr_len_str = getenv("SLURM_BITSTR_LEN");
+		if (bitstr_len_str)
+			bitstr_len = atoi(bitstr_len_str);
+		if (bitstr_len < 0)
+			bitstr_len = 64;
+		else
+			bitstr_len = MIN(bitstr_len, 4096);
+	}
+
+	if (bitstr_len > 0) {
+		/* Print the first bitstr_len bytes of the bitmap string */
+		buf_size = bitstr_len;
+		out_buf = xmalloc(buf_size);
+		bit_fmt(out_buf, buf_size, task_bitmap);
+		len = strlen(out_buf);
+		if (len > (buf_size - 3)) {
+			for (i = 0; i < 3; i++)
+				out_buf[buf_size - 2 - i] = '.';
+		}
+	} else {
+		/* Print the full bitmap's string representation.
+		 * For huge bitmaps this can take roughly one minute,
+		 * so let the client do the work */
+		out_buf = bit_fmt_full(task_bitmap);
+	}
+
+out:
+	if (array_max_tasks)
+		xstrfmtcat(out_buf, "%%%u", array_max_tasks);
+
+	xfree(*array_task_str);
+	*array_task_str = out_buf;
+
+	if (!array_bitmap)
+		bit_free(task_bitmap);
+}
