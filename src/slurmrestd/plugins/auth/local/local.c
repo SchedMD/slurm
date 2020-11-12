@@ -228,18 +228,21 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 			return ESLURM_AUTH_CRED_INVALID;
 		} else if (status.st_uid == getuid()) {
 			/* FIFO is owned by same user */
-			info("%s: [%s] accepted connection from uid:%u",
-			     __func__, name, status.st_uid);
-
 			ctxt->user_name = uid_to_string_or_null(status.st_uid);
 
 			if (ctxt->user_name) {
 				plugin_data_t *data = xmalloc(sizeof(*data));
 				data->magic = MAGIC;
 				ctxt->plugin_data = data;
+
+				info("[%s] accepted connection from user: %s[%u]",
+				     name, ctxt->user_name, status.st_uid);
 				return SLURM_SUCCESS;
-			} else
+			} else {
+				error("[%s] rejecting connection from unresolvable uid:%u",
+				      name, status.st_uid);
 				return ESLURM_USER_ID_MISSING;
+			}
 		}
 
 		return ESLURM_AUTH_CRED_INVALID;
