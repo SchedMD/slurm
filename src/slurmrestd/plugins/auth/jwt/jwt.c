@@ -117,8 +117,8 @@ extern int slurm_rest_auth_p_authenticate(on_http_request_args_t *args,
 		return ESLURM_AUTH_CRED_INVALID;
 	}
 
-	debug3("%s: [%s] attempting user_name %s token authentication",
-	       __func__, args->context->con->name, user_name);
+	info("[%s] attempting user_name %s token authentication pass through",
+	     args->context->con->name, user_name);
 
 	xassert(!ctxt->user_name);
 	xassert(!ctxt->plugin_data);
