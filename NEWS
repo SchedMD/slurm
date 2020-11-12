@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
     https://openapi-generator.tech/.
  -- nss_slurm - avoid loading slurm.conf to avoid issues on configless systems,
     or systems with config files loaded on shared storage.
+ -- scrontab - add cli_filter hooks.
 
 * Changes in Slurm 20.11.0rc1
 ==============================

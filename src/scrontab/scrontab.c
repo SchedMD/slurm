@@ -151,6 +151,8 @@ static void _reset_options(void)
                 error("cli_filter plugin terminated with error");
 		exit(1);
 	}
+
+	opt.job_flags |= CRON_JOB;
 }
 
 static char *_job_script_header(void)
@@ -323,6 +325,12 @@ edit:
 			break;
 		}
 
+		if (cli_filter_g_pre_submit(&opt, 0)) {
+			badline = xstrdup_printf("%d-%d", line_start, lineno);
+			printf("cli_filter plugin terminated with error\n");
+			break;
+		}
+
 		/*
 		 * track lines associated with this job submission, starting
 		 * starting at the first SCRON directive and completing here
@@ -393,6 +401,9 @@ edit:
 		slurm_free_crontab_update_response_msg(response);
 		goto edit;
 	}
+
+	for (int i = 0; i < response->jobids_count; i++)
+		cli_filter_g_post_submit(0, response->jobids[i], NO_VAL);
 
 	slurm_free_crontab_update_response_msg(response);
 	xfree(crontab);
