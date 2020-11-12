@@ -2,7 +2,7 @@
 # DEPRECATED, NOT MAINTAINED, WILL BE REMOVED IN A FUTURE RELEASE.
 
 Name:		slurm
-Version:	19.05.7
+Version:	19.05.8
 %define rel	1
 Release:	%{rel}%{?dist}
 Summary:	Slurm Workload Manager
