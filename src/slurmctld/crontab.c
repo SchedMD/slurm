@@ -91,6 +91,9 @@ static int _handle_job(void *x, void *y)
 	xfree(job->alloc_node);
 	job->alloc_node = xstrdup(args->alloc_node);
 
+	/* enforce this flag so the job submit plugin can differentiate */
+	job->bitflags |= CRON_JOB;
+
 	/* give job_submit a chance to play with it first */
 	args->return_code = validate_job_create_req(job, args->uid,
 						    args->err_msg);
@@ -175,11 +178,15 @@ static int _clear_requeue_cron(void *x, void *y)
 	return 0;
 }
 
-static int _set_requeue_cron(void *x, void *ignored)
+static int _set_requeue_cron(void *x, void *y)
 {
 	job_record_t *job_ptr = (job_record_t *) x;
+	bool *set = (bool *) y;
 
-	job_ptr->bit_flags |= CRON_JOB;
+	if (*set)
+		job_ptr->bit_flags |= CRON_JOB;
+	else
+		job_ptr->bit_flags &= ~CRON_JOB;
 
 	return 0;
 }
@@ -235,15 +242,23 @@ extern void crontab_submit(crontab_update_request_msg_t *request,
 		debug("%s: failed crontab submission, purged %d records",
 		      __func__, purged);
 	} else {
+		bool off = false, on = true;
+
+		/*
+		 * Flip the CRON_JOB flag off temporarily to avoid cancelling
+		 * these new jobs.
+		 */
+		if (args.new_jobs)
+			list_for_each(args.new_jobs, _set_requeue_cron, &off);
+
 		/* on success, kill/modify old jobs */
 		list_for_each(job_list, _clear_requeue_cron, &request->uid);
 
 		/*
-		 * now set the flag. don't do this upfront to avoid finding
-		 * them with _clear_requeue_cron()
+		 * Flip the flag on now that the old ones have been removed.
 		 */
 		if (args.new_jobs)
-			list_for_each(args.new_jobs, _set_requeue_cron, NULL);
+			list_for_each(args.new_jobs, _set_requeue_cron, &on);
 
 		/*
 		 * save the new file (if defined)
