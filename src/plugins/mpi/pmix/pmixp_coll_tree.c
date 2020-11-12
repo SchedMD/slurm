@@ -76,6 +76,7 @@ int pmixp_coll_tree_unpack(Buf buf, pmixp_coll_type_t *type,
 	uint32_t nprocs = 0;
 	uint32_t tmp;
 	int i, rc;
+	char *temp_ptr;
 
 	/* 1. extract the type of collective */
 	if (SLURM_SUCCESS != (rc = unpack32(&tmp, buf))) {
@@ -96,13 +97,13 @@ int pmixp_coll_tree_unpack(Buf buf, pmixp_coll_type_t *type,
 
 	for (i = 0; i < (int)nprocs; i++) {
 		/* 3. get namespace/rank of particular process */
-		rc = unpackmem(procs[i].nspace, &tmp, buf);
-		if (SLURM_SUCCESS != rc) {
+		if ((rc = unpackmem_ptr(&temp_ptr, &tmp, buf)) ||
+		    (strlcpy(procs[i].nspace, temp_ptr,
+			     PMIXP_MAX_NSLEN + 1) > PMIXP_MAX_NSLEN)) {
 			PMIXP_ERROR("Cannot unpack namespace for process #%d",
 				    i);
 			return rc;
 		}
-		procs[i].nspace[tmp] = '\0';
 
 		unsigned int tmp;
 		rc = unpack32(&tmp, buf);

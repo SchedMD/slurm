@@ -36,6 +36,10 @@ documents those changes that are of interest to users and administrators.
  -- scrontab - add cli_filter hooks.
  -- job_submit/lua - expose a "cron_job" flag to identify jobs submitted
     through scrontab.
+ -- PMIx - fix potential buffer overflows from use of unpackmem().
+    CVE-2020-27745.
+ -- X11 forwarding - fix potential leak of the magic cookie when sent as an
+    argument to the xauth command. CVE-2020-27746.
 
 * Changes in Slurm 20.11.0rc1
 ==============================
@@ -162,6 +166,9 @@ documents those changes that are of interest to users and administrators.
  -- Add --ntasks-per-gpu option.
  -- Add --gpu-bind=single option.
 
+* Changes in Slurm 20.02.7
+==========================
+
 * Changes in Slurm 20.02.6
 ==========================
  -- Fix sbcast --fanout option.
@@ -243,6 +250,10 @@ documents those changes that are of interest to users and administrators.
     from config.
  -- cons_tres - fix regression regarding gpus with --cpus-per-task.
  -- Don't send job completion email for revoked federation jobs.
+ -- PMIx - fix potential buffer overflows from use of unpackmem().
+    CVE-2020-27745.
+ -- X11 forwarding - fix potential leak of the magic cookie when sent as an
+    argument to the xauth command. CVE-2020-27746.
 
 * Changes in Slurm 20.02.5
 ==========================
@@ -634,10 +645,17 @@ documents those changes that are of interest to users and administrators.
  -- Make it so you can "stack" the energy plugins
  -- Add energy accounting plugin for AMD GPU
 
+* Changes in Slurm 19.05.9
+==========================
+
 * Changes in Slurm 19.05.8
 ==========================
  -- sbatch - handle --uid/--gid in #SBATCH directives properly.
  -- Fix HDF5 type version build error.
+ -- PMIx - fix potential buffer overflows from use of unpackmem().
+    CVE-2020-27745.
+ -- X11 forwarding - fix potential leak of the magic cookie when sent as an
+    argument to the xauth command. CVE-2020-27746.
 
 * Changes in Slurm 19.05.7
 ==========================
