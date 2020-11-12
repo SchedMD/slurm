@@ -1,4 +1,4 @@
-.TH sacct "1" "Slurm Commands" "October 2020" "Slurm Commands"
+.TH sacct "1" "Slurm Commands" "November 2020" "Slurm Commands"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -636,6 +636,11 @@ Heterogeneous jobs are in the form:
 \f2HetJobID+HetJobOffset\fP\c
 \&.
 
+When printing job arrays, performance of the command can be measurably improved
+for systems with large numbers of jobs when a single job ID is specified. By
+default, this field size will be limited to 64 bytes. Use the environment
+variable SLURM_BITSTR_LEN to specify larger field sizes.
+
 .TP
 \f3JobIDRaw\fP
 The identification number of the job or job step.  Prints the JobID in the
@@ -1101,6 +1106,14 @@ Same as \fB\-\-federation\fR
 .TP
 \fBSACCT_LOCAL\fR
 Same as \fB\-\-local\fR
+
+.TP
+\fBSLURM_BITSTR_LEN\fR
+Specifies the string length to be used for holding a job array's task ID
+expression. The default value is 64 bytes. A value of 0 will print the full
+expression with any length required. Larger values may adversely impact the
+application performance.
+
 .TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.

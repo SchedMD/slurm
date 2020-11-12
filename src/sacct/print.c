@@ -297,6 +297,16 @@ static void _xlate_task_str(slurmdb_job_rec_t *job_ptr)
 		}
 	}
 
+	if (bitstr_len == -1) {
+		char *bitstr_len_str = getenv("SLURM_BITSTR_LEN");
+		if (bitstr_len_str)
+			bitstr_len = atoi(bitstr_len_str);
+		if (bitstr_len < 0)
+			bitstr_len = 64;
+		else
+			bitstr_len = MIN(bitstr_len, 4096);
+	}
+
 	if (bitstr_len > 0) {
 		/* Print the first bitstr_len bytes of the bitmap string */
 		buf_size = bitstr_len;
