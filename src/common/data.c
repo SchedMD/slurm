@@ -637,7 +637,6 @@ extern data_t *data_list_prepend(data_t *data)
 	data_t *ndata = NULL;
 	_check_magic(data);
 
-	xassert(data->type == DATA_TYPE_LIST);
 	if (!data || data->type != DATA_TYPE_LIST)
 		return NULL;
 
