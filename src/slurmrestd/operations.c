@@ -449,6 +449,9 @@ extern int operations_router(on_http_request_args_t *args)
 	     get_http_method_string(args->method), args->path);
 
 	if ((rc = rest_authenticate_http_request(args))) {
+		error("%s: [%s] authentication failed: %s",
+		      __func__, args->context->con->name,
+		      slurm_strerror(rc));
 		_operations_router_reject(args, "Authentication failure",
 					  HTTP_STATUS_CODE_ERROR_UNAUTHORIZED,
 					  NULL);
