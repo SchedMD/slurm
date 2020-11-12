@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix HDF5 type version build error.
  -- PMIx - fix potential buffer overflows from use of unpackmem().
     CVE-2020-27745.
+ -- X11 forwarding - fix potential leak of the magic cookie when sent as an
+    argument to the xauth command. CVE-2020-27746.
 
 * Changes in Slurm 19.05.7
 ==========================
