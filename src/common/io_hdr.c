@@ -181,13 +181,16 @@ io_init_msg_unpack(struct slurm_io_init_msg *hdr, Buf buffer)
 {
 	/* If this function changes, io_init_msg_packed_size must change. */
 	uint32_t val;
+	char *tmp_ptr = NULL;
+
 	safe_unpack16(&hdr->version, buffer);
 	safe_unpack32(&hdr->nodeid, buffer);
 	safe_unpack32(&hdr->stdout_objs, buffer);
 	safe_unpack32(&hdr->stderr_objs, buffer);
-	safe_unpackmem((char *) hdr->cred_signature, &val, buffer);
+	safe_unpackmem_ptr(&tmp_ptr, &val, buffer);
 	if (val != SLURM_IO_KEY_SIZE)
 		goto unpack_error;
+	memcpy(hdr->cred_signature, tmp_ptr, SLURM_IO_KEY_SIZE);
 
 	return SLURM_SUCCESS;
 
