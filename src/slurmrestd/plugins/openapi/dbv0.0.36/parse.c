@@ -693,7 +693,7 @@ static const parser_t parse_cluster_accounting_rec[] = {
 	_add_parse(UINT64, alloc_secs, "time/allocated"),
 	_add_parse(UINT64, down_secs, "time/down"),
 	_add_parse(UINT64, idle_secs, "time/idle"),
-	_add_parse(UINT64, over_secs, "time/overcommited"),
+	_add_parse(UINT64, over_secs, "time/overcommitted"),
 	_add_parse(UINT64, pdown_secs, "time/planned_down"),
 	_add_parse(UINT64, period_start, "time/start"),
 	_add_parse(UINT64, period_start, "time/reserved"),
