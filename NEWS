@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
  -- Prevent a job from requesting too much memory if it
     requests MEM_PER_CPUS and --threads-per-core < the number of threads
     on a core.
+ -- slurmrestd - Avoid sending close header after body in
+    _operations_router_reject().
 
 * Changes in Slurm 20.11.0rc2
 ==============================
