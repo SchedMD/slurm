@@ -3356,8 +3356,9 @@ Cores are consumable resources.
 On nodes with hyper\-threads, each thread is counted as a CPU to
 satisfy a job's resource requirement, but multiple jobs are not
 allocated threads on the same core.
-The count of CPUs allocated to a job may be rounded up to account for every
-CPU on an allocated core.
+The count of CPUs allocated to a job is rounded up to account for every
+CPU on an allocated core. This will also impact total allocated memory when
+--mem-per-cpu is used to be multiply of total number of CPUs on allocated cores.
 .TP
 \fBCR_Core_Memory\fR
 Cores and memory are consumable resources.
