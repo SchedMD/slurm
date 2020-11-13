@@ -5248,7 +5248,9 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 		}
 	}
 
-	if (!ntasks_per_tres || (*ntasks_per_tres == NO_VAL16)) {
+	/* *num_tasks and *ntasks_per_tres could be 0 on requeue */
+	if (!ntasks_per_tres || !*ntasks_per_tres ||
+	    (*ntasks_per_tres == NO_VAL16)) {
 		/* do nothing */
 	} else if (list_count(*gres_list) != 0) {
 		/* Set num_tasks = gpus * ntasks/gpu */
@@ -5258,7 +5260,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 		else
 			error("%s: Can't set num_tasks = gpus * *ntasks_per_tres because there are no allocated GPUs",
 			      __func__);
-	} else if (*num_tasks != NO_VAL) { // list_count(*gres_list) == 0
+	} else if (*num_tasks && (*num_tasks != NO_VAL)) {
 		/*
 		 * If job_gres_list empty, and ntasks_per_tres is specified,
 		 * then derive GPUs according to how many tasks there are.
