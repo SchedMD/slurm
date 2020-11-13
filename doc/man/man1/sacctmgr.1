@@ -102,6 +102,7 @@ Identical to the \fBadd\fR command.
 .TP
 \fBdelete\fR <\fIENTITY\fR> \fBwhere\fR <\fISPECS\fR>
 Delete the specified entities.
+Identical to the \fBremove\fR command.
 
 .TP
 \fBdump\fR <\fIENTITY\fR> [\fBFile\fR=\fIFILENAME\fR]
@@ -132,6 +133,11 @@ Modify an entity.
 .TP
 \fBreconfigure\fR
 Reconfigures the SlurmDBD if running with one.
+
+.TP
+\fBremove\fR <\fIENTITY\fR> \fBwhere\fR <\fISPECS\fR>
+Delete the specified entities.
+Identical to the \fBdelete\fR command.
 
 .TP
 \fBshow\fR <\fIENTITY\fR> [<\fISPECS\fR>]
@@ -1239,7 +1245,7 @@ override any limits used by the requested partition's QOS limits.
 If set jobs using this QOS will be able to
 override the requested partition's TimeLimit.
 .TP
-\fIRequiresReservaton\fP
+\fIRequiresReservation\fP
 If set jobs using this QOS must designate a reservation when submitting a job.
 This option can be useful in restricting usage of a QOS that may have greater
 preemptive capability or additional resources to be allowed only within a
@@ -1885,18 +1891,23 @@ Get information about which associations were affected by the transactions.
 
 .TP
 \fIAction\fP
+Displays the type of Action that took place.
 
 .TP
 \fIActor\fP
+Displays the Actor to generate a transaction.
 
 .TP
 \fIInfo\fP
+Displays details of the transaction.
 
 .TP
 \fITimeStamp\fP
+Displays when the transaction occurred.
 
 .TP
 \fIWhere\fP
+Displays details of the constraints for the transaction.
 .P
 NOTE: If using the WithAssoc option you can also view the information
 about the various associations the transaction affected.  The
