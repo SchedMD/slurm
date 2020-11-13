@@ -8078,7 +8078,10 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 					sock_gres->job_specs->gres_per_node;
 			}
 		}
-		if (cpus_per_gres) {
+		/* Avoid max_node_gres with ntasks_per_gres and whole node */
+		if (cpus_per_gres &&
+		    ((sock_gres->job_specs->ntasks_per_gres == NO_VAL16) ||
+		     !whole_node)) {
 			int cpu_cnt;
 			cpu_cnt = bit_set_count(core_bitmap);
 			cpu_cnt *= cpus_per_core;
