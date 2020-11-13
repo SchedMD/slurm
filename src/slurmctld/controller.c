@@ -194,7 +194,6 @@ pthread_cond_t assoc_cache_cond = PTHREAD_COND_INITIALIZER;
 
 /* Local variables */
 static pthread_t assoc_cache_thread = (pthread_t) 0;
-static bool	bu_acct_reg = false;
 static int	bu_rc = SLURM_SUCCESS;
 static int	bu_thread_cnt = 0;
 static pthread_cond_t bu_cond = PTHREAD_COND_INITIALIZER;
@@ -2701,7 +2700,6 @@ static void *_shutdown_bu_thread(void *arg)
 {
 	int bu_inx, rc = SLURM_SUCCESS, rc2 = SLURM_SUCCESS;
 	slurm_msg_t req;
-	bool acct_reg = false;
 
 	bu_inx = *((int *) arg);
 	xfree(arg);
@@ -2723,7 +2721,6 @@ static void *_shutdown_bu_thread(void *arg)
 	} else if (rc2 == SLURM_SUCCESS) {
 		debug("backup controller %s has relinquished control",
 		      slurm_conf.control_machine[bu_inx]);
-		acct_reg = true;
 	} else {
 		error("%s (%s): %s", __func__,
 		      slurm_conf.control_machine[bu_inx],
@@ -2732,8 +2729,6 @@ static void *_shutdown_bu_thread(void *arg)
 	}
 
 	slurm_mutex_lock(&bu_mutex);
-	if (acct_reg)
-		bu_acct_reg = true;
 	if (rc != SLURM_SUCCESS)
 		bu_rc = rc;
 	bu_thread_cnt--;
@@ -2752,7 +2747,6 @@ static int _shutdown_backup_controller(void)
 {
 	int i, *arg;
 
-	bu_acct_reg = false;
 	bu_rc = SLURM_SUCCESS;
 	for (i = 1; i < slurm_conf.control_cnt; i++) {
 		if ((slurm_conf.control_addr[i] == NULL) ||
@@ -2772,15 +2766,6 @@ static int _shutdown_backup_controller(void)
 		slurm_cond_wait(&bu_cond, &bu_mutex);
 	}
 	slurm_mutex_unlock(&bu_mutex);
-
-	if (bu_acct_reg) {
-		/*
-		 * In case primary controller really did not terminate,
-		 * but just temporarily became non-responsive
-		 */
-		clusteracct_storage_g_register_ctld(acct_db_conn,
-		                                    slurm_conf.slurmctld_port);
-	}
 
 	return bu_rc;
 }
