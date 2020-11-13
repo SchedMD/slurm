@@ -296,11 +296,9 @@ done:
 	return rc;
 }
 
-extern char *acct_gather_profile_to_string(uint32_t profile)
+extern void acct_gather_profile_to_string_r(uint32_t profile,
+					    char *profile_str)
 {
-	static char profile_str[128];
-
-	profile_str[0] = '\0';
 	if (profile == ACCT_GATHER_PROFILE_NOT_SET)
 		strcat(profile_str, "NotSet");
 	else if (profile == ACCT_GATHER_PROFILE_NONE)
@@ -324,6 +322,15 @@ extern char *acct_gather_profile_to_string(uint32_t profile)
 			strcat(profile_str, "Task");
 		}
 	}
+}
+
+extern char *acct_gather_profile_to_string(uint32_t profile)
+{
+	static char profile_str[128];
+
+	profile_str[0] = '\0';
+	acct_gather_profile_to_string_r(profile, profile_str);
+
 	return profile_str;
 }
 

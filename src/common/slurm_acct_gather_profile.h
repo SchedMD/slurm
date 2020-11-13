@@ -96,6 +96,9 @@ extern int acct_gather_profile_fini(void);
 
 /* translate uint32_t profile to string (DO NOT free) */
 extern char *acct_gather_profile_to_string(uint32_t profile);
+/* translate uint32_t profile to string */
+extern void acct_gather_profile_to_string_r(uint32_t profile,
+					    char *profile_str);
 
 /* translate string of words to uint32_t filled in with bits set to profile */
 extern uint32_t acct_gather_profile_from_string(const char *profile_str);

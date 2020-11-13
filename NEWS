@@ -18,6 +18,9 @@ documents those changes that are of interest to users and administrators.
     on a core.
  -- slurmrestd - Avoid sending close header after body in
     _operations_router_reject().
+ -- slurmrestd - Set new job environment for SLURM_JOB_NAME, SLURM_OPEN_MODE,
+    SLURM_JOB_DEPENDENCY, SLURM_PROFILE, SLURM_ACCTG_FREQ, SLURM_NETWORK and
+    SLURM_CPU_FREQ_REQ to match sbatch.
 
 * Changes in Slurm 20.11.0rc2
 ==============================

@@ -620,11 +620,67 @@ cleanup:
 	slurm_option_table_destroy(spanked);
 	xfree(opt_string);
 
-	if (!rc)
-		return req;
+	if (rc) {
+		slurm_free_job_desc_msg(req);
+		return NULL;
+	}
 
-	slurm_free_job_desc_msg(req);
-	return NULL;
+	/*
+	 * Add generated environment variables to match
+	 * _opt_verify() in src/sbatch/opt.c
+	 */
+	if (req->name)
+		env_array_overwrite(&req->environment, "SLURM_JOB_NAME",
+				    req->name);
+
+	if (req->open_mode) {
+		/* Propage mode to spawned job using environment variable */
+		if (req->open_mode == OPEN_MODE_APPEND)
+			env_array_overwrite(&req->environment,
+					    "SLURM_OPEN_MODE", "a");
+		else
+			env_array_overwrite(&req->environment,
+					    "SLURM_OPEN_MODE", "t");
+	}
+
+	if (req->dependency)
+		env_array_overwrite(&req->environment, "SLURM_JOB_DEPENDENCY",
+				    req->dependency);
+
+	/* intentionally skipping SLURM_EXPORT_ENV */
+
+	if (req->profile) {
+		char tmp[128];
+		acct_gather_profile_to_string_r(req->profile, tmp);
+		env_array_overwrite(&req->environment, "SLURM_PROFILE", tmp);
+	}
+
+	if (req->acctg_freq)
+		env_array_overwrite(&req->environment, "SLURM_ACCTG_FREQ",
+				    req->acctg_freq);
+
+#ifdef HAVE_NATIVE_CRAY
+	if (req.network)
+		env_array_overwrite(&req->environment, "SLURM_NETWORK",
+				    req->network);
+#endif
+
+	if (req->cpu_freq_min || req->cpu_freq_max || req->cpu_freq_gov) {
+		char *tmp = cpu_freq_to_cmdline(req->cpu_freq_min,
+						req->cpu_freq_max,
+						req->cpu_freq_gov);
+
+		if (tmp)
+			env_array_overwrite(&req->environment,
+					    "SLURM_CPU_FREQ_REQ", tmp);
+
+		xfree(tmp);
+	}
+
+	/* update size of env in case it changed */
+	req->env_size = envcount(req->environment);
+
+	return req;
 }
 
 typedef struct {
