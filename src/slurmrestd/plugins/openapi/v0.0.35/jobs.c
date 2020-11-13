@@ -649,7 +649,7 @@ cleanup:
 				    req->acctg_freq);
 
 #ifdef HAVE_NATIVE_CRAY
-	if (req.network)
+	if (req->network)
 		env_array_overwrite(&req->environment, "SLURM_NETWORK",
 				    req->network);
 #endif
