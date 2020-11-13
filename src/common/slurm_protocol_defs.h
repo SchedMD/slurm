@@ -724,6 +724,12 @@ typedef struct shutdown_msg {
 	uint16_t options;
 } shutdown_msg_t;
 
+typedef enum {
+	SLURMCTLD_SHUTDOWN_ALL = 0,	/* all slurm daemons are shutdown */
+	SLURMCTLD_SHUTDOWN_ABORT,	/* slurmctld only and generate core */
+	SLURMCTLD_SHUTDOWN_CTLD,	/* slurmctld only (no core file) */
+} slurmctld_shutdown_type_t;
+
 typedef struct last_update_msg {
 	time_t last_update;
 } last_update_msg_t;

@@ -1397,7 +1397,7 @@ static int _process_command (int argc, char **argv)
 	}
 	else if (xstrncasecmp(tag, "shutdown", MAX(tag_len, 8)) == 0) {
 		/* require full command name */
-		uint16_t options = 0;
+		uint16_t options = SLURMCTLD_SHUTDOWN_ALL;
 		if (argc == 2) {
 			if (xstrcmp(argv[1], "slurmctld") &&
 			    xstrcmp(argv[1], "controller")) {
@@ -1407,7 +1407,7 @@ static int _process_command (int argc, char **argv)
 					 "invalid shutdown argument:%s\n",
 					 argv[1]);
 			} else
-				options= 2;
+				options= SLURMCTLD_SHUTDOWN_CTLD;
 		} else if (argc > 2) {
 			error_code = 1;
 			exit_code = 1;

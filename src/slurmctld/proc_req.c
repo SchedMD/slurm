@@ -3273,7 +3273,7 @@ static void _slurm_rpc_takeover(slurm_msg_t * msg)
 static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;
-	uint16_t options = 0;
+	slurmctld_shutdown_type_t options = SLURMCTLD_SHUTDOWN_ALL;
 	time_t now = time(NULL);
 	shutdown_msg_t *shutdown_msg = (shutdown_msg_t *) msg->data;
 	/* Locks: Read node */
@@ -3298,13 +3298,13 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 	/* do RPC call */
 	if (error_code)
 		;
-	else if (options == 1)
+	else if (options == SLURMCTLD_SHUTDOWN_ABORT)
 		info("performing immediate shutdown without state save");
 	else if (slurmctld_config.shutdown_time)
 		debug2("shutdown RPC issued when already in progress");
 	else {
 		if ((msg->msg_type == REQUEST_SHUTDOWN) &&
-		    (options == 0)) {
+		    (options == SLURMCTLD_SHUTDOWN_ALL)) {
 			/* This means (msg->msg_type != REQUEST_CONTROL) */
 			lock_slurmctld(node_read_lock);
 			msg_to_slurmd(REQUEST_SHUTDOWN);
@@ -3354,7 +3354,8 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 	}
 
 	slurm_send_rc_msg(msg, error_code);
-	if ((error_code == SLURM_SUCCESS) && (options == 1) &&
+	if ((error_code == SLURM_SUCCESS) &&
+	    (options == SLURMCTLD_SHUTDOWN_ABORT) &&
 	    (slurmctld_config.thread_id_sig))
 		pthread_kill(slurmctld_config.thread_id_sig, SIGABRT);
 }

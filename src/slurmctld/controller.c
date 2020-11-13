@@ -2714,7 +2714,7 @@ static void *_shutdown_bu_thread(void *arg)
 	               slurm_conf.control_addr[bu_inx]);
 	if (do_shutdown) {
 		req.msg_type = REQUEST_SHUTDOWN;
-		shutdown_msg.options = 2;
+		shutdown_msg.options = SLURMCTLD_SHUTDOWN_CTLD;
 		req.data = &shutdown_msg;
 	} else {
 		req.msg_type = REQUEST_CONTROL;
