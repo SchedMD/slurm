@@ -102,6 +102,7 @@ Identical to the \fBadd\fR command.
 .TP
 \fBdelete\fR <\fIENTITY\fR> \fBwhere\fR <\fISPECS\fR>
 Delete the specified entities.
+Identical to the \fBremove\fR command.
 
 .TP
 \fBdump\fR <\fIENTITY\fR> [\fBFile\fR=\fIFILENAME\fR]
@@ -132,6 +133,11 @@ Modify an entity.
 .TP
 \fBreconfigure\fR
 Reconfigures the SlurmDBD if running with one.
+
+.TP
+\fBremove\fR <\fIENTITY\fR> \fBwhere\fR <\fISPECS\fR>
+Delete the specified entities.
+Identical to the \fBdelete\fR command.
 
 .TP
 \fBshow\fR <\fIENTITY\fR> [<\fISPECS\fR>]
@@ -1206,6 +1212,19 @@ If set, and the QOS also has a UsageThreshold,
 any jobs submitted with this QOS that fall below the UsageThreshold
 will be held until their Fairshare Usage goes above the Threshold.
 .TP
+\fINoDecay\fP
+If set, this QOS will not have its GrpTRESMins,
+GrpWall and UsageRaw decayed by the slurm.conf PriorityDecayHalfLife or
+PriorityUsageResetPeriod settings.  This allows a QOS to provide aggregate
+limits that, once consumed, will not be replenished automatically.  Such a
+QOS will act as a time-limited quota of resources for an association
+that has access to it.  Account/user usage will still be decayed for
+associations using the QOS.  The QOS GrpTRESMins and
+GrpWall limits can be increased or the QOS RawUsage value reset to 0
+(zero) to again allow jobs submitted with this QOS to be queued (if
+DenyOnLimit is set) or run (pending with QOSGrp{TRES}MinutesLimit
+or QOSGrpWallLimit reasons, where {TRES} is some type of trackable resource).
+.TP
 \fINoReserve\fP
 If this flag is set and backfill scheduling is used, jobs using this QOS will
 not reserve resources in the backfill schedule's map of resources allocated
@@ -1230,24 +1249,11 @@ override any limits used by the requested partition's QOS limits.
 If set jobs using this QOS will be able to
 override the requested partition's TimeLimit.
 .TP
-\fIRequiresReservaton\fP
+\fIRequiresReservation\fP
 If set jobs using this QOS must designate a reservation when submitting a job.
 This option can be useful in restricting usage of a QOS that may have greater
 preemptive capability or additional resources to be allowed only within a
 reservation.
-.TP
-\fINoDecay\fP
-If set, this QOS will not have its GrpTRESMins,
-GrpWall and UsageRaw decayed by the slurm.conf PriorityDecayHalfLife or
-PriorityUsageResetPeriod settings.  This allows a QOS to provide aggregate
-limits that, once consumed, will not be replenished automatically.  Such a
-QOS will act as a time-limited quota of resources for an association
-that has access to it.  Account/user usage will still be decayed for
-associations using the QOS.  The QOS GrpTRESMins and
-GrpWall limits can be increased or the QOS RawUsage value reset to 0
-(zero) to again allow jobs submitted with this QOS to be queued (if
-DenyOnLimit is set) or run (pending with QOSGrp{TRES}MinutesLimit
-or QOSGrpWallLimit reasons, where {TRES} is some type of trackable resource).
 .TP
 \fIUsageFactorSafe\fP
 If set, and \fIAccountingStorageEnforce\fR includes \fISafe\fR, jobs will only
@@ -1303,6 +1309,32 @@ running jobs will be killed.
 The id of the QOS.
 
 .TP
+\fIMaxJobsAccruePerAccount\fP
+Maximum number of pending jobs an account (or subacct) can have accruing age
+priority at any given time.
+
+.TP
+\fIMaxJobsAccruePerUser\fP
+Maximum number of pending jobs a user can have accruing age priority at any
+given time.
+
+.TP
+\fIMaxJobsPerAccount\fP
+Maximum number of jobs each account is allowed to run at one time.
+
+.TP
+\fIMaxJobsPerUser\fP
+Maximum number of jobs each user is allowed to run at one time.
+
+.TP
+\fIMaxSubmitJobsPerAccount\fP
+Maximum number of jobs pending or running state at any time per account.
+
+.TP
+\fIMaxSubmitJobsPerUser\fP
+Maximum number of jobs pending or running state at any time per user.
+
+.TP
 \fIMaxTRESMinsPerJob\fP
 Maximum number of TRES minutes each job is able to use.
 
@@ -1327,22 +1359,10 @@ Maximum number of TRES each node in a job allocation can use.
 Maximum number of TRES each user is able to use.
 
 .TP
-\fIMaxJobsAccruePerAccount\fP
-Maximum number of pending jobs an account (or subacct) can have accruing age
-priority at any given time.
+\fIMaxWallDurationPerJob\fP
+Maximum wall clock time each job is able to use.
 
-.TP
-\fIMaxJobsAccruePerUser\fP
-Maximum number of pending jobs a user can have accruing age priority at any
-given time.
-
-.TP
-\fIMaxJobsPerAccount\fP
-Maximum number of jobs each account is allowed to run at one time.
-
-.TP
-\fIMaxJobsPerUser\fP
-Maximum number of jobs each user is allowed to run at one time.
+\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxWall\fR.
 
 .TP
 \fIMinPrioThreshold\fP
@@ -1356,20 +1376,6 @@ Otherwise the job will pend until modified.
 \fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMinTRES\fR.
 
 .TP
-\fIMaxSubmitJobsPerAccount\fP
-Maximum number of jobs pending or running state at any time per account.
-
-.TP
-\fIMaxSubmitJobsPerUser\fP
-Maximum number of jobs pending or running state at any time per user.
-
-.TP
-\fIMaxWallDurationPerJob\fP
-Maximum wall clock time each job is able to use.
-
-\fBNOTE\fR: This setting shows up in the sacctmgr output as \fBMaxWall\fR.
-
-.TP
 \fIName\fP
 Name of the QOS.
 
@@ -1379,6 +1385,15 @@ Other QOS' this QOS can preempt.
 
 \fBNOTE\fP: The \fIPriority\fP of a QOS is NOT related to QOS preemption, only
 \fIPreempt\fP is used to define which QOS can preempt others.
+
+.TP
+\fIPreemptExemptTime\fP
+Specifies a minimum run time for jobs of this QOS before they are considered for
+preemption. This QOS option takes precedence over the global
+\fIPreemptExemptTime\fP. Setting to -1 disables the option, allowing another
+QOS or the global option to take effect. Setting to 0 indicates no minimum run
+time and supersedes the lower priority QOS (see \fIOverPartQOS\fP) and/or the
+global option in slurm.conf.
 
 .TP
 \fIPreemptMode\fP
@@ -1391,15 +1406,6 @@ by specifying "OFF", "" or "Cluster", makes it use the default cluster\-wide
 .br
 See the description of the cluster\-wide \fBPreemptMode\fR parameter
 for further details of the available modes.
-
-.TP
-\fIPreemptExemptTime\fP
-Specifies a minimum run time for jobs of this QOS before they are considered for
-preemption. This QOS option takes precedence over the global
-\fIPreemptExemptTime\fP. Setting to -1 disables the option, allowing another
-QOS or the global option to take effect. Setting to 0 indicates no minimum run
-time and supersedes the lower priority QOS (see \fIOverPartQOS\fP) and/or the
-global option in slurm.conf.
 
 .TP
 \fIPriority\fP
@@ -1895,18 +1901,23 @@ Get information about which associations were affected by the transactions.
 
 .TP
 \fIAction\fP
+Displays the type of Action that took place.
 
 .TP
 \fIActor\fP
+Displays the Actor to generate a transaction.
 
 .TP
 \fIInfo\fP
+Displays details of the transaction.
 
 .TP
 \fITimeStamp\fP
+Displays when the transaction occurred.
 
 .TP
 \fIWhere\fP
+Displays details of the constraints for the transaction.
 .P
 NOTE: If using the WithAssoc option you can also view the information
 about the various associations the transaction affected.  The
