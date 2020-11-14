@@ -124,6 +124,7 @@ COMMAND CHANGES (see man pages for details)
  -- Change "scontrol reboot ASAP" to use next_state=resume logic.
  -- scontrol - added an admin-settable "Comment" field to each Node.
  -- squeue and sinfo -O no longer repeat the last suffix specified.
+ -- salloc now waits for PrologSlurmctld to finish before entering the shell.
 
 API CHANGES
 ===========

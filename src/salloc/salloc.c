@@ -1280,7 +1280,8 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 			job_killed = true;
 			break;
 		}
-		if ((rc & READY_JOB_STATE) && 
+		if ((rc & READY_JOB_STATE) &&
+		    (rc & READY_PROLOG_STATE) &&
 		    ((rc & READY_NODE_STATE) || !saopt.wait_all_nodes)) {
 			is_ready = 1;
 			break;

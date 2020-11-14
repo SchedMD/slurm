@@ -2137,7 +2137,8 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 
 	if (job_ptr->wait_all_nodes) {
 		(void) job_node_ready(launch_msg_ptr->job_id, &tmp);
-		if (tmp == (READY_JOB_STATE | READY_NODE_STATE)) {
+		if (tmp ==
+		    (READY_JOB_STATE | READY_NODE_STATE | READY_PROLOG_STATE)) {
 			nodes_ready = 1;
 			if (launch_msg_ptr->alias_list &&
 			    !xstrcmp(launch_msg_ptr->alias_list, "TBD")) {
