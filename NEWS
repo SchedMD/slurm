@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
     SLURM_CPU_FREQ_REQ to match sbatch.
  -- slurmrestd - Avoid defaulting open_mode to append for job submission.
  -- Fix "scontrol takeover [backup]" hangs when specifying a backup > 1.
+ -- salloc now waits for PrologSlurmctld to finish before entering the shell.
 
 * Changes in Slurm 20.11.0rc2
 ==============================

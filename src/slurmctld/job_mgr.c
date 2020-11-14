@@ -15849,12 +15849,11 @@ extern int job_node_ready(uint32_t job_id, int *ready)
 	if (rc)
 		rc = READY_NODE_STATE;
 
-	if (job_ptr->details && job_ptr->details->prolog_running)
-		rc &= (~READY_NODE_STATE);
-
+	if (job_ptr->details && !job_ptr->details->prolog_running)
+		rc |= READY_PROLOG_STATE;
 	if (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr))
 		rc |= READY_JOB_STATE;
-	if ((rc == (READY_NODE_STATE | READY_JOB_STATE)) &&
+	if ((rc == (READY_NODE_STATE | READY_JOB_STATE | READY_PROLOG_STATE)) &&
 	    job_ptr->alias_list && !xstrcmp(job_ptr->alias_list, "TBD") &&
 	    job_ptr->node_bitmap &&
 	    (bit_overlap_any(power_node_bitmap, job_ptr->node_bitmap) == 0)) {

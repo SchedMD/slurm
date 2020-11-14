@@ -265,7 +265,8 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 			job_killed = true;
 			break;
 		}
-		if (rc & READY_NODE_STATE) {		/* job and node ready */
+		if ((rc & READY_NODE_STATE) &&
+		    (rc & READY_PROLOG_STATE)) {
 			is_ready = 1;
 			break;
 		}

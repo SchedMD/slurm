@@ -951,7 +951,8 @@ static int _wait_nodes_ready(uint32_t job_id)
 			continue;			/* retry */
 		if ((rc & READY_JOB_STATE) == 0)	/* job killed */
 			break;
-		if (rc & READY_NODE_STATE) {		/* job and node ready */
+		if ((rc & READY_NODE_STATE) &&
+		    (rc & READY_PROLOG_STATE)) {
 			is_ready = SLURM_SUCCESS;
 			break;
 		}
