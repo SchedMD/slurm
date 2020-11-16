@@ -1812,6 +1812,10 @@
             "format": "int64",
             "description": "timestamp of node boot"
           },
+          "comment": {
+            "type": "string",
+            "description": "Arbitrary comment"
+          },
           "cores": {
             "type": "integer",
             "description": "number of cores per socket"
