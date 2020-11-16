@@ -8014,7 +8014,9 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 			    (sock_gres->job_specs->gres_per_node > max_gres) ||
 			    (sock_gres->job_specs->gres_per_task > max_gres) ||
 			    (sock_gres->job_specs->gres_per_socket > max_gres)){
-				/* Insufficient CPUs for any GRES */
+				log_flag(GRES, "%s: Insufficient CPUs for any GRES: max_gres (%"PRIu64") = max_cpus (%d) / cpus_per_gres (%d)",
+					 __func__, max_gres, max_cpus,
+					 cpus_per_gres);
 				rc = -1;
 				break;
 			}
@@ -8029,7 +8031,9 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 			if (mem_per_gres <= avail_mem) {
 				sock_gres->max_node_gres = avail_mem /
 							   mem_per_gres;
-			} else { /* Insufficient memory for any GRES */
+			} else {
+				log_flag(GRES, "%s: Insufficient memory for any GRES: mem_per_gres (%"PRIu64") > avail_mem (%"PRIu64")",
+					 __func__, mem_per_gres, avail_mem);
 				rc = -1;
 				break;
 			}
@@ -8080,6 +8084,8 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 			cpu_cnt *= cpus_per_core;
 			max_gres = cpu_cnt / cpus_per_gres;
 			if (max_gres == 0) {
+				log_flag(GRES, "%s: max_gres == 0 == cpu_cnt (%d) / cpus_per_gres (%d)",
+					 __func__, cpu_cnt, cpus_per_gres);
 				rc = -1;
 				break;
 			} else if ((sock_gres->max_node_gres == 0) ||
@@ -8095,6 +8101,9 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 		if ((sock_gres->total_cnt < min_gres) ||
 		    ((sock_gres->max_node_gres != 0) &&
 		     (sock_gres->max_node_gres < min_gres))) {
+			log_flag(GRES, "%s: min_gres (%"PRIu64") is > max_node_gres (%"PRIu64") or sock_gres->total_cnt (%"PRIu64")",
+				 __func__, min_gres, sock_gres->max_node_gres,
+				 sock_gres->total_cnt);
 			rc = -1;
 			break;
 		}
