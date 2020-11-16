@@ -60,6 +60,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="power_save.html">Power Saving Guide (power down idle nodes)</a></li>
 <li><a href="prolog_epilog.html">Prolog and Epilog Guide</a></li>
 <li><a href="rest.html">Slurm REST API</a></li>
+<li><a href="rest_api.html">Slurm REST API Reference</a></li>
 <li><a href="troubleshoot.html">Troubleshooting Guide</a></li>
 <li><a href="user_permissions.html">User Permissions</a></li>
 <li><a href="wckey.html">WCKey Management</a></li>

@@ -90,6 +90,7 @@ generated_html = \
 	resource_binding.html \
 	resource_limits.html \
 	rest.html \
+	rest_api.html \
 	rosetta.html \
 	route_plugin.html \
 	sched_config.html \
@@ -143,6 +144,7 @@ html_DATA = \
 	plane_ex6.gif \
 	plane_ex7.gif \
 	reset.css \
+	openapi.css \
 	slurm_logo.png \
 	schedmd.png \
 	slurm.css \
