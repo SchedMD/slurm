@@ -75,6 +75,10 @@ IPv4.</p>
 There are several third party tools that automatically generate documentation
 against the OAS output listed by
 <a href="https://openapi.tools/">openapi.tools.</a></p>
+<p>
+	To view the currently generated API reference:
+	<a href="rest_api.html">Slurm REST API Reference</a>
+</p>
 
 <h2>Plugins</h2>
 <p>As of Slurm 20.11, the REST API uses plugins for authentication and
