@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 20.11.1
+==========================
+
 * Changes in Slurm 20.11.0
 ==========================
  -- x11 forwarding: fix race on setup that prevented X11 forwarding from
