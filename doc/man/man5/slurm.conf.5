@@ -4640,14 +4640,14 @@ The default value is 1.
 .TP
 \fBState\fR
 State of the node with respect to the initiation of user jobs.
-Acceptable values are "CLOUD", "DOWN", "DRAIN", "FAIL", "FAILING", "FUTURE"
-and "UNKNOWN".
-Node states of "BUSY" and "IDLE" should not be specified in the node
-configuration, but set the node state to "UNKNOWN" instead.
-Setting the node state to "UNKNOWN" will result in the node state being set to
-"BUSY", "IDLE" or other appropriate state based upon recovered system state
-information.
-The default value is "UNKNOWN".
+Acceptable values are \fICLOUD\fR, \fIDOWN\fR, \fIDRAIN\fR, \fIFAIL\fR,
+\fIFAILING\fR, \fIFUTURE\fR and \fIUNKNOWN\fR.
+Node states of \fIBUSY\fR and \fIIDLE\fR should not be specified in the node
+configuration, but set the node state to \fIUNKNOWN\fR instead.
+Setting the node state to \fIUNKNOWN\fR will result in the node state being
+set to \fIBUSY\fR, \fIIDLE\fR or other appropriate state based upon recovered
+system state information.
+The default value is \fIUNKNOWN\fR.
 Also see the \fBDownNodes\fR parameter below.
 .RS
 .TP 10
@@ -4661,7 +4661,7 @@ state save file or the slurmd daemon starts on the compute node.
 Indicates the node failed and is unavailable to be allocated work.
 .TP
 \fBDRAIN\fP
-Indicates the node is unavailable to be allocated work.on.
+Indicates the node is unavailable to be allocated work.
 .TP
 \fBFAIL\fP
 Indicates the node is expected to fail soon, has
@@ -4702,10 +4702,9 @@ fanout communications need to be disabled by setting TreeWidth to a high number
 
 .TP
 \fBUNKNOWN\fP
-Indicates the node's state is undefined (BUSY or IDLE),
-but will be established when the \fBslurmd\fR daemon on that node
-registers.
-The default value is "UNKNOWN".
+Indicates the node's state is undefined but will be established
+(set to \fIBUSY\fR or \fIIDLE\fR) when the \fBslurmd\fR daemon on that
+node registers. \fIUNKNOWN\fR is the default state.
 .RE
 
 .TP
@@ -4783,54 +4782,29 @@ considered for scheduling individually.
 The default value is 1.
 
 .LP
-The "DownNodes=" configuration permits you to mark certain nodes as in a
-DOWN, DRAIN, FAIL, or FAILING state without altering the permanent
-configuration information listed under a "NodeName=" specification.
+The \fBDownNodes=\fR parameter permits you to mark certain nodes as in a
+\fIDOWN\fR, \fIDRAIN\fR, \fIFAIL\fR, \fIFAILING\fR or \fIFUTURE\fR state
+without altering the permanent configuration information listed under a
+\fBNodeName=\fR specification.
 
 .TP
 \fBDownNodes\fR
-Any node name, or list of node names, from the "NodeName=" specifications.
+Any node name, or list of node names, from the \fBNodeName=\fR specifications.
 
 .TP
 \fBReason\fR
-Identifies the reason for a node being in state "DOWN", "DRAIN",
-"FAIL" or "FAILING.
+Identifies the reason for a node being in state \fIDOWN\fR, \fIDRAIN\fR,
+\fIFAIL\fR, \fIFAILING\fR or \fIFUTURE\fR.
 \Use quotes to enclose a reason having more than one word.
 
 .TP
 \fBState\fR
 State of the node with respect to the initiation of user jobs.
-Acceptable values are "DOWN", "DRAIN", "FAIL", "FAILING" and "UNKNOWN".
-Node states of "BUSY" and "IDLE" should not be specified in the node
-configuration, but set the node state to "UNKNOWN" instead.
-Setting the node state to "UNKNOWN" will result in the node state being set to
-"BUSY", "IDLE" or other appropriate state based upon recovered system state
-information.
-The default value is "UNKNOWN".
-.RS
-.TP 10
-\fBDOWN\fP
-Indicates the node failed and is unavailable to be allocated work.
-.TP
-\fBDRAIN\fP
-Indicates the node is unavailable to be allocated work.on.
-.TP
-\fBFAIL\fP
-Indicates the node is expected to fail soon, has
-no jobs allocated to it, and will not be allocated
-to any new jobs.
-.TP
-\fBFAILING\fP
-Indicates the node is expected to fail soon, has
-one or more jobs allocated to it, but will not be allocated
-to any new jobs.
-.TP
-\fBUNKNOWN\fP
-Indicates the node's state is undefined (BUSY or IDLE),
-but will be established when the \fBslurmd\fR daemon on that node
-registers.
-The default value is "UNKNOWN".
-.RE
+Acceptable values are \fIDOWN\fR, \fIDRAIN\fR, \fIFAIL\fR, \fIFAILING\fR
+and \fIFUTURE\fR.
+For more information about these states see the descriptions under \fBState\fR
+in the \fBNodeName=\fR section above.
+The default value is \fIDOWN\fR.
 
 .LP
 On computers where frontend nodes are used to execute batch scripts
@@ -4919,25 +4893,23 @@ RSIP's port range.
 
 .TP
 \fBReason\fR
-Identifies the reason for a frontend node being in state "DOWN", "DRAINED"
-"DRAINING", "FAIL" or "FAILING".
+Identifies the reason for a frontend node being in state \fIDOWN\fR,
+\fIDRAINED\fR, \fIDRAINING\fR, \fIFAIL\fR or \fIFAILING\fR.
 Use quotes to enclose a reason having more than one word.
 
 .TP
 \fBState\fR
 State of the frontend node with respect to the initiation of user jobs.
-Acceptable values are "DOWN", "DRAIN", "FAIL", "FAILING" and "UNKNOWN".
-"DOWN" indicates the frontend node has failed and is unavailable to be
-allocated work.
-"DRAIN" indicates the frontend node is unavailable to be allocated work.
-"FAIL" indicates the frontend node is expected to fail soon, has
-no jobs allocated to it, and will not be allocated to any new jobs.
-"FAILING" indicates the frontend node is expected to fail soon, has
-one or more jobs allocated to it, but will not be allocated to any new jobs.
-"UNKNOWN" indicates the frontend node's state is undefined (BUSY or IDLE),
-but will be established when the \fBslurmd\fR daemon on that node registers.
-The default value is "UNKNOWN".
-Also see the \fBDownNodes\fR parameter above.
+Acceptable values are \fIDOWN\fR, \fIDRAIN\fR, \fIFAIL\fR, \fIFAILING\fR
+and \fIUNKNOWN\fR.
+Node states of \fIBUSY\fR and \fIIDLE\fR should not be specified in the node
+configuration, but set the node state to \fIUNKNOWN\fR instead.
+Setting the node state to \fIUNKNOWN\fR will result in the node state being
+set to \fIBUSY\fR, \fIIDLE\fR or other appropriate state based upon recovered
+system state information.
+For more information about these states see the descriptions under \fBState\fR
+in the \fBNodeName=\fR section above.
+The default value is \fIUNKNOWN\fR.
 
 For example: "FrontendName=frontend[00\-03] FrontendAddr=efrontend[00\-03]
 State=UNKNOWN" is used to define four front end nodes for running slurmd
