@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd/v0.0.36 - Filter node states against NODE_STATE_BASE to avoid
     the extended states all being reported as "invalid".
  -- Fix race that can prevent the prolog for a requeued job from running.
+ -- cli_filter - add "type" to readily distinguish between the CLI command in
+    use.
 
 * Changes in Slurm 20.11.0
 ==========================
