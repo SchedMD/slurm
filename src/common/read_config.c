@@ -223,7 +223,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"BatchStartTimeout", S_P_UINT16},
 	{"BurstBufferParameters", S_P_STRING},
 	{"BurstBufferType", S_P_STRING},
-	{"CacheGroups", S_P_UINT16},
 	{"CheckpointType", S_P_STRING},
 	{"CoreSpecPlugin", S_P_STRING},
 	{"CliFilterPlugins", S_P_STRING},
@@ -3676,9 +3675,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		conf->authtype = xstrdup(DEFAULT_AUTH_TYPE);
 
 	(void) s_p_get_string(&conf->bb_type, "BurstBufferType", hashtbl);
-
-	if (s_p_get_uint16(&uint16_tmp, "CacheGroups", hashtbl))
-		debug("Ignoring obsolete CacheGroups option.");
 
 	(void) s_p_get_string(&conf->comm_params, "CommunicationParameters",
 			      hashtbl);
