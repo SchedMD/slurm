@@ -369,7 +369,7 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 					 * Skip over the "," so it is
 					 * not included in the char list
 					 */
-					start = ++i;
+					start = i + 1;
 				}
 			} else if (names[i] == ']') {
 				brack_not = true;
