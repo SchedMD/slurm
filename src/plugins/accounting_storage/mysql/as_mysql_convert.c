@@ -41,7 +41,6 @@
 
 /*
  * Any time you have to add to an existing convert update this number.
- * NOTE: 7 was the first version of 19.05.
  * NOTE: 8 was the first version of 20.02.
  * NOTE: 9 was the first version of 20.11.
  */
@@ -253,19 +252,6 @@ extern int as_mysql_convert_non_cluster_tables_post_create(
 		debug4("%s: No conversion needed, Horray!", __func__);
 		return SLURM_SUCCESS;
 	}
-
-	if (db_curr_ver < 7) {
-		/*
-		 * In 19.05 we changed the name of the TRES bb/cray to be
-		 * bb/datawarp.
-		 */
-		char *query = xstrdup_printf(
-			"update %s set name='datawarp' where type='bb' and name='cray'",
-			tres_table);
-		rc = mysql_db_query(mysql_conn, query);
-		xfree(query);
-	}
-
 
 	if (rc == SLURM_SUCCESS) {
 		char *query = xstrdup_printf(

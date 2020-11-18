@@ -3194,7 +3194,7 @@ unpack_error:
 static void _pack_remote_dep_job(job_record_t *job_ptr, Buf buffer,
 				 uint16_t protocol_version)
 {
-	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(job_ptr->array_job_id, buffer);
 		pack32(job_ptr->array_task_id, buffer);
 		pack_dep_list(job_ptr->details->depend_list, buffer,
@@ -3230,7 +3230,7 @@ static int _unpack_remote_dep_job(job_record_t **job_pptr, Buf buffer,
 	job_ptr->fed_details = xmalloc(sizeof *(job_ptr->fed_details));
 	*job_pptr = job_ptr;
 
-	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&job_ptr->array_job_id, buffer);
 		safe_unpack32(&job_ptr->array_task_id, buffer);
 		unpack_dep_list(&job_ptr->details->depend_list, buffer,
@@ -3263,7 +3263,7 @@ static void _dump_remote_dep_job_list(Buf buffer, uint16_t protocol_version)
 	uint32_t count = NO_VAL;
 	job_record_t *job_ptr;
 
-	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		slurm_mutex_lock(&dep_job_list_mutex);
 		if (remote_dep_job_list)
 			count = list_count(remote_dep_job_list);
@@ -3291,7 +3291,7 @@ static List _load_remote_dep_job_list(Buf buffer, uint16_t protocol_version)
 	List tmp_list = NULL;
 	job_record_t *job_ptr = NULL;
 
-	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&count, buffer);
 		if (count > NO_VAL)
 			goto unpack_error;
@@ -3304,13 +3304,6 @@ static List _load_remote_dep_job_list(Buf buffer, uint16_t protocol_version)
 				list_append(tmp_list, job_ptr);
 			}
 		}
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		/*
-		 * This function didn't exist until 20.02. Add this block
-		 * to silence errors caused by upgrading an 18.08 or 19.05
-		 * versioned state file.
-		 */
-		debug3("%s: old protocol version", __func__);
 	} else {
 		error("%s: protocol_version %hu not supported.",
 		      __func__, protocol_version);

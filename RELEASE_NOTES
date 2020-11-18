@@ -1,4 +1,4 @@
-RELEASE NOTES FOR SLURM VERSION 20.11
+RELEASE NOTES FOR SLURM VERSION 21.08
 
 IMPORTANT NOTES:
 If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
@@ -6,140 +6,26 @@ If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
 NOTE: If using a backup DBD you must start the primary first to do any
 database conversion, the backup will not start until this has happened.
 
-The 20.11 slurmdbd will work with Slurm daemons of version 19.05 and above.
+The 21.08 slurmdbd will work with Slurm daemons of version 20.02 and above.
 You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
 any other clusters making use of it.
 
-Slurm can be upgraded from version 19.05 or 20.02 to version 20.11 without loss
+Slurm can be upgraded from version 20.02 or 20.11 to version 21.08 without loss
 of jobs or other state information. Upgrading directly from an earlier version
 of Slurm will result in loss of state information.
 
 If using SPANK plugins that use the Slurm APIs, they should be recompiled when
 upgrading Slurm to a new major release.
 
-NOTE: Slurmctld is now set to fatal in case of computing node configured with
-      CPUs == #Sockets. CPUs has to be either total number of cores or threads.
-
-NOTE: The FastSchedule option has been removed. The FastSchedule=2 functionality
-      (used for testing and development) is available as the new
-      SlurmdParameters=config_overrides option.
-
-NOTE: Slurmdbd is now set to fatal if slurmdbd.conf file isn't owned by
-      SlurmUser or it's mode is not set to 0600.
-
 HIGHLIGHTS
 ==========
- -- The example systemd unit files have been changed to the "simple" type of
-    operation, and the daemon will now run in the foreground within systemd
-    instead of daemonizing itself.
- -- Log messages enabled by the various DebugFlags have been overhauled, and
-    will all print at the verbose() level, and prepend the flag name that is
-    associated with a given log message.
- -- A separate unversioned libslurm_pmi.so will be installed, and the libpmi.so
-    that Slurm can (optionally) install will link to that rather than libslurm.
-    This should resolve long-standing issues when building static OpenMPI
-    libraries and later updating your Slurm release, thereby breaking the
-    embedded libslurm.so.<version> link in those OpenMPI libraries that were
-    inherited from libpmi.so.
- -- accounting_storage/filetxt has been removed as an option.  Please consider
-    using accounting_storage/slurmdbd as an alternative.
- -- setting of number of Sockets per node was standardized for configuration
-    line with and without Boards=. Specifically in case of Boards=1 and #CPUs
-    given the default value of Sockets will be set to #CPUs / #Cores / #Threads.
- -- Dynamic Future Nodes - slurmds started with -F[<feature>] will be
-    associated with a nodename in Slurm that matches the same hardware
-    configuration.
- -- SlurmctldParameters=cloud_reg_addrsa - Cloud nodes automatically get
-    NodeAddr and NodeHostname set from slurmd registration.
- -- SlurmctldParameters=power_save[_min]_interval - Configure how often the
-    power save module looks to do work.
- -- By default a step started with srun will get --exclusive behavior meaning
-    no other parallel step will be allowed to run on the same resources at
-    the same time.  To get the previous default behavior which allowed
-    parallel steps to share all resources use the new srun '--overlap' option.
- -- In conjunction to --exclusive behavior being the default for a step there
-    is also another option for step management, --whole, which will allow a
-    step access to all resources of a node in a job allocation.  This will
-    allocate all resources on a node allocated the step. No other parallel
-    step will have access to those unless \-\-overlap is used.
- -- --threads-per-core now influences task layout/binding, not just allocation.
- -- AutoDetect in gres.conf can now be specified for some nodes while not for
-    others via the NodeName option.
- -- gres.conf - Add new MultipleFiles configuration entry to allow a single
-    GRES to manage multiple device files simultaneously.
- -- Remove SallocDefaultCommand option.
- -- Add support for an "Interactive Step", designed to be used with salloc to
-    launch a terminal on an allocated compute node automatically. Enable by
-    setting "use_interactive_step" as part of LaunchParameters.
- -- Add IPv6 support. Must be explicitly enabled with EnableIPv6 in
-    CommunicationParameters. IPv4 support can be disabled with DisableIPv4.
- -- Allow use of a target directory with "srun --bcast", and change the default
-    filename to include the node name as well.
- -- Added a new --mail-type=INVALID_DEPEND option to salloc, sbatch, and srun.
- -- Differences between hardware (memory size, number of CPUs) discovered on
-    node vs configured in slurm.conf will now throw an error only when the node
-    state is set to drain. Previously it was done on every node registration,
-    those messages were demoted to debug level.
- -- Added "scrontab", which permits crontab-compatible job scripts to be
-    defined. These scripts will recurr automatically (at most) on the intervals
-    described.
- -- Enable -lnodes=#:gpus=# in #PBS/qsub -l nodes syntax.
- -- Any user >= Operator can see any hidden partition by default, as SlurmUser
-    or root already did.
- -- select/linear will now allocate up to nodes RealMemory when configured with
-    SelectTypeParameters=CR_Memory and --mem=0 specified. Previous behavior was
-    no memory accouted and no memory limits implied to job.
- -- slurmrestd - add API to interface with slurmdbd.
- -- Add --ntasks-per-gpu option.
- -- Add --gpu-bind=single option.
- -- Fix "scontrol takeover [backup]" hangs when specifying a backup > 1. All
-    slurmctlds below the "backup" will be shutdown.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
- -- Removed "cpusets" option from TaskPluginParam. Please use task/cgroup.
- -- Removed MsgAggregationParams.
- -- Removed Layouts.
- -- Remove switch/generic plugin.
- -- The acct_gather_energy/cray_aries plugin has been renamed to
-    acct_gather_energy/pm_counters.
- -- The JobCompLoc URL endpoint when the JobCompType=jobcomp/elasticsearch
-    plugin is enabled is now fully configurable and the plugin no longer appends
-    a hardcoded "/slurm/jobcomp" index and type suffix to it.
- -- Removed support for "default_gbytes" option in SchedulerParameters.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
- -- Make sacct get the UID from database instead of from the username and a
-    system call. Add --use-local-uid option to sacct to use old behavior.
- -- The '%s' format in -e/-i/-o options to sbatch will expand to "batch" rather
-    than "4294967294".
- -- squeue - added "pendingtime" as a option for --Format.
- -- sacct - AllocGres and ReqGres were removed. Alloc/ReqTres should be used
-    instead.
- -- scontrol - added the "Reserved" license count to 'scontrol show licenses'.
- -- Add time specification: "now-<x>" (i.e. subtract from the present)
- -- squeue - put sorted start times of "N/A" or 0 at the end of the list.
- -- Change "scontrol reboot ASAP" to use next_state=resume logic.
- -- scontrol - added an admin-settable "Comment" field to each Node.
- -- squeue and sinfo -O no longer repeat the last suffix specified.
- -- salloc now waits for PrologSlurmctld to finish before entering the shell.
 
 API CHANGES
 ===========
- -- slurm_ctl_conf_t has been renamed to slurm_conf_t.
- -- slurm_free_kvs_comm_set() has been renamed to slurm_pmi_free_kvs_comm_set(),
-    slurm_get_kvs_comm_set() has been renamed to slurm_pmi_get_kvs_comm_set().
- -- slurm_job_step_layout_get() parameters has changed to use slurm_step_id_t
-    see slurm.h for new implementation.  If not running hetsteps just put
-    NO_VAL as the value for step_het_comp.
- -- slurm_job_step_stat() parameters has changed to use slurm_step_id_t
-    see slurm.h for new implementation.  If not running hetsteps just put
-    NO_VAL as the value for step_het_comp.
- -- slurm_job_step_get_pids() parameters has changed to use slurm_step_id_t
-    see slurm.h for new implementation.  If not running hetsteps just put
-    NO_VAL as the value for step_het_comp.
- -- slurmdb_selected_step_t has been renamed slurm_selected_step_t.
- -- slurm_sbcast_lookup() arguments have changed.  It now takes a populated
-    slurm_selected_step_t instead of job_id, het_job_offset, step_id.

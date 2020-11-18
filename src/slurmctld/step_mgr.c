@@ -3142,64 +3142,10 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, Buf buffer,
 		packstr(step_ptr->tres_per_node, buffer);
 		packstr(step_ptr->tres_per_socket, buffer);
 		packstr(step_ptr->tres_per_task, buffer);
-	} else if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
-		pack32(step_ptr->job_ptr->array_job_id, buffer);
-		pack32(step_ptr->job_ptr->array_task_id, buffer);
-		pack_step_id(&step_ptr->step_id, buffer, protocol_version);
-		pack32(step_ptr->job_ptr->user_id, buffer);
-		pack32(cpu_cnt, buffer);
-		pack32(step_ptr->cpu_freq_min, buffer);
-		pack32(step_ptr->cpu_freq_max, buffer);
-		pack32(step_ptr->cpu_freq_gov, buffer);
-		pack32(task_cnt, buffer);
-		if (step_ptr->step_layout)
-			pack32(step_ptr->step_layout->task_dist, buffer);
-		else
-			pack32((uint32_t) SLURM_DIST_UNKNOWN, buffer);
-		pack32(step_ptr->time_limit, buffer);
-		pack32(step_ptr->state, buffer);
-		pack32(step_ptr->srun_pid, buffer);
-
-		pack_time(step_ptr->start_time, buffer);
-		if (IS_JOB_SUSPENDED(step_ptr->job_ptr)) {
-			run_time = step_ptr->pre_sus_time;
-		} else {
-			begin_time = MAX(step_ptr->start_time,
-					 step_ptr->job_ptr->suspend_time);
-			run_time = step_ptr->pre_sus_time +
-				difftime(time(NULL), begin_time);
-		}
-		pack_time(run_time, buffer);
-
-		packstr(slurm_conf.cluster_name, buffer);
-		if (step_ptr->job_ptr->part_ptr)
-			packstr(step_ptr->job_ptr->part_ptr->name, buffer);
-		else
-			packstr(step_ptr->job_ptr->partition, buffer);
-		packstr(step_ptr->host, buffer);
-		packstr(step_ptr->resv_ports, buffer);
-		packstr(node_list, buffer);
-		packstr(step_ptr->name, buffer);
-		packstr(step_ptr->network, buffer);
-		pack_bit_str_hex(pack_bitstr, buffer);
-		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
-					     protocol_version);
-		packstr(step_ptr->tres_fmt_alloc_str, buffer);
-		pack16(step_ptr->start_protocol_ver, buffer);
-
-		packstr(step_ptr->cpus_per_tres, buffer);
-		packstr(step_ptr->mem_per_tres, buffer);
-		packstr(step_ptr->tres_bind, buffer);
-		packstr(step_ptr->tres_freq, buffer);
-		packstr(step_ptr->tres_per_step, buffer);
-		packstr(step_ptr->tres_per_node, buffer);
-		packstr(step_ptr->tres_per_socket, buffer);
-		packstr(step_ptr->tres_per_task, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
 		pack_step_id(&step_ptr->step_id, buffer, protocol_version);
-		pack16(0, buffer); /* was ckpt_interval */
 		pack32(step_ptr->job_ptr->user_id, buffer);
 		pack32(cpu_cnt, buffer);
 		pack32(step_ptr->cpu_freq_min, buffer);
@@ -3236,7 +3182,6 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, Buf buffer,
 		packstr(step_ptr->name, buffer);
 		packstr(step_ptr->network, buffer);
 		pack_bit_str_hex(pack_bitstr, buffer);
-		packnull(buffer); /* was ckpt_dir */
 		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
 					     protocol_version);
 		packstr(step_ptr->tres_fmt_alloc_str, buffer);
@@ -3991,7 +3936,7 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 		if (jobacctinfo_unpack(&jobacct, protocol_version,
 				       PROTOCOL_TYPE_SLURM, buffer, true))
 			goto unpack_error;
-	} else if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id.step_id, buffer);
 		convert_old_step_id(&step_id.step_id);
 		safe_unpack16(&cyclic_alloc, buffer);
@@ -4045,94 +3990,6 @@ extern int load_step_state(job_record_t *job_ptr, Buf buffer,
 		    (switch_g_unpack_jobinfo(&switch_tmp, buffer,
 					     protocol_version)))
 				goto unpack_error;
-
-		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
-						   protocol_version))
-			goto unpack_error;
-		safe_unpackstr_xmalloc(&tres_alloc_str, &name_len, buffer);
-		safe_unpackstr_xmalloc(&tres_fmt_alloc_str, &name_len, buffer);
-
-		safe_unpackstr_xmalloc(&cpus_per_tres, &name_len, buffer);
-		safe_unpackstr_xmalloc(&mem_per_tres, &name_len, buffer);
-		safe_unpackstr_xmalloc(&tres_bind, &name_len, buffer);
-		safe_unpackstr_xmalloc(&tres_freq, &name_len, buffer);
-		safe_unpackstr_xmalloc(&tres_per_step, &name_len, buffer);
-		safe_unpackstr_xmalloc(&tres_per_node, &name_len, buffer);
-		safe_unpackstr_xmalloc(&tres_per_socket, &name_len, buffer);
-		safe_unpackstr_xmalloc(&tres_per_task, &name_len, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		char *temp_str;
-		time_t time_tmp;
-
-		uint16_t uint16_tmp;
-		safe_unpack32(&step_id.step_id, buffer);
-		convert_old_step_id(&step_id.step_id);
-		safe_unpack16(&cyclic_alloc, buffer);
-		safe_unpack32(&srun_pid, buffer);
-		safe_unpack16(&port, buffer);
-		safe_unpack16(&uint16_tmp, buffer); /* was ckpt_interval */
-		safe_unpack16(&cpus_per_task, buffer);
-		safe_unpack16(&resv_port_cnt, buffer);
-		safe_unpack16(&state, buffer);
-		safe_unpack16(&start_protocol_ver, buffer);
-
-		safe_unpack8(&uint8_tmp, buffer);
-		if (uint8_tmp)
-			flags |= SSF_NO_KILL;
-
-		safe_unpack32(&cpu_count, buffer);
-		safe_unpack64(&pn_min_memory, buffer);
-		safe_unpack32(&exit_code, buffer);
-		if (exit_code != NO_VAL) {
-			unpack_bit_str_hex(&exit_node_bitmap, buffer);
-		}
-		unpack_bit_str_hex(&core_bitmap_job, buffer);
-
-		safe_unpack32(&time_limit, buffer);
-		safe_unpack32(&cpu_freq_min, buffer);
-		safe_unpack32(&cpu_freq_max, buffer);
-		safe_unpack32(&cpu_freq_gov, buffer);
-
-		safe_unpack_time(&start_time, buffer);
-		safe_unpack_time(&pre_sus_time, buffer);
-		safe_unpack_time(&tot_sus_time, buffer);
-		safe_unpack_time(&time_tmp, buffer); /* was ckpt_time */
-
-		safe_unpackstr_xmalloc(&host, &name_len, buffer);
-		safe_unpackstr_xmalloc(&resv_ports, &name_len, buffer);
-		safe_unpackstr_xmalloc(&name, &name_len, buffer);
-		safe_unpackstr_xmalloc(&network, &name_len, buffer);
-		safe_unpackstr_xmalloc(&temp_str, &name_len, buffer);
-		xfree(temp_str); /* was ckpt_dir */
-
-		if (gres_plugin_step_state_unpack(&gres_list, buffer,
-						  &step_id,
-						  protocol_version)
-		    != SLURM_SUCCESS)
-			goto unpack_error;
-
-		safe_unpack16(&batch_step, buffer);
-		if (!batch_step) {
-			if (unpack_slurm_step_layout(&step_layout, buffer,
-						     protocol_version))
-				goto unpack_error;
-			if (switch_g_unpack_jobinfo(&switch_tmp, buffer,
-						    protocol_version))
-				goto unpack_error;
-		} else
-			step_layout = fake_slurm_step_layout_create(
-				job_ptr->batch_host, NULL, NULL, 1, 1);
-
-		/* fake out the former checkpoint plugin */
-		{
-			uint16_t id;
-			uint32_t size;
-			safe_unpack16(&id, buffer);
-			safe_unpack32(&size, buffer);
-			/* skip past any checkpoint plugin info */
-			size += get_buf_offset(buffer);
-			set_buf_offset(buffer, size);
-		}
 
 		if (select_g_select_jobinfo_unpack(&select_jobinfo, buffer,
 						   protocol_version))

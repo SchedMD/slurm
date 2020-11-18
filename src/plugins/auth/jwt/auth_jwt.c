@@ -353,7 +353,7 @@ int slurm_auth_pack(auth_token_t *cred, Buf buf, uint16_t protocol_version)
 		return SLURM_ERROR;
 	}
 
-	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(pack_this, buf);
 		packstr(thread_username, buf);
 	} else {
@@ -378,7 +378,7 @@ auth_token_t *slurm_auth_unpack(Buf buf, uint16_t protocol_version)
 	cred = xmalloc(sizeof(*cred));
 	cred->verified = false;		/* just to be explicit */
 
-	if (protocol_version >= SLURM_20_02_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&cred->token, &uint32_tmp, buf);
 		safe_unpackstr_xmalloc(&cred->username, &uint32_tmp, buf);
 	} else {
