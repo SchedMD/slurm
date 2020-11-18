@@ -1041,12 +1041,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		step_spec->pn_min_memory = 0;	/* clear MEM_PER_CPU flag */
 
 	if (job_ptr->next_step_id == 0) {
-		if (job_ptr->details && job_ptr->details->prolog_running) {
-			*return_code = ESLURM_PROLOG_RUNNING;
-			FREE_NULL_BITMAP(nodes_avail);
-			FREE_NULL_BITMAP(select_nodes_avail);
-			return NULL;
-		}
 		i_first = bit_ffs(job_ptr->node_bitmap);
 		if (i_first >= 0)
 			i_last  = bit_fls(job_ptr->node_bitmap);
@@ -2328,6 +2322,9 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	if (IS_JOB_FINISHED(job_ptr) ||
 	    ((job_ptr->end_time <= time(NULL)) && !IS_JOB_CONFIGURING(job_ptr)))
 		return ESLURM_ALREADY_DONE;
+
+	if (job_ptr->details->prolog_running)
+		return ESLURM_PROLOG_RUNNING;
 
 	if (step_specs->flags & SSF_INTERACTIVE) {
 		debug("%s: interactive step requested", __func__);

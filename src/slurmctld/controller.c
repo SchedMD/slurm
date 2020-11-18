@@ -2760,7 +2760,12 @@ static int _shutdown_backup_controller(void)
 	shutdown_arg_t *shutdown_arg;
 
 	bu_rc = SLURM_SUCCESS;
-	debug("shutting down backup controllers (my index: %d)", backup_inx);
+
+	/* If we don't have any backups configured just return */
+	if (slurm_conf.control_cnt == 1)
+		return bu_rc;
+
+	debug2("shutting down backup controllers (my index: %d)", backup_inx);
 	for (i = 1; i < slurm_conf.control_cnt; i++) {
 		if ((slurm_conf.control_addr[i] == NULL) ||
 		    (slurm_conf.control_addr[i][0] == '\0'))
