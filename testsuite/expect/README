@@ -610,6 +610,7 @@ test20.10  Test for the qrerun --help option
 test20.11  Test for the qrerun --man option
 test20.12  Test for qsub -V/-v arguments and their interaction with sbatch scripts
 test20.13  Test to test Grid Engine specific options
+test20.15  Test for seff
 
 test21.#   Testing of sacctmgr commands and options.
 ====================================================

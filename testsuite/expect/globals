@@ -151,6 +151,8 @@ cset qsub        "${slurm_dir}/bin/qsub"
 cset qalter      "${slurm_dir}/bin/qalter"
 cset qrerun      "${slurm_dir}/bin/qrerun"
 
+cset seff        "${slurm_dir}/bin/seff"
+
 cset lsid      	 "${slurm_dir}/bin/lsid"
 cset bjobs     	 "${slurm_dir}/bin/bjobs"
 cset bkill     	 "${slurm_dir}/bin/bkill"
