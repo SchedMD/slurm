@@ -5505,7 +5505,11 @@ PrologSlurmctld fails.
 Information about the job is passed to the script using environment
 variables.
 Unless otherwise specified, these environment variables are available
-to all of the programs.
+to each of the scripts mentioned above (\fBProlog\fR, \fBEpilog\fR,
+\fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR). For a full list of
+environment variables that includes those available in the \fBSrunProlog\fR,
+\fBSrunEpilog\fR, \fBTaskProlog\fR and \fBTaskEpilog\fR please see the Prolog
+and Epilog Guide <https://slurm.schedmd.com/prolog_epilog.html>.
 .TP
 \fBSLURM_ARRAY_JOB_ID\fR
 If this job is part of a job array, this will be set to the job ID.
@@ -5544,6 +5548,16 @@ Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
 \fBSLURM_CLUSTER_NAME\fR
 Name of the cluster executing the job.
 .TP
+\fBSLURM_CONF\fR
+Location of the slurm.conf file. Available in \fBProlog\fR and \fBEpilog\fR
+only.
+.TP
+\fBSLURMD_NODENAME\fR
+Name of the node running the task. In the case of a parallel job executing
+on multiple compute nodes, the various tasks will have this environment
+variable set to different values on each compute node. Availble in
+\fBProlog\fR and \fBEpilog\fR only.
+.TP
 \fBSLURM_JOB_ACCOUNT\fR
 Account name used for the job.
 Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
@@ -5570,7 +5584,7 @@ Available in \fBEpilogSlurmctld\fR only.
 .TP
 \fBSLURM_JOB_GID\fR
 Group ID of the job's owner.
-Available in \fBPrologSlurmctld\fR, \fBEpilogSlurmctld\fR and \fBTaskProlog\fR only.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
 .TP
 \fBSLURM_JOB_GPUS\fR
 GPU IDs allocated to the job (if any).
@@ -5582,9 +5596,9 @@ Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
 .TP
 \fBSLURM_JOB_ID\fR
 Job ID.
-CAUTION: If this job is the first task of a job array, then Slurm commands using
-this job ID will refer to the entire job array rather than this specific task
-of the job array.
+.TP
+\fBSLURM_JOBID\fR
+Job ID.
 .TP
 \fBSLURM_JOB_NAME\fR
 Name of the job.
@@ -5605,6 +5619,9 @@ User ID of the job's owner.
 .TP
 \fBSLURM_JOB_USER\fR
 User name of the job's owner.
+.TP
+\fBSLURM_SCRIPT_CONTEXT\fR
+Identifies which epilog or prolog program is currently running.
 
 .SH "NETWORK TOPOLOGY"
 Slurm is able to optimize job allocations to minimize network contention.
