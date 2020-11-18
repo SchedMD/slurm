@@ -968,7 +968,7 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
        - WCKeyUtilizationByUser                                            \n\
              - Cluster, Count, Login, Proper, Used, Wckey                  \n\
        - Utilization                                                       \n\
-             - Allocated, Cluster, Count, Down, Idle, Overcommited,        \n\
+             - Allocated, Cluster, Count, Down, Idle, Overcommitted,       \n\
                PlannedDown, Reported, Reserved                             \n\
                                                                            \n\
        Job                                                                 \n\

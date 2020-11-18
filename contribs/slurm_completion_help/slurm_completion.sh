@@ -688,7 +688,7 @@ _sreport()
 	    params="$opts_all Names= Nodes="
 	    if param "Clusters" ; then  offer_list "$(_clusters)" ;
 	    elif param "Format" ; then  offer_list "Allocated Cluster \
-		CPUCount Down Idle Overcommited PlannedDown Reported Reserved";
+		CPUCount Down Idle Overcommitted PlannedDown Reported Reserved";
 	    elif param "Nodes" ; then  offer_list "$(_nodes)" ;
 	    else offer "$params"
 	    fi
