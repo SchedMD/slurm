@@ -113,33 +113,29 @@ static void _test_cond_eq(uint16_t protocol_version,
 	slurmdb_destroy_event_cond(unpack);
 }
 
-START_TEST(pack_current_event_cond)
+static void _run_test(uint16_t protocol_version)
 {
 	slurmdb_event_cond_t pack = {0};
-	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
 
 	_init_event_cond(&pack);
 	_test_cond_eq(protocol_version, &pack);
+}
+
+START_TEST(pack_current_event_cond)
+{
+	_run_test(SLURM_PROTOCOL_VERSION);
 }
 END_TEST
 
 START_TEST(pack_last_event_cond)
 {
-	slurmdb_event_cond_t pack = {0};
-	uint16_t protocol_version = SLURM_ONE_BACK_PROTOCOL_VERSION;
-
-	_init_event_cond(&pack);
-	_test_cond_eq(protocol_version, &pack);
+	_run_test(SLURM_ONE_BACK_PROTOCOL_VERSION);
 }
 END_TEST
 
 START_TEST(pack_min_event_cond)
 {
-	slurmdb_event_cond_t pack = {0};
-	uint16_t protocol_version = SLURM_MIN_PROTOCOL_VERSION;
-
-	_init_event_cond(&pack);
-	_test_cond_eq(protocol_version, &pack);
+	_run_test(SLURM_MIN_PROTOCOL_VERSION);
 }
 END_TEST
 
