@@ -1705,7 +1705,7 @@ inval:
 static int _get_core_resrcs(slurmctld_resv_t *resv_ptr)
 {
 	int i, i_first, i_last, j, node_inx;
-	int c, core_offset_local, core_offset_global, core_end;
+	int c, core_offset_local, core_offset_global, core_end, core_set;
 
 	if (!resv_ptr->core_resrcs || resv_ptr->core_bitmap ||
 	    !resv_ptr->core_resrcs->core_bitmap ||
@@ -1746,11 +1746,15 @@ static int _get_core_resrcs(slurmctld_resv_t *resv_ptr)
 		core_end = cr_get_coremap_offset(i + 1);
 		core_offset_local = get_job_resources_offset(
 					resv_ptr->core_resrcs, node_inx, 0, 0);
+		core_set = 0;
 		for (c = core_offset_global, j = core_offset_local;
-	 	     c < core_end; c++, j++) {
+		     c < core_end &&
+		     core_set < resv_ptr->core_resrcs->cpus[node_inx];
+		     c++, j++) {
 			if (!bit_test(resv_ptr->core_resrcs->core_bitmap, j))
 				continue;
 			bit_set(resv_ptr->core_bitmap, c);
+			core_set++;
 		}
 	}
 

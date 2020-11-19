@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
     configured.
  -- Don't create interactive srun until PrologSlurmctld is done.
  -- Fix fd symlink path resolution.
+ -- Fix slurmctld segfault on subnode reservation restore after node
+    configuration change.
 
 * Changes in Slurm 20.11.0
 ==========================
