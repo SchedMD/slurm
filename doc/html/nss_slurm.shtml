@@ -52,7 +52,7 @@ Administrator Guide</a> for instructions on managing an RPM-based install.</p>
 
 <h2><a name="SETUP">Setup</a></h2>
 
-<p>The slurmctld must be configured to lookup and send the appropriate passwd
+<p>The slurmctld must be configured to look up and send the appropriate passwd
 and group details as part of the launch credential. This is handled by setting
 <b>LaunchParameters=enable_nss_slurm</b> in slurm.conf and restarting
 slurmctld.</p>
@@ -148,6 +148,6 @@ lookup requests &mdash; generally for info related to the user themselves,
 which is the only information nss_slurm will be able to provide &mdash; and
 overwhelm the underlying directory services.</p>
 
-<p style="text-align:center;">Last modified 2 July 2019</p>
+<p style="text-align:center;">Last modified 18 November 2020</p>
 
 <!--#include virtual="footer.txt"-->
