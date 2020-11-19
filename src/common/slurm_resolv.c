@@ -73,7 +73,8 @@ extern List resolve_ctls_from_dns_srv(void)
 
 	if ((len = res_nsearch(&res, SRV_RECORD, C_IN, T_SRV,
 			       answer, sizeof(answer))) < 0) {
-		error("%s: res_nsearch error: %m", __func__);
+		error("%s: res_nsearch error: %s",
+		      __func__, hstrerror(h_errno));
 		return NULL;
 	}
 
