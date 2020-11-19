@@ -253,25 +253,27 @@ extern int fsync_and_close(int fd, const char *file_type)
 	return rc;
 }
 
+/*
+ * Attempt to expand symlink for the specified file descriptor.
+ *
+ * The caller should deallocate the returned string using xfree().
+ *
+ * IN fd - file descriptor to resolve symlink from
+ * RET ptr to a string containing the resolved symlink or NULL if failure.
+ */
 extern char *fd_resolve_path(int fd)
 {
-	char *resolved = NULL;
+	char *resolved = NULL, *ret = NULL;
 	char *path = NULL;
 
 #if defined(__linux__)
-	struct stat sb = {0};
-
 	path = xstrdup_printf("/proc/self/fd/%u", fd);
-	if (lstat(path, &sb) == -1) {
-		debug("%s: unable to lstat(%s): %m", __func__, path);
+	ret = realpath(path, NULL);
+	if (!ret) {
+		debug("%s: realpath(%s) failed: %m", __func__,  path);
 	} else {
-		size_t name_len = sb.st_size + 1;
-		resolved = xmalloc(name_len);
-		if (readlink(path, resolved, name_len) <= 0) {
-			debug("%s: unable to readlink(%s): %m",
-			      __func__, path);
-			xfree(resolved);
-		}
+		resolved = xstrdup(ret);
+		free(ret);
 	}
 #endif
 

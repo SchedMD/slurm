@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Silence debug message about shutting down backup controllers if none are
     configured.
  -- Don't create interactive srun until PrologSlurmctld is done.
+ -- Fix fd symlink path resolution.
 
 * Changes in Slurm 20.11.0
 ==========================
