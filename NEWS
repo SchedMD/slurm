@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix fd symlink path resolution.
  -- Fix slurmctld segfault on subnode reservation restore after node
     configuration change.
+ -- Fix resource allocation response message environment allocation size.
 
 * Changes in Slurm 20.11.0
 ==========================

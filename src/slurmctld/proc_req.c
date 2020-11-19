@@ -862,7 +862,8 @@ extern resource_allocation_response_msg_t *build_alloc_msg(
 		if (job_ptr->details->env_cnt) {
 			alloc_msg->env_size = job_ptr->details->env_cnt;
 			alloc_msg->environment =
-				xmalloc(sizeof(char *) * alloc_msg->env_size);
+				xcalloc(alloc_msg->env_size + 1,
+					sizeof(char *));
 			for (i = 0; i < alloc_msg->env_size; i++) {
 				alloc_msg->environment[i] =
 					xstrdup(job_ptr->details->env_sup[i]);
