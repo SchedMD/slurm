@@ -142,6 +142,8 @@ START_TEST(test_data_job)
 	data_t *arg = data_new();
 	slurm_reset_all_options(&opt, true);
 
+	ck_assert_msg(slurm_conf_init(NULL) == 0, "slurm_conf_init()");
+
 	data_set_string(arg, "2000-01-01");
 	ck_assert_msg(slurm_process_option_data(&opt, 'b', arg, errors) == 0,
 		      "begin");
@@ -175,7 +177,7 @@ START_TEST(test_data_job)
 		      "core spec nochange");
 
 	/* force enable all governors */
-	slurmctld_conf.cpu_freq_govs = 0xffffffff;
+	slurm_conf.cpu_freq_govs = 0xffffffff;
 	data_set_string(arg, "10-100:PowerSave");
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_CPU_FREQ, arg,
 						errors) == 0, "cpu freq");
@@ -325,10 +327,10 @@ START_TEST(test_data_job)
 		      != 0, "gid");
 	ck_assert_msg(opt.gid == NO_VAL, "gid value");
 	/* verify that group of slurmuser can be used */
-	data_set_string(arg, slurmctld_conf.slurm_user_name);
+	data_set_string(arg, slurm_conf.slurm_user_name);
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_GID, arg, errors)
 		      == 0, "gid");
-	ck_assert_msg(opt.gid == gid_from_uid(slurmctld_conf.slurm_user_id),
+	ck_assert_msg(opt.gid == gid_from_uid(slurm_conf.slurm_user_id),
 		      "gid value");
 
 	data_set_string(arg, "help");
@@ -686,10 +688,10 @@ START_TEST(test_data_job)
 		      != 0, "gid");
 	ck_assert_msg(opt.uid == NO_VAL, "uid value");
 	/* verify that slurmuser can be used */
-	data_set_string(arg, slurmctld_conf.slurm_user_name);
+	data_set_string(arg, slurm_conf.slurm_user_name);
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_UID, arg, errors)
 		      == 0, "uid");
-	ck_assert_msg(opt.uid == slurmctld_conf.slurm_user_id, "uid value");
+	ck_assert_msg(opt.uid == slurm_conf.slurm_user_id, "uid value");
 
 	data_set_string(arg, "invalid");
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_UMASK, arg,
