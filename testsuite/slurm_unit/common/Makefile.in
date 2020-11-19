@@ -92,7 +92,9 @@ check_PROGRAMS = $(am__EXEEXT_2)
 TESTS = job-resources-test$(EXEEXT) log-test$(EXEEXT) \
 	pack-test$(EXEEXT) $(am__EXEEXT_1)
 @HAVE_CHECK_TRUE@am__append_1 = xtree-test \
-@HAVE_CHECK_TRUE@	 xhash-test
+@HAVE_CHECK_TRUE@	 xhash-test \
+@HAVE_CHECK_TRUE@	 data-test \
+@HAVE_CHECK_TRUE@	 slurm_opt-test
 
 subdir = testsuite/slurm_unit/common
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -151,19 +153,28 @@ CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @HAVE_CHECK_TRUE@am__EXEEXT_1 = xtree-test$(EXEEXT) \
-@HAVE_CHECK_TRUE@	xhash-test$(EXEEXT)
+@HAVE_CHECK_TRUE@	xhash-test$(EXEEXT) data-test$(EXEEXT) \
+@HAVE_CHECK_TRUE@	slurm_opt-test$(EXEEXT)
 am__EXEEXT_2 = job-resources-test$(EXEEXT) log-test$(EXEEXT) \
 	pack-test$(EXEEXT) $(am__EXEEXT_1)
-job_resources_test_SOURCES = job-resources-test.c
-job_resources_test_OBJECTS = job-resources-test.$(OBJEXT)
-job_resources_test_LDADD = $(LDADD)
+data_test_SOURCES = data-test.c
+data_test_OBJECTS = data_test-data-test.$(OBJEXT)
 am__DEPENDENCIES_1 =
-job_resources_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
+am__DEPENDENCIES_2 = $(top_builddir)/src/api/libslurm.o \
 	$(am__DEPENDENCIES_1)
+@HAVE_CHECK_TRUE@data_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+data_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(data_test_CFLAGS) \
+	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+job_resources_test_SOURCES = job-resources-test.c
+job_resources_test_OBJECTS = job-resources-test.$(OBJEXT)
+job_resources_test_LDADD = $(LDADD)
+job_resources_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
+	$(am__DEPENDENCIES_1)
 log_test_SOURCES = log-test.c
 log_test_OBJECTS = log-test.$(OBJEXT)
 log_test_LDADD = $(LDADD)
@@ -174,10 +185,15 @@ pack_test_OBJECTS = pack-test.$(OBJEXT)
 pack_test_LDADD = $(LDADD)
 pack_test_DEPENDENCIES = $(top_builddir)/src/api/libslurm.o \
 	$(am__DEPENDENCIES_1)
+slurm_opt_test_SOURCES = slurm_opt-test.c
+slurm_opt_test_OBJECTS = slurm_opt_test-slurm_opt-test.$(OBJEXT)
+@HAVE_CHECK_TRUE@slurm_opt_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
+slurm_opt_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(slurm_opt_test_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o \
+	$@
 xhash_test_SOURCES = xhash-test.c
 xhash_test_OBJECTS = xhash_test-xhash-test.$(OBJEXT)
-am__DEPENDENCIES_2 = $(top_builddir)/src/api/libslurm.o \
-	$(am__DEPENDENCIES_1)
 @HAVE_CHECK_TRUE@xhash_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
 xhash_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(xhash_test_CFLAGS) \
@@ -203,8 +219,10 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/job-resources-test.Po \
-	./$(DEPDIR)/log-test.Po ./$(DEPDIR)/pack-test.Po \
+am__depfiles_remade = ./$(DEPDIR)/data_test-data-test.Po \
+	./$(DEPDIR)/job-resources-test.Po ./$(DEPDIR)/log-test.Po \
+	./$(DEPDIR)/pack-test.Po \
+	./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po \
 	./$(DEPDIR)/xhash_test-xhash-test.Po \
 	./$(DEPDIR)/xtree_test-xtree-test.Po
 am__mv = mv -f
@@ -226,8 +244,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = job-resources-test.c log-test.c pack-test.c xhash-test.c \
-	xtree-test.c
+SOURCES = data-test.c job-resources-test.c log-test.c pack-test.c \
+	slurm_opt-test.c xhash-test.c xtree-test.c
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -731,13 +749,16 @@ AUTOMAKE_OPTIONS = foreign
 SUBDIRS = bitstring slurm_protocol_pack slurmdb_pack
 AM_CPPFLAGS = -I$(top_srcdir) -ldl -lpthread
 LDADD = $(top_builddir)/src/api/libslurm.o $(DL_LIBS)
-@HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@ -Wall -ansi -pedantic \
-@HAVE_CHECK_TRUE@	-std=c99 -D_ISO99_SOURCE \
-@HAVE_CHECK_TRUE@	-Wunused-but-set-variable
+@HAVE_CHECK_TRUE@MYCFLAGS = @CHECK_CFLAGS@ -Wall -ansi -std=c99 \
+@HAVE_CHECK_TRUE@	-D_ISO99_SOURCE -Wunused-but-set-variable
 @HAVE_CHECK_TRUE@xtree_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@xtree_test_LDADD = $(LDADD) @CHECK_LIBS@
 @HAVE_CHECK_TRUE@xhash_test_CFLAGS = $(MYCFLAGS)
 @HAVE_CHECK_TRUE@xhash_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@data_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@data_test_LDADD = $(LDADD) @CHECK_LIBS@
+@HAVE_CHECK_TRUE@slurm_opt_test_CFLAGS = $(MYCFLAGS)
+@HAVE_CHECK_TRUE@slurm_opt_test_LDADD = $(LDADD) @CHECK_LIBS@
 all: all-recursive
 
 .SUFFIXES:
@@ -781,6 +802,10 @@ clean-checkPROGRAMS:
 	echo " rm -f" $$list; \
 	rm -f $$list
 
+data-test$(EXEEXT): $(data_test_OBJECTS) $(data_test_DEPENDENCIES) $(EXTRA_data_test_DEPENDENCIES) 
+	@rm -f data-test$(EXEEXT)
+	$(AM_V_CCLD)$(data_test_LINK) $(data_test_OBJECTS) $(data_test_LDADD) $(LIBS)
+
 job-resources-test$(EXEEXT): $(job_resources_test_OBJECTS) $(job_resources_test_DEPENDENCIES) $(EXTRA_job_resources_test_DEPENDENCIES) 
 	@rm -f job-resources-test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(job_resources_test_OBJECTS) $(job_resources_test_LDADD) $(LIBS)
@@ -792,6 +817,10 @@ log-test$(EXEEXT): $(log_test_OBJECTS) $(log_test_DEPENDENCIES) $(EXTRA_log_test
 pack-test$(EXEEXT): $(pack_test_OBJECTS) $(pack_test_DEPENDENCIES) $(EXTRA_pack_test_DEPENDENCIES) 
 	@rm -f pack-test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(pack_test_OBJECTS) $(pack_test_LDADD) $(LIBS)
+
+slurm_opt-test$(EXEEXT): $(slurm_opt_test_OBJECTS) $(slurm_opt_test_DEPENDENCIES) $(EXTRA_slurm_opt_test_DEPENDENCIES) 
+	@rm -f slurm_opt-test$(EXEEXT)
+	$(AM_V_CCLD)$(slurm_opt_test_LINK) $(slurm_opt_test_OBJECTS) $(slurm_opt_test_LDADD) $(LIBS)
 
 xhash-test$(EXEEXT): $(xhash_test_OBJECTS) $(xhash_test_DEPENDENCIES) $(EXTRA_xhash_test_DEPENDENCIES) 
 	@rm -f xhash-test$(EXEEXT)
@@ -807,9 +836,11 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/data_test-data-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job-resources-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack-test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xhash_test-xhash-test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xtree_test-xtree-test.Po@am__quote@ # am--include-marker
 
@@ -839,6 +870,34 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+data_test-data-test.o: data-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_test_CFLAGS) $(CFLAGS) -MT data_test-data-test.o -MD -MP -MF $(DEPDIR)/data_test-data-test.Tpo -c -o data_test-data-test.o `test -f 'data-test.c' || echo '$(srcdir)/'`data-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/data_test-data-test.Tpo $(DEPDIR)/data_test-data-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='data-test.c' object='data_test-data-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_test_CFLAGS) $(CFLAGS) -c -o data_test-data-test.o `test -f 'data-test.c' || echo '$(srcdir)/'`data-test.c
+
+data_test-data-test.obj: data-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_test_CFLAGS) $(CFLAGS) -MT data_test-data-test.obj -MD -MP -MF $(DEPDIR)/data_test-data-test.Tpo -c -o data_test-data-test.obj `if test -f 'data-test.c'; then $(CYGPATH_W) 'data-test.c'; else $(CYGPATH_W) '$(srcdir)/data-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/data_test-data-test.Tpo $(DEPDIR)/data_test-data-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='data-test.c' object='data_test-data-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(data_test_CFLAGS) $(CFLAGS) -c -o data_test-data-test.obj `if test -f 'data-test.c'; then $(CYGPATH_W) 'data-test.c'; else $(CYGPATH_W) '$(srcdir)/data-test.c'; fi`
+
+slurm_opt_test-slurm_opt-test.o: slurm_opt-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_opt_test_CFLAGS) $(CFLAGS) -MT slurm_opt_test-slurm_opt-test.o -MD -MP -MF $(DEPDIR)/slurm_opt_test-slurm_opt-test.Tpo -c -o slurm_opt_test-slurm_opt-test.o `test -f 'slurm_opt-test.c' || echo '$(srcdir)/'`slurm_opt-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurm_opt_test-slurm_opt-test.Tpo $(DEPDIR)/slurm_opt_test-slurm_opt-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='slurm_opt-test.c' object='slurm_opt_test-slurm_opt-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_opt_test_CFLAGS) $(CFLAGS) -c -o slurm_opt_test-slurm_opt-test.o `test -f 'slurm_opt-test.c' || echo '$(srcdir)/'`slurm_opt-test.c
+
+slurm_opt_test-slurm_opt-test.obj: slurm_opt-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_opt_test_CFLAGS) $(CFLAGS) -MT slurm_opt_test-slurm_opt-test.obj -MD -MP -MF $(DEPDIR)/slurm_opt_test-slurm_opt-test.Tpo -c -o slurm_opt_test-slurm_opt-test.obj `if test -f 'slurm_opt-test.c'; then $(CYGPATH_W) 'slurm_opt-test.c'; else $(CYGPATH_W) '$(srcdir)/slurm_opt-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/slurm_opt_test-slurm_opt-test.Tpo $(DEPDIR)/slurm_opt_test-slurm_opt-test.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='slurm_opt-test.c' object='slurm_opt_test-slurm_opt-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(slurm_opt_test_CFLAGS) $(CFLAGS) -c -o slurm_opt_test-slurm_opt-test.obj `if test -f 'slurm_opt-test.c'; then $(CYGPATH_W) 'slurm_opt-test.c'; else $(CYGPATH_W) '$(srcdir)/slurm_opt-test.c'; fi`
 
 xhash_test-xhash-test.o: xhash-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xhash_test_CFLAGS) $(CFLAGS) -MT xhash_test-xhash-test.o -MD -MP -MF $(DEPDIR)/xhash_test-xhash-test.Tpo -c -o xhash_test-xhash-test.o `test -f 'xhash-test.c' || echo '$(srcdir)/'`xhash-test.c
@@ -1149,6 +1208,20 @@ xhash-test.log: xhash-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+data-test.log: data-test$(EXEEXT)
+	@p='data-test$(EXEEXT)'; \
+	b='data-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+slurm_opt-test.log: slurm_opt-test$(EXEEXT)
+	@p='slurm_opt-test$(EXEEXT)'; \
+	b='slurm_opt-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -1209,9 +1282,11 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
 	mostlyclean-am
 
 distclean: distclean-recursive
-		-rm -f ./$(DEPDIR)/job-resources-test.Po
+		-rm -f ./$(DEPDIR)/data_test-data-test.Po
+	-rm -f ./$(DEPDIR)/job-resources-test.Po
 	-rm -f ./$(DEPDIR)/log-test.Po
 	-rm -f ./$(DEPDIR)/pack-test.Po
+	-rm -f ./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po
 	-rm -f ./$(DEPDIR)/xhash_test-xhash-test.Po
 	-rm -f ./$(DEPDIR)/xtree_test-xtree-test.Po
 	-rm -f Makefile
@@ -1259,9 +1334,11 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-		-rm -f ./$(DEPDIR)/job-resources-test.Po
+		-rm -f ./$(DEPDIR)/data_test-data-test.Po
+	-rm -f ./$(DEPDIR)/job-resources-test.Po
 	-rm -f ./$(DEPDIR)/log-test.Po
 	-rm -f ./$(DEPDIR)/pack-test.Po
+	-rm -f ./$(DEPDIR)/slurm_opt_test-slurm_opt-test.Po
 	-rm -f ./$(DEPDIR)/xhash_test-xhash-test.Po
 	-rm -f ./$(DEPDIR)/xtree_test-xtree-test.Po
 	-rm -f Makefile
