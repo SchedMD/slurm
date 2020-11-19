@@ -3481,10 +3481,9 @@ static void _update_job_env(job_record_t *job_ptr, char *file_path)
 
 	/* Add to supplemental environment variables (in job record) */
 	if (env_cnt) {
-		job_ptr->details->env_sup =
-			xrealloc(job_ptr->details->env_sup,
-				 sizeof(char *) *
-				 (job_ptr->details->env_cnt + env_cnt));
+		xrecalloc(job_ptr->details->env_sup,
+			  MAX(job_ptr->details->env_cnt + env_cnt, 1 + env_cnt),
+			  sizeof(char *));
 		start = data_buf;
 		for (i = 0; (i < env_cnt) && start[0]; i++) {
 			sep = strchr(start, '\n');

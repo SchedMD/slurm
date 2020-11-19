@@ -4805,9 +4805,9 @@ static void _create_job_array(job_record_t *job_ptr, job_desc_msg_t *job_specs)
 			if (sep)
 				step_task_id = atoi(sep + 1);
 		}
-		details->env_sup = xrealloc(details->env_sup,
-					    (sizeof(char *) *
-					    (details->env_cnt + 4)));
+		xrecalloc(details->env_sup,
+			  MAX(job_ptr->details->env_cnt, 1) + 4,
+			  sizeof(char *));
 		xstrfmtcat(details->env_sup[details->env_cnt++],
 			   "SLURM_ARRAY_TASK_COUNT=%d", task_cnt);
 		xstrfmtcat(details->env_sup[details->env_cnt++],
