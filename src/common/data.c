@@ -478,12 +478,12 @@ extern void data_free(data_t *data)
 
 extern data_type_t data_get_type(const data_t *data)
 {
+	if (!data)
+		return DATA_TYPE_NONE;
+
 	_check_magic(data);
 
-	if (data)
-		return data->type;
-	else
-		return DATA_TYPE_NONE;
+	return data->type;
 }
 
 extern data_t *data_set_float(data_t *data, double value)
