@@ -630,11 +630,6 @@ empty:
 		resv = xmalloc(sizeof(slurmdb_reservation_rec_t));
 		list_append(resv_list, resv);
 		resv->id = slurm_atoul(row[RESV_REQ_ID]);
-		if (with_usage) {
-			if (!job_cond.resvid_list)
-				job_cond.resvid_list = list_create(NULL);
-			list_append(job_cond.resvid_list, row[RESV_REQ_ID]);
-		}
 		resv->name = xstrdup(row[RESV_REQ_NAME]);
 		resv->node_inx = xstrdup(row[RESV_REQ_NODE_INX]);
 		resv->cluster = xstrdup(row[RESV_REQ_COUNT]);
@@ -645,6 +640,11 @@ empty:
 		resv->flags = slurm_atoull(row[RESV_REQ_FLAGS]);
 		resv->tres_str = xstrdup(row[RESV_REQ_TRES]);
 		resv->unused_wall = atof(row[RESV_REQ_UNUSED]);
+		if (with_usage) {
+			if (!job_cond.resvid_list)
+				job_cond.resvid_list = list_create(NULL);
+			list_append(job_cond.resvid_list, row[RESV_REQ_ID]);
+		}
 	}
 
 	FREE_NULL_LIST(local_cluster_list);
