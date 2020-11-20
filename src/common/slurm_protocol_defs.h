@@ -1675,6 +1675,17 @@ extern char *slurm_get_selected_step_id(
 	char *job_id_str, int len,
 	slurm_selected_step_t *selected_step);
 
+/*
+ * Translate bitmap representation of array from hex to decimal format,
+ * replacing array_task_str and store the bitmap in array_bitmap.
+ *
+ * IN/OUT array_task_str - job's array task string
+ * IN array_max_tasks - job's array_max_tasks
+ * OUT array_bitmap - job's array_bitmap
+ */
+extern void xlate_array_task_str(char **array_task_str,
+				 uint32_t array_max_tasks, void **array_bitmap);
+
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\
 		char *ptr = (char *) buf;				\
