@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
     configuration change.
  -- Fix resource allocation response message environment allocation size.
  -- Ensure that details->env_sup is NULL terminated.
+ -- select/cray_aries - Correctly remove jobs/steps from blades using NPC.
 
 * Changes in Slurm 20.11.0
 ==========================
@@ -209,6 +210,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 20.02.7
 ==========================
  -- cons_tres - Fix DefCpuPerGPU
+ -- select/cray_aries - Correctly remove jobs/steps from blades using NPC.
 
 * Changes in Slurm 20.02.6
 ==========================
