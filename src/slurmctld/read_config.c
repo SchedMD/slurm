@@ -1754,35 +1754,36 @@ static void _gres_reconfig(bool reconfig)
 
 	if (reconfig) {
 		gres_plugin_reconfig();
-	} else {
-		for (i = 0, node_ptr = node_record_table_ptr;
-		     i < node_record_count; i++, node_ptr++) {
-			if (node_ptr->gres)
-				gres_name = node_ptr->gres;
-			else
-				gres_name = node_ptr->config_ptr->gres;
-			gres_plugin_init_node_config(node_ptr->name, gres_name,
-						     &node_ptr->gres_list);
-			if (!IS_NODE_CLOUD(node_ptr))
-				continue;
+		return;
+	}
 
-			/*
-			 * Load in GRES for node now. By default Slurm gets this
-			 * information when the node registers for the first
-			 * time, which can take a while for a node in the cloud
-			 * to boot.
-			 */
-			gres_plugin_node_config_load(
-				node_ptr->config_ptr->cpus, node_ptr->name,
-				node_ptr->gres_list, NULL, NULL);
-			gres_plugin_node_config_validate(
-				node_ptr->name, node_ptr->config_ptr->gres,
-				&node_ptr->gres, &node_ptr->gres_list,
-				node_ptr->config_ptr->threads,
-				node_ptr->config_ptr->cores,
-				node_ptr->config_ptr->tot_sockets,
-				slurm_conf.conf_flags & CTL_CONF_OR, NULL);
-		}
+	for (i = 0, node_ptr = node_record_table_ptr;
+	     i < node_record_count; i++, node_ptr++) {
+		if (node_ptr->gres)
+			gres_name = node_ptr->gres;
+		else
+			gres_name = node_ptr->config_ptr->gres;
+		gres_plugin_init_node_config(node_ptr->name, gres_name,
+					     &node_ptr->gres_list);
+		if (!IS_NODE_CLOUD(node_ptr))
+			continue;
+
+		/*
+		 * Load in GRES for node now. By default Slurm gets this
+		 * information when the node registers for the first
+		 * time, which can take a while for a node in the cloud
+		 * to boot.
+		 */
+		gres_plugin_node_config_load(
+			node_ptr->config_ptr->cpus, node_ptr->name,
+			node_ptr->gres_list, NULL, NULL);
+		gres_plugin_node_config_validate(
+			node_ptr->name, node_ptr->config_ptr->gres,
+			&node_ptr->gres, &node_ptr->gres_list,
+			node_ptr->config_ptr->threads,
+			node_ptr->config_ptr->cores,
+			node_ptr->config_ptr->tot_sockets,
+			slurm_conf.conf_flags & CTL_CONF_OR, NULL);
 	}
 }
 /*
