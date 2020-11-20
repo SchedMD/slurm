@@ -206,6 +206,69 @@ static int _setup_resv_cond_limits(slurmdb_reservation_cond_t *resv_cond,
 	return set;
 }
 
+static int _add_usage_to_resv(void *object, void *arg)
+{
+	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
+	slurmdb_reservation_rec_t *resv = (slurmdb_reservation_rec_t *)arg;
+	int start = job->start;
+	int end = job->end;
+	int elapsed = 0;
+
+	/*
+	 * Sanity check we are dealing with the reservation we requested.
+	 */
+	if (resv->id != job->resvid) {
+		error("We got a job %u and it doesn't match the reservation we requested. We requested %d but got %d.  This should never happen.",
+		      job->jobid, resv->id, job->resvid);
+		return SLURM_SUCCESS;
+	}
+
+	if (start < resv->time_start)
+		start = resv->time_start;
+
+	if (!end || end > resv->time_end)
+		end = resv->time_end;
+
+	if ((elapsed = (end - start)) < 1)
+		return SLURM_SUCCESS;
+
+	slurmdb_transfer_tres_time(
+		&resv->tres_list, job->tres_alloc_str,
+		elapsed);
+
+	return SLURM_SUCCESS;
+}
+
+static void _get_usage_for_resv(mysql_conn_t *mysql_conn, uid_t uid,
+				slurmdb_reservation_rec_t *resv,
+				char *resv_id)
+{
+	List job_list;
+	slurmdb_job_cond_t job_cond;
+
+	memset(&job_cond, 0, sizeof(job_cond));
+	job_cond.db_flags = SLURMDB_JOB_FLAG_NOTSET;
+
+	job_cond.usage_start = resv->time_start;
+	job_cond.usage_end = resv->time_end;
+
+	job_cond.cluster_list = list_create(NULL);
+	list_append(job_cond.cluster_list, resv->cluster);
+
+	job_cond.resvid_list = list_create(NULL);
+	list_append(job_cond.resvid_list, resv_id);
+
+	job_list = as_mysql_jobacct_process_get_jobs(
+			mysql_conn, uid, &job_cond);
+
+	if (job_list && list_count(job_list))
+		list_for_each(job_list, _add_usage_to_resv, resv);
+
+	FREE_NULL_LIST(job_cond.cluster_list);
+	FREE_NULL_LIST(job_cond.resvid_list);
+	FREE_NULL_LIST(job_list);
+}
+
 extern int as_mysql_add_resv(mysql_conn_t *mysql_conn,
 			     slurmdb_reservation_rec_t *resv)
 {
@@ -497,7 +560,6 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 	int i=0, is_admin=1;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	slurmdb_job_cond_t job_cond;
 	void *curr_cluster = NULL;
 	List local_cluster_list = NULL;
 	List use_cluster_list = as_mysql_cluster_list;
@@ -553,9 +615,10 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 
 	with_usage = resv_cond->with_usage;
 
-	memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
-	job_cond.db_flags = SLURMDB_JOB_FLAG_NOTSET;
 	if (resv_cond->nodes) {
+		slurmdb_job_cond_t job_cond;
+		memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
+		job_cond.db_flags = SLURMDB_JOB_FLAG_NOTSET;
 		job_cond.usage_start = resv_cond->time_start;
 		job_cond.usage_end = resv_cond->time_end;
 		job_cond.used_nodes = resv_cond->nodes;
@@ -571,9 +634,6 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 		job_cond.cluster_list = resv_cond->cluster_list;
 		local_cluster_list = setup_cluster_list_with_inx(
 			mysql_conn, &job_cond, (void **)&curr_cluster);
-	} else if (with_usage) {
-		job_cond.usage_start = resv_cond->time_start;
-		job_cond.usage_end = resv_cond->time_end;
 	}
 
 	(void) _setup_resv_cond_limits(resv_cond, &extra);
@@ -640,68 +700,12 @@ empty:
 		resv->flags = slurm_atoull(row[RESV_REQ_FLAGS]);
 		resv->tres_str = xstrdup(row[RESV_REQ_TRES]);
 		resv->unused_wall = atof(row[RESV_REQ_UNUSED]);
-		if (with_usage) {
-			if (!job_cond.resvid_list)
-				job_cond.resvid_list = list_create(NULL);
-			list_append(job_cond.resvid_list, row[RESV_REQ_ID]);
-		}
+		if (with_usage)
+			_get_usage_for_resv(
+				mysql_conn, uid, resv, row[RESV_REQ_ID]);
 	}
 
 	FREE_NULL_LIST(local_cluster_list);
-
-	if (with_usage && resv_list && list_count(resv_list)) {
-		List job_list = as_mysql_jobacct_process_get_jobs(
-			mysql_conn, uid, &job_cond);
-		ListIterator itr = NULL, itr2 = NULL;
-		slurmdb_job_rec_t *job = NULL;
-		slurmdb_reservation_rec_t *resv = NULL;
-
-		if (!job_list || !list_count(job_list))
-			goto no_jobs;
-
-		itr = list_iterator_create(job_list);
-		itr2 = list_iterator_create(resv_list);
-		while ((job = list_next(itr))) {
-			int set = 0;
-			while ((resv = list_next(itr2))) {
-				int start   = job->start;
-				int end     = job->end;
-				int elapsed = 0;
-				/* since a reservation could have
-				   changed while a job was running we
-				   have to make sure we get the time
-				   in the correct record.
-				*/
-				if (resv->id != job->resvid)
-					continue;
-				set = 1;
-
-				if (start < resv->time_start)
-					start = resv->time_start;
-				if (!end || end > resv->time_end)
-					end = resv->time_end;
-
-				if ((elapsed = (end - start)) < 1)
-					continue;
-
-				slurmdb_transfer_tres_time(
-					&resv->tres_list, job->tres_alloc_str,
-					elapsed);
-			}
-			list_iterator_reset(itr2);
-			if (!set) {
-				error("we got a job %u with no reservation "
-				      "associatied with it?", job->jobid);
-			}
-		}
-
-		list_iterator_destroy(itr2);
-		list_iterator_destroy(itr);
-	no_jobs:
-		FREE_NULL_LIST(job_list);
-	}
-
-	FREE_NULL_LIST(job_cond.resvid_list);
 
 	/* free result after we use the list with resv id's in it. */
 	mysql_free_result(result);
