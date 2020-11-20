@@ -703,6 +703,49 @@ static void _stop_aeld_thread(void)
 }
 #endif
 
+static void _remove_job_from_blades(select_jobinfo_t *jobinfo)
+{
+	int i;
+
+	slurm_mutex_lock(&blade_mutex);
+	for (i=0; i<blade_cnt; i++) {
+		if (!bit_test(jobinfo->blade_map, i))
+			continue;
+		blade_array[i].job_cnt--;
+		if ((int32_t)blade_array[i].job_cnt < 0) {
+			error("blade %d job_cnt underflow", i);
+			blade_array[i].job_cnt = 0;
+		}
+
+		if (jobinfo->npc == NPC_SYS) {
+			bit_nclear(blade_nodes_running_npc, 0,
+				   node_record_count-1);
+		} else if (jobinfo->npc) {
+			bit_not(blade_nodes_running_npc);
+			bit_or(blade_nodes_running_npc,
+			       blade_array[i].node_bitmap);
+			bit_not(blade_nodes_running_npc);
+		}
+	}
+
+	if (jobinfo->npc)
+		last_npc_update = time(NULL);
+
+	slurm_mutex_unlock(&blade_mutex);
+}
+
+static void _remove_step_from_blades(step_record_t *step_ptr)
+{
+	select_jobinfo_t *jobinfo = step_ptr->job_ptr->select_jobinfo->data;
+	select_jobinfo_t *step_jobinfo = step_ptr->select_jobinfo->data;
+
+	if (jobinfo->used_blades) {
+		bit_not(jobinfo->used_blades);
+		bit_or(jobinfo->used_blades, step_jobinfo->blade_map);
+		bit_not(jobinfo->used_blades);
+	}
+}
+
 static void _free_blade(blade_info_t *blade_info)
 {
 	FREE_NULL_BITMAP(blade_info->node_bitmap);
@@ -1546,6 +1589,9 @@ extern int select_p_job_fini(job_record_t *job_ptr)
 #endif
 
 	other_job_fini(job_ptr);
+
+	_remove_job_from_blades(job_ptr->select_jobinfo->data);
+
 	return SLURM_SUCCESS;
 }
 
@@ -1703,6 +1749,8 @@ extern int select_p_step_finish(step_record_t *step_ptr, bool killing_step)
 		jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
 
 	other_step_finish(step_ptr, killing_step);
+
+	_remove_step_from_blades(step_ptr);
 
 	return SLURM_SUCCESS;
 }
