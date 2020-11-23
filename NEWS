@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix resource allocation response message environment allocation size.
  -- Ensure that details->env_sup is NULL terminated.
  -- select/cray_aries - Correctly remove jobs/steps from blades using NPC.
+ -- cons_tres - Avoid max_node_gres when entire node is allocated with
+    --ntasks-per-gpu.
 
 * Changes in Slurm 20.11.0
 ==========================
