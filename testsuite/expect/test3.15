@@ -30,6 +30,8 @@ set exit_code		0
 set license_name        "test$test_id"
 set resv_name           "resv$test_id"
 set user_name		""
+set job_id1             0
+set job_id2             0
 
 proc submit_job { license_count } {
 	global bin_sleep license_name sbatch number exit_code
@@ -41,9 +43,7 @@ proc submit_job { license_count } {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch not responding"
-			set exit_code 1
-			exp_continue
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
@@ -58,6 +58,7 @@ proc submit_job { license_count } {
 
 proc reason_is_licenses { job_id } {
 	global squeue
+
 	set reason_licenses 0
 	spawn $squeue -j $job_id -o "%r"
 	expect {
@@ -66,9 +67,7 @@ proc reason_is_licenses { job_id } {
 			exp_continue
 		}
 		timeout {
-			log_error "squeue not responding"
-			set exit_code 1
-			exp_continue
+			fail "squeue not responding"
 		}
 		eof {
 			wait
@@ -97,9 +96,7 @@ proc test_license_count {want_total want_used want_free } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
-			exp_continue
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -153,8 +150,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -172,6 +168,27 @@ set config_file $config_dir/slurm.conf
 set cwd "[$bin_pwd]"
 
 save_conf $config_file
+
+proc cleanup {} {
+	global job_id1 job_id2
+
+	#
+	# Cancel the jobs and
+	# Restore the configuration
+	#
+	if {$job_id1 != 0} {
+		cancel_job $job_id1
+	}
+	if {$job_id2 != 0} {
+		cancel_job $job_id2
+	}
+
+	restore_conf $config_file
+
+	if [reconfigure] {
+		log_error "Error restoring reconfiguration"
+	}
+}
 
 set sep ""
 if {[string length ${licenses}] > 0} {
@@ -271,14 +288,3 @@ if { [reason_is_licenses $job_id2] != 0 } {
 # Test scontrol show license output
 #
 test_license_count 8 7 1
-
-#
-# Cancel the jobs and
-# Restore the configuration
-#
-cancel_job $job_id1
-cancel_job $job_id2
-restore_conf $config_file
-if [reconfigure] {
-	fail "Error restoring reconfiguration"
-}

@@ -28,11 +28,16 @@
 ############################################################################
 source ./globals
 
-set exit_code            0
 set file_in              "test$test_id.input"
 set file_out             "test$test_id.input"
 set got_job_grps         0
 set got_login_grps       0
+
+proc cleanup {} {
+	global file_in file_out
+
+	file delete $file_in $file_out
+}
 
 if {[get_config_param "FrontendName"] ne "MISSING" && ![is_super_user]} {
 	skip "This test is incompatible with front-end systems"
@@ -94,10 +99,4 @@ expect {
 
 if {$got_job_grps == 0} {
 	fail "Did not get user info from slurm job"
-}
-
-if {$exit_code == 0} {
-	file delete $file_in $file_out
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

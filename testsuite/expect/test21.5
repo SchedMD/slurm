@@ -100,9 +100,8 @@ set my_pid [spawn $sacctmgr -i delete cluster $tc1]
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr delete not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			fail "sacctmgr delete not responding"
 		}
 		eof {
 			wait
@@ -136,9 +135,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
@@ -161,8 +159,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr is not responding"
-		set exit_code 1
+		fail "sacctmgr is not responding"
 	}
 	eof {
 		wait
@@ -213,9 +210,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
@@ -238,9 +234,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait

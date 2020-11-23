@@ -24,27 +24,41 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set feature	"test$test_id"
-set file_in     "test$test_id.input"
+set exit_code               0
+set feature	            "test$test_id"
+set file_in                 "test$test_id.input"
+set node_name               ""
+set orig_avail_node_feat    ""
+set orig_active_node_feat   ""
 
 if {![is_super_user]} {
 	skip "This test can't be run without being a super user of the cluster"
 }
 
 proc set_node_feature {node_name new_avail_feature new_active_feature} {
-	global scontrol exit_code
+	global scontrol
 
 	spawn $scontrol update node=$node_name AvailableFeatures=$new_avail_feature ActiveFeatures=$new_active_feature
 	expect {
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
 		}
 	}
+}
+
+proc cleanup {} {
+	global node_name orig_avail_node_feat orig_active_node_feat
+	global bin_rm file_in
+
+	# Explicitly reset features, just to be safe
+	if {$node_name ne ""} {
+		set_node_feature $node_name $orig_avail_node_feat $orig_active_node_feat
+	}
+
+	exec $bin_rm -f $file_in
 }
 
 # Identify a node to use
@@ -65,9 +79,8 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -82,9 +95,7 @@ set match 0
 spawn $scontrol show node $node_name
 expect {
 	-re "AvailableFeatures=($re_word_str)" {
-		if {![string compare orig_avail_node_feat "(null)"]} {
-			set orig_avail_node_feat ""
-		} else {
+		if [string compare $expect_out(1,string) "(null)"] {
 			set orig_avail_node_feat $expect_out(1,string)
 		}
 		incr match
@@ -96,9 +107,7 @@ expect {
 		exp_continue
 	}
 	-re "ActiveFeatures=($re_word_str)" {
-		if {![string compare orig_avail_node_feat "(null)"]} {
-			set orig_active_node_feat ""
-		} else {
+		if [string compare $expect_out(1,string) "(null)"] {
 			set orig_active_node_feat $expect_out(1,string)
 		}
 		incr match
@@ -110,8 +119,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -149,9 +157,8 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -179,9 +186,8 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -191,11 +197,6 @@ if {$match != 1} {
 	fail "Ran job with what should be invalid constraint"
 }
 
-# Explicitly reset features, just to be safe
-set_node_feature $node_name $orig_avail_node_feat $orig_active_node_feat
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

@@ -31,6 +31,12 @@ source ./globals
 set exit_code   0
 set file_prog   "test$test_id.prog"
 
+proc cleanup {} {
+	global bin_rm file_prog
+
+	exec $bin_rm -f $file_prog
+}
+
 #
 # Test if memory affinity support is supported.
 #
@@ -132,8 +138,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding or failure to recognize prompt"
-		set exit_code 1
+		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $test_prompt {
 	}
@@ -181,8 +186,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding or failure to recognize prompt"
-		set exit_code 1
+		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $test_prompt
 }
@@ -209,9 +213,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding or failure to recognize prompt"
-		set exit_code 1
-		exp_continue
+		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $test_prompt
 }
@@ -233,8 +235,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding or failure to recognize prompt"
-		set exit_code 1
+		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $test_prompt
 }
@@ -255,8 +256,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding or failure to recognize prompt"
-		set exit_code 1
+		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $test_prompt
 }
@@ -284,9 +284,7 @@ while {$cpu_cnt < $task_cnt} {
 			exp_continue
 		}
 		timeout {
-			log_error "salloc not responding or failure to recognize prompt"
-			set exit_code 1
-			exp_continue
+			fail "salloc not responding or failure to recognize prompt"
 		}
 		-re $test_prompt
 	}
@@ -317,9 +315,7 @@ while {$cpu_cnt < $task_cnt} {
 			exp_continue
 		}
 		timeout {
-			log_error "salloc not responding or failure to recognize prompt"
-			set exit_code 1
-			exp_continue
+			fail "salloc not responding or failure to recognize prompt"
 		}
 		-re $test_prompt
 	}
@@ -391,9 +387,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding or failure to recognize prompt"
-		set exit_code 1
-		exp_continue
+		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $test_prompt
 }
@@ -418,9 +412,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding or failure to recognize prompt"
-		set exit_code 1
-		exp_continue
+		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $test_prompt
 }
@@ -445,9 +437,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding or failure to recognize prompt"
-		set exit_code 1
-		exp_continue
+		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $test_prompt
 }
@@ -472,8 +462,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding or failure to recognize prompt"
-		set exit_code 1
+		fail "salloc not responding or failure to recognize prompt"
 		exp_continue
 	}
 	-re $test_prompt
@@ -499,9 +488,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding or failure to recognize prompt"
-		set exit_code 1
-		exp_continue
+		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $test_prompt
 }
@@ -526,9 +513,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding or failure to recognize prompt"
-		set exit_code 1
-		exp_continue
+		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $test_prompt
 }
@@ -547,18 +532,15 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		log_error "salloc not responding or failure to recognize prompt"
 		slow_kill $salloc_pid
-		set exit_code 1
+		fail "salloc not responding or failure to recognize prompt"
 	}
 	eof {
 		wait
 	}
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_prog
-} else {
+if {$exit_code != 0} {
 	fail "This test can fail if the node configuration in slurm.conf (sockets, cores, threads) differs from the actual configuration. SPANK plugins (e.g. auto-affinity.so)"
 }
 

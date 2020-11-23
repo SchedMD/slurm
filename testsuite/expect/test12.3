@@ -101,9 +101,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr add not responding"
 		slow_kill $sadd_pid
-		set exit_code 1
+		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
@@ -119,9 +118,8 @@ if {$aamatches != 1} {
 set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$test_acct]
 expect {
 	 timeout {
-		log_error "sacctmgr add not responding"
 		slow_kill $sadd_pid
-		set exit_code 1
+		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
@@ -145,9 +143,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -175,9 +172,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -205,9 +201,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -260,9 +255,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait

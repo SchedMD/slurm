@@ -56,8 +56,7 @@ proc cleanup { } {
 	spawn $scontrol update node=$test_node state=idle
 	expect {
 		timeout {
-			log_warn "scontrol is not responding"
-			set exit_code 1
+			log_error "scontrol is not responding"
 		}
 		eof {
 			wait

@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code      0
 set skipped        ""
 set file_in1       "test$test_id.input1"
 set file_in2       "test$test_id.input2"
@@ -336,9 +335,6 @@ test_gpus_cnt "--sockets-per-node=1 --gpus-per-socket=1 --ntasks-per-core=1 -c $
 set target_gpus [expr min($sockets_per_node, $gpu_cnt)]
 test_gpus_cnt "--sockets-per-node=$sockets_per_node --gpus-per-socket=1 --ntasks-per-core=1 -c $cpus_per_node" $target_gpus $target_gpus
 
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
 if {[llength $skipped] != 0} {
 	skip "Some tests skipped:\n[join $skipped \n]"
 }

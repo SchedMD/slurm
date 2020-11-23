@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code            0
 set job_id               0
 set user_name            [get_my_user_name]
 set default_partition    [default_partition]
@@ -37,7 +36,9 @@ set res_name             "res_$test_name"
 proc cleanup {} {
 	global scontrol res_name job_id
 
-	cancel_job $job_id
+	if {$job_id > 0} {
+		cancel_job $job_id
+	}
 	run_command "$scontrol delete reservation=$res_name"
 }
 
@@ -138,7 +139,3 @@ test_flex true false
 test_flex false true
 # Test without FLEX flag and when reservation is INACTIVE
 test_flex false false
-
-if {$exit_code} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

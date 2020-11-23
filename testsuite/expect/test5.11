@@ -41,6 +41,16 @@ set node_h           ""
 set cpu_h_cnt        0
 set test_part        "test$test_id\_part"
 
+proc cleanup {} {
+	global job_id scontrol test_part bin_rm script
+
+	if {$job_id > 0} {
+		cancel_job $job_id
+	}
+	exec $scontrol delete partition=$test_part
+	exec $bin_rm -fr $script
+}
+
 make_bash_script $script "
 sleep 10
 "
@@ -52,8 +62,7 @@ if {![is_super_user]} {
 }
 
 proc sub_job { cpu_cnt part } {
-
-	global sbatch script job_id number exit_code
+	global sbatch script job_id number
 
 	set job_id 0
 	spawn $sbatch -t1 -H -p$part -n$cpu_cnt -o/dev/null $script
@@ -63,8 +72,7 @@ proc sub_job { cpu_cnt part } {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch is not responding"
-			set exit_code 1
+			fail "sbatch is not responding"
 		}
 		eof {
 			wait
@@ -77,7 +85,6 @@ proc sub_job { cpu_cnt part } {
 }
 
 proc check_node_cnt { exp_nodes } {
-
 	global squeue exit_code
 
 	set match 0
@@ -88,8 +95,7 @@ proc check_node_cnt { exp_nodes } {
 			exp_continue
 		}
 		timeout {
-			log_error "squeue is not responding"
-			set exit_code 1
+			fail "squeue is not responding"
 		}
 		eof {
 			wait
@@ -103,14 +109,12 @@ proc check_node_cnt { exp_nodes } {
 }
 
 proc update_job { job_id part } {
-
-	global scontrol exit_code
+	global scontrol
 
 	spawn $scontrol update jobid=$job_id partition=$part
 	expect {
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -134,8 +138,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -153,8 +156,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -232,8 +234,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sinfo is not responding"
-		set exit_code 1
+		fail "sinfo is not responding"
 	}
 	eof {
 		wait
@@ -252,8 +253,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sinfo is not responding"
-		set exit_code 1
+		fail "sinfo is not responding"
 	}
 	eof {
 		wait
@@ -267,9 +267,6 @@ if {$cpu_l_cnt == $cpu_h_cnt} {
 		each with different cpu counts -- finishing test now."
 
 	exec $bin_rm -fr $script
-	if {$exit_code != 0} {
-		fail "Test failed due to prior errors"
-	}
 	pass
 }
 
@@ -351,21 +348,6 @@ sub_job $cpu_test_cnt $default_part
 sleep 4
 test_and_check $job_id $test_part $exp_nodes
 
-sleep 4
-cancel_job $job_id
-
-spawn $scontrol delete partition=$test_part
-expect {
-	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-exec $bin_rm -fr $script
 if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

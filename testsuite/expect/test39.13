@@ -32,6 +32,13 @@ set file_in2       "test$test_id.input2"
 set file_out       "test$test_id.output"
 set number_commas  "\[0-9_,\]+"
 
+proc cleanup {} {
+	global scancel test_id bin_rm file_in1 file_in2
+
+	exec $scancel -n "test$test_id"
+	exec $bin_rm -f $file_in1 $file_in2
+}
+
 if {![check_config_select "cons_tres"]} {
 	skip "This test is only compatible with select/cons_tres"
 }
@@ -102,8 +109,7 @@ for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch not responding"
-			set exit_code 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
@@ -159,18 +165,14 @@ if {$exit_code != 0} {
 	spawn $squeue -tall -n "test$test_id"
 	expect {
 		timeout {
-			log_error "squeue not responding"
-			set exit_code 1
+			fail "squeue not responding"
 		}
 		eof {
 			wait
 		}
 	}
 }
-exec $scancel -n "test$test_id"
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in1 $file_in2
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

@@ -35,6 +35,12 @@ set exit_code   0
 set file_in     "test$test_id.input"
 set job_id      0
 
+proc cleanup {} {
+	global file_in
+
+	exec rm -f $file_in
+}
+
 #
 # Build input script file
 # The "sleep 1" ensures the background tasks is step 0 and foreground tasks is step 1
@@ -85,8 +91,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scancel not responding"
-		set exit_code 1
+		fail "scancel not responding"
 	}
 	eof {
 		wait
@@ -106,8 +111,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scancel not responding"
-		set exit_code 1
+		fail "scancel not responding"
 	}
 	eof {
 		wait
@@ -117,8 +121,6 @@ if {$matches != 1} {
 	fail "scancel with step_id failed"
 }
 
-if {$exit_code == 0} {
-	exec rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

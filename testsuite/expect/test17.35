@@ -31,6 +31,12 @@ set exit_code  0
 set job_cnt    100
 set target     200
 
+proc cleanup {} {
+	global bin_rm file_in
+
+	exec $bin_rm -f $file_in
+}
+
 if {[get_config_param "SwitchType"] eq "switch/cray"} {
 	set target 65
 }
@@ -73,8 +79,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -88,8 +93,7 @@ if {$match != $job_cnt} {
 spawn $scancel --name=$file_in
 expect {
 	timeout {
-		log_error "scancel is not responding"
-		set exit_code 1
+		fail "scancel is not responding"
 	}
 	eof {
 		wait
@@ -106,8 +110,6 @@ if {$rate < $target} {
 	fail "Job submit rate of $rate below target of $target. This may be due to use of NFS rather than local storage for logs or state information"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

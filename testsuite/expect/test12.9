@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code	0
 set timeout	60
 
 #
@@ -97,8 +96,7 @@ expect {
 		fail "sbatch did not submit jobs"
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -112,11 +110,10 @@ expect {
 		log_debug "Job $array2_job_id was submitted"
 	}
 	-re "error" {
-		fail "Sbatch did not submit jobs"
+		fail "sbatch did not submit jobs"
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -150,7 +147,3 @@ run_sacct "$array1_job_id,$array2_job_id\_3" [expr $expected_steps * 6] $expecte
 
 # Now test sacct one task from the first array and the second full
 run_sacct "$array1_job_id\_2,$array2_job_id" $expected_steps [expr $expected_steps * 6]
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

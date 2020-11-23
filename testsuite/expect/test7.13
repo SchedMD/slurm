@@ -27,10 +27,15 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
 set file_in          "test$test_id.input"
 set file_prog1       "test$test_id.prog1"
 set file_prog2       "test$test_id.prog2"
+
+proc cleanup {} {
+	global bin_rm file_in file_prog1 file_prog2
+
+	exec $bin_rm -f $file_in $file_prog1 $file_prog2
+}
 
 set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
 if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $accounting_storage_enforce "nojobs"]} {
@@ -251,10 +256,4 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 	if {$matches != 4} {
 		fail "sacct of $job_id failed ($matches != 4)"
 	}
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_prog1 $file_prog2
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

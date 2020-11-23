@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set matches     0
 
 #
@@ -46,8 +45,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "squeue not responding"
-		set exit_code 1
+		fail "squeue not responding"
 	}
 	eof {
 		wait
@@ -56,7 +54,4 @@ expect {
 
 if {$matches != 2} {
 	fail "squeue failed to report help message"
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

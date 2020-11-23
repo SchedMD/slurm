@@ -32,6 +32,12 @@ source ./globals
 set exit_code        0
 set file_prog_get    "test$test_id.prog"
 
+proc cleanup {} {
+	global bin_rm file_prog_get
+
+	exec $bin_rm -f $file_prog_get
+}
+
 # PMI library not in Cray RPM
 if {[get_config_param "SwitchType"] eq "switch/cray"} {
 	skip "This test is incompatible with Cray systems"
@@ -60,9 +66,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $prog_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -94,17 +99,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_prog_get
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

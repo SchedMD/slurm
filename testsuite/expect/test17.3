@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set version     0
 
 #
@@ -42,9 +41,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
-		exp_continue
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -53,7 +50,4 @@ expect {
 
 if {$version != 1} {
 	fail "Did not get proper sbatch version number"
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

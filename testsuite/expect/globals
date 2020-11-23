@@ -4232,10 +4232,7 @@ proc get_het_job_ids { jobid {use_offset 0}} {
 #		The cluster to reconfigure
 #
 # RETURN VALUE
-#	void
-#
-# ENVIRONMENT
-#	Sets exit_code to 1 on failure.
+#	RETURN_SUCCESS on success, otherwise RETURN_ERROR
 #
 ################################################################
 

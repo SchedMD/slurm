@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
 set matches      0
 
 #
@@ -46,8 +45,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sinfo not responding"
-		set exit_code 1
+		fail "sinfo not responding"
 	}
 	eof {
 		wait
@@ -55,8 +53,4 @@ expect {
 }
 if {$matches == 0} {
 	fail "sinfo --list-reason output format failure"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

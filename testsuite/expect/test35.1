@@ -34,6 +34,14 @@ set script_mk   "test$test_id.mk.bash"
 set script_rm   "test$test_id.rm.bash"
 set script_use  "test$test_id.use.bash"
 
+proc cleanup {} {
+	global bin_rm output_mk output_rm output_use
+	global script_mk script_rm script_use
+
+	exec $bin_rm -f $output_mk $output_rm $output_use
+	exec $bin_rm -f $script_mk $script_rm $script_use
+}
+
 proc find_bb_name { fname bb_name } {
 	global bin_cat
 
@@ -80,8 +88,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -110,8 +117,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -126,8 +132,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -173,8 +178,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -191,9 +195,6 @@ if {$job_id_rm == 0} {
 	fail "Job deleting burst buffer failed to do so"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $output_mk $output_rm $output_use
-	exec $bin_rm -f $script_mk $script_rm $script_use
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

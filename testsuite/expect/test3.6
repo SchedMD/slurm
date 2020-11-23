@@ -58,8 +58,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -77,8 +76,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -112,8 +110,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -142,8 +139,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -170,8 +166,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -191,8 +186,7 @@ if {$hidden == 0} {
 spawn $scontrol delete PartitionName=$part_name
 expect {
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -215,8 +209,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait

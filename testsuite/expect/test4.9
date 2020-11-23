@@ -46,8 +46,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sinfo not responding"
-		set exit_code 1
+		fail "sinfo not responding"
 	}
 	eof {
 		wait
@@ -72,8 +71,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sinfo not responding"
-		set exit_code 1
+		fail "sinfo not responding"
 	}
 	eof {
 		wait

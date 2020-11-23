@@ -41,7 +41,6 @@ source ./globals
 source ./globals_accounting
 source ./globals_federation
 
-set exit_code    0
 set fed_name     "feda"
 set user_name    ""
 set srun_job_cnt 0
@@ -81,16 +80,14 @@ proc sbatch { options regex } {
 			}
 		}
 		timeout {
-			log_error "sbatch not responding"
-			end_it 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$matches != 1} {
-		log_error "batch submit failure: expected $regex"
-		end_it 1
+		fail "batch submit failure: expected $regex"
 	}
 
 	return $job_id
@@ -111,8 +108,7 @@ proc squeue { regex } {
 		}
 	}
 	if {$matches != 1} {
-		log_error "unexpected error in squeue. expected $regex"
-		end_it 1
+		fail "Unexpected error in squeue. expected $regex"
 	}
 }
 
@@ -138,14 +134,6 @@ proc cleanup { } {
 	return [delete_federations $fed_name]
 }
 
-proc end_it { exit_code } {
-	global test_id my_squeue
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
-}
-
 #start test
 
 if {![check_federation_setup]} {
@@ -160,14 +148,12 @@ set user_name [get_my_user_name]
 
 # Remove existing setup
 if {[cleanup] != 0} {
-	log_error "failed to cleanup"
-	end_it 1
+	fail "Failed to cleanup"
 }
 
 # add clusters to federation
 if {[setup_federation $fed_name]} {
-	log_error "failed to setup federation"
-	end_it 1
+	fail "Failed to setup federation"
 }
 
 log_info "################################################################"
@@ -194,17 +180,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
-		set exit_code 1
+		fail "sacctmgr mod not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$exit_code || $matches != 4} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+if {$matches != 4} {
+	fail "Unexpected error. Got $matches"
 }
 
 set matches 0
@@ -227,17 +211,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
-		set exit_code 1
+		fail "sacctmgr mod not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$exit_code || $matches != 4} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+if {$matches != 4} {
+	fail "Unexpected error. Got $matches"
 }
 
 set matches 0
@@ -260,17 +242,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
-		set exit_code 1
+		fail "sacctmgr mod not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$exit_code || $matches != 4} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+if {$matches != 4} {
+	fail "Unexpected error. Got $matches"
 }
 
 log_info "################################################################"
@@ -328,6 +308,3 @@ set regf3 "CLUSTER: $fedc3$eol\\s*"
 squeue "$regf1$regf2$regf3"
 
 sbatch "--cluster-constraint=fa -M$fedc2" "sbatch: error: Batch.+"
-
-# All Done
-end_it 0

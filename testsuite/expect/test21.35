@@ -83,7 +83,6 @@ array set reset_assoc_val {
 }
 
 proc check_limit { type name } {
-
 	global sacctmgr sbatch lim_type_type i option max_tres_type
 	global job_id test_qos test_acct reset_qos_val reset_assoc_val
 	global file_in number exit_code tres_cpu_mult
@@ -101,8 +100,7 @@ proc check_limit { type name } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -138,8 +136,7 @@ proc check_limit { type name } {
 			set exit_code 1
 		}
 		timeout {
-			log_error "srun is not responding"
-			set exit_code 1
+			fail "srun is not responding"
 		}
 		eof {
 			wait
@@ -159,16 +156,14 @@ proc check_limit { type name } {
 
 
 proc cleanup { } {
-
 	global sacctmgr file_in bin_rm test_acct test_qos exit_code
-	global partition save_billing_weights scontrol
+	global partition save_billing_weights scontrol job_id
 
 	# Delete test account and qos
 	spawn $sacctmgr -i delete account $test_acct
 	expect {
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -178,8 +173,7 @@ proc cleanup { } {
 	spawn $sacctmgr -i delete qos $test_qos
 	expect {
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -194,8 +188,7 @@ proc cleanup { } {
 				set exit_code 1
 			}
 			timeout {
-				log_error "scontrol is not responding"
-				set exit_code 1
+				fail "scontrol is not responding"
 			}
 			eof {
 				wait
@@ -203,9 +196,13 @@ proc cleanup { } {
 		}
 	}
 
+	# Cancel the submitted job
+	if {$job_id != 0} {
+		cancel_job $job_id
+	}
+
 	# Remove test script
 	exec $bin_rm -f $file_in
-
 }
 
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
@@ -235,8 +232,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr is not responding"
-		set exit_code 1
+		fail "sacctmgr is not responding"
 	}
 	eof {
 		wait
@@ -255,8 +251,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error"sacctmgr is not responding"
-		set exit_code 1
+		fail "sacctmgr is not responding"
 	}
 	eof {
 		wait
@@ -270,8 +265,7 @@ if {$match != 1} {
 spawn $sacctmgr -i create user name=[get_my_user_name] account=$test_acct
 expect {
 	timeout {
-		log_error"sacctmgr is not responding"
-		set exit_code 1
+		fail "sacctmgr is not responding"
 	}
 	eof {
 		wait
@@ -287,8 +281,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr is not responding"
-		set exit_code 1
+		fail "sacctmgr is not responding"
 	}
 	eof {
 		wait
@@ -302,8 +295,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -317,8 +309,7 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -327,7 +318,6 @@ expect {
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-
 
 for {set i 0} {$i < 3} {incr i} {
 
@@ -355,8 +345,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr is not responding"
-		set exit_code 1
+		fail "sacctmgr is not responding"
 	}
 	eof {
 		wait
@@ -380,8 +369,7 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		log_error "srun is not responding"
-		set exit_code 1
+		fail "srun is not responding"
 	}
 	eof {
 		wait
@@ -391,9 +379,6 @@ expect {
 if {$match != 1 || $job_id} {
 	fail "Job should have been killed upon submission"
 }
-
-# Cancel the submitted job
-cancel_job $job_id
 
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors"

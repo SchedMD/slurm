@@ -51,8 +51,7 @@ proc check_alloc { } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -73,8 +72,7 @@ proc check_alloc { } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacct is not responding"
-			set exit_code 1
+			fail "sacct is not responding"
 		}
 		eof {
 			wait
@@ -92,8 +90,7 @@ proc check_alloc { } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -138,8 +135,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc is not responding"
-		set exit_code 1
+		fail "salloc is not responding"
 	}
 	eof {
 		wait
@@ -159,8 +155,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc is not responding"
-		set exit_code 1
+		fail "salloc is not responding"
 	}
 	eof {
 		wait
@@ -181,8 +176,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding\n"
-		set exit_code 1
+		fail "salloc not responding\n"
 	}
 	eof {
 		wait

@@ -31,6 +31,12 @@ source ./globals
 set file_in     "test$test_id.input"
 set exit_code   0
 
+proc cleanup {} {
+	global bin_rm file_in
+
+	exec $bin_rm -f $file_in
+}
+
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
@@ -74,20 +80,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 4} {
-	log_error "Did not get expected multi-program output"
-	set exit_code 1
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	fail "Did not get expected multi-program output"
 } else {
 	log_debug "So far, so good"
 }
@@ -132,9 +133,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -169,9 +169,8 @@ expect {
 		incr matches
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -210,9 +209,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -222,8 +220,6 @@ if {$matches != 2} {
 	fail "Processing MPMD line continuation ($matches != 2)"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

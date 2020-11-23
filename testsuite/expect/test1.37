@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set task_num    0
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
@@ -55,9 +54,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -66,8 +64,4 @@ expect {
 
 if {$task_output != $task_num} {
 	fail "Failed to get output from all tasks"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

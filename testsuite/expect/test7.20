@@ -87,15 +87,6 @@ proc cleanup_accounts {} {
 	remove_acct "" $ta1
 }
 
-proc cleanup {} {
-	global config_dir
-
-	cleanup_accounts
-	restore_conf $config_dir/job_submit.lua
-	restore_conf $config_dir/slurm.conf
-	reconfigure
-}
-
 proc check_rc { exit_code } {
 	if {$exit_code != 0} {
 		fail "Exiting with exit code $exit_code"
@@ -244,6 +235,15 @@ if {![param_contains [get_config_param "AccountingStorageEnforce"] "limits"]} {
 set nodes [get_nodes_by_request "--ntasks-per-node=5 -N3"]
 if { [llength $nodes] != 3 } {
 	skip "System too small for test, it needs '--ntasks-per-node=5 -N3'"
+}
+
+proc cleanup {} {
+	global config_dir
+
+	cleanup_accounts
+	restore_conf $config_dir/job_submit.lua
+	restore_conf $config_dir/slurm.conf
+	reconfigure
 }
 
 cleanup_accounts

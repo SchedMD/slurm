@@ -34,7 +34,6 @@ set ta2		"test$test_id-account.2"
 set tu1     [get_my_user_name]
 set tq1     "test$test_id-qos.1"
 set tq2     "test$test_id-qos.2"
-set exit_code	0
 
 # account options
 array set acct_1 {}

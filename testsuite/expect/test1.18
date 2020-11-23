@@ -81,8 +81,7 @@ if {[string compare $licenses ""] != 0} {
 			exp_continue
 		}
 		timeout {
-			log_error "srun not responding. This test can fail if the selected license is in use"
-			set exit_code 1
+			fail "srun not responding. This test can fail if the selected license is in use"
 		}
 		eof {
 			wait

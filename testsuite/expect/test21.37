@@ -28,8 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without AccountStorageType=slurmdbd"
 }
@@ -62,9 +60,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr show stats not responding"
-		set exit_code 1
 		slow_kill $as_pid
+		fail "sacctmgr show stats not responding"
 	}
 	eof {
 		wait
@@ -75,7 +72,3 @@ if {$rpc_rec_cnt > 0} {
 	incr matches
 }
 subtest {$matches == 5} "sacctmgr should show all expected sections" "($matches != 5)"
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

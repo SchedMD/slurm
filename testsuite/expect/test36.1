@@ -50,8 +50,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "lsid not responding"
-		set exit_code 1
+		fail "lsid not responding"
 	}
 	eof {
 		wait
@@ -69,5 +68,5 @@ if {[string compare $control_machine $lsid_control_machine]} {
 }
 
 if {$exit_code} {
-	fail "Test failed due to previous errors"
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

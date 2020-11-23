@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code	0
 set task_num	2
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
@@ -41,15 +40,12 @@ if {$nb_nodes < 3} {
 	skip "Need 3 or more nodes in default partition"
 }
 
-proc end_it { exit_code } {
+proc cleanup {} {
 	global het_job_id scancel
+
 	if {$het_job_id > 0} {
 		exec $scancel $het_job_id
 	}
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
 }
 
 set het_job_id 0
@@ -71,14 +67,12 @@ expect {
 	-re "$test_prompt" {
 	}
 	timeout {
-		log_error "salloc : allocation not granted in $timeout seconds"
-		end_it 1
+		fail "salloc : allocation not granted in $timeout seconds"
 	}
 }
 
 if {$het_job_id == 0} {
-	log_error "salloc failure"
-	end_it 1
+	fail "salloc failure"
 }
 
 #
@@ -110,13 +104,11 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "squeue not responding"
-		end_it 1
+		fail "squeue not responding"
 	}
 }
 if {$index != 3} {
-	log_error "squeue failure ($index != 3)"
-	end_it 1
+	fail "squeue failure ($index != 3)"
 }
 
 log_info "Test Sending Jobs To Various Components"
@@ -134,13 +126,11 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding"
-		end_it 1
+		fail "srun not responding"
 	}
 }
 if { $matches != 1} {
-	log_error "srun failure $matches $expect_out(buffer)"
-	end_it 1
+	fail "srun failure $matches $expect_out(buffer)"
 }
 
 set matches 0
@@ -155,13 +145,11 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding"
-		end_it 1
+		fail "srun not responding"
 	}
 }
 if { $matches != 1} {
-	log_error "srun failure $matches $expect_out(buffer)"
-	end_it 1
+	fail "srun failure $matches $expect_out(buffer)"
 }
 
 set matches 0
@@ -176,13 +164,11 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding"
-		end_it 1
+		fail "srun not responding"
 	}
 }
 if { $matches != 1} {
-	log_error "srun failure $matches $expect_out(buffer)"
-	end_it 1
+	fail "srun failure $matches $expect_out(buffer)"
 }
 
 set matches 0
@@ -197,13 +183,11 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding"
-		end_it 1
+		fail "srun not responding"
 	}
 }
 if { $matches != 3} {
-	log_error "srun failure $matches $expect_out(buffer)"
-	end_it 1
+	fail "srun failure $matches $expect_out(buffer)"
 }
 
 set matches 0
@@ -218,13 +202,11 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding"
-		end_it 1
+		fail "srun not responding"
 	}
 }
 if { $matches != 2} {
-	log_error "srun failure $matches $expect_out(buffer)"
-	end_it 1
+	fail "srun failure $matches $expect_out(buffer)"
 }
 
 log_info "Testing Error Messages"
@@ -242,13 +224,11 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding"
-		end_it 1
+		fail "srun not responding"
 	}
 }
 if { $matches != 1} {
-	log_error "srun failure $matches $expect_out(buffer)"
-	end_it 1
+	fail "srun failure $matches $expect_out(buffer)"
 }
 
 set matches 0
@@ -263,13 +243,11 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding"
-		end_it 1
+		fail "srun not responding"
 	}
 }
 if { $matches != 1} {
-	log_error "srun failure $matches $expect_out(buffer)"
-	end_it 1
+	fail "srun failure $matches $expect_out(buffer)"
 }
 
 set matches 0
@@ -284,13 +262,11 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding"
-		end_it 1
+		fail "srun not responding"
 	}
 }
 if { $matches != 1} {
-	log_error "srun failure $matches $expect_out(buffer)"
-	end_it 1
+	fail "srun failure $matches $expect_out(buffer)"
 }
 
 send "exit\r"

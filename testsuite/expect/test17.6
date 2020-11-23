@@ -33,8 +33,13 @@ set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set tasks       0
-
 set task_cnt    2
+
+proc cleanup {} {
+	global file_in file_out
+
+	file delete $file_in $file_out
+}
 
 #
 # Submit a slurm job that will execute 'id' on $task_cnt tasks (or try anyway)
@@ -55,8 +60,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -70,8 +74,7 @@ if {$job_id != 0} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -115,8 +118,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -150,8 +152,6 @@ if {$task_cnt != $tasks} {
 	set exit_code 1
 }
 
-if {$exit_code == 0} {
-	file delete $file_in $file_out
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

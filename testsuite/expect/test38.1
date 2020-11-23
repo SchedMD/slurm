@@ -34,7 +34,6 @@ if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 	skip "This test requires SchedulerType = sched/backfill"
 }
 
-set exit_code    0
 set file_in      "test$test_id.in"
 set job_id       0
 
@@ -47,25 +46,22 @@ proc sbatch {} {
 	set sbatch_pid [spawn $sbatch -t1 -o /dev/null $file_in]
 	expect {
 		-re "Batch job submission failed" {
-			log_warn "Unable to execute test due to system configuration"
-			end_it 0
+			skip "Unable to execute test due to system configuration"
 		}
 		-re "Submitted batch job ($number)" {
 			incr matches
 			set job_id $expect_out(1,string)
 		}
 		timeout {
-			log_error "sbatch not responding"
 			slow_kill $sbatch_pid
-			end_it 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$matches != 1} {
-		log_error "batch submit failure"
-		end_it 1
+		fail "batch submit failure"
 	}
 
 	return $job_id
@@ -83,20 +79,10 @@ proc cleanup { } {
 	global scancel user_name bin_rm file_in
 	global test_id bin_bash
 
+	cancel_job_id
+
 	exec $bin_rm -f $file_in test$test_id*.out
 	return 0
-}
-
-proc end_it { exit_code } {
-	global test_id
-	cancel_job_id
-	if {$exit_code == 0} {
-		cleanup
-	}
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
 }
 
 #start test
@@ -147,16 +133,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 7 } {
-	log_error "Problem with scontrol ($matches != 7)"
-	end_it 1
+	fail "Problem with scontrol ($matches != 7)"
 }
 
 set js [parse_id_set $id_set $job_id]
@@ -189,16 +173,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 5} {
-	log_error "Problem with scontrol ($matches != 5)"
-	end_it 1
+	fail "Problem with scontrol ($matches != 5)"
 }
 
 set matches 0
@@ -226,17 +208,12 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 5} {
-	log_error "Problem with scontrol ($matches != 5)"
-	end_it 1
+	fail "Problem with scontrol ($matches != 5)"
 }
-
-# All Done
-end_it 0

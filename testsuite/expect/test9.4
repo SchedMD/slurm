@@ -41,9 +41,21 @@ set file_in       "test$test_id.input"
 set file_in_task  "test$test_id.%t.input"
 set file_out_task "test$test_id.%t.output"
 set job_name      "test$test_id"
+set cycle_count   [get_cycle_count]
+set task_cnt      $max_stress_tasks
 
-set cycle_count [get_cycle_count]
-set task_cnt    $max_stress_tasks
+proc cleanup {} {
+	global bin_rm file_in test_id task_cnt
+
+	# Destroy all input/output files
+	exec $bin_rm -f $file_in
+	for {set tsk 0} {$tsk < $task_cnt} {incr tsk} {
+		set file_in_glob  "test$test_id.$tsk.input"
+		set file_out_glob "test$test_id.$tsk.output"
+		exec $bin_rm -f $file_in_glob $file_out_glob
+	}
+}
+
 if {[get_config_param "LaunchType"] ne "launch/slurm"} {
 	skip "This test is only compatible with systems using launch/slurm"
 } else {
@@ -90,10 +102,8 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
-		exp_continue
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -135,13 +145,6 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 			incr success_cnt
 		}
 	}
-}
-# Destroy all input/output files
-exec $bin_rm -f $file_in
-for {set tsk 0} {$tsk < $task_cnt} {incr tsk} {
-	set file_in_glob  "test$test_id.$tsk.input"
-	set file_out_glob "test$test_id.$tsk.output"
-	exec $bin_rm -f $file_in_glob $file_out_glob
 }
 
 if {$exit_code != 0} {

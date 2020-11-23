@@ -41,7 +41,6 @@ source ./globals
 source ./globals_accounting
 source ./globals_federation
 
-set exit_code    0
 set fed_name     "feda"
 set file_in      "test$test_id.in"
 set user_name    ""
@@ -76,16 +75,14 @@ proc sacctmgr_show { regex } {
 			incr matches
 		}
 		timeout {
-			log_error "scontrol not responding"
-			end_it 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$matches != 1} {
-		log_error "didn't match regex $regex: $matches"
-		end_it 1
+		fail "Didn't match regex $regex: $matches"
 	}
 }
 
@@ -93,7 +90,6 @@ proc sacctmgr_mod { state } {
 	global my_sacctmgr eol fedc1
 
 	set matches 0
-	set exit_code 0
 
 	spawn $my_sacctmgr mod cluster $fedc1 set fedstate=$state -i
 	expect {
@@ -114,17 +110,15 @@ proc sacctmgr_mod { state } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr mod not responding"
 			slow_kill $my_pid
-			set exit_code 1
+			fail "sacctmgr mod not responding"
 		}
 		eof {
 			wait
 		}
 	}
-	if {$exit_code || $matches != 4} {
-		log_error "Unexpected error. Got $matches"
-		end_it 1
+	if {$matches != 4} {
+		fail "Unexpected error. Got $matches"
 	}
 
 }
@@ -140,16 +134,14 @@ proc scontrol { category regex } {
 			incr matches
 		}
 		timeout {
-			log_error "scontrol not responding"
-			end_it 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$matches != 1} {
-		log_error "didn't match regex $regex: $matches"
-		end_it 1
+		fail "Didn't match regex $regex: $matches"
 	}
 
 }
@@ -183,16 +175,14 @@ proc sbatch { mfed error } {
 
 		}
 		timeout {
-			log_error "sbatch not responding"
-			end_it 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$matches != 1} {
-		log_error "batch submit failure"
-		end_it 1
+		fail "Batch submit failure"
 	}
 
 	$bin_sleep 3
@@ -214,8 +204,7 @@ proc squeue { regex } {
 		}
 	}
 	if {$matches != 1} {
-		log_error "unexpected error in squeue. expected $regex"
-		end_it 1
+		fail "Unexpected error in squeue. expected $regex"
 	}
 }
 
@@ -242,15 +231,6 @@ proc cleanup { } {
 	return [delete_federations $fed_name]
 }
 
-proc end_it { exit_code } {
-	global test_id
-	cleanup
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
-}
-
 #start test
 
 if {![check_federation_setup]} {
@@ -265,8 +245,7 @@ set user_name [get_my_user_name]
 
 # Remove existing setup
 if {[cleanup] != 0} {
-	log_error "failed to cleanup"
-	end_it 1
+	fail "Failed to cleanup"
 }
 
 # get number of nodes per cluster
@@ -317,17 +296,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
-		set exit_code 1
+		fail "sacctmgr mod not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$exit_code || $matches != 1} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+if {$matches != 1} {
+	fail "Unexpected error. Got $matches"
 }
 
 set matches 0
@@ -339,17 +316,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
-		set exit_code 1
+		fail "sacctmgr mod not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$exit_code || $matches != 1} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+if {$matches != 1} {
+	fail "Unexpected error. Got $matches"
 }
 
 sacctmgr_mod ACTIVE
@@ -398,7 +373,6 @@ sbatch 1 0
 squeue "R\\s+"
 
 set matches 0
-set exit_code 0
 
 spawn $my_sacctmgr mod cluster $fedc1 set fedstate=DRAIN+REMOVE -i
 expect {
@@ -419,17 +393,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
-		set exit_code 1
+		fail "sacctmgr mod not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$exit_code || $matches != 4} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+if {$matches != 4} {
+	fail "Unexpected error. Got $matches"
 }
 
 sbatch  1 1
@@ -452,8 +424,7 @@ scontrol jobs "Requeue=0.+"
 set job_id [sbatch 1 0]
 
 if {[expr $job_id >> 26]} {
-	log_warn "Removed cluster still giving federated job id"
-	end_it 1
+	fail "Removed cluster still giving federated job id"
 }
 
 wait_for_fed_job $job_id DONE $fedc1
@@ -479,24 +450,21 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
-		set exit_code 1
+		fail "sacctmgr mod not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$exit_code || $matches != 4} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+if {$matches != 4} {
+	fail "Unexpected error. Got $matches"
 }
 
 
 sacctmgr_show "\\s+ACTIVE.+ACTIVE\\s+"
 
 set matches 0
-set exit_code 0
 
 spawn $my_sacctmgr mod cluster $fedc2 set fedstate=DRAIN -i
 expect {
@@ -517,17 +485,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
-		set exit_code 1
+		fail "sacctmgr mod not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$exit_code || $matches != 4} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+if {$matches != 4} {
+	fail "Unexpected error. Got $matches"
 }
 
 sacctmgr_show "\\s+ACTIVE.+DRAIN\\s+"
@@ -541,7 +507,3 @@ squeue "R\\s+"
 sbatch 0 0
 
 squeue "PD\\s+R\\s+"
-
-# All Done
-end_it 0
- 0

@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set test_prog   "test$test_id.prog"
 
 #

@@ -29,11 +29,16 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
 set file_in          "test$test_id.input"
 set job_id           0
 set timeout          $max_job_delay
 set account	     "dummy_acct"
+
+proc cleanup {} {
+	global bin_rm file_in
+
+	exec $bin_rm -f $file_in
+}
 
 if [param_contains [get_config_param "AccountingStorageEnforce"] "associations"] {
 	log_warn "Using user's default account instead of $account since associations are enforced"
@@ -78,8 +83,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -93,9 +97,3 @@ if {$matches != 3} {
 	fail "Processed $matches of 3 environment variables"
 }
 cancel_job $job_id
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

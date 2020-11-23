@@ -30,7 +30,6 @@
 source ./globals
 
 set cwd				"[$bin_pwd]"
-set exit_code	    0
 set file_in         "${cwd}/test${test_id}.in"
 set file_out	    "${cwd}/test${test_id}.out"
 set file_prog	    "${cwd}/test${test_id}.prog"
@@ -47,9 +46,10 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
     skip "This test is incompatible with front-end systems"
 }
 
-proc end_it { exit_code } {
+proc cleanup {} {
 	global test_id orig_spank_conf spank_conf_file new_spank_conf spank_out
 	global file_out spank_out bin_cp bin_rm file_in file_prog
+
 	#
 	# Restore the original plugstack
 	#
@@ -58,14 +58,9 @@ proc end_it { exit_code } {
 	} else {
 		exec $bin_rm -f $spank_conf_file
 	}
-	incr exit_code [reconfigure]
+	reconfigure
 
-	if {$exit_code == 0} {
-		exec $bin_rm -f $orig_spank_conf $new_spank_conf $file_in $file_out $spank_out ${file_prog}.so
-		pass
-	} else {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
+	exec $bin_rm -f $orig_spank_conf $new_spank_conf $file_in $file_out $spank_out ${file_prog}.so
 }
 
 #
@@ -151,7 +146,9 @@ expect {
 		wait
 	}
 }
-incr exit_code [reconfigure]
+if [reconfigure] {
+	fail "Unable to reconfigure"
+}
 
 #
 # Test of srun help message
@@ -172,23 +169,20 @@ expect {
 		exp_continue
 	}
 	-re timeout {
-		log_error "sbatch not responding"
-		end_it 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 1} {
-	log_error "sbatch did not return a job id"
-	end_it 1
+	fail "sbatch did not return a job id"
 }
 # Check echo worked
 spawn $bin_cat $file_out
 expect {
 	-re "error" {
-		log_error "some error happened"
-		end_it 1
+		fail "Some error happened"
 	}
 	-re "IT_RAN" {
 		incr matches
@@ -199,8 +193,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	log_error "local (srun) sbatch spank plugin failure ($matches != 1)"
-	end_it 1
+	fail "Local (srun) sbatch spank plugin failure ($matches != 1)"
 }
 
 #check the output of spank plugin
@@ -217,21 +210,18 @@ expect {
 			incr matches
 			exp_continue
 		} else {
-			log_error "unexpected job id: $njob_id != $job_id"
-			end_it 1
+			fail "Unexpected job id: $njob_id != $job_id"
 		}
 	}
 	-re "error" {
-		log_error "some error happened"
-		end_it 1
+		fail "Some error happened"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 4} {
-	log_error "local (srun) sbatch spank plugin failure ($matches != 2)"
-	end_it 1
+	fail "Local (srun) sbatch spank plugin failure ($matches != 2)"
 }
 
 spawn $bin_rm $spank_out
@@ -249,23 +239,20 @@ expect {
 		exp_continue
 	}
 	-re timeout {
-		log_error "sbatch not responding"
-		end_it 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 1} {
-	log_error "sbatch did not return a job id"
-	end_it 1
+	fail "sbatch did not return a job id"
 }
 # Check echo worked
 spawn $bin_cat $file_out
 expect {
 	-re "error" {
-		log_error "some error happened"
-		end_it 1
+		fail "Some error happened"
 	}
 	-re "IT_RAN" {
 		incr matches
@@ -276,8 +263,7 @@ expect {
 	}
 }
 if {$matches != 2} {
-	log_error "local (srun) sbatch spank plugin failure ($matches != 2)"
-	end_it 1
+	fail "Local (srun) sbatch spank plugin failure ($matches != 2)"
 }
 
 #check the output of spank plugin
@@ -297,21 +283,16 @@ expect {
 			incr matches
 			exp_continue
 		} else {
-			log_error "unexpected array job id: $narray_job_id != $array_job_id"
-			end_it 1
+			fail "Unexpected array job id: $narray_job_id != $array_job_id"
 		}
 	}
 	-re "error" {
-		log_error "some error happened"
-		end_it 1
+		fail "Some error happened"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 5} {
-	log_error "local (srun) sbatch spank plugin failure ($matches != 5)"
-	end_it 1
+	fail "Local (srun) sbatch spank plugin failure ($matches != 5)"
 }
-
-end_it $exit_code

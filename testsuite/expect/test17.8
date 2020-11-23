@@ -38,15 +38,11 @@ set time_get    0
 # Since we make changes to configuration, call this function restore
 # configuration before exiting.
 #
-proc endit { } {
-	global exit_code bin_rm file_in
-	incr exit_code [reconfigure]
-	if {$exit_code == 0} {
-		exec $bin_rm -f $file_in
-		pass
-	} else {
-		fail "Exiting with exit code $exit_code"
-	}
+proc cleanup {} {
+	global bin_rm file_in
+
+	reconfigure
+	exec $bin_rm -f $file_in
 }
 
 #
@@ -61,9 +57,8 @@ if {![is_super_user]} {
 # Ensure that MaxTime is UNLIMITED so this test won't fail due to trying to set
 # time limits greater than MaxTime.
 #
-set exit_code [set_partition_maximum_time_limit "" -1]
-if { $exit_code != 0 } {
-	endit
+if [set_partition_maximum_time_limit "" -1] {
+	fail "Unable to reset partition MaxTime to UNLIMITED"
 }
 
 #
@@ -88,18 +83,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
-		exp_continue
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
 	}
 }
 if { $job_id == 0 } {
-	log_error "Failed to submit job"
-	set exit_code 1
-	endit
+	fail "Failed to submit job"
 }
 
 spawn $scontrol show job $job_id
@@ -138,18 +129,14 @@ expect {
 		pass
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
-		exp_continue
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
 	}
 }
 if { $job_id == 0 } {
-	log_error "Failed to submit job"
-	set exit_code 1
-	endit
+	fail "Failed to submit job"
 }
 
 spawn $scontrol show job $job_id
@@ -183,18 +170,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
-		exp_continue
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
 	}
 }
 if { $job_id == 0 } {
-	log_error "Failed to submit job"
-	set exit_code 1
-	endit
+	fail "Failed to submit job"
 }
 
 spawn $scontrol show job $job_id
@@ -217,4 +200,6 @@ if { $rc != 0 } {
 	incr exit_code
 }
 
-endit
+if {$exit_code != 0} {
+        fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

@@ -34,6 +34,12 @@ set script	 "$test_name\_script"
 set array_size	 2
 set exit_code	 0
 
+proc cleanup {} {
+	global bin_rm script
+
+	exec $bin_rm -f $script
+}
+
 if {[get_config_param "MaxArraySize"] < [expr $array_size + 1]} {
 	skip "MaxArraySize is to small for this test"
 } elseif {![is_super_user]} {
@@ -57,8 +63,7 @@ proc check_job { job_id } {
 				exp_continue
 			}
 			timeout {
-				log_error "scontrol is not responding"
-				set exit_code 1
+				fail "scontrol is not responding"
 			}
 			eof {
 				wait
@@ -91,8 +96,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sinfo is not responding"
-		set exit_code 1
+		fail "sinfo is not responding"
 	}
 	eof {
 		wait
@@ -109,13 +113,12 @@ if {[string compare $node_list ""] == 0} {
 spawn $scontrol create PartitionName=$test_part Nodes=$node_list
 expect {
 	-re "error" {
-		log_error"scontrol did not create partition"
+		log_error "scontrol did not create partition"
 		set exit_code 1
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -132,8 +135,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -161,16 +163,13 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
 	}
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $script 
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

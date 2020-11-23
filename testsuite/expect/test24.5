@@ -25,7 +25,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set timeout	60
 
 set jobid1 0
@@ -49,7 +48,7 @@ if { [string first "CR_ONE_TASK_PER_CORE" $select_type_params] != -1 } {
 	skip "This test can't be run SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
-proc end_it { exit_code } {
+proc cleanup {} {
 	global test_id jobid1 jobid2
 
 	if {$jobid1} {
@@ -58,11 +57,6 @@ proc end_it { exit_code } {
 	if {$jobid2} {
 		cancel_job $jobid2
 	}
-
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
 }
 
 
@@ -77,8 +71,7 @@ proc sub_job { cpu_cnt state } {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch not responding"
-			end_it 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
@@ -86,13 +79,11 @@ proc sub_job { cpu_cnt state } {
 	}
 
 	if {$jobid == 0} {
-		log_error "did not get sbatch jobid"
-		end_it 1
+		fail "did not get sbatch jobid"
 	}
 
 	if {[wait_for_job $jobid $state] != 0} {
-		log_error "error starting job $jobid"
-		end_it 1
+		fail "error starting job $jobid"
 	}
 
 	return $jobid
@@ -102,7 +93,7 @@ proc sub_job { cpu_cnt state } {
 proc sprio_args { args regex match_cnt } {
 	global sprio
 	if {[wait_for_command $sprio $args $regex $match_cnt]} {
-		end_it 1
+		fail "sprio did not match"
 	}
 }
 
@@ -121,8 +112,7 @@ proc update_job { jobid prio {error ""} } {
 			incr matches
 		}
 		timeout {
-			log_error "scontrol not responding"
-			end_it 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -130,8 +120,7 @@ proc update_job { jobid prio {error ""} } {
 	}
 
 	if {($error != "") && !$matches} {
-		log_error "didn't get expected error '$error'"
-		end_it 1
+		fail "didn't get expected error '$error'"
 	}
 }
 
@@ -159,5 +148,3 @@ sprio_args "-j $jobid2 -o \"%.15i %S\"" "$jobid2 -2147483645" 1
 
 update_job $jobid2 2147483646 "scontrol: error: SiteFactor value out of range"
 update_job $jobid2 -2147483646 "scontrol: error: SiteFactor value out of range"
-
-end_it 0

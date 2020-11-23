@@ -51,8 +51,7 @@ proc set_part_val {part_type part_val} {
 			set exit_code 1
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -72,8 +71,7 @@ proc check_part {part_type part_val} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -99,8 +97,7 @@ proc delete_part { } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -115,8 +112,7 @@ proc delete_part { } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -130,6 +126,14 @@ proc delete_part { } {
 
 }
 
+proc cleanup {} {
+
+	#
+	# Delete partition and Qos
+	#
+	delete_part
+}
+
 spawn $scontrol create partition=$part_name
 expect {
 	-re "error" {
@@ -137,8 +141,7 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		log_error "scontrol is not reponding"
-		set exit_code 1
+		fail "scontrol is not reponding"
 	}
 	eof {
 		wait
@@ -153,8 +156,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr is not responding"
-		set exit_code 1
+		fail "sacctmgr is not responding"
 	}
 	eof {
 		wait
@@ -205,11 +207,6 @@ set_part_val DenyQos none
 # Check that DenyQos is set to none
 #
 check_part DenyQos none
-
-#
-# Delete partition and Qos
-#
-delete_part
 
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"

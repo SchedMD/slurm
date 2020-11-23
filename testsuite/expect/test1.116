@@ -109,9 +109,8 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $sbatch_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait

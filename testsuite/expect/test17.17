@@ -39,6 +39,12 @@ set nodelist_name ""
 set gpu_tot      0
 set job_tres_cnt 0
 
+proc cleanup {} {
+	global bin_rm file_err file_in file_out
+
+	exec $bin_rm -f $file_err $file_in $file_out
+}
+
 set timeout $max_job_delay
 
 set node_name [get_nodes_by_request "--gres=gpu:2 -n1 -t1"]
@@ -68,9 +74,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -161,8 +166,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding\n"
-		set exit_code 1
+		fail "sbatch not responding\n"
 	}
 	eof {
 		wait
@@ -196,8 +200,6 @@ dict for {gres_name gres_count} $gres_dict_node {
 cancel_job $job_id2
 
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_err $file_in $file_out
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

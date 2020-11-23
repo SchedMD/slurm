@@ -39,8 +39,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scancel not responding"
-		set exit_code 1
+		fail "scancel not responding"
 	}
 	eof {
 		wait
@@ -63,8 +62,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scancel not responding"
-		set exit_code 1
+		fail "scancel not responding"
 	}
 	eof {
 		wait
@@ -87,8 +85,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scancel not responding"
-		set exit_code 1
+		fail "scancel not responding"
 	}
 	eof {
 		wait
@@ -100,5 +97,5 @@ if {$matches != 1} {
 }
 
 if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

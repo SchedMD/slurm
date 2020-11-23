@@ -28,11 +28,16 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set job_id      0
 set task_cnt	10
+
+proc cleanup {} {
+	global file_in file_out
+
+	file delete $file_in $file_out
+}
 
 #
 # Submit a slurm job that will print slurm env vars and execute 'id'
@@ -67,8 +72,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -79,10 +83,4 @@ if {$matches != 2} {
 }
 if {$task_cnt != $tasks} {
 	fail "Did not get proper number of tasks: $task_cnt, $tasks"
-}
-
-if {$exit_code == 0} {
-	file delete $file_in $file_out
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

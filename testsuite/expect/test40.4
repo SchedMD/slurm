@@ -39,6 +39,7 @@ set file_in        "test$test_id.input"
 set file_out1      "test$test_id.output1"
 set file_out2      "test$test_id.output2"
 set user           [get_my_user_name]
+set job_id1        0
 
 proc setup { mps_limit } {
 	global acct cluster exit_code user
@@ -63,12 +64,6 @@ proc setup { mps_limit } {
 	}
 
 	return 0
-}
-
-proc cleanup { } {
-	global acct
-
-	remove_acct "" $acct
 }
 
 set store_tres [string tolower [get_config_param "AccountingStorageTRES"]]
@@ -104,6 +99,16 @@ if {$mps_cnt < 100} {
 }
 log_debug "MPS count is $mps_cnt"
 
+proc cleanup {} {
+	global acct job_id1 bin_rm file_in file_out1 file_out2
+
+	remove_acct "" $acct
+	if {$job_id1 > 0} {
+		cancel_job $job_id1
+	}
+	exec $bin_rm -f $file_in $file_out1 $file_out2
+}
+
 # Remove any vestigial test account
 cleanup
 
@@ -135,7 +140,6 @@ if {$nb_nodes == 1} {
 } else {
 	set mps_fail_cnt [expr $mps_good_cnt + 1]
 }
-set job_id1 0
 spawn $sbatch --account=$acct --gres=craynetwork:0 --gres=mps:$mps_fail_cnt -N$nb_nodes -t1 -o $file_out1 -J "test$test_id" ./$file_in
 expect {
 	-re "Submitted batch job ($number)" {
@@ -143,8 +147,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -163,8 +166,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -193,8 +195,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -204,13 +205,7 @@ if {$match != 2} {
 	log_error "Job $job_id1 state is bad"
 	set exit_code 1
 }
-cancel_job $job_id1
-if {$exit_code != 0} {
-	fail "Unable to cancel job ($job_id1)"
-}
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out1 $file_out2
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

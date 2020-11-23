@@ -25,7 +25,6 @@
 source ./globals
 
 set cwd		    "[$bin_pwd]"
-set exit_code	    0
 set file_in         "${cwd}/test${test_id}.in"
 set file_out	    "${cwd}/test${test_id}.out"
 set file_prog	    "${cwd}/test${test_id}.prog"
@@ -360,4 +359,4 @@ if {[wait_for_file $spank_out] == 0} {
 	end_it 1
 }
 
-end_it $exit_code
+end_it 0

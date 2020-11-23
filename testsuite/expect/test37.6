@@ -41,7 +41,6 @@ source ./globals
 source ./globals_accounting
 source ./globals_federation
 
-set exit_code   0
 set fed_name    "feda"
 set file_in     "test$test_id.in"
 set user_name   ""
@@ -70,16 +69,14 @@ proc modify {job_id constraint reg_ex error_message} {
 			incr matches
 		}
 		timeout {
-			log_error "scontrol not responding"
-			end_it 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {![string match "" $reg_ex] && $matches != 1} {
-		log_error "didn't match regex $reg_ex: $matches"
-		end_it 1
+		fail "Didn't match regex $reg_ex: $matches"
 	}
 
 	$bin_sleep 3
@@ -97,16 +94,14 @@ proc modify_with_clusters {job_id constraint reg_ex error_message} {
 			incr matches
 		}
 		timeout {
-			log_error "scontrol not responding"
-			end_it 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {![string match "" $reg_ex] && $matches != 1} {
-		log_error "didn't match regex $reg_ex: $matches"
-		end_it 1
+		fail "Didn't match regex $reg_ex: $matches"
 	}
 
 	$bin_sleep 3
@@ -129,16 +124,14 @@ proc sbatch {my_sbatch script constraint args} {
 			set job_id $expect_out(1,string)
 		}
 		timeout {
-			log_error "sbatch not responding"
-			end_it 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$job_id == 0} {
-		log_error "batch submit failure"
-		end_it 1
+		fail "Batch submit failure"
 	}
 
 	$bin_sleep 3
@@ -161,8 +154,7 @@ proc verify {fed job_id pattern error_message} {
 		}
 	}
 	if {$matches != 1} {
-		log_error "$error_message"
-		end_it 1
+		fail "$error_message"
 	}
 }
 
@@ -189,14 +181,6 @@ proc cleanup { } {
 	return [delete_federations $fed_name]
 }
 
-proc end_it { exit_code } {
-	global test_id
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
-}
-
 #start test
 
 if {![check_federation_setup]} {
@@ -211,14 +195,12 @@ set user_name [get_my_user_name]
 
 # Remove existing setup
 if {[cleanup] != 0} {
-	log_error "failed to cleanup"
-	end_it 1
+	fail "Failed to cleanup"
 }
 
 # add clusters to federation
 if {[setup_federation $fed_name]} {
-	log_error "failed to setup federation"
-	end_it 1
+	fail "Failed to setup federation"
 }
 
 # get number of nodes per cluster
@@ -250,17 +232,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
-		set exit_code 1
+		fail "sacctmgr mod not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$exit_code || $matches != 4} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+if {$matches != 4} {
+	fail "Unexpected error. Got $matches"
 }
 
 set matches 0
@@ -283,17 +263,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
-		set exit_code 1
+		fail "sacctmgr mod not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$exit_code || $matches != 4} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+if {$matches != 4} {
+	fail "Unexpected error. Got $matches"
 }
 
 set matches 0
@@ -316,17 +294,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
-		set exit_code 1
+		fail "sacctmgr mod not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$exit_code || $matches != 4} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+if {$matches != 4} {
+	fail "Unexpected error. Got $matches"
 }
 
 set my_scontrol "${fed_slurm_base}/$fedc1/bin/scontrol"
@@ -368,8 +344,7 @@ modify $job_id fb "" "did not allow user to modify features of pending job"
 
 set run_cluster [wait_for_fed_job $job_id RUNNING ""]
 if {[string compare $run_cluster $fedc2]} {
-	log_error "Job not running on $fedc2"
-	end_it 1
+	fail "Job not running on $fedc2"
 }
 verify $fedc1 $job_id "RV\\s+$fedc2\\s+$fedc2" "Job not revoked"
 verify $fedc2 $job_id "R\\s+$fedc2\\s+$fedc2" "Job not running on designated cluster"
@@ -385,8 +360,7 @@ modify $job_id "fb,fc" "" "did not allow user to modify features of pending job"
 
 set run_cluster [wait_for_fed_job $job_id RUNNING ""]
 if {[string compare $run_cluster $fedc3]} {
-	log_error "Job not running on $fedc3"
-	end_it 1
+	fail "Job not running on $fedc3"
 }
 verify $fedc1 $job_id "RV\\s+$fedc2,$fedc3\\s+$fedc3" "Job not revoked"
 verify $fedc3 $job_id "R\\s+$fedc2,$fedc3\\s+$fedc3" "Job not running on designated cluster"
@@ -471,8 +445,7 @@ sleep 3
 
 set run_cluster [wait_for_fed_job $job_id RUNNING ""]
 if {[string compare $run_cluster $fedc3]} {
-	log_error "Job not running on $fedc3"
-	end_it 1
+	fail "Job not running on $fedc3"
 }
 verify $fedc1 $job_id "RV\\s+$fedc3\\s+$fedc3" "Job not running on designated cluster"
 verify $fedc2 $job_id ".+Invalid.+" "Job found on wrong cluster"
@@ -702,8 +675,7 @@ expect {
 		incr matches
 	}
 	timeout {
-		log_error "sbatch not responding"
-		end_it 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -711,9 +683,5 @@ expect {
 }
 
 if {$matches != 1} {
-	log_error "batch submit failure"
-	end_it 1
+	fail "Batch submit failure"
 }
-
-# All Done
-end_it 0

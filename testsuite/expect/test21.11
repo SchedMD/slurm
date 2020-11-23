@@ -114,8 +114,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr is not responding"
-		set exit_code 1
+		fail "sacctmgr is not responding"
 	}
 	eof {
 		wait
@@ -155,9 +154,8 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
 		slow_kill $as_list_pid
-		set exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
@@ -193,9 +191,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
@@ -222,9 +219,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
@@ -247,9 +243,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
@@ -277,8 +272,8 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		log_debug "Test associations delete verified"
 		slow_kill $as2_list_pid
+		log_debug "Test associations delete verified"
 	}
 	eof {
 		wait

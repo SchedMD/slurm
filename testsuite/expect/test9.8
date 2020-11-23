@@ -38,6 +38,12 @@ set job_name     "test$test_id"
 set sleep_time   300
 set task_cnt     60
 
+proc cleanup {} {
+	global bin_rm file_in
+
+	exec $bin_rm -f $file_in
+}
+
 if {![param_contains [get_config_param "SelectTypeParameters"] "CR_*MEMORY"]} {
 	set mem_per_step 0
 } else {
@@ -87,9 +93,8 @@ for {set inx 0} {$inx < $job_cnt} {incr inx} {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch not responding"
 			slow_kill $sbatch_pid
-			set exit_code 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
@@ -130,8 +135,7 @@ while { 1 } {
 			exp_continue
 		}
 		timeout {
-			log_error "squeue not responding"
-			set exit_code 1
+			fail "squeue not responding"
 		}
 		eof {
 			wait
@@ -151,8 +155,7 @@ while { 1 } {
 			exp_continue
 		}
 		timeout {
-			log_error "squeue not responding"
-			set exit_code 1
+			fail "squeue not responding"
 		}
 		eof {
 			wait
@@ -264,8 +267,6 @@ if {$completing_jobs != 0} {
 	log_error "Jobs not completing. Subsequent tests may fail!"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

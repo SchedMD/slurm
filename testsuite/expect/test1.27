@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
 set matches          0
 
 # These are the variables for which we are checking existence.
@@ -86,9 +85,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -112,8 +110,4 @@ foreach {slurm_var check_flag} [array get good_vars] {
 
 if {$good < $total} {
 	fail "Only $good of $total Slurm environment variables set"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

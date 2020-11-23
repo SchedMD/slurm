@@ -31,6 +31,12 @@ set part_inv       "$test_part\g"
 set file_in        "test$test_id\.sc"
 set exit_code      0
 
+proc cleanup {} {
+	global bin_rm file_in
+
+	exec $bin_rm -f $file_in
+}
+
 make_bash_script $file_in "sleep 1"
 
 proc test_sbatch { part }  {
@@ -47,8 +53,7 @@ proc test_sbatch { part }  {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch is not responding"
-			set exit_code 1
+			fail "sbatch is not responding"
 		}
 		eof {
 			wait
@@ -68,8 +73,7 @@ proc test_sbatch { part }  {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch is not responding"
-			set exit_code 1
+			fail "sbatch is not responding"
 		}
 		eof {
 			wait
@@ -89,8 +93,7 @@ proc test_sbatch { part }  {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch is not responding"
-			set exit_code 1
+			fail "sbatch is not responding"
 		}
 		eof {
 			wait
@@ -105,8 +108,6 @@ proc test_sbatch { part }  {
 test_sbatch $test_part\g
 test_sbatch "$test_part\,$test_part\g"
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors"
 }

@@ -36,6 +36,12 @@ set task_count  0
 set job_id      0
 set hostfile    "test$test_id.hostfile"
 
+proc cleanup {} {
+	global bin_rm hostfile
+
+	exec $bin_rm -f $hostfile
+}
+
 exec $bin_rm -f $hostfile
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test incompatible with front-end systems"
@@ -72,9 +78,8 @@ expect {
 		#log_debug "Job initiated"
 	}
 	timeout {
-		log_error "salloc not responding"
 		slow_kill $salloc_pid
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
@@ -379,8 +384,6 @@ expect {
 	}
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $hostfile
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

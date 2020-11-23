@@ -100,6 +100,16 @@ if {![is_super_user]} {
 #	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 #}
 
+proc cleanup {} {
+	global sr2 sr3 tc2
+
+	#
+	# Clean up and exit
+	#
+	remove_res $sr2,$sr3
+	remove_cluster $tc2
+}
+
 # verify a clean system and permission to do this work
 remove_cluster "$tc2"
 remove_res "$sr1"
@@ -149,8 +159,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -195,8 +204,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -223,8 +231,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -254,12 +261,6 @@ if {[check_resource_limits $sr3 [array get resource2_chck]] == 1} {
 	log_error "List resource output is incorrect"
 	incr exit_code 1
 }
-
-#
-# Clean up and exit
-#
-incr exit_code [remove_res $sr2,$sr3]
-incr exit_code [remove_cluster $tc2]
 
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"

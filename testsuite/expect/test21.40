@@ -36,14 +36,13 @@ set part_qos         "test$test_id\_part_qos"
 
 proc cleanup { } {
 	global test_acct job_qos part_qos scontrol sacctmgr test_part
-	global exit_code
+	global bin_rm file_in
 
 	# Delete the test QOS
 	spawn $sacctmgr -i delete qos $job_qos,$part_qos
 	expect {
 		timeout {
 			log_error "sacctmgr is not responding"
-			set exit_code 1
 		}
 		eof {
 			wait
@@ -54,8 +53,7 @@ proc cleanup { } {
 	spawn $sacctmgr -i delete account $test_acct
 	expect {
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+		log_error "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -66,23 +64,23 @@ proc cleanup { } {
 	spawn $scontrol delete partitionname=$test_part
 	expect {
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
 		}
 	}
+
+	exec $bin_rm -f $file_in
 }
 
 proc set_assoc {count} {
-	global sacctmgr test_acct exit_code
+	global sacctmgr test_acct
 
 	spawn $sacctmgr -i modify account $test_acct set grpnodes=$count
 	expect {
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -91,13 +89,12 @@ proc set_assoc {count} {
 }
 
 proc set_qos {qos_name count} {
-	global sacctmgr exit_code
+	global sacctmgr
 
 	spawn $sacctmgr -i modify qos $qos_name set grpnodes=$count
 	expect {
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -106,7 +103,7 @@ proc set_qos {qos_name count} {
 }
 
 proc reason_node_limit {job_id} {
-	global scontrol exit_code
+	global scontrol
 
 	set node_limit 0
 	spawn $scontrol show job $job_id
@@ -120,8 +117,7 @@ proc reason_node_limit {job_id} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -149,8 +145,7 @@ proc run_job_test { } {
             exp_continue
         }
 		timeout {
-			log_error "sbatch is not responding"
-			set exit_code 1
+			fail "sbatch is not responding"
 		}
 		eof {
 			wait
@@ -177,8 +172,7 @@ proc run_job_test { } {
                         exp_continue
                 }
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -200,8 +194,7 @@ proc run_job_test { } {
                         exp_continue
                 }
 		timeout {
-			log_error "sbatch is not responding"
-			set exit_code 1
+			fail "sbatch is not responding"
 		}
 		eof {
 			wait
@@ -223,8 +216,7 @@ proc run_job_test { } {
             exp_continue
         }
 		timeout {
-			log_error "sbatch is not responding"
-			set exit_code 1
+			fail "sbatch is not responding"
 		}
 		eof {
 			wait
@@ -264,8 +256,7 @@ proc run_job_test { } {
                         exp_continue
                 }
 		timeout {
-			log_error "sbatch is not responding"
-			set exit_code 1
+			fail "sbatch is not responding"
 		}
 		eof {
 			wait
@@ -311,8 +302,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr is not responding"
-		set exit_code 1
+		fail "sacctmgr is not responding"
 	}
 	eof {
 		wait
@@ -329,8 +319,7 @@ set user_name [get_my_user_name]
 spawn $sacctmgr -i create user name=$user_name account=$test_acct
 expect {
 	timeout {
-		log_error "sacctmgr not responding"
-		set exit_code 1
+		fail "sacctmgr not responding"
 	}
 	eof {
 		wait
@@ -345,8 +334,7 @@ set nb_nodes [get_node_cnt_in_part $def_part]
 spawn $scontrol create partitionname=$test_part qos=$part_qos nodes=[available_nodes_hostnames $def_part]
 expect {
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -371,8 +359,6 @@ run_job_test
 set_qos $part_qos -1
 
 # Clean up and exit
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

@@ -28,8 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 #
 # Submit a job with invalid constraint requirement
 #
@@ -48,9 +46,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -58,13 +55,8 @@ expect {
 }
 
 if {[string compare $host_0 ""] != 0} {
-	log_error "Job ran with invalid constraint option"
-	set exit_code   1
+	fail "Job ran with invalid constraint option"
 }
 if {$err_msg != 1} {
 	fail "Job failed to report required error"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

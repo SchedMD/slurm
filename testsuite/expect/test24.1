@@ -31,9 +31,14 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set test_prog   "test$test_id.prog"
 set matches     0
+
+proc cleanup {} {
+	global test_prog
+
+	file delete $test_prog
+}
 
 set damp [get_config_param "FairShareDampeningFactor"]
 if {$damp != 1} {
@@ -115,9 +120,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "spawn IO not responding"
 		cancel_job $job_id
-		set exit_code 1
+		fail "spawn IO not responding"
 	}
 	eof {
 		wait
@@ -125,12 +129,5 @@ expect {
 }
 
 if {$matches != 13} {
-	log_error "We didn't get the correct priorities from the plugin ($matches != 13)"
-	set exit_code 1
-}
-
-if {$exit_code == 0} {
-	file delete $test_prog
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	fail "We didn't get the correct priorities from the plugin ($matches != 13)"
 }

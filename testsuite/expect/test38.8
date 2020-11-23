@@ -27,7 +27,6 @@
 ############################################################################
 source ./globals
 
-set exit_code	0
 set task_num	2
 set timeout	60
 
@@ -50,15 +49,12 @@ if {$nb_nodes < 3} {
 	skip "Need 3 or more nodes in default partition"
 }
 
-proc end_it { exit_code } {
+proc cleanup {} {
 	global het_job_id scancel
+
 	if {$het_job_id > 0} {
 		exec $scancel $het_job_id
 	}
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
 }
 
 set het_job_id 0
@@ -81,16 +77,14 @@ expect {
 		#log_debug "Job initiated"
 	}
 	timeout {
-		log_error "salloc: allocation not granted in $timeout seconds"
-		end_it 1
+		fail "salloc: allocation not granted in $timeout seconds"
 	}
 	eof {
 		wait
 	}
 }
 if {$het_job_id == 0} {
-	log_error "salloc failure"
-	end_it 1
+	fail "salloc failure"
 }
 
 expect *
@@ -113,8 +107,7 @@ expect {
 		set has_prolog_flags 1
 	}
 	timeout {
-		log_error "scontrol show config not responding"
-		end_it 1
+		fail "scontrol show config not responding"
 	}
 	eof {
 		wait
@@ -129,16 +122,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacct not responding"
-		end_it 1
+		fail "sacct not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != $expected_matches} {
-	log_error "sacct failure ($matches != $expected_matches)"
-	end_it 1
+	fail "sacct failure ($matches != $expected_matches)"
 }
 
 set expected_matches 1
@@ -160,17 +151,13 @@ for {set inx 0} {$inx < 3} {incr inx} {
 			exp_continue
 		}
 		timeout {
-			log_error "sacct not responding"
-			end_it 1
+			fail "sacct not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$matches != $expected_matches || $bad_matches != 0} {
-		log_error "sacct failure ($matches != 1 || $bad_matches != 0)"
-		end_it 1
+		fail "sacct failure ($matches != 1 || $bad_matches != 0)"
 	}
 }
-
-end_it 0

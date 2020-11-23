@@ -29,7 +29,7 @@ set exit_code   0
 set file_prog   "test$test_id.prog"
 
 proc get_cpu_bind { type name } {
-	global re_word_str exit_code scontrol
+	global re_word_str scontrol
 
 	set cpu_bind "off"
 	spawn $scontrol show $type $name
@@ -49,7 +49,7 @@ proc get_cpu_bind { type name } {
 }
 
 proc set_cpu_bind { type name cpu_bind } {
-	global exit_code scontrol
+	global scontrol
 
 	spawn $scontrol update ${type}Name=$name CpuBind=$cpu_bind
 	expect {

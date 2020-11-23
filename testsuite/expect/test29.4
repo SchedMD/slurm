@@ -15,6 +15,19 @@ set file_in     "test$test_id.script"
 set reason_str  "test"
 set exit_code   0
 
+proc cleanup {} {
+	global job_id node_name bin_rm file_in
+
+	if {$job_id != 0} {
+		cancel_job $job_id
+	}
+	if {$node_name ne ""} {
+		reset_state $node_name
+	}
+
+	exec $bin_rm -f $file_in
+}
+
 if {![param_contains [get_config_param "SlurmctldPlugstack"] "nonstop"]} {
 	skip "This test is only compatible when SlurmctldPlugstack includes nonstop"
 }
@@ -23,7 +36,7 @@ if {![is_super_user]} {
 }
 
 proc get_node {job_id} {
-	global scontrol squeue re_word_str re_word_str exit_code
+	global scontrol squeue re_word_str re_word_str
 
 	set node_list ""
 	spawn $squeue -j $job_id --noheader -o NodeList=%N
@@ -33,8 +46,7 @@ proc get_node {job_id} {
 			exp_continue
 		}
 		timeout {
-			log_error "squeue is not responding"
-			set exit_code 1
+			fail "squeue is not responding"
 		}
 		eof {
 			wait
@@ -49,8 +61,7 @@ proc get_node {job_id} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -60,14 +71,12 @@ proc get_node {job_id} {
 }
 
 proc reset_state {node} {
-
-	global scontrol exit_code
+	global scontrol
 
 	spawn $scontrol update NodeName=$node State=RESUME
 	expect {
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -88,8 +97,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -121,8 +129,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "smd is not reponding"
-		set exit_code 1
+		fail "smd is not reponding"
 	}
 	eof {
 		wait
@@ -148,8 +155,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -161,13 +167,6 @@ if {$match != 2} {
 	set exit_code 1
 }
 
-
-cancel_job $job_id
-
-reset_state $node_name
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

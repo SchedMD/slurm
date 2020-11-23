@@ -32,6 +32,12 @@ set file_err	"test$test_id.error"
 set file_in	"test$test_id.input"
 set file_out	"test$test_id.output"
 
+proc cleanup {} {
+	global bin_rm file_in file_out file_err
+
+	exec $bin_rm -f $file_in $file_out $file_err
+}
+
 if {[file executable $bsub] == 0} {
 	skip "$bsub not found"
 }
@@ -50,8 +56,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "bsub not responding"
-		set exit_code 1
+		fail "bsub not responding"
 	}
 	eof {
 		wait
@@ -101,8 +106,6 @@ if {$matches != 1} {
 	fail "Unexpected bsub error file contents"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $file_err
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

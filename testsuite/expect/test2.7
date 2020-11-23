@@ -35,6 +35,12 @@ set file_err    "test$test_id.error"
 set job_id      0
 set scontrol_id 0
 
+proc cleanup {} {
+	global bin_rm file_in file_out file_err
+
+	exec $bin_rm -f $file_in $file_out $file_err
+}
+
 # Delete left-over stdout/err files
 file delete $file_out $file_err
 
@@ -53,9 +59,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -123,8 +128,6 @@ if {[wait_for_file $file_err] == 0} {
 if {$job_id != $scontrol_id} {
 	fail "scontrol pidinfo error"
 }
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $file_err
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

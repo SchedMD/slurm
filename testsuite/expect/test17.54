@@ -33,6 +33,12 @@ set file_in     "test$test_id.input"
 set exit_code   0
 set job_id      0
 
+proc cleanup {} {
+	global bin_rm file_in
+
+	exec $bin_rm -f $file_in
+}
+
 #
 # We must be SlurmUser or root in order to change the partition MaxTime limit,
 # otherwise this test may fail.
@@ -90,9 +96,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
-		exp_continue
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -123,9 +127,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
-		exp_continue
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -138,8 +140,6 @@ expect {
 #
 incr exit_code [reconfigure]
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

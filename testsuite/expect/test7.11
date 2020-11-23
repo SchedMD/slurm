@@ -29,7 +29,6 @@
 source ./globals
 
 set cwd		    "[$bin_pwd]"
-set exit_code	    0
 set file_in         "${cwd}/test${test_id}.in"
 set file_out	    "${cwd}/test${test_id}.out"
 set file_prog	    "${cwd}/test${test_id}.prog"
@@ -44,9 +43,10 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
 
-proc end_it { exit_code } {
+proc cleanup {} {
 	global test_id orig_spank_conf spank_conf_file new_spank_conf spank_out
 	global file_out spank_out bin_cp bin_rm file_in file_prog
+
 	#
 	# Restore the original plugstack
 	#
@@ -55,15 +55,9 @@ proc end_it { exit_code } {
 	} else {
 		exec $bin_rm -f $spank_conf_file
 	}
-	incr exit_code [reconfigure]
+	reconfigure
 
-	if {$exit_code == 0} {
-		exec $bin_rm -f $orig_spank_conf $new_spank_conf $file_in $file_out $spank_out ${file_prog}.so
-	}
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
+	exec $bin_rm -f $orig_spank_conf $new_spank_conf $file_in $file_out $spank_out ${file_prog}.so
 }
 
 #
@@ -143,7 +137,9 @@ expect {
 		wait
 	}
 }
-incr exit_code [reconfigure]
+if [reconfigure] {
+	fail "Unable to reconfigure"
+}
 
 #
 # Test of srun help message
@@ -167,17 +163,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		end_it 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 2} {
-	log_error "Spank help message not in srun help message"
-	end_it 1
+	fail "Spank help message not in srun help message"
 }
 
 #
@@ -198,17 +192,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding"
 		slow_kill $srun_pid
-		end_it 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 1} {
-	log_error "spank help message not in salloc help message ($matches != 1)"
-	end_it 1
+	fail "Spank help message not in salloc help message ($matches != 1)"
 }
 
 #
@@ -229,17 +221,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		end_it 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 1} {
-	log_error "spank help message not in sbatch help message ($matches != 1)"
-	end_it 1
+	fail "Spank help message not in sbatch help message ($matches != 1)"
 }
 
 #
@@ -257,8 +247,7 @@ log_debug "Checksum of local $spank_conf_file"
 spawn $bin_sum $spank_conf_file
 expect {
 	-re timeout {
-		log_error "sbatch not responding"
-		end_it 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -293,29 +282,25 @@ expect {
 		exp_continue
 	}
 	-re timeout {
-		log_error "sbatch not responding"
-		end_it 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	log_error "Batch submit failure"
-	end_it 1
+	fail "Batch submit failure"
 }
 if {$matches != 2} {
-	log_error "spank options not processed by sbatch ($matches != 2)"
-	end_it 1
+	fail "Spank options not processed by sbatch ($matches != 2)"
 }
 
 #
 # Wait for job to complete and check for files
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
 	cancel_job $job_id
-	end_it 1
+	fail "Waiting for job to complete"
 }
 
 # NOTE: spank logs from sbatch and srun would be intermingled here
@@ -326,8 +311,7 @@ if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
 		-re "error" {
-			log_error "Some error happened"
-			end_it 1
+			fail "Some error happened"
 		}
 		-re "_test_opt_process_(.*?=$number)" {
 			set substr $expect_out(1,string)
@@ -351,19 +335,16 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 	if {$matches_sbatch != 1} {
-		log_error "Local (srun) sbatch spank plugin failure ($matches_sbatch != 1)"
-		end_it 1
+		fail "Local (srun) sbatch spank plugin failure ($matches_sbatch != 1)"
 	} elseif {$matches_srun != 1} {
-		log_error "Local (srun) srun spank plugin failure ($matches_srun != 1)"
-		end_it 1
+		fail "Local (srun) srun spank plugin failure ($matches_srun != 1)"
 	} elseif {$matches != 2} {
-		log_error "Local (srun) spank plugin failure ($matches != 2)"
-		end_it 1
+		fail "Local (srun) spank plugin failure ($matches != 2)"
 	} else {
 		log_debug "Local (srun) spank plugin success"
 	}
 } else {
-	end_it 1
+	fail "Job output file ($file_out) did not appear"
 }
 
 #
@@ -391,8 +372,7 @@ if {[wait_for_file $spank_out] == 0} {
 			incr expected_spank_exit
 		}
 		timeout {
-			log_error "scontrol show config not responding"
-			end_it 1
+			fail "scontrol show config not responding"
 		}
 		eof {
 			wait
@@ -455,12 +435,9 @@ if {[wait_for_file $spank_out] == 0} {
 		set fail_cnt 1
 	}
 	if {$fail_cnt != 0} {
-		log_warn "Check for matching checksums on the plugstack.conf file. Different checksums could indicate file system delays"
-		end_it 1
+		fail "Check for matching checksums on the plugstack.conf file. Different checksums could indicate file system delays"
 	}
 	log_debug "Remote (slurmd) spank plugin success"
 } else {
-	end_it 1
+	fail "Spank output file ($spank_out) was not created"
 }
-
-end_it $exit_code

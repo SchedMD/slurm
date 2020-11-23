@@ -30,9 +30,14 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set io_prog     "test$test_id.io"
 set test_prog   "test$test_id.prog"
+
+proc cleanup {} {
+	global io_prog test_prog
+
+	file delete $io_prog $test_prog
+}
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
     skip "This test is incompatible with front-end systems"
@@ -97,14 +102,11 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		log_error "Some error occurred"
-		set exit_code 1
-		exp_continue
+		fail "Some error occurred"
 	}
 	timeout {
-		log_error "Spawn IO not responding"
 		cancel_job $job_id
-		set exit_code 1
+		fail "Spawn IO not responding"
 	}
 	eof {
 		wait
@@ -113,10 +115,4 @@ expect {
 
 if {$matches != [expr $task_cnt * 3]} {
 	fail "Spawn IO communications failure"
-}
-
-if {$exit_code == 0} {
-	file delete $io_prog $test_prog
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

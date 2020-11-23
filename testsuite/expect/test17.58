@@ -31,19 +31,12 @@ set file_in     "test$test_id.input"
 set exit_code   0
 set job_id      0
 
-#
-# Since we make changes to configuration, call this function restore
-# configuration before exiting.
-#
-proc endit { } {
-	global exit_code bin_rm file_in
-	incr exit_code [reconfigure]
-	if {$exit_code == 0} {
-		exec $bin_rm -f $file_in
-		pass
-	} else {
-		fail "Exiting with exit code $exit_code"
-	}
+proc cleanup {} {
+	global bin_rm file_in
+
+	reconfigure
+
+	exec $bin_rm -f $file_in
 }
 
 #
@@ -58,9 +51,8 @@ if {![is_super_user]} {
 # Ensure that MaxTime is UNLIMITED so this test won't fail due to trying to set
 # time limits greater than MaxTime.
 #
-set exit_code [set_partition_maximum_time_limit "" -1]
-if { $exit_code != 0 } {
-	endit
+if [set_partition_maximum_time_limit "" -1] {
+	fail "Unable to clear partition maximum time limit"
 }
 
 #
@@ -85,8 +77,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -94,9 +85,7 @@ expect {
 }
 
 if {$job_id == 0} {
-	log_error "Batch not submitted"
-	set exit_code 1
-	endit
+	fail "Batch not submitted"
 }
 
 #
@@ -104,9 +93,7 @@ if {$job_id == 0} {
 #
 if {[wait_for_job $job_id DONE] != 0} {
 	cancel_job $job_id
-	log_error "Job failed to run to completion. This can be due to QOS or account time limit <120 minutes"
-	set exit_code 1
-	endit
+	fail "Job failed to run to completion. This can be due to QOS or account time limit <120 minutes"
 }
 spawn $scontrol show job $job_id
 expect {
@@ -124,12 +111,13 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
 
-endit
+if {$exit_code != 0} {
+        fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

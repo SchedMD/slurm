@@ -28,12 +28,17 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set job_id      0
 set step_id	0
 set scontrol_id 0
+
+proc cleanup {} {
+	global bin_rm file_in file_out
+
+	exec $bin_rm -f $file_in $file_out
+}
 
 # Delete left-over stdout file
 file delete $file_out
@@ -59,9 +64,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $sbatch_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -103,10 +107,4 @@ if {[wait_for_file $file_out] == 0} {
 }
 if {$matches != 3} {
 	fail "scontrol listpids output error"
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

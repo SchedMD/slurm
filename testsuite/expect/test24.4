@@ -33,10 +33,15 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set test_prog   "test$test_id.prog"
 set matches     0
 set expected_matches 35
+
+proc cleanup {} {
+	global test_prog
+
+	file delete $test_prog
+}
 
 set damp [get_config_param "FairShareDampeningFactor"]
 if {$damp != 1} {
@@ -208,9 +213,8 @@ expect {
 	}
 
 	timeout {
-		log_error "spawn IO not responding"
 		cancel_job $job_id
-		set exit_code 1
+		fail "spawn IO not responding"
 	}
 	eof {
 		wait
@@ -218,19 +222,12 @@ expect {
 }
 
 if {$matches != $expected_matches} {
-	log_error "We didn't get the correct priorities from the plugin ($matches != $expected_matches)"
-	log_debug "Some potentially useful information is below:
+	log_debug "
 * Account aA, aB, and aC are general purpose algorithm tests with various shares, usage values, children counts, and depths
 * Account aD is used to test USE_PARENT. Any account that is USE_PARENT should have its children effectively reparented to the parent's parent. Any user with USE_PARENT should be ranked highest in its account, subject to ties with any other association with level_fs==1.0. uD2 and uD3 do NOT have the same level_fs; sshare doesn't show enough digits to visually distinguish.
 * Account aE and its children should have fairshare==1.0 as a result of tie handling code.
 * Account aF is similar to aE except its shares are different; they should still be 1.0.
 * Accounts aE and aF and their descendants and u1 (root) should have fairshare==1.0 or ranking is broken.
 * Account aG is set up so that uGA1 and uG1 will have equivalent fs factors due to the tie handling code but uGA2 will not."
-	set exit_code 1
-}
-
-if {$exit_code == 0} {
-	file delete $test_prog
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	fail "We didn't get the correct priorities from the plugin ($matches != $expected_matches)"
 }

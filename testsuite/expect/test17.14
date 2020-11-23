@@ -35,6 +35,12 @@ set file_in         "test$test_id.input"
 set file_out        "test$test_id.output"
 set job_id           0
 
+proc cleanup {} {
+	global bin_rm file_in file_out
+
+	exec $bin_rm -f $file_in $file_out
+}
+
 global env
 set env($test_env_name) $test_env_val
 
@@ -58,9 +64,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
-		exp_continue
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -117,9 +121,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
-		exp_continue
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -173,9 +175,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
-		exp_continue
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -229,9 +229,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
-		exp_continue
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -272,8 +270,6 @@ if {$matches != 0} {
 	fail "Environment variables were propagated ($matches != 0)"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

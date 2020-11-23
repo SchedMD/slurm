@@ -33,6 +33,12 @@ set file_in     "test$test_id.input"
 set force_part  0
 set job_id      0
 
+proc cleanup {} {
+	global bin_rm file_in
+
+	exec $bin_rm -f $file_in
+}
+
 set oversubscribe [partition_oversubscribe]
 if {[string compare $oversubscribe "FORCE"] == 0} {
 	set force_part 1
@@ -57,9 +63,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
-		exp_continue
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -85,8 +89,7 @@ if {$job_id != 0} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -166,8 +169,6 @@ if {$force_part == 0 && $match_oversubscribe != 1} {
 	fail "Did not properly set oversubscribe flag"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

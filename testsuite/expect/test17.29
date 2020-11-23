@@ -32,6 +32,12 @@ set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
 
+proc cleanup {} {
+	global bin_rm file_in file_out file_err
+
+	exec $bin_rm -f $file_in $file_out $file_err
+}
+
 set arg1        "arg_one"
 set arg2        "arg_two"
 set arg_match   0
@@ -56,8 +62,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -97,8 +102,6 @@ if {$arg_match == 0} {
 	fail "Failed to pass script arguments"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $file_err
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

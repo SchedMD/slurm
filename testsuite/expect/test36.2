@@ -28,7 +28,6 @@ source ./globals
 
 set file_in     "test$test_id.input"
 set job_id      0
-set exit_code   0
 
 if {[file executable $sbatch] == 0} {
 	skip "$sbatch does not exist"

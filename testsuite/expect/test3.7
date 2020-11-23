@@ -40,6 +40,12 @@ set job_id2        0
 set host_name      ""
 set not_supported  0
 
+proc cleanup {} {
+	global bin_rm file_out1 file_out2 file_prog file_prog_sh1 file_prog_sh2
+
+	exec $bin_rm -f $file_out1 $file_out2 $file_prog $file_prog_sh1 $file_prog_sh2
+}
+
 if [param_contains [get_config_param "PreemptMode"] "GANG"] {
 	skip "This test can't be run with gang scheduling"
 }
@@ -63,8 +69,7 @@ proc suspend_job { job_id operation } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -88,8 +93,7 @@ proc check_output { file_name } {
 			exp_continue
 		}
 		timeout {
-			log_error "cat not responding"
-			set exit_code 1
+			fail "cat not responding"
 		}
 		eof {
 			wait
@@ -237,8 +241,6 @@ if {$not_supported == 0} {
 	check_output $file_out2
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_out1 $file_out2 $file_prog $file_prog_sh1 $file_prog_sh2
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code). Failure may be due to use of gang scheduler, a race conditions, or the ProcTrack plugin not identifying the application as part of the job"
 }

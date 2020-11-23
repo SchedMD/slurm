@@ -34,6 +34,12 @@ set test_prog          "test$test_id.prog"
 set job_id             0
 set task_cnt           8
 
+proc cleanup {} {
+	global bin_rm file_in file_out file_err test_prog
+
+	exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
+}
+
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 } elseif {![file exists $oshcc]} {
@@ -83,9 +89,8 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $sbatch_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -135,12 +140,7 @@ if {[wait_for_file $file_out] == 0} {
 	set exit_code 1
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
-} else {
-	log_debug "Check contents of $file_err"
-}
-
 if {$exit_code != 0} {
+	log_debug "Check contents of $file_err"
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

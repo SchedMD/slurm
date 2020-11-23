@@ -33,6 +33,12 @@ set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set matches     0
 
+proc cleanup {} {
+	global file_in file_out
+
+	file delete $file_in $file_out
+}
+
 # These are the variables for which we are checking existence.
 # If the number following a variable name is 1, then we check to make
 # certain that the value of the env variable is greater than 0
@@ -70,8 +76,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -127,8 +132,6 @@ if {$good < $total} {
 	fail "Only $good of $total Slurm environment variables set"
 }
 
-if {$exit_code == 0} {
-	file delete $file_in $file_out
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

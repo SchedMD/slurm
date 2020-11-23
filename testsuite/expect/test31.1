@@ -62,7 +62,6 @@ proc cleanup { } {
 set timeout $max_job_delay
 
 proc change_pro_epi { arg program_name conf_change task_pro } {
-
 	global inc_slurm bin_chmod bin_rm test_dir pro_epi_prog bin_echo test_name bin_pwd re_word_str make_file bin_bash exit_code file_dir bin_ln
 
 	if {$conf_change == 0} {
@@ -118,8 +117,7 @@ proc check_file { file_name } {
 			exp_continue
 		}
 		timeout {
-			log_error "find is not responding"
-			set exit_code 1
+			fail "find is not responding"
 		}
 		eof {
 			wait
@@ -135,7 +133,6 @@ proc check_file { file_name } {
 }
 
 proc check_proc {program_name} {
-
 	global bin_ps bin_bash bin_grep exit_code
 
 	set proc_exist 0
@@ -146,8 +143,7 @@ proc check_proc {program_name} {
 			exp_continue
 		}
 		timeout {
-			log_error "Timed out while looking for process"
-			set exit_code 1
+			fail "Timed out while looking for process"
 		}
 		eof {
 			wait
@@ -161,7 +157,6 @@ proc check_proc {program_name} {
 }
 
 proc run_job { file_type program_name conf_change task_pro} {
-
 	global srun run_host make_file exit_code bin_rm bin_printenv bin_sleep test_dir test_name
 
 	# Change the included file to epilog in the slurm.conf
@@ -181,8 +176,7 @@ proc run_job { file_type program_name conf_change task_pro} {
 			exp_continue
 		}
 		timeout {
-			log_error "srun is not responding"
-			set exit_code 1
+			fail "srun is not responding"
 		}
 		eof {
 			wait
@@ -255,8 +249,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun is not responding"
-		set exit_code 1
+		fail "srun is not responding"
 	}
 	eof {
 		wait
@@ -311,8 +304,7 @@ if {$make_file == 1} {
 			exp_continue
 		}
 		timeout {
-			log_error "salloc is not responding"
-			set exit_code 1
+			fail "salloc is not responding"
 		}
 		eof {
 			wait

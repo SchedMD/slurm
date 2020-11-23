@@ -28,9 +28,14 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
 set file_in      "test$test_id.input"
 set file_script  "test$test_id.script"
+
+proc cleanup {} {
+	global bin_rm file_in file_script
+
+	exec $bin_rm -f $file_in $file_script
+}
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
@@ -67,10 +72,4 @@ expect {
 }
 if {$matches != 1} {
 	fail "umask not propagated"
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_script
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

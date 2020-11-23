@@ -35,6 +35,12 @@ set job_id2     0
 set job_acct    "TEST_ACCT"
 set job_acct_lc "test_acct"
 
+proc cleanup {} {
+	global bin_rm file_in
+
+	exec $bin_rm -f $file_in
+}
+
 if [param_contains [get_config_param "AccountingStorageEnforce"] "associations"] {
 	skip "This test will not work when associations are enforced"
 }
@@ -61,9 +67,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
 		slow_kill $sbatch_pid
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -126,8 +131,6 @@ if {$match_acct == 0} {
 	fail "Account information not processed"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

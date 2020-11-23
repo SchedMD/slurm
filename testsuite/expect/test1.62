@@ -71,9 +71,8 @@ proc run_gpu_test { gres_cnt } {
 			exp_continue
 		}
 		timeout {
-			log_error "srun not responding"
 			slow_kill $srun_pid
-			set exit_code 1
+			fail "srun not responding"
 		}
 		eof {
 			wait
@@ -106,9 +105,8 @@ proc run_gpu_fail { gres_spec } {
 			exp_continue
 		}
 		timeout {
-			log_error "srun not responding"
 			slow_kill $srun_pid
-			set exit_code 1
+			fail "srun not responding"
 		}
 		eof {
 			wait

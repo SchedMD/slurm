@@ -38,6 +38,12 @@ set prio2                -1
 set prio3                -1
 set multi                0
 
+proc cleanup {} {
+	global bin_rm file_in
+
+	exec $bin_rm -f $file_in
+}
+
 # expected outcome is different under multifactor rule
 if { ![string compare [priority_type] multifactor] } {
 	set multi 1
@@ -104,9 +110,8 @@ if {$job_id1 != 0} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
 			cancel_job $job_id1
-			set exit_code   1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -126,9 +131,8 @@ if {$job_id2 != 0} {
             exp_continue
         }
         timeout {
-            log_error "scontrol not responding"
             cancel_job $job_id2
-            set exit_code   1
+            fail "scontrol not responding"
         }
         eof {
 			wait
@@ -148,9 +152,8 @@ if {$job_id3 != 0} {
             exp_continue
         }
         timeout {
-            log_error "scontrol not responding"
             cancel_job $job_id3
-            set exit_code   1
+            fail "scontrol not responding"
         }
         eof {
 			wait
@@ -181,8 +184,6 @@ if {$prio3 != 0} {
 	fail "Held job has non-zero priority: $prio3"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

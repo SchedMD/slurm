@@ -35,6 +35,12 @@ set file_out    "test$test_id.output"
 set job_name    "TEST_NAME"
 set delay       10
 
+proc cleanup {} {
+	global file_in file_out
+
+	file delete $file_in $file_out
+}
+
 if {[get_config_param "EnforcePartLimits"] eq "NO"} {
 	skip "This test is incompatible with EnforcePartLimits = NO"
 }
@@ -67,9 +73,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
-		exp_continue
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -101,10 +105,8 @@ expect {
 		fail "Test B was supposed to fail submission"
 	}
 	timeout {
-		log_error "sbatch not responding"
 		slow_kill $sbatch_pid
-		set exit_code 1
-		exp_continue
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -133,10 +135,8 @@ expect {
 		cancel_job $job_id
 	}
 	timeout {
-		log_error "sbatch not responding"
 		slow_kill $sbatch_pid
-		set exit_code 1
-		exp_continue
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -146,8 +146,6 @@ expect {
 #
 # Post-processing
 #
-if {$exit_code == 0} {
-	file delete $file_in $file_out
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

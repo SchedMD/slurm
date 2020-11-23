@@ -30,7 +30,6 @@
 source ./globals
 source ./globals_het_jobs
 
-set exit_code    0
 set file_in      "test$test_id.in"
 set file_out     "test$test_id.out"
 set job_id 0
@@ -52,24 +51,21 @@ proc sbatch {} {
 	spawn {*}$command
 	expect {
 		-re "Batch job submission failed" {
-			log_warn "Unable to execute test due to system configuration"
-			end_it 0
+			skip "Unable to execute test due to system configuration"
 		}
 		-re "Submitted batch job ($number)" {
 			incr matches
 			set job_id $expect_out(1,string)
 		}
 		timeout {
-			log_error "sbatch not responding"
-			end_it 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$matches != 1} {
-		log_error "batch submit failure"
-		end_it 1
+		fail "batch submit failure"
 	}
 
 	return $job_id
@@ -87,17 +83,9 @@ proc cleanup { } {
 	global scancel user_name bin_rm file_in file_out
 	global test_id bin_bash
 
-	exec $bin_rm -f $file_in $file_out
-	return 0
-}
-
-proc end_it { exit_code } {
-	global test_id
 	cancel_job_id
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
+
+	exec $bin_rm -f $file_in $file_out
 }
 
 #start test
@@ -136,16 +124,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "squeue not responding"
-		end_it 1
+		fail "squeue not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 2 } {
-	log_error "Problem with squeue test 1 ($matches != 2)"
-	end_it 1
+	fail "Problem with squeue test 1 ($matches != 2)"
 } else {
 	log_debug "Test 1 OK"
 }
@@ -165,16 +151,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "squeue not responding"
-		end_it 1
+		fail "squeue not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 1 } {
-	log_error "Problem with squeue test 2 ($matches != 1)"
-	end_it 1
+	fail "Problem with squeue test 2 ($matches != 1)"
 } else {
 	log_debug "Test 2 OK"
 }
@@ -189,19 +173,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "squeue not responding"
-		end_it 1
+		fail "squeue not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 1 } {
-	log_error "Problem with squeue test 3 ($matches != 1)"
-	end_it 1
+	fail "Problem with squeue test 3 ($matches != 1)"
 } else {
 	log_debug "Test 3 OK"
 }
-
-# All Done
-end_it 0

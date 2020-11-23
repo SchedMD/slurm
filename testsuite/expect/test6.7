@@ -34,6 +34,12 @@ set file_out     "test$test_id.output"
 set file_out2    "test$test_id.output2"
 set file_prog    "test$test_id.prog"
 
+proc cleanup {} {
+	global file_in file_out2 file_prog
+
+	exec rm -f $file_in $file_out2 $file_prog
+}
+
 #
 # Cannot run the test if OverTimeLimit is set, since we test time limits.
 #
@@ -64,9 +70,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $sbatch_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -103,8 +108,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scancel not responding"
-		set exit_code 1
+		fail "scancel not responding"
 	}
 	eof {
 		wait
@@ -174,10 +178,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill sbatch_pid
-		set exit_code 1
-		exp_continue
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -210,8 +212,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scancel not responding"
-		set exit_code 1
+		fail "scancel not responding"
 	}
 	eof {
 		wait
@@ -246,9 +247,7 @@ if {[wait_for_file $file_out2] == 0} {
 	set exit_code 1
 }
 
-if {$exit_code == 0} {
-	exec rm -f $file_in $file_out2 $file_prog
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 

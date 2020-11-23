@@ -57,8 +57,7 @@ if {[string compare [get_admin_level] "Administrator"]} {
 spawn $sacctmgr -i delete user $tu1,$tu2,$tu3
 expect {
 	timeout {
-		log_error "sacctmgr delete user not responding"
-		set exit_code 1
+		fail "sacctmgr delete user not responding"
 	}
 	eof {
 		wait
@@ -68,8 +67,7 @@ expect {
 spawn $sacctmgr -i delete account $ta1,$ta2,$ta3
 expect {
 	 timeout {
-		log_error "sacctmgr delete account not responding"
-		set exit_code 1
+		fail "sacctmgr delete account not responding"
 	}
 	eof {
 		wait
@@ -79,8 +77,7 @@ expect {
 spawn $sacctmgr -i delete cluster $tc1,$tc2
 expect {
 	 timeout {
-		log_error "sacctmgr delete cluster not responding"
-		set exit_code 1
+		fail "sacctmgr delete cluster not responding"
 	}
 	eof {
 		wait
@@ -94,8 +91,7 @@ expect {
 spawn $sacctmgr -i add cluster $tc1
 expect {
 	 timeout {
-		log_error "sacctmgr add cluster not responding"
-		set exit_code 1
+		fail "sacctmgr add cluster not responding"
 	}
 	eof {
 		wait
@@ -105,8 +101,7 @@ expect {
 spawn $sacctmgr -i add account $ta1 cluster=$tc1
 expect {
 	 timeout {
-		log_error "sacctmgr add account $ta1 not responding"
-		set exit_code 1
+		fail "sacctmgr add account $ta1 not responding"
 	}
 	eof {
 		wait
@@ -116,8 +111,7 @@ expect {
 spawn $sacctmgr -i add account $ta2 parent=$ta1 cluster=$tc1
 expect {
 	 timeout {
-		log_error "sacctmgr add account $ta2 not responding"
-		set exit_code 1
+		fail "sacctmgr add account $ta2 not responding"
 	}
 	eof {
 		wait
@@ -127,8 +121,7 @@ expect {
 spawn $sacctmgr -i add user $tu1 account=$ta1 cluster=$tc1
 expect {
 	 timeout {
-		log_error "sacctmgr add user $tu1 not responding"
-		set exit_code 1
+		fail "sacctmgr add user $tu1 not responding"
 	}
 	eof {
 		wait
@@ -138,8 +131,7 @@ expect {
 spawn $sacctmgr -i add user $tu2 account=$ta1 cluster=$tc1
 expect {
 	 timeout {
-		log_error "sacctmgr add user $tu2 not responding"
-		set exit_code 1
+		fail "sacctmgr add user $tu2 not responding"
 	}
 	eof {
 		wait
@@ -149,8 +141,7 @@ expect {
 spawn $sacctmgr -i add user $tu3 account=$ta2 cluster=$tc1
 expect {
 	 timeout {
-		log_error "sacctmgr add user $tu3 not responding"
-		set exit_code 1
+		fail "sacctmgr add user $tu3 not responding"
 	}
 	eof {
 		wait
@@ -160,8 +151,7 @@ expect {
 spawn $sacctmgr -i delete cluster $tc1
 expect {
 	 timeout {
-		log_error "sacctmgr delete cluster $tc1  not responding"
-		set exit_code 1
+		fail "sacctmgr delete cluster $tc1  not responding"
 	}
 	eof {
 		wait
@@ -171,8 +161,7 @@ expect {
 spawn $sacctmgr -i add cluster $tc2
 expect {
 	 timeout {
-		log_error "sacctmgr add cluster $tc2  not responding"
-		set exit_code 1
+		fail "sacctmgr add cluster $tc2  not responding"
 	}
 	eof {
 		wait
@@ -182,8 +171,7 @@ expect {
 spawn $sacctmgr -i add account $ta3 cluster=$tc2
 expect {
 	 timeout {
-		log_error "sacctmgr add account $ta3  not responding"
-		set exit_code 1
+		fail "sacctmgr add account $ta3  not responding"
 	}
 	eof {
 		wait
@@ -193,8 +181,7 @@ expect {
 spawn $sacctmgr show problem
 expect {
 	 timeout {
-		log_error "sacctmgr show problem  not responding"
-		set exit_code 1
+		fail "sacctmgr show problem  not responding"
 	}
 	eof {
 		wait
@@ -237,9 +224,8 @@ expect {
 		}
 
 		timeout {
-			log_error "sacctmgr show not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			fail "sacctmgr show not responding"
 		}
 		eof {
 			wait
@@ -258,8 +244,7 @@ expect {
 spawn $sacctmgr -i delete user $tu1,$tu2,$tu3
 expect {
 	 timeout {
-		log_error "sacctmgr delete users not responding"
-		set exit_code 1
+		fail "sacctmgr delete users not responding"
 	}
 	eof {
 		wait
@@ -268,8 +253,7 @@ expect {
 spawn $sacctmgr -i delete account $ta1,$ta2,$ta3
 expect {
 	 timeout {
-		log_error "sacctmgr delete accounts not responding"
-		set exit_code 1
+		fail "sacctmgr delete accounts not responding"
 	}
 	eof {
 		wait
@@ -278,8 +262,7 @@ expect {
 spawn $sacctmgr -i delete cluster $tc1,$tc2
 expect {
 	 timeout {
-		log_error "sacctmgr delete clusters not responding"
-		set exit_code 1
+		fail "sacctmgr delete clusters not responding"
 	}
 	eof {
 		wait

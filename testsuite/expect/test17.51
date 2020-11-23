@@ -31,6 +31,12 @@ set cwd          "[$bin_pwd]"
 set config_path  ""
 set tmp_job      "test$test_id\_tmp_job"
 
+proc cleanup {} {
+	global bin_rm tmp_job
+
+	exec $bin_rm $tmp_job
+}
+
 if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
 }
@@ -66,8 +72,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -111,8 +116,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -140,8 +144,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "squeue is not responding"
-		set exit_code 1
+		fail "squeue is not responding"
 	}
 	eof {
 		wait
@@ -164,8 +167,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -193,8 +195,7 @@ expect {
 		set found 1
 	}
 	timeout {
-		log_error "squeue is not responding"
-		set exit_code 1
+		fail "squeue is not responding"
 	}
 	eof {
 		wait
@@ -216,8 +217,7 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 			exp_continue
 		}
 		timeout {
-			log_error "sacct is not responding"
-			set exit_code 1
+			fail "sacct is not responding"
 		}
 		eof {
 			wait
@@ -239,8 +239,7 @@ expect {
 		set found 1
 	}
 	timeout {
-		log_error "squeue is not responding"
-		set exit_code 1
+		fail "squeue is not responding"
 	}
 	eof {
 		wait
@@ -264,8 +263,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -305,8 +303,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -334,8 +331,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "squeue is not responding"
-		set exit_code 1
+		fail "squeue is not responding"
 	}
 	eof {
 		wait
@@ -357,8 +353,7 @@ expect {
 		set found 1
 	}
 	timeout {
-		log_error "squeue is not responding"
-		set exit_code 1
+		fail "squeue is not responding"
 	}
 	eof {
 		wait
@@ -384,8 +379,7 @@ expect {
 		log_debug "No mcs_label for this node. It was expected"
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -419,8 +413,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 		}
 	eof {
 		wait
@@ -448,8 +441,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "squeue is not responding"
-		set exit_code 1
+		fail "squeue is not responding"
 	}
 	eof {
 		wait
@@ -471,8 +463,7 @@ expect {
 		set found 1
 	}
 	timeout {
-		log_error "squeue is not responding"
-		set exit_code 1
+		fail "squeue is not responding"
 	}
 	eof {
 		wait
@@ -498,8 +489,7 @@ expect {
 		log_debug "No mcs_label for this node. It was expected"
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -520,8 +510,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -548,8 +537,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "squeue is not responding"
-		set exit_code 1
+		fail "squeue is not responding"
 	}
 	eof {
 		wait
@@ -592,8 +580,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -619,8 +606,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "squeue is not responding"
-		set exit_code 1
+		fail "squeue is not responding"
 	}
 	eof {
 		wait
@@ -642,8 +628,7 @@ expect {
 		set found 1
 	}
 	timeout {
-		log_error "squeue is not responding"
-		set exit_code 1
+		fail "squeue is not responding"
 	}
 	eof {
 		wait
@@ -668,8 +653,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -687,8 +671,6 @@ cancel_job $job_id
 restore_conf $config_file
 incr exit_code [reconfigure]
 
-if {$exit_code == 0} {
-	exec $bin_rm $tmp_job
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

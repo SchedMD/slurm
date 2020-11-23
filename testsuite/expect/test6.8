@@ -51,9 +51,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $sbatch_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -70,9 +69,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $sbatch_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -107,8 +105,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scancel not responding"
-		set exit_code 1
+		fail "scancel not responding"
 	}
 	eof {
 		wait
@@ -135,8 +132,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scancel not responding"
-		set exit_code 1
+		fail "scancel not responding"
 	}
 	eof {
 		wait

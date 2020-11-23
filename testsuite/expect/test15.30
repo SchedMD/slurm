@@ -44,8 +44,7 @@ expect {
 		fail "Salloc is OK with a deadline too old"
 	}
 	timeout {
-		log_error "salloc not responding"
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait

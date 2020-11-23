@@ -69,7 +69,7 @@ proc clean_assocs {} {
 	remove_qos $tq1
 }
 
-proc end_it { exit_code } {
+proc cleanup {} {
 	global test_id jobid1 jobid2 jobid3 jobid4 bin_cp config_file test_id ta1 tq1
 
 	if {$jobid1} {
@@ -88,12 +88,7 @@ proc end_it { exit_code } {
 	clean_assocs
 
 	restore_conf $config_file
-	incr exit_code [reconfigure]
-
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
+	reconfigure
 }
 
 proc part_cpu_cnt { partition } {
@@ -111,8 +106,7 @@ proc part_cpu_cnt { partition } {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch not responding"
-			end_it 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
@@ -136,8 +130,7 @@ proc sub_job { args state } {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch not responding"
-			end_it 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
@@ -145,13 +138,11 @@ proc sub_job { args state } {
 	}
 
 	if {$jobid == 0} {
-		log_error "did not get sbatch jobid"
-		end_it 1
+		fail "Did not get sbatch jobid"
 	}
 
 	if {[wait_for_job $jobid $state] != 0} {
-		log_error "error starting job $jobid"
-		end_it 1
+		fail "Error starting job $jobid"
 	}
 
 	return $jobid
@@ -168,8 +159,7 @@ proc sprio_args { args regex match_cnt } {
 			exp_continue
 		}
 		timeout {
-			log_error "sprio not responding"
-			end_it 1
+			fail "sprio not responding"
 		}
 		eof {
 			wait
@@ -177,8 +167,7 @@ proc sprio_args { args regex match_cnt } {
 	}
 
 	if {$matches != $match_cnt} {
-		log_error "sprio $args failed to match '$regex' $match_cnt times"
-		end_it 1
+		fail "sprio $args failed to match '$regex' $match_cnt times"
 	}
 }
 
@@ -197,8 +186,7 @@ proc update_job { jobid prio {error ""} } {
 			incr matches
 		}
 		timeout {
-			log_error "scontrol not responding"
-			end_it 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -206,8 +194,7 @@ proc update_job { jobid prio {error ""} } {
 	}
 
 	if {($error != "") && !$matches} {
-		log_error "didn't get expected error '$error'"
-		end_it 1
+		fail "Didn't get expected error '$error'"
 	}
 }
 
@@ -218,12 +205,10 @@ proc create_part { name nodes prio } {
 	spawn $scontrol create partitionname=$name priorityjobfactor=$prio nodes=$nodes
 	expect {
 		-re "error" {
-			log_error "scontrol found error"
-			end_it 1
+			fail "scontrol found error"
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			end_it 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -238,8 +223,7 @@ proc create_part { name nodes prio } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			end_it 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -247,8 +231,7 @@ proc create_part { name nodes prio } {
 	}
 
 	if {$found == 0} {
-		log_error "scontrol did not create partition $name"
-		end_it 1
+		fail "scontrol did not create partition $name"
 	}
 }
 
@@ -287,22 +270,19 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {!$match} {
-	log_error "didn't find NO_NORMAL_ALL flag"
-	end_it 1
+	fail "Didn't find NO_NORMAL_ALL flag"
 }
 
 set idle_node [get_idle_node_in_part]
 if {$idle_node == ""} {
-	log_error "no idle nodes"
-	end_it 1
+	fail "No idle nodes"
 }
 log_info "idle: $idle_node"
 create_part $p1 $idle_node 10
@@ -314,20 +294,20 @@ clean_assocs
 array set qos_req {}
 set qos_req(priority) 200
 if {[add_qos $tq1 [array get qos_req]]} {
-	end_it 1
+	fail "Unable to add qos ($tq1)"
 }
 
 array set acct_req {}
 set acct_req(priority) 100
 set acct_req(qos) $tq1
 if {[add_acct $ta1 [array get acct_req]]} {
-	end_it 1
+	fail "Unable to add account ($ta1)"
 }
 
 array set user_req {}
 set user_req(account) $ta1
 if {[add_user [get_my_user_name] [array get user_req]]} {
-	end_it 1
+	fail "Unable to add user to account ($ta1)"
 }
 
 set cpu_cnt [part_cpu_cnt $p1]
@@ -340,5 +320,3 @@ sprio_args "-j $jobid2 -o \"%.15i %10B %10P %10Q %10T\"" "$jobid2\\s+100\\s+10\\
 sprio_args "-j $jobid3 -o \"%.15i %10B %10P %10Q %10T\"" "$jobid3\\s+100\\s+20\\s+200\\s+cpu=$cpu_cnt" 1
 sprio_args "-j $jobid4 -p$p1 -o \"%.15i %10B %10P %10Q %10T\"" "$jobid4\\s+100\\s+10\\s+200\\s+cpu=$cpu_cnt" 1
 sprio_args "-j $jobid4 -p$p2 -o \"%.15i %10B %10P %10Q %10T\"" "$jobid4\\s+100\\s+20\\s+200\\s+cpu=$cpu_cnt" 1
-
-end_it 0
