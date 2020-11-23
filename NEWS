@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
  -- select/cray_aries - Correctly remove jobs/steps from blades using NPC.
  -- cons_tres - Avoid max_node_gres when entire node is allocated with
     --ntasks-per-gpu.
+ -- Allow NULL arg to data_get_type().
 
 * Changes in Slurm 20.11.0
 ==========================
