@@ -14,7 +14,7 @@ TESTS = \
 	pack-test
 
 if HAVE_CHECK
-MYCFLAGS  = @CHECK_CFLAGS@ -Wall -ansi -std=c99
+MYCFLAGS  = @CHECK_CFLAGS@ -Wall
 MYCFLAGS += -D_ISO99_SOURCE -Wunused-but-set-variable
 TESTS += xtree-test \
 	 xhash-test \

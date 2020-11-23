@@ -761,15 +761,43 @@ Suite *slurm_opt_suite(void)
 
 int main(void)
 {
+	/* Set up Slurm logging */
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
 	log_opts.stderr_level = LOG_LEVEL_DEBUG5;
 	log_init("slurm_opt-test", log_opts, 0, NULL);
 
+	/* Call slurm_conf_init() with a mock slurm.conf*/
+	int fd;
+	char *slurm_unit_conf_filename = xstrdup("slurm_unit.conf-XXXXXX");
+	if ((fd = mkstemp(slurm_unit_conf_filename)) == -1) {
+		error("error creating slurm_unit.conf (%s)",
+		      slurm_unit_conf_filename);
+		return EXIT_FAILURE;
+	} else
+		debug("fake slurm.conf created: %s", slurm_unit_conf_filename);
+
+	char slurm_unit_conf_content[] = "ClusterName=slurm_unit\n"
+					 "SlurmctldHost=slurm_unit\n";
+	size_t csize = sizeof(slurm_unit_conf_content);
+	ssize_t rc = write(fd, slurm_unit_conf_content, csize);
+	if (rc < csize) {
+		error("error writting slurm_unit.conf (%s)",
+		      slurm_unit_conf_filename);
+		return EXIT_FAILURE;
+	}
+	slurm_conf_init( slurm_unit_conf_filename );
+
+	unlink(slurm_unit_conf_filename);
+	xfree(slurm_unit_conf_filename);
+	close(fd);
+
+	/* data_init_static() is necessary on this test */
 	if(data_init_static()) {
 		error("data_init_static() failed");
 		return EXIT_FAILURE;
 	}
 
+	/* Start the actual libcheck code */
 	int number_failed;
 	SRunner *sr = srunner_create(slurm_opt_suite());
 
@@ -777,6 +805,7 @@ int main(void)
 	number_failed = srunner_ntests_failed(sr);
 	srunner_free(sr);
 
+	/* Cleanup */
 	data_destroy_static();
 
 	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
