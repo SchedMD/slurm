@@ -229,10 +229,8 @@ responding (assuming TrackSlurmctldDown is set in slurmdbd.conf).
 .IP Idle
 Time where nodes had no active jobs or reservations.
 .IP Overcommited
-Time that the nodes were over allocated, either with the \fB-O,
---overcommit\fP flag at submission time or \fBOverSubscribe\fP set to
-FORCE in the slurm.conf. This time is not counted against the total
-reported time.
+If there is enough utilization to consume more system time than is
+expected, the extra usage is recorded as Overcommitted.
 .IP PlannedDown
 Time that nodes were in use by a reservation created with the MAINT flag
 but not the IGNORE_JOBS flag.
