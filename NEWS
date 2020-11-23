@@ -20,6 +20,9 @@ documents those changes that are of interest to users and administrators.
  -- cons_tres - Avoid max_node_gres when entire node is allocated with
     --ntasks-per-gpu.
  -- Allow NULL arg to data_get_type().
+ -- In sreport have usage for a reservation contain all jobs that ran in the
+    reservation instead of just the ones that ran in the time specified. This
+    matches the report for the reservation is not truncated for a time period.
 
 * Changes in Slurm 20.11.0
 ==========================
