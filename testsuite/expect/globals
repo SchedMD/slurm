@@ -270,7 +270,10 @@ cset testsuite_color_failure   $COLOR_RED
 cset testsuite_color_skipped   $COLOR_ORANGE
 
 # Set to true to cause the first subtest failure to immediately end the test
-cset testsuite_subtest_fatal false
+cset testsuite_subtest_fatal   false
+# Set to all, fail_skip, fail or none print datails of subtests and testprocs
+cset testsuite_subtest_details  fail
+cset testsuite_testproc_details fail
 
 # To automatically call cleanup or not when ending the test
 cset testsuite_cleanup_on_failure true
@@ -278,9 +281,20 @@ if {[info exists env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)]} {
 	set testsuite_cleanup_on_failure $env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)
 }
 
-set subtest_pass_count 0
-set subtest_skip_count 0
-set subtest_fail_count 0
+# Testproc internal variables
+set _testproc_included    [list]
+set _testproc_excluded    [list]
+set _testproc_pass_list   [list]
+set _testproc_skip_list   [list]
+set _testproc_fail_list   [list]
+set _testproc_messages    [dict create]
+set _testproc_skip_next   false
+set _testproc_skip_reason ""
+set _incomplete_reason    ""
+set _subtest_pass_count   0
+set _subtest_skip_count   0
+set _subtest_fail_count   0
+set _subtest_messages     [dict create]
 
 # Other common variables
 set re_word_str          "\\S+"
@@ -348,6 +362,7 @@ set RETURN_TIMEOUT 2
 ################################################################
 
 proc fail { message } {
+	global _incomplete_reason
 
 	# Avoid recursive calls from within cleanup
 	if {[info level] > 1 && [lindex [info level -1] 0] eq "cleanup"} {
@@ -356,6 +371,7 @@ proc fail { message } {
 	}
 
 	log_fatal $message
+	set _incomplete_reason $message
 
 	# _test_fini will handle cleanup and print the failure message.
 	_test_fini 1
@@ -382,6 +398,7 @@ proc fail { message } {
 ################################################################
 
 proc skip { message } {
+	global _incomplete_reason
 
 	# Avoid recursive calls from within cleanup
 	if {[info level] > 1 && [lindex [info level -1] 0] eq "cleanup"} {
@@ -390,6 +407,7 @@ proc skip { message } {
 	}
 
 	log_warn $message
+	set _incomplete_reason $message
 
 	# _test_fini will handle cleanup and print the skipped message.
 	_test_fini -1
@@ -471,7 +489,8 @@ proc fail_on_error { message } {
 ################################################################
 
 proc subpass args {
-	global subtest_fail_count subtest_pass_count subtest_skip_count
+	global _subtest_fail_count _subtest_pass_count _subtest_skip_count
+	global _subtest_messages
 
 	set description ""
 	set argument_count [llength $args]
@@ -480,11 +499,12 @@ proc subpass args {
 		fail "Too many arguments ($argument_count): $args"
 	}
 
-	set subtest_count [expr $subtest_pass_count + $subtest_fail_count + $subtest_skip_count + 1]
-	incr subtest_pass_count
-	set message "Subtest $subtest_count passed"
-	if {$description ne ""} { append message ": $description" }
+	set subtest_count [expr $_subtest_pass_count + $_subtest_fail_count + $_subtest_skip_count + 1]
+	incr _subtest_pass_count
+	set message [format "Subtest %2d passed" $subtest_count]
+	if {$description ne ""} { append message "  : $description" }
 	log_info $message
+	dict set _subtest_messages $subtest_count [list pass $message]
 }
 
 
@@ -516,8 +536,9 @@ proc subpass args {
 ################################################################
 
 proc subfail args {
-	global subtest_fail_count subtest_pass_count subtest_skip_count
+	global _subtest_fail_count _subtest_pass_count _subtest_skip_count
 	global testsuite_subtest_fatal
+	global _subtest_messages
 
 	set description ""
 	set fatal       false
@@ -531,16 +552,17 @@ proc subfail args {
 	set argument_count [llength $args]
 	if {$argument_count >= 1} { set args [lassign $args description] }
 
-	set subtest_count [expr $subtest_pass_count + $subtest_fail_count + $subtest_skip_count + 1]
-	incr subtest_fail_count
-	set message "Subtest $subtest_count failed"
-	if {$description ne ""} { append message ": $description" }
+	set subtest_count [expr $_subtest_pass_count + $_subtest_fail_count + $_subtest_skip_count + 1]
+	incr _subtest_fail_count
+	set message [format "Subtest %2d failed" $subtest_count]
+	if {$description ne ""} { append message "  : $description" }
 	if [llength $args] { append message " (" [join $args ", "] ")" }
 	if {$fatal || $testsuite_subtest_fatal} {
 		fail $message
 	} else {
 		log_error $message
 	}
+	dict set _subtest_messages $subtest_count [list fail $message]
 }
 
 
@@ -567,7 +589,8 @@ proc subfail args {
 ################################################################
 
 proc subskip args {
-	global subtest_fail_count subtest_pass_count subtest_skip_count
+	global _subtest_fail_count _subtest_pass_count _subtest_skip_count
+	global _subtest_messages
 
 	set description ""
 	set count       1
@@ -584,15 +607,16 @@ proc subskip args {
 		fail "Too many arguments ($argument_count): $args"
 	}
 
-	set subtest_count [expr $subtest_pass_count + $subtest_fail_count + $subtest_skip_count + 1]
-	incr subtest_skip_count $count
+	set subtest_count [expr $_subtest_pass_count + $_subtest_fail_count + $_subtest_skip_count + 1]
+	incr _subtest_skip_count $count
 	if {$count > 1} {
-		set message "$count subtests skipped"
+		set message "Subtest $subtest_count-[expr $subtest_count+$count-1] skipped"
 	} else {
-		set message "Subtest $subtest_count skipped"
+		set message [format "Subtest %2d skipped" $subtest_count]
 	}
-	if {$description ne ""} { append message ": $description" }
+	if {$description ne ""} { append message " : $description" }
 	log_warn $message
+	dict set _subtest_messages [expr $subtest_count] [list skip $message]
 }
 
 
@@ -6037,6 +6061,9 @@ proc compile_against_libslurm { test_prog {use_full 0} {build_args ""} } {
 #		A string providing additional diagnostic information that is
 #		only included in the log message on failure
 #
+# RETURN VALUE
+#	the boolean condition evaluated
+#
 # ENVIRONMENT
 #	testsuite_subtest_fatal
 #		Specifies whether first failing subtest aborts the test
@@ -6066,9 +6093,198 @@ proc subtest args {
 
 	if [uplevel 1 expr [format "{%s}" $condition]] {
 		subpass $description
+		return true
 	} else {
 		subfail {*}$options $description {*}$args
+		return false
 	}
+}
+
+
+################################################################
+#
+# NAME
+#	_is_testproc_included - returns if testproc_num was included or not excluded in argv
+#
+# SYNOPSIS
+#	_is_testproc_included testproc_num
+#
+# DESCRIPTION
+#	From command line the test runner can use -i and -e to include or
+#	exclude some test functions by their number. This function must be
+#	used to check if the test runner included or excluded the given
+#	testproc_num.
+#
+# RETURN VALUE
+#	true is testproc_num was included with -i or not excluded -e,
+#	false otherwise
+#
+################################################################
+
+proc _is_testproc_included {testproc_num} {
+	global _testproc_included _testproc_excluded
+
+	if {[llength $_testproc_included]} {
+		if {[lsearch $_testproc_included $testproc_num] >= 0} {
+			return true
+		}
+		return false
+	}
+
+	if {[llength $_testproc_excluded]} {
+		if {[lsearch $_testproc_excluded $testproc_num] >= 0} {
+			return false
+		}
+	}
+
+	return true
+}
+
+
+################################################################
+#
+# NAME
+#	skip_following_testprocs - the following testproc calls will be skipped
+#
+# SYNOPSIS
+#	skip_following_testprocs reason
+#
+# ARGUMENTS
+#	reason
+#		The string with the reason message to add on the skip message
+#		on each skipped testproc.
+#
+# DESCRIPTION
+#	This function disables normal execution of testproc calls.
+#	It is meant to be used when some testprocs cannot be run due config
+#	limitations, but still call testproc to register what testprocs
+#	are skipped for a given reason.
+#	Use run_following_testprocs to reenable the norma execution of testprocs.
+
+################################################################
+
+proc skip_following_testprocs {reason} {
+	global _testproc_skip_next _testproc_skip_reason
+
+	set _testproc_skip_next   true
+	set _testproc_skip_reason $reason
+}
+
+
+################################################################
+#
+# NAME
+#	run_following_testprocs - the following testproc call will be run (if not excluded from command line)
+#
+# SYNOPSIS
+#	run_following_testprocs
+#
+# DESCRIPTION
+#	This function reenables the normal execution of testproc calls.
+#	It is meant to be used when skip_following_testprocs was called to skip
+#	previous testproc calls, and we want to normally run the following ones.
+#	Note that it does NOT overwrite what -i and -e included are passed
+#	from command line.
+#
+################################################################
+
+proc run_following_testprocs {} {
+	global _testproc_skip_next _testproc_skip_reason
+
+	set _testproc_skip_next   false
+	set _testproc_skip_reason ""
+}
+
+
+################################################################
+#
+# NAME
+#	testproc - launcher to run or skip a testproc_call
+#
+# SYNOPSIS
+#	testproc testproc_call
+#
+# ARGUMENTS
+#	A testproc_call is any normal call to a proc with any arguments that
+#	could be done normally without the testproc launcher.
+#	For example, we could normally do:
+#
+#	test_my_feature $some_args $expected_out
+#
+#	Or use the launcher like:
+#
+#	testproc test_my_feature $some_args $expected_out
+#
+# DESCRIPTION
+#	Using the testproc launcher has the following main benefits:
+#	a) Handles the -i and -e terminal options to include or exclude some
+#	   testprocs numbers.
+#	b) Runs or skips based on the last call of testproc_{skip,run}_following.
+#	c) Creates extra sections in the status summary
+#	   (see testsuite_testproc_details).
+#
+# RETURN VALUE
+#	The rc of the testproc_call if it has been run, or $::RETURN_SUCCESS
+#	otherwise. Using it is not recommended, though.
+#
+################################################################
+
+proc testproc args {
+	global _testproc_pass_list _testproc_skip_list _testproc_fail_list
+	global _testproc_skip_next _testproc_skip_reason
+	global _testproc_messages
+	global _subtest_pass_count
+	global _subtest_skip_count
+	global _subtest_fail_count
+
+	# Save previous subtest counts and next subtest num
+	set prev_pass $_subtest_pass_count
+	set prev_skip $_subtest_skip_count
+	set prev_fail $_subtest_fail_count
+	set prev_subtest [expr $_subtest_pass_count + \
+	                       $_subtest_skip_count + \
+	                       $_subtest_fail_count + 1]
+
+	# Get the testproc number
+	set testproc_num [expr [llength $_testproc_pass_list] + \
+	                       [llength $_testproc_skip_list] + \
+	                       [llength $_testproc_fail_list] + 1]
+
+	# Run or skip the testproc
+	set rc $::RETURN_SUCCESS
+	set reason ""
+	if {![_is_testproc_included $testproc_num]} {
+		set reason "(Excluded from command line)"
+		subskip "Skipping testproc $testproc_num: {$args} $reason"
+	} else {
+		if {$_testproc_skip_next} {
+			set reason "($_testproc_skip_reason)"
+			subskip  "Skipping testproc $testproc_num: {$args} $reason"
+		} else {
+			log_info "Running testproc $testproc_num: $args"
+			set rc [{*}$args]
+		}
+	}
+
+	# Get current subtest counts
+	set curr_subtest [expr $_subtest_pass_count + \
+	                       $_subtest_skip_count + \
+	                       $_subtest_fail_count]
+
+	# Register the testproc as fail, skip or pass (based on subtests)
+	if {$_subtest_fail_count > $prev_fail} {
+		set reason "(Subtests: $prev_subtest to $curr_subtest)"
+		lappend  _testproc_fail_list $testproc_num
+		dict set _testproc_messages  $testproc_num [list failed "{$args} $reason"]
+	} elseif {$_subtest_skip_count > $prev_skip} {
+		lappend  _testproc_skip_list $testproc_num
+		dict set _testproc_messages  $testproc_num [list skipped "{$args} $reason"]
+	} else {
+		lappend  _testproc_pass_list $testproc_num
+		dict set _testproc_messages  $testproc_num [list passed "{$args}"]
+	}
+
+	return $rc
 }
 
 
@@ -6245,7 +6461,11 @@ proc _print_summary {status completed} {
 	global test_name testsuite_colorize COLOR_NONE
 	global testsuite_color_success testsuite_color_skipped
 	global testsuite_color_failure
-	global subtest_fail_count subtest_pass_count subtest_skip_count
+	global _subtest_fail_count _subtest_pass_count _subtest_skip_count
+	global _testproc_pass_list _testproc_skip_list _testproc_fail_list
+	global _incomplete_reason
+	global _subtest_messages _testproc_messages
+	global testsuite_subtest_details testsuite_testproc_details
 
 	if {$status == 0} {
 		set color $testsuite_color_success
@@ -6263,13 +6483,91 @@ proc _print_summary {status completed} {
 	}
 
 	append output [string repeat = 78]\n
-	append output [format "%s            : %s\n" $header  $test_name]
-	set subtest_count [expr $subtest_fail_count + $subtest_pass_count + $subtest_skip_count]
+
+	# Get subtest and testproc counts
+	set testproc_fail  [llength $_testproc_fail_list]
+	set testproc_skip  [llength $_testproc_skip_list]
+	set testproc_pass  [llength $_testproc_pass_list]
+	set testproc_count [expr $testproc_pass + \
+	                         $testproc_skip + \
+	                         $testproc_fail]
+	set subtest_count  [expr $_subtest_fail_count + \
+	                         $_subtest_pass_count + \
+	                         $_subtest_skip_count]
+
+	# Detailed information
+	if {$testsuite_subtest_details ne "none"} {
+		set show_details false
+		if {$testsuite_subtest_details eq "all" && $subtest_count > 0} {
+			set show_details true
+		} elseif {$testsuite_subtest_details eq "fail_skip" && $_subtest_skip_count > 0} {
+			set show_details true
+		} elseif {$_subtest_fail_count > 0} {
+			set show_details true
+		}
+
+		if {$show_details} {
+			append output [format "SUBTESTS DETAILS     : %s\n" $test_name]
+			dict for {id result_msg} $_subtest_messages {
+				set result [lindex $result_msg 0]
+				if {$testsuite_subtest_details eq "all"} {
+					append output [format "  %s\n" [lindex $result_msg 1]]
+				} elseif {$testsuite_subtest_details eq "fail_skip" && $result eq "skip"} {
+					append output [format "  %s\n" [lindex $result_msg 1]]
+				} elseif {$result eq "fail"} {
+					append output [format "  %s\n" [lindex $result_msg 1]]
+				}
+			}
+			append output [string repeat = 78]\n
+		}
+	}
+	if {$testsuite_testproc_details ne "none"} {
+		set show_details false
+		if {$testsuite_testproc_details eq "all" && $testproc_count > 0} {
+			set show_details true
+		} elseif {$testsuite_testproc_details eq "fail_skip" && $testproc_skip > 0} {
+			set show_details true
+		} elseif {$_subtest_fail_count > 0} {
+			set show_details true
+		}
+
+		if {$show_details} {
+			append output [format "TESTPROCS DETAILS     : %s\n" $test_name]
+			dict for {num result_msg} $_testproc_messages {
+				set result [lindex $result_msg 0]
+				if {$testsuite_testproc_details eq "all"} {
+					append output [format "  Testproc %2d %-7s : %s\n" $num [lindex $result_msg 0] [lindex $result_msg 1]]
+				} elseif {$testsuite_testproc_details eq "fail_skip" && $result eq "skipped"} {
+					append output [format "  Testproc %2d %-7s : %s\n" $num [lindex $result_msg 0] [lindex $result_msg 1]]
+				} elseif {$result eq "failed"} {
+					append output [format "  Testproc %2d %-7s : %s\n" $num [lindex $result_msg 0] [lindex $result_msg 1]]
+				}
+			}
+			append output [string repeat = 78]\n
+		}
+	}
+
+	# Final summary
+	append output [format "%s             : %s\n" $header  $test_name]
+	if {$testproc_count > 0} {
+		append output [format "  Testprocs failed  : %3d (%3d%%)%s\n" $testproc_fail [expr $testproc_fail * 100 / $testproc_count] \
+		                                                             [expr {$testproc_fail ? " List: [join $_testproc_fail_list ,]" : ""}]]
+		append output [format "  Testprocs skipped : %3d (%3d%%)%s\n" $testproc_skip [expr $testproc_skip * 100 / $testproc_count] \
+		                                                             [expr {$testproc_skip ? " List: [join $_testproc_skip_list ,]" : ""}]]
+		append output [format "  Testprocs passed  : %3d (%3d%%)\n"   $testproc_pass [expr $testproc_pass * 100 / $testproc_count]]
+		append output [format "  Testprocs total   : %3d %s\n"        $testproc_count [expr {$completed ? "COMPLETED" : "INCOMPLETE: $_incomplete_reason"}]]
+	}
 	if {$subtest_count > 0} {
-		append output [format "  Subtests failed  : %d (%3d%%)\n" $subtest_fail_count [expr $subtest_fail_count * 100 / $subtest_count]]
-		append output [format "  Subtests skipped : %d (%3d%%)\n" $subtest_skip_count [expr $subtest_skip_count * 100 / $subtest_count]]
-		append output [format "  Subtests passed  : %d (%3d%%)\n" $subtest_pass_count [expr $subtest_pass_count * 100 / $subtest_count]]
-		append output [format "  Subtests total   : %d (%s)\n" $subtest_count [expr {$completed ? "COMPLETED" : "INCOMPLETE"}]]
+		if {$testproc_count > 0} {
+			append output \n
+		}
+		append output [format "  Subtests failed   : %3d (%3d%%)\n" $_subtest_fail_count [expr $_subtest_fail_count * 100 / $subtest_count]]
+		append output [format "  Subtests skipped  : %3d (%3d%%)\n" $_subtest_skip_count [expr $_subtest_skip_count * 100 / $subtest_count]]
+		append output [format "  Subtests passed   : %3d (%3d%%)\n" $_subtest_pass_count [expr $_subtest_pass_count * 100 / $subtest_count]]
+		append output [format "  Subtests total    : %3d %s\n"      $subtest_count [expr {$completed ? "COMPLETED" : "INCOMPLETE: $_incomplete_reason"}]]
+	}
+	if {$testproc_count == 0 && $subtest_count == 0} {
+		append output [format "%s\n" [expr {$completed ? "COMPLETED" : "INCOMPLETE          : $_incomplete_reason"}]]
 	}
 	append output [string repeat = 78]
 
@@ -6363,6 +6661,19 @@ proc _test_cleanup {} {
 
 proc _test_init {} {
 	global test_dir test_id test_name testsuite_shared_dir
+	global _testproc_included _testproc_excluded argv
+
+	# parse argv to get and remove _testproc_included and _testproc_excluded params
+	set idx [lsearch $argv -i]
+	if {$idx >= 0} {
+		set _testproc_included [split [lindex $argv [expr $idx + 1]] ,]
+		set argv [lreplace $argv $idx [expr $idx + 1]]
+	}
+	set idx [lsearch $argv -e]
+	if {$idx >= 0} {
+		set _testproc_excluded [split [lindex $argv [expr $idx + 1]] ,]
+		set argv [lreplace $argv $idx [expr $idx + 1]]
+	}
 
 	# Set test name to name of originally invoked test script, e.g. test1.1
 	set test_name [_get_test_name]
@@ -6410,16 +6721,16 @@ proc _test_init {} {
 
 proc _test_fini { status } {
 	global testsuite_cleanup_on_failure
-	global subtest_fail_count subtest_skip_count
+	global _subtest_fail_count _subtest_skip_count
 
 	# Determine if test completed or was aborted
 	set completed [expr $status == 0 ? true : false]
 
 	# Override status with subtest status if available and necessary
 	if {$status < 1} {
-		if {$subtest_fail_count > 0} {
+		if {$_subtest_fail_count > 0} {
 			set status 1
-		} elseif {$subtest_skip_count > 0} {
+		} elseif {$_subtest_skip_count > 0} {
 			set status -1
 		}
 	}
@@ -6455,7 +6766,7 @@ proc exit { {status 0} } {
 	#
 	if {[info level] > 1} {
 		# exit was called from a function, and it shouldn't
-		log_error "Exit should not be directly called, use pass, skip or fail instead"
+		fail "Exit should not be directly called, use pass, skip or fail instead"
 	} else {
 		set frame_level 1
 		while { $frame_level <= [info frame] } {
@@ -6463,7 +6774,7 @@ proc exit { {status 0} } {
 				if { [file tail [dict get [info frame $frame_level] file]] eq $test_name } {
 					# exit was called explicitly from the
 					# test, and it shouldn't
-					log_error "Exit should not be directly called, use pass, skip or fail instead"
+					fail "Exit should not be directly called, use pass, skip or fail instead"
 				}
 				break
 			}
@@ -6471,9 +6782,13 @@ proc exit { {status 0} } {
 		}
 	}
 
+	if {$status != 0} {
+		fail "Some Expect/TCL exception happen"
+	}
+
 	# The exit was called implicitly when the test ends, allowed but
 	# _test_fini call enforced
-	_test_fini $status
+	pass
 }
 
 
