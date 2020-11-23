@@ -94,6 +94,7 @@ extern int sched_g_init(void)
 		retval = SLURM_ERROR;
 		goto done;
 	}
+	main_sched_init();
 	init_run = true;
 
 done:
@@ -111,6 +112,8 @@ extern int sched_g_fini(void)
 	init_run = false;
 	rc = plugin_context_destroy(g_context);
 	g_context = NULL;
+
+	main_sched_fini();
 
 	gs_fini();
 

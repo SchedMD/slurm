@@ -125,9 +125,12 @@ static int	correspond_after_task_cnt = CORRESPOND_ARRAY_TASK_CNT;
 static int	save_last_part_update = 0;
 
 static pthread_mutex_t sched_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int sched_pend_thread = 0;
-static bool sched_running = false;
+static pthread_cond_t  sched_cond = PTHREAD_COND_INITIALIZER;
+static pthread_t thread_id_sched = 0;
+static bool sched_full_queue = false;
+static int sched_requests = 0;
 static struct timeval sched_last = {0, 0};
+
 static uint32_t max_array_size = NO_VAL;
 static bool bf_hetjob_immediate = false;
 static uint16_t bf_hetjob_prio = 0;
@@ -787,113 +790,79 @@ static bool _all_partition_priorities_same(void)
 }
 
 /*
- * schedule - attempt to schedule all pending jobs
- *	pending jobs for each partition will be scheduled in priority
- *	order until a request fails
- * IN job_limit - maximum number of jobs to test now, avoid testing the full
- *		  queue on every job submit (0 means to use the system default,
- *		  SchedulerParameters for default_queue_depth)
- * RET count of jobs scheduled
- * Note: If the scheduler has executed recently, rather than executing again
- *	right away, a thread will be spawned to execute later in an effort
- *	to reduce system overhead.
- * Note: We re-build the queue every time. Jobs can not only be added
- *	or removed from the queue, but have their priority or partition
- *	changed with the update_job RPC. In general nodes will be in priority
- *	order (by submit time), so the sorting should be pretty fast.
- * Note: job_write_lock must be unlocked before calling this.
+ * Queue requests of job scheduler
  */
-extern int schedule(bool full_queue)
+extern void schedule(bool full_queue)
 {
-	static bool sched_full_queue = false;
-	int job_count = 0;
-	struct timeval now;
-	long delta_t;
 
 	if (slurmctld_config.scheduling_disabled)
-		return 0;
-
-	gettimeofday(&now, NULL);
-	if (sched_last.tv_sec == 0) {
-		delta_t = sched_min_interval;
-	} else if (sched_running) {
-		delta_t = 0;
-	} else {
-		delta_t  = (now.tv_sec  - sched_last.tv_sec) * USEC_IN_SEC;
-		delta_t +=  now.tv_usec - sched_last.tv_usec;
-	}
+		return;
 
 	slurm_mutex_lock(&sched_mutex);
-	/*
-	 * A thread may not get its scheduling request immediately satisfied.
-	 * If any of those requests were for full_queue, the next thread that
-	 * launches _schedule() will ensure that is honored eventually.
-	 */
 	sched_full_queue |= full_queue;
-
-	if (delta_t >= sched_min_interval) {
-		/* Temporarily set time in the future until we get the real
-		 * scheduler completion time */
-		sched_last.tv_sec  = now.tv_sec;
-		sched_last.tv_usec = now.tv_usec;
-		sched_running = true;
-		slurm_mutex_unlock(&sched_mutex);
-
-		job_count = _schedule(sched_full_queue);
-
-		slurm_mutex_lock(&sched_mutex);
-		gettimeofday(&now, NULL);
-		sched_last.tv_sec  = now.tv_sec;
-		sched_last.tv_usec = now.tv_usec;
-		sched_full_queue = false;
-		sched_running = false;
-		slurm_mutex_unlock(&sched_mutex);
-	} else if (sched_pend_thread == 0) {
-		/* We don't want to run now, but also don't want to defer
-		 * this forever, so spawn a thread to run later */
-		sched_pend_thread = 1;
-		slurm_thread_create_detached(NULL, _sched_agent, NULL);
-		slurm_mutex_unlock(&sched_mutex);
-	} else {
-		/* Nothing to do, agent already pending */
-		slurm_mutex_unlock(&sched_mutex);
-	}
-
-	return job_count;
+	slurm_cond_broadcast(&sched_cond);
+	sched_requests++;
+	slurm_mutex_unlock(&sched_mutex);
 }
 
-/* Thread used to possibly start job scheduler later, if nothing else does */
+/* detached thread periodically attempts to schedule jobs */
 static void *_sched_agent(void *args)
 {
 	long delta_t;
 	struct timeval now;
-	useconds_t usec;
 	int job_cnt;
+	bool full_queue;
 
-	usec = sched_min_interval / 2;
-	usec = MIN(usec, 1000000);
-	usec = MAX(usec, 10000);
-
-	/* Keep waiting until scheduler() can really run */
 	while (!slurmctld_config.shutdown_time) {
-		usleep(usec);
-		if (sched_running)
-			continue;
-		gettimeofday(&now, NULL);
-		delta_t  = (now.tv_sec  - sched_last.tv_sec) * USEC_IN_SEC;
-		delta_t +=  now.tv_usec - sched_last.tv_usec;
-		if (delta_t >= sched_min_interval)
-			break;
-	}
 
-	job_cnt = schedule(0);
-	slurm_mutex_lock(&sched_mutex);
-	sched_pend_thread = 0;
-	slurm_mutex_unlock(&sched_mutex);
-	if (job_cnt) {
-		/* jobs were started, save state */
-		schedule_node_save();		/* Has own locking */
-		schedule_job_save();		/* Has own locking */
+		slurm_mutex_lock(&sched_mutex);
+		while (1) {
+			if (slurmctld_config.shutdown_time) {
+				slurm_mutex_unlock(&sched_mutex);
+				return NULL;
+			}
+
+			gettimeofday(&now, NULL);
+			delta_t  = (now.tv_sec  - sched_last.tv_sec) *
+				   USEC_IN_SEC;
+			delta_t +=  now.tv_usec - sched_last.tv_usec;
+
+			if (sched_requests && delta_t > sched_min_interval ) {
+				break;
+			} else if (sched_requests) {
+				struct timespec ts = {0, 0};
+				int64_t nsec;
+
+				nsec = sched_min_interval + sched_last.tv_usec;
+				nsec *= NSEC_IN_USEC;
+				nsec += NSEC_IN_USEC;
+				ts.tv_sec = sched_last.tv_sec +
+					    (nsec / NSEC_IN_SEC);
+				ts.tv_nsec = nsec % NSEC_IN_SEC;
+				slurm_cond_timedwait(&sched_cond,
+						     &sched_mutex, &ts);
+			} else {
+				slurm_cond_wait(&sched_cond, &sched_mutex);
+			}
+
+			if (slurmctld_config.shutdown_time)
+				return NULL;
+		}
+
+		full_queue = sched_full_queue;
+		sched_full_queue = false;
+		sched_requests = 0;
+		slurm_mutex_unlock(&sched_mutex);
+
+		job_cnt = _schedule(full_queue);
+		gettimeofday(&now, NULL);
+		sched_last.tv_sec  = now.tv_sec;
+		sched_last.tv_usec = now.tv_usec;
+		if (job_cnt) {
+			/* jobs were started, save state */
+			schedule_node_save();		/* Has own locking */
+			schedule_job_save();		/* Has own locking */
+		}
 	}
 
 	return NULL;
@@ -5045,4 +5014,19 @@ waitpid_timeout(const char *name, pid_t pid, int *pstatus, int timeout)
 
 	killpg(pid, SIGKILL);  /* kill children too */
 	return pid;
+}
+
+void main_sched_init(void)
+{
+	if (thread_id_sched)
+		return;
+	slurm_thread_create(&thread_id_sched, _sched_agent, NULL);
+}
+
+void main_sched_fini(void)
+{
+	if (!thread_id_sched)
+		return;
+	slurm_cond_broadcast(&sched_cond);
+	pthread_join(thread_id_sched, NULL);
 }

@@ -808,10 +808,7 @@ finished:	;
 	if (run_scheduler) {
 		run_scheduler = false;
 		/* below functions all have their own locking */
-		if (schedule(0))	{
-			schedule_job_save();
-			schedule_node_save();
-		}
+		schedule(false);
 	}
 	if ((agent_ptr->msg_type == REQUEST_PING) ||
 	    (agent_ptr->msg_type == REQUEST_HEALTH_CHECK) ||

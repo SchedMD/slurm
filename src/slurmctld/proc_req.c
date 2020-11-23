@@ -2011,7 +2011,7 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 		 * of managed jobs.
 		 */
 		if (!LOTS_OF_AGENTS && !defer_sched)
-			(void) schedule(0);	/* Has own locking */
+			schedule(false);	/* Has own locking */
 		schedule_node_save();		/* Has own locking */
 		schedule_job_save();		/* Has own locking */
 	}

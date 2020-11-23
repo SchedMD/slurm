@@ -711,8 +711,6 @@ int main(int argc, char **argv)
 
 		if (priority_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize priority plugin");
-		if (sched_g_init() != SLURM_SUCCESS)
-			fatal("failed to initialize scheduling plugin");
 		if (slurmctld_plugstack_init())
 			fatal("failed to initialize slurmctld_plugstack");
 		if (bb_g_init() != SLURM_SUCCESS)
@@ -754,6 +752,8 @@ int main(int argc, char **argv)
 		slurm_thread_create(&slurmctld_config.thread_id_purge_files,
 				    _purge_files_thread, NULL);
 
+		if (sched_g_init() != SLURM_SUCCESS)
+			fatal("failed to initialize scheduling plugin");
 		/*
 		 * process slurm background activities, could run as pthread
 		 */
@@ -2154,8 +2154,7 @@ static void *_slurmctld_background(void *no_data)
 			last_sched_time = now;
 			bb_g_load_state(false);	/* May alter job nice/prio */
 			unlock_slurmctld(job_write_lock2);
-			if (schedule(full_queue))
-				last_checkpoint_time = 0; /* force state save */
+			schedule(full_queue);
 			set_job_elig_time();
 		}
 
