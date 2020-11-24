@@ -4858,11 +4858,6 @@ unless explicitly set to other values in that frontend node record or
 replaced with a different set of default values.
 Each line where \fBFrontendName\fR is "DEFAULT" will replace or add to previous
 default values and not a reinitialize the default values.
-Note that since the naming of front end nodes would typically not follow that
-of the compute nodes (e.g. lacking X, Y and Z coordinates found in the compute
-node naming scheme), each front end node name should be listed separately and
-without a hostlist expression (i.e. frontend00,frontend01" rather than
-"frontend[00-01]").</p>
 
 .TP
 \fBFrontendAddr\fR
@@ -4911,9 +4906,12 @@ For more information about these states see the descriptions under \fBState\fR
 in the \fBNodeName=\fR section above.
 The default value is \fIUNKNOWN\fR.
 
-For example: "FrontendName=frontend[00\-03] FrontendAddr=efrontend[00\-03]
-State=UNKNOWN" is used to define four front end nodes for running slurmd
-daemons.
+.LP
+As an example, you can do something similar to the following to define four
+front end nodes for running slurmd daemons.
+.nf
+FrontendName=frontend[00\-03] FrontendAddr=efrontend[00\-03] State=UNKNOWN
+.fi
 
 .SH "NODESET CONFIGURATION"
 The nodeset configuration allows you to define a name for a specific set of
