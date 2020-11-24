@@ -2370,9 +2370,24 @@ static int _build_node_spec_bitmap(node_record_t *node_ptr)
 	cpu_spec_array = bitfmt2int(node_ptr->cpu_spec_list);
 	i = 0;
 	while (cpu_spec_array[i] != -1) {
-		bit_nclear(node_ptr->node_spec_bitmap,
-			   (cpu_spec_array[i] / node_ptr->threads),
-			   (cpu_spec_array[i + 1] / node_ptr->threads));
+		int start = (cpu_spec_array[i] / node_ptr->threads);
+		int end = (cpu_spec_array[i + 1] / node_ptr->threads);
+		if (start > size) {
+			error("%s: Specialized CPUs id start above the configured limit.",
+			      __func__);
+			break;
+		}
+
+		if (end > size) {
+			error("%s: Specialized CPUs id end above the configured limit",
+			      __func__);
+			end = size;
+		}
+		/*
+		 * We need to test to make sure we have these bits in this map.
+		 * If the node goes from 12 cpus to 6 like scenario.
+		 */
+		bit_nclear(node_ptr->node_spec_bitmap, start, end);
 		i += 2;
 	}
 	xfree(cpu_spec_array);
