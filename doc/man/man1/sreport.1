@@ -189,6 +189,13 @@ UserUtilizationByWckey, Utilization, WCKeyUtilizationByUser
 .B user
 \- TopUsage
 
+.LP
+\fBNOTE\fR: If \fBOverSubscribe\fR is configured to \fBFORCE\fR or \fBYES\fR
+in your slurm.conf and the system is not configured to use preemption
+(\fBPreemptMode=OFF\fR) this can allow for scenarios where the system is
+overcommitted.  If this happens, you may see error messages stating: "We have
+more allocated time than is possible."
+
 .SH "REPORT DESCRIPTION"
 
 .TP
