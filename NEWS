@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
  -- In sreport have usage for a reservation contain all jobs that ran in the
     reservation instead of just the ones that ran in the time specified. This
     matches the report for the reservation is not truncated for a time period.
+ -- Fix issue with sending wrong batch step id to a < 20.11 slurmd.
 
 * Changes in Slurm 20.11.0
 ==========================

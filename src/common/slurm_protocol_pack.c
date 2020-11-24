@@ -10073,7 +10073,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer,
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
 		pack32(msg->het_job_id, buffer);
-		pack32(SLURM_BATCH_SCRIPT, buffer);
+		pack_old_step_id(SLURM_BATCH_SCRIPT, buffer);
 
 		pack32(msg->uid, buffer);
 		pack32(msg->gid, buffer);
