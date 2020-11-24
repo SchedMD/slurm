@@ -355,7 +355,7 @@ PriorityType=priority/multifactor.
 <li>NO_NORMAL_ASSOC: If set, the associaton factor is not normalized against
 	the highest association priority.</li>
 <li>NO_NORMAL_PART: If set, the partition factor is not normalized against the
-	highest partition PriorityTier</li>
+	highest partition PriorityJobFactor.</li>
 <li>NO_NORMAL_QOS: If set, the QOS factor is not normalized against the
 	highest qos priority.</li>
 <li>NO_NORMAL_TRES: If set, the QOS factor is not normalized against the job's
@@ -431,6 +431,6 @@ PriorityWeightPartition=1000
 PriorityWeightQOS=0 # don't use the qos factor
 </PRE>
 
-<p style="text-align:center;">Last modified 19 October 2020</p>
+<p style="text-align:center;">Last modified 24 November 2020</p>
 
 <!--#include virtual="footer.txt"-->

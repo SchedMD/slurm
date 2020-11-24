@@ -349,6 +349,8 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		lua_pushstring(L, job_ptr->account);
 	} else if (!xstrcmp(name, "admin_comment")) {
 		lua_pushstring(L, job_ptr->admin_comment);
+	} else if (!xstrcmp(name, "alloc_node")) {
+               lua_pushstring(L, job_ptr->alloc_node);
 	} else if (!xstrcmp(name, "argv")) {
 		if (job_ptr->details)
 			_setup_stringarray(L, job_ptr->details->argc,
