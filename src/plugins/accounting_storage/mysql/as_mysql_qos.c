@@ -181,6 +181,8 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			qos->usage_factor = 1;
 		if (fuzzy_equal(qos->usage_thres, NO_VAL))
 			qos->usage_thres = (double)INFINITE;
+		if (fuzzy_equal(qos->limit_factor, NO_VAL))
+			qos->limit_factor = INFINITE;
 	}
 
 	if (qos->description) {
@@ -470,6 +472,17 @@ static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 		xstrcat(*cols, ", usage_thres");
 		xstrfmtcat(*vals, ", %f", qos->usage_thres);
 		xstrfmtcat(*extra, ", usage_thres=%f", qos->usage_thres);
+	}
+
+	if (fuzzy_equal(qos->limit_factor, INFINITE)) {
+		xstrcat(*cols, ", limit_factor");
+		xstrcat(*vals, ", NULL");
+		xstrcat(*extra, ", limit_factor=NULL");
+	} else if (!fuzzy_equal(qos->limit_factor, NO_VAL)
+		   && (qos->limit_factor > 0)) {
+		xstrcat(*cols, ", limit_factor");
+		xstrfmtcat(*vals, ", %f", qos->limit_factor);
+		xstrfmtcat(*extra, ", limit_factor=%f", qos->limit_factor);
 	}
 
 	/* When modifying anything below this comment it happens in
@@ -979,6 +992,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		qos_rec->usage_factor = qos->usage_factor;
 		qos_rec->usage_thres = qos->usage_thres;
+		qos_rec->limit_factor = qos->limit_factor;
 
 		if (addto_update_list(mysql_conn->update_list,
 				      SLURMDB_MODIFY_QOS, qos_rec)
@@ -1257,6 +1271,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		"usage_factor",
 		"usage_thres",
 		"min_tres_pj",
+		"limit_factor",
 	};
 	enum {
 		QOS_REQ_NAME,
@@ -1293,6 +1308,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 		QOS_REQ_UF,
 		QOS_REQ_UT,
 		QOS_REQ_MITPJ,
+		QOS_REQ_LF,
 		QOS_REQ_COUNT
 	};
 
@@ -1512,6 +1528,11 @@ empty:
 
 		if (row[QOS_REQ_MITPJ][0])
 			qos->min_tres_pj = xstrdup(row[QOS_REQ_MITPJ]);
+
+		if (row[QOS_REQ_LF])
+			qos->limit_factor = atof(row[QOS_REQ_LF]);
+		else
+			qos->limit_factor = (double)INFINITE;
 	}
 	mysql_free_result(result);
 

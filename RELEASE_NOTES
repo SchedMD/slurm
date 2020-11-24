@@ -21,6 +21,10 @@ upgrading Slurm to a new major release.
 HIGHLIGHTS
 ==========
  -- Removed gres/mic plugin used to support Xeon Phi coprocessors.
+ -- Add LimitFactor to the QOS. A float that is factored into an associations
+    GrpTRES limits.  For example, if the LimitFactor is 2, then an association
+    with a GrpTRES of 30 CPUs, would be allowed to allocate 60 CPUs when
+    running under this QOS.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

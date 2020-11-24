@@ -419,6 +419,11 @@ static int _set_rec(int *start, int argc, char **argv,
 					" Bad GrpWall time format: %s\n",
 					argv[i]);
 			}
+		} else if (!xstrncasecmp(argv[i], "LimitFactor",
+					 MAX(command_len, 6))) {
+			if (get_double(argv[i]+end, &qos->limit_factor,
+			    "LimitFactor") == SLURM_SUCCESS)
+				set = 1;
 		} else if (!xstrncasecmp(argv[i], "MaxCPUMinsPerJob",
 					 MAX(command_len, 7))) {
 			if (get_uint64(argv[i]+end,
@@ -1278,6 +1283,11 @@ extern int sacctmgr_list_qos(int argc, char **argv)
 			case PRINT_UF:
 				field->print_routine(
 					field, qos->usage_factor,
+					(curr_inx == field_count));
+				break;
+			case PRINT_LF:
+				field->print_routine(
+					field, qos->limit_factor,
 					(curr_inx == field_count));
 				break;
 			default:

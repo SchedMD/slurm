@@ -1426,6 +1426,11 @@ accounts.
 Usage factor when running with this QOS. See below for more details.
 
 .TP
+\fILimitFactor\fP
+Factor to scale TRES count limits when running with this QOS. See below for more
+details.
+
+.TP
 \fIUsageThreshold\fP
 A float representing the lowest fairshare of an association allowable
 to run a job.  If an association falls below this threshold and has
@@ -1633,6 +1638,17 @@ See \fIAccountingStorageEnforce\fR in slurm.conf man page.
 
 Default is 1. To clear a previously set value use the modify command with a new
 value of -1.
+
+.TP
+\fILimitFactor\fP
+A float that is factored into an associations [Grp|Max]TRES limits.  For
+example, if the LimitFactor is 2, then an association with a GrpTRES of 30 CPUs,
+would be allowed to allocate 60 CPUs when running under this QOS.
+
+NOTE: This factor is only applied to associations running in this QOS and
+is not applied to any limits in the QOS itself.
+
+To clear a previously set value use the modify command with a new value of \-1.
 
 .SH "SPECIFICATIONS FOR RESERVATIONS"
 

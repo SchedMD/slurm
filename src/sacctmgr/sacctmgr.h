@@ -167,6 +167,7 @@ typedef enum {
 	PRINT_PRXMPT,
 	PRINT_UF,
 	PRINT_UT,
+	PRINT_LF,
 
 	/* PROBLEM */
 	PRINT_PROBLEM = 7000,

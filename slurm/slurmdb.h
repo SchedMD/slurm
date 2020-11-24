@@ -911,6 +911,8 @@ typedef struct {
 					   * (DON'T PACK) */
 	uint32_t grp_wall; /* total time in hours this qos can run for */
 
+	double limit_factor; /* factor to apply to tres_cnt for associations
+			      * using this qos */
 	uint32_t max_jobs_pa;	/* max number of jobs an account can
 				 * run with this qos at one time */
 	uint32_t max_jobs_pu;	/* max number of jobs a user can

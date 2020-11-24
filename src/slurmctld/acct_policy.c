@@ -69,6 +69,29 @@ typedef struct het_job_limits {
 	slurmdb_qos_rec_t *qos_ptr_2;
 } het_job_limits_t;
 
+static void _apply_limit_factor(uint64_t *limit, double limit_factor)
+{
+	int64_t new_val;
+
+	xassert(limit);
+
+	if ((limit_factor <= 0.0) ||
+	    (*limit == NO_VAL64) ||
+	    (*limit == INFINITE64))
+		return;
+
+	new_val = (int64_t)(*limit) * limit_factor;
+        if (new_val < 0) {
+		/* We overflowed, setting to INFINITE */
+		debug2("Factored limit overflowed setting to INFINITE");
+		*limit = INFINITE64;
+	} else {
+		debug2("Limit adjusted from %"PRIu64" to %"PRIu64,
+		       *limit, new_val);
+		*limit = new_val;
+	}
+}
+
 /*
  * Update a job's allocated node count to reflect only nodes that are not
  * already allocated to this association.  Needed to enforce GrpNode limit.
@@ -2893,6 +2916,9 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 	assoc_mgr_lock_t locks =
 		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
 	bool strict_checking;
+	double limit_factor = -1.0;
+	uint64_t grp_tres_ctld[slurmctld_tres_cnt];
+	uint64_t max_tres_ctld[slurmctld_tres_cnt];
 
 	xassert(acct_policy_limit_set);
 
@@ -2936,12 +2962,23 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 		*/
 		strict_checking = true;
 
+	if (qos_ptr_1 && !fuzzy_equal(qos_ptr_1->limit_factor, INFINITE))
+		limit_factor = qos_ptr_1->limit_factor;
+	else if (qos_ptr_2 && !fuzzy_equal(qos_ptr_2->limit_factor, INFINITE))
+                limit_factor = qos_ptr_2->limit_factor;
+
 	while (assoc_ptr) {
 		int tres_pos = 0;
+		for (int i = 0; i < slurmctld_tres_cnt; i++) {
+			grp_tres_ctld[i] = assoc_ptr->grp_tres_ctld[i];
+			max_tres_ctld[i] = assoc_ptr->max_tres_ctld[i];
+			_apply_limit_factor(&grp_tres_ctld[i], limit_factor);
+			_apply_limit_factor(&max_tres_ctld[i], limit_factor);
+		}
 
 		if (!_validate_tres_limits_for_assoc(
 			    &tres_pos, job_desc->tres_req_cnt, 0,
-			    assoc_ptr->grp_tres_ctld,
+			    grp_tres_ctld,
 			    qos_rec.grp_tres_ctld,
 			    acct_policy_limit_set->tres,
 			    strict_checking, update_call, 1)) {
@@ -2956,7 +2993,7 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 			       job_desc->user_id,
 			       assoc_mgr_tres_name_array[tres_pos],
 			       job_desc->tres_req_cnt[tres_pos],
-			       assoc_ptr->grp_tres_ctld[tres_pos],
+			       grp_tres_ctld[tres_pos],
 			       assoc_ptr->acct);
 			rc = false;
 			break;
@@ -3080,7 +3117,7 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 		tres_pos = 0;
 		if (!_validate_tres_limits_for_assoc(
 			    &tres_pos, job_desc->tres_req_cnt, 0,
-			    assoc_ptr->max_tres_ctld,
+			    max_tres_ctld,
 			    qos_rec.max_tres_pj_ctld,
 			    acct_policy_limit_set->tres,
 			    strict_checking, update_call, 1)) {
@@ -3095,7 +3132,7 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 			       job_desc->user_id,
 			       assoc_mgr_tres_name_array[tres_pos],
 			       job_desc->tres_req_cnt[tres_pos],
-			       assoc_ptr->max_tres_ctld[tres_pos],
+			       max_tres_ctld[tres_pos],
 			       assoc_ptr->acct);
 			rc = false;
 			break;
@@ -3631,6 +3668,8 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	slurmdb_qos_rec_t qos_rec;
 	slurmdb_assoc_rec_t *assoc_ptr;
+	uint64_t grp_tres_ctld[slurmctld_tres_cnt];
+	uint64_t max_tres_ctld[slurmctld_tres_cnt];
 	uint64_t tres_usage_mins[slurmctld_tres_cnt];
 	uint64_t tres_run_mins[slurmctld_tres_cnt];
 	uint64_t job_tres_time_limit[slurmctld_tres_cnt];
@@ -3641,6 +3680,7 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 	int i, tres_pos = 0;
 	acct_policy_tres_usage_t tres_usage;
 	double usage_factor = 1.0;
+	double limit_factor = -1.0;
 	int parent = 0; /* flag to tell us if we are looking at the
 			 * parent or not
 			 */
@@ -3724,6 +3764,11 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 						 job_tres_time_limit)))
 		goto end_it;
 
+	if (qos_ptr_1 && !fuzzy_equal(qos_ptr_1->limit_factor, INFINITE))
+		limit_factor = qos_ptr_1->limit_factor;
+	else if (qos_ptr_2 && !fuzzy_equal(qos_ptr_2->limit_factor, INFINITE))
+                limit_factor = qos_ptr_2->limit_factor;
+
 	assoc_ptr = job_ptr->assoc_ptr;
 	while (assoc_ptr) {
 		for (i = 0; i < slurmctld_tres_cnt; i++) {
@@ -3743,6 +3788,12 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 				tres_usage_mins[i] *= usage_factor;
 				tres_run_mins[i] *= usage_factor;
 			}
+
+			grp_tres_ctld[i] = assoc_ptr->grp_tres_ctld[i];
+			max_tres_ctld[i] = assoc_ptr->max_tres_ctld[i];
+
+			_apply_limit_factor(&grp_tres_ctld[i], limit_factor);
+			_apply_limit_factor(&max_tres_ctld[i], limit_factor);
 		}
 
 #if _DEBUG
@@ -3821,7 +3872,7 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 					 &tres_req_cnt[TRES_ARRAY_NODE]);
 		tres_usage = _validate_tres_usage_limits_for_assoc(
 			&tres_pos,
-			assoc_ptr->grp_tres_ctld, qos_rec.grp_tres_ctld,
+			grp_tres_ctld, qos_rec.grp_tres_ctld,
 			tres_req_cnt, assoc_ptr->usage->grp_used_tres,
 			NULL, job_ptr->limit_set.tres, true);
 		tres_req_cnt[TRES_ARRAY_NODE] = orig_node_cnt;
@@ -3838,7 +3889,7 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 			       assoc_ptr->user, assoc_ptr->partition,
 			       assoc_mgr_tres_name_array[tres_pos],
 			       tres_req_cnt[tres_pos],
-			       assoc_ptr->grp_tres_ctld[tres_pos]);
+			       grp_tres_ctld[tres_pos]);
 			rc = false;
 			goto end_it;
 			break;
@@ -3850,7 +3901,7 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 			       job_ptr, assoc_ptr->id, assoc_ptr->acct,
 			       assoc_ptr->user, assoc_ptr->partition,
 			       assoc_mgr_tres_name_array[tres_pos],
-			       assoc_ptr->grp_tres_ctld[tres_pos],
+			       grp_tres_ctld[tres_pos],
 			       assoc_ptr->usage->grp_used_tres[tres_pos],
 			       tres_req_cnt[tres_pos]);
 			rc = false;
@@ -3938,7 +3989,7 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 
 		if (!_validate_tres_limits_for_assoc(
 			    &tres_pos, tres_req_cnt, 0,
-			    assoc_ptr->max_tres_ctld,
+			    max_tres_ctld,
 			    qos_rec.max_tres_pj_ctld,
 			    job_ptr->limit_set.tres,
 			    1, 0, 1)) {
@@ -3949,7 +4000,7 @@ extern bool acct_policy_job_runnable_post_select(job_record_t *job_ptr,
 			       job_ptr, assoc_ptr->id, assoc_ptr->acct,
 			       assoc_ptr->user, assoc_ptr->partition,
 			       assoc_mgr_tres_name_array[tres_pos],
-			       assoc_ptr->max_tres_ctld[tres_pos],
+			       max_tres_ctld[tres_pos],
 			       tres_req_cnt[tres_pos]);
 			rc = false;
 			break;
@@ -4004,6 +4055,7 @@ extern uint32_t acct_policy_get_max_nodes(job_record_t *job_ptr,
 			  * parent or not
 			  */
 	bool grp_set = 0;
+	double limit_factor = -1.0;
 
 	/* check to see if we are enforcing associations */
 	if (!(accounting_enforce & ACCOUNTING_ENFORCE_LIMITS))
@@ -4025,6 +4077,9 @@ extern uint32_t acct_policy_get_max_nodes(job_record_t *job_ptr,
 
 		grp_nodes = qos_ptr_1->grp_tres_ctld[TRES_ARRAY_NODE];
 
+		if (!fuzzy_equal(qos_ptr_1->limit_factor, INFINITE))
+			limit_factor = qos_ptr_1->limit_factor;
+
 		if (qos_ptr_2) {
 			if (max_nodes_pa == INFINITE64)
 				max_nodes_pa = qos_ptr_2->max_tres_pa_ctld[
@@ -4038,6 +4093,9 @@ extern uint32_t acct_policy_get_max_nodes(job_record_t *job_ptr,
 			if (grp_nodes == INFINITE64)
 				grp_nodes = qos_ptr_2->grp_tres_ctld[
 					TRES_ARRAY_NODE];
+			if ((limit_factor == -1.0) &&
+			    !fuzzy_equal(qos_ptr_1->limit_factor, INFINITE))
+				limit_factor = qos_ptr_2->limit_factor;
 		}
 
 		if (max_nodes_pa < max_nodes_limit) {
@@ -4067,23 +4125,23 @@ extern uint32_t acct_policy_get_max_nodes(job_record_t *job_ptr,
 	   not override a particular limit.
 	*/
 	while (assoc_ptr) {
+		uint64_t node_limit = assoc_ptr->grp_tres_ctld[TRES_ARRAY_NODE];
+
+		_apply_limit_factor(&node_limit, limit_factor);
+
 		if ((!qos_ptr_1 || (grp_nodes == INFINITE64))
-		    && (assoc_ptr->grp_tres_ctld[TRES_ARRAY_NODE] != INFINITE64)
-		    && (assoc_ptr->grp_tres_ctld[TRES_ARRAY_NODE] <
-			max_nodes_limit)) {
-			max_nodes_limit =
-				assoc_ptr->grp_tres_ctld[TRES_ARRAY_NODE];
+		    && (node_limit != INFINITE64)
+		    && (node_limit < max_nodes_limit)) {
+			max_nodes_limit = node_limit;
 			*wait_reason = WAIT_ASSOC_GRP_NODE;
 			grp_set = 1;
 		}
 
 		if (!parent
 		    && (qos_max_p_limit == INFINITE64)
-		    && (assoc_ptr->max_tres_ctld[TRES_ARRAY_NODE] != INFINITE64)
-		    && (assoc_ptr->max_tres_ctld[TRES_ARRAY_NODE] <
-			max_nodes_limit)) {
-			max_nodes_limit =
-				assoc_ptr->max_tres_ctld[TRES_ARRAY_NODE];
+		    && (node_limit != INFINITE64)
+		    && (node_limit < max_nodes_limit)) {
+			max_nodes_limit = node_limit;
 			*wait_reason = WAIT_ASSOC_MAX_NODE_PER_JOB;
 		}
 

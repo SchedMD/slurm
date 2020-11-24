@@ -1839,6 +1839,7 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version,
 
 		packdouble(object->usage_factor, buffer);
 		packdouble(object->usage_thres, buffer);
+		packdouble(object->limit_factor, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!object) {
 			packnull(buffer);
@@ -2014,6 +2015,7 @@ extern int slurmdb_unpack_qos_rec(void **object, uint16_t protocol_version,
 
 		safe_unpackdouble(&object_ptr->usage_factor, buffer);
 		safe_unpackdouble(&object_ptr->usage_thres, buffer);
+		safe_unpackdouble(&object_ptr->limit_factor, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&object_ptr->description,
 				       &uint32_tmp, buffer);

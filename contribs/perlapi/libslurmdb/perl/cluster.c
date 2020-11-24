@@ -810,6 +810,7 @@ qos_rec_to_hv(slurmdb_qos_rec_t* rec, HV* hv, List all_qos)
     STORE_FIELD(hv, rec, grp_tres_mins,       charp);
     STORE_FIELD(hv, rec, grp_tres_run_mins,   charp);
     STORE_FIELD(hv, rec, grp_wall,            uint32_t);
+    STORE_FIELD(hv, rec, limit_factor,        double);
     STORE_FIELD(hv, rec, max_jobs_pu,         uint32_t);
     STORE_FIELD(hv, rec, max_submit_jobs_pu,  uint32_t);
     STORE_FIELD(hv, rec, max_tres_mins_pj,    charp);

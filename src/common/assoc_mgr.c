@@ -2813,6 +2813,7 @@ extern int assoc_mgr_fill_in_qos(void *db_conn, slurmdb_qos_rec_t *qos,
 	/* if (!qos->usage->user_limit_list) */
 	/* 	qos->usage->user_limit_list = found_qos->usage->user_limit_list; */
 	qos->usage_factor = found_qos->usage_factor;
+	qos->limit_factor = found_qos->limit_factor;
 
 	if (!locked)
 		assoc_mgr_unlock(&locks);
@@ -4680,6 +4681,9 @@ extern int assoc_mgr_update_qos(slurmdb_update_object_t *update, bool locked)
 
 			if (!fuzzy_equal(object->usage_thres, NO_VAL))
 				rec->usage_thres = object->usage_thres;
+
+			if (!fuzzy_equal(object->limit_factor, NO_VAL))
+				rec->limit_factor = object->limit_factor;
 
 			if (update_jobs && init_setup.update_qos_notify) {
 				/* since there are some deadlock

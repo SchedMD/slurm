@@ -9,6 +9,10 @@ documents those changes that are of interest to users and administrators.
  -- slurmdbd - Improve log messages of more time than possible on rollups.
  -- Changed the --format handling for negative field widths (left justified)
     to apply to the column headers as well as the printed fields.
+ -- Add LimitFactor to the QOS. A float that is factored into an associations
+    [Grp|Max]TRES limits.  For example, if the LimitFactor is 2, then an
+    association with a GrpTRES of 30 CPUs, would be allowed to allocate 60
+    CPUs when running under this QOS.
 
 * Changes in Slurm 20.11.2
 ==========================

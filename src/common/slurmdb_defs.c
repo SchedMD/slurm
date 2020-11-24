@@ -1593,6 +1593,7 @@ extern void slurmdb_init_qos_rec(slurmdb_qos_rec_t *qos, bool free_it,
 
 	qos->usage_factor = (double)init_val;
 	qos->usage_thres = (double)init_val;
+	qos->limit_factor = (double)init_val;
 }
 
 extern void slurmdb_init_res_rec(slurmdb_res_rec_t *res,
@@ -3491,6 +3492,7 @@ extern void slurmdb_copy_qos_rec_limits(slurmdb_qos_rec_t *out,
 
 	out->usage_factor = in->usage_factor;
 	out->usage_thres = in->usage_thres;
+	out->limit_factor = in->limit_factor;
 
 }
 

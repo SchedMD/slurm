@@ -568,6 +568,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		{ "priority", "int unsigned default 0" },
 		{ "usage_factor", "double default 1.0 not null" },
 		{ "usage_thres", "double default NULL" },
+                { "limit_factor", "double default NULL"},
 		{ NULL, NULL}
 	};
 
@@ -2158,7 +2159,8 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 				   "preempt_exempt_time=DEFAULT, "
 				   "priority=DEFAULT, "
 				   "usage_factor=DEFAULT, "
-				   "usage_thres=DEFAULT "
+				   "usage_thres=DEFAULT, "
+				   "limit_factor=DEFAULT "
 				   "where deleted=0 && (%s);",
 				   qos_table, now, name_char);
 		} else {
