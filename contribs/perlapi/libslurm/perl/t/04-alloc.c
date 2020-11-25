@@ -61,7 +61,9 @@ $slurm->kill_job($jobid, SIGKILL) if $jobid;
 
 
 # 7
+my %env = ('PATH' => $ENV{'PATH'});
 $job_desc->{script} = "#!/bin/sh\nsleep 1000\n";
+$job_desc->{environment} = \%env;
 $resp = $slurm->submit_batch_job($job_desc);
 ok($resp, "submit batch job") or diag("submit_batch_job: " . $slurm->strerror());
 $slurm->kill_job($resp->{job_id}, SIGKILL) if $resp;

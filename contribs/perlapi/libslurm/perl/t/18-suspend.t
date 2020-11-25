@@ -10,6 +10,7 @@ my $slurm = Slurm::new();
 ok(defined $slurm,  "create slurm object with default configuration");
 
 
+my %env = ('PATH' => $ENV{'PATH'});
 $job_desc = {
     min_nodes => 1,
     num_tasks => 1,
@@ -18,6 +19,7 @@ $job_desc = {
     name => "perlapi_test",
     stdout => "/dev/null",
     stderr => "/dev/null",
+    environment => \%env,
 };
 
 
