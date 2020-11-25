@@ -183,14 +183,19 @@ slurm_job_state_num(slurm_t self, char *state_name)
 			    */
 
 char_xfree *
-slurm_reservation_flags_string(slurm_t self, uint16_t flags)
+slurm_reservation_flags_string(slurm_t self, HV *resv_hv)
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		RETVAL = slurm_reservation_flags_string(flags);
+		reserve_info_t resv;
+		if (hv_to_reserve_info(resv_hv, &resv) < 0) {
+			XSRETURN_UNDEF;
+		}
+
+		RETVAL = slurm_reservation_flags_string(&resv);
 	OUTPUT:
 		RETVAL
 
