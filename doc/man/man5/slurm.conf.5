@@ -5255,6 +5255,13 @@ will prevent oversubscription from happening due to preemption as well.
 \fBFORCE\fR that is greater than 1. For example, \fBOverSubscribe=FORCE:2\fR
 will permit two jobs per resource normally, but a third job can be started
 only if done so through preemption based upon QOS.
+
+\fBNOTE\fR: If \fBOverSubscribe\fR is configured to \fBFORCE\fR or \fBYES\fR
+in your slurm.conf and the system is not configured to use preemption
+(\fBPreemptMode=OFF\fR) accounting can easily grow to values greater than
+the actual utilization. It may be common on such systems to get error messages
+in the slurmdbd log stating: "We have more allocated time than is possible."
+
 .TP
 \fBYES\fR
 Makes all resources in the partition available for sharing upon request by
