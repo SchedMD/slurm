@@ -22,7 +22,7 @@ INCLUDE: const-xs.inc
 PROTOTYPES: ENABLE
 
 void*
-slurmdb_connection_get(persist_conn_flags)
+slurmdb_connection_get(persist_conn_flags = NULL)
 	void* persist_conn_flags
 
 int
