@@ -699,9 +699,10 @@ _sreport()
     local subopts=""
     local commands="cluster job user reservation"
 
-    local shortoptions="-a -n -h -p -P -Q -t -v -V"
-    local longoptions="--all_clusters --help --noheader --parsable\
-			--parsable2 --quiet --verbose --version"
+    local shortoptions="-a -h -M -n -p -P -Q -t -T -v -V"
+    local longoptions="--all_clusters --cluster --federation --help --local\
+		       --noheader --parsable --parsable2 --quiet --tres\
+		       --verbose --version"
 
     # Check whether we are in the middle of an option. If so serve them.
     remainings=$(compute_set_diff "$longoptions" "${COMP_WORDS[*]}")
@@ -725,8 +726,8 @@ _sreport()
 	TopUsage)
 	    params="$opts_all Accounts= Group TopCount= Users="
 	    if param "Clusters" ; then  offer_list "$(_clusters)" ;
-	    elif param "Format" ; then  offer_list "Account Cluster Login\
-						    Proper User" ;
+	    elif param "Format" ; then  offer_list "Account Cluster Energy\
+						    Login Proper Used" ;
 	    elif param "Accounts" ; then  offer_list "$(_accounts)" ;
 	    elif param "Users" ; then  offer_list "$(_users)" ;
 	    else offer "$params"
@@ -742,9 +743,9 @@ _sreport()
 	Utilization)
 	    params="$opts_all Names= Nodes= Accounts= Group TopCount= Users= "
 	    if param "Clusters" ; then  offer_list "$(_clusters)" ;
-	    elif param "Format" ; then  offer_list "Allocated Associations \
-		Clusters CPUCount CPUTime End Flags Idle Name Nodes\
-		ReservationId Start TotalTime";
+	    elif param "Format" ; then  offer_list "Allocated Associations\
+		 Clusters End Flags Idle Name Nodes ReservationId Start\
+		 TotalTime TresCount TresName TresTime";
 	    elif param "Nodes" ; then  offer_list "$(_nodes)" ;
 	    else offer "$params"
 	    fi
@@ -792,7 +793,8 @@ _sreport()
 	    params="$opts_all Names= Nodes="
 	    if param "Clusters" ; then  offer_list "$(_clusters)" ;
 	    elif param "Format" ; then  offer_list "Allocated Cluster \
-		CPUCount Down Idle Overcommitted PlannedDown Reported Reserved";
+		 Down Idle Overcommitted PlannedDown Reported Reserved\
+		 TresCount TresName";
 	    elif param "Nodes" ; then  offer_list "$(_nodes)" ;
 	    else offer "$params"
 	    fi
@@ -800,8 +802,9 @@ _sreport()
 	AccountUtilizationByUser|UserUtilizationByAccount)
 	    params="$opts_all Accounts= Tree Users= Wckeys="
 	    if param "Clusters" ; then  offer_list "$(_clusters)" ;
-	    elif param "Format" ; then  offer_list "Accounts Cluster CPUCount\
-						    Login Proper Used" ;
+	    elif param "Format" ; then  offer_list "Accounts Cluster Energy\
+						    Login Proper TresCount\
+						    Used" ;
 	    elif param "Accounts" ; then  offer_list "$(_accounts)" ;
 	    elif param "Users" ; then  offer_list "$(_users)" ;
 	    elif param "Wckeys" ; then  offer_list "$(_wckeys)" ;
@@ -811,8 +814,8 @@ _sreport()
 	UserUtilizationByWCKey|WCKeyUtilizationByUser)
 	    params="$opts_all Accounts= Tree Users= Wckeys="
 	    if param "Clusters" ; then  offer_list "$(_clusters)" ;
-	    elif param "Format" ; then  offer_list "Cluster CPUCount Login\
-						    Proper Used Wckey" ;
+	    elif param "Format" ; then  offer_list "Cluster Login Proper\
+						    TresCount Used Wckey" ;
 	    elif param "Accounts" ; then  offer_list "$(_accounts)" ;
 	    elif param "Users" ; then  offer_list "$(_users)" ;
 	    elif param "Wckeys" ; then  offer_list "$(_wckeys)" ;
