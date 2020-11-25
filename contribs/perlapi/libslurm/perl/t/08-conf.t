@@ -25,7 +25,7 @@ SKIP: {
     $slurm->print_ctl_conf($fh, $resp);
     seek($fh, 0, 0);
     while(<$fh>) {
-	$print_ok = 1 if /^ControlMachine\s+=\s+\w+$/;
+	$print_ok = 1 if /^SlurmctldPort/;
     }
     close($fh);
     ok($print_ok, "print ctl conf");
