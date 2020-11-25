@@ -58,8 +58,9 @@ ok(defined $rc, "notify job") or diag("notify_job: " . $slurm->strerror());
 
 
 # 9
-TODO: {
+SKIP: {
     local $TODO = "do not know how to test";
+    skip($TODO,1);
     my $jid = $slurm->pid2jobid(1234);
     ok(defined $jid, "pid2jobid");
 }
