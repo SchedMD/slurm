@@ -1,5 +1,5 @@
 #!/usr/bin/perl -T
-use Test::More tests => 16;
+use Test::More tests => 13;
 use Slurm qw(:constant);
 
 
