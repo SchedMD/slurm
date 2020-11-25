@@ -4344,7 +4344,7 @@ If set, xauth data on the compute node will be placed in \fB~/.Xauthority\fR
 rather than in a temporary file under \fBTmpFS\fR.
 .RE
 
-.LP
+.SH "NODE CONFIGURATION"
 The configuration of nodes (or machines) to be managed by Slurm is
 also specified in \fB/etc/slurm.conf\fR.
 Changes in node configuration (e.g. adding nodes, changing their
@@ -4781,7 +4781,7 @@ value and they will be added to the pool of nodes being
 considered for scheduling individually.
 The default value is 1.
 
-.LP
+.SH "DOWN NODE CONFIGURATION"
 The \fBDownNodes=\fR parameter permits you to mark certain nodes as in a
 \fIDOWN\fR, \fIDRAIN\fR, \fIFAIL\fR, \fIFAILING\fR or \fIFUTURE\fR state
 without altering the permanent configuration information listed under a
@@ -4806,7 +4806,7 @@ For more information about these states see the descriptions under \fBState\fR
 in the \fBNodeName=\fR section above.
 The default value is \fIDOWN\fR.
 
-.LP
+.SH "FRONTEND NODE CONFIGURATION"
 On computers where frontend nodes are used to execute batch scripts
 rather than compute nodes (Cray ALPS systems), one may configure one or more
 frontend nodes using the configuration parameters defined below. These options
@@ -4858,11 +4858,6 @@ unless explicitly set to other values in that frontend node record or
 replaced with a different set of default values.
 Each line where \fBFrontendName\fR is "DEFAULT" will replace or add to previous
 default values and not a reinitialize the default values.
-Note that since the naming of front end nodes would typically not follow that
-of the compute nodes (e.g. lacking X, Y and Z coordinates found in the compute
-node naming scheme), each front end node name should be listed separately and
-without a hostlist expression (i.e. frontend00,frontend01" rather than
-"frontend[00-01]").</p>
 
 .TP
 \fBFrontendAddr\fR
@@ -4911,11 +4906,14 @@ For more information about these states see the descriptions under \fBState\fR
 in the \fBNodeName=\fR section above.
 The default value is \fIUNKNOWN\fR.
 
-For example: "FrontendName=frontend[00\-03] FrontendAddr=efrontend[00\-03]
-State=UNKNOWN" is used to define four front end nodes for running slurmd
-daemons.
-
 .LP
+As an example, you can do something similar to the following to define four
+front end nodes for running slurmd daemons.
+.nf
+FrontendName=frontend[00\-03] FrontendAddr=efrontend[00\-03] State=UNKNOWN
+.fi
+
+.SH "NODESET CONFIGURATION"
 The nodeset configuration allows you to define a name for a specific set of
 nodes which can be used to simplify the partition configuration section,
 especially for heterogenous or condo-style systems. Each nodeset may be defined
@@ -4934,7 +4932,7 @@ List of nodes in this set.
 \fBNodeSet\fR
 Unique name for a set of nodes. Must not overlap with any NodeName definitions.
 
-.LP
+.SH "PARTITION CONFIGURATION"
 The partition configuration permits you to establish different job
 limits or access controls for various groups (or partitions) of nodes.
 Nodes may be in more than one partition, making partitions serve
@@ -5437,7 +5435,7 @@ the job's priority then refer to the PriorityWeightTRES option.
 
 .RE
 
-.SH "Prolog and Epilog Scripts"
+.SH "PROLOG AND EPILOG SCRIPTS"
 There are a variety of prolog and epilog program options that
 execute with various permissions and at various times.
 The four options most likely to be used are:
