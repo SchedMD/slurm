@@ -123,7 +123,7 @@ hv_to_partition_info(HV *hv, partition_info_t *part_info)
 	FETCH_FIELD(hv, part_info, preempt_mode, uint16_t, TRUE);
 	FETCH_FIELD(hv, part_info, priority_job_factor, uint16_t, TRUE);
 	FETCH_FIELD(hv, part_info, priority_tier, uint16_t, TRUE);
-	FETCH_FIELD(hv, part_info, qos_char, charp, TRUE);
+	FETCH_FIELD(hv, part_info, qos_char, charp, FALSE);
 	FETCH_FIELD(hv, part_info, state_up, uint16_t, TRUE);
 	FETCH_FIELD(hv, part_info, total_cpus, uint32_t, TRUE);
 	FETCH_FIELD(hv, part_info, total_nodes, uint32_t, TRUE);
