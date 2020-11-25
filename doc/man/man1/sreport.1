@@ -192,9 +192,9 @@ UserUtilizationByWckey, Utilization, WCKeyUtilizationByUser
 .LP
 \fBNOTE\fR: If \fBOverSubscribe\fR is configured to \fBFORCE\fR or \fBYES\fR
 in your slurm.conf and the system is not configured to use preemption
-(\fBPreemptMode=OFF\fR) this can allow for scenarios where the system is
-overcommitted.  If this happens, you may see error messages stating: "We have
-more allocated time than is possible."
+(\fBPreemptMode=OFF\fR) accounting can easily grow to values greater than
+the actual utilization. It may be common on such systems to get error messages
+in the slurmdbd log stating: "We have more allocated time than is possible."
 
 .SH "REPORT DESCRIPTION"
 
@@ -235,15 +235,23 @@ Time that nodes were marked as Down or time that slurmctld was not
 responding (assuming TrackSlurmctldDown is set in slurmdbd.conf).
 .IP Idle
 Time where nodes had no active jobs or reservations.
+<<<<<<< HEAD
 .IP Overcommitted
 If there is enough utilization to consume more system time than is
 expected, the extra usage is recorded as Overcommitted.
+=======
+.IP Overcommited
+Time of eligible jobs waiting in the queue over the Reserved time. Unlike
+Reserved, this has no limit. It is typically useful to determine whether your
+system is overloaded and by how much.
+>>>>>>> origin/slurm-20.02
 .IP PlannedDown
 Time that nodes were in use by a reservation created with the MAINT flag
 but not the IGNORE_JOBS flag.
 .IP Reserved
 Time that a node spent idle with eligible jobs in the queue that were
-unable to start due to time or size constraints. If this value is
+unable to start due to time or size constraints. The maximum time is limited
+to the amount of time possible on the system. If this value is
 not of importance for you then the number can be grouped with idle time.
 .IP TresCount
 Configured number of TRES' on the reported nodes. See also the
