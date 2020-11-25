@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
     calling libslurm MUST call slurm_init(NULL) before any API calls.
     Otherwise the API call is likely to fail due to libslurm's internal
     configuration not being available.
+ -- slurm.spec - allow custom paths for PMIx and UCX install locations.
 
 * Changes in Slurm 20.11.0
 ==========================
