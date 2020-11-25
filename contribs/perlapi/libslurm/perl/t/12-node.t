@@ -31,7 +31,7 @@ SKIP: {
 SKIP: {
     my ($fh, $print_ok);
     skip "failed to open temporary file", 1 unless open($fh, '+>', undef);
-    $slurm->print_node_table($fh, $resp->{node_array}->[0], 1, 1);
+    $slurm->print_node_table($fh, $resp->{node_array}->[0], 1);
     seek($fh, 0, 0);
     while(<$fh>) {
 	$print_ok = 1 if /^NodeName=\w+/;
