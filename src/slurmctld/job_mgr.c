@@ -9566,6 +9566,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->batch_features);
 	xfree(job_ptr->batch_host);
 	xfree(job_ptr->burst_buffer);
+	xfree(job_ptr->burst_buffer_state);
 	xfree(job_ptr->comment);
 	xfree(job_ptr->clusters);
 	xfree(job_ptr->cpus_per_tres);
