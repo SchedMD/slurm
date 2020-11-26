@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- cons_tres - Fix DefCpuPerGPU
  -- select/cray_aries - Correctly remove jobs/steps from blades using NPC.
+ -- Fix false positive oom-kill events on extern step termination when
+    jobacct_gather/cgroup configured.
 
 * Changes in Slurm 20.02.6
 ==========================

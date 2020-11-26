@@ -1145,6 +1145,24 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	step_terminate_monitor_start(job);
 	proctrack_g_signal(job->cont_id, SIGKILL);
 	proctrack_g_wait(job->cont_id);
+
+	/*
+	 * When an event is registered using the cgroups notification API and
+	 * memory is constrained using task/cgroup, the following check needs to
+	 * happen before any memory cgroup hierarchy removal.
+	 *
+	 * The eventfd will be woken up by control file implementation *or*
+	 * when the cgroup is removed. Thus, for the second case (cgroup
+	 * removal) we could be notified with false positive oom events.
+	 *
+	 * acct_gather_profile_fini() and task_g_post_step() can remove the
+	 * cgroup hierarchy if the cgroup implementation of these plugins are
+	 * configured.
+	 */
+	for (uint32_t i = 0; i < job->node_tasks; i++)
+		if (task_g_post_term(job, job->task[i]) == ENOMEM)
+			job->oom_error = true;
+
 	/*
 	 * This function below calls jobacct_gather_fini(). For the case of
 	 * jobacct_gather/cgroup, it ends up doing the cgroup hierarchy cleanup
@@ -1154,10 +1172,6 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	acct_gather_profile_fini();
 
 	step_terminate_monitor_stop();
-	for (uint32_t i = 0; i < job->node_tasks; i++)
-		if (task_g_post_term(job, job->task[i]) == ENOMEM)
-			job->oom_error = true;
-
 	task_g_post_step(job);
 
 fail1:
