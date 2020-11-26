@@ -907,13 +907,14 @@ static void _set_assoc_norm_priority(slurmdb_assoc_rec_t *assoc)
 	if (assoc->priority == INFINITE)
 		assoc->priority = 0;
 
-	if (!g_assoc_max_priority)
-		return;
-
 	if (!assoc->usage)
 		assoc->usage = slurmdb_create_assoc_usage(g_tres_count);
-	assoc->usage->priority_norm =
-		(double)assoc->priority / (double)g_assoc_max_priority;
+
+	if (!g_assoc_max_priority)
+		assoc->usage->priority_norm = 0.0;
+	else
+		assoc->usage->priority_norm =
+			(double)assoc->priority / (double)g_assoc_max_priority;
 }
 
 static void _calculate_assoc_norm_priorities(bool new_max)
