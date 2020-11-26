@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with sending wrong batch step id to a < 20.11 slurmd.
  -- Add a job's alloc_node to lua for job modification and completion.
  -- Fix regression getting a slurmdbd connection through the perl API.
+ -- Stop the extern step terminate monitor right after proctrack_g_wait().
 
 * Changes in Slurm 20.11.0
 ==========================

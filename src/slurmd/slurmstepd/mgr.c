@@ -1083,6 +1083,7 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	step_terminate_monitor_start(job);
 	proctrack_g_signal(job->cont_id, SIGKILL);
 	proctrack_g_wait(job->cont_id);
+	step_terminate_monitor_stop();
 
 	/*
 	 * When an event is registered using the cgroups notification API and
@@ -1109,7 +1110,6 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	 */
 	acct_gather_profile_fini();
 
-	step_terminate_monitor_stop();
 	task_g_post_step(job);
 
 fail1:
