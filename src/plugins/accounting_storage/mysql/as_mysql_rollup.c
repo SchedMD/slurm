@@ -553,9 +553,7 @@ static void _setup_cluster_tres_usage(mysql_conn_t *mysql_conn,
 				    sizeof(start_char));
 		slurm_make_time_str(&curr_end, end_char,
 				    sizeof(end_char));
-		error("We have more allocated time than is "
-		      "possible (%"PRIu64" > %"PRIu64") for "
-		      "cluster %s(%"PRIu64") from %s - %s tres %u",
+		error("We have more allocated time than is possible (%"PRIu64" > %"PRIu64") for cluster %s(%"PRIu64") from %s - %s tres %u (this may happen if oversubscription of resources is allowed without Gang)",
 		      loc_tres->time_alloc, loc_tres->total_time,
 		      cluster_name, loc_tres->count,
 		      start_char, end_char, loc_tres->id);
@@ -574,10 +572,7 @@ static void _setup_cluster_tres_usage(mysql_conn_t *mysql_conn,
 				    sizeof(start_char));
 		slurm_make_time_str(&curr_end, end_char,
 				    sizeof(end_char));
-		error("We have more time than is "
-		      "possible (%"PRIu64"+%"PRIu64"+%"
-		      PRIu64")(%"PRIu64") > %"PRIu64" for "
-		      "cluster %s(%"PRIu64") from %s - %s tres %u",
+		error("We have more time than is possible (%"PRIu64"+%"PRIu64"+%"PRIu64")(%"PRIu64") > %"PRIu64" for cluster %s(%"PRIu64") from %s - %s tres %u (this may happen if oversubscription of resources is allowed without Gang)",
 		      loc_tres->time_alloc, loc_tres->time_down,
 		      loc_tres->time_pd, total_used,
 		      loc_tres->total_time,
