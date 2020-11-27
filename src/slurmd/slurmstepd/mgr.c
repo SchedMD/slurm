@@ -1289,6 +1289,10 @@ job_manager(stepd_step_rec_t *job)
 		debug ("Unable to set dumpable to 1");
 #endif /* PR_SET_DUMPABLE */
 
+	/*
+	 * task_g_post_term() needs to be called before
+	 * acct_gather_profile_fini() and task_g_post_step().
+	 */
 	_wait_for_all_tasks(job);
 	acct_gather_profile_endpoll();
 	acct_gather_profile_g_node_step_end();
