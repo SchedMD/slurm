@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix slurmctld segfault in _slurm_rpc_job_step_create().
  -- slurmrestd/v0.0.36 - Filter node states against NODE_STATE_BASE to avoid
     the extended states all being reported as "invalid".
+ -- Fix race that can prevent the prolog for a requeued job from running.
 
 * Changes in Slurm 20.11.0
 ==========================
