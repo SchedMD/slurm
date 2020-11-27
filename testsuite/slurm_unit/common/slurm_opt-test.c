@@ -142,8 +142,6 @@ START_TEST(test_data_job)
 	data_t *arg = data_new();
 	slurm_reset_all_options(&opt, true);
 
-	ck_assert_msg(slurm_conf_init(NULL) == 0, "slurm_conf_init()");
-
 	data_set_string(arg, "2000-01-01");
 	ck_assert_msg(slurm_process_option_data(&opt, 'b', arg, errors) == 0,
 		      "begin");
