@@ -224,7 +224,7 @@ static int _handle_init_msg(slurmdbd_conn_t *slurmdbd_conn,
 }
 
 static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
-				persist_msg_t *msg, Buf *out_buffer,
+				persist_msg_t *msg, buf_t **out_buffer,
 				uint32_t *uid)
 {
 	int rc;
@@ -252,8 +252,8 @@ static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _add_accounts(slurmdbd_conn_t *slurmdbd_conn,
-			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _add_accounts(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			 buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_list_msg_t *get_msg = msg->data;
@@ -271,7 +271,7 @@ static int _add_accounts(slurmdbd_conn_t *slurmdbd_conn,
 }
 
 static int _fix_runaway_jobs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
-			     Buf *out_buffer, uint32_t *uid)
+			     buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_list_msg_t *get_msg = msg->data;
@@ -296,7 +296,8 @@ static int _fix_runaway_jobs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 }
 
 static int _add_account_coords(slurmdbd_conn_t *slurmdbd_conn,
-			       persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+			       persist_msg_t *msg, buf_t **out_buffer,
+			       uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_acct_coord_msg_t *get_msg = msg->data;
@@ -318,8 +319,8 @@ static int _add_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _add_tres(slurmdbd_conn_t *slurmdbd_conn,
-		     persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _add_tres(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		     buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_list_msg_t *get_msg = msg->data;
@@ -342,8 +343,8 @@ static int _add_tres(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _add_assocs(slurmdbd_conn_t *slurmdbd_conn,
-		       persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _add_assocs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		       buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_list_msg_t *get_msg = msg->data;
@@ -408,8 +409,8 @@ end_it:
 	return rc;
 }
 
-static int _add_clusters(slurmdbd_conn_t *slurmdbd_conn,
-			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _add_clusters(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			 buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_list_msg_t *get_msg = msg->data;
@@ -430,7 +431,7 @@ static int _add_clusters(slurmdbd_conn_t *slurmdbd_conn,
 }
 
 static int _add_federations(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
-			    Buf *out_buffer, uint32_t *uid)
+			    buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_list_msg_t *get_msg = msg->data;
@@ -452,8 +453,8 @@ static int _add_federations(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	return rc;
 }
 
-static int _add_qos(slurmdbd_conn_t *slurmdbd_conn,
-		    persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _add_qos(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		    buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_list_msg_t *get_msg = msg->data;
@@ -473,8 +474,8 @@ static int _add_qos(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _add_res(slurmdbd_conn_t *slurmdbd_conn,
-		    persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _add_res(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		    buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_list_msg_t *get_msg = msg->data;
@@ -494,8 +495,8 @@ static int _add_res(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _add_users(slurmdbd_conn_t *slurmdbd_conn,
-		      persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _add_users(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		      buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_list_msg_t *get_msg = msg->data;
@@ -513,8 +514,8 @@ static int _add_users(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _add_wckeys(slurmdbd_conn_t *slurmdbd_conn,
-		       persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _add_wckeys(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		       buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_list_msg_t *get_msg = msg->data;
@@ -530,8 +531,8 @@ static int _add_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _add_reservation(slurmdbd_conn_t *slurmdbd_conn,
-			    persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _add_reservation(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			    buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_rec_msg_t *rec_msg = msg->data;
@@ -555,8 +556,8 @@ end_it:
 	return rc;
 }
 
-static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn,
-			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _archive_dump(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			 buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = msg->data;
@@ -607,8 +608,8 @@ end_it:
 	return rc;
 }
 
-static int _archive_load(slurmdbd_conn_t *slurmdbd_conn,
-			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _archive_load(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			 buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_archive_rec_t *arch_rec = msg->data;
@@ -635,8 +636,8 @@ end_it:
 	return rc;
 }
 
-static int _cluster_tres(slurmdbd_conn_t *slurmdbd_conn,
-			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _cluster_tres(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			 buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_cluster_tres_msg_t *cluster_tres_msg = msg->data;
 	int rc = SLURM_SUCCESS;
@@ -684,8 +685,8 @@ end_it:
 	return rc;
 }
 
-static int _get_accounts(slurmdbd_conn_t *slurmdbd_conn,
-			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _get_accounts(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			 buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
@@ -717,8 +718,8 @@ static int _get_accounts(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _get_tres(slurmdbd_conn_t *slurmdbd_conn,
-		     persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _get_tres(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		     buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
@@ -749,8 +750,8 @@ static int _get_tres(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _get_assocs(slurmdbd_conn_t *slurmdbd_conn,
-		       persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _get_assocs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		       buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
@@ -781,8 +782,8 @@ static int _get_assocs(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _get_clusters(slurmdbd_conn_t *slurmdbd_conn,
-			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _get_clusters(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			 buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
@@ -815,7 +816,7 @@ static int _get_clusters(slurmdbd_conn_t *slurmdbd_conn,
 }
 
 static int _get_federations(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
-			    Buf *out_buffer, uint32_t *uid)
+			    buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
@@ -847,8 +848,8 @@ static int _get_federations(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	return rc;
 }
 
-static int _get_config(slurmdbd_conn_t *slurmdbd_conn,
-		       persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _get_config(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		       buf_t **out_buffer, uint32_t *uid)
 {
 	char *config_name = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
@@ -878,8 +879,8 @@ static int _get_config(slurmdbd_conn_t *slurmdbd_conn,
 	return SLURM_SUCCESS;
 }
 
-static int _get_events(slurmdbd_conn_t *slurmdbd_conn,
-		       persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _get_events(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		       buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
@@ -911,8 +912,8 @@ static int _get_events(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn,
-			  persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			  buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *cond_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
@@ -978,8 +979,8 @@ static int _get_jobs_cond(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _get_probs(slurmdbd_conn_t *slurmdbd_conn,
-		      persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _get_probs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		      buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
@@ -1010,8 +1011,8 @@ static int _get_probs(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _get_qos(slurmdbd_conn_t *slurmdbd_conn,
-		    persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _get_qos(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		    buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *cond_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
@@ -1045,8 +1046,8 @@ static int _get_qos(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _get_res(slurmdbd_conn_t *slurmdbd_conn,
-		    persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _get_res(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		    buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
@@ -1077,8 +1078,8 @@ static int _get_res(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _get_txn(slurmdbd_conn_t *slurmdbd_conn,
-		    persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _get_txn(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		    buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *cond_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
@@ -1109,8 +1110,8 @@ static int _get_txn(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _get_usage(slurmdbd_conn_t *slurmdbd_conn,
-		      persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _get_usage(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		      buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_usage_msg_t *get_msg = msg->data;
 	dbd_usage_msg_t got_msg;
@@ -1164,8 +1165,8 @@ static int _get_usage(slurmdbd_conn_t *slurmdbd_conn,
 	return SLURM_SUCCESS;
 }
 
-static int _get_users(slurmdbd_conn_t *slurmdbd_conn,
-		      persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _get_users(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		      buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
@@ -1213,8 +1214,8 @@ static int _get_users(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _get_wckeys(slurmdbd_conn_t *slurmdbd_conn,
-		       persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _get_wckeys(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		       buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
@@ -1260,7 +1261,7 @@ static int _get_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 }
 
 static int _get_reservations(slurmdbd_conn_t *slurmdbd_conn,
-			     persist_msg_t *msg, Buf *out_buffer,
+			     persist_msg_t *msg, buf_t **out_buffer,
 			     uint32_t *uid)
 {
 	dbd_cond_msg_t *get_msg = msg->data;
@@ -1301,8 +1302,8 @@ static int _find_rpc_obj_in_list(void *x, void *key)
 	return 0;
 }
 
-static int _flush_jobs(slurmdbd_conn_t *slurmdbd_conn,
-		       persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _flush_jobs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		       buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_cluster_tres_msg_t *cluster_tres_msg = msg->data;
 	int rc = SLURM_SUCCESS;
@@ -1327,8 +1328,8 @@ end_it:
 	return rc;
 }
 
-static int   _fini_conn(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
-			Buf *out_buffer)
+static int _fini_conn(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		      buf_t **out_buffer)
 {
 	dbd_fini_msg_t *fini_msg = msg->data;
 	char *comment = NULL;
@@ -1358,8 +1359,8 @@ static int   _fini_conn(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 
 }
 
-static int  _job_complete(slurmdbd_conn_t *slurmdbd_conn,
-			  persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _job_complete(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			 buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_job_comp_msg_t *job_comp_msg = msg->data;
 	job_record_t job;
@@ -1428,8 +1429,8 @@ end_it:
 	return SLURM_SUCCESS;
 }
 
-static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
-		       persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _job_start(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		      buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_job_start_msg_t *job_start_msg = msg->data;
 	dbd_id_rc_msg_t id_rc_msg;
@@ -1455,8 +1456,8 @@ static int  _job_start(slurmdbd_conn_t *slurmdbd_conn,
 	return SLURM_SUCCESS;
 }
 
-static int  _job_suspend(slurmdbd_conn_t *slurmdbd_conn,
-			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _job_suspend(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_job_suspend_msg_t *job_suspend_msg = msg->data;
 	job_record_t job;
@@ -1503,8 +1504,8 @@ end_it:
 	return SLURM_SUCCESS;
 }
 
-static int   _modify_accounts(slurmdbd_conn_t *slurmdbd_conn,
-			      persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _modify_accounts(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			    buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
@@ -1549,8 +1550,8 @@ static int   _modify_accounts(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int   _modify_assocs(slurmdbd_conn_t *slurmdbd_conn,
-			    persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _modify_assocs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			  buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
@@ -1600,9 +1601,8 @@ static int   _modify_assocs(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int   _modify_clusters(slurmdbd_conn_t *slurmdbd_conn,
-			      persist_msg_t *msg, Buf *out_buffer,
-			      uint32_t *uid)
+static int _modify_clusters(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			    buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
@@ -1649,7 +1649,7 @@ static int   _modify_clusters(slurmdbd_conn_t *slurmdbd_conn,
 
 static int _modify_federations(slurmdbd_conn_t *slurmdbd_conn,
 			       persist_msg_t *msg,
-			       Buf *out_buffer, uint32_t *uid)
+			       buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
@@ -1695,8 +1695,8 @@ static int _modify_federations(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int   _modify_job(slurmdbd_conn_t *slurmdbd_conn,
-			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _modify_job(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		       buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
@@ -1750,8 +1750,8 @@ static int   _modify_job(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int   _modify_qos(slurmdbd_conn_t *slurmdbd_conn,
-			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _modify_qos(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		       buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
@@ -1799,8 +1799,8 @@ static int   _modify_qos(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int   _modify_res(slurmdbd_conn_t *slurmdbd_conn,
-			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _modify_res(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		       buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
@@ -1845,8 +1845,8 @@ static int   _modify_res(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int   _modify_users(slurmdbd_conn_t *slurmdbd_conn,
-			   persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _modify_users(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			 buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
@@ -1951,8 +1951,8 @@ is_same_user:
 	return rc;
 }
 
-static int   _modify_wckeys(slurmdbd_conn_t *slurmdbd_conn,
-			    persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _modify_wckeys(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			  buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_list_msg_t list_msg = { NULL };
 	int rc = SLURM_SUCCESS;
@@ -1997,7 +1997,7 @@ static int   _modify_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 }
 
 static int _modify_reservation(slurmdbd_conn_t *slurmdbd_conn,
-			       persist_msg_t *msg, Buf *out_buffer,
+			       persist_msg_t *msg, buf_t **out_buffer,
 			       uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
@@ -2023,8 +2023,8 @@ end_it:
 	return rc;
 }
 
-static int _node_state(slurmdbd_conn_t *slurmdbd_conn,
-		       persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _node_state(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		       buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_node_state_msg_t *node_state_msg = msg->data;
 	node_record_t node_ptr;
@@ -2175,8 +2175,8 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	}
 }
 
-static int   _reconfig(slurmdbd_conn_t *slurmdbd_conn,
-		       persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _reconfig(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		     buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
@@ -2201,8 +2201,8 @@ static int   _reconfig(slurmdbd_conn_t *slurmdbd_conn,
 
 }
 
-static int   _register_ctld(slurmdbd_conn_t *slurmdbd_conn,
-			    persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _register_ctld(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			  buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_register_ctld_msg_t *register_ctld_msg = msg->data;
 	int rc = SLURM_SUCCESS;
@@ -2316,8 +2316,8 @@ end_it:
 	return rc;
 }
 
-static int   _remove_accounts(slurmdbd_conn_t *slurmdbd_conn,
-			      persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _remove_accounts(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			    buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = msg->data;
@@ -2361,9 +2361,9 @@ static int   _remove_accounts(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int   _remove_account_coords(slurmdbd_conn_t *slurmdbd_conn,
-				    persist_msg_t *msg, Buf *out_buffer,
-				    uint32_t *uid)
+static int _remove_account_coords(slurmdbd_conn_t *slurmdbd_conn,
+				  persist_msg_t *msg, buf_t **out_buffer,
+				  uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_acct_coord_msg_t *get_msg = msg->data;
@@ -2414,8 +2414,8 @@ static int   _remove_account_coords(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int   _remove_assocs(slurmdbd_conn_t *slurmdbd_conn,
-			    persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _remove_assocs(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			  buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = msg->data;
@@ -2465,9 +2465,8 @@ static int   _remove_assocs(slurmdbd_conn_t *slurmdbd_conn,
 
 }
 
-static int   _remove_clusters(slurmdbd_conn_t *slurmdbd_conn,
-			      persist_msg_t *msg, Buf *out_buffer,
-			      uint32_t *uid)
+static int _remove_clusters(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			    buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = msg->data;
@@ -2512,8 +2511,8 @@ static int   _remove_clusters(slurmdbd_conn_t *slurmdbd_conn,
 }
 
 static int _remove_federations(slurmdbd_conn_t *slurmdbd_conn,
-			       persist_msg_t *msg,
-			       Buf *out_buffer, uint32_t *uid)
+			       persist_msg_t *msg, buf_t **out_buffer,
+			       uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = msg->data;
@@ -2559,8 +2558,8 @@ static int _remove_federations(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int   _remove_qos(slurmdbd_conn_t *slurmdbd_conn,
-			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _remove_qos(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		       buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = msg->data;
@@ -2604,8 +2603,8 @@ static int   _remove_qos(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int _remove_res(slurmdbd_conn_t *slurmdbd_conn,
-		       persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _remove_res(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		       buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = msg->data;
@@ -2649,8 +2648,8 @@ static int _remove_res(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int   _remove_users(slurmdbd_conn_t *slurmdbd_conn,
-			   persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _remove_users(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			 buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = msg->data;
@@ -2694,8 +2693,8 @@ static int   _remove_users(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int   _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn,
-			    persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			  buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	dbd_cond_msg_t *get_msg = msg->data;
@@ -2740,7 +2739,7 @@ static int   _remove_wckeys(slurmdbd_conn_t *slurmdbd_conn,
 }
 
 static int _remove_reservation(slurmdbd_conn_t *slurmdbd_conn,
-			       persist_msg_t *msg, Buf *out_buffer,
+			       persist_msg_t *msg, buf_t **out_buffer,
 			       uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
@@ -2765,8 +2764,8 @@ end_it:
 	return rc;
 }
 
-static int   _roll_usage(slurmdbd_conn_t *slurmdbd_conn,
-			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _roll_usage(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		       buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_roll_usage_msg_t *get_msg = msg->data;
 	int rc = SLURM_SUCCESS;
@@ -2798,9 +2797,9 @@ end_it:
 	return rc;
 }
 
-static int   _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
-				  persist_msg_t *msg, Buf *out_buffer,
-				  uint32_t *uid)
+static int _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
+				persist_msg_t *msg, buf_t **out_buffer,
+				uint32_t *uid)
 {
 	dbd_list_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
@@ -2843,15 +2842,14 @@ static int   _send_mult_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	return SLURM_SUCCESS;
 }
 
-static int   _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn,
-			    persist_msg_t *msg, Buf *out_buffer,
-			    uint32_t *uid)
+static int _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			  buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_list_msg_t *get_msg = msg->data;
 	dbd_list_msg_t list_msg = { NULL };
 	char *comment = NULL;
 	ListIterator itr = NULL;
-	Buf req_buf = NULL, ret_buf = NULL;
+	buf_t *req_buf = NULL, *ret_buf = NULL;
 	int rc = SLURM_SUCCESS;
 	/* DEF_TIMERS; */
 
@@ -2901,8 +2899,8 @@ static int   _send_mult_msg(slurmdbd_conn_t *slurmdbd_conn,
 	return SLURM_SUCCESS;
 }
 
-static int  _step_complete(slurmdbd_conn_t *slurmdbd_conn,
-			   persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _step_complete(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			  buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_step_comp_msg_t *step_comp_msg = msg->data;
 	step_record_t step;
@@ -2970,8 +2968,8 @@ end_it:
 	return rc;
 }
 
-static int  _step_start(slurmdbd_conn_t *slurmdbd_conn,
-			persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _step_start(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		       buf_t **out_buffer, uint32_t *uid)
 {
 	dbd_step_start_msg_t *step_start_msg = msg->data;
 	step_record_t step;
@@ -3048,8 +3046,8 @@ end_it:
 	return rc;
 }
 
-static int  _get_stats(slurmdbd_conn_t *slurmdbd_conn,
-		       persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _get_stats(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		      buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
@@ -3075,8 +3073,8 @@ static int  _get_stats(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int  _clear_stats(slurmdbd_conn_t *slurmdbd_conn,
-			 persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _clear_stats(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+			buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
@@ -3101,8 +3099,8 @@ static int  _clear_stats(slurmdbd_conn_t *slurmdbd_conn,
 	return rc;
 }
 
-static int  _shutdown(slurmdbd_conn_t *slurmdbd_conn,
-		      persist_msg_t *msg, Buf *out_buffer, uint32_t *uid)
+static int _shutdown(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
+		     buf_t **out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
