@@ -1300,9 +1300,9 @@ extern char **get_job_env(job_record_t *job_ptr, uint32_t *env_size);
 /*
  * get_job_script - return the script for a given job
  * IN job_ptr - pointer to job for which data is required
- * RET Buf containing job script
+ * RET buf_t containing job script
  */
-extern Buf get_job_script(const job_record_t *job_ptr);
+extern buf_t *get_job_script(const job_record_t *job_ptr);
 
 /*
  * Return the next available job_id to be used.
@@ -1860,7 +1860,7 @@ extern int load_all_part_state ( void );
  * IN/OUT buffer - location from which to get data, pointers
  *                 automatically advanced
  */
-extern int load_step_state(job_record_t *job_ptr, Buf buffer,
+extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 			   uint16_t protocol_version);
 
 /*
@@ -1996,7 +1996,7 @@ extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
  */
 extern int pack_ctld_job_step_info_response_msg(
 	uint32_t job_id, uint32_t step_id, uid_t uid,
-	uint16_t show_flags, Buf buffer, uint16_t protocol_version);
+	uint16_t show_flags, buf_t *buffer, uint16_t protocol_version);
 
 /*
  * pack_all_part - dump all partition information for all partitions in
@@ -2026,7 +2026,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
  *	  whenever the data format changes
  */
 extern void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags,
-		     Buf buffer, uint16_t protocol_version, uid_t uid);
+		     buf_t *buffer, uint16_t protocol_version, uid_t uid);
 
 /*
  * pack_part - dump all configuration information about a specific partition
@@ -2038,7 +2038,7 @@ extern void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags,
  * NOTE: if you make any changes here be sure to make the corresponding
  *	changes to load_part_config in api/partition_info.c
  */
-extern void pack_part(part_record_t *part_ptr, Buf buffer,
+extern void pack_part(part_record_t *part_ptr, buf_t *buffer,
 		      uint16_t protocol_version);
 
 /*

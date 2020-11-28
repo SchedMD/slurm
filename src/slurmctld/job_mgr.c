@@ -137,7 +137,7 @@ typedef struct {
 } resp_array_struct_t;
 
 typedef struct {
-	Buf       buffer;
+	buf_t *buffer;
 	uint32_t  filter_uid;
 	uint32_t *jobs_packed;
 	uint16_t  protocol_version;
@@ -191,10 +191,10 @@ static slurmdb_qos_rec_t *_determine_and_validate_qos(
 	char *resv_name, slurmdb_assoc_rec_t *assoc_ptr,
 	bool operator, slurmdb_qos_rec_t *qos_rec, int *error_code,
 	bool locked, log_level_t log_lvl);
-static void _dump_job_details(struct job_details *detail_ptr, Buf buffer);
-static void _dump_job_state(job_record_t *dump_job_ptr, Buf buffer);
+static void _dump_job_details(struct job_details *detail_ptr, buf_t *buffer);
+static void _dump_job_state(job_record_t *dump_job_ptr, buf_t *buffer);
 static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
-				  Buf buffer);
+				  buf_t *buffer);
 static job_fed_details_t *_dup_job_fed_details(job_fed_details_t *src);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static bool _get_whole_hetjob(void);
@@ -207,22 +207,21 @@ static void _job_timed_out(job_record_t *job_ptr, bool preempted);
 static void _kill_dependent(job_record_t *job_ptr);
 static void _list_delete_job(void *job_entry);
 static int  _list_find_job_old(void *job_entry, void *key);
-static int  _load_job_details(job_record_t *job_ptr, Buf buffer,
+static int  _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 			      uint16_t protocol_version);
 static int  _load_job_fed_details(job_fed_details_t **fed_details_pptr,
-				  Buf buffer, uint16_t protocol_version);
-static int  _load_job_state(Buf buffer,	uint16_t protocol_version);
+				  buf_t *buffer, uint16_t protocol_version);
+static int  _load_job_state(buf_t *buffer, uint16_t protocol_version);
 static bitstr_t *_make_requeue_array(char *conf_buf);
 static uint32_t _max_switch_wait(uint32_t input_wait);
 static void _notify_srun_missing_step(job_record_t *job_ptr, int node_inx,
 				      time_t now, time_t node_boot_time);
-static Buf  _open_job_state_file(char **state_file);
+static buf_t *_open_job_state_file(char **state_file);
 static time_t _get_last_job_state_write_time(void);
-static void _pack_default_job_details(job_record_t *job_ptr, Buf buffer,
+static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				      uint16_t protocol_version);
 static void _pack_pending_job_details(struct job_details *detail_ptr,
-				      Buf buffer,
-				      uint16_t protocol_version);
+				      buf_t *buffer, uint16_t protocol_version);
 static bool _parse_array_tok(char *tok, bitstr_t *array_bitmap, uint32_t max);
 static void _purge_missing_jobs(int node_inx, time_t now);
 static int  _read_data_array_from_file(int fd, char *file_name, char ***data,
@@ -810,7 +809,7 @@ int dump_all_job_state(void)
 		{ READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	ListIterator job_iterator;
 	job_record_t *job_ptr;
-	Buf buffer = init_buf(high_buffer_size);
+	buf_t *buffer = init_buf(high_buffer_size);
 	time_t now = time(NULL);
 	time_t last_state_file_time;
 	DEF_TIMERS;
@@ -949,9 +948,9 @@ static int _find_resv_part(void *x, void *key)
  * state_file IN - the name of the state save file used
  * RET the file description to read from or error code
  */
-static Buf _open_job_state_file(char **state_file)
+static buf_t *_open_job_state_file(char **state_file)
 {
-	Buf buf;
+	buf_t *buf;
 
 	xassert(state_file);
 	xassert(!*state_file);
@@ -1077,7 +1076,7 @@ static time_t _get_last_job_state_write_time(void)
 {
 	int error_code = SLURM_SUCCESS;
 	char *state_file = NULL;
-	Buf buffer;
+	buf_t *buffer;
 	time_t buf_time = (time_t) 0;
 	char *ver_str = NULL;
 	uint32_t ver_str_len;
@@ -1114,7 +1113,7 @@ extern int load_all_job_state(void)
 	int error_code = SLURM_SUCCESS;
 	int job_cnt = 0;
 	char *state_file = NULL;
-	Buf buffer;
+	buf_t *buffer;
 	time_t buf_time;
 	uint32_t saved_job_id;
 	char *ver_str = NULL;
@@ -1192,7 +1191,7 @@ unpack_error:
 extern int load_last_job_id( void )
 {
 	char *state_file = NULL;
-	Buf buffer;
+	buf_t *buffer;
 	time_t buf_time;
 	char *ver_str = NULL;
 	uint32_t ver_str_len;
@@ -1245,7 +1244,7 @@ unpack_error:
 }
 
 static void _pack_acct_policy_limit(acct_policy_limit_set_t *limit_set,
-				    Buf buffer, uint16_t protocol_version)
+				    buf_t *buffer, uint16_t protocol_version)
 {
 	xassert(limit_set);
 
@@ -1256,7 +1255,7 @@ static void _pack_acct_policy_limit(acct_policy_limit_set_t *limit_set,
 
 static int _unpack_acct_policy_limit_members(
 	acct_policy_limit_set_t *limit_set,
-	Buf buffer, uint16_t protocol_version)
+	buf_t *buffer, uint16_t protocol_version)
 {
 	uint32_t tmp32;
 
@@ -1289,7 +1288,7 @@ unpack_error:
  * IN dump_job_ptr - pointer to job for which information is requested
  * IN/OUT buffer - location to store data, pointers automatically advanced
  */
-static void _dump_job_state(job_record_t *dump_job_ptr, Buf buffer)
+static void _dump_job_state(job_record_t *dump_job_ptr, buf_t *buffer)
 {
 	struct job_details *detail_ptr;
 	uint32_t tmp_32;
@@ -1468,7 +1467,7 @@ static void _dump_job_state(job_record_t *dump_job_ptr, Buf buffer)
 /* Unpack a job's state information from a buffer */
 /* NOTE: assoc_mgr qos, tres and assoc read lock must be unlocked before
  * calling */
-static int _load_job_state(Buf buffer, uint16_t protocol_version)
+static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 {
 	uint64_t db_index;
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
@@ -2394,7 +2393,7 @@ free_it:
  * IN detail_ptr - pointer to job details for which information is requested
  * IN/OUT buffer - location to store data, pointers automatically advanced
  */
-void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
+void _dump_job_details(struct job_details *detail_ptr, buf_t *buffer)
 {
 	/*
 	 * Some job fields can change in the course of scheduling, so we
@@ -2471,7 +2470,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 }
 
 /* _load_job_details - Unpack a job details information from buffer */
-static int _load_job_details(job_record_t *job_ptr, Buf buffer,
+static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 			     uint16_t protocol_version)
 {
 	char *acctg_freq = NULL, *req_nodes = NULL, *exc_nodes = NULL;
@@ -7641,14 +7640,14 @@ char **get_job_env(job_record_t *job_ptr, uint32_t *env_size)
 /*
  * get_job_script - return the script for a given job
  * IN job_ptr - pointer to job for which data is required
- * RET Buf containing job script
+ * RET buf_t *containing job script
  */
-Buf get_job_script(const job_record_t *job_ptr)
+buf_t *get_job_script(const job_record_t *job_ptr)
 {
 	char *file_name = NULL;
 	int hash;
 	uint32_t use_id;
-	Buf buf;
+	buf_t *buf;
 
 	if (!job_ptr->batch_flag)
 		return NULL;
@@ -9528,7 +9527,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 {
 	uint32_t jobs_packed = 0, tmp_offset;
 	_foreach_pack_job_info_t pack_info = {0};
-	Buf buffer;
+	buf_t *buffer;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -9580,7 +9579,7 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 {
 	uint32_t jobs_packed = 0, tmp_offset;
 	_foreach_pack_job_info_t pack_info = {0};
-	Buf buffer;
+	buf_t *buffer;
 
 	xassert(job_ids);
 
@@ -9615,7 +9614,7 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 }
 
 static int _pack_het_job(job_record_t *job_ptr, uint16_t show_flags,
-			    Buf buffer, uint16_t protocol_version, uid_t uid)
+			    buf_t *buffer, uint16_t protocol_version, uid_t uid)
 {
 	job_record_t *het_job_ptr;
 	int job_cnt = 0;
@@ -9655,7 +9654,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 {
 	job_record_t *job_ptr;
 	uint32_t jobs_packed = 0, tmp_offset;
-	Buf buffer;
+	buf_t *buffer;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -9728,7 +9727,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	return SLURM_SUCCESS;
 }
 
-static void _pack_job_gres(job_record_t *dump_job_ptr, Buf buffer,
+static void _pack_job_gres(job_record_t *dump_job_ptr, buf_t *buffer,
 			   uint16_t protocol_version)
 {
 	if (!IS_JOB_STARTED(dump_job_ptr) || IS_JOB_FINISHED(dump_job_ptr) ||
@@ -9752,7 +9751,7 @@ static void _pack_job_gres(job_record_t *dump_job_ptr, Buf buffer,
  * NOTE: change _unpack_job_info_members() in common/slurm_protocol_pack.c
  *	  whenever the data format changes
  */
-void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, Buf buffer,
+void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 	      uint16_t protocol_version, uid_t uid)
 {
 	struct job_details *detail_ptr;
@@ -10023,7 +10022,7 @@ static void _find_node_config(int *cpu_cnt_ptr, int *core_cnt_ptr)
 }
 
 /* pack default job details for "get_job_info" RPC */
-static void _pack_default_job_details(job_record_t *job_ptr, Buf buffer,
+static void _pack_default_job_details(job_record_t *job_ptr, buf_t *buffer,
 				      uint16_t protocol_version)
 {
 	int max_cpu_cnt = -1, max_core_cnt = -1;
@@ -10359,7 +10358,7 @@ static void _pack_default_job_details(job_record_t *job_ptr, Buf buffer,
 
 /* pack pending job details for "get_job_info" RPC */
 static void _pack_pending_job_details(struct job_details *detail_ptr,
-				      Buf buffer, uint16_t protocol_version)
+				      buf_t *buffer, uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (detail_ptr) {
@@ -17547,7 +17546,7 @@ extern void free_job_fed_details(job_fed_details_t **fed_details_pptr)
 }
 
 static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
-				  Buf buffer)
+				  buf_t *buffer)
 {
 	if (fed_details_ptr) {
 		pack16(1, buffer);
@@ -17563,8 +17562,7 @@ static void _dump_job_fed_details(job_fed_details_t *fed_details_ptr,
 }
 
 static int _load_job_fed_details(job_fed_details_t **fed_details_pptr,
-				 Buf buffer,
-				 uint16_t protocol_version)
+				 buf_t *buffer, uint16_t protocol_version)
 {
 	uint16_t tmp_uint16;
 	uint32_t tmp_uint32;

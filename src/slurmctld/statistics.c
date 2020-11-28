@@ -51,7 +51,7 @@ extern int retry_list_size(void);
 extern void pack_all_stat(int resp, char **buffer_ptr, int *buffer_size,
 			  uint16_t protocol_version)
 {
-	Buf buffer;
+	buf_t *buffer;
 	int parts_packed;
 	int agent_queue_size;
 	int agent_count;

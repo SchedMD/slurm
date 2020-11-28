@@ -98,7 +98,7 @@ static int  _opt_cpu_cnt(uint32_t step_min_cpus, bitstr_t *node_bitmap,
 			 uint32_t *usable_cpu_cnt);
 static int  _opt_node_cnt(uint32_t step_min_nodes, uint32_t step_max_nodes,
 			  int nodes_avail, int nodes_picked_cnt);
-static void _pack_ctld_job_step_info(step_record_t *step, Buf buffer,
+static void _pack_ctld_job_step_info(step_record_t *step, buf_t *buffer,
 				     uint16_t protocol_version);
 static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				  job_step_create_request_msg_t *step_spec,
@@ -3050,7 +3050,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
  * IN/OUT buffer - location to store data, pointers automatically advanced
  * IN protocol_version - slurm protocol version of client
  */
-static void _pack_ctld_job_step_info(step_record_t *step_ptr, Buf buffer,
+static void _pack_ctld_job_step_info(step_record_t *step_ptr, buf_t *buffer,
 				     uint16_t protocol_version)
 {
 	uint32_t task_cnt, cpu_cnt;
@@ -3210,7 +3210,7 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, Buf buffer,
  */
 extern int pack_ctld_job_step_info_response_msg(
 	uint32_t job_id, uint32_t step_id, uid_t uid,
-	uint16_t show_flags, Buf buffer, uint16_t protocol_version)
+	uint16_t show_flags, buf_t *buffer, uint16_t protocol_version)
 {
 	ListIterator job_iterator;
 	ListIterator step_iterator;
@@ -3755,7 +3755,7 @@ extern void resume_job_step(job_record_t *job_ptr)
 extern int dump_job_step_state(void *x, void *arg)
 {
 	step_record_t *step_ptr = (step_record_t *) x;
-	Buf buffer = (Buf) arg;
+	buf_t *buffer = (buf_t *) arg;
 
 	if (step_ptr->state < JOB_RUNNING)
 		return 0;
@@ -3836,7 +3836,7 @@ extern int dump_job_step_state(void *x, void *arg)
  * IN/OUT buffer - location to get data from, pointers advanced
  */
 /* NOTE: assoc_mgr tres and assoc read lock must be locked before calling */
-extern int load_step_state(job_record_t *job_ptr, Buf buffer,
+extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 			   uint16_t protocol_version)
 {
 	step_record_t *step_ptr = NULL;

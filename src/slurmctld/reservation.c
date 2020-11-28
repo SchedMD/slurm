@@ -176,8 +176,8 @@ static bool _job_overlap(time_t start_time, uint64_t flags,
 			 bitstr_t *node_bitmap, char *resv_name);
 static int _job_resv_check(void *x, void *arg);
 static List _list_dup(List license_list);
-static Buf  _open_resv_state_file(char **state_file);
-static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
+static buf_t *_open_resv_state_file(char **state_file);
+static void _pack_resv(slurmctld_resv_t *resv_ptr, buf_t *buffer,
 		       bool internal, uint16_t protocol_version);
 static bitstr_t *_pick_nodes(bitstr_t *avail_nodes,
 				  resv_desc_msg_t *resv_desc_ptr,
@@ -1827,7 +1827,7 @@ static void _set_core_resrcs(slurmctld_resv_t *resv_ptr)
  *	to _unpack_reserve_info_members() in common/slurm_protocol_pack.c
  *	plus load_all_resv_state() below.
  */
-static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
+static void _pack_resv(slurmctld_resv_t *resv_ptr, buf_t *buffer,
 		       bool internal, uint16_t protocol_version)
 {
 	time_t now = time(NULL), start_relative, end_relative;
@@ -2013,7 +2013,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, Buf buffer,
 	}
 }
 
-slurmctld_resv_t *_load_reservation_state(Buf buffer,
+slurmctld_resv_t *_load_reservation_state(buf_t *buffer,
 					  uint16_t protocol_version)
 {
 	slurmctld_resv_t *resv_ptr;
@@ -3477,7 +3477,7 @@ extern void show_resv(char **buffer_ptr, int *buffer_size, uid_t uid,
 	slurmctld_resv_t *resv_ptr;
 	uint32_t resv_packed;
 	int tmp_offset;
-	Buf buffer;
+	buf_t *buffer;
 	time_t now = time(NULL);
 	List assoc_list = NULL;
 	bool check_permissions = false;
@@ -3558,7 +3558,7 @@ extern int dump_all_resv_state(void)
 		.conf = READ_LOCK,
 		.node = READ_LOCK,
 	};
-	Buf buffer = init_buf(BUF_SIZE);
+	buf_t *buffer = init_buf(BUF_SIZE);
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -4145,9 +4145,9 @@ static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
  * state_file IN - the name of the state save file used
  * RET the file description to read from or error code
  */
-static Buf _open_resv_state_file(char **state_file)
+static buf_t *_open_resv_state_file(char **state_file)
 {
-	Buf buf;
+	buf_t *buf;
 
 	*state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(*state_file, "/resv_state");
@@ -4178,7 +4178,7 @@ extern int load_all_resv_state(int recover)
 	time_t now;
 	uint32_t uint32_tmp;
 	int error_code = 0;
-	Buf buffer;
+	buf_t *buffer;
 	slurmctld_resv_t *resv_ptr = NULL;
 	uint16_t protocol_version = NO_VAL16;
 

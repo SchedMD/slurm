@@ -710,7 +710,7 @@ extern void trigger_burst_buffer(void)
 	slurm_mutex_unlock(&trigger_mutex);
 }
 
-static void _dump_trigger_state(trig_mgr_info_t *trig_ptr, Buf buffer)
+static void _dump_trigger_state(trig_mgr_info_t *trig_ptr, buf_t *buffer)
 {
 	/* write trigger pull state flags */
 	pack8(ctld_failure,    buffer);
@@ -733,7 +733,7 @@ static void _dump_trigger_state(trig_mgr_info_t *trig_ptr, Buf buffer)
 	pack8    (trig_ptr->state,     buffer);
 }
 
-static int _load_trigger_state(Buf buffer, uint16_t protocol_version)
+static int _load_trigger_state(buf_t *buffer, uint16_t protocol_version)
 {
 	trig_mgr_info_t *trig_ptr;
 	uint32_t str_len;
@@ -819,7 +819,7 @@ extern int trigger_state_save(void)
 	static int high_buffer_size = (1024 * 1024);
 	int error_code = 0, log_fd;
 	char *old_file, *new_file, *reg_file;
-	Buf buffer = init_buf(high_buffer_size);
+	buf_t *buffer = init_buf(high_buffer_size);
 	ListIterator trig_iter;
 	trig_mgr_info_t *trig_in;
 	/* Locks: Read config */
@@ -904,9 +904,9 @@ extern int trigger_state_save(void)
  * state_file IN - the name of the state save file used
  * RET the file description to read from or error code
  */
-static Buf _open_trigger_state_file(char **state_file)
+static buf_t *_open_trigger_state_file(char **state_file)
 {
-	Buf buf;
+	buf_t *buf;
 
 	*state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(*state_file, "/trigger_state");
@@ -926,7 +926,7 @@ extern void trigger_state_restore(void)
 	uint16_t protocol_version = NO_VAL16;
 	int trigger_cnt = 0;
 	char *state_file;
-	Buf buffer;
+	buf_t *buffer;
 	time_t buf_time;
 	char *ver_str = NULL;
 	uint32_t ver_str_len;

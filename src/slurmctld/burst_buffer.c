@@ -60,7 +60,7 @@ typedef struct slurm_bb_ops {
 	uint64_t	(*get_system_size)	(void);
 	int		(*load_state)	(bool init_config);
 	char *		(*get_status)	(uint32_t argc, char **argv);
-	int		(*state_pack)	(uid_t uid, Buf buffer,
+	int		(*state_pack)	(uid_t uid, buf_t *buffer,
 					 uint16_t protocol_version);
 	int		(*reconfig)	(void);
 	int		(*job_validate)	(job_desc_msg_t *job_desc,
@@ -270,7 +270,7 @@ extern char *bb_g_get_status(uint32_t argc, char **argv)
  *
  * Returns a Slurm errno.
  */
-extern int bb_g_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
+extern int bb_g_state_pack(uid_t uid, buf_t *buffer, uint16_t protocol_version)
 {
 	DEF_TIMERS;
 	int i, rc, rc2;

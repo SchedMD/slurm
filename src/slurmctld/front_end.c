@@ -73,7 +73,7 @@ time_t last_front_end_update = (time_t) 0;
  * IN/OUT buffer - location to store data, pointers automatically advanced
  */
 static void _dump_front_end_state(front_end_record_t *front_end_ptr,
-				  Buf buffer)
+				  buf_t *buffer)
 {
 	packstr  (front_end_ptr->name, buffer);
 	pack32   (front_end_ptr->node_state, buffer);
@@ -89,9 +89,9 @@ static void _dump_front_end_state(front_end_record_t *front_end_ptr,
  * state_file IN - the name of the state save file used
  * RET the file description to read from or error code
  */
-static Buf _open_front_end_state_file(char **state_file)
+static buf_t *_open_front_end_state_file(char **state_file)
 {
-	Buf buf;
+	buf_t *buf;
 
 	*state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(*state_file, "/front_end_state");
@@ -119,7 +119,7 @@ static Buf _open_front_end_state_file(char **state_file)
  *	changes to load_front_end_config in api/node_info.c
  */
 static void _pack_front_end(front_end_record_t *dump_front_end_ptr,
-			    Buf buffer, uint16_t protocol_version)
+			    buf_t *buffer, uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(dump_front_end_ptr->allow_groups, buffer);
@@ -613,7 +613,7 @@ extern void pack_all_front_end(char **buffer_ptr, int *buffer_size, uid_t uid,
 {
 	time_t now = time(NULL);
 	uint32_t nodes_packed = 0;
-	Buf buffer;
+	buf_t *buffer;
 #ifdef HAVE_FRONT_END
 	uint32_t tmp_offset;
 	front_end_record_t *front_end_ptr;
@@ -673,7 +673,7 @@ extern int dump_all_front_end_state(void)
 	/* Locks: Read config and node */
 	slurmctld_lock_t node_read_lock = { READ_LOCK, NO_LOCK, READ_LOCK,
 					    NO_LOCK, NO_LOCK };
-	Buf buffer = init_buf(high_buffer_size);
+	buf_t *buffer = init_buf(high_buffer_size);
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -770,7 +770,7 @@ extern int load_all_front_end_state(bool state_only)
 	time_t reason_time = 0;
 	front_end_record_t *front_end_ptr;
 	time_t time_stamp;
-	Buf buffer;
+	buf_t *buffer;
 	char *ver_str = NULL;
 	uint16_t protocol_version = NO_VAL16;
 

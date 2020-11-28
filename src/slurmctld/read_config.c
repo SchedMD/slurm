@@ -2850,7 +2850,7 @@ extern int dump_config_state_lite(void)
 	static int high_buffer_size = (1024 * 1024);
 	int error_code = 0, log_fd;
 	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
-	Buf buffer = init_buf(high_buffer_size);
+	buf_t *buffer = init_buf(high_buffer_size);
 
 	DEF_TIMERS;
 
@@ -2917,7 +2917,7 @@ extern int load_config_state_lite(void)
 	uint32_t uint32_tmp = 0;
 	uint16_t ver = 0;
 	char *state_file;
-	Buf buffer;
+	buf_t *buffer;
 	time_t buf_time;
 	char *last_accounting_storage_type = NULL;
 

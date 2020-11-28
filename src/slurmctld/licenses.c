@@ -58,7 +58,7 @@
 List license_list = (List) NULL;
 time_t last_license_update = 0;
 static pthread_mutex_t license_mutex = PTHREAD_MUTEX_INITIALIZER;
-static void _pack_license(struct licenses *lic, Buf buffer,
+static void _pack_license(struct licenses *lic, buf_t *buffer,
 			  uint16_t protocol_version);
 
 /* Print all licenses on a list */
@@ -782,7 +782,7 @@ get_all_license_info(char **buffer_ptr,
 	licenses_t *lic_entry;
 	uint32_t lics_packed;
 	int tmp_offset;
-	Buf buffer;
+	buf_t *buffer;
 	time_t now = time(NULL);
 
 	debug2("%s: calling for all licenses", __func__);
@@ -926,7 +926,7 @@ extern void license_set_job_tres_cnt(List license_list,
 	return;
 }
 
-static void _pack_license(struct licenses *lic, Buf buffer,
+static void _pack_license(struct licenses *lic, buf_t *buffer,
 			  uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {

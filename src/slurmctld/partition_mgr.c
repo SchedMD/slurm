@@ -87,7 +87,7 @@ static int    _delete_part_record(char *name);
 static int    _dump_part_state(void *x, void *arg);
 static void   _list_delete_part(void *part_entry);
 static int    _match_part_ptr(void *part_ptr, void *key);
-static Buf    _open_part_state_file(char **state_file);
+static buf_t *_open_part_state_file(char **state_file);
 static void   _unlink_free_nodes(bitstr_t *old_bitmap, part_record_t *part_ptr);
 
 static int _calc_part_tres(void *x, void *arg)
@@ -417,7 +417,7 @@ int dump_all_part_state(void)
 	/* Locks: Read partition */
 	slurmctld_lock_t part_read_lock =
 	    { READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
-	Buf buffer = init_buf(high_buffer_size);
+	buf_t *buffer = init_buf(high_buffer_size);
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -500,7 +500,7 @@ int dump_all_part_state(void)
 static int _dump_part_state(void *x, void *arg)
 {
 	part_record_t *part_ptr = (part_record_t *) x;
-	Buf buffer = (Buf) arg;
+	buf_t *buffer = (buf_t *) arg;
 
 	xassert(part_ptr);
 	xassert(part_ptr->magic == PART_MAGIC);
@@ -546,9 +546,9 @@ static int _dump_part_state(void *x, void *arg)
  * state_file IN - the name of the state save file used
  * RET the file description to read from or error code
  */
-static Buf _open_part_state_file(char **state_file)
+static buf_t *_open_part_state_file(char **state_file)
 {
-	Buf buf;
+	buf_t *buf;
 
 	*state_file = xstrdup(slurm_conf.state_save_location);
 	xstrcat(*state_file, "/part_state");
@@ -587,7 +587,7 @@ int load_all_part_state(void)
 	part_record_t *part_ptr;
 	uint32_t name_len;
 	int error_code = 0, part_cnt = 0;
-	Buf buffer;
+	buf_t *buffer;
 	char *ver_str = NULL;
 	char* allow_alloc_nodes = NULL;
 	uint16_t protocol_version = NO_VAL16;
@@ -1079,7 +1079,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 	part_record_t *part_ptr;
 	uint32_t parts_packed;
 	int tmp_offset;
-	Buf buffer;
+	buf_t *buffer;
 	time_t now = time(NULL);
 
 	buffer_ptr[0] = NULL;
@@ -1125,7 +1125,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
  * NOTE: if you make any changes here be sure to make the corresponding changes
  *	to _unpack_partition_info_members() in common/slurm_protocol_pack.c
  */
-void pack_part(part_record_t *part_ptr, Buf buffer, uint16_t protocol_version)
+void pack_part(part_record_t *part_ptr, buf_t *buffer, uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (default_part_loc == part_ptr)

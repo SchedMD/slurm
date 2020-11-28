@@ -2280,7 +2280,7 @@ static void  _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
 	int rc = SLURM_SUCCESS;
 	slurm_msg_t response_msg;
 	job_record_t *job_ptr;
-	Buf script;
+	buf_t *script;
 	job_id_msg_t *job_id_msg = (job_id_msg_t *) msg->data;
 	/* Locks: Read config, job, and node info */
 	slurmctld_lock_t job_read_lock = {
@@ -2466,7 +2466,7 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 		log_flag(STEPS, "%s: no change", __func__);
 		error_code = SLURM_NO_CHANGE_IN_DATA;
 	} else {
-		Buf buffer = init_buf(BUF_SIZE);
+		buf_t *buffer = init_buf(BUF_SIZE);
 		error_code = pack_ctld_job_step_info_response_msg(
 			request->step_id.job_id, request->step_id.step_id,
 			msg->auth_uid, request->show_flags, buffer,
@@ -4560,7 +4560,7 @@ static void  _slurm_rpc_burst_buffer_info(slurm_msg_t * msg)
 	void *resp_buffer = NULL;
 	int resp_buffer_size = 0;
 	int error_code = SLURM_SUCCESS;
-	Buf buffer;
+	buf_t *buffer;
 	uid_t uid = msg->auth_uid;
 	DEF_TIMERS;
 
@@ -5361,7 +5361,7 @@ static void _pack_rpc_stats(int resp, char **buffer_ptr, int *buffer_size,
 			    uint16_t protocol_version)
 {
 	uint32_t i;
-	Buf buffer;
+	buf_t *buffer;
 
 	slurm_mutex_lock(&rpc_mutex);
 	buffer = create_buf(*buffer_ptr, *buffer_size);
@@ -5618,7 +5618,7 @@ static void _slurm_rpc_assoc_mgr_info(slurm_msg_t * msg)
 /* Take a persist_msg_t and handle it like a normal slurm_msg_t */
 static int _process_persist_conn(void *arg,
 				 persist_msg_t *persist_msg,
-				 Buf *out_buffer, uint32_t *uid)
+				 buf_t **out_buffer, uint32_t *uid)
 {
 	slurm_msg_t msg;
 	slurm_persist_conn_t *persist_conn = arg;
@@ -5650,7 +5650,7 @@ static void _slurm_rpc_persist_init(slurm_msg_t *msg)
 	DEF_TIMERS;
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
-	Buf ret_buf;
+	buf_t *ret_buf;
 	slurm_persist_conn_t *persist_conn = NULL, p_tmp;
 	persist_init_req_msg_t *persist_init = msg->data;
 	slurm_addr_t rem_addr;
@@ -5802,9 +5802,9 @@ static void _slurm_rpc_update_origin_dep_msg(uint32_t uid, slurm_msg_t *msg)
 	fed_mgr_q_update_origin_dep_msg(msg);
 }
 
-static Buf _build_rc_buf(int rc, uint16_t rpc_version)
+static buf_t *_build_rc_buf(int rc, uint16_t rpc_version)
 {
-	Buf buf = NULL;
+	buf_t *buf = NULL;
 	slurm_msg_t msg;
 	return_code_msg_t data;
 
@@ -5821,7 +5821,7 @@ static Buf _build_rc_buf(int rc, uint16_t rpc_version)
 	return buf;
 }
 
-/* Free Buf record from a list */
+/* Free buf_t *record from a list */
 static void _ctld_free_list_msg(void *x)
 {
 	FREE_NULL_BUFFER(x);
@@ -5832,8 +5832,8 @@ static void _proc_multi_msg(slurm_msg_t *msg)
 	slurm_msg_t sub_msg, response_msg;
 	ctld_list_msg_t *ctld_req_msg, ctld_resp_msg;
 	List full_resp_list = NULL;
-	Buf single_req_buf = NULL;
-	Buf ret_buf, resp_buf = NULL;
+	buf_t *single_req_buf = NULL;
+	buf_t *ret_buf, *resp_buf = NULL;
 	ListIterator iter = NULL;
 	int rc;
 

@@ -102,7 +102,7 @@ extern int get_agent_count(void);
 extern int get_agent_thread_count(void);
 
 /* agent_pack_pending_rpc_stats - pack counts of pending RPCs into a buffer */
-extern void agent_pack_pending_rpc_stats(Buf buffer);
+extern void agent_pack_pending_rpc_stats(buf_t *buffer);
 
 /*
  * mail_job_info - Send e-mail notice of job state change

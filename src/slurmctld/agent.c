@@ -1440,7 +1440,7 @@ extern void agent_trigger(int min_wait, bool mail_too)
 }
 
 /* agent_pack_pending_rpc_stats - pack counts of pending RPCs into a buffer */
-extern void agent_pack_pending_rpc_stats(Buf buffer)
+extern void agent_pack_pending_rpc_stats(buf_t *buffer)
 {
 	time_t now;
 	int i;
