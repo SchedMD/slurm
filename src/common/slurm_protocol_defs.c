@@ -1125,14 +1125,6 @@ extern void slurm_free_dep_update_origin_msg(dep_update_origin_msg_t *msg)
 	}
 }
 
-extern void slurm_free_event_log_msg(slurm_event_log_msg_t * msg)
-{
-	if (msg) {
-		xfree(msg->string);
-		xfree(msg);
-	}
-}
-
 extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 {
 	int i;
@@ -5196,9 +5188,6 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_ASSOC_MGR_INFO:
 		slurm_free_assoc_mgr_info_request_msg(data);
 		break;
-	case REQUEST_EVENT_LOG:
-		slurm_free_event_log_msg(data);
-		break;
 	case REQUEST_CTLD_MULT_MSG:
 	case RESPONSE_CTLD_MULT_MSG:
 		slurm_free_ctld_multi_msg(data);
@@ -5480,8 +5469,6 @@ rpc_num2string(uint16_t opcode)
 		return "REQUEST_ASSOC_MGR_INFO";
 	case RESPONSE_ASSOC_MGR_INFO:
 		return "RESPONSE_ASSOC_MGR_INFO";
-	case REQUEST_EVENT_LOG:
-		return "REQUEST_EVENT_LOG";
 
 	case REQUEST_FED_INFO:					/* 2048 */
 		return "REQUEST_FED_INFO";

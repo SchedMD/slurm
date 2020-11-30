@@ -284,7 +284,7 @@ typedef enum {
 	DEFUNCT_RPC_2042,
 	REQUEST_ASSOC_MGR_INFO,
 	RESPONSE_ASSOC_MGR_INFO,
-	REQUEST_EVENT_LOG,
+	DEFUNCT_RPC_2045,
 	DEFUNCT_RPC_2046, /* free for reuse */
 	DEFUNCT_RPC_2047,
 	DEFUNCT_RPC_2048,
@@ -1299,11 +1299,6 @@ typedef struct requeue_msg {
 	uint32_t flags;         /* JobExitRequeue | Hold | JobFailed | etc. */
 } requeue_msg_t;
 
-typedef struct slurm_event_log_msg {
-	uint16_t level;		/* Message level, from log.h */
-	char *   string;	/* String for slurmctld to log */
-} slurm_event_log_msg_t;
-
 typedef struct {
 	uint32_t cluster_id;	/* cluster id of cluster making request */
 	void    *data;		/* Unpacked buffer
@@ -1443,7 +1438,6 @@ extern void slurm_free_reboot_msg(reboot_msg_t * msg);
 extern void slurm_free_shutdown_msg(shutdown_msg_t * msg);
 
 extern void slurm_free_job_desc_msg(job_desc_msg_t * msg);
-extern void slurm_free_event_log_msg(slurm_event_log_msg_t * msg);
 
 extern void
 slurm_free_node_registration_status_msg(slurm_node_registration_status_msg_t *
