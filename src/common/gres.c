@@ -8717,7 +8717,7 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 				 uint32_t job_id, char *node_name,
 				 bitstr_t *core_bitmap, uint32_t user_id)
 {
-	int i, rc, rc2;
+	int rc, rc2;
 	ListIterator job_gres_iter,  node_gres_iter;
 	gres_state_t *job_gres_ptr, *node_gres_ptr;
 
@@ -8734,19 +8734,8 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (job_gres_ptr->plugin_id ==
-			    gres_context[i].plugin_id)
-				break;
-		}
-		if (i >= gres_context_cnt) {
-			error("%s: no plugin configured for data type %u for job %u and node %s",
-			      __func__, job_gres_ptr->plugin_id, job_id,
-			      node_name);
-			/* A likely sign that GresPlugins has changed */
-			continue;
-		}
-
+		gres_job_state_t *job_state_ptr =
+			(gres_job_state_t *) job_gres_ptr->gres_data;
 		node_gres_iter = list_iterator_create(node_gres_list);
 		while ((node_gres_ptr = (gres_state_t *)
 				list_next(node_gres_iter))) {
@@ -8756,14 +8745,14 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 		list_iterator_destroy(node_gres_iter);
 		if (node_gres_ptr == NULL) {
 			error("%s: job %u allocated gres/%s on node %s lacking that gres",
-			      __func__, job_id, gres_context[i].gres_name,
+			      __func__, job_id, job_state_ptr->gres_name,
 			      node_name);
 			continue;
 		}
 
 		rc2 = _job_alloc(job_gres_ptr->gres_data,
 				 node_gres_ptr->gres_data, node_cnt, node_index,
-				 node_offset, gres_context[i].gres_name,
+				 node_offset, job_state_ptr->gres_name,
 				 job_id, node_name, core_bitmap,
 				 job_gres_ptr->plugin_id, user_id);
 		if (rc2 != SLURM_SUCCESS)
