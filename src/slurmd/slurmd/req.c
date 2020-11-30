@@ -435,7 +435,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		      hostset_t step_hset, uint16_t protocol_version)
 {
 	int len = 0;
-	Buf buffer = NULL;
+	buf_t *buffer = NULL;
 	slurm_msg_t msg;
 
 	int rank;

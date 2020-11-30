@@ -248,7 +248,7 @@ static slurmd_conf_t *read_slurmd_conf_lite(int fd)
 {
 	int rc;
 	int len;
-	Buf buffer = NULL;
+	buf_t *buffer = NULL;
 	slurmd_conf_t *confl, *local_conf = NULL;
 	int tmp_int = 0;
 	List tmp_list = NULL;
@@ -504,7 +504,7 @@ _init_from_slurmd(int sock, char **argv,
 		  slurm_addr_t **_cli, slurm_addr_t **_self, slurm_msg_t **_msg)
 {
 	char *incoming_buffer = NULL;
-	Buf buffer;
+	buf_t *buffer;
 	int step_type;
 	int len;
 	uint16_t proto;

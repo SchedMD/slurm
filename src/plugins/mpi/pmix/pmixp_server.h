@@ -70,7 +70,7 @@ typedef struct {
 typedef void (*pmixp_server_sent_cb_t)(int rc, pmixp_p2p_ctx_t ctx,
 				       void *cb_data);
 /* convenience callback to just release sent buffer
- * expects an object of type `Buf` to be passed as `cb_data`
+ * expects an object of type `buf_t` to be passed as `cb_data`
  */
 void pmixp_server_sent_buf_cb(int rc, pmixp_p2p_ctx_t ctx, void *data);
 
@@ -82,11 +82,11 @@ void pmixp_server_slurm_conn(int fd);
 void pmixp_server_direct_conn(int fd);
 int pmixp_server_direct_conn_early(void);
 int pmixp_server_send_nb(pmixp_ep_t *ep, pmixp_srv_cmd_t type,
-			 uint32_t seq, Buf buf,
+			 uint32_t seq, buf_t *buf,
 			 pmixp_server_sent_cb_t complete_cb,
 			 void *cb_data);
-Buf pmixp_server_buf_new(void);
-size_t pmixp_server_buf_reset(Buf buf);
+buf_t *pmixp_server_buf_new(void);
+size_t pmixp_server_buf_reset(buf_t *buf);
 
 #ifndef NDEBUG
 /* Debug tools used only if debug was enabled */
@@ -116,7 +116,7 @@ void pmixp_server_run_cperf(void);
 #define pmixp_server_run_cperf();
 #endif
 
-static inline void pmixp_server_buf_reserve(Buf buf, uint32_t size)
+static inline void pmixp_server_buf_reserve(buf_t *buf, uint32_t size)
 {
 	if (remaining_buf(buf) < size) {
 		uint32_t to_reserve = size - remaining_buf(buf);

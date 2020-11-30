@@ -149,7 +149,7 @@ extern int bb_p_reconfig(void)
  *
  * Returns a Slurm errno.
  */
-extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
+extern int bb_p_state_pack(uid_t uid, buf_t *buffer, uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;
 }

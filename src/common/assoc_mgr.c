@@ -3273,7 +3273,7 @@ extern void assoc_mgr_info_get_pack_msg(
 
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .res = READ_LOCK,
 				   .tres = READ_LOCK, .user = READ_LOCK };
-	Buf buffer;
+	buf_t *buffer;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -3486,8 +3486,8 @@ end_it:
 	return;
 }
 
-extern int assoc_mgr_info_unpack_msg(
-	assoc_mgr_info_msg_t **object, Buf buffer, uint16_t protocol_version)
+extern int assoc_mgr_info_unpack_msg(assoc_mgr_info_msg_t **object,
+				     buf_t *buffer, uint16_t protocol_version)
 {
 	assoc_mgr_info_msg_t *object_ptr =
 		xmalloc(sizeof(assoc_mgr_info_msg_t));
@@ -5268,7 +5268,7 @@ extern int dump_assoc_mgr_state(void)
 	char *old_file = NULL, *new_file = NULL, *reg_file = NULL,
 		*tmp_char = NULL;
 	dbd_list_msg_t msg;
-	Buf buffer = NULL;
+	buf_t *buffer = NULL;
 	assoc_mgr_lock_t locks = { .assoc = READ_LOCK, .file = WRITE_LOCK,
 				   .qos = READ_LOCK, .res = READ_LOCK,
 				   .tres = READ_LOCK, .user = READ_LOCK,
@@ -5590,7 +5590,7 @@ extern int load_assoc_usage(void)
 	int i;
 	uint16_t ver = 0;
 	char *state_file, *tmp_str = NULL;
-	Buf buffer = NULL;
+	buf_t *buffer = NULL;
 	time_t buf_time;
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .file = READ_LOCK };
 
@@ -5693,7 +5693,7 @@ extern int load_qos_usage(void)
 {
 	uint16_t ver = 0;
 	char *state_file, *tmp_str = NULL;
-	Buf buffer = NULL;
+	buf_t *buffer = NULL;
 	time_t buf_time;
 	ListIterator itr = NULL;
 	assoc_mgr_lock_t locks = { .file = READ_LOCK, .qos = WRITE_LOCK };
@@ -5788,7 +5788,7 @@ extern int load_assoc_mgr_last_tres(void)
 	int error_code = SLURM_SUCCESS;
 	uint16_t ver = 0;
 	char *state_file;
-	Buf buffer = NULL;
+	buf_t *buffer = NULL;
 	time_t buf_time;
 	dbd_list_msg_t *msg = NULL;
 	assoc_mgr_lock_t locks = { .tres = WRITE_LOCK };
@@ -5861,7 +5861,7 @@ extern int load_assoc_mgr_state(bool only_tres)
 	uint16_t type = 0;
 	uint16_t ver = 0;
 	char *state_file;
-	Buf buffer = NULL;
+	buf_t *buffer = NULL;
 	time_t buf_time;
 	dbd_list_msg_t *msg = NULL;
 	assoc_mgr_lock_t locks = { .assoc = WRITE_LOCK, .file = READ_LOCK,

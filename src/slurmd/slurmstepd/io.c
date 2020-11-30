@@ -513,7 +513,7 @@ _local_file_write(eio_obj_t *obj, List objs)
 	void *buf;
 	int n;
 	struct slurm_io_header header;
-	Buf header_tmp_buf;
+	buf_t *header_tmp_buf;
 
 	xassert(client->magic == CLIENT_IO_MAGIC);
 	/*
@@ -1241,7 +1241,7 @@ static struct io_buf *
 _build_connection_okay_message(stepd_step_rec_t *job)
 {
 	struct io_buf *msg;
-	Buf packbuf;
+	buf_t *packbuf;
 	struct slurm_io_header header;
 
 	if (_outgoing_buf_free(job)) {
@@ -1264,7 +1264,7 @@ _build_connection_okay_message(stepd_step_rec_t *job)
 	msg->length = io_hdr_packed_size();
 	msg->ref_count = 0; /* make certain it is initialized */
 
-	/* free the Buf packbuf, but not the memory to which it points */
+	/* free packbuf, but not the memory to which it points */
 	packbuf->head = NULL;	/* CLANG false positive bug here */
 	free_buf(packbuf);
 
@@ -1712,7 +1712,7 @@ _send_eof_msg(struct task_read_info *out)
 	eio_obj_t *eio;
 	ListIterator clients;
 	struct slurm_io_header header;
-	Buf packbuf;
+	buf_t *packbuf;
 
 	debug4("Entering _send_eof_msg");
 	out->eof_msg_sent = true;
@@ -1744,7 +1744,7 @@ _send_eof_msg(struct task_read_info *out)
 	msg->length = io_hdr_packed_size() + header.length;
 	msg->ref_count = 0; /* make certain it is initialized */
 
-	/* free the Buf packbuf, but not the memory to which it points */
+	/* free packbuf, but not the memory to which it points */
 	packbuf->head = NULL;	/* CLANG false positive bug here */
 	free_buf(packbuf);
 
@@ -1773,7 +1773,7 @@ static struct io_buf *_task_build_message(struct task_read_info *out,
 {
 	struct io_buf *msg;
 	char *ptr;
-	Buf packbuf;
+	buf_t *packbuf;
 	bool must_truncate = false;
 	int avail;
 	struct slurm_io_header header;
@@ -1835,7 +1835,7 @@ static struct io_buf *_task_build_message(struct task_read_info *out,
 	msg->length = io_hdr_packed_size() + header.length;
 	msg->ref_count = 0; /* make certain it is initialized */
 
-	/* free the Buf packbuf, but not the memory to which it points */
+	/* free packbuf, but not the memory to which it points */
 	packbuf->head = NULL;	/* CLANG false positive bug here */
 	free_buf(packbuf);
 

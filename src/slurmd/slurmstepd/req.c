@@ -417,7 +417,7 @@ static void *_handle_accept(void *arg)
 	stepd_step_rec_t *job = ((struct request_params *)arg)->job;
 	int req;
 	int client_protocol_ver;
-	Buf buffer = NULL;
+	buf_t *buffer = NULL;
 	int rc;
 	uid_t uid;
 	pid_t remote_pid = NO_VAL;
@@ -1580,7 +1580,7 @@ _handle_completion(int fd, stepd_step_rec_t *job, uid_t uid)
 	int step_rc;
 	char *buf = NULL;
 	int len;
-	Buf buffer = NULL;
+	buf_t *buffer = NULL;
 	bool lock_set = false;
 
 	debug("_handle_completion for %ps", &job->step_id);

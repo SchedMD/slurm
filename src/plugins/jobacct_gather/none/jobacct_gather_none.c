@@ -115,12 +115,12 @@ extern int jobacct_gather_p_getinfo(struct jobacctinfo *jobacct,
 	return SLURM_SUCCESS;
 }
 
-extern void jobacct_gather_p_pack(struct jobacctinfo *jobacct, Buf buffer)
+extern void jobacct_gather_p_pack(struct jobacctinfo *jobacct, buf_t *buffer)
 {
 	return;
 }
 
-extern int jobacct_gather_p_unpack(struct jobacctinfo **jobacct, Buf buffer)
+extern int jobacct_gather_p_unpack(struct jobacctinfo **jobacct, buf_t *buffer)
 {
 	*jobacct = NULL;
 	return SLURM_SUCCESS;

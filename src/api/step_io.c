@@ -697,7 +697,7 @@ static int _file_read(eio_obj_t *obj, List objs)
 	struct io_buf *msg;
 	io_hdr_t header;
 	void *ptr;
-	Buf packbuf;
+	buf_t *packbuf;
 	int len;
 
 	debug2("Entering _file_read");
@@ -745,7 +745,7 @@ again:
 	io_hdr_pack(&header, packbuf);
 	msg->length = io_hdr_packed_size() + header.length;
 	msg->ref_count = 0; /* make certain it is initialized */
-	/* free the Buf packbuf, but not the memory to which it points */
+	/* free the packbuf structure, but not the memory to which it points */
 	packbuf->head = NULL;
 	free_buf(packbuf);
 	debug3("  msg->length = %d", msg->length);
@@ -1291,7 +1291,7 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id,
 {
 	struct io_buf *msg;
 	io_hdr_t header;
-	Buf packbuf;
+	buf_t *packbuf;
 	struct server_io_info *server;
 	int rc = SLURM_SUCCESS;
 	slurm_mutex_lock(&cio->ioservers_lock);
@@ -1333,7 +1333,7 @@ int client_io_handler_send_test_message(client_io_t *cio, int node_id,
 
 		packbuf = create_buf(msg->data, io_hdr_packed_size());
 		io_hdr_pack(&header, packbuf);
-		/* free the Buf packbuf, but not the memory to which it points*/
+		/* free the packbuf, but not the memory to which it points */
 		packbuf->head = NULL;
 		free_buf(packbuf);
 

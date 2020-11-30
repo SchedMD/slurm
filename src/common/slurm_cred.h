@@ -124,8 +124,8 @@ void slurm_cred_ctx_destroy(slurm_cred_ctx_t ctx);
  * buffer, on unpack() the contents of the buffer are used to
  * initialize the state of the context ctx.
  */
-int  slurm_cred_ctx_pack(slurm_cred_ctx_t ctx, Buf buffer);
-int  slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, Buf buffer);
+int slurm_cred_ctx_pack(slurm_cred_ctx_t ctx, buf_t *buffer);
+int slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, buf_t *buffer);
 
 
 /*
@@ -309,12 +309,13 @@ void slurm_cred_destroy(slurm_cred_t *cred);
 /*
  * Pack a slurm credential for network transmission
  */
-void slurm_cred_pack(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version);
+void slurm_cred_pack(slurm_cred_t *cred, buf_t *buffer,
+		     uint16_t protocol_version);
 
 /*
  * Unpack a slurm job credential
  */
-slurm_cred_t *slurm_cred_unpack(Buf buffer, uint16_t protocol_version);
+slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version);
 
 /*
  * Get a pointer to the slurm credential signature
@@ -375,9 +376,9 @@ sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 				       sbcast_cred_t *sbcast_cred,
 				       uint16_t block_no,
 				       uint16_t protocol_version);
-void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer,
+void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 		      uint16_t protocol_Version);
-sbcast_cred_t *unpack_sbcast_cred(Buf buffer, uint16_t protocol_version);
+sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer, uint16_t protocol_version);
 void print_sbcast_cred(sbcast_cred_t *sbcast_cred);
 void sbcast_cred_arg_free(sbcast_cred_arg_t *arg);
 extern bool slurm_cred_send_gids_enabled(void);

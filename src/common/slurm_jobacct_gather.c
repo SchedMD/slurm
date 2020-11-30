@@ -885,7 +885,7 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 	struct rusage *rusage = (struct rusage *)data;
 	uint64_t *uint64 = (uint64_t *) data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
-	Buf buffer = NULL;
+	buf_t *buffer = NULL;
 
 	if (!plugin_polling)
 		return SLURM_SUCCESS;
@@ -980,7 +980,7 @@ extern int jobacctinfo_getinfo(
 	case JOBACCT_DATA_PIPE:
 		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			int len;
-			Buf buffer;
+			buf_t *buffer;
 
 			safe_read(*fd, &len, sizeof(int));
 			buf = xmalloc(len);
@@ -1015,9 +1015,8 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
-			     uint16_t rpc_version, uint16_t protocol_type,
-			     Buf buffer)
+extern void jobacctinfo_pack(jobacctinfo_t *jobacct, uint16_t rpc_version,
+			     uint16_t protocol_type, buf_t *buffer)
 {
 	bool no_pack;
 
@@ -1078,9 +1077,8 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
 	}
 }
 
-extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
-			      uint16_t rpc_version, uint16_t protocol_type,
-			      Buf buffer, bool alloc)
+extern int jobacctinfo_unpack(jobacctinfo_t **jobacct, uint16_t rpc_version,
+			      uint16_t protocol_type, buf_t *buffer, bool alloc)
 {
 	uint32_t uint32_tmp;
 	uint8_t  uint8_tmp;

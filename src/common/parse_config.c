@@ -1202,7 +1202,7 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 }
 
 int s_p_parse_buffer(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
-		     Buf buffer, bool ignore_new)
+		     buf_t *buffer, bool ignore_new)
 {
 	char *leftover = NULL;
 	int rc = SLURM_SUCCESS;
@@ -2108,11 +2108,11 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
  * Primarily for sending a table across the network so you don't have to read a
  * file in.
  */
-extern Buf s_p_pack_hashtbl(const s_p_hashtbl_t *hashtbl,
-			   const s_p_options_t options[],
-			   const uint32_t cnt)
+extern buf_t *s_p_pack_hashtbl(const s_p_hashtbl_t *hashtbl,
+			       const s_p_options_t options[],
+			       const uint32_t cnt)
 {
-	Buf buffer = init_buf(0);
+	buf_t *buffer = init_buf(0);
 	s_p_values_t *p;
 	int i;
 
@@ -2176,7 +2176,7 @@ extern Buf s_p_pack_hashtbl(const s_p_hashtbl_t *hashtbl,
 /*
  * Given a buffer, unpack key, type, op and value into a hashtbl.
  */
-extern s_p_hashtbl_t *s_p_unpack_hashtbl(Buf buffer)
+extern s_p_hashtbl_t *s_p_unpack_hashtbl(buf_t *buffer)
 {
 	s_p_values_t *value = NULL;
 	s_p_hashtbl_t *hashtbl = NULL;

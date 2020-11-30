@@ -79,7 +79,7 @@ void pmixp_xfree_xmalloced(void *x)
 
 void pmixp_free_buf(void *x)
 {
-	Buf buf = (Buf)x;
+	buf_t *buf = (buf_t *) x;
 	FREE_NULL_BUFFER(buf);
 }
 

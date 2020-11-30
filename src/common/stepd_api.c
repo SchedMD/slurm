@@ -1033,7 +1033,7 @@ stepd_completion(int fd, uint16_t protocol_version, step_complete_msg_t *sent)
 	int req = REQUEST_STEP_COMPLETION_V2;
 	int rc;
 	int errnum = 0;
-	Buf buffer;
+	buf_t *buffer;
 	int len = 0;
 
 	buffer = init_buf(0);

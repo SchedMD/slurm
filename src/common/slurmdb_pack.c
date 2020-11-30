@@ -51,14 +51,14 @@
 static int _for_each_pack_str(void *x, void *arg)
 {
 	char *str = (char *) x;
-	Buf buffer = (Buf) arg;
+	buf_t *buffer = (buf_t *) arg;
 
 	packstr(str, buffer);
 
 	return SLURM_SUCCESS;
 }
 
-static void _pack_list_of_str(List l, Buf buffer)
+static void _pack_list_of_str(List l, buf_t *buffer)
 {
 	uint32_t count = NO_VAL;
 
@@ -71,7 +71,7 @@ static void _pack_list_of_str(List l, Buf buffer)
 }
 
 static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
-				uint16_t protocol_version, Buf buffer)
+				uint16_t protocol_version, buf_t *buffer)
 {
 	int i=0;
 
@@ -116,7 +116,7 @@ static void _pack_slurmdb_stats(slurmdb_stats_t *stats,
 }
 
 static int _unpack_slurmdb_stats(slurmdb_stats_t *stats,
-				 uint16_t protocol_version, Buf buffer)
+				 uint16_t protocol_version, buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 
@@ -175,7 +175,7 @@ unpack_error:
 
 
 extern void slurmdb_pack_user_rec(void *in, uint16_t protocol_version,
-				  Buf buffer)
+				  buf_t *buffer)
 {
 	slurmdb_user_rec_t *object = (slurmdb_user_rec_t *)in;
 
@@ -252,7 +252,7 @@ extern void slurmdb_pack_user_rec(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_user_rec(void **object, uint16_t protocol_version,
-				   Buf buffer)
+				   buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	slurmdb_user_rec_t *object_ptr = xmalloc(sizeof(slurmdb_user_rec_t));
@@ -394,7 +394,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_used_limits(void *in, uint32_t tres_cnt,
-				     uint16_t protocol_version, Buf buffer)
+				     uint16_t protocol_version, buf_t *buffer)
 {
 	slurmdb_used_limits_t *object = (slurmdb_used_limits_t *)in;
 
@@ -426,7 +426,7 @@ extern void slurmdb_pack_used_limits(void *in, uint32_t tres_cnt,
 }
 
 extern int slurmdb_unpack_used_limits(void **object, uint32_t tres_cnt,
-				      uint16_t protocol_version, Buf buffer)
+				      uint16_t protocol_version, buf_t *buffer)
 {
 	slurmdb_used_limits_t *object_ptr =
 		xmalloc(sizeof(slurmdb_used_limits_t));
@@ -464,7 +464,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_account_rec(void *in, uint16_t protocol_version,
-				     Buf buffer)
+				     buf_t *buffer)
 {
 	slurmdb_account_rec_t *object = (slurmdb_account_rec_t *)in;
 
@@ -515,7 +515,7 @@ extern void slurmdb_pack_account_rec(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_account_rec(void **object, uint16_t protocol_version,
-				      Buf buffer)
+				      buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -610,7 +610,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_coord_rec(void *in, uint16_t protocol_version,
-				   Buf buffer)
+				   buf_t *buffer)
 {
 	slurmdb_coord_rec_t *object = (slurmdb_coord_rec_t *)in;
 
@@ -632,7 +632,7 @@ extern void slurmdb_pack_coord_rec(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_coord_rec(void **object, uint16_t protocol_version,
-				    Buf buffer)
+				    buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	slurmdb_coord_rec_t *object_ptr = xmalloc(sizeof(slurmdb_coord_rec_t));
@@ -660,7 +660,7 @@ unpack_error:
 
 extern void slurmdb_pack_cluster_accounting_rec(void *in,
 						uint16_t protocol_version,
-						Buf buffer)
+						buf_t *buffer)
 {
 	slurmdb_cluster_accounting_rec_t *object =
 		(slurmdb_cluster_accounting_rec_t *)in;
@@ -698,7 +698,7 @@ extern void slurmdb_pack_cluster_accounting_rec(void *in,
 
 extern int slurmdb_unpack_cluster_accounting_rec(void **object,
 						 uint16_t protocol_version,
-						 Buf buffer)
+						 buf_t *buffer)
 {
 	slurmdb_cluster_accounting_rec_t *object_ptr =
 		xmalloc(sizeof(slurmdb_cluster_accounting_rec_t));
@@ -735,7 +735,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_clus_res_rec(void *in, uint16_t protocol_version,
-				      Buf buffer)
+				      buf_t *buffer)
 {
 	slurmdb_clus_res_rec_t *object = (slurmdb_clus_res_rec_t *)in;
 
@@ -756,7 +756,7 @@ extern void slurmdb_pack_clus_res_rec(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_clus_res_rec(void **object, uint16_t protocol_version,
-				       Buf buffer)
+				       buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	slurmdb_clus_res_rec_t *object_ptr =
@@ -788,7 +788,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
-				     Buf buffer)
+				     buf_t *buffer)
 {
 	slurmdb_cluster_rec_t *object = (slurmdb_cluster_rec_t *)in;
 	slurm_persist_conn_t *persist_conn;
@@ -864,7 +864,7 @@ extern void slurmdb_pack_cluster_rec(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_cluster_rec(void **object, uint16_t protocol_version,
-				      Buf buffer)
+				      buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	uint8_t uint8_tmp;
@@ -972,7 +972,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_federation_rec(void *in, uint16_t protocol_version,
-					Buf buffer)
+					buf_t *buffer)
 {
 	slurmdb_federation_rec_t *object = (slurmdb_federation_rec_t *)in;
 
@@ -996,7 +996,8 @@ extern void slurmdb_pack_federation_rec(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_federation_rec(void **object,
-					 uint16_t protocol_version, Buf buffer)
+					 uint16_t protocol_version,
+					 buf_t *buffer)
 {
 	uint8_t  uint8_tmp;
 	uint32_t uint32_tmp;
@@ -1053,7 +1054,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_accounting_rec(void *in, uint16_t protocol_version,
-					Buf buffer)
+					buf_t *buffer)
 {
 	slurmdb_accounting_rec_t *object = (slurmdb_accounting_rec_t *)in;
 
@@ -1079,7 +1080,7 @@ extern void slurmdb_pack_accounting_rec(void *in, uint16_t protocol_version,
 
 extern int slurmdb_unpack_accounting_rec(void **object,
 					 uint16_t protocol_version,
-					 Buf buffer)
+					 buf_t *buffer)
 {
 	slurmdb_accounting_rec_t *object_ptr =
 		xmalloc(sizeof(slurmdb_accounting_rec_t));
@@ -1109,7 +1110,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
-				   Buf buffer)
+				   buf_t *buffer)
 {
 	slurmdb_assoc_rec_t *object = (slurmdb_assoc_rec_t *)in;
 
@@ -1309,7 +1310,7 @@ extern void slurmdb_pack_assoc_rec(void *in, uint16_t protocol_version,
 
 extern int slurmdb_unpack_assoc_rec_members(slurmdb_assoc_rec_t *object_ptr,
 					    uint16_t protocol_version,
-					    Buf buffer)
+					    buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -1490,7 +1491,7 @@ unpack_error:
 }
 
 extern int slurmdb_unpack_assoc_rec(void **object, uint16_t protocol_version,
-				    Buf buffer)
+				    buf_t *buffer)
 {
 	int rc;
 	slurmdb_assoc_rec_t *object_ptr = xmalloc(sizeof(slurmdb_assoc_rec_t));
@@ -1508,7 +1509,7 @@ extern int slurmdb_unpack_assoc_rec(void **object, uint16_t protocol_version,
 }
 
 extern void slurmdb_pack_assoc_usage(void *in, uint16_t protocol_version,
-				     Buf buffer)
+				     buf_t *buffer)
 {
 	slurmdb_assoc_usage_t *usage = (slurmdb_assoc_usage_t *)in;
 
@@ -1540,7 +1541,7 @@ extern void slurmdb_pack_assoc_usage(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_assoc_usage(void **object, uint16_t protocol_version,
-				      Buf buffer)
+				      buf_t *buffer)
 {
 	slurmdb_assoc_usage_t *object_ptr =
 		xmalloc(sizeof(slurmdb_assoc_usage_t));
@@ -1584,7 +1585,7 @@ unpack_error:
 
 extern void slurmdb_pack_assoc_rec_with_usage(void *in,
 					      uint16_t protocol_version,
-					      Buf buffer)
+					      buf_t *buffer)
 {
 	slurmdb_assoc_rec_t *object = (slurmdb_assoc_rec_t *)in;
 
@@ -1616,7 +1617,7 @@ extern void slurmdb_pack_assoc_rec_with_usage(void *in,
 
 extern int slurmdb_unpack_assoc_rec_with_usage(void **object,
 					       uint16_t protocol_version,
-					       Buf buffer)
+					       buf_t *buffer)
 {
 	int rc;
 	uint32_t uint32_tmp;
@@ -1666,7 +1667,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_event_rec(void *in, uint16_t protocol_version,
-				   Buf buffer)
+				   buf_t *buffer)
 {
 	slurmdb_event_rec_t *object = (slurmdb_event_rec_t *)in;
 
@@ -1704,7 +1705,7 @@ extern void slurmdb_pack_event_rec(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_event_rec(void **object, uint16_t protocol_version,
-				    Buf buffer)
+				    buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	slurmdb_event_rec_t *object_ptr = xmalloc(sizeof(slurmdb_event_rec_t));
@@ -1744,7 +1745,8 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version, Buf buffer)
+extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version,
+				 buf_t *buffer)
 {
 	slurmdb_qos_rec_t *object = (slurmdb_qos_rec_t *)in;
 
@@ -1844,7 +1846,7 @@ extern void slurmdb_pack_qos_rec(void *in, uint16_t protocol_version, Buf buffer
 }
 
 extern int slurmdb_unpack_qos_rec(void **object, uint16_t protocol_version,
-				  Buf buffer)
+				  buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -1938,7 +1940,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_qos_usage(void *in, uint16_t protocol_version,
-				   Buf buffer)
+				   buf_t *buffer)
 {
 	slurmdb_qos_usage_t *usage = (slurmdb_qos_usage_t *)in;
 	uint32_t count;
@@ -1996,7 +1998,7 @@ extern void slurmdb_pack_qos_usage(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_qos_usage(void **object, uint16_t protocol_version,
-				    Buf buffer)
+				    buf_t *buffer)
 {
 	slurmdb_qos_usage_t *object_ptr = xmalloc(sizeof(slurmdb_qos_usage_t));
 
@@ -2070,7 +2072,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_qos_rec_with_usage(void *in, uint16_t protocol_version,
-					    Buf buffer)
+					    buf_t *buffer)
 {
 	slurmdb_qos_rec_t *object = (slurmdb_qos_rec_t *)in;
 
@@ -2112,7 +2114,7 @@ extern void slurmdb_pack_qos_rec_with_usage(void *in, uint16_t protocol_version,
 
 extern int slurmdb_unpack_qos_rec_with_usage(void **object,
 					     uint16_t protocol_version,
-					     Buf buffer)
+					     buf_t *buffer)
 {
 	int rc;
 	slurmdb_qos_rec_t *object_ptr;
@@ -2165,7 +2167,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
-					 Buf buffer)
+					 buf_t *buffer)
 {
 	slurmdb_reservation_rec_t *object = (slurmdb_reservation_rec_t *)in;
 
@@ -2211,7 +2213,7 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 
 extern int slurmdb_unpack_reservation_rec(void **object,
 					  uint16_t protocol_version,
-					  Buf buffer)
+					  buf_t *buffer)
 {
 	uint32_t uint32_tmp, count;
 	int i;
@@ -2266,7 +2268,8 @@ unpack_error:
 }
 
 
-extern void slurmdb_pack_res_rec(void *in, uint16_t protocol_version, Buf buffer)
+extern void slurmdb_pack_res_rec(void *in, uint16_t protocol_version,
+				 buf_t *buffer)
 {
 	slurmdb_res_rec_t *object = (slurmdb_res_rec_t *)in;
 
@@ -2308,7 +2311,7 @@ extern void slurmdb_pack_res_rec(void *in, uint16_t protocol_version, Buf buffer
 }
 
 extern int slurmdb_unpack_res_rec(void **object, uint16_t protocol_version,
-				  Buf buffer)
+				  buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	uint32_t count;
@@ -2360,7 +2363,8 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void slurmdb_pack_txn_rec(void *in, uint16_t protocol_version, Buf buffer)
+extern void slurmdb_pack_txn_rec(void *in, uint16_t protocol_version,
+				 buf_t *buffer)
 {
 	slurmdb_txn_rec_t *object = (slurmdb_txn_rec_t *)in;
 
@@ -2390,8 +2394,8 @@ extern void slurmdb_pack_txn_rec(void *in, uint16_t protocol_version, Buf buffer
 	}
 }
 
-extern int slurmdb_unpack_txn_rec(
-	void **object, uint16_t protocol_version, Buf buffer)
+extern int slurmdb_unpack_txn_rec(void **object, uint16_t protocol_version,
+				  buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	slurmdb_txn_rec_t *object_ptr = xmalloc(sizeof(slurmdb_txn_rec_t));
@@ -2424,7 +2428,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_wckey_rec(void *in, uint16_t protocol_version,
-				   Buf buffer)
+				   buf_t *buffer)
 {
 	slurmdb_wckey_rec_t *object = (slurmdb_wckey_rec_t *)in;
 
@@ -2499,7 +2503,7 @@ extern void slurmdb_pack_wckey_rec(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_wckey_rec(void **object, uint16_t protocol_version,
-				    Buf buffer)
+				    buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -2583,7 +2587,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_archive_rec(void *in, uint16_t protocol_version,
-				     Buf buffer)
+				     buf_t *buffer)
 {
 	slurmdb_archive_rec_t *object = (slurmdb_archive_rec_t *)in;
 
@@ -2598,7 +2602,7 @@ extern void slurmdb_pack_archive_rec(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_archive_rec(void **object, uint16_t protocol_version,
-				      Buf buffer)
+				      buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	slurmdb_archive_rec_t *object_ptr =
@@ -2619,7 +2623,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_tres_cond(void *in, uint16_t protocol_version,
-				   Buf buffer)
+				   buf_t *buffer)
 {
 	slurmdb_tres_cond_t *object = (slurmdb_tres_cond_t *)in;
 
@@ -2644,7 +2648,7 @@ extern void slurmdb_pack_tres_cond(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_tres_cond(void **object, uint16_t protocol_version,
-				    Buf buffer)
+				    buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -2726,7 +2730,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_tres_rec(void *in, uint16_t protocol_version,
-				  Buf buffer)
+				  buf_t *buffer)
 {
 	slurmdb_tres_rec_t *object = (slurmdb_tres_rec_t *)in;
 
@@ -2746,8 +2750,9 @@ extern void slurmdb_pack_tres_rec(void *in, uint16_t protocol_version,
 	packstr(object->type, buffer);
 }
 
-extern int slurmdb_unpack_tres_rec_noalloc(
-	slurmdb_tres_rec_t *object_ptr, uint16_t protocol_version, Buf buffer)
+extern int slurmdb_unpack_tres_rec_noalloc(slurmdb_tres_rec_t *object_ptr,
+					   uint16_t protocol_version,
+					   buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 
@@ -2765,7 +2770,7 @@ unpack_error:
 }
 
 extern int slurmdb_unpack_tres_rec(void **object, uint16_t protocol_version,
-				    Buf buffer)
+				   buf_t *buffer)
 {
 	int rc;
 	slurmdb_tres_rec_t *object_ptr =
@@ -2784,7 +2789,8 @@ extern int slurmdb_unpack_tres_rec(void **object, uint16_t protocol_version,
 	return rc;
 }
 
-extern void slurmdb_pack_user_cond(void *in, uint16_t protocol_version, Buf buffer)
+extern void slurmdb_pack_user_cond(void *in, uint16_t protocol_version,
+				   buf_t *buffer)
 {
 	slurmdb_user_cond_t *object = (slurmdb_user_cond_t *)in;
 
@@ -2818,7 +2824,7 @@ extern void slurmdb_pack_user_cond(void *in, uint16_t protocol_version, Buf buff
 }
 
 extern int slurmdb_unpack_user_cond(void **object, uint16_t protocol_version,
-				    Buf buffer)
+				    buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -2878,7 +2884,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_account_cond(void *in, uint16_t protocol_version,
-				      Buf buffer)
+				      buf_t *buffer)
 {
 	slurmdb_account_cond_t *object = (slurmdb_account_cond_t *)in;
 
@@ -2906,7 +2912,7 @@ extern void slurmdb_pack_account_cond(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_account_cond(void **object, uint16_t protocol_version,
-				       Buf buffer)
+				       buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -2957,7 +2963,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_cluster_cond(void *in, uint16_t protocol_version,
-				      Buf buffer)
+				      buf_t *buffer)
 {
 	slurmdb_cluster_cond_t *object = (slurmdb_cluster_cond_t *)in;
 
@@ -2997,7 +3003,7 @@ extern void slurmdb_pack_cluster_cond(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_cluster_cond(void **object, uint16_t protocol_version,
-				       Buf buffer)
+				       buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -3094,7 +3100,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_federation_cond(void *in, uint16_t protocol_version,
-					 Buf buffer)
+					 buf_t *buffer)
 {
 	slurmdb_federation_cond_t *object = (slurmdb_federation_cond_t *)in;
 
@@ -3117,7 +3123,7 @@ extern void slurmdb_pack_federation_cond(void *in, uint16_t protocol_version,
 
 extern int slurmdb_unpack_federation_cond(void **object,
 					  uint16_t protocol_version,
-					  Buf buffer)
+					  buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -3181,7 +3187,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_assoc_cond(void *in, uint16_t protocol_version,
-				    Buf buffer)
+				    buf_t *buffer)
 {
 	slurmdb_assoc_cond_t *object = (slurmdb_assoc_cond_t *)in;
 
@@ -3246,7 +3252,7 @@ extern void slurmdb_pack_assoc_cond(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_assoc_cond(void **object,
-				     uint16_t protocol_version, Buf buffer)
+				     uint16_t protocol_version, buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -3392,7 +3398,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_event_cond(void *in, uint16_t protocol_version,
-				    Buf buffer)
+				    buf_t *buffer)
 {
 	slurmdb_event_cond_t *object = (slurmdb_event_cond_t *)in;
 
@@ -3419,7 +3425,7 @@ extern void slurmdb_pack_event_cond(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_event_cond(void **object, uint16_t protocol_version,
-				     Buf buffer)
+				     buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -3512,7 +3518,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
-				  Buf buffer)
+				  buf_t *buffer)
 {
 	slurmdb_job_cond_t *object = (slurmdb_job_cond_t *)in;
 
@@ -3591,7 +3597,7 @@ extern void slurmdb_pack_job_cond(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_job_cond(void **object, uint16_t protocol_version,
-				   Buf buffer)
+				   buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -3839,7 +3845,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_job_modify_cond(void *in, uint16_t protocol_version,
-					 Buf buffer)
+					 buf_t *buffer)
 {
 	slurmdb_job_cond_t *cond = (slurmdb_job_cond_t *)in;
 
@@ -3873,7 +3879,7 @@ extern void slurmdb_pack_job_modify_cond(void *in, uint16_t protocol_version,
 
 extern int slurmdb_unpack_job_modify_cond(void **object,
 					  uint16_t protocol_version,
-					  Buf buffer)
+					  buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	char *cluster = NULL;
@@ -3913,7 +3919,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
-				 Buf buffer)
+				 buf_t *buffer)
 {
 	slurmdb_job_rec_t *job = (slurmdb_job_rec_t *)object;
 	ListIterator itr = NULL;
@@ -4089,7 +4095,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
-				  Buf buffer)
+				  buf_t *buffer)
 {
 	slurmdb_job_rec_t *job_ptr = xmalloc(sizeof(slurmdb_job_rec_t));
 	int i = 0;
@@ -4302,7 +4308,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_qos_cond(void *in, uint16_t protocol_version,
-				  Buf buffer)
+				  buf_t *buffer)
 {
 	slurmdb_qos_cond_t *object = (slurmdb_qos_cond_t *)in;
 
@@ -4328,7 +4334,7 @@ extern void slurmdb_pack_qos_cond(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_qos_cond(void **object, uint16_t protocol_version,
-				   Buf buffer)
+				   buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -4402,7 +4408,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_reservation_cond(void *in, uint16_t protocol_version,
-					  Buf buffer)
+					  buf_t *buffer)
 {
 	slurmdb_reservation_cond_t *object = (slurmdb_reservation_cond_t *)in;
 
@@ -4437,7 +4443,7 @@ extern void slurmdb_pack_reservation_cond(void *in, uint16_t protocol_version,
 
 extern int slurmdb_unpack_reservation_cond(void **object,
 					   uint16_t protocol_version,
-					   Buf buffer)
+					   buf_t *buffer)
 {
 	uint32_t uint32_tmp, count;
 	int i = 0;
@@ -4514,7 +4520,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
-				  uint16_t protocol_version, Buf buffer)
+				  uint16_t protocol_version, buf_t *buffer)
 {
 
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
@@ -4574,7 +4580,7 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 }
 
 extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
-				   uint16_t protocol_version, Buf buffer)
+				   uint16_t protocol_version, buf_t *buffer)
 {
 	uint32_t uint32_tmp = 0;
 	uint16_t uint16_tmp = 0;
@@ -4666,7 +4672,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_res_cond(void *in, uint16_t protocol_version,
-				  Buf buffer)
+				  buf_t *buffer)
 {
 	slurmdb_res_cond_t *object = (slurmdb_res_cond_t *)in;
 
@@ -4707,7 +4713,7 @@ extern void slurmdb_pack_res_cond(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_res_cond(void **object, uint16_t protocol_version,
-				   Buf buffer)
+				   buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -4846,7 +4852,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_txn_cond(void *in, uint16_t protocol_version,
-				  Buf buffer)
+				  buf_t *buffer)
 {
 	slurmdb_txn_cond_t *object = (slurmdb_txn_cond_t *)in;
 
@@ -4885,7 +4891,7 @@ extern void slurmdb_pack_txn_cond(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_txn_cond(void **object, uint16_t protocol_version,
-				   Buf buffer)
+				   buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -5019,7 +5025,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_wckey_cond(void *in, uint16_t protocol_version,
-				    Buf buffer)
+				    buf_t *buffer)
 {
 	slurmdb_wckey_cond_t *object = (slurmdb_wckey_cond_t *)in;
 
@@ -5060,7 +5066,7 @@ extern void slurmdb_pack_wckey_cond(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_wckey_cond(void **object, uint16_t protocol_version,
-				     Buf buffer)
+				     buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -5152,7 +5158,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_archive_cond(void *in, uint16_t protocol_version,
-				      Buf buffer)
+				      buf_t *buffer)
 {
 	slurmdb_archive_cond_t *object = (slurmdb_archive_cond_t *)in;
 
@@ -5186,7 +5192,7 @@ extern void slurmdb_pack_archive_cond(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_archive_cond(void **object, uint16_t protocol_version,
-				       Buf buffer)
+				       buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	slurmdb_archive_cond_t *object_ptr =
@@ -5222,7 +5228,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_rpc_obj(void *in, uint16_t protocol_version,
-				 Buf buffer)
+				 buf_t *buffer)
 {
 	slurmdb_rpc_obj_t *object = (slurmdb_rpc_obj_t *)in;
 
@@ -5238,7 +5244,7 @@ extern void slurmdb_pack_rpc_obj(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_rpc_obj(void **object, uint16_t protocol_version,
-				  Buf buffer)
+				  buf_t *buffer)
 {
 	slurmdb_rpc_obj_t *object_ptr = xmalloc(sizeof(slurmdb_rpc_obj_t));
 
@@ -5266,7 +5272,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_rollup_stats(void *in, uint16_t protocol_version,
-				      Buf buffer)
+				      buf_t *buffer)
 {
 	slurmdb_rollup_stats_t *object = (slurmdb_rollup_stats_t *) in;
 	uint32_t i;
@@ -5289,7 +5295,7 @@ extern void slurmdb_pack_rollup_stats(void *in, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_rollup_stats(void **object, uint16_t protocol_version,
-				       Buf buffer)
+				       buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	uint16_t rollup_count;
@@ -5337,7 +5343,7 @@ unpack_error:
 }
 
 extern void slurmdb_pack_stats_msg(void *object, uint16_t protocol_version,
-				   Buf buffer)
+				   buf_t *buffer)
 {
 	slurmdb_stats_rec_t *stats_ptr = (slurmdb_stats_rec_t *) object;
 
@@ -5364,7 +5370,7 @@ extern void slurmdb_pack_stats_msg(void *object, uint16_t protocol_version,
 }
 
 extern int slurmdb_unpack_stats_msg(void **object, uint16_t protocol_version,
-				    Buf buffer)
+				    buf_t *buffer)
 {
 	slurmdb_stats_rec_t *stats_ptr =
 		xmalloc(sizeof(slurmdb_stats_rec_t));
@@ -5414,13 +5420,13 @@ unpack_error:
 }
 
 extern void slurmdb_pack_update_object(slurmdb_update_object_t *object,
-				       uint16_t protocol_version, Buf buffer)
+				       uint16_t protocol_version, buf_t *buffer)
 {
 	uint32_t count = NO_VAL;
 	ListIterator itr = NULL;
 	void *slurmdb_object = NULL;
 	void (*my_function) (void *object, uint16_t protocol_version,
-			     Buf buffer);
+			     buf_t *buffer);
 
 	switch (object->type) {
 	case SLURMDB_MODIFY_USER:
@@ -5488,7 +5494,8 @@ extern void slurmdb_pack_update_object(slurmdb_update_object_t *object,
 }
 
 extern int slurmdb_unpack_update_object(slurmdb_update_object_t **object,
-					uint16_t protocol_version, Buf buffer)
+					uint16_t protocol_version,
+					buf_t *buffer)
 {
 	int i;
 	uint32_t count;
@@ -5496,7 +5503,7 @@ extern int slurmdb_unpack_update_object(slurmdb_update_object_t **object,
 		xmalloc(sizeof(slurmdb_update_object_t));
 	void *slurmdb_object = NULL;
 	int (*my_function) (void **object, uint16_t protocol_version,
-			    Buf buffer);
+			    buf_t *buffer);
 	void (*my_destroy) (void *object);
 
 	*object = object_ptr;

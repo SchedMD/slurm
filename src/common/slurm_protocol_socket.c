@@ -671,7 +671,7 @@ extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
 	freeaddrinfo(ai_start);
 }
 
-extern void slurm_pack_slurm_addr(slurm_addr_t *addr, Buf buffer)
+extern void slurm_pack_slurm_addr(slurm_addr_t *addr, buf_t *buffer)
 {
 	if (addr->ss_family == AF_INET6) {
 		error("%s: cannot pack IPv6 addresses", __func__);
@@ -682,7 +682,7 @@ extern void slurm_pack_slurm_addr(slurm_addr_t *addr, Buf buffer)
 	}
 }
 
-extern int slurm_unpack_slurm_addr_no_alloc(slurm_addr_t *addr, Buf buffer)
+extern int slurm_unpack_slurm_addr_no_alloc(slurm_addr_t *addr, buf_t *buffer)
 {
 	addr->ss_family = AF_INET;
 	struct sockaddr_in *in = (struct sockaddr_in *) addr;
@@ -719,7 +719,7 @@ extern void slurm_pack_addr(slurm_addr_t *addr, buf_t *buffer)
 	}
 }
 
-extern int slurm_unpack_addr_no_alloc(slurm_addr_t *addr, Buf buffer)
+extern int slurm_unpack_addr_no_alloc(slurm_addr_t *addr, buf_t *buffer)
 {
 	safe_unpack16(&addr->ss_family, buffer);
 

@@ -49,35 +49,33 @@
  * Pack various SlurmDBD message structures into a buffer
 \*****************************************************************************/
 
-extern void slurmdbd_pack_id_rc_msg(void *in,
-				    uint16_t rpc_version, Buf buffer);
+extern void slurmdbd_pack_id_rc_msg(void *in, uint16_t rpc_version,
+				    buf_t *buffer);
 
-extern int slurmdbd_unpack_id_rc_msg(void **msg,
-				     uint16_t rpc_version, Buf buffer);
+extern int slurmdbd_unpack_id_rc_msg(void **msg, uint16_t rpc_version,
+				     buf_t *buffer);
 
 extern void slurmdbd_pack_usage_msg(dbd_usage_msg_t *msg,
 				    uint16_t rpc_version,
 				    slurmdbd_msg_type_t type,
-				    Buf buffer);
+				    buf_t *buffer);
 extern int slurmdbd_unpack_usage_msg(dbd_usage_msg_t **msg,
 				     uint16_t rpc_version,
 				     slurmdbd_msg_type_t type,
-				     Buf buffer);
+				     buf_t *buffer);
 
-extern void slurmdbd_pack_fini_msg(dbd_fini_msg_t *msg,
-				   uint16_t rpc_version, Buf buffer);
-extern int slurmdbd_unpack_fini_msg(dbd_fini_msg_t **msg,
-				    uint16_t rpc_version, Buf buffer);
+extern void slurmdbd_pack_fini_msg(dbd_fini_msg_t *msg, uint16_t rpc_version,
+				   buf_t *buffer);
+extern int slurmdbd_unpack_fini_msg(dbd_fini_msg_t **msg, uint16_t rpc_version,
+				    buf_t *buffer);
 
-extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg,
-				   uint16_t rpc_version,
-				   slurmdbd_msg_type_t type,
-				   Buf buffer);
+extern void slurmdbd_pack_list_msg(dbd_list_msg_t *msg, uint16_t rpc_version,
+				   slurmdbd_msg_type_t type, buf_t *buffer);
 extern int slurmdbd_unpack_list_msg(dbd_list_msg_t **msg, uint16_t rpc_version,
-				    slurmdbd_msg_type_t type, Buf buffer);
+				    slurmdbd_msg_type_t type, buf_t *buffer);
 
-extern Buf pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version);
-extern int unpack_slurmdbd_msg(persist_msg_t *resp,
-			       uint16_t rpc_version, Buf buffer);
+extern buf_t *pack_slurmdbd_msg(persist_msg_t *req, uint16_t rpc_version);
+extern int unpack_slurmdbd_msg(persist_msg_t *resp, uint16_t rpc_version,
+			       buf_t *buffer);
 
 #endif	/* !_SLURMDBD_PACK_H */

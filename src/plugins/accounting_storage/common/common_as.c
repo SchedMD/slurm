@@ -879,7 +879,7 @@ static char *_make_archive_name(time_t period_start, time_t period_end,
 	return fullname;
 }
 
-extern int archive_write_file(Buf buffer, char *cluster_name,
+extern int archive_write_file(buf_t *buffer, char *cluster_name,
 			      time_t period_start, time_t period_end,
 			      char *arch_dir, char *arch_type,
 			      uint32_t archive_period)

@@ -252,7 +252,7 @@ extern int slurm_accept_msg_conn(int open_fd, slurm_addr_t * slurm_address);
  * RET int	- returns 0 on success, -1 on failure and sets errno
  */
 
-extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, Buf buffer);
+extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer);
 
 /*
  *  Receive a slurm message on the open slurm descriptor "fd" waiting
@@ -412,8 +412,8 @@ extern int slurm_get_peer_addr(int fd, slurm_addr_t * slurm_address);
  * IN/OUT buffer	- buffer to pack the slurm_addr_t from
  * returns		- Slurm error code
  */
-extern void slurm_pack_slurm_addr_array(slurm_addr_t * slurm_address,
-					uint32_t size_val, Buf buffer);
+extern void slurm_pack_slurm_addr_array(slurm_addr_t *slurm_address,
+					uint32_t size_val, buf_t *buffer);
 /* slurm_unpack_slurm_addr_array
  * unpacks an array of slurm_addrs from a buffer (pre-20.11 protocol)
  * OUT slurm_address	- slurm_addr_t to unpack to
@@ -421,8 +421,8 @@ extern void slurm_pack_slurm_addr_array(slurm_addr_t * slurm_address,
  * IN/OUT buffer	- buffer to upack the slurm_addr_t from
  * returns		- Slurm error code
  */
-extern int slurm_unpack_slurm_addr_array(slurm_addr_t ** slurm_address,
-					 uint32_t * size_val, Buf buffer);
+extern int slurm_unpack_slurm_addr_array(slurm_addr_t **slurm_address,
+					 uint32_t *size_val, buf_t *buffer);
 
 /* slurm_pack_addr_array
  * packs an array of slurm_addrs into a buffer

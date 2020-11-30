@@ -199,7 +199,7 @@ extern int dbd_conn_check_and_reopen(slurm_persist_conn_t *pc)
 extern void dbd_conn_close(slurm_persist_conn_t **pc)
 {
 	int rc;
-	Buf buffer;
+	buf_t *buffer;
 	dbd_fini_msg_t req;
 
 	if (!pc)
@@ -252,7 +252,7 @@ extern int dbd_conn_send_recv_direct(uint16_t rpc_version,
 				     persist_msg_t *resp)
 {
 	int rc = SLURM_SUCCESS;
-	Buf buffer;
+	buf_t *buffer;
 	slurm_persist_conn_t *use_conn = req->conn;
 
 	xassert(req);

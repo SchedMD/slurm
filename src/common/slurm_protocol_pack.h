@@ -55,7 +55,7 @@
  * IN/OUT buffer - destination of the pack, contains pointers that are
  *			automatically updated
  */
-extern void pack_header(header_t *header, Buf buffer);
+extern void pack_header(header_t *header, buf_t *buffer);
 
 /*
  * unpacks a slurm protocol header that precedes every slurm message
@@ -64,7 +64,7 @@ extern void pack_header(header_t *header, Buf buffer);
  *			automatically updated
  * RET 0 or error code
  */
-extern int unpack_header(header_t *header, Buf buffer);
+extern int unpack_header(header_t *header, buf_t *buffer);
 
 
 /**************************************************************************/
@@ -78,7 +78,7 @@ extern int unpack_header(header_t *header, Buf buffer);
  *			automatically updated
  * RET 0 or error code
  */
-extern int pack_msg(slurm_msg_t const *msg, Buf buffer);
+extern int pack_msg(slurm_msg_t const *msg, buf_t *buffer);
 
 /*
  * unpacks a generic slurm protocol message body
@@ -87,39 +87,40 @@ extern int pack_msg(slurm_msg_t const *msg, Buf buffer);
  *			automatically updated
  * RET 0 or error code
  */
-extern int unpack_msg(slurm_msg_t *msg, Buf buffer);
+extern int unpack_msg(slurm_msg_t *msg, buf_t *buffer);
 
 extern int slurm_pack_list(List send_list,
 			   void (*pack_function) (void *object,
 						  uint16_t rpc_version,
-						  Buf buffer),
-			   Buf buffer, uint16_t protocol_version);
+						  buf_t *buffer),
+			   buf_t *buffer, uint16_t protocol_version);
 extern int slurm_unpack_list(List *recv_list,
 			     int (*unpack_function) (void **object,
 						     uint16_t protocol_version,
-						     Buf buffer),
+						     buf_t *buffer),
 			     void (*destroy_function) (void *object),
-			     Buf buffer, uint16_t protocol_version);
+			     buf_t *buffer, uint16_t protocol_version);
 
-extern void pack_dep_list(List dep_list, Buf buffer, uint16_t protocol_version);
-extern int unpack_dep_list(List *dep_list, Buf buffer,
+extern void pack_dep_list(List dep_list, buf_t *buffer,
+			  uint16_t protocol_version);
+extern int unpack_dep_list(List *dep_list, buf_t *buffer,
 			   uint16_t protocol_version);
 
-extern void pack_multi_core_data(multi_core_data_t *multi_core, Buf buffer,
+extern void pack_multi_core_data(multi_core_data_t *multi_core, buf_t *buffer,
 				 uint16_t protocol_version);
-extern int unpack_multi_core_data(multi_core_data_t **multi_core, Buf buffer,
+extern int unpack_multi_core_data(multi_core_data_t **multi_core, buf_t *buffer,
 				  uint16_t protocol_version);
 
 extern void pack_config_response_msg(config_response_msg_t *msg,
-				     Buf buffer, uint16_t protocol_version);
+				     buf_t *buffer, uint16_t protocol_version);
 extern int unpack_config_response_msg(config_response_msg_t **msg_ptr,
-				      Buf buffer, uint16_t protocol_version);
+				      buf_t *buffer, uint16_t protocol_version);
 
-extern void pack_step_id(slurm_step_id_t *msg, Buf buffer,
+extern void pack_step_id(slurm_step_id_t *msg, buf_t *buffer,
 			 uint16_t protocol_version);
-extern int unpack_step_id_members(slurm_step_id_t *msg, Buf buffer,
+extern int unpack_step_id_members(slurm_step_id_t *msg, buf_t *buffer,
 				  uint16_t protocol_version);
-extern int unpack_step_id(slurm_step_id_t **msg_ptr, Buf buffer,
+extern int unpack_step_id(slurm_step_id_t **msg_ptr, buf_t *buffer,
 			  uint16_t protocol_version);
 
 /*
@@ -127,12 +128,12 @@ extern int unpack_step_id(slurm_step_id_t **msg_ptr, Buf buffer,
  * after 20.11.  They are only here for convenience and will no longer be needed
  * after 2 versions after 20.11.
  */
-extern void pack_old_step_id(uint32_t step_id, Buf buffer);
+extern void pack_old_step_id(uint32_t step_id, buf_t *buffer);
 extern void convert_old_step_id(uint32_t *step_id);
 
 extern void slurm_pack_selected_step(void *in, uint16_t protocol_version,
-				       Buf buffer);
+				     buf_t *buffer);
 extern int slurm_unpack_selected_step(slurm_selected_step_t **step,
-					uint16_t protocol_version, Buf buffer);
+				      uint16_t protocol_version, buf_t *buffer);
 
 #endif

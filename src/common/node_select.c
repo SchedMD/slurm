@@ -712,7 +712,7 @@ extern int select_g_step_finish(step_record_t *step_ptr, bool killing_step)
 }
 
 extern int select_g_select_nodeinfo_pack(dynamic_plugin_data_t *nodeinfo,
-					 Buf buffer,
+					 buf_t *buffer,
 					 uint16_t protocol_version)
 {
 	void *data = NULL;
@@ -740,7 +740,7 @@ extern int select_g_select_nodeinfo_pack(dynamic_plugin_data_t *nodeinfo,
 }
 
 extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
-					   Buf buffer,
+					   buf_t *buffer,
 					   uint16_t protocol_version)
 {
 	dynamic_plugin_data_t *nodeinfo_ptr = NULL;
@@ -977,7 +977,7 @@ extern dynamic_plugin_data_t *select_g_select_jobinfo_copy(
  * RET         - slurm error code
  */
 extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
-					Buf buffer,
+					buf_t *buffer,
 					uint16_t protocol_version)
 {
 	void *data = NULL;
@@ -1009,7 +1009,7 @@ extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
  * NOTE: returned value must be freed using select_g_free_jobinfo
  */
 extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
-					  Buf buffer,
+					  buf_t *buffer,
 					  uint16_t protocol_version)
 {
 	dynamic_plugin_data_t *jobinfo_ptr = NULL;

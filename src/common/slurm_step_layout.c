@@ -281,7 +281,7 @@ extern void slurm_step_layout_merge(slurm_step_layout_t *step_layout1,
 }
 
 extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
-				   Buf buffer, uint16_t protocol_version)
+				   buf_t *buffer, uint16_t protocol_version)
 {
 	uint32_t i = 0;
 
@@ -310,7 +310,7 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 	}
 }
 
-extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer,
+extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, buf_t *buffer,
 				    uint16_t protocol_version)
 {
 	uint16_t uint16_tmp;

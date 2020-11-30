@@ -518,7 +518,8 @@ typedef struct slurm_msg {
 				 */
 	uint32_t body_offset; /* DON'T PACK: offset in buffer where body part of
 				 buffer starts. */
-	Buf buffer; /* DON't PACK! ptr to buffer that msg was unpacked from. */
+	buf_t *buffer;		/* DON'T PACK! ptr to buffer that msg was
+				 * unpacked from. */
 	slurm_persist_conn_t *conn; /* DON'T PACK OR FREE! this is here to
 				     * distinguish a persistent connection from
 				     * a normal connection it should be filled
@@ -1080,7 +1081,7 @@ typedef struct batch_job_launch_msg {
 	char *nodes;		/* list of nodes allocated to job_step */
 	uint32_t profile;       /* what to profile for the batch step */
 	char *script;		/* the actual job script, default NONE */
-	Buf script_buf;		/* the job script as a mmap buf */
+	buf_t *script_buf;	/* the job script as a mmap buf */
 	char *std_err;		/* pathname of stderr */
 	char *std_in;		/* pathname of stdin */
 	char *qos;              /* qos the job is running under */
@@ -1267,7 +1268,7 @@ typedef struct slurm_node_registration_status_msg {
 	acct_gather_energy_t *energy;
 	char *features_active;	/* Currently active node features */
 	char *features_avail;	/* Available node features */
-	Buf gres_info;		/* generic resource info */
+	buf_t *gres_info;	/* generic resource info */
 	uint32_t hash_val;      /* hash value of slurm.conf and included files
 				 * existing on node */
 	uint32_t job_count;	/* number of associate job_id's */
@@ -1307,7 +1308,7 @@ typedef struct {
 	uint32_t cluster_id;	/* cluster id of cluster making request */
 	void    *data;		/* Unpacked buffer
 				 * Only populated on the receiving side. */
-	Buf      data_buffer;	/* Buffer that holds an unpacked data type.
+	buf_t *data_buffer;	/* Buffer that holds an unpacked data type.
 				 * Only populated on the sending side. */
 	uint32_t data_offset;	/* DON'T PACK: offset where body part of buffer
 				 * starts -- the part that gets sent. */

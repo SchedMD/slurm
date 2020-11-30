@@ -312,15 +312,15 @@ char *bb_handle_job_script(job_record_t *job_ptr, bb_job_t *bb_job);
 extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type);
 
 /* Pack individual burst buffer records into a buffer */
-extern int bb_pack_bufs(uid_t uid, bb_state_t *state_ptr, Buf buffer,
+extern int bb_pack_bufs(uid_t uid, bb_state_t *state_ptr, buf_t *buffer,
 			uint16_t protocol_version);
 
 /* Pack state and configuration parameters into a buffer */
-extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
+extern void bb_pack_state(bb_state_t *state_ptr, buf_t *buffer,
 			  uint16_t protocol_version);
 
 /* Pack individual burst buffer usage records into a buffer (used for limits) */
-extern int bb_pack_usage(uid_t uid, bb_state_t *state_ptr, Buf buffer,
+extern int bb_pack_usage(uid_t uid, bb_state_t *state_ptr, buf_t *buffer,
 			 uint16_t protocol_version);
 
 /* Sort preempt_bb_recs in order of DECREASING use_time */

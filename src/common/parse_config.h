@@ -311,7 +311,7 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 		   bool ignore_new);
 
 /* Returns SLURM_SUCCESS if buffer was opened and parse correctly.
- * buffer must be a valid Buf bufferonly containing strings.The parsing
+ * buffer must be a valid buf_t buffer only containing strings. The parsing
  * stops at the first non string content extracted.
  * OUT hash_val - cyclic redundancy check (CRC) character-wise value
  *                of file.
@@ -319,7 +319,7 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
  *                 print debug() message and continue
  */
 int s_p_parse_buffer(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
-		     Buf buffer, bool ignore_new);
+		     buf_t *buffer, bool ignore_new);
 
 /*
  * Returns 1 if the line is parsed cleanly, and 0 otherwise.
@@ -629,14 +629,14 @@ void s_p_dump_values(const s_p_hashtbl_t *hashtbl,
  * Primarily for sending a table across the network so you don't have to read a
  * file in.
  */
-extern Buf s_p_pack_hashtbl(const s_p_hashtbl_t *hashtbl,
-			   const s_p_options_t options[],
-			   const uint32_t cnt);
+extern buf_t *s_p_pack_hashtbl(const s_p_hashtbl_t *hashtbl,
+			       const s_p_options_t options[],
+			       const uint32_t cnt);
 
 /*
  * Given a buffer, unpack key, type, op and value into a hashtbl.
  */
-extern s_p_hashtbl_t *s_p_unpack_hashtbl(Buf buffer);
+extern s_p_hashtbl_t *s_p_unpack_hashtbl(buf_t *buffer);
 
 /*
  * copy options onto the end of full_options

@@ -66,14 +66,14 @@ int job_options_append (job_options_t opts, int type, const char *opt,
 		        const char *optarg);
 
 /*
- *  Pack all accumulated options into Buffer "buf"
+ *  Pack all accumulated options into buf
  */
-int job_options_pack (job_options_t opts, Buf buf);
+int job_options_pack(job_options_t opts, buf_t *buf);
 
 /*
- *  Unpack options from buffer "buf" into options container opts.
+ *  Unpack options from buf into options container opts.
  */
-int job_options_unpack (job_options_t opts, Buf buf);
+int job_options_unpack(job_options_t opts, buf_t *buf);
 
 /*
  *  Reset internal options list iterator

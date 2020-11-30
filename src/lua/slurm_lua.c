@@ -502,7 +502,7 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 	} else if (!xstrcmp(name, "resv_name")) {
 		lua_pushstring(L, job_ptr->resv_name);
 	} else if (!xstrcmp(name, "script")) {
-		Buf bscript = get_job_script(job_ptr);
+		buf_t *bscript = get_job_script(job_ptr);
 		if (bscript) {
 			char *script = bscript->head;
 			if (script && script[0] != '\0')

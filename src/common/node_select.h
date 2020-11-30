@@ -106,10 +106,10 @@ typedef struct slurm_select_ops {
 	int             (*step_finish)          (step_record_t *step_ptr,
 						 bool killing_step);
 	int		(*nodeinfo_pack)	(select_nodeinfo_t *nodeinfo,
-						 Buf buffer,
+						 buf_t *buffer,
 						 uint16_t protocol_version);
 	int		(*nodeinfo_unpack)	(select_nodeinfo_t **nodeinfo,
-						 Buf buffer,
+						 buf_t *buffer,
 						 uint16_t protocol_version);
 	select_nodeinfo_t *(*nodeinfo_alloc)	(void);
 	int		(*nodeinfo_free)	(select_nodeinfo_t *nodeinfo);
@@ -132,10 +132,10 @@ typedef struct slurm_select_ops {
 						 void *data);
 	select_jobinfo_t *(*jobinfo_copy)	(select_jobinfo_t *jobinfo);
 	int		(*jobinfo_pack)		(select_jobinfo_t *jobinfo,
-						 Buf buffer,
+						 buf_t *buffer,
 						 uint16_t protocol_version);
 	int		(*jobinfo_unpack)	(select_jobinfo_t **jobinfo_pptr,
-						 Buf buffer,
+						 buf_t *buffer,
 						 uint16_t protocol_version);
 	char *		(*jobinfo_sprint)	(select_jobinfo_t *jobinfo,
 						 char *buf, size_t size,
@@ -253,7 +253,7 @@ extern dynamic_plugin_data_t *select_g_select_nodeinfo_alloc(void);
  * IN protocol_version - Version used for packing the record
  */
 extern int select_g_select_nodeinfo_pack(dynamic_plugin_data_t *nodeinfo,
-					 Buf buffer,
+					 buf_t *buffer,
 					 uint16_t protocol_version);
 
 /*
@@ -266,7 +266,7 @@ extern int select_g_select_nodeinfo_pack(dynamic_plugin_data_t *nodeinfo,
  * returned value
  */
 extern int select_g_select_nodeinfo_unpack(dynamic_plugin_data_t **nodeinfo,
-					   Buf buffer,
+					   buf_t *buffer,
 					   uint16_t protocol_version);
 
 /* Free the memory allocated for a select plugin node record */
@@ -376,7 +376,7 @@ extern int select_g_select_jobinfo_free(dynamic_plugin_data_t *jobinfo);
  * RET         - slurm error code
  */
 extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
-					Buf buffer,
+					buf_t *buffer,
 					uint16_t protocol_version);
 
 /* unpack a select job credential from a buffer
@@ -387,7 +387,7 @@ extern int select_g_select_jobinfo_pack(dynamic_plugin_data_t *jobinfo,
  * NOTE: returned value must be freed using select_g_select_jobinfo_free
  */
 extern int select_g_select_jobinfo_unpack(dynamic_plugin_data_t **jobinfo,
-					  Buf buffer,
+					  buf_t *buffer,
 					  uint16_t protocol_version);
 
 /* fill in a previously allocated select job credential

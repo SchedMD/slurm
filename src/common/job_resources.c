@@ -537,7 +537,7 @@ extern void log_job_resources(void *void_job_ptr)
 	info("====================");
 }
 
-extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
+extern void pack_job_resources(job_resources_t *job_resrcs_ptr, buf_t *buffer,
 			       uint16_t protocol_version)
 {
 	int i;
@@ -627,7 +627,7 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, Buf buffer,
 }
 
 extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
-				Buf buffer, uint16_t protocol_version)
+				buf_t *buffer, uint16_t protocol_version)
 {
 	char *bit_fmt = NULL;
 	uint32_t empty, tmp32;

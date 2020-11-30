@@ -68,9 +68,9 @@ typedef struct {
 	uid_t		(*get_uid)	(void *cred);
 	gid_t		(*get_gid)	(void *cred);
 	char *		(*get_host)	(void *cred);
-	int		(*pack)		(void *cred, Buf buf,
+	int		(*pack)		(void *cred, buf_t *buf,
 					 uint16_t protocol_version);
-	void *		(*unpack)	(Buf buf, uint16_t protocol_version);
+	void *		(*unpack)	(buf_t *buf, uint16_t protocol_version);
 	int		(*thread_config) (const char *token, const char *username);
 	void		(*thread_clear) (void);
 	char *		(*token_generate) (const char *username, int lifespan);
@@ -298,7 +298,7 @@ char *g_slurm_auth_get_host(void *cred)
 	return (*(ops[wrap->index].get_host))(cred);
 }
 
-int g_slurm_auth_pack(void *cred, Buf buf, uint16_t protocol_version)
+int g_slurm_auth_pack(void *cred, buf_t *buf, uint16_t protocol_version)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
@@ -315,7 +315,7 @@ int g_slurm_auth_pack(void *cred, Buf buf, uint16_t protocol_version)
 	}
 }
 
-void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version)
+void *g_slurm_auth_unpack(buf_t *buf, uint16_t protocol_version)
 {
 	uint32_t plugin_id = 0;
 	cred_wrapper_t *cred;

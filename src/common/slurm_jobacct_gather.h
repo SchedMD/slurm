@@ -160,12 +160,11 @@ extern int jobacctinfo_setinfo(jobacctinfo_t *jobacct,
 extern int jobacctinfo_getinfo(jobacctinfo_t *jobacct,
 			       enum jobacct_data_type type, void *data,
 			       uint16_t protocol_version);
-extern void jobacctinfo_pack(jobacctinfo_t *jobacct,
-			     uint16_t rpc_version,
-			     uint16_t protocol_type, Buf buffer);
-extern int jobacctinfo_unpack(jobacctinfo_t **jobacct,
-			      uint16_t rpc_version,
-			      uint16_t protocol_type, Buf buffer, bool alloc);
+extern void jobacctinfo_pack(jobacctinfo_t *jobacct, uint16_t rpc_version,
+			     uint16_t protocol_type, buf_t *buffer);
+extern int jobacctinfo_unpack(jobacctinfo_t **jobacct, uint16_t rpc_version,
+			      uint16_t protocol_type, buf_t *buffer,
+			      bool alloc);
 
 extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from);
 

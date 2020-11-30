@@ -760,7 +760,7 @@ static void _save_bb_state(void)
 	time_t save_time = time(NULL);
 	bb_alloc_t *bb_alloc;
 	uint32_t rec_count = 0;
-	Buf buffer;
+	buf_t *buffer;
 	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
 	int i, count_offset, offset, state_fd;
 	int error_code = 0;
@@ -923,7 +923,7 @@ static void _recover_bb_state(void)
 	char *end_ptr = NULL;
 	time_t create_time = 0;
 	bb_alloc_t *bb_alloc;
-	Buf buffer;
+	buf_t *buffer;
 
 	state_fd = _open_part_state_file(&state_file);
 	if (state_fd < 0) {
@@ -3333,7 +3333,7 @@ extern int bb_p_reconfig(void)
  *
  * Returns a Slurm errno.
  */
-extern int bb_p_state_pack(uid_t uid, Buf buffer, uint16_t protocol_version)
+extern int bb_p_state_pack(uid_t uid, buf_t *buffer, uint16_t protocol_version)
 {
 	uint32_t rec_count = 0;
 

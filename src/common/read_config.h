@@ -337,11 +337,12 @@ extern int job_defaults_list(char *in_str, List *out_list);
 extern char *job_defaults_str(List in_list);
 
 /* Pack a job_defaults_t element. Used by slurm_pack_list() */
-extern void job_defaults_pack(void *in, uint16_t protocol_version, Buf buffer);
+extern void job_defaults_pack(void *in, uint16_t protocol_version,
+			      buf_t *buffer);
 
 /* Unpack a job_defaults_t element. Used by slurm_pack_list() */
 extern int job_defaults_unpack(void **out, uint16_t protocol_version,
-			       Buf buffer);
+			       buf_t *buffer);
 
 /*
  * list_find_frontend - find an entry in the front_end list, see list.h for
@@ -620,24 +621,24 @@ extern uint16_t reconfig_str2flags(char *reconfig_flags);
 
 extern void destroy_config_plugin_params(void *object);
 extern void pack_config_plugin_params(void *in, uint16_t protocol_version,
-				      Buf buff);
+				      buf_t *buff);
 extern int unpack_config_plugin_params(void **object, uint16_t protocol_version,
-				       Buf buff);
+				       buf_t *buff);
 extern void pack_config_plugin_params_list(void *in, uint16_t protocol_version,
-					   Buf buff);
+					   buf_t *buff);
 extern int unpack_config_plugin_params_list(void **object,
 					    uint16_t protocol_version,
-					    Buf buff);
+					    buf_t *buff);
 
 extern void destroy_config_key_pair(void *object);
 extern void pack_key_pair_list(void *key_pairs, uint16_t protocol_version,
-			       Buf buffer);
+			       buf_t *buffer);
 extern int unpack_key_pair_list(void **key_pairs, uint16_t protocol_version,
-				Buf buffer);
+				buf_t *buffer);
 extern void pack_config_key_pair(void *in, uint16_t protocol_version,
-				 Buf buffer);
+				 buf_t *buffer);
 extern int unpack_config_key_pair(void **object, uint16_t protocol_version,
-				  Buf buffer);
+				  buf_t *buffer);
 
 extern int sort_key_pairs(void *v1, void *v2);
 /*

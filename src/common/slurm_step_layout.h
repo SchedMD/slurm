@@ -80,8 +80,8 @@ extern void slurm_step_layout_merge(slurm_step_layout_t *step_layout1,
 
 /* pack and unpack structure */
 extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
-				   Buf buffer, uint16_t protocol_version);
-extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer,
+				   buf_t *buffer, uint16_t protocol_version);
+extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, buf_t *buffer,
 				    uint16_t protocol_version);
 
 /* destroys structure for step layout */

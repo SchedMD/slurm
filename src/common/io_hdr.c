@@ -55,8 +55,7 @@ static int g_io_init_msg_packed_size =
 
 #define io_init_msg_packed_size() g_io_init_msg_packed_size
 
-void
-io_hdr_pack(io_hdr_t *hdr, Buf buffer)
+void io_hdr_pack(io_hdr_t *hdr, buf_t *buffer)
 {
 	/* If this function changes, io_hdr_packed_size must change. */
 	pack16(hdr->type, buffer);
@@ -65,8 +64,7 @@ io_hdr_pack(io_hdr_t *hdr, Buf buffer)
 	pack32(hdr->length, buffer);
 }
 
-int
-io_hdr_unpack(io_hdr_t *hdr, Buf buffer)
+int io_hdr_unpack(io_hdr_t *hdr, buf_t *buffer)
 {
 	/* If this function changes, io_hdr_packed_size must change. */
 	safe_unpack16(&hdr->type, buffer);
@@ -117,11 +115,10 @@ static int _full_read(int fd, void *buf, size_t count)
  */
 int io_hdr_read_fd(int fd, io_hdr_t *hdr)
 {
-	Buf buffer;
 	int n = 0;
+	buf_t *buffer = init_buf(io_hdr_packed_size());
 
 	debug3("Entering io_hdr_read_fd");
-	buffer = init_buf(io_hdr_packed_size());
 	n = _full_read(fd, buffer->head, io_hdr_packed_size());
 	if (n <= 0)
 		goto fail;
@@ -163,8 +160,7 @@ io_init_msg_validate(struct slurm_io_init_msg *msg, const char *sig)
 }
 
 
-static void
-io_init_msg_pack(struct slurm_io_init_msg *hdr, Buf buffer)
+static void io_init_msg_pack(struct slurm_io_init_msg *hdr, buf_t *buffer)
 {
 	/* If this function changes, io_init_msg_packed_size must change. */
 	pack16(hdr->version, buffer);
@@ -176,8 +172,7 @@ io_init_msg_pack(struct slurm_io_init_msg *hdr, Buf buffer)
 }
 
 
-static int
-io_init_msg_unpack(struct slurm_io_init_msg *hdr, Buf buffer)
+static int io_init_msg_unpack(struct slurm_io_init_msg *hdr, buf_t *buffer)
 {
 	/* If this function changes, io_init_msg_packed_size must change. */
 	uint32_t val;
@@ -203,14 +198,13 @@ io_init_msg_unpack(struct slurm_io_init_msg *hdr, Buf buffer)
 int
 io_init_msg_write_to_fd(int fd, struct slurm_io_init_msg *msg)
 {
-	Buf buf;
 	int rc = SLURM_ERROR;
+	buf_t *buf = init_buf(io_init_msg_packed_size());
 
 	xassert(msg);
 
 	debug2("%s: entering", __func__);
 	msg->version = IO_PROTOCOL_VERSION;
-	buf = init_buf(io_init_msg_packed_size());
 	debug2("%s: msg->nodeid = %d", __func__, msg->nodeid);
 	io_init_msg_pack(msg, buf);
 
@@ -226,7 +220,7 @@ rwfail:
 int
 io_init_msg_read_from_fd(int fd, struct slurm_io_init_msg *msg)
 {
-	Buf buf;
+	buf_t *buf;
 	int n;
 
 	xassert(msg);

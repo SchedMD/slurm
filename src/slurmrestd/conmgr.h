@@ -64,7 +64,7 @@ typedef struct con_mgr_s con_mgr_t;
 typedef void *(*con_mgr_on_new_connection_t)(con_mgr_fd_t *con);
 
 /*
- * Call back when there is data ready in "in" Buf
+ * Call back when there is data ready in "in" buffer
  * This may be called several times in the same connection.
  *
  * IN con connection handler
@@ -109,11 +109,11 @@ struct con_mgr_fd_s {
 	/* call backs on events */
 	con_mgr_events_t events;
 	/* buffer holding incoming already read data */
-	Buf in;
+	buf_t *in;
 	/* has on_data already tried to parse data */
 	bool on_data_tried;
 	/* buffer holding out going to be written data */
-	Buf out;
+	buf_t *out;
 	/* this is a socket fd */
 	bool is_socket;
 	/* path to unix socket if it is one */

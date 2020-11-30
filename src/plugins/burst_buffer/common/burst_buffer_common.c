@@ -691,7 +691,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 	}
 }
 
-static void _pack_alloc(struct bb_alloc *bb_alloc, Buf buffer,
+static void _pack_alloc(struct bb_alloc *bb_alloc, buf_t *buffer,
 			uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -711,7 +711,7 @@ static void _pack_alloc(struct bb_alloc *bb_alloc, Buf buffer,
 }
 
 /* Pack individual burst buffer records into a buffer */
-extern int bb_pack_bufs(uid_t uid, bb_state_t *state_ptr, Buf buffer,
+extern int bb_pack_bufs(uid_t uid, bb_state_t *state_ptr, buf_t *buffer,
 			uint16_t protocol_version)
 {
 	int i, rec_count = 0;
@@ -745,7 +745,7 @@ extern int bb_pack_bufs(uid_t uid, bb_state_t *state_ptr, Buf buffer,
 }
 
 /* Pack state and configuration parameters into a buffer */
-extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
+extern void bb_pack_state(bb_state_t *state_ptr, buf_t *buffer,
 			  uint16_t protocol_version)
 {
 	bb_config_t *config_ptr = &state_ptr->bb_config;
@@ -785,7 +785,7 @@ extern void bb_pack_state(bb_state_t *state_ptr, Buf buffer,
 }
 
 /* Pack individual burst buffer usage records into a buffer (used for limits) */
-extern int bb_pack_usage(uid_t uid, bb_state_t *state_ptr, Buf buffer,
+extern int bb_pack_usage(uid_t uid, bb_state_t *state_ptr, buf_t *buffer,
 			 uint16_t protocol_version)
 {
 	int i, rec_count = 0;

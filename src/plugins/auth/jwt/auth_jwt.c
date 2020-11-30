@@ -344,7 +344,7 @@ char *slurm_auth_get_host(auth_token_t *cred)
 	return NULL;
 }
 
-int slurm_auth_pack(auth_token_t *cred, Buf buf, uint16_t protocol_version)
+int slurm_auth_pack(auth_token_t *cred, buf_t *buf, uint16_t protocol_version)
 {
 	char *pack_this = (thread_token) ? thread_token : token;
 
@@ -365,7 +365,7 @@ int slurm_auth_pack(auth_token_t *cred, Buf buf, uint16_t protocol_version)
 	return SLURM_SUCCESS;
 }
 
-auth_token_t *slurm_auth_unpack(Buf buf, uint16_t protocol_version)
+auth_token_t *slurm_auth_unpack(buf_t *buf, uint16_t protocol_version)
 {
 	auth_token_t *cred = NULL;
 	uint32_t uint32_tmp;

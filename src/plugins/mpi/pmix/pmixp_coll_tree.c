@@ -47,7 +47,7 @@
 static void _progress_coll_tree(pmixp_coll_t *coll);
 static void _reset_coll(pmixp_coll_t *coll);
 
-static int _pack_coll_info(pmixp_coll_t *coll, Buf buf)
+static int _pack_coll_info(pmixp_coll_t *coll, buf_t *buf)
 {
 	pmixp_proc_t *procs = coll->pset.procs;
 	size_t nprocs = coll->pset.nprocs;
@@ -69,7 +69,7 @@ static int _pack_coll_info(pmixp_coll_t *coll, Buf buf)
 	return SLURM_SUCCESS;
 }
 
-int pmixp_coll_tree_unpack(Buf buf, pmixp_coll_type_t *type,
+int pmixp_coll_tree_unpack(buf_t *buf, pmixp_coll_type_t *type,
 			   int *nodeid, pmixp_proc_t **r, size_t *nr)
 {
 	pmixp_proc_t *procs = NULL;
@@ -1010,8 +1010,8 @@ static char *_chld_ids_str(pmixp_coll_tree_t *tree)
 }
 
 
-int pmixp_coll_tree_child(pmixp_coll_t *coll, uint32_t peerid,
-			  uint32_t seq, Buf buf)
+int pmixp_coll_tree_child(pmixp_coll_t *coll, uint32_t peerid, uint32_t seq,
+			  buf_t *buf)
 {
 	char *data_src = NULL, *data_dst = NULL;
 	uint32_t size;
@@ -1150,8 +1150,8 @@ error2:
 	return SLURM_ERROR;
 }
 
-int pmixp_coll_tree_parent(pmixp_coll_t *coll, uint32_t peerid,
-			   uint32_t seq, Buf buf)
+int pmixp_coll_tree_parent(pmixp_coll_t *coll, uint32_t peerid, uint32_t seq,
+			   buf_t *buf)
 {
 	pmixp_coll_tree_t *tree = NULL;
 	char *data_src = NULL, *data_dst = NULL;

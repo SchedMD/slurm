@@ -890,7 +890,7 @@ static bool _opt_verify(void)
 		error("Cannot specify both --burst-buffer and --bbf");
 		exit(error_exit);
 	} else if (opt.burst_buffer_file) {
-		Buf buf = create_mmap_buf(opt.burst_buffer_file);
+		buf_t *buf = create_mmap_buf(opt.burst_buffer_file);
 		if (!buf) {
 			error("Invalid --bbf specification");
 			exit(error_exit);

@@ -100,7 +100,7 @@ int pmixp_dmdx_finalize(void)
 }
 
 
-static void _setup_header(Buf buf, dmdx_type_t t,
+static void _setup_header(buf_t *buf, dmdx_type_t t,
 			  const char *nspace, int rank, int status)
 {
 	char *str;
@@ -125,7 +125,7 @@ static void _setup_header(Buf buf, dmdx_type_t t,
 	pack32((uint32_t)status, buf);
 }
 
-static int _read_type(Buf buf, dmdx_type_t *type)
+static int _read_type(buf_t *buf, dmdx_type_t *type)
 {
 	unsigned char t;
 	int rc;
@@ -138,7 +138,7 @@ static int _read_type(Buf buf, dmdx_type_t *type)
 	return SLURM_SUCCESS;
 }
 
-static int _read_info(Buf buf, char **ns, int *rank,
+static int _read_info(buf_t *buf, char **ns, int *rank,
 		      char **sender_ns, int *status)
 {
 	uint32_t cnt, uint32_tmp;
@@ -182,7 +182,7 @@ static int _read_info(Buf buf, char **ns, int *rank,
 static void _respond_with_error(int seq_num, int nodeid,
 				char *sender_ns, int status)
 {
-	Buf buf = create_buf(NULL, 0);
+	buf_t *buf = create_buf(NULL, 0);
 	pmixp_ep_t ep;
 	int rc;
 
@@ -207,7 +207,7 @@ static void _dmdx_pmix_cb(int status, char *data, size_t sz,
 			  void *cbdata)
 {
 	dmdx_caddy_t *caddy = (dmdx_caddy_t *)cbdata;
-	Buf buf = pmixp_server_buf_new();
+	buf_t *buf = pmixp_server_buf_new();
 	pmixp_ep_t ep;
 	int rc;
 
@@ -236,7 +236,7 @@ int pmixp_dmdx_get(const char *nspace, int rank,
 		   void *cbfunc, void *cbdata)
 {
 	dmdx_req_info_t *req;
-	Buf buf;
+	buf_t *buf;
 	int rc;
 	uint32_t seq;
 	pmixp_ep_t ep;
@@ -282,7 +282,7 @@ int pmixp_dmdx_get(const char *nspace, int rank,
 	return rc;
 }
 
-static void _dmdx_req(Buf buf, int nodeid, uint32_t seq_num)
+static void _dmdx_req(buf_t *buf, int nodeid, uint32_t seq_num)
 {
 	int rank, rc;
 	int status;
@@ -366,7 +366,7 @@ static int _dmdx_req_cmp(void *x, void *key)
 	return (req->seq_num == seq_num);
 }
 
-static void _dmdx_resp(Buf buf, int nodeid, uint32_t seq_num)
+static void _dmdx_resp(buf_t *buf, int nodeid, uint32_t seq_num)
 {
 	dmdx_req_info_t *req;
 	int rank, rc = SLURM_SUCCESS;
@@ -424,7 +424,7 @@ exit:
 	 * anyway. We've notified libpmix, that's enough */
 }
 
-void pmixp_dmdx_process(Buf buf, int nodeid, uint32_t seq)
+void pmixp_dmdx_process(buf_t *buf, int nodeid, uint32_t seq)
 {
 	dmdx_type_t type = 0;
 	_read_type(buf, &type);

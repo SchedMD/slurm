@@ -49,7 +49,7 @@
 static bool acct_gather_suspended = false;
 static pthread_mutex_t suspended_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t conf_mutex = PTHREAD_MUTEX_INITIALIZER;
-static Buf acct_gather_options_buf = NULL;
+static buf_t *acct_gather_options_buf = NULL;
 static bool inited = 0;
 
 static int _get_int(const char *my_str)

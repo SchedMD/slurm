@@ -77,8 +77,8 @@ extern int g_io_hdr_size;
  * Return the packed size of an IO header in bytes;
  */
 #define io_hdr_packed_size() g_io_hdr_size
-void io_hdr_pack(io_hdr_t *hdr, Buf buffer);
-int io_hdr_unpack(io_hdr_t *hdr, Buf buffer);
+void io_hdr_pack(io_hdr_t *hdr, buf_t *buffer);
+int io_hdr_unpack(io_hdr_t *hdr, buf_t *buffer);
 int io_hdr_read_fd(int fd, io_hdr_t *hdr);
 
 /*

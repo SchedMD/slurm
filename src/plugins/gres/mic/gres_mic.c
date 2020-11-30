@@ -213,13 +213,13 @@ extern void step_reset_env(char ***step_env_ptr, void *gres_ptr,
 }
 
 /* Send GRES information to slurmstepd on the specified file descriptor */
-extern void send_stepd(Buf buffer)
+extern void send_stepd(buf_t *buffer)
 {
 	common_send_stepd(buffer, gres_devices);
 }
 
 /* Receive GRES information from slurmd on the specified file descriptor */
-extern void recv_stepd(Buf buffer)
+extern void recv_stepd(buf_t *buffer)
 {
 	common_recv_stepd(buffer, &gres_devices);
 }

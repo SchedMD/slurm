@@ -777,7 +777,7 @@ extern int parse_http(con_mgr_fd_t *con, void *x)
 		.on_chunk_complete = _on_chunk_complete
 	};
 	int rc = SLURM_SUCCESS;
-	Buf buffer = con->in;
+	buf_t *buffer = con->in;
 	request_t *request = context->request;
 	http_parser *parser = context->parser;
 

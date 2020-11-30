@@ -141,8 +141,8 @@ extern void ext_sensors_destroy(ext_sensors_data_t *ext_sensors)
 	xfree(ext_sensors);
 }
 
-extern void ext_sensors_data_pack(ext_sensors_data_t *ext_sensors, Buf buffer,
-				    uint16_t protocol_version)
+extern void ext_sensors_data_pack(ext_sensors_data_t *ext_sensors,
+				  buf_t *buffer, uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (!ext_sensors) {
@@ -160,8 +160,8 @@ extern void ext_sensors_data_pack(ext_sensors_data_t *ext_sensors, Buf buffer,
 	}
 }
 
-extern int ext_sensors_data_unpack(ext_sensors_data_t **ext_sensors, Buf buffer,
-				     uint16_t protocol_version)
+extern int ext_sensors_data_unpack(ext_sensors_data_t **ext_sensors,
+				   buf_t *buffer, uint16_t protocol_version)
 {
 	ext_sensors_data_t *ext_sensors_ptr = ext_sensors_alloc();
 	*ext_sensors = ext_sensors_ptr;

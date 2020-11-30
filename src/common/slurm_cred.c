@@ -280,17 +280,17 @@ static int _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t *c,
 static int _slurm_cred_init(void);
 static int _slurm_cred_fini(void);
 
-static job_state_t  * _job_state_unpack_one(Buf buffer);
-static cred_state_t * _cred_state_unpack_one(Buf buffer);
+static job_state_t *_job_state_unpack_one(buf_t *buffer);
+static cred_state_t *_cred_state_unpack_one(buf_t *buffer);
 
-static void _pack_cred(slurm_cred_t *cred, Buf buffer,
+static void _pack_cred(slurm_cred_t *cred, buf_t *buffer,
 		       uint16_t protocol_version);
-static void _job_state_unpack(slurm_cred_ctx_t ctx, Buf buffer);
-static void _job_state_pack(slurm_cred_ctx_t ctx, Buf buffer);
-static void _cred_state_unpack(slurm_cred_ctx_t ctx, Buf buffer);
-static void _cred_state_pack(slurm_cred_ctx_t ctx, Buf buffer);
-static void _job_state_pack_one(job_state_t *j, Buf buffer);
-static void _cred_state_pack_one(cred_state_t *s, Buf buffer);
+static void _job_state_unpack(slurm_cred_ctx_t ctx, buf_t *buffer);
+static void _job_state_pack(slurm_cred_ctx_t ctx, buf_t *buffer);
+static void _cred_state_unpack(slurm_cred_ctx_t ctx, buf_t *buffer);
+static void _cred_state_pack(slurm_cred_ctx_t ctx, buf_t *buffer);
+static void _job_state_pack_one(job_state_t *j, buf_t *buffer);
+static void _cred_state_pack_one(cred_state_t *s, buf_t *buffer);
 
 static void _sbast_cache_add(sbcast_cred_t *sbcast_cred);
 
@@ -1298,8 +1298,8 @@ extern void get_cred_gres(slurm_cred_t *cred, char *node_name,
 	return;
 }
 
-void
-slurm_cred_pack(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
+void slurm_cred_pack(slurm_cred_t *cred, buf_t *buffer,
+		     uint16_t protocol_version)
 {
 	xassert(cred != NULL);
 	xassert(cred->magic == CRED_MAGIC);
@@ -1315,8 +1315,7 @@ slurm_cred_pack(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
 	return;
 }
 
-slurm_cred_t *
-slurm_cred_unpack(Buf buffer, uint16_t protocol_version)
+slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 {
 	uint32_t     cred_uid, cred_gid, u32_ngids, len;
 	slurm_cred_t *cred = NULL;
@@ -1469,8 +1468,7 @@ unpack_error:
 	return NULL;
 }
 
-int
-slurm_cred_ctx_pack(slurm_cred_ctx_t ctx, Buf buffer)
+int slurm_cred_ctx_pack(slurm_cred_ctx_t ctx, buf_t *buffer)
 {
 	slurm_mutex_lock(&ctx->mutex);
 	_job_state_pack(ctx, buffer);
@@ -1480,8 +1478,7 @@ slurm_cred_ctx_pack(slurm_cred_ctx_t ctx, Buf buffer)
 	return SLURM_SUCCESS;
 }
 
-int
-slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, Buf buffer)
+int slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, buf_t *buffer)
 {
 	xassert(ctx != NULL);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
@@ -1679,10 +1676,9 @@ static int
 _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 		 uint16_t protocol_version)
 {
-	Buf           buffer;
 	int           rc;
+	buf_t *buffer = init_buf(4096);
 
-	buffer = init_buf(4096);
 	_pack_cred(cred, buffer, protocol_version);
 	rc = (*(ops.cred_sign))(ctx->key,
 				get_buf_data(buffer),
@@ -1703,11 +1699,10 @@ static int
 _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 			     uint16_t protocol_version)
 {
-	Buf            buffer;
 	int            rc;
+	buf_t *buffer = init_buf(4096);
 
 	debug("Checking credential with %u bytes of sig data", cred->siglen);
-	buffer = init_buf(4096);
 	_pack_cred(cred, buffer, protocol_version);
 
 	rc = (*(ops.cred_verify_sign))(ctx->key,
@@ -1733,8 +1728,8 @@ _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t *cred,
 }
 
 
-static void
-_pack_cred(slurm_cred_t *cred, Buf buffer, uint16_t protocol_version)
+static void _pack_cred(slurm_cred_t *cred, buf_t *buffer,
+		       uint16_t protocol_version)
 {
 	uint32_t cred_uid = (uint32_t) cred->uid;
 	uint32_t tot_core_cnt = 0;
@@ -2054,8 +2049,7 @@ _cred_state_create(slurm_cred_ctx_t ctx, slurm_cred_t *cred)
 	return s;
 }
 
-static void
-_cred_state_pack_one(cred_state_t *s, Buf buffer)
+static void _cred_state_pack_one(cred_state_t *s, buf_t *buffer)
 {
 	pack_step_id(&s->step_id, buffer, SLURM_PROTOCOL_VERSION);
 	pack_time(s->ctime, buffer);
@@ -2063,8 +2057,7 @@ _cred_state_pack_one(cred_state_t *s, Buf buffer)
 }
 
 
-static cred_state_t *
-_cred_state_unpack_one(Buf buffer)
+static cred_state_t *_cred_state_unpack_one(buf_t *buffer)
 {
 	cred_state_t *s = xmalloc(sizeof(*s));
 
@@ -2081,8 +2074,7 @@ unpack_error:
 }
 
 
-static void
-_job_state_pack_one(job_state_t *j, Buf buffer)
+static void _job_state_pack_one(job_state_t *j, buf_t *buffer)
 {
 	pack32(j->jobid, buffer);
 	pack_time(j->revoked, buffer);
@@ -2091,7 +2083,7 @@ _job_state_pack_one(job_state_t *j, Buf buffer)
 }
 
 
-static job_state_t *_job_state_unpack_one(Buf buffer)
+static job_state_t *_job_state_unpack_one(buf_t *buffer)
 {
 	job_state_t *j = xmalloc(sizeof(*j));
 
@@ -2117,8 +2109,7 @@ unpack_error:
 }
 
 
-static void
-_cred_state_pack(slurm_cred_ctx_t ctx, Buf buffer)
+static void _cred_state_pack(slurm_cred_ctx_t ctx, buf_t *buffer)
 {
 	ListIterator  i = NULL;
 	cred_state_t *s = NULL;
@@ -2132,8 +2123,7 @@ _cred_state_pack(slurm_cred_ctx_t ctx, Buf buffer)
 }
 
 
-static void
-_cred_state_unpack(slurm_cred_ctx_t ctx, Buf buffer)
+static void _cred_state_unpack(slurm_cred_ctx_t ctx, buf_t *buffer)
 {
 	time_t        now = time(NULL);
 	uint32_t      n;
@@ -2161,8 +2151,7 @@ unpack_error:
 }
 
 
-static void
-_job_state_pack(slurm_cred_ctx_t ctx, Buf buffer)
+static void _job_state_pack(slurm_cred_ctx_t ctx, buf_t *buffer)
 {
 	ListIterator  i = NULL;
 	job_state_t  *j = NULL;
@@ -2177,8 +2166,7 @@ _job_state_pack(slurm_cred_ctx_t ctx, Buf buffer)
 }
 
 
-static void
-_job_state_unpack(slurm_cred_ctx_t ctx, Buf buffer)
+static void _job_state_unpack(slurm_cred_ctx_t ctx, buf_t *buffer)
 {
 	time_t       now = time(NULL);
 	uint32_t     n   = 0;
@@ -2213,7 +2201,7 @@ unpack_error:
 \*****************************************************************************/
 
 /* Pack sbcast credential without the digital signature */
-static void _pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer,
+static void _pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 			      uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
@@ -2247,7 +2235,7 @@ sbcast_cred_t *create_sbcast_cred(slurm_cred_ctx_t ctx,
 				  sbcast_cred_arg_t *arg,
 				  uint16_t protocol_version)
 {
-	Buf buffer;
+	buf_t *buffer;
 	int rc;
 	sbcast_cred_t *sbcast_cred;
 
@@ -2344,7 +2332,7 @@ sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 	uint32_t sig_num = 0;
 	int i, rc;
 	time_t now = time(NULL);
-	Buf buffer;
+	buf_t *buffer;
 
 	xassert(ctx);
 
@@ -2429,7 +2417,7 @@ sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 }
 
 /* Pack an sbcast credential into a buffer including the digital signature */
-void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer,
+void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 		      uint16_t protocol_version)
 {
 	static int bad_cred_test = -1;
@@ -2456,7 +2444,7 @@ void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, Buf buffer,
 }
 
 /* Unpack an sbcast credential into a buffer including the digital signature */
-sbcast_cred_t *unpack_sbcast_cred(Buf buffer, uint16_t protocol_version)
+sbcast_cred_t *unpack_sbcast_cred(buf_t *buffer, uint16_t protocol_version)
 {
 	sbcast_cred_t *sbcast_cred;
 	uint32_t uint32_tmp;

@@ -230,7 +230,7 @@ extern void acct_gather_energy_destroy(acct_gather_energy_t *energy)
 	xfree(energy);
 }
 
-extern void acct_gather_energy_pack(acct_gather_energy_t *energy, Buf buffer,
+extern void acct_gather_energy_pack(acct_gather_energy_t *energy, buf_t *buffer,
 				    uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -253,7 +253,8 @@ extern void acct_gather_energy_pack(acct_gather_energy_t *energy, Buf buffer,
 	}
 }
 
-extern int acct_gather_energy_unpack(acct_gather_energy_t **energy, Buf buffer,
+extern int acct_gather_energy_unpack(acct_gather_energy_t **energy,
+				     buf_t *buffer,
 				     uint16_t protocol_version, bool need_alloc)
 {
 	acct_gather_energy_t *energy_ptr;

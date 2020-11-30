@@ -164,7 +164,7 @@ int main(int argc, char **argv)
 		 * in to the job script.
 		 */
 		if (opt.burst_buffer_file) {
-			Buf buf = create_mmap_buf(opt.burst_buffer_file);
+			buf_t *buf = create_mmap_buf(opt.burst_buffer_file);
 			if (!buf) {
 				error("Invalid --bbf specification");
 				exit(error_exit);

@@ -388,7 +388,7 @@ void _ucx_process_msg(char *buffer, size_t len)
 	xassert(_direct_hdr_set);
 	_direct_hdr.hdr_unpack_cb(buffer, _host_hdr);
 
-	Buf buf = create_buf(buffer, len);
+	buf_t *buf = create_buf(buffer, len);
 	set_buf_offset(buf, _direct_hdr.rhdr_net_size);
 	_direct_hdr.new_msg(_host_hdr, buf);
 }

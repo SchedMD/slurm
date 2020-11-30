@@ -144,8 +144,8 @@ extern int slurm_recv_timeout(int open_fd, char *buffer, size_t size,
  * IN slurm_address	- slurm_addr_t to pack
  * IN/OUT buffer	- buffer to pack the slurm_addr_t into
  */
-extern void slurm_pack_slurm_addr ( slurm_addr_t * slurm_address ,
-				    Buf buffer ) ;
+extern void slurm_pack_slurm_addr(slurm_addr_t *slurm_address,
+				  buf_t *buffer);
 
 /* slurm_unpack_slurm_addr_no_alloc
  * unpacks a buffer into a slurm_addr_t after serialization transport (pre-20.11)
@@ -153,8 +153,8 @@ extern void slurm_pack_slurm_addr ( slurm_addr_t * slurm_address ,
  * IN/OUT buffer	- buffer to upack the slurm_addr_t from
  * returns 		- Slurm error code
  */
-extern int slurm_unpack_slurm_addr_no_alloc (
-	slurm_addr_t * slurm_address , Buf buffer ) ;
+extern int slurm_unpack_slurm_addr_no_alloc(slurm_addr_t *slurm_address,
+					    buf_t *buffer);
 
 /* slurm_pack_addr
  * packs a slurm_addr_t into a buffer to serialization transport

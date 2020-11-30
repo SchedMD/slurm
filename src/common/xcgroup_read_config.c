@@ -63,7 +63,7 @@
 pthread_mutex_t xcgroup_config_read_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static slurm_cgroup_conf_t slurm_cgroup_conf;
-static Buf cg_conf_buf = NULL;
+static buf_t *cg_conf_buf = NULL;
 static bool slurm_cgroup_conf_inited = false;
 static bool slurm_cgroup_conf_exist = true;
 
@@ -100,7 +100,7 @@ static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *cg_conf)
 	xfree(cg_conf->allowed_devices_file);
 }
 
-static void _pack_cgroup_conf(slurm_cgroup_conf_t *cg_conf, Buf buffer)
+static void _pack_cgroup_conf(slurm_cgroup_conf_t *cg_conf, buf_t *buffer)
 {
 	/*
 	 * No protocol version needed, at the time of writing we are only
@@ -140,7 +140,7 @@ static void _pack_cgroup_conf(slurm_cgroup_conf_t *cg_conf, Buf buffer)
 	packstr(cg_conf->allowed_devices_file, buffer);
 }
 
-static int _unpack_cgroup_conf(Buf buffer)
+static int _unpack_cgroup_conf(buf_t *buffer)
 {
 	uint32_t uint32_tmp = 0;
 	bool tmpbool = false;
@@ -529,7 +529,7 @@ rwfail:
 extern int xcgroup_read_conf(int fd)
 {
 	int len, rc;
-	Buf buffer = NULL;
+	buf_t *buffer = NULL;
 
 	xcgroup_fini_slurm_cgroup_conf();
 

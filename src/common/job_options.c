@@ -77,7 +77,7 @@ static void job_option_info_destroy (struct job_option_info *ji)
 	return;
 }
 
-static void job_option_info_pack (struct job_option_info *ji, Buf buf)
+static void job_option_info_pack(struct job_option_info *ji, buf_t *buf)
 {
 	pack32  (ji->type, buf);
 	packstr (ji->option, buf);
@@ -85,7 +85,7 @@ static void job_option_info_pack (struct job_option_info *ji, Buf buf)
 	return;
 }
 
-static struct job_option_info * job_option_info_unpack (Buf buf)
+static struct job_option_info *job_option_info_unpack(buf_t *buf)
 {
 	struct job_option_info *ji = xmalloc (sizeof (*ji));
 	uint32_t type;
@@ -150,9 +150,9 @@ int job_options_append (job_options_t opts, int type, const char *opt,
 }
 
 /*
- *  Pack all accumulated options into Buffer "buf"
+ *  Pack all accumulated options into buf
  */
-int job_options_pack (job_options_t opts, Buf buf)
+int job_options_pack(job_options_t opts, buf_t *buf)
 {
 	uint32_t count = 0;
 	ListIterator i;
@@ -184,7 +184,7 @@ int job_options_pack (job_options_t opts, Buf buf)
 /*
  *  Unpack options from buffer "buf" into options container opts.
  */
-int job_options_unpack (job_options_t opts, Buf buf)
+int job_options_unpack(job_options_t opts, buf_t *buf)
 {
 	uint32_t count;
 	uint32_t len;

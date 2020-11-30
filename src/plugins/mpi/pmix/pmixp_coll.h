@@ -180,7 +180,7 @@ typedef struct {
 	pmixp_coll_tree_sndstate_t dfwd_status;
 
 	/* collective data */
-	Buf ufwd_buf, dfwd_buf;
+	buf_t *ufwd_buf, *dfwd_buf;
 	size_t serv_offs, dfwd_offset, ufwd_offset;
 } pmixp_coll_tree_t;
 
@@ -205,7 +205,7 @@ typedef struct {
 	uint32_t forward_cnt;
 	bool *contrib_map;
 	pmixp_ring_state_t state;
-	Buf ring_buf;
+	buf_t *ring_buf;
 } pmixp_coll_ring_ctx_t;
 
 /* coll ring struct */
@@ -299,13 +299,13 @@ pmixp_coll_t *pmixp_coll_tree_from_cbdata(void *cbdata);
 int pmixp_coll_tree_local(pmixp_coll_t *coll, char *data, size_t size,
 			  void *cbfunc, void *cbdata);
 int pmixp_coll_tree_child(pmixp_coll_t *coll, uint32_t nodeid,
-			  uint32_t seq, Buf buf);
+			  uint32_t seq, buf_t *buf);
 int pmixp_coll_tree_parent(pmixp_coll_t *coll, uint32_t nodeid,
-			   uint32_t seq, Buf buf);
+			   uint32_t seq, buf_t *buf);
 void pmixp_coll_tree_bcast(pmixp_coll_t *coll);
 bool pmixp_coll_tree_progress(pmixp_coll_t *coll, char *fwd_node,
 			      void **data, uint64_t size);
-int pmixp_coll_tree_unpack(Buf buf, pmixp_coll_type_t *type,
+int pmixp_coll_tree_unpack(buf_t *buf, pmixp_coll_type_t *type,
 			   int *nodeid, pmixp_proc_t **r,
 			   size_t *nr);
 void pmixp_coll_tree_reset_if_to(pmixp_coll_t *coll, time_t ts);
@@ -318,9 +318,9 @@ int pmixp_coll_ring_check(pmixp_coll_t  *coll, pmixp_coll_ring_msg_hdr_t *hdr);
 int pmixp_coll_ring_local(pmixp_coll_t  *coll, char *data, size_t size,
 			  void *cbfunc, void *cbdata);
 int pmixp_coll_ring_neighbor(pmixp_coll_t *coll, pmixp_coll_ring_msg_hdr_t *hdr,
-			     Buf buf);
+			     buf_t *buf);
 void pmixp_coll_ring_reset(pmixp_coll_ring_ctx_t *coll);
-int pmixp_coll_ring_unpack(Buf buf, pmixp_coll_type_t *type,
+int pmixp_coll_ring_unpack(buf_t *buf, pmixp_coll_type_t *type,
 			   pmixp_coll_ring_msg_hdr_t *ring_hdr,
 			   pmixp_proc_t **r, size_t *nr);
 void pmixp_coll_ring_reset_if_to(pmixp_coll_t  *coll, time_t ts);

@@ -44,7 +44,7 @@
 /* Assume that the slurmd and slurmstepd are the same version level when slurmd
  * starts slurmstepd, so we do not need to support different protocol versions
  * for the different message formats. */
-extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer)
+extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, buf_t *buffer)
 {
 	xassert(conf != NULL);
 	packstr(PROTOCOL_VERSION, buffer);
@@ -72,7 +72,7 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer)
 	packstr(conf->gres, buffer);
 }
 
-extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
+extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	uint16_t protocol_version;

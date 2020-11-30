@@ -1,6 +1,6 @@
 /****************************************************************************\
  *  pack.h - definitions for lowest level un/pack functions. all functions
- *	utilize a Buf structure. Call init_buf, un/pack, and free_buf
+ *	utilize a buf_t structure. Call init_buf, un/pack, and free_buf
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -60,7 +60,7 @@
 #define MAX_PACK_ARRAY_LEN	(128 * 1024)
 #define MAX_PACK_MEM_LEN	(1024 * 1024 * 1024)
 
-typedef struct slurm_buf {
+typedef struct {
 	uint32_t magic;
 	char *head;
 	uint32_t size;
@@ -68,80 +68,83 @@ typedef struct slurm_buf {
 	bool mmaped;
 } buf_t;
 
-typedef struct slurm_buf * Buf;
-
 #define get_buf_data(__buf)		(__buf->head)
 #define get_buf_offset(__buf)		(__buf->processed)
 #define set_buf_offset(__buf,__val)	(__buf->processed = __val)
 #define remaining_buf(__buf)		(__buf->size - __buf->processed)
 #define size_buf(__buf)			(__buf->size)
 
-Buf	create_buf (char *data, uint32_t size);
-Buf	create_mmap_buf(char *file);
-void	free_buf(Buf my_buf);
-Buf	init_buf(uint32_t size);
-void    grow_buf (Buf my_buf, uint32_t size);
-void	*xfer_buf_data(Buf my_buf);
+extern buf_t *create_buf(char *data, uint32_t size);
+extern buf_t *create_mmap_buf(char *file);
+extern void free_buf(buf_t *my_buf);
+extern buf_t *init_buf(uint32_t size);
+extern void grow_buf(buf_t *my_buf, uint32_t size);
+extern void *xfer_buf_data(buf_t *my_buf);
 
-void	pack_time(time_t val, Buf buffer);
-int	unpack_time(time_t *valp, Buf buffer);
+extern void pack_time(time_t val, buf_t *buffer);
+extern int unpack_time(time_t *valp, buf_t *buffer);
 
-void 	packfloat(float val, Buf buffer);
-int	unpackfloat(float *valp, Buf buffer);
+extern void packfloat(float val, buf_t *buffer);
+extern int unpackfloat(float *valp, buf_t *buffer);
 
-void 	packdouble(double val, Buf buffer);
-int	unpackdouble(double *valp, Buf buffer);
+extern void packdouble(double val, buf_t *buffer);
+extern int unpackdouble(double *valp, buf_t *buffer);
 
-void 	packlongdouble(long double val, Buf buffer);
-int	unpacklongdouble(long double *valp, Buf buffer);
+extern void packlongdouble(long double val, buf_t *buffer);
+extern int unpacklongdouble(long double *valp, buf_t *buffer);
 
-void 	pack64(uint64_t val, Buf buffer);
-int	unpack64(uint64_t *valp, Buf buffer);
+extern void pack64(uint64_t val, buf_t *buffer);
+extern int unpack64(uint64_t *valp, buf_t *buffer);
 
-void 	pack32(uint32_t val, Buf buffer);
-int	unpack32(uint32_t *valp, Buf buffer);
+extern void pack32(uint32_t val, buf_t *buffer);
+extern int unpack32(uint32_t *valp, buf_t *buffer);
 
-void	pack16(uint16_t val, Buf buffer);
-int	unpack16(uint16_t *valp, Buf buffer);
+extern void pack16(uint16_t val, buf_t *buffer);
+extern int unpack16(uint16_t *valp, buf_t *buffer);
 
-void	pack8(uint8_t val, Buf buffer);
-int	unpack8(uint8_t *valp, Buf buffer);
+extern void pack8(uint8_t val, buf_t *buffer);
+extern int unpack8(uint8_t *valp, buf_t *buffer);
 
-void	packbool(bool val, Buf buffer);
-int	unpackbool(bool *valp, Buf buffer);
+extern void packbool(bool val, buf_t *buffer);
+extern int unpackbool(bool *valp, buf_t *buffer);
 
-void    pack16_array(uint16_t *valp, uint32_t size_val, Buf buffer);
-int     unpack16_array(uint16_t **valp, uint32_t* size_val, Buf buffer);
+extern void pack16_array(uint16_t *valp, uint32_t size_val, buf_t *buffer);
+extern int unpack16_array(uint16_t **valp, uint32_t *size_val, buf_t *buffer);
 
-void	pack32_array(uint32_t *valp, uint32_t size_val, Buf buffer);
-int	unpack32_array(uint32_t **valp, uint32_t* size_val, Buf buffer);
+extern void pack32_array(uint32_t *valp, uint32_t size_val, buf_t *buffer);
+extern int unpack32_array(uint32_t **valp, uint32_t *size_val, buf_t *buffer);
 
-void	pack64_array(uint64_t *valp, uint32_t size_val, Buf buffer);
-int	unpack64_array(uint64_t **valp, uint32_t* size_val, Buf buffer);
+extern void pack64_array(uint64_t *valp, uint32_t size_val, buf_t *buffer);
+extern int unpack64_array(uint64_t **valp, uint32_t *size_val, buf_t *buffer);
 
-void	pack64_array_as_32(uint64_t * valp, uint32_t size_val, Buf buffer);
-int	unpack64_array_from_32(uint64_t ** valp, uint32_t * size_val, Buf buffer);
+extern void pack64_array_as_32(uint64_t *valp, uint32_t size_val,
+			       buf_t *buffer);
+extern int unpack64_array_from_32(uint64_t **valp, uint32_t *size_val,
+				  buf_t *buffer);
 
-void	packdouble_array(double *valp, uint32_t size_val, Buf buffer);
-int	unpackdouble_array(double **valp, uint32_t* size_val, Buf buffer);
+extern void packdouble_array(double *valp, uint32_t size_val, buf_t *buffer);
+extern int unpackdouble_array(double **valp, uint32_t *size_val, buf_t *buffer);
 
-void	packlongdouble_array(long double *valp, uint32_t size_val, Buf buffer);
-int	unpacklongdouble_array(long double **valp, uint32_t* size_val,
-			       Buf buffer);
+extern void packlongdouble_array(long double *valp, uint32_t size_val,
+				 buf_t *buffer);
+extern int unpacklongdouble_array(long double **valp, uint32_t *size_val,
+				  buf_t *buffer);
 
 extern void packmem(void *valp, uint32_t size_val, buf_t *buffer);
-int	unpackmem_ptr(char **valp, uint32_t *size_valp, Buf buffer);
-int	unpackmem_xmalloc(char **valp, uint32_t *size_valp, Buf buffer);
-int	unpackmem_malloc(char **valp, uint32_t *size_valp, Buf buffer);
+extern int unpackmem_ptr(char **valp, uint32_t *size_valp, buf_t *buffer);
+extern int unpackmem_xmalloc(char **valp, uint32_t *size_valp, buf_t *buffer);
+extern int unpackmem_malloc(char **valp, uint32_t *size_valp, buf_t *buffer);
 
-int	unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp, Buf buffer);
-int	unpackstr_xmalloc_chooser(char **valp, uint32_t *size_valp, Buf buffer);
+extern int unpackstr_xmalloc_escaped(char **valp, uint32_t *size_valp,
+				     buf_t *buffer);
+extern int unpackstr_xmalloc_chooser(char **valp, uint32_t *size_valp,
+				     buf_t *buffer);
 
-void	packstr_array(char **valp, uint32_t size_val, Buf buffer);
-int	unpackstr_array(char ***valp, uint32_t* size_val, Buf buffer);
+extern void packstr_array(char **valp, uint32_t size_val, buf_t *buffer);
+extern int unpackstr_array(char ***valp, uint32_t* size_val, buf_t *buffer);
 
-void	packmem_array(char *valp, uint32_t size_val, Buf buffer);
-int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
+extern void packmem_array(char *valp, uint32_t size_val, buf_t *buffer);
+extern int unpackmem_array(char *valp, uint32_t size_valp, buf_t *buffer);
 
 #define safe_unpack_time(valp,buf) do {			\
 	xassert(sizeof(*valp) == sizeof(time_t));	\

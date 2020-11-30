@@ -92,7 +92,7 @@ static int message_timeout = -1;
 /* STATIC FUNCTIONS */
 static char *_global_auth_key(void);
 static void  _remap_slurmctld_errno(void);
-static int   _unpack_msg_uid(Buf buffer, uint16_t protocol_version);
+static int _unpack_msg_uid(buf_t *buffer, uint16_t protocol_version);
 static bool  _is_port_ok(int, uint16_t, bool);
 
 /* define slurmdbd_conf here so we can treat its existence as a flag */
@@ -908,7 +908,7 @@ fini:	_slurm_api_free_comm_config(proto_conf);
 	return rc;
 }
 
-extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, Buf buffer)
+extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 {
 	header_t header;
 	int rc;
@@ -1027,7 +1027,7 @@ int slurm_receive_msg(int fd, slurm_msg_t *msg, int timeout)
 	char *buf = NULL;
 	size_t buflen = 0;
 	int rc;
-	Buf buffer;
+	buf_t *buffer;
 	bool keep_buffer = false;
 
 	if (msg->flags & SLURM_MSG_KEEP_BUFFER)
@@ -1124,7 +1124,7 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 	int rc;
 	void *auth_cred = NULL;
 	slurm_msg_t msg;
-	Buf buffer;
+	buf_t *buffer;
 	ret_data_info_t *ret_data_info = NULL;
 	List ret_list = NULL;
 	int orig_timeout = timeout;
@@ -1290,7 +1290,7 @@ total_return:
 
 /* try to determine the UID associated with a message with different
  * message header version, return -1 if we can't tell */
-static int _unpack_msg_uid(Buf buffer, uint16_t protocol_version)
+static int _unpack_msg_uid(buf_t *buffer, uint16_t protocol_version)
 {
 	int uid = -1;
 	void *auth_cred = NULL;
@@ -1323,7 +1323,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	header_t header;
 	int rc;
 	void *auth_cred = NULL;
-	Buf buffer;
+	buf_t *buffer;
 
 	xassert(fd >= 0);
 
@@ -1502,8 +1502,7 @@ total_return:
  *  Do the wonderful stuff that needs be done to pack msg
  *  and hdr into buffer
  */
-static void
-_pack_msg(slurm_msg_t *msg, header_t *hdr, Buf buffer)
+static void _pack_msg(slurm_msg_t *msg, header_t *hdr, buf_t *buffer)
 {
 	unsigned int tmplen, msglen;
 
@@ -1528,7 +1527,7 @@ _pack_msg(slurm_msg_t *msg, header_t *hdr, Buf buffer)
 int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 {
 	header_t header;
-	Buf      buffer;
+	buf_t *buffer;
 	int      rc;
 	void *   auth_cred;
 	time_t   start_time = time(NULL);
@@ -1741,8 +1740,8 @@ int slurm_get_peer_addr(int fd, slurm_addr_t * slurm_address)
  * IN/OUT buffer	- buffer to pack the slurm_addr_t from
  * returns		- Slurm error code
  */
-void slurm_pack_slurm_addr_array(slurm_addr_t * slurm_address,
-				 uint32_t size_val, Buf buffer)
+void slurm_pack_slurm_addr_array(slurm_addr_t *slurm_address,
+				 uint32_t size_val, buf_t *buffer)
 {
 	int i = 0;
 	uint32_t nl = htonl(size_val);
@@ -1761,8 +1760,8 @@ void slurm_pack_slurm_addr_array(slurm_addr_t * slurm_address,
  * IN/OUT buffer	- buffer to upack the slurm_addr_t from
  * returns		- Slurm error code
  */
-int slurm_unpack_slurm_addr_array(slurm_addr_t ** slurm_address,
-				  uint32_t * size_val, Buf buffer)
+int slurm_unpack_slurm_addr_array(slurm_addr_t **slurm_address,
+				  uint32_t *size_val, buf_t *buffer)
 {
 	int i = 0;
 	uint32_t nl;

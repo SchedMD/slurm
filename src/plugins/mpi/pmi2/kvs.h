@@ -51,7 +51,7 @@ extern int waiting_kvs_resp;
 
 extern int   temp_kvs_init(void);
 extern int   temp_kvs_add(char *key, char *val);
-extern int   temp_kvs_merge(Buf buf);
+extern int   temp_kvs_merge(buf_t *buf);
 extern int   temp_kvs_send(void);
 
 extern int   kvs_init(void);

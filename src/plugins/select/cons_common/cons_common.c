@@ -1636,7 +1636,7 @@ extern int select_p_step_finish(step_record_t *step_ptr, bool killing_step)
 }
 
 extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
-					 Buf buffer,
+					 buf_t *buffer,
 					 uint16_t protocol_version)
 {
 	select_nodeinfo_t *nodeinfo_empty = NULL;
@@ -1686,7 +1686,7 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 }
 
 extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
-					   Buf buffer,
+					   buf_t *buffer,
 					   uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
@@ -1959,7 +1959,8 @@ extern select_jobinfo_t *select_p_select_jobinfo_copy(select_jobinfo_t *jobinfo)
 }
 
 /* Unused for this plugin */
-extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
+extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo,
+					buf_t *buffer,
 					uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;
@@ -1967,7 +1968,7 @@ extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
 
 /* Unused for this plugin */
 extern int select_p_select_jobinfo_unpack(select_jobinfo_t *jobinfo,
-					  Buf buffer,
+					  buf_t *buffer,
 					  uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;

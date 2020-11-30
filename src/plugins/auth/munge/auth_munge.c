@@ -339,7 +339,7 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred)
  * Marshall a credential for transmission over the network, according to
  * Slurm's marshalling protocol.
  */
-int slurm_auth_pack(slurm_auth_credential_t *cred, Buf buf,
+int slurm_auth_pack(slurm_auth_credential_t *cred, buf_t *buf,
 		    uint16_t protocol_version )
 {
 	if (!cred || !buf) {
@@ -364,7 +364,8 @@ int slurm_auth_pack(slurm_auth_credential_t *cred, Buf buf,
  * Unmarshall a credential after transmission over the network according
  * to Slurm's marshalling protocol.
  */
-slurm_auth_credential_t *slurm_auth_unpack(Buf buf, uint16_t protocol_version)
+slurm_auth_credential_t *slurm_auth_unpack(buf_t *buf,
+					   uint16_t protocol_version)
 {
 	slurm_auth_credential_t *cred = NULL;
 	uint32_t size;

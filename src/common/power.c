@@ -183,7 +183,7 @@ extern void power_g_job_start(job_record_t *job_ptr)
 }
 
 /* Pack a power management data structure */
-extern void power_mgmt_data_pack(power_mgmt_data_t *power, Buf buffer,
+extern void power_mgmt_data_pack(power_mgmt_data_t *power, buf_t *buffer,
 				 uint16_t protocol_version)
 {
 	if (!power) {
@@ -195,7 +195,7 @@ extern void power_mgmt_data_pack(power_mgmt_data_t *power, Buf buffer,
 
 /* Unpack a power management data structure
  * Use power_mgmt_data_free() to free the returned structure */
-extern int power_mgmt_data_unpack(power_mgmt_data_t **power, Buf buffer,
+extern int power_mgmt_data_unpack(power_mgmt_data_t **power, buf_t *buffer,
 				  uint16_t protocol_version)
 {
 	power_mgmt_data_t *power_ptr = xmalloc(sizeof(power_mgmt_data_t));

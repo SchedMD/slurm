@@ -707,7 +707,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	struct utsname buf;
 	static bool first_msg = true;
 	static time_t slurmd_start_time = 0;
-	Buf gres_info;
+	buf_t *gres_info;
 
 	msg->dynamic = conf->dynamic;
 	msg->dynamic_feature = xstrdup(conf->dynamic_feature);
@@ -1873,7 +1873,7 @@ _restore_cred_state(slurm_cred_ctx_t ctx)
 	char *file_name = NULL, *data = NULL;
 	uint32_t data_offset = 0;
 	int cred_fd, data_allocated, data_read = 0;
-	Buf buffer = NULL;
+	buf_t *buffer = NULL;
 
 	if ( (mkdir(conf->spooldir, 0755) < 0) && (errno != EEXIST) ) {
 		fatal("mkdir(%s): %m", conf->spooldir);
@@ -1952,7 +1952,7 @@ int save_cred_state(slurm_cred_ctx_t ctx)
 {
 	char *old_file, *new_file, *reg_file;
 	int cred_fd = -1, error_code = SLURM_SUCCESS, rc;
-	Buf buffer = NULL;
+	buf_t *buffer = NULL;
 	static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 	old_file = xstrdup(conf->spooldir);

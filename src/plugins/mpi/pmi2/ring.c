@@ -418,7 +418,7 @@ int pmix_ring_out(int count, char* left, char* right)
 		/* TODO: do we need hton translation? */
 
 		/* construct message */
-		Buf buf = init_buf(1024);
+		buf_t *buf = init_buf(1024);
 		pack16(TREE_CMD_RING_RESP,    buf); /* specify message type (RING_OUT) */
 		pack32((uint32_t) msg->count, buf); /* send count value */
 		packstr(msg->left,            buf); /* send left value */
@@ -548,7 +548,7 @@ int pmix_ring_in(int ring_id, int count, char* left, char* right)
 			/* TODO: do we need hton translation? */
 
 			/* construct message */
-			Buf buf = init_buf(1024);
+			buf_t *buf = init_buf(1024);
 			pack16(TREE_CMD_RING, buf); /* specify message type (RING_IN) */
 			pack32(my_rank,       buf); /* send our rank */
 			pack32(sum,           buf); /* send count value */

@@ -3823,7 +3823,7 @@ extern int select_p_step_finish(step_record_t *step_ptr, bool killing_step)
 }
 
 extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
-					 Buf buffer,
+					 buf_t *buffer,
 					 uint16_t protocol_version)
 {
 	select_nodeinfo_t *nodeinfo_empty = NULL;
@@ -3850,7 +3850,7 @@ extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 }
 
 extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
-					   Buf buffer,
+					   buf_t *buffer,
 					   uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
@@ -4085,8 +4085,9 @@ extern int select_p_select_jobinfo_free  (select_jobinfo_t *jobinfo)
  * IN protocol_version - slurm protocol version of client
  * RET         - slurm error code
  */
-extern int  select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
-					 uint16_t protocol_version)
+extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo,
+					buf_t *buffer,
+					uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;
 }
@@ -4099,9 +4100,9 @@ extern int  select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
  * RET         - slurm error code
  * NOTE: returned value must be freed using select_p_select_jobinfo_free
  */
-extern int  select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
-					   Buf buffer,
-					   uint16_t protocol_version)
+extern int select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
+					  buf_t *buffer,
+					  uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;
 }

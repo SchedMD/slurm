@@ -349,7 +349,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	}
 }
 
-extern void common_send_stepd(Buf buffer, List gres_devices)
+extern void common_send_stepd(buf_t *buffer, List gres_devices)
 {
 	uint32_t cnt = 0;
 	gres_device_t *gres_device;
@@ -375,7 +375,7 @@ extern void common_send_stepd(Buf buffer, List gres_devices)
 	return;
 }
 
-extern void common_recv_stepd(Buf buffer, List *gres_devices)
+extern void common_recv_stepd(buf_t *buffer, List *gres_devices)
 {
 	uint32_t i, cnt;
 	uint32_t uint32_tmp = 0;

@@ -799,7 +799,7 @@ extern char *slurmdbd_msg_type_2_str(slurmdbd_msg_type_t msg_type, int get_enum)
 \****************************************************************************/
 extern void slurmdbd_free_buffer(void *x)
 {
-	Buf buffer = (Buf) x;
+	buf_t *buffer = (buf_t *) x;
 	if (buffer)
 		free_buf(buffer);
 }

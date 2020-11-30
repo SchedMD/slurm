@@ -95,8 +95,8 @@ extern int g_slurm_auth_verify(void *cred, char *auth_info);
 extern uid_t g_slurm_auth_get_uid(void *cred);
 extern gid_t g_slurm_auth_get_gid(void *cred);
 extern char *g_slurm_auth_get_host(void *cred);
-extern int g_slurm_auth_pack(void *cred, Buf buf, uint16_t protocol_version);
-extern void *g_slurm_auth_unpack(Buf buf, uint16_t protocol_version);
+extern int g_slurm_auth_pack(void *cred, buf_t *buf, uint16_t protocol_version);
+extern void *g_slurm_auth_unpack(buf_t *buf, uint16_t protocol_version);
 
 extern char *g_slurm_auth_token_generate(int plugin_id, const char *username,
 					 int lifespan);

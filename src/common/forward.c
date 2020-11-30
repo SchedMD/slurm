@@ -96,7 +96,7 @@ void *_forward_thread(void *arg)
 {
 	forward_msg_t *fwd_msg = (forward_msg_t *)arg;
 	forward_struct_t *fwd_struct = fwd_msg->fwd_struct;
-	Buf buffer = init_buf(BUF_SIZE);	/* probably enough for header */
+	buf_t *buffer = init_buf(BUF_SIZE);	/* probably enough for header */
 	List ret_list = NULL;
 	int fd = -1;
 	ret_data_info_t *ret_data_info = NULL;

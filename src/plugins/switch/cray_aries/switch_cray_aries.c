@@ -305,7 +305,7 @@ endit:
 	return;
 }
 
-extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
+extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, buf_t *buffer,
 				 uint16_t protocol_version)
 {
 	slurm_cray_jobinfo_t *job = (slurm_cray_jobinfo_t *) switch_job;
@@ -339,7 +339,7 @@ extern int switch_p_pack_jobinfo(switch_jobinfo_t *switch_job, Buf buffer,
 	return 0;
 }
 
-extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, Buf buffer,
+extern int switch_p_unpack_jobinfo(switch_jobinfo_t **switch_job, buf_t *buffer,
 				   uint16_t protocol_version)
 {
 	uint32_t num_cookies;
@@ -706,13 +706,13 @@ extern void switch_p_job_suspend_info_get(switch_jobinfo_t *jobinfo,
 {
 	return;
 }
-extern void switch_p_job_suspend_info_pack(void *suspend_info, Buf buffer,
+extern void switch_p_job_suspend_info_pack(void *suspend_info, buf_t *buffer,
 					   uint16_t protocol_version)
 {
 	return;
 }
 
-extern int switch_p_job_suspend_info_unpack(void **suspend_info, Buf buffer,
+extern int switch_p_job_suspend_info_unpack(void **suspend_info, buf_t *buffer,
 					    uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;
@@ -871,14 +871,14 @@ extern int switch_p_build_node_info(switch_node_info_t *switch_node)
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_pack_node_info(switch_node_info_t *switch_node, Buf buffer,
+extern int switch_p_pack_node_info(switch_node_info_t *switch_node, buf_t *buffer,
 				   uint16_t protocol_version)
 {
 	return 0;
 }
 
 extern int switch_p_unpack_node_info(switch_node_info_t **switch_node,
-				     Buf buffer, uint16_t protocol_version)
+				     buf_t *buffer, uint16_t protocol_version)
 {
 	return SLURM_SUCCESS;
 }

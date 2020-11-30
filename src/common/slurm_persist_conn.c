@@ -75,8 +75,8 @@ static pthread_mutex_t thread_count_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  thread_count_cond = PTHREAD_COND_INITIALIZER;
 static time_t          shutdown_time = 0;
 
-static Buf _slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn,
-                                   bool reopen);
+static buf_t *_slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn,
+				      bool reopen);
 
 /* Return time in msec since "start time" */
 static int _tot_wait (struct timeval *start_time)
@@ -227,7 +227,7 @@ static int _process_service_connection(
 	char *msg_char = NULL;
 	ssize_t msg_read = 0, offset = 0;
 	bool first = true, fini = false;
-	Buf buffer = NULL;
+	buf_t *buffer = NULL;
 	int rc = SLURM_SUCCESS;
 
 	xassert(persist_conn->callback_proc);
@@ -626,7 +626,7 @@ extern int slurm_persist_conn_open(slurm_persist_conn_t *persist_conn)
 		      __func__, persist_conn->rem_host, persist_conn->rem_port);
 		_close_fd(&persist_conn->fd);
 	} else {
-		Buf buffer = _slurm_persist_recv_msg(persist_conn, false);
+		buf_t *buffer = _slurm_persist_recv_msg(persist_conn, false);
 		persist_msg_t msg;
 		slurm_persist_conn_t persist_conn_tmp;
 
@@ -725,10 +725,10 @@ extern void slurm_persist_conn_destroy(slurm_persist_conn_t *persist_conn)
 extern int slurm_persist_conn_process_msg(slurm_persist_conn_t *persist_conn,
 					  persist_msg_t *persist_msg,
 					  char *msg_char, uint32_t msg_size,
-					  Buf *out_buffer, bool first)
+					  buf_t **out_buffer, bool first)
 {
 	int rc;
-	Buf recv_buffer = NULL;
+	buf_t *recv_buffer = NULL;
 	char *comment = NULL;
 
 	/* puts msg_char into buffer struct */
@@ -859,8 +859,8 @@ extern int slurm_persist_conn_writeable(slurm_persist_conn_t *persist_conn)
 	return 0;
 }
 
-extern int slurm_persist_send_msg(
-	slurm_persist_conn_t *persist_conn, Buf buffer)
+extern int slurm_persist_send_msg(slurm_persist_conn_t *persist_conn,
+				  buf_t *buffer)
 {
 	uint32_t msg_size, nw_size;
 	char *msg;
@@ -918,13 +918,13 @@ extern int slurm_persist_send_msg(
 	return SLURM_SUCCESS;
 }
 
-static Buf _slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn,
-				   bool reopen)
+static buf_t *_slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn,
+				      bool reopen)
 {
 	uint32_t msg_size, nw_size;
 	char *msg;
 	ssize_t msg_read, offset;
-	Buf buffer;
+	buf_t *buffer;
 
 	xassert(persist_conn);
 
@@ -1004,15 +1004,15 @@ endit:
 	return NULL;
 }
 
-extern Buf slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
+extern buf_t *slurm_persist_recv_msg(slurm_persist_conn_t *persist_conn)
 {
 	return _slurm_persist_recv_msg(persist_conn, true);
 }
 
-extern Buf slurm_persist_msg_pack(slurm_persist_conn_t *persist_conn,
-				  persist_msg_t *req_msg)
+extern buf_t *slurm_persist_msg_pack(slurm_persist_conn_t *persist_conn,
+				     persist_msg_t *req_msg)
 {
-	Buf buffer;
+	buf_t *buffer;
 
 	xassert(persist_conn);
 
@@ -1042,7 +1042,7 @@ extern Buf slurm_persist_msg_pack(slurm_persist_conn_t *persist_conn,
 
 
 extern int slurm_persist_msg_unpack(slurm_persist_conn_t *persist_conn,
-				    persist_msg_t *resp_msg, Buf buffer)
+				    persist_msg_t *resp_msg, buf_t *buffer)
 {
 	int rc;
 
@@ -1086,8 +1086,8 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void slurm_persist_pack_init_req_msg(
-	persist_init_req_msg_t *msg, Buf buffer)
+extern void slurm_persist_pack_init_req_msg(persist_init_req_msg_t *msg,
+					    buf_t *buffer)
 {
 	/* always send version field first for backwards compatibility */
 	pack16(msg->version, buffer);
@@ -1102,8 +1102,8 @@ extern void slurm_persist_pack_init_req_msg(
 	}
 }
 
-extern int slurm_persist_unpack_init_req_msg(
-	persist_init_req_msg_t **msg, Buf buffer)
+extern int slurm_persist_unpack_init_req_msg(persist_init_req_msg_t **msg,
+					     buf_t *buffer)
 {
 	uint32_t tmp32;
 
@@ -1140,8 +1140,9 @@ extern void slurm_persist_free_init_req_msg(persist_init_req_msg_t *msg)
 	}
 }
 
-extern void slurm_persist_pack_rc_msg(
-	persist_rc_msg_t *msg, Buf buffer, uint16_t protocol_version)
+extern void slurm_persist_pack_rc_msg(persist_rc_msg_t *msg,
+				      buf_t *buffer,
+				      uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->comment, buffer);
@@ -1154,8 +1155,9 @@ extern void slurm_persist_pack_rc_msg(
 	}
 }
 
-extern int slurm_persist_unpack_rc_msg(
-	persist_rc_msg_t **msg, Buf buffer, uint16_t protocol_version)
+extern int slurm_persist_unpack_rc_msg(persist_rc_msg_t **msg,
+				       buf_t *buffer,
+				       uint16_t protocol_version)
 {
 	uint32_t uint32_tmp;
 
@@ -1190,9 +1192,9 @@ extern void slurm_persist_free_rc_msg(persist_rc_msg_t *msg)
 	}
 }
 
-extern Buf slurm_persist_make_rc_msg(slurm_persist_conn_t *persist_conn,
-				     uint32_t rc, char *comment,
-				     uint16_t ret_info)
+extern buf_t *slurm_persist_make_rc_msg(slurm_persist_conn_t *persist_conn,
+					uint32_t rc, char *comment,
+					uint16_t ret_info)
 {
 	persist_rc_msg_t msg;
 	persist_msg_t resp;
@@ -1210,10 +1212,10 @@ extern Buf slurm_persist_make_rc_msg(slurm_persist_conn_t *persist_conn,
 	return slurm_persist_msg_pack(persist_conn, &resp);
 }
 
-extern Buf slurm_persist_make_rc_msg_flags(slurm_persist_conn_t *persist_conn,
-					   uint32_t rc, char *comment,
-					   uint16_t flags,
-					   uint16_t ret_info)
+extern buf_t *slurm_persist_make_rc_msg_flags(slurm_persist_conn_t *persist_conn,
+					      uint32_t rc, char *comment,
+					      uint16_t flags,
+					      uint16_t ret_info)
 {
 	persist_rc_msg_t msg;
 	persist_msg_t resp;

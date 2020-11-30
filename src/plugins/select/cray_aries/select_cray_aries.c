@@ -751,7 +751,7 @@ static void _free_blade(blade_info_t *blade_info)
 	FREE_NULL_BITMAP(blade_info->node_bitmap);
 }
 
-static void _pack_blade(blade_info_t *blade_info, Buf buffer,
+static void _pack_blade(blade_info_t *blade_info, buf_t *buffer,
 			uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -762,7 +762,7 @@ static void _pack_blade(blade_info_t *blade_info, Buf buffer,
 
 }
 
-static int _unpack_blade(blade_info_t *blade_info, Buf buffer,
+static int _unpack_blade(blade_info_t *blade_info, buf_t *buffer,
 			 uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -836,7 +836,7 @@ static void _set_job_running_restore(select_jobinfo_t *jobinfo)
 		last_npc_update = time(NULL);
 }
 
-static void _select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
+static void _select_jobinfo_pack(select_jobinfo_t *jobinfo, buf_t *buffer,
 				 uint16_t protocol_version)
 {
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -855,7 +855,7 @@ static void _select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
 }
 
 static int _select_jobinfo_unpack(select_jobinfo_t **jobinfo_pptr,
-				  Buf buffer, uint16_t protocol_version)
+				  buf_t *buffer, uint16_t protocol_version)
 {
 	select_jobinfo_t *jobinfo = xmalloc(sizeof(struct select_jobinfo));
 
@@ -966,7 +966,7 @@ extern int select_p_state_save(char *dir_name)
 {
 	int error_code = 0, log_fd, i;
 	char *old_file, *new_file, *reg_file;
-	Buf buffer = init_buf(BUF_SIZE);
+	buf_t *buffer = init_buf(BUF_SIZE);
 
 	DEF_TIMERS;
 
@@ -1050,7 +1050,7 @@ extern int select_p_state_restore(char *dir_name)
 	static time_t last_config_update = (time_t) 0;
 	int i;
 	char *state_file = NULL;
-	Buf buffer = NULL;
+	buf_t *buffer = NULL;
 	uint16_t protocol_version = NO_VAL16;
 	uint32_t record_count;
 
@@ -1776,7 +1776,7 @@ extern int select_p_select_nodeinfo_free(select_nodeinfo_t *nodeinfo)
 }
 
 extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
-					 Buf buffer, uint16_t protocol_version)
+					 buf_t *buffer, uint16_t protocol_version)
 {
 	int rc = SLURM_ERROR;
 
@@ -1796,7 +1796,7 @@ extern int select_p_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 }
 
 extern int select_p_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo_pptr,
-					   Buf buffer,
+					   buf_t *buffer,
 					   uint16_t protocol_version)
 {
 	int rc = SLURM_ERROR;
@@ -2035,7 +2035,8 @@ extern int select_p_select_jobinfo_free(select_jobinfo_t *jobinfo)
 	return rc;
 }
 
-extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
+extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo,
+					buf_t *buffer,
 					uint16_t protocol_version)
 {
 	int rc = SLURM_ERROR;
@@ -2050,7 +2051,8 @@ extern int select_p_select_jobinfo_pack(select_jobinfo_t *jobinfo, Buf buffer,
 }
 
 extern int select_p_select_jobinfo_unpack(select_jobinfo_t **jobinfo_pptr,
-					  Buf buffer, uint16_t protocol_version)
+					  buf_t *buffer,
+					  uint16_t protocol_version)
 {
 	int rc;
 	select_jobinfo_t *jobinfo = NULL;

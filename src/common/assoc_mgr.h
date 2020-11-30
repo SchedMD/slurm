@@ -309,8 +309,8 @@ extern void assoc_mgr_info_get_pack_msg(
  * IN: version of Slurm this is packed in
  * RET: SLURM_SUCCESS on SUCCESS, SLURM_ERROR else
  */
-extern int assoc_mgr_info_unpack_msg(
-	assoc_mgr_info_msg_t **object, Buf buffer, uint16_t protocol_version);
+extern int assoc_mgr_info_unpack_msg(assoc_mgr_info_msg_t **object,
+				     buf_t *buffer, uint16_t protocol_version);
 
 /*
  * assoc_mgr_update - update the association manager

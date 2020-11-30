@@ -58,10 +58,10 @@ extern int acct_gather_energy_init(void); /* load the plugin */
 extern int acct_gather_energy_fini(void); /* unload the plugin */
 extern acct_gather_energy_t *acct_gather_energy_alloc(uint16_t cnt);
 extern void acct_gather_energy_destroy(acct_gather_energy_t *energy);
-extern void acct_gather_energy_pack(acct_gather_energy_t *energy, Buf buffer,
+extern void acct_gather_energy_pack(acct_gather_energy_t *energy, buf_t *buffer,
 				    uint16_t protocol_version);
-extern int acct_gather_energy_unpack(acct_gather_energy_t **energy, Buf buffer,
-				     uint16_t protocol_version,
+extern int acct_gather_energy_unpack(acct_gather_energy_t **energy,
+				     buf_t *buffer, uint16_t protocol_version,
 				     bool need_alloc);
 
 extern int acct_gather_energy_g_update_node_energy(void);

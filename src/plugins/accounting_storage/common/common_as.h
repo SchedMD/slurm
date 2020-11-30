@@ -80,7 +80,7 @@ extern char* acct_get_db_name(void);
 extern time_t archive_setup_end_time(time_t last_submit, uint32_t purge);
 extern int archive_run_script(slurmdb_archive_cond_t *arch_cond,
 			      char *cluster_name, time_t last_submit);
-extern int archive_write_file(Buf buffer, char *cluster_name,
+extern int archive_write_file(buf_t *buffer, char *cluster_name,
 			      time_t period_start, time_t period_end,
 			      char *arch_dir, char *arch_type,
 			      uint32_t archive_period);

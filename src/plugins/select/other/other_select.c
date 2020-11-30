@@ -432,7 +432,7 @@ extern int other_step_finish(step_record_t *step_ptr, bool killing_step)
 }
 
 extern int other_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
-				      Buf buffer,
+				      buf_t *buffer,
 				      uint16_t protocol_version)
 {
 	if (other_select_init() < 0)
@@ -442,7 +442,7 @@ extern int other_select_nodeinfo_pack(select_nodeinfo_t *nodeinfo,
 }
 
 extern int other_select_nodeinfo_unpack(select_nodeinfo_t **nodeinfo,
-					Buf buffer,
+					buf_t *buffer,
 					uint16_t protocol_version)
 {
 	if (other_select_init() < 0)
@@ -557,7 +557,7 @@ extern select_jobinfo_t *other_select_jobinfo_copy(
  * RET         - slurm error code
  */
 extern int other_select_jobinfo_pack(select_jobinfo_t *jobinfo,
-				     Buf buffer,
+				     buf_t *buffer,
 				     uint16_t protocol_version)
 {
 	if (other_select_init() < 0)
@@ -573,7 +573,7 @@ extern int other_select_jobinfo_pack(select_jobinfo_t *jobinfo,
  * NOTE: returned value must be freed using other_free_jobinfo
  */
 extern int other_select_jobinfo_unpack(select_jobinfo_t **jobinfo,
-				       Buf buffer,
+				       buf_t *buffer,
 				       uint16_t protocol_version)
 {
 	if (other_select_init() < 0)

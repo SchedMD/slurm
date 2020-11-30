@@ -806,8 +806,8 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 
 static uint32_t high_buffer_size = (1024 * 1024);
 
-static void _pack_local_event(local_event_t *object,
-			      uint16_t rpc_version, Buf buffer)
+static void _pack_local_event(local_event_t *object, uint16_t rpc_version,
+			      buf_t *buffer)
 {
 	packstr(object->cluster_nodes, buffer);
 	packstr(object->node_name, buffer);
@@ -821,8 +821,8 @@ static void _pack_local_event(local_event_t *object,
 
 /* this needs to be allocated before calling, and since we aren't
  * doing any copying it needs to be used before destroying buffer */
-static int _unpack_local_event(local_event_t *object,
-			       uint16_t rpc_version, Buf buffer)
+static int _unpack_local_event(local_event_t *object, uint16_t rpc_version,
+			       buf_t *buffer)
 {
 	uint32_t tmp32;
 	char *tmp_char;
@@ -856,8 +856,8 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_job(local_job_t *object,
-			    uint16_t rpc_version, Buf buffer)
+static void _pack_local_job(local_job_t *object, uint16_t rpc_version,
+			    buf_t *buffer)
 {
 	packstr(object->account, buffer);
 	packstr(object->admin_comment, buffer);
@@ -913,8 +913,8 @@ static void _pack_local_job(local_job_t *object,
 
 /* this needs to be allocated before calling, and since we aren't
  * doing any copying it needs to be used before destroying buffer */
-static int _unpack_local_job(local_job_t *object,
-			     uint16_t rpc_version, Buf buffer)
+static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
+			     buf_t *buffer)
 {
 	uint32_t tmp32;
 	char *tmp_char = NULL;
@@ -1411,8 +1411,8 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_resv(local_resv_t *object,
-			     uint16_t rpc_version, Buf buffer)
+static void _pack_local_resv(local_resv_t *object, uint16_t rpc_version,
+			     buf_t *buffer)
 {
 	packstr(object->assocs, buffer);
 	packstr(object->deleted, buffer);
@@ -1429,8 +1429,8 @@ static void _pack_local_resv(local_resv_t *object,
 
 /* this needs to be allocated before calling, and since we aren't
  * doing any copying it needs to be used before destroying buffer */
-static int _unpack_local_resv(local_resv_t *object,
-			      uint16_t rpc_version, Buf buffer)
+static int _unpack_local_resv(local_resv_t *object, uint16_t rpc_version,
+			      buf_t *buffer)
 {
 	uint32_t tmp32;
 	char *tmp_char;
@@ -1489,8 +1489,8 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_step(local_step_t *object,
-			     uint16_t rpc_version, Buf buffer)
+static void _pack_local_step(local_step_t *object, uint16_t rpc_version,
+			     buf_t *buffer)
 {
 	packstr(object->act_cpufreq, buffer);
 	packstr(object->deleted, buffer);
@@ -1538,8 +1538,8 @@ static void _pack_local_step(local_step_t *object,
 
 /* this needs to be allocated before calling, and since we aren't
  * doing any copying it needs to be used before destroying buffer */
-static int _unpack_local_step(local_step_t *object,
-			      uint16_t rpc_version, Buf buffer)
+static int _unpack_local_step(local_step_t *object, uint16_t rpc_version,
+			      buf_t *buffer)
 {
 	uint32_t tmp32;
 	char *tmp_char;
@@ -2031,8 +2031,8 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_suspend(local_suspend_t *object,
-				uint16_t rpc_version, Buf buffer)
+static void _pack_local_suspend(local_suspend_t *object, uint16_t rpc_version,
+				buf_t *buffer)
 {
 	packstr(object->associd, buffer);
 	packstr(object->job_db_inx, buffer);
@@ -2042,8 +2042,8 @@ static void _pack_local_suspend(local_suspend_t *object,
 
 /* this needs to be allocated before calling, and since we aren't
  * doing any copying it needs to be used before destroying buffer */
-static int _unpack_local_suspend(local_suspend_t *object,
-				 uint16_t rpc_version, Buf buffer)
+static int _unpack_local_suspend(local_suspend_t *object, uint16_t rpc_version,
+				 buf_t *buffer)
 {
 	uint32_t tmp32;
 
@@ -2059,8 +2059,8 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_txn(local_txn_t *object,
-			    uint16_t rpc_version, Buf buffer)
+static void _pack_local_txn(local_txn_t *object, uint16_t rpc_version,
+			    buf_t *buffer)
 {
 	packstr(object->id, buffer);
 	packstr(object->timestamp, buffer);
@@ -2073,8 +2073,8 @@ static void _pack_local_txn(local_txn_t *object,
 
 /* this needs to be allocated before calling, and since we aren't
  * doing any copying it needs to be used before destroying buffer */
-static int _unpack_local_txn(local_txn_t *object,
-			     uint16_t rpc_version, Buf buffer)
+static int _unpack_local_txn(local_txn_t *object, uint16_t rpc_version,
+			     buf_t *buffer)
 {
 	uint32_t tmp32;
 
@@ -2093,8 +2093,8 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _pack_local_usage(local_usage_t *object,
-			      uint16_t rpc_version, Buf buffer)
+static void _pack_local_usage(local_usage_t *object, uint16_t rpc_version,
+			      buf_t *buffer)
 {
 	packstr(object->id, buffer);
 	packstr(object->tres_id, buffer);
@@ -2107,8 +2107,8 @@ static void _pack_local_usage(local_usage_t *object,
 
 /* this needs to be allocated before calling, and since we aren't
  * doing any copying it needs to be used before destroying buffer */
-static int _unpack_local_usage(local_usage_t *object,
-			     uint16_t rpc_version, Buf buffer)
+static int _unpack_local_usage(local_usage_t *object, uint16_t rpc_version,
+			       buf_t *buffer)
 {
 	uint32_t tmp32;
 
@@ -2135,7 +2135,7 @@ unpack_error:
 }
 
 static void _pack_local_cluster_usage(local_cluster_usage_t *object,
-				      uint16_t rpc_version, Buf buffer)
+				      uint16_t rpc_version, buf_t *buffer)
 {
 	packstr(object->tres_id, buffer);
 	packstr(object->time_start, buffer);
@@ -2154,7 +2154,7 @@ static void _pack_local_cluster_usage(local_cluster_usage_t *object,
 /* this needs to be allocated before calling, and since we aren't
  * doing any copying it needs to be used before destroying buffer */
 static int _unpack_local_cluster_usage(local_cluster_usage_t *object,
-				       uint16_t rpc_version, Buf buffer)
+				       uint16_t rpc_version, buf_t *buffer)
 {
 	uint32_t tmp32;
 
@@ -2809,12 +2809,12 @@ static char *_get_archive_columns(purge_type_t type)
 }
 
 
-static Buf _pack_archive_events(MYSQL_RES *result, char *cluster_name,
-				uint32_t cnt, uint32_t usage_info,
-				time_t *period_start)
+static buf_t *_pack_archive_events(MYSQL_RES *result, char *cluster_name,
+				   uint32_t cnt, uint32_t usage_info,
+				   time_t *period_start)
 {
 	MYSQL_ROW row;
-	Buf buffer;
+	buf_t *buffer;
 	local_event_t event;
 
 	buffer = init_buf(high_buffer_size);
@@ -2846,9 +2846,8 @@ static Buf _pack_archive_events(MYSQL_RES *result, char *cluster_name,
 }
 
 /* returns sql statement from archived data or NULL on error */
-static char *
-_load_events(uint16_t rpc_version, Buf buffer, char *cluster_name,
-	     uint32_t rec_cnt)
+static char *_load_events(uint16_t rpc_version, buf_t *buffer,
+			  char *cluster_name, uint32_t rec_cnt)
 {
 	char *insert = NULL, *format = NULL;
 	local_event_t object;
@@ -2897,12 +2896,12 @@ _load_events(uint16_t rpc_version, Buf buffer, char *cluster_name,
 	return insert;
 }
 
-static Buf _pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
-			      uint32_t cnt, uint32_t usage_info,
-			      time_t *period_start)
+static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
+				 uint32_t cnt, uint32_t usage_info,
+				 time_t *period_start)
 {
 	MYSQL_ROW row;
-	Buf buffer;
+	buf_t *buffer;
 	local_job_t job;
 
 	buffer = init_buf(high_buffer_size);
@@ -2976,7 +2975,7 @@ static Buf _pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 }
 
 /* returns sql statement from archived data or NULL on error */
-static char *_load_jobs(uint16_t rpc_version, Buf buffer,
+static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 			char *cluster_name, uint32_t rec_cnt)
 {
 	char *insert = NULL, *format = NULL;
@@ -3181,12 +3180,12 @@ static char *_load_jobs(uint16_t rpc_version, Buf buffer,
 	return insert;
 }
 
-static Buf _pack_archive_resvs(MYSQL_RES *result, char *cluster_name,
-			       uint32_t cnt, uint32_t usage_info,
-			       time_t *period_start)
+static buf_t *_pack_archive_resvs(MYSQL_RES *result, char *cluster_name,
+				  uint32_t cnt, uint32_t usage_info,
+				  time_t *period_start)
 {
 	MYSQL_ROW row;
-	Buf buffer;
+	buf_t *buffer;
 	local_resv_t resv;
 
 	buffer = init_buf(high_buffer_size);
@@ -3221,7 +3220,7 @@ static Buf _pack_archive_resvs(MYSQL_RES *result, char *cluster_name,
 }
 
 /* returns sql statement from archived data or NULL on error */
-static char *_load_resvs(uint16_t rpc_version, Buf buffer,
+static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 			 char *cluster_name, uint32_t rec_cnt)
 {
 	char *insert = NULL, *format = NULL;
@@ -3272,12 +3271,12 @@ static char *_load_resvs(uint16_t rpc_version, Buf buffer,
 	return insert;
 }
 
-static Buf _pack_archive_steps(MYSQL_RES *result, char *cluster_name,
-			       uint32_t cnt, uint32_t usage_info,
-			       time_t *period_start)
+static buf_t *_pack_archive_steps(MYSQL_RES *result, char *cluster_name,
+				  uint32_t cnt, uint32_t usage_info,
+				  time_t *period_start)
 {
 	MYSQL_ROW row;
-	Buf buffer;
+	buf_t *buffer;
 	local_step_t step;
 
 	buffer = init_buf(high_buffer_size);
@@ -3351,7 +3350,7 @@ static Buf _pack_archive_steps(MYSQL_RES *result, char *cluster_name,
 }
 
 /* returns sql statement from archived data or NULL on error */
-static char *_load_steps(uint16_t rpc_version, Buf buffer,
+static char *_load_steps(uint16_t rpc_version, buf_t *buffer,
 			 char *cluster_name, uint32_t rec_cnt)
 {
 	char *insert = NULL, *format = NULL;
@@ -3436,12 +3435,12 @@ static char *_load_steps(uint16_t rpc_version, Buf buffer,
 	return insert;
 }
 
-static Buf _pack_archive_suspends(MYSQL_RES *result, char *cluster_name,
-				  uint32_t cnt, uint32_t usage_info,
-				  time_t *period_start)
+static buf_t *_pack_archive_suspends(MYSQL_RES *result, char *cluster_name,
+				     uint32_t cnt, uint32_t usage_info,
+				     time_t *period_start)
 {
 	MYSQL_ROW row;
-	Buf buffer;
+	buf_t *buffer;
 	local_suspend_t suspend;
 
 	buffer = init_buf(high_buffer_size);
@@ -3470,7 +3469,7 @@ static Buf _pack_archive_suspends(MYSQL_RES *result, char *cluster_name,
 
 
 /* returns sql statement from archived data or NULL on error */
-static char *_load_suspend(uint16_t rpc_version, Buf buffer,
+static char *_load_suspend(uint16_t rpc_version, buf_t *buffer,
 			   char *cluster_name, uint32_t rec_cnt)
 {
 	char *insert = NULL, *format = NULL;
@@ -3514,12 +3513,12 @@ static char *_load_suspend(uint16_t rpc_version, Buf buffer,
 	return insert;
 }
 
-static Buf _pack_archive_txns(MYSQL_RES *result, char *cluster_name,
-			      uint32_t cnt, uint32_t usage_info,
-			      time_t *period_start)
+static buf_t *_pack_archive_txns(MYSQL_RES *result, char *cluster_name,
+				 uint32_t cnt, uint32_t usage_info,
+				 time_t *period_start)
 {
 	MYSQL_ROW row;
-	Buf buffer;
+	buf_t *buffer;
 	local_txn_t txn;
 
 	buffer = init_buf(high_buffer_size);
@@ -3551,7 +3550,7 @@ static Buf _pack_archive_txns(MYSQL_RES *result, char *cluster_name,
 
 
 /* returns sql statement from archived data or NULL on error */
-static char *_load_txn(uint16_t rpc_version, Buf buffer,
+static char *_load_txn(uint16_t rpc_version, buf_t *buffer,
 		       char *cluster_name, uint32_t rec_cnt)
 {
 	char *insert = NULL, *format = NULL;
@@ -3598,12 +3597,12 @@ static char *_load_txn(uint16_t rpc_version, Buf buffer,
 	return insert;
 }
 
-static Buf _pack_archive_usage(MYSQL_RES *result, char *cluster_name,
-			       uint32_t cnt, uint32_t usage_info,
-			       time_t *period_start)
+static buf_t *_pack_archive_usage(MYSQL_RES *result, char *cluster_name,
+				  uint32_t cnt, uint32_t usage_info,
+				  time_t *period_start)
 {
 	MYSQL_ROW row;
-	Buf buffer;
+	buf_t *buffer;
 	local_usage_t usage;
 	uint16_t type = usage_info & 0x0000ffff;
 	uint16_t period = usage_info >> 16;
@@ -3637,7 +3636,7 @@ static Buf _pack_archive_usage(MYSQL_RES *result, char *cluster_name,
 }
 
 /* returns sql statement from archived data or NULL on error */
-static char *_load_usage(uint16_t rpc_version, Buf buffer,
+static char *_load_usage(uint16_t rpc_version, buf_t *buffer,
 			 char *cluster_name, uint16_t type, uint16_t period,
 			 uint32_t rec_cnt)
 {
@@ -3726,12 +3725,12 @@ static char *_load_usage(uint16_t rpc_version, Buf buffer,
 	return insert;
 }
 
-static Buf _pack_archive_cluster_usage(MYSQL_RES *result, char *cluster_name,
-				       uint32_t cnt, uint32_t usage_info,
-				       time_t *period_start)
+static buf_t *_pack_archive_cluster_usage(MYSQL_RES *result, char *cluster_name,
+					  uint32_t cnt, uint32_t usage_info,
+					  time_t *period_start)
 {
 	MYSQL_ROW row;
-	Buf buffer;
+	buf_t *buffer;
 	local_cluster_usage_t usage;
 	uint16_t period = usage_info >> 16;
 
@@ -3770,7 +3769,7 @@ static Buf _pack_archive_cluster_usage(MYSQL_RES *result, char *cluster_name,
 }
 
 /* returns sql statement from archived data or NULL on error */
-static char *_load_cluster_usage(uint16_t rpc_version, Buf buffer,
+static char *_load_cluster_usage(uint16_t rpc_version, buf_t *buffer,
 				 char *cluster_name, uint16_t period,
 				 uint32_t rec_cnt)
 {
@@ -3849,11 +3848,11 @@ static uint32_t _archive_table(purge_type_t type, mysql_conn_t *mysql_conn,
 	char *cols = NULL, *query = NULL;
 	time_t period_start = 0;
 	uint32_t cnt = 0;
-	Buf buffer;
+	buf_t *buffer;
 	int error_code = 0;
-	Buf (*pack_func)(MYSQL_RES *result, char *cluster_name,
-			 uint32_t cnt, uint32_t usage_info,
-			 time_t *period_start);
+	buf_t *(*pack_func)(MYSQL_RES *result, char *cluster_name,
+			    uint32_t cnt, uint32_t usage_info,
+			    time_t *period_start);
 
 	cols = _get_archive_columns(type);
 
@@ -4388,7 +4387,7 @@ extern int as_mysql_jobacct_process_archive_load(
 {
 	char *data = NULL, *cluster_name = NULL;
 	int error_code = SLURM_SUCCESS;
-	Buf buffer = NULL;
+	buf_t *buffer = NULL;
 	time_t buf_time;
 	uint16_t type = 0, ver = 0, period = 0;
 	uint32_t data_size = 0, rec_cnt = 0, tmp32 = 0;

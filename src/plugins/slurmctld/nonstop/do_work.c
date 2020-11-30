@@ -196,7 +196,7 @@ static bool _valid_drain_user(uid_t cmd_uid)
 	return false;
 }
 
-static void _pack_job_state(job_failures_t *job_fail_ptr, Buf buffer)
+static void _pack_job_state(job_failures_t *job_fail_ptr, buf_t *buffer)
 {
 	int i;
 
@@ -217,7 +217,7 @@ static void _pack_job_state(job_failures_t *job_fail_ptr, Buf buffer)
 	pack32(job_fail_ptr->user_id, buffer);
 }
 
-static int _unpack_job_state(job_failures_t **job_pptr, Buf buffer,
+static int _unpack_job_state(job_failures_t **job_pptr, buf_t *buffer,
 			     uint16_t protocol_version)
 {
 	job_failures_t *job_fail_ptr;
@@ -317,7 +317,7 @@ static int _update_job(job_desc_msg_t * job_specs, uid_t uid)
 extern int save_nonstop_state(void)
 {
 	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
-	Buf buffer = init_buf(0);
+	buf_t *buffer = init_buf(0);
 	time_t now = time(NULL);
 	job_failures_t *job_fail_ptr;
 	ListIterator job_iterator;
@@ -404,7 +404,7 @@ extern int restore_nonstop_state(void)
 	char *state_file = NULL;
 	uint32_t job_cnt = 0;
 	uint16_t protocol_version = NO_VAL16;
-	Buf buffer;
+	buf_t *buffer;
 	int error_code = SLURM_SUCCESS, i;
 	time_t buf_time;
 	job_failures_t *job_fail_ptr = NULL;

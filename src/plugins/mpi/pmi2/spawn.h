@@ -76,14 +76,14 @@ extern spawn_subcmd_t *spawn_subcmd_new(void);
 extern void spawn_subcmd_free(spawn_subcmd_t *subcmd);
 extern spawn_req_t *spawn_req_new(void);
 extern void spawn_req_free(spawn_req_t *req);
-extern void spawn_req_pack(spawn_req_t *req, Buf buf);
-extern int  spawn_req_unpack(spawn_req_t **req_ptr, Buf buf);
+extern void spawn_req_pack(spawn_req_t *req, buf_t *buf);
+extern int  spawn_req_unpack(spawn_req_t **req_ptr, buf_t *buf);
 extern int  spawn_req_send_to_srun(spawn_req_t *req, spawn_resp_t **resp_ptr);
 
 extern spawn_resp_t *spawn_resp_new(void);
 extern void spawn_resp_free(spawn_resp_t *resp);
-extern void spawn_resp_pack(spawn_resp_t *resp, Buf buf);
-extern int  spawn_resp_unpack(spawn_resp_t **resp_ptr, Buf buf);
+extern void spawn_resp_pack(spawn_resp_t *resp, buf_t *buf);
+extern int  spawn_resp_unpack(spawn_resp_t **resp_ptr, buf_t *buf);
 extern int  spawn_resp_send_to_stepd(spawn_resp_t *resp, char **node);
 extern int  spawn_resp_send_to_fd(spawn_resp_t *resp, int fd);
 extern int  spawn_resp_send_to_srun(spawn_resp_t *resp);

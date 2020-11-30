@@ -257,7 +257,7 @@ static int _reset_usage(void)
 static void _read_last_decay_ran(time_t *last_ran, time_t *last_reset)
 {
 	char *state_file;
-	Buf buffer;
+	buf_t *buffer;
 
 	xassert(last_ran);
 	xassert(last_reset);
@@ -302,7 +302,7 @@ static int _write_last_decay_ran(time_t last_ran, time_t last_reset)
 	int error_code = SLURM_SUCCESS;
 	int state_fd;
 	char *old_file, *new_file, *state_file;
-	Buf buffer;
+	buf_t *buffer;
 
 	if (!xstrcmp(slurm_conf.state_save_location, "/dev/null")) {
 		error("Can not save priority state information, "

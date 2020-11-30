@@ -1218,7 +1218,8 @@ extern char *job_defaults_str(List in_list)
 }
 
 /* Pack a job_defaults_t element. Used by slurm_pack_list() */
-extern void job_defaults_pack(void *in, uint16_t protocol_version, Buf buffer)
+extern void job_defaults_pack(void *in, uint16_t protocol_version,
+			      buf_t *buffer)
 {
 	job_defaults_t *object = (job_defaults_t *)in;
 
@@ -1234,7 +1235,7 @@ extern void job_defaults_pack(void *in, uint16_t protocol_version, Buf buffer)
 
 /* Unpack a job_defaults_t element. Used by slurm_unpack_list() */
 extern int job_defaults_unpack(void **out, uint16_t protocol_version,
-			       Buf buffer)
+			       buf_t *buffer)
 {
 	job_defaults_t *object = xmalloc(sizeof(job_defaults_t));
 
@@ -5702,7 +5703,7 @@ extern void destroy_config_plugin_params(void *object)
 }
 
 extern void pack_config_plugin_params(void *in, uint16_t protocol_version,
-				      Buf buff)
+				      buf_t *buff)
 {
        config_plugin_params_t *object = (config_plugin_params_t *)in;
 
@@ -5710,8 +5711,8 @@ extern void pack_config_plugin_params(void *in, uint16_t protocol_version,
        pack_key_pair_list((void *)object->key_pairs, protocol_version, buff);
 }
 
-extern int
-unpack_config_plugin_params(void **object, uint16_t protocol_version, Buf buff)
+extern int unpack_config_plugin_params(void **object, uint16_t protocol_version,
+				       buf_t *buff)
 {
 	uint32_t uint32_tmp;
 	config_plugin_params_t *object_ptr = xmalloc(sizeof(*object_ptr));
@@ -5730,8 +5731,8 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void
-pack_config_plugin_params_list(void *in, uint16_t protocol_version, Buf buff)
+extern void pack_config_plugin_params_list(void *in, uint16_t protocol_version,
+					   buf_t *buff)
 {
 	uint32_t count = NO_VAL;
 
@@ -5748,9 +5749,9 @@ pack_config_plugin_params_list(void *in, uint16_t protocol_version, Buf buff)
 	}
 }
 
-extern int
-unpack_config_plugin_params_list(void **plugin_params_l,
-				 uint16_t protocol_version, Buf buff)
+extern int unpack_config_plugin_params_list(void **plugin_params_l,
+					    uint16_t protocol_version,
+					    buf_t *buff)
 {
 	uint32_t count = NO_VAL;
 	List tmp_list = NULL;
@@ -5789,16 +5790,16 @@ extern void destroy_config_key_pair(void *object)
 	}
 }
 
-extern void
-pack_config_key_pair(void *in, uint16_t protocol_version, Buf buffer)
+extern void pack_config_key_pair(void *in, uint16_t protocol_version,
+				 buf_t *buffer)
 {
 	config_key_pair_t *object = (config_key_pair_t *)in;
 	packstr(object->name,  buffer);
 	packstr(object->value, buffer);
 }
 
-extern int
-unpack_config_key_pair(void **object, uint16_t protocol_version, Buf buffer)
+extern int unpack_config_key_pair(void **object, uint16_t protocol_version,
+				  buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 	config_key_pair_t *object_ptr = xmalloc(sizeof(config_key_pair_t));
@@ -5815,8 +5816,8 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void
-pack_key_pair_list(void *key_pairs, uint16_t protocol_version, Buf buffer)
+extern void pack_key_pair_list(void *key_pairs, uint16_t protocol_version,
+			       buf_t *buffer)
 {
 	uint32_t count = NO_VAL;
 
@@ -5835,8 +5836,8 @@ pack_key_pair_list(void *key_pairs, uint16_t protocol_version, Buf buffer)
 	}
 }
 
-extern int
-unpack_key_pair_list(void **key_pairs, uint16_t protocol_version, Buf buffer)
+extern int unpack_key_pair_list(void **key_pairs, uint16_t protocol_version,
+				buf_t *buffer)
 {
 	uint32_t count = NO_VAL;
 	List tmp_list = NULL;
