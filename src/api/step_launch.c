@@ -381,7 +381,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 			goto fail1;
 		}
 		launch.num_io_port = ctx->launch_state->io.normal->num_listen;
-		launch.io_port = xmalloc(sizeof(uint16_t) * launch.num_io_port);
+		launch.io_port = xcalloc(launch.num_io_port, sizeof(uint16_t));
 		memcpy(launch.io_port, ctx->launch_state->io.normal->listenport,
 		       (sizeof(uint16_t) * launch.num_io_port));
 		/*
@@ -392,15 +392,14 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 		ctx->launch_state->io_timeout = slurm_conf.msg_timeout;
 	} else { /* user_managed_io is true */
 		/* initialize user_managed_io_t */
-		ctx->launch_state->io.user =
-			(user_managed_io_t *)xmalloc(sizeof(user_managed_io_t));
+		ctx->launch_state->io.user = xmalloc(sizeof(user_managed_io_t));
 		ctx->launch_state->io.user->connected = 0;
 		ctx->launch_state->io.user->sockets =
-			(int *)xmalloc(sizeof(int) * ctx->step_req->num_tasks);
+			xcalloc(ctx->step_req->num_tasks, sizeof(int));
 	}
 
 	launch.num_resp_port = ctx->launch_state->num_resp_port;
-	launch.resp_port = xmalloc(sizeof(uint16_t) * launch.num_resp_port);
+	launch.resp_port = xcalloc(launch.num_resp_port, sizeof(uint16_t));
 	memcpy(launch.resp_port, ctx->launch_state->resp_port,
 	       (sizeof(uint16_t) * launch.num_resp_port));
 	rc = _launch_tasks(ctx, &launch, params->msg_timeout,
@@ -574,7 +573,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 			goto fail1;
 		}
 		launch.num_io_port = ctx->launch_state->io.normal->num_listen;
-		launch.io_port = xmalloc(sizeof(uint16_t) * launch.num_io_port);
+		launch.io_port = xcalloc(launch.num_io_port, sizeof(uint16_t));
 		memcpy(launch.io_port, ctx->launch_state->io.normal->listenport,
 		       (sizeof(uint16_t) * launch.num_io_port));
 		/*
@@ -591,8 +590,8 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 	if (first_ctx->launch_state->num_resp_port &&
 	    first_ctx->launch_state->resp_port) {
 		launch.num_resp_port = first_ctx->launch_state->num_resp_port;
-		launch.resp_port = xmalloc(sizeof(uint16_t) *
-					  launch.num_resp_port);
+		launch.resp_port = xcalloc(launch.num_resp_port,
+					   sizeof(uint16_t));
 		memcpy(launch.resp_port, first_ctx->launch_state->resp_port,
 		       (sizeof(uint16_t) * launch.num_resp_port));
 	}
@@ -967,7 +966,7 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	sls->tasks_started = bit_alloc(layout->task_cnt);
 	sls->tasks_exited = bit_alloc(layout->task_cnt);
 	sls->node_io_error = bit_alloc(layout->node_cnt);
-	sls->io_deadline = (time_t *)xmalloc(sizeof(time_t) * layout->node_cnt);
+	sls->io_deadline = xcalloc(layout->node_cnt, sizeof(time_t));
 	sls->io_timeout_thread_created = false;
 	sls->io_timeout = 0;
 	sls->halt_io_test = false;
@@ -1150,7 +1149,7 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 
 	sls->msg_handle = eio_handle_create(slurm_conf.eio_timeout);
 	sls->num_resp_port = _estimate_nports(num_nodes, 48);
-	sls->resp_port = xmalloc(sizeof(uint16_t) * sls->num_resp_port);
+	sls->resp_port = xcalloc(sls->num_resp_port, sizeof(uint16_t));
 
 	/* multiple jobs (easily induced via no_alloc) and highly
 	 * parallel jobs using PMI sometimes result in slow message
@@ -1319,7 +1318,7 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 	fail_nodes = hostset_create(nf->nodelist);
 	fail_itr = hostset_iterator_create(fail_nodes);
 	num_node_ids = hostset_count(fail_nodes);
-	node_ids = xmalloc(sizeof(int) * num_node_ids);
+	node_ids = xcalloc(num_node_ids, sizeof(int));
 
 	slurm_mutex_lock(&sls->lock);
 	all_nodes = hostset_create(sls->layout->node_list);
