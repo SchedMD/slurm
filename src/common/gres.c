@@ -7130,7 +7130,6 @@ extern void gres_plugin_job_core_filter(List job_gres_list, List node_gres_list,
 					int core_start_bit, int core_end_bit,
 					char *node_name)
 {
-	int i;
 	ListIterator  job_gres_iter;
 	gres_state_t *job_gres_ptr, *node_gres_ptr;
 
@@ -7154,18 +7153,12 @@ extern void gres_plugin_job_core_filter(List job_gres_list, List node_gres_list,
 			break;
 		}
 
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (job_gres_ptr->plugin_id !=
-			    gres_context[i].plugin_id)
-				continue;
-			_job_core_filter(job_gres_ptr->gres_data,
-					 node_gres_ptr->gres_data,
-					 use_total_gres, core_bitmap,
-					 core_start_bit, core_end_bit,
-					 node_name,
-					 job_gres_ptr->plugin_id);
-			break;
-		}
+		_job_core_filter(job_gres_ptr->gres_data,
+				 node_gres_ptr->gres_data,
+				 use_total_gres, core_bitmap,
+				 core_start_bit, core_end_bit,
+				 node_name,
+				 job_gres_ptr->plugin_id);
 	}
 	list_iterator_destroy(job_gres_iter);
 	slurm_mutex_unlock(&gres_context_lock);
