@@ -8717,7 +8717,7 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 				 uint32_t job_id, char *node_name,
 				 bitstr_t *core_bitmap, uint32_t user_id)
 {
-	int rc, rc2;
+	int rc = SLURM_ERROR, rc2;
 	ListIterator job_gres_iter,  node_gres_iter;
 	gres_state_t *job_gres_ptr, *node_gres_ptr;
 
@@ -8729,9 +8729,6 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 		return SLURM_ERROR;
 	}
 
-	rc = gres_plugin_init();
-
-	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
 		gres_job_state_t *job_state_ptr =
@@ -8759,7 +8756,6 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 			rc = rc2;
 	}
 	list_iterator_destroy(job_gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
 }
