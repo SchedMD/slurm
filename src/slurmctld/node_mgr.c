@@ -2652,6 +2652,15 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		if (IS_NODE_POWER_UP(node_ptr) || IS_NODE_POWER_SAVE(node_ptr))
 			node_ptr->last_idle = now;
 
+		/*
+		 * Set last_response if it's expected. Otherwise let it get
+		 * marked at "unexpectedly rebooted". Not checked with
+		 * IS_NODE_POWER_SAVE() above to allow ReturnToService !=2
+		 * catch nodes [re]booting unexpectedly.
+		 */
+		if (IS_NODE_POWER_UP(node_ptr))
+			node_ptr->last_response = now;
+
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 		node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 		node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
