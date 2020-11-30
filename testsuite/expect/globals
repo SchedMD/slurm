@@ -5937,7 +5937,10 @@ proc check_reason { job_id reason } {
 #	It accepts all the options of run_command.
 #
 # OPTIONS
-#	It accpets and passes all the options of/to run_command.
+#	It accpets and passes all the options of/to run_command and also:
+#	-env env
+#		Prepend $env to the actual sbatch command to set environment
+#		variables. For example "-env 'SLURM_NTASKS_PER_GPU=2'".
 #
 # ARGUMENTS
 #	job_args
@@ -5951,7 +5954,14 @@ proc check_reason { job_id reason } {
 proc submit_job args {
 	global sbatch
 
+	set env    ""
 	set job_id 0
+
+	set idx [lsearch $args -env]
+	if {$idx >= 0} {
+		set env  [lindex   $args [expr $idx+1]]
+		set args [lreplace $args $idx [expr $idx+1]]
+	}
 
 	if {[llength $args] < 1} {
 		fail "Wrong number of parameters, should be >=1"
@@ -5962,7 +5972,7 @@ proc submit_job args {
 		set run_options [lrange $args 0 [expr [llength $args] - 2 ]]
 	}
 
-	set output [run_command_output {*}$run_options "$sbatch $job_options"]
+	set output [run_command_output {*}$run_options "$env $sbatch $job_options"]
 	regexp {Submitted \S+ job (\d+)} $output - job_id
 
 	return $job_id

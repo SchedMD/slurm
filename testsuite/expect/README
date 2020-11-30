@@ -243,6 +243,7 @@ test1.115  Test of srun not hanging on ignored stdin.
 test1.116  Extended MPI functionality tests via srun.
 test1.117  Test of standalone srun not ignoring --mem-per-cpu
 test1.118  Test --hint mutual exclusion properties.
+test1.119  Test of srun --ntasks-per-gpu option.
 
 test2.#    Testing of scontrol options (to be run as unprivileged user).
 ========================================================================
