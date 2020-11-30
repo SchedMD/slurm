@@ -88,7 +88,7 @@ static void _respond_with_error(int seq_num, int nodeid,
 
 int pmixp_dmdx_init(void)
 {
-	_dmdx_requests = list_create(pmixp_xfree_xmalloced);
+	_dmdx_requests = list_create(xfree_ptr);
 	_dmdx_seq_num = 1;
 	return SLURM_SUCCESS;
 }

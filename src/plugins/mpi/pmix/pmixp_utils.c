@@ -72,11 +72,6 @@ extern int pmixp_count_digits_base10(uint32_t val)
 	return digit_count;
 }
 
-void pmixp_xfree_xmalloced(void *x)
-{
-	xfree(x);
-}
-
 void pmixp_free_buf(void *x)
 {
 	buf_t *buf = (buf_t *) x;
