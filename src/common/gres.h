@@ -86,6 +86,12 @@ typedef struct {
 #define GRES_AUTODETECT_GPU_FLAGS 0x000000ff /* reserve first 8 bits for gpu
 					      * flags */
 
+typedef struct gres_search_key {
+	int node_offset;
+	uint32_t plugin_id;
+	uint32_t type_id;
+} gres_key_t;
+
 /* Gres state information gathered by slurmd daemon */
 typedef struct gres_slurmd_conf {
 	uint8_t config_flags;	/* See GRES_CONF_* values above */

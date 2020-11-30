@@ -162,12 +162,6 @@ typedef struct slurm_gres_context {
 	uint64_t        total_cnt;		/* Total GRES across all nodes */
 } slurm_gres_context_t;
 
-typedef struct gres_search_key {
-	int node_offset;
-	uint32_t plugin_id;
-	uint32_t type_id;
-} gres_key_t;
-
 typedef struct {
 	slurm_gres_context_t *context_ptr;
 	int new_has_file;
