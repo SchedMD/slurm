@@ -309,8 +309,6 @@ static void	_validate_gres_conf(List gres_conf_list,
 				    slurm_gres_context_t *context_ptr);
 static int	_validate_file(char *path_name, char *gres_name);
 static void	_validate_links(gres_slurmd_conf_t *p);
-static void	_validate_gres_node_cores(gres_node_state_t *node_gres_ptr,
-					  int cpus_ctld, char *node_name);
 static int	_valid_gres_type(char *gres_name, gres_node_state_t *gres_data,
 				 bool config_overrides, char **reason_down);
 
@@ -6716,8 +6714,8 @@ static bitstr_t *_core_bitmap_rebuild(bitstr_t *old_core_bitmap, int new_size)
 	return new_core_bitmap;
 }
 
-static void _validate_gres_node_cores(gres_node_state_t *node_gres_ptr,
-				      int cores_ctld, char *node_name)
+extern void gres_validate_node_cores(gres_node_state_t *node_gres_ptr,
+				     int cores_ctld, char *node_name)
 {
 	int i, cores_slurmd;
 	bitstr_t *new_core_bitmap;
@@ -6796,7 +6794,7 @@ static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
 			return;
 		}
 		core_ctld = core_end_bit - core_start_bit + 1;
-		_validate_gres_node_cores(node_gres_ptr, core_ctld, node_name);
+		gres_validate_node_cores(node_gres_ptr, core_ctld, node_name);
 		core_ctld = bit_size(node_gres_ptr->topo_core_bitmap[i]);
 		for (j = 0; j < core_ctld; j++) {
 			if (bit_test(node_gres_ptr->topo_core_bitmap[i], j)) {
@@ -6856,8 +6854,8 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 				      gres_name, job_id, node_name);
 				return (uint32_t) 0;
 			}
-			_validate_gres_node_cores(node_gres_ptr, core_ctld,
-						  node_name);
+			gres_validate_node_cores(node_gres_ptr, core_ctld,
+						 node_name);
 		}
 		for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
 			if (job_gres_ptr->type_name &&
@@ -6920,8 +6918,8 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 				      gres_name, job_id, node_name);
 				return (uint32_t) 0;
 			}
-			_validate_gres_node_cores(node_gres_ptr, core_ctld,
-						  node_name);
+			gres_validate_node_cores(node_gres_ptr, core_ctld,
+						 node_name);
 		} else {
 			for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
 				if (!node_gres_ptr->topo_core_bitmap[i])
