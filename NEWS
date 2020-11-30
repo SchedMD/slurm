@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
  -- Add a job's alloc_node to lua for job modification and completion.
  -- Fix regression getting a slurmdbd connection through the perl API.
  -- Stop the extern step terminate monitor right after proctrack_g_wait().
+ -- Fix removing the normalized priority of assocs.
 
 * Changes in Slurm 20.11.0
 ==========================
