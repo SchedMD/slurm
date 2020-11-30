@@ -210,6 +210,7 @@ const params_t job_params[] = {
 	{ "standard_error", 'e' },
 	{ "standard_in", 'i' },
 	{ "standard_input", 'i' },
+	{ "standard_out", 'o' },
 	{ "standard_output", 'o' },
 	{ "task_epilog", LONG_OPT_TASK_EPILOG, true },
 	{ "task_prolog", LONG_OPT_TASK_PROLOG, true },
