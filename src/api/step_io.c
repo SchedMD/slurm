@@ -220,10 +220,9 @@ static eio_obj_t *
 _create_server_eio_obj(int fd, client_io_t *cio, int nodeid,
 		       int stdout_objs, int stderr_objs)
 {
-	struct server_io_info *info = NULL;
 	eio_obj_t *eio = NULL;
+	struct server_io_info *info = xmalloc(sizeof(*info));
 
-	info = (struct server_io_info *)xmalloc(sizeof(struct server_io_info));
 	info->cio = cio;
 	info->node_id = nodeid;
 	info->testing_connection = false;
@@ -536,11 +535,9 @@ static eio_obj_t *
 create_file_write_eio_obj(int fd, uint32_t taskid, uint32_t nodeid,
 			  client_io_t *cio)
 {
-	struct file_write_info *info = NULL;
 	eio_obj_t *eio = NULL;
+	struct file_write_info *info = xmalloc(sizeof(*info));
 
-	info = (struct file_write_info *)
-		xmalloc(sizeof(struct file_write_info));
 	info->cio = cio;
 	info->msg_queue = list_create(NULL); /* FIXME! Add destructor */
 	info->out_msg = NULL;
@@ -634,11 +631,9 @@ static eio_obj_t *
 create_file_read_eio_obj(int fd, uint32_t taskid, uint32_t nodeid,
 			 client_io_t *cio)
 {
-	struct file_read_info *info = NULL;
 	eio_obj_t *eio = NULL;
+	struct file_read_info *info = xmalloc(sizeof(*info));
 
-	info = (struct file_read_info *)
-		xmalloc(sizeof(struct file_read_info));
 	info->cio = cio;
 	if (taskid == (uint32_t)-1) {
 		info->header.type = SLURM_IO_ALLSTDIN;
@@ -962,20 +957,13 @@ _wid(int n)
 static struct io_buf *
 _alloc_io_buf(void)
 {
-	struct io_buf *buf;
+	struct io_buf *buf = xmalloc(sizeof(*buf));
 
-	buf = (struct io_buf *)xmalloc(sizeof(struct io_buf));
-	if (!buf)
-		return NULL;
 	buf->ref_count = 0;
 	buf->length = 0;
 	/* The following "+ 1" is just temporary so I can stick a \0 at
 	   the end and do a printf of the data pointer */
 	buf->data = xmalloc(MAX_MSG_LEN + io_hdr_packed_size() + 1);
-	if (!buf->data) {
-		xfree(buf);
-		return NULL;
-	}
 
 	return buf;
 }
@@ -1093,7 +1081,7 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 		error("%s: invalid credential", __func__);
 		return NULL;
 	}
-	cio->io_key = (char *)xmalloc(siglen);
+	cio->io_key = xmalloc(siglen);
 	memcpy(cio->io_key, sig, siglen);
 	/* no need to free "sig", it is just a pointer into the credential */
 
@@ -1104,10 +1092,10 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 	 * overstressing the TCP/IP backoff/retry algorithm
 	 */
 	cio->num_listen = _estimate_nports(num_nodes, 48);
-	cio->listensock = (int *)xmalloc(cio->num_listen * sizeof(int));
-	cio->listenport = (uint16_t *)xmalloc(cio->num_listen*sizeof(uint16_t));
+	cio->listensock = xcalloc(cio->num_listen, sizeof(int));
+	cio->listenport = xcalloc(cio->num_listen, sizeof(uint16_t));
 
-	cio->ioserver = (eio_obj_t **)xmalloc(num_nodes*sizeof(eio_obj_t *));
+	cio->ioserver = xcalloc(num_nodes, sizeof(eio_obj_t *));
 	cio->ioservers_ready_bits = bit_alloc(num_nodes);
 	cio->ioservers_ready = 0;
 	slurm_mutex_init(&cio->ioservers_lock);
