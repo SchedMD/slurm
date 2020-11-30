@@ -241,7 +241,7 @@ static int	_job_alloc(void *job_gres_data, void *node_gres_data,
 static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
 				 bool use_total_gres, bitstr_t *core_bitmap,
 				 int core_start_bit, int core_end_bit,
-				 char *gres_name, char *node_name,
+				 char *node_name,
 				 uint32_t plugin_id);
 static int	_job_dealloc(void *job_gres_data, void *node_gres_data,
 			     int node_offset, char *gres_name, uint32_t job_id,
@@ -6754,7 +6754,7 @@ static void _validate_gres_node_cores(gres_node_state_t *node_gres_ptr,
 static void	_job_core_filter(void *job_gres_data, void *node_gres_data,
 				 bool use_total_gres, bitstr_t *core_bitmap,
 				 int core_start_bit, int core_end_bit,
-				 char *gres_name, char *node_name,
+				 char *node_name,
 				 uint32_t plugin_id)
 {
 	int i, j, core_ctld;
@@ -7162,7 +7162,7 @@ extern void gres_plugin_job_core_filter(List job_gres_list, List node_gres_list,
 					 node_gres_ptr->gres_data,
 					 use_total_gres, core_bitmap,
 					 core_start_bit, core_end_bit,
-					 gres_context[i].gres_name, node_name,
+					 node_name,
 					 job_gres_ptr->plugin_id);
 			break;
 		}
