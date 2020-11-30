@@ -853,22 +853,6 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 extern uint32_t gres_plugin_get_task_limit(List sock_gres_list);
 
 /*
- * Make final GRES selection for the job
- * sock_gres_list IN - per-socket GRES details, one record per allocated node
- * job_id IN - job ID for logging
- * job_res IN - job resource allocation
- * overcommit IN - job's ability to overcommit resources
- * tres_mc_ptr IN - job's multi-core options
- * node_table_ptr IN - slurmctld's node records
- * RET SLURM_SUCCESS or error code
- */
-extern int gres_plugin_job_core_filter4(List *sock_gres_list, uint32_t job_id,
-					struct job_resources *job_res,
-					uint8_t overcommit,
-					gres_mc_data_t *tres_mc_ptr,
-					node_record_t *node_table_ptr);
-
-/*
  * Determine if job GRES specification includes a tres-per-task specification
  * RET TRUE if any GRES requested by the job include a tres-per-task option
  */
