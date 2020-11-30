@@ -7138,9 +7138,6 @@ extern void gres_plugin_job_core_filter(List job_gres_list, List node_gres_list,
 		return;
 	}
 
-	(void) gres_plugin_init();
-
-	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
 		node_gres_ptr = list_find_first(node_gres_list, _gres_find_id,
@@ -7159,7 +7156,6 @@ extern void gres_plugin_job_core_filter(List job_gres_list, List node_gres_list,
 				 job_gres_ptr->plugin_id);
 	}
 	list_iterator_destroy(job_gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	return;
 }
