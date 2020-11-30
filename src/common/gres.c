@@ -162,14 +162,6 @@ typedef struct slurm_gres_context {
 	uint64_t        total_cnt;		/* Total GRES across all nodes */
 } slurm_gres_context_t;
 
-/* Generic gres data structure for adding to a list. Depending upon the
- * context, gres_data points to gres_node_state_t, gres_job_state_t or
- * gres_step_state_t */
-typedef struct gres_state {
-	uint32_t	plugin_id;
-	void		*gres_data;
-} gres_state_t;
-
 typedef struct gres_search_key {
 	int node_offset;
 	uint32_t plugin_id;

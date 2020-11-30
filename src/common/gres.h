@@ -237,6 +237,14 @@ typedef struct gres_job_state {
 	uint64_t  *gres_cnt_step_alloc;
 } gres_job_state_t;
 
+/* Generic gres data structure for adding to a list. Depending upon the
+ * context, gres_data points to gres_node_state_t, gres_job_state_t or
+ * gres_step_state_t */
+typedef struct gres_state {
+	uint32_t plugin_id;
+	void *gres_data;
+} gres_state_t;
+
 /* Used to set Prolog and Epilog env var. Currently designed for gres/mps. */
 typedef struct gres_epilog_info {
 	uint32_t plugin_id;	/* GRES ID number */
