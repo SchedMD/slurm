@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 20.11.3
 ==========================
+ -- Fix segfault when parsing bad "#SBATCH hetjob" directive.
 
 * Changes in Slurm 20.11.2
 ==========================
