@@ -1451,6 +1451,8 @@ extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 			     bitstr_t *cpu_aff_mac_bitstr, char *device_file,
 			     char *type, char *links);
 
+extern int gres_find_id(void *x, void *key);
+
 extern void gres_validate_node_cores(gres_node_state_t *node_gres_ptr,
 				     int cores_ctld, char *node_name);
 

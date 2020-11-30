@@ -163,6 +163,7 @@
 #define	hostset_within		slurm_hostset_within
 
 /* gres.[ch] functions */
+#define gres_find_id		slurm_gres_find_id
 #define gres_gresid_to_gresname	slurm_gres_gresid_to_gresname
 #define gres_get_node_used	slurm_gres_get_node_used
 #define gres_get_system_cnt	slurm_gres_get_system_cnt
