@@ -16,13 +16,10 @@ TESTS = \
 if HAVE_CHECK
 MYCFLAGS  = @CHECK_CFLAGS@ -Wall
 MYCFLAGS += -D_ISO99_SOURCE -Wunused-but-set-variable
-TESTS += xtree-test \
-	 xhash-test \
+TESTS += xhash-test \
 	 data-test \
 	 slurm_opt-test \
 	 xstring-test
-xtree_test_CFLAGS = $(MYCFLAGS)
-xtree_test_LDADD  = $(LDADD) @CHECK_LIBS@
 xhash_test_CFLAGS = $(MYCFLAGS)
 xhash_test_LDADD  = $(LDADD) @CHECK_LIBS@
 data_test_CFLAGS  = $(MYCFLAGS)
