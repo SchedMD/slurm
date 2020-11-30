@@ -32,7 +32,6 @@ libcommon_la_SOURCES = 			\
 	forward.c forward.h     	\
 	strlcpy.c strlcpy.h		\
 	list.c list.h 			\
-	xtree.c xtree.h			\
 	xhash.c xhash.h			\
 	net.c net.h                     \
 	log.c log.h			\

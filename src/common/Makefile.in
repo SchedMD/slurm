@@ -164,21 +164,20 @@ am__DEPENDENCIES_1 =
 libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	node_features.lo xmalloc.lo xassert.lo xstring.lo xsignal.lo \
-	strnatcmp.lo forward.lo strlcpy.lo list.lo xtree.lo xhash.lo \
-	net.lo log.lo cbuf.lo data.lo bitstring.lo slurm_mpi.lo \
-	pack.lo parse_config.lo parse_value.lo plugin.lo plugrack.lo \
-	power.lo print_fields.lo slurm_resolv.lo fetch_config.lo \
-	prep.lo read_config.lo run_in_daemon.lo node_select.lo env.lo \
-	fd.lo slurm_cred.lo slurm_errno.lo slurm_ext_sensors.lo \
-	slurm_mcs.lo slurm_priority.lo slurm_protocol_api.lo \
-	slurm_protocol_pack.lo slurm_protocol_util.lo \
-	slurm_protocol_socket.lo slurm_protocol_defs.lo \
-	slurm_rlimits_info.lo slurmdb_defs.lo slurmdb_pack.lo \
-	slurmdbd_defs.lo slurmdbd_pack.lo working_cluster.lo workq.lo \
-	uid.lo util-net.lo slurm_auth.lo slurm_acct_gather.lo \
-	slurm_accounting_storage.lo slurm_jobacct_gather.lo \
-	slurm_acct_gather_energy.lo slurm_acct_gather_profile.lo \
-	slurm_acct_gather_interconnect.lo \
+	strnatcmp.lo forward.lo strlcpy.lo list.lo xhash.lo net.lo \
+	log.lo cbuf.lo data.lo bitstring.lo slurm_mpi.lo pack.lo \
+	parse_config.lo parse_value.lo plugin.lo plugrack.lo power.lo \
+	print_fields.lo slurm_resolv.lo fetch_config.lo prep.lo \
+	read_config.lo run_in_daemon.lo node_select.lo env.lo fd.lo \
+	slurm_cred.lo slurm_errno.lo slurm_ext_sensors.lo slurm_mcs.lo \
+	slurm_priority.lo slurm_protocol_api.lo slurm_protocol_pack.lo \
+	slurm_protocol_util.lo slurm_protocol_socket.lo \
+	slurm_protocol_defs.lo slurm_rlimits_info.lo slurmdb_defs.lo \
+	slurmdb_pack.lo slurmdbd_defs.lo slurmdbd_pack.lo \
+	working_cluster.lo workq.lo uid.lo util-net.lo slurm_auth.lo \
+	slurm_acct_gather.lo slurm_accounting_storage.lo \
+	slurm_jobacct_gather.lo slurm_acct_gather_energy.lo \
+	slurm_acct_gather_profile.lo slurm_acct_gather_interconnect.lo \
 	slurm_acct_gather_filesystem.lo slurm_jobcomp.lo slurm_opt.lo \
 	slurm_route.lo slurm_time.lo slurm_topology.lo switch.lo \
 	slurm_selecttype_info.lo slurm_resource_info.lo hostlist.lo \
@@ -290,7 +289,7 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/x11_util.Plo ./$(DEPDIR)/xassert.Plo \
 	./$(DEPDIR)/xcgroup_read_config.Plo ./$(DEPDIR)/xhash.Plo \
 	./$(DEPDIR)/xmalloc.Plo ./$(DEPDIR)/xsignal.Plo \
-	./$(DEPDIR)/xstring.Plo ./$(DEPDIR)/xtree.Plo
+	./$(DEPDIR)/xstring.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -613,7 +612,6 @@ libcommon_la_SOURCES = \
 	forward.c forward.h     	\
 	strlcpy.c strlcpy.h		\
 	list.c list.h 			\
-	xtree.c xtree.h			\
 	xhash.c xhash.h			\
 	net.c net.h                     \
 	log.c log.h			\
@@ -920,7 +918,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xmalloc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xsignal.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xstring.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xtree.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -1147,7 +1144,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/xmalloc.Plo
 	-rm -f ./$(DEPDIR)/xsignal.Plo
 	-rm -f ./$(DEPDIR)/xstring.Plo
-	-rm -f ./$(DEPDIR)/xtree.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -1294,7 +1290,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/xmalloc.Plo
 	-rm -f ./$(DEPDIR)/xsignal.Plo
 	-rm -f ./$(DEPDIR)/xstring.Plo
-	-rm -f ./$(DEPDIR)/xtree.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
