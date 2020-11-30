@@ -644,6 +644,28 @@ extern int gres_plugin_get_gres_cnt(void)
 	return cnt;
 }
 
+extern char *gres_get_name_from_id(uint32_t plugin_id)
+{
+	char *gres_name = NULL;
+
+	if (gres_plugin_init() != SLURM_SUCCESS)
+		return gres_name;
+
+	slurm_mutex_lock(&gres_context_lock);
+	for (int i = 0; i < gres_context_cnt; i++) {
+		if (plugin_id == gres_context[i].plugin_id) {
+			gres_name = xstrdup(gres_context[i].gres_name);
+			break;
+		}
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+	if (!gres_name)
+		error("%s: no plugin configured for data type %u",
+		      __func__, plugin_id);
+
+	return gres_name;
+}
+
 /*
  * Add a GRES record. This is used by the node_features plugin after the
  * slurm.conf file is read and the initial GRES records are built by
