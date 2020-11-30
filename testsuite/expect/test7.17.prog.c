@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
 	uint32_t cpu_count, cpu_alloc, job_id = 12345;
 	char *node_name, *reason_down = NULL;
 	char *orig_config, *new_config = NULL, *tres_per_node = NULL;
-	Buf buffer;
+	buf_t *buffer;
 	List job_gres_list = NULL, node_gres_list = NULL;
 	bitstr_t *cpu_bitmap;
 	char config_dir[10000], test[1000];
