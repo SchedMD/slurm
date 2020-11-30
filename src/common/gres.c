@@ -8635,7 +8635,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 
 static void _job_select_whole_node_internal(
 	gres_key_t *job_search_key, gres_node_state_t *node_state_ptr,
-	int type_inx, int context_inx, List job_gres_list)
+	int type_inx, char *gres_name, List job_gres_list)
 {
 	gres_state_t *job_gres_ptr;
 	gres_job_state_t *job_state_ptr;
@@ -8648,8 +8648,7 @@ static void _job_select_whole_node_internal(
 		job_gres_ptr = xmalloc(sizeof(gres_state_t));
 		job_gres_ptr->plugin_id = job_search_key->plugin_id;
 		job_gres_ptr->gres_data = job_state_ptr;
-		job_state_ptr->gres_name =
-			xstrdup(gres_context[context_inx].gres_name);
+		job_state_ptr->gres_name = xstrdup(gres_name);
 		if (type_inx != -1)
 			job_state_ptr->type_name =
 				xstrdup(node_state_ptr->type_name[type_inx]);
@@ -8790,7 +8789,6 @@ extern int gres_plugin_job_select_whole_node(
 	List *job_gres_list, List node_gres_list,
 	uint32_t job_id, char *node_name)
 {
-	int i;
 	ListIterator node_gres_iter;
 	gres_state_t *node_gres_ptr;
 	gres_node_state_t *node_state_ptr;
@@ -8806,12 +8804,9 @@ extern int gres_plugin_job_select_whole_node(
 	if (!*job_gres_list)
 		*job_gres_list = list_create(_gres_job_list_delete);
 
-	if (gres_plugin_init() != SLURM_SUCCESS)
-		return SLURM_ERROR;
-
-	slurm_mutex_lock(&gres_context_lock);
 	node_gres_iter = list_iterator_create(node_gres_list);
 	while ((node_gres_ptr = list_next(node_gres_iter))) {
+		char *gres_name;
 		gres_key_t job_search_key;
 		node_state_ptr = (gres_node_state_t *) node_gres_ptr->gres_data;
 
@@ -8822,12 +8817,8 @@ extern int gres_plugin_job_select_whole_node(
 		if (!node_state_ptr->gres_cnt_config)
 			continue;
 
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (node_gres_ptr->plugin_id ==
-			    gres_context[i].plugin_id)
-				break;
-		}
-		if (i >= gres_context_cnt) {
+		if (!(gres_name = gres_get_name_from_id(
+			      node_gres_ptr->plugin_id))) {
 			error("%s: no plugin configured for data type %u for job %u and node %s",
 			      __func__, node_gres_ptr->plugin_id, job_id,
 			      node_name);
@@ -8841,19 +8832,19 @@ extern int gres_plugin_job_select_whole_node(
 			job_search_key.type_id = 0;
 			_job_select_whole_node_internal(
 				&job_search_key, node_state_ptr,
-				-1, i, *job_gres_list);
+				-1, gres_name, *job_gres_list);
 		} else {
 			for (int j = 0; j < node_state_ptr->type_cnt; j++) {
 				job_search_key.type_id = gres_plugin_build_id(
 					node_state_ptr->type_name[j]);
 				_job_select_whole_node_internal(
 					&job_search_key, node_state_ptr,
-					j, i, *job_gres_list);
+					j, gres_name, *job_gres_list);
 			}
 		}
+		xfree(gres_name);
 	}
 	list_iterator_destroy(node_gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	return SLURM_SUCCESS;
 }
