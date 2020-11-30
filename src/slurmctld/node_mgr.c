@@ -2639,6 +2639,12 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		last_node_update = now;
 	}
 
+	if (node_ptr->last_response &&
+	    (node_ptr->boot_time > node_ptr->last_response) &&
+	    !IS_NODE_UNKNOWN(node_ptr)) {	/* Node just rebooted */
+		(void) node_features_g_get_node(node_ptr->name);
+	}
+
 	if (IS_NODE_NO_RESPOND(node_ptr) ||
 	    IS_NODE_POWER_UP(node_ptr) ||
 	    IS_NODE_POWER_SAVE(node_ptr)) {
@@ -2674,12 +2680,6 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	}
 
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
-
-	if (node_ptr->last_response &&
-	    (node_ptr->boot_time > node_ptr->last_response) &&
-	    !IS_NODE_UNKNOWN(node_ptr)) {	/* Node just rebooted */
-		(void) node_features_g_get_node(node_ptr->name);
-	}
 
 	if (error_code) {
 		if (!IS_NODE_DOWN(node_ptr)
