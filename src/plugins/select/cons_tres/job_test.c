@@ -349,7 +349,7 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 
 	*avail_cpus = avail_res_array[node_inx]->avail_cpus;
 	if (job_ptr->gres_list) {
-		gres_plugin_job_core_filter3(mc_ptr,
+		gres_filter_sock_core(mc_ptr,
 				avail_res_array[node_inx]->sock_gres_list,
 				avail_res_array[node_inx]->sock_cnt,
 				select_node_record[node_inx].cores,

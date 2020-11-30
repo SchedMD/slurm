@@ -847,38 +847,6 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 				  const uint32_t node_inx);
 
 /*
- * Determine how many tasks can be started on a given node and which
- *	sockets/cores are required
- * IN mc_ptr - job's multi-core specs, NO_VAL and INFINITE mapped to zero
- * IN sock_gres_list - list of sock_gres_t entries built by gres_plugin_job_test2()
- * IN sockets - Count of sockets on the node
- * IN cores_per_socket - Count of cores per socket on the node
- * IN cpus_per_core - Count of CPUs per core on the node
- * IN avail_cpus - Count of available CPUs on the node, UPDATED
- * IN min_tasks_this_node - Minimum count of tasks that can be started on this
- *                          node, UPDATED
- * IN max_tasks_this_node - Maximum count of tasks that can be started on this
- *                          node or NO_VAL, UPDATED
- * IN rem_nodes - desired additional node count to allocate, including this node
- * IN enforce_binding - GRES must be co-allocated with cores
- * IN first_pass - set if first scheduling attempt for this job, use
- *		   co-located GRES and cores if possible
- * IN avail_cores - cores available on this node, UPDATED
- */
-extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
-					 List sock_gres_list,
-					 uint16_t sockets,
-					 uint16_t cores_per_socket,
-					 uint16_t cpus_per_core,
-					 uint16_t *avail_cpus,
-					 uint32_t *min_tasks_this_node,
-					 uint32_t *max_tasks_this_node,
-					 int rem_nodes,
-					 bool enforce_binding,
-					 bool first_pass,
-					 bitstr_t *avail_core);
-
-/*
  * Return the maximum number of tasks that can be started on a node with
  * sock_gres_list (per-socket GRES details for some node)
  */
