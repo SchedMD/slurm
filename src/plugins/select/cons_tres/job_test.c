@@ -38,6 +38,7 @@
 #include "select_cons_tres.h"
 #include "dist_tasks.h"
 #include "job_test.h"
+#include "../cons_common/gres_filter.h"
 
 #define _DEBUG 0	/* Enables module specific debugging */
 
@@ -3354,7 +3355,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 		uint16_t near_gpu_cnt = 0;
 		avail_res->sock_gres_list = sock_gres_list;
 		/* Disable GRES that can't be used with remaining cores */
-		rc = gres_plugin_job_core_filter2(
+		rc = gres_filter_remove_unusable(
 					sock_gres_list, avail_mem,
 					avail_res->avail_cpus,
 					enforce_binding, core_map[node_i],

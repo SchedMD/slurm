@@ -59,4 +59,40 @@ extern void gres_filter_cons_res(List job_gres_list, List node_gres_list,
 				 int core_start_bit, int core_end_bit,
 				 char *node_name);
 
+/*
+ * Determine which GRES can be used on this node given the available cores.
+ *	Filter out unusable GRES.
+ * IN sock_gres_list - list of sock_gres_t entries built by
+ *                     gres_plugin_job_test2()
+ * IN avail_mem - memory available for the job
+ * IN max_cpus - maximum CPUs available on this node (limited by specialized
+ *               cores and partition CPUs-per-node)
+ * IN enforce_binding - GRES must be co-allocated with cores
+ * IN core_bitmap - Identification of available cores on this node
+ * IN sockets - Count of sockets on the node
+ * IN cores_per_sock - Count of cores per socket on this node
+ * IN cpus_per_core - Count of CPUs per core on this node
+ * IN sock_per_node - sockets requested by job per node or NO_VAL
+ * IN task_per_node - tasks requested by job per node or NO_VAL16
+ * IN cpus_per_task - Count of CPUs per task
+ * IN whole_node - we are requesting the whole node or not
+ * OUT avail_gpus - Count of available GPUs on this node
+ * OUT near_gpus - Count of GPUs available on sockets with available CPUs
+ * RET - 0 if job can use this node, -1 otherwise (some GRES limit prevents use)
+ */
+extern int gres_filter_remove_unusable(List sock_gres_list,
+				       uint64_t avail_mem,
+				       uint16_t max_cpus,
+				       bool enforce_binding,
+				       bitstr_t *core_bitmap,
+				       uint16_t sockets,
+				       uint16_t cores_per_sock,
+				       uint16_t cpus_per_core,
+				       uint32_t sock_per_node,
+				       uint16_t task_per_node,
+				       uint16_t cpus_per_task,
+				       bool whole_node,
+				       uint16_t *avail_gpus,
+				       uint16_t *near_gpus);
+
 #endif /* _GRES_FILTER_H */
