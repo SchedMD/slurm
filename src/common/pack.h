@@ -117,11 +117,6 @@ extern int unpack32_array(uint32_t **valp, uint32_t *size_val, buf_t *buffer);
 extern void pack64_array(uint64_t *valp, uint32_t size_val, buf_t *buffer);
 extern int unpack64_array(uint64_t **valp, uint32_t *size_val, buf_t *buffer);
 
-extern void pack64_array_as_32(uint64_t *valp, uint32_t size_val,
-			       buf_t *buffer);
-extern int unpack64_array_from_32(uint64_t **valp, uint32_t *size_val,
-				  buf_t *buffer);
-
 extern void packdouble_array(double *valp, uint32_t size_val, buf_t *buffer);
 extern int unpackdouble_array(double **valp, uint32_t *size_val, buf_t *buffer);
 
