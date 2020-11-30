@@ -100,7 +100,6 @@
 #include "src/slurmd/common/core_spec_plugin.h"
 #include "src/slurmd/common/fname.h"
 #include "src/slurmd/common/job_container_plugin.h"
-#include "src/slurmd/common/log_ctld.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/run_script.h"
 #include "src/slurmd/common/reverse_tree.h"
@@ -388,16 +387,10 @@ stepd_step_rec_t *
 mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 {
 	stepd_step_rec_t *job = NULL;
-	char *err_msg = NULL;
 
 	if (!(job = batch_stepd_step_rec_create(msg))) {
-		xstrfmtcat(err_msg,
-			   "batch_stepd_step_rec_create() failed for job %u on %s: %s",
-			   msg->job_id, conf->hostname,
-			   slurm_strerror(errno));
-		(void) log_ctld(LOG_LEVEL_ERROR, err_msg);
-		error("%s", err_msg);
-		xfree(err_msg);
+		error("batch_stepd_step_rec_create() failed for job %u on %s: %s",
+		      msg->job_id, conf->hostname, slurm_strerror(errno));
 		return NULL;
 	}
 
@@ -422,13 +415,8 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 	return job;
 
 cleanup:
-	xstrfmtcat(err_msg,
-		   "batch script setup failed for job %u on %s: %s",
-		   msg->job_id, conf->hostname,
-		   slurm_strerror(errno));
-	(void) log_ctld(LOG_LEVEL_ERROR, err_msg);
-	error("%s", err_msg);
-	xfree(err_msg);
+	error("batch script setup failed for job %u on %s: %s",
+	      msg->job_id, conf->hostname, slurm_strerror(errno));
 
 	if (job->aborted)
 		verbose("job %u abort complete", job->step_id.job_id);
@@ -1143,7 +1131,6 @@ job_manager(stepd_step_rec_t *job)
 {
 	int  rc = SLURM_SUCCESS;
 	bool io_initialized = false;
-	char *err_msg = NULL;
 
 	debug3("Entered job_manager for %ps pid=%d",
 	       &job->step_id, job->jmgr_pid);
@@ -1217,11 +1204,6 @@ job_manager(stepd_step_rec_t *job)
 	    (mpi_hook_slurmstepd_prefork(job, &job->env) != SLURM_SUCCESS)) {
 		error("Failed mpi_hook_slurmstepd_prefork");
 		rc = SLURM_ERROR;
-		xstrfmtcat(err_msg,
-			   "mpi_hook_slurmstepd_prefork failure for %ps on %s",
-			   &job->step_id, conf->hostname);
-		(void) log_ctld(LOG_LEVEL_ERROR, err_msg);
-		xfree(err_msg);
 		goto fail3;
 	}
 
