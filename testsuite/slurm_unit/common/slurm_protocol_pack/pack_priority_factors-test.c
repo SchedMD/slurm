@@ -13,7 +13,7 @@ priority_factors_object_t pack_req = {0};
 #ifndef NDEBUG
 START_TEST(pack_null_resp)
 {
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurm_msg_t msg = {0};
 	msg.protocol_version = SLURM_MIN_PROTOCOL_VERSION;
 	msg.msg_type = RESPONSE_PRIORITY_FACTORS;
@@ -113,7 +113,7 @@ void compare_test(priority_factors_response_msg_t *unpack_resp,
 void run_test_version(uint16_t protocol_version)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	priority_factors_response_msg_t resp_req = {0};
 	resp_req.priority_factors_list = list_create(NULL);

@@ -19,7 +19,7 @@
 
 int main (int argc, char *argv[])
 {
-	Buf buffer;
+	buf_t *buffer;
 	uint16_t test16 = 1234, out16;
 	uint32_t test32 = 5678, out32, byte_cnt;
 	char testbytes[] = "TEST BYTES", *outbytes;

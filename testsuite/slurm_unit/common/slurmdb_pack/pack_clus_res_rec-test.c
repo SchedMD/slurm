@@ -14,7 +14,7 @@ START_TEST(invalid_protocol)
 	uint32_t x;
 
 	slurmdb_clus_res_rec_t *clus_res_rec = xmalloc(sizeof(slurmdb_clus_res_rec_t));
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	pack32(22, buf);
 	set_buf_offset(buf, 0);
@@ -37,7 +37,7 @@ END_TEST
 START_TEST(pack_1702_null_clus_res_rec)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_clus_res_rec_t pack_crr = {0};
 
 	slurmdb_pack_clus_res_rec(NULL, SLURM_MIN_PROTOCOL_VERSION, buf);
@@ -66,7 +66,7 @@ START_TEST(pack_1702_clus_res_rec)
 	pack_crr->percent_allowed = 12;
 	pack_crr->cluster         = xstrdup("Diogenes");
 
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_pack_clus_res_rec(pack_crr, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);

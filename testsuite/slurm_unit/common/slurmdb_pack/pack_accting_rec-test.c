@@ -14,7 +14,7 @@ START_TEST(invalid_protocol)
 	uint32_t x;
 
 	slurmdb_accounting_rec_t *accounting_rec = xmalloc(sizeof(slurmdb_accounting_rec_t));
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	pack32(22, buf);
 	set_buf_offset(buf, 0);
@@ -36,7 +36,7 @@ END_TEST
 START_TEST(pack_1702_null_accounting_rec)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_accounting_rec_t pack_ar = {0};
 
 	slurmdb_pack_accounting_rec(NULL, SLURM_MIN_PROTOCOL_VERSION, buf);
@@ -66,7 +66,7 @@ START_TEST(pack_1702_accounting_rec)
 	pack_ar->period_start   = 0;
 	pack_ar->tres_rec.count = 53;
 
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_pack_accounting_rec(pack_ar, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);

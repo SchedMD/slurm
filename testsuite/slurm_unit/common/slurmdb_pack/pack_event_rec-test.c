@@ -14,7 +14,7 @@ START_TEST(invalid_protocol)
 	uint32_t x;
 
 	slurmdb_event_rec_t *event_rec = xmalloc(sizeof(slurmdb_event_rec_t));
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	pack32(22, buf);
 	set_buf_offset(buf, 0);
@@ -48,7 +48,7 @@ END_TEST
 START_TEST(pack_min_proto_null_event_rec)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_event_rec_t pack_er = {0};
 
 	slurmdb_pack_event_rec(NULL, SLURM_MIN_PROTOCOL_VERSION, buf);
@@ -90,7 +90,7 @@ START_TEST(pack_min_proto_event_rec)
 	pack_er->state               = 33;
 	pack_er->tres_str            = xstrdup("Karl Marx");
 
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_pack_event_rec(pack_er, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);

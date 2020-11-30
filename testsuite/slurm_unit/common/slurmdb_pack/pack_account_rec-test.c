@@ -13,7 +13,7 @@ START_TEST(invalid_protocol)
 {
 	int rc;
 	slurmdb_account_rec_t *account_rec;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 
 	rc = slurmdb_unpack_account_rec((void **)&account_rec, 0, buf);
@@ -25,7 +25,7 @@ END_TEST
 START_TEST(pack_1702_null_account_rec)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_account_rec_t pack_ar = {0};
 
 	slurmdb_pack_account_rec(NULL, SLURM_MIN_PROTOCOL_VERSION, buf);
@@ -66,7 +66,7 @@ START_TEST(pack_1702_account_rec)
 	list_append(pack_ar->coordinators, (void *)j);
 	list_append(pack_ar->assoc_list,   (void *)k);
 
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_pack_account_rec(pack_ar, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);

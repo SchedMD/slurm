@@ -11,7 +11,7 @@ START_TEST(invalid_protocol)
 {
 	int rc;
 	slurmdb_used_limits_t *used_limits;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	rc = slurmdb_unpack_used_limits((void **)&used_limits, 0, 0, buf);
 	ck_assert_int_eq(rc, SLURM_ERROR);
@@ -22,7 +22,7 @@ END_TEST
 START_TEST(pack_1702_null_used_limits)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_used_limits_t pack_ul = {0};
 
 	slurmdb_pack_used_limits(NULL, 0, SLURM_MIN_PROTOCOL_VERSION, buf);
@@ -63,7 +63,7 @@ START_TEST(pack_1702_used_limits)
 		pack_ul->tres_run_mins[i] = 10*i;
 	}
 
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_pack_used_limits(pack_ul, tres_cnt, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
@@ -97,7 +97,7 @@ START_TEST(pack_1702_used_limits_null_ptrs)
 	pack_ul->submit_jobs = 11234;
 	pack_ul->uid         = 11123;
 
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_pack_used_limits(pack_ul, tres_cnt, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);

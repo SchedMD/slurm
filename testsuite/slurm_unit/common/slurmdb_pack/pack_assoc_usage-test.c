@@ -14,7 +14,7 @@ START_TEST(invalid_protocol)
 	uint32_t x;
 
 	slurmdb_assoc_usage_t *assoc_usage = xmalloc(sizeof(slurmdb_assoc_usage_t));
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	pack32(22, buf);
 	set_buf_offset(buf, 0);
@@ -34,7 +34,7 @@ END_TEST
 START_TEST(pack_1702_assoc_usage)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_assoc_usage_t *pack_au = xmalloc(sizeof(slurmdb_assoc_usage_t));
 
 	pack_au->children_list          = NULL;

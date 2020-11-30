@@ -15,7 +15,7 @@ START_TEST(invalid_protocol)
 	uint32_t x;
 
 	slurmdb_event_cond_t *cond_rec = xmalloc(sizeof(slurmdb_event_cond_t));
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	pack32(22, buf);
 	set_buf_offset(buf, 0);
@@ -84,7 +84,7 @@ static void _test_cond_eq(uint16_t protocol_version,
 			 slurmdb_event_cond_t *pack)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_pack_event_cond(pack, protocol_version, buf);
 	set_buf_offset(buf, 0);
 

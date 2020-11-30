@@ -25,7 +25,7 @@ START_TEST(pack_back2_null_rec)
 	int rc;
 	slurmdb_cluster_rec_t pack_rec;
 	slurmdb_cluster_rec_t *unpack_rec;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	slurmdb_init_cluster_rec(&pack_rec, false);
 	pack_rec.fed.state        = 0;
@@ -67,7 +67,7 @@ END_TEST
 START_TEST(pack_back2_rec)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_cluster_rec_t *unpack_rec;
 	slurmdb_cluster_rec_t pack_rec = {0};
 
@@ -150,7 +150,7 @@ END_TEST
 
 START_TEST(pack_back2_rec_null_ptrs)
 {
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_cluster_rec_t pack_rec = {0};
 	pack_rec.accounting_list  = NULL;
 	pack_rec.classification   = 2;
@@ -205,7 +205,7 @@ START_TEST(pack_back1_null_rec)
 	int rc;
 	slurmdb_cluster_rec_t pack_rec;
 	slurmdb_cluster_rec_t *unpack_rec;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	slurmdb_init_cluster_rec(&pack_rec, false);
 	pack_rec.fed.state        = 0;
@@ -245,7 +245,7 @@ END_TEST
 START_TEST(pack_back1_rec)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_cluster_rec_t *unpack_rec;
 	slurmdb_cluster_rec_t pack_rec = {0};
 
@@ -328,7 +328,7 @@ END_TEST
 
 START_TEST(pack_back1_rec_null_ptrs)
 {
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_cluster_rec_t pack_rec = {0};
 	pack_rec.accounting_list  = NULL;
 	pack_rec.classification   = 2;

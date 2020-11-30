@@ -21,7 +21,7 @@ END_TEST
 #ifndef NDEBUG
 START_TEST(pack_null_req)
 {
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurm_msg_t msg = {0};
 	msg.protocol_version = SLURM_MIN_PROTOCOL_VERSION;
 	msg.msg_type = REQUEST_JOB_ALLOCATION_INFO;
@@ -36,7 +36,7 @@ END_TEST
 START_TEST(pack_back2_req_null_ptrs)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	slurm_msg_t msg = {0};
 	job_alloc_info_msg_t pack_req = {0};
@@ -70,7 +70,7 @@ END_TEST
 START_TEST(pack_back2_req)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	slurm_msg_t msg = {0};
 	job_alloc_info_msg_t pack_req = {0};
@@ -106,7 +106,7 @@ END_TEST
 START_TEST(pack_back1_req_null_ptrs)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	slurm_msg_t msg = {0};
 	job_alloc_info_msg_t pack_req = {0};
@@ -139,7 +139,7 @@ END_TEST
 START_TEST(pack_back1_req)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	slurm_msg_t msg = {0};
 	job_alloc_info_msg_t pack_req = {0};

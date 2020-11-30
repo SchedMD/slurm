@@ -11,7 +11,7 @@ START_TEST(invalid_protocol)
 {
 	int rc;
 	slurmdb_cluster_rec_t *rec = NULL;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	rc = slurmdb_unpack_user_rec((void **)&rec, 0, buf);
 	ck_assert_int_eq(rc, SLURM_ERROR);
@@ -23,7 +23,7 @@ END_TEST
 START_TEST(pack_1702_null_rec)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_user_rec_t pack_rec = {0};
 
 	slurmdb_pack_user_rec(NULL, SLURM_MIN_PROTOCOL_VERSION, buf);
@@ -72,7 +72,7 @@ START_TEST(pack_1702_rec)
 	pack_rec.old_name      = xstrdup("old_name");
 	pack_rec.uid           = 12345;
 
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_pack_user_rec(&pack_rec, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
@@ -105,7 +105,7 @@ START_TEST(pack_1702_rec_null_ptrs)
 	pack_rec.admin_level   = 1;
 	pack_rec.uid           = 12345;
 
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_pack_user_rec(&pack_rec, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);

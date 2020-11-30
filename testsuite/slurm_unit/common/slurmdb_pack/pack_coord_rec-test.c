@@ -14,7 +14,7 @@ START_TEST(invalid_protocol)
 	uint32_t x;
 
 	slurmdb_coord_rec_t *coord_rec = xmalloc(sizeof(slurmdb_coord_rec_t));
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	pack32(22, buf);
 	set_buf_offset(buf, 0);
@@ -36,7 +36,7 @@ END_TEST
 START_TEST(pack_1702_null_coord_rec)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_coord_rec_t pack_cr = {0};
 
 	slurmdb_pack_coord_rec(NULL, SLURM_MIN_PROTOCOL_VERSION, buf);
@@ -62,7 +62,7 @@ START_TEST(pack_1702_coord_rec)
 	pack_cr->direct                = 12;
 	pack_cr->name                  = xstrdup("Gottlob Frege");
 
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_pack_coord_rec(pack_cr, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);

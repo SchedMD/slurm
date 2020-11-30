@@ -18,7 +18,7 @@ START_TEST(pack_null_usage)
 	slurmdb_assoc_rec_t *assoc_rec = xmalloc(sizeof(slurmdb_assoc_rec_t));
 	assoc_rec->usage = NULL;
 
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	pack32(22, buf);
 	set_buf_offset(buf, 0);
@@ -45,7 +45,7 @@ START_TEST(invalid_protocol)
 	slurmdb_assoc_rec_t *assoc_rec = xmalloc(sizeof(slurmdb_assoc_rec_t));
 	assoc_rec->usage = xmalloc(sizeof(slurmdb_assoc_usage_t));
 
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	pack32(22, buf);
 	set_buf_offset(buf, 0);
@@ -66,7 +66,7 @@ END_TEST
 START_TEST(pack_1702_assoc_rec)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_assoc_rec_t *pack_arwu   = xmalloc(sizeof(slurmdb_assoc_rec_t));
 	slurmdb_accounting_rec_t *art  = xmalloc(sizeof(slurmdb_accounting_rec_t));
 

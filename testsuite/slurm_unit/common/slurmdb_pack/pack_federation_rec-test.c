@@ -14,7 +14,7 @@ START_TEST(invalid_protocol)
 	uint32_t x;
 
 	slurmdb_federation_rec_t *federation_rec = xmalloc(sizeof(slurmdb_federation_rec_t));
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	pack32(22, buf);
 	set_buf_offset(buf, 0);
@@ -35,7 +35,7 @@ END_TEST
 START_TEST(pack_back2_null_federation_rec)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	slurmdb_pack_federation_rec(NULL, SLURM_MIN_PROTOCOL_VERSION, buf);
 
@@ -65,7 +65,7 @@ START_TEST(pack_back2_federation_rec)
 
 	list_append(pack_fr->cluster_list, x);
 
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_pack_federation_rec(pack_fr, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
@@ -96,7 +96,7 @@ START_TEST(pack_back2_federation_rec_empty_list)
 	pack_fr->name         = xstrdup("Saint Augustine");
 	pack_fr->cluster_list = NULL;
 
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_pack_federation_rec(pack_fr, SLURM_MIN_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
@@ -118,7 +118,7 @@ END_TEST
 START_TEST(pack_back1_null_federation_rec)
 {
 	int rc;
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 
 	slurmdb_pack_federation_rec(NULL, SLURM_ONE_BACK_PROTOCOL_VERSION, buf);
 
@@ -148,7 +148,7 @@ START_TEST(pack_back1_federation_rec)
 
 	list_append(pack_fr->cluster_list, x);
 
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_pack_federation_rec(pack_fr, SLURM_ONE_BACK_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
@@ -179,7 +179,7 @@ START_TEST(pack_back1_federation_rec_empty_list)
 	pack_fr->name         = xstrdup("Saint Augustine");
 	pack_fr->cluster_list = NULL;
 
-	Buf buf = init_buf(1024);
+	buf_t *buf = init_buf(1024);
 	slurmdb_pack_federation_rec(pack_fr, SLURM_ONE_BACK_PROTOCOL_VERSION, buf);
 
 	set_buf_offset(buf, 0);
