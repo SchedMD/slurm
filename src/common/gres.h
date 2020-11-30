@@ -798,24 +798,6 @@ extern int gres_plugin_job_state_unpack(List *gres_list, buf_t *buffer,
 					uint16_t protocol_version);
 
 /*
- * Clear the core_bitmap for cores which are not usable by this job (i.e. for
- *	cores which are already bound to other jobs or lack GRES)
- * IN job_gres_list   - job's gres_list built by gres_plugin_job_state_validate()
- * IN node_gres_list  - node's gres_list built by
- *                      gres_plugin_node_config_validate()
- * IN use_total_gres  - if set then consider all GRES resources as available,
- *		        and none are commited to running jobs
- * IN/OUT core_bitmap - Identification of available cores (NULL if no restriction)
- * IN core_start_bit  - index into core_bitmap for this node's first cores
- * IN core_end_bit    - index into core_bitmap for this node's last cores
- */
-extern void gres_plugin_job_core_filter(List job_gres_list, List node_gres_list,
-					bool use_total_gres,
-					bitstr_t *core_bitmap,
-					int core_start_bit, int core_end_bit,
-					char *node_name);
-
-/*
  * Determine how many cores on the node can be used by this job
  * IN job_gres_list  - job's gres_list built by gres_plugin_job_state_validate()
  * IN node_gres_list - node's gres_list built by gres_plugin_node_config_validate()
