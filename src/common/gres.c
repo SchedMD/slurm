@@ -8871,7 +8871,7 @@ extern int gres_plugin_job_alloc_whole_node(
 	uint32_t job_id, char *node_name,
 	bitstr_t *core_bitmap, uint32_t user_id)
 {
-	int i, rc, rc2;
+	int rc = SLURM_ERROR, rc2;
 	ListIterator node_gres_iter;
 	gres_state_t *node_gres_ptr;
 	gres_node_state_t *node_state_ptr;
@@ -8884,9 +8884,6 @@ extern int gres_plugin_job_alloc_whole_node(
 		return SLURM_ERROR;
 	}
 
-	rc = gres_plugin_init();
-
-	slurm_mutex_lock(&gres_context_lock);
 	node_gres_iter = list_iterator_create(node_gres_list);
 	while ((node_gres_ptr = list_next(node_gres_iter))) {
 		gres_key_t job_search_key;
@@ -8895,19 +8892,6 @@ extern int gres_plugin_job_alloc_whole_node(
 		if (node_state_ptr->no_consume ||
 		    !node_state_ptr->gres_cnt_config)
 			continue;
-
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (node_gres_ptr->plugin_id ==
-			    gres_context[i].plugin_id)
-				break;
-		}
-		if (i >= gres_context_cnt) {
-			error("%s: no plugin configured for data type %u for job %u and node %s",
-			      __func__, node_gres_ptr->plugin_id, job_id,
-			      node_name);
-			/* A likely sign that GresPlugins has changed */
-			continue;
-		}
 
 		job_search_key.plugin_id = node_gres_ptr->plugin_id;
 
@@ -8935,7 +8919,6 @@ extern int gres_plugin_job_alloc_whole_node(
 		}
 	}
 	list_iterator_destroy(node_gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
 }
