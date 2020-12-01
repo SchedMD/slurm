@@ -89,6 +89,40 @@ static const char *_get_long_node_state(uint32_t state)
 	return "invalid";
 }
 
+static const node_state_flags_t node_state_flags[] = {
+	{ NODE_STATE_COMPLETING, "COMPLETING" },
+	{ NODE_STATE_DRAIN, "DRAINING" },
+	{ NODE_STATE_FAIL, "FAILED" },
+	{ NODE_STATE_MAINT, "MAINTENANCE" },
+	{ NODE_STATE_NET, "PERFCTRS" }, /* net performance counters */
+	{ NODE_STATE_REBOOT, "REBOOTING" },
+	{ NODE_STATE_RES, "RESERVED" },
+	{ NODE_RESUME, "RESUME" },
+	{ NODE_STATE_NO_RESPOND, "NOT_RESPONDING" },
+	{ NODE_STATE_POWER_UP, "POWERING_UP" },
+	{ NODE_STATE_POWERING_DOWN, "POWERING_DOWN" },
+};
+
+static void _add_node_state_flags(data_t *flags, uint32_t state)
+{
+	bool valid = false;
+
+	xassert(data_get_type(flags) == DATA_TYPE_LIST);
+
+	for (int i = 0; i < ARRAY_SIZE(node_states); i++)
+		if (node_states[i].flag == (state & NODE_STATE_BASE))
+			valid = true;
+
+	/* Only give flags if state is known */
+	if (!valid)
+		return;
+
+	for (int i = 0; i < ARRAY_SIZE(node_state_flags); i++)
+		if (state & node_state_flags[i].flag)
+			data_set_string(data_list_append(flags),
+					node_state_flags[i].str);
+}
+
 static int _dump_node(data_t *p, node_info_t *node)
 {
 	data_t *d;
@@ -129,8 +163,18 @@ static int _dump_node(data_t *p, node_info_t *node)
 			_get_long_node_state(node->next_state));
 	data_set_string(data_key_set(d, "address"), node->node_addr);
 	data_set_string(data_key_set(d, "hostname"), node->node_hostname);
+
 	data_set_string(data_key_set(d, "state"),
 			_get_long_node_state(node->node_state));
+	_add_node_state_flags(data_set_list(data_key_set(d, "state_flags")),
+			      node->node_state);
+
+	data_set_string(data_key_set(d, "next_state_after_reboot"),
+			_get_long_node_state(node->next_state));
+	_add_node_state_flags(
+		data_set_list(data_key_set(d, "next_state_after_reboot_flags")),
+		node->next_state);
+
 	data_set_string(data_key_set(d, "operating_system"), node->os);
 	if (node->owner == NO_VAL) {
 		data_set_null(data_key_set(d, "owner"));

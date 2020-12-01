@@ -124,6 +124,18 @@ paths in a single quote string to avoid shell replacements.</p>
 </tr>
 </table>
 
+<h4>Add state flags</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_node".properties.state_flags</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_node".properties.next_state_after_reboot_flags</td>
+</tr>
+</table>
+
 <h2>Slurm 20.11.3<h2>
 
 <h3>openapi/dbv0.0.36 (src/slurmrestd/plugins/openapi/dbv0.0.36/openapi.json)</h3>

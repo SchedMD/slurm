@@ -2129,8 +2129,15 @@
             "description": "node name to slurm"
           },
           "next_state_after_reboot": {
-            "type": "string",
-            "description": ""
+	    "type": "string",
+	    "description": "state after reboot"
+	  },
+	  "next_state_after_reboot_flags": {
+	    "type": "array",
+	    "description": "node state flags",
+	    "items": {
+	      "type": "string"
+            }
           },
           "address": {
             "type": "string",
@@ -2141,8 +2148,15 @@
             "description": "node's hostname"
           },
           "state": {
-            "type": "string",
-            "description": "current node state"
+	    "type": "string",
+	    "description": "current node state"
+	  },
+	  "state_flags": {
+	    "type": "array",
+	    "description": "node state flags",
+	    "items": {
+	      "type": "string"
+            }
           },
           "operating_system": {
             "type": "string",
