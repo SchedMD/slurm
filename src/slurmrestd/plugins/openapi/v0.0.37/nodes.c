@@ -63,24 +63,29 @@ typedef enum {
 	URL_TAG_NODES,
 } url_tag_t;
 
+typedef struct {
+	uint32_t flag;
+	const char *str;
+} node_state_flags_t;
+
+static const node_state_flags_t node_states[] = {
+	{ NODE_STATE_DOWN, "down" },
+	{ NODE_STATE_IDLE, "idle" },
+	{ NODE_STATE_ALLOCATED, "allocated" },
+	{ NODE_STATE_ERROR, "error" },
+	{ NODE_STATE_MIXED, "mixed" },
+	{ NODE_STATE_FUTURE, "down" },
+};
+
 static const char *_get_long_node_state(uint32_t state)
 {
-	switch (state) {
-	case NODE_STATE_DOWN:
-		return "down";
-	case NODE_STATE_IDLE:
-		return "idle";
-	case NODE_STATE_ALLOCATED:
-		return "allocated";
-	case NODE_STATE_ERROR:
-		return "error";
-	case NODE_STATE_MIXED:
-		return "mixed";
-	case NODE_STATE_FUTURE:
-		return "future";
-	default:
-		return "invalid";
-	}
+	state &= NODE_STATE_BASE;
+
+	for (int i = 0; i < ARRAY_SIZE(node_states); i++)
+		if (node_states[i].flag == state)
+			return node_states[i].str;
+
+	return "invalid";
 }
 
 static int _dump_node(data_t *p, node_info_t *node)
