@@ -6497,6 +6497,30 @@ proc _print_summary {status completed} {
 	                         $_subtest_pass_count + \
 	                         $_subtest_skip_count]
 
+	# Initial summary
+	append output [format "%s             : %s\n" $header  $test_name]
+	if {$testproc_count > 0} {
+		append output [format "  Testprocs failed  : %3d (%3d%%)%s\n" $testproc_fail [expr $testproc_fail * 100 / $testproc_count] \
+		                                                             [expr {$testproc_fail ? " List: [join $_testproc_fail_list ,]" : ""}]]
+		append output [format "  Testprocs skipped : %3d (%3d%%)%s\n" $testproc_skip [expr $testproc_skip * 100 / $testproc_count] \
+		                                                             [expr {$testproc_skip ? " List: [join $_testproc_skip_list ,]" : ""}]]
+		append output [format "  Testprocs passed  : %3d (%3d%%)\n"   $testproc_pass [expr $testproc_pass * 100 / $testproc_count]]
+		append output [format "  Testprocs total   : %3d %s\n"        $testproc_count [expr {$completed ? "COMPLETED" : "INCOMPLETE: $_incomplete_reason"}]]
+	}
+	if {$subtest_count > 0} {
+		if {$testproc_count > 0} {
+			append output \n
+		}
+		append output [format "  Subtests failed   : %3d (%3d%%)\n" $_subtest_fail_count [expr $_subtest_fail_count * 100 / $subtest_count]]
+		append output [format "  Subtests skipped  : %3d (%3d%%)\n" $_subtest_skip_count [expr $_subtest_skip_count * 100 / $subtest_count]]
+		append output [format "  Subtests passed   : %3d (%3d%%)\n" $_subtest_pass_count [expr $_subtest_pass_count * 100 / $subtest_count]]
+		append output [format "  Subtests total    : %3d %s\n"      $subtest_count [expr {$completed ? "COMPLETED" : "INCOMPLETE: $_incomplete_reason"}]]
+	}
+	if {$testproc_count == 0 && $subtest_count == 0} {
+		append output [format "%s\n" [expr {$completed ? "COMPLETED" : "INCOMPLETE          : $_incomplete_reason"}]]
+	}
+	append output [string repeat = 78]\n
+
 	# Detailed information
 	if {$testsuite_subtest_details ne "none"} {
 		set show_details false
@@ -6549,35 +6573,11 @@ proc _print_summary {status completed} {
 		}
 	}
 
-	# Final summary
-	append output [format "%s             : %s\n" $header  $test_name]
-	if {$testproc_count > 0} {
-		append output [format "  Testprocs failed  : %3d (%3d%%)%s\n" $testproc_fail [expr $testproc_fail * 100 / $testproc_count] \
-		                                                             [expr {$testproc_fail ? " List: [join $_testproc_fail_list ,]" : ""}]]
-		append output [format "  Testprocs skipped : %3d (%3d%%)%s\n" $testproc_skip [expr $testproc_skip * 100 / $testproc_count] \
-		                                                             [expr {$testproc_skip ? " List: [join $_testproc_skip_list ,]" : ""}]]
-		append output [format "  Testprocs passed  : %3d (%3d%%)\n"   $testproc_pass [expr $testproc_pass * 100 / $testproc_count]]
-		append output [format "  Testprocs total   : %3d %s\n"        $testproc_count [expr {$completed ? "COMPLETED" : "INCOMPLETE: $_incomplete_reason"}]]
-	}
-	if {$subtest_count > 0} {
-		if {$testproc_count > 0} {
-			append output \n
-		}
-		append output [format "  Subtests failed   : %3d (%3d%%)\n" $_subtest_fail_count [expr $_subtest_fail_count * 100 / $subtest_count]]
-		append output [format "  Subtests skipped  : %3d (%3d%%)\n" $_subtest_skip_count [expr $_subtest_skip_count * 100 / $subtest_count]]
-		append output [format "  Subtests passed   : %3d (%3d%%)\n" $_subtest_pass_count [expr $_subtest_pass_count * 100 / $subtest_count]]
-		append output [format "  Subtests total    : %3d %s\n"      $subtest_count [expr {$completed ? "COMPLETED" : "INCOMPLETE: $_incomplete_reason"}]]
-	}
-	if {$testproc_count == 0 && $subtest_count == 0} {
-		append output [format "%s\n" [expr {$completed ? "COMPLETED" : "INCOMPLETE          : $_incomplete_reason"}]]
-	}
-	append output [string repeat = 78]
-
 	if ($testsuite_colorize) {
 		append output $COLOR_NONE
 	}
 
-	puts $output
+	puts -nonewline $output
 }
 
 
