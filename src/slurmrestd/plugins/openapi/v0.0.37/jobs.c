@@ -209,7 +209,6 @@ const params_t job_params[] = {
 	{ "spread_job", LONG_OPT_SPREAD_JOB },
 	{ "standard_error", 'e' },
 	{ "standard_input", 'i' },
-	{ "standard_out", 'o' },
 	{ "standard_output", 'o' },
 	{ "task_epilog", LONG_OPT_TASK_EPILOG, true },
 	{ "task_prolog", LONG_OPT_TASK_PROLOG, true },

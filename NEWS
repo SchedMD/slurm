@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==============================
  -- slurmrestd - add v0.0.37 OpenAPI plugin.
  -- slurmrestd/v0.0.37 - rename standard_in -> standard_input.
+ -- slurmrestd/v0.0.37 - rename standard_out -> standard_output.
 
 * Changes in Slurm 20.11.1
 ==========================
