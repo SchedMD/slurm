@@ -1916,6 +1916,18 @@ include "minutes", "minutes:seconds", "hours:minutes:seconds", "days\-hours",
 "days\-hours:minutes", and "days\-hours:minutes:seconds".
 
 .TP
+\fBPrEpParameters\fR
+Parameters to be passed to the \fBPrEpPlugins\fR.
+
+.TP
+\fBPrEpPlugins\fR
+A resource for programmers wishing to write their own plugins for the Prolog and
+Epilog (PrEp) scripts. The default, and currently the only implemented plugin is
+\fIprep/script\fR. Additional plugins can be specified in a comma separated
+list. For more information please see the PrEp Plugin API documentation page:
+<https://slurm.schedmd.com/prep_plugins.html>
+
+.TP
 \fBPriorityCalcPeriod\fR
 The period of time in minutes in which the half-life decay will be
 re-calculated.
