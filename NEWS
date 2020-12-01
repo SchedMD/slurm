@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression getting a slurmdbd connection through the perl API.
  -- Stop the extern step terminate monitor right after proctrack_g_wait().
  -- Fix removing the normalized priority of assocs.
+ -- slurmrestd/v0.0.36 - Use correct name for partition field:
+    "min nodes per job" -> "min_nodes_per_job".
 
 * Changes in Slurm 20.11.0
 ==========================

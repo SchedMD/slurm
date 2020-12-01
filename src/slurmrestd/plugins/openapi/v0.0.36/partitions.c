@@ -131,7 +131,7 @@ static int _dump_part(data_t *p, partition_info_t *part)
 		data_set_int(data_key_set(d, "max_time_limit"), -1);
 	else
 		data_set_int(data_key_set(d, "max_time_limit"), part->max_time);
-	data_set_int(data_key_set(d, "min nodes per job"), part->min_nodes);
+	data_set_int(data_key_set(d, "min_nodes_per_job"), part->min_nodes);
 	data_set_string(data_key_set(d, "name"), part->name);
 	// TODO: int32_t *node_inx;	/* list index pairs into node_table:
 	// 			 * start_range_1, end_range_1,
