@@ -460,21 +460,21 @@ extern char *get_argument(const char *file, int lineno, const char *line,
 	ptr = line;
 	*skipped = 0;
 
-	if ((argument = strcasestr(line, "packjob"))) {
+	/* skip whitespace */
+	while (isspace(*ptr) && *ptr != '\0') {
+		ptr++;
+	}
+
+	if (!xstrncasecmp(ptr, "packjob", 7) &&
+	    ((ptr[7] == '\0') || (isspace(ptr[7])))) {
 		if (!logged) {
 			info("Warning: the \"packjob\" component separator is being deprecated. Please, use \"hetjob\" instead.");
 			logged = true;
 		}
-		memcpy(argument, "       ", 7);
-	} else if ((argument = strcasestr(line, "hetjob"))) {
-		memcpy(argument, "      ", 6);
-	}
-
-	argument = NULL;
-
-	/* skip whitespace */
-	while (isspace(*ptr) && *ptr != '\0') {
-		ptr++;
+		memcpy((char *)ptr, "       ", 7);
+	} else if (!xstrncasecmp(ptr, "hetjob", 6) &&
+		   ((ptr[6] == '\0') || (isspace(ptr[6])))) {
+		memcpy((char *)ptr, "      ", 6);
 	}
 
 	if (*ptr == ':') {
@@ -584,10 +584,17 @@ static bool _opt_batch_script(const char * file, const void *body, int size,
 			continue;
 		}
 
+		/* skip whitespace */
+		while (isspace(*ptr) && *ptr != '\0') {
+			ptr++;
+		}
+
 		/* this line starts with the magic word */
-		if (strcasestr(line, "packjob")) {
+		if (!xstrncasecmp(ptr, "packjob", 7) &&
+		    ((ptr[7] == '\0') || (isspace(ptr[7])))) {
 			het_job_scan_inx++;
-		} else if (strcasestr(line, "hetjob")) {
+		} else if (!xstrncasecmp(ptr, "hetjob", 6) &&
+			   ((ptr[6] == '\0') || (isspace(ptr[6])))) {
 			het_job_scan_inx++;
 		}
 		if (het_job_scan_inx < het_job_inx) {
