@@ -115,7 +115,6 @@ START_TEST(just_two)
 }
 END_TEST
 
-
 START_TEST(just_one)
 {
 	test(NULL, "subpar", 0, 1, (char *[]){"1001"});
@@ -278,6 +277,13 @@ START_TEST(commas_between)
 }
 END_TEST
 
+START_TEST(spaces_between)
+{
+	test(NULL, "normal, subpar, great", 0, 1,
+	     (char *[]){ "1000", "1001", "1002" });
+}
+END_TEST
+
 START_TEST(commas_at_start)
 {
 	test(NULL, ",,,,,,normal,subpar,great", 0, 0, NULL);
@@ -357,6 +363,7 @@ Suite *suite(SRunner *sr)
 	tcase_add_test(tc_error, commas_at_end);
 	tcase_add_test(tc_error, commas_between);
 	tcase_add_test(tc_error, commas_at_start);
+	tcase_add_test(tc_error, spaces_between);
 	tcase_add_test(tc_error, comma_at_end);
 	tcase_add_test(tc_error, null_char_list);
 	tcase_add_test(tc_error, null_qos_list);
