@@ -126,6 +126,7 @@ Suite *suite_reverse_tree_math(void)
 {
 	Suite *s = suite_create("reverse_tree_math");
 	TCase *tc_core = tcase_create("reverse_tree_math");
+	tcase_set_timeout(tc_core, 60); /* Avoid timeouts with --coverage */
 	tcase_add_loop_test(tc_core, verify_children, 0, sizeof(nodes_loop) /
 			    sizeof(int));
 	suite_add_tcase(s, tc_core);
