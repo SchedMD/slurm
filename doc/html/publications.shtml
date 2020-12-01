@@ -4,6 +4,12 @@
 
 <p>Note that some of the older material contains dated information.</p>
 
+<h2>Presentations from SC20, November 2020</h2>
+<ul>
+<li>BOF: <a href="SC20/BoF.pdf">Slurm Birds of a Feather</a>,
+Tim Wickberg, SchedMD</li>
+</ul>
+
 <h2>Presentations from Slurm User Group Meeting, September 2020</h2>
 <ul>
 <li><a href="SLUG20/Field_Notes.pdf">Field Notes 4: From The Frontlines of Slurm Support</a>,
