@@ -414,7 +414,7 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 	 * make sure no we are the latest update.  If we aren't throw this one
 	 * away.
 	 */
-	if (start > resv->time_start) {
+	if ((start > resv->time_start) && (start <= now)) {
 		error("There is newer record for reservation with id %u, drop modification request:",
 		      resv->id);
 		error("assocs:'%s', cluster:'%s', flags:%"PRIu64", id:%u, name:'%s', nodes:'%s', nodes_inx:'%s', time_end:%ld, time_start:%ld, time_start_prev:%ld, tres_str:'%s', unused_wall:%f",

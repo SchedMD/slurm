@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
  -- Allow countless gpu:<type> node GRES specifications in slurm.conf.
  -- PMIx - Don't set UCX_MEM_MMAP_RELOC for older version of UCX (pre 1.5).
  -- Don't green-light any GPU validation when core conversion fails.
+ -- Allow updates to a reservation in the database that starts in the future.
 
 * Changes in Slurm 20.11.2
 ==========================
