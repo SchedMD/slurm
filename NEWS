@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
     to allow clients to only get the entities list when something changed.
  -- slurmdbd.service - add "After" relationship to all common names for MariaDB
     to reduce startup delays.
+ -- slurmrestd/v0.0.37 - Correct displaying node states that are UNKNOWN.
 
 * Changes in Slurm 20.11.5
 ==========================

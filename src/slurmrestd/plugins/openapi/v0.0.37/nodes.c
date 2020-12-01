@@ -75,6 +75,7 @@ static const node_state_flags_t node_states[] = {
 	{ NODE_STATE_ERROR, "error" },
 	{ NODE_STATE_MIXED, "mixed" },
 	{ NODE_STATE_FUTURE, "down" },
+	{ NODE_STATE_UNKNOWN, "unknown" },
 };
 
 static const char *_get_long_node_state(uint32_t state)
