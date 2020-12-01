@@ -65,7 +65,7 @@ typedef enum {
 
 static const char *_get_long_node_state(uint32_t state)
 {
-	switch (state) {
+	switch (state & NODE_STATE_BASE) {
 	case NODE_STATE_DOWN:
 		return "down";
 	case NODE_STATE_IDLE:
