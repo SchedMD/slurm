@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 21.08.0pre1
 ==============================
  -- slurmrestd - add v0.0.37 OpenAPI plugin.
+ -- slurmrestd/v0.0.37 - rename standard_in -> standard_input.
 
 * Changes in Slurm 20.11.1
 ==========================

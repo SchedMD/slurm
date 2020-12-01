@@ -208,7 +208,6 @@ const params_t job_params[] = {
 	{ "sockets_per_node", LONG_OPT_SOCKETSPERNODE },
 	{ "spread_job", LONG_OPT_SPREAD_JOB },
 	{ "standard_error", 'e' },
-	{ "standard_in", 'i' },
 	{ "standard_input", 'i' },
 	{ "standard_out", 'o' },
 	{ "standard_output", 'o' },

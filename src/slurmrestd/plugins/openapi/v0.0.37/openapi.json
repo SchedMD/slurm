@@ -1742,7 +1742,7 @@
             "type": "string",
             "description": "Instruct Slurm to connect the batch script's standard error directly to the file name."
           },
-          "standard_in": {
+	  "standard_input": {
             "type": "string",
             "description": "Instruct Slurm to connect the batch script's standard input directly to the file name specified."
           },
