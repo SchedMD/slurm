@@ -6529,7 +6529,7 @@ proc _print_summary {status completed} {
 			set show_details true
 		} elseif {$testsuite_testproc_details eq "fail_skip" && $testproc_skip > 0} {
 			set show_details true
-		} elseif {$_subtest_fail_count > 0} {
+		} elseif {$testproc_fail > 0} {
 			set show_details true
 		}
 
