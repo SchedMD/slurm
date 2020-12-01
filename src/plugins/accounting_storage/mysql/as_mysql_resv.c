@@ -317,7 +317,7 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 				slurmdb_reservation_rec_t *resv)
 {
 	MYSQL_RES *result = NULL;
-	MYSQL_ROW row;
+	MYSQL_ROW row, row2;
 	int rc = SLURM_SUCCESS;
 	char *cols = NULL, *vals = NULL, *extra = NULL,
 		*query = NULL;
@@ -327,6 +327,7 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 
 	char *resv_req_inx[] = {
 		"assoclist",
+		"deleted",
 		"time_start",
 		"time_end",
 		"resv_name",
@@ -337,6 +338,7 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 	};
 	enum {
 		RESV_ASSOCS,
+		RESV_DELETED,
 		RESV_START,
 		RESV_END,
 		RESV_NAME,
@@ -379,10 +381,10 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 	/* Get the last record of this reservation */
 	query = xstrdup_printf("select %s from \"%s_%s\" where id_resv=%u "
 			       "and time_start >= %ld "
-			       "and deleted=0 order by time_start desc "
-			       "limit 1 FOR UPDATE;",
+			       "order by time_start desc "
+			       "FOR UPDATE;",
 			       cols, resv->cluster, resv_table, resv->id,
-			       resv->time_start_prev);
+			       MIN(resv->time_start, resv->time_start_prev));
 	debug4("%d(%s:%d) query\n%s",
 	       mysql_conn->conn, THIS_FILE, __LINE__, query);
 	if (!(result = mysql_db_query_ret(
@@ -390,19 +392,24 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
-	if (!(row = mysql_fetch_row(result))) {
-		mysql_free_result(result);
-		error("%s: There is no reservation by id %u, time_start %ld, and cluster '%s', creating it",
-		      __func__, resv->id, resv->time_start_prev, resv->cluster);
-		/*
-		 * Don't set the time_start to time_start_prev as we have no
-		 * idea what the reservation looked like at that time.  Doing so
-		 * will also mess up future updates.
-		 */
-		/* resv->time_start = resv->time_start_prev; */
-		rc = as_mysql_add_resv(mysql_conn, resv);
-		goto end_it;
-	}
+
+	/* Get the first one that isn't deleted */
+	do {
+		if (!(row = mysql_fetch_row(result))) {
+			mysql_free_result(result);
+			error("%s: There is no reservation by id %u, time_start %ld, and cluster '%s', creating it",
+			      __func__, resv->id, resv->time_start_prev,
+			      resv->cluster);
+			/*
+			 * Don't set the time_start to time_start_prev as we
+			 * have no idea what the reservation looked like at that
+			 * time.  Doing so will also mess up future updates.
+			 */
+			/* resv->time_start = resv->time_start_prev; */
+			rc = as_mysql_add_resv(mysql_conn, resv);
+			goto end_it;
+		}
+	} while (slurm_atoul(row[RESV_DELETED]));
 
 	start = slurm_atoul(row[RESV_START]);
 
@@ -410,9 +417,9 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 	xfree(cols);
 
 	/*
-	 * Check to see if the start is after the time we are looking for to
-	 * make sure no we are the latest update.  If we aren't throw this one
-	 * away.
+	 * Check to see if the start is after the time we are looking for and
+	 * before now to make sure we are the latest update.  If we aren't throw
+	 * this one away.  This should rarely if ever happen.
 	 */
 	if ((start > resv->time_start) && (start <= now)) {
 		error("There is newer record for reservation with id %u, drop modification request:",
@@ -427,6 +434,28 @@ extern int as_mysql_modify_resv(mysql_conn_t *mysql_conn,
 		goto end_it;
 	}
 
+	/*
+	 * Here we are making sure we don't get a potential duplicate entry in
+	 * the database.  If we find one then we will delete it.  This should
+	 * never happen in practice but is more a sanity check.
+	 */
+	while ((row2 = mysql_fetch_row(result))) {
+		if (resv->time_start != slurm_atoul(row2[RESV_START]))
+			continue;
+
+		query = xstrdup_printf("delete from \"%s_%s\" where "
+				       "id_resv=%u and time_start=%ld;",
+				       resv->cluster, resv_table,
+				       resv->id, resv->time_start);
+		info("When trying to update a reservation an already existing row that would create a duplicate entry was found.  Replacing this old row with the current request.  This should rarely if ever happen.");
+		rc = mysql_db_query(mysql_conn, query);
+		if (rc != SLURM_SUCCESS) {
+			error("problem with update query");
+			mysql_free_result(result);
+			goto end_it;
+		}
+		xfree(query);
+	}
 
 	/* check differences here */
 
