@@ -1568,7 +1568,7 @@ extern int addto_action_char_list(List char_list, char *names)
 
 				i++;
 				start = i;
-				if (!names[i]) {
+				if (names[i] == ' ') {
 					error("There is a problem with "
 					      "your request.  It appears you "
 					      "have spaces inside your list.");

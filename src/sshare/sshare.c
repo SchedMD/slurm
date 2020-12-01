@@ -373,7 +373,7 @@ static int _addto_name_char_list(List char_list, char *names, bool gid)
 				}
 				i++;
 				start = i;
-				if (!names[i]) {
+				if (names[i] == ' ') {
 					info("There is a problem with "
 					     "your request.  It appears you "
 					     "have spaces inside your list.");

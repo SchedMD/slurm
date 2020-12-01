@@ -2931,7 +2931,7 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 
 				i++;
 				start = i;
-				if (!names[i]) {
+				if (names[i] == ' ') {
 					error("There is a problem with "
 					      "your request.  It appears you "
 					      "have spaces inside your list.");
