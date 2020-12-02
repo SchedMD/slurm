@@ -1376,6 +1376,9 @@ extern int gres_find_id(void *x, void *key);
 /* Find job record with matching name and type */
 extern int gres_find_job_by_key(void *x, void *key);
 
+/* Find job record with matching name and type */
+extern int gres_find_job_by_key_with_cnt(void *x, void *key);
+
 extern void gres_validate_node_cores(gres_node_state_t *node_gres_ptr,
 				     int cores_ctld, char *node_name);
 

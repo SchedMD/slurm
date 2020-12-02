@@ -325,7 +325,7 @@ extern int gres_find_job_by_key(void *x, void *key)
 }
 
 /* Find job record with matching name and type */
-static int _gres_find_job_by_key_with_cnt(void *x, void *key)
+extern int gres_find_job_by_key_with_cnt(void *x, void *key)
 {
 	gres_state_t *state_ptr = (gres_state_t *) x;
 	gres_key_t *job_key = (gres_key_t *) key;
@@ -11398,7 +11398,7 @@ extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 		job_search_key.node_offset = node_offset;
 		if (!(job_gres_ptr = list_find_first(
 			      job_gres_list,
-			      _gres_find_job_by_key_with_cnt,
+			      gres_find_job_by_key_with_cnt,
 			      &job_search_key))) {
 			/* job lack resources required by the step */
 			core_cnt = 0;
@@ -11665,7 +11665,7 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
 		job_search_key.node_offset = node_offset;
 		if (!(job_gres_ptr = list_find_first(
 			      job_gres_list,
-			      _gres_find_job_by_key_with_cnt,
+			      gres_find_job_by_key_with_cnt,
 			      &job_search_key))) {
 			/* job lack resources required by the step */
 			rc = ESLURM_INVALID_GRES;
@@ -11711,7 +11711,7 @@ static int _step_dealloc(gres_state_t *step_gres_ptr, List job_gres_list,
 		job_search_key.node_offset = i;
 		if (!(job_gres_ptr = list_find_first(
 			      job_gres_list,
-			      _gres_find_job_by_key_with_cnt,
+			      gres_find_job_by_key_with_cnt,
 			      &job_search_key)))
 			continue;
 
