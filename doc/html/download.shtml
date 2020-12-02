@@ -366,6 +366,22 @@ sudo make install
 	<pre>--with-http-parser=/usr/local/</pre>
 </li>
 
+<li><a name="yaml" href="https://github.com/yaml/libyaml">
+    <b>YAML Parser</b></a>
+	<p><a href="rest.html">slurmrestd</a> requires libyaml to support
+	YAML. Instructions for the build are as follows:</p>
+	<pre>
+git clone --depth 1 --single-branch -b 0.2.5 https://github.com/yaml/libyaml libyaml
+cd libyaml
+./bootstrap
+./configure
+make
+sudo make install
+	</pre>
+	Add the following argument when running <i>configure</i> for Slurm:
+	<pre>--with-yaml=/usr/local/</pre>
+</li>
+
 <li><b>Slurm-web</b><br>
 Slurm-web is a free software, distributed under the GPL version 2 license,
 that provides both a HTTP REST API (based on JSON format) and a web GUI
