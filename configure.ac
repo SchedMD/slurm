@@ -518,7 +518,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/gres/common/Makefile
 		 src/plugins/gres/gpu/Makefile
 		 src/plugins/gres/nic/Makefile
-		 src/plugins/gres/mic/Makefile
 		 src/plugins/gres/mps/Makefile
 		 src/plugins/jobacct_gather/Makefile
 		 src/plugins/jobacct_gather/common/Makefile

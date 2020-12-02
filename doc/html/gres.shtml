@@ -402,34 +402,6 @@ CVE-2018-6260</a> and in the
 <a href="https://nvidia.custhelp.com/app/answers/detail/a_id/4772">
 Security Bulletin: NVIDIA GPU Display Driver - February 2019</a>.</p>
 
-<!-------------------------------------------------------------------------->
-<a id="MIC_Management"></a>
-<h2>MIC Management</h2>
-
-<P>Slurm can be used to provide resource management for systems with the
-Intel&reg; Many Integrated Core (MIC) processor.
-Slurm sets an <code class="commandline">OFFLOAD_DEVICES</code>
-environment variable, which controls the
-selection of MICs available to a job step.
-The <code class="commandline">OFFLOAD_DEVICES</code>
-environment variable is used by both Intel
-LEO (Language Extensions for Offload) and the MKL (Math Kernel Library)
-automatic offload.
-(This is very similar to how the
-<code class="commandline">CUDA_VISIBLE_DEVICES</code> environment variable is
-used to control which GPUs can be used by CUDA&trade; software.)
-If no MICs are reserved via GRES, the
-<code class="commandline">OFFLOAD_DEVICES</code> variable is set to
--1. This causes the code to ignore the offload directives and run MKL
-routines on the CPU. The code will still run but only on the CPU. This
-also gives a somewhat cryptic warning:</P>
-<pre>offload warning: OFFLOAD_DEVICES device number -1 does not correspond
-to a physical device</pre>
-<P>The offloading is automatically scaled to all the devices, (e.g. if
---gres=mic:2 is defined) then all offloads use two MICs unless
-explicitly defined in the offload pragmas.</P>
-<!-------------------------------------------------------------------------->
-
-<p style="text-align: center;">Last modified 23 July 2020</p>
+<p style="text-align: center;">Last modified 2 December 2020</p>
 
 <!--#include virtual="footer.txt"-->

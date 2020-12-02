@@ -20,6 +20,7 @@ upgrading Slurm to a new major release.
 
 HIGHLIGHTS
 ==========
+ -- Removed gres/mic plugin used to support Xeon Phi coprocessors.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

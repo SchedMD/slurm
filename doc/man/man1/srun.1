@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "November 2020" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "December 2020" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -51,15 +51,12 @@ directory.
 
 .TP
 \fB\-\-accel\-bind\fR=<\fIoptions\fR>
-Control how tasks are bound to generic resources of type gpu, mic and nic.
+Control how tasks are bound to generic resources of type gpu and nic.
 Multiple options may be specified. Supported options include:
 .RS
 .TP
 \fBg\fR
 Bind each task to GPUs which are closest to the allocated CPUs.
-.TP
-\fBm\fR
-Bind each task to MICs which are closest to the allocated CPUs.
 .TP
 \fBn\fR
 Bind each task to NICs which are closest to the allocated CPUs.
@@ -1008,7 +1005,7 @@ The available generic consumable resources is configurable by the system
 administrator.
 A list of available generic consumable resources will be printed and the
 command will exit if the option argument is "help".
-Examples of use include "\-\-gres=gpu:2,mic:1", "\-\-gres=gpu:kepler:2", and
+Examples of use include "\-\-gres=gpu:2", "\-\-gres=gpu:kepler:2", and
 "\-\-gres=help".
 NOTE: This option applies to job and step allocations. By default, a job step
 is allocated all of the generic resources that have been allocated to the job.
