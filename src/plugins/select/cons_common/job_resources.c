@@ -38,6 +38,7 @@
 #include "cons_common.h"
 
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/gres_ctld.h"
 
 bool select_state_initializing = true;
 
@@ -345,14 +346,14 @@ extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action)
 			core_bitmap = copy_job_resources_node(job, n);
 			if (job_ptr->details &&
 			    (job_ptr->details->whole_node == 1))
-				gres_plugin_job_alloc_whole_node(
+				gres_ctld_job_alloc_whole_node(
 					job_ptr->gres_list,
 					node_gres_list, job->nhosts,
 					i, n, job_ptr->job_id,
 					node_ptr->name, core_bitmap,
 					job_ptr->user_id);
 			else
-				gres_plugin_job_alloc(
+				gres_ctld_job_alloc(
 					job_ptr->gres_list,
 					node_gres_list, job->nhosts,
 					i, n, job_ptr->job_id,

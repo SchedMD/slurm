@@ -72,6 +72,7 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/gres_ctld.h"
 #include "src/slurmctld/preempt.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/plugins/select/linear/select_linear.h"
@@ -2814,10 +2815,10 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 				gres_list = cr_ptr->nodes[i].gres_list;
 			else
 				gres_list = node_ptr->gres_list;
-			gres_plugin_job_alloc(job_ptr->gres_list, gres_list,
-					      node_cnt, i, node_offset,
-					      job_ptr->job_id, node_ptr->name,
-					      NULL, job_ptr->user_id);
+			gres_ctld_job_alloc(job_ptr->gres_list, gres_list,
+					    node_cnt, i, node_offset,
+					    job_ptr->job_id, node_ptr->name,
+					    NULL, job_ptr->user_id);
 			gres_plugin_node_state_log(gres_list, node_ptr->name);
 		}
 
@@ -3083,13 +3084,13 @@ static void _init_node_cr(void)
 			}
 
 			if (bit_test(job_ptr->node_bitmap, i)) {
-				gres_plugin_job_alloc(job_ptr->gres_list,
-						      node_ptr->gres_list,
-						      job_resrcs_ptr->nhosts,
-						      i, node_offset,
-						      job_ptr->job_id,
-						      node_ptr->name,
-						      NULL, job_ptr->user_id);
+				gres_ctld_job_alloc(job_ptr->gres_list,
+						    node_ptr->gres_list,
+						    job_resrcs_ptr->nhosts,
+						    i, node_offset,
+						    job_ptr->job_id,
+						    node_ptr->name,
+						    NULL, job_ptr->user_id);
 			}
 
 			part_cr_ptr = cr_ptr->nodes[i].parts;
