@@ -622,6 +622,7 @@ AC_CONFIG_FILES([Makefile
 		 testsuite/slurm_unit/common/Makefile
 		 testsuite/slurm_unit/common/slurm_protocol_defs/Makefile
 		 testsuite/slurm_unit/common/slurm_protocol_pack/Makefile
+		 testsuite/slurm_unit/common/slurmdb_defs/Makefile
 		 testsuite/slurm_unit/common/slurmdb_pack/Makefile
 		 testsuite/slurm_unit/common/bitstring/Makefile
 		 testsuite/slurm_unit/common/hostlist/Makefile

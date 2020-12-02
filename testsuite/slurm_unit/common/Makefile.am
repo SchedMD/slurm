@@ -4,6 +4,7 @@ SUBDIRS = bitstring \
 	  hostlist \
 	  slurm_protocol_defs \
 	  slurm_protocol_pack \
+	  slurmdb_defs \
 	  slurmdb_pack
 
 AM_CPPFLAGS = -I$(top_srcdir) -ldl -lpthread
@@ -25,8 +26,7 @@ TESTS += xhash-test \
 	 slurm_opt-test \
 	 xstring-test \
 	 parse_time-test \
-	 reverse_tree-test \
-	 slurmdb_addto_qos_char_list-test
+	 reverse_tree-test
 
 xhash_test_CFLAGS = $(MYCFLAGS)
 xhash_test_LDADD  = $(LDADD) @CHECK_LIBS@
@@ -34,8 +34,6 @@ data_test_CFLAGS  = $(MYCFLAGS)
 data_test_LDADD   = $(LDADD) @CHECK_LIBS@
 slurm_opt_test_CFLAGS = $(MYCFLAGS)
 slurm_opt_test_LDADD  = $(LDADD) @CHECK_LIBS@
-slurmdb_addto_qos_char_list_test_CFLAGS = $(MYCFLAGS)
-slurmdb_addto_qos_char_list_test_LDADD  = $(LDADD) @CHECK_LIBS@
 xstring_test_CFLAGS   = $(MYCFLAGS)
 xstring_test_LDADD    = $(LDADD) @CHECK_LIBS@
 parse_time_test_CFLAGS= $(MYCFLAGS)
