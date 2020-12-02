@@ -208,7 +208,6 @@ static uint64_t _get_job_gres_list_cnt(List gres_list, char *gres_name,
 				       char *gres_type);
 static uint64_t	_get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt,
 				  int *config_type_cnt);
-static int	_gres_find_job_by_key(void *x, void *key);
 static int	_gres_find_step_by_key(void *x, void *key);
 static void	_gres_job_list_delete(void *list_element);
 static int	_job_alloc(void *job_gres_data, void *node_gres_data,
@@ -311,7 +310,7 @@ extern int gres_find_id(void *x, void *key)
 }
 
 /* Find job record with matching name and type */
-static int _gres_find_job_by_key(void *x, void *key)
+extern int gres_find_job_by_key(void *x, void *key)
 {
 	gres_state_t *state_ptr = (gres_state_t *) x;
 	gres_key_t *job_key = (gres_key_t *) key;
@@ -333,7 +332,7 @@ static int _gres_find_job_by_key_with_cnt(void *x, void *key)
 	gres_job_state_t *gres_data_ptr;
 	gres_data_ptr = (gres_job_state_t *)state_ptr->gres_data;
 
-	if (!_gres_find_job_by_key(x, key))
+	if (!gres_find_job_by_key(x, key))
 		return 0;
 	/* ignore count on no_consume gres */
 	if (!gres_data_ptr->node_cnt ||
@@ -4997,7 +4996,7 @@ static gres_job_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
 	/* Find the job GRES record */
 	job_search_key.plugin_id = gres_context[context_inx].plugin_id;
 	job_search_key.type_id = gres_plugin_build_id(type);
-	gres_ptr = list_find_first(gres_list, _gres_find_job_by_key,
+	gres_ptr = list_find_first(gres_list, gres_find_job_by_key,
 				   &job_search_key);
 
 	if (gres_ptr) {
@@ -8641,7 +8640,7 @@ static void _job_select_whole_node_internal(
 	gres_job_state_t *job_state_ptr;
 
 	if (!(job_gres_ptr = list_find_first(job_gres_list,
-					     _gres_find_job_by_key,
+					     gres_find_job_by_key,
 					     job_search_key))) {
 		job_state_ptr = xmalloc(sizeof(gres_job_state_t));
 
@@ -8681,7 +8680,7 @@ static int _job_alloc_whole_node_internal(
 	gres_job_state_t *job_state_ptr;
 
 	if (!(job_gres_ptr = list_find_first(job_gres_list,
-					     _gres_find_job_by_key,
+					     gres_find_job_by_key,
 					     job_search_key))) {
 		error("%s: This should never happen, we couldn't find the gres %u:%u",
 		      __func__,
@@ -10163,7 +10162,7 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list,
 		else
 			job_search_key.type_id = step_gres_data->type_id;
 		job_gres_ptr = list_find_first(job_gres_list,
-					       _gres_find_job_by_key,
+					       gres_find_job_by_key,
 					       &job_search_key);
 		if (!job_gres_ptr || !job_gres_ptr->gres_data) {
 			*rc = ESLURM_INVALID_GRES;
