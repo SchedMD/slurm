@@ -74,6 +74,7 @@
 #include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
+#include "src/slurmctld/gres_ctld.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/node_scheduler.h"
@@ -2197,7 +2198,7 @@ static List _handle_exclusive_gres(job_record_t *job_ptr,
 	for (int i = i_first; i <= i_last; i++) {
 		if (!bit_test(select_bitmap, i))
 			continue;
-		gres_plugin_job_select_whole_node(
+		gres_ctld_job_select_whole_node(
 			&post_list,
 			node_record_table_ptr[i].gres_list,
 			job_ptr->job_id,

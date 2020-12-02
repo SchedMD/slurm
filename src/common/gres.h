@@ -927,20 +927,6 @@ extern int gres_plugin_job_min_cpu_node(uint32_t sockets_per_node,
 					List job_gres_list);
 
 /*
- * Fill in job_gres_list with the total amount of GRES on a node.
- * OUT job_gres_list - This list will be destroyed and remade with all GRES on
- *                     node.
- * IN node_gres_list - node's gres_list built by
- *		       gres_plugin_node_config_validate()
- * IN job_id      - job's ID (for logging)
- * IN node_name   - name of the node (for logging)
- * RET SLURM_SUCCESS or error code
- */
-extern int gres_plugin_job_select_whole_node(
-	List *job_gres_list, List node_gres_list,
-	uint32_t job_id, char *node_name);
-
-/*
  * Select and allocate all GRES on a node to a job and update node and job GRES
  * information
  * IN job_gres_list - job's gres_list built by gres_plugin_job_whole_node().

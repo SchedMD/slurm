@@ -8630,44 +8630,6 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 	return SLURM_SUCCESS;
 }
 
-static void _job_select_whole_node_internal(
-	gres_key_t *job_search_key, gres_node_state_t *node_state_ptr,
-	int type_inx, char *gres_name, List job_gres_list)
-{
-	gres_state_t *job_gres_ptr;
-	gres_job_state_t *job_state_ptr;
-
-	if (!(job_gres_ptr = list_find_first(job_gres_list,
-					     gres_find_job_by_key,
-					     job_search_key))) {
-		job_state_ptr = xmalloc(sizeof(gres_job_state_t));
-
-		job_gres_ptr = xmalloc(sizeof(gres_state_t));
-		job_gres_ptr->plugin_id = job_search_key->plugin_id;
-		job_gres_ptr->gres_data = job_state_ptr;
-		job_state_ptr->gres_name = xstrdup(gres_name);
-		if (type_inx != -1)
-			job_state_ptr->type_name =
-				xstrdup(node_state_ptr->type_name[type_inx]);
-		job_state_ptr->type_id = job_search_key->type_id;
-
-		list_append(job_gres_list, job_gres_ptr);
-	} else
-		job_state_ptr = job_gres_ptr->gres_data;
-
-	/*
-	 * Add the total_gres here but no count, that will be done after
-	 * allocation.
-	 */
-	if (node_state_ptr->no_consume) {
-		job_state_ptr->total_gres = NO_CONSUME_VAL64;
-	} else if (type_inx != -1)
-		job_state_ptr->total_gres +=
-			node_state_ptr->type_cnt_avail[type_inx];
-	else
-		job_state_ptr->total_gres += node_state_ptr->gres_cnt_avail;
-}
-
 static int _job_alloc_whole_node_internal(
 	gres_key_t *job_search_key, gres_node_state_t *node_state_ptr,
 	List job_gres_list, int node_cnt, int node_index, int node_offset,
@@ -8770,80 +8732,6 @@ extern int gres_plugin_job_alloc(List job_gres_list, List node_gres_list,
 	list_iterator_destroy(job_gres_iter);
 
 	return rc;
-}
-
-/*
- * Fill in job_gres_list with the total amount of GRES on a node.
- * OUT job_gres_list - This list will be destroyed and remade with all GRES on
- *                     node.
- * IN node_gres_list - node's gres_list built by
- *		       gres_plugin_node_config_validate()
- * IN job_id      - job's ID (for logging)
- * IN node_name   - name of the node (for logging)
- * RET SLURM_SUCCESS or error code
- */
-extern int gres_plugin_job_select_whole_node(
-	List *job_gres_list, List node_gres_list,
-	uint32_t job_id, char *node_name)
-{
-	ListIterator node_gres_iter;
-	gres_state_t *node_gres_ptr;
-	gres_node_state_t *node_state_ptr;
-
-	if (job_gres_list == NULL)
-		return SLURM_SUCCESS;
-	if (node_gres_list == NULL) {
-		error("%s: job %u has gres specification while node %s has none",
-		      __func__, job_id, node_name);
-		return SLURM_ERROR;
-	}
-
-	if (!*job_gres_list)
-		*job_gres_list = list_create(gres_job_list_delete);
-
-	node_gres_iter = list_iterator_create(node_gres_list);
-	while ((node_gres_ptr = list_next(node_gres_iter))) {
-		char *gres_name;
-		gres_key_t job_search_key;
-		node_state_ptr = (gres_node_state_t *) node_gres_ptr->gres_data;
-
-		/*
-		 * Don't check for no_consume here, we need them added here and
-		 * will filter them out in gres_plugin_job_alloc_whole_node()
-		 */
-		if (!node_state_ptr->gres_cnt_config)
-			continue;
-
-		if (!(gres_name = gres_get_name_from_id(
-			      node_gres_ptr->plugin_id))) {
-			error("%s: no plugin configured for data type %u for job %u and node %s",
-			      __func__, node_gres_ptr->plugin_id, job_id,
-			      node_name);
-			/* A likely sign that GresPlugins has changed */
-			continue;
-		}
-
-		job_search_key.plugin_id = node_gres_ptr->plugin_id;
-
-		if (!node_state_ptr->type_cnt) {
-			job_search_key.type_id = 0;
-			_job_select_whole_node_internal(
-				&job_search_key, node_state_ptr,
-				-1, gres_name, *job_gres_list);
-		} else {
-			for (int j = 0; j < node_state_ptr->type_cnt; j++) {
-				job_search_key.type_id = gres_plugin_build_id(
-					node_state_ptr->type_name[j]);
-				_job_select_whole_node_internal(
-					&job_search_key, node_state_ptr,
-					j, gres_name, *job_gres_list);
-			}
-		}
-		xfree(gres_name);
-	}
-	list_iterator_destroy(node_gres_iter);
-
-	return SLURM_SUCCESS;
 }
 
 /*
