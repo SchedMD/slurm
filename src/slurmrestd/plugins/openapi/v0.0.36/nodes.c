@@ -101,6 +101,7 @@ static int _dump_node(data_t *p, node_info_t *node)
 	data_set_int(data_key_set(d, "boards"), node->boards);
 	data_set_int(data_key_set(d, "boot_time"), node->boot_time);
 	/* cluster_name intentionally omitted */
+	data_set_string(data_key_set(d, "comment"), node->comment);
 	data_set_int(data_key_set(d, "cores"), node->cores);
 	/* core_spec_cnt intentionally omitted */
 	data_set_int(data_key_set(d, "cpu_binding"), node->cpu_bind);
