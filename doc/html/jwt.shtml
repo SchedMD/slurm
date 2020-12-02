@@ -17,7 +17,8 @@ compiled.</p>
 
 <h2>Setup</h2>
 <ol>
-<li>Configure and build Slurm for JWT support</li>
+<li><a href="download.html#jwt">
+    Configure and build Slurm for JWT support</a></li>
 <li>Add JWT key to controller in StateSaveLocation:
 Here is an example with StateSaveLocation=/var/spool/slurm/statesave/
 <pre>
@@ -48,6 +49,6 @@ scontrol token
 command.</li>
 </ol>
 
-<p style="text-align:center;">Last modified 30 September 2020</p>
+<p style="text-align:center;">Last modified 3 December 2020</p>
 
 <!--#include virtual="footer.txt"-->

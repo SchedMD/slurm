@@ -382,6 +382,22 @@ sudo make install
 	<pre>--with-yaml=/usr/local/</pre>
 </li>
 
+<li><a name="jwt" href="https://github.com/benmcollins/libjwt">
+    <b>JWT library</b></a>
+	<p><a href="jwt.html">JWT authentication</a> requires libjwt.
+	Instructions for the build are as follows:</p>
+	<pre>
+git clone --depth 1 --single-branch -b v1.12.0 https://github.com/benmcollins/libjwt.git libjwt
+cd libjwt
+autoreconf --force --install
+./configure --prefix=/usr/local
+make -j
+sudo make install
+	</pre>
+	Add the following argument when running <i>configure</i> for Slurm:
+	<pre>--with-jwt=/usr/local/</pre>
+</li>
+
 <li><b>Slurm-web</b><br>
 Slurm-web is a free software, distributed under the GPL version 2 license,
 that provides both a HTTP REST API (based on JSON format) and a web GUI
