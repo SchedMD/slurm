@@ -352,6 +352,20 @@ export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/:$PKG_CONFIG_PATH
 	</pre>
 </li>
 
+<li><a name="httpparser" href="https://github.com/nodejs/http-parser">
+    <b>HTTP Parser</b></a>
+	<p><a href="rest.html">slurmrestd</a> requires libhttp_parser
+	(>=v2.6.0). Instructions for the build are as follows:</p>
+	<pre>
+git clone --depth 1 --single-branch -b v2.9.4 https://github.com/nodejs/http-parser.git http_parser-c
+cd http_parser
+make
+sudo make install
+	</pre>
+	Add the following argument when running <i>configure</i> for Slurm:
+	<pre>--with-http-parser=/usr/local/</pre>
+</li>
+
 <li><b>Slurm-web</b><br>
 Slurm-web is a free software, distributed under the GPL version 2 license,
 that provides both a HTTP REST API (based on JSON format) and a web GUI
