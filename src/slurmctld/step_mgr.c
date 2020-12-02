@@ -71,6 +71,7 @@
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/front_end.h"
+#include "src/slurmctld/gres_ctld.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/port_mgr.h"
@@ -1879,11 +1880,12 @@ extern void step_alloc_lps(step_record_t *step_ptr)
 				step_ptr->cpus_per_task;
 
 		job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
-		gres_plugin_step_alloc(step_ptr->gres_list, job_ptr->gres_list,
-				job_node_inx, first_step_node,
-				step_ptr->step_layout->tasks[step_node_inx],
-				rem_nodes, job_ptr->job_id,
-				step_ptr->step_id.step_id);
+		gres_ctld_step_alloc(step_ptr->gres_list, job_ptr->gres_list,
+				     job_node_inx, first_step_node,
+				     step_ptr->step_layout->
+				     tasks[step_node_inx],
+				     rem_nodes, job_ptr->job_id,
+				     step_ptr->step_id.step_id);
 		first_step_node = false;
 		rem_nodes--;
 

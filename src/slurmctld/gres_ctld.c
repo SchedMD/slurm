@@ -1106,3 +1106,238 @@ extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
 
 	return rc;
 }
+static int _step_alloc(void *step_gres_data, void *job_gres_data,
+		       uint32_t plugin_id, int node_offset,
+		       bool first_step_node,
+		       slurm_step_id_t *step_id,
+		       uint16_t tasks_on_node, uint32_t rem_nodes)
+{
+	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
+	gres_step_state_t *step_gres_ptr = (gres_step_state_t *) step_gres_data;
+	uint64_t gres_needed, gres_avail, max_gres = 0;
+	bitstr_t *gres_bit_alloc;
+	int i, len;
+
+	xassert(job_gres_ptr);
+	xassert(step_gres_ptr);
+
+	if (job_gres_ptr->node_cnt == 0)	/* no_consume */
+		return SLURM_SUCCESS;
+
+	if (node_offset >= job_gres_ptr->node_cnt) {
+		error("gres/%s: %s for %ps, node offset invalid (%d >= %u)",
+		      job_gres_ptr->gres_name, __func__, step_id, node_offset,
+		      job_gres_ptr->node_cnt);
+		return SLURM_ERROR;
+	}
+
+	if (first_step_node)
+		step_gres_ptr->total_gres = 0;
+	if (step_gres_ptr->gres_per_node) {
+		gres_needed = step_gres_ptr->gres_per_node;
+	} else if (step_gres_ptr->gres_per_task) {
+		gres_needed = step_gres_ptr->gres_per_task * tasks_on_node;
+	} else if (step_gres_ptr->gres_per_step && (rem_nodes == 1)) {
+		gres_needed = step_gres_ptr->gres_per_step -
+			      step_gres_ptr->total_gres;
+	} else if (step_gres_ptr->gres_per_step) {
+		/* Leave at least one GRES per remaining node */
+		max_gres = step_gres_ptr->gres_per_step -
+			   step_gres_ptr->total_gres - (rem_nodes - 1);
+		gres_needed = 1;
+	} else {
+		/*
+		 * No explicit step GRES specification.
+		 * Note that gres_per_socket is not supported for steps
+		 */
+		gres_needed = job_gres_ptr->gres_cnt_node_alloc[node_offset];
+	}
+	if (step_gres_ptr->node_cnt == 0)
+		step_gres_ptr->node_cnt = job_gres_ptr->node_cnt;
+	if (!step_gres_ptr->gres_cnt_node_alloc) {
+		step_gres_ptr->gres_cnt_node_alloc =
+			xcalloc(step_gres_ptr->node_cnt, sizeof(uint64_t));
+	}
+
+	if (job_gres_ptr->gres_cnt_node_alloc &&
+	    job_gres_ptr->gres_cnt_node_alloc[node_offset])
+		gres_avail = job_gres_ptr->gres_cnt_node_alloc[node_offset];
+	else if (job_gres_ptr->gres_bit_select &&
+		 job_gres_ptr->gres_bit_select[node_offset])
+		gres_avail = bit_set_count(
+				job_gres_ptr->gres_bit_select[node_offset]);
+	else if (job_gres_ptr->gres_cnt_node_alloc)
+		gres_avail = job_gres_ptr->gres_cnt_node_alloc[node_offset];
+	else
+		gres_avail = job_gres_ptr->gres_per_node;
+	if (gres_needed > gres_avail) {
+		error("gres/%s: %s for %ps, step's > job's "
+		      "for node %d (%"PRIu64" > %"PRIu64")",
+		      job_gres_ptr->gres_name, __func__,
+		      step_id, node_offset, gres_needed, gres_avail);
+		return SLURM_ERROR;
+	}
+
+	if (!job_gres_ptr->gres_cnt_step_alloc) {
+		job_gres_ptr->gres_cnt_step_alloc =
+			xcalloc(job_gres_ptr->node_cnt, sizeof(uint64_t));
+	}
+
+	if (gres_needed >
+	    (gres_avail - job_gres_ptr->gres_cnt_step_alloc[node_offset])) {
+		error("gres/%s: %s for %ps, step's > job's "
+		      "remaining for node %d (%"PRIu64" > "
+		      "(%"PRIu64" - %"PRIu64"))",
+		      job_gres_ptr->gres_name, __func__,
+		      step_id, node_offset, gres_needed, gres_avail,
+		      job_gres_ptr->gres_cnt_step_alloc[node_offset]);
+		return SLURM_ERROR;
+	}
+	gres_avail -= job_gres_ptr->gres_cnt_step_alloc[node_offset];
+	if (max_gres)
+		gres_needed = MIN(gres_avail, max_gres);
+
+	if (step_gres_ptr->gres_cnt_node_alloc &&
+	    (node_offset < step_gres_ptr->node_cnt))
+		step_gres_ptr->gres_cnt_node_alloc[node_offset] = gres_needed;
+	step_gres_ptr->total_gres += gres_needed;
+
+	if (step_gres_ptr->node_in_use == NULL) {
+		step_gres_ptr->node_in_use = bit_alloc(job_gres_ptr->node_cnt);
+	}
+	bit_set(step_gres_ptr->node_in_use, node_offset);
+	job_gres_ptr->gres_cnt_step_alloc[node_offset] += gres_needed;
+
+	if ((job_gres_ptr->gres_bit_alloc == NULL) ||
+	    (job_gres_ptr->gres_bit_alloc[node_offset] == NULL)) {
+		debug3("gres/%s: %s gres_bit_alloc for %ps is NULL",
+		       job_gres_ptr->gres_name, __func__, step_id);
+		return SLURM_SUCCESS;
+	}
+
+	gres_bit_alloc = bit_copy(job_gres_ptr->gres_bit_alloc[node_offset]);
+	len = bit_size(gres_bit_alloc);
+	if (gres_id_shared(plugin_id)) {
+		for (i = 0; i < len; i++) {
+			if (gres_needed > 0) {
+				if (bit_test(gres_bit_alloc, i))
+					gres_needed = 0;
+			} else {
+				bit_clear(gres_bit_alloc, i);
+			}
+		}
+	} else {
+		if (job_gres_ptr->gres_bit_step_alloc &&
+		    job_gres_ptr->gres_bit_step_alloc[node_offset]) {
+			bit_and_not(gres_bit_alloc,
+				job_gres_ptr->gres_bit_step_alloc[node_offset]);
+		}
+		for (i = 0; i < len; i++) {
+			if (gres_needed > 0) {
+				if (bit_test(gres_bit_alloc, i))
+					gres_needed--;
+			} else {
+				bit_clear(gres_bit_alloc, i);
+			}
+		}
+	}
+	if (gres_needed) {
+		error("gres/%s: %s %ps oversubscribed resources on node %d",
+		      job_gres_ptr->gres_name, __func__, step_id, node_offset);
+	}
+
+	if (job_gres_ptr->gres_bit_step_alloc == NULL) {
+		job_gres_ptr->gres_bit_step_alloc =
+			xcalloc(job_gres_ptr->node_cnt, sizeof(bitstr_t *));
+	}
+	if (job_gres_ptr->gres_bit_step_alloc[node_offset]) {
+		bit_or(job_gres_ptr->gres_bit_step_alloc[node_offset],
+		       gres_bit_alloc);
+	} else {
+		job_gres_ptr->gres_bit_step_alloc[node_offset] =
+			bit_copy(gres_bit_alloc);
+	}
+	if (step_gres_ptr->gres_bit_alloc == NULL) {
+		step_gres_ptr->gres_bit_alloc = xcalloc(job_gres_ptr->node_cnt,
+							sizeof(bitstr_t *));
+	}
+	if (step_gres_ptr->gres_bit_alloc[node_offset]) {
+		error("gres/%s: %s %ps bit_alloc already exists",
+		      job_gres_ptr->gres_name, __func__, step_id);
+		bit_or(step_gres_ptr->gres_bit_alloc[node_offset],
+		       gres_bit_alloc);
+		FREE_NULL_BITMAP(gres_bit_alloc);
+	} else {
+		step_gres_ptr->gres_bit_alloc[node_offset] = gres_bit_alloc;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Allocate resource to a step and update job and step gres information
+ * IN step_gres_list - step's gres_list built by
+ *		gres_plugin_step_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN node_offset - job's zero-origin index to the node of interest
+ * IN first_step_node - true if this is the first node in the step's allocation
+ * IN tasks_on_node - number of tasks to be launched on this node
+ * IN rem_nodes - desired additional node count to allocate, including this node
+ * IN job_id, step_id - ID of the step being allocated.
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
+				int node_offset, bool first_step_node,
+				uint16_t tasks_on_node, uint32_t rem_nodes,
+				uint32_t job_id, uint32_t step_id)
+{
+	int rc = SLURM_SUCCESS, rc2;
+	ListIterator step_gres_iter;
+	gres_state_t *step_gres_ptr, *job_gres_ptr;
+	slurm_step_id_t tmp_step_id;
+
+	if (step_gres_list == NULL)
+		return SLURM_SUCCESS;
+	if (job_gres_list == NULL) {
+		error("%s: step allocates GRES, but job %u has none",
+		      __func__, job_id);
+		return SLURM_ERROR;
+	}
+
+	tmp_step_id.job_id = job_id;
+	tmp_step_id.step_het_comp = NO_VAL;
+	tmp_step_id.step_id = step_id;
+
+	step_gres_iter = list_iterator_create(step_gres_list);
+	while ((step_gres_ptr = list_next(step_gres_iter))) {
+		gres_step_state_t *step_data_ptr =
+			(gres_step_state_t *) step_gres_ptr->gres_data;
+		gres_key_t job_search_key;
+		job_search_key.plugin_id = step_gres_ptr->plugin_id;
+		if (step_data_ptr->type_name)
+			job_search_key.type_id = step_data_ptr->type_id;
+		else
+			job_search_key.type_id = NO_VAL;
+
+		job_search_key.node_offset = node_offset;
+		if (!(job_gres_ptr = list_find_first(
+			      job_gres_list,
+			      gres_find_job_by_key_with_cnt,
+			      &job_search_key))) {
+			/* job lack resources required by the step */
+			rc = ESLURM_INVALID_GRES;
+			break;
+		}
+
+		rc2 = _step_alloc(step_data_ptr,
+				  job_gres_ptr->gres_data,
+				  step_gres_ptr->plugin_id, node_offset,
+				  first_step_node, &tmp_step_id, tasks_on_node,
+				  rem_nodes);
+		if (rc2 != SLURM_SUCCESS)
+			rc = rc2;
+	}
+	list_iterator_destroy(step_gres_iter);
+
+	return rc;
+}
