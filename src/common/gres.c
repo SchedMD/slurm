@@ -8574,43 +8574,6 @@ static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
 }
 
 /*
- * Extract from the job record's gres_list the count of allocated resources of
- * 	the named gres type.
- * IN job_gres_list  - job record's gres_list.
- * IN gres_name_type - the name of the gres type to retrieve the associated
- *	value from.
- * RET The value associated with the gres type or NO_VAL if not found.
- */
-extern uint64_t gres_plugin_get_job_value_by_type(List job_gres_list,
-						  char *gres_name_type)
-{
-	uint64_t gres_val;
-	uint32_t gres_name_type_id;
-	ListIterator  job_gres_iter;
-	gres_state_t *job_gres_ptr;
-
-	if (job_gres_list == NULL)
-		return NO_VAL64;
-
-	slurm_mutex_lock(&gres_context_lock);
-	gres_name_type_id = gres_plugin_build_id(gres_name_type);
-	gres_val = NO_VAL64;
-
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
-		if (job_gres_ptr->plugin_id == gres_name_type_id) {
-			gres_val = ((gres_job_state_t *)
-				   (job_gres_ptr->gres_data))->gres_per_node;
-			break;
-		}
-	}
-	list_iterator_destroy(job_gres_iter);
-
-	slurm_mutex_unlock(&gres_context_lock);
-	return gres_val;
-}
-
-/*
  * Extract from the job/step gres_list the count of GRES of the specified name
  * and (optionally) type. If no type is specified, then the count will include
  * all GRES of that name, regardless of type.
