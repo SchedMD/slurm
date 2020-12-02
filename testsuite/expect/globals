@@ -2384,6 +2384,40 @@ proc param_contains { haystack needle } {
 ################################################################
 #
 # NAME
+#	param_value - returns the value of a parameter in a comma-separated-list
+#
+# SYNOPSIS
+#	param_value params_list param ?default?
+#
+# DESCRIPTION
+#	Searches for the specified param in the comma-separated-list
+#	string (params_list) and returns its value.
+#
+# RETURN VALUE
+#	Returns the value found or the optional default value if not found.
+#	If the param is found without a value, returns true (ie like
+#	param_contains).
+#
+################################################################
+
+proc param_value {params_list param {default false}} {
+	global re_word_str
+	foreach pair [split $params_list ","] {
+		if {[regexp "$param" $pair] == 1} {
+			if {[regexp "$param=($re_word_str)" $pair - value] == 1} {
+				return $value
+			} else {
+				return true
+			}
+		}
+	}
+	return $default
+}
+
+
+################################################################
+#
+# NAME
 #	get_affinity_types - gets the task plugins running with task/ stripped
 #
 # SYNOPSIS
