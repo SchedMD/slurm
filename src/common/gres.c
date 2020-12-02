@@ -8082,8 +8082,6 @@ extern void gres_plugin_job_clear(List job_gres_list)
 	if (job_gres_list == NULL)
 		return;
 
-	(void) gres_plugin_init();
-	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
 		job_state_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
@@ -8104,7 +8102,6 @@ extern void gres_plugin_job_clear(List job_gres_list)
 		job_state_ptr->node_cnt = 0;
 	}
 	list_iterator_destroy(job_gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 }
 
 /*
