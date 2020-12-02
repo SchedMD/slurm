@@ -10541,7 +10541,7 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
 				  uint16_t tasks_on_node, uint32_t rem_nodes,
 				  uint32_t job_id, uint32_t step_id)
 {
-	int rc, rc2;
+	int rc = SLURM_SUCCESS, rc2;
 	ListIterator step_gres_iter;
 	gres_state_t *step_gres_ptr, *job_gres_ptr;
 	slurm_step_id_t tmp_step_id;
@@ -10554,13 +10554,10 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
 		return SLURM_ERROR;
 	}
 
-	rc = gres_plugin_init();
-
 	tmp_step_id.job_id = job_id;
 	tmp_step_id.step_het_comp = NO_VAL;
 	tmp_step_id.step_id = step_id;
 
-	slurm_mutex_lock(&gres_context_lock);
 	step_gres_iter = list_iterator_create(step_gres_list);
 	while ((step_gres_ptr = (gres_state_t *) list_next(step_gres_iter))) {
 		gres_step_state_t *step_data_ptr =
@@ -10592,7 +10589,6 @@ extern int gres_plugin_step_alloc(List step_gres_list, List job_gres_list,
 			rc = rc2;
 	}
 	list_iterator_destroy(step_gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
 }
@@ -10703,7 +10699,7 @@ static int _step_dealloc(gres_state_t *step_gres_ptr, List job_gres_list,
 extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list,
 				    uint32_t job_id, uint32_t step_id)
 {
-	int rc, rc2;
+	int rc = SLURM_SUCCESS, rc2;
 	ListIterator step_gres_iter;
 	gres_state_t *step_gres_ptr;
 	slurm_step_id_t tmp_step_id;
@@ -10716,13 +10712,10 @@ extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list,
 		return SLURM_ERROR;
 	}
 
-	rc = gres_plugin_init();
-
 	tmp_step_id.job_id = job_id;
 	tmp_step_id.step_het_comp = NO_VAL;
 	tmp_step_id.step_id = step_id;
 
-	slurm_mutex_lock(&gres_context_lock);
 	step_gres_iter = list_iterator_create(step_gres_list);
 	while ((step_gres_ptr = list_next(step_gres_iter))) {
 		rc2 = _step_dealloc(step_gres_ptr,
@@ -10732,7 +10725,6 @@ extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list,
 			rc = rc2;
 	}
 	list_iterator_destroy(step_gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
 }
