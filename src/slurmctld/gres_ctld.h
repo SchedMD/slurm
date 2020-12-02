@@ -95,4 +95,26 @@ extern int gres_ctld_job_alloc(List job_gres_list, List node_gres_list,
 			       uint32_t job_id, char *node_name,
 			       bitstr_t *core_bitmap, uint32_t user_id);
 
+/*
+ * Deallocate resource from a job and update node and job gres information
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN node_gres_list - node's gres_list built by
+ *		gres_plugin_node_config_validate()
+ * IN node_offset - zero-origin index to the node of interest
+ * IN job_id      - job's ID (for logging)
+ * IN node_name   - name of the node (for logging)
+ * IN old_job     - true if job started before last slurmctld reboot.
+ *		    Immediately after slurmctld restart and before the node's
+ *		    registration, the GRES type and topology. This results in
+ *		    some incorrect internal bookkeeping, but does not cause
+ *		    failures in terms of allocating GRES to jobs.
+ * IN user_id     - job's user ID
+ * IN: job_fini   - job fully terminating on this node (not just a test)
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
+				 int node_offset, uint32_t job_id,
+				 char *node_name, bool old_job,
+				 uint32_t user_id, bool job_fini);
+
 #endif /* _GRES_CTLD_H */

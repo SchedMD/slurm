@@ -524,10 +524,10 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 				gres_list = node_usage[i].gres_list;
 			else
 				gres_list = node_ptr->gres_list;
-			gres_plugin_job_dealloc(job_ptr->gres_list, gres_list,
-						n, job_ptr->job_id,
-						node_ptr->name, old_job,
-						job_ptr->user_id, job_fini);
+			gres_ctld_job_dealloc(job_ptr->gres_list, gres_list,
+					      n, job_ptr->job_id,
+					      node_ptr->name, old_job,
+					      job_ptr->user_id, job_fini);
 			gres_plugin_node_state_log(gres_list, node_ptr->name);
 
 			if (node_usage[i].alloc_memory <

@@ -834,3 +834,275 @@ extern int gres_ctld_job_alloc_whole_node(
 
 	return rc;
 }
+
+static int _job_dealloc(void *job_gres_data, void *node_gres_data,
+			int node_offset, char *gres_name, uint32_t job_id,
+			char *node_name, bool old_job, uint32_t plugin_id,
+			uint32_t user_id, bool job_fini)
+{
+	int i, j, len, sz1, sz2;
+	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
+	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
+	bool type_array_updated = false;
+	uint64_t gres_cnt = 0, k;
+	uint64_t gres_per_bit = 1;
+
+	/*
+	 * Validate data structures. Either job_gres_data->node_cnt and
+	 * job_gres_data->gres_bit_alloc are both set or both zero/NULL.
+	 */
+	xassert(node_offset >= 0);
+	xassert(job_gres_ptr);
+	xassert(node_gres_ptr);
+
+	if (node_gres_ptr->no_consume)
+		return SLURM_SUCCESS;
+
+	if (job_gres_ptr->node_cnt <= node_offset) {
+		error("gres/%s: job %u dealloc of node %s bad node_offset %d "
+		      "count is %u", gres_name, job_id, node_name, node_offset,
+		      job_gres_ptr->node_cnt);
+		return SLURM_ERROR;
+	}
+
+	if (gres_id_shared(plugin_id))
+		gres_per_bit = job_gres_ptr->gres_per_node;
+
+	xfree(node_gres_ptr->gres_used);	/* Clear cache */
+	if (node_gres_ptr->gres_bit_alloc && job_gres_ptr->gres_bit_alloc &&
+	    job_gres_ptr->gres_bit_alloc[node_offset]) {
+		len = bit_size(job_gres_ptr->gres_bit_alloc[node_offset]);
+		i   = bit_size(node_gres_ptr->gres_bit_alloc);
+		if (i != len) {
+			error("gres/%s: job %u and node %s bitmap sizes differ "
+			      "(%d != %d)", gres_name, job_id, node_name, len,
+			       i);
+			len = MIN(len, i);
+			/* proceed with request, make best effort */
+		}
+		for (i = 0; i < len; i++) {
+			if (!bit_test(job_gres_ptr->gres_bit_alloc[node_offset],
+				      i)) {
+				continue;
+			}
+			bit_clear(node_gres_ptr->gres_bit_alloc, i);
+
+			/*
+			 * NOTE: Do not clear bit from
+			 * job_gres_ptr->gres_bit_alloc[node_offset]
+			 * since this may only be an emulated deallocate
+			 */
+			if (node_gres_ptr->gres_cnt_alloc >= gres_per_bit) {
+				node_gres_ptr->gres_cnt_alloc -= gres_per_bit;
+			} else {
+				error("gres/%s: job %u dealloc node %s GRES count underflow (%"PRIu64" < %"PRIu64")",
+				      gres_name, job_id, node_name,
+				      node_gres_ptr->gres_cnt_alloc,
+				      gres_per_bit);
+				node_gres_ptr->gres_cnt_alloc = 0;
+			}
+		}
+	} else if (job_gres_ptr->gres_cnt_node_alloc) {
+		gres_cnt = job_gres_ptr->gres_cnt_node_alloc[node_offset];
+	} else {
+		gres_cnt = job_gres_ptr->gres_per_node;
+	}
+	if (gres_cnt && (node_gres_ptr->gres_cnt_alloc >= gres_cnt))
+		node_gres_ptr->gres_cnt_alloc -= gres_cnt;
+	else if (gres_cnt) {
+		error("gres/%s: job %u node %s GRES count underflow (%"PRIu64" < %"PRIu64")",
+		      gres_name, job_id, node_name,
+		      node_gres_ptr->gres_cnt_alloc, gres_cnt);
+		node_gres_ptr->gres_cnt_alloc = 0;
+	}
+
+	if (job_gres_ptr->gres_bit_alloc &&
+	    job_gres_ptr->gres_bit_alloc[node_offset] &&
+	    node_gres_ptr->topo_gres_bitmap &&
+	    node_gres_ptr->topo_gres_cnt_alloc) {
+		for (i = 0; i < node_gres_ptr->topo_cnt; i++) {
+			sz1 = bit_size(
+				job_gres_ptr->gres_bit_alloc[node_offset]);
+			sz2 = bit_size(node_gres_ptr->topo_gres_bitmap[i]);
+			if (sz1 != sz2)
+				continue;
+			gres_cnt = (uint64_t)bit_overlap(
+				job_gres_ptr->gres_bit_alloc[node_offset],
+				node_gres_ptr->topo_gres_bitmap[i]);
+			gres_cnt *= gres_per_bit;
+			if (node_gres_ptr->topo_gres_cnt_alloc[i] >= gres_cnt) {
+				node_gres_ptr->topo_gres_cnt_alloc[i] -=
+					gres_cnt;
+			} else if (old_job) {
+				node_gres_ptr->topo_gres_cnt_alloc[i] = 0;
+			} else {
+				error("gres/%s: job %u dealloc node %s topo gres count underflow "
+				      "(%"PRIu64" %"PRIu64")",
+				      gres_name, job_id, node_name,
+				      node_gres_ptr->topo_gres_cnt_alloc[i],
+				      gres_cnt);
+				node_gres_ptr->topo_gres_cnt_alloc[i] = 0;
+			}
+			if ((node_gres_ptr->type_cnt == 0) ||
+			    (node_gres_ptr->topo_type_name == NULL) ||
+			    (node_gres_ptr->topo_type_name[i] == NULL))
+				continue;
+			for (j = 0; j < node_gres_ptr->type_cnt; j++) {
+				if (!node_gres_ptr->type_name[j] ||
+				    (node_gres_ptr->topo_type_id[i] !=
+				     node_gres_ptr->type_id[j]))
+					continue;
+				if (node_gres_ptr->type_cnt_alloc[j] >=
+				    gres_cnt) {
+					node_gres_ptr->type_cnt_alloc[j] -=
+						gres_cnt;
+				} else if (old_job) {
+					node_gres_ptr->type_cnt_alloc[j] = 0;
+				} else {
+					error("gres/%s: job %u dealloc node %s type %s gres count underflow "
+					      "(%"PRIu64" %"PRIu64")",
+					      gres_name, job_id, node_name,
+					      node_gres_ptr->type_name[j],
+					      node_gres_ptr->type_cnt_alloc[j],
+					      gres_cnt);
+					node_gres_ptr->type_cnt_alloc[j] = 0;
+				}
+			}
+		}
+		type_array_updated = true;
+	} else if (job_gres_ptr->gres_bit_alloc &&
+		   job_gres_ptr->gres_bit_alloc[node_offset] &&
+		   node_gres_ptr->topo_gres_cnt_alloc) {
+		/* Avoid crash if configuration inconsistent */
+		len = MIN(node_gres_ptr->gres_cnt_config,
+			  bit_size(job_gres_ptr->
+				   gres_bit_alloc[node_offset]));
+		for (i = 0; i < len; i++) {
+			if (!bit_test(job_gres_ptr->
+				      gres_bit_alloc[node_offset], i) ||
+			    !node_gres_ptr->topo_gres_cnt_alloc[i])
+				continue;
+			if (node_gres_ptr->topo_gres_cnt_alloc[i] >=
+			    gres_per_bit) {
+				node_gres_ptr->topo_gres_cnt_alloc[i] -=
+								gres_per_bit;
+			} else {
+				error("gres/%s: job %u dealloc node %s "
+				      "topo_gres_cnt_alloc[%d] count underflow "
+				      "(%"PRIu64" %"PRIu64")",
+				      gres_name, job_id, node_name, i,
+				      node_gres_ptr->topo_gres_cnt_alloc[i],
+				      gres_per_bit);
+				node_gres_ptr->topo_gres_cnt_alloc[i] = 0;
+			}
+			if ((node_gres_ptr->type_cnt == 0) ||
+			    (node_gres_ptr->topo_type_name == NULL) ||
+			    (node_gres_ptr->topo_type_name[i] == NULL))
+				continue;
+			for (j = 0; j < node_gres_ptr->type_cnt; j++) {
+				if (!node_gres_ptr->type_name[j] ||
+				    (node_gres_ptr->topo_type_id[i] !=
+				     node_gres_ptr->type_id[j]))
+					continue;
+				if (node_gres_ptr->type_cnt_alloc[j] >=
+				    gres_per_bit) {
+					node_gres_ptr->type_cnt_alloc[j] -=
+								gres_per_bit;
+				} else {
+					error("gres/%s: job %u dealloc node %s "
+					      "type %s type_cnt_alloc count underflow "
+					      "(%"PRIu64" %"PRIu64")",
+					      gres_name, job_id, node_name,
+					      node_gres_ptr->type_name[j],
+					      node_gres_ptr->type_cnt_alloc[j],
+					      gres_per_bit);
+					node_gres_ptr->type_cnt_alloc[j] = 0;
+				}
+ 			}
+		}
+		type_array_updated = true;
+	}
+
+	if (!type_array_updated && job_gres_ptr->type_name) {
+		gres_cnt = job_gres_ptr->gres_per_node;
+		for (j = 0; j < node_gres_ptr->type_cnt; j++) {
+			if (job_gres_ptr->type_id !=
+			    node_gres_ptr->type_id[j])
+				continue;
+			k = MIN(gres_cnt, node_gres_ptr->type_cnt_alloc[j]);
+			node_gres_ptr->type_cnt_alloc[j] -= k;
+			gres_cnt -= k;
+			if (gres_cnt == 0)
+				break;
+		}
+ 	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Deallocate resource from a job and update node and job gres information
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN node_gres_list - node's gres_list built by
+ *		gres_plugin_node_config_validate()
+ * IN node_offset - zero-origin index to the node of interest
+ * IN job_id      - job's ID (for logging)
+ * IN node_name   - name of the node (for logging)
+ * IN old_job     - true if job started before last slurmctld reboot.
+ *		    Immediately after slurmctld restart and before the node's
+ *		    registration, the GRES type and topology. This results in
+ *		    some incorrect internal bookkeeping, but does not cause
+ *		    failures in terms of allocating GRES to jobs.
+ * IN user_id     - job's user ID
+ * IN: job_fini   - job fully terminating on this node (not just a test)
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
+				 int node_offset, uint32_t job_id,
+				 char *node_name, bool old_job,
+				 uint32_t user_id, bool job_fini)
+{
+	int rc = SLURM_SUCCESS, rc2;
+	ListIterator job_gres_iter;
+	gres_state_t *job_gres_ptr, *node_gres_ptr;
+	char *gres_name = NULL;
+
+	if (job_gres_list == NULL)
+		return SLURM_SUCCESS;
+	if (node_gres_list == NULL) {
+		error("%s: job %u has gres specification while node %s has none",
+		      __func__, job_id, node_name);
+		return SLURM_ERROR;
+	}
+
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		if (!(gres_name = gres_get_name_from_id(
+			      job_gres_ptr->plugin_id))) {
+			error("%s: no plugin configured for data type %u for job %u and node %s",
+			      __func__, job_gres_ptr->plugin_id, job_id,
+			      node_name);
+			/* A likely sign that GresPlugins has changed */
+			gres_name = "UNKNOWN";
+		}
+
+		node_gres_ptr = list_find_first(node_gres_list, gres_find_id,
+						&job_gres_ptr->plugin_id);
+
+		if (node_gres_ptr == NULL) {
+			error("%s: node %s lacks gres/%s for job %u", __func__,
+			      node_name, gres_name , job_id);
+			continue;
+		}
+
+		rc2 = _job_dealloc(job_gres_ptr->gres_data,
+				   node_gres_ptr->gres_data, node_offset,
+				   gres_name, job_id, node_name, old_job,
+				   job_gres_ptr->plugin_id, user_id, job_fini);
+		if (rc2 != SLURM_SUCCESS)
+			rc = rc2;
+	}
+	list_iterator_destroy(job_gres_iter);
+
+	return rc;
+}
