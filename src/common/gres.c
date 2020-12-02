@@ -251,8 +251,6 @@ static int	_parse_gres_config(void **dest, slurm_parser_enum_t type,
 static int	_parse_gres_config2(void **dest, slurm_parser_enum_t type,
 				    const char *key, const char *value,
 				    const char *line, char **leftover);
-static bool	_shared_gres(uint32_t plugin_id);
-static bool	_sharing_gres(uint32_t plugin_id);
 static void	_sock_gres_del(void *x);
 static int	_step_alloc(void *step_gres_data, void *job_gres_data,
 			    uint32_t plugin_id, int node_offset,
@@ -2571,7 +2569,7 @@ static int _node_config_init(char *node_name, char *orig_config,
 	if ((gres_data->gres_bit_alloc != NULL) &&
 	    (gres_data->gres_cnt_avail >
 	     bit_size(gres_data->gres_bit_alloc)) &&
-	    !_shared_gres(context_ptr->plugin_id)) {
+	    !gres_id_shared(context_ptr->plugin_id)) {
 		gres_data->gres_bit_alloc =
 			bit_realloc(gres_data->gres_bit_alloc,
 				    gres_data->gres_cnt_avail);
@@ -2899,7 +2897,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 
 	has_file = context_ptr->config_flags & GRES_CONF_HAS_FILE;
 	has_type = context_ptr->config_flags & GRES_CONF_HAS_TYPE;
-	if (_shared_gres(context_ptr->plugin_id))
+	if (gres_id_shared(context_ptr->plugin_id))
 		dev_cnt = topo_cnt;
 	else
 		dev_cnt = gres_cnt;
@@ -2949,7 +2947,8 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			gres_data->gres_bit_alloc = bit_realloc(
 				gres_data->gres_bit_alloc, dev_cnt);
 		gres_data->topo_cnt = topo_cnt;
-	} else if (_shared_gres(context_ptr->plugin_id) && gres_data->topo_cnt){
+	} else if (gres_id_shared(context_ptr->plugin_id) &&
+		   gres_data->topo_cnt) {
 		/*
 		 * Need to rebuild topology info to recover state after
 		 * slurmctld restart with running jobs.
@@ -2966,7 +2965,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 			    context_ptr->plugin_id)
 				continue;
 			if ((gres_data->gres_bit_alloc) &&
-			    !_shared_gres(context_ptr->plugin_id))
+			    !gres_id_shared(context_ptr->plugin_id))
 				gres_data->topo_gres_cnt_alloc[i] = 0;
 			gres_data->topo_gres_cnt_avail[i] =
 					gres_slurmd_conf->count;
@@ -3012,7 +3011,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 					}
 				}
 			}
-			if (_shared_gres(gres_slurmd_conf->plugin_id)) {
+			if (gres_id_shared(gres_slurmd_conf->plugin_id)) {
 				/* If running jobs recovered then already set */
 				if (!gres_data->topo_gres_bitmap[i]) {
 					gres_data->topo_gres_bitmap[i] =
@@ -3124,7 +3123,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 
 	if (has_file) {
 		uint64_t gres_bits;
-		if (_shared_gres(context_ptr->plugin_id)) {
+		if (gres_id_shared(context_ptr->plugin_id)) {
 			gres_bits = topo_cnt;
 		} else {
 			if (gres_data->gres_cnt_avail > MAX_GRES_BITMAP) {
@@ -3425,14 +3424,14 @@ static int _node_reconfig(char *node_name, char *new_gres, char **gres_str,
 		gres_data->gres_cnt_avail = 0;
 
 	if (context_ptr->config_flags & GRES_CONF_HAS_FILE) {
-		if (_shared_gres(context_ptr->plugin_id))
+		if (gres_id_shared(context_ptr->plugin_id))
 			gres_bits = gres_data->topo_cnt;
 		else
 			gres_bits = gres_data->gres_cnt_avail;
 
 		_gres_bit_alloc_resize(gres_data, gres_bits);
 	} else if (gres_data->gres_bit_alloc &&
-		   !_shared_gres(context_ptr->plugin_id)) {
+		   !gres_id_shared(context_ptr->plugin_id)) {
 		/*
 		 * If GRES count changed in configuration between reboots,
 		 * update bitmap sizes as needed.
@@ -3441,7 +3440,7 @@ static int _node_reconfig(char *node_name, char *new_gres, char **gres_str,
 		if (gres_bits != bit_size(gres_data->gres_bit_alloc)) {
 			info("gres/%s count changed on node %s to %"PRIu64,
 			     context_ptr->gres_name, node_name, gres_bits);
-			if (_sharing_gres(context_ptr->plugin_id))
+			if (gres_id_sharing(context_ptr->plugin_id))
 				*updated_gpu_cnt = true;
 			gres_data->gres_bit_alloc =
 				bit_realloc(gres_data->gres_bit_alloc,
@@ -3805,7 +3804,7 @@ extern int gres_plugin_node_reconfig(char *node_name,
 		/* Update gres/mps counts and bitmaps to match gres/gpu */
 		gres_iter = list_iterator_create(*gres_list);
 		while ((mps_gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-			if (_shared_gres(mps_gres_ptr->plugin_id))
+			if (gres_id_shared(mps_gres_ptr->plugin_id))
 				break;
 		}
 		list_iterator_destroy(gres_iter);
@@ -6757,7 +6756,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 	uint32_t core_cnt = 0;
 	bitstr_t *alloc_core_bitmap = NULL;
 	bitstr_t *avail_core_bitmap = NULL;
-	bool shared_gres = _shared_gres(plugin_id);
+	bool shared_gres = gres_id_shared(plugin_id);
 	bool use_busy_dev = false;
 
 	if (node_gres_ptr->no_consume)
@@ -8208,7 +8207,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 		return SLURM_SUCCESS;
 	}
 
-	if (_shared_gres(plugin_id)) {
+	if (gres_id_shared(plugin_id)) {
 		shared_gres = true;
 		gres_per_bit = job_gres_ptr->gres_per_node;
 	}
@@ -8476,7 +8475,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 			sz2 = bit_size(node_gres_ptr->topo_gres_bitmap[i]);
 
 			if ((sz1 != sz2) && log_cnt_err) {
-				if (_shared_gres(plugin_id))
+				if (gres_id_shared(plugin_id))
 					log_type = "File";
 				else
 					log_type = "Count";
@@ -8838,7 +8837,7 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 		return SLURM_ERROR;
 	}
 
-	if (_shared_gres(plugin_id))
+	if (gres_id_shared(plugin_id))
 		gres_per_bit = job_gres_ptr->gres_per_node;
 
 	xfree(node_gres_ptr->gres_used);	/* Clear cache */
@@ -9891,7 +9890,7 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 		min_gres = MAX(min_gres, gres_cnt);
 	}
 
-	if (!_shared_gres(plugin_id) &&
+	if (!gres_id_shared(plugin_id) &&
 	    job_gres_ptr->gres_bit_alloc &&
 	    job_gres_ptr->gres_bit_alloc[node_offset]) {
 		gres_cnt = bit_set_count(job_gres_ptr->
@@ -11314,7 +11313,7 @@ extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
  * Return TRUE if this plugin ID consumes GRES count > 1 for a single device
  * file (e.g. MPS)
  */
-static bool _shared_gres(uint32_t plugin_id)
+extern bool gres_id_shared(uint32_t plugin_id)
 {
 	if (plugin_id == mps_plugin_id)
 		return true;
@@ -11324,7 +11323,7 @@ static bool _shared_gres(uint32_t plugin_id)
  * Return TRUE if this plugin ID shares resources with another GRES that
  * consumes subsets of its resources (e.g. GPU)
  */
-static bool _sharing_gres(uint32_t plugin_id)
+extern bool gres_id_sharing(uint32_t plugin_id)
 {
 	if (plugin_id == gpu_plugin_id)
 		return true;
@@ -11442,7 +11441,7 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 
 	gres_bit_alloc = bit_copy(job_gres_ptr->gres_bit_alloc[node_offset]);
 	len = bit_size(gres_bit_alloc);
-	if (_shared_gres(plugin_id)) {
+	if (gres_id_shared(plugin_id)) {
 		for (i = 0; i < len; i++) {
 			if (gres_needed > 0) {
 				if (bit_test(gres_bit_alloc, i))
