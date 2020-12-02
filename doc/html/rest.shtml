@@ -91,21 +91,13 @@ JWT can be used to authenticate user over REST protocol.
 	<li>JWT Header: X-SLURM-USER-TOKEN</li>
 </ul>
 SlurmUser or root can provide alternative user names to act as a proxy for the
-given user. While using JWT authentication, slurmrestd should be run as unique
-<b>unprivileged</b> user and group. slurmrestd should <b>not</b> be provided a
-SLURM_JWT environment variable at startup, but rather users should provide their
-own JWT tokens while authenticating to the proxy.</p>
-<p>When using JWT, it is important that the "AuthType=auth/jwt" in slurm.conf
-for slurmrestd. It is suggested to use the following slurm.conf wrapper (adjust
-path as needed) to ensure slurmrestd is using JWT authentication.</p>
-<pre>
-include /etc/slurm/slurm.conf
-AuthType=auth/jwt
-</pre>
-<p>Then to start slurmrestd with the wrapper slurm.conf:</p>
-<pre>
-env SLURM_CONF=$PATH_TO_WRAPPER_SLURM.CONF slurmrestd $ARGS
-</pre>
+given user. While using JWT authentication, slurmrestd should be run as a
+unique, <b>unprivileged</b> user and group. Slurmrestd should be provided an
+empty SLURM_JWT environment variable at startup to activate JWT authentication.
+This will allow users to provide their own JWT tokens while authenticating to
+the proxy.</p>
+<p>When using JWT, it is important that <u>AuthAltTypes=auth/jwt</u> be
+configured in your slurm.conf for slurmrestd.</p>
 
 <h2>Local Authentication</h2>
 <p>slurmrestd supports using UNIX domain sockets to have the kernel
@@ -249,6 +241,6 @@ The example is <b>not</b> provided to be run in production.</p>
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 7 February 2020</p>
+<p style="text-align:center;">Last modified 2 December 2020</p>
 
 <!--#include virtual="footer.txt"-->
