@@ -9448,9 +9448,6 @@ void gres_plugin_step_state_rebase(List gres_list,
 	if (gres_list == NULL)
 		return;
 
-	(void) gres_plugin_init();
-
-	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		gres_step_ptr = (gres_step_state_t *) gres_ptr->gres_data;
@@ -9512,7 +9509,6 @@ void gres_plugin_step_state_rebase(List gres_list,
 		gres_step_ptr->gres_bit_alloc = new_gres_bit_alloc;
 	}
 	list_iterator_destroy(gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	return;
 }
