@@ -8345,7 +8345,7 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 				   char *node_name, bool old_job,
 				   uint32_t user_id, bool job_fini)
 {
-	int i, rc, rc2;
+	int rc = SLURM_SUCCESS, rc2;
 	ListIterator job_gres_iter;
 	gres_state_t *job_gres_ptr, *node_gres_ptr;
 	char *gres_name = NULL;
@@ -8358,24 +8358,16 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 		return SLURM_ERROR;
 	}
 
-	rc = gres_plugin_init();
-
-	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (job_gres_ptr->plugin_id ==
-			    gres_context[i].plugin_id)
-				break;
-		}
-		if (i >= gres_context_cnt) {
+		if (!(gres_name = gres_get_name_from_id(
+			      job_gres_ptr->plugin_id))) {
 			error("%s: no plugin configured for data type %u for job %u and node %s",
 			      __func__, job_gres_ptr->plugin_id, job_id,
 			      node_name);
 			/* A likely sign that GresPlugins has changed */
 			gres_name = "UNKNOWN";
-		} else
-			gres_name = gres_context[i].gres_name;
+		}
 
 		node_gres_ptr = list_find_first(node_gres_list, gres_find_id,
 						&job_gres_ptr->plugin_id);
@@ -8394,7 +8386,6 @@ extern int gres_plugin_job_dealloc(List job_gres_list, List node_gres_list,
 			rc = rc2;
 	}
 	list_iterator_destroy(job_gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
 }
