@@ -7909,8 +7909,6 @@ extern bool gres_plugin_job_mem_set(List job_gres_list,
 	list_iterator_destroy(job_gres_iter);
 
 	return rc;
-}
-
 /*
  * Determine the minimum number of CPUs required to satify the job's GRES
  *	request (based upon total GRES times cpus_per_gres value)
@@ -7961,67 +7959,6 @@ extern int gres_plugin_job_min_cpus(uint32_t node_count,
 	}
 	list_iterator_destroy(job_gres_iter);
 	return min_cpus;
-}
-
-/*
- * Determine the minimum number of tasks required to satisfy the job's GRES
- *	request (based upon total GRES times ntasks_per_tres value). If
- *	ntasks_per_tres is not specified, returns 0.
- * node_count IN - count of nodes in job allocation
- * sockets_per_node IN - count of sockets per node in job allocation
- * ntasks_per_tres IN - # of tasks per GPU
- * gres_name IN - (optional) Filter GRES by name. If NULL, check all GRES
- * job_gres_list IN - job GRES specification
- * RET count of required tasks for the job
- */
-extern int gres_plugin_job_min_tasks(uint32_t node_count,
-				     uint32_t sockets_per_node,
-				     uint16_t ntasks_per_tres,
-				     char *gres_name,
-				     List job_gres_list)
-{
-	ListIterator job_gres_iter;
-	gres_state_t *gres_ptr;
-	gres_job_state_t *gres_data;
-	int tmp, min_tasks = 0;
-	uint32_t plugin_id = 0;
-
-	if (ntasks_per_tres == NO_VAL16)
-		return 0;
-
-	if (!job_gres_list || (list_count(job_gres_list) == 0))
-		return 0;
-
-	if (gres_name && (gres_name[0] != '\0'))
-		plugin_id = gres_plugin_build_id(gres_name);
-
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_ptr = list_next(job_gres_iter))) {
-		uint64_t total_gres = 0;
-		/* Filter on GRES name, if specified */
-		if (plugin_id && (plugin_id != gres_ptr->plugin_id))
-			continue;
-
-		gres_data = (gres_job_state_t *)gres_ptr->gres_data;
-
-		if (gres_data->gres_per_job) {
-			total_gres = gres_data->gres_per_job;
-		} else if (gres_data->gres_per_node) {
-			total_gres = gres_data->gres_per_node * node_count;
-		} else if (gres_data->gres_per_socket) {
-			total_gres = gres_data->gres_per_socket * node_count *
-				sockets_per_node;
-		} else if (gres_data->gres_per_task) {
-			error("%s: gres_per_task and ntasks_per_tres conflict",
-			      __func__);
-		} else
-			continue;
-
-		tmp = ntasks_per_tres * total_gres;
-		min_tasks = MAX(min_tasks, tmp);
-	}
-	list_iterator_destroy(job_gres_iter);
-	return min_tasks;
 }
 
 /*
