@@ -132,6 +132,9 @@ extern void gres_ctld_job_merge(List from_job_gres_list,
 				List to_job_gres_list,
 				bitstr_t *to_job_node_bitmap);
 
+/* Clear any vestigial job gres state. This may be needed on job requeue. */
+extern void gres_ctld_job_clear(List job_gres_list);
+
 /*
  * Allocate resource to a step and update job and step gres information
  * IN step_gres_list - step's gres_list built by

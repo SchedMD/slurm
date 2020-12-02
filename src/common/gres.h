@@ -926,9 +926,6 @@ extern int gres_plugin_job_min_cpu_node(uint32_t sockets_per_node,
 					uint32_t tasks_per_node,
 					List job_gres_list);
 
-/* Clear any vestigial job gres state. This may be needed on job requeue. */
-extern void gres_plugin_job_clear(List job_gres_list);
-
 /*
  * Set environment variables as required for a batch job
  * IN/OUT job_env_ptr - environment variable array

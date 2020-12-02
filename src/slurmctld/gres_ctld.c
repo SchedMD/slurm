@@ -1351,6 +1351,39 @@ step3:
 	return;
 }
 
+/* Clear any vestigial job gres state. This may be needed on job requeue. */
+extern void gres_ctld_job_clear(List job_gres_list)
+{
+	int i;
+	ListIterator job_gres_iter;
+	gres_state_t *job_gres_ptr;
+	gres_job_state_t *job_state_ptr;
+
+	if (job_gres_list == NULL)
+		return;
+
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = list_next(job_gres_iter))) {
+		job_state_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
+		for (i = 0; i < job_state_ptr->node_cnt; i++) {
+			if (job_state_ptr->gres_bit_alloc) {
+				FREE_NULL_BITMAP(job_state_ptr->
+						 gres_bit_alloc[i]);
+			}
+			if (job_state_ptr->gres_bit_step_alloc) {
+				FREE_NULL_BITMAP(job_state_ptr->
+						 gres_bit_step_alloc[i]);
+			}
+		}
+		xfree(job_state_ptr->gres_bit_alloc);
+		xfree(job_state_ptr->gres_bit_step_alloc);
+		xfree(job_state_ptr->gres_cnt_step_alloc);
+		xfree(job_state_ptr->gres_cnt_node_alloc);
+		job_state_ptr->node_cnt = 0;
+	}
+	list_iterator_destroy(job_gres_iter);
+}
+
 static int _step_alloc(void *step_gres_data, void *job_gres_data,
 		       uint32_t plugin_id, int node_offset,
 		       bool first_step_node,

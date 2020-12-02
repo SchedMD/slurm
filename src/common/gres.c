@@ -8071,39 +8071,6 @@ extern int gres_plugin_job_min_cpu_node(uint32_t sockets_per_node,
 	return min_cpus;
 }
 
-/* Clear any vestigial job gres state. This may be needed on job requeue. */
-extern void gres_plugin_job_clear(List job_gres_list)
-{
-	int i;
-	ListIterator job_gres_iter;
-	gres_state_t *job_gres_ptr;
-	gres_job_state_t *job_state_ptr;
-
-	if (job_gres_list == NULL)
-		return;
-
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
-		job_state_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
-		for (i = 0; i < job_state_ptr->node_cnt; i++) {
-			if (job_state_ptr->gres_bit_alloc) {
-				FREE_NULL_BITMAP(job_state_ptr->
-						 gres_bit_alloc[i]);
-			}
-			if (job_state_ptr->gres_bit_step_alloc) {
-				FREE_NULL_BITMAP(job_state_ptr->
-						 gres_bit_step_alloc[i]);
-			}
-		}
-		xfree(job_state_ptr->gres_bit_alloc);
-		xfree(job_state_ptr->gres_bit_step_alloc);
-		xfree(job_state_ptr->gres_cnt_step_alloc);
-		xfree(job_state_ptr->gres_cnt_node_alloc);
-		job_state_ptr->node_cnt = 0;
-	}
-	list_iterator_destroy(job_gres_iter);
-}
-
 /*
  * Set environment variables as required for a batch job
  * IN/OUT job_env_ptr - environment variable array
