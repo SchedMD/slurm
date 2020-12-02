@@ -1388,9 +1388,9 @@ alloc_job:
 					 details_ptr->pn_min_cpus));
 	if (job_ptr->details->mc_ptr)
 		sockets_per_node = job_ptr->details->mc_ptr->sockets_per_node;
-	i = gres_plugin_job_min_cpus(job_res->nhosts, sockets_per_node,
-				     job_ptr->details->num_tasks,
-				     job_ptr->gres_list);
+	i = gres_select_util_job_min_cpus(job_res->nhosts, sockets_per_node,
+					  job_ptr->details->num_tasks,
+					  job_ptr->gres_list);
 	job_res->ncpus            = MAX(job_res->ncpus, i);
 	job_res->node_req         = job_node_req;
 	job_res->cpus             = cpu_count;	/* Per node CPU counts */
