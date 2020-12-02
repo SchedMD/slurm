@@ -8406,61 +8406,6 @@ extern void gres_plugin_job_set_env(char ***job_env_ptr, List job_gres_list,
 }
 
 /*
- * Set job default parameters in a given element of a list
- * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
- * IN gres_name - name of gres, apply defaults to all elements (e.g. updates to
- *		  gres_name="gpu" would apply to "gpu:tesla", "gpu:volta", etc.)
- * IN cpu_per_gpu - value to set as default
- * IN mem_per_gpu - value to set as default
- * OUT *cpus_per_tres - CpusPerTres string displayed by scontrol show job
- * OUT *mem_per_tres - MemPerTres string displayed by scontrol show job
- */
-extern void gres_plugin_job_set_defs(List job_gres_list, char *gres_name,
-				     uint64_t cpu_per_gpu, uint64_t mem_per_gpu,
-				     char **cpus_per_tres, char **mem_per_tres)
-{
-	uint32_t plugin_id;
-	ListIterator gres_iter;
-	gres_state_t *gres_ptr = NULL;
-	gres_job_state_t *job_gres_data;
-
-	/*
-	 * Currently only GPU supported, check how cpus_per_tres/mem_per_tres
-	 * is handled in _fill_job_desc_from_sbatch_opts and
-	 * _job_desc_msg_create_from_opts.
-	 */
-	xassert(!xstrcmp(gres_name, "gpu"));
-
-	if (!job_gres_list)
-		return;
-
-	plugin_id = gres_plugin_build_id(gres_name);
-	gres_iter = list_iterator_create(job_gres_list);
-	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-		if (gres_ptr->plugin_id != plugin_id)
-			continue;
-		job_gres_data = (gres_job_state_t *) gres_ptr->gres_data;
-		if (!job_gres_data)
-			continue;
-		job_gres_data->def_cpus_per_gres = cpu_per_gpu;
-		job_gres_data->def_mem_per_gres = mem_per_gpu;
-		if (!job_gres_data->cpus_per_gres) {
-			xfree(*cpus_per_tres);
-			if (cpu_per_gpu)
-				xstrfmtcat(*cpus_per_tres, "gpu:%"PRIu64,
-					   cpu_per_gpu);
-		}
-		if (!job_gres_data->mem_per_gres) {
-			xfree(*mem_per_tres);
-			if (mem_per_gpu)
-				xstrfmtcat(*mem_per_tres, "gpu:%"PRIu64,
-					   mem_per_gpu);
-		}
-	}
-	list_iterator_destroy(gres_iter);
-}
-
-/*
  * Translate GRES flag to string.
  * NOT reentrant
  */
