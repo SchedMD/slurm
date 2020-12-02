@@ -394,7 +394,6 @@ AC_CONFIG_FILES([Makefile
 		 contribs/cray/csm/Makefile
 		 contribs/cray/slurmsmwd/Makefile
 		 contribs/lua/Makefile
-		 contribs/mic/Makefile
 		 contribs/nss_slurm/Makefile
 		 contribs/pam/Makefile
 		 contribs/pam_slurm_adopt/Makefile
