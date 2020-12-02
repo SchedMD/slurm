@@ -200,7 +200,7 @@ static mail_info_t *_mail_alloc(void);
 static void  _mail_free(void *arg);
 static void *_mail_proc(void *arg);
 static char *_mail_type_str(uint16_t mail_type);
-static char **_build_mail_env(job_record_t *job_ptr);
+static char **_build_mail_env(job_record_t *job_ptr, uint32_t mail_type);
 
 static pthread_mutex_t defer_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mail_mutex  = PTHREAD_MUTEX_INITIALIZER;
@@ -1846,9 +1846,10 @@ static void _mail_free(void *arg)
 	}
 }
 
-static char **_build_mail_env(job_record_t *job_ptr)
+static char **_build_mail_env(job_record_t *job_ptr, uint32_t mail_type)
 {
-	char **my_env = xcalloc(2, sizeof(char *));
+	int exit_code, signal;
+	char buf[32], *eq, *name, **my_env = xcalloc(2, sizeof(char *));
 
         my_env = xmalloc(sizeof(char *));
         my_env[0] = NULL;
@@ -1857,6 +1858,129 @@ static char **_build_mail_env(job_record_t *job_ptr)
                         slurm_conf.cluster_name);
 	setenvf(&my_env, "SLURM_JOB_STATE", "%s",
 		job_state_string(job_ptr->job_state));
+	if (job_ptr->account)
+		setenvf(&my_env, "SLURM_JOB_ACCOUNT", "%s", job_ptr->account);
+	if (job_ptr->details && job_ptr->details->features) {
+		setenvf(&my_env, "SLURM_JOB_CONSTRAINTS",
+			"%s", job_ptr->details->features);
+	}
+
+	if ((mail_type & MAIL_JOB_END) || (mail_type & MAIL_JOB_FAIL)) {
+		exit_code = signal = 0;
+		if (WIFEXITED(job_ptr->exit_code)) {
+			exit_code = WEXITSTATUS(job_ptr->exit_code);
+		}
+		if (WIFSIGNALED(job_ptr->exit_code)) {
+			signal = WTERMSIG(job_ptr->exit_code);
+		}
+		snprintf(buf, sizeof(buf), "%d:%d", exit_code, signal);
+		setenvf(&my_env, "SLURM_JOB_DERIVED_EC", "%u",
+			job_ptr->derived_ec);
+		setenvf(&my_env, "SLURM_JOB_EXIT_CODE2", "%s", buf);
+		setenvf(&my_env, "SLURM_JOB_EXIT_CODE", "%u",
+			job_ptr->exit_code);
+	}
+
+	if (job_ptr->array_task_id != NO_VAL) {
+		setenvf(&my_env, "SLURM_ARRAY_JOB_ID", "%u",
+			job_ptr->array_job_id);
+		setenvf(&my_env, "SLURM_ARRAY_TASK_ID", "%u",
+			job_ptr->array_task_id);
+		if (job_ptr->details && job_ptr->details->env_sup &&
+		    job_ptr->details->env_cnt) {
+			for (int i = 0; i < job_ptr->details->env_cnt; i++) {
+				if (xstrncmp(job_ptr->details->env_sup[i],
+					     "SLURM_ARRAY_TASK", 16))
+					continue;
+				eq = strchr(job_ptr->details->env_sup[i], '=');
+				if (!eq)
+					continue;
+				eq[0] = '\0';
+				setenvf(&my_env,
+					job_ptr->details->env_sup[i],
+					"%s", eq + 1);
+				eq[0] = '=';
+			}
+		}
+	}
+
+	if (job_ptr->het_job_id) {
+		/* Continue support for old hetjob terminology. */
+		setenvf(&my_env, "SLURM_PACK_JOB_ID", "%u",
+			job_ptr->het_job_id);
+		setenvf(&my_env, "SLURM_PACK_JOB_OFFSET", "%u",
+			job_ptr->het_job_offset);
+		setenvf(&my_env, "SLURM_HET_JOB_ID", "%u",
+			job_ptr->het_job_id);
+		setenvf(&my_env, "SLURM_HET_JOB_OFFSET", "%u",
+			job_ptr->het_job_offset);
+		if ((job_ptr->het_job_offset == 0) && job_ptr->het_job_list) {
+			job_record_t *het_job = NULL;
+			ListIterator iter;
+			hostset_t hs = NULL;
+			int hs_len = 0;
+			iter = list_iterator_create(job_ptr->het_job_list);
+			while ((het_job = list_next(iter))) {
+				if (job_ptr->het_job_id !=
+				    het_job->het_job_id) {
+					error("%s: Bad het_job_list for %pJ",
+					      __func__, job_ptr);
+					continue;
+				}
+
+				if (!het_job->nodes) {
+					debug("%s: %pJ het_job->nodes == NULL.  Usually this means the job was canceled while it was starting and shouldn't be a real issue.",
+					      __func__, job_ptr);
+					continue;
+				}
+
+				if (hs) {
+					(void) hostset_insert(hs,
+							      het_job->nodes);
+				} else {
+					hs = hostset_create(het_job->nodes);
+				}
+				hs_len += strlen(het_job->nodes) + 2;
+			}
+			list_iterator_destroy(iter);
+			if (hs) {
+				char *buf = xmalloc(hs_len);
+				(void) hostset_ranged_string(hs, hs_len, buf);
+				/* Support for old hetjob terminology. */
+				setenvf(&my_env, "SLURM_PACK_JOB_NODELIST",
+					"%s", buf);
+				setenvf(&my_env, "SLURM_HET_JOB_NODELIST",
+					"%s", buf);
+				xfree(buf);
+				hostset_destroy(hs);
+			}
+		}
+	}
+	setenvf(&my_env, "SLURM_JOB_GID", "%u", job_ptr->group_id);
+	name = gid_to_string((gid_t) job_ptr->group_id);
+	setenvf(&my_env, "SLURM_JOB_GROUP", "%s", name);
+	xfree(name);
+	setenvf(&my_env, "SLURM_JOBID", "%u", job_ptr->job_id);
+	setenvf(&my_env, "SLURM_JOB_ID", "%u", job_ptr->job_id);
+	if (job_ptr->licenses)
+		setenvf(&my_env, "SLURM_JOB_LICENSES", "%s", job_ptr->licenses);
+	setenvf(&my_env, "SLURM_JOB_NAME", "%s", job_ptr->name);
+	setenvf(&my_env, "SLURM_JOB_NODELIST", "%s", job_ptr->nodes);
+	if (job_ptr->part_ptr) {
+		setenvf(&my_env, "SLURM_JOB_PARTITION", "%s",
+			job_ptr->part_ptr->name);
+	} else {
+		setenvf(&my_env, "SLURM_JOB_PARTITION", "%s",
+			job_ptr->partition);
+	}
+	setenvf(&my_env, "SLURM_JOB_UID", "%u", job_ptr->user_id);
+	name = uid_to_string((uid_t) job_ptr->user_id);
+	setenvf(&my_env, "SLURM_JOB_USER", "%s", name);
+	xfree(name);
+	if (job_ptr->wckey) {
+		setenvf(&my_env, "SLURM_WCKEY", "%s", job_ptr->wckey);
+	}
+
 	if (job_ptr->details->std_err)
 		setenvf(&my_env, "SLURM_STDERR", "%s",
 			job_ptr->details->std_err);
@@ -2106,7 +2230,7 @@ extern void mail_job_info(job_record_t *job_ptr, uint16_t mail_type)
 					     _mail_type_str(mail_type),
 					     job_time, term_msg);
 	}
-	mi->environment = _build_mail_env(job_ptr);
+	mi->environment = _build_mail_env(job_ptr, mail_type);
 	info("email msg to %s: %s", mi->user_name, mi->message);
 
 	slurm_mutex_lock(&mail_mutex);
