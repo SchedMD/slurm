@@ -1382,6 +1382,9 @@ extern bool gres_id_shared(uint32_t plugin_id);
  */
 extern bool gres_id_sharing(uint32_t plugin_id);
 
+extern void gres_add_type(char *type, gres_node_state_t *gres_data,
+			  uint64_t tmp_gres_cnt);
+
 extern void gres_validate_node_cores(gres_node_state_t *node_gres_ptr,
 				     int cores_ctld, char *node_name);
 

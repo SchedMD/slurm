@@ -2363,8 +2363,8 @@ static void _gres_node_list_delete(void *list_element)
 	xfree(gres_ptr);
 }
 
-static void _add_gres_type(char *type, gres_node_state_t *gres_data,
-			   uint64_t tmp_gres_cnt)
+extern void gres_add_type(char *type, gres_node_state_t *gres_data,
+			  uint64_t tmp_gres_cnt)
 {
 	int i;
 	uint32_t type_id;
@@ -2470,7 +2470,7 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 			if (sub_tok)	/* Skip GRES name */
 				sub_tok = strtok_r(NULL, ":", &last_sub_tok);
 			while (sub_tok) {
-				_add_gres_type(sub_tok, gres_data,
+				gres_add_type(sub_tok, gres_data,
 					       tmp_gres_cnt);
 				sub_tok = strtok_r(NULL, ":", &last_sub_tok);
 			}
@@ -3100,7 +3100,7 @@ static int _node_config_validate(char *node_name, char *orig_config,
 				gres_data->type_cnt_avail[i] =
 					gres_slurmd_conf->count;
 			} else {
-				_add_gres_type(gres_slurmd_conf->type_name,
+				gres_add_type(gres_slurmd_conf->type_name,
 					       gres_data,
 					       gres_slurmd_conf->count);
 			}
@@ -8596,8 +8596,8 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 			 * are allocated to this job from here to avoid
 			 * underflows when this job is deallocated
 			 */
-			_add_gres_type(job_gres_ptr->type_name, node_gres_ptr,
-				       0);
+			gres_add_type(job_gres_ptr->type_name, node_gres_ptr,
+				      0);
 			for (j = 0; j < node_gres_ptr->type_cnt; j++) {
 				if (job_gres_ptr->type_id !=
 				    node_gres_ptr->type_id[j])
