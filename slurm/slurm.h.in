@@ -827,7 +827,6 @@ typedef enum mem_bind_type {    /* memory binding type from --mem-bind=... */
 typedef enum accel_bind_type {    /* accelerator binding from --accel_bind= */
 	ACCEL_BIND_VERBOSE         = 0x01, /* 'v' verbose */
 	ACCEL_BIND_CLOSEST_GPU     = 0x02, /* 'g' Use closest GPU to the CPU */
-	ACCEL_BIND_CLOSEST_MIC     = 0x04, /* 'm' Use closest NIC to CPU */
 	ACCEL_BIND_CLOSEST_NIC     = 0x08  /* 'n' Use closest NIC to CPU */
 } accel_bind_type_t;
 

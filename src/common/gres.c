@@ -13458,7 +13458,6 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 	gres_state_t *gres_ptr = NULL;
 	bool bind_gpu = accel_bind_type & ACCEL_BIND_CLOSEST_GPU;
 	bool bind_nic = accel_bind_type & ACCEL_BIND_CLOSEST_NIC;
-	bool bind_mic = accel_bind_type & ACCEL_BIND_CLOSEST_MIC;
 	char *sep, *map_gpu = NULL, *mask_gpu = NULL;
 	bitstr_t *usable_gres = NULL;
 	bool found;
@@ -13494,7 +13493,7 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 	for (i = 0; i < gres_context_cnt; i++) {
 		if (!gres_context[i].ops.step_set_env)
 			continue;	/* No plugin to call */
-		if (bind_gpu || bind_mic || bind_nic || map_gpu || mask_gpu) {
+		if (bind_gpu || bind_nic || map_gpu || mask_gpu) {
 			if (!xstrcmp(gres_context[i].gres_name, "gpu")) {
 				if (map_gpu) {
 					usable_gres = _get_gres_map(map_gpu,
@@ -13508,12 +13507,6 @@ extern void gres_plugin_step_set_env(char ***job_env_ptr, List step_gres_list,
 							    tasks_per_gres,
 							    local_proc_id);
 				}
-				else
-					continue;
-			} else if (!xstrcmp(gres_context[i].gres_name,
-					    "mic")) {
-				if (bind_mic)
-					usable_gres = _get_usable_gres(i);
 				else
 					continue;
 			} else if (!xstrcmp(gres_context[i].gres_name,

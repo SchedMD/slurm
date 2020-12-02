@@ -473,8 +473,6 @@ static int arg_set_accel_bind_type(slurm_opt_t *opt, const char *arg)
 		opt->srun_opt->accel_bind_type |= ACCEL_BIND_VERBOSE;
 	if (strchr(arg, 'g'))
 		opt->srun_opt->accel_bind_type |= ACCEL_BIND_CLOSEST_GPU;
-	if (strchr(arg, 'm'))
-		opt->srun_opt->accel_bind_type |= ACCEL_BIND_CLOSEST_MIC;
 	if (strchr(arg, 'n'))
 		opt->srun_opt->accel_bind_type |= ACCEL_BIND_CLOSEST_NIC;
 
@@ -496,8 +494,6 @@ static char *arg_get_accel_bind_type(slurm_opt_t *opt)
 		xstrcat(tmp, "v");
 	if (opt->srun_opt->accel_bind_type & ACCEL_BIND_CLOSEST_GPU)
 		xstrcat(tmp, "g");
-	if (opt->srun_opt->accel_bind_type & ACCEL_BIND_CLOSEST_MIC)
-		xstrcat(tmp, "m");
 	if (opt->srun_opt->accel_bind_type & ACCEL_BIND_CLOSEST_NIC)
 		xstrcat(tmp, "n");
 
