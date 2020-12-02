@@ -205,3 +205,73 @@ extern int gres_select_util_job_min_tasks(uint32_t node_count,
 	list_iterator_destroy(job_gres_iter);
 	return min_tasks;
 }
+
+/*
+ * Set per-node memory limits based upon GRES assignments
+ * RET TRUE if mem-per-tres specification used to set memory limits
+ */
+extern bool gres_select_util_job_mem_set(List job_gres_list,
+					 job_resources_t *job_res)
+{
+	ListIterator job_gres_iter;
+	gres_state_t *job_gres_ptr;
+	gres_job_state_t *job_data_ptr;
+	bool rc = false, first_set = true;
+	uint64_t gres_cnt, mem_size, mem_per_gres;
+	int i, i_first, i_last, node_off;
+
+	if (!job_gres_list)
+		return false;
+
+	i_first = bit_ffs(job_res->node_bitmap);
+	if (i_first < 0)
+		return false;
+	i_last = bit_fls(job_res->node_bitmap);
+
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = list_next(job_gres_iter))) {
+		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
+		if (job_data_ptr->mem_per_gres)
+			mem_per_gres = job_data_ptr->mem_per_gres;
+		else
+			mem_per_gres = job_data_ptr->def_mem_per_gres;
+		/*
+		 * The logic below is correct because the only mem_per_gres
+		 * is --mem-per-gpu adding another option will require change
+		 * to take MAX of mem_per_gres for all types.
+		 */
+		if ((mem_per_gres == 0) || !job_data_ptr->gres_cnt_node_select)
+			continue;
+		rc = true;
+		node_off = -1;
+		for (i = i_first; i <= i_last; i++) {
+			if (!bit_test(job_res->node_bitmap, i))
+				continue;
+			node_off++;
+			if (job_res->whole_node == 1) {
+				gres_state_t *node_gres_ptr;
+				gres_node_state_t *node_state_ptr;
+
+				node_gres_ptr = list_find_first(
+					node_record_table_ptr[i].gres_list,
+					gres_find_id,
+					&job_gres_ptr->plugin_id);
+				if (!node_gres_ptr)
+					continue;
+				node_state_ptr = node_gres_ptr->gres_data;
+				gres_cnt = node_state_ptr->gres_cnt_avail;
+			} else
+				gres_cnt =
+					job_data_ptr->gres_cnt_node_select[i];
+			mem_size = mem_per_gres * gres_cnt;
+			if (first_set)
+				job_res->memory_allocated[node_off] = mem_size;
+			else
+				job_res->memory_allocated[node_off] += mem_size;
+		}
+		first_set = false;
+	}
+	list_iterator_destroy(job_gres_iter);
+
+	return rc;
+}

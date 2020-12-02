@@ -1598,7 +1598,7 @@ alloc_job:
 		return error_code;
 
 	if (is_cons_tres && !(job_ptr->bit_flags & JOB_MEM_SET) &&
-	    gres_plugin_job_mem_set(job_ptr->gres_list, job_res)) {
+	    gres_select_util_job_mem_set(job_ptr->gres_list, job_res)) {
 		debug("%pJ memory set via GRES limit", job_ptr);
 	} else {
 		/* load memory allocated array */

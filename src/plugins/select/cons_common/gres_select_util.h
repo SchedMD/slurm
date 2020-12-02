@@ -85,4 +85,12 @@ extern int gres_select_util_job_min_tasks(uint32_t node_count,
 					  char *gres_name,
 					  List job_gres_list);
 
+/*
+ * Set per-node memory limits based upon GRES assignments
+ * RET TRUE if mem-per-tres specification used to set memory limits
+ */
+extern bool gres_select_util_job_mem_set(List job_gres_list,
+					 job_resources_t *job_res);
+
+
 #endif /* _GRES_SELECT_UTIL_H */

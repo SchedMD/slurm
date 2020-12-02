@@ -877,13 +877,6 @@ extern bool gres_plugin_job_tres_per_task(List job_gres_list);
 extern uint64_t gres_plugin_job_mem_max(List job_gres_list);
 
 /*
- * Set per-node memory limits based upon GRES assignments
- * RET TRUE if mem-per-tres specification used to set memory limits
- */
-extern bool gres_plugin_job_mem_set(List job_gres_list,
-				    job_resources_t *job_res);
-
-/*
  * Determine the minimum number of CPUs required to satify the job's GRES
  *	request (based upon total GRES times cpus_per_gres value)
  * node_count IN - count of nodes in job allocation
