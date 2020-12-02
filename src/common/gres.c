@@ -208,7 +208,6 @@ static uint64_t _get_job_gres_list_cnt(List gres_list, char *gres_name,
 				       char *gres_type);
 static uint64_t	_get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt,
 				  int *config_type_cnt);
-static void	_gres_job_list_delete(void *list_element);
 static int	_job_alloc(void *job_gres_data, void *node_gres_data,
 			   int node_cnt, int node_index, int node_offset,
 			   char *gres_name, uint32_t job_id, char *node_name,
@@ -4535,7 +4534,7 @@ static void _job_state_delete(void *gres_data)
 	xfree(gres_ptr);
 }
 
-static void _gres_job_list_delete(void *list_element)
+extern void gres_job_list_delete(void *list_element)
 {
 	gres_state_t *gres_ptr;
 
@@ -5156,7 +5155,7 @@ extern int gres_plugin_job_state_validate(char *cpus_per_tres,
 	 * Set new values as requested
 	 */
 	if (*gres_list == NULL)
-		*gres_list = list_create(_gres_job_list_delete);
+		*gres_list = list_create(gres_job_list_delete);
 	slurm_mutex_lock(&gres_context_lock);
 	if (cpus_per_tres) {
 		char *in_val = cpus_per_tres, *save_ptr = NULL;
@@ -6032,7 +6031,7 @@ extern List gres_plugin_job_state_extract(List gres_list, int node_index)
 		if (new_gres_data == NULL)
 			break;
 		if (new_gres_list == NULL) {
-			new_gres_list = list_create(_gres_job_list_delete);
+			new_gres_list = list_create(gres_job_list_delete);
 		}
 		new_gres_state = xmalloc(sizeof(gres_state_t));
 		new_gres_state->plugin_id = gres_ptr->plugin_id;
@@ -6231,7 +6230,7 @@ extern int gres_plugin_job_state_unpack(List *gres_list, buf_t *buffer,
 
 	slurm_mutex_lock(&gres_context_lock);
 	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
-		*gres_list = list_create(_gres_job_list_delete);
+		*gres_list = list_create(gres_job_list_delete);
 	}
 
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
@@ -8800,7 +8799,7 @@ extern int gres_plugin_job_select_whole_node(
 	}
 
 	if (!*job_gres_list)
-		*job_gres_list = list_create(_gres_job_list_delete);
+		*job_gres_list = list_create(gres_job_list_delete);
 
 	node_gres_iter = list_iterator_create(node_gres_list);
 	while ((node_gres_ptr = list_next(node_gres_iter))) {
@@ -9329,7 +9328,7 @@ extern void gres_plugin_job_merge(List from_job_gres_list,
 step2:	if (!from_job_gres_list)
 		goto step3;
 	if (!to_job_gres_list) {
-		to_job_gres_list = list_create(_gres_job_list_delete);
+		to_job_gres_list = list_create(gres_job_list_delete);
 		free_to_job_gres_list = true;
 	}
 	gres_iter = list_iterator_create(from_job_gres_list);
