@@ -118,6 +118,21 @@ extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
 				 uint32_t user_id, bool job_fini);
 
 /*
+ * Merge one job's gres allocation into another job's gres allocation.
+ * IN from_job_gres_list - List of gres records for the job being merged
+ *			   into another job
+ * IN from_job_node_bitmap - bitmap of nodes for the job being merged into
+ *			     another job
+ * IN/OUT to_job_gres_list - List of gres records for the job being merged
+ *			     into job
+ * IN to_job_node_bitmap - bitmap of nodes for the job being merged into
+ */
+extern void gres_ctld_job_merge(List from_job_gres_list,
+				bitstr_t *from_job_node_bitmap,
+				List to_job_gres_list,
+				bitstr_t *to_job_node_bitmap);
+
+/*
  * Allocate resource to a step and update job and step gres information
  * IN step_gres_list - step's gres_list built by
  *		gres_plugin_step_state_validate()

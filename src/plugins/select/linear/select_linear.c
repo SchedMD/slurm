@@ -2546,10 +2546,10 @@ static int _job_expand(job_record_t *from_job_ptr, job_record_t *to_job_ptr)
 					  cpus[new_node_offset];
 	}
 	build_job_resources_cpu_array(new_job_resrcs_ptr);
-	gres_plugin_job_merge(from_job_ptr->gres_list,
-			      from_job_resrcs_ptr->node_bitmap,
-			      to_job_ptr->gres_list,
-			      to_job_resrcs_ptr->node_bitmap);
+	gres_ctld_job_merge(from_job_ptr->gres_list,
+			    from_job_resrcs_ptr->node_bitmap,
+			    to_job_ptr->gres_list,
+			    to_job_resrcs_ptr->node_bitmap);
 
 	/* Now swap data: "new" -> "to" and clear "from" */
 	free_job_resources(&to_job_ptr->job_resrcs);
