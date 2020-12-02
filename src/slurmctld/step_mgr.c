@@ -4446,9 +4446,9 @@ extern void rebuild_step_bitmaps(job_record_t *job_ptr,
 	while ((step_ptr = list_next(step_iterator))) {
 		if (step_ptr->state < JOB_RUNNING)
 			continue;
-		gres_plugin_step_state_rebase(step_ptr->gres_list,
-					orig_job_node_bitmap,
-					job_ptr->job_resrcs->node_bitmap);
+		gres_ctld_step_state_rebase(step_ptr->gres_list,
+					    orig_job_node_bitmap,
+					    job_ptr->job_resrcs->node_bitmap);
 		if (step_ptr->core_bitmap_job == NULL)
 			continue;
 		orig_step_core_bitmap = step_ptr->core_bitmap_job;

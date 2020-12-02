@@ -146,4 +146,15 @@ extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
 extern int gres_ctld_step_dealloc(List step_gres_list, List job_gres_list,
 				  uint32_t job_id, uint32_t step_id);
 
+/*
+ * A job allocation size has changed. Update the job step gres information
+ * bitmaps and other data structures.
+ * IN gres_list - List of Gres records for this step to track usage
+ * IN orig_job_node_bitmap - bitmap of nodes in the original job allocation
+ * IN new_job_node_bitmap - bitmap of nodes in the new job allocation
+ */
+extern void gres_ctld_step_state_rebase(List gres_list,
+					bitstr_t *orig_job_node_bitmap,
+					bitstr_t *new_job_node_bitmap);
+
 #endif /* _GRES_CTLD_H */
