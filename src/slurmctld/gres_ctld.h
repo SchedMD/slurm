@@ -135,4 +135,15 @@ extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
 				uint16_t tasks_on_node, uint32_t rem_nodes,
 				uint32_t job_id, uint32_t step_id);
 
+/*
+ * Deallocate resource to a step and update job and step gres information
+ * IN step_gres_list - step's gres_list built by
+ *		gres_plugin_step_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN job_id, step_id - ID of the step being allocated.
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_ctld_step_dealloc(List step_gres_list, List job_gres_list,
+				  uint32_t job_id, uint32_t step_id);
+
 #endif /* _GRES_CTLD_H */

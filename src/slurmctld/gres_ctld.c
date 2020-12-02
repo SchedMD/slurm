@@ -1341,3 +1341,138 @@ extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
 
 	return rc;
 }
+
+static int _step_dealloc(gres_state_t *step_gres_ptr, List job_gres_list,
+			 slurm_step_id_t *step_id)
+{
+	gres_state_t *job_gres_ptr;
+	gres_step_state_t *step_data_ptr =
+		(gres_step_state_t *)step_gres_ptr->gres_data;
+	gres_job_state_t *job_data_ptr;
+	uint32_t i, j;
+	uint64_t gres_cnt;
+	int len_j, len_s;
+	gres_key_t job_search_key;
+
+	xassert(job_gres_list);
+	xassert(step_data_ptr);
+
+	job_search_key.plugin_id = step_gres_ptr->plugin_id;
+	if (step_data_ptr->type_name)
+		job_search_key.type_id = step_data_ptr->type_id;
+	else
+		job_search_key.type_id = NO_VAL;
+	for (i = 0; i < step_data_ptr->node_cnt; i++) {
+		job_search_key.node_offset = i;
+		if (!(job_gres_ptr = list_find_first(
+			      job_gres_list,
+			      gres_find_job_by_key_with_cnt,
+			      &job_search_key)))
+			continue;
+
+		job_data_ptr = (gres_job_state_t *)job_gres_ptr->gres_data;
+		if (job_data_ptr->node_cnt == 0) {	/* no_consume */
+			xassert(!step_data_ptr->node_in_use);
+			xassert(!step_data_ptr->gres_bit_alloc);
+			return SLURM_SUCCESS;
+		} else if (job_data_ptr->node_cnt < i)
+			return SLURM_SUCCESS;
+
+		if (!step_data_ptr->node_in_use) {
+			error("gres/%s: %s %ps dealloc, node_in_use is NULL",
+			      job_data_ptr->gres_name, __func__, step_id);
+			return SLURM_ERROR;
+		}
+
+		if (!bit_test(step_data_ptr->node_in_use, i))
+			continue;
+
+		if (step_data_ptr->gres_cnt_node_alloc)
+			gres_cnt = step_data_ptr->gres_cnt_node_alloc[i];
+		else
+			gres_cnt = step_data_ptr->gres_per_node;
+
+		if (job_data_ptr->gres_cnt_step_alloc) {
+			if (job_data_ptr->gres_cnt_step_alloc[i] >=
+			    gres_cnt) {
+				job_data_ptr->gres_cnt_step_alloc[i] -=
+					gres_cnt;
+			} else {
+				error("gres/%s: %s %ps dealloc count underflow",
+				      job_data_ptr->gres_name, __func__,
+				      step_id);
+				job_data_ptr->gres_cnt_step_alloc[i] = 0;
+			}
+		}
+		if ((step_data_ptr->gres_bit_alloc == NULL) ||
+		    (step_data_ptr->gres_bit_alloc[i] == NULL))
+			continue;
+		if (job_data_ptr->gres_bit_alloc[i] == NULL) {
+			error("gres/%s: %s job %u gres_bit_alloc[%d] is NULL",
+			      job_data_ptr->gres_name, __func__,
+			      step_id->job_id, i);
+			continue;
+		}
+		len_j = bit_size(job_data_ptr->gres_bit_alloc[i]);
+		len_s = bit_size(step_data_ptr->gres_bit_alloc[i]);
+		if (len_j != len_s) {
+			error("gres/%s: %s %ps dealloc, bit_alloc[%d] size mis-match (%d != %d)",
+			      job_data_ptr->gres_name, __func__,
+			      step_id, i, len_j, len_s);
+			len_j = MIN(len_j, len_s);
+		}
+		for (j = 0; j < len_j; j++) {
+			if (!bit_test(step_data_ptr->gres_bit_alloc[i], j))
+				continue;
+			if (job_data_ptr->gres_bit_step_alloc &&
+			    job_data_ptr->gres_bit_step_alloc[i]) {
+				bit_clear(job_data_ptr->gres_bit_step_alloc[i],
+					  j);
+			}
+		}
+		FREE_NULL_BITMAP(step_data_ptr->gres_bit_alloc[i]);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Deallocate resource to a step and update job and step gres information
+ * IN step_gres_list - step's gres_list built by
+ *		gres_plugin_step_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN job_id, step_id - ID of the step being allocated.
+ * RET SLURM_SUCCESS or error code
+ */
+extern int gres_ctld_step_dealloc(List step_gres_list, List job_gres_list,
+				  uint32_t job_id, uint32_t step_id)
+{
+	int rc = SLURM_SUCCESS, rc2;
+	ListIterator step_gres_iter;
+	gres_state_t *step_gres_ptr;
+	slurm_step_id_t tmp_step_id;
+
+	if (step_gres_list == NULL)
+		return SLURM_SUCCESS;
+	if (job_gres_list == NULL) {
+		error("%s: step deallocates gres, but job %u has none",
+		      __func__, job_id);
+		return SLURM_ERROR;
+	}
+
+	tmp_step_id.job_id = job_id;
+	tmp_step_id.step_het_comp = NO_VAL;
+	tmp_step_id.step_id = step_id;
+
+	step_gres_iter = list_iterator_create(step_gres_list);
+	while ((step_gres_ptr = list_next(step_gres_iter))) {
+		rc2 = _step_dealloc(step_gres_ptr,
+				    job_gres_list,
+				    &tmp_step_id);
+		if (rc2 != SLURM_SUCCESS)
+			rc = rc2;
+	}
+	list_iterator_destroy(step_gres_iter);
+
+	return rc;
+}

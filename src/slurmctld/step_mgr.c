@@ -4498,9 +4498,9 @@ extern int post_job_step(step_record_t *step_ptr)
 	job_record_t *job_ptr = step_ptr->job_ptr;
 
 	_step_dealloc_lps(step_ptr);
-	gres_plugin_step_dealloc(step_ptr->gres_list,
-				 job_ptr->gres_list, job_ptr->job_id,
-				 step_ptr->step_id.step_id);
+	gres_ctld_step_dealloc(step_ptr->gres_list,
+			       job_ptr->gres_list, job_ptr->job_id,
+			       step_ptr->step_id.step_id);
 
 	/* Don't need to set state. Will be destroyed in next steps. */
 	/* step_ptr->state = JOB_COMPLETE; */

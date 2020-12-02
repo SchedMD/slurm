@@ -1115,17 +1115,6 @@ extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 				      uint32_t job_id, uint32_t step_id);
 
 /*
- * Deallocate resource to a step and update job and step gres information
- * IN step_gres_list - step's gres_list built by
- *		gres_plugin_step_state_validate()
- * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
- * IN job_id, step_id - ID of the step being allocated.
- * RET SLURM_SUCCESS or error code
- */
-extern int gres_plugin_step_dealloc(List step_gres_list, List job_gres_list,
-				    uint32_t job_id, uint32_t step_id);
-
-/*
  * Build a string containing the GRES details for a given node and socket
  * sock_gres_list IN - List of sock_gres_t entries
  * sock_inx IN - zero-origin socket for which information is to be returned
