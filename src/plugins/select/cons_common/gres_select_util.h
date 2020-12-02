@@ -56,5 +56,16 @@ extern void gres_select_util_job_set_defs(List job_gres_list,
 					  char **cpus_per_tres,
 					  char **mem_per_tres);
 
+/*
+ * Determine the minimum number of CPUs required to satify the job's GRES
+ *	request on one node
+ * sockets_per_node IN - count of sockets per node in job allocation
+ * tasks_per_node IN - count of tasks per node in job allocation
+ * job_gres_list IN - job GRES specification
+ * RET count of required CPUs for the job
+ */
+extern int gres_select_util_job_min_cpu_node(uint32_t sockets_per_node,
+					     uint32_t tasks_per_node,
+					     List job_gres_list);
 
 #endif /* _GRES_SELECT_UTIL_H */

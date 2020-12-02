@@ -98,3 +98,49 @@ extern void gres_select_util_job_set_defs(List job_gres_list,
 	list_iterator_destroy(gres_iter);
 }
 
+/*
+ * Determine the minimum number of CPUs required to satify the job's GRES
+ *	request on one node
+ * sockets_per_node IN - count of sockets per node in job allocation
+ * tasks_per_node IN - count of tasks per node in job allocation
+ * job_gres_list IN - job GRES specification
+ * RET count of required CPUs for the job
+ */
+extern int gres_select_util_job_min_cpu_node(uint32_t sockets_per_node,
+					     uint32_t tasks_per_node,
+					     List job_gres_list)
+{
+	ListIterator job_gres_iter;
+	gres_state_t *job_gres_ptr;
+	gres_job_state_t  *job_data_ptr;
+	int tmp, min_cpus = 0;
+	uint16_t cpus_per_gres;
+
+	if (!job_gres_list || (list_count(job_gres_list) == 0))
+		return 0;
+
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		uint64_t total_gres = 0;
+		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
+		if (job_data_ptr->cpus_per_gres)
+			cpus_per_gres = job_data_ptr->cpus_per_gres;
+		else
+			cpus_per_gres = job_data_ptr->def_cpus_per_gres;
+		if (cpus_per_gres == 0)
+			continue;
+		if (job_data_ptr->gres_per_node) {
+			total_gres = job_data_ptr->gres_per_node;
+		} else if (job_data_ptr->gres_per_socket) {
+			total_gres = job_data_ptr->gres_per_socket *
+				     sockets_per_node;
+		} else if (job_data_ptr->gres_per_task) {
+			total_gres = job_data_ptr->gres_per_task *
+				     tasks_per_node;
+		} else
+			total_gres = 1;
+		tmp = cpus_per_gres * total_gres;
+		min_cpus = MAX(min_cpus, tmp);
+	}
+	return min_cpus;
+}

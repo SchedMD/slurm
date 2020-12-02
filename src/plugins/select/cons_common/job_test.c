@@ -875,7 +875,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			sockets_per_node =
 				details_ptr->mc_ptr->sockets_per_node;
 		_set_gpu_defaults(job_ptr);
-		details_ptr->min_gres_cpu = gres_plugin_job_min_cpu_node(
+		details_ptr->min_gres_cpu = gres_select_util_job_min_cpu_node(
 			sockets_per_node,
 			details_ptr->ntasks_per_node,
 			job_ptr->gres_list);
