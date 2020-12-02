@@ -8149,7 +8149,6 @@ extern void gres_plugin_job_merge(List from_job_gres_list,
 		xfree(select_type);
 	}
 
-	(void) gres_plugin_init();
 	new_node_cnt = bit_set_count(from_job_node_bitmap) +
 		       bit_set_count(to_job_node_bitmap) -
 		       bit_overlap(from_job_node_bitmap, to_job_node_bitmap);
@@ -8162,8 +8161,6 @@ extern void gres_plugin_job_merge(List from_job_gres_list,
 		error("%s: node_bitmaps are empty", __func__);
 		return;
 	}
-
-	slurm_mutex_lock(&gres_context_lock);
 
 	/* Step one - Expand the gres data structures in "to" job */
 	if (!to_job_gres_list)
@@ -8348,7 +8345,7 @@ step2:	if (!from_job_gres_list)
 	}
 	list_iterator_destroy(gres_iter);
 
-step3:	slurm_mutex_unlock(&gres_context_lock);
+step3:
 	if (free_to_job_gres_list)
 		FREE_NULL_LIST(to_job_gres_list);
 	return;
