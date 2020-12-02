@@ -208,7 +208,6 @@ static uint64_t _get_job_gres_list_cnt(List gres_list, char *gres_name,
 				       char *gres_type);
 static uint64_t	_get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt,
 				  int *config_type_cnt);
-static int	_gres_find_step_by_key(void *x, void *key);
 static void	_gres_job_list_delete(void *list_element);
 static int	_job_alloc(void *job_gres_data, void *node_gres_data,
 			   int node_cnt, int node_index, int node_offset,
@@ -341,7 +340,7 @@ extern int gres_find_job_by_key_with_cnt(void *x, void *key)
 	return 0;
 }
 
-static int _gres_find_step_by_key(void *x, void *key)
+extern int gres_find_step_by_key(void *x, void *key)
 {
 	gres_state_t *state_ptr = (gres_state_t *) x;
 	gres_key_t *step_key = (gres_key_t *) key;
@@ -10105,7 +10104,7 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 	/* Find the step GRES record */
 	step_search_key.plugin_id = gres_context[context_inx].plugin_id;
 	step_search_key.type_id = gres_plugin_build_id(type);
-	gres_ptr = list_find_first(gres_list, _gres_find_step_by_key,
+	gres_ptr = list_find_first(gres_list, gres_find_step_by_key,
 				   &step_search_key);
 
 	if (gres_ptr) {
