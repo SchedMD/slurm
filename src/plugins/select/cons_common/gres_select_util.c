@@ -382,3 +382,28 @@ extern bool gres_select_util_job_tres_per_task(List job_gres_list)
 
 	return have_gres_per_task;
 }
+
+/*
+ * Return the maximum number of tasks that can be started on a node with
+ * sock_gres_list (per-socket GRES details for some node)
+ */
+extern uint32_t gres_select_util_get_task_limit(List sock_gres_list)
+{
+	ListIterator sock_gres_iter;
+	sock_gres_t *sock_gres;
+	uint32_t max_tasks = NO_VAL;
+	uint64_t task_limit;
+
+	sock_gres_iter = list_iterator_create(sock_gres_list);
+	while ((sock_gres = list_next(sock_gres_iter))) {
+		xassert(sock_gres->job_specs);
+		if (sock_gres->job_specs->gres_per_task == 0)
+			continue;
+		task_limit = sock_gres->total_cnt /
+			     sock_gres->job_specs->gres_per_task;
+		max_tasks = MIN(max_tasks, task_limit);
+	}
+	list_iterator_destroy(sock_gres_iter);
+
+	return max_tasks;
+}

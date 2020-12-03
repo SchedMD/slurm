@@ -118,5 +118,10 @@ extern uint64_t gres_select_util_job_mem_max(List job_gres_list);
  */
 extern bool gres_select_util_job_tres_per_task(List job_gres_list);
 
+/*
+ * Return the maximum number of tasks that can be started on a node with
+ * sock_gres_list (per-socket GRES details for some node)
+ */
+extern uint32_t gres_select_util_get_task_limit(List sock_gres_list);
 
 #endif /* _GRES_SELECT_UTIL_H */

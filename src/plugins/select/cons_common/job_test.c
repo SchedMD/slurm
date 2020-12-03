@@ -1502,7 +1502,7 @@ alloc_job:
 				continue;
 			if (have_gres_per_task) {
 				gres_task_limit[j] =
-					gres_plugin_get_task_limit(
+					gres_select_util_get_task_limit(
 						avail_res_array[i]->
 						sock_gres_list);
 				if (gres_task_limit[j] != NO_VAL)
