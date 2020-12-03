@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd/v0.0.36 - Use correct name for partition field:
     "min nodes per job" -> "min_nodes_per_job".
  -- slurmrestd/v0.0.36 - Add node comment field.
+ -- Fix regression marking cloud nodes as "unexpectedly rebooted" after
+    multiple boots.
 
 * Changes in Slurm 20.11.0
 ==========================
