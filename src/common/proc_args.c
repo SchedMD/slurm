@@ -498,6 +498,13 @@ char *base_name(const char *command)
 	return xstrdup(char_ptr);
 }
 
+static bool _end_on_byte(const char * endptr) {
+	if ((endptr[1] == '\0') ||
+	    (((endptr[1] == 'B') || (endptr[1] == 'b')) && endptr[2] == '\0'))
+		return true;
+	return false;
+}
+
 /*
  * str_to_mbytes(): verify that arg is numeric with optional "K", "M", "G"
  * or "T" at end and return the number in mega-bytes. Default units are MB.
@@ -519,16 +526,16 @@ uint64_t str_to_mbytes(const char *arg)
 	else if (endptr[0] == '\0')	/* MB default */
 		;
 	else if (((endptr[0] == 'k') || (endptr[0] == 'K')) &&
-	         (endptr[1] == '\0'))
+		 _end_on_byte(endptr))
 		result = (result + 1023) / 1024;	/* round up */
 	else if (((endptr[0] == 'm') || (endptr[0] == 'M')) &&
-	         (endptr[1] == '\0'))
+	         _end_on_byte(endptr))
 		;
 	else if (((endptr[0] == 'g') || (endptr[0] == 'G')) &&
-	         (endptr[1] == '\0'))
+	         _end_on_byte(endptr))
 		result *= 1024;
 	else if (((endptr[0] == 't') || (endptr[0] == 'T')) &&
-	         (endptr[1] == '\0'))
+	         _end_on_byte(endptr))
 		result *= (1024 * 1024);
 	else
 		return NO_VAL64;
