@@ -89,17 +89,17 @@ extern int slurm_auth_index(void *cred);
 /*
  * Static bindings for the global authentication context.
  */
-extern void *g_slurm_auth_create(int index, char *auth_info);
-extern int g_slurm_auth_destroy(void *cred);
-extern int g_slurm_auth_verify(void *cred, char *auth_info);
-extern uid_t g_slurm_auth_get_uid(void *cred);
-extern gid_t g_slurm_auth_get_gid(void *cred);
-extern char *g_slurm_auth_get_host(void *cred);
-extern int g_slurm_auth_pack(void *cred, buf_t *buf, uint16_t protocol_version);
-extern void *g_slurm_auth_unpack(buf_t *buf, uint16_t protocol_version);
+extern void *auth_g_create(int index, char *auth_info);
+extern int auth_g_destroy(void *cred);
+extern int auth_g_verify(void *cred, char *auth_info);
+extern uid_t auth_g_get_uid(void *cred);
+extern gid_t auth_g_get_gid(void *cred);
+extern char *auth_g_get_host(void *cred);
+extern int auth_g_pack(void *cred, buf_t *buf, uint16_t protocol_version);
+extern void *auth_g_unpack(buf_t *buf, uint16_t protocol_version);
 
-extern char *g_slurm_auth_token_generate(int plugin_id, const char *username,
-					 int lifespan);
+extern char *auth_g_token_generate(int plugin_id, const char *username,
+				   int lifespan);
 
 /*
  * Set local thread security context
@@ -107,10 +107,10 @@ extern char *g_slurm_auth_token_generate(int plugin_id, const char *username,
  * IN username - username to run as (only available for SlurmUser/root),
  *		 or NULL
  */
-extern int g_slurm_auth_thread_config(const char *token, const char *username);
+extern int auth_g_thread_config(const char *token, const char *username);
 /*
  * clear local thread security context
  */
-extern void g_slurm_auth_thread_clear(void);
+extern void auth_g_thread_clear(void);
 
 #endif /*__SLURM_AUTHENTICATION_H__*/

@@ -261,7 +261,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer);
  *    (msg->data) is allocated from within this function, and must be
  *    freed at some point using one of the slurm_free* functions.
  *    Also a slurm_cred is allocated (msg->auth_cred) which must be
- *    freed with g_slurm_auth_destroy() if it exists.
+ *    freed with auth_g_destroy() if it exists.
  *
  * IN open_fd	- file descriptor to receive msg on
  * OUT msg	- a slurm_msg struct to be filled in by the function

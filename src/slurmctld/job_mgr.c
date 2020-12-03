@@ -13617,7 +13617,7 @@ extern int update_job(slurm_msg_t *msg, uid_t uid, bool send_msg)
 {
 	job_desc_msg_t *job_specs = (job_desc_msg_t *) msg->data;
 	job_record_t *job_ptr;
-	char *hostname = g_slurm_auth_get_host(msg->auth_cred);
+	char *hostname = auth_g_get_host(msg->auth_cred);
 	int rc;
 
 	xfree(job_specs->job_id_str);
@@ -13661,7 +13661,7 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid)
 	slurm_msg_t resp_msg;
 	job_desc_msg_t *job_specs = (job_desc_msg_t *) msg->data;
 	job_record_t *job_ptr, *new_job_ptr, *het_job;
-	char *hostname = g_slurm_auth_get_host(msg->auth_cred);
+	char *hostname = auth_g_get_host(msg->auth_cred);
 	ListIterator iter;
 	long int long_id;
 	uint32_t job_id = 0, het_job_offset;

@@ -1920,11 +1920,11 @@ slurm_load_slurmd_status(slurmd_status_t **slurmd_status_ptr)
 	if ((rc != 0) || !resp_msg.auth_cred) {
 		error("slurm_slurmd_info: %m");
 		if (resp_msg.auth_cred)
-			g_slurm_auth_destroy(resp_msg.auth_cred);
+			auth_g_destroy(resp_msg.auth_cred);
 		return SLURM_ERROR;
 	}
 	if (resp_msg.auth_cred)
-		g_slurm_auth_destroy(resp_msg.auth_cred);
+		auth_g_destroy(resp_msg.auth_cred);
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURMD_STATUS:

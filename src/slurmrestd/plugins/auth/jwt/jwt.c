@@ -139,7 +139,7 @@ extern int slurm_rest_auth_p_apply(rest_auth_context_t *context)
 	xassert(data->magic == MAGIC);
 	xassert(context->plugin_id == plugin_id);
 
-	return g_slurm_auth_thread_config(data->token, context->user_name);
+	return auth_g_thread_config(data->token, context->user_name);
 }
 
 extern void slurm_rest_auth_p_free(rest_auth_context_t *context)

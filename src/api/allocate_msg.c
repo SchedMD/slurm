@@ -296,7 +296,7 @@ _handle_msg(void *arg, slurm_msg_t *msg)
 	uid_t req_uid;
 	uid_t uid = getuid();
 
-	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	req_uid = auth_g_get_uid(msg->auth_cred);
 
 	if ((req_uid != slurm_conf.slurm_user_id) && (req_uid != 0) &&
 	    (req_uid != uid)) {

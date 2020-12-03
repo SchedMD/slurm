@@ -237,7 +237,7 @@ static int _unpack_persist_init(slurmdbd_conn_t *slurmdbd_conn,
 		drop_priv = true;
 #endif
 
-	req_msg->uid = g_slurm_auth_get_uid(slurmdbd_conn->conn->auth_cred);
+	req_msg->uid = auth_g_get_uid(slurmdbd_conn->conn->auth_cred);
 
 	rc = _handle_init_msg(slurmdbd_conn, req_msg, uid);
 

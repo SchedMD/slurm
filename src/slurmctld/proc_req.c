@@ -595,7 +595,7 @@ static void _set_hostname(slurm_msg_t *msg, char **alloc_node)
 	slurm_addr_t addr;
 
 	xfree(*alloc_node);
-	if ((*alloc_node = g_slurm_auth_get_host(msg->auth_cred)))
+	if ((*alloc_node = auth_g_get_host(msg->auth_cred)))
 		debug3("%s: Using auth hostname for alloc_node: %s",
 		       __func__, *alloc_node);
 	else if (msg->conn) {
@@ -999,7 +999,7 @@ static void _slurm_rpc_allocate_het_job(slurm_msg_t * msg)
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
+	gid_t gid = auth_g_get_gid(msg->auth_cred);
 	uint32_t job_uid = NO_VAL;
 	job_record_t *job_ptr, *first_job_ptr = NULL;
 	char *err_msg = NULL, **job_submit_user_msg = NULL;
@@ -1264,7 +1264,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
+	gid_t gid = auth_g_get_gid(msg->auth_cred);
 	int immediate = job_desc_msg->immediate;
 	bool do_unlock = false;
 	bool reject_job = false;
@@ -2515,7 +2515,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	/* Locks: Read config, write job, write node, read partition, read fed*/
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
+	gid_t gid = auth_g_get_gid(msg->auth_cred);
 	slurm_addr_t resp_addr;
 	will_run_response_msg_t *resp = NULL;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
@@ -3514,7 +3514,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t *msg)
 	 * federation */
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
+	gid_t gid = auth_g_get_gid(msg->auth_cred);
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	bool reject_job = false;
 
@@ -3676,7 +3676,7 @@ static void _slurm_rpc_submit_batch_het_job(slurm_msg_t *msg)
 	slurmctld_lock_t job_write_lock = {
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	List job_req_list = (List) msg->data;
-	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
+	gid_t gid = auth_g_get_gid(msg->auth_cred);
 	uint32_t job_uid = NO_VAL;
 	char *err_msg = NULL, *job_submit_user_msg = NULL;
 	bool reject_job = false;
@@ -4721,8 +4721,8 @@ static void _slurm_rpc_auth_token(slurm_msg_t *msg)
 		lifespan = DEFAULT_AUTH_TOKEN_LIFESPAN;
 
 	resp_data = xmalloc(sizeof(*resp_data));
-	resp_data->token = g_slurm_auth_token_generate(AUTH_PLUGIN_JWT,
-						       username, lifespan);
+	resp_data->token = auth_g_token_generate(AUTH_PLUGIN_JWT, username,
+						 lifespan);
 	END_TIMER2(__func__);
 
 	response_init(&response_msg, msg);
@@ -4826,7 +4826,7 @@ static void _slurm_rpc_trigger_get(slurm_msg_t *msg)
 static void _slurm_rpc_trigger_set(slurm_msg_t *msg)
 {
 	int rc;
-	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
+	gid_t gid = auth_g_get_gid(msg->auth_cred);
 	trigger_info_msg_t * trigger_ptr = (trigger_info_msg_t *) msg->data;
 	bool allow_user_triggers = xstrcasestr(slurm_conf.slurmctld_params,
 	                                       "allow_user_triggers");
@@ -5590,7 +5590,7 @@ static int _process_persist_conn(void *arg,
 	slurm_persist_conn_t *persist_conn = arg;
 
 	if (*uid == NO_VAL)
-		*uid = g_slurm_auth_get_uid(persist_conn->auth_cred);
+		*uid = auth_g_get_uid(persist_conn->auth_cred);
 
 	*out_buffer = NULL;
 
@@ -6021,7 +6021,7 @@ static void _slurm_rpc_update_crontab(slurm_msg_t *msg)
 	/* probably need to mirror _slurm_rpc_dump_batch_script() */
 	slurmctld_lock_t job_write_lock =
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
-	gid_t gid = g_slurm_auth_get_gid(msg->auth_cred);
+	gid_t gid = auth_g_get_gid(msg->auth_cred);
 
 	START_TIMER;
 	debug3("Processing RPC details: REQUEST_UPDATE_CRONTAB for uid=%u",

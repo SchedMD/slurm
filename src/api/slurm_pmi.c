@@ -308,7 +308,7 @@ extern int slurm_pmi_get_kvs_comm_set(kvs_comm_set_t **kvs_set_ptr,
 		return errno;
 	}
 	if (msg_rcv.auth_cred)
-		(void)g_slurm_auth_destroy(msg_rcv.auth_cred);
+		(void) auth_g_destroy(msg_rcv.auth_cred);
 
 	if (msg_rcv.msg_type != PMI_KVS_GET_RESP) {
 		error("slurm_get_kvs_comm_set msg_type=%d", msg_rcv.msg_type);

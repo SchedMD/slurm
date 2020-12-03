@@ -2799,7 +2799,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			slurm_get_ip_str(&addr, comm_name, INET6_ADDRSTRLEN);
 		}
 
-		hostname = g_slurm_auth_get_host(slurm_msg->auth_cred);
+		hostname = auth_g_get_host(slurm_msg->auth_cred);
 
 		set_node_comm_name(
 			node_ptr,

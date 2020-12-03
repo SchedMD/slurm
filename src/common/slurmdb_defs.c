@@ -3052,7 +3052,7 @@ extern int slurmdb_send_accounting_update(List update_list, char *cluster,
 		rc = SLURM_ERROR;
 	}
 	if (resp.auth_cred)
-		g_slurm_auth_destroy(resp.auth_cred);
+		auth_g_destroy(resp.auth_cred);
 
 	switch (resp.msg_type) {
 	case RESPONSE_SLURM_RC:

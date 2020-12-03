@@ -499,8 +499,7 @@ static int _auth_cred_create(buf_t *buf)
 	void *auth_cred = NULL;
 	int rc = SLURM_SUCCESS;
 
-	auth_cred = g_slurm_auth_create(AUTH_DEFAULT_INDEX,
-					slurm_conf.authinfo);
+	auth_cred = auth_g_create(AUTH_DEFAULT_INDEX, slurm_conf.authinfo);
 	if (!auth_cred) {
 		PMIXP_ERROR("Creating authentication credential: %m");
 		return errno;
@@ -510,11 +509,11 @@ static int _auth_cred_create(buf_t *buf)
 	 * We can use SLURM_PROTOCOL_VERSION here since there is no possibility
 	 * of protocol mismatch.
 	 */
-	rc = g_slurm_auth_pack(auth_cred, buf, SLURM_PROTOCOL_VERSION);
+	rc = auth_g_pack(auth_cred, buf, SLURM_PROTOCOL_VERSION);
 	if (rc)
 		PMIXP_ERROR("Packing authentication credential: %m");
 
-	g_slurm_auth_destroy(auth_cred);
+	auth_g_destroy(auth_cred);
 
 	return rc;
 }
@@ -528,17 +527,17 @@ static int _auth_cred_verify(buf_t *buf)
 	 * We can use SLURM_PROTOCOL_VERSION here since there is no possibility
 	 * of protocol mismatch.
 	 */
-	auth_cred = g_slurm_auth_unpack(buf, SLURM_PROTOCOL_VERSION);
+	auth_cred = auth_g_unpack(buf, SLURM_PROTOCOL_VERSION);
 	if (!auth_cred) {
 		PMIXP_ERROR("Unpacking authentication credential: %m");
 		return SLURM_ERROR;
 	}
 
-	rc = g_slurm_auth_verify(auth_cred, slurm_conf.authinfo);
+	rc = auth_g_verify(auth_cred, slurm_conf.authinfo);
 
 	if (rc)
 		PMIXP_ERROR("Verifying authentication credential: %m");
-	g_slurm_auth_destroy(auth_cred);
+	auth_g_destroy(auth_cred);
 	return rc;
 }
 

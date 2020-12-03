@@ -416,7 +416,7 @@ static int _background_process_msg(slurm_msg_t *msg)
 
 	if (msg->msg_type != REQUEST_PING) {
 		bool super_user = false;
-		uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
+		uid_t uid = auth_g_get_uid(msg->auth_cred);
 
 		if (validate_slurm_user(uid))
 			super_user = true;
@@ -480,7 +480,7 @@ static void *_ping_ctld_thread(void *arg)
 		}
 		slurm_free_msg_data(resp.msg_type, resp.data);
 		if (resp.auth_cred)
-			g_slurm_auth_destroy(resp.auth_cred);
+			auth_g_destroy(resp.auth_cred);
 	}
 
 	slurm_mutex_lock(&ping_mutex);

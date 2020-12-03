@@ -1364,7 +1364,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	int      errnum = SLURM_SUCCESS;
 	uint16_t port;
 	char     host[MAXHOSTNAMELEN];
-	gid_t req_gid = g_slurm_auth_get_gid(msg->auth_cred);
+	gid_t req_gid = auth_g_get_gid(msg->auth_cred);
 	launch_tasks_request_msg_t *req = msg->data;
 	bool     super_user = false;
 	bool     mem_sort = false;
@@ -4063,7 +4063,7 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 	file_bcast_info_t key;
 
 	key.uid = msg->auth_uid;
-	key.gid = g_slurm_auth_get_gid(msg->auth_cred);
+	key.gid = auth_g_get_gid(msg->auth_cred);
 
 	cred_arg = _valid_sbcast_cred(req, key.uid, key.gid,
 				      msg->protocol_version);

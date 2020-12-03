@@ -950,29 +950,29 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 		      "slurm_receive_msg_and_forward instead", __func__);
 	}
 
-	if ((auth_cred = g_slurm_auth_unpack(buffer, header.version)) == NULL) {
-		error("%s: g_slurm_auth_unpack: %s has authentication error: %m",
+	if (!(auth_cred = auth_g_unpack(buffer, header.version))) {
+		error("%s: auth_g_unpack: %s has authentication error: %m",
 		      __func__, rpc_num2string(header.msg_type));
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
 	msg->auth_index = slurm_auth_index(auth_cred);
 	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
-		rc = g_slurm_auth_verify(auth_cred, _global_auth_key());
+		rc = auth_g_verify(auth_cred, _global_auth_key());
 	} else {
-		rc = g_slurm_auth_verify(auth_cred, slurm_conf.authinfo);
+		rc = auth_g_verify(auth_cred, slurm_conf.authinfo);
 	}
 
 	if (rc != SLURM_SUCCESS) {
-		error("%s: g_slurm_auth_verify: %s has authentication error: %s",
+		error("%s: auth_g_verify: %s has authentication error: %s",
 		      __func__, rpc_num2string(header.msg_type),
 		      slurm_strerror(rc));
-		(void) g_slurm_auth_destroy(auth_cred);
+		(void) auth_g_destroy(auth_cred);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 		goto total_return;
 	}
 
-	msg->auth_uid = g_slurm_auth_get_uid(auth_cred);
+	msg->auth_uid = auth_g_get_uid(auth_cred);
 	msg->auth_uid_set = true;
 
 	/*
@@ -987,7 +987,7 @@ extern int slurm_unpack_received_msg(slurm_msg_t *msg, int fd, buf_t *buffer)
 	if ((header.body_length > remaining_buf(buffer)) ||
 	    (unpack_msg(msg, buffer) != SLURM_SUCCESS)) {
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
-		(void) g_slurm_auth_destroy(auth_cred);
+		(void) auth_g_destroy(auth_cred);
 		goto total_return;
 	}
 
@@ -1214,29 +1214,29 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 		      "slurm_receive_msg_and_forward instead");
 	}
 
-	if ((auth_cred = g_slurm_auth_unpack(buffer, header.version)) == NULL) {
-		error("%s: g_slurm_auth_unpack: %m", __func__);
+	if (!(auth_cred = auth_g_unpack(buffer, header.version))) {
+		error("%s: auth_g_unpack: %m", __func__);
 		free_buf(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
 	msg.auth_index = slurm_auth_index(auth_cred);
 	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
-		rc = g_slurm_auth_verify(auth_cred, _global_auth_key());
+		rc = auth_g_verify(auth_cred, _global_auth_key());
 	} else {
-		rc = g_slurm_auth_verify(auth_cred, slurm_conf.authinfo);
+		rc = auth_g_verify(auth_cred, slurm_conf.authinfo);
 	}
 
 	if (rc != SLURM_SUCCESS) {
-		error("%s: g_slurm_auth_verify: %s has authentication error: %m",
+		error("%s: auth_g_verify: %s has authentication error: %m",
 		      __func__, rpc_num2string(header.msg_type));
-		(void) g_slurm_auth_destroy(auth_cred);
+		(void) auth_g_destroy(auth_cred);
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 		goto total_return;
 	}
 
-	msg.auth_uid = g_slurm_auth_get_uid(auth_cred);
+	msg.auth_uid = auth_g_get_uid(auth_cred);
 	msg.auth_uid_set = true;
 
 	/*
@@ -1248,12 +1248,12 @@ List slurm_receive_msgs(int fd, int steps, int timeout)
 
 	if ((header.body_length > remaining_buf(buffer)) ||
 	    (unpack_msg(&msg, buffer) != SLURM_SUCCESS)) {
-		(void) g_slurm_auth_destroy(auth_cred);
+		(void) auth_g_destroy(auth_cred);
 		free_buf(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	g_slurm_auth_destroy(auth_cred);
+	auth_g_destroy(auth_cred);
 
 	free_buf(buffer);
 	rc = SLURM_SUCCESS;
@@ -1295,13 +1295,13 @@ static int _unpack_msg_uid(buf_t *buffer, uint16_t protocol_version)
 	int uid = -1;
 	void *auth_cred = NULL;
 
-	if ((auth_cred = g_slurm_auth_unpack(buffer, protocol_version)) == NULL)
+	if (!(auth_cred = auth_g_unpack(buffer, protocol_version)))
 		return uid;
-	if (g_slurm_auth_verify(auth_cred, slurm_conf.authinfo))
+	if (auth_g_verify(auth_cred, slurm_conf.authinfo))
 		return uid;
 
-	uid = (int) g_slurm_auth_get_uid(auth_cred);
-	g_slurm_auth_destroy(auth_cred);
+	uid = (int) auth_g_get_uid(auth_cred);
+	auth_g_destroy(auth_cred);
 
 	return uid;
 }
@@ -1431,8 +1431,8 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 		}
 	}
 
-	if ((auth_cred = g_slurm_auth_unpack(buffer, header.version)) == NULL) {
-		error("%s: g_slurm_auth_unpack: %s has authentication error: %m",
+	if (!(auth_cred = auth_g_unpack(buffer, header.version))) {
+		error("%s: auth_g_unpack: %s has authentication error: %m",
 		      __func__, rpc_num2string(header.msg_type));
 		free_buf(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
@@ -1440,21 +1440,21 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 	}
 	msg->auth_index = slurm_auth_index(auth_cred);
 	if (header.flags & SLURM_GLOBAL_AUTH_KEY) {
-		rc = g_slurm_auth_verify(auth_cred, _global_auth_key());
+		rc = auth_g_verify(auth_cred, _global_auth_key());
 	} else {
-		rc = g_slurm_auth_verify(auth_cred, slurm_conf.authinfo);
+		rc = auth_g_verify(auth_cred, slurm_conf.authinfo);
 	}
 
 	if (rc != SLURM_SUCCESS) {
-		error("%s: g_slurm_auth_verify: %s has authentication error: %m",
+		error("%s: auth_g_verify: %s has authentication error: %m",
 		      __func__, rpc_num2string(header.msg_type));
-		(void) g_slurm_auth_destroy(auth_cred);
+		(void) auth_g_destroy(auth_cred);
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 		goto total_return;
 	}
 
-	msg->auth_uid = g_slurm_auth_get_uid(auth_cred);
+	msg->auth_uid = auth_g_get_uid(auth_cred);
 	msg->auth_uid_set = true;
 
 	/*
@@ -1466,7 +1466,7 @@ int slurm_receive_msg_and_forward(int fd, slurm_addr_t *orig_addr,
 
 	if ( (header.body_length > remaining_buf(buffer)) ||
 	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
-		(void) g_slurm_auth_destroy(auth_cred);
+		(void) auth_g_destroy(auth_cred);
 		free_buf(buffer);
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
@@ -1571,11 +1571,9 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	 * wait too long for the incoming message.
 	 */
 	if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
-		auth_cred = g_slurm_auth_create(msg->auth_index,
-						_global_auth_key());
+		auth_cred = auth_g_create(msg->auth_index, _global_auth_key());
 	} else {
-		auth_cred = g_slurm_auth_create(msg->auth_index,
-						slurm_conf.authinfo);
+		auth_cred = auth_g_create(msg->auth_index, slurm_conf.authinfo);
 	}
 
 	if (msg->forward.init != FORWARD_INIT) {
@@ -1589,17 +1587,17 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	forward_wait(msg);
 
 	if (difftime(time(NULL), start_time) >= 60) {
-		(void) g_slurm_auth_destroy(auth_cred);
+		(void) auth_g_destroy(auth_cred);
 		if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
-			auth_cred = g_slurm_auth_create(msg->auth_index,
-							_global_auth_key());
+			auth_cred = auth_g_create(msg->auth_index,
+						  _global_auth_key());
 		} else {
-			auth_cred = g_slurm_auth_create(msg->auth_index,
-							slurm_conf.authinfo);
+			auth_cred = auth_g_create(msg->auth_index,
+						  slurm_conf.authinfo);
 		}
 	}
 	if (auth_cred == NULL) {
-		error("%s: g_slurm_auth_create: %s has authentication error: %m",
+		error("%s: auth_g_create: %s has authentication error: %m",
 		      __func__, rpc_num2string(msg->msg_type));
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
@@ -1615,10 +1613,10 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	/*
 	 * Pack auth credential
 	 */
-	rc = g_slurm_auth_pack(auth_cred, buffer, header.version);
-	(void) g_slurm_auth_destroy(auth_cred);
+	rc = auth_g_pack(auth_cred, buffer, header.version);
+	(void) auth_g_destroy(auth_cred);
 	if (rc) {
-		error("%s: g_slurm_auth_pack: %s has  authentication error: %m",
+		error("%s: auth_g_pack: %s has  authentication error: %m",
 		      __func__, rpc_num2string(header.msg_type));
 		free_buf(buffer);
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
@@ -2154,7 +2152,7 @@ tryagain:
 		retry = 0;
 		rc = _send_and_recv_msg(fd, request_msg, response_msg, 0);
 		if (response_msg->auth_cred)
-			g_slurm_auth_destroy(response_msg->auth_cred);
+			auth_g_destroy(response_msg->auth_cred);
 		else
 			rc = -1;
 
@@ -2523,7 +2521,7 @@ int slurm_send_recv_rc_msg_only_one(slurm_msg_t *req, int *rc, int timeout)
 		return -1;
 	if (!_send_and_recv_msg(fd, req, &resp, timeout)) {
 		if (resp.auth_cred)
-			g_slurm_auth_destroy(resp.auth_cred);
+			auth_g_destroy(resp.auth_cred);
 		*rc = slurm_get_return_code(resp.msg_type, resp.data);
 		slurm_free_msg_data(resp.msg_type, resp.data);
 		ret_c = 0;
@@ -2619,7 +2617,7 @@ extern void slurm_free_msg_members(slurm_msg_t *msg)
 {
 	if (msg) {
 		if (msg->auth_cred)
-			(void) g_slurm_auth_destroy(msg->auth_cred);
+			(void) auth_g_destroy(msg->auth_cred);
 		free_buf(msg->buffer);
 		slurm_free_msg_data(msg->msg_type, msg->data);
 		FREE_NULL_LIST(msg->ret_list);

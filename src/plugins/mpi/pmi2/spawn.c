@@ -149,8 +149,7 @@ extern void spawn_req_pack(spawn_req_t *req, buf_t *buf)
 	spawn_subcmd_t *subcmd;
 	void *auth_cred;
 
-	auth_cred = g_slurm_auth_create(AUTH_DEFAULT_INDEX,
-					slurm_conf.authinfo);
+	auth_cred = auth_g_create(AUTH_DEFAULT_INDEX, slurm_conf.authinfo);
 	if (auth_cred == NULL) {
 		error("authentication: %m");
 		return;
@@ -160,8 +159,8 @@ extern void spawn_req_pack(spawn_req_t *req, buf_t *buf)
 	 * We can use SLURM_PROTOCOL_VERSION here since there is no possibility
 	 * of protocol mismatch.
 	 */
-	(void) g_slurm_auth_pack(auth_cred, buf, SLURM_PROTOCOL_VERSION);
-	(void) g_slurm_auth_destroy(auth_cred);
+	(void) auth_g_pack(auth_cred, buf, SLURM_PROTOCOL_VERSION);
+	(void) auth_g_destroy(auth_cred);
 
 	pack32(req->seq, buf);
 	packstr(req->from_node, buf);
@@ -201,17 +200,17 @@ extern int spawn_req_unpack(spawn_req_t **req_ptr, buf_t *buf)
 	 * We can use SLURM_PROTOCOL_VERSION here since there is no possibility
 	 * of protocol mismatch.
 	 */
-	auth_cred = g_slurm_auth_unpack(buf, SLURM_PROTOCOL_VERSION);
+	auth_cred = auth_g_unpack(buf, SLURM_PROTOCOL_VERSION);
 	if (auth_cred == NULL) {
 		error("authentication: %m");
 		return SLURM_ERROR;
 	}
-	if (g_slurm_auth_verify(auth_cred, slurm_conf.authinfo)) {
+	if (auth_g_verify(auth_cred, slurm_conf.authinfo)) {
 		error("authentication: %m");
 		return SLURM_ERROR;
 	}
-	auth_uid = g_slurm_auth_get_uid(auth_cred);
-	(void) g_slurm_auth_destroy(auth_cred);
+	auth_uid = auth_g_get_uid(auth_cred);
+	(void) auth_g_destroy(auth_cred);
 	my_uid = getuid();
 	if ((auth_uid != 0) && (auth_uid != my_uid)) {
 		error("mpi/pmi2: spawn request apparently from uid %u",

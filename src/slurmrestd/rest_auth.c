@@ -251,7 +251,7 @@ extern int rest_auth_g_apply(rest_auth_context_t *context)
 
 extern void rest_auth_g_clear(void)
 {
-	g_slurm_auth_thread_clear();
+	auth_g_thread_clear();
 }
 
 extern void *rest_auth_g_get_db_conn(rest_auth_context_t *context)

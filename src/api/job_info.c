@@ -1516,11 +1516,11 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 
 	if ((rc != 0) || !resp_msg.auth_cred) {
 		if (resp_msg.auth_cred)
-			g_slurm_auth_destroy(resp_msg.auth_cred);
+			auth_g_destroy(resp_msg.auth_cred);
 		return SLURM_ERROR;
 	}
 	if (resp_msg.auth_cred)
-		g_slurm_auth_destroy(resp_msg.auth_cred);
+		auth_g_destroy(resp_msg.auth_cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_ID:
 		*jobid = ((job_id_response_msg_t *) resp_msg.data)->job_id;

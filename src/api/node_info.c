@@ -868,11 +868,11 @@ extern int slurm_get_node_energy(char *host, uint16_t context_id,
 	if (rc != 0 || !resp_msg.auth_cred) {
 		error("slurm_get_node_energy: %m");
 		if (resp_msg.auth_cred)
-			g_slurm_auth_destroy(resp_msg.auth_cred);
+			auth_g_destroy(resp_msg.auth_cred);
 		return SLURM_ERROR;
 	}
 	if (resp_msg.auth_cred)
-		g_slurm_auth_destroy(resp_msg.auth_cred);
+		auth_g_destroy(resp_msg.auth_cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_ACCT_GATHER_ENERGY:
 		*sensor_cnt = ((acct_gather_node_resp_msg_t *)

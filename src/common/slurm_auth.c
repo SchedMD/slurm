@@ -140,7 +140,7 @@ extern int slurm_auth_init(char *auth_type)
 	 * This loop construct ensures that the AuthType is in position zero
 	 * of the ops and g_context arrays, followed by any AuthAltTypes that
 	 * have been defined. This ensures that the most common type is found
-	 * first in g_slurm_auth_unpack(), and that we can default to
+	 * first in auth_g_unpack(), and that we can default to
 	 * the zeroth element rather than tracking the primary plugin
 	 * through some other index.
 	 * One other side effect is that the AuthAltTypes are permitted to
@@ -235,7 +235,7 @@ int slurm_auth_index(void *cred)
  * the API function dispatcher.
  */
 
-void *g_slurm_auth_create(int index, char *auth_info)
+void *auth_g_create(int index, char *auth_info)
 {
 	cred_wrapper_t *cred;
 
@@ -248,7 +248,7 @@ void *g_slurm_auth_create(int index, char *auth_info)
 	return cred;
 }
 
-int g_slurm_auth_destroy(void *cred)
+int auth_g_destroy(void *cred)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
@@ -258,7 +258,7 @@ int g_slurm_auth_destroy(void *cred)
 	return (*(ops[wrap->index].destroy))(cred);
 }
 
-int g_slurm_auth_verify(void *cred, char *auth_info)
+int auth_g_verify(void *cred, char *auth_info)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
@@ -268,7 +268,7 @@ int g_slurm_auth_verify(void *cred, char *auth_info)
 	return (*(ops[wrap->index].verify))(cred, auth_info);
 }
 
-uid_t g_slurm_auth_get_uid(void *cred)
+uid_t auth_g_get_uid(void *cred)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
@@ -278,7 +278,7 @@ uid_t g_slurm_auth_get_uid(void *cred)
 	return (*(ops[wrap->index].get_uid))(cred);
 }
 
-gid_t g_slurm_auth_get_gid(void *cred)
+gid_t auth_g_get_gid(void *cred)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
@@ -288,7 +288,7 @@ gid_t g_slurm_auth_get_gid(void *cred)
 	return (*(ops[wrap->index].get_gid))(cred);
 }
 
-char *g_slurm_auth_get_host(void *cred)
+char *auth_g_get_host(void *cred)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
@@ -298,7 +298,7 @@ char *g_slurm_auth_get_host(void *cred)
 	return (*(ops[wrap->index].get_host))(cred);
 }
 
-int g_slurm_auth_pack(void *cred, buf_t *buf, uint16_t protocol_version)
+int auth_g_pack(void *cred, buf_t *buf, uint16_t protocol_version)
 {
 	cred_wrapper_t *wrap = (cred_wrapper_t *) cred;
 
@@ -315,7 +315,7 @@ int g_slurm_auth_pack(void *cred, buf_t *buf, uint16_t protocol_version)
 	}
 }
 
-void *g_slurm_auth_unpack(buf_t *buf, uint16_t protocol_version)
+void *auth_g_unpack(buf_t *buf, uint16_t protocol_version)
 {
 	uint32_t plugin_id = 0;
 	cred_wrapper_t *cred;
@@ -347,7 +347,7 @@ unpack_error:
 	return NULL;
 }
 
-int g_slurm_auth_thread_config(const char *token, const char *username)
+int auth_g_thread_config(const char *token, const char *username)
 {
 	if (slurm_auth_init(NULL) < 0)
 		return SLURM_ERROR;
@@ -355,7 +355,7 @@ int g_slurm_auth_thread_config(const char *token, const char *username)
 	return (*(ops[0].thread_config))(token, username);
 }
 
-void g_slurm_auth_thread_clear(void)
+void auth_g_thread_clear(void)
 {
 	if (slurm_auth_init(NULL) < 0)
 		return;
@@ -363,8 +363,8 @@ void g_slurm_auth_thread_clear(void)
 	(*(ops[0].thread_clear))();
 }
 
-char *g_slurm_auth_token_generate(int plugin_id, const char *username,
-				  int lifespan)
+char *auth_g_token_generate(int plugin_id, const char *username,
+			    int lifespan)
 {
 	if (slurm_auth_init(NULL) < 0)
 		return NULL;
