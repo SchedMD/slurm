@@ -758,15 +758,6 @@ extern bool gres_plugin_job_sched_sufficient(List job_gres_list,
 					     List sock_gres_list);
 
 /*
- * Given a List of sock_gres_t entries, return a string identifying the
- * count of each GRES available on this set of nodes
- * IN sock_gres_list - count of GRES available in this group of nodes
- * IN job_gres_list - job GRES specification, used only to get GRES name/type
- * RET xfree the returned string
- */
-extern char *gres_plugin_job_sched_str(List sock_gres_list, List job_gres_list);
-
-/*
  * Create a (partial) copy of a job's gres state for job binding
  * IN gres_list - List of Gres records for this job to track usage
  * RET The copy or NULL on failure

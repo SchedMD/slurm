@@ -177,8 +177,8 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 select_cons_tres_la_DEPENDENCIES = ../cons_common/libcons_common.la
-am_select_cons_tres_la_OBJECTS = dist_tasks.lo job_test.lo \
-	select_cons_tres.lo
+am_select_cons_tres_la_OBJECTS = dist_tasks.lo gres_sched.lo \
+	job_test.lo select_cons_tres.lo
 select_cons_tres_la_OBJECTS = $(am_select_cons_tres_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -204,7 +204,8 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/dist_tasks.Plo \
-	./$(DEPDIR)/job_test.Plo ./$(DEPDIR)/select_cons_tres.Plo
+	./$(DEPDIR)/gres_sched.Plo ./$(DEPDIR)/job_test.Plo \
+	./$(DEPDIR)/select_cons_tres.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -511,6 +512,7 @@ pkglib_LTLIBRARIES = select_cons_tres.la
 
 # Trackable RESources selection plugin.
 select_cons_tres_la_SOURCES = dist_tasks.c dist_tasks.h	\
+				gres_sched.c gres_sched.h	\
 				job_test.c job_test.h		\
 				select_cons_tres.c select_cons_tres.h
 
@@ -595,6 +597,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dist_tasks.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gres_sched.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_test.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_cons_tres.Plo@am__quote@ # am--include-marker
 
@@ -726,6 +729,7 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/dist_tasks.Plo
+	-rm -f ./$(DEPDIR)/gres_sched.Plo
 	-rm -f ./$(DEPDIR)/job_test.Plo
 	-rm -f ./$(DEPDIR)/select_cons_tres.Plo
 	-rm -f Makefile
@@ -774,6 +778,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/dist_tasks.Plo
+	-rm -f ./$(DEPDIR)/gres_sched.Plo
 	-rm -f ./$(DEPDIR)/job_test.Plo
 	-rm -f ./$(DEPDIR)/select_cons_tres.Plo
 	-rm -f Makefile
