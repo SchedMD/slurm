@@ -272,6 +272,10 @@ slurmd_req(slurm_msg_t *msg)
 		return;
 	}
 
+	if (!msg->auth_uid_set)
+		fatal("%s: received message without previously validated auth",
+		      __func__);
+
 	debug2("Processing RPC: %s", rpc_num2string(msg->msg_type));
 	switch (msg->msg_type) {
 	case REQUEST_LAUNCH_PROLOG:
