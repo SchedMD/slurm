@@ -730,9 +730,8 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 				     _enough_nodes(consec_nodes[i], rem_nodes,
 						   min_nodes, req_nodes);
 			if (sufficient && gres_per_job) {
-				sufficient = gres_plugin_job_sched_sufficient(
-						job_ptr->gres_list,
-						consec_gres[i]);
+				sufficient = gres_sched_sufficient(
+					job_ptr->gres_list, consec_gres[i]);
 			}
 
 			/*
@@ -1755,8 +1754,8 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			     _enough_nodes(best_node_cnt, rem_nodes,
 					   min_nodes, req_nodes);
 		if (sufficient && gres_per_job) {
-			sufficient = gres_plugin_job_sched_sufficient(
-					job_ptr->gres_list, best_gres);
+			sufficient = gres_sched_sufficient(
+				job_ptr->gres_list, best_gres);
 		}
 	}
 	list_iterator_destroy(iter);
@@ -1953,8 +1952,8 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			     _enough_nodes(best_node_cnt, rem_nodes,
 				   min_nodes, req_nodes);
 		if (sufficient && gres_per_job) {
-			sufficient = gres_plugin_job_sched_sufficient(
-						job_ptr->gres_list, best_gres);
+			sufficient = gres_sched_sufficient(
+				job_ptr->gres_list, best_gres);
 		}
 		if (sufficient && (i < switch_record_cnt)) {
 			/* Complete request using this one leaf switch */
@@ -2391,8 +2390,8 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			     _enough_nodes(best_node_cnt, rem_nodes,
 					   min_nodes, req_nodes);
 		if (sufficient && gres_per_job) {
-			sufficient = gres_plugin_job_sched_sufficient(
-					job_ptr->gres_list, best_gres);
+			sufficient = gres_sched_sufficient(
+				job_ptr->gres_list, best_gres);
 		}
 	}
 	list_iterator_destroy(iter);

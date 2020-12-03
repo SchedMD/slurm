@@ -48,4 +48,13 @@
  */
 extern char *gres_sched_str(List sock_gres_list, List job_gres_list);
 
+/*
+ * Determine if the additional sock_gres_list resources will result in
+ * satisfying the job's gres_per_job constraints
+ * IN job_gres_list - job's GRES requirements
+ * IN sock_gres_list - available GRES in a set of nodes, data structure built
+ *		       by gres_plugin_job_sched_consec()
+ */
+extern bool gres_sched_sufficient(List job_gres_list, List sock_gres_list);
+
 #endif /* _CONS_TRES_GRES_SCHED_H */

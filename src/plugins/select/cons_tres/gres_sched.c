@@ -106,3 +106,48 @@ extern char *gres_sched_str(List sock_gres_list, List job_gres_list)
 
 	return out_str;
 }
+
+/*
+ * Determine if the additional sock_gres_list resources will result in
+ * satisfying the job's gres_per_job constraints
+ * IN job_gres_list - job's GRES requirements
+ * IN sock_gres_list - available GRES in a set of nodes, data structure built
+ *		       by gres_plugin_job_sched_consec()
+ */
+extern bool gres_sched_sufficient(List job_gres_list, List sock_gres_list)
+{
+	ListIterator iter;
+	gres_state_t *job_gres_state;
+	gres_job_state_t *job_data;
+	sock_gres_t *sock_data;
+	bool rc = true;
+
+	if (!job_gres_list)
+		return true;
+	if (!sock_gres_list)
+		return false;
+
+	iter = list_iterator_create(job_gres_list);
+	while ((job_gres_state = list_next(iter))) {
+		job_data = (gres_job_state_t *) job_gres_state->gres_data;
+		if (!job_data->gres_per_job)	/* Don't care about totals */
+			continue;
+		if (job_data->total_gres >= job_data->gres_per_job)
+			continue;
+		sock_data = list_find_first(sock_gres_list,
+					    gres_find_sock_by_job_state,
+					    job_gres_state);
+		if (!sock_data)	{	/* None of this GRES available */
+			rc = false;
+			break;
+		}
+		if ((job_data->total_gres + sock_data->total_cnt) <
+		    job_data->gres_per_job) {
+			rc = false;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return rc;
+}
