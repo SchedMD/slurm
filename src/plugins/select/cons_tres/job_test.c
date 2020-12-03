@@ -519,7 +519,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	rem_cpus = details_ptr->min_cpus;
 	rem_max_cpus = details_ptr->max_cpus;
 	min_rem_nodes = min_nodes;
-	if ((gres_per_job = gres_plugin_job_sched_init(job_ptr->gres_list))) {
+	if ((gres_per_job = gres_sched_init(job_ptr->gres_list))) {
 		rem_nodes = MIN(min_nodes, req_nodes);
 		consec_gres = xcalloc(consec_size, sizeof(List));
 	} else
@@ -1060,7 +1060,7 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 	if ((details_ptr->num_tasks != NO_VAL) &&
 	    (details_ptr->num_tasks != 0))
 		max_nodes = MIN(max_nodes, details_ptr->num_tasks);
-	if ((gres_per_job = gres_plugin_job_sched_init(job_ptr->gres_list)))
+	if ((gres_per_job = gres_sched_init(job_ptr->gres_list)))
 		rem_nodes = MIN(min_nodes, req_nodes);
 	else
 		rem_nodes = MAX(min_nodes, req_nodes);
@@ -1244,7 +1244,7 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 	if ((details_ptr->num_tasks != NO_VAL) &&
 	    (details_ptr->num_tasks != 0))
 		max_nodes = MIN(max_nodes, details_ptr->num_tasks);
-	if ((gres_per_job = gres_plugin_job_sched_init(job_ptr->gres_list)))
+	if ((gres_per_job = gres_sched_init(job_ptr->gres_list)))
 		rem_nodes = MIN(min_nodes, req_nodes);
 	else
 		rem_nodes = MAX(min_nodes, req_nodes);
@@ -1515,7 +1515,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	rem_cpus = details_ptr->min_cpus;
 	rem_max_cpus = details_ptr->max_cpus;
 	min_rem_nodes = min_nodes;
-	if ((gres_per_job = gres_plugin_job_sched_init(job_ptr->gres_list)))
+	if ((gres_per_job = gres_sched_init(job_ptr->gres_list)))
 		rem_nodes = MIN(min_nodes, req_nodes);
 	else
 		rem_nodes = MAX(min_nodes, req_nodes);
@@ -2148,7 +2148,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	rem_cpus = details_ptr->min_cpus;
 	rem_max_cpus = details_ptr->max_cpus;
 	min_rem_nodes = min_nodes;
-	if ((gres_per_job = gres_plugin_job_sched_init(job_ptr->gres_list)))
+	if ((gres_per_job = gres_sched_init(job_ptr->gres_list)))
 		rem_nodes = MIN(min_nodes, req_nodes);
 	else
 		rem_nodes = MAX(min_nodes, req_nodes);
@@ -2709,7 +2709,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 	if ((details_ptr->num_tasks != NO_VAL) &&
 	    (details_ptr->num_tasks != 0))
 		max_nodes = MIN(max_nodes, details_ptr->num_tasks);
-	if ((gres_per_job = gres_plugin_job_sched_init(job_ptr->gres_list)))
+	if ((gres_per_job = gres_sched_init(job_ptr->gres_list)))
 		rem_nodes = MIN(min_nodes, req_nodes);
 	else
 		rem_nodes = MAX(min_nodes, req_nodes);
@@ -2919,7 +2919,7 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 	if ((details_ptr->num_tasks != NO_VAL) &&
 	    (details_ptr->num_tasks != 0))
 		max_nodes = MIN(max_nodes, details_ptr->num_tasks);
-	if ((gres_per_job = gres_plugin_job_sched_init(job_ptr->gres_list)))
+	if ((gres_per_job = gres_sched_init(job_ptr->gres_list)))
 		rem_nodes = MIN(min_nodes, req_nodes);
 	else
 		rem_nodes = MAX(min_nodes, req_nodes);

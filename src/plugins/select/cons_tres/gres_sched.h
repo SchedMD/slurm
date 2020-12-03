@@ -49,6 +49,12 @@
 extern char *gres_sched_str(List sock_gres_list, List job_gres_list);
 
 /*
+ * Clear GRES allocation info for all job GRES at start of scheduling cycle
+ * Return TRUE if any gres_per_job constraints to satisfy
+ */
+extern bool gres_sched_init(List job_gres_list);
+
+/*
  * Determine if the additional sock_gres_list resources will result in
  * satisfying the job's gres_per_job constraints
  * IN job_gres_list - job's GRES requirements

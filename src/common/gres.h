@@ -708,12 +708,6 @@ extern int gres_plugin_job_revalidate2(uint32_t job_id, List job_gres_list,
 				       bitstr_t *node_bitmap);
 
 /*
- * Clear GRES allocation info for all job GRES at start of scheduling cycle
- * Return TRUE if any gres_per_job constraints to satisfy
- */
-extern bool gres_plugin_job_sched_init(List job_gres_list);
-
-/*
  * Return TRUE if all gres_per_job specifications are satisfied
  */
 extern bool gres_plugin_job_sched_test(List job_gres_list, uint32_t job_id);
