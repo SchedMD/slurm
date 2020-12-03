@@ -4121,7 +4121,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		step_ptr->jobacct = jobacct;
 	}
 
-	info("recovered %pS", step_ptr);
+	info("Recovered %pS", step_ptr);
 	return SLURM_SUCCESS;
 
 unpack_error:
