@@ -13,9 +13,10 @@
 <h2>Prerequisites</h2>
 <p>slurmrestd requires additional libraries for compilation:</p>
 <ul>
-	<li><a href="https://github.com/nodejs/http-parser">HTTP Parser</a> (>= v2.6.0)</li>
-	<li><a href="https://github.com/yaml/libyaml">LibYAML</a></li>
-	<li><a href="https://github.com/json-c/json-c">JSON-C</a></li>
+	<li><a href="download.html#httpparser">HTTP Parser</a> (>= v2.6.0)</li>
+	<li><a href="download.html#yaml">LibYAML</a> (optional)</li>
+	<li><a href="download.html#json">JSON-C</a></li>
+	<li><a href="download.html#jwt">JWT Authentication</a> (optional)</li>
 </ul>
 
 <!-- <h2>Usage Models</h2>
@@ -241,6 +242,6 @@ The example is <b>not</b> provided to be run in production.</p>
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 2 December 2020</p>
+<p style="text-align:center;">Last modified 3 December 2020</p>
 
 <!--#include virtual="footer.txt"-->

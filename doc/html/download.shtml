@@ -331,44 +331,72 @@ easy and elegantly manner.
 <li><a href="mslurm/mslurm.tgz">Code</a></li>
 </ul></li><br>
 
-<li><a name="json"><b>JSON</b></a><br>
-Some Slurm plugins (burst_buffer/datawarp and power/cray_aries) plugins
-parse JSON format data.
-These plugins are designed to make use of the JSON-C library for this purpose.
-Instructions for the build are as follows:
-<ol>
-<li>Download json-c version 0.12 (or higher) from<br>
-<a href="https://github.com/json-c/json-c/wiki">
-https://github.com/json-c/json-c/wiki</a></li>
+<li><a name="json" href="https://github.com/json-c/json-c/wiki"><b>JSON</b></a>
+	<p>Some Slurm plugins (<a href="rest.html">slurmrestd</a>,
+	<a href="burst_buffer.html">burst_buffer/datawarp</a>
+	and <a href="power_mgmt.html">power/cray_aries</a>) parse JSON format
+	data. These plugins and slurmrestd are designed to make use of the
+	JSON-C library for this purpose. Instructions for the build are as
+	follows:</p>
+	<pre>
+git clone --depth 1 --single-branch -b json-c-0.15-20200726 https://github.com/json-c/json-c.git json-c
+cd json-c
+cmake .
+make
+sudo make install
+	</pre>
+	Declare the package configuration path before compiling Slurm
+	(example provided for /bin/sh):
+	<pre>
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig/:$PKG_CONFIG_PATH
+	</pre>
+</li>
 
-<li>Unpackage json-c<br>
-gunzip json-c-0.12.tar.gz<br>
-tar -xf json-c-0.12.tar</li>
+<li><a name="httpparser" href="https://github.com/nodejs/http-parser">
+    <b>HTTP Parser</b></a>
+	<p><a href="rest.html">slurmrestd</a> requires libhttp_parser
+	(>=v2.6.0). Instructions for the build are as follows:</p>
+	<pre>
+git clone --depth 1 --single-branch -b v2.9.4 https://github.com/nodejs/http-parser.git http_parser-c
+cd http_parser
+make
+sudo make install
+	</pre>
+	Add the following argument when running <i>configure</i> for Slurm:
+	<pre>--with-http-parser=/usr/local/</pre>
+</li>
 
-<li>Built and install json-c
-<ul>
-<li>If you have current build tools<br>
-cd json-c-0.12<br>
-export CFLAGS=-Wno-error=unused-but-set-variable<br>
-./configure --prefix=DESIRED_PATH<br>
-make<br>
-make install</li>
+<li><a name="yaml" href="https://github.com/yaml/libyaml">
+    <b>YAML Parser</b></a>
+	<p><a href="rest.html">slurmrestd</a> requires libyaml to support
+	YAML. Instructions for the build are as follows:</p>
+	<pre>
+git clone --depth 1 --single-branch -b 0.2.5 https://github.com/yaml/libyaml libyaml
+cd libyaml
+./bootstrap
+./configure
+make
+sudo make install
+	</pre>
+	Add the following argument when running <i>configure</i> for Slurm:
+	<pre>--with-yaml=/usr/local/</pre>
+</li>
 
-<li>If you have old build tools<br>
-cd json-c-0.12<br>
-mv aclocal.m4 aclocal.m4.orig<br>
-mv ltmain.sh ltmain.sh.orig<br>
-./autogen.sh<br>
-export CFLAGS=-Wno-error=unused-but-set-variable<br>
-./configure --prefix=DESIRED_JSON_PATH<br>
-make<br>
-make install</li>
-</ul>
-
-<li>Build and install Slurm<br>
-./configure --with-json=DESIRED_JSON_PATH ...<br>
-make -j</li>
-</ol><br>
+<li><a name="jwt" href="https://github.com/benmcollins/libjwt">
+    <b>JWT library</b></a>
+	<p><a href="jwt.html">JWT authentication</a> requires libjwt.
+	Instructions for the build are as follows:</p>
+	<pre>
+git clone --depth 1 --single-branch -b v1.12.0 https://github.com/benmcollins/libjwt.git libjwt
+cd libjwt
+autoreconf --force --install
+./configure --prefix=/usr/local
+make -j
+sudo make install
+	</pre>
+	Add the following argument when running <i>configure</i> for Slurm:
+	<pre>--with-jwt=/usr/local/</pre>
+</li>
 
 <li><b>Slurm-web</b><br>
 Slurm-web is a free software, distributed under the GPL version 2 license,
@@ -379,6 +407,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 9 September 2020</p>
+<p style="text-align:center;">Last modified 3 December 2020</p>
 
 <!--#include virtual="footer.txt"-->

@@ -235,6 +235,19 @@ static int _get_option_field_index(lua_State *st)
 	else if (!strcmp(name, "spank_job_env"))
 		return _setup_stringarray(st, options->spank_job_env_size,
 					  options->spank_job_env);
+	else if (!strcmp(name, "type")) {
+		if (options->salloc_opt)
+			lua_pushstring(st, "salloc");
+		else if (options->sbatch_opt)
+			lua_pushstring(st, "sbatch");
+		else if (options->scron_opt)
+			lua_pushstring(st, "scrontab");
+		else if (options->srun_opt)
+			lua_pushstring(st, "srun");
+		else
+			lua_pushstring(st, "other");
+		return 1;
+	}
 
 	value = slurm_option_get(options, name);
 	if (!value)
