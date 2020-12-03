@@ -102,14 +102,14 @@ __thread char *thread_username = NULL;
  * asynchronously. If we're running in one of the daemons, it's presumed that
  * we're receiving tokens but do not need to generate them as part of our
  * responses. In the client commands, responses are not validated, although
- * for safety the slurm_auth_get_uid()/slurm_auth_get_gid() calls are set to
+ * for safety the auth_p_get_uid()/auth_p_get_gid() calls are set to
  * fatal.
  *
  * This plugin does implement a few calls that are unique to its operation:
- *	slurm_auth_thread_config() - used to set a different token specific to
+ *	auth_p_thread_config() - used to set a different token specific to
  *		the current thread.
- *	slurm_auth_thread_clear() - free any thread_config memory
- *	slurm_auth_token_generate() - creates a JWT to be passed back to the
+ *	auth_p_thread_clear() - free any thread_config memory
+ *	auth_p_token_generate() - creates a JWT to be passed back to the
  *		requestor for a given username and duration.
  */
 
@@ -187,12 +187,12 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
-auth_token_t *slurm_auth_create(char *auth_info)
+auth_token_t *auth_p_create(char *auth_info)
 {
 	return xmalloc(sizeof(auth_token_t));
 }
 
-int slurm_auth_destroy(auth_token_t *cred)
+int auth_p_destroy(auth_token_t *cred)
 {
 	if (cred == NULL) {
 		slurm_seterrno(ESLURM_AUTH_MEMORY);
@@ -210,7 +210,7 @@ int slurm_auth_destroy(auth_token_t *cred)
  *
  * Return SLURM_SUCCESS if the credential is in order and valid.
  */
-int slurm_auth_verify(auth_token_t *cred, char *auth_info)
+int auth_p_verify(auth_token_t *cred, char *auth_info)
 {
 	jwt_t *jwt = NULL;
 	char *username = NULL;
@@ -278,7 +278,7 @@ fail:
 	return SLURM_ERROR;
 }
 
-uid_t slurm_auth_get_uid(auth_token_t *cred)
+uid_t auth_p_get_uid(auth_token_t *cred)
 {
 	if (cred == NULL || !cred->verified) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
@@ -302,7 +302,7 @@ uid_t slurm_auth_get_uid(auth_token_t *cred)
 	return cred->uid;
 }
 
-gid_t slurm_auth_get_gid(auth_token_t *cred)
+gid_t auth_p_get_gid(auth_token_t *cred)
 {
 	uid_t uid;
 
@@ -318,7 +318,7 @@ gid_t slurm_auth_get_gid(auth_token_t *cred)
 	if (cred->gid_set)
 		return cred->gid;
 
-	if ((uid = slurm_auth_get_uid(cred)) == SLURM_AUTH_NOBODY) {
+	if ((uid = auth_p_get_uid(cred)) == SLURM_AUTH_NOBODY) {
 		slurm_seterrno(ESLURM_USER_ID_MISSING);
 		return SLURM_AUTH_NOBODY;
 	}
@@ -333,7 +333,7 @@ gid_t slurm_auth_get_gid(auth_token_t *cred)
 	return cred->gid;
 }
 
-char *slurm_auth_get_host(auth_token_t *cred)
+char *auth_p_get_host(auth_token_t *cred)
 {
 	if (cred == NULL) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
@@ -344,7 +344,7 @@ char *slurm_auth_get_host(auth_token_t *cred)
 	return NULL;
 }
 
-int slurm_auth_pack(auth_token_t *cred, buf_t *buf, uint16_t protocol_version)
+int auth_p_pack(auth_token_t *cred, buf_t *buf, uint16_t protocol_version)
 {
 	char *pack_this = (thread_token) ? thread_token : token;
 
@@ -365,7 +365,7 @@ int slurm_auth_pack(auth_token_t *cred, buf_t *buf, uint16_t protocol_version)
 	return SLURM_SUCCESS;
 }
 
-auth_token_t *slurm_auth_unpack(buf_t *buf, uint16_t protocol_version)
+auth_token_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
 	auth_token_t *cred = NULL;
 	uint32_t uint32_tmp;
@@ -391,11 +391,11 @@ auth_token_t *slurm_auth_unpack(buf_t *buf, uint16_t protocol_version)
 
 unpack_error:
 	slurm_seterrno(ESLURM_AUTH_UNPACK);
-	slurm_auth_destroy(cred);
+	auth_p_destroy(cred);
 	return NULL;
 }
 
-int slurm_auth_thread_config(const char *token, const char *username)
+int auth_p_thread_config(const char *token, const char *username)
 {
 	xfree(thread_token);
 	xfree(thread_username);
@@ -406,13 +406,13 @@ int slurm_auth_thread_config(const char *token, const char *username)
 	return SLURM_SUCCESS;
 }
 
-void slurm_auth_thread_clear(void)
+void auth_p_thread_clear(void)
 {
 	xfree(thread_token);
 	xfree(thread_username);
 }
 
-char *slurm_auth_token_generate(const char *username, int lifespan)
+char *auth_p_token_generate(const char *username, int lifespan)
 {
 	jwt_alg_t opt_alg = JWT_ALG_HS256;
 	time_t now = time(NULL);

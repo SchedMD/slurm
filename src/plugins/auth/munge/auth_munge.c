@@ -92,7 +92,7 @@ static int bad_cred_test = -1;
  * The Munge implementation of the slurm AUTH credential
  */
 #define MUNGE_MAGIC 0xfeed
-typedef struct _slurm_auth_credential {
+typedef struct {
 	int index; /* MUST ALWAYS BE FIRST. DO NOT PACK. */
 	int magic;         /* magical munge validity magic                   */
 	char   *m_str;     /* munged string                                  */
@@ -100,11 +100,11 @@ typedef struct _slurm_auth_credential {
 	bool    verified;  /* true if this cred has been verified            */
 	uid_t   uid;       /* UID. valid only if verified == true            */
 	gid_t   gid;       /* GID. valid only if verified == true            */
-} slurm_auth_credential_t;
+} auth_credential_t;
 
 /* Static prototypes */
 
-static int _decode_cred(slurm_auth_credential_t *c, char *socket);
+static int _decode_cred(auth_credential_t *c, char *socket);
 static void _print_cred(munge_ctx_t ctx);
 
 /*
@@ -128,10 +128,10 @@ int init(void)
  * allocate a credential.  Whether the credential is populated with useful
  * data at this time is implementation-dependent.
  */
-slurm_auth_credential_t *slurm_auth_create(char *opts)
+auth_credential_t *auth_p_create(char *opts)
 {
 	int rc, retry = RETRY_COUNT, auth_ttl;
-	slurm_auth_credential_t *cred = NULL;
+	auth_credential_t *cred = NULL;
 	munge_err_t err = EMUNGE_SUCCESS;
 	munge_ctx_t ctx = munge_ctx_create();
 	SigFunc *ohandler;
@@ -198,9 +198,9 @@ again:
 }
 
 /*
- * Free a credential that was allocated with slurm_auth_alloc().
+ * Free a credential that was allocated with auth_p_create().
  */
-int slurm_auth_destroy(slurm_auth_credential_t *cred)
+int auth_p_destroy(auth_credential_t *cred)
 {
 	if (!cred) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
@@ -222,7 +222,7 @@ int slurm_auth_destroy(slurm_auth_credential_t *cred)
  *
  * Return SLURM_SUCCESS if the credential is in order and valid.
  */
-int slurm_auth_verify(slurm_auth_credential_t *c, char *opts)
+int auth_p_verify(auth_credential_t *c, char *opts)
 {
 	int rc;
 	char *socket;
@@ -248,9 +248,9 @@ int slurm_auth_verify(slurm_auth_credential_t *c, char *opts)
 
 /*
  * Obtain the Linux UID from the credential.
- * slurm_auth_verify() must be called first.
+ * auth_p_verify() must be called first.
  */
-uid_t slurm_auth_get_uid(slurm_auth_credential_t *cred)
+uid_t auth_p_get_uid(auth_credential_t *cred)
 {
 	if (!cred || !cred->verified) {
 		/*
@@ -269,9 +269,9 @@ uid_t slurm_auth_get_uid(slurm_auth_credential_t *cred)
 
 /*
  * Obtain the Linux GID from the credential.
- * slurm_auth_verify() must be called first.
+ * auth_p_verify() must be called first.
  */
-gid_t slurm_auth_get_gid(slurm_auth_credential_t *cred)
+gid_t auth_p_get_gid(auth_credential_t *cred)
 {
 	if (!cred || !cred->verified) {
 		/*
@@ -291,9 +291,9 @@ gid_t slurm_auth_get_gid(slurm_auth_credential_t *cred)
 
 /*
  * Obtain the Host addr from where the credential originated.
- * slurm_auth_verify() must be called first.
+ * auth_p_verify() must be called first.
  */
-char *slurm_auth_get_host(slurm_auth_credential_t *cred)
+char *auth_p_get_host(auth_credential_t *cred)
 {
 	slurm_addr_t addr;
 	struct sockaddr_in *sin = (struct sockaddr_in *) &addr;
@@ -339,8 +339,7 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred)
  * Marshall a credential for transmission over the network, according to
  * Slurm's marshalling protocol.
  */
-int slurm_auth_pack(slurm_auth_credential_t *cred, buf_t *buf,
-		    uint16_t protocol_version )
+int auth_p_pack(auth_credential_t *cred, buf_t *buf, uint16_t protocol_version)
 {
 	if (!cred || !buf) {
 		slurm_seterrno(ESLURM_AUTH_BADARG);
@@ -364,10 +363,9 @@ int slurm_auth_pack(slurm_auth_credential_t *cred, buf_t *buf,
  * Unmarshall a credential after transmission over the network according
  * to Slurm's marshalling protocol.
  */
-slurm_auth_credential_t *slurm_auth_unpack(buf_t *buf,
-					   uint16_t protocol_version)
+auth_credential_t *auth_p_unpack(buf_t *buf, uint16_t protocol_version)
 {
-	slurm_auth_credential_t *cred = NULL;
+	auth_credential_t *cred = NULL;
 	uint32_t size;
 
 	if (!buf) {
@@ -393,7 +391,7 @@ slurm_auth_credential_t *slurm_auth_unpack(buf_t *buf,
 
 unpack_error:
 	slurm_seterrno(ESLURM_AUTH_UNPACK);
-	slurm_auth_destroy(cred);
+	auth_p_destroy(cred);
 	return NULL;
 }
 
@@ -401,7 +399,7 @@ unpack_error:
  * Decode the munge encoded credential `m_str' placing results, if validated,
  * into slurm credential `c'
  */
-static int _decode_cred(slurm_auth_credential_t *c, char *socket)
+static int _decode_cred(auth_credential_t *c, char *socket)
 {
 	int retry = RETRY_COUNT;
 	munge_err_t err;
@@ -501,18 +499,18 @@ static void _print_cred(munge_ctx_t ctx)
 		info("DECODED: %s", slurm_ctime2_r(&decoded, buf));
 }
 
-int slurm_auth_thread_config(const char *token, const char *username)
+int auth_p_thread_config(const char *token, const char *username)
 {
 	/* not supported */
 	return SLURM_ERROR;
 }
 
-void slurm_auth_thread_clear(void)
+void auth_p_thread_clear(void)
 {
 	/* no op */
 }
 
-char *slurm_auth_token_generate(const char *username, int lifespan)
+char *auth_p_token_generate(const char *username, int lifespan)
 {
 	return NULL;
 }

@@ -82,17 +82,17 @@ typedef struct {
 static const char *syms[] = {
 	"plugin_id",
 	"plugin_type",
-	"slurm_auth_create",
-	"slurm_auth_destroy",
-	"slurm_auth_verify",
-	"slurm_auth_get_uid",
-	"slurm_auth_get_gid",
-	"slurm_auth_get_host",
-	"slurm_auth_pack",
-	"slurm_auth_unpack",
-	"slurm_auth_thread_config",
-	"slurm_auth_thread_clear",
-	"slurm_auth_token_generate",
+	"auth_p_create",
+	"auth_p_destroy",
+	"auth_p_verify",
+	"auth_p_get_uid",
+	"auth_p_get_gid",
+	"auth_p_get_host",
+	"auth_p_pack",
+	"auth_p_unpack",
+	"auth_p_thread_config",
+	"auth_p_thread_clear",
+	"auth_p_token_generate",
 };
 
 /*

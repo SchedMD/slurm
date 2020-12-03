@@ -64,12 +64,12 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 
-<p class="commandline">void *slurm_auth_create(char *auth_info);</p>
+<p class="commandline">void *auth_p_create(char *auth_info);</p>
 <p style="margin-left:.2in"><b>Description</b>: Allocates from the free store
 an anonymous credential object and returns a pointer to it. The pointer should
-be valid until passed to <span class="commandline">slurm_auth_destroy()</span> for
-disposal. Slurm will not pass
-credentials to the API which have not been allocated by this function.</p>
+be valid until passed to <span class="commandline">auth_p_destroy()</span> for
+disposal. Slurm will not pass credentials to the API which have not been
+allocated by this function.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline">argv</span> &nbsp;&nbsp;(input) plugin specific
 information.
@@ -78,9 +78,9 @@ identification of the server.</p>
 <p style="margin-left:.2in"><b>Returns</b>: A pointer to a newly allocated credential
 if successful. On failure, the plugin should return NULL and set its errno to
 an appropriate value to indicate the reason for failure.</p>
-<p class="commandline">int slurm_auth_destroy (void *cr);</p>
+<p class="commandline">int auth_p_destroy(void *cr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Deallocates a credential that
-was allocated with <span class="commandline">slurm_auth_alloc()</span> and any
+was allocated with <span class="commandline">auth_p_create()</span> and any
 associated storage that has been allocated for it during its use.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> cr</span>&nbsp;
 &nbsp;&nbsp;(input) pointer to the credential that is to be deallocated. Cannot
@@ -89,12 +89,12 @@ be NULL.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int slurm_auth_verify (void *cr, char *auth_info );</p>
+<p class="commandline">int auth_p_verify(void *cr, char *auth_info);</p>
 <p style="margin-left:.2in"><b>Description</b>: Verifies that a credential is
 in order and correctly identifies the associated user. It also verifies that the
 credential has not expired. If verification is successful, the return values of
-<span class="commandline">slurm_auth_get_uid()</span> and
-<span class="commandline">slurm_auth_get_gid()</span>
+<span class="commandline">auth_p_get_uid()</span> and
+<span class="commandline">auth_p_get_gid()</span>
 in subsequent calls must correspond to the actual verified system UID and GID
 of the user associated with the credential. Verification must fail if the credential
 has not previously been activated, even if a credential implementation cannot
@@ -111,11 +111,11 @@ verified to be in order and has not expired. If the credential cannot be verifie
 or if the credential has expired, the function should return SLURM_ERROR and set
 its errno to an appropriate value to indicate the reason for failure.</p>
 
-<p class="commandline">uid_t slurm_auth_get_uid(void *cred);<br>
-gid_t slurm_auth_get_gid (void *cred);</p>
+<p class="commandline">uid_t auth_p_get_uid(void *cred);<br>
+gid_t auth_p_get_gid (void *cred);</p>
 <p style="margin-left:.2in"><b>Description</b>: Extracts the numerical UID or GID
 of the user corresponding to the given credential.
-Only valid after <span class="commandline">slurm_auth_verify()</span> has
+Only valid after <span class="commandline">auth_p_verify()</span> has
 been called on a given credential.
 An unverified credential does not immediately give rise to an error condition
 in these functions, but instead will return SLURM_AUTH_NOBODY for the UID and GID.
@@ -127,12 +127,12 @@ containing the desired identification.  Cannot be NULL.<br>
 associated with the credential. In case of error, SLURM_AUTH_NOBODY should be
 returned and errno set appropriately to indicate the cause of the failure.</p>
 
-<p class="commandline">int slurm_auth_pack (void *cr, Buf buf);</p>
+<p class="commandline">int auth_p_pack(void *cr, Buf buf, uint16_t protocol_version);</p>
 <p style="margin-left:.2in"><b>Description</b>: Marshals a credential into a buffer
 for transmission according to the Slurm packing protocol. All authentication plugins
 must first pack the plugin_type and then the plugin_version data before any plugin-specific
-data elements are packed. slurm_auth_pack() and slurm_auth_pack() are strictly
-reciprocal. The esult of a packing followed by an unpacking must be a functionally
+data elements are packed. auth_p_pack() and auth_p_unpack() are strictly
+reciprocal. The result of a packing followed by an unpacking must be a functionally
 equivalent credential. A credential is deemed appropriate for marshalling at any
 time after its allocation and before its destruction.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
@@ -143,7 +143,7 @@ into which the credential should be packed.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure
 the plugin should return SLURM_ERROR and set the errno to indicate the reason
 for the failure.</p>
-<p class="commandline">int slurm_auth_unpack (void *cr, Buf buf);</p>
+<p class="commandline">int auth_p_unpack(void *cr, buf_t *buf, uint16_t protocol_version);</p>
 <p style="margin-left:.2in"><b>Description</b>: Unmarshals a credential from a
 buffer according to the Slurm packing protocol into a supplied (and presumed empty)
 credential object. The unmarshalled credential is not assumed to be activated
@@ -160,8 +160,8 @@ from which the credential should be unpacked.</p>
 successfully unpacked. In case of failure, the function should return SLURM_ERROR
 and set errno appropriately to indicate the cause of the failure. If the function
 fails, no assumptions are made about the state of the credential except its suitability
-for destruction via <span class="commandline">slurm_auth_destroy()</span>.</p>
+for destruction via <span class="commandline">auth_p_destroy()</span>.</p>
 
-<p style="text-align:center;">Last modified 7 March 2019</p>
+<p style="text-align:center;">Last modified 2 December 2020</p>
 
 <!--#include virtual="footer.txt"-->
