@@ -38,7 +38,7 @@
 #include "select_cons_tres.h"
 #include "dist_tasks.h"
 #include "job_test.h"
-#include "../cons_common/gres_filter.h"
+#include "../cons_common/gres_select_filter.h"
 
 #define _DEBUG 0	/* Enables module specific debugging */
 
@@ -349,14 +349,15 @@ static void _select_cores(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 
 	*avail_cpus = avail_res_array[node_inx]->avail_cpus;
 	if (job_ptr->gres_list) {
-		gres_filter_sock_core(mc_ptr,
-				avail_res_array[node_inx]->sock_gres_list,
-				avail_res_array[node_inx]->sock_cnt,
-				select_node_record[node_inx].cores,
-				select_node_record[node_inx].vpus, avail_cpus,
-				&min_tasks_this_node, &max_tasks_this_node,
-				rem_nodes, enforce_binding, first_pass,
-				avail_core[node_inx]);
+		gres_select_filter_sock_core(
+			mc_ptr,
+			avail_res_array[node_inx]->sock_gres_list,
+			avail_res_array[node_inx]->sock_cnt,
+			select_node_record[node_inx].cores,
+			select_node_record[node_inx].vpus, avail_cpus,
+			&min_tasks_this_node, &max_tasks_this_node,
+			rem_nodes, enforce_binding, first_pass,
+			avail_core[node_inx]);
 	}
 	if (max_tasks_this_node == 0) {
 		*avail_cpus = 0;
@@ -3355,21 +3356,21 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 		uint16_t near_gpu_cnt = 0;
 		avail_res->sock_gres_list = sock_gres_list;
 		/* Disable GRES that can't be used with remaining cores */
-		rc = gres_filter_remove_unusable(
-					sock_gres_list, avail_mem,
-					avail_res->avail_cpus,
-					enforce_binding, core_map[node_i],
-					select_node_record[node_i].tot_sockets,
-					select_node_record[node_i].cores,
-					select_node_record[node_i].vpus,
-					s_p_n,
-					job_ptr->details->ntasks_per_node,
-					job_ptr->details->cpus_per_task,
-					(job_ptr->details->whole_node == 1),
-					&avail_res->avail_gpus, &near_gpu_cnt);
+		rc = gres_select_filter_remove_unusable(
+			sock_gres_list, avail_mem,
+			avail_res->avail_cpus,
+			enforce_binding, core_map[node_i],
+			select_node_record[node_i].tot_sockets,
+			select_node_record[node_i].cores,
+			select_node_record[node_i].vpus,
+			s_p_n,
+			job_ptr->details->ntasks_per_node,
+			job_ptr->details->cpus_per_task,
+			(job_ptr->details->whole_node == 1),
+			&avail_res->avail_gpus, &near_gpu_cnt);
 		if (rc != 0) {
 #if _DEBUG
-			info("Test fail on node %d: gres_plugin_job_core_filter2",
+			info("Test fail on node %d: gres_select_filter_remove_unusable",
 			     node_i);
 #endif
 			common_free_avail_res(avail_res);

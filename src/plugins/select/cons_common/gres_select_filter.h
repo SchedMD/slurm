@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  gres_filter.h - filters used in the select plugin
+ *  gres_select_filter.h - filters used in the select plugin
  *****************************************************************************
  *  Copyright (C) 2020 SchedMD LLC.
  *  Derived in large part from code previously in common/gres.h
@@ -34,8 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _GRES_FILTER_H
-#define _GRES_FILTER_H
+#ifndef _GRES_SELECT_FILTER_H
+#define _GRES_SELECT_FILTER_H
 
 #include "src/common/gres.h"
 
@@ -53,11 +53,11 @@
  * IN core_start_bit - index into core_bitmap for this node's first cores
  * IN core_end_bit - index into core_bitmap for this node's last cores
  */
-extern void gres_filter_cons_res(List job_gres_list, List node_gres_list,
-				 bool use_total_gres,
-				 bitstr_t *core_bitmap,
-				 int core_start_bit, int core_end_bit,
-				 char *node_name);
+extern void gres_select_filter_cons_res(List job_gres_list, List node_gres_list,
+					bool use_total_gres,
+					bitstr_t *core_bitmap,
+					int core_start_bit, int core_end_bit,
+					char *node_name);
 
 /*
  * Determine which GRES can be used on this node given the available cores.
@@ -80,20 +80,20 @@ extern void gres_filter_cons_res(List job_gres_list, List node_gres_list,
  * OUT near_gpus - Count of GPUs available on sockets with available CPUs
  * RET - 0 if job can use this node, -1 otherwise (some GRES limit prevents use)
  */
-extern int gres_filter_remove_unusable(List sock_gres_list,
-				       uint64_t avail_mem,
-				       uint16_t max_cpus,
-				       bool enforce_binding,
-				       bitstr_t *core_bitmap,
-				       uint16_t sockets,
-				       uint16_t cores_per_sock,
-				       uint16_t cpus_per_core,
-				       uint32_t sock_per_node,
-				       uint16_t task_per_node,
-				       uint16_t cpus_per_task,
-				       bool whole_node,
-				       uint16_t *avail_gpus,
-				       uint16_t *near_gpus);
+extern int gres_select_filter_remove_unusable(List sock_gres_list,
+					      uint64_t avail_mem,
+					      uint16_t max_cpus,
+					      bool enforce_binding,
+					      bitstr_t *core_bitmap,
+					      uint16_t sockets,
+					      uint16_t cores_per_sock,
+					      uint16_t cpus_per_core,
+					      uint32_t sock_per_node,
+					      uint16_t task_per_node,
+					      uint16_t cpus_per_task,
+					      bool whole_node,
+					      uint16_t *avail_gpus,
+					      uint16_t *near_gpus);
 
 /*
  * Determine how many tasks can be started on a given node and which
@@ -114,18 +114,18 @@ extern int gres_filter_remove_unusable(List sock_gres_list,
  *		   co-located GRES and cores if possible
  * IN avail_core - cores available on this node, UPDATED
  */
-extern void gres_filter_sock_core(gres_mc_data_t *mc_ptr,
-				  List sock_gres_list,
-				  uint16_t sockets,
-				  uint16_t cores_per_socket,
-				  uint16_t cpus_per_core,
-				  uint16_t *avail_cpus,
-				  uint32_t *min_tasks_this_node,
-				  uint32_t *max_tasks_this_node,
-				  int rem_nodes,
-				  bool enforce_binding,
-				  bool first_pass,
-				  bitstr_t *avail_core);
+extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
+					 List sock_gres_list,
+					 uint16_t sockets,
+					 uint16_t cores_per_socket,
+					 uint16_t cpus_per_core,
+					 uint16_t *avail_cpus,
+					 uint32_t *min_tasks_this_node,
+					 uint32_t *max_tasks_this_node,
+					 int rem_nodes,
+					 bool enforce_binding,
+					 bool first_pass,
+					 bitstr_t *avail_core);
 
 /*
  * Make final GRES selection for the job
@@ -137,10 +137,10 @@ extern void gres_filter_sock_core(gres_mc_data_t *mc_ptr,
  * node_table_ptr IN - slurmctld's node records
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_filter_select_and_set(List *sock_gres_list, uint32_t job_id,
-				      struct job_resources *job_res,
-				      uint8_t overcommit,
-				      gres_mc_data_t *tres_mc_ptr,
-				      node_record_t *node_table_ptr);
+extern int gres_select_filter_select_and_set(List *sock_gres_list, uint32_t job_id,
+					     struct job_resources *job_res,
+					     uint8_t overcommit,
+					     gres_mc_data_t *tres_mc_ptr,
+					     node_record_t *node_table_ptr);
 
-#endif /* _GRES_FILTER_H */
+#endif /* _GRES_SELECT_FILTER_H */

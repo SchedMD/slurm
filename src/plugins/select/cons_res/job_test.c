@@ -98,7 +98,7 @@
 #include "dist_tasks.h"
 #include "job_test.h"
 #include "select_cons_res.h"
-#include "../cons_common/gres_filter.h"
+#include "../cons_common/gres_select_filter.h"
 
 /* Enables module specific debugging */
 #define _DEBUG 0
@@ -2102,9 +2102,9 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 
 	disable_binding = job_ptr->bit_flags & GRES_DISABLE_BIND;
 	if (!disable_binding) {
-		gres_filter_cons_res(job_ptr->gres_list, gres_list,
-				     test_only, core_map, core_start_bit,
-				     core_end_bit, node_ptr->name);
+		gres_select_filter_cons_res(job_ptr->gres_list, gres_list,
+					    test_only, core_map, core_start_bit,
+					    core_end_bit, node_ptr->name);
 	}
 	if (disable_binding || (s_p_n == NO_VAL)) {
 		gres_cores = gres_plugin_job_test(job_ptr->gres_list,

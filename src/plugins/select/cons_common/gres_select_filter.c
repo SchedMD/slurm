@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  gres_filter.c - filters used in the select plugin
+ *  gres_select_filter.c - filters used in the select plugin
  *****************************************************************************
  *  Copyright (C) 2020 SchedMD LLC.
  *  Derived in large part from code previously in common/gres.c
@@ -40,7 +40,7 @@
 
 #include "src/common/slurm_xlator.h"
 
-#include "gres_filter.h"
+#include "gres_select_filter.h"
 
 static uint32_t gpu_plugin_id = NO_VAL, mps_plugin_id = NO_VAL;
 
@@ -117,11 +117,11 @@ static void _job_core_filter(void *job_gres_data, void *node_gres_data,
  * IN core_start_bit - index into core_bitmap for this node's first cores
  * IN core_end_bit - index into core_bitmap for this node's last cores
  */
-extern void gres_filter_cons_res(List job_gres_list, List node_gres_list,
-				 bool use_total_gres,
-				 bitstr_t *core_bitmap,
-				 int core_start_bit, int core_end_bit,
-				 char *node_name)
+extern void gres_select_filter_cons_res(List job_gres_list, List node_gres_list,
+					bool use_total_gres,
+					bitstr_t *core_bitmap,
+					int core_start_bit, int core_end_bit,
+					char *node_name)
 {
 	ListIterator  job_gres_iter;
 	gres_state_t *job_gres_ptr, *node_gres_ptr;
@@ -199,20 +199,20 @@ fini:	return avail_cores_by_sock;
  * OUT near_gpus - Count of GPUs available on sockets with available CPUs
  * RET - 0 if job can use this node, -1 otherwise (some GRES limit prevents use)
  */
-extern int gres_filter_remove_unusable(List sock_gres_list,
-				       uint64_t avail_mem,
-				       uint16_t max_cpus,
-				       bool enforce_binding,
-				       bitstr_t *core_bitmap,
-				       uint16_t sockets,
-				       uint16_t cores_per_sock,
-				       uint16_t cpus_per_core,
-				       uint32_t sock_per_node,
-				       uint16_t task_per_node,
-				       uint16_t cpus_per_task,
-				       bool whole_node,
-				       uint16_t *avail_gpus,
-				       uint16_t *near_gpus)
+extern int gres_select_filter_remove_unusable(List sock_gres_list,
+					      uint64_t avail_mem,
+					      uint16_t max_cpus,
+					      bool enforce_binding,
+					      bitstr_t *core_bitmap,
+					      uint16_t sockets,
+					      uint16_t cores_per_sock,
+					      uint16_t cpus_per_core,
+					      uint32_t sock_per_node,
+					      uint16_t task_per_node,
+					      uint16_t cpus_per_task,
+					      bool whole_node,
+					      uint16_t *avail_gpus,
+					      uint16_t *near_gpus)
 {
 	ListIterator sock_gres_iter;
 	sock_gres_t *sock_gres;
@@ -284,7 +284,7 @@ extern int gres_filter_remove_unusable(List sock_gres_list,
 		if (mem_per_gres && avail_mem) {
 			if (mem_per_gres <= avail_mem) {
 				sock_gres->max_node_gres = avail_mem /
-							   mem_per_gres;
+					mem_per_gres;
 			} else {
 				log_flag(GRES, "%s: Insufficient memory for any GRES: mem_per_gres (%"PRIu64") > avail_mem (%"PRIu64")",
 					 __func__, mem_per_gres, avail_mem);
@@ -295,8 +295,8 @@ extern int gres_filter_remove_unusable(List sock_gres_list,
 		if (sock_gres->cnt_by_sock || enforce_binding) {
 			if (!avail_cores_by_sock) {
 				avail_cores_by_sock =_build_avail_cores_by_sock(
-							core_bitmap, sockets,
-							cores_per_sock);
+					core_bitmap, sockets,
+					cores_per_sock);
 			}
 		}
 		/*
@@ -366,7 +366,7 @@ extern int gres_filter_remove_unusable(List sock_gres_list,
 		}
 
 		if (sock_gres->plugin_id == gpu_plugin_id) {
-			 *avail_gpus += sock_gres->total_cnt;
+			*avail_gpus += sock_gres->total_cnt;
 			if (sock_gres->max_node_gres &&
 			    (sock_gres->max_node_gres < near_gres_cnt))
 				near_gres_cnt = sock_gres->max_node_gres;
@@ -401,7 +401,7 @@ static int _sock_gres_sort(void *x, void *y)
 }
 
 static int _sort_sockets_by_avail_cores(const void *x, const void *y,
-				 void *socket_avail_cores)
+					void *socket_avail_cores)
 {
 	uint16_t *sockets = (uint16_t *)socket_avail_cores;
 	return (sockets[*(int *)y] - sockets[*(int *)x]);
@@ -426,18 +426,18 @@ static int _sort_sockets_by_avail_cores(const void *x, const void *y,
  *		   co-located GRES and cores if possible
  * IN avail_core - cores available on this node, UPDATED
  */
-extern void gres_filter_sock_core(gres_mc_data_t *mc_ptr,
-				  List sock_gres_list,
-				  uint16_t sockets,
-				  uint16_t cores_per_socket,
-				  uint16_t cpus_per_core,
-				  uint16_t *avail_cpus,
-				  uint32_t *min_tasks_this_node,
-				  uint32_t *max_tasks_this_node,
-				  int rem_nodes,
-				  bool enforce_binding,
-				  bool first_pass,
-				  bitstr_t *avail_core)
+extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
+					 List sock_gres_list,
+					 uint16_t sockets,
+					 uint16_t cores_per_socket,
+					 uint16_t cpus_per_core,
+					 uint16_t *avail_cpus,
+					 uint32_t *min_tasks_this_node,
+					 uint32_t *max_tasks_this_node,
+					 int rem_nodes,
+					 bool enforce_binding,
+					 bool first_pass,
+					 bitstr_t *avail_core)
 {
 	ListIterator sock_gres_iter;
 	sock_gres_t *sock_gres;
@@ -480,11 +480,12 @@ extern void gres_filter_sock_core(gres_mc_data_t *mc_ptr,
 		if (job_specs->gres_per_job &&
 		    (job_specs->total_gres < job_specs->gres_per_job)) {
 			rem_gres = job_specs->gres_per_job -
-				   job_specs->total_gres;
+				job_specs->total_gres;
 		}
 
 		/*
-		 * gres_plugin_job_core_filter2() sets sock_gres->max_node_gres
+		 * gres_select_filter_remove_unusable() sets
+		 * sock_gres->max_node_gres
 		 * for mem_per_gres enforcement; use it to set GRES limit for
 		 * this node (max_gres).
 		 */
@@ -504,7 +505,7 @@ extern void gres_filter_sock_core(gres_mc_data_t *mc_ptr,
 		}
 		if (job_specs->gres_per_node && job_specs->gres_per_task) {
 			max_tasks = job_specs->gres_per_node /
-				    job_specs->gres_per_task;
+				job_specs->gres_per_task;
 			if ((max_tasks == 0) ||
 			    (max_tasks > *max_tasks_this_node) ||
 			    (max_tasks < *min_tasks_this_node)) {
@@ -517,9 +518,9 @@ extern void gres_filter_sock_core(gres_mc_data_t *mc_ptr,
 		}
 
 		min_core_cnt = MAX(*min_tasks_this_node, 1) *
-			       MAX(mc_ptr->cpus_per_task, 1);
+			MAX(mc_ptr->cpus_per_task, 1);
 		min_core_cnt = (min_core_cnt + cpus_per_core - 1) /
-			       cpus_per_core;
+			cpus_per_core;
 
 		if (job_specs->cpus_per_gres)
 			cpus_per_gres = job_specs->cpus_per_gres;
@@ -561,13 +562,13 @@ extern void gres_filter_sock_core(gres_mc_data_t *mc_ptr,
 			if ((enforce_binding || first_pass) && cpus_per_gres) {
 				int max_gres_socket = (avail_cores_per_sock[s] *
 						       cpus_per_core) /
-						      cpus_per_gres;
+					cpus_per_gres;
 				cnt_avail_sock = MIN(cnt_avail_sock,
 						     max_gres_socket);
 			}
 
 			tot_gres_sock = sock_gres->cnt_any_sock +
-					cnt_avail_sock;
+				cnt_avail_sock;
 			if ((job_specs->gres_per_socket > tot_gres_sock) ||
 			    (tot_gres_sock == 0)) {
 				/*
@@ -652,9 +653,9 @@ extern void gres_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 * tasks, sockets, etc. Round the values down.
 		 */
 		*min_tasks_this_node = (*min_tasks_this_node / task_cnt_incr) *
-				       task_cnt_incr;
+			task_cnt_incr;
 		*max_tasks_this_node = (*max_tasks_this_node / task_cnt_incr) *
-				       task_cnt_incr;
+			task_cnt_incr;
 
 		if (*max_tasks_this_node == 0)
 			break;
@@ -750,7 +751,7 @@ extern void gres_filter_sock_core(gres_mc_data_t *mc_ptr,
 					 __func__, job_specs->gres_per_socket);
 			} else if (job_specs->gres_per_task) {
 				i = job_specs->gres_per_task *
-				    *max_tasks_this_node;
+					*max_tasks_this_node;
 				log_flag(GRES, "%s: estimating req_cores max_tasks_this_node=%u gres_per_task=%"PRIu64,
 					 __func__,
 					 *max_tasks_this_node,
@@ -786,7 +787,7 @@ extern void gres_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 * In case of enforce-binding those are already cleared.
 		 */
 		if ((avail_cores_tot > req_cores) &&
-		     !enforce_binding && !first_pass) {
+		    !enforce_binding && !first_pass) {
 			for (s = 0; s < sockets; s++) {
 				if (avail_cores_tot == req_cores)
 					break;
@@ -970,7 +971,7 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 				continue;   /* GRES not on this socket */
 			bit_set(job_specs->gres_bit_select[node_inx], t);
 			job_specs->gres_cnt_node_select[node_inx] +=
-								gres_per_bit;
+				gres_per_bit;
 			alloc_gres_cnt += gres_per_bit;
 			break;
 		}
@@ -2123,11 +2124,12 @@ static int _get_gres_node_cnt(gres_node_state_t *node_specs, int node_inx)
  * node_table_ptr IN - slurmctld's node records
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_filter_select_and_set(List *sock_gres_list, uint32_t job_id,
-				      struct job_resources *job_res,
-				      uint8_t overcommit,
-				      gres_mc_data_t *tres_mc_ptr,
-				      node_record_t *node_table_ptr)
+extern int gres_select_filter_select_and_set(List *sock_gres_list,
+					     uint32_t job_id,
+					     struct job_resources *job_res,
+					     uint8_t overcommit,
+					     gres_mc_data_t *tres_mc_ptr,
+					     node_record_t *node_table_ptr)
 {
 	ListIterator sock_gres_iter;
 	sock_gres_t *sock_gres;
