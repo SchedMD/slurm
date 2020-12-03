@@ -164,6 +164,7 @@
 
 /* gres.[ch] functions */
 #define gres_find_id		slurm_gres_find_id
+#define gres_find_sock_by_job_state slurm_gres_find_sock_by_job_state
 #define gres_gresid_to_gresname	slurm_gres_gresid_to_gresname
 #define gres_get_node_used	slurm_gres_get_node_used
 #define gres_get_system_cnt	slurm_gres_get_system_cnt

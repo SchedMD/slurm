@@ -1145,6 +1145,15 @@ extern int gres_find_job_by_key_with_cnt(void *x, void *key);
 /* Find step record with matching name and type */
 extern int gres_find_step_by_key(void *x, void *key);
 
+/*
+ * Find a sock_gres_t record in a list by matching the plugin_id and type_id
+ *	from a gres_state_t job record
+ * IN x - a sock_gres_t record to test
+ * IN key - the gres_state_t record (from a job) we want to match
+ * RET 1 on match, otherwise 0
+ */
+extern int gres_find_sock_by_job_state(void *x, void *key);
+
 extern void gres_job_list_delete(void *list_element);
 
 /*

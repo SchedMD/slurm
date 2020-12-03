@@ -96,6 +96,7 @@ typedef cpuset_t cpu_set_t;
 #define MAX_GRES_BITMAP 1024
 
 strong_alias(gres_find_id, slurm_gres_find_id);
+strong_alias(gres_find_sock_by_job_state, slurm_gres_find_sock_by_job_state);
 strong_alias(gres_gresid_to_gresname, slurm_gres_gresid_to_gresname);
 strong_alias(gres_get_node_used, slurm_gres_get_node_used);
 strong_alias(gres_get_system_cnt, slurm_gres_get_system_cnt);
@@ -199,7 +200,6 @@ static void	_build_node_gres_str(List *gres_list, char **gres_str,
 				     int cores_per_sock, int sock_per_node);
 static bitstr_t *_core_bitmap_rebuild(bitstr_t *old_core_bitmap, int new_size);
 static void	_epilog_list_del(void *x);
-static int	_find_sock_by_job_gres(void *x, void *key);
 static void	_get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 			      char *gres_name, char *gres_name_colon,
 			      int gres_name_colon_len);
@@ -5591,7 +5591,7 @@ extern int gres_plugin_job_revalidate2(uint32_t job_id, List job_gres_list,
  * IN key - the gres_state_t record (from a job) we want to match
  * RET 1 on match, otherwise 0
  */
-static int _find_sock_by_job_gres(void *x, void *key)
+extern int gres_find_sock_by_job_state(void *x, void *key)
 {
 	sock_gres_t *sock_data = (sock_gres_t *) x;
 	gres_state_t *job_gres_state = (gres_state_t *) key;
@@ -5684,7 +5684,7 @@ extern bool gres_plugin_job_sched_test2(List job_gres_list, List sock_gres_list,
 		    (job_data->gres_per_job < job_data->total_gres))
 			continue;
 		sock_data = list_find_first(sock_gres_list,
-					    _find_sock_by_job_gres,
+					    gres_find_sock_by_job_state,
 					    job_gres_state);
 		if (!sock_data ||
 		    (job_data->gres_per_job >
@@ -5722,7 +5722,7 @@ extern void gres_plugin_job_sched_add(List job_gres_list, List sock_gres_list,
 		if (!job_data->gres_per_job)	/* Don't care about totals */
 			continue;
 		sock_data = list_find_first(sock_gres_list,
-					    _find_sock_by_job_gres,
+					    gres_find_sock_by_job_state,
 					    job_gres_state);
 		if (!sock_data)		/* None of this GRES available */
 			continue;
@@ -5760,14 +5760,14 @@ extern void gres_plugin_job_sched_consec(List *consec_gres, List job_gres_list,
 		if (!job_data->gres_per_job)	/* Don't care about totals */
 			continue;
 		sock_data = list_find_first(sock_gres_list,
-					    _find_sock_by_job_gres,
+					    gres_find_sock_by_job_state,
 					    job_gres_state);
 		if (!sock_data)		/* None of this GRES available */
 			continue;
 		if (*consec_gres == NULL)
 			*consec_gres = list_create(_sock_gres_del);
 		consec_data = list_find_first(*consec_gres,
-					      _find_sock_by_job_gres,
+					      gres_find_sock_by_job_state,
 					      job_gres_state);
 		if (!consec_data) {
 			consec_data = xmalloc(sizeof(sock_gres_t));
@@ -5809,7 +5809,7 @@ extern bool gres_plugin_job_sched_sufficient(List job_gres_list,
 		if (job_data->total_gres >= job_data->gres_per_job)
 			continue;
 		sock_data = list_find_first(sock_gres_list,
-					    _find_sock_by_job_gres,
+					    gres_find_sock_by_job_state,
 					    job_gres_state);
 		if (!sock_data)	{	/* None of this GRES available */
 			rc = false;
