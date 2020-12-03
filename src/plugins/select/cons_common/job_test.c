@@ -630,7 +630,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 	bool disable_binding = false;
 
 	if (is_cons_tres && !(job_ptr->bit_flags & JOB_MEM_SET) &&
-	    (min_mem = gres_plugin_job_mem_max(job_ptr->gres_list))) {
+	    (min_mem = gres_select_util_job_mem_max(job_ptr->gres_list))) {
 		/*
 		 * Clear default partition or system per-node memory limit.
 		 * Rely exclusively upon the per-GRES memory limit.

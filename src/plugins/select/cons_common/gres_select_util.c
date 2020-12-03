@@ -327,3 +327,31 @@ extern int gres_select_util_job_min_cpus(uint32_t node_count,
 	list_iterator_destroy(job_gres_iter);
 	return min_cpus;
 }
+
+/*
+ * Determine if the job GRES specification includes a mem-per-tres specification
+ * RET largest mem-per-tres specification found
+ */
+extern uint64_t gres_select_util_job_mem_max(List job_gres_list)
+{
+	ListIterator job_gres_iter;
+	gres_state_t *job_gres_ptr;
+	gres_job_state_t *job_data_ptr;
+	uint64_t mem_max = 0, mem_per_gres;
+
+	if (!job_gres_list)
+		return 0;
+
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
+		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
+		if (job_data_ptr->mem_per_gres)
+			mem_per_gres = job_data_ptr->mem_per_gres;
+		else
+			mem_per_gres = job_data_ptr->def_mem_per_gres;
+		mem_max = MAX(mem_max, mem_per_gres);
+	}
+	list_iterator_destroy(job_gres_iter);
+
+	return mem_max;
+}
