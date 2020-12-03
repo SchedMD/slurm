@@ -1341,7 +1341,7 @@ proc wait_for args {
 	while {1} {
 		# Evaluate code block
 		log_trace "Evaluating code block ([string trim $body])"
-		set ret [catch {uplevel $body} result]
+		uplevel $body
 
 		# Check condition
 		if {[uplevel expr [format "{%s}" $condition]]} {
