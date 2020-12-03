@@ -5571,7 +5571,7 @@ _run_prolog(job_env_t *job_env, slurm_cred_t *cred, bool remove_running)
 	timer_struct.timer_mutex = &timer_mutex;
 	slurm_thread_create(&timer_id, _prolog_timer, &timer_struct);
 
-	rc = prep_prolog(job_env, cred);
+	rc = prep_g_prolog(job_env, cred);
 
 	slurm_mutex_lock(&timer_mutex);
 	prolog_fini = true;
@@ -5609,7 +5609,7 @@ _run_epilog(job_env_t *job_env)
 		script_lock = true;
 	}
 
-	error_code = prep_epilog(job_env, NULL);
+	error_code = prep_g_epilog(job_env, NULL);
 
 	diff_time = difftime(time(NULL), start_time);
 	if (diff_time >= (slurm_conf.msg_timeout / 2)) {

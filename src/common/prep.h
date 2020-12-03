@@ -81,26 +81,26 @@ extern int prep_plugin_reconfig(void);
 /*
  * Returns a Slurm errno.
  */
-extern int prep_prolog(job_env_t *job_env, slurm_cred_t *cred);
+extern int prep_g_prolog(job_env_t *job_env, slurm_cred_t *cred);
 
 /*
  * Returns a Slurm errno.
  */
-extern int prep_epilog(job_env_t *job_env, slurm_cred_t *cred);
+extern int prep_g_epilog(job_env_t *job_env, slurm_cred_t *cred);
 
 /*
  * No return code, will update job status through job_ptr if necessary,
  * or plugins may call prep_prolog_slurmctld_callback().
  */
-extern void prep_prolog_slurmctld(job_record_t *job_ptr);
+extern void prep_g_prolog_slurmctld(job_record_t *job_ptr);
 
 /*
  * No return code, will update job status through job_ptr if necessary,
  * or plugins may call prep_epilog_slurmctld_callback().
  */
-extern void prep_epilog_slurmctld(job_record_t *job_ptr);
+extern void prep_g_epilog_slurmctld(job_record_t *job_ptr);
 
 /* Whether or not the requested prep is configured or not */
-extern bool prep_required(prep_call_type_t type);
+extern bool prep_g_required(prep_call_type_t type);
 
 #endif /* !_PREP_H_ */

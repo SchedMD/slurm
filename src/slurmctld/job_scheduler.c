@@ -4111,7 +4111,7 @@ extern void epilog_slurmctld(job_record_t *job_ptr)
 {
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
-	prep_epilog_slurmctld(job_ptr);
+	prep_g_epilog_slurmctld(job_ptr);
 }
 
 /*
@@ -4466,7 +4466,7 @@ static void *_start_prolog_slurmctld_thread(void *x)
 		unlock_slurmctld(node_write_lock);
 		return NULL;
 	}
-	prep_prolog_slurmctld(job_ptr);
+	prep_g_prolog_slurmctld(job_ptr);
 
 	/*
 	 * No async prolog_slurmctld threads running, so decrement now to move
@@ -4493,7 +4493,7 @@ extern void prolog_slurmctld(job_record_t *job_ptr)
 	uint32_t *job_id;
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
-	if (!prep_required(PREP_PROLOG_SLURMCTLD))
+	if (!prep_g_required(PREP_PROLOG_SLURMCTLD))
 		return;
 	job_ptr->details->prolog_running++;
 	job_ptr->job_state |= JOB_CONFIGURING;

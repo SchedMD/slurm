@@ -208,7 +208,7 @@ extern int prep_plugin_reconfig(void)
  **************************************************************************
  */
 
-extern int prep_prolog(job_env_t *job_env, slurm_cred_t *cred)
+extern int prep_g_prolog(job_env_t *job_env, slurm_cred_t *cred)
 {
 	DEF_TIMERS;
 	int rc;
@@ -225,7 +225,7 @@ extern int prep_prolog(job_env_t *job_env, slurm_cred_t *cred)
 	return rc;
 }
 
-extern int prep_epilog(job_env_t *job_env, slurm_cred_t *cred)
+extern int prep_g_epilog(job_env_t *job_env, slurm_cred_t *cred)
 {
 	DEF_TIMERS;
 	int rc;
@@ -242,7 +242,7 @@ extern int prep_epilog(job_env_t *job_env, slurm_cred_t *cred)
 	return rc;
 }
 
-extern void prep_prolog_slurmctld(job_record_t *job_ptr)
+extern void prep_g_prolog_slurmctld(job_record_t *job_ptr)
 {
 	DEF_TIMERS;
 	int rc;
@@ -263,7 +263,7 @@ extern void prep_prolog_slurmctld(job_record_t *job_ptr)
 	END_TIMER2(__func__);
 }
 
-extern void prep_epilog_slurmctld(job_record_t *job_ptr)
+extern void prep_g_epilog_slurmctld(job_record_t *job_ptr)
 {
 	DEF_TIMERS;
 	int rc;
@@ -288,7 +288,7 @@ extern void prep_epilog_slurmctld(job_record_t *job_ptr)
 	END_TIMER2(__func__);
 }
 
-extern bool prep_required(prep_call_type_t type)
+extern bool prep_g_required(prep_call_type_t type)
 {
 	int rc;
 	bool required = false;
