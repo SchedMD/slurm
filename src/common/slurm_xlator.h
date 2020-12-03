@@ -178,6 +178,7 @@
 #define gres_set_job_tres_cnt	slurm_gres_set_job_tres_cnt
 #define gres_set_node_tres_cnt	slurm_gres_set_node_tres_cnt
 #define gres_device_major	slurm_gres_device_major
+#define gres_sock_delete	slurm_gres_sock_delete
 #define destroy_gres_device	slurm_destroy_gres_device
 
 /* list.[ch] functions */

@@ -110,6 +110,7 @@ strong_alias(gres_2_tres_str, slurm_gres_2_tres_str);
 strong_alias(gres_set_job_tres_cnt, slurm_gres_set_job_tres_cnt);
 strong_alias(gres_set_node_tres_cnt, slurm_gres_set_node_tres_cnt);
 strong_alias(gres_device_major, slurm_gres_device_major);
+strong_alias(gres_sock_delete, slurm_gres_sock_delete);
 strong_alias(destroy_gres_device, slurm_destroy_gres_device);
 strong_alias(destroy_gres_slurmd_conf, slurm_destroy_gres_slurmd_conf);
 
@@ -241,7 +242,6 @@ static int	_parse_gres_config(void **dest, slurm_parser_enum_t type,
 static int	_parse_gres_config2(void **dest, slurm_parser_enum_t type,
 				    const char *key, const char *value,
 				    const char *line, char **leftover);
-static void	_sock_gres_del(void *x);
 static void *	_step_state_dup(void *gres_data);
 static void *	_step_state_dup2(void *gres_data, int node_index);
 static void	_step_state_log(void *gres_data, slurm_step_id_t *step_id,
@@ -6962,7 +6962,7 @@ extern uint32_t gres_plugin_job_test(List job_gres_list, List node_gres_list,
 	return core_cnt;
 }
 
-static void _sock_gres_del(void *x)
+extern void gres_sock_delete(void *x)
 {
 	sock_gres_t *sock_gres = (sock_gres_t *) x;
 	int s;
@@ -7353,7 +7353,7 @@ static sock_gres_t *_build_sock_gres_by_topo(gres_job_state_t *job_gres_ptr,
 		sock_gres->type_id = job_gres_ptr->type_id;
 		sock_gres->type_name = xstrdup(job_gres_ptr->type_name);
 	} else {
-		_sock_gres_del(sock_gres);
+		gres_sock_delete(sock_gres);
 		sock_gres = NULL;
 	}
 	return sock_gres;
@@ -7537,7 +7537,7 @@ extern List gres_plugin_job_test2(List job_gres_list, List node_gres_list,
 		return sock_gres_list;
 	(void) gres_plugin_init();
 
-	sock_gres_list = list_create(_sock_gres_del);
+	sock_gres_list = list_create(gres_sock_delete);
 	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {

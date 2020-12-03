@@ -1140,6 +1140,8 @@ extern int gres_find_sock_by_job_state(void *x, void *key);
 
 extern void gres_job_list_delete(void *list_element);
 
+extern void gres_sock_delete(void *x);
+
 /*
  * Return TRUE if this plugin ID consumes GRES count > 1 for a single device
  * file (e.g. MPS)
