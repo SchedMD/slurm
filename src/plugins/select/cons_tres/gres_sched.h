@@ -55,11 +55,45 @@ extern char *gres_sched_str(List sock_gres_list, List job_gres_list);
 extern bool gres_sched_init(List job_gres_list);
 
 /*
+ * Return TRUE if all gres_per_job specifications are satisfied
+ */
+extern bool gres_sched_test(List job_gres_list, uint32_t job_id);
+
+/*
+ * Return TRUE if all gres_per_job specifications will be satisfied with
+ *	the addtitional resources provided by a single node
+ * IN job_gres_list - List of job's GRES requirements (job_gres_state_t)
+ * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
+ * IN job_id - The job being tested
+ */
+extern bool gres_sched_test2(List job_gres_list, List sock_gres_list,
+			     uint32_t job_id);
+
+/*
+ * Update a job's total_gres counter as we add a node to potential allocation
+ * IN job_gres_list - List of job's GRES requirements (job_gres_state_t)
+ * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
+ * IN avail_cpus - CPUs currently available on this node
+ */
+extern void gres_sched_add(List job_gres_list, List sock_gres_list,
+			   uint16_t avail_cpus);
+
+/*
+ * Create/update List GRES that can be made available on the specified node
+ * IN/OUT consec_gres - List of sock_gres_t that can be made available on
+ *			a set of nodes
+ * IN job_gres_list - List of job's GRES requirements (gres_job_state_t)
+ * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
+ */
+extern void gres_sched_consec(List *consec_gres, List job_gres_list,
+			      List sock_gres_list);
+
+/*
  * Determine if the additional sock_gres_list resources will result in
  * satisfying the job's gres_per_job constraints
  * IN job_gres_list - job's GRES requirements
  * IN sock_gres_list - available GRES in a set of nodes, data structure built
- *		       by gres_plugin_job_sched_consec()
+ *		       by gres_sched_consec()
  */
 extern bool gres_sched_sufficient(List job_gres_list, List sock_gres_list);
 

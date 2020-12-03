@@ -562,14 +562,14 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 			min_rem_nodes--;
 			max_nodes--;
 			if (gres_per_job) {
-				gres_plugin_job_sched_add(job_ptr->gres_list,
+				gres_sched_add(
+					job_ptr->gres_list,
 					avail_res_array[i]->sock_gres_list,
 					avail_cpus);
 			}
 		}
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
-		    gres_plugin_job_sched_test(job_ptr->gres_list,
-					       job_ptr->job_id)) {
+		    gres_sched_test(job_ptr->gres_list, job_ptr->job_id)) {
 			error_code = SLURM_SUCCESS;
 			bit_and(node_map, req_map);
 			goto fini;
@@ -651,7 +651,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 			consec_cpus[consec_index] += avail_cpus;
 			consec_nodes[consec_index]++;
 			if (gres_per_job) {
-				gres_plugin_job_sched_consec(
+				gres_sched_consec(
 					&consec_gres[consec_index],
 					job_ptr->gres_list,
 					avail_res_array[i]->sock_gres_list);
@@ -681,8 +681,8 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 			char *host_list;
 			if (gres_per_job) {
 				gres_str = gres_sched_str(
-						consec_gres[i],
-						job_ptr->gres_list);
+					consec_gres[i],
+					job_ptr->gres_list);
 				if (gres_str) {
 					xstrcat(gres_str, " ");
 					gres_print = gres_str;
@@ -807,9 +807,8 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 				if ((max_nodes == 0) ||
 				    ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 				     (!gres_per_job ||
-				      gres_plugin_job_sched_test(
-						job_ptr->gres_list,
-						job_ptr->job_id))))
+				      gres_sched_test(job_ptr->gres_list,
+						      job_ptr->job_id))))
 					break;
 				if (bit_test(node_map, i)) {
 					/* required node already in set */
@@ -844,7 +843,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 				rem_cpus -= avail_cpus;
 				rem_max_cpus -= avail_cpus;
 				if (gres_per_job) {
-					gres_plugin_job_sched_add(
+					gres_sched_add(
 						job_ptr->gres_list,
 						avail_res_array[i]->
 						sock_gres_list, avail_cpus);
@@ -855,9 +854,8 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 				if ((max_nodes == 0) ||
 				    ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 				     (!gres_per_job ||
-				      gres_plugin_job_sched_test(
-						job_ptr->gres_list,
-						job_ptr->job_id))))
+				      gres_sched_test(job_ptr->gres_list,
+						      job_ptr->job_id))))
 					break;
 				if (bit_test(node_map, i))
 					continue;
@@ -889,7 +887,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 				min_rem_nodes--;
 				max_nodes--;
 				if (gres_per_job) {
-					gres_plugin_job_sched_add(
+					gres_sched_add(
 						job_ptr->gres_list,
 						avail_res_array[i]->
 						sock_gres_list, avail_cpus);
@@ -908,11 +906,11 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 					if (avail_cpu_per_node[i] < rem_cpus)
 						continue;
 					if (gres_per_job &&
-					    !gres_plugin_job_sched_test2(
-							job_ptr->gres_list,
-							avail_res_array[i]->
-							sock_gres_list,
-							job_ptr->job_id)) {
+					    !gres_sched_test2(
+						    job_ptr->gres_list,
+						    avail_res_array[i]->
+						    sock_gres_list,
+						    job_ptr->job_id)) {
 						continue;
 					}
 					if ((best_fit == -1) ||
@@ -941,9 +939,8 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 				if ((max_nodes == 0) ||
 				    ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 				     (!gres_per_job ||
-				      gres_plugin_job_sched_test(
-						job_ptr->gres_list,
-						job_ptr->job_id))))
+				      gres_sched_test(job_ptr->gres_list,
+						      job_ptr->job_id))))
 					break;
 				if (bit_test(node_map, i) ||
 				    !avail_res_array[i])
@@ -986,7 +983,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 				min_rem_nodes--;
 				max_nodes--;
 				if (gres_per_job) {
-					gres_plugin_job_sched_add(
+					gres_sched_add(
 						job_ptr->gres_list,
 						avail_res_array[i]->
 						sock_gres_list, avail_cpus);
@@ -995,8 +992,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 		}
 
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
-		    gres_plugin_job_sched_test(job_ptr->gres_list,
-					       job_ptr->job_id)) {
+		    gres_sched_test(job_ptr->gres_list, job_ptr->job_id)) {
 			error_code = SLURM_SUCCESS;
 			break;
 		}
@@ -1005,7 +1001,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 	}
 
 	if (error_code && (rem_cpus <= 0) &&
-	    gres_plugin_job_sched_test(job_ptr->gres_list, job_ptr->job_id) &&
+	    gres_sched_test(job_ptr->gres_list, job_ptr->job_id) &&
 	    _enough_nodes(0, rem_nodes, min_nodes, req_nodes))
 		error_code = SLURM_SUCCESS;
 
@@ -1103,7 +1099,7 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 				/* leaving bitmap set, decr max limit */
 				max_nodes--;
 				if (gres_per_job) {
-					gres_plugin_job_sched_add(
+					gres_sched_add(
 						job_ptr->gres_list,
 						avail_res_array[i]->
 						sock_gres_list, avail_cpus);
@@ -1115,8 +1111,7 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 			}
 		}
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
-		    gres_plugin_job_sched_test(job_ptr->gres_list,
-					       job_ptr->job_id)) {
+		    gres_sched_test(job_ptr->gres_list, job_ptr->job_id)) {
 			error_code = SLURM_SUCCESS;
 			bit_and(node_map, req_map);
 			goto fini;
@@ -1174,13 +1169,14 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 			max_nodes--;
 			bit_set(node_map, i);
 			if (gres_per_job) {
-				gres_plugin_job_sched_add(job_ptr->gres_list,
+				gres_sched_add(
+					job_ptr->gres_list,
 					avail_res_array[i]->sock_gres_list,
 					avail_cpus);
 			}
 			if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
-			    gres_plugin_job_sched_test(job_ptr->gres_list,
-						       job_ptr->job_id)) {
+			    gres_sched_test(job_ptr->gres_list,
+					    job_ptr->job_id)) {
 				error_code = SLURM_SUCCESS;
 				all_done = true;
 				break;
@@ -1196,8 +1192,7 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 	if (error_code == SLURM_SUCCESS) {
 		/* Already succeeded */
 	} else if ((rem_cpus > 0) || (min_rem_nodes > 0) ||
-		   !gres_plugin_job_sched_test(job_ptr->gres_list,
-					       job_ptr->job_id)) {
+		   !gres_sched_test(job_ptr->gres_list, job_ptr->job_id)) {
 		bit_clear_all(node_map);
 		error_code = SLURM_ERROR;
 	} else {
@@ -1288,7 +1283,7 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 				if (max_nodes)
 					max_nodes--;
 				if (gres_per_job) {
-					gres_plugin_job_sched_add(
+					gres_sched_add(
 						job_ptr->gres_list,
 						avail_res_array[i]->
 						sock_gres_list, avail_cpus);
@@ -1300,8 +1295,7 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 			}
 		}
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
-		    gres_plugin_job_sched_test(job_ptr->gres_list,
-					       job_ptr->job_id)) {
+		    gres_sched_test(job_ptr->gres_list, job_ptr->job_id)) {
 			error_code = SLURM_SUCCESS;
 			bit_and(node_map, req_map);
 			goto fini;
@@ -1371,16 +1365,15 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 				max_nodes--;
 				bit_set(node_map, i);
 				if (gres_per_job) {
-					gres_plugin_job_sched_add(
+					gres_sched_add(
 						job_ptr->gres_list,
 						avail_res_array[i]->
 						sock_gres_list,
 						avail_cpus);
 				}
 				if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
-				    gres_plugin_job_sched_test(
-							job_ptr->gres_list,
-							job_ptr->job_id)) {
+				    gres_sched_test(job_ptr->gres_list,
+						    job_ptr->job_id)) {
 					error_code = SLURM_SUCCESS;
 					all_done = true;
 					break;
@@ -1397,8 +1390,7 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 	if (error_code == SLURM_SUCCESS) {
 		/* Already succeeded */
 	} else if ((rem_cpus > 0) || (min_rem_nodes > 0) ||
-		   !gres_plugin_job_sched_test(job_ptr->gres_list,
-					       job_ptr->job_id)) {
+		   !gres_sched_test(job_ptr->gres_list, job_ptr->job_id)) {
 		bit_clear_all(node_map);
 		error_code = SLURM_ERROR;
 	} else {
@@ -1586,7 +1578,8 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			rem_cpus   -= avail_cpus;
 			rem_max_cpus -= avail_cpus;
 			if (gres_per_job) {
-				gres_plugin_job_sched_add(job_ptr->gres_list,
+				gres_sched_add(
+					job_ptr->gres_list,
 					avail_res_array[i]->sock_gres_list,
 					avail_cpus);
 			}
@@ -1609,8 +1602,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	if (req_nodes_bitmap) {
 		bit_and(node_map, req_nodes_bitmap);
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
-		    gres_plugin_job_sched_test(job_ptr->gres_list,
-					       job_ptr->job_id)) {
+		    gres_sched_test(job_ptr->gres_list, job_ptr->job_id)) {
 			/* Required nodes completely satisfied the request */
 			rc = SLURM_SUCCESS;
 			goto fini;
@@ -1744,7 +1736,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			best_cpu_cnt += avail_cpus;
 			best_node_cnt++;
 			if (gres_per_job) {
-				gres_plugin_job_sched_consec(
+				gres_sched_consec(
 					&best_gres, job_ptr->gres_list,
 					avail_res_array[i]->sock_gres_list);
 			}
@@ -1808,7 +1800,8 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			rem_cpus   -= avail_cpus;
 			rem_max_cpus -= avail_cpus;
 			if (gres_per_job) {
-				gres_plugin_job_sched_add(job_ptr->gres_list,
+				gres_sched_add(
+					job_ptr->gres_list,
 					avail_res_array[i]->sock_gres_list,
 					avail_cpus);
 			}
@@ -1835,8 +1828,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 		}
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 		    (!gres_per_job ||
-		     gres_plugin_job_sched_test(job_ptr->gres_list,
-					        job_ptr->job_id))) {
+		     gres_sched_test(job_ptr->gres_list, job_ptr->job_id))) {
 			/* Required nodes completely satisfied the request */
 			error("Scheduling anomaly for %pJ",
 			      job_ptr);
@@ -1941,9 +1933,10 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 				best_cpu_cnt += avail_cpus;
 				best_node_cnt++;
 				if (gres_per_job) {
-					gres_plugin_job_sched_consec(
+					gres_sched_consec(
 						&best_gres, job_ptr->gres_list,
-						avail_res_array[j]->sock_gres_list);
+						avail_res_array[j]->
+						sock_gres_list);
 				}
 			}
 			break;
@@ -1970,7 +1963,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 				rem_cpus   -= avail_cpus;
 				rem_max_cpus -= avail_cpus;
 				if (gres_per_job) {
-					gres_plugin_job_sched_add(
+					gres_sched_add(
 						job_ptr->gres_list,
 						avail_res_array[j]->
 						sock_gres_list,
@@ -1979,9 +1972,8 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 				bit_set(node_map, j);
 				if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 				    (!gres_per_job ||
-				     gres_plugin_job_sched_test(
-							job_ptr->gres_list,
-							job_ptr->job_id))) {
+				     gres_sched_test(job_ptr->gres_list,
+						     job_ptr->job_id))) {
 					rc = SLURM_SUCCESS;
 					goto fini;
 				}
@@ -2045,7 +2037,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 				rem_cpus   -= avail_cpus;
 				rem_max_cpus -= avail_cpus;
 				if (gres_per_job) {
-					gres_plugin_job_sched_add(
+					gres_sched_add(
 						job_ptr->gres_list,
 						avail_res_array[j]->
 						sock_gres_list,
@@ -2054,9 +2046,8 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 				bit_set(node_map, j);
 				if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 				    (!gres_per_job ||
-				     gres_plugin_job_sched_test(
-							job_ptr->gres_list,
-							job_ptr->job_id))) {
+				     gres_sched_test(job_ptr->gres_list,
+						     job_ptr->job_id))) {
 					rc = SLURM_SUCCESS;
 					goto fini;
 				}
@@ -2072,7 +2063,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	}
 	if ((min_rem_nodes <= 0) && (rem_cpus <= 0) &&
 	    (!gres_per_job ||
-	     gres_plugin_job_sched_test(job_ptr->gres_list, job_ptr->job_id))) {
+	     gres_sched_test(job_ptr->gres_list, job_ptr->job_id))) {
 		rc = SLURM_SUCCESS;
 		goto fini;
 	}
@@ -2219,7 +2210,8 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			rem_cpus   -= avail_cpus;
 			rem_max_cpus -= avail_cpus;
 			if (gres_per_job) {
-				gres_plugin_job_sched_add(job_ptr->gres_list,
+				gres_sched_add(
+					job_ptr->gres_list,
 					avail_res_array[i]->sock_gres_list,
 					avail_cpus);
 			}
@@ -2322,8 +2314,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	if (req_nodes_bitmap) {
 		bit_and(node_map, req_nodes_bitmap);
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
-		    gres_plugin_job_sched_test(job_ptr->gres_list,
-					       job_ptr->job_id)) {
+		    gres_sched_test(job_ptr->gres_list, job_ptr->job_id)) {
 			/* Required nodes completely satisfied the request */
 			rc = SLURM_SUCCESS;
 			goto fini;
@@ -2380,7 +2371,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			best_cpu_cnt += avail_cpus;
 			best_node_cnt++;
 			if (gres_per_job) {
-				gres_plugin_job_sched_consec(
+				gres_sched_consec(
 					&best_gres, job_ptr->gres_list,
 					avail_res_array[i]->sock_gres_list);
 			}
@@ -2444,7 +2435,8 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			rem_cpus   -= avail_cpus;
 			rem_max_cpus -= avail_cpus;
 			if (gres_per_job) {
-				gres_plugin_job_sched_add(job_ptr->gres_list,
+				gres_sched_add(
+					job_ptr->gres_list,
 					avail_res_array[i]->sock_gres_list,
 					avail_cpus);
 			}
@@ -2463,8 +2455,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 		    (!gres_per_job ||
-		     gres_plugin_job_sched_test(job_ptr->gres_list,
-					        job_ptr->job_id))) {
+		     gres_sched_test(job_ptr->gres_list, job_ptr->job_id))) {
 			/* Required nodes completely satisfied the request */
 			error("Scheduling anomaly for %pJ",
 			      job_ptr);
@@ -2542,7 +2533,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 				rem_cpus   -= avail_cpus;
 				rem_max_cpus -= avail_cpus;
 				if (gres_per_job) {
-					gres_plugin_job_sched_add(
+					gres_sched_add(
 						job_ptr->gres_list,
 						avail_res_array[j]->
 						sock_gres_list,
@@ -2551,9 +2542,8 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 				bit_set(node_map, j);
 				if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 				    (!gres_per_job ||
-				     gres_plugin_job_sched_test(
-							job_ptr->gres_list,
-							job_ptr->job_id))) {
+				     gres_sched_test(job_ptr->gres_list,
+						     job_ptr->job_id))) {
 					rc = SLURM_SUCCESS;
 					goto fini;
 				}
@@ -2605,15 +2595,16 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			rem_cpus   -= avail_cpus;
 			rem_max_cpus -= avail_cpus;
 			if (gres_per_job) {
-				gres_plugin_job_sched_add(job_ptr->gres_list,
+				gres_sched_add(
+					job_ptr->gres_list,
 					avail_res_array[i]->sock_gres_list,
 					avail_cpus);
 			}
 			bit_set(node_map, i);
 			if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 			    (!gres_per_job ||
-			     gres_plugin_job_sched_test(job_ptr->gres_list,
-							job_ptr->job_id))) {
+			     gres_sched_test(job_ptr->gres_list,
+					     job_ptr->job_id))) {
 				rc = SLURM_SUCCESS;
 				goto fini;
 			}
@@ -2622,7 +2613,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	}
 	if ((min_rem_nodes <= 0) && (rem_cpus <= 0) &&
 	    (!gres_per_job ||
-	     gres_plugin_job_sched_test(job_ptr->gres_list, job_ptr->job_id))) {
+	     gres_sched_test(job_ptr->gres_list, job_ptr->job_id))) {
 		rc = SLURM_SUCCESS;
 		goto fini;
 	}
@@ -2752,7 +2743,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 				/* leaving bitmap set, decr max limit */
 				max_nodes--;
 				if (gres_per_job) {
-					gres_plugin_job_sched_add(
+					gres_sched_add(
 						job_ptr->gres_list,
 						avail_res_array[i]->
 						sock_gres_list, avail_cpus);
@@ -2764,8 +2755,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 			}
 		}
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
-		    gres_plugin_job_sched_test(job_ptr->gres_list,
-					       job_ptr->job_id)) {
+		    gres_sched_test(job_ptr->gres_list, job_ptr->job_id)) {
 			error_code = SLURM_SUCCESS;
 			bit_and(node_map, req_map);
 			goto fini;
@@ -2848,13 +2838,14 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 			max_nodes--;
 			bit_set(node_map, i);
 			if (gres_per_job) {
-				gres_plugin_job_sched_add(job_ptr->gres_list,
+				gres_sched_add(
+					job_ptr->gres_list,
 					avail_res_array[i]->sock_gres_list,
 					avail_cpus);
 			}
 			if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
-			    gres_plugin_job_sched_test(job_ptr->gres_list,
-						       job_ptr->job_id)) {
+			    gres_sched_test(job_ptr->gres_list,
+					    job_ptr->job_id)) {
 				error_code = SLURM_SUCCESS;
 				all_done = true;
 				break;
@@ -2870,8 +2861,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 	if (error_code == SLURM_SUCCESS) {
 		/* Already succeeded */
 	} else if ((rem_cpus > 0) || (min_rem_nodes > 0) ||
-		   !gres_plugin_job_sched_test(job_ptr->gres_list,
-					       job_ptr->job_id)) {
+		   !gres_sched_test(job_ptr->gres_list, job_ptr->job_id)) {
 		bit_clear_all(node_map);
 		error_code = SLURM_ERROR;
 	} else {
@@ -2962,7 +2952,7 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 				/* leaving bitmap set, decr max limit */
 				max_nodes--;
 				if (gres_per_job) {
-					gres_plugin_job_sched_add(
+					gres_sched_add(
 						job_ptr->gres_list,
 						avail_res_array[i]->
 						sock_gres_list, avail_cpus);
@@ -2974,8 +2964,7 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 			}
 		}
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
-		    gres_plugin_job_sched_test(job_ptr->gres_list,
-					       job_ptr->job_id)) {
+		    gres_sched_test(job_ptr->gres_list, job_ptr->job_id)) {
 			error_code = SLURM_SUCCESS;
 			bit_and(node_map, req_map);
 			goto fini;
@@ -3033,13 +3022,14 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 			max_nodes--;
 			bit_set(node_map, i);
 			if (gres_per_job) {
-				gres_plugin_job_sched_add(job_ptr->gres_list,
+				gres_sched_add(
+					job_ptr->gres_list,
 					avail_res_array[i]->sock_gres_list,
 					avail_cpus);
 			}
 			if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
-			    gres_plugin_job_sched_test(job_ptr->gres_list,
-						       job_ptr->job_id)) {
+			    gres_sched_test(job_ptr->gres_list,
+					    job_ptr->job_id)) {
 				error_code = SLURM_SUCCESS;
 				all_done = true;
 				break;
@@ -3055,8 +3045,7 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 	if (error_code == SLURM_SUCCESS) {
 		/* Already succeeded */
 	} else if ((rem_cpus > 0) || (min_rem_nodes > 0) ||
-		   !gres_plugin_job_sched_test(job_ptr->gres_list,
-					       job_ptr->job_id)) {
+		   !gres_sched_test(job_ptr->gres_list, job_ptr->job_id)) {
 		bit_clear_all(node_map);
 		error_code = SLURM_ERROR;
 	} else {

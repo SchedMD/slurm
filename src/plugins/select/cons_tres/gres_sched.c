@@ -135,11 +135,160 @@ extern bool gres_sched_init(List job_gres_list)
 }
 
 /*
+ * Return TRUE if all gres_per_job specifications are satisfied
+ */
+extern bool gres_sched_test(List job_gres_list, uint32_t job_id)
+{
+	ListIterator iter;
+	gres_state_t *job_gres_state;
+	gres_job_state_t *job_data;
+	bool rc = true;
+
+	if (!job_gres_list)
+		return rc;
+
+	iter = list_iterator_create(job_gres_list);
+	while ((job_gres_state = list_next(iter))) {
+		job_data = (gres_job_state_t *) job_gres_state->gres_data;
+		if (job_data->gres_per_job &&
+		    (job_data->gres_per_job > job_data->total_gres)) {
+			rc = false;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return rc;
+}
+
+/*
+ * Return TRUE if all gres_per_job specifications will be satisfied with
+ *	the addtitional resources provided by a single node
+ * IN job_gres_list - List of job's GRES requirements (job_gres_state_t)
+ * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
+ * IN job_id - The job being tested
+ */
+extern bool gres_sched_test2(List job_gres_list, List sock_gres_list,
+			     uint32_t job_id)
+{
+	ListIterator iter;
+	gres_state_t *job_gres_state;
+	gres_job_state_t *job_data;
+	sock_gres_t *sock_data;
+	bool rc = true;
+
+	if (!job_gres_list)
+		return rc;
+
+	iter = list_iterator_create(job_gres_list);
+	while ((job_gres_state = list_next(iter))) {
+		job_data = (gres_job_state_t *) job_gres_state->gres_data;
+		if ((job_data->gres_per_job == 0) ||
+		    (job_data->gres_per_job < job_data->total_gres))
+			continue;
+		sock_data = list_find_first(sock_gres_list,
+					    gres_find_sock_by_job_state,
+					    job_gres_state);
+		if (!sock_data ||
+		    (job_data->gres_per_job >
+		     (job_data->total_gres + sock_data->total_cnt))) {
+			rc = false;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+
+	return rc;
+}
+
+/*
+ * Update a job's total_gres counter as we add a node to potential allocation
+ * IN job_gres_list - List of job's GRES requirements (job_gres_state_t)
+ * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
+ * IN avail_cpus - CPUs currently available on this node
+ */
+extern void gres_sched_add(List job_gres_list, List sock_gres_list,
+			   uint16_t avail_cpus)
+{
+	ListIterator iter;
+	gres_state_t *job_gres_state;
+	gres_job_state_t *job_data;
+	sock_gres_t *sock_data;
+	uint64_t gres_limit;
+
+	if (!job_gres_list)
+		return;
+
+	iter = list_iterator_create(job_gres_list);
+	while ((job_gres_state = list_next(iter))) {
+		job_data = (gres_job_state_t *) job_gres_state->gres_data;
+		if (!job_data->gres_per_job)	/* Don't care about totals */
+			continue;
+		sock_data = list_find_first(sock_gres_list,
+					    gres_find_sock_by_job_state,
+					    job_gres_state);
+		if (!sock_data)		/* None of this GRES available */
+			continue;
+		if (job_data->cpus_per_gres) {
+			gres_limit = avail_cpus / job_data->cpus_per_gres;
+			gres_limit = MIN(gres_limit, sock_data->total_cnt);
+		} else
+			gres_limit = sock_data->total_cnt;
+		job_data->total_gres += gres_limit;
+	}
+	list_iterator_destroy(iter);
+}
+
+/*
+ * Create/update List GRES that can be made available on the specified node
+ * IN/OUT consec_gres - List of sock_gres_t that can be made available on
+ *			a set of nodes
+ * IN job_gres_list - List of job's GRES requirements (gres_job_state_t)
+ * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
+ */
+extern void gres_sched_consec(List *consec_gres, List job_gres_list,
+			      List sock_gres_list)
+{
+	ListIterator iter;
+	gres_state_t *job_gres_state;
+	gres_job_state_t *job_data;
+	sock_gres_t *sock_data, *consec_data;
+
+	if (!job_gres_list)
+		return;
+
+	iter = list_iterator_create(job_gres_list);
+	while ((job_gres_state = list_next(iter))) {
+		job_data = (gres_job_state_t *) job_gres_state->gres_data;
+		if (!job_data->gres_per_job)	/* Don't care about totals */
+			continue;
+		sock_data = list_find_first(sock_gres_list,
+					    gres_find_sock_by_job_state,
+					    job_gres_state);
+		if (!sock_data)		/* None of this GRES available */
+			continue;
+		if (*consec_gres == NULL)
+			*consec_gres = list_create(gres_sock_delete);
+		consec_data = list_find_first(*consec_gres,
+					      gres_find_sock_by_job_state,
+					      job_gres_state);
+		if (!consec_data) {
+			consec_data = xmalloc(sizeof(sock_gres_t));
+			consec_data->plugin_id = sock_data->plugin_id;
+			consec_data->type_id   = sock_data->type_id;
+			list_append(*consec_gres, consec_data);
+		}
+		consec_data->total_cnt += sock_data->total_cnt;
+	}
+	list_iterator_destroy(iter);
+}
+
+/*
  * Determine if the additional sock_gres_list resources will result in
  * satisfying the job's gres_per_job constraints
  * IN job_gres_list - job's GRES requirements
  * IN sock_gres_list - available GRES in a set of nodes, data structure built
- *		       by gres_plugin_job_sched_consec()
+ *		       by gres_job_sched_consec()
  */
 extern bool gres_sched_sufficient(List job_gres_list, List sock_gres_list)
 {
