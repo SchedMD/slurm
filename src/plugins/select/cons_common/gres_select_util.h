@@ -112,5 +112,11 @@ extern int gres_select_util_job_min_cpus(uint32_t node_count,
  */
 extern uint64_t gres_select_util_job_mem_max(List job_gres_list);
 
+/*
+ * Determine if job GRES specification includes a tres-per-task specification
+ * RET TRUE if any GRES requested by the job include a tres-per-task option
+ */
+extern bool gres_select_util_job_tres_per_task(List job_gres_list);
+
 
 #endif /* _GRES_SELECT_UTIL_H */

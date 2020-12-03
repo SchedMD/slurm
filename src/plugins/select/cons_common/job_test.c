@@ -1489,7 +1489,7 @@ alloc_job:
 		 * Determine if any job gres_per_task specification here
 		 * to avoid calling gres_plugin_get_task_limit unless needed
 		 */
-		have_gres_per_task = gres_plugin_job_tres_per_task(
+		have_gres_per_task = gres_select_util_job_tres_per_task(
 			job_ptr->gres_list);
 		if (have_gres_per_task) {
 			gres_task_limit = xcalloc(job_res->nhosts,

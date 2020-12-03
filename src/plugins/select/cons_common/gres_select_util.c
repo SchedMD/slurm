@@ -355,3 +355,30 @@ extern uint64_t gres_select_util_job_mem_max(List job_gres_list)
 
 	return mem_max;
 }
+
+/*
+ * Determine if job GRES specification includes a tres-per-task specification
+ * RET TRUE if any GRES requested by the job include a tres-per-task option
+ */
+extern bool gres_select_util_job_tres_per_task(List job_gres_list)
+{
+	ListIterator job_gres_iter;
+	gres_state_t *job_gres_ptr;
+	gres_job_state_t *job_data_ptr;
+	bool have_gres_per_task = false;
+
+	if (!job_gres_list)
+		return false;
+
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = list_next(job_gres_iter))) {
+		job_data_ptr = (gres_job_state_t *) job_gres_ptr->gres_data;
+		if (job_data_ptr->gres_per_task) {
+			have_gres_per_task = true;
+			break;
+		}
+	}
+	list_iterator_destroy(job_gres_iter);
+
+	return have_gres_per_task;
+}
