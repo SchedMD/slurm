@@ -2200,6 +2200,8 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		error("%s: Error talking to slurmctld: %m", __func__);
 	}
 
+	slurm_cred_handle_reissue(conf->vctx, req->cred, false);
+
 	slurm_mutex_lock(&prolog_mutex);
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
 	if (first_job_run) {
