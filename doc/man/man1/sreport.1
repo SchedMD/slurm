@@ -235,16 +235,10 @@ Time that nodes were marked as Down or time that slurmctld was not
 responding (assuming TrackSlurmctldDown is set in slurmdbd.conf).
 .IP Idle
 Time where nodes had no active jobs or reservations.
-<<<<<<< HEAD
-.IP Overcommitted
-If there is enough utilization to consume more system time than is
-expected, the extra usage is recorded as Overcommitted.
-=======
 .IP Overcommited
 Time of eligible jobs waiting in the queue over the Reserved time. Unlike
 Reserved, this has no limit. It is typically useful to determine whether your
 system is overloaded and by how much.
->>>>>>> origin/slurm-20.02
 .IP PlannedDown
 Time that nodes were in use by a reservation created with the MAINT flag
 but not the IGNORE_JOBS flag.
