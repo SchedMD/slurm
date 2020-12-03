@@ -2406,6 +2406,10 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 				 slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
+		slurm_step_layout_t *step_layout = NULL;
+		dynamic_plugin_data_t *select_jobinfo = NULL;
+		dynamic_plugin_data_t *switch_job = NULL;
+
 		log_flag(STEPS, "%s: %pS %s %s",
 			 __func__, step_rec, req_step_msg->node_list, TIME_STR);
 
@@ -2413,7 +2417,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		job_step_resp.job_step_id = step_rec->step_id.step_id;
 		job_step_resp.resv_ports  = step_rec->resv_ports;
 
-		job_step_resp.step_layout = step_rec->step_layout;
+		step_layout = slurm_step_layout_copy(step_rec->step_layout);
+		job_step_resp.step_layout = step_layout;
 
 #ifdef HAVE_FRONT_END
 		if (step_rec->job_ptr->batch_host) {
@@ -2428,8 +2433,11 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		}
 		job_step_resp.cred           = slurm_cred;
 		job_step_resp.use_protocol_ver = step_rec->start_protocol_ver;
-		job_step_resp.select_jobinfo = step_rec->select_jobinfo;
-		job_step_resp.switch_job     = step_rec->switch_job;
+		select_jobinfo = select_g_select_jobinfo_copy(
+			step_rec->select_jobinfo);
+		job_step_resp.select_jobinfo = select_jobinfo;
+		switch_g_duplicate_jobinfo(step_rec->switch_job, &switch_job);
+		job_step_resp.switch_job = switch_job;
 
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 			unlock_slurmctld(job_write_lock);
@@ -2440,7 +2448,12 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		resp.data = &job_step_resp;
 
 		slurm_send_node_msg(msg->conn_fd, &resp);
+
 		slurm_cred_destroy(slurm_cred);
+		slurm_step_layout_destroy(step_layout);
+		select_g_select_jobinfo_free(select_jobinfo);
+		switch_g_free_jobinfo(switch_job);
+
 		schedule_job_save();	/* Sets own locks */
 	}
 }

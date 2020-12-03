@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd/v0.0.36 - Add node comment field.
  -- Fix regression marking cloud nodes as "unexpectedly rebooted" after
     multiple boots.
+ -- Fix slurmctld segfault in _slurm_rpc_job_step_create().
 
 * Changes in Slurm 20.11.0
 ==========================
