@@ -76,6 +76,45 @@ There are several third party tools that automatically generate documentation
 against the OAS output listed by
 <a href="https://openapi.tools/">openapi.tools.</a></p>
 
+<h2>Plugins</h2>
+<p>As of Slurm 20.11, the REST API uses plugins for authentication and
+generating content. These plugins can be optionality listed or selected via
+command line arguments as described in the <a href="slurmrestd.html">
+slurmrestd</a> documentation.</p>
+
+<h3>Plugin life cycle</h3>
+<p>Plugins provided with Slurm in any release are considered supported by that
+release. Due to the nature of the plugins, one plugin can be supported accross
+multiple Slurm releases to ensure (limited) forward client compatibility. As
+the slurmrestd plugins are relatively new, we are currently only explicitly
+deprecating plugins and expect any plugin not marked for deprecation to
+continue to exist in the next Slurm release. When a plugin is marked for
+removal in the next major Slurm release, the OpenAPI specification dictates
+that the given plugin will have all of the paths tagged with
+<pre>"deprecated": "true"</pre></p>
+
+<p>Sites are <b>always</b> encouraged to use the latest stable plugin version
+available for code development. There is <b>no</b> guarantee of compatibility
+between different versions of the same plugin with clients. Clients should
+always make sure to validate their code when migrating to newer versions of
+plugins. Plugin versions will always be included in the path for every method
+provided by a given plugin to ensure no two plugins will provide the same
+path.</p>
+
+<p>As the plugins utilize the Slurm API internally, plugins that existed in
+previous versions of Slurm should continue to be able to communicate with the
+two previous versions of Slurm, similar to other components of Slurm. Newer
+plugins may have required RPC changes which will exclude them from working with
+previous Slurm versions. For instance, the openapi/dbv0.0.36 plugin will not be
+able to communicate with any slurmdbd servers prior to the slurm-20.11
+release.</p>
+
+<p>As with all other plugins in Slurm, sites are more than welcome to write
+their own plugins and are suggested to submit them as code contributions via
+<a href="https://bugs.schedmd.com/">bugzilla</a>, tagged as a contribution.
+The plugin API provided may change between releases which could cause site
+specific plugins to break.</p>
+
 <h2>Security</h2>
 <p>The Slurm REST API is written to provide the necessary functionality for
 clients to control Slurm using REST commands. It is <b>not</b> designed to be
