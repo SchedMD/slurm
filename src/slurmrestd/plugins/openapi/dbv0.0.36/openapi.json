@@ -363,7 +363,7 @@
             "in": "query",
             "name": "user",
             "description": "User name",
-            "required": true,
+            "required": false,
             "style": "form",
             "explode": false,
             "schema": {

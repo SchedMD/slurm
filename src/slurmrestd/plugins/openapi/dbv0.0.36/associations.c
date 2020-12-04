@@ -138,14 +138,16 @@ static int _dump_association(data_t *resp, rest_auth_context_t *auth,
 	slurmdb_assoc_cond_t *assoc_cond = xmalloc(sizeof(*assoc_cond));
 
 	assoc_cond->acct_list = list_create(NULL);
-	assoc_cond->user_list = list_create(NULL);
 
 	list_append(assoc_cond->acct_list, account);
 	if (cluster) {
 		assoc_cond->cluster_list = list_create(NULL);
 		list_append(assoc_cond->cluster_list, cluster);
 	}
-	list_append(assoc_cond->user_list, user);
+	if (user) {
+		assoc_cond->user_list = list_create(NULL);
+		list_append(assoc_cond->user_list, user);
+	}
 	if (partition) {
 		assoc_cond->partition_list = list_create(NULL);
 		list_append(assoc_cond->partition_list, partition);
@@ -285,7 +287,7 @@ static int op_handler_association(const char *context_id,
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
-	char *user;
+	char *user = NULL; /* optional */
 	char *account = NULL; /* optional */
 	char *cluster = NULL; /* optional */
 	char *partition = NULL; /* optional */
