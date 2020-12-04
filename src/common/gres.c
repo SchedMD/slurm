@@ -9806,7 +9806,6 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 {
 	ListIterator itr;
 	gres_state_t *gres_state_ptr;
-	int i;
 	uint64_t count;
 	char *col_name = NULL;
 	char *tres_str = NULL;
@@ -9819,10 +9818,8 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 	if (!locked)
 		assoc_mgr_lock(&locks);
 
-	slurm_mutex_lock(&gres_context_lock);
 	itr = list_iterator_create(gres_list);
 	while ((gres_state_ptr = list_next(itr))) {
-		char *gres_name = NULL;
 		if (is_job) {
 			gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
 				gres_state_ptr->gres_data;
@@ -9835,27 +9832,15 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 			count = gres_data_ptr->total_gres;
 		}
 
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_context[i].plugin_id ==
-			    gres_state_ptr->plugin_id) {
-				gres_name = gres_context[i].gres_name;
-				break;
-			}
-		}
-
-		if (!gres_name) {
-			debug("%s: couldn't find name", __func__);
-			continue;
-		}
-
 		/* If we are no_consume, print a 0 */
 		if (count == NO_CONSUME_VAL64)
 			count = 0;
 
-		_gres_2_tres_str_internal(&tres_str, gres_name, col_name, count);
+		_gres_2_tres_str_internal(&tres_str,
+					  gres_state_ptr->gres_name,
+					  col_name, count);
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	if (!locked)
 		assoc_mgr_unlock(&locks);
@@ -9882,8 +9867,6 @@ extern char *gres_job_gres_on_node_as_tres(List job_gres_list,
 	char *tres_str = NULL;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
-	(void) gres_plugin_init();
-
 	if (!job_gres_list)	/* No GRES allocated */
 		return NULL;
 
@@ -9891,7 +9874,6 @@ extern char *gres_job_gres_on_node_as_tres(List job_gres_list,
 	if (!locked)
 		assoc_mgr_lock(&locks);
 
-	slurm_mutex_lock(&gres_context_lock);
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = list_next(job_gres_iter))) {
 		uint64_t count;
@@ -9921,8 +9903,6 @@ extern char *gres_job_gres_on_node_as_tres(List job_gres_list,
 					  count);
 	}
 	list_iterator_destroy(job_gres_iter);
-
-	slurm_mutex_unlock(&gres_context_lock);
 
 	if (!locked)
 		assoc_mgr_unlock(&locks);
