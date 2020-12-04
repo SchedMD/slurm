@@ -199,4 +199,28 @@ extern void gres_ctld_step_state_rebase(List gres_list,
 					bitstr_t *orig_job_node_bitmap,
 					bitstr_t *new_job_node_bitmap);
 
+/*
+ * Given a job's GRES data structure, return a simple tres string of gres
+ * allocated on the node_inx requested
+ * IN job_gres_list  - job's GRES data structure
+ * IN node_inx - position of node in job_state_ptr->gres_cnt_node_alloc
+ *
+ * RET - simple string containing gres this job is allocated on the node
+ * requested.
+ */
+extern char *gres_ctld_gres_on_node_as_tres(List job_gres_list,
+					    int node_inx,
+					    bool locked);
+
+/*
+ * Translate a gres_list into a tres_str
+ * IN gres_list - filled in with gres_job_state_t or gres_step_state_t's
+ * IN is_job - if is job function expects gres_job_state_t's else
+ *             gres_step_state_t's
+ * IN locked - if the assoc_mgr tres read locked is locked or not
+ * RET char * in a simple TRES format
+ */
+extern char *gres_ctld_gres_2_tres_str(
+	List gres_list, bool is_job, bool locked);
+
 #endif /* _GRES_CTLD_H */

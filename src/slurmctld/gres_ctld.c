@@ -2017,3 +2017,172 @@ void gres_ctld_step_state_rebase(List gres_list,
 
 	return;
 }
+
+static void _gres_2_tres_str_internal(char **tres_str,
+				      char *gres_name, char *gres_type,
+				      uint64_t count)
+{
+	slurmdb_tres_rec_t *tres_rec;
+	static bool first_run = 1;
+	static slurmdb_tres_rec_t tres_req;
+
+	/* we only need to init this once */
+	if (first_run) {
+		first_run = 0;
+		memset(&tres_req, 0, sizeof(slurmdb_tres_rec_t));
+		tres_req.type = "gres";
+	}
+
+	xassert(verify_assoc_lock(TRES_LOCK, READ_LOCK));
+	xassert(gres_name);
+	xassert(tres_str);
+
+	tres_req.name = gres_name;
+	tres_rec = assoc_mgr_find_tres_rec(&tres_req);
+
+	if (tres_rec &&
+	    slurmdb_find_tres_count_in_string(
+		    *tres_str, tres_rec->id) == INFINITE64)
+		/* New gres */
+		xstrfmtcat(*tres_str, "%s%u=%"PRIu64,
+			   *tres_str ? "," : "",
+			   tres_rec->id, count);
+
+	if (gres_type) {
+		/*
+		 * Now let's put of the : name TRES if we are
+		 * tracking it as well.  This would be handy
+		 * for GRES like "gpu:tesla", where you might
+		 * want to track both as TRES.
+		 */
+		tres_req.name = xstrdup_printf("%s:%s", gres_name, gres_type);
+		tres_rec = assoc_mgr_find_tres_rec(&tres_req);
+		xfree(tres_req.name);
+	} else {
+		/*
+		 * Job allocated GRES without "type"
+		 * specification, but Slurm is only accounting
+		 * for this GRES by specific "type", so pick
+		 * some valid "type" to get some accounting.
+		 * Although the reported "type" may not be
+		 * accurate, it is better than nothing...
+		 */
+		tres_rec = assoc_mgr_find_tres_rec2(&tres_req);
+	}
+
+	if (tres_rec &&
+	    slurmdb_find_tres_count_in_string(
+		    *tres_str, tres_rec->id) == INFINITE64)
+		/* New GRES */
+		xstrfmtcat(*tres_str, "%s%u=%"PRIu64,
+			   *tres_str ? "," : "",
+			   tres_rec->id, count);
+}
+
+/*
+ * Given a job's GRES data structure, return a simple tres string of gres
+ * allocated on the node_inx requested
+ * IN job_gres_list  - job's GRES data structure
+ * IN node_inx - position of node in job_state_ptr->gres_cnt_node_alloc
+ * IN locked - if the assoc_mgr tres read locked is locked or not
+ *
+ * RET - simple string containing gres this job is allocated on the node
+ * requested.
+ */
+extern char *gres_ctld_gres_on_node_as_tres(List job_gres_list,
+					    int node_inx,
+					    bool locked)
+{
+	ListIterator job_gres_iter;
+	gres_state_t *job_gres_ptr;
+	char *tres_str = NULL;
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+
+	if (!job_gres_list)	/* No GRES allocated */
+		return NULL;
+
+	/* must be locked first before gres_contrex_lock!!! */
+	if (!locked)
+		assoc_mgr_lock(&locks);
+
+	job_gres_iter = list_iterator_create(job_gres_list);
+	while ((job_gres_ptr = list_next(job_gres_iter))) {
+		uint64_t count;
+		gres_job_state_t *job_state_ptr =
+			(gres_job_state_t *)job_gres_ptr->gres_data;
+		if (!job_state_ptr->gres_bit_alloc)
+			continue;
+
+		if (node_inx > job_state_ptr->node_cnt)
+			break;
+
+		if (!job_state_ptr->gres_name) {
+			debug("%s: couldn't find name", __func__);
+			continue;
+		}
+
+		/* If we are no_consume, print a 0 */
+		if (job_state_ptr->total_gres == NO_CONSUME_VAL64)
+			count = 0;
+		else if (job_state_ptr->gres_cnt_node_alloc[node_inx])
+			count = job_state_ptr->gres_cnt_node_alloc[node_inx];
+		else /* If this gres isn't on the node skip it */
+			continue;
+		_gres_2_tres_str_internal(&tres_str,
+					  job_state_ptr->gres_name,
+					  job_state_ptr->type_name,
+					  count);
+	}
+	list_iterator_destroy(job_gres_iter);
+
+	if (!locked)
+		assoc_mgr_unlock(&locks);
+
+	return tres_str;
+}
+
+extern char *gres_ctld_gres_2_tres_str(List gres_list, bool is_job, bool locked)
+{
+	ListIterator itr;
+	gres_state_t *gres_state_ptr;
+	uint64_t count;
+	char *col_name = NULL;
+	char *tres_str = NULL;
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+
+	if (!gres_list)
+		return NULL;
+
+	/* must be locked first before gres_contrex_lock!!! */
+	if (!locked)
+		assoc_mgr_lock(&locks);
+
+	itr = list_iterator_create(gres_list);
+	while ((gres_state_ptr = list_next(itr))) {
+		if (is_job) {
+			gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
+				gres_state_ptr->gres_data;
+			col_name = gres_data_ptr->type_name;
+			count = gres_data_ptr->total_gres;
+		} else {
+			gres_step_state_t *gres_data_ptr = (gres_step_state_t *)
+				gres_state_ptr->gres_data;
+			col_name = gres_data_ptr->type_name;
+			count = gres_data_ptr->total_gres;
+		}
+
+		/* If we are no_consume, print a 0 */
+		if (count == NO_CONSUME_VAL64)
+			count = 0;
+
+		_gres_2_tres_str_internal(&tres_str,
+					  gres_state_ptr->gres_name,
+					  col_name, count);
+	}
+	list_iterator_destroy(itr);
+
+	if (!locked)
+		assoc_mgr_unlock(&locks);
+
+	return tres_str;
+}
