@@ -333,21 +333,12 @@ extern int gres_find_step_by_key(void *x, void *key)
 	return 0;
 }
 
-static int _gres_find_name_internal(char *name, char *key, uint32_t plugin_id)
+static int _gres_find_name_internal(char *name, char *key,
+				    gres_state_t *gres_ptr)
 {
 	if (!name) {
-		int i;
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_context[i].plugin_id == plugin_id) {
-				name = gres_context[i].gres_name;
-				break;
-			}
-		}
-
-		if (!name) {
-			debug("%s: couldn't find name", __func__);
-			return 0;
-		}
+		xassert(gres_ptr->gres_name);
+		name = gres_ptr->gres_name;
 	}
 
 	if (!xstrcmp(name, key))
@@ -362,7 +353,7 @@ static int _gres_job_find_name(void *x, void *key)
 		(gres_job_state_t *)state_ptr->gres_data;
 
 	return _gres_find_name_internal(gres_data_ptr->type_name, (char *)key,
-					state_ptr->plugin_id);
+					state_ptr);
 }
 
 static int _gres_step_find_name(void *x, void *key)
@@ -371,7 +362,7 @@ static int _gres_step_find_name(void *x, void *key)
 	gres_step_state_t *gres_data_ptr =
 		(gres_step_state_t *)state_ptr->gres_data;
 	return _gres_find_name_internal(gres_data_ptr->type_name, (char *)key,
-					state_ptr->plugin_id);
+					state_ptr);
 }
 
 static int _load_gres_plugin(slurm_gres_context_t *plugin_context)
