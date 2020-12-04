@@ -44,6 +44,7 @@ documents those changes that are of interest to users and administrators.
  -- cli_filter - add "type" to readily distinguish between the CLI command in
     use.
  -- smail - reduce sleep before seff to 5 seconds.
+ -- Ensure SPANK prolog and epilog run without an explicit PlugStackConfig.
 
 * Changes in Slurm 20.11.0
 ==========================
@@ -240,6 +241,7 @@ documents those changes that are of interest to users and administrators.
  -- select/cray_aries - Correctly remove jobs/steps from blades using NPC.
  -- Fix false positive oom-kill events on extern step termination when
     jobacct_gather/cgroup configured.
+ -- Ensure SPANK prolog and epilog run without an explicit PlugStackConfig.
 
 * Changes in Slurm 20.02.6
 ==========================
