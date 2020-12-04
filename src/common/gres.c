@@ -9856,7 +9856,8 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 			count = 0;
 
 		_gres_2_tres_str_internal(&tres_str, gres_name, col_name, count,
-					  (i < gres_context_cnt));
+		_gres_2_tres_str_internal(&tres_str,
+					  true);
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&gres_context_lock);
