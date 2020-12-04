@@ -10019,17 +10019,7 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 	itr = list_iterator_create(gres_list);
 	while ((gres_state_ptr = list_next(itr))) {
 		bool set_total = false;
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_context[i].plugin_id ==
-			    gres_state_ptr->plugin_id) {
-				tres_rec.name =	gres_context[i].gres_name;
-				break;
-			}
-		}
-		if (!tres_rec.name) {
-			debug("%s: couldn't find name", __func__);
-			continue;
-		}
+		tres_rec.name = gres_state_ptr->gres_name;
 
 		/* Get alloc count for main GRES. */
 		switch (state_type) {
@@ -10083,8 +10073,8 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 			col_name = gres_data_ptr->type_name;
 			if (col_name) {
 				tres_rec.name = xstrdup_printf(
-					"%s%s",
-					gres_context[i].gres_name_colon,
+					"%s:%s",
+					gres_state_ptr->gres_name,
 					col_name);
 				if ((tres_pos = assoc_mgr_find_tres_pos(
 					     &tres_rec, true)) != -1)
@@ -10099,12 +10089,10 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 				 * Although the reported "type" may not be
 				 * accurate, it is better than nothing...
 				 */
-				tres_rec.name = xstrdup_printf(
-					"%s", gres_context[i].gres_name);
+				tres_rec.name = gres_state_ptr->gres_name;
 				if ((tres_pos = assoc_mgr_find_tres_pos2(
 					     &tres_rec, true)) != -1)
 					tres_cnt[tres_pos] = count;
-				xfree(tres_rec.name);
 			}
 			break;
 		}
@@ -10120,8 +10108,8 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 					continue;
 
 				tres_rec.name = xstrdup_printf(
-						"%s%s",
-						gres_context[i].gres_name_colon,
+						"%s:%s",
+						gres_state_ptr->gres_name,
 						col_name);
 
 				count = gres_data_ptr->type_cnt_alloc[type];
