@@ -1030,26 +1030,6 @@ extern char *gres_job_gres_on_node_as_tres(List job_gres_list,
 					   int node_inx,
 					   bool locked);
 
-/* Fill in the job allocated tres_cnt based off the gres_list and node_cnt
- * IN gres_list - filled in with gres_job_state_t's
- * IN node_cnt - number of nodes in the job
- * OUT tres_cnt - gres spots filled in with total number of TRES
- *                requested for job that are requested in gres_list
- * IN locked - if the assoc_mgr tres read locked is locked or not
- */
-extern void gres_set_job_tres_cnt(List gres_list,
-				  uint32_t node_cnt,
-				  uint64_t *tres_cnt,
-				  bool locked);
-
-/* Fill in the node allocated tres_cnt based off the gres_list
- * IN gres_list - filled in with gres_node_state_t's gres_alloc_cnt
- * OUT tres_cnt - gres spots filled in with total number of TRES
- *                allocated on node
- * IN locked - if the assoc_mgr tres read locked is locked or not
- */
-extern void gres_set_node_tres_cnt(List gres_list, uint64_t *tres_cnt,
-				   bool locked);
 
 /* return the major info from a given path of a device */
 extern char *gres_device_major(char *dev_path);

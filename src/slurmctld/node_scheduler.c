@@ -2413,10 +2413,10 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)selected_node_cnt;
 
 	assoc_mgr_lock(&job_read_locks);
-	gres_set_job_tres_cnt(job_ptr->gres_list,
-			      selected_node_cnt,
-			      tres_req_cnt,
-			      true);
+	gres_ctld_set_job_tres_cnt(job_ptr->gres_list,
+				   selected_node_cnt,
+				   tres_req_cnt,
+				   true);
 
 	tres_req_cnt[TRES_ARRAY_BILLING] =
 		assoc_mgr_tres_weighted(tres_req_cnt,

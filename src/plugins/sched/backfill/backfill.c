@@ -86,6 +86,7 @@
 #include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/fed_mgr.h"
 #include "src/slurmctld/front_end.h"
+#include "src/slurmctld/gres_ctld.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
@@ -2653,10 +2654,10 @@ skip_start:
 				(uint64_t)selected_node_cnt;
 
 			assoc_mgr_lock(&locks);
-			gres_set_job_tres_cnt(job_ptr->gres_list,
-					      selected_node_cnt,
-					      tres_req_cnt,
-					      true);
+			gres_ctld_set_job_tres_cnt(job_ptr->gres_list,
+						   selected_node_cnt,
+						   tres_req_cnt,
+						   true);
 
 			tres_req_cnt[TRES_ARRAY_BILLING] =
 				assoc_mgr_tres_weighted(
@@ -3330,8 +3331,9 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 		tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)selected_node_cnt;
 
 		assoc_mgr_lock(&locks);
-		gres_set_job_tres_cnt(job_ptr->gres_list, selected_node_cnt,
-				      tres_req_cnt, true);
+		gres_ctld_set_job_tres_cnt(job_ptr->gres_list,
+					   selected_node_cnt,
+					   tres_req_cnt, true);
 
 		tres_req_cnt[TRES_ARRAY_BILLING] =
 			assoc_mgr_tres_weighted(

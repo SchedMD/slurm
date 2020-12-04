@@ -80,6 +80,7 @@
 #include "src/slurmctld/fed_mgr.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
+#include "src/slurmctld/gres_ctld.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/licenses.h"
@@ -3375,10 +3376,10 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 					sockets_per_node;
 			}
 			assoc_mgr_lock(&locks);
-			gres_set_job_tres_cnt(job_ptr->gres_list,
-					      job_ptr->details->min_nodes,
-					      job_ptr->tres_req_cnt,
-					      true);
+			gres_ctld_set_job_tres_cnt(job_ptr->gres_list,
+						   job_ptr->details->min_nodes,
+						   job_ptr->tres_req_cnt,
+						   true);
 			xfree(job_ptr->tres_req_str);
 			job_ptr->tres_req_str =
 				assoc_mgr_make_tres_str_from_array(

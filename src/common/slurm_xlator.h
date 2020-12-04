@@ -174,8 +174,6 @@
 #define gres_get_step_state	slurm_gres_get_step_state
 #define gres_get_job_state	slurm_gres_get_job_state
 #define gres_2_tres_str		slurm_gres_2_tres_str
-#define gres_set_job_tres_cnt	slurm_gres_set_job_tres_cnt
-#define gres_set_node_tres_cnt	slurm_gres_set_node_tres_cnt
 #define gres_device_major	slurm_gres_device_major
 #define gres_sock_delete	slurm_gres_sock_delete
 #define destroy_gres_device	slurm_destroy_gres_device

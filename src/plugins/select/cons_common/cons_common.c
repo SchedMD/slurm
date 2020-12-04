@@ -1837,8 +1837,8 @@ extern int select_p_select_nodeinfo_set_all(void)
 			gres_list = select_node_usage[n].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		gres_set_node_tres_cnt(gres_list, nodeinfo->tres_alloc_cnt,
-				       false);
+		gres_ctld_set_node_tres_cnt(gres_list, nodeinfo->tres_alloc_cnt,
+					    false);
 
 		xfree(nodeinfo->tres_alloc_fmt_str);
 		nodeinfo->tres_alloc_fmt_str =

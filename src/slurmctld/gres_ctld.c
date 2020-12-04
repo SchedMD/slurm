@@ -35,6 +35,7 @@
 \*****************************************************************************/
 
 #include "gres_ctld.h"
+#include "src/common/assoc_mgr.h"
 #include "src/common/xstring.h"
 
 /*
@@ -1384,6 +1385,175 @@ extern void gres_ctld_job_clear(List job_gres_list)
 		job_state_ptr->node_cnt = 0;
 	}
 	list_iterator_destroy(job_gres_iter);
+}
+
+/* Fill in job/node TRES arrays with allocated GRES. */
+static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
+			       List gres_list,
+			       uint32_t node_cnt,
+			       uint64_t *tres_cnt,
+			       bool locked)
+{
+	ListIterator itr;
+	gres_state_t *gres_state_ptr;
+	static bool first_run = 1;
+	static slurmdb_tres_rec_t tres_rec;
+	char *col_name = NULL;
+	uint64_t count;
+	int tres_pos;
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+
+	/* we only need to init this once */
+	if (first_run) {
+		first_run = 0;
+		memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
+		tres_rec.type = "gres";
+	}
+
+	if (!gres_list || !tres_cnt ||
+	    ((state_type == GRES_STATE_TYPE_JOB) &&
+	     (!node_cnt || (node_cnt == NO_VAL))))
+		return;
+
+	/* must be locked first before gres_contrex_lock!!! */
+	if (!locked)
+		assoc_mgr_lock(&locks);
+
+	gres_clear_tres_cnt(tres_cnt, true);
+
+	itr = list_iterator_create(gres_list);
+	while ((gres_state_ptr = list_next(itr))) {
+		bool set_total = false;
+		tres_rec.name = gres_state_ptr->gres_name;
+
+		/* Get alloc count for main GRES. */
+		switch (state_type) {
+		case GRES_STATE_TYPE_JOB:
+		{
+			gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
+				gres_state_ptr->gres_data;
+			count = gres_data_ptr->total_gres;
+			break;
+		}
+		case GRES_STATE_TYPE_NODE:
+		{
+			gres_node_state_t *gres_data_ptr = (gres_node_state_t *)
+				gres_state_ptr->gres_data;
+			count = gres_data_ptr->gres_cnt_alloc;
+			break;
+		}
+		default:
+			error("%s: unsupported state type %d", __func__,
+			      state_type);
+			continue;
+		}
+		/*
+		 * Set main TRES's count (i.e. if no GRES "type" is being
+		 * accounted for). We need to increment counter since the job
+		 * may have been allocated multiple GRES types, but Slurm is
+		 * only configured to track the total count. For example, a job
+		 * allocated 1 GPU of type "tesla" and 1 GPU of type "volta",
+		 * but we want to record that the job was allocated a total of
+		 * 2 GPUs.
+		 */
+		if ((tres_pos = assoc_mgr_find_tres_pos(&tres_rec,true)) != -1){
+			if (count == NO_CONSUME_VAL64)
+				tres_cnt[tres_pos] = NO_CONSUME_VAL64;
+			else
+				tres_cnt[tres_pos] += count;
+			set_total = true;
+		}
+
+		/*
+		 * Set TRES count for GRES model types. This would be handy for
+		 * GRES like "gpu:tesla", where you might want to track both as
+		 * TRES.
+		 */
+		switch (state_type) {
+		case GRES_STATE_TYPE_JOB:
+		{
+			gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
+				gres_state_ptr->gres_data;
+
+			col_name = gres_data_ptr->type_name;
+			if (col_name) {
+				tres_rec.name = xstrdup_printf(
+					"%s:%s",
+					gres_state_ptr->gres_name,
+					col_name);
+				if ((tres_pos = assoc_mgr_find_tres_pos(
+					     &tres_rec, true)) != -1)
+					tres_cnt[tres_pos] = count;
+				xfree(tres_rec.name);
+			} else if (!set_total) {
+				/*
+				 * Job allocated GRES without "type"
+				 * specification, but Slurm is only accounting
+				 * for this GRES by specific "type", so pick
+				 * some valid "type" to get some accounting.
+				 * Although the reported "type" may not be
+				 * accurate, it is better than nothing...
+				 */
+				tres_rec.name = gres_state_ptr->gres_name;
+				if ((tres_pos = assoc_mgr_find_tres_pos2(
+					     &tres_rec, true)) != -1)
+					tres_cnt[tres_pos] = count;
+			}
+			break;
+		}
+		case GRES_STATE_TYPE_NODE:
+		{
+			int type;
+			gres_node_state_t *gres_data_ptr = (gres_node_state_t *)
+				gres_state_ptr->gres_data;
+
+			for (type = 0; type < gres_data_ptr->type_cnt; type++) {
+				col_name = gres_data_ptr->type_name[type];
+				if (!col_name)
+					continue;
+
+				tres_rec.name = xstrdup_printf(
+						"%s:%s",
+						gres_state_ptr->gres_name,
+						col_name);
+
+				count = gres_data_ptr->type_cnt_alloc[type];
+
+				if ((tres_pos = assoc_mgr_find_tres_pos(
+							&tres_rec, true)) != -1)
+					tres_cnt[tres_pos] = count;
+				xfree(tres_rec.name);
+			}
+			break;
+		}
+		default:
+			error("%s: unsupported state type %d", __func__,
+			      state_type);
+			continue;
+		}
+	}
+	list_iterator_destroy(itr);
+
+	if (!locked)
+		assoc_mgr_unlock(&locks);
+
+	return;
+}
+extern void gres_ctld_set_job_tres_cnt(List gres_list,
+				       uint32_t node_cnt,
+				       uint64_t *tres_cnt,
+				       bool locked)
+{
+	_set_type_tres_cnt(GRES_STATE_TYPE_JOB,
+			   gres_list, node_cnt, tres_cnt, locked);
+}
+
+extern void gres_ctld_set_node_tres_cnt(List gres_list,
+					uint64_t *tres_cnt,
+					bool locked)
+{
+	_set_type_tres_cnt(GRES_STATE_TYPE_NODE,
+			   gres_list, 0, tres_cnt, locked);
 }
 
 static int _step_alloc(void *step_gres_data, void *job_gres_data,

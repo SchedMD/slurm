@@ -93,6 +93,7 @@
 #include "src/slurmctld/fed_mgr.h"
 #include "src/slurmctld/front_end.h"
 #include "src/slurmctld/gang.h"
+#include "src/slurmctld/gres_ctld.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/job_submit.h"
 #include "src/slurmctld/licenses.h"
@@ -6946,10 +6947,10 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	gres_set_job_tres_cnt(gres_list,
-			      job_desc->min_nodes,
-			      job_desc->tres_req_cnt,
-			      false);
+	gres_ctld_set_job_tres_cnt(gres_list,
+				   job_desc->min_nodes,
+				   job_desc->tres_req_cnt,
+				   false);
 
 	/*
 	 * Do this last,after other TRES' have been set as it uses the other
@@ -8821,10 +8822,10 @@ extern void job_set_req_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
 				 true);
 
 	/* FIXME: this assumes that all nodes have equal TRES */
-	gres_set_job_tres_cnt(job_ptr->gres_list,
-			      node_cnt,
-			      job_ptr->tres_req_cnt,
-			      true);
+	gres_ctld_set_job_tres_cnt(job_ptr->gres_list,
+				   node_cnt,
+				   job_ptr->tres_req_cnt,
+				   true);
 
 	bb_g_job_set_tres_cnt(job_ptr,
 			      job_ptr->tres_req_cnt,
@@ -8890,10 +8891,10 @@ extern void job_set_alloc_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
 				 job_ptr->tres_alloc_cnt,
 				 true);
 
-	gres_set_job_tres_cnt(job_ptr->gres_list,
-			      alloc_nodes,
-			      job_ptr->tres_alloc_cnt,
-			      true);
+	gres_ctld_set_job_tres_cnt(job_ptr->gres_list,
+				   alloc_nodes,
+				   job_ptr->tres_alloc_cnt,
+				   true);
 
 	bb_g_job_set_tres_cnt(job_ptr,
 			      job_ptr->tres_alloc_cnt,
@@ -11804,8 +11805,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			job_specs->cpus_per_task = NO_VAL16;	/* Unchanged */
 	}
 	if (gres_update) {
-		gres_set_job_tres_cnt(gres_list, detail_ptr->min_nodes,
-				      job_specs->tres_req_cnt, false);
+		gres_ctld_set_job_tres_cnt(gres_list, detail_ptr->min_nodes,
+					   job_specs->tres_req_cnt, false);
 	}
 
 	if ((job_specs->min_nodes != NO_VAL) &&

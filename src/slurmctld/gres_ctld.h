@@ -136,6 +136,30 @@ extern void gres_ctld_job_merge(List from_job_gres_list,
 extern void gres_ctld_job_clear(List job_gres_list);
 
 /*
+ * Fill in the job allocated tres_cnt based off the gres_list and node_cnt
+ * IN gres_list - filled in with gres_job_state_t's
+ * IN node_cnt - number of nodes in the job
+ * OUT tres_cnt - gres spots filled in with total number of TRES
+ *                requested for job that are requested in gres_list
+ * IN locked - if the assoc_mgr tres read locked is locked or not
+ */
+extern void gres_ctld_set_job_tres_cnt(List gres_list,
+				       uint32_t node_cnt,
+				       uint64_t *tres_cnt,
+				       bool locked);
+
+/*
+ * Fill in the node allocated tres_cnt based off the gres_list
+ * IN gres_list - filled in with gres_node_state_t's gres_alloc_cnt
+ * OUT tres_cnt - gres spots filled in with total number of TRES
+ *                allocated on node
+ * IN locked - if the assoc_mgr tres read locked is locked or not
+ */
+extern void gres_ctld_set_node_tres_cnt(List gres_list,
+					uint64_t *tres_cnt,
+					bool locked);
+
+/*
  * Allocate resource to a step and update job and step gres information
  * IN step_gres_list - step's gres_list built by
  *		gres_plugin_step_state_validate()
