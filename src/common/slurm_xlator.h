@@ -171,8 +171,6 @@
 #define gres_get_job_info	slurm_gres_get_job_info
 #define gres_build_job_details	slurm_gres_build_job_details
 #define gres_get_step_info	slurm_gres_get_step_info
-#define gres_get_step_state	slurm_gres_get_step_state
-#define gres_get_job_state	slurm_gres_get_job_state
 #define gres_device_major	slurm_gres_device_major
 #define gres_sock_delete	slurm_gres_sock_delete
 #define destroy_gres_device	slurm_destroy_gres_device

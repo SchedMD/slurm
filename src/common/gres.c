@@ -103,8 +103,6 @@ strong_alias(gres_get_value_by_type, slurm_gres_get_value_by_type);
 strong_alias(gres_get_job_info, slurm_gres_get_job_info);
 strong_alias(gres_build_job_details, slurm_gres_build_job_details);
 strong_alias(gres_get_step_info, slurm_gres_get_step_info);
-strong_alias(gres_get_step_state, slurm_gres_get_step_state);
-strong_alias(gres_get_job_state, slurm_gres_get_job_state);
 strong_alias(gres_device_major, slurm_gres_device_major);
 strong_alias(gres_sock_delete, slurm_gres_sock_delete);
 strong_alias(destroy_gres_device, slurm_destroy_gres_device);
@@ -327,38 +325,6 @@ extern int gres_find_step_by_key(void *x, void *key)
 	    (gres_data_ptr->type_id == step_key->type_id))
 		return 1;
 	return 0;
-}
-
-static int _gres_find_name_internal(char *name, char *key,
-				    gres_state_t *gres_ptr)
-{
-	if (!name) {
-		xassert(gres_ptr->gres_name);
-		name = gres_ptr->gres_name;
-	}
-
-	if (!xstrcmp(name, key))
-		return 1;
-	return 0;
-}
-
-static int _gres_job_find_name(void *x, void *key)
-{
-	gres_state_t *state_ptr = (gres_state_t *) x;
-	gres_job_state_t *gres_data_ptr =
-		(gres_job_state_t *)state_ptr->gres_data;
-
-	return _gres_find_name_internal(gres_data_ptr->type_name, (char *)key,
-					state_ptr);
-}
-
-static int _gres_step_find_name(void *x, void *key)
-{
-	gres_state_t *state_ptr = (gres_state_t *) x;
-	gres_step_state_t *gres_data_ptr =
-		(gres_step_state_t *)state_ptr->gres_data;
-	return _gres_find_name_internal(gres_data_ptr->type_name, (char *)key,
-					state_ptr);
 }
 
 static int _load_gres_plugin(slurm_gres_context_t *plugin_context)
@@ -9701,36 +9667,6 @@ extern int gres_get_step_info(List step_gres_list, char *gres_name,
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
-}
-
-extern gres_step_state_t *gres_get_step_state(List gres_list, char *name)
-{
-	gres_state_t *gres_state_ptr;
-
-	if (!gres_list || !name || !list_count(gres_list))
-		return NULL;
-
-	gres_state_ptr = list_find_first(gres_list, _gres_step_find_name, name);
-
-	if (!gres_state_ptr)
-		return NULL;
-
-	return (gres_step_state_t *)gres_state_ptr->gres_data;
-}
-
-extern gres_job_state_t *gres_get_job_state(List gres_list, char *name)
-{
-	gres_state_t *gres_state_ptr;
-
-	if (!gres_list || !name || !list_count(gres_list))
-		return NULL;
-
-	gres_state_ptr = list_find_first(gres_list, _gres_job_find_name, name);
-
-	if (!gres_state_ptr)
-		return NULL;
-
-	return (gres_job_state_t *)gres_state_ptr->gres_data;
 }
 
 extern uint32_t gres_get_autodetect_flags(void)

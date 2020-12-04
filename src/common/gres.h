@@ -1003,9 +1003,6 @@ extern int gres_get_step_info(List step_gres_list, char *gres_name,
 			      uint32_t node_inx,
 			      enum gres_step_data_type data_type, void *data);
 
-extern gres_job_state_t *gres_get_job_state(List gres_list, char *name);
-extern gres_step_state_t *gres_get_step_state(List gres_list, char *name);
-
 extern uint32_t gres_get_autodetect_flags(void);
 
 /* return the major info from a given path of a device */
