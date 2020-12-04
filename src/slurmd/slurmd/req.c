@@ -5061,7 +5061,6 @@ _rpc_abort_job(slurm_msg_t *msg)
 static void
 _rpc_terminate_job(slurm_msg_t *msg)
 {
-	bool		have_spank = false;
 	int             rc     = SLURM_SUCCESS;
 	kill_job_msg_t *req    = msg->data;
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
@@ -5199,12 +5198,6 @@ _rpc_terminate_job(slurm_msg_t *msg)
 						uid);
 	}
 
-	if ((nsteps == 0) && !slurm_conf.epilog) {
-		struct stat stat_buf;
-		if (slurm_conf.plugstack &&
-		    !stat(slurm_conf.plugstack, &stat_buf))
-			have_spank = true;
-	}
 	/*
 	 *  If there are currently no active job steps and no
 	 *    configured epilog to run, bypass asynchronous reply and
@@ -5212,7 +5205,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 *    request. We need to send current switch state on AIX
 	 *    systems, so this bypass can not be used.
 	 */
-	if ((nsteps == 0) && !slurm_conf.epilog && !have_spank) {
+	if ((nsteps == 0) && !slurm_conf.epilog && !spank_plugin_count()) {
 		debug4("sent ALREADY_COMPLETE");
 		if (msg->conn_fd >= 0) {
 			slurm_send_rc_msg(msg,
