@@ -142,6 +142,7 @@ cset sstat       "${slurm_dir}/bin/sstat"
 cset strigger    "${slurm_dir}/bin/strigger"
 
 cset slurmd      "${slurm_dir}/sbin/slurmd"
+cset slurmrestd  "${slurm_dir}/sbin/slurmrestd"
 
 cset pbsnodes    "${slurm_dir}/bin/pbsnodes"
 cset qdel        "${slurm_dir}/bin/qdel"
