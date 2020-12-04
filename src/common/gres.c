@@ -9743,7 +9743,7 @@ extern uint32_t gres_get_autodetect_flags(void)
 
 static void _gres_2_tres_str_internal(char **tres_str,
 				      char *gres_name, char *gres_type,
-				      uint64_t count, bool find_other_types)
+				      uint64_t count)
 {
 	slurmdb_tres_rec_t *tres_rec;
 	static bool first_run = 1;
@@ -9770,9 +9770,6 @@ static void _gres_2_tres_str_internal(char **tres_str,
 		xstrfmtcat(*tres_str, "%s%u=%"PRIu64,
 			   *tres_str ? "," : "",
 			   tres_rec->id, count);
-
-	if (!find_other_types)
-		return;
 
 	if (gres_type) {
 		/*
@@ -9855,9 +9852,7 @@ extern char *gres_2_tres_str(List gres_list, bool is_job, bool locked)
 		if (count == NO_CONSUME_VAL64)
 			count = 0;
 
-		_gres_2_tres_str_internal(&tres_str, gres_name, col_name, count,
-		_gres_2_tres_str_internal(&tres_str,
-					  true);
+		_gres_2_tres_str_internal(&tres_str, gres_name, col_name, count);
 	}
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&gres_context_lock);
@@ -9923,7 +9918,7 @@ extern char *gres_job_gres_on_node_as_tres(List job_gres_list,
 		_gres_2_tres_str_internal(&tres_str,
 					  job_state_ptr->gres_name,
 					  job_state_ptr->type_name,
-					  count, true);
+					  count);
 	}
 	list_iterator_destroy(job_gres_iter);
 
