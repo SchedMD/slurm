@@ -9754,9 +9754,7 @@ extern gres_step_state_t *gres_get_step_state(List gres_list, char *name)
 	if (!gres_list || !name || !list_count(gres_list))
 		return NULL;
 
-	slurm_mutex_lock(&gres_context_lock);
 	gres_state_ptr = list_find_first(gres_list, _gres_step_find_name, name);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	if (!gres_state_ptr)
 		return NULL;
@@ -9771,9 +9769,7 @@ extern gres_job_state_t *gres_get_job_state(List gres_list, char *name)
 	if (!gres_list || !name || !list_count(gres_list))
 		return NULL;
 
-	slurm_mutex_lock(&gres_context_lock);
 	gres_state_ptr = list_find_first(gres_list, _gres_job_find_name, name);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	if (!gres_state_ptr)
 		return NULL;
