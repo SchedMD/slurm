@@ -10015,6 +10015,7 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 		    ((tres_pos = assoc_mgr_find_tres_pos(&tres_rec,true)) !=-1))
 			tres_cnt[tres_pos] = 0;
 	}
+	slurm_mutex_unlock(&gres_context_lock);
 
 	itr = list_iterator_create(gres_list);
 	while ((gres_state_ptr = list_next(itr))) {
@@ -10128,7 +10129,6 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 		}
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&gres_context_lock);
 
 	if (!locked)
 		assoc_mgr_unlock(&locks);
