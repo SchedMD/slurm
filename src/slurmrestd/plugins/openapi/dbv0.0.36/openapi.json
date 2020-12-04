@@ -352,7 +352,7 @@
             "in": "query",
             "name": "account",
             "description": "account name",
-            "required": true,
+            "required": false,
             "style": "form",
             "explode": false,
             "schema": {
