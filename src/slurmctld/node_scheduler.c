@@ -3371,9 +3371,8 @@ static int _build_node_list(job_record_t *job_ptr,
 		node_set_ptr[node_set_inx].node_cnt =
 			bit_set_count(node_set_ptr[node_set_inx].my_bitmap);
 		if (node_set_ptr[node_set_inx].node_cnt == 0) {
-			debug2("%s: JobId=%u matched 0 nodes (%s): %s",
-			       __func__, job_ptr->job_id, config_ptr->nodes,
-			       err_msg ? *err_msg : NULL);
+			debug2("%s: JobId=%u matched 0 nodes (%s) due to job partition or features",
+			       __func__, job_ptr->job_id, config_ptr->nodes);
 			FREE_NULL_BITMAP(node_set_ptr[node_set_inx].my_bitmap);
 			continue;
 		}
