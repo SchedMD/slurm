@@ -31,30 +31,61 @@ source ./globals
 set exit_code            0
 set got_job_grps         0
 set got_login_grps       0
+set config_dir           [get_conf_path]
+set config_file          "$config_dir/slurm.conf"
+set cwd                  "[$bin_pwd]"
+set mail_prog            "$test_id.MailProg.sh"
+set mail_prog_out        "$test_id.MailProg.out"
 
 if {[get_config_param "FrontendName"] ne "MISSING" && ![is_super_user]} {
 	skip "This test is incompatible with front-end systems"
 }
 
+proc cleanup { } {
+	global config_dir exit_code bin_rm
+	global mail_prog mail_prog_out
+
+	restore_conf $config_dir/slurm.conf
+	exec $bin_rm -f $mail_prog $mail_prog_out
+
+	reconfigure
+}
+
+
+save_conf $config_dir/slurm.conf
+make_bash_script $mail_prog "
+echo $@ >> $cwd/$mail_prog_out
+"
+
+#Comment MailProg line if existed before
+exec $bin_sed -i /^\[\t\s\]*MailProg\[\t\s\]*=/Id $config_file
+
+# Append MailProg config to the slurm.conf
+exec $bin_echo "MailProg=$cwd/$mail_prog" >> $config_file
+reconfigure
+
+
 #
 # Execute 'id' to determine my user and group ID...
 #
-
 set login_grp_info [get_my_user_name]
 
 #
 # Submit a slurm job that will execute 'id'
 #
+set job_id 0
+set got_job_id 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -t1 --job-name=test$test_id --mail-type=all --mail-user=$login_grp_info $bin_id -un]
+set srun_pid [spawn $srun -N1 -t1 --job-name=test$test_id --mail-type=all --mail-user=$login_grp_info /bin/bash -c "echo \$SLURM_JOB_ID"]
 expect {
 	-re "error" {
 		log_error "Error running srun"
 		set exit_code 1
 		exp_continue
 	}
-	-re "$login_grp_info" {
-		set got_job_grps 1
+	-re "($number)" {
+		set job_id $expect_out(1,string)
+		set got_job_id 1
 		exp_continue
 	}
 	timeout {
@@ -67,8 +98,36 @@ expect {
 	}
 }
 
-if {$got_job_grps == 0} {
-	fail "Did not get user info from slurm job"
+if {$got_job_id == 0} {
+	fail "Did not get JobId info from slurm job"
+}
+
+set began_logged 0
+set ended_logged 0
+
+#Wait for mails to go through agent
+if {[wait_for_file $mail_prog_out] != 0} {
+	fail "No output file"
+}
+
+spawn $bin_cat $mail_prog_out
+expect {
+	-re "-s Slurm Job_id=$job_id Name=test$test_id Began" {
+		set began_logged 1
+		exp_continue
+	}
+	-re "-s Slurm Job_id=$job_id Name=test$test_id Ended" {
+		set ended_logged 1
+		exp_continue
+	}
+}
+
+if {$began_logged == 0} {
+	fail "Began mail not sent for $job_id"
+}
+
+if {$ended_logged == 0} {
+	fail "Ended mail not sent for $job_id"
 }
 
 if {$exit_code != 0} {
