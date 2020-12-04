@@ -2288,6 +2288,18 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _gres_state_delete_members(void *x)
+{
+	gres_state_t *gres_ptr = (gres_state_t *) x;
+
+	if (!gres_ptr)
+		return;
+
+	xfree(gres_ptr->gres_name);
+	xassert(!gres_ptr->gres_data); /* This must be freed beforehand */
+	xfree(gres_ptr);
+}
+
 static void _gres_node_state_delete_topo(gres_node_state_t *gres_node_ptr)
 {
 	int i;
@@ -2343,7 +2355,8 @@ static void _gres_node_list_delete(void *list_element)
 	gres_ptr = (gres_state_t *) list_element;
 	gres_node_ptr = (gres_node_state_t *) gres_ptr->gres_data;
 	_gres_node_state_delete(gres_node_ptr);
-	xfree(gres_ptr);
+	gres_ptr->gres_data = NULL;
+	_gres_state_delete_members(gres_ptr);
 }
 
 extern void gres_add_type(char *type, gres_node_state_t *gres_data,
@@ -2591,6 +2604,8 @@ extern int gres_plugin_init_node_config(char *node_name, char *orig_config,
 		if (gres_ptr == NULL) {
 			gres_ptr = xmalloc(sizeof(gres_state_t));
 			gres_ptr->plugin_id = gres_context[i].plugin_id;
+			gres_ptr->gres_name =
+				xstrdup(gres_context[i].gres_name);
 			list_append(*gres_list, gres_ptr);
 		}
 
@@ -3213,6 +3228,8 @@ extern int gres_plugin_node_config_validate(char *node_name,
 		if (gres_ptr == NULL) {
 			gres_ptr = xmalloc(sizeof(gres_state_t));
 			gres_ptr->plugin_id = gres_context[i].plugin_id;
+			gres_ptr->gres_name =
+				xstrdup(gres_context[i].gres_name);
 			list_append(*gres_list, gres_ptr);
 		}
 		rc2 = _node_config_validate(node_name, orig_config,
@@ -3312,6 +3329,7 @@ extern void gres_plugin_node_feature(char *node_name,
 			gres_ptr = xmalloc(sizeof(gres_state_t));
 			gres_ptr->plugin_id = plugin_id;
 			gres_ptr->gres_data = _build_gres_node_state();
+			gres_ptr->gres_name = xstrdup(gres_name);
 			list_append(*gres_list, gres_ptr);
 		}
 		gres_node_ptr = gres_ptr->gres_data;
@@ -3923,6 +3941,7 @@ extern int gres_plugin_node_state_unpack(List *gres_list, buf_t *buffer,
 		gres_ptr = xmalloc(sizeof(gres_state_t));
 		gres_ptr->plugin_id = gres_context[i].plugin_id;
 		gres_ptr->gres_data = gres_node_ptr;
+		gres_ptr->gres_name = xstrdup(gres_context[i].gres_name);
 		list_append(*gres_list, gres_ptr);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
@@ -4050,6 +4069,8 @@ extern List gres_plugin_node_state_dup(List gres_list)
 				new_gres = xmalloc(sizeof(gres_state_t));
 				new_gres->plugin_id = gres_ptr->plugin_id;
 				new_gres->gres_data = gres_data;
+				new_gres->gres_name =
+					xstrdup(gres_ptr->gres_name);
 				list_append(new_list, new_gres);
 			}
 			break;
@@ -4526,7 +4547,8 @@ extern void gres_job_list_delete(void *list_element)
 	gres_ptr = (gres_state_t *) list_element;
 	slurm_mutex_lock(&gres_context_lock);
 	_job_state_delete(gres_ptr->gres_data);
-	xfree(gres_ptr);
+	gres_ptr->gres_data = NULL;
+	_gres_state_delete_members(gres_ptr);
 	slurm_mutex_unlock(&gres_context_lock);
 }
 
@@ -4991,6 +5013,8 @@ static gres_job_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
 		gres_ptr = xmalloc(sizeof(gres_state_t));
 		gres_ptr->plugin_id = gres_context[context_inx].plugin_id;
 		gres_ptr->gres_data = job_gres_data;
+		gres_ptr->gres_name =
+			xstrdup(gres_context[context_inx].gres_name);
 		list_append(gres_list, gres_ptr);
 	}
 	job_gres_data->flags = flags;
@@ -5729,6 +5753,7 @@ extern List gres_plugin_job_state_extract(List gres_list, int node_index)
 		new_gres_state = xmalloc(sizeof(gres_state_t));
 		new_gres_state->plugin_id = gres_ptr->plugin_id;
 		new_gres_state->gres_data = new_gres_data;
+		new_gres_state->gres_name = xstrdup(gres_ptr->gres_name);
 		list_append(new_gres_list, new_gres_state);
 	}
 	list_iterator_destroy(gres_iter);
@@ -6081,6 +6106,7 @@ extern int gres_plugin_job_state_unpack(List *gres_list, buf_t *buffer,
 		gres_ptr = xmalloc(sizeof(gres_state_t));
 		gres_ptr->plugin_id = gres_context[i].plugin_id;
 		gres_ptr->gres_data = gres_job_ptr;
+		gres_ptr->gres_name = xstrdup(gres_context[i].gres_name);
 		gres_job_ptr = NULL;	/* nothing left to free on error */
 		list_append(*gres_list, gres_ptr);
 	}
@@ -7887,7 +7913,8 @@ static void _gres_step_list_delete(void *list_element)
 	gres_state_t *gres_ptr = (gres_state_t *) list_element;
 
 	_step_state_delete(gres_ptr->gres_data);
-	xfree(gres_ptr);
+	gres_ptr->gres_data = NULL;
+	_gres_state_delete_members(gres_ptr);
 }
 
 static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
@@ -8047,6 +8074,8 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 		gres_ptr = xmalloc(sizeof(gres_state_t));
 		gres_ptr->plugin_id = gres_context[context_inx].plugin_id;
 		gres_ptr->gres_data = step_gres_data;
+		gres_ptr->gres_name =
+			xstrdup(gres_context[context_inx].gres_name);
 		list_append(gres_list, gres_ptr);
 	}
 	step_gres_data->flags = flags;
@@ -8442,6 +8471,7 @@ List gres_plugin_step_state_extract(List gres_list, int node_index)
 		new_gres_state = xmalloc(sizeof(gres_state_t));
 		new_gres_state->plugin_id = gres_ptr->plugin_id;
 		new_gres_state->gres_data = new_gres_data;
+		new_gres_state->gres_name = xstrdup(gres_ptr->gres_name);
 		list_append(new_gres_list, new_gres_state);
 	}
 	list_iterator_destroy(gres_iter);
@@ -8618,6 +8648,7 @@ extern int gres_plugin_step_state_unpack(List *gres_list, buf_t *buffer,
 		gres_ptr = xmalloc(sizeof(gres_state_t));
 		gres_ptr->plugin_id = gres_context[i].plugin_id;
 		gres_ptr->gres_data = gres_step_ptr;
+		gres_ptr->gres_name = xstrdup(gres_context[i].gres_name);
 		gres_step_ptr = NULL;
 		list_append(*gres_list, gres_ptr);
 	}
