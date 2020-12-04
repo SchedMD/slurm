@@ -943,16 +943,6 @@ extern uint64_t gres_plugin_step_test(List step_gres_list, List job_gres_list,
 extern char *gres_plugin_sock_str(List sock_gres_list, int sock_inx);
 
 /*
- * Map a given GRES type ID back to a GRES type name.
- * gres_id IN - GRES type ID to search for.
- * gres_name IN - Pre-allocated string in which to store the GRES type name.
- * gres_name_len - Size of gres_name in bytes
- * RET - error code (currently not used--always return SLURM_SUCCESS)
- */
-extern int gres_gresid_to_gresname(uint32_t gres_id, char* gres_name,
-				   int gres_name_len);
-
-/*
  * Determine total count GRES of a given type are allocated to a job across
  * all nodes
  * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()

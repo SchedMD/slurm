@@ -97,7 +97,6 @@ typedef cpuset_t cpu_set_t;
 
 strong_alias(gres_find_id, slurm_gres_find_id);
 strong_alias(gres_find_sock_by_job_state, slurm_gres_find_sock_by_job_state);
-strong_alias(gres_gresid_to_gresname, slurm_gres_gresid_to_gresname);
 strong_alias(gres_get_node_used, slurm_gres_get_node_used);
 strong_alias(gres_get_system_cnt, slurm_gres_get_system_cnt);
 strong_alias(gres_get_value_by_type, slurm_gres_get_value_by_type);
@@ -2650,46 +2649,6 @@ static uint64_t _get_tot_gres_cnt(uint32_t plugin_id, uint64_t *topo_cnt,
 	if (cpu_set_cnt)
 		*topo_cnt = rec_cnt;
 	return gres_cnt;
-}
-
-/*
- * Map a given GRES type ID back to a GRES type name.
- * gres_id IN - GRES type ID to search for.
- * gres_name IN - Pre-allocated string in which to store the GRES type name.
- * gres_name_len - Size of gres_name in bytes
- * RET - error code (currently not used--always return SLURM_SUCCESS)
- */
-extern int gres_gresid_to_gresname(uint32_t gres_id, char* gres_name,
-				   int gres_name_len)
-{
-	int rc = SLURM_SUCCESS;
-	int      found = 0;
-	int i;
-
-	/*
-	 * Check GresTypes from slurm.conf (gres_context) for GRES type name
-	 */
-	slurm_mutex_lock(&gres_context_lock);
-	for (i = 0; i < gres_context_cnt; ++i) {
-		if (gres_id == gres_context[i].plugin_id) {
-			strlcpy(gres_name, gres_context[i].gres_name,
-				gres_name_len);
-			found = 1;
-			break;
-		}
-	}
-	slurm_mutex_unlock(&gres_context_lock);
-
-	/*
-	 * If can't find GRES type name, emit error and default to GRES type ID
-	 */
-	if (!found) {
-		error("Could not find GRES type name in slurm.conf that corresponds to GRES type ID `%d`.  Using ID as GRES type name instead.",
-		      gres_id);
-		snprintf(gres_name, gres_name_len, "%u", gres_id);
-	}
-
-	return rc;
 }
 
 /* Convert comma-delimited array of link counts to an integer array */
