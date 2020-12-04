@@ -3361,11 +3361,11 @@ static int _build_node_list(job_record_t *job_ptr,
 		 * for scheduling, but only as needed (slower)
 		 */
 		if (config_filter) {
+			_set_err_msg(cpus_ok, mem_ok, disk_ok,
+				     job_mc_ok, err_msg);
 			debug2("%s: JobId=%u filtered all nodes (%s): %s",
 			       __func__, job_ptr->job_id, config_ptr->nodes,
 			       err_msg ? *err_msg : NULL);
-			_set_err_msg(cpus_ok, mem_ok, disk_ok,
-				     job_mc_ok, err_msg);
 			continue;
 		}
 
