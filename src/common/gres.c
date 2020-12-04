@@ -9975,6 +9975,40 @@ extern char *gres_job_gres_on_node_as_tres(List job_gres_list,
 	return tres_str;
 }
 
+extern void gres_clear_tres_cnt(uint64_t *tres_cnt, bool locked)
+{
+	static bool first_run = 1;
+	static slurmdb_tres_rec_t tres_rec;
+	int tres_pos;
+	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+
+	/* we only need to init this once */
+	if (first_run) {
+		first_run = 0;
+		memset(&tres_rec, 0, sizeof(slurmdb_tres_rec_t));
+		tres_rec.type = "gres";
+	}
+
+	/* must be locked first before gres_contrex_lock!!! */
+	if (!locked)
+		assoc_mgr_lock(&locks);
+
+	slurm_mutex_lock(&gres_context_lock);
+	/* Initialize all GRES counters to zero. Increment them later. */
+	for (int i = 0; i < gres_context_cnt; i++) {
+		tres_rec.name =	gres_context[i].gres_name;
+		if (tres_rec.name &&
+		    ((tres_pos = assoc_mgr_find_tres_pos(
+			      &tres_rec, true)) !=-1))
+			tres_cnt[tres_pos] = 0;
+	}
+	slurm_mutex_unlock(&gres_context_lock);
+
+	/* must be locked first before gres_contrex_lock!!! */
+	if (!locked)
+		assoc_mgr_unlock(&locks);
+}
+
 /* Fill in job/node TRES arrays with allocated GRES. */
 static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 			       List gres_list,
@@ -9988,7 +10022,7 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 	static slurmdb_tres_rec_t tres_rec;
 	char *col_name = NULL;
 	uint64_t count;
-	int i, tres_pos;
+	int tres_pos;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	/* we only need to init this once */
@@ -10007,15 +10041,7 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 	if (!locked)
 		assoc_mgr_lock(&locks);
 
-	slurm_mutex_lock(&gres_context_lock);
-	/* Initialize all GRES counters to zero. Increment them later. */
-	for (i = 0; i < gres_context_cnt; i++) {
-		tres_rec.name =	gres_context[i].gres_name;
-		if (tres_rec.name &&
-		    ((tres_pos = assoc_mgr_find_tres_pos(&tres_rec,true)) !=-1))
-			tres_cnt[tres_pos] = 0;
-	}
-	slurm_mutex_unlock(&gres_context_lock);
+	gres_clear_tres_cnt(tres_cnt, true);
 
 	itr = list_iterator_create(gres_list);
 	while ((gres_state_ptr = list_next(itr))) {

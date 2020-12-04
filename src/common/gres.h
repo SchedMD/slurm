@@ -1110,6 +1110,14 @@ extern void gres_job_list_delete(void *list_element);
 extern void gres_sock_delete(void *x);
 
 /*
+ * Given a tres_cnt array of size slurmctld_tres_cnt reset all GRES counters to
+ * 0.
+ * IN/OUT tres_cnt - gres spots zeroed out
+ * IN locked - if the assoc_mgr tres read locked is locked or not
+ */
+extern void gres_clear_tres_cnt(uint64_t *tres_cnt, bool locked);
+
+/*
  * Return TRUE if this plugin ID consumes GRES count > 1 for a single device
  * file (e.g. MPS)
  */
