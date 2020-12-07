@@ -819,7 +819,7 @@ extern int parse_http(con_mgr_fd_t *con, void *x)
 		error("%s: [%s] unexpected HTTP error %s: %s",
 		      __func__, con->name, http_errno_name(parser->http_errno),
 		      http_errno_description(parser->http_errno));
-		rc = SLURM_UNEXPECTED_MSG_ERROR;
+		rc = _send_reject(parser, HTTP_STATUS_CODE_ERROR_BAD_REQUEST);
 	} else if (parser->upgrade) {
 		debug2("%s: [%s] HTTP Upgrade currently not supported",
 		       __func__, con->name);
