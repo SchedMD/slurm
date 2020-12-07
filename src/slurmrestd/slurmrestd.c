@@ -345,7 +345,7 @@ static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 
 int main(int argc, char **argv)
 {
-	int rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS, parse_rc = SLURM_SUCCESS;
 	struct sigaction sigpipe_handler = { .sa_handler = _sigpipe_handler };
 	socket_listen = list_create(xfree_ptr);
 	con_mgr_t *conmgr = NULL;
@@ -499,6 +499,9 @@ int main(int argc, char **argv)
 					     0)))
 			fatal("%s: unable to process stdin: %s",
 			      __func__, slurm_strerror(rc));
+
+		/* fail on first error if this is piped process */
+		conmgr->exit_on_error = true;
 	} else if (run_mode.listen) {
 		if (con_mgr_create_sockets(conmgr, socket_listen,
 					   conmgr_events))
@@ -512,6 +515,14 @@ int main(int argc, char **argv)
 	_lock_down();
 
 	rc = con_mgr_run(conmgr);
+
+	/*
+	 * Capture if there were issues during parsing in inet mode.
+	 * Inet mode expects connection errors to propagate upwards as
+	 * connection errors so they can be logged appropriately.
+	 */
+	if (conmgr->exit_on_error)
+		parse_rc = conmgr->error;
 
 	/* cleanup everything */
 	destroy_rest_auth();
@@ -546,5 +557,6 @@ int main(int argc, char **argv)
 	slurm_conf_destroy();
 	log_fini();
 
-	return rc;
+	/* send parsing RC if there were no higher level errors */
+	return (rc ? rc : parse_rc);
 }
