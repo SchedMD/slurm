@@ -24,7 +24,7 @@ Here is an example with StateSaveLocation=/var/spool/slurm/statesave/
 <pre>
 openssl genrsa -out /var/spool/slurm/statesave/jwt_hs256.key 2048
 chown slurm /var/spool/slurm/statesave/jwt_hs256.key
-chmod 0700 /var/spool/slurm/statesave/jwt_hs256.key
+chmod 0600 /var/spool/slurm/statesave/jwt_hs256.key
 </pre>
 </li>
 <li>Add JWT as an alternative authentication in slurm.conf:
@@ -49,6 +49,6 @@ scontrol token
 command.</li>
 </ol>
 
-<p style="text-align:center;">Last modified 3 December 2020</p>
+<p style="text-align:center;">Last modified 8 December 2020</p>
 
 <!--#include virtual="footer.txt"-->
