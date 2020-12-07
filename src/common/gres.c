@@ -2561,6 +2561,7 @@ extern int gres_init_node_config(char *node_name, char *orig_config,
 			gres_ptr->plugin_id = gres_context[i].plugin_id;
 			gres_ptr->gres_name =
 				xstrdup(gres_context[i].gres_name);
+			gres_ptr->state_type = GRES_STATE_TYPE_NODE;
 			list_append(*gres_list, gres_ptr);
 		}
 
@@ -3145,6 +3146,7 @@ extern int gres_node_config_validate(char *node_name,
 			gres_ptr->plugin_id = gres_context[i].plugin_id;
 			gres_ptr->gres_name =
 				xstrdup(gres_context[i].gres_name);
+			gres_ptr->state_type = GRES_STATE_TYPE_NODE;
 			list_append(*gres_list, gres_ptr);
 		}
 		rc2 = _node_config_validate(node_name, orig_config,
@@ -3245,6 +3247,7 @@ extern void gres_node_feature(char *node_name,
 			gres_ptr->plugin_id = plugin_id;
 			gres_ptr->gres_data = _build_gres_node_state();
 			gres_ptr->gres_name = xstrdup(gres_name);
+			gres_ptr->state_type = GRES_STATE_TYPE_NODE;
 			list_append(*gres_list, gres_ptr);
 		}
 		gres_node_ptr = gres_ptr->gres_data;
@@ -3858,6 +3861,7 @@ extern int gres_node_state_unpack(List *gres_list, buf_t *buffer,
 		gres_ptr->plugin_id = gres_context[i].plugin_id;
 		gres_ptr->gres_data = gres_node_ptr;
 		gres_ptr->gres_name = xstrdup(gres_context[i].gres_name);
+		gres_ptr->state_type = GRES_STATE_TYPE_NODE;
 		list_append(*gres_list, gres_ptr);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
@@ -3987,6 +3991,7 @@ extern List gres_node_state_dup(List gres_list)
 				new_gres->gres_data = gres_data;
 				new_gres->gres_name =
 					xstrdup(gres_ptr->gres_name);
+				gres_ptr->state_type = GRES_STATE_TYPE_NODE;
 				list_append(new_list, new_gres);
 			}
 			break;
@@ -4931,6 +4936,7 @@ static gres_job_state_t *_get_next_job_gres(char *in_val, uint64_t *cnt,
 		gres_ptr->gres_data = job_gres_data;
 		gres_ptr->gres_name =
 			xstrdup(gres_context[context_inx].gres_name);
+		gres_ptr->state_type = GRES_STATE_TYPE_JOB;
 		list_append(gres_list, gres_ptr);
 	}
 	job_gres_data->flags = flags;
@@ -5670,6 +5676,7 @@ extern List gres_job_state_extract(List gres_list, int node_index)
 		new_gres_state->plugin_id = gres_ptr->plugin_id;
 		new_gres_state->gres_data = new_gres_data;
 		new_gres_state->gres_name = xstrdup(gres_ptr->gres_name);
+		new_gres_state->state_type = GRES_STATE_TYPE_JOB;
 		list_append(new_gres_list, new_gres_state);
 	}
 	list_iterator_destroy(gres_iter);
@@ -6023,6 +6030,7 @@ extern int gres_job_state_unpack(List *gres_list, buf_t *buffer,
 		gres_ptr->plugin_id = gres_context[i].plugin_id;
 		gres_ptr->gres_data = gres_job_ptr;
 		gres_ptr->gres_name = xstrdup(gres_context[i].gres_name);
+		gres_ptr->state_type = GRES_STATE_TYPE_JOB;
 		gres_job_ptr = NULL;	/* nothing left to free on error */
 		list_append(*gres_list, gres_ptr);
 	}
@@ -7997,6 +8005,7 @@ static gres_step_state_t *_get_next_step_gres(char *in_val, uint64_t *cnt,
 		gres_ptr->gres_data = step_gres_data;
 		gres_ptr->gres_name =
 			xstrdup(gres_context[context_inx].gres_name);
+		gres_ptr->state_type = GRES_STATE_TYPE_STEP;
 		list_append(gres_list, gres_ptr);
 	}
 	step_gres_data->flags = flags;
@@ -8393,6 +8402,7 @@ List gres_step_state_extract(List gres_list, int node_index)
 		new_gres_state->plugin_id = gres_ptr->plugin_id;
 		new_gres_state->gres_data = new_gres_data;
 		new_gres_state->gres_name = xstrdup(gres_ptr->gres_name);
+		new_gres_state->state_type = GRES_STATE_TYPE_STEP;
 		list_append(new_gres_list, new_gres_state);
 	}
 	list_iterator_destroy(gres_iter);
@@ -8570,6 +8580,7 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 		gres_ptr->plugin_id = gres_context[i].plugin_id;
 		gres_ptr->gres_data = gres_step_ptr;
 		gres_ptr->gres_name = xstrdup(gres_context[i].gres_name);
+		gres_ptr->state_type = GRES_STATE_TYPE_STEP;
 		gres_step_ptr = NULL;
 		list_append(*gres_list, gres_ptr);
 	}

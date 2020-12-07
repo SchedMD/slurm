@@ -257,6 +257,7 @@ typedef struct gres_state {
 	uint32_t plugin_id;
 	void *gres_data;
 	char *gres_name;		/* GRES name (e.g. "gpu") */
+	gres_state_type_enum_t state_type;
 } gres_state_t;
 
 /* Used to set Prolog and Epilog env var. Currently designed for gres/mps. */

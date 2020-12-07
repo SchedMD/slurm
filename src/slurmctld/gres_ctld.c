@@ -604,6 +604,7 @@ static void _job_select_whole_node_internal(
 		job_gres_ptr->plugin_id = job_search_key->plugin_id;
 		job_gres_ptr->gres_data = job_state_ptr;
 		job_gres_ptr->gres_name = xstrdup(gres_name);
+		job_gres_ptr->state_type = GRES_STATE_TYPE_JOB;
 		job_state_ptr->gres_name = xstrdup(gres_name);
 		if (type_inx != -1)
 			job_state_ptr->type_name =
@@ -1249,6 +1250,7 @@ step2:	if (!from_job_gres_list)
 			gres_ptr2->plugin_id = gres_ptr->plugin_id;
 			gres_ptr2->gres_data = gres_job_ptr2;
 			gres_ptr2->gres_name = xstrdup(gres_job_ptr->gres_name);
+			gres_ptr2->state_type = gres_ptr->state_type;
 			gres_job_ptr2->gres_name =
 					xstrdup(gres_job_ptr->gres_name);
 			gres_job_ptr2->cpus_per_gres =
