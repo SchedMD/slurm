@@ -1505,9 +1505,7 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 		tres_rec.type = "gres";
 	}
 
-	if (!gres_list || !tres_cnt ||
-	    ((state_type == GRES_STATE_TYPE_JOB) &&
-	     (!node_cnt || (node_cnt == NO_VAL))))
+	if (!gres_list || !tres_cnt)
 		return;
 
 	/* must be locked first before gres_contrex_lock!!! */
@@ -1639,6 +1637,9 @@ extern void gres_ctld_set_job_tres_cnt(List gres_list,
 				       uint64_t *tres_cnt,
 				       bool locked)
 {
+	if (!node_cnt || (node_cnt == NO_VAL))
+		return;
+
 	_set_type_tres_cnt(GRES_STATE_TYPE_JOB,
 			   gres_list, node_cnt, tres_cnt, locked);
 }
