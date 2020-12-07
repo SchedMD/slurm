@@ -101,31 +101,16 @@ if {$got_job_id == 0} {
 	fail "Did not get JobId info from slurm job"
 }
 
-set began_logged 0
-set ended_logged 0
-
-#Wait for mails to go through agent
+# Wait for mails to go through agent
 if {[wait_for_file $mail_prog_out] != 0} {
 	fail "No output file"
 }
 
-spawn $bin_cat $mail_prog_out
-expect {
-	-re "-s Slurm Job_id=$job_id Name=test$test_id Began" {
-		set began_logged 1
-		exp_continue
-	}
-	-re "-s Slurm Job_id=$job_id Name=test$test_id Ended" {
-		set ended_logged 1
-		exp_continue
-	}
-}
-
-if {$began_logged == 0} {
+set output [run_command_output -fail "$bin_cat $mail_prog_out"]
+if {![regexp "-s Slurm Job_id=$job_id Name=test$test_id Began" $output]} {
 	fail "Began mail not sent for $job_id"
 }
-
-if {$ended_logged == 0} {
+if {![regexp "-s Slurm Job_id=$job_id Name=test$test_id Ended" $output]} {
 	fail "Ended mail not sent for $job_id"
 }
 
