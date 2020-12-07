@@ -185,10 +185,17 @@ sleep 10"
 	# since it will be past the association limit
 	#
 	set matches 0
+	set time 1
 	for {set inx 0} {$inx <= $val} {incr inx} {
+		if { $inx == $val } {
+			# the n+1'th job gets a longer time limit to avoid
+			# having it prematurely start after _decay_thread() runs
+			# and decays the values of the other running jobs
+			set time $val
+		}
 		spawn $sbatch [lindex $limit 0]1 --account=$ta \
 		    --output=/dev/null --error=/dev/null \
-		    -t1 $file_in
+		    -t$time $file_in
 		expect {
 			-re "Submitted batch job ($number)" {
 				set job_id $expect_out(1,string)
