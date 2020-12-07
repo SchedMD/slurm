@@ -244,6 +244,7 @@ typedef struct gres_job_state {
 } gres_job_state_t;
 
 typedef enum {
+	GRES_STATE_TYPE_UNSET = 0,
 	GRES_STATE_TYPE_NODE,
 	GRES_STATE_TYPE_JOB,
 	GRES_STATE_TYPE_STEP
