@@ -101,7 +101,6 @@ strong_alias(gres_get_node_used, slurm_gres_get_node_used);
 strong_alias(gres_get_system_cnt, slurm_gres_get_system_cnt);
 strong_alias(gres_get_value_by_type, slurm_gres_get_value_by_type);
 strong_alias(gres_get_job_info, slurm_gres_get_job_info);
-strong_alias(gres_build_job_details, slurm_gres_build_job_details);
 strong_alias(gres_get_step_info, slurm_gres_get_step_info);
 strong_alias(gres_device_major, slurm_gres_device_major);
 strong_alias(gres_sock_delete, slurm_gres_sock_delete);
@@ -9505,99 +9504,6 @@ extern int gres_get_job_info(List job_gres_list, char *gres_name,
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return rc;
-}
-
-/* Given a job's GRES data structure, return the indecies for selected elements
- * IN job_gres_list  - job's GRES data structure
- * OUT gres_detail_cnt - Number of elements (nodes) in gres_detail_str
- * OUT gres_detail_str - Description of GRES on each node
- * OUT total_gres_str - String containing all gres in the job and counts.
- */
-extern void gres_build_job_details(List job_gres_list,
-				   uint32_t *gres_detail_cnt,
-				   char ***gres_detail_str,
-				   char **total_gres_str)
-{
-	int i, j;
-	ListIterator job_gres_iter;
-	gres_state_t *job_gres_ptr;
-	gres_job_state_t *job_gres_data;
-	char *sep1, *sep2, tmp_str[128], *type, **my_gres_details = NULL;
-	uint32_t my_gres_cnt = 0;
-	char *gres_name, *gres_str = NULL;
-	uint64_t gres_cnt;
-
-	/* Release any vestigial data (e.g. from job requeue) */
-	for (i = 0; i < *gres_detail_cnt; i++)
-		xfree(gres_detail_str[0][i]);
-	xfree(*gres_detail_str);
-	xfree(*total_gres_str);
-	*gres_detail_cnt = 0;
-
-	if (job_gres_list == NULL)	/* No GRES allocated */
-		return;
-
-	(void) gres_init();
-
-	job_gres_iter = list_iterator_create(job_gres_list);
-	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
-		job_gres_data = (gres_job_state_t *) job_gres_ptr->gres_data;
-		if (job_gres_data->gres_bit_alloc == NULL)
-			continue;
-		if (my_gres_details == NULL) {
-			my_gres_cnt = job_gres_data->node_cnt;
-			my_gres_details = xcalloc(my_gres_cnt, sizeof(char *));
-		}
-
-		if (job_gres_data->type_name) {
-			sep2 = ":";
-			type = job_gres_data->type_name;
-		} else {
-			sep2 = "";
-			type = "";
-		}
-
-		gres_name = xstrdup_printf(
-			"%s%s%s",
-			job_gres_data->gres_name, sep2, type);
-		gres_cnt = 0;
-
-		for (j = 0; j < my_gres_cnt; j++) {
-			if (j >= job_gres_data->node_cnt)
-				break;	/* node count mismatch */
-			if (my_gres_details[j])
-				sep1 = ",";
-			else
-				sep1 = "";
-
-			gres_cnt += job_gres_data->gres_cnt_node_alloc[j];
-
-			if (job_gres_data->gres_bit_alloc[j]) {
-				bit_fmt(tmp_str, sizeof(tmp_str),
-					job_gres_data->gres_bit_alloc[j]);
-				xstrfmtcat(my_gres_details[j],
-					   "%s%s:%"PRIu64"(IDX:%s)",
-					   sep1, gres_name,
-					   job_gres_data->
-					   gres_cnt_node_alloc[j],
-					   tmp_str);
-			} else if (job_gres_data->gres_cnt_node_alloc[j]) {
-				xstrfmtcat(my_gres_details[j],
-					   "%s%s(CNT:%"PRIu64")",
-					   sep1, gres_name,
-					   job_gres_data->
-					   gres_cnt_node_alloc[j]);
-			}
-		}
-
-		xstrfmtcat(gres_str, "%s%s:%"PRIu64,
-			   gres_str ? "," : "", gres_name, gres_cnt);
-		xfree(gres_name);
-	}
-	list_iterator_destroy(job_gres_iter);
-	*gres_detail_cnt = my_gres_cnt;
-	*gres_detail_str = my_gres_details;
-	*total_gres_str = gres_str;
 }
 
 /* Get generic GRES data types here. Call the plugin for others */

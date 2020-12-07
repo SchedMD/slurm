@@ -971,17 +971,6 @@ extern int gres_get_job_info(List job_gres_list, char *gres_name,
 			     uint32_t node_inx,
 			     enum gres_job_data_type data_type, void *data);
 
-/* Given a job's GRES data structure, return the indecies for selected elements
- * IN job_gres_list  - job's GRES data structure
- * OUT gres_detail_cnt - Number of elements (nodes) in gres_detail_str
- * OUT gres_detail_str - Description of GRES on each node
- * OUT total_gres_str - String containing all gres in the job and counts.
- */
-extern void gres_build_job_details(List job_gres_list,
-				   uint32_t *gres_detail_cnt,
-				   char ***gres_detail_str,
-				   char **total_gres_str);
-
 enum gres_step_data_type {
 	GRES_STEP_DATA_COUNT,	/* data-> uint64_t  */
 	GRES_STEP_DATA_BITMAP,	/* data-> bitstr_t* */

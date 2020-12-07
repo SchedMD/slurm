@@ -2325,10 +2325,10 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	assoc_mgr_unlock(&locks);
 
 	build_node_details(job_ptr, false);	/* set node_addr */
-	gres_build_job_details(job_ptr->gres_list,
-			       &job_ptr->gres_detail_cnt,
-			       &job_ptr->gres_detail_str,
-			       &job_ptr->gres_used);
+	gres_ctld_job_build_details(job_ptr->gres_list,
+				    &job_ptr->gres_detail_cnt,
+				    &job_ptr->gres_detail_str,
+				    &job_ptr->gres_used);
 	job_ptr->clusters     = clusters;
 	job_ptr->fed_details  = job_fed_details;
 	return SLURM_SUCCESS;
@@ -3786,10 +3786,11 @@ extern int kill_running_job_by_node_name(char *node_name)
 				kill_step_on_node(job_ptr, node_ptr, true);
 				excise_node_from_job(job_ptr, node_ptr);
 				(void) gs_job_start(job_ptr);
-				gres_build_job_details(job_ptr->gres_list,
-						       &job_ptr->gres_detail_cnt,
-						       &job_ptr->gres_detail_str,
-						       &job_ptr->gres_used);
+				gres_ctld_job_build_details(
+					job_ptr->gres_list,
+					&job_ptr->gres_detail_cnt,
+					&job_ptr->gres_detail_str,
+					&job_ptr->gres_used);
 				job_post_resize_acctg(job_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
 				   job_ptr->details->requeue) {
@@ -11655,10 +11656,10 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			}
 			bit_free(rem_nodes);
 			(void) gs_job_start(job_ptr);
-			gres_build_job_details(job_ptr->gres_list,
-					       &job_ptr->gres_detail_cnt,
-					       &job_ptr->gres_detail_str,
-					       &job_ptr->gres_used);
+			gres_ctld_job_build_details(job_ptr->gres_list,
+						    &job_ptr->gres_detail_cnt,
+						    &job_ptr->gres_detail_str,
+						    &job_ptr->gres_used);
 			job_post_resize_acctg(job_ptr);
 			/*
 			 * Since job_post_resize_acctg will restart
@@ -12862,10 +12863,10 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 		xfree(tmp);
 		FREE_NULL_LIST(job_ptr->gres_list);
 		job_ptr->gres_list = gres_list;
-		gres_build_job_details(job_ptr->gres_list,
-				       &job_ptr->gres_detail_cnt,
-				       &job_ptr->gres_detail_str,
-				       &job_ptr->gres_used);
+		gres_ctld_job_build_details(job_ptr->gres_list,
+					    &job_ptr->gres_detail_cnt,
+					    &job_ptr->gres_detail_str,
+					    &job_ptr->gres_used);
 		gres_list = NULL;
 	}
 
@@ -13099,10 +13100,10 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			 */
 			update_accounting = false;
 		}
-		gres_build_job_details(job_ptr->gres_list,
-				       &job_ptr->gres_detail_cnt,
-				       &job_ptr->gres_detail_str,
-				       &job_ptr->gres_used);
+		gres_ctld_job_build_details(job_ptr->gres_list,
+					    &job_ptr->gres_detail_cnt,
+					    &job_ptr->gres_detail_str,
+					    &job_ptr->gres_used);
 	}
 
 	if (job_specs->ntasks_per_node != NO_VAL16) {

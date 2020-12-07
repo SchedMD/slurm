@@ -169,7 +169,6 @@
 #define gres_get_system_cnt	slurm_gres_get_system_cnt
 #define gres_get_value_by_type	slurm_gres_get_value_by_type
 #define gres_get_job_info	slurm_gres_get_job_info
-#define gres_build_job_details	slurm_gres_build_job_details
 #define gres_get_step_info	slurm_gres_get_step_info
 #define gres_device_major	slurm_gres_device_major
 #define gres_sock_delete	slurm_gres_sock_delete

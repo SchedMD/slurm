@@ -135,6 +135,17 @@ extern void gres_ctld_job_merge(List from_job_gres_list,
 /* Clear any vestigial job gres state. This may be needed on job requeue. */
 extern void gres_ctld_job_clear(List job_gres_list);
 
+/* Given a job's GRES data structure, return the indecies for selected elements
+ * IN job_gres_list  - job's GRES data structure
+ * OUT gres_detail_cnt - Number of elements (nodes) in gres_detail_str
+ * OUT gres_detail_str - Description of GRES on each node
+ * OUT total_gres_str - String containing all gres in the job and counts.
+ */
+extern void gres_ctld_job_build_details(List job_gres_list,
+					uint32_t *gres_detail_cnt,
+					char ***gres_detail_str,
+					char **total_gres_str);
+
 /*
  * Fill in the job allocated tres_cnt based off the gres_list and node_cnt
  * IN gres_list - filled in with gres_job_state_t's
