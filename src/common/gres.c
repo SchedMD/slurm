@@ -1736,7 +1736,7 @@ static void _merge_config(node_config_load_t *node_conf, List gres_conf_list,
 	FREE_NULL_LIST(new_gres_list);
 }
 
-extern void _pack_gres_context(slurm_gres_context_t *ctx, buf_t *buffer)
+static void _pack_gres_context(slurm_gres_context_t *ctx, buf_t *buffer)
 {
 	/* ctx->cur_plugin: DON'T PACK will be filled in on the other side */
 	pack8(ctx->config_flags, buffer);
@@ -1750,7 +1750,7 @@ extern void _pack_gres_context(slurm_gres_context_t *ctx, buf_t *buffer)
 	pack64(ctx->total_cnt, buffer);
 }
 
-extern int _unpack_gres_context(slurm_gres_context_t* ctx, buf_t *buffer)
+static int _unpack_gres_context(slurm_gres_context_t* ctx, buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 
