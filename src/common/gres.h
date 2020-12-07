@@ -243,6 +243,12 @@ typedef struct gres_job_state {
 	uint64_t  *gres_cnt_step_alloc;
 } gres_job_state_t;
 
+typedef enum {
+	GRES_STATE_TYPE_NODE,
+	GRES_STATE_TYPE_JOB,
+	GRES_STATE_TYPE_STEP
+} gres_state_type_enum_t;
+
 /* Generic gres data structure for adding to a list. Depending upon the
  * context, gres_data points to gres_node_state_t, gres_job_state_t or
  * gres_step_state_t */
@@ -333,12 +339,6 @@ typedef struct gres_mc_data {
 	uint32_t task_dist;         /* task distribution directives */
 	uint8_t whole_node;         /* allocate entire node */
 } gres_mc_data_t;
-
-typedef enum {
-	GRES_STATE_TYPE_NODE = 0,
-	GRES_STATE_TYPE_JOB,
-	GRES_STATE_TYPE_STEP
-} gres_state_type_enum_t;
 
 /*
  * Initialize the GRES plugins.
