@@ -595,7 +595,7 @@ static int _job_count_bitmap(struct cr_record *cr_ptr,
 		core_start_bit = cr_get_coremap_offset(i);
 		core_end_bit   = cr_get_coremap_offset(i+1) - 1;
 		cpus_per_core  = cpu_cnt / (core_end_bit - core_start_bit + 1);
-		gres_cores = gres_plugin_job_test(job_ptr->gres_list,
+		gres_cores = gres_job_test(job_ptr->gres_list,
 						  gres_list, use_total_gres,
 						  NULL, core_start_bit,
 						  core_end_bit, job_ptr->job_id,
@@ -2336,7 +2336,7 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr, job_record_t *job_ptr,
 					      node_offset, job_ptr->job_id,
 					      node_ptr->name, old_job,
 					      job_ptr->user_id, job_fini);
-			gres_plugin_node_state_log(gres_list, node_ptr->name);
+			gres_node_state_log(gres_list, node_ptr->name);
 		}
 
 		if (exclusive) {
@@ -2737,7 +2737,7 @@ static int _rm_job_from_one_node(job_record_t *job_ptr, node_record_t *node_ptr,
 	gres_ctld_job_dealloc(job_ptr->gres_list, gres_list, node_offset,
 			      job_ptr->job_id, node_ptr->name, old_job,
 			      job_ptr->user_id, true);
-	gres_plugin_node_state_log(gres_list, node_ptr->name);
+	gres_node_state_log(gres_list, node_ptr->name);
 
 	return _decr_node_job_cnt(node_inx, job_ptr, pre_err);
 }
@@ -2819,7 +2819,7 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 					    node_cnt, i, node_offset,
 					    job_ptr->job_id, node_ptr->name,
 					    NULL, job_ptr->user_id);
-			gres_plugin_node_state_log(gres_list, node_ptr->name);
+			gres_node_state_log(gres_list, node_ptr->name);
 		}
 
 		if (exclusive)
@@ -2917,7 +2917,7 @@ static void _dump_node_cr(struct cr_record *cr_ptr)
 		else
 			gres_list = node_ptr->gres_list;
 		if (gres_list)
-			gres_plugin_node_state_log(gres_list, node_ptr->name);
+			gres_node_state_log(gres_list, node_ptr->name);
 	}
 #endif
 }
@@ -2970,7 +2970,7 @@ static struct cr_record *_dup_cr(struct cr_record *cr_ptr)
 		else
 			gres_list = node_ptr->gres_list;
 		new_cr_ptr->nodes[i].gres_list =
-			gres_plugin_node_state_dup(gres_list);
+			gres_node_state_dup(gres_list);
 	}
 	return new_cr_ptr;
 }
@@ -3014,7 +3014,7 @@ static void _init_node_cr(void)
 	/* Clear existing node Gres allocations */
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
-		gres_plugin_node_state_dealloc_all(node_ptr->gres_list);
+		gres_node_state_dealloc_all(node_ptr->gres_list);
 	}
 
 	/* record running and suspended jobs in node_cr_records */
@@ -3666,7 +3666,7 @@ extern int select_p_job_begin(job_record_t *job_ptr)
 	if (rc == SLURM_SUCCESS)
 		rc = _add_job_to_nodes(cr_ptr, job_ptr, "select_p_job_begin", 1);
 
-	gres_plugin_job_state_log(job_ptr->gres_list, job_ptr->job_id);
+	gres_job_state_log(job_ptr->gres_list, job_ptr->job_id);
 	slurm_mutex_unlock(&cr_mutex);
 	return rc;
 }

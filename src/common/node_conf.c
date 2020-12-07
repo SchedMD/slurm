@@ -412,8 +412,8 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 		if (node->feature && node->feature[0])
 			config_ptr->feature = xstrdup(node->feature);
 		if (in_daemon) {
-			config_ptr->gres = gres_plugin_name_filter(node->gres,
-							       node->nodenames);
+			config_ptr->gres = gres_name_filter(node->gres,
+							    node->nodenames);
 		}
 
 		rc = check_nodeline_info(node, config_ptr, LOG_LEVEL_FATAL,

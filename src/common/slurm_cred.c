@@ -557,8 +557,8 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	cred->gids = copy_gids(arg->ngids, arg->gids);
 	cred->gr_names = copy_gr_names(arg->ngids, arg->gr_names);
 	cred->job_core_spec   = arg->job_core_spec;
-	cred->job_gres_list   = gres_plugin_job_state_dup(arg->job_gres_list);
-	cred->step_gres_list  = gres_plugin_step_state_dup(arg->step_gres_list);
+	cred->job_gres_list   = gres_job_state_dup(arg->job_gres_list);
+	cred->step_gres_list  = gres_step_state_dup(arg->step_gres_list);
 	cred->job_mem_limit   = arg->job_mem_limit;
 	cred->step_mem_limit  = arg->step_mem_limit;
 	cred->step_hostlist   = xstrdup(arg->step_hostlist);
@@ -670,8 +670,8 @@ slurm_cred_copy(slurm_cred_t *cred)
 	rcred->gids = copy_gids(cred->ngids, cred->gids);
 	rcred->gr_names = copy_gr_names(cred->ngids, cred->gr_names);
 	rcred->job_core_spec  = cred->job_core_spec;
-	rcred->job_gres_list  = gres_plugin_job_state_dup(cred->job_gres_list);
-	rcred->step_gres_list = gres_plugin_step_state_dup(cred->step_gres_list);
+	rcred->job_gres_list  = gres_job_state_dup(cred->job_gres_list);
+	rcred->step_gres_list = gres_step_state_dup(cred->step_gres_list);
 	rcred->job_mem_limit  = cred->job_mem_limit;
 	rcred->step_mem_limit = cred->step_mem_limit;
 	rcred->step_hostlist  = xstrdup(cred->step_hostlist);
@@ -816,8 +816,8 @@ static void _copy_cred_to_arg(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 	arg->ngids = cred->ngids;
 	arg->gids = copy_gids(cred->ngids, cred->gids);
 	arg->gr_names = copy_gr_names(cred->ngids, cred->gr_names);
-	arg->job_gres_list  = gres_plugin_job_state_dup(cred->job_gres_list);
-	arg->step_gres_list = gres_plugin_step_state_dup(cred->step_gres_list);
+	arg->job_gres_list  = gres_job_state_dup(cred->job_gres_list);
+	arg->step_gres_list = gres_step_state_dup(cred->step_gres_list);
 	arg->job_core_spec  = cred->job_core_spec;
 	arg->job_mem_limit  = cred->job_mem_limit;
 	arg->step_mem_limit = cred->step_mem_limit;
@@ -1291,10 +1291,10 @@ extern void get_cred_gres(slurm_cred_t *cred, char *node_name,
 		return;
 	}
 
-	*job_gres_list = gres_plugin_job_state_extract(cred->job_gres_list,
-						       host_index);
-	*step_gres_list = gres_plugin_step_state_extract(cred->step_gres_list,
-							 host_index);
+	*job_gres_list = gres_job_state_extract(cred->job_gres_list,
+						host_index);
+	*step_gres_list = gres_step_state_extract(cred->step_gres_list,
+						  host_index);
 	return;
 }
 
@@ -1347,13 +1347,14 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 			      __func__, u32_ngids, cred->ngids);
 			goto unpack_error;
 		}
-		if (gres_plugin_job_state_unpack(&cred->job_gres_list, buffer,
-						 cred->step_id.job_id, protocol_version)
+		if (gres_job_state_unpack(&cred->job_gres_list, buffer,
+					  cred->step_id.job_id,
+					  protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
-		if (gres_plugin_step_state_unpack(&cred->step_gres_list,
-						  buffer, &cred->step_id,
-						  protocol_version)
+		if (gres_step_state_unpack(&cred->step_gres_list,
+					   buffer, &cred->step_id,
+					   protocol_version)
 		    != SLURM_SUCCESS) {
 			goto unpack_error;
 		}
@@ -1410,13 +1411,13 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 			      __func__, u32_ngids, cred->ngids);
 			goto unpack_error;
 		}
-		if (gres_plugin_job_state_unpack(&cred->job_gres_list, buffer,
-						 cred->step_id.job_id, protocol_version)
+		if (gres_job_state_unpack(&cred->job_gres_list, buffer,
+					  cred->step_id.job_id, protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
-		if (gres_plugin_step_state_unpack(&cred->step_gres_list,
-						  buffer, &cred->step_id,
-						  protocol_version)
+		if (gres_step_state_unpack(&cred->step_gres_list,
+					   buffer, &cred->step_id,
+					   protocol_version)
 		    != SLURM_SUCCESS) {
 			goto unpack_error;
 		}
@@ -1750,11 +1751,11 @@ static void _pack_cred(slurm_cred_t *cred, buf_t *buffer,
 		pack32_array(cred->gids, cred->ngids, buffer);
 		packstr_array(cred->gr_names, gr_names_cnt, buffer);
 
-		(void) gres_plugin_job_state_pack(cred->job_gres_list, buffer,
-						  cred->step_id.job_id, false,
-						  protocol_version);
-		gres_plugin_step_state_pack(cred->step_gres_list, buffer,
-					    &cred->step_id, protocol_version);
+		(void) gres_job_state_pack(cred->job_gres_list, buffer,
+					   cred->step_id.job_id, false,
+					   protocol_version);
+		gres_step_state_pack(cred->step_gres_list, buffer,
+				     &cred->step_id, protocol_version);
 		pack16(cred->job_core_spec, buffer);
 		pack64(cred->job_mem_limit, buffer);
 		pack64(cred->step_mem_limit, buffer);
@@ -1793,11 +1794,11 @@ static void _pack_cred(slurm_cred_t *cred, buf_t *buffer,
 		pack32_array(cred->gids, cred->ngids, buffer);
 		packstr_array(cred->gr_names, gr_names_cnt, buffer);
 
-		(void) gres_plugin_job_state_pack(cred->job_gres_list, buffer,
-						  cred->step_id.job_id, false,
-						  protocol_version);
-		gres_plugin_step_state_pack(cred->step_gres_list, buffer,
-					    &cred->step_id, protocol_version);
+		(void) gres_job_state_pack(cred->job_gres_list, buffer,
+					   cred->step_id.job_id, false,
+					   protocol_version);
+		gres_step_state_pack(cred->step_gres_list, buffer,
+				     &cred->step_id, protocol_version);
 		pack16(cred->job_core_spec, buffer);
 		pack64(cred->job_mem_limit, buffer);
 		pack64(cred->step_mem_limit, buffer);

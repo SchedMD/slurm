@@ -79,7 +79,7 @@ void print_slurm_version(void)
 /* print the available gres options */
 void print_gres_help(void)
 {
-	char *msg = gres_plugin_help_msg();
+	char *msg = gres_help_msg();
 	printf("%s", msg);
 	xfree(msg);
 }

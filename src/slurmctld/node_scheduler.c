@@ -2179,7 +2179,7 @@ static List _handle_exclusive_gres(job_record_t *job_ptr,
 	int i_first, i_last;
 	List post_list = NULL;
 
-	if (test_only || !gres_plugin_get_gres_cnt())
+	if (test_only || !gres_get_gres_cnt())
 		return NULL;
 
 	xassert(job_ptr);

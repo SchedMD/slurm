@@ -86,7 +86,7 @@ extern void node_data_dump(void)
 		else
 			gres_list = node_ptr->gres_list;
 		if (gres_list)
-			gres_plugin_node_state_log(gres_list, node_ptr->name);
+			gres_node_state_log(gres_list, node_ptr->name);
 	}
 }
 
@@ -124,7 +124,7 @@ extern node_use_record_t *node_data_dup_use(
 			gres_list = orig_ptr[i].gres_list;
 		else
 			gres_list = node_record_table_ptr[i].gres_list;
-		new_ptr[i].gres_list = gres_plugin_node_state_dup(gres_list);
+		new_ptr[i].gres_list = gres_node_state_dup(gres_list);
 	}
 	return new_use_ptr;
 }

@@ -510,8 +510,8 @@ int main(int argc, char **argv)
 			fatal("failed to initialize node selection plugin");
 		}
 	}
-	/* gres_plugin_init() must follow slurm_select_init() */
-	if (gres_plugin_init() != SLURM_SUCCESS) {
+	/* gres_init() must follow slurm_select_init() */
+	if (gres_init() != SLURM_SUCCESS) {
 		if (test_config) {
 			error("failed to initialize gres plugin");
 			test_config_rc = 1;
@@ -896,7 +896,7 @@ int main(int argc, char **argv)
 	/* Some plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
 	ext_sensors_fini();
-	gres_plugin_fini();
+	gres_fini();
 	job_submit_plugin_fini();
 	prep_plugin_fini();
 	slurm_preempt_fini();
@@ -2399,8 +2399,7 @@ static int _add_node_gres_tres(void *x, void *arg)
 	if (xstrcmp(tres_rec_in->type, "gres"))
 		return 0;
 
-	gres_cnt = gres_plugin_node_config_cnt(node_ptr->gres_list,
-					       tres_rec_in->name);
+	gres_cnt = gres_node_config_cnt(node_ptr->gres_list, tres_rec_in->name);
 
 	/*
 	 * Set the count here for named GRES as we don't store the count the

@@ -1427,9 +1427,9 @@ static void _dump_job_state(job_record_t *dump_job_ptr, buf_t *buffer)
 	packstr_array(dump_job_ptr->spank_job_env,
 		      dump_job_ptr->spank_job_env_size, buffer);
 
-	(void) gres_plugin_job_state_pack(dump_job_ptr->gres_list, buffer,
-					  dump_job_ptr->job_id, true,
-					  SLURM_PROTOCOL_VERSION);
+	(void) gres_job_state_pack(dump_job_ptr->gres_list, buffer,
+				   dump_job_ptr->job_id, true,
+				   SLURM_PROTOCOL_VERSION);
 
 	/* Dump job details, if available */
 	detail_ptr = dump_job_ptr->details;
@@ -1691,11 +1691,10 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_array(&spank_job_env, &spank_job_env_size,
 				     buffer);
 
-		if (gres_plugin_job_state_unpack(&gres_list, buffer, job_id,
-						 protocol_version) !=
-		    SLURM_SUCCESS)
+		if (gres_job_state_unpack(&gres_list, buffer, job_id,
+					  protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
-		gres_plugin_job_state_log(gres_list, job_id);
+		gres_job_state_log(gres_list, job_id);
 
 		safe_unpack16(&details, buffer);
 		if ((details == DETAILS_FLAG) &&
@@ -1918,11 +1917,10 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_array(&spank_job_env, &spank_job_env_size,
 				     buffer);
 
-		if (gres_plugin_job_state_unpack(&gres_list, buffer, job_id,
-						 protocol_version) !=
-		    SLURM_SUCCESS)
+		if (gres_job_state_unpack(&gres_list, buffer, job_id,
+					  protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
-		gres_plugin_job_state_log(gres_list, job_id);
+		gres_job_state_log(gres_list, job_id);
 
 		safe_unpack16(&details, buffer);
 		if ((details == DETAILS_FLAG) &&
@@ -4297,7 +4295,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	/* struct job_details *details;		*** NOTE: Copied below */
 	if (job_ptr->gres_list) {
 		job_ptr_pend->gres_list =
-			gres_plugin_job_state_dup(job_ptr->gres_list);
+			gres_job_state_dup(job_ptr->gres_list);
 	}
 	job_ptr_pend->gres_detail_cnt = 0;
 	job_ptr_pend->gres_detail_str = NULL;
@@ -6915,7 +6913,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		goto cleanup_fail;
 	}
 
-	if ((error_code = gres_plugin_job_state_validate(
+	if ((error_code = gres_job_state_validate(
 						job_desc->cpus_per_tres,
 						job_desc->tres_freq,
 						job_desc->tres_per_job,
@@ -7102,7 +7100,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 
 	job_ptr->gres_detail_cnt = 0;
 	job_ptr->gres_detail_str = NULL;
-	gres_plugin_job_state_log(job_ptr->gres_list, job_ptr->job_id);
+	gres_job_state_log(job_ptr->gres_list, job_ptr->job_id);
 
 	if ((error_code = validate_job_resv(job_ptr)))
 		goto cleanup_fail;
@@ -10681,7 +10679,7 @@ void reset_job_bitmaps(void)
 			job_fail = true;
 		}
 		if (!job_fail && !IS_JOB_FINISHED(job_ptr) &&
-		    gres_plugin_job_revalidate(job_ptr->gres_list)) {
+		    gres_job_revalidate(job_ptr->gres_list)) {
 			error("Aborting %pJ due to use of unsupported GRES options",
 			      job_ptr);
 			job_fail = true;
@@ -10689,9 +10687,9 @@ void reset_job_bitmaps(void)
 
 		if (!job_fail && job_ptr->job_resrcs &&
 		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) &&
-		    gres_plugin_job_revalidate2(job_ptr->job_id,
-					job_ptr->gres_list,
-					job_ptr->job_resrcs->node_bitmap)) {
+		    gres_job_revalidate2(job_ptr->job_id,
+					 job_ptr->gres_list,
+					 job_ptr->job_resrcs->node_bitmap)) {
 			/*
 			 * This can be due to the job being allocated GRES
 			 * which no longer exist (i.e. the GRES count on some
@@ -11769,8 +11767,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 		}
 		if (job_specs->cpus_per_task == NO_VAL16)
 			job_specs->cpus_per_task = detail_ptr->cpus_per_task;
-		gres_list = gres_plugin_job_state_dup(job_ptr->gres_list);
-		if ((error_code = gres_plugin_job_state_validate(
+		gres_list = gres_job_state_dup(job_ptr->gres_list);
+		if ((error_code = gres_job_state_validate(
 						job_specs->cpus_per_tres,
 						job_specs->tres_freq,
 						job_specs->tres_per_job,
@@ -14955,7 +14953,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 			 * instead of what was given exclusively.
 			 */
 			FREE_NULL_LIST(job_ptr->gres_list);
-			(void)gres_plugin_job_state_validate(
+			(void)gres_job_state_validate(
 				job_ptr->cpus_per_tres,
 				job_ptr->tres_freq,
 				job_ptr->tres_per_job,

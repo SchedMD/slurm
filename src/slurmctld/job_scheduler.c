@@ -3351,7 +3351,7 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 				_copy_tres_opts(job_ptr, dep_job_ptr);
 			}
 			FREE_NULL_LIST(job_ptr->gres_list);
-			(void) gres_plugin_job_state_validate(
+			(void) gres_job_state_validate(
 				job_ptr->cpus_per_tres,
 				job_ptr->tres_freq,
 				job_ptr->tres_per_job,

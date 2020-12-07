@@ -249,8 +249,8 @@ static void _dump_node_state(node_record_t *dump_node_ptr, buf_t *buffer)
 	pack_time(dump_node_ptr->last_response, buffer);
 	pack16  (dump_node_ptr->protocol_version, buffer);
 	packstr (dump_node_ptr->mcs_label, buffer);
-	(void) gres_plugin_node_state_pack(dump_node_ptr->gres_list, buffer,
-					   dump_node_ptr->name);
+	(void) gres_node_state_pack(dump_node_ptr->gres_list, buffer,
+				    dump_node_ptr->name);
 }
 
 
@@ -378,9 +378,9 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack_time(&last_response, buffer);
 			safe_unpack16(&obj_protocol_version, buffer);
 			safe_unpackstr_xmalloc(&mcs_label, &name_len, buffer);
-			if (gres_plugin_node_state_unpack(&gres_list, buffer,
-							  node_name,
-							  protocol_version) !=
+			if (gres_node_state_unpack(&gres_list, buffer,
+						   node_name,
+						   protocol_version) !=
 			    SLURM_SUCCESS)
 				goto unpack_error;
 			base_state = node_state & NODE_STATE_BASE;
@@ -412,7 +412,7 @@ extern int load_all_node_state ( bool state_only )
 			safe_unpack_time(&last_response, buffer);
 			safe_unpack16 (&obj_protocol_version, buffer);
 			safe_unpackstr_xmalloc (&mcs_label, &name_len, buffer);
-			if (gres_plugin_node_state_unpack(
+			if (gres_node_state_unpack(
 				    &gres_list, buffer, node_name,
 				    protocol_version) != SLURM_SUCCESS)
 				goto unpack_error;
@@ -1702,7 +1702,7 @@ extern void restore_node_features(int recover)
 		 * We lose the GRES information updated manually and always
 		 * use the information from slurm.conf
 		 */
-		(void) gres_plugin_node_reconfig(
+		(void) gres_node_reconfig(
 			node_ptr->name,
 			node_ptr->config_ptr->gres,
 			&node_ptr->gres,
@@ -1710,7 +1710,7 @@ extern void restore_node_features(int recover)
 			slurm_conf.conf_flags & CTL_CONF_OR,
 			node_ptr->cores,
 			node_ptr->tot_sockets);
-		gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
+		gres_node_state_log(node_ptr->gres_list, node_ptr->name);
 	}
 	_update_node_avail_features(NULL, NULL, FEATURE_MODE_PEND);
 }
@@ -2022,7 +2022,7 @@ static int _update_node_gres(char *node_names, char *gres)
 			if (!bit_test(tmp_bitmap, i))
 				continue;	/* Not this node */
 			node_ptr = node_record_table_ptr + i;
-			rc2 = gres_plugin_node_reconfig(
+			rc2 = gres_node_reconfig(
 				node_ptr->name,
 				gres, &node_ptr->gres,
 				&node_ptr->gres_list,
@@ -2035,8 +2035,8 @@ static int _update_node_gres(char *node_names, char *gres)
 				if (rc == SLURM_SUCCESS)
 					rc = rc2;
 			}
-			gres_plugin_node_state_log(node_ptr->gres_list,
-						   node_ptr->name);
+			gres_node_state_log(node_ptr->gres_list,
+					    node_ptr->name);
 		}
 
 		overlap2 = bit_set_count(config_ptr->node_bitmap);
@@ -2440,11 +2440,11 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	sockets1 = reg_msg->sockets;
 	cores1   = sockets1 * reg_msg->cores;
 	threads1 = cores1   * reg_msg->threads;
-	if (gres_plugin_node_config_unpack(reg_msg->gres_info,
-					   node_ptr->name) != SLURM_SUCCESS) {
+	if (gres_node_config_unpack(reg_msg->gres_info,
+				    node_ptr->name) != SLURM_SUCCESS) {
 		error_code = SLURM_ERROR;
 		xstrcat(reason_down, "Could not unpack gres data");
-	} else if (gres_plugin_node_config_validate(
+	} else if (gres_node_config_validate(
 				node_ptr->name, config_ptr->gres,
 				&node_ptr->gres, &node_ptr->gres_list,
 				reg_msg->threads, reg_msg->cores,
@@ -2455,7 +2455,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		error_code = EINVAL;
 		/* reason_down set in function above */
 	}
-	gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
+	gres_node_state_log(node_ptr->gres_list, node_ptr->name);
 
 	if (!(slurm_conf.conf_flags & CTL_CONF_OR)) {
 		/* sockets1, cores1, and threads1 are set above */
@@ -3008,8 +3008,8 @@ extern int validate_nodes_via_front_end(
 	}
 	list_iterator_destroy(job_iterator);
 
-	(void) gres_plugin_node_config_unpack(reg_msg->gres_info,
-					      node_record_table_ptr->name);
+	(void) gres_node_config_unpack(reg_msg->gres_info,
+				       node_record_table_ptr->name);
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
 		bool acct_updated = false;
@@ -3017,7 +3017,7 @@ extern int validate_nodes_via_front_end(
 		config_ptr = node_ptr->config_ptr;
 		node_ptr->last_response = now;
 
-		rc = gres_plugin_node_config_validate(
+		rc = gres_node_config_validate(
 			node_ptr->name,
 			config_ptr->gres,
 			&node_ptr->gres,
@@ -3036,7 +3036,7 @@ extern int validate_nodes_via_front_end(
 			last_node_update = now;
 		}
 		xfree(reason_down);
-		gres_plugin_node_state_log(node_ptr->gres_list, node_ptr->name);
+		gres_node_state_log(node_ptr->gres_list, node_ptr->name);
 
 		if (reg_msg->up_time) {
 			node_ptr->up_time = reg_msg->up_time;

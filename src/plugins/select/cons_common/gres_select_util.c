@@ -42,7 +42,7 @@
 
 /*
  * Set job default parameters in a given element of a list
- * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_job_state_validate()
  * IN gres_name - name of gres, apply defaults to all elements (e.g. updates to
  *		  gres_name="gpu" would apply to "gpu:tesla", "gpu:volta", etc.)
  * IN cpu_per_gpu - value to set as default
@@ -72,7 +72,7 @@ extern void gres_select_util_job_set_defs(List job_gres_list,
 	if (!job_gres_list)
 		return;
 
-	plugin_id = gres_plugin_build_id(gres_name);
+	plugin_id = gres_build_id(gres_name);
 	gres_iter = list_iterator_create(job_gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
 		if (gres_ptr->plugin_id != plugin_id)
@@ -175,7 +175,7 @@ extern int gres_select_util_job_min_tasks(uint32_t node_count,
 		return 0;
 
 	if (gres_name && (gres_name[0] != '\0'))
-		plugin_id = gres_plugin_build_id(gres_name);
+		plugin_id = gres_build_id(gres_name);
 
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((gres_ptr = list_next(job_gres_iter))) {

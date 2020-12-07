@@ -1179,18 +1179,22 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			}
 
 			/* ignore current step allocations */
-			gres_cpus = gres_plugin_step_test(step_gres_list,
-						job_ptr->gres_list, node_inx,
-						first_step_node, cpus_per_task,
-						max_rem_nodes, true,
-						job_ptr->job_id, NO_VAL);
+			gres_cpus = gres_step_test(step_gres_list,
+						   job_ptr->gres_list,
+						   node_inx,
+						   first_step_node,
+						   cpus_per_task,
+						   max_rem_nodes, true,
+						   job_ptr->job_id, NO_VAL);
 			total_cpus = MIN(total_cpus, gres_cpus);
 			/* consider current step allocations */
-			gres_cpus = gres_plugin_step_test(step_gres_list,
-						job_ptr->gres_list, node_inx,
-						first_step_node, cpus_per_task,
-						max_rem_nodes, false,
-						job_ptr->job_id, NO_VAL);
+			gres_cpus = gres_step_test(step_gres_list,
+						   job_ptr->gres_list,
+						   node_inx,
+						   first_step_node,
+						   cpus_per_task,
+						   max_rem_nodes, false,
+						   job_ptr->job_id, NO_VAL);
 			if (gres_cpus < avail_cpus) {
 				avail_cpus = gres_cpus;
 				usable_cpu_cnt[i] = avail_cpus;
@@ -1941,8 +1945,8 @@ extern void step_alloc_lps(step_record_t *step_ptr)
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
 			break;
 	}
-	gres_plugin_step_state_log(step_ptr->gres_list, job_ptr->job_id,
-				   step_ptr->step_id.step_id);
+	gres_step_state_log(step_ptr->gres_list, job_ptr->job_id,
+			    step_ptr->step_id.step_id);
 }
 
 /* Dump a job step's CPU binding information.
@@ -2415,17 +2419,17 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	_copy_job_tres_to_step(step_specs, job_ptr);
 
 	/* If whole is given we probably need to copy tres_per_* from the job */
-	i = gres_plugin_step_state_validate(step_specs->cpus_per_tres,
-					    step_specs->tres_per_step,
-					    step_specs->tres_per_node,
-					    step_specs->tres_per_socket,
-					    step_specs->tres_per_task,
-					    step_specs->mem_per_tres,
-					    step_specs->ntasks_per_tres,
-					    &step_gres_list,
-					    job_ptr->gres_list, job_ptr->job_id,
-					    NO_VAL, &step_specs->num_tasks,
-					    &step_specs->cpu_count);
+	i = gres_step_state_validate(step_specs->cpus_per_tres,
+				     step_specs->tres_per_step,
+				     step_specs->tres_per_node,
+				     step_specs->tres_per_socket,
+				     step_specs->tres_per_task,
+				     step_specs->mem_per_tres,
+				     step_specs->ntasks_per_tres,
+				     &step_gres_list,
+				     job_ptr->gres_list, job_ptr->job_id,
+				     NO_VAL, &step_specs->num_tasks,
+				     &step_specs->cpu_count);
 	if (i != SLURM_SUCCESS) {
 		FREE_NULL_LIST(step_gres_list);
 		return i;
@@ -2531,8 +2535,8 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 
 	step_ptr->gres_list = step_gres_list;
 	step_gres_list      = (List) NULL;
-	gres_plugin_step_state_log(step_ptr->gres_list, job_ptr->job_id,
-				   step_ptr->step_id.step_id);
+	gres_step_state_log(step_ptr->gres_list, job_ptr->job_id,
+			    step_ptr->step_id.step_id);
 
 	step_ptr->port = step_specs->port;
 	step_ptr->srun_pid = step_specs->srun_pid;
@@ -2964,14 +2968,14 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 				usable_cpus = MIN(usable_cpus, usable_mem);
 			}
 
-			gres_cpus = gres_plugin_step_test(step_ptr->gres_list,
-							job_ptr->gres_list,
-							job_node_offset,
-							first_step_node,
-							step_ptr->cpus_per_task,
-							rem_nodes, false,
-							job_ptr->job_id,
-							step_ptr->step_id.step_id);
+			gres_cpus = gres_step_test(step_ptr->gres_list,
+						   job_ptr->gres_list,
+						   job_node_offset,
+						   first_step_node,
+						   step_ptr->cpus_per_task,
+						   rem_nodes, false,
+						   job_ptr->job_id,
+						   step_ptr->step_id.step_id);
 			if (usable_cpus > gres_cpus)
 				usable_cpus = gres_cpus;
 			if (usable_cpus <= 0) {
@@ -3798,9 +3802,9 @@ extern int dump_job_step_state(void *x, void *arg)
 	packstr(step_ptr->name, buffer);
 	packstr(step_ptr->network, buffer);
 
-	(void) gres_plugin_step_state_pack(step_ptr->gres_list, buffer,
-					   &step_ptr->step_id,
-					   SLURM_PROTOCOL_VERSION);
+	(void) gres_step_state_pack(step_ptr->gres_list, buffer,
+				    &step_ptr->step_id,
+				    SLURM_PROTOCOL_VERSION);
 
 	pack16(step_ptr->batch_step, buffer);
 
@@ -3901,9 +3905,8 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr_xmalloc(&name, &name_len, buffer);
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 
-		if (gres_plugin_step_state_unpack(&gres_list, buffer,
-						  &step_id,
-						  protocol_version)
+		if (gres_step_state_unpack(&gres_list, buffer,
+					   &step_id, protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 
@@ -3973,9 +3976,8 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr_xmalloc(&name, &name_len, buffer);
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 
-		if (gres_plugin_step_state_unpack(&gres_list, buffer,
-						  &step_id,
-						  protocol_version)
+		if (gres_step_state_unpack(&gres_list, buffer,
+					   &step_id, protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
 

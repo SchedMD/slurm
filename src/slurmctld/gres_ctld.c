@@ -148,7 +148,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 	 * These next 2 checks were added long before job resizing was allowed.
 	 * They are not errors as we need to keep the original size around for
 	 * any steps that might still be out there with the larger size.  If the
-	 * job was sized up the gres_plugin_job_merge() function handles the
+	 * job was sized up the gres_job_merge() function handles the
 	 * resize so we are set there.
 	 */
 	else if (job_gres_ptr->node_cnt < node_cnt) {
@@ -632,7 +632,7 @@ static void _job_select_whole_node_internal(
  * OUT job_gres_list - This list will be destroyed and remade with all GRES on
  *                     node.
  * IN node_gres_list - node's gres_list built by
- *		       gres_plugin_node_config_validate()
+ *		       gres_node_config_validate()
  * IN job_id      - job's ID (for logging)
  * IN node_name   - name of the node (for logging)
  * RET SLURM_SUCCESS or error code
@@ -664,7 +664,7 @@ extern int gres_ctld_job_select_whole_node(
 
 		/*
 		 * Don't check for no_consume here, we need them added here and
-		 * will filter them out in gres_plugin_job_alloc_whole_node()
+		 * will filter them out in gres_job_alloc_whole_node()
 		 */
 		if (!node_state_ptr->gres_cnt_config)
 			continue;
@@ -687,7 +687,7 @@ extern int gres_ctld_job_select_whole_node(
 				-1, gres_name, *job_gres_list);
 		} else {
 			for (int j = 0; j < node_state_ptr->type_cnt; j++) {
-				job_search_key.type_id = gres_plugin_build_id(
+				job_search_key.type_id = gres_build_id(
 					node_state_ptr->type_name[j]);
 				_job_select_whole_node_internal(
 					&job_search_key, node_state_ptr,
@@ -703,9 +703,9 @@ extern int gres_ctld_job_select_whole_node(
 
 /*
  * Select and allocate GRES to a job and update node and job GRES information
- * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_job_state_validate()
  * IN node_gres_list - node's gres_list built by
- *		       gres_plugin_node_config_validate()
+ *		       gres_node_config_validate()
  * IN node_cnt    - total number of nodes originally allocated to the job
  * IN node_index  - zero-origin global node index
  * IN node_offset - zero-origin index in job allocation to the node of interest
@@ -766,9 +766,9 @@ extern int gres_ctld_job_alloc(List job_gres_list, List node_gres_list,
 /*
  * Select and allocate all GRES on a node to a job and update node and job GRES
  * information
- * IN job_gres_list - job's gres_list built by gres_plugin_job_whole_node().
+ * IN job_gres_list - job's gres_list built by gres_job_whole_node().
  * IN node_gres_list - node's gres_list built by
- *		       gres_plugin_node_config_validate()
+ *		       gres_node_config_validate()
  * IN node_cnt    - total number of nodes originally allocated to the job
  * IN node_index  - zero-origin global node index
  * IN node_offset - zero-origin index in job allocation to the node of interest
@@ -820,7 +820,7 @@ extern int gres_ctld_job_alloc_whole_node(
 				rc = rc2;
 		} else {
 			for (int j = 0; j < node_state_ptr->type_cnt; j++) {
-				job_search_key.type_id = gres_plugin_build_id(
+				job_search_key.type_id = gres_build_id(
 					node_state_ptr->type_name[j]);
 				rc2 = _job_alloc_whole_node_internal(
 					&job_search_key, node_state_ptr,
@@ -1044,9 +1044,9 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 
 /*
  * Deallocate resource from a job and update node and job gres information
- * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_job_state_validate()
  * IN node_gres_list - node's gres_list built by
- *		gres_plugin_node_config_validate()
+ *		gres_node_config_validate()
  * IN node_offset - zero-origin index to the node of interest
  * IN job_id      - job's ID (for logging)
  * IN node_name   - name of the node (for logging)
@@ -1727,8 +1727,8 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 /*
  * Allocate resource to a step and update job and step gres information
  * IN step_gres_list - step's gres_list built by
- *		gres_plugin_step_state_validate()
- * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ *		gres_step_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_job_state_validate()
  * IN node_offset - job's zero-origin index to the node of interest
  * IN first_step_node - true if this is the first node in the step's allocation
  * IN tasks_on_node - number of tasks to be launched on this node
@@ -1889,8 +1889,8 @@ static int _step_dealloc(gres_state_t *step_gres_ptr, List job_gres_list,
 /*
  * Deallocate resource to a step and update job and step gres information
  * IN step_gres_list - step's gres_list built by
- *		gres_plugin_step_state_validate()
- * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ *		gres_step_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_job_state_validate()
  * IN job_id, step_id - ID of the step being allocated.
  * RET SLURM_SUCCESS or error code
  */
@@ -1956,7 +1956,7 @@ void gres_ctld_step_state_rebase(List gres_list,
 		if (!gres_step_ptr)
 			continue;
 		if (!gres_step_ptr->node_in_use) {
-			error("gres_plugin_step_state_rebase: node_in_use is NULL");
+			error("gres_step_state_rebase: node_in_use is NULL");
 			continue;
 		}
 		new_node_cnt = bit_set_count(new_job_node_bitmap);
@@ -1966,7 +1966,7 @@ void gres_ctld_step_state_rebase(List gres_list,
 		i_last  = MAX(bit_fls(orig_job_node_bitmap),
 			      bit_fls(new_job_node_bitmap));
 		if (i_last == -1) {
-			error("gres_plugin_step_state_rebase: node_bitmaps "
+			error("gres_step_state_rebase: node_bitmaps "
 			      "are empty");
 			continue;
 		}

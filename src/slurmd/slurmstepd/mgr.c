@@ -1155,7 +1155,7 @@ job_manager(stepd_step_rec_t *job)
 	    (acct_gather_profile_init() != SLURM_SUCCESS)	||
 	    (slurm_cred_init() != SLURM_SUCCESS)		||
 	    (job_container_init() != SLURM_SUCCESS)		||
-	    (gres_plugin_init() != SLURM_SUCCESS)) {
+	    (gres_init() != SLURM_SUCCESS)) {
 		rc = SLURM_PLUGIN_NAME_INVALID;
 		goto fail1;
 	}
@@ -1217,8 +1217,8 @@ job_manager(stepd_step_rec_t *job)
 	    (job->node_tasks > 1) &&
 	    (job->accel_bind_type || job->tres_bind)) {
 		uint64_t gpu_cnt, nic_cnt;
-		gpu_cnt = gres_plugin_step_count(job->step_gres_list, "gpu");
-		nic_cnt = gres_plugin_step_count(job->step_gres_list, "nic");
+		gpu_cnt = gres_step_count(job->step_gres_list, "gpu");
+		nic_cnt = gres_step_count(job->step_gres_list, "nic");
 		if ((gpu_cnt <= 1) || (gpu_cnt == NO_VAL64))
 			job->accel_bind_type &= (~ACCEL_BIND_CLOSEST_GPU);
 		if ((nic_cnt <= 1) || (nic_cnt == NO_VAL64))

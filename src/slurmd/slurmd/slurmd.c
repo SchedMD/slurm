@@ -731,7 +731,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	get_free_mem(&msg->free_mem);
 
 	gres_info = init_buf(1024);
-	if (gres_plugin_node_config_pack(gres_info) != SLURM_SUCCESS)
+	if (gres_node_config_pack(gres_info) != SLURM_SUCCESS)
 		error("error packing gres configuration");
 	else
 		msg->gres_info   = gres_info;
@@ -1139,7 +1139,7 @@ _reconfigure(void)
 	 */
 	group_cache_purge();
 
-	gres_plugin_reconfig();
+	gres_reconfig();
 	(void) switch_g_reconfig();
 	container_g_reconfig();
 	prep_plugin_reconfig();
@@ -1150,9 +1150,9 @@ _reconfigure(void)
 	build_all_frontend_info(true);
 	node_rec = find_node_record2(conf->node_name);
 	if (node_rec && node_rec->config_ptr) {
-		(void) gres_plugin_init_node_config(conf->node_name,
-						    node_rec->config_ptr->gres,
-						    &gres_list);
+		(void) gres_init_node_config(conf->node_name,
+					     node_rec->config_ptr->gres,
+					     &gres_list);
 
 		/* Send the slurm.conf GRES to the stepd */
 		conf->gres = xstrdup(node_rec->config_ptr->gres);
@@ -1368,9 +1368,9 @@ static void _print_gres(void)
 	node_rec = find_node_record(conf->node_name);
 
 	if (node_rec && node_rec->config_ptr) {
-		gres_plugin_init_node_config(conf->node_name,
-					     node_rec->config_ptr->gres,
-					     &gres_list);
+		gres_init_node_config(conf->node_name,
+				      node_rec->config_ptr->gres,
+				      &gres_list);
 
 		gres_g_node_config_load(1024, /*Do not need real #CPU*/
 					conf->node_name, gres_list,
@@ -1696,7 +1696,7 @@ _slurmd_init(void)
 		return SLURM_ERROR;
 	if (conf->print_gres)
 		slurm_conf.debug_flags = DEBUG_FLAG_GRES;
-	if (gres_plugin_init() != SLURM_SUCCESS)
+	if (gres_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	build_all_nodeline_info(true, 0);
 	build_all_frontend_info(true);
@@ -1709,7 +1709,7 @@ _slurmd_init(void)
 
 	/*
 	 * slurmd -G, calling it here rather than from _process_cmdline
-	 * since it relies on gres_plugin_init and _read_config.
+	 * since it relies on gres_init and _read_config.
 	 */
 	if (conf->print_gres)
 		_print_gres();
@@ -1738,9 +1738,9 @@ _slurmd_init(void)
 	fini_job_id = xmalloc(sizeof(uint32_t) * fini_job_cnt);
 	node_rec = find_node_record2(conf->node_name);
 	if (node_rec && node_rec->config_ptr) {
-		(void) gres_plugin_init_node_config(conf->node_name,
-						    node_rec->config_ptr->gres,
-						    &gres_list);
+		(void) gres_init_node_config(conf->node_name,
+					     node_rec->config_ptr->gres,
+					     &gres_list);
 		/* Send the slurm.conf GRES to the stepd */
 		conf->gres = xstrdup(node_rec->config_ptr->gres);
 	}
@@ -1922,7 +1922,7 @@ _slurmd_fini(void)
 	slurm_proctrack_fini();
 	slurm_auth_fini();
 	node_fini2();
-	gres_plugin_fini();
+	gres_fini();
 	prep_plugin_fini();
 	slurm_topo_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */

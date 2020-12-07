@@ -710,11 +710,11 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			gres_list = node_usage[i].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		gres_cores = gres_plugin_job_test(job_ptr->gres_list,
-						  gres_list, true,
-						  NULL, 0, 0, job_ptr->job_id,
-						  node_ptr->name,
-						  disable_binding);
+		gres_cores = gres_job_test(job_ptr->gres_list,
+					   gres_list, true,
+					   NULL, 0, 0, job_ptr->job_id,
+					   node_ptr->name,
+					   disable_binding);
 		gres_cpus = gres_cores;
 		if (gres_cpus != NO_VAL)
 			gres_cpus *= select_node_record[i].vpus;
@@ -1487,7 +1487,7 @@ alloc_job:
 
 		/*
 		 * Determine if any job gres_per_task specification here
-		 * to avoid calling gres_plugin_get_task_limit unless needed
+		 * to avoid calling gres_get_task_limit unless needed
 		 */
 		have_gres_per_task = gres_select_util_job_tres_per_task(
 			job_ptr->gres_list);
@@ -2344,8 +2344,8 @@ extern int common_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			}
 			log_job_resources(job_ptr);
 			if (is_cons_tres)
-				gres_plugin_job_state_log(job_ptr->gres_list,
-							  job_ptr->job_id);
+				gres_job_state_log(job_ptr->gres_list,
+						   job_ptr->job_id);
 		} else {
 			info("no job_resources info for %pJ rc=%d",
 			     job_ptr, rc);

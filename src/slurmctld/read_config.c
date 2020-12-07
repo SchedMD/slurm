@@ -1494,7 +1494,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		_acct_restore_active_jobs();
 
 	/* Sync select plugin with synchronized job/node/part data */
-	gres_plugin_reconfig();		/* Clear gres/mps counters */
+	gres_reconfig();		/* Clear gres/mps counters */
 	select_g_reconfigure();
 	if (reconfig && (slurm_mcs_reconfig() != SLURM_SUCCESS))
 		fatal("Failed to reconfigure mcs plugin");
@@ -1753,7 +1753,7 @@ static void _gres_reconfig(bool reconfig)
 	int i;
 
 	if (reconfig) {
-		gres_plugin_reconfig();
+		gres_reconfig();
 		return;
 	}
 
@@ -1763,8 +1763,8 @@ static void _gres_reconfig(bool reconfig)
 			gres_name = node_ptr->gres;
 		else
 			gres_name = node_ptr->config_ptr->gres;
-		gres_plugin_init_node_config(node_ptr->name, gres_name,
-					     &node_ptr->gres_list);
+		gres_init_node_config(node_ptr->name, gres_name,
+				      &node_ptr->gres_list);
 		if (!IS_NODE_CLOUD(node_ptr))
 			continue;
 
@@ -1777,7 +1777,7 @@ static void _gres_reconfig(bool reconfig)
 		gres_g_node_config_load(
 			node_ptr->config_ptr->cpus, node_ptr->name,
 			node_ptr->gres_list, NULL, NULL);
-		gres_plugin_node_config_validate(
+		gres_node_config_validate(
 			node_ptr->name, node_ptr->config_ptr->gres,
 			&node_ptr->gres, &node_ptr->gres_list,
 			node_ptr->config_ptr->threads,

@@ -99,17 +99,16 @@ int main(int argc, char *argv[])
 	slurm_init(NULL);
 
 	// Initialize GRES info (from slurm.conf)
-	rc = gres_plugin_init_node_config(node_name, slurm_conf_gres_str,
-					  &gres_list);
+	rc = gres_init_node_config(node_name, slurm_conf_gres_str, &gres_list);
 	if (rc != SLURM_SUCCESS) {
-		slurm_perror("FAILURE: gres_plugin_init_node_config");
+		slurm_perror("FAILURE: gres_init_node_config");
 		exit(1);
 	}
 
 	rc = gres_g_node_config_load(4, node_name, gres_list, NULL, NULL);
 	FREE_NULL_LIST(gres_list);
 	if (rc != SLURM_SUCCESS) {
-		slurm_perror("FAILURE: gres_plugin_node_config_load");
+		slurm_perror("FAILURE: gres_node_config_load");
 		exit(1);
 	}
 
@@ -121,7 +120,7 @@ int main(int argc, char *argv[])
 #ifdef USING_VALGRIND
 	// Clean up for valgrind
 	slurm_conf_destroy();
-	gres_plugin_fini();
+	gres_fini();
 	slurm_select_fini();
 	log_fini();
 	xfree(slurm_conf);

@@ -138,8 +138,8 @@ static uint32_t _gres_sock_job_test(List job_gres_list, List node_gres_list,
 
 /*
  * Determine how many CPUs on the node can be used by this job
- * IN job_gres_list  - job's gres_list built by gres_plugin_job_state_validate()
- * IN node_gres_list - node's gres_list built by gres_plugin_node_config_validate()
+ * IN job_gres_list  - job's gres_list built by gres_job_state_validate()
+ * IN node_gres_list - node's gres_list built by gres_node_config_validate()
  * IN use_total_gres - if set then consider all gres resources as available,
  *		       and none are commited to running jobs
  * IN cpu_bitmap     - Identification of available CPUs (NULL if no restriction)
@@ -169,10 +169,10 @@ static uint32_t _gres_sock_job_test(List job_gres_list, List node_gres_list,
 	    ((sock_cnt = select_node_record[node_i].sockets) < 2) ||
 	    (sock_cnt <= s_p_n)) {
 		/* No socket filtering possible, use all sockets */
-		return gres_plugin_job_test(job_gres_list, node_gres_list,
-					    use_total_gres, core_bitmap,
-					    core_start_bit, core_end_bit,
-					    job_id, node_name, false);
+		return gres_job_test(job_gres_list, node_gres_list,
+				     use_total_gres, core_bitmap,
+				     core_start_bit, core_end_bit,
+				     job_id, node_name, false);
 	}
 
 	/* Build local data structures */
@@ -206,10 +206,15 @@ static uint32_t _gres_sock_job_test(List job_gres_list, List node_gres_list,
 	for (i = 0; i <= (sock_cnt - s_p_n); i++) {
 		for (j = 1; j < s_p_n; j++)
 			bit_or(sock_core_bitmap[i], sock_core_bitmap[i+j]);
-		avail_cores[i] = gres_plugin_job_test(job_gres_list,
-					node_gres_list, use_total_gres,
-					sock_core_bitmap[i], core_start_bit,
-					core_end_bit, job_id, node_name, false);
+		avail_cores[i] = gres_job_test(job_gres_list,
+					       node_gres_list,
+					       use_total_gres,
+					       sock_core_bitmap[i],
+					       core_start_bit,
+					       core_end_bit,
+					       job_id,
+					       node_name,
+					       false);
 	}
 
 	/* Identify the best sockets */
@@ -2107,12 +2112,12 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 					    core_end_bit, node_ptr->name);
 	}
 	if (disable_binding || (s_p_n == NO_VAL)) {
-		gres_cores = gres_plugin_job_test(job_ptr->gres_list,
-						  gres_list, test_only,
-						  core_map, core_start_bit,
-						  core_end_bit, job_ptr->job_id,
-						  node_ptr->name,
-						  disable_binding);
+		gres_cores = gres_job_test(job_ptr->gres_list,
+					   gres_list, test_only,
+					   core_map, core_start_bit,
+					   core_end_bit, job_ptr->job_id,
+					   node_ptr->name,
+					   disable_binding);
 	} else {
 		gres_cores = _gres_sock_job_test(job_ptr->gres_list,
 						 gres_list, test_only,

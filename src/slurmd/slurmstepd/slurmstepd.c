@@ -700,11 +700,11 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 
 	/* Establish GRES environment variables */
 	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES) {
-		gres_plugin_job_state_log(job->job_gres_list,
-					  job->step_id.job_id);
-		gres_plugin_step_state_log(job->step_gres_list,
-					   job->step_id.job_id,
-					   job->step_id.step_id);
+		gres_job_state_log(job->job_gres_list,
+				   job->step_id.job_id);
+		gres_step_state_log(job->step_gres_list,
+				    job->step_id.job_id,
+				    job->step_id.step_id);
 	}
 	if (msg->msg_type == REQUEST_BATCH_JOB_LAUNCH) {
 		gres_g_job_set_env(&job->env, job->job_gres_list, 0);

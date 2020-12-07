@@ -43,9 +43,9 @@
  * Clear the core_bitmap for cores which are not usable by this job (i.e. for
  *	cores which are already bound to other jobs or lack GRES) only for
  *	cons_res.
- * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_job_state_validate()
  * IN node_gres_list - node's gres_list built by
- *                     gres_plugin_node_config_validate()
+ *                     gres_node_config_validate()
  * IN use_total_gres - if set then consider all GRES resources as available,
  *		       and none are commited to running jobs
  * IN/OUT core_bitmap - Identification of available cores
@@ -63,7 +63,7 @@ extern void gres_select_filter_cons_res(List job_gres_list, List node_gres_list,
  * Determine which GRES can be used on this node given the available cores.
  *	Filter out unusable GRES.
  * IN sock_gres_list - list of sock_gres_t entries built by
- *                     gres_plugin_job_test2()
+ *                     gres_job_test2()
  * IN avail_mem - memory available for the job
  * IN max_cpus - maximum CPUs available on this node (limited by specialized
  *               cores and partition CPUs-per-node)
@@ -99,7 +99,7 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
  * Determine how many tasks can be started on a given node and which
  *	sockets/cores are required
  * IN mc_ptr - job's multi-core specs, NO_VAL and INFINITE mapped to zero
- * IN sock_gres_list - list of sock_gres_t entries built by gres_plugin_job_test2()
+ * IN sock_gres_list - list of sock_gres_t entries built by gres_job_test2()
  * IN sockets - Count of sockets on the node
  * IN cores_per_socket - Count of cores per socket on the node
  * IN cpus_per_core - Count of CPUs per core on the node

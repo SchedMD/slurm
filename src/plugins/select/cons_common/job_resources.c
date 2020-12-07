@@ -360,8 +360,7 @@ extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action)
 					node_ptr->name, core_bitmap,
 					job_ptr->user_id);
 
-			gres_plugin_node_state_log(node_gres_list,
-						   node_ptr->name);
+			gres_node_state_log(node_gres_list, node_ptr->name);
 			FREE_NULL_BITMAP(core_bitmap);
 
 			if (job->memory_allocated[n] == 0)
@@ -528,7 +527,7 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 					      n, job_ptr->job_id,
 					      node_ptr->name, old_job,
 					      job_ptr->user_id, job_fini);
-			gres_plugin_node_state_log(gres_list, node_ptr->name);
+			gres_node_state_log(gres_list, node_ptr->name);
 
 			if (node_usage[i].alloc_memory <
 			    job->memory_allocated[n]) {

@@ -955,7 +955,7 @@ extern int init(void)
 		xfree(default_mcdram_str);
 		xfree(default_numa_str);
 	}
-	gres_plugin_add("hbm");
+	gres_add("hbm");
 
 	if ((rc == SLURM_SUCCESS) &&
 	    ume_check_interval && running_in_slurmd()) {
@@ -1718,9 +1718,9 @@ extern int node_features_p_node_update(char *active_features,
 			if (!node_ptr->gres)
 				node_ptr->gres =
 					xstrdup(node_ptr->config_ptr->gres);
-			gres_plugin_node_feature(node_ptr->name, "hbm",
-						 mcdram_size, &node_ptr->gres,
-						 &node_ptr->gres_list);
+			gres_node_feature(node_ptr->name, "hbm",
+					  mcdram_size, &node_ptr->gres,
+					  &node_ptr->gres_list);
 		}
 	}
 

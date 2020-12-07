@@ -193,13 +193,13 @@ static void _avail_res_log(avail_res_t *avail_res, char *node_name)
 	     node_name, avail_res->sock_cnt, avail_res->spec_threads,
 	     avail_res->min_cpus, avail_res->max_cpus, avail_res->avail_cpus,
 	     avail_res->vpus);
-	gres_info = gres_plugin_sock_str(avail_res->sock_gres_list, -1);
+	gres_info = gres_sock_str(avail_res->sock_gres_list, -1);
 	if (gres_info) {
 		info("  AnySocket %s", gres_info);
 		xfree(gres_info);
 	}
 	for (i = 0; i < avail_res->sock_cnt; i++) {
-		gres_info = gres_plugin_sock_str(avail_res->sock_gres_list, i);
+		gres_info = gres_sock_str(avail_res->sock_gres_list, i);
 		if (gres_info) {
 			info("  Socket[%d] Cores:%u GRES:%s", i,
 			     avail_res->avail_cores_per_sock[i], gres_info);
@@ -3277,7 +3277,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 					select_node_record[node_i].tot_cores);
 			bit_set_all(core_map[node_i]);
 		}
-		sock_gres_list = gres_plugin_job_test2(
+		sock_gres_list = gres_job_test2(
 					job_ptr->gres_list, node_gres_list,
 					test_only, core_map[node_i],
 					select_node_record[node_i].tot_sockets,
@@ -3287,7 +3287,7 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 					job_ptr->user_id, node_i);
 		if (!sock_gres_list) {	/* GRES requirement fail */
 #if _DEBUG
-			info("Test fail on node %d: gres_plugin_job_test2",
+			info("Test fail on node %d: gres_job_test2",
 			     node_i);
 #endif
 			return NULL;

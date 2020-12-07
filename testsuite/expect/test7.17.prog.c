@@ -101,90 +101,89 @@ int main(int argc, char *argv[])
 
 	slurm_init(NULL);
 
-	rc = gres_plugin_init();
+	rc = gres_init();
 	if (rc)
-		fatal("failure: gres_plugin_init: %s", slurm_strerror(rc));
+		fatal("failure: gres_init: %s", slurm_strerror(rc));
 
 	/*
 	 * Logic normally executed by slurmctld daemon
 	 */
 	orig_config = "gpu:8";
-	rc = gres_plugin_init_node_config(node_name, orig_config,
-					  &node_gres_list);
+	rc = gres_init_node_config(node_name, orig_config, &node_gres_list);
 	if (rc)
-		fatal("failure: gres_plugin_init_node_config: %s",
+		fatal("failure: gres_init_node_config: %s",
 		      slurm_strerror(rc));
 
 	cpu_count = strtol(argv[4], NULL, 10);
 	node_name = "test_node";
 	rc = gres_g_node_config_load(cpu_count, node_name, node_gres_list,
-					  NULL, NULL);
+				     NULL, NULL);
 	if (rc)
-		fatal("failure: gres_plugin_node_config_load: %s",
+		fatal("failure: gres_node_config_load: %s",
 		      slurm_strerror(rc));
 
 	buffer = init_buf(1024);
-	rc = gres_plugin_node_config_pack(buffer);
+	rc = gres_node_config_pack(buffer);
 	if (rc)
-		fatal("failure: gres_plugin_node_config_pack: %s",
+		fatal("failure: gres_node_config_pack: %s",
 		      slurm_strerror(rc));
 
 	set_buf_offset(buffer, 0);
-	rc = gres_plugin_node_config_unpack(buffer, node_name);
+	rc = gres_node_config_unpack(buffer, node_name);
 	if (rc != SLURM_SUCCESS) {
-		slurm_perror("failure: gres_plugin_node_config_unpack");
+		slurm_perror("failure: gres_node_config_unpack");
 		exit(1);
 	}
 
 	core_count = cpu_count;
 	sock_count = 1;
-	rc = gres_plugin_node_config_validate(node_name, orig_config,
-					      &new_config, &node_gres_list,
-					      cpu_count, core_count, sock_count,
-					      0, &reason_down);
+	rc = gres_node_config_validate(node_name, orig_config,
+				       &new_config, &node_gres_list,
+				       cpu_count, core_count, sock_count,
+				       0, &reason_down);
 	if (rc)
-		fatal("failure: gres_plugin_node_config_validate: %s",
+		fatal("failure: gres_node_config_validate: %s",
 		      slurm_strerror(rc));
 
 	if (argc > 2)
 		tres_per_node = xstrdup(argv[1]);
 
-	rc = gres_plugin_job_state_validate(NULL,	/* cpus_per_tres */
-					    NULL,	/* tres_freq */
-					    NULL,	/* tres_per_job */
-					    tres_per_node,
-					    NULL,	/* tres_per_socket */
-					    NULL,	/* tres_per_task */
-					    NULL,	/* mem_per_tres */
-					    &num_tasks,
-					    &min_nodes,
-					    &max_nodes,
-					    &ntasks_per_node,
-					    &ntasks_per_socket,
-					    &sockets_per_node,
-					    &cpus_per_task,
-					    &ntasks_per_tres,
-					    &job_gres_list);
+	rc = gres_job_state_validate(NULL,	/* cpus_per_tres */
+				     NULL,	/* tres_freq */
+				     NULL,	/* tres_per_job */
+				     tres_per_node,
+				     NULL,	/* tres_per_socket */
+				     NULL,	/* tres_per_task */
+				     NULL,	/* mem_per_tres */
+				     &num_tasks,
+				     &min_nodes,
+				     &max_nodes,
+				     &ntasks_per_node,
+				     &ntasks_per_socket,
+				     &sockets_per_node,
+				     &cpus_per_task,
+				     &ntasks_per_tres,
+				     &job_gres_list);
 	if (rc)
-		fatal("failure: gres_plugin_job_state_validate: %s",
+		fatal("failure: gres_job_state_validate: %s",
 		      slurm_strerror(rc));
 
-	gres_plugin_node_state_log(node_gres_list, node_name);
-	gres_plugin_job_state_log(job_gres_list, job_id);
+	gres_node_state_log(node_gres_list, node_name);
+	gres_job_state_log(job_gres_list, job_id);
 
 	cpu_bitmap = bit_alloc(cpu_count);
 	bit_nset(cpu_bitmap, 0, cpu_count - 1);
-	cpu_alloc = gres_plugin_job_test(job_gres_list, node_gres_list, true,
-					 cpu_bitmap, 0, cpu_count - 1,
-					 job_id, node_name, false);
+	cpu_alloc = gres_job_test(job_gres_list, node_gres_list, true,
+				  cpu_bitmap, 0, cpu_count - 1,
+				  job_id, node_name, false);
 	if (cpu_alloc == NO_VAL)
 		printf("cpu_alloc=ALL\n");
 	else
 		printf("cpu_alloc=%u\n", cpu_alloc);
 
-	rc = gres_plugin_fini();
+	rc = gres_fini();
 	if (rc != SLURM_SUCCESS)
-		fatal("failure: gres_plugin_fini: %s", slurm_strerror(rc));
+		fatal("failure: gres_fini: %s", slurm_strerror(rc));
 
 	printf("Test %s ran to completion\n\n", argv[3]);
 	return rc;

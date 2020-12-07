@@ -1130,7 +1130,7 @@ extern int select_p_node_init(node_record_t *node_ptr, int node_cnt)
 			_check_allocatable_sockets(&select_node_record[i]);
 
 		select_node_usage[i].node_state = NODE_CR_AVAILABLE;
-		gres_plugin_node_state_dealloc_all(
+		gres_node_state_dealloc_all(
 			select_node_record[i].node_ptr->gres_list);
 	}
 	part_data_create_array();
@@ -1443,7 +1443,7 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 		gres_ctld_job_dealloc(job_ptr->gres_list, gres_list, n,
 				      job_ptr->job_id, node_ptr->name,
 				      old_job, job_ptr->user_id, true);
-		gres_plugin_node_state_log(gres_list, node_ptr->name);
+		gres_node_state_log(gres_list, node_ptr->name);
 
 		if (node_usage[i].alloc_memory < job->memory_allocated[n]) {
 			error("node %s memory is underallocated (%"PRIu64"-%"PRIu64") for %pJ",
@@ -1872,7 +1872,7 @@ extern int select_p_select_nodeinfo_set(job_record_t *job_ptr)
 	} else
 		return SLURM_SUCCESS;
 
-	gres_plugin_job_state_log(job_ptr->gres_list, job_ptr->job_id);
+	gres_job_state_log(job_ptr->gres_list, job_ptr->job_id);
 
 	return rc;
 }

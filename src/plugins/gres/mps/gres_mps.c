@@ -299,7 +299,7 @@ static void _distribute_count(List gres_conf_list, List gpu_conf_list,
 		}
 		mps_record->file = xstrdup(gpu_record->file);
 		mps_record->name = xstrdup("mps");
-		mps_record->plugin_id = gres_plugin_build_id("mps");
+		mps_record->plugin_id = gres_build_id("mps");
 		mps_record->type_name = xstrdup(gpu_record->type_name);
 		list_append(gres_conf_list, mps_record);
 
@@ -381,7 +381,7 @@ static int _merge_lists(List gres_conf_list, List gpu_conf_list,
 			}
 			mps_record->file = xstrdup(gpu_record->file);
 			mps_record->name = xstrdup("mps");
-			mps_record->plugin_id = gres_plugin_build_id("mps");
+			mps_record->plugin_id = gres_build_id("mps");
 			mps_record->type_name = xstrdup(gpu_record->type_name);
 			list_append(gres_conf_list, mps_record);
 		}
@@ -457,7 +457,7 @@ static int _compute_local_id(char *dev_file_name)
 static uint64_t _build_mps_dev_info(List gres_conf_list)
 {
 	uint64_t mps_count = 0;
-	uint32_t mps_plugin_id = gres_plugin_build_id("mps");
+	uint32_t mps_plugin_id = gres_build_id("mps");
 	gres_slurmd_conf_t *gres_conf;
 	mps_dev_info_t *mps_conf;
 	ListIterator iter;

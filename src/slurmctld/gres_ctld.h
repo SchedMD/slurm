@@ -44,7 +44,7 @@
  * OUT job_gres_list - This list will be destroyed and remade with all GRES on
  *                     node.
  * IN node_gres_list - node's gres_list built by
- *		       gres_plugin_node_config_validate()
+ *		       gres_node_config_validate()
  * IN job_id      - job's ID (for logging)
  * IN node_name   - name of the node (for logging)
  * RET SLURM_SUCCESS or error code
@@ -56,9 +56,9 @@ extern int gres_ctld_job_select_whole_node(
 /*
  * Select and allocate all GRES on a node to a job and update node and job GRES
  * information
- * IN job_gres_list - job's gres_list built by gres_plugin_job_whole_node().
+ * IN job_gres_list - job's gres_list built by gres_job_whole_node().
  * IN node_gres_list - node's gres_list built by
- *		       gres_plugin_node_config_validate()
+ *		       gres_node_config_validate()
  * IN node_cnt    - total number of nodes originally allocated to the job
  * IN node_index  - zero-origin global node index
  * IN node_offset - zero-origin index in job allocation to the node of interest
@@ -77,9 +77,9 @@ extern int gres_ctld_job_alloc_whole_node(
 
 /*
  * Select and allocate GRES to a job and update node and job GRES information
- * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_job_state_validate()
  * IN node_gres_list - node's gres_list built by
- *		       gres_plugin_node_config_validate()
+ *		       gres_node_config_validate()
  * IN node_cnt    - total number of nodes originally allocated to the job
  * IN node_index  - zero-origin global node index
  * IN node_offset - zero-origin index in job allocation to the node of interest
@@ -97,9 +97,9 @@ extern int gres_ctld_job_alloc(List job_gres_list, List node_gres_list,
 
 /*
  * Deallocate resource from a job and update node and job gres information
- * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_job_state_validate()
  * IN node_gres_list - node's gres_list built by
- *		gres_plugin_node_config_validate()
+ *		gres_node_config_validate()
  * IN node_offset - zero-origin index to the node of interest
  * IN job_id      - job's ID (for logging)
  * IN node_name   - name of the node (for logging)
@@ -162,8 +162,8 @@ extern void gres_ctld_set_node_tres_cnt(List gres_list,
 /*
  * Allocate resource to a step and update job and step gres information
  * IN step_gres_list - step's gres_list built by
- *		gres_plugin_step_state_validate()
- * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ *		gres_step_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_job_state_validate()
  * IN node_offset - job's zero-origin index to the node of interest
  * IN first_step_node - true if this is node zero of the step
  *                      (do initialization)
@@ -180,8 +180,8 @@ extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
 /*
  * Deallocate resource to a step and update job and step gres information
  * IN step_gres_list - step's gres_list built by
- *		gres_plugin_step_state_validate()
- * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ *		gres_step_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_job_state_validate()
  * IN job_id, step_id - ID of the step being allocated.
  * RET SLURM_SUCCESS or error code
  */

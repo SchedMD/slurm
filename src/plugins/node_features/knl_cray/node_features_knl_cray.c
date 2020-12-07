@@ -1537,9 +1537,9 @@ static void _update_all_node_features(
 				node_ptr->gres =
 					xstrdup(node_ptr->config_ptr->gres);
 			}
-			gres_plugin_node_feature(node_ptr->name, "hbm",
-						 mcdram_size, &node_ptr->gres,
-						 &node_ptr->gres_list);
+			gres_node_feature(node_ptr->name, "hbm",
+					  mcdram_size, &node_ptr->gres,
+					  &node_ptr->gres_list);
 		}
 	}
 	if (numa_cap && (validate_mode == 0)) {
@@ -1589,8 +1589,8 @@ static void _update_all_node_features(
 		}
 		if (!node_ptr->gres)
 			node_ptr->gres = xstrdup(node_ptr->config_ptr->gres);
-		gres_plugin_node_feature(node_ptr->name, "hbm", 0,
-					 &node_ptr->gres, &node_ptr->gres_list);
+		gres_node_feature(node_ptr->name, "hbm", 0,
+				  &node_ptr->gres, &node_ptr->gres_list);
 	}
 
 	xfree(prefix);
@@ -1655,9 +1655,9 @@ static void _update_node_features(node_record_t *node_ptr,
 				node_ptr->gres =
 					xstrdup(node_ptr->config_ptr->gres);
 			}
-			gres_plugin_node_feature(node_ptr->name, "hbm",
-						 mcdram_size, &node_ptr->gres,
-						 &node_ptr->gres_list);
+			gres_node_feature(node_ptr->name, "hbm",
+					  mcdram_size, &node_ptr->gres,
+					  &node_ptr->gres_list);
 			break;
 		}
 	}
@@ -1701,8 +1701,8 @@ static void _update_node_features(node_record_t *node_ptr,
 			node_ptr->gres =
 				xstrdup(node_ptr->config_ptr->gres);
 		}
-		gres_plugin_node_feature(node_ptr->name, "hbm", 0,
-					 &node_ptr->gres, &node_ptr->gres_list);
+		gres_node_feature(node_ptr->name, "hbm", 0,
+				  &node_ptr->gres, &node_ptr->gres_list);
 	}
 
 	/* Update bitmaps and lists used by slurmctld for scheduling */
@@ -1957,7 +1957,7 @@ extern int init(void)
 		xfree(default_mcdram_str);
 		xfree(default_numa_str);
 	}
-	gres_plugin_add("hbm");
+	gres_add("hbm");
 
 	if (ume_check_interval && running_in_slurmd()) {
 		slurm_mutex_lock(&ume_mutex);
@@ -2806,9 +2806,9 @@ extern int node_features_p_node_update(char *active_features,
 		if (mcdram_per_node && (mcdram_inx >= 0)) {
 			mcdram_size = mcdram_per_node[i] *
 				      (100 - mcdram_pct[mcdram_inx]) / 100;
-			gres_plugin_node_feature(node_ptr->name, "hbm",
-						 mcdram_size, &node_ptr->gres,
-						 &node_ptr->gres_list);
+			gres_node_feature(node_ptr->name, "hbm",
+					  mcdram_size, &node_ptr->gres,
+					  &node_ptr->gres_list);
 		}
 	}
 

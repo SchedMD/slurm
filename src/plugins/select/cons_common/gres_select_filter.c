@@ -61,7 +61,7 @@ static void _job_core_filter(void *job_gres_data, void *node_gres_data,
 		return;
 
 	if (mps_plugin_id == NO_VAL)
-		mps_plugin_id = gres_plugin_build_id("mps");
+		mps_plugin_id = gres_build_id("mps");
 
 	if (!use_total_gres &&
 	    (plugin_id == mps_plugin_id) &&
@@ -107,9 +107,9 @@ static void _job_core_filter(void *job_gres_data, void *node_gres_data,
 /*
  * Clear the core_bitmap for cores which are not usable by this job (i.e. for
  *	cores which are already bound to other jobs or lack GRES)
- * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_job_state_validate()
  * IN node_gres_list - node's gres_list built by
- *                     gres_plugin_node_config_validate()
+ *                     gres_node_config_validate()
  * IN use_total_gres - if set then consider all GRES resources as available,
  *		       and none are commited to running jobs
  * IN/OUT core_bitmap - Identification of available cores
@@ -182,7 +182,7 @@ fini:	return avail_cores_by_sock;
  * Determine which GRES can be used on this node given the available cores.
  *	Filter out unusable GRES.
  * IN sock_gres_list - list of sock_gres_t entries built by
- *                     gres_plugin_job_test2()
+ *                     gres_job_test2()
  * IN avail_mem - memory available for the job
  * IN max_cpus - maximum CPUs available on this node (limited by specialized
  *               cores and partition CPUs-per-node)
@@ -228,7 +228,7 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 		return rc;
 
 	if (gpu_plugin_id == NO_VAL)
-		gpu_plugin_id = gres_plugin_build_id("gpu");
+		gpu_plugin_id = gres_build_id("gpu");
 
 	sock_gres_iter = list_iterator_create(sock_gres_list);
 	while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
@@ -301,7 +301,7 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 		}
 		/*
 		 * NOTE: gres_per_socket enforcement is performed by
-		 * _build_sock_gres_by_topo(), called by gres_plugin_job_test2()
+		 * _build_sock_gres_by_topo(), called by gres_job_test2()
 		 */
 		if (sock_gres->cnt_by_sock && enforce_binding) {
 			for (s = 0; s < sockets; s++) {
@@ -411,7 +411,7 @@ static int _sort_sockets_by_avail_cores(const void *x, const void *y,
  * Determine how many tasks can be started on a given node and which
  *	sockets/cores are required
  * IN mc_ptr - job's multi-core specs, NO_VAL and INFINITE mapped to zero
- * IN sock_gres_list - list of sock_gres_t entries built by gres_plugin_job_test2()
+ * IN sock_gres_list - list of sock_gres_t entries built by gres_job_test2()
  * IN sockets - Count of sockets on the node
  * IN cores_per_socket - Count of cores per socket on the node
  * IN cpus_per_core - Count of CPUs per core on the node

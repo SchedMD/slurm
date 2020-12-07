@@ -41,7 +41,7 @@
 
 /*
  * Set job default parameters in a given element of a list
- * IN job_gres_list - job's gres_list built by gres_plugin_job_state_validate()
+ * IN job_gres_list - job's gres_list built by gres_job_state_validate()
  * IN gres_name - name of gres, apply defaults to all elements (e.g. updates to
  *		  gres_name="gpu" would apply to "gpu:tesla", "gpu:volta", etc.)
  * IN cpu_per_gpu - value to set as default
