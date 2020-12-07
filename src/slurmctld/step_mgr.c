@@ -3579,7 +3579,7 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 		} else
 			mem_count *= node_count;
 		tmp_tres_str = gres_ctld_gres_2_tres_str(
-			step_ptr->gres_list, 0, true);
+			step_ptr->gres_list, true);
 	}
 
 	xstrfmtcat(step_ptr->tres_alloc_str,

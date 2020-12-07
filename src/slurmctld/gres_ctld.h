@@ -226,12 +226,10 @@ extern char *gres_ctld_gres_on_node_as_tres(List job_gres_list,
 /*
  * Translate a gres_list into a tres_str
  * IN gres_list - filled in with gres_job_state_t or gres_step_state_t's
- * IN is_job - if is job function expects gres_job_state_t's else
- *             gres_step_state_t's
  * IN locked - if the assoc_mgr tres read locked is locked or not
  * RET char * in a simple TRES format
  */
 extern char *gres_ctld_gres_2_tres_str(
-	List gres_list, bool is_job, bool locked);
+	List gres_list, bool locked);
 
 #endif /* _GRES_CTLD_H */

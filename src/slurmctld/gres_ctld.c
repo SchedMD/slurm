@@ -2233,7 +2233,7 @@ extern char *gres_ctld_gres_on_node_as_tres(List job_gres_list,
 	return tres_str;
 }
 
-extern char *gres_ctld_gres_2_tres_str(List gres_list, bool is_job, bool locked)
+extern char *gres_ctld_gres_2_tres_str(List gres_list, bool locked)
 {
 	ListIterator itr;
 	gres_state_t *gres_state_ptr;
@@ -2251,16 +2251,27 @@ extern char *gres_ctld_gres_2_tres_str(List gres_list, bool is_job, bool locked)
 
 	itr = list_iterator_create(gres_list);
 	while ((gres_state_ptr = list_next(itr))) {
-		if (is_job) {
+		switch (gres_state_ptr->state_type) {
+		case GRES_STATE_TYPE_JOB:
+		{
 			gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
 				gres_state_ptr->gres_data;
 			col_name = gres_data_ptr->type_name;
 			count = gres_data_ptr->total_gres;
-		} else {
+			break;
+		}
+		case GRES_STATE_TYPE_STEP:
+		{
 			gres_step_state_t *gres_data_ptr = (gres_step_state_t *)
 				gres_state_ptr->gres_data;
 			col_name = gres_data_ptr->type_name;
 			count = gres_data_ptr->total_gres;
+			break;
+		}
+		default:
+			error("%s: unsupported state type %d", __func__,
+			      gres_state_ptr->state_type);
+			continue;
 		}
 
 		/* If we are no_consume, print a 0 */
