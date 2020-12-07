@@ -1485,7 +1485,6 @@ extern void gres_ctld_job_build_details(List job_gres_list,
 /* Fill in job/node TRES arrays with allocated GRES. */
 static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 			       List gres_list,
-			       uint32_t node_cnt,
 			       uint64_t *tres_cnt,
 			       bool locked)
 {
@@ -1641,7 +1640,7 @@ extern void gres_ctld_set_job_tres_cnt(List gres_list,
 		return;
 
 	_set_type_tres_cnt(GRES_STATE_TYPE_JOB,
-			   gres_list, node_cnt, tres_cnt, locked);
+			   gres_list, tres_cnt, locked);
 }
 
 extern void gres_ctld_set_node_tres_cnt(List gres_list,
@@ -1649,7 +1648,7 @@ extern void gres_ctld_set_node_tres_cnt(List gres_list,
 					bool locked)
 {
 	_set_type_tres_cnt(GRES_STATE_TYPE_NODE,
-			   gres_list, 0, tres_cnt, locked);
+			   gres_list, tres_cnt, locked);
 }
 
 static int _step_alloc(void *step_gres_data, void *job_gres_data,
