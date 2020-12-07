@@ -212,7 +212,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 			  int core_start_bit, int core_end_bit, bool *topo_set,
 			  uint32_t job_id, char *node_name, char *gres_name,
 			  uint32_t plugin_id, bool disable_binding);
-static int	_load_gres_plugin(slurm_gres_context_t *plugin_context);
+static int	_load_plugin(slurm_gres_context_t *plugin_context);
 static int	_log_gres_slurmd_conf(void *x, void *arg);
 static void	_my_stat(char *file_name);
 static int	_node_config_init(char *node_name, char *orig_config,
@@ -247,7 +247,7 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 			   uint32_t plugin_id);
 static void	_sync_node_mps_to_gpu(gres_state_t *mps_gres_ptr,
 				      gres_state_t *gpu_gres_ptr);
-static int	_unload_gres_plugin(slurm_gres_context_t *plugin_context);
+static int	_unload_plugin(slurm_gres_context_t *plugin_context);
 static void	_validate_slurm_conf(List slurm_conf_list,
 				     slurm_gres_context_t *context_ptr);
 static void	_validate_gres_conf(List gres_conf_list,
@@ -327,7 +327,7 @@ extern int gres_find_step_by_key(void *x, void *key)
 	return 0;
 }
 
-static int _load_gres_plugin(slurm_gres_context_t *plugin_context)
+static int _load_plugin(slurm_gres_context_t *plugin_context)
 {
 	/*
 	 * Must be synchronized with slurm_gres_ops_t above.
@@ -401,7 +401,7 @@ static int _load_gres_plugin(slurm_gres_context_t *plugin_context)
 	return SLURM_SUCCESS;
 }
 
-static int _unload_gres_plugin(slurm_gres_context_t *plugin_context)
+static int _unload_plugin(slurm_gres_context_t *plugin_context)
 {
 	int rc;
 
@@ -684,7 +684,7 @@ extern int gres_plugin_fini(void)
 
 	init_run = false;
 	for (i = 0; i < gres_context_cnt; i++) {
-		j = _unload_gres_plugin(gres_context + i);
+		j = _unload_plugin(gres_context + i);
 		if (j != SLURM_SUCCESS)
 			rc = j;
 	}
@@ -1283,7 +1283,7 @@ static int _foreach_gres_conf(void *x, void *arg)
 		 * Ignore return code, as we will still support the gres
 		 * with or without the plugin.
 		 */
-		if (_load_gres_plugin(context_ptr) == SLURM_SUCCESS)
+		if (_load_plugin(context_ptr) == SLURM_SUCCESS)
 			context_ptr->config_flags |= GRES_CONF_LOADED;
 	}
 
@@ -1346,7 +1346,7 @@ static void _validate_gres_conf(List gres_conf_list,
 		 * If we fail loading we will treat it as a count
 		 * only GRES since the stepd will try to load it elsewise.
 		 */
-		if (_load_gres_plugin(context_ptr) != SLURM_SUCCESS)
+		if (_load_plugin(context_ptr) != SLURM_SUCCESS)
 			context_ptr->config_flags |= GRES_CONF_COUNT_ONLY;
 	} else
 		/* Remove as this is only really used locally */
@@ -1754,16 +1754,16 @@ static int _unpack_gres_context(slurm_gres_context_t* ctx, buf_t *buffer)
 {
 	uint32_t uint32_tmp;
 
-	/* ctx->cur_plugin: filled in later with _load_gres_plugin() */
+	/* ctx->cur_plugin: filled in later with _load_plugin() */
 	safe_unpack8(&ctx->config_flags, buffer);
 	safe_unpackstr_xmalloc(&ctx->gres_name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&ctx->gres_name_colon, &uint32_tmp, buffer);
 	safe_unpack32(&uint32_tmp, buffer);
 	ctx->gres_name_colon_len = (int)uint32_tmp;
 	safe_unpackstr_xmalloc(&ctx->gres_type, &uint32_tmp, buffer);
-	/* ctx->ops: filled in later with _load_gres_plugin() */
+	/* ctx->ops: filled in later with _load_plugin() */
 	safe_unpack32(&ctx->plugin_id, buffer);
-	/* ctx->plugin_list: filled in later with _load_gres_plugin() */
+	/* ctx->plugin_list: filled in later with _load_plugin() */
 	safe_unpack64(&ctx->total_cnt, buffer);
 	return SLURM_SUCCESS;
 
@@ -1852,7 +1852,7 @@ static int _unpack_context_buf(buf_t *buffer)
 		slurm_gres_context_t *ctx = &gres_context[i];
 		if (_unpack_gres_context(ctx, buffer) != SLURM_SUCCESS)
 			goto unpack_error;
-		(void)_load_gres_plugin(ctx);
+		(void)_load_plugin(ctx);
 		if (ctx->ops.recv_stepd)
 			(*(ctx->ops.recv_stepd))(buffer);
 	}
@@ -2191,7 +2191,7 @@ extern int gres_plugin_node_config_unpack(buf_t *buffer, char *node_name)
 			 */
 			if (!(gres_context[j].config_flags &
 			      GRES_CONF_LOADED)) {
-				(void)_load_gres_plugin(&gres_context[j]);
+				(void)_load_plugin(&gres_context[j]);
 				gres_context[j].config_flags |=
 					GRES_CONF_LOADED;
 			}
