@@ -191,6 +191,10 @@ struct con_mgr_s {
 	int event_fd[2];
 	/* Signal PIPE to catch SIGINT */
 	int sigint_fd[2];
+	/* Caller requests finish on error */
+	bool exit_on_error;
+	/* First observed error */
+	int error;
 
 	pthread_mutex_t mutex;
 	/* called after events or changes to wake up _watch */

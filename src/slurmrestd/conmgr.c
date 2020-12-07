@@ -826,6 +826,15 @@ static void _wrap_on_data(void *x)
 	if (rc) {
 		error("%s: [%s] on_data returned rc: %s",
 		      __func__, con->name, slurm_strerror(rc));
+
+		slurm_mutex_lock(&mgr->mutex);
+		if (mgr->exit_on_error)
+			mgr->shutdown = true;
+
+		if (!mgr->error)
+			mgr->error = rc;
+		slurm_mutex_unlock(&mgr->mutex);
+
 		_close_con(false, con);
 		return;
 	}
