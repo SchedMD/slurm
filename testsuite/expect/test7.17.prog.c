@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 
 	cpu_count = strtol(argv[4], NULL, 10);
 	node_name = "test_node";
-	rc = gres_plugin_node_config_load(cpu_count, node_name, node_gres_list,
+	rc = gres_g_node_config_load(cpu_count, node_name, node_gres_list,
 					  NULL, NULL);
 	if (rc)
 		fatal("failure: gres_plugin_node_config_load: %s",

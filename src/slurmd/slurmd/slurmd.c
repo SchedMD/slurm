@@ -1157,9 +1157,9 @@ _reconfigure(void)
 		/* Send the slurm.conf GRES to the stepd */
 		conf->gres = xstrdup(node_rec->config_ptr->gres);
 	}
-	(void) gres_plugin_node_config_load(cpu_cnt, conf->node_name, gres_list,
-					    (void *)&xcpuinfo_abs_to_mac,
-					    (void *)&xcpuinfo_mac_to_abs);
+	(void) gres_g_node_config_load(cpu_cnt, conf->node_name, gres_list,
+				       (void *)&xcpuinfo_abs_to_mac,
+				       (void *)&xcpuinfo_mac_to_abs);
 	FREE_NULL_LIST(gres_list);
 
 	_build_conf_buf();
@@ -1372,10 +1372,10 @@ static void _print_gres(void)
 					     node_rec->config_ptr->gres,
 					     &gres_list);
 
-		gres_plugin_node_config_load(1024, /*Do not need real #CPU*/
-					     conf->node_name, gres_list,
-					     (void *)&xcpuinfo_abs_to_mac,
-					     (void *)&xcpuinfo_mac_to_abs);
+		gres_g_node_config_load(1024, /*Do not need real #CPU*/
+					conf->node_name, gres_list,
+					(void *)&xcpuinfo_abs_to_mac,
+					(void *)&xcpuinfo_mac_to_abs);
 		FREE_NULL_LIST(gres_list);
 	} else {
 		fatal("Unable to find node record for node:%s",
@@ -1744,9 +1744,9 @@ _slurmd_init(void)
 		/* Send the slurm.conf GRES to the stepd */
 		conf->gres = xstrdup(node_rec->config_ptr->gres);
 	}
-	rc = gres_plugin_node_config_load(cpu_cnt, conf->node_name, gres_list,
-					  (void *)&xcpuinfo_abs_to_mac,
-					  (void *)&xcpuinfo_mac_to_abs);
+	rc = gres_g_node_config_load(cpu_cnt, conf->node_name, gres_list,
+				     (void *)&xcpuinfo_abs_to_mac,
+				     (void *)&xcpuinfo_mac_to_abs);
 	FREE_NULL_LIST(gres_list);
 	if (rc != SLURM_SUCCESS)
 		return SLURM_ERROR;

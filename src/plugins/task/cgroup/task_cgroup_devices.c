@@ -247,7 +247,7 @@ static int _cgroup_create_callback(const char *calling_func,
 	/*
          * allow or deny access to devices according to job GRES permissions
          */
-	device_list = gres_plugin_get_allocated_devices(job_gres_list, true);
+	device_list = gres_g_get_devices(job_gres_list, true);
 
 	if (device_list) {
 		list_for_each(device_list, _handle_device_access,
@@ -274,8 +274,7 @@ static int _cgroup_create_callback(const char *calling_func,
 		 * allow or deny access to devices according to GRES permissions
 		 * for the step
 		 */
-		device_list = gres_plugin_get_allocated_devices(
-			step_gres_list, false);
+		device_list = gres_g_get_devices(step_gres_list, false);
 
 		if (device_list) {
 			list_for_each(device_list, _handle_device_access,

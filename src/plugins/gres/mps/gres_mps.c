@@ -482,7 +482,8 @@ static uint64_t _build_mps_dev_info(List gres_conf_list)
  * This only validates that the configuration was specified in gres.conf.
  * In the general case, no code would need to be changed.
  */
-extern int node_config_load(List gres_conf_list, node_config_load_t *config)
+extern int gres_p_node_config_load(List gres_conf_list,
+				   node_config_load_t *config)
 {
 	int rc = SLURM_SUCCESS;
 	log_level_t log_lvl;
@@ -650,8 +651,9 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
  * Set environment variables as appropriate for a job (i.e. all tasks) based
  * upon the job's GRES state.
  */
-extern void job_set_env(char ***job_env_ptr, void *gres_ptr, int node_inx,
-			gres_internal_flags_t flags)
+extern void gres_p_job_set_env(char ***job_env_ptr, void *gres_ptr,
+			       int node_inx,
+			       gres_internal_flags_t flags)
 {
 	/*
 	 * Variables are not static like in step_*_env since we could be calling
@@ -672,8 +674,8 @@ extern void job_set_env(char ***job_env_ptr, void *gres_ptr, int node_inx,
  * Set environment variables as appropriate for a step (i.e. all tasks) based
  * upon the job step's GRES state.
  */
-extern void step_set_env(char ***step_env_ptr, void *gres_ptr,
-			 gres_internal_flags_t flags)
+extern void gres_p_step_set_env(char ***step_env_ptr, void *gres_ptr,
+				gres_internal_flags_t flags)
 {
 	static int local_inx = 0;
 	static bool already_seen = false;
@@ -686,8 +688,9 @@ extern void step_set_env(char ***step_env_ptr, void *gres_ptr,
  * Reset environment variables as appropriate for a job (i.e. this one task)
  * based upon the job step's GRES state and assigned CPUs.
  */
-extern void step_reset_env(char ***step_env_ptr, void *gres_ptr,
-			   bitstr_t *usable_gres, gres_internal_flags_t flags)
+extern void gres_p_step_reset_env(char ***step_env_ptr, void *gres_ptr,
+				  bitstr_t *usable_gres,
+				  gres_internal_flags_t flags)
 {
 	static int local_inx = 0;
 	static bool already_seen = false;
@@ -697,7 +700,7 @@ extern void step_reset_env(char ***step_env_ptr, void *gres_ptr,
 }
 
 /* Send GRES information to slurmstepd on the specified file descriptor */
-extern void send_stepd(buf_t *buffer)
+extern void gres_p_send_stepd(buf_t *buffer)
 {
 	int mps_cnt;
 	mps_dev_info_t *mps_ptr;
@@ -722,7 +725,7 @@ extern void send_stepd(buf_t *buffer)
 }
 
 /* Receive GRES information from slurmd on the specified file descriptor */
-extern void recv_stepd(buf_t *buffer)
+extern void gres_p_recv_stepd(buf_t *buffer)
 {
 	int i, mps_cnt;
 	mps_dev_info_t *mps_ptr = NULL;
@@ -763,8 +766,9 @@ unpack_error:
  *            DO NOT FREE: This is a pointer into the job's data structure
  * RET - SLURM_SUCCESS or error code
  */
-extern int job_info(gres_job_state_t *job_gres_data, uint32_t node_inx,
-		     enum gres_job_data_type data_type, void *data)
+extern int gres_p_get_job_info(gres_job_state_t *job_gres_data,
+			       uint32_t node_inx,
+			       enum gres_job_data_type data_type, void *data)
 {
 	return EINVAL;
 }
@@ -780,8 +784,9 @@ extern int job_info(gres_job_state_t *job_gres_data, uint32_t node_inx,
  *            DO NOT FREE: This is a pointer into the step's data structure
  * RET - SLURM_SUCCESS or error code
  */
-extern int step_info(gres_step_state_t *step_gres_data, uint32_t node_inx,
-		     enum gres_step_data_type data_type, void *data)
+extern int gres_p_get_step_info(gres_step_state_t *step_gres_data,
+				uint32_t node_inx,
+				enum gres_step_data_type data_type, void *data)
 {
 	return EINVAL;
 }
@@ -790,17 +795,17 @@ extern int step_info(gres_step_state_t *step_gres_data, uint32_t node_inx,
  * Return a list of devices of this type. The list elements are of type
  * "gres_device_t" and the list should be freed using FREE_NULL_LIST().
  */
-extern List get_devices(void)
+extern List gres_p_get_devices(void)
 {
 	return gres_devices;
 }
 
-extern void step_hardware_init(bitstr_t *usable_gres, char *settings)
+extern void gres_p_step_hardware_init(bitstr_t *usable_gres, char *settings)
 {
 	return;
 }
 
-extern void step_hardware_fini(void)
+extern void gres_p_step_hardware_fini(void)
 {
 	return;
 }
@@ -809,7 +814,8 @@ extern void step_hardware_fini(void)
  * Build record used to set environment variables as appropriate for a job's
  * prolog or epilog based GRES allocated to the job.
  */
-extern gres_epilog_info_t *epilog_build_env(gres_job_state_t *gres_job_ptr)
+extern gres_epilog_info_t *gres_p_epilog_build_env(
+	gres_job_state_t *gres_job_ptr)
 {
 	int i;
 	gres_epilog_info_t *epilog_info;
@@ -840,8 +846,8 @@ extern gres_epilog_info_t *epilog_build_env(gres_job_state_t *gres_job_ptr)
  * Set environment variables as appropriate for a job's prolog or epilog based
  * GRES allocated to the job.
  */
-extern void epilog_set_env(char ***epilog_env_ptr,
-			   gres_epilog_info_t *epilog_info, int node_inx)
+extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
+				  gres_epilog_info_t *epilog_info, int node_inx)
 {
 	int dev_inx = -1, env_inx = 0, global_id = -1, i;
 	uint64_t count_on_dev, gres_per_node = 0, percentage;

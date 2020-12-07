@@ -1774,7 +1774,7 @@ static void _gres_reconfig(bool reconfig)
 		 * time, which can take a while for a node in the cloud
 		 * to boot.
 		 */
-		gres_plugin_node_config_load(
+		gres_g_node_config_load(
 			node_ptr->config_ptr->cpus, node_ptr->name,
 			node_ptr->gres_list, NULL, NULL);
 		gres_plugin_node_config_validate(

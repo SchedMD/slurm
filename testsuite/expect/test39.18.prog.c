@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	rc = gres_plugin_node_config_load(4, node_name, gres_list, NULL, NULL);
+	rc = gres_g_node_config_load(4, node_name, gres_list, NULL, NULL);
 	FREE_NULL_LIST(gres_list);
 	if (rc != SLURM_SUCCESS) {
 		slurm_perror("FAILURE: gres_plugin_node_config_load");

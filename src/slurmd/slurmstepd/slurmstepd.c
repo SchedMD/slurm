@@ -629,7 +629,7 @@ _init_from_slurmd(int sock, char **argv,
 	}
 
 	/* Receive GRES information from slurmd */
-	gres_plugin_recv_stepd(sock, msg);
+	gres_g_recv_stepd(sock, msg);
 
 	/*
 	 * Read slurmd node name - may be dictated by slurmctld due to
@@ -707,10 +707,10 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 					   job->step_id.step_id);
 	}
 	if (msg->msg_type == REQUEST_BATCH_JOB_LAUNCH) {
-		gres_plugin_job_set_env(&job->env, job->job_gres_list, 0);
+		gres_g_job_set_env(&job->env, job->job_gres_list, 0);
 	} else if (msg->msg_type == REQUEST_LAUNCH_TASKS) {
-		gres_plugin_step_set_env(&job->env, job->step_gres_list, 0,
-					 NULL, -1);
+		gres_g_step_set_env(&job->env, job->step_gres_list, 0,
+				    NULL, -1);
 	}
 
 	/*
