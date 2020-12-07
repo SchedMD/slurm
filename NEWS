@@ -46,6 +46,7 @@ documents those changes that are of interest to users and administrators.
  -- smail - reduce sleep before seff to 5 seconds.
  -- Ensure SPANK prolog and epilog run without an explicit PlugStackConfig.
  -- Disable MySQL automatic reconnection.
+ -- Fix allowing "b" after memory unit suffixes.
 
 * Changes in Slurm 20.11.0
 ==========================
