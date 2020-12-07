@@ -1483,8 +1483,7 @@ extern void gres_ctld_job_build_details(List job_gres_list,
 }
 
 /* Fill in job/node TRES arrays with allocated GRES. */
-static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
-			       List gres_list,
+static void _set_type_tres_cnt(List gres_list,
 			       uint64_t *tres_cnt,
 			       bool locked)
 {
@@ -1519,7 +1518,7 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 		tres_rec.name = gres_state_ptr->gres_name;
 
 		/* Get alloc count for main GRES. */
-		switch (state_type) {
+		switch (gres_state_ptr->state_type) {
 		case GRES_STATE_TYPE_JOB:
 		{
 			gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
@@ -1536,7 +1535,7 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 		}
 		default:
 			error("%s: unsupported state type %d", __func__,
-			      state_type);
+			      gres_state_ptr->state_type);
 			continue;
 		}
 		/*
@@ -1561,7 +1560,7 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 		 * GRES like "gpu:tesla", where you might want to track both as
 		 * TRES.
 		 */
-		switch (state_type) {
+		switch (gres_state_ptr->state_type) {
 		case GRES_STATE_TYPE_JOB:
 		{
 			gres_job_state_t *gres_data_ptr = (gres_job_state_t *)
@@ -1620,7 +1619,7 @@ static void _set_type_tres_cnt(gres_state_type_enum_t state_type,
 		}
 		default:
 			error("%s: unsupported state type %d", __func__,
-			      state_type);
+			      gres_state_ptr->state_type);
 			continue;
 		}
 	}
@@ -1639,16 +1638,14 @@ extern void gres_ctld_set_job_tres_cnt(List gres_list,
 	if (!node_cnt || (node_cnt == NO_VAL))
 		return;
 
-	_set_type_tres_cnt(GRES_STATE_TYPE_JOB,
-			   gres_list, tres_cnt, locked);
+	_set_type_tres_cnt(gres_list, tres_cnt, locked);
 }
 
 extern void gres_ctld_set_node_tres_cnt(List gres_list,
 					uint64_t *tres_cnt,
 					bool locked)
 {
-	_set_type_tres_cnt(GRES_STATE_TYPE_NODE,
-			   gres_list, tres_cnt, locked);
+	_set_type_tres_cnt(gres_list, tres_cnt, locked);
 }
 
 static int _step_alloc(void *step_gres_data, void *job_gres_data,
