@@ -176,7 +176,7 @@ static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
 static slurm_gres_context_t *gres_context = NULL;
 static char *gres_node_name = NULL;
-static char *gres_plugin_list = NULL;
+static char *local_plugins_str = NULL;
 static pthread_mutex_t gres_context_lock = PTHREAD_MUTEX_INITIALIZER;
 static List gres_conf_list = NULL;
 static bool init_run = false;
@@ -466,15 +466,15 @@ extern int gres_plugin_init(void)
 	if (gres_context_cnt >= 0)
 		goto fini;
 
-	gres_plugin_list = xstrdup(slurm_conf.gres_plugins);
+	local_plugins_str = xstrdup(slurm_conf.gres_plugins);
 	gres_context_cnt = 0;
-	if ((gres_plugin_list == NULL) || (gres_plugin_list[0] == '\0'))
+	if ((local_plugins_str == NULL) || (local_plugins_str[0] == '\0'))
 		goto fini;
 
 	/* Ensure that "gres/mps" follows "gres/gpu" */
 	have_gpu = false;
 	have_mps = false;
-	names = xstrdup(gres_plugin_list);
+	names = xstrdup(local_plugins_str);
 	one_name = strtok_r(names, ",", &last);
 	while (one_name) {
 		bool skip_name = false;
@@ -689,7 +689,7 @@ extern int gres_plugin_fini(void)
 			rc = j;
 	}
 	xfree(gres_context);
-	xfree(gres_plugin_list);
+	xfree(local_plugins_str);
 	FREE_NULL_LIST(gres_conf_list);
 	FREE_NULL_BUFFER(gres_context_buf);
 	FREE_NULL_BUFFER(gres_conf_buf);
@@ -740,7 +740,7 @@ extern int gres_plugin_reconfig(void)
 
 	slurm_mutex_lock(&gres_context_lock);
 
-	if (xstrcmp(slurm_conf.gres_plugins, gres_plugin_list))
+	if (xstrcmp(slurm_conf.gres_plugins, local_plugins_str))
 		plugin_change = true;
 	else
 		plugin_change = false;
@@ -748,7 +748,7 @@ extern int gres_plugin_reconfig(void)
 
 	if (plugin_change) {
 		error("GresPlugins changed from %s to %s ignored",
-		     gres_plugin_list, slurm_conf.gres_plugins);
+		      local_plugins_str, slurm_conf.gres_plugins);
 		error("Restart the slurmctld daemon to change GresPlugins");
 #if 0
 		/* This logic would load new plugins, but we need the old
