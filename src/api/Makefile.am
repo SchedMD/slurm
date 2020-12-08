@@ -24,9 +24,7 @@ FULL_OTHER_FLAGS = \
 # With libslurm_pmi we have magic init/fini callers so the linker does not
 # have to worry about knowing to call slurm_conf_init()
 SLURM_PMI_OTHER_FLAGS = \
-	-Wl,--version-script=$(VERSION_SCRIPT) \
-	-Wl,-init,slurm_library_init \
-	-Wl,-fini,slurm_library_fini
+	-Wl,--version-script=$(VERSION_SCRIPT)
 endif
 
 # libslurm version information :

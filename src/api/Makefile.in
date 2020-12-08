@@ -606,9 +606,7 @@ AM_CPPFLAGS = -I$(top_srcdir)
 # With libslurm_pmi we have magic init/fini callers so the linker does not
 # have to worry about knowing to call slurm_conf_init()
 @WITH_GNU_LD_TRUE@SLURM_PMI_OTHER_FLAGS = \
-@WITH_GNU_LD_TRUE@	-Wl,--version-script=$(VERSION_SCRIPT) \
-@WITH_GNU_LD_TRUE@	-Wl,-init,slurm_library_init \
-@WITH_GNU_LD_TRUE@	-Wl,-fini,slurm_library_fini
+@WITH_GNU_LD_TRUE@	-Wl,--version-script=$(VERSION_SCRIPT)
 
 
 # libslurm version information :
