@@ -51,8 +51,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not reponding"
-		set exit_code 1
+		fail "sbatch is not reponding"
 	}
 	eof {
 		wait
@@ -73,8 +72,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not reponding"
-		set exit_code 1
+		fail "sbatch is not reponding"
 	}
 	eof {
 		wait
@@ -92,8 +90,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not reponding"
-		set exit_code 1
+		fail "sbatch is not reponding"
 	}
 	eof {
 		wait
@@ -112,8 +109,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "squeue is not reponding"
-		set exit_code 1
+		fail "squeue is not reponding"
 	}
 	eof {
 		wait

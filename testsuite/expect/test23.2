@@ -35,6 +35,12 @@ set file_in3    "test$test_id.input3"
 set test_acct   "test$test_id\_acct"
 set timeout     $max_job_delay
 
+proc cleanup {} {
+	global bin_rm file_in1 file_in2 file_in3
+
+	exec $bin_rm -f $file_in1 $file_in2 $file_in3
+}
+
 set ac		AveCPU
 set ap		AvePages
 set ar		AveRSS
@@ -123,9 +129,8 @@ if {$aamatches != 1} {
 set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$test_acct]
 expect {
 	 timeout {
-		log_error "sacctmgr add not responding"
 		slow_kill $sadd_pid
-		set exit_code 1
+		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
@@ -175,8 +180,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -194,8 +198,7 @@ if {$job_id3 == 0} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -229,7 +232,6 @@ sleep 5
 proc sstat_job { soption job_id step_id } {
 	global sstat number
 	set debug       0
-	set exit_code   0
 	set matches     0
 	set not_support 0
 	log_debug "sstat -$soption -p -j $job_id"
@@ -252,8 +254,7 @@ proc sstat_job { soption job_id step_id } {
 				exp_continue
 			}
 			timeout {
-				log_error "sstat not responding"
-				set exit_code 1
+				fail "sstat not responding"
 			}
 			eof {
 				wait
@@ -286,8 +287,7 @@ proc sstat_job { soption job_id step_id } {
 				exp_continue
 			}
 			timeout {
-				log_error "sstat not responding"
-				set exit_code 1
+				fail "sstat not responding"
 			}
 			eof {
 				wait
@@ -327,8 +327,7 @@ proc sstat_job { soption job_id step_id } {
 				exp_continue
 			}
 			timeout {
-				log_error "sstat not responding"
-				set exit_code 1
+				fail "sstat not responding"
 			}
 			eof {
 				wait
@@ -368,8 +367,7 @@ proc sstat_job { soption job_id step_id } {
 				exp_continue
 			}
 			timeout {
-				log_error "sstat not responding"
-				set exit_code 1
+				fail "sstat not responding"
 			}
 			eof {
 				wait
@@ -409,8 +407,7 @@ proc sstat_job { soption job_id step_id } {
 				exp_continue
 			}
 			timeout {
-				log_error "sstat not responding"
-				set exit_code 1
+				fail "sstat not responding"
 			}
 			eof {
 				wait
@@ -438,7 +435,6 @@ proc sstat_job { soption job_id step_id } {
 proc sstat_vargs { soption vargs job_id} {
 	global sstat
 	set debug	0
-	set exit_code   0
 	set matches     0
 	set not_support 0
 	log_debug "sstat -$soption $vargs -p -j $job_id"
@@ -481,8 +477,7 @@ proc sstat_vargs { soption vargs job_id} {
 				exp_continue
 			}
 			timeout {
-				log_error "sstat not responding"
-				set exit_code 1
+				fail "sstat not responding"
 			}
 			eof {
 				wait
@@ -584,9 +579,8 @@ expect {
 	}
 
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
@@ -622,9 +616,8 @@ if {$needtodel == 1} {
 		}
 
 		timeout {
-			log_error "sacctmgr delete not responding"
 			slow_kill $sadel_pid
-			set exit_code 1
+			fail "sacctmgr delete not responding"
 		}
 		eof {
 			wait
@@ -636,8 +629,6 @@ if {$damatches != 1} {
 	fail "sacctmgr had problems deleting the account"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in1 $file_in2 $file_in3
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

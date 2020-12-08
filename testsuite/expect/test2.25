@@ -38,7 +38,7 @@ if {![is_super_user]} {
 }
 
 proc mod_assoc_vals { } {
-	global sacctmgr test_acct test_user exit_code
+	global sacctmgr test_acct test_user
 
 	set modified 0
 	spawn $sacctmgr mod -i account $test_acct where user=$test_user set \
@@ -49,8 +49,7 @@ proc mod_assoc_vals { } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -63,7 +62,7 @@ proc mod_assoc_vals { } {
 }
 
 proc clear_assoc_vals { } {
-	global sacctmgr test_acct test_user exit_code
+	global sacctmgr test_acct test_user
 
 	set modified 0
 	spawn $sacctmgr mod -i account $test_acct where user=$test_user set \
@@ -74,8 +73,7 @@ proc clear_assoc_vals { } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -88,7 +86,7 @@ proc clear_assoc_vals { } {
 }
 
 proc delete_test_acct { } {
-	global test_acct sacctmgr exit_code
+	global test_acct sacctmgr
 
 	set deleted 0
 	spawn $sacctmgr delete -i account $test_acct
@@ -98,8 +96,7 @@ proc delete_test_acct { } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -124,8 +121,7 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -145,8 +141,7 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not reponding"
-			set exit_code 1
+			fail "sacctmgr is not reponding"
 		}
 		eof {
 			wait
@@ -181,8 +176,7 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -225,8 +219,7 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -270,8 +263,7 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -307,8 +299,7 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait

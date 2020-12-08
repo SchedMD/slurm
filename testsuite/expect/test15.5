@@ -34,6 +34,12 @@ set exit_code   0
 set file_in     "test$test_id.input"
 set job_id      0
 
+proc cleanup {} {
+	global file_in
+
+	file delete $file_in
+}
+
 # NOTE: If you increase sleep_time, change job time limits as well
 set sleep_time  180
 
@@ -60,8 +66,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -170,8 +175,6 @@ if {$completions != 1} {
 	fail "Job failed to complete properly ($completions)"
 }
 
-if {$exit_code == 0} {
-	file delete $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

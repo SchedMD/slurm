@@ -31,12 +31,19 @@ source ./globals
 set exit_code   0
 set test_prog   "test$test_id.prog"
 
+proc cleanup {} {
+	global test_prog
+
+	file delete $test_prog
+}
+
 #
 # Delete left-over programs and rebuild them.
 #
 exec $bin_rm -f $test_prog
-compile_against_libslurm ${test_prog}
-fail_on_error "Cannot compile test program"
+if [compile_against_libslurm ${test_prog}] {
+	fail "Cannot compile test program"
+}
 
 spawn ./$test_prog
 expect {
@@ -45,16 +52,13 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "test$test_id.prog not responding."
-		set exit_code 1
+		fail "test$test_id.prog not responding."
 	}
 	eof {
 		wait
 	}
 }
 
-if { $exit_code == 0 } {
-	file delete $test_prog
-} else {
+if { $exit_code != 0 } {
 	fail "One or more hosts weren't found"
 }

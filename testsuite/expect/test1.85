@@ -155,3 +155,7 @@ expect {
 if {[ string compare $host2 $hostname] != 0} {
 	fail "The execution hostname $hostname != $host2 requested hostname."
 }
+
+if {$exit_code != 0} {
+        fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}

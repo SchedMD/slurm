@@ -30,7 +30,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set matches     0
 set not_support 0
 
@@ -64,8 +63,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacct not responding"
-		set exit_code 1
+		fail "sacct not responding"
 	}
 	eof {
 		wait
@@ -77,8 +75,4 @@ if {$not_support != 0} {
 }
 if {$matches != 3} {
 	fail "sacct --help failed ($matches != 3)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

@@ -59,6 +59,12 @@ set def_node_inx_max	-1
 set ii			0
 set log_cpu_cnt		0
 
+proc cleanup {} {
+	global bin_rm file_in
+
+	exec $bin_rm -f $file_in
+}
+
 if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
 }
@@ -233,11 +239,9 @@ if {$cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclus
 if {$cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclusive == 0 && $cr_socket == 0 && $irregular_node_name == 0 && $heterogeneous == 0} {
 	inc3_11_9
 }
-
 inc3_11_10
 inc3_11_11
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
-	fail "Test failed due to previous errors"
+
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

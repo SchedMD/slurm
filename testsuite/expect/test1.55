@@ -117,7 +117,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		fail "Squeue not responding"
+		fail "squeue not responding"
 	}
 	eof {
 		wait

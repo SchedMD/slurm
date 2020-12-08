@@ -37,14 +37,12 @@ if {![is_super_user]} {
 }
 
 proc delete_part { } {
-
-	global scontrol exit_code test_part_1 test_part_2
+	global scontrol test_part_1 test_part_2
 
 	spawn $scontrol delete partition=$test_part_1
 	expect {
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -54,13 +52,16 @@ proc delete_part { } {
 	spawn $scontrol delete partition=$test_part_2
 	expect {
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
 		}
 	}
+}
+
+proc cleanup {} {
+	delete_part
 }
 
 # Remove any vestigial Partitions
@@ -74,8 +75,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sinfo is not responding"
-		set exit_code 1
+		fail "sinfo is not responding"
 	}
 	eof {
 		wait
@@ -86,8 +86,7 @@ expect {
 spawn $scontrol create partition=$test_part_1 nodes=$test_node
 expect {
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -97,8 +96,7 @@ expect {
 spawn $scontrol create partition=$test_part_2 nodes=$test_node
 expect {
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -118,8 +116,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sinfo is not responding"
-		set exit_code 1
+		fail "sinfo is not responding"
 	}
 	eof {
 		wait
@@ -145,8 +142,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sinfo is not responding"
-		set exit_code 1
+		fail "sinfo is not responding"
 	}
 	eof {
 		wait
@@ -174,8 +170,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sinfo is not responding"
-		set exit_code 1
+		fail "sinfo is not responding"
 	}
 	eof {
 		wait
@@ -201,8 +196,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sinfo is not responding"
-		set exit_code 1
+		fail "sinfo is not responding"
 	}
 	eof {
 		wait
@@ -226,8 +220,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sinfo is not responding"
-		set exit_code 1
+		fail "sinfo is not responding"
 	}
 	eof {
 		wait
@@ -249,8 +242,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sinfo is not responding"
-		set exit_code 1
+		fail "sinfo is not responding"
 	}
 	eof {
 		wait
@@ -271,8 +263,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sinfo is not responding"
-		set exit_code 1
+		fail "sinfo is not responding"
 	}
 	eof {
 		wait
@@ -282,9 +273,6 @@ expect {
 if {$match != 1} {
 	fail "sinfo should have produced an error ($match != 1)"
 }
-
-# Delete test partitions
-delete_part
 
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"

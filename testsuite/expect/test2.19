@@ -57,8 +57,7 @@ proc set_part_val {part_type part_val} {
 			set exit_code 1
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -144,8 +143,7 @@ proc create_qos { acct qos } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -160,8 +158,7 @@ proc create_qos { acct qos } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -172,8 +169,7 @@ proc create_qos { acct qos } {
 	spawn $sacctmgr -i create user $user_name account=$acct cluster=$cluster_name
 	expect {
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -204,8 +200,7 @@ proc test_part {acct qos part qos_con } {
 			exp_continue
 		}
 		timeout {
-			log_error "srun is not responding"
-			set exit_code 1
+			fail "srun is not responding"
 		}
 		eof {
 			wait
@@ -243,8 +238,7 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		log_error "scontrol is not reponding"
-		set exit_code 1
+		fail "scontrol is not reponding"
 	}
 	eof {
 		wait

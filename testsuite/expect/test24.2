@@ -51,7 +51,7 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 ################################################################
 
 proc sshare_opt { soption } {
-	global exit_code sshare number
+	global sshare number
 	set debug       1
 	set matches     0
 	set not_support 0
@@ -85,8 +85,7 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				log_error "sshare not responding"
-				set exit_code 1
+				fail "sshare not responding"
 			}
 			eof {
 				wait
@@ -122,8 +121,7 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				log_error "sshare not responding"
-				set exit_code 1
+				fail "sshare not responding"
 			}
 			eof {
 				wait
@@ -164,8 +162,7 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				log_error "sshare not responding"
-				set exit_code 1
+				fail "sshare not responding"
 			}
 			eof {
 				wait
@@ -202,8 +199,7 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				log_error "sshare not responding"
-				set exit_code 1
+				fail "sshare not responding"
 			}
 			eof {
 				wait
@@ -244,8 +240,7 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				log_error "sshare not responding"
-				set exit_code 1
+				fail "sshare not responding"
 			}
 			eof {
 				wait
@@ -282,8 +277,7 @@ proc sshare_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				log_error "sshare not responding"
-				set exit_code 1
+				fail "sshare not responding"
 			}
 			eof {
 				wait
@@ -363,7 +357,6 @@ if {$matches != 2} {
 	log_error "sshare --verbose failed ($matches != 2)"
 	set exit_code 1
 }
-
 
 set matches [sshare_opt V ]
 if {$matches != 1} {

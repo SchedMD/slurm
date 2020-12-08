@@ -1530,13 +1530,14 @@ proc remove_clus_res {name} {
 #	check_assoc_limit assoc type name assoc_val
 #
 # RETURN VALUE
-#	1 if association limits are correct, 0 otherwise
+#	true if association limits are correct, false otherwise
 #
 ################################################################
 
 proc check_assoc_limit { assoc type name assoc_val } {
-	global sacctmgr number exit_code
+	global sacctmgr number
 	array set assoc_arr $assoc_val
+	set return_value true
 	set format_str ""
 	set exp "$name"
 	set first 0
@@ -1570,9 +1571,8 @@ proc check_assoc_limit { assoc type name assoc_val } {
 				exp_continue
 			}
 			timeout {
-				log_error "sacctmgr is not responding"
 				slow_kill $my_pid
-				set exit_code 1
+				fail "sacctmgr is not responding"
 			}
 			eof {
 				wait
@@ -1581,7 +1581,7 @@ proc check_assoc_limit { assoc type name assoc_val } {
 		}
 		if {$check_val != 1} {
 			log_error "$name was not set correctly"
-			set exit_code 1
+			set return_value false
 		}
 
 	} elseif {$assoc == 2} {
@@ -1592,9 +1592,8 @@ proc check_assoc_limit { assoc type name assoc_val } {
 				exp_continue
 			}
 			timeout {
-				log_error "sacctmgr is not responding"
 				slow_kill $my_pid
-				set exit_code 1
+				fail "sacctmgr is not responding"
 			}
 			eof {
 				wait
@@ -1603,7 +1602,7 @@ proc check_assoc_limit { assoc type name assoc_val } {
 		}
 		if {$check_val != 1} {
 			log_error "$name was not set correctly $check_val"
-			set exit_code 1
+			set return_value false
 		}
 	} elseif {$assoc == 3} {
 		set my_pid [eval spawn $sacctmgr list assoc $type=$name -p -n format=user,$format_str]
@@ -1613,9 +1612,8 @@ proc check_assoc_limit { assoc type name assoc_val } {
 				exp_continue
 			}
 			timeout {
-				log_error "sacctmgr is not responding"
 				slow_kill $my_pid
-				set exit_code 1
+				fail "sacctmgr is not responding"
 			}
 			eof {
 				wait
@@ -1623,10 +1621,11 @@ proc check_assoc_limit { assoc type name assoc_val } {
 		}
 		if {$check_val != 1} {
 			log_error "$name was not set correctly $check_val"
-			set exit_code 1
+			set return_value false
 		}
 	}
 	log_user 1
+	return $return_value
 }
 
 
@@ -1644,8 +1643,9 @@ proc check_assoc_limit { assoc type name assoc_val } {
 ################################################################
 
 proc reset_account_usage { cluster acct } {
-	global sacctmgr exit_code
+	global sacctmgr
 
+	set exit_code $::RETURN_SUCCESS
 	if { ![string compare $cluster ""] } {
 		set cluster [get_config_param "ClusterName"]
 	}
@@ -1666,6 +1666,7 @@ proc reset_account_usage { cluster acct } {
 			wait
 		}
 	}
+	return $exit_code
 }
 
 
@@ -1683,8 +1684,9 @@ proc reset_account_usage { cluster acct } {
 ################################################################
 
 proc reset_qos_usage { cluster qos } {
-	global sacctmgr exit_code
+	global sacctmgr
 
+	set exit_code $::RETURN_SUCCESS
 	if { ![string compare $cluster ""] } {
 		set cluster [get_config_param "ClusterName"]
 	}
@@ -1705,6 +1707,7 @@ proc reset_qos_usage { cluster qos } {
 			wait
 		}
 	}
+	return $exit_code
 }
 
 
@@ -1773,7 +1776,7 @@ proc check_qos_limits { name qos_req } {
 
 	set command "format="
 	set values ""
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	array set qos_limits $qos_req
 
 	if { ![string length $name] } {
@@ -1805,7 +1808,7 @@ proc check_qos_limits { name qos_req } {
 		timeout {
 			log_error "sacctmgr is not responding"
 			slow_kill $my_pid
-			set exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -1815,7 +1818,7 @@ proc check_qos_limits { name qos_req } {
 
 	if {$match == 0} {
 		log_error "Limits do not match"
-		set exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	return $exit_code
@@ -1840,12 +1843,12 @@ proc check_resource_limits { name res_limits } {
 
 	set command "format=name"
 	set values "$name"
-	set exit_code 0
+	set exit_code $::RETURN_SUCCESS
 	array set res_req $res_limits
 
 	if { ![string length $name] } {
 		log_error "We need a name to check"
-		return 1
+		return $::RETURN_ERROR
 	}
 
 	foreach option [array names res_req] {
@@ -1867,7 +1870,7 @@ proc check_resource_limits { name res_limits } {
 		timeout {
 			log_error "sacctmgr is not responding"
 			slow_kill $my_pid
-			set exit_code 1
+			set exit_code $::RETURN_TIMEOUT
 		}
 		eof {
 			wait
@@ -1877,11 +1880,10 @@ proc check_resource_limits { name res_limits } {
 	log_user 1
 
 	if {$match == 0} {
-		set exit_code 1
+		set exit_code $::RETURN_ERROR
 	}
 
 	return $exit_code
-
 }
 
 
@@ -1960,8 +1962,6 @@ proc mod_resource {name mod_limits} {
 proc get_assoc_id {user acct cluster} {
 	global sacctmgr number
 
-	set exit_code 0
-
 	if { ![string length $user] } {
 		log_error "We need a user to check"
 		return -1
@@ -1994,7 +1994,6 @@ proc get_assoc_id {user acct cluster} {
 		timeout {
 			log_error "sacctmgr is not responding"
 			slow_kill $my_pid
-			set exit_code 1
 		}
 		eof {
 			wait

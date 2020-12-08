@@ -28,11 +28,16 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_in	"test$test_id.input"
 set file_out	"test$test_id.output"
 set file_err	"test$test_id.error"
 set job_name	"test$test_id"
+
+proc cleanup {} {
+	global bin_rm file_in file_out file_err
+
+	exec $bin_rm -f $file_in $file_out $file_err
+}
 
 if {[file executable $qsub] == 0} {
 	skip "$qsub does not exists"
@@ -53,8 +58,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "qsub not responding"
-		set exit_code 1
+		fail "qsub not responding"
 	}
 	eof {
 		wait
@@ -72,8 +76,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "qstat not responding"
-		set exit_code 1
+		fail "qstat not responding"
 	}
 	eof {
 		wait
@@ -83,9 +86,3 @@ if {$matches != 1} {
 	fail "qstat failed to report job"
 }
 catch {exec $qdel $job_id}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $file_err
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

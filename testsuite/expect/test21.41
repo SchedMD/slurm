@@ -66,28 +66,6 @@ set jobid08       "1008"
 
 ###############################################################################
 #
-# Proc: Loads the remove sql entries and remove the added users, accounts and
-#       clusters.
-#
-###############################################################################
-proc cleanup {} {
-	global exit_code bin_rm
-	global sql_in_clus1 sql_in_clus2
-	global sql_rem_clus1 sql_rem_clus2
-	global clusters accounts users
-
-	incr exit_code [archive_load $sql_rem_clus1]
-	incr exit_code [archive_load $sql_rem_clus2]
-	remove_user    $clusters $accounts $users
-	remove_acct    "" $accounts
-	remove_cluster $clusters
-
-	exec $bin_rm $sql_in_clus1 $sql_in_clus2 $sql_rem_clus1 $sql_rem_clus2
-}
-
-
-###############################################################################
-#
 # Proc: Creates the sql files to load 8 test jobs, and to remove them.
 #       Each job is a unique combination of 2 accounts, 2 users and 2 wckeys
 #
@@ -100,7 +78,7 @@ proc cleanup {} {
 proc create_sql {cluster sql_in sql_rem} {
 
 	global bin_rm
-	global exit_code test_name
+	global test_name
 	global account1 account2
 	global wckey1 wckey2
 	global user1acct1 user1acct2
@@ -258,10 +236,13 @@ proc _run_test { update_str expected_jobs } {
 	incr exit_code [archive_load $sql_rem_clus2]
 	incr exit_code [archive_load $sql_in_clus1]
 	incr exit_code [archive_load $sql_in_clus2]
-	fail_on_error "Unable to load archive"
+	if {$exit_code != 0} {
+		fail "Unable to load archive"
+	}
 
-	incr exit_code [test_job_update $update_str $expected_jobs]
-	fail_on_error "Update failed with: $update_str"
+	if [test_job_update $update_str $expected_jobs] {
+		fail "Update failed with: $update_str"
+	}
 }
 
 #
@@ -284,6 +265,29 @@ if {[string compare [get_admin_level] "Administrator"]} {
 if {![string compare $user1 $user2]} {
 	skip "This test can't be run as root, because it needs 2 usernames and uses the current one and root"
 }
+
+###############################################################################
+#
+# Proc: Loads the remove sql entries and remove the added users, accounts and
+#       clusters.
+#
+###############################################################################
+proc cleanup {} {
+	global code bin_rm
+	global sql_in_clus1 sql_in_clus2
+	global sql_rem_clus1 sql_rem_clus2
+	global clusters accounts users
+
+	archive_load $sql_rem_clus1
+	archive_load $sql_rem_clus2
+
+	remove_user    $clusters $accounts $users
+	remove_acct    "" $accounts
+	remove_cluster $clusters
+
+	exec $bin_rm -f $sql_in_clus1 $sql_in_clus2 $sql_rem_clus1 $sql_rem_clus2
+}
+
 
 # Cluster Request
 array set clus_req {}
@@ -308,15 +312,19 @@ remove_cluster $clusters
 # Add cluster
 incr exit_code [add_cluster $cluster1 [array get clus_req]]
 incr exit_code [add_cluster $cluster2 [array get clus_req]]
-fail_on_error "Unable to add clusters"
+if {$exit_code != 0} {
+	fail "Unable to add clusters"
+}
 
 # Add accounts
-incr exit_code [add_acct "$account1,$account2" [array get acct_req]]
-fail_on_error "Unable to add accounts"
+if [add_acct "$account1,$account2" [array get acct_req]] {
+	fail "Unable to add accounts"
+}
 
 # Add users
-incr exit_code [add_user $users [array get user_req]]
-fail_on_error "Unable to add users"
+if [add_user $users [array get user_req]] {
+	fail "Unable to add users"
+}
 
 #
 # Get the association ids
@@ -337,9 +345,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
@@ -356,9 +363,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
@@ -375,9 +381,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
@@ -394,9 +399,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
 		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
@@ -438,9 +442,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr wckeys not responding"
 		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr wckeys not responding"
 	}
 	eof {
 		wait

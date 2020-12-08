@@ -32,7 +32,6 @@ set qos_prefix          "${test_name}_qos_"
 set test_acct           "${test_name}_acct"
 set test_user           [get_my_user_name]
 set access_err          0
-set exit_code           0
 set job_list            {}
 set failure_count       0
 
@@ -134,8 +133,9 @@ expect {
 #
 # Clear the usage statistics
 #
-reset_account_usage "$cluster" "$test_acct"
-fail_on_error "Unable to reset account usage"
+if [reset_account_usage "$cluster" "$test_acct"] {
+	fail "Unable to reset account usage"
+}
 
 #
 # Test Usage Factor Function

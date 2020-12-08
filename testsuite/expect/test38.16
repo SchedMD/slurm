@@ -25,10 +25,19 @@
 ############################################################################
 source ./globals
 
-set exit_code	0
 set file_in	"test$test_id.bash"
 set file_out	"test$test_id.out"
 set timeout	60
+set het_job_id  0
+
+proc cleanup {} {
+	global het_job_id scancel bin_rm file_in file_out
+
+	if {$het_job_id > 0} {
+		exec $scancel $het_job_id
+	}
+	exec $bin_rm -f $file_in $file_out
+}
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
     skip "This test is incompatible with front-end systems"
@@ -50,18 +59,6 @@ make_bash_script $file_in "
 "
 exec $bin_rm -f $file_out
 
-proc end_it { exit_code } {
-	global het_job_id scancel
-	if {$het_job_id > 0} {
-		exec $scancel $het_job_id
-	}
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
-}
-
-set het_job_id 0
 set component(0) 0
 set matches 0
 set index 0
@@ -81,16 +78,14 @@ expect {
 		#log_debug "Job initiated"
 	}
 	timeout {
-		log_error "salloc : allocation not granted in $timeout seconds"
-		end_it 1
+		fail "salloc : allocation not granted in $timeout seconds"
 	}
 	eof {
 		wait
 	}
 }
 if {$het_job_id == 0} {
-	log_error "salloc failure"
-	end_it 1
+	fail "salloc failure"
 }
 
 log_debug "Collect Nodename for each job component"
@@ -109,13 +104,11 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "squeue not responding"
-		end_it 1
+		fail "squeue not responding"
 	}
 }
 if {$index != 2} {
-	log_error "squeue failure ($index != 2)"
-	end_it 1
+	fail "squeue failure ($index != 2)"
 }
 
 log_info "Test environment variables needed by MPI"
@@ -127,16 +120,14 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding"
-		end_it 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {[wait_for_file $file_out] != 0} {
-	log_error "srun output file not found"
-	end_it 1
+	fail "srun output file not found"
 }
 
 set het_nodelist ""
@@ -162,8 +153,7 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "sort not responding"
-		end_it 1
+		fail "sort not responding"
 	}
 	eof {
 		wait
@@ -185,8 +175,7 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "sort not responding"
-		end_it 1
+		fail "sort not responding"
 	}
 	eof {
 		wait
@@ -194,15 +183,13 @@ expect {
 }
 log_user 1
 if {$matches != 6} {
-	log_error "srun failure ($matches != 6)"
-	end_it 1
+	fail "srun failure ($matches != 6)"
 }
 
 send "exit\r"
 expect {
 	timeout {
-		log_error "srun not responding"
-		end_it 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -219,14 +206,9 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 }
 if {$matches != 2} {
-	log_error "srun combined hostlist is bad ($matches != 2)"
-	end_it 1
+	fail "srun combined hostlist is bad ($matches != 2)"
 }
-
-exec $bin_rm -f $file_in $file_out
-end_it 0

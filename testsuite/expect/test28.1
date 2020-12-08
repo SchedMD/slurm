@@ -36,6 +36,12 @@ set job_id      ""
 set min_task_id 5
 set max_task_id 8
 
+proc cleanup {} {
+	global file_in file_out file_script
+
+	file delete $file_in $file_out $file_script
+}
+
 set array_size [get_config_param "MaxArraySize"]
 if {$array_size < $min_task_id} {
 	skip "MaxArraySize is too small"
@@ -58,8 +64,7 @@ proc scontrol_check { job_id } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -84,8 +89,7 @@ proc multi_squeue_check {job_id} {
 			exp_continue
 		}
 		timeout {
-			log_error "squeue is not responding"
-			set exit_code 1
+			fail "squeue is not responding"
 		}
 		eof {
 			wait
@@ -95,8 +99,7 @@ proc multi_squeue_check {job_id} {
 }
 
 proc multi_scontrol_check { job_id } {
-
-	global scontrol number array_id exit_code
+	global scontrol number array_id
 
 	set task_cnt 0
 	spawn $scontrol show job $job_id
@@ -106,8 +109,7 @@ proc multi_scontrol_check { job_id } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -132,8 +134,7 @@ expect {
 		fail "sbatch did not submit jobs"
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -161,8 +162,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scancel not responding"
-		set exit_code 1
+		fail "scancel not responding"
 	}
 	eof {
 		wait
@@ -179,8 +179,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scancel not responding"
-		set exit_code 1
+		fail "scancel not responding"
 	}
 	eof {
 		wait
@@ -190,8 +189,6 @@ expect {
 # checks that all the job indexes where cancelled
 scontrol_check $job_id
 
-if {$exit_code == 0} {
-	file delete $file_in $file_out $file_script
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

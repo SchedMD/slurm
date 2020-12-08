@@ -33,6 +33,12 @@ set exit_code   0
 set file_in     "test$test_id.input"
 set timeout	60
 
+proc cleanup {} {
+	global bin_rm file_in
+
+	exec $bin_rm -f $file_in
+}
+
 #
 # Check accounting config and bail if not found.
 #
@@ -67,10 +73,9 @@ make_bash_script $file_in "$bin_sleep 600"
 ################################################################
 
 proc sub_job { cpu_cnt } {
-
 	global exit_code file_in number sbatch test_id
-	set file_in	test${test_id}.input
 
+	set file_in	test${test_id}.input
 	set job_id	0
 	spawn $sbatch --output=/dev/null --error=/dev/null -n $cpu_cnt --exclusive $file_in
 	expect {
@@ -79,8 +84,7 @@ proc sub_job { cpu_cnt } {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch not responding"
-			set exit_code 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
@@ -143,8 +147,7 @@ proc sprio_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				log_error "sprio not responding"
-				set exit_code 1
+				fail "sprio not responding"
 			}
 			eof {
 				wait
@@ -177,8 +180,7 @@ proc sprio_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				log_error "sprio not responding"
-				set exit_code 1
+				fail "sprio not responding"
 			}
 			eof {
 				wait
@@ -210,8 +212,7 @@ proc sprio_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				log_error "sprio not responding"
-				set exit_code 1
+				fail "sprio not responding"
 			}
 			eof {
 				wait
@@ -249,8 +250,7 @@ proc sprio_opt { soption } {
 				exp_continue
 			}
 			timeout {
-				log_error "sprio not responding"
-				set exit_code 1
+				fail "sprio not responding"
 			}
 			eof {
 				wait
@@ -303,8 +303,7 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			timeout {
-				log_error "sprio not responding"
-				set exit_code 1
+				fail "sprio not responding"
 			}
 			eof {
 				wait
@@ -341,8 +340,7 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			timeout {
-				log_error "sprio not responding"
-				set exit_code 1
+				fail "sprio not responding"
 			}
 			eof {
 				wait
@@ -379,8 +377,7 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			timeout {
-				log_error "sprio not responding"
-				set exit_code 1
+				fail "sprio not responding"
 			}
 			eof {
 				wait
@@ -417,8 +414,7 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			timeout {
-				log_error "sprio not responding"
-				set exit_code 1
+				fail "sprio not responding"
 			}
 			eof {
 				wait
@@ -460,8 +456,7 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			timeout {
-				log_error "sprio not responding"
-				set exit_code 1
+				fail "sprio not responding"
 			}
 			eof {
 				wait
@@ -498,8 +493,7 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			timeout {
-				log_error "sprio not responding"
-				set exit_code 1
+				fail "sprio not responding"
 			}
 			eof {
 				wait
@@ -536,8 +530,7 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			timeout {
-				log_error "sprio not responding"
-				set exit_code 1
+				fail "sprio not responding"
 			}
 			eof {
 				wait
@@ -579,8 +572,7 @@ proc sprio_args { soption sargs jobid} {
 				exp_continue
 			}
 			timeout {
-				log_error "sprio not responding"
-				set exit_code 1
+				fail "sprio not responding"
 			}
 			eof {
 				wait
@@ -695,8 +687,6 @@ cancel_job $jobid2
 #
 # Exit with code as appropriate
 #
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

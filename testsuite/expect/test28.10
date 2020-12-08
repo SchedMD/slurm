@@ -32,6 +32,12 @@ set file_script   "test$test_id.sh"
 set job_id        0
 set task_limit    1
 
+proc cleanup {} {
+	global bin_rm file_script
+
+	exec $bin_rm -f $file_script
+}
+
 if {[get_config_param "MaxArraySize"] < [expr $array_size + 1]} {
 	skip "MaxArraySize is too small"
 }
@@ -50,8 +56,7 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -78,8 +83,7 @@ while { $inx < 10 } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -98,8 +102,7 @@ while { $inx < 10 } {
 		spawn $scontrol update jobid=$job_id arraytaskthrottle $task_limit
 		expect {
 			timeout {
-				log_error "scontrol not responding"
-				set exit_code 1
+				fail "scontrol not responding"
 			}
 			eof {
 				wait
@@ -113,8 +116,6 @@ if {[cancel_job $job_id] != 0} {
 	fail "Unable to cancel job ($job_id)"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_script
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

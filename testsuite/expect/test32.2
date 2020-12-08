@@ -26,8 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code  0
-
 if {[file executable $sgather] == 0} {
 	skip "$sgather does not exist"
 }
@@ -44,8 +42,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sgather is not responding"
-		set exit_code 1
+		fail "sgather is not responding"
 	}
 	eof {
 		wait
@@ -53,8 +50,4 @@ expect {
 }
 if {$matches != 2} {
 	fail "sgather did not report the help message ($matches != 2)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

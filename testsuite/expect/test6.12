@@ -34,10 +34,15 @@ source ./globals
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
-
 set exit_code   0
 set job_id      0
 set step_id	0
+
+proc cleanup {} {
+	global bin_rm file_in file_out file_err
+
+	exec $bin_rm -f $file_in $file_out $file_err
+}
 
 #
 # Delete left-over input script plus stdout/err files
@@ -291,8 +296,6 @@ if {[cancel_job $job_id] != 0} {
 	fail "Unable to cancel job ($job_id)"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $file_err
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

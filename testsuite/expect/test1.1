@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code            0
 set login_grp_info       ""
 set job_grp_info         ""
 set got_job_grps         0
@@ -56,9 +55,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -76,7 +74,4 @@ if {$got_job_grps == 0} {
 
 if {[string compare $login_grp_info $job_grp_info] != 0} {
 	fail "Login and slurm user info mismatch"
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

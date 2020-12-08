@@ -36,10 +36,12 @@ set node2      ""
 set het_job_id 0
 
 proc cleanup { } {
-	global het_job_id scancel
+	global bin_rm script1 het_job_id scancel
+
 	if {$het_job_id > 0} {
 		exec $scancel $het_job_id
 	}
+	exec $bin_rm -rf $script1
 }
 
 set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
@@ -66,8 +68,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sinfo is not responding"
-		set exit_code 1
+		fail "sinfo is not responding"
 	}
 	eof {
 		wait
@@ -192,8 +193,7 @@ expect {
 		#log_debug "Job initiated"
 	}
 	timeout {
-		log_error "salloc is not responding"
-		set exit_code 1
+		fail "salloc is not responding"
 	}
 	eof {
 		wait
@@ -203,8 +203,6 @@ if {$matches != 4} {
 	fail "sbcast did not copy the file(s) to the correct nodes ($matches != 4)"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -rf $script1
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

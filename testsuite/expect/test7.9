@@ -35,6 +35,12 @@ set file_out         "test$test_id.output"
 set file_prog        "test$test_id.prog"
 set iterations       50
 
+proc cleanup {} {
+	global bin_rm file_in file_prog file_out
+
+	exec $bin_rm -f $file_in $file_prog $file_out
+}
+
 set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
 if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $accounting_storage_enforce "nojobs"]} {
 	skip "This test can not be run with nosteps or nojobs (AccoutingStorageEnforce)"
@@ -110,8 +116,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "/bin/cat not responding"
-		set exit_code 1
+		fail "/bin/cat not responding"
 	}
 	eof {
 		wait
@@ -136,8 +141,6 @@ if {$matches != 0} {
 	log_debug "  To diagnose, use lsof to examine spawned job"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_prog $file_out
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

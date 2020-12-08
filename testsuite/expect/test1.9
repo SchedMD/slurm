@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set tasks       0
 set task_cnt	5
 set verbosity   0
@@ -51,9 +50,8 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -65,7 +63,4 @@ if {$task_cnt != $tasks} {
 }
 if {$verbosity != 1} {
 	fail "Did not report job id with verbosity on"
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

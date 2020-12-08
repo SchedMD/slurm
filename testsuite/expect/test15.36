@@ -49,8 +49,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding"
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait

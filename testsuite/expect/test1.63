@@ -29,8 +29,13 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_prog   "test$test_id.prog"
+
+proc cleanup {} {
+	global bin_rm file_prog
+
+	exec $bin_rm -f $file_prog
+}
 
 #
 # Delete left-over programs and rebuild them.
@@ -72,9 +77,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -88,13 +92,4 @@ if {$match_sig < 1} {
 }
 if {$match_abort < 1} {
 	fail "srun failed to properly process multiple SIGINT to abort"
-}
-
-#
-# Post-processing
-#
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_prog
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

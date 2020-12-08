@@ -113,9 +113,8 @@ set my_pid [spawn $sacctmgr -i delete cluster $tc1]
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr delete not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			fail "sacctmgr delete not responding"
 		}
 		eof {
 			wait
@@ -171,9 +170,8 @@ set my_pid [spawn $sacctmgr -i delete cluster $tc1]
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr add not responding"
 			slow_kill $my_pid
-			incr exit_code 1
+			fail "sacctmgr add not responding"
 		}
 		eof {
 			wait
@@ -206,9 +204,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr add not responding"
 		slow_kill $sadd_pid
-		set exit_code 1
+		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
@@ -238,9 +235,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
@@ -263,8 +259,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr is not responding"
-		set exit_code 1
+		fail "sacctmgr is not responding"
 	}
 	eof {
 		wait
@@ -284,7 +279,10 @@ add_acct $ta1 [array get acct]
 #
 # Use sacctmgr to list and check the test associations
 #
-check_assoc_limit 2 account $ta1 [array get acct]
+if {![check_assoc_limit 2 account $ta1 [array get acct]]} {
+	log_error "The association limits for account $ta1 are incorrect"
+	set exit_code 1
+}
 
 if {![check_acct_associations]} {
 	log_error "Our associations don't line up"
@@ -301,9 +299,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
@@ -330,9 +327,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
@@ -356,9 +352,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
@@ -381,8 +376,8 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		log_debug "Test associations delete verified"
 		slow_kill $as2_list_pid
+		log_error "Test associations delete verified"
 	}
 	eof {
 		wait

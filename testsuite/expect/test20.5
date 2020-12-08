@@ -26,8 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
-
 if {[file executable $qalter] == 0} {
 	skip "$qalter does not exist"
 }
@@ -40,8 +38,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "qalter is not responding"
-		set exit_code 1
+		fail "qalter is not responding"
 	}
 	eof {
 		wait
@@ -49,8 +46,4 @@ expect {
 }
 if {$found != 1} {
 	fail "qalter's help option did not work"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set test_prog   "test$test_id.prog"
 
 #
@@ -37,8 +36,7 @@ set test_prog   "test$test_id.prog"
 #
 file delete $test_prog
 
-compile_against_libslurm ${test_prog}
-if {$exit_code} {
+if [compile_against_libslurm ${test_prog}] {
 	fail "Error compiling test_prog"
 }
 

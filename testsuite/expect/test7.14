@@ -28,10 +28,15 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
 set file_in          "test$test_id.input"
 set file_prog1       "test$test_id.prog1"
 set file_prog2       "test$test_id.prog2"
+
+proc cleanup {} {
+	global bin_rm file_in file_prog1 file_prog2
+
+	exec $bin_rm -f $file_in $file_prog1 $file_prog2
+}
 
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without a usable AccountStorageType"
@@ -156,10 +161,4 @@ expect {
 
 if {$matches != 1} {
 	fail "sacct of $job_id failed ($matches)"
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_prog1 $file_prog2
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

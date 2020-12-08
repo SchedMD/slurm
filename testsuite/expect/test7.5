@@ -38,6 +38,12 @@ set fini_cnt    0
 set usr1cnt     0
 set usr2cnt     0
 
+proc cleanup {} {
+	global bin_rm file_prog
+
+	exec $bin_rm -f $file_prog
+}
+
 #
 # Delete left-over program and rebuild it
 #
@@ -97,9 +103,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		log_debug "EOF"
@@ -163,9 +168,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		log_debug "EOF"
@@ -182,8 +186,6 @@ if {$fini_cnt > 0} {
 #
 # Post-processing
 #
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_prog
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

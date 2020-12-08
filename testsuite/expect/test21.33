@@ -39,7 +39,6 @@ set res1(server)                     "test$test_id\_server1"
 set res1(servertype)                 "test$test_id\_server_type1"
 set res1(type)                       "license"
 
-
 array set res2 {}
 set res2(count)                      25
 set res2(server)                     "test$test_id\_server2"
@@ -51,23 +50,13 @@ set res1_cluster(cluster)            $test_cluster
 set res1_cluster(server)             "test$test_id\_server1"
 set res1_cluster(percentallowed)     25
 
-
 array set res2_cluster {}
 set res2_cluster(cluster)            $test_cluster
 set res2_cluster(server)             "test$test_id\_server2"
 set res2_cluster(percentallowed)     25
 
-proc clean_up { } {
-	global test_res1 test_res2 test_cluster
-
-	remove_res $test_res1
-	remove_res $test_res2
-	remove_cluster $test_cluster
-}
-
 proc check_val { res_name } {
-
-	global sacctmgr test_cluster exit_code
+	global sacctmgr test_cluster
 
 	set rc 0
 	spawn $sacctmgr -n show resource withcluster cluster=$test_cluster \
@@ -78,8 +67,7 @@ proc check_val { res_name } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -95,8 +83,16 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
     skip "This test can't be run without superuser permissions"
 }
 
+proc cleanup { } {
+	global test_res1 test_res2 test_cluster
+
+	remove_res $test_res1
+	remove_res $test_res2
+	remove_cluster $test_cluster
+}
+
 # Delete any vestigial data
-clean_up
+cleanup
 
 set added 0
 spawn $sacctmgr add -i cluster $test_cluster
@@ -106,8 +102,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr is not responding"
-		set exit_code 1
+		fail "sacctmgr is not responding"
 	}
 	eof {
 		wait
@@ -124,13 +119,13 @@ if {$added != 1} {
 add_resource $test_res1 [array get res1]
 if {[check_resource_limits $test_res1 [array get res1]]} {
 	log_error "$test_res1 has bad values"
-	clean_up
+	cleanup
 }
 
 add_resource $test_res2 [array get res2]
 if {[check_resource_limits $test_res2 [array get res2]]} {
 	log_error "$test_res2 has bad values"
-	clean_up
+	cleanup
 }
 
 #
@@ -165,8 +160,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr is not responding"
-		set exit_code 1
+		fail "sacctmgr is not responding"
 	}
 	eof {
 		wait
@@ -198,8 +192,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr is not reponding"
-		set exit_code 1
+		fail "sacctmgr is not reponding"
 	}
 	eof {
 		wait
@@ -210,8 +203,6 @@ if {$match != 0} {
 	log_error "$test_res1 and $test_res2 were not deleted"
 	set exit_code 1
 }
-
-remove_cluster $test_cluster
 
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors"

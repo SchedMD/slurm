@@ -44,7 +44,6 @@ source ./globals_federation
 set c1 $fedc1
 set c2 $fedc2
 set c3 $fedc3
-set exit_code 0
 set job_id1 0
 set job_id2 0
 set user_name [get_my_user_name]
@@ -83,15 +82,6 @@ proc cancel_job { job_id clusters } {
 		}
 	}
 	wait_for_fed_job $job_id "DONE" $clusters
-}
-
-proc cleanup {} {
-	global bin_rm file_in_long file_in_short fed_name test_id
-
-	delete_federations $fed_name
-	cancel_federation_jobs
-	exec $bin_rm -f $file_in_long
-	exec $bin_rm -f $file_in_short
 }
 
 proc submit_job { options cdir file_in } {
@@ -1023,10 +1013,6 @@ proc test_remote_and_dependencies { } {
 	cancel_job $job_id1 $c1
 }
 
-###############################################################################
-# Begin test
-###############################################################################
-
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without a usable AccountStorageType"
 }
@@ -1047,6 +1033,19 @@ if {[check_federation_setup]} {
 	set my_scancel $scancel
 	set my_scontrol $scontrol
 }
+
+proc cleanup {} {
+	global bin_rm file_in_long file_in_short fed_name test_id
+
+	delete_federations $fed_name
+	cancel_federation_jobs
+	exec $bin_rm -f $file_in_long
+	exec $bin_rm -f $file_in_short
+}
+
+###############################################################################
+# Begin test
+###############################################################################
 
 # Use file_in_short when we have to wait for the job to end.
 # Use file_in_long everywhere else.

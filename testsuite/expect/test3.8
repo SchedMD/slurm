@@ -39,6 +39,14 @@ set file_flag_4   "test$test_id.run.4"
 set job_id        0
 set node_cnt 1-4
 
+proc cleanup {} {
+	global bin_rm file_in file_out file_err
+	global file_flag_1 file_flag_2 file_flag_3 file_flag_4
+
+	exec $bin_rm -f $file_in $file_out $file_err
+	exec $bin_rm -f $file_flag_1 $file_flag_2 $file_flag_3 $file_flag_4
+}
+
 if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
 }
@@ -76,9 +84,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $sbatch_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -104,8 +111,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -128,8 +134,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -180,9 +185,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $sbatch_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -214,8 +218,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -240,9 +243,6 @@ if {[file exists $file_flag_2]} {
 	fail "File $file_flag_2 is found"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $file_err
-	exec $bin_rm -f $file_flag_1 $file_flag_2 $file_flag_3 $file_flag_4
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

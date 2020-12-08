@@ -36,6 +36,16 @@ set job_id        0
 set new_prio      1
 set read_priority -1
 
+proc cleanup {} {
+	global job_id
+
+	if {$job_id != 0} {
+		if {[cancel_job $job_id] != 0} {
+			log_error "Unable to cancel job ($job_id)"
+		}
+	}
+}
+
 #
 # Build input script file
 #
@@ -51,9 +61,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -74,8 +83,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -96,8 +104,7 @@ expect {
 		skip "User not authorized to modify jobs"
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -120,8 +127,7 @@ expect {
 		skip "User not authorized to modify jobs"
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -138,8 +144,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -149,9 +154,6 @@ if {$validate_new_priority && ($read_priority != $new_prio)} {
 	fail "scontrol priority change error"
 }
 
-if {[cancel_job $job_id] != 0} {
-	fail "Unable to cancel job ($job_id)"
-}
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

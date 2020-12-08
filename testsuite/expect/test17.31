@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set delay       1
@@ -40,16 +39,12 @@ global env
 set env_pbs_ignore "SBATCH_IGNORE_PBS"
 set env($env_pbs_ignore) 0
 
-proc end_it { exit_code } {
+proc cleanup {} {
         global job_id test_id
+
         if {$job_id != 0} {
                 cancel_job $job_id
         }
-
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
 }
 
 set available [available_nodes]
@@ -73,17 +68,12 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
 		slow_kill $scontrol_pid
-		exp_continue
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
-        if {$exit_code != 0} {
-                end_it $exit_code
-        }
 }
 log_user 1
 log_debug "Actual configuration: min_cpus=$ppn_cnt  min_mem=$min_mem"
@@ -100,8 +90,7 @@ proc pbs_ignore_expects {} {
                 -re "mem$whitespace: ($number)G" {
                         set mem $expect_out(1,string)
                         if { $mem * 1024 != $min_mem } {
-                                log_error "Min memory is different ($mem) than requested ($min_mem)"
-                                end_it 1
+                                fail "Min memory is different ($mem) than requested ($min_mem)"
                         } else {
                                 incr matches
                         }
@@ -110,8 +99,7 @@ proc pbs_ignore_expects {} {
                 -re "mem$whitespace: ($number)" {
                         set mem $expect_out(1,string)
                         if { $mem != $min_mem } {
-                                log_error "Min memory is different ($mem) than requested ($min_mem)"
-                                end_it 1
+                                fail "Min memory is different ($mem) than requested ($min_mem)"
                         } else {
                                 incr matches
                         }
@@ -120,8 +108,7 @@ proc pbs_ignore_expects {} {
                 -re "nodes$whitespace: ($number)" {
                         set nodes $expect_out(1,string)
                         if { $nodes != $node_cnt } {
-                                log_error "Bad node count allocated"
-                                end_it 1
+                                fail "Bad node count allocated"
                         } else {
                                 incr matches
                         }
@@ -131,8 +118,7 @@ proc pbs_ignore_expects {} {
                         set cpu_count $expect_out(1,string)
                         set cpus_per_node [expr $cpu_count / $node_cnt]
                         if { $cpus_per_node != $ppn_cnt } {
-                                log_error "PPN count not sent correctly asked for $ppn_cnt but got $cpus_per_node"
-                                end_it 1
+                                fail "PPN count not sent correctly asked for $ppn_cnt but got $cpus_per_node"
                         } else {
                                 incr matches
                         }
@@ -148,9 +134,8 @@ proc pbs_ignore_expects {} {
                 }
 
                 timeout {
-                        log_error "sbatch not responding"
                         slow_kill $sbatch_pid
-                        end_it 1
+                        fail "sbatch not responding"
                 }
                 eof {
                         wait
@@ -177,8 +162,7 @@ $bin_sleep $delay
 set sbatch_pid [spawn $sbatch -vv -o $file_out $file_in]
 set matches [pbs_ignore_expects]
 if {$matches != 3} {
-        log_error "sbatch didn't read the correct options from batch file ($matches of 3)"
-        end_it 1
+        fail "sbatch didn't read the correct options from batch file ($matches of 3)"
 }
 log_info "#PBS batch command processed correctly"
 
@@ -192,8 +176,7 @@ $bin_sleep $delay
 set sbatch_pid [spawn $sbatch -vv -o $file_out $file_in]
 set matches [pbs_ignore_expects]
 if {$matches != 0} {
-        log_error "#SBATCH --ignore-pbs was not processed"
-        end_it 1
+        fail "#SBATCH --ignore-pbs was not processed"
 }
 log_info "#SBATCH --ignore-pbs processed correctly"
 
@@ -206,8 +189,7 @@ $bin_sleep $delay
 set sbatch_pid [spawn $sbatch --ignore-pbs -vv -o $file_out $file_in]
 set matches [pbs_ignore_expects]
 if {$matches != 0} {
-        log_error "command line arg --ignore-pbs was not processed"
-        end_it 1
+        fail "command line arg --ignore-pbs was not processed"
 }
 log_info "command line arg --ignore-pbs processed correctly"
 
@@ -221,10 +203,7 @@ set env($env_pbs_ignore) 1
 set sbatch_pid [spawn $sbatch -vv -o $file_out $file_in ]
 set matches [pbs_ignore_expects]
 if {$matches != 0} {
-        log_error "SBATCH_IGNORE_PBS=1 environment variable was not processed"
-        end_it 1
+        fail "SBATCH_IGNORE_PBS=1 environment variable was not processed"
 }
 set env($env_pbs_ignore) 0
 log_info "BATCH_IGNORE_PBS=1 environment variable processed correctly"
-
-end_it 0

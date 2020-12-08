@@ -94,8 +94,7 @@ proc srun_test {exp_cnt account} {
 			exp_continue
 		}
 		timeout {
-			log_error "srun is not responding"
-			set exit_code 1
+			fail "srun is not responding"
 		}
 		eof {
 			wait
@@ -278,8 +277,6 @@ srun_test $node_cnt $acct
 srun_test [expr $node_cnt - 1] $acct_c1
 
 srun_test [expr $node_cnt - 2] $acct_c2
-
-cleanup
 
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors"

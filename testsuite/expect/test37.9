@@ -41,7 +41,6 @@ source ./globals
 source ./globals_accounting
 source ./globals_federation
 
-set exit_code   0
 set fed_name    "feda"
 set user_name   ""
 set srun_job_cnt 0
@@ -85,16 +84,14 @@ proc sbatch { args } {
 			set job_id $expect_out(1,string)
 		}
 		timeout {
-			log_error "sbatch not responding"
-			end_it 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$matches != 1} {
-		log_error "batch submit failure"
-		end_it 1
+		fail "Batch submit failure"
 	}
 	return $job_id
 }
@@ -115,8 +112,7 @@ proc squeue { options regex } {
 		}
 	}
 	if {$matches != 1} {
-		log_error "unexpected error in squeue. expected $regex"
-		end_it 1
+		fail "Unexpected error in squeue. expected $regex"
 	}
 }
 
@@ -154,8 +150,7 @@ proc sinfo { options regex } {
 		}
 	}
 	if {$matches != 1} {
-		log_error "unexpected error in sinfo. expected $regex"
-		end_it 1
+		fail "Unexpected error in sinfo. expected $regex"
 	}
 }
 
@@ -176,8 +171,7 @@ proc sprio { options regex {match_cnt 1} } {
 		}
 	}
 	if {$matches != $match_cnt} {
-		log_error "unexpected error in sprio. expected $regex ($matches != $match_cnt)"
-		end_it 1
+		fail "Unexpected error in sprio. expected $regex ($matches != $match_cnt)"
 	}
 }
 
@@ -200,9 +194,8 @@ proc scontrol_show { category tasks regex option } {
 		}
 	}
 	if {$matches != 1} {
-		log_error "unexpected error in scontrol_show. expected $regex \
+		fail Uunexpected error in scontrol_show. expected $regex \
 			$matches matches"
-		end_it 1
 	}
 
 }
@@ -230,15 +223,6 @@ proc cleanup { } {
 	return [delete_federations $fed_name]
 }
 
-proc end_it { exit_code } {
-	global test_id
-	cleanup
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
-}
-
 #start test
 
 if {![check_federation_setup]} {
@@ -253,14 +237,12 @@ set user_name [get_my_user_name]
 
 # Remove existing setup
 if {[cleanup] != 0} {
-	log_error "failed to cleanup"
-	end_it 1
+	fail "Failed to cleanup"
 }
 
 # add clusters to federation
 if {[setup_federation $fed_name]} {
-	log_error "failed to setup federation"
-	end_it 1
+	fail "Failed to setup federation"
 }
 
 # get number of nodes per cluster
@@ -290,17 +272,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
-		set exit_code 1
+		fail "sacctmgr mod not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$exit_code || $matches != 4} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+if {$matches != 4} {
+	fail "Unexpected error. Got $matches"
 }
 
 set matches 0
@@ -323,17 +303,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
-		set exit_code 1
+		fail "sacctmgr mod not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$exit_code || $matches != 4} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+if {$matches != 4} {
+	fail "Unexpected error. Got $matches"
 }
 
 set matches 0
@@ -356,17 +334,15 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr mod not responding"
 		slow_kill $my_pid
-		set exit_code 1
+		fail "sacctmgr mod not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$exit_code || $matches != 4} {
-	log_error "Unexpected error. Got $matches"
-	end_it 1
+if {$matches != 4} {
+	fail "Unexpected error. Got $matches"
 }
 
 make_bash_script $file_in "env; $my_srun sleep 900 & $my_srun sleep 900"
@@ -572,6 +548,3 @@ scontrol_show "steps" $tasks "$reg4{2}" "--local"
 scontrol_show "steps" $tasks "$reg4{2}" "-M$fedc1"
 scontrol_show "steps" $tasks "$reg5{2}" "-M$fedc2"
 scontrol_show "steps" $tasks "$reg6{2}" "-M$fedc3"
-
-# All Done
-end_it 0

@@ -46,6 +46,12 @@ array set freq_lvl_2 {
 	powersave     0
 }
 
+proc cleanup {} {
+	global bin_rm file_id file_in file_out
+
+	exec $bin_rm -f $file_id $file_in $file_out
+}
+
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without AccountStorageType=slurmdbd"
 }
@@ -95,8 +101,7 @@ proc sub_job { freq } {
 				exp_continue
 			}
 			timeout {
-				log_error "srun is not responding"
-				set exit_code 1
+				fail "srun is not responding"
 			}
 			eof {
 				wait
@@ -127,8 +132,7 @@ proc sub_job { freq } {
 				exp_continue
 			}
 			timeout {
-				log_error "sacct is not responding"
-				set exit_code 1
+				fail "sacct is not responding"
 			}
 			eof {
 				wait
@@ -154,8 +158,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -197,8 +200,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -243,8 +245,6 @@ if { (($freq_lvl_1(low) > $freq_lvl_1(medium)) ||
 	fail "CPU frequency values are not valid. Test with smaller JobAcctGatherFrequency configuration or longer running jobs"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_id $file_in $file_out
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

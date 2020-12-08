@@ -74,9 +74,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -130,9 +129,7 @@ expect {
 	}
 
 	timeout {
-		log_error "$bin_sort not responding"
-		set exit_code 1
-		exp_continue
+		fail "$bin_sort not responding"
 	}
 	eof {
 		wait

@@ -82,8 +82,7 @@ proc sreport_opt { soption } {
 			exp_continue
 		}
 		timeout {
-			log_error "sreport not responding"
-			set exit_code 1
+			fail "sreport not responding"
 		}
 		eof {
 			wait
@@ -115,8 +114,7 @@ proc sreport_opt { soption } {
 			exp_continue
 		}
 		timeout {
-			log_error "sreport not responding"
-			set exit_code 1
+			fail "sreport not responding"
 		}
 		eof {
 			wait
@@ -152,8 +150,7 @@ proc sreport_opt { soption } {
 			exp_continue
 		}
 		timeout {
-			log_error "sreport not responding"
-			set exit_code 1
+			fail "sreport not responding"
 		}
 		eof {
 			wait
@@ -185,8 +182,7 @@ proc sreport_opt { soption } {
 			exp_continue
 		}
 		timeout {
-			log_error "sreport not responding"
-			set exit_code 1
+			fail "sreport not responding"
 		}
 		eof {
 			wait
@@ -218,8 +214,7 @@ proc sreport_opt { soption } {
 			exp_continue
 		}
 		timeout {
-			log_error "sreport not responding"
-			set exit_code 1
+			fail "sreport not responding"
 		}
 		eof {
 			wait

@@ -83,9 +83,8 @@ if {$sockets_per_node < 2} {
 	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --accel-bind=g -J "test$test_id" -t1 ./$file_in]
 	expect {
 		timeout {
-			log_error "srun not responding"
 			slow_kill $srun_pid
-			set exit_code 1
+			fail "srun not responding"
 		}
 		eof {
 			wait
@@ -99,9 +98,8 @@ if {$sockets_per_node < 2} {
 	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-socket=1 --sockets-per-node=2 -n2 --gpu-bind=closest -J "test$test_id" -t1 ./$file_in]
 	expect {
 		timeout {
-			log_error "srun not responding"
 			slow_kill $srun_pid
-			set exit_code 1
+			fail "srun not responding"
 		}
 		eof {
 			wait
@@ -147,9 +145,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -194,9 +191,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait

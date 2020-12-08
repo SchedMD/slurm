@@ -43,9 +43,7 @@ source ./globals
 source ./globals_accounting
 source ./globals_federation
 
-set exit_code   0
 set fed_name    "feda"
-
 set timeout	5
 
 #
@@ -253,15 +251,14 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 #		exp_continue
 #	}
 #	timeout {
-#		log_error "sacctmgr add not responding"
 #		slow_kill $my_pid
-#		set exit_code 1
+#		fail "sacctmgr add not responding"
 #	}
 #	eof {
 #		wait
 #	}
 #}
-#if {$exit_code || $matches != 4} {
+#if {$matches != 4} {
 #	fail "Setting LLC flag"
 #}
 #
@@ -294,15 +291,14 @@ test_fed_status $fedc1 $fed_flags [array get clusters]
 #		exp_continue
 #	}
 #	timeout {
-#		log_error "sacctmgr add not responding"
 #		slow_kill $my_pid
-#		set exit_code 1
+#		fail "sacctmgr add not responding"
 #	}
 #	eof {
 #		wait
 #	}
 #}
-#if {$exit_code || $matches != 4} {
+#if {$matches != 4} {
 #	fail "Removing federation flags. Got $matches"
 #}
 #
@@ -339,15 +335,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr add not responding"
 		slow_kill $my_pid
-		set exit_code 1
+		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$exit_code || $matches != 5} {
+if {$matches != 5} {
 	fail "Unexpected error. Got $matches"
 }
 
@@ -378,15 +373,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr add not responding"
 		slow_kill $my_pid
-		set exit_code 1
+		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$exit_code || $matches != 4} {
+if {$matches != 4} {
 	fail "Unexpected error. Got $matches"
 }
 
@@ -417,15 +411,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr add not responding"
 		slow_kill $my_pid
-		set exit_code 1
+		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$exit_code || $matches != 4} {
+if {$matches != 4} {
 	fail "Unexpected error. Got $matches"
 }
 
@@ -457,15 +450,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr add not responding"
 		slow_kill $my_pid
-		set exit_code 1
+		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$exit_code || $matches != 4} {
+if {$matches != 4} {
 	fail "Unexpected error. Got $matches"
 }
 

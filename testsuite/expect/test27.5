@@ -45,8 +45,7 @@ proc sdiag_all { } {
 			exp_continue
 		}
 		timeout {
-			log_error "sdiag not responding"
-			set exit_code 1
+			fail "sdiag not responding"
 		}
 		eof {
 			wait

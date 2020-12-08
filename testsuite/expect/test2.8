@@ -45,7 +45,7 @@ if {[check_config_select "linear"]} {
 	}
 }
 
-proc end_it {code} {
+proc cleanup {} {
 	global job_id1 job_id2 bin_rm test_id exit_code
 
 	if {$job_id1} {
@@ -55,10 +55,6 @@ proc end_it {code} {
 		cancel_job $job_id2
 	}
 	exec $bin_rm -f slurm-$job_id1.sh $test_id.sh
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
 }
 
 #
@@ -134,8 +130,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -153,16 +148,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 2} {
-	log_error "scontrol failed to find matching job ($matches != 2)"
-	end_it 1
+	fail "scontrol failed to find matching job ($matches != 2)"
 }
 
 #
@@ -181,8 +174,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -200,8 +192,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -210,8 +201,7 @@ expect {
 }
 set match_target 4
 if {$matches != $match_target} {
-	log_error "scontrol failed to find matching job ($matches != $match_target)"
-	end_it 1
+	fail "scontrol failed to find matching job ($matches != $match_target)"
 }
 
 #
@@ -230,8 +220,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -249,8 +238,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -260,8 +248,7 @@ expect {
 
 set match_target 4
 if {$matches != $match_target} {
-	log_error "scontrol failed to find matching job ($matches != $match_target)"
-	end_it 1
+	fail "scontrol failed to find matching job ($matches != $match_target)"
 }
 
 #
@@ -275,21 +262,17 @@ expect {
 		exp_continue
 	}
 	-re "JobId=" {
-		log_error "scontrol filter by job id"
-		end_it 1
-		exp_continue
+		fail "scontrol filter by job id"
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 1} {
-	log_error "scontrol failed to find requested job"
-	end_it 1
+	fail "scontrol failed to find requested job"
 }
 
 #
@@ -308,16 +291,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 1} {
-	log_error "scontrol failed to find job step $job_id1.$step_id"
-	end_it 1
+	fail "scontrol failed to find job step $job_id1.$step_id"
 }
 
 #
@@ -331,21 +312,17 @@ expect {
 		exp_continue
 	}
 	-re "StepId=" {
-		log_error "scontrol filter by step id"
-		end_it 1
-		exp_continue
+		fail "scontrol filter by step id"
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 1} {
-	log_error "scontrol failed to specific job step"
-	end_it 1
+	fail "scontrol failed to specific job step"
 }
 
 #
@@ -357,9 +334,7 @@ set job_id3 [expr $job_id1 + 10000]
 spawn $scontrol show step $job_id3.$step_id
 expect {
 	-re "StepId=$job_id3\\.$step_id " {
-		log_error "scontrol found unexpected job step"
-		end_it 1
-		exp_continue
+		fail "scontrol found unexpected job step"
 	}
 	-re "Invalid job id" {
 		log_debug "No worries, error expected"
@@ -367,21 +342,17 @@ expect {
 		exp_continue
 	}
 	-re "StepId=" {
-		log_error "scontrol filter by step id"
-		end_it 1
-		exp_continue
+		fail "scontrol filter by step id"
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 1} {
-	log_error "scontrol found unexpected job step"
-	end_it 1
+	fail "scontrol found unexpected job step"
 }
 
 
@@ -396,16 +367,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 1} {
-	log_error "scontrol failed to write batch script"
-	end_it 1
+	fail "scontrol failed to write batch script"
 }
 
 set matches 0
@@ -416,62 +385,54 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 1} {
-	log_error "scontrol failed to write batch script"
-	end_it 1
+	fail "scontrol failed to write batch script"
 }
 
 set matches 0
 spawn ls slurm-$job_id1.sh
 expect {
 	-re "ls: cannot access" {
-		end_it 1
+		fail "ls failure"
 	}
 	-re "slurm-$job_id1\\.sh" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 1} {
-	log_error "Could not find file"
-	end_it 1
+	fail "Could not find file"
 }
 
 set matches 0
 spawn ls $test_id.sh
 expect {
 	-re "ls: cannot access" {
-		end_it 1
+		fail "ls failure"
 	}
 	-re "$test_id\\.sh" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 1} {
-	log_error "Could not find file"
-	end_it 1
+	fail "Could not find file"
 }
-
-end_it 0

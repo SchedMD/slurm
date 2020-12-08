@@ -33,6 +33,12 @@ set file_prog   "test$test_id.prog"
 set elps_time   0
 set job_id      0
 
+proc cleanup {} {
+	global file_prog file_in file_out
+
+	exec rm -f $file_prog $file_in $file_out
+}
+
 #
 # Cannot run the test if OverTimeLimit is set, since we test time limits.
 #
@@ -73,8 +79,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -104,8 +109,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "cat is not responding"
-		set exit_code 1
+		fail "cat is not responding"
 	}
 	eof {
 		wait
@@ -134,8 +138,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -156,8 +159,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -187,8 +189,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "cat is not responding"
-		set exit_code 1
+		fail "cat is not responding"
 	}
 	eof {
 		wait
@@ -218,16 +219,13 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
 	}
 }
 
-if {$exit_code == 0} {
-	exec rm -f $file_prog $file_in $file_out
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

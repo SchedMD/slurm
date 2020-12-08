@@ -30,6 +30,12 @@ set file_in     "test$test_id.input"
 set job_id      0
 set timeout $max_job_delay
 
+proc cleanup {} {
+	global file_in
+
+	exec rm -f $file_in
+}
+
 if {[get_config_param "SlurmdUser"] ne "root(0)"} {
 	skip "This test is incompatible with SlurmdUser != root"
 }
@@ -129,9 +135,6 @@ if {$exec_cnt != $node_cnt} {
 	set exit_code 1
 }
 
-if {$exit_code == 0} {
-	exec rm -f $file_in
-}
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

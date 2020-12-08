@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code      0
 set file_in        "test$test_id.input"
 set num_procs      10
 set ii             0
@@ -169,6 +168,3 @@ for {set ii 0} {$ii < [llength $job_map]} {incr ii} {
 		fail "scancel did not remove jobs $job_list from node $node_name"
 	}
 }
-
-
-fail_on_error "Test failed due to previous errors (\$exit_code = $exit_code)"

@@ -28,8 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 if {[get_config_param "LaunchType"] ne "launch/slurm"} {
 	skip "This test is only compatible with systems using launch/slurm"
 }
@@ -47,8 +45,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -56,8 +53,4 @@ expect {
 }
 if {$matches != 2} {
 	fail "Unexpected output. Got $matches"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

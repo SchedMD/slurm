@@ -28,7 +28,6 @@ source ./globals
 
 set file_in1   "test$test_id.in1"
 set file_in2   "test$test_id.in2"
-set exit_code  0
 set job_id     0
 set hostlist   ""
 set node1      ""
@@ -118,8 +117,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc is not responding"
-		set exit_code 1
+		fail "salloc is not responding"
 	}
 	eof {
 		wait
@@ -130,8 +128,4 @@ if {$job_id == 0} {
 }
 if {$matches != 2} {
 	fail "sbcast did not copy the file to the correct nodes ($matches != 2)"
-}
-
-if {$exit_code} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

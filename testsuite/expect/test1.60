@@ -119,7 +119,9 @@ if {$file_cnt != $node_count} {
 	log_error "File format of %t in stdout failed"
 	set exit_code 1
 }
-fail_on_error "Test failed due to previous errors"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors"
+}
 for {set node_id 0} {$node_id < $node_count} {incr node_id} {
 	set file_out_n_glob  "test$test_id.n.$node_id.output"
 	exec $bin_rm -f $file_out_n_glob

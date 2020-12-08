@@ -47,6 +47,7 @@ proc cleanup { } {
 
 proc check_prolog { pattern } {
 	global prolog_out exit_code bin_grep
+
 	set rc [wait_for_command -timeout 5 "$bin_grep" "$pattern $prolog_out" $pattern]
 	if { $rc == 0 } {
 		log_info "Prolog: Found '$pattern'"
@@ -58,6 +59,7 @@ proc check_prolog { pattern } {
 
 proc check_epilog { pattern } {
 	global epilog_out exit_code bin_grep
+
 	set rc [wait_for_command -timeout 5 "$bin_grep" "$pattern $epilog_out" $pattern]
 	if { $rc == 0 } {
 		log_info "Epilog: Found '$pattern'"
@@ -69,7 +71,6 @@ proc check_epilog { pattern } {
 
 # Get the location of the slurm.conf file
 set config_dir [get_conf_path]
-fail_on_error "Error getting the config path"
 
 #
 # Copy slurm.conf file
@@ -96,7 +97,7 @@ exec $bin_echo "" >> $config_dir/slurm.conf
 exec $bin_echo "Prolog=$cwd/$prolog" >> $config_dir/slurm.conf
 exec $bin_echo "Epilog=$cwd/$epilog" >> $config_dir/slurm.conf
 
-reconfigure
+incr exit_code [reconfigure]
 
 # Test whether env vars exist in Prolog and Epilog
 log_info "Checking for regular env vars"
@@ -201,4 +202,3 @@ if {$exit_code != 0} {
 if {[llength $skipped]} {
 	skip [join $skipped "\n"]
 }
-

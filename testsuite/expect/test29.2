@@ -9,9 +9,7 @@
 ############################################################################
 source ./globals
 
-set exit_code  0
-
-if {![slurmctld_plug_stack_nonstop]} {
+if {![param_contains [get_config_param "SlurmctldPlugstack"] "nonstop"]} {
 	skip "This test is only compatible when SlurmctldPlugstack includes nonstop"
 }
 
@@ -26,8 +24,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "smd is not responding"
-		set exit_code 1
+		fail "smd is not responding"
 	}
 	eof {
 		wait
@@ -49,8 +46,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "smd is not responding"
-		set exit_code 1
+		fail "smd is not responding"
 	}
 	eof {
 		wait
@@ -58,8 +54,4 @@ expect {
 }
 if {$match != 2} {
 	fail "smd show config failed"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

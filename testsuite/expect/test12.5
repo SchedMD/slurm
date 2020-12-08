@@ -54,7 +54,6 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 proc sacct_job { soption } {
 	global sacct
 	set debug       0
-	set exit_code   0
 	set matches     0
 	set not_support 0
 	log_debug "Sacct $soption"
@@ -76,8 +75,7 @@ proc sacct_job { soption } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacct not responding"
-			set exit_code 1
+			fail "sacct not responding"
 		}
 		eof {
 			wait

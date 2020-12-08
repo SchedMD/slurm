@@ -32,6 +32,12 @@ set cwd               "[$bin_pwd]"
 set permission        0
 set exit_code         0
 
+proc cleanup {} {
+	global bin_rm trigger_file_in trigger_file_out
+
+	exec $bin_rm -f $trigger_file_in $trigger_file_out
+}
+
 #
 # get my uid and clear any vestigial triggers
 #
@@ -58,8 +64,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "strigger is not responding"
-		set exit_code 1
+		fail "strigger is not responding"
 	}
 	eof {
 		wait
@@ -82,8 +87,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "strigger is not responding"
-		set exit_code 1
+		fail "strigger is not responding"
 	}
 	eof {
 		wait
@@ -102,8 +106,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "strigger is not responding"
-		set exit_code 1
+		fail "strigger is not responding"
 	}
 	eof {
 		wait
@@ -118,16 +121,13 @@ set match 0
 spawn $strigger --clear -v --user=$uid
 expect {
 	timeout {
-		log_error "strigger is not responding"
-		set exit_code 1
+		fail "strigger is not responding"
 	}
 	eof {
 		wait
 	}
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $trigger_file_in $trigger_file_out
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors"
 }

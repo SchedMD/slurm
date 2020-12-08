@@ -62,8 +62,7 @@ proc check_job_nodes {test_job node_name find_node} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -79,8 +78,7 @@ proc check_job_nodes {test_job node_name find_node} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -114,8 +112,7 @@ proc check_job {nnode test_job} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -130,8 +127,7 @@ proc check_job {nnode test_job} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -166,8 +162,7 @@ proc sub_job_and {nnode fail_test} {
 				exp_continue
 			}
 			timeout {
-				log_error "sbatch is not responding"
-				set exit_code 1
+				fail "sbatch is not responding"
 			}
 			eof {
 				wait
@@ -195,8 +190,7 @@ proc sub_job_and {nnode fail_test} {
 				exp_continue
 			}
 			timeout {
-				log_error "sbatch is not responding"
-				set exit_code 1
+				fail "sbatch is not responding"
 			}
 			eof {
 				wait
@@ -235,8 +229,7 @@ proc sub_batch_host {nnode} {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch is not responding"
-			set exit_code 1
+			fail "sbatch is not responding"
 		}
 		eof {
 			wait
@@ -259,8 +252,7 @@ proc sub_batch_host {nnode} {
 					exp_continue
 				}
 				timeout {
-					log_error "sbatch is not responding"
-					set exit_code 1
+					fail "sbatch is not responding"
 				}
 				eof {
 					wait
@@ -295,8 +287,7 @@ proc sub_job_count {nnode fail_test} {
 				exp_continue
 			}
 			timeout {
-				log_error "sbatch is not responding"
-				set exit_code 1
+				fail "sbatch is not responding"
 			}
 			eof {
 				wait
@@ -324,8 +315,7 @@ proc sub_job_count {nnode fail_test} {
 				exp_continue
 			}
 			timeout {
-				log_error "sbatch is not responding"
-				set exit_code 1
+				fail "sbatch is not responding"
 			}
 			eof {
 				wait
@@ -365,8 +355,7 @@ proc sub_job_or {nnode fail_test} {
 				exp_continue
 			}
 			timeout {
-				log_error "sbatch is not responding"
-				set exit_code 1
+				fail "sbatch is not responding"
 			}
 			eof {
 				wait
@@ -394,8 +383,7 @@ proc sub_job_or {nnode fail_test} {
 				exp_continue
 			}
 			timeout {
-				log_error "sbatch is not responding"
-				set exit_code 1
+				fail "sbatch is not responding"
 			}
 			eof {
 				wait
@@ -432,8 +420,7 @@ proc sub_job_or_paren {nnode fail_test} {
             exp_continue
         }
         timeout {
-            log_error "sbatch is not responding"
-            set exit_code 1
+            fail "sbatch is not responding"
         }
         eof {
             wait
@@ -459,8 +446,7 @@ proc sub_job_or_paren {nnode fail_test} {
             exp_continue
         }
         timeout {
-            log_error "sbatch is not responding"
-            set exit_code 1
+            fail "sbatch is not responding"
         }
         eof {
             wait
@@ -490,8 +476,7 @@ proc sub_job_or_paren {nnode fail_test} {
             exp_continue
         }
         timeout {
-            log_error "sbatch is not responding"
-            set exit_code 1
+            fail "sbatch is not responding"
         }
         eof {
             wait
@@ -521,8 +506,7 @@ proc sub_job_or_paren {nnode fail_test} {
             exp_continue
         }
         timeout {
-            log_error "sbatch is not responding"
-            set exit_code 1
+            fail "sbatch is not responding"
         }
         eof {
             wait
@@ -558,8 +542,7 @@ proc sub_job_xand {nnode fail_test} {
 				exp_continue
 			}
 			timeout {
-				log_error "sbatch is not responding"
-				set exit_code 1
+				fail "sbatch is not responding"
 			}
 			eof {
 				wait
@@ -587,8 +570,7 @@ proc sub_job_xand {nnode fail_test} {
 				exp_continue
 			}
 			timeout {
-				log_error "sbatch is not responding"
-				set exit_code 1
+				fail "sbatch is not responding"
 			}
 			eof {
 				wait
@@ -629,8 +611,7 @@ proc sub_job_xor {nnode fail_test} {
 				exp_continue
 			}
 			timeout {
-				log_error "sbatch is not responding"
-				set exit_code 1
+				fail "sbatch is not responding"
 			}
 			eof {
 				wait
@@ -658,8 +639,7 @@ proc sub_job_xor {nnode fail_test} {
 				exp_continue
 			}
 			timeout {
-				log_error "sbatch is not responding"
-				set exit_code 1
+				fail "sbatch is not responding"
 			}
 			eof {
 				wait
@@ -698,8 +678,7 @@ proc sub_job_and_xor {nnode fail_test} {
 				exp_continue
 			}
 			timeout {
-				log_error "sbatch is not responding"
-				set exit_code 1
+				fail "sbatch is not responding"
 			}
 			eof {
 				wait
@@ -727,8 +706,7 @@ proc sub_job_and_xor {nnode fail_test} {
 				exp_continue
 			}
 			timeout {
-				log_error "sbatch is not responding"
-				set exit_code 1
+				fail "sbatch is not responding"
 			}
 			eof {
 				wait
@@ -748,13 +726,12 @@ proc sub_job_and_xor {nnode fail_test} {
 }
 
 proc set_node_feature {node_name new_feature} {
-	global scontrol exit_code
+	global scontrol
 
 	spawn $scontrol update node=$node_name AvailableFeatures=$new_feature ActiveFeatures=$new_feature
 	expect {
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -763,13 +740,12 @@ proc set_node_feature {node_name new_feature} {
 }
 
 proc clean_up {} {
-	global test_part scontrol def_active_node_feat def_avail_node_feat nodes exit_code
+	global test_part scontrol def_active_node_feat def_avail_node_feat nodes
 
 	spawn $scontrol delete partition=$test_part
 	expect {
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -779,17 +755,20 @@ proc clean_up {} {
 	# Reset nodes back to normal
 	foreach option [array names nodes] {
 		set node $nodes($option)
-		spawn $scontrol update node=$node AvailableFeatures=$def_avail_node_feat($node) ActiveFeatures=$def_active_node_feat($node)
-		expect {
-			timeout {
-				log_error "scontrol is not responding"
-				set exit_code 1
-			}
-			eof {
-				wait
-			}
+		if [info exists def_avail_node_feat($node)] {
+			run_command -none "$scontrol update node=$node AvailableFeatures=$def_avail_node_feat($node) ActiveFeatures=$def_active_node_feat($node)"
 		}
 	}
+}
+
+proc cleanup {} {
+	global bin_rm file_in
+
+	# Reset node features and remove test part
+	log_debug "==========Clean Up=========="
+	clean_up
+
+	exec $bin_rm -f $file_in
 }
 
 #
@@ -821,9 +800,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
-		exp_continue
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -853,9 +830,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun is not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun is not responding"
 	}
 	eof {
 		wait
@@ -874,8 +850,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -891,8 +866,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -924,8 +898,7 @@ foreach option [array names nodes] {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -950,8 +923,7 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -1020,12 +992,6 @@ if {[get_config_param "FrontendName"] eq "MISSING"} {
 	sub_batch_host 3
 }
 
-# Reset node features and remove test part
-log_debug "==========Clean Up=========="
-clean_up
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

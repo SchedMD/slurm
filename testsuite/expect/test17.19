@@ -32,6 +32,12 @@ source ./globals
 set exit_code   0
 set file_in     "test$test_id.input"
 
+proc cleanup {} {
+	global bin_rm file_in
+
+	exec $bin_rm -f $file_in
+}
+
 #
 # Delete left-over stdin/out/err files
 # Build stdin file
@@ -66,9 +72,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
-		exp_continue
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -86,9 +90,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
-		exp_continue
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -122,9 +124,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
-		exp_continue
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -168,9 +168,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
-		exp_continue
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -196,9 +194,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
-		exp_continue
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -211,8 +207,6 @@ if {[cancel_job $job_id] != 0} {
 	fail "Unable to cancel job ($job_id)"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

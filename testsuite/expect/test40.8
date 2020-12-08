@@ -32,6 +32,12 @@ set file_out    "test$test_id.output"
 set file_prog   "test$test_id.prog"
 set job_id      0
 
+proc cleanup {} {
+	global bin_rm file_in file_out file_prog
+
+	exec $bin_rm -f $file_in $file_out $file_prog
+}
+
 if {![check_config_select "cons_tres"]} {
     skip "This test is only compatible with select/cons_tres"
 }
@@ -64,8 +70,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -163,8 +168,6 @@ if {[wait_for_file $file_out] == 0} {
 	fail "Output file failed to appear ($file_out)"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $file_prog
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

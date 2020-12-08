@@ -479,6 +479,21 @@ proc _remove_user { acct user } {
 	return $exit_code
 }
 
+proc cleanup {} {
+	global tu1 tu2 tu3 tu4 ta1 ta2 ta3 ta4 tc1 file_in file_in2 file_in3
+
+	_remove_user "" "$tu1,$tu2,$tu3,$tu4"
+	_remove_acct "" "$ta1,$ta2,$ta3,$ta4"
+	_remove_cluster "$tc1"
+
+	#
+	# Delete left-over input script files
+	#
+	exec $bin_rm -f $file_in
+	exec $bin_rm -f $file_in2
+	exec $bin_rm -f $file_in3
+}
+
 #make sure we have a clean system and permission to do this work
 _remove_user "" "$tu1,$tu2,$tu3,$tu4"
 _remove_acct "" "$ta1,$ta2,$ta3,$ta4"
@@ -511,9 +526,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding 1"
 		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding 1"
 	}
 	eof {
 		wait
@@ -564,9 +578,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding 2"
 		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding 2"
 	}
 	eof {
 		wait
@@ -597,9 +610,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding 3"
 		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding 3"
 	}
 	eof {
 		wait
@@ -636,9 +648,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr load not responding 4"
 		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr load not responding 4"
 	}
 	eof {
 		wait
@@ -711,9 +722,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding 5"
 		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding 5"
 	}
 	eof {
 		wait
@@ -748,9 +758,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding 6"
 		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding 6"
 	}
 	eof {
 		wait
@@ -786,9 +795,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding 7"
 		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding 7"
 	}
 	eof {
 		wait
@@ -852,9 +860,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding 8"
 		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding 8"
 	}
 	eof {
 		wait
@@ -889,9 +896,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding 9"
 		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding 9"
 	}
 	eof {
 		wait
@@ -902,19 +908,6 @@ if {$matches != 3} {
 	log_error "Adminstrator and coordinator 3 incorrect with only $matches"
 	incr exit_code 1
 }
-
-# This is the end below here
-
-incr exit_code [_remove_user "" "$tu1,$tu2,$tu3,$tu4"]
-incr exit_code [_remove_acct "" "$ta1,$ta2,$ta3,$ta4"]
-incr exit_code [_remove_cluster "$tc1"]
-
-#
-# Delete left-over input script files
-#
-exec $bin_rm -f $file_in
-exec $bin_rm -f $file_in2
-exec $bin_rm -f $file_in3
 
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors"

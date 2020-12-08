@@ -34,6 +34,12 @@ set file_prog   "test$test_id.prog"
 set job_id      0
 set matches     0
 
+proc cleanup {} {
+	global bin_rm file_prog
+
+	exec $bin_rm -f $file_prog
+}
+
 if {[get_config_param "LaunchType"] ne "launch/slurm"} {
 	skip "This test is only compatible with systems using launch/slurm"
 }
@@ -102,8 +108,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sattach not responding"
-		set exit_code 1
+		fail "sattach not responding"
 	}
 	eof {
 		wait
@@ -134,8 +139,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sattach not responding"
-		set exit_code 1
+		fail "sattach not responding"
 	}
 	eof {
 		wait
@@ -167,8 +171,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sattach not responding"
-		set exit_code 1
+		fail "sattach not responding"
 	}
 	eof {
 		wait
@@ -186,17 +189,14 @@ if {$matches != [expr $task_cnt + 1]} {
 set spawn_id $init_id
 expect {
 	timeout {
-		log_error "srun (terminate) not responding"
-		set exit_code 1
+		fail "srun (terminate) not responding"
 	}
 	eof {
 		wait
 	}
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_prog
-} else {
+if {$exit_code != 0} {
 	cancel_job $job_id
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

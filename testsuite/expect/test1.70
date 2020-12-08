@@ -42,8 +42,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun is not responding"
-		set exit_code 1
+		fail "srun is not responding"
 	}
 	eof {
 		wait
@@ -60,8 +59,7 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		log_error "diff is not responding"
-		set exit_code 1
+		fail "diff is not responding"
 	}
 	eof {
 		wait

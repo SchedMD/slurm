@@ -34,7 +34,6 @@ source ./globals
 # - task affinity either cgroups or cpusets
 
 set nerr	0
-set exit_code	0
 set test_prog   "test$test_id.prog"
 set avail_freq	[split "1000 2000" " "]
 set nfreq	0
@@ -376,7 +375,4 @@ if {$nerr != 0} {
 	fail "$nerr test cases failed."
 } else {
 	exec $bin_rm -f $wd/test1.76.out
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

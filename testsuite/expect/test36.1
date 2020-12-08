@@ -33,7 +33,7 @@ if {[file executable $lsid] == 0} {
 }
 
 set cluster_name [get_config_param "ClusterName"]
-set control_machine [get_control_machine]
+regsub {\(.*} [get_config_param {SlurmctldHost[0]}] {} control_machine
 set lsid_cluster_name ""
 set lsid_control_machine ""
 set cluster_name_ok 0
@@ -50,8 +50,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "lsid not responding"
-		set exit_code 1
+		fail "lsid not responding"
 	}
 	eof {
 		wait
@@ -69,5 +68,5 @@ if {[string compare $control_machine $lsid_control_machine]} {
 }
 
 if {$exit_code} {
-	fail "Test failed due to previous errors"
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

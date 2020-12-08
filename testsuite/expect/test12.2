@@ -37,6 +37,12 @@ set file_name   "/tmp/test$test_id.filename"
 set job_id      0
 set matches     0
 
+proc cleanup {} {
+	global file_prog file_in file_out file_err file_name
+
+	exec rm -f $file_prog $file_in $file_out $file_err $file_name
+}
+
 # job parameters
 set mem_size    102400
 set sleep_time  32
@@ -61,7 +67,6 @@ proc _get_mem {prog} {
 	set mem_used -1
 	set mem_task -1
 	set ave_used -1
-	set exit_code 0
 
 	spawn $prog --noheader -p --job=$job_id.$step_id --format \
 		    maxrss,maxrsstask,averss --noconvert
@@ -77,16 +82,11 @@ proc _get_mem {prog} {
 			exp_continue
 		}
 		timeout {
-			log_error "$prog not responding"
-			set exit_code 1
+			fail "$prog not responding"
 		}
 		eof {
 			wait
 		}
-	}
-
-	if { $exit_code } {
-		return 1
 	}
 
 	if { $mem_used == -1 } {
@@ -147,8 +147,7 @@ proc _get_file_size {prog} {
 							  $scale4]
 		}
 		timeout {
-			log_error "$prog not responding"
-			set exit_code 1
+			fail "$prog not responding"
 		}
 		eof {
 			wait
@@ -349,8 +348,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacct not responding"
-		set exit_code 1
+		fail "sacct not responding"
 	}
 	eof {
 		wait
@@ -381,8 +379,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacct not responding"
-		set exit_code 1
+		fail "sacct not responding"
 	}
 	eof {
 		wait
@@ -412,8 +409,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacct not responding"
-		set exit_code 1
+		fail "sacct not responding"
 	}
 	eof {
 		wait
@@ -442,8 +438,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacct not responding"
-		set exit_code 1
+		fail "sacct not responding"
 	}
 	eof {
 		wait
@@ -465,8 +460,6 @@ if {[_get_file_size $sacct] != 0} {
 	set exit_code 1
 }
 
-if {$exit_code == 0} {
-	exec rm -f $file_prog $file_in $file_out $file_err $file_name
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

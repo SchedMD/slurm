@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code          0
 set job_id             0
 set matches            0
 set scratch_file       "scratch.$test_id"
@@ -55,9 +54,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -71,7 +69,4 @@ expect {
 if {$matches != 1} {
 	exec $bin_rm -f $scratch_file
 	fail "srun --unbuffered option failure"
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

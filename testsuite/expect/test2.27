@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
 set job_id           0
 set node_cnt         1
 set user             [get_my_user_name]
@@ -137,8 +136,6 @@ proc update { job_id args regex {negate_match 0}} {
 }
 
 set config_path [get_conf_path]
-fail_on_error "Unable to determine configuration path"
-
 save_conf $config_path/slurm.conf
 
 proc test_it {} {

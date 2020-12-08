@@ -28,8 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 #
 # Report all slurm nodes, multi-line (default) mode
 #
@@ -41,16 +39,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 1} {
-	log_error "scontrol show node command failed"
-	set exit_code 1
+	fail "scontrol show node command failed"
 }
 
 #
@@ -64,8 +60,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -73,8 +68,4 @@ expect {
 }
 if {$matches != 0} {
 	fail "scontrol --oneliner mode failed"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

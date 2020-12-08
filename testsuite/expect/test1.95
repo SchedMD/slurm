@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code          0
 set file_in            "test$test_id.input"
 set file_out           "test$test_id.output"
 set file_err           "test$test_id.error"
@@ -34,6 +33,12 @@ set test_prog          "test$test_id.prog"
 set job_id             0
 set task_cnt           2
 set thread_cnt         4
+
+proc cleanup {} {
+	global bin_rm file_in file_out file_err test_prog
+
+	exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
+}
 
 #
 # Test for existence of UPC compiler
@@ -142,10 +147,4 @@ if {[wait_for_file $file_out] == 0} {
 	}
 } else {
 	fail "Output file for job ($job_id) did not get created"
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
-} else {
-	fail "Check contents of $file_err\n"
 }

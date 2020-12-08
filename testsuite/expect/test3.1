@@ -30,6 +30,17 @@ source ./globals
 
 set exit_code   0
 set file_in     "test$test_id.input"
+set job_id      0
+
+proc cleanup {} {
+	global job_id bin_rm file_in
+
+	reconfigure
+	if {$job_id != 0} {
+		cancel_job $job_id
+	}
+	exec $bin_rm -f $file_in
+}
 
 #
 # This test must be run as a Slurm administrator, root, or SlurmUser in order to
@@ -45,7 +56,6 @@ if {[string compare [get_admin_level] "Administrator"]} {
 make_bash_script $file_in "
   $srun $bin_sleep 60
 "
-set job_id 0
 set sbatch_pid [spawn $sbatch -N1 --output=/dev/null -t2 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
@@ -53,9 +63,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
 		catch {exec $bin_kill -KILL $sbatch_pid}
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -72,15 +81,12 @@ if {[wait_for_job $job_id RUNNING] != 0} {
 #
 # Issue scontrol reconfigure
 #
-reconfigure
+incr exit_code [reconfigure]
 
 if {[wait_for_job $job_id RUNNING] != 0} {
 	fail "Job $job_id not running after reconfiguration"
 }
-cancel_job $job_id
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

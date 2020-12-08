@@ -89,9 +89,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -114,9 +113,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -139,9 +137,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -172,9 +169,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -191,9 +187,8 @@ if {$match == 2} {
 			exp_continue
 		}
 		timeout {
-			log_error "srun not responding"
 			slow_kill $srun_pid
-			set exit_code 1
+			fail "srun not responding"
 		}
 		eof {
 			wait
@@ -210,9 +205,8 @@ if {$match == 2} {
 			exp_continue
 		}
 		timeout {
-			log_error "srun not responding"
 			slow_kill $srun_pid
-			set exit_code 1
+			fail "srun not responding"
 		}
 		eof {
 			wait
@@ -249,9 +243,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait

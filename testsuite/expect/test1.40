@@ -59,9 +59,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
 		slow_kill $sbatch_pid
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -82,8 +81,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -114,9 +112,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -138,8 +135,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait

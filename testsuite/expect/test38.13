@@ -26,9 +26,16 @@
 ############################################################################
 source ./globals
 
-set exit_code	0
 set matches	0
 set het_job_id	0
+
+proc cleanup {} {
+	global het_job_id
+
+	if {$het_job_id > 0} {
+		cancel_job $pack_job_id
+	}
+}
 
 if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 	skip "This test requires SchedulerType = sched/backfill"
@@ -45,22 +52,17 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
 		slow_kill $sbatch_pid
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$het_job_id != 0} {
-	cancel_job $pack_job_id
 	fail "Heterogeneous job array should not be accepted"
 } elseif {$matches != 1} {
 	fail "Heterogeneous job array should not be accepted ($matches != 1)"
 } else {
 	log_debug "No worries. This error is expected"
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

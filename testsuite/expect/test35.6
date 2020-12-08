@@ -32,6 +32,14 @@ set output_parent  "test$test_id.parent.output"
 set script_child   "test$test_id.child.bash"
 set script_parent  "test$test_id.parent.bash"
 
+proc cleanup {} {
+	global bin_rm script_child script_parent
+	global output_child output_parent
+
+	exec $bin_rm -f $script_child $script_parent
+	exec $bin_rm -f $output_child $output_parent
+}
+
 stop_root_user
 
 set bb_types [get_bb_types]
@@ -56,8 +64,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -97,9 +104,6 @@ if {$found == 0} {
 	fail "Dependent job not completed"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $script_child $script_parent
-	exec $bin_rm -f $output_child $output_parent
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

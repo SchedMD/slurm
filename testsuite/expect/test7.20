@@ -87,15 +87,6 @@ proc cleanup_accounts {} {
 	remove_acct "" $ta1
 }
 
-proc cleanup {} {
-	global config_dir
-
-	cleanup_accounts
-	restore_conf $config_dir/job_submit.lua
-	restore_conf $config_dir/slurm.conf
-	reconfigure
-}
-
 proc check_rc { exit_code } {
 	if {$exit_code != 0} {
 		fail "Exiting with exit code $exit_code"
@@ -246,6 +237,15 @@ if { [llength $nodes] != 3 } {
 	skip "System too small for test, it needs '--ntasks-per-node=5 -N3'"
 }
 
+proc cleanup {} {
+	global config_dir
+
+	cleanup_accounts
+	restore_conf $config_dir/job_submit.lua
+	restore_conf $config_dir/slurm.conf
+	reconfigure
+}
+
 cleanup_accounts
 create_accounts
 
@@ -256,7 +256,7 @@ save_conf $config_dir/slurm.conf
 # Activate lua plugin
 exec $bin_sed -i {s/^\(JobSubmitPlugins\)/#\1/gI} $config_dir/slurm.conf
 exec $bin_echo "\n### test7.20 additions####\nJobSubmitPlugins=lua" >> $config_dir/slurm.conf
-reconfigure
+incr exit_code [reconfigure]
 
 run_command "$bin_rm $config_dir/job_submit.lua"
 run_command -fail "$bin_cp $test_lua_reject $config_dir/job_submit.lua"

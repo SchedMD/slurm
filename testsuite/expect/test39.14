@@ -34,6 +34,18 @@ set file_in2         "test$test_id.input2"
 set file_in3         "test$test_id.input3"
 set file_out1        "test$test_id.output1"
 set file_out2        "test$test_id.output2"
+set job_id1          0
+set job_id2          0
+
+proc cleanup {} {
+	global bin_rm file_in1 file_in2 file_in3 file_out1 file_out2 job_id2
+
+	exec $bin_rm -f $file_in1 $file_in2 $file_in3 $file_out1 $file_out2
+	if {$job_id2 > 0} {
+		exec $bin_rm -f slurm_job_${job_id2}_resize.csh
+		exec $bin_rm -f slurm_job_${job_id2}_resize.sh
+	}
+}
 
 # Bug 9701: disabling test until bug 6252 is fixed
 skip "Test disabled until bug 6252 is fixed"
@@ -100,7 +112,6 @@ echo 'HOST:'\$SLURMD_NODENAME 'CUDA_VISIBLE_DEVICES:'\$CUDA_VISIBLE_DEVICES"
 #
 # Submit job to expand: uses one GPU one node
 #
-set job_id1 0
 spawn $sbatch -N1 --exclusive -J "test$test_id" -t2 --gpus=1 --output=$file_out1 $file_in1
 expect {
 	-re "Submitted batch job ($number)" {
@@ -108,8 +119,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -126,7 +136,6 @@ if {[wait_for_job $job_id1 "RUNNING"] != 0} {
 #
 # Submit job to shrink: uses one GPU one node
 #
-set job_id2 0
 spawn $sbatch -N1 --exclusive -J "test_child_$test_id" --dependency=expand:$job_id1 -t1 --gpus=1 --output=$file_out2 $file_in2
 expect {
 	-re "Submitted batch job ($number)" {
@@ -134,8 +143,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -194,10 +202,6 @@ expect {
 	}
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in1 $file_in2 $file_in3 $file_out1 $file_out2
-	exec $bin_rm -f slurm_job_${job_id2}_resize.csh
-	exec $bin_rm -f slurm_job_${job_id2}_resize.sh
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

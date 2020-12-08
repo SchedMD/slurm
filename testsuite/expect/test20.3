@@ -33,6 +33,12 @@ set file_in	"test$test_id.input"
 set file_out	"test$test_id.output"
 set file_err	"test$test_id.error"
 
+proc cleanup {} {
+	global bin_rm file_in file_out file_err
+
+	exec $bin_rm -f $file_in $file_out $file_err
+}
+
 if {[file executable $qsub] == 0} {
 	skip "$qsub does not exists"
 }
@@ -49,8 +55,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "qsub not responding"
-		set exit_code 1
+		fail "qsub not responding"
 	}
 	eof {
 		wait
@@ -77,8 +82,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "qdel not responding"
-		set exit_code 1
+		fail "qdel not responding"
 	}
 	eof {
 		catch wait reason
@@ -101,8 +105,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "qdel not responding"
-		set exit_code 1
+		fail "qdel not responding"
 	}
 	eof {
 		catch wait reason
@@ -115,8 +118,6 @@ if {($matches != 0) || ($status == 0)} {
 	fail "No error on attempt to cancel terminated job"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $file_err
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

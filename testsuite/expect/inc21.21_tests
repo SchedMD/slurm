@@ -282,10 +282,11 @@ proc inc21_21_submit_test { limit } {
 	    [lindex $acct_mod_assoc_vals($limit) 0]
 	set acct_mod_assoc_test_vals($limit_sub) \
 	    [lindex $acct_mod_assoc_vals($limit) 1]
-	set exit_code  [mod_acct $ta [array get acct_mod_desc] \
+	if [mod_acct $ta [array get acct_mod_desc] \
 				 [array get acct_mod_assoc_test_vals] \
-				 [array get acct_mod_acct_vals]]
-	fail_on_error "Unable to modify account $ta"
+				 [array get acct_mod_acct_vals]] {
+		fail "Unable to modify account $ta"
+	}
 
 	make_bash_script $file_in "
 	$bin_sleep 10

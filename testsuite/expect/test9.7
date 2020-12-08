@@ -27,7 +27,6 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
 set file_script  "./test$test_id.bash"
 set iterations   5
 set sleep_time   1
@@ -72,8 +71,4 @@ for {set inx 0} {$inx < $task_cnt} {incr inx} {
 
 if {$success_cnt != $task_cnt} {
 	fail "Only $success_cnt of $task_cnt tests passed"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

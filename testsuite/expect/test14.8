@@ -35,6 +35,12 @@ source ./globals
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 
+proc cleanup {} {
+	global bin_rm file_in file_out
+
+	exec $bin_rm -f $file_in $file_out
+}
+
 set exit_code            0
 set job_id               0
 
@@ -80,9 +86,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $sbatch_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -125,8 +130,6 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

@@ -63,8 +63,7 @@ if {$min_job_age < 10} {
 }
 
 proc acct_setup { acct_name qos_name pre_qos pre_mode } {
-
-	global user nodes sacctmgr exit_code
+	global user nodes sacctmgr
 
 	set added 0
 	spawn $sacctmgr -i create qos $qos_name preempt=$pre_qos preemptmode=$pre_mode maxnodes=$nodes
@@ -74,8 +73,7 @@ proc acct_setup { acct_name qos_name pre_qos pre_mode } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -89,8 +87,7 @@ proc acct_setup { acct_name qos_name pre_qos pre_mode } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -104,8 +101,7 @@ proc acct_setup { acct_name qos_name pre_qos pre_mode } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -118,8 +114,7 @@ proc acct_setup { acct_name qos_name pre_qos pre_mode } {
 }
 
 proc sub_job { acct1 {het_job false} } {
-
-	global nodes file_in sbatch number exit_code
+	global nodes file_in sbatch number
 
 	set job_id 0
 	if { $het_job } {
@@ -134,8 +129,7 @@ proc sub_job { acct1 {het_job false} } {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch is not responding"
-			set exit_code 1
+			fail "sbatch is not responding"
 		}
 		eof {
 			wait
@@ -150,7 +144,6 @@ proc sub_job { acct1 {het_job false} } {
 }
 
 proc cleanup {} {
-
 	global acct_1 acct_2 qos_1 qos_2 qos_1_id qos_2_id sacctmgr exit_code
 	global user bin_rm file_in
 
@@ -174,8 +167,7 @@ proc cleanup {} {
 				exp_continue
 			}
 			timeout {
-				log_error "sacctmgr is not responding"
-				set exit_code 1
+				fail "sacctmgr is not responding"
 			}
 			eof {
 				wait
@@ -189,8 +181,7 @@ proc cleanup {} {
 				exp_continue
 			}
 			timeout {
-				log_error "sacctmgr is not responding"
-				set exit_code 1
+				fail "sacctmgr is not responding"
 			}
 			eof {
 				wait
@@ -202,7 +193,6 @@ proc cleanup {} {
 		log_error "Unable to clean up accounts and qos"
 		set exit_code 1
 	}
-
 }
 
 cleanup

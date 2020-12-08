@@ -26,8 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code  0
-
 if {[file executable $qrerun] == 0} {
 	skip "qrerun was not found"
 }
@@ -40,8 +38,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "qrerun is not responding"
-		set exit_code 1
+		fail "qrerun is not responding"
 	}
 	eof {
 		wait
@@ -49,8 +46,4 @@ expect {
 }
 if {$found != 1} {
 	fail "qrerun --help option failed"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

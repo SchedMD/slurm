@@ -30,6 +30,12 @@ set exit_code   0
 set file_in     "test$test_id.in"
 set job_id      0
 
+proc cleanup {} {
+	global file_in
+
+	exec rm -f $file_in
+}
+
 #
 # Submit simple "sleep" batch job with --wait option
 #
@@ -42,8 +48,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -64,8 +69,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "squeue is not responding"
-		set exit_code 1
+		fail "squeue is not responding"
 	}
 	eof {
 		wait
@@ -73,10 +77,4 @@ expect {
 }
 if {$match != 1} {
 	fail "Job not in state COMPLETED. Could be due to small configured MinJobAge value"
-}
-
-if {$exit_code == 0} {
-	exec rm -f $file_in
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

@@ -25,7 +25,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set test_script "./test$test_id.bash"
 
 #   job_blocks  Submit jobs in blocks of this size (job count)
@@ -47,7 +46,7 @@ if {[get_config_param "FrontendName"] ne "MISSING" || $enable_memory_leak_debug 
 # NOTE: The throughput rate is highly dependent upon configuration
 #
 proc _submit_jobs { job_name test_file } {
-	global exit_code job_blocks job_cnt sbatch test_script
+	global job_blocks job_cnt sbatch test_script
 
 	log_user 0
 	for {set jobs_rem $job_cnt} {$jobs_rem > 0} { } {
@@ -73,7 +72,3 @@ proc _submit_jobs { job_name test_file } {
 set time_took [string trim [time {_submit_jobs "test$test_id" "/dev/null"}] " per iteration microseconds"]
 set jobs_per_sec [expr $job_cnt * 1000000 / $time_took]
 log_debug "Ran $job_cnt jobs in $time_took microseconds or $jobs_per_sec jobs per second"
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

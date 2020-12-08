@@ -28,7 +28,12 @@ source ./globals
 
 set file_in    "test$test_id.input"
 set file_out   "test$test_id.output"
-set exit_code  0
+
+proc cleanup {} {
+	global bin_rm file_in file_out
+
+	exec $bin_rm -f $file_in $file_out
+}
 
 if {[file executable $qrerun] == 0} {
 	skip "qrerun was not found"
@@ -68,10 +73,4 @@ expect {
 }
 if {$matches != 1} {
 	fail "qrerun did not return the man pages ($matches != 1)"
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

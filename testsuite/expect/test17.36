@@ -42,6 +42,12 @@ set job_id        0
 set node_name     ""
 set exit_code     0
 
+proc cleanup {} {
+	global bin_rm file_in
+
+	exec $bin_rm -f $file_in
+}
+
 if {[check_config_select "linear"]} {
 	skip "Test is not compatible with a config of SelectType=select/linear"
 }
@@ -109,8 +115,7 @@ proc cr_core_cpu { node } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -131,7 +136,7 @@ proc cr_core_cpu { node } {
 
 # Get default_queue_depth to see how many jobs will start at one time
 proc default_queue_depth { } {
-	global scontrol exit_coode number
+	global scontrol number
 
 	set depth 100
 	log_user 0
@@ -142,8 +147,7 @@ proc default_queue_depth { } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -156,35 +160,19 @@ proc default_queue_depth { } {
 
 proc create_part {part oversubscribe node} {
 
-	global scontrol exit_code
+	global scontrol
 
 	spawn $scontrol create partitionname=$part OverSubscribe=$oversubscribe nodes=$node
 	expect {
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-}
-
-proc delete_part {part} {
-	global scontrol exit_code
-
-	spawn $scontrol delete partitionname=$part
-	expect {
-		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
 		}
 	}
 }
+
 
 proc sub_job { job oversubscribe part } {
 	global sbatch file_in number job_id exit_code job_mem_opt
@@ -198,8 +186,7 @@ proc sub_job { job oversubscribe part } {
 				exp_continue
 			}
 			timeout {
-				log_error "sbatch is not responding"
-				set exit_code 1
+				fail "sbatch is not responding"
 			}
 			eof {
 				wait
@@ -213,8 +200,7 @@ proc sub_job { job oversubscribe part } {
 				exp_continue
 			}
 			timeout {
-				log_error "sbatch is not responding"
-				set exit_code 1
+				fail "sbatch is not responding"
 			}
 			eof {
 				wait
@@ -225,7 +211,6 @@ proc sub_job { job oversubscribe part } {
 		log_error "sbatch did not submit job"
 		set exit_code 1
 	}
-
 }
 
 proc check_job { exp_num_jobs } {
@@ -255,7 +240,7 @@ proc check_job { exp_num_jobs } {
 }
 
 proc check_part { } {
-	global scontrol test_part_1 test_part_2 test_part_3 exit_code
+	global scontrol test_part_1 test_part_2 test_part_3
 
 	set found     0
 	set part_name ""
@@ -268,8 +253,7 @@ proc check_part { } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -372,8 +356,6 @@ check_job 1
 cancel_job $job_id
 delete_part $test_part_3
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors"
 }

@@ -36,7 +36,7 @@ proc inc21_30_12 { } {
 
 	# Since wall is a decayed variable lets reset it to make sure the test
 	# gets exactly what we would expect.
-	reset_qos_usage "" $qostest
+	incr exit_code [reset_qos_usage "" $qostest]
 
 	spawn $salloc --account=$acct --qos=$qostest -N2 -t1 $srun $bin_sleep [expr $grpwall_num * 60 + 1]
 	expect {
@@ -96,7 +96,7 @@ proc inc21_30_12 { } {
 	}
 
 	# Reset the QoS usage
-	reset_qos_usage "" $qostest
+	incr exit_code [reset_qos_usage "" $qostest]
 
 	# Cancel job
 	if {$exit_code} {
