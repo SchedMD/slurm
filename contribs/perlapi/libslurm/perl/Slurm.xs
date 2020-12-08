@@ -53,7 +53,7 @@ PROTOTYPES: ENABLE
 
 BOOT:
 {
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 }
 
 ######################################################################
