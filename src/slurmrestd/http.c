@@ -558,6 +558,10 @@ static int _send_reject(const http_parser *parser,
 		.headers = list_create(_free_http_header),
 	};
 
+	/* If we don't have a requested client version, default to 0.9 */
+	if ((args.http_major == 0) && (args.http_minor == 0))
+		args.http_minor = 9;
+
 	/* Ignore response since this connection is already dead */
 	(void) send_http_response(&args);
 
