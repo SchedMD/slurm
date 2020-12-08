@@ -11,8 +11,7 @@ VERSION_SCRIPT = \
 # With libslurm we have magic init/fini callers so the linker does not have to
 # worry about knowing to call slurm_conf_init()
 OTHER_FLAGS = \
-	-Wl,--version-script=$(VERSION_SCRIPT) \
-	-Wl,-init,slurm_library_init
+	-Wl,--version-script=$(VERSION_SCRIPT)
 FULL_VERSION_SCRIPT = \
 	full_version.map
 # With libslurmfull we expect the process to know they have to call
@@ -111,7 +110,6 @@ slurmapi_src =           \
 	crontab.c        \
 	federation_info.c \
 	front_end_info.c \
-	init.c           \
 	init_msg.c       \
 	job_info.c       \
 	job_step_info.c  \
