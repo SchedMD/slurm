@@ -31,7 +31,6 @@ source ./globals
 source ./globals_accounting
 source ./inc21.21_tests
 
-set exit_code   0
 set test_qos    "test$test_id\_qos"
 set file_in     "test.$test_id.input"
 set ta		"test$test_id-account.1"
@@ -116,7 +115,7 @@ if {[param_contains $select_type_parameters "CR_ONE_TASK_PER_CORE"]} {
 
 # Define global cleanup routine so it can be called on exit
 proc cleanup { } {
-	global bin_rm file_in sacctmgr ta test_qos job_id exit_code
+	global bin_rm file_in sacctmgr ta test_qos job_id
 
 	# First wait for the job to complete
 	if { $job_id } {
@@ -135,8 +134,7 @@ proc cleanup { } {
 		}
 		timeout {
 			slow_kill $sadel_pid
-			log_error "sacctmgr delete not responding"
-			set exit_code 1
+			fail "sacctmgr delete not responding"
 		}
 		eof {
 			wait
@@ -157,8 +155,7 @@ proc cleanup { } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr delete not responding"
-			set exit_code 1
+			fail "sacctmgr delete not responding"
 		}
 		eof {
 			wait
@@ -206,13 +203,13 @@ if {$totcpus == 0} {
 
 proc assoc_setup { limit_type limit_val } {
 
-	global acct_mod_assoc_test_vals exit_code
+	global acct_mod_assoc_test_vals
 	global acct_mod_desc acct_mod_acct_vals acct_mod_assoc_vals ta
 
 	set new_limit [lindex $limit_val 1]
 	set acct_mod_assoc_test_vals($limit_type) $new_limit
 
-	set exit_code [mod_acct $ta [array get acct_mod_desc] [array get acct_mod_assoc_test_vals] [array get acct_mod_acct_vals]]
+	return [mod_acct $ta [array get acct_mod_desc] [array get acct_mod_assoc_test_vals] [array get acct_mod_acct_vals]]
 }
 
 proc _test_limits { } {
@@ -224,8 +221,9 @@ proc _test_limits { } {
 		log_info "Setting up association limit $option..."
 		if { [string compare $option "maxjobsub"] &&
 		     [string compare $option "grpjobsub"] } {
-			assoc_setup $option $acct_mod_assoc_vals($option)
-			fail_on_error "Unable to modify account $ta"
+			if [assoc_setup $option $acct_mod_assoc_vals($option)]
+				fail "Unable to modify account $ta"
+			}
 
 			if { ![string compare $option "maxcpumins"] && $one_task_pc } {
 				set acct_mod_assoc_vals(maxcpumins) "-n [expr [lindex $acct_mod_assoc_vals(maxcpumins) 1] / $nthreads]"
@@ -282,7 +280,6 @@ expect {
 # Test Fixture
 #
 cleanup
-fail_on_error "Initial test cleanup/fixture failed"
 
 #
 # Use sacctmgr to add an account

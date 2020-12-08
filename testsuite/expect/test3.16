@@ -34,7 +34,6 @@ set lic_c           "lic_c_test$test_id"
 set cluster [get_config_param "ClusterName"]
 
 proc add_lic { license } {
-
 	global sacctmgr exit_code cluster
 
 	set added 0
@@ -46,8 +45,7 @@ proc add_lic { license } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not reponding"
-			set exit_code 1
+			fail "sacctmgr is not reponding"
 		}
 		eof {
 			wait
@@ -61,7 +59,6 @@ proc add_lic { license } {
 }
 
 proc delete_lic { license } {
-
 	global sacctmgr exit_code 1
 
 	set deleted 0
@@ -72,8 +69,7 @@ proc delete_lic { license } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -90,6 +86,14 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
         skip "This test can't be run without AccountStorageType=slurmdbd"
 } elseif {![is_super_user]} {
         skip "This test can't be run without superuser permissions"
+}
+
+proc cleanup {} {
+	global lic_a lic_b lic_c
+
+	delete_lic $lic_a
+	delete_lic $lic_b
+	delete_lic $lic_c
 }
 
 # Add the licenses in random order
@@ -113,8 +117,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -124,10 +127,6 @@ expect {
 if { $match != 3 } {
 	fail "Licenses are not sorted"
 }
-
-delete_lic $lic_a
-delete_lic $lic_b
-delete_lic $lic_c
 
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"

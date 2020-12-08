@@ -32,6 +32,18 @@ set file_in2         "test$test_id.input2"
 set file_in3         "test$test_id.input3"
 set file_out1        "test$test_id.output1"
 set file_out2        "test$test_id.output2"
+set job_id1          0
+set job_id2          0
+
+proc cleanup {} {
+	global bin_rm job_id2 file_in1 file_in2 file_in3 file_out1 file_out2
+
+	if {$job_id2 > 0} {
+		exec $bin_rm -f slurm_job_${job_id2}_resize.csh
+		exec $bin_rm -f slurm_job_${job_id2}_resize.sh
+	}
+	exec $bin_rm -f $file_in1 $file_in2 $file_in3 $file_out1 $file_out2
+}
 
 if {![param_contains [get_config_param "SchedulerParameters"] "permit_job_expansion"]} {
     skip "This test is only compatible with SchedulerParameters=permit_job_expansion"
@@ -99,7 +111,6 @@ echo 'HOST:'\$SLURMD_NODENAME 'CUDA_VISIBLE_DEVICES:'\$CUDA_VISIBLE_DEVICES 'CUD
 #
 # Submit job to expand: uses 10 gres/mps on one node
 #
-set job_id1 0
 spawn $sbatch -N1 --exclusive -J "test$test_id" -t2 --gres=mps:10 --output=$file_out1 $file_in1
 expect {
 	-re "Submitted batch job ($number)" {
@@ -107,8 +118,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -125,7 +135,6 @@ if {[wait_for_job $job_id1 "RUNNING"] != 0} {
 #
 # Submit job to give up resources: uses 10 gres/mps on one node
 #
-set job_id2 0
 spawn $sbatch -N1 --exclusive -J "test_child_$test_id" --dependency=expand:$job_id1 -t1 --gres=mps:10 --output=$file_out2 $file_in2
 expect {
 	-re "Submitted batch job ($number)" {
@@ -133,8 +142,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -229,10 +237,6 @@ expect {
 	}
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in1 $file_in2 $file_in3 $file_out1 $file_out2
-	exec $bin_rm -f slurm_job_${job_id2}_resize.csh
-	exec $bin_rm -f slurm_job_${job_id2}_resize.sh
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

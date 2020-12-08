@@ -25,7 +25,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set matches     0
 
 #
@@ -43,8 +42,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sdiag not responding"
-		set exit_code 1
+		fail "sdiag not responding"
 	}
 	eof {
 		wait
@@ -53,8 +51,4 @@ expect {
 
 if {$matches != 2} {
 	fail "sdiag --help failed ($matches)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

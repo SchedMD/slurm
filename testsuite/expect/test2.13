@@ -36,6 +36,12 @@ set step_id       0
 set orig_time     0
 set new_time      0
 
+proc cleanup {} {
+	global bin_rm file_in1 file_in2 file_out
+
+	exec $bin_rm -f $file_in1 $file_in2 $file_out
+}
+
 #
 # Build input batch file
 #
@@ -67,9 +73,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -96,8 +101,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -114,8 +118,7 @@ if {$orig_time != 5} {
 spawn $scontrol update StepId=$job_id TimeLimit=1
 expect {
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -132,8 +135,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -167,9 +169,6 @@ expect {
 	}
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in1 $file_in2 $file_out
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-

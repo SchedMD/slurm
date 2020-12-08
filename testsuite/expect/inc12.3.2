@@ -28,9 +28,7 @@ source ./globals
 source ./globals_accounting
 
 proc inc12_3_2 {job_id_1 job_id_2 job_id_3 job_name_1 job_name_2 test_acct job_1_node_0 job_1_node_2 job_2_node_0 job_2_node_1} {
-
-	global re_word_str sacct
-	global exit_code
+	global re_word_str sacct exit_code
 
 	log_info "Search for jobs $job_id_1 and $job_id_3 on node: $job_1_node_0 (Within: inc12.3.2)"
 	set job_1_match 0

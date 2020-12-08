@@ -46,7 +46,6 @@ foreach inx [array names qos_test] {
 }
 
 proc reset_qos { } {
-
 	global sacctmgr qos_main exit_code qos_test
 
 	set removed 0
@@ -57,8 +56,7 @@ proc reset_qos { } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -73,7 +71,6 @@ proc reset_qos { } {
 }
 
 proc _local_mod_qos { preempt_qos } {
-
 	global sacctmgr exit_code qos_test
 
 	set mod 0
@@ -84,8 +81,7 @@ proc _local_mod_qos { preempt_qos } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait
@@ -99,7 +95,6 @@ proc _local_mod_qos { preempt_qos } {
 }
 
 proc check_pre { preempt_qos } {
-
 	global sacctmgr exit_code re_word_str qos_test
 
 	set match 0
@@ -110,8 +105,7 @@ proc check_pre { preempt_qos } {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
+			fail "sacctmgr is not responding"
 		}
 		eof {
 			wait

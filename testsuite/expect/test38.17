@@ -26,23 +26,19 @@
 
 source ./globals
 
-set exit_code    0
 set file_in1     "test$test_id.in1"
 set file_in2     "test$test_id.in2"
 set file_in3     "test$test_id.in3"
 set job_id       0
 set matches      0
 
-proc end_it { exit_code } {
+proc cleanup {} {
 	global job_id scancel bin_rm file_in1 file_in2 file_in3 test_id
+
 	if {$job_id != 0} {
 		exec $scancel $job_id
 	}
 	exec $bin_rm -f $file_in1 $file_in2 $file_in3
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
 }
 
 # find out if we have enough nodes to test functionality
@@ -66,8 +62,7 @@ set timeout $max_job_delay
 spawn $salloc -t1 -N1 : -N1 : -N1 ./$file_in1
 expect {
 	-re "Job submit/allocate failed" {
-		log_warn "Unable to execute test due to system configuration"
-		end_it 0
+		skip "Unable to execute test due to system configuration"
 	}
 	-re "Granted job allocation ($number)" {
 		incr matches
@@ -85,25 +80,20 @@ expect {
 		} elseif {$expect_out(1,string) == 2 && $expect_out(2,string) == 2} {
 			incr matches
 		} else {
-			log_error "Invalid output ($expect_out(1,string): FILE$expect_out(2,string))"
-			set exit_code 1
+			fail "Invalid output ($expect_out(1,string): FILE$expect_out(2,string))"
 		}
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding"
-		end_it 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$job_id == 0} {
-	log_error "Error submitting job"
-	end_it 1
+	fail "Error submitting job"
 }
 if {$matches != 4} {
-	log_error "Invalid output ($matches != 4)"
-	end_it 1
+	fail "Invalid output ($matches != 4)"
 }
-end_it $exit_code

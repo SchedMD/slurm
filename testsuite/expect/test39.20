@@ -66,12 +66,6 @@ proc setup { gpu_limit } {
 	return 0
 }
 
-proc cleanup { } {
-	global acct
-
-	remove_acct "" $acct
-}
-
 set store_tres [string tolower [get_config_param "AccountingStorageTRES"]]
 set store_mps [string first "gres/gpu:" $store_tres]
 if {$store_mps != -1} {
@@ -125,6 +119,13 @@ if {$cpus_per_node < 3} {
 	skip "This test requires 3 or more CPUs per node in the default partition"
 }
 
+proc cleanup {} {
+	global acct bin_rm file_in file_out1 file_out2
+
+	remove_acct "" $acct
+	exec $bin_rm -f $file_in $file_out1 $file_out2
+}
+
 # Remove any vestigial test account
 cleanup
 
@@ -160,8 +161,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -180,8 +180,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -210,8 +209,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -222,7 +220,9 @@ if {$match != 2} {
 	set exit_code 1
 }
 cancel_job $job_id1
-fail_on_error "Test failed due to previous errors (\$exit_code = $exit_code)"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}
 
 #
 # Test --gpus-per-node option by job (first job over limit, second job under limit)
@@ -245,8 +245,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -265,8 +264,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -295,8 +293,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -307,7 +304,9 @@ if {$match != 2} {
 	set exit_code 1
 }
 cancel_job $job_id1
-fail_on_error "Test failed due to previous errors (\$exit_code = $exit_code)"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}
 
 #
 # Test --gpus-per-task option by job (first job over limit, second job under limit)
@@ -334,8 +333,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -354,8 +352,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -384,8 +381,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -396,8 +392,6 @@ if {$match != 2} {
 	set exit_code 1
 }
 cancel_job $job_id1
-fail_on_error "Test failed due to previous errors (\$exit_code = $exit_code)"
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out1 $file_out2
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

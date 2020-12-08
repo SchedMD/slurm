@@ -31,6 +31,12 @@ set file_in1       "test$test_id.input1"
 set file_in2       "test$test_id.input2"
 set file_out       "test$test_id.output"
 
+proc cleanup {} {
+	global bin_rm file_in1 file_in2 file_out
+
+	exec $bin_rm -f $file_in1 $file_in2 $file_out
+}
+
 #
 # Validate the job, batch step and step 0 of a job have the proper MPS counts
 # No step to test if step_mps == -1
@@ -227,8 +233,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -298,8 +303,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -317,8 +321,6 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 test_out_file $file_out $target
 test_acct $job_id $target $target $req_mps $have_mps_types
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in1 $file_in2 $file_out
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

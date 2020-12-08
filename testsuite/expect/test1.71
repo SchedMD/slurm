@@ -68,8 +68,7 @@ expect {
 		incr error_match
 	 }
 	timeout {
-		log_error "Program is not responding"
-		set exit_code 1
+		fail "Program is not responding"
 	}
 	eof {
 		wait

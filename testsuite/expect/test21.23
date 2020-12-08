@@ -36,10 +36,20 @@ set wk          "test$test_id-wckey"
 set wk2         "test$test_id-wckey2"
 set wk3         "test$test_id-wckey3"
 set timeout 60
-
+set reconfigured false
 set config_path [get_conf_path]
-fail_on_error "Error getting config path"
 set config_file $config_path/slurm.conf
+
+proc cleanup {} {
+	global reconfigured config_file bin_rm file_in
+
+	if {$reconfigured} {
+		restore_conf $config_file
+		reconfigure
+	}
+
+	exec $bin_rm -f $file_in
+}
 
 #
 # Check accounting config and bail if not found.
@@ -93,9 +103,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr add not responding"
 		slow_kill $sadd_pid
-		set exit_code 1
+		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
@@ -111,9 +120,8 @@ if {$aamatches != 1} {
 set sadd_pid [spawn $sacctmgr -i create user name=$user_name account=$ta cluster=$cn wckeys=$wk]
 expect {
 	 timeout {
-		log_error "sacctmgr add not responding"
 		slow_kill $sadd_pid
-		set exit_code 1
+		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
@@ -123,7 +131,6 @@ expect {
 #
 # Enable TrackWCKey
 #
-set reconfigured false
 if {[get_config_param "TrackWCKey"] ne "Yes"} {
 	log_info "Enabling TrackWCKey..."
 
@@ -131,7 +138,7 @@ if {[get_config_param "TrackWCKey"] ne "Yes"} {
 
 	exec $bin_sed -i /^\[\t\s\]*TrackWCKey\[\t\s\]*=/Id $config_file
 	exec $bin_echo TrackWCKey=Yes >> $config_file
-	reconfigure
+	incr exit_code [reconfigure]
 	set reconfigured true
 }
 
@@ -154,8 +161,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding"
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
@@ -173,8 +179,7 @@ spawn $sacct -p -j $job_id --format=wckey
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -200,8 +205,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -219,8 +223,7 @@ if {$job_id == 0} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -237,8 +240,7 @@ if {$job_id == 0} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -261,8 +263,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -280,8 +281,7 @@ if {$job_id == 0} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -299,8 +299,7 @@ if {$job_id == 0} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -323,9 +322,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
@@ -352,9 +350,8 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		log_error "sacctmgr add not responding"
 		slow_kill $saadd_pid
-		set exit_code 1
+		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
@@ -386,9 +383,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list not responding"
 		slow_kill $salist_pid
-		set exit_code 1
+		fail "sacctmgr list not responding"
 	}
 	eof {
 		wait
@@ -411,9 +407,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
@@ -438,22 +433,14 @@ expect {
 		log_error "WCKey = $wk3 should be deleted, but was not"
 	}
 	timeout {
-		log_error "sacctmgr list not responding"
 		slow_kill $salist_pid
-		set exit_code 1
+		fail "sacctmgr list not responding"
 	}
 	eof {
 		wait
 	}
 }
 
-if {$reconfigured} {
-	restore_conf $config_file
-	reconfigure
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

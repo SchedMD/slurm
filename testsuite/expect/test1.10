@@ -30,7 +30,6 @@ source ./globals
 
 set debug_get   0
 set debug_set "error"
-set exit_code   0
 set debug_expected "verbose"
 
 if [param_contains [get_config_param "LaunchParameters"] "test_exec"] {
@@ -49,15 +48,11 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 }
 
 if {$debug_get != $debug_expected} {
 	fail "Did not log at proper level ($debug_get != $debug_expected)"
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

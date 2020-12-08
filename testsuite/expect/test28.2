@@ -56,6 +56,11 @@ proc delete_file {} {
 	exec $bin_rm -f $file_script
 }
 
+proc cleanup {} {
+
+	delete_file
+}
+
 # delete any remaining output files
 delete_file
 
@@ -82,9 +87,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
-		exp_continue
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -118,9 +121,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
-		exp_continue
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -207,8 +208,6 @@ for {set index 0} {$index < $array_end} {incr index} {
 	}
 }
 
-if {$exit_code == 0} {
-	delete_file
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors"
 }

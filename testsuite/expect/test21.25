@@ -28,8 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 #
 # Use sacctmgr to create a cluster
 #
@@ -64,8 +62,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr add not responding"
-		set exit_code 1
+		fail "sacctmgr add not responding"
 	}
 	eof {
 		wait
@@ -76,8 +73,4 @@ if {$slurm_conf_matches != 2} {
 }
 if {$slurmdbd_conf_matches != 2} {
 	fail "sacctmgr failed to show slurmdbd configuration"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

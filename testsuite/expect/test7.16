@@ -26,8 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 #
 # Try to get allocation with bad credential
 #
@@ -71,8 +69,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -92,8 +89,3 @@ if {$job_id != 0} {
 		fail "Allocation granted with bad Munge credential. This happens rarely, when the Slurm test modifies a byte that Munge does not use"
 	}
 }
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
-

@@ -36,14 +36,14 @@ set config_path ""
 set cwd "[$bin_pwd]"
 
 proc cleanup { } {
-	global exit_code file_script reconfigure bin_cp cwd config_file test_id
+	global file_script reconfigure bin_cp cwd config_file test_id
 	restore_conf $config_file
 	file delete $file_script
 	reconfigure
 }
 
 proc get_single_node_feature { } {
-	global scontrol exit_code re_word_str
+	global scontrol re_word_str
 	set ret_features ""
 
 	log_user 1
@@ -62,9 +62,8 @@ proc get_single_node_feature { } {
 			# Don't exp_continue since we only care about one.
 		}
 		timeout {
-			log_error "scontrol not responding"
 			slow_kill $scon_pid
-			set exit_code 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -78,8 +77,6 @@ if {![is_super_user]} {
 }
 
 set config_path [get_conf_path]
-fail_on_error "Not able to get config_path"
-
 set config_file $config_path/slurm.conf
 
 save_conf $config_file
@@ -88,8 +85,9 @@ save_conf $config_file
 exec $bin_sed -i /^\[\t\s\]*MinJobAge\[\t\s\]*=/Id $config_file
 exec $bin_echo -e "\nMinJobAge=10" >> $config_file
 
-reconfigure
-fail_on_error "Not able to reconfigure"
+if [reconfigure] {
+	fail "Not able to reconfigure"
+}
 
 # Verify that MinJobAge was set
 regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
@@ -119,15 +117,16 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch timed out"
-		set exit_code 1
+		fail "sbatch timed out"
 	}
 	eof {
 		wait
 	}
 }
 
-fail_on_error "Error submitting job"
+if {$exit_code != 0} {
+	fail "Error submitting job"
+}
 
 # Wait enough time for the jobs to be in the controller
 set count 0
@@ -145,8 +144,9 @@ subtest -fail { $count == $count_exp } "Jobs have requested feature $node_featur
                                                 $count_exp $node_feature $count]
 
 # Cancel the jobs and wait for them to purged from the controller
-set exit_code [cancel_job $job_id]
-fail_on_error "Problem cancelling job $job_id"
+if [cancel_job $job_id] {
+	fail "Problem cancelling job $job_id"
+}
 
 set exit_code 1
 set sleep_time $min_job_age
@@ -161,12 +161,9 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol timed out"
-		set exit_code 1
+		fail "scontrol timed out"
 	}
 	eof {
 		wait
 	}
 }
-
-pass

@@ -31,7 +31,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set job_id      0
 
 set cpu_cnt     1
@@ -39,31 +38,21 @@ set mem_size    13
 set tmp_size    2
 set matches     0
 
-proc end_it {exit_code} {
-	global job_id test_id
+proc cleanup {} {
+	global job_id
 
 	if {$job_id} {
 		cancel_job $job_id
 	}
-
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
-}
-
-proc cleanup { } {
-	global job_id
-	cancel_job $job_id
 }
 
 proc sbatch_mem_error {arg} {
-	global sbatch test_id number global_exit_code job_id
+	global sbatch test_id number job_id
 
 	set matches 0
 	set job_id 0
 
-	set cmd "$sbatch -Jtest$test_id --wrap=hostname $arg -H"
+	set cmd "$sbatch -Jtest$test_id --wrap=hostname $arg"
 	set sbatch_pid [spawn {*}$cmd]
 	expect {
 		-re "Submitted batch job ($number)" {
@@ -73,58 +62,19 @@ proc sbatch_mem_error {arg} {
 			incr matches
 		}
 		timeout {
-			log_error "FAILURE: sbatch not responding"
 			slow_kill $sbatch_pid
-			end_it 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$job_id} {
-		log_error "job shouldn't have submitted (cmd:$cmd)"
-		end_it 1
+		fail "Job shouldn't have submitted (cmd:$cmd)"
 	}
 	if {$matches != 1} {
-		log_error "job should have errored with arg '$arg'"
-		end_it 1
+		fail "Job should have errored with arg '$arg'"
 	}
-}
-
-proc sbatch_mem_good {arg} {
-	global sbatch test_id number global_exit_code job_id
-
-	set matches 0
-	set job_id 0
-
-	set cmd "$sbatch -Jtest$test_id --wrap=hostname $arg -H"
-	set sbatch_pid [spawn {*}$cmd]
-	expect {
-		-re "Submitted batch job ($number)" {
-			set job_id $expect_out(1,string)
-		}
-		"sbatch: error: Invalid" {
-			incr matches
-		}
-		timeout {
-			log_error "FAILURE: sbatch not responding"
-			slow_kill $sbatch_pid
-			end_it 1
-		}
-		eof {
-			wait
-		}
-	}
-	if {!$job_id} {
-		log_error "job should have submitted (cmd:$cmd)"
-		end_it 1
-	}
-	if {$matches != 0} {
-		log_error "job shouldln't have errored with arg '$arg'"
-		end_it 1
-	}
-
-	cancel_job $job_id
 }
 
 #
@@ -136,13 +86,11 @@ expect {
 		set job_id $expect_out(1,string)
 	}
 	-re "uid=" {
-		log_error "salloc --hold option ineffective"
-		end_it 1
+		fail "salloc --hold option ineffective"
 	}
 	timeout {
-		log_error "salloc not responding"
 		slow_kill [expr 0 - $salloc_pid]
-		end_it 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
@@ -195,16 +143,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		end_it 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 5} {
-	log_error "Did not get constraints ($matches of 5)"
-	end_it 1
+	fail "Did not get constraints ($matches of 5)"
 }
 if {[cancel_job $job_id] != 0} {
 	fail "Unable to cancel job ($job_id)"
@@ -218,18 +164,3 @@ sbatch_mem_error "--mem-per-cpu="
 sbatch_mem_error "--mem-per-cpu=1gggggg"
 sbatch_mem_error "--mem-per-cpu=memory"
 sbatch_mem_error "--mem-per-cpu=-1"
-sbatch_mem_error "--mem-per-cpu=m"
-
-set options [list "m" "k" "g" "t"]
-foreach option $options {
-	sbatch_mem_good "--mem=1${option}"
-	sbatch_mem_good "--mem=1${option}b"
-
-	set upper [string toupper $option]
-	sbatch_mem_good "--mem=1$upper"
-	sbatch_mem_good "--mem=1${upper}B"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

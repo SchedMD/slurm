@@ -39,16 +39,17 @@ set mismatches   0
 # We start the node position of the array to 3 because the first 2 nodes will be
 # used for allocated state since scontrol cannot change node state to allocated
 set node_pos     2
+set tmp_id       0
+set tmp_sc       "test$test_id\_tmp_sc"
 array set node_list {}
 
 proc change_state { state nodes } {
-	global scontrol exit_code
+	global scontrol
 
 	spawn $scontrol update nodename=$nodes state=$state reason=test
 	expect {
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -57,21 +58,30 @@ proc change_state { state nodes } {
 }
 
 proc reset_state { } {
-
-	global scontrol node_list node_pos exit_code
+	global scontrol node_list node_pos
 
 	foreach num [array names node_list] {
 		spawn $scontrol update nodename=$node_list($num) state=idle
 		expect {
 			timeout {
-				log_error "scontrol is not responding"
-				set exit_code 1
+				fail "scontrol is not responding"
 			}
 			eof {
 				wait
 			}
 		}
 	}
+}
+
+proc cleanup {} {
+	global tmp_sc
+
+	#
+	# Reset node states back to idle
+	#
+	reset_state
+
+	file delete $tmp_sc
 }
 
 set partition [default_partition]
@@ -87,8 +97,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sinfo is not responding"
-		set exit_code 1
+		fail "sinfo is not responding"
 	}
 	eof  {
 		wait
@@ -117,8 +126,7 @@ expect {
 		}
 	}
 	timeout {
-		log_error "sinfo is not responding"
-		set exit_code 1
+		fail "sinfo is not responding"
 	}
 	eof {
 		wait
@@ -135,8 +143,6 @@ set node_list_str [join [dict values [array get node_list]] ","]
 # Submit a job to filter for allocated job state
 #
 log_info "Testing ALLOCATED state"
-set tmp_id 0
-set tmp_sc "test$test_id\_tmp_sc"
 make_bash_script $tmp_sc "sleep 20"
 spawn $sbatch -p$partition -w$node_list(0),$node_list(1) -o/dev/null -n[expr 2 * $num_cpus] --exclusive $tmp_sc
 expect {
@@ -145,8 +151,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -188,8 +193,7 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "sinfo not responding"
-		set exit_code 1
+		fail "sinfo not responding"
 	}
 	eof {
 		wait
@@ -246,8 +250,7 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "sinfo not responding"
-		set exit_code 1
+		fail "sinfo not responding"
 	}
 	eof {
 		wait
@@ -291,8 +294,7 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "sinfo not responding"
-		set exit_code 1
+		fail "sinfo not responding"
 	}
 	eof {
 		wait
@@ -333,8 +335,7 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "sinfo not responding"
-		set exit_code 1
+		fail "sinfo not responding"
 	}
 	eof {
 		wait
@@ -440,13 +441,6 @@ if {$drain_cnt != 2} {
 	fail "drain_cnt($drain_cnt) != 2"
 }
 
-#
-# Reset node states back to idle
-#
-reset_state
-
-if {$exit_code == 0} {
-	file delete $tmp_sc
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

@@ -48,8 +48,7 @@ expect {
 		fail "srun is OK with a deadline too old"
 	}
 	timeout {
-		log_error "srun not responding"
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait

@@ -35,6 +35,12 @@ set file_script      "test$test_id.sh"
 set job_id           0
 set timeout          $max_job_delay
 
+proc cleanup {} {
+	global bin_rm file_in file_out file_script
+
+	exec $bin_rm -f $file_in $file_out $file_script
+}
+
 #
 # Build input script file
 #
@@ -55,8 +61,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -82,8 +87,6 @@ if {$matches != 1} {
 	fail "Sbatch failed to process --input"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $file_script
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

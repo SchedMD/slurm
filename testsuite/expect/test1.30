@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set error 0
 set srun_opts "-c1"
 
@@ -52,9 +51,7 @@ for {set node_cnt 1} {$node_cnt < $max_node_cnt} {set node_cnt [expr $node_cnt *
 			exp_continue
 		}
 		-re "Unable to contact" {
-			log_error "Slurm appears to be down"
-			set exit_code 1
-			exp_continue
+			fail "Slurm appears to be down"
 		}
 		-re "Unable to allocate resources" {
 			log_debug "This error is expected, no worries"
@@ -72,9 +69,8 @@ for {set node_cnt 1} {$node_cnt < $max_node_cnt} {set node_cnt [expr $node_cnt *
 			exp_continue
 		}
 		timeout {
-			log_error "srun not responding"
 			slow_kill $srun_pid
-			set exit_code 1
+			fail "srun not responding"
 		}
 		eof {
 			wait
@@ -84,8 +80,4 @@ for {set node_cnt 1} {$node_cnt < $max_node_cnt} {set node_cnt [expr $node_cnt *
 
 if {$error == 1} {
 	fail "Some error happened"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

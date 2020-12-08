@@ -29,6 +29,13 @@ source ./globals
 set exit_code     0
 set array_size    3
 set top_array_task_id [expr $array_size - 1]
+set job_id        0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 if {$array_size > [get_config_param "MaxArraySize"]} {
 	skip "MaxArraySize is too small"
@@ -37,7 +44,6 @@ if {$array_size > [get_config_param "MaxArraySize"]} {
 #
 # Submit a job array for first dependency test
 #
-set job_id 0
 spawn $sbatch -N1 -t1 -a 0-$top_array_task_id -o /dev/null -e /dev/null --wrap "sleep \$(( ( RANDOM % 10 ) + 1 ))"
 expect {
 	-re "Submitted batch job ($number)" {
@@ -45,8 +51,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -68,9 +73,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -96,8 +100,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -119,9 +122,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -131,7 +133,6 @@ if {$match_job_state != $array_size} {
 	fail "Dependent job not completed ($match_job_state != $array_size)"
 }
 
-cancel_job $job_id
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set version     0
 
 #
@@ -42,8 +41,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding"
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
@@ -52,7 +50,4 @@ expect {
 
 if {$version != 1} {
 	fail "Did not get proper salloc version number"
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

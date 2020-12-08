@@ -28,8 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 if {[file executable $pbsnodes] == 0} {
 	skip "$pbsnodes does not exists"
 }
@@ -42,8 +40,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "pbsnodes not responding"
-		set exit_code 1
+		fail "pbsnodes not responding"
 	}
 	eof {
 		wait
@@ -51,8 +48,4 @@ expect {
 }
 if {$matches == 0} {
 	fail "pbsnodes output failure"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

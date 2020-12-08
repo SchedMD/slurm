@@ -34,6 +34,16 @@ set file_in_fini  "test$test_id.fini_input"
 set file_in_time  "test$test_id.time_input"
 set file_out_fini "test$test_id.fini_output"
 set file_out_time "test$test_id.time_output"
+set job_id 0
+
+proc cleanup {} {
+	global bin_rm file_in file_in_fini file_in_time job_id
+
+	if {$job_id != 0} {
+		cancel_job $job_id
+	}
+	exec $bin_rm -f $file_in $file_in_fini $file_in_time
+}
 
 #
 # get my uid and clear any vestigial triggers
@@ -46,7 +56,6 @@ exec $strigger --clear --quiet --user=$uid
 #
 make_bash_script $file_in "$srun sleep 60"
 
-set job_id 0
 spawn $sbatch --output=/dev/null -t2 $file_in
 expect {
 	-re "Submitted batch job ($number)" {
@@ -89,9 +98,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "strigger not responding"
 		slow_kill $strigger_pid
-		set exit_code 1
+		fail "strigger not responding"
 	}
 	eof {
 		wait
@@ -115,9 +123,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "strigger not responding"
 		slow_kill $strigger_pid
-		set exit_code 1
+		fail "strigger not responding"
 	}
 	eof {
 		wait
@@ -136,9 +143,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "strigger not responding"
 		slow_kill $strigger_pid
-		set exit_code 1
+		fail "strigger not responding"
 	}
 	eof {
 		wait
@@ -222,11 +228,7 @@ if {[wait_for_file $file_out_fini] != 0} {
 	}
 }
 
-cancel_job $job_id
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_in_fini $file_in_time
-	exec $bin_rm -f $file_out_fini $file_out_time
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 

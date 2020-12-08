@@ -30,6 +30,15 @@ set exit_code   0
 set file_script "test$test_id.bash"
 set job_id      0
 
+proc cleanup {} {
+	global job_id file_script
+
+	if {$job_id != 0} {
+		cancel_job $job_id
+	}
+	file delete $file_script
+}
+
 make_bash_script $file_script "
 if \[ \$SLURM_ARRAY_TASK_ID == 2 \]
 then
@@ -50,8 +59,7 @@ expect {
 		fail "sbatch did not submit jobs"
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -74,8 +82,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "squeue not responding"
-		set exit_code 1
+		fail "squeue not responding"
 	}
 	eof {
 		wait
@@ -91,8 +98,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "squeue not responding"
-		set exit_code 1
+		fail "squeue not responding"
 	}
 	eof {
 		wait
@@ -114,20 +120,16 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "squeue not responding"
-		set exit_code 1
+		fail "squeue not responding"
 	}
 	eof {
 		wait
 	}
 }
-cancel_job $job_id
 if {$match != 3} {
 	fail "Failed to requeue desired count of job array elements ($match != 3)"
 }
 
-if {$exit_code == 0} {
-	file delete $file_script
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

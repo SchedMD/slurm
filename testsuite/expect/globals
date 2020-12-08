@@ -51,11 +51,6 @@ if {[info procs exit] eq "exit"} {
 	return
 }
 
-#
-# Include private functions and variables
-#
-source ./globals_private
-
 global sacctmgr sacct salloc sattach sbatch sbcast scancel scontrol sinfo
 global smd squeue sreport srun sstat strigger
 
@@ -442,32 +437,6 @@ proc pass { } {
 
 	# _test_fini will handle cleanup and print the success message.
 	_test_fini 0
-}
-
-
-################################################################
-#
-# NAME
-#	fail_on_error - fails if exit_code is non-zero
-#
-# SYNOPSIS
-#	fail_on_error message
-#
-# DESCRIPTION
-#	If exit_code global variable is non-zero it calls fail with the
-#	message.
-#
-# NOTE
-#	DO NOT call this within your local cleanup procedure.
-#
-################################################################
-
-proc fail_on_error { message } {
-	global exit_code
-
-	if {$exit_code != 0} {
-		fail "$message"
-	}
 }
 
 
@@ -909,7 +878,6 @@ proc run_command args {
 ################################################################
 
 proc run_command_output args {
-	global exit_code
 
 	set result [run_command {*}$args]
 
@@ -966,7 +934,6 @@ proc run_command_output args {
 ################################################################
 
 proc run_command_status args {
-	global exit_code
 
 	set result [run_command {*}$args]
 
@@ -1580,6 +1547,159 @@ proc wait_for_file args {
 ################################################################
 #
 # NAME
+#	_wait_for_single_job - waits for a job to reach the desired state
+#
+# SYNOPSIS
+#	_wait_for_single_job ?options? job_id desired_state
+#
+# DESCRIPTION
+#	Wait for a previously submitted Slurm job to reach the desired state.
+#
+# OPTIONS
+#	-timeout <integer_number>
+#		time in seconds to wait for the job to be in the desired state
+#		before timing out (default is 360)
+#	-pollinterval <integer_number>
+#		time in seconds between each job state check (default is 1)
+#
+# ARGUMENTS
+#	job_id
+#		The Slurm job id of a job we want to wait for.
+#	desired_state
+#		The state you want the job to attain before
+#		returning.  Currently supports:
+#			DONE any terminated state
+#			PENDING job is pending
+#			RUNNING job is running
+#			SPECIAL_EXIT
+#			SUSPENDED job is suspended
+#
+# RETURN VALUE
+#	RETURN_SUCCESS, or non-zero on error.
+#
+# NOTE: We sleep for two seconds before replying that a job is
+# done to give time for I/O completion (stdout/stderr files)
+#
+################################################################
+
+proc _wait_for_single_job args {
+	global scontrol
+
+	set timeout       360
+	set poll_interval 1
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-time*  {set args [lassign $args - timeout]}
+			-poll*  {set args [lassign $args - poll_interval]}
+			-*      {fail "Unknown option: [lindex $args 0]"}
+			default break
+		}
+	}
+	set argument_count [llength $args]
+	if {$argument_count != 2} {
+		fail "Invalid number of arguments ($argument_count): $args"
+	} else {
+		lassign $args job_id desired_state
+	}
+
+	# First verify that desired_state is supported
+	switch $desired_state {
+		"DONE" {}
+		"PENDING" {}
+		"RUNNING" {}
+		"SPECIAL_EXIT" {}
+		"SUSPENDED" {}
+		default {
+			log_warn "Invalid desired state: $desired_state"
+			return $::RETURN_ERROR
+		}
+	}
+
+	if {$job_id == 0} {
+		log_warn "Invalid job ID: $job_id"
+		return $::RETURN_ERROR
+	}
+
+	set my_delay    0
+	while 1 {
+		set fd [open "|$scontrol -o show job $job_id"]
+		gets $fd line
+		catch {close $fd}
+		if {[regexp {JobState\s*=\s*(\w+)} $line foo state] != 1} {
+			set state "NOT_FOUND"
+		}
+
+		switch $state {
+			"NOT_FOUND" -
+			"BOOT_FAIL" -
+			"CANCELLED" -
+			"COMPLETED" -
+			"DEADLINE" -
+			"FAILED" -
+			"NODE_FAIL" -
+			"OUT_OF_MEMORY" -
+			"PREEMPTED" -
+			"TIMEOUT" {
+				if {[string compare $desired_state "DONE"] == 0} {
+					log_debug "Job $job_id is DONE ($state)"
+					sleep 2
+					return $::RETURN_SUCCESS
+				}
+				if {[string compare $desired_state "RUNNING"] == 0} {
+					log_debug "Job $job_id is $state, but we wanted RUNNING"
+				}
+				if {[string compare $desired_state "SUSPENDED"] == 0} {
+					log_debug "Job $job_id is $state, but we wanted SUSPENDED"
+				}
+				return $::RETURN_ERROR
+			}
+			"PENDING" {
+				if {[string compare $desired_state "PENDING"] == 0} {
+					log_debug "Job $job_id is PENDING"
+					return $::RETURN_SUCCESS
+				}
+				log_debug "Job $job_id is in state $state, desire $desired_state"
+			}
+			"RUNNING" {
+				if {[string compare $desired_state "RUNNING"] == 0} {
+					log_debug "Job $job_id is RUNNING"
+					return $::RETURN_SUCCESS
+				}
+				log_debug "Job $job_id is in state $state, desire $desired_state"
+			}
+			"SPECIAL_EXIT" {
+				if {[string compare $desired_state "SPECIAL_EXIT"] == 0} {
+					log_debug "Job $job_id is SPECIAL_EXIT"
+					return $::RETURN_SUCCESS
+				}
+				log_debug "Job $job_id is in state $state, desire $desired_state"
+			}
+			"SUSPENDED" {
+				if {[string compare $desired_state "SUSPENDED"] == 0} {
+					log_debug "Job $job_id is SUSPENDED"
+					return $::RETURN_SUCCESS
+				}
+				log_debug "Job $job_id is in state $state, desire $desired_state"
+			}
+			default {
+				log_debug "Job $job_id is in state $state, desire $desired_state"
+			}
+		}
+
+		if { $my_delay > $timeout } {
+			log_warn "Timeout waiting for job state $desired_state"
+			return $::RETURN_TIMEOUT
+		}
+
+		exec sleep $poll_interval
+		set my_delay [expr $my_delay + $poll_interval]
+	}
+}
+
+
+################################################################
+#
+# NAME
 #	wait_for_job - waits for job to be in desired state
 #
 # SYNOPSIS
@@ -2177,7 +2297,7 @@ proc get_config { } {
 	set output [run_command_output -fail -nolog "$scontrol show config"]
 
 	foreach line [split $output "\n"] {
-		if {[regexp {^(\w+) += (.*)$} $line {} param_name param_value] == 1} {
+		if {[regexp {^(\S+) += (.*)$} $line {} param_name param_value] == 1} {
 			dict set config_dict $param_name $param_value
 		}
 	}
@@ -2587,7 +2707,7 @@ proc check_config_select { type } {
 ################################################################
 
 proc get_total_cpus {} {
-	global sinfo scontrol re_word_str exit_code
+	global sinfo scontrol re_word_str
 
 	set partition [default_partition]
 	set cpu_cnt 0
@@ -2602,8 +2722,7 @@ proc get_total_cpus {} {
 			exp_continue
 		}
 		timeout {
-			log_error "sinfo not responding"
-			set exit_code 1
+			fail "sinfo not responding"
 		}
 		eof {
 			wait
@@ -3021,7 +3140,7 @@ proc get_suffix { hostname } {
 ################################################################
 
 proc check_acct_associations { } {
-	global sacctmgr number re_word_str exit_code
+	global sacctmgr number re_word_str
 
 	set rc true
 	log_user 0
@@ -3067,9 +3186,8 @@ proc check_acct_associations { } {
 		      exp_continue
 	       }
 	       timeout {
-			log_error "sacctmgr add not responding"
 			slow_kill $s_pid
-			set exit_code 1
+			fail "sacctmgr add not responding"
 	       }
 	       eof {
 		      wait
@@ -3147,7 +3265,7 @@ proc get_job_acct_freq { } {
 ################################################################
 
 proc get_admin_level { } {
-	global sacctmgr re_word_str re_word_str bin_id exit_code
+	global sacctmgr re_word_str re_word_str bin_id
 
 	set admin_level ""
 	set user_name ""
@@ -3183,55 +3301,6 @@ proc get_admin_level { } {
 	log_user 1
 
 	return $admin_level
-}
-
-
-################################################################
-#
-# NAME
-#	get_control_machine - gets the ControlMachine parameter
-#
-# SYNOPSIS
-#	get_control_machine
-#
-# RETURN VALUE
-#	ControlMachine value
-#
-################################################################
-
-proc get_control_machine { } {
-	global scontrol re_word_str exit_code
-	#
-	# Use scontrol to find the ControlMachine
-	#
-	log_user 0
-	set control_machine ""
-	set scon_pid [spawn -noecho $scontrol show config]
-	expect {
-		# We need to handle two possible outputs of SlurmctldHost[0]:
-		# a) hostname
-		# b) hostname(IP)
-		-re "SlurmctldHost.0. *= ($re_word_str)" {
-			set par_idx [expr [string last "(" $expect_out(1,string)] -1]
-			if { $par_idx == -2 } {
-				set control_machine $expect_out(1,string)
-			} else {
-				set control_machine [string range $expect_out(1,string) 0 $par_idx]
-			}
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol not responding"
-			slow_kill $scon_pid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	log_user 1
-	return $control_machine
 }
 
 
@@ -3522,93 +3591,6 @@ proc check_config_node_mem { } {
 ################################################################
 #
 # NAME
-#	slurmctld_plug_stack_nonstop - verifies that the SlurmctldPlugstack is set to nonstop
-#
-# SYNOPSIS
-#	slurmctld_plug_stack_nonstop
-#
-# DESCRIPTION
-#	Use scontrol to determine that the SlurmctldPlugstack is set to nonstop.
-#
-# RETURN VALUE
-#	1 if the value is set to nonstop.
-#
-################################################################
-
-proc slurmctld_plug_stack_nonstop { } {
-	global scontrol re_word_str exit_code
-
-	log_user 0
-	set nonstop_enforce 0
-	set scon_pid [spawn -noecho $scontrol show config]
-	expect {
-		-re "SlurmctldPlugstack *= ($re_word_str)" {
-			if {[string first $expect_out(1,string) "nonstop"] != -1} {
-				set nonstop_enforce 1
-			}
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol not responding"
-			slow_kill $scon_pid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	return $nonstop_enforce
-}
-
-
-################################################################
-#
-# NAME
-#	job_submit_all_partitions - determines if the JobSubmitPlugins includes "all_partitions"
-#
-# SYNOPSIS
-#	job_submit_all_partitions
-#
-# DESCRIPTION
-#	Use scontrol to determine if the JobSubmitPlugins
-#	includes "all_partitions".
-#
-# RETURN VALUE
-#	1 if the value is set to nonstop.
-#
-################################################################
-
-proc job_submit_all_partitions { } {
-	global scontrol re_word_str exit_code
-
-	log_user 0
-	set all_partitions 0
-	set scon_pid [spawn -noecho $scontrol show config]
-	expect {
-		-re "JobSubmitPlugins *= ($re_word_str)" {
-			if {[string first $expect_out(1,string) "all_partitions"] != -1} {
-				set all_partitions 1
-			}
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol not responding"
-			slow_kill $scon_pid
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	return $all_partitions
-}
-
-
-################################################################
-#
-# NAME
 #	wait_for_node - waits for nodes in a partition to reach a certain state
 #
 # SYNOPSIS
@@ -3730,8 +3712,7 @@ proc wait_for_node args {
 #####################################################################
 
 proc available_nodes_hostnames { partition {also_power_save false} } {
-
-	global sinfo re_word_str exit_code
+	global sinfo re_word_str
 
 	log_user 0
 	set idle_nodelist ""
@@ -3754,8 +3735,7 @@ proc available_nodes_hostnames { partition {also_power_save false} } {
 			exp_continue
 		}
 		timeout {
-			log_error "sinfo is not responding"
-			set exit_code 1
+			fail "sinfo is not responding"
 		}
 		eof {
 			wait
@@ -3810,9 +3790,8 @@ proc get_partition_nodes {partition states} {
 			exp_continue
 		}
 		timeout {
-			log_error "sinfo not responding"
 			slow_kill $sinfo_pid
-			set exit_code 1
+			fail "sinfo not responding"
 		}
 		eof {
 			wait
@@ -3838,7 +3817,7 @@ proc get_partition_nodes {partition states} {
 #####################################################################
 
 proc set_partition_maximum_time_limit {partition limit} {
-	global scontrol exit_code
+	global scontrol
 
 	if {[string length $partition] == 0} {
 		set partition [default_partition]
@@ -3873,10 +3852,6 @@ proc set_partition_maximum_time_limit {partition limit} {
 		log_error "Unable to update partition MaxTime, got $maxtime, wanted $limit"
 		return $::RETURN_ERROR
 	}
-	if { $exit_code != 0 } {
-		log_error "set_partition_maximum_time_limit: Unexpected error."
-		return $::RETURN_ERROR
-	}
 
 	return $::RETURN_SUCCESS
 }
@@ -3899,8 +3874,7 @@ proc set_partition_maximum_time_limit {partition limit} {
 #####################################################################
 
 proc get_partition_maximum_time_limit {partition} {
-
-	global sinfo number exit_code
+	global sinfo number
 
 	if {[string length $partition] == 0} {
 		set partition [default_partition]
@@ -3941,9 +3915,8 @@ proc get_partition_maximum_time_limit {partition} {
 			exp_continue
 		}
 		timeout {
-			log_error "sinfo not responding"
 			slow_kill $sinfo_pid
-			set exit_code 1
+			fail "sinfo not responding"
 		}
 		eof {
 			wait
@@ -3973,7 +3946,7 @@ proc get_partition_maximum_time_limit {partition} {
 ################################################################
 
 proc get_partition_default_time_limit { {partition ""} } {
-	global sinfo number exit_code
+	global sinfo number
 
 	if {[string length $partition] == 0} {
 		set partition [default_partition]
@@ -4014,9 +3987,8 @@ proc get_partition_default_time_limit { {partition ""} } {
 			exp_continue
 		}
 		timeout {
-			log_error "sinfo not responding"
 			slow_kill $sinfo_pid
-			set exit_code 1
+			fail "sinfo not responding"
 		}
 		eof {
 			wait
@@ -4069,9 +4041,8 @@ proc get_node_cores {node} {
 			exp_continue
 		}
 		timeout {
-			log_error "sinfo not responding"
 			slow_kill $sinfo_pid
-			set exit_code 1
+			fail "sinfo not responding"
 		}
 		eof {
 			wait
@@ -4106,8 +4077,8 @@ proc get_node_cores {node} {
 #####################################################################
 
 proc get_node_cpus {node} {
-
 	global scontrol number
+
 	set nthreads -1
 	set nsockets 0
 	set ncores 0
@@ -4137,9 +4108,8 @@ proc get_node_cpus {node} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
 			slow_kill $scontrol_pid
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -4209,9 +4179,8 @@ proc get_part_total_cores {part states} {
 			exp_continue
 		}
 		timeout {
-			log_error "sinfo not responding"
 			slow_kill $sinfo_pid
-			set exit_code 1
+			fail "sinfo not responding"
 		}
 		eof {
 			wait
@@ -4419,16 +4388,14 @@ proc get_het_job_ids { jobid {use_offset 0}} {
 #		The cluster to reconfigure
 #
 # RETURN VALUE
-#	void
-#
-# ENVIRONMENT
-#	Sets exit_code to 1 on failure.
+#	RETURN_SUCCESS on success, otherwise RETURN_ERROR
 #
 ################################################################
 
 proc reconfigure { {cluster ""} } {
-	global exit_code scontrol timeout
+	global scontrol timeout
 
+	set exit_code $::RETURN_SUCCESS
 	#
 	# Increase timeout just in case we're running under valgrind
 	#
@@ -4442,17 +4409,16 @@ proc reconfigure { {cluster ""} } {
 	expect {
 		-re "slurm_reconfigure error: Invalid user id" {
 			log_error "Invalid user id"
-			set exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		-re "Error|error" {
 			log_error "scontrol reconfigure error"
-			set exit_code 1
+			set exit_code $::RETURN_ERROR
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -4463,6 +4429,7 @@ proc reconfigure { {cluster ""} } {
 	#
 	sleep 5
 	set timeout $save_timeout
+	return $exit_code
 }
 
 
@@ -4655,13 +4622,10 @@ proc in_fed {} {
 #	on that state if it's a hetjob and het_job option enabled, false
 #	otherwise.
 #
-# ENVIRONMENT
-#	Also sets exit_code to 1 if there are some error in the called commands.
-#
 ################################################################
 
 proc check_job_state { job state {het_job 0}} {
-	global scontrol exit_code
+	global scontrol
 
 	set jid_list ""
 	if { $het_job } {
@@ -4681,9 +4645,7 @@ proc check_job_state { job state {het_job 0}} {
 				incr state_match
 			}
 			timeout {
-				log_error "scontrol not responding"
-				set exit_code 1
-				return false
+				fail "scontrol not responding"
 			}
 			eof {
 				wait
@@ -5117,49 +5079,12 @@ proc cuda_count { cuda_string } {
 ################################################################
 
 proc get_conf_path { } {
-	global scontrol re_word_str eol exit_code
+	global scontrol re_word_str eol
 
 	if [regexp {(.*)/slurm.conf} [get_config_param "SLURM_CONF"] {} config_dir] {
 		return $config_dir
 	} else {
 		fail "Unable to determine config dir"
-	}
-}
-
-
-################################################################
-#
-# NAME
-#	copy_conf - backs up the slurm.conf file
-#
-# SYNOPSIS
-#	copy_conf config_path cwd
-#
-# DESCRIPTION
-#	Copy the slurm.conf file to the a new file called
-#	slurm.conf.orig in the current working directory
-#
-# ARGUMENTS
-#	config_path
-#		The path to slurm.conf
-#	cwd
-#		The full path of the current working directory
-#
-################################################################
-
-proc copy_conf { config_path cwd } {
-	global bin_cp bin_rm exit_code
-
-	exec $bin_rm -fr $cwd/slurm.conf.orig
-	spawn $bin_cp -v $config_path/slurm.conf $cwd/slurm.conf.orig
-	expect {
-		timeout {
-			log_error "slurm.conf was not copied"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
 	}
 }
 
@@ -5287,33 +5212,9 @@ proc restore_conf { file_name } {
 ################################################################
 
 proc have_nvml { } {
-	global bin_grep number exit_code config_h
+	global bin_grep number config_h
 
-	set grep_fail 0
-	set have_nvml false
-	log_user 0
-	spawn $bin_grep "HAVE_NVML" $config_h
-	expect {
-		-re "HAVE_NVML 1" {
-			set have_nvml true
-			exp_continue
-		}
-		timeout {
-			set grep_fail 1
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	if {$grep_fail == 1} {
-		log_warn "Could not grep $config_h for HAVE_NVML"
-		set have_nvml false
-	}
-
-	return $have_nvml
+	return [expr [run_command_status -none -nolog "$bin_grep \"HAVE_NVML 1\" $config_h"] == 0]
 }
 
 
@@ -5334,8 +5235,7 @@ proc delete_part { part_name } {
 	spawn $scontrol delete partition=$part_name
 	expect {
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -5358,33 +5258,9 @@ proc delete_part { part_name } {
 ################################################################
 
 proc have_lua { } {
-	global bin_grep number exit_code config_h
+	global bin_grep config_h
 
-	set grep_fail 0
-	set have_lua false
-	log_user 0
-	spawn $bin_grep "HAVE_LUA" $config_h
-	expect {
-		-re "HAVE_LUA 1" {
-			set have_lua true
-			exp_continue
-		}
-		timeout {
-			set grep_fail 1
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	if {$grep_fail == 1} {
-		log_error "Could not grep $config_h for HAVE_LUA"
-		set have_lua false
-	}
-
-	return $have_lua
+	return [expr [run_command_status -none -nolog "$bin_grep HAVE_LUA $config_h"] == 0]
 }
 
 
@@ -5583,8 +5459,7 @@ proc create_part { part_name num_nodes_in } {
 			exp_continue
 		}
 		timeout {
-			log_err "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -5655,8 +5530,7 @@ proc create_part { part_name num_nodes_in } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -6003,7 +5877,7 @@ proc submit_job args {
 ################################################################################
 
 proc compile_against_libslurm { test_prog {use_full 0} {build_args ""} } {
-	global slurm_dir bin_cc src_dir build_dir exit_code bin_chmod
+	global slurm_dir bin_cc src_dir build_dir bin_chmod
 
 	if {$use_full} {
 		set libfile "libslurmfull.so"
@@ -6036,11 +5910,11 @@ proc compile_against_libslurm { test_prog {use_full 0} {build_args ""} } {
 	catch {exec {*}$build_cmd} out_str out_dict
 	if {[dict get $out_dict -code]} {
 		log_error $out_str
-		set exit_code 1
-		return
+		return $::RETURN_ERROR
 	}
 
 	exec $bin_chmod 700 $test_prog
+	return $::RETURN_SUCCESS
 }
 
 

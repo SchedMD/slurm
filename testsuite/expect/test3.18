@@ -33,7 +33,6 @@
 source ./globals
 
 set authorized     1
-set exit_code      0
 set file_in        "test$test_id.input"
 
 if {![is_super_user]} {
@@ -54,9 +53,8 @@ expect {
                 exp_continue
         }
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -78,8 +76,7 @@ expect {
                 exp_continue
         }
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -102,8 +99,7 @@ expect {
             exp_continue
         }
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -111,8 +107,4 @@ expect {
 }
 if {$matches != 1} {
 	fail "Node GRES change request not rejected. Configuration of node $host_name is likely left in a bad state"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

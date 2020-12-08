@@ -32,12 +32,17 @@ set array_size    4
 set file_script   "test$test_id.sh"
 set job_id        0
 
+proc cleanup {} {
+	global bin_rm file_script
+
+	exec $bin_rm -f $file_script
+}
+
 if {[get_config_param "MaxArraySize"] < [expr $array_size + 1]} {
 	skip "MaxArraySize is to small"
 }
 
 proc check_ids { job } {
-
 	global scontrol array_size exit_code number
 
 	for {set index 0} {$index<$array_size} {incr index} {
@@ -49,8 +54,7 @@ proc check_ids { job } {
 				exp_continue
 			}
 			timeout {
-				log_error "scontrol is not responding"
-				set exit_code 1
+				fail "scontrol is not responding"
 			}
 			eof {
 				wait
@@ -76,8 +80,7 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -90,8 +93,6 @@ if {$job_id != 0} {
 	}
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_script
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

@@ -33,6 +33,12 @@ set test_srun   "test$test_id.test_srun"
 set run_timer   2
 set exit_code   0
 
+proc cleanup {} {
+	global bin_rm test_timer test_srun file_in
+
+	exec $bin_rm -f $test_timer $test_srun $file_in
+}
+
 set nb_nodes [get_node_cnt_in_part]
 if {[check_config_select "linear"]} {
 	if {$nb_nodes < 2} {
@@ -120,8 +126,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun is not responding"
-		set exit_code 1
+		fail "srun is not responding"
 	}
 	eof {
 		wait
@@ -139,8 +144,6 @@ if {$fini_match != $run_timer} {
 	fail "srun did not finish the program submitted ($fini_match != $run_timer)"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $test_timer $test_srun $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

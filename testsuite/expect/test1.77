@@ -27,7 +27,6 @@
 ############################################################################
 source ./globals
 
-set exit_code	0
 set job_id      0
 set number      "\[0-9\]+"
 set name        "banana"
@@ -98,9 +97,7 @@ expect {
 if {$found != 1} {
 	fail "Could not find SLURM_JOB_NAME=banana"
 }
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_out
-}
+exec $bin_rm -f $file_out
 exec rm -f slurm-$job_id.out
 
 #
@@ -125,6 +122,3 @@ if {$found != 1} {
 	fail "Could not find SLURM_JOB_NAME=banana"
 }
 exec rm -f $file_in
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

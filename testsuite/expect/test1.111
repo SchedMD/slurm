@@ -35,7 +35,7 @@ set job_id      0
 #
 proc endit { } {
 	global exit_code
-	reconfigure
+	incr exit_code [reconfigure]
 	if {$exit_code != 0} {
 		fail "Exiting due to previous errors with exit code $exit_code"
 	}

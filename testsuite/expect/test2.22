@@ -30,6 +30,13 @@ set script             "test$test_id.bash"
 set job_id             0
 set exit_code          0
 
+proc cleanup {} {
+	global bin_rm script job_id
+
+	cancel_job $job_id
+	exec $bin_rm -f $script
+}
+
 regexp "($number)" [get_config_param "MinJobAge"] {} min_age
 if {$min_age < 10} {
 	skip "MinJobAge too low for this test ($min_age < 10)"
@@ -41,7 +48,6 @@ exec $bin_rm -f $script
 make_bash_script $script "$bin_sleep 20"
 
 proc check_hold { job } {
-
 	global scontrol exit_code
 
 	set hold 0
@@ -52,8 +58,7 @@ proc check_hold { job } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -67,7 +72,6 @@ proc check_hold { job } {
 }
 
 proc check_release { job } {
-
 	global scontrol number exit_code
 
 	set priority 0
@@ -78,8 +82,7 @@ proc check_release { job } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -99,8 +102,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1get_min_job_age
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -120,8 +122,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 spawn $scontrol requeuehold $job_id
 expect {
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -140,8 +141,7 @@ if {![check_job_state $job_id PENDING]} {
 spawn $scontrol release $job_id
 expect {
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -150,10 +150,6 @@ expect {
 
 check_release $job_id
 
-cancel_job $job_id
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $script
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

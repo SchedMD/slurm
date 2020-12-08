@@ -26,8 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code	0
-
 if {[get_config_param "FrontendName"] ne "MISSING"} {
         skip "This test is incompatible with front-end systems"
 } else {
@@ -43,15 +41,12 @@ if {$nb_nodes < 3} {
 	skip "Need 3 or more nodes in default partition"
 }
 
-proc end_it { exit_code } {
+proc cleanup {} {
 	global het_job_id scancel
+
 	if {$het_job_id > 0} {
 		exec $scancel $het_job_id
 	}
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
 }
 
 proc check { id tl matches } {
@@ -66,16 +61,14 @@ proc check { id tl matches } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			end_it 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$count != $matches} {
-		log_error "scontrol failure ($count != 3)"
-		end_it 1
+		fail "scontrol failure ($count != 3)"
 	}
 }
 
@@ -96,16 +89,14 @@ expect {
 		#log_debug "Job initiated"
 	}
 	timeout {
-		log_error "salloc : allocation not granted in $timeout seconds"
-		end_it 1
+		fail "salloc : allocation not granted in $timeout seconds"
 	}
 	eof {
 		wait
 	}
 }
 if {$het_job_id == 0} {
-	log_error "salloc failure"
-	end_it 1
+	fail "salloc failure"
 }
 
 expect *
@@ -128,5 +119,3 @@ check $het_job_id+2 7 1
 
 check $het_job_id+1 6 1
 check $het_job_id+0 5 1
-
-end_it 0

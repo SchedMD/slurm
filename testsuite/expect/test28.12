@@ -30,6 +30,15 @@ set exit_code   0
 set file_script "test$test_id.bash"
 set job_id      0
 
+proc cleanup {} {
+	global job_id file_script
+
+	if {$job_id != 0} {
+		cancel_job $job_id
+	}
+	file delete $file_script
+}
+
 regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
 if {$min_job_age > 60} {
 	skip "MinJobAge too large for this test ($min_job_age > 60)"
@@ -55,8 +64,7 @@ expect {
 		fail "sbatch did not submit jobs"
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -87,8 +95,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "squeue not responding"
-		set exit_code 1
+		fail "squeue not responding"
 	}
 	eof {
 		wait
@@ -98,9 +105,6 @@ if {$match != 1} {
 	fail "Head job not found"
 }
 
-cancel_job $job_id
-if {$exit_code == 0} {
-	file delete $file_script
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

@@ -31,7 +31,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set matches     0
 set tmp_dir	"/tmp"
 
@@ -49,9 +48,8 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -60,7 +58,4 @@ expect {
 
 if {$matches != 1} {
 	fail "Srun failed to change working directory"
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

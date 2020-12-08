@@ -29,9 +29,14 @@
 ############################################################################
 source ./globals
 
-set exit_code      0
 set file_in        "test$test_id.bash"
 set test_prog      "test$test_id.prog"
+
+proc cleanup {} {
+	global bin_rm file_in test_prog
+
+	exec $bin_rm -f $file_in $test_prog
+}
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
@@ -60,24 +65,13 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 1} {
-	log_error "srun failed to report exit code"
-	set exit_code 1
-}
-
-#
-# Post-processing
-#
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $test_prog
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	fail "srun failed to report exit code"
 }

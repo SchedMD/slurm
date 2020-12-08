@@ -33,6 +33,12 @@ set exit_code   0
 set file_in     "test$test_id.input"
 set job_id      0
 
+proc cleanup {} {
+	global file_in
+
+	exec rm -f $file_in
+}
+
 #
 # Build input script file
 #
@@ -92,8 +98,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scancel not responding"
-		set exit_code 1
+		fail "scancel not responding"
 	}
 	eof {
 		wait
@@ -103,8 +108,6 @@ if {$matches != 3} {
 	fail "scancel with multiple step_id failed"
 }
 
-if {$exit_code == 0} {
-	exec rm -f $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

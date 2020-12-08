@@ -32,6 +32,12 @@ set exit_code    0
 set file_in      "test$test_id.input"
 set file_out     "test$test_id.output"
 
+proc cleanup {} {
+	global bin_rm file_in file_out
+
+	exec $bin_rm -f $file_in $file_out
+}
+
 #
 # get my uid and clear any vestigial triggers
 #
@@ -59,9 +65,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "strigger not responding"
 		slow_kill $strigger_pid
-		set exit_code 1
+		fail "strigger not responding"
 	}
 	eof {
 		wait
@@ -83,9 +88,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "strigger not responding"
 		slow_kill $strigger_pid
-		set exit_code 1
+		fail "strigger not responding"
 	}
 	eof {
 		wait
@@ -140,17 +144,14 @@ if {$invalid == 0} {
 set strigger_pid [spawn $strigger --clear -v --reconfig --user=$uid]
 expect {
 	timeout {
-		log_error "strigger not responding"
 		slow_kill $strigger_pid
-		set exit_code 1
+		fail "strigger not responding"
 	}
 	eof {
 		wait
 	}
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

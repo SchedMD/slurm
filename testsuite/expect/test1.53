@@ -29,8 +29,13 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
 set file_prog    "test$test_id.prog"
+
+proc cleanup {} {
+	global file_prog
+
+	exec rm -f $file_prog
+}
 
 #
 # Delete left-over programs and rebuild them.
@@ -56,9 +61,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -69,10 +73,3 @@ if {$began_flag == 0} {
 } elseif {$run_time < 59 || $run_time > 121} {
 	fail "Problem with time limit signal"
 }
-
-if {$exit_code == 0} {
-	exec rm -f $file_prog
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
-

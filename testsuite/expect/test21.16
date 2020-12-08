@@ -180,8 +180,14 @@ if { $exit_code } {
 incr exit_code [add_user "$tu4,$tu5" [array get user_req2]]
 if { $exit_code == 0} {
 	# Check Limits of both users
-	check_assoc_limit 3 user $tu4 [array get user_req2]
-	check_assoc_limit 3 user $tu5 [array get user_req2]
+	if {![check_assoc_limit 3 user $tu4 [array get user_req2]} {
+		log_error "The association limits for user $tu4 are incorrect"
+		set exit_code 1
+	}
+	if {![check_assoc_limit 3 user $tu5 [array get user_req2]} {
+		log_error "The association limits for user $tu5 are incorrect"
+		set exit_code 1
+	}
 }
 
 incr exit_code [remove_user "" "" "$tu4,$tu5"]

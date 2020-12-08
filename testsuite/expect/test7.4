@@ -44,6 +44,12 @@ source ./globals
 set exit_code     0
 set test_prog     "test$test_id.prog"
 
+proc cleanup {} {
+	global bin_rm test_prog
+
+	exec $bin_rm -f $test_prog ${test_prog}.o ${test_prog}.TVD.v3breakpoints ${test_prog}.TVD.v3breakpoints~
+}
+
 # Note this appears as a single argv value to totalviewcli
 set bulk "dset TV::bulk_launch_enabled true; dset TV::bulk_launch_tmpfile1_host_lines %R; dset TV::bulk_launch_string {$srun --jobid=%J -N%N -n%N -w`awk -F. \'BEGIN {ORS=\",\"} {if (NR==%N) ORS=\"\"; print \$1}\' %t1` -l --input=none %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
 set no_bulk       "dset TV::bulk_launch_enabled false"
@@ -144,8 +150,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "totalviewcli not responding"
-		set exit_code 1
+		fail "totalviewcli not responding"
 	}
 	eof {
 		wait
@@ -224,8 +229,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "totalviewcli not responding"
-		set exit_code 1
+		fail "totalviewcli not responding"
 	}
 	eof {
 		wait
@@ -238,8 +242,6 @@ if {$matches != 12} {
 	fail "totalviewcli operation matches $matches of 12. Remove your ~/.totalview directory and try again"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $test_prog ${test_prog}.o ${test_prog}.TVD.v3breakpoints ${test_prog}.TVD.v3breakpoints~
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

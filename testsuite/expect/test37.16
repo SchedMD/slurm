@@ -41,7 +41,6 @@ source ./globals
 source ./globals_accounting
 source ./globals_federation
 
-set exit_code    0
 set fed_name     "feda"
 set user_name    ""
 set srun_job_cnt 0
@@ -67,7 +66,6 @@ if {[string compare [get_admin_level] "Administrator"]} {
 
 proc setup_cluster_features {} {
 	global sacctmgr fedc1 fedc2 fedc3 eol
-	set exit_code 0
 	set matches 0
 	set my_pid [spawn $sacctmgr -i modify cluster $fedc1 set features=fa]
 	expect {
@@ -88,17 +86,15 @@ proc setup_cluster_features {} {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr mod not responding"
 			slow_kill $my_pid
-			set exit_code 1
+			fail "sacctmgr mod not responding"
 		}
 		eof {
 			wait
 		}
 	}
-	if {$exit_code || $matches != 4} {
-		log_error "Unexpected error. Got $matches"
-		end_it 1
+	if {$matches != 4} {
+		fail "Unexpected error. Got $matches"
 	}
 
 	set matches 0
@@ -121,17 +117,15 @@ proc setup_cluster_features {} {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr mod not responding"
 			slow_kill $my_pid
-			set exit_code 1
+			fail "sacctmgr mod not responding"
 		}
 		eof {
 			wait
 		}
 	}
-	if {$exit_code || $matches != 4} {
-		log_error "Unexpected error. Got $matches"
-		end_it 1
+	if {$matches != 4} {
+		fail "Unexpected error. Got $matches"
 	}
 
 	set matches 0
@@ -154,17 +148,15 @@ proc setup_cluster_features {} {
 			exp_continue
 		}
 		timeout {
-			log_error "sacctmgr mod not responding"
 			slow_kill $my_pid
-			set exit_code 1
+			fail "sacctmgr mod not responding"
 		}
 		eof {
 			wait
 		}
 	}
-	if {$exit_code || $matches != 4} {
-		log_error "Unexpected error. Got $matches"
-		end_it 1
+	if {$matches != 4} {
+		fail "Unexpected error. Got $matches"
 	}
 }
 
@@ -182,16 +174,14 @@ proc scontrol { fed job_id index regex } {
 			incr matches
 		}
 		timeout {
-			log_error "srun not responding"
-			end_it 1
+			fail "srun not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$matches != 1} {
-		log_error "srun failure: expected $regex"
-		end_it 1
+		fail "srun failure: expected $regex"
 	}
 }
 
@@ -211,16 +201,14 @@ proc sbatch { options } {
 			set job_id $expect_out(1,string)
 		}
 		timeout {
-			log_error "sbatch not responding"
-			end_it 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$matches != 1} {
-		log_error "batch submit failure: expected $regex"
-		end_it 1
+		fail "batch submit failure: expected $regex"
 	}
 
 	return $job_id
@@ -243,16 +231,14 @@ proc srun { options index } {
 			set job_id $expect_out(1,string)
 		}
 		timeout {
-			log_error "srun not responding"
-			end_it 1
+			fail "srun not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$matches != 1} {
-		log_error "srun failure: expected $regex"
-		end_it 1
+		fail "srun failure: expected $regex"
 	}
 
 	return $job_id
@@ -271,8 +257,7 @@ proc squeue { fed m regex } {
 		}
 	}
 	if {$matches != $m} {
-		log_error "unexpected error in squeue. expected $regex.  Matched $matches/$m times."
-		end_it 1
+		fail "Unexpected error in squeue. expected $regex.  Matched $matches/$m times."
 	}
 }
 
@@ -308,15 +293,6 @@ proc cleanup { } {
 	return [delete_federations $fed_name]
 }
 
-proc end_it { exit_code } {
-	global test_id my_squeue
-	cleanup
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
-}
-
 #start test
 
 if {![check_federation_setup]} {
@@ -331,14 +307,12 @@ set user_name [get_my_user_name]
 
 # Remove existing setup
 if {[cleanup] != 0} {
-	log_error "failed to cleanup"
-	end_it 1
+	fail "Failed to cleanup"
 }
 
 # add clusters to federation
 if {[setup_federation $fed_name]} {
-	log_error "failed to setup federation"
-	end_it 1
+	fail "Failed to setup federation"
 }
 setup_cluster_features
 
@@ -485,8 +459,7 @@ expect {
 	}
 }
 if {$matches != 3} {
-	log_error "unexpected error in sacct. $matches/3"
-	end_it 1
+	fail "Unexpected error in sacct. $matches/3"
 }
 
 # Test that job3 is marked REVOKED on the siblings clusters (fed2,fed3) and
@@ -505,8 +478,7 @@ expect {
 	}
 }
 if {$matches != 3} {
-	log_error "unexpected error in sacct."
-	end_it 1
+	fail "Unexpected error in sacct."
 }
 
 
@@ -516,8 +488,7 @@ cancel_job $j(1) "-M$fedc2"
 
 set run_cluster [wait_for_fed_job $j(6) RUNNING $fedc2]
 if {[string compare $run_cluster ""] == 0} {
-	log_error "Didn't find running job on cluster"
-	end_it 1
+	fail "Didn't find running job on cluster"
 }
 
 
@@ -556,8 +527,7 @@ expect {
 	eof {}
 }
 if {$matches != 0} {
-	log_error "srun got signaled when it shouldn't have."
-	end_it 1
+	fail "srun got signaled when it shouldn't have."
 }
 set timeout $old_timeout
 
@@ -576,8 +546,7 @@ cancel_job $j(2) "-M$fedc3"
 
 set run_cluster [wait_for_fed_job $j(7) RUNNING $fedc3]
 if {[string compare $run_cluster ""] == 0} {
-	log_error "Didn't find running job on cluster"
-	end_it 1
+	fail "Didn't find running job on cluster"
 }
 
 log_info "################################################################"
@@ -674,6 +643,3 @@ spawn $my_sacctmgr mod fed $fed_name set -i clusters-=$fedc1
 scontrol $fedc1 $j(0) 1 "srun: I'm Alive"
 scontrol $clus1 $j(1) 2 "srun: I'm Alive"
 scontrol $clus2 $j(2) 3 "srun: I'm Alive"
-
-# All Done
-end_it 0

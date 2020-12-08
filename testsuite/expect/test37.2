@@ -42,9 +42,7 @@ source ./globals
 source ./globals_accounting
 source ./globals_federation
 
-set exit_code   0
 set fed_name    "feda"
-
 set timeout	5
 
 #
@@ -61,15 +59,6 @@ if {[string compare [get_admin_level] "Administrator"]} {
 proc cleanup { } {
 	global fed_name
 	return [delete_federations $fed_name]
-}
-
-proc end_it { exit_code } {
-	global test_id
-	cleanup
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
 }
 
 # submit jobs to each cluster and ensure that they return a unique job id
@@ -170,14 +159,12 @@ if {![check_federation_up]} {
 
 # Remove existing setup
 if {[cleanup] != 0} {
-	log_error "Failed to cleanup"
-	end_it 1
+	fail "Failed to cleanup"
 }
 
 # add clusters to federation
 if {[setup_federation $fed_name]} {
-	log_error "Failed to setup federation"
-	end_it 1
+	fail "Failed to setup federation"
 }
 
 # Get cluster/fed info from db
@@ -187,15 +174,14 @@ log_info "Verify federation ids are returned when cluster is part of federation"
 if {[test_fed_job_id $fedc1 [dict get $clusters($fedc1) id]] ||
     [test_fed_job_id $fedc2 [dict get $clusters($fedc2) id]] ||
     [test_fed_job_id $fedc3 [dict get $clusters($fedc3) id]]} {
-	end_it 1
+	fail "Federation id was not returned"
 }
 
 
 # Verify that after clusters are removed from federation that they give normal
 # job ids again.
 if {[delete_federations $fed_name]} {
-	log_error "Failed delete federation $fed_name"
-	end_it 1
+	fail "Failed delete federation $fed_name"
 }
 
 sleep 2
@@ -204,7 +190,5 @@ log_info "Verify local ids after being removed from federation"
 if {[test_loc_job_id $fedc1] ||
     [test_loc_job_id $fedc2] ||
     [test_loc_job_id $fedc3]} {
-	end_it 1
+	fail "Local ids could not be verified"
 }
-
-end_it 0

@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set iteration    0
 
 #
@@ -54,8 +53,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "squeue not responding"
-		set exit_code 1
+		fail "squeue not responding"
 	}
 	eof {
 		wait
@@ -64,7 +62,4 @@ expect {
 
 if {$iteration < 3} {
 	fail "squeue iteration error"
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

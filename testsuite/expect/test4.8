@@ -45,8 +45,7 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "sinfo not responding"
-		set exit_code 1
+		fail "sinfo not responding"
 	}
 	eof {
 		wait
@@ -72,8 +71,7 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "sinfo not responding"
-		set exit_code 1
+		fail "sinfo not responding"
 	}
 	eof {
 		wait
@@ -99,8 +97,7 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "sinfo not responding"
-		set exit_code 1
+		fail "sinfo not responding"
 	}
 	eof {
 		wait

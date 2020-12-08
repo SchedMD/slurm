@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
 set file_err         "test$test_id.error"
 set file_in          "test$test_id.input"
 set file_out         "test$test_id.output"
@@ -40,6 +39,12 @@ set limit_nofile     1016
 set limit_nproc      1230
 set limit_stack      2021
 set matches          0
+
+proc cleanup {} {
+	global bin_rm file_err file_in file_prog_get file_out
+
+	exec $bin_rm -f $file_err $file_in $file_prog_get $file_out
+}
 
 #
 # Delete left-over programs and rebuild them.
@@ -206,8 +211,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sort not responding"
-		set exit_code 1
+		fail "sort not responding"
 	}
 	eof {
 		wait
@@ -217,10 +221,4 @@ expect {
 set target 5
 if {$matches != $target} {
 	fail "User limits not propagated got $matches of $target matches. Check PropagateResourceLimits configuration parameter. Check $file_err for errors. A long running slurmd could cause a file size limit error. slurmd could have been started with limits lower than user launching the task"
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_err $file_in $file_prog_get $file_out
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

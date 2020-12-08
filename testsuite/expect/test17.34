@@ -33,6 +33,12 @@ set file_out   "test$test_id\.out"
 set spec_in    "spec_core_script\.in"
 set exit_code  0
 
+proc cleanup {} {
+	global bin_rm file_in file_out spec_in
+
+	exec $bin_rm -f $file_in $file_out $spec_in
+}
+
 #############################################################################
 #
 # Checks that the node uses the correct number of specialized cores
@@ -78,8 +84,7 @@ proc core_spec_job {task node core_spec exp_nodes} {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch is not responding"
-			set exit_code 1
+			fail "sbatch is not responding"
 		}
 		eof {
 			wait
@@ -112,8 +117,7 @@ proc core_spec_job {task node core_spec exp_nodes} {
 				exp_continue
 			}
 			timeout {
-				log_error "scontrol is not responding"
-				set exit_code 1
+				fail "scontrol is not responding"
 			}
 			eof {
 				wait
@@ -185,8 +189,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch is not responding"
-		set exit_code 1
+		fail "sbatch is not responding"
 	}
 	eof {
 		wait
@@ -229,8 +232,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "cat is not responding"
-		set exit_code 1
+		fail "cat is not responding"
 	}
 	eof {
 		wait
@@ -266,8 +268,6 @@ log_info "Fail by trying to use more cores than exist"
 core_spec_job 1 $first_node [expr $core_cnt + 5] -1
 core_spec_job 1 $first_node [expr $core_cnt + 7] -1
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $spec_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

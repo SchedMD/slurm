@@ -80,9 +80,18 @@ if {$access_err != 0} {
 #
 # Check cluster limits
 #
-check_assoc_limit 1 cluster $tc1 [array get cluster]
-check_assoc_limit 1 cluster $tc2 [array get cluster]
-check_assoc_limit 1 cluster $tc3 [array get cluster]
+if {![check_assoc_limit 1 cluster $tc1 [array get cluster]]} {
+	log_error "The association limits for cluster $tc1 are incorrect"
+	set exit_code 1
+}
+if {![check_assoc_limit 1 cluster $tc2 [array get cluster]]} {
+	log_error "The association limits for cluster $tc2 are incorrect"
+	set exit_code 1
+}
+if {![check_assoc_limit 1 cluster $tc3 [array get cluster]]} {
+	log_error "The association limits for cluster $tc3 are incorrect"
+	set exit_code 1
+}
 
 #
 # Use sacctmgr to delete the test cluster
@@ -107,9 +116,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait

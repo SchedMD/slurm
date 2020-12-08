@@ -44,7 +44,7 @@ proc inc21_34_1 { qostest wait_reason } {
 	set timelimit [expr $grpcpumin_num / $nthreads]
 	# Since GrpCpuMins is a decayed variable lets reset it to make sure
 	# the test gets exactly what we would expect.
-	reset_qos_usage "" $qostest
+	incr exit_code [reset_qos_usage "" $qostest]
 
 	spawn $salloc --account=$acct -w$test_node -n$nthreads -t$timelimit $srun $bin_sleep 1
 	expect {
@@ -71,7 +71,7 @@ proc inc21_34_1 { qostest wait_reason } {
 	}
 	cancel_job $job_id1
 
-	reset_qos_usage "" $qostest
+	incr exit_code [reset_qos_usage "" $qostest]
 
 	spawn $salloc --account=$acct -w$test_node -n$nthreads -t[expr $timelimit + 1] $srun $bin_sleep 1
 	expect {

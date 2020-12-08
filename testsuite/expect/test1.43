@@ -54,9 +54,8 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 			exp_continue
 		}
 		timeout {
-			log_error "srun not responding"
 			slow_kill $srun_pid
-			set exit_code 1
+			fail "srun not responding"
 		}
 		eof {
 			wait

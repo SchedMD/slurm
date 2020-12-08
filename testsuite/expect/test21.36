@@ -33,7 +33,6 @@ set cluster          [get_config_param "ClusterName"]
 set account          "test$test_id\_acct"
 set user             "test$test_id\_user"
 set config_dir       ""
-set exit_code        1
 set access_err       0
 
 # Cluster requirments
@@ -46,28 +45,6 @@ set acct_req(cluster) $cluster
 set user_req(account) $account
 set user_req(cluster) $cluster
 
-# Remove pre-existing items
-proc cleanup { } {
-	global cluster account user sql_query_rem
-	archive_load $sql_query_rem
-	remove_user "" "" $user
-	remove_acct "" $account
-}
-
-proc endit { } {
-	global exit_code bin_rm sql_query sql_query_rem
-	cleanup
-
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors"
-	}
-
-	exec $bin_rm -f $sql_query $sql_query_rem
-
-	pass
-}
-
-
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "This test can't be run without AccountStorageType=slurmdbd"
 }
@@ -75,6 +52,7 @@ if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator"
 }
 
+# Remove pre-existing items
 exec $bin_rm -f $sql_query $sql_query_rem
 
 # Make SQL file to remove the inserted job
@@ -83,17 +61,24 @@ set file [open $sql_query_rem "w"]
 puts $file "delete from job_table where alloc_nodes=\'test21.36_node\' cluster=\'$cluster\';"
 close $file
 
-# Remove pre-existing items
-cleanup
+proc cleanup { } {
+	global cluster account user bin_rm sql_query sql_query_rem
+
+	archive_load $sql_query_rem
+	remove_user "" "" $user
+	remove_acct "" $account
+
+	exec $bin_rm -f $sql_query $sql_query_rem
+}
 
 # Add Test Account
 if {[add_acct $account [array get acct_req]]} {
-	endit
+	fail "Unable to add test account ($account)"
 }
 
 # Add Test User
 if {[add_user $user [array get user_req]]} {
-	endit
+	fail "Unable to add test user ($user)"
 }
 
 set assoc_id [get_assoc_id $user $account $cluster]
@@ -124,7 +109,7 @@ set cwd "[$bin_pwd]"
 # Load a job to the database that has no end time.
 if {[archive_load $sql_query]} {
 	archive_load $sql_query_rem
-	endit
+	fail "Unable to load job to database"
 }
 
 # Test sacctmgr show runawayjobs
@@ -136,8 +121,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr is not responding"
-		endit
+		fail "sacctmgr is not responding"
 	}
 	eof {
 		wait
@@ -145,8 +129,7 @@ expect {
 }
 
 if {$list_job != 1} {
-	log_error "sacctmgr did not find any runaway jobs when it should have"
-	endit
+	fail "sacctmgr did not find any runaway jobs when it should have"
 }
 
 # Check that jobs were fixed
@@ -158,8 +141,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr is not responding"
-		endit
+		fail "sacctmgr is not responding"
 	}
 	eof {
 		wait
@@ -167,9 +149,5 @@ expect {
 }
 
 if {$list_job != 1} {
-	log_error "sacctmgr found runaway jobs when it should not have"
-	endit
+	fail "sacctmgr found runaway jobs when it should not have"
 }
-
-set exit_code 0
-endit

@@ -28,8 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 #
 # Unless a job is hung in completing state, there is typically no output
 #
@@ -37,8 +35,7 @@ set exit_code   0
 spawn $scontrol completing
 expect {
 	-re "invalid keyword" {
-		log_error "scontrol did not recognize \'completing\' command"
-		set exit_code 1
+		fail "scontrol did not recognize \'completing\' command"
 	}
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
@@ -46,8 +43,4 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

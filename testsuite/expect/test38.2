@@ -29,7 +29,6 @@
 
 source ./globals
 
-set exit_code    0
 set file_in      "test$test_id.in"
 set file_out     "test$test_id.out"
 
@@ -54,8 +53,7 @@ proc sbatch {} {
 	spawn {*}$command
 	expect {
 		-re "Batch job submission failed" {
-			log_warn "Unable to execute test due to system configuration"
-			end_it 0
+			skip "Unable to execute test due to system configuration"
 		}
 		-re "$regex" {
 			incr matches
@@ -63,16 +61,14 @@ proc sbatch {} {
 
 		}
 		timeout {
-			log_error "sbatch not responding"
-			end_it 1
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$matches != 1} {
-		log_error "batch submit failure"
-		end_it 1
+		fail "Batch submit failure"
 	}
 }
 
@@ -93,8 +89,7 @@ proc test_env {value} {
 	}
 	log_user 1
 	if {$matches != 1} {
-		log_error "output of env incorrect matches: $value ($matches != 1)"
-		end_it 1
+		fail "Output of env incorrect matches: $value ($matches != 1)"
 	}
 }
 
@@ -110,17 +105,9 @@ proc cleanup { } {
 	global bin_rm file_in file_out
 	global test_id
 
-	exec $bin_rm -f $file_in $file_out test$test_id*.out
-	return 0
-}
-
-proc end_it { exit_code } {
-	global test_id
 	cancel_job_id
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
+
+	exec $bin_rm -f $file_in $file_out test$test_id*.out
 }
 
 #start test
@@ -169,8 +156,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	log_error "output of env incorrect matches: SLURM_HET_SIZE=3 ($matches != 1)"
-	end_it 1
+	fail "Output of env incorrect matches: SLURM_HET_SIZE=3 ($matches != 1)"
 }
 
 set matches 0
@@ -188,8 +174,7 @@ expect {
 }
 log_user 1
 if {$matches != 3} {
-	log_error "output of env incorrect matches: SLURM_JOB_PARTITION_HET_GROUP ($matches != 3)"
-	end_it 1
+	fail "Output of env incorrect matches: SLURM_JOB_PARTITION_HET_GROUP ($matches != 3)"
 }
 
 test_env "SLURM_CPUS_PER_TASK_HET_GROUP_0=4"
@@ -207,6 +192,3 @@ test_env "SLURM_MEM_PER_CPU_HET_GROUP_2=6"
 test_env "SLURM_NTASKS_HET_GROUP_0=1"
 test_env "SLURM_NTASKS_HET_GROUP_1=1"
 test_env "SLURM_NTASKS_HET_GROUP_2=1"
-
-# All Done
-end_it 0

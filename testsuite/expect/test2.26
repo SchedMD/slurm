@@ -42,9 +42,7 @@ proc top_enabled { } {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
-			exp_continue
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -65,9 +63,7 @@ proc submit_job { } {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch not responding"
-			set exit_code 1
-			exp_continue
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
@@ -96,9 +92,7 @@ proc load_job_prio { } {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch not responding"
-			set exit_code 1
-			exp_continue
+			fail "sbatch not responding"
 		}
 		eof {
 			wait

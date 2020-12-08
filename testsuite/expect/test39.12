@@ -137,9 +137,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -175,9 +174,8 @@ if {[expr $use_gpus_per_job - 2] > $nb_nodes} {
 			exp_continue
 		}
 		timeout {
-			log_error "srun not responding"
 			slow_kill $srun_pid
-			set exit_code 1
+			fail "srun not responding"
 		}
 		eof {
 			wait
@@ -220,9 +218,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -280,9 +277,8 @@ if { [llength $node_list] != $nb_nodes } {
 			exp_continue
 		}
 		timeout {
-			log_error "srun not responding"
 			slow_kill $srun_pid
-			set exit_code 1
+			fail "srun not responding"
 		}
 		eof {
 			wait
@@ -324,9 +320,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -340,7 +335,9 @@ if {$match_gpu != $expected_gpus} {
 	fail "srun --gpus-per-task failure ($match_gpu != $expected_gpus)"
 }
 
-fail_on_error "Test failed due to previous errors (\$exit_code = $exit_code)"
+if {$exit_code != 0} {
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+}
 if {[llength $skipped] != 0} {
 	skip "Some tests skipped:\n[join $skipped \n]"
 }

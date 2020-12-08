@@ -33,6 +33,12 @@ set authorized     1
 set exit_code      0
 set part_name      "QA_TEST"
 
+proc cleanup {} {
+	global bin_rm test_salloc file_in
+
+	exec $bin_rm $test_salloc $file_in
+}
+
 if {![is_super_user]} {
 	skip "Can not test more unless SlurmUser or root"
 }
@@ -53,8 +59,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -91,8 +96,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -115,8 +119,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -184,9 +187,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 					exp_continue
 				}
 				timeout {
-					log_error "scontrol not responding"
-					set exit_code 1
-					exp_continue
+					fail "scontrol not responding"
 				}
 				eof {
 					wait
@@ -213,8 +214,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
                         exp_continue
                 }
                 timeout {
-                        log_error "salloc not responding"
-                        set exit_code 1
+                        fail "salloc not responding"
                 }
                 eof {
                         wait
@@ -228,8 +228,7 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 spawn $scontrol delete PartitionName=$part_name
 expect {
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -252,8 +251,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -263,8 +261,6 @@ if {$found != 0} {
 	fail "Partition not deleted"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm $test_salloc $file_in
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

@@ -114,8 +114,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr is not responding"
-		set exit_code 1
+		fail "sacctmgr is not responding"
 	}
 	eof {
 		wait
@@ -155,9 +154,8 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
 		slow_kill $as_list_pid
-		set exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
@@ -169,9 +167,14 @@ if {$almatches != 2} {
 	set exit_code 1
 }
 # Check that the Association was set correctly
-check_assoc_limit 2 account $ta1 [array get acct]
-
-check_assoc_limit 2 account $ta2 [array get acct]
+if {![check_assoc_limit 2 account $ta1 [array get acct]} {
+	log_error "The association limits for account $ta1 were not set correctly"
+	set exit_code 1
+}
+if {![check_assoc_limit 2 account $ta2 [array get acct]} {
+	log_error "The association limits for account $ta2 were not set correctly"
+	set exit_code 1
+}
 
 if {![check_acct_associations]} {
 	log_error "Our associations don't line up"
@@ -188,9 +191,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
@@ -217,9 +219,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
@@ -242,9 +243,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
@@ -272,8 +272,8 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		log_debug "Test associations delete verified"
 		slow_kill $as2_list_pid
+		log_debug "Test associations delete verified"
 	}
 	eof {
 		wait

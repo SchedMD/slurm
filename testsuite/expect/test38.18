@@ -26,7 +26,6 @@
 
 source ./globals
 
-set exit_code    0
 set is_skip      false
 
 if {[get_highest_gres_count 1 "gpu"] < 2} {
@@ -500,10 +499,6 @@ if {[check_config_select "cons_tres"]} {
 } else {
 	log_warn "Some tests are skipped because they require SelectType=cons_tres."
 	set is_skip true
-}
-
-if {$exit_code} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 
 if {$is_skip} {

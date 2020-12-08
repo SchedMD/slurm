@@ -35,6 +35,14 @@ set output_use  "test$test_id.use.output"
 set script_use  "test$test_id.use.bash"
 set tmp_file    "test$test_id"
 
+proc cleanup {} {
+	global bin_rm input_data output_data
+	global output_use script_use
+
+	exec $bin_rm -f $input_data $output_data
+	exec $bin_rm -f $output_use $script_use
+}
+
 proc find_bb_jobid { fname bb_jobid } {
 	global bin_cat
 
@@ -108,8 +116,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
+		fail "sbatch not responding"
 	}
 	eof {
 		wait
@@ -147,8 +154,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -162,9 +168,6 @@ if {[find_bb_data $output_data $data_out] == 0} {
 	fail "Job output burst buffer data not correct"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $input_data $output_data
-	exec $bin_rm -f $output_use $script_use
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

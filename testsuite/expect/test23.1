@@ -72,8 +72,7 @@ proc sstat_job { soption } {
 				exp_continue
 			}
 			timeout {
-				log_error "sstat not responding"
-				set exit_code 1
+				fail "sstat not responding"
 			}
 			eof {
 				wait
@@ -102,8 +101,7 @@ proc sstat_job { soption } {
 				exp_continue
 			}
 			timeout {
-				log_error "sstat not responding"
-				set exit_code 1
+				fail "sstat not responding"
 			}
 			eof {
 				wait
@@ -127,8 +125,7 @@ proc sstat_job { soption } {
 				exp_continue
 			}
 			timeout {
-				log_error "sstat not responding"
-				set exit_code 1
+				fail "sstat not responding"
 			}
 			eof {
 				wait

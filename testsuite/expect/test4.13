@@ -69,20 +69,17 @@ array set part_info {
 
 
 proc cleanup { } {
-
-	global scontrol test_part exit_code
+	global scontrol test_part
 
 	spawn $scontrol delete partitionname=$test_part
 	expect {
 		timeout {
 			log_error "scontrol is not responding"
-			set exit_code 1
 		}
 		eof {
 			wait
 		}
 	}
-
 }
 
 if {![is_super_user]} {
@@ -105,8 +102,7 @@ foreach option [array names node_info] {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -130,8 +126,7 @@ foreach option [array names node_sinfo_vals] {
 			exp_continue
 		}
 		timeout {
-			log_error "sinfo is not responding"
-			set exit_code 1
+			fail "sinfo is not responding"
 		}
 		eof {
 			wait
@@ -150,8 +145,7 @@ foreach option [array names node_sinfo_vals] {
 spawn $scontrol create partitionname=$test_part nodes=$test_node
 expect {
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -166,8 +160,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol is not responding"
-		set exit_code 1
+		fail "scontrol is not responding"
 	}
 	eof {
 		wait
@@ -196,8 +189,7 @@ foreach option [array names part_info] {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
+			fail "scontrol is not responding"
 		}
 		eof {
 			wait
@@ -217,8 +209,7 @@ foreach option [array names part_sinfo_vals] {
 			exp_continue
 		}
 		timeout {
-			log_error "sinfo is not responding"
-			set exit_code 1
+			fail "sinfo is not responding"
 		}
 		eof {
 			wait
@@ -231,8 +222,6 @@ foreach option [array names part_sinfo_vals] {
 	}
 }
 
-cleanup
-
 if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
+	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

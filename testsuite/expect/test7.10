@@ -32,6 +32,12 @@ source ./globals
 set exit_code            0
 set ld_preload           "ld_preload"
 
+proc cleanup {} {
+	global bin_rm ld_preload
+
+	exec $bin_rm -f ${ld_preload}.c ${ld_preload}.lo ${ld_preload}.so
+}
+
 if [is_super_user] {
 	skip "This test can't be run as SlurmUser"
 }
@@ -67,17 +73,14 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f ${ld_preload}.c ${ld_preload}.lo ${ld_preload}.so
-} else {
+if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

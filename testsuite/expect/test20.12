@@ -64,8 +64,7 @@ proc run_qsub { variable1_name variable1_expect_val variable2_name
 			exp_continue
 		}
 		timeout {
-			log_error "qsub not responding"
-			set exit_code 1
+			fail "qsub not responding"
 		}
 		eof {
 			wait

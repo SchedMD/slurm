@@ -106,9 +106,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
@@ -143,9 +142,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
@@ -168,8 +166,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr is not responding"
-		set exit_code 1
+		fail "sacctmgr is not responding"
 	}
 	eof {
 		wait
@@ -192,13 +189,22 @@ if {$access_err != 0} {
 }
 
 # Check Cluster 1
-check_assoc_limit 1 cluster $tc1 [array get cluster]
+if {![check_assoc_limit 1 cluster $tc1 [array get cluster]]} {
+	log_error "The association limits for cluster $tc1 are incorrect"
+	set exit_code 1
+}
 
 # Check Cluster 2
-check_assoc_limit 1 cluster $tc2 [array get cluster]
+if {![check_assoc_limit 1 cluster $tc2 [array get cluster]]} {
+	log_error "The association limits for cluster $tc2 are incorrect"
+	set exit_code 1
+}
 
 # Check Cluster 3
-check_assoc_limit 1 cluster $tc3 [array get cluster]
+if {![check_assoc_limit 1 cluster $tc3 [array get cluster]]} {
+	log_error "The association limits for cluster $tc3 are incorrect"
+	set exit_code 1
+}
 
 if {![check_acct_associations]} {
 	log_error "Our associations don't line up"
@@ -229,9 +235,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
@@ -253,9 +258,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr delete not responding"
 		slow_kill $sadel_pid
-		set exit_code 1
+		fail "sacctmgr delete not responding"
 	}
 	eof {
 		wait
