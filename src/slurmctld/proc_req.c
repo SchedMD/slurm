@@ -2436,7 +2436,9 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		select_jobinfo = select_g_select_jobinfo_copy(
 			step_rec->select_jobinfo);
 		job_step_resp.select_jobinfo = select_jobinfo;
-		switch_g_duplicate_jobinfo(step_rec->switch_job, &switch_job);
+		if (step_rec->switch_job)
+			switch_g_duplicate_jobinfo(step_rec->switch_job,
+						   &switch_job);
 		job_step_resp.switch_job = switch_job;
 
 		if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
