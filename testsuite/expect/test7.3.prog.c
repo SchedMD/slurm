@@ -57,6 +57,8 @@ int main (int argc, char *argv[])
 	int *fd_array = NULL;
 	int num_fd;
 
+	slurm_init(NULL);
+
 	if (argc > 1) {
 		i = atoi(argv[1]);
 		if (i > 0)
