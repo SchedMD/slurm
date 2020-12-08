@@ -12,8 +12,7 @@ VERSION_SCRIPT = \
 # worry about knowing to call slurm_conf_init()
 OTHER_FLAGS = \
 	-Wl,--version-script=$(VERSION_SCRIPT) \
-	-Wl,-init,slurm_library_init \
-	-Wl,-fini,slurm_library_fini
+	-Wl,-init,slurm_library_init
 FULL_VERSION_SCRIPT = \
 	full_version.map
 # With libslurmfull we expect the process to know they have to call

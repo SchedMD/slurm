@@ -591,8 +591,7 @@ AM_CPPFLAGS = -I$(top_srcdir)
 # worry about knowing to call slurm_conf_init()
 @WITH_GNU_LD_TRUE@OTHER_FLAGS = \
 @WITH_GNU_LD_TRUE@	-Wl,--version-script=$(VERSION_SCRIPT) \
-@WITH_GNU_LD_TRUE@	-Wl,-init,slurm_library_init \
-@WITH_GNU_LD_TRUE@	-Wl,-fini,slurm_library_fini
+@WITH_GNU_LD_TRUE@	-Wl,-init,slurm_library_init
 
 @WITH_GNU_LD_TRUE@FULL_VERSION_SCRIPT = \
 @WITH_GNU_LD_TRUE@	full_version.map
