@@ -17,6 +17,8 @@ documents those changes that are of interest to users and administrators.
     in the credential.
  -- When sending a job a warning signal make sure we always send SIGCONT
     beforehand.
+ -- Fix issue where a batch job would continue running if a prolog failed on a
+    node that wasn't the batch host and requeuing was disabled.
 
 * Changes in Slurm 20.11.4
 ==========================

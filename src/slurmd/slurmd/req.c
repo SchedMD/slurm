@@ -2648,10 +2648,21 @@ no_job:
 	}
 }
 
+/* Wrapper for slurm_kill_job2() */
+static uint32_t _kill_job(uint32_t job_id)
+{
+	int rc;
+	char *job_id_str = NULL;
+
+	xstrfmtcat(job_id_str, "%u", job_id);
+	rc = slurm_kill_job2(job_id_str, SIGKILL, 0);
+	xfree(job_id_str);
+	return rc;
+}
+
 static int
 _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 {
-	complete_batch_script_msg_t comp_msg = {0};
 	struct requeue_msg req_msg = {0};
 	slurm_msg_t resp_msg;
 	int rc = 0, rpc_rc;
@@ -2668,27 +2679,21 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 
 	slurm_msg_t_init(&resp_msg);
 
-	if (slurm_rc == ESLURMD_CREDENTIAL_REVOKED) {
-		comp_msg.job_id = job_id;
-		comp_msg.job_rc = INFINITE;
-		comp_msg.slurm_rc = slurm_rc;
-		comp_msg.node_name = conf->node_name;
-		comp_msg.jobacct = NULL; /* unused */
-		resp_msg.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT;
-		resp_msg.data = &comp_msg;
-	} else {
-		req_msg.job_id = job_id;
-		req_msg.job_id_str = NULL;
-		if (requeue_no_hold)
-			req_msg.flags = JOB_PENDING;
-		else
-			req_msg.flags = (JOB_REQUEUE_HOLD | JOB_LAUNCH_FAILED);
-		resp_msg.msg_type = REQUEST_JOB_REQUEUE;
-		resp_msg.data = &req_msg;
-	}
+	if (slurm_rc == ESLURMD_CREDENTIAL_REVOKED)
+		return _kill_job(job_id);
 
+	/* Try to requeue the job. If that doesn't work, kill the job. */
+	req_msg.job_id = job_id;
+	req_msg.job_id_str = NULL;
+	if (requeue_no_hold)
+		req_msg.flags = JOB_PENDING;
+	else
+		req_msg.flags = (JOB_REQUEUE_HOLD | JOB_LAUNCH_FAILED);
+	resp_msg.msg_type = REQUEST_JOB_REQUEUE;
+	resp_msg.data = &req_msg;
 	rpc_rc = slurm_send_recv_controller_rc_msg(&resp_msg, &rc,
 						   working_cluster_rec);
+
 	if ((resp_msg.msg_type == REQUEST_JOB_REQUEUE) &&
 	    ((rc == ESLURM_DISABLED) || (rc == ESLURM_BATCH_ONLY))) {
 		info("Could not launch job %u and not able to requeue it, "
@@ -2702,16 +2707,7 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 			slurm_notify_job(job_id, buf);
 			xfree(buf);
 		}
-
-		comp_msg.job_id = job_id;
-		comp_msg.job_rc = INFINITE;
-		comp_msg.slurm_rc = slurm_rc;
-		comp_msg.node_name = conf->node_name;
-		comp_msg.jobacct = NULL; /* unused */
-		resp_msg.msg_type = REQUEST_COMPLETE_BATCH_SCRIPT;
-		resp_msg.data = &comp_msg;
-		rpc_rc = slurm_send_recv_controller_rc_msg(&resp_msg, &rc,
-							   working_cluster_rec);
+		rpc_rc = _kill_job(job_id);
 	}
 
 	return rpc_rc;
