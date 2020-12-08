@@ -586,22 +586,15 @@ AM_CPPFLAGS = -I$(top_srcdir)
 @WITH_GNU_LD_TRUE@VERSION_SCRIPT = \
 @WITH_GNU_LD_TRUE@	version.map
 
-# With libslurm we have magic init/fini callers so the linker does not have to
-# worry about knowing to call slurm_conf_init()
 @WITH_GNU_LD_TRUE@OTHER_FLAGS = \
 @WITH_GNU_LD_TRUE@	-Wl,--version-script=$(VERSION_SCRIPT)
 
 @WITH_GNU_LD_TRUE@FULL_VERSION_SCRIPT = \
 @WITH_GNU_LD_TRUE@	full_version.map
 
-# With libslurmfull we expect the process to know they have to call
-# slurm_conf_init() since they are inside of slurm at this point.
-# We do not have the init/fini that libslurm has.
 @WITH_GNU_LD_TRUE@FULL_OTHER_FLAGS = \
 @WITH_GNU_LD_TRUE@	-Wl,--version-script=$(FULL_VERSION_SCRIPT)
 
-# With libslurm_pmi we have magic init/fini callers so the linker does not
-# have to worry about knowing to call slurm_conf_init()
 @WITH_GNU_LD_TRUE@SLURM_PMI_OTHER_FLAGS = \
 @WITH_GNU_LD_TRUE@	-Wl,--version-script=$(VERSION_SCRIPT)
 
