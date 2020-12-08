@@ -7248,7 +7248,10 @@ static int _foreach_reservation_license_list(void *x, void *key)
 	slurmctld_resv_t *reservation = (slurmctld_resv_t *) x;
 	time_t now = time(NULL);
 
-	if (reservation->flags & RESERVE_FLAG_FLEX) {
+	if (!reservation->license_list) {
+		/* reservation without licenses */
+		return 0;
+	} else if (reservation->flags & RESERVE_FLAG_FLEX) {
 		/*
 		 * Treat FLEX reservations as always active
 		 * and skip time bounds checks.
