@@ -143,3 +143,7 @@ API CHANGES
  -- slurmdb_selected_step_t has been renamed slurm_selected_step_t.
  -- slurm_sbcast_lookup() arguments have changed.  It now takes a populated
     slurm_selected_step_t instead of job_id, het_job_offset, step_id.
+ -- Due to internal restructuring ahead of the 20.11 release, applications
+    calling libslurm MUST call slurm_init(NULL) before any API calls.
+    Otherwise the API call is likely to fail due to libslurm's internal
+    configuration not being available.

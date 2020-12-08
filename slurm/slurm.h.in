@@ -1062,6 +1062,27 @@ typedef enum {
 } step_spec_flags_t;
 
 /*****************************************************************************\
+ *      SLURM LIBRARY INITIALIZATION FUNCTIONS
+\*****************************************************************************/
+
+/*
+ * MUST be called before any other Slurm library API calls.
+ *
+ * conf should be a fully qualified path to a slurm.conf configuration file,
+ * or more commonly NULL to allow libslurm to automatically locate its own
+ * configuration.
+ */
+extern void slurm_init(const char *conf);
+
+/*
+ * Call at process termination to cleanup internal configuration structures.
+ *
+ * Strongly recommended if valgrind or similar tools will be used to check
+ * your application for memory leaks.
+ */
+extern void slurm_fini(void);
+
+/*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS
 \*****************************************************************************/
 

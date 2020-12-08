@@ -41,6 +41,10 @@ documents those changes that are of interest to users and administrators.
  -- Disable MySQL automatic reconnection.
  -- Fix allowing "b" after memory unit suffixes.
  -- Fix slurmctld segfault with reservations without licenses.
+ -- Due to internal restructuring ahead of the 20.11 release, applications
+    calling libslurm MUST call slurm_init(NULL) before any API calls.
+    Otherwise the API call is likely to fail due to libslurm's internal
+    configuration not being available.
 
 * Changes in Slurm 20.11.0
 ==========================
