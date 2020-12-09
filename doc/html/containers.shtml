@@ -142,7 +142,7 @@ to provide HPC containers with full scheduler integration.
 
 <p>Singularity is hybrid container system that supports:
 <ul>
-	<li>Slurm integration via
+	<li>Slurm integration (for singularity v2.x) via
 		<a href="https://github.com/sylabs/singularity/blob/master/docs/2.x-slurm/README.md">
 		Plugin</a>. A full description of the plugin was provided in the
 		<a href="https://slurm.schedmd.com/SLUG17/SLUG_Bull_Singularity.pdf">
