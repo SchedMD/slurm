@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
  -- Use rpath if enabled when testing for Mellanox's UCX libraries.
  -- slurmrestd/dbv0.0.36 - Change user query for associations to optional.
  -- slurmrestd/dbv0.0.36 - Change account query for associations to optional.
+ -- mpi/pmix - change the error handler error message to be more useful.
 
 * Changes in Slurm 20.11.0
 ==========================
