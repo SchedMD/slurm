@@ -173,6 +173,7 @@
 #define gres_device_major	slurm_gres_device_major
 #define gres_sock_delete	slurm_gres_sock_delete
 #define destroy_gres_device	slurm_destroy_gres_device
+#define destroy_gres_slurmd_conf slurm_destroy_gres_slurmd_conf
 
 /* list.[ch] functions */
 #define	list_create		slurm_list_create
