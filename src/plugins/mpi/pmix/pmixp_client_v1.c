@@ -192,8 +192,8 @@ static void _errhandler(pmix_status_t status,
 {
 	/* TODO: do something more sophisticated here */
 	/* FIXME: use proper specificator for nranges */
-	PMIXP_ERROR_STD("Error handler invoked: status = %d, nranges = %d",
-			status, (int) nproc);
+	PMIXP_ERROR("Error handler invoked: status = %d, nprocs = %zu",
+		    (int) status, nproc);
 	slurm_kill_job_step(pmixp_info_jobid(), pmixp_info_stepid(), SIGKILL);
 }
 
