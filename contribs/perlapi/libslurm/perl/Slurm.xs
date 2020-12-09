@@ -12,8 +12,6 @@
 #include "slurm-perl.h"
 #include "bitstr.h"
 
-extern void slurm_conf_reinit(const char *file_name);
-
 /* Custom typemap that free's memory after copying to perl stack. */
 typedef char char_xfree;
 typedef char char_free;
@@ -63,10 +61,8 @@ BOOT:
 #
 # $slurm = Slurm::new($conf_file);
 #
-slurm_t
-slurm_new(char *conf_file=NULL)
+slurm_t slurm_new()
 	CODE:
-		slurm_conf_reinit(conf_file);
 		RETVAL = new_slurm();
 		if (RETVAL == NULL) {
 			XSRETURN_UNDEF;
