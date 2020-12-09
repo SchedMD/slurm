@@ -40,8 +40,14 @@ AC_DEFUN([X_AC_UCX],
             test -d "$d/$bit" || continue
             _x_ac_ucx_cppflags_save="$CPPFLAGS"
             CPPFLAGS="-I$d/include $CPPFLAGS"
+            _x_ac_ucx_ldflags_save="$LDFLAGS"
+            if test "$ac_with_rpath" = "yes"; then
+              LDFLAGS="-Wl,-rpath -Wl,$d/$bit -L$d/$bit $LDFLAGS"
+            else
+              LDFLAGS="-L$d/$bit $LDFLAGS"
+            fi
             _x_ac_ucx_libs_save="$LIBS"
-            LIBS="-L$d/$bit -lucp $LIBS"
+            LIBS="-lucp $LIBS"
 
             AC_CHECK_LIB([ucp],[ucp_cleanup])
 
@@ -55,6 +61,7 @@ AC_DEFUN([X_AC_UCX],
             AC_MSG_NOTICE(ucx checking result: $x_ac_cv_ucx_libdir)
 
             CPPFLAGS="$_x_ac_ucx_cppflags_save"
+            LDFLAGS="$_x_ac_ucx_ldflags_save"
             LIBS="$_x_ac_ucx_libs_save"
             test -n "$x_ac_cv_ucx_dir" && break
           done
