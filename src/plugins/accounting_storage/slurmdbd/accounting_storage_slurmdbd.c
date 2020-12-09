@@ -3095,6 +3095,7 @@ extern int acct_storage_p_reconfig(void *db_conn, bool dbd)
 	}
 
 	msg.msg_type = DBD_RECONFIG;
+	msg.conn = db_conn;
 	dbd_conn_send_recv_rc_msg(SLURM_PROTOCOL_VERSION, &msg, &rc);
 
 	return rc;
@@ -3146,6 +3147,7 @@ extern int acct_storage_p_clear_stats(void *db_conn)
 	int rc = SLURM_SUCCESS;
 
 	msg.msg_type = DBD_CLEAR_STATS;
+	msg.conn = db_conn;
 	dbd_conn_send_recv_rc_msg(SLURM_PROTOCOL_VERSION, &msg, &rc);
 
 	return rc;
@@ -3178,6 +3180,7 @@ extern int acct_storage_p_shutdown(void *db_conn)
 	int rc = SLURM_SUCCESS;
 
 	msg.msg_type = DBD_SHUTDOWN;
+	msg.conn = db_conn;
 	dbd_conn_send_recv_rc_msg(SLURM_PROTOCOL_VERSION, &msg, &rc);
 
 	return rc;
