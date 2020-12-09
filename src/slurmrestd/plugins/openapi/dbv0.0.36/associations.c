@@ -137,15 +137,18 @@ static int _dump_association(data_t *resp, rest_auth_context_t *auth,
 	int rc = SLURM_SUCCESS;
 	slurmdb_assoc_cond_t *assoc_cond = xmalloc(sizeof(*assoc_cond));
 
-	assoc_cond->acct_list = list_create(NULL);
-	assoc_cond->user_list = list_create(NULL);
-
-	list_append(assoc_cond->acct_list, account);
+	if (account) {
+		assoc_cond->acct_list = list_create(NULL);
+		list_append(assoc_cond->acct_list, account);
+	}
 	if (cluster) {
 		assoc_cond->cluster_list = list_create(NULL);
 		list_append(assoc_cond->cluster_list, cluster);
 	}
-	list_append(assoc_cond->user_list, user);
+	if (user) {
+		assoc_cond->user_list = list_create(NULL);
+		list_append(assoc_cond->user_list, user);
+	}
 	if (partition) {
 		assoc_cond->partition_list = list_create(NULL);
 		list_append(assoc_cond->partition_list, partition);
@@ -283,9 +286,8 @@ static int op_handler_association(const char *context_id,
 				  data_t *parameters, data_t *query, int tag,
 				  data_t *resp, rest_auth_context_t *auth)
 {
-	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
-	char *user;
+	char *user = NULL; /* optional */
 	char *account = NULL; /* optional */
 	char *cluster = NULL; /* optional */
 	char *partition = NULL; /* optional */
@@ -297,11 +299,9 @@ static int op_handler_association(const char *context_id,
 	(void)data_retrieve_dict_path_string(query, "partition", &partition);
 	(void)data_retrieve_dict_path_string(query, "cluster", &cluster);
 	(void)data_retrieve_dict_path_string(query, "user", &user);
+	(void)data_retrieve_dict_path_string(query, "account", &account);
 
-	if ((rc = data_retrieve_dict_path_string(query, "account", &account)))
-		return resp_error(errors, ESLURM_REST_EMPTY_RESULT,
-				  "account is missing", "HTTP query");
-	else if (method == HTTP_REQUEST_GET)
+	if (method == HTTP_REQUEST_GET)
 		return _dump_association(resp, auth, errors, account, cluster,
 					 user, partition);
 	else if (method == HTTP_REQUEST_DELETE)
