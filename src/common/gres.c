@@ -2470,13 +2470,13 @@ static void _get_gres_cnt(gres_node_state_t *gres_data, char *orig_config,
 				tmp_gres_cnt = 1;
 			} else if ((mult = suffix_mult(last_num)) != NO_VAL64) {
 				tmp_gres_cnt *= mult;
+				num[0] = '\0';
 			} else {
 				error("Bad GRES configuration: %s", tok);
 				break;
 			}
 
 			gres_config_cnt += tmp_gres_cnt;
-			num[0] = '\0';
 
 			sub_tok = strtok_r(tok, ":", &last_sub_tok);
 			if (sub_tok)	/* Skip GRES name */
