@@ -178,8 +178,7 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-am__DEPENDENCIES_1 =
-libnss_slurm_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+libnss_slurm_la_DEPENDENCIES = $(top_builddir)/src/api/libslurm.la
 am_libnss_slurm_la_OBJECTS = libnss_slurm.lo
 libnss_slurm_la_OBJECTS = $(am_libnss_slurm_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -510,7 +509,7 @@ AM_CPPFLAGS = -fPIC -I$(top_srcdir) -I$(top_srcdir)/src/common
 PLUGIN_FLAGS = --export-dynamic -shrext .so.2 -avoid-version
 lib_LTLIBRARIES = libnss_slurm.la
 libnss_slurm_la_SOURCES = libnss_slurm.c
-libnss_slurm_la_LIBADD = $(LIB_SLURM)
+libnss_slurm_la_LIBADD = $(top_builddir)/src/api/libslurm.la
 libnss_slurm_la_LDFLAGS = $(PLUGIN_FLAGS) $(LIB_LDFLAGS)
 all: all-am
 

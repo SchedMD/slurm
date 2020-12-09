@@ -11,7 +11,7 @@ lib_LTLIBRARIES = libnss_slurm.la
 
 libnss_slurm_la_SOURCES = libnss_slurm.c
 
-libnss_slurm_la_LIBADD = $(LIB_SLURM)
+libnss_slurm_la_LIBADD = $(top_builddir)/src/api/libslurm.la
 
 libnss_slurm_la_LDFLAGS = $(PLUGIN_FLAGS) $(LIB_LDFLAGS)
 
