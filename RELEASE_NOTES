@@ -27,6 +27,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
+ -- Changed the --format handling for negative field widths (left justified)
+    to apply to the column headers as well as the printed fields.
 
 API CHANGES
 ===========

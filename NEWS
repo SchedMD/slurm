@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd/v0.0.37 - rename standard_in -> standard_input.
  -- slurmrestd/v0.0.37 - rename standard_out -> standard_output.
  -- slurmdbd - Improve log messages of more time than possible on rollups.
+ -- Changed the --format handling for negative field widths (left justified)
+    to apply to the column headers as well as the printed fields.
 
 * Changes in Slurm 20.11.1
 ==========================
