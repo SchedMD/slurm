@@ -697,6 +697,9 @@ proc _line_trace {} {
 #	-fail
 #		If the exit code or timeout is unexpected, the action that will
 #		be taken is to fail the test
+#	-subtest
+#		If the exit code or timeout is unexpected, the action that will
+#		be taken is to subfail, otherwise subpass will be called
 #	-warn
 #		If the exit code or timeout is unexpected, the action that will
 #		be taken is to log a warning (this is the default)
@@ -743,6 +746,7 @@ proc run_command args {
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
 			-fail    {set action "fail"; set args [lrange $args 1 end]}
+			-subtest {set action "subtest"; set args [lrange $args 1 end]}
 			-none    {set action "none"; set args [lrange $args 1 end]}
 			-timeout {set args [lassign $args - timeout]}
 			-warn    {set action "warn"; set args [lrange $args 1 end]}
@@ -810,6 +814,8 @@ proc run_command args {
 		}
 		if {$action eq "warn"} {
 			log_warn $message
+		} elseif {$action eq "subtest"} {
+			subfail "Command \"$command\" should succeed (rc = $exit_status)"
 		} elseif {$action eq "fail"} {
 			fail $message
 		}
@@ -817,8 +823,16 @@ proc run_command args {
 		cset message "Command \"$command\" was expected to fail but succeeeded"
 		if {$action eq "warn"} {
 			log_warn $message
+		} elseif {$action eq "subtest"} {
+			subfail "Command \"$command\" should fail (rc = $exit_status)"
 		} elseif {$action eq "fail"} {
 			fail $message
+		}
+	} elseif {$action eq "subtest"} {
+		if {!$expect_failure} {
+			subpass "Command \"$command\" should succeed"
+		} else {
+			subpass "Command \"$command\" should fail"
 		}
 	}
 	log_user $orig_log_user
