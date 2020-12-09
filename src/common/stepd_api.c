@@ -80,20 +80,6 @@ strong_alias(xfree_struct_passwd, slurm_xfree_struct_passwd);
 strong_alias(stepd_getgr, slurm_stepd_getgr);
 strong_alias(xfree_struct_group_array, slurm_xfree_struct_group_array);
 
-static bool
-_slurm_authorized_user()
-{
-	uid_t uid, slurm_user_id;
-	slurm_conf_t *conf = slurm_conf_lock();
-
-	slurm_user_id = (uid_t)conf->slurm_user_id;
-	slurm_conf_unlock();
-
-	uid = getuid();
-
-	return ((uid == (uid_t)0) || (uid == slurm_user_id));
-}
-
 /*
  * Should be called when a connect() to a socket returns ECONNREFUSED.
  * Presumably the ECONNREFUSED means that nothing is attached to the listening
@@ -108,8 +94,8 @@ _handle_stray_socket(const char *socket_name)
 	time_t now;
 
 	/* Only attempt to remove the stale socket if process is running
-	   as root or the SlurmUser. */
-	if (!_slurm_authorized_user())
+	   as root or the SlurmdUser. */
+	if (getuid() && (getuid() != slurm_conf.slurmd_user_id))
 		return;
 
 	if (stat(socket_name, &buf) == -1) {

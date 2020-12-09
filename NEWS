@@ -59,6 +59,7 @@ documents those changes that are of interest to users and administrators.
  -- mpi/pmix - change the error handler error message to be more useful.
  -- Add missing connection in acct_storage_p_{clear_stats, reconfig, shutdown}.
  -- Perl API - fix issue when running in configless mode.
+ -- nss_slurm - avoid deadlock when stray sockets are found.
 
 * Changes in Slurm 20.11.0
 ==========================
