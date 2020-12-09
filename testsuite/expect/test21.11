@@ -167,11 +167,11 @@ if {$almatches != 2} {
 	set exit_code 1
 }
 # Check that the Association was set correctly
-if {![check_assoc_limit 2 account $ta1 [array get acct]} {
+if {![check_assoc_limit 2 account $ta1 [array get acct]]} {
 	log_error "The association limits for account $ta1 were not set correctly"
 	set exit_code 1
 }
-if {![check_assoc_limit 2 account $ta2 [array get acct]} {
+if {![check_assoc_limit 2 account $ta2 [array get acct]]} {
 	log_error "The association limits for account $ta2 were not set correctly"
 	set exit_code 1
 }

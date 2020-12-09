@@ -221,7 +221,7 @@ proc _test_limits { } {
 		log_info "Setting up association limit $option..."
 		if { [string compare $option "maxjobsub"] &&
 		     [string compare $option "grpjobsub"] } {
-			if [assoc_setup $option $acct_mod_assoc_vals($option)]
+			if [assoc_setup $option $acct_mod_assoc_vals($option)] {
 				fail "Unable to modify account $ta"
 			}
 

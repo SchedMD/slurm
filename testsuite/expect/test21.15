@@ -187,7 +187,7 @@ if { $exit_code } {
 	fail "Unable to add user ($tu2)"
 }
 
-if {![check_assoc_limit 3 user $tu2 [array get user_req2]} {
+if {![check_assoc_limit 3 user $tu2 [array get user_req2]]} {
 	log_error "The association limits for user $tu2 are incorrect"
 	set exit_code 1
 }
