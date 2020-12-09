@@ -8,25 +8,14 @@ AM_CPPFLAGS = -I$(top_srcdir)
 if WITH_GNU_LD
 VERSION_SCRIPT = \
 	version.map
-# With libslurm we have magic init/fini callers so the linker does not have to
-# worry about knowing to call slurm_conf_init()
 OTHER_FLAGS = \
-	-Wl,--version-script=$(VERSION_SCRIPT) \
-	-Wl,-init,slurm_library_init \
-	-Wl,-fini,slurm_library_fini
+	-Wl,--version-script=$(VERSION_SCRIPT)
 FULL_VERSION_SCRIPT = \
 	full_version.map
-# With libslurmfull we expect the process to know they have to call
-# slurm_conf_init() since they are inside of slurm at this point.
-# We do not have the init/fini that libslurm has.
 FULL_OTHER_FLAGS = \
 	-Wl,--version-script=$(FULL_VERSION_SCRIPT)
-# With libslurm_pmi we have magic init/fini callers so the linker does not
-# have to worry about knowing to call slurm_conf_init()
 SLURM_PMI_OTHER_FLAGS = \
-	-Wl,--version-script=$(VERSION_SCRIPT) \
-	-Wl,-init,slurm_library_init \
-	-Wl,-fini,slurm_library_fini
+	-Wl,--version-script=$(VERSION_SCRIPT)
 endif
 
 # libslurm version information :

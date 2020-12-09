@@ -289,7 +289,7 @@ int main(int argc, char *argv[])
 	if (cc < 0)
 		goto ouch;
 
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 
 	if ((fd = fopen(params.testcases, "r")) == NULL) {
 		info("Failed to open %s: %m",params.testcases);

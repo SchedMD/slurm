@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 	// Override where Slurm looks for conf files
 	setenv("SLURM_CONF", slurm_conf, 1);
 
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 
 	// Initialize GRES info (from slurm.conf)
 	rc = gres_plugin_init_node_config(node_name, slurm_conf_gres_str,

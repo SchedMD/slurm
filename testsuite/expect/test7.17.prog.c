@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
 	 */
 	setenv("SLURM_CONF", slurm_conf, 1);
 
-	slurm_conf_init(NULL);
+	slurm_init(NULL);
 
 	rc = gres_plugin_init();
 	if (rc)

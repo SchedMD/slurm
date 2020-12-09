@@ -36,12 +36,12 @@
 
 #include "src/common/read_config.h"
 
-extern void slurm_library_init(void)
+extern void slurm_init(const char *conf)
 {
-	slurm_conf_init(NULL);
+	slurm_conf_init(conf);
 }
 
-extern void slurm_library_fini(void)
+extern void slurm_fini(void)
 {
 	slurm_conf_destroy();
 }
