@@ -78,7 +78,3 @@ if {[wait_for_file $file_out] == 0} {
 } else {
 	fail "File not found ($file_out)"
 }
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
