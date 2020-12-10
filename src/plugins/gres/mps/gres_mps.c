@@ -457,7 +457,6 @@ static int _compute_local_id(char *dev_file_name)
 static uint64_t _build_mps_dev_info(List gres_conf_list)
 {
 	uint64_t mps_count = 0;
-	uint32_t mps_plugin_id = gres_build_id("mps");
 	gres_slurmd_conf_t *gres_conf;
 	mps_dev_info_t *mps_conf;
 	ListIterator iter;
@@ -465,7 +464,7 @@ static uint64_t _build_mps_dev_info(List gres_conf_list)
 	mps_info = list_create(xfree_ptr);
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_conf = list_next(iter))) {
-		if (gres_conf->plugin_id != mps_plugin_id)
+		if (!gres_id_shared(gres_conf->plugin_id))
 			continue;
 		mps_conf = xmalloc(sizeof(mps_dev_info_t));
 		mps_conf->count = gres_conf->count;

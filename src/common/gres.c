@@ -6407,7 +6407,7 @@ static uint32_t _job_test(void *job_gres_data, void *node_gres_data,
 		use_total_gres = true;
 
 	if (!use_total_gres &&
-	    (plugin_id == mps_plugin_id) &&
+	    gres_id_shared(plugin_id) &&
 	    (node_gres_ptr->gres_cnt_alloc != 0)) {
 		/* We must use the ONE already active GRES of this type */
 		use_busy_dev = true;
@@ -6865,7 +6865,7 @@ static sock_gres_t *_build_sock_gres_by_topo(
 		return NULL;
 
 	if (!use_total_gres &&
-	    (main_plugin_id == mps_plugin_id) &&
+	    gres_id_shared(main_plugin_id) &&
 	    (node_gres_ptr->gres_cnt_alloc != 0)) {
 		/* We must use the ONE already active GRES of this type */
 		use_busy_dev = true;

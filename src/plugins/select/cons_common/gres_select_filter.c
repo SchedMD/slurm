@@ -42,8 +42,6 @@
 
 #include "gres_select_filter.h"
 
-static uint32_t gpu_plugin_id = NO_VAL, mps_plugin_id = NO_VAL;
-
 static void _job_core_filter(void *job_gres_data, void *node_gres_data,
 			     bool use_total_gres, bitstr_t *core_bitmap,
 			     int core_start_bit, int core_end_bit,
@@ -60,11 +58,8 @@ static void _job_core_filter(void *job_gres_data, void *node_gres_data,
 	    !job_gres_ptr->gres_per_node)		/* No job GRES */
 		return;
 
-	if (mps_plugin_id == NO_VAL)
-		mps_plugin_id = gres_build_id("mps");
-
 	if (!use_total_gres &&
-	    (plugin_id == mps_plugin_id) &&
+	    gres_id_shared(plugin_id) &&
 	    (node_gres_ptr->gres_cnt_alloc != 0)) {
 		/* We must use the ONE already active GRES of this type */
 		use_busy_dev = true;
@@ -227,9 +222,6 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 	    (list_count(sock_gres_list) == 0))
 		return rc;
 
-	if (gpu_plugin_id == NO_VAL)
-		gpu_plugin_id = gres_build_id("gpu");
-
 	sock_gres_iter = list_iterator_create(sock_gres_list);
 	while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
 		uint64_t min_gres = 1, tmp_u64;
@@ -365,7 +357,7 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 			break;
 		}
 
-		if (sock_gres->plugin_id == gpu_plugin_id) {
+		if (gres_id_sharing(sock_gres->plugin_id)) {
 			*avail_gpus += sock_gres->total_cnt;
 			if (sock_gres->max_node_gres &&
 			    (sock_gres->max_node_gres < near_gres_cnt))
@@ -933,7 +925,7 @@ static void _pick_specific_topo(struct job_resources *job_res, int node_inx,
 		}
 	}
 
-	if ((sock_gres->plugin_id == mps_plugin_id) &&
+	if (gres_id_shared(sock_gres->plugin_id) &&
 	    (node_specs->gres_cnt_alloc != 0)) {
 		/* We must use the ONE already active GRES of this type */
 		use_busy_dev = true;
@@ -1631,7 +1623,7 @@ static void _set_node_bits(struct job_resources *job_res, int node_inx,
 	 */
 	if (node_specs->link_len == gres_cnt)
 		links_cnt = xcalloc(gres_cnt, sizeof(int));
-	if (sock_gres->plugin_id == mps_plugin_id)
+	if (gres_id_shared(sock_gres->plugin_id))
 		gres_per_bit = job_specs->gres_per_node;
 	for (s = -1;	/* Socket == - 1 if GRES avail from any socket */
 	     ((s < sock_cnt) && (alloc_gres_cnt < job_specs->gres_per_node));
@@ -2223,7 +2215,7 @@ extern int gres_select_filter_select_and_set(List *sock_gres_list,
 			job_specs->gres_cnt_node_select[i] = 0;
 
 			if (job_specs->gres_per_node &&
-			    (sock_gres->plugin_id == mps_plugin_id)) {
+			    gres_id_shared(sock_gres->plugin_id)) {
 				/* gres/mps: select specific topo bit for job */
 				_pick_specific_topo(job_res, i, node_inx,
 						    sock_gres, job_id,
