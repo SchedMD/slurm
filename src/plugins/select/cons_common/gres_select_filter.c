@@ -284,13 +284,11 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 				break;
 			}
 		}
-		if (sock_gres->cnt_by_sock || enforce_binding) {
-			if (!avail_cores_by_sock) {
-				avail_cores_by_sock =_build_avail_cores_by_sock(
-					core_bitmap, sockets,
-					cores_per_sock);
-			}
-		}
+
+		if (sock_gres->cnt_by_sock && !avail_cores_by_sock)
+			avail_cores_by_sock =_build_avail_cores_by_sock(
+				core_bitmap, sockets, cores_per_sock);
+
 		/*
 		 * NOTE: gres_per_socket enforcement is performed by
 		 * _build_sock_gres_by_topo(), called by gres_job_test2()
