@@ -1978,7 +1978,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	char *stoptoken  = "XXXXSLURMSTOPPARSINGHEREXXXXX";
 	char cmdstr[256], *env_loc = NULL;
 	char *stepd_path = NULL;
-	int fd1, fd2, fildes[2], found, fval, len, rc, timeleft;
+	int fildes[2], found, fval, len, rc, timeleft;
 	int buf_read, buf_rem, config_timeout;
 	pid_t child;
 	struct timeval begin, now;
@@ -2025,16 +2025,18 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	}
 	if (child == 0) {
 		char **tmp_env = NULL;
+		int devnull;
 		tmp_env = env_array_create();
 		env_array_overwrite(&tmp_env, "ENVIRONMENT", "BATCH");
 		setpgid(0, 0);
-		close(STDIN_FILENO);
-		if ((fd1 = open("/dev/null", O_RDONLY)) == -1)
+
+		if ((devnull = open("/dev/null", O_RDONLY)) == -1)
 			error("%s: open(/dev/null): %m", __func__);
+		dup2(devnull, STDIN_FILENO);
 		dup2(fildes[1], STDOUT_FILENO);
-		close(STDERR_FILENO);
-		if ((fd2 = open("/dev/null", O_WRONLY)) == -1)
-			error("%s: open(/dev/null): %m", __func__);
+		dup2(devnull, STDERR_FILENO);
+		closeall(3);
+
 		if      (mode == 1)
 			execle(SUCMD, "su", username, "-c", cmdstr, NULL, tmp_env);
 		else if (mode == 2)
@@ -2046,10 +2048,8 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 			execle(SUCMD, "su", "-", username, "-c", cmdstr, NULL, tmp_env);
 #endif
 		}
-		if (fd1 >= 0)	/* Avoid Coverity resource leak notification */
-			(void) close(fd1);
-		if (fd2 >= 0)	/* Avoid Coverity resource leak notification */
-			(void) close(fd2);
+		if (devnull >= 0)	/* Avoid Coverity resource leak notification */
+			(void) close(devnull);
 		_exit(1);
 	}
 
