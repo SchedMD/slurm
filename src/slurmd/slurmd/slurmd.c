@@ -206,6 +206,7 @@ static void      _select_spec_cores(void);
 static void     *_service_connection(void *);
 static int       _set_slurmd_spooldir(const char *dir);
 static int       _set_topo_info(void);
+static int       _set_work_dir(void);
 static int       _slurmd_init(void);
 static int       _slurmd_fini(void);
 static void      _update_logging(void);
@@ -1829,40 +1830,8 @@ _slurmd_init(void)
 	}
 
 	if (conf->daemonize) {
-		bool success = false;
-
-		if (conf->logfile && (conf->logfile[0] == '/')) {
-			char *slash_ptr, *work_dir;
-			work_dir = xstrdup(conf->logfile);
-			slash_ptr = strrchr(work_dir, '/');
-			if (slash_ptr == work_dir)
-				work_dir[1] = '\0';
-			else
-				slash_ptr[0] = '\0';
-			if ((access(work_dir, W_OK) != 0) ||
-			    (chdir(work_dir) < 0)) {
-				error("Unable to chdir to %s", work_dir);
-			} else
-				success = true;
-			xfree(work_dir);
-		}
-
-		if (!success) {
-			if ((access(conf->spooldir, W_OK) != 0) ||
-			    (chdir(conf->spooldir) < 0)) {
-				error("Unable to chdir to %s", conf->spooldir);
-			} else
-				success = true;
-		}
-
-		if (!success) {
-			if ((access("/var/tmp", W_OK) != 0) ||
-			    (chdir("/var/tmp") < 0)) {
-				error("chdir(/var/tmp): %m");
-				return SLURM_ERROR;
-			} else
-				info("chdir to /var/tmp");
-		}
+		if (_set_work_dir() != SLURM_SUCCESS)
+			return SLURM_ERROR;
 	}
 
 	if ((devnull = open("/dev/null", O_RDWR | O_CLOEXEC)) < 0) {
@@ -2629,4 +2598,44 @@ extern int run_script_health_check(void)
 	}
 
 	return rc;
+}
+
+static int _set_work_dir(void)
+{
+	bool success = false;
+
+	if (conf->logfile && (conf->logfile[0] == '/')) {
+		char *slash_ptr, *work_dir;
+		work_dir = xstrdup(conf->logfile);
+		slash_ptr = strrchr(work_dir, '/');
+		if (slash_ptr == work_dir)
+			work_dir[1] = '\0';
+		else
+			slash_ptr[0] = '\0';
+		if ((access(work_dir, W_OK) != 0) ||
+		    (chdir(work_dir) < 0)) {
+			error("Unable to chdir to %s", work_dir);
+		} else
+			success = true;
+		xfree(work_dir);
+	}
+
+	if (!success) {
+		if ((access(conf->spooldir, W_OK) != 0) ||
+		    (chdir(conf->spooldir) < 0)) {
+			error("Unable to chdir to %s", conf->spooldir);
+		} else
+			success = true;
+	}
+
+	if (!success) {
+		if ((access("/var/tmp", W_OK) != 0) ||
+		    (chdir("/var/tmp") < 0)) {
+			error("chdir(/var/tmp): %m");
+			return SLURM_ERROR;
+		} else
+			info("chdir to /var/tmp");
+	}
+
+	return SLURM_SUCCESS;
 }
