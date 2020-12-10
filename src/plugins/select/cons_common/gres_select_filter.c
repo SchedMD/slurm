@@ -1805,8 +1805,7 @@ static void _set_task_bits(struct job_resources *job_res, int node_inx,
 				continue;   /* GRES not on this socket */
 			if (bit_test(node_specs->gres_bit_alloc, g))
 				continue;   /* Already allocated GRES */
-			if (bit_test(node_specs->gres_bit_alloc, g) ||
-			    bit_test(job_specs->gres_bit_select[node_inx], g))
+			if (bit_test(job_specs->gres_bit_select[node_inx], g))
 				continue;   /* Already allocated GRES */
 			bit_set(job_specs->gres_bit_select[node_inx], g);
 			job_specs->gres_cnt_node_select[node_inx]++;
