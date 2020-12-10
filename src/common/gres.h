@@ -448,12 +448,6 @@ extern int gres_init_node_config(char *node_name, char *orig_config,
  */
 extern int gres_get_gres_cnt(void);
 
-/*
- * Given a plugin_id, return the name of the gres.
- * Caller must xfree returned value. NULL returned if no gres is found.
- */
-extern char *gres_get_name_from_id(uint32_t plugin_id);
-
 /* Add a GRES record. This is used by the node_features plugin after the
  * slurm.conf file is read and the initial GRES records are built by
  * gres_init(). */

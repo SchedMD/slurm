@@ -659,7 +659,6 @@ extern int gres_ctld_job_select_whole_node(
 
 	node_gres_iter = list_iterator_create(node_gres_list);
 	while ((node_gres_ptr = list_next(node_gres_iter))) {
-		char *gres_name;
 		gres_key_t job_search_key;
 		node_state_ptr = (gres_node_state_t *) node_gres_ptr->gres_data;
 
@@ -670,32 +669,23 @@ extern int gres_ctld_job_select_whole_node(
 		if (!node_state_ptr->gres_cnt_config)
 			continue;
 
-		if (!(gres_name = gres_get_name_from_id(
-			      node_gres_ptr->plugin_id))) {
-			error("%s: no plugin configured for data type %u for job %u and node %s",
-			      __func__, node_gres_ptr->plugin_id, job_id,
-			      node_name);
-			/* A likely sign that GresPlugins has changed */
-			continue;
-		}
-
 		job_search_key.plugin_id = node_gres_ptr->plugin_id;
 
 		if (!node_state_ptr->type_cnt) {
 			job_search_key.type_id = 0;
 			_job_select_whole_node_internal(
 				&job_search_key, node_state_ptr,
-				-1, gres_name, *job_gres_list);
+				-1, node_gres_ptr->gres_name, *job_gres_list);
 		} else {
 			for (int j = 0; j < node_state_ptr->type_cnt; j++) {
 				job_search_key.type_id = gres_build_id(
 					node_state_ptr->type_name[j]);
 				_job_select_whole_node_internal(
 					&job_search_key, node_state_ptr,
-					j, gres_name, *job_gres_list);
+					j, node_gres_ptr->gres_name,
+					*job_gres_list);
 			}
 		}
-		xfree(gres_name);
 	}
 	list_iterator_destroy(node_gres_iter);
 
@@ -1068,7 +1058,6 @@ extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
 	int rc = SLURM_SUCCESS, rc2;
 	ListIterator job_gres_iter;
 	gres_state_t *job_gres_ptr, *node_gres_ptr;
-	char *gres_name = NULL;
 
 	if (job_gres_list == NULL)
 		return SLURM_SUCCESS;
@@ -1080,27 +1069,19 @@ extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
 
 	job_gres_iter = list_iterator_create(job_gres_list);
 	while ((job_gres_ptr = (gres_state_t *) list_next(job_gres_iter))) {
-		if (!(gres_name = gres_get_name_from_id(
-			      job_gres_ptr->plugin_id))) {
-			error("%s: no plugin configured for data type %u for job %u and node %s",
-			      __func__, job_gres_ptr->plugin_id, job_id,
-			      node_name);
-			/* A likely sign that GresPlugins has changed */
-			gres_name = "UNKNOWN";
-		}
-
 		node_gres_ptr = list_find_first(node_gres_list, gres_find_id,
 						&job_gres_ptr->plugin_id);
 
 		if (node_gres_ptr == NULL) {
 			error("%s: node %s lacks gres/%s for job %u", __func__,
-			      node_name, gres_name , job_id);
+			      node_name, job_gres_ptr->gres_name, job_id);
 			continue;
 		}
 
 		rc2 = _job_dealloc(job_gres_ptr->gres_data,
 				   node_gres_ptr->gres_data, node_offset,
-				   gres_name, job_id, node_name, old_job,
+				   job_gres_ptr->gres_name, job_id,
+				   node_name, old_job,
 				   job_gres_ptr->plugin_id, user_id, job_fini);
 		if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
