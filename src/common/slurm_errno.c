@@ -378,6 +378,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Reservation given is not skipable, try deleting instead"},
 	{ ESLURM_RESERVATION_USER_GROUP,
 	  "Reservations can't have users and groups specified, only one or the other"},
+	{ ESLURM_PARTITION_ASSOC,
+	  "Multiple partition job request not supported when a partition is set in the association" },
 
 	/* slurmd error codes */
 	{ ESLURMD_PIPE_ERROR_ON_TASK_SPAWN,

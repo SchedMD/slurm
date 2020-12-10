@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix sacct not displaying UserCPU, SystemCPU and TotalCPU for large times.
  -- scrontab - fix to return the correct index for a bad #SCRON option.
  -- scrontab - fix memory leak when invalid option found in #SCRON line.
+ -- Add errno for when a user requests multiple partitions and they are using
+    partition based associations.
 
 * Changes in Slurm 20.11.4
 ==========================
