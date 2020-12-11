@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "November 2020" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "December 2020" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -2899,8 +2899,10 @@ This option is disabled by default.
 .TP
 \fBbf_resolution=#\fR
 The number of seconds in the resolution of data maintained about when jobs
-begin and end.
-Higher values result in less overhead and better responsiveness.
+begin and end. Higher values result in better responsiveness and quicker
+backfill cycles by using larger blocks of time to determine node eligibility.
+However, higher values lead to less efficient system planning, and may miss
+opportunities to improve system utilization.
 This option applies only to \fBSchedulerType=sched/backfill\fR.
 Default: 60, Min: 1, Max: 3600 (1 hour).
 .TP
