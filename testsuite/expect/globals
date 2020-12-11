@@ -5990,10 +5990,12 @@ proc compile_against_libslurm args {
 	set build_cmd "$bin_cc ${test_prog}.c -g -pthread"
 
 	if {$shared} {
-		append build_cmd " -fPIC -shared -o ${test_prog}.so"
+		set out "${test_prog}.so"
+		append build_cmd " -fPIC -shared"
 	} else {
-		append build_cmd " -o $test_prog"
+		set out "${test_prog}"
 	}
+	append build_cmd " -o $out"
 
 	append build_cmd " -I$src_dir -I$build_dir -I$slurm_dir/include -Wl,-rpath=$libline -L$libline -l$libfile -lresolv"
 
@@ -6009,7 +6011,7 @@ proc compile_against_libslurm args {
 		return $::RETURN_ERROR
 	}
 
-	exec $bin_chmod 700 $test_prog
+	exec $bin_chmod 700 $out
 	return $::RETURN_SUCCESS
 }
 
