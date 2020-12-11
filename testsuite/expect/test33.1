@@ -76,7 +76,7 @@ proc run_config { test_config } {
 #
 file delete $test_prog
 
-if [compile_against_libslurm ${test_prog} 1] {
+if [compile_against_libslurm -full $test_prog] {
 	fail "Cannot compile test program"
 }
 
