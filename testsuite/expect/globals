@@ -142,6 +142,7 @@ cset sstat       "${slurm_dir}/bin/sstat"
 cset strigger    "${slurm_dir}/bin/strigger"
 
 cset slurmd      "${slurm_dir}/sbin/slurmd"
+cset slurmrestd  "${slurm_dir}/sbin/slurmrestd"
 
 cset pbsnodes    "${slurm_dir}/bin/pbsnodes"
 cset qdel        "${slurm_dir}/bin/qdel"
@@ -704,6 +705,9 @@ proc _line_trace {} {
 #	-fail
 #		If the exit code or timeout is unexpected, the action that will
 #		be taken is to fail the test
+#	-subtest
+#		If the exit code or timeout is unexpected, the action that will
+#		be taken is to subfail, otherwise subpass will be called
 #	-warn
 #		If the exit code or timeout is unexpected, the action that will
 #		be taken is to log a warning (this is the default)
@@ -720,6 +724,8 @@ proc _line_trace {} {
 #		timing out (default is 60.0)
 #	-nolog
 #		Logging for this command will occur at trace threshold only
+#	-stdin
+#		Provide standard in to be piped into command
 #
 # ARGUMENTS
 #	command
@@ -744,14 +750,17 @@ proc run_command args {
 	set timeout 60
 	set expect_failure false
 	set log_at_trace_level false
+	set stdin ""
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
 			-fail    {set action "fail"; set args [lrange $args 1 end]}
+			-subtest {set action "subtest"; set args [lrange $args 1 end]}
 			-none    {set action "none"; set args [lrange $args 1 end]}
 			-timeout {set args [lassign $args - timeout]}
 			-warn    {set action "warn"; set args [lrange $args 1 end]}
 			-xfail   {set expect_failure true; set args [lrange $args 1 end]}
 			-nolog   {set log_at_trace_level true; set args [lrange $args 1 end]}
+			-stdin   {set stdin [lindex $args 1]; set args [lassign $args - stdin]}
 			-*       {fail "Unknown option: [lindex $args 0]"}
 			default  break
 		}
@@ -775,6 +784,9 @@ proc run_command args {
 	set start_clock_ms [clock milliseconds]
 	set stty_init raw ; # Prevent the terminal from inserting \r
 	set expect_pid [spawn -noecho $bin_bash -c "$command"]
+	if { $stdin != "" } {
+		exp_send "$stdin"
+	}
 	expect {
 		-re "(.+)" {
 			append output $expect_out(1,string)
@@ -810,6 +822,8 @@ proc run_command args {
 		}
 		if {$action eq "warn"} {
 			log_warn $message
+		} elseif {$action eq "subtest"} {
+			subfail "Command \"$command\" should succeed (rc = $exit_status)"
 		} elseif {$action eq "fail"} {
 			fail $message
 		}
@@ -817,8 +831,16 @@ proc run_command args {
 		cset message "Command \"$command\" was expected to fail but succeeeded"
 		if {$action eq "warn"} {
 			log_warn $message
+		} elseif {$action eq "subtest"} {
+			subfail "Command \"$command\" should fail (rc = $exit_status)"
 		} elseif {$action eq "fail"} {
 			fail $message
+		}
+	} elseif {$action eq "subtest"} {
+		if {!$expect_failure} {
+			subpass "Command \"$command\" should succeed"
+		} else {
+			subpass "Command \"$command\" should fail"
 		}
 	}
 	log_user $orig_log_user
@@ -867,6 +889,8 @@ proc run_command args {
 #	-timeout <float_number>
 #		time in seconds to wait for the command to complete before
 #		timing out (default is 60.0)
+#	-stdin
+#		Provide standard in to be piped into command
 #
 # ARGUMENTS
 #	command
@@ -923,6 +947,8 @@ proc run_command_output args {
 #	-timeout <float_number>
 #		time in seconds to wait for the command to complete before
 #		timing out (default is 60.0)
+#	-stdin
+#		Provide standard in to be piped into command
 #
 # ARGUMENTS
 #	command
