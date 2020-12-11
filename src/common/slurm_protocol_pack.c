@@ -14175,10 +14175,15 @@ extern int slurm_unpack_selected_step(slurm_selected_step_t **step,
 		safe_unpack32(&step_ptr->step_id.job_id, buffer);
 		safe_unpack32(&step_ptr->het_job_offset, buffer);
 		safe_unpack32(&step_ptr->step_id.step_id, buffer);
-		/* Old Slurm used to use INFINITE To denote the batch script */
+		/*
+		 * convert_old_step_id will not convert step_id correctly in
+		 * this particular situation.
+		 * Old Slurm used to use INFINITE To denote the batch script.
+		 * The extern step was not searchable before 20.11. NO_VAL meant
+		 * not set.
+		 */
 		if (step_ptr->step_id.step_id == INFINITE)
 			step_ptr->step_id.step_id = SLURM_BATCH_SCRIPT;
-		convert_old_step_id(&step_ptr->step_id.step_id);
 		step_ptr->step_id.step_het_comp = NO_VAL;
 	} else
 		goto unpack_error;
