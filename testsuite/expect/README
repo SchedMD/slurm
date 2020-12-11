@@ -395,6 +395,7 @@ test7.18   Test of slurm_hostlist_find().
 test7.19   Test sbatch/srun/salloc path resolving
 test7.20   Test lua JobSubmitPlugin
 test7.21   Test SPANK plugins that link against libslurm
+test7.22   Test basic functionality of backfill scheduler
 test7.23   Test time_str2secs parsing of different formats
 
 test8.#    Testing of advanced reservation functionality.
