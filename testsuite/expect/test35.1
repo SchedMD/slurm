@@ -59,6 +59,10 @@ proc find_bb_name { fname bb_name } {
 	return $found
 }
 
+if {[get_my_uid] == 0} {
+	skip "This test can't be run as user root"
+}
+
 set bb_types [get_bb_types]
 if {[string first "datawarp" $bb_types] == -1} {
 	skip "This test can only be run with the burst_buffer/datawarp plugin"
