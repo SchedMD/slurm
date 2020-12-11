@@ -113,7 +113,7 @@ if { $match != 1 } {
 # Check that the job with dependency is in the correct state and has correct
 # reason
 set match 0
-if {[param_contains [get_config_param "SchedulerParameters"] "kill_invalid_depend"]} {
+if {[param_contains [get_config_param "DependencyParameters"] "kill_invalid_depend"]} {
 	spawn $scontrol show job $job_id2
 	expect {
 		-re "JobState=CANCELLED Reason=Dependency Dependency=afternotok:${job_id1}" {
