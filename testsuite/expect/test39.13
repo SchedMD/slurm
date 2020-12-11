@@ -30,14 +30,20 @@ set exit_code      0
 set file_in1       "test$test_id.input1"
 set file_in2       "test$test_id.input2"
 set file_out       "test$test_id.output"
+set job_list       ""
 set number_commas  "\[0-9_,\]+"
 
 proc cleanup {} {
-	global scancel test_id bin_rm file_in1 file_in2
+	global job_list file_out file_in1 file_in2 bin_rm
 
-	exec $scancel -n "test$test_id"
-	exec $bin_rm -f $file_in1 $file_in2
+	# cancel jobs
+	cancel_job $job_list
+
+	# remove vestigial files
+	run_command -none "$bin_rm ${file_out}.*"
+	run_command -none "$bin_rm -f $file_in1 $file_in2"
 }
+cleanup
 
 if {![check_config_select "cons_tres"]} {
 	skip "This test is only compatible with select/cons_tres"
@@ -93,86 +99,36 @@ make_bash_script $file_in2 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$C
 for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 	set job_id 0
 	set ofile ${file_out}.${inx}
-	exec $bin_rm -f $ofile
 	if {$tot_gpus > $tot_cpus} {
-#		Assumes no configured DefCPUsPerGPU
-		spawn $sbatch --gpus=$inx -t1 -w $node_name \
-		              -J "test$test_id" --output=$ofile ./$file_in1
+		# Assumes no configured DefCPUsPerGPU
+		set job_id [submit_job "--gpus=$inx -t1 -w $node_name -J \"test$test_id\" --output=$ofile ./$file_in1"]
 	} else {
-		spawn $sbatch --cpus-per-gpu=1 --gpus=$inx -t1 \
-		              -w $node_name -J "test$test_id" \
-		              --output=$ofile ./$file_in1
-	}
-	expect {
-		-re "Submitted batch job ($number)" {
-			set job_id $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			fail "sbatch not responding"
-		}
-		eof {
-			wait
-		}
+		set job_id [submit_job "--cpus-per-gpu=1 --gpus=$inx -t1 -w $node_name -J \"test$test_id\" --output=$ofile ./$file_in1"]
 	}
 	if {$job_id == 0} {
-		log_error "sbatch job submit failure"
-		set exit_code 1
-		set tot_gpus [expr $inx - 1]
-		break
+		fail "sbatch job submit failure"
+	} else {
+		lappend job_list $job_id
 	}
 }
 
-#
-# Check the output file contents to identify allocated GPUs
-#
-# Try to avoid possibly huge delays here when tot_gpus is large
-# Perform large delay at the start and small delays for each job's output
-#
-if {$tot_gpus > 4} {
-	sleep 70
+foreach job_id $job_list {
+	if {[wait_for_job $job_id "DONE"]} {
+		fail "Job $job_id not end"
+	}
 }
+
 for {set inx 1} {$inx <= $tot_gpus} {incr inx} {
 	set ofile ${file_out}.${inx}
 	if {[wait_for_file -timeout 20 $ofile] != 0} {
-		log_error "Output file $ofile not found"
-		set exit_code 1
-	} else {
-		set match 0
-		spawn $bin_cat $ofile
-		expect {
-			-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
-				incr match [cuda_count $expect_out(1,string)]
-				exp_continue
-			}
-			eof {
-				wait
-			}
-		}
-		if {$match != $inx} {
-			log_error "Bad GPU count in file $ofile ($match != $inx)"
-			set exit_code 1
-		} else {
-			exec $bin_rm -f $ofile
-		}
+		fail "Output file $ofile not found"
 	}
-}
-
-#
-# Log any vestigial jobs and cancel them
-#
-if {$exit_code != 0} {
-	spawn $squeue -tall -n "test$test_id"
-	expect {
-		timeout {
-			fail "squeue not responding"
-		}
-		eof {
-			wait
-		}
+	set output [run_command_output "$bin_cat $ofile"]
+	set matches_list [regexp -inline -all "CUDA_VISIBLE_DEVICES:($number_commas)" $output]
+	set match 0
+	foreach {re devices} $matches_list {
+		incr match [cuda_count $devices]
 	}
-}
 
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	subtest {$match == $inx} "GPU count should be $inx in file $ofile" "$match != $inx, file: $output"
 }
