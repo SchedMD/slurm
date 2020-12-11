@@ -48,6 +48,7 @@
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
+#include "src/common/gres.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -726,6 +727,8 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	job_desc_msg_t *j = xmalloc(sizeof(*j));
 	hostlist_t hl = NULL;
+	List tmp_gres_list = NULL;
+	int rc;
 	xassert(srun_opt);
 
 	slurm_init_job_desc_msg(j);
@@ -944,6 +947,26 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 	if (opt_local->mem_per_gpu != NO_VAL64)
 		xstrfmtcat(j->mem_per_tres, "gpu:%"PRIu64,
 			   opt_local->mem_per_gpu);
+
+	rc = gres_job_state_validate(j->cpus_per_tres,
+				     j->tres_freq,
+				     j->tres_per_job,
+				     j->tres_per_node,
+				     j->tres_per_socket,
+				     j->tres_per_task,
+				     j->mem_per_tres,
+				     &j->num_tasks,
+				     &j->min_nodes,
+				     &j->max_nodes,
+				     &j->ntasks_per_node,
+				     &j->ntasks_per_socket,
+				     &j->sockets_per_node,
+				     &j->cpus_per_task,
+				     &j->ntasks_per_tres,
+				     &tmp_gres_list);
+	FREE_NULL_LIST(tmp_gres_list);
+	if (rc)
+		return NULL;
 
 	return j;
 }
