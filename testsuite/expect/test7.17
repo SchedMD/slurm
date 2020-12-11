@@ -39,7 +39,7 @@ if {[get_config_param "SwitchType"] eq "switch/cray"} {
 #
 file delete $test_prog
 
-if [compile_against_libslurm ${test_prog} 1] {
+if [compile_against_libslurm -full $test_prog] {
 	fail "Cannot compile test program"
 }
 

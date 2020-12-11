@@ -5920,16 +5920,21 @@ proc submit_job args {
 #	compile_against_libslurm - compiles a test program against either libslurm.so or libslurmfull.so
 #
 # SYNOPSIS
-#	compile_against_libslurm test_prog ?use_full? ?build_args?
+#	compile_against_libslurm ?options? test_prog ?build_args?
 #
 # DESCRIPTION
 #	Compile a test program against either libslurm.so or libslurmfull.so.
 #
+# OPTIONS
+#	-full
+#		use libslurmfull.so instead of libslurm.so
+#	-shared
+#		produces a shared library (adds the -shared compiler option
+#		and adds a .so suffix to the output file name)
+#
 # ARGUMENTS
 #	test_prog
 #		The name of the test program (and .c file)
-#	use_full
-#		If 1, use libslurmfull.so instead of libslurm.so. Defaults to 0.
 #	build_args
 #		Additional string to be appended to the build command.
 #		E.g. "-DUSING_VALGRIND -lm ${build_dir}/src/slurmctld/locks.o"
@@ -5937,8 +5942,30 @@ proc submit_job args {
 #
 ################################################################################
 
-proc compile_against_libslurm { test_prog {use_full 0} {build_args ""} } {
+proc compile_against_libslurm args {
 	global slurm_dir bin_cc src_dir build_dir bin_chmod
+
+	set use_full   false
+	set shared     false
+	set build_args ""
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-full    {set use_full true; set args [lrange $args 1 end]}
+			-shared  {set shared true; set args [lrange $args 1 end]}
+			-*       {fail "Unknown option: [lindex $args 0]"}
+			default  break
+		}
+	}
+	set argument_count [llength $args]
+	if {$argument_count < 1} {
+		fail "Too few arguments ($argument_count): $args"
+	} else {
+		lassign $args test_prog
+	}
+	if {$argument_count == 2} { set build_args [lindex $args 1] }
+	if {$argument_count > 2} {
+		fail "Too many arguments ($argument_count): $args"
+	}
 
 	if {$use_full} {
 		set libfile "libslurmfull.so"
@@ -5960,11 +5987,19 @@ proc compile_against_libslurm { test_prog {use_full 0} {build_args ""} } {
 		set libfile "slurm"
 	}
 
-	set build_cmd "$bin_cc ${test_prog}.c -g -pthread -o $test_prog -I$src_dir -I$build_dir -I$slurm_dir/include -Wl,-rpath=$libline -L$libline -l$libfile -lresolv"
+	set build_cmd "$bin_cc ${test_prog}.c -g -pthread"
+
+	if {$shared} {
+		append build_cmd " -fPIC -shared -o ${test_prog}.so"
+	} else {
+		append build_cmd " -o $test_prog"
+	}
+
+	append build_cmd " -I$src_dir -I$build_dir -I$slurm_dir/include -Wl,-rpath=$libline -L$libline -l$libfile -lresolv"
 
 	# Add additional arguments to the build command
 	if {$build_args != ""} {
-		set build_cmd "$build_cmd $build_args"
+		append build_cmd " $build_args"
 	}
 
 	log_debug "Build command: $build_cmd"
