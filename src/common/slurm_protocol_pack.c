@@ -2762,6 +2762,7 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpack32(&tmp_ptr->num_tasks, buffer);
 		safe_unpack64(&tmp_ptr->pn_min_memory, buffer);
 		safe_unpack32(&tmp_ptr->time_limit, buffer);
+		tmp_ptr->threads_per_core = NO_VAL16;
 
 		safe_unpack16(&tmp_ptr->relative, buffer);
 		safe_unpack32(&tmp_ptr->task_dist, buffer);
