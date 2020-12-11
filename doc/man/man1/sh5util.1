@@ -1,4 +1,4 @@
-.TH sh5util "1" "Slurm Commands" "April 2015" "Slurm Commands"
+.TH sh5util "1" "Slurm Commands" "December 2020" "Slurm Commands"
 
 .SH "NAME"
 .LP
@@ -22,15 +22,31 @@ analysis tools such as spreadsheets.
 .LP
 The second, (Item-Extract) extracts one data time from one time series for all
 the samples on all the nodes from a jobs HDF5 profile.
-.TP
+.LP
 \- Finds sample with maximum value of the item.
-.TP
+.LP
 \- Write CSV file with min, ave, max, and item totals for each node for each
 sample
 
 
 .SH "OPTIONS"
 .LP
+
+.TP
+\fB\-L\fR, \fB\-\-list\fR
+
+Print the items of a series contained in a job file.
+.RS
+.TP 10
+List mode options
+
+.TP
+\fB\-i\fR, \fB\-\-input\fR=\fIpath\fR
+Merged file to extract from (default ./job_$jobid.h5)
+
+.TP
+\fB\-s\fR, \fB\-\-series\fR=[Energy | Filesystem | Network | Task]
+.RE
 
 .TP
 \fB\-E\fR, \fB\-\-extract\fR
@@ -50,12 +66,12 @@ merged file to extract from (default ./job_$jobid.h5)
 Node name to extract (default is all)
 
 .TP
-\fB\-l\fR, \fB\-\-level\fR=\fI[Node:Totals|Node:TimeSeries]\fR
+\fB\-l\fR, \fB\-\-level\fR=[Node:Totals | Node:TimeSeries]
 Level to which series is attached. (default Node:Totals)
 
 .TP
-\fB\-s\fR, \fB\-\-series\fR=\fI[Energy | Lustre | Network | Tasks | Task_#]\fR
-\fBTasks\fR is all tasks, \fBTask_#\fR (# is a task id) (default is everything)
+\fB\-s\fR, \fB\-\-series\fR=[Energy | Filesystem | Network | Task | Task_#]
+\fBTask\fR is all tasks, \fBTask_#\fR (# is a task id) (default is everything)
 
 .RE
 
@@ -69,7 +85,7 @@ Extract one data item from all samples of one data series from all nodes in a me
 Item-Extract mode options
 
 .TP
-\fB\-s\fR, \fB\-\-series\fR=[Energy | Lustre | Network | Task]\fR
+\fB\-s\fR, \fB\-\-series\fR=[Energy | Filesystem | Network | Task]\fR
 
 .TP
 \fB\-d\fR, \fB\-\-data\fR
@@ -124,7 +140,7 @@ CPU_Frequency
 .fi
 
 .TP
-\fBLustre\fR
+\fBFilesystem\fR
 .nf
 Reads
 Megabytes_Read
