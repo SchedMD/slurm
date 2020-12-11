@@ -778,6 +778,7 @@ proc run_command args {
 	set expect_pid [spawn -noecho $bin_bash -c "$command"]
 	if { $stdin != "" } {
 		exp_send "$stdin"
+		set command "$command <<< $stdin"
 	}
 	expect {
 		-re "(.+)" {
