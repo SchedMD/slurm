@@ -775,10 +775,9 @@ static int _load_trigger_state(buf_t *buffer, uint16_t protocol_version)
 	if (trig_ptr->res_type == TRIGGER_RES_TYPE_JOB) {
 		trig_ptr->job_id = (uint32_t) atol(trig_ptr->res_id);
 		trig_ptr->job_ptr = find_job_record(trig_ptr->job_id);
-		if ((trig_ptr->job_id == 0)     ||
-		    (trig_ptr->job_ptr == NULL) ||
-		    (IS_JOB_COMPLETED(trig_ptr->job_ptr) &&
-		     trig_ptr->state != 2))
+		if (((trig_ptr->job_id == 0)     ||
+		     (trig_ptr->job_ptr == NULL)) &&
+		    (trig_ptr->state != 2))
 			goto unpack_error;
 	} else if (trig_ptr->res_type == TRIGGER_RES_TYPE_NODE) {
 		trig_ptr->job_id = 0;
