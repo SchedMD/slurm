@@ -2492,6 +2492,73 @@ proc get_mps_count_by_index { index hostname } {
 ################################################################
 #
 # NAME
+#	check_bb_emulate - determines if Cray burst buffers API is emulated
+#
+# SYNOPSIS
+#	check_bb_emulate
+#
+# RETURN VALUE
+#	Returns true if Cray burst buffers API is emulated, false otherwise
+#
+################################################################
+
+proc check_bb_emulate { } {
+	global scontrol
+
+	log_user 0
+	set bb_emulate false
+	spawn $scontrol show burst
+	expect {
+		-re "EmulateCray" {
+			set bb_emulate true
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	return $bb_emulate
+}
+
+
+################################################################
+#
+# NAME
+#	check_bb_persistent - determines if persistent burst buffers can be created by users
+#
+# SYNOPSIS
+#	check_bb_persistent
+#
+# RETURN VALUE
+#	Returns true if Cray burst buffers can be created by users,
+#	false otherwise
+#
+################################################################
+
+proc check_bb_persistent { } {
+	global scontrol
+
+	log_user 0
+	set bb_persistent false
+	spawn $scontrol show burst
+	expect {
+		-re "EnablePersistent" {
+			set bb_persistent true
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	log_user 1
+	return $bb_persistent
+}
+
+
+################################################################
+#
+# NAME
 #	get_bb_types - gets the burst buffer plugins running with task/ stripped
 #
 # SYNOPSIS
