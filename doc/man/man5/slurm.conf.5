@@ -1439,6 +1439,9 @@ launch it on nodes in the step.
 Have salloc use the Interactive Step to launch a shell on an allocated compute
 node rather than locally to wherever salloc was invoked. This is accomplished
 by launching the srun command with InteractiveStepOptions as options.
+
+This does not affect salloc called with a command as an argument. These jobs
+will continue to be executed as the calling user on the calling host.
 .RE
 
 .TP
