@@ -5754,6 +5754,90 @@ proc get_nodes_by_request args {
 ################################################################
 #
 # NAME
+#	get_partitions - returns a dictionary of dictionaries of partition parameters
+#
+# SYNOPSIS
+#	get_partitions ?partition_name?
+#
+# DESCRIPTION
+#	Uses `scontrol show partitions` to query partition parameters,
+#	returning a dictionary of dictionaries with the partition names
+#	as keys of the first level dictionary and with the parameters as
+#	keys of the second level dictionary. Specifying an invalid partition
+#	name will result in a failure.
+#
+# RETURN VALUE
+#	If the optional partition_name argument is specified, the result will
+#	contain only the one patition. Otherwise, the results for all
+#	partitions will be returned.
+#
+################################################################
+
+proc get_partitions { {partition_name ""} } {
+	global scontrol
+
+	set command "$scontrol show partition -o"
+	if {$partition_name ne ""} {
+		append command " $partition_name"
+	}
+	set output [run_command_output -fail -nolog "$command"]
+
+	# Iterate over each partition parameter line
+	foreach line [split $output "\n"] {
+		if {$line eq ""} { continue }
+
+		# Peel off the partition parameters one at a time
+		# The first quantifier sets the greediness for the whole RE
+		while {[regexp {^ *?([^ =]+)=(.*)(?= +[^ =]+=| *$)} $line {} param_name param_value]} {
+			# Remove the consumed parameter from the line
+			set line [regsub {^ *?[^ =]+=.*(?= +[^ =]+=| *$)} $line {}]
+			# Add it to the temporary node dictionary
+			dict set part_dict $param_name $param_value
+		}
+
+		set part_name [dict get $part_dict "PartitionName"]
+
+		# Add the node dictionary to nodes dictionary
+		dict set parts_dict $part_name $part_dict
+
+		# Clear the node dictionary for use by the next node
+		set part_dict {}
+	}
+
+	return $parts_dict
+}
+
+
+################################################################
+#
+# NAME
+#	get_partition_param - returns a specific parameter value for a specific partition
+#
+# SYNOPSIS
+#	get_partition_param partitoin_name parameter_name
+#
+# DESCRIPTION
+#	Returns a specific parameter value for a specified partition if the
+#	parameter exists for the partition, or MISSING if it does not exist.
+#	Specifying an invalid partition name will result in a failure.
+#
+################################################################
+
+proc get_partition_param { partition_name parameter_name } {
+
+	set partitions_dict [get_partitions $partition_name]
+
+	if [dict exists $partitions_dict $partition_name $parameter_name] {
+		return [dict get $partitions_dict $partition_name $parameter_name]
+	} else {
+		return "MISSING"
+	}
+}
+
+
+################################################################
+#
+# NAME
 #	get_jobs - returns a dictionary of dictionaries of job parameters
 #
 # SYNOPSIS
