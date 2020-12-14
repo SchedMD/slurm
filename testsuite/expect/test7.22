@@ -47,6 +47,10 @@ if {$nodes_avail < $nodes_min} {
 	skip "Not enough nodes currently available ($nodes_avail avail < $nodes_min needed)."
 }
 
+if {[get_partition_param [default_partition] "OverSubscribe"] != "NO"} {
+	skip "This tests not works if OverSubscribe is enabled"
+}
+
 # Clean jobs and print success/failure based on exit_code
 proc cleanup { } {
 	global job_id job_pd job_bf
