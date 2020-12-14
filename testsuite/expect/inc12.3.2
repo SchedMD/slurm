@@ -28,113 +28,29 @@ source ./globals
 source ./globals_accounting
 
 proc inc12_3_2 {job_id_1 job_id_2 job_id_3 job_name_1 job_name_2 test_acct job_1_node_0 job_1_node_2 job_2_node_0 job_2_node_1} {
-	global re_word_str sacct exit_code
+	global sacct
 
-	log_info "Search for jobs $job_id_1 and $job_id_3 on node: $job_1_node_0 (Within: inc12.3.2)"
-	set job_1_match 0
-	set job_2_match 0
-	spawn $sacct -A '$test_acct' -N$job_1_node_0 -X -p -o jobid,jobname
-	expect {
-		-re "$job_id_1" {
-			incr job_1_match
-			exp_continue
-		}
-		-re "$job_id_2" {
-			incr job_2_match
-			exp_continue
-		}
-		timeout {
-			log_error "sacct did not respond (Within: inc12.3.2)"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if {$job_1_match != 1} {
-		log_error "sacct was unable to find the job $job_id_1 on node $job_1_node_0 ($job_1_match != 1) (Within: inc12.3.2)"
-		set exit_code 1
-	}
-	if {$job_2_match != 0} {
-		log_error "sacct was found job $job_id_2 on node $job_1_node_0 ($job_2_match != 0) (Within: inc12.3.2)"
-		set exit_code 1
-	}
+	log_info "Search for jobs $job_id_1 and $job_id_3 on node: $job_1_node_0"
+	set output [run_command_output -fail "$sacct -A '$test_acct' -N$job_1_node_0 -X -P -o jobid,jobname"]
+	subtest [regexp -line "^$job_id_1\\|" $output] "sacct should show job $job_id_1 as having run on node $job_1_node_0"
+	subtest {![regexp -line "^$job_id_2\\|" $output]} "sacct should not show job $job_id_2 as having run on node $job_1_node_0"
+	subtest [regexp -line "^$job_id_3\\|" $output] "sacct should show job $job_id_3 as having run on node $job_1_node_0"
 
-	log_info "Search for jobs $job_id_1 and $job_id_2 on node: $job_1_node_2 (Within: inc12.3.2))"
-	set job_1_match 0
-	set job_2_match 0
-	spawn $sacct -A '$test_acct' -N$job_1_node_2 -X -p -o jobid,jobname
-	expect {
-		-re "$job_id_1" {
-			incr job_1_match
-			exp_continue
-		}
-		-re "$job_id_2" {
-			incr job_2_match
-			exp_continue
-		}
-		timeout {
-			log_error "sacct did not respond (Within: inc12.3.2)"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if {$job_1_match != 1} {
-		log_error "sacct was unable to find the job $job_id_1 on node $job_1_node_2 ($job_1_match != 1) (Within: inc12.3.2)"
-		set exit_code 1
-	}
+	log_info "Search for jobs $job_id_1 and $job_id_2 on node: $job_1_node_2"
+	set output [run_command_output -fail "$sacct -A '$test_acct' -N$job_1_node_2 -X -P -o jobid,jobname"]
+	subtest [regexp -line "^$job_id_1\\|" $output] "sacct should show job $job_id_1 as having run on node $job_1_node_2"
+	subtest [regexp -line "^$job_id_2\\|" $output] "sacct should show job $job_id_2 as having run on node $job_1_node_2"
+	subtest {![regexp -line "^$job_id_3\\|" $output]} "sacct should not show job $job_id_3 as having run on node $job_1_node_2"
 
-	log_info "Search for jobs $job_id_1 and $job_id_2 on node: $job_2_node_0 (Within: inc12.3.2)"
-	set job_1_match 0
-	set job_2_match 0
-	spawn $sacct -A '$test_acct' -N$job_2_node_0 -X -p -o jobid,jobname
-	expect {
-		-re "$job_id_1" {
-			incr job_1_match
-		 	exp_continue
-		}
-		-re "$job_id_2" {
-			incr job_2_match
-			exp_continue
-		}
-		timeout {
-			log_error "sacct did not respond (Within: inc12.3.2)"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if {$job_2_match != 1} {
-		log_error "sacct was unable to find the job $job_id_2 on node $job_2_node_0 ($job_2_match != 1, Within: inc12.3.2)"
-		set exit_code 1
-	}
+	log_info "Search for jobs $job_id_1 and $job_id_2 on node: $job_2_node_0"
+	set output [run_command_output -fail "$sacct -A '$test_acct' -N$job_2_node_0 -X -P -o jobid,jobname"]
+	subtest [regexp -line "^$job_id_1\\|" $output] "sacct should show job $job_id_1 as having run on node $job_2_node_0"
+	subtest [regexp -line "^$job_id_2\\|" $output] "sacct should show job $job_id_2 as having run on node $job_2_node_0"
+	subtest {![regexp -line "^$job_id_3\\|" $output]} "sacct should not show job $job_id_3 as having run on node $job_2_node_0"
 
-	log_info "Search for jobs $job_id_2 and $job_id_3 on node: $job_2_node_1 (Within: inc12.3.2)"
-	set job_1_match 0
-	set job_2_match 0
-	spawn $sacct -A '$test_acct' -N$job_2_node_1 -X -p -o jobid,jobname
-	expect {
-		-re "$job_id_1" {
-			incr job_1_match
-		 	exp_continue
-		}
-		-re "$job_id_2" {
-			incr job_2_match
-			exp_continue
-		}
-		timeout {
-			log_error "sacct did not respond (Within: inc12.3.2)"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if {$job_2_match != 1} {
-		log_error "sacct was unable to find the job $job_id_2 on node $job_2_node_1 ($job_2_match != 1, Within: inc12.3.2)"
-		set exit_code 1
-	}
+	log_info "Search for jobs $job_id_2 and $job_id_3 on node: $job_2_node_1"
+	set output [run_command_output -fail "$sacct -A '$test_acct' -N$job_2_node_1 -X -P -o jobid,jobname"]
+	subtest {![regexp -line "$job_id_1\\|" $output]} "sacct should not show job $job_id_1 as having run on node $job_2_node_1"
+	subtest [regexp -line "$job_id_2\\|" $output] "sacct should show job $job_id_2 as having run on node $job_2_node_1"
+	subtest [regexp -line "$job_id_3\\|" $output] "sacct should show job $job_id_3 as having run on node $job_2_node_1"
 }
