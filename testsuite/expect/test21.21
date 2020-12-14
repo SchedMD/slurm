@@ -387,42 +387,25 @@ if {$job_id == 0} {
 # Spawn a job via sbatch using this account
 #
 make_bash_script $file_in "$bin_id"
-set job_id 0
-spawn $sbatch -N1 --account=$ta --output=none $file_in
+set job_id [submit_job -fail "-N1 --account=$ta --output=none $file_in"]
+set matches 0
+spawn $scontrol show job $job_id
 expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
+	-re "Account=$ta" {
+		incr matches
 		exp_continue
 	}
 	timeout {
-		fail "sbatch not responding"
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$job_id == 0} {
-	fail "did not get sbatch job_id"
-} else {
-	set matches 0
-	spawn $scontrol show job $job_id
-	expect {
-		-re "Account=$ta" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$matches != 1} {
-		fail "sbatch failed to use specified account"
-	}
-	cancel_job $job_id
+if {$matches != 1} {
+	fail "sbatch failed to use specified account"
 }
+cancel_job $job_id
 
 #
 # Spawn a job via srun using this account
