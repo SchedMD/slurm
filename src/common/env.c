@@ -2028,11 +2028,11 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 		tmp_env = env_array_create();
 		env_array_overwrite(&tmp_env, "ENVIRONMENT", "BATCH");
 		setpgid(0, 0);
-		close(0);
+		close(STDIN_FILENO);
 		if ((fd1 = open("/dev/null", O_RDONLY)) == -1)
 			error("%s: open(/dev/null): %m", __func__);
-		dup2(fildes[1], 1);
-		close(2);
+		dup2(fildes[1], STDOUT_FILENO);
+		close(STDERR_FILENO);
 		if ((fd2 = open("/dev/null", O_WRONLY)) == -1)
 			error("%s: open(/dev/null): %m", __func__);
 		if      (mode == 1)

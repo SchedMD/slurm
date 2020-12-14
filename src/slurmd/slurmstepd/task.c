@@ -218,10 +218,10 @@ _run_script_and_set_env(const char *name, const char *path,
 
 		argv[0] = xstrdup(path);
 		argv[1] = NULL;
-		if (dup2(pfd[1], 1) == -1)
+		if (dup2(pfd[1], STDOUT_FILENO) == -1)
 			error("couldn't do the dup: %m");
-		close(2);
-		close(0);
+		close(STDERR_FILENO);
+		close(STDIN_FILENO);
 		close(pfd[0]);
 		close(pfd[1]);
 		setpgid(0, 0);
