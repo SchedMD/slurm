@@ -27,57 +27,15 @@ source ./globals
 source ./globals_accounting
 
 proc inc12_3_1 {job_id_1 job_id_2 job_name_1 job_name_2 test_acct} {
-	global sacct exit_code
+	global sacct
 
-	set idmatch 0
-	log_info "Search for job ID $job_id_1 having name $job_name_1 (Within: inc12.3.1)"
-	log_debug "Job id1 number: $job_id_1"
-	spawn $sacct -A '$test_acct' --name=$job_name_1 -X -p -o jobid
-	expect {
-		-re "$job_id_1" {
-			incr idmatch
-			exp_continue
-		}
-		-re "$job_id_2" {
-			incr idmatch
-			exp_continue
-		}
-		timeout {
-			log_error "sacct not responding (Within: inc12.3.1)"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
+	log_info "Search for job ID $job_id_1 having name $job_name_1"
+	set output [run_command_output -fail "$sacct -A '$test_acct' --name=$job_name_1 -X -P -o jobid"]
+	subtest [regexp -line "^$job_id_1$" $output] "sacct should show job $job_id_1 as having name $job_name_1"
+	subtest {![regexp -line "^$job_id_2$" $output]} "sacct should not show job $job_id_2 as having name $job_name_1"
 
-	}
-	if {$idmatch != 1} {
-		log_error "sacct could not match job id to job name ($idmatch != 1, Within: inc12.3.1)"
-		set exit_code 1
-	}
-
-	set idmatch 0
-	log_info "Search for job ID $job_id_2 having name $job_name_2 (Within: inc12.3.1)"
-	spawn $sacct -A '$test_acct' --name=$job_name_2 -X -p -o jobid
-	expect {
-		-re "$job_id_1" {
-			incr idmatch
-			exp_continue
-		}
-		-re "$job_id_2" {
-			incr idmatch
-			exp_continue
-		}
-		timeout {
-			log_error "sacct not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if {$idmatch != 1} {
-		log_error "sacct could not match job id to job name ($idmatch != 1, Within: 12.3.1)"
-		set exit_code 1
-	}
+	log_info "Search for job ID $job_id_2 having name $job_name_2"
+	set output [run_command_output -fail "$sacct -A '$test_acct' --name=$job_name_2 -X -P -o jobid"]
+	subtest {![regexp -line "^$job_id_1$" $output]} "sacct should not show job $job_id_1 as having name $job_name_2"
+	subtest [regexp -line "^$job_id_2$" $output] "sacct should show job $job_id_2 as having name $job_name_2"
 }
