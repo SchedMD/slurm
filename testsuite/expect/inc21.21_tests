@@ -193,26 +193,7 @@ sleep 10"
 			# and decays the values of the other running jobs
 			set time $val
 		}
-		spawn $sbatch [lindex $limit 0]1 --account=$ta \
-		    --output=/dev/null --error=/dev/null \
-		    -t$time $file_in
-		expect {
-			-re "Submitted batch job ($number)" {
-				set job_id $expect_out(1,string)
-				incr matches
-				exp_continue
-			}
-			timeout {
-				fail "sbatch not responding [test_info $test_type \"inc21_21_grp_test\"]"
-			}
-			eof {
-				wait
-			}
-		}
-	}
-
-	if {$matches != [expr $val + 1]} {
-		fail "Only $matches out of [expr $val + 1] jobs were submitted"
+		set job_id [submit_job -fail "[lindex $limit 0]1 --account=$ta --output=/dev/null --error=/dev/null -t$time $file_in"]
 	}
 
 	#
@@ -306,27 +287,7 @@ proc inc21_21_submit_test { limit } {
 	# Submit jobs to test the limit set in the association
 	for {set inx 0} {$inx < $acct_mod_assoc_test_vals($limit_sub)} \
 	    {incr inx} {
-		    set job_id($inx) 0
-		    set mypid [spawn $sbatch -N1 -n1 --account=$ta \
-				   --output=/dev/null \
-				   --error=/dev/null -t5 $file_in]
-		    expect {
-			    -re "Submitted batch job ($number)" {
-				    set job_id($inx) $expect_out(1,string)
-				    exp_continue
-			    }
-			    -re "Unable to contact" {
-				    fail "Slurm appears to be down [test_info $limit \"inc21_21_submit_test\"]"
-			    }
-			    timeout {
-				    slow_kill $mypid
-				    fail "sbatch not responding [test_info $limit \"inc21_21_submit_test\"]"
-			    }
-			    eof {
-				    wait
-			    }
-		    }
-
+		    set job_id($inx) [submit_job -fail "-N1 -n1 --account=$ta --output=/dev/null --error=/dev/null -t5 $file_in"]
 		    if { !$job_id($inx) } {
 			    fail "sbatch didn't return jobid [test_info $limit \"inc21_21_submit_test\"]"
 		    }
@@ -408,27 +369,7 @@ proc inc21_21_submit_test { limit } {
 	# Submit jobs to test the limit set in the association
 	for {set inx 0} {$inx < $acct_mod_assoc_test_vals($limit_sub)} \
 	    {incr inx} {
-		    set job_id($inx) 0
-		    set mypid [spawn $sbatch -N1 -a0 --account=$ta \
-				   --output=/dev/null \
-				   --error=/dev/null -t5 $file_in]
-		    expect {
-			    -re "Submitted batch job ($number)" {
-				    set job_id($inx) $expect_out(1,string)
-				    exp_continue
-			    }
-			    -re "Unable to contact" {
-				    fail "Slurm appears to be down [test_info $limit \"inc21_21_submit_test\"]"
-			    }
-			    timeout {
-				    slow_kill $mypid
-				    fail "sbatch not responding [test_info $limit \"inc21_21_submit_test\"]"
-			    }
-			    eof {
-				    wait
-			    }
-		    }
-
+		    set job_id($inx) [submit_job -fail "-N1 -a0 --account=$ta --output=/dev/null --error=/dev/null -t5 $file_in"]
 		    if { !$job_id($inx) } {
 			    fail "sbatch didn't return jobid [test_info $limit \"inc21_21_submit_test\"]"
 		    }
