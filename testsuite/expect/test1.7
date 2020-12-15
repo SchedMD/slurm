@@ -84,6 +84,16 @@ if {$inactive_limit < $sleep_time} {
 	log_debug "Reset job sleep time to $sleep_time seconds"
 }
 
+proc capture_debug_for_bug_10313 {} {
+	global scontrol bin_cat bin_ls slurm_dir
+
+	run_command "$scontrol show config"
+	set testsuite_dir [file dirname [info script]]
+	run_command "$bin_cat ${testsuite_dir}/globals.local"
+	run_command "ls -l ${slurm_dir}/lib/slurm"
+	run_command "stat ${slurm_dir}/lib/slurm/switch_generic.so"
+}
+
 #
 # Execute a couple of three minute jobs; one with a one minute time
 # limit and the other with a four minute time limit. Confirm jobs
@@ -99,6 +109,10 @@ set timeout [expr $max_job_delay + $sleep_time]
 set timed_out 0
 set srun_pid [spawn $srun -t1 $bin_sleep $sleep_time]
 expect {
+	-re "Incompatible Slurm plugin" {
+		capture_debug_for_bug_10313
+		exp_continue
+	}
 	-re "time limit" {
 		set timed_out 1
 		exp_continue
