@@ -361,8 +361,8 @@ but does not require knowledge of the actual number of cpus on
 each node.  In some cases, it is more convenient to be able to
 request that no more than a specific number of ntasks be invoked
 on each node, socket, or core.  Examples of this include submitting
-a hybrid MPI/OpenMP app where only one MPI "task/rank" should be
-assigned to each node while allowing the OpenMP portion to utilize
+an app where only one "task/rank" should be
+assigned to each node while allowing the job to utilize
 all of the parallelism present in the node, or submitting a single
 setup/cleanup/monitoring job to each node of a pre-existing
 allocation as one step in a larger job script.
@@ -476,26 +476,25 @@ a different layout using the high-level flags since users do not have to
 recalculate mask or CPU IDs. This approach is much simpler than
 rearranging the mask or map.</p>
 
-<p>Given a 32-process MPI job and a four dual-socket dual-core node
+<p>Given a 32-process job and a four node, dual-socket, dual-core
 cluster, we want to use a block distribution across the four nodes and then a
-cyclic distribution within the node across the physical processors. We have had
-several requests from users that they would like this distribution to be the
-default distribution on multi-core clusters. Below we show how to obtain the
-wanted layout using 1) the high-level flags and 2) --cpubind</p>
+cyclic distribution within the node across the physical processors. Below we
+show how to obtain the wanted layout using 1) high-level flags and
+2) --cpubind</p>
 
 <h3>High-Level flags</h3>
 
-<p>Using Slurm's high-level flag, users can obtain the above layout with:</p>
+<p>Using Slurm's high-level flag, users can obtain the above layout with
+either of the following submissions since --distribution=block:cyclic
+is the default distribution method.</p>
 
-<DL>
-<DL>
-<DT><p>% mpirun -srun -n 32 -N 4 -B 4:2 --distribution=block:cyclic a.out</p>
+<pre>
+$ srun -n 32 -N 4 -B 4:2 --distribution=block:cyclic a.out
+</pre>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;or
-<DT><p>% mpirun -srun -n 32 -N 4 -B 4:2 a.out</p>
-</DL>
-</DL>
-
-<p>(since --distribution=block:cyclic is the default distribution)</p>
+<pre>
+$ srun -n 32 -N 4 -B 4:2 a.out
+</pre>
 
 <p>The cores are shown as c0 and c1 and the processors are shown
 as p0 through p3. The resulting task IDs are: </p>
@@ -623,41 +622,37 @@ task IDs
 </table>
 
 <p>The above maps and task IDs can be translated into the
-following mpirun command:</p>
+following command:</p>
 
-<DL>
-<DL>
-<DT><p>% mpirun -srun -n 32 -N 4 --cpu-bind=mask_cpu:1,4,10,40,2,8,20,80 a.out</p>
+<pre>
+$ srun -n 32 -N 4 --cpu-bind=mask_cpu:1,4,10,40,2,8,20,80 a.out
+</pre>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;or
-<DT><p>% mpirun -srun -n 32 -N 4 --cpu-bind=map_cpu:0,2,4,6,1,3,5,7 a.out</p>
-</DL>
-</DL>
+<pre>
+$ srun -n 32 -N 4 --cpu-bind=map_cpu:0,2,4,6,1,3,5,7 a.out
+</pre>
 
 <h3>Same cluster but with its core numbered cyclic instead of block</h3>
 
 <p>On a system with cyclically numbered cores, the correct mask
-argument to the <i>mpirun</i>/<i>srun</i> command looks like: (this will
+argument to the <i>srun</i> command looks like: (this will
 achieve the same layout as the command above on a system with core block
 numbering.)</p>
 
-<DL>
-<DL>
-<DT><p>% mpirun -srun -n 32 -N 4 --cpu-bind=map_cpu:0,1,2,3,4,5,6,7 a.out</p>
-</DL>
-</DL>
+<pre>
+$ srun -n 32 -N 4 --cpu-bind=map_cpu:0,1,2,3,4,5,6,7 a.out
+</pre>
 
 <h3>Block map_cpu on a system with cyclic core numbering</h3>
 
 <p>If users do not check their system's core numbering before specifying
 the map_cpu list and thereby do not realize that the system has cyclic core
 numbering instead of block numbering then they will not get the expected
-layout.. For example, if they decide to re-use their mpirun command from above:</p>
+layout. For example, if they decide to re-use their command from above:</p>
 
-<DL>
-<DL>
-<DT><p>% mpirun -srun -n 32 -N 4 --cpu-bind=map_cpu:0,2,4,6,1,3,5,7 a.out</p>
-</DL>
-</DL>
+<pre>
+$ srun -n 32 -N 4 --cpu-bind=map_cpu:0,2,4,6,1,3,5,7 a.out
+</pre>
 
 <p>they get the following unintentional task ID layout:</p>
 
@@ -918,6 +913,6 @@ NodeName=dualcore[01-16] CoresPerSocket=2 ThreadsPerCore=1
 <p>For a more complete description of the various node configuration options
 see the slurm.conf man page.</p>
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 9 October 2019</p>
+<p style="text-align:center;">Last modified 15 December 2020</p>
 
 <!--#include virtual="footer.txt"-->
