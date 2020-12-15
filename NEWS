@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- jobacct_gather/common - Do not process jobacct's with same taskid when
     calling prec_extra.
  -- Cleanup all tracked jobacct tasks when extern step child process finishes.
+ -- slurmrestd/dbv0.0.36 - Correct structure of dbv0.0.36_tres_list.
 
 * Changes in Slurm 20.11.2
 ==========================
