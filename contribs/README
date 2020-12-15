@@ -92,12 +92,6 @@ of the Slurm contribs distribution follows:
      A Slurm SPANK plugin that can be used to permit users to generated
      light-weight core files rather than full core files.
 
-  time_login.c       [ C program ]
-     This program will report how long a pseudo-login will take for specific
-     users or all users on the system. Users identified by this program
-     will not have their environment properly set for jobs submitted through
-     Moab. Build with "make -f /dev/null time_login" and execute as user root.
-
   torque/            [ Wrapper Scripts for Torque migration to Slurm ]
      Helpful scripts to make transition to Slurm easier from PBS or Torque.
      These scripts are easily updatable if there is functionality missing.
