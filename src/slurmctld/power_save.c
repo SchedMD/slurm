@@ -57,6 +57,7 @@
 #include <unistd.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_features.h"
@@ -700,7 +701,6 @@ static void _do_suspend(char *host)
  */
 static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id) //use common
 {
-	int i;
 	char *argv[4], *pname;
 	pid_t child;
 
@@ -719,8 +719,7 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id) //us
 	child = fork();
 	if (child == 0) {
 		char **env = NULL;
-		for (i = 0; i < 1024; i++)
-			(void) close(i);
+		closeall(0);
 		setpgid(0, 0);
 
 		env = env_array_create();

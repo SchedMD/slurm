@@ -281,9 +281,7 @@ int main(int argc, char **argv)
 	 * Make sure we have no extra open files which
 	 * would be propagated to spawned tasks.
 	 */
-	cnt = sysconf(_SC_OPEN_MAX);
-	for (i = 3; i < cnt; i++)
-		close(i);
+	closeall(3);
 
 	/*
 	 * Establish initial configuration
@@ -3465,7 +3463,6 @@ static void _run_primary_prog(bool primary_on)
 	char *prog_name, *prog_type;
 	char *argv[2], *sep;
 	pid_t cpid;
-	int i;
 
 	if (primary_on) {
 		prog_name = slurm_conf.slurmctld_primary_on_prog;
@@ -3494,8 +3491,7 @@ static void _run_primary_prog(bool primary_on)
 		return;
 	}
 	if (cpid == 0) {		/* Child */
-		for (i = 0; i < 1024; i++)
-			(void) close(i);
+		closeall(0);
 		setpgid(0, 0);
 		execv(prog_name, argv);
 		_exit(127);

@@ -78,6 +78,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -2273,7 +2274,7 @@ static void _reboot_from_ctld(agent_arg_t *agent_arg_ptr)
 {
 	char *argv[3], *pname;
 	pid_t child;
-	int i, rc, status = 0;
+	int rc, status = 0;
 
 	if (!agent_arg_ptr->hostlist) {
 		error("%s: hostlist is NULL", __func__);
@@ -2294,8 +2295,7 @@ static void _reboot_from_ctld(agent_arg_t *agent_arg_ptr)
 
 	child = fork();
 	if (child == 0) {
-		for (i = 0; i < 1024; i++)
-			(void) close(i);
+		closeall(0);
 		(void) setpgid(0, 0);
 		(void) execv(slurm_conf.reboot_program, argv);
 		_exit(1);

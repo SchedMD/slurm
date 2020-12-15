@@ -1469,11 +1469,9 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 	if (child_pid > 0) {
 		trig_in->child_pid = child_pid;
 	} else if (child_pid == 0) {
-		int i;
 		bool run_as_self = (uid == slurm_conf.slurm_user_id);
 
-		for (i = 0; i < 1024; i++)
-			(void) close(i);
+		closeall(0);
 		setpgid(0, 0);
 		setsid();
 		if ((initgroups(user_name, gid) == -1) && !run_as_self) {

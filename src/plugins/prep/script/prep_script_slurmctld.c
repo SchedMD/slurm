@@ -34,6 +34,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/prep.h"
@@ -105,8 +106,7 @@ static void *_run_script(void *arg)
 		goto fini;
 	} else if (cpid == 0) {
 		/* child process */
-		for (int i = 0; i < 1024; i++)
-			(void) close(i);
+		closeall(0);
 		setpgid(0, 0);
 		execve(argv[0], argv, script_arg->my_env);
 		_exit(127);
