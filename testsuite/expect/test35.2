@@ -90,7 +90,7 @@ set cwd [$bin_pwd]
 exec $bin_rm -f $input_data $output_data $output_use
 exec $bin_echo $data_in >$cwd/$input_data
 
-if {[get_config_param "EmulateCray"] ne "MISSING"} {
+if [check_bb_emulate] {
 make_bash_script $script_use "#DW jobdw type=scratch capacity=1GiB access_mode=striped,private type=scratch
 #DW stage_in type=file source=$cwd/$input_data destination=\$DW_JOB_STRIPED/$tmp_file
 #DW stage_out type=file destination=$cwd/$output_data source=\$DW_JOB_STRIPED/$tmp_file
