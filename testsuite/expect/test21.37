@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
-#          sacctmgr show stats
+#          sacctmgr show and clear stats
 ############################################################################
 # Copyright (C) 2008-2010 Lawrence Livermore National Security.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -35,6 +35,9 @@ if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
+#
+# sacctmgr show stats
+#
 set matches 0
 set rpc_rec_cnt 0
 set as_pid [spawn $sacctmgr show stats]
@@ -72,3 +75,15 @@ if {$rpc_rec_cnt > 0} {
 	incr matches
 }
 subtest {$matches == 5} "sacctmgr should show all expected sections" "($matches != 5)"
+
+#
+# sacctmgr clear stats
+#
+set time_stamp_before [run_command_output "$bin_date +%s"]
+set time_stamp_after  0
+
+run_command -subtest "$sacctmgr clear stats"
+set output [run_command_output -fail "$sacctmgr show stats"]
+regexp -line "Data since +(\\S+) (\\S+) (\\S+) (\\S+) (\\d+) \\((\\d+)\\)" $output - - - - - - time_stamp_after
+
+subtest {$time_stamp_before <= $time_stamp_after} "timestamp in show stats should be newer than before running clear stats" "$time_stamp_before > $time_stamp_after"
