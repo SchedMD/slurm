@@ -38,11 +38,7 @@ set p2         "test$test_id-part.2"
 
 set config_path  ""
 
-set jobid1 0
-set jobid2 0
-set jobid3 0
-set jobid4 0
-set jobid5 0
+set jobid_list ""
 
 set cwd "[$bin_pwd]"
 
@@ -78,25 +74,9 @@ proc clean_assocs {} {
 }
 
 proc cleanup { } {
-	global test_id jobid1 jobid2 jobid3 jobid4 jobid5 bin_cp
-	global config_file test_id cwd
+	global config_file jobid_list
 
-	if {$jobid1} {
-		cancel_job $jobid1
-	}
-	if {$jobid2} {
-		cancel_job $jobid2
-	}
-	if {$jobid3} {
-		cancel_job $jobid3
-	}
-	if {$jobid4} {
-		cancel_job $jobid4
-	}
-	if {$jobid5} {
-		cancel_job $jobid5
-	}
-
+	cancel_job $jobid_list
 	clean_assocs
 
 	restore_conf $config_file
@@ -130,7 +110,7 @@ proc part_cpu_cnt { partition } {
 
 proc sub_job { args state } {
 
-	global number sbatch test_id bin_sleep
+	global number sbatch test_id bin_sleep jobid_list
 
 	set jobid 0
 	set cmd "$sbatch -J$test_id -o/dev/null -e/dev/null --exclusive --wrap \"$bin_sleep 999\""
@@ -158,30 +138,16 @@ proc sub_job { args state } {
 		fail "Error starting job $jobid"
 	}
 
+	lappend jobid_list $jobid
 	return $jobid
 }
 
-proc sprio_args { args regex match_cnt } {
+proc sprio_args { args regex } {
 	global sprio
-	set matches 0
 
-	spawn $sprio {*}$args
-	expect {
-		-re $regex {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "sprio not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != $match_cnt} {
-		fail "sprio $args failed to match '$regex' $match_cnt times"
-	}
+	wait_for -timeout 5 -poll .1 {
+		[regexp $regex [run_command_output -fail "$sprio $args"]] == 1
+	} { }
 }
 
 proc scontrol { args regex match_cnt } {
@@ -374,11 +340,11 @@ set jobid1 [sub_job "-n$cpu_cnt -p$p1 -A$ta1 --qos=$tq1" RUNNING]
 set jobid2 [sub_job "-n$cpu_cnt -p$p1 -A$ta1 --qos=$tq1" PENDING]
 set jobid3 [sub_job "-n$cpu_cnt_half -p$p2 -A$ta2 --qos=$tq2" PENDING]
 
-sprio_args "-j $jobid2 -o \"%.15i %10B %10P %10Q %12T\"" "$jobid2\\s+$weight\\s+$part_weight\\s+$weight\\s+cpu=$weight" 1
-sprio_args "-n -j $jobid2 -o \"%.15i %10b %10p %10q %12t\"" "$jobid2\\s+1\\.0+\\s+1\\.0+\\s+1\\.0+\\s+cpu=1\\.0+" 1
+sprio_args "-j $jobid2 -o \"%.15i %10B %10P %10Q %12T\"" "$jobid2\\s+$weight\\s+$part_weight\\s+$weight\\s+cpu=$weight"
+sprio_args "-n -j $jobid2 -o \"%.15i %10b %10p %10q %12t\"" "$jobid2\\s+1\\.0+\\s+1\\.0+\\s+1\\.0+\\s+cpu=1\\.0+"
 
-sprio_args "-j $jobid3 -o \"%.15i %10B %10P %10Q %12T\"" "$jobid3\\s+$weight_half\\s+$part_weight_half\\s+$weight_half\\s+cpu=$weight_half" 1
-sprio_args "-n -j $jobid3 -o \"%.15i %10b %10p %10q %12t\"" "$jobid3\\s+0\\.50+\\s+0\\.50+\\s+0\\.50+\\s+cpu=0\\.5+" 1
+sprio_args "-j $jobid3 -o \"%.15i %10B %10P %10Q %12T\"" "$jobid3\\s+$weight_half\\s+$part_weight_half\\s+$weight_half\\s+cpu=$weight_half"
+sprio_args "-n -j $jobid3 -o \"%.15i %10b %10p %10q %12t\"" "$jobid3\\s+0\\.50+\\s+0\\.50+\\s+0\\.50+\\s+cpu=0\\.5+"
 
 log_info "test2"
 # update priorities to high water mark, job should get full weights because the
@@ -399,9 +365,9 @@ scontrol "show assoc qos=$tq1 flags=qos" "Priority=$weight_half" 1
 
 update_part $p1 "priorityjobfactor=$part_weight_half"
 
-set jobid4 [sub_job "-n$cpu_cnt -p$p2 -A$ta2 --qos=$tq2" PENDING]
-sprio_args "-j $jobid4 -o \"%.15i %10B %10P %10Q %12T\"" "$jobid4\\s+$weight\\s+$part_weight\\s+$weight\\s+cpu=$weight" 1
-sprio_args "-n -j $jobid4 -o \"%.15i %10b %10p %10q %12t\"" "$jobid4\\s+1\\.0+\\s+1\\.0+\\s+1\\.0+\\s+cpu=1\\.0+" 1
+set jobid [sub_job "-n$cpu_cnt -p$p2 -A$ta2 --qos=$tq2" PENDING]
+sprio_args "-j $jobid -o \"%.15i %10B %10P %10Q %12T\"" "$jobid\\s+$weight\\s+$part_weight\\s+$weight\\s+cpu=$weight"
+sprio_args "-n -j $jobid -o \"%.15i %10b %10p %10q %12t\"" "$jobid\\s+1\\.0+\\s+1\\.0+\\s+1\\.0+\\s+cpu=1\\.0+"
 
 
 log_info "test3"
@@ -422,14 +388,14 @@ scontrol "show assoc qos=$tq1 flags=qos" "Priority=$weight" 1
 
 update_part $p1 "priorityjobfactor=$part_weight"
 
-set jobid5 [sub_job "-n$cpu_cnt_half -p$p2 -A$ta2 --qos=$tq2" PENDING]
-sprio_args "-j $jobid5 -o \"%.15i %10B %10P %10Q %12T\"" "$jobid5\\s+$weight_half\\s+$part_weight_half\\s+$weight_half\\s+cpu=$weight_half" 1
-sprio_args "-n -j $jobid5 -o \"%.15i %10b %10p %10q %12t\"" "$jobid5\\s+0\\.50+\\s+0\\.50+\\s+0\\.50+\\s+cpu=0\\.5+" 1
+set jobid [sub_job "-n$cpu_cnt_half -p$p2 -A$ta2 --qos=$tq2" PENDING]
+sprio_args "-j $jobid -o \"%.15i %10B %10P %10Q %12T\"" "$jobid\\s+$weight_half\\s+$part_weight_half\\s+$weight_half\\s+cpu=$weight_half"
+sprio_args "-n -j $jobid -o \"%.15i %10b %10p %10q %12t\"" "$jobid\\s+0\\.50+\\s+0\\.50+\\s+0\\.50+\\s+cpu=0\\.5+"
 
 log_info "test4"
 # test setting priority directly on a job
-set jobid5 [sub_job "-n$cpu_cnt_half -p$p2 -A$ta2 --qos=$tq2" PENDING]
-update_job $jobid5 999
+set jobid [sub_job "-n$cpu_cnt_half -p$p2 -A$ta2 --qos=$tq2" PENDING]
+update_job $jobid 999
 
-sprio_args "-j $jobid5 -o \"%.15i %.10Y %.10S %.10A %.10B %.10F %.10J %.10P %.10Q %.11N %.20T\"" "$jobid5\\s+999\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0" 1
-sprio_args "-n -j $jobid5 -o \"%.15i %.10Y %.10S %.10A %.10B %.10F %.10J %.10P %.10Q %.11N %.20T\"" "$jobid5\\s+999\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0" 1
+sprio_args "-j $jobid -o \"%.15i %.10Y %.10S %.10A %.10B %.10F %.10J %.10P %.10Q %.11N %.20T\"" "$jobid\\s+999\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0"
+sprio_args "-n -j $jobid -o \"%.15i %.10Y %.10S %.10A %.10B %.10F %.10J %.10P %.10Q %.11N %.20T\"" "$jobid\\s+999\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0\\s+0"
