@@ -2498,7 +2498,7 @@ _drop_privileges(stepd_step_rec_t *job, bool do_setuid,
 	}
 
 	if (setgroups(job->ngids, job->gids) < 0) {
-		error("getgroups: %m");
+		error("setgroups: %m");
 		return -1;
 	}
 
