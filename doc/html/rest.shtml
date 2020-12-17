@@ -30,6 +30,19 @@ unnecessary security issues involved with hosting a listening daemon on a shared
 system.</p>
 -->
 
+<h2>Stateless</h2>
+<p>Slurmrestd is stateless as it does not cache or save any state between
+requests. Each request is handled in a thread and then all of that state is
+discarded. Any request to slurmrestd is completely synchronous with the
+Slurm controller (slurmctld or slurmdbd) and is only considered complete once
+the HTTP response code has been sent to the client. Slurmrestd will hold a
+client connection open while processing a request. Slurm database commands are
+commited at the end of every request, on the success of all API calls in the
+request.</p>
+<p>Sites are strongly encouraged to setup a caching proxy between slurmrestd
+and clients to avoid having clients repeatedly call queries, causing usage to
+be higher than needed (and causing lock contention) on the controller.</p>
+
 <h2>Run modes</h2>
 Slurmrestd currently supports two run modes: inet service mode and listening
 mode.
@@ -285,6 +298,6 @@ The example is <b>not</b> provided to be run in production.</p>
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 3 December 2020</p>
+<p style="text-align:center;">Last modified 17 December 2020</p>
 
 <!--#include virtual="footer.txt"-->
