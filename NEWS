@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix older versions of sacct not working with 20.11.
  -- Fix slurmctld crash when using a pre-20.11 srun in a job allocation.
  -- Correct logic problem in _validate_user_access.
+ -- Fix libpmi to initialize Slurm configuration correctly.
 
 * Changes in Slurm 20.11.1
 ==========================
