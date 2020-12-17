@@ -4564,7 +4564,7 @@ This option has no effect unless cgroup job confinement is also configured
 (\fBTaskPlugin=task/cgroup\fR with \fBConstrainCores=yes\fR in cgroup.conf).
 
 .TP
-\fBFeature\fR
+\fBFeatures\fR
 A comma delimited list of arbitrary strings indicative of some
 characteristic associated with the node.
 There is no value or count associated with a feature at this time, a node
@@ -4598,7 +4598,7 @@ A suffix of "K", "M", "G", "T" or "P" may be used to multiply the number by
 (e.g."Gres=gpu:tesla:1,gpu:kepler:1,bandwidth:lustre:no_consume:4G").
 By default a node has no generic resources and its maximum count is
 that of an unsigned 64bit integer.
-Also see \fBFeature\fR for Boolean flags to filter nodes using job constraints.
+Also see \fBFeatures\fR for Boolean flags to filter nodes using job constraints.
 
 .TP
 \fBMemSpecLimit\fR
