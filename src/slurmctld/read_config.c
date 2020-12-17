@@ -341,6 +341,31 @@ static void _handle_nodesets(char **nodeline)
 	hostlist_destroy(hl);
 }
 
+static void _init_bitmaps(void)
+{
+	/* initialize the idle and up bitmaps */
+	FREE_NULL_BITMAP(avail_node_bitmap);
+	FREE_NULL_BITMAP(bf_ignore_node_bitmap);
+	FREE_NULL_BITMAP(booting_node_bitmap);
+	FREE_NULL_BITMAP(cg_node_bitmap);
+	FREE_NULL_BITMAP(future_node_bitmap);
+	FREE_NULL_BITMAP(idle_node_bitmap);
+	FREE_NULL_BITMAP(power_node_bitmap);
+	FREE_NULL_BITMAP(share_node_bitmap);
+	FREE_NULL_BITMAP(up_node_bitmap);
+	FREE_NULL_BITMAP(rs_node_bitmap);
+	avail_node_bitmap = bit_alloc(node_record_count);
+	bf_ignore_node_bitmap = bit_alloc(node_record_count);
+	booting_node_bitmap = bit_alloc(node_record_count);
+	cg_node_bitmap = bit_alloc(node_record_count);
+	future_node_bitmap = bit_alloc(node_record_count);
+	idle_node_bitmap = bit_alloc(node_record_count);
+	power_node_bitmap = bit_alloc(node_record_count);
+	share_node_bitmap = bit_alloc(node_record_count);
+	up_node_bitmap = bit_alloc(node_record_count);
+	rs_node_bitmap = bit_alloc(node_record_count);
+}
+
 /*
  * _build_bitmaps_pre_select - recover some state for jobs and nodes prior to
  *	calling the select_* functions
@@ -465,27 +490,7 @@ static void _build_bitmaps(void)
 	last_node_update = time(NULL);
 	last_part_update = time(NULL);
 
-	/* initialize the idle and up bitmaps */
-	FREE_NULL_BITMAP(avail_node_bitmap);
-	FREE_NULL_BITMAP(bf_ignore_node_bitmap);
-	FREE_NULL_BITMAP(booting_node_bitmap);
-	FREE_NULL_BITMAP(cg_node_bitmap);
-	FREE_NULL_BITMAP(future_node_bitmap);
-	FREE_NULL_BITMAP(idle_node_bitmap);
-	FREE_NULL_BITMAP(power_node_bitmap);
-	FREE_NULL_BITMAP(share_node_bitmap);
-	FREE_NULL_BITMAP(up_node_bitmap);
-	FREE_NULL_BITMAP(rs_node_bitmap);
-	avail_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
-	bf_ignore_node_bitmap = bit_alloc(node_record_count);
-	booting_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
-	cg_node_bitmap    = (bitstr_t *) bit_alloc(node_record_count);
-	future_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
-	idle_node_bitmap  = (bitstr_t *) bit_alloc(node_record_count);
-	power_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
-	share_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
-	up_node_bitmap    = (bitstr_t *) bit_alloc(node_record_count);
-	rs_node_bitmap    = (bitstr_t *) bit_alloc(node_record_count);
+	_init_bitmaps();
 
 	/* Set all bits, all nodes initially available for sharing */
 	bit_set_all(share_node_bitmap);
