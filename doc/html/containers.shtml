@@ -23,7 +23,7 @@ and can be made to start most, if not all, types.
 <li><a href="#shifter">Shifter</a></li>
 <li><a href="#singularity">Singularity</a></li>
 <li><a href="#enroot">ENROOT</a></li>
-<li><a href="#podman">podman</a></li>
+<li><a href="#podman">Podman</a></li>
 <li><a href="#sarus">Sarus</a></li>
 </ul>
 
@@ -33,9 +33,10 @@ created all the time.
 
 <hr size=4 width="100%">
 <h2>Container Types</h2>
-<h3 name="charliecloud"><a href="https://github.com/hpc/charliecloud">Charliecloud</a></h3>
+<h3 id="charliecloud">Charliecloud</h3>
 
-<p>Charliecloud is user namespace container system sponsored by
+<p><a href="https://github.com/hpc/charliecloud">Charliecloud</a> is user
+namespace container system sponsored by
 <a href="https://lanl.gov/">LANL</a> to provide HPC containers.
 Charliecloud supports the following:
 
@@ -53,31 +54,30 @@ Charliecloud supports the following:
 </ul>
 </p>
 
-<h3 name="docker"><a href="https://www.docker.com/">Docker</a></h3>
+<h3 id="docker">Docker</h3>
 
-<p>Docker currently has multiple design points that make it unfriendly to HPC
-systems. The issue that usually stops most sites from using Docker is the
+<p><a href="https://www.docker.com/">Docker</a> currently has multiple design
+points that make it unfriendly to HPC systems.
+The issue that usually stops most sites from using Docker is the
 requirement of "only trusted users should be allowed to control your Docker
 daemon"
-<a href="https://docs.docker.com/engine/security/security/">[Docker Security]</a>
-which is not acceptable to most HPC systems.</p>
+<a href="https://docs.docker.com/engine/security/security/">
+[Docker Security]</a> which is not acceptable to most HPC systems.</p>
 
 <p>Sites with trusted users can add them to the docker Unix group and allow them
 control Docker directly from inside of jobs. There is currently no direct
 support for starting or stopping docker containers in Slurm.</p>
 
-<h3 name="udocker"><a href="https://github.com/indigo-dc/udocker">UDOCKER</a></h3>
+<h3 id="udocker">UDOCKER</h3>
 
-<p>UDOCKER is Docker feature subset clone that is designed to allow execution of
+<p><a href="https://github.com/indigo-dc/udocker">UDOCKER</a> is Docker feature
+subset clone that is designed to allow execution of
 docker commands without increased user privileges.</p>
 
-<h3 name="k8s">
-	<a href="https://kubernetes.io/docs/concepts/workloads/pods/pod/">
-		Kubernetes Pods (k8s)
-	</a>
-</h3>
+<h3 id="k8s">Kubernetes Pods (k8s)</h3>
 
-<p> Kubernetes is a container orchestration system that uses PODs, which are
+<p><a href="https://kubernetes.io/docs/concepts/workloads/pods/pod/">
+Kubernetes</a> is a container orchestration system that uses PODs, which are
 generally a logical grouping of containers for singular purpose. </p>
 
 <p>There is currently no support for Kubernetes Pods in Slurm.
@@ -96,7 +96,8 @@ one of the following instead:
 </ul>
 </p>
 
-<p>Kubernetes requires root privileges but users could consider using rootless Kubernetes inside of jobs:
+<p>Kubernetes requires root privileges but users could consider using rootless
+Kubernetes inside of jobs:
 <ul>
 	<li>
 		<a href="https://github.com/rootless-containers/usernetes">Usernetes</a>
@@ -115,9 +116,10 @@ one of the following instead:
 </ul>
 </p>
 
-<h3 name="shifter"><a href="https://github.com/NERSC/shifter">Shifter</a></h3>
+<h3 id="shifter">Shifter</h3>
 
-<p>Shifter is a container project out of <a href="http://www.nersc.gov/">NERSC</a>
+<p><a href="https://github.com/NERSC/shifter">Shifter</a> is a container
+project out of <a href="http://www.nersc.gov/">NERSC</a>
 to provide HPC containers with full scheduler integration.
 
 <ul>
@@ -138,11 +140,12 @@ to provide HPC containers with full scheduler integration.
 </ul>
 </p>
 
-<h3 name="singularity"><a href="https://www.sylabs.io/singularity/">Singularity</a></h3>
+<h3 id="singularity">Singularity</h3>
 
-<p>Singularity is hybrid container system that supports:
+<p><a href="https://www.sylabs.io/singularity/">Singularity</a> is hybrid
+container system that supports:
 <ul>
-	<li>Slurm integration via
+	<li>Slurm integration (for singularity v2.x) via
 		<a href="https://github.com/sylabs/singularity/blob/master/docs/2.x-slurm/README.md">
 		Plugin</a>. A full description of the plugin was provided in the
 		<a href="https://slurm.schedmd.com/SLUG17/SLUG_Bull_Singularity.pdf">
@@ -150,17 +153,16 @@ to provide HPC containers with full scheduler integration.
 	</li>
 	<li>User namespace containers via sandbox mode that require no additional
 		permissions.</li>
-	<li>Users directly calling singularity via setuid executable outside of Slurm.</a>
+	<li>Users directly calling singularity via setuid executable outside of
+		Slurm.</li>
 </ul>
 </p>
 
-<h3 name="enroot">
-	<a href="https://github.com/NVIDIA/enroot">ENROOT</a>
-</h3>
+<h3 id="enroot">ENROOT</h3>
 
-<p>Enroot is a user namespace container system sponsored by
-	<a href="https://www.nvidia.com">NVIDIA</a>
-	that supports:
+<p><a href="https://github.com/NVIDIA/enroot">Enroot</a> is a user namespace
+container system sponsored by <a href="https://www.nvidia.com">NVIDIA</a>
+that supports:
 <ul>
 	<li>Slurm integration via
 		<a href="https://github.com/NVIDIA/pyxis">pyxis</a>
@@ -170,14 +172,12 @@ to provide HPC containers with full scheduler integration.
 </ul>
 </p>
 
-<h3 name="podman">
-	<a href="https://podman.io/">podman</a>
-</h3>
+<h3 id="podman">Podman</h3>
 
-<p>podman is a user namespace container system sponsored by
-	<a href="https://developers.redhat.com/blog/2018/08/29/intro-to-podman/">
-		Redhat/IBM</a>
-	that supports:
+<p><a href="https://podman.io/">Podman</a> is a user namespace container system
+sponsored by
+<a href="https://developers.redhat.com/blog/2018/08/29/intro-to-podman/">
+Redhat/IBM</a> that supports:
 <ul>
 	<li>Drop in replacement of Docker.</li>
 	<li>Called directly by users. (Currently lacks direct Slurm support).</li>
@@ -188,13 +188,11 @@ to provide HPC containers with full scheduler integration.
 </ul>
 </p>
 
-<h3 name="sarus">
-	<a href="https://github.com/eth-cscs/sarus">Sarus</a>
-</h3>
-<p>Sarus is a privileged container system sponsored by
-	ETH Zurich /
-	<a href="https://user.cscs.ch/tools/containers/sarus/">CSCS</a>
-	that supports:
+<h3 id="sarus">Sarus</h3>
+
+<p><a href="https://github.com/eth-cscs/sarus">Sarus</a> is a privileged
+container system sponsored by ETH Zurich
+<a href="https://user.cscs.ch/tools/containers/sarus/">CSCS</a> that supports:
 <ul>
 	<li>
 		<a href="https://sarus.readthedocs.io/en/latest/config/slurm-global-sync-hook.html">
@@ -211,6 +209,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified February 2020</p>
+<p style="text-align:center;">Last modified December 2020</p>
 
 <!--#include virtual="footer.txt"-->
