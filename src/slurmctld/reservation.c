@@ -4134,8 +4134,9 @@ static bool _validate_user_access(slurmctld_resv_t *resv_ptr,
 	} else {
 		for (int i = 0; i < resv_ptr->user_cnt; i++) {
 			if (resv_ptr->user_list[i] == uid)
-				return 0;
+				return 1;
 		}
+		return 0;
 	}
 
 	return 1;
