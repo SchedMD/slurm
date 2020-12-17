@@ -34,9 +34,10 @@ source ./inc12.3.1
 source ./inc12.3.2
 
 set exit_code   0
+set job_id_1    0
+set job_id_2    0
 set job_name_1  "JOB1"
 set job_name_2  "JOB2"
-set job_name_3  "JOB3"
 set file_in     "test.$test_id.input"
 set test_acct	"slurm_test-account.1"
 set step_id	0
@@ -59,10 +60,16 @@ if {[string compare [get_admin_level] "Administrator"]} {
 #
 # Make sure we have enough nodes to test functionality
 #
-set partition [default_partition]
-set node_count [get_node_cnt_in_part $partition]
-if { $node_count < 3 } {
-	skip "System must have at least 3 nodes to run this test on.  This system only has $node_count"
+set nodes [get_nodes_by_request "-N3"]
+if {[llength $nodes] != 3} {
+	skip "This test requires to be able to run a job on as least 3 nodes"
+}
+lassign $nodes node1 node2 node3
+
+proc cleanup {} {
+	global sacctmgr test_acct
+
+	run_command "$sacctmgr -i delete account $test_acct"
 }
 
 #
@@ -129,16 +136,12 @@ expect {
 #
 # Submit two slurm jobs to capture job info
 #
-set job_id_1 0
 set job_1_node_inx 0
-set job_1_node(0) "TBD"
-set job_1_node(1) "TBD"
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N2 -t1 -A $test_acct -J $job_name_1 -v $bin_id]
+set srun_pid [spawn $srun -N2 -w$node1,$node2 -t1 -A $test_acct -J $job_name_1 -v $bin_id]
 expect {
 	-re "launching ($number)\\.$step_id on host ($re_word_str)," {
 		set job_id_1 $expect_out(1,string)
-		set job_1_node($job_1_node_inx) $expect_out(2,string)
 		incr job_1_node_inx
 		exp_continue
 	}
@@ -156,18 +159,14 @@ if {$job_1_node_inx != 2} {
 }
 
 #
-# Second job explicitly excludes node zero from previous job
+# Second job includes one node from the first job and another different node
 #
-set job_id_2 0
 set job_2_node_inx 0
-set job_2_node(0) "TBD"
-set job_2_node(1) "TBD"
-set srun_pid [spawn $srun -N2 -x $job_1_node(0) -t1 -A $test_acct -J $job_name_2 -v $bin_id]
+set srun_pid [spawn $srun -N2 -w$node2,$node3 -t1 -A $test_acct -J $job_name_2 -v $bin_id]
 expect {
 
 	-re "launching ($number)\\.$step_id on host ($re_word_str)," {
 		set job_id_2 $expect_out(1,string)
-		set job_2_node($job_2_node_inx) $expect_out(2,string)
 		incr job_2_node_inx
 		exp_continue
 	}
@@ -185,51 +184,17 @@ if {$job_2_node_inx != 2} {
 }
 
 #
-# Third job explicitly excludes node 1 from previous job
-#
-set job_id_3 0
-set job_3_node_inx 0
-set job_3_node(0) "TBD"
-set job_3_node(1) "TBD"
-set srun_pid [spawn $srun -w$job_1_node(0),$job_2_node(1) -t1 -A $test_acct -J $job_name_3 -v $bin_id]
-expect {
-
-	-re "launching ($number)\\.$step_id on host ($re_word_str)," {
-		set job_id_3 $expect_out(1,string)
-		set job_3_node($job_3_node_inx) $expect_out(2,string)
-		incr job_3_node_inx
-		exp_continue
-	}
-	timeout {
-		slow_kill $srun_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_3_node_inx != 2} {
-	log_error "srun host count bad ($job_3_node_inx != 2)"
-	set exit_code 1
-}
-
-#
 # Wait for accounting data to be propagated to slurmdbd
 #
-if {[wait_for_command $sacct "-A 'slurm_test-account.1' --name=$job_name_1
+if [wait_for_command $sacct "-A 'slurm_test-account.1' --name=$job_name_1
                               -X -n -P -j $job_id_1 -o jobid,jobname" \
-                              "$job_id_1.$job_name_1"]} {
-	set exit_code 1
+                              "$job_id_1.$job_name_1"] {
+	fail "Accounting data for job 1 ($job_id_1) not propogated to slurmdbd"
 }
-if {[wait_for_command $sacct "-A 'slurm_test-account.1' --name=$job_name_2
+if [wait_for_command $sacct "-A 'slurm_test-account.1' --name=$job_name_2
                               -X -n -P -j $job_id_2 -o jobid,jobname" \
-                              "$job_id_2.$job_name_2"]} {
-	set exit_code 1
-}
-if {[wait_for_command $sacct "-A 'slurm_test-account.1' --name=$job_name_3
-                              -X -n -P -j $job_id_3 -o jobid,jobname" \
-                              "$job_id_3.$job_name_3"]} {
-	set exit_code 1
+                              "$job_id_2.$job_name_2"] {
+	fail "Accounting data for job 2 ($job_id_2) not propogated to slurmdbd"
 }
 
 # Only run these sub-tests if we haven't failed already
@@ -239,32 +204,8 @@ if {$exit_code == 0} {
 	#
 	inc12_3_1 $job_id_1 $job_id_2 $job_name_1 $job_name_2 $test_acct
 
-	inc12_3_2 $job_id_1 $job_id_2 $job_id_3 $job_name_1 $job_name_2   \
-	          $test_acct $job_1_node(0) $job_1_node(1) $job_2_node(0) \
-	          $job_2_node(1)
-}
-
-#
-# Use sacctmgr to delete the test account
-#
-set damatches 0
-set sadel_pid [spawn $sacctmgr -i delete account $test_acct]
-expect {
-	-re "Deleting account" {
-		incr damatches
-		exp_continue
-	}
-	timeout {
-		slow_kill $sadel_pid
-		fail "sacctmgr delete not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$damatches != 1} {
-	log_error "sacctmgr had a problem deleting account"
-	set exit_code 1
+	inc12_3_2 $job_id_1 $job_id_2 $job_name_1 $job_name_2 $test_acct \
+		$node1 $node2 $node3
 }
 
 if {$exit_code != 0} {
