@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd/v0.0.37 - add API to fetch reservation(s) info.
  -- Catch more errors in task/cgroup initalization and cleanup to avoid allowing
     jobs to start when cgroups failure to configure correctly.
+ -- Fix cgroup ns detection when using containers (e.g. LXC or Docker).
 
 * Changes in Slurm 20.11.4
 ==========================
