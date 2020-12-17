@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression in 20.11 which made slurmd incorrectly attempt to find the
     parent slurmd address when not applicable and send incorrect reverse-tree
     info to the slurmstepd.
+ -- Fix cgroup ns detection when using containers (e.g. LXC or Docker).
 
 * Changes in Slurm 20.11.3
 ==========================
