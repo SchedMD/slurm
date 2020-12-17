@@ -66,11 +66,20 @@ if {[llength $nodes] != 3} {
 }
 lassign $nodes node1 node2 node3
 
+set config_dir [get_conf_path]
+save_conf $config_dir/slurmdbd.conf
+
 proc cleanup {} {
-	global sacctmgr test_acct
+	global sacctmgr test_acct config_dir
 
 	run_command "$sacctmgr -i delete account $test_acct"
+	restore_conf $config_dir/slurmdbd.conf
+	run_command "$sacctmgr reconfigure"
 }
+
+# Add slurmdbd job query logging to troubleshoot bug 9681
+run_command "$bin_echo DebugFlags=DB_JOB >> $config_dir/slurmdbd.conf"
+run_command "$sacctmgr reconfigure"
 
 #
 # Identify the user and his current default account
@@ -186,13 +195,15 @@ if {$job_2_node_inx != 2} {
 #
 # Wait for accounting data to be propagated to slurmdbd
 #
+# Displaying start and end times to troubleshoot bug 9681
+#
 if [wait_for_command $sacct "-A 'slurm_test-account.1' --name=$job_name_1
-                              -X -n -P -j $job_id_1 -o jobid,jobname" \
+                              -X -n -P -j $job_id_1 -o jobid,jobname,start,end" \
                               "$job_id_1.$job_name_1"] {
 	fail "Accounting data for job 1 ($job_id_1) not propogated to slurmdbd"
 }
 if [wait_for_command $sacct "-A 'slurm_test-account.1' --name=$job_name_2
-                              -X -n -P -j $job_id_2 -o jobid,jobname" \
+                              -X -n -P -j $job_id_2 -o jobid,jobname,start,end" \
                               "$job_id_2.$job_name_2"] {
 	fail "Accounting data for job 2 ($job_id_2) not propogated to slurmdbd"
 }
