@@ -490,8 +490,6 @@ static void _build_bitmaps(void)
 	last_node_update = time(NULL);
 	last_part_update = time(NULL);
 
-	_init_bitmaps();
-
 	/* Set all bits, all nodes initially available for sharing */
 	bit_set_all(share_node_bitmap);
 
@@ -1263,6 +1261,8 @@ int read_slurm_conf(int recover, bool reconfig)
 	_set_slurmd_addr();
 
 	_stat_slurm_dirs();
+
+	_init_bitmaps();
 
 	/*
 	 * Set standard features and preserve the plugin controlled ones.
