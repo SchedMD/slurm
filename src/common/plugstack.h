@@ -90,6 +90,16 @@ int spank_slurmd_exit (void);
 int spank_fini (stepd_step_rec_t *job);
 
 /*
+ * Return true if a loaded spank plugin has a prolog function defined.
+ */
+extern bool spank_has_prolog(void);
+
+/*
+ * Return true if a loaded spank plugin has an epilog function defined.
+ */
+extern bool spank_has_epilog(void);
+
+/*
  *  Option processing
  */
 

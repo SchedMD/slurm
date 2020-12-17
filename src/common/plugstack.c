@@ -66,6 +66,9 @@
 #define OPTIONAL "optional"
 #define INCLUDE  "include"
 
+static bool has_prolog = false;
+static bool has_epilog = false;
+
 struct spank_plugin_operations {
 	spank_f *init;
 	spank_f *job_prolog;
@@ -446,6 +449,17 @@ spank_stack_plugin_valid_for_context (struct spank_stack *stack,
 			return (1);
 		break;
 	case S_TYPE_SLURMD:
+		/*
+		 * Set flags if prolog/epilog exist, but only return 1 if
+		 * slurmd_exit is defined so that spank_init is only called when
+		 * slurmd_exit exists. slurmd needs to know whether to create a
+		 * spank stepd to run spank prolog/epilog in job_script context.
+		 */
+		if (p->ops.job_prolog)
+			has_prolog = true;
+		if (p->ops.job_epilog)
+			has_epilog = true;
+
 		if (p->ops.slurmd_exit)
 			return (1);
 		break;
@@ -2639,4 +2653,14 @@ extern bool spank_option_get_next_set(char **plugin, char **name,
 	*state = NULL;
 
 	return false;
+}
+
+extern bool spank_has_prolog()
+{
+	return has_prolog;
+}
+
+extern bool spank_has_epilog()
+{
+	return has_epilog;
 }
