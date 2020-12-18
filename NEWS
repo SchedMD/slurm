@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 20.11.3
+==========================
+
 * Changes in Slurm 20.11.2
 ==========================
  -- Fix older versions of sacct not working with 20.11.
