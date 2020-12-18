@@ -2749,9 +2749,9 @@ extern int _unpack_job_step_create_request_msg(
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		char *temp_str;
 		uint16_t uint16_tmp;
-		if (unpack_step_id_members(&tmp_ptr->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
-			goto unpack_error;
+		safe_unpack32(&tmp_ptr->step_id.job_id, buffer);
+		safe_unpack32(&tmp_ptr->step_id.step_id, buffer);
+		tmp_ptr->step_id.step_het_comp = NO_VAL;
 		safe_unpack32(&tmp_ptr->user_id, buffer);
 		safe_unpack32(&tmp_ptr->min_nodes, buffer);
 		safe_unpack32(&tmp_ptr->max_nodes, buffer);
@@ -7729,7 +7729,7 @@ _unpack_step_alloc_info_msg(step_alloc_info_msg_t **
 		safe_unpack32(&job_desc_ptr->step_id.job_id, buffer);
 		safe_unpack32(&job_desc_ptr->het_job_offset, buffer);
 		safe_unpack32(&job_desc_ptr->step_id.step_id, buffer);
-		convert_old_step_id(&job_desc_ptr->step_id.step_id);
+		job_desc_ptr->step_id.step_het_comp = NO_VAL;
 
 		return SLURM_SUCCESS;
 
@@ -9014,9 +9014,9 @@ _unpack_job_step_kill_msg(job_step_kill_msg_t ** msg_ptr, Buf buffer,
 		safe_unpack16(&msg->flags, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&(msg)->sjob_id, &cc, buffer);
-		if (unpack_step_id_members(&msg->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
-			goto unpack_error;
+		safe_unpack32(&msg->step_id.job_id, buffer);
+		safe_unpack32(&msg->step_id.step_id, buffer);
+		msg->step_id.step_het_comp = NO_VAL;
 		safe_unpackstr_xmalloc(&msg->sibling, &cc, buffer);
 		safe_unpack16(&msg->signal, buffer);
 		safe_unpack16(&msg->flags, buffer);
@@ -9109,7 +9109,6 @@ _unpack_update_job_step_msg(step_update_request_msg_t ** msg_ptr, Buf buffer,
 		safe_unpackstr_xmalloc(&msg->name, &uint32_tmp, buffer);
 		safe_unpack_time(&msg->start_time, buffer);
 		safe_unpack32(&msg->step_id, buffer);
-		convert_old_step_id(&msg->step_id);
 		safe_unpack32(&msg->time_limit, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
@@ -9704,9 +9703,9 @@ _unpack_job_step_info_req_msg(job_step_info_request_msg_t ** msg, Buf buffer,
 		safe_unpack16(&job_step_info->show_flags, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack_time(&job_step_info->last_update, buffer);
-		if (unpack_step_id_members(&job_step_info->step_id, buffer,
-					   protocol_version) != SLURM_SUCCESS)
-			goto unpack_error;
+		safe_unpack32(&job_step_info->step_id.job_id, buffer);
+		safe_unpack32(&job_step_info->step_id.step_id, buffer);
+		job_step_info->step_id.step_het_comp = NO_VAL;
 		safe_unpack16(&job_step_info->show_flags, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
