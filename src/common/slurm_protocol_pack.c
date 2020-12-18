@@ -9008,12 +9008,12 @@ _unpack_job_step_kill_msg(job_step_kill_msg_t ** msg_ptr, Buf buffer,
 		if (unpack_step_id_members(&msg->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
-		safe_unpackstr_xmalloc(&(msg)->sjob_id, &cc, buffer);
+		safe_unpackstr_xmalloc(&msg->sjob_id, &cc, buffer);
 		safe_unpackstr_xmalloc(&msg->sibling, &cc, buffer);
 		safe_unpack16(&msg->signal, buffer);
 		safe_unpack16(&msg->flags, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&(msg)->sjob_id, &cc, buffer);
+		safe_unpackstr_xmalloc(&msg->sjob_id, &cc, buffer);
 		safe_unpack32(&msg->step_id.job_id, buffer);
 		safe_unpack32(&msg->step_id.step_id, buffer);
 		msg->step_id.step_het_comp = NO_VAL;
