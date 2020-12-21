@@ -4137,6 +4137,9 @@ extern uint32_t acct_policy_get_max_nodes(job_record_t *job_ptr,
 			grp_set = 1;
 		}
 
+		node_limit = assoc_ptr->max_tres_ctld[TRES_ARRAY_NODE];
+
+		_apply_limit_factor(&node_limit, limit_factor);
 		if (!parent
 		    && (qos_max_p_limit == INFINITE64)
 		    && (node_limit != INFINITE64)
