@@ -4365,37 +4365,6 @@ proc check_hosts_contiguous { check_hosts_list {partition ""} } {
 }
 
 
-#####################################################################
-#
-# NAME
-#	stop_root_user - detect, warn, and stop root user
-#
-# SYNOPSIS
-#	stop_root_user
-#
-# DESCRIPTION
-#	Detect, warn, and stop root user
-#
-# RETURN VALUE
-#	uid if not root user, exits otherwise
-#
-#####################################################################
-
-proc stop_root_user {} {
-
-	global bin_id number
-
-	set uid [get_my_uid]
-	if {$uid == -1} {
-		fail "Can't get my uid"
-	} elseif {$uid == 0} {
-		skip "Can't run this test as user root"
-	}
-
-	return $uid
-}
-
-
 proc expect_extern_step { } {
 	global scontrol
 	# If PrologFlags=contain is in slurm.conf, then an "extern" step will be
