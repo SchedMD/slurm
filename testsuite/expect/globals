@@ -2839,34 +2839,28 @@ proc get_total_cpus {} {
 
 	set partition [default_partition]
 	set cpu_cnt 0
+	set nodes_matched [list]
 
-	set re_with_cs    "CPUTot=(\\d+).*CoreSpecCount=(\\d+).*ThreadsPerCore=(\\d+)"
-	set re_without_cs "CPUTot=(\\d+)"
+	set re_with_cs    "NodeName=($re_word_str).*CPUTot=(\\d+).*CoreSpecCount=(\\d+).*ThreadsPerCore=(\\d+)"
+	set re_without_cs "NodeName=($re_word_str).*CPUTot=(\\d+)"
 
-	spawn $sinfo -h -o "%P %N" -p $partition --state=idle
-	expect {
-		-re "$partition\\* ($re_word_str)" {
-			set def_hostlist $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			fail "sinfo not responding"
-		}
-		eof {
-			wait
-		}
+	set out [run_command_output -fail "$sinfo -h -o \"%P %N\" -p $partition --state=idle"]
+	if {[regexp "$partition\\* ($re_word_str)" $out - def_hostlist] != 1} {
+		fail "Not able to get the hostlist from sinfo"
 	}
-	set fd [open "|$scontrol --oneliner show node $def_hostlist"]
-	while {[gets $fd line] != -1} {
-		if {[regexp $re_with_cs $line frag tmp_cpu_cnt core_spec_cnt threads_per_core] == 1} {
-			set cpu_cnt [expr $cpu_cnt + $tmp_cpu_cnt - $core_spec_cnt * $threads_per_core]
-			continue
-		}
-		if {[regexp $re_without_cs $line frag tmp_cpu_cnt] == 1} {
+
+	set out [run_command_output "$scontrol --oneliner show node $def_hostlist"]
+	foreach {re node_name tmp_cpu_cnt core_spec_cnt threads_per_core} [regexp -all -inline -linestop $re_with_cs $out] {
+		set cpu_cnt [expr $cpu_cnt + $tmp_cpu_cnt - $core_spec_cnt * $threads_per_core]
+		lappend nodes_matched $node_name
+	}
+	foreach {re node_name tmp_cpu_cnt} [regexp -all -inline -linestop $re_without_cs $out] {
+		# Not count nodes already counted
+		if {[lsearch $nodes_matched $node_name] == -1} {
 			set cpu_cnt [expr $cpu_cnt + $tmp_cpu_cnt]
-			continue
 		}
 	}
+
 	return $cpu_cnt
 }
 
