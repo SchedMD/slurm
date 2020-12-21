@@ -1151,27 +1151,17 @@ proc get_my_user_name {  } {
 #	get_my_uid
 #
 # RETURN VALUE
-#	A non-zero return code indicates a failure.
+#	The uid of the current user, or fails.
 #
 ################################################################
 
 proc get_my_uid {  } {
 	global bin_id number
 
-	set uid -1
-
-	log_user 0
-	spawn $bin_id -u
-	expect {
-		-re "($number)" {
-			set uid $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
+	set out [run_command_output -nolog -fail "$bin_id -u"]
+	if {![regexp "($number)" $out - uid]} {
+		fail "Unable to get UID with $bin_id ($out)"
 	}
-	log_user 1
 
 	return $uid
 }
