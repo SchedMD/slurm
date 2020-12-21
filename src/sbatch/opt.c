@@ -470,6 +470,8 @@ extern char *get_argument(const char *file, int lineno, const char *line,
 		memcpy(argument, "      ", 6);
 	}
 
+	argument = NULL;
+
 	/* skip whitespace */
 	while (isspace(*ptr) && *ptr != '\0') {
 		ptr++;
