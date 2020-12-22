@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix segfault when parsing bad "#SBATCH hetjob" directive.
  -- Allow countless gpu:<type> node GRES specifications in slurm.conf.
+ -- PMIx - Don't set UCX_MEM_MMAP_RELOC for older version of UCX (pre 1.5).
 
 * Changes in Slurm 20.11.2
 ==========================
