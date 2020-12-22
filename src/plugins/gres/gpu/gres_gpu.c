@@ -306,7 +306,7 @@ static int _validate_cpus_links(gres_slurmd_conf_t *conf_gres,
 	 * If the config gres has cpus defined check it with what is found on
 	 * the system.
 	 */
-	if (conf_gres->cpus && conf_gres->cpus_bitmap &&
+	if (conf_gres->cpus_bitmap && sys_gres->cpus_bitmap &&
 	    !bit_equal(conf_gres->cpus_bitmap, sys_gres->cpus_bitmap))
 		return 0;
 
