@@ -334,25 +334,25 @@ again:
 		     (plugin_id == SELECT_PLUGIN_CRAY_LINEAR))) {
 			char *type = "select", *name = "select/cray_aries";
 			uint16_t save_params = slurm_conf.select_type_param;
-			uint16_t params = save_params;
+			uint16_t params[2];
 			int cray_plugin_id[2], cray_offset;
 
 			cray_other_cons_res = true;
 
 			if (plugin_id == SELECT_PLUGIN_CRAY_LINEAR) {
-				params &= ~CR_OTHER_CONS_RES;
-				params &= ~CR_OTHER_CONS_TRES;
+				params[0] = save_params & ~CR_OTHER_CONS_RES;
 				cray_plugin_id[0] = SELECT_PLUGIN_CRAY_CONS_RES;
+				params[1] = save_params & ~CR_OTHER_CONS_TRES;
 				cray_plugin_id[1] = SELECT_PLUGIN_CRAY_CONS_TRES;
 			} else if (plugin_id == SELECT_PLUGIN_CRAY_CONS_RES) {
-				params |= CR_OTHER_CONS_RES;
-				params &= ~CR_OTHER_CONS_TRES;
+				params[0] = save_params | CR_OTHER_CONS_RES;
 				cray_plugin_id[0] = SELECT_PLUGIN_CRAY_LINEAR;
+				params[1] = save_params & ~CR_OTHER_CONS_RES;
 				cray_plugin_id[1] = SELECT_PLUGIN_CRAY_CONS_TRES;
 			} else {	/* SELECT_PLUGIN_CRAY_CONS_TRES */
-				params &= ~CR_OTHER_CONS_RES;
-				params |= CR_OTHER_CONS_TRES;
+				params[0] = save_params | CR_OTHER_CONS_TRES;
 				cray_plugin_id[0] = SELECT_PLUGIN_CRAY_LINEAR;
+				params[1] = save_params & ~CR_OTHER_CONS_RES;
 				cray_plugin_id[1] = SELECT_PLUGIN_CRAY_CONS_RES;
 			}
 
@@ -369,8 +369,8 @@ again:
 				goto end_it;	/* No match */
 
 			slurm_mutex_lock(&select_context_lock);
+			slurm_conf.select_type_param = params[cray_offset];
 			plugin_context_destroy(select_context[i]);
-			slurm_conf.select_type_param = params;
 			select_context[i] =
 				plugin_context_create(type, name,
 						      (void **)&ops[i],
