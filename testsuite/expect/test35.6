@@ -40,7 +40,9 @@ proc cleanup {} {
 	exec $bin_rm -f $output_child $output_parent
 }
 
-stop_root_user
+if {[get_my_uid] == 0} {
+	skip "This test can't be run as user root"
+}
 
 set bb_types [get_bb_types]
 if {[string first "datawarp" $bb_types] == -1} {

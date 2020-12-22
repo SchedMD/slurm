@@ -78,7 +78,9 @@ proc find_bb_data { file_name string_seek } {
 	return $found
 }
 
-stop_root_user
+if {[get_my_uid] == 0} {
+	skip "This test can't be run as user root"
+}
 
 set bb_types [get_bb_types]
 if {[string first "datawarp" $bb_types] == -1} {

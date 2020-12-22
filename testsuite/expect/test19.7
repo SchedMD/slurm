@@ -36,7 +36,10 @@ set file_out         "test$test_id.output"
 #
 # get my uid and clear any vestigial triggers
 #
-set uid [stop_root_user]
+set uid [get_my_uid]
+if {$uid == 0} {
+	skip "This test can't be run as user root"
+}
 
 proc cleanup {} {
 	global bin_rm file_in file_in_idle file_out strigger uid

@@ -50,7 +50,10 @@ proc cleanup {} {
 #
 # get my uid and clear any vestigial triggers
 #
-set uid [stop_root_user]
+set uid [get_my_uid]
+if {$uid == 0} {
+	skip "This test can't be run as user root"
+}
 exec $strigger --clear --quiet --user=$uid
 
 #

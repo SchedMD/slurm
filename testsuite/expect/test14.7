@@ -45,7 +45,9 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
 
-stop_root_user
+if {[get_my_uid] == 0} {
+	skip "This test can't be run as user root"
+}
 
 # Delete left-over stdout/err files
 file delete $file_out $file_err
