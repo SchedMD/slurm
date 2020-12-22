@@ -325,8 +325,7 @@ again:
 	}
 	if (i >= select_context_cnt) {
 		/*
-		 * Put on the extra Cray select plugins that do not get
-		 * generated automatically.
+		 * Replace the current Cray with the one we are looking for.
 		 */
 		if (!cray_other_cons_res &&
 		    ((plugin_id == SELECT_PLUGIN_CRAY_CONS_RES)  ||
@@ -339,6 +338,13 @@ again:
 
 			cray_other_cons_res = true;
 
+			/*
+			 * Here we are setting params to be like we need them
+			 * in the plugin to set things up to get the correct
+			 * plugin_id when in the plugin.  cray_plugin_id is
+			 * setup with the other plugins so we can find which of
+			 * them is currently loaded.
+			 */
 			if (plugin_id == SELECT_PLUGIN_CRAY_LINEAR) {
 				params &= ~CR_OTHER_CONS_RES;
 				params &= ~CR_OTHER_CONS_TRES;
@@ -369,7 +375,14 @@ again:
 				goto end_it;	/* No match */
 
 			slurm_mutex_lock(&select_context_lock);
+
+			/* Shut the old one down */
 			plugin_context_destroy(select_context[i]);
+
+			/*
+			 * Open the one we are looking for in the same spot in
+			 * select_context and ops
+			 */
 			slurm_conf.select_type_param = params;
 			select_context[i] =
 				plugin_context_create(type, name,
