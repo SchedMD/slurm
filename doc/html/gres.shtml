@@ -100,6 +100,39 @@ If a matching system GPU is not found, no validation takes place and the GPU is
 assumed to be as the configuration says.
 </p>
 
+<P>For <i>Type</i> to match a system-detected device, it must either exactly
+match or be a substring of the GPU name reported by slurmd via the AutoDetect
+mechanism. This GPU name will have all spaces replaced with underscores. To see
+the GPU name, set <i>SlurmdDebug=debug2</i> in your slurm.conf and either
+restart or reconfigure <b>slurmd</b> and check the slurmd log. For example,
+with <i>AutoDetect=nvml</i>:</P>
+
+<PRE>
+debug:  gpu/nvml: init: init: GPU NVML plugin loaded
+debug2: gpu/nvml: _nvml_init: Successfully initialized NVML
+debug:  gpu/nvml: _get_system_gpu_list_nvml: Systems Graphics Driver Version: 450.36.06
+debug:  gpu/nvml: _get_system_gpu_list_nvml: NVML Library Version: 11.450.36.06
+debug2: gpu/nvml: _get_system_gpu_list_nvml: Total CPU count: 6
+debug2: gpu/nvml: _get_system_gpu_list_nvml: Device count: 1
+debug2: gpu/nvml: _get_system_gpu_list_nvml: GPU index 0:
+debug2: gpu/nvml: _get_system_gpu_list_nvml:     Name: geforce_rtx_2060
+debug2: gpu/nvml: _get_system_gpu_list_nvml:     UUID: GPU-g44ef22a-d954-c552-b5c4-7371354534b2
+debug2: gpu/nvml: _get_system_gpu_list_nvml:     PCI Domain/Bus/Device: 0:1:0
+debug2: gpu/nvml: _get_system_gpu_list_nvml:     PCI Bus ID: 00000000:01:00.0
+debug2: gpu/nvml: _get_system_gpu_list_nvml:     NVLinks: -1
+debug2: gpu/nvml: _get_system_gpu_list_nvml:     Device File (minor number): /dev/nvidia0
+debug2: gpu/nvml: _get_system_gpu_list_nvml:     CPU Affinity Range - Machine: 0-5
+debug2: gpu/nvml: _get_system_gpu_list_nvml:     Core Affinity Range - Abstract: 0-5
+</PRE>
+
+<P>In this example, the GPU's name is reported as
+<code class="commandline">geforce_rtx_2060</code>. So in your slurm.conf and
+gres.conf, the GPU <i>Type</i> can be set to <code class="commandline">
+geforce</code>, <code class="commandline">rtx</code>, <code class="commandline">
+2060</code>, <code class="commandline">geforce_rtx_2060</code>, or any other
+substring, and <b>slurmd</b> should be able to match it to the system-detected
+device <code class="commandline">geforce_rtx_2060</code>.
+
 <!-------------------------------------------------------------------------->
 <a id="Running_Jobs"></a>
 <h2>Running Jobs</h2>
@@ -430,6 +463,6 @@ to a physical device</pre>
 explicitly defined in the offload pragmas.</P>
 <!-------------------------------------------------------------------------->
 
-<p style="text-align: center;">Last modified 23 July 2020</p>
+<p style="text-align: center;">Last modified 22 December 2020</p>
 
 <!--#include virtual="footer.txt"-->
