@@ -1159,27 +1159,17 @@ proc get_my_user_name {  } {
 #	get_my_uid
 #
 # RETURN VALUE
-#	A non-zero return code indicates a failure.
+#	The uid of the current user, or fails.
 #
 ################################################################
 
 proc get_my_uid {  } {
 	global bin_id number
 
-	set uid -1
-
-	log_user 0
-	spawn $bin_id -u
-	expect {
-		-re "($number)" {
-			set uid $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
+	set out [run_command_output -nolog -fail "$bin_id -u"]
+	if {![regexp "($number)" $out - uid]} {
+		fail "Unable to get UID with $bin_id ($out)"
 	}
-	log_user 1
 
 	return $uid
 }
@@ -4380,37 +4370,6 @@ proc check_hosts_contiguous { check_hosts_list {partition ""} } {
 	}
 
 	return true
-}
-
-
-#####################################################################
-#
-# NAME
-#	stop_root_user - detect, warn, and stop root user
-#
-# SYNOPSIS
-#	stop_root_user
-#
-# DESCRIPTION
-#	Detect, warn, and stop root user
-#
-# RETURN VALUE
-#	uid if not root user, exits otherwise
-#
-#####################################################################
-
-proc stop_root_user {} {
-
-	global bin_id number
-
-	set uid [get_my_uid]
-	if {$uid == -1} {
-		fail "Can't get my uid"
-	} elseif {$uid == 0} {
-		skip "Can't run this test as user root"
-	}
-
-	return $uid
 }
 
 
