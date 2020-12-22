@@ -3,6 +3,9 @@
 # Purpose: Test of Slurm functionality
 #          Test of --deadline and --begin option and --time_min too long
 ############################################################################
+# Copyright (C) 2020 SchedMD LLC.
+# Written by Albert Gil <albert.gil@schedmd.com>
+#
 # Copyright (C) 2015 CEA/DAM/DIF
 # Written by Aline Roy <aline.roy@cea.fr>
 #
@@ -26,108 +29,61 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-set exit_code   0
-set job_id      0
+set job_list ""
 
 proc cleanup {} {
-	global bin_rm file_in
-
-	exec $bin_rm -f $file_in
+	global job_list
+	cancel_job $job_list
 }
 
 #
-# Build input script file
+# Get the node to use
 #
-exec $bin_rm -f $file_in
-make_bash_script $file_in "$bin_sleep 5"
-
-#
-# Spawn a batch job with a deadline and no time
-#
-set timeout [expr $max_job_delay + 60]
-spawn $sbatch --output=/dev/null --error=/dev/null --begin now+60 --deadline now+600 --time-min 10 $file_in
-expect {
-	-re "Requested time limit is invalid (missing or exceeds some limit)" {
-		set exit_code 1
-		exp_continue
-	}
-	-re "Incompatible begin and deadline time specification" {
-		set exit_code 1
-		exp_continue
-	}
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		set exit_code 0
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "Batch not submitted with a deadline too short"
+set node [get_nodes_by_request "-N1 -t 5"]
+if {[llength $node] != 1} {
+	skip "This test needs to be able to submit a job with '-N1 -t 5'"
 }
 
 #
-# test status deadline in scontrol and sacct
+# Submit a blocking job
 #
-if {[wait_for_job $job_id DONE] != 0} {
-	fail "Job failed to run to completion"
-}
+set job_block [submit_job -fail "-w $node --exclusive -t 5 --wrap '$bin_sleep 300' -J $test_name -o /dev/null -e /dev/null"]
+lappend job_list $job_block
+wait_for_job $job_block "RUNNING"
 
-spawn $scontrol show job $job_id
-expect {
-	-re "JobState=DEADLINE" {
-		exp_continue
-	}
-	-re "JobState=" {
-		log_error "Invalid job state"
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
+#
+# Submit a job with deadline that will rest pending until deadlines
+#
+set job_id [submit_job -fail "-w $node --begin=now+5 --deadline=now+75 --time-min=1 --wrap '$bin_sleep 60' -J $test_name -o /dev/null -e /dev/null"]
+lappend job_list $job_id
 
-set cycle_count 8
-set not_support 0
-for {set inx 0} {$inx < $cycle_count} {incr inx} {
-	spawn $sacct  -n -P -X -j $job_id -o State
-	expect {
-		-re "Slurm accounting storage is disabled" {
-			set not_support 1
-			exp_continue
-		}
-		-re "DEADLINE" {
-			break
-		}
-		-re "COMPLETED" {
-			set exit_code 1
-			break
-		}
-		timeout {
-			fail "sacct not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	sleep 10
+#
+# Check that job goes from PENDING with reason BeginTime to finally
+# end with DEADLINE.
+#
+set state  ""
+set reason ""
+wait_for -timeout 10 {$state == "PENDING" && $reason == "BeginTime"} {
+	set state  [get_job_param $job_id "JobState"]
+	set reason [get_job_param $job_id "Reason"]
 }
-if {$not_support != 0} {
+subtest {$state == "PENDING" && $reason == "BeginTime"} "Job should be PENDING with reason BeginTime" "JobState=$state Reason=$reason"
+
+wait_for -timeout 60 {$state == "DEADLINE" && $reason == "DeadLine"} {
+	set state  [get_job_param $job_id "JobState"]
+	set reason [get_job_param $job_id "Reason"]
+}
+subtest {$state == "DEADLINE" && $reason == "DeadLine"} "Job should end with state DEADLINE and reason DeadLine" "JobState=$state Reason=$reason"
+
+#
+# Test that the state is accounted properly
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
 	skip "Can not test without accounting enabled"
 }
 
-if {$exit_code == 1} {
-	fail "Batch submitted with a deadline too short"
-} elseif {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+set sacct_state ""
+wait_for -timeout 30 {[regexp "DEADLINE" $sacct_state]} {
+	set sacct_state [run_command_output -fail "$sacct  -n -P -X -j $job_id -o State"]
 }
+subtest {[regexp "DEADLINE" $sacct_state]} "Job should be accounted with state DEADLINE" "$sacct_state != DEADLINE"
