@@ -53,7 +53,6 @@
 #include "src/common/cli_filter.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/env.h"
-#include "src/common/gres.h"
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/plugstack.h"
@@ -508,10 +507,8 @@ static void _env_merge_filter(job_desc_msg_t *desc)
 /* Returns 0 on success, -1 on failure */
 static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
-	int i, rc;
+	int i;
 	extern char **environ;
-
-	List tmp_gres_list = NULL;
 
 	desc->contiguous = opt.contiguous ? 1 : 0;
 	if (opt.core_spec != NO_VAL16)
@@ -741,25 +738,6 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 		xstrfmtcat(desc->mem_per_tres, "gpu:%"PRIu64, opt.mem_per_gpu);
 
 	desc->clusters = xstrdup(opt.clusters);
-
-	rc = gres_job_state_validate(desc->cpus_per_tres,
-				     desc->tres_freq,
-				     desc->tres_per_job,
-				     desc->tres_per_node,
-				     desc->tres_per_socket,
-				     desc->tres_per_task,
-				     desc->mem_per_tres,
-				     &desc->num_tasks,
-				     &desc->min_nodes,
-				     &desc->max_nodes,
-				     &desc->ntasks_per_node,
-				     &desc->ntasks_per_socket,
-				     &desc->sockets_per_node,
-				     &desc->cpus_per_task,
-				     &desc->ntasks_per_tres,
-				     &tmp_gres_list);
-	if (rc)
-		return -1;
 
 	return 0;
 }
