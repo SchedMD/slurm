@@ -444,6 +444,12 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	num_tasks = 0;
 	threads_per_core = common_cpus_per_core(details_ptr, node_i);
 
+	/* Are enough CPUs available compared with required ones? */
+	if ((free_core_count * threads_per_core) < details_ptr->pn_min_cpus) {
+		num_tasks = 0;
+		goto fini;
+	}
+
 	for (i = 0; i < sockets; i++) {
 		uint16_t tmp = free_cores[i] * threads_per_core;
 		if ((tmp == 0) && req_sock_map && bit_test(req_sock_map, i)) {
@@ -483,6 +489,14 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 		j = avail_cpus / cpus_per_task;
 		num_tasks = MIN(num_tasks, j);
 		avail_cpus = num_tasks * cpus_per_task;
+	}
+
+	/*
+	 * If there's an auto adjustment then use the max between the required
+	 * CPUs according to required task number, or to the autoadjustment.
+	 */
+	if (details_ptr->pn_min_cpus > details_ptr->orig_pn_min_cpus) {
+		avail_cpus = MAX(details_ptr->pn_min_cpus, avail_cpus);
 	}
 
 	if ((details_ptr->ntasks_per_node &&

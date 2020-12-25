@@ -16,6 +16,7 @@ documents those changes that are of interest to users and administrators.
  -- Cray - Handle setting correct prefix for cpuset cgroup with respects to
     expected_usage_in_bytes.  This fixes Cray's OOM killer.
  -- mpi/pmix: Fix PMIx_Abort support.
+ -- Don't reject jobs allocating more cores than tasks with MaxMemPerCPU.
 
 * Changes in Slurm 20.11.2
 ==========================
