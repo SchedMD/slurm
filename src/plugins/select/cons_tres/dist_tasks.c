@@ -37,27 +37,38 @@
 #include "select_cons_tres.h"
 #include "../cons_common/dist_tasks.h"
 
-/* At tasks_per_node limit for given node */
-static bool _at_tpn_limit(const uint32_t n, const job_record_t *job_ptr,
+/*
+ * Check if we're at job tasks_per_node limit for a given node when allocating
+ * tasks to a node.
+ *
+ * RETURNS rc
+ *  rc > 0 if tpn limit exceeded
+ *  rc == 0 if exactly at tpn limit
+ *  rc < 0 if not at limit yet
+ */
+static int _at_tpn_limit(const uint32_t n, const job_record_t *job_ptr,
 			  const char *tag, bool log_error)
 {
 	const job_resources_t *job_res = job_ptr->job_resrcs;
 	const log_level_t log_lvl = log_error ? LOG_LEVEL_ERROR :
 						LOG_LEVEL_INFO;
+	int rc = -1;
 
+	/* Special case where no limit is imposed - no overcommit */
 	if (job_ptr->details->ntasks_per_node == 0)
-		return false;
+		return rc;
 
-	if (job_res->tasks_per_node[n] < job_ptr->details->ntasks_per_node)
-		return false;
+	rc = job_res->tasks_per_node[n] - job_ptr->details->ntasks_per_node;
 
-	if (log_error || (slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE))
+	/* Limit exceeded */
+	if ((rc > 0) && (log_error || (slurm_conf.debug_flags &
+				       DEBUG_FLAG_SELECT_TYPE)))
 		log_var(log_lvl,
 			"%s over tasks_per_node for %pJ node:%u task_per_node:%d max:%" PRIu16,
 			tag, job_ptr, n, job_res->tasks_per_node[n],
 			job_ptr->details->ntasks_per_node);
 
-	return true;
+	return rc;
 }
 
 /*
@@ -177,7 +188,8 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 			if (!dist_tasks_tres_tasks_avail(
 				    gres_task_limit, job_res, n))
 				break;
-			if (_at_tpn_limit(n, job_ptr, "fill allocated", false))
+			if (_at_tpn_limit(n, job_ptr, "fill allocated",
+					  false) >= 0)
 				break;
 			tid++;
 			job_res->tasks_per_node[n]++;
@@ -201,7 +213,8 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 		maxtasks = 0;	/* Allocate have one_task_per_node */
 	while (tid < maxtasks) {
 		bool space_remaining = false;
-		if (over_subscribe && log_over_subscribe) {
+		int over_limit = -1;
+		if (over_subscribe && log_over_subscribe && (over_limit > 0)) {
 			/*
 			 * 'over_subscribe' is a relief valve that guards
 			 * against an infinite loop, and it *should* never
@@ -224,9 +237,11 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 						    gres_task_limit,
 						    job_res, n))
 						break;
-					if (_at_tpn_limit(n, job_ptr,
-							  "fill additional",
-							  false))
+					over_limit = _at_tpn_limit(
+						n, job_ptr,
+						"fill additional",
+						false);
+					if (over_limit >= 0)
 						break;
 				}
 
@@ -264,7 +279,7 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 					continue;
 				if (_at_tpn_limit(n, job_ptr,
 						  "fill non-dedicated CPUs",
-						  true))
+						  true) >= 0)
 					continue;
 			}
 

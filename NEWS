@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
     expected_usage_in_bytes.  This fixes Cray's OOM killer.
  -- mpi/pmix: Fix PMIx_Abort support.
  -- Don't reject jobs allocating more cores than tasks with MaxMemPerCPU.
+ -- Fix false error message complaining about oversubscribe in cons_tres.
 
 * Changes in Slurm 20.11.2
 ==========================
