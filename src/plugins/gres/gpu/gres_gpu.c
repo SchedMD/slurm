@@ -295,6 +295,14 @@ static int _validate_cpus_links(gres_slurmd_conf_t *conf_gres,
 			        gres_slurmd_conf_t *sys_gres)
 {
 	/*
+	 * If conf_gres->cpus doesn't convert into conf_gres->cpus_bitmap, then
+	 * the configuration is messed up, and we should never validate it
+	 * against any system device.
+	 */
+	if (conf_gres->cpus && !conf_gres->cpus_bitmap)
+		return 0;
+
+	/*
 	 * If the config gres has cpus defined check it with what is found on
 	 * the system.
 	 */
