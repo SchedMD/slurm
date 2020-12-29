@@ -572,9 +572,8 @@ salloc -N1 --mem=256GB -C haswell : \
 srun server : client
 </pre>
 
-<p>The SLURM_PROCID and SLURM_TASKID environment variables will be set to
-reflect a global task rank (both environment variables will have the same value).
-Each spawned process will have a unique SLURM_PROCID.</p>
+<p>The SLURM_PROCID environment variable will be set to reflect a global
+task rank. Each spawned process will have a unique SLURM_PROCID.</p>
 
 <p>Similarly, the SLURM_NPROCS and SLURM_NTASKS environment variables will be set
 to reflect a global task count (both environment variables will have the same
@@ -752,6 +751,6 @@ Such a situation will have an adverse effect upon scheduling other jobs,
 especially other heterogeneous jobs.</p>
 
 
-<p style="text-align:center;">Last modified 13 July 2020</p>
+<p style="text-align:center;">Last modified 29 December 2020</p>
 
 <!--#include virtual="footer.txt"-->
