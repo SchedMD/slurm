@@ -4564,15 +4564,19 @@ This option has no effect unless cgroup job confinement is also configured
 (\fBTaskPlugin=task/cgroup\fR with \fBConstrainCores=yes\fR in cgroup.conf).
 
 .TP
-\fBFeature\fR
+\fBFeatures\fR
 A comma delimited list of arbitrary strings indicative of some
 characteristic associated with the node.
-There is no value associated with a feature at this time, a node
+There is no value or count associated with a feature at this time, a node
 either has a feature or it does not.
-If desired a feature may contain a numeric component indicating,
-for example, processor speed.
+A desired feature may contain a numeric component indicating,
+for example, processor speed but this numeric component will be considered to
+be part of the feature string. Features are intended to be used to filter nodes
+eligible to run jobs via the \fB--constraint\fR argument.
 By default a node has no features.
-Also see \fBGres\fR.
+Also see \fBGres\fR for being able to have more control such as types and
+count. Using features is faster than scheduling against GRES but is limited to
+Boolean operations.
 
 .TP
 \fBGres\fR
@@ -4594,7 +4598,7 @@ A suffix of "K", "M", "G", "T" or "P" may be used to multiply the number by
 (e.g."Gres=gpu:tesla:1,gpu:kepler:1,bandwidth:lustre:no_consume:4G").
 By default a node has no generic resources and its maximum count is
 that of an unsigned 64bit integer.
-Also see \fBFeature\fR.
+Also see \fBFeatures\fR for Boolean flags to filter nodes using job constraints.
 
 .TP
 \fBMemSpecLimit\fR
