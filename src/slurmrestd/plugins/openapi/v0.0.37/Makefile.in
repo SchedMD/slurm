@@ -184,7 +184,7 @@ am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
 am_openapi_v0_0_37_la_OBJECTS = api.lo diag.lo jobs.lo nodes.lo \
-	partitions.lo
+	partitions.lo reservations.lo
 openapi_v0_0_37_la_OBJECTS = $(am_openapi_v0_0_37_la_OBJECTS)
 openapi_v0_0_37_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
@@ -207,7 +207,7 @@ depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/api.Plo ./$(DEPDIR)/diag.Plo \
 	./$(DEPDIR)/jobs.Plo ./$(DEPDIR)/nodes.Plo \
-	./$(DEPDIR)/partitions.Plo
+	./$(DEPDIR)/partitions.Plo ./$(DEPDIR)/reservations.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -519,7 +519,7 @@ libopenapi_ref_la_DEPENDENCIES = openapi_ref.lo
 pkglib_LTLIBRARIES = openapi_v0_0_37.la
 noinst_LTLIBRARIES = libopenapi_ref.la
 openapi_v0_0_37_la_SOURCES = \
-	api.c api.h diag.c jobs.c nodes.c partitions.c
+	api.c api.h diag.c jobs.c nodes.c partitions.c reservations.c
 
 openapi_v0_0_37_la_DEPENDENCIES = $(LIB_SLURM_BUILD)
 openapi_v0_0_37_la_LDFLAGS = $(PLUGIN_FLAGS)
@@ -621,6 +621,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobs.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nodes.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/partitions.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reservations.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -755,6 +756,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/jobs.Plo
 	-rm -f ./$(DEPDIR)/nodes.Plo
 	-rm -f ./$(DEPDIR)/partitions.Plo
+	-rm -f ./$(DEPDIR)/reservations.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -805,6 +807,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/jobs.Plo
 	-rm -f ./$(DEPDIR)/nodes.Plo
 	-rm -f ./$(DEPDIR)/partitions.Plo
+	-rm -f ./$(DEPDIR)/reservations.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

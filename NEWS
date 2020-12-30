@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
  -- Add DEBUG_FLAG_JAG to improve logging related to job account gathering.
  -- Convert logging in account_gather/common to DEBUG_FLAG_JAG.
  -- Add more logging for jag_common_poll_data() when prec_extra() called.
+ -- slurmrestd/v0.0.37 - add API to fetch reservation(s) info.
 
 * Changes in Slurm 20.11.3
 ==========================

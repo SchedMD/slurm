@@ -133,6 +133,7 @@ extern void slurm_openapi_p_init(void)
 	init_op_jobs();
 	init_op_nodes();
 	init_op_partitions();
+	init_op_reservations();
 }
 
 extern void slurm_openapi_p_fini(void)
@@ -141,4 +142,5 @@ extern void slurm_openapi_p_fini(void)
 	destroy_op_jobs();
 	destroy_op_nodes();
 	destroy_op_partitions();
+	destroy_op_reservations();
 }

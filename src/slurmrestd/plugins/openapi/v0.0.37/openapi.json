@@ -453,6 +453,77 @@
         }
       }
     },
+    "/reservations/": {
+      "get": {
+        "tags": [
+          "slurm"
+        ],
+        "operationId": "slurmctld_get_reservations",
+        "summary": "get all reservation info",
+        "responses": {
+          "200": {
+            "description": "reservation information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.37_reservations_response"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.37_reservations_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "no reservations found"
+          }
+        }
+      }
+    },
+    "/reservation/{reservation_name}": {
+      "get": {
+        "tags": [
+          "slurm"
+        ],
+        "operationId": "slurmctld_get_reservation",
+        "summary": "get reservation info",
+        "parameters": [
+          {
+            "name": "reservation_name",
+            "in": "path",
+            "description": "Slurm Reservation Name",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "reservation information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.37_reservations_response"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/v0.0.37_reservations_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "no reservations found"
+          }
+        }
+      }
+    },
     "/openapi.yaml": {
       "get": {
         "tags": [
@@ -900,6 +971,97 @@
             "description": "partition info",
             "items": {
               "$ref": "#/components/schemas/v0.0.37_partition"
+            }
+          }
+        }
+      },
+      "v0.0.37_reservation": {
+        "type": "object",
+        "properties": {
+          "accounts": {
+            "type": "string",
+            "description": "Allowed accounts"
+          },
+          "burst_buffer": {
+            "type": "string",
+            "description": "Reserved burst buffer"
+          },
+          "core_count": {
+            "type": "integer",
+            "description": "Number of reserved cores"
+          },
+          "end_time": {
+            "type": "integer",
+            "description": "End time of the reservation"
+          },
+          "features": {
+            "type": "string",
+            "description": "List of features"
+          },
+          "flags": {
+            "type": "array",
+            "description": "Reservation options",
+            "items": {
+              "type": "string"
+            }
+          },
+          "licenses": {
+            "type": "string",
+            "description": "List of licenses"
+          },
+          "max_start_delay": {
+            "type": "integer",
+            "description": "Maximum delay in which jobs outside of the reservation will be permitted to overlap once any jobs are queued for the reservation"
+          },
+          "name": {
+            "type": "string",
+            "description": "Reservationn name"
+          },
+          "node_count": {
+            "type": "integer",
+            "description": "Count of nodes reserved"
+          },
+          "node_list": {
+            "type": "string",
+            "description": "List of reserved nodes"
+          },
+          "partition": {
+            "type": "string",
+            "description": "Partition"
+          },
+          "purge_comp_time": {
+            "type": "integer",
+            "description": "If PURGE_COMP flag is set the amount of minutes this reservation will sit idle until it is revoked."
+          },
+          "start_time": {
+            "type": "integer",
+            "description": "Start time of reservation"
+          },
+          "tres": {
+            "type": "string",
+            "description": "List of TRES"
+          },
+          "users": {
+            "type": "string",
+            "description": "List of users"
+          }
+        }
+      },
+      "v0.0.37_reservations_response": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/v0.0.37_error"
+            }
+          },
+          "reservations": {
+            "type": "array",
+            "description": "reservation info",
+            "items": {
+              "$ref": "#/components/schemas/v0.0.37_reservation"
             }
           }
         }

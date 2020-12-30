@@ -49,9 +49,11 @@ extern void init_op_diag(void);
 extern void init_op_jobs(void);
 extern void init_op_nodes(void);
 extern void init_op_partitions(void);
+extern void init_op_reservations(void);
 extern void destroy_op_diag(void);
 extern void destroy_op_jobs(void);
 extern void destroy_op_nodes(void);
 extern void destroy_op_partitions(void);
+extern void destroy_op_reservations(void);
 
 #endif
