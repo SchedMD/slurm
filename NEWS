@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- Improve reported error and logging in _build_node_list().
  -- Fix uninitialized variable in _rpc_file_bcast() which could lead to an
     incorrect error return from sbcast / srun --bcast.
+ -- mpi/cray_shasta - fix use-after-free on error in _multi_prog_parse().
 
 * Changes in Slurm 20.11.2
 ==========================
