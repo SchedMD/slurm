@@ -364,7 +364,7 @@ extern int proctrack_p_add (stepd_step_rec_t *job, pid_t pid)
 extern int proctrack_p_signal (uint64_t id, int signal)
 {
 	pid_t* pids = NULL;
-	int npids;
+	int npids = 0;
 	int i;
 	int slurm_task;
 
