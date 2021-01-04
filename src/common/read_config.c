@@ -3942,6 +3942,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	(void) s_p_get_string(&conf->launch_params, "LaunchParameters",
 			      hashtbl);
 
+	if (xstrcasestr(conf->launch_params, "enable_nss_slurm") &&
+	    xstrcasestr(conf->launch_params, "disable_send_gids"))
+		fatal("LaunchParameters options enable_nss_slurm and disable_send_gids are mutually exclusive.");
+
 	if (!s_p_get_string(&conf->launch_type, "LaunchType", hashtbl))
 		conf->launch_type = xstrdup(DEFAULT_LAUNCH_TYPE);
 
