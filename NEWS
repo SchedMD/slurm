@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- mpi/pmix: Fix PMIx_Abort support.
  -- Don't reject jobs allocating more cores than tasks with MaxMemPerCPU.
  -- Fix false error message complaining about oversubscribe in cons_tres.
+ -- scrontab - fix parsing of empty lines.
 
 * Changes in Slurm 20.11.2
 ==========================
