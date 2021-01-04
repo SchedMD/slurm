@@ -46,15 +46,14 @@ if { $node_count < 3 } {
 proc salloc {} {
 	global number salloc bin_sleep file_out job_id
 
-	set file [open $file_out w]
 	set matches 0
 	set job_id  0
-	log_file -noappend $file_out
 	set command "$salloc --cpus-per-task=4 --mem-per-cpu=10 --ntasks=1 -t1 :\
 			     --cpus-per-task=2 --mem-per-cpu=2  --ntasks=1 -t1 :\
 			     --cpus-per-task=1 --mem-per-cpu=6  --ntasks=1 -t1 \
 				env"
 
+	log_file -noappend $file_out
 	spawn {*}$command
 	expect {
 		-re "Job submit/allocate failed" {
@@ -72,8 +71,7 @@ proc salloc {} {
 			fail "salloc not responding"
 		}
 	}
-
-	close $file
+	log_file
 }
 
 proc test_env {value} {
