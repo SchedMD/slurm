@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "December 2020" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "January 2021" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -1421,8 +1421,10 @@ NodeAddr will be used in this context instead.
 .TP
 \fBdisable_send_gids\fR
 By default, the slurmctld will look up and send the user_name and extended gids
-for a job, rather than individual on each node as part of each task launch. Which avoids issues around name service scalability when launching jobs involving
-many nodes.  Using this option will reverse this functionality.
+for a job, rather than independently on each node as part of each task launch.
+This helps mitigate issues around name service scalability when launching jobs
+involving many nodes. Using this option will disable this functionality. This
+option is ignored if enable_nss_slurm is specified.
 .TP 24
 \fBslurmstepd_memlock\fR
 Lock the slurmstepd process's current memory in RAM.
