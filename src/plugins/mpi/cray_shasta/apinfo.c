@@ -211,10 +211,10 @@ static void _multi_prog_parse(const stepd_step_rec_t *job, int *ncmds,
 				rank_id = strtol(one_rank, &end_ptr, 10);
 				if ((end_ptr[0] != '\0') || (rank_id < 0) ||
 				    (rank_id >= job->ntasks)) {
-					free(one_rank);
 					hostlist_destroy(hl);
 					error("%s: invalid rank id %s",
 					      plugin_type, one_rank);
+					free(one_rank);
 					goto fail;
 				}
 				free(one_rank);

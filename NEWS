@@ -23,6 +23,11 @@ documents those changes that are of interest to users and administrators.
  -- Allow updates to a reservation in the database that starts in the future.
  -- Better check/handling of primary key collision in reservation table.
  -- Improve reported error and logging in _build_node_list().
+ -- Fix uninitialized variable in _rpc_file_bcast() which could lead to an
+    incorrect error return from sbcast / srun --bcast.
+ -- mpi/cray_shasta - fix use-after-free on error in _multi_prog_parse().
+ -- Cray - Handle setting correct prefix for cpuset cgroup with respects to
+    expected_usage_in_bytes.  This fixes Cray's OOM killer.
 
 * Changes in Slurm 20.11.2
 ==========================

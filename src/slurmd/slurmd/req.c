@@ -4057,7 +4057,7 @@ void file_bcast_purge(void)
 
 static void _rpc_file_bcast(slurm_msg_t *msg)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	int64_t offset, inx;
 	sbcast_cred_arg_t *cred_arg;
 	file_bcast_info_t *file_info;

@@ -989,6 +989,7 @@ static int _cgroup_create_callback(const char *calling_func,
 	pid_t pid;
 	int rc = SLURM_ERROR;
 #ifdef HAVE_NATIVE_CRAY
+	char expected_usage_name[PATH_MAX];
 	char expected_usage[32];
 #endif
 
@@ -1053,9 +1054,11 @@ static int _cgroup_create_callback(const char *calling_func,
 	 * on Cray systems, set the expected usage in bytes.
 	 * This is used by the Cray OOM killer
 	 */
+	snprintf(expected_usage_name, sizeof(expected_usage_name),
+		 "%sexpected_usage_in_bytes", cpuset_prefix);
 	snprintf(expected_usage, sizeof(expected_usage), "%"PRIu64,
 		 (uint64_t)job->step_mem * 1024 * 1024);
-	xcgroup_set_param(&step_cpuset_cg, "expected_usage_in_bytes",
+	xcgroup_set_param(&step_cpuset_cg, expected_usage_name,
 			  expected_usage);
 #endif
 
