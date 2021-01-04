@@ -46,9 +46,7 @@ expect {
 		exp_continue
 	}
 	-re "(Task count specification invalid|configuration not available)" {
-		if {$job_id != 0} {
-             cancel_job $job_id
-		}
+		cancel_job $job_id
 		if {[get_config_param "FrontendName"] ne "MISSING"} {
 			skip "Error expected, Testing is incompatible with front-end systems"
 		} else {
@@ -64,9 +62,7 @@ expect {
 	}
 	timeout {
 		log_error "salloc not responding"
-		if {$job_id != 0} {
-			cancel_job $job_id
-		}
+		cancel_job $job_id
 		slow_kill [expr 0 - $salloc_pid]
 		set exit_code 1
 	}
@@ -98,9 +94,7 @@ expect {
 	}
 	timeout {
 		log_error "salloc not responding"
-		if {$job_id != 0} {
-			cancel_job $job_id
-		}
+		cancel_job $job_id
 		slow_kill [expr 0 - $salloc_pid]
 		set exit_code 1
 	}
@@ -141,9 +135,7 @@ expect {
 	}
 	timeout {
 		log_error "salloc not responding"
-		if {$job_id != 0} {
-			cancel_job $job_id
-		}
+		cancel_job $job_id
 		slow_kill [expr 0 - $salloc_pid]
 		set exit_code 1
 	}
@@ -198,9 +190,7 @@ expect {
 	}
 	timeout {
 		log_error "salloc not responding"
-		if {$job_id != 0} {
-			cancel_job $job_id
-		}
+		cancel_job $job_id
 		slow_kill [expr 0 - $salloc_pid]
 		set exit_code 1
 	}
@@ -257,9 +247,7 @@ expect {
 		exp_continue
 	}
 	-re "salloc: error" {
-		if {$job_id != 0} {
-			cancel_job $job_id
-		}
+		cancel_job $job_id
 		skip "Can't test salloc task distribution"
 	}
 	-re "($number): *($re_word_str)" {
@@ -279,9 +267,7 @@ expect {
 	}
 	timeout {
 		log_error "salloc not responding"
-		if {$job_id != 0} {
-			cancel_job $job_id
-		}
+		cancel_job $job_id
 		slow_kill [expr 0 - $salloc_pid]
 		set exit_code 1
 	}

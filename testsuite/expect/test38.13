@@ -32,9 +32,7 @@ set het_job_id	0
 proc cleanup {} {
 	global het_job_id
 
-	if {$het_job_id > 0} {
-		cancel_job $pack_job_id
-	}
+	cancel_job $het_job_id
 }
 
 if {[get_config_param "SchedulerType"] ne "sched/backfill"} {

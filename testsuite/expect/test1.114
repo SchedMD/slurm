@@ -33,9 +33,7 @@ set jobid_excl  0
 proc cleanup {} {
 	global jobid_excl
 
-	if {$jobid_excl > 0} {
-		cancel_job $jobid_excl
-	}
+	cancel_job $jobid_excl
 }
 
 proc run_spread_job { task_cnt } {

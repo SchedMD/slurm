@@ -103,9 +103,7 @@ proc cleanup {} {
 	global acct job_id1 bin_rm file_in file_out1 file_out2
 
 	remove_acct "" $acct
-	if {$job_id1 > 0} {
-		cancel_job $job_id1
-	}
+	cancel_job $job_id1
 	exec $bin_rm -f $file_in $file_out1 $file_out2
 }
 

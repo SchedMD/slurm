@@ -44,12 +44,8 @@ proc cleanup {} {
 	#
 	# Cancel jobs and remove files
 	#
-	if {$job_id1 > 0} {
-		cancel_job $job_id1
-	}
-	if {$job_id2 > 0} {
-		cancel_job $job_id2
-	}
+	cancel_job $job_id1
+	cancel_job $job_id2
 	exec $bin_rm -f $file_in
 }
 

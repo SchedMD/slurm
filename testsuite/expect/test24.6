@@ -70,20 +70,12 @@ proc clean_assocs {} {
 }
 
 proc cleanup {} {
-	global test_id jobid1 jobid2 jobid3 jobid4 bin_cp config_file test_id ta1 tq1
+	global jobid1 jobid2 jobid3 jobid4 config_file
 
-	if {$jobid1} {
-		cancel_job $jobid1
-	}
-	if {$jobid2} {
-		cancel_job $jobid2
-	}
-	if {$jobid3} {
-		cancel_job $jobid3
-	}
-	if {$jobid4} {
-		cancel_job $jobid4
-	}
+	cancel_job $jobid1
+	cancel_job $jobid2
+	cancel_job $jobid3
+	cancel_job $jobid4
 
 	clean_assocs
 

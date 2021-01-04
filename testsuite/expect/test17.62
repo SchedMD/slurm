@@ -39,9 +39,7 @@ set node_list     [get_idle_node_in_part $partition]
 proc cleanup {} {
 	global job_id bin_rm file_in
 
-	if {$job_id > 0} {
-		cancel_job $job_id
-	}
+	cancel_job $job_id
 	exec $bin_rm -fr $file_in
 }
 

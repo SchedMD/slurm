@@ -176,12 +176,8 @@ proc cleanup {} {
 	# Cancel the jobs and
 	# Restore the configuration
 	#
-	if {$job_id1 != 0} {
-		cancel_job $job_id1
-	}
-	if {$job_id2 != 0} {
-		cancel_job $job_id2
-	}
+	cancel_job $job_id1
+	cancel_job $job_id2
 
 	restore_conf $config_file
 

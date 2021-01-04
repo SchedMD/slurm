@@ -19,9 +19,7 @@ set exit_code   0
 proc cleanup {} {
 	global job_id node_name bin_rm file_in
 
-	if {$job_id != 0} {
-		cancel_job $job_id
-	}
+	cancel_job $job_id
 	if {$node_name ne ""}  {
 		reset_state $node_name
 	}

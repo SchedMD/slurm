@@ -148,9 +148,7 @@ expect {
 }
 
 if {$no_start != 0} {
-	if {$job_id != 0} {
-		cancel_job $job_id
-	}
+	cancel_job $job_id
 	skip "Partition too small for test"
 }
 if {$job_id == 0} {

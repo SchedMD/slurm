@@ -32,7 +32,7 @@ source ./globals_het_jobs
 
 set file_in      "test$test_id.in"
 set file_out     "test$test_id.out"
-set job_id 0
+set job_id       0
 
 if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 	skip "This test requires SchedulerType = sched/backfill"
@@ -71,19 +71,10 @@ proc sbatch {} {
 	return $job_id
 }
 
-proc cancel_job_id { } {
-	global scancel job_id
-
-	if {$job_id != 0} {
-		exec $scancel $job_id
-	}
-}
-
 proc cleanup { } {
-	global scancel user_name bin_rm file_in file_out
-	global test_id bin_bash
+	global job_id user_name bin_rm file_in file_out
 
-	cancel_job_id
+	cancel_job $job_id
 
 	exec $bin_rm -f $file_in $file_out
 }

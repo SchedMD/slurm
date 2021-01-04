@@ -187,12 +187,8 @@ proc cleanup {} {
 	global part_id_1 part_id_2 part_name_1 part_name_2
 	global bin_rm job1 job2 file_in
 
-	if {$part_id_1 != 0} {
-		cancel_job $part_id_1
-	}
-	if {$part_id_2 != 0} {
-		cancel_job $part_id_2
-	}
+	cancel_job $part_id_1
+	cancel_job $part_id_2
 
 	delete_part $part_name_1
 	delete_part $part_name_2

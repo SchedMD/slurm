@@ -100,9 +100,7 @@ if {$available < 2} {
 proc cleanup {} {
 	global job_id test_acct bin_rm file_err file_out file_in
 
-	if {$job_id > 0} {
-		cancel_job $job_id
-	}
+	cancel_job $job_id
 
 	remove_acct "" $test_acct
 

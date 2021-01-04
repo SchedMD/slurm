@@ -49,14 +49,10 @@ if { [string first "CR_ONE_TASK_PER_CORE" $select_type_params] != -1 } {
 }
 
 proc cleanup {} {
-	global test_id jobid1 jobid2
+	global jobid1 jobid2
 
-	if {$jobid1} {
-		cancel_job $jobid1
-	}
-	if {$jobid2} {
-		cancel_job $jobid2
-	}
+	cancel_job $jobid1
+	cancel_job $jobid2
 }
 
 

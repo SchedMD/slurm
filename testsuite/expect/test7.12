@@ -40,9 +40,7 @@ set test_prog   "test$test_id.prog"
 proc cleanup {} {
 	global job_id file_in test_prog
 
-	if {$job_id > 0} {
-		cancel_job $job_id
-	}
+	cancel_job $job_id
 	file delete $file_in $test_prog
 }
 

@@ -81,9 +81,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		if {$job_id != 0} {
-			cancel_job $job_id
-		}
+		cancel_job $job_id
 		slow_kill [expr 0 - $salloc_pid]
 		fail "salloc not responding"
 	}
@@ -160,9 +158,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		if {$job_id != 0} {
-			cancel_job $job_id
-		}
+		cancel_job $job_id
 		slow_kill [expr 0 - $salloc_pid]
 		fail "salloc not responding"
 	}
@@ -222,9 +218,7 @@ expect {
 	}
 	timeout {
 		log_error "salloc not responding"
-		if {$job_id != 0} {
-			cancel_job $job_id
-		}
+		cancel_job $job_id
 		slow_kill [expr 0 - $salloc_pid]
 		set exit_code 1
 	}
