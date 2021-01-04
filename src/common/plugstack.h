@@ -63,8 +63,6 @@ int spank_init (stepd_step_rec_t *job);
 
 int spank_slurmd_init (void);
 
-int spank_plugin_count(void);
-
 int spank_job_prolog(uint32_t jobid, uid_t uid, gid_t gid);
 
 int spank_init_allocator (void);

@@ -855,14 +855,6 @@ int spank_slurmd_init (void)
 	return _spank_init (S_TYPE_SLURMD, NULL);
 }
 
-int spank_plugin_count(void)
-{
-	if (!global_spank_stack)
-		return 0;
-
-	return list_count(global_spank_stack->plugin_list);
-}
-
 int spank_init_post_opt (void)
 {
 	struct spank_stack *stack = global_spank_stack;
