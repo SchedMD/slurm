@@ -113,10 +113,6 @@
 #define RETRY_DELAY 15		/* retry every 15 seconds */
 #define MAX_RETRY   240		/* retry 240 times (one hour max) */
 
-#ifndef MAXHOSTNAMELEN
-#define MAXHOSTNAMELEN	64
-#endif
-
 #define MAX_CPU_CNT 1024
 #define MAX_NUMA_CNT 128
 
@@ -1363,7 +1359,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 {
 	int      errnum = SLURM_SUCCESS;
 	uint16_t port;
-	char     host[MAXHOSTNAMELEN];
+	char     host[HOST_NAME_MAX];
 	gid_t req_gid = auth_g_get_gid(msg->auth_cred);
 	launch_tasks_request_msg_t *req = msg->data;
 	bool     super_user = false;

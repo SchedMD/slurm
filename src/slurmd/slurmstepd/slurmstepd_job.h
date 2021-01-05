@@ -54,10 +54,6 @@
 #include "src/common/job_options.h"
 #include "src/common/stepd_api.h"
 
-#ifndef MAXHOSTNAMELEN
-#define MAXHOSTNAMELEN	64
-#endif
-
 typedef struct {
 	unsigned char data[SLURM_IO_KEY_SIZE];
 } srun_key_t;

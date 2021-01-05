@@ -119,10 +119,6 @@
 #include "src/slurmd/slurmd/req.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
-#ifndef MAXHOSTNAMELEN
-#  define MAXHOSTNAMELEN	64
-#endif
-
 #define MAX_THREADS		256
 
 #define _free_and_set(__dst, __src)		\
@@ -1255,10 +1251,10 @@ _print_conf(void)
 static void
 _init_conf(void)
 {
-	char  host[MAXHOSTNAMELEN];
+	char  host[HOST_NAME_MAX];
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
 
-	if (gethostname_short(host, MAXHOSTNAMELEN) < 0) {
+	if (gethostname_short(host, HOST_NAME_MAX) < 0) {
 		error("Unable to get my hostname: %m");
 		exit(1);
 	}

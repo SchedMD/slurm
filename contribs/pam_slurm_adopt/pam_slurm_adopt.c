@@ -67,11 +67,6 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xcgroup_read_config.h"
 
-/* This definition would probably be good to centralize somewhere */
-#ifndef MAXHOSTNAMELEN
-#define MAXHOSTNAMELEN    64
-#endif
-
 typedef enum {
 	CALLERID_ACTION_NEWEST,
 	CALLERID_ACTION_ALLOW,
@@ -380,7 +375,7 @@ static int _rpc_network_callerid(struct callerid_conn *conn, char *user_name,
 {
 	network_callerid_msg_t req;
 	char ip_src_str[INET6_ADDRSTRLEN];
-	char node_name[MAXHOSTNAMELEN];
+	char node_name[HOST_NAME_MAX];
 
 	memset(&req, 0, sizeof(req));
 	memcpy((void *)&req.ip_src, (void *)&conn->ip_src, 16);
@@ -390,7 +385,7 @@ static int _rpc_network_callerid(struct callerid_conn *conn, char *user_name,
 	req.af = conn->af;
 
 	inet_ntop(req.af, &conn->ip_src, ip_src_str, INET6_ADDRSTRLEN);
-	if (slurm_network_callerid(req, job_id, node_name, MAXHOSTNAMELEN)
+	if (slurm_network_callerid(req, job_id, node_name, sizeof(node_name))
 	    != SLURM_SUCCESS) {
 		debug("From %s port %d as %s: unable to retrieve callerid data from remote slurmd",
 		      ip_src_str,

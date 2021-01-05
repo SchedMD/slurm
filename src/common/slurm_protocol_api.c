@@ -2877,9 +2877,9 @@ extern void slurm_setup_addr(slurm_addr_t *sin, uint16_t port)
 			var = "NoInAddrAny";
 
 		if (xstrcasestr(slurm_conf.comm_params, var)) {
-			char host[MAXHOSTNAMELEN];
+			char host[HOST_NAME_MAX];
 
-			if (!gethostname(host, MAXHOSTNAMELEN)) {
+			if (!gethostname(host, HOST_NAME_MAX)) {
 				slurm_set_addr(&s_addr, port, host);
 			} else
 				fatal("%s: Can't get hostname or addr: %m",

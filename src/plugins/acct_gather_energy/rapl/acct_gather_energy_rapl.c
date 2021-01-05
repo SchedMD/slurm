@@ -129,7 +129,7 @@ static int dataset_id = -1; /* id of the dataset for profile data */
 /* one cpu in the package */
 static int pkg2cpu[MAX_PKGS] = {[0 ... MAX_PKGS-1] = -1};
 static int pkg_fd[MAX_PKGS] = {[0 ... MAX_PKGS-1] = -1};
-static char hostname[MAXHOSTNAMELEN];
+static char hostname[HOST_NAME_MAX];
 
 static int nb_pkg = 0;
 
@@ -454,7 +454,7 @@ extern int acct_gather_energy_p_update_node_energy(void)
  */
 extern int init(void)
 {
-	gethostname(hostname, MAXHOSTNAMELEN);
+	gethostname(hostname, HOST_NAME_MAX);
 
 	/* put anything that requires the .conf being read in
 	   acct_gather_energy_p_conf_parse

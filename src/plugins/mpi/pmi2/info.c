@@ -236,7 +236,7 @@ ifconfig(void)
 	int s;
 	int n;
 	char addr[NI_MAXHOST];
-	char hostname[MAXHOSTNAMELEN];
+	char hostname[HOST_NAME_MAX];
 	char *buf;
 
 	if (getifaddrs(&ifaddr) == -1) {
@@ -249,7 +249,7 @@ ifconfig(void)
 		++n;
 	/* this should be a good guess of the size we need.
 	 */
-	buf = xmalloc((MAXHOSTNAMELEN + n) * 64);
+	buf = xmalloc((HOST_NAME_MAX + n) * 64);
 
 	gethostname(hostname, sizeof(hostname));
 	n = sprintf(buf, "(%s", hostname);

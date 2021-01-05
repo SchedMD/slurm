@@ -2827,7 +2827,7 @@ static int _compare_hostnames(node_record_t *old_node_table,
 	for (cc = 0; cc < node_count; cc++)
 		hostset_insert(set, node_table[cc].name);
 
-	set_size = MAXHOSTNAMELEN * node_count + node_count + 1;
+	set_size = HOST_NAME_MAX * node_count + node_count + 1;
 
 	old_ranged = xmalloc(set_size);
 	ranged = xmalloc(set_size);

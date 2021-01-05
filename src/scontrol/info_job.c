@@ -992,7 +992,7 @@ extern int scontrol_callerid(int argc, char **argv)
 		      ip_dst[sizeof(struct in6_addr)];
 	uint32_t port_src, port_dst, job_id;
 	network_callerid_msg_t req;
-	char node_name[MAXHOSTNAMELEN], *ptr;
+	char node_name[HOST_NAME_MAX], *ptr;
 
 	if (argc == 5) {
 		ver = strtoul(argv[4], &ptr, 0);
@@ -1036,7 +1036,7 @@ extern int scontrol_callerid(int argc, char **argv)
 	req.port_dst = port_dst;
 	req.af = af;
 
-	if (slurm_network_callerid(req, &job_id, node_name, MAXHOSTNAMELEN)
+	if (slurm_network_callerid(req, &job_id, node_name, HOST_NAME_MAX)
 			!= SLURM_SUCCESS) {
 		fprintf(stderr,
 			"slurm_network_callerid: unable to retrieve callerid data from remote slurmd\n");
