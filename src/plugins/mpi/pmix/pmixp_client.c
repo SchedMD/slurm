@@ -2,8 +2,9 @@
  **  pmix_client.c - PMIx client communication code
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
- *  Copyright (C) 2015-2017 Mellanox Technologies. All rights reserved.
- *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
+ *  Copyright (C) 2015-2020 Mellanox Technologies. All rights reserved.
+ *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>,
+ *             Boris Karasev <karasev.b@gmail.com, boriska@mellanox.com>.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -793,4 +794,22 @@ extern int pmixp_lib_fence(const pmixp_proc_t procs[], size_t nprocs,
 error:
 	modex_cbfunc(status, NULL, 0, cbdata, NULL, NULL);
 	return SLURM_ERROR;
+}
+
+extern int pmixp_lib_abort(int status, void *cbfunc, void *cbdata)
+{
+	pmix_op_cbfunc_t abort_cbfunc = (pmix_op_cbfunc_t)cbfunc;
+
+	/*
+	 * Propagate the status to the abort
+	 * agent running in the srun context
+	 */
+	pmixp_abort_propagate(status);
+
+	slurm_kill_job_step(pmixp_info_jobid(), pmixp_info_stepid(), SIGKILL);
+
+	if (abort_cbfunc)
+		abort_cbfunc(PMIX_SUCCESS, cbdata);
+
+	return SLURM_SUCCESS;
 }

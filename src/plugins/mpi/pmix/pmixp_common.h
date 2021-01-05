@@ -2,8 +2,13 @@
  **  pmix_common.h - PMIx common declarations and includes
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
- *  Copyright (C) 2015-2017 Mellanox Technologies. All rights reserved.
- *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
+ *  Copyright (C) 2015-2020 Mellanox Technologies. All rights reserved.
+ *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>,
+               Boris Karasev <karasev.b@gmail.com, boriska@mellanox.com>.
+ *  Copyright (C) 2020      Siberian State University of Telecommunications
+ *                          and Information Sciences (SibSUTIS).
+ *                          All rights reserved.
+ *  Written by Boris Bochkarev <boris-bochkaryov@yandex.ru>.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -76,6 +81,8 @@
 #define PMIXP_CPUS_PER_NODE_ENV "SLURM_JOB_CPUS_PER_NODE"
 #define PMIXP_CPUS_PER_TASK "SLURM_CPUS_PER_TASK"
 #define PMIXP_SLURM_MAPPING_ENV "SLURM_PMIX_MAPPING_SERV"
+#define PMIXP_SLURM_ABORT_AGENT_IP "SLURM_SRUN_COMM_HOST"
+#define PMIXP_SLURM_ABORT_AGENT_PORT "SLURM_PMIXP_ABORT_AGENT_PORT"
 
 /* ----------------------------------------------------------
  * This variables can be used to adjust the plugin's behavior

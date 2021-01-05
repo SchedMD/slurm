@@ -2,8 +2,12 @@
  **  mpi_pmix.c - Main plugin callbacks for PMIx support in Slurm
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
- *  Copyright (C) 2015-2017 Mellanox Technologies. All rights reserved.
+ *  Copyright (C) 2015-2020 Mellanox Technologies. All rights reserved.
  *  Written by Artem Y. Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
+ *  Copyright (C) 2020      Siberian State University of Telecommunications
+ *                          and Information Sciences (SibSUTIS).
+ *                          All rights reserved.
+ *  Written by Boris Bochkarev <boris-bochkaryov@yandex.ru>.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -209,6 +213,12 @@ extern mpi_plugin_client_state_t *p_mpi_hook_client_prelaunch(
 	static bool setup_done = false;
 	uint32_t nnodes, ntasks, **tids;
 	uint16_t *task_cnt;
+	int ret;
+
+	if ((ret = pmixp_abort_agent_start(env)) != SLURM_SUCCESS) {
+		PMIXP_ERROR("pmixp_abort_agent_start() failed %d", ret);
+		return NULL;
+	}
 
 	PMIXP_DEBUG("setup process mapping in srun");
 	if ((job->het_job_id == NO_VAL) || (job->het_job_task_offset == 0)) {
@@ -242,6 +252,5 @@ extern mpi_plugin_client_state_t *p_mpi_hook_client_prelaunch(
 extern int p_mpi_hook_client_fini(void)
 {
 	xfree(process_mapping);
-
-	return SLURM_SUCCESS;
+	return pmixp_abort_agent_stop();
 }

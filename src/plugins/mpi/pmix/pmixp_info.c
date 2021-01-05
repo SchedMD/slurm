@@ -2,8 +2,13 @@
  **  pmix_info.c - PMIx various environment information
  *****************************************************************************
  *  Copyright (C) 2014-2015 Artem Polyakov. All rights reserved.
- *  Copyright (C) 2015-2017 Mellanox Technologies. All rights reserved.
- *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>.
+ *  Copyright (C) 2015-2020 Mellanox Technologies. All rights reserved.
+ *  Written by Artem Polyakov <artpol84@gmail.com, artemp@mellanox.com>,
+ *             Boris Karasev <karasev.b@gmail.com, boriska@mellanox.com>.
+ *  Copyright (C) 2020      Siberian State University of Telecommunications
+ *                          and Information Sciences (SibSUTIS).
+ *                          All rights reserved.
+ *  Written by Boris Bochkarev <boris-bochkaryov@yandex.ru>.
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -212,6 +217,8 @@ int pmixp_info_free(void)
 		xfree(_pmixp_job_info.task_map_packed);
 	}
 
+	xfree(_pmixp_job_info.srun_ip);
+
 	hostlist_destroy(_pmixp_job_info.job_hl);
 	hostlist_destroy(_pmixp_job_info.step_hl);
 	if (_pmixp_job_info.hostname) {
@@ -296,6 +303,18 @@ static int _resources_set(char ***env)
 {
 	char *p = NULL;
 
+	/* Initialize abort thread info */
+	p = getenvp(*env, PMIXP_SLURM_ABORT_AGENT_IP);
+
+	xfree(_pmixp_job_info.srun_ip);
+	_pmixp_job_info.srun_ip = xstrdup(p);
+
+	p = getenvp(*env, PMIXP_SLURM_ABORT_AGENT_PORT);
+	if (p)
+		_pmixp_job_info.abort_agent_port = slurm_atoul(p);
+	else
+		_pmixp_job_info.abort_agent_port = -1;
+
 	/* Initialize all memory pointers that would be allocated to NULL
 	 * So in case of error exit we will know what to xfree
 	 */
@@ -365,6 +384,8 @@ err_exit:
 	if (_pmixp_job_info.hostname) {
 		xfree(_pmixp_job_info.hostname);
 	}
+
+	xfree(_pmixp_job_info.srun_ip);
 	return SLURM_ERROR;
 }
 
