@@ -808,6 +808,7 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu-bind=... */
 #define CPU_FREQ_PERFORMANCE		0x82000000
 #define CPU_FREQ_POWERSAVE		0x81000000
 #define CPU_FREQ_USERSPACE		0x80800000
+#define CPU_FREQ_SCHEDUTIL		0x80400000
 #define CPU_FREQ_GOV_MASK   		0x8ff00000
 
 typedef enum mem_bind_type {    /* memory binding type from --mem-bind=... */

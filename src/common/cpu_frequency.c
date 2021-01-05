@@ -70,6 +70,7 @@
 #define GOV_PERFORMANCE		0x04
 #define GOV_POWERSAVE		0x08
 #define GOV_USERSPACE		0x10
+#define GOV_SCHEDUTIL		0x20
 
 static uint16_t cpu_freq_count = 0;
 static int set_batch_freq = -1;
@@ -350,6 +351,11 @@ cpu_freq_init(slurmd_conf_t *conf)
 			cpufreq[i].avail_governors |= GOV_USERSPACE;
 			if (i == 0)
 				log_flag(CPU_FREQ, "cpu_freq: UserSpace governor defined on cpu 0");
+		}
+		if (strstr(value, "schedutil")) {
+			cpufreq[i].avail_governors |= GOV_SCHEDUTIL;
+			if (i == 0)
+				log_flag(CPU_FREQ, "cpu_freq: SchedUtil governor defined on cpu 0");
 		}
 		fclose(fp);
 		if (_cpu_freq_cpu_avail(i) == SLURM_ERROR)
@@ -901,6 +907,10 @@ _cpu_freq_govspec_string(uint32_t cpu_freq, int cpuidx)
 		if (cpufreq[cpuidx].avail_governors & GOV_USERSPACE)
 			strcpy(cpufreq[cpuidx].new_governor, "userspace");
 		return SLURM_SUCCESS;
+	case CPU_FREQ_SCHEDUTIL:
+		if (cpufreq[cpuidx].avail_governors & GOV_SCHEDUTIL)
+			strcpy(cpufreq[cpuidx].new_governor, "schedutil");
+		return SLURM_SUCCESS;
 	default:
 		return SLURM_ERROR;
 	}
@@ -1082,6 +1092,8 @@ _cpu_freq_check_gov(const char* arg, uint32_t illegal)
 		rc = CPU_FREQ_USERSPACE;
 	} else if (xstrncasecmp(arg, "onde", 4) == 0) {
 		rc = CPU_FREQ_ONDEMAND;
+	} else if (xstrncasecmp(arg, "sche", 4) == 0) {
+		rc = CPU_FREQ_SCHEDUTIL;
 	}
 	rc &= (~illegal);
 	if (rc == 0)
@@ -1341,6 +1353,8 @@ cpu_freq_to_string(char *buf, int buf_size, uint32_t cpu_freq)
 		snprintf(buf, buf_size, "UserSpace");
 	else if (cpu_freq == CPU_FREQ_ONDEMAND)
 		snprintf(buf, buf_size, "OnDemand");
+	else if (cpu_freq == CPU_FREQ_SCHEDUTIL)
+		snprintf(buf, buf_size, "SchedUtil");
 	else if (cpu_freq & CPU_FREQ_RANGE_FLAG)
 		snprintf(buf, buf_size, "Unknown");
 	else if (fuzzy_equal(cpu_freq, NO_VAL)) {
@@ -1461,6 +1475,14 @@ cpu_freq_govlist_to_string(char* buf, uint16_t bufsz, uint32_t govs)
 		else {
 			xstrcatchar(list,',');
 			xstrcat(list,"OnDemand");
+		}
+	}
+	if ((govs & CPU_FREQ_SCHEDUTIL) == CPU_FREQ_SCHEDUTIL) {
+		if (!list)
+			list = xstrdup("SchedUtil");
+		else {
+			xstrcatchar(list,',');
+			xstrcat(list,"SchedUtil");
 		}
 	}
 	if ((govs & CPU_FREQ_USERSPACE) == CPU_FREQ_USERSPACE) {
