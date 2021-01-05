@@ -384,7 +384,7 @@ static int _rpc_network_callerid(struct callerid_conn *conn, char *user_name,
 	req.port_dst = conn->port_dst;
 	req.af = conn->af;
 
-	inet_ntop(req.af, &conn->ip_src, ip_src_str, INET6_ADDRSTRLEN);
+	inet_ntop(req.af, &conn->ip_src, ip_src_str, sizeof(ip_src_str));
 	if (slurm_network_callerid(req, job_id, node_name, sizeof(node_name))
 	    != SLURM_SUCCESS) {
 		debug("From %s port %d as %s: unable to retrieve callerid data from remote slurmd",
@@ -434,7 +434,7 @@ static int _try_rpc(pam_handle_t *pamh, struct passwd *pwd)
 		return PAM_IGNORE;
 	}
 
-	if (inet_ntop(conn.af, &conn.ip_src, ip_src_str, INET6_ADDRSTRLEN)
+	if (inet_ntop(conn.af, &conn.ip_src, ip_src_str, sizeof(ip_src_str))
 	    == NULL) {
 		/* Somehow we successfully grabbed bad data. Fall through to
 		 * next action. */
