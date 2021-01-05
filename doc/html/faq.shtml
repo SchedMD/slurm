@@ -191,6 +191,8 @@ script for Slurm?</a></li>
     with SIGBUS (bus error)?</a></li>
 <li><a href="#sysv_memory">How do I configure Slurm to work with System V IPC
     enabled applications?</a></li>
+<li><a href="#opencl_pmix">Why is Multi-Instance GPU not working with Slurm and
+    PMIx, and complaining about GPUs being 'In use by another client'?</a></li>
 </ul>
 
 <h2>For Management</h2>
@@ -2250,6 +2252,28 @@ memory allocations but may cause application issues.
 </ul>
 </p>
 
-<p style="text-align:center;">Last modified 15 October 2020</p>
+<p><a name="opencl_pmix"><b>Why is Multi-Instance GPU not working with Slurm and
+    PMIx, and complaining about GPUs being 'In use by another client'?</b></a>
+<br/>
+PMIx uses the <b>hwloc API</b> for different purposes, including
+<i>OS device</i> features like querying sysfs folders (such as
+<i>/sys/class/net</i> and <i>/sys/class/infiniband</i>) to get the names of
+Infiniband HCAs. With the above mentioned features, hwloc defaults to
+querying the OpenCL devices, which creates handles on <i>/dev/nvidia*</i> files.
+These handles are kept by slurmstepd and will result in the following error
+inside a job:
+<br/>
+<pre>
+$ nvidia-smi mig --id 1 --create-gpu-instance FOO,FOO --default-compute-instance
+Unable to create a GPU instance on GPU 1 using profile FOO: In use by another client
+</pre>
+
+In order to use Multi-Instance GPUs with Slurm and PMIx you can instruct hwloc
+to not query OpenCL devices by setting the
+<span class="commandline">HWLOC_COMPONENTS=-opencl</span> environment
+variable for slurmd, i.e. setting this variable in systemd unit file for slurmd.
+</p>
+
+<p style="text-align:center;">Last modified 05 January 2021</p>
 
 <!--#include virtual="footer.txt"-->
