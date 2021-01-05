@@ -809,12 +809,6 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu-bind=... */
 #define CPU_FREQ_POWERSAVE		0x81000000
 #define CPU_FREQ_USERSPACE		0x80800000
 #define CPU_FREQ_GOV_MASK   		0x8ff00000
-/* Vestigial values for transition from v14.11 systems */
-#define CPU_FREQ_PERFORMANCE_OLD	0x80000005
-#define CPU_FREQ_POWERSAVE_OLD		0x80000006
-#define CPU_FREQ_USERSPACE_OLD		0x80000007
-#define CPU_FREQ_ONDEMAND_OLD		0x80000008
-#define CPU_FREQ_CONSERVATIVE_OLD	0x80000009
 
 typedef enum mem_bind_type {    /* memory binding type from --mem-bind=... */
 	/* verbose can be set with any other flag */
