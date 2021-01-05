@@ -35,13 +35,6 @@ set file_script "test$test_id.sh"
 set config_path ""
 set cwd "[$bin_pwd]"
 
-proc cleanup { } {
-	global file_script reconfigure bin_cp cwd config_file test_id
-	restore_conf $config_file
-	file delete $file_script
-	reconfigure
-}
-
 proc get_single_node_feature { } {
 	global scontrol re_word_str
 	set ret_features ""
@@ -78,16 +71,20 @@ if {![is_super_user]} {
 
 set config_path [get_conf_path]
 set config_file $config_path/slurm.conf
-
 save_conf $config_file
+
+proc cleanup { } {
+	global config_file file_script
+
+	restore_conf $config_file
+	reconfigure
+	file delete $file_script
+}
 
 # Change the slurm.conf MinJobAge=10 so we don't have to wait very long.
 exec $bin_sed -i /^\[\t\s\]*MinJobAge\[\t\s\]*=/Id $config_file
 exec $bin_echo -e "\nMinJobAge=10" >> $config_file
-
-if [reconfigure] {
-	fail "Not able to reconfigure"
-}
+reconfigure -fail
 
 # Verify that MinJobAge was set
 regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age

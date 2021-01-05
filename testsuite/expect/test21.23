@@ -138,7 +138,7 @@ if {[get_config_param "TrackWCKey"] ne "Yes"} {
 
 	exec $bin_sed -i /^\[\t\s\]*TrackWCKey\[\t\s\]*=/Id $config_file
 	exec $bin_echo TrackWCKey=Yes >> $config_file
-	incr exit_code [reconfigure]
+	reconfigure -fail
 	set reconfigured true
 }
 

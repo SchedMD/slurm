@@ -27,20 +27,14 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
 set chk_ports    [get_config_param "SrunPortRange"]
 set cwd          "[$bin_pwd]"
 set port_dir     "test$test_id\_port_conf"
 set config_path  ""
 set file_in      "test$test_id\_sc"
 set tmp_job      "test$test_id\_tmp_job"
+set job_id       0
 array set ports {}
-
-proc cleanup {} {
-	global bin_rm file_in tmp_job
-
-	exec $bin_rm -f $file_in $tmp_job
-}
 
 if {![is_super_user]} {
     skip "This test can't be run without being a super user of the cluster"
@@ -66,8 +60,18 @@ if {[expr $ports(1) - $ports(0)] < 5} {
 #
 set config_path [get_conf_path]
 set config_file $config_path/slurm.conf
-
 save_conf $config_file
+
+proc cleanup {} {
+	global bin_rm file_in tmp_job job_id config_file
+
+	exec $bin_rm -f $file_in $tmp_job
+	cancel_job $job_id
+
+	# Clean up vestigial files and restore original slurm.conf file
+	restore_conf $config_file
+	reconfigure
+}
 
 ### Check that SrunPortRange in scontrol show config and slurm.conf match ###
 log_info "---Checking SrunPortRange in slurm.conf and scontrol show conf---"
@@ -103,8 +107,7 @@ expect {
 }
 
 if {[string compare $show_config_range $slurm_conf_range]} {
-	log_error "SrunPortRange from scontrol show config does not match what is in slurm.conf"
-	set exit_code 1
+	fail "SrunPortRange from scontrol show config does not match what is in slurm.conf"
 }
 
 set range [split $slurm_conf_range -]
@@ -143,8 +146,7 @@ expect {
 }
 
 if {$out_of_range != 0} {
-	log_error "srun has exceeded the allowed port range"
-	set exit_code 1
+	fail "srun has exceeded the allowed port range"
 }
 
 #
@@ -153,18 +155,17 @@ if {$out_of_range != 0} {
 exec $bin_sed -i "s/SrunPortRange=$slurm_conf_range/#SrunPortRange=$slurm_conf_range/Ig" $config_file
 exec $bin_echo SrunPortRange=$ports(0)-[expr $ports(0) + 5] > $config_path/$port_dir
 exec $bin_echo include $config_path/$port_dir >> $config_file
-incr exit_code [reconfigure]
+reconfigure -fail
 
 ###### Check that srun produces an error when all ports are exhausted ######
 log_info "---Checking srun error when ports are exhausted---"
 
 make_bash_script $tmp_job "$srun -t1 sleep 10"
 
-set tmp_id 0
 spawn $sbatch -N1 -o/dev/null -t1 $tmp_job
 expect {
 	-re "Submitted batch job ($number)" {
-		set tmp_id $expect_out(1,string)
+		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -175,13 +176,12 @@ expect {
 	}
 }
 
-if {$tmp_id == 0} {
+if {$job_id == 0} {
 	fail "Job was not submitted"
 }
 
-if {[wait_for_job $tmp_id "RUNNING"] != 0} {
-	log_error "Error waiting for job $tmp_id to start"
-	set exit_code 1
+if {[wait_for_job $job_id "RUNNING"] != 0} {
+	fail "Error waiting for job $job_id to start"
 }
 set match 0
 spawn $srun -t1 sleep 10
@@ -200,16 +200,5 @@ expect {
 }
 
 if {$match != 1} {
-	log_error "srun should have failed due to exhausted ports but did not"
-	set exit_code 1
-}
-
-cancel_job $tmp_id
-
-# Clean up vestigial files and restore original slurm.conf file
-restore_conf $config_file
-incr exit_code [reconfigure]
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	fail "srun should have failed due to exhausted ports but did not"
 }

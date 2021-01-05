@@ -34,10 +34,30 @@ set good_script     "$test_id\_good_script"
 set good_job        "$test_id\_good_job_sc"
 set bad_job         "$test_id\_bad_job_sc"
 set timeout         [expr $max_job_delay + 500]
-set exit_code       0
 
 if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
+}
+
+#
+# Get the slurm.conf path
+#
+set config_dir [get_conf_path]
+set config_file $config_dir/slurm.conf
+
+#
+# Copy the original slurm.conf file
+#
+save_conf $config_file
+
+proc cleanup {} {
+	global config_file
+	global bin_rm good_script bad_script good_job bad_job conf_script
+
+	# Restore the slurm.conf file back to original values
+	restore_conf $config_file
+	reconfigure
+	exec $bin_rm -f $good_script $bad_script $good_job $bad_job $conf_script
 }
 
 #
@@ -58,7 +78,7 @@ echo RC=$\?
 "
 
 proc check_rc { job } {
-	global number exit_code
+	global number
 
 	set rc -1
 	spawn ./$job
@@ -68,8 +88,7 @@ proc check_rc { job } {
 			exp_continue
 		}
 		timeout {
-			log_error "echo is not responding"
-			set exit_code 1
+			fail "echo is not responding"
 		}
 		eof {
 			wait
@@ -80,26 +99,13 @@ proc check_rc { job } {
 }
 
 #
-# Get the slurm.conf path
-#
-set config_dir [get_conf_path]
-set config_file $config_dir/slurm.conf
-
-#
-# Copy the original slurm.conf file
-#
-save_conf $config_file
-
-#
 # Add OverTimeLimit value to slurm.conf and reconfigure
 #
 make_bash_script $conf_script "$bin_echo OverTimeLimit=2 >> $config_file"
 spawn ./$conf_script
 expect {
 	-re "Permission denied" {
-		log_warn "Unable to update slurm.conf"
-		set exit_code 1
-		exp_continue
+		fail "Unable to update slurm.conf"
 	}
 	eof {
 		wait
@@ -119,7 +125,7 @@ expect {
 if {$match == 0} {
 	fail "slurm.conf was not updated"
 }
-incr exit_code [reconfigure]
+reconfigure -fail
 
 set rc [check_rc $good_job]
 if {$rc != 0} {
@@ -129,15 +135,4 @@ if {$rc != 0} {
 set rc [check_rc $bad_job]
 if {$rc == 0} {
 	fail "Bad job exit code ($rc == 0)"
-}
-
-# Restore the slurm.conf file back to original values
-restore_conf $config_file
-incr exit_code [reconfigure]
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $good_script $bad_script $good_job $bad_job
-	exec $bin_rm -f $conf_script
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

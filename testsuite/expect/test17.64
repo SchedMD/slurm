@@ -30,12 +30,7 @@ set exit_code    0
 set cwd          "[$bin_pwd]"
 set config_path  ""
 set tmp_job      "test$test_id\.bash"
-
-proc cleanup {} {
-	global bin_rm tmp_job
-
-	exec $bin_rm -f $tmp_job
-}
+set job_id       0
 
 if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
@@ -49,6 +44,16 @@ set config_path [get_conf_path]
 set config_file $config_path/slurm.conf
 save_conf $config_file
 
+proc cleanup {} {
+	global job_id config_file bin_rm tmp_job
+
+	# Clean up vestigial files, jobs and restore original slurm.conf file
+	cancel_job $job_id
+	restore_conf $config_file
+	reconfigure
+	exec $bin_rm -f $tmp_job
+}
+
 log_info "---Checking sbatch uses mcs-label only for some jobs (ondemand mode)---"
 
 #
@@ -60,7 +65,7 @@ exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_file
 exec $bin_echo -e "\nMCSPlugin=mcs/account" >> $config_file
 exec $bin_echo MCSParameters=ondemand,select,privatedata >> $config_file
 exec $bin_echo PrivateData=jobs,nodes >> $config_file
-incr exit_code [reconfigure]
+reconfigure -fail
 
 #
 # verify slurm conf parameters MCS
@@ -90,7 +95,6 @@ log_info "---Checking sbatch fails with a bad mcs-label ---"
 
 set timeout $max_job_delay
 make_bash_script $tmp_job "sleep 10"
-set job_id 0
 spawn $sbatch -N1 --mcs-label=foo -t1 $tmp_job
 expect {
 	-re "Batch job submission failed: Invalid mcs_label specified" {
@@ -283,7 +287,7 @@ exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_file
 exec $bin_echo -e "\nMCSPlugin=mcs/account" >> $config_file
 exec $bin_echo MCSParameters=enforced,noselect,privatedata >> $config_file
 exec $bin_echo PrivateData=jobs,nodes >> $config_file
-reconfigure
+reconfigure -fail
 
 ###### Check that sbatch uses mcs-label=account ######
 log_info "---Checking sbatch uses mcs-label=account---"
@@ -376,12 +380,6 @@ expect {
 		wait
 	}
 }
-
-cancel_job $job_id
-
-# Clean up vestigial files and restore original slurm.conf file
-restore_conf $config_file
-reconfigure
 
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"

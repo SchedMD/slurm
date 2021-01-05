@@ -284,7 +284,7 @@ PriorityWeightQOS       = $weight
 PriorityWeightTRES=cpu=$weight
 "
 exec $bin_echo $prio_conf >> $config_file
-reconfigure
+reconfigure -fail
 
 
 set idle_node [get_idle_node_in_part]

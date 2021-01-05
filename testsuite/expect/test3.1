@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_in     "test$test_id.input"
 set job_id      0
 
@@ -79,12 +78,8 @@ if {[wait_for_job $job_id RUNNING] != 0} {
 #
 # Issue scontrol reconfigure
 #
-incr exit_code [reconfigure]
+reconfigure -fail
 
 if {[wait_for_job $job_id RUNNING] != 0} {
 	fail "Job $job_id not running after reconfiguration"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

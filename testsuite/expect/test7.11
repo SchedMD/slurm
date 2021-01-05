@@ -137,9 +137,7 @@ expect {
 		wait
 	}
 }
-if [reconfigure] {
-	fail "Unable to reconfigure"
-}
+reconfigure -fail
 
 #
 # Test of srun help message

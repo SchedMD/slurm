@@ -32,12 +32,7 @@ set config_path  ""
 set tmp_job      "test$test_id\_tmp_job"
 set file_in	 "test${test_id}.in"
 set file_out     "test${test_id}.out"
-
-proc cleanup {} {
-	global bin_rm tmp_job
-
-	exec $bin_rm $tmp_job
-}
+set job_id       0
 
 if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
@@ -46,6 +41,16 @@ if {![is_super_user]} {
 set config_path [get_conf_path]
 set config_file $config_path/slurm.conf
 save_conf $config_file
+
+proc cleanup {} {
+	global job_id config_file bin_rm tmp_job
+
+	# Clean up vestigial files, jobs and restore original slurm.conf file
+	cancel_job $job_id
+	restore_conf $config_file
+	reconfigure
+	exec $bin_rm $tmp_job
+}
 
 log_info "---Checking sbatch uses mcs-label only for some jobs (ondemand mode)---"
 
@@ -70,7 +75,7 @@ exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_file
 exec $bin_echo -e "\nMCSPlugin=mcs/group" >> $config_file
 exec $bin_echo MCSParameters=ondemand,select,privatedata:$groups_name >> $config_file
 exec $bin_echo PrivateData=jobs,nodes >> $config_file
-incr exit_code [reconfigure]
+reconfigure -fail
 
 
 #
@@ -122,7 +127,6 @@ expect {
 log_info "---Checking sbatch uses mcs-label=group---"
 
 make_bash_script $tmp_job "sleep 10"
-set job_id 0
 spawn $sbatch -N1 -o/dev/null --exclusive=mcs -t1 $tmp_job
 expect {
 	-re "Submitted batch job ($number)" {
@@ -289,7 +293,7 @@ exec $bin_sed -i /^\[\t\s\]*PrivateData\[\t\s\]*=/Id $config_file
 exec $bin_echo -e "\nMCSPlugin=mcs/group" >> $config_file
 exec $bin_echo MCSParameters=enforced,noselect,privatedata:$groups_name >> $config_file
 exec $bin_echo PrivateData=jobs,nodes >> $config_file
-incr exit_code [reconfigure]
+reconfigure -fail
 
 
 ###### Check that sbatch uses mcs-label=group ######
@@ -384,12 +388,6 @@ expect {
 		wait
 	}
 }
-
-cancel_job $job_id
-
-# Clean up vestigial files and restore original slurm.conf file
-restore_conf $config_file
-incr exit_code [reconfigure]
 
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"

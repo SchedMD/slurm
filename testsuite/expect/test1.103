@@ -30,19 +30,6 @@ set job_id	0
 set exit_code   0
 
 #
-# Since we make changes to configuration, call this function restore
-# configuration before exiting.
-#
-proc endit { } {
-	global exit_code
-	incr exit_code [reconfigure]
-	if {$exit_code != 0} {
-		fail "Exiting due to previous errors with exit code $exit_code"
-	}
-	pass
-}
-
-#
 # We must be SlurmUser or root in order to change the partition MaxTime limit,
 # otherwise this test may fail.
 #
@@ -51,12 +38,22 @@ if {![is_super_user]} {
 }
 
 #
+# Since we make changes to configuration, define a cleanup function to restore
+# the configuration before exiting.
+#
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+	reconfigure
+}
+
+#
 # Ensure that MaxTime is UNLIMITED so this test won't fail due to trying to set
 # time limits greater than MaxTime.
 #
-set exit_code [set_partition_maximum_time_limit "" -1]
-if { $exit_code != 0 } {
-	endit
+if [set_partition_maximum_time_limit "" -1] {
+	fail "Unable to set partition MaxTime to UNLIMITED"
 }
 
 #
@@ -82,8 +79,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	log_error "Job launch failed"
-	set exit_code 1
+	fail "Job launch failed"
 } else {
 	spawn $scontrol show job $job_id
 	expect {
@@ -106,10 +102,6 @@ if {$job_id == 0} {
 	}
 }
 
-set rc [cancel_job $job_id]
-if { $rc != 0 } {
-	log_error "Unable to cancel job $job_id."
-	incr exit_code
+if {$exit_code != 0} {
+        fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
-
-endit

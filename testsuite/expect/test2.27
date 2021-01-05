@@ -176,7 +176,7 @@ proc test_it {} {
 # Test w/out MailDomain
 set domain ""
 exec $bin_sed -i "s/^\\(MailDomain.*\\)/#\\1/Ig" $config_path/slurm.conf
-reconfigure
+reconfigure -fail
 test_it
 
 
@@ -186,5 +186,5 @@ set mail_conf "
 MailDomain = $domain
 "
 exec $bin_echo $mail_conf >> $config_path/slurm.conf
-reconfigure
+reconfigure -fail
 test_it
