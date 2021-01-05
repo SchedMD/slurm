@@ -798,12 +798,10 @@ proc run_command args {
 		}
 	}
 	set start_time [format "%.3f" [expr $start_clock_ms / 1000.000]]
-	set start_hms [format "%s.%03d" [clock format [expr int($start_clock_ms / 1000.000)] -format %H:%M:%S] [expr int(fmod($start_clock_ms, 1000))]]
 	set end_time [format "%.3f" [expr [clock milliseconds] / 1000.000]]
 	set duration [format "%.3f" [expr $end_time - $start_time]]
 
 	log_alias "Command Results:"
-	log_alias "	Start Time: $start_hms"
 	log_alias "	Duration:   $duration"
 	log_alias "	Exit Code:  $exit_status"
 	if {[info exists output]} {
