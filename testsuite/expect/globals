@@ -4197,7 +4197,7 @@ proc get_node_cpus {node} {
 	}
 
 	# Get the number of CPUs on a node
-	set my_pid [spawn $scontrol show node $node]
+	set scontrol_pid [spawn $scontrol show node $node]
 	expect {
 		-re "CoresPerSocket=($number)" {
 			set ncores $expect_out(1,string)
