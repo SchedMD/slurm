@@ -937,6 +937,7 @@ extern void jag_common_poll_data(
 {
 	/* Update the data */
 	uint64_t total_job_mem = 0, total_job_vsize = 0;
+	uint32_t last_taskid = NO_VAL;
 	ListIterator itr;
 	jag_prec_t *prec = NULL, tmp_prec;
 	struct jobacctinfo *jobacct = NULL;
@@ -990,9 +991,13 @@ extern void jag_common_poll_data(
 		 * make sure we call it once per task, so call it here as we
 		 * iterate through the tasks instead of in get_precs.
 		 */
-		if (callbacks->prec_extra)
-			(*(callbacks->prec_extra))(prec, jobacct->id.taskid);
+		if (callbacks->prec_extra) {
+			if (last_taskid == jobacct->id.taskid)
+				continue;
 
+			last_taskid = jobacct->id.taskid;
+			(*(callbacks->prec_extra))(prec, jobacct->id.taskid);
+		}
 #if _DEBUG
 		info("pid:%u ppid:%u rss:%"PRIu64" B",
 		     prec->pid, prec->ppid,

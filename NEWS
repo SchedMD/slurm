@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
  -- jobacct_gather/linux - Don't count memory on tasks that have already
     finished.
  -- Fix 19.05/20.02 batch steps talking with a 20.11 slurmctld.
+ -- jobacct_gather/common - Do not process jobacct's with same taskid when
+    calling prec_extra.
 
 * Changes in Slurm 20.11.2
 ==========================
