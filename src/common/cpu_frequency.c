@@ -878,7 +878,7 @@ _cpu_freq_govspec_string(uint32_t cpu_freq, int cpuidx)
 
 	if ((cpu_freq & CPU_FREQ_RANGE_FLAG) == 0)
 		return SLURM_ERROR;
-		
+
 	switch(cpu_freq)
 	{
 	case CPU_FREQ_CONSERVATIVE:
@@ -922,27 +922,27 @@ _cpu_freq_freqspec_num(uint32_t cpu_freq, int cpuidx)
 		{
 		case CPU_FREQ_LOW :
 			return cpufreq[cpuidx].avail_freq[0];
-	
+
 		case CPU_FREQ_MEDIUM :
 			if (cpufreq[cpuidx].nfreq == 1)
 				return cpufreq[cpuidx].avail_freq[0];
 			fx = (cpufreq[cpuidx].nfreq - 1) / 2;
 			return cpufreq[cpuidx].avail_freq[fx];
-	
+
 		case CPU_FREQ_HIGHM1 :
 			if (cpufreq[cpuidx].nfreq == 1)
 				return cpufreq[cpuidx].avail_freq[0];
 			fx = cpufreq[cpuidx].nfreq - 2;
 			return cpufreq[cpuidx].avail_freq[fx];
-	
+
 		case CPU_FREQ_HIGH :
 			fx = cpufreq[cpuidx].nfreq - 1;
 			return cpufreq[cpuidx].avail_freq[fx];
-		
+
 		default:
 			return NO_VAL;
 		}
-	}		
+	}
 
 	/* check for request above or below available values */
 	if (cpu_freq < cpufreq[cpuidx].avail_freq[0]) {
