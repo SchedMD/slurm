@@ -4455,10 +4455,15 @@ proc get_het_job_ids { jobid {use_offset 0}} {
 #	reconfigure - calls scontrol reconfigure
 #
 # SYNOPSIS
-#	reconfigure ?cluster?
+#	reconfigure ?options? ?cluster?
 #
 # DESCRIPTION
-#	Calls scontrol reconfigure.
+#	Calls scontrol reconfigure. This routine takes the same options as
+#	run_command, passing them to the underlying run_command invocation.
+#	This command waits an additional 5 seconds before returning.
+#
+# OPTIONS
+#	See OPTIONS of run_command proc.
 #
 # ARGUMENTS
 #	cluster
@@ -4469,44 +4474,40 @@ proc get_het_job_ids { jobid {use_offset 0}} {
 #
 ################################################################
 
-proc reconfigure { {cluster ""} } {
-	global scontrol timeout
+proc reconfigure args {
+	global scontrol
 
-	set exit_code $::RETURN_SUCCESS
-	#
-	# Increase timeout just in case we're running under valgrind
-	#
-	set save_timeout $timeout
-	set timeout 20
-	if { $cluster == "" } {
-		spawn $scontrol reconfigure
-	} else {
-		spawn $scontrol -M$cluster reconfigure
-	}
-	expect {
-		-re "slurm_reconfigure error: Invalid user id" {
-			log_error "Invalid user id"
-			set exit_code $::RETURN_ERROR
-			exp_continue
-		}
-		-re "Error|error" {
-			log_error "scontrol reconfigure error"
-			set exit_code $::RETURN_ERROR
-			exp_continue
-		}
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
+	set options [list]
+	set cluster ""
+
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-* {
+				lappend options {*}[lrange $args 0 1]
+				set args [lrange $args 2 end]
+			}
+			default break
 		}
 	}
+	set argument_count [llength $args]
+	if {$argument_count > 1}  {
+		fail "Too many arguments ($argument_count): $args"
+	} elseif {$argument_count == 1} {
+		lassign $args cluster
+	}
+
+	set command $scontrol
+	if {$cluster ne ""} {
+		append command " -M$cluster"
+	}
+	append command " reconfigure"
+	set rc [run_command_status {*}$options "$command"]
+
 	#
-	# Wait for reconfigure to complete, then reset timeout and return.
+	# Wait 5 seconds for reconfigure to complete, then return.
 	#
 	sleep 5
-	set timeout $save_timeout
-	return $exit_code
+	return $rc
 }
 
 
