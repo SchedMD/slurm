@@ -4791,14 +4791,6 @@ static step_record_t *_build_interactive_step(
 		return NULL;
 	}
 
-	step_ptr = _create_step_record(job_ptr, protocol_version);
-
-	if (!step_ptr) {
-		error("%s: Can't create step_record! This should never happen",
-		      __func__);
-		return NULL;
-	}
-
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr =
 				find_front_end_record(job_ptr->batch_host);
@@ -4812,6 +4804,20 @@ static step_record_t *_build_interactive_step(
 #else
 		host = job_ptr->batch_host;
 #endif
+	if (!host) {
+		error("%s: %pJ batch_host is NULL! This should never happen",
+		      __func__, job_ptr);
+		return NULL;
+	}
+
+	step_ptr = _create_step_record(job_ptr, protocol_version);
+
+	if (!step_ptr) {
+		error("%s: Can't create step_record! This should never happen",
+		      __func__);
+		return NULL;
+	}
+
 	step_ptr->step_layout = fake_slurm_step_layout_create(
 		host, NULL, NULL, 1, 1);
 	step_ptr->ext_sensors = ext_sensors_alloc();
