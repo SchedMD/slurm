@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix false error message complaining about oversubscribe in cons_tres.
  -- scrontab - fix parsing of empty lines.
  -- Fix regression causing spank_process_option errors to be ignored.
+ -- Avoid making multiple interactive steps.
 
 * Changes in Slurm 20.11.2
 ==========================

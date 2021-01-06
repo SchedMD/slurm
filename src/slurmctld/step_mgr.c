@@ -4769,6 +4769,7 @@ static step_record_t *_build_interactive_step(
 	job_record_t *job_ptr;
 	step_record_t *step_ptr;
 	char *host = NULL;
+	slurm_step_id_t step_id = {0};
 
 	if (job_ptr_in->het_job_id) {
 		job_ptr = find_job_record(job_ptr_in->het_job_id);
@@ -4779,6 +4780,16 @@ static step_record_t *_build_interactive_step(
 		}
 	} else
 		job_ptr = job_ptr_in;
+
+	step_id.job_id = job_ptr->job_id;
+	step_id.step_id = SLURM_INTERACTIVE_STEP,
+	step_id.step_het_comp = NO_VAL;
+	step_ptr = find_step_record(job_ptr, &step_id);
+	if (step_ptr) {
+		debug("%s: interactive step for %pJ already exists",
+		      __func__, job_ptr);
+		return NULL;
+	}
 
 	step_ptr = _create_step_record(job_ptr, protocol_version);
 
