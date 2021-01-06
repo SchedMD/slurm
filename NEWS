@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
     association with a GrpTRES of 30 CPUs, would be allowed to allocate 60
     CPUs when running under this QOS.
  -- slurmrestd - Pass SLURM_NO_CHANGE_IN_DATA to client as 403 (Not Modified).
+ -- slurmrestd/v0.0.37 - Add update_time field to Jobs query to allow clients
+    to only get jobs list based on change timestamp.
 
 * Changes in Slurm 20.11.3
 ==========================

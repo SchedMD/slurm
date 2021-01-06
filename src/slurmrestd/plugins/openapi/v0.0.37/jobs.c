@@ -1188,20 +1188,35 @@ static int _op_handler_jobs(const char *context_id,
 	job_info_msg_t *job_info_ptr = NULL;
 	(void) populate_response_format(resp);
 	data_t *jobs = data_set_list(data_key_set(resp, "jobs"));
+	time_t update_time = 0; /* default to unix epoch */
+	data_t *data_update_time;
 
 	debug4("%s: jobs handler called by %s", __func__, context_id);
 
-	rc = slurm_load_jobs((time_t)NULL, &job_info_ptr,
-			     SHOW_ALL|SHOW_DETAIL);
+	if ((data_update_time = data_key_get(query, "update_time"))) {
+		if (data_convert_type(data_update_time, DATA_TYPE_INT_64) ==
+		    DATA_TYPE_INT_64) {
+			update_time = data_get_int(data_update_time);
+		} else {
+			rc = ESLURM_REST_INVALID_QUERY;
+			goto done;
+		}
+	}
 
-	if (rc == SLURM_SUCCESS && job_info_ptr &&
-	    job_info_ptr->record_count) {
+	rc = slurm_load_jobs(update_time, &job_info_ptr,
+			     SHOW_ALL | SHOW_DETAIL);
+
+	if (rc == SLURM_NO_CHANGE_IN_DATA) {
+		/* no-op: nothing to do here */
+	} else if ((rc == SLURM_SUCCESS) && job_info_ptr &&
+		   job_info_ptr->record_count) {
 		for (size_t i = 0; i < job_info_ptr->record_count; ++i) {
 			dump_job_info(job_info_ptr->job_array + i,
 				      data_list_append(jobs));
 		}
 	}
 
+done:
 	slurm_free_job_info_msg(job_info_ptr);
 
 	return rc;

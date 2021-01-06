@@ -102,6 +102,20 @@
         ],
         "operationId": "slurmctld_get_jobs",
         "summary": "get list of jobs",
+	"parameters": [
+	  {
+	    "name": "update_time",
+	    "in": "query",
+	    "description": "filter if changed since update_time",
+	    "required": false,
+	    "style": "simple",
+	    "explode": false,
+	    "schema": {
+	      "type": "integer",
+	      "format": "int64"
+	    }
+	  }
+	],
         "responses": {
           "200": {
             "description": "job(s) information",
