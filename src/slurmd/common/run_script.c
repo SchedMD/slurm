@@ -214,7 +214,7 @@ int run_script(const char *name, const char *pattern, uint32_t job_id,
 	while ((s = list_next (i))) {
 		rc = _run_one_script (name, s, job_id, max_wait, env, uid);
 		if (rc) {
-			error ("%s: exited with status 0x%04x\n", s, rc);
+			error ("%s: exited with status 0x%04x", s, rc);
 			break;
 		}
 
