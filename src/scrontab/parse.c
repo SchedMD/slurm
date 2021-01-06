@@ -370,9 +370,8 @@ extern char **convert_file_to_line_array(char *file, int *line_count)
 				break;
 			xrecalloc(line_array, lines + 2, sizeof(char *));
 			line_array[lines] = ptr;
-		}
-
-		ptr++;
+		} else
+			ptr++;
 	}
 
 	*line_count = lines;
