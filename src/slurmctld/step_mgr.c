@@ -2330,7 +2330,10 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		debug("%s: interactive step requested", __func__);
 		*new_step_record = _build_interactive_step(job_ptr, step_specs,
 							   protocol_version);
-		return SLURM_SUCCESS;
+		if (*new_step_record)
+			return SLURM_SUCCESS;
+		else
+			return ESLURM_DUPLICATE_STEP_ID;
 	}
 
 	task_dist = step_specs->task_dist & SLURM_DIST_STATE_BASE;
@@ -4665,6 +4668,11 @@ extern step_record_t *build_extern_step(job_record_t *job_ptr)
 	node_list = job_ptr->nodes;
 	node_cnt = job_ptr->node_cnt;
 #endif
+	if (!step_ptr) {
+		error("%s: Can't create step_record! This should never happen",
+		      __func__);
+		return NULL;
+	}
 
 	step_ptr->step_layout = fake_slurm_step_layout_create(
 		node_list, NULL, NULL, node_cnt, node_cnt);
@@ -4705,6 +4713,12 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 		job_ptr = job_ptr_in;
 
 	step_ptr = _create_step_record(job_ptr, 0);
+
+	if (!step_ptr) {
+		error("%s: Can't create step_record! This should never happen",
+		      __func__);
+		return NULL;
+	}
 
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr =
@@ -4767,6 +4781,12 @@ static step_record_t *_build_interactive_step(
 		job_ptr = job_ptr_in;
 
 	step_ptr = _create_step_record(job_ptr, protocol_version);
+
+	if (!step_ptr) {
+		error("%s: Can't create step_record! This should never happen",
+		      __func__);
+		return NULL;
+	}
 
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr =
