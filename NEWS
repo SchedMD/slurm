@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
     [Grp|Max]TRES limits.  For example, if the LimitFactor is 2, then an
     association with a GrpTRES of 30 CPUs, would be allowed to allocate 60
     CPUs when running under this QOS.
+ -- slurmrestd - Pass SLURM_NO_CHANGE_IN_DATA to client as 403 (Not Modified).
 
 * Changes in Slurm 20.11.3
 ==========================

@@ -380,7 +380,22 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	else
 		fatal_abort("%s: unexpected mime type", __func__);
 
-	if (rc) {
+	if (rc == SLURM_NO_CHANGE_IN_DATA) {
+		/*
+		 * RFC#7232 Section:4.1
+		 *
+		 * Send minimal response that nothing has changed
+		 *
+		 */
+		send_http_response_args_t send_args = {
+			.con = args->context->con,
+			.http_major = args->http_major,
+			.http_minor = args->http_minor,
+			.status_code = HTTP_STATUS_CODE_REDIRECT_NOT_MODIFIED,
+		};
+
+		rc = send_http_response(&send_args);
+	} else if (rc) {
 		http_status_code_t e = HTTP_STATUS_CODE_SRVERR_INTERNAL;
 
 		if (rc == ESLURM_REST_INVALID_QUERY)
