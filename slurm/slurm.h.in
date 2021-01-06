@@ -131,6 +131,13 @@ typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 #define SLURM_VERSION_MICRO(a)    ((a)        & 0xff)
 
 /*****************************************************************************\
+ *	DEFINITIONS FOR POSIX VALUES
+\*****************************************************************************/
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX 64
+#endif
+
+/*****************************************************************************\
  *	DEFINITIONS FOR INPUT VALUES
 \*****************************************************************************/
 
