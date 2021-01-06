@@ -4840,6 +4840,8 @@ static step_record_t *_build_interactive_step(
 			     &step_ptr->step_node_bitmap)) {
 		error("%s: %pJ has invalid node list (%s)",
 		      __func__, job_ptr, job_ptr->batch_host);
+		delete_step_record(job_ptr, step_ptr);
+		return NULL;
 	}
 #endif
 

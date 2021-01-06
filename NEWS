@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- scrontab - fix parsing of empty lines.
  -- Fix regression causing spank_process_option errors to be ignored.
  -- Avoid making multiple interactive steps.
+ -- Fix corner case issues where step creation should fail.
 
 * Changes in Slurm 20.11.2
 ==========================
