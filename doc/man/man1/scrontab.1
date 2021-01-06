@@ -1,4 +1,4 @@
-.TH scrontab "1" "Slurm Commands" "November 2020" "Slurm Commands"
+.TH scrontab "1" "Slurm Commands" "January 2021" "Slurm Commands"
 
 .SH "NAME"
 .LP
@@ -26,6 +26,12 @@ Note that jobs are not guaranteed to execute at the preferred time. Jobs will
 run no more frequently than requested, but are managed by setting the
 BeginTime field to the next valid iteration, and are then subject to queuing
 delays. The exact behavior will depend on the local site configuration.
+Because of this method of implementation, the next job in the series won't be
+submitted until after the previous job has completed.  For example, if you
+have a monitoring job that is scheduled to run every minute on a busy
+system, if the job scheduled to start at 08:20:00 isn't able to start until
+08:20:30 and it runs for 35 seconds then the job at 08:21:00 will be skipped
+and the next job will be scheduled for 08:22:00.
 .LP
 \fBscrontab\fR uses the same syntax for date and time specifiers as \fBcron\fR.
 Each line has five fields that have the following meanings:
