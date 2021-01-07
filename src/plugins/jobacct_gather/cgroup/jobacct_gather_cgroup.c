@@ -140,7 +140,6 @@ static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 	//DEF_TIMERS;
 	//START_TIMER;
 	/* info("before"); */
-	/* print_jag_prec(prec); */
 	xcgroup_get_param(task_cpuacct_cg, "cpuacct.stat",
 			  &cpu_time, &cpu_time_size);
 	if (cpu_time == NULL) {
@@ -217,7 +216,6 @@ static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 	/* prec->disk_write = (double)tot_write / (double)1048576; */
 
 	/* info("after %d %d", total_rss); */
-	/* print_jag_prec(prec); */
 	//END_TIMER;
 	//info("took %s", TIME_STR);
 	return;
