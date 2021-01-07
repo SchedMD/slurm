@@ -1744,17 +1744,17 @@ extern void print_fields(type_t type, void *object)
 			switch (type) {
 			case JOB:
 				if (!job->track_steps && !step)
-					tmp_dub = NO_VAL;
+					tmp_uint32 = NO_VAL;
 				// we want to use the step info
 				if (!step)
 					break;
 			case JOBSTEP:
-				tmp_dub = step->req_cpufreq_min;
+				tmp_uint32 = step->req_cpufreq_min;
 				break;
 			default:
 				break;
 			}
-			cpu_freq_to_string(outbuf, sizeof(outbuf), tmp_dub);
+			cpu_freq_to_string(outbuf, sizeof(outbuf), tmp_uint32);
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
@@ -1763,17 +1763,17 @@ extern void print_fields(type_t type, void *object)
 			switch (type) {
 			case JOB:
 				if (!job->track_steps && !step)
-					tmp_dub = NO_VAL;
+					tmp_uint32 = NO_VAL;
 				// we want to use the step info
 				if (!step)
 					break;
 			case JOBSTEP:
-				tmp_dub = step->req_cpufreq_max;
+				tmp_uint32 = step->req_cpufreq_max;
 				break;
 			default:
 				break;
 			}
-			cpu_freq_to_string(outbuf, sizeof(outbuf), tmp_dub);
+			cpu_freq_to_string(outbuf, sizeof(outbuf), tmp_uint32);
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
@@ -1782,17 +1782,17 @@ extern void print_fields(type_t type, void *object)
 			switch (type) {
 			case JOB:
 				if (!job->track_steps && !step)
-					tmp_dub = NO_VAL;
+					tmp_uint32 = NO_VAL;
 				// we want to use the step info
 				if (!step)
 					break;
 			case JOBSTEP:
-				tmp_dub = step->req_cpufreq_gov;
+				tmp_uint32 = step->req_cpufreq_gov;
 				break;
 			default:
 				break;
 			}
-			cpu_freq_to_string(outbuf, sizeof(outbuf), tmp_dub);
+			cpu_freq_to_string(outbuf, sizeof(outbuf), tmp_uint32);
 			field->print_routine(field,
 					     outbuf,
 					     (curr_inx == field_count));
