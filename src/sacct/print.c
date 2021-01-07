@@ -354,7 +354,7 @@ extern void print_fields(type_t type, void *object)
 						    confirm the values
 						    coming in are
 						    NO_VAL64 */
-		uint32_t tmp_uint32 = NO_VAL;
+		uint32_t tmp_uint32 = NO_VAL, tmp2_uint32 = NO_VAL;
 		uint64_t tmp_uint64 = NO_VAL64, tmp2_uint64 = NO_VAL64;
 
 		memset(&outbuf, 0, sizeof(outbuf));
@@ -382,11 +382,11 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_ALLOC_NODES:
 			switch(type) {
 			case JOB:
-				tmp_int = job->alloc_nodes;
+				tmp_uint32 = job->alloc_nodes;
 				tmp_char = job->tres_alloc_str;
 				break;
 			case JOBSTEP:
-				tmp_int = step->nnodes;
+				tmp_uint32 = step->nnodes;
 				tmp_char = step->tres_alloc_str;
 				break;
 			case JOBCOMP:
@@ -396,14 +396,14 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			if (!tmp_int && tmp_char) {
+			if (!tmp_uint32 && tmp_char) {
 				if ((tmp_uint64 =
 				     slurmdb_find_tres_count_in_string(
 					     tmp_char, TRES_NODE))
 				    != INFINITE64)
-					tmp_int = tmp_uint64;
+					tmp_uint32 = tmp_uint64;
 			}
-			convert_num_unit((double)tmp_int, outbuf,
+			convert_num_unit((double)tmp_uint32, outbuf,
 					 sizeof(outbuf), UNIT_NONE, NO_VAL,
 					 params.convert_flags);
 			field->print_routine(field,
@@ -471,18 +471,18 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_ASSOCID:
 			switch(type) {
 			case JOB:
-				tmp_int = job->associd;
+				tmp_uint32 = job->associd;
 				break;
 			case JOBSTEP:
-				tmp_int = step->job_ptr->associd;
+				tmp_uint32 = step->job_ptr->associd;
 				break;
 			case JOBCOMP:
 			default:
-				tmp_int = NO_VAL;
+				tmp_uint32 = NO_VAL;
 				break;
 			}
 			field->print_routine(field,
-					     tmp_int,
+					     tmp_uint32,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_AVECPU:
@@ -806,20 +806,20 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_ELAPSED_RAW:
 			switch(type) {
 			case JOB:
-				tmp_int = job->elapsed;
+				tmp_uint32 = job->elapsed;
 				break;
 			case JOBSTEP:
-				tmp_int = step->elapsed;
+				tmp_uint32 = step->elapsed;
 				break;
 			case JOBCOMP:
-				tmp_int = job_comp->elapsed_time;
+				tmp_uint32 = job_comp->elapsed_time;
 				break;
 			default:
-				tmp_int = NO_VAL;
+				tmp_uint32 = NO_VAL;
 				break;
 			}
 			field->print_routine(field,
-					     tmp_int,
+					     tmp_uint32,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_ELIGIBLE:
@@ -895,16 +895,16 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_FLAGS:
 			switch(type) {
 			case JOB:
-				tmp_int = job->flags;
+				tmp_uint32 = job->flags;
 				break;
 			case JOBSTEP:
 			case JOBCOMP:
 			default:
-				tmp_int = SLURMDB_JOB_FLAG_NONE;
+				tmp_uint32 = SLURMDB_JOB_FLAG_NONE;
 				break;
 			}
-			if (tmp_int != SLURMDB_JOB_FLAG_NONE)
-				tmp_char = slurmdb_job_flags_str(tmp_int);
+			if (tmp_uint32 != SLURMDB_JOB_FLAG_NONE)
+				tmp_char = slurmdb_job_flags_str(tmp_uint32);
 
 			field->print_routine(field,
 					     tmp_char,
@@ -913,39 +913,39 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_GID:
 			switch(type) {
 			case JOB:
-				tmp_int = job->gid;
+				tmp_uint32 = job->gid;
 				break;
 			case JOBSTEP:
-				tmp_int = NO_VAL;
+				tmp_uint32 = NO_VAL;
 				break;
 			case JOBCOMP:
-				tmp_int = job_comp->gid;
+				tmp_uint32 = job_comp->gid;
 				break;
 			default:
-				tmp_int = NO_VAL;
+				tmp_uint32 = NO_VAL;
 				break;
 			}
 			field->print_routine(field,
-					     tmp_int,
+					     tmp_uint32,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_GROUP:
 			switch(type) {
 			case JOB:
-				tmp_int = job->gid;
+				tmp_uint32 = job->gid;
 				break;
 			case JOBSTEP:
-				tmp_int = NO_VAL;
+				tmp_uint32 = NO_VAL;
 				break;
 			case JOBCOMP:
-				tmp_int = job_comp->gid;
+				tmp_uint32 = job_comp->gid;
 				break;
 			default:
-				tmp_int = NO_VAL;
+				tmp_uint32 = NO_VAL;
 				break;
 			}
 			tmp_char = NULL;
-			if ((gr=getgrgid(tmp_int)))
+			if ((gr=getgrgid(tmp_uint32)))
 				tmp_char=gr->gr_name;
 
 			field->print_routine(field,
@@ -1589,44 +1589,44 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_NNODES:
 			switch(type) {
 			case JOB:
-				tmp_int = job->alloc_nodes;
+				tmp_uint32 = job->alloc_nodes;
 				tmp_char = (job->tres_alloc_str &&
 					    job->tres_alloc_str[0])
 					? job->tres_alloc_str :
 					job->tres_req_str;
 				break;
 			case JOBSTEP:
-				tmp_int = step->nnodes;
+				tmp_uint32 = step->nnodes;
 				tmp_char = step->tres_alloc_str;
 				break;
 			case JOBCOMP:
-				tmp_int = job_comp->node_cnt;
+				tmp_uint32 = job_comp->node_cnt;
 				break;
 			default:
 				break;
 			}
 
-			if (!tmp_int && tmp_char) {
+			if (!tmp_uint32 && tmp_char) {
 				if ((tmp_uint64 =
 				     slurmdb_find_tres_count_in_string(
 					     tmp_char, TRES_NODE))
 				    != INFINITE64)
-					tmp_int = tmp_uint64;
+					tmp_uint32 = tmp_uint64;
 			}
 			field->print_routine(field,
-					     tmp_int,
+					     tmp_uint32,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_NTASKS:
 			switch(type) {
 			case JOB:
 				if (!job->track_steps && !step)
-					tmp_int = cpu_tres_rec_count;
+					tmp_uint32 = cpu_tres_rec_count;
 				// we want to use the step info
 				if (!step)
 					break;
 			case JOBSTEP:
-				tmp_int = step->ntasks;
+				tmp_uint32 = step->ntasks;
 				break;
 			case JOBCOMP:
 			default:
@@ -1634,13 +1634,13 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 			field->print_routine(field,
-					     tmp_int,
+					     tmp_uint32,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_PRIO:
 			switch(type) {
 			case JOB:
-				tmp_int = job->priority;
+				tmp_uint32 = job->priority;
 				break;
 			case JOBSTEP:
 
@@ -1653,7 +1653,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 			field->print_routine(field,
-					     tmp_int,
+					     tmp_uint32,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_PARTITION:
@@ -1708,7 +1708,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_QOSRAW:
 			switch(type) {
 			case JOB:
-				tmp_int = job->qosid;
+				tmp_uint32 = job->qosid;
 				break;
 			case JOBSTEP:
 
@@ -1721,7 +1721,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 			field->print_routine(field,
-					     tmp_int,
+					     tmp_uint32,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_REASON:
@@ -1800,10 +1800,10 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_REQ_CPUS:
 			switch(type) {
 			case JOB:
-				tmp_int = job->req_cpus;
+				tmp_uint32 = job->req_cpus;
 				break;
 			case JOBSTEP:
-				tmp_int = step_cpu_tres_rec_count;
+				tmp_uint32 = step_cpu_tres_rec_count;
 				break;
 			case JOBCOMP:
 
@@ -1813,7 +1813,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 			field->print_routine(field,
-					     tmp_int,
+					     tmp_uint32,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_REQ_MEM:
@@ -1843,28 +1843,28 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_REQ_NODES:
 			switch(type) {
 			case JOB:
-				tmp_int = 0;
+				tmp_uint32 = 0;
 				tmp_char = job->tres_req_str;
 				break;
 			case JOBSTEP:
-				tmp_int = step->nnodes;
+				tmp_uint32 = step->nnodes;
 				tmp_char = step->tres_alloc_str;
 				break;
 			case JOBCOMP:
-				tmp_int = job_comp->node_cnt;
+				tmp_uint32 = job_comp->node_cnt;
 				break;
 			default:
 				break;
 			}
 
-			if (!tmp_int && tmp_char) {
+			if (!tmp_uint32 && tmp_char) {
 				if ((tmp_uint64 =
 				     slurmdb_find_tres_count_in_string(
 					     tmp_char, TRES_NODE))
 				    != INFINITE64)
-					tmp_int = tmp_uint64;
+					tmp_uint32 = tmp_uint64;
 			}
-			convert_num_unit((double)tmp_int, outbuf,
+			convert_num_unit((double)tmp_uint32, outbuf,
 					 sizeof(outbuf), UNIT_NONE,
 					 params.units, params.convert_flags);
 
@@ -2029,12 +2029,12 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_STATE:
 			switch(type) {
 			case JOB:
-				tmp_int = job->state;
-				tmp_int2 = job->requid;
+				tmp_uint32 = job->state;
+				tmp2_uint32 = job->requid;
 				break;
 			case JOBSTEP:
-				tmp_int = step->state;
-				tmp_int2 = step->requid;
+				tmp_uint32 = step->state;
+				tmp2_uint32 = step->requid;
 				break;
 			case JOBCOMP:
 				tmp_char = job_comp->state;
@@ -2044,16 +2044,16 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 
-			if (((tmp_int & JOB_STATE_BASE) == JOB_CANCELLED) &&
-			    (tmp_int2 != -1))
+			if (((tmp_uint32 & JOB_STATE_BASE) == JOB_CANCELLED) &&
+			    (tmp2_uint32 != -1))
 				snprintf(outbuf, FORMAT_STRING_SIZE,
-					 "%s by %d",
-					 job_state_string(tmp_int),
-					 tmp_int2);
-			else if (tmp_int != NO_VAL)
+					 "%s by %u",
+					 job_state_string(tmp_uint32),
+					 tmp2_uint32);
+			else if (tmp_uint32 != NO_VAL)
 				snprintf(outbuf, FORMAT_STRING_SIZE,
 					 "%s",
-					 job_state_string(tmp_int));
+					 job_state_string(tmp_uint32));
 			else if (tmp_char)
 				snprintf(outbuf, FORMAT_STRING_SIZE,
 					 "%s",
@@ -2102,10 +2102,10 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_SUSPENDED:
 			switch(type) {
 			case JOB:
-				tmp_int = job->suspended;
+				tmp_uint32 = job->suspended;
 				break;
 			case JOBSTEP:
-				tmp_int = step->suspended;
+				tmp_uint32 = step->suspended;
 				break;
 			case JOBCOMP:
 
@@ -2115,7 +2115,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 			field->print_routine(field,
-					     (uint64_t)tmp_int,
+					     (uint64_t)tmp_uint32,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_SYSTEMCPU:
@@ -2265,14 +2265,14 @@ extern void print_fields(type_t type, void *object)
 			case JOB:
 				if (params.use_local_uid && job->user &&
 				    (pw = getpwnam(job->user)))
-					tmp_int = pw->pw_uid;
+					tmp_uint32 = pw->pw_uid;
 				else
-					tmp_int = job->uid;
+					tmp_uint32 = job->uid;
 				break;
 			case JOBSTEP:
 				break;
 			case JOBCOMP:
-				tmp_int = job_comp->uid;
+				tmp_uint32 = job_comp->uid;
 				break;
 			default:
 
@@ -2280,7 +2280,7 @@ extern void print_fields(type_t type, void *object)
 			}
 
 			field->print_routine(field,
-					     tmp_int,
+					     tmp_uint32,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_USER:
@@ -2351,7 +2351,7 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_WCKEYID:
 			switch(type) {
 			case JOB:
-				tmp_int = job->wckeyid;
+				tmp_uint32 = job->wckeyid;
 				break;
 			case JOBSTEP:
 
@@ -2364,7 +2364,7 @@ extern void print_fields(type_t type, void *object)
 				break;
 			}
 			field->print_routine(field,
-					     tmp_int,
+					     tmp_uint32,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_WORK_DIR:
