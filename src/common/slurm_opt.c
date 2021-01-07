@@ -5315,12 +5315,14 @@ int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 		}
 	}
 
-	/*
-	 * If we've made it here, then the set_func failed for some reason.
-	 * At which point we'll abandon ship.
-	 */
-	exit(-1);
 	return SLURM_ERROR;
+}
+
+void slurm_process_option_or_exit(slurm_opt_t *opt, int optval, const char *arg,
+				  bool set_by_env, bool early_pass)
+{
+	if (slurm_process_option(opt, optval, arg, set_by_env, early_pass))
+		exit(-1);
 }
 
 void slurm_print_set_options(slurm_opt_t *opt)

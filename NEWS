@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
  -- Don't reject jobs allocating more cores than tasks with MaxMemPerCPU.
  -- Fix false error message complaining about oversubscribe in cons_tres.
  -- scrontab - fix parsing of empty lines.
+ -- Fix regression causing spank_process_option errors to be ignored.
 
 * Changes in Slurm 20.11.2
 ==========================

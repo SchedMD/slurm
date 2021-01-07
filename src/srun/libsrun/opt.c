@@ -627,7 +627,8 @@ static void _opt_env(int het_job_offset)
 
 	while (e->var) {
 		if ((val = getenv(e->var)))
-			slurm_process_option(&opt, e->type, val, true, false);
+			slurm_process_option_or_exit(&opt, e->type, val, true,
+						     false);
 		if ((het_job_offset >= 0) &&
 		    strcmp(e->var, "SLURM_JOBID") &&
 		    strcmp(e->var, "SLURM_JOB_ID")) {
@@ -635,13 +636,13 @@ static void _opt_env(int het_job_offset)
 			snprintf(key, sizeof(key), "%s_PACK_GROUP_%d",
 				 e->var, het_job_offset);
 			if ((val = getenv(key)))
-				slurm_process_option(&opt, e->type, val,
-						     true, false);
+				slurm_process_option_or_exit(&opt, e->type, val,
+							     true, false);
 			snprintf(key, sizeof(key), "%s_HET_GROUP_%d",
 				 e->var, het_job_offset);
 			if ((val = getenv(key)))
-				slurm_process_option(&opt, e->type, val,
-						     true, false);
+				slurm_process_option_or_exit(&opt, e->type, val,
+							     true, false);
 		}
 		e++;
 	}
@@ -681,7 +682,8 @@ static bitstr_t *_get_het_group(const int argc, char **argv,
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
-		slurm_process_option(&opt, opt_char, optarg, false, true);
+		slurm_process_option_or_exit(&opt, opt_char, optarg, false,
+					     true);
 	}
 	slurm_option_table_destroy(optz);
 	xfree(opt_string);
@@ -734,7 +736,8 @@ static void _set_options(const int argc, char **argv)
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
-		slurm_process_option(&opt, opt_char, optarg, false, false);
+		slurm_process_option_or_exit(&opt, opt_char, optarg, false,
+					     false);
 	}
 
 	slurm_option_table_destroy(optz);
@@ -1026,10 +1029,10 @@ static bool _opt_verify(void)
 
 	if (sropt.parallel_debug) {
 		/* Set --threads 1 */
-		slurm_process_option(&opt, 'T', "1", false, false);
+		slurm_process_option_or_exit(&opt, 'T', "1", false, false);
 		/* Set --msg-timeout 15 */
-		slurm_process_option(&opt, LONG_OPT_MSG_TIMEOUT, "1",
-				     false, false);
+		slurm_process_option_or_exit(&opt, LONG_OPT_MSG_TIMEOUT, "1",
+					     false, false);
 	}
 
 	pmi_server_max_threads(sropt.max_threads);
@@ -1198,7 +1201,8 @@ static bool _opt_verify(void)
 			 * which influences future decisions.
 			 */
 			xstrfmtcat(tmp, "%d", opt.min_nodes);
-			slurm_process_option(&opt, 'N', tmp, false, false);
+			slurm_process_option_or_exit(&opt, 'N', tmp, false,
+						     false);
 			xfree(tmp);
 			if (hl_cnt > opt.min_nodes) {
 				int del_cnt, i;

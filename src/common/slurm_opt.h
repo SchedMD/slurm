@@ -431,6 +431,13 @@ extern int slurm_process_option(slurm_opt_t *opt, int optval, const char *arg,
 				bool set_by_env, bool early_pass);
 
 /*
+ * Use slurm_process_option and call exit(-1) in case of non-zero return code
+ */
+extern void slurm_process_option_or_exit(slurm_opt_t *opt, int optval,
+					 const char *arg, bool set_by_env,
+					 bool early_pass);
+
+/*
  * Process incoming single component of Job data entry
  * IN opt - options to populate from job chunk
  * IN job - data containing job request

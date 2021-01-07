@@ -256,8 +256,8 @@ static void _set_bsub_options(int argc, char **argv) {
 		}
 
 		if (xlate_val)
-			slurm_process_option(&opt, xlate_val, xlate_arg,
-					     false, false);
+			slurm_process_option_or_exit(&opt, xlate_val, xlate_arg,
+						     false, false);
 		xfree(xlate_arg);
 	}
 
@@ -403,8 +403,8 @@ static void _set_pbs_options(int argc, char **argv)
 		}
 
 		if (xlate_val)
-			slurm_process_option(&opt, xlate_val, xlate_arg,
-					     false, false);
+			slurm_process_option_or_exit(&opt, xlate_val, xlate_arg,
+						     false, false);
 		xfree(xlate_arg);
 	}
 
@@ -455,8 +455,9 @@ static void _parse_pbs_nodes_opts(char *node_opts)
 		if (!xstrncmp(node_opts+i, "gpus=", 5)) {
 			i += 5;
 			temp = _get_pbs_node_name(node_opts, &i);
-			slurm_process_option(&opt, LONG_OPT_GPUS_PER_NODE,
-					     temp, false, false);
+			slurm_process_option_or_exit(&opt,
+						     LONG_OPT_GPUS_PER_NODE,
+						     temp, false, false);
 			xfree(temp);
 		} else if (!xstrncmp(node_opts+i, "ppn=", 4)) {
 			i+=4;
@@ -478,7 +479,7 @@ static void _parse_pbs_nodes_opts(char *node_opts)
 		node_cnt = 1;
 	else {
 		char *nodes = xstrdup_printf("%d", node_cnt);
-		slurm_process_option(&opt, 'N', nodes, false, false);
+		slurm_process_option_or_exit(&opt, 'N', nodes, false, false);
 		xfree(nodes);
 	}
 
@@ -486,12 +487,12 @@ static void _parse_pbs_nodes_opts(char *node_opts)
 		char *ntasks;
 		ppn *= node_cnt;
 		ntasks = xstrdup_printf("%d", ppn);
-		slurm_process_option(&opt, 'n', ntasks, false, false);
+		slurm_process_option_or_exit(&opt, 'n', ntasks, false, false);
 	}
 
 	if (hostlist_count(hl) > 0) {
 		char *nodelist = hostlist_ranged_string_xmalloc(hl);
-		slurm_process_option(&opt, 'w', nodelist, false, false);
+		slurm_process_option_or_exit(&opt, 'w', nodelist, false, false);
 		xfree(nodelist);
 	}
 
@@ -545,7 +546,8 @@ static void _parse_pbs_resource_list(char *rl)
 				error("No value given for cput");
 				exit(error_exit);
 			}
-			slurm_process_option(&opt, 't', temp, false, false);
+			slurm_process_option_or_exit(&opt, 't', temp, false,
+						     false);
 			xfree(temp);
 		} else if (!xstrncmp(rl+i, "file=", 5)) {
 			int end = 0;
@@ -564,8 +566,8 @@ static void _parse_pbs_resource_list(char *rl)
 				 */
 				temp[end] = '\0';
 			}
-			slurm_process_option(&opt, LONG_OPT_TMP, temp,
-					     false, false);
+			slurm_process_option_or_exit(&opt, LONG_OPT_TMP, temp,
+						     false, false);
 			xfree(temp);
 		} else if (!xstrncmp(rl+i, "host=", 5)) {
 			i+=5;
@@ -587,17 +589,17 @@ static void _parse_pbs_resource_list(char *rl)
 				 */
 				temp[end] = '\0';
 			}
-			slurm_process_option(&opt, LONG_OPT_MEM, temp,
-					     false, false);
+			slurm_process_option_or_exit(&opt, LONG_OPT_MEM, temp,
+						     false, false);
 			xfree(temp);
 		} else if (!xstrncasecmp(rl+i, "mpiprocs=", 9)) {
 			i += 9;
 			temp = _get_pbs_option_value(rl, &i, ':');
 			if (temp) {
 				pbs_pro_flag |= 4;
-				slurm_process_option(&opt,
-						     LONG_OPT_NTASKSPERNODE,
-						     temp, false, false);
+				slurm_process_option_or_exit(
+					&opt, LONG_OPT_NTASKSPERNODE, temp,
+					false, false);
 				xfree(temp);
 			}
 #ifdef HAVE_NATIVE_CRAY
@@ -610,8 +612,8 @@ static void _parse_pbs_resource_list(char *rl)
 			i += 9;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (temp) {
-				slurm_process_option(&opt, 'c', temp,
-						     false, false);
+				slurm_process_option_or_exit(&opt, 'c', temp,
+							     false, false);
 			}
 			xfree(temp);
 		} else if (!xstrncmp(rl + i, "mppnodes=", 9)) {
@@ -622,23 +624,24 @@ static void _parse_pbs_resource_list(char *rl)
 				error("No value given for mppnodes");
 				exit(error_exit);
 			}
-			slurm_process_option(&opt, 'w', temp, false, false);
+			slurm_process_option_or_exit(&opt, 'w', temp, false,
+						     false);
 		} else if (!xstrncmp(rl + i, "mppnppn=", 8)) {
 			/* Cray: number of processing elements per node */
 			i += 8;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (temp)
-				slurm_process_option(&opt,
-						     LONG_OPT_NTASKSPERNODE,
-						     temp, false, false);
+				slurm_process_option_or_exit(
+					&opt, LONG_OPT_NTASKSPERNODE, temp,
+					false, false);
 			xfree(temp);
 		} else if (!xstrncmp(rl + i, "mppwidth=", 9)) {
 			/* Cray: task width (number of processing elements) */
 			i += 9;
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (temp)
-				slurm_process_option(&opt, 'n', temp,
-						     false, false);
+				slurm_process_option_or_exit(&opt, 'n', temp,
+							     false, false);
 			xfree(temp);
 #endif /* HAVE_NATIVE_CRAY */
 		} else if (!xstrncasecmp(rl+i, "naccelerators=", 14)) {
@@ -653,15 +656,17 @@ static void _parse_pbs_resource_list(char *rl)
 			temp = _get_pbs_option_value(rl, &i, ':');
 			if (temp) {
 				pbs_pro_flag |= 2;
-				slurm_process_option(&opt, LONG_OPT_MINCPUS,
-						     temp, false, false);
+				slurm_process_option_or_exit(&opt,
+							     LONG_OPT_MINCPUS,
+							     temp, false,
+							     false);
 				xfree(temp);
 			}
 		} else if (!xstrncmp(rl+i, "nice=", 5)) {
 			i += 5;
 			temp = _get_pbs_option_value(rl, &i, ',');
-			slurm_process_option(&opt, LONG_OPT_NICE, temp,
-					     false, false);
+			slurm_process_option_or_exit(&opt, LONG_OPT_NICE, temp,
+						     false, false);
 			xfree(temp);
 		} else if (!xstrncmp(rl+i, "nodes=", 6)) {
 			i+=6;
@@ -685,7 +690,8 @@ static void _parse_pbs_resource_list(char *rl)
 				error("No value given for pcput");
 				exit(error_exit);
 			}
-			slurm_process_option(&opt, 't', temp, false, false);
+			slurm_process_option_or_exit(&opt, 't', temp, false,
+						     false);
 			xfree(temp);
 		} else if (!xstrncmp(rl+i, "pmem=", 5)) {
 			i+=5;
@@ -695,7 +701,8 @@ static void _parse_pbs_resource_list(char *rl)
 			temp = _get_pbs_option_value(rl, &i, ',');
 			if (opt.constraint)
 				xstrfmtcat(temp, ",%s", opt.constraint);
-			slurm_process_option(&opt, 'C', temp, false, false);
+			slurm_process_option_or_exit(&opt, 'C', temp, false,
+						     false);
 			xfree(temp);
 			_get_next_pbs_option(rl, &i);
 		} else if (!xstrncmp(rl+i, "pvmem=", 6)) {
@@ -706,7 +713,8 @@ static void _parse_pbs_resource_list(char *rl)
 			temp = _get_pbs_option_value(rl, &i, ':');
 			if (temp) {
 				pbs_pro_flag |= 1;
-				slurm_process_option(&opt, 'N', temp, false, false);
+				slurm_process_option_or_exit(&opt, 'N', temp,
+							     false, false);
 				xfree(temp);
 			}
 		} else if (!xstrncmp(rl+i, "software=", 9)) {
@@ -722,7 +730,8 @@ static void _parse_pbs_resource_list(char *rl)
 				error("No value given for walltime");
 				exit(error_exit);
 			}
-			slurm_process_option(&opt, 't', temp, false, false);
+			slurm_process_option_or_exit(&opt, 't', temp, false,
+						     false);
 			xfree(temp);
 		} else
 			i++;
@@ -735,7 +744,7 @@ static void _parse_pbs_resource_list(char *rl)
 		 * like cpus_per_node=10 and ntasks_per_node=8 */
 		int cpus_per_task = opt.pn_min_cpus / opt.ntasks_per_node;
 		temp = xstrdup_printf("%d", cpus_per_task);
-		slurm_process_option(&opt, 'c', temp, false, false);
+		slurm_process_option_or_exit(&opt, 'c', temp, false, false);
 		xfree(temp);
 	}
 	if (gpus > 0) {
@@ -743,7 +752,8 @@ static void _parse_pbs_resource_list(char *rl)
 			temp = xstrdup_printf("%s,gpu:%d", opt.gres, gpus);
 		else
 			temp = xstrdup_printf("gpu:%d", gpus);
-		slurm_process_option(&opt, LONG_OPT_GRES, temp, false, false);
+		slurm_process_option_or_exit(&opt, LONG_OPT_GRES, temp, false,
+					     false);
 		xfree(temp);
 	}
 }
