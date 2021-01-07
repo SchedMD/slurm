@@ -761,7 +761,7 @@ extern jobacctinfo_t *jobacct_gather_remove_task(pid_t pid)
 
 	itr = list_iterator_create(task_list);
 	while((jobacct = list_next(itr))) {
-		if (jobacct->pid == pid) {
+		if (!pid || (jobacct->pid == pid)) {
 			list_remove(itr);
 			break;
 		}
@@ -771,7 +771,8 @@ extern jobacctinfo_t *jobacct_gather_remove_task(pid_t pid)
 		debug2("removing task %u pid %d from jobacct",
 		       jobacct->id.taskid, jobacct->pid);
 	} else {
-		debug2("pid(%d) not being watched in jobacct!", pid);
+		if (pid)
+			debug2("pid(%d) not being watched in jobacct!", pid);
 	}
 error:
 	slurm_mutex_unlock(&task_list_lock);
