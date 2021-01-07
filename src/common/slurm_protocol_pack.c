@@ -2772,6 +2772,8 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpack16(&uint16_tmp, buffer); /* was exclusive */
 		if (uint16_tmp)
 			tmp_ptr->flags |= SSF_EXCLUSIVE;
+		else
+			tmp_ptr->flags |= SSF_WHOLE;
 
 		safe_unpack16(&tmp_ptr->immediate, buffer);
 		safe_unpack16(&tmp_ptr->resv_port_cnt, buffer);
