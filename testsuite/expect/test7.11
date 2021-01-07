@@ -441,3 +441,13 @@ if {[wait_for_file $spank_out] == 0} {
 } else {
 	fail "Spank output file ($spank_out) was not created"
 }
+
+#Test if internal spank option parsing works (Bug 10454)
+set output [run_command_output -timeout 2 -xfail -subtest "$sbatch --test_suite_sbatch=NaN --wrap='/bin/true'"]
+subtest {[regexp "sbatch: error: Non-zero argument required" $output]} "sbatch should print error message from spank"
+
+set output [run_command_output -timeout 2 -xfail -subtest "$salloc --test_suite_sbatch=NaN"]
+subtest {[regexp "salloc: error: Non-zero argument required" $output]} "salloc should print error message from spank"
+
+set output [run_command_output -timeout 2 -xfail -subtest "$srun --test_suite_sbatch=NaN"]
+subtest {[regexp "srun: error: Non-zero argument required" $output]} "srun should print error message from spank"
