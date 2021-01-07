@@ -44,9 +44,7 @@ set test_part        "test$test_id\_part"
 proc cleanup {} {
 	global job_id scontrol test_part bin_rm script
 
-	if {$job_id > 0} {
-		cancel_job $job_id
-	}
+	cancel_job $job_id
 	exec $scontrol delete partition=$test_part
 	exec $bin_rm -fr $script
 }

@@ -39,9 +39,7 @@ set read_priority -1
 proc cleanup {} {
 	global job_id
 
-	if {$job_id != 0} {
-		cancel_job $job_id
-	}
+	cancel_job $job_id
 }
 
 #

@@ -36,9 +36,7 @@ set res_name             "res_$test_name"
 proc cleanup {} {
 	global scontrol res_name job_id
 
-	if {$job_id > 0} {
-		cancel_job $job_id
-	}
+	cancel_job $job_id
 	run_command "$scontrol delete reservation=$res_name"
 }
 

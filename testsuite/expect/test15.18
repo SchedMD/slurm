@@ -53,9 +53,7 @@ expect {
 	}
 	timeout {
 		log_error "salloc not responding"
-		if {$job_id != 0} {
-			cancel_job $job_id
-		}
+		cancel_job $job_id
 		slow_kill [expr 0 - $salloc_pid]
 		set exit_code 1
 	}

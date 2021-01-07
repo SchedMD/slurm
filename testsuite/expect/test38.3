@@ -80,22 +80,12 @@ proc salloc {} {
 	return $job_id
 }
 
-proc cancel_job_id { } {
-	global scancel job_id
-
-	if {$job_id != 0} {
-		exec $scancel $job_id
-	}
-}
-
 proc cleanup { } {
-	global bin_rm file_in
-	global test_id
+	global job_id bin_rm file_in test_id
 
-	cancel_job_id
+	cancel_job $job_id
 
 	exec $bin_rm -f $file_in test$test_id*.out
-	return 0
 }
 
 #start test
@@ -104,7 +94,6 @@ log_info "\n################################################################\n"
 log_info "Salloc hetjob and verify output from scontrol show job"
 log_info "\n################################################################\n"
 
-set job_id 0
 set matches 0
 
 set job_id [salloc]

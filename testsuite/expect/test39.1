@@ -34,9 +34,7 @@ set job_id      0
 proc cleanup {} {
 	global job_id bin_rm file_in file_out
 
-	if {$job_id > 0} {
-		cancel_job $job_id
-	}
+	cancel_job $job_id
 
 	exec $bin_rm -f $file_in $file_out
 }
