@@ -56,9 +56,7 @@ expect {
 		#log_debug "Job initiated"
 	}
 	timeout {
-		if {$job_id != 0} {
-			cancel_job $job_id
-		}
+		cancel_job $job_id
 		slow_kill [expr 0 - $salloc_pid]
 		fail "salloc not responding"
 	}

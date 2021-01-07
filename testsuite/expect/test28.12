@@ -33,9 +33,7 @@ set job_id      0
 proc cleanup {} {
 	global job_id file_script
 
-	if {$job_id != 0} {
-		cancel_job $job_id
-	}
+	cancel_job $job_id
 	file delete $file_script
 }
 

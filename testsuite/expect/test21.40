@@ -127,7 +127,7 @@ proc reason_node_limit {job_id} {
 }
 
 proc run_job_test { } {
-	global file_in cancel_job sbatch scontrol test_acct
+	global file_in sbatch scontrol test_acct
 	global test_part job_qos number re_word_str
 	global nb_nodes exit_code reason_node_limit
 

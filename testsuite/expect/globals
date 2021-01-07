@@ -985,6 +985,9 @@ proc run_command_status args {
 #		1 if jobs are hetjobs and we want to confirm each
 #		component has completed
 #
+# DESCRIPTION
+#	Cancels one or more jobs. A job_id of 0 will be silently ignored.
+#
 # RETURN VALUE
 #	RETURN_SUCCESS if jobs are cancelled, or non-zero value otherwise.
 #
@@ -995,8 +998,7 @@ proc cancel_job { job_id_list {het_job 0}} {
 
 	foreach job_id $job_id_list {
 		if {$job_id == 0} {
-			log_warn "Invalid job_id argument value ($job_id)"
-			return $::RETURN_ERROR
+			continue
 		}
 
 		log_debug "Cancelling $job_id"

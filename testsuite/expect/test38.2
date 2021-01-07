@@ -29,6 +29,7 @@
 
 source ./globals
 
+set job_id       0
 set file_in      "test$test_id.in"
 set file_out     "test$test_id.out"
 
@@ -93,19 +94,10 @@ proc test_env {value} {
 	}
 }
 
-proc cancel_job_id { } {
-	global scancel job_id
-
-	if {$job_id != 0} {
-		exec $scancel $job_id
-	}
-}
-
 proc cleanup { } {
-	global bin_rm file_in file_out
-	global test_id
+	global job_id bin_rm file_in file_out test_id
 
-	cancel_job_id
+	cancel_job $job_id
 
 	exec $bin_rm -f $file_in $file_out test$test_id*.out
 }
@@ -125,7 +117,6 @@ log_info "\n################################################################\n"
 log_info "Submit hetjob and verify output from scontrol show job"
 log_info "\n################################################################\n"
 
-set job_id 0
 sbatch
 if {$job_id == 0} {
 	fail "Error submitting job $job_id"

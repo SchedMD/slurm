@@ -40,9 +40,8 @@ set step_mem_opt         "--mem-per-cpu=4M"
 
 proc cleanup {} {
 	global job_id bin_rm file_in file_out file_err
-	if {$job_id} {
-		cancel_job $job_id
-	}
+
+	cancel_job $job_id
 	exec $bin_rm -f $file_in $file_out $file_err
 }
 

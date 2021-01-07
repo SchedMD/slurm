@@ -40,11 +40,9 @@ set env_pbs_ignore "SBATCH_IGNORE_PBS"
 set env($env_pbs_ignore) 0
 
 proc cleanup {} {
-        global job_id test_id
+	global job_id test_id
 
-        if {$job_id != 0} {
-                cancel_job $job_id
-        }
+	cancel_job $job_id
 }
 
 set available [available_nodes]

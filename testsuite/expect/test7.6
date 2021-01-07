@@ -48,9 +48,7 @@ set timeout       $max_job_delay
 proc cleanup {} {
 	global job_id bin_rm test_prog
 
-	if {$job_id > 0} {
-		cancel_job $job_id
-	}
+	cancel_job $job_id
 	exec $bin_rm -f $test_prog ${test_prog}.o ${test_prog}.TVD.v3breakpoints
 }
 
