@@ -5224,6 +5224,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Accrue");
 	}
+	if (debug_flags & DEBUG_FLAG_JAG) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "JobAccountGather");
+	}
 	if (debug_flags & DEBUG_FLAG_AGENT) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5515,6 +5520,9 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 	while (tok) {
 		if (xstrcasecmp(tok, "Accrue") == 0)
 			(*flags_out) |= DEBUG_FLAG_ACCRUE;
+		if (!xstrcasecmp(tok, "JobAccountGather") ||
+		    !xstrcasecmp(tok, "JAG"))
+			(*flags_out) |= DEBUG_FLAG_JAG;
 		else if (xstrcasecmp(tok, "Agent") == 0)
 			(*flags_out) |= DEBUG_FLAG_AGENT;
 		else if (xstrcasecmp(tok, "Backfill") == 0)
