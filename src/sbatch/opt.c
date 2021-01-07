@@ -168,7 +168,8 @@ static void _opt_early_env(void)
 
 	while (e->var) {
 		if ((val = getenv(e->var)))
-			slurm_process_option(&opt, e->type, val, true, false);
+			slurm_process_option_or_exit(&opt, e->type, val, true,
+						     false);
 		e++;
 	}
 }
@@ -244,7 +245,8 @@ static void _opt_env(void)
 
 	while (e->var) {
 		if ((val = getenv(e->var)) != NULL)
-			slurm_process_option(&opt, e->type, val, true, false);
+			slurm_process_option_or_exit(&opt, e->type, val, true,
+						     false);
 		e++;
 	}
 
@@ -300,7 +302,8 @@ extern char *process_options_first_pass(int argc, char **argv)
 	optind = 0;
 	while ((opt_char = getopt_long(local_argc, local_argv, opt_string,
 				       optz, &option_index)) != -1) {
-		slurm_process_option(&opt, opt_char, optarg, true, true);
+		slurm_process_option_or_exit(&opt, opt_char, optarg, true,
+					     true);
 	}
 	slurm_option_table_destroy(optz);
 	xfree(opt_string);
@@ -638,7 +641,8 @@ static int _set_options(int argc, char **argv)
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
-		slurm_process_option(&opt, opt_char, optarg, false, false);
+		slurm_process_option_or_exit(&opt, opt_char, optarg, false,
+					     false);
 	}
 
 	slurm_option_table_destroy(optz);
