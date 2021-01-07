@@ -546,6 +546,7 @@ env_vars_t env_vars[] = {
   { "SLURM_DISABLE_STATUS", 'X' },
   { "SLURM_DISTRIBUTION", 'm' },
   { "SLURM_EPILOG", LONG_OPT_EPILOG },
+  { "SLURM_EXACT", LONG_OPT_EXACT },
   { "SLURM_EXCLUSIVE", LONG_OPT_EXCLUSIVE },
   { "SLURM_EXPORT_ENV", LONG_OPT_EXPORT },
   { "SRUN_EXPORT_ENV", LONG_OPT_EXPORT }, /* overrides SLURM_EXPORT_ENV */
@@ -901,6 +902,11 @@ static bool _opt_verify(void)
 		opt.burst_buffer = xstrdup(get_buf_data(buf));
 		free_buf(buf);
 		xfree(opt.burst_buffer_file);
+	}
+
+	if (sropt.exact && sropt.whole) {
+		error("--exact and --whole are mutually exclusive.");
+		verified = false;
 	}
 
 	if (sropt.no_alloc && !opt.nodelist) {
@@ -1426,7 +1432,7 @@ static void _usage(void)
 "            [--cpu-bind=...] [--mem-bind=...] [--network=type]\n"
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n] [reservation=name]\n"
 "            [--ntasks-per-core=n] [--mem-per-cpu=MB] [--preserve-env]\n"
-"            [--profile=...] [--whole]\n"
+"            [--profile=...] [--exact]\n"
 "            [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
 "            [--prolog=fname] [--epilog=fname]\n"
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
@@ -1548,8 +1554,6 @@ static void _help(void)
 "  -W, --wait=sec              seconds to wait after first task exits\n"
 "                              before killing job\n"
 "      --wckey=wckey           wckey to run job under\n"
-"      --whole                 Use entire node(s) in the allocation\n"
-"                              for the step\n"
 "  -X, --disable-status        Disable Ctrl-C status feature\n"
 "\n"
 "Constraint options:\n"
@@ -1566,12 +1570,15 @@ static void _help(void)
 "  -Z, --no-allocate           don't allocate nodes (must supply -w)\n"
 "\n"
 "Consumable resources related options:\n"
-"      --exclusive[=user]      allocate nodes in exclusive mode when\n"
-"                              cpu consumable resource is enabled\n"
-"                              or don't share CPUs for job steps\n"
+"      --exact                 use only the resources requested for the step\n"
+"                              (by default, all non-gres resources on each node\n"
+"                              in the allocation will be used in the step)\n"
+"      --exclusive[=user]      for job allocation, this allocates nodes in\n"
+"                              in exclusive mode\n"
+"                              for job steps, this is equivalent to --exact\n"
 "      --exclusive[=mcs]       allocate nodes in exclusive mode when\n"
 "                              cpu consumable resource is enabled\n"
-"                              and mcs plugin is enabled\n"
+"                              and mcs plugin is enabled (--exact implied)\n"
 "                              or don't share CPUs for job steps\n"
 "      --mem-per-cpu=MB        maximum amount of real memory per allocated\n"
 "                              cpu required by the job.\n"

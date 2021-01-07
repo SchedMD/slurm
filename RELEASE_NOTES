@@ -54,15 +54,20 @@ HIGHLIGHTS
     NodeAddr and NodeHostname set from slurmd registration.
  -- SlurmctldParameters=power_save[_min]_interval - Configure how often the
     power save module looks to do work.
- -- By default a step started with srun will get --exclusive behavior meaning
-    no other parallel step will be allowed to run on the same resources at
-    the same time.  To get the previous default behavior which allowed
-    parallel steps to share all resources use the new srun '--overlap' option.
- -- In conjunction to --exclusive behavior being the default for a step there
-    is also another option for step management, --whole, which will allow a
-    step access to all resources of a node in a job allocation.  This will
-    allocate all resources on a node allocated the step. No other parallel
-    step will have access to those unless \-\-overlap is used.
+ -- By default, a step started with srun will be granted exclusive (or non-
+    overlapping) access to the resources assigned to that step. No other
+    parallel step will be allowed to run on the same resources at the same
+    time. This replaces one facet of the '--exclusive' option's behavior, but
+    does not imply the '--exact' option described below. To get the previous
+    default behavior - which allowed parallel steps to share all resources -
+    use the new srun '--overlap' option.
+ -- In conjunction to this non-overlapping step allocation behavior being the
+    new default, there is an additional new option for step management
+    '--exact', which will allow a step access to only those resources requested
+    by the step. This is the second half of the '--exclusive' behavior.
+    Otherwise, by default all non-gres resources on each node in the allocation
+    will be used by the step, making it so no other parallel step will have
+    access to those resources unless both steps have specified '--overlap'.
  -- --threads-per-core now influences task layout/binding, not just allocation.
  -- AutoDetect in gres.conf can now be specified for some nodes while not for
     others via the NodeName option.

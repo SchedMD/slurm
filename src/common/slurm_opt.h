@@ -94,6 +94,7 @@ enum {
 	LONG_OPT_DELAY_BOOT,
 	LONG_OPT_ENVIRONMENT, /* only for data */
 	LONG_OPT_EPILOG,
+	LONG_OPT_EXACT,
 	LONG_OPT_EXCLUSIVE,
 	LONG_OPT_EXPORT,
 	LONG_OPT_EXPORT_FILE,
@@ -242,6 +243,7 @@ typedef struct {
 	bool debugger_test;		/* --debugger-test		*/
 	bool disable_status;		/* --disable-status		*/
 	char *epilog;			/* --epilog			*/
+	bool exact;			/* --exact			*/
 	bool exclusive;			/* --exclusive			*/
 	bool interactive;		/* --interactive		*/
 	uint32_t jobid;			/* --jobid			*/
