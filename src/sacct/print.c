@@ -787,20 +787,20 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_ELAPSED:
 			switch(type) {
 			case JOB:
-				tmp_int = job->elapsed;
+				tmp_uint64 = job->elapsed;
 				break;
 			case JOBSTEP:
-				tmp_int = step->elapsed;
+				tmp_uint64 = step->elapsed;
 				break;
 			case JOBCOMP:
-				tmp_int = job_comp->elapsed_time;
+				tmp_uint64 = job_comp->elapsed_time;
 				break;
 			default:
-				tmp_int = NO_VAL;
+				tmp_uint64 = NO_VAL64;
 				break;
 			}
 			field->print_routine(field,
-					     (uint64_t)tmp_int,
+					     tmp_uint64,
 					     (curr_inx == field_count));
 			break;
 		case PRINT_ELAPSED_RAW:
