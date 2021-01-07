@@ -907,22 +907,25 @@ static void _print_jag_prec(jag_prec_t *prec)
 		NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 		READ_LOCK, NO_LOCK, NO_LOCK };
 
-	info("pid %d (ppid %d)", prec->pid, prec->ppid);
-	info("act_cpufreq\t%d", prec->act_cpufreq);
-	info("ssec \t%f", prec->ssec);
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_JAG))
+		return;
+
+	log_flag(JAG, "pid %d (ppid %d)", prec->pid, prec->ppid);
+	log_flag(JAG, "act_cpufreq\t%d", prec->act_cpufreq);
+	log_flag(JAG, "ssec \t%f", prec->ssec);
 	assoc_mgr_lock(&locks);
 	for (i = 0; i < prec->tres_count; i++) {
 		if (prec->tres_data[i].size_read == INFINITE64)
 			continue;
-		info("%s in/read \t%"PRIu64"",
-		     assoc_mgr_tres_name_array[i],
-		     prec->tres_data[i].size_read);
-		info("%s out/write \t%"PRIu64"",
-		     assoc_mgr_tres_name_array[i],
-		     prec->tres_data[i].size_write);
+		log_flag(JAG, "%s in/read \t%" PRIu64 "",
+			 assoc_mgr_tres_name_array[i],
+			 prec->tres_data[i].size_read);
+		log_flag(JAG, "%s out/write \t%" PRIu64 "",
+			 assoc_mgr_tres_name_array[i],
+			 prec->tres_data[i].size_write);
 	}
 	assoc_mgr_unlock(&locks);
-	info("usec \t%f", prec->usec);
+	log_flag(JAG, "usec \t%f", prec->usec);
 }
 
 extern void jag_common_poll_data(
