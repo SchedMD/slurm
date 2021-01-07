@@ -231,7 +231,7 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 		/* frequency scaling not enabled */
 		if (!cpunfo_frequency) {
 			snprintf(freq_file, 14, "/proc/cpuinfo");
-			log_flag(JAG, "_get_sys_interface_freq_line: filename = %s (cpu scaling not enabled)",
+			log_flag(JAG, "filename = %s (cpu scaling not enabled)",
 			       freq_file);
 			if ((sys_fp = fopen(freq_file, "r")) != NULL) {
 				while (fgets(cpunfo_line, sizeof(cpunfo_line),
@@ -288,12 +288,12 @@ again:
 		error("%s: Tgid: string not found for pid=%u", __func__, pid);
 
 	if (pid != (uint32_t)tgid) {
-		log_flag(JAG, "%s: pid=%u != tgid=%u is a lightweight process",
-			 __func__, pid, tgid);
+		log_flag(JAG, "pid=%u != tgid=%u is a lightweight process",
+			 pid, tgid);
 		return 1;
 	} else {
-		log_flag(JAG, "%s: pid=%u == tgid=%u is the leader LWP",
-			 __func__, pid, tgid);
+		log_flag(JAG, "pid=%u == tgid=%u is the leader LWP",
+			 pid, tgid);
 		return 0;
 	}
 }
@@ -416,7 +416,7 @@ static int _get_process_memory_line(int in, jag_prec_t *prec)
 
 	/* If shared > rss then there is a problem, give up... */
 	if (share > rss) {
-		log_flag(JAG, "jobacct_gather_linux: jobacct_gather_linux: share > rss - bail!");
+		log_flag(JAG, "share > rss - bail!");
 		return 0;
 	}
 
@@ -619,8 +619,7 @@ static List _get_precs(List task_list, bool pgid_plugin, uint64_t cont_id,
 					jobacct->energy.consumed_energy;
 				jobacct->tres_usage_out_tot[TRES_ARRAY_ENERGY] =
 					jobacct->energy.current_watts;
-				log_flag(JAG, "%s: energy = %"PRIu64" watts = %"PRIu64,
-					 __func__,
+				log_flag(JAG, "energy = %"PRIu64" watts = %"PRIu64,
 					 jobacct->tres_usage_in_tot[
 						TRES_ARRAY_ENERGY],
 					 jobacct->tres_usage_out_tot[
@@ -1023,8 +1022,7 @@ extern void jag_common_poll_data(
 				jobacct->energy.consumed_energy;
 			prec->tres_data[TRES_ARRAY_ENERGY].size_write =
 				jobacct->energy.current_watts;
-			log_flag(JAG, "%s: energy = %"PRIu64" watts = %"PRIu64" ave_watts = %u",
-				 __func__,
+			log_flag(JAG, "energy = %"PRIu64" watts = %"PRIu64" ave_watts = %u",
 				 prec->tres_data[TRES_ARRAY_ENERGY].size_read,
 				 prec->tres_data[TRES_ARRAY_ENERGY].size_write,
 				 jobacct->energy.ave_watts);
@@ -1085,8 +1083,7 @@ extern void jag_common_poll_data(
 		jobacct->act_cpufreq =
 			_update_weighted_freq(jobacct, sbuf);
 
-		log_flag(JAG, "%s: Task %u pid %d ave_freq = %u mem size/max %"PRIu64"/%"PRIu64" vmem size/max %"PRIu64"/%"PRIu64", disk read size/max (%"PRIu64"/%"PRIu64"), disk write size/max (%"PRIu64"/%"PRIu64"), time %f(%u+%u) Energy tot/max %"PRIu64"/%"PRIu64" TotPower %"PRIu64" MaxPower %"PRIu64" MinPower %"PRIu64,
-			 __func__,
+		log_flag(JAG, "Task %u pid %d ave_freq = %u mem size/max %"PRIu64"/%"PRIu64" vmem size/max %"PRIu64"/%"PRIu64", disk read size/max (%"PRIu64"/%"PRIu64"), disk write size/max (%"PRIu64"/%"PRIu64"), time %f(%u+%u) Energy tot/max %"PRIu64"/%"PRIu64" TotPower %"PRIu64" MaxPower %"PRIu64" MinPower %"PRIu64,
 			 jobacct->id.taskid,
 			 jobacct->pid,
 			 jobacct->act_cpufreq,
