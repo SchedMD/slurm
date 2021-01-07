@@ -69,7 +69,7 @@ proc test_flex {use_flex submit_active} {
 	cleanup
 	if {$submit_active} {
 		setup $use_flex ""
-		wait_for {[get_resvation_param $res_name State] eq "ACTIVE"} {}
+		wait_for {[get_reservation_param $res_name State] eq "ACTIVE"} {}
 	} else {
 		setup $use_flex "+5"
 	}
@@ -95,7 +95,7 @@ proc test_flex {use_flex submit_active} {
 	cleanup
 	if {$submit_active} {
 		setup $use_flex ""
-		wait_for {[get_resvation_param $res_name State] eq "ACTIVE"} {}
+		wait_for {[get_reservation_param $res_name State] eq "ACTIVE"} {}
 	} else {
 		setup $use_flex "+5"
 	}

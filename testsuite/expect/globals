@@ -5399,19 +5399,19 @@ proc get_reservations { {resv_name ""} } {
 ################################################################
 #
 # NAME
-#	get_resvation_param - returns a specific parameter value for a specific reservation
+#	get_reservation_param - returns a specific parameter value for a specific reservation
 #
 # SYNOPSIS
-#	get_resvation_param resv_name parameter_name
+#	get_reservation_param resv_name parameter_name
 #
 # DESCRIPTION
-#	Returns a specific parameter value for a specified resvation if the
-#	parameter exists for the resvation, or MISSING if it does not exist.
-#	Specifying an invalid resvation name will result in a failure.
+#	Returns a specific parameter value for a specified reservation if the
+#	parameter exists for the reservation, or MISSING if it does not exist.
+#	Specifying an invalid reservation name will result in a failure.
 #
 ################################################################
 
-proc get_resvation_param { resv_name parameter_name } {
+proc get_reservation_param { resv_name parameter_name } {
 
 	set resvs_dict [get_reservations $resv_name]
 
