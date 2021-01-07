@@ -65,7 +65,7 @@ struct spank_option spank_options_reg[] =
 {
 	{ "test_suite_sbatch",
 	  "[opt_arg_sbatch]",
-	  "Registered component of slurm test suite.",
+	  "Registered component of slurm test suite. Has to be non-zero int",
 	  2,
 	  0,
 	  _test_opt_process_sbatch
@@ -85,6 +85,12 @@ static int _test_opt_process_srun(int val, const char *optarg, int remote)
 static int _test_opt_process_sbatch(int val, const char *optarg, int remote)
 {
 	opt_arg_sbatch = atoi(optarg);
+	/* Verify if option is a non-zero number */
+	if (!opt_arg_sbatch) {
+		slurm_error("Non-zero argument required");
+		return -1;
+	}
+
 	if (!remote)
 		slurm_info("%s: opt_arg_sbatch=%d", __func__, opt_arg_sbatch);
 
