@@ -1444,54 +1444,31 @@ extern void
 cpu_freq_govlist_to_string(char* buf, uint16_t bufsz, uint32_t govs)
 {
 	char *list = NULL;
+	char *sep = "", *pos = NULL;
 
 	if ((govs & CPU_FREQ_CONSERVATIVE) == CPU_FREQ_CONSERVATIVE) {
-		if (list == NULL)
-			list = xstrdup("Conservative");
-		else {
-			xstrcatchar(list,',');
-			xstrcat(list,"Conservative");
-		}
+		xstrfmtcatat(list, &pos, "%s%s", sep, "Conservative");
+		sep = ",";
 	}
 	if ((govs & CPU_FREQ_PERFORMANCE) == CPU_FREQ_PERFORMANCE) {
-		if (list == NULL)
-			list = xstrdup("Performance");
-		else {
-			xstrcatchar(list,',');
-			xstrcat(list,"Performance");
-		}
+		xstrfmtcatat(list, &pos, "%s%s", sep, "Performance");
+		sep = ",";
 	}
 	if ((govs & CPU_FREQ_POWERSAVE) == CPU_FREQ_POWERSAVE) {
-		if (list == NULL)
-			list = xstrdup("PowerSave");
-		else {
-			xstrcatchar(list,',');
-			xstrcat(list,"PowerSave");
-		}
+		xstrfmtcatat(list, &pos, "%s%s", sep, "PowerSave");
+		sep = ",";
 	}
 	if ((govs & CPU_FREQ_ONDEMAND) == CPU_FREQ_ONDEMAND) {
-		if (list == NULL)
-			list = xstrdup("OnDemand");
-		else {
-			xstrcatchar(list,',');
-			xstrcat(list,"OnDemand");
-		}
+		xstrfmtcatat(list, &pos, "%s%s", sep, "OnDemand");
+		sep = ",";
 	}
 	if ((govs & CPU_FREQ_SCHEDUTIL) == CPU_FREQ_SCHEDUTIL) {
-		if (!list)
-			list = xstrdup("SchedUtil");
-		else {
-			xstrcatchar(list,',');
-			xstrcat(list,"SchedUtil");
-		}
+		xstrfmtcatat(list, &pos, "%s%s", sep, "SchedUtil");
+		sep = ",";
 	}
 	if ((govs & CPU_FREQ_USERSPACE) == CPU_FREQ_USERSPACE) {
-		if (list == NULL)
-			list = xstrdup("UserSpace");
-		else {
-			xstrcatchar(list,',');
-			xstrcat(list,"UserSpace");
-		}
+		xstrfmtcatat(list, &pos, "%s%s", sep, "UserSpace");
+		sep = ",";
 	}
 
 	if (list) {
