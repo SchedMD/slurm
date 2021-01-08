@@ -1450,16 +1450,16 @@ cpu_freq_govlist_to_string(char* buf, uint16_t bufsz, uint32_t govs)
 		xstrfmtcatat(list, &pos, "%s%s", sep, "Conservative");
 		sep = ",";
 	}
+	if ((govs & CPU_FREQ_ONDEMAND) == CPU_FREQ_ONDEMAND) {
+		xstrfmtcatat(list, &pos, "%s%s", sep, "OnDemand");
+		sep = ",";
+	}
 	if ((govs & CPU_FREQ_PERFORMANCE) == CPU_FREQ_PERFORMANCE) {
 		xstrfmtcatat(list, &pos, "%s%s", sep, "Performance");
 		sep = ",";
 	}
 	if ((govs & CPU_FREQ_POWERSAVE) == CPU_FREQ_POWERSAVE) {
 		xstrfmtcatat(list, &pos, "%s%s", sep, "PowerSave");
-		sep = ",";
-	}
-	if ((govs & CPU_FREQ_ONDEMAND) == CPU_FREQ_ONDEMAND) {
-		xstrfmtcatat(list, &pos, "%s%s", sep, "OnDemand");
 		sep = ",";
 	}
 	if ((govs & CPU_FREQ_SCHEDUTIL) == CPU_FREQ_SCHEDUTIL) {
