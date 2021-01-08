@@ -1470,8 +1470,10 @@ static slurm_cli_opt_t slurm_opt_exclude = {
 static int arg_set_exclusive(slurm_opt_t *opt, const char *arg)
 {
 	if (!arg || !xstrcasecmp(arg, "exclusive")) {
-		if (opt->srun_opt)
+		if (opt->srun_opt) {
 			opt->srun_opt->exclusive = true;
+			opt->srun_opt->exact = true;
+		}
 		opt->shared = JOB_SHARED_NONE;
 	} else if (!xstrcasecmp(arg, "oversubscribe")) {
 		opt->shared = JOB_SHARED_OK;
@@ -1496,8 +1498,10 @@ static int arg_set_data_exclusive(slurm_opt_t *opt, const data_t *arg,
 		ADD_DATA_ERROR("Unable to read string", rc);
 	else {
 		if (!str || !xstrcasecmp(str, "exclusive")) {
-			if (opt->srun_opt)
+			if (opt->srun_opt) {
 				opt->srun_opt->exclusive = true;
+				opt->srun_opt->exact = true;
+			}
 			opt->shared = JOB_SHARED_NONE;
 		} else if (!xstrcasecmp(str, "oversubscribe")) {
 			opt->shared = JOB_SHARED_OK;
@@ -1544,6 +1548,16 @@ static slurm_cli_opt_t slurm_opt_exclusive = {
 	.get_func = arg_get_exclusive,
 	.reset_func = arg_reset_shared,
 	.reset_each_pass = true,
+};
+
+COMMON_SRUN_BOOL_OPTION(exact);
+static slurm_cli_opt_t slurm_opt_exact = {
+	.name = "exact",
+	.has_arg = no_argument,
+	.val = LONG_OPT_EXACT,
+	.set_func_srun = arg_set_exact,
+	.get_func = arg_get_exact,
+	.reset_func = arg_reset_exact,
 };
 
 static int arg_set_export(slurm_opt_t *opt, const char *arg)
@@ -4919,6 +4933,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_distribution,
 	&slurm_opt_epilog,
 	&slurm_opt_error,
+	&slurm_opt_exact,
 	&slurm_opt_exclude,
 	&slurm_opt_exclusive,
 	&slurm_opt_export,

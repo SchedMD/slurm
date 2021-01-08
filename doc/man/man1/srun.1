@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "December 2020" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "January 2021" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -753,6 +753,13 @@ SLURM_NTASKS through to the \fIexecutable\fR, rather than computing them
 from commandline parameters. This option applies to job allocations.
 
 .TP
+\fB\-\-exact\fR
+Allow a step access to only the resources requested for the step.
+By default, all non-GRES resources on each node in the step allocation will be
+used. Note that no other parallel step will have access to those resources
+unless \-\-overlap is specified. This option applies to step allocations.
+
+.TP
 \fB\-\-epilog\fR=<\fIexecutable\fR>
 \fBsrun\fR will run \fIexecutable\fR just after the job step completes.
 The command line arguments for \fIexecutable\fR will be the command
@@ -772,11 +779,11 @@ The default shared/exclusive behavior depends on system configuration and the
 partition's \fBOverSubscribe\fR option takes precedence over the job's option.
 
 This option can also be used when initiating more than one job step within
-an existing resource allocation, where you want separate processors to
+an existing resource allocation (default), where you want separate processors to
 be dedicated to each job step. If sufficient processors are not
 available to initiate the job step, it will be deferred. This can
 be thought of as providing a mechanism for resource management to the job
-within its allocation.
+within its allocation (\fB\-\-exact\fR implied).
 
 The exclusive allocation of CPUs applies to job steps by default. In order to
 share the resources use the \fB\-\-overlap\fR option.
@@ -2387,13 +2394,6 @@ step allocations.
 \fB\-\-wckey\fR=<\fIwckey\fR>
 Specify wckey to be used with job.  If TrackWCKey=no (default) in the
 slurm.conf this value is ignored. This option applies to job allocations.
-
-.TP
-\fB\-\-whole\fR
-Allow step access to all resources of a node in a job allocation.  This will
-allocate all resources on a node allocated the step. No other parallel step will
-have access to those unless \-\-overlap is used. This option applies to step
-allocations.
 
 .TP
 \fB\-X\fR, \fB\-\-disable\-status\fR
