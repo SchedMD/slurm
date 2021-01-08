@@ -1502,6 +1502,8 @@ extern char *log_build_step_id_str(
 	xassert(buf);
 	xassert(buf_size > 1);
 
+	buf[pos] = '\0';
+
 	if (flags & STEP_ID_FLAG_SPACE)
 		buf[pos++] = ' ';
 
