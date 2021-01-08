@@ -1473,6 +1473,10 @@ static void _dump_job_state(job_record_t *dump_job_ptr, buf_t *buffer)
 				   dump_job_ptr->job_id, true,
 				   SLURM_PROTOCOL_VERSION);
 
+	(void) gres_job_state_pack(dump_job_ptr->gres_list_alloc,
+				   buffer, dump_job_ptr->job_id,
+				   true, SLURM_PROTOCOL_VERSION);
+
 	/* Dump job details, if available */
 	detail_ptr = dump_job_ptr->details;
 	if (detail_ptr) {
@@ -1549,7 +1553,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	char *batch_features = NULL, *system_comment = NULL;
 	uint32_t task_id_size = NO_VAL;
 	char **spank_job_env = (char **) NULL;
-	List gres_list = NULL, part_ptr_list = NULL;
+	List gres_list = NULL, gres_list_alloc = NULL, part_ptr_list = NULL;
 	job_record_t *job_ptr = NULL;
 	part_record_t *part_ptr;
 	int error_code, i, qos_error, rc;
@@ -1737,6 +1741,12 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 					  protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		gres_job_state_log(gres_list, job_id);
+
+		if (gres_job_state_unpack(&gres_list_alloc, buffer,
+					  job_id, protocol_version) !=
+		    SLURM_SUCCESS)
+			goto unpack_error;
+		gres_job_state_log(gres_list_alloc, job_id);
 
 		safe_unpack16(&details, buffer);
 		if ((details == DETAILS_FLAG) &&
@@ -2353,6 +2363,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	job_ptr->gres_used    = gres_used;
 	gres_used             = NULL;  /* reused, nothing left to free */
 	job_ptr->gres_list    = gres_list;
+	job_ptr->gres_list_alloc = gres_list_alloc;
 	job_ptr->site_factor = site_factor;
 	job_ptr->direct_set_prio = direct_set_prio;
 	job_ptr->db_index     = db_index;
@@ -4637,6 +4648,10 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	if (job_ptr->gres_list) {
 		job_ptr_pend->gres_list =
 			gres_job_state_dup(job_ptr->gres_list);
+	}
+	if (job_ptr->gres_list_alloc) {
+		job_ptr_pend->gres_list_alloc =
+			gres_job_state_dup(job_ptr->gres_list_alloc);
 	}
 	job_ptr_pend->gres_detail_cnt = 0;
 	job_ptr_pend->gres_detail_str = NULL;
@@ -9645,6 +9660,7 @@ static void _list_delete_job(void *job_entry)
 	_clear_job_gres_details(job_ptr);
 	xfree(job_ptr->gres_used);
 	FREE_NULL_LIST(job_ptr->gres_list);
+	FREE_NULL_LIST(job_ptr->gres_list_alloc);
 	xfree(job_ptr->licenses);
 	FREE_NULL_LIST(job_ptr->license_list);
 	xfree(job_ptr->limit_set.tres);
@@ -15772,6 +15788,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	xfree(job_ptr->nodes_completing);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
+	FREE_NULL_LIST(job_ptr->gres_list_alloc);
 
 	job_resv_clear_magnetic_flag(job_ptr);
 

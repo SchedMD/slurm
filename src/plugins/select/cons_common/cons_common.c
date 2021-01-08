@@ -1860,6 +1860,11 @@ extern int select_p_select_nodeinfo_set(job_record_t *job_ptr)
 
 	gres_job_state_log(job_ptr->gres_list, job_ptr->job_id);
 
+	if ((slurm_conf.debug_flags & DEBUG_FLAG_GRES) &&
+	    job_ptr->gres_list_alloc)
+		info("Alloc GRES");
+	gres_job_state_log(job_ptr->gres_list_alloc, job_ptr->job_id);
+
 	return rc;
 }
 

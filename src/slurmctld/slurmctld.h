@@ -731,6 +731,8 @@ struct job_record {
 	front_end_record_t *front_end_ptr; /* Pointer to front-end node running
 					 * this job */
 	List gres_list;			/* generic resource allocation detail */
+	List gres_list_alloc;		/* Allocated generic resource allocation
+					 * detail */
 	uint32_t gres_detail_cnt;	/* Count of gres_detail_str records,
 					 * one per allocated node */
 	char **gres_detail_str;		/* Details of GRES index alloc per node */

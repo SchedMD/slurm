@@ -3667,6 +3667,11 @@ extern int select_p_job_begin(job_record_t *job_ptr)
 		rc = _add_job_to_nodes(cr_ptr, job_ptr, "select_p_job_begin", 1);
 
 	gres_job_state_log(job_ptr->gres_list, job_ptr->job_id);
+
+	if ((slurm_conf.debug_flags & DEBUG_FLAG_GRES) &&
+	    job_ptr->gres_list_alloc)
+		info("Alloc GRES");
+	gres_job_state_log(job_ptr->gres_list_alloc, job_ptr->job_id);
 	slurm_mutex_unlock(&cr_mutex);
 	return rc;
 }
