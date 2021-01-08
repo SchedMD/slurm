@@ -609,7 +609,6 @@ env_vars_t env_vars[] = {
   { "SLURM_WAIT", 'W' },
   { "SLURM_WAIT4SWITCH", LONG_OPT_SWITCH_WAIT },
   { "SLURM_WCKEY", LONG_OPT_WCKEY },
-  { "SLURM_WHOLE", LONG_OPT_WHOLE },
   { "SLURM_WORKING_DIR", 'D' },
   { "SLURMD_DEBUG", LONG_OPT_SLURMD_DEBUG },
   { NULL }
