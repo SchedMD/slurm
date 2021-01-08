@@ -6751,12 +6751,12 @@ proc _test_init {} {
 	global _testproc_included _testproc_excluded argv
 
 	# parse argv to get and remove _testproc_included and _testproc_excluded params
-	set idx [lsearch $argv -i]
+	set idx [expr {[info exists argv] ? [lsearch $argv -i] : -1}]
 	if {$idx >= 0} {
 		set _testproc_included [split [lindex $argv [expr $idx + 1]] ,]
 		set argv [lreplace $argv $idx [expr $idx + 1]]
 	}
-	set idx [lsearch $argv -e]
+	set idx [expr {[info exists argv] ? [lsearch $argv -e] : -1}]
 	if {$idx >= 0} {
 		set _testproc_excluded [split [lindex $argv [expr $idx + 1]] ,]
 		set argv [lreplace $argv $idx [expr $idx + 1]]
@@ -6846,6 +6846,11 @@ rename exit __exit
 
 proc exit { {status 0} } {
 	global test_name
+
+	# To avoid failures when using "expect -c 'source globals'"
+	if {$test_name eq "globals"} {
+		pass
+	}
 
 	#
 	# Minor sanity check to detect if exit was explicitly called (not
