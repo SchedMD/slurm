@@ -9093,7 +9093,6 @@ static void _step_state_log(void *gres_data, slurm_step_id_t *step_id,
 extern void gres_step_state_log(List gres_list, uint32_t job_id,
 				uint32_t step_id)
 {
-	int i;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr;
 	slurm_step_id_t tmp_step_id;
@@ -9107,19 +9106,12 @@ extern void gres_step_state_log(List gres_list, uint32_t job_id,
 	tmp_step_id.step_het_comp = NO_VAL;
 	tmp_step_id.step_id = step_id;
 
-	slurm_mutex_lock(&gres_context_lock);
 	gres_iter = list_iterator_create(gres_list);
 	while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-		for (i = 0; i < gres_context_cnt; i++) {
-			if (gres_ptr->plugin_id != gres_context[i].plugin_id)
-				continue;
-			_step_state_log(gres_ptr->gres_data, &tmp_step_id,
-					gres_context[i].gres_name);
-			break;
-		}
+		_step_state_log(gres_ptr->gres_data, &tmp_step_id,
+				gres_ptr->gres_name);
 	}
 	list_iterator_destroy(gres_iter);
-	slurm_mutex_unlock(&gres_context_lock);
 }
 
 /*
