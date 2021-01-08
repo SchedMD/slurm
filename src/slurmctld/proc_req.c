@@ -2168,8 +2168,10 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 			      __func__, job_ptr);
 			step_ptr = build_batch_step(job_ptr);
 		}
-
-		if (step_ptr->step_id.step_id != SLURM_BATCH_SCRIPT) {
+		if (!step_ptr) {
+			error("%s: %pJ Can't create batch step. This should never happen.",
+			      __func__, job_ptr);
+		} else if (step_ptr->step_id.step_id != SLURM_BATCH_SCRIPT) {
 			error("%s: %pJ Didn't find batch step, found step %u. This should never happen.",
 			      __func__, job_ptr, step_ptr->step_id.step_id);
 		} else {

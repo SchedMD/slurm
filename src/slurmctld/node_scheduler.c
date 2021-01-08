@@ -2950,8 +2950,14 @@ extern void launch_prolog(job_record_t *job_ptr)
 	/* At least on a Cray we have to treat this as a real step, so
 	 * this is where to do it.
 	 */
-	if (slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN)
-		select_g_step_start(build_extern_step(job_ptr));
+	if (slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN) {
+		step_record_t *step_ptr = build_extern_step(job_ptr);
+		if (step_ptr)
+			select_g_step_start(step_ptr);
+		else
+			error("%s: build_extern_step failure for %pJ",
+			      __func__, job_ptr);
+	}
 
 	/* Launch the RPC via agent */
 	agent_queue_request(agent_arg_ptr);

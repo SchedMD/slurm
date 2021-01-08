@@ -2336,7 +2336,10 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		debug("%s: interactive step requested", __func__);
 		*new_step_record = _build_interactive_step(job_ptr, step_specs,
 							   protocol_version);
-		return SLURM_SUCCESS;
+		if (*new_step_record)
+			return SLURM_SUCCESS;
+		else
+			return ESLURM_DUPLICATE_STEP_ID;
 	}
 
 	task_dist = step_specs->task_dist & SLURM_DIST_STATE_BASE;
@@ -4527,6 +4530,11 @@ extern step_record_t *build_extern_step(job_record_t *job_ptr)
 	node_list = job_ptr->nodes;
 	node_cnt = job_ptr->node_cnt;
 #endif
+	if (!step_ptr) {
+		error("%s: Can't create step_record! This should never happen",
+		      __func__);
+		return NULL;
+	}
 
 	step_ptr->step_layout = fake_slurm_step_layout_create(
 		node_list, NULL, NULL, node_cnt, node_cnt);
@@ -4567,6 +4575,12 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 		job_ptr = job_ptr_in;
 
 	step_ptr = _create_step_record(job_ptr, 0);
+
+	if (!step_ptr) {
+		error("%s: Can't create step_record! This should never happen",
+		      __func__);
+		return NULL;
+	}
 
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr =
@@ -4617,6 +4631,7 @@ static step_record_t *_build_interactive_step(
 	job_record_t *job_ptr;
 	step_record_t *step_ptr;
 	char *host = NULL;
+	slurm_step_id_t step_id = {0};
 
 	if (job_ptr_in->het_job_id) {
 		job_ptr = find_job_record(job_ptr_in->het_job_id);
@@ -4628,7 +4643,15 @@ static step_record_t *_build_interactive_step(
 	} else
 		job_ptr = job_ptr_in;
 
-	step_ptr = _create_step_record(job_ptr, protocol_version);
+	step_id.job_id = job_ptr->job_id;
+	step_id.step_id = SLURM_INTERACTIVE_STEP,
+	step_id.step_het_comp = NO_VAL;
+	step_ptr = find_step_record(job_ptr, &step_id);
+	if (step_ptr) {
+		debug("%s: interactive step for %pJ already exists",
+		      __func__, job_ptr);
+		return NULL;
+	}
 
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr =
@@ -4643,6 +4666,20 @@ static step_record_t *_build_interactive_step(
 #else
 		host = job_ptr->batch_host;
 #endif
+	if (!host) {
+		error("%s: %pJ batch_host is NULL! This should never happen",
+		      __func__, job_ptr);
+		return NULL;
+	}
+
+	step_ptr = _create_step_record(job_ptr, protocol_version);
+
+	if (!step_ptr) {
+		error("%s: Can't create step_record! This should never happen",
+		      __func__);
+		return NULL;
+	}
+
 	step_ptr->step_layout = fake_slurm_step_layout_create(
 		host, NULL, NULL, 1, 1);
 	step_ptr->ext_sensors = ext_sensors_alloc();
@@ -4665,6 +4702,8 @@ static step_record_t *_build_interactive_step(
 			     &step_ptr->step_node_bitmap)) {
 		error("%s: %pJ has invalid node list (%s)",
 		      __func__, job_ptr, job_ptr->batch_host);
+		delete_step_record(job_ptr, step_ptr);
+		return NULL;
 	}
 #endif
 
