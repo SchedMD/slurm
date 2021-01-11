@@ -945,8 +945,8 @@ static bool _opt_verify(void)
 			opt.nodes_set = false;
 	}
 
-	validate_hint_option(&opt);
-	if (opt.hint) {
+	if (opt.hint &&
+	    !validate_hint_option(&opt)) {
 		if(sropt.cpu_bind_type & ~CPU_BIND_VERBOSE)
 		       fatal("--hint and --cpu-bind (other than --cpu-bind=verbose) are mutually exclusive.");
 		xassert(opt.ntasks_per_core == NO_VAL);

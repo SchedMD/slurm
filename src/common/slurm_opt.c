@@ -5602,13 +5602,15 @@ extern void validate_memory_options(slurm_opt_t *opt)
 	}
 }
 
-extern void validate_hint_option(slurm_opt_t *opt)
+extern int validate_hint_option(slurm_opt_t *opt)
 {
 	if (slurm_option_set_by_cli(opt, LONG_OPT_HINT) &&
 	    (slurm_option_set_by_cli(opt, LONG_OPT_NTASKSPERCORE) ||
 	     slurm_option_set_by_cli(opt, LONG_OPT_THREADSPERCORE) ||
 	     slurm_option_set_by_cli(opt, 'B')) ) {
-		fatal("Following options are mutually exclusive: --hint, --ntasks-per-core, --threads-per-core, -B.");
+		if (opt->verbose)
+			info("Following options are mutually exclusive: --hint, --ntasks-per-core, --threads-per-core, -B. Ignoring --hint.");
+		return SLURM_ERROR;
 	} else if (slurm_option_set_by_cli(opt, LONG_OPT_HINT)) {
 		slurm_option_reset(opt, "ntasks-per-core");
 		slurm_option_reset(opt, "threads-per-core");
@@ -5617,12 +5619,16 @@ extern void validate_hint_option(slurm_opt_t *opt)
 		   slurm_option_set_by_cli(opt, LONG_OPT_THREADSPERCORE) ||
 		   slurm_option_set_by_cli(opt, 'B')) {
 		slurm_option_reset(opt, "hint");
+		return SLURM_ERROR;
 	} else if (slurm_option_set_by_env(opt, LONG_OPT_HINT) &&
 		   (slurm_option_set_by_env(opt, LONG_OPT_NTASKSPERCORE) ||
 		    slurm_option_set_by_env(opt, LONG_OPT_THREADSPERCORE) ||
 		    slurm_option_set_by_env(opt, 'B'))) {
-		fatal("Following options are mutually exclusive: --hint, --ntasks-per-core, --threads-per-core, -B, but more than one set by environment variables.");
+		if (opt->verbose)
+			info("Following options are mutually exclusive: --hint, --ntasks-per-core, --threads-per-core, -B, but more than one set by environment variables. Ignoring SLURM_HINT.");
+		return SLURM_ERROR;
 	}
+	return SLURM_SUCCESS;
 }
 
 static void _validate_ntasks_per_gpu(slurm_opt_t *opt)
