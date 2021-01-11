@@ -21,7 +21,8 @@ AC_DEFUN([X_AC_JWT], [
   AC_ARG_WITH(
     [jwt],
     AS_HELP_STRING(--with-jwt=PATH,Specify path to jwt installation),
-    [AS_IF([test "x$with_jwt" != xno],[_x_ac_jwt_dirs="$with_jwt $_x_ac_jwt_dirs"])])
+    [AS_IF([test "x$with_jwt" != xno && test "x$with_jwt" != xyes],
+           [_x_ac_jwt_dirs="$with_jwt"])])
 
   if [test "x$with_jwt" = xno]; then
     AC_MSG_WARN([support for jwt disabled])
@@ -49,7 +50,11 @@ AC_DEFUN([X_AC_JWT], [
       ])
 
     if test -z "$x_ac_cv_jwt_dir"; then
-      AC_MSG_WARN([unable to locate jwt library])
+      if test -z "$with_jwt"; then
+        AC_MSG_WARN([unable to locate jwt library])
+      else
+        AC_MSG_ERROR([unable to locate jwt library])
+      fi
     else
       AC_DEFINE([HAVE_JWT], [1], [Define if you are compiling with jwt.])
       JWT_CPPFLAGS="-I$x_ac_cv_jwt_dir/include"

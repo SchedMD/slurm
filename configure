@@ -19538,8 +19538,8 @@ fi
 
 # Check whether --with-jwt was given.
 if test "${with_jwt+set}" = set; then :
-  withval=$with_jwt; if test "x$with_jwt" != xno; then :
-  _x_ac_jwt_dirs="$with_jwt $_x_ac_jwt_dirs"
+  withval=$with_jwt; if test "x$with_jwt" != xno && test "x$with_jwt" != xyes; then :
+  _x_ac_jwt_dirs="$with_jwt"
 fi
 fi
 
@@ -19596,8 +19596,12 @@ fi
 $as_echo "$x_ac_cv_jwt_dir" >&6; }
 
     if test -z "$x_ac_cv_jwt_dir"; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate jwt library" >&5
+      if test -z "$with_jwt"; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate jwt library" >&5
 $as_echo "$as_me: WARNING: unable to locate jwt library" >&2;}
+      else
+        as_fn_error $? "unable to locate jwt library" "$LINENO" 5
+      fi
     else
 
 $as_echo "#define HAVE_JWT 1" >>confdefs.h
