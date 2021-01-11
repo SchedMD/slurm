@@ -900,7 +900,7 @@ extern void destroy_jag_prec(void *object)
 	return;
 }
 
-extern void print_jag_prec(jag_prec_t *prec)
+static void _print_jag_prec(jag_prec_t *prec)
 {
 	int i;
 	assoc_mgr_lock_t locks = {
@@ -982,8 +982,10 @@ extern void jag_common_poll_data(
 		 * make sure we call it once per task, so call it here as we
 		 * iterate through the tasks instead of in get_precs.
 		 */
-		if (callbacks->prec_extra)
+		if (callbacks->prec_extra) {
 			(*(callbacks->prec_extra))(prec, jobacct->id.taskid);
+			_print_jag_prec(prec);
+		}
 
 		log_flag(JAG, "pid:%u ppid:%u %s:%" PRIu64 " B",
 			 prec->pid, prec->ppid,

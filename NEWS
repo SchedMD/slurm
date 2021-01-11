@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
  -- Reset job eligible time when job is manually held.
  -- Add DEBUG_FLAG_JAG to improve logging related to job account gathering.
  -- Convert logging in account_gather/common to DEBUG_FLAG_JAG.
+ -- Add more logging for jag_common_poll_data() when prec_extra() called.
 
 * Changes in Slurm 20.11.3
 ==========================

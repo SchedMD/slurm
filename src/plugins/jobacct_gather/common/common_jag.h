@@ -67,7 +67,6 @@ typedef struct jag_callbacks {
 extern void jag_common_init(long in_hertz);
 extern void jag_common_fini(void);
 extern void destroy_jag_prec(void *object);
-extern void print_jag_prec(jag_prec_t *prec);
 
 extern void jag_common_poll_data(
 	List task_list, bool pgid_plugin, uint64_t cont_id,
