@@ -19724,8 +19724,8 @@ fi
 
 # Check whether --with-yaml was given.
 if test "${with_yaml+set}" = set; then :
-  withval=$with_yaml; if test "x$with_yaml" != xno; then :
-  _x_ac_yaml_dirs="$with_yaml $_x_ac_yaml_dirs"
+  withval=$with_yaml; if test "x$with_yaml" != xno && test "x$with_yaml" != xyes; then :
+  _x_ac_yaml_dirs="$with_yaml"
 fi
 fi
 
@@ -19781,8 +19781,12 @@ fi
 $as_echo "$x_ac_cv_yaml_dir" >&6; }
 
 		if test -z "$x_ac_cv_yaml_dir"; then
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate libyaml parser library" >&5
+			if test -z "$with_yaml"; then
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate libyaml parser library" >&5
 $as_echo "$as_me: WARNING: unable to locate libyaml parser library" >&2;}
+			else
+				as_fn_error $? "unable to locate libyaml parser library" "$LINENO" 5
+			fi
 		else
 
 $as_echo "#define HAVE_YAML 1" >>confdefs.h

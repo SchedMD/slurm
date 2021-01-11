@@ -20,7 +20,8 @@ AC_DEFUN([X_AC_YAML], [
 	AC_ARG_WITH(
 		[yaml],
 		AS_HELP_STRING(--with-yaml=PATH,Specify path to libyaml installation),
-		[AS_IF([test "x$with_yaml" != xno],[_x_ac_yaml_dirs="$with_yaml $_x_ac_yaml_dirs"])])
+		[AS_IF([test "x$with_yaml" != xno && test "x$with_yaml" != xyes],
+           [_x_ac_yaml_dirs="$with_yaml"])])
 
 	if [test "x$with_yaml" = xno]; then
 		AC_MSG_WARN([support for libyaml disabled])
@@ -47,7 +48,11 @@ AC_DEFUN([X_AC_YAML], [
 		  ])
 
 		if test -z "$x_ac_cv_yaml_dir"; then
-			AC_MSG_WARN([unable to locate libyaml parser library])
+			if test -z "$with_yaml"; then
+				AC_MSG_WARN([unable to locate libyaml parser library])
+			else
+				AC_MSG_ERROR([unable to locate libyaml parser library])
+			fi
 		else
 			AC_DEFINE([HAVE_YAML], [1], [Define if you are compiling with libyaml parser.])
 			YAML_CPPFLAGS="-I$x_ac_cv_yaml_dir/include"
