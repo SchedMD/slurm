@@ -17,7 +17,8 @@ AC_DEFUN([X_AC_OFED], [
   AC_ARG_WITH(
     [ofed],
     AS_HELP_STRING(--with-ofed=PATH,Specify path to ofed installation),
-    [AS_IF([test "x$with_ofed" != xno],[_x_ac_ofed_dirs="$with_ofed $_x_ac_ofed_dirs"])])
+    [AS_IF([test "x$with_ofed" != xno && test "x$with_ofed" != xyes],
+	   [_x_ac_ofed_dirs="$with_ofed"])])
 
   if [test "x$with_ofed" = xno]; then
      AC_MSG_WARN([support for ofed disabled])
@@ -52,7 +53,11 @@ AC_DEFUN([X_AC_OFED], [
     ])
 
     if test -z "$x_ac_cv_ofed_dir"; then
-      AC_MSG_WARN([unable to locate ofed installation])
+      if test -z "$with_ofed"; then
+        AC_MSG_WARN([unable to locate ofed installation])
+      else
+        AC_MSG_ERROR([unable to locate ofed installation])
+      fi
     else
       OFED_CPPFLAGS="-I$x_ac_cv_ofed_dir/include/infiniband"
       if test "$ac_with_rpath" = "yes"; then

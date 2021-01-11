@@ -20607,8 +20607,8 @@ $as_echo "not set" >&6; };
 
 # Check whether --with-ofed was given.
 if test "${with_ofed+set}" = set; then :
-  withval=$with_ofed; if test "x$with_ofed" != xno; then :
-  _x_ac_ofed_dirs="$with_ofed $_x_ac_ofed_dirs"
+  withval=$with_ofed; if test "x$with_ofed" != xno && test "x$with_ofed" != xyes; then :
+  _x_ac_ofed_dirs="$with_ofed"
 fi
 fi
 
@@ -20694,8 +20694,12 @@ fi
 $as_echo "$x_ac_cv_ofed_dir" >&6; }
 
     if test -z "$x_ac_cv_ofed_dir"; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate ofed installation" >&5
+      if test -z "$with_ofed"; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate ofed installation" >&5
 $as_echo "$as_me: WARNING: unable to locate ofed installation" >&2;}
+      else
+        as_fn_error $? "unable to locate ofed installation" "$LINENO" 5
+      fi
     else
       OFED_CPPFLAGS="-I$x_ac_cv_ofed_dir/include/infiniband"
       if test "$ac_with_rpath" = "yes"; then
