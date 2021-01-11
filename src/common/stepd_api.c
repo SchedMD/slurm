@@ -181,7 +181,11 @@ _step_connect(const char *directory, const char *nodename,
 		      __func__, name);
 		if (errno == ECONNREFUSED && running_in_slurmd()) {
 			_handle_stray_socket(name);
-			if (step_id->step_id == SLURM_BATCH_SCRIPT)
+			/*
+			 * NOTE: Checking against NO_VAL can be removed after 21.08
+			 */
+			if ((step_id->step_id == SLURM_BATCH_SCRIPT) ||
+			    (step_id->step_id == NO_VAL))
 				_handle_stray_script(directory,
 						     step_id->job_id);
 		}

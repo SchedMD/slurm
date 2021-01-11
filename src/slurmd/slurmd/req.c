@@ -2604,8 +2604,10 @@ _rpc_job_notify(slurm_msg_t *msg)
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
 	while ((stepd = list_next(i))) {
+		/* NOTE: Checking against NO_VAL can be removed after 21.08 */
 		if ((stepd->step_id.job_id  != req->step_id.job_id) ||
-		    (stepd->step_id.step_id != SLURM_BATCH_SCRIPT)) {
+		    ((stepd->step_id.step_id != SLURM_BATCH_SCRIPT) &&
+		     (stepd->step_id.step_id != NO_VAL))) {
 			continue;
 		}
 
@@ -3499,7 +3501,9 @@ _get_step_list(void)
 
 		if (step_list)
 			xstrcat(step_list, ", ");
-		if (stepd->step_id.step_id == SLURM_BATCH_SCRIPT) {
+		/* NOTE: Checking against NO_VAL can be removed after 21.08 */
+		if ((stepd->step_id.step_id == SLURM_BATCH_SCRIPT) ||
+		    (stepd->step_id.step_id == NO_VAL)) {
 			snprintf(tmp, sizeof(tmp), "%u",
 				 stepd->step_id.job_id);
 			xstrcat(step_list, tmp);
@@ -4456,11 +4460,13 @@ _kill_all_active_steps(uint32_t jobid, int sig, int flags, bool batch,
 			       __func__, jobid, stepd->step_id.job_id);
 			continue;
 		}
-
+		/* NOTE: Checking against NO_VAL can be removed after 21.08 */
 		if ((sig_all_steps &&
-		     (stepd->step_id.step_id != SLURM_BATCH_SCRIPT)) ||
+		     ((stepd->step_id.step_id != SLURM_BATCH_SCRIPT) &&
+		      (stepd->step_id.step_id != NO_VAL))) ||
 		    (sig_batch_step &&
-		     (stepd->step_id.step_id == SLURM_BATCH_SCRIPT))) {
+		     ((stepd->step_id.step_id == SLURM_BATCH_SCRIPT) ||
+		      (stepd->step_id.step_id == NO_VAL)))) {
 			if (_signal_jobstep(&stepd->step_id, sig,
 			                    flags, req_uid) != SLURM_SUCCESS) {
 				rc = SLURM_ERROR;
@@ -4551,7 +4557,9 @@ _terminate_all_steps(uint32_t jobid, bool batch)
 			continue;
 		}
 
-		if ((stepd->step_id.step_id == SLURM_BATCH_SCRIPT) && (!batch))
+		/* NOTE: Checking against NO_VAL can be removed after 21.08 */
+		if (((stepd->step_id.step_id == SLURM_BATCH_SCRIPT) ||
+		     (stepd->step_id.step_id == NO_VAL)) && !batch)
 			continue;
 
 		step_cnt++;
