@@ -146,9 +146,12 @@ _step_connect(const char *directory, const char *nodename,
 	int len;
 	struct sockaddr_un addr;
 	char *name = NULL, *pos = NULL;
+	uint32_t stepid = step_id->step_id;
+	bool old_id_tied = false;
 
+try_old_id:
 	xstrfmtcatat(name, &pos, "%s/%s_%u.%u",
-		     directory, nodename, step_id->job_id, step_id->step_id);
+		     directory, nodename, step_id->job_id, stepid);
 	if (step_id->step_het_comp != NO_VAL)
 		xstrfmtcatat(name, &pos, ".%u", step_id->step_het_comp);
 
@@ -189,6 +192,22 @@ _step_connect(const char *directory, const char *nodename,
 				_handle_stray_script(directory,
 						     step_id->job_id);
 		}
+
+		/* NOTE: This code can be removed after 21.08 */
+		if (errno == ENOENT && !old_id_tied &&
+		    ((step_id->step_id == SLURM_BATCH_SCRIPT) ||
+		     (step_id->step_id == SLURM_EXTERN_CONT))) {
+			debug("%s: Try to use old step_id", __func__);
+			close(fd);
+			if (stepid == SLURM_BATCH_SCRIPT)
+				stepid = NO_VAL;
+			else
+				stepid = INFINITE;
+			pos = name;
+			old_id_tied = true;
+			goto try_old_id;
+		}
+
 		xfree(name);
 		close(fd);
 		return -1;
