@@ -7,7 +7,7 @@
 #
 #  DESCRIPTION:
 #    Adds support for --without-readline. Exports READLINE_LIBS if found
-#    
+#
 #
 #  WARNINGS:
 #    This macro must be placed after AC_PROG_CC and X_AC_CURSES.
@@ -35,7 +35,7 @@ AC_DEFUN([X_AC_READLINE],
     AC_LINK_IFELSE([AC_LANG_PROGRAM([[	#include <stdio.h>
 	#include <readline/readline.h>
 	#include <readline/history.h>]], [[
-	readline("in:");]])],[AC_DEFINE([HAVE_READLINE], [1], 
+	readline("in:");]])],[AC_DEFINE([HAVE_READLINE], [1],
                  [Define if you are compiling with readline.])],[READLINE_LIBS=""])
     LIBS="$saved_LIBS"
     if test "$READLINE_LIBS" = ""; then

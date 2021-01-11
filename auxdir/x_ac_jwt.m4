@@ -25,7 +25,7 @@ AC_DEFUN([X_AC_JWT], [
 
   if [test "x$with_jwt" = xno]; then
     AC_MSG_WARN([support for jwt disabled])
-  else 
+  else
     AC_CACHE_CHECK(
       [for jwt installation],
       [x_ac_cv_jwt_dir],
@@ -47,7 +47,7 @@ AC_DEFUN([X_AC_JWT], [
           test -n "$x_ac_cv_jwt_dir" && break
         done
       ])
-  
+
     if test -z "$x_ac_cv_jwt_dir"; then
       AC_MSG_WARN([unable to locate jwt library])
     else
@@ -55,7 +55,7 @@ AC_DEFUN([X_AC_JWT], [
       JWT_CPPFLAGS="-I$x_ac_cv_jwt_dir/include"
       JWT_LDFLAGS="-L$x_ac_cv_jwt_dir/$bit -ljwt"
     fi
-  
+
     AC_SUBST(JWT_CPPFLAGS)
     AC_SUBST(JWT_LDFLAGS)
   fi

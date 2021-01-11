@@ -25,7 +25,7 @@ AC_DEFUN([X_AC_JSON], [
 
   if [test "x$with_json" = xno]; then
     AC_MSG_WARN([support for json disabled])
-  else 
+  else
     AC_CACHE_CHECK(
       [for json installation],
       [x_ac_cv_json_dir],
@@ -47,7 +47,7 @@ AC_DEFUN([X_AC_JSON], [
           test -n "$x_ac_cv_json_dir" && break
         done
       ])
-  
+
     if test -z "$x_ac_cv_json_dir"; then
       AC_MSG_WARN([unable to locate json parser library])
     else
@@ -61,7 +61,7 @@ AC_DEFUN([X_AC_JSON], [
       JSON_CPPFLAGS="-I$x_ac_cv_json_dir/include"
       JSON_LDFLAGS="-L$x_ac_cv_json_dir/$bit -ljson-c"
     fi
-  
+
     AC_SUBST(JSON_CPPFLAGS)
     AC_SUBST(JSON_LDFLAGS)
   fi

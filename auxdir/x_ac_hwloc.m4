@@ -6,7 +6,7 @@
 #    X_AC_HWLOC
 #
 #  DESCRIPTION:
-#    Determine if the HWLOC libraries exists and if they support PCI data. 
+#    Determine if the HWLOC libraries exists and if they support PCI data.
 ##*****************************************************************************
 
 AC_DEFUN([X_AC_HWLOC],
