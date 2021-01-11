@@ -19435,8 +19435,8 @@ $as_echo "yes" >&6; }
 
 # Check whether --with-json was given.
 if test "${with_json+set}" = set; then :
-  withval=$with_json; if test "x$with_json" != xno; then :
-  _x_ac_json_dirs="$with_json $_x_ac_json_dirs"
+  withval=$with_json; if test "x$with_json" != xno && test "x$with_json" != xyes; then :
+  _x_ac_json_dirs="$with_json"
 fi
 fi
 
@@ -19493,8 +19493,11 @@ fi
 $as_echo "$x_ac_cv_json_dir" >&6; }
 
     if test -z "$x_ac_cv_json_dir"; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate json parser library" >&5
-$as_echo "$as_me: WARNING: unable to locate json parser library" >&2;}
+      if test -z "$with_json" ; then
+        as_fn_error $? "unable to locate json parser library" "$LINENO" 5
+      else
+        as_fn_error $? "unable to locate json parser library" "$LINENO" 5
+      fi
     else
       if test -f "$d/include/json-c/json_object.h" ; then
 

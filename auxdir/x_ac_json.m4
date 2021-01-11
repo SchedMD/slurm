@@ -21,7 +21,8 @@ AC_DEFUN([X_AC_JSON], [
   AC_ARG_WITH(
     [json],
     AS_HELP_STRING(--with-json=PATH,Specify path to json-c installation),
-    [AS_IF([test "x$with_json" != xno],[_x_ac_json_dirs="$with_json $_x_ac_json_dirs"])])
+    [AS_IF([test "x$with_json" != xno && test "x$with_json" != xyes],
+	   [_x_ac_json_dirs="$with_json"])])
 
   if [test "x$with_json" = xno]; then
     AC_MSG_WARN([support for json disabled])
@@ -49,7 +50,11 @@ AC_DEFUN([X_AC_JSON], [
       ])
 
     if test -z "$x_ac_cv_json_dir"; then
-      AC_MSG_WARN([unable to locate json parser library])
+      if [test -z "$with_json"] ; then
+        AC_MSG_ERROR([unable to locate json parser library])
+      else
+        AC_MSG_ERROR([unable to locate json parser library])
+      fi
     else
       if test -f "$d/include/json-c/json_object.h" ; then
         AC_DEFINE([HAVE_JSON_C_INC], [1], [Define if headers in include/json-c.])
