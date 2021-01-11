@@ -19632,8 +19632,8 @@ fi
 
 # Check whether --with-http_parser was given.
 if test "${with_http_parser+set}" = set; then :
-  withval=$with_http_parser; if test "x$with_http_parser" != xno; then :
-  _x_ac_http_parser_dirs="$with_http_parser $_x_ac_http_parser_dirs"
+  withval=$with_http_parser; if test "x$with_http_parser" != xno && "x$with_http_parser" != xyes; then :
+  _x_ac_http_parser_dirs="$with_http_parser"
 fi
 fi
 
@@ -19689,8 +19689,12 @@ fi
 $as_echo "$x_ac_cv_http_parser_dir" >&6; }
 
 	if test -z "$x_ac_cv_http_parser_dir"; then
-	  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate HTTP Parser library" >&5
+		if test -z "$with_http_parser"; then
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate HTTP Parser library" >&5
 $as_echo "$as_me: WARNING: unable to locate HTTP Parser library" >&2;}
+		else
+			as_fn_error $? "unable to locate HTTP Parser library" "$LINENO" 5
+		fi
 	else
 
 $as_echo "#define HAVE_HTTP_PARSER 1" >>confdefs.h
