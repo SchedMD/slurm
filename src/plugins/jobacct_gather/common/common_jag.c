@@ -984,11 +984,10 @@ extern void jag_common_poll_data(
 		if (callbacks->prec_extra)
 			(*(callbacks->prec_extra))(prec, jobacct->id.taskid);
 
-#if _DEBUG
-		info("pid:%u ppid:%u rss:%"PRIu64" B",
+		log_flag(JAG, "pid:%u ppid:%u rss:%"PRIu64" B",
 		     prec->pid, prec->ppid,
 		     prec->tres_data[TRES_ARRAY_MEM].size_read);
-#endif
+
 		/* find all my descendents */
 		if (callbacks->get_offspring_data)
 			(*(callbacks->get_offspring_data))
