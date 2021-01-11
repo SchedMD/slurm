@@ -86,9 +86,9 @@ log_info "TEST 1: --gpus-per-node option"
 
 make_bash_script $file_in1 "
 	$scontrol -dd show job \${SLURM_JOBID}
-	$srun -n1 --gpus-per-node=1 -n1 --mem=0 ./$file_in2 &
-	$srun -n1 --gpus-per-node=1 -n1 --mem=0 ./$file_in2 &
-	$srun -n1 --gpus-per-node=1 -n1 --mem=0 ./$file_in2 &
+	$srun --exact -n1 --gpus-per-node=1 --exact -n1 --mem=0 ./$file_in2 &
+	$srun --exact -n1 --gpus-per-node=1 --exact -n1 --mem=0 ./$file_in2 &
+	$srun --exact -n1 --gpus-per-node=1 --exact -n1 --mem=0 ./$file_in2 &
 	wait
 	exit 0"
 
@@ -158,7 +158,7 @@ expect {
 }
 log_user 1
 if {$match != 1} {
-	log_error "Did not delay step for available GPU"
+	log_error "Did not delay step for available GPU $match"
 	set exit_code 1
 }
 
@@ -170,8 +170,8 @@ log_info "TEST 2: --gpus-per-node for job and multiple simultaneous steps using 
 
 make_bash_script $file_in1 "
 	$scontrol -dd show job \${SLURM_JOBID}
-	$srun -n1 --gpus-per-task=1 --gpus-per-node=0 --mem=0 ./$file_in2 &
-	$srun -n1 --gpus-per-task=1 --gpus-per-node=0 --mem=0 ./$file_in2 &
+	$srun --exact -n1 --gpus-per-task=1 --gpus-per-node=0 --mem=0 ./$file_in2 &
+	$srun --exact -n1 --gpus-per-task=1 --gpus-per-node=0 --mem=0 ./$file_in2 &
 	wait
 	exit 0"
 
@@ -257,8 +257,8 @@ log_info "TEST 3: --gpus-per-node for job and multiple simultaneous steps using 
 
 make_bash_script $file_in1 "
 	$scontrol -dd show job \${SLURM_JOBID}
-	$srun -n1 --gpus=1 --gpus-per-node=0 --mem=0 ./$file_in2 &
-	$srun -n1 --gpus=1 --gpus-per-node=0 --mem=0 ./$file_in2 &
+	$srun --exact -n1 --gpus=1 --gpus-per-node=0 --mem=0 ./$file_in2 &
+	$srun --exact -n1 --gpus=1 --gpus-per-node=0 --mem=0 ./$file_in2 &
 	wait
 	exit 0"
 
@@ -345,8 +345,8 @@ if {$gpu_cnt > 2} {
 
 	make_bash_script $file_in1 "
 		$scontrol -dd show job \${SLURM_JOBID}
-		$srun -n1 --gpus=2 --gpus-per-node=0 --mem=0 ./$file_in2 &
-		$srun -n1 --gpus=1 --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -n1 --gpus=2 --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -n1 --gpus=1 --gpus-per-node=0 --mem=0 ./$file_in2 &
 		wait
 		exit 0"
 
@@ -452,9 +452,9 @@ if {$gpu_cnt > 2} {
 
 	make_bash_script $file_in1 "
 		$scontrol -dd show job \${SLURM_JOBID}
-		$srun -n1 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
-		$srun -n1 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
-		$srun -n1 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -n1 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -n1 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -n1 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
 		wait
 		exit 0"
 
@@ -564,9 +564,9 @@ if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 
 	make_bash_script $file_in1 "
 		$scontrol -dd show job \${SLURM_JOBID}
-		$srun -n2 --gpus=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
-		$srun -n2 --gpus=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
-		$srun -n2 --gpus=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -n2 --gpus=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -n2 --gpus=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -n2 --gpus=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
 		wait
 		exit 0"
 
@@ -682,9 +682,9 @@ if {$gpu_cnt >= 4 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 
 	make_bash_script $file_in1 "
 		$scontrol -dd show job \${SLURM_JOBID}
-		$srun -n2 --gpus=6 --gpus-per-node=0 --mem=0 ./$file_in2 &
-		$srun -n2 --gpus=7 --gpus-per-node=0 --mem=0 ./$file_in2 &
-		$srun -n2 --gpus=8 --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -n2 --gpus=6 --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -n2 --gpus=7 --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -n2 --gpus=8 --gpus-per-node=0 --mem=0 ./$file_in2 &
 		wait
 		exit 0"
 
@@ -772,8 +772,8 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 
 	make_bash_script $file_in1 "
 		$scontrol -dd show job \${SLURM_JOBID}
-		$srun -n3 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
-		$srun -n3 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -n3 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -n3 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
 		wait
 		exit 0"
 
@@ -891,11 +891,11 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 
 	make_bash_script $file_in1 "
 		$scontrol -dd show job \${SLURM_JOBID}
-		$srun -N1 -n1 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
-		$srun -N1 -n1 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
-		$srun -N1 -n1 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
-		$srun -N1 -n1 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
-		$srun -N1 -n1 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -N1 -n1 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -N1 -n1 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -N1 -n1 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -N1 -n1 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -N1 -n1 --gpus-per-task=$step_gpus --gpus-per-node=0 --mem=0 ./$file_in2 &
 		wait
 		exit 0"
 
@@ -993,8 +993,8 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 
 	make_bash_script $file_in1 "
 		$scontrol -dd show job \${SLURM_JOBID}
-		$srun -N2 -n4 --ntasks-per-node=2 --gpus-per-task=1 --gpus-per-node=0 --mem=0 ./$file_in2 &
-		$srun -N2 -n4 --ntasks-per-node=2 --gpus-per-task=1 --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -N2 -n4 --ntasks-per-node=2 --gpus-per-task=1 --gpus-per-node=0 --mem=0 ./$file_in2 &
+		$srun --exact -N2 -n4 --ntasks-per-node=2 --gpus-per-task=1 --gpus-per-node=0 --mem=0 ./$file_in2 &
 		wait
 		exit 0"
 
