@@ -224,7 +224,8 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 		num_read = read(fd, sbuf, (sizeof(sbuf) - 1));
 		if (num_read > 0) {
 			sbuf[num_read] = '\0';
-			log_flag(JAG, " cpu %d freq= %s", cpu, sbuf);
+			log_flag(JAG, "scaling enabled on cpu %d freq= %s",
+				 cpu, sbuf);
 		}
 		fclose(sys_fp);
 	} else {
