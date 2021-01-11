@@ -215,7 +215,7 @@ static int _get_sys_interface_freq_line(uint32_t cpu, char *filename,
 	snprintf(freq_file, 79,
 		 "/sys/devices/system/cpu/cpu%d/cpufreq/%s",
 		 cpu, filename);
-	log_flag(JAG, "_get_sys_interface_freq_line: filename = %s ", freq_file);
+	log_flag(JAG, "filename = %s", freq_file);
 	if ((sys_fp = fopen(freq_file, "r"))!= NULL) {
 		/* frequency scaling enabled */
 		fd = fileno(sys_fp);
