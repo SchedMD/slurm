@@ -21228,64 +21228,54 @@ fi
 #
 # Handle user hints
 #
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if lz4 is installed" >&5
-$as_echo_n "checking if lz4 is installed... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if lz4 is wanted" >&5
+$as_echo_n "checking if lz4 is wanted... " >&6; }
 lz4_places="/usr/local /usr /opt/local /sw"
 
 # Check whether --with-lz4 was given.
 if test "${with_lz4+set}" = set; then :
-  withval=$with_lz4; if test "$withval" != no ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+  withval=$with_lz4; if test "x$with_lz4" != xno && test "x$with_lz4" != xyes; then :
+  lz4_places="$with_lz4"; { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-  if test -d "$withval"
-  then
-    lz4_places="$withval $lz4_places"
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $withval does not exist, checking usual places" >&5
-$as_echo "$as_me: WARNING: $withval does not exist, checking usual places" >&2;}
-  fi
 else
-  lz4_places=
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 fi
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes ${lz4_places}" >&5
-$as_echo "yes ${lz4_places}" >&6; }
 fi
 
 
 #
 # Locate lz4, if installed
 #
-if test -n "${lz4_places}"
-then
+if test "x$with_lz4" = xno; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for lz4 disabled" >&5
+$as_echo "$as_me: WARNING: support for lz4 disabled" >&2;}
+else
   # check the user supplied or any other more or less 'standard' place:
   #   Most UNIX systems      : /usr/local and /usr
   #   MacPorts / Fink on OSX : /opt/local respectively /sw
+  HAVE_LZ4=0
   for LZ4_HOME in ${lz4_places} ; do
-    if test -f "${LZ4_HOME}/include/lz4.h"; then break; fi
-    LZ4_HOME=""
-  done
+    test -f "${LZ4_HOME}/include/lz4.h" || continue
 
-  LZ4_OLD_LDFLAGS=$LDFLAGS
-  LZ4_OLD_CPPFLAGS=$CPPFLAGS
-  if test -n "${LZ4_HOME}"; then
+    LZ4_OLD_LDFLAGS=$LDFLAGS
+    LZ4_OLD_CPPFLAGS=$CPPFLAGS
+    if test -n "${LZ4_HOME}"; then
       LZ4_CPPFLAGS="-I${LZ4_HOME}/include"
       LZ4_LDFLAGS="-L${LZ4_HOME}/lib"
       LZ4_LIBS="-llz4"
 
       LDFLAGS="$LDFLAGS ${LZ4_LDFLAGS}"
       CPPFLAGS="$CPPFLAGS ${LZ4_CPPFLAGS}"
-  fi
+    fi
 
-  ac_ext=c
+    ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for LZ4_compress_destSize in -llz4" >&5
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for LZ4_compress_destSize in -llz4" >&5
 $as_echo_n "checking for LZ4_compress_destSize in -llz4... " >&6; }
 if ${ac_cv_lib_lz4_LZ4_compress_destSize+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -21327,7 +21317,7 @@ else
   ac_cv_lz4=no
 fi
 
-  ac_fn_c_check_header_mongrel "$LINENO" "lz4.h" "ac_cv_header_lz4_h" "$ac_includes_default"
+    ac_fn_c_check_header_mongrel "$LINENO" "lz4.h" "ac_cv_header_lz4_h" "$ac_includes_default"
 if test "x$ac_cv_header_lz4_h" = xyes; then :
   ac_cv_lz4_h=yes
 else
@@ -21335,37 +21325,47 @@ else
 fi
 
 
-  ac_ext=c
+    ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-  # Restore variables
-  LDFLAGS="$LZ4_OLD_LDFLAGS"
-  CPPFLAGS="$LZ4_OLD_CPPFLAGS"
+    # Restore variables
+    LDFLAGS="$LZ4_OLD_LDFLAGS"
+    CPPFLAGS="$LZ4_OLD_CPPFLAGS"
 
-  if test "$ac_cv_lz4" = "yes" && test "$ac_cv_lz4_h" = "yes"
-  then
-      #
-      # If both library and header were found, action-if-found
-      #
+    if  test "$ac_cv_lz4" = "yes" && test "$ac_cv_lz4_h" = "yes" ; then
+        #
+        # If both library and header were found, action-if-found
+        #
 
 
 
 
 $as_echo "#define HAVE_LZ4 1" >>confdefs.h
 
-      { $as_echo "$as_me:${as_lineno-$LINENO}: result: LZ4 test program built properly." >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: LZ4 test program built properly." >&5
 $as_echo "LZ4 test program built properly." >&6; }
-  else
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: LZ4 test program build failed." >&5
-$as_echo "$as_me: WARNING: LZ4 test program build failed." >&2;}
+        HAVE_LZ4=1
+        break
+    else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: LZ4 test program build failed." >&5
+$as_echo "LZ4 test program build failed." >&6; }
+    fi
+  done
+
+  if test "$HAVE_LZ4" != 1; then
+    if test -z "$with_lz4"; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate working lz4 installation" >&5
+$as_echo "$as_me: WARNING: unable to locate working lz4 installation" >&2;}
+    else
+      as_fn_error $? "unable to locate working lz4 installation" "$LINENO" 5
+    fi
   fi
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate LZ4 install." >&5
-$as_echo "$as_me: WARNING: unable to locate LZ4 install." >&2;}
+
+
 fi
 
 
