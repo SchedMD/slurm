@@ -21545,8 +21545,12 @@ fi
 $as_echo "#define HAVE_NVML 1" >>confdefs.h
 
     else
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate libnvidia-ml.so and/or nvml.h" >&5
+      if test -z "$with_nvml"; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate libnvidia-ml.so and/or nvml.h" >&5
 $as_echo "$as_me: WARNING: unable to locate libnvidia-ml.so and/or nvml.h" >&2;}
+      else
+        as_fn_error $? "unable to locate libnvidia-ml.so and/or nvml.h" "$LINENO" 5
+      fi
     fi
 
 

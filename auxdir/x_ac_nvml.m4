@@ -34,7 +34,11 @@ AC_DEFUN([X_AC_NVML],
       NVML_CPPFLAGS="$nvml_includes"
       AC_DEFINE(HAVE_NVML, 1, [Define to 1 if NVML library found])
     else
-      AC_MSG_WARN([unable to locate libnvidia-ml.so and/or nvml.h])
+      if test -z "$with_nvml"; then
+        AC_MSG_WARN([unable to locate libnvidia-ml.so and/or nvml.h])
+      else
+        AC_MSG_ERROR([unable to locate libnvidia-ml.so and/or nvml.h])
+      fi
     fi
     AC_SUBST(NVML_LIBS)
     AC_SUBST(NVML_CPPFLAGS)
