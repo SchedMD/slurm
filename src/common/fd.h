@@ -156,4 +156,16 @@ extern char *poll_revents_to_str(const short revents);
 extern void send_fd_over_pipe(int socket, int fd);
 extern int receive_fd_over_pipe(int socket);
 
+/*
+ * Make full directory path.
+ *
+ * Will not error if directories already exist.
+ * Warning: directory creation is a not an atomic operation.
+ * This function iteratively builds the path until complete, or an error
+ * occurs.
+ *
+ * RET SLURM_SUCCESS or error.
+ */
+extern int mkdirpath(const char *pathname, mode_t mode);
+
 #endif /* !_FD_H */

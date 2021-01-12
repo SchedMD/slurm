@@ -39,8 +39,10 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <poll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -453,4 +455,46 @@ extern int receive_fd_over_pipe(int socket)
 	memmove(&fd, CMSG_DATA(cmsg), sizeof(fd));
 
 	return fd;
+}
+
+static int _mkdir(const char *pathname, mode_t mode)
+{
+	int rc;
+
+	if ((rc = mkdir(pathname, mode)))
+		rc = errno;
+	else
+		return SLURM_SUCCESS;
+
+	if (rc == EEXIST)
+		return SLURM_SUCCESS;
+
+	debug("%s: unable to mkdir(%s): %s",
+	      __func__, pathname, slurm_strerror(rc));
+
+	return rc;
+}
+
+extern int mkdirpath(const char *pathname, mode_t mode)
+{
+	int rc;
+	char *p, *dst;
+
+	p = dst = xstrdup(pathname);
+
+	while ((p = xstrchr(p + 1, '/'))) {
+		*p = '\0';
+
+		if ((rc = _mkdir(dst, mode)))
+			goto cleanup;
+
+		*p = '/';
+	}
+
+	/* final directory */
+	rc = _mkdir(dst, mode);
+
+cleanup:
+	xfree(dst);
+	return rc;
 }
