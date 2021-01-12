@@ -24635,8 +24635,8 @@ $as_echo "#define HAVE_SYSTEMD 1" >>confdefs.h
 
 # Check whether --with-munge was given.
 if test "${with_munge+set}" = set; then :
-  withval=$with_munge; if test "x$with_munge" != xno; then :
-  _x_ac_munge_dirs="$with_munge $_x_ac_munge_dirs"
+  withval=$with_munge; if test "x$with_munge" != xno && test "x$with_munge" != xyes; then :
+  _x_ac_munge_dirs="$with_munge"
 fi
 fi
 
@@ -24693,8 +24693,12 @@ fi
 $as_echo "$x_ac_cv_munge_dir" >&6; }
 
     if test -z "$x_ac_cv_munge_dir"; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate munge installation" >&5
+      if test -z "$with_munge"; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate munge installation" >&5
 $as_echo "$as_me: WARNING: unable to locate munge installation" >&2;}
+      else
+        as_fn_error $? "unable to locate munge installation" "$LINENO" 5
+      fi
     else
       MUNGE_LIBS="-lmunge"
       MUNGE_CPPFLAGS="-I$x_ac_cv_munge_dir/include"
