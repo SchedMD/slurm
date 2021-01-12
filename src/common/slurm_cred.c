@@ -787,6 +787,8 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 			cred->signature[i] = 'a' + (rand() & 0xf);
 	}
 
+	(void) _fill_cred_gids(cred, arg);
+
 	slurm_mutex_unlock(&cred->mutex);
 	return cred;
 
