@@ -5017,8 +5017,12 @@ $as_echo "$as_me: WARNING: *** mysql_config not found. Evidently no MySQL develo
 			sed 's/\([0-9]*\).\([0-9]*\).\([a-zA-Z0-9]*\)/\3/'`
 
 		if test $mysql_config_major_version -lt 5; then
-	   		{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** mysql-$mysql_config_major_version.$mysql_config_minor_version.$mysql_config_micro_version available, we need >= mysql-5.0.0 installed for the mysql interface." >&5
+			if test -z "$with_mysql_config"; then
+				{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** mysql-$mysql_config_major_version.$mysql_config_minor_version.$mysql_config_micro_version available, we need >= mysql-5.0.0 installed for the mysql interface." >&5
 $as_echo "$as_me: WARNING: *** mysql-$mysql_config_major_version.$mysql_config_minor_version.$mysql_config_micro_version available, we need >= mysql-5.0.0 installed for the mysql interface." >&2;}
+			else
+				as_fn_error $? "*** mysql-$mysql_config_major_version.$mysql_config_minor_version.$mysql_config_micro_version available, we need >= mysql-5.0.0 installed for the mysql interface." "$LINENO" 5
+			fi
 			ac_have_mysql="no"
 		else
 		# mysql_config puts -I on the front of the dir.  We don't
@@ -5064,8 +5068,12 @@ $as_echo "#define HAVE_MYSQL 1" >>confdefs.h
 			else
 				MYSQL_CFLAGS=""
 				MYSQL_LIBS=""
-				{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** MySQL test program execution failed. A thread-safe MySQL library is required." >&5
+				if test -z "$with_mysql_config"; then
+					{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: *** MySQL test program execution failed. A thread-safe MySQL library is required." >&5
 $as_echo "$as_me: WARNING: *** MySQL test program execution failed. A thread-safe MySQL library is required." >&2;}
+				else
+					as_fn_error $? "*** MySQL test program execution failed. A thread-safe MySQL library is required." "$LINENO" 5
+				fi
 			fi
 		fi
       	fi
