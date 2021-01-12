@@ -1,4 +1,4 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "November 2020" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "January 2021" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
@@ -149,9 +149,7 @@ by SlurmUser.
 \fBAuthType\fR
 Define the authentication method for communications between Slurm
 components.
-Acceptable values at present include "auth/none" and "auth/munge".
-The default value is "auth/munge".
-\fBDo not use "auth/none" if you desire any security\fR.
+Acceptable values at present include "auth/munge", which is the default.
 "auth/munge" indicates that LLNL's MUNGE system is to be used
 (this is the supported authentication mechanism for Slurm;
 see "https://dun.github.io/munge/" for more information).

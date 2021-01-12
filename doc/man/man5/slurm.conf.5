@@ -405,11 +405,7 @@ The default value is dependent upon the MUNGE installation, but is typically
 \fBAuthType\fR
 The authentication method for communications between Slurm
 components.
-Acceptable values at present include "auth/munge" and "auth/none".
-The default value is "auth/munge".
-"auth/none" includes the UID in each communication, but it is not verified.
-This may be fine for testing purposes, but
-\fBdo not use "auth/none" if you desire any security\fR.
+Acceptable values at present include "auth/munge", which is the default.
 "auth/munge" indicates that MUNGE is to be used.
 (See "https://dun.github.io/munge/" for more information).
 All Slurm daemons and commands must be terminated prior to changing
