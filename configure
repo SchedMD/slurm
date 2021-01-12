@@ -21374,8 +21374,8 @@ fi
 
 # Check whether --with-hwloc was given.
 if test "${with_hwloc+set}" = set; then :
-  withval=$with_hwloc; if test "x$with_hwloc" != xno; then :
-  _x_ac_hwloc_dirs="$with_hwloc $_x_ac_hwloc_dirs"
+  withval=$with_hwloc; if test "x$with_hwloc" != xno && test "x$with_hwloc" != xyes; then :
+  _x_ac_hwloc_dirs="$with_hwloc"
 fi
 fi
 
@@ -21435,8 +21435,12 @@ fi
 $as_echo "$x_ac_cv_hwloc_dir" >&6; }
 
     if test -z "$x_ac_cv_hwloc_dir"; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate hwloc installation" >&5
+      if test -z "$with_hwloc"; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate hwloc installation" >&5
 $as_echo "$as_me: WARNING: unable to locate hwloc installation" >&2;}
+      else
+        as_fn_error $? "unable to locate hwloc installation" "$LINENO" 5
+      fi
     else
       HWLOC_CPPFLAGS="-I$x_ac_cv_hwloc_dir/include"
       if test "$ac_with_rpath" = "yes"; then
