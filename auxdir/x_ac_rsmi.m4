@@ -46,10 +46,18 @@ AC_DEFUN([X_AC_RSMI],
         ac_rsmi="yes"
         AC_DEFINE(HAVE_RSMI, 1, [Define to 1 if RSMI library found])
       else
-        AC_MSG_WARN([upgrade to newer version of ROCm/rsmi])
+        if test -z "$with_rsmi"; then
+          AC_MSG_WARN([upgrade to newer version of ROCm/rsmi])
+        else
+          AC_MSG_ERROR([upgrade to newer version of ROCm/rsmi])
+        fi
       fi
     else
-      AC_MSG_WARN([unable to locate librocm_smi64.so and/or rocm_smi.h])
+      if test -z "$with_rsmi"; then
+        AC_MSG_WARN([unable to locate librocm_smi64.so and/or rocm_smi.h])
+      else
+        AC_MSG_ERROR([unable to locate librocm_smi64.so and/or rocm_smi.h])
+      fi
     fi
     AC_SUBST(RSMI_LIBS)
     AC_SUBST(RSMI_CPPFLAGS)
