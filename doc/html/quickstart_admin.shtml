@@ -477,15 +477,14 @@ message) between Slurm components can use a different security mechanism
 that is configurable.
 You must specify one &quot;auth&quot; plugin for this purpose using the
 <b>AuthType</b> configuration parameter.
-Currently, only two authentication plugins are supported:
-<b>auth/none</b> and <b>auth/munge</b>.
-The auth/none plugin is built by default, but
+Currently, only one authentication plugin is supported: <b>auth/munge</b>.
 <a href="https://dun.github.io/munge/">MUNGE</a>
 should be installed in order to get properly authenticated communications.
 We recommend the use of MUNGE.
 The configure script in the top-level directory of this distribution will
 determine which authentication plugins may be built.
-The configuration file specifies which of the available plugins will be utilized. </p>
+The configuration file specifies which of the available plugins will be
+utilized.</p>
 
 <h3>Pluggable Authentication Module (PAM) support</h3>
 <p>A PAM module (Pluggable Authentication Module) is available for Slurm that
@@ -744,6 +743,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 18 September 2020</p>
+<p style="text-align:center;">Last modified 13 January 2021</p>
 
 <!--#include virtual="footer.txt"-->
