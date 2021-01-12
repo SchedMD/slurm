@@ -816,6 +816,7 @@ test38.15  Test for proper handling of different rank end times
 test38.16  Test environment variables needed by MPI
 test38.17  Test for multiple, out of order srun --het-group options
 test38.18  Validate heterogeneous gpu job options.
+test38.19  Test heterogeneous job steps.
 
 test39.#   Test of job select/cons_tres and --gpu options.
 ==========================================================
