@@ -42,6 +42,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix regression causing spank_process_option errors to be ignored.
  -- Avoid making multiple interactive steps.
  -- Fix corner case issues where step creation should fail.
+ -- Fix job rejection when --gres is less than --gpus.
 
 * Changes in Slurm 20.11.2
 ==========================
