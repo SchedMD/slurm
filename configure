@@ -22102,8 +22102,8 @@ fi
 
 # Check whether --with-rrdtool was given.
 if test "${with_rrdtool+set}" = set; then :
-  withval=$with_rrdtool; if test "x$with_rrdtool" != xno; then :
-  _x_ac_rrdtool_dirs="$with_rrdtool $_x_ac_rrdtool_dirs"
+  withval=$with_rrdtool; if test "x$with_rrdtool" != xno && test "x$with_rrdtool" != xyes; then :
+  _x_ac_rrdtool_dirs="$with_rrdtool"
 fi
 fi
 
@@ -22157,8 +22157,12 @@ $as_echo "$x_ac_cv_rrdtool_dir" >&6; }
 
     # echo x_ac_cv_rrdtool_dir $x_ac_cv_rrdtool_dir
     if test -z "$x_ac_cv_rrdtool_dir"; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate rrdtool installation" >&5
+      if test -z "$with_rrdtool"; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate rrdtool installation" >&5
 $as_echo "$as_me: WARNING: unable to locate rrdtool installation" >&2;}
+      else
+        as_fn_error $? "unable to locate rrdtool installation" "$LINENO" 5
+      fi
     else
       RRDTOOL_CPPFLAGS="-I$x_ac_cv_rrdtool_dir/include"
       if test "$ac_with_rpath" = "yes"; then
