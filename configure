@@ -24103,13 +24103,13 @@ _ACEOF
 
 # Check whether --with-netloc was given.
 if test "${with_netloc+set}" = set; then :
-  withval=$with_netloc; if test "x$with_netloc" != xno; then :
-  _x_ac_netloc_dirs="$with_netloc $_x_ac_netloc_dirs"
+  withval=$with_netloc; if test "x$with_netloc" != xno && test "x$with_netloc" != xyes; then :
+  _x_ac_netloc_dirs="$with_netloc"
 fi
 fi
 
 
-  if test "x$with_netloc" = xno; then
+  if test "$with_netloc" = xno; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for netloc disabled" >&5
 $as_echo "$as_me: WARNING: support for netloc disabled" >&2;}
   else
@@ -24179,8 +24179,12 @@ fi
 $as_echo "$x_ac_cv_netloc_dir" >&6; }
 
     if test -z "$x_ac_cv_netloc_dir"; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate netloc installation" >&5
+      if test -z "$with_netloc"; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate netloc installation" >&5
 $as_echo "$as_me: WARNING: unable to locate netloc installation" >&2;}
+      else
+        as_fn_error $? "unable to locate netloc installation" "$LINENO" 5
+      fi
     else
       NETLOC_CPPFLAGS="-I$x_ac_cv_netloc_dir/include"
       if test "$ac_with_rpath" = "yes"; then
