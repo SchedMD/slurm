@@ -43,6 +43,8 @@ documents those changes that are of interest to users and administrators.
  -- Avoid making multiple interactive steps.
  -- Fix corner case issues where step creation should fail.
  -- Fix job rejection when --gres is less than --gpus.
+ -- Fix regression causing spank prolog/epilog not to be called unless the
+    spank plugin was loaded in slurmd context.
 
 * Changes in Slurm 20.11.2
 ==========================

@@ -5186,7 +5186,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	 *    request. We need to send current switch state on AIX
 	 *    systems, so this bypass can not be used.
 	 */
-	if ((nsteps == 0) && !slurm_conf.epilog && !spank_plugin_count()) {
+	if ((nsteps == 0) && !slurm_conf.epilog && !spank_has_epilog()) {
 		debug4("sent ALREADY_COMPLETE");
 		if (msg->conn_fd >= 0) {
 			slurm_send_rc_msg(msg,
