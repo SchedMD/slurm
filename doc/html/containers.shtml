@@ -19,6 +19,7 @@ and can be made to start most, if not all, types.
 <li><a href="#charliecloud">Charliecloud</a></li>
 <li><a href="#docker">Docker</a></li>
 <li><a href="#udocker">UDOCKER</a></li>
+<li><a href="#docker-rootless">Rootless Docker</a></li>
 <li><a href="#k8s">Kubernetes Pods (k8s)</a></li>
 <li><a href="#shifter">Shifter</a></li>
 <li><a href="#singularity">Singularity</a></li>
@@ -54,7 +55,7 @@ Charliecloud supports the following:
 </ul>
 </p>
 
-<h3 id="docker">Docker</h3>
+<h3 id="docker">Docker (running as root)</h3>
 
 <p><a href="https://www.docker.com/">Docker</a> currently has multiple design
 points that make it unfriendly to HPC systems.
@@ -73,6 +74,16 @@ support for starting or stopping docker containers in Slurm.</p>
 <p><a href="https://github.com/indigo-dc/udocker">UDOCKER</a> is Docker feature
 subset clone that is designed to allow execution of
 docker commands without increased user privileges.</p>
+
+<h3 id="docker-rootless">Rootless Docker</h3>
+
+<p><a href="https://docs.docker.com/engine/security/rootless/">
+Rootless Docker</a> (>=v20.10) requires no extra permissions for users and
+currently (as of January 2021) has no known security issues with users gaining
+privileges. Each user will need to run an instance of the dockerd server on
+each node of the job in order to use docker. There are currently no helper
+scripts or plugins for Slurm to automate the build up or tear down the docker
+daemons.</p>
 
 <h3 id="k8s">Kubernetes Pods (k8s)</h3>
 
@@ -209,6 +220,6 @@ Overview slides of Sarus are
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified December 2020</p>
+<p style="text-align:center;">Last modified 21 January 2021</p>
 
 <!--#include virtual="footer.txt"-->
