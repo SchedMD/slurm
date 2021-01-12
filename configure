@@ -22000,10 +22000,11 @@ fi
   _x_ac_freeipmi_libs="lib64 lib"
 
 
+
 # Check whether --with-freeipmi was given.
 if test "${with_freeipmi+set}" = set; then :
-  withval=$with_freeipmi; if test "x$with_freeipmi" != xno; then :
-  _x_ac_freeipmi_dirs="$with_freeipmi $_x_ac_freeipmi_dirs"
+  withval=$with_freeipmi; if test "x$with_freipmi" != xno && test "x$with_freeipmi" != xyes; then :
+  _x_ac_freeipmi_dirs="$with_freeipmi"
 fi
 fi
 
@@ -22061,8 +22062,12 @@ fi
 $as_echo "$x_ac_cv_freeipmi_dir" >&6; }
 
     if test -z "$x_ac_cv_freeipmi_dir"; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate freeipmi installation (libipmonitoring/libfreeipmi" >&5
+      if test -z "$with_freeipmi"; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate freeipmi installation (libipmonitoring/libfreeipmi" >&5
 $as_echo "$as_me: WARNING: unable to locate freeipmi installation (libipmonitoring/libfreeipmi" >&2;}
+      else
+        as_fn_error $? "unable to locate freeipmi installation (libipmonitoring/libfreeipmi" "$LINENO" 5
+      fi
     else
       FREEIPMI_CPPFLAGS="-I$x_ac_cv_freeipmi_dir/include"
       if test "$ac_with_rpath" = "yes"; then
