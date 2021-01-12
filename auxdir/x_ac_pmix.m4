@@ -23,8 +23,8 @@ AC_DEFUN([X_AC_PMIX],
   AC_ARG_WITH(
     [pmix],
     AS_HELP_STRING(--with-pmix=PATH,Specify path to pmix installation(s).  Multiple version directories can be ':' delimited.),
-    [AS_IF([test "x$with_pmix" != xno],[with_pmix=`echo $with_pmix | sed "s/:/ /g"`
-      _x_ac_pmix_dirs="$with_pmix"])])
+    [AS_IF([test "x$with_pmix" != xno && test "x$with_pmix" != xyes],
+           [_x_ac_pmix_dirs="`echo $with_pmix | sed "s/:/ /g"`"])])
 
   if [test "x$with_pmix" = xno]; then
     AC_MSG_WARN([support for pmix disabled])
@@ -34,10 +34,13 @@ AC_DEFUN([X_AC_PMIX],
       [x_ac_cv_pmix_dir],
       [
         for d in $_x_ac_pmix_dirs; do
-          test -d "$d" || continue
-          test -d "$d/include" || continue
-          test -f "$d/include/pmix/pmix_common.h" || test -f $d/include/pmix_common.h || continue
-          test -f "$d/include/pmix_server.h" || continue
+          if [ ! test -d "$d/include" ] || [ ! test -f "$d/include/pmix_server.h" ] ||
+		[ ! test -f "$d/include/pmix/pmix_common.h" && ! test -f $d/include/pmix_common.h ]; then
+		if [ test -n "$with_pmix" && test "$with_pmix" != yes ]; then
+			AC_MSG_ERROR([No PMIX installation found in $d])
+		fi
+		continue
+	  fi
           for d1 in $_x_ac_pmix_libs; do
             test -d "$d/$d1" || continue
             _x_ac_pmix_cppflags_save="$CPPFLAGS"
@@ -175,7 +178,11 @@ AC_DEFUN([X_AC_PMIX],
 
     if test $_x_ac_pmix_v1_found = 0 && test $_x_ac_pmix_v2_found = 0 &&
           test $_x_ac_pmix_v3_found = 0 && test $_x_ac_pmix_v4_found = 0; then
-      AC_MSG_WARN([unable to locate pmix installation])
+      if test -z "$with_pmix"; then
+        AC_MSG_WARN([unable to locate pmix installation])
+      else
+        AC_MSG_ERROR([unable to locate pmix installation])
+      fi
     fi
   fi
 
