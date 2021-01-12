@@ -8190,7 +8190,7 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 	gres_job_state_t *job_specs;
 	int i, j, c, s, sock_cnt = 0, req_cores, rem_sockets, full_socket;
 	int tot_core_cnt = 0, min_core_cnt = 1;
-	uint64_t cnt_avail_sock, cnt_avail_total, max_gres = 0, rem_gres = 0;
+	uint64_t cnt_avail_sock, cnt_avail_total;
 	uint64_t tot_gres_sock, max_tasks;
 	uint32_t task_cnt_incr;
 	bool *req_sock = NULL;	/* Required socket */
@@ -8220,6 +8220,8 @@ extern void gres_plugin_job_core_filter3(gres_mc_data_t *mc_ptr,
 	sock_gres_iter = list_iterator_create(sock_gres_list);
 	while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
 		bool sufficient_gres;
+		uint64_t max_gres = 0, rem_gres = 0;
+
 		job_specs = sock_gres->job_specs;
 		if (!job_specs)
 			continue;
