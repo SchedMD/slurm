@@ -7933,12 +7933,12 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 	if (step_gres_ptr->gres_per_step &&
 	    (step_gres_ptr->gres_per_step > step_gres_ptr->total_gres) &&
 	    (max_rem_nodes == 1)) {
-		gres_cnt = step_gres_ptr->gres_per_step;
+		uint64_t gres_per_step = step_gres_ptr->gres_per_step;
 		if (ignore_alloc)
-			gres_cnt -= step_gres_ptr->gross_gres;
+			gres_per_step -= step_gres_ptr->gross_gres;
 		else
-			gres_cnt -= step_gres_ptr->total_gres;
-		min_gres = MAX(min_gres, gres_cnt);
+			gres_per_step -= step_gres_ptr->total_gres;
+		min_gres = MAX(min_gres, gres_per_step);
 	}
 
 	if (!gres_id_shared(plugin_id) &&
