@@ -6914,7 +6914,7 @@ extern void job_resv_check(void)
 				 */
 				_clear_job_resv(resv_ptr);
 				list_delete_item(iter);
-			} else {
+			} else if (resv_ptr->start_time <= now) {
 				resv_ptr->ctld_flags &= (~RESV_CTLD_PROLOG);
 				resv_ptr->ctld_flags &= (~RESV_CTLD_EPILOG);
 				_advance_resv_time(resv_ptr);
