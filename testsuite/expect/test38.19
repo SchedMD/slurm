@@ -173,7 +173,7 @@ expect {
 set node [get_first_node_of_job $job_id]
 log_info "node=$node for job $job_id"
 
-send "srun -w $node : -w $node $bin_true\r"
+send "$srun -w $node : -w $node $bin_true\r"
 expect {
 	-re "$test_prompt" {
 		#break
