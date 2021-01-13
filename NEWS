@@ -45,6 +45,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix job rejection when --gres is less than --gpus.
  -- Fix regression causing spank prolog/epilog not to be called unless the
     spank plugin was loaded in slurmd context.
+ -- Fix regression preventing SLURM_HINT=nomultithread from being used
+    to set defaults for salloc->srun, sbatch->srun sequence.
 
 * Changes in Slurm 20.11.2
 ==========================

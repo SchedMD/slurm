@@ -383,8 +383,8 @@ static bool _opt_verify(void)
 		xfree(opt.burst_buffer_file);
 	}
 
-	validate_hint_option(&opt);
-	if (opt.hint) {
+	if (opt.hint &&
+	    !validate_hint_option(&opt)) {
 		xassert(opt.ntasks_per_core == NO_VAL);
 		xassert(opt.threads_per_core == NO_VAL);
 		if (verify_hint(opt.hint,
