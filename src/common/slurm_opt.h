@@ -533,9 +533,8 @@ extern void validate_memory_options(slurm_opt_t *opt);
  * Validate that conflicting optons (--hint, --ntasks-per-core,
  * --nthreads-per-core) are not used together.
  *
- * Based on validate_memory_options()
  */
-extern void validate_hint_option(slurm_opt_t *opt);
+extern int validate_hint_option(slurm_opt_t *opt);
 
 /*
  * Validate options that are common to salloc, sbatch, and srun.

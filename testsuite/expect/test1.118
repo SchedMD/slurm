@@ -34,22 +34,21 @@ proc cleanup {} {
 
 proc check_error {client option prog error} {
 	global sbatch salloc srun test_id
-	set cmd "$client -H -Jtest$test_id -t1 --hint=nomultithread $option $prog"
+	set cmd "$client -v -H -Jtest$test_id -t1 --hint=nomultithread $option $prog"
 
-		set matches 0
-		set pid [spawn {*}$cmd]
-		expect {
-			$error {
-				incr matches
-					exp_continue
-			}
-			timeout {
-				fail "$client not responding"
-			}
-			eof {
-				wait
-			}
+	set matches 0
+	set pid [spawn {*}$cmd]
+	expect {
+		-ex "$error" {
+			incr matches
 		}
+		timeout {
+			fail "$client not responding"
+		}
+		eof {
+			wait
+		}
+	}
 	subtest {$matches == 1} "Submission should return '$error'"
 }
 
@@ -59,7 +58,7 @@ proc mutual_error_tests {} {
 
 	set clients [list "$sbatch" "$salloc" "$srun"]
 	set options [list "--threads-per-core=1" "--ntasks-per-core=1" "-B1"]
-	set error "fatal: Following options are mutually exclusive: --hint, --ntasks-per-core, --threads-per-core, -B."
+	set error "Following options are mutually exclusive: --hint, --ntasks-per-core, --threads-per-core, -B."
 
 	foreach client $clients {
 		set prog "hostname"
@@ -73,20 +72,20 @@ proc mutual_error_tests {} {
 
 	# Test srun --hint only with works with --cpu-bind=verbose
 	set options [list "--cpu-bind=threads" "--cpu-bind=threads,verbose"]
-	set error "fatal: --hint and --cpu-bind (other than --cpu-bind=verbose) are mutually exclusive."
+	set error "--hint and --cpu-bind (other than --cpu-bind=verbose) are mutually exclusive."
 	foreach option $options {
 		check_error $client $option "hostname" $error
 	}
 
 	set options [list "--cpu-bind=verbose"]
 	foreach option $options {
-		set cmd "$client -H -Jtest$test_id -t1 --begin=now+1 --hint=nomultithread $option $prog"
+		set cmd "$client -v -H -Jtest$test_id -t1 --begin=now+1 --hint=nomultithread $option $prog"
 
 		set job_id 0
 		set matches 0
 		set pid [spawn {*}$cmd]
 		expect {
-			"fatal" {
+			"mutually exclusive" {
 				incr matches
 				exp_continue
 			}
@@ -101,7 +100,7 @@ proc mutual_error_tests {} {
 			}
 		}
 		cancel_job $job_id
-		subtest {$matches == 0} "$cmd should not fail with fatal" "(got $matches fatals)"
+		subtest {$matches == 0} "$cmd should not find 'mutually exclsive'" "(got $matches matches)"
 	}
 }
 
@@ -115,13 +114,13 @@ set client "$sbatch"
 set prog "--wrap=hostname"
 set options [list "--threads-per-core=2 --ntasks-per-core=3"]
 foreach option $options {
-	set cmd "$client -H -Jtest$test_id -t1 $option $prog"
+	set cmd "$client -v -H -Jtest$test_id -t1 $option $prog"
 
 	set job_id 0
 	set matches 0
 	set pid [spawn {*}$cmd]
 	expect {
-		"fatal" {
+		"mutually exclusive" {
 			incr matches
 			exp_continue
 		}
@@ -135,7 +134,8 @@ foreach option $options {
 			wait
 		}
 	}
-	subtest {$matches == 0} "$cmd should not fail with fatal" "(got $matches fatals)"
+	subtest {$job_id != 0} "$cmd should have given an id"
+	subtest {$matches == 0} "$cmd should not find 'mutually exclsive'" "(got $matches matches)"
 
 	set threads_req [get_job_param $job_id "ReqB:S:C:T"]
 	set tasks_req [get_job_param $job_id "NtasksPerN:B:S:C"]
