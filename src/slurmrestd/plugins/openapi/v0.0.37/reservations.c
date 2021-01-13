@@ -156,6 +156,10 @@ static int _op_handler_reservations(const char *context_id,
 	if (!rc)
 		rc = slurm_load_reservations(0, &res_info_ptr);
 
+	if ((tag == URL_TAG_RESERVATION) &&
+	    (!res_info_ptr || (res_info_ptr->record_count == 0)))
+		rc = ESLURM_RESERVATION_INVALID;
+
 	if (!rc && res_info_ptr) {
 		int found = 0;
 
@@ -171,12 +175,9 @@ static int _op_handler_reservations(const char *context_id,
 			}
 		}
 
-		if (!found)
+		if (!found && (tag == URL_TAG_RESERVATION))
 			rc = ESLURM_RESERVATION_INVALID;
 	}
-
-	if (!res_info_ptr || res_info_ptr->record_count == 0)
-		rc = ESLURM_RESERVATION_INVALID;
 
 	if (rc) {
 		data_t *e = data_set_dict(data_list_append(errors));
