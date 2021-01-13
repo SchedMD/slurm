@@ -1142,7 +1142,7 @@ static int _persist_fed_job_cancel(slurmdb_cluster_rec_t *conn, uint32_t job_id,
 	memset(&kill_req, 0, sizeof(job_step_kill_msg_t));
 	kill_req.step_id.job_id      = job_id;
 	kill_req.sjob_id     = NULL;
-	kill_req.step_id.step_id = SLURM_BATCH_SCRIPT;
+	kill_req.step_id.step_id = NO_VAL;
 	kill_req.step_id.step_het_comp = NO_VAL;
 	kill_req.signal      = signal;
 	kill_req.flags       = flags;
