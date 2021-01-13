@@ -119,7 +119,13 @@ static int _dump_res(data_t *p, reserve_info_t *res)
 	data_set_int(data_key_set(d, "node_count"), res->node_cnt);
 	data_set_string(data_key_set(d, "node_list"), res->node_list);
 	data_set_string(data_key_set(d, "partition"), res->partition);
-	data_set_int(data_key_set(d, "purge_comp_time"), res->purge_comp_time);
+
+	/* purgecomp is a flag with a time setting */
+	if (res->flags & RESERVE_FLAG_PURGE_COMP) {
+		data_t *pd = data_set_dict(data_key_set(d, "purge_completed"));
+		data_set_int(data_key_set(pd, "time"), res->purge_comp_time);
+	}
+
 	data_set_int(data_key_set(d, "start_time"), res->start_time);
 	data_set_string(data_key_set(d, "tres"), res->tres_str);
 	data_set_string(data_key_set(d, "users"), res->users);

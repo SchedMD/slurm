@@ -1029,9 +1029,15 @@
             "type": "string",
             "description": "Partition"
           },
-          "purge_comp_time": {
-            "type": "integer",
-            "description": "If PURGE_COMP flag is set the amount of minutes this reservation will sit idle until it is revoked."
+          "purge_completed": {
+            "type": "object",
+            "description": "If PURGE_COMP flag is set the amount of seconds this reservation will sit idle until it is revoked",
+            "properties": {
+              "time": {
+                "type": "integer",
+                "description": "amount of seconds this reservation will sit idle until it is revoked"
+              }
+            }
           },
           "start_time": {
             "type": "integer",
