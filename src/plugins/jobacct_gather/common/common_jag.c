@@ -963,6 +963,8 @@ extern void jag_common_poll_data(
 		callbacks->get_precs = _get_precs;
 
 	ct = time(NULL);
+
+	(void)list_for_each(prec_list, (ListForF)_init_tres, NULL);
 	(*(callbacks->get_precs))(task_list, pgid_plugin, cont_id, callbacks);
 
 	if (!list_count(prec_list) || !task_list || !list_count(task_list))
