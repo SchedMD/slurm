@@ -2022,11 +2022,13 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
  * IN/OUT buffer - buffer in which data is placed, pointers automatically
  *	updated
  * IN uid - user requesting the data
+ * IN has_qos_lock - true if assoc_lock .qos=READ_LOCK already acquired
  * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
  *	  whenever the data format changes
  */
 extern void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags,
-		     Buf buffer, uint16_t protocol_version, uid_t uid);
+		     Buf buffer, uint16_t protocol_version, uid_t uid,
+		     bool has_qos_lock);
 
 /*
  * pack_part - dump all configuration information about a specific partition
