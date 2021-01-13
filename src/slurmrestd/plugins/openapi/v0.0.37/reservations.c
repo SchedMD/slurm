@@ -61,6 +61,42 @@ typedef enum {
 	URL_TAG_RESERVATIONS,
 } url_tag_t;
 
+typedef struct {
+	uint64_t flag;
+	char *name;
+} res_flags_t;
+
+/* based on strings in reservation_flags_string() */
+static const res_flags_t res_flags[] = {
+	{ RESERVE_FLAG_MAINT, "MAINT" },
+	{ RESERVE_FLAG_NO_MAINT, "NO_MAINT" },
+	{ RESERVE_FLAG_FLEX, "FLEX" },
+	{ RESERVE_FLAG_OVERLAP, "OVERLAP" },
+	{ RESERVE_FLAG_IGN_JOBS, "IGNORE_JOBS" },
+	{ RESERVE_FLAG_DAILY, "DAILY" },
+	{ RESERVE_FLAG_NO_DAILY, "NO_DAILY" },
+	{ RESERVE_FLAG_WEEKDAY, "WEEKDAY" },
+	{ RESERVE_FLAG_WEEKEND, "WEEKEND" },
+	{ RESERVE_FLAG_WEEKLY, "WEEKLY" },
+	{ RESERVE_FLAG_NO_WEEKLY, "NO_WEEKLY" },
+	{ RESERVE_FLAG_SPEC_NODES, "SPEC_NODES" },
+	{ RESERVE_FLAG_ALL_NODES, "ALL_NODES" },
+	{ RESERVE_FLAG_ANY_NODES, "ANY_NODES" },
+	{ RESERVE_FLAG_NO_ANY_NODES, "NO_ANY_NODES" },
+	{ RESERVE_FLAG_STATIC, "STATIC" },
+	{ RESERVE_FLAG_NO_STATIC, "NO_STATIC" },
+	{ RESERVE_FLAG_PART_NODES, "PART_NODES" },
+	{ RESERVE_FLAG_NO_PART_NODES, "NO_PART_NODES" },
+	{ RESERVE_FLAG_FIRST_CORES, "FIRST_CORES" },
+	{ RESERVE_FLAG_TIME_FLOAT, "TIME_FLOAT" },
+	{ RESERVE_FLAG_REPLACE, "REPLACE" },
+	{ RESERVE_FLAG_REPLACE_DOWN, "REPLACE_DOWN" },
+	/* skipping RESERVE_FLAG_PURGE_COMP due to setting */
+	{ RESERVE_FLAG_NO_HOLD_JOBS, "NO_HOLD_JOBS_AFTER_END" },
+	{ RESERVE_FLAG_MAGNETIC, "MAGNETIC" },
+	{ RESERVE_FLAG_NO_MAGNETIC, "NO_MAGNETIC" },
+};
+
 static int _dump_res(data_t *p, reserve_info_t *res)
 {
 	data_t *d = data_set_dict(data_list_append(p));
@@ -71,48 +107,12 @@ static int _dump_res(data_t *p, reserve_info_t *res)
 	data_set_int(data_key_set(d, "core_count"), res->core_cnt);
 	data_set_int(data_key_set(d, "end_time"), res->end_time);
 	data_set_string(data_key_set(d, "features"), res->features);
-	if (res->flags & RESERVE_FLAG_MAINT)
-		data_set_string(data_list_append(flags), "maint");
-	if (res->flags & RESERVE_FLAG_DAILY)
-		data_set_string(data_list_append(flags), "daily");
-	if (res->flags & RESERVE_FLAG_WEEKLY)
-		data_set_string(data_list_append(flags), "weekly");
-	if (res->flags & RESERVE_FLAG_IGN_JOBS)
-		data_set_string(data_list_append(flags), "ignore_jobs");
-	if (res->flags & RESERVE_FLAG_ANY_NODES)
-		data_set_string(data_list_append(flags), "any_nodes");
-	if (res->flags & RESERVE_FLAG_STATIC)
-		data_set_string(data_list_append(flags), "static");
-	if (res->flags & RESERVE_FLAG_PART_NODES)
-		data_set_string(data_list_append(flags), "part_nodes");
-	if (res->flags & RESERVE_FLAG_OVERLAP)
-		data_set_string(data_list_append(flags), "overlap");
-	if (res->flags & RESERVE_FLAG_SPEC_NODES)
-		data_set_string(data_list_append(flags), "spec_nodes");
-	if (res->flags & RESERVE_FLAG_FIRST_CORES)
-		data_set_string(data_list_append(flags), "first_cores");
-	if (res->flags & RESERVE_FLAG_TIME_FLOAT)
-		data_set_string(data_list_append(flags), "time_float");
-	if (res->flags & RESERVE_FLAG_REPLACE)
-		data_set_string(data_list_append(flags), "replace");
-	if (res->flags & RESERVE_FLAG_ALL_NODES)
-		data_set_string(data_list_append(flags), "all_nodes");
-	if (res->flags & RESERVE_FLAG_PURGE_COMP)
-		data_set_string(data_list_append(flags), "purge_comp");
-	if (res->flags & RESERVE_FLAG_WEEKDAY)
-		data_set_string(data_list_append(flags), "weekday");
-	if (res->flags & RESERVE_FLAG_WEEKEND)
-		data_set_string(data_list_append(flags), "weekend");
-	if (res->flags & RESERVE_FLAG_FLEX)
-		data_set_string(data_list_append(flags), "flex");
-	if (res->flags & RESERVE_FLAG_NO_HOLD_JOBS)
-		data_set_string(data_list_append(flags), "no_hold_jobs");
-	if (res->flags & RESERVE_FLAG_REPLACE_DOWN)
-		data_set_string(data_list_append(flags), "replace_down");
-	if (res->flags & RESERVE_FLAG_MAGNETIC)
-		data_set_string(data_list_append(flags), "magnetic");
-	if (res->flags & RESERVE_FLAG_SKIP)
-		data_set_string(data_list_append(flags), "skip");
+
+	for (int i = 0; i < ARRAY_SIZE(res_flags); i++)
+		if (res->flags & res_flags[i].flag)
+			data_set_string(data_list_append(flags),
+					res_flags[i].name);
+
 	data_set_string(data_key_set(d, "licenses"), res->licenses);
 	data_set_int(data_key_set(d, "max_start_delay"), res->max_start_delay);
 	data_set_string(data_key_set(d, "name"), res->name);
