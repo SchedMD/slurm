@@ -990,6 +990,10 @@
             "type": "integer",
             "description": "Number of reserved cores"
           },
+          "core_spec_cnt": {
+            "type": "integer",
+            "description": "Number of reserved specialized cores"
+          },
           "end_time": {
             "type": "integer",
             "description": "End time of the reservation"
@@ -1004,6 +1008,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "groups": {
+            "type": "string",
+            "description": "List of groups permitted to use the reserved nodes"
           },
           "licenses": {
             "type": "string",
@@ -1042,6 +1050,10 @@
           "start_time": {
             "type": "integer",
             "description": "Start time of reservation"
+          },
+          "watts": {
+            "type": "integer",
+            "description": "amount of power to reserve in watts"
           },
           "tres": {
             "type": "string",

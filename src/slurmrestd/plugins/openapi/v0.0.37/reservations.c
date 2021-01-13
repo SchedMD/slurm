@@ -105,6 +105,7 @@ static int _dump_res(data_t *p, reserve_info_t *res)
 	data_set_string(data_key_set(d, "accounts"), res->accounts);
 	data_set_string(data_key_set(d, "burst_buffer"), res->burst_buffer);
 	data_set_int(data_key_set(d, "core_count"), res->core_cnt);
+	data_set_int(data_key_set(d, "core_spec_cnt"), res->core_spec_cnt);
 	data_set_int(data_key_set(d, "end_time"), res->end_time);
 	data_set_string(data_key_set(d, "features"), res->features);
 
@@ -113,10 +114,12 @@ static int _dump_res(data_t *p, reserve_info_t *res)
 			data_set_string(data_list_append(flags),
 					res_flags[i].name);
 
+	data_set_string(data_key_set(d, "groups"), res->groups);
 	data_set_string(data_key_set(d, "licenses"), res->licenses);
 	data_set_int(data_key_set(d, "max_start_delay"), res->max_start_delay);
 	data_set_string(data_key_set(d, "name"), res->name);
 	data_set_int(data_key_set(d, "node_count"), res->node_cnt);
+	/* skipping node_inx */
 	data_set_string(data_key_set(d, "node_list"), res->node_list);
 	data_set_string(data_key_set(d, "partition"), res->partition);
 
@@ -127,6 +130,7 @@ static int _dump_res(data_t *p, reserve_info_t *res)
 	}
 
 	data_set_int(data_key_set(d, "start_time"), res->start_time);
+	data_set_int(data_key_set(d, "watts"), res->resv_watts);
 	data_set_string(data_key_set(d, "tres"), res->tres_str);
 	data_set_string(data_key_set(d, "users"), res->users);
 
