@@ -6930,8 +6930,8 @@ extern void job_resv_check(void)
 			_validate_node_choice(resv_ptr);
 			continue;
 		}
-		if (!(resv_ptr->ctld_flags &
-		      (RESV_CTLD_EPILOG | RESV_CTLD_PROLOG)))
+		if (!(resv_ptr->ctld_flags & RESV_CTLD_PROLOG) ||
+		    !(resv_ptr->ctld_flags & RESV_CTLD_EPILOG))
 			continue;
 		(void)_advance_resv_time(resv_ptr);
 		if ((!resv_ptr->job_run_cnt ||
