@@ -1200,22 +1200,6 @@ done:
 	return rc;
 }
 
-#define _job_error(...)                                                      \
-	do {                                                                 \
-		const char *error_string = xstrdup_printf(__VA_ARGS__);      \
-		error("%s", error_string);                                   \
-		data_t *error = data_list_append(errors);                    \
-		data_set_dict(error);                                        \
-		data_set_string(data_key_set(error, "error"), error_string); \
-		xfree(error_string);                                         \
-		if (errno) {                                                 \
-			rc = errno;                                          \
-			errno = 0;                                           \
-		} else                                                       \
-			rc = SLURM_ERROR;                                    \
-		data_set_int(data_key_set(error, "error_code"), errno);      \
-	} while (0)
-
 static int _handle_job_get(const char *context_id, http_request_method_t method,
 			   data_t *parameters, data_t *query, int tag,
 			   data_t *resp, const uint32_t job_id,
@@ -1232,7 +1216,8 @@ static int _handle_job_get(const char *context_id, http_request_method_t method,
 				      data_list_append(jobs));
 		}
 	} else {
-		_job_error("%s: unknown job %d", __func__, job_id);
+		resp_error(errors, rc, "slurm_load_job",
+			   "unknown job: %d", job_id);
 	}
 
 	slurm_free_job_info_msg(job_info_ptr);
@@ -1247,15 +1232,13 @@ static int _handle_job_delete(const char *context_id,
 			      data_t *const errors, const int signal)
 {
 	if (slurm_kill_job(job_id, signal, KILL_FULL_JOB)) {
-		int rc;
-
 		/* Already signaled jobs are considered a success here */
 		if (errno == ESLURM_ALREADY_DONE)
 			return SLURM_SUCCESS;
 
-		_job_error("%s: unable to kill job %d with signal %d: %s",
-			   __func__, job_id, signal, slurm_strerror(errno));
-		return rc;
+		return resp_error(errors, errno,"slurm_kill_job",
+				  "unable to kill job %d with signal %d: %s",
+				  job_id, signal, slurm_strerror(errno));
 	}
 
 	return SLURM_SUCCESS;
@@ -1279,15 +1262,16 @@ static int _handle_job_post(const char *context_id,
 	jobs_rc = _parse_job_list(query, NULL, errors, true);
 
 	if (jobs_rc.rc) {
-		_job_error("%s: job parsing failed for %s",
-			   __func__, context_id);
+		resp_error(errors, jobs_rc.rc, "_parse_job_list",
+			   "job parsing failed for %s", context_id);
 	} else {
 		debug3("%s: job parsing successful for %s",
 		       __func__, context_id);
 		rc = jobs_rc.rc;
 		if (jobs_rc.het_job) {
-			_job_error("%s: unexpected het job request from %s",
-				   __func__, context_id);
+			resp_error(errors, rc, "_parse_job_list",
+				   "unexpected het job request from %s",
+				   context_id);
 		} else {
 			job_array_resp_msg_t *resp = NULL;
 			errno = 0;
@@ -1297,15 +1281,17 @@ static int _handle_job_post(const char *context_id,
 
 			rc = slurm_update_job2(jobs_rc.job, &resp);
 
-			if (rc)
-				_job_error("%s: job update from %s failed: %s",
-					   __func__, context_id,
-					   slurm_strerror(errno));
-			else if (resp && resp->error_code && resp->error_code)
-				_job_error(
-					"%s: job array update from %s failed with error_code: %s",
-					__func__, context_id,
-					slurm_strerror(*resp->error_code));
+			if (rc) {
+				resp_error(errors, errno, "_parse_job_list",
+					   "job update from %s failed",
+					   context_id);
+			} else if (resp && resp->error_code &&
+				   resp->error_code) {
+				resp_error(errors, *resp->error_code,
+					   "_parse_job_list",
+					   "job array update from %s failed",
+					   context_id);
+			}
 
 			slurm_free_job_desc_msg(jobs_rc.job);
 			slurm_free_job_array_resp(resp);
@@ -1327,20 +1313,29 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 	       __func__, get_http_method_string(method), context_id, tag);
 
 	if (!parameters) {
-		_job_error("%s: [%s] missing request parameters",
-			   __func__, context_id);
+		return resp_error(errors, ESLURM_REST_INVALID_QUERY,
+				  "HTTP request",
+				  "[%s] missing request parameters",
+				  context_id);
 	} else if (!(data_jobid = data_key_get(parameters, "job_id"))) {
-		_job_error("%s: [%s] missing job_id in parameters",
-			   __func__, context_id);
+		return resp_error(errors, ESLURM_REST_INVALID_QUERY,
+				  "HTTP request",
+				  "[%s] missing job_id in parameters",
+				  context_id);
 	} else if (data_get_type(data_jobid) != DATA_TYPE_INT_64) {
-		_job_error("%s: [%s] invalid job_id data type",
-			   __func__, context_id);
+		return resp_error(errors, ESLURM_REST_INVALID_QUERY,
+				  "HTTP request",
+				  "[%s] invalid job_id data type", context_id);
 	} else if (data_get_int(data_jobid) == 0) {
-		_job_error("%s: [%s] job_id is zero",
-			   __func__, context_id);
+		return resp_error(errors, ESLURM_REST_INVALID_QUERY,
+				  "HTTP request",
+				  "[%s] job_id %"PRId64" is invalid",
+				  context_id, data_get_int(data_jobid));
 	} else if (data_get_int(data_jobid) >= NO_VAL) {
-		_job_error("%s: [%s] job_id too large: %" PRId64,
-			   __func__, context_id, data_get_int(data_jobid));
+		return resp_error(errors, ESLURM_REST_INVALID_QUERY,
+				  "HTTP request",
+				  "[%s] job_id %"PRId64" is invalid",
+				  context_id, data_get_int(data_jobid));
 	} else {
 		job_id = data_get_int(data_jobid);
 	}
@@ -1363,7 +1358,9 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 			signal = SIGKILL;
 
 		if (signal < 1 || signal >= SIGRTMAX) {
-			_job_error("%s: invalid signal: %d", __func__, signal);
+			rc = resp_error(errors, ESLURM_REST_INVALID_QUERY,
+					"HTTP request: signal",
+					"invalid signal: %d", signal);
 		} else {
 			rc = _handle_job_delete(context_id, method, parameters,
 						query, tag, resp, job_id,
@@ -1374,7 +1371,9 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 		rc = _handle_job_post(context_id, method, parameters, query,
 				      tag, resp, job_id, errors);
 	} else {
-		_job_error("%s: unknown request", __func__);
+		rc = resp_error(errors, ESLURM_REST_INVALID_QUERY,
+				"HTTP request", "%s: unknown request",
+				context_id);
 	}
 
 	return rc;
