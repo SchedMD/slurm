@@ -157,22 +157,6 @@ cleanup:
 	return rc;
 }
 
-#define _ping_error(...)                                                     \
-	do {                                                                 \
-		const char *error_string = xstrdup_printf(__VA_ARGS__);      \
-		error("%s", error_string);                                   \
-		data_t *error = data_list_append(errors);                    \
-		data_set_dict(error);                                        \
-		data_set_string(data_key_set(error, "error"), error_string); \
-		xfree(error_string);                                         \
-		if (errno) {                                                 \
-			data_set_int(data_key_set(error, "errno"), errno);   \
-			rc = errno;                                       \
-			errno = 0;                                           \
-		} else                                                       \
-			rc = SLURM_ERROR;                                 \
-	} while (0)
-
 static int _op_handler_ping(const char *context_id,
 			    http_request_method_t method, data_t *parameters,
 			    data_t *query, int tag, data_t *resp_ptr,
@@ -184,9 +168,10 @@ static int _op_handler_ping(const char *context_id,
 
 	data_t *errors = populate_response_format(resp_ptr);
 
-	if (slurm_load_ctl_conf((time_t) NULL, &slurm_ctl_conf_ptr))
-		_ping_error("%s: slurmctld config is unable to load: %m",
-			    __func__);
+	if ((rc = slurm_load_ctl_conf((time_t) NULL, &slurm_ctl_conf_ptr)))
+		return resp_error(errors, rc,
+				  "slurmctld config is unable to load",
+				  "slurm_load_ctl_conf");
 
 	if (slurm_ctl_conf_ptr) {
 		data_t *pings = data_key_set(resp_ptr, "pings");
@@ -217,7 +202,9 @@ static int _op_handler_ping(const char *context_id,
 			data_set_string(data_key_set(ping, "mode"), mode);
 		}
 	} else {
-		_ping_error("%s: slurmctld config is missing", __func__);
+		rc = resp_error(errors, ESLURM_INTERNAL,
+				"slurmctld config is missing",
+				"slurm_load_ctl_conf");
 	}
 
 	slurm_free_ctl_conf(slurm_ctl_conf_ptr);
