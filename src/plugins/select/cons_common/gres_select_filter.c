@@ -431,7 +431,6 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 {
 	ListIterator sock_gres_iter;
 	sock_gres_t *sock_gres;
-	gres_job_state_t *job_specs;
 	int i, j, c, s, sock_cnt = 0, req_cores, rem_sockets, full_socket;
 	int tot_core_cnt = 0, min_core_cnt = 1;
 	uint64_t cnt_avail_total;
@@ -462,6 +461,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 	list_sort(sock_gres_list, _sock_gres_sort);
 	sock_gres_iter = list_iterator_create(sock_gres_list);
 	while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
+		gres_job_state_t *job_specs;
 		bool sufficient_gres;
 		uint64_t max_gres = 0, rem_gres = 0;
 		uint16_t avail_cores_tot = 0, cpus_per_gres;
