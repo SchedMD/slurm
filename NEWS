@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
  -- job_submit/lua - add "network" field.
  -- Fix situations when a reoccuring reservation could erroneously skip a
     period.
+ -- Ensure that a reservations [pro|epi]log are ran on reoccuring reservations.
 
 * Changes in Slurm 20.11.3
 ==========================
