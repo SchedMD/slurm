@@ -689,30 +689,30 @@ proc _line_trace {} {
 #
 # DESCRIPTION
 #	Executes a command and returns a dictionary that includes the output,
-#	exit code, etc. An action can be taken (fail, warn, none)  if the
-#	command's exit code or timeout is unexpected. By default, the action
+#	exit code, etc. An action can be taken (fail, warn, subtest, none) if
+#	the command's exit code is unexpected. By default, the action
 #	will be applied if the command fails. If the -xfail option is
 #	specified, the behavior will be reversed to apply the action if the
 #	command ran successfully.
+#	A timeout is always treated as unexpected, so log_error will be shown
+#	by default, or fail/subfail will be called if -fail/-subtest are used.
 #
 # OPTIONS
 #	-fail
-#		If the exit code or timeout is unexpected, the action that will
+#		If the exit code is unexpected, the action that will
 #		be taken is to fail the test
 #	-subtest
-#		If the exit code or timeout is unexpected, the action that will
+#		If the exit code is unexpected, the action that will
 #		be taken is to subfail, otherwise subpass will be called
 #	-warn
-#		If the exit code or timeout is unexpected, the action that will
+#		If the exit code is unexpected, the action that will
 #		be taken is to log a warning (this is the default)
 #	-none
-#		If the exit code or timeout is unexpected, no action will be
-#		taken
+#		If the exit code is unexpected, no action will be taken
 #	-xfail
-#		If the command exits with zero and does not time out, the
-#		action will be applied. Without this option, the action will
-#		be applied if the command exits with a non-zero exit code or
-#		times out.
+#		If the command exits with zero the action will be applied.
+#		Without this option, the action will be applied if the
+#		command exits with a non-zero exit code.
 #	-timeout <float_number>
 #		Time in seconds to wait for the command to complete before
 #		timing out (default is 60.0)
@@ -739,6 +739,7 @@ proc run_command args {
 	global bin_bash
 
 	set exit_status 0
+	set timedout false
 	set output ""
 	set action "warn"
 	set timeout 60
@@ -790,7 +791,8 @@ proc run_command args {
 		timeout {
 			set message "Command \"$command\" timed out after $timeout seconds"
 			slow_kill $expect_pid
-			set exit_status 1
+			set exit_status $::RETURN_TIMEOUT
+			set timedout true
 		}
 		eof {
 			lassign [wait] pid spawnid os_error_flag errno
@@ -808,7 +810,15 @@ proc run_command args {
 		log_alias "	Output: $output"
 	}
 
-	if {! $expect_failure && $exit_status != 0} {
+	if {$timedout} {
+		if {$action eq "fail"} {
+			fail $message
+		} elseif {$action eq "subtest"} {
+			subfail "Command should not timeout" "$message"
+		} else {
+			log_error $message
+		}
+	} elseif {! $expect_failure && $exit_status != 0} {
 		cset message "Command \"$command\" failed with rc=$exit_status"
 		if {[info exists output] && $output != ""} {
 			append message ": [string trimright $output]"
