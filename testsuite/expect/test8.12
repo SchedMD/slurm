@@ -63,7 +63,7 @@ if {$nb_nodes < 2} {
 proc test_flex {use_flex submit_active} {
 	global res_name job_id
 
-	log_info "SUBTEST: Job using more nodes than reservation"
+	# Subtest job using more nodes than reservation
 	cleanup
 	if {$submit_active} {
 		setup $use_flex ""
@@ -82,7 +82,7 @@ proc test_flex {use_flex submit_active} {
 		}
 	}
 
-	log_info "SUBTEST: Job with EndTime after reservation end"
+	# Subtest job with EndTime after reservation end
 	cleanup
 	if {$submit_active} {
 		setup $use_flex ""
@@ -100,7 +100,7 @@ proc test_flex {use_flex submit_active} {
 		subtest {[get_job_param $job_id JobState] == "TIMEOUT" } "Job should TIMEOUT with reservation end without FLEX"
 	}
 
-	log_info "SUBTEST: Job start before reservation StartTime"
+	# Subtest Job start before reservation StartTime
 	cleanup
 	setup $use_flex "+60"
 	set job_id [submit_job -fail "-N1 --reservation=$res_name -t 300 --wrap 'sleep 30'"]
