@@ -118,6 +118,26 @@ extern data_t *populate_response_format(data_t *resp)
 	return data_set_list(data_key_set(resp, "errors"));
 }
 
+extern int resp_error(data_t *errors, int error_code, const char *why,
+		      const char *source)
+{
+	data_t *e = data_set_dict(data_list_append(errors));
+
+	if (why)
+		data_set_string(data_key_set(e, "description"), why);
+
+	if (error_code) {
+		data_set_int(data_key_set(e, "error_number"), error_code);
+		data_set_string(data_key_set(e, "error"),
+				slurm_strerror(error_code));
+	}
+
+	if (source)
+		data_set_string(data_key_set(e, "source"), source);
+
+	return error_code;
+}
+
 extern data_t *slurm_openapi_p_get_specification(void)
 {
 	data_t *spec = NULL;

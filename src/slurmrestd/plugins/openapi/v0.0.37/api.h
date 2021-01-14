@@ -49,6 +49,17 @@
  */
 extern data_t *populate_response_format(data_t *resp);
 
+/*
+ * Add a response error to errors
+ * IN errors - data list to append a new error
+ * IN why - description of error or NULL
+ * IN error_code - Error number
+ * IN source - Where the error was generated
+ * RET value of error_code
+ */
+extern int resp_error(data_t *errors, int error_code, const char *why,
+		      const char *source);
+
 extern void init_op_diag(void);
 extern void init_op_jobs(void);
 extern void init_op_nodes(void);
