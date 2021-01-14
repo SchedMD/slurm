@@ -268,22 +268,6 @@ static void _list_delete_job_desc_msg_t(void *_p)
 	slurm_free_job_desc_msg(_p);
 }
 
-#define _parse_error(...)                                                    \
-	do {                                                                 \
-		const char *error_string = xstrdup_printf(__VA_ARGS__);      \
-		error("%s", error_string);                                   \
-		data_t *error = data_list_append(errors);                    \
-		data_set_dict(error);                                        \
-		data_set_string(data_key_set(error, "error"), error_string); \
-		xfree(error_string);                                         \
-		if (errno) {                                                 \
-			rc = errno;                                          \
-			errno = 0;                                           \
-		} else                                                       \
-			rc = SLURM_ERROR;                                    \
-		data_set_int(data_key_set(error, "error_code"), rc);         \
-	} while (0)
-
 typedef struct {
 	slurm_opt_t *opt;
 	data_t *errors;
@@ -305,20 +289,28 @@ static data_for_each_cmd_t _per_job_param(const char *key, const data_t *data,
 	xstrtolower(lkey);
 
 	if (!(rc = hsearch_r(e, FIND, &re, &hash_params))) {
-		_parse_error("Unknown key \"%s\": %m", lkey);
+		char *str = xstrdup_printf("Unknown key \"%s\"", lkey);
+		resp_error(errors, rc, str, "hsearch_r");
+		xfree(str);
+
 		return DATA_FOR_EACH_FAIL;
 	}
 
 	p = re->data;
 	if (p->disabled) {
-		_parse_error("Disabled key: \"%s\"", p->param);
+		char *str = xstrdup_printf("Disabled key: \"%s\"", p->param);
+		resp_error(errors, rc, str, "openapi specification");
+		xfree(str);
+
 		return DATA_FOR_EACH_FAIL;
 	}
 
 	if ((rc = slurm_process_option_data(args->opt, p->optval, data,
 					    errors))) {
-		_parse_error("process failed for key %s with error: %s",
-			     key, slurm_strerror(rc));
+		char *str = xstrdup_printf("Unknown key \"%s\"", lkey);
+		resp_error(errors, rc, str, "slurm_process_option_data");
+		xfree(str);
+
 		return DATA_FOR_EACH_FAIL;
 	}
 
