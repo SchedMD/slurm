@@ -437,8 +437,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 	uint64_t cnt_avail_total;
 	uint64_t max_tasks;
 	uint32_t task_cnt_incr;
-	bool *req_sock = NULL;	/* Required socket */
-	int *socket_index = NULL; /* Socket indexes */
+	bool *req_sock; /* Required socket */
+	int *socket_index; /* Socket indexes */
 	uint16_t *avail_cores_per_sock;
 
 	if (*max_tasks_this_node == 0)
