@@ -43,6 +43,10 @@
 
 #include "src/common/data.h"
 
+/*
+ * Fill out boilerplate for every data response
+ * RET ptr to errors dict
+ */
 extern data_t *populate_response_format(data_t *resp);
 
 extern void init_op_diag(void);
