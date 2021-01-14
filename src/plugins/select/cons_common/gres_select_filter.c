@@ -810,8 +810,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 */
 		while (avail_cores_tot > req_cores) {
 			int full_socket = -1;
-			int s;
-			for (s = 0; s < sockets; s++) {
+			for (int s = 0; s < sockets; s++) {
 				if (avail_cores_tot == req_cores)
 					break;
 				if (!req_sock[s] ||
@@ -825,9 +824,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 			}
 			if (full_socket == -1)
 				break;
-			s = full_socket;
 			for (int c = cores_per_socket - 1; c >= 0; c--) {
-				int i = (s * cores_per_socket) + c;
+				int i = (full_socket * cores_per_socket) + c;
 				if (!bit_test(avail_core, i))
 					continue;
 				bit_clear(avail_core, i);
@@ -835,7 +833,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 				    *avail_cpus) {
 					*avail_cpus -= cpus_per_core;
 				}
-				avail_cores_per_sock[s]--;
+				avail_cores_per_sock[full_socket]--;
 				avail_cores_tot--;
 				break;
 			}
