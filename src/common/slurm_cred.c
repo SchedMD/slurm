@@ -365,6 +365,36 @@ static int _slurm_cred_fini(void)
 	return rc;
 }
 
+static int _fill_cred_gids(slurm_cred_t *cred, slurm_cred_arg_t *arg)
+{
+	struct passwd pwd, *result;
+	char buffer[PW_BUF_SIZE];
+	int rc;
+
+	if (!enable_nss_slurm && !enable_send_gids)
+		return SLURM_SUCCESS;
+
+	xassert(cred);
+	xassert(arg);
+
+	rc = slurm_getpwuid_r(arg->uid, &pwd, buffer, PW_BUF_SIZE, &result);
+	if (rc || !result) {
+		error("%s: getpwuid failed for uid=%u",
+		      __func__, arg->uid);
+		return SLURM_ERROR;
+	}
+
+	cred->pw_name = xstrdup(result->pw_name);
+	cred->pw_gecos = xstrdup(result->pw_gecos);
+	cred->pw_dir = xstrdup(result->pw_dir);
+	cred->pw_shell = xstrdup(result->pw_shell);
+
+	cred->ngids = group_cache_lookup(arg->uid, arg->gid,
+					 arg->pw_name, &cred->gids);
+
+	return SLURM_SUCCESS;
+}
+
 /* Terminate the plugin and release all memory. */
 extern int slurm_cred_fini(void)
 {
@@ -597,25 +627,8 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	cred->job_hostlist    = xstrdup(arg->job_hostlist);
 	cred->ctime  = time(NULL);
 
-	if (enable_nss_slurm || enable_send_gids) {
-		struct passwd pwd, *result;
-		char buffer[PW_BUF_SIZE];
-
-		int rc = slurm_getpwuid_r(arg->uid, &pwd, buffer,
-					  PW_BUF_SIZE, &result);
-		if (rc || !result) {
-			error("%s: getpwuid failed for uid=%u",
-			      __func__, arg->uid);
-			goto fail;
-		}
-		cred->pw_name = xstrdup(result->pw_name);
-		cred->pw_gecos = xstrdup(result->pw_gecos);
-		cred->pw_dir = xstrdup(result->pw_dir);
-		cred->pw_shell = xstrdup(result->pw_shell);
-
-		cred->ngids = group_cache_lookup(arg->uid, arg->gid,
-						 arg->pw_name, &cred->gids);
-	}
+	if (_fill_cred_gids(cred, arg) != SLURM_SUCCESS)
+		goto fail;
 
 	if (enable_nss_slurm) {
 		if (cred->ngids) {
@@ -773,6 +786,8 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 		for (i=0; i<cred->siglen-1; i++)
 			cred->signature[i] = 'a' + (rand() & 0xf);
 	}
+
+	(void) _fill_cred_gids(cred, arg);
 
 	slurm_mutex_unlock(&cred->mutex);
 	return cred;
