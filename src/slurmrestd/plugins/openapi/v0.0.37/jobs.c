@@ -1368,6 +1368,7 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 	}
 
 	if (rc) {
+		/* do nothing */
 	} else if (tag == URL_TAG_JOB && method == HTTP_REQUEST_GET) {
 		rc = _handle_job_get(context_id, method, parameters, query, tag,
 				     resp, job_id, errors);
