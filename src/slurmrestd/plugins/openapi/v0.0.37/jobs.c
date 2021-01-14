@@ -1348,23 +1348,24 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 	debug4("%s: job handler %s called by %s with tag %d",
 	       __func__, get_http_method_string(method), context_id, tag);
 
-	if (!parameters)
+	if (!parameters) {
 		_job_error("%s: [%s] missing request parameters",
 			   __func__, context_id);
-	else if (!(data_jobid = data_key_get(parameters, "job_id")))
+	} else if (!(data_jobid = data_key_get(parameters, "job_id"))) {
 		_job_error("%s: [%s] missing job_id in parameters",
 			   __func__, context_id);
-	else if (data_get_type(data_jobid) != DATA_TYPE_INT_64)
+	} else if (data_get_type(data_jobid) != DATA_TYPE_INT_64) {
 		_job_error("%s: [%s] invalid job_id data type",
 			   __func__, context_id);
-	else if (data_get_int(data_jobid) == 0)
+	} else if (data_get_int(data_jobid) == 0) {
 		_job_error("%s: [%s] job_id is zero",
 			   __func__, context_id);
-	else if (data_get_int(data_jobid) >= NO_VAL)
+	} else if (data_get_int(data_jobid) >= NO_VAL) {
 		_job_error("%s: [%s] job_id too large: %" PRId64,
 			   __func__, context_id, data_get_int(data_jobid));
-	else
+	} else {
 		job_id = data_get_int(data_jobid);
+	}
 
 	if (rc) {
 	} else if (tag == URL_TAG_JOB && method == HTTP_REQUEST_GET) {
@@ -1382,12 +1383,13 @@ static int _op_handler_job(const char *context_id, http_request_method_t method,
 		else
 			signal = SIGKILL;
 
-		if (signal < 1 || signal >= SIGRTMAX)
+		if (signal < 1 || signal >= SIGRTMAX) {
 			_job_error("%s: invalid signal: %d", __func__, signal);
-		else
+		} else {
 			rc = _handle_job_delete(context_id, method, parameters,
 						query, tag, resp, job_id,
 						errors, signal);
+		}
 	} else if (tag == URL_TAG_JOB &&
 		   method == HTTP_REQUEST_POST) {
 		rc = _handle_job_post(context_id, method, parameters, query,
