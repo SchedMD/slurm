@@ -6750,7 +6750,7 @@ static int _advance_resv_time(slurmctld_resv_t *resv_ptr)
 		verbose("%s: reservation %s advanced by %d day%s",
 			__func__, resv_ptr->name, day_cnt,
 			(day_cnt > 1 ? "s" : ""));
-
+		resv_ptr->idle_start_time = 0;
 		resv_ptr->start_time = resv_ptr->start_time_first;
 		_advance_time(&resv_ptr->start_time, day_cnt);
 		resv_ptr->start_time_prev = resv_ptr->start_time;
@@ -6889,12 +6889,6 @@ extern void job_resv_check(void)
 			info("Reservation %s has no more jobs for %s, ending it",
 			     resv_ptr->name, tmp_pct);
 
-			/*
-			 * Reset time here for reoccurring reservations so we
-			 * don't continually keep running this.
-			 */
-			resv_ptr->idle_start_time = 0;
-
 			(void)_post_resv_delete(resv_ptr);
 
 			if (!(resv_ptr->ctld_flags & RESV_CTLD_EPILOG))
@@ -6908,6 +6902,12 @@ extern void job_resv_check(void)
 						 RESERVE_FLAG_WEEKDAY |
 						 RESERVE_FLAG_WEEKEND |
 						 RESERVE_FLAG_WEEKLY))) {
+				/*
+				 * Reset time here for reoccurring reservations
+				 * so we don't continually keep running this.
+				 */
+				resv_ptr->idle_start_time = 0;
+
 				/*
 				 * Clear resv ptrs on finished jobs still
 				 * pointing to this reservation.
