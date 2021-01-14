@@ -5972,7 +5972,7 @@ proc check_reason { job_id reason } {
 #	It accepts all the options of run_command.
 #
 # OPTIONS
-#	It accpets and passes all the options of/to run_command and also:
+#	It accepts and passes all the options of/to run_command and also:
 #	-env env
 #		Prepend $env to the actual sbatch command to set environment
 #		variables. For example "-env 'SLURM_NTASKS_PER_GPU=2'".
