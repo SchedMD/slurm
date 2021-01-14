@@ -440,7 +440,6 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 	bool *req_sock = NULL;	/* Required socket */
 	int *socket_index = NULL; /* Socket indexes */
 	uint16_t *avail_cores_per_sock, cpus_per_gres;
-	uint16_t avail_cores_tot;
 
 	if (*max_tasks_this_node == 0)
 		return;
@@ -465,6 +464,8 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 	while ((sock_gres = (sock_gres_t *) list_next(sock_gres_iter))) {
 		bool sufficient_gres;
 		uint64_t max_gres = 0, rem_gres = 0;
+		uint16_t avail_cores_tot = 0;
+
 		job_specs = sock_gres->job_specs;
 		if (!job_specs)
 			continue;
@@ -523,7 +524,6 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 			cpus_per_gres = job_specs->def_cpus_per_gres;
 
 		/* Filter out unusable GRES by socket */
-		avail_cores_tot = 0;
 		cnt_avail_total = sock_gres->cnt_any_sock;
 		sufficient_gres = false;
 		for (s = 0; s < sockets; s++)
