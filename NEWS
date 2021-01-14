@@ -36,6 +36,8 @@ documents those changes that are of interest to users and administrators.
     calling prec_extra.
  -- Cleanup all tracked jobacct tasks when extern step child process finishes.
  -- slurmrestd/dbv0.0.36 - Correct structure of dbv0.0.36_tres_list.
+ -- Fix regression causing task/affinity and task/cgroup to be out of sync when
+    configured ThreadsPerCore is different than the physical threads per core.
 
 * Changes in Slurm 20.11.2
 ==========================
