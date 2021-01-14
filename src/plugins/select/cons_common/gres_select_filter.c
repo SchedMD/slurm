@@ -431,7 +431,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 {
 	ListIterator sock_gres_iter;
 	sock_gres_t *sock_gres;
-	int i, j, c, s, sock_cnt = 0, full_socket;
+	int i, j, c, s, sock_cnt = 0;
 	int tot_core_cnt = 0;
 	uint32_t task_cnt_incr;
 	bool *req_sock; /* Required socket */
@@ -808,7 +808,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		 * available to use with the nearby GRES that we do need.
 		 */
 		while (avail_cores_tot > req_cores) {
-			full_socket = -1;
+			int full_socket = -1;
 			for (s = 0; s < sockets; s++) {
 				if (avail_cores_tot == req_cores)
 					break;
