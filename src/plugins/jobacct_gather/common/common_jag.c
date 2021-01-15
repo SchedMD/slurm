@@ -941,6 +941,7 @@ extern void jag_common_poll_data(
 {
 	/* Update the data */
 	uint64_t total_job_mem = 0, total_job_vsize = 0;
+	uint32_t last_taskid = NO_VAL;
 	ListIterator itr;
 	jag_prec_t *prec = NULL, tmp_prec;
 	struct jobacctinfo *jobacct = NULL;
@@ -995,6 +996,10 @@ extern void jag_common_poll_data(
 		 * iterate through the tasks instead of in get_precs.
 		 */
 		if (callbacks->prec_extra) {
+			if (last_taskid == jobacct->id.taskid)
+				continue;
+
+			last_taskid = jobacct->id.taskid;
 			(*(callbacks->prec_extra))(prec, jobacct->id.taskid);
 			_print_jag_prec(prec);
 		}

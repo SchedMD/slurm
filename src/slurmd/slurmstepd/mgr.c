@@ -1050,8 +1050,8 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 		;	       /* Wait until above process exits from signal */
 	}
 
-	jobacct = jobacct_gather_remove_task(pid);
-	if (jobacct) {
+	/* remove all tracked tasks */
+	while ((jobacct = jobacct_gather_remove_task(0))) {
 		jobacctinfo_setinfo(jobacct,
 				    JOBACCT_DATA_RUSAGE, &rusage,
 				    SLURM_PROTOCOL_VERSION);
