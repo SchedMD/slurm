@@ -996,8 +996,16 @@ extern void jag_common_poll_data(
 		 * iterate through the tasks instead of in get_precs.
 		 */
 		if (callbacks->prec_extra) {
-			if (last_taskid == jobacct->id.taskid)
+			if (last_taskid == jobacct->id.taskid) {
+				log_flag(JAG, "skipping prec_extra() call against nodeid:%u taskid:%u",
+					 jobacct->id.nodeid,
+					 jobacct->id.taskid);
 				continue;
+			} else {
+				log_flag(JAG, "calling prec_extra() call against nodeid:%u taskid:%u",
+					 jobacct->id.nodeid,
+					 jobacct->id.taskid);
+			}
 
 			last_taskid = jobacct->id.taskid;
 			(*(callbacks->prec_extra))(prec, jobacct->id.taskid);
