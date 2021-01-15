@@ -485,6 +485,19 @@ static int _get_process_io_data_line(int in, jag_prec_t *prec) {
 	return 1;
 }
 
+static int _init_tres(jag_prec_t *prec, void *empty)
+{
+	/* Initialize read/writes */
+	for (int i = 0; i < prec->tres_count; i++) {
+		prec->tres_data[i].num_reads = INFINITE64;
+		prec->tres_data[i].num_writes = INFINITE64;
+		prec->tres_data[i].size_read = INFINITE64;
+		prec->tres_data[i].size_write = INFINITE64;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 static void _handle_stats(char *proc_stat_file, char *proc_io_file,
 			  char *proc_smaps_file, jag_callbacks_t *callbacks,
 			  int tres_count)
@@ -493,7 +506,7 @@ static void _handle_stats(char *proc_stat_file, char *proc_io_file,
 	static int use_pss = -1;
 	FILE *stat_fp = NULL;
 	FILE *io_fp = NULL;
-	int fd, fd2, i;
+	int fd, fd2;
 	jag_prec_t *prec = NULL;
 
 	if (no_share_data == -1) {
@@ -539,13 +552,7 @@ static void _handle_stats(char *proc_stat_file, char *proc_io_file,
 	prec->tres_data = xmalloc(prec->tres_count *
 				  sizeof(acct_gather_data_t));
 
-	/* Initialize read/writes */
-	for (i = 0; i < prec->tres_count; i++) {
-		prec->tres_data[i].num_reads = INFINITE64;
-		prec->tres_data[i].num_writes = INFINITE64;
-		prec->tres_data[i].size_read = INFINITE64;
-		prec->tres_data[i].size_write = INFINITE64;
-	}
+	(void)_init_tres(prec, NULL);
 
 	if (!_get_process_data_line(fd, prec)) {
 		fclose(stat_fp);
@@ -960,6 +967,8 @@ extern void jag_common_poll_data(
 		callbacks->get_precs = _get_precs;
 
 	ct = time(NULL);
+
+	(void)list_for_each(prec_list, (ListForF)_init_tres, NULL);
 	(*(callbacks->get_precs))(task_list, pgid_plugin, cont_id, callbacks);
 
 	if (!list_count(prec_list) || !task_list || !list_count(task_list))

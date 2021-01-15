@@ -49,6 +49,8 @@ documents those changes that are of interest to users and administrators.
     to set defaults for salloc->srun, sbatch->srun sequence.
  -- Reject job credential if non-superuser sets the LAUNCH_NO_ALLOC flag.
  -- Make it so srun --no-allocate works again.
+ -- jobacct_gather/linux - Don't count memory on tasks that have already
+    finished.
 
 * Changes in Slurm 20.11.2
 ==========================
