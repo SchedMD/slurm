@@ -28,6 +28,8 @@ documents those changes that are of interest to users and administrators.
  -- Make scontrol exit with non-zero status after failing to delete a partition
     or reservation.
  -- Make NtasksPerTRES optional in slurm_sprint_job_info().
+ -- slurmrestd/v0.0.37 - Add update_time field to nodes query to allow clients
+    to only get nodes list based on change timestamp.
 
 * Changes in Slurm 20.11.4
 ==========================

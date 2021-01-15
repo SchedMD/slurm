@@ -90,11 +90,10 @@ extern int get_date_param(data_t *query, const char *param, time_t *time) {
 	data_t *data_update_time;
 	if ((data_update_time = data_key_get(query, param))) {
 		if (data_convert_type(data_update_time, DATA_TYPE_INT_64) ==
-		    DATA_TYPE_INT_64) {
+		    DATA_TYPE_INT_64)
 			*time = data_get_int(data_update_time);
-		} else {
+		else
 			return ESLURM_REST_INVALID_QUERY;
-		}
 	}
 	return SLURM_SUCCESS;
 }

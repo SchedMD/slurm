@@ -160,9 +160,15 @@ static int _op_handler_nodes(const char *context_id,
 	data_t *errors = populate_response_format(d);
 	data_t *nodes = data_set_list(data_key_set(d, "nodes"));
 	node_info_msg_t *node_info_ptr = NULL;
+	time_t update_time;
+
+	if ((rc = get_date_param(query, "update_time", &update_time)))
+		goto done;
+
 
 	if (tag == URL_TAG_NODES)
-		rc = slurm_load_node(0, &node_info_ptr, SHOW_ALL|SHOW_DETAIL);
+		rc = slurm_load_node(update_time, &node_info_ptr,
+				     SHOW_ALL|SHOW_DETAIL);
 	else if (tag == URL_TAG_NODE) {
 		const data_t *node_name = data_key_get_const(parameters,
 							     "node_name");
@@ -178,7 +184,11 @@ static int _op_handler_nodes(const char *context_id,
 	} else
 		rc = SLURM_ERROR;
 
-	if (!rc && node_info_ptr)
+	if (errno == SLURM_NO_CHANGE_IN_DATA) {
+		/* no-op: nothing to do here */
+		rc = errno;
+		goto done;
+	} else if (!rc && node_info_ptr)
 		for (int i = 0; !rc && i < node_info_ptr->record_count; i++)
 			rc = _dump_node(nodes,
 					   &node_info_ptr->node_array[i]);
@@ -193,6 +203,7 @@ static int _op_handler_nodes(const char *context_id,
 		data_set_int(data_key_set(e, "errno"), rc);
 	}
 
+done:
 	slurm_free_node_info_msg(node_info_ptr);
 	return rc;
 }
