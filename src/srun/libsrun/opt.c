@@ -647,14 +647,6 @@ static void _opt_env(int het_job_offset)
 		e++;
 	}
 
-	/* Running srun within an existing srun. Don't inherit values. */
-	if (getenv("SLURM_STEP_ID")) {
-		xfree(sropt.cpu_bind);
-		sropt.cpu_bind_type = 0;
-		xfree(opt.mem_bind);
-		opt.mem_bind_type = 0;
-	}
-
 	/* Process spank env options */
 	if (spank_process_env_options())
 		exit(error_exit);
