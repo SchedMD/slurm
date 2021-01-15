@@ -56,6 +56,8 @@ documents those changes that are of interest to users and administrators.
     calling prec_extra.
  -- Cleanup all tracked jobacct tasks when extern step child process finishes.
  -- slurmrestd/dbv0.0.36 - Correct structure of dbv0.0.36_tres_list.
+ -- Fix regression causing task/affinity and task/cgroup to be out of sync when
+    configured ThreadsPerCore is different than the physical threads per core.
 
 * Changes in Slurm 20.11.2
 ==========================
@@ -400,6 +402,8 @@ documents those changes that are of interest to users and administrators.
     CVE-2020-27745.
  -- X11 forwarding - fix potential leak of the magic cookie when sent as an
     argument to the xauth command. CVE-2020-27746.
+ -- Fix situation when --gpus is given but not max nodes (-N1-1) in a job
+    allocation.
 
 * Changes in Slurm 20.02.5
 ==========================

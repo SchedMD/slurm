@@ -995,19 +995,17 @@ xcpuinfo_fini(void)
  */
 int xcpuinfo_abs_to_mac(char *lrange, char **prange)
 {
-	uint16_t total_cores, total_cpus;
+	static int total_cores = -1, total_cpus = -1;
 	bitstr_t* absmap = NULL;
 	bitstr_t* macmap = NULL;
 	int icore, ithread;
 	int absid, macid;
 	int rc = SLURM_SUCCESS;
 
-	/* init internal data if not already done */
-	if (xcpuinfo_init() != XCPUINFO_SUCCESS)
-		return SLURM_ERROR;
-
-	total_cores = sockets * cores;
-	total_cpus = block_map_size;
+	if (total_cores == -1) {
+		total_cores = conf->sockets * conf->cores;
+		total_cpus  = conf->block_map_size;
+	}
 
 	/* allocate bitmap */
 	absmap = bit_alloc(total_cores);
@@ -1024,14 +1022,14 @@ int xcpuinfo_abs_to_mac(char *lrange, char **prange)
 		goto end_it;
 	}
 
-	/* mapping abstract id to machine id using block_map */
+	/* mapping abstract id to machine id using conf->block_map */
 	for (icore = 0; icore < total_cores; icore++) {
 		if (bit_test(absmap, icore)) {
-			for (ithread = 0; ithread < threads; ithread++) {
-				absid = (icore * threads) + ithread;
+			for (ithread = 0; ithread < conf->threads; ithread++) {
+				absid = icore * conf->threads + ithread;
 				absid %= total_cpus;
 
-				macid = block_map[absid];
+				macid = conf->block_map[absid];
 				macid %= total_cpus;
 
 				bit_set(macmap, macid);
