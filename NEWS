@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where sometimes salloc/srun wouldn't get a message about a prolog
     failure in the job's stdout.
  -- Requeue or kill job on a prolog failure when PrologFlags is not set.
+ -- Fix race condition causing node reboots to get requeued before
+    ResumeTimeout expires.
 
 * Changes in Slurm 20.11.4
 ==========================
