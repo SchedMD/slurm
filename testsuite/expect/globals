@@ -766,6 +766,14 @@ proc run_command args {
 		fail "Invalid number of arguments [llength $args]: $args"
 	}
 
+	if {$action eq "subtest"} {
+		if {$expect_failure} {
+			set test_description "Command \"$command\" should fail"
+		} else {
+			set test_description "Command \"$command\" should succeed"
+		}
+	}
+
 	if {$log_at_trace_level} {
 		interp alias {} log_alias {} log_trace
 	} else {
@@ -789,7 +797,6 @@ proc run_command args {
 			exp_continue
 		}
 		timeout {
-			set message "Command \"$command\" timed out after $timeout seconds"
 			slow_kill $expect_pid
 			set exit_status $::RETURN_TIMEOUT
 			set timedout true
@@ -811,40 +818,37 @@ proc run_command args {
 	}
 
 	if {$timedout} {
+		set message "Command \"$command\" timed out after $timeout seconds"
 		if {$action eq "fail"} {
 			fail $message
 		} elseif {$action eq "subtest"} {
-			subfail "Command should not timeout" "$message"
+			subfail $test_description $message
 		} else {
 			log_error $message
 		}
 	} elseif {! $expect_failure && $exit_status != 0} {
-		cset message "Command \"$command\" failed with rc=$exit_status"
+		set message "Command \"$command\" failed with rc=$exit_status"
 		if {[info exists output] && $output != ""} {
 			append message ": [string trimright $output]"
 		}
 		if {$action eq "warn"} {
 			log_warn $message
 		} elseif {$action eq "subtest"} {
-			subfail "Command \"$command\" should succeed (rc = $exit_status)"
+			subfail $test_description $message
 		} elseif {$action eq "fail"} {
 			fail $message
 		}
 	} elseif {$expect_failure && $exit_status == 0} {
-		cset message "Command \"$command\" was expected to fail but succeeeded"
+		set message "Command \"$command\" was expected to fail but succeeeded"
 		if {$action eq "warn"} {
 			log_warn $message
 		} elseif {$action eq "subtest"} {
-			subfail "Command \"$command\" should fail (rc = $exit_status)"
+			subfail $test_description $message
 		} elseif {$action eq "fail"} {
 			fail $message
 		}
 	} elseif {$action eq "subtest"} {
-		if {!$expect_failure} {
-			subpass "Command \"$command\" should succeed"
-		} else {
-			subpass "Command \"$command\" should fail"
-		}
+		subpass $test_description
 	}
 	log_user $orig_log_user
 
