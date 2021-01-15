@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
  -- Interactive step - ignore cpu bind and mem bind options, and do not set
     the associated environment variables which lead to unexpected behavior
     from srun commands launched within the interactive step.
+ -- Handle exit code from pipe when using UCX with PMIx.
 
 * Changes in Slurm 20.11.2
 ==========================
