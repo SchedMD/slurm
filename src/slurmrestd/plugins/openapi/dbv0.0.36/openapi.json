@@ -2421,23 +2421,27 @@
         }
       },
       "dbv0.0.36_tres_list": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "description": "TRES type"
-          },
-          "name": {
-            "type": "string",
-            "description": "TRES name (optional)"
-          },
-          "id": {
-            "type": "integer",
-	    "description": "Database id"
-          },
-          "count": {
-            "type": "integer",
-	    "description": "Count of TRES"
+        "type": "array",
+        "description": "TRES list of attributes",
+        "items": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "TRES type"
+            },
+            "name": {
+              "type": "string",
+              "description": "TRES name (optional)"
+            },
+            "id": {
+              "type": "integer",
+              "description": "database id"
+            },
+            "count": {
+              "type": "integer",
+              "description": "count of TRES"
+            }
           }
         }
       },
