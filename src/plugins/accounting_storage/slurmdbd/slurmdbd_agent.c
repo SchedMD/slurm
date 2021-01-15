@@ -55,7 +55,6 @@ slurm_persist_conn_t *slurmdbd_conn = NULL;
 
 
 #define DBD_MAGIC		0xDEAD3219
-#define SLURMDBD_TIMEOUT	900	/* Seconds SlurmDBD for response */
 #define DEBUG_PRINT_MAX_MSG_TYPES 10
 #define MAX_DBD_DEFAULT_ACTION MAX_DBD_ACTION_DISCARD
 
