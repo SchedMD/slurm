@@ -279,8 +279,12 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 
 	itr = list_iterator_create(steps);
 	while ((stepd = list_next(itr))) {
-		/* Only use container steps from this user */
-		if (stepd->step_id.step_id == SLURM_EXTERN_CONT &&
+		/*
+		 * Only use container steps from this user
+		 * NOTE: Checking against INFINITE can be removed after 21.08
+		 */
+		if ((stepd->step_id.step_id == SLURM_EXTERN_CONT ||
+		     stepd->step_id.step_id == INFINITE) &&
 		    (uid == _get_job_uid(stepd))) {
 			cgroup_time = _cgroup_creation_time(
 				uidcg, stepd->step_id.job_id);
@@ -357,7 +361,12 @@ static int _user_job_count(List steps, uid_t uid, step_loc_t **out_stepd)
 
 	itr = list_iterator_create(steps);
 	while ((stepd = list_next(itr))) {
-		if ((stepd->step_id.step_id == SLURM_EXTERN_CONT) &&
+		/*
+		 * Only count container steps from this user
+		 * NOTE: Checking against INFINITE can be removed after 21.08
+		 */
+		if ((stepd->step_id.step_id == SLURM_EXTERN_CONT ||
+		     stepd->step_id.step_id == INFINITE) &&
 		    (uid == _get_job_uid(stepd))) {
 			user_job_cnt++;
 			*out_stepd = stepd;

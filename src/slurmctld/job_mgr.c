@@ -3321,7 +3321,7 @@ extern int kill_job_step(job_step_kill_msg_t *job_step_kill_msg, uint32_t uid)
 	job_ptr = find_job_record(job_step_kill_msg->step_id.job_id);
 	if (job_ptr && job_ptr->het_job_list &&
 	    (job_step_kill_msg->signal == SIGKILL) &&
-	    (job_step_kill_msg->step_id.step_id != SLURM_BATCH_SCRIPT)) {
+	    (job_step_kill_msg->step_id.step_id != NO_VAL)) {
 		cnt = list_count(job_ptr->het_job_list);
 		het_job_ids = xcalloc(cnt, sizeof(uint32_t));
 		i = 0;
