@@ -180,10 +180,7 @@ proc cleanup {} {
 	cancel_job $job_id2
 
 	restore_conf $config_file
-
-	if [reconfigure] {
-		log_error "Error restoring reconfiguration"
-	}
+	reconfigure
 }
 
 set sep ""
@@ -195,7 +192,7 @@ exec $bin_echo "Licenses=${licenses}${sep}${license_name}:8" >> $cwd/slurm.conf.
 exec $bin_cp $cwd/slurm.conf.work $config_file
 exec $bin_rm -f $cwd/slurm.conf.work
 
-reconfigure
+reconfigure -fail
 
 #
 # Delete any vesgitial advanced reservation, then

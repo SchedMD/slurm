@@ -41,17 +41,14 @@ if {[get_config_param "FrontendName"] ne "MISSING" && ![is_super_user]} {
 }
 
 proc cleanup { } {
-	global config_dir bin_rm
-	global mail_prog mail_prog_out
+	global config_file bin_rm mail_prog mail_prog_out
 
-	restore_conf $config_dir/slurm.conf
+	restore_conf $config_file
 	exec $bin_rm -f $mail_prog $mail_prog_out
-
 	reconfigure
 }
 
-
-save_conf $config_dir/slurm.conf
+save_conf $config_file
 make_bash_script $mail_prog "
 echo $@ >> $cwd/$mail_prog_out
 "

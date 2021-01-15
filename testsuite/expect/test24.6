@@ -249,7 +249,7 @@ PriorityWeightTRES=cpu=1
 PriorityFlags=NO_NORMAL_ALL
 "
 exec $bin_echo $prio_conf >> $config_file
-incr exit_code [reconfigure]
+reconfigure -fail
 
 
 # verify NO_NORMAL_ALL shows. It sets multiple flags but show be collapsed to

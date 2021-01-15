@@ -35,7 +35,6 @@ proc cleanup {} {
 	global bin_rm file_in
 
 	reconfigure
-
 	exec $bin_rm -f $file_in
 }
 

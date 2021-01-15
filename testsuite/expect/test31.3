@@ -40,9 +40,8 @@ proc cleanup { } {
 	global prolog epilog prolog_out epilog_out
 
 	restore_conf $config_dir/slurm.conf
-	exec $bin_rm -f $prolog $epilog $prolog_out $epilog_out
-
 	reconfigure
+	exec $bin_rm -f $prolog $epilog $prolog_out $epilog_out
 }
 
 proc check_prolog { pattern } {
@@ -96,8 +95,7 @@ exec $bin_echo "" >> $config_dir/slurm.conf
 # Append Prolog and Epilog config to the slurm.conf
 exec $bin_echo "Prolog=$cwd/$prolog" >> $config_dir/slurm.conf
 exec $bin_echo "Epilog=$cwd/$epilog" >> $config_dir/slurm.conf
-
-incr exit_code [reconfigure]
+reconfigure -fail
 
 # Test whether env vars exist in Prolog and Epilog
 log_info "Checking for regular env vars"

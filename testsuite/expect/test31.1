@@ -166,7 +166,7 @@ proc run_job { file_type program_name conf_change task_pro} {
 	$bin_sleep 10
 
 	# Update config file
-	incr exit_code [reconfigure]
+	reconfigure -fail
 
 	set sub_job 0
 	spawn $srun -t1 -w$run_host $bin_printenv SLURMD_NODENAME
@@ -238,7 +238,7 @@ if {$get_name != 1} {
 #
 change_pro_epi srun-task-epilog srun--task-epilog_$test_name 1 0
 
-incr exit_code [reconfigure]
+reconfigure -fail
 
 set sub_job 0
 set invalid_node 0
@@ -286,7 +286,7 @@ if {$make_file == 1} {
 	# Test srun --task-prolog
 	change_pro_epi srun-task-prolog srun--task-prolog_$test_name 1 1
 
-	incr exit_code [reconfigure]
+	reconfigure -fail
 
 	set sub_job 0
 	set sbcast_file      "$file_dir/${test_name}_sbcast"

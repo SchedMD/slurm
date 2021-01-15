@@ -806,12 +806,10 @@ proc run_command args {
 		}
 	}
 	set start_time [format "%.3f" [expr $start_clock_ms / 1000.000]]
-	set start_hms [format "%s.%03d" [clock format [expr int($start_clock_ms / 1000.000)] -format %H:%M:%S] [expr int(fmod($start_clock_ms, 1000))]]
 	set end_time [format "%.3f" [expr [clock milliseconds] / 1000.000]]
 	set duration [format "%.3f" [expr $end_time - $start_time]]
 
 	log_alias "Command Results:"
-	log_alias "	Start Time: $start_hms"
 	log_alias "	Duration:   $duration"
 	log_alias "	Exit Code:  $exit_status"
 	if {[info exists output]} {
@@ -4205,7 +4203,7 @@ proc get_node_cpus {node} {
 	}
 
 	# Get the number of CPUs on a node
-	set my_pid [spawn $scontrol show node $node]
+	set scontrol_pid [spawn $scontrol show node $node]
 	expect {
 		-re "CoresPerSocket=($number)" {
 			set ncores $expect_out(1,string)
@@ -4463,10 +4461,15 @@ proc get_het_job_ids { jobid {use_offset 0}} {
 #	reconfigure - calls scontrol reconfigure
 #
 # SYNOPSIS
-#	reconfigure ?cluster?
+#	reconfigure ?options? ?cluster?
 #
 # DESCRIPTION
-#	Calls scontrol reconfigure.
+#	Calls scontrol reconfigure. This routine takes the same options as
+#	run_command, passing them to the underlying run_command invocation.
+#	This command waits an additional 5 seconds before returning.
+#
+# OPTIONS
+#	See OPTIONS of run_command proc.
 #
 # ARGUMENTS
 #	cluster
@@ -4477,44 +4480,40 @@ proc get_het_job_ids { jobid {use_offset 0}} {
 #
 ################################################################
 
-proc reconfigure { {cluster ""} } {
-	global scontrol timeout
+proc reconfigure args {
+	global scontrol
 
-	set exit_code $::RETURN_SUCCESS
-	#
-	# Increase timeout just in case we're running under valgrind
-	#
-	set save_timeout $timeout
-	set timeout 20
-	if { $cluster == "" } {
-		spawn $scontrol reconfigure
-	} else {
-		spawn $scontrol -M$cluster reconfigure
-	}
-	expect {
-		-re "slurm_reconfigure error: Invalid user id" {
-			log_error "Invalid user id"
-			set exit_code $::RETURN_ERROR
-			exp_continue
-		}
-		-re "Error|error" {
-			log_error "scontrol reconfigure error"
-			set exit_code $::RETURN_ERROR
-			exp_continue
-		}
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
+	set options [list]
+	set cluster ""
+
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-* {
+				lappend options {*}[lrange $args 0 1]
+				set args [lrange $args 2 end]
+			}
+			default break
 		}
 	}
+	set argument_count [llength $args]
+	if {$argument_count > 1}  {
+		fail "Too many arguments ($argument_count): $args"
+	} elseif {$argument_count == 1} {
+		lassign $args cluster
+	}
+
+	set command $scontrol
+	if {$cluster ne ""} {
+		append command " -M$cluster"
+	}
+	append command " reconfigure"
+	set rc [run_command_status {*}$options "$command"]
+
 	#
-	# Wait for reconfigure to complete, then reset timeout and return.
+	# Wait 5 seconds for reconfigure to complete, then return.
 	#
 	sleep 5
-	set timeout $save_timeout
-	return $exit_code
+	return $rc
 }
 
 
@@ -5980,7 +5979,7 @@ proc check_reason { job_id reason } {
 #	It accepts all the options of run_command.
 #
 # OPTIONS
-#	It accpets and passes all the options of/to run_command and also:
+#	It accepts and passes all the options of/to run_command and also:
 #	-env env
 #		Prepend $env to the actual sbatch command to set environment
 #		variables. For example "-env 'SLURM_NTASKS_PER_GPU=2'".
