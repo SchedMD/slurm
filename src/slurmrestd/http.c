@@ -538,6 +538,16 @@ extern int send_http_response(const send_http_response_args_t *args)
 		if ((rc = con_mgr_queue_write_fd(args->con, args->body,
 						 args->body_length)))
 			return rc;
+	} else if (((args->status_code >= 100) && (args->status_code < 200)) ||
+		   (args->status_code == 204) ||
+		   (args->status_code == 304)) {
+		/*
+		 * RFC2616 requires empty line after headers for return code
+		 * that "MUST NOT" include a message body
+		 */
+		if ((rc = con_mgr_queue_write_fd(args->con, CRLF,
+						 strlen(CRLF))))
+			return rc;
 	}
 
 	return rc;
