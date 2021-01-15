@@ -34,6 +34,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix 19.05/20.02 batch steps talking with a 20.11 slurmctld.
  -- jobacct_gather/common - Do not process jobacct's with same taskid when
     calling prec_extra.
+ -- Cleanup all tracked jobacct tasks when extern step child process finishes.
 
 * Changes in Slurm 20.11.2
 ==========================
