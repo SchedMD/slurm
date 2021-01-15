@@ -43,6 +43,8 @@
 
 #include "src/common/data.h"
 
+extern int get_date_param(data_t *query, const char *param, time_t *time);
+
 /*
  * Fill out boilerplate for every data response
  * RET ptr to errors dict

@@ -1175,19 +1175,11 @@ static int _op_handler_jobs(const char *context_id,
 	(void) populate_response_format(resp);
 	data_t *jobs = data_set_list(data_key_set(resp, "jobs"));
 	time_t update_time = 0; /* default to unix epoch */
-	data_t *data_update_time;
 
 	debug4("%s: jobs handler called by %s", __func__, context_id);
 
-	if ((data_update_time = data_key_get(query, "update_time"))) {
-		if (data_convert_type(data_update_time, DATA_TYPE_INT_64) ==
-		    DATA_TYPE_INT_64) {
-			update_time = data_get_int(data_update_time);
-		} else {
-			rc = ESLURM_REST_INVALID_QUERY;
-			goto done;
-		}
-	}
+	if ((rc = get_date_param(query, "update_time", &update_time)))
+	    goto done;
 
 	rc = slurm_load_jobs(update_time, &job_info_ptr,
 			     SHOW_ALL | SHOW_DETAIL);
