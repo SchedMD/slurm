@@ -389,7 +389,8 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 
 
-	if (env->cpu_bind_type && !env->batch_flag) {
+	if (env->cpu_bind_type && !env->batch_flag &&
+	    (env->stepid != SLURM_INTERACTIVE_STEP)) {
 		char *str_verbose, *str_bind1 = NULL, *str_bind2 = NULL;
 		char *str_bind_list, *str_bind_type = NULL, *str_bind = NULL;
 
@@ -476,7 +477,7 @@ int setup_env(env_t *env, bool preserve_env)
 		xfree(str_bind_type);
 	}
 
-	if (env->mem_bind_type) {
+	if (env->mem_bind_type && (env->stepid != SLURM_INTERACTIVE_STEP)) {
 		char *str_verbose, *str_bind_type = NULL, *str_bind_list;
 		char *str_prefer = NULL, *str_bind = NULL;
 		char *str_bind_sort = NULL;
