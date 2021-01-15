@@ -1656,7 +1656,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				state_val = base_state;
 				bit_clear(avail_node_bitmap, node_inx);
 			} else if (state_val == NODE_STATE_CANCEL_REBOOT) {
-				if (IS_NODE_RUNNING_JOB(node_ptr)) {
+				if (!IS_NODE_REBOOT_ISSUED(node_ptr)) {
 					node_ptr->node_state &=
 						(~NODE_STATE_REBOOT);
 					state_val = base_state;
