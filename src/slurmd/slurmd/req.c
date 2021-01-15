@@ -1392,6 +1392,13 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 	super_user = _slurm_authorized_user(req_uid);
 
+	if (req->step_id.step_id == SLURM_INTERACTIVE_STEP) {
+		req->cpu_bind_type = CPU_BIND_NONE;
+		xfree(req->cpu_bind);
+		req->mem_bind_type = MEM_BIND_NONE;
+		xfree(req->mem_bind);
+	}
+
 	if ((super_user == false) && (req_uid != req->uid)) {
 		error("launch task request from uid %u",
 		      (unsigned int) req_uid);
