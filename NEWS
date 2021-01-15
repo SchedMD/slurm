@@ -40,6 +40,9 @@ documents those changes that are of interest to users and administrators.
     configured ThreadsPerCore is different than the physical threads per core.
  -- Fix situation when --gpus is given but not max nodes (-N1-1) in a job
     allocation.
+ -- Interactive step - ignore cpu bind and mem bind options, and do not set
+    the associated environment variables which lead to unexpected behavior
+    from srun commands launched within the interactive step.
 
 * Changes in Slurm 20.11.2
 ==========================
