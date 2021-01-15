@@ -2492,6 +2492,9 @@ typedef struct will_run_response_msg {
 							 * deleting the
 							 * reservation proper */
 
+#define RESERVE_REOCCURING	(RESERVE_FLAG_DAILY | RESERVE_FLAG_WEEKLY | \
+				 RESERVE_FLAG_WEEKDAY | RESERVE_FLAG_WEEKEND)
+
 typedef struct resv_core_spec {
 	char *node_name;	/* Name of reserved node */
 	char *core_id;		/* IDs of reserved cores */

@@ -2593,10 +2593,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 		}
 	}
 	if ((resv_desc_ptr->flags & RESERVE_FLAG_TIME_FLOAT) &&
-	    (resv_desc_ptr->flags & (RESERVE_FLAG_DAILY   |
-				     RESERVE_FLAG_WEEKDAY |
-				     RESERVE_FLAG_WEEKEND |
-				     RESERVE_FLAG_WEEKLY))) {
+	    (resv_desc_ptr->flags & RESERVE_REOCCURING)) {
 		info("Reservation request has mutually exclusive flags. Repeating floating reservations are not supported.");
 		rc = ESLURM_NOT_SUPPORTED;
 		goto bad_parse;
@@ -3017,10 +3014,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 
 		/* handle skipping later */
 		if (resv_desc_ptr->flags & RESERVE_FLAG_SKIP) {
-			if (!(resv_ptr->flags & (RESERVE_FLAG_DAILY |
-						 RESERVE_FLAG_WEEKDAY |
-						 RESERVE_FLAG_WEEKEND |
-						 RESERVE_FLAG_WEEKLY))) {
+			if (!(resv_ptr->flags & RESERVE_REOCCURING)) {
 				error_code = ESLURM_RESERVATION_NO_SKIP;
 				goto update_failure;
 			}
@@ -6783,10 +6777,7 @@ extern void job_resv_check(void)
 			 * If we are ending a reoccurring reservation advance
 			 * it, otherwise delete it.
 			 */
-			if (!(resv_ptr->flags & (RESERVE_FLAG_DAILY |
-						 RESERVE_FLAG_WEEKDAY |
-						 RESERVE_FLAG_WEEKEND |
-						 RESERVE_FLAG_WEEKLY))) {
+			if (!(resv_ptr->flags & RESERVE_REOCCURING)) {
 				/*
 				 * Reset time here for reoccurring reservations
 				 * so we don't continually keep running this.
@@ -6825,10 +6816,7 @@ extern void job_resv_check(void)
 		(void)_advance_resv_time(resv_ptr);
 		if ((!resv_ptr->job_run_cnt ||
 		     (resv_ptr->flags & RESERVE_FLAG_FLEX)) &&
-		    ((resv_ptr->flags & RESERVE_FLAG_DAILY )  == 0) &&
-		    ((resv_ptr->flags & RESERVE_FLAG_WEEKDAY) == 0) &&
-		    ((resv_ptr->flags & RESERVE_FLAG_WEEKEND) == 0) &&
-		    ((resv_ptr->flags & RESERVE_FLAG_WEEKLY)  == 0)) {
+		    !(resv_ptr->flags & RESERVE_REOCCURING)) {
 			if (resv_ptr->job_pend_cnt) {
 				info("Purging vestigial reservation %s "
 				     "with %u pending jobs",
