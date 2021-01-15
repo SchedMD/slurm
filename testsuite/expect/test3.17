@@ -24,7 +24,6 @@
 ############################################################################
 source ./globals
 
-set exit_code               0
 set feature	            "test$test_id"
 set file_in                 "test$test_id.input"
 set node_name               ""
@@ -153,8 +152,7 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		log_error "Slurm appears to be down"
-		set exit_code 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
 		slow_kill $srun_pid
@@ -165,12 +163,11 @@ expect {
 	}
 }
 if {$match == 0} {
-	log_error "Could not run job with constraint"
-	set exit_code 1
+	fail "Could not run job with constraint"
 }
 
 # Run "scontrol reconfig" to restore proper features on the node
-incr exit_code [reconfigure]
+reconfigure -fail
 
 # Now run a job with that constraint and make sure it fails
 set match 0
@@ -182,8 +179,7 @@ expect {
 		exp_continue
 	}
 	-re "Unable to contact" {
-		log_error "Slurm appears to be down"
-		set exit_code 1
+		fail "Slurm appears to be down"
 	}
 	timeout {
 		slow_kill $srun_pid
@@ -195,8 +191,4 @@ expect {
 }
 if {$match != 1} {
 	fail "Ran job with what should be invalid constraint"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

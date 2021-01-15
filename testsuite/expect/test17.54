@@ -33,18 +33,20 @@ set file_in     "test$test_id.input"
 set exit_code   0
 set job_id      0
 
-proc cleanup {} {
-	global bin_rm file_in
-
-	exec $bin_rm -f $file_in
-}
-
 #
 # We must be SlurmUser or root in order to change the partition MaxTime limit,
 # otherwise this test may fail.
 #
 if {![is_super_user]} {
 	skip "You must be SlurmUser or root to run this test"
+}
+
+proc cleanup {} {
+	global bin_rm file_in
+
+	# Restore partition MaxTime and DefaultTime.
+	reconfigure
+	exec $bin_rm -f $file_in
 }
 
 set default_part [default_partition]
@@ -133,12 +135,6 @@ expect {
 		wait
 	}
 }
-
-#
-# Restore partition MaxTime and DefaultTime.
-# reconfigure will set exit_code and log any errors if it fails.
-#
-incr exit_code [reconfigure]
 
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
