@@ -1871,7 +1871,6 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_node_acct;
 	static time_t last_ctld_bu_ping;
 	static time_t last_uid_update;
-	static time_t last_reboot_msg_time;
 	time_t now;
 	int no_resp_msg_interval, ping_interval, purge_job_interval;
 	int i;
@@ -1918,7 +1917,7 @@ static void *_slurmctld_background(void *no_data)
 	last_purge_job_time = last_trigger = last_health_check_time = now;
 	last_timelimit_time = last_assert_primary_time = now;
 	last_no_resp_msg_time = last_resv_time = last_ctld_bu_ping = now;
-	last_uid_update = last_reboot_msg_time = now;
+	last_uid_update = now;
 	last_acct_gather_node_time = last_ext_sensors_time = now;
 
 
@@ -2097,10 +2096,8 @@ static void *_slurmctld_background(void *no_data)
 			unlock_slurmctld(job_read_lock);
 		}
 
-		if (want_nodes_reboot && (now > last_reboot_msg_time)) {
+		if (want_nodes_reboot) {
 			lock_slurmctld(node_write_lock);
-			now = time(NULL);
-			last_reboot_msg_time = now;
 			_queue_reboot_msg();
 			unlock_slurmctld(node_write_lock);
 		}
