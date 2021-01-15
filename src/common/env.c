@@ -389,16 +389,15 @@ int setup_env(env_t *env, bool preserve_env)
 		}
 
 
-	if (env->cpu_bind_type) {
+	if (env->cpu_bind_type && !env->batch_flag &&
+	    (env->stepid != SLURM_INTERACTIVE_STEP)) {
 		char *str_verbose, *str_bind1 = NULL, *str_bind2 = NULL;
 		char *str_bind_list, *str_bind_type = NULL, *str_bind = NULL;
 
-		if (!env->batch_flag) {
-			unsetenvp(env->env, "SLURM_CPU_BIND");
-			unsetenvp(env->env, "SLURM_CPU_BIND_LIST");
-			unsetenvp(env->env, "SLURM_CPU_BIND_TYPE");
-			unsetenvp(env->env, "SLURM_CPU_BIND_VERBOSE");
-		}
+		unsetenvp(env->env, "SLURM_CPU_BIND");
+		unsetenvp(env->env, "SLURM_CPU_BIND_LIST");
+		unsetenvp(env->env, "SLURM_CPU_BIND_TYPE");
+		unsetenvp(env->env, "SLURM_CPU_BIND_VERBOSE");
 
 		if (env->cpu_bind_type & CPU_BIND_VERBOSE)
 			str_verbose = "verbose";
@@ -454,33 +453,31 @@ int setup_env(env_t *env, bool preserve_env)
 		} else
 			str_bind_type = xstrdup("");
 
-		if (!env->batch_flag) {
-			if (setenvf(&env->env, "SLURM_CPU_BIND", "%s", str_bind)) {
-				error("Unable to set SLURM_CPU_BIND");
-				rc = SLURM_ERROR;
-			}
-			if (setenvf(&env->env, "SLURM_CPU_BIND_LIST", "%s",
-				    str_bind_list)) {
-				error("Unable to set SLURM_CPU_BIND_LIST");
-				rc = SLURM_ERROR;
-			}
-			if (setenvf(&env->env, "SLURM_CPU_BIND_TYPE", "%s",
-				    str_bind_type)) {
-				error("Unable to set SLURM_CPU_BIND_TYPE");
-				rc = SLURM_ERROR;
-			}
-			if (setenvf(&env->env, "SLURM_CPU_BIND_VERBOSE", "%s",
-				    str_verbose)) {
-				error("Unable to set SLURM_CPU_BIND_VERBOSE");
-				rc = SLURM_ERROR;
-			}
+		if (setenvf(&env->env, "SLURM_CPU_BIND", "%s", str_bind)) {
+			error("Unable to set SLURM_CPU_BIND");
+			rc = SLURM_ERROR;
+		}
+		if (setenvf(&env->env, "SLURM_CPU_BIND_LIST", "%s",
+			    str_bind_list)) {
+			error("Unable to set SLURM_CPU_BIND_LIST");
+			rc = SLURM_ERROR;
+		}
+		if (setenvf(&env->env, "SLURM_CPU_BIND_TYPE", "%s",
+			    str_bind_type)) {
+			error("Unable to set SLURM_CPU_BIND_TYPE");
+			rc = SLURM_ERROR;
+		}
+		if (setenvf(&env->env, "SLURM_CPU_BIND_VERBOSE", "%s",
+			    str_verbose)) {
+			error("Unable to set SLURM_CPU_BIND_VERBOSE");
+			rc = SLURM_ERROR;
 		}
 
 		xfree(str_bind);
 		xfree(str_bind_type);
 	}
 
-	if (env->mem_bind_type) {
+	if (env->mem_bind_type && (env->stepid != SLURM_INTERACTIVE_STEP)) {
 		char *str_verbose, *str_bind_type = NULL, *str_bind_list;
 		char *str_prefer = NULL, *str_bind = NULL;
 		char *str_bind_sort = NULL;

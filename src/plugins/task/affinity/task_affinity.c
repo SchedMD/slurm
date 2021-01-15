@@ -114,6 +114,9 @@ static void _update_bind_type(launch_tasks_request_msg_t *req)
 {
 	bool set_bind = false;
 
+	if (req->step_id.step_id == SLURM_INTERACTIVE_STEP)
+		return;
+
 	if ((req->cpu_bind_type & (~CPU_BIND_VERBOSE)) == 0) {
 		if (slurm_conf.task_plugin_param & CPU_BIND_NONE) {
 			req->cpu_bind_type |= CPU_BIND_NONE;
