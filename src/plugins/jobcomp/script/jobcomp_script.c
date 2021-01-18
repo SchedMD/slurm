@@ -92,6 +92,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
@@ -469,7 +470,7 @@ static int _redirect_stdio (void)
 		return error ("jobcomp/script: Failed to redirect stdout: %m");
 	if (dup2 (devnull, STDERR_FILENO) < 0)
 		return error ("jobcomp/script: Failed to redirect stderr: %m");
-	close (devnull);
+	closeall(3);
 	return (0);
 }
 
