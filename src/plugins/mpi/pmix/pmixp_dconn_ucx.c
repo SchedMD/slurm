@@ -761,7 +761,10 @@ static void _ucx_regio(eio_handle_t *h)
 {
 	eio_obj_t *obj;
 
-	pipe(_service_pipe);
+	if (pipe(_service_pipe) != 0) {
+		error("pipe(): %m");
+		return;
+	}
 	fd_set_nonblocking(_service_pipe[0]);
 	fd_set_nonblocking(_service_pipe[1]);
 	fd_set_close_on_exec(_service_pipe[0]);

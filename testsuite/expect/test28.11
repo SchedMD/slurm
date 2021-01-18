@@ -48,7 +48,7 @@ proc get_single_node_feature { } {
 				set ret_features ""
 				exp_continue
 			}
-			set coma_pos [expr [string last , $ret_features] -1]
+			set coma_pos [expr [string first , $ret_features] -1]
 			if { $coma_pos > 0 } {
 				set ret_features [string range $ret_features 0 $coma_pos]
 			}
