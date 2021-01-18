@@ -51,6 +51,7 @@
 #define POLLRDHUP POLLHUP
 #endif
 
+#include "src/common/fd.h"
 #include "src/common/macros.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
@@ -151,20 +152,19 @@ extern char *run_command(char *script_type, char *script_path,
 	child_proc_count++;
 	slurm_mutex_unlock(&proc_count_mutex);
 	if ((cpid = fork()) == 0) {
-		int cc;
-
-		cc = sysconf(_SC_OPEN_MAX);
 		if (max_wait != -1) {
+			int devnull;
+			if ((devnull = open("/dev/null", O_RDWR)) < 0) {
+				error("%s: Unable to open /dev/null: %m",
+				      __func__);
+				_exit(127);
+			}
+			dup2(devnull, STDIN_FILENO);
 			dup2(pfd[1], STDERR_FILENO);
 			dup2(pfd[1], STDOUT_FILENO);
-			for (i = 0; i < cc; i++) {
-				if ((i != STDERR_FILENO) &&
-				    (i != STDOUT_FILENO))
-					close(i);
-			}
+			closeall(3);
 		} else {
-			for (i = 0; i < cc; i++)
-				close(i);
+			closeall(0);
 			if ((cpid = fork()) < 0)
 				_exit(127);
 			else if (cpid > 0)
