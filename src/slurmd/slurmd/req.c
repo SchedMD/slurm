@@ -1710,7 +1710,7 @@ static int _open_as_other(char *path_name, int flags, int mode,
 	}
 	send_fd_over_pipe(pipe[0], *fd);
 	close(*fd);
-	exit(SLURM_SUCCESS);
+	_exit(SLURM_SUCCESS);
 }
 
 
