@@ -55,6 +55,7 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/pack.h"
 #include "src/common/parse_config.h"
@@ -262,30 +263,26 @@ extern char *power_run_script(char *script_name, char *script_path,
 		}
 	}
 	if ((cpid = fork()) == 0) {
-		int cc;
+		int devnull;
+		devnull = open("/dev/null", O_RDWR);
 
-		cc = sysconf(_SC_OPEN_MAX);
 		if (data_in)
 			dup2(fd_stdin[0], STDIN_FILENO);
+		else
+			dup2(devnull, STDIN_FILENO);
+
 		if (max_wait != -1) {
 			dup2(fd_stdout[1], STDERR_FILENO);
 			dup2(fd_stdout[1], STDOUT_FILENO);
-			for (i = 0; i < cc; i++) {
-				if ((i != STDERR_FILENO) &&
-				    (i != STDIN_FILENO)  &&
-				    (i != STDOUT_FILENO))
-					close(i);
-			}
 		} else {
-			for (i = 0; i < cc; i++) {
-				if (!data_in || (i != STDERR_FILENO))
-					close(i);
-			}
+			dup2(devnull, STDERR_FILENO);
+			dup2(devnull, STDOUT_FILENO);
 			if ((cpid = fork()) < 0)
 				_exit(127);
 			else if (cpid > 0)
 				_exit(0);
 		}
+		closeall(3);
 		setpgid(0, 0);
 		execv(script_path, script_argv);
 		error("%s: execv(%s): %m", __func__, script_path);
