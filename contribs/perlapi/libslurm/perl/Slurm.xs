@@ -1764,7 +1764,7 @@ slurm_sprint_reservation_info(slurm_t self, HV *resv_info, int one_liner=0)
 ######################################################################
 
 int
-slurm_ping(slurm_t self, uint16_t primary=1)
+slurm_ping(slurm_t self, uint16_t primary=0)
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
