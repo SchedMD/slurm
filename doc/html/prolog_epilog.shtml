@@ -489,7 +489,8 @@ SrunEpilog and TaskEpilog.</li>
 
 <li><b>SLURM_JOB_PARTITION</b>
 Partition that job runs in.
-Available in all environments except Epilog.</li>
+Available in Prolog, PrologSlurmctld, SrunProlog, TaskProlog, EpilogSlurmctld,
+SrunEpilog and TaskEpilog.</li>
 
 <li><b>SLURM_JOB_QOS</b>
 QOS assigned to job. Available in SrunProlog, TaskProlog, SrunEpilog
