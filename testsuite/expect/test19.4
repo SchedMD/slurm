@@ -32,11 +32,9 @@ set exit_code    0
 set file_in      "test$test_id.input"
 set file_out     "test$test_id.output"
 
-proc cleanup {} {
-	global bin_rm file_in file_out
-
-	exec $bin_rm -f $file_in $file_out
-}
+# TODO: Temporary variables to debug bug 9665 (remove once fixed)
+set trigger_get_failed false
+set config_dir [get_conf_path]
 
 #
 # get my uid and clear any vestigial triggers
@@ -46,8 +44,6 @@ if {$uid == 0} {
 	skip "This test can't be run as user root"
 }
 
-exec $strigger --clear --quiet --user=$uid
-
 #
 # Build input script file
 #
@@ -55,52 +51,50 @@ set cwd "[$bin_pwd]"
 exec $bin_rm -f $file_in $file_out
 make_bash_script $file_in "$bin_echo RECONFIG >$cwd/$file_out"
 
-set disabled 0
-set matches  0
-set strigger_pid [spawn $strigger --set -v -offset=0 --reconfig --program=$cwd/$file_in]
-expect {
-	-re "permission denied" {
-		set disabled 1
-		exp_continue
+proc cleanup {} {
+	global bin_rm file_in file_out strigger uid
+
+	# TODO: Temporary debug for bug 9665 (remove once fixed)
+	global trigger_get_failed
+	if {$trigger_get_failed} {
+		if [
+			wait_for -timeout 5 -poll .1 {
+				regexp "$file_in" [run_command_output "$strigger --get -v --reconfig --user=$uid"]
+			} {}
+		] {
+			log_warn "Trigger get failed and never recovered"
+		} else {
+			log_warn "Trigger get failed but became available afterwards"
+		}
 	}
-	-re "trigger set" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		slow_kill $strigger_pid
-		fail "strigger not responding"
-	}
-	eof {
-		wait
-	}
+	global config_dir scontrol
+	restore_conf $config_dir/slurm.conf
+	run_command "$scontrol reconfigure"
+
+	run_command -none -nolog "$strigger --clear --reconfig --user=$uid --quiet"
+	exec $bin_rm -f $file_in $file_out
 }
-if {$disabled == 1} {
-	exec $bin_rm -f $file_in
-	skip "Current configuration prevents setting triggers. Need to run as SlurmUser or make SlurmUser=root"
-}
-if {$matches == 0} {
+
+# TODO: Temporarily increase logging to debug bug 9665 (remove once fixed)
+save_conf $config_dir/slurm.conf
+run_command -none "$bin_echo SlurmctldDebug=debug3 >> $config_dir/slurm.conf"
+run_command -none "$bin_echo DebugFlags=Triggers >> $config_dir/slurm.conf"
+run_command -fail "$scontrol reconfigure"
+wait_for -timeout 5 -pollinterval .1 {[get_config_param "SlurmctldDebug"] eq "debug3"} {}
+wait_for -timeout 5 -pollinterval .1 {[get_config_param "DebugFlags"] eq "Triggers"} {}
+
+run_command -fail "$strigger --clear --quiet --user=$uid"
+
+# Create a trigger on a reconfig event
+if {![regexp "trigger set" [run_command_output -fail "$strigger --set -v --offset=0 --reconfig --program=$cwd/$file_in"]]} {
 	fail "Trigger creation failure"
 }
 
-set matches 0
-set strigger_pid [spawn $strigger --get -v --reconfig --user=$uid]
-expect {
-	-re "$file_in" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		slow_kill $strigger_pid
-		fail "strigger not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches == 0} {
-	log_error "Trigger get failure"
-	set exit_code 1
+# Verify that the trigger has been created
+if {![regexp "$file_in" [run_command_output -fail "$strigger --get -v --reconfig --user=$uid"]]} {
+	# TODO: Temporary variable to debug bug 9665 (remove once fixed)
+	set trigger_get_failed true
+	fail "Trigger get failure"
 }
 
 #
@@ -118,10 +112,10 @@ expect {
 	}
 }
 if {$invalid == 0} {
-#	Add delay for slurmctld to process triggers (every 15 secs)
+	# Add delay for slurmctld to process triggers (every 15 secs)
 	exec sleep 15
 
-#	Plus time for cross-platform NSF delays
+	# Plus time for cross-platform NSF delays
 	if {[wait_for_file $file_out] != 0} {
 		log_error "File $file_out is missing"
 		set exit_code 1
@@ -141,17 +135,6 @@ if {$invalid == 0} {
 			log_error "File $file_out contents are bad"
 			set exit_code 1
 		}
-	}
-}
-
-set strigger_pid [spawn $strigger --clear -v --reconfig --user=$uid]
-expect {
-	timeout {
-		slow_kill $strigger_pid
-		fail "strigger not responding"
-	}
-	eof {
-		wait
 	}
 }
 
