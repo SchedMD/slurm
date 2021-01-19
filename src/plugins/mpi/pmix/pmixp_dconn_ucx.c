@@ -273,6 +273,11 @@ int pmixp_dconn_ucx_prepare(pmixp_dconn_handlers_t *handlers,
 		goto err_efd;
 	}
 
+	if (pipe(_service_pipe) != 0) {
+		PMIXP_ERROR("Failed to open service pipe: %m");
+		goto err_pipe;
+	}
+
 	memset(handlers, 0, sizeof(*handlers));
 	handlers->connect = _ucx_connect;
 	handlers->init = _ucx_init;
@@ -286,6 +291,7 @@ int pmixp_dconn_ucx_prepare(pmixp_dconn_handlers_t *handlers,
 
 	return SLURM_SUCCESS;
 
+err_pipe:
 err_efd:
 	ucp_worker_release_address(ucp_worker, _ucx_addr);
 err_addr:
@@ -761,10 +767,6 @@ static void _ucx_regio(eio_handle_t *h)
 {
 	eio_obj_t *obj;
 
-	if (pipe(_service_pipe) != 0) {
-		error("pipe(): %m");
-		return;
-	}
 	fd_set_nonblocking(_service_pipe[0]);
 	fd_set_nonblocking(_service_pipe[1]);
 	fd_set_close_on_exec(_service_pipe[0]);

@@ -4,6 +4,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 20.11.4
 ==========================
  -- Fix node selection for advanced reservations with features.
+ -- mpi/pmix: Handle pipe failure better when using ucx.
 
 * Changes in Slurm 20.11.3
 ==========================
