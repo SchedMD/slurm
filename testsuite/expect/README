@@ -42,6 +42,8 @@ testsuite_subtest_details:    add details of subtest in the summary [fail]
                               possible values: all, fail, fail_skip or none
 testsuite_testproc_details:   add details of testprocs in the summary [fail]
                               possible values: all, fail, fail_skip or none
+testsuite_user:               username that may be used when an admin user
+                              such as slurm or root is not desired
 
 The testsuite needs at least one cluster-wide shared file system.
 By default, we assume that it's the testsuite/expect directory (i.e. ".").
