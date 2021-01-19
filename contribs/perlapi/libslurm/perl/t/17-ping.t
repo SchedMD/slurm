@@ -54,7 +54,13 @@ SKIP: {
 SKIP: {
     skip "not super user", 1 if $>;
     $rc = $slurm->set_schedlog_level(1);
-    ok($rc == SLURM_SUCCESS, "set sched log level") || diag("set_sched_log_level" . $slurm->strerror());
+    if ($rc != SLURM_SUCCESS) {
+	    my $errno = $slurm->get_errno();
+	    if ($errno == ESLURM_DISABLED) {
+		    skip("SlurmSchedLogFile not set cannot test", 1);
+	    }
+    }
+    ok($rc == SLURM_SUCCESS, "set sched log level") ||  diag("set_sched_log_level" . $slurm->strerror());
 }
 
 
