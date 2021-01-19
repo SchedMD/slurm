@@ -9,6 +9,8 @@
 	communicate with Slurm via a REST API (in addition to the command line
 	interface (CLI) or C API).
 </p>
+<p>Please see <a href="rest_release_notes.html">REST API Release Notes</a> for
+changes between release versions.</p>
 
 <h2>Prerequisites</h2>
 <p>slurmrestd requires additional libraries for compilation:</p>

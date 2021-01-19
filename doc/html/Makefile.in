@@ -538,6 +538,7 @@ generated_html = \
 	resource_limits.html \
 	rest.html \
 	rest_api.html \
+	rest_release_notes.html \
 	rosetta.html \
 	route_plugin.html \
 	sched_config.html \
