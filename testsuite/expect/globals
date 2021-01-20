@@ -324,7 +324,7 @@ set gpu_sock_list {}
 #
 set RETURN_SUCCESS 0
 set RETURN_ERROR   1
-set RETURN_TIMEOUT 2
+set RETURN_TIMEOUT 110 ; # ETIMEDOUT
 
 
 ################################################################
