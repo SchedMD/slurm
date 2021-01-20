@@ -219,6 +219,7 @@ cset bin_sed	"sed"
 cset bin_sleep  "sleep"
 cset bin_sort	"sort"
 cset bin_sum	"sum"
+cset bin_sudo	"sudo"
 cset bin_touch	"touch"
 cset bin_true	"true"
 cset bin_uname	"uname"
@@ -690,6 +691,37 @@ proc _line_trace {} {
 ################################################################
 #
 # NAME
+#	check_run_as_user - check permissions to see if the caller may run as
+#	the supplied user
+#
+# SYNOPSIS
+#	check_run_as_user user
+#
+# DESCRIPTION
+#	Note sudo config. Calling user should be permitted to run as user.
+#
+# ARGUMENTS
+#	user
+#		user name that should be checked
+#
+# RETURN VALUE
+#	Returns a boolean value indicating whether the calling user may run
+#	as user user.
+#
+################################################################
+proc check_run_as_user user {
+	global bin_id
+
+	if {[run_command_status -none -user $user "$bin_id -un"]} {
+		return false
+	}
+	return true
+}
+
+
+################################################################
+#
+# NAME
 #	run_command - executes a command and returns a dictionary result
 #
 # SYNOPSIS
@@ -728,6 +760,9 @@ proc _line_trace {} {
 #		Logging for this command will occur at trace threshold only
 #	-stdin
 #		Provide standard in to be piped into command
+#	-user <user>
+#		Attempt to execute command as <user>. Note that sudo must be
+#		properly configured to permit the caller to execute as <user>.
 #
 # ARGUMENTS
 #	command
@@ -744,8 +779,9 @@ proc _line_trace {} {
 #
 ################################################################
 proc run_command args {
-	global bin_bash
+	global bin_bash bin_sudo
 
+	set alt_user ""
 	set exit_status 0
 	set timedout false
 	set output ""
@@ -764,6 +800,7 @@ proc run_command args {
 			-xfail   {set expect_failure true; set args [lrange $args 1 end]}
 			-nolog   {set log_at_trace_level true; set args [lrange $args 1 end]}
 			-stdin   {set stdin [lindex $args 1]; set args [lassign $args - stdin]}
+			-user    {set args [lassign $args - alt_user]}
 			-*       {fail "Unknown option: [lindex $args 0]"}
 			default  break
 		}
@@ -791,10 +828,18 @@ proc run_command args {
 	set orig_log_user [log_user -info]
 	log_user 0
 
-	log_alias "Invoking command \"$command\""
+	if {$alt_user ne ""} {
+		log_alias "Invoking command \"$command\" as user $alt_user"
+	} else {
+		log_alias "Invoking command \"$command\""
+	}
 	set start_clock_ms [clock milliseconds]
 	set stty_init raw ; # Prevent the terminal from inserting \r
-	set expect_pid [spawn -noecho $bin_bash -c "$command"]
+	if {$alt_user ne ""} {
+		set expect_pid [spawn -noecho $bin_sudo -nu $alt_user $bin_bash -c "$command"]
+	} else {
+		set expect_pid [spawn -noecho $bin_bash -c "$command"]
+	}
 	if { $stdin != "" } {
 		exp_send "$stdin"
 		set command "$command <<< $stdin"
