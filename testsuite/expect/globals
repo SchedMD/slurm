@@ -250,6 +250,9 @@ set ::env(LANG)          "en_US.UTF-8"
 # Testsuite level variables
 cset testsuite_shared_dir "[$bin_pwd]"
 
+# Testsuite non-privileged user (set it in globals.local)
+cset testsuite_user ""
+
 # Testsuite log variables
 cset testsuite_log_level $LOG_LEVEL_DEBUG
 cset testsuite_log_format "\[%{timestamp}s.%{msecs}03d] %{loglevel}-7s %{message}s \(%{backtrace}s)"
@@ -683,27 +686,29 @@ proc _line_trace {} {
 ################################################################
 #
 # NAME
-#	check_run_as_user - check permissions to see if the caller may run as
-#	the supplied user
+#	check_run_as_user - check if the caller may run_command as the supplied user
 #
 # SYNOPSIS
 #	check_run_as_user user
 #
 # DESCRIPTION
-#	Note sudo config. Calling user should be permitted to run as user.
-#
-# ARGUMENTS
-#	user
-#		user name that should be checked
+#	Note that a proper sudo config needs to be set in orther to pass this
+#	check. Calling user should be permitted to run_commands as the
+#	supplied user using sudo without password.
+#	See the -user option of run_command.
 #
 # RETURN VALUE
-#	Returns a boolean value indicating whether the calling user may run
-#	as user user.
+#	Returns a boolean value indicating whether the calling user may
+#	run_command as user.
 #
 ################################################################
+
 proc check_run_as_user user {
 	global bin_id
 
+	if {$user eq ""} {
+		return false
+	}
 	if {[run_command_status -none -user $user "$bin_id -un"]} {
 		return false
 	}
