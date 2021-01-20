@@ -250,6 +250,9 @@ set ::env(LANG)          "en_US.UTF-8"
 # Testsuite level variables
 cset testsuite_shared_dir "[$bin_pwd]"
 
+# Testsuite non-privileged user (set it in globals.local)
+cset testsuite_user ""
+
 # Testsuite log variables
 cset testsuite_log_level $LOG_LEVEL_DEBUG
 cset testsuite_log_format "\[%{timestamp}s.%{msecs}03d] %{loglevel}-7s %{message}s \(%{backtrace}s)"
@@ -691,27 +694,29 @@ proc _line_trace {} {
 ################################################################
 #
 # NAME
-#	check_run_as_user - check permissions to see if the caller may run as
-#	the supplied user
+#	check_run_as_user - check if the caller may run_command as the supplied user
 #
 # SYNOPSIS
 #	check_run_as_user user
 #
 # DESCRIPTION
-#	Note sudo config. Calling user should be permitted to run as user.
-#
-# ARGUMENTS
-#	user
-#		user name that should be checked
+#	Note that a proper sudo config needs to be set in orther to pass this
+#	check. Calling user should be permitted to run_commands as the
+#	supplied user using sudo without password.
+#	See the -user option of run_command.
 #
 # RETURN VALUE
-#	Returns a boolean value indicating whether the calling user may run
-#	as user user.
+#	Returns a boolean value indicating whether the calling user may
+#	run_command as user.
 #
 ################################################################
+
 proc check_run_as_user user {
 	global bin_id
 
+	if {$user eq ""} {
+		return false
+	}
 	if {[run_command_status -none -user $user "$bin_id -un"]} {
 		return false
 	}
@@ -2361,18 +2366,38 @@ proc wait_job_reason args {
 #	get_config - returns a dictionary of slurm configuration parameters
 #
 # SYNOPSIS
-#	get_config
+#	get_config ?options?
 #
-# DESCRIPTION
-#	Uses `scontrol show config` to return the slurm configuration as
-#	a dictionary of parameter values.
+# OPTIONS
+#	-dbd
+#		uses `sacctmgr show config` to return slurmdbd configuration
+#		parameters
+#	-slurm
+#		uses `scontrol show config` to return slurm configuration
+#		parameters (this is the default)
+#
+# RETURN VALUE
+#	Returns a dictionary of parameter values
 #
 ################################################################
 
-proc get_config { } {
-	global scontrol
+proc get_config args {
+	global sacctmgr scontrol
 
-	set output [run_command_output -fail -nolog "$scontrol show config"]
+	set command "$scontrol"
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-slurm  {set command "$scontrol"; set args [lrange $args 1 end]}
+			-dbd    {set command "$sacctmgr"; set args [lrange $args 1 end]}
+			-*      {fail "Unknown option: [lindex $args 0]"}
+			default break
+		}
+	}
+	if {[llength $args] > 0} {
+		fail "[lindex [info level 0] 0]: No arguments allowed: $args"
+	}
+
+	set output [run_command_output -fail -nolog "$command show config"]
 
 	foreach line [split $output "\n"] {
 		if {[regexp {^(\S+) += (.*)$} $line {} param_name param_value] == 1} {
@@ -2387,10 +2412,22 @@ proc get_config { } {
 ################################################################
 #
 # NAME
-#	get_config_param - returns a slurm configuration parameter
+#	get_config_param - returns a slurm configuration parameter value
 #
 # SYNOPSIS
-#	get_config_param parameter_name
+#	get_config_param ?options? parameter_name
+#
+# OPTIONS
+#	-dbd
+#		uses `sacctmgr show config` to return the specified slurmdbd
+#		configuration parameter value
+#	-slurm
+#		uses `scontrol show config` to return the specified slurm
+#		configuration parameter value (this is the default)
+#
+# ARGUMENTS
+#	parameter_name
+#		the parameter to return the value for
 #
 # DESCRIPTION
 #	Returns a specific configuration parameter value.
@@ -2401,9 +2438,25 @@ proc get_config { } {
 #
 ################################################################
 
-proc get_config_param { parameter_name } {
+proc get_config_param args {
 
-	set config_dict [get_config]
+	set options [list]
+	while {[llength $args]} {
+		switch -glob -- [lindex $args 0] {
+			-* {
+				lappend options [lindex $args 0]
+				set args [lrange $args 1 end]
+			}
+			default break
+		}
+	}
+	if {[llength $args] == 1} {
+		lassign $args parameter_name
+	} else {
+		fail "[lindex [info level 0] 0]: Invalid number of arguments ([llength $args]): $args"
+	}
+
+	set config_dict [get_config {*}$options]
 
 	if [dict exists $config_dict $parameter_name] {
 		return [dict get $config_dict $parameter_name]
