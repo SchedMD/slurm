@@ -394,8 +394,7 @@ Available in PrologSlurmctld, SrunProlog, TaskProlog, EpilogSlurmctld,
 SrunEpilog and TaskEpilog.</li>
 
 <li><b>SLURM_CLUSTER_NAME</b>
-Name of the cluster executing the job. Available in Prolog, SrunProlog,
-TaskProlog, Epilog, SrunEpilog and TaskEpilog.</li>
+Name of the cluster executing the job.</li>
 
 <li><b>SLURM_CONF</b>
 Location of the slurm.conf file. Available in Prolog, SrunProlog, TaskProlog,
@@ -490,7 +489,8 @@ SrunEpilog and TaskEpilog.</li>
 
 <li><b>SLURM_JOB_PARTITION</b>
 Partition that job runs in.
-Available in all environments except Epilog.</li>
+Available in Prolog, PrologSlurmctld, SrunProlog, TaskProlog, EpilogSlurmctld,
+SrunEpilog and TaskEpilog.</li>
 
 <li><b>SLURM_JOB_QOS</b>
 QOS assigned to job. Available in SrunProlog, TaskProlog, SrunEpilog
@@ -652,6 +652,6 @@ the job to be requeued. Only batch jobs can be requeued. Interactive jobs
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 24 March 2020</p>
+<p style="text-align:center;">Last modified 19 January 2021</p>
 
 <!--#include virtual="footer.txt"-->

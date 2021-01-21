@@ -5521,7 +5521,7 @@ Otherwise it will not be set.
 To reference this specific task of a job array, combine
 SLURM_ARRAY_JOB_ID with SLURM_ARRAY_TASK_ID
 (e.g. "scontrol update ${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...");
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
 .TP
 \fBSLURM_ARRAY_TASK_ID\fR
 If this job is part of a job array, this will be set to the task ID.
@@ -5529,74 +5529,72 @@ Otherwise it will not be set.
 To reference this specific task of a job array, combine
 SLURM_ARRAY_JOB_ID with SLURM_ARRAY_TASK_ID
 (e.g. "scontrol update ${SLURM_ARRAY_JOB_ID}_{$SLURM_ARRAY_TASK_ID} ...");
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
 .TP
 \fBSLURM_ARRAY_TASK_MAX\fR
 If this job is part of a job array, this will be set to the maximum
 task ID.
 Otherwise it will not be set.
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
 .TP
 \fBSLURM_ARRAY_TASK_MIN\fR
 If this job is part of a job array, this will be set to the minimum
 task ID.
 Otherwise it will not be set.
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
 .TP
 \fBSLURM_ARRAY_TASK_STEP\fR
 If this job is part of a job array, this will be set to the step
 size of task IDs.
 Otherwise it will not be set.
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
 .TP
 \fBSLURM_CLUSTER_NAME\fR
 Name of the cluster executing the job.
 .TP
 \fBSLURM_CONF\fR
-Location of the slurm.conf file. Available in \fBProlog\fR and \fBEpilog\fR
-only.
+Location of the slurm.conf file. Available in \fBProlog\fR and \fBEpilog\fR.
 .TP
 \fBSLURMD_NODENAME\fR
 Name of the node running the task. In the case of a parallel job executing
 on multiple compute nodes, the various tasks will have this environment
 variable set to different values on each compute node. Availble in
-\fBProlog\fR and \fBEpilog\fR only.
+\fBProlog\fR and \fBEpilog\fR.
 .TP
 \fBSLURM_JOB_ACCOUNT\fR
 Account name used for the job.
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
 .TP
 \fBSLURM_JOB_CONSTRAINTS\fR
 Features required to run the job.
-Available in \fBProlog\fR, \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+Available in \fBProlog\fR, \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
 .TP
 \fBSLURM_JOB_DERIVED_EC\fR
 The highest exit code of all of the job steps.
-Available in \fBEpilogSlurmctld\fR only.
+Available in \fBEpilogSlurmctld\fR.
 .TP
 \fBSLURM_JOB_EXIT_CODE\fR
 The exit code of the job script (or salloc). The value is the status
 as returned by the wait() system call (See wait(2))
-Available in \fBEpilogSlurmctld\fR only.
+Available in \fBEpilogSlurmctld\fR.
 .TP
 \fBSLURM_JOB_EXIT_CODE2\fR
 The exit code of the job script (or salloc). The value has the format
 <exit>:<sig>. The first number is the exit code, typically as set by the
 exit() function. The second number of the signal that caused the process to
 terminate if it was terminated by a signal.
-Available in \fBEpilogSlurmctld\fR only.
+Available in \fBEpilogSlurmctld\fR.
 .TP
 \fBSLURM_JOB_GID\fR
 Group ID of the job's owner.
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
 .TP
 \fBSLURM_JOB_GPUS\fR
 GPU IDs allocated to the job (if any).
-Available in the \fBProlog\fR only.
+Available in the \fBProlog\fR.
 .TP
 \fBSLURM_JOB_GROUP\fR
 Group name of the job's owner.
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
 .TP
 \fBSLURM_JOB_ID\fR
 Job ID.
@@ -5606,17 +5604,17 @@ Job ID.
 .TP
 \fBSLURM_JOB_NAME\fR
 Name of the job.
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
 .TP
 \fBSLURM_JOB_NODELIST\fR
 Nodes assigned to job. A Slurm hostlist expression.
 "scontrol show hostnames" can be used to convert this to a
 list of individual host names.
-Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+Available in \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
 .TP
 \fBSLURM_JOB_PARTITION\fR
 Partition that job runs in.
-Available in \fBProlog\fR, \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR only.
+Available in \fBProlog\fR, \fBPrologSlurmctld\fR and \fBEpilogSlurmctld\fR.
 .TP
 \fBSLURM_JOB_UID\fR
 User ID of the job's owner.
