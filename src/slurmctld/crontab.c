@@ -72,7 +72,7 @@ static int _handle_job(void *x, void *y)
 	if (!job->crontab_entry || !valid_cron_entry(job->crontab_entry)) {
 		error("crontab submission failed due to missing or invalid cron_entry_t");
 		args->return_code = SLURM_ERROR;
-		return 1;
+		return -1;
 	}
 
 	/*
@@ -102,7 +102,7 @@ static int _handle_job(void *x, void *y)
 		xstrfmtcat(*args->failed_lines, "%u-%u",
 			   ((cron_entry_t *) job->crontab_entry)->line_start,
 			   ((cron_entry_t *) job->crontab_entry)->line_end);
-		return 1;
+		return -1;
 	}
 
 	args->return_code = job_allocate(job, 0, false, NULL, 0, args->uid,
@@ -122,7 +122,7 @@ static int _handle_job(void *x, void *y)
 		xstrfmtcat(*args->failed_lines, "%u-%u",
 			   ((cron_entry_t *) job->crontab_entry)->line_start,
 			   ((cron_entry_t *) job->crontab_entry)->line_end);
-		return 1;
+		return -1;
 	} else {
 		xassert(job_ptr->details);
 		job_ptr->details->crontab_entry = job->crontab_entry;
