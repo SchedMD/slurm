@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
     jobs to start when cgroups failure to configure correctly.
  -- Fix cgroup ns detection when using containers (e.g. LXC or Docker).
  -- Reset job's next_step_id counter to 0 after being requeued.
+ -- Make scontrol exit with non-zero status after failing to delete a partition
+    or reservation.
 
 * Changes in Slurm 20.11.4
 ==========================

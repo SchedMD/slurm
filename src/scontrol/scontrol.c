@@ -1585,6 +1585,7 @@ static void _delete_it(int argc, char **argv)
 			char errmsg[64];
 			snprintf(errmsg, 64, "delete_partition %s", argv[0]);
 			slurm_perror(errmsg);
+			exit_code = 1;
 		}
 	} else if (xstrncasecmp(tag, "ReservationName", MAX(tag_len, 3)) == 0) {
 		reservation_name_msg_t   res_msg;
@@ -1594,6 +1595,7 @@ static void _delete_it(int argc, char **argv)
 			char errmsg[64];
 			snprintf(errmsg, 64, "delete_reservation %s", argv[0]);
 			slurm_perror(errmsg);
+			exit_code = 1;
 		}
 	} else {
 		exit_code = 1;
