@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
 set file_in      "test$test_id.input"
 set file_out     "test$test_id.output"
 
@@ -115,8 +114,7 @@ if {$invalid == 0} {
 
 	# Plus time for cross-platform NSF delays
 	if {[wait_for_file $file_out] != 0} {
-		log_error "File $file_out is missing"
-		set exit_code 1
+		fail "File $file_out is missing"
 	} else {
 		set reconfig 0
 		spawn $bin_cat $file_out
@@ -130,12 +128,7 @@ if {$invalid == 0} {
 			}
 		}
 		if {$reconfig == 0} {
-			log_error "File $file_out contents are bad"
-			set exit_code 1
+			fail "File $file_out contents are bad"
 		}
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
