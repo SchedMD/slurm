@@ -254,6 +254,10 @@ static void _set_procdatas(List lresp)
 		list_append(rankinfo, kvp);
 		free(nodename);
 
+		PMIXP_KVP_CREATE(kvp, PMIX_NODEID, &nsptr->node_id,
+				 PMIX_UINT32);
+		list_append(rankinfo, kvp);
+
 		/* merge rankinfo into one PMIX_PROC_DATA key */
 		count = list_count(rankinfo);
 		PMIX_INFO_CREATE(info, count);

@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix node selection for advanced reservations with features.
  -- mpi/pmix: Handle pipe failure better when using ucx.
+ -- mpi/pmix: include PMIX_NODEID for each process entry.
 
 * Changes in Slurm 20.11.3
 ==========================
