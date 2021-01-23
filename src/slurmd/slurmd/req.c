@@ -2699,8 +2699,13 @@ _launch_job_fail(uint32_t job_id, uint32_t slurm_rc)
 		info("Could not launch job %u and not able to requeue it, "
 		     "cancelling job", job_id);
 
-		if ((slurm_rc == ESLURMD_PROLOG_FAILED) &&
-		    (rc == ESLURM_BATCH_ONLY)) {
+		if (slurm_rc == ESLURMD_PROLOG_FAILED) {
+			/*
+			 * Send the job's stdout a message, whether or not it's
+			 * a batch job. ESLURM_DISABLED can take priority over
+			 * ESLURM_BATCH_ONLY so we have no way to tell if it's
+			 * a batch job or not.
+			 */
 			char *buf = NULL;
 			xstrfmtcat(buf, "Prolog failure on node %s",
 				   conf->node_name);
