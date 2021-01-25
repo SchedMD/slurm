@@ -147,10 +147,10 @@ static void _update_crontab_with_disabled_lines(char **crontab,
 
 static void _reset_options(void)
 {
-        slurm_reset_all_options(&opt, true);
-        /* cli_filter plugins can change the defaults */
-        if (cli_filter_g_setup_defaults(&opt, false)) {
-                error("cli_filter plugin terminated with error");
+	slurm_reset_all_options(&opt, true);
+	/* cli_filter plugins can change the defaults */
+	if (cli_filter_g_setup_defaults(&opt, false)) {
+		error("cli_filter plugin terminated with error");
 		exit(1);
 	}
 
@@ -167,22 +167,22 @@ char *_load_script_from_fd(int fd)
 {
 	char *buf, *ptr;
 	int buf_size = 4096, buf_left, script_size = 0, tmp_size;
-        buf = ptr = xmalloc(buf_size);
-        buf_left = buf_size;
+	buf = ptr = xmalloc(buf_size);
+	buf_left = buf_size;
 
 	if (lseek(fd, 0, SEEK_SET) < 0)
 		fatal("%s: lseek(0): %m", __func__);
 
-        while((tmp_size = read(fd, ptr, buf_left)) > 0) {
-                buf_left -= tmp_size;
-                script_size += tmp_size;
-                if (buf_left == 0) {
-                        buf_size += BUFSIZ;
-                        xrealloc(buf, buf_size);
-                }
-                ptr = buf + script_size;
-                buf_left = buf_size - script_size;
-        }
+	while((tmp_size = read(fd, ptr, buf_left)) > 0) {
+		buf_left -= tmp_size;
+		script_size += tmp_size;
+		if (buf_left == 0) {
+			buf_size += BUFSIZ;
+			xrealloc(buf, buf_size);
+		}
+		ptr = buf + script_size;
+		buf_left = buf_size - script_size;
+	}
 
 	return buf;
 }
