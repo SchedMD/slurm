@@ -163,7 +163,7 @@ static char *_job_script_header(void)
 		       "# This job was submitted through scrontab\n");
 }
 
-char *_load_script_from_fd(int fd)
+static char *_load_script_from_fd(int fd)
 {
 	char *buf, *ptr;
 	int buf_size = 4096, buf_left, script_size = 0, tmp_size;
