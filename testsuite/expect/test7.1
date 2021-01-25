@@ -45,7 +45,7 @@ proc cleanup {} {
 }
 
 # expected outcome is different under multifactor rule
-if { ![string compare [priority_type] multifactor] } {
+if {[get_config_param "PriorityType"] eq "priority/multifactor"} {
 	set multi 1
 }
 

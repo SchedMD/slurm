@@ -2703,45 +2703,6 @@ proc get_bb_types { } {
 ################################################################
 #
 # NAME
-#	priority_type - gets the priority plugin type
-#
-# SYNOPSIS
-#	priority_type
-#
-# DESCRIPTION
-#	Use scontrol to determine the priority plugin
-#
-# RETURN VALUE
-#	Name of priority type
-#
-################################################################
-
-proc priority_type {} {
-	global scontrol
-
-	log_user 0
-	set name ""
-	set fd [open "|$scontrol show config"]
-	while {[gets $fd line] != -1} {
-		if {[regexp {^PriorityType *= priority/(\w+)} $line frag name]
-				== 1} {
-			break
-		}
-	}
-	catch {close $fd}
-	log_user 1
-
-	if {[string length $name] == 0} {
-		log_error "Could not identify the Priority Type"
-	}
-
-	return $name
-}
-
-
-################################################################
-#
-# NAME
 #	get_default_acct - gets user's default account
 #
 # SYNOPSIS
@@ -3214,43 +3175,6 @@ proc default_part_exclusive {} {
 	} else {
 		return 0
 	}
-}
-
-
-################################################################
-#
-# NAME
-#	switch_type - determines the switch type
-#
-# SYNOPSIS
-#	switch_type
-#
-# DESCRIPTION
-#	Use scontrol to determine the switch type
-#
-# RETURN VALUE
-#	Name of SwitchType
-#
-################################################################
-
-proc switch_type {} {
-	global scontrol
-
-	set name ""
-	set fd [open "|$scontrol show config"]
-	while {[gets $fd line] != -1} {
-		if {[regexp {^SwitchType *= switch/(\w+)} $line frag name]
-				== 1} {
-			break
-		}
-	}
-	catch {close $fd}
-
-	if {[string length $name] == 0} {
-		log_error "Could not identify the switch type"
-	}
-
-	return $name
 }
 
 
@@ -4476,32 +4400,6 @@ proc check_hosts_contiguous { check_hosts_list {partition ""} } {
 	}
 
 	return true
-}
-
-
-proc expect_extern_step { } {
-	global scontrol
-	# If PrologFlags=contain is in slurm.conf, then an "extern" step will be
-	# launched on each node, so we need to check for 3 steps per
-	# job instead of 2.
-
-	log_user 0
-	set extern_step 0
-	set scon_pid [spawn -noecho $scontrol show config]
-	expect {
-		-re "PrologFlags\\s*=\\s*\[A-z/,\]*Contain" {
-			set extern_step 1
-		}
-		timeout {
-			fail "scontrol show config not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $extern_step
 }
 
 
