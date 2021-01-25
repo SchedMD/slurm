@@ -3658,6 +3658,7 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	bool truth;
 	uint16_t uint16_tmp;
 	uint64_t def_cpu_per_gpu = 0, def_mem_per_gpu = 0, tot_prio_weight;
+	uint64_t uint64_tmp;
 	job_defaults_t *job_defaults;
 	int i;
 
@@ -3812,12 +3813,16 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			 conf->cred_type = xstrdup(DEFAULT_CRED_TYPE);
 	}
 
-	conf->def_mem_per_cpu = 0;
-	if (s_p_get_uint64(&conf->def_mem_per_cpu, "DefMemPerCPU", hashtbl))
-		conf->def_mem_per_cpu |= MEM_PER_CPU;
-	else if (!s_p_get_uint64(&conf->def_mem_per_cpu, "DefMemPerNode",
-				 hashtbl))
-		conf->def_mem_per_cpu = DEFAULT_MEM_PER_CPU;
+	if (!s_p_get_uint64(&conf->def_mem_per_cpu, "DefMemPerNode", hashtbl)) {
+		if (s_p_get_uint64(&conf->def_mem_per_cpu, "DefMemPerCPU",
+				   hashtbl)) {
+			conf->def_mem_per_cpu |= MEM_PER_CPU;
+		} else {
+			conf->def_mem_per_cpu = DEFAULT_MEM_PER_CPU;
+		}
+	} else if (s_p_get_uint64(&uint64_tmp, "DefMemPerCPU", hashtbl)) {
+		error("DefMemPerCPU ignored, since it's mutually exclusive with DefMemPerNode");
+	}
 
 	if (s_p_get_uint64(&def_cpu_per_gpu, "DefCPUPerGPU", hashtbl)) {
 		job_defaults = xmalloc(sizeof(job_defaults_t));
@@ -4112,13 +4117,15 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		}
 	}
 
-	conf->max_mem_per_cpu = 0;
-	if (s_p_get_uint64(&conf->max_mem_per_cpu,
-			   "MaxMemPerCPU", hashtbl)) {
-		conf->max_mem_per_cpu |= MEM_PER_CPU;
-	} else if (!s_p_get_uint64(&conf->max_mem_per_cpu,
-				 "MaxMemPerNode", hashtbl)) {
-		conf->max_mem_per_cpu = DEFAULT_MAX_MEM_PER_CPU;
+	if (!s_p_get_uint64(&conf->max_mem_per_cpu, "MaxMemPerNode", hashtbl)) {
+		if (s_p_get_uint64(&conf->max_mem_per_cpu, "MaxMemPerCPU",
+				   hashtbl)) {
+			conf->max_mem_per_cpu |= MEM_PER_CPU;
+		} else {
+			conf->max_mem_per_cpu = DEFAULT_MAX_MEM_PER_CPU;
+		}
+	} else if (s_p_get_uint64(&uint64_tmp, "MaxMemPerCPU", hashtbl)) {
+		   error("MaxMemPerCPU ignored, since it's mutually exclusive with MaxMemPerNode");
 	}
 
 	if (!s_p_get_uint32(&conf->max_step_cnt, "MaxStepCount", hashtbl))
