@@ -4,6 +4,8 @@
 scrontab \- manage Slurm crontab files
 
 .SH "SYNOPSIS"
+scrontab [-u user] file
+.br
 scrontab [-u user] [ -e | -l | -r ]
 
 .SH "DESCRIPTION"
@@ -58,6 +60,8 @@ ranges being separated. Step values can be specified by entering a slash
 interval appropriate for that field.
 
 .SH "OPTIONS"
+The first form of this command is used to install a new crontab from some named
+file or standard input if the pseudo-filename ``-'' is given.
 .TP
 \fB\-e\fR
 Edit the crontab. If a crontab does not exist already, a default example

@@ -139,6 +139,7 @@ COMMAND CHANGES (see man pages for details)
  -- "scontrol show node" now shows State as base_state+flags instead of
     shortened state with flags appended. eg. IDLE# -> IDLE+POWERING_UP.
     Also "POWER" state flag string is "POWERED_DOWN".
+ -- scrontab - add ability to update crontab from a file or standard input.
 
 API CHANGES
 ===========
