@@ -166,7 +166,9 @@ static char *_job_script_header(void)
 static char *_read_fd(int fd)
 {
 	char *buf, *ptr;
-	int buf_size = 4096, buf_left, script_size = 0, tmp_size;
+	int buf_size = 4096;
+	size_t buf_left;
+	ssize_t script_size = 0, tmp_size;
 	buf = ptr = xmalloc(buf_size);
 	buf_left = buf_size;
 
