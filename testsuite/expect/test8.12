@@ -94,7 +94,7 @@ proc test_flex {use_flex submit_active} {
 	} else {
 		setup $use_flex "+5"
 	}
-	set job_id [submit_job -none "-N2 --reservation=$res_name --wrap 'sleep 30'"]
+	set job_id [submit_job -none "-N2 --reservation=$res_name --wrap 'sleep 30' -o /dev/null -e /dev/null"]
 	if {$use_flex} {
 		subtest {![wait_for_job -timeout 30 $job_id RUNNING]} "Job should be running because with FLEX more nodes can be requested"
 	} else {
@@ -113,7 +113,7 @@ proc test_flex {use_flex submit_active} {
 	} else {
 		setup $use_flex "+5"
 	}
-	set job_id [submit_job -fail "-N1 --reservation=$res_name -t 120 --wrap 'sleep 100'"]
+	set job_id [submit_job -fail "-N1 --reservation=$res_name -t 120 --wrap 'sleep 100' -o /dev/null -e /dev/null"]
 	subtest {![wait_for_job -timeout 30 $job_id RUNNING]} "Job should be RUNNING"
 	subtest {![wait_for_job -timeout 200 -pollinterval 10 $job_id DONE]} "Job should be DONE"
 
@@ -126,7 +126,7 @@ proc test_flex {use_flex submit_active} {
 	# Subtest Job start before reservation StartTime
 	subcleanup
 	setup $use_flex "+60"
-	set job_id [submit_job -fail "-N1 --reservation=$res_name -t 300 --wrap 'sleep 30'"]
+	set job_id [submit_job -fail "-N1 --reservation=$res_name -t 300 --wrap 'sleep 30' -o /dev/null -e /dev/null"]
 	if {$use_flex} {
 		subtest {![wait_for_job -timeout 30 $job_id RUNNING]} "Job should start before reservation since it's FLEX."
 	} else {
