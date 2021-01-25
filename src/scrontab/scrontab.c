@@ -170,7 +170,7 @@ static char *_read_fd(int fd)
 	buf = ptr = xmalloc(buf_size);
 	buf_left = buf_size;
 
-	while((tmp_size = read(fd, ptr, buf_left)) > 0) {
+	while ((tmp_size = read(fd, ptr, buf_left)) > 0) {
 		buf_left -= tmp_size;
 		script_size += tmp_size;
 		if (buf_left == 0) {
