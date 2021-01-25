@@ -163,15 +163,12 @@ static char *_job_script_header(void)
 		       "# This job was submitted through scrontab\n");
 }
 
-static char *_load_script_from_fd(int fd)
+static char *_read_fd(int fd)
 {
 	char *buf, *ptr;
 	int buf_size = 4096, buf_left, script_size = 0, tmp_size;
 	buf = ptr = xmalloc(buf_size);
 	buf_left = buf_size;
-
-	if (lseek(fd, 0, SEEK_SET) < 0)
-		fatal("%s: lseek(0): %m", __func__);
 
 	while((tmp_size = read(fd, ptr, buf_left)) > 0) {
 		buf_left -= tmp_size;
@@ -185,6 +182,14 @@ static char *_load_script_from_fd(int fd)
 	}
 
 	return buf;
+}
+
+static char *_load_script_from_fd(int fd)
+{
+	if (lseek(fd, 0, SEEK_SET) < 0)
+		fatal("%s: lseek(0): %m", __func__);
+
+	return _read_fd(fd);
 }
 
 /*
