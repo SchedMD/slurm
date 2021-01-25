@@ -188,6 +188,7 @@
 #define	list_for_each		slurm_list_for_each
 #define	list_for_each_max	slurm_list_for_each_max
 #define	list_sort		slurm_list_sort
+#define	list_flip		slurm_list_flip
 #define	list_push		slurm_list_push
 #define	list_pop		slurm_list_pop
 #define	list_peek		slurm_list_peek

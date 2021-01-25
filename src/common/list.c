@@ -2,6 +2,7 @@
  *  list.c
  *****************************************************************************
  *  Copyright (C) 2001-2002 The Regents of the University of California.
+ *  Copyright (C) 2021 NVIDIA Corporation.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Chris Dunlap <cdunlap@llnl.gov>.
  *
@@ -69,6 +70,7 @@ strong_alias(list_for_each,	slurm_list_for_each);
 strong_alias(list_for_each_max,	slurm_list_for_each_max);
 strong_alias(list_flush,	slurm_list_flush);
 strong_alias(list_sort,		slurm_list_sort);
+strong_alias(list_flip,		slurm_list_flip);
 strong_alias(list_push,		slurm_list_push);
 strong_alias(list_pop,		slurm_list_pop);
 strong_alias(list_peek,		slurm_list_peek);
@@ -602,6 +604,47 @@ list_sort(List l, ListCmpF f)
 	xfree(v);
 
 	/* Reset all iterators on the list to point
+	 * to the head of the list.
+	 */
+	for (i = l->iNext; i; i = i->iNext) {
+		xassert(i->magic == LIST_ITR_MAGIC);
+		i->pos = i->list->head;
+		i->prev = &i->list->head;
+	}
+
+	slurm_mutex_unlock(&l->mutex);
+}
+
+/*
+ * list_flip - not called list_reverse due to collision with MariaDB
+ */
+void list_flip(List l)
+{
+	ListNode old_head, prev = NULL, curr, next = NULL;
+	ListIterator i;
+
+	xassert(l);
+	xassert(l->magic == LIST_MAGIC);
+	slurm_mutex_lock(&l->mutex);
+
+	if (l->count <= 1) {
+		slurm_mutex_unlock(&l->mutex);
+		return;
+	}
+
+	old_head = curr = l->head;
+	while (curr) {
+		next = curr->next;
+		curr->next = prev;
+		prev = curr;
+		curr = next;
+	}
+	l->head = prev;
+	l->tail = &old_head->next;
+	l->tail_ptr = old_head;
+
+	/*
+	 * Reset all iterators on the list to point
 	 * to the head of the list.
 	 */
 	for (i = l->iNext; i; i = i->iNext) {

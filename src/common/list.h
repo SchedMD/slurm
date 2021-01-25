@@ -2,6 +2,7 @@
  *  list.h
  *****************************************************************************
  *  Copyright (C) 2001-2002 The Regents of the University of California.
+ *  Copyright (C) 2021 NVIDIA Corporation.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Chris Dunlap <cdunlap@llnl.gov>.
  *
@@ -250,6 +251,12 @@ int list_flush(List l);
  *  This function uses the libC qsort() algorithm.
  */
 void list_sort(List l, ListCmpF f);
+
+/*
+ * Reverses the order of the items in list [l].
+ * Note: Reversing a list resets all iterators associated with the list.
+ */
+void list_flip(List l);
 
 /****************************
  *  Stack Access Functions  *
