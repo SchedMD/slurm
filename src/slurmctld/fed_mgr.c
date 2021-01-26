@@ -5034,7 +5034,7 @@ extern int fed_mgr_job_requeue_test(job_record_t *job_ptr, uint32_t flags)
 			return SLURM_ERROR;
 		}
 
-		log_flag(FEDR, "requeueing fed job %pJ on origin cluster %d",
+		log_flag(FEDR, "requeuing fed job %pJ on origin cluster %d",
 			 job_ptr, origin_id);
 
 		_persist_fed_job_requeue(origin_cluster, job_ptr->job_id,
@@ -5045,7 +5045,7 @@ extern int fed_mgr_job_requeue_test(job_record_t *job_ptr, uint32_t flags)
 		return SLURM_SUCCESS;
 	}
 
-	log_flag(FEDR, "requeueing fed %pJ by cluster_id %d",
+	log_flag(FEDR, "requeuing fed %pJ by cluster_id %d",
 		 job_ptr, fed_mgr_cluster_rec->fed.id);
 
 	/* If the job is currently running locally, then cancel the running job
@@ -5099,7 +5099,7 @@ extern int fed_mgr_job_requeue(job_record_t *job_ptr)
 	if (!_is_fed_job(job_ptr, &origin_id))
 		return SLURM_SUCCESS;
 
-	log_flag(FEDR, "requeueing fed job %pJ", job_ptr);
+	log_flag(FEDR, "requeuing fed job %pJ", job_ptr);
 
 	/* clear where actual siblings were */
 	job_ptr->fed_details->siblings_active = 0;

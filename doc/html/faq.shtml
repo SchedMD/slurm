@@ -803,7 +803,7 @@ $ srun -n &lt;tasks&gt; ./fluent-srun.sh
 <p><a name="req"><b>How can a job in a complete or failed state be requeued?</b></a>
 <br>
 <p>
-Slurm supports requeueing jobs in a done or failed state. Use the
+Slurm supports requeuing jobs in a done or failed state. Use the
 command:</p>
 <p align=left><b>scontrol requeue job_id</b></p>
 </head>
@@ -1923,7 +1923,7 @@ $ squeue
 The job can be later released and run again.
 </p>
 <p>
-The requeueing of jobs which exit with a specific exit code can be
+The requeuing of jobs which exit with a specific exit code can be
 automated using an <b>EpilogSlurmctld</b>, see man(5) slurm.conf.
 This is an example of a script which exit code depends on the existence
 of a file.
@@ -2274,6 +2274,6 @@ to not query OpenCL devices by setting the
 variable for slurmd, i.e. setting this variable in systemd unit file for slurmd.
 </p>
 
-<p style="text-align:center;">Last modified 05 January 2021</p>
+<p style="text-align:center;">Last modified 26 January 2021</p>
 
 <!--#include virtual="footer.txt"-->

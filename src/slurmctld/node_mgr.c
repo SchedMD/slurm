@@ -1556,7 +1556,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				     IS_NODE_MIXED(node_ptr)) &&
 				    (IS_NODE_POWER_SAVE(node_ptr) ||
 				     IS_NODE_POWER_UP(node_ptr))) {
-					info("%s: DRAIN/FAIL request for node %s which is allocated and being powered up. Requeueing jobs",
+					info("%s: DRAIN/FAIL request for node %s which is allocated and being powered up. Requeuing jobs",
 					     __func__, this_node_name);
 					kill_running_job_by_node_name(
 								this_node_name);

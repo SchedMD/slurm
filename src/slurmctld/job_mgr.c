@@ -16745,7 +16745,7 @@ static int _job_requeue_op(uid_t uid, job_record_t *job_ptr, bool preempt,
 		job_ptr->job_state |= JOB_COMPLETING;
 
 	/*
-	 * Mark the origin job as requeueing. Will finish requeueing fed job
+	 * Mark the origin job as requeuing. Will finish requeuing fed job
 	 * after job has completed.
 	 * If it's completed, batch_requeue_fini is called below and will call
 	 * fed_mgr_job_requeue() to submit new siblings.
@@ -17712,7 +17712,7 @@ extern bool job_hold_requeue(job_record_t *job_ptr)
 		return false;
 
 	/* If the job is not on the origin cluster, then don't worry about
-	 * requeueing the job here. The exit code will be sent the origin
+	 * requeuing the job here. The exit code will be sent the origin
 	 * cluster and the origin cluster will decide if the job should be
 	 * requeued or not. */
 	if (!fed_mgr_is_origin_job(job_ptr))
