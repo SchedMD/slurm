@@ -1757,7 +1757,7 @@ Optional Packages:
   --without-zlib          to disable zlib usage completely
   --with-lz4=PATH         Specify path to liblz4 installation
   --with-hwloc=PATH       Specify path to hwloc installation
-  --without-nvml          Do not build NVIDIA NVML-related code
+  --with-nvml=PATH        Specify path to nvml installation
   --without-rsmi          Do not build AMD RSMI-related code
   --with-rsmi_dir=PATH    Specify path to ROCm installation -
                           /opt/rocm/rocm_smi by default
@@ -21468,11 +21468,15 @@ $as_echo "#define HAVE_HWLOC 1" >>confdefs.h
   fi
 
 
+  _x_ac_nvml_dirs="/usr/local/cuda /usr/cuda"
+  _x_ac_nvml_libs="lib64 lib"
+
 
 # Check whether --with-nvml was given.
 if test "${with_nvml+set}" = set; then :
-  withval=$with_nvml;
-
+  withval=$with_nvml; if test "x$with_nvml" != xno && test "x$with_nvml" != xyes; then :
+  _x_ac_nvml_dirs="$with_nvml"
+fi
 fi
 
 
@@ -21480,14 +21484,13 @@ fi
      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for nvml disabled" >&5
 $as_echo "$as_me: WARNING: support for nvml disabled" >&2;}
   else
-    # /usr/local/cuda/include is the main location. Others are just in case
-    nvml_includes="-I/usr/local/cuda/include -I/usr/cuda/include"
-    # Check for NVML header and library in the default locations
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: " >&5
-$as_echo "" >&6; }
-    cppflags_save="$CPPFLAGS"
-    CPPFLAGS="$nvml_includes $CPPFLAGS"
-    ac_fn_c_check_header_mongrel "$LINENO" "nvml.h" "ac_cv_header_nvml_h" "$ac_includes_default"
+    for d in $_x_ac_nvml_dirs; do
+      for bit in $_x_ac_nvml_libs; do
+        _x_ac_nvml_ldflags_save="$LDFLAGS"
+        _x_ac_nvml_cppflags_save="$CPPFLAGS"
+        LDFLAGS="-L$d/$bit -lnvidia-ml"
+        CPPFLAGS="-I$d/include $CPPFLAGS"
+        ac_fn_c_check_header_mongrel "$LINENO" "nvml.h" "ac_cv_header_nvml_h" "$ac_includes_default"
 if test "x$ac_cv_header_nvml_h" = xyes; then :
   ac_nvml_h=yes
 else
@@ -21495,7 +21498,7 @@ else
 fi
 
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for nvmlInit in -lnvidia-ml" >&5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for nvmlInit in -lnvidia-ml" >&5
 $as_echo_n "checking for nvmlInit in -lnvidia-ml... " >&6; }
 if ${ac_cv_lib_nvidia_ml_nvmlInit+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -21537,9 +21540,21 @@ else
   ac_nvml=no
 fi
 
-    CPPFLAGS="$cppflags_save"
-    if test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes"; then
-      NVML_LIBS="-lnvidia-ml"
+        LDFLAGS="$_x_ac_nvml_ldflags_save"
+        CPPFLAGS="$_x_ac_nvml_cppflags_save"
+        if  test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ; then
+          nvml_includes="-I$d/include"
+          nvml_libs="-L$d/$bit -lnvidia-ml"
+          break
+        fi
+      done
+      if  test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ; then
+        break
+      fi
+    done
+
+    if  test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ; then
+      NVML_LIBS="$nvml_libs"
       NVML_CPPFLAGS="$nvml_includes"
 
 $as_echo "#define HAVE_NVML 1" >>confdefs.h
@@ -21552,6 +21567,7 @@ $as_echo "$as_me: WARNING: unable to locate libnvidia-ml.so and/or nvml.h" >&2;}
         as_fn_error $? "unable to locate libnvidia-ml.so and/or nvml.h" "$LINENO" 5
       fi
     fi
+
 
 
   fi

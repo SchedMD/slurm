@@ -11,26 +11,41 @@
 
 AC_DEFUN([X_AC_NVML],
 [
+  _x_ac_nvml_dirs="/usr/local/cuda /usr/cuda"
+  _x_ac_nvml_libs="lib64 lib"
+
   AC_ARG_WITH(
     [nvml],
-    AS_HELP_STRING(--without-nvml, Do not build NVIDIA NVML-related code),
-    []
-  )
+    AS_HELP_STRING(--with-nvml=PATH, Specify path to nvml installation),
+    [AS_IF([test "x$with_nvml" != xno && test "x$with_nvml" != xyes],
+           [_x_ac_nvml_dirs="$with_nvml"])])
 
   if [test "x$with_nvml" = xno]; then
      AC_MSG_WARN([support for nvml disabled])
   else
-    # /usr/local/cuda/include is the main location. Others are just in case
-    nvml_includes="-I/usr/local/cuda/include -I/usr/cuda/include"
-    # Check for NVML header and library in the default locations
-    AC_MSG_RESULT([])
-    cppflags_save="$CPPFLAGS"
-    CPPFLAGS="$nvml_includes $CPPFLAGS"
-    AC_CHECK_HEADER([nvml.h], [ac_nvml_h=yes], [ac_nvml_h=no])
-    AC_CHECK_LIB([nvidia-ml], [nvmlInit], [ac_nvml=yes], [ac_nvml=no])
-    CPPFLAGS="$cppflags_save"
-    if test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes"; then
-      NVML_LIBS="-lnvidia-ml"
+    for d in $_x_ac_nvml_dirs; do
+      for bit in $_x_ac_nvml_libs; do
+        _x_ac_nvml_ldflags_save="$LDFLAGS"
+        _x_ac_nvml_cppflags_save="$CPPFLAGS"
+        LDFLAGS="-L$d/$bit -lnvidia-ml"
+        CPPFLAGS="-I$d/include $CPPFLAGS"
+        AC_CHECK_HEADER([nvml.h], [ac_nvml_h=yes], [ac_nvml_h=no])
+        AC_CHECK_LIB([nvidia-ml], [nvmlInit], [ac_nvml=yes], [ac_nvml=no])
+        LDFLAGS="$_x_ac_nvml_ldflags_save"
+        CPPFLAGS="$_x_ac_nvml_cppflags_save"
+        if [ test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ]; then
+          nvml_includes="-I$d/include"
+          nvml_libs="-L$d/$bit -lnvidia-ml"
+          break
+        fi
+      done
+      if [ test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ]; then
+        break
+      fi
+    done
+
+    if [ test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ]; then
+      NVML_LIBS="$nvml_libs"
       NVML_CPPFLAGS="$nvml_includes"
       AC_DEFINE(HAVE_NVML, 1, [Define to 1 if NVML library found])
     else
@@ -40,6 +55,7 @@ AC_DEFUN([X_AC_NVML],
         AC_MSG_ERROR([unable to locate libnvidia-ml.so and/or nvml.h])
       fi
     fi
+
     AC_SUBST(NVML_LIBS)
     AC_SUBST(NVML_CPPFLAGS)
   fi
