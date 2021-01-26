@@ -36,6 +36,7 @@
 
 #include "config.h"
 
+#include <stdarg.h>
 #include <unistd.h>
 
 #include "slurm/slurm.h"
@@ -119,12 +120,22 @@ extern data_t *populate_response_format(data_t *resp)
 }
 
 extern int resp_error(data_t *errors, int error_code, const char *source,
-		      const char *why)
+		      const char *why, ...)
 {
 	data_t *e = data_set_dict(data_list_append(errors));
 
-	if (why)
-		data_set_string(data_key_set(e, "description"), why);
+	if (why) {
+		va_list ap;
+		char *str;
+
+		va_start(ap, why);
+		str = vxstrfmt(why, ap);
+		va_end(ap);
+
+		data_set_string(data_key_set(e, "description"), str);
+
+		xfree(str);
+	}
 
 	if (error_code) {
 		data_set_int(data_key_set(e, "error_number"), error_code);
