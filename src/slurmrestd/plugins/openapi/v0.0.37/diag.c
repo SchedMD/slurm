@@ -169,9 +169,8 @@ static int _op_handler_ping(const char *context_id,
 	data_t *errors = populate_response_format(resp_ptr);
 
 	if ((rc = slurm_load_ctl_conf((time_t) NULL, &slurm_ctl_conf_ptr)))
-		return resp_error(errors, rc,
-				  "slurmctld config is unable to load",
-				  "slurm_load_ctl_conf");
+		return resp_error(errors, rc, "slurm_load_ctl_conf",
+				  "slurmctld config is unable to load");
 
 	if (slurm_ctl_conf_ptr) {
 		data_t *pings = data_key_set(resp_ptr, "pings");
@@ -202,9 +201,8 @@ static int _op_handler_ping(const char *context_id,
 			data_set_string(data_key_set(ping, "mode"), mode);
 		}
 	} else {
-		rc = resp_error(errors, ESLURM_INTERNAL,
-				"slurmctld config is missing",
-				"slurm_load_ctl_conf");
+		rc = resp_error(errors, ESLURM_INTERNAL, "slurm_load_ctl_conf",
+				"slurmctld config is missing");
 	}
 
 	slurm_free_ctl_conf(slurm_ctl_conf_ptr);

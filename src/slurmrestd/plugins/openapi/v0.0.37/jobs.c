@@ -290,7 +290,7 @@ static data_for_each_cmd_t _per_job_param(const char *key, const data_t *data,
 
 	if (!(rc = hsearch_r(e, FIND, &re, &hash_params))) {
 		char *str = xstrdup_printf("Unknown key \"%s\"", lkey);
-		resp_error(errors, rc, str, "hsearch_r");
+		resp_error(errors, rc, "hsearch_r", str);
 		xfree(str);
 
 		return DATA_FOR_EACH_FAIL;
@@ -299,7 +299,7 @@ static data_for_each_cmd_t _per_job_param(const char *key, const data_t *data,
 	p = re->data;
 	if (p->disabled) {
 		char *str = xstrdup_printf("Disabled key: \"%s\"", p->param);
-		resp_error(errors, rc, str, "openapi specification");
+		resp_error(errors, rc, "openapi specification", str);
 		xfree(str);
 
 		return DATA_FOR_EACH_FAIL;
@@ -308,7 +308,7 @@ static data_for_each_cmd_t _per_job_param(const char *key, const data_t *data,
 	if ((rc = slurm_process_option_data(args->opt, p->optval, data,
 					    errors))) {
 		char *str = xstrdup_printf("Unknown key \"%s\"", lkey);
-		resp_error(errors, rc, str, "slurm_process_option_data");
+		resp_error(errors, rc, "slurm_process_option_data", str);
 		xfree(str);
 
 		return DATA_FOR_EACH_FAIL;

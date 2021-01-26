@@ -118,8 +118,8 @@ extern data_t *populate_response_format(data_t *resp)
 	return data_set_list(data_key_set(resp, "errors"));
 }
 
-extern int resp_error(data_t *errors, int error_code, const char *why,
-		      const char *source)
+extern int resp_error(data_t *errors, int error_code, const char *source,
+		      const char *why)
 {
 	data_t *e = data_set_dict(data_list_append(errors));
 

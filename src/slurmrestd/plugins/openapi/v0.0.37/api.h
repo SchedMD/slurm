@@ -57,8 +57,8 @@ extern data_t *populate_response_format(data_t *resp);
  * IN source - Where the error was generated
  * RET value of error_code
  */
-extern int resp_error(data_t *errors, int error_code, const char *why,
-		      const char *source);
+extern int resp_error(data_t *errors, int error_code, const char *source,
+		      const char *why);
 
 extern void init_op_diag(void);
 extern void init_op_jobs(void);
