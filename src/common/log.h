@@ -267,6 +267,25 @@ extern char *log_build_step_id_str(
  */
 
 /*
+ * return a heap allocated string formed from fmt and ap arglist
+ * returned string is allocated with xmalloc, so must free with xfree.
+ *
+ * args are like printf, with the addition of the following format chars:
+ * - %m expands to strerror(errno)
+ * - %M expand to time stamp, format is configuration dependent
+ * - %pA expands to "AAA.BBB.CCC.DDD:XXXX" for the given slurm_addr_t.
+ * - %pJ expands to "JobId=XXXX" for the given job_ptr, with the appropriate
+ *       format for job arrays and hetjob components.
+ * - %pS expands to "JobId=XXXX StepId=YYYY" for a given step_ptr.
+ * - %t expands to strftime("%x %X") [ locally preferred short date/time ]
+ * - %T expands to rfc2822 date time [ "dd, Mon yyyy hh:mm:ss GMT offset" ]
+ *
+ * these formats are expanded first, leaving all others to be passed to
+ * vsnprintf() to complete the expansion using the ap arglist.
+ */
+extern char *vxstrfmt(const char *fmt, va_list ap);
+
+/*
  * fatal() exits program
  * error() returns SLURM_ERROR
  */

@@ -778,24 +778,7 @@ static char *_stepid2fmt(step_record_t *step_ptr, char *buf, int buf_size)
 				     STEP_ID_FLAG_SPACE | STEP_ID_FLAG_NO_JOB);
 }
 
-/*
- * return a heap allocated string formed from fmt and ap arglist
- * returned string is allocated with xmalloc, so must free with xfree.
- *
- * args are like printf, with the addition of the following format chars:
- * - %m expands to strerror(errno)
- * - %M expand to time stamp, format is configuration dependent
- * - %pA expands to "AAA.BBB.CCC.DDD:XXXX" for the given slurm_addr_t.
- * - %pJ expands to "JobId=XXXX" for the given job_ptr, with the appropriate
- *       format for job arrays and hetjob components.
- * - %pS expands to "JobId=XXXX StepId=YYYY" for a given step_ptr.
- * - %t expands to strftime("%x %X") [ locally preferred short date/time ]
- * - %T expands to rfc2822 date time  [ "dd, Mon yyyy hh:mm:ss GMT offset" ]
- *
- * these formats are expanded first, leaving all others to be passed to
- * vsnprintf() to complete the expansion using the ap arglist.
- */
-static char *vxstrfmt(const char *fmt, va_list ap)
+extern char *vxstrfmt(const char *fmt, va_list ap)
 {
 	char	*intermediate_fmt = NULL;
 	char	*out_string = NULL;
