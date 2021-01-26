@@ -138,6 +138,47 @@ proc test_constrain_batch {nnode constrain constrain_batch expected_batch_node} 
 	cancel_job $test_job
 }
 
+proc test_constrain_9546 {} {
+	global test_name feat0 feat1 bin_sleep test_part
+
+	set job_id_1 [submit_job -fail  "--exclusive  -J $test_name -C $feat0 -p $test_part -o /dev/null --wrap '$bin_sleep 1000'" ]
+	set job_id_2 [submit_job -fail  "--exclusive  -J $test_name -C $feat0 -p $test_part -o /dev/null --wrap '$bin_sleep 1000'" ]
+
+	subtest {![wait_for_job $job_id_1 RUNNING]} "Job1 $job_id_1 with \"-C $feat0\" should be started"
+	subtest {![wait_for_job $job_id_2 RUNNING]} "Job2 $job_id_2 with \"-C $feat0\" should be started"
+
+	set job_id_3 [submit_job -fail  "--exclusive  -J $test_name -C \'\[$feat1|$feat0\]\' -p $test_part -o /dev/null --wrap 'exit 0'" ]
+	set job_id_4 [submit_job -fail  "--exclusive  -J $test_name -C \'\[$feat1|$feat0\]\' -p $test_part -o /dev/null --wrap 'exit 0'" ]
+
+	subtest {![wait_for_job $job_id_3 DONE]} "Job3 $job_id_3 with \"-C '\[$feat1|$feat0\]'\" should be completed"
+	subtest {![wait_for_job $job_id_4 DONE]} "Job4 $job_id_4 with \"-C '\[$feat1|$feat0\]'\" should be completed"
+
+	set job_id_3 [submit_job -fail  "--exclusive  -J $test_name -C \'\[$feat0|$feat1\]\' -p $test_part -o /dev/null --wrap 'exit 0'" ]
+	set job_id_4 [submit_job -fail  "--exclusive  -J $test_name -C \'\[$feat0|$feat1\]\' -p $test_part -o /dev/null --wrap 'exit 0'" ]
+
+	subtest {![wait_for_job $job_id_3 DONE]} "Job3 $job_id_3 with \"-C '\[$feat0|$feat1\]'\" should be completed"
+	subtest {![wait_for_job $job_id_4 DONE]} "Job4 $job_id_4 with \"-C '\[$feat0|$feat1\]'\" should be completed"
+
+	cancel_job [list $job_id_1 $job_id_2]
+
+	set job_id_1 [submit_job -fail  "--exclusive  -J $test_name -C $feat1 -p $test_part -o /dev/null --wrap '$bin_sleep 1000'" ]
+	set job_id_2 [submit_job -fail  "--exclusive  -J $test_name -C $feat1 -p $test_part -o /dev/null --wrap '$bin_sleep 1000'" ]
+
+	subtest {![wait_for_job $job_id_1 RUNNING]} "Job1 $job_id_1 with \"-C $feat1\" should be started"
+	subtest {![wait_for_job $job_id_2 RUNNING]} "Job2 $job_id_2 with \"-C $feat1\" should be started"
+
+	set job_id_3 [submit_job -fail  "--exclusive  -J $test_name -C \'\[$feat1|$feat0\]\' -p $test_part -o /dev/null --wrap 'exit 0'" ]
+	set job_id_4 [submit_job -fail  "--exclusive  -J $test_name -C \'\[$feat1|$feat0\]\' -p $test_part -o /dev/null --wrap 'exit 0'" ]
+
+	subtest {![wait_for_job $job_id_3 DONE]} "Job3 $job_id_3 with \"-C '\[$feat1|$feat0\]'\" should be completed"
+	subtest {![wait_for_job $job_id_4 DONE]} "Job4 $job_id_4 with \"-C '\[$feat1|$feat0\]'\" should be completed"
+
+	set job_id_3 [submit_job -fail  "--exclusive  -J $test_name -C \'\[$feat0|$feat1\]\' -p $test_part -o /dev/null --wrap 'exit 0'" ]
+	set job_id_4 [submit_job -fail  "--exclusive  -J $test_name -C \'\[$feat0|$feat1\]\' -p $test_part -o /dev/null --wrap 'exit 0'" ]
+
+	subtest {![wait_for_job $job_id_3 DONE]} "Job3 $job_id_3 with \"-C '\[$feat0|$feat1\]'\" should be completed"
+	subtest {![wait_for_job $job_id_4 DONE]} "Job4 $job_id_4 with \"-C '\[$feat0|$feat1\]'\" should be completed"
+}
 
 proc set_node_feature {node_name new_feature} {
 	global scontrol
@@ -145,7 +186,7 @@ proc set_node_feature {node_name new_feature} {
 }
 
 
-proc setup_features {} {
+proc setup_4_features {} {
 	global scontrol test_part
 	global nodes nodelist feat0 feat1 feat2 feat3 feat4
 
@@ -157,11 +198,24 @@ proc setup_features {} {
 
 	run_command -fail "$scontrol create partition=$test_part nodes=[join $nodelist ,]"
 }
+proc setup_2_features {} {
+	global scontrol test_part
+	global nodes nodelist feat0 feat1 feat2 feat3 feat4
 
-setup_features
+	log_info "Setup partition $test_part with 4 nodes with 2 features"
+	set_node_feature $nodes(0) $feat0
+	set_node_feature $nodes(1) $feat0
+	set_node_feature $nodes(2) $feat1
+	set_node_feature $nodes(3) $feat1
 
-# Test invalid constraint requirement
-testproc test_constrain_invalid 1 "invalid,constraint"
+	run_command -fail "$scontrol create partition=$test_part nodes=[join $nodelist ,]"
+}
+
+#
+# Main setup of 4 features on 4 nodes
+#
+setup_4_features
+
 #
 # Main/Generic testprocs
 #
@@ -224,3 +278,8 @@ run_following_testprocs
 
 # Specific test invalid constraint requirement
 testproc test_constrain_invalid 1 "invalid,constraint"
+
+# Specific test for bug 9546 about xor/xand (with specific setup)
+cleanup
+setup_2_features
+testproc test_constrain_9546
