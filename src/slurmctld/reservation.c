@@ -4733,7 +4733,7 @@ static int _select_nodes(resv_desc_msg_t *resv_desc_ptr,
 				rc = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 
 			/* filter nodes that won't work from all bitmaps */
-			for (size_t i = 1; (i < MAX_BITMAPS) && node_bitmaps[i];
+			for (size_t i = 0; (i < MAX_BITMAPS) && node_bitmaps[i];
 			     i++)
 				bit_and(node_bitmaps[i], tmp_bitmap);
 			FREE_NULL_BITMAP(tmp_bitmap);
