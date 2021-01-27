@@ -31,7 +31,6 @@
 source ./globals
 
 set iterations 100
-set exit_code   0
 
 if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
@@ -49,34 +48,12 @@ if {$switch ne "switch/none"} {
 #
 # Submit a 1 node job and record the node name
 #
-# NOTE: Check explicity for "^0:" or "\n0:. Otherwise in srun verbose mode we
-# can get a hostname ending with 0 in the messages that gets used to generate
-# a bad value for host_0 below.
-#
-set host_0      ""
-set nodelist_name ""
-set timeout $max_job_delay
-set srun_pid [spawn $srun -v -N1 -l -t1 $bin_printenv SLURMD_NODENAME]
-expect {
-	-re "on host ($re_word_str)," {
-		set nodelist_name $expect_out(1,string)
-		exp_continue
-	}
-	-re "^0: ($re_word_str)" {
-		set host_0 $expect_out(1,string)
-		exp_continue
-	}
-	-re "\n0: ($re_word_str)" {
-		set host_0 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $srun_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
+set output [run_command_output -fail "$srun -v -N1 -l -t1 $bin_printenv SLURMD_NODENAME"]
+if {![regexp {on host (\S+),} $output - nodelist_name]} {
+	fail "Unable to parse assigned task host name from srun output"
+}
+if {![regexp -line {^0: (\S+)} $output - host_0]} {
+	fail "Unable to parse value of SLURMD_NODENAME from srun output"
 }
 
 #
@@ -96,50 +73,11 @@ set include_node $host_0
 #
 # Submit a job directly to that node
 #
-set host_1      ""
-set slurm_user  1
-set timeout     10
-set srun_pid [spawn $srun -N1 -l --nodelist=$include_node --no-allocate -t1 $bin_printenv SLURMD_NODENAME]
-expect {
-	-re "Invalid job credential" {
-		log_warn "Not SlurmUser or root"
-		set slurm_user 0
-		exp_continue
-	}
-	-re "error: .*try again" {
-		log_debug "Can't avoid this possible error"
-		set host_1 $host_0
-		exp_continue
-	}
-	-re "error: .*already in shared memory" {
-		log_debug "Can't avoid this possible error"
-		set host_1 $host_0
-		exp_continue
-	}
-	-re "error: .*exit code 1" {
-		exp_continue
-	}
-	-re "0: ($re_word_str)" {
-		set host_1 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		log_error "srun not responding."
-		slow_kill $srun_pid
-		set slurm_user 0
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
+set output [run_command_output -fail "$srun -N1 -l --nodelist=$include_node --no-allocate -t1 $bin_printenv SLURMD_NODENAME"]
+if {![regexp -line {^0: (\S+)} $output - host_1]} {
+	fail "Unable to parse value of SLURMD_NODENAME from srun output"
 }
-if {$slurm_user == 0} {
-	pass
-}
-if {[string compare $host_1 $include_node]} {
-	log_error "Allocation lacked an included node"
-	set exit_code 1
-}
+subtest {$host_1 eq $include_node} "Allocation was on included host" "$host_1 !=$include_node"
 
 #
 # Run three tasks at a time on some node and do so repeatedly
@@ -148,8 +86,6 @@ if {[string compare $host_1 $include_node]} {
 # logic has time to be processed (slurmd -> slurmctld messages)
 # Note: process output in order of expected completion
 #
-set front_end {[get_config_param "FrontendName"] ne "MISSING"}
-
 set successes 0
 for {set inx 0} {$inx < $iterations} {incr inx} {
 	exec $bin_sleep 0.25
@@ -243,14 +179,6 @@ for {set inx 0} {$inx < $iterations} {incr inx} {
 
 	if {$failures == 0} {
 		incr successes
-	} else {
-		set exit_code 1
 	}
 }
-if {$successes != $iterations} {
-	fail "Only $successes of $iterations completed successfully"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$successes == $iterations} "Race condition check" "[expr $iterations - $successes] out of $iterations iterations failed"
