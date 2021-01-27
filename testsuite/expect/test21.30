@@ -157,7 +157,7 @@ if {$tmpc == 0 || $tmpn == 0} {
 	skip "Not enough Nodes and/or CPUs"
 }
 
-if { ![string compare [priority_type] "multifactor"] } {
+if {[get_config_param "PriorityType"] eq "priority/multifactor"} {
 	set prio_multifactor 1
 } else {
 	set prio_multifactor 0

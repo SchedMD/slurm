@@ -120,7 +120,9 @@ expect {
 	}
 }
 
-if {[expect_extern_step]} {
+# If PrologFlags=contain is in slurm.conf, then an "extern" step will be
+# launched on each node, so we need to check for 3 steps per job instead of 2.
+if {[param_contains [get_config_param "PrologFlags"] "Contain"]} {
 	set expected_steps 3
 } else {
 	set expected_steps 2
