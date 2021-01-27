@@ -36,12 +36,10 @@ set file_out     "test$test_id.output"
 set trigger_get_failed false
 set config_dir [get_conf_path]
 
-#
-# get my uid and clear any vestigial triggers
-#
 set uid [get_my_uid]
-if {$uid == 0} {
-	skip "This test can't be run as user root"
+set user [get_my_user_name]
+if {![regexp "${user}\\($number\\)" [get_config_param "SlurmUser"]] || $user eq "root"} {
+	skip "This test must run as the SlurmUser but this user cannot be root"
 }
 
 #
