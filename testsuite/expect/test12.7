@@ -283,7 +283,7 @@ if {$canc_count != 1} {
 set run_count [check_sacct_states "RUNNING" 0]
 # The requeued job and its batch step should now be running.
 if {$run_count != 2} {
-	endit 1 "Bad RUNNING count ($run_count != 1)"
+	endit 1 "Bad RUNNING count ($run_count != 2)"
 }
 log_info "So far, so good"
 
@@ -318,7 +318,7 @@ if {$req_count != 1} {
 # The first and second batch steps should both show CANCELLED
 set canc_count [check_sacct_states "CANCELLED" 0]
 if {$canc_count != 2} {
-	endit 1 "Bad CANCELLED count ($canc_count != 1)"
+	endit 1 "Bad CANCELLED count ($canc_count != 2)"
 }
 set pend_count [check_sacct_states "PENDING" 0]
 if {$pend_count != 1} {
@@ -349,12 +349,12 @@ if {$req_count != 1} {
 }
 set canc_count [check_sacct_states "CANCELLED" 0]
 if {$canc_count != 2} {
-	endit 1 "Bad CANCELLED count ($canc_count != 1)"
+	endit 1 "Bad CANCELLED count ($canc_count != 2)"
 }
 # The job and its batch step should be RUNNING
 set run_count [check_sacct_states "RUNNING" 0]
 if {$run_count != 2} {
-	endit 1 "Bad RUNNING count ($run_count != 1)"
+	endit 1 "Bad RUNNING count ($run_count != 2)"
 }
 log_info "So far, so good"
 
@@ -377,7 +377,7 @@ if {$req_count != 1} {
 }
 set canc_count [check_sacct_states "CANCELLED" 0]
 if {$canc_count != 2} {
-	endit 1 "Bad CANCELLED count ($canc_count != 1)"
+	endit 1 "Bad CANCELLED count ($canc_count != 2)"
 }
 set comp_count [check_sacct_states "COMPLETED" 0]
 if {$comp_count != 2} {
