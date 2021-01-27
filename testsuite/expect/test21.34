@@ -227,7 +227,7 @@ if {[param_contains $select_type_parameters "CR_CORE_*"]} {
 	set selectparam 1
 }
 
-if { ![string compare [priority_type] "multifactor"] } {
+if {[get_config_param "PriorityType"] eq "priority/multifactor"} {
 	set prio_multifactor 1
 } else {
 	set prio_multifactor 0
