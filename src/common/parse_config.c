@@ -869,55 +869,62 @@ static int _handle_expline(s_p_values_t* v, const char* value,
  *                  If the handler for that key parses more of the line,
  *                  it will move the leftover pointer to point to the character
  *                  after it has finished parsing in the line.
+ * RET:
+ *	-1 if the value is invalid.
+ *	0 if the value is validbut no value will be set for "data".
+ *	1 if "data" is set.
  */
-static void _handle_keyvalue_match(s_p_values_t *v,
+static int _handle_keyvalue_match(s_p_values_t *v,
 				   const char *value, const char *line,
 				   char **leftover)
 {
+	int rc;
 	switch (v->type) {
 	case S_P_IGNORE:
 		/* do nothing */
+		rc = 1;
 		break;
 	case S_P_STRING:
-		_handle_common(v, value, line, leftover, _handle_string);
+		rc = _handle_common(v, value, line, leftover, _handle_string);
 		break;
 	case S_P_LONG:
-		_handle_common(v, value, line, leftover, _handle_long);
+		rc = _handle_common(v, value, line, leftover, _handle_long);
 		break;
 	case S_P_UINT16:
-		_handle_common(v, value, line, leftover, _handle_uint16);
+		rc = _handle_common(v, value, line, leftover, _handle_uint16);
 		break;
 	case S_P_UINT32:
-		_handle_common(v, value, line, leftover, _handle_uint32);
+		rc = _handle_common(v, value, line, leftover, _handle_uint32);
 		break;
 	case S_P_UINT64:
-		_handle_common(v, value, line, leftover, _handle_uint64);
+		rc = _handle_common(v, value, line, leftover, _handle_uint64);
 		break;
 	case S_P_POINTER:
-		_handle_pointer(v, value, line, leftover);
+		rc = _handle_pointer(v, value, line, leftover);
 		break;
 	case S_P_ARRAY:
-		_handle_array(v, value, line, leftover);
+		rc = _handle_array(v, value, line, leftover);
 		break;
 	case S_P_BOOLEAN:
-		_handle_common(v, value, line, leftover, _handle_boolean);
+		rc = _handle_common(v, value, line, leftover, _handle_boolean);
 		break;
 	case S_P_LINE:
-		_handle_line(v, value, line, leftover);
+		rc = _handle_line(v, value, line, leftover);
 		break;
 	case S_P_EXPLINE:
-		_handle_expline(v, value, line, leftover);
+		rc = _handle_expline(v, value, line, leftover);
 		break;
 	case S_P_FLOAT:
-		_handle_common(v, value, line, leftover, _handle_float);
+		rc = _handle_common(v, value, line, leftover, _handle_float);
 		break;
 	case S_P_DOUBLE:
-		_handle_common(v, value, line, leftover, _handle_double);
+		rc = _handle_common(v, value, line, leftover, _handle_double);
 		break;
 	case S_P_LONG_DOUBLE:
-		_handle_common(v, value, line, leftover, _handle_ldouble);
+		rc = _handle_common(v, value, line, leftover, _handle_ldouble);
 		break;
 	}
+	return rc;
 }
 
 /*
@@ -956,8 +963,13 @@ int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line, char **leftover)
 	while (_keyvalue_regex(hashtbl, ptr, &key, &value, &new_leftover, &op) == 0) {
 		if ((p = _conf_hashtbl_lookup(hashtbl, key))) {
 			p->operator = op;
-			_handle_keyvalue_match(p, value,
-					       new_leftover, &new_leftover);
+			if (_handle_keyvalue_match(p, value, new_leftover,
+						   &new_leftover) == -1) {
+				xfree(key);
+				xfree(value);
+				slurm_seterrno(EINVAL);
+				return 0;
+			}
 			*leftover = ptr = new_leftover;
 		} else {
 			error("Parsing error at unrecognized key: %s", key);
@@ -988,8 +1000,14 @@ static int _parse_next_key(s_p_hashtbl_t *hashtbl,
 	if (_keyvalue_regex(hashtbl, line, &key, &value, &new_leftover, &op) == 0) {
 		if ((p = _conf_hashtbl_lookup(hashtbl, key))) {
 			p->operator = op;
-			_handle_keyvalue_match(p, value,
-					       new_leftover, &new_leftover);
+			if (_handle_keyvalue_match(p, value, new_leftover,
+						   &new_leftover) == -1) {
+				xfree(key);
+				xfree(value);
+				*leftover = (char *)line;
+				slurm_seterrno(EINVAL);
+				return 0;
+			}
 			*leftover = new_leftover;
 		} else if (ignore_new) {
 			debug("%s: Parsing error at unrecognized key: %s",
@@ -1170,7 +1188,12 @@ int s_p_parse_file(s_p_hashtbl_t *hashtbl, uint32_t *hash_val, char *filename,
 						  line, &leftover, ignore_new,
 						  filename);
 		if (inc_rc == 0) {
-			_parse_next_key(hashtbl, line, &leftover, ignore_new);
+			if (!_parse_next_key(hashtbl, line, &leftover,
+					     ignore_new)) {
+				rc = SLURM_ERROR;
+				line_number += merged_lines;
+				continue;
+			}
 		} else if (inc_rc < 0) {
 			error("\"Include\" failed in file %s line %d",
 			      filename, line_number);
@@ -1224,7 +1247,12 @@ int s_p_parse_buffer(s_p_hashtbl_t *hashtbl, uint32_t *hash_val,
 				xfree(tmp_str);
 				continue;
 			}
-			_parse_next_key(hashtbl, tmp_str, &leftover, ignore_new);
+			if (!_parse_next_key(hashtbl, tmp_str, &leftover,
+					     ignore_new)) {
+				rc = SLURM_ERROR;
+				xfree(tmp_str);
+				continue;
+			}
 			/* Make sure that after parsing only whitespace
 			   is left over */
 			if (!_line_is_space(leftover)) {
@@ -1758,7 +1786,11 @@ int s_p_parse_pair_with_op(s_p_hashtbl_t *hashtbl, const char *key,
 		leftover++;
 	while (*leftover != '\0' && isspace(*leftover))
 		leftover++; /* skip trailing spaces */
-	_handle_keyvalue_match(p, value, leftover, &leftover);
+	if (_handle_keyvalue_match(p, value, leftover, &leftover) == -1) {
+		xfree(value);
+		slurm_seterrno(EINVAL);
+		return 0;
+	}
 	xfree(value);
 
 	return 1;

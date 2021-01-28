@@ -30,6 +30,9 @@ documents those changes that are of interest to users and administrators.
  -- Make NtasksPerTRES optional in slurm_sprint_job_info().
  -- slurmrestd/v0.0.37 - Add update_time field to nodes query to allow clients
     to only get nodes list based on change timestamp.
+ -- common/parse_config - catch and propagate return codes when handling a match
+    on a key-value pattern. This implies error codes detected in the handlers
+    are now not ignored and users of _handle_keyvalue_match() can fatal().
 
 * Changes in Slurm 20.11.4
 ==========================
