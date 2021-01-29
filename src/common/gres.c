@@ -7941,18 +7941,13 @@ end_it:
 	return gres_cnt;
 }
 
-static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
-			   int node_offset, bool first_step_node,
+static uint64_t _step_test(void *step_gres_data, bool first_step_node,
 			   uint16_t cpus_per_task, int max_rem_nodes,
-			   bool ignore_alloc, slurm_step_id_t *step_id,
-			   uint32_t plugin_id,
-			   uint64_t gres_cnt)
+			   bool ignore_alloc, uint64_t gres_cnt)
 {
-	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_step_state_t *step_gres_ptr = (gres_step_state_t *) step_gres_data;
 	uint64_t core_cnt, min_gres = 1, task_cnt;
 
-	xassert(job_gres_ptr);
 	xassert(step_gres_ptr);
 
 	if (!gres_cnt)
@@ -9307,14 +9302,9 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 					      &job_search_key,
 					      ignore_alloc,
 					      &tmp_step_id);
-		tmp_cnt = _step_test(step_data_ptr,
-				     job_gres_ptr->gres_data,
-				     node_offset, first_step_node,
+		tmp_cnt = _step_test(step_data_ptr, first_step_node,
 				     cpus_per_task, max_rem_nodes,
-				     ignore_alloc,
-				     &tmp_step_id,
-				     step_gres_ptr->plugin_id,
-				     gres_cnt);
+				     ignore_alloc, gres_cnt);
 		if ((tmp_cnt != NO_VAL64) && (tmp_cnt < core_cnt))
 			core_cnt = tmp_cnt;
 
