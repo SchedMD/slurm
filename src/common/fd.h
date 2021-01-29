@@ -100,14 +100,6 @@ pid_t fd_is_read_lock_blocked(int fd);
  *    returns the pid of the process holding the lock; o/w, returns 0.
  */
 
-ssize_t fd_read_line(int fd, void *buf, size_t maxlen);
-/*
- *  Reads at most (maxlen-1) bytes up to a newline from (fd) into (buf).
- *  The (buf) is guaranteed to be NUL-terminated and will contain the
- *    newline if it is encountered within (maxlen-1) bytes.
- *  Returns the number of bytes read, 0 on EOF, or -1 on error.
- */
-
 extern int wait_fd_readable(int fd, int time_limit);
 /* Wait for a file descriptor to be readable (up to time_limit seconds).
  * Return 0 when readable or -1 on error */
