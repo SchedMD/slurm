@@ -238,11 +238,6 @@ static void *	_step_state_dup(void *gres_data);
 static void *	_step_state_dup2(void *gres_data, int node_index);
 static void	_step_state_log(void *gres_data, slurm_step_id_t *step_id,
 				char *gres_name);
-static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
-			   int node_offset, bool first_step_node,
-			   uint16_t cpus_per_task, int max_rem_nodes,
-			   bool ignore_alloc, slurm_step_id_t *step_id,
-			   uint32_t plugin_id);
 static void	_sync_node_mps_to_gpu(gres_state_t *mps_gres_ptr,
 				      gres_state_t *gpu_gres_ptr);
 static int	_unload_plugin(slurm_gres_context_t *plugin_context);
@@ -7897,26 +7892,71 @@ static void _gres_step_list_delete(void *list_element)
 	_gres_state_delete_members(gres_ptr);
 }
 
+
+static uint64_t _step_get_gres_cnt(gres_state_t *job_gres_ptr,
+				   gres_key_t *job_search_key,
+				   bool ignore_alloc,
+				   slurm_step_id_t *step_id)
+{
+	gres_job_state_t *gres_job_state;
+	int node_offset = job_search_key->node_offset;
+	uint64_t gres_cnt = 0;
+
+	gres_job_state = job_gres_ptr->gres_data;
+	if ((node_offset >= gres_job_state->node_cnt) &&
+	    (gres_job_state->node_cnt != 0)) { /* GRES is type no_consume */
+		error("gres/%s: %s %ps node offset invalid (%d >= %u)",
+		      gres_job_state->gres_name, __func__, step_id,
+		      node_offset, gres_job_state->node_cnt);
+		gres_cnt = 0;
+		goto end_it;
+	}
+	if (!gres_id_shared(job_search_key->plugin_id) &&
+	    gres_job_state->gres_bit_alloc &&
+	    gres_job_state->gres_bit_alloc[node_offset]) {
+		gres_cnt += bit_set_count(gres_job_state->
+					  gres_bit_alloc[node_offset]);
+		if (!ignore_alloc &&
+		    gres_job_state->gres_bit_step_alloc &&
+		    gres_job_state->gres_bit_step_alloc[node_offset]) {
+			gres_cnt -= bit_set_count(gres_job_state->
+						  gres_bit_step_alloc
+						  [node_offset]);
+		}
+	} else if (gres_job_state->gres_cnt_node_alloc &&
+		   gres_job_state->gres_cnt_step_alloc) {
+		gres_cnt += gres_job_state->gres_cnt_node_alloc[node_offset];
+		if (!ignore_alloc) {
+			gres_cnt -= gres_job_state->
+				gres_cnt_step_alloc[node_offset];
+		}
+	} else {
+		debug3("gres/%s:%s: %s %ps gres_bit_alloc and gres_cnt_node_alloc are NULL",
+		       gres_job_state->gres_name, gres_job_state->type_name,
+		       __func__, step_id);
+		gres_cnt = NO_VAL64;
+		goto end_it;
+	}
+end_it:
+	return gres_cnt;
+}
+
 static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 			   int node_offset, bool first_step_node,
 			   uint16_t cpus_per_task, int max_rem_nodes,
 			   bool ignore_alloc, slurm_step_id_t *step_id,
-			   uint32_t plugin_id)
+			   uint32_t plugin_id,
+			   uint64_t gres_cnt)
 {
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_step_state_t *step_gres_ptr = (gres_step_state_t *) step_gres_data;
-	uint64_t core_cnt, gres_cnt, min_gres = 1, task_cnt;
+	uint64_t core_cnt, min_gres = 1, task_cnt;
 
 	xassert(job_gres_ptr);
 	xassert(step_gres_ptr);
 
-	if ((node_offset >= job_gres_ptr->node_cnt) &&
-	    (job_gres_ptr->node_cnt != 0)) {	/* GRES is type no_consume */
-		error("gres/%s: %s %ps node offset invalid (%d >= %u)",
-		      job_gres_ptr->gres_name, __func__, step_id, node_offset,
-		      job_gres_ptr->node_cnt);
+	if (!gres_cnt)
 		return 0;
-	}
 
 	if (first_step_node) {
 		if (ignore_alloc)
@@ -7941,33 +7981,7 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 		min_gres = MAX(min_gres, gres_per_step);
 	}
 
-	if (!gres_id_shared(plugin_id) &&
-	    job_gres_ptr->gres_bit_alloc &&
-	    job_gres_ptr->gres_bit_alloc[node_offset]) {
-		gres_cnt = bit_set_count(job_gres_ptr->
-					 gres_bit_alloc[node_offset]);
-		if (!ignore_alloc &&
-		    job_gres_ptr->gres_bit_step_alloc &&
-		    job_gres_ptr->gres_bit_step_alloc[node_offset]) {
-			gres_cnt -= bit_set_count(job_gres_ptr->
-						  gres_bit_step_alloc
-						  [node_offset]);
-		}
-		if (min_gres > gres_cnt) {
-			core_cnt = 0;
-		} else if (step_gres_ptr->gres_per_task) {
-			task_cnt = (gres_cnt + step_gres_ptr->gres_per_task - 1)
-				/ step_gres_ptr->gres_per_task;
-			core_cnt = task_cnt * cpus_per_task;
-		} else
-			core_cnt = NO_VAL64;
-	} else if (job_gres_ptr->gres_cnt_node_alloc &&
-		   job_gres_ptr->gres_cnt_step_alloc) {
-		gres_cnt = job_gres_ptr->gres_cnt_node_alloc[node_offset];
-		if (!ignore_alloc) {
-			gres_cnt -= job_gres_ptr->
-				gres_cnt_step_alloc[node_offset];
-		}
+	if (gres_cnt != NO_VAL64) {
 		if (min_gres > gres_cnt) {
 			core_cnt = 0;
 		} else if (step_gres_ptr->gres_per_task) {
@@ -7977,11 +7991,10 @@ static uint64_t _step_test(void *step_gres_data, void *job_gres_data,
 		} else
 			core_cnt = NO_VAL64;
 	} else {
-		debug3("gres/%s: %s %ps gres_bit_alloc and gres_cnt_node_alloc are NULL",
-		       job_gres_ptr->gres_name, __func__, step_id);
 		gres_cnt = 0;
 		core_cnt = NO_VAL64;
 	}
+
 	if (core_cnt != 0) {
 		if (ignore_alloc)
 			step_gres_ptr->gross_gres += gres_cnt;
@@ -9253,6 +9266,7 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 	gres_state_t *job_gres_ptr, *step_gres_ptr;
 	gres_step_state_t *step_data_ptr = NULL;
 	slurm_step_id_t tmp_step_id;
+	uint64_t gres_cnt;
 
 	if (step_gres_list == NULL)
 		return NO_VAL64;
@@ -9289,13 +9303,18 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 			break;
 		}
 
+		gres_cnt = _step_get_gres_cnt(job_gres_ptr,
+					      &job_search_key,
+					      ignore_alloc,
+					      &tmp_step_id);
 		tmp_cnt = _step_test(step_data_ptr,
 				     job_gres_ptr->gres_data,
 				     node_offset, first_step_node,
 				     cpus_per_task, max_rem_nodes,
 				     ignore_alloc,
 				     &tmp_step_id,
-				     step_gres_ptr->plugin_id);
+				     step_gres_ptr->plugin_id,
+				     gres_cnt);
 		if ((tmp_cnt != NO_VAL64) && (tmp_cnt < core_cnt))
 			core_cnt = tmp_cnt;
 
