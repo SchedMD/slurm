@@ -47,7 +47,7 @@
 #define _LOG_H
 
 #include <syslog.h>
-#include <stgarg.h>
+#include <stdarg.h>
 #include <stdio.h>
 
 #include "slurm/slurm.h"
