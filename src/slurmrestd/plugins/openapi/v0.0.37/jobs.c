@@ -690,15 +690,10 @@ static data_for_each_cmd_t _parse_job_component(const data_t *data, void *arg)
 
 		list_append(rc->jobs, job_desc);
 	} else { /* parsing failed */
-		data_t *error = data_list_append(j->errors);
-		char *error_string = xstrdup_printf(
-			"%s: unexpected failure parsing het job: %zd",
-			__func__, j->i);
-		data_set_dict(error);
-		data_set_string(data_key_set(error, "error"), error_string);
-		//error("%s", error_string);
-		xfree(error_string);
-		rc->rc = ESLURM_REST_FAIL_PARSING;
+		rc->rc = resp_error(j->errors, ESLURM_REST_FAIL_PARSING,
+				    "_parse_job_desc",
+				    "unexpected failure parsing het job: %zd",
+				    j->i);
 		return DATA_FOR_EACH_FAIL;
 	}
 
