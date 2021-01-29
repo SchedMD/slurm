@@ -113,7 +113,7 @@ extern int fsync_and_close(int fd, const char *file_type);
 
 /*
  * Sets err to socket error
- * or returns SLURM_ERROR on error
+ * Returns SLURM_SUCCESS or errno value from getsockopt on error
  * */
 int fd_get_socket_error(int fd, int *err);
 
