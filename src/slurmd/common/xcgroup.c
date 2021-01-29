@@ -900,7 +900,7 @@ extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns)
 		error("unable to build slurm cgroup for ns %s: %m",
 		      ns->subsystems);
 	else
-		debug3("slurm cgroup %s successfully created for ns %s: %m",
+		debug3("slurm cgroup %s successfully created for ns %s",
 		       pre, ns->subsystems);
 
 	xcgroup_destroy(&slurm_cg);
