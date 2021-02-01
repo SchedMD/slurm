@@ -164,6 +164,12 @@ typedef struct {
 	int rec_count;
 } foreach_gres_conf_t;
 
+typedef struct {
+	bool ignore_alloc;
+	gres_key_t *job_search_key;
+	slurm_step_id_t *step_id;
+} foreach_gres_cnt_t;
+
 /* Pointers to functions in src/slurmd/common/xcpuinfo.h that we may use */
 typedef struct xcpuinfo_funcs {
 	int (*xcpuinfo_abs_to_mac) (char *abs, char **mac);
@@ -7894,11 +7900,12 @@ static void _gres_step_list_delete(void *list_element)
 
 
 static uint64_t _step_get_gres_cnt(gres_state_t *job_gres_ptr,
-				   gres_key_t *job_search_key,
-				   bool ignore_alloc,
-				   slurm_step_id_t *step_id)
+				   foreach_gres_cnt_t *foreach_gres_cnt)
 {
 	gres_job_state_t *gres_job_state;
+	gres_key_t *job_search_key = foreach_gres_cnt->job_search_key;
+	bool ignore_alloc = foreach_gres_cnt->ignore_alloc;
+	slurm_step_id_t *step_id = foreach_gres_cnt->step_id;
 	int node_offset = job_search_key->node_offset;
 	uint64_t gres_cnt = 0;
 
@@ -9262,6 +9269,7 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 	gres_step_state_t *step_data_ptr = NULL;
 	slurm_step_id_t tmp_step_id;
 	uint64_t gres_cnt;
+	foreach_gres_cnt_t foreach_gres_cnt;
 
 	if (step_gres_list == NULL)
 		return NO_VAL64;
@@ -9277,10 +9285,15 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 	tmp_step_id.step_het_comp = NO_VAL;
 	tmp_step_id.step_id = step_id;
 
+	memset(&foreach_gres_cnt, 0, sizeof(foreach_gres_cnt));
+	foreach_gres_cnt.ignore_alloc = ignore_alloc;
+	foreach_gres_cnt.step_id = &tmp_step_id;
+
 	slurm_mutex_lock(&gres_context_lock);
 	step_gres_iter = list_iterator_create(step_gres_list);
 	while ((step_gres_ptr = (gres_state_t *) list_next(step_gres_iter))) {
 		gres_key_t job_search_key;
+
 		step_data_ptr = (gres_step_state_t *)step_gres_ptr->gres_data;
 		job_search_key.plugin_id = step_gres_ptr->plugin_id;
 		if (step_data_ptr->type_name)
@@ -9289,6 +9302,7 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 			job_search_key.type_id = NO_VAL;
 
 		job_search_key.node_offset = node_offset;
+
 		if (!(job_gres_ptr = list_find_first(
 			      job_gres_list,
 			      gres_find_job_by_key_with_cnt,
@@ -9298,10 +9312,10 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 			break;
 		}
 
+		foreach_gres_cnt.job_search_key = &job_search_key;
+
 		gres_cnt = _step_get_gres_cnt(job_gres_ptr,
-					      &job_search_key,
-					      ignore_alloc,
-					      &tmp_step_id);
+					      &foreach_gres_cnt);
 		tmp_cnt = _step_test(step_data_ptr, first_step_node,
 				     cpus_per_task, max_rem_nodes,
 				     ignore_alloc, gres_cnt);
