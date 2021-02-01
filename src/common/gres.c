@@ -7900,9 +7900,10 @@ static void _gres_step_list_delete(void *list_element)
 }
 
 
-static uint64_t _step_get_gres_cnt(gres_state_t *job_gres_ptr,
-				   foreach_gres_cnt_t *foreach_gres_cnt)
+static int _step_get_gres_cnt(void *x, void *arg)
 {
+	gres_state_t *job_gres_ptr = (gres_state_t *)x;
+	foreach_gres_cnt_t *foreach_gres_cnt = (foreach_gres_cnt_t *)arg;
 	gres_job_state_t *gres_job_state;
 	gres_key_t *job_search_key = foreach_gres_cnt->job_search_key;
 	bool ignore_alloc = foreach_gres_cnt->ignore_alloc;
@@ -7916,7 +7917,7 @@ static uint64_t _step_get_gres_cnt(gres_state_t *job_gres_ptr,
 		      gres_job_state->gres_name, __func__, step_id,
 		      node_offset, gres_job_state->node_cnt);
 		foreach_gres_cnt->gres_cnt = 0;
-		goto end_it;
+		return -1;
 	}
 	if (!gres_id_shared(job_search_key->plugin_id) &&
 	    gres_job_state->gres_bit_alloc &&
@@ -7943,9 +7944,8 @@ static uint64_t _step_get_gres_cnt(gres_state_t *job_gres_ptr,
 		       gres_job_state->gres_name, gres_job_state->type_name,
 		       __func__, step_id);
 		foreach_gres_cnt->gres_cnt = NO_VAL64;
-		goto end_it;
+		return -1;
 	}
-end_it:
 	return 0;
 }
 
