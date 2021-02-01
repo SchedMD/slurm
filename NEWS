@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix threads-per-core memory allocation issue when using CR_CPU_MEMORY.
  -- Fix scheduling issue with --gpus.
  -- Fix gpu allocations that request --cpus-per-task.
+ -- mpi/pmix: fixed print messages for all PMIXP_* macros
 
 * Changes in Slurm 20.11.3
 ==========================

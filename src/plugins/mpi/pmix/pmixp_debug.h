@@ -43,57 +43,35 @@
 #define MAX_MSG_SIZE 1024
 
 #define PMIXP_DEBUG(format, args...) {				\
-	char file[] = __FILE__;					\
-	char *file_base = strrchr(file, '/');			\
-	if (file_base == NULL) {				\
-		file_base = file;				\
-	}							\
-	debug("%s [%d] %s:%d [%s] mpi/pmix: " format "",	\
+	debug("%s [%d]: %s:%d: " format "",			\
 	      pmixp_info_hostname(), pmixp_info_nodeid(),	\
-	      file_base, __LINE__, __func__, ## args);		\
+	      THIS_FILE, __LINE__, ## args);			\
 }
 
 #define PMIXP_ERROR_STD(format, args...) {			\
-	char file[] = __FILE__;					\
-	char *file_base = strrchr(file, '/');			\
-	if (file_base == NULL) {				\
-		file_base = file;				\
-	}							\
-	error("%s [%d] %s:%d [%s] mpi/pmix: ERROR: " format ": %s (%d)", \
-	      pmixp_info_hostname(), pmixp_info_nodeid(),	\
-	      file_base, __LINE__, __func__,			\
+	error(" %s: %s: %s [%d]: %s:%d: " format ": %s (%d)",	\
+	      plugin_type, __func__, pmixp_info_hostname(),	\
+	      pmixp_info_nodeid(), THIS_FILE, __LINE__,		\
 	      ## args, strerror(errno), errno);			\
 }
 
 #define PMIXP_ERROR(format, args...) {				\
-	char file[] = __FILE__;					\
-	char *file_base = strrchr(file, '/');			\
-	if (file_base == NULL) {				\
-		file_base = file;				\
-	}							\
-	error("%s [%d] %s:%d [%s] mpi/pmix: ERROR: " format,	\
-	      pmixp_info_hostname(), pmixp_info_nodeid(),	\
-	      file_base, __LINE__, __func__, ## args);		\
+	error(" %s: %s: %s [%d]: %s:%d: " format,		\
+	      plugin_type, __func__, pmixp_info_hostname(),	\
+	      pmixp_info_nodeid(), THIS_FILE, __LINE__,		\
+	      ## args);						\
 }
 
 #define PMIXP_ABORT(format, args...) {				\
-	PMIXP_ERROR(format, ##args);                            \
-	error("%s [%d] %s:%d [%s] mpi/pmix: ERROR: " format,	\
-	      pmixp_info_hostname(), pmixp_info_nodeid(),	\
-	      file_base, __LINE__, __func__, ## args);		\
+	PMIXP_ERROR(format, ##args);				\
 	slurm_kill_job_step(pmixp_info_jobid(),			\
 			    pmixp_info_stepid(), SIGKILL);	\
 }
 
 #define PMIXP_ERROR_NO(err, format, args...) {			\
-	char file[] = __FILE__;					\
-	char *file_base = strrchr(file, '/');			\
-	if (file_base == NULL) {				\
-		file_base = file;				\
-	}							\
-	error("%s [%d] %s:%d [%s] mpi/pmix: ERROR: " format ": %s (%d)", \
-	      pmixp_info_hostname(), pmixp_info_nodeid(),	\
-	      file_base, __LINE__, __func__,			\
+	error(" %s: %s: %s [%d]: %s:%d: " format ": %s (%d)",	\
+	      plugin_type, __func__, pmixp_info_hostname(),	\
+	      pmixp_info_nodeid(), THIS_FILE, __LINE__,		\
 	      ## args, strerror(err), err);			\
 }
 
