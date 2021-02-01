@@ -283,6 +283,20 @@ extern int gres_find_id(void *x, void *key)
 }
 
 /* Find job record with matching name and type */
+extern int gres_find_job_by_key_exact_type(void *x, void *key)
+{
+	gres_state_t *state_ptr = (gres_state_t *) x;
+	gres_key_t *job_key = (gres_key_t *) key;
+	gres_job_state_t *gres_data_ptr;
+	gres_data_ptr = (gres_job_state_t *)state_ptr->gres_data;
+
+	if ((state_ptr->plugin_id == job_key->plugin_id) &&
+	    (gres_data_ptr->type_id == job_key->type_id))
+		return 1;
+	return 0;
+}
+
+/* Find job record with matching name and type */
 extern int gres_find_job_by_key(void *x, void *key)
 {
 	gres_state_t *state_ptr = (gres_state_t *) x;
