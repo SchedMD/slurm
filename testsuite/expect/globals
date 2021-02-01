@@ -694,6 +694,110 @@ proc _line_trace {} {
 ################################################################
 #
 # NAME
+#	tolerance - determines whether a value is within a specified tolerance
+#
+# SYNOPSIS
+#	tolerance expected observed tolerance_expression
+#
+# ARGUMENTS
+#	expected
+#		the expected (numeric) value
+#	observed
+#		the observed (numeric) value
+#	tolerance_expression
+#		a string of the form: [~][+|-]<tolerance>[%]
+#
+# DESCRIPTION
+#	tolerance
+#		A numeric tolerance
+#	symmetry
+#		By default the permitted range of values is symetric:
+#			[expected - tolerance, expected + tolerance]
+#		If the + sign is specified, the tolerance is limited to the
+#		the higher side only:
+#			[expected, expected + tolerance]
+#		If the - sign is specified, the tolerance is limited to the
+#		the lower side only:
+#			[expected - tolerance, expected]
+#	percent
+#		By default the permitted range is computed as absolute values:
+#			[expected - tolerance, expected + tolerance]
+#		If % is specified, the permitted range is computed as a
+#		percentage of the expected value:
+#			[expected*(1-tolerance/100), expected*(1+tolerance/100)]
+#	exclusivity
+#		By default the permitted range of values is inclusive, ie
+#		the min and max tolerated values are included in the range:
+#			[expected - tolerance, expected + tolerance]
+#		If ~ (exclusive) is specified, the tolerance limits are
+#		exclusive, ie the min and max tolerated values are excluded:
+#			(expected - tolerance, expected + tolerance)
+#	expression
+#		any combination of symetry, percent and exclusivity is allowed
+#
+# RETURN VALUE
+#	Returns true if the observed value is within the specified tolerance
+#	range of the expected value, otherwise false
+#
+# EXAMPLES
+#	The indicated tolerance_expression is true if:
+#	"5"     expected - 5  <= observed <= expected + 5
+#	"-5"    expected - 5  <= observed <= expected
+#	"+5"    expected      <= observed <= expected + 5
+#	"5%"    expected - 5% <= observed <= expected + 5%
+#	"~5"    expected - 5  <  observed <  expected + 5
+#	"~+5%"  expected      <= observed <  expected + 5%
+#
+################################################################
+
+proc tolerance { expected observed tolerance_expression } {
+	if {![regexp {^(~?)([-+]?)([0-9\.]+)(%?)$} $tolerance_expression {} exclusive sign tolerance percent]} {
+		fail "Invalid tolerance expression ($tolerance_expression)"
+	}
+
+	set lower_bound_expression $observed
+	if {$sign eq "+" || $exclusive ne "~"} {
+		append lower_bound_expression " >="
+	} else {
+		append lower_bound_expression " >"
+	}
+	append lower_bound_expression " $expected"
+	if {$sign eq "-" || $sign eq ""} {
+		if {$percent eq "%"} {
+			append lower_bound_expression " - $tolerance * $expected / 100"
+		} else {
+			append lower_bound_expression " - $tolerance"
+		}
+	}
+
+	set upper_bound_expression $observed
+	if {$sign eq "-" || $exclusive ne "~"} {
+		append upper_bound_expression " <="
+	} else {
+		append upper_bound_expression " <"
+	}
+	append upper_bound_expression " $expected"
+	if {$sign eq "+" || $sign eq ""} {
+		if {$percent eq "%"} {
+			append upper_bound_expression " + $tolerance * $expected / 100"
+		} else {
+			append upper_bound_expression " + $tolerance"
+		}
+	}
+
+	if {[expr $lower_bound_expression] && [expr $upper_bound_expression]} {
+		log_debug "$observed is within tolerance $tolerance_expression of $expected"
+		return true
+	} else {
+		log_warn "$observed is not within tolerance $tolerance_expression of $expected"
+		return false
+	}
+}
+
+
+################################################################
+#
+# NAME
 #	check_run_as_user - check if the caller may run_command as the supplied user
 #
 # SYNOPSIS

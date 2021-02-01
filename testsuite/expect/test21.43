@@ -33,7 +33,6 @@ set test_acct           "${test_name}_acct"
 set test_user           [get_my_user_name]
 set access_err          0
 set job_list            {}
-set failure_count       0
 
 set qoses {
 	high {UsageFactor 2}
@@ -141,7 +140,7 @@ if [reset_account_usage "$cluster" "$test_acct"] {
 # Test Usage Factor Function
 #
 proc test_usage_factor { qos usage_factor } {
-	global failure_count sbatch scontrol test_acct number test_name
+	global sbatch scontrol test_acct number test_name
 
 	log_info "Testing for a usage factor of $usage_factor with qos $qos"
 
@@ -175,7 +174,7 @@ proc test_usage_factor { qos usage_factor } {
 	#
 	# Wait for job to enter running state
 	#
-	if {[wait_for_job $job_id "RUNNING"] != 0} {
+	if {[wait_for_job -pollinterval .1 $job_id "RUNNING"] != 0} {
 		fail "Error waiting for job $job_id to be RUNNING"
 	}
 
@@ -215,10 +214,10 @@ proc test_usage_factor { qos usage_factor } {
 			wait
 		}
 	}
-	if {$observed_usage != $expected_usage} {
-		log_error "Usage for qos $qos was expected to be $expected_usage but was observed to be $observed_usage"
-		incr failure_count
-	}
+
+	# A tolerance of -1 (sec) must be permitted because usage can be accrued
+	# one second before the usage value can be returned.
+	subtest [tolerance $expected_usage $observed_usage -1] "Check that usage for qos $qos is within tolerance (-1 sec)" "$observed_usage not in \[$expected_usage-1, $expected_usage\]"
 
 	#
 	# Cancel the job
@@ -231,9 +230,4 @@ dict for {key qos_spec} $qoses {
 	dict with qos_spec {
 		test_usage_factor $test_qos $UsageFactor
 	}
-}
-
-# Fail test if any previous subtests failed
-if {$failure_count} {
-    fail "Test failed due to $failure_count prior subtest failures"
 }
