@@ -57,6 +57,7 @@ extern int gres_ctld_job_select_whole_node(
  * Select and allocate all GRES on a node to a job and update node and job GRES
  * information
  * IN job_gres_list - job's gres_list built by gres_job_whole_node().
+ * OUT job_alloc_gres_list - job's list of allocated gres
  * IN node_gres_list - node's gres_list built by
  *		       gres_node_config_validate()
  * IN node_cnt    - total number of nodes originally allocated to the job
@@ -70,7 +71,7 @@ extern int gres_ctld_job_select_whole_node(
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_job_alloc_whole_node(
-	List job_gres_list, List node_gres_list,
+	List job_gres_list, List *job_alloc_gres_list, List node_gres_list,
 	int node_cnt, int node_index, int node_offset,
 	uint32_t job_id, char *node_name,
 	bitstr_t *core_bitmap);
@@ -78,6 +79,7 @@ extern int gres_ctld_job_alloc_whole_node(
 /*
  * Select and allocate GRES to a job and update node and job GRES information
  * IN job_gres_list - job's gres_list built by gres_job_state_validate()
+ * OUT job_alloc_gres_list - job's list of allocated gres
  * IN node_gres_list - node's gres_list built by
  *		       gres_node_config_validate()
  * IN node_cnt    - total number of nodes originally allocated to the job
@@ -90,8 +92,9 @@ extern int gres_ctld_job_alloc_whole_node(
  * IN user_id     - job's user ID
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_ctld_job_alloc(List job_gres_list, List node_gres_list,
-			       int node_cnt, int node_index, int node_offset,
+extern int gres_ctld_job_alloc(List job_gres_list, List *job_alloc_gres_list,
+			       List node_gres_list, int node_cnt,
+			       int node_index, int node_offset,
 			       uint32_t job_id, char *node_name,
 			       bitstr_t *core_bitmap);
 

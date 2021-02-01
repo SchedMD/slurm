@@ -348,12 +348,14 @@ extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action)
 			    (job_ptr->details->whole_node == 1))
 				gres_ctld_job_alloc_whole_node(
 					job_ptr->gres_list,
+					&job_ptr->gres_list_alloc,
 					node_gres_list, job->nhosts,
 					i, n, job_ptr->job_id,
 					node_ptr->name, core_bitmap);
 			else
 				gres_ctld_job_alloc(
 					job_ptr->gres_list,
+					&job_ptr->gres_list_alloc,
 					node_gres_list, job->nhosts,
 					i, n, job_ptr->job_id,
 					node_ptr->name, core_bitmap);

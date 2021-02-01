@@ -91,10 +91,11 @@ static bool _cores_on_gres(bitstr_t *core_bitmap, bitstr_t *alloc_core_bitmap,
 	return false;
 }
 
-static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
-		      int node_index, int node_offset, char *gres_name,
-		      uint32_t job_id, char *node_name,
-		      bitstr_t *core_bitmap, uint32_t plugin_id)
+static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
+		      void *node_gres_data, int node_cnt, int node_index,
+		      int node_offset, char *gres_name, uint32_t job_id,
+		      char *node_name, bitstr_t *core_bitmap,
+		      uint32_t plugin_id)
 {
 	int j, sz1, sz2;
 	int64_t gres_cnt, i;
@@ -543,9 +544,9 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 
 static int _job_alloc_whole_node_internal(
 	gres_key_t *job_search_key, gres_node_state_t *node_state_ptr,
-	List job_gres_list, int node_cnt, int node_index, int node_offset,
-	int type_index, uint32_t job_id, char *node_name,
-	bitstr_t *core_bitmap)
+	List job_gres_list, List *job_gres_list_alloc, int node_cnt,
+	int node_index, int node_offset, int type_index, uint32_t job_id,
+	char *node_name, bitstr_t *core_bitmap)
 {
 	gres_state_t *job_gres_ptr;
 	gres_job_state_t *job_state_ptr;
@@ -574,7 +575,7 @@ static int _job_alloc_whole_node_internal(
 	else
 		job_state_ptr->gres_per_node = node_state_ptr->gres_cnt_avail;
 
-	return _job_alloc(job_state_ptr, node_state_ptr,
+	return _job_alloc(job_state_ptr, *job_gres_list_alloc, node_state_ptr,
 			  node_cnt, node_index, node_offset,
 			  job_state_ptr->gres_name,
 			  job_id, node_name, core_bitmap,
@@ -688,6 +689,7 @@ extern int gres_ctld_job_select_whole_node(
 /*
  * Select and allocate GRES to a job and update node and job GRES information
  * IN job_gres_list - job's gres_list built by gres_job_state_validate()
+ * OUT job_gres_list_alloc - job's list of allocated gres
  * IN node_gres_list - node's gres_list built by
  *		       gres_node_config_validate()
  * IN node_cnt    - total number of nodes originally allocated to the job
@@ -699,8 +701,9 @@ extern int gres_ctld_job_select_whole_node(
  *                  available)
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_ctld_job_alloc(List job_gres_list, List node_gres_list,
-			       int node_cnt, int node_index, int node_offset,
+extern int gres_ctld_job_alloc(List job_gres_list, List *job_gres_list_alloc,
+			       List node_gres_list, int node_cnt,
+			       int node_index, int node_offset,
 			       uint32_t job_id, char *node_name,
 			       bitstr_t *core_bitmap)
 {
@@ -733,7 +736,7 @@ extern int gres_ctld_job_alloc(List job_gres_list, List node_gres_list,
 			continue;
 		}
 
-		rc2 = _job_alloc(job_gres_ptr->gres_data,
+		rc2 = _job_alloc(job_gres_ptr->gres_data, *job_gres_list_alloc,
 				 node_gres_ptr->gres_data, node_cnt, node_index,
 				 node_offset, job_state_ptr->gres_name,
 				 job_id, node_name, core_bitmap,
@@ -750,6 +753,7 @@ extern int gres_ctld_job_alloc(List job_gres_list, List node_gres_list,
  * Select and allocate all GRES on a node to a job and update node and job GRES
  * information
  * IN job_gres_list - job's gres_list built by gres_job_whole_node().
+ * OUT job_gres_list_alloc - job's list of allocated gres
  * IN node_gres_list - node's gres_list built by
  *		       gres_node_config_validate()
  * IN node_cnt    - total number of nodes originally allocated to the job
@@ -762,7 +766,7 @@ extern int gres_ctld_job_alloc(List job_gres_list, List node_gres_list,
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_job_alloc_whole_node(
-	List job_gres_list, List node_gres_list,
+	List job_gres_list, List *job_gres_list_alloc, List node_gres_list,
 	int node_cnt, int node_index, int node_offset,
 	uint32_t job_id, char *node_name,
 	bitstr_t *core_bitmap)
@@ -795,7 +799,8 @@ extern int gres_ctld_job_alloc_whole_node(
 			job_search_key.type_id = 0;
 			rc2 = _job_alloc_whole_node_internal(
 				&job_search_key, node_state_ptr,
-				job_gres_list, node_cnt, node_index,
+				job_gres_list, job_gres_list_alloc,
+				node_cnt, node_index,
 				node_offset, -1, job_id, node_name,
 				core_bitmap);
 			if (rc2 != SLURM_SUCCESS)
@@ -806,7 +811,8 @@ extern int gres_ctld_job_alloc_whole_node(
 					node_state_ptr->type_name[j]);
 				rc2 = _job_alloc_whole_node_internal(
 					&job_search_key, node_state_ptr,
-					job_gres_list, node_cnt, node_index,
+					job_gres_list, job_gres_list_alloc,
+					node_cnt, node_index,
 					node_offset, j, job_id, node_name,
 					core_bitmap);
 				if (rc2 != SLURM_SUCCESS)
