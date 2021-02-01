@@ -7910,6 +7910,14 @@ static int _step_get_gres_cnt(void *x, void *arg)
 	slurm_step_id_t *step_id = foreach_gres_cnt->step_id;
 	int node_offset = job_search_key->node_offset;
 
+	/* This isn't the gres we are looking for */
+	if (!gres_find_job_by_key_with_cnt(job_gres_ptr, job_search_key))
+		return 0;
+
+	/* This is the first time we have found a matching GRES. */
+	if (foreach_gres_cnt->gres_cnt == INFINITE64)
+		foreach_gres_cnt->gres_cnt = 0;
+
 	gres_job_state = job_gres_ptr->gres_data;
 	if ((node_offset >= gres_job_state->node_cnt) &&
 	    (gres_job_state->node_cnt != 0)) { /* GRES is type no_consume */
@@ -9266,7 +9274,7 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 {
 	uint64_t core_cnt, tmp_cnt;
 	ListIterator step_gres_iter;
-	gres_state_t *job_gres_ptr, *step_gres_ptr;
+	gres_state_t *step_gres_ptr;
 	gres_step_state_t *step_data_ptr = NULL;
 	slurm_step_id_t tmp_step_id;
 	foreach_gres_cnt_t foreach_gres_cnt;
@@ -9303,19 +9311,17 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 
 		job_search_key.node_offset = node_offset;
 
-		if (!(job_gres_ptr = list_find_first(
-			      job_gres_list,
-			      gres_find_job_by_key_with_cnt,
-			      &job_search_key))) {
+		foreach_gres_cnt.job_search_key = &job_search_key;
+		foreach_gres_cnt.gres_cnt = INFINITE64;
+
+		(void)list_for_each(job_gres_list, _step_get_gres_cnt,
+				    &foreach_gres_cnt);
+
+		if (foreach_gres_cnt.gres_cnt == INFINITE64) {
 			/* job lack resources required by the step */
 			core_cnt = 0;
 			break;
 		}
-
-		foreach_gres_cnt.job_search_key = &job_search_key;
-		foreach_gres_cnt.gres_cnt = 0;
-		(void)_step_get_gres_cnt(job_gres_ptr,
-					 &foreach_gres_cnt);
 		tmp_cnt = _step_test(step_data_ptr, first_step_node,
 				     cpus_per_task, max_rem_nodes,
 				     ignore_alloc, foreach_gres_cnt.gres_cnt);
