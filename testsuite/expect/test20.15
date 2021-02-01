@@ -33,7 +33,7 @@ if {[file executable $seff] == 0} {
 set out [run_command_output -fail -xfail "$seff -h"]
 subtest {[regexp "Usage:" $out]} "seff -h should return Usage:"
 
-set job_id [submit_job -fail "-H --wrap=\"sleep 10\""]
+set job_id [submit_job -fail "-H --wrap=\"sleep 10\" -o /dev/null -e /dev/null"]
 wait_for_command "$sacct" "-n -j $job_id" "PENDING"
 set out [run_command_output -fail "$seff $job_id" ]
 subtest {[regexp "State: PENDING" $out]} "Job should be returned as in PENDING state by seff"
@@ -50,4 +50,11 @@ subtest {[regexp "WARNING: Efficiency statistics may be misleading for RUNNING j
 wait_for_command "$sacct" "-X -n -j $job_id" "COMPLETED"
 set out [run_command_output -fail "$seff $job_id"]
 subtest {[regexp "State: COMPLETED"  $out]} "Job should be reported as COMPLETED by seff"
-subtest {[regexp -line {CPU Efficiency: 0.00% of 00:00:1\d core-walltime} $out]} "Job efficiency should be 0.00% of >=10s core-walltime"
+subtest {[regexp "Cores: \(\\d+\)" $out {} cores] || \
+         [regexp "Cores per node: \(\\d+\)" $out {} cores]} "seff should report the number of cores (per node) based on the configuration"
+# On select/linear or other configs, cores could be > 1
+if {$cores > 5} {
+	subskip "Not subtesting CPU Efficency if Cores ($cores) > 5"
+} else {
+	subtest {[regexp -line "CPU Efficiency: 0.00% of 00:00:$cores\\d core-walltime" $out]} "Job efficiency should be 0.00% of >=10s*Cores core-walltime"
+}
