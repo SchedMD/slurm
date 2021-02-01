@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
     period.
  -- Ensure that a reservations [pro|epi]log are ran on reoccuring reservations.
  -- Fix threads-per-core memory allocation issue when using CR_CPU_MEMORY.
+ -- Fix scheduling issue with --gpus.
 
 * Changes in Slurm 20.11.3
 ==========================

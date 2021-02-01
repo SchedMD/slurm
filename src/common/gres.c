@@ -8085,9 +8085,13 @@ extern int gres_plugin_job_core_filter2(List sock_gres_list, uint64_t avail_mem,
 			near_gres_cnt = sock_gres->total_cnt;
 		}
 		if (sock_gres->job_specs && !whole_node) {
-			(void)_set_max_node_gres(sock_gres,
-						 sock_gres->job_specs->
-						 gres_per_node);
+			/* If gres_per_node isn't set, try gres_per_job */
+			if (!_set_max_node_gres(
+				    sock_gres,
+				    sock_gres->job_specs->gres_per_node))
+				(void)_set_max_node_gres(
+					sock_gres,
+					sock_gres->job_specs->gres_per_job);
 		}
 		/* Avoid max_node_gres with ntasks_per_gres and whole node */
 		if (cpus_per_gres &&
