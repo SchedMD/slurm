@@ -32,8 +32,25 @@ set job_id               0
 set user_name            [get_my_user_name]
 set default_partition    [default_partition]
 set res_name             "res_$test_name"
+set resv_over_run        false
+set config_file          [get_conf_path]/slurm.conf
+
+if { [get_config_param ResvOverRun] != "0 min" } {
+	set resv_over_run true
+}
 
 proc cleanup {} {
+	global resv_over_run config_file
+
+	subcleanup
+
+	if { $resv_over_run } {
+		restore_conf $config_file
+		reconfigure -fail
+	}
+}
+
+proc subcleanup {} {
 	global scontrol res_name job_id
 
 	cancel_job $job_id
@@ -60,72 +77,60 @@ if {$nb_nodes < 2} {
 	skip "Need 2 or more nodes in default partition"
 }
 
-proc test_flex {use_flex submit_active} {
-	global res_name job_id
+if { $resv_over_run } {
+	save_conf $config_file
+	exec $bin_echo ResvOverRun=0 >> $config_file
+	reconfigure -fail
+}
 
-	log_info "SUBTEST: Job using more nodes than reservation"
-	cleanup
+proc test_flex {use_flex submit_active} {
+	global res_name job_id resv_over_run
+
+	# Subtest job using more nodes than reservation
+	subcleanup
 	if {$submit_active} {
 		setup $use_flex ""
 		wait_for {[get_reservation_param $res_name State] eq "ACTIVE"} {}
 	} else {
 		setup $use_flex "+5"
 	}
-	set job_id [submit_job -none "-N2 --reservation=$res_name --wrap 'sleep 30'"]
+	set job_id [submit_job -none "-N2 --reservation=$res_name --wrap 'sleep 30' -o /dev/null -e /dev/null"]
 	if {$use_flex} {
-		if {[wait_for_job -timeout 30 $job_id RUNNING]} {
-			fail "Job didn't start while it should because with FLEX more nodes can be requested"
-		}
+		subtest {![wait_for_job -timeout 30 $job_id RUNNING]} "Job should be running because with FLEX more nodes can be requested"
 	} else {
 		if {$submit_active} {
-			if {$job_id} {
-				fail "Job submitted but it shouldn't because requested more nodes than in reservation without FLEX and ACTIVE"
-			}
-			log_debug "Previous submission error expected, don't worry"
+			subtest {$job_id == 0} "Job shouldn't be running requested more nodes than in reservation without FLEX and ACTIVE"
 		} else {
-			if {![wait_for_job -timeout 30 $job_id RUNNING]} {
-				fail "Job started but it shouldn't because requested more nodes than in reservation without FLEX"
-			}
+			subtest {[wait_for_job -timeout 30 $job_id RUNNING]} "Job shouldn't be running because requested more nodes than in reservation without FLEX"
 		}
 	}
 
-	log_info "SUBTEST: Job with EndTime after reservation end"
-	cleanup
+	# Subtest job with EndTime after reservation end
+	subcleanup
 	if {$submit_active} {
 		setup $use_flex ""
 		wait_for {[get_reservation_param $res_name State] eq "ACTIVE"} {}
 	} else {
 		setup $use_flex "+5"
 	}
-	set job_id [submit_job -fail "-N1 --reservation=$res_name -t 120 --wrap 'sleep 100'"]
-	if {[wait_for_job -timeout 30 $job_id RUNNING]} {
-		fail "Job didn't start while it should"
-	}
-	if {[wait_for_job -timeout 200 -pollinterval 10 $job_id DONE]} {
-		fail "Job didn't end"
-	}
+	set job_id [submit_job -fail "-N1 --reservation=$res_name -t 120 --wrap 'sleep 100' -o /dev/null -e /dev/null"]
+	subtest {![wait_for_job -timeout 30 $job_id RUNNING]} "Job should be RUNNING"
+	subtest {![wait_for_job -timeout 200 -pollinterval 10 $job_id DONE]} "Job should be DONE"
+
 	if {$use_flex} {
-		if { [get_job_param $job_id JobState] ne "COMPLETED" } {
-			fail "Job didn't complete successfully and it should with FLEX"
-		}
+		subtest {[get_job_param $job_id JobState] == "COMPLETED" } "Job should complete successfully after reservation end when it was FLEX"
 	} else {
-		if { [get_job_param $job_id JobState] ne "TIMEOUT" } {
-			fail "Job didn't TIMEOUT it should without FLEX"
-		}
+		subtest {[get_job_param $job_id JobState] == "TIMEOUT" } "Job should TIMEOUT with reservation end without FLEX"
 	}
 
-	log_info "SUBTEST: Job start before reservation StartTime"
-	cleanup
+	# Subtest Job start before reservation StartTime
+	subcleanup
 	setup $use_flex "+60"
-	set job_id [submit_job -fail "-N1 --reservation=$res_name -t 300 --wrap 'sleep 30'"]
+	set job_id [submit_job -fail "-N1 --reservation=$res_name -t 300 --wrap 'sleep 30' -o /dev/null -e /dev/null"]
 	if {$use_flex} {
-		if {[wait_for_job -timeout 30 $job_id RUNNING]} {
-			fail "Job didn't start before reservation and it should with FLEX."
-		}
+		subtest {![wait_for_job -timeout 30 $job_id RUNNING]} "Job should start before reservation since it's FLEX."
 	} else {
-		if {![wait_for_job -timeout 30 $job_id RUNNING]} {
-			fail "Job started before reservation and it shouldn't without FLEX."
-		}
+		subtest {[wait_for_job -timeout 30 $job_id RUNNING]}  "Job shouldn't started before reservation since it's not FLEX."
 	}
 }
 
