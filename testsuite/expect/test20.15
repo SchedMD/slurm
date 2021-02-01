@@ -33,7 +33,7 @@ if {[file executable $seff] == 0} {
 set out [run_command_output -fail -xfail "$seff -h"]
 subtest {[regexp "Usage:" $out]} "seff -h should return Usage:"
 
-set job_id [submit_job -fail "-H --wrap=\"sleep 10\""]
+set job_id [submit_job -fail "-H --wrap=\"sleep 10\" -o /dev/null -e /dev/null"]
 wait_for_command "$sacct" "-n -j $job_id" "PENDING"
 set out [run_command_output -fail "$seff $job_id" ]
 subtest {[regexp "State: PENDING" $out]} "Job should be returned as in PENDING state by seff"
