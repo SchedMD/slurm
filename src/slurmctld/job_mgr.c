@@ -14915,10 +14915,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	job_ptr->preempt_time = 0;
 	job_ptr->suspend_time = 0;
 	job_ptr->tot_sus_time = 0;
-	/* Current code (<= 2.1) has it so we start the new job with the next
-	 * step id.  This could be used when restarting to figure out which
-	 * step the previous run of this job stopped on. */
-	//job_ptr->next_step_id = 0;
+	job_ptr->next_step_id = 0;
 
 	job_ptr->node_cnt = 0;
 	xfree(job_ptr->nodes);

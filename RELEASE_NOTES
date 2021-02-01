@@ -25,6 +25,8 @@ HIGHLIGHTS
     GrpTRES limits.  For example, if the LimitFactor is 2, then an association
     with a GrpTRES of 30 CPUs, would be allowed to allocate 60 CPUs when
     running under this QOS.
+ -- A job's next_step_id counter now resets to 0 after being requeued.
+    Previously, the step id's would continue from the job's last run.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
