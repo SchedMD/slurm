@@ -34,7 +34,6 @@ set job_id      0
 proc cleanup {} {
 	global job_id bin_rm file_in
 
-	reconfigure
 	cancel_job $job_id
 	exec $bin_rm -f $file_in
 }
