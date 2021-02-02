@@ -67,7 +67,6 @@
 #include "src/common/working_cluster.h"
 #include "src/common/xassert.h"
 
-#define MAX_SLURM_NAME 64
 #define FORWARD_INIT 0xfffe
 
 /* Defined job states */

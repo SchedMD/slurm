@@ -135,8 +135,8 @@ typedef struct slurmctld_config {
 	pthread_cond_t backup_finish_cond; /* use thread_count_lock */
 	time_t	boot_time;
 	int	daemonize;
-	char    node_name_long[MAX_SLURM_NAME];
-	char    node_name_short[MAX_SLURM_NAME];
+	char    node_name_long[HOST_NAME_MAX];
+	char    node_name_short[HOST_NAME_MAX];
 	bool	resume_backup;
 	bool    scheduling_disabled;
 	int	server_thread_count;

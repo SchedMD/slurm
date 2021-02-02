@@ -893,8 +893,8 @@ _read_config(void)
 		conf->node_name = slurm_conf_get_nodename(conf->hostname);
 
 	if ((conf->node_name == NULL) && conf->dynamic) {
-		char hostname[MAX_SLURM_NAME];
-		if (!gethostname(hostname, MAX_SLURM_NAME))
+		char hostname[HOST_NAME_MAX];
+		if (!gethostname(hostname, HOST_NAME_MAX))
 			conf->node_name = xstrdup(hostname);
 	}
 

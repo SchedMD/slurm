@@ -1801,9 +1801,9 @@ static int _load_slurmctld_host(slurm_conf_t *conf)
 		}
 		if (!xstrcasecmp("localhost", conf->control_machine[i])) {
 			xfree(conf->control_machine[i]);
-			conf->control_machine[i] = xmalloc(MAX_SLURM_NAME);
+			conf->control_machine[i] = xmalloc(HOST_NAME_MAX);
 			if (gethostname_short(conf->control_machine[i],
-					      MAX_SLURM_NAME)) {
+					      HOST_NAME_MAX)) {
 				error("getnodename: %m");
 				goto error;
 			}

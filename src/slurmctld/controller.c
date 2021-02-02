@@ -447,11 +447,11 @@ int main(int argc, char **argv)
 		     slurm_prog_name, SLURM_VERSION_STRING,
 		     slurm_conf.cluster_name);
 	if ((error_code = gethostname_short(slurmctld_config.node_name_short,
-					    MAX_SLURM_NAME)) &&
+					    HOST_NAME_MAX)) &&
 	    !test_config)
 		fatal("getnodename_short error %s", slurm_strerror(error_code));
 	if ((error_code = gethostname(slurmctld_config.node_name_long,
-				      MAX_SLURM_NAME)) &&
+				      HOST_NAME_MAX)) &&
 	    !test_config)
 		fatal("getnodename error %s", slurm_strerror(error_code));
 

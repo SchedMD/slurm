@@ -579,16 +579,16 @@ static void
 _print_daemons (void)
 {
 	slurm_ctl_conf_info_msg_t *conf;
-	char node_name_short[MAX_SLURM_NAME];
-	char node_name_long[MAX_SLURM_NAME];
+	char node_name_short[HOST_NAME_MAX];
+	char node_name_long[HOST_NAME_MAX];
 	char *c, *n, *token, *save_ptr = NULL;
 	int actld = 0, ctld = 0, d = 0, i;
 	char *daemon_list = NULL;
 
 	conf = slurm_conf_lock();
 
-	gethostname_short(node_name_short, MAX_SLURM_NAME);
-	gethostname(node_name_long, MAX_SLURM_NAME);
+	gethostname_short(node_name_short, HOST_NAME_MAX);
+	gethostname(node_name_long, HOST_NAME_MAX);
 	for (i = 0; i < conf->control_cnt; i++) {
 		if (!conf->control_machine[i])
 			break;
@@ -635,11 +635,11 @@ _print_daemons (void)
 static void
 _print_aliases (char* node_hostname)
 {
-	char me[MAX_SLURM_NAME], *n = NULL, *a = NULL;
+	char me[HOST_NAME_MAX], *n = NULL, *a = NULL;
 	char *s;
 
 	if (!node_hostname) {
-		gethostname_short(me, MAX_SLURM_NAME);
+		gethostname_short(me, HOST_NAME_MAX);
 		s = me;
 	} else
 		s = node_hostname;
