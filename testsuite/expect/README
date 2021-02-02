@@ -403,6 +403,7 @@ test7.23   Test time_str2secs parsing of different formats
 test8.#    Testing of advanced reservation functionality.
 =========================================================
 test8.12   Test reservation with flags=FLEX
+test8.13   Test user_resv_delete parameter
 
 test9.#    System stress testing. Exercises all commands and daemons.
 =====================================================================
