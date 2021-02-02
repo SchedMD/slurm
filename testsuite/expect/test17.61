@@ -31,6 +31,15 @@ set exit_code   0
 set job_id      0
 
 #
+# Ensure that default partition has a DefaultTime big enough
+#
+run_command -fail "$scontrol update partitionname=[default_partition] DefaultTime=10"
+
+proc cleanup {} {
+	# Restore DefaultTime
+	reconfigure
+}
+#
 # Build input script file
 #
 exec $bin_rm -f $file_in
