@@ -261,8 +261,11 @@ extern int slurm_send_timeout(int fd, char *buf, size_t size,
 		}
 		if ((ufds.revents & POLLHUP) || (ufds.revents & POLLNVAL) ||
 		    (recv(fd, &temp, 1, flags) == 0)) {
-			debug2("slurm_send_timeout: Socket no longer there");
-			slurm_seterrno(ENOTCONN);
+			int so_err;
+			fd_get_socket_error(fd, &so_err);
+			debug2("%s: Socket no longer there: %s",
+			       __func__, slurm_strerror(so_err));
+			slurm_seterrno(so_err);
 			sent = SLURM_ERROR;
 			goto done;
 		}
@@ -369,8 +372,11 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size,
 		if ((ufds.revents & POLLNVAL) ||
 		    ((ufds.revents & POLLHUP) &&
 		     ((ufds.revents & POLLIN) == 0))) {
-			debug2("%s: Socket no longer there", __func__);
-			slurm_seterrno(ENOTCONN);
+			int so_err;
+			fd_get_socket_error(fd, &so_err);
+			debug2("%s: Socket no longer there: %s",
+			       __func__, slurm_strerror(so_err));
+			slurm_seterrno(so_err);
 			recvlen = SLURM_ERROR;
 			goto done;
 		}
