@@ -1965,6 +1965,11 @@ static void _step_alloc_lps(step_record_t *step_ptr)
 	}
 	gres_step_state_log(step_ptr->gres_list, job_ptr->job_id,
 			    step_ptr->step_id.step_id);
+	if ((slurm_conf.debug_flags & DEBUG_FLAG_GRES) &&
+	    step_ptr->gres_list_alloc)
+		info("Step Alloc GRES:");
+	gres_step_state_log(step_ptr->gres_list_alloc, job_ptr->job_id,
+			    step_ptr->step_id.step_id);
 }
 
 /* Dump a job step's CPU binding information.
@@ -2561,6 +2566,11 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->gres_list = step_gres_list;
 	step_gres_list      = (List) NULL;
 	gres_step_state_log(step_ptr->gres_list, job_ptr->job_id,
+			    step_ptr->step_id.step_id);
+	if ((slurm_conf.debug_flags & DEBUG_FLAG_GRES) &&
+	    step_ptr->gres_list_alloc)
+		info("Step Alloc GRES:");
+	gres_step_state_log(step_ptr->gres_list_alloc, job_ptr->job_id,
 			    step_ptr->step_id.step_id);
 
 	step_ptr->port = step_specs->port;
@@ -3925,6 +3935,9 @@ extern int dump_job_step_state(void *x, void *arg)
 	(void) gres_step_state_pack(step_ptr->gres_list, buffer,
 				    &step_ptr->step_id,
 				    SLURM_PROTOCOL_VERSION);
+	(void) gres_step_state_pack(step_ptr->gres_list_alloc, buffer,
+				    &step_ptr->step_id,
+				    SLURM_PROTOCOL_VERSION);
 
 	pack16(step_ptr->batch_step, buffer);
 
@@ -3996,7 +4009,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	char *tres_per_socket = NULL, *tres_per_task = NULL;
 	dynamic_plugin_data_t *switch_tmp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
-	List gres_list = NULL;
+	List gres_list = NULL, gres_list_alloc = NULL;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 	jobacctinfo_t *jobacct = NULL;
 	slurm_step_id_t step_id = { .job_id = job_ptr->job_id,
@@ -4038,6 +4051,10 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 
 		if (gres_step_state_unpack(&gres_list, buffer,
+					   &step_id, protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+		if (gres_step_state_unpack(&gres_list_alloc, buffer,
 					   &step_id, protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
@@ -4306,6 +4323,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	step_ptr->network      = network;
 	step_ptr->flags        = flags;
 	step_ptr->gres_list    = gres_list;
+	step_ptr->gres_list_alloc = gres_list_alloc;
 	step_ptr->srun_pid     = srun_pid;
 	step_ptr->port         = port;
 	step_ptr->pn_min_memory= pn_min_memory;
@@ -4406,6 +4424,7 @@ unpack_error:
 	xfree(name);
 	xfree(network);
 	FREE_NULL_LIST(gres_list);
+	FREE_NULL_LIST(gres_list_alloc);
 	FREE_NULL_BITMAP(exit_node_bitmap);
 	FREE_NULL_BITMAP(core_bitmap_job);
 	xfree(core_job);
