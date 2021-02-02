@@ -231,7 +231,7 @@ _slurm_cgroup_has_pid(pid_t pid)
 	xcgroup_t cg;
 
 	fstatus = xcgroup_ns_find_by_pid(&freezer_ns, &cg, pid);
-	if ( fstatus != XCGROUP_SUCCESS)
+	if (fstatus != XCGROUP_SUCCESS)
 		return false;
 
 	if (xstrcmp(cg.path, step_freezer_cg.path)) {
