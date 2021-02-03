@@ -760,8 +760,8 @@ static node_record_t *_find_node_record(char *name, bool test_alias,
 		return (&node_record_table_ptr[0]);
 
 	if (log_missing)
-		error("%s(%d): lookup failure for %s",
-		      __func__, __LINE__, name);
+		error("%s: lookup failure for node \"%s\"",
+		      __func__, name);
 
 	if (test_alias) {
 		char *alias = slurm_conf_get_nodename(name);
@@ -772,8 +772,8 @@ static node_record_t *_find_node_record(char *name, bool test_alias,
 
 		node_ptr = xhash_get_str(node_hash_table, alias);
 		if (log_missing)
-			error("%s(%d): lookup failure for %s alias %s",
-			      __func__, __LINE__, name, alias);
+			error("%s: lookup failure for node \"%s\", alias \"%s\"",
+			      __func__, name, alias);
 		xfree(alias);
 		return node_ptr;
 	}
