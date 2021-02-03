@@ -197,7 +197,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	int first_inx = -1;
 	bitstr_t *bit_alloc = NULL;
 	bool use_local_dev_index = common_use_local_device_index();
-	bool alloc_cnt = false, set_global_id = false;
+	bool set_global_id = false;
 	gres_device_t *gres_device, *first_device = NULL;
 	ListIterator itr;
 	char *global_prefix = "", *local_prefix = "";
@@ -235,13 +235,8 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		    gres_step_ptr->gres_bit_alloc &&
 		    gres_step_ptr->gres_bit_alloc[0]) {
 			bit_alloc = gres_step_ptr->gres_bit_alloc[0];
-		} else if (((gres_step_ptr->gres_per_step   > 0) ||
-			    (gres_step_ptr->gres_per_node   > 0) ||
-			    (gres_step_ptr->gres_per_socket > 0) ||
-			    (gres_step_ptr->gres_per_task   > 0))) {
-			alloc_cnt = true;
 		}
-		tmp_gres_per_node = gres_step_ptr->gres_per_node;
+		tmp_gres_per_node = gres_step_ptr->gres_cnt_node_alloc[0];
 	}
 
 	if (gres_per_node)
@@ -252,9 +247,6 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		 * The gres.conf file must identify specific device files
 		 * in order to set the CUDA_VISIBLE_DEVICES env var
 		 */
-		if (alloc_cnt)
-			debug("%s: unable to set env vars, no device files configured",
-			      __func__);
 		return;
 	}
 
