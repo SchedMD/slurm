@@ -873,8 +873,8 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
 			bit_set (my_bitmap, (bitoff_t) (node_ptr -
 							node_record_table_ptr));
 		} else {
-			error ("node_name2bitmap: invalid node specified %s",
-			       this_node_name);
+			error("%s: invalid node specified: \"%s\"", __func__,
+			      this_node_name);
 			if (!best_effort)
 				rc = EINVAL;
 		}
