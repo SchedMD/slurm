@@ -7904,7 +7904,7 @@ static void _step_state_delete(void *gres_data)
 	xfree(gres_ptr);
 }
 
-static void _gres_step_list_delete(void *list_element)
+extern void gres_step_list_delete(void *list_element)
 {
 	gres_state_t *gres_ptr = (gres_state_t *) list_element;
 
@@ -8283,7 +8283,7 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 		return rc;
 
 	slurm_mutex_lock(&gres_context_lock);
-	new_step_list = list_create(_gres_step_list_delete);
+	new_step_list = list_create(gres_step_list_delete);
 	if (cpus_per_tres) {
 		char *in_val = cpus_per_tres, *save_ptr = NULL;
 		while ((step_gres_data = _get_next_step_gres(in_val, &cnt,
@@ -8493,7 +8493,7 @@ List gres_step_state_extract(List gres_list, int node_index)
 							 node_index);
 		}
 		if (new_gres_list == NULL) {
-			new_gres_list = list_create(_gres_step_list_delete);
+			new_gres_list = list_create(gres_step_list_delete);
 		}
 		new_gres_state = xmalloc(sizeof(gres_state_t));
 		new_gres_state->plugin_id = gres_ptr->plugin_id;
@@ -8610,7 +8610,7 @@ extern int gres_step_state_unpack(List *gres_list, buf_t *buffer,
 
 	slurm_mutex_lock(&gres_context_lock);
 	if ((gres_context_cnt > 0) && (*gres_list == NULL)) {
-		*gres_list = list_create(_gres_step_list_delete);
+		*gres_list = list_create(gres_step_list_delete);
 	}
 
 	while ((rc == SLURM_SUCCESS) && (rec_cnt)) {
