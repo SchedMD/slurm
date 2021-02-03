@@ -121,10 +121,8 @@ slurm_kill_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	return SLURM_SUCCESS;
 }
 
-/* slurm_kill_job2()
- */
-int
-slurm_kill_job2(const char *job_id, uint16_t signal, uint16_t flags)
+extern int slurm_kill_job2(const char *job_id, uint16_t signal, uint16_t flags,
+			   const char *sibling)
 {
 	int cc, rc = SLURM_SUCCESS;
 	slurm_msg_t msg;
@@ -144,6 +142,7 @@ slurm_kill_job2(const char *job_id, uint16_t signal, uint16_t flags)
 	req.step_id.step_het_comp = NO_VAL;
 	req.signal      = signal;
 	req.flags	= flags;
+	req.sibling = xstrdup(sibling);
 	msg.msg_type    = REQUEST_KILL_JOB;
         msg.data        = &req;
 
@@ -157,6 +156,7 @@ slurm_kill_job2(const char *job_id, uint16_t signal, uint16_t flags)
 
 fini:
 	xfree(req.sjob_id);
+	xfree(req.sibling);
 	return rc;
 }
 

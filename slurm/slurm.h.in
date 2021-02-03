@@ -3492,9 +3492,15 @@ extern int slurm_kill_job_step(uint32_t job_id,
 			       uint32_t step_id,
 			       uint16_t signal);
 /*
- * slurm_kill_job2()
+ * slurm_kill_job2 - send REQUEST_KILL_JOB msg to an existing job or step.
+ * IN job_id - the job's id (in a string format)
+ * IN signal - signal to send
+ * IN flags - see KILL_* flags above (such as KILL_JOB_BATCH)
+ * IN sibling - optional string of sibling cluster to send the message to.
+ * RET SLURM_SUCCESS on success, otherwise return SLURM_ERROR with errno set
  */
-extern int slurm_kill_job2(const char *job_id, uint16_t signal, uint16_t flags);
+extern int slurm_kill_job2(const char *job_id, uint16_t signal, uint16_t flags,
+			   const char *sibling);
 
 /*
  * slurm_kill_job_msg - send kill msg to and existing job or step.

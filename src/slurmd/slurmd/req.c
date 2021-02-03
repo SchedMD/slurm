@@ -2644,7 +2644,7 @@ static uint32_t _kill_job(uint32_t job_id)
 	char *job_id_str = NULL;
 
 	xstrfmtcat(job_id_str, "%u", job_id);
-	rc = slurm_kill_job2(job_id_str, SIGKILL, 0);
+	rc = slurm_kill_job2(job_id_str, SIGKILL, 0, NULL);
 	xfree(job_id_str);
 	return rc;
 }
