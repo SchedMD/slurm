@@ -34,6 +34,9 @@ documents those changes that are of interest to users and administrators.
     on a key-value pattern. This implies error codes detected in the handlers
     are now not ignored and users of _handle_keyvalue_match() can fatal().
  -- common/hostlist - fix hostlist_delete_nth() xassert() upper bound check.
+ -- API change: Removed slurm_kill_job_msg and modified the function signature
+    for slurm_kill_job2. slurm_kill_job2 should be used instead of
+    slurm_kill_job_msg.
 
 * Changes in Slurm 20.11.5
 ==========================
