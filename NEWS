@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix situations when a reoccuring reservation could erroneously skip a
     period.
  -- Ensure that a reservations [pro|epi]log are ran on reoccuring reservations.
+ -- Fix threads-per-core memory allocation issue when using CR_CPU_MEMORY.
 
 * Changes in Slurm 20.11.3
 ==========================

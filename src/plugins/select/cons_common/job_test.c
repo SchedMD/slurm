@@ -1615,13 +1615,15 @@ alloc_job:
 				 * getting more memory than we are actually
 				 * expecting.
 				 */
-				if (job_ptr->details->mc_ptr->threads_per_core <
-				    select_node_record[i].vpus) {
+				if (((cr_type & CR_CORE) ||
+				     (cr_type & CR_SOCKET)) &&
+				    (job_ptr->details->mc_ptr->
+				     threads_per_core <
+				     select_node_record[i].vpus)) {
 					cpu_count /= select_node_record[i].vpus;
 					cpu_count *= job_ptr->details->
 						mc_ptr->threads_per_core;
 				}
-
 				needed_mem = cpu_count *
 					(save_mem & (~MEM_PER_CPU));
 			} else if (save_mem) {		/* Memory per node */
