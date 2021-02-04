@@ -101,6 +101,8 @@ set LOG_LEVEL_FATAL   1
 set LOG_LEVEL_ERROR   2
 set LOG_LEVEL_WARNING 3
 set LOG_LEVEL_INFO    4
+set LOG_LEVEL_PASS    4
+set LOG_LEVEL_COMMAND 4
 set LOG_LEVEL_DEBUG   5
 set LOG_LEVEL_TRACE   6
 
@@ -264,6 +266,8 @@ cset testsuite_color_fatal     $COLOR_RED
 cset testsuite_color_error     $COLOR_RED_NORMAL
 cset testsuite_color_warn      $COLOR_ORANGE
 cset testsuite_color_info      $COLOR_YELLOW
+cset testsuite_color_pass      $COLOR_GREEN
+cset testsuite_color_command   $COLOR_CYAN
 cset testsuite_color_debug     $COLOR_BLUE
 cset testsuite_color_trace     $COLOR_MAGENTA
 cset testsuite_color_header    $COLOR_NONE
@@ -471,7 +475,7 @@ proc subpass args {
 	incr _subtest_pass_count
 	set message [format "Subtest %2d passed" $subtest_count]
 	if {$description ne ""} { append message "  : $description" }
-	log_info $message
+	log_pass $message
 	dict set _subtest_messages $subtest_count [list pass $message]
 }
 
@@ -921,18 +925,20 @@ proc run_command args {
 	}
 
 	if {$log_at_trace_level} {
-		interp alias {} log_alias {} log_trace
+		interp alias {} log_run     {} log_trace
+		interp alias {} log_details {} log_trace
 	} else {
-		interp alias {} log_alias {} log_debug
+		interp alias {} log_run     {} log_command
+		interp alias {} log_details {} log_debug
 	}
 
 	set orig_log_user [log_user -info]
 	log_user 0
 
 	if {$alt_user ne ""} {
-		log_alias "Invoking command \"$command\" as user $alt_user"
+		log_run "Run Command as user $alt_user: $command"
 	} else {
-		log_alias "Invoking command \"$command\""
+		log_run "Run Command: $command"
 	}
 	set start_clock_ms [clock milliseconds]
 	set stty_init raw ; # Prevent the terminal from inserting \r
@@ -964,11 +970,11 @@ proc run_command args {
 	set end_time [format "%.3f" [expr [clock milliseconds] / 1000.000]]
 	set duration [format "%.3f" [expr $end_time - $start_time]]
 
-	log_alias "Command Results:"
-	log_alias "	Duration:   $duration"
-	log_alias "	Exit Code:  $exit_status"
+	log_details "Command Results:"
+	log_details "	Duration:   $duration"
+	log_details "	Exit Code:  $exit_status"
 	if {[info exists output]} {
-		log_alias "	Output: $output"
+		log_details "	Output: $output"
 	}
 
 	if {$timedout} {
@@ -4714,6 +4720,50 @@ proc log_info {message} {
 #####################################################################
 #
 # NAME
+#	log_pass - prints a pass level message
+#
+# SYNOPSIS
+#	log_pass message
+#
+# SEE ALSO
+#	_log_format for options governing the message format and colorization
+#
+#####################################################################
+
+proc log_pass {message} {
+	global testsuite_log_level LOG_LEVEL_PASS
+
+	if {$testsuite_log_level >= $LOG_LEVEL_PASS} {
+		_log_format "pass" "$message"
+	}
+}
+
+
+#####################################################################
+#
+# NAME
+#	log_command - prints a command level message
+#
+# SYNOPSIS
+#	log_command message
+#
+# SEE ALSO
+#	_log_format for options governing the message format and colorization
+#
+#####################################################################
+
+proc log_command {message} {
+	global testsuite_log_level LOG_LEVEL_COMMAND
+
+	if {$testsuite_log_level >= $LOG_LEVEL_COMMAND} {
+		_log_format "command" "$message"
+	}
+}
+
+
+#####################################################################
+#
+# NAME
 #	log_debug - prints a debug level message
 #
 # SYNOPSIS
@@ -6541,7 +6591,8 @@ proc _log_format { log_level message } {
 	global testsuite_colorize testsuite_log_format testsuite_time_format
 	global COLOR_NONE
 	global testsuite_color_fatal testsuite_color_error testsuite_color_warn
-	global testsuite_color_info testsuite_color_debug testsuite_color_trace
+	global testsuite_color_info testsuite_color_pass testsuite_color_command
+	global testsuite_color_debug testsuite_color_trace
 
 	set format_string $testsuite_log_format
 	set milliseconds_since_epoch [clock milliseconds]
@@ -6581,6 +6632,8 @@ proc _log_format { log_level message } {
 			error   { append output $testsuite_color_error }
 			warning { append output $testsuite_color_warn }
 			info    { append output $testsuite_color_info }
+			pass    { append output $testsuite_color_pass }
+			command { append output $testsuite_color_command }
 			debug   { append output $testsuite_color_debug }
 			trace   { append output $testsuite_color_trace }
 		}
