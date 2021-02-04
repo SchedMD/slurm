@@ -5223,7 +5223,8 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 		bit_nset(bitmap, 0, (node_record_count - 1));
 	} else if (node_name2bitmap(nodelist, false, &bitmap) != 0) {
 		FREE_NULL_BITMAP(bitmap);
-		error("Bad node list in REBOOT_NODES request: %s", nodelist);
+		error("%s: Bad node list in REBOOT_NODES request: \"%s\"",
+		      __func__, nodelist);
 		slurm_send_rc_msg(msg, ESLURM_INVALID_NODE_NAME);
 		return;
 	}
