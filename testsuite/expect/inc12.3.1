@@ -30,9 +30,28 @@ source ./globals_accounting
 proc inc12_3_1 {job_id_1 job_id_2 job_name_1 job_name_2 test_acct} {
 	global sacct
 
+	# TODO: Temporary variables to debug bug 9681 (remove once fixed)
+	set username    [get_my_user_name]
+	set hostname    [string trimright [run_command_output "hostname -s"]]
+
 	log_info "Search for job ID $job_id_1 having name $job_name_1"
 	set output [run_command_output -fail "$sacct -A '$test_acct' --name=$job_name_1 -X -P -o jobid -v -v"]
-	subtest [regexp -line "^$job_id_1$" $output] "sacct should show job $job_id_1 as having name $job_name_1"
+	# TODO: Temporarily breakup subtest to debug bug 9681 (restore once fixed)
+	#subtest [regexp -line "^$job_id_1$" $output] "sacct should show job $job_id_1 as having name $job_name_1"
+	if [regexp -line "^$job_id_1$" $output] {
+		subpass "sacct should show job $job_id_1 as having name $job_name_1"
+	} else {
+		if {$hostname eq "knl2" && $username eq "jenkins"} {
+			global slurm_dir
+			set dbd_dict [get_config -dbd]
+			set database_user [dict get $dbd_dict "StorageUser"]
+			set database_host [dict get $dbd_dict "StorageHost"]
+			set database_port [dict get $dbd_dict "StoragePort"]
+			set database_name [dict get $dbd_dict "StorageLoc"]
+			run_command "mysqldump -u $database_user -h $database_host -P $database_port $database_name > $slurm_dir/log/slurmdb.sql"
+		}
+		subfail "sacct should show job $job_id_1 as having name $job_name_1"
+	}
 	subtest {![regexp -line "^$job_id_2$" $output]} "sacct should not show job $job_id_2 as having name $job_name_1"
 
 	log_info "Search for job ID $job_id_2 having name $job_name_2"
