@@ -269,3 +269,10 @@ if { $matches != 1} {
 }
 
 send "exit\r"
+expect {
+	timeout {
+		fail "salloc not ending"
+	}
+	eof {
+	}
+}
