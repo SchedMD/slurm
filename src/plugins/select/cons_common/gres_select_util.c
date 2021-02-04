@@ -168,7 +168,7 @@ extern int gres_select_util_job_min_tasks(uint32_t node_count,
 	int tmp, min_tasks = 0;
 	uint32_t plugin_id = 0;
 
-	if (ntasks_per_tres == NO_VAL16)
+	if (!ntasks_per_tres || (ntasks_per_tres == NO_VAL16))
 		return 0;
 
 	if (!job_gres_list || (list_count(job_gres_list) == 0))
