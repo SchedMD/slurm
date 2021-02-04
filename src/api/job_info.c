@@ -1027,12 +1027,11 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			   print_mail_type(job_ptr->mail_type));
 	}
 
-	/****** Line ******/
+	/****** Line (optional) ******/
 	xstrcat(out, line_end);
-	if ((job_ptr->ntasks_per_tres == NO_VAL16) ||
-	    (job_ptr->ntasks_per_tres == INFINITE16))
-		xstrcat(out, "NtasksPerTRES:*");
-	else
+	if ((job_ptr->ntasks_per_tres) &&
+	    (job_ptr->ntasks_per_tres != NO_VAL16) &&
+	    (job_ptr->ntasks_per_tres != INFINITE16))
 		xstrfmtcat(out, "NtasksPerTRES:%u", job_ptr->ntasks_per_tres);
 
 	/****** END OF JOB RECORD ******/
