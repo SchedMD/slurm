@@ -331,6 +331,13 @@ extern int unpackmem_array(char *valp, uint32_t size_valp, buf_t *buffer);
 #define safe_unpackstr_malloc	                        \
         safe_unpackmem_malloc
 
+#define safe_unpackstr(valp, buf) do {				\
+	uint32_t size_valp;					\
+	xassert(buf->magic == BUF_MAGIC);		        \
+	if (unpackstr_xmalloc_chooser(valp, &size_valp, buf))   \
+		goto unpack_error;		       		\
+} while (0)
+
 #define safe_unpackstr_xmalloc(valp, size_valp, buf) do {	\
 	xassert(sizeof(*size_valp) == sizeof(uint32_t));	\
 	xassert(buf->magic == BUF_MAGIC);		        \
