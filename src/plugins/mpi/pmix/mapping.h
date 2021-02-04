@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/common/mapping.h - routines for compact process mapping representation
+ *  mapping.h - routines for compact process mapping representation
  *****************************************************************************
  *  Copyright (C) 2014 Institute of Semiconductor Physics
  *                     Siberian Branch of Russian Academy of Science

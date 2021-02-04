@@ -7,7 +7,9 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common $(HWLOC_CPPFLAGS) \
 	$(UCX_CPPFLAGS)
 
-pmix_src = mpi_pmix.c \
+pmix_src = \
+	mapping.c mapping.h \
+	mpi_pmix.c \
 	pmixp_common.h pmixp_coll.h \
 	pmixp_agent.c pmixp_client.c pmixp_nspaces.c pmixp_info.c \
 	pmixp_agent.h pmixp_client.h pmixp_nspaces.h pmixp_info.h \

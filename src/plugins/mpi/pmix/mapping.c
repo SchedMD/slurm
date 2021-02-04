@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/common/mapping.c - routines for compact process mapping representation
+ *  mapping.c - routines for compact process mapping representation
  *****************************************************************************
  *  Copyright (C) 2014 Institute of Semiconductor Physics
  *                     Siberian Branch of Russian Academy of Science
@@ -38,7 +38,7 @@
 
 #define _GNU_SOURCE
 
-#include "src/common/mapping.h"
+#include "src/plugins/mpi/pmix/mapping.h"
 
 static void _dump_config(uint32_t node_cnt, uint32_t task_cnt,
 			 uint16_t *tasks, uint32_t **tids, int offset)

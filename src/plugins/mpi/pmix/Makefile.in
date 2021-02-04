@@ -186,7 +186,7 @@ am__DEPENDENCIES_2 = $(pmix_internal_libs) $(am__DEPENDENCIES_1) \
 @HAVE_PMIX_V1_TRUE@mpi_pmix_v1_la_DEPENDENCIES =  \
 @HAVE_PMIX_V1_TRUE@	$(am__DEPENDENCIES_2)
 @HAVE_UCX_TRUE@am__objects_1 = mpi_pmix_v1_la-pmixp_dconn_ucx.lo
-am__objects_2 = mpi_pmix_v1_la-mpi_pmix.lo \
+am__objects_2 = mpi_pmix_v1_la-mapping.lo mpi_pmix_v1_la-mpi_pmix.lo \
 	mpi_pmix_v1_la-pmixp_agent.lo mpi_pmix_v1_la-pmixp_client.lo \
 	mpi_pmix_v1_la-pmixp_nspaces.lo mpi_pmix_v1_la-pmixp_info.lo \
 	mpi_pmix_v1_la-pmixp_server.lo mpi_pmix_v1_la-pmixp_state.lo \
@@ -211,7 +211,7 @@ mpi_pmix_v1_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 @HAVE_PMIX_V2_TRUE@mpi_pmix_v2_la_DEPENDENCIES =  \
 @HAVE_PMIX_V2_TRUE@	$(am__DEPENDENCIES_2)
 @HAVE_UCX_TRUE@am__objects_3 = mpi_pmix_v2_la-pmixp_dconn_ucx.lo
-am__objects_4 = mpi_pmix_v2_la-mpi_pmix.lo \
+am__objects_4 = mpi_pmix_v2_la-mapping.lo mpi_pmix_v2_la-mpi_pmix.lo \
 	mpi_pmix_v2_la-pmixp_agent.lo mpi_pmix_v2_la-pmixp_client.lo \
 	mpi_pmix_v2_la-pmixp_nspaces.lo mpi_pmix_v2_la-pmixp_info.lo \
 	mpi_pmix_v2_la-pmixp_server.lo mpi_pmix_v2_la-pmixp_state.lo \
@@ -232,7 +232,7 @@ mpi_pmix_v2_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 @HAVE_PMIX_V3_TRUE@mpi_pmix_v3_la_DEPENDENCIES =  \
 @HAVE_PMIX_V3_TRUE@	$(am__DEPENDENCIES_2)
 @HAVE_UCX_TRUE@am__objects_5 = mpi_pmix_v3_la-pmixp_dconn_ucx.lo
-am__objects_6 = mpi_pmix_v3_la-mpi_pmix.lo \
+am__objects_6 = mpi_pmix_v3_la-mapping.lo mpi_pmix_v3_la-mpi_pmix.lo \
 	mpi_pmix_v3_la-pmixp_agent.lo mpi_pmix_v3_la-pmixp_client.lo \
 	mpi_pmix_v3_la-pmixp_nspaces.lo mpi_pmix_v3_la-pmixp_info.lo \
 	mpi_pmix_v3_la-pmixp_server.lo mpi_pmix_v3_la-pmixp_state.lo \
@@ -253,7 +253,7 @@ mpi_pmix_v3_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 @HAVE_PMIX_V4_TRUE@mpi_pmix_v4_la_DEPENDENCIES =  \
 @HAVE_PMIX_V4_TRUE@	$(am__DEPENDENCIES_2)
 @HAVE_UCX_TRUE@am__objects_7 = mpi_pmix_v4_la-pmixp_dconn_ucx.lo
-am__objects_8 = mpi_pmix_v4_la-mpi_pmix.lo \
+am__objects_8 = mpi_pmix_v4_la-mapping.lo mpi_pmix_v4_la-mpi_pmix.lo \
 	mpi_pmix_v4_la-pmixp_agent.lo mpi_pmix_v4_la-pmixp_client.lo \
 	mpi_pmix_v4_la-pmixp_nspaces.lo mpi_pmix_v4_la-pmixp_info.lo \
 	mpi_pmix_v4_la-pmixp_server.lo mpi_pmix_v4_la-pmixp_state.lo \
@@ -286,7 +286,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/mpi_pmix_v1_la-mpi_pmix.Plo \
+am__depfiles_remade = ./$(DEPDIR)/mpi_pmix_v1_la-mapping.Plo \
+	./$(DEPDIR)/mpi_pmix_v1_la-mpi_pmix.Plo \
 	./$(DEPDIR)/mpi_pmix_v1_la-pmixp_agent.Plo \
 	./$(DEPDIR)/mpi_pmix_v1_la-pmixp_client.Plo \
 	./$(DEPDIR)/mpi_pmix_v1_la-pmixp_client_v1.Plo \
@@ -304,6 +305,7 @@ am__depfiles_remade = ./$(DEPDIR)/mpi_pmix_v1_la-mpi_pmix.Plo \
 	./$(DEPDIR)/mpi_pmix_v1_la-pmixp_server.Plo \
 	./$(DEPDIR)/mpi_pmix_v1_la-pmixp_state.Plo \
 	./$(DEPDIR)/mpi_pmix_v1_la-pmixp_utils.Plo \
+	./$(DEPDIR)/mpi_pmix_v2_la-mapping.Plo \
 	./$(DEPDIR)/mpi_pmix_v2_la-mpi_pmix.Plo \
 	./$(DEPDIR)/mpi_pmix_v2_la-pmixp_agent.Plo \
 	./$(DEPDIR)/mpi_pmix_v2_la-pmixp_client.Plo \
@@ -322,6 +324,7 @@ am__depfiles_remade = ./$(DEPDIR)/mpi_pmix_v1_la-mpi_pmix.Plo \
 	./$(DEPDIR)/mpi_pmix_v2_la-pmixp_server.Plo \
 	./$(DEPDIR)/mpi_pmix_v2_la-pmixp_state.Plo \
 	./$(DEPDIR)/mpi_pmix_v2_la-pmixp_utils.Plo \
+	./$(DEPDIR)/mpi_pmix_v3_la-mapping.Plo \
 	./$(DEPDIR)/mpi_pmix_v3_la-mpi_pmix.Plo \
 	./$(DEPDIR)/mpi_pmix_v3_la-pmixp_agent.Plo \
 	./$(DEPDIR)/mpi_pmix_v3_la-pmixp_client.Plo \
@@ -340,6 +343,7 @@ am__depfiles_remade = ./$(DEPDIR)/mpi_pmix_v1_la-mpi_pmix.Plo \
 	./$(DEPDIR)/mpi_pmix_v3_la-pmixp_server.Plo \
 	./$(DEPDIR)/mpi_pmix_v3_la-pmixp_state.Plo \
 	./$(DEPDIR)/mpi_pmix_v3_la-pmixp_utils.Plo \
+	./$(DEPDIR)/mpi_pmix_v4_la-mapping.Plo \
 	./$(DEPDIR)/mpi_pmix_v4_la-mpi_pmix.Plo \
 	./$(DEPDIR)/mpi_pmix_v4_la-pmixp_agent.Plo \
 	./$(DEPDIR)/mpi_pmix_v4_la-pmixp_client.Plo \
@@ -663,14 +667,15 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common $(HWLOC_CPPFLAGS) \
 	$(UCX_CPPFLAGS)
 
-pmix_src = mpi_pmix.c pmixp_common.h pmixp_coll.h pmixp_agent.c \
-	pmixp_client.c pmixp_nspaces.c pmixp_info.c pmixp_agent.h \
-	pmixp_client.h pmixp_nspaces.h pmixp_info.h pmixp_server.c \
-	pmixp_state.c pmixp_io.c pmixp_utils.c pmixp_dmdx.c \
-	pmixp_server.h pmixp_state.h pmixp_io.h pmixp_utils.h \
-	pmixp_dmdx.h pmixp_conn.c pmixp_dconn.c pmixp_dconn_tcp.c \
-	pmixp_conn.h pmixp_dconn.h pmixp_dconn_tcp.h pmixp_coll.c \
-	pmixp_coll_tree.c pmixp_coll_ring.c $(am__append_1)
+pmix_src = mapping.c mapping.h mpi_pmix.c pmixp_common.h pmixp_coll.h \
+	pmixp_agent.c pmixp_client.c pmixp_nspaces.c pmixp_info.c \
+	pmixp_agent.h pmixp_client.h pmixp_nspaces.h pmixp_info.h \
+	pmixp_server.c pmixp_state.c pmixp_io.c pmixp_utils.c \
+	pmixp_dmdx.c pmixp_server.h pmixp_state.h pmixp_io.h \
+	pmixp_utils.h pmixp_dmdx.h pmixp_conn.c pmixp_dconn.c \
+	pmixp_dconn_tcp.c pmixp_conn.h pmixp_dconn.h pmixp_dconn_tcp.h \
+	pmixp_coll.c pmixp_coll_tree.c pmixp_coll_ring.c \
+	$(am__append_1)
 pmix_internal_libs = \
 	$(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_math.la
 
@@ -900,6 +905,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v1_la-mapping.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v1_la-mpi_pmix.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v1_la-pmixp_agent.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v1_la-pmixp_client.Plo@am__quote@ # am--include-marker
@@ -918,6 +924,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v1_la-pmixp_server.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v1_la-pmixp_state.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v1_la-pmixp_utils.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v2_la-mapping.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v2_la-mpi_pmix.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v2_la-pmixp_agent.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v2_la-pmixp_client.Plo@am__quote@ # am--include-marker
@@ -936,6 +943,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v2_la-pmixp_server.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v2_la-pmixp_state.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v2_la-pmixp_utils.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v3_la-mapping.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v3_la-mpi_pmix.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v3_la-pmixp_agent.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v3_la-pmixp_client.Plo@am__quote@ # am--include-marker
@@ -954,6 +962,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v3_la-pmixp_server.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v3_la-pmixp_state.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v3_la-pmixp_utils.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v4_la-mapping.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v4_la-mpi_pmix.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v4_la-pmixp_agent.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_pmix_v4_la-pmixp_client.Plo@am__quote@ # am--include-marker
@@ -999,6 +1008,13 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+mpi_pmix_v1_la-mapping.lo: mapping.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v1_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mpi_pmix_v1_la-mapping.lo -MD -MP -MF $(DEPDIR)/mpi_pmix_v1_la-mapping.Tpo -c -o mpi_pmix_v1_la-mapping.lo `test -f 'mapping.c' || echo '$(srcdir)/'`mapping.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mpi_pmix_v1_la-mapping.Tpo $(DEPDIR)/mpi_pmix_v1_la-mapping.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mapping.c' object='mpi_pmix_v1_la-mapping.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v1_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mpi_pmix_v1_la-mapping.lo `test -f 'mapping.c' || echo '$(srcdir)/'`mapping.c
 
 mpi_pmix_v1_la-mpi_pmix.lo: mpi_pmix.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v1_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mpi_pmix_v1_la-mpi_pmix.lo -MD -MP -MF $(DEPDIR)/mpi_pmix_v1_la-mpi_pmix.Tpo -c -o mpi_pmix_v1_la-mpi_pmix.lo `test -f 'mpi_pmix.c' || echo '$(srcdir)/'`mpi_pmix.c
@@ -1126,6 +1142,13 @@ mpi_pmix_v1_la-pmixp_client_v1.lo: pmixp_client_v1.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v1_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mpi_pmix_v1_la-pmixp_client_v1.lo `test -f 'pmixp_client_v1.c' || echo '$(srcdir)/'`pmixp_client_v1.c
 
+mpi_pmix_v2_la-mapping.lo: mapping.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mpi_pmix_v2_la-mapping.lo -MD -MP -MF $(DEPDIR)/mpi_pmix_v2_la-mapping.Tpo -c -o mpi_pmix_v2_la-mapping.lo `test -f 'mapping.c' || echo '$(srcdir)/'`mapping.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mpi_pmix_v2_la-mapping.Tpo $(DEPDIR)/mpi_pmix_v2_la-mapping.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mapping.c' object='mpi_pmix_v2_la-mapping.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mpi_pmix_v2_la-mapping.lo `test -f 'mapping.c' || echo '$(srcdir)/'`mapping.c
+
 mpi_pmix_v2_la-mpi_pmix.lo: mpi_pmix.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mpi_pmix_v2_la-mpi_pmix.lo -MD -MP -MF $(DEPDIR)/mpi_pmix_v2_la-mpi_pmix.Tpo -c -o mpi_pmix_v2_la-mpi_pmix.lo `test -f 'mpi_pmix.c' || echo '$(srcdir)/'`mpi_pmix.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mpi_pmix_v2_la-mpi_pmix.Tpo $(DEPDIR)/mpi_pmix_v2_la-mpi_pmix.Plo
@@ -1252,6 +1275,13 @@ mpi_pmix_v2_la-pmixp_client_v2.lo: pmixp_client_v2.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v2_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mpi_pmix_v2_la-pmixp_client_v2.lo `test -f 'pmixp_client_v2.c' || echo '$(srcdir)/'`pmixp_client_v2.c
 
+mpi_pmix_v3_la-mapping.lo: mapping.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v3_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mpi_pmix_v3_la-mapping.lo -MD -MP -MF $(DEPDIR)/mpi_pmix_v3_la-mapping.Tpo -c -o mpi_pmix_v3_la-mapping.lo `test -f 'mapping.c' || echo '$(srcdir)/'`mapping.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mpi_pmix_v3_la-mapping.Tpo $(DEPDIR)/mpi_pmix_v3_la-mapping.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mapping.c' object='mpi_pmix_v3_la-mapping.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v3_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mpi_pmix_v3_la-mapping.lo `test -f 'mapping.c' || echo '$(srcdir)/'`mapping.c
+
 mpi_pmix_v3_la-mpi_pmix.lo: mpi_pmix.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v3_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mpi_pmix_v3_la-mpi_pmix.lo -MD -MP -MF $(DEPDIR)/mpi_pmix_v3_la-mpi_pmix.Tpo -c -o mpi_pmix_v3_la-mpi_pmix.lo `test -f 'mpi_pmix.c' || echo '$(srcdir)/'`mpi_pmix.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mpi_pmix_v3_la-mpi_pmix.Tpo $(DEPDIR)/mpi_pmix_v3_la-mpi_pmix.Plo
@@ -1377,6 +1407,13 @@ mpi_pmix_v3_la-pmixp_client_v2.lo: pmixp_client_v2.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pmixp_client_v2.c' object='mpi_pmix_v3_la-pmixp_client_v2.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v3_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mpi_pmix_v3_la-pmixp_client_v2.lo `test -f 'pmixp_client_v2.c' || echo '$(srcdir)/'`pmixp_client_v2.c
+
+mpi_pmix_v4_la-mapping.lo: mapping.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v4_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mpi_pmix_v4_la-mapping.lo -MD -MP -MF $(DEPDIR)/mpi_pmix_v4_la-mapping.Tpo -c -o mpi_pmix_v4_la-mapping.lo `test -f 'mapping.c' || echo '$(srcdir)/'`mapping.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mpi_pmix_v4_la-mapping.Tpo $(DEPDIR)/mpi_pmix_v4_la-mapping.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mapping.c' object='mpi_pmix_v4_la-mapping.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v4_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mpi_pmix_v4_la-mapping.lo `test -f 'mapping.c' || echo '$(srcdir)/'`mapping.c
 
 mpi_pmix_v4_la-mpi_pmix.lo: mpi_pmix.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mpi_pmix_v4_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mpi_pmix_v4_la-mpi_pmix.lo -MD -MP -MF $(DEPDIR)/mpi_pmix_v4_la-mpi_pmix.Tpo -c -o mpi_pmix_v4_la-mpi_pmix.lo `test -f 'mpi_pmix.c' || echo '$(srcdir)/'`mpi_pmix.c
@@ -1605,7 +1642,8 @@ clean-am: clean-generic clean-libtool clean-pkglib_v1LTLIBRARIES \
 	clean-pkglib_v4LTLIBRARIES mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/mpi_pmix_v1_la-mpi_pmix.Plo
+		-rm -f ./$(DEPDIR)/mpi_pmix_v1_la-mapping.Plo
+	-rm -f ./$(DEPDIR)/mpi_pmix_v1_la-mpi_pmix.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v1_la-pmixp_agent.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v1_la-pmixp_client.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v1_la-pmixp_client_v1.Plo
@@ -1623,6 +1661,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/mpi_pmix_v1_la-pmixp_server.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v1_la-pmixp_state.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v1_la-pmixp_utils.Plo
+	-rm -f ./$(DEPDIR)/mpi_pmix_v2_la-mapping.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v2_la-mpi_pmix.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v2_la-pmixp_agent.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v2_la-pmixp_client.Plo
@@ -1641,6 +1680,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/mpi_pmix_v2_la-pmixp_server.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v2_la-pmixp_state.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v2_la-pmixp_utils.Plo
+	-rm -f ./$(DEPDIR)/mpi_pmix_v3_la-mapping.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v3_la-mpi_pmix.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v3_la-pmixp_agent.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v3_la-pmixp_client.Plo
@@ -1659,6 +1699,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/mpi_pmix_v3_la-pmixp_server.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v3_la-pmixp_state.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v3_la-pmixp_utils.Plo
+	-rm -f ./$(DEPDIR)/mpi_pmix_v4_la-mapping.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v4_la-mpi_pmix.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v4_la-pmixp_agent.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v4_la-pmixp_client.Plo
@@ -1725,7 +1766,8 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/mpi_pmix_v1_la-mpi_pmix.Plo
+		-rm -f ./$(DEPDIR)/mpi_pmix_v1_la-mapping.Plo
+	-rm -f ./$(DEPDIR)/mpi_pmix_v1_la-mpi_pmix.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v1_la-pmixp_agent.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v1_la-pmixp_client.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v1_la-pmixp_client_v1.Plo
@@ -1743,6 +1785,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/mpi_pmix_v1_la-pmixp_server.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v1_la-pmixp_state.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v1_la-pmixp_utils.Plo
+	-rm -f ./$(DEPDIR)/mpi_pmix_v2_la-mapping.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v2_la-mpi_pmix.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v2_la-pmixp_agent.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v2_la-pmixp_client.Plo
@@ -1761,6 +1804,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/mpi_pmix_v2_la-pmixp_server.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v2_la-pmixp_state.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v2_la-pmixp_utils.Plo
+	-rm -f ./$(DEPDIR)/mpi_pmix_v3_la-mapping.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v3_la-mpi_pmix.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v3_la-pmixp_agent.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v3_la-pmixp_client.Plo
@@ -1779,6 +1823,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/mpi_pmix_v3_la-pmixp_server.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v3_la-pmixp_state.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v3_la-pmixp_utils.Plo
+	-rm -f ./$(DEPDIR)/mpi_pmix_v4_la-mapping.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v4_la-mpi_pmix.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v4_la-pmixp_agent.Plo
 	-rm -f ./$(DEPDIR)/mpi_pmix_v4_la-pmixp_client.Plo

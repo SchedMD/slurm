@@ -184,11 +184,10 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo cpu_frequency.lo \
 	slurm_step_layout.lo job_resources.lo parse_time.lo \
 	job_options.lo global_defaults.lo timers.lo track_script.lo \
 	stepd_api.lo write_labelled_message.lo proc_args.lo \
-	node_conf.lo gpu.lo gres.lo mapping.lo xcgroup_read_config.lo \
-	callerid.lo group_cache.lo slurm_persist_conn.lo \
-	run_command.lo x11_util.lo half_duplex.lo state_control.lo \
-	site_factor.lo cli_filter.lo tres_bind.lo cron.lo \
-	tres_frequency.lo
+	node_conf.lo gpu.lo gres.lo xcgroup_read_config.lo callerid.lo \
+	group_cache.lo slurm_persist_conn.lo run_command.lo \
+	x11_util.lo half_duplex.lo state_control.lo site_factor.lo \
+	cli_filter.lo tres_bind.lo cron.lo tres_frequency.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -242,17 +241,17 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/half_duplex.Plo ./$(DEPDIR)/hostlist.Plo \
 	./$(DEPDIR)/io_hdr.Plo ./$(DEPDIR)/job_options.Plo \
 	./$(DEPDIR)/job_resources.Plo ./$(DEPDIR)/list.Plo \
-	./$(DEPDIR)/log.Plo ./$(DEPDIR)/mapping.Plo \
-	./$(DEPDIR)/net.Plo ./$(DEPDIR)/node_conf.Plo \
-	./$(DEPDIR)/node_features.Plo ./$(DEPDIR)/node_select.Plo \
-	./$(DEPDIR)/optz.Plo ./$(DEPDIR)/pack.Plo \
-	./$(DEPDIR)/parse_config.Plo ./$(DEPDIR)/parse_time.Plo \
-	./$(DEPDIR)/parse_value.Plo ./$(DEPDIR)/plugin.Plo \
-	./$(DEPDIR)/plugrack.Plo ./$(DEPDIR)/plugstack.Plo \
-	./$(DEPDIR)/power.Plo ./$(DEPDIR)/prep.Plo \
-	./$(DEPDIR)/print_fields.Plo ./$(DEPDIR)/proc_args.Plo \
-	./$(DEPDIR)/read_config.Plo ./$(DEPDIR)/run_command.Plo \
-	./$(DEPDIR)/run_in_daemon.Plo ./$(DEPDIR)/site_factor.Plo \
+	./$(DEPDIR)/log.Plo ./$(DEPDIR)/net.Plo \
+	./$(DEPDIR)/node_conf.Plo ./$(DEPDIR)/node_features.Plo \
+	./$(DEPDIR)/node_select.Plo ./$(DEPDIR)/optz.Plo \
+	./$(DEPDIR)/pack.Plo ./$(DEPDIR)/parse_config.Plo \
+	./$(DEPDIR)/parse_time.Plo ./$(DEPDIR)/parse_value.Plo \
+	./$(DEPDIR)/plugin.Plo ./$(DEPDIR)/plugrack.Plo \
+	./$(DEPDIR)/plugstack.Plo ./$(DEPDIR)/power.Plo \
+	./$(DEPDIR)/prep.Plo ./$(DEPDIR)/print_fields.Plo \
+	./$(DEPDIR)/proc_args.Plo ./$(DEPDIR)/read_config.Plo \
+	./$(DEPDIR)/run_command.Plo ./$(DEPDIR)/run_in_daemon.Plo \
+	./$(DEPDIR)/site_factor.Plo \
 	./$(DEPDIR)/slurm_accounting_storage.Plo \
 	./$(DEPDIR)/slurm_acct_gather.Plo \
 	./$(DEPDIR)/slurm_acct_gather_energy.Plo \
@@ -699,7 +698,6 @@ libcommon_la_SOURCES = \
 	node_conf.h node_conf.c		\
 	gpu.h gpu.c			\
 	gres.h gres.c			\
-	mapping.c mapping.h		\
 	xcgroup_read_config.c xcgroup_read_config.h \
 	callerid.c callerid.h		\
 	group_cache.c group_cache.h	\
@@ -842,7 +840,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_resources.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/list.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mapping.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_conf.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_features.Plo@am__quote@ # am--include-marker
@@ -1068,7 +1065,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/job_resources.Plo
 	-rm -f ./$(DEPDIR)/list.Plo
 	-rm -f ./$(DEPDIR)/log.Plo
-	-rm -f ./$(DEPDIR)/mapping.Plo
 	-rm -f ./$(DEPDIR)/net.Plo
 	-rm -f ./$(DEPDIR)/node_conf.Plo
 	-rm -f ./$(DEPDIR)/node_features.Plo
@@ -1214,7 +1210,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/job_resources.Plo
 	-rm -f ./$(DEPDIR)/list.Plo
 	-rm -f ./$(DEPDIR)/log.Plo
-	-rm -f ./$(DEPDIR)/mapping.Plo
 	-rm -f ./$(DEPDIR)/net.Plo
 	-rm -f ./$(DEPDIR)/node_conf.Plo
 	-rm -f ./$(DEPDIR)/node_features.Plo
