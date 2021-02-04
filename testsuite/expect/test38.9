@@ -113,7 +113,6 @@ if {$index != 3} {
 
 log_info "Test Sending Jobs To Various Components"
 
-set timeout 3
 set matches 0
 
 send "$srun --mpi=none --het-group=0 printenv SLURMD_NODENAME\r"
@@ -270,3 +269,10 @@ if { $matches != 1} {
 }
 
 send "exit\r"
+expect {
+	timeout {
+		fail "salloc not ending"
+	}
+	eof {
+	}
+}
