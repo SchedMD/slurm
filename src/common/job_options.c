@@ -63,7 +63,7 @@ job_option_info_create (int type, const char *opt, const char *optarg)
 
 	ji->type =   type;
 	ji->option = xstrdup (opt);
-	ji->optarg = optarg ? xstrdup (optarg) : NULL;
+	ji->optarg = xstrdup(optarg);
 
 	return (ji);
 }
