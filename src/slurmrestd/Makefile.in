@@ -509,7 +509,7 @@ top_srcdir = @top_srcdir@
 @WITH_SLURMRESTD_TRUE@SUBDIRS = plugins
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.* *.bino
-REF = usage.txt openapi.json
+REF = usage.txt
 SRCS = \
 	conmgr.h conmgr.c \
 	http.c http.h \
