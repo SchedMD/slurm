@@ -562,6 +562,8 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushnumber(L, job_desc->min_nodes);
 	} else if (!xstrcmp(name, "name")) {
 		lua_pushstring(L, job_desc->name);
+	} else if (!xstrcmp(name, "network")) {
+		lua_pushstring(L, job_desc->network);
 	} else if (!xstrcmp(name, "nice")) {
 		lua_pushnumber(L, job_desc->nice);
 	} else if (!xstrcmp(name, "ntasks_per_board")) {
