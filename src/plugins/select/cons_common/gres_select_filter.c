@@ -173,6 +173,19 @@ static bool *_build_avail_cores_by_sock(bitstr_t *core_bitmap,
 fini:	return avail_cores_by_sock;
 }
 
+/* Set max_node_gres if it is unset or greater than val */
+static bool _set_max_node_gres(sock_gres_t *sock_gres, uint64_t val)
+{
+	if (val &&
+	    ((sock_gres->max_node_gres == 0) ||
+	     (sock_gres->max_node_gres > val))) {
+		sock_gres->max_node_gres = val;
+		return true;
+	}
+
+	return false;
+}
+
 /*
  * Determine which GRES can be used on this node given the available cores.
  *	Filter out unusable GRES.
@@ -313,15 +326,17 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 		} else {
 			near_gres_cnt = sock_gres->total_cnt;
 		}
-		if (sock_gres->job_specs && !whole_node &&
-		    sock_gres->job_specs->gres_per_node) {
-			if ((sock_gres->max_node_gres == 0) ||
-			    (sock_gres->max_node_gres >
-			     sock_gres->job_specs->gres_per_node)) {
-				sock_gres->max_node_gres =
-					sock_gres->job_specs->gres_per_node;
-			}
+
+		if (sock_gres->job_specs && !whole_node) {
+			/* If gres_per_node isn't set, try gres_per_job */
+			if (!_set_max_node_gres(
+				    sock_gres,
+				    sock_gres->job_specs->gres_per_node))
+				(void)_set_max_node_gres(
+					sock_gres,
+					sock_gres->job_specs->gres_per_job);
 		}
+
 		/* Avoid max_node_gres with ntasks_per_gres and whole node */
 		if (cpus_per_gres &&
 		    ((sock_gres->job_specs->ntasks_per_gres == NO_VAL16) ||
