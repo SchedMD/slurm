@@ -102,20 +102,20 @@
         ],
         "operationId": "slurmctld_get_jobs",
         "summary": "get list of jobs",
-	"parameters": [
-	  {
-	    "name": "update_time",
-	    "in": "query",
-	    "description": "filter if changed since update_time",
-	    "required": false,
-	    "style": "simple",
-	    "explode": false,
-	    "schema": {
-	      "type": "integer",
-	      "format": "int64"
-	    }
-	  }
-	],
+        "parameters": [
+          {
+            "name": "update_time",
+            "in": "query",
+            "description": "filter if changed since update_time",
+            "required": false,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "job(s) information",
@@ -1936,11 +1936,11 @@
             "type": "string",
             "description": "Instruct Slurm to connect the batch script's standard error directly to the file name."
           },
-	  "standard_input": {
+          "standard_input": {
             "type": "string",
             "description": "Instruct Slurm to connect the batch script's standard input directly to the file name specified."
           },
-	  "standard_output": {
+          "standard_output": {
             "type": "string",
             "description": "Instruct Slurm to connect the batch script's standard output directly to the file name."
           },
