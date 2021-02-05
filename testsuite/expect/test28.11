@@ -34,67 +34,44 @@ set exit_code 0
 set file_script "test$test_id.sh"
 set config_path ""
 set cwd "[$bin_pwd]"
-
-proc get_single_node_feature { } {
-	global scontrol re_word_str
-	set ret_features ""
-
-	log_user 1
-	set scon_pid [spawn $scontrol show node]
-	expect {
-		-re "AvailableFeatures=($re_word_str)" {
-			set ret_features $expect_out(1,string)
-			if [string match "(null)" $ret_features] {
-				set ret_features ""
-				exp_continue
-			}
-			set coma_pos [expr [string first , $ret_features] -1]
-			if { $coma_pos > 0 } {
-				set ret_features [string range $ret_features 0 $coma_pos]
-			}
-			# Don't exp_continue since we only care about one.
-		}
-		timeout {
-			slow_kill $scon_pid
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	return $ret_features
-}
+set node_feature "$test_name"
 
 if {![is_super_user]} {
 	skip "This test must be run as SlurmUser or root"
 }
 
-set config_path [get_conf_path]
-set config_file $config_path/slurm.conf
-save_conf $config_file
-
 proc cleanup { } {
 	global config_file file_script
 
+	# Restore previous MinJobAge and AvailableFeatures
 	restore_conf $config_file
 	reconfigure
 	file delete $file_script
 }
 
 # Change the slurm.conf MinJobAge=10 so we don't have to wait very long.
+set config_path [get_conf_path]
+set config_file $config_path/slurm.conf
+save_conf $config_file
+
 exec $bin_sed -i /^\[\t\s\]*MinJobAge\[\t\s\]*=/Id $config_file
 exec $bin_echo -e "\nMinJobAge=10" >> $config_file
 reconfigure -fail
+
+# Setup the necessary feature to do the test
+set node [get_nodes_by_request "-N1 -t1"]
+set features [get_node_param $node "AvailableFeatures"]
+if {$features == "(null)"} {
+	set features "$node_feature"
+} else {
+	set features "$features,$node_feature"
+}
+run_command -fail "$scontrol update nodename=$node AvailableFeatures=$features"
 
 # Verify that MinJobAge was set
 regexp "($number)" [get_config_param "MinJobAge"] {} min_job_age
 if {$min_job_age != 10} {
 	fail "MinJobAge was not set"
-}
-
-set node_feature [get_single_node_feature]
-if { $node_feature == "" } {
-	skip "Cannot run this test without any node features."
 }
 
 # It doesn't matter how long the job sleeps; it will be cancelled anyway.
