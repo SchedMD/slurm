@@ -5,7 +5,7 @@ endif
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.* *.bino
 
-REF = usage.txt openapi.json
+REF = usage.txt
 
 SRCS = \
 	conmgr.h conmgr.c \
