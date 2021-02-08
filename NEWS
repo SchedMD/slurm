@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix race condition causing node reboots to get requeued before
     ResumeTimeout expires.
  -- Preserve node boot_req_time on reconfigure.
+ -- Preserve node power_save_req_time on reconfigure.
 
 * Changes in Slurm 20.11.4
 ==========================
