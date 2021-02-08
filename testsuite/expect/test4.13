@@ -42,7 +42,7 @@ array set node_info {
 	CPULoad            cpusload
 	CoresPerSocket     cores
 	TmpDisk            disk
-	Features           features
+	AvailableFeatures  features
 	FreeMem            freemem
 	Gres               gres
 	NodeAddr           nodeaddr
@@ -67,161 +67,52 @@ array set part_info {
 	RootOnly           root
 }
 
-
-proc cleanup { } {
-	global scontrol test_part
-
-	spawn $scontrol delete partitionname=$test_part
-	expect {
-		timeout {
-			log_error "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-}
-
 if {![is_super_user]} {
     skip "This test can't be run without being a super user of the cluster"
 }
 
-log_info "=== Testing Node Information ==="
-set first_option 1
-foreach option [array names node_info] {
+proc cleanup { } {
+	global scontrol test_part
 
-	if {$first_option == 1} {
-		set first_option 0
-	} else {
-		log_user 0
-	}
-	spawn $scontrol show node $test_node
-	expect {
-		-re "\\m$option=($re_word_str)\\M" {
-			set node_sinfo_vals($node_info($option)) $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
+	run_command "$scontrol delete partitionname=$test_part"
 }
 
-set first_option 1
-foreach option [array names node_sinfo_vals] {
+log_info "=== Testing Node Information ==="
+set nodes_dict [get_nodes $test_node]
+foreach option [array names node_info] {
+	set node_sinfo_vals($node_info($option)) [dict get $nodes_dict $test_node $option]
+}
 
+foreach option [array names node_sinfo_vals] {
 	# Gres option (and potentially others) may include "(" and ")" as
 	# characters, they need to be escaped to be used as part of a regexp
-	set regexp [string map {\( \\( \) \\)} $node_sinfo_vals($option)]
+	set val_re [string map {\( \\( \) \\)} $node_sinfo_vals($option)]
 
-	set match 0
-	spawn $sinfo -n$test_node -O$option:256 -h
-	expect {
-		-nocase -re "$regexp" {
-			set match 1
-			exp_continue
-		}
-		timeout {
-			fail "sinfo is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$match != 1} {
-		log_error "Node information $option output does not match sinfo output. Looking for value: $option = $node_sinfo_vals($option)"
-		set exit_code 1
+	set output [string trim [run_command_output -fail "$sinfo -n$test_node -O$option:256 -h"]]
+	if {$option eq "cpusload" || $option eq "freemem"} {
+		# CPULoad and FreeMem can change from one system call to another
+		subtest [regexp {\d+(?:\.\d+)?} $output] "Verify node $option field" "Expected a number but observed $output"
+	} else {
+		subtest [regexp -nocase $val_re $output] "Verify node $option field" "Expected $val_re but observed $output"
 	}
 }
 
 #
 # Add test partition
 #
-spawn $scontrol create partitionname=$test_part nodes=$test_node
-expect {
-	timeout {
-		fail "scontrol is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-set match 0
-spawn $scontrol show partitionname=$test_part
-expect {
-	-re "PartitionName=$test_part" {
-		set match 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol is not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$match != 1} {
+run_command -fail "$scontrol create partitionname=$test_part nodes=$test_node"
+set output [run_command_output -fail "$scontrol show partitionname=$test_part"]
+if {![regexp "PartitionName=$test_part" $output]} {
 	fail "Test partition was not created"
 }
 
 log_info "=== Testing Partition Information ==="
-set first_option 1
+set parts_dict [get_partitions $test_part]
 foreach option [array names part_info] {
-
-	set part_sinfo_vals($part_info($option)) "UNKNOWN"
-	set match 0
-	if {$first_option == 1} {
-		set first_option 0
-	} else {
-		log_user 0
-	}
-	spawn $scontrol show partition $test_part
-	expect {
-		-re "\\m$option=($re_word_str)\\M" {
-			set part_sinfo_vals($part_info($option)) \
-			    $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
+	set part_sinfo_vals($part_info($option)) [dict get $parts_dict $test_part $option]
 }
 
-set first_option 1
 foreach option [array names part_sinfo_vals] {
-
-	set match 0
-	spawn $sinfo -p$test_part -O$option -h
-	expect {
-		-nocase -re "$part_sinfo_vals($option)" {
-			set match 1
-			exp_continue
-		}
-		timeout {
-			fail "sinfo is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$match != 1} {
-		log_error "Partition information $option output does not match sinfo output. Looking for value: $option = $part_sinfo_vals($option)"
-		set exit_code 1
-	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	set output [string trim [run_command_output -fail "$sinfo -p$test_part -O$option -h"]]
+	subtest [regexp -nocase $part_sinfo_vals($option) $output] "Verify partition $option field" "Expected $part_sinfo_vals($option) but observed $output"
 }
