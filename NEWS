@@ -24,6 +24,7 @@ documents those changes that are of interest to users and administrators.
  -- Requeue or kill job on a prolog failure when PrologFlags is not set.
  -- Fix race condition causing node reboots to get requeued before
     ResumeTimeout expires.
+ -- Preserve node boot_req_time on reconfigure.
 
 * Changes in Slurm 20.11.4
 ==========================

@@ -1971,6 +1971,7 @@ static int _restore_node_state(int recover,
 		}
 
 		node_ptr->boot_time     = old_node_ptr->boot_time;
+		node_ptr->boot_req_time = old_node_ptr->boot_req_time;
 		node_ptr->cpus          = old_node_ptr->cpus;
 		node_ptr->cores         = old_node_ptr->cores;
 		xfree(node_ptr->cpu_spec_list);
