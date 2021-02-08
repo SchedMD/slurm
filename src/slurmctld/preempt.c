@@ -416,12 +416,14 @@ static int _job_check_grace_internal(void *x, void *arg)
 	if (grace_time) {
 		debug("setting %u sec preemption grace time for %pJ to reclaim resources for %pJ",
 		      grace_time, job_ptr, preemptor_ptr);
-		job_signal(job_ptr, SIGCONT, 0, 0, 0);
+		/* send job warn signal always sends SIGCONT first */
 		if (preempt_send_user_signal && job_ptr->warn_signal &&
 		    !(job_ptr->warn_flags & WARN_SENT))
 			send_job_warn_signal(job_ptr, true);
-		else
+		else {
+			job_signal(job_ptr, SIGCONT, 0, 0, 0);
 			job_signal(job_ptr, SIGTERM, 0, 0, 0);
+		}
 	} else
 		rc = 1;
 

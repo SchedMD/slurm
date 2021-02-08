@@ -15,6 +15,8 @@ documents those changes that are of interest to users and administrators.
     threads.
  -- When using PrologFlags=alloc make sure the correct Slurm version is set
     in the credential.
+ -- When sending a job a warning signal make sure we always send SIGCONT
+    beforehand.
 
 * Changes in Slurm 20.11.4
 ==========================

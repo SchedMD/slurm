@@ -18401,6 +18401,9 @@ extern void send_job_warn_signal(job_record_t *job_ptr, bool ignore_time)
 		if (!(job_ptr->warn_flags & KILL_JOB_BATCH))
 			job_ptr->warn_flags |= KILL_STEPS_ONLY;
 
+		/* send SIGCONT first */
+		job_signal(job_ptr, SIGCONT, job_ptr->warn_flags, 0, false);
+
 		debug("%s: warning signal %u to %pJ",
 		      __func__, job_ptr->warn_signal, job_ptr);
 
