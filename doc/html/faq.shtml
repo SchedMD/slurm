@@ -180,7 +180,7 @@ script for Slurm?</a></li>
 <li><a href="#cray_dvs">How can I update Slurm on a Cray DVS file system without
     rebooting the nodes?</a></li>
 <li><a href="#dbd_rebuild">How can I rebuild the database hierarchy?</a></li>
-<li><a href="#routing queue">How can a routing queue be configured?</a></li>
+<li><a href="#routing_queue">How can a routing queue be configured?</a></li>
 <li><a href="#squeue_script">How can I suspend, resume, hold or release all
     of the jobs belonging to a specific user, partition, etc?</a></li>
 <li><a href="#changed_uid">I had to change a user's UID and now they cannot submit
@@ -2083,7 +2083,7 @@ administrator error in directly modifying the database. In order to rebuild
 the database information, start the slurmdbd daemon with the "-R" option
 followed by an optional comma separated list of cluster names to operate on.</p>
 
-<p><a id="routing queue"><b>How can a routing queue be configured?</b></a><br>
+<p><a id="routing_queue"><b>How can a routing queue be configured?</b></a><br>
 A job submit plugin is designed to have access to a job request from a user,
 plus information about all of the available system partitions/queue.
 An administrator can write a C plugin or LUA script to set an incoming job's
