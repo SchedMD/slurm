@@ -745,6 +745,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 				removed_tasks++;
 				(*max_tasks_this_node)--;
 				req_cores = *max_tasks_this_node;
+				req_cores *= mc_ptr->cpus_per_task;
 			}
 		}
 		if (cpus_per_gres) {
