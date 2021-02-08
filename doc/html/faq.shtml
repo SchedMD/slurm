@@ -806,7 +806,6 @@ $ srun -n &lt;tasks&gt; ./fluent-srun.sh
 Slurm supports requeuing jobs in a done or failed state. Use the
 command:</p>
 <p align=left><b>scontrol requeue job_id</b></p>
-</head>
 <p>The job will then be requeued back in the PENDING state and scheduled again.
 See man(1) scontrol.
 </p>
