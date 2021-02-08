@@ -923,6 +923,8 @@ static int _handle_keyvalue_match(s_p_values_t *v,
 	case S_P_LONG_DOUBLE:
 		rc = _handle_common(v, value, line, leftover, _handle_ldouble);
 		break;
+	default:
+		fatal("%s: unsupported s_p_value_t type %d", __func__, v->type);
 	}
 	return rc;
 }
