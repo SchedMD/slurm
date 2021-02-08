@@ -875,8 +875,8 @@ static int _handle_expline(s_p_values_t* v, const char* value,
  *	1 if "data" is set.
  */
 static int _handle_keyvalue_match(s_p_values_t *v,
-				   const char *value, const char *line,
-				   char **leftover)
+				  const char *value, const char *line,
+				  char **leftover)
 {
 	int rc;
 	switch (v->type) {
