@@ -878,11 +878,11 @@ static int _handle_keyvalue_match(s_p_values_t *v,
 				  const char *value, const char *line,
 				  char **leftover)
 {
-	int rc;
+	int rc = 1;
+
 	switch (v->type) {
 	case S_P_IGNORE:
 		/* do nothing */
-		rc = 1;
 		break;
 	case S_P_STRING:
 		rc = _handle_common(v, value, line, leftover, _handle_string);
