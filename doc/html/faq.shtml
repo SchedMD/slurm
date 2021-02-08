@@ -1330,7 +1330,7 @@ including
 <li>The <i>Prolog</i> script taking a long time to complete</li>
 </ul>
 <p>Configure <i>MessageTimeout</i> in slurm.conf to a value higher than the
-default 5 seconds.</p>
+default 10 seconds.</p>
 
 <p><a name="large_time"><b>What does
 &quot;Warning: Note very large processing time&quot;
