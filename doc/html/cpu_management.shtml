@@ -1110,19 +1110,6 @@ Step 4 is performed by slurmd and the task plugin.
 				</font></p>
 			</td>
 		</tr>
-				<tr>
-			<td height="18" width="20%">
-				<p align="LEFT"><font face="Courier New, monospace"><font style="font-size: 8pt" size="1">
-				<a href="slurm.conf.html#OPT_TaskPluginParam">TaskPluginParam</a></font></font></p>
-			</td>
-			<td height="18" width="20%">
-				<p align="LEFT"><font style="font-size: 8pt" size="1">See man page</font></p>
-			</td>
-			<td width="60%">
-				<p align="LEFT"><font style="font-size: 8pt" size="1">
-				For task/affinity, controls the binding unit (sockets, cores or threads).</font></p>
-			</td>
-		</tr>
 	</tbody></table>
 </center>
 </p><center>
@@ -2304,7 +2291,6 @@ single node in the default partition. Apply core binding to each task.
 <pre>SelectType=select/cons_res
 SelectTypeParameters=CR_Core
 TaskPlugin=task/affinity
-TaskPluginParam=sched
 </pre>
 <p>Command line:</p>
 <pre>srun --nodes=1-1 --ntasks=6 --cpu-bind=cores ...
@@ -2446,7 +2432,6 @@ a single node in the default partition. Apply socket binding to each task.
 <pre>SelectType=select/cons_res
 SelectTypeParameters=CR_Core
 TaskPlugin=task/affinity
-TaskPluginParam=sched
 </pre>
 <p>Command line:</p>
 <pre>srun --nodes=1-1 --ntasks=6 --cpu-bind=sockets ...
@@ -2579,7 +2564,6 @@ Distribute cores using the block distribution method. Apply socket binding to ea
 <pre>SelectType=select/cons_res
 SelectTypeParameters=CR_Core,CR_CORE_DEFAULT_DIST_BLOCK
 TaskPlugin=task/affinity
-TaskPluginParam=sched
 </pre>
 <p>Command line:</p>
 <pre>srun --nodes=1-1 --ntasks=2 --cpus-per-task=3 --cpu-bind=sockets <BR/>
@@ -2711,7 +2695,6 @@ Distribute cores using the cyclic distribution method. Apply socket binding to e
 <pre>SelectType=select/cons_res
 SelectTypeParameters=CR_Core,CR_CORE_DEFAULT_DIST_BLOCK
 TaskPlugin=task/affinity
-TaskPluginParam=sched
 </pre>
 <p>Command line:</p>
 <pre>srun --nodes=1-1 --ntasks=2 --cpus-per-task=3 --cpu-bind=sockets <BR/>
@@ -2844,7 +2827,6 @@ tasks for CPU binding.
 <pre>SelectType=select/cons_res
 SelectTypeParameters=CR_Core,CR_CORE_DEFAULT_DIST_BLOCK
 TaskPlugin=task/affinity
-TaskPluginParam=sched
 </pre>
 <p>Command line:</p>
 <pre>srun --nodes=3-3 --ntasks=18 --ntasks-per-node=6 <BR/>
@@ -3161,7 +3143,6 @@ of the job.</p>
 <pre>SelectType=select/cons_res
 SelectTypeParameters=CR_Core,CR_CORE_DEFAULT_DIST_BLOCK
 TaskPlugin=task/affinity
-TaskPluginParam=sched
 </pre>
 <p>Command line:</p>
 <pre>srun --ntasks=3 --cpus-per-task=3 --ntasks-per-node=1 --cpu-bind=cores ...
@@ -3172,8 +3153,7 @@ TaskPluginParam=sched
 <font face="Courier New, monospace">SelectTypeParameters</font> configuration option specifies
 a consumable resource type of cores and block allocation within nodes. The
 <font face="Courier New, monospace">TaskPlugin</font>
-<font face="Courier New, monospace">and TaskPluginParam</font>
-configuration options enable task affinity. The srun options specify the following
+configuration option enables task affinity. The srun options specify the following
 conditions for the job: 3 tasks, with 3 unique CPUs per task, with 1 task per node. To satisfy
 these conditions, Slurm allocates 3 CPUs from one socket in each of the 3 nodes in the default partition. The
 <font face="Courier New, monospace">--cpu-bind=cores</font> option causes Slurm to bind
