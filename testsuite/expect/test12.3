@@ -72,6 +72,19 @@ save_conf $config_dir/slurmdbd.conf
 proc cleanup {} {
 	global sacctmgr test_acct config_dir
 
+	# TODO: Temporarily dump database on subtest failure to debug bug 9681 (restore once fixed)
+	global _subtest_fail_count slurm_dir
+	set username [get_my_user_name]
+	set hostname [string trimright [run_command_output "hostname -s"]]
+	if {$hostname eq "knl2" && $username eq "jenkins" && $_subtest_fail_count > 0} {
+		set dbd_dict [get_config -dbd]
+		set database_user [dict get $dbd_dict "StorageUser"]
+		set database_host [dict get $dbd_dict "StorageHost"]
+		set database_port [dict get $dbd_dict "StoragePort"]
+		set database_name [dict get $dbd_dict "StorageLoc"]
+		run_command "mysqldump -u $database_user -h $database_host -P $database_port $database_name > $slurm_dir/log/slurmdb.sql"
+	}
+
 	run_command "$sacctmgr -i delete account $test_acct"
 	restore_conf $config_dir/slurmdbd.conf
 	run_command "$sacctmgr reconfigure"
