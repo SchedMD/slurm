@@ -139,6 +139,7 @@ extern int init(void)
 		PMIXP_ERROR("pmi/pmix: can not load PMIx library");
 		return SLURM_ERROR;
 	}
+	debug("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 
