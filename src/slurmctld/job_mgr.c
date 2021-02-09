@@ -945,6 +945,39 @@ static int _find_resv_part(void *x, void *key)
 		return 1;	/* match */
 }
 
+static int _find_part_assoc(void *x, void *key)
+{
+	part_record_t *part_ptr = (part_record_t *)x;
+	slurmdb_assoc_rec_t *assoc_ptr = (slurmdb_assoc_rec_t *) key;
+	slurmdb_assoc_rec_t assoc_rec;
+
+	memset(&assoc_rec, 0, sizeof(assoc_rec));
+	assoc_rec.acct      = assoc_ptr->acct;
+	assoc_rec.partition = part_ptr->name;
+	assoc_rec.uid       = assoc_ptr->uid;
+
+	(void) assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+				       accounting_enforce, NULL, false);
+
+	if (assoc_rec.id != assoc_ptr->id) {
+		info("%s: can't check multiple partitions with partition based associations",
+		     __func__);
+		return 1;
+	}
+	return 0;
+}
+
+static int _check_for_part_assocs(List part_ptr_list,
+				  slurmdb_assoc_rec_t *assoc_ptr)
+{
+	if (assoc_ptr && part_ptr_list &&
+	    list_find_first(part_ptr_list, _find_part_assoc, assoc_ptr)) {
+		return ESLURM_PARTITION_ASSOC;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /* Open the job state save file, or backup if necessary.
  * state_file IN - the name of the state save file used
  * RET the file description to read from or error code
@@ -6868,6 +6901,10 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		}
 	}
 
+	if ((error_code = _check_for_part_assocs(
+		     part_ptr_list, assoc_ptr)) != SLURM_SUCCESS)
+		goto cleanup_fail;
+
 	if (job_desc->account == NULL)
 		job_desc->account = xstrdup(assoc_rec.acct);
 
@@ -11995,6 +12032,12 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 	 * request, let's assume it is expected and allow the change to happen.
 	 */
 	if (new_qos_ptr || new_assoc_ptr || new_part_ptr) {
+		List use_part_list = new_part_ptr ?
+			part_ptr_list : job_ptr->part_ptr_list;
+		if ((error_code = _check_for_part_assocs(
+			     use_part_list, use_assoc_ptr)) != SLURM_SUCCESS)
+			goto fini;
+
 		if (!operator &&
 		    (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
 			uint32_t acct_reason = 0;
