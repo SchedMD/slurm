@@ -965,8 +965,10 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 				     &j->ntasks_per_tres,
 				     &tmp_gres_list);
 	FREE_NULL_LIST(tmp_gres_list);
-	if (rc)
+	if (rc) {
+		job_desc_msg_destroy(j);
 		return NULL;
+	}
 
 	return j;
 }
