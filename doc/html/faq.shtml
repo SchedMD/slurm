@@ -1482,7 +1482,7 @@ sinfo -t drain -h -o "scontrol update nodename='%N' state=drain reason='%E'"
 </pre>
 
 <p><a id="health_check"><b>Why doesn't the <i>HealthCheckProgram</i>
-execute on DOWN nodes?</a></b><br>
+execute on DOWN nodes?</b></a><br>
 Hierarchical communications are used for sending this message. If there
 are DOWN nodes in the communications hierarchy, messages will need to
 be re-routed. This limits Slurm's ability to tightly synchronize the
