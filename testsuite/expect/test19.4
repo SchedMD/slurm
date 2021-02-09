@@ -55,9 +55,9 @@ proc cleanup {} {
 	global trigger_get_failed
 	if {$trigger_get_failed} {
 		if [
-			wait_for -timeout 5 -poll .1 {
+			wait_for -timeout 5 -poll .1 {[
 				regexp "$file_in" [run_command_output "$strigger --get -v --reconfig --user=$uid"]
-			} {}
+			]} {}
 		] {
 			log_warn "Trigger get failed and never recovered"
 		} else {
