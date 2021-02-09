@@ -1729,12 +1729,41 @@ _handle_stat_jobacct(int fd, stepd_step_rec_t *job, uid_t uid)
 	jobacct = jobacctinfo_create(NULL);
 	debug3("num tasks = %d", job->node_tasks);
 
-	for (i = 0; i < job->node_tasks; i++) {
-		temp_jobacct = jobacct_gather_stat_task(job->task[i]->pid);
-		if (temp_jobacct) {
-			jobacctinfo_aggregate(jobacct, temp_jobacct);
-			jobacctinfo_destroy(temp_jobacct);
-			num_tasks++;
+	/*
+	 * Extern step has pid = -1 so it would be skipped, deal with it
+	 * differently
+	 */
+	if (job->step_id.step_id == SLURM_EXTERN_CONT) {
+		pid_t *pids = NULL;
+		int npids = 0;
+
+		/*
+		 * We only have one task in the extern step on each node,
+		 * despite many pids may have been adopted.
+		 */
+		num_tasks = 1;
+		proctrack_g_get_pids(job->cont_id, &pids, &npids);
+
+		for (i = 0; i < npids; i++) {
+			temp_jobacct = jobacct_gather_stat_task(pids[i]);
+			if (temp_jobacct) {
+				jobacctinfo_aggregate(jobacct, temp_jobacct);
+				jobacctinfo_destroy(temp_jobacct);
+			}
+			log_flag(JAG, "%s: step_extern cont_id=%lu includes pid=%lu",
+				 __func__, job->cont_id, (uint64_t) pids[i]);
+		}
+
+		xfree(pids);
+	} else {
+		for (i = 0; i < job->node_tasks; i++) {
+			temp_jobacct =
+				jobacct_gather_stat_task(job->task[i]->pid);
+			if (temp_jobacct) {
+				jobacctinfo_aggregate(jobacct, temp_jobacct);
+				jobacctinfo_destroy(temp_jobacct);
+				num_tasks++;
+			}
 		}
 	}
 

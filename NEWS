@@ -175,6 +175,7 @@ documents those changes that are of interest to users and administrators.
     set this option by default.
  -- Treat any return code from SPANK plugin that is not SLURM_SUCCESS to be an
     error or rejection.
+ -- Print the statistics for extern step adopted processes in sstat.
 
 * Changes in Slurm 20.11.9
 ==========================
