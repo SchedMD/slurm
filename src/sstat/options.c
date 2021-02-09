@@ -82,13 +82,14 @@ sstat [<OPTION>] -j <job(.stepid)>                                          \n\
      -j, --jobs:                                                            \n\
 	           Format is <job(.step)>. Stat this job step               \n\
                    or comma-separated list of job steps. This option is     \n\
-                   required.  The step portion will default to lowest step  \n\
-                   running if not specified, unless the --allsteps flag is  \n\
-                   set where not specifying a step will result in all       \n\
-                   running steps to be displayed.  A step id of 'batch'     \n\
-                   will display the information about the batch step. A     \n\
-                   step id of 'extern' will display the information about   \n\
-                   the extern step when using PrologFlags=contain.          \n\
+                   required.  The step portion will default to the lowest   \n\
+                   numbered (not batch, extern, etc) step running if not    \n\
+                   specified, unless the --allsteps flag is set where not   \n\
+                   specifying a step will result in all running steps       \n\
+                   to be displayed. A step id of 'batch' will display the   \n\
+                   information about the batch step. A step id of 'extern'  \n\
+                   will display the information about the extern step       \n\
+                   when using PrologFlags=contain.                          \n\
      -n, --noheader:                                                        \n\
 	           No header will be added to the beginning of output.      \n\
                    The default is to print a header.                        \n\
