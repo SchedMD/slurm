@@ -27,6 +27,7 @@
 """This script makes it easier to run the Slurm expect test scripts."""
 
 from __future__ import print_function
+import json
 import os
 import re
 import sys
@@ -62,6 +63,8 @@ def main(argv=None):
     parser.add_option('-b', '--begin-from-test', type='string',
                       dest='begin_from_test', action='callback',
                       callback=test_parser)
+    parser.add_option('-f', '--results-file', type='string',
+                      help='write json result to specified file name')
 
     (options, args) = parser.parse_args(args=argv)
 
@@ -108,12 +111,16 @@ def main(argv=None):
         test_env["SLURM_TESTSUITE_CLEANUP_ON_FAILURE"] = "true"
     print('Started:', time.asctime(time.localtime(start_time)), file=sys.stdout)
     sys.stdout.flush()
+    results_list = []
     for test in tests:
         if begin[0] > test[0] or (begin[0] == test[0] and begin[1] > test[1]):
             continue
-        sys.stdout.write('Running test %d.%d ' % (test[0],test[1]))
+        test_id = f"{test[0]}.{test[1]}"
+        sys.stdout.write(f"Running test {test_id} ")
         sys.stdout.flush()
-        testlog_name = 'test%d.%d.log' % (test[0],test[1])
+        test_dict = {}
+        test_dict['id'] = float(test_id)
+        testlog_name = f"test{test_id}.log"
         try:
             os.remove(testlog_name+'.failed')
         except:
@@ -122,8 +129,11 @@ def main(argv=None):
 
         if options.time_individual:
             t1 = time.time()
+            test_dict['start_time'] = float("%.03f" % t1)
+
         retcode = Popen(('expect', test[2]), shell=False,
                         env=test_env, stdout=testlog, stderr=testlog).wait()
+
         if options.time_individual:
             t2 = time.time()
             minutes = int(t2-t1)/60
@@ -131,9 +141,64 @@ def main(argv=None):
             if minutes > 0:
                 sys.stdout.write('%d min '%(minutes))
             sys.stdout.write('%.2f sec '%(seconds))
+            test_dict['duration'] = float("%.03f" % (t2 - t1))
+
+        if retcode == 0:
+            status = 'pass'
+        elif retcode > 127:
+            status = 'skip'
+        else:
+            status = 'fail'
+
+        test_dict['status'] = status
+
+        # Determine the reason if requesting a json results file
+        if status != 'pass' and options.results_file:
+            testlog.flush()
+            testlog.seek(0)
+
+            fatals = []
+            errors = []
+            section = 'pre'
+            for line in testlog.readlines():
+                if re.search(fr"^{'=' * 78}", line):
+                    if section == 'pre':
+                        section = 'header'
+                    elif section == 'header':
+                        section = 'body'
+                    elif section == 'body':
+                        section = 'footer'
+                    elif section == 'footer':
+                        section = 'post'
+                    elif section != 'unknown':
+                        section = 'unknown'
+                    continue
+                if section == 'pre' and re.search(r'^TEST:\s+test', line):
+                    section = 'header'
+                    continue
+                if section == 'body':
+                    match = re.search(r'^\[[^\]]+\][ \[]+Fatal[ \]:]+(.*) \([^\)\(]+\)$', line)
+                    if match:
+                        fatals.append(match.group(1))
+                    else:
+                        match = re.search(r'^\[[^\]]+\][ \[]+Error[ \]:]+(.*) \([^\)\(]+\)$', line)
+                        if match:
+                            errors.append(match.group(1))
+                    continue
+                if section == 'footer':
+                    if re.search(r'^(?:SUCCESS\|SKIPPED\|FAILURE)\s+: test', line):
+                        continue
+
+            if fatals and not re.search(r'previous errors', fatals[0]):
+                test_dict['reason'] = fatals[0]
+            elif errors:
+                test_dict['reason'] = errors[0]
+
+        results_list.append(test_dict)
 
         testlog.close()
-        if retcode == 0:
+
+        if status == 'pass':
             passed_tests.append(test)
             sys.stdout.write('\n')
             if not options.keep_logs:
@@ -142,7 +207,7 @@ def main(argv=None):
                 except IOError as e:
                     print('ERROR failed to close %s %s' % (testlog_name, e),
                             file=sys.stederr);
-        elif retcode > 127:
+        elif status == 'skip':
             skipped_tests.append(test)
             sys.stdout.write('SKIPPED\n')
             if not options.keep_logs:
@@ -163,6 +228,11 @@ def main(argv=None):
     print('Ended:', time.asctime(time.localtime(end_time)), file=sys.stdout)
     print('\nTestsuite ran for %d minutes %d seconds'\
           %((end_time-start_time)/60,(end_time-start_time)%60), file=sys.stdout)
+
+    if options.results_file:
+        with open(options.results_file, 'w') as results_file:
+            json.dump(results_list, results_file)
+
     print('Completions  :', len(passed_tests), file=sys.stdout)
     print('Failures     :', len(failed_tests), file=sys.stdout)
     print('Skipped      :', len(skipped_tests), file=sys.stdout)
