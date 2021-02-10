@@ -552,64 +552,80 @@ static void *_handle_string(const char *key, const char *value)
 static void *_handle_long(const char *key, const char *value)
 {
 	long *data = xmalloc(sizeof(*data));
-	if (s_p_handle_long(data, key, value) == SLURM_ERROR)
+	if (s_p_handle_long(data, key, value) == SLURM_ERROR) {
+		xfree(data);
 		return NULL;
+	}
 	return data;
 }
 
 static void *_handle_uint16(const char *key, const char *value)
 {
 	uint16_t *data = xmalloc(sizeof(*data));
-	if (s_p_handle_uint16(data, key, value) == SLURM_ERROR)
+	if (s_p_handle_uint16(data, key, value) == SLURM_ERROR) {
+		xfree(data);
 		return NULL;
+	}
 	return data;
 }
 
 static void *_handle_uint32(const char *key, const char *value)
 {
 	uint32_t *data = xmalloc(sizeof(*data));
-	if (s_p_handle_uint32(data, key, value) == SLURM_ERROR)
+	if (s_p_handle_uint32(data, key, value) == SLURM_ERROR) {
+		xfree(data);
 		return NULL;
+	}
 	return data;
 }
 
 static void *_handle_uint64(const char *key, const char *value)
 {
 	uint64_t *data = xmalloc(sizeof(*data));
-	if (s_p_handle_uint64(data, key, value) == SLURM_ERROR)
+	if (s_p_handle_uint64(data, key, value) == SLURM_ERROR) {
+		xfree(data);
 		return NULL;
+	}
 	return data;
 }
 
 static void *_handle_boolean(const char *key, const char *value)
 {
 	bool *data = xmalloc(sizeof(*data));
-	if (s_p_handle_boolean(data, key, value) == SLURM_ERROR)
+	if (s_p_handle_boolean(data, key, value) == SLURM_ERROR) {
+		xfree(data);
 		return NULL;
+	}
 	return data;
 }
 
 static void *_handle_float(const char *key, const char *value)
 {
 	float *data = xmalloc(sizeof(*data));
-	if (s_p_handle_float(data, key, value) == SLURM_ERROR)
+	if (s_p_handle_float(data, key, value) == SLURM_ERROR) {
+		xfree(data);
 		return NULL;
+	}
 	return data;
 }
 
 static void *_handle_double(const char *key, const char *value)
 {
 	double *data = xmalloc(sizeof(*data));
-	if (s_p_handle_double(data, key, value) == SLURM_ERROR)
+	if (s_p_handle_double(data, key, value) == SLURM_ERROR) {
+		xfree(data);
 		return NULL;
+	}
 	return data;
 }
 
 static void *_handle_ldouble(const char *key, const char *value)
 {
 	long double *data = xmalloc(sizeof(*data));
-	if (s_p_handle_long_double(data, key, value) == SLURM_ERROR)
+	if (s_p_handle_long_double(data, key, value) == SLURM_ERROR) {
+		xfree(data);
 		return NULL;
+	}
 	return data;
 }
 
