@@ -1592,7 +1592,7 @@ next_task:
 			    (job_ptr->state_reason == WAIT_RESOURCES)) {
 				sched_debug("%pJ unable to schedule in Partition=%s (per _failed_partition()). State=PENDING. Previous-Reason=%s. Previous-Desc=%s. New-Reason=Priority. Priority=%u.",
 					    job_ptr,
-					    job_ptr->partition,
+					    job_ptr->part_ptr->name,
 					    job_reason_string(
 						    job_ptr->state_reason),
 					    job_ptr->state_desc,
@@ -1605,7 +1605,7 @@ next_task:
 				 * overriding the reason */
 				sched_debug2("%pJ. unable to schedule in Partition=%s (per _failed_partition()). Retaining previous scheduling Reason=%s. Desc=%s. Priority=%u.",
 					     job_ptr,
-					     job_ptr->partition,
+					     job_ptr->part_ptr->name,
 					     job_reason_string(
 						     job_ptr->state_reason),
 					     job_ptr->state_desc,
