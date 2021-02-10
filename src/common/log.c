@@ -675,7 +675,7 @@ static void _set_idbuf(char *idbuf, size_t size)
 	gettimeofday(&now, NULL);
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_GET_NAME, thread_name, NULL, NULL, NULL) < 0) {
-		error("failed to get thread name: %m");
+		fprintf(stderr, "failed to get thread name: %m\n");
 		max_len = 0;
 		thread_name[0] = '\0';
 	}
