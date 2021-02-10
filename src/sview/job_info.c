@@ -440,6 +440,7 @@ struct signv {
 	{ "TSTP",	SIGTSTP },
 	{ "TTIN",	SIGTTIN },
 	{ "TTOU",	SIGTTOU },
+	{ "XCPU",	SIGXCPU },
 	{ "SIGHUP",	SIGHUP  },
 	{ "SIGINT",	SIGINT  },
 	{ "SIGQUIT",	SIGQUIT },
@@ -453,7 +454,8 @@ struct signv {
 	{ "SIGSTOP",	SIGSTOP },
 	{ "SIGTSTP",	SIGTSTP },
 	{ "SIGTTIN",	SIGTTIN },
-	{ "SIGTTOU",	SIGTTOU }
+	{ "SIGTTOU",	SIGTTOU },
+	{ "SIGXCPU",	SIGXCPU },
 };
 
 static display_data_t *local_display_data = NULL;
