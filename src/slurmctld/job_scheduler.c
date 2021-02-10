@@ -834,7 +834,6 @@ extern int schedule(bool full_queue)
 		sched_last.tv_sec  = now.tv_sec;
 		sched_last.tv_usec = now.tv_usec;
 		sched_running = true;
-		sched_full_queue = false;
 		slurm_mutex_unlock(&sched_mutex);
 
 		job_count = _schedule(sched_full_queue);
@@ -843,6 +842,7 @@ extern int schedule(bool full_queue)
 		gettimeofday(&now, NULL);
 		sched_last.tv_sec  = now.tv_sec;
 		sched_last.tv_usec = now.tv_usec;
+		sched_full_queue = false;
 		sched_running = false;
 		slurm_mutex_unlock(&sched_mutex);
 	} else if (sched_pend_thread == 0) {
