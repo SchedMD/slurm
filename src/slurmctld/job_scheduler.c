@@ -1366,7 +1366,7 @@ static int _schedule(bool full_queue)
 		list_iterator_destroy(part_iterator);
 	}
 
-	sched_debug("Running job scheduler");
+	sched_debug("Running job scheduler %s.", full_queue ? "for full queue":"for default depth");
 	/*
 	 * If we are doing FIFO scheduling, use the job records right off the
 	 * job list.
