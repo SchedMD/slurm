@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
  -- Make it so we handle multithreaded allocations correctly when doing
     --exclusive or --core-spec allocations.
  -- Fix incorrect round-up division in _pick_step_cores
+ -- Use appropriate math to adjust cpu counts when --ntasks-per-core=1.
 
 * Changes in Slurm 20.11.5
 ==========================
