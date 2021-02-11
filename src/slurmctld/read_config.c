@@ -517,7 +517,8 @@ static void _build_bitmaps(void)
 			bit_set(cg_node_bitmap, i);
 		if (IS_NODE_IDLE(node_ptr) ||
 		    IS_NODE_ALLOCATED(node_ptr) ||
-		    (IS_NODE_REBOOT(node_ptr) &&
+		    ((IS_NODE_REBOOT(node_ptr) ||
+		      IS_NODE_REBOOT_ISSUED(node_ptr)) &&
 		     (node_ptr->next_state == NODE_RESUME))) {
 			if ((drain_flag == 0) &&
 			    (!IS_NODE_NO_RESPOND(node_ptr)))
@@ -531,7 +532,8 @@ static void _build_bitmaps(void)
 		if (IS_NODE_FUTURE(node_ptr))
 			bit_set(future_node_bitmap, i);
 
-		if (IS_NODE_REBOOT(node_ptr) &&
+		if ((IS_NODE_REBOOT(node_ptr) ||
+		     IS_NODE_REBOOT_ISSUED(node_ptr)) &&
 		    (node_ptr->next_state == NODE_RESUME))
 			bit_set(rs_node_bitmap, i);
 	}

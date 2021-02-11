@@ -1820,6 +1820,7 @@ static void _queue_reboot_msg(void)
 		 */
 		node_ptr->node_state &=  NODE_STATE_FLAGS;
 		node_ptr->node_state |=  NODE_STATE_DOWN;
+		node_ptr->node_state &= ~NODE_STATE_REBOOT;
 		node_ptr->node_state |= NODE_STATE_REBOOT_ISSUED;
 
 		bit_clear(avail_node_bitmap, i);

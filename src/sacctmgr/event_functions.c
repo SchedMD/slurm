@@ -56,6 +56,8 @@ static uint32_t _decode_node_state(char *val)
 		return NODE_STATE_DRAIN;
 	else if (!xstrncasecmp(val, "FAIL", MAX(vallen, 3)))
 		return NODE_STATE_FAIL;
+	else if (!xstrncasecmp(val, "REBOOT^", MAX(vallen, 7)))
+		return NODE_STATE_REBOOT_ISSUED;
 	else if (!xstrncasecmp(val, "REBOOT", MAX(vallen, 3)))
 		return NODE_STATE_REBOOT;
 	else {

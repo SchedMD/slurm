@@ -1682,7 +1682,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 						(node_ptr->node_state &
 						 NODE_STATE_FLAGS);
 
-				if (!IS_NODE_REBOOT(node_ptr))
+				if (!IS_NODE_REBOOT(node_ptr) &&
+				    !IS_NODE_REBOOT_ISSUED(node_ptr))
 					node_ptr->next_state = NO_VAL;
 				bit_clear(rs_node_bitmap, node_inx);
 
@@ -2792,12 +2793,11 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			}
 		} else if (IS_NODE_DOWN(node_ptr) &&
 			   ((slurm_conf.ret2service == 2) ||
-			    IS_NODE_REBOOT(node_ptr) ||
+			    IS_NODE_REBOOT_ISSUED(node_ptr) ||
 			    ((slurm_conf.ret2service == 1) &&
 			     !xstrcmp(node_ptr->reason, "Not responding") &&
 			     (node_ptr->boot_time <
 			      node_ptr->last_response)))) {
-			node_flags &= (~NODE_STATE_REBOOT);
 			node_flags &= (~NODE_STATE_REBOOT_ISSUED);
 			if (node_ptr->next_state != NO_VAL)
 				node_flags &= (~NODE_STATE_DRAIN);
@@ -4047,7 +4047,8 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 		       __func__, job_ptr, node_ptr->name);
 		node_ptr->last_busy = now;
 		trigger_node_drained(node_ptr);
-		if (!IS_NODE_REBOOT(node_ptr))
+		if (!IS_NODE_REBOOT(node_ptr) &&
+		    !IS_NODE_REBOOT_ISSUED(node_ptr))
 			clusteracct_storage_g_node_down(acct_db_conn,
 			                                node_ptr, now, NULL,
 			                                slurm_conf.slurm_user_id);
@@ -4189,7 +4190,7 @@ extern void check_reboot_nodes()
 	for (i = 0; i < node_record_count; i++) {
 		node_ptr = &node_record_table_ptr[i];
 
-		if (IS_NODE_REBOOT(node_ptr) &&
+		if (IS_NODE_REBOOT_ISSUED(node_ptr) &&
 		    node_ptr->boot_req_time &&
 		    (node_ptr->boot_req_time + resume_timeout < now)) {
 			char *timeout_msg = "reboot timed out";
@@ -4208,7 +4209,6 @@ extern void check_reboot_nodes()
 			/*
 			 * Remove states now so that event state shows as DOWN.
 			 */
-			node_ptr->node_state &= (~NODE_STATE_REBOOT);
 			node_ptr->node_state &= (~NODE_STATE_REBOOT_ISSUED);
 			node_ptr->node_state &= (~NODE_STATE_DRAIN);
 			node_ptr->boot_req_time = 0;
@@ -4223,8 +4223,7 @@ extern bool waiting_for_node_boot(node_record_t *node_ptr)
 {
 	xassert(node_ptr);
 
-	if ((IS_NODE_POWER_UP(node_ptr) ||
-	     (IS_NODE_DOWN(node_ptr) && IS_NODE_REBOOT(node_ptr))) &&
+	if ((IS_NODE_POWER_UP(node_ptr) || IS_NODE_REBOOT_ISSUED(node_ptr)) &&
 	    (node_ptr->boot_time < node_ptr->boot_req_time)) {
 		debug("Still waiting for boot of node %s", node_ptr->name);
 		return true;
