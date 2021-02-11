@@ -1291,6 +1291,7 @@ static struct {
 	{ "TSTP",	SIGTSTP	},
 	{ "TTIN",	SIGTTIN	},
 	{ "TTOU",	SIGTTOU	},
+	{ "XCPU",	SIGXCPU	},
 	{ NULL,		0	}	/* terminate array */
 };
 
