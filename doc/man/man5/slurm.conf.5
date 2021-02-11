@@ -92,7 +92,7 @@ daemon is required (not just a "scontrol reconfig").
 
 .TP
 \fBAccountingStorageExternalHost\fR
-A comma separated list of external slurmdbds (<host/ip>[:port][,...]) to
+A comma-separated list of external slurmdbds (<host/ip>[:port][,...]) to
 register with. If no port is given, the \fBAccountingStoragePort\fR will be
 used.
 
@@ -111,7 +111,7 @@ Also see \fBDefaultStorageHost\fR.
 
 .TP
 \fBAccountingStorageParameters\fR
-Comma separated list of key-value pair parameters. Currently
+Comma-separated list of key-value pair parameters. Currently
 supported values include options to establish a secure connection to the
 database:
 .RS
@@ -157,7 +157,7 @@ Also see \fBDefaultStoragePort\fR.
 
 .TP
 \fBAccountingStorageTRES\fR
-Comma separated list of resources you wish to track on the cluster.
+Comma-separated list of resources you wish to track on the cluster.
 These are the resources requested by the sbatch/srun job when it
 is submitted. Currently this consists of any GRES, BB (burst buffer) or
 license along with CPU, Memory, Node, Energy, FS/[Disk|Lustre], IC/OFED, Pages,
@@ -345,7 +345,7 @@ value for this option is "YES" for Cray systems and "NO" for other system types.
 
 .TP
 \fBAuthAltTypes\fR
-Comma separated list of alternative authentication plugins that the slurmctld
+Comma-separated list of alternative authentication plugins that the slurmctld
 will permit for communication. Acceptable values at present include
 \fIauth/jwt\fR.
 
@@ -476,7 +476,7 @@ be lower case.
 
 .TP
 \fBCommunicationParameters\fR
-Comma separated options identifying communication options.
+Comma-separated options identifying communication options.
 .RS
 .TP 15
 \fBCheckGhalQuiesce\fR
@@ -821,7 +821,7 @@ Also see \fBAccountingStorageUser\fR and \fBJobCompUser\fR.
 
 .TP
 \fBDependencyParameters\fR
-Multiple options may be comma-separated.
+Multiple options may be comma separated.
 
 .RS
 .TP
@@ -1937,7 +1937,7 @@ Parameters to be passed to the \fBPrEpPlugins\fR.
 \fBPrEpPlugins\fR
 A resource for programmers wishing to write their own plugins for the Prolog and
 Epilog (PrEp) scripts. The default, and currently the only implemented plugin is
-\fIprep/script\fR. Additional plugins can be specified in a comma separated
+\fIprep/script\fR. Additional plugins can be specified in a comma-separated
 list. For more information please see the PrEp Plugin API documentation page:
 <https://slurm.schedmd.com/prep_plugins.html>
 
@@ -2155,7 +2155,7 @@ The default value is 0.
 
 .TP
 \fBPriorityWeightTRES\fR
-A comma separated list of TRES Types and weights that sets the degree that each
+A comma-separated list of TRES Types and weights that sets the degree that each
 TRES Type contributes to the job's priority.
 
 .nf
@@ -2372,7 +2372,7 @@ the tasks scheduling priority will be lower than the slurm daemon).
 
 .TP
 \fBPropagateResourceLimits\fR
-A list of comma separated resource limit names.
+A comma-separated list of resource limit names.
 The slurmd daemon uses these names to obtain the associated (soft) limit
 values from the user's process environment on the submit node.
 These limits are then propagated and applied to the jobs that
@@ -2435,7 +2435,7 @@ The maximum stack size
 
 .TP
 \fBPropagateResourceLimitsExcept\fR
-A list of comma separated resource limit names.
+A comma-separated list of resource limit names.
 By default, all resource limits will be propagated, (as described by
 the \fBPropagateResourceLimits\fR parameter), except for the limits
 appearing in this list.   The user can override this by specifying which
@@ -3273,7 +3273,7 @@ exists otherwise use the built\-in FIFO scheduler
 
 .TP
 \fBScronParameters\fR
-Multiple options may be comma-separated.
+Multiple options may be comma separated.
 .RS
 .TP
 \fBenable\fR
@@ -3536,7 +3536,7 @@ See the section \fBLOGGING\fR if a pathname is specified.
 
 .TP
 \fBSlurmctldParameters\fR
-Multiple options may be comma-separated.
+Multiple options may be comma separated.
 
 .RS
 .TP
@@ -4070,7 +4070,7 @@ See \fBTaskProlog\fR for execution order details.
 \fBTaskPlugin\fR
 Identifies the type of task launch plugin, typically used to provide
 resource management within a node (e.g. pinning tasks to specific
-processors). More than one task plugin can be specified in a comma separated
+processors). More than one task plugin can be specified in a comma-separated
 list. The prefix of "task/" is optional. Acceptable values include:
 .RS
 .TP 15
@@ -4224,7 +4224,7 @@ The default value is "/tmp".
 
 .TP
 \fBTopologyParam\fR
-Comma separated options identifying network topology options.
+Comma-separated options identifying network topology options.
 .RS
 .TP 15
 \fBDragonfly\fR
@@ -4428,7 +4428,7 @@ and/or a simple node range expression may optionally be used to
 specify numeric ranges of nodes to avoid building a configuration
 file with large numbers of entries.
 The node range expression can contain one  pair of square brackets
-with a sequence of comma separated numbers and/or ranges of numbers
+with a sequence of comma-separated numbers and/or ranges of numbers
 separated by a "\-" (e.g. "linux[0\-64,128]", or "lx[15,18,32\-33]").
 Note that the numeric ranges can include one or more leading
 zeros to indicate the numeric portion has a fixed number of digits
@@ -4437,7 +4437,7 @@ Multiple numeric ranges can be included in the expression
 (e.g. "rack[0\-63]_blade[0\-41]").
 If one or more numeric expressions are included, one of them
 must be at the end of the name (e.g. "unit[0\-31]rack" is invalid),
-but arbitrary names can always be used in a comma separated list.
+but arbitrary names can always be used in a comma-separated list.
 .LP
 The node configuration specified the following information:
 
@@ -4852,7 +4852,7 @@ The front end configuration specifies the following information:
 
 .TP
 \fBAllowGroups\fR
-Comma separated list of group names which may execute jobs on this front end
+Comma-separated list of group names which may execute jobs on this front end
 node. By default, all groups may use this front end node.
 A user will be permitted to use this front end node if AllowGroups has
 \fBat least one\fR group associated with the user.
@@ -4860,19 +4860,19 @@ May not be used with the \fBDenyGroups\fR option.
 
 .TP
 \fBAllowUsers\fR
-Comma separated list of user names which may execute jobs on this front end
+Comma-separated list of user names which may execute jobs on this front end
 node. By default, all users may use this front end node.
 May not be used with the \fBDenyUsers\fR option.
 
 .TP
 \fBDenyGroups\fR
-Comma separated list of group names which are prevented from executing jobs on
+Comma-separated list of group names which are prevented from executing jobs on
 this front end node.
 May not be used with the \fBAllowGroups\fR option.
 
 .TP
 \fBDenyUsers\fR
-Comma separated list of user names which are prevented from executing jobs on
+Comma-separated list of user names which are prevented from executing jobs on
 this front end node.
 May not be used with the \fBAllowUsers\fR option.
 
@@ -4996,7 +4996,7 @@ The partition configuration file contains the following information:
 
 .TP
 \fBAllocNodes\fR
-Comma separated list of nodes from which users can submit jobs in the
+Comma-separated list of nodes from which users can submit jobs in the
 partition.
 Node names may be specified using the node range expression syntax
 described above.
@@ -5004,7 +5004,7 @@ The default value is "ALL".
 
 .TP
 \fBAllowAccounts\fR
-Comma separated list of accounts which may execute jobs in the partition.
+Comma-separated list of accounts which may execute jobs in the partition.
 The default value is "ALL".
 \fBNOTE:\fR If AllowAccounts is used then DenyAccounts will not be enforced.
 Also refer to DenyAccounts.
@@ -5038,7 +5038,7 @@ described above.
 
 .TP
 \fBAllowQos\fR
-Comma separated list of Qos which may execute jobs in the partition.
+Comma-separated list of Qos which may execute jobs in the partition.
 Jobs executed as user root can use any partition without regard to
 the value of AllowQos.
 The default value is "ALL".
@@ -5104,14 +5104,14 @@ exclusive.
 
 .TP
 \fBDenyAccounts\fR
-Comma separated list of accounts which may not execute jobs in the partition.
+Comma-separated list of accounts which may not execute jobs in the partition.
 By default, no accounts are denied access
 \fBNOTE:\fR If AllowAccounts is used then DenyAccounts will not be enforced.
 Also refer to AllowAccounts.
 
 .TP
 \fBDenyQos\fR
-Comma separated list of Qos which may not execute jobs in the partition.
+Comma-separated list of Qos which may not execute jobs in the partition.
 By default, no QOS are denied access
 \fBNOTE:\fR If AllowQos is used then DenyQos will not be enforced.
 Also refer AllowQos.
@@ -5228,7 +5228,7 @@ This limit does not apply to jobs executed by SlurmUser or user root.
 
 .TP
 \fBNodes\fR
-Comma separated list of nodes or nodesets which are associated with this
+Comma-separated list of nodes or nodesets which are associated with this
 partition.
 Node names may be specified using the node range expression syntax
 described above. A blank list of nodes
