@@ -1,4 +1,4 @@
-.TH "cgroup.conf" "5" "Slurm Configuration File" "June 2020" "Slurm Configuration File"
+.TH "cgroup.conf" "5" "Slurm Configuration File" "February 2021" "Slurm Configuration File"
 
 .SH "NAME"
 cgroup.conf \- Slurm configuration file for the cgroup support
@@ -200,19 +200,43 @@ This can usually be placed in /etc/default/grub inside the
 after updating the file.
 
 .SH "EXAMPLE"
-.LP
-.br
+.TP
+\fB/etc/slurm/cgroup.conf\fR:
+This example cgroup.conf file shows a configuration that enables the more
+commonly used cgroup enforcment mechanisms.
+
+.nf
 ###
-.br
-# Slurm cgroup support configuration file
-.br
+# Slurm cgroup support configuration file.
 ###
-.br
 CgroupAutomount=yes
-.br
+CgroupMountpoint=/sys/fs/cgroup
 ConstrainCores=yes
-.br
-#
+ConstrainDevices=yes
+ConstrainKmemSpace=no        #avoid known Kernel issues
+ConstrainRAMSpace=yes
+ConstrainSwapSpace=yes
+TaskAffinity=no              #use task/affinity plugin instead
+.fi
+.TP
+\fB/etc/slurm/slurm.conf\fR:
+These are the entries required in \fBslurm.conf\fR to activate the cgroup
+enforcement mechanisms. Make sure that the node definitions in your
+\fBslurm.conf\fR closely match the configuration as shown by "\fBslurmd -C\fR".
+Either MemSpecLimit should be set or RealMemory should be defined with less
+than the actual amount of memory for a node to ensure that all system/non-job
+processes will have sufficient memory at all times. Sites should also configure
+\fBpam_slurm_adopt\fR to ensure users can not escape the cgroups via \fBssh\fR.
+
+.nf
+###
+# Slurm configuration entries for cgroups
+###
+ProctrackType=proctrack/cgroup
+TaskPlugin=task/cgroup,task/affinity
+JobAcctGatherType=jobacct_gather/cgroup #optional for gathering metrics
+PrologFlags=Contain                     #X11 flag is also suggested
+.fi
 
 .SH "COPYING"
 Copyright (C) 2010\-2012 Lawrence Livermore National Security.
