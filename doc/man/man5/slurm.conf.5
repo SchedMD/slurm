@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "February 2021" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "March 2021" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -4854,8 +4854,8 @@ The front end configuration specifies the following information:
 \fBAllowGroups\fR
 Comma separated list of group names which may execute jobs on this front end
 node. By default, all groups may use this front end node.
-If \fBat least\fR one group associated with the user attempting to execute the
-job is in AllowGroups, he will be permitted to use this front end node.
+A user will be permitted to use this front end node if AllowGroups has
+\fBat least one\fR group associated with the user.
 May not be used with the \fBDenyGroups\fR option.
 
 .TP
@@ -5011,17 +5011,21 @@ Also refer to DenyAccounts.
 
 .TP
 \fBAllowGroups\fR
-Comma separated list of group names which may execute jobs in the partition.
-If \fBat least\fR one group associated with the user attempting to execute the
-job is in AllowGroups, he will be permitted to use this partition.
-Jobs executed as user root can use any partition without regard to
-the value of AllowGroups.
+Comma-separated list of group names which may view and execute jobs in this
+partition.
+A user will be permitted to view and submit a job to this partition if
+AllowGroups has \fBat least one\fR group associated with the user.
+Jobs executed as user root or as user SlurmUser will be allowed to view and
+use any partition, regardless of the value of AllowGroups. In addition, a Slurm
+Admin or Operator will be able to view any partition, regardless of the value
+of AllowGroups.
 If user root attempts to execute a job as another user (e.g. using
-srun's \-\-uid option), this other user must be in one of groups
-identified by AllowGroups for the job to successfully execute.
-The default value is "ALL".
-When set, all partitions that a user does not have access will be hidden from
-display regardless of the settings used for PrivateData.
+srun's \-\-uid option), then the job will be subject to AllowGroups as if it
+were submitted by that user.
+By default, AllowGroups is unset, meaning all groups are allowed to use this
+partition. The special value 'ALL' is equivalent to this.
+Even when PrivateData does not hide partition information, AllowGroups will
+still hide partition information accordingly.
 \fBNOTE:\fR For performance reasons, Slurm maintains a list of user IDs
 allowed to use each partition and this is checked at job submission time.
 This list of user IDs is updated when the \fBslurmctld\fR daemon is restarted,
