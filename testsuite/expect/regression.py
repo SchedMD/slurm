@@ -119,7 +119,7 @@ def main(argv=None):
         sys.stdout.write(f"Running test {test_id} ")
         sys.stdout.flush()
         test_dict = {}
-        test_dict['id'] = float(test_id)
+        test_dict['id'] = test_id
         testlog_name = f"test{test_id}.log"
         try:
             os.remove(testlog_name+'.failed')
@@ -136,8 +136,8 @@ def main(argv=None):
 
         if options.time_individual:
             t2 = time.time()
-            minutes = int(t2-t1)/60
-            seconds = (t2-t1)%60
+            minutes = int(int(t2-t1)/60)
+            seconds = (int(t2-t1))%60
             if minutes > 0:
                 sys.stdout.write('%d min '%(minutes))
             sys.stdout.write('%.2f sec '%(seconds))
