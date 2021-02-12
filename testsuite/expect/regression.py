@@ -136,8 +136,8 @@ def main(argv=None):
 
         if options.time_individual:
             t2 = time.time()
-            minutes = int(t2-t1)/60
-            seconds = (t2-t1)%60
+            minutes = int(int(t2-t1)/60)
+            seconds = (int(t2-t1))%60
             if minutes > 0:
                 sys.stdout.write('%d min '%(minutes))
             sys.stdout.write('%.2f sec '%(seconds))
