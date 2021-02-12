@@ -119,7 +119,7 @@ def main(argv=None):
         sys.stdout.write(f"Running test {test_id} ")
         sys.stdout.flush()
         test_dict = {}
-        test_dict['id'] = float(test_id)
+        test_dict['id'] = test_id
         testlog_name = f"test{test_id}.log"
         try:
             os.remove(testlog_name+'.failed')
