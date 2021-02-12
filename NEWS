@@ -18,6 +18,8 @@ documents those changes that are of interest to users and administrators.
  -- Add mapping for XCPU to --signal option.
  -- Fix regression in 20.11 that prevented a full pass of the main scheduler
     from ever executing.
+ -- Work around a glibc bug in which "0" is incorrectly printed as "nan"
+    which will result in corrupted association state on restart.
 
 * Changes in Slurm 20.11.3
 ==========================

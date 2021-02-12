@@ -44,6 +44,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <math.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
@@ -410,6 +411,16 @@ int	unpacklongdouble(long double *valp, Buf buffer)
 
 	if (sscanf(val_str, "%Lf", &nl) != 1)
 		return SLURM_ERROR;
+
+	/*
+	 * Workaround for a flawed glibc version which printed "nan" instead of
+	 * "0.000000" for long doubles. Restoring these as NaN will corrupt
+	 * the association state, so ensure they're 0.
+	 *
+	 * https://bugzilla.redhat.com/show_bug.cgi?id=1925204
+	 */
+	if (isnan(nl))
+		nl = 0L;
 
 	*valp = nl;
 	return SLURM_SUCCESS;
