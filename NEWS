@@ -20,6 +20,9 @@ documents those changes that are of interest to users and administrators.
     from ever executing.
  -- Work around a glibc bug in which "0" is incorrectly printed as "nan"
     which will result in corrupted association state on restart.
+ -- Fix regression in 20.11 which made slurmd incorrectly attempt to find the
+    parent slurmd address when not applicable and send incorrect reverse-tree
+    info to the slurmstepd.
 
 * Changes in Slurm 20.11.3
 ==========================

@@ -511,7 +511,11 @@ _send_slurmstepd_init(int fd, int type, void *req,
 			error("reverse_tree_info: Sanity check fail, can't start job");
 			goto rwfail;
 		}
-		if (rank > 0) { /* rank 0 talks directly to the slurmctld */
+		/*
+		 * rank 0 always talks directly to the slurmctld. If
+		 * parent_rank = -1, all nodes talk to the slurmctld
+		 */
+		if (rank > 0 && parent_rank != -1) {
 			int rc;
 			/* Find the slurm_addr_t of this node's parent slurmd
 			 * in the step host list */
