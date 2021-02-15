@@ -435,7 +435,7 @@ extern void print_fields(type_t type, void *object)
 	curr_inx = 1;
 	list_iterator_reset(print_fields_itr);
 	while ((field = list_next(print_fields_itr))) {
-		char *tmp_char = NULL, id[FORMAT_STRING_SIZE];
+		char *tmp_char = NULL, *id = NULL;
 		int exit_code, tmp_int = NO_VAL, tmp_int2 = NO_VAL;
 		double tmp_dub = (double)NO_VAL; /* don't use NO_VAL64
 						    unless we can
@@ -1029,24 +1029,18 @@ extern void print_fields(type_t type, void *object)
 			if (job) {
 				if (job->array_task_str) {
 					_xlate_task_str(job);
-					snprintf(id, FORMAT_STRING_SIZE,
-						 "%u_[%s]",
-						 job->array_job_id,
-						 job->array_task_str);
+					xstrfmtcat(id, "%u_[%s]",
+						   job->array_job_id,
+						   job->array_task_str);
 				} else if (job->array_task_id != NO_VAL) {
-					snprintf(id, FORMAT_STRING_SIZE,
-						 "%u_%u",
-						 job->array_job_id,
-						 job->array_task_id);
+					xstrfmtcat(id, "%u_%u",
+						   job->array_job_id,
+						   job->array_task_id);
 				} else if (job->het_job_id) {
-					snprintf(id, FORMAT_STRING_SIZE,
-						 "%u+%u",
-						 job->het_job_id,
-						 job->het_job_offset);
+					xstrfmtcat(id, "%u+%u", job->het_job_id,
+						   job->het_job_offset);
 				} else {
-					snprintf(id, FORMAT_STRING_SIZE,
-						 "%u",
-						 job->jobid);
+					xstrfmtcat(id, "%u", job->jobid);
 				}
 			}
 
@@ -1076,6 +1070,7 @@ extern void print_fields(type_t type, void *object)
 			field->print_routine(field,
 					     tmp_char,
 					     (curr_inx == field_count));
+			xfree(id);
 			xfree(tmp_char);
 			break;
 		case PRINT_JOBIDRAW:

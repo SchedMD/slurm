@@ -24,6 +24,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix problem with SlurmctldProlog where requeued jobs would never launch.
  -- job_container/tmpfs - Fix issue when restarting slurmd where the namespace
     mount points could disappear.
+ -- sacct - avoid truncating JobId at 34 characters.
 
 * Changes in Slurm 20.11.7
 ==========================
