@@ -521,11 +521,9 @@ _send_slurmstepd_init(int fd, int type, void *req,
 			 * in the step host list */
 			parent_alias = hostset_nth(step_hset, parent_rank);
 			rc = slurm_conf_get_addr(parent_alias, &parent_addr, 0);
-			if (rc != SLURM_SUCCESS) {
-				error("Failed looking up address for "
-				      "NodeName %s", parent_alias);
-				/* parent_rank = -1; */
-			}
+			if (rc != SLURM_SUCCESS)
+				error("%s: failed getting address for parent NodeName %s (parent rank %d)",
+				      __func__, parent_alias, parent_rank);
 		}
 #else
 		/* In FRONT_END mode, one slurmd pretends to be all
