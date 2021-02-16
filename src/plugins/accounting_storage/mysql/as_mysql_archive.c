@@ -233,6 +233,7 @@ static void _free_local_job_members(local_job_t *object)
 
 typedef struct {
 	char *assocs;
+	char *comment;
 	char *deleted;
 	char *flags;
 	char *id;
@@ -249,6 +250,7 @@ static void _free_local_resv_members(local_resv_t *object)
 {
 	if (object) {
 		xfree(object->assocs);
+		xfree(object->comment);
 		xfree(object->deleted);
 		xfree(object->flags);
 		xfree(object->id);
@@ -608,6 +610,7 @@ char *resv_req_inx[] = {
 	"time_start",
 	"time_end",
 	"unused_wall",
+	"comment",
 };
 
 enum {
@@ -622,6 +625,7 @@ enum {
 	RESV_REQ_START,
 	RESV_REQ_END,
 	RESV_REQ_UNUSED,
+	RESV_REQ_COMMENT,
 	RESV_REQ_COUNT
 };
 
@@ -1666,6 +1670,7 @@ static void _pack_local_resv(local_resv_t *object, uint16_t rpc_version,
 			     buf_t *buffer)
 {
 	packstr(object->assocs, buffer);
+	packstr(object->comment, buffer);
 	packstr(object->deleted, buffer);
 	packstr(object->flags, buffer);
 	packstr(object->id, buffer);
@@ -1688,6 +1693,7 @@ static int _unpack_local_resv(local_resv_t *object, uint16_t rpc_version,
 
 	if (rpc_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&object->assocs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->comment, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->flags, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->id, &tmp32, buffer);
@@ -3662,6 +3668,7 @@ static buf_t *_pack_archive_resvs(MYSQL_RES *result, char *cluster_name,
 		resv.time_start = row[RESV_REQ_START];
 		resv.tres_str = row[RESV_REQ_TRES];
 		resv.unused_wall = row[RESV_REQ_UNUSED];
+		resv.comment = row[RESV_REQ_COMMENT];
 
 		_pack_local_resv(&resv, SLURM_PROTOCOL_VERSION, buffer);
 	}
@@ -3692,6 +3699,11 @@ static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 		RESV_REQ_COUNT
 	};
 
+	/* Sync w/ job_table_fields where text/tinytext can be NULL */
+	int null_attributes[] = {
+		RESV_REQ_COMMENT,
+		RESV_REQ_COUNT
+	};
 
 	xstrfmtcatat(insert, &insert_pos, "insert into \"%s_%s\" (%s",
 		     cluster_name, resv_table,
@@ -3700,6 +3712,10 @@ static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 		xstrfmtcatat(insert, &insert_pos, ", %s",
 			     resv_req_inx[safe_attributes[1]]);
 	}
+	/* Some attributes that might be NULL require special handling */
+	for (i = 0; null_attributes[i] < RESV_REQ_COUNT; i++)
+		xstrfmtcatat(insert, &insert_pos,
+			     ", %s", resv_req_inx[null_attributes[i]]);
 	xstrcatat(insert, &insert_pos, ") values ");
 
 	for(i=0; i<rec_cnt; i++) {
@@ -3719,6 +3735,12 @@ static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 			xstrcatat(format, &format_pos, ", '%s'");
 		}
 
+		/* special handling for NULL attributes */
+		if (object.comment)
+			xstrcatat(format, &format_pos, ", '%s'");
+		else
+			xstrcatat(format, &format_pos, ", %s");
+
 		xstrcatat(format, &format_pos, ")");
 
 		xstrfmtcatat(insert, &insert_pos, format,
@@ -3732,7 +3754,8 @@ static char *_load_resvs(uint16_t rpc_version, buf_t *buffer,
 			     object.name,
 			     object.time_start,
 			     object.time_end,
-			     object.unused_wall);
+			     object.unused_wall,
+			     object.comment ? object.comment : "NULL");
 
 		_free_local_resv_members(&object);
 		format_pos = NULL;

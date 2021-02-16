@@ -2568,6 +2568,7 @@ typedef struct resv_core_spec {
 typedef struct reserve_info {
 	char *accounts;		/* names of accounts permitted to use */
 	char *burst_buffer;	/* burst buffer resources to be included */
+	char *comment;		/* arbitrary comment */
 	uint32_t core_cnt;	/* count of cores required */
 	uint32_t core_spec_cnt;	/* count of core_spec records */
 	resv_core_spec_t *core_spec; /* reserved cores specification */
@@ -2606,6 +2607,7 @@ typedef struct reserve_info_msg {
 typedef struct resv_desc_msg {
 	char *accounts;		/* names of accounts permitted to use */
 	char *burst_buffer;	/* burst buffer resources to be included */
+	char *comment;		/* arbitrary comment */
 	uint32_t *core_cnt;	/* Count of cores required */
 	uint32_t duration;	/* duration of reservation in minutes */
 	time_t end_time;	/* end time of reservation */

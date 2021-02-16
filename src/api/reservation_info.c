@@ -166,6 +166,13 @@ char *slurm_sprint_reservation_info ( reserve_info_t * resv_ptr,
 	xstrfmtcat(out, "MaxStartDelay=%s",
 		   resv_ptr->max_start_delay ? tmp3 : NULL);
 
+	/****** Line (optional) ******/
+	if (resv_ptr->comment) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "Comment=%s", resv_ptr->comment);
+	}
+
+	/****** END OF RESV RECORD ******/
 	if (one_liner)
 		xstrcat(out, "\n");
 	else

@@ -760,13 +760,14 @@ static void _dump_resv_req(resv_desc_msg_t *resv_ptr, char *mode)
 		}
 	}
 
-	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d Flags=%s NodeCnt=%s CoreCnt=%s NodeList=%s Features=%s PartitionName=%s Users=%s Groups=%s Accounts=%s Licenses=%s BurstBuffer=%s TRES=%s Watts=%s",
+	info("%s: Name=%s StartTime=%s EndTime=%s Duration=%d Flags=%s NodeCnt=%s CoreCnt=%s NodeList=%s Features=%s PartitionName=%s Users=%s Groups=%s Accounts=%s Licenses=%s BurstBuffer=%s TRES=%s Watts=%s Comment=%s",
 	     mode, resv_ptr->name, start_str, end_str, duration,
 	     flag_str, node_cnt_str, core_cnt_str, resv_ptr->node_list,
 	     resv_ptr->features, resv_ptr->partition,
 	     resv_ptr->users, resv_ptr->groups, resv_ptr->accounts,
 	     resv_ptr->licenses,
-	     resv_ptr->burst_buffer, resv_ptr->tres_str, watts_str);
+	     resv_ptr->burst_buffer, resv_ptr->tres_str, watts_str,
+	     resv_ptr->comment);
 
 	xfree(flag_str);
 	xfree(node_cnt_str);
@@ -1048,6 +1049,7 @@ static int _post_resv_create(slurmctld_resv_t *resv_ptr)
 	memset(&resv, 0, sizeof(slurmdb_reservation_rec_t));
 	resv.assocs = resv_ptr->assoc_list;
 	resv.cluster = slurm_conf.cluster_name;
+	resv.comment = resv_ptr->comment;
 	resv.tres_str = resv_ptr->tres_str;
 
 	resv.flags = resv_ptr->flags;
@@ -1117,11 +1119,13 @@ static int _post_resv_update(slurmctld_resv_t *resv_ptr,
 	resv.tres_str = resv_ptr->tres_str;
 	resv.flags = resv_ptr->flags;
 	resv.nodes = resv_ptr->node_list;
+	resv.comment = resv_ptr->comment;
 
 	if (xstrcmp(old_resv_ptr->assoc_list, resv_ptr->assoc_list) ||
 	    xstrcmp(old_resv_ptr->tres_str, resv_ptr->tres_str)	||
 	    (old_resv_ptr->flags != resv_ptr->flags) ||
-	    xstrcmp(old_resv_ptr->node_list, resv_ptr->node_list))
+	    xstrcmp(old_resv_ptr->node_list, resv_ptr->node_list) ||
+	    xstrcmp(old_resv_ptr->comment, resv_ptr->comment))
 		change = true;
 
 	/* Here if the reservation has started already we need
@@ -1895,6 +1899,7 @@ static void _pack_resv(slurmctld_resv_t *resv_ptr, buf_t *buffer,
 	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		packstr(resv_ptr->accounts,	buffer);
 		packstr(resv_ptr->burst_buffer,	buffer);
+		packstr(resv_ptr->comment,	buffer);
 		pack32(resv_ptr->core_cnt,	buffer);
 		pack_time(end_relative,		buffer);
 		packstr(resv_ptr->features,	buffer);
@@ -2043,6 +2048,8 @@ slurmctld_resv_t *_load_reservation_state(buf_t *buffer,
 		safe_unpackstr_xmalloc(&resv_ptr->accounts,
 				       &uint32_tmp,	buffer);
 		safe_unpackstr_xmalloc(&resv_ptr->burst_buffer,
+				       &uint32_tmp,	buffer);
+		safe_unpackstr_xmalloc(&resv_ptr->comment,
 				       &uint32_tmp,	buffer);
 		safe_unpack32(&resv_ptr->core_cnt,	buffer);
 		safe_unpack_time(&resv_ptr->end_time,	buffer);
@@ -2408,13 +2415,15 @@ static void _set_tres_cnt(slurmctld_resv_t *resv_ptr,
 			      tmp_msd, sizeof(tmp_msd));
 
 	sched_info("%s reservation=%s%s%s%s%s%s%s nodes=%s cores=%u "
-		   "licenses=%s tres=%s watts=%u start=%s end=%s MaxStartDelay=%s",
+		   "licenses=%s tres=%s watts=%u start=%s end=%s MaxStartDelay=%s "
+		   "Comment=%s",
 		   old_resv_ptr ? "Updated" : "Created",
 		   resv_ptr->name, name1, val1, name2, val2, name3, val3,
 		   resv_ptr->node_list, resv_ptr->core_cnt, resv_ptr->licenses,
 		   resv_ptr->tres_fmt_str, resv_ptr->resv_watts,
 		   start_time, end_time,
-		   resv_ptr->max_start_delay ? tmp_msd : "");
+		   resv_ptr->max_start_delay ? tmp_msd : "",
+		   resv_ptr->comment ? resv_ptr->comment : "");
 	if (old_resv_ptr)
 		_post_resv_update(resv_ptr, old_resv_ptr);
 	else
@@ -2818,6 +2827,8 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	account_list = NULL;
 	resv_ptr->burst_buffer	= resv_desc_ptr->burst_buffer;
 	resv_desc_ptr->burst_buffer = NULL;	/* Nothing left to free */
+	resv_ptr->comment = resv_desc_ptr->comment;
+	resv_desc_ptr->comment = NULL;		/* Nothing left to free */
 
 	if (user_not)
 		resv_ptr->ctld_flags |= RESV_CTLD_USER_NOT;
@@ -3107,6 +3118,14 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		if (resv_desc_ptr->burst_buffer[0] != '\0') {
 			resv_ptr->burst_buffer = resv_desc_ptr->burst_buffer;
 			resv_desc_ptr->burst_buffer = NULL;
+		}
+	}
+	if (resv_desc_ptr->comment) {
+		xfree(resv_ptr->comment);
+		if (resv_desc_ptr->comment[0] != '\0') {
+			resv_ptr->comment = resv_desc_ptr->comment;
+			resv_desc_ptr->comment = NULL;
+			info("set it here! %s", resv_ptr->comment);
 		}
 	}
 	if (resv_desc_ptr->licenses && (resv_desc_ptr->licenses[0] == '\0')) {

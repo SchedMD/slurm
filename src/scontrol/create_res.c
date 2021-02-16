@@ -143,7 +143,14 @@ static int _parse_res_options(int argc, char **argv, const char *msg,
 			} else {
 				resv_msg_ptr->accounts = val;
 			}
-
+		} else if (xstrncasecmp(tag, "Comment", MAX(taglen, 3)) == 0) {
+			if (resv_msg_ptr->comment) {
+				exit_code = 1;
+				error("Parameter %s specified more than once",
+				      argv[i]);
+				return SLURM_ERROR;
+			}
+			resv_msg_ptr->comment = val;
 		} else if (!xstrncasecmp(tag, "Flags", MAX(taglen, 2))) {
 			uint64_t f;
 			if (plus_minus) {

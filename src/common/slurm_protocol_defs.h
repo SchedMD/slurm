@@ -197,6 +197,7 @@
 #define RESV_FREE_STR_TRES_LIC  SLURM_BIT(4)
 #define RESV_FREE_STR_TRES_NODE SLURM_BIT(5)
 #define RESV_FREE_STR_GROUP     SLURM_BIT(6)
+#define RESV_FREE_STR_COMMENT   SLURM_BIT(7)
 
 /* These defines have to be here to avoid circular dependancy with
  * switch.h

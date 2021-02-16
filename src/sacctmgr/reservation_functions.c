@@ -319,6 +319,12 @@ int sacctmgr_list_reservation(int argc, char **argv)
 						     (curr_inx == field_count));
 				xfree(tmp_char);
 				break;
+			case PRINT_COMMENT:
+				field->print_routine(
+					field,
+					reservation->comment,
+					(curr_inx == field_count));
+				break;
 			case PRINT_UNUSED:
 				field->print_routine(
 					field,

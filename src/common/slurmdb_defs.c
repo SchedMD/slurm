@@ -1016,6 +1016,7 @@ extern void slurmdb_destroy_reservation_rec(void *object)
 	if (slurmdb_resv) {
 		xfree(slurmdb_resv->assocs);
 		xfree(slurmdb_resv->cluster);
+		xfree(slurmdb_resv->comment);
 		xfree(slurmdb_resv->name);
 		xfree(slurmdb_resv->nodes);
 		xfree(slurmdb_resv->node_inx);

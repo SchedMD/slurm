@@ -2049,6 +2049,7 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 		if (!object) {
 			packnull(buffer);
 			packnull(buffer);
+			packnull(buffer);
 			pack64(NO_VAL64, buffer);
 			pack32(NO_VAL, buffer);
 			packnull(buffer);
@@ -2065,6 +2066,7 @@ extern void slurmdb_pack_reservation_rec(void *in, uint16_t protocol_version,
 
 		packstr(object->assocs, buffer);
 		packstr(object->cluster, buffer);
+		packstr(object->comment, buffer);
 		pack64(object->flags, buffer);
 		pack32(object->id, buffer);
 		packstr(object->name, buffer);
@@ -2135,6 +2137,8 @@ extern int slurmdb_unpack_reservation_rec(void **object,
 		safe_unpackstr_xmalloc(&object_ptr->assocs, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&object_ptr->comment, &uint32_tmp,
 				       buffer);
 		safe_unpack64(&object_ptr->flags, buffer);
 		safe_unpack32(&object_ptr->id, buffer);

@@ -2068,6 +2068,7 @@ _pack_update_resv_msg(resv_desc_msg_t * msg, buf_t *buffer,
 		packstr(msg->accounts,     buffer);
 		packstr(msg->burst_buffer, buffer);
 		packstr(msg->groups, buffer);
+		packstr(msg->comment, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->name,         buffer);
 		pack_time(msg->start_time, buffer);
@@ -2167,6 +2168,8 @@ _unpack_update_resv_msg(resv_desc_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr_xmalloc(&tmp_ptr->burst_buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->groups,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->comment,
 				       &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
@@ -3139,6 +3142,7 @@ _unpack_reserve_info_members(reserve_info_t * resv, buf_t *buffer,
 	if (protocol_version >= SLURM_23_02_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&resv->accounts,	&uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&resv->burst_buffer,&uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&resv->comment, &uint32_tmp, buffer);
 		safe_unpack32(&resv->core_cnt,          buffer);
 		safe_unpack_time(&resv->end_time,	buffer);
 		safe_unpackstr_xmalloc(&resv->features,	&uint32_tmp, buffer);

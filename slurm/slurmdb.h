@@ -1053,6 +1053,7 @@ typedef struct {
 typedef struct {
 	char *assocs; /* comma separated list of associations */
 	char *cluster; /* cluster reservation is for */
+	char *comment; /* arbitrary comment assigned to reservation */
 	uint64_t flags; /* flags for reservation. */
 	uint32_t id;   /* id of reservation. */
 	char *name; /* name of reservation */

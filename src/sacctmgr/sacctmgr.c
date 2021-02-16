@@ -1126,7 +1126,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Description, Flags, Manager, Name,             \n\
                             PercentAllowed, PercentUsed, Server, Type      \n\
                                                                            \n\
-       Reservation        - Assoc, Cluster, End, Flags, ID, Name,          \n\
+       Reservation        - Assoc, Cluster, Comment, End, Flags, ID, Name, \n\
                             NodeNames, Start, TRES, UnusedWall             \n\
                                                                            \n\
        RunAwayJobs        - Cluster, ID, Name, Partition, State,           \n\
