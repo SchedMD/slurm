@@ -40,6 +40,7 @@ html_DATA = \
 	sbcast.html \
 	scancel.html \
 	scontrol.html \
+	scrontab.html \
 	sdiag.html \
 	sinfo.html \
 	sprio.html \

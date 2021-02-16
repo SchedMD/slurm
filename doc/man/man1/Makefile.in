@@ -461,11 +461,11 @@ man1_MANS = sacct.1 sacctmgr.1 salloc.1 sattach.1 sbatch.1 sbcast.1 \
 	$(am__append_1) $(am__append_2)
 @HAVE_MAN2HTML_TRUE@html_DATA = sacct.html sacctmgr.html salloc.html \
 @HAVE_MAN2HTML_TRUE@	sattach.html sbatch.html sbcast.html \
-@HAVE_MAN2HTML_TRUE@	scancel.html scontrol.html sdiag.html \
-@HAVE_MAN2HTML_TRUE@	sinfo.html sprio.html squeue.html \
-@HAVE_MAN2HTML_TRUE@	sreport.html srun.html sshare.html \
-@HAVE_MAN2HTML_TRUE@	sstat.html strigger.html $(am__append_3) \
-@HAVE_MAN2HTML_TRUE@	$(am__append_4)
+@HAVE_MAN2HTML_TRUE@	scancel.html scontrol.html scrontab.html \
+@HAVE_MAN2HTML_TRUE@	sdiag.html sinfo.html sprio.html \
+@HAVE_MAN2HTML_TRUE@	squeue.html sreport.html srun.html \
+@HAVE_MAN2HTML_TRUE@	sshare.html sstat.html strigger.html \
+@HAVE_MAN2HTML_TRUE@	$(am__append_3) $(am__append_4)
 @HAVE_MAN2HTML_TRUE@MOSTLYCLEANFILES = ${html_DATA}
 @HAVE_MAN2HTML_TRUE@SUFFIXES = .html
 all: all-am
