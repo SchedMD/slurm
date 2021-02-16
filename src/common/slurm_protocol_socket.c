@@ -287,11 +287,13 @@ extern int slurm_send_timeout(int fd, char *buf, size_t size,
 			goto done;
 		}
 		if (rc == 0) {
-			debug("slurm_send_timeout at %d of %zu, "
-				"sent zero bytes", sent, size);
-			slurm_seterrno(SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT);
-			sent = SLURM_ERROR;
-			goto done;
+			/*
+			 * If driver false reports POLLIN but then does not
+			 * provide any output: try poll() again.
+			 */
+			LOG_FLAG(NET, "send() sent zero bytes out of %d/%zu",
+				 sent, size);
+			continue;
 		}
 
 		sent += rc;
