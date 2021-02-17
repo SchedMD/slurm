@@ -30,6 +30,8 @@ HIGHLIGHTS
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
+ -- Errors detected in the parser handlers due to invalid configurations are now
+    propagated and can lead to fatal (and thus exit) the calling process.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
