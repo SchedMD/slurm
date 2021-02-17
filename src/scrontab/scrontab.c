@@ -35,7 +35,9 @@
 \*****************************************************************************/
 
 #include <ctype.h>
+#include <sys/stat.h>
 #include <unistd.h>
+
 
 #include "src/common/bitstring.h"
 #include "src/common/cli_filter.h"
@@ -196,7 +198,16 @@ static void _edit_crontab(char **crontab)
 
 	if (!*crontab)
 		static_ref_to_cstring(*crontab, default_crontab_txt);
-	fd = dump_to_memfd("crontab", *crontab, &filename);
+
+	xstrfmtcat(filename, "%s/scrontab-XXXXXX", slurm_conf.tmp_fs);
+
+	/* protect against weak file permissions in old glibc */
+	umask(0077);
+	fd = mkstemp(filename);
+	if (fd < 0 )
+		fatal("could not create temp file");
+	safe_write(fd, *crontab, strlen(*crontab));
+
 	xfree(*crontab);
 
 	if (!(editor = getenv("VISUAL")) || (editor[0] == '\0'))
@@ -217,17 +228,26 @@ static void _edit_crontab(char **crontab)
 		exit(127);
 	}
 
-	xfree(filename);
-
 	waitpid(pid, &wstatus, 0);
 
 	if (wstatus) {
-		fatal("editor returned non-zero exit code");
 		close(fd);
+		unlink(filename);
+		xfree(filename);
+		fatal("editor returned non-zero exit code");
 	}
 
 	*crontab = _load_script_from_fd(fd);
 	close(fd);
+	unlink(filename);
+	xfree(filename);
+	return;
+
+rwfail:
+	close(fd);
+	unlink(filename);
+	xfree(filename);
+	fatal("failed to write to temp crontab file");
 }
 
 static job_desc_msg_t *_entry_to_job(cron_entry_t *entry, char *script)
