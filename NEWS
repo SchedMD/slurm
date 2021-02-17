@@ -57,6 +57,7 @@ documents those changes that are of interest to users and administrators.
     parent slurmd address when not applicable and send incorrect reverse-tree
     info to the slurmstepd.
  -- Fix cgroup ns detection when using containers (e.g. LXC or Docker).
+ -- scrontab - change temporary file handling to work with emacs.
 
 * Changes in Slurm 20.11.3
 ==========================
