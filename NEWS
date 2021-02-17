@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- Fix main scheduler bug where bf_hetjob_prio truncates SchedulerParameters.
  -- Fix sacct not displaying UserCPU, SystemCPU and TotalCPU for large times.
+ -- scrontab - fix to return the correct index for a bad #SCRON option.
 
 * Changes in Slurm 20.11.4
 ==========================
