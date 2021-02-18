@@ -130,12 +130,13 @@ static int _make_sure_users_have_default(
 		while ((cluster = list_next(clus_itr))) {
 			MYSQL_RES *result = NULL;
 			MYSQL_ROW row;
-			char *wckey = NULL;
+
 			/* only look at non * and non deleted ones */
 			query = xstrdup_printf(
 				"select distinct is_def, wckey_name from "
 				"\"%s_%s\" where user='%s' and wckey_name "
-				"not like '*%%' and deleted=0 FOR UPDATE;",
+				"not like '*%%' and deleted=0 ORDER BY "
+				"is_dev desc, creation_time desc LIMIT 1;",
 				cluster, wckey_table, user);
 			debug4("%d(%s:%d) query\n%s",
 			       mysql_conn->conn, THIS_FILE, __LINE__, query);
@@ -154,24 +155,22 @@ static int _make_sure_users_have_default(
 				mysql_free_result(result);
 				continue;
 			}
-			while ((row = mysql_fetch_row(result))) {
-				if (row[0][0] == '1')
-					break;
-				if (!wckey)
-					wckey = xstrdup(row[1]);
-			}
-			mysql_free_result(result);
 
-			/* we found one so just continue */
-			if (row || !wckey) {
-				xfree(wckey);
+			/* check if row is default */
+			row = mysql_fetch_row(result);
+			if (row[0][0] == '1') {
+				/* default found, continue */
+				mysql_free_result(result);
 				continue;
 			}
+
+			/* if we made it here, there is no default */
 			query = xstrdup_printf(
 				"update \"%s_%s\" set is_def=1 where "
 				"user='%s' and wckey_name='%s';",
-				cluster, wckey_table, user, wckey);
-			xfree(wckey);
+				cluster, wckey_table, user, row[1]);
+			mysql_free_result(result);
+
 			DB_DEBUG(DB_WCKEY, mysql_conn->conn, "query\n%s",
 			         query);
 			rc = mysql_db_query(mysql_conn, query);
