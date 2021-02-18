@@ -1775,13 +1775,12 @@ static uint64_t _step_get_gres_needed(void *step_gres_data,
 
 static int _step_alloc(void *step_gres_data, void *job_gres_data,
 		       uint32_t plugin_id, int node_offset,
-		       bool first_step_node,
 		       slurm_step_id_t *step_id,
-		       uint16_t tasks_on_node, uint32_t rem_nodes)
+		       uint64_t gres_needed, uint64_t max_gres)
 {
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_step_state_t *step_gres_ptr = (gres_step_state_t *) step_gres_data;
-	uint64_t gres_needed, gres_avail, max_gres = 0;
+	uint64_t gres_avail;
 	bitstr_t *gres_bit_alloc;
 	int i, len;
 
@@ -1798,9 +1797,6 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 		return SLURM_ERROR;
 	}
 
-	gres_needed = _step_get_gres_needed(
-		step_gres_data, first_step_node, tasks_on_node,
-		rem_nodes, &max_gres);
 	if (step_gres_ptr->node_cnt == 0)
 		step_gres_ptr->node_cnt = job_gres_ptr->node_cnt;
 	if (!step_gres_ptr->gres_cnt_node_alloc) {
@@ -1940,6 +1936,7 @@ extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
 	ListIterator step_gres_iter;
 	gres_state_t *step_gres_ptr, *job_gres_ptr;
 	slurm_step_id_t tmp_step_id;
+	uint64_t gres_needed, max_gres;
 
 	if (step_gres_list == NULL)
 		return SLURM_SUCCESS;
@@ -1965,6 +1962,9 @@ extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
 			job_search_key.type_id = NO_VAL;
 
 		job_search_key.node_offset = node_offset;
+		gres_needed = _step_get_gres_needed(
+			step_data_ptr, first_step_node, tasks_on_node,
+			rem_nodes, &max_gres);
 		if (!(job_gres_ptr = list_find_first(
 			      job_gres_list,
 			      gres_find_job_by_key_with_cnt,
@@ -1977,8 +1977,7 @@ extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
 		rc2 = _step_alloc(step_data_ptr,
 				  job_gres_ptr->gres_data,
 				  step_gres_ptr->plugin_id, node_offset,
-				  first_step_node, &tmp_step_id, tasks_on_node,
-				  rem_nodes);
+				  &tmp_step_id, gres_needed, max_gres);
 		if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
 	}
