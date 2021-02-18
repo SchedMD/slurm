@@ -1739,6 +1739,40 @@ extern void gres_ctld_set_node_tres_cnt(List gres_list,
 	_set_type_tres_cnt(gres_list, tres_cnt, locked);
 }
 
+static uint64_t _step_get_gres_needed(void *step_gres_data,
+				      bool first_step_node,
+				      uint16_t tasks_on_node,
+				      uint32_t rem_nodes, uint64_t *max_gres)
+{
+	gres_step_state_t *step_gres_ptr = (gres_step_state_t *)step_gres_data;
+	uint64_t gres_needed;
+	*max_gres = 0;
+	if (first_step_node)
+		step_gres_ptr->total_gres = 0;
+
+	if (step_gres_ptr->gres_per_node) {
+		gres_needed = step_gres_ptr->gres_per_node;
+	} else if (step_gres_ptr->gres_per_task) {
+		gres_needed = step_gres_ptr->gres_per_task * tasks_on_node;
+	} else if (step_gres_ptr->gres_per_step && (rem_nodes == 1)) {
+		gres_needed = step_gres_ptr->gres_per_step -
+			      step_gres_ptr->total_gres;
+	} else if (step_gres_ptr->gres_per_step) {
+		/* Leave at least one GRES per remaining node */
+		*max_gres = step_gres_ptr->gres_per_step -
+			    step_gres_ptr->total_gres - (rem_nodes - 1);
+		gres_needed = 1;
+	} else {
+		/*
+		 * No explicit step GRES specification.
+		 * Note that gres_per_socket is not supported for steps
+		 */
+		gres_needed = INFINITE64; /* All allocated to job on Node */
+	}
+
+	return gres_needed;
+}
+
 static int _step_alloc(void *step_gres_data, void *job_gres_data,
 		       uint32_t plugin_id, int node_offset,
 		       bool first_step_node,
@@ -1764,27 +1798,9 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 		return SLURM_ERROR;
 	}
 
-	if (first_step_node)
-		step_gres_ptr->total_gres = 0;
-	if (step_gres_ptr->gres_per_node) {
-		gres_needed = step_gres_ptr->gres_per_node;
-	} else if (step_gres_ptr->gres_per_task) {
-		gres_needed = step_gres_ptr->gres_per_task * tasks_on_node;
-	} else if (step_gres_ptr->gres_per_step && (rem_nodes == 1)) {
-		gres_needed = step_gres_ptr->gres_per_step -
-			      step_gres_ptr->total_gres;
-	} else if (step_gres_ptr->gres_per_step) {
-		/* Leave at least one GRES per remaining node */
-		max_gres = step_gres_ptr->gres_per_step -
-			   step_gres_ptr->total_gres - (rem_nodes - 1);
-		gres_needed = 1;
-	} else {
-		/*
-		 * No explicit step GRES specification.
-		 * Note that gres_per_socket is not supported for steps
-		 */
-		gres_needed = job_gres_ptr->gres_cnt_node_alloc[node_offset];
-	}
+	gres_needed = _step_get_gres_needed(
+		step_gres_data, first_step_node, tasks_on_node,
+		rem_nodes, &max_gres);
 	if (step_gres_ptr->node_cnt == 0)
 		step_gres_ptr->node_cnt = job_gres_ptr->node_cnt;
 	if (!step_gres_ptr->gres_cnt_node_alloc) {
