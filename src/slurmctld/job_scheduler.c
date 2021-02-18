@@ -1151,12 +1151,12 @@ static int _schedule(bool full_queue)
 		bf_hetjob_prio = 0;
 		if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
 		                           "bf_hetjob_prio="))) {
-			tmp_ptr = strtok(tmp_ptr + 15, ",");
-			if (!xstrcasecmp(tmp_ptr, "min"))
+			tmp_ptr += 15;
+			if (!xstrncasecmp(tmp_ptr, "min", 3))
 				bf_hetjob_prio |= HETJOB_PRIO_MIN;
-			else if (!xstrcasecmp(tmp_ptr, "max"))
+			else if (!xstrncasecmp(tmp_ptr, "max", 3))
 				bf_hetjob_prio |= HETJOB_PRIO_MAX;
-			else if (!xstrcasecmp(tmp_ptr, "avg"))
+			else if (!xstrncasecmp(tmp_ptr, "avg", 3))
 				bf_hetjob_prio |= HETJOB_PRIO_AVG;
 			else
 				error("Invalid SchedulerParameters bf_hetjob_prio: %s",
