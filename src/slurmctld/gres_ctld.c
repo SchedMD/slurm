@@ -1781,14 +1781,12 @@ static uint64_t _step_get_gres_needed(void *step_gres_data,
 
 	return gres_needed;
 }
-
-static int _step_alloc(void *step_gres_data, void *job_gres_data,
+static int _step_alloc(gres_step_state_t *step_gres_ptr,
+		       gres_job_state_t *job_gres_ptr,
 		       uint32_t plugin_id, int node_offset,
 		       slurm_step_id_t *step_id,
 		       uint64_t gres_needed, uint64_t max_gres)
 {
-	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
-	gres_step_state_t *step_gres_ptr = (gres_step_state_t *) step_gres_data;
 	uint64_t gres_avail;
 	bitstr_t *gres_bit_alloc;
 	int i, len;
@@ -1927,7 +1925,12 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 static int _step_alloc_type(gres_state_t *job_gres_ptr,
 			    foreach_step_alloc_t *args)
 {
-	args->rc = _step_alloc(args->step_gres_ptr, job_gres_ptr,
+	gres_job_state_t *job_data_ptr = (gres_job_state_t *)
+		job_gres_ptr->gres_data;
+	gres_step_state_t *step_data_ptr = (gres_step_state_t *)
+		args->step_gres_ptr->gres_data;
+
+	args->rc = _step_alloc(step_data_ptr, job_data_ptr,
 			       args->step_gres_ptr->plugin_id,
 			       args->node_offset, &args->tmp_step_id,
 			       args->gres_needed, args->max_gres);
