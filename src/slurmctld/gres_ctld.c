@@ -38,6 +38,15 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/xstring.h"
 
+typedef struct {
+	uint64_t gres_needed;
+	uint64_t max_gres;
+	int node_offset;
+	int rc;
+	gres_state_t *step_gres_ptr;
+	slurm_step_id_t tmp_step_id;
+} foreach_step_alloc_t;
+
 /*
  * Determine if specific GRES index on node is available to a job's allocated
  *	cores
@@ -1915,6 +1924,16 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 	return SLURM_SUCCESS;
 }
 
+static int _step_alloc_type(gres_state_t *job_gres_ptr,
+			    foreach_step_alloc_t *args)
+{
+	args->rc = _step_alloc(args->step_gres_ptr, job_gres_ptr,
+			       args->step_gres_ptr->plugin_id,
+			       args->node_offset, &args->tmp_step_id,
+			       args->gres_needed, args->max_gres);
+	return 0;
+}
+
 /*
  * Allocate resource to a step and update job and step gres information
  * IN step_gres_list - step's gres_list built by
@@ -1932,11 +1951,10 @@ extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
 				uint16_t tasks_on_node, uint32_t rem_nodes,
 				uint32_t job_id, uint32_t step_id)
 {
-	int rc = SLURM_SUCCESS, rc2;
+	int rc = SLURM_SUCCESS;
 	ListIterator step_gres_iter;
 	gres_state_t *step_gres_ptr, *job_gres_ptr;
 	slurm_step_id_t tmp_step_id;
-	uint64_t gres_needed, max_gres;
 
 	if (step_gres_list == NULL)
 		return SLURM_SUCCESS;
@@ -1955,6 +1973,7 @@ extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
 		gres_step_state_t *step_data_ptr =
 			(gres_step_state_t *) step_gres_ptr->gres_data;
 		gres_key_t job_search_key;
+		foreach_step_alloc_t args;
 		job_search_key.plugin_id = step_gres_ptr->plugin_id;
 		if (step_data_ptr->type_name)
 			job_search_key.type_id = step_data_ptr->type_id;
@@ -1962,9 +1981,9 @@ extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
 			job_search_key.type_id = NO_VAL;
 
 		job_search_key.node_offset = node_offset;
-		gres_needed = _step_get_gres_needed(
+		args.gres_needed = _step_get_gres_needed(
 			step_data_ptr, first_step_node, tasks_on_node,
-			rem_nodes, &max_gres);
+			rem_nodes, &args.max_gres);
 		if (!(job_gres_ptr = list_find_first(
 			      job_gres_list,
 			      gres_find_job_by_key_with_cnt,
@@ -1974,12 +1993,15 @@ extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
 			break;
 		}
 
-		rc2 = _step_alloc(step_data_ptr,
-				  job_gres_ptr->gres_data,
-				  step_gres_ptr->plugin_id, node_offset,
-				  &tmp_step_id, gres_needed, max_gres);
-		if (rc2 != SLURM_SUCCESS)
-			rc = rc2;
+		args.node_offset = node_offset;
+		args.rc = SLURM_SUCCESS;
+		args.step_gres_ptr = step_gres_ptr;
+		args.tmp_step_id = tmp_step_id;
+
+		_step_alloc_type(job_gres_ptr, &args);
+
+		if (args.rc != SLURM_SUCCESS)
+			rc = args.rc;
 	}
 	list_iterator_destroy(step_gres_iter);
 
