@@ -34,6 +34,9 @@ documents those changes that are of interest to users and administrators.
     on a key-value pattern. This implies error codes detected in the handlers
     are now not ignored and users of _handle_keyvalue_match() can fatal().
 
+* Changes in Slurm 20.11.5
+==========================
+
 * Changes in Slurm 20.11.4
 ==========================
  -- Fix node selection for advanced reservations with features.
