@@ -113,7 +113,7 @@ proc inc3_11_11 {} {
 	log_info "+++++ STARTING TEST 11 (Within: inc3.11.11) +++++"
 
 
-	set part_nodes [available_nodes_hostnames $def_partition true]
+	set part_nodes [get_partition_param $def_partition "Nodes"]
 	set one_node [get_idle_node_in_part $def_partition]
 
 	inc3_11_11_resv_create $res_name partition=$def_partition
