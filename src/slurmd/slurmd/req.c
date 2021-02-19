@@ -1601,8 +1601,10 @@ done:
 	/*
 	 *  If job prolog failed, indicate failure to slurmctld
 	 */
-	if (errnum == ESLURMD_PROLOG_FAILED)
+	if (errnum == ESLURMD_PROLOG_FAILED) {
+		_launch_job_fail(req->step_id.job_id, errnum);
 		send_registration_msg(errnum, false);
+	}
 
 	slurm_mutex_unlock(&launch_mutex);
 }

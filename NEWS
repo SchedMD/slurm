@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
     node that wasn't the batch host and requeuing was disabled.
  -- Fix issue where sometimes salloc/srun wouldn't get a message about a prolog
     failure in the job's stdout.
+ -- Requeue or kill job on a prolog failure when PrologFlags is not set.
 
 * Changes in Slurm 20.11.4
 ==========================
