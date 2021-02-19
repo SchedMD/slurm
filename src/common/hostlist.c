@@ -2270,6 +2270,8 @@ char * hostlist_nth(hostlist_t hl, int n)
 	if (!hl)
 		return NULL;
 	LOCK_HOSTLIST(hl);
+	xassert(n >= 0);
+
 	count = 0;
 	for (i = 0; i < hl->nranges; i++) {
 		int num_in_range = hostrange_count(hl->hr[i]);
