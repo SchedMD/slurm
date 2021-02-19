@@ -2296,7 +2296,7 @@ int hostlist_delete_nth(hostlist_t hl, int n)
 	if (!hl)
 		return -1;
 	LOCK_HOSTLIST(hl);
-	xassert(n >= 0 && n <= hl->nhosts);
+	xassert(n >= 0 && n < hl->nhosts);
 
 	count = 0;
 

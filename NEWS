@@ -33,6 +33,7 @@ documents those changes that are of interest to users and administrators.
  -- common/parse_config - catch and propagate return codes when handling a match
     on a key-value pattern. This implies error codes detected in the handlers
     are now not ignored and users of _handle_keyvalue_match() can fatal().
+ -- common/hostlist - fix hostlist_delete_nth() xassert() upper bound check.
 
 * Changes in Slurm 20.11.5
 ==========================
