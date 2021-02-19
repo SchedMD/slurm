@@ -4576,7 +4576,8 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 		}
 		req_nodes = job_gres_data->gres_per_job /
 			job_gres_data->gres_per_node;
-		if ((req_nodes < *min_nodes) || (req_nodes > *max_nodes)) {
+		if (((*min_nodes != NO_VAL) && (req_nodes < *min_nodes)) ||
+		    (req_nodes > *max_nodes)) {
 			error("Failed to validate job spec. Based on --%s and --gres=%s/--%ss-per-node required nodes (%u) doesn't fall between min_nodes (%u) and max_nodes (%u) boundaries.",
 			      job_gres_data->gres_name,
 			      job_gres_data->gres_name,
@@ -4724,7 +4725,8 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 
 	/* Ensure tres_per_job >= node count */
 	if (job_gres_data->gres_per_job) {
-		if (job_gres_data->gres_per_job < *min_nodes) {
+		if ((*min_nodes != NO_VAL) &&
+		    (job_gres_data->gres_per_job < *min_nodes)) {
 			error("Failed to validate job spec, --%ss < -N",
 			      job_gres_data->gres_name);
 			return -1;
