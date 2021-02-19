@@ -827,7 +827,7 @@ test39.1   Test full set of sbatch --gpu options and scontrol show job
 test39.2   Test full set of salloc --gpu options and scontrol show job
 test39.3   Test full set of srun --gpu options and scontrol show step
 test39.4   Test some invalid combinations of --gpu options
-test39.5   Test some valid combinations of srun --gpu options
+test39.5   Test some combinations of srun and sbatch --gpu options
 test39.6   Ensure job requesting GPUs on multiple sockets gets CPUs on them
 test39.7   Test --cpus-per-gpu option
 test39.8   Test --gpu-bind options

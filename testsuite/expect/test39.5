@@ -37,11 +37,11 @@ proc cleanup {} {
 	exec $bin_rm -f $file_in1 $file_in2
 }
 
-proc test_gpus_cnt {srun_opts expected_gpus_times_tasks expected_job_gpus} {
+proc _test_gpus_cnt {cmd expected_gpus_times_tasks expected_job_gpus} {
 	global file_in1 test_id srun number_commas
 	set match 0
 	set job_gpus 0
-	set srun_pid [spawn /bin/sh -c "$srun $srun_opts -t1 -J test$test_id -l ./$file_in1"]
+	spawn /bin/sh -c "$cmd"
 	expect {
 		-re "JOB_GRES=gpu:(\[0-9\]+)|CUDA_VISIBLE_DEVICES:($number_commas)" {
 			if {[string first "JOB_GRES" $expect_out(0,string)] != -1} {
@@ -58,11 +58,32 @@ proc test_gpus_cnt {srun_opts expected_gpus_times_tasks expected_job_gpus} {
 			wait
 		}
 	}
-	if {$match != $expected_gpus_times_tasks} {
-		fail "srun $srun_opts failure tasks*gpus ($match != $expected_gpus_times_tasks)"
+	subtest {$match == $expected_gpus_times_tasks} "$cmd tasks*gpus result=$match, expected=$expected_gpus_times_tasks"
+	subtest {$job_gpus == $expected_job_gpus} "$cmd JOB_GRES result=$job_gpus, expected=$expected_job_gpus"
+}
+
+proc test_gpus_cnt {srun_opts expected_gpus_times_tasks expected_job_gpus} {
+	global file_in1 test_id srun number_commas bin_cat
+	set expected_failure false
+	if {$expected_gpus_times_tasks == 0 && $expected_job_gpus == 0} {
+		set expected_failure true
 	}
-	if {$job_gpus != $expected_job_gpus} {
-		fail "srun $srun_opts failure job_gpus ($job_gpus != $expected_job_gpus)"
+
+	_test_gpus_cnt "$srun $srun_opts -t1 -J test$test_id -l ./$file_in1" $expected_gpus_times_tasks $expected_job_gpus
+
+	if {$expected_failure} {
+		set jobid [submit_job -xfail -subtest "$srun_opts -t1 -J test_sbatch_$test_id --wrap='$srun -l ./$file_in1'"]
+	} else {
+		set jobid [submit_job -subtest "$srun_opts -t1 -J test_sbatch_$test_id --wrap='$srun -l ./$file_in1'"]
+		if {$jobid != 0} {
+			if {[wait_for_file -pollinterval 0.1 "./slurm-$jobid.out"]} {
+				fail "No output created within timeout"
+			}
+			_test_gpus_cnt "$bin_cat ./slurm-$jobid.out" $expected_gpus_times_tasks $expected_job_gpus
+			run_command "rm ./slurm-$jobid.out"
+		} else {
+			subskip -count 2 "Skipping #GPUs * #NTASKS and #GPUS subtests since job submit failed"
+		}
 	}
 }
 
