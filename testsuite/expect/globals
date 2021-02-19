@@ -3144,54 +3144,6 @@ proc uint2hex {value} {
 ################################################################
 #
 # NAME
-#	available_nodes - returns number of available nodes
-#
-# SYNOPSIS
-#	available_nodes ?state? ?partition?
-#
-# DESCRIPTION
-#	Check to see if a given partition has a at least "num_nodes" number
-#	of nodes in the alloc, idle, or comp state.  This can be used to
-#	avoid launching a job that will never run because nodes are in the
-#	"drained" state or otherwise unavailable.
-#	If the partition is not specified, the default partition will be used.
-#
-# RETURN VALUE
-#	Returns the number of available nodes in the partition, or
-#	-1 on failure.
-#
-################################################################
-
-proc available_nodes { {state ""} {partition ""} } {
-	global sinfo
-
-	if {[string length $partition] == 0} {
-		set partition [default_partition]
-	}
-
-	if {[string length $state] == 0} {
-		set state "idle,alloc,comp"
-	}
-
-	set available -1
-	set fd [open "|$sinfo --noheader --partition $partition --state $state --format %D"]
-	gets $fd line
-	catch {close $fd}
-	regexp {\d+} $line available
-	if {[string match *K $line]} {
-		set available [expr $available * 1024]
-	} elseif {[string match *M $line]} {
-		set available [expr $available * 1048576]
-	}
-
-
-	return $available
-}
-
-
-################################################################
-#
-# NAME
 #	partition_oversubscribe - determines the oversubscribe configuration of the specified partition
 #
 # SYNOPSIS
@@ -3556,67 +3508,6 @@ proc get_admin_level { } {
 }
 
 
-################################################################
-#
-# NAME
-#	get_idle_node_in_part - gets an idle node in a given partition
-#
-# SYNOPSIS
-#	get_idle_node_in_part ?partition?
-#
-# DESCRIPTION
-#	Get an idle node in a given partition.
-#	If the partition is not specified, the default partition will be used.
-#
-# RETURN VALUE
-#	Returns name of node in a partition or "" if unknown.
-#
-################################################################
-
-proc get_idle_node_in_part { {partition ""} } {
-	global scontrol sinfo re_word_str
-
-	if {[string length $partition] == 0} {
-		set partition [default_partition]
-	}
-
-	log_user 0
-	set host_list ""
-	spawn $sinfo -oNAME=%N -h -p$partition --state=idle
-	expect {
-		-re "not found" {
-			log_error "Partition $partition doesn't exist"
-		}
-		-re "NAME=($re_word_str)" {
-			set host_list $expect_out(1,string)
-		}
-		timeout {
-			log_error "sinfo not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	set node_name ""
-	spawn $scontrol show hostname $host_list
-	expect {
-		-re "($re_word_str)" {
-			set node_name $expect_out(1,string)
-		}
-		timeout {
-			log_error "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-
-	return $node_name
-}
-
-
 ###############################################################
 #
 # NAME
@@ -3899,65 +3790,37 @@ proc wait_for_node args {
 #####################################################################
 #
 # NAME
-#	available_nodes_hostnames - gets all available nodes in the system
+#	list2hostlist - converts a TCL list into a Slurm hostlist using scontrol
 #
 # SYNOPSIS
-#	available_nodes_hostnames partition ?also_power_save?
+#	list2hostlist nodes_list
 #
 # ARGUMENTS
 #
-#	partition
-#		to only return nodes of an specific partition
-#	also_power_save
-#		to include POWERING_DOWN and POWER_DOWN nodes
+#	nodes_list
+#		a TCL list of node names
 #
 # RETURN VALUE
-#	idle nodes, and also_power_save nodes if specified
+#	the hostlist form returned by scrontrol show hostlist
 #
 #####################################################################
 
-proc available_nodes_hostnames { partition {also_power_save false} } {
-	global sinfo re_word_str
+proc list2hostlist {nodes_list} {
+	global scontrol
 
-	log_user 0
-	set idle_nodelist ""
-	set sep ""
-	if {$also_power_save} {
-		set avail_states "idle,power_down,powering_down"
-	} else {
-		set avail_states "idle"
-	}
-	if {[string compare $partition ""] == 0} {
-		spawn $sinfo -t$avail_states -h -o%N
-	} else {
-		spawn $sinfo -t$avail_states -h -o%N -p$partition
-	}
-	expect {
-		-re "($re_word_str)" {
-			append idle_nodelist $sep
-			append idle_nodelist $expect_out(1,string)
-			set sep ","
-			exp_continue
-		}
-		timeout {
-			fail "sinfo is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	log_user 1
-	return $idle_nodelist
+	set comalist [join $nodes_list ,]
+	set hostlist [run_command_output -fail "$scontrol show hostlist $comalist"]
+	set hostlist [string trimright $hostlist "\r\n"]
 }
 
 
 #####################################################################
 #
 # NAME
-#	get_partition_nodes - gets the list of node names in a given partition/states
+#	get_nodes_by_state - gets the list of node names in a given partition/states
 #
 # SYNOPSIS
-#	get_partition_nodes partition states
+#	get_nodes_by_state partition states
 #
 # DESCRIPTION
 #	Get the list of node names in a given partition/states
@@ -3973,7 +3836,7 @@ proc available_nodes_hostnames { partition {also_power_save false} } {
 #
 #####################################################################
 
-proc get_partition_nodes {partition states} {
+proc get_nodes_by_state {{states ""} {partition ""}} {
 
 	global sinfo re_word_str
 	log_user 0
@@ -3984,11 +3847,10 @@ proc get_partition_nodes {partition states} {
 	}
 
 	if {[string length $states] == 0} {
-		set sinfo_pid [spawn -noecho $sinfo -h -N -p $partition -o %N -e]
-	} else {
-		set sinfo_pid [spawn -noecho $sinfo -h -N -p $partition -o %N -t $states -e]
+		set states "Idle"
 	}
 
+	set sinfo_pid [spawn -noecho $sinfo -h -N -p $partition -o %N -t $states -e]
 	expect {
 		-re "($re_word_str)" {
 			lappend node_list $expect_out(1,string)
@@ -4952,7 +4814,7 @@ proc count_gres { gres_param } {
 
 proc get_highest_gres_count { node_count gres_name } {
 
-	set available_nodes [available_nodes_hostnames [default_partition]]
+	set available_nodes [list2hostlist [get_nodes_by_state]]
 	set gres_dict [get_gres_count $gres_name $available_nodes]
 	set gres_count [list]
 
@@ -5135,7 +4997,7 @@ proc get_highest_mps_count { node_count } {
 	# We cannot use get_highest_gres_count because we need "per gpu",
 	# so we get all the mps per node and all gpus per node, to create
 	# a mps_per_gpu list to sort and get the count.
-	set available_nodes [available_nodes_hostnames [default_partition]]
+	set available_nodes [list2hostlist [get_nodes_by_state]]
 	set mps_dict [get_gres_count "mps" $available_nodes]
 	set gpu_dict [get_gres_count "gpu" $available_nodes]
 	set mps_per_gpu [list]
@@ -5672,7 +5534,7 @@ proc create_part { part_name num_nodes_in } {
 	if { $num_nodes_in } {
 		set num_nodes $num_nodes_in
 	} else {
-		set num_nodes [available_nodes idle]
+		set num_nodes [llength [get_nodes_by_state]]
 	}
 
 	log_user 0

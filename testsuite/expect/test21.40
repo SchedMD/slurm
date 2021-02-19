@@ -326,12 +326,11 @@ expect {
 	}
 }
 
-# Get default partition name
-set def_part [default_partition]
-set nb_nodes [get_partition_param $def_part "TotalNodes"]
+# Get the number of nodes in the default partition
+set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
 
 # Create a partition to use for testing
-spawn $scontrol create partitionname=$test_part qos=$part_qos nodes=[available_nodes_hostnames $def_part]
+spawn $scontrol create partitionname=$test_part qos=$part_qos nodes=[list2hostlist [get_nodes_by_state]]
 expect {
 	timeout {
 		fail "scontrol is not responding"

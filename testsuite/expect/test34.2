@@ -36,7 +36,7 @@ set qos_2       "test$test_id\_qos2"
 set qos_1_id    0
 set qos_2_id    0
 set file_in     "test$test_id\_sc"
-set nodes       [available_nodes idle]
+set nodes       [llength [get_nodes_by_state]]
 set job_id      0
 
 # job states

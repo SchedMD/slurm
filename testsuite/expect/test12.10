@@ -210,7 +210,7 @@ exec $bin_sleep 2
 # Start a long job (will be cancelled)
 # Test job will depend on it to test non-eligible
 #
-set def_node [get_idle_node_in_part]
+set def_node [lindex [get_nodes_by_state] 0]
 set pid_depend [spawn $sbatch -t5 -w $def_node --exclusive -J queue-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
 expect {
 	-re "Submitted batch job ($number)" {
@@ -237,7 +237,7 @@ wait_for_job $jobid_dependent "RUNNING"
 # Start a long job (will be cancelled)
 # Test job will wait until this job, to test eligible
 #
-set def_node [get_idle_node_in_part]
+set def_node [lindex [get_nodes_by_state] 0]
 set pid_queue [spawn $sbatch -t5 -w $def_node --exclusive -J queue-test$test_id --output=/dev/null --error=/dev/null --wrap "$bin_sleep 300"]
 expect {
 	-re "Submitted batch job ($number)" {

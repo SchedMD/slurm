@@ -42,7 +42,7 @@ set host_3      ""
 set node_cnt 3
 set timeout $max_job_delay
 
-set available [available_nodes idle]
+set available [llength [get_nodes_by_state]]
 if {$available < $node_cnt} {
     skip "Not enough nodes currently available ($available avail, $node_cnt needed)"
 }

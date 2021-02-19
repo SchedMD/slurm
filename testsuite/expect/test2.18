@@ -184,7 +184,7 @@ proc test_part { acct part acct_con } {
 cleanup
 
 set user_name [get_my_user_name]
-set node_name [get_idle_node_in_part]
+set node_name [lindex [get_nodes_by_state] 0]
 set cluster_name [get_config_param "ClusterName"]
 
 # NOTE: acct_good should always work and
