@@ -4150,11 +4150,11 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		packstr(job->submit_line, buffer);
 		pack32(job->suspended, buffer);
 		packstr(job->system_comment, buffer);
-		pack32(job->sys_cpu_sec, buffer);
-		pack32(job->sys_cpu_usec, buffer);
+		pack64(job->sys_cpu_sec, buffer);
+		pack64(job->sys_cpu_usec, buffer);
 		pack32(job->timelimit, buffer);
-		pack32(job->tot_cpu_sec, buffer);
-		pack32(job->tot_cpu_usec, buffer);
+		pack64(job->tot_cpu_sec, buffer);
+		pack64(job->tot_cpu_usec, buffer);
 		pack16(job->track_steps, buffer);
 
 		packstr(job->tres_alloc_str, buffer);
@@ -4162,8 +4162,8 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 
 		pack32(job->uid, buffer);
 		packstr(job->user, buffer);
-		pack32(job->user_cpu_sec, buffer);
-		pack32(job->user_cpu_usec, buffer);
+		pack64(job->user_cpu_sec, buffer);
+		pack64(job->user_cpu_usec, buffer);
 		packstr(job->wckey, buffer);
 		pack32(job->wckeyid, buffer);
 		packstr(job->work_dir, buffer);
@@ -4230,11 +4230,23 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack_time(job->submit, buffer);
 		pack32(job->suspended, buffer);
 		packstr(job->system_comment, buffer);
-		pack32(job->sys_cpu_sec, buffer);
-		pack32(job->sys_cpu_usec, buffer);
+		if (job->sys_cpu_sec > NO_VAL)
+			pack32(NO_VAL, buffer);
+		else
+			pack32(job->sys_cpu_sec, buffer);
+		if (job->sys_cpu_usec > NO_VAL)
+			pack32(NO_VAL, buffer);
+		else
+			pack32(job->sys_cpu_usec, buffer);
 		pack32(job->timelimit, buffer);
-		pack32(job->tot_cpu_sec, buffer);
-		pack32(job->tot_cpu_usec, buffer);
+		if (job->tot_cpu_sec > NO_VAL)
+			pack32(NO_VAL, buffer);
+		else
+			pack32(job->tot_cpu_sec, buffer);
+		if (job->tot_cpu_usec > NO_VAL)
+			pack32(NO_VAL, buffer);
+		else
+			pack32(job->tot_cpu_usec, buffer);
 		pack16(job->track_steps, buffer);
 
 		packstr(job->tres_alloc_str, buffer);
@@ -4242,8 +4254,14 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 
 		pack32(job->uid, buffer);
 		packstr(job->user, buffer);
-		pack32(job->user_cpu_sec, buffer);
-		pack32(job->user_cpu_usec, buffer);
+		if (job->user_cpu_sec > NO_VAL)
+			pack32(NO_VAL, buffer);
+		else
+			pack32(job->user_cpu_sec, buffer);
+		if (job->user_cpu_usec > NO_VAL)
+			pack32(NO_VAL, buffer);
+		else
+			pack32(job->user_cpu_usec, buffer);
 		packstr(job->wckey, buffer);
 		pack32(job->wckeyid, buffer);
 		packstr(job->work_dir, buffer);
@@ -4312,11 +4330,23 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack_time(job->submit, buffer);
 		pack32(job->suspended, buffer);
 		packstr(job->system_comment, buffer);
-		pack32(job->sys_cpu_sec, buffer);
-		pack32(job->sys_cpu_usec, buffer);
+		if (job->sys_cpu_sec > NO_VAL)
+			pack32(NO_VAL, buffer);
+		else
+			pack32(job->sys_cpu_sec, buffer);
+		if (job->sys_cpu_usec > NO_VAL)
+			pack32(NO_VAL, buffer);
+		else
+			pack32(job->sys_cpu_usec, buffer);
 		pack32(job->timelimit, buffer);
-		pack32(job->tot_cpu_sec, buffer);
-		pack32(job->tot_cpu_usec, buffer);
+		if (job->tot_cpu_sec > NO_VAL)
+			pack32(NO_VAL, buffer);
+		else
+			pack32(job->tot_cpu_sec, buffer);
+		if (job->tot_cpu_usec > NO_VAL)
+			pack32(NO_VAL, buffer);
+		else
+			pack32(job->tot_cpu_usec, buffer);
 		pack16(job->track_steps, buffer);
 
 		packstr(job->tres_alloc_str, buffer);
@@ -4324,8 +4354,14 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 
 		pack32(job->uid, buffer);
 		packstr(job->user, buffer);
-		pack32(job->user_cpu_sec, buffer);
-		pack32(job->user_cpu_usec, buffer);
+		if (job->user_cpu_sec > NO_VAL)
+			pack32(NO_VAL, buffer);
+		else
+			pack32(job->user_cpu_sec, buffer);
+		if (job->user_cpu_usec > NO_VAL)
+			pack32(NO_VAL, buffer);
+		else
+			pack32(job->user_cpu_usec, buffer);
 		packstr(job->wckey, buffer);
 		pack32(job->wckeyid, buffer);
 		packstr(job->work_dir, buffer);
@@ -4426,11 +4462,11 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->suspended, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->system_comment, &uint32_tmp,
 				       buffer);
-		safe_unpack32(&job_ptr->sys_cpu_sec, buffer);
-		safe_unpack32(&job_ptr->sys_cpu_usec, buffer);
+		safe_unpack64(&job_ptr->sys_cpu_sec, buffer);
+		safe_unpack64(&job_ptr->sys_cpu_usec, buffer);
 		safe_unpack32(&job_ptr->timelimit, buffer);
-		safe_unpack32(&job_ptr->tot_cpu_sec, buffer);
-		safe_unpack32(&job_ptr->tot_cpu_usec, buffer);
+		safe_unpack64(&job_ptr->tot_cpu_sec, buffer);
+		safe_unpack64(&job_ptr->tot_cpu_usec, buffer);
 		safe_unpack16(&job_ptr->track_steps, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->tres_alloc_str,
 				       &uint32_tmp, buffer);
@@ -4438,8 +4474,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&job_ptr->uid, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->user, &uint32_tmp, buffer);
-		safe_unpack32(&job_ptr->user_cpu_sec, buffer);
-		safe_unpack32(&job_ptr->user_cpu_usec, buffer);
+		safe_unpack64(&job_ptr->user_cpu_sec, buffer);
+		safe_unpack64(&job_ptr->user_cpu_usec, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->wckey, &uint32_tmp, buffer);
 		safe_unpack32(&job_ptr->wckeyid, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->work_dir, &uint32_tmp, buffer);
@@ -4517,11 +4553,15 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->suspended, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->system_comment, &uint32_tmp,
 				       buffer);
-		safe_unpack32(&job_ptr->sys_cpu_sec, buffer);
-		safe_unpack32(&job_ptr->sys_cpu_usec, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->sys_cpu_sec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->sys_cpu_usec = uint32_tmp;
 		safe_unpack32(&job_ptr->timelimit, buffer);
-		safe_unpack32(&job_ptr->tot_cpu_sec, buffer);
-		safe_unpack32(&job_ptr->tot_cpu_usec, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->tot_cpu_sec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->tot_cpu_usec = uint32_tmp;
 		safe_unpack16(&job_ptr->track_steps, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->tres_alloc_str,
 				       &uint32_tmp, buffer);
@@ -4529,8 +4569,10 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&job_ptr->uid, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->user, &uint32_tmp, buffer);
-		safe_unpack32(&job_ptr->user_cpu_sec, buffer);
-		safe_unpack32(&job_ptr->user_cpu_usec, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->user_cpu_sec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->user_cpu_usec = uint32_tmp;
 		safe_unpackstr_xmalloc(&job_ptr->wckey, &uint32_tmp, buffer);
 		safe_unpack32(&job_ptr->wckeyid, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->work_dir, &uint32_tmp, buffer);
@@ -4614,11 +4656,15 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->suspended, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->system_comment, &uint32_tmp,
 				       buffer);
-		safe_unpack32(&job_ptr->sys_cpu_sec, buffer);
-		safe_unpack32(&job_ptr->sys_cpu_usec, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->sys_cpu_sec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->sys_cpu_usec = uint32_tmp;
 		safe_unpack32(&job_ptr->timelimit, buffer);
-		safe_unpack32(&job_ptr->tot_cpu_sec, buffer);
-		safe_unpack32(&job_ptr->tot_cpu_usec, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->tot_cpu_sec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->tot_cpu_usec = uint32_tmp;
 		safe_unpack16(&job_ptr->track_steps, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->tres_alloc_str,
 				       &uint32_tmp, buffer);
@@ -4626,8 +4672,10 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&job_ptr->uid, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->user, &uint32_tmp, buffer);
-		safe_unpack32(&job_ptr->user_cpu_sec, buffer);
-		safe_unpack32(&job_ptr->user_cpu_usec, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->user_cpu_sec = uint32_tmp;
+		safe_unpack32(&uint32_tmp, buffer);
+		job_ptr->user_cpu_usec = uint32_tmp;
 		safe_unpackstr_xmalloc(&job_ptr->wckey, &uint32_tmp, buffer);
 		safe_unpack32(&job_ptr->wckeyid, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->work_dir, &uint32_tmp, buffer);
