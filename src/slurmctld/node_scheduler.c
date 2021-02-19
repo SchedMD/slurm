@@ -2905,7 +2905,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	cred_arg.gid                 = job_ptr->group_id;
 	cred_arg.x11                 = job_ptr->details->x11;
 	cred_arg.job_core_spec       = job_ptr->details->core_spec;
-	cred_arg.job_gres_list       = job_ptr->gres_list;
+	cred_arg.job_gres_list       = job_ptr->gres_list_alloc;
 	cred_arg.job_nhosts          = job_ptr->job_resrcs->nhosts;
 	cred_arg.job_constraints     = job_ptr->details->features;
 	cred_arg.job_mem_limit       = job_ptr->details->pn_min_memory;

@@ -2550,6 +2550,11 @@ static int _job_expand(job_record_t *from_job_ptr, job_record_t *to_job_ptr)
 			    from_job_resrcs_ptr->node_bitmap,
 			    to_job_ptr->gres_list,
 			    to_job_resrcs_ptr->node_bitmap);
+	/* copy the allocated gres */
+	gres_ctld_job_merge(from_job_ptr->gres_list_alloc,
+			    from_job_resrcs_ptr->node_bitmap,
+			    to_job_ptr->gres_list_alloc,
+			    to_job_resrcs_ptr->node_bitmap);
 
 	/* Now swap data: "new" -> "to" and clear "from" */
 	free_job_resources(&to_job_ptr->job_resrcs);
@@ -2847,7 +2852,7 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 	}
 
 	if (alloc_all) {
-		gres_ctld_job_build_details(job_ptr->gres_list,
+		gres_ctld_job_build_details(job_ptr->gres_list_alloc,
 					    &job_ptr->gres_detail_cnt,
 					    &job_ptr->gres_detail_str,
 					    &job_ptr->gres_used);

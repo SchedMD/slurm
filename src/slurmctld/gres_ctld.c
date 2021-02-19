@@ -1481,7 +1481,7 @@ extern void gres_ctld_job_clear(List job_gres_list)
 }
 
 /* Given a job's GRES data structure, return the indecies for selected elements
- * IN job_gres_list  - job's GRES data structure
+ * IN job_gres_list  - job's allocated GRES data structure
  * OUT gres_detail_cnt - Number of elements (nodes) in gres_detail_str
  * OUT gres_detail_str - Description of GRES on each node
  * OUT total_gres_str - String containing all gres in the job and counts.
@@ -1792,17 +1792,13 @@ static int _step_alloc(void *step_gres_data, void *job_gres_data,
 			xcalloc(step_gres_ptr->node_cnt, sizeof(uint64_t));
 	}
 
-	if (job_gres_ptr->gres_cnt_node_alloc &&
-	    job_gres_ptr->gres_cnt_node_alloc[node_offset])
+	if (job_gres_ptr->gres_cnt_node_alloc)
 		gres_avail = job_gres_ptr->gres_cnt_node_alloc[node_offset];
-	else if (job_gres_ptr->gres_bit_select &&
-		 job_gres_ptr->gres_bit_select[node_offset])
-		gres_avail = bit_set_count(
-				job_gres_ptr->gres_bit_select[node_offset]);
-	else if (job_gres_ptr->gres_cnt_node_alloc)
-		gres_avail = job_gres_ptr->gres_cnt_node_alloc[node_offset];
-	else
-		gres_avail = job_gres_ptr->gres_per_node;
+	else {
+		error("gres/%s: %s gres_cnt_node_alloc is not allocated",
+		      job_gres_ptr->gres_name, __func__);
+		return SLURM_ERROR;
+	}
 	if (gres_needed > gres_avail) {
 		error("gres/%s: %s for %ps, step's > job's "
 		      "for node %d (%"PRIu64" > %"PRIu64")",
@@ -2265,7 +2261,7 @@ static void _gres_2_tres_str_internal(char **tres_str,
 /*
  * Given a job's GRES data structure, return a simple tres string of gres
  * allocated on the node_inx requested
- * IN job_gres_list  - job's GRES data structure
+ * IN job_gres_list  - job's alllocated GRES data structure
  * IN node_inx - position of node in job_state_ptr->gres_cnt_node_alloc
  * IN locked - if the assoc_mgr tres read locked is locked or not
  *

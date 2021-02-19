@@ -784,7 +784,7 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 	}
 
 	cred_arg.job_nhosts      = job_resrcs_ptr->nhosts;
-	cred_arg.job_gres_list   = job_ptr->gres_list;
+	cred_arg.job_gres_list   = job_ptr->gres_list_alloc;
 	cred_arg.step_gres_list  = step_ptr->gres_list;
 
 	cred_arg.step_core_bitmap = step_ptr->core_bitmap_job;

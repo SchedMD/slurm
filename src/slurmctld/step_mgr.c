@@ -1191,7 +1191,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 
 			/* ignore current step allocations */
 			gres_cpus = gres_step_test(step_gres_list,
-						   job_ptr->gres_list,
+						   job_ptr->gres_list_alloc,
 						   node_inx,
 						   first_step_node,
 						   cpus_per_task,
@@ -1200,7 +1200,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			total_cpus = MIN(total_cpus, gres_cpus);
 			/* consider current step allocations */
 			gres_cpus = gres_step_test(step_gres_list,
-						   job_ptr->gres_list,
+						   job_ptr->gres_list_alloc,
 						   node_inx,
 						   first_step_node,
 						   cpus_per_task,
@@ -2994,7 +2994,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 			}
 
 			gres_cpus = gres_step_test(step_ptr->gres_list,
-						   job_ptr->gres_list,
+						   job_ptr->gres_list_alloc,
 						   job_node_offset,
 						   first_step_node,
 						   step_ptr->cpus_per_task,
@@ -3687,7 +3687,7 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 				memory_allocated[batch_inx];
 
 		tmp_tres_str = gres_ctld_gres_on_node_as_tres(
-			job_ptr->gres_list, 0, true);
+			job_ptr->gres_list_alloc, 0, true);
 	} else {
 		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
 			cpu_count = (uint64_t)job_ptr->total_cpus;

@@ -2610,7 +2610,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	assoc_mgr_unlock(&locks);
 
 	build_node_details(job_ptr, false);	/* set node_addr */
-	gres_ctld_job_build_details(job_ptr->gres_list,
+	gres_ctld_job_build_details(job_ptr->gres_list_alloc,
 				    &job_ptr->gres_detail_cnt,
 				    &job_ptr->gres_detail_str,
 				    &job_ptr->gres_used);
@@ -4137,7 +4137,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				excise_node_from_job(job_ptr, node_ptr);
 				(void) gs_job_start(job_ptr);
 				gres_ctld_job_build_details(
-					job_ptr->gres_list,
+					job_ptr->gres_list_alloc,
 					&job_ptr->gres_detail_cnt,
 					&job_ptr->gres_detail_str,
 					&job_ptr->gres_used);
@@ -9299,8 +9299,7 @@ extern void job_set_alloc_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
 	license_set_job_tres_cnt(job_ptr->license_list,
 				 job_ptr->tres_alloc_cnt,
 				 true);
-
-	gres_ctld_set_job_tres_cnt(job_ptr->gres_list,
+	gres_ctld_set_job_tres_cnt(job_ptr->gres_list_alloc,
 				   alloc_nodes,
 				   job_ptr->tres_alloc_cnt,
 				   true);
@@ -11543,7 +11542,7 @@ void reset_job_bitmaps(void)
 		if (!job_fail && job_ptr->job_resrcs &&
 		    (IS_JOB_RUNNING(job_ptr) || IS_JOB_SUSPENDED(job_ptr)) &&
 		    gres_job_revalidate2(job_ptr->job_id,
-					 job_ptr->gres_list,
+					 job_ptr->gres_list_alloc,
 					 job_ptr->job_resrcs->node_bitmap)) {
 			/*
 			 * This can be due to the job being allocated GRES
@@ -12518,7 +12517,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			}
 			bit_free(rem_nodes);
 			(void) gs_job_start(job_ptr);
-			gres_ctld_job_build_details(job_ptr->gres_list,
+			gres_ctld_job_build_details(job_ptr->gres_list_alloc,
 						    &job_ptr->gres_detail_cnt,
 						    &job_ptr->gres_detail_str,
 						    &job_ptr->gres_used);
@@ -13733,10 +13732,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 		xfree(tmp);
 		FREE_NULL_LIST(job_ptr->gres_list);
 		job_ptr->gres_list = gres_list;
-		gres_ctld_job_build_details(job_ptr->gres_list,
-					    &job_ptr->gres_detail_cnt,
-					    &job_ptr->gres_detail_str,
-					    &job_ptr->gres_used);
+
 		gres_list = NULL;
 	}
 
@@ -13970,7 +13966,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			 */
 			update_accounting = false;
 		}
-		gres_ctld_job_build_details(job_ptr->gres_list,
+		gres_ctld_job_build_details(job_ptr->gres_list_alloc,
 					    &job_ptr->gres_detail_cnt,
 					    &job_ptr->gres_detail_str,
 					    &job_ptr->gres_used);

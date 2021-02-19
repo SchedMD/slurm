@@ -2656,7 +2656,7 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 		cred_arg.job_mem_alloc_size = 1;
 	}
 	cred_arg.job_nhosts          = job_resrcs_ptr->nhosts;
-	cred_arg.job_gres_list       = job_ptr->gres_list;
+	cred_arg.job_gres_list       = job_ptr->gres_list_alloc;
 /*	cred_arg.step_gres_list      = NULL; */
 
 #ifdef HAVE_FRONT_END

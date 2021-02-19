@@ -139,7 +139,7 @@ extern void gres_ctld_job_merge(List from_job_gres_list,
 extern void gres_ctld_job_clear(List job_gres_list);
 
 /* Given a job's GRES data structure, return the indecies for selected elements
- * IN job_gres_list  - job's GRES data structure
+ * IN job_gres_list  - job's allocated GRES data structure
  * OUT gres_detail_cnt - Number of elements (nodes) in gres_detail_str
  * OUT gres_detail_str - Description of GRES on each node
  * OUT total_gres_str - String containing all gres in the job and counts.
@@ -216,7 +216,7 @@ extern void gres_ctld_step_state_rebase(List gres_list,
 /*
  * Given a job's GRES data structure, return a simple tres string of gres
  * allocated on the node_inx requested
- * IN job_gres_list  - job's GRES data structure
+ * IN job_gres_list  - job's allocated GRES data structure
  * IN node_inx - position of node in job_state_ptr->gres_cnt_node_alloc
  *
  * RET - simple string containing gres this job is allocated on the node

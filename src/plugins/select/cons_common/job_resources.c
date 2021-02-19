@@ -379,7 +379,7 @@ extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action)
 	}
 
 	if (action != JOB_RES_ACTION_RESUME) {
-		gres_ctld_job_build_details(job_ptr->gres_list,
+		gres_ctld_job_build_details(job_ptr->gres_list_alloc,
 					    &job_ptr->gres_detail_cnt,
 					    &job_ptr->gres_detail_str,
 					    &job_ptr->gres_used);

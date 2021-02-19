@@ -923,7 +923,7 @@ extern void gres_step_state_log(List gres_list, uint32_t job_id,
 /*
  * Determine how many cores of a job's allocation can be allocated to a step
  *	on a specific node
- * IN job_gres_list - a running job's gres info
+ * IN job_gres_list - a running job's allocated gres info
  * IN/OUT step_gres_list - a pending job step's gres requirements
  * IN node_offset - index into the job's node allocation
  * IN first_step_node - true if this is node zero of the step (do initialization)
