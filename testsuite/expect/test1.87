@@ -38,7 +38,7 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 }
 
 # find out if we have enough nodes to test functionality
-set node_count [get_node_cnt_in_part]
+set node_count [get_partition_param [default_partition] "TotalNodes"]
 if { $node_count < 4 } {
 	skip "Insufficient nodes in default partition ($node_count < 4)"
 }

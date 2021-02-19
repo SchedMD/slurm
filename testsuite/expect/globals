@@ -3559,53 +3559,6 @@ proc get_admin_level { } {
 ################################################################
 #
 # NAME
-#	get_node_cnt_in_part - determines how many nodes are in a given partition
-#
-# SYNOPSIS
-#	get_node_cnt_in_part ?partition?
-#
-# DESCRIPTION
-#	Determine how many nodes are in a given partition.
-#	If the partition is not specified, the default partition will be used.
-#
-# RETURN VALUE
-#	Returns count of nodes in a partition or 0 if unknown.
-#
-################################################################
-
-proc get_node_cnt_in_part { {partition ""} } {
-	global scontrol number
-
-	if {[string length $partition] == 0} {
-		set partition [default_partition]
-	}
-
-	log_user 0
-	set node_cnt 0
-	set scon_pid [spawn -noecho $scontrol show partition $partition]
-	expect {
-		-re "not found" {
-			log_error "Partition $partition doesn't exist"
-		}
-		-re "TotalNodes=($number)" {
-			set node_cnt $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol not responding"
-		}
-		eof {
-		}
-	}
-	log_user 1
-
-	return $node_cnt
-}
-
-
-################################################################
-#
-# NAME
 #	get_idle_node_in_part - gets an idle node in a given partition
 #
 # SYNOPSIS

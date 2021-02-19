@@ -52,7 +52,7 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 } elseif {[get_config_param "SlurmdUser"] ne "root(0)"} {
 	skip "This test requires that the SlurmdUser be root"
-} elseif {[get_node_cnt_in_part] < 2} {
+} elseif {[get_partition_param [default_partition] "TotalNodes"] < 2} {
 	skip "This test requires that the configuration has at least 2 nodes"
 }
 if {[get_config_param "SchedulerType"] ne "sched/backfill"} {

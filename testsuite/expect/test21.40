@@ -328,7 +328,7 @@ expect {
 
 # Get default partition name
 set def_part [default_partition]
-set nb_nodes [get_node_cnt_in_part $def_part]
+set nb_nodes [get_partition_param $def_part "TotalNodes"]
 
 # Create a partition to use for testing
 spawn $scontrol create partitionname=$test_part qos=$part_qos nodes=[available_nodes_hostnames $def_part]

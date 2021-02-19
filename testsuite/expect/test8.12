@@ -72,7 +72,7 @@ proc setup {use_flex {start_time ""}} {
 	}
 }
 
-set nb_nodes [get_node_cnt_in_part]
+set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
 if {$nb_nodes < 2} {
 	skip "Need 2 or more nodes in default partition"
 }

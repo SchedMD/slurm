@@ -94,7 +94,7 @@ if {[string compare [get_admin_level] "Administrator"]} {
 }
 
 if {[check_config_select "linear"]} {
-	set nb_nodes [get_node_cnt_in_part]
+	set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
 	if {$nb_nodes < 2} {
 		skip "This test is incompatible with select/linear and only one node"
 	}

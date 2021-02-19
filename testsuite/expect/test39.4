@@ -29,7 +29,7 @@ source ./globals
 set exit_code   0
 set job_id      0
 
-set nb_nodes [get_node_cnt_in_part]
+set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
 
 set gpu_cnt [get_highest_gres_count 1 "gpu"]
 if {$gpu_cnt < 1} {
