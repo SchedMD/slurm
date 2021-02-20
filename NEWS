@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
     EnforcePartLimits=any and partition based associations.
  -- Remove possible deadlock when adding associations/wckeys in multiple
     threads.
+ -- When using PrologFlags=alloc make sure the correct Slurm version is set
+    in the credential.
 
 * Changes in Slurm 20.11.4
 ==========================
