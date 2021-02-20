@@ -168,10 +168,6 @@ char *slurm_get_ext_sensors_type(void);
  */
 extern uint16_t slurm_get_ext_sensors_freq(void);
 
-/* slurm_get_sched_params
- * RET char * - Value of SchedulerParameters, MUST be xfreed by caller */
-extern char *slurm_get_sched_params(void);
-
 /* slurm_get_select_type
  * get select_type from slurm_conf object
  * RET char *   - select_type, MUST be xfreed by caller

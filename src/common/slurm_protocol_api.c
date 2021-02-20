@@ -580,22 +580,6 @@ char *slurm_get_preempt_type(void)
 	return preempt_type;
 }
 
-/* slurm_get_sched_params
- * RET char * - Value of SchedulerParameters, MUST be xfreed by caller */
-extern char *slurm_get_sched_params(void)
-{
-	char *params = 0;
-	slurm_conf_t *conf;
-
- 	if (slurmdbd_conf) {
-	} else {
-		conf = slurm_conf_lock();
-		params = xstrdup(conf->sched_params);
-		slurm_conf_unlock();
-	}
-	return params;
-}
-
 /* slurm_get_select_type
  * get select_type from slurm_conf object
  * RET char *   - select_type, MUST be xfreed by caller

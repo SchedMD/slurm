@@ -237,7 +237,6 @@ int main(int argc, char **argv)
 
 		if ((opt.get_user_env_time >= 0) && !env_cache_set) {
 			bool no_env_cache = false;
-			char *sched_params;
 			char *user;
 
 			env_cache_set = true;
@@ -247,10 +246,9 @@ int main(int argc, char **argv)
 				exit(error_exit);
 			}
 
-			sched_params = slurm_get_sched_params();
-			if (xstrcasestr(sched_params, "no_env_cache"))
+			if (xstrcasestr(slurm_conf.sched_params,
+					"no_env_cache"))
 				no_env_cache = true;
-			xfree(sched_params);
 
 			env = env_array_user_default(user,
 						     opt.get_user_env_time,

@@ -1917,9 +1917,8 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t *msg)
 	 * already be set earlier. */
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
 		if (config_update != slurm_conf.last_update) {
-			char *sched_params = slurm_get_sched_params();
-			defer_sched = (xstrcasestr(sched_params, "defer"));
-			xfree(sched_params);
+			defer_sched = (xstrcasestr(slurm_conf.sched_params,
+						   "defer"));
 			config_update = slurm_conf.last_update;
 		}
 

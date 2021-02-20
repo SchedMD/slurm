@@ -158,19 +158,12 @@ void cfmakeraw(struct termios *attr)
 
 static bool _enable_het_job_steps(void)
 {
-	bool enabled = true;
-	char *sched_params = slurm_get_sched_params();
-
 	/* Continue supporting old terminology */
-	if (xstrcasestr(sched_params, "disable_hetero_steps") ||
-	    xstrcasestr(sched_params, "disable_hetjob_steps"))
-		enabled = false;
-	else if (xstrcasestr(sched_params, "enable_hetero_steps") ||
-		 xstrcasestr(sched_params, "enable_hetjob_steps"))
-		enabled = true;
+	if (xstrcasestr(slurm_conf.sched_params, "disable_hetero_steps") ||
+	    xstrcasestr(slurm_conf.sched_params, "disable_hetjob_steps"))
+		return false;
 
-	xfree(sched_params);
-	return enabled;
+	return true;
 }
 
 int srun(int ac, char **av)

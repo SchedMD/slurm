@@ -662,12 +662,9 @@ static bool _opt_verify(void)
 	cpu_freq_set_env("SLURM_CPU_FREQ_REQ",
 			opt.cpu_freq_min, opt.cpu_freq_max, opt.cpu_freq_gov);
 
-	if (saopt.wait_all_nodes == NO_VAL16) {
-		char *sched_params = slurm_get_sched_params();
-		if (xstrcasestr(sched_params, "salloc_wait_nodes"))
+	if ((saopt.wait_all_nodes == NO_VAL16) &&
+	    (xstrcasestr(slurm_conf.sched_params, "salloc_wait_nodes")))
 			saopt.wait_all_nodes = 1;
-		xfree(sched_params);
-	}
 
 	if (opt.x11) {
 		x11_get_display(&opt.x11_target_port, &opt.x11_target);

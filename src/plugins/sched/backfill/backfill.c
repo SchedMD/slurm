@@ -673,9 +673,7 @@ static uint32_t _my_sleep(int64_t usec)
 
 static void _load_config(void)
 {
-	char *sched_params, *tmp_ptr;
-
-	sched_params = slurm_get_sched_params();
+	char *sched_params = slurm_conf.sched_params, *tmp_ptr;
 
 	if ((tmp_ptr = xstrcasestr(sched_params, "bf_interval="))) {
 		backfill_interval = atoi(tmp_ptr + 12);
@@ -950,8 +948,6 @@ static void _load_config(void)
 		      max_rpc_cnt);
 		max_rpc_cnt = 0;
 	}
-
-	xfree(sched_params);
 }
 
 /* Note that slurm.conf has changed */

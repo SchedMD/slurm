@@ -322,14 +322,12 @@ extern int xcpuinfo_hwloc_topo_get(
 	objtype[PU]     = HWLOC_OBJ_PU;
 	if (hwloc_get_type_depth(topology, HWLOC_OBJ_NODE) >
 	    hwloc_get_type_depth(topology, HWLOC_OBJ_SOCKET)) {
-		char *sched_params = slurm_get_sched_params();
-		if (xstrcasestr(sched_params, "Ignore_NUMA")) {
+		if (xstrcasestr(slurm_conf.sched_params, "Ignore_NUMA")) {
 			info("Ignoring NUMA nodes within a socket");
 		} else {
 			info("Considering each NUMA node as a socket");
 			objtype[SOCKET] = HWLOC_OBJ_NODE;
 		}
-		xfree(sched_params);
 	}
 
 	/* Groups below root obj are interpreted as boards */
