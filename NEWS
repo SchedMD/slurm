@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 20.11.5
 ==========================
  -- Fix main scheduler bug where bf_hetjob_prio truncates SchedulerParameters.
+ -- Fix sacct not displaying UserCPU, SystemCPU and TotalCPU for large times.
 
 * Changes in Slurm 20.11.4
 ==========================
