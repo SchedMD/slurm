@@ -430,15 +430,19 @@ char *get_argument(char **pos)
 
 static int _set_options(int argc, char **argv)
 {
-	int opt_char, option_index = 0;
+	int opt_char;
 	char *opt_string = NULL;
 	struct option *optz = slurm_option_table_create(&opt, &opt_string);
 
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, opt_string,
-				       optz, &option_index)) != -1) {
+				       optz, NULL)) != -1) {
 		if (slurm_process_option(&opt, opt_char, optarg, false, false))
-			return option_index;
+		{
+			slurm_option_table_destroy(optz);
+			xfree(opt_string);
+			return optind - 1;
+		}
 	}
 
 	slurm_option_table_destroy(optz);
@@ -462,6 +466,9 @@ extern int parse_scron_line(char *line, int lineno)
 
 	if (argc > 1 && (i = _set_options(argc, argv)) < argc) {
 		error("Invalid option found in #SCRON line: %s", argv[i]);
+		for (i = 1; i < argc; i++)
+			xfree(argv[i]);
+		xfree(argv);
 		return SLURM_ERROR;
 	}
 
