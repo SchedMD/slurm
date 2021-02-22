@@ -37,6 +37,8 @@ COMMAND CHANGES (see man pages for details)
 ===========================================
  -- Changed the --format handling for negative field widths (left justified)
     to apply to the column headers as well as the printed fields.
+ -- Invalidate multiple partition requests when using partition based
+    associations.
 
 API CHANGES
 ===========
