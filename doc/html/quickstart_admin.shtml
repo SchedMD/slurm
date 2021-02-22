@@ -108,7 +108,7 @@ present. Build dependencies for various plugins and commands are denoted below:
 <li> <b>HTML Man Pages</b> HTML versions of the man pages will be generated if
 		the <i>man2html</i> command is present.</li>
 <li> <b>IPMI Engergy Consumption</b> The <i>acct_gather_energy/ipmi</i>
-		accouting plugin will be built if the <i>freeimpi</i>
+		accouting plugin will be built if the <i>freeipmi</i>
 		development library is present.</li>
 <li> <b>InfiniBand Accounting</b> The <i>acct_gather_interconnect/ofed</i>
 		InfiniBand accounting plugin will be built if the
@@ -744,6 +744,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 18 September 2020</p>
+<p style="text-align:center;">Last modified 22 February 2021</p>
 
 <!--#include virtual="footer.txt"-->
