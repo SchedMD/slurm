@@ -92,7 +92,7 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator"
 }
-set available [available_nodes idle]
+set available [llength [get_nodes_by_state]]
 if {$available < 2} {
     skip "Not enough nodes currently available ($available avail, 2 needed)"
 }

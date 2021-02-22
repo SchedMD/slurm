@@ -38,7 +38,7 @@ if {[file executable $qsub] == 0} {
 	skip "$qsub not found"
 }
 
-set nb_nodes [get_node_cnt_in_part]
+set nb_nodes [get_partition_param $part "TotalNodes"]
 if {$nb_nodes > 1} {
 	set nb_nodes 2
 }

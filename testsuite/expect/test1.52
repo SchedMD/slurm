@@ -63,7 +63,7 @@ expect {
 	}
 }
 
-set idle_nodes [available_nodes idle]
+set idle_nodes [llength [get_nodes_by_state]]
 if { ($idle_nodes < 3) || ($max_nodes < 3) } {
 	if { $max_nodes == 999999 } {
 		skip "Default partition must have at least 3 idle nodes and MaxNodes >= 3 to run this test on. IDLE:$idle_nodes MaxNodes:UNLIMITED"

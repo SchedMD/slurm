@@ -46,7 +46,7 @@ if {$craynetwork_count < 1} {
 }
 log_debug "craynetwork count is $craynetwork_count"
 
-set nb_nodes [get_node_cnt_in_part]
+set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
 
 #
 # Build input script file

@@ -62,7 +62,7 @@ proc end_it { exit_code } {
 	}
 }
 
-set node_count [available_nodes]
+set node_count [llength [get_nodes_by_state idle,alloc,comp]]
 if {$node_count < 2} {
     skip "Insufficient node count to run test"
 }

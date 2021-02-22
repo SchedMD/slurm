@@ -39,7 +39,7 @@ if {![check_config_select "cons_tres"]} {
     skip "This test is only compatible with select/cons_tres"
 }
 
-set nb_nodes [get_node_cnt_in_part]
+set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
 if {$nb_nodes > 1} {
 	set nb_nodes 2
 }

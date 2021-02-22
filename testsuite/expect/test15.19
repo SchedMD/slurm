@@ -226,7 +226,7 @@ if {$dup_host == 1} {
 }
 
 # find out if we have enough nodes to test functionality
-set node_count [get_node_cnt_in_part]
+set node_count [get_partition_param [default_partition] "TotalNodes"]
 if { $node_count < 2 } {
 	skip "Insufficient nodes in default partition to continue ($node_count < 2)"
 }

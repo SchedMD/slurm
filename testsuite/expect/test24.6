@@ -272,7 +272,7 @@ if {!$match} {
 	fail "Didn't find NO_NORMAL_ALL flag"
 }
 
-set idle_node [get_idle_node_in_part]
+set idle_node [lindex [get_nodes_by_state] 0]
 if {$idle_node == ""} {
 	fail "No idle nodes"
 }

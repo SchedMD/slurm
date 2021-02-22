@@ -32,7 +32,7 @@ set script      "test$test_id.bash"
 set file_out    "test$test_id.out"
 set job_id      0
 
-set node_cnt [available_nodes]
+set node_cnt [llength [get_nodes_by_state idle,alloc,comp]]
 if {$node_cnt < 2} {
 	skip "Not enough nodes in partition ($node_cnt < 2)"
 }
