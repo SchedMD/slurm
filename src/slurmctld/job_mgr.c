@@ -6413,7 +6413,6 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 {
 	int rc = SLURM_SUCCESS;
 	part_record_t *part_ptr_tmp;
-	slurmdb_assoc_rec_t assoc_rec;
 	uint32_t min_nodes_orig = INFINITE, max_nodes_orig = 1;
 	uint32_t max_time = 0;
 	bool any_check = false;
@@ -6425,31 +6424,15 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 
 		while ((part_ptr_tmp = list_next(iter))) {
 			/*
-			 * FIXME: When dealing with multiple partitions we
-			 * currently can't deal with partition based
-			 * associations.
+			 * Associations should have already be checked before
+			 * this. It is not allowed to have a multiple partition
+			 * request with partition based associations.
 			 */
-			memset(&assoc_rec, 0, sizeof(assoc_rec));
-			if (assoc_ptr) {
-				assoc_rec.acct      = assoc_ptr->acct;
-				assoc_rec.partition = part_ptr_tmp->name;
-				assoc_rec.uid       = job_desc->user_id;
-				(void) assoc_mgr_fill_in_assoc(
-					acct_db_conn, &assoc_rec,
-					accounting_enforce, NULL, false);
-			}
+			rc = _part_access_check(part_ptr_tmp, job_desc,
+						req_bitmap, submit_uid,
+						qos_ptr, assoc_ptr ?
+						assoc_ptr->acct : NULL);
 
-			if (assoc_ptr && assoc_rec.id != assoc_ptr->id) {
-				info("%s: can't check multiple "
-				     "partitions with partition based "
-				     "associations", __func__);
-				rc = SLURM_ERROR;
-			} else {
-				rc = _part_access_check(part_ptr_tmp, job_desc,
-							req_bitmap, submit_uid,
-							qos_ptr, assoc_ptr ?
-							assoc_ptr->acct : NULL);
-			}
 			if ((rc != SLURM_SUCCESS) &&
 			    ((rc == ESLURM_ACCESS_DENIED) ||
 			     (rc == ESLURM_USER_ID_MISSING) ||
