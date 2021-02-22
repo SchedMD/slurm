@@ -6115,8 +6115,7 @@ static int _alt_part_test(part_record_t *part_ptr, part_record_t **part_ptr_new)
  */
 static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
 			      bitstr_t *req_bitmap, uid_t submit_uid,
-			      slurmdb_qos_rec_t *qos_ptr, char *acct,
-			      char *assoc_partition)
+			      slurmdb_qos_rec_t *qos_ptr, char *acct)
 {
 	uint32_t total_nodes, min_nodes_tmp, max_nodes_tmp;
 	uint32_t job_min_nodes, job_max_nodes;
@@ -6245,18 +6244,6 @@ static int _part_access_check(part_record_t *part_ptr, job_desc_msg_t *job_desc,
 		if ((rc = part_policy_valid_qos(part_ptr, qos_ptr, NULL))
 		    != SLURM_SUCCESS)
 			goto fini;
-	}
-
-	/*
-	 * If a partition is part of the association, check if the association's
-	 * partition matches the current partition.
-	 */
-	if ((accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
-	    assoc_partition && xstrcmp(assoc_partition, part_ptr->name)) {
-		rc = ESLURM_PARTITION_ASSOC;
-		debug2("%s: uid %u access to partition %s denied, it does not match association partition %s",
-		       __func__, submit_uid, part_ptr->name, assoc_partition);
-		goto fini;
 	}
 
 fini:
@@ -6393,32 +6380,43 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 {
 	int rc = SLURM_SUCCESS;
 	part_record_t *part_ptr_tmp;
+	slurmdb_assoc_rec_t assoc_rec;
 	uint32_t min_nodes_orig = INFINITE, max_nodes_orig = 1;
 	uint32_t max_time = 0;
 	bool any_check = false;
-	char *assoc_acct, *assoc_part;
 
 	/* Change partition pointer(s) to alternates as needed */
 	if (part_ptr_list) {
-		int fail_rc;
-		ListIterator iter;
-
-		fail_rc = SLURM_SUCCESS;
-		iter = list_iterator_create(part_ptr_list);
+		int fail_rc = SLURM_SUCCESS;
+		ListIterator iter = list_iterator_create(part_ptr_list);
 
 		while ((part_ptr_tmp = list_next(iter))) {
-
+			/*
+			 * FIXME: When dealing with multiple partitions we
+			 * currently can't deal with partition based
+			 * associations.
+			 */
+			memset(&assoc_rec, 0, sizeof(assoc_rec));
 			if (assoc_ptr) {
-				assoc_acct = assoc_ptr->acct;
-				assoc_part = assoc_ptr->partition;
-			} else {
-				assoc_acct = NULL;
-				assoc_part = NULL;
+				assoc_rec.acct      = assoc_ptr->acct;
+				assoc_rec.partition = part_ptr_tmp->name;
+				assoc_rec.uid       = job_desc->user_id;
+				(void) assoc_mgr_fill_in_assoc(
+					acct_db_conn, &assoc_rec,
+					accounting_enforce, NULL, false);
 			}
-			rc = _part_access_check(part_ptr_tmp, job_desc,
-						req_bitmap, submit_uid,
-						qos_ptr, assoc_acct,
-						assoc_part);
+
+			if (assoc_ptr && assoc_rec.id != assoc_ptr->id) {
+				info("%s: can't check multiple "
+				     "partitions with partition based "
+				     "associations", __func__);
+				rc = SLURM_ERROR;
+			} else {
+				rc = _part_access_check(part_ptr_tmp, job_desc,
+							req_bitmap, submit_uid,
+							qos_ptr, assoc_ptr ?
+							assoc_ptr->acct : NULL);
+			}
 			if ((rc != SLURM_SUCCESS) &&
 			    ((rc == ESLURM_ACCESS_DENIED) ||
 			     (rc == ESLURM_USER_ID_MISSING) ||
@@ -6462,19 +6460,12 @@ static int _valid_job_part(job_desc_msg_t *job_desc, uid_t submit_uid,
 		}
 		rc = SLURM_SUCCESS;	/* At least some partition usable */
 	} else {
-		if (assoc_ptr) {
-			assoc_acct = assoc_ptr->acct;
-			assoc_part = assoc_ptr->partition;
-		} else {
-			assoc_acct = NULL;
-			assoc_part = NULL;
-		}
 		min_nodes_orig = part_ptr->min_nodes_orig;
 		max_nodes_orig = part_ptr->max_nodes_orig;
 		max_time = part_ptr->max_time;
 		rc = _part_access_check(part_ptr, job_desc, req_bitmap,
-					submit_uid, qos_ptr, assoc_acct,
-					assoc_part);
+					submit_uid, qos_ptr,
+					assoc_ptr ? assoc_ptr->acct : NULL);
 		if ((rc != SLURM_SUCCESS) &&
 		    ((rc == ESLURM_ACCESS_DENIED) ||
 		     (rc == ESLURM_USER_ID_MISSING) ||
@@ -6623,7 +6614,6 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 	job_record_t *job_ptr = NULL;
 	slurmdb_qos_rec_t  *qos_ptr;
 	slurmdb_assoc_rec_t *assoc_ptr;
-	char *partition_name = NULL;
 	job_desc_msg_t job_desc;
 	int rc;
 
@@ -6659,11 +6649,10 @@ extern int job_limits_check(job_record_t **job_pptr, bool check_min_time)
 		job_desc.time_limit = job_ptr->time_min;
 	else
 		job_desc.time_limit = job_ptr->time_limit;
-	partition_name = assoc_ptr ? assoc_ptr->partition : NULL;
 
 	if ((rc = _part_access_check(part_ptr, &job_desc, NULL,
 				     job_ptr->user_id, qos_ptr,
-				     job_ptr->account, partition_name))) {
+				     job_ptr->account))) {
 		debug2("%pJ can't run in partition %s: %s",
 		       job_ptr, part_ptr->name, slurm_strerror(rc));
 		switch (rc) {
