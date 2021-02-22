@@ -31,7 +31,7 @@ set prolog          "test$test_id\_prolog.sh"
 set epilog          "test$test_id\_epilog.sh"
 set prolog_out      "test$test_id\_prolog.out"
 set epilog_out      "test$test_id\_epilog.out"
-set test_node       [get_idle_node_in_part]
+set test_node       [lindex [get_nodes_by_state] 0]
 set job_id          0
 set skipped         ""
 

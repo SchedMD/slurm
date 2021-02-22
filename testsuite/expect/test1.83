@@ -40,7 +40,7 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with topology configured systems"
 }
 
-set available [available_nodes]
+set available [llength [get_nodes_by_state idle,alloc,comp]]
 if {$available < 3} {
 	skip "This test requires 3 nodes, but only $available available"
 }

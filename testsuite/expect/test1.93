@@ -114,7 +114,7 @@ if {![is_super_user]} {
 }
 
 set partition [default_partition]
-set nb_nodes [get_node_cnt_in_part $partition]
+set nb_nodes [get_partition_param $partition "TotalNodes"]
 if {$nb_nodes < 2} {
 	skip "Need 2 or more nodes in default partition"
 }

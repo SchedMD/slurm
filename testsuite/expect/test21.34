@@ -264,7 +264,7 @@ if {$tmpc == 0 || $tmpn == 0} {
 # Get the number of nodes in the default partition, minus one.
 # $maxnode_num is used as MaxNodes in QOS and we will test requests of
 # $maxnode_num + 1. If not EnforcePartLimits could interfere.
-set num_nodes [expr [available_nodes "idle"] -1]
+set num_nodes [expr [llength [get_nodes_by_state]] -1]
 
 if {$num_nodes == 0} {
 	fail "No cpus were found"

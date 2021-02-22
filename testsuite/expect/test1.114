@@ -91,7 +91,7 @@ if {![check_config_select "cons_res"] &&
 	skip "Test is only compatible with a config of SelectType=select/cons_res or select/cons_tres"
 }
 
-set nodes    [get_partition_nodes [default_partition] idle]
+set nodes    [get_nodes_by_state]
 set node_cnt [llength $nodes]
 if { $node_cnt < 3} {
 	skip "Insufficient nodes for test in default partition ($node_cnt < 3)"

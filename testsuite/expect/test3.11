@@ -185,7 +185,7 @@ if {$heterogeneous != 0} {
 	log_warn "Cluster is heterogeneous and some tests may fail"
 }
 set cores_per_node [expr $cores_per_socket * $sockets_per_node]
-set node_count [available_nodes]
+set node_count [llength [get_nodes_by_state idle,alloc,comp]]
 set cluster_cpus [expr $cores_per_node * $node_count]
 
 set cr_socket 0
@@ -195,7 +195,7 @@ if {[param_contains $select_type_parameters "CR_SOCKET*"]} {
 
 # Retrieve a node from partition and total cores in partition
 set states "idle"
-set node_list [get_partition_nodes $def_partition $states]
+set node_list [get_nodes_by_state $states $def_partition]
 set part_node_cnt [llength $node_list]
 if {$part_node_cnt == 0} {
 	fail "Unable to get $states nodes in partition $def_partition"

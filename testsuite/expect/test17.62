@@ -34,7 +34,7 @@ set job_time      1
 set stdout        "/dev/null"
 set stderr        "/tmp/err"
 set job_id        0
-set node_list     [get_idle_node_in_part $partition]
+set node_list     [lindex [get_nodes_by_state] 0]
 
 proc cleanup {} {
 	global job_id bin_rm file_in

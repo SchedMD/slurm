@@ -53,7 +53,7 @@ if {[get_config_param "LaunchType"] eq "launch/runjob"} {
 if {$have_runjob} {
 	set nnodes 1
 } else {
-	set nnodes [available_nodes idle]
+	set nnodes [llength [get_nodes_by_state]]
 }
 
 #

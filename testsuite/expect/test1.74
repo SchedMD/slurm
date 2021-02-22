@@ -148,7 +148,7 @@ proc add_child {parent child maxnode grpnode} {
 cleanup
 
 # Setup
-set node_cnt [available_nodes "idle,alloc,comp"]
+set node_cnt [llength [get_nodes_by_state idle,alloc,comp]]
 if {$node_cnt < 3} {
 	skip "Default partition has too few nodes ($node_cnt < 3)"
 }
@@ -157,7 +157,7 @@ if {$node_cnt < 3} {
 if {[wait_for_node idle 3]} {
 	skip "Default Partition lacks 3 idle nodes"
 }
-set node_cnt [available_nodes idle]
+set node_cnt [llength [get_nodes_by_state]]
 
 # Add parent account (off root)
 if {[add_child "root" $acct -1 -1]} {

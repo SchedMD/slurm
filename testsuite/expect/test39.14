@@ -61,7 +61,7 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
     skip "This test is incompatible with front-end systems"
 }
 
-set nb_nodes [available_nodes]
+set nb_nodes [llength [get_nodes_by_state idle,alloc,comp]]
 if {$nb_nodes < 2} {
     skip "Not enough nodes currently available ($nb_nodes avail, 2 needed)"
 }

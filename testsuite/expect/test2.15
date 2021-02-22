@@ -46,7 +46,7 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 }
 
 set node_cnt 2
-set available [available_nodes]
+set available [llength [get_nodes_by_state idle,alloc,comp]]
 if {$available < $node_cnt} {
 	skip "Not enough nodes currently available ($available avail, $node_cnt needed)"
 }

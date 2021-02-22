@@ -73,15 +73,15 @@ proc inc3_11_9 {} {
 		fail "Unable to delete reservation ($res_name)"
 	}
 
-	set nodes [available_nodes_hostnames $def_partition ]
-	set num_nodes [available_nodes "IDLE" $def_partition]
+	set nodes [get_nodes_by_state]
+	set num_nodes [llength $nodes]
 
 	set core_res_num   [ expr $cores_per_node / 2 ]
 	set thread_res_num [ expr $core_res_num * $threadcnt ]
 	set job_id 0
 
 	# Submit a batch job using half the threads on the nodes
-	set sbatch_pid [spawn $sbatch -w$nodes --time=10:00 --ntasks-per-node=$thread_res_num --output=/dev/null $file_in]
+	set sbatch_pid [spawn $sbatch -w[list2hostlist $nodes] --time=10:00 --ntasks-per-node=$thread_res_num --output=/dev/null $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
