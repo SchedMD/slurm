@@ -3179,7 +3179,7 @@ static int arg_set_open_mode(slurm_opt_t *opt, const char *arg)
 		opt->open_mode = OPEN_MODE_TRUNCATE;
 	else {
 		error("Invalid --open-mode specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
