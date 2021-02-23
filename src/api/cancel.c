@@ -44,6 +44,7 @@
 
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 /*
@@ -125,7 +126,7 @@ slurm_kill_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 int
 slurm_kill_job2(const char *job_id, uint16_t signal, uint16_t flags)
 {
-	int cc;
+	int cc, rc = SLURM_SUCCESS;
 	slurm_msg_t msg;
 	job_step_kill_msg_t req;
 
@@ -146,13 +147,17 @@ slurm_kill_job2(const char *job_id, uint16_t signal, uint16_t flags)
 	msg.msg_type    = REQUEST_KILL_JOB;
         msg.data        = &req;
 
-	if (slurm_send_recv_controller_rc_msg(&msg, &cc, working_cluster_rec)<0)
-		return SLURM_ERROR;
+	if (slurm_send_recv_controller_rc_msg(&msg, &cc, working_cluster_rec)) {
+		rc = SLURM_ERROR;
+		goto fini;
+	}
 
 	if (cc)
 		slurm_seterrno_ret(cc);
 
-	return SLURM_SUCCESS;
+fini:
+	xfree(req.sjob_id);
+	return rc;
 }
 
 /*
