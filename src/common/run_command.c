@@ -197,6 +197,10 @@ extern char *run_command(char *script_type, char *script_path,
 				      __func__, script_type);
 				break;
 			}
+
+			if (tid && track_script_broadcast(tid, *status))
+				break;
+
 			fds.fd = pfd[0];
 			fds.events = POLLIN | POLLHUP | POLLRDHUP;
 			fds.revents = 0;

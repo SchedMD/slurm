@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix node reboots being queued and issued multiple times and preventing the
     reboot to time out.
  -- Fix debug message related to GrpTRESRunMin (AssocGrpCPURunMinutesLimit).
+ -- Fix run_command to exit correctly if track_script kills the calling thread.
 
 * Changes in Slurm 20.11.4
 ==========================
