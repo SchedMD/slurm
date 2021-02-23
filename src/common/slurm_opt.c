@@ -3221,6 +3221,7 @@ static slurm_cli_opt_t slurm_opt_open_mode = {
 	.has_arg = required_argument,
 	.val = LONG_OPT_OPEN_MODE,
 	.set_func_sbatch = arg_set_open_mode,
+	.set_func_scron = arg_set_open_mode,
 	.set_func_srun = arg_set_open_mode,
 	.set_func_data = arg_set_data_open_mode,
 	.get_func = arg_get_open_mode,

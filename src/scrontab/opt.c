@@ -145,6 +145,7 @@ extern void fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.warn_time)
 		desc->warn_time = opt.warn_time;
 
+	desc->open_mode = opt.open_mode;
 	desc->std_err = xstrdup(opt.efname);
 	desc->std_in = xstrdup(opt.ifname);
 	desc->std_out = xstrdup(opt.ofname);
