@@ -48,6 +48,7 @@ set conf_mismatch_err	"WARNING: A line in gres.conf for GRES $re_word_str has $n
 set slurm_conf_type_err	"GRES in slurm.conf have a type while others do not"
 set gres_conf_type_err	"fatal: gres.conf for $re_word_str, some records have \"Type=\" specification while others do not"
 set gres_conf_file_err	"fatal: gres.conf for $re_word_str, some records have \"File\" specification while others do not"
+set key_parse_err	"error: _parse_next_key: Parsing error at unrecognized key"
 
 set debug_mode 0
 # set debug_mode 1
@@ -1477,7 +1478,7 @@ Type=tesla File=${dev}1 Cores=0-3
 "
 set fake_gpus_conf ""
 set expected_output ""
-set err_msgs $parse_err
+set err_msgs $key_parse_err
 set expected_errs 1
 check_configuration 2.20 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
