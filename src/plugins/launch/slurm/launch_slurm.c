@@ -772,7 +772,7 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.mem_bind = opt_local->mem_bind;
 	launch_params.mem_bind_type = opt_local->mem_bind_type;
 	launch_params.accel_bind_type = srun_opt->accel_bind_type;
-	launch_params.open_mode = srun_opt->open_mode;
+	launch_params.open_mode = opt_local->open_mode;
 	if (opt_local->acctg_freq)
 		launch_params.acctg_freq = opt_local->acctg_freq;
 	launch_params.pty = srun_opt->pty;

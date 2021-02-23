@@ -682,8 +682,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->work_dir = xstrdup(opt.chdir);
 	if (sbopt.requeue != NO_VAL)
 		desc->requeue = sbopt.requeue;
-	if (sbopt.open_mode)
-		desc->open_mode = sbopt.open_mode;
+	if (opt.open_mode)
+		desc->open_mode = opt.open_mode;
 	if (opt.acctg_freq)
 		desc->acctg_freq = xstrdup(opt.acctg_freq);
 

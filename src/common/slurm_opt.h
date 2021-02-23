@@ -211,7 +211,6 @@ typedef struct {
 	int minthreads;			/* --minthreads=n		*/
 	bool parsable;			/* --parsable			*/
 	char *propagate;		/* --propagate[=RLIMIT_CORE,...]*/
-	uint8_t open_mode;		/* --open-mode			*/
 	int requeue;			/* --requeue and --no-requeue	*/
 	bool test_only;			/* --test-only			*/
 	int umask;			/* job umask for PBS		*/
@@ -256,7 +255,6 @@ typedef struct {
 	bool multi_prog;		/* multiple programs to execute */
 	int32_t multi_prog_cmds;	/* number of commands in multi prog file */
 	bool no_alloc;			/* --no-allocate		*/
-	uint8_t open_mode;		/* --open-mode=append|truncate	*/
 	char *het_group;		/* --het-group			*/
 	bitstr_t *het_grp_bits;		/* --het-group in bitmap form	*/
 	int het_step_cnt;		/* Total count of het groups to launch */
@@ -409,6 +407,7 @@ typedef struct {
 	uint16_t x11_target_port;	/* target display TCP port on localhost */
 
 	/* used in both sbatch and srun, here for convenience */
+	uint8_t open_mode;		/* --open-mode=append|truncate	*/
 	char *export_env;		/* --export			*/
 	char *efname;			/* error file name		*/
 	char *ifname;			/* input file name		*/

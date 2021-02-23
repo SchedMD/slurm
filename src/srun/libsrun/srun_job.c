@@ -629,9 +629,8 @@ static void _match_job_name(List opt_list)
 	while ((opt_local = list_next(iter))) {
 		if (!opt_local->job_name)
 			opt_local->job_name = xstrdup(opt.job_name);
-		if (opt_local->srun_opt &&
-		    (opt_local->srun_opt->open_mode == 0)) {
-			opt_local->srun_opt->open_mode = OPEN_MODE_APPEND;
+		if (opt_local->open_mode == 0) {
+			opt_local->open_mode = OPEN_MODE_APPEND;
 		}
 	}
 	list_iterator_destroy(iter);
