@@ -26,6 +26,8 @@ documents those changes that are of interest to users and administrators.
     ResumeTimeout expires.
  -- Preserve node boot_req_time on reconfigure.
  -- Preserve node power_save_req_time on reconfigure.
+ -- Fix node reboots being queued and issued multiple times and preventing the
+    reboot to time out.
 
 * Changes in Slurm 20.11.4
 ==========================
