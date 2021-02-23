@@ -287,6 +287,10 @@ if {[info exists env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)]} {
 	set testsuite_cleanup_on_failure $env(SLURM_TESTSUITE_CLEANUP_ON_FAILURE)
 }
 
+# To avoid potential infinite loops due calls to fail/pass/skip inside
+# custom cleanup procs (_test_fini should be called only once)
+set _test_fini_called false
+
 # Testproc internal variables
 set _testproc_included    [list]
 set _testproc_excluded    [list]
@@ -6681,7 +6685,7 @@ proc _get_test_name { } {
 #	test-defined cleanup procedure.
 #
 # NOTES
-#	This function should be called only from _test_init and _exit.
+#	This function should be called only from _test_init and _test_fini.
 #
 ################################################################
 
@@ -6780,8 +6784,18 @@ proc _test_init {} {
 ################################################################
 
 proc _test_fini { status } {
-	global testsuite_cleanup_on_failure
+	global testsuite_cleanup_on_failure _test_fini_called
 	global _subtest_fail_count _subtest_skip_count
+
+	# Avoid potential infinite recursive calls.
+	# _test_fini should be called only once, but custom cleanup procs
+	# called from _test_cleanup can potentially call it (eg fail)
+	if {$_test_fini_called} {
+		log_debug "Recursive _test_fini call detected, most probably a fail on a cleanup function"
+		return
+	}
+	set _test_fini_called true
+
 
 	# Determine if test completed or was aborted
 	set completed [expr $status == 0 ? true : false]
