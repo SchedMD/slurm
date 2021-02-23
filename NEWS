@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
     partition based associations.
  -- Fix issue where a job could run in a wrong partition when using
     EnforcePartLimits=any and partition based associations.
+ -- Remove possible deadlock when adding associations/wckeys in multiple
+    threads.
 
 * Changes in Slurm 20.11.4
 ==========================
