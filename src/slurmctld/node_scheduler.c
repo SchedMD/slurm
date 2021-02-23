@@ -2826,6 +2826,7 @@ end_it:
 extern void launch_prolog(job_record_t *job_ptr)
 {
 	prolog_launch_msg_t *prolog_msg_ptr;
+	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
 	agent_arg_t *agent_arg_ptr;
 	job_resources_t *job_resrcs_ptr;
 	slurm_cred_arg_t cred_arg;
@@ -2841,6 +2842,19 @@ extern void launch_prolog(job_record_t *job_ptr)
 	 */
 	if (job_ptr->batch_flag)
 		return;
+
+	xassert(job_ptr->front_end_ptr);
+	protocol_version = job_ptr->front_end_ptr->protocol_version;
+#else
+	protocol_version = SLURM_PROTOCOL_VERSION;
+	for (i = 0; i < node_record_count; i++) {
+		if (bit_test(job_ptr->node_bitmap, i) == 0)
+			continue;
+		if (protocol_version >
+		    node_record_table_ptr[i].protocol_version)
+			protocol_version =
+				node_record_table_ptr[i].protocol_version;
+	}
 #endif
 
 	prolog_msg_ptr = xmalloc(sizeof(prolog_launch_msg_t));
@@ -2910,7 +2924,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 
 	prolog_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
 						 &cred_arg,
-						 SLURM_PROTOCOL_VERSION);
+						 protocol_version);
 	if (!prolog_msg_ptr->cred) {
 		error("%s: slurm_cred_create failure for %pJ",
 		      __func__, job_ptr);
@@ -2923,25 +2937,13 @@ extern void launch_prolog(job_record_t *job_ptr)
 
 	agent_arg_ptr = xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->retry = 0;
+	agent_arg_ptr->protocol_version = protocol_version;
 #ifdef HAVE_FRONT_END
-	xassert(job_ptr->front_end_ptr);
 	xassert(job_ptr->front_end_ptr->name);
-	agent_arg_ptr->protocol_version =
-		job_ptr->front_end_ptr->protocol_version;
 	agent_arg_ptr->hostlist = hostlist_create(job_ptr->front_end_ptr->name);
 	agent_arg_ptr->node_count = 1;
 #else
 	agent_arg_ptr->hostlist = hostlist_create(job_ptr->nodes);
-	agent_arg_ptr->protocol_version = SLURM_PROTOCOL_VERSION;
-	for (i = 0; i < node_record_count; i++) {
-		if (bit_test(job_ptr->node_bitmap, i) == 0)
-			continue;
-		if (agent_arg_ptr->protocol_version >
-		    node_record_table_ptr[i].protocol_version)
-			agent_arg_ptr->protocol_version =
-				node_record_table_ptr[i].protocol_version;
-	}
-
 	agent_arg_ptr->node_count = job_ptr->node_cnt;
 #endif
 	agent_arg_ptr->msg_type = REQUEST_LAUNCH_PROLOG;
