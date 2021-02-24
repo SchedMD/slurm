@@ -1066,18 +1066,16 @@ end_it:
  */
 int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 {
-	uint16_t total_cores, total_cpus;
+	static int total_cores = -1, total_cpus = -1;
 	bitstr_t *macmap = NULL;
 	bitstr_t *absmap = NULL;
 	bitstr_t *absmap_core = NULL;
 	int rc = SLURM_SUCCESS;
 
-	/* init internal data if not already done */
-	if (xcpuinfo_init() != XCPUINFO_SUCCESS)
-		return SLURM_ERROR;
-
-	total_cores = sockets * cores;
-	total_cpus = block_map_size;
+	if (total_cores == -1) {
+		total_cores = conf->sockets * conf->cores;
+		total_cpus  = conf->block_map_size;
+	}
 
 	/* allocate bitmaps */
 	macmap = bit_alloc(total_cpus);
@@ -1095,18 +1093,18 @@ int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 		goto end_it;
 	}
 
-	/* mapping machine id to abstract id using block_map_inv */
+	/* mapping machine id to abstract id using conf->block_map_inv */
 	for (int icore = 0; icore < total_cores; icore++) {
-		for (int ithread = 0; ithread < threads; ithread++) {
+		for (int ithread = 0; ithread < conf->threads; ithread++) {
 			int absid, macid;
-			macid = (icore * threads) + ithread;
+			macid = (icore * conf->threads) + ithread;
 			macid %= total_cpus;
 
 			/* Skip this machine CPU id if not in in_range */
 			if (!bit_test(macmap, macid))
 				continue;
 
-			absid = block_map_inv[macid];
+			absid = conf->block_map_inv[macid];
 			absid %= total_cpus;
 
 			bit_set(absmap, absid);
@@ -1115,8 +1113,8 @@ int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 
 	/* condense abstract CPU bitmap into an abstract core bitmap */
 	for (int icore = 0; icore < total_cores; icore++) {
-		for (int ithread = 0; ithread < threads; ithread++) {
-			int icpu = (icore * threads) + ithread;
+		for (int ithread = 0; ithread < conf->threads; ithread++) {
+			int icpu = (icore * conf->threads) + ithread;
 			icpu %= total_cpus;
 
 			if (bit_test(absmap, icpu)) {

@@ -49,6 +49,7 @@ documents those changes that are of interest to users and administrators.
  -- Add job_container/tmps plugin to give a method to provide a private /tmp
     per job.
  -- Set the correct core affinity when using AutoDetect.
+ -- Start relying on the conf again in xcpuinfo_mac_to_abs().
 
 * Changes in Slurm 20.11.4
 ==========================
