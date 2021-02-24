@@ -31,6 +31,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix debug message related to GrpTRESRunMin (AssocGrpCPURunMinutesLimit).
  -- Fix run_command to exit correctly if track_script kills the calling thread.
  -- Only requeue a job when the PrologSlurmctld returns nonzero.
+ -- When a job is signaled with SIGKILL make sure we flush all
+    prologs/setup scripts.
 
 * Changes in Slurm 20.11.4
 ==========================

@@ -5558,6 +5558,7 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 		job_ptr->job_state      = JOB_CANCELLED | JOB_COMPLETING;
 		if (flags & KILL_FED_REQUEUE)
 			job_ptr->job_state |= JOB_REQUEUE;
+		track_script_flush_job(job_ptr->job_id);
 		build_cg_bitmap(job_ptr);
 		job_completion_logger(job_ptr, false);
 		deallocate_nodes(job_ptr, false, false, false);
@@ -5576,6 +5577,7 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 		job_ptr->start_time	= now;
 		job_ptr->end_time	= now;
 		srun_allocate_abort(job_ptr);
+		track_script_flush_job(job_ptr->job_id);
 		job_completion_logger(job_ptr, false);
 		if (flags & KILL_FED_REQUEUE) {
 			job_ptr->job_state &= (~JOB_REQUEUE);
