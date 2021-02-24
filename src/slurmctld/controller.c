@@ -1779,13 +1779,13 @@ static void _queue_reboot_msg(void)
 		 */
 		if (!IS_NODE_REBOOT(node_ptr))
 			continue;	/* No reboot needed */
-		if (IS_NODE_COMPLETING(node_ptr)) {
-			want_nodes_reboot = true;
-			continue;
-		}
-		if (node_ptr->boot_req_time + slurm_conf.resume_timeout > now) {
+		else if (IS_NODE_REBOOT_ISSUED(node_ptr)) {
 			debug2("%s: Still waiting for boot of node %s",
 			       __func__, node_ptr->name);
+			continue;
+		}
+		if (IS_NODE_COMPLETING(node_ptr)) {
+			want_nodes_reboot = true;
 			continue;
 		}
                 /* only active idle nodes, don't reboot
@@ -1830,6 +1830,7 @@ static void _queue_reboot_msg(void)
 		 */
 		node_ptr->node_state &=  NODE_STATE_FLAGS;
 		node_ptr->node_state |=  NODE_STATE_DOWN;
+		node_ptr->node_state |= NODE_STATE_REBOOT_ISSUED;
 
 		bit_clear(avail_node_bitmap, i);
 		bit_clear(idle_node_bitmap, i);
@@ -1847,7 +1848,7 @@ static void _queue_reboot_msg(void)
 		hostlist_uniq(reboot_agent_args->hostlist);
 		host_str = hostlist_ranged_string_xmalloc(
 				reboot_agent_args->hostlist);
-		debug("Queuing reboot request for nodes %s", host_str);
+		debug("Issuing reboot request for nodes %s", host_str);
 		xfree(host_str);
 		agent_queue_request(reboot_agent_args);
 		last_node_update = now;
