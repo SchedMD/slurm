@@ -106,7 +106,7 @@
           {
             "name": "update_time",
             "in": "query",
-            "description": "filter if changed since update_time",
+            "description": "Filter if changed since update_time. Use of this parameter can result in faster replies.",
             "required": false,
             "style": "simple",
             "explode": false,
@@ -322,7 +322,7 @@
           {
             "name": "update_time",
             "in": "query",
-            "description": "filter if changed since update_time",
+            "description": "Filter if changed since update_time. Use of this parameter can result in faster replies.",
             "required": false,
             "style": "simple",
             "explode": false,
@@ -407,7 +407,7 @@
           {
             "name": "update_time",
             "in": "query",
-            "description": "filter if changed since update_time",
+            "description": "Filter if changed since update_time. Use of this parameter can result in faster replies.",
             "required": false,
             "style": "simple",
             "explode": false,
@@ -463,7 +463,7 @@
           {
             "name": "update_time",
             "in": "query",
-            "description": "filter if there were no partition changes (not limited to partition in URL endpoint) since update_time",
+            "description": "Filter if there were no partition changes (not limited to partition in URL endpoint) since update_time.",
             "required": false,
             "style": "simple",
             "explode": false,
@@ -506,7 +506,7 @@
           {
             "name": "update_time",
             "in": "query",
-            "description": "filter if changed since update_time",
+            "description": "Filter if changed since update_time. Use of this parameter can result in faster replies.",
             "required": false,
             "style": "simple",
             "explode": false,
@@ -562,7 +562,7 @@
           {
             "name": "update_time",
             "in": "query",
-            "description": "filter if no reservation (not limited to reservation in URL) changed since update_time",
+            "description": "Filter if no reservation (not limited to reservation in URL) changed since update_time.",
             "required": false,
             "style": "simple",
             "explode": false,
