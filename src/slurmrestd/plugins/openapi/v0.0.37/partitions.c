@@ -175,6 +175,10 @@ static int _op_handler_partitions(const char *context_id,
 	data_t *partitions = data_set_list(data_key_set(d, "partitions"));
 	char *name = NULL;
 	partition_info_msg_t *part_info_ptr = NULL;
+	time_t update_time = 0;
+
+	if ((rc = get_date_param(query, "update_time", &update_time)))
+		goto done;
 
 	if (tag == URL_TAG_PARTITION) {
 		const data_t *part_name = data_key_get_const(parameters,
@@ -185,9 +189,13 @@ static int _op_handler_partitions(const char *context_id,
 	}
 
 	if (!rc)
-		rc = slurm_load_partitions(0, &part_info_ptr, SHOW_ALL);
-
-	if (!rc && part_info_ptr) {
+		rc = slurm_load_partitions(update_time, &part_info_ptr,
+					   SHOW_ALL);
+	if (errno == SLURM_NO_CHANGE_IN_DATA) {
+		/* no-op: nothing to do here */
+		rc = errno;
+		goto done;
+	} else if (!rc && part_info_ptr) {
 		int found = 0;
 		for (int i = 0; !rc && i < part_info_ptr->record_count; i++) {
 			if (tag == URL_TAG_PARTITIONS ||
@@ -214,6 +222,7 @@ static int _op_handler_partitions(const char *context_id,
 		data_set_int(data_key_set(e, "errno"), rc);
 	}
 
+done:
 	slurm_free_partition_info_msg(part_info_ptr);
 	xfree(name);
 	return rc;

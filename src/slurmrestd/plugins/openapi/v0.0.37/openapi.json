@@ -403,6 +403,20 @@
         ],
         "operationId": "slurmctld_get_partitions",
         "summary": "get all partition info",
+        "parameters": [
+          {
+            "name": "update_time",
+            "in": "query",
+            "description": "filter if changed since update_time",
+            "required": false,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "partition information",
@@ -442,6 +456,20 @@
             "explode": false,
             "schema": {
               "type": "string"
+            }
+          }
+        ],
+        "parameters": [
+          {
+            "name": "update_time",
+            "in": "query",
+            "description": "filter if there were no partition changes (not limited to partition in URL endpoint) since update_time",
+            "required": false,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
             }
           }
         ],
