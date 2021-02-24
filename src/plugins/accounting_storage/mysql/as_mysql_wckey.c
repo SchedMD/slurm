@@ -136,7 +136,7 @@ static int _make_sure_users_have_default(
 				"select distinct is_def, wckey_name from "
 				"\"%s_%s\" where user='%s' and wckey_name "
 				"not like '*%%' and deleted=0 ORDER BY "
-				"is_dev desc, creation_time desc LIMIT 1;",
+				"is_def desc, creation_time desc LIMIT 1;",
 				cluster, wckey_table, user);
 			debug4("%d(%s:%d) query\n%s",
 			       mysql_conn->conn, THIS_FILE, __LINE__, query);
