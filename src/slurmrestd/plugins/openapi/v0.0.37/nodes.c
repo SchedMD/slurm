@@ -162,14 +162,12 @@ static int _op_handler_nodes(const char *context_id,
 	node_info_msg_t *node_info_ptr = NULL;
 	time_t update_time;
 
-	if ((rc = get_date_param(query, "update_time", &update_time)))
-		goto done;
-
-
-	if (tag == URL_TAG_NODES)
+	if (tag == URL_TAG_NODES) {
+		if ((rc = get_date_param(query, "update_time", &update_time)))
+			goto done;
 		rc = slurm_load_node(update_time, &node_info_ptr,
 				     SHOW_ALL|SHOW_DETAIL);
-	else if (tag == URL_TAG_NODE) {
+	} else if (tag == URL_TAG_NODE) {
 		const data_t *node_name = data_key_get_const(parameters,
 							     "node_name");
 		char *name = NULL;
