@@ -28,6 +28,7 @@ SUBDIRS = \
 	route			\
 	sched			\
 	select			\
+	serializer		\
 	site_factor		\
 	slurmctld		\
 	switch			\

@@ -586,6 +586,9 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/select/cray_aries/Makefile
 		 src/plugins/select/linear/Makefile
 		 src/plugins/select/other/Makefile
+		 src/plugins/serializer/Makefile
+		 src/plugins/serializer/json/Makefile
+		 src/plugins/serializer/yaml/Makefile
 		 src/plugins/site_factor/Makefile
 		 src/plugins/site_factor/none/Makefile
 		 src/plugins/slurmctld/Makefile
