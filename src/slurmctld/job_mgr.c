@@ -6314,7 +6314,8 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 	}
 
 	/* Check for and cleanup stuck scripts */
-	if (job_ptr->details && job_ptr->details->prolog_running)
+	if (IS_JOB_PENDING(job_ptr) || IS_JOB_CONFIGURING(job_ptr) ||
+	    (job_ptr->details && job_ptr->details->prolog_running))
 		track_script_flush_job(job_ptr->job_id);
 
 	info("%s: %pJ done", __func__, job_ptr);

@@ -33,6 +33,8 @@ documents those changes that are of interest to users and administrators.
  -- Only requeue a job when the PrologSlurmctld returns nonzero.
  -- When a job is signaled with SIGKILL make sure we flush all
     prologs/setup scripts.
+ -- Handle burst buffer scripts if the job is canceled while stage_in is
+    happening.
 
 * Changes in Slurm 20.11.4
 ==========================
