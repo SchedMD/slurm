@@ -35,6 +35,8 @@ documents those changes that are of interest to users and administrators.
     prologs/setup scripts.
  -- Handle burst buffer scripts if the job is canceled while stage_in is
     happening.
+ -- When shutting down the slurmctld make note to ignore error message when
+    we have to kill a prolog/setup script we are tracking.
 
 * Changes in Slurm 20.11.4
 ==========================
