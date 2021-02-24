@@ -787,8 +787,8 @@ int main(void)
 	xfree(slurm_unit_conf_filename);
 	close(fd);
 
-	/* data_init_static() is necessary on this test */
-	if(data_init_static()) {
+	/* data_init() is necessary on this test */
+	if (data_init(NULL, NULL)) {
 		error("data_init_static() failed");
 		return EXIT_FAILURE;
 	}

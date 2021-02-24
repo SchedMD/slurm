@@ -42,6 +42,7 @@
 #include <stddef.h>
 
 #include "src/common/list.h"
+#include "src/common/plugrack.h"
 
 /*
  * The possible types of data.
@@ -128,11 +129,18 @@ typedef data_for_each_cmd_t (*DataDictForF) (const char *key, data_t *data, void
 typedef data_for_each_cmd_t (*DataDictForFConst) (const char *key, const data_t *data, void *arg);
 
 /*
- * Initialize static structs needed by data functions.
+ * Initialize static structs needed by data functions and
+ * 	load serializer plugins
+ *
  * WARNING: must be called only once before any data commands
+ *
+ * IN plugins - comma delimited list of plugins or "list"
+ * 	pass NULL to load all found or "" to load none of them
+ *
+ * IN listf - function to call if plugins="list" (may be NULL)
  * RET SLURM_SUCCESS or error
  */
-extern int data_init_static(void);
+extern int data_init(const char *plugins, plugrack_foreach_t listf);
 extern void data_destroy_static(void);
 
 /*
@@ -527,5 +535,54 @@ extern int data_retrieve_dict_path_int(const data_t *data, const char *path,
  * RET ptr to dest or NULL on error
  */
 extern data_t *data_copy(data_t *dest, const data_t *src);
+
+typedef enum {
+	DATA_SER_FLAGS_NONE = 0, /* defaults to compact currently */
+	DATA_SER_FLAGS_COMPACT = 1 << 1,
+	DATA_SER_FLAGS_PRETTY = 1 << 2,
+} data_serializer_flags_t;
+
+/*
+ * Define common MIME types to make it easier for serializer callers.
+ *
+ * WARNING: There is no guarantee that plugins for these types
+ * will be loaded at any given time.
+ */
+#define MIME_TYPE_YAML "application/x-yaml"
+#define MIME_TYPE_YAML_PLUGIN "serializer/yaml"
+#define MIME_TYPE_JSON "application/json"
+#define MIME_TYPE_JSON_PLUGIN "serializer/json"
+
+/*
+ * Serialize data in src into string dest
+ * IN/OUT dest - ptr to NULL string ptr to set with output data.
+ * 	caller must xfree(dest) if set.
+ * IN src - populated data ptr to serialize
+ * IN mime_type - serialize data into the given mime_type
+ * IN flags - optional flags to specify to serilzier to change presentation of
+ * 	data
+ * RET SLURM_SUCCESS or error
+ */
+extern int data_g_serialize(char **dest, const data_t *src,
+			    const char *mime_type,
+			    data_serializer_flags_t flags);
+
+/*
+ * Deserialize string in src into data dest
+ * IN/OUT dest - ptr to NULL data ptr to set with output data.
+ * 	caller must FREE_NULL_DATA(dest) if set.
+ * IN src - string to deserialize
+ * IN length - number of bytes in src
+ * IN mime_type - deserialize data using given mime_type
+ * RET SLURM_SUCCESS or error
+ */
+extern int data_g_deserialize(data_t **dest, const char *src, size_t length,
+			      const char *mime_type);
+
+/*
+ * Check if there is a plugin loaded that can handle the requested mime type
+ * RET ptr to best matching mime type or NULL if none can match
+ */
+extern const char *data_resolve_mime_type(const char *mime_type);
 
 #endif /* _DATA_H */
