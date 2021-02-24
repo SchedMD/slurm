@@ -100,6 +100,9 @@ HIGHLIGHTS
  -- Add --gpu-bind=single option.
  -- Fix "scontrol takeover [backup]" hangs when specifying a backup > 1. All
     slurmctlds below the "backup" will be shutdown.
+ -- The names of the functions in the cli_filter plugin are now prepended with
+    the string "cli_filter_p_". For example, the function setup_defaults()
+    was changed to cli_filter_p_setup_defaults().
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
