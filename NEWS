@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
     reboot to time out.
  -- Fix debug message related to GrpTRESRunMin (AssocGrpCPURunMinutesLimit).
  -- Fix run_command to exit correctly if track_script kills the calling thread.
+ -- Only requeue a job when the PrologSlurmctld returns nonzero.
 
 * Changes in Slurm 20.11.4
 ==========================

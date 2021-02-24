@@ -55,8 +55,7 @@ extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id)
 		unlock_slurmctld(job_write_lock);
 		return;
 	}
-
-	if (rc) {
+	if (WEXITSTATUS(rc)) {
 		error("prolog_slurmctld JobId=%u prolog exit status %u:%u",
 		      job_id, WEXITSTATUS(rc), WTERMSIG(rc));
 		job_ptr->prep_prolog_failed = true;
