@@ -148,6 +148,10 @@ static int _op_handler_reservations(const char *context_id,
 	data_t *reservations = data_set_list(data_key_set(d, "reservations"));
 	char *name = NULL;
 	reserve_info_msg_t *res_info_ptr = NULL;
+	time_t update_time = 0;
+
+	if ((rc = get_date_param(query, "update_time", &update_time)))
+		goto done;
 
 	if (tag == URL_TAG_RESERVATION) {
 		const data_t *res_name = data_key_get_const(parameters,
@@ -158,13 +162,17 @@ static int _op_handler_reservations(const char *context_id,
 	}
 
 	if (!rc)
-		rc = slurm_load_reservations(0, &res_info_ptr);
+		rc = slurm_load_reservations(update_time, &res_info_ptr);
 
 	if ((tag == URL_TAG_RESERVATION) &&
 	    (!res_info_ptr || (res_info_ptr->record_count == 0)))
 		rc = ESLURM_RESERVATION_INVALID;
 
-	if (!rc && res_info_ptr) {
+	if (errno == SLURM_NO_CHANGE_IN_DATA) {
+		/* no-op: nothing to do here */
+		rc = errno;
+		goto done;
+	} else if (!rc && res_info_ptr) {
 		int found = 0;
 
 		for (int i = 0; !rc && (i < res_info_ptr->record_count); i++) {
@@ -189,6 +197,7 @@ static int _op_handler_reservations(const char *context_id,
 		data_set_int(data_key_set(e, "errno"), rc);
 	}
 
+done:
 	slurm_free_reservation_info_msg(res_info_ptr);
 	xfree(name);
 	return rc;

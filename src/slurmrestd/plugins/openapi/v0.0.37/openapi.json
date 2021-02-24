@@ -474,6 +474,20 @@
         ],
         "operationId": "slurmctld_get_reservations",
         "summary": "get all reservation info",
+        "parameters": [
+          {
+            "name": "update_time",
+            "in": "query",
+            "description": "filter if changed since update_time",
+            "required": false,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "reservation information",
@@ -513,6 +527,20 @@
             "explode": false,
             "schema": {
               "type": "string"
+            }
+          }
+        ],
+        "parameters": [
+          {
+            "name": "update_time",
+            "in": "query",
+            "description": "filter if no reservation (not limited to reservation in URL) changed since update_time",
+            "required": false,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
             }
           }
         ],
