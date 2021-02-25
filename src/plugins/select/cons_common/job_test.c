@@ -927,7 +927,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		free_core_array(&avail_cores);
 		free_core_array(&free_cores);
 		_free_avail_res_array(avail_res_array);
-		log_flag(CPU_BIND, "test 0 fail: waiting for switches");
+		log_flag(SELECT_TYPE, "test 0 fail: waiting for switches");
 		return SLURM_ERROR;
 	}
 	if (cr_type == CR_MEMORY) {
