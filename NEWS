@@ -65,6 +65,7 @@ documents those changes that are of interest to users and administrators.
  -- Preserve node power_save_req_time on reconfigure.
  -- Fix node reboots being queued and issued multiple times and preventing the
     reboot to time out.
+ -- Fix debug message related to GrpTRESRunMin (AssocGrpCPURunMinutesLimit).
 
 * Changes in Slurm 20.11.4
 ==========================
