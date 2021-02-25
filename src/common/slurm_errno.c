@@ -549,6 +549,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Unable to convert Data type"},
 	{ ESLURM_DATA_REGEX_COMPILE,
 	  "Unable to compile regex"},
+	{ ESLURM_DATA_UNKNOWN_MIME_TYPE,
+	  "MIME type is unknown to any loaded plugins"},
 
 };
 
