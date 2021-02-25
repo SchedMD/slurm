@@ -549,11 +549,13 @@ _ping_slurmctld(uint32_t control_cnt, char **control_machine)
 	bool down_msg = false;
 	int i;
 
+	exit_code = 1;
 	for (i = 0; i < control_cnt; i++) {
 		int status = 0;
-		if (slurm_ping(i) == SLURM_SUCCESS)
+		if (slurm_ping(i) == SLURM_SUCCESS) {
 			status = 1;
-		else
+			exit_code = 0;
+		} else
 			down_msg = true;
 		if (i == 0)
 			snprintf(mode, sizeof(mode), "primary");
