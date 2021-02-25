@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "November 2020" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "February 2021" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -2123,7 +2123,7 @@ To edit/create a file start with a cluster line for the new cluster:
 
 .nf
 \fBCluster\ \-\ cluster_name:MaxTRESPerJob=node=15\fP
-.ad
+.fi
 
 Anything included on this line will be the default for all
 associations on this cluster.  The options for the cluster are:
@@ -2195,7 +2195,7 @@ accounts on the system. The entries will look similar to this example:
 Account\ \-\ cs:MaxTRESPerJob=node=5:MaxJobs=4:FairShare=399:MaxWallDurationPerJob=40:Description='Computer Science':Organization='LC'
 Parent\ \-\ cs
 Account\ \-\ test:MaxTRESPerJob=node=1:MaxJobs=1:FairShare=1:MaxWallDurationPerJob=1:Description='Test Account':Organization='Test'\fP
-.ad
+.fi
 
 Any of the options after a ':' can be left out and they can be in any order.
 If you want to add any sub accounts just list the Parent THAT HAS ALREADY
@@ -2271,7 +2271,7 @@ To add users to an account add a line after the Parent line, similar to this:
 .nf
 \fBParent\ \-\ test
 User\ \-\ adam:MaxTRESPerJob=node:2:MaxJobs=3:FairShare=1:MaxWallDurationPerJob=1:AdminLevel=Operator:Coordinator='test'\fP
-.ad
+.fi
 
 
 User options are:
