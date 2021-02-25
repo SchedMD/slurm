@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "November 2020" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "February 2021" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -2376,68 +2376,51 @@ hardware component type.
 Name of the node running the job script.
 
 .SH "EXAMPLES"
-.LP
-Specify a batch script by filename on the command line.
+.TP
+Specify a batch script by filename on the command line. \
 The batch script specifies a 1 minute time limit for the job.
-.IP
+
+.nf
 $ cat myscript
-.br
 #!/bin/sh
-.br
 #SBATCH \-\-time=1
-.br
 srun hostname |sort
-.br
 
-.br
 $ sbatch \-N4 myscript
-.br
 salloc: Granted job allocation 65537
-.br
 
-.br
 $ cat slurm\-65537.out
-.br
 host1
-.br
 host2
-.br
 host3
-.br
 host4
+.fi
 
-.LP
+.TP
 Pass a batch script to sbatch on standard input:
-.IP
+
+.nf
 $ sbatch \-N4 <<EOF
-.br
 > #!/bin/sh
-.br
 > srun hostname |sort
-.br
 > EOF
-.br
 sbatch: Submitted batch job 65541
-.br
 
-.br
 $ cat slurm\-65541.out
-.br
 host1
-.br
 host2
-.br
 host3
-.br
 host4
+.fi
 
-.LP
-To create a heterogeneous job with 3 components, each allocating a unique set
+.TP
+To create a heterogeneous job with 3 components, each allocating a unique set \
 of nodes:
-.IP
-sbatch -w node[2-3] : -w node4 : -w node[5-7] work.bash
-.br
+
+.nf
+$ sbatch -w node[2-3] : -w node4 : -w node[5-7] work.bash
 Submitted batch job 34987
+.fi
 
 .SH "COPYING"
 Copyright (C) 2006\-2007 The Regents of the University of California.
