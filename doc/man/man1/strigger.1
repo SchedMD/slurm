@@ -1,4 +1,4 @@
-.TH strigger "1" "Slurm Commands" "August 2016" "Slurm Commands"
+.TH strigger "1" "Slurm Commands" "February 2021" "Slurm Commands"
 
 .SH "NAME"
 strigger \- Used set, get or clear Slurm trigger information.
@@ -321,7 +321,7 @@ primary slurmctld fails.
 # Submit trigger for next primary slurmctld failure event
 strigger \-\-set \-\-primary_slurmctld_failure \\
          \-\-program=/usr/sbin/primary_slurmctld_failure
-# Notify the administrator of the failure using by e\-mail
+# Notify the administrator of the failure using e\-mail
 /bin/mail slurm_admin@site.com \-s Primary_SLURMCTLD_FAILURE
 
 > strigger \-\-set \-\-primary_slurmctld_failure \\
