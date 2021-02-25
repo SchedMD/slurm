@@ -2029,7 +2029,7 @@ timer_check:
 		if (*preemptee_job_list == NULL) {
 			*preemptee_job_list = list_create(NULL);
 		}
-		preemptee_iterator =list_iterator_create(preemptee_candidates);
+		preemptee_iterator = list_iterator_create(preemptee_candidates);
 		while ((tmp_job_ptr = list_next(preemptee_iterator))) {
 			if (!bit_overlap_any(node_bitmap,
 					     tmp_job_ptr->node_bitmap))
