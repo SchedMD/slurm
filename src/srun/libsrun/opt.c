@@ -673,6 +673,7 @@ static bitstr_t *_get_het_group(const int argc, char **argv,
 
 	*opt_found = false;
 	optind = 0;
+	opterr = 0;	/* disable error messages about unrecognized options */
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		slurm_process_option_or_exit(&opt, opt_char, optarg, false,
@@ -727,6 +728,7 @@ static void _set_options(const int argc, char **argv)
 	struct option *optz = slurm_option_table_create(&opt, &opt_string);
 
 	optind = 0;
+	opterr = 1;	/* re-enable error messages for unrecognized options */
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {
 		slurm_process_option_or_exit(&opt, opt_char, optarg, false,
