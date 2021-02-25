@@ -2416,229 +2416,151 @@ The location of the Slurm configuration file.
 You must define clusters before you add accounts and you must add accounts
 before you can add users.
 
-.eo
-.br
--> sacctmgr create cluster tux
-.br
--> sacctmgr create account name=science fairshare=50
-.br
--> sacctmgr create account name=chemistry parent=science fairshare=30
-.br
--> sacctmgr create account name=physics parent=science fairshare=20
-.br
--> sacctmgr create user name=adam cluster=tux account=physics fairshare=10
-.br
--> sacctmgr delete user name=adam cluster=tux account=physics
-.br
--> sacctmgr delete account name=physics cluster=tux
-.br
--> sacctmgr modify user where name=adam cluster=tux account=physics set
-  maxjobs=2 maxwall=30:00
-.br
--> sacctmgr add user brian account=chemistry
-.br
--> sacctmgr list associations cluster=tux format=Account,Cluster,User,Fairshare tree withd
-.br
--> sacctmgr list transactions Action="Add Users" Start=11/03-10:30:00 format=Where,Time
-.br
--> sacctmgr dump cluster=tux file=tux_data_file
-.br
--> sacctmgr load tux_data_file
-.br
+.nf
+$ sacctmgr create cluster tux
+$ sacctmgr create account name=science fairshare=50
+$ sacctmgr create account name=chemistry parent=science fairshare=30
+$ sacctmgr create account name=physics parent=science fairshare=20
+$ sacctmgr create user name=adam cluster=tux account=physics fairshare=10
+$ sacctmgr delete user name=adam cluster=tux account=physics
+$ sacctmgr delete account name=physics cluster=tux
+$ sacctmgr modify user where name=adam cluster=tux account=physics set maxjobs=2 maxwall=30:00
+$ sacctmgr add user brian account=chemistry
+$ sacctmgr list associations cluster=tux format=Account,Cluster,User,Fairshare tree withd
+$ sacctmgr list transactions Action="Add Users" Start=11/03-10:30:00 format=Where,Time
+$ sacctmgr dump cluster=tux file=tux_data_file
+$ sacctmgr load tux_data_file
+.fi
 
-.br
 A user's account can not be changed directly. A new association needs to be
 created for the user with the new account. Then the association with the old
 account can be deleted.
 
-.br
 When modifying an object placing the key words 'set' and the
 optional 'where' is critical to perform correctly below are examples to
 produce correct results.  As a rule of thumb anything you put in front
 of the set will be used as a quantifier.  If you want to put a
 quantifier after the key word 'set' you should use the key
-word 'where'.
-.br
+word 'where'. The following is wrong:
 
-.br
-wrong-> sacctmgr modify user name=adam set fairshare=10 cluster=tux
-.br
+.nf
+$ sacctmgr modify user name=adam set fairshare=10 cluster=tux
+.fi
 
-.br
 This will produce an error as the above line reads modify user adam
-set fairshare=10 and cluster=tux.
-.br
+set fairshare=10 and cluster=tux. Either of the following is correct:
 
-.br
-right-> sacctmgr modify user name=adam cluster=tux set fairshare=10
-.br
-right-> sacctmgr modify user name=adam set fairshare=10 where cluster=tux
-.br
+.nf
+$ sacctmgr modify user name=adam cluster=tux set fairshare=10
+$ sacctmgr modify user name=adam set fairshare=10 where cluster=tux
+.fi
 
-.br
 When changing qos for something only use the '=' operator when wanting
 to explicitly set the qos to something.  In most cases you will want
 to use the '+=' or '\-=' operator to either add to or remove from the
 existing qos already in place.
-.br
 
-.br
 If a user already has qos of normal,standby for a parent or it was
 explicitly set you should use qos+=expedite to add this to the list in
 this fashion.
-.br
 
 If you are looking to only add the qos expedite to only a certain
 account and or cluster you can do that by specifying them in the
 sacctmgr line.
 
-.br
--> sacctmgr modify user name=adam set qos+=expedite
-.br
+.nf
+$ sacctmgr modify user name=adam set qos+=expedite
+.fi
 
-.br
-> sacctmgr modify user name=adam acct=this cluster=tux set qos+=expedite
-.br
+or
 
-.br
+.nf
+$ sacctmgr modify user name=adam acct=this cluster=tux set qos+=expedite
+.fi
+
 Let's give an example how to add QOS to user accounts.
 List all available QOSs in the cluster.
-.br
 
-.br
-->sacctmgr show qos format=name
+.nf
+$ sacctmgr show qos format=name
       Name
-.br
   ---------
-.br
     normal
-.br
   expedite
-.br
+.fi
 
-.br
 List all the associations in the cluster.
-.br
 
-->sacctmgr show assoc format=cluster,account,qos
+.nf
+$ sacctmgr show assoc format=cluster,account,qos
    Cluster    Account    QOS
-.br
   --------  ---------- -----
-.br
   zebra       root         normal
-.br
   zebra       root         normal
-.br
   zebra          g         normal
-.br
   zebra         g1         normal
-.br
+.fi
 
-.br
 Add the QOS expedite to account G1 and display the result.
 Using the operator += the QOS will be added together
 with the  existing QOS to this account.
-.br
 
-.br
-->sacctmgr modify account name=g1 set qos+=expedite
-.br
-
-.br
-->sacctmgr show assoc format=cluster,account,qos
-.br
+.nf
+$ sacctmgr modify account name=g1 set qos+=expedite
+$ sacctmgr show assoc format=cluster,account,qos
    Cluster    Account   QOS
-.br
    --------  --------  -------
-.br
    zebra       root         normal
-.br
    zebra       root         normal
-.br
    zebra          g         normal
-.br
    zebra         g1  expedite,normal
-.br
+.fi
 
-.br
 Now set the QOS expedite as the only QOS for the account G and display
 the result. Using the operator = that expedite is the only usable
 QOS by account G
-.br
 
-.br
-->sacctmgr modify account name=G set qos=expedite
-.br
-
-.br
->sacctmgr show assoc format=cluster,account,user,qos
-.br
+.nf
+$ sacctmgr modify account name=G set qos=expedite
+$ sacctmgr show assoc format=cluster,account,user,qos
    Cluster    Account  QOS
-.br
   ---------   -------- -----
-.br
   zebra       root      normal
-.br
   zebra       root      normal
-.br
   zebra          g      expedite
-.br
   zebra         g1      expedite,normal
-.br
+.fi
 
-.br
 If a new account is added under the account G it will inherit the
 QOS expedite and it will not have access to QOS normal.
-.br
 
-.br
-->sacctmgr add account banana parent=G
-.br
-
-.br
-->sacctmgr show assoc format=cluster,account,qos
-.br
+.nf
+$ sacctmgr add account banana parent=G
+$ sacctmgr show assoc format=cluster,account,qos
    Cluster    Account   QOS
-.br
   ---------  --------  -----
-.br
   zebra       root       normal
-.br
   zebra       root       normal
-.br
   zebra          g       expedite
-.br
   zebra     banana       expedite
-.br
   zebra         g1       expedite,normal
-.br
+.fi
 
-An example of listing trackable resources
-.br
+An example of listing trackable resources:
 
-.br
-->sacctmgr show tres
-.br
+.nf
+$ sacctmgr show tres
       Type              Name      ID
-.br
 ---------- ----------------- --------
-.br
        cpu                          1
-.br
        mem                          2
-.br
     energy                          3
-.br
       node                          4
-.br
    billing                          5
-.br
       gres         gpu:tesla     1001
-.br
    license               vcs     1002
-.br
         bb              cray     1003
-.br
+.fi
 
 .SH "COPYING"
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
