@@ -20,7 +20,7 @@ SRCS = \
 	xyaml.h xyaml.c
 
 if WITH_SLURMRESTD
-AM_CPPFLAGS = -I$(top_srcdir) $(JSON_CPPFLAGS) $(HTTP_PARSER_CPPFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir) $(HTTP_PARSER_CPPFLAGS)
 BIN_REF = $(REF:.txt=.bino)
 BIN_REF2 = $(BIN_REF:.json=.bino)
 
@@ -59,7 +59,7 @@ slurmrestd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 libslurmrest_ref_la_LIBADD = libslurmrest_ref.lo
 slurmrestd_LDADD = \
 	$(convenience_libs) $(HTTP_PARSER_LDFLAGS) \
-	$(YAML_LDFLAGS) $(JSON_LDFLAGS) \
+	$(YAML_LDFLAGS) \
 	libslurmrest_ref.la
 endif
 force:

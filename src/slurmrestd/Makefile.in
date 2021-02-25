@@ -522,7 +522,7 @@ SRCS = \
 	xjson.h xjson.c \
 	xyaml.h xyaml.c
 
-@WITH_SLURMRESTD_TRUE@AM_CPPFLAGS = -I$(top_srcdir) $(JSON_CPPFLAGS) $(HTTP_PARSER_CPPFLAGS)
+@WITH_SLURMRESTD_TRUE@AM_CPPFLAGS = -I$(top_srcdir) $(HTTP_PARSER_CPPFLAGS)
 @WITH_SLURMRESTD_TRUE@BIN_REF = $(REF:.txt=.bino)
 @WITH_SLURMRESTD_TRUE@BIN_REF2 = $(BIN_REF:.json=.bino)
 
@@ -536,7 +536,7 @@ SRCS = \
 @WITH_SLURMRESTD_TRUE@libslurmrest_ref_la_LIBADD = libslurmrest_ref.lo
 @WITH_SLURMRESTD_TRUE@slurmrestd_LDADD = \
 @WITH_SLURMRESTD_TRUE@	$(convenience_libs) $(HTTP_PARSER_LDFLAGS) \
-@WITH_SLURMRESTD_TRUE@	$(YAML_LDFLAGS) $(JSON_LDFLAGS) \
+@WITH_SLURMRESTD_TRUE@	$(YAML_LDFLAGS) \
 @WITH_SLURMRESTD_TRUE@	libslurmrest_ref.la
 
 all: all-recursive
