@@ -99,7 +99,7 @@ static void *_track_script_rec_cleanup(void *arg)
 	struct timespec abs;
 	track_script_rec_t *r = (track_script_rec_t *)arg;
 
-	debug("script for jobid=%u found running, tid=%lu, force ending.",
+	debug("Script for jobid=%u found running, tid=%lu, force ending. Ignore errors about not finding this thread id after this.",
 	      r->job_id, (unsigned long)r->tid);
 
 	_kill_script(r);

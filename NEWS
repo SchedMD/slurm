@@ -66,6 +66,14 @@ documents those changes that are of interest to users and administrators.
  -- Fix node reboots being queued and issued multiple times and preventing the
     reboot to time out.
  -- Fix debug message related to GrpTRESRunMin (AssocGrpCPURunMinutesLimit).
+ -- Fix run_command to exit correctly if track_script kills the calling thread.
+ -- Only requeue a job when the PrologSlurmctld returns nonzero.
+ -- When a job is signaled with SIGKILL make sure we flush all
+    prologs/setup scripts.
+ -- Handle burst buffer scripts if the job is canceled while stage_in is
+    happening.
+ -- When shutting down the slurmctld make note to ignore error message when
+    we have to kill a prolog/setup script we are tracking.
 
 * Changes in Slurm 20.11.4
 ==========================
