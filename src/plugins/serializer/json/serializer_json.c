@@ -34,8 +34,20 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
+#include "slurm/slurm.h"
+
 #include "src/common/slurm_xlator.h"
 #include "src/common/log.h"
+#include "src/common/xassert.h"
+#include "src/common/xstring.h"
+
+#if HAVE_JSON_C_INC
+#include <json-c/json.h>
+#else
+#include <json/json.h>
+#endif
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -71,14 +83,211 @@ const char *mime_types[] = {
 	NULL
 };
 
+static json_object *_data_to_json(const data_t *d);
+
+extern int serializer_p_init(void)
+{
+	log_flag(DATA, "loaded");
+
+	return SLURM_SUCCESS;
+}
+
+extern int serializer_p_fini(void)
+{
+	log_flag(DATA, "unloaded");
+
+	return SLURM_SUCCESS;
+}
+
+
+static json_object *_try_parse(const char *src, size_t stringlen,
+			       struct json_tokener *tok)
+{
+	json_object *jobj = json_tokener_parse_ex(tok, src, stringlen);
+
+	if (jobj == NULL) {
+		enum json_tokener_error jerr = json_tokener_get_error(tok);
+		error("%s: JSON parsing error %zu bytes: %s",
+		      __func__, stringlen, json_tokener_error_desc(jerr));
+		return NULL;
+	}
+	if (tok->char_offset < stringlen)
+		info("%s: WARNING: Extra %zu characters after JSON string detected",
+		     __func__, (stringlen - tok->char_offset));
+
+	return jobj;
+}
+
+static data_t *_json_to_data(json_object *jobj, data_t *d)
+{
+	size_t arraylen = 0;
+
+	if (!d)
+		d = data_new();
+
+	switch (json_object_get_type(jobj)) {
+	case json_type_null:
+		data_set_null(d);
+		break;
+	case json_type_boolean:
+		data_set_bool(d, json_object_get_boolean(jobj));
+		break;
+	case json_type_double:
+		data_set_float(d, json_object_get_double(jobj));
+		break;
+	case json_type_int:
+		data_set_int(d, json_object_get_int64(jobj));
+		break;
+	case json_type_object:
+		data_set_dict(d);
+		/* warning: json_object_object_foreach is an evil macro */
+		json_object_object_foreach(jobj, key, val) {
+			_json_to_data(val, data_key_set(d, key));
+		}
+		break;
+	case json_type_array:
+		arraylen = json_object_array_length(jobj);
+		data_set_list(d);
+		for (size_t i = 0; i < arraylen; i++)
+			_json_to_data(json_object_array_get_idx(jobj, i),
+				      data_list_append(d));
+		break;
+	case json_type_string:
+		data_set_string(d, json_object_get_string(jobj));
+		break;
+	default:
+		fatal_abort("%s: unknown JSON type", __func__);
+	};
+
+	return d;
+}
+
+static data_for_each_cmd_t _convert_dict_json(const char *key,
+					      const data_t *data,
+					      void *arg)
+{
+	json_object *jobj = arg;
+	json_object *jobject = _data_to_json(data);
+
+	json_object_object_add(jobj, key, jobject);
+	return DATA_FOR_EACH_CONT;
+}
+
+static data_for_each_cmd_t _convert_list_json(const data_t *data, void *arg)
+{
+	json_object *jobj = arg;
+	json_object *jarray = _data_to_json(data);
+
+	json_object_array_add(jobj, jarray);
+	return DATA_FOR_EACH_CONT;
+}
+
+static json_object *_data_to_json(const data_t *d)
+{
+	if (!d)
+		return NULL;
+
+	switch (data_get_type(d)) {
+	case DATA_TYPE_NULL:
+		return NULL;
+		break;
+	case DATA_TYPE_BOOL:
+		return json_object_new_boolean(data_get_bool(d));
+		break;
+	case DATA_TYPE_FLOAT:
+		return json_object_new_double(data_get_float(d));
+		break;
+	case DATA_TYPE_INT_64:
+		return json_object_new_int64(data_get_int(d));
+		break;
+	case DATA_TYPE_DICT:
+	{
+		json_object *jobj = json_object_new_object();
+		if (data_dict_for_each_const(d, _convert_dict_json, jobj) < 0)
+			error("%s: unexpected error calling _convert_dict_json()",
+			      __func__);
+		return jobj;
+	}
+	case DATA_TYPE_LIST:
+	{
+		json_object *jobj = json_object_new_array();
+		if (data_list_for_each_const(d, _convert_list_json, jobj) < 0)
+			error("%s: unexpected error calling _convert_list_json()",
+			      __func__);
+		return jobj;
+	}
+	case DATA_TYPE_STRING:
+	{
+		const char *str = data_get_string_const(d);
+		if (str)
+			return json_object_new_string(str);
+		else
+			return json_object_new_string("");
+		break;
+	}
+	default:
+		fatal_abort("%s: unknown type", __func__);
+	};
+}
+
 extern int serializer_p_serialize(char **dest, const data_t *data,
 				  data_serializer_flags_t flags)
 {
-	return SLURM_ERROR;
+	struct json_object *jobj = _data_to_json(data);
+	int jflags = 0;
+
+	/* can't be pretty and compact at the same time! */
+	xassert((flags & (DATA_SER_FLAGS_PRETTY | DATA_SER_FLAGS_COMPACT)) !=
+		(DATA_SER_FLAGS_PRETTY | DATA_SER_FLAGS_COMPACT));
+
+	switch (flags) {
+	case DATA_SER_FLAGS_PRETTY:
+		jflags = JSON_C_TO_STRING_SPACED | JSON_C_TO_STRING_PRETTY;
+		break;
+	case DATA_SER_FLAGS_COMPACT: /* fallthrough */
+	default:
+		jflags = JSON_C_TO_STRING_PLAIN;
+	}
+
+	/* string will die with jobj */
+	*dest = xstrdup(json_object_to_json_string_ext(jobj, jflags));
+
+	/* put is equiv to free() */
+	json_object_put(jobj);
+
+	return SLURM_SUCCESS;
 }
 
 extern int serializer_p_deserialize(data_t **dest, const char *src,
 				    size_t len)
 {
-	return SLURM_ERROR;
+	json_object *jobj = NULL;
+	data_t *data = NULL;
+	struct json_tokener *tok = json_tokener_new();
+
+	if (!src)
+		return ESLURM_DATA_PTR_NULL;
+
+	/* json-c has hard limit of 32 bits */
+	if (len >= INT32_MAX) {
+		error("%s: unable to parse JSON: too large",
+		      __func__);
+		return ESLURM_DATA_TOO_LARGE;
+	}
+
+	if (!tok) {
+		/* FIXME: json_tokener_new() failed? */
+		return SLURM_ERROR;
+	}
+
+	jobj = _try_parse(src, len, tok);
+	if (jobj) {
+		data = _json_to_data(jobj, NULL);
+		json_object_put(jobj);
+	}
+
+	json_tokener_free(tok);
+
+	*dest = data;
+	return SLURM_SUCCESS;
 }
