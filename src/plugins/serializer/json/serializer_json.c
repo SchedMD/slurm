@@ -265,6 +265,9 @@ extern int serializer_p_deserialize(data_t **dest, const char *src,
 	data_t *data = NULL;
 	struct json_tokener *tok = json_tokener_new();
 
+	if (!tok)
+		return ENOMEM;
+
 	if (!src)
 		return ESLURM_DATA_PTR_NULL;
 
@@ -273,11 +276,6 @@ extern int serializer_p_deserialize(data_t **dest, const char *src,
 		error("%s: unable to parse JSON: too large",
 		      __func__);
 		return ESLURM_DATA_TOO_LARGE;
-	}
-
-	if (!tok) {
-		/* FIXME: json_tokener_new() failed? */
-		return SLURM_ERROR;
 	}
 
 	jobj = _try_parse(src, len, tok);
