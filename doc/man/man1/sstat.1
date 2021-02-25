@@ -300,13 +300,15 @@ The location of the Slurm configuration file.
 
 .SH "EXAMPLES"
 
-.TP
-\f3sstat \-\-format=AveCPU,AvePages,AveRSS,AveVMSize,JobID \-j 11\fP
+.nf
+$ sstat \-\-format=AveCPU,AvePages,AveRSS,AveVMSize,JobID \-j 11
 25:02.000  0K         1.37M      5.93M      9.0
+.fi
 
-.TP
-\f3sstat \-p \-\-format=AveCPU,AvePages,AveRSS,AveVMSize,JobID \-j 11\fP
+.nf
+$ sstat \-p \-\-format=AveCPU,AvePages,AveRSS,AveVMSize,JobID \-j 11
 25:02.000|0K|1.37M|5.93M|9.0|
+.fi
 
 .SH "COPYING"
 Copyright (C) 2009 Lawrence Livermore National Security.
