@@ -856,66 +856,66 @@ A valid strftime() format can also be specified. For example, a value of
 "%a %T" will report the day of the week and a time stamp (e.g. "Mon 12:34:56").
 
 .SH "EXAMPLES"
+.TP
 Report basic node and partition configurations:
 
 .nf
-
-> sinfo
+$ sinfo
 PARTITION AVAIL TIMELIMIT NODES STATE  NODELIST
 batch     up     infinite     2 alloc  adev[8-9]
 batch     up     infinite     6 idle   adev[10-15]
 debug*    up        30:00     8 idle   adev[0-7]
-
 .fi
 
+.TP
 Report partition summary information:
-.nf
 
-> sinfo -s
+.nf
+$ sinfo -s
 PARTITION AVAIL TIMELIMIT NODES(A/I/O/T) NODELIST
 batch     up     infinite 2/6/0/8        adev[8-15]
 debug*    up        30:00 0/8/0/8        adev[0-7]
-
 .fi
 
+.TP
 Report more complete information about the partition debug:
-.nf
 
-> sinfo --long --partition=debug
+.nf
+$ sinfo --long --partition=debug
 PARTITION AVAIL TIMELIMIT JOB_SIZE ROOT OVERSUBS GROUPS NODES STATE NODELIST
 debug*    up        30:00        8 no   no       all        8 idle  dev[0-7]
 .fi
 
+.TP
 Report only those nodes that are in state DRAINED:
-.nf
 
-> sinfo --states=drained
+.nf
+$ sinfo --states=drained
 PARTITION AVAIL NODES TIMELIMIT STATE  NODELIST
 debug*    up        2     30:00 drain  adev[6-7]
-
 .fi
 
+.TP
 Report node-oriented information with details and exact matches:
-.nf
 
-> sinfo -Nel
+.nf
+$ sinfo -Nel
 NODELIST    NODES PARTITION STATE  CPUS MEMORY TMP_DISK WEIGHT FEATURES REASON
 adev[0-1]       2 debug*    idle      2   3448    38536     16 (null)   (null)
 adev[2,4-7]     5 debug*    idle      2   3384    38536     16 (null)   (null)
 adev3           1 debug*    idle      2   3394    38536     16 (null)   (null)
 adev[8-9]       2 batch     allocated 2    246    82306     16 (null)   (null)
 adev[10-15]     6 batch     idle      2    246    82306     16 (null)   (null)
-
 .fi
 
+.TP
 Report only down, drained and draining nodes and their reason field:
-.nf
 
-> sinfo -R
+.nf
+$ sinfo -R
 REASON                              NODELIST
 Memory errors                       dev[0,5]
 Not Responding                      dev8
-
 .fi
 
 .SH "COPYING"
