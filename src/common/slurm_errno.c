@@ -551,7 +551,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Unable to compile regex"},
 	{ ESLURM_DATA_UNKNOWN_MIME_TYPE,
 	  "MIME type is unknown to any loaded plugins"},
-
+	{ ESLURM_DATA_TOO_LARGE,
+	  "DATA too large to handle"},
 };
 
 /*
