@@ -4191,15 +4191,16 @@ Function in TaskPlugin
 \fB2. TaskProlog\fR
 System\-wide per task program defined in slurm.conf
 .TP
-\fB3. user prolog\fR
-Job step specific task program defined using
+\fB3. User prolog\fR
+Job-step-specific task program defined using
 \fBsrun\fR's \fB\-\-task\-prolog\fR option or \fBSLURM_TASK_PROLOG\fR
 environment variable
 .TP
-\fB4.\fR Execute the job step's task
+\fB4. Task\fR
+Execute the job step's task
 .TP
-\fB5. user epilog\fR
-Job step specific task program defined using
+\fB5. User epilog\fR
+Job-step-specific task program defined using
 \fBsrun\fR's \fB\-\-task\-epilog\fR option or \fBSLURM_TASK_EPILOG\fR
 environment variable
 .TP
