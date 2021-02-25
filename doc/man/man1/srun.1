@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "January 2021" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "February 2021" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -3210,6 +3210,7 @@ to the arguments specified in the configuration file.
 .PP
 For example:
 .nf
+$ cat silly.conf
 ###################################################################
 # srun multiple program configuration file
 #
@@ -3219,7 +3220,7 @@ For example:
 1,7       echo  task:%t
 0,2\-3     echo  offset:%o
 
-> srun \-n8 \-l \-\-multi\-prog silly.conf
+$ srun \-n8 \-l \-\-multi\-prog silly.conf
 0: offset:0
 1: task:1
 2: offset:1
@@ -3228,9 +3229,7 @@ For example:
 5: linux16.llnl.gov
 6: linux17.llnl.gov
 7: task:7
-
 .fi
-
 
 .SH "EXAMPLES"
 This simple example demonstrates the execution of the command \fBhostname\fR
@@ -3240,8 +3239,7 @@ the request. The output of each task will be proceeded with its task number.
 (The machine "dev" in the example below has a total of two CPUs per node)
 
 .nf
-
-> srun \-n8 \-l hostname
+$ srun \-n8 \-l hostname
 0: dev0
 1: dev0
 2: dev1
@@ -3250,8 +3248,8 @@ the request. The output of each task will be proceeded with its task number.
 5: dev2
 6: dev3
 7: dev3
-
 .fi
+
 .PP
 The srun \fB\-r\fR option is used within a job script
 to run two job steps on disjoint nodes in the following
@@ -3259,28 +3257,26 @@ example. The script is run using allocate mode instead
 of as a batch job in this case.
 
 .nf
-
-> cat test.sh
+$ cat test.sh
 #!/bin/sh
 echo $SLURM_JOB_NODELIST
 srun \-lN2 \-r2 hostname
 srun \-lN2 hostname
 
-> salloc \-N4 test.sh
+$ salloc \-N4 test.sh
 dev[7\-10]
 0: dev9
 1: dev10
 0: dev7
 1: dev8
-
 .fi
+
 .PP
 The following script runs two job steps in parallel
 within an allocated set of nodes.
 
 .nf
-
-> cat test.sh
+$ cat test.sh
 #!/bin/bash
 srun \-lN2 \-n4 \-r 2 sleep 60 &
 srun \-lN2 \-r 0 sleep 60 &
@@ -3289,15 +3285,15 @@ squeue
 squeue \-s
 wait
 
-> salloc \-N4 test.sh
+$ salloc \-N4 test.sh
   JOBID PARTITION     NAME     USER  ST      TIME  NODES NODELIST
   65641     batch  test.sh   grondo   R      0:01      4 dev[7\-10]
 
 STEPID     PARTITION     USER      TIME NODELIST
 65641.0        batch   grondo      0:01 dev[7\-8]
 65641.1        batch   grondo      0:01 dev[9\-10]
-
 .fi
+
 .PP
 This example demonstrates how one executes a simple MPI job.
 We use \fBsrun\fR to build a list of machines (nodes) to be used by
@@ -3305,8 +3301,7 @@ We use \fBsrun\fR to build a list of machines (nodes) to be used by
 the script to be executed follow.
 
 .nf
-
-> cat test.sh
+$ cat test.sh
 #!/bin/sh
 MACHINEFILE="nodes.$SLURM_JOB_ID"
 
@@ -3320,9 +3315,9 @@ mpirun \-np $SLURM_NTASKS \-machinefile $MACHINEFILE mpi\-app
 
 rm $MACHINEFILE
 
-> salloc \-N2 \-n4 test.sh
-
+$ salloc \-N2 \-n4 test.sh
 .fi
+
 .PP
 This simple example demonstrates the execution of different jobs on different
 nodes in the same srun.  You can do this for any number of nodes or any
@@ -3331,8 +3326,7 @@ SLURM_NODEID env var.  Starting at 0 and going to the number specified on
 the srun commandline.
 
 .nf
-
-> cat test.sh
+$ cat test.sh
 case $SLURM_NODEID in
     0) echo "I am running on "
        hostname ;;
@@ -3340,13 +3334,13 @@ case $SLURM_NODEID in
        echo "is where I am running" ;;
 esac
 
-> srun \-N2 test.sh
+$ srun \-N2 test.sh
 dev0
 is where I am running
 I am running on
 dev1
-
 .fi
+
 .PP
 This example demonstrates use of multi\-core options to control layout
 of tasks.
@@ -3354,17 +3348,16 @@ We request that four sockets per node and two cores per socket be
 dedicated to the job.
 
 .nf
-
-> srun \-N2 \-B 4\-4:2\-2 a.out
+$ srun \-N2 \-B 4\-4:2\-2 a.out
 .fi
+
 .PP
 This example shows a script in which Slurm is used to provide resource
 management for a job by executing the various job steps as processors
 become available for their dedicated use.
 
 .nf
-
-> cat my.script
+$ cat my.script
 #!/bin/bash
 srun \-n4 prog1 &
 srun \-n3 prog2 &
@@ -3380,8 +3373,7 @@ This example shows how to launch an application called "server" with one task,
 task.
 
 .nf
-
-> srun \-n1 \-c16 \-\-mem\-per\-cpu=1gb server : \-n16 \-\-mem\-per\-cpu=1gb client
+$ srun \-n1 \-c16 \-\-mem\-per\-cpu=1gb server : \-n16 \-\-mem\-per\-cpu=1gb client
 .fi
 
 .SH "COPYING"
