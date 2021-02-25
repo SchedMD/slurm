@@ -57,6 +57,12 @@ def insert_tag(lineIn):
 
     if lineIn[0:4] != "<DT>":
         return lineIn
+    if lineIn[4:7] == "<B>":
+        bold_tag = True
+    elif lineIn[4:7] == "<I>":
+        bold_tag = False
+    else:
+        return lineIn
     contentsBgn = 4
     contentsEnd = lineIn.find("<DD>")
     contents = lineIn[contentsBgn:contentsEnd]
@@ -67,7 +73,11 @@ def insert_tag(lineIn):
     else:
         posBgn += 2
 
-    posEnd = lineIn.find("</B>",posBgn)
+    if bold_tag:
+        posEnd = lineIn.find("</B>",posBgn)
+    else:
+        posEnd = lineIn.find("</I>",posBgn)
+
     if posEnd == -1:
         # poorly constructed
         return lineIn
