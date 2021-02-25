@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "October 2020" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "February 2021" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -79,8 +79,8 @@ the verbosity of logging. By default only errors will be displayed.
 .TP
 \fB\-V\fR , \fB\-\-version\fR
 Print version information and exit.
-.TP
-\fBCOMMANDS\fR
+
+.SS COMMANDS
 
 .TP
 \fBabort\fP
@@ -488,8 +488,7 @@ Write the current configuration to a file with the naming convention of
 file.  If a filename is given that file location with a .<datetime> suffix is
 created.
 
-.TP
-\fBINTERACTIVE COMMANDS\fR
+.SS INTERACTIVE COMMANDS
 \fBNOTE:\fP
 All commands listed below can be used in the interactive mode, but \fINOT\fP
 on the initial command line.
@@ -544,9 +543,7 @@ This includes time\-stamps on data structures, record counts, etc.
 \fB!!\fP
 Repeat the last command executed.
 
-.TP
-\fBSPECIFICATIONS FOR UPDATE COMMAND, JOBS\fR
-.LP
+.SS SPECIFICATIONS FOR UPDATE COMMAND, JOBS
 Note that update requests done by either root, SlurmUser or Administrators are
 not subject to certain restrictions. For instance, if an Administrator changes
 the QOS on a pending job, certain limits such as the TimeLimit will not be
@@ -954,10 +951,7 @@ Set the job's working directory to the specified value. Note that this may
 only be set for jobs in the PENDING state, and that jobs may fail to launch
 if they rely on relative paths to the originally submitted WorkDir.
 
-.TP
-\fBSPECIFICATIONS FOR SHOW COMMAND, JOBS\fR
-.LP
-
+.SS SPECIFICATIONS FOR SHOW COMMAND, JOBS
 The "show" command, when used with the "job" or "job <jobid>"
 entity displays detailed information about a job or jobs.  Much of
 this information may be modified using the "update job" command as
@@ -1051,8 +1045,7 @@ code explicitly returns zero for these values. These values are
 meaningless once the job resources have been allocated and the job has
 started.
 
-.TP
-\fBSPECIFICATIONS FOR UPDATE COMMAND, STEPS\fR
+.SS SPECIFICATIONS FOR UPDATE COMMAND, STEPS
 .TP
 \fIStepId\fP=<job_id>[.<step_id>]
 Identify the step to be updated.
@@ -1117,8 +1110,7 @@ time limit (e.g. "TimeLimit=+30"). In order to increment or decrement the
 current time limit, the \fIStepId\fP specification must precede the
 \fITimeLimit\fP specification.
 
-.TP
-\fBSPECIFICATIONS FOR UPDATE COMMAND, NODES\fR
+.SS SPECIFICATIONS FOR UPDATE COMMAND, NODES
 .TP
 \fINodeName\fP=<name>
 Identify the node(s) to be updated. Multiple node names may be specified using
@@ -1280,8 +1272,7 @@ preserved or slurmctld's receipt of a SIGHUP.
 Update slurm.conf with any changes meant to be persistent across normal
 restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 
-.TP
-\fBSPECIFICATIONS FOR SHOW COMMAND, NODES\fR
+.SS SPECIFICATIONS FOR SHOW COMMAND, NODES
 .TP
 The meaning of the energy information is as follows:
 
@@ -1356,9 +1347,7 @@ The total memory, in MB, currently allocated by jobs on the node.
 \fIFreeMem\fP
 The total memory, in MB, currently free on the node as reported by the OS.
 
-.TP
-\fBSPECIFICATIONS FOR UPDATE COMMAND, FRONTEND\fR
-
+.SS SPECIFICATIONS FOR UPDATE COMMAND, FRONTEND
 .TP
 \fIFrontendName\fP=<name>
 Identify the front end node to be updated. This specification is required.
@@ -1380,8 +1369,7 @@ appropriate.
 Setting a front end node "DOWN" will cause all running and suspended jobs on
 that node to be terminated.
 
-.TP
-\fBSPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS, PARTITIONS\fR
+.SS SPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS, PARTITIONS
 .TP
 \fIAllowGroups\fP=<name>
 Identify the user groups which may use this partition.
@@ -1627,8 +1615,7 @@ when calculating fairshare and when enforcing the TRES billing limit on jobs.
 Updates affect new jobs and not existing jobs.
 See the slurm.conf man page for more information.
 
-.TP
-\fBSPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS, RESERVATIONS\fR
+.SS SPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS, RESERVATIONS
 .TP
 
 .TP
