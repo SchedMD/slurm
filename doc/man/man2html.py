@@ -39,8 +39,13 @@ dirname = ''
 #   <H2>hhhh</h2> also has tag has tag <a id="SECTION_hhhh"></a> inserted
 def insert_tag(lineIn):
     lineOt = ""
-    if lineIn[0:4] == "<H2>":
-        posEnd = lineIn.find("</H2>")
+    if lineIn[0:2] == "<H" and lineIn[3] == ">":
+        header_num = lineIn[2]
+        # Don't make links to h1 tags - no need, since already at top of page
+        if header_num == "1":
+            return lineIn;
+
+        posEnd = lineIn.find("</H%s>" % header_num)
         if posEnd == -1:
             return lineIn;
 
@@ -52,7 +57,7 @@ def insert_tag(lineIn):
         else:
             ids[id_name] = 0
         id_name = "SECTION_%s" % (id_name)
-        lineOt = '<h2>%s<a class="slurm_link" id="%s" href="#%s"></a></h2>' % (contents, id_name, id_name)
+        lineOt = '<h%s>%s<a class="slurm_link" id="%s" href="#%s"></a></h%s>' % (header_num, contents, id_name, id_name, header_num)
         return lineOt
 
     if lineIn[0:4] != "<DT>":
