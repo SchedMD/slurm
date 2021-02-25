@@ -975,8 +975,8 @@ static int _process_command (int argc, char **argv)
 			fprintf (stderr,
 				 "too many arguments for keyword:%s\n",
 				 tag);
-		}
-		_print_ping ();
+		} else
+			_print_ping();
 	}
 	else if ((xstrncasecmp(tag, "\\q", 2) == 0) ||
 		 (xstrncasecmp(tag, "quiet", MAX(tag_len, 4)) == 0)) {
