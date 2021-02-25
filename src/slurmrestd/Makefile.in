@@ -536,7 +536,6 @@ SRCS = \
 @WITH_SLURMRESTD_TRUE@libslurmrest_ref_la_LIBADD = libslurmrest_ref.lo
 @WITH_SLURMRESTD_TRUE@slurmrestd_LDADD = \
 @WITH_SLURMRESTD_TRUE@	$(convenience_libs) $(HTTP_PARSER_LDFLAGS) \
-@WITH_SLURMRESTD_TRUE@	$(YAML_LDFLAGS) \
 @WITH_SLURMRESTD_TRUE@	libslurmrest_ref.la
 
 all: all-recursive

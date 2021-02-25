@@ -59,7 +59,6 @@ slurmrestd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 libslurmrest_ref_la_LIBADD = libslurmrest_ref.lo
 slurmrestd_LDADD = \
 	$(convenience_libs) $(HTTP_PARSER_LDFLAGS) \
-	$(YAML_LDFLAGS) \
 	libslurmrest_ref.la
 endif
 force:
