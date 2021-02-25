@@ -808,6 +808,10 @@ proc tolerance { expected observed tolerance_expression } {
 #	check. Calling user should be permitted to run_commands as the
 #	supplied user using sudo without password.
 #	See the -user option of run_command.
+#	This proc also log_warn a message if user already exists in the DB
+#	because most probably this user is testsuite_user and that user is
+#	expected NOT to be in the DB and could potentially be removed from it by
+#	the test.
 #
 # RETURN VALUE
 #	Returns a boolean value indicating whether the calling user may
@@ -824,6 +828,11 @@ proc check_run_as_user user {
 	if {[run_command_status -none -user $user "$bin_id -un"]} {
 		return false
 	}
+
+	if {[get_admin_level $user] != ""} {
+		log_warn "User $user already exists in DB, but it's probable that it's going to be removed by the test cleanup"
+	}
+
 	return true
 }
 
@@ -872,6 +881,7 @@ proc check_run_as_user user {
 #	-user <user>
 #		Attempt to execute command as <user>. Note that sudo must be
 #		properly configured to permit the caller to execute as <user>.
+#		See check_run_as_user.
 #
 # ARGUMENTS
 #	command
