@@ -101,9 +101,6 @@ if {[wait_for_file $mail_prog_out] != 0} {
 }
 
 set output [run_command_output -fail "$bin_cat $mail_prog_out"]
-if {![regexp "-s Slurm Job_id=$job_id Name=test$test_id Began, \\S+ \\S+ \\S+ $login_grp_info SLURM_JOB_ID=$job_id SLURM_JOB_USER=$login_grp_info SLURM_MAIL_TYPE=Began" $output]} {
-	fail "Began mail not sent for $job_id"
-}
-if {![regexp "-s Slurm Job_id=$job_id Name=test$test_id Ended, \\S+ \\S+ \\S+, \\S+, \\S+ \\d+ $login_grp_info SLURM_JOB_ID=$job_id SLURM_JOB_USER=$login_grp_info SLURM_MAIL_TYPE=Ended" $output]} {
-	fail "Ended mail not sent for $job_id"
-}
+subtest {[regexp "-s Slurm Job_id=$job_id Name=test$test_id Began, \\S+ \\S+ \\S+ $login_grp_info SLURM_JOB_ID=$job_id SLURM_JOB_USER=$login_grp_info SLURM_MAIL_TYPE=Began" $output]} "Began mail output should be found in log"
+
+subtest {[regexp "-s Slurm Job_id=$job_id Name=test$test_id Ended, \\S+ \\S+ \\S+, \\S+, \\S+ \\d+ $login_grp_info SLURM_JOB_ID=$job_id SLURM_JOB_USER=$login_grp_info SLURM_MAIL_TYPE=Ended" $output]} "Ended mail output should be found in log"
