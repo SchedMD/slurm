@@ -816,6 +816,10 @@ proc tolerance { expected observed tolerance_expression } {
 #	check. Calling user should be permitted to run_commands as the
 #	supplied user using sudo without password.
 #	See the -user option of run_command.
+#	This proc also log_warn a message if user already exists in the DB
+#	because most probably this user is testsuite_user and that user is
+#	expected NOT to be in the DB and could potentially be removed from it by
+#	the test.
 #
 # RETURN VALUE
 #	Returns a boolean value indicating whether the calling user may
@@ -832,6 +836,11 @@ proc check_run_as_user user {
 	if {[run_command_status -none -user $user "$bin_id -un"]} {
 		return false
 	}
+
+	if {[get_admin_level $user] != ""} {
+		log_warn "User $user already exists in DB, but it's probable that it's going to be removed by the test cleanup"
+	}
+
 	return true
 }
 
@@ -880,6 +889,7 @@ proc check_run_as_user user {
 #	-user <user>
 #		Attempt to execute command as <user>. Note that sudo must be
 #		properly configured to permit the caller to execute as <user>.
+#		See check_run_as_user.
 #
 # ARGUMENTS
 #	command
@@ -3050,7 +3060,7 @@ proc get_total_cpus {} {
 #	is_super_user - determines if user is root or SlurmUser
 #
 # SYNOPSIS
-#	is_super_user
+#	is_super_user ?user?
 #
 # DESCRIPTION
 #	Determine if user is a Slurm super user (i.e. user
@@ -3061,10 +3071,12 @@ proc get_total_cpus {} {
 #
 ################################################################
 
-proc is_super_user { } {
+proc is_super_user {{user ""}} {
 	global number
 
-	set user [get_my_user_name]
+	if {$user == ""} {
+		set user [get_my_user_name]
+	}
 
 	# Check if user is root
 	if {[string compare $user "root"] == 0} {
@@ -3470,30 +3482,31 @@ proc get_job_acct_freq { } {
 ################################################################
 #
 # NAME
-#	get_admin_level - gets the AdminLevel for the current user
+#	get_admin_level - gets the AdminLevel of the user
 #
 # SYNOPSIS
-#	get_admin_level
+#	get_admin_level ?user?
 #
 # RETURN VALUE
 #	AdminLevel for the current user
 #
 ################################################################
 
-proc get_admin_level { } {
+proc get_admin_level {{user_name ""}} {
 	global sacctmgr re_word_str re_word_str bin_id
 
 	set admin_level ""
-	set user_name ""
 
-	if {[is_super_user]} {
-		return "Administrator"
+	if {$user_name == ""} {
+		set user_name [get_my_user_name]
+		if { ![string length $user_name] } {
+			log_error "No name returned from id"
+			return ""
+		}
 	}
 
-	set user_name [get_my_user_name]
-	if { ![string length $user_name] } {
-		log_error "No name returned from id"
-		return ""
+	if {[is_super_user $user_name]} {
+		return "Administrator"
 	}
 
 	#

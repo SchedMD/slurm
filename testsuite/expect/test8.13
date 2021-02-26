@@ -32,6 +32,7 @@ set default_partition    [default_partition]
 set resv_name            "resv_$test_name"
 set config_file          [get_conf_path]/slurm.conf
 set slurm_user           [get_config_param "SlurmUser"]
+set test_acct            "$test_name\_acct"
 regsub {\(.*} $slurm_user {} slurm_user
 
 proc testproc_cleanup {} {
@@ -43,13 +44,16 @@ proc testproc_cleanup {} {
 }
 
 proc cleanup {} {
-	global config_file
+	global config_file do_useracct_cleanup sacctmgr test_acct testsuite_user
 
 	log_info "cleanup called"
 	testproc_cleanup
 
+	run_command "$sacctmgr -vi delete user name=$testsuite_user"
+	run_command "$sacctmgr -vi delete account name=$test_acct"
+
 	restore_conf $config_file
-	reconfigure -fail
+	reconfigure
 }
 
 proc set_user_resv_delete {} {
@@ -105,6 +109,11 @@ if {![check_run_as_user $testsuite_user]} {
 if {$testsuite_user == $slurm_user} {
 	skip "Test needs testsuite_user ($testsuite_user) different than SlurmUser ($slurm_user)"
 }
+
+# Provide the right permissions to $testsuite_user
+run_command -fail "$sacctmgr -vi add account name=$test_acct"
+run_command -fail "$sacctmgr -vi add user name=$testsuite_user account=$test_acct"
+run_command -fail "$sacctmgr -vi update user $testsuite_user set adminlevel=None"
 
 #
 # Main testproc
