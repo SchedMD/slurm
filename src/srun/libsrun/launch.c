@@ -487,14 +487,12 @@ extern void launch_common_set_stdio_fds(srun_job_t *job,
 					slurm_step_io_fds_t *cio_fds,
 					slurm_opt_t *opt_local)
 {
-	srun_opt_t *srun_opt = opt_local->srun_opt;
 	bool err_shares_out = false;
 	int file_flags;
-	xassert(srun_opt);
 
-	if (srun_opt->open_mode == OPEN_MODE_APPEND)
+	if (opt_local->open_mode == OPEN_MODE_APPEND)
 		file_flags = O_CREAT|O_WRONLY|O_APPEND;
-	else if (srun_opt->open_mode == OPEN_MODE_TRUNCATE)
+	else if (opt_local->open_mode == OPEN_MODE_TRUNCATE)
 		file_flags = O_CREAT|O_WRONLY|O_APPEND|O_TRUNC;
 	else {
 		slurm_conf_t *conf = slurm_conf_lock();

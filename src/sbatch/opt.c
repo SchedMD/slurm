@@ -931,9 +931,9 @@ static bool _opt_verify(void)
 		exit(error_exit);
 	}
 
-	if (sbopt.open_mode) {
+	if (opt.open_mode) {
 		/* Propage mode to spawned job using environment variable */
-		if (sbopt.open_mode == OPEN_MODE_APPEND)
+		if (opt.open_mode == OPEN_MODE_APPEND)
 			setenvf(NULL, "SLURM_OPEN_MODE", "a");
 		else
 			setenvf(NULL, "SLURM_OPEN_MODE", "t");
