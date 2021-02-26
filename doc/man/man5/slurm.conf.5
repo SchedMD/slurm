@@ -1464,6 +1464,9 @@ local address itself. Changes to MailDomain will only affect new jobs.
 Fully qualified pathname to the program used to send email per user request.
 The default value is "/bin/mail" (or "/usr/bin/mail" if "/bin/mail" does not
 exist but "/usr/bin/mail" does exist).
+The program is called with arguments suitable for the default mail command,
+however additional information about the job is passed in the form of
+environment variables.
 
 .TP
 \fBMaxArraySize\fR
