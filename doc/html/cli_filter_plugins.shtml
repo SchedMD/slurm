@@ -11,19 +11,23 @@ their own Slurm cli_filter plugins.</p>
 during the execution of the <b>salloc</b>, <b>sbatch</b>, and <b>srun</b>
 command line interface (CLI) programs. Three hooks are defined:
 <ul>
-<li><b>setup_defaults</b> &mdash; Called before any option processing is done,
+<li><b>cli_filter_p_setup_defaults</b> &mdash;
+Called before any option processing is done,
 <i>per job component</i>, allowing a plugin to replace default option
 values.</li>
-<li><b>pre_submit</b> &mdash; Called after option processing <i>per job
+<li><b>cli_filter_p_pre_submit</b> &mdash;
+Called after option processing <i>per job
 component</i> but before any communication
 is made with the slurm controller. This location
 is ideal for policy enforcement because the plugin can read all the options
 supplied by the user (as well as the environment) - thus invalid job requests
 can be stopped before they ever reach the slurmctld.</li>
-<li><b>post_submit</b> &mdash; Called after the jobid (and, in the case of
+<li><b>cli_filter_p_post_submit</b> &mdash;
+Called after the jobid (and, in the case of
 <b>srun</b>, after the stepid) is generated, and typically before or in
 parallel with job execution.  In combination with data collected in the
-pre_submit() hook, this is an ideal location for logging activity.</li>
+cli_filter_p_pre_submit() hook, this is an ideal location for logging
+activity.</li>
 </p>
 
 <p>
@@ -99,7 +103,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 
-<p class="commandline">int setup_defaults(slurm_opt_t *options, bool early)
+<p class="commandline">int cli_filter_p_setup_defaults(slurm_opt_t *options, bool early)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the salloc, sbatch, or srun command line interface
 (CLI) programs shortly before processing any options from the environment,
@@ -122,46 +126,49 @@ the slurm_option_* API within <i>src/common/slurm_opt.h</i>.<br>
 <span class="commandline">SLURM_ERROR</span> on failure, will terminate execution
 of the CLI.
 
-<p class="commandline">int pre_submit(slurm_opt_t *options, int offset)
+<p class="commandline">int cli_filter_p_pre_submit(slurm_opt_t *options, int offset)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the CLI after option processing but before any
-communication with the slurmctld is made.  This is after all setup_defaults()
+communication with the slurmctld is made.  This is after all
+cli_filter_p_setup_defaults()
 hooks are executed (for the current job component), environment variables
 processed, command line options and #SBATCH directives interpreted.
-<b>pre_submit()</b> is called before any parts of
+cli_filter_p_pre_submit() is called before any parts of
 the data structure are rewritten, so it is safe to
 both read and write or unset any options from the plugin that you desire.
-Note that post_submit() cannot safely read (or write) the options, so you should
-save any state for logging in post_submit() during pre_submit(). This function is
-called once per job component.
+Note that cli_filter_p_post_submit() cannot safely read (or write) the options,
+so you should save any state for logging in cli_filter_p_post_submit() during
+cli_filter_p_pre_submit(). This function is called once per job component.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">options</span>
 (input/output) the job allocation request specifications.<br>
 <span class="commandline">offset</span>
 (input) integer value for the current hetjob offset; should be used as a key when
-storing data for communication between pre_submit() and post_submit().<br>
+storing data for communication between cli_filter_p_pre_submit() and
+cli_filter_p_post_submit().<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure, will terminate execution
 of the CLI.
 
-<p class="commandline">void post_submit(int offset, uint32_t jobid, uint32_t stepid)
+<p class="commandline">void cli_filter_p_post_submit(int offset, uint32_t jobid, uint32_t stepid)
 <p style="margin-left:.2in"><b>Description</b>:<br>
 This function is called by the CLI after a jobid (and, if srun, a stepid) has
 been assigned by the controller.  It is no longer safe to read or write to the
 options data structure, so it has been removed from this function.  You should
-save any state you need in pre_submit() using het_job_offset as a key, since
-the function is called separately for every job component, and access
+save any state you need in cli_filter_p_pre_submit() using het_job_offset as a
+key, since the function is called separately for every job component, and access
 it here.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">offset</span>
 (input) integer value for the current hetjob offset; should be used as a key
-when storing data for communication between pre_submit() and post_submit().<br>
+when storing data for communication between cli_filter_p_pre_submit() and
+cli_filter_p_post_submit().<br>
 <span class="commandline">jobid</span>
 (input) job id of the job<br>
 <span class="commandline">stepid</span>
 (input) step id of the job if appropriate, NO_VAL otherwise<br>
 
-<p style="text-align:center;">Last modified 2 June 2020</p>
+<p style="text-align:center;">Last modified 26 February 2021</p>
 
 <!--#include virtual="footer.txt"-->
