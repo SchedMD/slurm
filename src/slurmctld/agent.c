@@ -1857,7 +1857,7 @@ static char **_build_mail_env(job_record_t *job_ptr, uint32_t mail_type)
                 setenvf(&my_env, "SLURM_CLUSTER_NAME", "%s",
                         slurm_conf.cluster_name);
 	setenvf(&my_env, "SLURM_JOB_STATE", "%s",
-		job_state_string(job_ptr->job_state));
+		job_state_string(job_ptr->job_state & JOB_STATE_BASE));
 	if (job_ptr->account)
 		setenvf(&my_env, "SLURM_JOB_ACCOUNT", "%s", job_ptr->account);
 	if (job_ptr->details && job_ptr->details->features) {
