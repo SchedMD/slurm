@@ -516,17 +516,11 @@ START_TEST(test_data_job)
 	data_set_string(arg, "append");
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_OPEN_MODE, arg,
 						errors) == 0, "open mode");
-	ck_assert_msg(opt.sbatch_opt->open_mode == OPEN_MODE_APPEND,
-		      "open mode value");
-	ck_assert_msg(opt.srun_opt->open_mode == OPEN_MODE_APPEND,
-		      "open mode value");
+	ck_assert_msg(opt.open_mode == OPEN_MODE_APPEND, "open mode value");
 	data_set_string(arg, "truncate");
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_OPEN_MODE, arg,
 						errors) == 0, "open mode");
-	ck_assert_msg(opt.sbatch_opt->open_mode == OPEN_MODE_TRUNCATE,
-		      "open mode value");
-	ck_assert_msg(opt.srun_opt->open_mode == OPEN_MODE_TRUNCATE,
-		      "open mode value");
+	ck_assert_msg(opt.open_mode == OPEN_MODE_TRUNCATE, "open mode value");
 	data_set_string(arg, "invalid");
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_OPEN_MODE, arg,
 						errors) != 0, "open mode");
