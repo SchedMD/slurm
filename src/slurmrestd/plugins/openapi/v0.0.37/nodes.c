@@ -160,7 +160,7 @@ static int _op_handler_nodes(const char *context_id,
 	data_t *errors = populate_response_format(d);
 	data_t *nodes = data_set_list(data_key_set(d, "nodes"));
 	node_info_msg_t *node_info_ptr = NULL;
-	time_t update_time;
+	time_t update_time = 0;
 
 	if (tag == URL_TAG_NODES) {
 		if ((rc = get_date_param(query, "update_time", &update_time)))
