@@ -140,6 +140,9 @@ static void _free_tables(void)
 
 	debug3("%s %s called", plugin_type, __func__);
 
+	if (!tables)
+		return;
+
 	for (i = 0; i < tables_cur_len; i++) {
 		table_t *table = &(tables[i]);
 		for (j = 0; j < tables->size; j++)
