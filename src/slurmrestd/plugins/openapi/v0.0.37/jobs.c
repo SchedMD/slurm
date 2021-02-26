@@ -478,14 +478,13 @@ static int _fill_job_desc_from_sbatch_opts(slurm_opt_t *opt,
 	desc->argv = xmalloc(sizeof(char *) * sbopt->script_argc);
 	for (i = 0; i < sbopt->script_argc; i++)
 		desc->argv[i] = xstrdup(sbopt->script_argv[i]);
+	desc->open_mode = opt->open_mode;
 	desc->std_err = xstrdup(opt->efname);
 	desc->std_in = xstrdup(opt->ifname);
 	desc->std_out = xstrdup(opt->ofname);
 	desc->work_dir = xstrdup(opt->chdir);
 	if (sbopt->requeue != NO_VAL)
 		desc->requeue = sbopt->requeue;
-	if (sbopt->open_mode)
-		desc->open_mode = sbopt->open_mode;
 	if (opt->acctg_freq)
 		desc->acctg_freq = xstrdup(opt->acctg_freq);
 
