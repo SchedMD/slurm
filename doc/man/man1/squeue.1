@@ -1,4 +1,4 @@
-.TH squeue "1" "Slurm Commands" "October 2020" "Slurm Commands"
+.TH squeue "1" "Slurm Commands" "February 2021" "Slurm Commands"
 
 .SH "NAME"
 squeue \- view information about jobs located in the Slurm scheduling queue.
@@ -21,7 +21,8 @@ list of account names. This has no effect when listing job steps.
 \fB\-a\fR, \fB\-\-all\fR
 Display information about jobs and job steps in all partitions.
 This causes information to be displayed about partitions that are configured as
-hidden and partitions that are unavailable to user's group.
+hidden, partitions that are unavailable to a user's group, and federated jobs
+that are in a "revoked" state.
 
 .TP
 \fB\-r\fR, \fB\-\-array\fR
