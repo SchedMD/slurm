@@ -1102,6 +1102,10 @@ int xcpuinfo_mac_to_abs(char *in_range, char **out_range)
 			macid = (icore * threads) + ithread;
 			macid %= total_cpus;
 
+			/* Skip this machine CPU id if not in in_range */
+			if (!bit_test(macmap, macid))
+				continue;
+
 			absid = block_map_inv[macid];
 			absid %= total_cpus;
 

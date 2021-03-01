@@ -48,6 +48,7 @@ documents those changes that are of interest to users and administrators.
     INVALID_DEPEND state flag set and were allowed to run in 20.11.
  -- Add job_container/tmps plugin to give a method to provide a private /tmp
     per job.
+ -- Set the correct core affinity when using AutoDetect.
 
 * Changes in Slurm 20.11.4
 ==========================
