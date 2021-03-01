@@ -1846,6 +1846,11 @@ static void _mail_free(void *arg)
 	}
 }
 
+/*
+ * Initializes MailProg environment and sets main part of variables, however
+ * additional variables are set in _set_job_time and _set_job_term_info to avoid
+ * code duplication.
+ */
 static char **_build_mail_env(job_record_t *job_ptr, uint32_t mail_type)
 {
 	int exit_code, signal;
@@ -2067,16 +2072,19 @@ static char *_mail_type_str(uint16_t mail_type)
 }
 
 static void _set_job_time(job_record_t *job_ptr, uint16_t mail_type,
-			  char *buf, int buf_len)
+			  char *buf, int buf_len, char ***env)
 {
 	time_t interval = NO_VAL;
+	int msg_len;
 
 	buf[0] = '\0';
 	if ((mail_type == MAIL_JOB_BEGIN) && job_ptr->start_time &&
 	    job_ptr->details && job_ptr->details->submit_time) {
 		interval = job_ptr->start_time - job_ptr->details->submit_time;
 		snprintf(buf, buf_len, ", Queued time ");
-		secs2time_str(interval, buf+14, buf_len-14);
+		msg_len = 14;
+		secs2time_str(interval, buf+msg_len, buf_len-msg_len);
+		setenvf(env, "SLURM_QUEUED_TIME", "%s", buf+msg_len);
 		return;
 	}
 
@@ -2089,7 +2097,9 @@ static void _set_job_time(job_record_t *job_ptr, uint16_t mail_type,
 		} else
 			interval = job_ptr->end_time - job_ptr->start_time;
 		snprintf(buf, buf_len, ", Run time ");
-		secs2time_str(interval, buf+11, buf_len-11);
+		msg_len = 11;
+		secs2time_str(interval, buf+msg_len, buf_len-msg_len);
+		setenvf(env, "SLURM_RUN_TIME", "%s", buf+msg_len);
 		return;
 	}
 
@@ -2103,20 +2113,24 @@ static void _set_job_time(job_record_t *job_ptr, uint16_t mail_type,
 		} else
 			interval = time(NULL) - job_ptr->start_time;
 		snprintf(buf, buf_len, ", Run time ");
-		secs2time_str(interval, buf+11, buf_len-11);
+		msg_len = 11;
+		secs2time_str(interval, buf+msg_len, buf_len-msg_len);
+		setenvf(env, "SLURM_RUN_TIME", "%s", buf+msg_len);
 		return;
 	}
 
 	if ((mail_type == MAIL_JOB_STAGE_OUT) && job_ptr->end_time) {
 		interval = time(NULL) - job_ptr->end_time;
 		snprintf(buf, buf_len, " time ");
-		secs2time_str(interval, buf + 6, buf_len - 6);
+		msg_len = 11;
+		secs2time_str(interval, buf+msg_len, buf_len-msg_len);
+		setenvf(env, "SLURM_STAGE_OUT_TIME", "%s", buf+msg_len);
 		return;
 	}
 }
 
 static void _set_job_term_info(job_record_t *job_ptr, uint16_t mail_type,
-			       char *buf, int buf_len)
+			       char *buf, int buf_len, char ***env)
 {
 	buf[0] = '\0';
 
@@ -2145,17 +2159,26 @@ static void _set_job_term_info(job_record_t *job_ptr, uint16_t mail_type,
 				snprintf(buf, buf_len, ", %s, ExitCode [%d-%d]",
 					 state_string, exit_code_min,
 					 exit_code_max);
+				setenvf(env, "SLURM_EXIT_CODE_MIN", "%d",
+					exit_code_min);
+				setenvf(env, "SLURM_EXIT_CODE_MAX", "%d",
+					exit_code_max);
 			} else if (WIFSIGNALED(exit_status_max)) {
 				exit_code_max = WTERMSIG(exit_status_max);
 				snprintf(buf, buf_len, ", %s, MaxSignal [%d]",
 					 "Mixed", exit_code_max);
+				setenvf(env, "SLURM_TERM_SIGNAL_MAX", "%d",
+					exit_code_max);
 			} else if (WIFEXITED(exit_status_max)) {
 				exit_code_max = WEXITSTATUS(exit_status_max);
 				snprintf(buf, buf_len, ", %s, MaxExitCode [%d]",
 					 "Mixed", exit_code_max);
+				setenvf(env, "SLURM_EXIT_CODE_MAX", "%d",
+					exit_code_max);
 			} else {
 				snprintf(buf, buf_len, ", %s",
 					 job_state_string(base_state));
+				setenvf(env, "SLURM_EXIT_CODE_MAX", "%s", "0");
 			}
 
 			if (job_ptr->array_recs->array_flags &
@@ -2169,9 +2192,12 @@ static void _set_job_term_info(job_record_t *job_ptr, uint16_t mail_type,
 				snprintf(buf, buf_len, ", %s, ExitCode %d",
 					 job_state_string(base_state),
 					 exit_code_max);
+				setenvf(env, "SLURM_EXIT_CODE_MAX", "%d",
+					exit_code_max);
 			} else {
 				snprintf(buf, buf_len, ", %s",
 					 job_state_string(base_state));
+				setenvf(env, "SLURM_EXIT_CODE_MAX", "%s", "0");
 			}
 		}
 	} else if (buf_len > 0) {
@@ -2208,8 +2234,11 @@ extern void mail_job_info(job_record_t *job_ptr, uint16_t mail_type)
 			job_ptr = master_job_ptr;
 	}
 
-	_set_job_time(job_ptr, mail_type, job_time, sizeof(job_time));
-	_set_job_term_info(job_ptr, mail_type, term_msg, sizeof(term_msg));
+	mi->environment = _build_mail_env(job_ptr, mail_type);
+	_set_job_time(job_ptr, mail_type, job_time, sizeof(job_time),
+		      &mi->environment);
+	_set_job_term_info(job_ptr, mail_type, term_msg, sizeof(term_msg),
+			   &mi->environment);
 	if (job_ptr->array_recs && !(job_ptr->mail_type & MAIL_ARRAY_TASKS)) {
 		mi->message = xstrdup_printf("Slurm Array Summary Job_id=%u_* (%u) Name=%s "
 					     "%s%s",
@@ -2231,7 +2260,6 @@ extern void mail_job_info(job_record_t *job_ptr, uint16_t mail_type)
 					     _mail_type_str(mail_type),
 					     job_time, term_msg);
 	}
-	mi->environment = _build_mail_env(job_ptr, mail_type);
 	info("email msg to %s: %s", mi->user_name, mi->message);
 
 	slurm_mutex_lock(&mail_mutex);
