@@ -304,53 +304,6 @@ extern int task_p_post_step (stepd_step_rec_t *job)
 	return fini();
 }
 
-extern char* task_cgroup_create_slurm_cg (xcgroup_ns_t* ns) {
-
-	/* we do it here as we do not have access to the conf structure */
-	/* in libslurm (src/common/xcgroup.c) */
-	xcgroup_t slurm_cg;
-	char *pre;
-	slurm_cgroup_conf_t *cg_conf;
-
-	/* read cgroup configuration */
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = xcgroup_get_slurm_cgroup_conf();
-
-	pre = xstrdup(cg_conf->cgroup_prepend);
-
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
-
-#ifdef MULTIPLE_SLURMD
-	if ( conf->node_name != NULL )
-		xstrsubstitute(pre,"%n", conf->node_name);
-	else {
-		xfree(pre);
-		pre = (char*) xstrdup("/slurm");
-	}
-#endif
-
-	/* create slurm cgroup in the ns (it could already exist) */
-	if (xcgroup_create(ns,&slurm_cg,pre,
-			   getuid(), getgid()) != XCGROUP_SUCCESS) {
-		xfree(pre);
-		return pre;
-	}
-	if (xcgroup_instantiate(&slurm_cg) != XCGROUP_SUCCESS) {
-		error("unable to build slurm cgroup for ns %s: %m",
-		      ns->subsystems);
-		xcgroup_destroy(&slurm_cg);
-		xfree(pre);
-		return pre;
-	}
-	else {
-		debug3("slurm cgroup %s successfully created for ns %s: %m",
-		       pre,ns->subsystems);
-		xcgroup_destroy(&slurm_cg);
-	}
-
-	return pre;
-}
-
 /*
  * Add pid to specific cgroup.
  */
