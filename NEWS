@@ -76,6 +76,8 @@ documents those changes that are of interest to users and administrators.
  -- When shutting down the slurmctld make note to ignore error message when
     we have to kill a prolog/setup script we are tracking.
  -- scrontab - add support for the --open-mode option.
+ -- acct_gather_profile/influxdb - avoid segfault on plugin shutdown if setup
+    has not completed successfully.
 
 * Changes in Slurm 20.11.4
 ==========================
