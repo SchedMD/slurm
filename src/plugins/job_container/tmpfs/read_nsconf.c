@@ -51,28 +51,77 @@
 static slurm_ns_conf_t slurm_ns_conf;
 static bool slurm_ns_conf_inited = false;
 
-static int _read_slurm_ns_conf(void)
+static s_p_hashtbl_t *_create_ns_hashtbl(void)
 {
-	char *conf_path = NULL;
-	s_p_hashtbl_t **node_tbl = NULL;
-	s_p_hashtbl_t *node = NULL;
-	s_p_hashtbl_t *tbl = NULL;
-	struct stat buf;
-	int node_count;
-	char *nodename = NULL;
-	char *basepath = NULL;
-	char *initscript = NULL;
-	int rc = SLURM_SUCCESS;
-	int i;
-	s_p_options_t node_options[] = {
-		{"NodeName", S_P_STRING},
-		{"BasePath", S_P_PLAIN_STRING},
-		{"InitScript", S_P_PLAIN_STRING},
+	static s_p_options_t ns_options[] = {
+		{"BasePath", S_P_STRING},
+		{"InitScript", S_P_STRING},
 		{NULL}
 	};
 
-	s_p_options_t options[] = {
-		{"NodeName", S_P_EXPLINE, NULL, NULL, node_options},
+	return s_p_hashtbl_create(ns_options);
+}
+
+static int _parse_ns_conf_internal(void **dest, slurm_parser_enum_t type,
+				   const char *key, const char *value,
+				   const char *line, char **leftover)
+{
+	int rc = 1;
+	s_p_hashtbl_t *tbl = _create_ns_hashtbl();
+	s_p_parse_line(tbl, *leftover, leftover);
+
+	if (value)
+		slurm_ns_conf.basepath = xstrdup(value);
+	else if (!s_p_get_string(&slurm_ns_conf.basepath, "BasePath", tbl)) {
+		fatal("empty basepath detected, please verify namespace.conf is correct");
+		rc = 0;
+		goto end_it;
+	}
+
+	if (!s_p_get_string(&slurm_ns_conf.initscript, "InitScript", tbl))
+		debug3("empty init script detected");
+
+end_it:
+	s_p_hashtbl_destroy(tbl);
+
+	/* Nothing to free on this line in parse_config.c when freeing table. */
+	*dest = NULL;
+	return rc;
+}
+
+static int _parse_ns_conf(void **dest, slurm_parser_enum_t type,
+			  const char *key, const char *value,
+			  const char *line, char **leftover)
+{
+	if (value) {
+		bool match = false;
+		hostlist_t hl = hostlist_create(value);
+		if (hl) {
+			match = (hostlist_find(hl, conf->node_name) >= 0);
+			hostlist_destroy(hl);
+		}
+		if (!match) {
+			s_p_hashtbl_t *tbl = _create_ns_hashtbl();
+			s_p_parse_line(tbl, *leftover, leftover);
+			s_p_hashtbl_destroy(tbl);
+			debug("skipping NS for NodeName=%s %s", value, line);
+			return 0;
+		}
+	}
+
+	return _parse_ns_conf_internal(dest, type, key, NULL, line, leftover);
+}
+
+static int _read_slurm_ns_conf(void)
+{
+	char *conf_path = NULL;
+	s_p_hashtbl_t *tbl = NULL;
+	struct stat buf;
+	int rc = SLURM_SUCCESS;
+
+	static s_p_options_t options[] = {
+		{"BasePath", S_P_ARRAY, _parse_ns_conf_internal, NULL},
+		{"NodeName", S_P_ARRAY, _parse_ns_conf, NULL},
 		{NULL}
 	};
 
@@ -82,57 +131,25 @@ static int _read_slurm_ns_conf(void)
 
 	if ((!conf_path) || (stat(conf_path, &buf) == -1)) {
 		error("No namespace.conf file");
-		return ENOENT;
+		rc = ENOENT;
+		goto end_it;
 	}
+
 	debug("Reading namespace.conf file %s", conf_path);
 	tbl = s_p_hashtbl_create(options);
 	if (s_p_parse_file(tbl, NULL, conf_path, false) == SLURM_ERROR) {
 		fatal("Could not open/read/parse namespace.conf file %s",
 		      conf_path);
-		return SLURM_ERROR;
-	}
-
-	if (!s_p_get_expline(&node_tbl, &node_count, "NodeName", tbl)) {
-		error("Could not parse namespace.conf file %s", conf_path);
-		return SLURM_ERROR;
-	}
-	for (i = 0; i < node_count; i++) {
-		node = node_tbl[i];
-		if (!s_p_get_string(&nodename, "NodeName", node)) {
-			error("empty nodename detected, please verify namespace.conf is correct");
-			rc = SLURM_ERROR;
-			xfree(nodename);
-			continue;
-		}
-
-		if (xstrcmp(nodename, conf->node_name)) {
-			xfree(nodename);
-			continue;
-		}
-
-		if (!s_p_get_string(&basepath, "BasePath", node)) {
-			error("empty basepath detected, please verify namespace.conf is correct");
-			rc = SLURM_ERROR;
-			xfree(basepath);
-			break;
-		}
-		slurm_ns_conf.basepath = basepath;
-
-		if (!s_p_get_string(&initscript, "InitScript", node)) {
-			debug3("empty init script detected");
-			xfree(initscript);
-			slurm_ns_conf.initscript = NULL;
-		} else {
-			slurm_ns_conf.initscript = initscript;
-		}
-		xfree(nodename);
-		break;
+		goto end_it;
 	}
 
 	if (!slurm_ns_conf.basepath) {
 		error("Configuration for this node not found in namespace.conf");
 		rc = SLURM_ERROR;
 	}
+
+end_it:
+
 	s_p_hashtbl_destroy(tbl);
 	xfree(conf_path);
 
