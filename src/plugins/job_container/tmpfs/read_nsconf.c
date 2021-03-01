@@ -50,10 +50,12 @@
 
 static slurm_ns_conf_t slurm_ns_conf;
 static bool slurm_ns_conf_inited = false;
+static bool auto_basepath_set = false;
 
 static s_p_hashtbl_t *_create_ns_hashtbl(void)
 {
 	static s_p_options_t ns_options[] = {
+		{"AutoBasePath", S_P_BOOLEAN},
 		{"BasePath", S_P_STRING},
 		{"InitScript", S_P_STRING},
 		{NULL}
@@ -81,6 +83,9 @@ static int _parse_ns_conf_internal(void **dest, slurm_parser_enum_t type,
 #ifdef MULTIPLE_SLURMD
 	xstrfmtcat(slurm_ns_conf.basepath, "/%s", conf->node_name);
 #endif
+
+	if (s_p_get_boolean(&slurm_ns_conf.auto_basepath, "AutoBasePath", tbl))
+		auto_basepath_set = true;
 
 	if (!s_p_get_string(&slurm_ns_conf.initscript, "InitScript", tbl))
 		debug3("empty init script detected");
@@ -124,6 +129,7 @@ static int _read_slurm_ns_conf(void)
 	int rc = SLURM_SUCCESS;
 
 	static s_p_options_t options[] = {
+		{"AutoBasePath", S_P_BOOLEAN},
 		{"BasePath", S_P_ARRAY, _parse_ns_conf_internal, NULL},
 		{"NodeName", S_P_ARRAY, _parse_ns_conf, NULL},
 		{NULL}
@@ -146,6 +152,11 @@ static int _read_slurm_ns_conf(void)
 		      conf_path);
 		goto end_it;
 	}
+
+	/* If AutoBasePath wasn't set on the line see if it was on the global */
+	if (!auto_basepath_set)
+		s_p_get_boolean(&slurm_ns_conf.auto_basepath,
+				"AutoBasePath", tbl);
 
 	if (!slurm_ns_conf.basepath) {
 		error("Configuration for this node not found in namespace.conf");

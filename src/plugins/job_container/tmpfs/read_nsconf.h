@@ -45,6 +45,7 @@
  * parameters
  */
 typedef struct slurm_ns_conf {
+	bool auto_basepath;
 	char *basepath;
 	char *initscript;
 } slurm_ns_conf_t;

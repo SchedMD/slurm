@@ -185,6 +185,48 @@ extern int container_p_restore(char *dir_name, bool recover)
 
 	debug("namepsace.conf read successfully");
 
+	if (ns_conf->auto_basepath) {
+		int fstatus;
+		char *mnt_point, *p;
+		mode_t omask;
+
+		omask = umask(S_IWGRP | S_IWOTH);
+
+		fstatus = mkdir(ns_conf->basepath, 0755);
+		if (fstatus && errno != EEXIST) {
+			if (ns_conf->basepath[0] != '/') {
+				debug("unable to create ns directory '%s' : does not start with '/'", ns_conf->basepath);
+				umask(omask);
+				return SLURM_ERROR;
+			}
+			mnt_point = xstrdup(ns_conf->basepath);
+			p = mnt_point;
+			while ((p = xstrchr(p+1, '/')) != NULL) {
+				*p = '\0';
+				fstatus = mkdir(mnt_point, 0755);
+				if (fstatus && errno != EEXIST) {
+					debug("unable to create ns required directory '%s'",
+					      mnt_point);
+					xfree(mnt_point);
+					umask(omask);
+					return SLURM_ERROR;
+				}
+				*p='/';
+			}
+			xfree(mnt_point);
+			fstatus = mkdir(ns_conf->basepath, 0755);
+		}
+
+		if (fstatus && errno != EEXIST) {
+			debug("unable to create ns directory '%s' : %m",
+			      ns_conf->basepath);
+			umask(omask);
+			return SLURM_ERROR;
+		}
+		umask(omask);
+
+	}
+
 	if (stat(ns_conf->basepath, &stbuf)) {
 		error("%s: stat failed %s, %s",
 		      __func__, ns_conf->basepath, strerror(errno));
