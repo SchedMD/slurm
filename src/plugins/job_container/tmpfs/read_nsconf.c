@@ -78,6 +78,10 @@ static int _parse_ns_conf_internal(void **dest, slurm_parser_enum_t type,
 		goto end_it;
 	}
 
+#ifdef MULTIPLE_SLURMD
+	xstrfmtcat(slurm_ns_conf.basepath, "/%s", conf->node_name);
+#endif
+
 	if (!s_p_get_string(&slurm_ns_conf.initscript, "InitScript", tbl))
 		debug3("empty init script detected");
 
