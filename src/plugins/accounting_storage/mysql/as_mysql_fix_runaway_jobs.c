@@ -58,6 +58,9 @@ static int _first_job_roll_up(mysql_conn_t *mysql_conn, time_t first_start)
 	start_tm.tm_mday = 0;
 	month_start = slurm_mktime(&start_tm);
 
+	debug("Need to reroll usage from %s in cluster %s because of runaway job(s)",
+	      slurm_ctime2(&month_start), mysql_conn->cluster_name);
+
 	query = xstrdup_printf("UPDATE \"%s_%s\" SET hourly_rollup = %ld, "
 			       "daily_rollup = %ld, monthly_rollup = %ld;",
 			       mysql_conn->cluster_name, last_ran_table,
@@ -166,6 +169,8 @@ extern int as_mysql_fix_runaway_jobs(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(job_ids, "%s%d", ((job_ids) ? "," : ""), job->jobid);
 	}
 	list_iterator_destroy(iter);
+
+	debug("Fixing runaway jobs: %s", job_ids);
 
 	query = xstrdup_printf("UPDATE \"%s_%s\" SET time_end="
 			       "GREATEST(time_start, time_eligible, time_submit), "

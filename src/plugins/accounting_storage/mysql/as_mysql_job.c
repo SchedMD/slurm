@@ -1015,6 +1015,10 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 
 	slurm_mutex_lock(&rollup_lock);
 	if (end_time < global_last_rollup) {
+		debug("Need to reroll usage from %s Job %u from %s %s then and we are just now hearing about it.",
+		      slurm_ctime2(&end_time),
+		      job_ptr->job_id, mysql_conn->cluster_name,
+		      IS_JOB_RESIZING(job_ptr) ? "resized" : "ended");
 		global_last_rollup = end_time;
 		slurm_mutex_unlock(&rollup_lock);
 
