@@ -3513,6 +3513,82 @@ static bool _have_hbm_token(char *gres_plugins)
 	return rc;
 }
 
+static int _validate_accounting_storage_enforce(char *acct_enforce_str,
+						slurm_conf_t *conf)
+{
+	int rc = SLURM_SUCCESS;
+	char *tmp_str, *tok, *saveptr = NULL;
+
+	tmp_str = xstrdup(acct_enforce_str);
+	tok = strtok_r(tmp_str, ",", &saveptr);
+	while (tok) {
+		if (!xstrcasecmp(tok, "1")
+		    || !xstrcasecmp(tok, "associations")) {
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_ASSOCS;
+		} else if (!xstrcasecmp(tok, "2")
+			   || !xstrcasecmp(tok, "limits")) {
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_ASSOCS;
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_LIMITS;
+		} else if (!xstrcasecmp(tok, "safe")) {
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_ASSOCS;
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_LIMITS;
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_SAFE;
+		} else if (!xstrcasecmp(tok, "wckeys")) {
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_ASSOCS;
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_WCKEYS;
+			conf->conf_flags |= CTL_CONF_WCKEY;
+		} else if (!xstrcasecmp(tok, "qos")) {
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_ASSOCS;
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_QOS;
+		} else if (!xstrcasecmp(tok, "all")) {
+			conf->accounting_storage_enforce = 0xffff;
+			conf->conf_flags |= CTL_CONF_WCKEY;
+			/*
+			 * If all is used, nojobs and nosteps aren't
+			 * part of it.  They must be requested as well.
+			 */
+			conf->accounting_storage_enforce
+				&= (~ACCOUNTING_ENFORCE_NO_JOBS);
+			conf->accounting_storage_enforce
+				&= (~ACCOUNTING_ENFORCE_NO_STEPS);
+			/*
+			 * Everything that "all" doesn't mean should be put
+			 * below here.
+			 */
+		} else if (!xstrcasecmp(tok, "nojobs")) {
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_NO_JOBS;
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_NO_STEPS;
+		} else if (!xstrcasecmp(tok, "nosteps")) {
+			conf->accounting_storage_enforce
+				|= ACCOUNTING_ENFORCE_NO_STEPS;
+		} else {
+			error("Invalid parameter for AccountingStorageEnforce: %s",
+			      tok);
+			conf->accounting_storage_enforce = 0;
+			conf->conf_flags &= ~CTL_CONF_WCKEY;
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		tok = strtok_r(NULL, ",", &saveptr);
+	}
+	xfree(tmp_str);
+
+	return rc;
+}
+
 /*
  *
  * IN/OUT ctl_conf_ptr - a configuration as loaded by read_slurm_conf_ctl
@@ -4154,68 +4230,12 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			   ",%s", DEFAULT_ACCOUNTING_TRES);
 
 	if (s_p_get_string(&temp_str, "AccountingStorageEnforce", hashtbl)) {
-		if (xstrcasestr(temp_str, "1")
-		    || xstrcasestr(temp_str, "associations"))
-			conf->accounting_storage_enforce
-				|= ACCOUNTING_ENFORCE_ASSOCS;
-
-		if (xstrcasestr(temp_str, "2")
-		    || xstrcasestr(temp_str, "limits")) {
-			conf->accounting_storage_enforce
-				|= ACCOUNTING_ENFORCE_ASSOCS;
-			conf->accounting_storage_enforce
-				|= ACCOUNTING_ENFORCE_LIMITS;
+		if (_validate_accounting_storage_enforce(temp_str, conf)) {
+			error("AccountingStorageEnforce invalid: %s",
+			      temp_str);
+			xfree(temp_str);
+			return SLURM_ERROR;
 		}
-
-		if (xstrcasestr(temp_str, "safe")) {
-			conf->accounting_storage_enforce
-				|= ACCOUNTING_ENFORCE_ASSOCS;
-			conf->accounting_storage_enforce
-				|= ACCOUNTING_ENFORCE_LIMITS;
-			conf->accounting_storage_enforce
-				|= ACCOUNTING_ENFORCE_SAFE;
-		}
-
-		if (xstrcasestr(temp_str, "wckeys")) {
-			conf->accounting_storage_enforce
-				|= ACCOUNTING_ENFORCE_ASSOCS;
-			conf->accounting_storage_enforce
-				|= ACCOUNTING_ENFORCE_WCKEYS;
-			conf->conf_flags |= CTL_CONF_WCKEY;
-		}
-
-		if (xstrcasestr(temp_str, "qos")) {
-			conf->accounting_storage_enforce
-				|= ACCOUNTING_ENFORCE_ASSOCS;
-			conf->accounting_storage_enforce
-				|= ACCOUNTING_ENFORCE_QOS;
-		}
-
-		if (xstrcasestr(temp_str, "all")) {
-			conf->accounting_storage_enforce = 0xffff;
-			conf->conf_flags |= CTL_CONF_WCKEY;
-			/* If all is used, nojobs and nosteps aren't
-			   part of it.  They must be requested as well.
-			*/
-			conf->accounting_storage_enforce
-				&= (~ACCOUNTING_ENFORCE_NO_JOBS);
-			conf->accounting_storage_enforce
-				&= (~ACCOUNTING_ENFORCE_NO_STEPS);
-		}
-
-		/* Everything that "all" doesn't mean should be put here */
-		if (xstrcasestr(temp_str, "nojobs")) {
-			conf->accounting_storage_enforce
-				|= ACCOUNTING_ENFORCE_NO_JOBS;
-			conf->accounting_storage_enforce
-				|= ACCOUNTING_ENFORCE_NO_STEPS;
-		}
-
-		if (xstrcasestr(temp_str, "nosteps")) {
-			conf->accounting_storage_enforce
-				|= ACCOUNTING_ENFORCE_NO_STEPS;
-		}
-
 		xfree(temp_str);
 	} else
 		conf->accounting_storage_enforce = 0;

@@ -38,6 +38,9 @@ documents those changes that are of interest to users and administrators.
     for slurm_kill_job2. slurm_kill_job2 should be used instead of
     slurm_kill_job_msg.
  -- Fix non-zero exit code for scontrol ping when all controllers are down.
+ -- Enforce a valid configuration for AccountingStorageEnforce in slurm.conf.
+    If the configuration is invalid, then an error message will be printed and
+    the command or daemon (including slurmctld) will not run.
 
 * Changes in Slurm 20.11.5
 ==========================

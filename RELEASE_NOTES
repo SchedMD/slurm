@@ -35,6 +35,9 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
  -- Errors detected in the parser handlers due to invalid configurations are now
     propagated and can lead to fatal (and thus exit) the calling process.
+ -- Enforce a valid configuration for AccountingStorageEnforce in slurm.conf.
+    If the configuration is invalid, then an error message will be printed and
+    the command or daemon (including slurmctld) will not run.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
