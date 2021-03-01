@@ -1,4 +1,4 @@
-.TH "acct_gather.conf" "5" "Slurm Configuration File" "April 2020" "Slurm Configuration File"
+.TH "acct_gather.conf" "5" "Slurm Configuration File" "April 2021" "Slurm Configuration File"
 
 .SH "NAME"
 acct_gather.conf \- Slurm configuration file for the acct_gather plugins
@@ -263,31 +263,19 @@ The default port is 1.
 .RE
 .RE
 .SH "EXAMPLE"
-.LP
-.br
+.nf
 ###
-.br
 # Slurm acct_gather configuration file
-.br
 ###
-.br
 # Parameters for acct_gather_energy/impi plugin
-.br
 EnergyIPMIFrequency=10
-.br
 EnergyIPMICalcAdjustment=yes
-.br
 #
-.br
 # Parameters for acct_gather_profile/hdf5 plugin
-.br
 ProfileHDF5Dir=/app/slurm/profile_data
-.br
 # Parameters for acct_gather_interconnect/ofed plugin
-.br
 InfinibandOFEDPort=1
-.br
-
+.fi
 
 .SH "COPYING"
 Copyright (C) 2012-2013 Bull.
