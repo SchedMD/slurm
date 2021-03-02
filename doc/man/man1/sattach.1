@@ -101,9 +101,15 @@ various Slurm error conditions.
 
 
 .SH "EXAMPLES"
+.TP
+Attach to job 15, step 0:
+
 .nf
 $ sattach 15.0
 .fi
+
+.TP
+Limit the output to the 5th task of job 65386, step 15:
 
 .nf
 $ sattach \-\-output\-filter 5 65386.15
