@@ -31,7 +31,7 @@ respective plugin for an option that option will appear to be unknown by Slurm
 and could cause Slurm not to load.  If you decide to change plugin types you
 might also have to change the related options as well.
 
-.SH EnergyIPMI
+.SH acct_gather_energy/IPMI
 Options used for acct_gather_energy/ipmi are as follows:
 
 .RS
@@ -85,7 +85,7 @@ Specify BMC Username.
 Specify BMC Password.
 .RE
 
-.SH EnergyXCC
+.SH acct_gather_energy/XCC
 Options used for acct_gather_energy/xcc include only in-band communications
 with XClarity Controller, thus a reduced set of configurations is supported:
 
@@ -101,7 +101,7 @@ Timeout, in seconds, for initializing the IPMI XCC context for a new gathering
 thread. Default is 10 seconds.
 .RE
 
-.SH ProfileHDF5
+.SH acct_gather_profile/HDF5
 Options used for acct_gather_profile/hdf5 are as follows:
 
 .RS
@@ -143,8 +143,7 @@ Network (InfiniBand) data is collected.
 \fBTask\fR
 Task (I/O, Memory, ...) data is collected.
 
-.SH ProfileInfluxDB
-.P
+.SH acct_gather_profile/InfluxDB
 The InfluxDB plugin provides the same information as the HDF5 plugin but will
 instead send information to the configured InfluxDB server.
 .P
@@ -252,7 +251,7 @@ This kind of tool permits one to create dashboards, tables and other graphics
 using the stored time series.
 
 .RS
-.SH InfinibandOFED
+.SH acct_gather_interconnect/OFED
 Options used for acct_gather_interconnect/ofed are as follows:
 
 .RS
