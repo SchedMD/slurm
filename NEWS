@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- Enforce a valid configuration for AccountingStorageEnforce in slurm.conf.
     If the configuration is invalid, then an error message will be printed and
     the command or daemon (including slurmctld) will not run.
+ -- slurmrestd/v0.0.37 - Add update_time field to partitions/reservations query
+    to allow clients to only get the entities list when something changed.
 
 * Changes in Slurm 20.11.5
 ==========================
