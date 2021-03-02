@@ -299,11 +299,17 @@ environment variables, along with their corresponding options, are listed below.
 The location of the Slurm configuration file.
 
 .SH "EXAMPLES"
+.TP
+Display job step information for job 11 with the specified fields:
 
 .nf
 $ sstat \-\-format=AveCPU,AvePages,AveRSS,AveVMSize,JobID \-j 11
 25:02.000  0K         1.37M      5.93M      9.0
 .fi
+
+.TP
+Display job step information for job 11 with the specified fields in a \
+parsable format:
 
 .nf
 $ sstat \-p \-\-format=AveCPU,AvePages,AveRSS,AveVMSize,JobID \-j 11
