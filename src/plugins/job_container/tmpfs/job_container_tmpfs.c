@@ -134,6 +134,10 @@ extern void container_p_reconfig(void)
  */
 extern int init(void)
 {
+#if defined(__APPLE__) || defined(__FreeBSD__)
+	fatal("%s is not available on this system. (mount bind limitation)", plugin_name);
+#endif
+
 	debug("%s loaded", plugin_name);
 
 	return SLURM_SUCCESS;
@@ -233,6 +237,7 @@ extern int container_p_restore(char *dir_name, bool recover)
 		return SLURM_ERROR;
 	}
 
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	/*
 	 * MS_BIND mountflag would make mount() ignore all other mountflags
 	 * except MS_REC. We need MS_PRIVATE mountflag as well to make the
@@ -251,6 +256,7 @@ extern int container_p_restore(char *dir_name, bool recover)
 		      __func__, strerror(errno));
 		return SLURM_ERROR;
 	}
+#endif
 	debug3("tmpfs: Base namespace created");
 
 	return SLURM_SUCCESS;
@@ -262,6 +268,7 @@ static int _mount_private_tmp(char *path)
 		error("%s: cannot mount /tmp", __func__);
 		return -1;
 	}
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	if (mount(NULL, "/", NULL, MS_PRIVATE|MS_REC, NULL)) {
 		error("%s: making root private: failed: %s",
 		      __func__, strerror(errno));
@@ -272,7 +279,7 @@ static int _mount_private_tmp(char *path)
 		      __func__, strerror(errno));
 		return -1;
 	}
-
+#endif
 	return 0;
 }
 
@@ -286,12 +293,14 @@ static int _mount_private_shm(void)
 		      __func__, strerror(errno));
 		return rc;
 	}
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 	rc = mount("tmpfs", "/dev/shm", "tmpfs", 0, NULL);
 	if (rc) {
 		error("%s: mounting private /dev/shm failed: %s\n",
 		      __func__, strerror(errno));
 		return -1;
 	}
+#endif
 	return rc;
 }
 
@@ -511,6 +520,7 @@ extern int container_p_create(uint32_t job_id)
 		 * Bind mount /proc/pid/ns/mnt to hold namespace active
 		 * without a process attached to it
 		 */
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
 		rc = mount(proc_path, ns_holder, NULL, MS_BIND, NULL);
 		if (rc) {
 			error("%s: ns base mount failed: %s",
@@ -520,6 +530,7 @@ extern int container_p_create(uint32_t job_id)
 				      __func__, strerror(errno));
 			goto exit1;
 		}
+#endif
 		if (sem_post(sem2) < 0) {
 			error("%s: sem_post failed: %s",
 			      __func__, strerror(errno));
