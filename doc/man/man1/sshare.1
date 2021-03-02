@@ -190,8 +190,17 @@ environment variables, along with their corresponding options, are listed below.
 The location of the Slurm configuration file.
 
 .SH "EXAMPLES"
+.TP
+Display information about users in a particular account:
+
 .nf
 $ sshare -A <Account>
+.fi
+
+.TP
+Display information about a specific user in a parsable format:
+
+.nf
 $ sshare --parsable --users=<User>
 .fi
 
