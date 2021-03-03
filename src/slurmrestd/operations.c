@@ -476,5 +476,9 @@ cleanup:
 	FREE_NULL_DATA(query);
 	FREE_NULL_DATA(params);
 
+	/* always clear the auth context */
+	rest_auth_g_free(args->context->auth);
+	args->context->auth = NULL;
+
 	return rc;
 }

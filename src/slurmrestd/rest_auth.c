@@ -196,10 +196,12 @@ extern int rest_authenticate_http_request(on_http_request_args_t *args)
 	rest_auth_context_t *context =
 		(rest_auth_context_t *) args->context->auth;
 
-	if (!context) {
-		context = rest_auth_g_new();
-		args->context->auth = context;
+	if (context) {
+		fatal("%s: authentication context already set for connection: %s",
+		      __func__, args->context->con->name);
 	}
+
+	args->context->auth = context = rest_auth_g_new();
 
 	_check_magic(context);
 

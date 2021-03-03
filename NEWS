@@ -53,6 +53,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix global_last_rollup assignment on job resizing.
  -- slurmrestd - hand over connection context on _on_message_complete().
  -- slurmrestd - mark "environment" as required for job submissions in schema.
+ -- slurmrestd - Disable credential reuse on the same TCP connection. Pipelined
+    HTTP connections will have to provide authentication with every request.
 
 * Changes in Slurm 20.11.4
 ==========================

@@ -904,7 +904,7 @@ extern http_context_t *_http_context_new(void)
 	http_parser_init(parser, HTTP_REQUEST);
 	context->parser = parser;
 
-	context->auth = rest_auth_g_new();
+	context->auth = NULL;
 
 	return context;
 }
