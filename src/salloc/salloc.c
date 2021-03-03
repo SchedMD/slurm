@@ -1262,8 +1262,14 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 		saopt.wait_all_nodes = 0;
 
 	for (i = 0; (cur_delay < max_delay); i++) {
-		if (i) {
-			if (i == 1)
+
+		if (i == 1) {
+			/*
+			 * Only sleep a short time on the first miss.
+			 */
+			usleep(500); /* Not adding sub-sec to cur_delay */
+		} else if (i) {
+			if (i == 2)
 				info("Waiting for resource configuration");
 			else
 				debug("still waiting");
@@ -1292,7 +1298,7 @@ static int _wait_nodes_ready(resource_allocation_response_msg_t *alloc)
 	if (is_ready) {
 		resource_allocation_response_msg_t *resp;
 		char *tmp_str;
-		if (i > 0)
+		if (i > 1)
      			info("Nodes %s are ready for job", alloc->node_list);
 		if (alloc->alias_list && !xstrcmp(alloc->alias_list, "TBD") &&
 		    (slurm_allocation_lookup(alloc->job_id, &resp)

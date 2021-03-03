@@ -40,6 +40,7 @@ documents those changes that are of interest to users and administrators.
  -- scrontab - add support for the --open-mode option.
  -- acct_gather_profile/influxdb - avoid segfault on plugin shutdown if setup
     has not completed successfully.
+ -- Reduce delay in starting salloc allocations when running with prologs.
 
 * Changes in Slurm 20.11.4
 ==========================
