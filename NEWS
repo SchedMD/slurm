@@ -43,6 +43,8 @@ documents those changes that are of interest to users and administrators.
     the command or daemon (including slurmctld) will not run.
  -- slurmrestd/v0.0.37 - Add update_time field to partitions/reservations query
     to allow clients to only get the entities list when something changed.
+ -- slurmdbd.service - add "After" relationship to all common names for MariaDB
+    to reduce startup delays.
 
 * Changes in Slurm 20.11.5
 ==========================
