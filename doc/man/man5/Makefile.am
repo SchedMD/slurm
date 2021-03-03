@@ -10,7 +10,8 @@ man5_MANS = \
 	nonstop.conf.5 \
 	slurm.conf.5 \
 	slurmdbd.conf.5 \
-	topology.conf.5
+	topology.conf.5 \
+	namespace.conf.5
 
 if HAVE_MAN2HTML
 
@@ -24,7 +25,8 @@ html_DATA = \
 	nonstop.conf.html \
 	slurm.conf.html \
 	slurmdbd.conf.html \
-	topology.conf.html
+	topology.conf.html \
+	namespace.conf.html
 
 MOSTLYCLEANFILES = ${html_DATA}
 
