@@ -34,6 +34,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
 #ifndef PAM_MODULE_NAME
 #  define PAM_MODULE_NAME "pam_slurm_adopt"
 #endif
@@ -94,6 +95,7 @@ static struct {
 	char *node_name;
 	bool disable_x11;
 	char *pam_service;
+	bool join_container;
 } opts;
 
 static void _init_opts(void)
@@ -108,6 +110,7 @@ static void _init_opts(void)
 	opts.node_name = NULL;
 	opts.disable_x11 = false;
 	opts.pam_service = NULL;
+	opts.join_container = true;
 }
 
 /* Adopts a process into the given step. Returns SLURM_SUCCESS if
@@ -161,6 +164,26 @@ static int _adopt_process(pam_handle_t *pamh, pid_t pid, step_loc_t *stepd)
 			pam_putenv(pamh, env);
 			xfree(env);
 			xfree(xauthority);
+		}
+	}
+
+	if (opts.join_container) {
+		int ns_fd = stepd_get_namespace_fd(fd, protocol_version);
+		if (ns_fd == -1) {
+			error("stepd_get_ns_fd failed");
+			rc = SLURM_ERROR;
+		} else if (ns_fd == 0) {
+			debug2("No ns_fd given back, expected if not running with a job_container plugin that supports namespace mounting");
+		} else {
+			/*
+			 * No need to specify the type of namespace, rely on
+			 * slurm to give us the right one
+			 */
+			rc = setns(ns_fd, 0);
+			if (rc) {
+				error("setns() failed: %s", strerror(errno));
+				rc = SLURM_ERROR;
+			}
 		}
 	}
 
@@ -616,6 +639,8 @@ static void _parse_opts(pam_handle_t *pamh, int argc, const char **argv)
 		} else if (!xstrncasecmp(*argv, "service=", 8)) {
 			v = (char *)(8 + *argv);
 			opts.pam_service = xstrdup(v);
+		} else if (!xstrncasecmp(*argv, "join_container=false", 19)) {
+			opts.join_container = false;
 		}
 	}
 

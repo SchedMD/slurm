@@ -79,6 +79,7 @@ strong_alias(stepd_getpw, slurm_stepd_getpw);
 strong_alias(xfree_struct_passwd, slurm_xfree_struct_passwd);
 strong_alias(stepd_getgr, slurm_stepd_getgr);
 strong_alias(xfree_struct_group_array, slurm_xfree_struct_group_array);
+strong_alias(stepd_get_namespace_fd, slurm_stepd_get_namespace_fd);
 
 /*
  * Should be called when a connect() to a socket returns ECONNREFUSED.
@@ -407,6 +408,35 @@ rwfail:
 	return -1;
 }
 
+/*
+ * Request to enter namespace of a job
+ * -1 on error;
+ */
+extern int stepd_get_namespace_fd(int fd, uint16_t protocol_version)
+{
+	int req = REQUEST_GET_NS_FD;
+	int ns_fd = 0;
+
+	debug("entering %s", __func__);
+	safe_write(fd, &req, sizeof(int));
+
+	safe_read(fd, &ns_fd, sizeof(ns_fd));
+
+	/*
+	 * Receive the file descriptor of the namespace to be joined if valid fd
+	 * is coming. Note that the number of ns_fd will not be the same
+	 * returned from receive_fd_over_pipe().  The number we got from the
+	 * safe_read was the fd on the sender which will be different on our
+	 * end.
+	 */
+	if (ns_fd > 0)
+		ns_fd = receive_fd_over_pipe(fd);
+
+	return ns_fd;
+
+rwfail:
+	return -1;
+}
 
 /*
  * Attach a client to a running job step.

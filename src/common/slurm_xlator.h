@@ -461,6 +461,7 @@
 #define xfree_struct_passwd		slurm_xfree_struct_passwd
 #define stepd_getgr			slurm_stepd_getgr
 #define xfree_struct_group_array	slurm_xfree_struct_group_array
+#define stepd_get_namespace_fd		slurm_stepd_get_namespace_fd
 
 /* xcgroup_read_config.[ch] */
 #define xcgroup_config_read_mutex       slurm_xcgroup_config_read_mutex

@@ -74,6 +74,7 @@ typedef enum {
 	REQUEST_X11_DISPLAY,
 	REQUEST_GETPW,
 	REQUEST_GETGR,
+	REQUEST_GET_NS_FD,
 } step_msg_t;
 
 typedef enum {
@@ -321,4 +322,10 @@ extern uid_t stepd_get_uid(int fd, uint16_t protocol_version);
  */
 extern uint32_t stepd_get_nodeid(int fd, uint16_t protocol_version);
 
+/*
+ * Get the namespace fd of a running job via slurmstepd by entering
+ * its job container
+ * On error returns -1.
+ */
+extern int stepd_get_namespace_fd(int fd, uint16_t protocol_version);
 #endif /* _STEPD_API_H */
