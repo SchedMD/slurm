@@ -541,6 +541,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Too wide of a date range in query"			},
 	{ ESLURM_DB_CONNECTION_INVALID,
 	  "Database connection reference is invalid"		},
+	{ ESLURM_NO_REMOVE_DEFAULT_ACCOUNT,
+	  "You can not remove the default account of a user"	},
 
 	/* Federation Errors */
 	{ ESLURM_FED_CLUSTER_MAX_CNT,
