@@ -1,4 +1,4 @@
-.TH sprio "1" "Slurm Commands" "September 2018" "Slurm Commands"
+.TH sprio "1" "Slurm Commands" "February 2021" "Slurm Commands"
 
 .SH "NAME"
 sprio \- view the factors that comprise a job's scheduling priority
@@ -243,67 +243,56 @@ Same as \fB\-\-local\fR
 Same as \fB\-\-sibling\fR
 
 .SH "EXAMPLES"
-.eo
+.TP
 Print the list of all pending jobs with their weighted priorities
-.br
-> sprio
-.br
+
+.nf
+$ sprio
   JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS
-.br
   65539      62664          0      51664       1000      10000          0
-.br
   65540      62663          0      51663       1000      10000          0
-.br
   65541      62662          0      51662       1000      10000          0
-.ec
+.fi
 
-.eo
+.TP
 Print the list of all pending jobs with their normalized priorities
-.br
-> sprio -n
-.br
+
+.nf
+$ sprio -n
   JOBID PRIORITY   AGE        FAIRSHARE  JOBSIZE    PARTITION  QOS
-.br
   65539 0.00001459 0.0007180  0.5166470  1.0000000  1.0000000  0.0000000
-.br
   65540 0.00001459 0.0007180  0.5166370  1.0000000  1.0000000  0.0000000
-.br
   65541 0.00001458 0.0007180  0.5166270  1.0000000  1.0000000  0.0000000
-.ec
+.fi
 
-.eo
+.TP
 Print the job priorities for specific jobs
-.br
-> sprio --jobs=65548,65547
-.br
+
+.nf
+$ sprio --jobs=65548,65547
   JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS
-.br
   65547      62078          0      51078       1000      10000          0
-.br
   65548      62077          0      51077       1000      10000          0
-.ec
+.fi
 
-.eo
+.TP
 Print the job priorities for jobs of specific users
-.br
-> sprio --users=fred,sally
-.br
-  JOBID     USER  PRIORITY       AGE  FAIRSHARE   JOBSIZE  PARTITION     QOS
-.br
-  65548     fred     62079         1      51077      1000      10000       0
-.br
-  65549    sally     62080         1      51078      1000      10000       0
-.ec
 
-.eo
+.nf
+$ sprio --users=fred,sally
+  JOBID     USER  PRIORITY       AGE  FAIRSHARE   JOBSIZE  PARTITION     QOS
+  65548     fred     62079         1      51077      1000      10000       0
+  65549    sally     62080         1      51078      1000      10000       0
+.fi
+
+.TP
 Print the configured weights for each priority component
-.br
-> sprio -w
-.br
+
+.nf
+$ sprio -w
   JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS
-.br
   Weights                1000     100000       1000      10000          1
-.ec
+.fi
 
 .SH "COPYING"
 Copyright (C) 2009 Lawrence Livermore National Security.

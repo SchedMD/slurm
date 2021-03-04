@@ -1,4 +1,4 @@
-.TH scancel "1" "Slurm Commands" "July 2020" "Slurm Commands"
+.TH scancel "1" "Slurm Commands" "February 2021" "Slurm Commands"
 
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
@@ -273,27 +273,45 @@ authority to invoke scancel on other users jobs.
 .SH "EXAMPLES"
 .TP
 Send SIGTERM to steps 1 and 3 of job 1234:
-scancel \-\-signal=TERM 1234.1 1234.3
+
+.nf
+$ scancel \-\-signal=TERM 1234.1 1234.3
+.fi
 
 .TP
 Cancel job 1234 along with all of its steps:
-scancel 1234
+
+.nf
+$ scancel 1234
+.fi
 
 .TP
 Send SIGKILL to all steps of job 1235, but do not cancel the job itself:
-scancel \-\-signal=KILL 1235
+
+.nf
+$ scancel \-\-signal=KILL 1235
+.fi
 
 .TP
 Send SIGUSR1 to the batch shell processes of job 1236:
-scancel \-\-signal=USR1 \-\-batch 1236
+
+.nf
+$ scancel \-\-signal=USR1 \-\-batch 1236
+.fi
 
 .TP
-Cancel job all pending jobs belonging to user "bob" in partition "debug":
-scancel \-\-state=PENDING \-\-user=bob \-\-partition=debug
+Cancel all pending jobs belonging to user "bob" in partition "debug":
+
+.nf
+$ scancel \-\-state=PENDING \-\-user=bob \-\-partition=debug
+.fi
 
 .TP
 Cancel only array ID 4 of job array 1237
-scancel 1237_4
+
+.nf
+$ scancel 1237_4
+.fi
 
 .SH "COPYING"
 Copyright (C) 2002-2007 The Regents of the University of California.

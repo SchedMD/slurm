@@ -18,7 +18,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="sdiag.html">sdiag</a></td><td>scheduling diagnostic tool.</td></tr>
 <tr><td><a href="sinfo.html">sinfo</a></td><td>view information about Slurm nodes and partitions.</td></tr>
 <tr><td><a href="slurm.html">slurm</a></td><td>Slurm system overview.</td></tr>
-<tr><td><a href="smd.html">smd</a></td><td>failure management support tool.</td></tr>
 <tr><td><a href="sprio.html">sprio</a></td><td>view the factors that comprise a job's scheduling priority</td></tr>
 <tr><td><a href="sh5util.html">sh5util</a></td><td>merge utility for acct_gather_profile plugin.</td></tr>
 <tr><td><a href="squeue.html">squeue</a></td><td>view information about jobs located in the Slurm scheduling queue.</td></tr>
@@ -54,6 +53,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="spank.html">SPANK</a></td><td>Slurm Plug-in Architecture for Node and job (K)control</td></tr>
 </table>
 
-<p style="text-align:center;">Last modified 20 February 2020</p>
+<p style="text-align:center;">Last modified 25 February 2021</p>
 
 <!--#include virtual="footer.txt"-->

@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "October 2020" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "February 2021" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -79,8 +79,8 @@ the verbosity of logging. By default only errors will be displayed.
 .TP
 \fB\-V\fR , \fB\-\-version\fR
 Print version information and exit.
-.TP
-\fBCOMMANDS\fR
+
+.SS COMMANDS
 
 .TP
 \fBabort\fP
@@ -488,8 +488,7 @@ Write the current configuration to a file with the naming convention of
 file.  If a filename is given that file location with a .<datetime> suffix is
 created.
 
-.TP
-\fBINTERACTIVE COMMANDS\fR
+.SS INTERACTIVE COMMANDS
 \fBNOTE:\fP
 All commands listed below can be used in the interactive mode, but \fINOT\fP
 on the initial command line.
@@ -544,9 +543,7 @@ This includes time\-stamps on data structures, record counts, etc.
 \fB!!\fP
 Repeat the last command executed.
 
-.TP
-\fBSPECIFICATIONS FOR UPDATE COMMAND, JOBS\fR
-.LP
+.SS JOBS \- SPECIFICATIONS FOR UPDATE COMMAND
 Note that update requests done by either root, SlurmUser or Administrators are
 not subject to certain restrictions. For instance, if an Administrator changes
 the QOS on a pending job, certain limits such as the TimeLimit will not be
@@ -954,10 +951,7 @@ Set the job's working directory to the specified value. Note that this may
 only be set for jobs in the PENDING state, and that jobs may fail to launch
 if they rely on relative paths to the originally submitted WorkDir.
 
-.TP
-\fBSPECIFICATIONS FOR SHOW COMMAND, JOBS\fR
-.LP
-
+.SS JOBS \- SPECIFICATIONS FOR SHOW COMMAND
 The "show" command, when used with the "job" or "job <jobid>"
 entity displays detailed information about a job or jobs.  Much of
 this information may be modified using the "update job" command as
@@ -1039,7 +1033,7 @@ duplicate entries for a job.
 .TP
 \fISuspendTime\fP
 Time the job was last suspended or resumed.
-.TP
+
 NOTE on information displayed for various job states:
 When you submit a request for the "show job" function the scontrol
 process makes an RPC request call to slurmctld with a REQUEST_JOB_INFO
@@ -1051,8 +1045,7 @@ code explicitly returns zero for these values. These values are
 meaningless once the job resources have been allocated and the job has
 started.
 
-.TP
-\fBSPECIFICATIONS FOR UPDATE COMMAND, STEPS\fR
+.SS STEPS \- SPECIFICATIONS FOR UPDATE COMMAND
 .TP
 \fIStepId\fP=<job_id>[.<step_id>]
 Identify the step to be updated.
@@ -1065,7 +1058,6 @@ Update a step with information about a step's completion.  Can be
 useful if step statistics aren't directly available through a
 jobacct_gather plugin.  The file is a space\-delimited file with
 format for Version 1 is as follows
-.eo
 .br
 .sp
 1 34461 0 2 0 3 1361906011 1361906015 1 1 3368 13357 /bin/sleep
@@ -1101,7 +1093,6 @@ K maxrss
 L uid
 .br
 M command name
-.ec
 .TP
 \fITimeLimit\fP=<time>
 The job's time limit.
@@ -1117,8 +1108,7 @@ time limit (e.g. "TimeLimit=+30"). In order to increment or decrement the
 current time limit, the \fIStepId\fP specification must precede the
 \fITimeLimit\fP specification.
 
-.TP
-\fBSPECIFICATIONS FOR UPDATE COMMAND, NODES\fR
+.SS NODES \- SPECIFICATIONS FOR UPDATE COMMAND
 .TP
 \fINodeName\fP=<name>
 Identify the node(s) to be updated. Multiple node names may be specified using
@@ -1280,8 +1270,7 @@ preserved or slurmctld's receipt of a SIGHUP.
 Update slurm.conf with any changes meant to be persistent across normal
 restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 
-.TP
-\fBSPECIFICATIONS FOR SHOW COMMAND, NODES\fR
+.SS NODES \- SPECIFICATIONS FOR SHOW COMMAND
 .TP
 The meaning of the energy information is as follows:
 
@@ -1356,9 +1345,7 @@ The total memory, in MB, currently allocated by jobs on the node.
 \fIFreeMem\fP
 The total memory, in MB, currently free on the node as reported by the OS.
 
-.TP
-\fBSPECIFICATIONS FOR UPDATE COMMAND, FRONTEND\fR
-
+.SS FRONTEND \- SPECIFICATIONS FOR UPDATE COMMAND
 .TP
 \fIFrontendName\fP=<name>
 Identify the front end node to be updated. This specification is required.
@@ -1380,8 +1367,7 @@ appropriate.
 Setting a front end node "DOWN" will cause all running and suspended jobs on
 that node to be terminated.
 
-.TP
-\fBSPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS, PARTITIONS\fR
+.SS PARTITIONS \- SPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS
 .TP
 \fIAllowGroups\fP=<name>
 Identify the user groups which may use this partition.
@@ -1627,8 +1613,7 @@ when calculating fairshare and when enforcing the TRES billing limit on jobs.
 Updates affect new jobs and not existing jobs.
 See the slurm.conf man page for more information.
 
-.TP
-\fBSPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS, RESERVATIONS\fR
+.SS RESERVATIONS \- SPECIFICATIONS FOR CREATE, UPDATE, AND DELETE COMMANDS
 .TP
 
 .TP
@@ -2104,80 +2089,44 @@ restriction has been defined in the slurm.conf file.
 .br
 
 .SH "EXAMPLES"
-.eo
-.br
-# scontrol
-.br
+.nf
+$ scontrol
 scontrol: show part debug
-.br
 PartitionName=debug
-.br
    AllocNodes=ALL AllowGroups=ALL Default=YES
-.br
    DefaultTime=NONE DisableRootJobs=NO Hidden=NO
-.br
    MaxNodes=UNLIMITED MaxTime=UNLIMITED MinNodes=1
-.br
    Nodes=snowflake[0-48]
-.br
    Priority=1 RootOnly=NO OverSubscribe=YES:4
-.br
    State=UP TotalCPUs=694 TotalNodes=49
-.br
 scontrol: update PartitionName=debug MaxTime=60:00 MaxNodes=4
-.br
 scontrol: show job 71701
-.br
 JobId=71701 Name=hostname
-.br
    UserId=da(1000) GroupId=da(1000)
-.br
    Priority=66264 Account=none QOS=normal WCKey=*123
-.br
    JobState=COMPLETED Reason=None Dependency=(null)
-.br
    TimeLimit=UNLIMITED Requeue=1 Restarts=0 BatchFlag=0 ExitCode=0:0
-.br
    SubmitTime=2010-01-05T10:58:40 EligibleTime=2010-01-05T10:58:40
-.br
    StartTime=2010-01-05T10:58:40 EndTime=2010-01-05T10:58:40
-.br
    SuspendTime=None SecsPreSuspend=0
-.br
    Partition=debug AllocNode:Sid=snowflake:4702
-.br
    ReqNodeList=(null) ExcNodeList=(null)
-.br
    NodeList=snowflake0
-.br
    NumNodes=1 NumCPUs=10 CPUs/Task=2 ReqS:C:T=1:1:1
-.br
    MinCPUsNode=2 MinMemoryNode=0 MinTmpDiskNode=0
-.br
    Features=(null) Reservation=(null)
-.br
    OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null)
-.br
 scontrol: update JobId=71701 TimeLimit=30:00 Priority=500
-.br
 scontrol: show hostnames tux[1-3]
-.br
 tux1
-.br
 tux2
-.br
 tux3
-.br
 scontrol: create res StartTime=2009-04-01T08:00:00 Duration=5:00:00 Users=dbremer NodeCnt=10
-.br
 Reservation created: dbremer_1
-.br
 scontrol: update Reservation=dbremer_1 Flags=Maint NodeCnt=20
-.br
 scontrol: delete Reservation=dbremer_1
-.br
 scontrol: quit
-.ec
+.fi
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.

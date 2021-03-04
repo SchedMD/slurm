@@ -1,4 +1,4 @@
-.TH sreport "1" "Slurm Commands" "November 2020" "Slurm Commands"
+.TH sreport "1" "Slurm Commands" "February 2021" "Slurm Commands"
 
 .SH "NAME"
 sreport \- Generate reports from the slurm accounting data.
@@ -542,26 +542,58 @@ The location of the Slurm configuration file.
 
 .in 0
 .SH "EXAMPLES"
+
 .TP
-\fBsreport job sizesbyaccount\fP
+Report number of jobs per account according to different job size bins:
+
+.nf
+$ sreport job sizesbyaccount
+.fi
+
 .TP
-\fBsreport cluster utilization\fP
+Report cluster utilization:
+
+.nf
+$ sreport cluster utilization
+.fi
+
 .TP
-\fBsreport user top\fP
+Report top usage:
+
+.nf
+$ sreport user top
+.fi
+
 .TP
-\fBsreport job sizesbyaccount All_Clusters users=gore1 account=environ PrintJobCount\fP
-Report number of jobs by user gore1 within the environ account
+Report number of jobs by user gore1 within the environ account:
+
+.nf
+$ sreport job sizesbyaccount All_Clusters users=gore1 account=environ PrintJobCount
+.fi
+
 .TP
-\fBsreport cluster AccountUtilizationByUser cluster=zeus user=gore1 start=2/23/08 end=2/24/09 format=Accounts,Cluster,TresCount,Login,Proper,Used\fP
-Report cluster account utilization with the specified fields during
-the specified 24 hour day of February 23, 2009, by user gore1
+Report cluster account utilization with the specified fields during the \
+specified 24 hour day of February 23, 2009, by user gore1:
+
+.nf
+$ sreport cluster AccountUtilizationByUser cluster=zeus user=gore1 \
+start=2/23/09 end=2/24/09 format=Accounts,Cluster,TresCount,Login,Proper,Used
+.fi
+
 .TP
-\fBsreport cluster AccountUtilizationByUser cluster=zeus accounts=lc start=2/23/08 end=2/24/09\fP
-Report cluster account utilization by user in the LC account on
-cluster zeus
+Report cluster account utilization by user in the LC account on cluster zeus:
+
+.nf
+$ sreport cluster AccountUtilizationByUser cluster=zeus accounts=lc \
+start=2/23/09 end=2/24/09
+.fi
+
 .TP
-\fBsreport user topusage start=2/16/09 end=2/23/09 \-t percent account=lc\fP
-Report top usage in percent of the lc account during the specified week
+Report top usage in percent of the lc account during the specified week:
+
+.nf
+$ sreport user topusage start=2/16/09 end=2/23/09 \-t percent account=lc
+.fi
 
 .SH "COPYING"
 Copyright (C) 2009\-2010 Lawrence Livermore National Security.

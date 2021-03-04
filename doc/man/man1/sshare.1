@@ -1,4 +1,4 @@
-.TH sshare "1" "Slurm Commands" "April 2015" "Slurm Commands"
+.TH sshare "1" "Slurm Commands" "February 2021" "Slurm Commands"
 
 .SH "NAME"
 sshare \- Tool for listing the shares of associations to a cluster.
@@ -190,15 +190,19 @@ environment variables, along with their corresponding options, are listed below.
 The location of the Slurm configuration file.
 
 .SH "EXAMPLES"
-.eo
-.br
-> sshare -A <Account>
-.br
-.br
-> sshare --parsable --users=<User>
-.br
+.TP
+Display information about users in a particular account:
 
-.ec
+.nf
+$ sshare -A <Account>
+.fi
+
+.TP
+Display information about a specific user in a parsable format:
+
+.nf
+$ sshare --parsable --users=<User>
+.fi
 
 .SH "COPYING"
 Copyright (C) 2008 Lawrence Livermore National Security.

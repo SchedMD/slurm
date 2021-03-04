@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "January 2021" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "February 2021" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -4195,15 +4195,16 @@ Function in TaskPlugin
 \fB2. TaskProlog\fR
 System\-wide per task program defined in slurm.conf
 .TP
-\fB3. user prolog\fR
-Job step specific task program defined using
+\fB3. User prolog\fR
+Job-step-specific task program defined using
 \fBsrun\fR's \fB\-\-task\-prolog\fR option or \fBSLURM_TASK_PROLOG\fR
 environment variable
 .TP
-\fB4.\fR Execute the job step's task
+\fB4. Task\fR
+Execute the job step's task
 .TP
-\fB5. user epilog\fR
-Job step specific task program defined using
+\fB5. User epilog\fR
+Job-step-specific task program defined using
 \fBsrun\fR's \fB\-\-task\-epilog\fR option or \fBSLURM_TASK_EPILOG\fR
 environment variable
 .TP
@@ -4775,7 +4776,8 @@ might be used to ensure the file system is kept clean.
 The default value is 0.
 
 .TP
-\fBTRESWeights\fR TRESWeights are used to calculate a value that represents how
+\fBTRESWeights\fR
+TRESWeights are used to calculate a value that represents how
 busy a node is. Currently only used in federation configurations. TRESWeights
 are different from TRESBillingWeights \-\- which is used for fairshare
 calculations.

@@ -1,4 +1,4 @@
-.TH sbcast "1" "Slurm Commands" "April 2020" "Slurm Commands"
+.TH sbcast "1" "Slurm Commands" "February 2021" "Slurm Commands"
 
 .SH "NAME"
 sbcast \- transmit a file to the nodes allocated to a Slurm job.
@@ -117,18 +117,18 @@ The location of the Slurm configuration file.
 When using SlurmDBD, users who have an AdminLevel defined (Operator
 or Admin) are given the authority to invoke sbcast on other users jobs.
 
-.SH "EXAMPLE"
+.SH "EXAMPLES"
 
 Using a batch script, transmit local file \fBmy.prog\fR to
 \fB/tmp/my.proc\fR on the local nodes and then execute it.
 
 .nf
-> cat my.job
+$ cat my.job
 #!/bin/bash
 sbcast my.prog /tmp/my.prog
 srun /tmp/my.prog
 
-> sbatch \-\-nodes=8 my.job
+$ sbatch \-\-nodes=8 my.job
 srun: jobid 12345 submitted
 .fi
 

@@ -1,4 +1,4 @@
-.TH sh5util "1" "Slurm Commands" "December 2020" "Slurm Commands"
+.TH sh5util "1" "Slurm Commands" "February 2021" "Slurm Commands"
 
 .SH "NAME"
 .LP
@@ -183,21 +183,28 @@ procedure calls to \fBslurmctld\fR from loops in shell scripts or other
 programs. Ensure that programs limit calls to \fBsh5util\fR to the minimum
 necessary for the information you are trying to gather.
 
-.SH "Examples"
+.SH "EXAMPLES"
 
 .TP
-Merge node-step files (as part of a sbatch script)
-.LP
-sbatch \-n1 \-d$SLURM_JOB_ID \-\-wrap="sh5util \-\-savefiles \-j $SLURM_JOB_ID"
+Merge node-step files (as part of a sbatch script):
+
+.nf
+$ sbatch \-n1 \-d$SLURM_JOB_ID \-\-wrap="sh5util \-\-savefiles \-j $SLURM_JOB_ID"
+.fi
 
 .TP
-Extract all task data from a node
-.LP
-sh5util \-j 42 \-N snowflake01 \-\-level=Node:TimeSeries \-\-series=Tasks
+Extract all task data from a node:
+
+.nf
+$ sh5util \-j 42 \-N snowflake01 \-\-level=Node:TimeSeries \-\-series=Tasks
+.fi
 
 .TP
-Extract all energy data
-sh5util \-j 42 \-\-series=Energy \-\-data=power
+Extract all energy data:
+
+.nf
+$ sh5util \-j 42 \-\-series=Energy \-\-data=power
+.fi
 
 .SH "COPYING"
 Copyright (C) 2013 Bull.

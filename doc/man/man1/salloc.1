@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "December 2020" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "February 2021" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -2043,33 +2043,35 @@ release the allocation and exit without waiting for the command to finish.
 Another exception is SIGTERM, which will be forwarded to the spawned process.
 
 .SH "EXAMPLES"
-.LP
-To get an allocation, and open a new xterm in which srun commands may be typed
+.TP
+To get an allocation, and open a new xterm in which srun commands may be typed \
 interactively:
-.IP
+
+.nf
 $ salloc \-N16 xterm
-.br
 salloc: Granted job allocation 65537
-.br
-(at this point the xterm appears, and salloc waits for xterm to exit)
-.br
+# (at this point the xterm appears, and salloc waits for xterm to exit)
 salloc: Relinquishing job allocation 65537
-.LP
-To grab an allocation of nodes and launch a parallel application on one command
-line (See the \fBsalloc\fR man page for more examples):
-.IP
-salloc \-N5 srun \-n10 myprogram
-.LP
-To create a heterogeneous job with 3 components, each allocating a unique set
+.fi
+
+.TP
+To grab an allocation of nodes and launch a parallel application on one \
+command line:
+
+.nf
+$ salloc \-N5 srun \-n10 myprogram
+.fi
+
+.TP
+To create a heterogeneous job with 3 components, each allocating a unique set \
 of nodes:
-.IP
-salloc -w node[2-3] : -w node4 : -w node[5-7] bash
-.br
+
+.nf
+$ salloc -w node[2-3] : -w node4 : -w node[5-7] bash
 salloc: job 32294 queued and waiting for resources
-.br
 salloc: job 32294 has been allocated resources
-.br
 salloc: Granted job allocation 32294
+.fi
 
 .SH "COPYING"
 Copyright (C) 2006\-2007 The Regents of the University of California.
