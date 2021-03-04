@@ -249,8 +249,13 @@ extern int slurm_send_timeout(int fd, char *buf, size_t size,
 		 * nonblocking read means just that.
 		 */
 		if (ufds.revents & POLLERR) {
-			debug("slurm_send_timeout: Socket POLLERR");
-			slurm_seterrno(ENOTCONN);
+			int e;
+
+			fd_get_socket_error(fd, &e);
+			debug("%s: Socket POLLERR: %s",
+			      __func__, slurm_strerror(e));
+
+			slurm_seterrno(e);
 			sent = SLURM_ERROR;
 			goto done;
 		}
