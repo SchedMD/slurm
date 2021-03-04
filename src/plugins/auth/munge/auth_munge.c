@@ -297,7 +297,7 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred)
 {
 	slurm_addr_t addr;
 	struct sockaddr_in *sin = (struct sockaddr_in *) &addr;
-	char *hostname = NULL;
+	char *hostname = NULL, *dot_ptr = NULL;
 
 	if (!cred || !cred->verified) {
 		/*
@@ -321,7 +321,13 @@ char *slurm_auth_get_host(slurm_auth_credential_t *cred)
 	 */
 	if (sin->sin_addr.s_addr != 0) {
 		hostname = get_name_info((struct sockaddr *) &addr,
-					 sizeof(addr), NI_NOFQDN);
+					 sizeof(addr), 0);
+		/*
+		 * The NI_NOFQDN flag was used here previously, but did not work
+		 * as desired if the primary domain did not match on both sides.
+		 */
+		if (hostname && (dot_ptr = strchr(hostname, '.')))
+			dot_ptr[0] = '\0';
 	}
 
 	if (!hostname) {

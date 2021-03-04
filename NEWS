@@ -42,6 +42,8 @@ documents those changes that are of interest to users and administrators.
     has not completed successfully.
  -- Reduce delay in starting salloc allocations when running with prologs.
  -- Fix issue passing open fd's with [send|recv]msg.
+ -- Alter AllocNodes check to work if the allocating node's domain doesn't
+    match the slurmctld's. This restores the pre-20.11 behavior.
 
 * Changes in Slurm 20.11.4
 ==========================
