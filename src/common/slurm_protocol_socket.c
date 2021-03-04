@@ -354,8 +354,13 @@ extern int slurm_recv_timeout(int fd, char *buffer, size_t size,
 		}
 
 		if (ufds.revents & POLLERR) {
-			debug("%s: Socket POLLERR", __func__);
-			slurm_seterrno(ENOTCONN);
+			int e;
+
+			fd_get_socket_error(fd, &e);
+			debug("%s: Socket POLLERR: %s",
+			      __func__, slurm_strerror(e));
+
+			slurm_seterrno(e);
 			recvlen = SLURM_ERROR;
 			goto done;
 		}
