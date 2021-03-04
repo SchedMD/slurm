@@ -730,11 +730,9 @@ int slurm_init_msg_engine_ports(uint16_t *ports)
  * msg connection establishment functions used by msg clients
 \**********************************************************************/
 
-/* In the bsd socket implementation it creates a SOCK_STREAM socket
- *	and calls connect on it a SOCK_DGRAM socket called with connect
- *	is defined to only receive messages from the address/port pair
- *	argument of the connect call slurm_address - for now it is
- *	really just a sockaddr_in
+/*
+ * Creates a SOCK_STREAM (TCP) socket and calls connect() on it.
+ * Will only receive messages from the address (w/port) argument.
  * IN slurm_address	- slurm_addr_t of the connection destination
  * RET slurm_fd		- file descriptor of the connection created
  */
