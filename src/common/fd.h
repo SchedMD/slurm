@@ -146,7 +146,7 @@ extern void fd_set_oob(int fd, int value);
 extern char *poll_revents_to_str(const short revents);
 
 /*
- * Pass an open fd back over a pipe to the parent process.
+ * Pass an open fd back over a pipe.
  */
 extern void send_fd_over_pipe(int socket, int fd);
 extern int receive_fd_over_pipe(int socket);
