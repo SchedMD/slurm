@@ -84,6 +84,7 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
+#include "src/common/run_command.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/uid.h"
@@ -105,6 +106,7 @@
 #define RPC_PACK_MAX_AGE	30	/* Rebuild data over 30 seconds old */
 #define DUMP_RPC_COUNT 		25
 #define HOSTLIST_MAX_SIZE 	80
+#define MAIL_PROG_TIMEOUT 120*1000
 
 typedef enum {
 	DSH_NEW,        /* Request not yet started */
@@ -2008,28 +2010,20 @@ static char **_build_mail_env(job_record_t *job_ptr, uint32_t mail_type)
 static void *_mail_proc(void *arg)
 {
 	mail_info_t *mi = (mail_info_t *) arg;
-	pid_t pid;
+	int status;
+	char *result = NULL;
+	char *argv[5] = {
+		slurm_conf.mail_prog, "-s", mi->message, mi->user_name, NULL};
 
-	pid = fork();
-	if (pid < 0) {		/* error */
-		error("fork(): %m");
-	} else if (pid == 0) {	/* child */
-		int fd_0, fd_1, fd_2, i;
-		for (i = 0; i < 1024; i++)
-			(void) close(i);
-		if ((fd_0 = open("/dev/null", O_RDWR)) == -1)	// fd = 0
-			error("Couldn't open /dev/null: %m");
-		if ((fd_1 = dup(fd_0)) == -1)			// fd = 1
-			error("Couldn't do a dup on fd 1: %m");
-		if ((fd_2 = dup(fd_0)) == -1)			// fd = 2
-			error("Couldn't do a dup on fd 2 %m");
-		execle(slurm_conf.mail_prog, "mail", "-s", mi->message,
-		       mi->user_name, NULL, mi->environment);
-		error("Failed to exec %s: %m", slurm_conf.mail_prog);
-		_exit(1);
-	} else {		/* parent */
-		waitpid(pid, NULL, 0);
-	}
+	result = run_command("MailProg", slurm_conf.mail_prog, argv,
+			     mi->environment, MAIL_PROG_TIMEOUT, 0, &status);
+	if (status)
+		error("MailProg returned error, it's output was '%s'", result);
+	else if (result && (strlen(result) > 0))
+		debug("MailProg output was '%s'.", result);
+	else
+		debug2("No output from MailProg, exit code=%d", status);
+	xfree(result);
 	_mail_free(mi);
 	slurm_mutex_lock(&agent_cnt_mutex);
 	slurm_mutex_lock(&mail_mutex);
