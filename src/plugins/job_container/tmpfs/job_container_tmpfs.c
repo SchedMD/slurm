@@ -381,7 +381,7 @@ extern int container_p_create(uint32_t job_id)
 	/* run any initialization script- if any*/
 	if (jc_conf->initscript) {
 		result = run_command("initscript", jc_conf->initscript, NULL,
-				     10000, 0, &rc);
+				     NULL, 10000, 0, &rc);
 		if (rc) {
 			error("%s: init script: %s failed",
 			      __func__, jc_conf->initscript);

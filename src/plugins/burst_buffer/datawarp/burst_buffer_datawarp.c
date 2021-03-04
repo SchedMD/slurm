@@ -1625,7 +1625,7 @@ static void *_start_stage_in(void *x)
 	START_TIMER;
 	resp_msg = run_command("setup",
 			       bb_state.bb_config.get_sys_state,
-			       setup_argv, timeout, pthread_self(),
+			       setup_argv, NULL, timeout, pthread_self(),
 			       &status);
 	END_TIMER;
 	info("setup for job JobId=%u ran for %s",
@@ -1693,7 +1693,8 @@ static void *_start_stage_in(void *x)
 		START_TIMER;
 		resp_msg = run_command("dws_data_in",
 				       bb_state.bb_config.get_sys_state,
-				       data_in_argv, timeout, pthread_self(),
+				       data_in_argv, NULL,
+				       timeout, pthread_self(),
 				       &status);
 		END_TIMER;
 		info("dws_data_in for JobId=%u ran for %s",
@@ -1750,7 +1751,8 @@ static void *_start_stage_in(void *x)
 		START_TIMER;
 		resp_msg2 = run_command("real_size",
 				        bb_state.bb_config.get_sys_state,
-				        size_argv, timeout, pthread_self(),
+				        size_argv, NULL,
+					timeout, pthread_self(),
 					&status);
 		END_TIMER;
 		if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
@@ -1937,7 +1939,7 @@ static void *_start_stage_out(void *x)
 	START_TIMER;
 	resp_msg = run_command("dws_post_run",
 			       bb_state.bb_config.get_sys_state,
-			       post_run_argv, timeout, pthread_self(),
+			       post_run_argv, NULL, timeout, pthread_self(),
 			       &status);
 	END_TIMER;
 	if ((DELTA_TIMER > 500000) ||	/* 0.5 secs */
@@ -1997,7 +1999,8 @@ static void *_start_stage_out(void *x)
 		xfree(resp_msg);
 		resp_msg = run_command("dws_data_out",
 				       bb_state.bb_config.get_sys_state,
-				       data_out_argv, timeout, pthread_self(),
+				       data_out_argv, NULL,
+				       timeout, pthread_self(),
 				       &status);
 		END_TIMER;
 		if ((DELTA_TIMER > 1000000) ||	/* 10 secs */
@@ -2186,7 +2189,7 @@ static void *_start_teardown(void *x)
 	timeout = bb_state.bb_config.other_timeout * 1000;
 	resp_msg = run_command("teardown",
 			       bb_state.bb_config.get_sys_state,
-			       teardown_argv, timeout, pthread_self(),
+			       teardown_argv, NULL, timeout, pthread_self(),
 			       &status);
 	END_TIMER;
 	info("teardown for JobId=%u ran for %s",
@@ -3414,7 +3417,7 @@ extern char *bb_p_get_status(uint32_t argc, char **argv)
 	for (i = 0; i < argc; i++)
 		script_argv[i + 1] = argv[i];
 	status_resp = run_command("dwstat", bb_state.bb_config.get_sys_status,
-				  script_argv, 2000, 0, &status);
+				  script_argv, NULL, 2000, 0, &status);
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
 		xfree(status_resp);
 		status_resp = xstrdup("Error running dwstat\n");
@@ -3757,7 +3760,7 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 	START_TIMER;
 	resp_msg = run_command("job_process",
 			       bb_state.bb_config.get_sys_state,
-			       script_argv, timeout, 0, &status);
+			       script_argv, NULL, timeout, 0, &status);
 	END_TIMER;
 	if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
 	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
@@ -4167,7 +4170,7 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 		START_TIMER;
 		resp_msg = run_command("paths",
 				       bb_state.bb_config.get_sys_state,
-				       script_argv, timeout, 0,
+				       script_argv, NULL, timeout, 0,
 				       &status);
 		END_TIMER;
 		if ((DELTA_TIMER > 200000) ||	/* 0.2 secs */
@@ -4305,7 +4308,8 @@ static void *_start_pre_run(void *x)
 	START_TIMER;
 	resp_msg = run_command("dws_pre_run",
 			       bb_state.bb_config.get_sys_state,
-			       pre_run_args->args, timeout, pthread_self(),
+			       pre_run_args->args, NULL,
+			       timeout, pthread_self(),
 			       &status);
 	END_TIMER;
 
@@ -4892,7 +4896,7 @@ static void *_create_persistent(void *x)
 	START_TIMER;
 	resp_msg = run_command("create_persistent",
 			       bb_state.bb_config.get_sys_state,
-			       script_argv, timeout, pthread_self(),
+			       script_argv, NULL, timeout, pthread_self(),
 			       &status);
 	_log_script_argv(script_argv, resp_msg);
 	free_command_argv(script_argv);
@@ -5048,7 +5052,7 @@ static void *_destroy_persistent(void *x)
 	START_TIMER;
 	resp_msg = run_command("destroy_persistent",
 			       bb_state.bb_config.get_sys_state,
-			       script_argv, timeout, pthread_self(),
+			       script_argv, NULL, timeout, pthread_self(),
 			       &status);
 	_log_script_argv(script_argv, resp_msg);
 	free_command_argv(script_argv);
@@ -5156,7 +5160,7 @@ _bb_get_configs(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	START_TIMER;
 	resp_msg = run_command("show_configurations",
 			       state_ptr->bb_config.get_sys_state,
-			       script_argv, timeout, 0, &status);
+			       script_argv, NULL, timeout, 0, &status);
 	END_TIMER;
 	log_flag(BURST_BUF, "show_configurations ran for %s",
 		 TIME_STR);
@@ -5225,7 +5229,7 @@ _bb_get_instances(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	START_TIMER;
 	resp_msg = run_command("show_instances",
 			       state_ptr->bb_config.get_sys_state,
-			       script_argv, timeout, 0, &status);
+			       script_argv, NULL, timeout, 0, &status);
 	END_TIMER;
 	log_flag(BURST_BUF, "show_instances ran for %s",
 		 TIME_STR);
@@ -5293,7 +5297,7 @@ _bb_get_pools(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	START_TIMER;
 	resp_msg = run_command("pools",
 			       state_ptr->bb_config.get_sys_state,
-			       script_argv, timeout, 0, &status);
+			       script_argv, NULL, timeout, 0, &status);
 	END_TIMER;
 	if (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF) {
 		/* Only log pools data if different to limit volume of logs */
@@ -5360,7 +5364,7 @@ _bb_get_sessions(int *num_ent, bb_state_t *state_ptr, uint32_t timeout)
 	START_TIMER;
 	resp_msg = run_command("show_sessions",
 			       state_ptr->bb_config.get_sys_state,
-			       script_argv, timeout, 0, &status);
+			       script_argv, NULL, timeout, 0, &status);
 	END_TIMER;
 	log_flag(BURST_BUF, "show_sessions ran for %s",
 		 TIME_STR);
