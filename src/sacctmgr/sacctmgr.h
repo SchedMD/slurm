@@ -266,7 +266,6 @@ extern int sacctmgr_list_stats(int argc, char **argv);
 extern int sacctmgr_list_tres(int, char **);
 extern int sacctmgr_list_wckey(int argc, char **argv);
 
-extern int sacctmgr_modify_assoc(int argc, char **argv);
 extern int sacctmgr_modify_user(int argc, char **argv);
 extern int sacctmgr_modify_account(int argc, char **argv);
 extern int sacctmgr_modify_cluster(int argc, char **argv);
@@ -275,7 +274,6 @@ extern int sacctmgr_modify_job(int argc, char **argv);
 extern int sacctmgr_modify_qos(int argc, char **argv);
 extern int sacctmgr_modify_res(int argc, char **argv);
 
-extern int sacctmgr_delete_assoc(int argc, char **argv);
 extern int sacctmgr_delete_user(int argc, char **argv);
 extern int sacctmgr_delete_account(int argc, char **argv);
 extern int sacctmgr_delete_cluster(int argc, char **argv);

@@ -908,15 +908,3 @@ extern int sacctmgr_list_assoc(int argc, char **argv)
 	tree_display = 0;
 	return rc;
 }
-
-/* extern int sacctmgr_modify_assoc(int argc, char **argv) */
-/* { */
-/* 	int rc = SLURM_SUCCESS; */
-/* 	return rc; */
-/* } */
-
-/* extern int sacctmgr_delete_assoc(int argc, char **argv) */
-/* { */
-/* 	int rc = SLURM_SUCCESS; */
-/* 	return rc; */
-/* } */
