@@ -94,6 +94,7 @@ const params_t job_params[] = {
 	{ "account_gather_frequency", LONG_OPT_ACCTG_FREQ },
 	{ "allocation_node_list", LONG_OPT_ALLOC_NODELIST, true },
 	{ "array", 'a' },
+	{ "argv", LONG_OPT_ARGV },
 	{ "batch_features", LONG_OPT_BATCH },
 	{ "begin_time", 'b' },
 	{ "bell", LONG_OPT_BELL, true },
