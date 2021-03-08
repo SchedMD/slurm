@@ -101,14 +101,10 @@ static void *_safe_signal_while_allocating(void *in_data)
 
 	debug("Got signal %d", signo);
 	xfree(in_data);
-	if (signo == SIGCONT)
-		return NULL;
 
-	destroy_job = 1;
 	if (pending_job_id != 0) {
 		info("Job allocation %u has been revoked", pending_job_id);
 		slurm_complete_job(pending_job_id, NO_VAL);
-		destroy_job = 1;
 	}
 
 	return NULL;
@@ -128,6 +124,11 @@ static void _signal_while_allocating(int signo)
 	 *
 	 * SO, DON'T PRINT ANYTHING IN THIS FUNCTION.
 	 */
+	if (signo == SIGCONT)
+		return;
+
+	destroy_job = 1;
+
 	local_signal = xmalloc(sizeof(int));
 	*local_signal = signo;
 	slurm_thread_create_detached(NULL, _safe_signal_while_allocating,
