@@ -593,6 +593,51 @@ static slurm_cli_opt_t slurm_opt_array = {
 	.reset_func = arg_reset_array_inx,
 };
 
+
+static data_for_each_cmd_t _parse_argv(const data_t *data, void *arg)
+{
+	char ***argv = arg;
+	(**argv) = xstrdup(data_get_string_const(data));
+	(*argv)++;
+	return DATA_FOR_EACH_CONT;
+}
+
+static int arg_set_data_argv(slurm_opt_t *opt, const data_t *arg,
+			     data_t *errors)
+{
+	int argc = data_get_list_length(arg);
+	char **argv = xcalloc(argc, sizeof(char *));
+	opt->sbatch_opt->script_argc = argc;
+	opt->sbatch_opt->script_argv = argv;
+	/* argv will be advanced by _parse_argv */
+	data_list_for_each_const(arg, _parse_argv, &argv);
+	return SLURM_SUCCESS;
+}
+static char *arg_get_argv(slurm_opt_t *opt)
+{
+	char *argv_string = NULL;
+	for (int i = 0; i < opt->sbatch_opt->script_argc; i++)
+		xstrfmtcat(argv_string, " %s",
+			   opt->sbatch_opt->script_argv[i]);
+	return argv_string;
+}
+static void arg_reset_argv(slurm_opt_t *opt)
+{
+	if (opt->sbatch_opt) {
+		xfree(opt->sbatch_opt->script_argv);
+		opt->sbatch_opt->script_argc = 0;
+	}
+}
+static slurm_cli_opt_t slurm_opt_argv = {
+	.name = "argv",
+	.has_arg = required_argument,
+	.val = LONG_OPT_ARGV,
+	.set_func_data = arg_set_data_argv,
+	.get_func = arg_get_argv,
+	.reset_func = arg_reset_argv,
+};
+
+
 COMMON_SBATCH_STRING_OPTION(batch_features);
 static slurm_cli_opt_t slurm_opt_batch = {
 	.name = "batch",
@@ -4871,6 +4916,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_acctg_freq,
 	&slurm_opt_alloc_nodelist,
 	&slurm_opt_array,
+	&slurm_opt_argv,
 	&slurm_opt_batch,
 	&slurm_opt_bcast,
 	&slurm_opt_begin,

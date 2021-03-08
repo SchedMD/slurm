@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - remove (non-functioning) users query parameter for
     slurmdb/v0.0.36/jobs from openapi.json
  -- slurmrestd - fix segfault in slurmrestd db/jobs with numeric queries
+ -- slurmrestd - add argv handling for job/submit endpoint.
 
 * Changes in Slurm 20.11.7
 ==========================
