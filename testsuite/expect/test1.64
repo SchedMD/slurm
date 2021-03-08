@@ -40,7 +40,6 @@ set srun_pid [spawn $srun -N1 -t1 --begin=noon -v $bin_sleep 1]
 expect {
 	-re "queued and waiting for resources" {
 		incr matches
-		sleep 1
 		exec $bin_kill -INT $srun_pid
 		log_debug "Sent SIGINT"
 		exp_continue
