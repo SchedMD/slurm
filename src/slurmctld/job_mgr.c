@@ -1755,6 +1755,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		safe_unpack32(&job_ptr->bit_flags, buffer);
 		job_ptr->bit_flags &= ~BACKFILL_TEST;
 		job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
+		job_ptr->bit_flags &= ~CRON_JOB;
 		safe_unpackstr_xmalloc(&tres_alloc_str,
 				       &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_fmt_alloc_str,
@@ -1981,6 +1982,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		safe_unpack32(&job_ptr->bit_flags, buffer);
 		job_ptr->bit_flags &= ~BACKFILL_TEST;
 		job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
+		job_ptr->bit_flags &= ~CRON_JOB;
 		safe_unpackstr_xmalloc(&tres_alloc_str,
 				       &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_fmt_alloc_str,
@@ -17235,10 +17237,18 @@ extern bool job_hold_requeue(job_record_t *job_ptr)
 	_set_job_requeue_exit_value(job_ptr);
 
 	/* handle crontab jobs */
-	if (job_ptr->bit_flags & CRON_JOB) {
+	if ((job_ptr->bit_flags & CRON_JOB) &&
+	    job_ptr->details->crontab_entry) {
 		job_ptr->job_state |= JOB_REQUEUE;
 		job_ptr->details->begin_time =
 			calc_next_cron_start(job_ptr->details->crontab_entry);
+	} else if (job_ptr->bit_flags & CRON_JOB) {
+		/*
+		 * Skip requeuing this instead of crashing.
+		 */
+		error("Missing cron details for %pJ. This should never happen. Clearing CRON_JOB flag and skipping requeue.",
+		      job_ptr);
+		job_ptr->bit_flags &= ~CRON_JOB;
 	}
 
 	state = job_ptr->job_state;
