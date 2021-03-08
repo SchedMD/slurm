@@ -69,6 +69,7 @@ const char plugin_type[]        = "job_container/tmpfs";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 static slurm_ns_conf_t *ns_conf = NULL;
+static int step_ns_fd = -1;
 
 static int _create_paths(uint32_t job_id,
 			 char *job_mount,
@@ -169,6 +170,11 @@ extern int fini(void)
 		return SLURM_ERROR;
 	}
 	free_ns_conf();
+
+	if (step_ns_fd != -1) {
+		close(step_ns_fd);
+		step_ns_fd = -1;
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -570,12 +576,12 @@ exit2:
 	return rc;
 }
 
-static int _get_fd(uint32_t job_id)
+/* Add a process to a job container, create the proctrack container to add */
+extern int container_p_join_external(uint32_t job_id)
 {
 	char job_mount[PATH_MAX];
 	char ns_holder[PATH_MAX];
 	char active[PATH_MAX];
-	int fd;
 	int rc = 0;
 	struct stat st;
 
@@ -597,19 +603,13 @@ static int _get_fd(uint32_t job_id)
 		return -1;
 	}
 
-	fd = open(ns_holder, O_RDONLY);
-	if (fd == -1) {
-		error("%s: %s", __func__, strerror(errno));
-		return -1;
+	if (step_ns_fd == -1) {
+		step_ns_fd = open(ns_holder, O_RDONLY);
+		if (step_ns_fd == -1)
+			error("%s: %s", __func__, strerror(errno));
 	}
 
-	return fd;
-}
-
-/* Add a process to a job container, create the proctrack container to add */
-extern int container_p_join_external(uint32_t job_id)
-{
-	return _get_fd(job_id);
+	return step_ns_fd;
 }
 
 /* Add proctrack container (PAGG) to a job container */
