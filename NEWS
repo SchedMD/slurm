@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
  -- Set the correct core affinity when using AutoDetect.
  -- Start relying on the conf again in xcpuinfo_mac_to_abs().
  -- Fix global_last_rollup assignment on job resizing.
+ -- slurmrestd - hand over connection context on _on_message_complete().
 
 * Changes in Slurm 20.11.4
 ==========================
