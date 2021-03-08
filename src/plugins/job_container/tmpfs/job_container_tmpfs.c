@@ -707,12 +707,6 @@ extern int container_p_delete(uint32_t job_id)
 		return SLURM_ERROR;
 	}
 
-	ns_conf = get_slurm_ns_conf();
-	if (!ns_conf) {
-		error("%s: Configuration not loaded", __func__);
-		return SLURM_ERROR;
-	}
-
 	errno = 0;
 	rc = umount2(ns_holder, MNT_DETACH);
 	if (rc) {
