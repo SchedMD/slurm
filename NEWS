@@ -55,6 +55,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - mark "environment" as required for job submissions in schema.
  -- slurmrestd - Disable credential reuse on the same TCP connection. Pipelined
     HTTP connections will have to provide authentication with every request.
+ -- Avoid data conversion error on NULL strings in data_get_string_converted().
 
 * Changes in Slurm 20.11.4
 ==========================
