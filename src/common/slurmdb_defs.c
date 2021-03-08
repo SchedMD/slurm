@@ -358,7 +358,7 @@ extern void slurmdb_job_cond_def_start_end(slurmdb_job_cond_t *job_cond)
 	    (job_cond->flags & JOBCOND_FLAG_NO_DEFAULT_USAGE))
 		return;
 	/*
-	 * Defaults for start and end times...
+	 * Defaults for start (S) and end (E) times:
 	 * - with -j and -s:
 	 *   -S defaults to Epoch 0
 	 *   -E defaults to -S (unless no -S then Now)
@@ -397,6 +397,15 @@ extern void slurmdb_job_cond_def_start_end(slurmdb_job_cond_t *job_cond)
 
 	if (!job_cond->usage_end)
 		job_cond->usage_end = now;
+
+	/*
+	 * The query will be exclusive of the end time, that is [S,E).
+	 * We must adjust E when E==S to include S, and when E==Now to
+	 * include the current second.
+	 */
+	if ((job_cond->usage_end == job_cond->usage_start) ||
+	    (job_cond->usage_end == now))
+		job_cond->usage_end++;
 }
 
 static uint32_t _str_2_qos_flags(char *flags)
