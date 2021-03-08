@@ -95,6 +95,7 @@ documents those changes that are of interest to users and administrators.
     per job.
  -- Set the correct core affinity when using AutoDetect.
  -- Start relying on the conf again in xcpuinfo_mac_to_abs().
+ -- Fix global_last_rollup assignment on job resizing.
 
 * Changes in Slurm 20.11.4
 ==========================

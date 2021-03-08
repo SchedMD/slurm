@@ -1015,7 +1015,7 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 
 	slurm_mutex_lock(&rollup_lock);
 	if (end_time < global_last_rollup) {
-		global_last_rollup = job_ptr->end_time;
+		global_last_rollup = end_time;
 		slurm_mutex_unlock(&rollup_lock);
 
 		query = xstrdup_printf("update \"%s_%s\" set "
