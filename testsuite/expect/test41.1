@@ -39,6 +39,8 @@ run_command -subtest        "$slurmrestd -s list"
 run_command -subtest -xfail "$slurmrestd -s invalid_plugin"
 run_command -subtest        -stdin "GET /openapi HTTP/1.1\r\nConnection: Close\r\n\r\n" "$slurmrestd -a rest_auth/local"
 run_command -subtest -xfail -stdin "GET /openapi HTTP/1.1\r\nConnection: Close\r\n\r\n" "$slurmrestd -a rest_auth/invalid"
-
-# TODO: enable this upon resolution of bug#10388
-# run_command -subtest -xfail -stdin "INVALID\r\n\r\n" "$slurmrestd -vvv"
+# Subtests related to Bug 10388:
+run_command -subtest -xfail -stdin "INVALID" "$slurmrestd"
+run_command -subtest -xfail -stdin "INVALID\r\n\r\n" "$slurmrestd"
+run_command -subtest -xfail -stdin "INVALID\r\nINVALID\r\n\r\n" "$slurmrestd"
+run_command -subtest -xfail -stdin "GET /openapi HTTP/1.1\r\nINVALID\r\n\r\n" "$slurmrestd"
