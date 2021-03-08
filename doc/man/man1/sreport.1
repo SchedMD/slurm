@@ -298,9 +298,13 @@ used, only the reservations that ran at any time during the period requested.
 
 .TP
 .B user TopUsage
-Displays the top users on a cluster.  Use the group option to group
-accounts together.  The default is to have a different line for each
-user account combination.
+Displays the top users on a cluster, i.e. users with the highest CPUTime.
+Use the group option to group accounts together.
+The default is to have a different line for each user account combination.
+
+\fBNOTE\fR: TopUsage is always based on CPUTime. The \-T, \-\-tres option will
+show the TRES usage of the top users, but the users are always sorted by
+their CPUTime, not by the specified TRES.
 
 .TP
 Each report type has various options...
