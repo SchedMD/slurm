@@ -410,8 +410,8 @@ extern int container_p_create(uint32_t job_id)
 		    MAP_SHARED|MAP_ANONYMOUS, -1, 0);
 	if (sem2 == MAP_FAILED) {
 		error("%s: mmap failed: %s", __func__, strerror(errno));
-		munmap(sem1, sizeof(*sem1));
 		sem_destroy(sem1);
+		munmap(sem1, sizeof(*sem1));
 		rc = -1;
 		goto exit2;
 	}
@@ -475,10 +475,10 @@ extern int container_p_create(uint32_t job_id)
 			goto child_exit;
 		}
 	child_exit:
-		munmap(sem1, sizeof(*sem1));
 		sem_destroy(sem1);
-		munmap(sem2, sizeof(*sem2));
+		munmap(sem1, sizeof(*sem1));
 		sem_destroy(sem2);
+		munmap(sem2, sizeof(*sem2));
 
 		if (!rc) {
 			rc = _mount_private_shm();
@@ -551,10 +551,10 @@ extern int container_p_create(uint32_t job_id)
 	}
 
 exit1:
-	munmap(sem1, sizeof(*sem1));
 	sem_destroy(sem1);
-	munmap(sem2, sizeof(*sem2));
+	munmap(sem1, sizeof(*sem1));
 	sem_destroy(sem2);
+	munmap(sem2, sizeof(*sem2));
 
 exit2:
 	if (rc) {
