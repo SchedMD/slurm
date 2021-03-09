@@ -1745,6 +1745,9 @@
       },
       "v0.0.37_job_properties": {
         "type": "object",
+        "required": [
+          "environment"
+        ],
         "properties": {
           "account": {
             "type": "string",
