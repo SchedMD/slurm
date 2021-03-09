@@ -652,6 +652,7 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 		return SLURM_ERROR;
 	}
 
+	/* This is called on the slurmd so we can't use ns_fd. */
 	fd = open(ns_holder, O_RDONLY);
 	if (fd == -1) {
 		error("%s: open failed for %s: %s",
@@ -663,18 +664,21 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 	if (rc) {
 		error("%s: setns failed for %s: %s",
 		      __func__, ns_holder, strerror(errno));
+		/* closed after strerror(errno) */
+		close(fd);
 		return SLURM_ERROR;
 	} else {
 		struct stat st;
+		close(fd);
 		if (stat(active, &st)) {
 			/* touch .active to imply namespace is active */
-			int fp = 0;
-			fp = open(active, O_CREAT|O_RDWR, S_IRWXU);
-			if (fp == -1) {
+			fd = open(active, O_CREAT|O_RDWR, S_IRWXU);
+			if (fd == -1) {
 				error("%s: open failed %s: %s",
 				      __func__, active, strerror(errno));
 				return SLURM_ERROR;
 			}
+			close(fd);
 		}
 		debug3("job entered namespace");
 	}
