@@ -10862,18 +10862,22 @@ extern uint32_t get_next_job_id(bool test_only)
 
 	/* Ensure no conflict in job id if we roll over 32 bits */
 	for (i = 0; i < max_jobs; i++) {
-		if (++tmp_id_sequence >= slurm_conf.max_job_id)
+		if (tmp_id_sequence >= slurm_conf.max_job_id)
 			tmp_id_sequence = slurm_conf.first_job_id;
 
 		new_id = fed_mgr_get_job_id(tmp_id_sequence);
 
-		if (find_job_record(new_id))
+		if (find_job_record(new_id)) {
+			tmp_id_sequence++;
 			continue;
-		if (_dup_job_file_test(new_id))
+		}
+		if (_dup_job_file_test(new_id)) {
+			tmp_id_sequence++;
 			continue;
+		}
 
 		if (!test_only)
-			job_id_sequence = tmp_id_sequence;
+			job_id_sequence = tmp_id_sequence + 1;
 
 		return new_id;
 	}
