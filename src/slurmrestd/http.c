@@ -1031,7 +1031,7 @@ static int _http_header_find_key(void *x, void *y)
 		return 0;
 }
 
-const char *find_http_header(List headers, const char *name)
+extern const char *find_http_header(List headers, const char *name)
 {
 	http_header_entry_t *header = NULL;
 
