@@ -181,8 +181,6 @@ extern int fini(void)
 
 extern int container_p_restore(char *dir_name, bool recover)
 {
-	struct stat stbuf;
-
 #ifdef HAVE_NATIVE_CRAY
 	return SLURM_SUCCESS;
 #endif
@@ -235,12 +233,6 @@ extern int container_p_restore(char *dir_name, bool recover)
 		}
 		umask(omask);
 
-	}
-
-	if (stat(ns_conf->basepath, &stbuf)) {
-		error("%s: stat failed %s, %s",
-		      __func__, ns_conf->basepath, strerror(errno));
-		return SLURM_ERROR;
 	}
 
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
@@ -494,7 +486,6 @@ extern int container_p_create(uint32_t job_id)
 		}
 		exit(rc);
 	} else {
-		struct stat sb;
 		int wstatus;
 		char proc_path[PATH_MAX];
 
@@ -510,15 +501,6 @@ extern int container_p_create(uint32_t job_id)
 			error("%s: Unable to build job %u /proc path: %m",
 			      __func__, job_id);
 			rc = -1;
-			goto exit1;
-		}
-
-		rc = stat(proc_path, &sb);
-		if (rc) {
-			error("%s: stat failed: %s", __func__, strerror(errno));
-			if (sem_post(sem2) < 0)
-				error("%s: Could not release semaphore: %s",
-				      __func__, strerror(errno));
 			goto exit1;
 		}
 
@@ -668,18 +650,15 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 		close(fd);
 		return SLURM_ERROR;
 	} else {
-		struct stat st;
+		/* touch .active to imply namespace is active */
 		close(fd);
-		if (stat(active, &st)) {
-			/* touch .active to imply namespace is active */
-			fd = open(active, O_CREAT|O_RDWR, S_IRWXU);
-			if (fd == -1) {
-				error("%s: open failed %s: %s",
-				      __func__, active, strerror(errno));
-				return SLURM_ERROR;
-			}
-			close(fd);
+		fd = open(active, O_CREAT|O_RDWR, S_IRWXU);
+		if (fd == -1) {
+			error("%s: open failed %s: %s",
+			      __func__, active, strerror(errno));
+			return SLURM_ERROR;
 		}
+		close(fd);
 		debug3("job entered namespace");
 	}
 
@@ -691,7 +670,6 @@ extern int container_p_delete(uint32_t job_id)
 	char job_mount[PATH_MAX];
 	char ns_holder[PATH_MAX];
 	int rc = 0;
-	struct stat st;
 
 #ifdef HAVE_NATIVE_CRAY
 	return SLURM_SUCCESS;
@@ -699,11 +677,6 @@ extern int container_p_delete(uint32_t job_id)
 
 	if (_create_paths(job_id, job_mount, ns_holder, NULL, NULL)
 	    != SLURM_SUCCESS) {
-		return SLURM_ERROR;
-	}
-
-	if (stat(job_mount, &st)) {
-		error("%s: Job mount not found", __func__);
 		return SLURM_ERROR;
 	}
 
