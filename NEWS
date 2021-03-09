@@ -46,7 +46,7 @@ documents those changes that are of interest to users and administrators.
     match the slurmctld's. This restores the pre-20.11 behavior.
  -- Fix slurmctld segfault if jobs from a prior version had the now-removed
     INVALID_DEPEND state flag set and were allowed to run in 20.11.
- -- Add job_container/tmps plugin to give a method to provide a private /tmp
+ -- Add job_container/tmpfs plugin to give a method to provide a private /tmp
     per job.
  -- Set the correct core affinity when using AutoDetect.
  -- Start relying on the conf again in xcpuinfo_mac_to_abs().
