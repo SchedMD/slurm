@@ -909,7 +909,7 @@ extern void free_parse_host_port(parsed_host_port_t *parsed)
 	xfree(parsed);
 }
 
-extern http_context_t *_http_context_new(void)
+static http_context_t *_http_context_new(void)
 {
 	http_context_t *context = xmalloc(sizeof(*context));
 	http_parser *parser = xmalloc(sizeof(*parser));
