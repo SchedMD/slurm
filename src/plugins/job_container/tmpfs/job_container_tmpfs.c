@@ -87,7 +87,7 @@ static int _create_paths(uint32_t job_id,
 
 	xassert(job_mount);
 
-	if (snprintf(job_mount, PATH_MAX, "%s/%d", ns_conf->basepath, job_id)
+	if (snprintf(job_mount, PATH_MAX, "%s/%u", ns_conf->basepath, job_id)
 	    >= PATH_MAX) {
 		error("%s: Unable to build job %u mount path: %m",
 			__func__, job_id);
