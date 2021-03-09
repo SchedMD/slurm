@@ -745,6 +745,7 @@ static int _on_message_complete(http_parser *parser)
 		request_t *nrequest = xmalloc(sizeof(*request));
 		nrequest->magic = MAGIC_REQUEST_T;
 		nrequest->headers = list_create(_free_http_header);
+		nrequest->context = request->context;
 		request->context->request = nrequest;
 		parser->data = nrequest;
 		_free_request_t(request);
