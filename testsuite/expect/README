@@ -399,6 +399,7 @@ test7.19   Test sbatch/srun/salloc path resolving
 test7.20   Test lua JobSubmitPlugin
 test7.21   Test SPANK plugins that link against libslurm
 test7.22   Test basic functionality of backfill scheduler
+test7.23   Test min_mem_per_{cpu,node} in lua JobSubmitPlugin
 
 test8.#    Testing of advanced reservation functionality.
 =========================================================

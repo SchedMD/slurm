@@ -881,8 +881,11 @@ int data_get_string_converted(const data_t *d, char **buffer)
 		    DATA_TYPE_STRING)
 			_buffer = xstrdup(data_get_string(dclone));
 		FREE_NULL_DATA(dclone);
-	} else
+	} else {
 		_buffer = xstrdup(data_get_string_const(d));
+		if (!_buffer)
+			_buffer = xstrdup("");
+	}
 
 	if (_buffer) {
 		*buffer = _buffer;
