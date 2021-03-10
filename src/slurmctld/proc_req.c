@@ -2163,13 +2163,15 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 					    .step_het_comp = NO_VAL };
 		step_record_t *step_ptr = find_step_record(job_ptr, &step_id);
 		if (!step_ptr) {
-			error("%s: Could not find batch step for %pJ, this should never happen",
+			/* Ignore duplicate or late batch complete RPCs */
+			debug("%s: Ignoring late or duplicate REQUEST_COMPLETE_BATCH_SCRIPT received for job %pJ",
 			      __func__, job_ptr);
-			step_ptr = build_batch_step(job_ptr);
-		}
-		if (!step_ptr) {
-			error("%s: %pJ Can't create batch step. This should never happen.",
-			      __func__, job_ptr);
+			if (!(msg->flags & CTLD_QUEUE_PROCESSING)) {
+				unlock_slurmctld(job_write_lock);
+				_throttle_fini(&active_rpc_cnt);
+			}
+			slurm_send_rc_msg(msg, SLURM_SUCCESS);
+			return;
 		} else if (step_ptr->step_id.step_id != SLURM_BATCH_SCRIPT) {
 			error("%s: %pJ Didn't find batch step, found step %u. This should never happen.",
 			      __func__, job_ptr, step_ptr->step_id.step_id);

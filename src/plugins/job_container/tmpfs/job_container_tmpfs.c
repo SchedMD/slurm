@@ -69,6 +69,7 @@ const char plugin_type[]        = "job_container/tmpfs";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 static slurm_ns_conf_t *ns_conf = NULL;
+static int step_ns_fd = -1;
 
 static int _create_paths(uint32_t job_id,
 			 char *job_mount,
@@ -86,7 +87,7 @@ static int _create_paths(uint32_t job_id,
 
 	xassert(job_mount);
 
-	if (snprintf(job_mount, PATH_MAX, "%s/%d", ns_conf->basepath, job_id)
+	if (snprintf(job_mount, PATH_MAX, "%s/%u", ns_conf->basepath, job_id)
 	    >= PATH_MAX) {
 		error("%s: Unable to build job %u mount path: %m",
 			__func__, job_id);
@@ -170,13 +171,16 @@ extern int fini(void)
 	}
 	free_ns_conf();
 
+	if (step_ns_fd != -1) {
+		close(step_ns_fd);
+		step_ns_fd = -1;
+	}
+
 	return SLURM_SUCCESS;
 }
 
 extern int container_p_restore(char *dir_name, bool recover)
 {
-	struct stat stbuf;
-
 #ifdef HAVE_NATIVE_CRAY
 	return SLURM_SUCCESS;
 #endif
@@ -229,12 +233,6 @@ extern int container_p_restore(char *dir_name, bool recover)
 		}
 		umask(omask);
 
-	}
-
-	if (stat(ns_conf->basepath, &stbuf)) {
-		error("%s: stat failed %s, %s",
-		      __func__, ns_conf->basepath, strerror(errno));
-		return SLURM_ERROR;
 	}
 
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
@@ -410,8 +408,8 @@ extern int container_p_create(uint32_t job_id)
 		    MAP_SHARED|MAP_ANONYMOUS, -1, 0);
 	if (sem2 == MAP_FAILED) {
 		error("%s: mmap failed: %s", __func__, strerror(errno));
-		munmap(sem1, sizeof(*sem1));
 		sem_destroy(sem1);
+		munmap(sem1, sizeof(*sem1));
 		rc = -1;
 		goto exit2;
 	}
@@ -475,10 +473,10 @@ extern int container_p_create(uint32_t job_id)
 			goto child_exit;
 		}
 	child_exit:
-		munmap(sem1, sizeof(*sem1));
 		sem_destroy(sem1);
-		munmap(sem2, sizeof(*sem2));
+		munmap(sem1, sizeof(*sem1));
 		sem_destroy(sem2);
+		munmap(sem2, sizeof(*sem2));
 
 		if (!rc) {
 			rc = _mount_private_shm();
@@ -488,7 +486,6 @@ extern int container_p_create(uint32_t job_id)
 		}
 		exit(rc);
 	} else {
-		struct stat sb;
 		int wstatus;
 		char proc_path[PATH_MAX];
 
@@ -504,15 +501,6 @@ extern int container_p_create(uint32_t job_id)
 			error("%s: Unable to build job %u /proc path: %m",
 			      __func__, job_id);
 			rc = -1;
-			goto exit1;
-		}
-
-		rc = stat(proc_path, &sb);
-		if (rc) {
-			error("%s: stat failed: %s", __func__, strerror(errno));
-			if (sem_post(sem2) < 0)
-				error("%s: Could not release semaphore: %s",
-				      __func__, strerror(errno));
 			goto exit1;
 		}
 
@@ -551,10 +539,10 @@ extern int container_p_create(uint32_t job_id)
 	}
 
 exit1:
-	munmap(sem1, sizeof(*sem1));
 	sem_destroy(sem1);
-	munmap(sem2, sizeof(*sem2));
+	munmap(sem1, sizeof(*sem1));
 	sem_destroy(sem2);
+	munmap(sem2, sizeof(*sem2));
 
 exit2:
 	if (rc) {
@@ -570,12 +558,12 @@ exit2:
 	return rc;
 }
 
-static int _get_fd(uint32_t job_id)
+/* Add a process to a job container, create the proctrack container to add */
+extern int container_p_join_external(uint32_t job_id)
 {
 	char job_mount[PATH_MAX];
 	char ns_holder[PATH_MAX];
 	char active[PATH_MAX];
-	int fd;
 	int rc = 0;
 	struct stat st;
 
@@ -597,19 +585,13 @@ static int _get_fd(uint32_t job_id)
 		return -1;
 	}
 
-	fd = open(ns_holder, O_RDONLY);
-	if (fd == -1) {
-		error("%s: %s", __func__, strerror(errno));
-		return -1;
+	if (step_ns_fd == -1) {
+		step_ns_fd = open(ns_holder, O_RDONLY);
+		if (step_ns_fd == -1)
+			error("%s: %s", __func__, strerror(errno));
 	}
 
-	return fd;
-}
-
-/* Add a process to a job container, create the proctrack container to add */
-extern int container_p_join_external(uint32_t job_id)
-{
-	return _get_fd(job_id);
+	return step_ns_fd;
 }
 
 /* Add proctrack container (PAGG) to a job container */
@@ -652,6 +634,7 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 		return SLURM_ERROR;
 	}
 
+	/* This is called on the slurmd so we can't use ns_fd. */
 	fd = open(ns_holder, O_RDONLY);
 	if (fd == -1) {
 		error("%s: open failed for %s: %s",
@@ -663,19 +646,19 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 	if (rc) {
 		error("%s: setns failed for %s: %s",
 		      __func__, ns_holder, strerror(errno));
+		/* closed after strerror(errno) */
+		close(fd);
 		return SLURM_ERROR;
 	} else {
-		struct stat st;
-		if (stat(active, &st)) {
-			/* touch .active to imply namespace is active */
-			int fp = 0;
-			fp = open(active, O_CREAT|O_RDWR, S_IRWXU);
-			if (fp == -1) {
-				error("%s: open failed %s: %s",
-				      __func__, active, strerror(errno));
-				return SLURM_ERROR;
-			}
+		/* touch .active to imply namespace is active */
+		close(fd);
+		fd = open(active, O_CREAT|O_RDWR, S_IRWXU);
+		if (fd == -1) {
+			error("%s: open failed %s: %s",
+			      __func__, active, strerror(errno));
+			return SLURM_ERROR;
 		}
+		close(fd);
 		debug3("job entered namespace");
 	}
 
@@ -687,7 +670,6 @@ extern int container_p_delete(uint32_t job_id)
 	char job_mount[PATH_MAX];
 	char ns_holder[PATH_MAX];
 	int rc = 0;
-	struct stat st;
 
 #ifdef HAVE_NATIVE_CRAY
 	return SLURM_SUCCESS;
@@ -695,17 +677,6 @@ extern int container_p_delete(uint32_t job_id)
 
 	if (_create_paths(job_id, job_mount, ns_holder, NULL, NULL)
 	    != SLURM_SUCCESS) {
-		return SLURM_ERROR;
-	}
-
-	if (stat(job_mount, &st)) {
-		error("%s: Job mount not found", __func__);
-		return SLURM_ERROR;
-	}
-
-	ns_conf = get_slurm_ns_conf();
-	if (!ns_conf) {
-		error("%s: Configuration not loaded", __func__);
 		return SLURM_ERROR;
 	}
 
