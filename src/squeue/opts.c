@@ -2277,7 +2277,7 @@ static List _load_clusters_nodes(void)
 
 
 /*
- * Handle NodeName vs NodeHostname and the special "localhost" case.
+ * Map name into NodeName, and handle the special "localhost" case.
  * IN: pointer to an array of pointers to node_info_msg_t
  * IN: input node name
  * RET: mapped node name if valid, NULL otherwise
@@ -2298,14 +2298,8 @@ static char *_map_node_name(List clusters_node_info, char *name1)
 	if ( xstrcasecmp("localhost", name1) == 0 ) {
 		name2 = xmalloc(128);
 		gethostname_short(name2, 128);
-	} else {
-		/* translate NodeHostName to NodeName */
-		name2 = slurm_conf_get_nodename(name1);
-
-		/* use NodeName if translation failed */
-		if ( name2 == NULL )
-			name2 = xstrdup(name1);
-	}
+	} else
+		name2 = xstrdup(name1);
 
 	node_info_itr = list_iterator_create(clusters_node_info);
 
@@ -2316,15 +2310,18 @@ static char *_map_node_name(List clusters_node_info, char *name1)
 			 */
 			if (node_info->node_array[cc].name == NULL)
 				continue;
-			if (xstrcmp(name2,
-					node_info->node_array[cc].name) == 0) {
+			if (!xstrcmp(name2, node_info->node_array[cc].name) ||
+			    !xstrcmp(name2,
+				     node_info->node_array[cc].node_hostname)) {
+				xfree(name2);
 				list_iterator_destroy(node_info_itr);
-				return name2;
+				return xstrdup(node_info->node_array[cc].name);
 			}
 		}
 	}
 
 	error("Invalid node name %s", name1);
+	xfree(name2);
 	list_iterator_destroy(node_info_itr);
 	return NULL;
 }
