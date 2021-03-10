@@ -82,6 +82,7 @@ static void _parse_long_token( char *token, char *sep, int *field_size,
 			       bool *right_justify, char **suffix);
 static void  _print_options( void );
 static void  _usage( void );
+static void _filter_nodes(void);
 static bool _check_node_names(hostset_t);
 static bool _find_a_host(char *, node_info_msg_t *);
 
@@ -388,41 +389,8 @@ parse_command_line( int argc, char* *argv )
 		}
 	}
 
-	if ( params.nodes ) {
-		char *name1 = NULL;
-		char *name2 = NULL;
-		hostset_t nodenames = hostset_create(NULL);
-
-		while ( hostset_count(params.nodes) > 0 ) {
-			name1 = hostset_pop(params.nodes);
-
-			/* localhost = use current host name */
-			if ( xstrcasecmp("localhost", name1) == 0 ) {
-				name2 = xmalloc(128);
-				gethostname_short(name2, 128);
-			} else {
-				/* translate NodeHostName to NodeName */
-				name2 = slurm_conf_get_nodename(name1);
-
-				/* use NodeName if translation failed */
-				if ( name2 == NULL )
-					name2 = xstrdup(name1);
-			}
-			hostset_insert(nodenames, name2);
-			free(name1);
-			xfree(name2);
-		}
-
-		/* Replace params.nodes with the new one */
-		hostset_destroy(params.nodes);
-		params.nodes = nodenames;
-		/* Check if all node names specified
-		 * with -w are known to the controller.
-		 */
-		if (!_check_node_names(params.nodes)) {
-			exit(1);
-		}
-	}
+	if ( params.nodes )
+		_filter_nodes();
 
 	if ( ( params.accounts == NULL ) &&
 	     ( env_val = getenv("SQUEUE_ACCOUNT") ) ) {
@@ -2223,6 +2191,46 @@ Usage: squeue [OPTIONS]\n\
 \nHelp options:\n\
   --help                          show this help message\n\
   --usage                         display a brief summary of squeue options\n");
+}
+
+/*
+ * Validate and assign filtered nodes to params.nodes.
+ */
+static void _filter_nodes(void)
+{
+	char *name1 = NULL;
+	char *name2 = NULL;
+	hostset_t nodenames = hostset_create(NULL);
+
+	while ( hostset_count(params.nodes) > 0 ) {
+		name1 = hostset_pop(params.nodes);
+
+		/* localhost = use current host name */
+		if ( xstrcasecmp("localhost", name1) == 0 ) {
+			name2 = xmalloc(128);
+			gethostname_short(name2, 128);
+		} else {
+			/* translate NodeHostName to NodeName */
+			name2 = slurm_conf_get_nodename(name1);
+
+			/* use NodeName if translation failed */
+			if ( name2 == NULL )
+				name2 = xstrdup(name1);
+		}
+		hostset_insert(nodenames, name2);
+		free(name1);
+		xfree(name2);
+	}
+
+	/* Replace params.nodes with the new one */
+	hostset_destroy(params.nodes);
+	params.nodes = nodenames;
+	/* Check if all node names specified
+	 * with -w are known to the controller.
+	 */
+	if (!_check_node_names(params.nodes)) {
+		exit(1);
+	}
 }
 
 /* _check_node_names()
