@@ -908,7 +908,7 @@ _read_config(void)
 	if (conf->node_name == NULL)
 		conf->node_name = slurm_conf_get_nodename("localhost");
 
-	if (conf->node_name == NULL)
+	if (!conf->node_name || conf->node_name[0] == '\0')
 		fatal("Unable to determine this slurmd's NodeName");
 
 	if ((bcast_address = slurm_conf_get_bcast_address(conf->node_name))) {
@@ -1053,10 +1053,6 @@ _read_config(void)
 	cc = acct_gather_parse_freq(PROFILE_TASK, cf->job_acct_gather_freq);
 	if (cc != -1)
 		conf->acct_freq_task = cc;
-
-	if ( (conf->node_name == NULL) ||
-	     (conf->node_name[0] == '\0') )
-		fatal("Node name lookup failure");
 
 	if (cf->control_addr == NULL)
 		fatal("Unable to establish controller machine");
