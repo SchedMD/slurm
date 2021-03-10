@@ -208,7 +208,6 @@ static time_t	next_stats_reset = 0;
 static int	new_nice = 0;
 static int	recover   = DEFAULT_RECOVER;
 static pthread_mutex_t sched_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pid_t	slurmctld_pid;
 static char *	slurm_conf_filename;
 
 /*
@@ -293,7 +292,6 @@ int main(int argc, char **argv)
 	_parse_commandline(argc, argv);
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
 	sched_log_init(argv[0], sched_log_opts, LOG_DAEMON, NULL);
-	slurmctld_pid = getpid();
 	/*
 	 * Must pass in an explicit filename to slurm_conf_init() to avoid
 	 * the "configless" mode of operation kicking in if no file is
