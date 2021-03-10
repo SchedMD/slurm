@@ -83,6 +83,7 @@ static void _parse_long_token( char *token, char *sep, int *field_size,
 static void  _print_options( void );
 static void  _usage( void );
 static void _filter_nodes(void);
+static char *_map_node_name(char *name1);
 static bool _check_node_names(hostset_t);
 static bool _find_a_host(char *, node_info_msg_t *);
 
@@ -2204,19 +2205,7 @@ static void _filter_nodes(void)
 
 	while ( hostset_count(params.nodes) > 0 ) {
 		name1 = hostset_pop(params.nodes);
-
-		/* localhost = use current host name */
-		if ( xstrcasecmp("localhost", name1) == 0 ) {
-			name2 = xmalloc(128);
-			gethostname_short(name2, 128);
-		} else {
-			/* translate NodeHostName to NodeName */
-			name2 = slurm_conf_get_nodename(name1);
-
-			/* use NodeName if translation failed */
-			if ( name2 == NULL )
-				name2 = xstrdup(name1);
-		}
+		name2 = _map_node_name(name1);
 		hostset_insert(nodenames, name2);
 		free(name1);
 		xfree(name2);
@@ -2231,6 +2220,33 @@ static void _filter_nodes(void)
 	if (!_check_node_names(params.nodes)) {
 		exit(1);
 	}
+}
+
+/*
+ * Handle NodeName vs NodeHostname and the special "localhost" case.
+ * IN: input node name
+ * RET: mapped node name
+ *
+ * NOTE: caller must xfree() the returned name.
+ */
+static char *_map_node_name(char *name1)
+{
+	char *name2 = NULL;
+
+	/* localhost = use current host name */
+	if ( xstrcasecmp("localhost", name1) == 0 ) {
+		name2 = xmalloc(128);
+		gethostname_short(name2, 128);
+	} else {
+		/* translate NodeHostName to NodeName */
+		name2 = slurm_conf_get_nodename(name1);
+
+		/* use NodeName if translation failed */
+		if ( name2 == NULL )
+			name2 = xstrdup(name1);
+	}
+
+	return name2;
 }
 
 /* _check_node_names()
