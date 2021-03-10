@@ -614,7 +614,7 @@ $(perl_dir)/Makefile:	$(perl_dir)/Makefile.PL
 			${LN_S} -f ${abs_srcdir}/$$f $$f; \
 		done; \
 	fi
-	@cd $(perl_dir) && $(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix} INSTALL_BASE= PERL_MM_OPT=
+	@cd $(perl_dir) && $(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix} INSTALL_BASE= PERL_MM_OPT= INSTALLSITEMAN1DIR=$(mandir)/man1 INSTALLSITEMAN3DIR=$(mandir)/man3
 
 #
 # Note on linking logic below
