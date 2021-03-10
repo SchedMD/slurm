@@ -56,6 +56,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - Disable credential reuse on the same TCP connection. Pipelined
     HTTP connections will have to provide authentication with every request.
  -- Avoid data conversion error on NULL strings in data_get_string_converted().
+ -- Handle situation where slurmctld is too slow processing
+    REQUEST_COMPLETE_BATCH_SCRIPT and it gets resent from the slurmstepd.
 
 * Changes in Slurm 20.11.4
 ==========================
