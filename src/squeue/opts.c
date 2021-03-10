@@ -85,7 +85,7 @@ static void  _usage( void );
 static void _filter_nodes(void);
 static List _load_clusters_nodes(void);
 static void _node_info_list_del(void *data);
-static char *_map_node_name(List clusters_node_info, char *name1);
+static char *_map_node_name(List clusters_node_info, char *name);
 
 /*
  * parse_command_line
@@ -2199,8 +2199,8 @@ Usage: squeue [OPTIONS]\n\
  */
 static void _filter_nodes(void)
 {
-	char *name1 = NULL;
-	char *name2 = NULL;
+	char *name = NULL;
+	char *nodename = NULL;
 	hostset_t nodenames = hostset_create(NULL);
 	List clusters_nodes = NULL;
 
@@ -2210,16 +2210,16 @@ static void _filter_nodes(void)
 
 	/* Map all node names specified with -w, if known to any controller. */
 	while ( hostset_count(params.nodes) > 0 ) {
-		name1 = hostset_pop(params.nodes);
-		if (!(name2 = _map_node_name(clusters_nodes, name1))) {
-			free(name1);
+		name = hostset_pop(params.nodes);
+		if (!(nodename = _map_node_name(clusters_nodes, name))) {
+			free(name);
 			hostset_destroy(params.nodes);
 			FREE_NULL_LIST(clusters_nodes);
 			exit(1);
 		}
-		hostset_insert(nodenames, name2);
-		free(name1);
-		xfree(name2);
+		hostset_insert(nodenames, nodename);
+		free(name);
+		xfree(nodename);
 	}
 	FREE_NULL_LIST(clusters_nodes);
 
@@ -2284,22 +2284,22 @@ static List _load_clusters_nodes(void)
  *
  * NOTE: caller must xfree() the returned name.
  */
-static char *_map_node_name(List clusters_node_info, char *name1)
+static char *_map_node_name(List clusters_node_info, char *name)
 {
-	char *name2 = NULL;
+	char *nodename = NULL;
 	int cc;
 	node_info_msg_t *node_info;
 	ListIterator node_info_itr;
 
-	if (!name1)
+	if (!name)
 		return NULL;
 
 	/* localhost = use current host name */
-	if ( xstrcasecmp("localhost", name1) == 0 ) {
-		name2 = xmalloc(128);
-		gethostname_short(name2, 128);
+	if ( xstrcasecmp("localhost", name) == 0 ) {
+		nodename = xmalloc(128);
+		gethostname_short(nodename, 128);
 	} else
-		name2 = xstrdup(name1);
+		nodename = xstrdup(name);
 
 	node_info_itr = list_iterator_create(clusters_node_info);
 
@@ -2310,18 +2310,18 @@ static char *_map_node_name(List clusters_node_info, char *name1)
 			 */
 			if (node_info->node_array[cc].name == NULL)
 				continue;
-			if (!xstrcmp(name2, node_info->node_array[cc].name) ||
-			    !xstrcmp(name2,
+			if (!xstrcmp(nodename, node_info->node_array[cc].name) ||
+			    !xstrcmp(nodename,
 				     node_info->node_array[cc].node_hostname)) {
-				xfree(name2);
+				xfree(nodename);
 				list_iterator_destroy(node_info_itr);
 				return xstrdup(node_info->node_array[cc].name);
 			}
 		}
 	}
 
-	error("Invalid node name %s", name1);
-	xfree(name2);
+	error("Invalid node name %s", name);
+	xfree(nodename);
 	list_iterator_destroy(node_info_itr);
 	return NULL;
 }
