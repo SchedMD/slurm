@@ -2199,17 +2199,16 @@ Usage: squeue [OPTIONS]\n\
  */
 static void _filter_nodes(void)
 {
-	char *name = NULL;
-	char *nodename = NULL;
+	char *name = NULL, *nodename = NULL;
 	hostset_t nodenames = hostset_create(NULL);
 	List clusters_nodes = NULL;
 
-	/* Retrieve node_info from controlles */
+	/* Retrieve node_info from controllers */
 	if (!(clusters_nodes = _load_clusters_nodes()))
 		exit(1);
 
 	/* Map all node names specified with -w, if known to any controller. */
-	while ( hostset_count(params.nodes) > 0 ) {
+	while (hostset_count(params.nodes) > 0) {
 		name = hostset_pop(params.nodes);
 		if (!(nodename = _map_node_name(clusters_nodes, name))) {
 			free(name);
@@ -2275,7 +2274,6 @@ static List _load_clusters_nodes(void)
 	return node_info_list;
 }
 
-
 /*
  * Map name into NodeName, and handle the special "localhost" case.
  * IN: pointer to an array of pointers to node_info_msg_t
@@ -2287,7 +2285,6 @@ static List _load_clusters_nodes(void)
 static char *_map_node_name(List clusters_node_info, char *name)
 {
 	char *nodename = NULL;
-	int cc;
 	node_info_msg_t *node_info;
 	ListIterator node_info_itr;
 
@@ -2295,7 +2292,7 @@ static char *_map_node_name(List clusters_node_info, char *name)
 		return NULL;
 
 	/* localhost = use current host name */
-	if ( xstrcasecmp("localhost", name) == 0 ) {
+	if (!xstrcasecmp("localhost", name)) {
 		nodename = xmalloc(128);
 		gethostname_short(nodename, 128);
 	} else
@@ -2304,13 +2301,15 @@ static char *_map_node_name(List clusters_node_info, char *name)
 	node_info_itr = list_iterator_create(clusters_node_info);
 
 	while ((node_info = list_next(node_info_itr))) {
-		for (cc = 0; cc < node_info->record_count; cc++) {
-			/* This can happen if the host is removed
-			 * fron DNS but still in slurm.conf
+		for (int cc = 0; cc < node_info->record_count; cc++) {
+			/*
+			 * This can happen if the host is removed from DNS but
+			 * still in slurm.conf
 			 */
-			if (node_info->node_array[cc].name == NULL)
+			if (!node_info->node_array[cc].name)
 				continue;
-			if (!xstrcmp(nodename, node_info->node_array[cc].name) ||
+			if (!xstrcmp(nodename,
+				     node_info->node_array[cc].name) ||
 			    !xstrcmp(nodename,
 				     node_info->node_array[cc].node_hostname)) {
 				xfree(nodename);
