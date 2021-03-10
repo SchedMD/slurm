@@ -83,9 +83,9 @@ static void _parse_long_token( char *token, char *sep, int *field_size,
 static void  _print_options( void );
 static void  _usage( void );
 static void _filter_nodes(void);
-static char *_map_node_name(char *name1);
-static bool _check_node_names(hostset_t);
-static bool _find_a_host(char *, node_info_msg_t *);
+static List _load_clusters_nodes(void);
+static void _node_info_list_del(void *data);
+static char *_map_node_name(List clusters_node_info, char *name1);
 
 /*
  * parse_command_line
@@ -2202,36 +2202,97 @@ static void _filter_nodes(void)
 	char *name1 = NULL;
 	char *name2 = NULL;
 	hostset_t nodenames = hostset_create(NULL);
+	List clusters_nodes = NULL;
 
+	/* Retrieve node_info from controlles */
+	if (!(clusters_nodes = _load_clusters_nodes()))
+		exit(1);
+
+	/* Map all node names specified with -w, if known to any controller. */
 	while ( hostset_count(params.nodes) > 0 ) {
 		name1 = hostset_pop(params.nodes);
-		name2 = _map_node_name(name1);
+		if (!(name2 = _map_node_name(clusters_nodes, name1))) {
+			free(name1);
+			hostset_destroy(params.nodes);
+			FREE_NULL_LIST(clusters_nodes);
+			exit(1);
+		}
 		hostset_insert(nodenames, name2);
 		free(name1);
 		xfree(name2);
 	}
+	FREE_NULL_LIST(clusters_nodes);
 
 	/* Replace params.nodes with the new one */
 	hostset_destroy(params.nodes);
 	params.nodes = nodenames;
-	/* Check if all node names specified
-	 * with -w are known to the controller.
-	 */
-	if (!_check_node_names(params.nodes)) {
-		exit(1);
-	}
 }
 
 /*
+ * ListDelF for a list of node_info_msg_t.
+ */
+static void _node_info_list_del(void *data)
+{
+	node_info_msg_t *node_info_ptr = data;
+
+	slurm_free_node_info_msg(node_info_ptr);
+}
+
+/*
+ * Retrieve node_info_msg_t for params.clusters or just local cluster.
+ * RET: List of all needed node_info_msg_t or NULL if any fail
+ *
+ * NOTE: caller must free the returned list if not NULL.
+ */
+static List _load_clusters_nodes(void)
+{
+	List node_info_list = NULL;
+	ListIterator iter = NULL;
+	node_info_msg_t *node_info = NULL;
+
+	node_info_list = list_create(_node_info_list_del);
+
+	if (params.clusters)
+		iter = list_iterator_create(params.clusters);
+
+	do {
+		if (slurm_load_node(0, &node_info, SHOW_ALL)) {
+			slurm_perror("slurm_load_node error");
+			FREE_NULL_LIST(node_info_list);
+			break;
+		}
+
+		list_append(node_info_list, node_info);
+	} while (params.clusters && (working_cluster_rec = list_next(iter)));
+
+	/*
+	 * Don't need to reset working_cluster_rec here. Nobody uses it in
+	 * parse_command_line(), and it's already reset later in main().
+	 */
+	if (params.clusters)
+		list_iterator_destroy(iter);
+
+	return node_info_list;
+}
+
+
+/*
  * Handle NodeName vs NodeHostname and the special "localhost" case.
+ * IN: pointer to an array of pointers to node_info_msg_t
  * IN: input node name
- * RET: mapped node name
+ * RET: mapped node name if valid, NULL otherwise
  *
  * NOTE: caller must xfree() the returned name.
  */
-static char *_map_node_name(char *name1)
+static char *_map_node_name(List clusters_node_info, char *name1)
 {
 	char *name2 = NULL;
+	int cc;
+	node_info_msg_t *node_info;
+	ListIterator node_info_itr;
+
+	if (!name1)
+		return NULL;
 
 	/* localhost = use current host name */
 	if ( xstrcasecmp("localhost", name1) == 0 ) {
@@ -2246,61 +2307,24 @@ static char *_map_node_name(char *name1)
 			name2 = xstrdup(name1);
 	}
 
-	return name2;
-}
+	node_info_itr = list_iterator_create(clusters_node_info);
 
-/* _check_node_names()
- */
-static bool
-_check_node_names(hostset_t names)
-{
-	int cc;
-	node_info_msg_t *node_info;
-	char *host;
-	hostlist_iterator_t itr;
-
-	if (names == NULL)
-		return true;
-
-	cc = slurm_load_node(0,
-			     &node_info,
-			     SHOW_ALL);
-	if (cc != 0) {
-		slurm_perror ("slurm_load_node error");
-		return false;
-	}
-
-	itr = hostset_iterator_create(names);
-	while ((host = hostlist_next(itr))) {
-		if (!_find_a_host(host, node_info)) {
-			error("Invalid node name %s", host);
-			free(host);
-			hostlist_iterator_destroy(itr);
-			return false;
+	while ((node_info = list_next(node_info_itr))) {
+		for (cc = 0; cc < node_info->record_count; cc++) {
+			/* This can happen if the host is removed
+			 * fron DNS but still in slurm.conf
+			 */
+			if (node_info->node_array[cc].name == NULL)
+				continue;
+			if (xstrcmp(name2,
+					node_info->node_array[cc].name) == 0) {
+				list_iterator_destroy(node_info_itr);
+				return name2;
+			}
 		}
-		free(host);
-	}
-	hostlist_iterator_destroy(itr);
-
-	return true;
-}
-
-/* _find_a_host()
- */
-static bool
-_find_a_host(char *host, node_info_msg_t *node)
-{
-	int cc;
-
-	for (cc = 0; cc < node->record_count; cc++) {
-		/* This can happen if the host is removed
-		 * fron DNS but still in slurm.conf
-		 */
-		if (node->node_array[cc].name == NULL)
-			continue;
-		if (xstrcmp(host, node->node_array[cc].name) == 0)
-			return true;
 	}
 
-	return false;
+	error("Invalid node name %s", name1);
+	list_iterator_destroy(node_info_itr);
+	return NULL;
 }

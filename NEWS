@@ -48,6 +48,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd/v0.0.37 - Correct displaying node states that are UNKNOWN.
  -- slurmrestd/v0.0.37 - Add flags to node states.
  -- Fix first job on fresh cluster not being assigned JobId=1 (or FirstJobId).
+ -- squeue - make it so --nodelist is sensitive to --clusters.
 
 * Changes in Slurm 20.11.5
 ==========================
