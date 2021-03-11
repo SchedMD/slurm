@@ -2677,7 +2677,7 @@ typedef struct reservation_name_msg {
 #define PROLOG_FLAG_X11		0x0010 /* enable slurm x11 forwarding support */
 
 #define CTL_CONF_OR             0x00000001 /*SlurmdParameters=config_overrides*/
-#define CTL_CONF_SJC            0x00000002 /* AccountingStoreJobComment */
+#define CTL_CONF_SJC            0x00000002 /* AccountingStoreFlags=job_comment*/
 #define CTL_CONF_DRJ            0x00000004 /* DisableRootJobs */
 #define CTL_CONF_ASRU           0x00000008 /* AllowSpecResourcesUsage */
 #define CTL_CONF_PAM            0x00000010 /* UsePam */

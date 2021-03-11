@@ -207,11 +207,19 @@ Only used for database type storage plugins, ignored otherwise.
 Also see \fBDefaultStorageUser\fR.
 
 .TP
-\fBAccountingStoreJobComment\fR
-If set to "YES" then include the job's comment field in the job
-complete message sent to the Accounting Storage database.  The default
-is "YES".
+\fBAccountingStoreFlags\fR
+This is used to tell the slurmctld to store extra fields that may
+be more heavy weight than the normal job information.
+.RS
+
+.TP
+Current options are
+
+.TP
+\fBjob_comment\fR
+Include the job's comment field in the job complete message sent to the Accounting Storage database.
 Note the AdminComment and SystemComment are always recorded in the database.
+.RE
 
 .TP
 \fBAcctGatherNodeFreq\fR

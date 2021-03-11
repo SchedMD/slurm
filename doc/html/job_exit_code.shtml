@@ -66,8 +66,8 @@ enabled.</p>
 
 <p>In addition to the derived exit code, the job record in the Slurm
 database contains a comment string.  This is initialized to the job's
-comment string (when AccountingStoreJobComment parameter in the
-slurm.conf is set) and can only be changed by the user.</p>
+comment string (when AccountingStoreFlags parameter in the
+slurm.conf contains 'job_comment') and can only be changed by the user.</p>
 
 <p>A new option has been added to the <b>sacctmgr</b> command to
 provide the user the means to modify these two fields of the job

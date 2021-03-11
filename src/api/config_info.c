@@ -562,12 +562,6 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("AccountingStoreJobComment");
-	key_pair->value = xstrdup(
-		(slurm_ctl_conf_ptr->conf_flags & CTL_CONF_SJC) ? "Yes" : "No");
-	list_append(ret_list, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AcctGatherEnergyType");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->acct_gather_energy_type);
 	list_append(ret_list, key_pair);
@@ -2156,7 +2150,7 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 		    !xstrcasecmp(key_pair->name, "AccountingStoragePort") ||
 		    !xstrcasecmp(key_pair->name, "AccountingStorageType") ||
 		    !xstrcasecmp(key_pair->name, "AccountingStorageUser") ||
-		    !xstrcasecmp(key_pair->name, "AccountingStoreJobComment") ||
+		    !xstrcasecmp(key_pair->name, "AccountingStoreFlags") ||
 		    !xstrcasecmp(key_pair->name, "AcctGatherEnergyType") ||
 		    !xstrcasecmp(key_pair->name, "AcctGatherFilesystemType") ||
 		    !xstrcasecmp(key_pair->name, "AcctGatherInterconnectType") ||

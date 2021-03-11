@@ -4281,9 +4281,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		xfree(temp_str);
 	}
 
-	if (!s_p_get_boolean(&truth, "AccountingStoreJobComment", hashtbl)
-	    || truth)
-		conf->conf_flags |= CTL_CONF_SJC;
+	if (s_p_get_boolean(&truth, "AccountingStoreJobComment", hashtbl))
+		fatal("The AccountingStoreJobComment option has been removed, please use AccountingStoreFlags=job_comment option instead.");
 
 	s_p_get_string(&conf->accounting_storage_params,
 		       "AccountingStorageParameters", hashtbl);

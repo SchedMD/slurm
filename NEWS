@@ -50,6 +50,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix first job on fresh cluster not being assigned JobId=1 (or FirstJobId).
  -- squeue - make it so --nodelist is sensitive to --clusters.
  -- squeue - do --nodelist node validation in the same order as listing.
+ -- Removed AccountingStoreJobComment option.  Please update your config to use
+    AccountingStoreFlags=job_comment instead.
 
 * Changes in Slurm 20.11.6
 ==========================
