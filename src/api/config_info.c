@@ -555,6 +555,13 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("AccountingStoreFlags");
+	if (slurm_ctl_conf_ptr->conf_flags & CTL_CONF_SJC)
+		xstrfmtcat(key_pair->value, "%sjob_comment",
+			   key_pair->value ? "," : "");
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("AccountingStoreJobComment");
 	key_pair->value = xstrdup(
 		(slurm_ctl_conf_ptr->conf_flags & CTL_CONF_SJC) ? "Yes" : "No");

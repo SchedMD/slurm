@@ -205,6 +205,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"AccountingStoragePort", S_P_UINT16},
 	{"AccountingStorageType", S_P_STRING},
 	{"AccountingStorageUser", S_P_STRING},
+	{"AccountingStoreFlags", S_P_STRING},
 	{"AccountingStoreJobComment", S_P_BOOLEAN},
 	{"AcctGatherEnergyType", S_P_STRING},
 	{"AcctGatherNodeFreq", S_P_UINT16},
@@ -4273,6 +4274,13 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			conf->accounting_storage_pass =
 				xstrdup(default_storage_pass);
 	}
+
+	if (s_p_get_string(&temp_str, "AccountingStoreFlags", hashtbl)) {
+		if (xstrcasestr(temp_str, "job_comment"))
+			conf->conf_flags |= CTL_CONF_SJC;
+		xfree(temp_str);
+	}
+
 	if (!s_p_get_boolean(&truth, "AccountingStoreJobComment", hashtbl)
 	    || truth)
 		conf->conf_flags |= CTL_CONF_SJC;
