@@ -330,6 +330,11 @@ sacct [<OPTION>]                                                            \n \
                    to display.  By default, all accounts are selected.      \n\
      -b, --brief:                                                           \n\
 	           Equivalent to '--format=jobstep,state,error'.            \n\
+     -B, --batch-script:                                                    \n\
+	           Print batch script of job.                               \n\
+                   NOTE: AccountingStoreFlags=job_script is required for this\n\
+                   NOTE: Requesting specific job(s) with '-j' is required   \n\
+                         for this.                                          \n\
      -c, --completion: Use job completion instead of accounting data.       \n\
          --delimiter:                                                       \n\
 	           ASCII characters used to separate the fields when        \n\
@@ -697,6 +702,7 @@ extern void parse_command_line(int argc, char **argv)
                 {"accounts",       required_argument, 0,    'A'},
                 {"allocations",    no_argument,       0,    'X'},
                 {"brief",          no_argument,       0,    'b'},
+		{"batch-script",   no_argument,       0,    'B'},
                 {"completion",     no_argument,       0,    'c'},
                 {"constraints",    required_argument, 0,    'C'},
                 {"delimiter",      required_argument, 0,    OPT_LONG_DELIMITER},
@@ -763,7 +769,7 @@ extern void parse_command_line(int argc, char **argv)
 
 	while (1) {		/* now cycle through the command line */
 		c = getopt_long(argc, argv,
-				"aA:bcC:DeE:f:F:g:hi:I:j:k:K:lLM:nN:o:pPq:r:s:S:Ttu:UvVW:x:X",
+				"aA:bBcC:DeE:f:F:g:hi:I:j:k:K:lLM:nN:o:pPq:r:s:S:Ttu:UvVW:x:X",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -778,6 +784,10 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case 'b':
 			brief_output = true;
+			break;
+		case 'B':
+			job_cond->flags |= JOBCOND_FLAG_SCRIPT;
+			job_cond->flags |= JOBCOND_FLAG_NO_STEP;
 			break;
 		case 'c':
 			params.opt_completion = 1;
@@ -1023,6 +1033,15 @@ extern void parse_command_line(int argc, char **argv)
 		case '?':	/* getopt() has explained it */
 			exit(1);
 		}
+	}
+
+	if (!job_cond->step_list || !list_count(job_cond->step_list)) {
+		char *reason = NULL;
+		if (job_cond->flags & JOBCOND_FLAG_SCRIPT)
+			reason = "job scripts";
+
+		if (reason)
+			fatal("When requesting %s you must also request specific jobs with the '-j' option.", reason);
 	}
 
 	if (long_output && params.opt_field_list)
@@ -1426,6 +1445,16 @@ static inline bool _test_local_job(uint32_t job_id)
 	return false;
 }
 
+static void _print_script(slurmdb_job_rec_t *job)
+{
+	char *id = slurmdb_get_job_id_str(job);
+
+	printf("Batch Script for %s\n--------------------------------------------------------------------------------\n%s\n",
+	       id, job->script ? job->script : "NONE\n");
+	xfree(id);
+	return;
+}
+
 /* do_list() -- List the assembled data
  *
  * In:	Nothing explicit.
@@ -1451,6 +1480,11 @@ extern void do_list(void)
 		    _test_local_job(job->jobid) &&
 		    xstrcmp(params.cluster_name, job->cluster))
 			continue;
+
+		if (job_cond->flags & JOBCOND_FLAG_SCRIPT) {
+			_print_script(job);
+			continue;
+		}
 
 		if (job->show_full)
 			print_fields(JOB, job);

@@ -595,6 +595,8 @@ struct job_details {
 	uint16_t requeue;		/* controls ability requeue job */
 	uint8_t share_res;		/* set if job can share resources with
 					 * other jobs */
+	char *script;			/* DBD USE ONLY DON'T PACK:
+					 * job's script */
 	char *std_err;			/* pathname of job's stderr file */
 	char *std_in;			/* pathname of job's stdin file */
 	char *std_out;			/* pathname of job's stdout file */

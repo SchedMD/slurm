@@ -101,6 +101,7 @@ char *job_req_inx[] = {
 	"t1.tres_req",
 	"t1.work_dir",
 	"t1.mcs_label",
+	"t1.batch_script",
 	"t2.acct",
 	"t2.lft",
 	"t2.user"
@@ -155,6 +156,7 @@ enum {
 	JOB_REQ_TRESR,
 	JOB_REQ_WORK_DIR,
 	JOB_REQ_MCS_LABEL,
+	JOB_REQ_SCRIPT,
 	JOB_REQ_ACCOUNT,
 	JOB_REQ_LFT,
 	JOB_REQ_USER_NAME,
@@ -699,6 +701,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->start = start;
 		job->end = slurm_atoul(row[JOB_REQ_END]);
 		job->timelimit = slurm_atoul(row[JOB_REQ_TIMELIMIT]);
+
+		job->script = xstrdup(row[JOB_REQ_SCRIPT]);
 
 		/* since the job->end could be set later end it here */
 		if (job->end) {
@@ -1694,7 +1698,8 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	memset(&user, 0, sizeof(slurmdb_user_rec_t));
 	user.uid = uid;
 
-	if (slurm_conf.private_data & PRIVATE_DATA_JOBS) {
+	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) ||
+	    (job_cond->flags & JOBCOND_FLAG_SCRIPT)) {
 		if (!(is_admin = is_user_min_admin_level(
 			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 			/*
@@ -1715,12 +1720,31 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	    && (slurm_atoul(list_peek(job_cond->state_list)) == JOB_PENDING))
 		only_pending = 1;
 
+	if (job_cond &&
+	    (!job_cond->step_list || !list_count(job_cond->step_list))) {
+		char *reason = NULL;
+
+		if (job_cond->flags & JOBCOND_FLAG_SCRIPT)
+			reason = "job scripts";
+
+		if (reason) {
+			error("User %u is requesting %s, but no job requested, this is not allowed",
+			      user.uid, reason);
+			return NULL;
+		}
+	}
+
 	setup_job_cond_limits(job_cond, &extra);
 
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", job_req_inx[0]);
 	for (i = 1; i < JOB_REQ_COUNT; i++) {
-		xstrfmtcat(tmp, ", %s", job_req_inx[i]);
+		/* Only get the script if requesting it */
+		if ((i == JOB_REQ_SCRIPT) &&
+		    (!job_cond || !(job_cond->flags & JOBCOND_FLAG_SCRIPT)))
+			xstrcat(tmp, ", ''");
+		else
+			xstrfmtcat(tmp, ", %s", job_req_inx[i]);
 	}
 
 	xfree(tmp2);

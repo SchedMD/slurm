@@ -1080,6 +1080,8 @@ extern void slurmdbd_free_job_start_msg(void *in)
 		xfree(msg->nodes);
 		xfree(msg->node_inx);
 		xfree(msg->partition);
+		xfree(msg->script);
+		FREE_NULL_BUFFER(msg->script_buf);
 		xfree(msg->tres_alloc_str);
 		xfree(msg->tres_req_str);
 		xfree(msg->wckey);

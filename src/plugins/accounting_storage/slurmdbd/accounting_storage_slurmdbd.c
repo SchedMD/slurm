@@ -134,6 +134,7 @@ static void _partial_free_dbd_job_start(void *object)
 		xfree(req->node_inx);
 		xfree(req->wckey);
 		xfree(req->gres_used);
+		FREE_NULL_BUFFER(req->script_buf);
 		xfree(req->tres_alloc_str);
 		xfree(req->tres_req_str);
 		xfree(req->work_dir);
@@ -236,6 +237,13 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	req->uid           = job_ptr->user_id;
 	req->qos_id        = job_ptr->qos_id;
 	req->gres_used     = xstrdup(job_ptr->gres_used);
+
+	/* Only send this once per instance of the job! */
+	if (!job_ptr->db_index || (job_ptr->db_index == NO_VAL64)) {
+		if (slurm_conf.conf_flags & CTL_CONF_SJS)
+			req->script_buf = get_job_script(job_ptr);
+
+	}
 
 	return SLURM_SUCCESS;
 }

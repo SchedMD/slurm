@@ -52,6 +52,7 @@ documents those changes that are of interest to users and administrators.
  -- squeue - do --nodelist node validation in the same order as listing.
  -- Removed AccountingStoreJobComment option.  Please update your config to use
     AccountingStoreFlags=job_comment instead.
+ -- AccountingStoreFlags=job_script allows you to store the job's batch script.
 
 * Changes in Slurm 20.11.6
 ==========================

@@ -30,6 +30,7 @@ HIGHLIGHTS
  -- API change: Removed slurm_kill_job_msg and modified the function signature
     for slurm_kill_job2. slurm_kill_job2 should be used instead of
     slurm_kill_job_msg.
+ -- AccountingStoreFlags=job_script allows you to store the job's batch script.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

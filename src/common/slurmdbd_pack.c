@@ -428,6 +428,9 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 {
 	dbd_job_start_msg_t *msg = (dbd_job_start_msg_t *)in;
 
+	if (msg->script_buf)
+		msg->script = msg->script_buf->head;
+
 	if (rpc_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		packstr(msg->account, buffer);
 		pack32(msg->alloc_nodes, buffer);
@@ -458,6 +461,7 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 		pack32(msg->req_cpus, buffer);
 		pack64(msg->req_mem, buffer);
 		pack32(msg->resv_id, buffer);
+		packstr(msg->script, buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->submit_time, buffer);
 		pack32(msg->timelimit, buffer);
@@ -545,6 +549,9 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 		packstr(msg->wckey, buffer);
 		packstr(msg->work_dir, buffer);
 	}
+
+	if (msg->script_buf)
+		msg->script = NULL;
 }
 
 static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
@@ -592,6 +599,7 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->req_cpus, buffer);
 		safe_unpack64(&msg_ptr->req_mem, buffer);
 		safe_unpack32(&msg_ptr->resv_id, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->script, &uint32_tmp, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
 		safe_unpack_time(&msg_ptr->submit_time, buffer);
 		safe_unpack32(&msg_ptr->timelimit, buffer);

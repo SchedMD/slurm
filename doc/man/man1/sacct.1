@@ -76,6 +76,14 @@ Displays a brief listing consisting of JobID, State, and ExitCode.
 .IP
 
 .TP
+\f3\-B\fP\f3,\fP \f3\-\-batch-script\fP
+This option will print the batch script of job if the job used one. If the job
+didn't have a script 'NONE' is output.
+NOTE: AccountingStoreFlags=job_script is required for this.
+NOTE: Requesting specific job(s) with '\-j' is required for this.
+.IP
+
+.TP
 \f3\-c\fP\f3,\fP \f3\-\-completion\fP
 Use job completion data instead of job accounting.  The \f3JobCompType\fP
 parameter in the slurm.conf file must be defined to a non\-none option.

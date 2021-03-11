@@ -135,6 +135,7 @@ typedef struct {
 	char *req_cpus;
 	char *req_mem;
 	char *resvid;
+	char *script;
 	char *start;
 	char *state;
 	char *state_reason_prev;
@@ -204,6 +205,7 @@ static void _free_local_job_members(local_job_t *object)
 		xfree(object->req_cpus);
 		xfree(object->req_mem);
 		xfree(object->resvid);
+		xfree(object->script);
 		xfree(object->start);
 		xfree(object->state);
 		xfree(object->state_reason_prev);
@@ -476,6 +478,7 @@ static char *job_req_inx[] = {
 	"id_assoc",
 	"id_array_job",
 	"id_array_task",
+	"batch_script",
 	"id_block",
 	"constraints",
 	"deleted",
@@ -529,6 +532,7 @@ enum {
 	JOB_REQ_ASSOCID,
 	JOB_REQ_ARRAYJOBID,
 	JOB_REQ_ARRAYTASKID,
+	JOB_REQ_SCRIPT,
 	JOB_REQ_BLOCKID,
 	JOB_REQ_CONSTRAINTS,
 	JOB_REQ_DELETED,
@@ -868,6 +872,7 @@ static void _pack_local_job(local_job_t *object, uint16_t rpc_version,
 	packstr(object->array_taskid, buffer);
 	packstr(object->array_task_pending, buffer);
 	packstr(object->array_task_str, buffer);
+	packstr(object->script, buffer);
 	packstr(object->blockid, buffer);
 	packstr(object->constraints, buffer);
 	packstr(object->deleted, buffer);
@@ -950,6 +955,7 @@ static int _unpack_local_job(local_job_t *object, uint16_t rpc_version,
 		safe_unpackstr_xmalloc(&object->array_taskid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->array_task_pending, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->array_task_str, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->script, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->blockid, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->constraints, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->deleted, &tmp32, buffer);
@@ -2977,6 +2983,7 @@ static buf_t *_pack_archive_jobs(MYSQL_RES *result, char *cluster_name,
 		job.array_taskid = row[JOB_REQ_ARRAYTASKID];
 		job.array_task_pending = row[JOB_REQ_ARRAY_TASK_PENDING];
 		job.array_task_str = row[JOB_REQ_ARRAY_TASK_STR];
+		job.script = row[JOB_REQ_SCRIPT];
 		job.blockid = row[JOB_REQ_BLOCKID];
 		job.constraints = row[JOB_REQ_CONSTRAINTS];
 		job.deleted = row[JOB_REQ_DELETED];
@@ -3078,6 +3085,7 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		JOB_REQ_ACCOUNT,
 		JOB_REQ_ADMIN_COMMENT,
 		JOB_REQ_ARRAY_TASK_STR,
+		JOB_REQ_SCRIPT,
 		JOB_REQ_BLOCKID,
 		JOB_REQ_CONSTRAINTS,
 		JOB_REQ_DERIVED_ES,
@@ -3126,6 +3134,10 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 		else
 			xstrcat(format, ", '%s'");
 		if (object.array_task_str == NULL)
+			xstrcat(format, ", %s");
+		else
+			xstrcat(format, ", '%s'");
+		if (object.script == NULL)
 			xstrcat(format, ", %s");
 		else
 			xstrcat(format, ", '%s'");
@@ -3207,6 +3219,8 @@ static char *_load_jobs(uint16_t rpc_version, buf_t *buffer,
 				"NULL" : object.admin_comment,
 			   (object.array_task_str == NULL) ?
 				"NULL" : object.array_task_str,
+			   (object.script == NULL) ?
+				"NULL" : object.script,
 			   (object.blockid == NULL) ?
 				"NULL" : object.blockid,
 			   (object.constraints == NULL) ?

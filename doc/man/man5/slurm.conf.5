@@ -208,7 +208,7 @@ Also see \fBDefaultStorageUser\fR.
 
 .TP
 \fBAccountingStoreFlags\fR
-This is used to tell the slurmctld to store extra fields that may
+Comma separated list used to tell the slurmctld to store extra fields that may
 be more heavy weight than the normal job information.
 .RS
 
@@ -219,6 +219,11 @@ Current options are
 \fBjob_comment\fR
 Include the job's comment field in the job complete message sent to the Accounting Storage database.
 Note the AdminComment and SystemComment are always recorded in the database.
+.RE
+
+.TP
+\fBjob_script\fR
+Include the job's batch script in the job start message sent to the Accounting Storage database.
 .RE
 
 .TP

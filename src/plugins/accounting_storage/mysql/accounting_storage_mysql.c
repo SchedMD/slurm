@@ -1260,6 +1260,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "array_task_str", "text" },
 		{ "array_max_tasks", "int unsigned default 0 not null" },
 		{ "array_task_pending", "int unsigned default 0 not null" },
+		{ "batch_script", "longtext" },
 		{ "constraints", "text default ''" },
 		{ "cpus_req", "int unsigned not null" },
 		{ "derived_ec", "int unsigned default 0 not null" },

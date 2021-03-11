@@ -201,6 +201,7 @@ enum cluster_fed_states {
 #define JOBCOND_FLAG_NO_DEFAULT_USAGE 0x00000080 /* Use usage_time as the
 						  * submit_time of the job.
 						  */
+#define JOBCOND_FLAG_SCRIPT  0x00000010 /* Get batch script only */
 
 /* Archive / Purge time flags */
 #define SLURMDB_PURGE_BASE    0x0000ffff   /* Apply to get the number
@@ -817,6 +818,7 @@ typedef struct {
 	uint32_t requid;
 	uint32_t resvid;
 	char *resv_name;
+	char *script;
 	uint32_t show_full;
 	time_t start;
 	uint32_t state;

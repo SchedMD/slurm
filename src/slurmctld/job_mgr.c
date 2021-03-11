@@ -672,6 +672,7 @@ static void _delete_job_details(job_record_t *job_entry)
 	xfree(job_entry->details->std_out);
 	FREE_NULL_BITMAP(job_entry->details->req_node_bitmap);
 	xfree(job_entry->details->req_nodes);
+	xfree(job_entry->details->script);
 	xfree(job_entry->details->work_dir);
 	xfree(job_entry->details->x11_magic_cookie);
 	xfree(job_entry->details->x11_target);
