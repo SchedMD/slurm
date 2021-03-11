@@ -613,9 +613,9 @@ Changes in the RPCs (remote procedure calls) and state files will only be made
 if the major release number changes, which typically happens about every nine
 months. A list of most recent major Slurm releases is shown below.</p>
 <ul>
-<li>18.08.x (Released August 2018)</li>
 <li>19.05.x (Released May 2019)</li>
 <li>20.02.x (Released February 2020)</li>
+<li>20.11.x (Released November 2020)</li>
 </ul>
 
 <p>Slurm's MPI libraries may also change if the major release number change,
@@ -623,8 +623,8 @@ requiring applications be re-linked (behavior may vary depending upon
 the MPI implementation used and the specific Slurm changes between releases).
 Locally developed Slurm plugins may also require modification.
 Slurm daemons will support RPCs and state files from the two previous major
-releases (e.g. a version 20.02.x SlurmDBD will support slurmctld daemons and
-commands with a version of 20.02.x, 19.05.x, or 18.08.x).
+releases (e.g. a version 20.11.x SlurmDBD will support slurmctld daemons and
+commands with a version of 20.11.x, 20.02.x, or 19.05.x).
 This means that upgrading at least once each year is recommended.
 Otherwise, intermediate upgrades will be required to preserve state information.
 Changes in the mainenance release number generally represent only bug fixes,
@@ -633,7 +633,7 @@ but may also include minor enhancements.</p>
 <p>If the SlurmDBD daemon is used, it must be at the same or higher major
 release number as the Slurmctld daemons.
 In other words, when changing the version to a higher release number (e.g
-from 19.05.x to 20.02.x) <b>always upgrade the SlurmDBD daemon first</b>.
+from 20.02.x to 20.11.x) <b>always upgrade the SlurmDBD daemon first</b>.
 Database table changes may be required for the upgrade, for example
 adding new fields to existing tables.
 If the database contains a large number of entries, <b>the SlurmDBD daemon
@@ -663,14 +663,14 @@ although rolling upgrades are also possible (i.e. upgrading the head node(s)
 first then upgrading the compute and login nodes later at various times).
 Also see the note above about reverse compatibility.</p>
 
-<p>Almost every new major release of Slurm (e.g. 19.05.x to 20.02.x)
+<p>Almost every new major release of Slurm (e.g. 20.02.x to 20.11.x)
 involves changes to the state files with new data structures, new options, etc.
 Slurm permits upgrades to a new major release from the past two major releases,
-which happen every nine months (e.g. 18.08.x or 19.05.x to 20.02.x) without loss of
+which happen every nine months (e.g. 19.05.x or 20.02.x to 20.11.x) without loss of
 jobs or other state information.
 State information from older versions will not be recognized and will be
 discarded, resulting in loss of all running and pending jobs.
-State files are <b>not</b> recognized when downgrading (e.g. from 19.05.x to 18.08.x)
+State files are <b>not</b> recognized when downgrading (e.g. from 20.11.x to 20.02.x)
 and will be discarded, resulting in loss of all running and pending jobs.
 For this reason, creating backup copies of state files (as described below)
 can be of value.
@@ -744,6 +744,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 22 February 2021</p>
+<p style="text-align:center;">Last modified 28 April 2021</p>
 
 <!--#include virtual="footer.txt"-->
