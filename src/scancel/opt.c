@@ -678,7 +678,7 @@ static void _opt_list(void)
 static void _usage(void)
 {
 	printf("Usage: scancel [-A account] [--batch] [--full] [--interactive] [-n job_name]\n");
-	printf("               [-p partition] [-Q] [-q qos] [-R reservation][-s signal | integer]\n");
+	printf("               [-p partition] [-Q] [-q qos] [-R reservation] [-s signal | integer]\n");
 	printf("               [-t PENDING | RUNNING | SUSPENDED] [--usage] [-u user_name]\n");
 	printf("               [--hurry] [-V] [-v] [-w hosts...] [--wckey=wckey]\n");
 	printf("               [job_id[_array_id][.step_id]]\n");
