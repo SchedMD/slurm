@@ -633,21 +633,6 @@ static void _handle_all_downnodes(void)
 	}
 }
 
-/*
- * _build_all_nodeline_info - get a array of slurm_conf_node_t structures
- *	from the slurm.conf reader, build table, and set values
- * RET 0 if no error, error code otherwise
- * Note: Operates on common variables
- *	default_node_record - default node configuration values
- */
-static int _build_all_nodeline_info(void)
-{
-	/* Load the node table here */
-	build_all_nodeline_info(false, slurmctld_tres_cnt);
-	(void)acct_storage_g_reconfig(acct_db_conn, 0);
-	return build_all_frontend_info(false);
-}
-
 /* Convert a comma delimited list of account names into a NULL terminated
  * array of pointers to strings. Call accounts_list_free() to release memory */
 extern void accounts_list_build(char *accounts, char ***accounts_array)
@@ -1176,7 +1161,9 @@ int read_slurm_conf(int recover, bool reconfig)
 	}
 
 	/* Build node and partition information based upon slurm.conf file */
-	_build_all_nodeline_info();
+	build_all_nodeline_info(false, slurmctld_tres_cnt);
+	(void)acct_storage_g_reconfig(acct_db_conn, 0);
+	build_all_frontend_info(false);
 	if (reconfig) {
 		if (_compare_hostnames(old_node_table_ptr,
 				       old_node_record_count,

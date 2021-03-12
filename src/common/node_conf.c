@@ -263,12 +263,12 @@ static void _dump_front_end(slurm_conf_frontend_t *fe_ptr)
  * is_slurmd_context: set to true if run from slurmd
  * RET 0 if no error, error code otherwise
  */
-extern int build_all_frontend_info (bool is_slurmd_context)
+extern void build_all_frontend_info (bool is_slurmd_context)
 {
 	slurm_conf_frontend_t **ptr_array;
 #ifdef HAVE_FRONT_END
 	slurm_conf_frontend_t *fe_single, *fe_line;
-	int i, count, max_rc = SLURM_SUCCESS;
+	int i, count;
 
 	count = slurm_conf_frontend_array(&ptr_array);
 	if (count == 0)
@@ -325,11 +325,9 @@ extern int build_all_frontend_info (bool is_slurmd_context)
 		hostlist_destroy(hl_addr);
 		hostlist_destroy(hl_name);
 	}
-	return max_rc;
 #else
 	if (slurm_conf_frontend_array(&ptr_array) != 0)
 		fatal("FrontendName information configured!");
-	return SLURM_SUCCESS;
 #endif
 }
 

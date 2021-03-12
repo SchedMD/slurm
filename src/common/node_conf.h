@@ -227,9 +227,8 @@ extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt);
  * build_all_frontend_info - get a array of slurm_conf_frontend_t structures
  *	from the slurm.conf reader, build table, and set values
  * is_slurmd_context: set to true if run from slurmd
- * RET 0 if no error, error code otherwise
  */
-extern int build_all_frontend_info (bool is_slurmd_context);
+extern void build_all_frontend_info (bool is_slurmd_context);
 
 /*
  * check_nodeline_info - From the slurm.conf reader, build table, and set values
