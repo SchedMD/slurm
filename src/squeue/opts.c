@@ -2209,7 +2209,7 @@ static void _filter_nodes(void)
 
 	/* Map all node names specified with -w, if known to any controller. */
 	while (hostset_count(params.nodes) > 0) {
-		name = hostset_pop(params.nodes);
+		name = hostset_shift(params.nodes);
 		if (!(nodename = _map_node_name(clusters_nodes, name))) {
 			free(name);
 			hostset_destroy(params.nodes);
