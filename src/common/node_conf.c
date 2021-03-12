@@ -459,7 +459,7 @@ extern void check_nodeline_info(slurm_conf_node_t *node_ptr,
 	if (!node_ptr->nodenames || !node_ptr->nodenames[0])
 		fatal("Empty NodeName in config.");
 
-	if (node_ptr->state != NULL) {
+	if (node_ptr->state) {
 		state_val = state_str2int(node_ptr->state, node_ptr->nodenames);
 		if (state_val == NO_VAL)
 			fatal("Invalid state %s from %s",
