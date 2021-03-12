@@ -414,8 +414,7 @@ extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 							    node->nodenames);
 		}
 
-		check_nodeline_info(node, config_ptr, LOG_LEVEL_FATAL,
-				    _check_callback);
+		check_nodeline_info(node, config_ptr, _check_callback);
 	}
 
 	if (set_bitmap) {
@@ -436,7 +435,6 @@ extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
  */
 extern void check_nodeline_info(slurm_conf_node_t *node_ptr,
 			        config_record_t *config_ptr,
-			        log_level_t lvl,
 			        void (*_callback) (
 				       char *alias, char *hostname,
 				       char *address, char *bcast_address,
@@ -558,10 +556,8 @@ extern void check_nodeline_info(slurm_conf_node_t *node_ptr,
 				free(port_str);
 			port_str = hostlist_shift(port_list);
 			port_int = atoi(port_str);
-			if ((port_int <= 0) || (port_int > 0xffff)) {
-				log_var(lvl, "Invalid Port %s",
-					node_ptr->port_str);
-			}
+			if ((port_int <= 0) || (port_int > 0xffff))
+				fatal("Invalid Port %s", node_ptr->port_str);
 			port = port_int;
 		} else
 			port = slurm_conf.slurmd_port;
