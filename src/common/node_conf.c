@@ -365,9 +365,8 @@ static void _check_callback(char *alias, char *hostname,
  * IN set_bitmap - if true then set node_bitmap in config record (used by
  *		    slurmd), false is used by slurmctld and testsuite
  * IN tres_cnt - number of TRES configured on system (used on controller side)
- * RET 0 if no error, error code otherwise
  */
-extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
+extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 {
 	slurm_conf_node_t *node, **ptr_array;
 	config_record_t *config_ptr = NULL;
@@ -428,8 +427,6 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 		}
 		list_iterator_destroy(config_iterator);
 	}
-
-	return SLURM_SUCCESS;
 }
 
 /*

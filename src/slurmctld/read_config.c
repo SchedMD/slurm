@@ -642,15 +642,10 @@ static void _handle_all_downnodes(void)
  */
 static int _build_all_nodeline_info(void)
 {
-	int rc, rc2;
-
 	/* Load the node table here */
-	rc = build_all_nodeline_info(false, slurmctld_tres_cnt);
+	build_all_nodeline_info(false, slurmctld_tres_cnt);
 	(void)acct_storage_g_reconfig(acct_db_conn, 0);
-	rc2 = build_all_frontend_info(false);
-	rc = MAX(rc, rc2);
-
-	return rc;
+	return build_all_frontend_info(false);
 }
 
 /* Convert a comma delimited list of account names into a NULL terminated

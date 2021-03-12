@@ -157,9 +157,7 @@ extern int route_p_split_hostlist(hostlist_t hl,
 		if (init_node_conf()) {
 			fatal("ROUTE: Failed to init slurm config");
 		}
-		if (build_all_nodeline_info(false, 0)) {
-			fatal("ROUTE: Failed to build node config");
-		}
+		build_all_nodeline_info(false, 0);
 		rehash_node();
 
 		if (slurm_topo_build_config() != SLURM_SUCCESS) {
