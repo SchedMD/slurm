@@ -371,8 +371,7 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 {
 	slurm_conf_node_t *node, **ptr_array;
 	config_record_t *config_ptr = NULL;
-	int count;
-	int i, rc, max_rc = SLURM_SUCCESS;
+	int count, i;
 	bool in_daemon;
 	static bool daemon_run = false, daemon_set = false;
 
@@ -416,9 +415,8 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 							    node->nodenames);
 		}
 
-		rc = check_nodeline_info(node, config_ptr, LOG_LEVEL_FATAL,
-					 _check_callback);
-		max_rc = MAX(max_rc, rc);
+		check_nodeline_info(node, config_ptr, LOG_LEVEL_FATAL,
+				    _check_callback);
 	}
 
 	if (set_bitmap) {
@@ -431,27 +429,24 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt)
 		list_iterator_destroy(config_iterator);
 	}
 
-	return max_rc;
+	return SLURM_SUCCESS;
 }
 
 /*
- * check_nodeline_info - From the slurm.conf reader, build table,
- * 	and set values
- * RET 0 if no error, error code otherwise
+ * check_nodeline_info - From the slurm.conf reader, build table, and set values
  * Note: Operates on common variables
  *	default_node_record - default node configuration values
  */
-extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
-			       config_record_t *config_ptr,
-			       log_level_t lvl,
-			       void (*_callback) (
+extern void check_nodeline_info(slurm_conf_node_t *node_ptr,
+			        config_record_t *config_ptr,
+			        log_level_t lvl,
+			        void (*_callback) (
 				       char *alias, char *hostname,
 				       char *address, char *bcast_address,
 				       uint16_t port, int state_val,
 				       slurm_conf_node_t *node_ptr,
 				       config_record_t *config_ptr))
 {
-	int error_code = SLURM_SUCCESS;
 	hostlist_t address_list = NULL;
 	hostlist_t alias_list = NULL;
 	hostlist_t bcast_list = NULL;
@@ -598,7 +593,6 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 		hostlist_destroy(hostname_list);
 	if (port_list)
 		hostlist_destroy(port_list);
-	return error_code;
 }
 
 /*

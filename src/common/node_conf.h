@@ -233,13 +233,11 @@ extern int build_all_nodeline_info(bool set_bitmap, int tres_cnt);
 extern int build_all_frontend_info (bool is_slurmd_context);
 
 /*
- * check_nodeline_info - From the slurm.conf reader, build table,
- * 	and set values
- * RET 0 if no error, error code otherwise
+ * check_nodeline_info - From the slurm.conf reader, build table, and set values
  * Note: Operates on common variables
  *	default_node_record - default node configuration values
  */
-extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
+extern void check_nodeline_info(slurm_conf_node_t *node_ptr,
 			       config_record_t *config_ptr,
 			       log_level_t lvl,
 			       void (*_callback) (
