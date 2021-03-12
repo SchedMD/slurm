@@ -540,6 +540,8 @@ rm -rf %{buildroot}
 %config %{_sysconfdir}/slurm.conf.template
 %endif
 %config %{_sysconfdir}/cgroup.conf.example
+%config %{_sysconfdir}/job_submit.lua.example
+%config %{_sysconfdir}/prolog.example
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/slurmdbd.conf.example
 %config %{_sysconfdir}/cli_filter.lua.example

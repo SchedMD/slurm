@@ -108,11 +108,12 @@ is as follows:
 <li>gres.conf</li>
 <li>knl_cray.conf</li>
 <li>knl_generic.conf</li>
+<li>namespace.conf</li>
 <li>plugstack.conf</li>
 <li>topology.conf</li>
 </ul>
 </p>
 
-<p style="text-align:center;">Last modified 11 September 2020</p>
+<p style="text-align:center;">Last modified 11 March 2021</p>
 
 <!--#include virtual="footer.txt"-->
