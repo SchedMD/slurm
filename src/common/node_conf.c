@@ -466,7 +466,7 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 	int address_count, alias_count, bcast_count, hostname_count, port_count;
 	uint16_t port = 0;
 
-	if ((node_ptr->nodenames == NULL) || (node_ptr->nodenames[0] == '\0'))
+	if (!node_ptr->nodenames || !node_ptr->nodenames[0])
 		return -1;
 
 	if (node_ptr->state != NULL) {
