@@ -301,4 +301,7 @@ extern void slurmdb_merge_grp_node_usage(bitstr_t **grp_node_bitmap1,
 					 uint16_t **grp_node_job_cnt1,
 					 bitstr_t *grp_node_bitmap2,
 					 uint16_t *grp_node_job_cnt2);
+
+extern char *slurmdb_get_job_id_str(slurmdb_job_rec_t *job);
+
 #endif

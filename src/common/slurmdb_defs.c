@@ -4533,3 +4533,29 @@ extern void slurmdb_merge_grp_node_usage(bitstr_t **grp_node_bitmap1,
 			grp_node_job_cnt2 ? grp_node_job_cnt2[i] : 1;
 	}
 }
+
+extern char *slurmdb_get_job_id_str(slurmdb_job_rec_t *job)
+{
+	char *id = NULL;
+
+	if (job->array_task_str) {
+		xlate_array_task_str(
+			&job->array_task_str,
+			job->array_max_tasks, NULL);
+		id = xstrdup_printf("%u_[%s]",
+				    job->array_job_id,
+				    job->array_task_str);
+	} else if (job->array_task_id != NO_VAL)
+		id = xstrdup_printf("%u_%u",
+				    job->array_job_id,
+				    job->array_task_id);
+	else if (job->het_job_id)
+		id = xstrdup_printf("%u+%u",
+				    job->het_job_id,
+				    job->het_job_offset);
+	else
+		id = xstrdup_printf("%u", job->jobid);
+
+	return id;
+
+}

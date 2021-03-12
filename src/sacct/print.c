@@ -357,7 +357,7 @@ extern void print_fields(type_t type, void *object)
 	curr_inx = 1;
 	list_iterator_reset(print_fields_itr);
 	while ((field = list_next(print_fields_itr))) {
-		char *tmp_char = NULL, id[FORMAT_STRING_SIZE];
+		char *tmp_char = NULL, *id = NULL;
 		int exit_code, tmp_int = NO_VAL, tmp_int2 = NO_VAL;
 		double tmp_dub = (double)NO_VAL; /* don't use NO_VAL64
 						    unless we can
@@ -948,41 +948,20 @@ extern void print_fields(type_t type, void *object)
 			if (type == JOBSTEP)
 				job = step->job_ptr;
 
-			if (job) {
-				if (job->array_task_str) {
-					xlate_array_task_str(
-						&job->array_task_str,
-						job->array_max_tasks, NULL);
-					snprintf(id, FORMAT_STRING_SIZE,
-						 "%u_[%s]",
-						 job->array_job_id,
-						 job->array_task_str);
-				} else if (job->array_task_id != NO_VAL) {
-					snprintf(id, FORMAT_STRING_SIZE,
-						 "%u_%u",
-						 job->array_job_id,
-						 job->array_task_id);
-				} else if (job->het_job_id) {
-					snprintf(id, FORMAT_STRING_SIZE,
-						 "%u+%u",
-						 job->het_job_id,
-						 job->het_job_offset);
-				} else {
-					snprintf(id, FORMAT_STRING_SIZE,
-						 "%u",
-						 job->jobid);
-				}
-			}
+			if (job)
+				id = slurmdb_get_job_id_str(job);
 
 			switch (type) {
 			case JOB:
-				tmp_char = xstrdup(id);
+				tmp_char = id;
+				id = NULL;
 				break;
 			case JOBSTEP:
 				tmp_int = 64;
 				tmp_char = xmalloc(tmp_int);
 				tmp_int2 =
 					snprintf(tmp_char, tmp_int, "%s.", id);
+				xfree(id);
 				tmp_int -= tmp_int2;
 				log_build_step_id_str(&step->step_id,
 						      tmp_char + tmp_int2,
