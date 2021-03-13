@@ -268,9 +268,13 @@ static int _get_query(on_http_request_args_t *args, data_t **query,
 	case MIME_URL_ENCODED:
 		/* everything but POST must be urlencoded */
 		if (args->method == HTTP_REQUEST_POST)
-			*query = parse_url_query(args->body, true);
+			rc = data_g_deserialize(query, args->body,
+						args->body_length,
+						MIME_TYPE_URL_ENCODED);
 		else
-			*query = parse_url_query(args->query, true);
+			rc = data_g_deserialize(query, args->query,
+						strlen(args->query),
+						MIME_TYPE_URL_ENCODED);
 		break;
 	case MIME_YAML:
 		rc = data_g_deserialize(query, args->body, args->body_length,

@@ -102,15 +102,6 @@ static unsigned char _decode_seq(const char *ptr)
 	}
 }
 
-extern data_t *parse_url_query(const char *query, bool convert_types)
-{
-	data_t *d = NULL;
-
-	data_g_deserialize(&d, query, strlen(query), MIME_TYPE_URL_ENCODED);
-
-	return d;
-}
-
 static int _add_path(data_t *d, char **buffer, bool convert_types)
 {
 	if (!xstrcasecmp(*buffer, ".")) {

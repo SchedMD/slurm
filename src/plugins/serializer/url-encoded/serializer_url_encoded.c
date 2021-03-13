@@ -175,6 +175,17 @@ static unsigned char _decode_seq(const char *ptr)
 	}
 }
 
+/*
+ * Parses url query into a data struct.
+ * IN dest - ptr to data to overwrite on success
+ * IN src rfc3986&rfc1866 query string
+ * 	application/x-www-form-urlencoded
+ * 	breaks key=value&key2=value2&...
+ * 	into a data_t dictionary
+ * 	dup keys will override existing keys
+ * IN len - not used
+ * RET SLURM_SUCCESS or error
+ */
 extern int serializer_p_deserialize(data_t **dest, const char *src,
 				    size_t len)
 {

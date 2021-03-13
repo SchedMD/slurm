@@ -53,16 +53,4 @@
 extern data_t *parse_url_path(const char *path, bool convert_types,
 			      bool allow_templates);
 
-/*
- * Parses url query into a data struct.
- * IN query rfc3986&rfc1866 query string
- * 	application/x-www-form-urlencoded
- * 	breaks key=value&key2=value2&...
- * 	into a data_t dictionary
- * 	dup keys will override existing keys
- * IN convert_types if true, call data_convert_type() on each value
- * RET data ptr or NULL on error
- */
-extern data_t *parse_url_query(const char *query, bool convert_types);
-
 #endif /* SLURMRESTD_HTTP_URL_H */
