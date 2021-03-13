@@ -49,7 +49,6 @@
 
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
-#include "src/slurmrestd/xjson.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they

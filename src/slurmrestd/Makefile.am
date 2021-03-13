@@ -16,7 +16,6 @@ SRCS = \
 	operations.c operations.h \
 	slurmrestd.c \
 	rest_auth.h rest_auth.c \
-	xjson.h xjson.c \
 	xyaml.h xyaml.c
 
 if WITH_SLURMRESTD

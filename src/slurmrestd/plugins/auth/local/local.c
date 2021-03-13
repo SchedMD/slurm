@@ -55,7 +55,6 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmrestd/rest_auth.h"
-#include "src/slurmrestd/xjson.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they

@@ -50,7 +50,6 @@
 
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/rest_auth.h"
-#include "src/slurmrestd/xjson.h"
 
 static pthread_mutex_t init_lock = PTHREAD_MUTEX_INITIALIZER;
 

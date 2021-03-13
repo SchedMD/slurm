@@ -51,7 +51,6 @@
 
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
-#include "src/slurmrestd/xjson.h"
 
 #include "src/slurmrestd/plugins/openapi/v0.0.36/api.h"
 

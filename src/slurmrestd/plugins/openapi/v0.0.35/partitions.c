@@ -51,7 +51,6 @@
 
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
-#include "src/slurmrestd/xjson.h"
 
 typedef enum {
 	URL_TAG_UNKNOWN = 0,

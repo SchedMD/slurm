@@ -65,7 +65,6 @@
 
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
-#include "src/slurmrestd/xjson.h"
 
 #include "src/slurmrestd/plugins/openapi/v0.0.37/api.h"
 
@@ -1247,7 +1246,10 @@ static int _handle_job_post(const char *context_id,
 	job_parse_list_t jobs_rc;
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG5) {
-		char *buffer = dump_json(query, DUMP_JSON_FLAGS_COMPACT);
+		char *buffer = NULL;
+
+		data_g_serialize(&buffer, query, MIME_TYPE_JSON,
+				 DATA_SER_FLAGS_COMPACT);
 		debug5("%s: job update from %s: %s",
 		       __func__, context_id, buffer);
 		xfree(buffer);
@@ -1390,11 +1392,16 @@ static int _op_handler_submit_job_post(const char *context_id,
 	}
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG5) {
-		char *buffer = dump_json(query, DUMP_JSON_FLAGS_COMPACT);
+		char *buffer = NULL;
+
+		data_g_serialize(&buffer, query, MIME_TYPE_JSON,
+				 DATA_SER_FLAGS_COMPACT);
 		debug5("%s: job submit query from %s: %s",
 		       __func__, context_id, buffer);
 		xfree(buffer);
-		buffer = dump_json(parameters, DUMP_JSON_FLAGS_COMPACT);
+
+		data_g_serialize(&buffer, parameters, MIME_TYPE_JSON,
+				 DATA_SER_FLAGS_COMPACT);
 		debug5("%s: job submit parameters from %s: %s",
 		       __func__, context_id, buffer);
 		xfree(buffer);

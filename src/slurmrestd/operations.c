@@ -51,7 +51,6 @@
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 #include "src/slurmrestd/rest_auth.h"
-#include "src/slurmrestd/xjson.h"
 #include "src/slurmrestd/xyaml.h"
 
 static pthread_rwlock_t paths_lock = PTHREAD_RWLOCK_INITIALIZER;
@@ -251,6 +250,8 @@ static int _resolve_path(on_http_request_args_t *args, int *path_tag,
 static int _get_query(on_http_request_args_t *args, data_t **query,
 		      mime_types_t read_mime, mime_types_t write_mime)
 {
+	int rc = SLURM_SUCCESS;
+
 	/* sanity check there is a HTML body to actually parse */
 	if ((read_mime == MIME_JSON || read_mime == MIME_YAML) &&
 	    args->body_length == 0)
@@ -261,7 +262,9 @@ static int _get_query(on_http_request_args_t *args, data_t **query,
 	/* post will have query in the body otherwise it is in the URL */
 	switch (read_mime) {
 	case MIME_JSON:
-		*query = parse_json(args->body, (args->body_length - 1));
+		rc = data_g_deserialize(query, args->body,
+					(args->body_length - 1),
+					MIME_TYPE_JSON);
 		break;
 	case MIME_URL_ENCODED:
 		/* everything but POST must be urlencoded */
@@ -277,7 +280,7 @@ static int _get_query(on_http_request_args_t *args, data_t **query,
 		fatal_abort("%s: unknown read mime type", __func__);
 	}
 
-	if (!*query)
+	if (rc || !*query)
 		return _operations_router_reject(
 			args, "Unable to parse query.",
 			HTTP_STATUS_CODE_ERROR_BAD_REQUEST, NULL);
@@ -366,7 +369,7 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 {
 	int rc;
 	data_t *resp = data_new();
-	const char *body = NULL;
+	char *body = NULL;
 
 	rc = callback(args->context->con->name, args->method, params, query,
 		      callback_tag, resp, args->context->auth);
@@ -375,9 +378,10 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		/* no op */;
 	else if (write_mime == MIME_YAML)
 		body = dump_yaml(resp);
-	else if (write_mime == MIME_JSON)
-		body = dump_json(resp, DUMP_JSON_FLAGS_PRETTY);
-	else
+	else if (write_mime == MIME_JSON) {
+		rc = data_g_serialize(&body, resp, MIME_TYPE_JSON,
+				      DATA_SER_FLAGS_PRETTY);
+	} else
 		fatal_abort("%s: unexpected mime type", __func__);
 
 	if (rc == SLURM_NO_CHANGE_IN_DATA) {

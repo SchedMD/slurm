@@ -53,7 +53,6 @@
 #include "src/slurmrestd/http_url.h"
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
-#include "src/slurmrestd/xjson.h"
 
 decl_static_data(openapi_json);
 
@@ -277,11 +276,12 @@ static bool _match_server_path(const data_t *server_path, const data_t *path,
 	found = data_check_match(joined_path, match_path, false);
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG5) {
-		char *joined_path_str, *mpath_str;
+		char *joined_path_str = NULL, *mpath_str = NULL;
 
-		joined_path_str = dump_json(joined_path,
-					    DUMP_JSON_FLAGS_COMPACT);
-		mpath_str = dump_json(match_path, DUMP_JSON_FLAGS_COMPACT);
+		data_g_serialize(&joined_path_str, joined_path, MIME_TYPE_JSON,
+				 DATA_SER_FLAGS_COMPACT);
+		data_g_serialize(&mpath_str, match_path, MIME_TYPE_JSON,
+				 DATA_SER_FLAGS_COMPACT);
 
 		debug5("%s: match:%s server_path:%s match_path:%s",
 		       __func__, (found ? "T" : "F"),
@@ -306,9 +306,15 @@ static data_for_each_cmd_t _match_server_override(const data_t *data,
 
 	surl = data_resolve_dict_path_const(data, "url");
 
-	if (!surl)
+	if (!surl) {
+		char *d = NULL;
+
+		data_g_serialize(&d, data, MIME_TYPE_JSON,
+				 DATA_SER_FLAGS_COMPACT);
+
 		fatal("%s: server %s lacks url field required per OASv3.0.3 section 4.7.5",
-		      __func__, dump_json(data, 0));
+		      __func__, d);
+	}
 
 	spath = parse_url_path(data_get_string_const(surl), true, true);
 
@@ -370,9 +376,15 @@ static data_for_each_cmd_t _match_server_path_string(const data_t *data,
 
 	surl = data_resolve_dict_path_const(data, "url");
 
-	if (!surl)
+	if (!surl) {
+		char *d = NULL;
+
+		data_g_serialize(&d, data, MIME_TYPE_JSON,
+				 DATA_SER_FLAGS_COMPACT);
+
 		fatal("%s: server %s lacks url field required per OASv3.0.3 section 4.7.5",
-		      __func__, dump_json(data, 0));
+		      __func__, d);
+	}
 
 	args->server_path = spath = parse_url_path(data_get_string_const(surl),
 						   true, true);
@@ -709,8 +721,11 @@ static int _match_path_from_data(void *x, void *key)
 	}
 
 	if (get_log_level() >= LOG_LEVEL_DEBUG5) {
-		char *str_path = dump_json(args->dpath,
-					   DUMP_JSON_FLAGS_COMPACT);
+		char *str_path = NULL;
+
+		data_g_serialize(&str_path, args->dpath, MIME_TYPE_JSON,
+				 DATA_SER_FLAGS_COMPACT);
+
 		if (args->matched)
 			debug5("%s: match successful for tag %d to %s(0x%"PRIXPTR")",
 			       __func__, args->path->tag, str_path,
