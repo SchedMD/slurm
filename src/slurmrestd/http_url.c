@@ -67,42 +67,6 @@ static bool _is_valid_url_char(char buffer)
 	       buffer == '-' || buffer == '.' || buffer == '_';
 }
 
-static int _handle_new_key_char(data_t *d, char **key, char **buffer,
-				bool convert_types)
-{
-	if (*key == NULL && *buffer == NULL) {
-		/* example: &test=value */
-	} else if (*key == NULL && *buffer != NULL) {
-		/*
-		 * example: test&test=value
-		 * existing buffer, assume null value.
-		 */
-		data_t *c = data_key_set(d, *buffer);
-		data_set_null(c);
-		xfree(*buffer);
-		*buffer = NULL;
-	} else if (*key != NULL && *buffer == NULL) {
-		/* example: &test1=&=value */
-		data_t *c = data_key_set(d, *key);
-		data_set_null(c);
-		xfree(*key);
-		*key = NULL;
-	} else if (*key != NULL && *buffer != NULL) {
-		data_t *c = data_key_set(d, *key);
-		data_set_string(c, *buffer);
-
-		if (convert_types)
-			data_convert_type(c, DATA_TYPE_NONE);
-
-		xfree(*key);
-		xfree(*buffer);
-		*key = NULL;
-		*buffer = NULL;
-	}
-
-	return SLURM_SUCCESS;
-}
-
 /*
  * decodes % sequence.
  * IN ptr pointing to % character
@@ -140,89 +104,9 @@ static unsigned char _decode_seq(const char *ptr)
 
 extern data_t *parse_url_query(const char *query, bool convert_types)
 {
-	int rc = SLURM_SUCCESS;
-	data_t *d = data_new();
-	char *key = NULL;
-	char *buffer = NULL;
+	data_t *d = NULL;
 
-	data_set_dict(d);
-
-	/* extract each word */
-	for (const char *ptr = query; ptr && !rc && *ptr != '\0'; ++ptr) {
-		if (_is_valid_url_char(*ptr)) {
-			xstrcatchar(buffer, *ptr);
-			continue;
-		}
-
-		switch (*ptr) {
-		case '%': /* rfc3986 */
-		{
-			const char c = _decode_seq(ptr);
-			if (c != '\0') {
-				/* shift past the hex value */
-				ptr += 2;
-
-				xstrcatchar(buffer, c);
-			} else {
-				debug("%s: invalid URL escape sequence: %s",
-				      __func__, ptr);
-				rc = SLURM_ERROR;
-				break;
-			}
-			break;
-		}
-		case '+': /* rfc1866 only */
-			xstrcatchar(buffer, ' ');
-			break;
-		case ';': /* rfc1866 requests ';' treated like '&' */
-		case '&': /* rfc1866 only */
-			rc = _handle_new_key_char(d, &key, &buffer,
-						  convert_types);
-			break;
-		case '=': /* rfc1866 only */
-			if (key == NULL && buffer == NULL) {
-				/* example: =test=value */
-				error("%s: invalid url character = before key name",
-				      __func__);
-				rc = SLURM_ERROR;
-			} else if (key == NULL && buffer != NULL) {
-				key = buffer;
-				buffer = NULL;
-			} else if (key != NULL && buffer == NULL) {
-				/* example: test===value */
-				debug4("%s: ignoring duplicate character = in url",
-				       __func__);
-			} else if (key != NULL && buffer != NULL) {
-				/* example: test=value=testv */
-				error("%s: invalid url characer = before new key name",
-				      __func__);
-				rc = SLURM_ERROR;
-			}
-			break;
-		default:
-			debug("%s: unexpected URL character: %c",
-			      __func__, *ptr);
-			rc = SLURM_ERROR;
-		}
-	}
-
-	/* account for last entry */
-	if (!rc)
-		rc = _handle_new_key_char(d, &key, &buffer, convert_types);
-	if (!rc && buffer)
-		/* account for last entry not having a value */
-		rc = _handle_new_key_char(d, &key, &buffer, convert_types);
-
-	xassert(rc || !buffer);
-	xassert(rc || !key);
-
-	xfree(buffer);
-	xfree(key);
-
-	if (rc) {
-		FREE_NULL_DATA(d);
-		return NULL;
-	}
+	data_g_deserialize(&d, query, strlen(query), MIME_TYPE_URL_ENCODED);
 
 	return d;
 }

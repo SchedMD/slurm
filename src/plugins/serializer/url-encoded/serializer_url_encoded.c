@@ -39,8 +39,11 @@
 #include "slurm/slurm.h"
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/data.h"
 #include "src/common/log.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 /*
@@ -76,14 +79,187 @@ const char *mime_types[] = {
 	NULL
 };
 
+static bool _is_char_hex(char buffer)
+{
+	return (buffer >= '0' && buffer <= '9') ||
+	       (buffer >= 'a' && buffer <= 'f') ||
+	       (buffer >= 'A' && buffer <= 'F');
+}
+
 extern int serializer_p_serialize(char **dest, const data_t *data,
 				  data_serializer_flags_t flags)
 {
-	return SLURM_ERROR;
+	return ESLURM_NOT_SUPPORTED;
+}
+
+static int _handle_new_key_char(data_t *d, char **key, char **buffer,
+				bool convert_types)
+{
+	if (*key == NULL && *buffer == NULL) {
+		/* example: &test=value */
+	} else if (*key == NULL && *buffer != NULL) {
+		/*
+		 * example: test&test=value
+		 * existing buffer, assume null value.
+		 */
+		data_t *c = data_key_set(d, *buffer);
+		data_set_null(c);
+		xfree(*buffer);
+		*buffer = NULL;
+	} else if (*key != NULL && *buffer == NULL) {
+		/* example: &test1=&=value */
+		data_t *c = data_key_set(d, *key);
+		data_set_null(c);
+		xfree(*key);
+		*key = NULL;
+	} else if (*key != NULL && *buffer != NULL) {
+		data_t *c = data_key_set(d, *key);
+		data_set_string(c, *buffer);
+
+		if (convert_types)
+			data_convert_type(c, DATA_TYPE_NONE);
+
+		xfree(*key);
+		xfree(*buffer);
+		*key = NULL;
+		*buffer = NULL;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * chars that can pass without decoding.
+ * rfc3986: unreserved characters.
+ */
+static bool _is_valid_url_char(char buffer)
+{
+	return (buffer >= '0' && buffer <= '9') ||
+	       (buffer >= 'a' && buffer <= 'z') ||
+	       (buffer >= 'A' && buffer <= 'Z') || buffer == '~' ||
+	       buffer == '-' || buffer == '.' || buffer == '_';
+}
+
+/*
+ * decodes % sequence.
+ * IN ptr pointing to % character
+ * RET \0 on error or decoded character
+ */
+static unsigned char _decode_seq(const char *ptr)
+{
+	if (_is_char_hex(*(ptr + 1)) && _is_char_hex(*(ptr + 2))) {
+		/* using unsigned char to avoid any rollover */
+		unsigned char high = *(ptr + 1);
+		unsigned char low = *(ptr + 2);
+		unsigned char decoded = (slurm_char_to_hex(high) << 4) +
+					slurm_char_to_hex(low);
+
+		//TODO: find more invalid characters?
+		if (decoded == '\0') {
+			error("%s: invalid URL escape sequence for 0x00",
+			      __func__);
+			return '\0';
+		} else if (decoded == 0xff) {
+			error("%s: invalid URL escape sequence for 0xff",
+			      __func__);
+			return '\0';
+		}
+
+		debug5("%s: URL decoded: 0x%c%c -> %c",
+		       __func__, high, low, decoded);
+
+		return decoded;
+	} else {
+		debug("%s: invalid URL escape sequence: %s", __func__, ptr);
+		return '\0';
+	}
 }
 
 extern int serializer_p_deserialize(data_t **dest, const char *src,
 				    size_t len)
 {
-	return SLURM_ERROR;
+	int rc = SLURM_SUCCESS;
+	data_t *d = data_set_dict(data_new());
+	char *key = NULL;
+	char *buffer = NULL;
+
+	/* extract each word */
+	for (const char *ptr = src; ptr && !rc && *ptr != '\0'; ++ptr) {
+		if (_is_valid_url_char(*ptr)) {
+			xstrcatchar(buffer, *ptr);
+			continue;
+		}
+
+		switch (*ptr) {
+		case '%': /* rfc3986 */
+		{
+			const char c = _decode_seq(ptr);
+			if (c != '\0') {
+				/* shift past the hex value */
+				ptr += 2;
+
+				xstrcatchar(buffer, c);
+			} else {
+				debug("%s: invalid URL escape sequence: %s",
+				      __func__, ptr);
+				rc = SLURM_ERROR;
+				break;
+			}
+			break;
+		}
+		case '+': /* rfc1866 only */
+			xstrcatchar(buffer, ' ');
+			break;
+		case ';': /* rfc1866 requests ';' treated like '&' */
+		case '&': /* rfc1866 only */
+			rc = _handle_new_key_char(d, &key, &buffer, true);
+			break;
+		case '=': /* rfc1866 only */
+			if (key == NULL && buffer == NULL) {
+				/* example: =test=value */
+				error("%s: invalid url character = before key name",
+				      __func__);
+				rc = SLURM_ERROR;
+			} else if (key == NULL && buffer != NULL) {
+				key = buffer;
+				buffer = NULL;
+			} else if (key != NULL && buffer == NULL) {
+				/* example: test===value */
+				debug4("%s: ignoring duplicate character = in url",
+				       __func__);
+			} else if (key != NULL && buffer != NULL) {
+				/* example: test=value=testv */
+				error("%s: invalid url characer = before new key name",
+				      __func__);
+				rc = SLURM_ERROR;
+			}
+			break;
+		default:
+			debug("%s: unexpected URL character: %c",
+			      __func__, *ptr);
+			rc = SLURM_ERROR;
+		}
+	}
+
+	/* account for last entry */
+	if (!rc)
+		rc = _handle_new_key_char(d, &key, &buffer, true);
+	if (!rc && buffer)
+		/* account for last entry not having a value */
+		rc = _handle_new_key_char(d, &key, &buffer, true);
+
+	xassert(rc || !buffer);
+	xassert(rc || !key);
+
+	xfree(buffer);
+	xfree(key);
+
+	if (rc) {
+		FREE_NULL_DATA(d);
+	} else {
+		FREE_NULL_DATA(*dest);
+		*dest = d;
+	}
+
+	return rc;
 }
