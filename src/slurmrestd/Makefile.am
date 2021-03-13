@@ -15,8 +15,7 @@ SRCS = \
 	openapi.c openapi.h \
 	operations.c operations.h \
 	slurmrestd.c \
-	rest_auth.h rest_auth.c \
-	xyaml.h xyaml.c
+	rest_auth.h rest_auth.c
 
 if WITH_SLURMRESTD
 AM_CPPFLAGS = -I$(top_srcdir) $(HTTP_PARSER_CPPFLAGS)

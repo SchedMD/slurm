@@ -51,7 +51,6 @@
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 #include "src/slurmrestd/rest_auth.h"
-#include "src/slurmrestd/xyaml.h"
 
 static pthread_rwlock_t paths_lock = PTHREAD_RWLOCK_INITIALIZER;
 static List paths = NULL;
@@ -274,7 +273,8 @@ static int _get_query(on_http_request_args_t *args, data_t **query,
 			*query = parse_url_query(args->query, true);
 		break;
 	case MIME_YAML:
-		*query = parse_yaml(args->body, args->body_length);
+		rc = data_g_deserialize(query, args->body, args->body_length,
+					MIME_TYPE_YAML);
 		break;
 	default:
 		fatal_abort("%s: unknown read mime type", __func__);
@@ -377,7 +377,8 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 	if (data_get_type(resp) == DATA_TYPE_NULL)
 		/* no op */;
 	else if (write_mime == MIME_YAML)
-		body = dump_yaml(resp);
+		rc = data_g_serialize(&body, resp, MIME_TYPE_YAML,
+				      DATA_SER_FLAGS_PRETTY);
 	else if (write_mime == MIME_JSON) {
 		rc = data_g_serialize(&body, resp, MIME_TYPE_JSON,
 				      DATA_SER_FLAGS_PRETTY);

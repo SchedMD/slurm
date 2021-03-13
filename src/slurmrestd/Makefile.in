@@ -162,7 +162,7 @@ am__v_lt_1 =
 am__objects_1 = conmgr.$(OBJEXT) http.$(OBJEXT) \
 	http_content_type.$(OBJEXT) http_url.$(OBJEXT) \
 	openapi.$(OBJEXT) operations.$(OBJEXT) slurmrestd.$(OBJEXT) \
-	rest_auth.$(OBJEXT) xyaml.$(OBJEXT)
+	rest_auth.$(OBJEXT)
 @WITH_SLURMRESTD_TRUE@am_slurmrestd_OBJECTS = $(am__objects_1)
 slurmrestd_OBJECTS = $(am_slurmrestd_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -189,8 +189,7 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/conmgr.Po ./$(DEPDIR)/http.Po \
 	./$(DEPDIR)/http_content_type.Po ./$(DEPDIR)/http_url.Po \
 	./$(DEPDIR)/openapi.Po ./$(DEPDIR)/operations.Po \
-	./$(DEPDIR)/rest_auth.Po ./$(DEPDIR)/slurmrestd.Po \
-	./$(DEPDIR)/xyaml.Po
+	./$(DEPDIR)/rest_auth.Po ./$(DEPDIR)/slurmrestd.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -518,8 +517,7 @@ SRCS = \
 	openapi.c openapi.h \
 	operations.c operations.h \
 	slurmrestd.c \
-	rest_auth.h rest_auth.c \
-	xyaml.h xyaml.c
+	rest_auth.h rest_auth.c
 
 @WITH_SLURMRESTD_TRUE@AM_CPPFLAGS = -I$(top_srcdir) $(HTTP_PARSER_CPPFLAGS)
 @WITH_SLURMRESTD_TRUE@BIN_REF = $(REF:.txt=.bino)
@@ -652,7 +650,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/operations.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rest_auth.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmrestd.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xyaml.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -838,7 +835,6 @@ distclean: distclean-recursive
 	-rm -f ./$(DEPDIR)/operations.Po
 	-rm -f ./$(DEPDIR)/rest_auth.Po
 	-rm -f ./$(DEPDIR)/slurmrestd.Po
-	-rm -f ./$(DEPDIR)/xyaml.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -892,7 +888,6 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f ./$(DEPDIR)/operations.Po
 	-rm -f ./$(DEPDIR)/rest_auth.Po
 	-rm -f ./$(DEPDIR)/slurmrestd.Po
-	-rm -f ./$(DEPDIR)/xyaml.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
