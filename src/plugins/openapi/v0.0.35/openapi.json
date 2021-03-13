@@ -18,6 +18,7 @@
   "paths": {
     "/slurm/v0.0.35/diag/": {
       "get": {
+	"deprecated": true,
 	"summary": "get diagnostics",
 	"responses": {
 	  "200": {
@@ -28,6 +29,7 @@
     },
     "/slurm/v0.0.35/ping/": {
       "get": {
+	"deprecated": true,
 	"summary": "ping test",
 	"responses": {
 	  "200": {
@@ -38,6 +40,7 @@
     },
     "/slurm/v0.0.35/jobs/": {
       "get": {
+	"deprecated": true,
 	"summary": "get list of jobs",
 	"responses": {
 	  "200": {
@@ -48,6 +51,7 @@
     },
     "/slurm/v0.0.35/job/{job_id}": {
       "get": {
+	"deprecated": true,
 	"summary": "get job info",
 	"parameters": [
 	  {
@@ -73,6 +77,7 @@
 	}
       },
       "post": {
+	"deprecated": true,
 	"summary": "update job",
 	"parameters": [
 	  {
@@ -114,6 +119,7 @@
 	}
       },
       "delete": {
+	"deprecated": true,
 	"summary": "cancel or signal job",
 	"parameters": [
 	  {
@@ -152,6 +158,7 @@
     },
     "/slurm/v0.0.35/job/submit": {
       "post": {
+	"deprecated": true,
 	"summary": "submit new job",
 	"requestBody": {
 	  "description": "submit new job",
@@ -181,6 +188,7 @@
     },
     "/slurm/v0.0.35/nodes/": {
       "get": {
+	"deprecated": true,
 	"summary": "get all node info",
 	"responses": {
 	  "200": {
@@ -194,6 +202,7 @@
     },
     "/slurm/v0.0.35/node/{node_name}": {
       "get": {
+	"deprecated": true,
 	"summary": "get node info",
 	"parameters": [
 	  {
@@ -220,6 +229,7 @@
     },
     "/slurm/v0.0.35/partitions/": {
       "get": {
+	"deprecated": true,
 	"summary": "get all partition info",
 	"responses": {
 	  "200": {
@@ -233,6 +243,7 @@
     },
     "/slurm/v0.0.35/partition/{partition_name}": {
       "get": {
+	"deprecated": true,
 	"summary": "get partition info",
 	"parameters": [
 	  {

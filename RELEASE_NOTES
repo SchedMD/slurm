@@ -124,3 +124,5 @@ API CHANGES
     slurm_sched_p_initial_priority() call.
  -- step_ctx code has been removed from the api.
  -- slurm_stepd_get_info()/stepd_get_info() has been removed from the api.
+ -- The v0.0.35 OpenAPI plugin has now been marked as deprecated.
+    Please convert your requests to the v0.0.37 OpenAPI plugin.
