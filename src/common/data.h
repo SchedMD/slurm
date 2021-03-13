@@ -552,6 +552,8 @@ typedef enum {
 #define MIME_TYPE_YAML_PLUGIN "serializer/yaml"
 #define MIME_TYPE_JSON "application/json"
 #define MIME_TYPE_JSON_PLUGIN "serializer/json"
+#define MIME_TYPE_URL_ENCODED "application/x-www-form-urlencoded"
+#define MIME_TYPE_URL_ENCODED_PLUGIN "serializer/url-encoded"
 
 /*
  * Serialize data in src into string dest
