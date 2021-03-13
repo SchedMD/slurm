@@ -46,7 +46,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/http_content_type.h"
 #include "src/slurmrestd/http_url.h"
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
@@ -66,6 +65,11 @@ typedef struct {
 	/* tag to hand to handler */
 	int callback_tag;
 } path_t;
+
+typedef struct {
+	char *type; /* mime type and sub type unchanged */
+	float q; /* quality factor (priority) */
+} http_header_accept_t;
 
 static void _check_path_magic(const path_t *path)
 {
@@ -247,42 +251,19 @@ static int _resolve_path(on_http_request_args_t *args, int *path_tag,
 }
 
 static int _get_query(on_http_request_args_t *args, data_t **query,
-		      mime_types_t read_mime, mime_types_t write_mime)
+		      const char *read_mime)
 {
 	int rc = SLURM_SUCCESS;
 
-	/* sanity check there is a HTML body to actually parse */
-	if ((read_mime == MIME_JSON || read_mime == MIME_YAML) &&
-	    args->body_length == 0)
-		return _operations_router_reject(
-			args, "Unable to parse empty HTML body.",
-			HTTP_STATUS_CODE_ERROR_BAD_REQUEST, NULL);
-
 	/* post will have query in the body otherwise it is in the URL */
-	switch (read_mime) {
-	case MIME_JSON:
+	if (args->method == HTTP_REQUEST_POST)
 		rc = data_g_deserialize(query, args->body,
-					(args->body_length - 1),
-					MIME_TYPE_JSON);
-		break;
-	case MIME_URL_ENCODED:
-		/* everything but POST must be urlencoded */
-		if (args->method == HTTP_REQUEST_POST)
-			rc = data_g_deserialize(query, args->body,
-						args->body_length,
-						MIME_TYPE_URL_ENCODED);
-		else
-			rc = data_g_deserialize(query, args->query,
-						strlen(args->query),
-						MIME_TYPE_URL_ENCODED);
-		break;
-	case MIME_YAML:
-		rc = data_g_deserialize(query, args->body, args->body_length,
-					MIME_TYPE_YAML);
-		break;
-	default:
-		fatal_abort("%s: unknown read mime type", __func__);
-	}
+				      args->body_length,
+				      read_mime);
+	else
+		rc = data_g_deserialize(query, args->query,
+				      (args->query ? strlen(args->query) : 0),
+				      read_mime);
 
 	if (rc || !*query)
 		return _operations_router_reject(
@@ -293,23 +274,95 @@ static int _get_query(on_http_request_args_t *args, data_t **query,
 
 }
 
-static int _resolve_mime(on_http_request_args_t *args, mime_types_t *read_mime,
-			 mime_types_t *write_mime)
+static void _parse_http_accept_entry(char *entry, List l)
 {
-	*read_mime = find_matching_mime_type(args->content_type);
+	char *save_ptr = NULL;
+	char *token = NULL;
+	char *buffer = xstrdup(entry);
+	http_header_accept_t *act = xmalloc(sizeof(*act));
+	act->type = NULL;
+	act->q = 1; /* default to 1 per rfc7231:5.3.1 */
+
+	token = strtok_r(buffer, ";", &save_ptr);
+
+	if (token) {
+		/* first token is the mime type */
+		xstrtrim(token);
+		act->type = xstrdup(token);
+	}
+	while ((token = strtok_r(NULL, ",", &save_ptr))) {
+		xstrtrim(token);
+		sscanf(token, "q=%f", &act->q);
+	}
+	xfree(buffer);
+
+	debug5("%s: found %s with q=%f", __func__, act->type, act->q);
+
+	list_append(l, act);
+}
+
+static int _compare_q(void *x, void *y)
+{
+	http_header_accept_t *xobj = (http_header_accept_t *) x;
+	http_header_accept_t *yobj = (http_header_accept_t *) y;
+
+	if (xobj->q < yobj->q)
+		return -1;
+	else if (xobj->q > yobj->q)
+		return 1;
+
+	return 0;
+}
+
+static void _http_accept_list_delete(void *x)
+{
+	http_header_accept_t *obj = (http_header_accept_t *) x;
+
+	if (!obj)
+		return;
+
+	xfree(obj->type);
+	xfree(obj);
+}
+
+static List _parse_http_accept(const char *accept)
+{
+	List l = list_create(_http_accept_list_delete);
+	xassert(accept);
+	char *save_ptr = NULL;
+	char *token = NULL;
+	char *buffer = xstrdup(accept);
+
+	token = strtok_r(buffer, ",", &save_ptr);
+	while (token) {
+		xstrtrim(token);
+		_parse_http_accept_entry(token, l);
+		token = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(buffer);
+
+	list_sort(l, _compare_q);
+
+	return l;
+}
+
+static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
+			 const char **write_mime)
+{
+	*read_mime = args->content_type;
 
 	//TODO: check Content-encoding and make sure it is identity only!
 	//https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
 
-	if (*read_mime == MIME_UNKNOWN) {
-		*read_mime = MIME_URL_ENCODED;
+	if (!*read_mime) {
+		*read_mime = MIME_TYPE_URL_ENCODED;
 
 		debug4("%s: [%s] did not provide a known content type header. Assuming URL encoded.",
 		      __func__, args->context->con->name);
 	}
 
 	if (args->accept) {
-		List accept = parse_http_accept(args->accept);
+		List accept = _parse_http_accept(args->accept);
 		http_header_accept_t *ptr = NULL;
 		ListIterator itr = list_iterator_create(accept);
 		while ((ptr = list_next(itr))) {
@@ -317,24 +370,38 @@ static int _resolve_mime(on_http_request_args_t *args, mime_types_t *read_mime,
 			       __func__, args->context->con->name, ptr->type,
 			       ptr->q);
 
-			*write_mime = find_matching_mime_type(ptr->type);
-			if (*write_mime != MIME_UNKNOWN)
+			if ((*write_mime = data_resolve_mime_type(ptr->type))) {
+				debug4("%s: [%s] found accepts %s=%s with q=%f",
+				       __func__, args->context->con->name,
+				       ptr->type, *write_mime, ptr->q);
 				break;
+			} else {
+				debug4("%s: [%s] rejecting accepts %s with q=%f",
+				       __func__, args->context->con->name,
+				       ptr->type, ptr->q);
+			}
 		}
 		list_iterator_destroy(itr);
 		list_destroy(accept);
 	} else {
 		debug3("%s: [%s] Accept header not specified. Defaulting to JSON.",
 		       __func__, args->context->con->name);
-		*write_mime = MIME_JSON;
+		*write_mime = MIME_TYPE_JSON;
 	}
 
-	if (*write_mime == MIME_UNKNOWN)
+	if (!*write_mime)
 		return _operations_router_reject(
 			args, "Accept content type is unknown",
+			HTTP_STATUS_CODE_ERROR_UNSUPPORTED_MEDIA_TYPE, NULL);
+
+	if (args->method != HTTP_REQUEST_POST && args->body_length > 0)
+		return _operations_router_reject(
+			args,
+			"Unexpected http body provided for non-POST method",
 			HTTP_STATUS_CODE_ERROR_BAD_REQUEST, NULL);
 
-	if ((*read_mime != MIME_URL_ENCODED) && (args->body_length == 0)) {
+	if (xstrcasecmp(*read_mime, MIME_TYPE_URL_ENCODED) &&
+	    (args->body_length == 0)) {
 		/*
 		 * RFC7273#3.1.1.5 only specifies a sender SHOULD send
 		 * the correct content-type header but allows for them to be
@@ -346,30 +413,22 @@ static int _resolve_mime(on_http_request_args_t *args, mime_types_t *read_mime,
 		 */
 		debug("%s: [%s] Overriding content type from %s to %s for %s",
 		      __func__, args->context->con->name,
-		      get_mime_type_str(*read_mime),
-		      get_mime_type_str(MIME_URL_ENCODED),
+		      *read_mime,
+		      MIME_TYPE_URL_ENCODED,
 		      get_http_method_string(args->method));
 
-		*read_mime = MIME_URL_ENCODED;
+		*read_mime = MIME_TYPE_URL_ENCODED;
 	}
 
-	if (args->method != HTTP_REQUEST_POST && args->body_length > 0)
-		return _operations_router_reject(
-			args,
-			"Unexpected http body provided for non-POST method",
-			HTTP_STATUS_CODE_ERROR_BAD_REQUEST, NULL);
-
 	debug3("%s: [%s] mime read: %s write: %s",
-	       __func__, args->context->con->name,
-	       get_mime_type_str(*read_mime), get_mime_type_str(*write_mime));
-
+	       __func__, args->context->con->name, *read_mime, *write_mime);
 
 	return SLURM_SUCCESS;
 }
 
 static int _call_handler(on_http_request_args_t *args, data_t *params,
 			 data_t *query, operation_handler_t callback,
-			 int callback_tag, mime_types_t write_mime)
+			 int callback_tag, const char *write_mime)
 {
 	int rc;
 	data_t *resp = data_new();
@@ -380,14 +439,9 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 
 	if (data_get_type(resp) == DATA_TYPE_NULL)
 		/* no op */;
-	else if (write_mime == MIME_YAML)
-		rc = data_g_serialize(&body, resp, MIME_TYPE_YAML,
+	else
+		rc = data_g_serialize(&body, resp, write_mime,
 				      DATA_SER_FLAGS_PRETTY);
-	else if (write_mime == MIME_JSON) {
-		rc = data_g_serialize(&body, resp, MIME_TYPE_JSON,
-				      DATA_SER_FLAGS_PRETTY);
-	} else
-		fatal_abort("%s: unexpected mime type", __func__);
 
 	if (rc == SLURM_NO_CHANGE_IN_DATA) {
 		/*
@@ -413,9 +467,10 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 			e = HTTP_STATUS_CODE_ERROR_BAD_REQUEST;
 		else if (rc == ESLURM_REST_INVALID_JOBS_DESC)
 			e = HTTP_STATUS_CODE_ERROR_BAD_REQUEST;
+		else if (rc == ESLURM_DATA_UNKNOWN_MIME_TYPE)
+			e = HTTP_STATUS_CODE_ERROR_UNSUPPORTED_MEDIA_TYPE;
 
-		rc = _operations_router_reject(args, body, e,
-					       get_mime_type_str(write_mime));
+		rc = _operations_router_reject(args, body, e, write_mime);
 	} else {
 		send_http_response_args_t send_args = {
 			.con = args->context->con,
@@ -429,7 +484,7 @@ static int _call_handler(on_http_request_args_t *args, data_t *params,
 		if (body) {
 			send_args.body = body;
 			send_args.body_length = strlen(body);
-			send_args.body_encoding = get_mime_type_str(write_mime);
+			send_args.body_encoding = write_mime;
 		}
 
 		rc = send_http_response(&send_args);
@@ -450,8 +505,8 @@ extern int operations_router(on_http_request_args_t *args)
 	path_t *path = NULL;
 	operation_handler_t callback = NULL;
 	int callback_tag;
-	mime_types_t read_mime = MIME_UNKNOWN;
-	mime_types_t write_mime = MIME_UNKNOWN;
+	const char *read_mime = NULL;
+	const char *write_mime = NULL;
 
 	info("%s: [%s] %s %s",
 	     __func__, args->context->con->name,
@@ -493,7 +548,7 @@ extern int operations_router(on_http_request_args_t *args)
 	if ((rc = _resolve_mime(args, &read_mime, &write_mime)))
 		goto cleanup;
 
-	if ((rc = _get_query(args, &query, read_mime, write_mime)))
+	if ((rc = _get_query(args, &query, read_mime)))
 		goto cleanup;
 
 	rc = _call_handler(args, params, query, callback, callback_tag,
