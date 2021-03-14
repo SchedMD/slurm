@@ -143,7 +143,6 @@ typedef struct {
 	union {
 		parser_flags_t flags;
 		parser_tres_t tres;
-		parser_qos_preempt_t qos_preempt;
 	} per_type;
 } parser_t;
 
@@ -167,13 +166,10 @@ typedef struct {
 		.required = req,                                              \
 		.type = PARSE_##mtype,                                        \
 	}
-#define add_parser_qos_preempt(stype, req, field_bitstr, field_list, path)    \
+/* only use add_parser_qos_preempt() with slurmdb_qos_rec_t */
+#define add_parser_qos_preempt(req, path)                                     \
 	{                                                                     \
 		.key = path,                                                  \
-		.per_type.qos_preempt.field_offset_preempt_bitstr =           \
-			offsetof(stype, field_bitstr),                        \
-		.per_type.qos_preempt.field_offset_preempt_list =             \
-			offsetof(stype, field_list),                          \
 		.required = req,                                              \
 		.type = PARSE_QOS_PREEMPT_LIST,                               \
 	}
@@ -534,8 +530,7 @@ static const parser_t parse_qos[] = {
 	_add_parse(UINT32, min_prio_thresh, "limits/min/priority_threshold"),
 	_add_parse(TRES_LIST, min_tres_pj, "limits/min/tres/per/job"),
 	/* skipping min_tres_pj_ctld (not packed) */
-	add_parser_qos_preempt(slurmdb_qos_rec_t, false, preempt_bitstr,
-			       preempt_list, "preempt/list"),
+	add_parser_qos_preempt(false, "preempt/list"),
 	/* skip preempt_list (only for ops) */
 	add_parser_flags(parser_qos_preempt_flags, slurmdb_qos_rec_t, false,
 			 preempt_mode, "preempt/mode"),
@@ -1320,12 +1315,10 @@ static int _parse_qos_preempt_list(const parser_t *const parse, void *obj,
 {
 #ifndef NDEBUG
 	bitstr_t **preempt_bitstr =
-		(((void *)obj) +
-		 parse->per_type.qos_preempt.field_offset_preempt_bitstr);
+		(((void *)obj) + offsetof(slurmdb_qos_rec_t, preempt_bitstr));
 #endif
 	List *preempt_list =
-		(((void *)obj) +
-		 parse->per_type.qos_preempt.field_offset_preempt_list);
+		(((void *)obj) + offsetof(slurmdb_qos_rec_t, preempt_list));
 	foreach_parse_qos_preempt_list_t args = {
 		.magic = MAGIC_FOREACH_QOS_PREEMPT_LIST,
 		.penv = penv,
@@ -1351,12 +1344,11 @@ static int _dump_qos_preempt_list(const parser_t *const parse, void *obj,
 				  data_t *dst, const parser_env_t *penv)
 {
 	bitstr_t **preempt_bitstr =
-		(((void *)obj) +
-		 parse->per_type.qos_preempt.field_offset_preempt_bitstr);
+		(((void *)obj) + offsetof(slurmdb_qos_rec_t, preempt_bitstr));
+
 #ifndef NDEBUG
 	List *preempt_list =
-		(((void *)obj) +
-		 parse->per_type.qos_preempt.field_offset_preempt_list);
+		(((void *)obj) + offsetof(slurmdb_qos_rec_t, preempt_list));
 #endif
 
 	xassert(!parse->field_offset);
