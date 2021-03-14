@@ -107,6 +107,8 @@ static char **oas_plugin_types = NULL;
 static size_t oas_plugin_count = 0;
 static plugrack_t *oas_rack = NULL;
 
+bool unshare_sysv = true;
+
 /* SIGPIPE handler - mostly a no-op */
 static void _sigpipe_handler(int signum)
 {
@@ -145,6 +147,23 @@ static void _parse_env(void)
 	if ((buffer = getenv("SLURMRESTD_OPENAPI_PLUGINS")) != NULL) {
 		xfree(oas_specs);
 		oas_specs = xstrdup(buffer);
+	}
+
+	if ((buffer = getenv("SLURMRESTD_SECURITY"))) {
+		char *token = NULL, *save_ptr = NULL;
+		char *toklist = xstrdup(buffer);
+
+		token = strtok_r(toklist, ",", &save_ptr);
+		while (token) {
+			if (!xstrcasecmp(token, "disable_unshare_sysv")) {
+				unshare_sysv = false;
+			} else {
+				fatal("Unexpected value in SLURMRESTD_SECURITY=%s",
+				      token);
+			}
+			token = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(toklist);
 	}
 }
 
@@ -285,7 +304,7 @@ static void _lock_down(void)
 {
 	if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) == -1)
 		fatal("Unable to disable new privileges: %m");
-	if (unshare(CLONE_SYSVSEM))
+	if (unshare_sysv && unshare(CLONE_SYSVSEM))
 		fatal("Unable to unshare System V namespace: %m");
 	if (unshare(CLONE_FILES))
 		fatal("Unable to unshare file descriptors: %m");
