@@ -89,7 +89,6 @@ typedef enum {
 	PARSE_STRING, /* char */
 	PARSE_TASK_DISTRIBUTION, /* uint32_t <-> task_dist_states_t */
 	PARSE_TRES_LIST, /* List of slurmdb_tres_rec_t* combined into a TRES string */
-	PARSE_TRES_NODE_COUNT_TASK, /* ptr slurmdb_tres_rec_t* for node,count, and task */
 	PARSE_TRES, /* slurmdb_tres_rec_t* */
 	PARSE_UINT16, /* uint16_t */
 	PARSE_UINT32, /* uint32_t */

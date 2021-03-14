@@ -118,13 +118,6 @@ typedef struct {
 } parser_enum_t;
 
 typedef struct {
-	size_t field_offset_count;
-	size_t field_offset_node;
-	size_t field_offset_task;
-	size_t field_offset_nodes; /* char* node list */
-} parser_tres_t;
-
-typedef struct {
 	const parser_enum_t *list;
 	size_t count;
 } parser_flags_t;
@@ -142,7 +135,6 @@ typedef struct {
 	char *key;
 	union {
 		parser_flags_t flags;
-		parser_tres_t tres;
 	} per_type;
 } parser_t;
 
@@ -172,21 +164,6 @@ typedef struct {
 		.key = path,                                                  \
 		.required = req,                                              \
 		.type = PARSE_QOS_PREEMPT_LIST,                               \
-	}
-#define add_parser_tres(stype, req, field_count, field_node, field_task,      \
-			field_nodes, path)                                    \
-	{                                                                     \
-		.key = path,                                                  \
-		.per_type.tres.field_offset_count =                           \
-			offsetof(stype, field_count),                         \
-		.per_type.tres.field_offset_node =                            \
-			offsetof(stype, field_node),                          \
-		.per_type.tres.field_offset_nodes =                           \
-			offsetof(stype, field_nodes),                         \
-		.per_type.tres.field_offset_task =                            \
-			offsetof(stype, field_task),                          \
-		.required = req,                                              \
-		.type = PARSE_TRES_NODE_COUNT_TASK,                           \
 	}
 #define add_parser_flags(flags_array, stype, req, field, path)                \
 	{                                                                     \
@@ -557,9 +534,6 @@ static const parser_enum_t parse_job_step_cpu_freq_flags[] = {
 
 #define _add_parse(mtype, field, path) \
 	add_parser(slurmdb_step_rec_t, mtype, false, field, path)
-#define _tres3(count, node, task, path)                                      \
-	add_parser_tres(slurmdb_step_rec_t, false, count, node, task, nodes, \
-			path)
 /* should mirror the structure of slurmdb_step_rec_t   */
 static const parser_t parse_job_step[] = {
 	_add_parse(UINT32, elapsed, "time/elapsed"),
@@ -593,24 +567,27 @@ static const parser_t parse_job_step[] = {
 	_add_parse(UINT32, user_cpu_sec, "time/user/seconds"),
 	_add_parse(UINT32, user_cpu_usec, "time/user/microseconds"),
 
+	/*
+	 * Handled in _dump_job_steps()->_foreach_step():
+	 * 	stats.tres_usage_in_max
+	 * 	stats.tres_usage_in_max_nodeid
+	 * 	stats.tres_usage_in_max_taskid
+	 * 	stats.tres_usage_out_max
+	 * 	stats.tres_usage_out_max_nodeid
+	 * 	stats.tres_usage_out_max_taskid
+	 * 	stats.tres_usage_out_min
+	 * 	stats.tres_usage_out_min_nodeid
+	 * 	stats.tres_usage_out_min_taskid
+	 */
 	_add_parse(TRES_LIST, stats.tres_usage_in_ave,
 		   "tres/requested/average"),
-	_tres3(stats.tres_usage_in_max, stats.tres_usage_in_max_nodeid,
-	       stats.tres_usage_in_max_taskid, "tres/requested/max"),
-	_tres3(stats.tres_usage_in_min, stats.tres_usage_in_min_nodeid,
-	       stats.tres_usage_in_min_taskid, "tres/requested/min"),
 	_add_parse(TRES_LIST, stats.tres_usage_in_tot, "tres/requested/total"),
 	_add_parse(TRES_LIST, stats.tres_usage_out_ave,
 		   "tres/consumed/average"),
-	_tres3(stats.tres_usage_out_max, stats.tres_usage_out_max_nodeid,
-	       stats.tres_usage_out_max_taskid, "tres/consumed/max"),
-	_tres3(stats.tres_usage_out_min, stats.tres_usage_out_min_nodeid,
-	       stats.tres_usage_out_min_taskid, "tres/consumed/min"),
 	_add_parse(TRES_LIST, stats.tres_usage_out_tot, "tres/consumed/total"),
 	_add_parse(TRES_LIST, tres_alloc_str, "tres/allocated"),
 };
 #undef _add_parse
-#undef _tres3
 
 #define _add_parse(mtype, field, path) \
 	add_parser(slurmdb_stats_rec_t, mtype, false, field, path)
@@ -2037,9 +2014,10 @@ static int _foreach_populate_g_tres_list(void *x, void *arg)
 	return 0;
 }
 
-static int _dump_tres_nct(const parser_t *const parse, void *obj, data_t *dst,
-			  const parser_env_t *penv)
+static int _dump_tres_nct(data_t *dst, char *tres_count, char *tres_node, char
+			  *tres_task, char *nodes, const parser_env_t *penv)
 {
+	const List g_tres_list = penv->g_tres_list;
 	int rc = ESLURM_DATA_CONV_FAILED;
 	foreach_list_per_tres_type_nct_t args = {
 		.magic = MAGIC_LIST_PER_TRES_TYPE_NCT,
@@ -2049,14 +2027,6 @@ static int _dump_tres_nct(const parser_t *const parse, void *obj, data_t *dst,
 	};
 	slurmdb_tres_nct_rec_t *tres_nct = NULL;
 	int tres_nct_count = 0;
-	char **tres_count = (((void *)obj) +
-			     parse->per_type.tres.field_offset_count);
-	char **tres_node = (((void *)obj) +
-			    parse->per_type.tres.field_offset_node);
-	char **tres_task = (((void *)obj) +
-			    parse->per_type.tres.field_offset_task);
-	char **nodes = (((void *)obj) +
-			parse->per_type.tres.field_offset_nodes);
 	List tres_count_list = NULL;
 	List tres_node_list = NULL;
 	List tres_task_list = NULL;
@@ -2064,30 +2034,29 @@ static int _dump_tres_nct(const parser_t *const parse, void *obj, data_t *dst,
 	xassert(data_get_type(dst) == DATA_TYPE_NULL);
 	data_set_list(dst);
 
-	xassert(!parse->field_offset);
-	xassert(penv->g_tres_list);
-	if (!penv->g_tres_list)
+	xassert(g_tres_list);
+	if (!g_tres_list)
 		goto cleanup;
 
-	if (!*tres_count && !*tres_node && !*tres_task)
+	if (!tres_count && !tres_node && !tres_task)
 		/* ignore empty TRES strings */
 		goto cleanup;
 
 	args.tres_nct_count = gtres_args.tres_nct_count = tres_nct_count =
-		list_count(penv->g_tres_list);
+		list_count(g_tres_list);
 	args.tres_nct = gtres_args.tres_nct = tres_nct = xcalloc(
-		list_count(penv->g_tres_list), sizeof(*tres_nct));
-	if (list_for_each(penv->g_tres_list, _foreach_populate_g_tres_list,
+		list_count(g_tres_list), sizeof(*tres_nct));
+	if (list_for_each(g_tres_list, _foreach_populate_g_tres_list,
 			  &gtres_args) < 0)
 		goto cleanup;
 
-	args.host_list = hostlist_create(*nodes);
+	args.host_list = hostlist_create(nodes);
 
-	slurmdb_tres_list_from_string(&tres_count_list, *tres_count,
+	slurmdb_tres_list_from_string(&tres_count_list, tres_count,
 				      TRES_STR_FLAG_BYTES);
-	slurmdb_tres_list_from_string(&tres_node_list, *tres_node,
+	slurmdb_tres_list_from_string(&tres_node_list, tres_node,
 				      TRES_STR_FLAG_BYTES);
-	slurmdb_tres_list_from_string(&tres_task_list, *tres_task,
+	slurmdb_tres_list_from_string(&tres_task_list, tres_task,
 				      TRES_STR_FLAG_BYTES);
 
 	args.type = TRES_EXPLODE_COUNT;
@@ -2249,7 +2218,8 @@ typedef struct {
 
 static int _foreach_step(void *x, void *arg)
 {
-	int rc = 1;
+	int rc[4];
+	int trc = 1;
 	slurmdb_step_rec_t *step = x;
 	foreach_step_t *args = arg;
 	data_t *dstep = data_set_dict(data_list_append(args->steps));
@@ -2258,12 +2228,12 @@ static int _foreach_step(void *x, void *arg)
 
 	hostlist_t host_list = hostlist_create(step->nodes);
 	if (!host_list) {
-		rc = -1;
+		trc = -1;
 		goto cleanup;
 	}
 
 	xassert(hostlist_count(host_list) == step->nnodes);
-	if (!rc && hostlist_count(host_list)) {
+	if (!trc && hostlist_count(host_list)) {
 		char *host;
 		data_t *d = data_set_list(
 			data_define_dict_path(dstep, "nodes/list"));
@@ -2275,13 +2245,44 @@ static int _foreach_step(void *x, void *arg)
 		hostlist_iterator_destroy(itr);
 	}
 
+	rc[0] = _dump_tres_nct(data_define_dict_path(dstep,
+						     "tres/requested/max"),
+			       step->stats.tres_usage_in_max,
+			       step->stats.tres_usage_in_max_nodeid,
+			       step->stats.tres_usage_in_max_taskid,
+			       step->nodes, args->penv);
+	rc[1] = _dump_tres_nct(data_define_dict_path(dstep,
+						     "tres/requested/min"),
+			       step->stats.tres_usage_in_min,
+			       step->stats.tres_usage_in_min_nodeid,
+			       step->stats.tres_usage_in_min_taskid,
+			       step->nodes, args->penv);
+	rc[2] = _dump_tres_nct(data_define_dict_path(dstep,
+						     "tres/consumed/max"),
+			       step->stats.tres_usage_out_max,
+			       step->stats.tres_usage_out_max_nodeid,
+			       step->stats.tres_usage_out_max_taskid,
+			       step->nodes, args->penv);
+	rc[3] = _dump_tres_nct(data_define_dict_path(dstep,
+						     "tres/consumed/min"),
+			       step->stats.tres_usage_out_min,
+			       step->stats.tres_usage_out_min_nodeid,
+			       step->stats.tres_usage_out_min_taskid,
+			       step->nodes, args->penv);
+
+	if (rc[0] || rc[1] || rc[2] || rc[3]) {
+		trc = -1;
+		goto cleanup;
+	}
+
 	if (_parser_dump(step, parse_job_step, ARRAY_SIZE(parse_job_step),
 			 dstep, args->penv))
-		rc = -1;
+		trc = -1;
+
 cleanup:
 	FREE_NULL_HOSTLIST(host_list);
 
-	return rc;
+	return trc;
 }
 
 static int _dump_job_steps(const parser_t *const parse, void *obj, data_t *dst,
@@ -2788,7 +2789,6 @@ const parser_funcs_t funcs[] = {
 		  PARSE_QOS_PREEMPT_LIST),
 	_add_func(_parse_tres, _dump_tres, PARSE_TRES),
 	_add_func(_parse_tres_list, _dump_tres_list, PARSE_TRES_LIST),
-	_add_func(NULL, _dump_tres_nct, PARSE_TRES_NODE_COUNT_TASK),
 	_add_func(NULL, _dump_job_steps, PARSE_JOB_STEPS),
 	_add_func(NULL, _dump_job_exit_code, PARSE_JOB_EXIT_CODE),
 	_add_func(_parse_admin_lvl, _dump_admin_lvl, PARSE_ADMIN_LVL),
