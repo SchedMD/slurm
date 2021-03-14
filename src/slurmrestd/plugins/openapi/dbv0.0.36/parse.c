@@ -117,11 +117,6 @@ typedef struct {
 	size_t field_offset;
 } parser_enum_t;
 
-typedef struct {
-	const parser_enum_t *list;
-	size_t count;
-} parser_flags_t;
-
 /* QOS preemption list uses one field to list and one field to set */
 typedef struct {
 	size_t field_offset_preempt_bitstr;
@@ -133,9 +128,6 @@ typedef struct {
 	bool required;
 	size_t field_offset;
 	char *key;
-	union {
-		parser_flags_t flags;
-	} per_type;
 } parser_t;
 
 /* templates for read and write functions */
@@ -165,18 +157,22 @@ typedef struct {
 		.required = req,                                              \
 		.type = PARSE_QOS_PREEMPT_LIST,                               \
 	}
+/*
+ * flags are a special exception that just passed the flags_array as the
+ * field_offset since the array actually has all of the flag offsets in the
+ * struct
+ */
 #define add_parser_flags(flags_array, stype, req, field, path)                \
 	{                                                                     \
-		.field_offset = offsetof(stype, field),                       \
+		.field_offset = (uintptr_t)flags_array,                       \
 		.key = path,                                                  \
-		.per_type.flags.list = flags_array,                           \
-		.per_type.flags.count = ARRAY_SIZE(flags_array),              \
 		.required = req,                                              \
 		.type = PARSE_FLAGS,                                          \
 	}
 #define add_parser_enum_flag(stype, field, flagv, stringv)                    \
 	{                                                                     \
 		.flag = flagv,                                                \
+		.field_offset = offsetof(stype, field),                       \
 		.size = sizeof(((stype *) 0)->field),                         \
 		.string = stringv,                                            \
 		.type = PARSER_ENUM_FLAG_BIT,                                 \
@@ -206,6 +202,7 @@ static const parser_enum_t parser_assoc_flags[] = {
 	add_parser_enum_flag(slurmdb_assoc_rec_t, flags, ASSOC_FLAG_DELETED,
 			     "DELETED"),
 	add_parse_enum_bool(slurmdb_assoc_rec_t, is_def, "DEFAULT"),
+	{0}
 };
 
 static const parser_t parse_assoc_short[] = {
@@ -285,6 +282,7 @@ static const parser_enum_t parser_job_flags[] = {
 	_add_flag(SLURMDB_JOB_FLAG_SUBMIT, "STARTED_ON_SUBMIT"),
 	_add_flag(SLURMDB_JOB_FLAG_SCHED, "STARTED_ON_SCHEDULE"),
 	_add_flag(SLURMDB_JOB_FLAG_BACKFILL, "STARTED_ON_BACKFILL"),
+	{0}
 };
 #undef _add_flag
 
@@ -393,6 +391,7 @@ static const parser_enum_t parser_wckey_flags[] = {
 	add_parser_enum_flag(slurmdb_wckey_rec_t, flags,
 			     SLURMDB_WCKEY_FLAG_DELETED, "DELETED"),
 	add_parse_enum_bool(slurmdb_wckey_rec_t, is_def, "DEFAULT"),
+	{0}
 };
 
 #define _add_parse(mtype, field, path) \
@@ -446,6 +445,7 @@ static const parser_enum_t parser_qos_flags[] = {
 	_add_flag(QOS_FLAG_OVER_PART_QOS, "OVERRIDE_PARTITION_QOS"),
 	_add_flag(QOS_FLAG_NO_DECAY, "NO_DECAY"),
 	_add_flag(QOS_FLAG_USAGE_FACTOR_SAFE, "USAGE_FACTOR_SAFE"),
+	{0}
 };
 #undef _add_flag
 
@@ -457,6 +457,7 @@ static const parser_enum_t parser_qos_preempt_flags[] = {
 	_add_flag(PREEMPT_MODE_CANCEL, "CANCEL"),
 	_add_flag(PREEMPT_MODE_GANG, "GANG"),
 	/* skip PREEMPT_MODE_OFF (it is implied by empty list) */
+	{0}
 };
 #undef _add_flag
 
@@ -529,6 +530,7 @@ static const parser_enum_t parse_job_step_cpu_freq_flags[] = {
 	_add_flag(CPU_FREQ_POWERSAVE, "PowerSave"),
 	_add_flag(CPU_FREQ_ONDEMAND, "OnDemand"),
 	_add_flag(CPU_FREQ_USERSPACE, "UserSpace"),
+	{0}
 };
 #undef _add_flag
 
@@ -630,6 +632,7 @@ static const parser_enum_t parse_cluster_rec_flags[] = {
 	_add_flag(CLUSTER_FLAG_CRAY_N, "CRAY_NATIVE"),
 	_add_flag(CLUSTER_FLAG_FED, "FEDERATION"),
 	_add_flag(CLUSTER_FLAG_EXT, "EXTERNAL"),
+	{0}
 };
 #undef _add_flag
 
@@ -950,9 +953,8 @@ static data_for_each_cmd_t _for_each_parse_flag(data_t *data, void *arg)
 	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
 		return DATA_FOR_EACH_FAIL;
 
-	for (int i = 0; i < args->parse->per_type.flags.count; i++) {
-		const parser_enum_t *f = (args->parse->per_type.flags.list + i);
-
+	for (const parser_enum_t *f = (NULL + args->parse->field_offset);
+	     f->type; f++) {
 		bool match = !xstrcasecmp(data_get_string(data), f->string);
 
 		if (f->type == PARSER_ENUM_FLAG_BIT) {
@@ -963,19 +965,19 @@ static data_for_each_cmd_t _for_each_parse_flag(data_t *data, void *arg)
 			/* C allows complier to choose a size for the enum */
 			if (b == sizeof(uint64_t)) {
 				uint64_t *flags = (((void *)args->obj) +
-						   args->parse->field_offset);
+						   f->field_offset);
 				*flags |= f->flag;
 			} else if (b == sizeof(uint32_t)) {
 				uint32_t *flags = (((void *)args->obj) +
-						   args->parse->field_offset);
+						   f->field_offset);
 				*flags |= f->flag;
 			} else if (b == sizeof(uint16_t)) {
 				uint16_t *flags = (((void *)args->obj) +
-						   args->parse->field_offset);
+						   f->field_offset);
 				*flags |= f->flag;
 			} else if (b == sizeof(uint8_t)) {
 				uint8_t *flags = (((void *)args->obj) +
-						  args->parse->field_offset);
+						  f->field_offset);
 				*flags |= f->flag;
 			} else
 				fatal("%s: unexpected enum size: %zu", __func__,
@@ -1045,8 +1047,8 @@ static int _dump_flags(const parser_t *const parse, void *obj, data_t *data,
 	xassert(data_get_type(data) == DATA_TYPE_NULL);
 	data_set_list(data);
 
-	for (int i = 0; i < parse->per_type.flags.count; i++) {
-		const parser_enum_t *f = (parse->per_type.flags.list + i);
+	for (const parser_enum_t *f = (NULL + parse->field_offset);
+	     f->type; f++) {
 		bool found = false;
 
 		if (f->type == PARSER_ENUM_FLAG_BIT) {
@@ -1055,22 +1057,22 @@ static int _dump_flags(const parser_t *const parse, void *obj, data_t *data,
 			/* C allows complier to choose a size for the enum */
 			if (b == sizeof(uint64_t)) {
 				uint64_t *flags = (((void *)obj) +
-						   parse->field_offset);
+						   f->field_offset);
 				if (*flags & f->flag)
 					found = true;
 			} else if (b == sizeof(uint32_t)) {
 				uint32_t *flags = (((void *)obj) +
-						   parse->field_offset);
+						   f->field_offset);
 				if (*flags & f->flag)
 					found = true;
 			} else if (b == sizeof(uint16_t)) {
 				uint16_t *flags = (((void *)obj) +
-						   parse->field_offset);
+						   f->field_offset);
 				if (*flags & f->flag)
 					found = true;
 			} else if (b == sizeof(uint8_t)) {
 				uint8_t *flags = (((void *)obj) +
-						  parse->field_offset);
+						  f->field_offset);
 				if (*flags & f->flag)
 					found = true;
 			} else
