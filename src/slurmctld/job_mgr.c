@@ -4172,8 +4172,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   mcs_label=%s", job_specs->mcs_label);
 	slurm_make_time_str(&job_specs->deadline, buf, sizeof(buf));
 	debug3("   deadline=%s", buf);
-	debug3("   bitflags=%u delay_boot=%u", job_specs->bitflags,
-	       job_specs->delay_boot);
+	debug3("   bitflags=0x%"PRIx32" delay_boot=%u",
+	       job_specs->bitflags, job_specs->delay_boot);
 
 	if (job_specs->cpus_per_tres)
 		debug3("   CPUs_per_TRES=%s", job_specs->cpus_per_tres);
