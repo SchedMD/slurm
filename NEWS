@@ -53,6 +53,7 @@ documents those changes that are of interest to users and administrators.
  -- Removed AccountingStoreJobComment option.  Please update your config to use
     AccountingStoreFlags=job_comment instead.
  -- AccountingStoreFlags=job_script allows you to store the job's batch script.
+ -- AccountingStoreFlags=job_env allows you to store the job's env vars.
 
 * Changes in Slurm 20.11.6
 ==========================

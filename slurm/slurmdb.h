@@ -202,6 +202,7 @@ enum cluster_fed_states {
 						  * submit_time of the job.
 						  */
 #define JOBCOND_FLAG_SCRIPT  0x00000010 /* Get batch script only */
+#define JOBCOND_FLAG_ENV     0x00000020 /* Get job's env only */
 
 /* Archive / Purge time flags */
 #define SLURMDB_PURGE_BASE    0x0000ffff   /* Apply to get the number
@@ -799,6 +800,7 @@ typedef struct {
 	uint32_t elapsed;
 	time_t eligible;
 	time_t end;
+	char *env;
 	uint32_t exitcode;
 	uint32_t flags;
 	void *first_step_ptr;

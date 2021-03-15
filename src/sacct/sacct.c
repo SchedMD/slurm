@@ -179,7 +179,8 @@ int main(int argc, char **argv)
 
 	switch (op) {
 	case SACCT_LIST:
-		if (!(params.job_cond->flags & JOBCOND_FLAG_SCRIPT))
+		if (!(params.job_cond->flags & JOBCOND_FLAG_SCRIPT) &&
+		    !(params.job_cond->flags & JOBCOND_FLAG_ENV))
 			print_fields_header(print_fields_list);
 		if (get_data() == SLURM_ERROR)
 			exit(errno);

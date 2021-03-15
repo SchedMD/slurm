@@ -738,6 +738,7 @@ job_rec_to_hv(slurmdb_job_rec_t* rec, HV* hv)
     STORE_FIELD(hv, rec, elapsed,         uint32_t);
     STORE_FIELD(hv, rec, eligible,        time_t);
     STORE_FIELD(hv, rec, end,             time_t);
+    STORE_FIELD(hv, rec, env,             charp);
     STORE_FIELD(hv, rec, exitcode,        uint32_t);
     /*STORE_FIELD(hv, rec, first_step_ptr,  void*);*/
     STORE_FIELD(hv, rec, gid,             uint32_t);

@@ -2685,6 +2685,7 @@ typedef struct reservation_name_msg {
 #define CTL_CONF_IPV4_ENABLED	0x00000040 /* IPv4 is enabled */
 #define CTL_CONF_IPV6_ENABLED	0x00000080 /* IPv6 is enabled */
 #define CTL_CONF_SJS            0x00000200 /* AccountingStoreFlags=job_script */
+#define CTL_CONF_SJE            0x00000400 /* AccountingStoreFlags=job_env */
 
 #define LOG_FMT_ISO8601_MS      0
 #define LOG_FMT_ISO8601         1

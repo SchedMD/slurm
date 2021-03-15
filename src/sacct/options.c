@@ -55,6 +55,7 @@
 #define OPT_LONG_FEDR      0x105
 #define OPT_LONG_WHETJOB   0x106
 #define OPT_LONG_LOCAL_UID 0x107
+#define OPT_LONG_ENV       0x108
 
 #define JOB_HASH_SIZE 1000
 
@@ -353,6 +354,11 @@ sacct [<OPTION>]                                                            \n \
                    Select jobs eligible before this time.  If states are    \n\
                    given with the -s option return jobs in this state before\n\
                    this period.                                             \n\
+         --env-vars:                                                        \n\
+	           Print the environment to launch the batch script of job. \n\
+                   NOTE: AccountingStoreFlags=job_env is required for this  \n\
+                   NOTE: Requesting specific job(s) with '-j' is required   \n\
+                         for this.                                          \n\
          --federation: Report jobs from federation if a member of a one.    \n\
      -f, --file=file:                                                       \n\
 	           Read data from the specified file, rather than Slurm's   \n\
@@ -711,6 +717,7 @@ extern void parse_command_line(int argc, char **argv)
                 {"helpformat",     no_argument,       0,    'e'},
                 {"help-fields",    no_argument,       0,    'e'},
                 {"endtime",        required_argument, 0,    'E'},
+                {"env-vars",       no_argument,       0,    OPT_LONG_ENV},
                 {"file",           required_argument, 0,    'f'},
                 {"flags",          required_argument, 0,    'F'},
                 {"gid",            required_argument, 0,    'g'},
@@ -824,6 +831,10 @@ extern void parse_command_line(int argc, char **argv)
 			job_cond->usage_end = parse_time(optarg, 1);
 			if (errno == ESLURM_INVALID_TIME_VALUE)
 				exit(1);
+			break;
+		case OPT_LONG_ENV:
+			job_cond->flags |= JOBCOND_FLAG_ENV;
+			job_cond->flags |= JOBCOND_FLAG_NO_STEP;
 			break;
 		case 'f':
 			xfree(params.opt_filein);
@@ -1040,9 +1051,17 @@ extern void parse_command_line(int argc, char **argv)
 		if (job_cond->flags & JOBCOND_FLAG_SCRIPT)
 			reason = "job scripts";
 
+		if (job_cond->flags & JOBCOND_FLAG_ENV)
+			reason = "job environment";
+
 		if (reason)
 			fatal("When requesting %s you must also request specific jobs with the '-j' option.", reason);
 	}
+
+	if ((job_cond->flags & JOBCOND_FLAG_SCRIPT) &&
+	    (job_cond->flags & JOBCOND_FLAG_ENV))
+		fatal("Options --batch-script and --env-vars are mutually exclusive");
+
 
 	if (long_output && params.opt_field_list)
 		fatal("Options -o(--format) and -l(--long) are mutually exclusive. Please remove one and retry.");
@@ -1455,6 +1474,16 @@ static void _print_script(slurmdb_job_rec_t *job)
 	return;
 }
 
+static void _print_env(slurmdb_job_rec_t *job)
+{
+	char *id = slurmdb_get_job_id_str(job);
+
+	printf("Environment used for %s (must be batch to display)\n--------------------------------------------------------------------------------\n%s\n",
+	       id, job->env ? job->env : "NONE\n");
+	xfree(id);
+	return;
+}
+
 /* do_list() -- List the assembled data
  *
  * In:	Nothing explicit.
@@ -1483,6 +1512,9 @@ extern void do_list(void)
 
 		if (job_cond->flags & JOBCOND_FLAG_SCRIPT) {
 			_print_script(job);
+			continue;
+		} else if (job_cond->flags & JOBCOND_FLAG_ENV) {
+			_print_env(job);
 			continue;
 		}
 

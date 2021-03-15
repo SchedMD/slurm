@@ -102,6 +102,7 @@ char *job_req_inx[] = {
 	"t1.work_dir",
 	"t1.mcs_label",
 	"t1.batch_script",
+	"t1.env_vars",
 	"t2.acct",
 	"t2.lft",
 	"t2.user"
@@ -157,6 +158,7 @@ enum {
 	JOB_REQ_WORK_DIR,
 	JOB_REQ_MCS_LABEL,
 	JOB_REQ_SCRIPT,
+	JOB_REQ_ENV,
 	JOB_REQ_ACCOUNT,
 	JOB_REQ_LFT,
 	JOB_REQ_USER_NAME,
@@ -703,6 +705,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->timelimit = slurm_atoul(row[JOB_REQ_TIMELIMIT]);
 
 		job->script = xstrdup(row[JOB_REQ_SCRIPT]);
+
+		job->env = xstrdup(row[JOB_REQ_ENV]);
 
 		/* since the job->end could be set later end it here */
 		if (job->end) {
@@ -1699,7 +1703,8 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	user.uid = uid;
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) ||
-	    (job_cond->flags & JOBCOND_FLAG_SCRIPT)) {
+	    (job_cond->flags & JOBCOND_FLAG_SCRIPT) ||
+	    (job_cond->flags & JOBCOND_FLAG_ENV)) {
 		if (!(is_admin = is_user_min_admin_level(
 			      mysql_conn, uid, SLURMDB_ADMIN_OPERATOR))) {
 			/*
@@ -1727,6 +1732,9 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 		if (job_cond->flags & JOBCOND_FLAG_SCRIPT)
 			reason = "job scripts";
 
+		if (job_cond->flags & JOBCOND_FLAG_ENV)
+			reason = "job environment";
+
 		if (reason) {
 			error("User %u is requesting %s, but no job requested, this is not allowed",
 			      user.uid, reason);
@@ -1740,8 +1748,10 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	xstrfmtcat(tmp, "%s", job_req_inx[0]);
 	for (i = 1; i < JOB_REQ_COUNT; i++) {
 		/* Only get the script if requesting it */
-		if ((i == JOB_REQ_SCRIPT) &&
-		    (!job_cond || !(job_cond->flags & JOBCOND_FLAG_SCRIPT)))
+		if (((i == JOB_REQ_SCRIPT) &&
+		     (!job_cond || !(job_cond->flags & JOBCOND_FLAG_SCRIPT))) ||
+		    ((i == JOB_REQ_ENV) &&
+		     (!job_cond || !(job_cond->flags & JOBCOND_FLAG_ENV))))
 			xstrcat(tmp, ", ''");
 		else
 			xstrfmtcat(tmp, ", %s", job_req_inx[i]);

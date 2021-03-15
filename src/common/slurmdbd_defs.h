@@ -256,6 +256,7 @@ typedef struct dbd_job_start_msg {
 	uint32_t db_flags;      /* flags about job */
 	uint64_t db_index;	/* index into the db for this job */
 	time_t   eligible_time;	/* time job becomes eligible to run */
+	char *env;              /* job environment in text form */
 	uint32_t gid;	        /* group ID */
 	uint32_t het_job_id;	/* ID of hetjob leader or 0 */
 	uint32_t het_job_offset; /* Hetjob component ID, zero-origin */

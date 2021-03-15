@@ -127,6 +127,7 @@ static void _partial_free_dbd_job_start(void *object)
 		xfree(req->account);
 		xfree(req->array_task_str);
 		xfree(req->constraints);
+		xfree(req->env);
 		xfree(req->mcs_label);
 		xfree(req->name);
 		xfree(req->nodes);
@@ -242,7 +243,17 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	if (!job_ptr->db_index || (job_ptr->db_index == NO_VAL64)) {
 		if (slurm_conf.conf_flags & CTL_CONF_SJS)
 			req->script_buf = get_job_script(job_ptr);
-
+		if (job_ptr->batch_flag &&
+		    (slurm_conf.conf_flags & CTL_CONF_SJE)) {
+			uint32_t env_size = 0;
+			char **env = get_job_env(job_ptr, &env_size);
+			if (env) {
+				for (int i = 0; i < env_size; i++)
+					xstrfmtcat(req->env, "%s\n", env[i]);
+				xfree(env[0]);
+				xfree(env);
+			}
+		}
 	}
 
 	return SLURM_SUCCESS;

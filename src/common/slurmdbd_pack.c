@@ -444,6 +444,7 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 		pack32(msg->db_flags, buffer);
 		pack64(msg->db_index, buffer);
 		pack_time(msg->eligible_time, buffer);
+		packstr(msg->env, buffer);
 		pack32(msg->gid, buffer);
 		packstr(msg->gres_used, buffer);
 		pack32(msg->job_id, buffer);
@@ -579,6 +580,7 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->db_flags, buffer);
 		safe_unpack64(&msg_ptr->db_index, buffer);
 		safe_unpack_time(&msg_ptr->eligible_time, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->env, &uint32_tmp, buffer);
 		safe_unpack32(&msg_ptr->gid, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->gres_used, &uint32_tmp,
 				       buffer);

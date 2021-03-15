@@ -2109,6 +2109,10 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	if (job_start_msg->db_index != NO_VAL64)
 		job.db_index = job_start_msg->db_index;
 	details.begin_time = job_start_msg->eligible_time;
+	if (job_start_msg->env) {
+		details.env_sup = xmalloc(sizeof(*details.env_sup));
+		details.env_sup[0] = job_start_msg->env;
+	}
 	job.user_id = job_start_msg->uid;
 	job.group_id = job_start_msg->gid;
 	job.het_job_id = job_start_msg->het_job_id;
@@ -2164,6 +2168,8 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	/* just in case job.wckey was set because we didn't send one */
 	if (!job_start_msg->wckey)
 		xfree(job.wckey);
+
+	xfree(details.env_sup);
 
 	if (!slurmdbd_conn->conn->rem_port) {
 		debug3("DBD_JOB_START: cluster not registered");

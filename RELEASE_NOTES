@@ -31,6 +31,7 @@ HIGHLIGHTS
     for slurm_kill_job2. slurm_kill_job2 should be used instead of
     slurm_kill_job_msg.
  -- AccountingStoreFlags=job_script allows you to store the job's batch script.
+ -- AccountingStoreFlags=job_env allows you to store the job's env vars.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

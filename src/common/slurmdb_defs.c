@@ -923,6 +923,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->cluster);
 		xfree(job->constraints);
 		xfree(job->derived_es);
+		xfree(job->env);
 		xfree(job->jobname);
 		xfree(job->mcs_label);
 		xfree(job->partition);

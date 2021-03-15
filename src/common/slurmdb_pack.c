@@ -4103,6 +4103,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		pack32(job->elapsed, buffer);
 		pack_time(job->eligible, buffer);
 		pack_time(job->end, buffer);
+		packstr(job->env, buffer);
 		pack32((uint32_t)job->exitcode, buffer);
 		pack32(job->flags, buffer);
 		/* the first_step_ptr
@@ -4367,6 +4368,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpack32(&job_ptr->elapsed, buffer);
 		safe_unpack_time(&job_ptr->eligible, buffer);
 		safe_unpack_time(&job_ptr->end, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->env,
+				       &uint32_tmp, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
 		job_ptr->exitcode = (int32_t)uint32_tmp;
 		safe_unpack32(&job_ptr->flags, buffer);

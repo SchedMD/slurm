@@ -1265,6 +1265,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "cpus_req", "int unsigned not null" },
 		{ "derived_ec", "int unsigned default 0 not null" },
 		{ "derived_es", "text" },
+		{ "env_vars", "longtext" },
 		{ "exit_code", "int unsigned default 0 not null" },
 		{ "flags", "int unsigned default 0 not null" },
 		{ "job_name", "tinytext not null" },
