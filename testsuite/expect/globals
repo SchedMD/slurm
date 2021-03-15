@@ -180,7 +180,7 @@ cset enable_memory_leak_debug 0
 # test_prompt: to be used as prompt for interactive shells
 set test_prompt  "TEST_PROMPT: "
 # reset_bash_prompt: to be used as command on scripts or interactive jobs
-set reset_bash_prompt "unset PROMPT_COMMAND; export PS1=\"$test_prompt\""
+set reset_bash_prompt "unset PROMPT_COMMAND; unset PS0; export PS1=\"$test_prompt\""
 
 #
 # Specify locations of other executable files used
