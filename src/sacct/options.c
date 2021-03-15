@@ -686,6 +686,7 @@ extern void parse_command_line(int argc, char **argv)
 	bool brief_output = false, long_output = false;
 	bool all_users = false;
 	bool all_clusters = false;
+	char *qos_names = NULL;
 	slurmdb_job_cond_t *job_cond = params.job_cond;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	int verbosity;		/* count of -v options */
@@ -934,21 +935,7 @@ extern void parse_command_line(int argc, char **argv)
 				PRINT_FIELDS_PARSABLE_NO_ENDING;
 			break;
 		case 'q':
-			if (!g_qos_list) {
-				slurmdb_qos_cond_t qos_cond;
-				memset(&qos_cond, 0,
-				       sizeof(slurmdb_qos_cond_t));
-				qos_cond.with_deleted = 1;
-				g_qos_list = slurmdb_qos_get(
-					acct_db_conn, &qos_cond);
-			}
-
-			if (!job_cond->qos_list)
-				job_cond->qos_list = list_create(xfree_ptr);
-
-			if (!slurmdb_addto_qos_char_list(job_cond->qos_list,
-							g_qos_list, optarg, 0))
-				fatal("problem processing qos list");
+			qos_names = xstrdup(optarg);
 			break;
 		case 'r':
 			if (!job_cond->partition_list)
@@ -1137,6 +1124,26 @@ extern void parse_command_line(int argc, char **argv)
 			exit(1);
 		}
 	}
+
+	if (qos_names) {
+		if (!g_qos_list) {
+			slurmdb_qos_cond_t qos_cond;
+			memset(&qos_cond, 0,
+				sizeof(slurmdb_qos_cond_t));
+			qos_cond.with_deleted = 1;
+			g_qos_list = slurmdb_qos_get(
+				acct_db_conn, &qos_cond);
+		}
+
+		if (!job_cond->qos_list)
+			job_cond->qos_list = list_create(xfree_ptr);
+
+		if (!slurmdb_addto_qos_char_list(job_cond->qos_list,
+						g_qos_list, qos_names, 0))
+			fatal("problem processing qos list");
+		xfree(qos_names);
+	}
+
 
 	/* specific clusters requested? */
 	if (params.opt_federation && !all_clusters && !job_cond->cluster_list &&
