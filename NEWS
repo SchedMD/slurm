@@ -51,6 +51,9 @@ documents those changes that are of interest to users and administrators.
  -- squeue - make it so --nodelist is sensitive to --clusters.
  -- squeue - do --nodelist node validation in the same order as listing.
 
+* Changes in Slurm 20.11.6
+==========================
+
 * Changes in Slurm 20.11.5
 ==========================
  -- Fix main scheduler bug where bf_hetjob_prio truncates SchedulerParameters.
