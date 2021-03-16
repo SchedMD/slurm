@@ -136,7 +136,8 @@ extern void container_p_reconfig(void)
 extern int init(void)
 {
 #if defined(__APPLE__) || defined(__FreeBSD__)
-	fatal("%s is not available on this system. (mount bind limitation)", plugin_name);
+	fatal("%s is not available on this system. (mount bind limitation)",
+	      plugin_name);
 #endif
 
 	debug("%s loaded", plugin_name);
@@ -203,7 +204,8 @@ extern int container_p_restore(char *dir_name, bool recover)
 		fstatus = mkdir(jc_conf->basepath, 0755);
 		if (fstatus && errno != EEXIST) {
 			if (jc_conf->basepath[0] != '/') {
-				debug("unable to create ns directory '%s' : does not start with '/'", jc_conf->basepath);
+				debug("unable to create ns directory '%s' : does not start with '/'",
+				      jc_conf->basepath);
 				umask(omask);
 				return SLURM_ERROR;
 			}
