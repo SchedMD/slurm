@@ -428,7 +428,7 @@ rwfail:
 
 /*
  * Validate the cpus and select the frequency to set
- * Called from task cpuset code with task launch request containing
+ * Called from task/affinity code with task launch request containing
  *  a pointer to a hex map string of the cpus to be used by this step
  */
 extern void
