@@ -527,11 +527,17 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 
 		rc = _slurm_connect(fd, (struct sockaddr const *)addr,
 				    sizeof(*addr));
-		if (rc >= 0)		    /* success */
+		/* always set errno as upstream callers expect it */
+		slurm_seterrno(rc);
+
+		if (!rc) {
+			/* success */
 			break;
-		if (((errno != ECONNREFUSED) && (errno != ETIMEDOUT)) ||
+		}
+
+		if (((rc != ECONNREFUSED) && (rc != ETIMEDOUT)) ||
 		    (!retry) || (retry_cnt >= PORT_RETRIES)) {
-			slurm_seterrno(errno);
+			slurm_seterrno(rc);
 			goto error;
 		}
 
@@ -556,7 +562,7 @@ extern int slurm_get_stream_addr(int fd, slurm_addr_t *addr )
 /* Open a connection on socket FD to peer at ADDR (which LEN bytes long).
  * For connectionless socket types, just set the default address to send to
  * and the only address from which to accept transmissions.
- * Return 0 on success, -1 for errors.  */
+ * Return SLURM_SUCCESS or error  */
 static int _slurm_connect (int __fd, struct sockaddr const * __addr,
 			   socklen_t __len)
 {
@@ -580,7 +586,7 @@ static int _slurm_connect (int __fd, struct sockaddr const * __addr,
 
 	rc = connect(__fd , __addr , __len);
 	if ((rc < 0) && (errno != EINPROGRESS))
-		return -1;
+		return errno;
 	if (rc == 0)
 		goto done;  /* connect completed immediately */
 
@@ -591,25 +597,25 @@ static int _slurm_connect (int __fd, struct sockaddr const * __addr,
 again:
 	rc = poll(&ufds, 1, slurm_conf.tcp_timeout * 1000);
 	if (rc == -1) {
+		int lerrno = errno;
+
 		/* poll failed */
-		if (errno == EINTR) {
+		if (lerrno == EINTR) {
 			/* NOTE: connect() is non-interruptible in Linux */
-			debug2("%s: poll() failed for %pA: %m",
-			       __func__, __addr);
+			debug2("%s: poll() failed for %pA: %s",
+			      __func__, __addr, slurm_strerror(lerrno));
 			goto again;
 		}
 
-		error("%s: poll() failed for %pA: %m",
-		      __func__, __addr);
-
-		return -1;
+		error("%s: poll() failed for %pA: %s",
+		      __func__, __addr, slurm_strerror(lerrno));
+		return lerrno;
 	} else if (rc == 0) {
 		/* poll timed out before any socket events */
 		debug2("%s: connect to %pA in %us: %s",
 		      __func__, __addr, slurm_conf.tcp_timeout,
 		      slurm_strerror(ETIMEDOUT));
-		slurm_seterrno(ETIMEDOUT);
-		return -1;
+		return ETIMEDOUT;
 	} else if (ufds.revents & POLLERR) {
 		int err;
 
@@ -625,7 +631,6 @@ again:
 		 * with terminated srun commands. */
 		error("%s: failed to connect to %pA: %s",
 		      __func__, __addr, slurm_strerror(err));
-		slurm_seterrno(err);
 		return err;
 	}
 
