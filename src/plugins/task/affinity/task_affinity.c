@@ -293,7 +293,8 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 			else
 				numa_set_membind(&new_mask);
 			cur_mask = new_mask;
-		}
+		} else
+			rc = SLURM_ERROR;
 		slurm_chk_memset(&cur_mask, job);
 	}
 #endif
