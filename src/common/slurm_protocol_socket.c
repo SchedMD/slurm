@@ -604,8 +604,10 @@ again:
 		return -1;
 	} else if (rc == 0) {
 		/* poll timed out before any socket events */
+		debug2("%s: connect to %pA in %us: %s",
+		      __func__, __addr, slurm_conf.tcp_timeout,
+		      slurm_strerror(ETIMEDOUT));
 		slurm_seterrno(ETIMEDOUT);
-		debug2("slurm_connect poll timeout: %m");
 		return -1;
 	} else if (ufds.revents & POLLERR) {
 		int err;
