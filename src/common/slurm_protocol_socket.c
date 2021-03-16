@@ -569,8 +569,7 @@ static int _slurm_connect (int __fd, struct sockaddr const * __addr,
 	 * Timeouts in excess of 3 minutes have been observed, resulting
 	 * in serious problems for slurmctld. Making the connect call
 	 * non-blocking and polling seems to fix the problem. */
-	int rc, flags, flags_save, err;
-	socklen_t len;
+	int rc, flags, flags_save;
 	struct pollfd ufds;
 
 	flags = fcntl(__fd, F_GETFL);
@@ -582,7 +581,6 @@ static int _slurm_connect (int __fd, struct sockaddr const * __addr,
 	if (fcntl(__fd, F_SETFL, flags | O_NONBLOCK) < 0)
 		error("%s: fcntl(F_SETFL) error: %m", __func__);
 
-	err = 0;
 	rc = connect(__fd , __addr , __len);
 	if ((rc < 0) && (errno != EINPROGRESS))
 		return -1;
@@ -610,30 +608,28 @@ again:
 		debug2("slurm_connect poll timeout: %m");
 		return -1;
 	} else {
+		int err;
+
 		/* poll saw some event on the socket
 		 * We need to check if the connection succeeded by
 		 * using getsockopt.  The revent is not necessarily
 		 * POLLERR when the connection fails! */
-		len = sizeof(err);
-		if (getsockopt(__fd, SOL_SOCKET, SO_ERROR,
-			       &err, &len) < 0)
-			return -1; /* solaris pending error */
+		if ((rc = fd_get_socket_error(__fd, &err)))
+			return rc;
+
+		/* NOTE: Connection refused is typically reported for
+		 * non-responsived nodes plus attempts to communicate
+		 * with terminated srun commands. */
+		slurm_seterrno(err);
+		debug2("slurm_connect failed: %m");
+		slurm_seterrno(err);
+		return err;
 	}
 
 done:
 	if (flags_save != -1) {
 		if (fcntl(__fd, F_SETFL, flags_save) < 0)
 			error("%s: fcntl(F_SETFL) error: %m", __func__);
-	}
-
-	/* NOTE: Connection refused is typically reported for
-	 * non-responsived nodes plus attempts to communicate
-	 * with terminated srun commands. */
-	if (err) {
-		slurm_seterrno(err);
-		debug2("slurm_connect failed: %m");
-		slurm_seterrno(err);
-		return -1;
 	}
 
 	return 0;
