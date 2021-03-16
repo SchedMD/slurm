@@ -620,8 +620,8 @@ again:
 		/* NOTE: Connection refused is typically reported for
 		 * non-responsived nodes plus attempts to communicate
 		 * with terminated srun commands. */
-		slurm_seterrno(err);
-		debug2("slurm_connect failed: %m");
+		error("%s: failed to connect to %pA: %s",
+		      __func__, __addr, slurm_strerror(err));
 		slurm_seterrno(err);
 		return err;
 	}
