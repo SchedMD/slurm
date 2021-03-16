@@ -9056,6 +9056,7 @@ extern void pack_config_response_msg(config_response_msg_t *msg,
 		packstr(msg->cgroup_allowed_devices_file_config, buffer);
 		packstr(msg->ext_sensors_config, buffer);
 		packstr(msg->gres_config, buffer);
+		packstr(msg->job_container_config, buffer);
 		packstr(msg->knl_cray_config, buffer);
 		packstr(msg->knl_generic_config, buffer);
 		packstr(msg->plugstack_config, buffer);
@@ -9073,7 +9074,7 @@ extern void pack_config_response_msg(config_response_msg_t *msg,
 		packstr(msg->knl_generic_config, buffer);
 		packstr(msg->plugstack_config, buffer);
 		packstr(msg->topology_config, buffer);
-		packstr(msg->xtra_config, buffer);
+		packstr(msg->job_container_config, buffer);
 		packstr(msg->slurmd_spooldir, buffer);
 	}
 }
@@ -9097,6 +9098,8 @@ extern int unpack_config_response_msg(config_response_msg_t **msg_ptr,
 		safe_unpackstr_xmalloc(&msg->ext_sensors_config, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&msg->gres_config, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->job_container_config, &uint32_tmp,
+				       buffer);
 		safe_unpackstr_xmalloc(&msg->knl_cray_config, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&msg->knl_generic_config, &uint32_tmp,
@@ -9128,7 +9131,7 @@ extern int unpack_config_response_msg(config_response_msg_t **msg_ptr,
 				       buffer);
 		safe_unpackstr_xmalloc(&msg->topology_config, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&msg->xtra_config, &uint32_tmp,
+		safe_unpackstr_xmalloc(&msg->job_container_config, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&msg->slurmd_spooldir, &uint32_tmp,
 				       buffer);

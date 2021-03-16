@@ -1137,6 +1137,7 @@ typedef struct {
 	char *cgroup_allowed_devices_file_config;
 	char *ext_sensors_config;
 	char *gres_config;
+	char *job_container_config;
 	char *knl_cray_config;
 	char *knl_generic_config;
 	char *plugstack_config;
