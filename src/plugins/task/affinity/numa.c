@@ -201,8 +201,10 @@ int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
 		return true;
 	}
 
-	if (!job->mem_bind)
+	if (!job->mem_bind) {
+		error("--mem-bind value is empty for local task %d", local_id);
 		return false;
+	}
 
 	nummasks = 1;
 	selstr = NULL;
@@ -230,6 +232,8 @@ int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
 			curstr++;
 		}
 		if (!*curstr) {
+			error("--mem-bind value '%s' is malformed for local task %d",
+			      job->mem_bind, local_id);
 			return false;
 		}
 		selstr = curstr;
@@ -266,6 +270,7 @@ int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
 		return true;
 	}
 
+	error("Unhandled --mem-bind option for local task %d", local_id);
 	return false;
 }
 
