@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  read_nsconf.h - parse namespace.conf configuration file.
+ *  read_nsconf.h - parse job_container.conf configuration file.
  *****************************************************************************
  *  Copyright (C) 2019-2021 Regents of the University of California
  *  Produced at Lawrence Berkeley National Laboratory

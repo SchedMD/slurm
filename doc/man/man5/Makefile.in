@@ -457,12 +457,12 @@ man5_MANS = \
 	cgroup.conf.5 \
 	ext_sensors.conf.5 \
 	gres.conf.5 \
+	job_container.conf.5 \
 	knl.conf.5 \
 	nonstop.conf.5 \
 	slurm.conf.5 \
 	slurmdbd.conf.5 \
-	topology.conf.5 \
-	namespace.conf.5
+	topology.conf.5
 
 @HAVE_MAN2HTML_TRUE@html_DATA = \
 @HAVE_MAN2HTML_TRUE@	acct_gather.conf.html \
@@ -470,12 +470,12 @@ man5_MANS = \
 @HAVE_MAN2HTML_TRUE@	cgroup.conf.html \
 @HAVE_MAN2HTML_TRUE@	ext_sensors.conf.html \
 @HAVE_MAN2HTML_TRUE@	gres.conf.html \
+@HAVE_MAN2HTML_TRUE@	job_container.conf.html \
 @HAVE_MAN2HTML_TRUE@	knl.conf.html \
 @HAVE_MAN2HTML_TRUE@	nonstop.conf.html \
 @HAVE_MAN2HTML_TRUE@	slurm.conf.html \
 @HAVE_MAN2HTML_TRUE@	slurmdbd.conf.html \
-@HAVE_MAN2HTML_TRUE@	topology.conf.html \
-@HAVE_MAN2HTML_TRUE@	namespace.conf.html
+@HAVE_MAN2HTML_TRUE@	topology.conf.html
 
 @HAVE_MAN2HTML_TRUE@MOSTLYCLEANFILES = ${html_DATA}
 @HAVE_MAN2HTML_TRUE@SUFFIXES = .html

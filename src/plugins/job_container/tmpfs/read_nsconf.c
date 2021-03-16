@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  read_nsconf.c - parse namespace.conf configuration file.
+ *  read_nsconf.c - parse job_container.conf configuration file.
  *****************************************************************************
  *  Copyright (C) 2019-2021 Regents of the University of California
  *  Produced at Lawrence Berkeley National Laboratory
@@ -48,7 +48,7 @@
 
 #include "read_nsconf.h"
 
-char *tmpfs_conf_file = "namespace.conf";
+char *tmpfs_conf_file = "job_container.conf";
 
 static slurm_ns_conf_t slurm_ns_conf;
 static bool slurm_ns_conf_inited = false;

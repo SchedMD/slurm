@@ -2281,10 +2281,10 @@ variable for slurmd, i.e. setting this variable in systemd unit file for slurmd.
 Tmpfs job container plugin can be used by including
 <i>JobContainerType=job_container/tmpfs</i>
 in your slurm.conf file. It additionally requires a
-<a href="namespace.conf.html">namespace.conf</a> file to be
+<a href="job_container.conf.html">job_container.conf</a> file to be
 set up which is further described in the man page.
 Tmpfs plugin creates a private mount namespace inside of which it mounts a
-private /tmp to a location that is configured in namespace.conf. The basepath
+private /tmp to a location that is configured in job_container.conf. The basepath
 is used to construct the mount path, by creating a job specific directory inside it
 and mounting /tmp to it. Since all the mounts are created inside of a mount
 namespace which is private, they are only visible inside the job. Hence this

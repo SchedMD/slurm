@@ -6,12 +6,12 @@ man5_MANS = \
 	cgroup.conf.5 \
 	ext_sensors.conf.5 \
 	gres.conf.5 \
+	job_container.conf.5 \
 	knl.conf.5 \
 	nonstop.conf.5 \
 	slurm.conf.5 \
 	slurmdbd.conf.5 \
-	topology.conf.5 \
-	namespace.conf.5
+	topology.conf.5
 
 if HAVE_MAN2HTML
 
@@ -21,12 +21,12 @@ html_DATA = \
 	cgroup.conf.html \
 	ext_sensors.conf.html \
 	gres.conf.html \
+	job_container.conf.html \
 	knl.conf.html \
 	nonstop.conf.html \
 	slurm.conf.html \
 	slurmdbd.conf.html \
-	topology.conf.html \
-	namespace.conf.html
+	topology.conf.html
 
 MOSTLYCLEANFILES = ${html_DATA}
 

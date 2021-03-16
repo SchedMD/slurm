@@ -350,11 +350,11 @@ extern int write_configs_to_conf_cache(config_response_msg_t *msg,
 		return SLURM_ERROR;
 	if (_write_conf(dir, "gres.conf", msg->gres_config))
 		return SLURM_ERROR;
+	if (_write_conf(dir, "job_container.conf", msg->xtra_config))
+		return SLURM_ERROR;
 	if (_write_conf(dir, "knl_cray.conf", msg->knl_cray_config))
 		return SLURM_ERROR;
 	if (_write_conf(dir, "knl_generic.conf", msg->knl_generic_config))
-		return SLURM_ERROR;
-	if (_write_conf(dir, "namespace.conf", msg->xtra_config))
 		return SLURM_ERROR;
 	if (_write_conf(dir, "plugstack.conf", msg->plugstack_config))
 		return SLURM_ERROR;
@@ -401,9 +401,9 @@ extern void load_config_response_msg(config_response_msg_t *msg, int flags)
 		   &msg->cgroup_allowed_devices_file_config);
 	_load_conf(dir, "ext_sensors.conf", &msg->ext_sensors_config);
 	_load_conf(dir, "gres.conf", &msg->gres_config);
+	_load_conf(dir, "job_container.conf", &msg->xtra_config);
 	_load_conf(dir, "knl_cray.conf", &msg->knl_cray_config);
 	_load_conf(dir, "knl_generic.conf", &msg->knl_generic_config);
-	_load_conf(dir, "namespace.conf", &msg->xtra_config);
 	_load_conf(dir, "plugstack.conf", &msg->plugstack_config);
 	_load_conf(dir, "topology.conf", &msg->topology_config);
 
