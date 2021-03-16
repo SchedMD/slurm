@@ -1375,7 +1375,8 @@ fail1:
 	 */
 	_set_job_state(job, SLURMSTEPD_STEP_ENDING);
 	if (rc != 0) {
-		error("job_manager exiting abnormally, rc = %d", rc);
+		error("%s: exiting abnormally: %s",
+		      __func__, slurm_strerror(rc));
 		_send_launch_resp(job, rc);
 	}
 
