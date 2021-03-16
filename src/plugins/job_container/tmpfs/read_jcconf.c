@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  read_nsconf.c - parse job_container.conf configuration file.
+ *  read_jcconf.c - parse job_container.conf configuration file.
  *****************************************************************************
  *  Copyright (C) 2019-2021 Regents of the University of California
  *  Produced at Lawrence Berkeley National Laboratory
@@ -46,12 +46,12 @@
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 
-#include "read_nsconf.h"
+#include "read_jcconf.h"
 
 char *tmpfs_conf_file = "job_container.conf";
 
-static slurm_ns_conf_t slurm_ns_conf;
-static bool slurm_ns_conf_inited = false;
+static slurm_jc_conf_t slurm_jc_conf;
+static bool slurm_jc_conf_inited = false;
 static bool auto_basepath_set = false;
 
 static s_p_hashtbl_t *_create_ns_hashtbl(void)
@@ -66,7 +66,7 @@ static s_p_hashtbl_t *_create_ns_hashtbl(void)
 	return s_p_hashtbl_create(ns_options);
 }
 
-static int _parse_ns_conf_internal(void **dest, slurm_parser_enum_t type,
+static int _parse_jc_conf_internal(void **dest, slurm_parser_enum_t type,
 				   const char *key, const char *value,
 				   const char *line, char **leftover)
 {
@@ -75,8 +75,8 @@ static int _parse_ns_conf_internal(void **dest, slurm_parser_enum_t type,
 	s_p_parse_line(tbl, *leftover, leftover);
 
 	if (value)
-		slurm_ns_conf.basepath = xstrdup(value);
-	else if (!s_p_get_string(&slurm_ns_conf.basepath, "BasePath", tbl)) {
+		slurm_jc_conf.basepath = xstrdup(value);
+	else if (!s_p_get_string(&slurm_jc_conf.basepath, "BasePath", tbl)) {
 		fatal("empty basepath detected, please verify %s is correct",
 		      tmpfs_conf_file);
 		rc = 0;
@@ -84,13 +84,13 @@ static int _parse_ns_conf_internal(void **dest, slurm_parser_enum_t type,
 	}
 
 #ifdef MULTIPLE_SLURMD
-	xstrfmtcat(slurm_ns_conf.basepath, "/%s", conf->node_name);
+	xstrfmtcat(slurm_jc_conf.basepath, "/%s", conf->node_name);
 #endif
 
-	if (s_p_get_boolean(&slurm_ns_conf.auto_basepath, "AutoBasePath", tbl))
+	if (s_p_get_boolean(&slurm_jc_conf.auto_basepath, "AutoBasePath", tbl))
 		auto_basepath_set = true;
 
-	if (!s_p_get_string(&slurm_ns_conf.initscript, "InitScript", tbl))
+	if (!s_p_get_string(&slurm_jc_conf.initscript, "InitScript", tbl))
 		debug3("empty init script detected");
 
 end_it:
@@ -101,7 +101,7 @@ end_it:
 	return rc;
 }
 
-static int _parse_ns_conf(void **dest, slurm_parser_enum_t type,
+static int _parse_jc_conf(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
 			  const char *line, char **leftover)
 {
@@ -121,10 +121,10 @@ static int _parse_ns_conf(void **dest, slurm_parser_enum_t type,
 		}
 	}
 
-	return _parse_ns_conf_internal(dest, type, key, NULL, line, leftover);
+	return _parse_jc_conf_internal(dest, type, key, NULL, line, leftover);
 }
 
-static int _read_slurm_ns_conf(void)
+static int _read_slurm_jc_conf(void)
 {
 	char *conf_path = NULL;
 	s_p_hashtbl_t *tbl = NULL;
@@ -133,8 +133,8 @@ static int _read_slurm_ns_conf(void)
 
 	static s_p_options_t options[] = {
 		{"AutoBasePath", S_P_BOOLEAN},
-		{"BasePath", S_P_ARRAY, _parse_ns_conf_internal, NULL},
-		{"NodeName", S_P_ARRAY, _parse_ns_conf, NULL},
+		{"BasePath", S_P_ARRAY, _parse_jc_conf_internal, NULL},
+		{"NodeName", S_P_ARRAY, _parse_jc_conf, NULL},
 		{NULL}
 	};
 
@@ -158,10 +158,10 @@ static int _read_slurm_ns_conf(void)
 
 	/* If AutoBasePath wasn't set on the line see if it was on the global */
 	if (!auto_basepath_set)
-		s_p_get_boolean(&slurm_ns_conf.auto_basepath,
+		s_p_get_boolean(&slurm_jc_conf.auto_basepath,
 				"AutoBasePath", tbl);
 
-	if (!slurm_ns_conf.basepath) {
+	if (!slurm_jc_conf.basepath) {
 		error("Configuration for this node not found in %s",
 		      tmpfs_conf_file);
 		rc = SLURM_ERROR;
@@ -175,25 +175,25 @@ end_it:
 	return rc;
 }
 
-extern slurm_ns_conf_t *get_slurm_ns_conf(void)
+extern slurm_jc_conf_t *get_slurm_jc_conf(void)
 {
 	int rc;
-	if (!slurm_ns_conf_inited) {
-		memset(&slurm_ns_conf, 0, sizeof(slurm_ns_conf_t));
-		rc = _read_slurm_ns_conf();
+	if (!slurm_jc_conf_inited) {
+		memset(&slurm_jc_conf, 0, sizeof(slurm_jc_conf_t));
+		rc = _read_slurm_jc_conf();
 		if (rc == SLURM_ERROR)
 			return NULL;
-		slurm_ns_conf_inited = true;
+		slurm_jc_conf_inited = true;
 	}
 
-	return &slurm_ns_conf;
+	return &slurm_jc_conf;
 }
 
-extern void free_ns_conf(void)
+extern void free_jc_conf(void)
 {
-	if (slurm_ns_conf_inited) {
-		xfree(slurm_ns_conf.basepath);
-		xfree(slurm_ns_conf.initscript);
+	if (slurm_jc_conf_inited) {
+		xfree(slurm_jc_conf.basepath);
+		xfree(slurm_jc_conf.initscript);
 	}
 	return;
 }

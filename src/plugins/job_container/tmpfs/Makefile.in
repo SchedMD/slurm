@@ -178,7 +178,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 job_container_tmpfs_la_LIBADD =
 am_job_container_tmpfs_la_OBJECTS = job_container_tmpfs.lo \
-	read_nsconf.lo
+	read_jcconf.lo
 job_container_tmpfs_la_OBJECTS = $(am_job_container_tmpfs_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -204,7 +204,7 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/job_container_tmpfs.Plo \
-	./$(DEPDIR)/read_nsconf.Plo
+	./$(DEPDIR)/read_jcconf.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -510,8 +510,8 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = job_container_tmpfs.la
 
 # job_container/none plugin.
-job_container_tmpfs_la_SOURCES = job_container_tmpfs.c read_nsconf.c \
-				 read_nsconf.h
+job_container_tmpfs_la_SOURCES = job_container_tmpfs.c read_jcconf.c \
+				 read_jcconf.h
 
 job_container_tmpfs_la_LDFLAGS = $(PLUGIN_FLAGS)
 all: all-am
@@ -593,7 +593,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_container_tmpfs.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_nsconf.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_jcconf.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -723,7 +723,7 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/job_container_tmpfs.Plo
-	-rm -f ./$(DEPDIR)/read_nsconf.Plo
+	-rm -f ./$(DEPDIR)/read_jcconf.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -770,7 +770,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/job_container_tmpfs.Plo
-	-rm -f ./$(DEPDIR)/read_nsconf.Plo
+	-rm -f ./$(DEPDIR)/read_jcconf.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
