@@ -594,10 +594,14 @@ again:
 		/* poll failed */
 		if (errno == EINTR) {
 			/* NOTE: connect() is non-interruptible in Linux */
-			debug2("slurm_connect poll failed: %m");
+			debug2("%s: poll() failed for %pA: %m",
+			       __func__, __addr);
 			goto again;
-		} else
-			error("slurm_connect poll failed: %m");
+		}
+
+		error("%s: poll() failed for %pA: %m",
+		      __func__, __addr);
+
 		return -1;
 	} else if (rc == 0) {
 		/* poll timed out before any socket events */
