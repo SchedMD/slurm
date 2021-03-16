@@ -48,6 +48,8 @@
 
 #include "read_nsconf.h"
 
+char *tmpfs_conf_file = "namespace.conf";
+
 static slurm_ns_conf_t slurm_ns_conf;
 static bool slurm_ns_conf_inited = false;
 static bool auto_basepath_set = false;
@@ -75,7 +77,8 @@ static int _parse_ns_conf_internal(void **dest, slurm_parser_enum_t type,
 	if (value)
 		slurm_ns_conf.basepath = xstrdup(value);
 	else if (!s_p_get_string(&slurm_ns_conf.basepath, "BasePath", tbl)) {
-		fatal("empty basepath detected, please verify namespace.conf is correct");
+		fatal("empty basepath detected, please verify %s is correct",
+		      tmpfs_conf_file);
 		rc = 0;
 		goto end_it;
 	}
@@ -137,19 +140,19 @@ static int _read_slurm_ns_conf(void)
 
 	xassert(conf->node_name);
 
-	conf_path = get_extra_conf_path("namespace.conf");
+	conf_path = get_extra_conf_path(tmpfs_conf_file);
 
 	if ((!conf_path) || (stat(conf_path, &buf) == -1)) {
-		error("No namespace.conf file");
+		error("No %s file", tmpfs_conf_file);
 		rc = ENOENT;
 		goto end_it;
 	}
 
-	debug("Reading namespace.conf file %s", conf_path);
+	debug("Reading %s file %s", tmpfs_conf_file, conf_path);
 	tbl = s_p_hashtbl_create(options);
 	if (s_p_parse_file(tbl, NULL, conf_path, false) == SLURM_ERROR) {
-		fatal("Could not open/read/parse namespace.conf file %s",
-		      conf_path);
+		fatal("Could not open/read/parse %s file %s",
+		      tmpfs_conf_file, conf_path);
 		goto end_it;
 	}
 
@@ -159,7 +162,8 @@ static int _read_slurm_ns_conf(void)
 				"AutoBasePath", tbl);
 
 	if (!slurm_ns_conf.basepath) {
-		error("Configuration for this node not found in namespace.conf");
+		error("Configuration for this node not found in %s",
+		      tmpfs_conf_file);
 		rc = SLURM_ERROR;
 	}
 

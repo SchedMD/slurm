@@ -80,8 +80,8 @@ static int _create_paths(uint32_t job_id,
 	ns_conf = get_slurm_ns_conf();
 
 	if (!ns_conf) {
-		error("%s: Configuration not read correctly: did namespace.conf not exist?",
-			__func__);
+		error("%s: Configuration not read correctly: did %s not exist?",
+		      __func__, tmpfs_conf_file);
 		return SLURM_ERROR;
 	}
 

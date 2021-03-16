@@ -50,6 +50,8 @@ typedef struct slurm_ns_conf {
 	char *initscript;
 } slurm_ns_conf_t;
 
+extern char *tmpfs_conf_file;
+
 extern slurm_ns_conf_t *get_slurm_ns_conf(void);
 
 extern void free_ns_conf(void);
