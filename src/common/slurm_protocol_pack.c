@@ -9049,7 +9049,20 @@ extern void pack_config_response_msg(config_response_msg_t *msg,
 {
 	xassert(msg);
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		packstr(msg->config, buffer);
+		packstr(msg->acct_gather_config, buffer);
+		packstr(msg->cgroup_config, buffer);
+		packstr(msg->cgroup_allowed_devices_file_config, buffer);
+		packstr(msg->ext_sensors_config, buffer);
+		packstr(msg->gres_config, buffer);
+		packstr(msg->knl_cray_config, buffer);
+		packstr(msg->knl_generic_config, buffer);
+		packstr(msg->plugstack_config, buffer);
+		packstr(msg->topology_config, buffer);
+		packstr(msg->xtra_config, buffer);
+		packstr(msg->slurmd_spooldir, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->config, buffer);
 		packstr(msg->acct_gather_config, buffer);
 		packstr(msg->cgroup_config, buffer);
@@ -9073,7 +9086,30 @@ extern int unpack_config_response_msg(config_response_msg_t **msg_ptr,
 	xassert(msg_ptr);
 	*msg_ptr = msg;
 
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&msg->config, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->acct_gather_config, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg->cgroup_config, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg->cgroup_allowed_devices_file_config,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->ext_sensors_config, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg->gres_config, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&msg->knl_cray_config, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg->knl_generic_config, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg->plugstack_config, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg->topology_config, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg->xtra_config, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&msg->slurmd_spooldir, &uint32_tmp,
+				       buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&msg->config, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->acct_gather_config, &uint32_tmp,
 				       buffer);
