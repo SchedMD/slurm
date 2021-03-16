@@ -634,7 +634,7 @@ done:
 			error("%s: fcntl(F_SETFL) error: %m", __func__);
 	}
 
-	return 0;
+	return SLURM_SUCCESS;
 #endif
 }
 
