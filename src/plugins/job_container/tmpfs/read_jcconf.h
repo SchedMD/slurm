@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  read_nsconf.h - parse namespace.conf configuration file.
+ *  read_jcconf.h - parse job_container.conf configuration file.
  *****************************************************************************
  *  Copyright (C) 2019-2021 Regents of the University of California
  *  Produced at Lawrence Berkeley National Laboratory
@@ -35,8 +35,8 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#ifndef _READ_NSCONF_H
-#define _READ_NSCONF_H
+#ifndef _READ_JCCONF_H
+#define _READ_JCCONF_H
 
 #include "src/slurmd/slurmd/slurmd.h"
 
@@ -44,14 +44,16 @@
  * Slurm namespace job container plugin initialization
  * parameters
  */
-typedef struct slurm_ns_conf {
+typedef struct slurm_jc_conf {
 	bool auto_basepath;
 	char *basepath;
 	char *initscript;
-} slurm_ns_conf_t;
+} slurm_jc_conf_t;
 
-extern slurm_ns_conf_t *get_slurm_ns_conf(void);
+extern char *tmpfs_conf_file;
 
-extern void free_ns_conf(void);
+extern slurm_jc_conf_t *get_slurm_jc_conf(void);
+
+extern void free_jc_conf(void);
 
 #endif

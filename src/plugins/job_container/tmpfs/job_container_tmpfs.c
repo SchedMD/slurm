@@ -56,7 +56,7 @@
 #include "src/common/log.h"
 #include "src/common/run_command.h"
 
-#include "read_nsconf.h"
+#include "read_jcconf.h"
 
 #if defined (__APPLE__)
 extern slurmd_conf_t *conf __attribute__((weak_import));
@@ -68,7 +68,7 @@ const char plugin_name[]        = "job_container tmpfs plugin";
 const char plugin_type[]        = "job_container/tmpfs";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
-static slurm_ns_conf_t *ns_conf = NULL;
+static slurm_jc_conf_t *jc_conf = NULL;
 static int step_ns_fd = -1;
 
 static int _create_paths(uint32_t job_id,
@@ -77,17 +77,17 @@ static int _create_paths(uint32_t job_id,
 			 char *src_bind,
 			 char *active)
 {
-	ns_conf = get_slurm_ns_conf();
+	jc_conf = get_slurm_jc_conf();
 
-	if (!ns_conf) {
-		error("%s: Configuration not read correctly: did namespace.conf not exist?",
-			__func__);
+	if (!jc_conf) {
+		error("%s: Configuration not read correctly: did %s not exist?",
+		      __func__, tmpfs_conf_file);
 		return SLURM_ERROR;
 	}
 
 	xassert(job_mount);
 
-	if (snprintf(job_mount, PATH_MAX, "%s/%u", ns_conf->basepath, job_id)
+	if (snprintf(job_mount, PATH_MAX, "%s/%u", jc_conf->basepath, job_id)
 	    >= PATH_MAX) {
 		error("%s: Unable to build job %u mount path: %m",
 			__func__, job_id);
@@ -136,7 +136,8 @@ extern void container_p_reconfig(void)
 extern int init(void)
 {
 #if defined(__APPLE__) || defined(__FreeBSD__)
-	fatal("%s is not available on this system. (mount bind limitation)", plugin_name);
+	fatal("%s is not available on this system. (mount bind limitation)",
+	      plugin_name);
 #endif
 
 	debug("%s loaded", plugin_name);
@@ -158,18 +159,18 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 #endif
 
-	ns_conf = get_slurm_ns_conf();
-	if (!ns_conf) {
+	jc_conf = get_slurm_jc_conf();
+	if (!jc_conf) {
 		error("%s: Configuration not loaded", __func__);
 		return SLURM_ERROR;
 	}
-	rc = umount2(ns_conf->basepath, MNT_DETACH);
+	rc = umount2(jc_conf->basepath, MNT_DETACH);
 	if (rc) {
 		error("%s: umount2: %s failed: %s",
-		      __func__, ns_conf->basepath, strerror(errno));
+		      __func__, jc_conf->basepath, strerror(errno));
 		return SLURM_ERROR;
 	}
-	free_ns_conf();
+	free_jc_conf();
 
 	if (step_ns_fd != -1) {
 		close(step_ns_fd);
@@ -185,29 +186,30 @@ extern int container_p_restore(char *dir_name, bool recover)
 	return SLURM_SUCCESS;
 #endif
 
-	ns_conf = get_slurm_ns_conf();
-	if (!ns_conf) {
+	jc_conf = get_slurm_jc_conf();
+	if (!jc_conf) {
 		error("%s: Configuration not loaded", __func__);
 		return SLURM_ERROR;
 	}
 
 	debug("namepsace.conf read successfully");
 
-	if (ns_conf->auto_basepath) {
+	if (jc_conf->auto_basepath) {
 		int fstatus;
 		char *mnt_point, *p;
 		mode_t omask;
 
 		omask = umask(S_IWGRP | S_IWOTH);
 
-		fstatus = mkdir(ns_conf->basepath, 0755);
+		fstatus = mkdir(jc_conf->basepath, 0755);
 		if (fstatus && errno != EEXIST) {
-			if (ns_conf->basepath[0] != '/') {
-				debug("unable to create ns directory '%s' : does not start with '/'", ns_conf->basepath);
+			if (jc_conf->basepath[0] != '/') {
+				debug("unable to create ns directory '%s' : does not start with '/'",
+				      jc_conf->basepath);
 				umask(omask);
 				return SLURM_ERROR;
 			}
-			mnt_point = xstrdup(ns_conf->basepath);
+			mnt_point = xstrdup(jc_conf->basepath);
 			p = mnt_point;
 			while ((p = xstrchr(p+1, '/')) != NULL) {
 				*p = '\0';
@@ -222,12 +224,12 @@ extern int container_p_restore(char *dir_name, bool recover)
 				*p='/';
 			}
 			xfree(mnt_point);
-			fstatus = mkdir(ns_conf->basepath, 0755);
+			fstatus = mkdir(jc_conf->basepath, 0755);
 		}
 
 		if (fstatus && errno != EEXIST) {
 			debug("unable to create ns directory '%s' : %m",
-			      ns_conf->basepath);
+			      jc_conf->basepath);
 			umask(omask);
 			return SLURM_ERROR;
 		}
@@ -243,12 +245,12 @@ extern int container_p_restore(char *dir_name, bool recover)
 	 * done by calling mount() a second time with MS_PRIVATE and MS_REC
 	 * flags.
 	 */
-	if (mount(ns_conf->basepath, ns_conf->basepath, "xfs", MS_BIND, NULL)) {
+	if (mount(jc_conf->basepath, jc_conf->basepath, "xfs", MS_BIND, NULL)) {
 		error("%s: Initial base mount failed, %s",
 		      __func__, strerror(errno));
 		return SLURM_ERROR;
 	}
-	if (mount(ns_conf->basepath, ns_conf->basepath, "xfs",
+	if (mount(jc_conf->basepath, jc_conf->basepath, "xfs",
 		  MS_PRIVATE | MS_REC, NULL)) {
 		error("%s: Initial base mount failed, %s",
 		      __func__, strerror(errno));
@@ -377,12 +379,12 @@ extern int container_p_create(uint32_t job_id)
 	close(fd);
 
 	/* run any initialization script- if any*/
-	if (ns_conf->initscript) {
-		result = run_command("initscript", ns_conf->initscript, NULL,
+	if (jc_conf->initscript) {
+		result = run_command("initscript", jc_conf->initscript, NULL,
 				     10000, 0, &rc);
 		if (rc) {
 			error("%s: init script: %s failed",
-			      __func__, ns_conf->initscript);
+			      __func__, jc_conf->initscript);
 			goto exit2;
 		} else {
 			debug3("initscript stdout: %s", result);
@@ -466,7 +468,7 @@ extern int container_p_create(uint32_t job_id)
 		 * mounts inside the job, they will only see their job mount
 		 * but not the basepath mount.
 		 */
-		rc = umount2(ns_conf->basepath, MNT_DETACH);
+		rc = umount2(jc_conf->basepath, MNT_DETACH);
 		if (rc) {
 			error("%s: umount2 failed: %s",
 			      __func__, strerror(errno));

@@ -9,6 +9,6 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = job_container_tmpfs.la
 
 # job_container/none plugin.
-job_container_tmpfs_la_SOURCES = job_container_tmpfs.c read_nsconf.c \
-				 read_nsconf.h
+job_container_tmpfs_la_SOURCES = job_container_tmpfs.c read_jcconf.c \
+				 read_jcconf.h
 job_container_tmpfs_la_LDFLAGS = $(PLUGIN_FLAGS)

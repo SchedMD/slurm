@@ -36,12 +36,12 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="cgroup.conf.html">cgroup.conf</a></td><td>Slurm configuration file for the cgroup support</td></tr>
 <tr><td><a href="ext_sensors.conf.html">ext_sensors.conf</a></td><td>Slurm configuration file for the external sensor support</td></tr>
 <tr><td><a href="gres.conf.html">gres.conf</a></td><td>Slurm configuration file for generic resource management.</td></tr>
+<tr><td><a href="job_container.conf.html">job_container.conf</a></td><td>Slurm configuration file for configuring the tmpfs job container plugin</td></tr>
 <tr><td><a href="knl.conf.html">knl.conf</a></td><td>Slurm configuration file for Intel Knights Landing management.</td></tr>
 <tr><td><a href="nonstop.conf.html">nonstop.conf</a></td><td>Slurm configuration file for failure management.</td></tr>
 <tr><td><a href="slurm.conf.html">slurm.conf</a></td><td>Slurm configuration file</td></tr>
 <tr><td><a href="slurmdbd.conf.html">slurmdbd.conf</a></td><td>Slurm Database Daemon (SlurmDBD) configuration file</td></tr>
 <tr><td><a href="topology.conf.html">topology.conf</a></td><td>Slurm configuration file for defining the network topology</td></tr>
-<tr><td><a href="namespace.conf.html">namespace.conf</a></td><td>Slurm configuration file for configuring tmpfs job container plugin</td></tr>
 </table>
 
 <h2>Daemons and Other</h2>

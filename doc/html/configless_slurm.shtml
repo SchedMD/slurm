@@ -106,9 +106,9 @@ is as follows:
 <li>cgroup_allowed_devices_file.conf</li>
 <li>ext_sensors.conf</li>
 <li>gres.conf</li>
+<li>job_container.conf</li>
 <li>knl_cray.conf</li>
 <li>knl_generic.conf</li>
-<li>namespace.conf</li>
 <li>plugstack.conf</li>
 <li>topology.conf</li>
 </ul>
