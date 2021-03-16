@@ -607,7 +607,7 @@ again:
 		slurm_seterrno(ETIMEDOUT);
 		debug2("slurm_connect poll timeout: %m");
 		return -1;
-	} else {
+	} else if (ufds.revents & POLLERR) {
 		int err;
 
 		/* poll saw some event on the socket
