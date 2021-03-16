@@ -560,9 +560,6 @@ extern int slurm_get_stream_addr(int fd, slurm_addr_t *addr )
 static int _slurm_connect (int __fd, struct sockaddr const * __addr,
 			   socklen_t __len)
 {
-#if 0
-	return connect ( __fd , __addr , __len ) ;
-#else
 	/* From "man connect": Note that for IP sockets the timeout
 	 * may be very long when syncookies are enabled on the server.
 	 *
@@ -635,7 +632,6 @@ done:
 	}
 
 	return SLURM_SUCCESS;
-#endif
 }
 
 extern void slurm_set_addr(slurm_addr_t *addr, uint16_t port, char *host)
