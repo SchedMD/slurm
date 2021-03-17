@@ -53,6 +53,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 20.11.6
 ==========================
+ -- Fix sacct assert with the --qos option.
 
 * Changes in Slurm 20.11.5
 ==========================
@@ -111,6 +112,7 @@ documents those changes that are of interest to users and administrators.
  -- Avoid data conversion error on NULL strings in data_get_string_converted().
  -- Handle situation where slurmctld is too slow processing
     REQUEST_COMPLETE_BATCH_SCRIPT and it gets resent from the slurmstepd.
+ -- Fix sacct crashing with the --qos option
 
 * Changes in Slurm 20.11.4
 ==========================
