@@ -694,6 +694,8 @@ extern void init_srun(int argc, char **argv,
 	if (atexit(_call_spank_fini) < 0)
 		error("Failed to register atexit handler for plugins: %m");
 
+	opt.submit_line = slurm_option_get_argv_str(argc, argv);
+
 	het_job_argc = argc;
 	het_job_argv = argv;
 	for (het_job_inx = 0; !het_job_fini; het_job_inx++) {

@@ -464,6 +464,7 @@ static void _pack_job_start_msg(void *in, uint16_t rpc_version, buf_t *buffer)
 		pack32(msg->resv_id, buffer);
 		packstr(msg->script, buffer);
 		pack_time(msg->start_time, buffer);
+		packstr(msg->submit_line, buffer);
 		pack_time(msg->submit_time, buffer);
 		pack32(msg->timelimit, buffer);
 		packstr(msg->tres_alloc_str, buffer);
@@ -603,6 +604,8 @@ static int _unpack_job_start_msg(void **msg, uint16_t rpc_version,
 		safe_unpack32(&msg_ptr->resv_id, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->script, &uint32_tmp, buffer);
 		safe_unpack_time(&msg_ptr->start_time, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->submit_line,
+				       &uint32_tmp, buffer);
 		safe_unpack_time(&msg_ptr->submit_time, buffer);
 		safe_unpack32(&msg_ptr->timelimit, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->tres_alloc_str,

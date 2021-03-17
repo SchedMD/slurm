@@ -682,6 +682,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->std_err  = xstrdup(opt.efname);
 	desc->std_in   = xstrdup(opt.ifname);
 	desc->std_out  = xstrdup(opt.ofname);
+	desc->submit_line = xstrdup(opt.submit_line);
 	desc->work_dir = xstrdup(opt.chdir);
 	if (sbopt.requeue != NO_VAL)
 		desc->requeue = sbopt.requeue;

@@ -828,6 +828,7 @@ typedef struct {
 	slurmdb_stats_t stats;
 	List    steps; /* list of slurmdb_step_rec_t *'s */
 	time_t submit;
+	char *submit_line;
 	uint32_t suspended;
 	char	*system_comment;
 	uint32_t sys_cpu_sec;

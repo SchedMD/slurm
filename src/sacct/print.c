@@ -2081,6 +2081,21 @@ extern void print_fields(type_t type, void *object)
 					     tmp_int,
 					     (curr_inx == field_count));
 			break;
+		case PRINT_SUBMIT_LINE:
+			switch(type) {
+			case JOB:
+				tmp_char = job->submit_line;
+				break;
+			case JOBSTEP:
+			case JOBCOMP:
+			default:
+
+				break;
+			}
+			field->print_routine(field,
+					     tmp_char,
+					     (curr_inx == field_count));
+			break;
 		case PRINT_SUSPENDED:
 			switch(type) {
 			case JOB:

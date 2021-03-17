@@ -398,6 +398,7 @@ typedef struct {
 	uint32_t step_het_comp_cnt;     /* How many components are in this het
 					 * step that is part of a non-hetjob. */
 	char *step_het_grps;		/* what het groups are used by step */
+	char *submit_line;		/* submit line of the caller	*/
 	char *tres_bind;		/* derived from gpu_bind	*/
 	char *tres_freq;		/* derived from gpu_freq	*/
 	uint16_t x11;			/* --x11			*/
@@ -539,5 +540,10 @@ extern int validate_hint_option(slurm_opt_t *opt);
  * Validate options that are common to salloc, sbatch, and srun.
  */
 extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt);
+
+/*
+ * Return the argv options in a string.
+ */
+extern char *slurm_option_get_argv_str(const int argc, char **argv);
 
 #endif	/* _SLURM_OPT_H_ */

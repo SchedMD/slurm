@@ -808,6 +808,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->name = xstrdup(opt.job_name);
 	desc->reservation = xstrdup(opt.reservation);
 	desc->profile  = opt.profile;
+	desc->submit_line = xstrdup(opt.submit_line);
 	desc->wckey  = xstrdup(opt.wckey);
 
 	desc->x11 = opt.x11;

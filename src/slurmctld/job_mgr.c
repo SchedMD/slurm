@@ -670,6 +670,7 @@ static void _delete_job_details(job_record_t *job_entry)
 	xfree(job_entry->details->mc_ptr);
 	xfree(job_entry->details->mem_bind);
 	xfree(job_entry->details->std_out);
+	xfree(job_entry->details->submit_line);
 	FREE_NULL_BITMAP(job_entry->details->req_node_bitmap);
 	xfree(job_entry->details->req_nodes);
 	xfree(job_entry->details->script);
@@ -2493,6 +2494,7 @@ void _dump_job_details(struct job_details *detail_ptr, buf_t *buffer)
 	packstr(detail_ptr->std_err,       buffer);
 	packstr(detail_ptr->std_in,        buffer);
 	packstr(detail_ptr->std_out,       buffer);
+	packstr(detail_ptr->submit_line,   buffer);
 	packstr(detail_ptr->work_dir,  buffer);
 
 	pack_multi_core_data(detail_ptr->mc_ptr, buffer,
@@ -2513,6 +2515,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	char *orig_dependency = NULL, *mem_bind, *cluster_features = NULL;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char **argv = (char **) NULL, **env_sup = (char **) NULL;
+	char *submit_line = NULL;
 	uint32_t min_nodes, max_nodes;
 	uint32_t min_cpus = 1, max_cpus = NO_VAL;
 	uint32_t pn_min_cpus, pn_min_tmp_disk;
@@ -2583,6 +2586,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr_xmalloc(&err, &name_len, buffer);
 		safe_unpackstr_xmalloc(&in,  &name_len, buffer);
 		safe_unpackstr_xmalloc(&out, &name_len, buffer);
+		safe_unpackstr_xmalloc(&submit_line, &name_len, buffer);
 		safe_unpackstr_xmalloc(&work_dir, &name_len, buffer);
 
 		if (unpack_multi_core_data(&mc_ptr, buffer, protocol_version))
@@ -2751,6 +2755,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	xfree(job_ptr->details->std_in);
 	xfree(job_ptr->details->mem_bind);
 	xfree(job_ptr->details->std_out);
+	xfree(job_ptr->details->submit_line);
 	xfree(job_ptr->details->req_nodes);
 	xfree(job_ptr->details->work_dir);
 
@@ -2802,6 +2807,7 @@ static int _load_job_details(job_record_t *job_ptr, buf_t *buffer,
 	job_ptr->details->num_tasks = num_tasks;
 	job_ptr->details->open_mode = open_mode;
 	job_ptr->details->std_out = out;
+	job_ptr->details->submit_line = submit_line;
 	job_ptr->details->overcommit = overcommit;
 	job_ptr->details->plane_size = plane_size;
 	job_ptr->details->prolog_running = prolog_running;
@@ -4529,6 +4535,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	details_new->std_err = xstrdup(job_details->std_err);
 	details_new->std_in = xstrdup(job_details->std_in);
 	details_new->std_out = xstrdup(job_details->std_out);
+	details_new->submit_line = xstrdup(job_details->submit_line);
 	details_new->work_dir = xstrdup(job_details->work_dir);
 	details_new->x11_magic_cookie = xstrdup(job_details->x11_magic_cookie);
 
@@ -7404,6 +7411,7 @@ static int _test_job_desc_fields(job_desc_msg_t * job_desc)
 	    _test_strlen(job_desc->std_err, "std_err", MAXPATHLEN)	||
 	    _test_strlen(job_desc->std_in, "std_in", MAXPATHLEN)	||
 	    _test_strlen(job_desc->std_out, "std_out", MAXPATHLEN)	||
+	    _test_strlen(job_desc->submit_line, "submit_line", 1024*1024) ||
 	    _test_strlen(job_desc->tres_bind, "tres_bind", 1024)	||
 	    _test_strlen(job_desc->tres_freq, "tres_freq", 1024)	||
 	    _test_strlen(job_desc->tres_per_job, "tres_per_job", 1024)	||
@@ -8212,6 +8220,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	detail_ptr->std_err = xstrdup(job_desc->std_err);
 	detail_ptr->std_in = xstrdup(job_desc->std_in);
 	detail_ptr->std_out = xstrdup(job_desc->std_out);
+	detail_ptr->submit_line = xstrdup(job_desc->submit_line);
 	detail_ptr->work_dir = xstrdup(job_desc->work_dir);
 	if (job_desc->begin_time > time(NULL))
 		detail_ptr->begin_time = job_desc->begin_time;
@@ -17342,6 +17351,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->std_err           = xstrdup(details->std_err);
 	job_desc->std_in            = xstrdup(details->std_in);
 	job_desc->std_out           = xstrdup(details->std_out);
+	job_desc->submit_line       = xstrdup(details->submit_line);
 	job_desc->task_dist         = details->task_dist;
 	job_desc->time_limit        = job_ptr->time_limit;
 	job_desc->time_min          = job_ptr->time_min;

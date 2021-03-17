@@ -932,6 +932,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->script);
 		slurmdb_free_slurmdb_stats_members(&job->stats);
 		FREE_NULL_LIST(job->steps);
+		xfree(job->submit_line);
 		xfree(job->system_comment);
 		xfree(job->tres_alloc_str);
 		xfree(job->tres_req_str);

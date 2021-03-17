@@ -289,6 +289,8 @@ extern char *process_options_first_pass(int argc, char **argv)
 		exit(error_exit);
 	}
 
+	opt.submit_line = slurm_option_get_argv_str(argc, argv);
+
 	_opt_early_env();
 
 	/* Remove hetjob separator and capture all options of interest from

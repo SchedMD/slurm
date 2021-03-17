@@ -122,6 +122,7 @@ print_field_t fields[] = {
 	{19, "Start", print_fields_date, PRINT_START},
 	{10, "State", print_fields_str, PRINT_STATE},
 	{19, "Submit", print_fields_date, PRINT_SUBMIT},
+	{20, "SubmitLine", print_fields_str, PRINT_SUBMIT_LINE},
 	{10, "Suspended", print_fields_time_from_secs, PRINT_SUSPENDED},
 	{10, "SystemCPU", print_fields_str, PRINT_SYSTEMCPU},
 	{15, "SystemComment", print_fields_str, PRINT_SYSTEM_COMMENT},

@@ -1085,6 +1085,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 				xfree(msg->spank_job_env[i]);
 			xfree(msg->spank_job_env);
 		}
+		xfree(msg->submit_line);
 		xfree(msg->tres_bind);
 		xfree(msg->tres_freq);
 		xfree(msg->tres_req_cnt);

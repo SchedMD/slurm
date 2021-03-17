@@ -5096,6 +5096,7 @@ extern void slurm_free_options_members(slurm_opt_t *opt)
 
 	xfree(opt->chdir);
 	xfree(opt->state);
+	xfree(opt->submit_line);
 }
 
 static void _init_state(slurm_opt_t *opt)
@@ -5636,4 +5637,19 @@ static void _validate_ntasks_per_gpu(slurm_opt_t *opt)
 extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 {
 	_validate_ntasks_per_gpu(opt);
+}
+
+extern char *slurm_option_get_argv_str(const int argc, char **argv)
+{
+	char *submit_line;
+
+	if (!argv || !argv[0])
+		fatal("%s: no argv given", __func__);
+
+	submit_line = xstrdup(argv[0]);
+
+	for (int i = 1; i < argc; i++)
+		xstrfmtcat(submit_line, " %s", argv[i]);
+
+	return submit_line;
 }

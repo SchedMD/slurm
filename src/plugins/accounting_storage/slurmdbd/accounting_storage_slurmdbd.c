@@ -136,6 +136,7 @@ static void _partial_free_dbd_job_start(void *object)
 		xfree(req->wckey);
 		xfree(req->gres_used);
 		FREE_NULL_BUFFER(req->script_buf);
+		xfree(req->submit_line);
 		xfree(req->tres_alloc_str);
 		xfree(req->tres_req_str);
 		xfree(req->work_dir);
@@ -227,6 +228,7 @@ static int _setup_job_start_msg(dbd_job_start_msg_t *req,
 	if (job_ptr->details) {
 		req->req_cpus = job_ptr->details->min_cpus;
 		req->req_mem = job_ptr->details->pn_min_memory;
+		req->submit_line = xstrdup(job_ptr->details->submit_line);
 	}
 	req->resv_id       = job_ptr->resv_id;
 	req->priority      = job_ptr->priority;

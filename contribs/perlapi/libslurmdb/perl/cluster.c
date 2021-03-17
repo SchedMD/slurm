@@ -759,6 +759,7 @@ job_rec_to_hv(slurmdb_job_rec_t* rec, HV* hv)
     STORE_FIELD(hv, rec, start,           time_t);
     STORE_FIELD(hv, rec, state,           uint32_t);
     STORE_FIELD(hv, rec, submit,          time_t);
+    STORE_FIELD(hv, rec, submit_line,     charp);
     STORE_FIELD(hv, rec, suspended,       uint32_t);
     STORE_FIELD(hv, rec, sys_cpu_sec,     uint32_t);
     STORE_FIELD(hv, rec, sys_cpu_usec,    uint32_t);

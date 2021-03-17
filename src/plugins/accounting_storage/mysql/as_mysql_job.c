@@ -508,6 +508,8 @@ no_rollup_change:
 			xstrcat(query, ", batch_script");
 		if (job_ptr->details->env_sup)
 			xstrcat(query, ", env_vars");
+		if (job_ptr->details->submit_line)
+			xstrcat(query, ", submit_line");
 
 		xstrfmtcat(query,
 			   ") values (%u, UNIX_TIMESTAMP(), "
@@ -566,6 +568,9 @@ no_rollup_change:
 		if (job_ptr->details->env_sup)
 			xstrfmtcat(query, ", '%s'",
 				   job_ptr->details->env_sup[0]);
+		if (job_ptr->details->submit_line)
+			xstrfmtcat(query, ", '%s'",
+				   job_ptr->details->submit_line);
 
 		xstrfmtcat(query,
 			   ") on duplicate key update "
@@ -639,6 +644,10 @@ no_rollup_change:
 			xstrfmtcat(query, ", env_vars='%s'",
 				   job_ptr->details->env_sup[0]);
 
+		if (job_ptr->details->submit_line)
+			xstrfmtcat(query, ", submit_line='%s'",
+				   job_ptr->details->submit_line);
+
 		DB_DEBUG(DB_JOB, mysql_conn->conn, "query\n%s", query);
 	try_again:
 		if (!(job_ptr->db_index = mysql_db_insert_ret_id(
@@ -704,6 +713,10 @@ no_rollup_change:
 		if (job_ptr->details->env_sup)
 			xstrfmtcat(query, "env_vars='%s', ",
 				   job_ptr->details->env_sup[0]);
+
+		if (job_ptr->details->submit_line)
+			xstrfmtcat(query, "submit_line='%s', ",
+				   job_ptr->details->submit_line);
 
 		xstrfmtcat(query, "time_start=%ld, job_name='%s', "
 			   "state=greatest(state, %u), "

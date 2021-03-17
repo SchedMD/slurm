@@ -102,6 +102,7 @@ char *job_req_inx[] = {
 	"t1.work_dir",
 	"t1.mcs_label",
 	"t1.batch_script",
+	"t1.submit_line",
 	"t1.env_vars",
 	"t2.acct",
 	"t2.lft",
@@ -158,6 +159,7 @@ enum {
 	JOB_REQ_WORK_DIR,
 	JOB_REQ_MCS_LABEL,
 	JOB_REQ_SCRIPT,
+	JOB_REQ_SUBMIT_LINE,
 	JOB_REQ_ENV,
 	JOB_REQ_ACCOUNT,
 	JOB_REQ_LFT,
@@ -707,6 +709,8 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->script = xstrdup(row[JOB_REQ_SCRIPT]);
 
 		job->env = xstrdup(row[JOB_REQ_ENV]);
+
+		job->submit_line = xstrdup(row[JOB_REQ_SUBMIT_LINE]);
 
 		/* since the job->end could be set later end it here */
 		if (job->end) {

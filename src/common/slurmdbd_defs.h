@@ -278,6 +278,8 @@ typedef struct dbd_job_start_msg {
 	time_t   start_time;	/* job start time */
 	uint32_t state_reason_prev; /* Last reason of blocking before job
 				     * started */
+	char *submit_line;      /* The command issued with all it's options in a
+				 * string */
 	time_t   submit_time;	/* job submit time */
 	uint32_t timelimit;	/* job timelimit */
 	uint32_t uid;	        /* user ID if associations are being used */

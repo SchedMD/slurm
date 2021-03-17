@@ -5652,6 +5652,7 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 		packstr(job_desc_ptr->std_err, buffer);
 		packstr(job_desc_ptr->std_in, buffer);
 		packstr(job_desc_ptr->std_out, buffer);
+		packstr(job_desc_ptr->submit_line, buffer);
 		packstr(job_desc_ptr->work_dir, buffer);
 
 		pack16(job_desc_ptr->immediate, buffer);
@@ -6123,6 +6124,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		safe_unpackstr_xmalloc(&job_desc_ptr->std_in,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->std_out,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job_desc_ptr->submit_line,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->work_dir,
 				       &uint32_tmp, buffer);

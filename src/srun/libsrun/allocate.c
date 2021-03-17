@@ -752,6 +752,7 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 	if (opt_local->acctg_freq)
 		j->acctg_freq     = xstrdup(opt_local->acctg_freq);
 	j->reservation    = opt_local->reservation;
+	j->submit_line    = opt_local->submit_line;
 	j->wckey          = opt_local->wckey;
 	j->x11 = opt.x11;
 	if (j->x11) {

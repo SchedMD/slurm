@@ -600,6 +600,8 @@ struct job_details {
 	char *std_err;			/* pathname of job's stderr file */
 	char *std_in;			/* pathname of job's stdin file */
 	char *std_out;			/* pathname of job's stdout file */
+	char *submit_line;              /* The command issued with all it's
+					 * options in a string */
 	time_t submit_time;		/* time of submission */
 	uint32_t task_dist;		/* task layout for this job. Only
 					 * useful when Consumable Resources

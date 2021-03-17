@@ -260,6 +260,8 @@ static void _set_options(int argc, char **argv)
 	int opt_char, option_index = 0;
 	struct option *optz = slurm_option_table_create(&opt, &opt_string);
 
+	opt.submit_line = slurm_option_get_argv_str(argc, argv);
+
 	optind = 0;
 	while ((opt_char = getopt_long(argc, argv, opt_string,
 				       optz, &option_index)) != -1) {

@@ -2132,6 +2132,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	details.script = job_start_msg->script;
 	job.start_protocol_ver = slurmdbd_conn->conn->version;
 	job.start_time = job_start_msg->start_time;
+	details.submit_line = job_start_msg->submit_line;
 	job.time_limit = job_start_msg->timelimit;
 	job.tres_alloc_str = job_start_msg->tres_alloc_str;
 	job.tres_req_str = job_start_msg->tres_req_str;

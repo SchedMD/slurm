@@ -4147,6 +4147,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 			list_iterator_destroy(itr);
 		}
 		pack_time(job->submit, buffer);
+		packstr(job->submit_line, buffer);
 		pack32(job->suspended, buffer);
 		packstr(job->system_comment, buffer);
 		pack32(job->sys_cpu_sec, buffer);
@@ -4420,6 +4421,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		}
 
 		safe_unpack_time(&job_ptr->submit, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->submit_line,
+				       &uint32_tmp, buffer);
 		safe_unpack32(&job_ptr->suspended, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->system_comment, &uint32_tmp,
 				       buffer);
