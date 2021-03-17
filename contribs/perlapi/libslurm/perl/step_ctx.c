@@ -27,7 +27,6 @@ hv_to_slurm_step_ctx_params(HV *hv, slurm_step_ctx_params_t *params)
 	slurm_step_ctx_params_t_init(params);
 
 	hv_to_step_id(&params->step_id, step_id_hv);
-	hv_store_sv(hv, "step_id", newRV((SV*)step_id_hv));
 
 	FETCH_FIELD(hv, params, cpu_count, uint32_t, FALSE);
 	FETCH_FIELD(hv, params, cpu_freq_min, uint32_t, FALSE);

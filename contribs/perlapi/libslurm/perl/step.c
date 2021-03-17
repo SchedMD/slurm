@@ -78,7 +78,6 @@ hv_to_job_step_info(HV *hv, job_step_info_t *step_info)
 	memset(step_info, 0, sizeof(job_step_info_t));
 
 	hv_to_step_id(&step_info->step_id, step_id_hv);
-	hv_store_sv(hv, "step_id", newRV((SV*)step_id_hv));
 
 	FETCH_FIELD(hv, step_info, array_job_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, step_info, array_task_id, uint32_t, TRUE);
