@@ -2235,7 +2235,7 @@ static int _foreach_step(void *x, void *arg)
 	}
 
 	xassert(hostlist_count(host_list) == step->nnodes);
-	if (!trc && hostlist_count(host_list)) {
+	if (hostlist_count(host_list)) {
 		char *host;
 		data_t *d = data_set_list(
 			data_define_dict_path(dstep, "nodes/list"));
