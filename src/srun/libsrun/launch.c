@@ -328,6 +328,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 	job->ctx_params.features = opt_local->constraint;
 
+	job->ctx_params.submit_line = opt_local->submit_line;
+
 	job->ctx_params.step_het_grps = opt_local->step_het_grps;
 
 	if (opt_local->cpus_per_gpu) {

@@ -193,6 +193,7 @@ char *step_req_inx[] = {
 	"t1.req_cpufreq_min",
 	"t1.req_cpufreq",
 	"t1.req_cpufreq_gov",
+	"t1.submit_line",
 	"t1.tres_alloc",
 	"t1.tres_usage_in_max",
 	"t1.tres_usage_in_max_taskid",
@@ -236,6 +237,7 @@ enum {
 	STEP_REQ_REQ_CPUFREQ_MIN,
 	STEP_REQ_REQ_CPUFREQ_MAX,
 	STEP_REQ_REQ_CPUFREQ_GOV,
+	STEP_REQ_SUBMIT_LINE,
 	STEP_REQ_TRES,
 	STEP_REQ_TRES_USAGE_IN_MAX,
 	STEP_REQ_TRES_USAGE_IN_MAX_TASKID,
@@ -1017,6 +1019,9 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			step->nodes = xstrdup(step_row[STEP_REQ_NODELIST]);
 			step->requid =
 				slurm_atoul(step_row[STEP_REQ_KILL_REQUID]);
+
+			step->submit_line =
+				xstrdup(step_row[STEP_REQ_SUBMIT_LINE]);
 
 			step->user_cpu_sec = slurm_atoul(
 				step_row[STEP_REQ_USER_SEC]);

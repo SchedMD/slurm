@@ -146,6 +146,8 @@ static job_step_create_request_msg_t *_create_step_request(
 	memcpy(&step_req->step_id, &step_params->step_id,
 	       sizeof(step_req->step_id));
 
+	step_req->submit_line = xstrdup(step_params->submit_line);
+
 	step_req->task_dist = step_params->task_dist;
 	step_req->threads_per_core = step_params->threads_per_core;
 	step_req->tres_bind = xstrdup(step_params->tres_bind);

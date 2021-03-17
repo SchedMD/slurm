@@ -1263,26 +1263,41 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 		"insert into \"%s_%s\" (job_db_inx, id_step, step_het_comp, "
 		"time_start, step_name, state, tres_alloc, "
 		"nodes_alloc, task_cnt, nodelist, node_inx, "
-		"task_dist, req_cpufreq, req_cpufreq_min, req_cpufreq_gov) "
-		"values (%"PRIu64", %d, %u, %d, '%s', %d, '%s', %d, %d, "
-		"'%s', '%s', %d, %u, %u, %u) "
-		"on duplicate key update "
-		"nodes_alloc=%d, task_cnt=%d, time_end=0, state=%d, "
-		"nodelist='%s', node_inx='%s', task_dist=%d, "
-		"req_cpufreq=%u, req_cpufreq_min=%u, req_cpufreq_gov=%u,"
-		"tres_alloc='%s';",
-		mysql_conn->cluster_name, step_table,
-		step_ptr->job_ptr->db_index,
-		step_ptr->step_id.step_id,
-		step_ptr->step_id.step_het_comp,
-		(int)start_time, step_ptr->name,
-		JOB_RUNNING, step_ptr->tres_alloc_str,
-		nodes, tasks, node_list, node_inx, task_dist,
-		step_ptr->cpu_freq_max, step_ptr->cpu_freq_min,
-		step_ptr->cpu_freq_gov, nodes, tasks, JOB_RUNNING,
-		node_list, node_inx, task_dist, step_ptr->cpu_freq_max,
-		step_ptr->cpu_freq_min, step_ptr->cpu_freq_gov,
-		step_ptr->tres_alloc_str);
+		"task_dist, req_cpufreq, req_cpufreq_min, req_cpufreq_gov",
+		mysql_conn->cluster_name, step_table);
+
+	if (step_ptr->submit_line)
+		xstrcat(query, ", submit_line");
+
+	xstrfmtcat(query,
+		   ") values (%"PRIu64", %d, %u, %d, '%s', %d, '%s', %d, %d, "
+		   "'%s', '%s', %d, %u, %u, %u",
+		   step_ptr->job_ptr->db_index,
+		   step_ptr->step_id.step_id,
+		   step_ptr->step_id.step_het_comp,
+		   (int)start_time, step_ptr->name,
+		   JOB_RUNNING, step_ptr->tres_alloc_str,
+		   nodes, tasks, node_list, node_inx, task_dist,
+		   step_ptr->cpu_freq_max, step_ptr->cpu_freq_min,
+		   step_ptr->cpu_freq_gov);
+
+	if (step_ptr->submit_line)
+		xstrfmtcat(query, ", '%s'", step_ptr->submit_line);
+
+	xstrfmtcat(query,
+		   ") on duplicate key update "
+		   "nodes_alloc=%d, task_cnt=%d, time_end=0, state=%d, "
+		   "nodelist='%s', node_inx='%s', task_dist=%d, "
+		   "req_cpufreq=%u, req_cpufreq_min=%u, req_cpufreq_gov=%u,"
+		   "tres_alloc='%s'",
+		   nodes, tasks, JOB_RUNNING,
+		   node_list, node_inx, task_dist, step_ptr->cpu_freq_max,
+		   step_ptr->cpu_freq_min, step_ptr->cpu_freq_gov,
+		   step_ptr->tres_alloc_str);
+
+	if (step_ptr->submit_line)
+		xstrfmtcat(query, ", submit_line='%s'", step_ptr->submit_line);
+
 	DB_DEBUG(DB_STEP, mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);

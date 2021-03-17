@@ -3021,6 +3021,7 @@ static int _step_start(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	step.cpu_freq_min = step_start_msg->req_cpufreq_min;
 	step.cpu_freq_max = step_start_msg->req_cpufreq_max;
 	step.cpu_freq_gov = step_start_msg->req_cpufreq_gov;
+	step.submit_line = step_start_msg->submit_line;
 	step.tres_alloc_str = step_start_msg->tres_alloc_str;
 
 	layout.node_cnt = step_start_msg->node_cnt;

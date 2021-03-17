@@ -272,6 +272,8 @@ static void _build_pending_step(job_record_t *job_ptr,
 	step_ptr->step_id.job_id = job_ptr->job_id;
 	step_ptr->step_id.step_id = SLURM_PENDING_STEP;
 	step_ptr->step_id.step_het_comp = NO_VAL;
+	step_ptr->submit_line = xstrdup(step_specs->submit_line);
+
 	if (job_ptr->node_bitmap)
 		step_ptr->step_node_bitmap = bit_copy(job_ptr->node_bitmap);
 	step_ptr->time_last_active = time(NULL);
@@ -464,6 +466,7 @@ extern void free_step_record(void *x)
 	xfree(step_ptr->ext_sensors);
 	xfree(step_ptr->cpus_per_tres);
 	xfree(step_ptr->mem_per_tres);
+	xfree(step_ptr->submit_line);
 	xfree(step_ptr->tres_bind);
 	xfree(step_ptr->tres_freq);
 	xfree(step_ptr->tres_per_step);
@@ -2564,6 +2567,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 
 	step_ptr->cpus_per_tres = xstrdup(step_specs->cpus_per_tres);
 	step_ptr->mem_per_tres = xstrdup(step_specs->mem_per_tres);
+	step_ptr->submit_line = xstrdup(step_specs->submit_line);
 	step_ptr->tres_bind = xstrdup(step_specs->tres_bind);
 	step_ptr->tres_freq = xstrdup(step_specs->tres_freq);
 	step_ptr->tres_per_step = xstrdup(step_specs->tres_per_step);
@@ -3142,6 +3146,7 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, buf_t *buffer,
 
 		packstr(step_ptr->cpus_per_tres, buffer);
 		packstr(step_ptr->mem_per_tres, buffer);
+		packstr(step_ptr->submit_line, buffer);
 		packstr(step_ptr->tres_bind, buffer);
 		packstr(step_ptr->tres_freq, buffer);
 		packstr(step_ptr->tres_per_step, buffer);
@@ -3914,7 +3919,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	uint32_t time_limit, cpu_freq_min, cpu_freq_max, cpu_freq_gov;
 	uint64_t pn_min_memory;
 	time_t start_time, pre_sus_time, tot_sus_time;
-	char *host = NULL, *core_job = NULL;
+	char *host = NULL, *core_job = NULL, *submit_line = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL;
 	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL;
 	char *cpus_per_tres = NULL, *mem_per_tres = NULL, *tres_bind = NULL;
@@ -3988,6 +3993,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 
 		safe_unpackstr_xmalloc(&cpus_per_tres, &name_len, buffer);
 		safe_unpackstr_xmalloc(&mem_per_tres, &name_len, buffer);
+		safe_unpackstr_xmalloc(&submit_line, &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_bind, &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_freq, &name_len, buffer);
 		safe_unpackstr_xmalloc(&tres_per_step, &name_len, buffer);
@@ -4200,6 +4206,9 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	xfree(step_ptr->mem_per_tres);
 	step_ptr->mem_per_tres = mem_per_tres;
 	mem_per_tres = NULL;
+	xfree(step_ptr->submit_line);
+	step_ptr->submit_line = submit_line;
+	submit_line = NULL;
 	xfree(step_ptr->tres_bind);
 	step_ptr->tres_bind = tres_bind;
 	tres_bind = NULL;
@@ -4273,6 +4282,7 @@ unpack_error:
 	xfree(tres_fmt_alloc_str);
 	xfree(cpus_per_tres);
 	xfree(mem_per_tres);
+	xfree(submit_line);
 	xfree(tres_bind);
 	xfree(tres_freq);
 	xfree(tres_per_step);
@@ -4818,6 +4828,7 @@ static step_record_t *_build_interactive_step(
 	step_ptr->port = step_specs->port;
 	step_ptr->srun_pid = step_specs->srun_pid;
 	step_ptr->host = xstrdup(step_specs->host);
+	step_ptr->submit_line = xstrdup(step_specs->submit_line);
 
 	step_ptr->core_bitmap_job = bit_copy(job_ptr->job_resrcs->core_bitmap);
 

@@ -989,6 +989,8 @@ typedef struct {
 /*	time_t suspend_time;		 * time step last suspended or resumed
 					 * implicitly the same as suspend_time
 					 * in the job record */
+	char *submit_line;              /* The command issued with all it's
+					 * options in a string */
 	dynamic_plugin_data_t *switch_job; /* switch context, opaque */
 	uint16_t threads_per_core;	/* step threads-per-core */
 	time_t time_last_active;	/* time step was last found on node */

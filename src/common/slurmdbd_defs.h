@@ -379,6 +379,8 @@ typedef struct dbd_step_start_msg {
 	uint32_t req_cpufreq_max; /* requested maximum CPU frequency  */
 	uint32_t req_cpufreq_gov; /* requested CPU frequency governor */
 	slurm_step_id_t step_id;
+	char *submit_line;      /* The command issued with all it's options in a
+				 * string */
 	uint32_t task_dist;     /* layout method of step */
 	uint32_t total_tasks;	/* count of tasks for step */
 	char *tres_alloc_str;   /* Simple comma separated list of TRES */

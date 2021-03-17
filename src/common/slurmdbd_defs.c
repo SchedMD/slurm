@@ -1199,6 +1199,7 @@ extern void slurmdbd_free_step_start_msg(dbd_step_start_msg_t *msg)
 		xfree(msg->name);
 		xfree(msg->nodes);
 		xfree(msg->node_inx);
+		xfree(msg->submit_line);
 		xfree(msg->tres_alloc_str);
 		xfree(msg);
 	}

@@ -2820,6 +2820,7 @@ extern int jobacct_storage_p_step_start(void *db_conn, step_record_t *step_ptr)
 
 	req.total_tasks = tasks;
 
+	req.submit_line = step_ptr->submit_line;
 	req.tres_alloc_str = step_ptr->tres_alloc_str;
 
 	req.req_cpufreq_min = step_ptr->cpu_freq_min;

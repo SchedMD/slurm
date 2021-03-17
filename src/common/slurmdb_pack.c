@@ -4877,6 +4877,7 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 		pack16(step->state, buffer);
 		pack_step_id(&step->step_id, buffer, protocol_version);
 		packstr(step->stepname, buffer);
+		packstr(step->submit_line, buffer);
 		pack32(step->suspended, buffer);
 		pack32(step->sys_cpu_sec, buffer);
 		pack32(step->sys_cpu_usec, buffer);
@@ -4974,6 +4975,8 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
 		safe_unpackstr_xmalloc(&step_ptr->stepname,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step_ptr->submit_line,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&step_ptr->suspended, buffer);
 		safe_unpack32(&step_ptr->sys_cpu_sec, buffer);

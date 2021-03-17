@@ -782,6 +782,8 @@ typedef struct job_step_specs {
 	char *step_het_grps;	/* what het groups are used by step */
 	slurm_step_id_t step_id;
 	uint32_t srun_pid;	/* PID of srun command, also see host */
+	char *submit_line;	/* The command issued with all it's options in a
+				 * string */
 	uint32_t task_dist;	/* see enum task_dist_state in slurm.h */
 	uint32_t time_limit;	/* maximum run time in minutes, default is
 				 * partition limit */

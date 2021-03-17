@@ -2364,6 +2364,7 @@ extern void _pack_job_step_create_request_msg(
 		packstr(msg->cpus_per_tres, buffer);
 		packstr(msg->mem_per_tres, buffer);
 		pack16(msg->ntasks_per_tres, buffer);
+		packstr(msg->submit_line, buffer);
 		packstr(msg->tres_bind, buffer);
 		packstr(msg->tres_freq, buffer);
 		packstr(msg->tres_per_step, buffer);
@@ -2516,6 +2517,8 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpackstr_xmalloc(&tmp_ptr->mem_per_tres, &uint32_tmp,
 				       buffer);
 		safe_unpack16(&tmp_ptr->ntasks_per_tres, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->submit_line,
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->tres_bind, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->tres_freq, &uint32_tmp,
@@ -3205,6 +3208,8 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 		safe_unpackstr_xmalloc(&step->cpus_per_tres,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&step->mem_per_tres,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->submit_line,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&step->tres_bind,
 				       &uint32_tmp, buffer);

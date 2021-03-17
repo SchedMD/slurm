@@ -2087,6 +2087,8 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = job->submit_line;
 				break;
 			case JOBSTEP:
+				tmp_char = step->submit_line;
+				break;
 			case JOBCOMP:
 			default:
 
