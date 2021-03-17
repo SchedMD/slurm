@@ -2329,7 +2329,48 @@ extern void _pack_job_step_create_request_msg(
 {
 	xassert(msg);
 
-	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		pack_step_id(&msg->step_id, buffer, protocol_version);
+		pack32(msg->user_id, buffer);
+		pack32(msg->min_nodes, buffer);
+		pack32(msg->max_nodes, buffer);
+		pack32(msg->cpu_count, buffer);
+		pack32(msg->cpu_freq_min, buffer);
+		pack32(msg->cpu_freq_max, buffer);
+		pack32(msg->cpu_freq_gov, buffer);
+		pack32(msg->num_tasks, buffer);
+		pack64(msg->pn_min_memory, buffer);
+		pack32(msg->time_limit, buffer);
+		pack16(msg->threads_per_core, buffer);
+
+		pack16(msg->relative, buffer);
+		pack32(msg->task_dist, buffer);
+		pack16(msg->plane_size, buffer);
+		pack16(msg->port, buffer);
+		pack16(msg->immediate, buffer);
+		pack16(msg->resv_port_cnt, buffer);
+		pack32(msg->srun_pid, buffer);
+		pack32(msg->flags, buffer);
+
+		packstr(msg->host, buffer);
+		packstr(msg->name, buffer);
+		packstr(msg->network, buffer);
+		packstr(msg->node_list, buffer);
+		packstr(msg->exc_nodes, buffer);
+		packstr(msg->features, buffer);
+		pack32(msg->step_het_comp_cnt, buffer);
+		packstr(msg->step_het_grps, buffer);
+
+		packstr(msg->cpus_per_tres, buffer);
+		packstr(msg->mem_per_tres, buffer);
+		pack16(msg->ntasks_per_tres, buffer);
+		packstr(msg->tres_bind, buffer);
+		packstr(msg->tres_freq, buffer);
+		packstr(msg->tres_per_step, buffer);
+		packstr(msg->tres_per_node, buffer);
+		packstr(msg->tres_per_socket, buffer);
+		packstr(msg->tres_per_task, buffer);
+	} else if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		pack_step_id(&msg->step_id, buffer, protocol_version);
 		pack32(msg->user_id, buffer);
 		pack32(msg->min_nodes, buffer);
@@ -2431,7 +2472,63 @@ extern int _unpack_job_step_create_request_msg(
 	tmp_ptr = xmalloc(sizeof(job_step_create_request_msg_t));
 	*msg = tmp_ptr;
 
-	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		if (unpack_step_id_members(&tmp_ptr->step_id, buffer,
+					   protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&tmp_ptr->user_id, buffer);
+		safe_unpack32(&tmp_ptr->min_nodes, buffer);
+		safe_unpack32(&tmp_ptr->max_nodes, buffer);
+		safe_unpack32(&tmp_ptr->cpu_count, buffer);
+		safe_unpack32(&tmp_ptr->cpu_freq_min, buffer);
+		safe_unpack32(&tmp_ptr->cpu_freq_max, buffer);
+		safe_unpack32(&tmp_ptr->cpu_freq_gov, buffer);
+		safe_unpack32(&tmp_ptr->num_tasks, buffer);
+		safe_unpack64(&tmp_ptr->pn_min_memory, buffer);
+		safe_unpack32(&tmp_ptr->time_limit, buffer);
+		safe_unpack16(&tmp_ptr->threads_per_core, buffer);
+
+		safe_unpack16(&tmp_ptr->relative, buffer);
+		safe_unpack32(&tmp_ptr->task_dist, buffer);
+		safe_unpack16(&tmp_ptr->plane_size, buffer);
+		safe_unpack16(&tmp_ptr->port, buffer);
+		safe_unpack16(&tmp_ptr->immediate, buffer);
+		safe_unpack16(&tmp_ptr->resv_port_cnt, buffer);
+		safe_unpack32(&tmp_ptr->srun_pid, buffer);
+		safe_unpack32(&tmp_ptr->flags, buffer);
+
+		safe_unpackstr_xmalloc(&tmp_ptr->host, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->network, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->exc_nodes, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->features, &uint32_tmp,
+				       buffer);
+		safe_unpack32(&tmp_ptr->step_het_comp_cnt, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->step_het_grps, &uint32_tmp,
+				       buffer);
+
+		safe_unpackstr_xmalloc(&tmp_ptr->cpus_per_tres, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->mem_per_tres, &uint32_tmp,
+				       buffer);
+		safe_unpack16(&tmp_ptr->ntasks_per_tres, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->tres_bind, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->tres_freq, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->tres_per_step, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->tres_per_node, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->tres_per_socket, &uint32_tmp,
+				       buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->tres_per_task, &uint32_tmp,
+				       buffer);
+	} else if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&tmp_ptr->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
@@ -3069,7 +3166,59 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 {
 	uint32_t uint32_tmp = 0;
 
-	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		safe_unpack32(&step->array_job_id, buffer);
+		safe_unpack32(&step->array_task_id, buffer);
+		if (unpack_step_id_members(&step->step_id, buffer,
+					   protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&step->user_id, buffer);
+		safe_unpack32(&step->num_cpus, buffer);
+		safe_unpack32(&step->cpu_freq_min, buffer);
+		safe_unpack32(&step->cpu_freq_max, buffer);
+		safe_unpack32(&step->cpu_freq_gov, buffer);
+		safe_unpack32(&step->num_tasks, buffer);
+		safe_unpack32(&step->task_dist, buffer);
+		safe_unpack32(&step->time_limit, buffer);
+		safe_unpack32(&step->state, buffer);
+		safe_unpack32(&step->srun_pid, buffer);
+
+		safe_unpack_time(&step->start_time, buffer);
+		safe_unpack_time(&step->run_time, buffer);
+
+		safe_unpackstr_xmalloc(&step->cluster, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->partition, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->srun_host, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->resv_ports, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->nodes, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->name, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->network, &uint32_tmp, buffer);
+		unpack_bit_str_hex_as_inx(&step->node_inx, buffer);
+
+		if (select_g_select_jobinfo_unpack(&step->select_jobinfo,
+						   buffer, protocol_version))
+			goto unpack_error;
+		safe_unpackstr_xmalloc(&step->tres_alloc_str,
+				       &uint32_tmp, buffer);
+		safe_unpack16(&step->start_protocol_ver, buffer);
+
+		safe_unpackstr_xmalloc(&step->cpus_per_tres,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->mem_per_tres,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->tres_bind,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->tres_freq,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->tres_per_step,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->tres_per_node,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->tres_per_socket,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->tres_per_task,
+				       &uint32_tmp, buffer);
+	} else if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		safe_unpack32(&step->array_job_id, buffer);
 		safe_unpack32(&step->array_task_id, buffer);
 		if (unpack_step_id_members(&step->step_id, buffer,
