@@ -66,8 +66,14 @@ hv_to_job_step_info(HV *hv, job_step_info_t *step_info)
 	SV **svp;
 	AV *av;
 	int i, n;
+	HV *step_id_hv;
 
-	HV *step_id_hv = (HV*)sv_2mortal((SV*)newHV());
+	svp = hv_fetch(hv, "step_id", 7, FALSE);
+	if (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVHV) {
+		step_id_hv = (HV*)SvRV(*svp);
+	} else {
+		step_id_hv = (HV*)sv_2mortal((SV*)newHV());
+	}
 
 	memset(step_info, 0, sizeof(job_step_info_t));
 
