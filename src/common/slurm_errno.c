@@ -94,6 +94,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Plugin initialization failed"			},
 	{ SLURM_UNKNOWN_FORWARD_ADDR,
 	  "Can't find an address, check slurm.conf"		},
+	{ SLURM_COMMUNICATIONS_MISSING_SOCKET_ERROR,
+	  "Unexpected missing socket error"			},
 
 	/* communication failures to/from slurmctld */
 	{ SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR,
