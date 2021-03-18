@@ -1646,7 +1646,6 @@ static void *_start_stage_in(void *x)
 	track_script_reset_cpid(pthread_self(), 0);
 
 	_log_script_argv(setup_argv, resp_msg);
-	lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	/*
 	 * The buffer's actual size may be larger than requested by the user.
@@ -1657,32 +1656,34 @@ static void *_start_stage_in(void *x)
 		     &bb_state);
 
 	if (!WIFEXITED(status) || (WEXITSTATUS(status) != 0)) {
+		/*
+		 * Unlock bb_mutex before locking job_write_lock to avoid
+		 * deadlock, since job_write_lock is always locked first.
+		 */
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 		trigger_burst_buffer();
 		error("setup for JobId=%u status:%u response:%s",
 		      stage_args->job_id, status,
 		      resp_msg);
 		rc = SLURM_ERROR;
+		lock_slurmctld(job_write_lock);
 		job_ptr = find_job_record(stage_args->job_id);
 		if (job_ptr)
 			_update_system_comment(job_ptr, "setup", resp_msg, 0);
+		unlock_slurmctld(job_write_lock);
 	} else {
-		job_ptr = find_job_record(stage_args->job_id);
 		bb_job = bb_job_find(&bb_state, stage_args->job_id);
-		if (!job_ptr) {
-			error("unable to find job record for JobId=%u",
+		if (!bb_job) {
+			error("unable to find bb_job record for JobId=%u",
 			      stage_args->job_id);
 			rc = SLURM_ERROR;
-		} else if (!bb_job) {
-			error("unable to find bb_job record for %pJ",
-			      job_ptr);
 		} else if (bb_job->total_size) {
 			/* Restore limit based upon actual size. */
 			bb_limit_add(stage_args->user_id, bb_job->total_size,
 				     stage_args->pool, &bb_state, true);
 		}
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 	}
-	slurm_mutex_unlock(&bb_state.bb_mutex);
-	unlock_slurmctld(job_write_lock);
 
 	if (rc == SLURM_SUCCESS) {
 		timeout = bb_state.bb_config.stage_in_timeout * 1000;
