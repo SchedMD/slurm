@@ -194,35 +194,42 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 	if ((!node_cnt) && (core_cnt)) {
 		int num_nodes = bit_set_count(avail_bitmap);
 		int i;
-		bit_fmt(str, (sizeof(str) - 1), avail_bitmap);
-		log_flag(RESERVATION, "Reserving cores from nodes: %s",
-			 str);
+		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
+			bit_fmt(str, (sizeof(str) - 1), avail_bitmap);
+			log_flag(RESERVATION, "Reserving cores from nodes: %s",
+				 str);
+		}
 		for (i = 0; (i < num_nodes) && core_cnt[i]; i++)
 			total_core_cnt += core_cnt[i];
 	}
 
-	log_flag(RESERVATION, "Reservations requires %d cores (%u each on %d nodes, plus %u)",
-		 total_core_cnt,
-		 cores_per_node,
-		 node_cnt,
-		 extra_cores_needed);
 
 	sp_avail_bitmap = bit_alloc(bit_size(avail_bitmap));
-	bit_fmt(str, (sizeof(str) - 1), avail_bitmap);
-	bit_fmt(str, (sizeof(str) - 1), sp_avail_bitmap);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
+		bit_fmt(str, (sizeof(str) - 1), avail_bitmap);
+		log_flag(RESERVATION, "Reservations requires %d cores (%u each on %d nodes, plus %u), avail bitmap:%s ",
+			 total_core_cnt,
+			 cores_per_node,
+			 node_cnt,
+			 extra_cores_needed,
+			 str);
+
+	}
 
 	if (core_cnt) { /* Reservation is using partial nodes */
 		int node_list_inx = 0;
-
-		log_flag(RESERVATION, "Reservation is using partial nodes");
 
 		xassert(core_bitmap);
 
 		tmpcore = bit_copy(*core_bitmap);
 
 		bit_not(tmpcore); /* tmpcore contains now current free cores */
-		bit_fmt(str, (sizeof(str) - 1), tmpcore);
-		debug2("tmpcore contains just current free cores: %s", str);
+		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
+			bit_fmt(str, (sizeof(str) - 1), tmpcore);
+			log_flag(RESERVATION,"Reservation is using partial nodes. Free cores (whole cluster) are: %s",
+				 str);
+		}
 		bit_and(*core_bitmap, tmpcore);	/* clear core_bitmap */
 
 		while (total_core_cnt) {
@@ -307,8 +314,12 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			return NULL;
 		}
 
-		bit_fmt(str, (sizeof(str) - 1), *core_bitmap);
-		debug2("sequential pick using coremap: %s", str);
+		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
+                       bit_fmt(str, (sizeof(str) - 1), *core_bitmap);
+                       log_flag(RESERVATION,
+				"sequential pick using coremap: %s", str);
+		}
+
 
 	} else { /* Reservation is using full nodes */
 		while (node_cnt) {
@@ -332,8 +343,11 @@ bitstr_t *_sequential_pick(bitstr_t *avail_bitmap, uint32_t node_cnt,
 			return NULL;
 		}
 
-		bit_fmt(str, (sizeof(str) - 1), sp_avail_bitmap);
-		log_flag(RESERVATION, "sequential pick using nodemap: %s", str);
+		if (slurm_conf.debug_flags & DEBUG_FLAG_RESERVATION) {
+			bit_fmt(str, (sizeof(str) - 1), sp_avail_bitmap);
+			log_flag(RESERVATION, "sequential pick using nodemap: %s",
+				 str);
+		}
 	}
 
 	return sp_avail_bitmap;
