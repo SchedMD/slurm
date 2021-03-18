@@ -144,20 +144,20 @@ const uint16_t nodeinfo_magic = 0x82aa;
  * core_bitmap IN/OUT - Cores currently NOT available for use */
 static void _spec_core_filter(bitstr_t *node_bitmap, bitstr_t **core_bitmap)
 {
-	bitstr_t **p_spec_core_map =
+	bitstr_t **avail_core_map =
 		common_mark_avail_cores(node_bitmap, NO_VAL16);
 
 	xassert(core_bitmap);
 
 	if (*core_bitmap) {
-		core_array_and(core_bitmap, p_spec_core_map);
+		core_array_and(core_bitmap, avail_core_map);
 	} else {
-		bit_not(*p_spec_core_map);
-		*core_bitmap = *p_spec_core_map;
-		*p_spec_core_map = NULL;
+		bit_not(*avail_core_map);
+		*core_bitmap = *avail_core_map;
+		*avail_core_map = NULL;
 	}
 
-	free_core_array(&p_spec_core_map);
+	free_core_array(&avail_core_map);
 }
 
 /* Once here, if core_cnt is NULL, avail_bitmap has nodes not used by any job or
