@@ -255,7 +255,8 @@ static int _foreach_user_coord_add(void *x, void *arg)
 
 	if ((args->rc = slurmdb_coord_add(rest_auth_g_get_db_conn(args->auth),
 					  uc->acct_list, &uc->user_cond)))
-		resp_error(args->errors, args->rc, NULL, "slurmdb_coord_add");
+		rc = resp_error(args->errors, args->rc, NULL,
+				"slurmdb_coord_add");
 
 	return (rc ? -1 : 0);
 }
