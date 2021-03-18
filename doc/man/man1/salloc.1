@@ -1759,14 +1759,14 @@ Same as \fB\-\-delay\-boot\fR
 \fBSALLOC_EXCLUSIVE\fR
 Same as \fB\-\-exclusive\fR
 .TP
-\fBSALLOC_GPUS\fR
-Same as \fB\-G, \-\-gpus\fR
-.TP
 \fBSALLOC_GPU_BIND\fR
 Same as \fB\-\-gpu\-bind\fR
 .TP
 \fBSALLOC_GPU_FREQ\fR
 Same as \fB\-\-gpu\-freq\fR
+.TP
+\fBSALLOC_GPUS\fR
+Same as \fB\-G, \-\-gpus\fR
 .TP
 \fBSALLOC_GPUS_PER_NODE\fR
 Same as \fB\-\-gpus\-per\-node\fR
@@ -1851,11 +1851,11 @@ Same as \fB\-\-use\-min\-nodes\fR
 \fBSALLOC_WAIT_ALL_NODES\fR
 Same as \fB\-\-wait\-all\-nodes\fR
 .TP
-\fBSALLOC_WCKEY\fR
-Same as \fB\-\-wckey\fR
-.TP
 \fBSALLOC_WAIT4SWITCH\fR
 Max time waiting for requested switches. See \fB\-\-switches\fR
+.TP
+\fBSALLOC_WCKEY\fR
+Same as \fB\-\-wckey\fR
 .TP
 \fBSLURM_CONF\fR
 The location of the Slurm configuration file.
@@ -1901,10 +1901,6 @@ See \fB\-m, \-\-distribution\fR.
 \fBSLURM_DISTRIBUTION\fR
 Only set if the \fB\-m, \-\-distribution\fR option is specified.
 .TP
-\fBSLURM_GPUS\fR
-Number of GPUs requested.
-Only set if the \fB\-G, \-\-gpus\fR option is specified.
-.TP
 \fBSLURM_GPU_BIND\fR
 Requested binding of tasks to GPU.
 Only set if the \fB\-\-gpu\-bind\fR option is specified.
@@ -1912,6 +1908,10 @@ Only set if the \fB\-\-gpu\-bind\fR option is specified.
 \fBSLURM_GPU_FREQ\fR
 Requested GPU frequency.
 Only set if the \fB\-\-gpu\-freq\fR option is specified.
+.TP
+\fBSLURM_GPUS\fR
+Number of GPUs requested.
+Only set if the \fB\-G, \-\-gpus\fR option is specified.
 .TP
 \fBSLURM_GPUS_PER_NODE\fR
 Requested GPU count per allocated node.
@@ -1925,10 +1925,13 @@ Only set if the \fB\-\-gpus\-per\-socket\fR option is specified.
 Requested GPU count per allocated task.
 Only set if the \fB\-\-gpus\-per\-task\fR option is specified.
 .TP
+\fBSLURM_HET_SIZE\fR
+Set to count of components in heterogeneous job.
+.TP
 \fBSLURM_JOB_ACCOUNT\fR
 Account name associated of the job allocation.
 .TP
-\fBSLURM_JOB_ID\fR (and \fBSLURM_JOBID\fR for backwards compatibility)
+\fBSLURM_JOB_ID\fR
 The ID of the job allocation.
 .TP
 \fBSLURM_JOB_CPUS_PER_NODE\fR
@@ -1939,10 +1942,10 @@ The select/cons_res plugin allocates individual processors
 to jobs, so this number indicates the number of processors
 on each node allocated to the job allocation.
 .TP
-\fBSLURM_JOB_NODELIST\fR (and \fBSLURM_NODELIST\fR for backwards compatibility)
+\fBSLURM_JOB_NODELIST\fR
 List of nodes allocated to the job.
 .TP
-\fBSLURM_JOB_NUM_NODES\fR (and \fBSLURM_NNODES\fR for backwards compatibility)
+\fBSLURM_JOB_NUM_NODES\fR
 Total number of nodes in the job allocation.
 .TP
 \fBSLURM_JOB_PARTITION\fR
@@ -1953,6 +1956,10 @@ Quality Of Service (QOS) of the job allocation.
 .TP
 \fBSLURM_JOB_RESERVATION\fR
 Advanced reservation containing the job allocation, if any.
+.TP
+\fBSLURM_JOBID\fR
+The ID of the job allocation. See \fBSLURM_JOB_ID\fR. Included for backwards
+compatibility.
 .TP
 \fBSLURM_MEM_BIND\fR
 Set to value of the \-\-mem\-bind\fR option.
@@ -1984,14 +1991,13 @@ Only set if the \fB\-\-mem\-per\-gpu\fR option is specified.
 \fBSLURM_MEM_PER_NODE\fR
 Same as \fB\-\-mem\fR
 .TP
-\fBSLURM_HET_SIZE\fR
-Set to count of components in heterogeneous job.
+\fBSLURM_NNODES\fR
+Total number of nodes in the job allocation. See \fBSLURM_JOB_NUM_NODES\fR.
+Included for backwards compatibility.
 .TP
-\fBSLURM_SUBMIT_DIR\fR
-The directory from which \fBsalloc\fR was invoked.
-.TP
-\fBSLURM_SUBMIT_HOST\fR
-The hostname of the computer from which \fBsalloc\fR was invoked.
+\fBSLURM_NODELIST\fR
+List of nodes allocated to the job. See \fBSLURM_JOB_NODELIST\fR. Included
+for backwards compabitility.
 .TP
 \fBSLURM_NODE_ALIASES\fR
 Sets of node name, communication address and hostname for nodes allocated to
@@ -2016,6 +2022,13 @@ Set to value of the \-\-ntasks\-per\-socket\fR option, if specified.
 .TP
 \fBSLURM_PROFILE\fR
 Same as \fB\-\-profile\fR
+.TP
+\fBSLURM_SUBMIT_DIR\fR
+The directory from which \fBsalloc\fR was invoked or, if applicable, the
+directory specified by the \fB\-D, \-\-chdir\fR option.
+.TP
+\fBSLURM_SUBMIT_HOST\fR
+The hostname of the computer from which \fBsalloc\fR was invoked.
 .TP
 \fBSLURM_TASKS_PER_NODE\fR
 Number of tasks to be initiated on each node. Values are
