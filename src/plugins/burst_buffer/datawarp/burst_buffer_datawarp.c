@@ -1462,6 +1462,7 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 	int hash_inx = job_ptr->job_id % 10;
 	int rc = SLURM_SUCCESS;
 	pthread_t tid;
+	bb_alloc_t *bb_alloc = NULL;
 
 	xstrfmtcat(hash_dir, "%s/hash.%d",
 		   slurm_conf.state_save_location, hash_inx);
@@ -1501,6 +1502,19 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 		setup_argv[15] = xstrdup("--nodehostnamefile");
 #endif
 		setup_argv[16] = xstrdup(client_nodes_file_nid);
+	}
+	/*
+	 * Create bb allocation for the job now. Check if it has already been
+	 * created (perhaps it was created but then slurmctld restarted).
+	 * bb_alloc is the structure that is state saved.
+	 * If we wait until the _start_stage_in thread to create bb_alloc,
+	 * we introduce a race condition where the thread could be killed
+	 * (if slurmctld is shut down) before the thread creates
+	 * bb_alloc. That race would mean the burst buffer isn't state saved.
+	 */
+	if (!(bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr))) {
+		bb_alloc = bb_alloc_job(&bb_state, job_ptr, bb_job);
+		bb_alloc->create_time = time(NULL);
 	}
 	bb_limit_add(job_ptr->user_id, bb_job->total_size, job_pool, &bb_state,
 		     true);
@@ -1661,20 +1675,11 @@ static void *_start_stage_in(void *x)
 		} else if (!bb_job) {
 			error("unable to find bb_job record for %pJ",
 			      job_ptr);
-		} else {
+		} else if (bb_job->total_size) {
 			_set_bb_state(job_ptr, bb_job, BB_STATE_STAGING_IN);
-			bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
-			if (!bb_alloc && bb_job->total_size) {
-				/* Not found (from restart race condtion) and
-				 * job buffer has non-zero size */
-				bb_alloc = bb_alloc_job(&bb_state, job_ptr,
-							bb_job);
-				bb_limit_add(stage_args->user_id,
-					     bb_job->total_size,
-					     stage_args->pool, &bb_state,
-					     true);
-				bb_alloc->create_time = time(NULL);
-			}
+			/* Restore limit based upon actual size. */
+			bb_limit_add(stage_args->user_id, bb_job->total_size,
+				     stage_args->pool, &bb_state, true);
 		}
 	}
 	slurm_mutex_unlock(&bb_state.bb_mutex);
