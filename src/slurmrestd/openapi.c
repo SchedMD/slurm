@@ -850,11 +850,14 @@ data_for_each_cmd_t _merge_path(const char *key, data_t *data, void *arg)
 {
 	merge_path_t *args = arg;
 	data_t *e;
-	data_t *merge[3] = { 0 }, *merged;
+	data_t *merge[3] = { 0 }, *merged = NULL;
 	merge_path_strings_t mp_args = { 0 };
+	data_for_each_cmd_t rc = DATA_FOR_EACH_CONT;
 
-	if (data_get_type(data) != DATA_TYPE_DICT)
-		return DATA_FOR_EACH_FAIL;
+	if (data_get_type(data) != DATA_TYPE_DICT) {
+		rc = DATA_FOR_EACH_FAIL;
+		goto cleanup;
+	}
 
 	/* merge the paths together cleanly */
 	if (!data_key_get(data, "servers")) {
@@ -866,8 +869,10 @@ data_for_each_cmd_t _merge_path(const char *key, data_t *data, void *arg)
 	}
 	merged = data_list_join((const data_t **)merge, true);
 
-	if (data_list_for_each(merged, _merge_path_strings, &mp_args) < 0)
-		return DATA_FOR_EACH_FAIL;
+	if (data_list_for_each(merged, _merge_path_strings, &mp_args) < 0) {
+		rc = DATA_FOR_EACH_FAIL;
+		goto cleanup;
+	}
 
 	e = data_key_set(args->paths, mp_args.path);
 	if (data_get_type(e) != DATA_TYPE_NULL) {
@@ -877,16 +882,18 @@ data_for_each_cmd_t _merge_path(const char *key, data_t *data, void *arg)
 		 */
 		debug("%s: overwriting path %s", __func__, mp_args.path);
 	}
+
 	data_set_dict(e);
+	data_copy(e, data);
+
+cleanup:
 
 	FREE_NULL_DATA(merged);
 	FREE_NULL_DATA(merge[0]);
 	FREE_NULL_DATA(merge[1]);
 	xfree(mp_args.path);
 
-	data_copy(e, data);
-
-	return DATA_FOR_EACH_CONT;
+	return rc;
 }
 
 typedef struct {
