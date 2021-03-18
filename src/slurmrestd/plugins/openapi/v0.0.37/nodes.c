@@ -187,8 +187,8 @@ static int _dump_node(data_t *p, node_info_t *node)
 	data_set_int(data_key_set(d, "real_memory"), node->real_memory);
 	data_set_string(data_key_set(d, "reason"), node->reason);
 	data_set_int(data_key_set(d, "reason_changed_at"), node->reason_time);
-	data_set_string(data_key_set(d, "reason_set_by_user"),
-			uid_to_string_or_null(node->reason_uid));
+	data_set_string_own(data_key_set(d, "reason_set_by_user"),
+			    uid_to_string_or_null(node->reason_uid));
 	// TODO: dynamic_plugin_data_t *select_nodeinfo;  /* opaque data structure,
 	data_set_int(data_key_set(d, "slurmd_start_time"), node->slurmd_start_time);
 	data_set_int(data_key_set(d, "sockets"), node->sockets);
