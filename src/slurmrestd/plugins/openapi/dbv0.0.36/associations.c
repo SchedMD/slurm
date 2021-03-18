@@ -291,6 +291,7 @@ static int op_handler_association(const char *context_id,
 	char *account = NULL; /* optional */
 	char *cluster = NULL; /* optional */
 	char *partition = NULL; /* optional */
+	int rc = ESLURM_REST_INVALID_QUERY;
 
 	if (!query)
 		return resp_error(errors, ESLURM_REST_EMPTY_RESULT,
@@ -302,13 +303,18 @@ static int op_handler_association(const char *context_id,
 	(void)data_retrieve_dict_path_string(query, "account", &account);
 
 	if (method == HTTP_REQUEST_GET)
-		return _dump_association(resp, auth, errors, account, cluster,
-					 user, partition);
+		rc = _dump_association(resp, auth, errors, account, cluster,
+				       user, partition);
 	else if (method == HTTP_REQUEST_DELETE)
-		return _delete_assoc(resp, auth, errors, account, cluster, user,
-				     partition);
+		rc = _delete_assoc(resp, auth, errors, account, cluster, user,
+				   partition);
 
-	return ESLURM_REST_INVALID_QUERY;
+	xfree(partition);
+	xfree(cluster);
+	xfree(user);
+	xfree(account);
+
+	return rc;
 }
 
 extern int op_handler_associations(const char *context_id,
