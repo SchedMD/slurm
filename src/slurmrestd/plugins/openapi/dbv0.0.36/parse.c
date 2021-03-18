@@ -2103,7 +2103,6 @@ static int _parse_admin_lvl(const parser_t *const parse, void *obj, data_t *src,
 			    data_t *errors, const parser_env_t *penv)
 {
 	uint16_t *admin_level = (((void *)obj) + parse->field_offset);
-	xassert(!(0xffff0000 & *admin_level));
 
 	if (data_convert_type(src, DATA_TYPE_STRING) != DATA_TYPE_STRING)
 		return ESLURM_REST_FAIL_PARSING;
