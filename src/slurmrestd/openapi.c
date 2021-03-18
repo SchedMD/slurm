@@ -519,20 +519,21 @@ static data_for_each_cmd_t _populate_methods(const char *key,
 
 extern int register_path_tag(const char *str_path)
 {
+	int rc = -1;
 	path_t *path = NULL;
 	const data_t *spec_entry;
 	populate_methods_t args = {0};
 	entry_t *entries = _parse_openapi_path(str_path);
 
 	if (!entries)
-		return -1;
+		goto cleanup;
 
 	spec_entry = _find_spec_path(str_path);
 	if (!spec_entry)
-		return -1;
+		goto cleanup;
 
 	if (data_get_type(spec_entry) != DATA_TYPE_DICT)
-		return -1;
+		goto cleanup;
 
 	path = xmalloc(sizeof(*path));
 	path->tag = path_tag_counter++;
@@ -545,14 +546,18 @@ extern int register_path_tag(const char *str_path)
 	if (data_dict_for_each_const(spec_entry, _populate_methods, &args) < 0)
 		fatal_abort("%s: failed", __func__);
 
+	list_append(paths, path);
+
+	rc = path->tag;
+
+cleanup:
 	for (entry_t *entry = entries; entry->type; entry++) {
 		xfree(entry->entry);
 		xfree(entry->name);
 	}
 	xfree(entries);
-	list_append(paths, path);
 
-	return path->tag;
+	return rc;
 }
 
 static int _rm_path_by_tag(void *x, void *tptr)
