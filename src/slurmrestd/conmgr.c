@@ -1337,13 +1337,19 @@ static void _poll_connections(void *x)
 	/* grab counts once */
 	count = list_count(mgr->connections);
 
+	fds_ptr = args->fds;
+	args->fds = NULL;
+
 	slurm_mutex_unlock(&mgr->mutex);
 
-	xrecalloc(args->fds, ((count * 2) + 2), sizeof(*args->fds));
-	fds_ptr = args->fds;
-	args->nfds = 0;
+	/* Drop lock during potentially slow xrecalloc() */
+	xrecalloc(fds_ptr, ((count * 2) + 2), sizeof(*fds_ptr));
+	xassert(sizeof(*fds_ptr) == sizeof(*args->fds));
 
 	slurm_mutex_lock(&mgr->mutex);
+
+	args->fds = fds_ptr;
+	args->nfds = 0;
 
 	if (count < list_count(mgr->connections)) {
 		/*
