@@ -99,7 +99,6 @@ typedef struct {
 
 static data_for_each_cmd_t _foreach_tres(data_t *data, void *arg)
 {
-	int rc = SLURM_SUCCESS;
 	foreach_tres_t *args = arg;
 	data_t *errors = args->errors;
 	parser_env_t penv = { 0 };
@@ -107,17 +106,16 @@ static data_for_each_cmd_t _foreach_tres(data_t *data, void *arg)
 
 	xassert(args->magic == MAGIC_FOREACH_TRES);
 
-	if (data_get_type(data) != DATA_TYPE_DICT)
+	if (data_get_type(data) != DATA_TYPE_DICT) {
 		resp_error(errors, ESLURM_NOT_SUPPORTED,
 			   "each TRES entry must be a dictionary", "TRES");
-
-	if (rc)
 		return DATA_FOR_EACH_FAIL;
+	}
 
 	tres = xmalloc(sizeof(slurmdb_tres_rec_t));
 	list_append(args->tres_list, tres);
 
-	if ((!rc) && parse(PARSE_TRES, tres, data, args->errors, &penv))
+	if (parse(PARSE_TRES, tres, data, args->errors, &penv))
 		return DATA_FOR_EACH_FAIL;
 
 	return DATA_FOR_EACH_CONT;
