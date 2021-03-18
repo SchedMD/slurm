@@ -37,31 +37,40 @@ dirname = ''
 #       <DT><B>--pppppp</B> or <DT><B>-P</B>, <B>--pppppp</B>
 #           has tag <a id="OPT_pppppp"></a>
 #   <H2>hhhh</h2> also has tag has tag <a id="SECTION_hhhh"></a> inserted
-def insert_tag(html, lineIn):
+def insert_tag(lineIn):
+    lineOt = ""
     if lineIn[0:4] == "<H2>":
         posEnd = lineIn.find("</H2>")
-        if posEnd != -1:
-            id_name = lineIn[4:posEnd]
-            id_name = id_name.replace(' ','-')
-            if id_name in ids:
-                ids[id_name] += 1
-                id_name += "_" + str(ids[id_name])
-            else:
-                ids[id_name] = 0
-            html.write('<a id="SECTION_' + id_name + '"></a>\n')
-            return
+        if posEnd == -1:
+            return lineIn;
 
-    if lineIn[0:7] != "<DT><B>":
-        return
+        contents = lineIn[4:posEnd]
+        id_name = contents.replace(' ','-')
+        if id_name in ids:
+            ids[id_name] += 1
+            id_name += "_" + str(ids[id_name])
+        else:
+            ids[id_name] = 0
+        id_name = "SECTION_%s" % (id_name)
+        lineOt = '<h2>%s<a class="slurm_link" id="%s" href="#%s"></a></h2>' % (contents, id_name, id_name)
+        return lineOt
+
+    if lineIn[0:4] != "<DT>":
+        return lineIn
+    contentsBgn = 4
+    contentsEnd = lineIn.find("<DD>")
+    contents = lineIn[contentsBgn:contentsEnd]
     posBgn = lineIn.find("--")
     if posBgn == -1:
         # 1st form
-        posBgn = 5
-    posBgn = posBgn + 2
+        posBgn = 7
+    else:
+        posBgn += 2
+
     posEnd = lineIn.find("</B>",posBgn)
     if posEnd == -1:
         # poorly constructed
-        return
+        return lineIn
 
     id_name = lineIn[posBgn:posEnd]
     id_name = id_name.replace(' ','-')
@@ -70,8 +79,10 @@ def insert_tag(html, lineIn):
         id_name += "_" + str(ids[id_name])
     else:
         ids[id_name] = 0
-    html.write('<a id="OPT_' + id_name + '"></a>\n')
-    return
+    id_name = "OPT_%s" % (id_name)
+    link_and_contents = '%s<a class="slurm_link" id="%s" href="#%s"></a>' % (contents, id_name, id_name)
+    lineOt = "<dt>" + link_and_contents + "</dt><dd>"
+    return lineOt
 
 
 def llnl_references(line):
@@ -247,7 +258,7 @@ for filename in files:
         # Special case some html references
         line = llnl_references(line)
         #insert tags for some options
-        insert_tag(html, line)
+        line = insert_tag(line)
         # Make man2html links relative ones
         line = relative_reference(line)
 
