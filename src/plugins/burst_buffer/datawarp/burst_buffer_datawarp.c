@@ -1676,7 +1676,6 @@ static void *_start_stage_in(void *x)
 			error("unable to find bb_job record for %pJ",
 			      job_ptr);
 		} else if (bb_job->total_size) {
-			_set_bb_state(job_ptr, bb_job, BB_STATE_STAGING_IN);
 			/* Restore limit based upon actual size. */
 			bb_limit_add(stage_args->user_id, bb_job->total_size,
 				     stage_args->pool, &bb_state, true);
