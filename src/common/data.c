@@ -614,7 +614,7 @@ extern data_t *data_set_list(data_t *data)
 		 __func__, (uintptr_t) data);
 
 	data->type = DATA_TYPE_LIST;
-	data->data.dict_u = _data_list_new();
+	data->data.list_u = _data_list_new();
 
 	return data;
 }
