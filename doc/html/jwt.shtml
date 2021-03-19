@@ -11,7 +11,7 @@ interactive jobs using <b>srun</b>) are currently not supported for hosts with
 only auth/jwt enabled.</p>
 
 <h2>Prerequisites</h2>
-<p>JWT requires <a href="https://github.com/benmcollins/libjwt">libjwt</a>.
+<p>JWT requires <a href="download.html#jwt">libjwt</a>.
 Both the library and the development headers must be available when Slurm is
 compiled.</p>
 
@@ -142,6 +142,6 @@ b = a.decode(sys.argv[1], signing_key, algorithms=["HS256"])
 print(b)
 </pre>
 
-<p style="text-align:center;">Last modified 15 March 2021</p>
+<p style="text-align:center;">Last modified 19 March 2021</p>
 
 <!--#include virtual="footer.txt"-->
