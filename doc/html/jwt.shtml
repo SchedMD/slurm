@@ -6,9 +6,10 @@
 <a href="https://jwt.io/">JSON Web Tokens (JWT)</a>. This authentication can
 be used as an <b>AuthAltType</b>, usually alongside <b>auth/munge</b> as the
 <b>AuthType</b>. The only supported communication direction is from a client
-connecting to <b>slurmctld</b>, which means that certain commands (specifically
-interactive jobs using <b>srun</b>) are currently not supported for hosts with
-only auth/jwt enabled.</p>
+connecting to <b>slurmctld</b> and <b>slurmdbd</b>. This means that certain
+scenarios (specifically interactive jobs using <b>srun</b>) are currently not
+supported for clients with auth/jwt enabled (or that have SLURM_JWT in their
+enviroment).</p>
 
 <h2>Prerequisites</h2>
 <p>JWT requires <a href="download.html#jwt">libjwt</a>.
