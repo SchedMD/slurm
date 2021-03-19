@@ -23,7 +23,7 @@ compiled.</p>
 <li>Add JWT key to controller in StateSaveLocation:
 Here is an example with StateSaveLocation=/var/spool/slurm/statesave/
 <pre>
-openssl genrsa -out /var/spool/slurm/statesave/jwt_hs256.key 2048
+dd if=/dev/random of=/var/spool/slurm/statesave/jwt_hs256.key bs=32 count=1
 chown slurm /var/spool/slurm/statesave/jwt_hs256.key
 chmod 0600 /var/spool/slurm/statesave/jwt_hs256.key
 </pre>
