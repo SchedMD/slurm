@@ -24,13 +24,16 @@ compiled.</p>
 Here is an example with StateSaveLocation=/var/spool/slurm/statesave/
 <pre>
 dd if=/dev/random of=/var/spool/slurm/statesave/jwt_hs256.key bs=32 count=1
-chown slurm /var/spool/slurm/statesave/jwt_hs256.key
-chmod 0600 /var/spool/slurm/statesave/jwt_hs256.key
+chown slurm:slurm /etc/slurm/jwt_hs256.key
+chmod 0600 /etc/slurm/jwt_hs256.key
+chown root:root /etc/slurm
+chmod 0755 /etc/slurm
 </pre>
 </li>
-<li>Add JWT as an alternative authentication in slurm.conf:
+<li>Add JWT as an alternative authentication in slurm.conf and slurmdbd.conf:
 <pre>
 AuthAltTypes=auth/jwt
+AuthAltParameters=jwt_key=/etc/slurm/jwt_hs256.key
 </pre>
 </li>
 <li>Restart slurmctld</li>
