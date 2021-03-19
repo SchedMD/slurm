@@ -71,6 +71,77 @@ are met:
 	the tokens. Slurm currently only supports a single signing key.</li>
 </ol>
 
-<p style="text-align:center;">Last modified 30 December 2020</p>
+The following scripts require the installation of the JWT Python module.
+This script can serve as an example of what you might do to generate
+a jwt key for use with Slurm.
+<pre>
+#!/usr/bin/env python3
+import sys
+import os
+import pprint
+import json
+import time
+from datetime import datetime, timedelta, timezone
+
+from jwt import JWT
+from jwt.jwa import HS256
+from jwt.jwk import jwk_from_dict
+from jwt.utils import b64decode,b64encode
+
+if len(sys.argv) != 3:
+    sys.exit("gen_jwt.py [user name] [expiration time (seconds)]");
+
+with open("/etc/slurm/jwt.key", "rb") as f:
+    priv_key = f.read()
+
+signing_key = jwk_from_dict({
+    'kty': 'oct',
+    'k': b64encode(priv_key)
+})
+
+message = {
+    "exp": int(time.time() + int(sys.argv[2])),
+    "iat": int(time.time()),
+    "sun": sys.argv[1]
+}
+
+a = JWT()
+compact_jws = a.encode(message, signing_key, alg='HS256')
+print("SLURM_JWT={}".format(compact_jws))
+</pre>
+
+Similarly, the following script can be used as an example of how you might
+verify that a jwt key is valid for use with Slurm.
+<pre>
+#!/usr/bin/env python3
+import sys
+import os
+import pprint
+import json
+import time
+from datetime import datetime, timedelta, timezone
+
+from jwt import JWT
+from jwt.jwa import HS256
+from jwt.jwk import jwk_from_dict
+from jwt.utils import b64decode,b64encode
+
+if len(sys.argv) != 2:
+    sys.exit("verify_jwt.py [JWT Token]");
+
+with open("/etc/slurm/jwt.key", "rb") as f:
+    priv_key = f.read()
+
+signing_key = jwk_from_dict({
+    'kty': 'oct',
+    'k': b64encode(priv_key)
+})
+
+a = JWT()
+b = a.decode(sys.argv[1], signing_key, algorithms=["HS256"])
+print(b)
+</pre>
+
+<p style="text-align:center;">Last modified 15 March 2021</p>
 
 <!--#include virtual="footer.txt"-->
