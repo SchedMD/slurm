@@ -326,8 +326,9 @@ static void _release_data_list(data_list_t *dl)
 	_check_data_list_magic(dl);
 
 	if (!n) {
+		xassert(!dl->count);
 		xassert(!dl->end);
-		return;
+		goto finish;
 	}
 
 	xassert(dl->end);
@@ -345,6 +346,8 @@ static void _release_data_list(data_list_t *dl)
 #ifndef NDEBUG
 	xassert(count == init_count);
 #endif
+
+finish:
 	dl->magic = ~DATA_LIST_MAGIC;
 	xfree(dl);
 }
