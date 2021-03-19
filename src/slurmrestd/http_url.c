@@ -252,10 +252,8 @@ extern data_t *parse_url_path(const char *path, bool convert_types,
 			      bool allow_templates)
 {
 	int rc = SLURM_SUCCESS;
-	data_t *d = data_new();
+	data_t *d = data_set_list(data_new());
 	char *buffer = NULL;
-
-	data_set_list(d);
 
 	/* extract each word */
 	for (const char *ptr = path; !rc && *ptr != '\0'; ++ptr) {
