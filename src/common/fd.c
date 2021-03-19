@@ -135,11 +135,11 @@ pid_t fd_is_read_lock_blocked(int fd)
 
 int fd_get_socket_error(int fd, int *err)
 {
-	socklen_t errlen = sizeof(err);
+	socklen_t errlen = sizeof(*err);
 
 	xassert(fd >= 0);
 
-	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&err, &errlen))
+	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)err, &errlen))
 		return errno;
 	else
 		return SLURM_SUCCESS;
