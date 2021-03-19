@@ -1689,6 +1689,9 @@ proc wait_for_command args {
 #	wait_for_file ?options? file_name
 #
 # OPTIONS
+#	-fail
+#		If an error occurs or the file does not become present
+#		by the timeout, fail the test rather than returning an error
 #	-timeout <integer_number>
 #		time in seconds to wait for the file to exist before
 #		timing out (default is 90)
@@ -1701,18 +1704,21 @@ proc wait_for_command args {
 #	be purged then be re-created.
 #
 # RETURN VALUE
-#	RETURN_SUCCESS if job reaches the desired state, or non-zero value
-#	otherwise.
+#	RETURN_SUCCESS if the file becomes present within the timeout, or
+#	non-zero value otherwise.
 #
 ################################################################
 
 proc wait_for_file args {
 	global bin_sleep
 
+	set fatal         false
 	set timeout       90
 	set poll_interval 1
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
+			-fatal  -
+			-fail   {set fatal true; set args [lrange $args 1 end]}
 			-time*  {set args [lassign $args - timeout]}
 			-poll*  {set args [lassign $args - poll_interval]}
 			-*      {fail "Unknown option: [lindex $args 0]"}
@@ -1746,7 +1752,12 @@ proc wait_for_file args {
 		}
 		exec /bin/ls $dir_name
 	}
-	log_error "Timeout waiting for file $file_name"
+	set message "Timeout waiting for file $file_name"
+	if {$fatal} {
+		fail $message
+	}
+
+	log_error $message
 	return $::RETURN_TIMEOUT
 }
 
@@ -1763,6 +1774,9 @@ proc wait_for_file args {
 #	Wait for a previously submitted Slurm job to reach the desired state.
 #
 # OPTIONS
+#	-fail
+#		If an error occurs or the job does not reach the desired state
+#		by the timeout, fail the test rather than returning an error
 #	-timeout <integer_number>
 #		time in seconds to wait for the job to be in the desired state
 #		before timing out (default is 360)
@@ -1792,10 +1806,13 @@ proc wait_for_file args {
 proc _wait_for_single_job args {
 	global scontrol
 
+	set fatal         false
 	set timeout       360
 	set poll_interval 1
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
+			-fatal  -
+			-fail   {set fatal true; set args [lrange $args 1 end]}
 			-time*  {set args [lassign $args - timeout]}
 			-poll*  {set args [lassign $args - poll_interval]}
 			-*      {fail "Unknown option: [lindex $args 0]"}
@@ -1817,13 +1834,21 @@ proc _wait_for_single_job args {
 		"SPECIAL_EXIT" {}
 		"SUSPENDED" {}
 		default {
-			log_warn "Invalid desired state: $desired_state"
+			set message "Invalid desired state: $desired_state"
+			if {$fatal} {
+				fail $message
+			}
+			log_warn $message
 			return $::RETURN_ERROR
 		}
 	}
 
 	if {$job_id == 0} {
-		log_warn "Invalid job ID: $job_id"
+		set message "Invalid job ID: $job_id"
+		if {$fatal} {
+			fail $message
+		}
+		log_warn $message
 		return $::RETURN_ERROR
 	}
 
@@ -1853,11 +1878,15 @@ proc _wait_for_single_job args {
 					return $::RETURN_SUCCESS
 				}
 				if {[string compare $desired_state "RUNNING"] == 0} {
-					log_debug "Job $job_id is $state, but we wanted RUNNING"
+					set message "Job $job_id is $state, but we wanted RUNNING"
 				}
 				if {[string compare $desired_state "SUSPENDED"] == 0} {
-					log_debug "Job $job_id is $state, but we wanted SUSPENDED"
+					set message "Job $job_id is $state, but we wanted SUSPENDED"
 				}
+				if {$fatal} {
+					fail $message
+				}
+				log_debug $message
 				return $::RETURN_ERROR
 			}
 			"PENDING" {
@@ -1894,6 +1923,10 @@ proc _wait_for_single_job args {
 		}
 
 		if { $my_delay > $timeout } {
+			set message "Timeout waiting for job state $desired_state"
+			if {$fatal} {
+				fail $message
+			}
 			log_warn "Timeout waiting for job state $desired_state"
 			return $::RETURN_TIMEOUT
 		}
@@ -1916,6 +1949,9 @@ proc _wait_for_single_job args {
 #	Wait for job to be in desired state. Can handle het job components.
 #
 # OPTIONS
+#	-fail
+#		If an error occurs or the job does not reach the desired state
+#		by the timeout, fail the test rather than returning an error
 #	-timeout <integer_number>
 #		time in seconds to wait for the job to be in the desired state
 #		before timing out (default is 90)
@@ -1953,7 +1989,13 @@ proc wait_for_job args {
 
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
-			-* {
+			-fatal  -
+			-fail   {
+				lappend options [lindex $args 0]
+				set args [lrange $args 1 end]
+			}
+			-time*  -
+			-poll*  {
 				lappend options {*}[lrange $args 0 1]
 				set args [lrange $args 2 end]
 			}
