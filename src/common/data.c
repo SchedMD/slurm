@@ -459,6 +459,8 @@ static void _release(data_t *data)
 	}
 
 	data->type = DATA_TYPE_NONE;
+	/* always zero data in debug mode */
+	xassert(memset(&data->data, 0, sizeof(data->data)));
 }
 
 extern void data_free(data_t *data)
