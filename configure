@@ -24570,10 +24570,9 @@ $as_echo "$_cv_systemd_presence" >&6; }
 $as_echo "#define HAVE_SYSTEMD 1" >>confdefs.h
 
 
-	    _cv_systemd_version=`$PKG_CONFIG --modversion systemd 2>/dev/null`
-
 	    SYSTEMD_TASKSMAX_OPTION=""
-	    if test "$_cv_systemd_version" -ge 227; then
+	    $PKG_CONFIG --atleast-version 227 systemd
+	    if test "$?" -eq 0; then
 		    SYSTEMD_TASKSMAX_OPTION="TasksMax=infinity"
 	    fi
 

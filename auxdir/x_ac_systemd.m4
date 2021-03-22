@@ -7,8 +7,7 @@
 #
 # DESCRIPTION:
 #	Determine systemd presence
-#	Determine systemd version
-#	Determine systemd system unit dir
+#	Substitute SYSTEMD_TASKSMAX_OPTION output var if systemd version >= 227
 ##*****************************************************************************
 
 AC_DEFUN([X_AC_SYSTEMD],
@@ -25,10 +24,9 @@ AC_DEFUN([X_AC_SYSTEMD],
 		      [1],
 		      [Define systemd presence])
 
-	    _cv_systemd_version=`$PKG_CONFIG --modversion systemd 2>/dev/null`
-
 	    SYSTEMD_TASKSMAX_OPTION=""
-	    if [test "$_cv_systemd_version" -ge 227]; then
+	    $PKG_CONFIG --atleast-version 227 systemd
+	    if [test "$?" -eq 0]; then
 		    SYSTEMD_TASKSMAX_OPTION="TasksMax=infinity"
 	    fi
 	    AC_SUBST(SYSTEMD_TASKSMAX_OPTION)
