@@ -262,10 +262,11 @@ extern int fsync_and_close(int fd, const char *file_type)
  */
 extern char *fd_resolve_path(int fd)
 {
-	char *resolved = NULL, *ret = NULL;
+	char *resolved = NULL;
 	char *path = NULL;
 
 #if defined(__linux__)
+	char *ret = NULL;
 	path = xstrdup_printf("/proc/self/fd/%u", fd);
 	ret = realpath(path, NULL);
 	if (!ret) {
