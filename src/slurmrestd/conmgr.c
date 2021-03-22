@@ -1034,7 +1034,7 @@ static int _handle_connection(void *x, void *arg)
 {
 	con_mgr_fd_t *con = x;
 	con_mgr_t *mgr = con->mgr;
-	int count;
+	int count, rc;
 
 	/* cant run full magic checks inside of list lock */
 	xassert(mgr->magic == MAGIC_CON_MGR);
@@ -1169,8 +1169,12 @@ static int _handle_connection(void *x, void *arg)
 	/* have a thread free all the memory */
 	xassert(list_is_empty(con->work));
 	xassert(!con->has_work);
-	workq_add_work(mgr->workq, _connection_fd_delete, con,
-		       "_connection_fd_delete");
+	if ((rc = workq_add_work(mgr->workq, _connection_fd_delete, con,
+				 "_connection_fd_delete"))) {
+		log_flag(NET, "%s: [%s] direct cleanup as workq rejected _connection_fd_delete(): %s",
+			 __func__, con->name, slurm_strerror(rc));
+		_connection_fd_delete(con);
+	}
 
 	/* remove this connection */
 	return 1;
