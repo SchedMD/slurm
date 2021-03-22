@@ -54,6 +54,7 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 20.11.6
 ==========================
  -- Fix sacct assert with the --qos option.
+ -- Use pkg-config --atleast-version instead of --modversion for systemd.
 
 * Changes in Slurm 20.11.5
 ==========================
