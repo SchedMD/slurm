@@ -169,14 +169,14 @@ static bool _conn_readable(slurm_persist_conn_t *persist_conn)
 			return false;
 		}
 		if (ufds.revents & POLLERR) {
-			int sockerr;
-			if (fd_get_socket_error(ufds.fd, &sockerr))
+			int sockerr, fd_rc;
+			if (!(fd_rc = fd_get_socket_error(ufds.fd, &sockerr)))
 				error("%s: persistent connection for fd %d experienced error[%d]: %s",
 				      __func__, ufds.fd, sockerr,
 				      slurm_strerror(sockerr));
 			else
-				error("%s: persistent connection for fd %d experienced an unknown error",
-				      __func__, ufds.fd);
+				error("%s: persistent connection for fd %d experienced an error getting socket error: %s",
+				      __func__, ufds.fd, slurm_strerror(fd_rc));
 
 			return false;
 		}

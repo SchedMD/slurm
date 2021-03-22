@@ -6,6 +6,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix sacct assert with the --qos option.
  -- Use pkg-config --atleast-version instead of --modversion for systemd.
  -- common/fd - fix getsockopt() call in fd_get_socket_error().
+ -- Properly handle the return from fd_get_socket_error() in _conn_readable().
 
 * Changes in Slurm 20.11.5
 ==========================
