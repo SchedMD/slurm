@@ -3448,6 +3448,9 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 	job_record_t *job_ptr;
 	step_record_t *step_ptr;
 	int nodes, rem_nodes;
+#ifndef HAVE_FRONT_END
+	int range_bits, set_bits;
+#endif
 
 	xassert(rem);
 
@@ -3492,9 +3495,6 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 		return EINVAL;
 	}
 
-	ext_sensors_g_get_stependdata(step_ptr);
-	jobacctinfo_aggregate(step_ptr->jobacct, req->jobacct);
-
 	/* we have been adding task average frequencies for
 	 * jobacct->act_cpufreq so we need to divide with the
 	 * total number of tasks/cpus for the step average frequency */
@@ -3525,10 +3525,45 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 	bit_set_all(step_ptr->exit_node_bitmap);
 	rem_nodes = 0;
 #else
+	range_bits = req->range_last + 1 - req->range_first;
+	set_bits = bit_set_count_range(step_ptr->exit_node_bitmap,
+				       req->range_first,
+				       req->range_last + 1);
+
+	/* Check if any stepd of the range was already received */
+	if (set_bits) {
+		/* If all are already received skip jobacctinfo_aggregate */
+		if (set_bits == range_bits) {
+			debug("Step complete from %d to %d was already processed. Probably a RPC was resent from a child.",
+			      req->range_first, req->range_last);
+			goto no_aggregate;
+		}
+
+		/*
+		 * If partially received, we cannot recover the right gathered
+		 * information. If we don't gather the new one we'll miss some
+		 * information, and if we gather it some of the info will be
+		 * duplicated. We log that error and chose to partially
+		 * duplicate because it's probably a smaller error.
+		 */
+		error("Step complete from %d to %d was already processed (%d of %d). Probably a RPC was resent from a child and gathered information is partially duplicated.",
+		      req->range_first, req->range_last,
+		      set_bits, range_bits);
+	}
+
 	bit_nset(step_ptr->exit_node_bitmap,
 		 req->range_first, req->range_last);
+
+#endif
+
+	ext_sensors_g_get_stependdata(step_ptr);
+	jobacctinfo_aggregate(step_ptr->jobacct, req->jobacct);
+
+#ifndef HAVE_FRONT_END
+no_aggregate:
 	rem_nodes = bit_clear_count(step_ptr->exit_node_bitmap);
 #endif
+
 	*rem = rem_nodes;
 	if (rem_nodes == 0) {
 		/* release all switch windows */
