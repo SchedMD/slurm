@@ -150,7 +150,7 @@ static void _spec_core_filter(bitstr_t *node_bitmap, bitstr_t **core_bitmap)
 	xassert(core_bitmap);
 
 	if (*core_bitmap) {
-		core_array_and_not(core_bitmap, p_spec_core_map);
+		core_array_and(core_bitmap, p_spec_core_map);
 	} else {
 		bit_not(*p_spec_core_map);
 		*core_bitmap = *p_spec_core_map;
