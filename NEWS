@@ -64,6 +64,7 @@ documents those changes that are of interest to users and administrators.
  -- Properly handle the return from fd_get_socket_error() in _conn_readable().
  -- cons_res - Fix issue where running jobs were not taken into consideration
     when creating a reservation.
+ -- Avoid a deadlock between job_list for_each and assoc QOS_LOCK.
 
 * Changes in Slurm 20.11.5
 ==========================

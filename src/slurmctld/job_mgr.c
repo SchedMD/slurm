@@ -140,6 +140,7 @@ typedef struct {
 typedef struct {
 	buf_t *buffer;
 	uint32_t  filter_uid;
+	bool has_qos_lock;
 	uint32_t *jobs_packed;
 	uint16_t  protocol_version;
 	uint16_t  show_flags;
@@ -9584,7 +9585,8 @@ static int _pack_job(void *object, void *arg)
 		return SLURM_SUCCESS;
 
 	pack_job(job_ptr, pack_info->show_flags, pack_info->buffer,
-		 pack_info->protocol_version, pack_info->uid);
+		 pack_info->protocol_version, pack_info->uid,
+		 pack_info->has_qos_lock);
 
 	(*pack_info->jobs_packed)++;
 
@@ -9623,6 +9625,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	uint32_t jobs_packed = 0, tmp_offset;
 	_foreach_pack_job_info_t pack_info = {0};
 	buf_t *buffer;
+	assoc_mgr_lock_t locks = { .qos = READ_LOCK };
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -9641,8 +9644,11 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	pack_info.protocol_version = protocol_version;
 	pack_info.show_flags       = show_flags;
 	pack_info.uid              = uid;
+	pack_info.has_qos_lock = true;
 
+	assoc_mgr_lock(&locks);
 	list_for_each(job_list, _pack_job, &pack_info);
+	assoc_mgr_unlock(&locks);
 
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);
@@ -9675,6 +9681,7 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 	uint32_t jobs_packed = 0, tmp_offset;
 	_foreach_pack_job_info_t pack_info = {0};
 	buf_t *buffer;
+	assoc_mgr_lock_t locks = { .qos = READ_LOCK };
 
 	xassert(job_ids);
 
@@ -9695,8 +9702,11 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 	pack_info.protocol_version = protocol_version;
 	pack_info.show_flags       = show_flags;
 	pack_info.uid              = uid;
+	pack_info.has_qos_lock = true;
 
+	assoc_mgr_lock(&locks);
 	list_for_each(job_ids, _foreach_pack_jobid, &pack_info);
+	assoc_mgr_unlock(&locks);
 
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);
@@ -9719,7 +9729,7 @@ static int _pack_het_job(job_record_t *job_ptr, uint16_t show_flags,
 	while ((het_job_ptr = list_next(iter))) {
 		if (het_job_ptr->het_job_id == job_ptr->het_job_id) {
 			pack_job(het_job_ptr, show_flags, buffer,
-				 protocol_version, uid);
+				 protocol_version, uid, false);
 			job_cnt++;
 		} else {
 			error("%s: Bad het_job_list for %pJ",
@@ -9774,7 +9784,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 		/* Pack regular (not array) job */
 		if (!_hide_job(job_ptr, uid, show_flags)) {
 			pack_job(job_ptr, show_flags, buffer, protocol_version,
-				 uid);
+				 uid, false);
 			jobs_packed++;
 		}
 	} else {
@@ -9785,7 +9795,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 			packed_head = true;
 			if (!_hide_job(job_ptr, uid, show_flags)) {
 				pack_job(job_ptr, show_flags, buffer,
-					 protocol_version, uid);
+					 protocol_version, uid, false);
 				jobs_packed++;
 			}
 		}
@@ -9798,7 +9808,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 				if (_hide_job(job_ptr, uid, show_flags))
 					break;
 				pack_job(job_ptr, show_flags, buffer,
-					 protocol_version, uid);
+					 protocol_version, uid, false);
 				jobs_packed++;
 			}
 			job_ptr = job_ptr->job_array_next_j;
@@ -9847,13 +9857,14 @@ static void _pack_job_gres(job_record_t *dump_job_ptr, buf_t *buffer,
  *	  whenever the data format changes
  */
 void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
-	      uint16_t protocol_version, uid_t uid)
+	      uint16_t protocol_version, uid_t uid, bool has_qos_lock)
 {
 	struct job_details *detail_ptr;
 	time_t accrue_time = 0, begin_time = 0, start_time = 0, end_time = 0;
 	uint32_t time_limit;
 	char *nodelist = NULL;
 	assoc_mgr_lock_t locks = { .qos = READ_LOCK };
+	xassert(!has_qos_lock || verify_assoc_lock(QOS_LOCK, READ_LOCK));
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		detail_ptr = dump_job_ptr->details;
@@ -9982,7 +9993,8 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		packstr(dump_job_ptr->burst_buffer_state, buffer);
 		packstr(dump_job_ptr->system_comment, buffer);
 
-		assoc_mgr_lock(&locks);
+		if (!has_qos_lock)
+			assoc_mgr_lock(&locks);
 		if (dump_job_ptr->qos_ptr)
 			packstr(dump_job_ptr->qos_ptr->name, buffer);
 		else {
@@ -10003,7 +10015,8 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		} else {
 			pack_time(0, buffer);
 		}
-		assoc_mgr_unlock(&locks);
+		if (!has_qos_lock)
+			assoc_mgr_unlock(&locks);
 
 		packstr(dump_job_ptr->licenses, buffer);
 		packstr(dump_job_ptr->state_desc, buffer);
