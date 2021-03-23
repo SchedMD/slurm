@@ -467,7 +467,7 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 	uint16_t port = 0;
 
 	if (!node_ptr->nodenames || !node_ptr->nodenames[0])
-		return -1;
+		fatal("Empty NodeName in config.");
 
 	if (node_ptr->state != NULL) {
 		state_val = state_str2int(node_ptr->state, node_ptr->nodenames);
