@@ -10738,8 +10738,13 @@ static void _pack_default_job_details(job_record_t *job_ptr, Buf buffer,
 				pack32(detail_ptr->num_tasks, buffer);
 			else if (IS_JOB_PENDING(job_ptr))
 				pack32(detail_ptr->min_nodes, buffer);
+			else if (job_ptr->tres_alloc_cnt)
+				pack32((uint32_t)
+				       job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE],
+				       buffer);
 			else
 				pack32(job_ptr->node_cnt, buffer);
+
 			pack16(shared, buffer);
 			pack32(detail_ptr->cpu_freq_min, buffer);
 			pack32(detail_ptr->cpu_freq_max, buffer);
