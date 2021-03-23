@@ -201,8 +201,8 @@ enum cluster_fed_states {
 #define JOBCOND_FLAG_NO_DEFAULT_USAGE 0x00000080 /* Use usage_time as the
 						  * submit_time of the job.
 						  */
-#define JOBCOND_FLAG_SCRIPT  0x00000010 /* Get batch script only */
-#define JOBCOND_FLAG_ENV     0x00000020 /* Get job's env only */
+#define JOBCOND_FLAG_SCRIPT  0x00000100 /* Get batch script only */
+#define JOBCOND_FLAG_ENV     0x00000200 /* Get job's env only */
 
 /* Archive / Purge time flags */
 #define SLURMDB_PURGE_BASE    0x0000ffff   /* Apply to get the number
