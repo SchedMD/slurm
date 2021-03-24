@@ -11,21 +11,17 @@
 
 AC_DEFUN([X_AC_RSMI],
 [
+  _x_ac_rsmi_dir="/opt/rocm/rocm_smi"
   AC_ARG_WITH(
     [rsmi],
-    AS_HELP_STRING(--without-rsmi, Do not build AMD RSMI-related code),
-    []
-  )
+    AS_HELP_STRING(--with-rsmi=PATH, Specify path to rsmi installation),
+    [AS_IF([test "x$with_rsmi" != xno && test "x$with_rsmi" != xyes],
+           [_x_ac_rsmi_dir="$with_rsmi"])])
 
   if [test "x$with_rsmi" = xno]; then
      AC_MSG_WARN([support for rsmi disabled])
   else
     AC_MSG_CHECKING([whether RSMI/ROCm in installed in this system])
-    _x_ac_rsmi_dir="/opt/rocm/rocm_smi"
-    AC_ARG_WITH(
-      [rsmi_dir],
-      AS_HELP_STRING(--with-rsmi_dir=PATH,Specify path to ROCm installation - /opt/rocm/rocm_smi by default),
-      [AS_IF([test "x$with_rsmi_dir" != xno],[_x_ac_rsmi_dir="$with_rsmi_dir"])])
     # /opt/rocm/rocm_smi/ is the default location. Check for RSMI header and library in the default location
     # or in the location specified during configure
     AC_MSG_RESULT([])

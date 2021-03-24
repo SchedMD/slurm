@@ -68,6 +68,8 @@ documents those changes that are of interest to users and administrators.
     falling back to the default directories), and will always error the build
     if the library is not found (instead of a mix of error messages and non-
     fatal warning messages).
+ -- configure: replace --with-rmsi_dir option with proper handling for
+    --with-rsmi=dir.
 
 * Changes in Slurm 20.11.6
 ==========================

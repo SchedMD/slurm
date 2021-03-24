@@ -990,7 +990,6 @@ with_lz4
 with_hwloc
 with_nvml
 with_rsmi
-with_rsmi_dir
 with_pmix
 with_freeipmi
 with_rrdtool
@@ -1758,9 +1757,7 @@ Optional Packages:
   --with-lz4=PATH         Specify path to liblz4 installation
   --with-hwloc=PATH       Specify path to hwloc installation
   --with-nvml=PATH        Specify path to nvml installation
-  --without-rsmi          Do not build AMD RSMI-related code
-  --with-rsmi_dir=PATH    Specify path to ROCm installation -
-                          /opt/rocm/rocm_smi by default
+  --with-rsmi=PATH        Specify path to rsmi installation
   --with-pmix=PATH        Specify path to pmix installation(s). Multiple
                           version directories can be ':' delimited.
   --with-freeipmi=PATH    Specify path to freeipmi installation
@@ -21582,11 +21579,13 @@ fi
 
 
 
+  _x_ac_rsmi_dir="/opt/rocm/rocm_smi"
 
 # Check whether --with-rsmi was given.
 if test "${with_rsmi+set}" = set; then :
-  withval=$with_rsmi;
-
+  withval=$with_rsmi; if test "x$with_rsmi" != xno && test "x$with_rsmi" != xyes; then :
+  _x_ac_rsmi_dir="$with_rsmi"
+fi
 fi
 
 
@@ -21596,15 +21595,6 @@ $as_echo "$as_me: WARNING: support for rsmi disabled" >&2;}
   else
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether RSMI/ROCm in installed in this system" >&5
 $as_echo_n "checking whether RSMI/ROCm in installed in this system... " >&6; }
-    _x_ac_rsmi_dir="/opt/rocm/rocm_smi"
-
-# Check whether --with-rsmi_dir was given.
-if test "${with_rsmi_dir+set}" = set; then :
-  withval=$with_rsmi_dir; if test "x$with_rsmi_dir" != xno; then :
-  _x_ac_rsmi_dir="$with_rsmi_dir"
-fi
-fi
-
     # /opt/rocm/rocm_smi/ is the default location. Check for RSMI header and library in the default location
     # or in the location specified during configure
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: " >&5

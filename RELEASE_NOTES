@@ -38,6 +38,8 @@ HIGHLIGHTS
     falling back to the default directories), and will always error the build
     if the library is not found (instead of a mix of error messages and non-
     fatal warning messages).
+ -- configure: replace --with-rmsi_dir option with proper handling for
+    --with-rsmi=dir.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
