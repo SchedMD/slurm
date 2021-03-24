@@ -186,6 +186,9 @@ typedef struct {
 	int tag;
 } path_t;
 
+static void _free_entry_list(entry_t *entry, path_t *path,
+			     entry_method_t *method);
+
 static entry_t *_parse_openapi_path(const char *str_path)
 {
 	char *save_ptr = NULL;
@@ -551,11 +554,8 @@ extern int register_path_tag(const char *str_path)
 	rc = path->tag;
 
 cleanup:
-	for (entry_t *entry = entries; entry->type; entry++) {
-		xfree(entry->entry);
-		xfree(entry->name);
-	}
-	xfree(entries);
+	_free_entry_list(entries, path, args.method);
+	entries = NULL;
 
 	return rc;
 }
@@ -1049,6 +1049,28 @@ static int _get_openapi_specification(data_t *resp)
 	return SLURM_SUCCESS;
 }
 
+static void _free_entry_list(entry_t *entry, path_t *path,
+			     entry_method_t *method)
+{
+	entry_t *itr = entry;
+
+	if (!entry)
+		return;
+
+	while (itr->type) {
+		debug5("%s: remove path tag:%d method:%s entry:%s name:%s",
+		       __func__, path->tag,
+		       get_http_method_string(method->method),
+		       itr->entry, itr->name);
+
+		xfree(itr->entry);
+		xfree(itr->name);
+		itr++;
+	}
+
+	xfree(entry);
+}
+
 static void _list_delete_path_t(void *x)
 {
 	entry_method_t *method;
@@ -1061,24 +1083,12 @@ static void _list_delete_path_t(void *x)
 	method = path->methods;
 
 	while (method->method) {
-		entry_t *entry = method->entries;
-
 		debug5("%s: remove path tag:%d method:%s",
 		       __func__, path->tag,
 		       get_http_method_string(method->method));
 
-		while (entry->type) {
-			debug5("%s: remove path tag:%d method:%s entry:%s name:%s",
-			       __func__, path->tag,
-			       get_http_method_string(method->method),
-			       entry->entry, entry->name);
-
-			xfree(entry->entry);
-			xfree(entry->name);
-			entry++;
-		}
-
-		xfree(method->entries);
+		_free_entry_list(method->entries, path, method);
+		method->entries = NULL;
 		method++;
 	}
 
