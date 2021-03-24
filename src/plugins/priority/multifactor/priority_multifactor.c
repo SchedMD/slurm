@@ -872,6 +872,13 @@ static void _handle_tres_run_secs(uint64_t *tres_run_delta,
 
 	_handle_qos_tres_run_secs(NULL, tres_run_delta,
 				  job_ptr->job_id, job_ptr->qos_ptr);
+
+	/* Only update partition qos if not being used by job */
+	if (job_ptr->part_ptr &&
+	    (job_ptr->part_ptr->qos_ptr != job_ptr->qos_ptr))
+		_handle_qos_tres_run_secs(NULL, tres_run_delta, job_ptr->job_id,
+					  job_ptr->part_ptr->qos_ptr);
+
 	while (assoc) {
 		_handle_assoc_tres_run_secs(NULL, tres_run_delta,
 					    job_ptr->job_id, assoc);

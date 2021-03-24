@@ -65,6 +65,7 @@ documents those changes that are of interest to users and administrators.
  -- cons_res - Fix issue where running jobs were not taken into consideration
     when creating a reservation.
  -- Avoid a deadlock between job_list for_each and assoc QOS_LOCK.
+ -- Fix TRESRunMins usage for partition qos on restart/reconfig.
 
 * Changes in Slurm 20.11.5
 ==========================
