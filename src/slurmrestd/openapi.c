@@ -94,8 +94,6 @@ static slurm_openapi_ops_t *ops;
 static int g_context_cnt = -1;
 static plugin_context_t **g_context = NULL;
 
-static data_for_each_cmd_t _match_server_path_string(const data_t *data,
-						     void *arg);
 
 /*
  * Parse OAS type.
@@ -188,6 +186,8 @@ typedef struct {
 
 static void _free_entry_list(entry_t *entry, path_t *path,
 			     entry_method_t *method);
+static data_for_each_cmd_t _match_server_path_string(const data_t *data,
+						     void *arg);
 
 static entry_t *_parse_openapi_path(const char *str_path)
 {
