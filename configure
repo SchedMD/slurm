@@ -1755,9 +1755,7 @@ Optional Packages:
   --with-zlib=DIR         root directory path of zlib installation [defaults to
                           /usr/local or /usr if not found in /usr/local]
   --without-zlib          to disable zlib usage completely
-  --with-lz4=DIR          root directory path of lz4 installation [defaults to
-                          to /usr/local or /usr if not found in /usr/local]
-   --without-lz4          to disable lz4 usage completely
+  --with-lz4=PATH         Specify path to liblz4 installation
   --with-hwloc=PATH       Specify path to hwloc installation
   --without-nvml          Do not build NVIDIA NVML-related code
   --without-rsmi          Do not build AMD RSMI-related code
