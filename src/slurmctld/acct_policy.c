@@ -1073,10 +1073,21 @@ static void _qos_alter_job(job_record_t *job_ptr,
 	for (i=0; i<slurmctld_tres_cnt; i++) {
 		if (used_tres_run_secs[i] == new_used_tres_run_secs[i])
 			continue;
-		qos_ptr->usage->grp_used_tres_run_secs[i] -=
-			used_tres_run_secs[i];
-		qos_ptr->usage->grp_used_tres_run_secs[i] +=
+		/*
+		 * Handle the case when remaining usage is less than
+		 * the original job request.
+		 */
+		int64_t used_tres_run_sec_decr =
+			used_tres_run_secs[i] -
 			new_used_tres_run_secs[i];
+		if ((used_tres_run_sec_decr < 0) ||
+		    (used_tres_run_sec_decr <
+		     qos_ptr->usage->grp_used_tres_run_secs[i]))
+			qos_ptr->usage->grp_used_tres_run_secs[i] -=
+				used_tres_run_sec_decr;
+		else
+			qos_ptr->usage->grp_used_tres_run_secs[i] = 0;
+
 		debug2("altering %pJ QOS %s got %"PRIu64" just removed %"PRIu64" and added %"PRIu64,
 		       job_ptr, qos_ptr->name,
 		       qos_ptr->usage->grp_used_tres_run_secs[i],
@@ -2704,10 +2715,21 @@ extern void acct_policy_alter_job(job_record_t *job_ptr,
 		for (i=0; i<slurmctld_tres_cnt; i++) {
 			if (used_tres_run_secs[i] == new_used_tres_run_secs[i])
 				continue;
-			assoc_ptr->usage->grp_used_tres_run_secs[i] -=
-				used_tres_run_secs[i];
-			assoc_ptr->usage->grp_used_tres_run_secs[i] +=
+			/*
+			 * Handle the case when remaining usage is less than
+			 * the original job request.
+			 */
+			int64_t used_tres_run_sec_decr =
+				used_tres_run_secs[i] -
 				new_used_tres_run_secs[i];
+			if ((used_tres_run_sec_decr < 0) ||
+			    (used_tres_run_sec_decr <
+			     assoc_ptr->usage->grp_used_tres_run_secs[i]))
+				assoc_ptr->usage->grp_used_tres_run_secs[i] -=
+					used_tres_run_sec_decr;
+			else
+				assoc_ptr->usage->grp_used_tres_run_secs[i] = 0;
+
 			debug2("altering %pJ assoc %u(%s/%s/%s) got %"PRIu64" just removed %"PRIu64" and added %"PRIu64,
 			       job_ptr, assoc_ptr->id, assoc_ptr->acct,
 			       assoc_ptr->user, assoc_ptr->partition,
