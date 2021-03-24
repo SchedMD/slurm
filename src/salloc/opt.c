@@ -784,7 +784,7 @@ static void _usage(void)
 {
  	printf(
 "Usage: salloc [-N numnodes|[min nodes]-[max nodes]] [-n num-processors]\n"
-"              [[-c cpus-per-node] [-r n] [-p partition] [--hold] [-t minutes]\n"
+"              [-c cpus-per-node] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "              [--immediate[=secs]] [--no-kill] [--overcommit] [-D path]\n"
 "              [--oversubscribe] [-J jobname]\n"
 "              [--verbose] [--gid=group] [--uid=user] [--licenses=names]\n"
@@ -797,13 +797,13 @@ static void _usage(void)
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos]\n"
 "              [--mem-bind=...] [--reservation=name] [--mcs-label=mcs]\n"
 "              [--time-min=minutes] [--gres=list] [--gres-flags=opts]\n"
-"              [--cpu-freq=min[-max[:gov]] [--power=flags] [--profile=...]\n"
+"              [--cpu-freq=min[-max[:gov]]] [--power=flags] [--profile=...]\n"
 "              [--switches=max-switches[@max-time-to-wait]]\n"
 "              [--core-spec=cores] [--thread-spec=threads] [--reboot]\n"
 "              [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
 "              [--delay-boot=mins] [--use-min-nodes]\n"
 "              [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
-"              [--gpus-per-node=n] [--gpus-per-socket=n]  [--gpus-per-task=n]\n"
+"              [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
 "              [--mem-per-gpu=MB]\n"
 "              [command [args...]]\n");
 }

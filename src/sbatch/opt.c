@@ -1117,7 +1117,7 @@ static void _usage(void)
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              [--network=type] [--mem-per-cpu=MB] [--qos=qos] [--gres=list]\n"
 "              [--mem-bind=...] [--reservation=name] [--mcs-label=mcs]\n"
-"              [--cpu-freq=min[-max[:gov]] [--power=flags] [--gres-flags=opts]\n"
+"              [--cpu-freq=min[-max[:gov]]] [--power=flags] [--gres-flags=opts]\n"
 "              [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
 "              [--core-spec=cores] [--thread-spec=threads]\n"
 "              [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
@@ -1125,7 +1125,7 @@ static void _usage(void)
 "              [--export[=names]] [--export-file=file|fd] [--delay-boot=mins]\n"
 "              [--use-min-nodes]\n"
 "              [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
-"              [--gpus-per-node=n] [--gpus-per-socket=n]  [--gpus-per-task=n]\n"
+"              [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
 "              [--mem-per-gpu=MB]\n"
 "              executable [args...]\n");
 }
