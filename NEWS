@@ -32,6 +32,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix RESV_DEL_HOLD not being a valid state when using squeue --states.
  -- Add missing squeue selectable states in valid states error message.
  -- Fix scheduling last array task multiple times on error, causing segfault.
+ -- Fix issue where a step could be allocated more memory than the job when
+    dealing with --mem-per-cpu and --threads-per-core.
 
 * Changes in Slurm 20.11.5
 ==========================
