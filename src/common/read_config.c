@@ -4993,9 +4993,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 				}
 				set_unit = true;
 				conf->task_plugin_param |= CPU_BIND_TO_THREADS;
-			} else if (xstrcasecmp(tok, "sched") == 0) {
-				/* No change to task_plugin_param,
-				 * this is the default */
 			} else if (xstrcasecmp(tok, "verbose") == 0) {
 				conf->task_plugin_param |= CPU_BIND_VERBOSE;
 			} else if (xstrncasecmp(tok, "autobind=",
