@@ -1123,7 +1123,8 @@ extern void gres_plugin_job_set_env(char ***job_env_ptr, List job_gres_list,
  */
 extern void gres_plugin_job_set_defs(List job_gres_list, char *gres_name,
 				     uint64_t cpu_per_gpu, uint64_t mem_per_gpu,
-				     char **cpus_per_tres, char **mem_per_tres);
+				     char **cpus_per_tres, char **mem_per_tres,
+				     uint16_t *cpus_per_task);
 
 /*
  * Extract from the job record's gres_list the count of allocated resources of
