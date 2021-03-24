@@ -1431,7 +1431,7 @@ static void _usage(void)
 "            [--prolog=fname] [--epilog=fname]\n"
 "            [--task-prolog=fname] [--task-epilog=fname]\n"
 "            [--ctrl-comm-ifhn=addr] [--multi-prog] [--mcs-label=mcs]\n"
-"            [--cpu-freq=min[-max[:gov]] [--power=flags] [--spread-job]\n"
+"            [--cpu-freq=min[-max[:gov]]] [--power=flags] [--spread-job]\n"
 "            [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
 "            [--core-spec=cores] [--thread-spec=threads]\n"
 "            [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
@@ -1440,7 +1440,7 @@ static void _usage(void)
 "            [-w hosts...] [-x hosts...] [--use-min-nodes]\n"
 "            [--mpi-combine=yes|no] [--het-group=value]\n"
 "            [--cpus-per-gpu=n] [--gpus=n] [--gpu-bind=...] [--gpu-freq=...]\n"
-"            [--gpus-per-node=n] [--gpus-per-socket=n]  [--gpus-per-task=n]\n"
+"            [--gpus-per-node=n] [--gpus-per-socket=n] [--gpus-per-task=n]\n"
 "            [--mem-per-gpu=MB]\n"
 "            executable [args...]\n");
 
