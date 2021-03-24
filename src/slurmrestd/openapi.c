@@ -94,6 +94,39 @@ static slurm_openapi_ops_t *ops;
 static int g_context_cnt = -1;
 static plugin_context_t **g_context = NULL;
 
+typedef enum {
+	OPENAPI_PATH_ENTRY_UNKNOWN = 0,
+	OPENAPI_PATH_ENTRY_MATCH_STRING,
+	OPENAPI_PATH_ENTRY_MATCH_PARAMETER,
+	OPENAPI_PATH_ENTRY_MAX
+} entry_type_t;
+
+/*
+ * This is a simplified entry since OAS allows combos of
+ * parameters but we will only honor having a single parameter
+ * as an dir entry for now
+ */
+typedef struct {
+	char *entry;
+	char *name;
+	entry_type_t type;
+	parameter_type_t parameter;
+} entry_t;
+
+typedef struct {
+	entry_t *entries;
+	http_request_method_t method;
+} entry_method_t;
+
+typedef struct {
+	entry_method_t *methods;
+	int tag;
+} path_t;
+
+static void _free_entry_list(entry_t *entry, path_t *path,
+			     entry_method_t *method);
+static data_for_each_cmd_t _match_server_path_string(const data_t *data,
+						     void *arg);
 
 /*
  * Parse OAS type.
@@ -143,13 +176,6 @@ static const char *_get_parameter_type_string(parameter_type_t type)
 	}
 }
 
-typedef enum {
-	OPENAPI_PATH_ENTRY_UNKNOWN = 0,
-	OPENAPI_PATH_ENTRY_MATCH_STRING,
-	OPENAPI_PATH_ENTRY_MATCH_PARAMETER,
-	OPENAPI_PATH_ENTRY_MAX
-} entry_type_t;
-
 static const char *_get_entry_type_string(entry_type_t type)
 {
 	switch (type) {
@@ -161,33 +187,6 @@ static const char *_get_entry_type_string(entry_type_t type)
 		return "invalid";
 	}
 }
-
-/*
- * This is a simplified entry since OAS allows combos of
- * parameters but we will only honor having a single parameter
- * as an dir entry for now
- */
-typedef struct {
-	char *entry;
-	char *name;
-	entry_type_t type;
-	parameter_type_t parameter;
-} entry_t;
-
-typedef struct {
-	entry_t *entries;
-	http_request_method_t method;
-} entry_method_t;
-
-typedef struct {
-	entry_method_t *methods;
-	int tag;
-} path_t;
-
-static void _free_entry_list(entry_t *entry, path_t *path,
-			     entry_method_t *method);
-static data_for_each_cmd_t _match_server_path_string(const data_t *data,
-						     void *arg);
 
 static entry_t *_parse_openapi_path(const char *str_path)
 {
