@@ -639,7 +639,11 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	_sprint_range(tmp_line, sizeof(tmp_line), job_ptr->num_cpus, job_ptr->max_cpus);
 	xstrfmtcat(out, "NumCPUs=%s ", tmp_line);
 
-	xstrfmtcat(out, "NumTasks=%u ", job_ptr->num_tasks);
+	if (job_ptr->num_tasks == NO_VAL)
+		xstrcat(out, "NumTasks=N/A ");
+	else
+		xstrfmtcat(out, "NumTasks=%u ", job_ptr->num_tasks);
+
 	if (job_ptr->cpus_per_task == NO_VAL16)
 		xstrfmtcat(out, "CPUs/Task=N/A ");
 	else
