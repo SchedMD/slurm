@@ -66,6 +66,8 @@ documents those changes that are of interest to users and administrators.
     when creating a reservation.
  -- Avoid a deadlock between job_list for_each and assoc QOS_LOCK.
  -- Fix TRESRunMins usage for partition qos on restart/reconfig.
+ -- Fix printing of number of tasks on a completed job that didn't request
+    tasks.
 
 * Changes in Slurm 20.11.5
 ==========================
