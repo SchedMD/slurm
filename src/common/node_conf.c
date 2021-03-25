@@ -90,7 +90,7 @@ uint16_t *cr_node_num_cores = NULL;
 uint32_t *cr_node_cores_offset = NULL;
 
 /* Local function definitions */
-static int	_delete_config_record (void);
+static void _delete_config_record(void);
 #if _DEBUG
 static void	_dump_hash (void);
 #endif
@@ -105,13 +105,11 @@ static void _node_record_hash_identity (void* item, const char** key,
  * RET 0 if no error, errno otherwise
  * global: config_list - list of all configuration records
  */
-static int _delete_config_record (void)
+static void _delete_config_record(void)
 {
 	last_node_update = time (NULL);
 	list_flush(config_list);
 	list_flush(front_end_list);
-
-	return SLURM_SUCCESS;
 }
 
 
@@ -787,7 +785,7 @@ extern int init_node_conf (void)
 	xhash_free(node_hash_table);
 
 	if (config_list)	/* delete defunct configuration entries */
-		(void) _delete_config_record ();
+		_delete_config_record();
 	else {
 		config_list    = list_create (_list_delete_config);
 		front_end_list = list_create (destroy_frontend);
