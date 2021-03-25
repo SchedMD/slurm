@@ -4272,11 +4272,10 @@ void dump_job_desc(job_desc_msg_t * job_specs)
  *	before creating any job entries. Pre-existing job entries are
  *	left unchanged.
  *	NOTE: The job hash table size does not change after initial creation.
- * RET 0 if no error, otherwise an error code
  * global: last_job_update - time of last job table update
  *	job_list - pointer to global job list
  */
-int init_job_conf(void)
+void init_job_conf(void)
 {
 	if (job_list == NULL) {
 		job_count = 0;
@@ -4288,8 +4287,6 @@ int init_job_conf(void)
 	if (!purge_files_list) {
 		purge_files_list = list_create(xfree_ptr);
 	}
-
-	return SLURM_SUCCESS;
 }
 
 /*

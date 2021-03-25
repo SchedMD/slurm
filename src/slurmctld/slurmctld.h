@@ -1338,11 +1338,10 @@ extern void init_depend_policy(void);
  * init_job_conf - initialize the job configuration tables and values.
  *	this should be called after creating node information, but
  *	before creating any job entries.
- * RET 0 if no error, otherwise an error code
  * global: last_job_update - time of last job table update
  *	job_list - pointer to global job list
  */
-extern int init_job_conf (void);
+extern void init_job_conf(void);
 
 /*
  * init_node_conf - initialize the node configuration tables and values.
