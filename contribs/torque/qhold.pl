@@ -49,7 +49,6 @@ use Getopt::Long 2.24 qw(:config no_ignore_case);
 use lib "${FindBin::Bin}/../lib/perl";
 use autouse 'Pod::Usage' => qw(pod2usage);
 use Slurm ':all';
-use Switch;
 
 Main:
 {
@@ -95,14 +94,10 @@ Main:
 
     my $reason = "user held (qhold)";
 
-    if($hold) {
-	    switch($hold) {
-		    case ['u'] { $reason = "user held (qhold)" }
-		    case ['s'] { $reason = "system held (qhold)" }
-		    case ['o'] { $reason = "batch held (qhold)" }
-		    case ['n'] { $reason = "" }
-	    }
-    }
+    if    ($hold eq 'u') { $reason = "user held (qhold)" }
+    elsif ($hold eq 's') { $reason = "system held (qhold)" }
+    elsif ($hold eq 'o') { $reason = "batch held (qhold)" }
+    elsif ($hold eq 'n') { $reason = "" }
 
     my $rc = 0;
     foreach my $jobid (@jobIds) {

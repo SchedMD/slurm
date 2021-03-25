@@ -50,7 +50,6 @@ use lib "${FindBin::Bin}/../lib/perl";
 use autouse 'Pod::Usage' => qw(pod2usage);
 use Slurm ':all';
 use Slurmdb ':all'; # needed for getting the correct cluster dims
-use Switch;
 
 # Parse Command Line Arguments
 my (
@@ -250,19 +249,18 @@ sub stateCode
 	if(!defined($state)) {
 		return 'U';
 	}
-	switch($state & JOB_STATE_BASE) {
-		case [JOB_COMPLETE,
-		      JOB_CANCELLED,
-		      JOB_TIMEOUT,
-		      JOB_NODE_FAIL,
-		      JOB_PREEMPTED,
-		      JOB_BOOT_FAIL,
-		      JOB_FAILED]    { return 'C' }
-		case [JOB_RUNNING]   { return 'R' }
-		case [JOB_PENDING]   { return 'Q' }
-		case [JOB_SUSPENDED] { return 'S' }
-		else                 { return 'U' }   # Unknown
-	}
+	my $base_state = $state & JOB_STATE_BASE;
+	if ($base_state == JOB_COMPLETE
+		|| $base_state == JOB_CANCELLED
+		|| $base_state == JOB_TIMEOUT
+		|| $base_state == JOB_NODE_FAIL
+		|| $base_state == JOB_PREEMPTED
+		|| $base_state == JOB_BOOT_FAIL
+		|| $base_state == JOB_FAILED)    { return 'C' }
+	elsif ($base_state == JOB_RUNNING)   { return 'R' }
+	elsif ($base_state == JOB_PENDING)   { return 'Q' }
+	elsif ($base_state == JOB_SUSPENDED) { return 'S' }
+	else                                 { return 'U' }   # Unknown
 	return 'U';
 }
 

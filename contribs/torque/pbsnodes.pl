@@ -50,7 +50,6 @@ use Getopt::Long 2.24 qw(:config no_ignore_case);
 use lib "${FindBin::Bin}/../lib/perl";
 use autouse 'Pod::Usage' => qw(pod2usage);
 use Slurm ':all';
-use Switch;
 
 Main:
 {
