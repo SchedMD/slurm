@@ -1268,7 +1268,7 @@ extern int dist_tasks(job_record_t *job_ptr, const uint16_t cr_type,
 	 * by the next code block
 	 */
 	if (slurm_conf.select_type_param & CR_CORE_DEFAULT_DIST_BLOCK) {
-		switch (job_ptr->details->task_dist & SLURM_DIST_NODEMASK) {
+		switch (job_ptr->details->task_dist & SLURM_DIST_NODESOCKMASK) {
 		case SLURM_DIST_ARBITRARY:
 		case SLURM_DIST_BLOCK:
 		case SLURM_DIST_CYCLIC:
