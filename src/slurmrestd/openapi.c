@@ -1058,10 +1058,9 @@ static void _free_entry_list(entry_t *entry, path_t *path,
 
 	while (itr->type) {
 		debug5("%s: remove path tag:%d method:%s entry:%s name:%s",
-		       __func__, path->tag,
-		       get_http_method_string(method->method),
-		       itr->entry, itr->name);
-
+		       __func__, (path ? path->tag : -1),
+		       (method ? get_http_method_string(method->method) :
+				 "UNKNOWN"), itr->entry, itr->name);
 		xfree(itr->entry);
 		xfree(itr->name);
 		itr++;
