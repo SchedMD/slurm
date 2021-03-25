@@ -341,6 +341,30 @@ static int _set_task_dist(job_record_t *job_ptr, const uint16_t cr_type)
 	if (error_code != SLURM_SUCCESS)
 		return error_code;
 
+	/*
+	 * If we are asking for less threads per core than there are on the node
+	 * we need to adjust for that for accounting.
+	 * This will be reversed for getting the correct memory in cons_common.c
+	 * _job_test() look for 'save_mem & MEM_PER_CPU'.
+	 */
+	if (job_ptr->job_resrcs &&
+	    (job_ptr->details->mc_ptr->threads_per_core != NO_VAL16) &&
+	    ((cr_type & CR_CORE) || (cr_type & CR_SOCKET))) {
+		job_resources_t *job_res = job_ptr->job_resrcs;
+		int i = 0, n_last, n_first = bit_ffs(job_res->node_bitmap);
+
+		if (n_first == -1)
+			return SLURM_ERROR;
+
+		n_last = bit_fls(job_res->node_bitmap);
+		for (int n = n_first; n <= n_last; n++) {
+			if (!bit_test(job_res->node_bitmap, n) ||
+			    (job_ptr->details->mc_ptr->threads_per_core ==
+			     select_node_record[n].vpus))
+				continue;
+			job_res->cpus[i++] *= select_node_record[n].vpus;
+		}
+	}
 	return SLURM_SUCCESS;
 }
 
