@@ -111,7 +111,7 @@ static int  _compare_hostnames(node_record_t *old_node_table,
 			       int old_node_count, node_record_t *node_table,
 			       int node_count);
 static void _gres_reconfig(bool reconfig);
-static int  _init_all_slurm_conf(void);
+static void _init_all_slurm_conf(void);
 static void _list_delete_feature(void *feature_entry);
 static int _preserve_select_type_param(slurm_conf_t *ctl_conf_ptr,
                                        uint16_t old_select_type_p);
@@ -541,11 +541,10 @@ static void _build_bitmaps(void)
 /*
  * _init_all_slurm_conf - initialize or re-initialize the slurm
  *	configuration values.
- * RET 0 if no error, otherwise an error code.
  * NOTE: We leave the job table intact
  * NOTE: Operates on common variables, no arguments
  */
-static int _init_all_slurm_conf(void)
+static void _init_all_slurm_conf(void)
 {
 	char *conf_name = xstrdup(slurm_conf.slurm_conf);
 
@@ -555,8 +554,6 @@ static int _init_all_slurm_conf(void)
 	init_node_conf();
 	init_part_conf();
 	init_job_conf();
-
-	return 0;
 }
 
 static int _handle_downnodes_line(slurm_conf_downnodes_t *down)
@@ -1071,7 +1068,8 @@ static void _test_cgroup_plugin_use(void)
 int read_slurm_conf(int recover, bool reconfig)
 {
 	DEF_TIMERS;
-	int error_code, i, rc = 0, load_job_ret = SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS;
+	int i, rc = 0, load_job_ret = SLURM_SUCCESS;
 	int old_node_record_count = 0;
 	node_record_t *old_node_table_ptr = NULL, *node_ptr;
 	List old_part_list = NULL;
@@ -1121,14 +1119,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		default_part_name = NULL;
 	}
 
-	if ((error_code = _init_all_slurm_conf())) {
-		node_record_table_ptr = old_node_table_ptr;
-		node_record_count = old_node_record_count;
-		part_list = old_part_list;
-		default_part_name = old_def_part_name;
-		old_def_part_name = NULL;
-		goto end_it;
-	}
+	_init_all_slurm_conf();
 
 	if (reconfig)
 		xcgroup_reconfig_slurm_cgroup_conf();
