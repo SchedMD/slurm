@@ -881,11 +881,10 @@ extern List get_part_list(char *name, char **err_part)
  * init_part_conf - initialize the default partition configuration values
  *	and create a (global) partition list.
  * this should be called before creating any partition entries.
- * RET 0 if no error, otherwise an error code
  * global: default_part - default partition values
  *         part_list - global partition list
  */
-int init_part_conf(void)
+void init_part_conf(void)
 {
 	last_part_update = time(NULL);
 
@@ -938,8 +937,6 @@ int init_part_conf(void)
 
 	xfree(default_part_name);
 	default_part_loc = NULL;
-
-	return 0;
 }
 
 /*

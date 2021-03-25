@@ -554,9 +554,7 @@ static int _init_all_slurm_conf(void)
 	xfree(conf_name);
 
 	init_node_conf();
-
-	if ((error_code = init_part_conf()))
-		return error_code;
+	init_part_conf();
 
 	if ((error_code = init_job_conf()))
 		return error_code;

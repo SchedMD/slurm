@@ -1360,11 +1360,10 @@ extern void init_node_conf(void);
  * init_part_conf - initialize the default partition configuration values
  *	and create a (global) partition list.
  * this should be called before creating any partition entries.
- * RET 0 if no error, otherwise an error code
  * global: default_part - default partition values
  *         part_list - global partition list
  */
-extern int init_part_conf (void);
+extern void init_part_conf(void);
 
 /* init_requeue_policy()
  * Initialize the requeue exit/hold bitmaps.
