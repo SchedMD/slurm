@@ -304,9 +304,8 @@ extern int hostlist2bitmap (hostlist_t hl, bool best_effort, bitstr_t **bitmap);
  * init_node_conf - initialize the node configuration tables and values.
  *	this should be called before creating any node or configuration
  *	entries.
- * RET 0 if no error, otherwise an error code
  */
-extern int init_node_conf (void);
+extern void init_node_conf(void);
 
 /* node_fini2 - free memory associated with node records (except bitmaps) */
 extern void node_fini2 (void);

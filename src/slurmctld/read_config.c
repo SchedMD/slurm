@@ -553,8 +553,7 @@ static int _init_all_slurm_conf(void)
 	slurm_conf_reinit(conf_name);
 	xfree(conf_name);
 
-	if ((error_code = init_node_conf()))
-		return error_code;
+	init_node_conf();
 
 	if ((error_code = init_part_conf()))
 		return error_code;

@@ -768,9 +768,8 @@ static node_record_t *_find_node_record(char *name, bool test_alias,
  * init_node_conf - initialize the node configuration tables and values.
  *	this should be called before creating any node or configuration
  *	entries.
- * RET 0 if no error, otherwise an error code
  */
-extern int init_node_conf (void)
+extern void init_node_conf(void)
 {
 	last_node_update = time (NULL);
 	int i;
@@ -790,8 +789,6 @@ extern int init_node_conf (void)
 		config_list    = list_create (_list_delete_config);
 		front_end_list = list_create (destroy_frontend);
 	}
-
-	return SLURM_SUCCESS;
 }
 
 

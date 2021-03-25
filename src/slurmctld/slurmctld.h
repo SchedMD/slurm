@@ -1348,14 +1348,13 @@ extern int init_job_conf (void);
  * init_node_conf - initialize the node configuration tables and values.
  *	this should be called before creating any node or configuration
  *	entries.
- * RET 0 if no error, otherwise an error code
  * global: node_record_table_ptr - pointer to global node table
  *         default_node_record - default values for node records
  *         default_config_record - default values for configuration records
  *         hash_table - table of hash indexes
  *         last_node_update - time of last node table update
  */
-extern int init_node_conf (void);
+extern void init_node_conf(void);
 
 /*
  * init_part_conf - initialize the default partition configuration values
