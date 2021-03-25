@@ -4040,8 +4040,8 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 	int last_op = FEATURE_OP_AND, paren_op = FEATURE_OP_AND;
 	int last_paren = 0, position = 0;
 
-	result_node_bitmap = bit_alloc(MAX_FEATURES);
 	if (details_ptr->feature_list == NULL) {	/* no constraints */
+		result_node_bitmap = bit_alloc(MAX_FEATURES);
 		bit_set(result_node_bitmap, 0);
 		return result_node_bitmap;
 	}
@@ -4104,6 +4104,9 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 		      (last_op == FEATURE_OP_XOR)))) {
 			if (bit_overlap_any(config_ptr->node_bitmap,
 					    working_node_bitmap)) {
+				if (!result_node_bitmap)
+					result_node_bitmap =
+						bit_alloc(MAX_FEATURES);
 				bit_set(result_node_bitmap, position);
 				if (can_reboot && reboot_bitmap &&
 				    active_node_bitmap) {
@@ -4126,7 +4129,10 @@ static bitstr_t *_valid_features(job_record_t *job_ptr,
 #if _DEBUG
 {
 	char tmp[64];
-	bit_fmt(tmp, sizeof(tmp), result_node_bitmap);
+	if (result_node_bitmap)
+		bit_fmt(tmp, sizeof(tmp), result_node_bitmap);
+	else
+		snprintf(tmp, sizeof(tmp), "NONE");
 	info("CONFIG_FEATURE:%s FEATURE_XOR_BITS:%s", config_ptr->feature, tmp);
 	if (reboot_bitmap && (bit_ffs(reboot_bitmap) >= 0)) {
 		char *reboot_node_str = bitmap2node_name(reboot_bitmap);
