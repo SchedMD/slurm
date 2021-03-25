@@ -5555,12 +5555,12 @@ static void _slurm_rpc_kill_job(slurm_msg_t *msg)
 	_throttle_fini(&active_rpc_cnt);
 
 	if (cc == ESLURM_ALREADY_DONE) {
-		debug2("%s: job_str_signal() JobId=%s sig %d returned %s",
-		       __func__, kill->sjob_id,
+		debug2("%s: job_str_signal() uid:%u JobId=%s sig %d returned %s",
+		       __func__, msg->auth_uid, kill->sjob_id,
 		       kill->signal, slurm_strerror(cc));
 	} else if (cc != SLURM_SUCCESS) {
-		info("%s: job_str_signal() JobId=%s sig %d returned %s",
-		     __func__, kill->sjob_id,
+		info("%s: job_str_signal() uid:%u JobId=%s sig %d returned %s",
+		     __func__, msg->auth_uid, kill->sjob_id,
 		     kill->signal, slurm_strerror(cc));
 	} else {
 		slurmctld_diag_stats.jobs_canceled++;
