@@ -69,6 +69,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix printing of number of tasks on a completed job that didn't request
     tasks.
  -- Fix updating GrpTRESRunMins when decrementing job time is bigger than it.
+ -- Make it so we handle multithreaded allocations correctly when doing
+    --exclusive or --core-spec allocations.
 
 * Changes in Slurm 20.11.5
 ==========================
