@@ -211,7 +211,7 @@ static void _clear_spec_cores(job_record_t *job_ptr,
 }
 
 /* CPUs already selected for jobs, just distribute the tasks */
-static int _set_task_dist(job_record_t *job_ptr)
+static int _set_task_dist_internal(job_record_t *job_ptr)
 {
 	uint32_t n, i, tid = 0, maxtasks;
 	uint16_t *avail_cpus;
@@ -330,6 +330,16 @@ static int _set_task_dist(job_record_t *job_ptr)
 		}
 	}
 	xfree(avail_cpus);
+
+	return SLURM_SUCCESS;
+}
+
+static int _set_task_dist(job_record_t *job_ptr, const uint16_t cr_type)
+{
+	int error_code = _set_task_dist_internal(job_ptr);
+
+	if (error_code != SLURM_SUCCESS)
+		return error_code;
 
 	return SLURM_SUCCESS;
 }
@@ -1177,7 +1187,7 @@ extern int dist_tasks(job_record_t *job_ptr, const uint16_t cr_type,
 		 * The job has been allocated all non-specialized cores.
 		 * Just set the task distribution for tres_per_task support.
 		 */
-		error_code = _set_task_dist(job_ptr);
+		error_code = _set_task_dist(job_ptr, cr_type);
 		if (error_code != SLURM_SUCCESS)
 			return error_code;
 		return SLURM_SUCCESS;
@@ -1192,7 +1202,8 @@ extern int dist_tasks(job_record_t *job_ptr, const uint16_t cr_type,
 		 * tres_per_task support.
 		 */
 		_clear_spec_cores(job_ptr, core_array);
-		error_code = _set_task_dist(job_ptr);
+		error_code = _set_task_dist(job_ptr, cr_type);
+
 		if (error_code != SLURM_SUCCESS)
 			return error_code;
 		return SLURM_SUCCESS;
