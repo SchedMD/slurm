@@ -34,6 +34,9 @@ set make_file        0
 set exit_code        0
 set pcmd_prog        "/opt/cray/nodehealth/default/bin/pcmd"
 
+# Use PID to avoid issues with ps aux killall
+set test_pid         [pid]
+
 if {[get_config_param "SwitchType"] eq "switch/cray"} {
 	set make_file 1
 	if { ![file exists $pcmd_prog] } {
@@ -105,7 +108,7 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 }
 
 proc check_file { file_name } {
-	global test_name exit_code file_dir run_host pcmd_prog
+	global exit_code file_dir run_host pcmd_prog
 
 	sleep 1
 
@@ -236,7 +239,7 @@ if {$get_name != 1} {
 #
 # Test srun --task-epilog
 #
-change_pro_epi srun-task-epilog srun--task-epilog_$test_name 1 0
+change_pro_epi srun-task-epilog srun--task-epilog_${test_name}_${test_pid} 1 0
 
 reconfigure -fail
 
@@ -266,10 +269,10 @@ if {$make_file == 1} {
 
 
 # Check to see if the child process still exist
-check_proc srun--task-epilog_$test_name
+check_proc srun--task-epilog_${test_name}_${test_pid}
 
 # Remove link
-exec $bin_rm -rf $test_dir/srun--task-epilog_$test_name
+exec $bin_rm -rf $test_dir/srun--task-epilog_${test_name}_${test_pid}
 
 #
 # Task Prolog Test
@@ -328,7 +331,7 @@ if {$make_file == 1} {
 	#
 	# Test TaskProlog
 	#
-	run_job taskprolog taskprolog_$test_name 0 1
+	run_job taskprolog taskprolog_${test_name}_${test_pid} 0 1
 
 } else {
 	# Add a line in the slurm.conf file to include the epilogs and prologs
@@ -340,19 +343,19 @@ if {$make_file == 1} {
 #
 # Test Epilog param
 #
-run_job epilog epilog_$test_name 0 0
+run_job epilog epilog_${test_name}_${test_pid} 0 0
 
 #
 # Test TaskEpilog param
 #
-run_job taskepilog taskepilog_$test_name 0 0
+run_job taskepilog taskepilog_${test_name}_${test_pid} 0 0
 
 ###############Prolog Test###############
 
 #
 # Test Prolog param
 #
-run_job prolog prolog_$test_name 0 0
+run_job prolog prolog_${test_name}_${test_pid} 0 0
 
 if {$exit_code} {
 	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
