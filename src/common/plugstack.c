@@ -1666,12 +1666,6 @@ spank_option_getopt (spank_t sp, struct spank_option *opt, char **argp)
 }
 
 
-int spank_get_remote_options_env (char **env)
-{
-	return spank_stack_get_remote_options_env (global_spank_stack, env);
-}
-
-
 static int
 spank_stack_get_remote_options_env (struct spank_stack *stack, char **env)
 {
@@ -1704,11 +1698,6 @@ spank_stack_get_remote_options_env (struct spank_stack *stack, char **env)
 	list_iterator_destroy (i);
 
 	return (0);
-}
-
-int spank_get_remote_options(job_options_t opts)
-{
-	return spank_stack_get_remote_options (global_spank_stack, opts);
 }
 
 static int
