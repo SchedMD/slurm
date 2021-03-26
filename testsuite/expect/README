@@ -405,6 +405,7 @@ test8.#    Testing of advanced reservation functionality.
 =========================================================
 test8.12   Test reservation with flags=FLEX
 test8.13   Test user_resv_delete parameter
+test8.14   Test --reservation with multiple reservations
 
 test9.#    System stress testing. Exercises all commands and daemons.
 =====================================================================
