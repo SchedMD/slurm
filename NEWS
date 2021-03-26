@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
     --exclusive or --core-spec allocations.
  -- Fix incorrect round-up division in _pick_step_cores
  -- Use appropriate math to adjust cpu counts when --ntasks-per-core=1.
+ -- cons_tres - Fix consideration of power downed nodes.
 
 * Changes in Slurm 20.11.5
 ==========================
