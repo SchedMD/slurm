@@ -217,7 +217,7 @@ extern void node_features_g_step_config(bool mem_sort, bitstr_t *numa_bitmap)
 	for (i = 0; i < g_context_cnt; i++)
 		(*(ops[i].step_config))(mem_sort, numa_bitmap);
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("node_features_g_step_config");
+	END_TIMER2(__func__);
 }
 
 /* Reset plugin configuration information */
@@ -232,7 +232,7 @@ extern int node_features_g_reconfig(void)
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].reconfig))();
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("node_features_g_reconfig");
+	END_TIMER2(__func__);
 
 	return rc;
 }
@@ -250,7 +250,7 @@ extern bool node_features_g_changeable_feature(char *feature)
 	for (i = 0; ((i < g_context_cnt) && !changeable); i++)
 		changeable = (*(ops[i].changeable_feature))(feature);
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("node_features_g_reconfig");
+	END_TIMER2(__func__);
 
 	return changeable;
 }
@@ -268,7 +268,7 @@ extern int node_features_g_get_node(char *node_list)
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].get_node))(node_list);
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("node_features_g_get_node");
+	END_TIMER2(__func__);
 
 	return rc;
 }
@@ -285,7 +285,7 @@ extern int node_features_g_job_valid(char *job_features)
 	for (i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].job_valid))(job_features);
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("node_features_g_job_valid");
+	END_TIMER2(__func__);
 
 	return rc;
 }
@@ -317,7 +317,7 @@ extern char *node_features_g_job_xlate(char *job_features)
 		}
 	}
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("node_features_g_job_xlate");
+	END_TIMER2(__func__);
 
 	return node_features;
 }
@@ -338,7 +338,7 @@ extern bitstr_t *node_features_g_get_node_bitmap(void)
 			break;
 	}
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("node_features_g_get_node_bitmap");
+	END_TIMER2(__func__);
 
 	return node_bitmap;
 }
@@ -356,7 +356,7 @@ extern int node_features_g_overlap(bitstr_t *active_bitmap)
 	for (i = 0; i < g_context_cnt; i++)
 		cnt += (*(ops[i].overlap))(active_bitmap);
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("node_features_g_overlap");
+	END_TIMER2(__func__);
 
 	return cnt;
 }
@@ -377,7 +377,7 @@ extern bool node_features_g_node_power(void)
 			break;
 	}
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("node_features_g_node_power");
+	END_TIMER2(__func__);
 
 	return node_power;
 }
@@ -398,7 +398,7 @@ extern int node_features_g_node_set(char *active_features)
 		rc = (*(ops[i].node_set))(active_features);
 	}
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("node_features_g_node_set");
+	END_TIMER2(__func__);
 
 	return rc;
 }
@@ -418,7 +418,7 @@ extern void node_features_g_node_state(char **avail_modes, char **current_mode)
 		(*(ops[i].node_state))(avail_modes, current_mode);
 	}
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("node_features_g_node_state");
+	END_TIMER2(__func__);
 }
 
 /* Note the active features associated with a set of nodes have been updated.
@@ -439,7 +439,7 @@ extern int node_features_g_node_update(char *active_features,
 		rc = (*(ops[i].node_update))(active_features, node_bitmap);
 	}
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("node_features_g_node_update");
+	END_TIMER2(__func__);
 
 	return rc;
 }
@@ -469,7 +469,7 @@ extern bool node_features_g_node_update_valid(void *node_ptr,
 			break;
 	}
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("node_features_g_node_update_valid");
+	END_TIMER2(__func__);
 
 	return update_valid;
 }
@@ -511,7 +511,7 @@ extern char *node_features_g_node_xlate(char *new_features, char *orig_features,
 
 	}
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("node_features_g_node_xlate");
+	END_TIMER2(__func__);
 
 	return new_value;
 }
@@ -541,7 +541,7 @@ extern char *node_features_g_node_xlate2(char *new_features)
 
 	}
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("node_features_g_node_xlate2");
+	END_TIMER2(__func__);
 
 	return new_value;
 }
@@ -561,7 +561,7 @@ extern bool node_features_g_user_update(uid_t uid)
 		result = (*(ops[i].user_update))(uid);
 	}
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("node_features_g_user_update");
+	END_TIMER2(__func__);
 
 	return result;
 }
@@ -580,7 +580,7 @@ extern uint32_t node_features_g_boot_time(void)
 		boot_time = MAX(boot_time, (*(ops[i].boot_time))());
 	}
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("node_features_g_user_update");
+	END_TIMER2(__func__);
 
 	return boot_time;
 }
@@ -612,8 +612,7 @@ extern List node_features_g_get_config(void)
 			list_append(conf_list, p);
 	}
 	slurm_mutex_unlock(&g_context_lock);
-
-	END_TIMER2("node_features_g_get_config");
+	END_TIMER2(__func__);
 
 	return conf_list;
 }
@@ -632,7 +631,7 @@ extern uint32_t node_features_g_reboot_weight(void)
 	if (g_context_cnt > 0)
 		weight = (*(ops[0].reboot_weight))();
 	slurm_mutex_unlock(&g_context_lock);
-	END_TIMER2("node_features_g_reboot_weight");
+	END_TIMER2(__func__);
 
 	return weight;
 }
