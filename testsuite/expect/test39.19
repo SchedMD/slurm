@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code      0
 set file_in1       "test$test_id.input1"
 set file_in2       "test$test_id.input2"
 set file_out       "test$test_id.output"
@@ -46,7 +45,7 @@ proc cleanup {} {
 #
 proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 	global re_word_str number
-	global bin_cat bin_rm bin_grep exit_code file_out sacct
+	global bin_cat bin_rm bin_grep file_out sacct
 
 	if {$job_id == 0} {
 		return
@@ -71,35 +70,23 @@ proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 		expect {
 			-re "\[^:\]gpu:($number)" {
 				incr match
-				if {$expect_out(1,string) != $job_gpus} {
-					log_error "Bad step GPU count reported by sacct ($expect_out(1,string) != $step_gpus)"
-					set exit_code 1
-				}
+				subtest {$expect_out(1,string) == $job_gpus} "Step GPUs reported by sacct should be $job_gpus" "$expect_out(1,string) != $job_gpus"
 				exp_continue
 			}
 			-re ":gpu:($number)" {
 				incr match
-				if {$expect_out(1,string) != $req_gpus} {
-					log_error "Bad step GPU count reported by sacct ($expect_out(1,string) != $req_gpus)"
-					set exit_code 1
-				}
+				subtest {$expect_out(1,string) == $req_gpus} "Step GPUs reported by sacct should be $req_gpus" "$expect_out(1,string) != $req_gpus"
 				exp_continue
 			}
 			-re "gres/gpu=($number)" {
 				incr match
-				if {$expect_out(1,string) != $step_gpus} {
-					log_error "Bad step GPU count reported by sacct ($expect_out(1,string) != $step_gpus)"
-					set exit_code 1
-				}
+				subtest {$expect_out(1,string) == $step_gpus} "Step GPUs reported by sacct should be $step_gpus" "$expect_out(1,string) != $step_gpus"
 				exp_continue
 			}
 			-re "gres/gpu:($re_word_str)=($number)" {
 				if {$have_gpu_types != 0} {
 					incr match
-					if {$expect_out(2,string) != $step_gpus} {
-						log_error "Bad step GPU count reported by sacct ($expect_out(2,string) != $step_gpus)"
-						set exit_code 1
-					}
+					subtest {$expect_out(2,string) == $step_gpus} "Step GPUs reported by sacct should be $step_gpus" "$expect_out(2,string) != $step_gpus"
 				}
 				exp_continue
 			}
@@ -107,9 +94,7 @@ proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 				wait
 			}
 		}
-		if {$match != 3} {
-			log_error "Missing step GPU count report from sacct ($match != 3)"
-		}
+		subtest {$match == 3} "sacct should report GPUs 3 times" "found $match times"
 	}
 
 	set match 0
@@ -117,62 +102,42 @@ proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 	expect {
 		-re "\[^:\]gpu:($number)" {
 			incr match
-			if {$expect_out(1,string) != $job_gpus} {
-				log_error "Bad batch GPU count reported by sacct ($expect_out(1,string) != $job_gpus)"
-				set exit_code 1
-			}
+			subtest {$expect_out(1,string) == $job_gpus} "Step GPUs reported by sacct should be $job_gpus" "$expect_out(1,string) != $job_gpus"
 			exp_continue
 		}
 		-re ":gpu:($number)" {
 			incr match
-			if {$expect_out(1,string) != $req_gpus} {
-				log_error "Bad batch GPU count reported by sacct ($expect_out(1,string) != $req_gpus)"
-				set exit_code 1
-			}
+			subtest {$expect_out(1,string) == $req_gpus} "Step GPUs reported by sacct should be $req_gpus" "$expect_out(1,string) != $req_gpus"
 			exp_continue
 		}
 		eof {
 			wait
 		}
 	}
-	if {$match != 2} {
-		log_error "Missing batch GPU count report from sacct ($match != 2)"
-	}
+	subtest {$match == 2} "sacct should report GPUs 2 times" "found $match times"
 
 	set match 0
 	spawn $bin_grep $job_id| $file_out
 	expect {
 		-re "\[^:\]gpu:($number)" {
 			incr match
-			if {$expect_out(1,string) != $job_gpus} {
-				log_error "Bad job GPU count reported by sacct ($expect_out(1,string) != $job_gpus)"
-				set exit_code 1
-			}
+			subtest {$expect_out(1,string) == $job_gpus} "Step GPUs reported by sacct should be $job_gpus" "$expect_out(1,string) != $job_gpus"
 			exp_continue
 		}
 		-re ":gpu:($number)" {
 			incr match
-			if {$expect_out(1,string) != $req_gpus} {
-				log_error "Bad job GPU count reported by sacct ($expect_out(1,string) != $req_gpus)"
-				set exit_code 1
-			}
+			subtest {$expect_out(1,string) == $req_gpus} "Step GPUs reported by sacct should be $req_gpus" "$expect_out(1,string) != $req_gpus"
 			exp_continue
 		}
 		-re "gres/gpu=($number)" {
 			incr match
-			if {$expect_out(1,string) != $job_gpus} {
-				log_error "Bad job GPU count reported by sacct ($expect_out(1,string) != $job_gpus)"
-				set exit_code 1
-			}
+			subtest {$expect_out(1,string) == $job_gpus} "Step GPUs reported by sacct should be $job_gpus" "$expect_out(1,string) != $job_gpus"
 			exp_continue
 		}
 		-re "gres/gpu:($re_word_str)=($number)" {
 			if {$have_gpu_types != 0} {
 				incr match
-				if {$expect_out(2,string) != $job_gpus} {
-					log_error "Bad job GPU count reported by sacct ($expect_out(2,string) != $job_gpus)"
-					set exit_code 1
-				}
+				subtest {$expect_out(2,string) == $job_gpus} "Step GPUs reported by sacct should be $job_gpus" "$expect_out(1,string) != $job_gpus"
 			}
 			exp_continue
 		}
@@ -180,9 +145,7 @@ proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 			wait
 		}
 	}
-	if {$match != 3} {
-		log_error "Missing job GPU count report from sacct ($match != 3)"
-	}
+	subtest {$match == 3} "sacct should report GPUs 2 times" "found $match times"
 	exec $bin_rm -f $file_out
 	log_user 1
 }
@@ -195,7 +158,7 @@ proc test_acct { job_id job_gpus step_gpus req_gpus have_gpu_types } {
 #	are reported based upon the job specification
 #
 proc test_out_file { file_out target } {
-	global re_word_str number bin_cat exit_code
+	global re_word_str number bin_cat
 
 	if {[wait_for_file $file_out] != 0} {
 		fail "No output file"
@@ -216,10 +179,7 @@ proc test_out_file { file_out target } {
 			wait
 		}
 	}
-	if {$match != $target} {
-		log_error "Failed to account for proper GPU count ($match != $target)"
-		set exit_code 1
-	}
+	subtest {$match == $target} "GPUs accounted should be $target" "$match != $target"
 }
 
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
@@ -325,10 +285,7 @@ expect {
 		wait
 	}
 }
-if {$match != $target} {
-	log_error "Failed to account for proper GPU count ($match != $target)"
-	set exit_code 1
-}
+subtest {$match == $target} "GPUs accounted should be $target" "$match != $target"
 test_acct $job_id $target -1 $req_gpus $have_gpu_types
 
 #
@@ -665,7 +622,3 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 
 test_out_file $file_out $step_tasks
 test_acct $job_id $job_tasks $step_tasks $req_gpus $have_gpu_types
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
