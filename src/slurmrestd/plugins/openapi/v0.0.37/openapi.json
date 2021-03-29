@@ -457,9 +457,7 @@
             "schema": {
               "type": "string"
             }
-          }
-        ],
-        "parameters": [
+          },
           {
             "name": "update_time",
             "in": "query",
@@ -556,9 +554,7 @@
             "schema": {
               "type": "string"
             }
-          }
-        ],
-        "parameters": [
+          },
           {
             "name": "update_time",
             "in": "query",
