@@ -170,8 +170,6 @@ if {$match == 0} {
 log_info "RESUMING NODE"
 spawn $scontrol update node=$test_node state=RESUME
 
-#Comment out SchedulerParameters
-exec $bin_sed -i {s/^\(SchedulerParameters=\)/#\1/gI} $config_dir/slurm.conf
 #Append SchedulerParameters=nohold_on_prolog_fail to SchedulerParameters
 exec $bin_echo "SchedulerParameters=nohold_on_prolog_fail" \
 	 >> $config_dir/slurm.conf
