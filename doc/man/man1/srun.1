@@ -2971,11 +2971,11 @@ See the description of the \fB\-\-cpu\-freq\fR option or the
 \fBSLURM_CPU_FREQ_REQ\fR input environment variable.
 .TP
 \fBSLURM_CPUS_ON_NODE\fR
-Count of processors available to the job on this node.
-Note the select/linear plugin allocates entire nodes to
+Number of CPUs available to the step on this node.
+\fBNOTE\fR: The \fBselect/linear\fR plugin allocates entire nodes to
 jobs, so the value indicates the total count of CPUs on the node.
-For the select/cons_res plugin, this number indicates the number of cores
-on this node allocated to the job.
+For the \fBselect/cons_res\fR and \fBcons/tres\fR plugins, this number
+indicates the number of CPUs on this node allocated to the step.
 .TP
 \fBSLURM_CPUS_PER_TASK\fR
 Number of cpus requested per task.

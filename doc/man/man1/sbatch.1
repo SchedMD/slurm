@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "April 2021" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "May 2021" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -2189,7 +2189,11 @@ Job array's index step size.
 Name of the cluster on which the job is executing.
 .TP
 \fBSLURM_CPUS_ON_NODE\fR
-Number of CPUS on the allocated node.
+Number of CPUs allocated to the batch step.
+\fBNOTE\fR: The \fBselect/linear\fR plugin allocates entire nodes to
+jobs, so the value indicates the total count of CPUs on the node.
+For the \fBselect/cons_res\fR and \fBcons/tres\fR plugins, this number
+indicates the number of CPUs on this node allocated to the step.
 .TP
 \fBSLURM_CPUS_PER_GPU\fR
 Number of CPUs requested per allocated GPU.
