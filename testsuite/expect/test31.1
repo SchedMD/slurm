@@ -66,6 +66,7 @@ set timeout $max_job_delay
 
 proc change_pro_epi { arg program_name conf_change task_pro } {
 	global inc_slurm bin_chmod bin_rm test_dir pro_epi_prog bin_echo test_name bin_pwd re_word_str make_file bin_bash exit_code file_dir bin_ln
+	global bin_sleep
 
 	if {$conf_change == 0} {
 		exec $bin_echo $arg=$test_dir/$pro_epi_prog > $test_dir/$inc_slurm
@@ -73,7 +74,7 @@ proc change_pro_epi { arg program_name conf_change task_pro } {
 
 	set make_ln 0
 	exec $bin_rm -f $test_dir/$program_name
-	spawn $bin_bash -c "$bin_ln -sv /bin/sleep $test_dir/$program_name"
+	spawn $bin_bash -c "$bin_ln -sv $bin_sleep $test_dir/$program_name"
 	expect {
 		-re "$program_name" {
 			set make_ln 1
