@@ -107,7 +107,6 @@ will ignore registering to the external slurmdbd.
 \fBAccountingStorageHost\fR
 The name of the machine hosting the accounting storage database.
 Only used with systems using SlurmDBD, ignored otherwise.
-Also see \fBDefaultStorageHost\fR.
 
 .TP
 \fBAccountingStorageParameters\fR
@@ -143,7 +142,7 @@ while the default MUNGE daemon provides authentication within a
 cluster.  In that case, \fBAccountingStoragePass\fR should specify the
 named port to be used for communications with the alternate MUNGE
 daemon (e.g.  "/var/run/munge/global.socket.2"). The default value is
-NULL.  Also see \fBDefaultStoragePass\fR.
+NULL.
 
 .TP
 \fBAccountingStoragePort\fR
@@ -153,7 +152,6 @@ The default value is SLURMDBD_PORT as established at system
 build time. If no value is explicitly specified, it will be set to 6819.
 This value must be equal to the \fBDbdPort\fR parameter in the
 slurmdbd.conf file.
-Also see \fBDefaultStoragePort\fR.
 
 .TP
 \fBAccountingStorageTRES\fR
@@ -198,13 +196,11 @@ will be written to the Slurm DBD, which manages an underlying MySQL
 database. See "man slurmdbd" for more information.  The
 default value is "accounting_storage/none" and indicates that account
 records are not maintained.
-Also see \fBDefaultStorageType\fR.
 
 .TP
 \fBAccountingStorageUser\fR
 The user account for accessing the accounting storage database.
 Only used for database type storage plugins, ignored otherwise.
-Also see \fBDefaultStorageUser\fR.
 
 .TP
 \fBAccountingStoreFlags\fR
@@ -796,51 +792,6 @@ Also see \fBDefMemPerCPU\fR, \fBDefMemPerGPU\fR and \fBMaxMemPerCPU\fR.
 mutually exclusive.
 
 .TP
-\fBDefaultStorageHost\fR
-The default name of the machine hosting the accounting storage and
-job completion databases.
-Only used for database type storage plugins and when the
-\fBAccountingStorageHost\fR and \fBJobCompHost\fR have not been
-defined.
-
-.TP
-\fBDefaultStorageLoc\fR
-The fully qualified file name where job completion records are written
-when the \fBDefaultStorageType\fR is "filetxt".
-Also see \fBJobCompLoc\fR.
-
-.TP
-\fBDefaultStoragePass\fR
-The password used to gain access to the database to store the
-accounting and job completion data.
-Only used for database type storage plugins, ignored otherwise.
-Also see \fBAccountingStoragePass\fR and \fBJobCompPass\fR.
-
-.TP
-\fBDefaultStoragePort\fR
-The listening port of the accounting storage and/or job completion
-database server.
-Only used for database type storage plugins, ignored otherwise.
-Also see \fBAccountingStoragePort\fR and \fBJobCompPort\fR.
-
-.TP
-\fBDefaultStorageType\fR
-The accounting and job completion storage mechanism type.  Acceptable
-values at present include "filetxt", "mysql" and "none".
-The value "filetxt" indicates that records will be written to a file.
-The value "mysql" indicates that accounting records will be written to a MySQL
-or MariaDB database.
-The default value is "none", which means that records are not maintained.
-Also see \fBAccountingStorageType\fR and \fBJobCompType\fR.
-
-.TP
-\fBDefaultStorageUser\fR
-The user account for accessing the accounting storage and/or job
-completion database.
-Only used for database type storage plugins, ignored otherwise.
-Also see \fBAccountingStorageUser\fR and \fBJobCompUser\fR.
-
-.TP
 \fBDependencyParameters\fR
 Multiple options may be comma separated.
 
@@ -1235,7 +1186,6 @@ delay before a job is killed, which could lead to system Out of Memory events.
 \fBJobCompHost\fR
 The name of the machine hosting the job completion database.
 Only used for database type storage plugins, ignored otherwise.
-Also see \fBDefaultStorageHost\fR.
 
 .TP
 \fBJobCompLoc\fR
@@ -1247,7 +1197,6 @@ when \fBJobCompType\fR is "jobcomp/elasticsearch" like i.e.
 "localhost:9200/slurm/_doc".
 NOTE: More information is available at the Slurm web site
 <https://slurm.schedmd.com/elasticsearch.html>.
-Also see \fBDefaultStorageLoc\fR.
 
 .TP
 \fBJobCompParams\fR
@@ -1259,13 +1208,11 @@ Also see \fBJobCompType\fR.
 The password used to gain access to the database to store the job
 completion data.
 Only used for database type storage plugins, ignored otherwise.
-Also see \fBDefaultStoragePass\fR.
 
 .TP
 \fBJobCompPort\fR
 The listening port of the job completion database server.
 Only used for database type storage plugins, ignored otherwise.
-Also see \fBDefaultStoragePort\fR.
 
 .TP
 \fBJobCompType\fR
@@ -1296,7 +1243,6 @@ indicating the job information.
 \fBJobCompUser\fR
 The user account for accessing the job completion database.
 Only used for database type storage plugins, ignored otherwise.
-Also see \fBDefaultStorageUser\fR.
 
 .TP
 \fBJobContainerType\fR

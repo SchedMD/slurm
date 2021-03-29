@@ -237,12 +237,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"CredType", S_P_STRING},
 	{"CryptoType", S_P_STRING},
 	{"DebugFlags", S_P_STRING},
-	{"DefaultStorageHost", S_P_STRING},
-	{"DefaultStorageLoc", S_P_STRING},
-	{"DefaultStoragePass", S_P_STRING},
-	{"DefaultStoragePort", S_P_UINT32},
-	{"DefaultStorageType", S_P_STRING},
-	{"DefaultStorageUser", S_P_STRING},
 	{"DefCPUPerGPU" , S_P_UINT64},
 	{"DefMemPerCPU", S_P_UINT64},
 	{"DefMemPerGPU" , S_P_UINT64},
@@ -3602,10 +3596,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	char *temp_str = NULL;
 	long long_suspend_time;
 	bool truth;
-	char *default_storage_type = NULL, *default_storage_host = NULL;
-	char *default_storage_user = NULL, *default_storage_pass = NULL;
-	char *default_storage_loc = NULL;
-	uint32_t default_storage_port = 0;
 	uint16_t uint16_tmp;
 	uint64_t def_cpu_per_gpu = 0, def_mem_per_gpu = 0, tot_prio_weight;
 	job_defaults_t *job_defaults;
@@ -3672,18 +3662,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	} else if (DEFAULT_ALLOW_SPEC_RESOURCE_USAGE)
 		conf->conf_flags |= CTL_CONF_ASRU;
 
-	(void) s_p_get_string(&default_storage_type, "DefaultStorageType",
-			      hashtbl);
-	(void) s_p_get_string(&default_storage_host, "DefaultStorageHost",
-			      hashtbl);
-	(void) s_p_get_string(&default_storage_user, "DefaultStorageUser",
-			      hashtbl);
-	(void) s_p_get_string(&default_storage_pass, "DefaultStoragePass",
-			      hashtbl);
-	(void) s_p_get_string(&default_storage_loc,  "DefaultStorageLoc",
-			      hashtbl);
-	(void) s_p_get_uint32(&default_storage_port, "DefaultStoragePort",
-			      hashtbl);
 	(void) s_p_get_string(&conf->job_credential_private_key,
 			     "JobCredentialPrivateKey", hashtbl);
 	(void) s_p_get_string(&conf->job_credential_public_certificate,
@@ -3916,58 +3894,26 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		fatal("Invalid parameter MemLimitEnforce. The option is no longer supported, please use OverMemoryKill instead.");
 	}
 
-	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl)) {
-		if (default_storage_type) {
-			if (!xstrcasecmp("slurmdbd", default_storage_type)) {
-				error("Can not use the default storage type "
-				      "specified for jobcomp since there is "
-				      "not slurmdbd type.  We are using %s "
-				      "as the type. To disable this message "
-				      "set JobCompType in your slurm.conf",
-				      DEFAULT_JOB_COMP_TYPE);
-				conf->job_comp_type =
-					xstrdup(DEFAULT_JOB_COMP_TYPE);
-			} else
-				conf->job_comp_type =
-					xstrdup_printf("jobcomp/%s",
-						       default_storage_type);
-		} else
-			conf->job_comp_type = xstrdup(DEFAULT_JOB_COMP_TYPE);
-	}
+	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl))
+		conf->job_comp_type = xstrdup(DEFAULT_JOB_COMP_TYPE);
 	if (!s_p_get_string(&conf->job_comp_loc, "JobCompLoc", hashtbl)) {
-		if (default_storage_loc)
-			conf->job_comp_loc = xstrdup(default_storage_loc);
-		else if (!xstrcmp(conf->job_comp_type, "jobcomp/mysql"))
+		if (!xstrcmp(conf->job_comp_type, "jobcomp/mysql"))
 			conf->job_comp_loc = xstrdup(DEFAULT_JOB_COMP_DB);
 		else
 			conf->job_comp_loc = xstrdup(DEFAULT_JOB_COMP_LOC);
 	}
 
 	if (!s_p_get_string(&conf->job_comp_host, "JobCompHost",
-			    hashtbl)) {
-		if (default_storage_host)
-			conf->job_comp_host = xstrdup(default_storage_host);
-		else
-			conf->job_comp_host = xstrdup(DEFAULT_STORAGE_HOST);
-	}
+			    hashtbl))
+		conf->job_comp_host = xstrdup(DEFAULT_STORAGE_HOST);
 	if (!s_p_get_string(&conf->job_comp_user, "JobCompUser",
-			    hashtbl)) {
-		if (default_storage_user)
-			conf->job_comp_user = xstrdup(default_storage_user);
-		else
-			conf->job_comp_user = xstrdup(DEFAULT_STORAGE_USER);
-	}
+			    hashtbl))
+		conf->job_comp_user = xstrdup(DEFAULT_STORAGE_USER);
 	s_p_get_string(&conf->job_comp_params, "JobCompParams", hashtbl);
-	if (!s_p_get_string(&conf->job_comp_pass, "JobCompPass",
-			    hashtbl)) {
-		if (default_storage_pass)
-			conf->job_comp_pass = xstrdup(default_storage_pass);
-	}
+	s_p_get_string(&conf->job_comp_pass, "JobCompPass", hashtbl);
 	if (!s_p_get_uint32(&conf->job_comp_port, "JobCompPort",
 			    hashtbl)) {
-		if (default_storage_port)
-			conf->job_comp_port = default_storage_port;
-		else if (!xstrcmp(conf->job_comp_type, "job_comp/mysql"))
+		if (!xstrcmp(conf->job_comp_type, "job_comp/mysql"))
 			conf->job_comp_port = DEFAULT_MYSQL_PORT;
 		else
 			conf->job_comp_port = DEFAULT_STORAGE_PORT;
@@ -4194,19 +4140,11 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		conf->conf_flags |= CTL_CONF_WCKEY;
 
 	if (!s_p_get_string(&conf->accounting_storage_type,
-			    "AccountingStorageType", hashtbl)) {
-		if (default_storage_type)
-			conf->accounting_storage_type =
-				xstrdup_printf("accounting_storage/%s",
-					       default_storage_type);
-		else
-			conf->accounting_storage_type =
+			    "AccountingStorageType", hashtbl))
+		conf->accounting_storage_type =
 				xstrdup(DEFAULT_ACCOUNTING_STORAGE_TYPE);
-	} else {
-		if (xstrcasestr(conf->accounting_storage_type, "mysql"))
-			fatal("AccountingStorageType=accounting_storage/mysql "
-			      "only permitted in SlurmDBD.");
-	}
+	else if (xstrcasestr(conf->accounting_storage_type, "mysql"))
+		fatal("AccountingStorageType=accounting_storage/mysql only permitted in SlurmDBD.");
 
 	(void) s_p_get_string(&conf->node_features_plugins,
 			     "NodeFeaturesPlugins", hashtbl);
@@ -4247,33 +4185,17 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			    "AccountingStorageExternalHost", hashtbl);
 
 	if (!s_p_get_string(&conf->accounting_storage_host,
-			    "AccountingStorageHost", hashtbl)) {
-		if (default_storage_host)
-			conf->accounting_storage_host =
-				xstrdup(default_storage_host);
-		else
-			conf->accounting_storage_host =
-				xstrdup(DEFAULT_STORAGE_HOST);
-	}
+			    "AccountingStorageHost", hashtbl))
+		conf->accounting_storage_host = xstrdup(DEFAULT_STORAGE_HOST);
 
 	if (s_p_get_string(&temp_str, "AccountingStorageLoc", hashtbl))
 		fatal("The AccountingStorageLoc option has been removed. It is safe to remove from your configuration.");
 
 	if (!s_p_get_string(&conf->accounting_storage_user,
-			    "AccountingStorageUser", hashtbl)) {
-		if (default_storage_user)
-			conf->accounting_storage_user =
-				xstrdup(default_storage_user);
-		else
-			conf->accounting_storage_user =
-				xstrdup(DEFAULT_STORAGE_USER);
-	}
-	if (!s_p_get_string(&conf->accounting_storage_pass,
-			    "AccountingStoragePass", hashtbl)) {
-		if (default_storage_pass)
-			conf->accounting_storage_pass =
-				xstrdup(default_storage_pass);
-	}
+			    "AccountingStorageUser", hashtbl))
+		conf->accounting_storage_user = xstrdup(DEFAULT_STORAGE_USER);
+	s_p_get_string(&conf->accounting_storage_pass, "AccountingStoragePass",
+		       hashtbl);
 
 	if (s_p_get_string(&temp_str, "AccountingStoreFlags", hashtbl)) {
 		if (xstrcasestr(temp_str, "job_comment"))
@@ -4293,10 +4215,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (!s_p_get_uint16(&conf->accounting_storage_port,
 			    "AccountingStoragePort", hashtbl)) {
-		if (default_storage_port)
-			conf->accounting_storage_port = default_storage_port;
-		else if (!xstrcmp(conf->accounting_storage_type,
-				"accounting_storage/slurmdbd"))
+		if (!xstrcmp(conf->accounting_storage_type,
+			     "accounting_storage/slurmdbd"))
 			conf->accounting_storage_port = SLURMDBD_PORT;
 		else if (!xstrcmp(conf->accounting_storage_type,
 			  "accounting_storage/mysql"))
@@ -5114,12 +5034,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		 */
 		conf->prolog_epilog_timeout = NO_VAL16;
 	}
-
-	xfree(default_storage_type);
-	xfree(default_storage_loc);
-	xfree(default_storage_host);
-	xfree(default_storage_user);
-	xfree(default_storage_pass);
 
 	return SLURM_SUCCESS;
 }

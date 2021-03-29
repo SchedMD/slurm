@@ -42,6 +42,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     the command or daemon (including slurmctld) will not run.
  -- Removed AccountingStoreJobComment option.  Please update your config to use
     AccountingStoreFlags=job_comment instead.
+ -- Removed DefaultStorage{Host,Loc,Pass,Port,Type,User} options.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
