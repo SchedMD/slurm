@@ -512,7 +512,8 @@ User ID of the job's owner.</li>
 User name of the job's owner.</li>
 
 <li><b>SLURM_JOB_WORK_DIR</b>
-Job's working directory. Available in PrologSlurmctld, EpilogSlurmctld.</li>
+Job's working directory. Available in Prolog, PrologSlurmctld, Epilog,
+EpilogSlurmctld.</li>
 
 <li><b>SLURM_LOCAL_GLOBALS_FILE</b>
 Globals file used to set up the environment for the testsuite. Available
@@ -664,6 +665,6 @@ the job to be requeued. Only batch jobs can be requeued. Interactive jobs
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 19 April 2021</p>
+<p style="text-align:center;">Last modified 20 April 2021</p>
 
 <!--#include virtual="footer.txt"-->

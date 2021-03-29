@@ -2698,6 +2698,7 @@ _pack_kill_job_msg(kill_job_msg_t * msg, buf_t *buffer, uint16_t protocol_versio
 			      buffer);
 		pack_time(msg->start_time, buffer);
 		pack_time(msg->time, buffer);
+		packstr(msg->work_dir, buffer);
 	} else if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		gres_job_alloc_pack(msg->job_gres_info, buffer,
 				    protocol_version);
@@ -2763,6 +2764,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, buf_t *buffer,
 				     &tmp_ptr->spank_job_env_size, buffer);
 		safe_unpack_time(&tmp_ptr->start_time, buffer);
 		safe_unpack_time(&tmp_ptr->time, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->work_dir, &uint32_tmp, buffer);
 	} else if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		if (gres_job_alloc_unpack(&tmp_ptr->job_gres_info,
 					  buffer, protocol_version))

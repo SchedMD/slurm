@@ -1490,6 +1490,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
+		job_env.work_dir = req->cwd;
 		job_env.uid = req->uid;
 		job_env.gid = req->gid;
 		job_env.user_name = req->user_name;
@@ -2250,6 +2251,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
+		job_env.work_dir = req->work_dir;
 		job_env.uid = req->uid;
 		job_env.gid = req->gid;
 		job_env.user_name = req->user_name;
@@ -2457,6 +2459,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		job_env.partition = req->partition;
 		job_env.spank_job_env = req->spank_job_env;
 		job_env.spank_job_env_size = req->spank_job_env_size;
+		job_env.work_dir = req->work_dir;
 		job_env.uid = req->uid;
 		job_env.gid = req->gid;
 		job_env.user_name = req->user_name;
@@ -5045,6 +5048,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 	job_env.node_list = req->nodes;
 	job_env.spank_job_env = req->spank_job_env;
 	job_env.spank_job_env_size = req->spank_job_env_size;
+	job_env.work_dir = req->work_dir;
 	job_env.uid = req->job_uid;
 	job_env.gid = req->job_gid;
 
@@ -5293,6 +5297,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	job_env.node_list = req->nodes;
 	job_env.spank_job_env = req->spank_job_env;
 	job_env.spank_job_env_size = req->spank_job_env_size;
+	job_env.work_dir = req->work_dir;
 	job_env.uid = req->job_uid;
 	job_env.gid = req->job_gid;
 
