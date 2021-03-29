@@ -337,7 +337,7 @@ test_acct $job_id $target -1 $req_gpus $have_gpu_types
 log_info "TEST 2: --gpus option by job"
 
 exec $bin_rm -f $file_out
-if {$nb_nodes >= 2 || $gpu_cnt >= 2} {
+if {$nb_nodes >= 2 || $gpu_cnt >= 3} {
 	set target 3
 } else {
 	set target 2
@@ -501,7 +501,7 @@ test_acct $job_id $target $target $req_gpus $have_gpu_types
 log_info "TEST 6: --gpus option by step"
 
 exec $bin_rm -f $file_out
-if {$nb_nodes >= 2 || $gpu_cnt >= 2} {
+if {$nb_nodes >= 2 || $gpu_cnt >= 3} {
 	set target 3
 } else {
 	set target 2
