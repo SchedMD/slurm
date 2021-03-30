@@ -45,7 +45,7 @@
 
 typedef struct node_weight_struct {
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this weight */
-	uint32_t weight;	/* priority of node for scheduling work on */
+	uint64_t weight;	/* priority of node for scheduling work on */
 } node_weight_type;
 
 typedef struct topo_weight_info {
@@ -112,8 +112,8 @@ static int _node_weight_sort(void *x, void *y);
 static int _node_weight_find(void *x, void *key)
 {
 	node_weight_type *nwt = (node_weight_type *) x;
-	config_record_t *config_ptr = (config_record_t *) key;
-	if (nwt->weight == config_ptr->weight)
+	node_record_t *node_ptr = (node_record_t *) key;
+	if (nwt->weight == node_ptr->sched_weight)
 		return 1;
 	return 0;
 }
@@ -160,12 +160,11 @@ static List _build_node_weight_list(bitstr_t *node_bitmap)
 		if (!bit_test(node_bitmap, i))
 			continue;
 		node_ptr = node_record_table_ptr + i;
-		nwt = list_find_first(node_list, _node_weight_find,
-				      node_ptr->config_ptr);
+		nwt = list_find_first(node_list, _node_weight_find, node_ptr);
 		if (!nwt) {
 			nwt = xmalloc(sizeof(node_weight_type));
 			nwt->node_bitmap = bit_alloc(select_node_cnt);
-			nwt->weight = node_ptr->config_ptr->weight;
+			nwt->weight = node_ptr->sched_weight;
 			list_append(node_list, nwt);
 		}
 		bit_set(nwt->node_bitmap, i);
