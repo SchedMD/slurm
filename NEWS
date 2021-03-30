@@ -72,6 +72,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix updating GrpTRESRunMins when decrementing job time is bigger than it.
  -- Make it so we handle multithreaded allocations correctly when doing
     --exclusive or --core-spec allocations.
+ -- Fix incorrect round-up division in _pick_step_cores
 
 * Changes in Slurm 20.11.5
 ==========================
