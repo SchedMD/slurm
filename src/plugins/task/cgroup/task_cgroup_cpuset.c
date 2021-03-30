@@ -984,7 +984,7 @@ static int _cgroup_create_callback(const char *calling_func,
 	char *cpus = cgroup_callback->cpus;
 	stepd_step_rec_t *job = cgroup_callback->job;
 	char *user_alloc_cpus = NULL;
-	char *job_alloc_cores = NULL;
+	char *job_alloc_cpus = NULL;
 	char *step_alloc_cores = NULL;
 	pid_t pid;
 	int rc = SLURM_ERROR;
@@ -1001,7 +1001,7 @@ static int _cgroup_create_callback(const char *calling_func,
 	debug("%s: step abstract cores are '%s'",
 	      calling_func, job->step_alloc_cores);
 	if (xcpuinfo_abs_to_mac(job->job_alloc_cores,
-				&job_alloc_cores) != SLURM_SUCCESS) {
+				&job_alloc_cpus) != SLURM_SUCCESS) {
 		error("%s: unable to build job physical cores",
 		      calling_func);
 		goto endit;
@@ -1013,14 +1013,14 @@ static int _cgroup_create_callback(const char *calling_func,
 		goto endit;
 	}
 	debug("%s: job physical CPUs are '%s'",
-	      calling_func, job_alloc_cores);
+	      calling_func, job_alloc_cpus);
 	debug("%s: step physical CPUs are '%s'",
 	      calling_func, step_alloc_cores);
 
 	/*
 	 * check that user's cpuset cgroup is consistent and add the job cores
 	 */
-	user_alloc_cpus = xstrdup(job_alloc_cores);
+	user_alloc_cpus = xstrdup(job_alloc_cpus);
 	if (cpus)
 		xstrfmtcat(user_alloc_cpus, ",%s", cpus);
 
@@ -1037,7 +1037,7 @@ static int _cgroup_create_callback(const char *calling_func,
 		xcgroup_destroy(&job_cpuset_cg);
 		goto endit;
 	}
-	xcgroup_set_param(&job_cpuset_cg, cpuset_meta, job_alloc_cores);
+	xcgroup_set_param(&job_cpuset_cg, cpuset_meta, job_alloc_cpus);
 
 	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
 				&step_cpuset_cg) != XCGROUP_SUCCESS) {
@@ -1076,7 +1076,7 @@ static int _cgroup_create_callback(const char *calling_func,
 	cpu_freq_cgroup_validate(job, step_alloc_cores);
 endit:
 	xfree(user_alloc_cpus);
-	xfree(job_alloc_cores);
+	xfree(job_alloc_cpus);
 	xfree(step_alloc_cores);
 	return rc;
 }
