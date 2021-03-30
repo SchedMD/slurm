@@ -983,7 +983,7 @@ static int _cgroup_create_callback(const char *calling_func,
 	char *cpuset_meta = cgroup_callback->cpuset_meta;
 	char *cpus = cgroup_callback->cpus;
 	stepd_step_rec_t *job = cgroup_callback->job;
-	char *user_alloc_cores = NULL;
+	char *user_alloc_cpus = NULL;
 	char *job_alloc_cores = NULL;
 	char *step_alloc_cores = NULL;
 	pid_t pid;
@@ -1020,16 +1020,16 @@ static int _cgroup_create_callback(const char *calling_func,
 	/*
 	 * check that user's cpuset cgroup is consistent and add the job cores
 	 */
-	user_alloc_cores = xstrdup(job_alloc_cores);
+	user_alloc_cpus = xstrdup(job_alloc_cores);
 	if (cpus)
-		xstrfmtcat(user_alloc_cores, ",%s", cpus);
+		xstrfmtcat(user_alloc_cpus, ",%s", cpus);
 
 	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
 				&user_cpuset_cg) != XCGROUP_SUCCESS) {
 		xcgroup_destroy(&user_cpuset_cg);
 		goto endit;
 	}
-	xcgroup_set_param(&user_cpuset_cg, cpuset_meta, user_alloc_cores);
+	xcgroup_set_param(&user_cpuset_cg, cpuset_meta, user_alloc_cpus);
 
 	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
 				&job_cpuset_cg) != XCGROUP_SUCCESS) {
@@ -1075,7 +1075,7 @@ static int _cgroup_create_callback(const char *calling_func,
 	/* validate the requested cpu frequency and set it */
 	cpu_freq_cgroup_validate(job, step_alloc_cores);
 endit:
-	xfree(user_alloc_cores);
+	xfree(user_alloc_cpus);
 	xfree(job_alloc_cores);
 	xfree(step_alloc_cores);
 	return rc;
