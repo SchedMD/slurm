@@ -204,7 +204,7 @@ static int _handle_device_access(void *x, void *arg)
 		cg = "devices.deny";
 
 	log_flag(GRES, "%s %s: adding %s(%s)",
-		 (devices_cg == &job_devices_cg) ? "job " : "step",
+		 (devices_cg == &job_devices_cg) ? "job" : "step",
 		 cg, gres_device->major, gres_device->path);
 	xcgroup_set_param(devices_cg, cg, gres_device->major);
 
