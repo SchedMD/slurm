@@ -310,7 +310,12 @@ static int _lua_cli_json(lua_State *st)
 {
 	char *json = NULL;
 	slurm_opt_t *options = NULL;
-	lua_getmetatable(st, -1);
+
+	if (!lua_getmetatable(st, -1)) {
+		error("json_cli_options requires one argument - options structure");
+		return 0;
+	}
+
 	lua_getfield(st, -1, "_opt");
 	options = (slurm_opt_t *) lua_touserdata(st, -1);
 	lua_settop(st, -3);
