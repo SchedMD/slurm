@@ -715,6 +715,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 		req_cores = *max_tasks_this_node;
 		if (mc_ptr->cpus_per_task) {
 			int threads_per_core, removed_tasks = 0;
+			int efctv_cpt = mc_ptr->cpus_per_task;
 
 			if (mc_ptr->threads_per_core)
 				threads_per_core =
@@ -723,7 +724,14 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 			else
 				threads_per_core = cpus_per_core;
 
-			req_cores *= mc_ptr->cpus_per_task;
+			if ((mc_ptr->ntasks_per_core == 1) &&
+			    (efctv_cpt % threads_per_core)) {
+				efctv_cpt /= threads_per_core;
+				efctv_cpt++;
+				efctv_cpt *= threads_per_core;
+			}
+
+			req_cores *= efctv_cpt;
 
 			while (*max_tasks_this_node >= *min_tasks_this_node) {
 				/* round up by full threads per core */
@@ -745,7 +753,7 @@ extern void gres_select_filter_sock_core(gres_mc_data_t *mc_ptr,
 				removed_tasks++;
 				(*max_tasks_this_node)--;
 				req_cores = *max_tasks_this_node;
-				req_cores *= mc_ptr->cpus_per_task;
+				req_cores *= efctv_cpt;
 			}
 		}
 		if (cpus_per_gres) {
