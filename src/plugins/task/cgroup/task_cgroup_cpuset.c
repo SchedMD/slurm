@@ -1012,9 +1012,9 @@ static int _cgroup_create_callback(const char *calling_func,
 		      calling_func);
 		goto endit;
 	}
-	debug("%s: job physical cores are '%s'",
+	debug("%s: job physical CPUs are '%s'",
 	      calling_func, job_alloc_cores);
-	debug("%s: step physical cores are '%s'",
+	debug("%s: step physical CPUs are '%s'",
 	      calling_func, step_alloc_cores);
 
 	/*
