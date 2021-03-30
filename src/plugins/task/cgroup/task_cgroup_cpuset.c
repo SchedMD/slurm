@@ -985,7 +985,7 @@ static int _cgroup_create_callback(const char *calling_func,
 	stepd_step_rec_t *job = cgroup_callback->job;
 	char *user_alloc_cpus = NULL;
 	char *job_alloc_cpus = NULL;
-	char *step_alloc_cores = NULL;
+	char *step_alloc_cpus = NULL;
 	pid_t pid;
 	int rc = SLURM_ERROR;
 #ifdef HAVE_NATIVE_CRAY
@@ -1007,7 +1007,7 @@ static int _cgroup_create_callback(const char *calling_func,
 		goto endit;
 	}
 	if (xcpuinfo_abs_to_mac(job->step_alloc_cores,
-				&step_alloc_cores) != SLURM_SUCCESS) {
+				&step_alloc_cpus) != SLURM_SUCCESS) {
 		error("%s: unable to build step physical cores",
 		      calling_func);
 		goto endit;
@@ -1015,7 +1015,7 @@ static int _cgroup_create_callback(const char *calling_func,
 	debug("%s: job physical CPUs are '%s'",
 	      calling_func, job_alloc_cpus);
 	debug("%s: step physical CPUs are '%s'",
-	      calling_func, step_alloc_cores);
+	      calling_func, step_alloc_cpus);
 
 	/*
 	 * check that user's cpuset cgroup is consistent and add the job cores
@@ -1047,7 +1047,7 @@ static int _cgroup_create_callback(const char *calling_func,
 		xcgroup_destroy(&step_cpuset_cg);
 		goto endit;
 	}
-	xcgroup_set_param(&step_cpuset_cg, cpuset_meta, step_alloc_cores);
+	xcgroup_set_param(&step_cpuset_cg, cpuset_meta, step_alloc_cpus);
 
 #ifdef HAVE_NATIVE_CRAY
 	/*
@@ -1073,11 +1073,11 @@ static int _cgroup_create_callback(const char *calling_func,
 		rc = SLURM_SUCCESS;
 
 	/* validate the requested cpu frequency and set it */
-	cpu_freq_cgroup_validate(job, step_alloc_cores);
+	cpu_freq_cgroup_validate(job, step_alloc_cpus);
 endit:
 	xfree(user_alloc_cpus);
 	xfree(job_alloc_cpus);
-	xfree(step_alloc_cores);
+	xfree(step_alloc_cpus);
 	return rc;
 }
 
