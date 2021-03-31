@@ -49,13 +49,16 @@
  * IN mem_per_gpu - value to set as default
  * OUT *cpus_per_tres - CpusPerTres string displayed by scontrol show job
  * OUT *mem_per_tres - MemPerTres string displayed by scontrol show job
+ * IN/OUT *cpus_per_task - Increased if cpu_per_gpu * gres_per_task is more than
+ *                         *cpus_per_task
  */
 extern void gres_select_util_job_set_defs(List job_gres_list,
 					  char *gres_name,
 					  uint64_t cpu_per_gpu,
 					  uint64_t mem_per_gpu,
 					  char **cpus_per_tres,
-					  char **mem_per_tres)
+					  char **mem_per_tres,
+					  uint16_t *cpus_per_task)
 {
 	uint32_t plugin_id;
 	ListIterator gres_iter;
@@ -93,6 +96,11 @@ extern void gres_select_util_job_set_defs(List job_gres_list,
 			if (mem_per_gpu)
 				xstrfmtcat(*mem_per_tres, "gpu:%"PRIu64,
 					   mem_per_gpu);
+		}
+		if (cpu_per_gpu && job_gres_data->gres_per_task) {
+			*cpus_per_task = MAX(*cpus_per_task,
+					     (job_gres_data->gres_per_task *
+					      cpu_per_gpu));
 		}
 	}
 	list_iterator_destroy(gres_iter);

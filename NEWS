@@ -75,6 +75,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix incorrect round-up division in _pick_step_cores
  -- Use appropriate math to adjust cpu counts when --ntasks-per-core=1.
  -- cons_tres - Fix consideration of power downed nodes.
+ -- cons_tres - Fix DefCpuPerGPU, increase cpus-per-task to match with
+    gpus-per-task * cpus-per-gpu.
 
 * Changes in Slurm 20.11.5
 ==========================
