@@ -308,17 +308,21 @@ extern const char plugin_type[];
 /*
  * Print plugins with the plugin_type and func
  */
-#define format_print(l, fmt, ...)			\
-	if (get_log_level() >= l)			\
-		log_var(l, "%s: %s: "fmt, plugin_type,	\
-			__func__, ##__VA_ARGS__);
+#define format_print(l, fmt, ...)				\
+	do {							\
+		if (get_log_level() >= l)			\
+			log_var(l, "%s: %s: "fmt, plugin_type,	\
+				__func__, ##__VA_ARGS__);	\
+	} while (0)
 #else
 /*
  * Normal log messages
  */
 #define format_print(l, fmt, ...)			\
-	if (get_log_level() >= l)			\
-		log_var(l, fmt, ##__VA_ARGS__);
+	do {						\
+		if (get_log_level() >= l)		\
+			log_var(l, fmt, ##__VA_ARGS__);	\
+	} while (0)
 #endif //SLURM_PLUGIN_DEBUG
 
 #define info(fmt, ...)		\
