@@ -3889,6 +3889,7 @@ extern int dump_job_step_state(void *x, void *arg)
 
 	packstr(step_ptr->cpus_per_tres, buffer);
 	packstr(step_ptr->mem_per_tres, buffer);
+	packstr(step_ptr->submit_line, buffer);
 	packstr(step_ptr->tres_bind, buffer);
 	packstr(step_ptr->tres_freq, buffer);
 	packstr(step_ptr->tres_per_step, buffer);
