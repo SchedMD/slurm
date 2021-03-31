@@ -2370,6 +2370,11 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	node_ptr = find_node_record(reg_msg->node_name);
 	if (node_ptr == NULL)
 		return ENOENT;
+
+	debug3("%s: validating nodes %s in state: %s",
+	       __func__, reg_msg->node_name,
+	       node_state_string(node_ptr->node_state));
+
 	node_inx = node_ptr - node_record_table_ptr;
 	orig_node_avail = bit_test(avail_node_bitmap, node_inx);
 
