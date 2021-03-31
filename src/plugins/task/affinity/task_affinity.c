@@ -284,8 +284,10 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 		nodemask_t new_mask, cur_mask;
 
 		cur_mask = numa_get_membind();
-		if (get_memset(&new_mask, job)
-		    &&  (!(job->mem_bind_type & MEM_BIND_NONE))) {
+		if ((job->mem_bind_type & MEM_BIND_NONE) ||
+		    (job->mem_bind_type == MEM_BIND_VERBOSE)) {
+			/* Do nothing */
+		} else if (get_memset(&new_mask, job)) {
 			if (job->mem_bind_type & MEM_BIND_PREFER)
 				_numa_set_preferred(&new_mask);
 			else

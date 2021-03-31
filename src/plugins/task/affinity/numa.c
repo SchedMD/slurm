@@ -186,9 +186,6 @@ int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
 	}
 
 	nodemask_zero(mask);
-	if (job->mem_bind_type & MEM_BIND_NONE) {
-		return true;
-	}
 
 	if (job->mem_bind_type & MEM_BIND_RANK) {
 		int node;
