@@ -8335,6 +8335,8 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 			    (job_desc_msg->max_cpus < job_desc_msg->min_cpus)) {
 				job_desc_msg->max_cpus = job_desc_msg->min_cpus;
 			}
+		} else {
+			job_desc_msg->pn_min_cpus = job_desc_msg->cpus_per_task;
 		}
 		return true;
 	}

@@ -77,6 +77,7 @@ documents those changes that are of interest to users and administrators.
  -- cons_tres - Fix consideration of power downed nodes.
  -- cons_tres - Fix DefCpuPerGPU, increase cpus-per-task to match with
     gpus-per-task * cpus-per-gpu.
+ -- Fix under-cpu memory auto-adjustment when MaxMemPerCPU is set.
 
 * Changes in Slurm 20.11.5
 ==========================
