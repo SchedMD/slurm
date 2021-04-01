@@ -23,6 +23,7 @@ documents those changes that are of interest to users and administrators.
     gpus-per-task * cpus-per-gpu.
  -- Fix under-cpu memory auto-adjustment when MaxMemPerCPU is set.
  -- Make it possible to override CR_CORE_DEFAULT_DIST_BLOCK.
+ -- Perl API - fix retrieving/storing of slurm_step_id_t in job_step_info_t.
 
 * Changes in Slurm 20.11.5
 ==========================
