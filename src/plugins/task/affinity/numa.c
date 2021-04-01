@@ -265,10 +265,22 @@ int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
 
 	if (job->mem_bind_type & MEM_BIND_MAP) {
 		long int my_node = 0;
+		char *end_ptr = NULL;
+		slurm_seterrno(0);
 		if (xstrncmp(mstr, "0x", 2) == 0) {
-			my_node = strtol(&(mstr[2]), NULL, 16);
+			my_node = strtol(&(mstr[2]), &end_ptr, 16);
 		} else {
-			my_node = strtol(mstr, NULL, 10);
+			my_node = strtol(mstr, &end_ptr, 10);
+		}
+		if (slurm_get_errno()) {
+			error("--mem-bind=map_mem:%s failed to parse into valid NUMA nodes for local task %d: %m",
+			      mstr, local_id);
+			return false;
+		} else if (end_ptr && (mstr[0] != '\0') && (end_ptr[0] != '\0')) {
+			/* i.e. the string was not all parsable into digits */
+			error("--mem-bind=map_mem:%s contained non-numeric values for local task %d",
+			      mstr, local_id);
+			return false;
 		}
 		if ((my_node < 0) || (my_node > (long int)numa_max_node())) {
 			error("NUMA node %ld does not exist; cannot bind local task %d to it (--mem-bind=map_mem)",
