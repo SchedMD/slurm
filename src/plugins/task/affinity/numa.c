@@ -250,6 +250,15 @@ int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
 		/* convert mask string into nodemask_t mask */
 		if (_str_to_memset(mask, mstr, local_id) < 0) {
 			return false;
+		} else {
+			/* Check that at least one NUMA node is specified */
+			nodemask_t tmp;
+			nodemask_zero(&tmp);
+			if (nodemask_equal(mask, &tmp)) {
+				error("NUMA node mask is NULL (0x0). Must bind at least one NUMA node to local task %d (--mem-bind=mask_mem)",
+				      local_id);
+				return false;
+			}
 		}
 		return true;
 	}
