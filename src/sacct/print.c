@@ -1079,6 +1079,7 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = xstrdup_printf("%u", job->jobid);
 				break;
 			case JOBSTEP:
+				id = xmalloc(FORMAT_STRING_SIZE);
 				log_build_step_id_str(&step->step_id, id,
 						      sizeof(id),
 						      (STEP_ID_FLAG_NO_PREFIX |
@@ -1086,6 +1087,7 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = xstrdup_printf("%u.%s",
 							  step->job_ptr->jobid,
 							  id);
+				xfree(id);
 				break;
 			case JOBCOMP:
 				tmp_char = xstrdup_printf("%u",
