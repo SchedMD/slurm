@@ -7575,10 +7575,10 @@ static void _job_state_log(void *gres_data, uint32_t job_id, uint32_t plugin_id)
 		info("  gres_per_task:%"PRIu64, gres_ptr->gres_per_task);
 	if (gres_ptr->mem_per_gres)
 		info("  mem_per_gres:%"PRIu64, gres_ptr->mem_per_gres);
-	if (gres_ptr->ntasks_per_gres)
-		info("  ntasks_per_gres:%u", gres_ptr->ntasks_per_gres);
 	else if (gres_ptr->def_mem_per_gres)
 		info("  def_mem_per_gres:%"PRIu64, gres_ptr->def_mem_per_gres);
+	if (gres_ptr->ntasks_per_gres)
+		info("  ntasks_per_gres:%u", gres_ptr->ntasks_per_gres);
 
 	if (gres_ptr->node_cnt == 0)
 		return;
