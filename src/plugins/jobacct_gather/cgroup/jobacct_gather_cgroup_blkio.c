@@ -71,7 +71,7 @@
 
 /* 	/\* initialize blkio cgroup namespace *\/ */
 /* 	if (xcgroup_ns_create(&blkio_ns, "", "blkio") */
-/* 	    != XCGROUP_SUCCESS) { */
+/* 	    != SLURM_SUCCESS) { */
 /* 		error("jobacct_gather/cgroup: unable to create blkio " */
 /* 		      "namespace"); */
 /* 		return SLURM_ERROR; */
@@ -196,12 +196,12 @@
 /* 	 *\/ */
 
 /* 	if (xcgroup_create(&blkio_ns, &blkio_cg, "", 0, 0) */
-/* 	    != XCGROUP_SUCCESS) { */
+/* 	    != SLURM_SUCCESS) { */
 /* 		error("jobacct_gather/cgroup: unable to create root blkio " */
 /* 		      "xcgroup"); */
 /* 		return SLURM_ERROR; */
 /* 	} */
-/* 	if (xcgroup_lock(&blkio_cg) != XCGROUP_SUCCESS) { */
+/* 	if (xcgroup_lock(&blkio_cg) != SLURM_SUCCESS) { */
 /* 		xcgroup_destroy(&blkio_cg); */
 /* 		error("jobacct_gather/cgroup: unable to lock root blkio cg"); */
 /* 		return SLURM_ERROR; */
@@ -212,14 +212,14 @@
 /* 	 *\/ */
 /* 	if (xcgroup_create(&blkio_ns, &user_blkio_cg, */
 /* 			   user_cgroup_path, */
-/* 			   uid, gid) != XCGROUP_SUCCESS) { */
+/* 			   uid, gid) != SLURM_SUCCESS) { */
 /* 		error("jobacct_gather/cgroup: unable to create user %u blkio " */
 /* 		      "cgroup", uid); */
 /* 		fstatus = SLURM_ERROR; */
 /* 		goto error; */
 /* 	} */
 
-/* 	if (xcgroup_instantiate(&user_blkio_cg) != XCGROUP_SUCCESS) { */
+/* 	if (xcgroup_instantiate(&user_blkio_cg) != SLURM_SUCCESS) { */
 /* 		xcgroup_destroy(&user_blkio_cg); */
 /* 		error("jobacct_gather/cgroup: unable to instantiate user %u " */
 /* 		      "blkio cgroup", uid); */
@@ -232,7 +232,7 @@
 /* 	 *\/ */
 /* 	if (xcgroup_create(&blkio_ns, &job_blkio_cg, */
 /* 			   job_cgroup_path, */
-/* 			   uid, gid) != XCGROUP_SUCCESS) { */
+/* 			   uid, gid) != SLURM_SUCCESS) { */
 /* 		xcgroup_destroy(&user_blkio_cg); */
 /* 		error("jobacct_gather/cgroup: unable to create job %u blkio " */
 /* 		      "cgroup", jobid); */
@@ -240,7 +240,7 @@
 /* 		goto error; */
 /* 	} */
 
-/* 	if (xcgroup_instantiate(&job_blkio_cg) != XCGROUP_SUCCESS) { */
+/* 	if (xcgroup_instantiate(&job_blkio_cg) != SLURM_SUCCESS) { */
 /* 		xcgroup_destroy(&user_blkio_cg); */
 /* 		xcgroup_destroy(&job_blkio_cg); */
 /* 		error("jobacct_gather/cgroup: unable to instantiate job %u " */
@@ -254,7 +254,7 @@
 /* 	 *\/ */
 /* 	if (xcgroup_create(&blkio_ns, &step_blkio_cg, */
 /* 			   jobstep_cgroup_path, */
-/* 			   uid, gid) != XCGROUP_SUCCESS) { */
+/* 			   uid, gid) != SLURM_SUCCESS) { */
 /* 		/\* do not delete user/job cgroup as they can exist for other */
 /* 		 * steps, but release cgroup structures *\/ */
 /* 		xcgroup_destroy(&user_blkio_cg); */
@@ -265,7 +265,7 @@
 /* 		goto error; */
 /* 	} */
 
-/* 	if (xcgroup_instantiate(&step_blkio_cg) != XCGROUP_SUCCESS) { */
+/* 	if (xcgroup_instantiate(&step_blkio_cg) != SLURM_SUCCESS) { */
 /* 		xcgroup_destroy(&user_blkio_cg); */
 /* 		xcgroup_destroy(&job_blkio_cg); */
 /* 		xcgroup_destroy(&step_blkio_cg); */
@@ -280,7 +280,7 @@
 /* 	 *\/ */
 /* 	if (xcgroup_create(&blkio_ns, &task_blkio_cg, */
 /* 			   task_cgroup_path, */
-/* 			   uid, gid) != XCGROUP_SUCCESS) { */
+/* 			   uid, gid) != SLURM_SUCCESS) { */
 /* 		/\* do not delete user/job cgroup as they can exist for other */
 /* 		 * steps, but release cgroup structures *\/ */
 /* 		xcgroup_destroy(&user_blkio_cg); */
@@ -291,7 +291,7 @@
 /* 		goto error; */
 /* 	} */
 
-/* 	if (xcgroup_instantiate(&task_blkio_cg) != XCGROUP_SUCCESS) { */
+/* 	if (xcgroup_instantiate(&task_blkio_cg) != SLURM_SUCCESS) { */
 /* 		xcgroup_destroy(&user_blkio_cg); */
 /* 		xcgroup_destroy(&job_blkio_cg); */
 /* 		xcgroup_destroy(&step_blkio_cg); */
@@ -305,7 +305,7 @@
 /* 	 * Attach the slurmstepd to the task blkio cgroup */
 /* 	 *\/ */
 /* 	rc = xcgroup_add_pids(&task_blkio_cg, &pid, 1); */
-/* 	if (rc != XCGROUP_SUCCESS) { */
+/* 	if (rc != SLURM_SUCCESS) { */
 /* 		error("jobacct_gather/cgroup: unable to add slurmstepd to " */
 /* 		      "blkio cg '%s'", task_blkio_cg.path); */
 /* 		fstatus = SLURM_ERROR; */

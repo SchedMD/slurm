@@ -101,7 +101,7 @@ extern int init_system_cpuset_cgroup(void)
 
 	/* initialize cpuset cgroup namespace */
 	if (xcgroup_ns_create(&cpuset_ns, "", "cpuset")
-	    != XCGROUP_SUCCESS) {
+	    != SLURM_SUCCESS) {
 		error("system cgroup: unable to create cpuset namespace");
 		return SLURM_ERROR;
 	}
@@ -115,7 +115,7 @@ extern int init_system_cpuset_cgroup(void)
 
 	/* check that this cgroup has cpus allowed or initialize them */
 	if (xcgroup_load(&cpuset_ns, &slurm_cg, slurm_cgpath)
-	    != XCGROUP_SUCCESS) {
+	    != SLURM_SUCCESS) {
 		error("system cgroup: unable to load slurm cpuset xcgroup");
 		xfree(slurm_cgpath);
 		xcgroup_ns_destroy(&cpuset_ns);
@@ -125,8 +125,8 @@ extern int init_system_cpuset_cgroup(void)
 again:
 	snprintf(cpuset_meta, sizeof(cpuset_meta), "%scpus", cpuset_prefix);
 	rc = xcgroup_get_param(&slurm_cg, cpuset_meta, &cpus, &cpus_size);
-	if (rc != XCGROUP_SUCCESS || cpus_size == 1) {
-		if (!cpuset_prefix_set && (rc != XCGROUP_SUCCESS)) {
+	if (rc != SLURM_SUCCESS || cpus_size == 1) {
+		if (!cpuset_prefix_set && (rc != SLURM_SUCCESS)) {
 			cpuset_prefix_set = 1;
 			cpuset_prefix = "cpuset.";
 			goto again;
@@ -134,7 +134,7 @@ again:
 
 		/* initialize the cpusets as it was nonexistent */
 		if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
-					&slurm_cg) != XCGROUP_SUCCESS) {
+					&slurm_cg) != SLURM_SUCCESS) {
 			xfree(slurm_cgpath);
 			xcgroup_destroy(&slurm_cg);
 			xcgroup_ns_destroy(&cpuset_ns);
@@ -151,14 +151,14 @@ again:
 
 	/* create system cgroup in the cpuset ns */
 	if (xcgroup_create(&cpuset_ns, &system_cpuset_cg, system_cgroup_path,
-			   getuid(),getgid()) != XCGROUP_SUCCESS) {
+			   getuid(),getgid()) != SLURM_SUCCESS) {
 		goto error;
 	}
-	if (xcgroup_instantiate(&system_cpuset_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&system_cpuset_cg) != SLURM_SUCCESS) {
 		goto error;
 	}
 	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
-				&system_cpuset_cg) != XCGROUP_SUCCESS) {
+				&system_cpuset_cg) != SLURM_SUCCESS) {
 		goto error;
 	}
 
@@ -180,7 +180,7 @@ extern int init_system_memory_cgroup(void)
 
 	/* initialize memory cgroup namespace */
 	if (xcgroup_ns_create(&memory_ns, "", "memory")
-	    != XCGROUP_SUCCESS) {
+	    != SLURM_SUCCESS) {
 		error("system cgroup: unable to create memory namespace");
 		return SLURM_ERROR;
 	}
@@ -268,15 +268,15 @@ extern int init_system_memory_cgroup(void)
 	/* create system cgroup in the cpuset ns */
 	if (xcgroup_create(&memory_ns, &system_memory_cg,
 			   system_cgroup_path,
-			   getuid(), getgid()) != XCGROUP_SUCCESS) {
+			   getuid(), getgid()) != SLURM_SUCCESS) {
 		goto error;
 	}
-	if (xcgroup_instantiate(&system_memory_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&system_memory_cg) != SLURM_SUCCESS) {
 		goto error;
 	}
 
 	if ( xcgroup_set_param(&system_memory_cg, "memory.use_hierarchy", "1")
-	     != XCGROUP_SUCCESS ) {
+	     != SLURM_SUCCESS ) {
 		error("system cgroup: unable to ask for hierarchical accounting"
 		      "of system memcg '%s'", system_memory_cg.path);
 		goto error;
@@ -328,11 +328,11 @@ static char* _system_cgroup_create_slurm_cg (xcgroup_ns_t* ns)
 
 	/* create slurm cgroup in the ns */
 	if (xcgroup_create(ns, &slurm_cg, pre,
-			   getuid(), getgid()) != XCGROUP_SUCCESS) {
+			   getuid(), getgid()) != SLURM_SUCCESS) {
 		xfree(pre);
 		return pre;
 	}
-	if (xcgroup_instantiate(&slurm_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&slurm_cg) != SLURM_SUCCESS) {
 		error("system cgroup: unable to build slurm cgroup for "
 		      "ns %s: %m",
 		      ns->subsystems);
@@ -374,14 +374,14 @@ extern int disable_system_cgroup_mem_oom()
 
 extern int attach_system_cpuset_pid(pid_t pid)
 {
-	if (xcgroup_add_pids(&system_cpuset_cg, &pid, 1) != XCGROUP_SUCCESS)
+	if (xcgroup_add_pids(&system_cpuset_cg, &pid, 1) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
 
 extern int attach_system_memory_pid(pid_t pid)
 {
-	if (xcgroup_add_pids(&system_memory_cg, &pid, 1) != XCGROUP_SUCCESS)
+	if (xcgroup_add_pids(&system_memory_cg, &pid, 1) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
@@ -426,17 +426,17 @@ extern void attach_system_cgroup_pid(pid_t pid)
 #endif
 	xstrcat(slurm_cgpath,"/system");
 	if (xcgroup_ns_load(&cpuset_ns, "cpuset")
-	    == XCGROUP_SUCCESS) {
+	    == SLURM_SUCCESS) {
 		if (xcgroup_load(&cpuset_ns, &system_cpuset_cg, slurm_cgpath)
-		    == XCGROUP_SUCCESS)
+		    == SLURM_SUCCESS)
 			if (attach_system_cpuset_pid(pid) != SLURM_SUCCESS)
 				debug2("system cgroup: unable to attach pid to "
 				       "system cpuset cgroup");
 	}
 	if (xcgroup_ns_load(&memory_ns, "memory")
-	    == XCGROUP_SUCCESS) {
+	    == SLURM_SUCCESS) {
 		if (xcgroup_load(&memory_ns, &system_memory_cg, slurm_cgpath)
-		    == XCGROUP_SUCCESS)
+		    == SLURM_SUCCESS)
 			if (attach_system_memory_pid(pid) != SLURM_SUCCESS)
 				debug2("system cgroup: unable to attach pid to "
 				       "system memory cgroup");

@@ -73,7 +73,7 @@ jobacct_gather_cgroup_cpuacct_init(void)
 
 	/* initialize cpuacct cgroup namespace */
 	if (xcgroup_ns_create(&cpuacct_ns,  "", "cpuacct")
-	    != XCGROUP_SUCCESS) {
+	    != SLURM_SUCCESS) {
 		error("jobacct_gather/cgroup: unable to create cpuacct "
 		      "namespace");
 		return SLURM_ERROR;
@@ -104,7 +104,7 @@ jobacct_gather_cgroup_cpuacct_fini(void)
 	 * cgroup. It will do the necessary cleanup.
 	 */
 	if (xcgroup_create(&cpuacct_ns,
-			   &cpuacct_cg, "", 0, 0) == XCGROUP_SUCCESS) {
+			   &cpuacct_cg, "", 0, 0) == SLURM_SUCCESS) {
 		xcgroup_set_uint32_param(&cpuacct_cg, "tasks", getpid());
 	}
 
@@ -112,7 +112,7 @@ jobacct_gather_cgroup_cpuacct_fini(void)
 	 * related to this job.
 	 */
 	lock_ok = true;
-	if (xcgroup_lock(&cpuacct_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_lock(&cpuacct_cg) != SLURM_SUCCESS) {
 		error("failed to flock() %s %m", cpuacct_cg.path);
 		lock_ok = false;
 	}
@@ -131,22 +131,22 @@ jobacct_gather_cgroup_cpuacct_fini(void)
 			   cpuacct_ns.mnt_point, jobstep_cgroup_path, cc);
 		cgroup.path = buf;
 
-		if (xcgroup_delete(&cgroup) != XCGROUP_SUCCESS) {
+		if (xcgroup_delete(&cgroup) != SLURM_SUCCESS) {
 			debug2("failed to delete %s %m", buf);
 		}
 
 		xfree(buf);
 	}
 
-	if (xcgroup_delete(&step_cpuacct_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_delete(&step_cpuacct_cg) != SLURM_SUCCESS) {
 		debug2("failed to delete %s %m", cpuacct_cg.path);
 	}
 
-	if (xcgroup_delete(&job_cpuacct_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_delete(&job_cpuacct_cg) != SLURM_SUCCESS) {
 		debug2("failed to delete %s %m", job_cpuacct_cg.path);
 	}
 
-	if (xcgroup_delete(&user_cpuacct_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_delete(&user_cpuacct_cg) != SLURM_SUCCESS) {
 		debug2("failed to delete %s %m", user_cpuacct_cg.path);
 	}
 

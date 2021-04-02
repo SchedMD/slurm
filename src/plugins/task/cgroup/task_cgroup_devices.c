@@ -118,7 +118,7 @@ extern int task_cgroup_devices_init(void)
 	strcpy(cgroup_allowed_devices_file, cg_conf->allowed_devices_file);
 	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 	if (xcgroup_ns_create(&devices_ns, "", "devices")
-	    != XCGROUP_SUCCESS ) {
+	    != SLURM_SUCCESS ) {
 		error("unable to create devices namespace");
 		goto error;
 	}
@@ -146,8 +146,8 @@ extern int task_cgroup_devices_fini(void)
 	 * root cgroup so we don't race with another job step that is
 	 * being started.  */
         if (xcgroup_create(&devices_ns, &devices_cg,"",0,0)
-	    == XCGROUP_SUCCESS) {
-                if (xcgroup_lock(&devices_cg) == XCGROUP_SUCCESS) {
+	    == SLURM_SUCCESS) {
+                if (xcgroup_lock(&devices_cg) == SLURM_SUCCESS) {
 			/* First move slurmstepd to the root devices cg
 			 * so we can remove the step/job/user devices
 			 * cg's.  */
@@ -159,11 +159,11 @@ extern int task_cgroup_devices_fini(void)
 			if (xcgroup_delete(&step_devices_cg) != SLURM_SUCCESS)
                                 debug2("unable to remove step "
                                        "devices : %m");
-                        if (xcgroup_delete(&job_devices_cg) != XCGROUP_SUCCESS)
+                        if (xcgroup_delete(&job_devices_cg) != SLURM_SUCCESS)
                                 debug2("not removing "
                                        "job devices : %m");
                         if (xcgroup_delete(&user_devices_cg)
-			    != XCGROUP_SUCCESS)
+			    != SLURM_SUCCESS)
                                 debug2("not removing "
                                        "user devices : %m");
                         xcgroup_unlock(&devices_cg);
@@ -291,7 +291,7 @@ static int _cgroup_create_callback(const char *calling_func,
 	/* attach the slurmstepd to the step devices cgroup */
 	pid = getpid();
 	rc = xcgroup_add_pids(&step_devices_cg, &pid, 1);
-	if (rc != XCGROUP_SUCCESS) {
+	if (rc != SLURM_SUCCESS) {
 		error("%s: unable to add slurmstepd to devices cg '%s'",
 		      calling_func, step_devices_cg.path);
 		rc = SLURM_ERROR;

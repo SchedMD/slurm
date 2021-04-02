@@ -133,7 +133,7 @@ extern int task_cgroup_memory_init(void)
 	jobstep_cgroup_path[0]='\0';
 
 	/* initialize memory cgroup namespace */
-	if (xcgroup_ns_create(&memory_ns, "", "memory") != XCGROUP_SUCCESS) {
+	if (xcgroup_ns_create(&memory_ns, "", "memory") != SLURM_SUCCESS) {
 		error("unable to create memory namespace. "
 			"You may need to set the Linux kernel option "
 			"cgroup_enable=memory (and reboot), or disable "
@@ -144,7 +144,7 @@ extern int task_cgroup_memory_init(void)
 	/* Enable memory.use_hierarchy in the root of the cgroup.
 	 */
 	if (xcgroup_create(&memory_ns, &memory_cg, "", 0, 0)
-	    != XCGROUP_SUCCESS) {
+	    != SLURM_SUCCESS) {
 		error("unable to create root memory cgroup: %m");
 		return SLURM_ERROR;
 	}
@@ -263,15 +263,15 @@ extern int task_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
 	 * are present to see if they can be be moved to an orhpan memcg.
 	 * That could be done in the future, if it is necessary.
 	 */
-	if (xcgroup_create(&memory_ns,&memory_cg,"",0,0) == XCGROUP_SUCCESS) {
-		if (xcgroup_lock(&memory_cg) == XCGROUP_SUCCESS) {
+	if (xcgroup_create(&memory_ns,&memory_cg,"",0,0) == SLURM_SUCCESS) {
+		if (xcgroup_lock(&memory_cg) == SLURM_SUCCESS) {
 			if (xcgroup_delete(&step_memory_cg) != SLURM_SUCCESS)
 				debug2("unable to remove step "
 				       "memcg : %m");
-			if (xcgroup_delete(&job_memory_cg) != XCGROUP_SUCCESS)
+			if (xcgroup_delete(&job_memory_cg) != SLURM_SUCCESS)
 				debug2("not removing "
 				       "job memcg : %m");
-			if (xcgroup_delete(&user_memory_cg) != XCGROUP_SUCCESS)
+			if (xcgroup_delete(&user_memory_cg) != SLURM_SUCCESS)
 				debug2("not removing "
 				       "user memcg : %m");
 			xcgroup_unlock(&memory_cg);
@@ -653,7 +653,7 @@ static int _cgroup_create_callback(const char *calling_func,
 	stepd_step_rec_t *job = cgroup_callback->job;
 
 	if (xcgroup_set_param(&user_memory_cg, "memory.use_hierarchy", "1") !=
-	    XCGROUP_SUCCESS) {
+	    SLURM_SUCCESS) {
 		error("%s: unable to ask for hierarchical accounting of user memcg '%s'",
 		      calling_func, user_memory_cg.path);
 		xcgroup_destroy (&user_memory_cg);
@@ -710,7 +710,7 @@ extern int task_cgroup_memory_attach_task(stepd_step_rec_t *job, pid_t pid)
 {
 	int fstatus = SLURM_ERROR;
 
-	if (xcgroup_add_pids(&step_memory_cg, &pid, 1) != XCGROUP_SUCCESS) {
+	if (xcgroup_add_pids(&step_memory_cg, &pid, 1) != SLURM_SUCCESS) {
 		error("unable to add task[pid=%u] to "
 		      "memory cg '%s'",pid,step_memory_cg.path);
 		fstatus = SLURM_ERROR;
@@ -723,12 +723,12 @@ extern int task_cgroup_memory_attach_task(stepd_step_rec_t *job, pid_t pid)
 /* return 1 if failcnt file exists and is > 0 */
 int failcnt_non_zero(xcgroup_t* cg, char* param)
 {
-	int fstatus = XCGROUP_ERROR;
+	int fstatus = SLURM_ERROR;
 	uint64_t value;
 
 	fstatus = xcgroup_get_uint64_param(cg, param, &value);
 
-	if (fstatus != XCGROUP_SUCCESS) {
+	if (fstatus != SLURM_SUCCESS) {
 		debug2("unable to read '%s' from '%s'", param, cg->path);
 		return 0;
 	}
@@ -744,12 +744,12 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 	ssize_t ret;
 
 	if (xcgroup_create(&memory_ns, &memory_cg, "", 0, 0)
-	    != XCGROUP_SUCCESS) {
+	    != SLURM_SUCCESS) {
 		error("task/cgroup task_cgroup_memory_check_oom: unable to create root memcg : %m");
 		goto fail_xcgroup_create;
 	}
 
-	if (xcgroup_lock(&memory_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_lock(&memory_cg) != SLURM_SUCCESS) {
 		error("task/cgroup task_cgroup_memory_check_oom: task_cgroup_memory_check_oom: unable to lock root memcg : %m");
 		goto fail_xcgroup_lock;
 	}

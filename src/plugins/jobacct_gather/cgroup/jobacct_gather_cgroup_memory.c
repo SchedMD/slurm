@@ -73,7 +73,7 @@ jobacct_gather_cgroup_memory_init(void)
 
 	/* initialize memory cgroup namespace */
 	if (xcgroup_ns_create(&memory_ns, "", "memory")
-	    != XCGROUP_SUCCESS) {
+	    != SLURM_SUCCESS) {
 		error("jobacct_gather/cgroup: unable to create memory "
 		      "namespace");
 		return SLURM_ERROR;
@@ -99,14 +99,14 @@ jobacct_gather_cgroup_memory_fini(void)
 		return SLURM_SUCCESS;
 
 	/* Move the slurmstepd back to the root memory cg */
-	if (xcgroup_create(&memory_ns, &memory_cg, "", 0, 0) == XCGROUP_SUCCESS)
+	if (xcgroup_create(&memory_ns, &memory_cg, "", 0, 0) == SLURM_SUCCESS)
 		xcgroup_set_uint32_param(&memory_cg, "tasks", getpid());
 
 	/* Lock the root of the cgroup and remove the subdirectories
 	 * related to this job.
 	 */
 	lock_ok = true;
-	if (xcgroup_lock(&memory_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_lock(&memory_cg) != SLURM_SUCCESS) {
 		error("failed to flock() %s %m", memory_cg.path);
 		lock_ok = false;
 	}
@@ -129,7 +129,7 @@ jobacct_gather_cgroup_memory_fini(void)
 			   memory_ns.mnt_point, jobstep_cgroup_path, cc);
 		cgroup.path = buf;
 
-		if (xcgroup_delete(&cgroup) != XCGROUP_SUCCESS) {
+		if (xcgroup_delete(&cgroup) != SLURM_SUCCESS) {
 			debug2("failed to delete %s %m", buf);
 		}
 
@@ -145,15 +145,15 @@ jobacct_gather_cgroup_memory_fini(void)
 	 * kernel pages will still be seen.
 	 */
 	xcgroup_set_param(&step_memory_cg, "memory.force_empty", "1");
-	if (xcgroup_delete(&step_memory_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_delete(&step_memory_cg) != SLURM_SUCCESS) {
 		debug2("failed to delete %s %m", step_memory_cg.path);
 	}
 
-	if (xcgroup_delete(&job_memory_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_delete(&job_memory_cg) != SLURM_SUCCESS) {
 		debug2("failed to delete %s %m", job_memory_cg.path);
 	}
 
-	if (xcgroup_delete(&user_memory_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_delete(&user_memory_cg) != SLURM_SUCCESS) {
 		debug2("failed to delete %s %m", user_memory_cg.path);
 	}
 

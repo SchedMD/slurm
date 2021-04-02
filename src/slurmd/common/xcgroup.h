@@ -43,8 +43,6 @@
 #include "src/common/xcgroup_read_config.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
-#define XCGROUP_ERROR    1
-#define XCGROUP_SUCCESS  0
 #define MAX_MOVE_WAIT 5000
 
 // http://lists.debian.org/debian-boot/2012/04/msg00047.html
@@ -76,8 +74,8 @@ typedef struct xcgroup {
  * create a cgroup namespace for tasks containment
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  */
 int xcgroup_ns_create(xcgroup_ns_t* cgns, char* mnt_args,
 		      char* subsys);
@@ -91,8 +89,8 @@ void xcgroup_ns_destroy(xcgroup_ns_t* cgns);
  * mount a cgroup namespace
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  *
  * If an error occurs, errno will be set.
  */
@@ -102,8 +100,8 @@ int xcgroup_ns_mount(xcgroup_ns_t* cgns);
  * umount a cgroup namespace
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  *
  * If an error occurs, errno will be set.
  */
@@ -122,8 +120,8 @@ int xcgroup_ns_is_available(xcgroup_ns_t* cgns);
  * load a cgroup from a cgroup namespace given a pid
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  */
 int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid);
 
@@ -131,8 +129,8 @@ int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid);
  * load a cgroup namespace
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  */
 int xcgroup_ns_load(xcgroup_ns_t *cgns, char *subsys);
 
@@ -140,8 +138,8 @@ int xcgroup_ns_load(xcgroup_ns_t *cgns, char *subsys);
  * create a cgroup structure
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  */
 int xcgroup_create(xcgroup_ns_t* cgns, xcgroup_t* cg,
 		   char* uri, uid_t uid, gid_t gid);
@@ -156,8 +154,8 @@ void xcgroup_destroy(xcgroup_t* cg);
  * (system level using flock)
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  */
 int xcgroup_lock(xcgroup_t* cg);
 
@@ -165,8 +163,8 @@ int xcgroup_lock(xcgroup_t* cg);
  * unlock a cgroup
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  */
 int xcgroup_unlock(xcgroup_t* cg);
 
@@ -174,8 +172,8 @@ int xcgroup_unlock(xcgroup_t* cg);
  * instantiate a cgroup in a cgroup namespace (mkdir)
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  */
 int xcgroup_instantiate(xcgroup_t* cg);
 
@@ -183,8 +181,8 @@ int xcgroup_instantiate(xcgroup_t* cg);
  * load a cgroup from a cgroup namespace into a structure
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  */
 int xcgroup_load(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri);
 
@@ -192,8 +190,8 @@ int xcgroup_load(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri);
  * delete a cgroup instance in a cgroup namespace (rmdir)
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  */
 int xcgroup_delete(xcgroup_t* cg);
 
@@ -201,8 +199,8 @@ int xcgroup_delete(xcgroup_t* cg);
  * add a list of pids to a cgroup
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  */
 int xcgroup_add_pids(xcgroup_t* cg, pid_t* pids, int npids);
 
@@ -212,8 +210,8 @@ int xcgroup_add_pids(xcgroup_t* cg, pid_t* pids, int npids);
  * pids array must be freed using xfree(...)
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  */
 int xcgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids);
 
@@ -226,8 +224,8 @@ int xcgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids);
  * i.e. xcgroup_set_params(&cf,"memory.swappiness","10");
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  */
 int xcgroup_set_param(xcgroup_t* cg, char* parameter, char* content);
 
@@ -242,8 +240,8 @@ int xcgroup_set_param(xcgroup_t* cg, char* parameter, char* content);
  * on success, content must be free using xfree
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  */
 int xcgroup_get_param(xcgroup_t* cg, char* param, char **content,
 		      size_t *csize);
@@ -257,8 +255,8 @@ int xcgroup_get_param(xcgroup_t* cg, char* param, char **content,
  * i.e. xcgroup_set_uint32_param(&cf,"memory.swappiness",value);
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  */
 int xcgroup_set_uint32_param(xcgroup_t* cg, char* parameter, uint32_t value);
 
@@ -271,8 +269,8 @@ int xcgroup_set_uint32_param(xcgroup_t* cg, char* parameter, uint32_t value);
  * i.e. xcgroup_get_uint32_param(&cg,"memory.swappiness",&value);
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  */
 int xcgroup_get_uint32_param(xcgroup_t* cg, char* param, uint32_t* value);
 
@@ -285,8 +283,8 @@ int xcgroup_get_uint32_param(xcgroup_t* cg, char* param, uint32_t* value);
  * i.e. xcgroup_set_uint64_param(&cf,"memory.swappiness",value);
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  */
 int xcgroup_set_uint64_param(xcgroup_t* cg, char* parameter, uint64_t value);
 
@@ -299,8 +297,8 @@ int xcgroup_set_uint64_param(xcgroup_t* cg, char* parameter, uint64_t value);
  * i.e. xcgroup_get_uint64_param(&cg,"memory.swappiness",&value);
  *
  * returned values:
- *  - XCGROUP_ERROR
- *  - XCGROUP_SUCCESS
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
  */
 int xcgroup_get_uint64_param(xcgroup_t* cg, char* param, uint64_t* value);
 
@@ -313,8 +311,8 @@ int xcgroup_get_uint64_param(xcgroup_t* cg, char* param, uint64_t* value);
  *   must be moved individually and this call can be racy.
  *
  *  returns:
- *   - XCGROUP_ERROR
- *   - XCGROUP_SUCCESS
+ *   - SLURM_ERROR
+ *   - SLURM_SUCCESS
  */
 int xcgroup_move_process(xcgroup_t *cg, pid_t pid);
 
@@ -359,7 +357,7 @@ int xcgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name);
  * IN: cpuset_prefix - cpuset prefix to set
  * IN/OUT: prefix_set - wheter cpuset prefix is set or not
  * IN: cg - cgroup to initialize
- * OUT: XCGROUP_ERROR or XCGROUP_SUCCESS
+ * OUT: SLURM_ERROR or SLURM_SUCCESS
  *
  */
 extern int xcgroup_cpuset_init(char *cpuset_prefix, bool *set, xcgroup_t *cg);

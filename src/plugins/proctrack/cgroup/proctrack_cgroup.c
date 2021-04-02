@@ -103,14 +103,14 @@ int _slurm_cgroup_init(void)
 	jobstep_cgroup_path[0]='\0';
 
 	/* initialize freezer cgroup namespace */
-	if (xcgroup_ns_create(&freezer_ns, "", "freezer") != XCGROUP_SUCCESS) {
+	if (xcgroup_ns_create(&freezer_ns, "", "freezer") != SLURM_SUCCESS) {
 		error("unable to create freezer cgroup namespace");
 		return SLURM_ERROR;
 	}
 
 	/* initialize the root freezer cg */
 	if (xcgroup_create(&freezer_ns, &freezer_cg, "", 0, 0)
-	    != XCGROUP_SUCCESS) {
+	    != SLURM_SUCCESS) {
 		error("proctrack/cgroup unable to create root freezer xcgroup");
 		xcgroup_ns_destroy(&freezer_ns);
 		return SLURM_ERROR;
@@ -124,7 +124,7 @@ static int _move_current_to_root_cgroup(xcgroup_ns_t *ns)
 	xcgroup_t cg;
 	int rc;
 
-	if (xcgroup_create(ns, &cg, "", 0, 0) != XCGROUP_SUCCESS)
+	if (xcgroup_create(ns, &cg, "", 0, 0) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	rc = xcgroup_move_process(&cg, getpid());
@@ -135,7 +135,7 @@ static int _move_current_to_root_cgroup(xcgroup_ns_t *ns)
 
 int _slurm_cgroup_destroy(void)
 {
-	if (xcgroup_lock(&freezer_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_lock(&freezer_cg) != SLURM_SUCCESS) {
 		error("xcgroup_lock error");
 		return SLURM_ERROR;
 	}
@@ -155,7 +155,7 @@ int _slurm_cgroup_destroy(void)
 	xcgroup_wait_pid_moved(&job_freezer_cg, "freezer job");
 
 	if (jobstep_cgroup_path[0] != '\0') {
-		if (xcgroup_delete(&step_freezer_cg) != XCGROUP_SUCCESS) {
+		if (xcgroup_delete(&step_freezer_cg) != SLURM_SUCCESS) {
 			debug("_slurm_cgroup_destroy: problem deleting step cgroup path %s: %m",
 			      step_freezer_cg.path);
 			xcgroup_unlock(&freezer_cg);
@@ -231,7 +231,7 @@ _slurm_cgroup_has_pid(pid_t pid)
 	xcgroup_t cg;
 
 	fstatus = xcgroup_ns_find_by_pid(&freezer_ns, &cg, pid);
-	if (fstatus != XCGROUP_SUCCESS)
+	if (fstatus != SLURM_SUCCESS)
 		return false;
 
 	if (xstrcmp(cg.path, step_freezer_cg.path)) {

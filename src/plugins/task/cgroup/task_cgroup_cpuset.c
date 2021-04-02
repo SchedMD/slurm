@@ -499,7 +499,7 @@ static int _task_cgroup_cpuset_dist_cyclic(
 	}
 
 	if ((nsockets == 0) || (ncores == 0))
-		return XCGROUP_ERROR;
+		return SLURM_ERROR;
 	cps = (ncores + nsockets - 1) / nsockets;
 	tpc = (nthreads + ncores - 1) / ncores;
 
@@ -684,16 +684,16 @@ static int _task_cgroup_cpuset_dist_cyclic(
 		error("hwloc_get_obj_below_by_type() failing, "
 		      "task/affinity plugin may be required to address bug "
 		      "fixed in HWLOC version 1.11.5");
-		return XCGROUP_ERROR;
+		return SLURM_ERROR;
 	} else if (sock_loop > npdist) {
 		char buf[128] = "";
 		hwloc_bitmap_snprintf(buf, sizeof(buf), cpuset);
 		error("task[%u] infinite loop broken while trying "
 		      "to provision compute elements using %s (bitmap:%s)",
 		      taskid, format_task_dist_states(job->task_dist), buf);
-		return XCGROUP_ERROR;
+		return SLURM_ERROR;
 	} else
-		return XCGROUP_SUCCESS;
+		return SLURM_SUCCESS;
 }
 
 static int _task_cgroup_cpuset_dist_block(
@@ -778,7 +778,7 @@ static int _task_cgroup_cpuset_dist_block(
 			error("hwloc_get_obj_below_by_type() "
 			      "failing, task/affinity plugin may be required"
 			      "to address bug fixed in HWLOC version 1.11.5");
-			return XCGROUP_ERROR;
+			return SLURM_ERROR;
 		} else if (core_loop > npdist) {
 			char buf[128] = "";
 			hwloc_bitmap_snprintf(buf, sizeof(buf), cpuset);
@@ -786,9 +786,9 @@ static int _task_cgroup_cpuset_dist_block(
 			      "trying to provision compute elements using %s (bitmap:%s)",
 			      taskid, format_task_dist_states(job->task_dist),
 			      buf);
-			return XCGROUP_ERROR;
+			return SLURM_ERROR;
 		} else
-			return XCGROUP_SUCCESS;
+			return SLURM_SUCCESS;
 	}
 
 	if (hwloc_compare_types(hwtype, HWLOC_OBJ_CORE) >= 0) {
@@ -848,7 +848,7 @@ static int _task_cgroup_cpuset_dist_block(
 		FREE_NULL_BITMAP(spec_threads);
 	}
 
-	return XCGROUP_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 
@@ -918,7 +918,7 @@ extern int task_cgroup_cpuset_init(void)
 
 	/* initialize cpuset cgroup namespace */
 	if (xcgroup_ns_create(&cpuset_ns, "", "cpuset")
-	    != XCGROUP_SUCCESS) {
+	    != SLURM_SUCCESS) {
 		error("unable to create cpuset namespace");
 		return SLURM_ERROR;
 	}
@@ -933,8 +933,8 @@ extern int task_cgroup_cpuset_fini(void)
 	/* Similarly to task_cgroup_memory_fini(), we must lock the
 	 * root cgroup so we don't race with another job step that is
 	 * being started.  */
-        if (xcgroup_create(&cpuset_ns, &cpuset_cg,"",0,0) == XCGROUP_SUCCESS) {
-		if (xcgroup_lock(&cpuset_cg) == XCGROUP_SUCCESS) {
+        if (xcgroup_create(&cpuset_ns, &cpuset_cg,"",0,0) == SLURM_SUCCESS) {
+		if (xcgroup_lock(&cpuset_cg) == SLURM_SUCCESS) {
 			/* First move slurmstepd to the root cpuset cg
 			 * so we can remove the step/job/user cpuset
 			 * cg's.  */
@@ -945,10 +945,10 @@ extern int task_cgroup_cpuset_fini(void)
                         if (xcgroup_delete(&step_cpuset_cg) != SLURM_SUCCESS)
                                 debug2("unable to remove step "
                                        "cpuset : %m");
-                        if (xcgroup_delete(&job_cpuset_cg) != XCGROUP_SUCCESS)
+                        if (xcgroup_delete(&job_cpuset_cg) != SLURM_SUCCESS)
                                 debug2("not removing "
                                        "job cpuset : %m");
-                        if (xcgroup_delete(&user_cpuset_cg) != XCGROUP_SUCCESS)
+                        if (xcgroup_delete(&user_cpuset_cg) != SLURM_SUCCESS)
                                 debug2("not removing "
                                        "user cpuset : %m");
                         xcgroup_unlock(&cpuset_cg);
@@ -1019,14 +1019,14 @@ static int _cgroup_create_callback(const char *calling_func,
 		xstrfmtcat(user_alloc_cpus, ",%s", cpus);
 
 	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
-				&user_cpuset_cg) != XCGROUP_SUCCESS) {
+				&user_cpuset_cg) != SLURM_SUCCESS) {
 		xcgroup_destroy(&user_cpuset_cg);
 		goto endit;
 	}
 	xcgroup_set_param(&user_cpuset_cg, cpuset_meta, user_alloc_cpus);
 
 	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
-				&job_cpuset_cg) != XCGROUP_SUCCESS) {
+				&job_cpuset_cg) != SLURM_SUCCESS) {
 		xcgroup_destroy(&user_cpuset_cg);
 		xcgroup_destroy(&job_cpuset_cg);
 		goto endit;
@@ -1034,7 +1034,7 @@ static int _cgroup_create_callback(const char *calling_func,
 	xcgroup_set_param(&job_cpuset_cg, cpuset_meta, job_alloc_cpus);
 
 	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
-				&step_cpuset_cg) != XCGROUP_SUCCESS) {
+				&step_cpuset_cg) != SLURM_SUCCESS) {
 		xcgroup_destroy(&user_cpuset_cg);
 		xcgroup_destroy(&job_cpuset_cg);
 		(void)xcgroup_delete(&step_cpuset_cg);
@@ -1059,7 +1059,7 @@ static int _cgroup_create_callback(const char *calling_func,
 	/* attach the slurmstepd to the step cpuset cgroup */
 	pid = getpid();
 	rc = xcgroup_add_pids(&step_cpuset_cg, &pid, 1);
-	if (rc != XCGROUP_SUCCESS) {
+	if (rc != SLURM_SUCCESS) {
 		error("%s: unable to add slurmstepd to cpuset cg '%s'",
 		      calling_func, step_cpuset_cg.path);
 		rc = SLURM_ERROR;
@@ -1094,7 +1094,7 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 
 	/* check that this cgroup has cpus allowed or initialize them */
 	if (xcgroup_load(&cpuset_ns, &slurm_cg, slurm_cgpath) !=
-	    XCGROUP_SUCCESS){
+	    SLURM_SUCCESS){
 		error("unable to load slurm cpuset xcgroup");
 		xfree(slurm_cgpath);
 		return SLURM_ERROR;
@@ -1102,8 +1102,8 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 again:
 	snprintf(cpuset_meta, sizeof(cpuset_meta), "%scpus", cpuset_prefix);
 	rc = xcgroup_get_param(&slurm_cg, cpuset_meta, &cgroup_callback.cpus, &cpus_size);
-	if ((rc != XCGROUP_SUCCESS) || (cpus_size == 1)) {
-		if (!cpuset_prefix_set && (rc != XCGROUP_SUCCESS)) {
+	if ((rc != SLURM_SUCCESS) || (cpus_size == 1)) {
+		if (!cpuset_prefix_set && (rc != SLURM_SUCCESS)) {
 			cpuset_prefix_set = 1;
 			cpuset_prefix = "cpuset.";
 			xfree(cgroup_callback.cpus);
@@ -1112,7 +1112,7 @@ again:
 
 		/* initialize the cpusets as it was non-existent */
 		if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
-					&slurm_cg) != XCGROUP_SUCCESS) {
+					&slurm_cg) != SLURM_SUCCESS) {
 			xfree(cgroup_callback.cpus);
 			xfree(slurm_cgpath);
 			xcgroup_destroy(&slurm_cg);

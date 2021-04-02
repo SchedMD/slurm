@@ -393,7 +393,7 @@ static int _handle_task_cgroup(const char *calling_func,
 	 */
 	if (xcgroup_create(ns, &task_cg_info->task_cg,
 			   task_cgroup_path,
-			   uid, gid) != XCGROUP_SUCCESS) {
+			   uid, gid) != SLURM_SUCCESS) {
 		/* Don't use free_task_cg_info as the task_cg isn't there */
 		xfree(task_cg_info);
 
@@ -402,7 +402,7 @@ static int _handle_task_cgroup(const char *calling_func,
 		return SLURM_ERROR;
 	}
 
-	if (xcgroup_instantiate(&task_cg_info->task_cg) != XCGROUP_SUCCESS) {
+	if (xcgroup_instantiate(&task_cg_info->task_cg) != SLURM_SUCCESS) {
 		free_task_cg_info(task_cg_info);
 		error("%s: unable to instantiate task %u cgroup",
 		      calling_func, taskid);
@@ -413,7 +413,7 @@ static int _handle_task_cgroup(const char *calling_func,
 	 * Attach the slurmstepd to the task memory cgroup
 	 */
 	rc = xcgroup_add_pids(&task_cg_info->task_cg, &pid, 1);
-	if (rc != XCGROUP_SUCCESS) {
+	if (rc != SLURM_SUCCESS) {
 		error("%s: unable to add slurmstepd to memory cg '%s'",
 		      calling_func, task_cg_info->task_cg.path);
 		rc = SLURM_ERROR;
