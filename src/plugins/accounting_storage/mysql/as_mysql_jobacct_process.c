@@ -1023,12 +1023,12 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 			step->submit_line =
 				xstrdup(step_row[STEP_REQ_SUBMIT_LINE]);
 
-			step->user_cpu_sec = slurm_atoul(
+			step->user_cpu_sec = slurm_atoull(
 				step_row[STEP_REQ_USER_SEC]);
 			step->user_cpu_usec = slurm_atoul(
 				step_row[STEP_REQ_USER_USEC]);
-			step->sys_cpu_sec =
-				slurm_atoul(step_row[STEP_REQ_SYS_SEC]);
+			step->sys_cpu_sec =slurm_atoull(
+				step_row[STEP_REQ_SYS_SEC]);
 			step->sys_cpu_usec = slurm_atoul(
 				step_row[STEP_REQ_SYS_USEC]);
 			step->tot_cpu_sec +=

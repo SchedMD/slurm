@@ -1072,13 +1072,13 @@ typedef struct {
 	char *stepname;
 	char *submit_line;
 	uint32_t suspended;
-	uint32_t sys_cpu_sec;
+	uint64_t sys_cpu_sec;
 	uint32_t sys_cpu_usec;
 	uint32_t task_dist;
-	uint32_t tot_cpu_sec;
+	uint64_t tot_cpu_sec;
 	uint32_t tot_cpu_usec;
 	char *tres_alloc_str;
-	uint32_t user_cpu_sec;
+	uint64_t user_cpu_sec;
 	uint32_t user_cpu_usec;
 } slurmdb_step_rec_t;
 

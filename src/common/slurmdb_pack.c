@@ -4927,13 +4927,13 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 		packstr(step->stepname, buffer);
 		packstr(step->submit_line, buffer);
 		pack32(step->suspended, buffer);
-		pack32(step->sys_cpu_sec, buffer);
+		pack64(step->sys_cpu_sec, buffer);
 		pack32(step->sys_cpu_usec, buffer);
 		pack32(step->task_dist, buffer);
-		pack32(step->tot_cpu_sec, buffer);
+		pack64(step->tot_cpu_sec, buffer);
 		pack32(step->tot_cpu_usec, buffer);
 		packstr(step->tres_alloc_str, buffer);
-		pack32(step->user_cpu_sec, buffer);
+		pack64(step->user_cpu_sec, buffer);
 		pack32(step->user_cpu_usec, buffer);
 	} else if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		pack32(step->elapsed, buffer);
@@ -4952,13 +4952,22 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 		pack_step_id(&step->step_id, buffer, protocol_version);
 		packstr(step->stepname, buffer);
 		pack32(step->suspended, buffer);
-		pack32(step->sys_cpu_sec, buffer);
+		if (step->sys_cpu_sec > NO_VAL)
+			pack32(NO_VAL, buffer);
+		else
+			pack32((uint32_t)step->sys_cpu_sec, buffer);
 		pack32(step->sys_cpu_usec, buffer);
 		pack32(step->task_dist, buffer);
-		pack32(step->tot_cpu_sec, buffer);
+		if (step->tot_cpu_sec > NO_VAL)
+			pack32(NO_VAL, buffer);
+		else
+			pack32((uint32_t)step->tot_cpu_sec, buffer);
 		pack32(step->tot_cpu_usec, buffer);
 		packstr(step->tres_alloc_str, buffer);
-		pack32(step->user_cpu_sec, buffer);
+		if (step->user_cpu_sec > NO_VAL)
+			pack32(NO_VAL, buffer);
+		else
+			pack32((uint32_t)step->user_cpu_sec, buffer);
 		pack32(step->user_cpu_usec, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(step->elapsed, buffer);
@@ -5027,14 +5036,14 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 		safe_unpackstr_xmalloc(&step_ptr->submit_line,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&step_ptr->suspended, buffer);
-		safe_unpack32(&step_ptr->sys_cpu_sec, buffer);
+		safe_unpack64(&step_ptr->sys_cpu_sec, buffer);
 		safe_unpack32(&step_ptr->sys_cpu_usec, buffer);
 		safe_unpack32(&step_ptr->task_dist, buffer);
-		safe_unpack32(&step_ptr->tot_cpu_sec, buffer);
+		safe_unpack64(&step_ptr->tot_cpu_sec, buffer);
 		safe_unpack32(&step_ptr->tot_cpu_usec, buffer);
 		safe_unpackstr_xmalloc(&step_ptr->tres_alloc_str,
 				       &uint32_tmp, buffer);
-		safe_unpack32(&step_ptr->user_cpu_sec, buffer);
+		safe_unpack64(&step_ptr->user_cpu_sec, buffer);
 		safe_unpack32(&step_ptr->user_cpu_usec, buffer);
 	} else if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		safe_unpack32(&step_ptr->elapsed, buffer);
@@ -5061,14 +5070,17 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 		safe_unpackstr_xmalloc(&step_ptr->stepname,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&step_ptr->suspended, buffer);
-		safe_unpack32(&step_ptr->sys_cpu_sec, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		step_ptr->sys_cpu_sec = uint32_tmp;
 		safe_unpack32(&step_ptr->sys_cpu_usec, buffer);
 		safe_unpack32(&step_ptr->task_dist, buffer);
-		safe_unpack32(&step_ptr->tot_cpu_sec, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		step_ptr->tot_cpu_sec = uint32_tmp;
 		safe_unpack32(&step_ptr->tot_cpu_usec, buffer);
 		safe_unpackstr_xmalloc(&step_ptr->tres_alloc_str,
 				       &uint32_tmp, buffer);
-		safe_unpack32(&step_ptr->user_cpu_sec, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		step_ptr->user_cpu_sec = uint32_tmp;
 		safe_unpack32(&step_ptr->user_cpu_usec, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&step_ptr->elapsed, buffer);
@@ -5096,14 +5108,17 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 		safe_unpackstr_xmalloc(&step_ptr->stepname,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&step_ptr->suspended, buffer);
-		safe_unpack32(&step_ptr->sys_cpu_sec, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		step_ptr->sys_cpu_sec = uint32_tmp;
 		safe_unpack32(&step_ptr->sys_cpu_usec, buffer);
 		safe_unpack32(&step_ptr->task_dist, buffer);
-		safe_unpack32(&step_ptr->tot_cpu_sec, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		step_ptr->tot_cpu_sec = uint32_tmp;
 		safe_unpack32(&step_ptr->tot_cpu_usec, buffer);
 		safe_unpackstr_xmalloc(&step_ptr->tres_alloc_str,
 				       &uint32_tmp, buffer);
-		safe_unpack32(&step_ptr->user_cpu_sec, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		step_ptr->user_cpu_sec = uint32_tmp;
 		safe_unpack32(&step_ptr->user_cpu_usec, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
