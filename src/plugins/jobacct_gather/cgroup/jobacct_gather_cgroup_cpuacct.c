@@ -113,7 +113,7 @@ jobacct_gather_cgroup_cpuacct_fini(void)
 	 */
 	lock_ok = true;
 	if (xcgroup_lock(&cpuacct_cg) != XCGROUP_SUCCESS) {
-		error("%s: failed to flock() %s %m", __func__, cpuacct_cg.path);
+		error("failed to flock() %s %m", cpuacct_cg.path);
 		lock_ok = false;
 	}
 
@@ -132,25 +132,22 @@ jobacct_gather_cgroup_cpuacct_fini(void)
 		cgroup.path = buf;
 
 		if (xcgroup_delete(&cgroup) != XCGROUP_SUCCESS) {
-			debug2("%s: failed to delete %s %m", __func__, buf);
+			debug2("failed to delete %s %m", buf);
 		}
 
 		xfree(buf);
 	}
 
 	if (xcgroup_delete(&step_cpuacct_cg) != XCGROUP_SUCCESS) {
-		debug2("%s: failed to delete %s %m", __func__,
-		       cpuacct_cg.path);
+		debug2("failed to delete %s %m", cpuacct_cg.path);
 	}
 
 	if (xcgroup_delete(&job_cpuacct_cg) != XCGROUP_SUCCESS) {
-		debug2("%s: failed to delete %s %m", __func__,
-		       job_cpuacct_cg.path);
+		debug2("failed to delete %s %m", job_cpuacct_cg.path);
 	}
 
 	if (xcgroup_delete(&user_cpuacct_cg) != XCGROUP_SUCCESS) {
-		debug2("%s: failed to delete %s %m", __func__,
-		       user_cpuacct_cg.path);
+		debug2("failed to delete %s %m", user_cpuacct_cg.path);
 	}
 
 	if (lock_ok == true)
@@ -180,8 +177,8 @@ jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 	if (jobacct_id->taskid >= max_task_id)
 		max_task_id = jobacct_id->taskid;
 
-	debug("%s: %ps taskid %u max_task_id %u",
-	      __func__, &job->step_id, jobacct_id->taskid, max_task_id);
+	debug("%ps taskid %u max_task_id %u", &job->step_id,
+	      jobacct_id->taskid, max_task_id);
 
 	return create_jobacct_cgroups(__func__,
 				      jobacct_id,

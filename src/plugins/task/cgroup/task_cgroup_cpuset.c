@@ -996,26 +996,20 @@ static int _cgroup_create_callback(const char *calling_func,
 	/*
 	 * build job and job steps allocated cores lists
 	 */
-	debug("%s: job abstract cores are '%s'",
-	      calling_func, job->job_alloc_cores);
-	debug("%s: step abstract cores are '%s'",
-	      calling_func, job->step_alloc_cores);
+	debug("job abstract cores are '%s'", job->job_alloc_cores);
+	debug("step abstract cores are '%s'", job->step_alloc_cores);
 	if (xcpuinfo_abs_to_mac(job->job_alloc_cores,
 				&job_alloc_cpus) != SLURM_SUCCESS) {
-		error("%s: unable to build job physical cores",
-		      calling_func);
+		error("unable to build job physical cores");
 		goto endit;
 	}
 	if (xcpuinfo_abs_to_mac(job->step_alloc_cores,
 				&step_alloc_cpus) != SLURM_SUCCESS) {
-		error("%s: unable to build step physical cores",
-		      calling_func);
+		error("unable to build step physical cores");
 		goto endit;
 	}
-	debug("%s: job physical CPUs are '%s'",
-	      calling_func, job_alloc_cpus);
-	debug("%s: step physical CPUs are '%s'",
-	      calling_func, step_alloc_cpus);
+	debug("job physical CPUs are '%s'", job_alloc_cpus);
+	debug("step physical CPUs are '%s'", step_alloc_cpus);
 
 	/*
 	 * check that user's cpuset cgroup is consistent and add the job's CPUs

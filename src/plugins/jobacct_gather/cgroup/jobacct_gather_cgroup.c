@@ -125,13 +125,11 @@ static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 	 * just print an error and return.
 	 */
 	if (!task_cpuacct_cg) {
-		error("%s: Could not find task_cpuacct_cg, this should never happen",
-		      __func__);
+		error("Could not find task_cpuacct_cg, this should never happen");
 		exit_early = true;
 	}
 	if (!task_memory_cg) {
-		error("%s: Could not find task_memory_cg, this should never happen",
-		      __func__);
+		error("Could not find task_memory_cg, this should never happen");
 		exit_early = true;
 	}
 	if (exit_early)
@@ -143,8 +141,8 @@ static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 	xcgroup_get_param(task_cpuacct_cg, "cpuacct.stat",
 			  &cpu_time, &cpu_time_size);
 	if (cpu_time == NULL) {
-		debug2("%s: failed to collect cpuacct.stat pid %d ppid %d",
-		       __func__, prec->pid, prec->ppid);
+		debug2("failed to collect cpuacct.stat pid %d ppid %d",
+		       prec->pid, prec->ppid);
 	} else {
 		sscanf(cpu_time, "%*s %lu %*s %lu", &utime, &stime);
 		/*
@@ -158,8 +156,8 @@ static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 	xcgroup_get_param(task_memory_cg, "memory.stat",
 			  &memory_stat, &memory_stat_size);
 	if (memory_stat == NULL) {
-		debug2("%s: failed to collect memory.stat  pid %d ppid %d",
-		       __func__, prec->pid, prec->ppid);
+		debug2("failed to collect memory.stat  pid %d ppid %d",
+		       prec->pid, prec->ppid);
 	} else {
 		/*
 		 * This number represents the amount of "dirty" private memory

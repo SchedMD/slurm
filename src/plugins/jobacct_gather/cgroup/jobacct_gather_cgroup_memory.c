@@ -107,7 +107,7 @@ jobacct_gather_cgroup_memory_fini(void)
 	 */
 	lock_ok = true;
 	if (xcgroup_lock(&memory_cg) != XCGROUP_SUCCESS) {
-		error("%s: failed to flock() %s %m", __func__, memory_cg.path);
+		error("failed to flock() %s %m", memory_cg.path);
 		lock_ok = false;
 	}
 
@@ -130,7 +130,7 @@ jobacct_gather_cgroup_memory_fini(void)
 		cgroup.path = buf;
 
 		if (xcgroup_delete(&cgroup) != XCGROUP_SUCCESS) {
-			debug2("%s: failed to delete %s %m", __func__, buf);
+			debug2("failed to delete %s %m", buf);
 		}
 
 		xfree(buf);
@@ -146,18 +146,15 @@ jobacct_gather_cgroup_memory_fini(void)
 	 */
 	xcgroup_set_param(&step_memory_cg, "memory.force_empty", "1");
 	if (xcgroup_delete(&step_memory_cg) != XCGROUP_SUCCESS) {
-		debug2("%s: failed to delete %s %m", __func__,
-		       step_memory_cg.path);
+		debug2("failed to delete %s %m", step_memory_cg.path);
 	}
 
 	if (xcgroup_delete(&job_memory_cg) != XCGROUP_SUCCESS) {
-		debug2("%s: failed to delete %s %m", __func__,
-		       job_memory_cg.path);
+		debug2("failed to delete %s %m", job_memory_cg.path);
 	}
 
 	if (xcgroup_delete(&user_memory_cg) != XCGROUP_SUCCESS) {
-		debug2("%s: failed to delete %s %m", __func__,
-		       user_memory_cg.path);
+		debug2("failed to delete %s %m", user_memory_cg.path);
 	}
 
 	if (lock_ok == true)
@@ -187,8 +184,8 @@ jobacct_gather_cgroup_memory_attach_task(pid_t pid, jobacct_id_t *jobacct_id)
 	if (jobacct_id->taskid >= max_task_id)
 		max_task_id = jobacct_id->taskid;
 
-	debug("%s: %ps taskid %u max_task_id %u",
-	      __func__, &job->step_id, jobacct_id->taskid, max_task_id);
+	debug("%ps taskid %u max_task_id %u", &job->step_id,
+	      jobacct_id->taskid, max_task_id);
 
 	return create_jobacct_cgroups(__func__,
 				      jobacct_id,

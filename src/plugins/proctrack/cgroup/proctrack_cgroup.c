@@ -136,7 +136,7 @@ static int _move_current_to_root_cgroup(xcgroup_ns_t *ns)
 int _slurm_cgroup_destroy(void)
 {
 	if (xcgroup_lock(&freezer_cg) != XCGROUP_SUCCESS) {
-		error("%s: xcgroup_lock error", __func__);
+		error("xcgroup_lock error");
 		return SLURM_ERROR;
 	}
 
@@ -146,8 +146,8 @@ int _slurm_cgroup_destroy(void)
 	 *   because slurmstepd is still in the cgroup!
 	 */
 	if (_move_current_to_root_cgroup(&freezer_ns) != SLURM_SUCCESS) {
-		error("%s: Unable to move pid %d to root cgroup",
-		      __func__, getpid());
+		error("Unable to move pid %d to root cgroup",
+		      getpid());
 		xcgroup_unlock(&freezer_cg);
 		return SLURM_ERROR;
 	}
@@ -449,8 +449,8 @@ extern int proctrack_p_wait(uint64_t cont_id)
 		if (delay < 120) {
 			delay *= 2;
 		} else {
-			error("%s: Unable to destroy container %"PRIu64" in cgroup plugin, giving up after %d sec",
-			      __func__, cont_id, delay);
+			error("Unable to destroy container %"PRIu64" in cgroup plugin, giving up after %d sec",
+			      cont_id, delay);
 			break;
 		}
 	}
