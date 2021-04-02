@@ -204,8 +204,10 @@ static void _edit_crontab(char **crontab)
 	/* protect against weak file permissions in old glibc */
 	umask(0077);
 	fd = mkstemp(filename);
-	if (fd < 0 )
+	if (fd < 0) {
+		xfree(filename);
 		fatal("could not create temp file");
+	}
 	safe_write(fd, *crontab, strlen(*crontab));
 	close(fd);
 
@@ -215,8 +217,11 @@ static void _edit_crontab(char **crontab)
 		if (!(editor = getenv("EDITOR")) || (editor[0] == '\0'))
 			editor = "vi";
 
-	if ((pid = fork()) == -1)
+	if ((pid = fork()) == -1) {
+		unlink(filename);
+		xfree(filename);
 		fatal("cannot fork");
+	}
 
 	if (!pid) {
 		/* child */
