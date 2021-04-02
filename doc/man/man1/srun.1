@@ -751,7 +751,7 @@ applies to job and step allocations.
 
 .TP
 \fB\-E\fR, \fB\-\-preserve-env\fR
-Pass the current values of environment variables SLURM_JOB_NODES and
+Pass the current values of environment variables SLURM_JOB_NUM_NODES and
 SLURM_NTASKS through to the \fIexecutable\fR, rather than computing them
 from commandline parameters. This option applies to job allocations.
 
@@ -3036,7 +3036,7 @@ Sort free cache pages (run zonesort on Intel KNL nodes).
 \fBSLURM_MEM_BIND_VERBOSE\fR
 \-\-mem\-bind verbosity (quiet,verbose).
 .TP
-\fBSLURM_JOB_NODES\fR
+\fBSLURM_JOB_NUM_NODES\fR
 Total number of nodes in the job's resource allocation.
 .TP
 \fBSLURM_NODE_ALIASES\fR

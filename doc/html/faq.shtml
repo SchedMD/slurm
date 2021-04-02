@@ -644,8 +644,8 @@ Any job steps running on the nodes which are relinquished by the job will be
 killed unless initiated with the <i>--no-kill</i> option.
 After the job size is changed, some environment variables created by Slurm
 containing information about the job's environment will no longer be valid and
-should either be removed or altered (e.g. SLURM_JOB_NODES, SLURM_JOB_NODELIST and
-SLURM_NTASKS).
+should either be removed or altered (e.g. SLURM_JOB_NUM_NODES,
+SLURM_JOB_NODELIST and SLURM_NTASKS).
 The <i>scontrol</i> command will generate a script that can be executed to
 reset local environment variables.
 You must retain the SLURM_JOB_ID environment variable in order for the
