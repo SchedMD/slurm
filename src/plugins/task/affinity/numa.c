@@ -73,11 +73,12 @@ static char * _memset_to_str(nodemask_t *mask, char *str)
 	return ret ? ret : ptr - 1;
 }
 
-static int _str_to_memset(nodemask_t *mask, const char* str)
+static int _str_to_memset(nodemask_t *mask, const char* str, int local_id)
 {
 	int len = strlen(str);
 	const char *ptr = str + len - 1;
 	int base = 0;
+	int numa_node_max = numa_max_node();
 
 	/* skip 0x, it's all hex anyway */
 	if (len > 1 && !memcmp(str, "0x", 2L))
@@ -86,8 +87,27 @@ static int _str_to_memset(nodemask_t *mask, const char* str)
 	nodemask_zero(mask);
 	while (ptr >= str) {
 		char val = slurm_char_to_hex(*ptr);
-		if (val == (char) -1)
+		int err_base = -1;
+		if (val == (char) -1) {
+			error("Failed to convert hex string 0x%s into hex for local task %d (--mem-bind=mask_mem)",
+			      str, local_id);
 			return -1;
+		}
+		if ((val & 1) && (base > numa_node_max))
+			err_base = base;
+		else if ((val & 2) && ((base + 1) > numa_node_max))
+			err_base = base + 1;
+		else if ((val & 4) && ((base + 2) > numa_node_max))
+			err_base = base + 2;
+		else if ((val & 8) && ((base + 3) > numa_node_max))
+			err_base = base + 3;
+
+		if (err_base != -1) {
+			error("NUMA node %d does not exist; cannot bind local task %d to it (--mem-bind=mask_mem; 0x%s)",
+			      err_base, local_id, str);
+			return -1;
+		}
+
 		if (val & 1)
 			nodemask_set(mask, base);
 		if (val & 2)
@@ -171,8 +191,16 @@ int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
 	}
 
 	if (job->mem_bind_type & MEM_BIND_RANK) {
+		int node;
 		threads = MAX(conf->threads, 1);
-		nodemask_set(mask, job->envtp->localid % (job->cpus*threads));
+		node = local_id % (job->cpus * threads);
+		if (node > numa_max_node()) {
+			error("NUMA node %d does not exist; cannot bind local task %d to it (--mem-bind=rank)",
+			      node, local_id);
+			return false;
+		}
+
+		nodemask_set(mask, node);
 		return true;
 	}
 
@@ -219,8 +247,7 @@ int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
 
 	if (job->mem_bind_type & MEM_BIND_MASK) {
 		/* convert mask string into nodemask_t mask */
-		if (_str_to_memset(mask, mstr) < 0) {
-			error("_str_to_memset %s", mstr);
+		if (_str_to_memset(mask, mstr, local_id) < 0) {
 			return false;
 		}
 		return true;
@@ -232,6 +259,11 @@ int get_memset(nodemask_t *mask, stepd_step_rec_t *job)
 			my_node = strtol(&(mstr[2]), NULL, 16);
 		} else {
 			my_node = strtol(mstr, NULL, 10);
+		}
+		if ((my_node < 0) || (my_node > (long int)numa_max_node())) {
+			error("NUMA node %ld does not exist; cannot bind local task %d to it (--mem-bind=map_mem)",
+			      my_node, local_id);
+			return false;
 		}
 		nodemask_set(mask, (int)my_node);
 		return true;
