@@ -207,6 +207,7 @@ static void _edit_crontab(char **crontab)
 	if (fd < 0 )
 		fatal("could not create temp file");
 	safe_write(fd, *crontab, strlen(*crontab));
+	close(fd);
 
 	xfree(*crontab);
 
@@ -231,10 +232,16 @@ static void _edit_crontab(char **crontab)
 	waitpid(pid, &wstatus, 0);
 
 	if (wstatus) {
-		close(fd);
 		unlink(filename);
 		xfree(filename);
 		fatal("editor returned non-zero exit code");
+	}
+
+	fd = open(filename, O_RDONLY);
+	if (fd < 0) {
+		unlink(filename);
+		xfree(filename);
+		fatal("could not reopen temp file");
 	}
 
 	*crontab = _load_script_from_fd(fd);
