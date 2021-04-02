@@ -16,7 +16,13 @@
 int
 hv_to_slurm_step_ctx_params(HV *hv, slurm_step_ctx_params_t *params)
 {
-	HV *step_id_hv = (HV*)sv_2mortal((SV*)newHV());
+	HV *step_id_hv;
+	SV **svp = hv_fetch(hv, "step_id", 7, FALSE);
+	if (svp && SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVHV) {
+		step_id_hv = (HV*)SvRV(*svp);
+	} else {
+		step_id_hv = (HV*)sv_2mortal((SV*)newHV());
+	}
 
 	slurm_step_ctx_params_t_init(params);
 
