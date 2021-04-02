@@ -41,7 +41,7 @@ ok($jobid, "allocate resources blocking") or diag("allocate_resources_blocking: 
 
 
 $params = {
-    job_id => $jobid,
+    step_id => {job_id => $jobid, step_id => NO_VAL, step_het_comp => NO_VAL},
     name => "perlapi_test",
     min_nodes => 1,
     task_count => 1,
