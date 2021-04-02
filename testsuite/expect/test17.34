@@ -156,6 +156,13 @@ proc core_spec_job {task node core_spec exp_nodes} {
 #
 #############################################################################
 
+# Run basic client tool checks before validating configuration
+set output [run_command_output -xfail -subtest "$sbatch --thread-spec=1 -S1 --wrap='/bin/true'"]
+subtest {[regexp "sbatch: fatal: -S/--core-spec and --thred-spec options are mutually exclusive" $output]} "sbatch should faile for both --thread-spec and -S given"
+
+set output [run_command_output -xfail -subtest "SBATCH_CORE_SPEC=1 SBATCH_THREAD_SPEC=1 $sbatch --wrap='/bin/true'"]
+subtest {[regexp "Both --core-spec and --thread-spec set using environment variables. Those options are mutually exclusive" $output]} "sbatch should fail when both SBATCH_CORE_SPEC SBATCH_THREAD_SPEC set in environment and no cli given"
+
 if {[check_config_select "linear"]} {
 	skip "This test is incompatible with select/linear"
 }
@@ -245,6 +252,9 @@ if {$core_cnt == 0} {
 if {$core_cnt < 4} {
 	skip "Core count too low for testing ($core_cnt < 4)"
 }
+
+# The environment variable should get overwritten.
+set env(SBATCH_THREAD_SPEC) "99"
 
 #
 # Using the core spec within the node limits
