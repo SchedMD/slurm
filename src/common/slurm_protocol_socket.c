@@ -291,7 +291,7 @@ extern int slurm_send_timeout(int fd, char *buf, size_t size,
 			 * If driver false reports POLLIN but then does not
 			 * provide any output: try poll() again.
 			 */
-			LOG_FLAG(NET, "send() sent zero bytes out of %d/%zu",
+			log_flag(NET, "send() sent zero bytes out of %d/%zu",
 				 sent, size);
 			continue;
 		}
