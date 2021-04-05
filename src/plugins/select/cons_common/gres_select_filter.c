@@ -1602,7 +1602,6 @@ static void _set_node_bits(struct job_resources *job_res, int node_inx,
 	gres_node_state_t *node_specs;
 	int *used_sock = NULL, alloc_gres_cnt = 0;
 	int *links_cnt = NULL, best_link_cnt = 0;
-	uint64_t gres_per_bit = 1;
 
 	job_specs = sock_gres->job_specs;
 	node_specs = sock_gres->node_specs;
@@ -1647,8 +1646,6 @@ static void _set_node_bits(struct job_resources *job_res, int node_inx,
 	 */
 	if (node_specs->link_len == gres_cnt)
 		links_cnt = xcalloc(gres_cnt, sizeof(int));
-	if (gres_id_shared(sock_gres->plugin_id))
-		gres_per_bit = job_specs->gres_per_node;
 	for (s = -1;	/* Socket == - 1 if GRES avail from any socket */
 	     ((s < sock_cnt) && (alloc_gres_cnt < job_specs->gres_per_node));
 	     s++) {
@@ -1665,13 +1662,11 @@ static void _set_node_bits(struct job_resources *job_res, int node_inx,
 			     !bit_test(sock_gres->bits_by_sock[s], g)))
 				continue;   /* GRES not on this socket */
 			if (bit_test(job_specs->gres_bit_select[node_inx], g) ||
-			    ((gres_per_bit == 1) &&
-			     bit_test(node_specs->gres_bit_alloc, g)))
+			    bit_test(node_specs->gres_bit_alloc, g))
 				continue;   /* Already allocated GRES */
 			bit_set(job_specs->gres_bit_select[node_inx], g);
-			job_specs->gres_cnt_node_select[node_inx] +=
-				gres_per_bit;
-			alloc_gres_cnt += gres_per_bit;
+			job_specs->gres_cnt_node_select[node_inx]++;
+			alloc_gres_cnt++;
 			for (l = 0; links_cnt && (l < gres_cnt); l++) {
 				if ((l == g) ||
 				    bit_test(node_specs->gres_bit_alloc, l))
@@ -1722,13 +1717,11 @@ static void _set_node_bits(struct job_resources *job_res, int node_inx,
 				if (bit_test(job_specs->
 					     gres_bit_select[node_inx],
 					     g) ||
-				    ((gres_per_bit == 1) &&
-				     bit_test(node_specs->gres_bit_alloc, g)))
+				    bit_test(node_specs->gres_bit_alloc, g))
 					continue;   /* Already allocated GRES */
 				bit_set(job_specs->gres_bit_select[node_inx],g);
-				job_specs->gres_cnt_node_select[node_inx] +=
-					gres_per_bit;
-				alloc_gres_cnt += gres_per_bit;
+				job_specs->gres_cnt_node_select[node_inx]++;
+				alloc_gres_cnt++;
 				if (alloc_gres_cnt >= job_specs->gres_per_node)
 					break;
 			}
@@ -1756,14 +1749,12 @@ static void _set_node_bits(struct job_resources *job_res, int node_inx,
 				if (bit_test(job_specs->
 					     gres_bit_select[node_inx],
 					     g) ||
-				    ((gres_per_bit == 1) &&
-				     bit_test(node_specs->gres_bit_alloc, g)))
+				    bit_test(node_specs->gres_bit_alloc, g))
 					continue;   /* Already allocated GRES */
 				bit_set(job_specs->gres_bit_select[node_inx],
 					g);
-				job_specs->gres_cnt_node_select[node_inx] +=
-					gres_per_bit;
-				alloc_gres_cnt += gres_per_bit;
+				job_specs->gres_cnt_node_select[node_inx]++;
+				alloc_gres_cnt++;
 				if (alloc_gres_cnt >= job_specs->gres_per_node)
 					break;
 			}
