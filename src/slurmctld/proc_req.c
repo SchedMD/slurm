@@ -590,6 +590,21 @@ extern bool validate_operator(uid_t uid)
 		return false;
 }
 
+extern bool validate_operator_user_rec(slurmdb_user_rec_t *user)
+{
+#ifndef NDEBUG
+	if (drop_priv)
+		return false;
+#endif
+	if ((user->uid == 0) ||
+	    (user->uid == slurm_conf.slurm_user_id) ||
+	    (user->admin_level >= SLURMDB_ADMIN_OPERATOR))
+		return true;
+	else
+		return false;
+
+}
+
 static void _set_hostname(slurm_msg_t *msg, char **alloc_node)
 {
 	slurm_addr_t addr;

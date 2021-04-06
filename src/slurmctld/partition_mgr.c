@@ -1060,6 +1060,22 @@ extern bool part_is_visible(part_record_t *part_ptr, uid_t uid)
 	return true;
 }
 
+/* partition is visible to the user */
+extern bool part_is_visible_user_rec(part_record_t *part_ptr,
+				     slurmdb_user_rec_t *user)
+{
+	xassert(verify_lock(PART_LOCK, READ_LOCK));
+
+	if (validate_operator_user_rec(user))
+		return true;
+	if (part_ptr->flags & PART_FLAG_HIDDEN)
+		return false;
+	if (!validate_group(part_ptr, user->uid))
+		return false;
+
+	return true;
+}
+
 /*
  * pack_all_part - dump all partition information for all partitions in
  *	machine independent form (for network transmission)

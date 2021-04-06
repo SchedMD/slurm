@@ -186,6 +186,14 @@ static slurmdb_assoc_rec_t *_find_assoc_rec_id(uint32_t assoc_id)
 	return NULL;
 }
 
+static int _find_acct_by_name(void *x, void *y)
+{
+	slurmdb_coord_rec_t *acct = (slurmdb_coord_rec_t*) x;
+	if (!xstrcmp(acct->name, (char*)y))
+		return 1;
+	return 0;
+}
+
 /*
  * _find_assoc_rec - return a pointer to the assoc_ptr with the given
  * contents of assoc.
@@ -3057,6 +3065,23 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn,
 		return true;
 	}
 	assoc_mgr_unlock(&locks);
+
+	return false;
+}
+
+extern bool assoc_mgr_is_user_acct_coord_user_rec(void *db_conn,
+						  slurmdb_user_rec_t *user,
+						  char *acct_name)
+{
+	if (!acct_name)
+		return false;
+
+	if (!user || !user->coord_accts)
+		return false;
+
+	if (list_find_first(user->coord_accts, _find_acct_by_name,
+			    acct_name))
+		return true;
 
 	return false;
 }
