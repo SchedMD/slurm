@@ -1421,7 +1421,7 @@ static acct_policy_tres_usage_t _validate_tres_usage_limits(
 
 			if (curr_usage)
 				usage = curr_usage[i];
-			if (tres_usage &&
+			if (tres_usage && tres_req_cnt[i] &&
 			    ((tres_req_cnt[i] + tres_usage[i]) >
 			     (tres_limit_array[i] - usage)))
 				return TRES_USAGE_REQ_NOT_SAFE_WITH_USAGE;
