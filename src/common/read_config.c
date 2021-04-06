@@ -297,7 +297,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"MaxTasksPerNode", S_P_UINT16},
 	{"MCSParameters", S_P_STRING},
 	{"MCSPlugin", S_P_STRING},
-	{"MemLimitEnforce", S_P_STRING},
 	{"MessageTimeout", S_P_UINT16},
 	{"MinJobAge", S_P_UINT32},
 	{"MpiDefault", S_P_STRING},
@@ -3870,10 +3869,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			tok = strtok_r(NULL, ",", &save_ptr);
 		}
 		xfree(tmp);
-	}
-
-	if (s_p_get_string(&temp_str, "MemLimitEnforce", hashtbl)) {
-		fatal("Invalid parameter MemLimitEnforce. The option is no longer supported, please use OverMemoryKill instead.");
 	}
 
 	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl))
