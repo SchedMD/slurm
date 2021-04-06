@@ -223,7 +223,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"BatchStartTimeout", S_P_UINT16},
 	{"BurstBufferParameters", S_P_STRING},
 	{"BurstBufferType", S_P_STRING},
-	{"CheckpointType", S_P_STRING},
 	{"CoreSpecPlugin", S_P_STRING},
 	{"CliFilterPlugins", S_P_STRING},
 	{"ClusterName", S_P_STRING},
@@ -266,7 +265,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"JobAcctGatherType", S_P_STRING},
 	{"JobAcctGatherFrequency", S_P_STRING},
 	{"JobAcctGatherParams", S_P_STRING},
-	{"JobCheckpointDir", S_P_STRING},
 	{"JobCompHost", S_P_STRING},
 	{"JobCompLoc", S_P_STRING},
 	{"JobCompParams", S_P_STRING},
@@ -3697,11 +3695,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			xstrdup(DEFAULT_CORE_SPEC_PLUGIN);
 	}
 
-	if (s_p_get_string(&temp_str, "CheckpointType", hashtbl)) {
-		xfree(temp_str);
-		debug("Ignoring obsolete CheckpointType option.");
-	}
-
 	(void) s_p_get_string(&conf->cli_filter_plugins, "CliFilterPlugins",
 			      hashtbl);
 
@@ -3877,11 +3870,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			tok = strtok_r(NULL, ",", &save_ptr);
 		}
 		xfree(tmp);
-	}
-
-	if (s_p_get_string(&temp_str, "JobCheckpointDir", hashtbl)) {
-		xfree(temp_str);
-		debug("Ignoring obsolete JobCheckpointDir option.");
 	}
 
 	if (s_p_get_string(&temp_str, "MemLimitEnforce", hashtbl)) {
