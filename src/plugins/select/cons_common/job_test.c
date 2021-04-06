@@ -1641,8 +1641,7 @@ alloc_job:
 				needed_mem = save_mem;
 			} else {		/* Allocate all node memory */
 				needed_mem = avail_mem;
-				if (!test_only &&
-				    (node_usage[i].alloc_memory > 0)) {
+				if (node_usage[i].alloc_memory > 0) {
 					log_flag(SELECT_TYPE, "node %s has already alloc_memory=%"PRIu64". %pJ can't allocate all node memory",
 					         nodename,
 					         node_usage[i].alloc_memory,
@@ -1653,7 +1652,7 @@ alloc_job:
 				if ((j == 0) || (lowest_mem > avail_mem))
 					lowest_mem = avail_mem;
 			}
-			if (!test_only && save_mem) {
+			if (save_mem) {
 				if (node_usage[i].alloc_memory > avail_mem) {
 					error("node %s memory is already overallocated (%"PRIu64" > %"PRIu64"). %pJ can't allocate any node memory",
 					      nodename,
