@@ -730,7 +730,8 @@ struct job_record {
 	job_fed_details_t *fed_details;	/* details for federated jobs. */
 	front_end_record_t *front_end_ptr; /* Pointer to front-end node running
 					 * this job */
-	List gres_list;			/* generic resource allocation detail */
+	List gres_list_req;		/* Requested generic resource allocation
+					   detail */
 	List gres_list_alloc;		/* Allocated generic resource allocation
 					 * detail */
 	uint32_t gres_detail_cnt;	/* Count of gres_detail_str records,

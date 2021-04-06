@@ -2107,19 +2107,19 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 
 	disable_binding = job_ptr->bit_flags & GRES_DISABLE_BIND;
 	if (!disable_binding) {
-		gres_select_filter_cons_res(job_ptr->gres_list, gres_list,
+		gres_select_filter_cons_res(job_ptr->gres_list_req, gres_list,
 					    test_only, core_map, core_start_bit,
 					    core_end_bit, node_ptr->name);
 	}
 	if (disable_binding || (s_p_n == NO_VAL)) {
-		gres_cores = gres_job_test(job_ptr->gres_list,
+		gres_cores = gres_job_test(job_ptr->gres_list_req,
 					   gres_list, test_only,
 					   core_map, core_start_bit,
 					   core_end_bit, job_ptr->job_id,
 					   node_ptr->name,
 					   disable_binding);
 	} else {
-		gres_cores = _gres_sock_job_test(job_ptr->gres_list,
+		gres_cores = _gres_sock_job_test(job_ptr->gres_list_req,
 						 gres_list, test_only,
 						 core_map, core_start_bit,
 						 core_end_bit, job_ptr->job_id,

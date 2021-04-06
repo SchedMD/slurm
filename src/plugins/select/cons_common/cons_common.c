@@ -1226,13 +1226,13 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 	}
 
 	if (is_cons_tres) {
-		if (to_job_ptr->gres_list) {
+		if (to_job_ptr->gres_list_req) {
 			/* Can't reset gres/mps fields today */
 			error("%pJ has allocated GRES",
 			      to_job_ptr);
 			return SLURM_ERROR;
 		}
-		if (from_job_ptr->gres_list) {
+		if (from_job_ptr->gres_list_req) {
 			/* Can't reset gres/mps fields today */
 			error("%pJ has allocated GRES",
 			      from_job_ptr);
@@ -1367,9 +1367,9 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 		}
 	}
 	build_job_resources_cpu_array(new_job_resrcs_ptr);
-	gres_ctld_job_merge(from_job_ptr->gres_list,
+	gres_ctld_job_merge(from_job_ptr->gres_list_req,
 			    from_job_resrcs_ptr->node_bitmap,
-			    to_job_ptr->gres_list,
+			    to_job_ptr->gres_list_req,
 			    to_job_resrcs_ptr->node_bitmap);
 	/* copy the allocated gres */
 	gres_ctld_job_merge(from_job_ptr->gres_list_alloc,
@@ -1464,7 +1464,7 @@ extern int select_p_job_resized(job_record_t *job_ptr, node_record_t *node_ptr)
 			gres_list = node_usage[i].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		gres_ctld_job_dealloc(job_ptr->gres_list, gres_list, n,
+		gres_ctld_job_dealloc(job_ptr->gres_list_req, gres_list, n,
 				      job_ptr->job_id, node_ptr->name,
 				      old_job, true);
 		gres_node_state_log(gres_list, node_ptr->name);
@@ -1863,7 +1863,7 @@ extern int select_p_select_nodeinfo_set(job_record_t *job_ptr)
 	} else
 		return SLURM_SUCCESS;
 
-	gres_job_state_log(job_ptr->gres_list, job_ptr->job_id);
+	gres_job_state_log(job_ptr->gres_list_req, job_ptr->job_id);
 
 	if ((slurm_conf.debug_flags & DEBUG_FLAG_GRES) &&
 	    job_ptr->gres_list_alloc)

@@ -347,14 +347,14 @@ extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action)
 			if (job_ptr->details &&
 			    (job_ptr->details->whole_node == 1))
 				gres_ctld_job_alloc_whole_node(
-					job_ptr->gres_list,
+					job_ptr->gres_list_req,
 					&job_ptr->gres_list_alloc,
 					node_gres_list, job->nhosts,
 					i, n, job_ptr->job_id,
 					node_ptr->name, core_bitmap);
 			else
 				gres_ctld_job_alloc(
-					job_ptr->gres_list,
+					job_ptr->gres_list_req,
 					&job_ptr->gres_list_alloc,
 					node_gres_list, job->nhosts,
 					i, n, job_ptr->job_id,
@@ -523,7 +523,7 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 				gres_list = node_usage[i].gres_list;
 			else
 				gres_list = node_ptr->gres_list;
-			gres_ctld_job_dealloc(job_ptr->gres_list, gres_list,
+			gres_ctld_job_dealloc(job_ptr->gres_list_req, gres_list,
 					      n, job_ptr->job_id,
 					      node_ptr->name, old_job,
 					      job_fini);

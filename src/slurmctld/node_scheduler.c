@@ -288,7 +288,7 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	last_node_update    = time(NULL);
 	kill_job->job_gres_info =
-		gres_g_epilog_build_env(job_ptr->gres_list, job_ptr->nodes);
+		gres_g_epilog_build_env(job_ptr->gres_list_req, job_ptr->nodes);
 	kill_job->step_id.job_id    = job_ptr->job_id;
 	kill_job->het_job_id = job_ptr->het_job_id;
 	kill_job->step_id.step_id = NO_VAL;
@@ -2132,7 +2132,7 @@ static void _end_null_job(job_record_t *job_ptr)
 	time_t now = time(NULL);
 
 	job_ptr->exit_code = 0;
-	gres_ctld_job_clear(job_ptr->gres_list);
+	gres_ctld_job_clear(job_ptr->gres_list_req);
 	gres_ctld_job_clear(job_ptr->gres_list_alloc);
 	job_ptr->job_state = JOB_RUNNING;
 	job_ptr->bit_flags |= JOB_WAS_RUNNING;
@@ -2396,8 +2396,8 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 
 		if (gres_list_whole_node) {
 			gres_list_pre_set = true;
-			gres_list_pre = job_ptr->gres_list;
-			job_ptr->gres_list = gres_list_whole_node;
+			gres_list_pre = job_ptr->gres_list_req;
+			job_ptr->gres_list_req = gres_list_whole_node;
 		}
 
 	} else
@@ -2415,7 +2415,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)selected_node_cnt;
 
 	assoc_mgr_lock(&job_read_locks);
-	gres_ctld_set_job_tres_cnt(job_ptr->gres_list,
+	gres_ctld_set_job_tres_cnt(job_ptr->gres_list_req,
 				   selected_node_cnt,
 				   tres_req_cnt,
 				   true);
@@ -2554,7 +2554,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->sched_nodes);
 	job_ptr->exit_code = 0;
-	gres_ctld_job_clear(job_ptr->gres_list);
+	gres_ctld_job_clear(job_ptr->gres_list_req);
 	gres_ctld_job_clear(job_ptr->gres_list_alloc);
 	if (!job_ptr->step_list)
 		job_ptr->step_list = list_create(free_step_record);
@@ -2738,9 +2738,9 @@ cleanup:
 	if (error_code != SLURM_SUCCESS) {
 		FREE_NULL_BITMAP(job_ptr->node_bitmap);
 		if (gres_list_pre_set &&
-		    (job_ptr->gres_list != gres_list_pre)) {
-			FREE_NULL_LIST(job_ptr->gres_list);
-			job_ptr->gres_list = gres_list_pre;
+		    (job_ptr->gres_list_req != gres_list_pre)) {
+			FREE_NULL_LIST(job_ptr->gres_list_req);
+			job_ptr->gres_list_req = gres_list_pre;
 		}
 	} else
 		FREE_NULL_LIST(gres_list_pre);
@@ -2868,7 +2868,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 		job_ptr->state_reason = WAIT_PROLOG;
 
 	prolog_msg_ptr->job_gres_info =
-		 gres_g_epilog_build_env(job_ptr->gres_list,job_ptr->nodes);
+		 gres_g_epilog_build_env(job_ptr->gres_list_req,job_ptr->nodes);
 	prolog_msg_ptr->job_id = job_ptr->job_id;
 	prolog_msg_ptr->het_job_id = job_ptr->het_job_id;
 	prolog_msg_ptr->uid = job_ptr->user_id;
@@ -4190,7 +4190,7 @@ extern void re_kill_job(job_record_t *job_ptr)
 	agent_args->retry = 0;
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	kill_job->job_gres_info	=
-		gres_g_epilog_build_env(job_ptr->gres_list,job_ptr->nodes);
+		gres_g_epilog_build_env(job_ptr->gres_list_req,job_ptr->nodes);
 	kill_job->step_id.job_id    = job_ptr->job_id;
 	kill_job->het_job_id = job_ptr->het_job_id;
 	kill_job->step_id.step_id = NO_VAL;

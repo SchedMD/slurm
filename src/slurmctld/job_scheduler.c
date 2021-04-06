@@ -3371,7 +3371,7 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 				 */
 				_copy_tres_opts(job_ptr, dep_job_ptr);
 			}
-			FREE_NULL_LIST(job_ptr->gres_list);
+			FREE_NULL_LIST(job_ptr->gres_list_req);
 			(void) gres_job_state_validate(
 				job_ptr->cpus_per_tres,
 				job_ptr->tres_freq,
@@ -3391,13 +3391,13 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 				&job_ptr->details->
 				orig_cpus_per_task,
 				&job_ptr->details->ntasks_per_tres,
-				&job_ptr->gres_list);
+				&job_ptr->gres_list_req);
 			if (mc_ptr && (sockets_per_node != NO_VAL16)) {
 				mc_ptr->sockets_per_node =
 					sockets_per_node;
 			}
 			assoc_mgr_lock(&locks);
-			gres_ctld_set_job_tres_cnt(job_ptr->gres_list,
+			gres_ctld_set_job_tres_cnt(job_ptr->gres_list_req,
 						   job_ptr->details->min_nodes,
 						   job_ptr->tres_req_cnt,
 						   true);

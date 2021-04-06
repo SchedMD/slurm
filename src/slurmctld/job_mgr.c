@@ -1469,7 +1469,7 @@ static void _dump_job_state(job_record_t *dump_job_ptr, buf_t *buffer)
 	packstr_array(dump_job_ptr->spank_job_env,
 		      dump_job_ptr->spank_job_env_size, buffer);
 
-	(void) gres_job_state_pack(dump_job_ptr->gres_list, buffer,
+	(void) gres_job_state_pack(dump_job_ptr->gres_list_req, buffer,
 				   dump_job_ptr->job_id, true,
 				   SLURM_PROTOCOL_VERSION);
 
@@ -1553,7 +1553,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	char *batch_features = NULL, *system_comment = NULL;
 	uint32_t task_id_size = NO_VAL;
 	char **spank_job_env = (char **) NULL;
-	List gres_list = NULL, gres_list_alloc = NULL, part_ptr_list = NULL;
+	List gres_list_req = NULL, gres_list_alloc = NULL, part_ptr_list = NULL;
 	job_record_t *job_ptr = NULL;
 	part_record_t *part_ptr;
 	int error_code, i, qos_error, rc;
@@ -1737,10 +1737,10 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_array(&spank_job_env, &spank_job_env_size,
 				     buffer);
 
-		if (gres_job_state_unpack(&gres_list, buffer, job_id,
+		if (gres_job_state_unpack(&gres_list_req, buffer, job_id,
 					  protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
-		gres_job_state_log(gres_list, job_id);
+		gres_job_state_log(gres_list_req, job_id);
 
 		if (gres_job_state_unpack(&gres_list_alloc, buffer,
 					  job_id, protocol_version) !=
@@ -1967,10 +1967,10 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_array(&spank_job_env, &spank_job_env_size,
 				     buffer);
 
-		if (gres_job_state_unpack(&gres_list, buffer, job_id,
+		if (gres_job_state_unpack(&gres_list_req, buffer, job_id,
 					  protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
-		gres_job_state_log(gres_list, job_id);
+		gres_job_state_log(gres_list_req, job_id);
 
 		safe_unpack16(&details, buffer);
 		if ((details == DETAILS_FLAG) &&
@@ -2198,10 +2198,10 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_array(&spank_job_env, &spank_job_env_size,
 				     buffer);
 
-		if (gres_job_state_unpack(&gres_list, buffer, job_id,
+		if (gres_job_state_unpack(&gres_list_req, buffer, job_id,
 					  protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
-		gres_job_state_log(gres_list, job_id);
+		gres_job_state_log(gres_list_req, job_id);
 
 		safe_unpack16(&details, buffer);
 		if ((details == DETAILS_FLAG) &&
@@ -2362,7 +2362,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	xfree(job_ptr->gres_used);
 	job_ptr->gres_used    = gres_used;
 	gres_used             = NULL;  /* reused, nothing left to free */
-	job_ptr->gres_list    = gres_list;
+	job_ptr->gres_list_req = gres_list_req;
 	job_ptr->gres_list_alloc = gres_list_alloc;
 	job_ptr->site_factor = site_factor;
 	job_ptr->direct_set_prio = direct_set_prio;
@@ -4645,9 +4645,9 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 
 	job_ptr_pend->front_end_ptr = NULL;
 	/* struct job_details *details;		*** NOTE: Copied below */
-	if (job_ptr->gres_list) {
-		job_ptr_pend->gres_list =
-			gres_job_state_dup(job_ptr->gres_list);
+	if (job_ptr->gres_list_req) {
+		job_ptr_pend->gres_list_req =
+			gres_job_state_dup(job_ptr->gres_list_req);
 	}
 	if (job_ptr->gres_list_alloc) {
 		job_ptr_pend->gres_list_alloc =
@@ -7442,13 +7442,13 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	 * to be expanded by update_job_dependency()
 	 */
 	if (!job_ptr->details->expanding_jobid) {
-		job_ptr->gres_list = gres_list;
+		job_ptr->gres_list_req = gres_list;
 		gres_list = NULL;
 	}
 
 	job_ptr->gres_detail_cnt = 0;
 	job_ptr->gres_detail_str = NULL;
-	gres_job_state_log(job_ptr->gres_list, job_ptr->job_id);
+	gres_job_state_log(job_ptr->gres_list_req, job_ptr->job_id);
 
 	if ((error_code = validate_job_resv(job_ptr)))
 		goto cleanup_fail;
@@ -9230,7 +9230,7 @@ extern void job_set_req_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
 				 true);
 
 	/* FIXME: this assumes that all nodes have equal TRES */
-	gres_ctld_set_job_tres_cnt(job_ptr->gres_list,
+	gres_ctld_set_job_tres_cnt(job_ptr->gres_list_req,
 				   node_cnt,
 				   job_ptr->tres_req_cnt,
 				   true);
@@ -9658,7 +9658,7 @@ static void _list_delete_job(void *job_entry)
 	free_job_resources(&job_ptr->job_resrcs);
 	_clear_job_gres_details(job_ptr);
 	xfree(job_ptr->gres_used);
-	FREE_NULL_LIST(job_ptr->gres_list);
+	FREE_NULL_LIST(job_ptr->gres_list_req);
 	FREE_NULL_LIST(job_ptr->gres_list_alloc);
 	xfree(job_ptr->licenses);
 	FREE_NULL_LIST(job_ptr->license_list);
@@ -10183,7 +10183,7 @@ static void _pack_job_gres(job_record_t *dump_job_ptr, buf_t *buffer,
 			   uint16_t protocol_version)
 {
 	if (!IS_JOB_STARTED(dump_job_ptr) || IS_JOB_FINISHED(dump_job_ptr) ||
-	    (dump_job_ptr->gres_list == NULL)) {
+	    (dump_job_ptr->gres_list_req == NULL)) {
 		packstr_array(NULL, 0, buffer);
 		return;
 	}
@@ -11533,7 +11533,7 @@ void reset_job_bitmaps(void)
 			job_fail = true;
 		}
 		if (!job_fail && !IS_JOB_FINISHED(job_ptr) &&
-		    gres_job_revalidate(job_ptr->gres_list)) {
+		    gres_job_revalidate(job_ptr->gres_list_req)) {
 			error("Aborting %pJ due to use of unsupported GRES options",
 			      job_ptr);
 			job_fail = true;
@@ -12630,7 +12630,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 		if (job_specs->cpus_per_task == NO_VAL16)
 			job_specs->cpus_per_task =
 				detail_ptr->orig_cpus_per_task;
-		gres_list = gres_job_state_dup(job_ptr->gres_list);
+		gres_list = gres_job_state_dup(job_ptr->gres_list_req);
 		if ((error_code = gres_job_state_validate(
 						job_specs->cpus_per_tres,
 						job_specs->tres_freq,
@@ -13730,8 +13730,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 		}
 		sched_info("%s: setting %sfor %pJ", __func__, tmp, job_ptr);
 		xfree(tmp);
-		FREE_NULL_LIST(job_ptr->gres_list);
-		job_ptr->gres_list = gres_list;
+		FREE_NULL_LIST(job_ptr->gres_list_req);
+		job_ptr->gres_list_req = gres_list;
 
 		gres_list = NULL;
 	}
@@ -14791,7 +14791,7 @@ static void _send_job_kill(job_record_t *job_ptr)
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
 	last_node_update    = time(NULL);
 	kill_job->job_gres_info	=
-		gres_g_epilog_build_env(job_ptr->gres_list, job_ptr->nodes);
+		gres_g_epilog_build_env(job_ptr->gres_list_req, job_ptr->nodes);
 	kill_job->step_id.job_id = job_ptr->job_id;
 	kill_job->het_job_id = job_ptr->het_job_id;
 	kill_job->step_id.step_id = NO_VAL;
@@ -15199,7 +15199,7 @@ extern void abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
 	kill_req->nodes		= xstrdup(node_name);
 	if (job_ptr) {  /* NULL if unknown */
 		kill_req->job_gres_info	=
-			gres_g_epilog_build_env(job_ptr->gres_list,
+			gres_g_epilog_build_env(job_ptr->gres_list_req,
 						job_ptr->nodes);
 		kill_req->het_job_id	= job_ptr->het_job_id;
 		kill_req->start_time = job_ptr->start_time;
@@ -15284,7 +15284,7 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 		}
 		kill_req = xmalloc(sizeof(kill_job_msg_t));
 		kill_req->job_gres_info	=
-			gres_g_epilog_build_env(job_ptr->gres_list,
+			gres_g_epilog_build_env(job_ptr->gres_list_req,
 						job_ptr->nodes);
 		kill_req->step_id.job_id = job_ptr->job_id;
 		kill_req->step_id.step_id = NO_VAL;
@@ -15325,7 +15325,7 @@ extern void kill_job_on_node(job_record_t *job_ptr,
 
 	kill_req = xmalloc(sizeof(kill_job_msg_t));
 	kill_req->job_gres_info	=
-		gres_g_epilog_build_env(job_ptr->gres_list,job_ptr->nodes);
+		gres_g_epilog_build_env(job_ptr->gres_list_req,job_ptr->nodes);
 	kill_req->het_job_id	= job_ptr->het_job_id;
 	kill_req->step_id.job_id = job_ptr->job_id;
 	kill_req->step_id.step_id = NO_VAL;
@@ -15815,12 +15815,13 @@ void batch_requeue_fini(job_record_t *job_ptr)
 		job_ptr->bit_flags &= ~JOB_ACCRUE_OVER;
 		job_ptr->details->accrue_time = 0;
 
-		if ((job_ptr->details->whole_node == 1) && job_ptr->gres_list) {
+		if ((job_ptr->details->whole_node == 1) &&
+		    job_ptr->gres_list_req) {
 			/*
 			 * We need to reset the gres_list to what was requested
 			 * instead of what was given exclusively.
 			 */
-			FREE_NULL_LIST(job_ptr->gres_list);
+			FREE_NULL_LIST(job_ptr->gres_list_req);
 			(void)gres_job_state_validate(
 				job_ptr->cpus_per_tres,
 				job_ptr->tres_freq,
@@ -15837,7 +15838,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 				&job_ptr->details->mc_ptr->sockets_per_node,
 				&job_ptr->details->orig_cpus_per_task,
 				&job_ptr->details->ntasks_per_tres,
-				&job_ptr->gres_list);
+				&job_ptr->gres_list_req);
 		}
 	}
 

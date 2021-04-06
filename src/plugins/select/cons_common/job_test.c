@@ -232,7 +232,7 @@ static void _set_gpu_defaults(job_record_t *job_ptr)
 	uint64_t cpu_per_gpu, mem_per_gpu;
 
 	xassert(is_cons_tres);
-	if (!job_ptr->gres_list)
+	if (!job_ptr->gres_list_req)
 		return;
 
 	if (job_ptr->part_ptr != last_part_ptr) {
@@ -258,8 +258,9 @@ static void _set_gpu_defaults(job_record_t *job_ptr)
 	else
 		mem_per_gpu = 0;
 
-	gres_select_util_job_set_defs(job_ptr->gres_list, "gpu", cpu_per_gpu,
-				      mem_per_gpu, &job_ptr->cpus_per_tres,
+	gres_select_util_job_set_defs(job_ptr->gres_list_req, "gpu",
+				      cpu_per_gpu, mem_per_gpu,
+				      &job_ptr->cpus_per_tres,
 				      &job_ptr->mem_per_tres,
 				      &job_ptr->details->cpus_per_task);
 }
@@ -279,7 +280,7 @@ static uint32_t _socks_per_node(job_record_t *job_ptr)
 	 * FIXME: This was removed in cons_tres commit e82b9f17a23adf0, I am
 	 * wondering if it is actually needed in cons_res.
 	 */
-	if (!is_cons_tres && ((job_ptr->gres_list == NULL) ||
+	if (!is_cons_tres && ((job_ptr->gres_list_req == NULL) ||
 			      ((job_ptr->bit_flags & GRES_ENFORCE_BIND) == 0)))
 		return s_p_n;
 
@@ -633,7 +634,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 	bool disable_binding = false;
 
 	if (is_cons_tres && !(job_ptr->bit_flags & JOB_MEM_SET) &&
-	    (min_mem = gres_select_util_job_mem_max(job_ptr->gres_list))) {
+	    (min_mem = gres_select_util_job_mem_max(job_ptr->gres_list_req))) {
 		/*
 		 * Clear default partition or system per-node memory limit.
 		 * Rely exclusively upon the per-GRES memory limit.
@@ -713,7 +714,7 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			gres_list = node_usage[i].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
-		gres_cores = gres_job_test(job_ptr->gres_list,
+		gres_cores = gres_job_test(job_ptr->gres_list_req,
 					   gres_list, true,
 					   NULL, 0, 0, job_ptr->job_id,
 					   node_ptr->name,
@@ -881,7 +882,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		details_ptr->min_gres_cpu = gres_select_util_job_min_cpu_node(
 			sockets_per_node,
 			details_ptr->ntasks_per_node,
-			job_ptr->gres_list);
+			job_ptr->gres_list_req);
 	} else if (exc_cores && *exc_cores)
 		exc_core_bitmap = *exc_cores;
 
@@ -1385,7 +1386,7 @@ alloc_job:
 	/* See if # of cpus increases with ntasks_per_tres */
 	i = gres_select_util_job_min_tasks(job_res->nhosts, sockets_per_node,
 					   details_ptr->ntasks_per_tres, "gpu",
-					   job_ptr->gres_list);
+					   job_ptr->gres_list_req);
 	job_res->ncpus            = MAX(job_res->ncpus, i);
 	job_res->ncpus            = MAX(job_res->ncpus,
 					details_ptr->min_cpus);
@@ -1396,7 +1397,7 @@ alloc_job:
 		sockets_per_node = job_ptr->details->mc_ptr->sockets_per_node;
 	i = gres_select_util_job_min_cpus(job_res->nhosts, sockets_per_node,
 					  job_ptr->details->num_tasks,
-					  job_ptr->gres_list);
+					  job_ptr->gres_list_req);
 	job_res->ncpus            = MAX(job_res->ncpus, i);
 	job_res->node_req         = job_node_req;
 	job_res->cpus             = cpu_count;	/* Per node CPU counts */
@@ -1487,7 +1488,7 @@ alloc_job:
 	else
 		i_last = -2;
 	if (is_cons_tres &&
-	    job_ptr->gres_list && (error_code == SLURM_SUCCESS)) {
+	    job_ptr->gres_list_req && (error_code == SLURM_SUCCESS)) {
 		node_record_t *node_ptr;
 		bool have_gres_per_task, task_limit_set = false;
 
@@ -1496,7 +1497,7 @@ alloc_job:
 		 * to avoid calling gres_get_task_limit unless needed
 		 */
 		have_gres_per_task = gres_select_util_job_tres_per_task(
-			job_ptr->gres_list);
+			job_ptr->gres_list_req);
 		if (have_gres_per_task) {
 			gres_task_limit = xcalloc(job_res->nhosts,
 						  sizeof(uint32_t));
@@ -1526,7 +1527,7 @@ alloc_job:
 	error_code = dist_tasks(job_ptr, cr_type, preempt_mode,
 				avail_cores, gres_task_limit);
 	if (is_cons_tres &&
-	    job_ptr->gres_list && (error_code == SLURM_SUCCESS)) {
+	    job_ptr->gres_list_req && (error_code == SLURM_SUCCESS)) {
 		error_code = gres_select_filter_select_and_set(
 			sock_gres_list,
 			job_ptr->job_id, job_res,
@@ -1604,7 +1605,7 @@ alloc_job:
 		return error_code;
 
 	if (is_cons_tres && !(job_ptr->bit_flags & JOB_MEM_SET) &&
-	    gres_select_util_job_mem_set(job_ptr->gres_list, job_res)) {
+	    gres_select_util_job_mem_set(job_ptr->gres_list_req, job_res)) {
 		debug("%pJ memory set via GRES limit", job_ptr);
 	} else {
 		/* load memory allocated array */
@@ -2345,7 +2346,7 @@ extern int common_job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 			}
 			log_job_resources(job_ptr);
 			if (is_cons_tres)
-				gres_job_state_log(job_ptr->gres_list,
+				gres_job_state_log(job_ptr->gres_list_req,
 						   job_ptr->job_id);
 		} else {
 			info("no job_resources info for %pJ rc=%d",
