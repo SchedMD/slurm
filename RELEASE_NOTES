@@ -43,6 +43,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Removed AccountingStoreJobComment option.  Please update your config to use
     AccountingStoreFlags=job_comment instead.
  -- Removed DefaultStorage{Host,Loc,Pass,Port,Type,User} options.
+ -- Removed CacheGroups, CheckpointType, JobCheckpointDir, MemLimitEnforce,
+    SchedulerPort, SchedulerRootFilter options.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

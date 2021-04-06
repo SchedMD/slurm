@@ -57,6 +57,8 @@ documents those changes that are of interest to users and administrators.
  -- Add sacct -o SubmitLine to get the submit line of a job/step.
  -- Removed DefaultStorage{Host,Loc,Pass,Port,Type,User} options.
  -- Fix NtasksPerTRES delimiter from : to = in scontrol show job output.
+ -- Removed CacheGroups, CheckpointType, JobCheckpointDir, MemLimitEnforce,
+    SchedulerPort, SchedulerRootFilter options.
 
 * Changes in Slurm 20.11.6
 ==========================
