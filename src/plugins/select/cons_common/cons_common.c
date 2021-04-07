@@ -1545,39 +1545,6 @@ extern int select_p_job_signal(job_record_t *job_ptr, int signal)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_job_mem_confirm(job_record_t *job_ptr)
-{
-	int i_first, i_last, i, offset;
-	uint64_t avail_mem, lowest_mem = 0;
-
-	xassert(job_ptr);
-
-	if ((job_ptr->details == NULL) ||
-	    (job_ptr->job_resrcs == NULL) ||
-	    (job_ptr->job_resrcs->node_bitmap == NULL) ||
-	    (job_ptr->job_resrcs->memory_allocated == NULL))
-		return SLURM_ERROR;
-	i_first = bit_ffs(job_ptr->job_resrcs->node_bitmap);
-	if (i_first >= 0)
-		i_last = bit_fls(job_ptr->job_resrcs->node_bitmap);
-	else
-		i_last = i_first - 1;
-	for (i = i_first, offset = 0; i <= i_last; i++) {
-		if (!bit_test(job_ptr->job_resrcs->node_bitmap, i))
-			continue;
-		avail_mem = select_node_record[i].real_memory -
-			select_node_record[i].mem_spec_limit;
-		job_ptr->job_resrcs->memory_allocated[offset] = avail_mem;
-		select_node_usage[i].alloc_memory = avail_mem;
-		if ((offset == 0) || (lowest_mem > avail_mem))
-			lowest_mem = avail_mem;
-		offset++;
-	}
-	job_ptr->details->pn_min_memory = lowest_mem;
-
-	return SLURM_SUCCESS;
-}
-
 extern int select_p_job_fini(job_record_t *job_ptr)
 {
 	xassert(job_ptr);

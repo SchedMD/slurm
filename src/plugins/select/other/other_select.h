@@ -168,12 +168,6 @@ extern int other_job_resized(job_record_t *job_ptr, node_record_t *node_ptr);
 extern int other_job_signal(job_record_t *job_ptr, int signal);
 
 /*
- * Pass job memory allocation confirmation request to other plugin.
- * IN job_ptr - job to be signaled
- */
-extern int other_job_mem_confirm(job_record_t *job_ptr);
-
-/*
  * Note termination of job is starting. Executed from slurmctld.
  * IN job_ptr - pointer to job being terminated
  */

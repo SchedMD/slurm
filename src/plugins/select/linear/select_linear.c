@@ -3737,11 +3737,6 @@ extern int select_p_job_signal(job_record_t *job_ptr, int signal)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_job_mem_confirm(job_record_t *job_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
 /*
  * Note termination of job is starting. Executed from slurmctld.
  * IN job_ptr - pointer to job being terminated

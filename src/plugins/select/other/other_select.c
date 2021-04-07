@@ -72,7 +72,6 @@ const char *node_select_syms[] = {
 	"select_p_job_expand",
 	"select_p_job_resized",
 	"select_p_job_signal",
-	"select_p_job_mem_confirm",
 	"select_p_job_fini",
 	"select_p_job_suspend",
 	"select_p_job_resume",
@@ -325,18 +324,6 @@ extern int other_job_signal(job_record_t *job_ptr, int signal)
 		return SLURM_ERROR;
 
 	return (*(ops.job_signal))(job_ptr, signal);
-}
-
-/*
- * Pass job memory allocation confirmation request to other plugin.
- * IN job_ptr - job to be signaled
- */
-extern int other_job_mem_confirm(job_record_t *job_ptr)
-{
-	if (other_select_init() < 0)
-		return SLURM_ERROR;
-
-	return (*(ops.job_mem_confirm))(job_ptr);
 }
 
 /*
