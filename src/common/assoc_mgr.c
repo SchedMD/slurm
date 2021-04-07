@@ -6293,23 +6293,6 @@ extern slurmdb_tres_rec_t *assoc_mgr_find_tres_rec(slurmdb_tres_rec_t *tres_rec)
 		return assoc_mgr_tres_array[pos];
 }
 
-/*
- * Calls assoc_mgr_find_tres_pos and returns the pointer in the
- * assoc_mgr_tres_array. Ignores GRES "type" option.
- * NOTE: The assoc_mgr tres read lock needs to be locked before calling this
- * function and while using the returned record.
- */
-extern slurmdb_tres_rec_t *assoc_mgr_find_tres_rec2(
-		slurmdb_tres_rec_t *tres_rec)
-{
-	int pos = assoc_mgr_find_tres_pos2(tres_rec, 1);
-
-	if (pos == -1)
-		return NULL;
-	else
-		return assoc_mgr_tres_array[pos];
-}
-
 extern int assoc_mgr_set_tres_cnt_array(uint64_t **tres_cnt, char *tres_str,
 					uint64_t init_val, bool locked)
 {
