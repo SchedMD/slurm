@@ -81,6 +81,10 @@ documents those changes that are of interest to users and administrators.
  -- Fix under-cpu memory auto-adjustment when MaxMemPerCPU is set.
  -- Make it possible to override CR_CORE_DEFAULT_DIST_BLOCK.
  -- Perl API - fix retrieving/storing of slurm_step_id_t in job_step_info_t.
+ -- Recover state of burst buffers when slurmctld is restarted to avoid skipping
+    burst buffer stages.
+ -- Fix race condition in burst buffer plugin which caused a burst buffer
+    in stage-in to not get state saved if slurmctld stopped.
 
 * Changes in Slurm 20.11.5
 ==========================

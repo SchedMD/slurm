@@ -1303,6 +1303,16 @@ int read_slurm_conf(int recover, bool reconfig)
 	_gres_reconfig(reconfig);
 	reset_job_bitmaps();		/* must follow select_g_job_init() */
 
+	/*
+	 * The burst buffer plugin must be initialized and state loaded before
+	 * _sync_nodes_to_jobs(), which calls bb_g_job_init().
+	 */
+	if (reconfig)
+		rc =  bb_g_reconfig();
+	else
+		rc = bb_g_load_state(true);
+	error_code = MAX(error_code, rc);	/* not fatal */
+
 	(void) _sync_nodes_to_jobs(reconfig);
 	(void) sync_job_files();
 	_purge_old_node_state(old_node_table_ptr, old_node_record_count);
@@ -1451,11 +1461,6 @@ int read_slurm_conf(int recover, bool reconfig)
 		error_code = MAX(error_code, rc); /* not fatal */
 	}
 	rc = _preserve_select_type_param(&slurm_conf, old_select_type_p);
-	error_code = MAX(error_code, rc);	/* not fatal */
-	if (reconfig)
-		rc =  bb_g_reconfig();
-	else
-		rc = bb_g_load_state(true);
 	error_code = MAX(error_code, rc);	/* not fatal */
 
 	/*

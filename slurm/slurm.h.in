@@ -4818,6 +4818,10 @@ void slurm_init_trigger_msg(trigger_info_t *trigger_info_msg);
 #define BB_FLAG_SET_EXEC_HOST		0x0020	/* Set execute host */
 
 #define BB_SIZE_IN_NODES	0x8000000000000000
+/*
+ * Burst buffer states: Keep in sync with bb_state_string() and bb_state_num()
+ * in slurm_protocol_defs.c.
+ */
 #define BB_STATE_PENDING	0x0000		/* Placeholder: no action started */
 #define BB_STATE_ALLOCATING	0x0001		/* Cray: bbs_setup started */
 #define BB_STATE_ALLOCATED	0x0002		/* Cray: bbs_setup started */

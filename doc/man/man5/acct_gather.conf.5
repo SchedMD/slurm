@@ -1,38 +1,48 @@
-.TH "acct_gather.conf" "5" "Slurm Configuration File" "April 2020" "Slurm Configuration File"
+.TH "acct_gather.conf" "5" "Slurm Configuration File" "April 2021" "Slurm Configuration File"
 
 .SH "NAME"
-acct_gather.conf \- Slurm configuration file for the acct_gather plugins
+\fBacct_gather.conf\fR \- Slurm configuration file for the acct_gather plugins
 
 .SH "DESCRIPTION"
 
-\fBacct_gather.conf\fP is an ASCII file which defines parameters used by
-Slurm's acct_gather related plugins.
+\fBacct_gather.conf\fP is a UTF8 formatted file which defines parameters used
+by Slurm's acct_gather related plugins.
 The file location can be modified at system build time using the
 DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
 environment variable. The file will always be located in the
 same directory as the \fBslurm.conf\fP file.
 .LP
-Parameter names are case insensitive.
+Parameter names are case insensitive but parameter values are case sensistive.
 Any text following a "#" in the configuration file is treated
 as a comment through the end of that line.
 The size of each line in the file is limited to 1024 characters.
+.LP
 Changes to the configuration file take effect upon restart of
-Slurm daemons, daemon receipt of the SIGHUP signal, or execution
-of the command "scontrol reconfigure" unless otherwise noted.
+the Slurm daemons.
 
 .LP
-The following acct_gather.conf parameters are defined to control the general
-behavior of various plugins in Slurm.
+The following \fBacct_gather.conf\fR parameters are defined to control the
+general behavior of various plugins in Slurm.
 
 .LP
-The acct_gather.conf file is different than other Slurm .conf files.  Each
-plugin defines which options are available.  So if you do not load the
-respective plugin for an option that option will appear to be unknown by Slurm
-and could cause Slurm not to load.  If you decide to change plugin types you
-might also have to change the related options as well.
+The \fBacct_gather.conf\fR file is different than other Slurm .conf files. Each
+plugin defines which options are available. Each plugin to be loaded must be
+specified in the \fBslurm.conf\fR under the following configuration entries:
+.LP
+\(bu AcctGatherEnergyType (plugin type=\fIacct_gather_energy\fR)
+.br
+\(bu AcctGatherInterconnectType (plugin type=\fIacct_gather_interconnect\fR)
+.br
+\(bu AcctGatherFilesystemType (plugin type=\fIacct_gather_filesystem\fR)
+.br
+\(bu AcctGatherProfileType (plugin type=\fIacct_gather_profile\fR)
 
-.TP
-\fBEnergyIPMI\fR
+.LP
+If the respective plugin for an option is not loaded then that option will
+appear to be unknown by Slurm and silently ignored. If you decide to change
+plugin types you may also have to change the related options.
+
+.SH acct_gather_energy/IPMI
 Options used for acct_gather_energy/ipmi are as follows:
 
 .RS
@@ -74,7 +84,7 @@ EnergyIPMIPowerSensors=Node=29,32;SSUP0=29;SSUP1=32
 EnergyIPMIPowerSensors=Node=1280
 
 .LP
-The following acct_gather.conf parameters are defined to control the
+The following \fBacct_gather.conf\fR parameters are defined to control the
 IPMI config default values for libipmiconsole.
 
 .TP 10
@@ -86,8 +96,7 @@ Specify BMC Username.
 Specify BMC Password.
 .RE
 
-.TP
-\fBEnergyXCC\fR
+.SH acct_gather_energy/XCC
 Options used for acct_gather_energy/xcc include only in-band communications
 with XClarity Controller, thus a reduced set of configurations is supported:
 
@@ -103,12 +112,11 @@ Timeout, in seconds, for initializing the IPMI XCC context for a new gathering
 thread. Default is 10 seconds.
 .RE
 
-.TP
-\fBProfileHDF5\fR
+.SH acct_gather_profile/HDF5
 Options used for acct_gather_profile/hdf5 are as follows:
 
 .RS
-.TP 10
+.TP
 \fBProfileHDF5Dir\fR=<path>
 This parameter is the path to the shared folder into which the
 acct_gather_profile plugin will write detailed data (usually as an HDF5 file).
@@ -146,16 +154,20 @@ Network (InfiniBand) data is collected.
 \fBTask\fR
 Task (I/O, Memory, ...) data is collected.
 
-.RE
-.RE
+.SH acct_gather_profile/InfluxDB
+The InfluxDB plugin provides the same information as the HDF5 plugin but will
+instead send information to the configured InfluxDB server.
+.P
+The InfluxDB plugin is designed against 1.x protocol of InfluxDB. Any site
+running a v2.x InfluxDB server will need to configure a v1.x compatiblity
+endpoint along with the correct user and password authorization. Token
+authentication is not currently supported.
+.SS
+Options:
 .TP
-\fBProfileInfluxDB\fR
-Options used for acct_gather_profile/influxdb are as follows:
-
-.RS
-.TP 10
 \fBProfileInfluxDBDatabase\fR
-InfluxDB database name where profiling information is to be written.
+InfluxDB v1.x database name where profiling information is to be written.
+InfluxDB v2.x bucket name where profiling information is to be written.
 
 .TP
 \fBProfileInfluxDBDefault\fR
@@ -163,14 +175,14 @@ A comma delimited list of data types to be collected for each job submission.
 Allowed values are:
 
 .RS
-.TP 8
+.TP 10
 \fBAll\fR
-All data types are collected. (Cannot be combined with other values.)
+All data types are collected. Cannot be combined with other values.
 
 .TP
 \fBNone\fR
 No data types are collected. This is the default.
-(Cannot be combined with other values.)
+Cannot be combined with other values.
 
 .TP
 \fBEnergy\fR
@@ -191,68 +203,66 @@ Task (I/O, Memory, ...) data is collected.
 
 .TP
 \fBProfileInfluxDBHost\fR=<hostname>:<port>
-The hostname of the machine where the influxd instance is executed and the port
-used by the HTTP API. The port used by the HTTP API is the one configured
-through the bind-address influxdb.conf option in the [http] section. Example:
-
+The hostname of the machine where the \fIinfluxd\fR instance is executed and
+the port used by the HTTP API. The port used by the HTTP API is the one
+configured through the bind-address influxdb.conf option in the [http] section.
+.BR
+Example:
+.nf
 ProfileInfluxDBHost=myinfluxhost:8086
-
+.fi
+.in -2
 .TP
 \fBProfileInfluxDBPass\fR
-Optional password for username configured in ProfileInfluxDBUser.
+Password for username configured in ProfileInfluxDBUser. Required in v2.x and
+optional in v1.x InfluxDB.
 
 .TP
 \fBProfileInfluxDBRTPolicy\fR
-The InfluxDB retention policy name for the database configured in
-ProfileInfluxDBDatabase option.
+The InfluxDB v1.x retention policy name for the database configured in
+ProfileInfluxDBDatabase option. The InfluxDB v2.x retention policy bucket name
+for the database configured in ProfileInfluxDBDatabase option.
 
 .TP
 \fBProfileInfluxDBUser\fR
-Optional InfluxDB username that should be used to gain access to the database
-configured in ProfileInfluxDBDatabase. This is only needed InfluxDB is
-configured with authentication enabled in the [http] config section and a user
-has been granted at least WRITE access to the database. See also
-ProfileInfluxDBPass.
-.RE
-
-.TP
-NOTE:
-This plugin requires the libcurl development files to be installed.
-.TP
-NOTE:
+InfluxDB username that should be used to gain access to the database configured
+in ProfileInfluxDBDatabase. Required in v2.x and optional in v1.x InfluxDB.
+This is only needed if InfluxDB v1.x is configured with authentication enabled
+in the [http] config section and a user has been granted at least WRITE access
+to the database. See also \fBProfileInfluxDBPass\fR.
+.SS
+NOTES:
+.LP
+This plugin requires the libcurl development files to be installed and linkable
+at configure time. The plugin will not build otherwise.
+.LP
 Information on how to install and configure InfluxDB and manage databases,
 retention policies and such is available on the official webpage.
-.TP
-NOTE:
+.LP
 Collected information is written from every compute node where a job runs to
-the influxd instance listening on the ProfileInfluxDBHost. In order to avoid
-overloading the influxd instance with incoming connection requests, the plugin
-uses an internal buffer which is filled with samples. Once the buffer is full, a
-HTTP API write request is performed and the buffer is emptied to hold subsequent
-samples. A final request is also performed when a task ends even if the buffer
-isn't full.
-.TP
-NOTE:
-Failed HTTP API write requests are discarded. This means that collected profile
-information in the plugin buffer is lost if it can't be written to the influxd
-database for any reason.
-.TP
-NOTE:
+the \fIinfluxd\fR instance listening on the ProfileInfluxDBHost. In order to
+avoid overloading the \fIinfluxd\fR instance with incoming connection requests,
+the plugin uses an internal buffer which is filled with samples. Once the buffer
+is full, a HTTP API write request is performed and the buffer is emptied to hold
+subsequent samples. A final request is also performed when a task ends even if
+the buffer isn't full.
+.LP
+Failed HTTP API write requests are silently discarded. This means that collected
+profile information in the plugin buffer is lost if it can't be written to the
+\fIinfluxd\fR database for any reason.
+.LP
 Plugin messages are logged along with the slurmstepd logs to SlurmdLogFile. In
 order to troubleshoot any issues, it is recommended to temporarily increase
 the slurmd debug level to debug3 and add Profile to the debug flags. This can
 be accomplished by setting the slurm.conf SlurmdDebug and DebugFlags
 respectively or dynamically through scontrol setdebug and setdebugflags.
-.TP
-NOTE:
-Perhaps it's a good idea to use a monitoring and analytics tool such as Grafana
-on top of InfluxDB. This kind of tools permit one to create dashboards, tables, and
-other graphics using the stored time series. This way, it is easier to correlate
-resource usage peaks reported by other node monitoring tools such as Ganglia
-with specific job step tasks.
+.LP
+Grafana can be used to create charts based on the data held by InfluxDB.
+This kind of tool permits one to create dashboards, tables and other graphics
+using the stored time series.
 
-.TP
-\fBInfinibandOFED\fR
+.RS
+.SH acct_gather_interconnect/OFED
 Options used for acct_gather_interconnect/ofed are as follows:
 
 .RS
@@ -263,31 +273,19 @@ The default port is 1.
 .RE
 .RE
 .SH "EXAMPLE"
-.LP
-.br
+.nf
 ###
-.br
 # Slurm acct_gather configuration file
-.br
 ###
-.br
 # Parameters for acct_gather_energy/impi plugin
-.br
 EnergyIPMIFrequency=10
-.br
 EnergyIPMICalcAdjustment=yes
-.br
 #
-.br
 # Parameters for acct_gather_profile/hdf5 plugin
-.br
 ProfileHDF5Dir=/app/slurm/profile_data
-.br
 # Parameters for acct_gather_interconnect/ofed plugin
-.br
 InfinibandOFEDPort=1
-.br
-
+.fi
 
 .SH "COPYING"
 Copyright (C) 2012-2013 Bull.
