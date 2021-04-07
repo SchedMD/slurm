@@ -1649,7 +1649,7 @@ typedef struct {
 			return 0;                                  \
 		if (xstrcasecmp(args->assoc->field, assoc->field)) \
 			return 0;                                  \
-	} while (0);
+	} while (0)
 
 static int _find_assoc_id(void *x, void *key)
 {

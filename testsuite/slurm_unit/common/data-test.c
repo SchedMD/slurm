@@ -58,7 +58,7 @@
 				      "bool converted: %s -> %s == %s",     \
 				      str, (bres ? "true" : "false"),       \
 				      (b ? "true" : "false"));              \
-	} while (0);
+	} while (0)
 
 static data_for_each_cmd_t
 	_find_dict_bool(const char *key, const data_t *data, void *arg)

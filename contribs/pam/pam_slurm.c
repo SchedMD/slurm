@@ -98,7 +98,7 @@ static void _send_denial_msg(pam_handle_t *pamh, struct _options *opts,
 	do {							\
 		if (pam_debug)					\
 			_log_msg(LOG_INFO, msg, ##args);	\
-	} while (0);
+	} while (0)
 
 /**********************************\
  *  Account Management Functions  *
