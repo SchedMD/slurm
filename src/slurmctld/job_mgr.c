@@ -8590,6 +8590,9 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 		return true;
 	}
 
+	if (job_mem_limit == 0)
+		job_mem_limit = _mem_per_node_part(part_ptr);
+
 	if (((job_mem_limit & MEM_PER_CPU) == 0) &&
 	    ((sys_mem_limit & MEM_PER_CPU) == 0)) {
 		if (job_mem_limit <= sys_mem_limit)
