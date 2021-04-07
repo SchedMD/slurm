@@ -153,7 +153,7 @@ static int _purge_job(void *x, void *ignored)
 }
 
 /*
- * Clear the JOB_REQUEUE_CRON for all jobs by a given user.
+ * Clear the CRON_JOB flag for all jobs by a given user.
  */
 static int _clear_requeue_cron(void *x, void *y)
 {

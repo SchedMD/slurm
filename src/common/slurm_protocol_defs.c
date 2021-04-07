@@ -2842,8 +2842,6 @@ extern char *job_state_string(uint32_t inx)
 		return "CONFIGURING";
 	if (inx & JOB_RESIZING)
 		return "RESIZING";
-	if (inx & JOB_REQUEUE_CRON)
-		return "REQUEUED_CRON";
 	if (inx & JOB_REQUEUE)
 		return "REQUEUED";
 	if (inx & JOB_REQUEUE_FED)
@@ -2903,8 +2901,6 @@ extern char *job_state_string_compact(uint32_t inx)
 		return "CF";
 	if (inx & JOB_RESIZING)
 		return "RS";
-	if (inx & JOB_REQUEUE_CRON)
-		return "RC";
 	if (inx & JOB_REQUEUE)
 		return "RQ";
 	if (inx & JOB_REQUEUE_FED)
@@ -3023,8 +3019,6 @@ extern char *job_state_string_complete(uint32_t state)
 		xstrcat(state_str, ",RECONFIG_FAIL");
 	if (state & JOB_RESIZING)
 		xstrcat(state_str, ",RESIZING");
-	if (state & JOB_REQUEUE_CRON)
-		xstrcat(state_str, ",REQUEUED_CRON");
 	if (state & JOB_REQUEUE)
 		xstrcat(state_str, ",REQUEUED");
 	if (state & JOB_REQUEUE_FED)
@@ -3073,8 +3067,6 @@ extern uint32_t job_state_num(const char *state_name)
 		return JOB_CONFIGURING;
 	if (_job_name_test(JOB_RESIZING, state_name))
 		return JOB_RESIZING;
-	if (_job_name_test(JOB_REQUEUE_CRON, state_name))
-		return JOB_REQUEUE_CRON;
 	if (_job_name_test(JOB_REQUEUE, state_name))
 		return JOB_REQUEUE;
 	if (_job_name_test(JOB_REQUEUE_FED, state_name))
