@@ -69,17 +69,6 @@ extern int jobacct_gather_cgroup_memory_fini(void);
 extern int jobacct_gather_cgroup_memory_attach_task(
 	pid_t pid, jobacct_id_t *jobacct_id);
 
-/* FIXME: Enable when kernel support ready. */
- /* extern xcgroup_t task_blkio_cg; */
-/* extern int jobacct_gather_cgroup_blkio_init( */
-/* 	slurm_cgroup_conf_t *slurm_cgroup_conf); */
-
-/* extern int jobacct_gather_cgroup_blkio_fini( */
-/* 	slurm_cgroup_conf_t *slurm_cgroup_conf); */
-
-/* extern int jobacct_gather_cgroup_blkio_attach_task( */
-/* 	pid_t pid, jobacct_id_t *jobacct_id); */
-
 extern int find_task_cg_info(void *x, void *key);
 
 extern void free_task_cg_info(void *task_cg);
