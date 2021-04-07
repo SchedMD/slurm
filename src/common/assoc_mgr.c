@@ -2613,9 +2613,15 @@ extern int assoc_mgr_fill_in_user(void *db_conn, slurmdb_user_rec_t *user,
 
 	if (user_pptr)
 		*user_pptr = NULL;
-	if (!assoc_mgr_user_list)
-		if (_get_assoc_mgr_user_list(db_conn, enforce) == SLURM_ERROR)
+
+	if (!locked) {
+		if (!assoc_mgr_user_list &&
+		    _get_assoc_mgr_user_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
+	} else {
+		if (enforce & ACCOUNTING_ENFORCE_ASSOCS)
+			xassert(assoc_mgr_user_list);
+	}
 
 	if (!locked)
 		assoc_mgr_lock(&locks);
