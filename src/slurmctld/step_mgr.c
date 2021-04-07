@@ -459,7 +459,7 @@ extern void free_step_record(void *x)
 	xfree(step_ptr->resv_port_array);
 	xfree(step_ptr->resv_ports);
 	xfree(step_ptr->network);
-	FREE_NULL_LIST(step_ptr->gres_list);
+	FREE_NULL_LIST(step_ptr->gres_list_req);
 	select_g_select_jobinfo_free(step_ptr->select_jobinfo);
 	xfree(step_ptr->tres_alloc_str);
 	xfree(step_ptr->tres_fmt_alloc_str);
@@ -1901,7 +1901,7 @@ static void _step_alloc_lps(step_record_t *step_ptr)
 				step_ptr->cpus_per_task;
 
 		job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
-		gres_ctld_step_alloc(step_ptr->gres_list,
+		gres_ctld_step_alloc(step_ptr->gres_list_req,
 				     &step_ptr->gres_list_alloc,
 				     job_ptr->gres_list_alloc,
 				     job_node_inx, first_step_node,
@@ -1965,7 +1965,7 @@ static void _step_alloc_lps(step_record_t *step_ptr)
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
 			break;
 	}
-	gres_step_state_log(step_ptr->gres_list, job_ptr->job_id,
+	gres_step_state_log(step_ptr->gres_list_req, job_ptr->job_id,
 			    step_ptr->step_id.step_id);
 	if ((slurm_conf.debug_flags & DEBUG_FLAG_GRES) &&
 	    step_ptr->gres_list_alloc)
@@ -2565,9 +2565,9 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	}
 
 	step_ptr->container = xstrdup(step_specs->container);
-	step_ptr->gres_list = step_gres_list;
+	step_ptr->gres_list_req = step_gres_list;
 	step_gres_list      = (List) NULL;
-	gres_step_state_log(step_ptr->gres_list, job_ptr->job_id,
+	gres_step_state_log(step_ptr->gres_list_req, job_ptr->job_id,
 			    step_ptr->step_id.step_id);
 	if ((slurm_conf.debug_flags & DEBUG_FLAG_GRES) &&
 	    step_ptr->gres_list_alloc)
@@ -3005,7 +3005,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 				usable_cpus = MIN(usable_cpus, usable_mem);
 			}
 
-			gres_cpus = gres_step_test(step_ptr->gres_list,
+			gres_cpus = gres_step_test(step_ptr->gres_list_req,
 						   job_ptr->gres_list_alloc,
 						   job_node_offset,
 						   first_step_node,
@@ -3934,7 +3934,7 @@ extern int dump_job_step_state(void *x, void *arg)
 	packstr(step_ptr->name, buffer);
 	packstr(step_ptr->network, buffer);
 
-	(void) gres_step_state_pack(step_ptr->gres_list, buffer,
+	(void) gres_step_state_pack(step_ptr->gres_list_req, buffer,
 				    &step_ptr->step_id,
 				    SLURM_PROTOCOL_VERSION);
 	(void) gres_step_state_pack(step_ptr->gres_list_alloc, buffer,
@@ -4011,7 +4011,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	char *tres_per_socket = NULL, *tres_per_task = NULL;
 	dynamic_plugin_data_t *switch_tmp = NULL;
 	slurm_step_layout_t *step_layout = NULL;
-	List gres_list = NULL, gres_list_alloc = NULL;
+	List gres_list_req = NULL, gres_list_alloc = NULL;
 	dynamic_plugin_data_t *select_jobinfo = NULL;
 	jobacctinfo_t *jobacct = NULL;
 	slurm_step_id_t step_id = { .job_id = job_ptr->job_id,
@@ -4052,7 +4052,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr_xmalloc(&name, &name_len, buffer);
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 
-		if (gres_step_state_unpack(&gres_list, buffer,
+		if (gres_step_state_unpack(&gres_list_req, buffer,
 					   &step_id, protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
@@ -4129,7 +4129,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr_xmalloc(&name, &name_len, buffer);
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 
-		if (gres_step_state_unpack(&gres_list, buffer,
+		if (gres_step_state_unpack(&gres_list_req, buffer,
 					   &step_id, protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
@@ -4200,7 +4200,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpackstr_xmalloc(&name, &name_len, buffer);
 		safe_unpackstr_xmalloc(&network, &name_len, buffer);
 
-		if (gres_step_state_unpack(&gres_list, buffer,
+		if (gres_step_state_unpack(&gres_list_req, buffer,
 					   &step_id, protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
@@ -4324,7 +4324,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	step_ptr->name         = name;
 	step_ptr->network      = network;
 	step_ptr->flags        = flags;
-	step_ptr->gres_list    = gres_list;
+	step_ptr->gres_list_req = gres_list_req;
 	step_ptr->gres_list_alloc = gres_list_alloc;
 	step_ptr->srun_pid     = srun_pid;
 	step_ptr->port         = port;
@@ -4425,7 +4425,7 @@ unpack_error:
 	xfree(resv_ports);
 	xfree(name);
 	xfree(network);
-	FREE_NULL_LIST(gres_list);
+	FREE_NULL_LIST(gres_list_req);
 	FREE_NULL_LIST(gres_list_alloc);
 	FREE_NULL_BITMAP(exit_node_bitmap);
 	FREE_NULL_BITMAP(core_bitmap_job);

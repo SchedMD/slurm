@@ -959,7 +959,7 @@ typedef struct {
 	bitstr_t *exit_node_bitmap;	/* bitmap of exited nodes */
 	ext_sensors_data_t *ext_sensors; /* external sensors plugin data */
 	uint32_t flags;		        /* flags from step_spec_flags_t */
-	List gres_list;			/* generic resource request detail */
+	List gres_list_req;		/* generic resource request detail */
 	List gres_list_alloc;		/* generic resource allocation detail */
 	char *host;			/* host for srun communications */
 	job_record_t *job_ptr;		/* ptr to the job that owns the step */
