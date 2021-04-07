@@ -1,4 +1,4 @@
-.TH "cgroup.conf" "5" "Slurm Configuration File" "February 2021" "Slurm Configuration File"
+.TH "cgroup.conf" "5" "Slurm Configuration File" "April 2021" "Slurm Configuration File"
 
 .SH "NAME"
 cgroup.conf \- Slurm configuration file for the cgroup support
@@ -130,7 +130,7 @@ ConstrainRAMSpace is set to "no", \fBAllowedRAMSpace\fR is automatically set
 to 100% in order to limit the RAM+Swap amount to 100% of job's requirement
 plus the percent of allowed swap space. This amount is thus set to both
 RAM and RAM+Swap limits. This means that in that particular case,
-ConstrainRAMSpace is automatically enabled with the same limit than the one
+ConstrainRAMSpace is automatically enabled with the same limit as the one
 used to constrain swap space.
 Also see \fBAllowedSwapSpace\fR.
 
@@ -163,9 +163,9 @@ used. The default value is 100.
 Configure the kernel's priority for swapping out anonymous pages (such as
 program data) verses file cache pages for the job cgroup. Valid values are
 between 0 and 100, inclusive. A value of 0 prevents the kernel from swapping
-out program data. A value of 100 gives equal priorioty to swapping out file
+out program data. A value of 100 gives equal priority to swapping out file
 cache or anonymous pages. If not set, then the kernel's default swappiness
-value will be used. Either \fBConstrainRAMSpace\fR or \fBConstrainSwapSpace\fR
+value will be used. \fBConstrainSwapSpace\fR
 must be set to \fByes\fR in order for this parameter to be applied.
 
 .TP
