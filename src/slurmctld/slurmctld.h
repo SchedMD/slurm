@@ -1490,7 +1490,7 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue);
  */
 extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 				 uint64_t pn_min_memory, uint32_t cpu_cnt,
-				 uint32_t node_cnt);
+				 uint32_t node_cnt, part_record_t *part_ptr);
 
 /*
  * job_epilog_complete - Note the completion of the epilog script for a

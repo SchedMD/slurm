@@ -2408,7 +2408,7 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 					job_ptr->job_resrcs,
 					job_ptr->details->pn_min_memory,
 					tres_req_cnt[TRES_ARRAY_CPU],
-					selected_node_cnt);
+					selected_node_cnt, job_ptr->part_ptr);
 	tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)selected_node_cnt;
 
 	assoc_mgr_lock(&job_read_locks);
