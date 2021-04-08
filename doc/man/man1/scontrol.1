@@ -1183,8 +1183,10 @@ node are in use, rendering this node as not usable for any other jobs.
 "RESERVED" indicates the node is in an advanced reservation and not generally
 available.
 "RESUME" is not an actual node state, but will change a node state from
-"DRAINED", "DRAINING", "DOWN" or "REBOOT" to either
-"IDLE" or "ALLOCATED" state as appropriate.
+"DRAINED", "DRAINING", "DOWN" or "REBOOT" to "IDLE" and "NoResp". slurmctld
+will then attempt to contact slurmd to request node register itself. Once
+registered, the node state will then remove the "NoResp" flag and will resume
+normal operations.
 "RESUME" will also clear the "POWERING_DOWN" state of a node and make it
 eligible to be allocted.
 "UNDRAIN" clears the node from being drained (like "RESUME"), but will
