@@ -85,6 +85,8 @@ documents those changes that are of interest to users and administrators.
     an interactive step to work.
  -- Add new 'PLANNED' state to a node to represent when the backfill scheduler
     has it planned to be used in the future instead of showing as 'IDLE'.
+ -- slurmd - Delay background node registration on every failure up to 128s on
+    startup.
 
 * Changes in Slurm 20.11.8
 ==========================

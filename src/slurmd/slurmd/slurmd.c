@@ -416,6 +416,8 @@ main (int argc, char **argv)
 static void *
 _registration_engine(void *arg)
 {
+	static const uint32_t MAX_DELAY = 128;
+	uint32_t delay = 1;
 	_increment_thd_count();
 
 	while (!_shutdown && !sent_reg_time) {
@@ -424,10 +426,15 @@ _registration_engine(void *arg)
 		if (!(rc = send_registration_msg(SLURM_SUCCESS, true)))
 			break;
 
-		debug("Unable to register with slurm controller, retrying: %s",
-		      slurm_strerror(rc));
+		debug("Unable to register with slurm controller (retry in %us): %s",
+		      delay, slurm_strerror(rc));
 
-		sleep(1);
+		sleep(delay);
+
+		/* increase delay until max on every failure */
+		delay *= 2;
+		if (delay > MAX_DELAY)
+			delay = MAX_DELAY;
 	}
 
 	_decrement_thd_count();
