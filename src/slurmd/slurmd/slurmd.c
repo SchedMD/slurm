@@ -437,6 +437,8 @@ _registration_engine(void *arg)
 			delay = MAX_DELAY;
 	}
 
+	debug3("%s complete", __func__);
+
 	_decrement_thd_count();
 	return NULL;
 }
