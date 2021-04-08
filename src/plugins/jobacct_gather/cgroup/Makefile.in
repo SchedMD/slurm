@@ -178,9 +178,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 jobacct_gather_cgroup_la_DEPENDENCIES =  \
 	../common/libjobacct_gather_common.la
-am_jobacct_gather_cgroup_la_OBJECTS = jobacct_gather_cgroup.lo \
-	jobacct_gather_cgroup_cpuacct.lo \
-	jobacct_gather_cgroup_memory.lo
+am_jobacct_gather_cgroup_la_OBJECTS = jobacct_gather_cgroup.lo
 jobacct_gather_cgroup_la_OBJECTS =  \
 	$(am_jobacct_gather_cgroup_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -206,9 +204,7 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/jobacct_gather_cgroup.Plo \
-	./$(DEPDIR)/jobacct_gather_cgroup_cpuacct.Plo \
-	./$(DEPDIR)/jobacct_gather_cgroup_memory.Plo
+am__depfiles_remade = ./$(DEPDIR)/jobacct_gather_cgroup.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -515,8 +511,6 @@ pkglib_LTLIBRARIES = jobacct_gather_cgroup.la
 
 # Null job completion logging plugin.
 jobacct_gather_cgroup_la_SOURCES = jobacct_gather_cgroup.c \
-                                   jobacct_gather_cgroup_cpuacct.c \
-                                   jobacct_gather_cgroup_memory.c \
                                    jobacct_gather_cgroup.h
 
 jobacct_gather_cgroup_la_LDFLAGS = $(PLUGIN_FLAGS)
@@ -600,8 +594,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_gather_cgroup.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_gather_cgroup_cpuacct.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_gather_cgroup_memory.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -731,8 +723,6 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/jobacct_gather_cgroup.Plo
-	-rm -f ./$(DEPDIR)/jobacct_gather_cgroup_cpuacct.Plo
-	-rm -f ./$(DEPDIR)/jobacct_gather_cgroup_memory.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -779,8 +769,6 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/jobacct_gather_cgroup.Plo
-	-rm -f ./$(DEPDIR)/jobacct_gather_cgroup_cpuacct.Plo
-	-rm -f ./$(DEPDIR)/jobacct_gather_cgroup_memory.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
