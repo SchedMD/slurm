@@ -418,14 +418,15 @@ _registration_engine(void *arg)
 {
 	_increment_thd_count();
 
-	while (!_shutdown) {
-		if ((sent_reg_time == (time_t) 0) &&
-		    (send_registration_msg(SLURM_SUCCESS, true) !=
-		     SLURM_SUCCESS)) {
-			debug("Unable to register with slurm controller, retrying");
-		} else if (_shutdown || sent_reg_time) {
+	while (!_shutdown && !sent_reg_time) {
+		int rc;
+
+		if (!(rc = send_registration_msg(SLURM_SUCCESS, true)))
 			break;
-		}
+
+		debug("Unable to register with slurm controller, retrying: %s",
+		      slurm_strerror(rc));
+
 		sleep(1);
 	}
 
