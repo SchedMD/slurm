@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
  -- Set missing job_uid and job_gid members when preparing a kill_job_msg_t in
     abort_job_on_node(), abort_job_on_nodes() and kill_job_on_node().
  -- Fix swappiness not being set in cgroups.
+ -- Fix coordinators for new subaccounts.
 
 * Changes in Slurm 21.08.0rc2
 =============================
