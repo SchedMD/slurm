@@ -95,14 +95,12 @@ char *apinfo = NULL; // Application PMI file
 /*
  * Create the Cray MPI directory under the slurmd spool directory
  */
-static int _create_mpi_dir(void)
+static int _create_mpi_dir(const char *spool)
 {
 	char *mpidir = NULL;
 	int rc = SLURM_SUCCESS;
 
-	// TODO: pass in node_name parameter
-	mpidir = xstrdup_printf("%s/%s",
-				slurm_conf.slurmd_spooldir, MPI_CRAY_DIR);
+	mpidir = xstrdup_printf("%s/%s", spool, MPI_CRAY_DIR);
 	if ((mkdir(mpidir, 0755) == -1) && (errno != EEXIST)) {
 		error("%s: Couldn't create Cray MPI directory %s: %m",
 		      plugin_type, mpidir);
@@ -116,14 +114,12 @@ static int _create_mpi_dir(void)
 /*
  * Create the application-specific directory under the Cray MPI directory
  */
-static int _create_app_dir(const stepd_step_rec_t *job)
+static int _create_app_dir(const stepd_step_rec_t *job, const char *spool)
 {
-	// TODO: pass in node_name parameter
-
 	xfree(appdir);
 	// Format the directory name
 	appdir = xstrdup_printf("%s/%s/%u.%u",
-				slurm_conf.slurmd_spooldir, MPI_CRAY_DIR,
+				spool, MPI_CRAY_DIR,
 				job->step_id.job_id, job->step_id.step_id);
 
 	// Create the directory
@@ -235,12 +231,20 @@ static int _rmdir_recursive(char *path)
 extern int p_mpi_hook_slurmstepd_prefork(
 	const stepd_step_rec_t *job, char ***env)
 {
+	/* do the node_name substitution once */
+	char *spool = xstrdup(slurm_conf.slurmd_spooldir);
+	xstrsubstitute(spool, "%n", job->node_name);
+	xstrsubstitute(spool, "%h", job->node_name);
+
 	// Set up spool directory and apinfo
-	if (_create_mpi_dir() == SLURM_ERROR ||
-	    _create_app_dir(job) == SLURM_ERROR ||
+	if (_create_mpi_dir(spool) == SLURM_ERROR ||
+	    _create_app_dir(job, spool) == SLURM_ERROR ||
 	    create_apinfo(job) == SLURM_ERROR) {
+		xfree(spool);
 		return SLURM_ERROR;
 	}
+
+	xfree(spool);
 
 	return SLURM_SUCCESS;
 }
