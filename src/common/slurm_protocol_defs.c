@@ -3078,6 +3078,8 @@ extern uint32_t job_state_num(const char *state_name)
 		return JOB_CONFIGURING;
 	if (_job_name_test(JOB_RESIZING, state_name))
 		return JOB_RESIZING;
+	if (_job_name_test(JOB_RESV_DEL_HOLD, state_name))
+		return JOB_RESV_DEL_HOLD;
 	if (_job_name_test(JOB_REQUEUE_CRON, state_name))
 		return JOB_REQUEUE_CRON;
 	if (_job_name_test(JOB_REQUEUE, state_name))
