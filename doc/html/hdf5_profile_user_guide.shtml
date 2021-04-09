@@ -148,13 +148,14 @@ no data collected unless the <B>ProfileHDF5Default</B>
 option is used in acct_gather.conf. --profile on the command line overrides
 any value specified in the configuration file.</p>
 
+<div style="margin-left: 20px;">
+<dl>
 <dt><b>--profile</b>=&lt;all|none|[energy[,|task[,|filesystem[,|network]]]]&gt;
 </dt>
-<DD>
-<p>enables detailed data collection by the acct_gather_profile plugin.
+<dd>Enables detailed data collection by the acct_gather_profile plugin.
 Detailed data are typically time-series that are stored in a HDF5 file for
-the job.</p></DD>
-<div style="margin-left: 20px;">
+the job.</dd>
+<dd>
 <DL>
 <dt><B>All</B></dt>
 <DD>All data types are collected. (Cannot be combined with other values.)
@@ -176,8 +177,9 @@ Lustre filesystem is supported.</DD>
 
 <dt><B>Task</B></dt>
 <DD>Task (I/O, Memory, ...) data is collected.</DD>
-
 </DL>
+</dd>
+</dl>
 </div>
 
 <h3>Data Consolidation</h3>
