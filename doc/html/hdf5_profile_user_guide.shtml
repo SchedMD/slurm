@@ -65,7 +65,6 @@ the ProfileHDF5Dir.</p>
 
 <p>Each user that creates a profile will have a subdirectory in the profile
 directory that has read/write permission only for the user.</p>
-</span>
 </div>
 <h3>Configuration parameters</h3>
 
