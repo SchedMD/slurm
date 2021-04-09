@@ -3059,8 +3059,6 @@ extern uint32_t job_state_num(const char *state_name)
 			return i;
 	}
 
-	if (_job_name_test(JOB_STAGE_OUT, state_name))
-		return JOB_STAGE_OUT;
 	if (_job_name_test(JOB_COMPLETING, state_name))
 		return JOB_COMPLETING;
 	if (_job_name_test(JOB_CONFIGURING, state_name))
@@ -3077,6 +3075,8 @@ extern uint32_t job_state_num(const char *state_name)
 		return JOB_REQUEUE_HOLD;
 	if (_job_name_test(JOB_SPECIAL_EXIT, state_name))
 		return JOB_SPECIAL_EXIT;
+	if (_job_name_test(JOB_STAGE_OUT, state_name))
+		return JOB_STAGE_OUT;
 	if (_job_name_test(JOB_STOPPED, state_name))
 		return JOB_STOPPED;
 	if (_job_name_test(JOB_REVOKED, state_name))
