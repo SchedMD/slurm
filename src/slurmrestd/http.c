@@ -606,8 +606,7 @@ extern const char *get_http_method_string(http_request_method_t method)
 	case HTTP_REQUEST_TRACE:
 		return "TRACE";
 	default:
-		fatal_abort("unknown method string");
-		return "UNKNOWN";
+		return "INVALID";
 	}
 }
 
