@@ -156,8 +156,7 @@ int main(int argc, char **argv)
 	 * for the first time after an upgrade.
 	 */
 	if (slurm_auth_init(NULL) != SLURM_SUCCESS) {
-		fatal("Unable to initialize %s authentication plugin",
-		      slurm_conf.authtype);
+		fatal("Unable to initialize authentication plugins");
 	}
 	if (slurm_acct_storage_init() != SLURM_SUCCESS) {
 		fatal("Unable to initialize %s accounting storage plugin",
