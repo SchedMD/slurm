@@ -241,8 +241,7 @@ extern int workq_add_work(workq_t *workq, work_func_t func, void *arg,
 	slurm_mutex_lock(&workq->mutex);
 	/* add to work list and signal a thread */
 	if (workq->shutdown)
-		/* TODO: get better error for this */
-		rc = SLURM_ERROR;
+		rc = ESLURM_DISABLED;
 	else { /* workq is not shutdown */
 		list_append(workq->work, work);
 		slurm_cond_signal(&workq->cond);
