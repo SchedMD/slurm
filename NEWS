@@ -87,6 +87,7 @@ documents those changes that are of interest to users and administrators.
     burst buffer stages.
  -- Fix race condition in burst buffer plugin which caused a burst buffer
     in stage-in to not get state saved if slurmctld stopped.
+ -- auth/jwt - print an error if jwt_file= has not been set in slurmdbd.
 
 * Changes in Slurm 20.11.5
 ==========================

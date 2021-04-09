@@ -139,10 +139,11 @@ static int _init_key(void)
 		/* default to state_save_location for slurmctld */
 		xstrfmtcat(key_file, "%s/%s",
 			   slurm_conf.state_save_location, default_key);
-	}
-
-	if (!key_file)
+	} else if (!key_file) {
+		/* Must be in slurmdbd */
+		error("No jwt_key set. Please set the jwt_key=/path/to/key/file option in AuthAltParams in slurmdbd.conf.");
 		return ESLURM_AUTH_SKIP;
+	}
 
 	debug("%s: Loading key: %s", __func__, key_file);
 
