@@ -65,7 +65,6 @@ the ProfileHDF5Dir.</p>
 
 <p>Each user that creates a profile will have a subdirectory in the profile
 directory that has read/write permission only for the user.</p>
-</span>
 </div>
 <h3>Configuration parameters</h3>
 
@@ -76,45 +75,46 @@ configured in the
 <a href="acct_gather.conf.html">acct_gather.conf</a> file.</p>
 </div>
 <div style="margin-left: 20px;">
-<h4>slurm.conf parameters</h4>
+<br>
+<h3>slurm.conf parameters</h3>
 <div style="margin-left: 20px;">
-This enables the HDF5 plugin:
-<p><b>AcctGatherProfileType</b> = acct_gather_profile/hdf5</p>
-This sets the sampling frequency for data types:
-<p><b>JobAcctGatherFrequency</b> = &lt;seconds&gt;</p>
+<dl>
+<dt><b>AcctGatherProfileType</b>=acct_gather_profile/hdf5</dt>
+<dd>Enables the HDF5 plugin.</dd>
+<dt><b>JobAcctGatherFrequency</b>=&lt;seconds&gt;</dt>
+<dd>Sets the sampling frequency for data types.</dd>
+</dl>
 </div>
 </div>
 <div style="margin-left: 20px;">
-<h4>acct_gather.conf parameters</h4>
+<br>
+<h3>acct_gather.conf parameters</h3>
 <div style="margin-left: 20px;">
 <p>These parameters are directly used by the HDF5 Profile Plugin.</p>
 <dl>
-<dt><b>ProfileHDF5Dir</b> = &lt;path&gt;</dt>
-<p>
-This parameter is the path to the shared folder into which the
+<dt><b>ProfileHDF5Dir</b>=&lt;path&gt;</dt>
+<dd>This parameter is the path to the shared folder into which the
 acct_gather_profile plugin will write detailed data as an HDF5 file.
 The directory is assumed to be on a file system shared by the controller and
-all compute nodes. This is a required parameter.<p>
-
-<dt><b>ProfileHDF5Default</b> = [options]</dt>
-<p>
-A  comma  delimited list of data types to be collected for each job submission.
-Use this option with caution. A node-step file will be created on every
-node for every step of every job. They will not automatically be merged
+all compute nodes. This is a required parameter.</dd>
+<dt><b>ProfileHDF5Default</b>=[options]</dt>
+<dd>A comma delimited list of data types to be collected for each job
+submission. Use this option with caution. A node-step file will be created on
+every node for every step of every job. They will not automatically be merged
 into job files. (Even job files for large numbers of small jobs would fill the
 file system.) This option is intended for test environments where you
 might want to profile a series of jobs but do not want to have to
 add the --profile option to the launch scripts.
 The options are described below and in the man pages for acct_gather.conf,
-srun, salloc and sbatch commands.
-</dd>
+srun, salloc and sbatch commands.</dd>
 </dl>
 </div>
 </div>
 
 
 <div style="margin-left: 20px;">
-<h4>Time Series Control Parameters</h4>
+<br>
+<h3>Time Series Control Parameters</h3>
 <div style="margin-left: 20px;">
 <p>Other plugins add time series data to the HDF5 collection. They typically
 have a default polling frequency specified in slurm.conf in the
@@ -148,36 +148,38 @@ no data collected unless the <B>ProfileHDF5Default</B>
 option is used in acct_gather.conf. --profile on the command line overrides
 any value specified in the configuration file.</p>
 
-<DT><b>--profile</b>=&lt;all|none|[energy[,|task[,|filesystem[,|network]]]]&gt;
-<DD>
-<p>enables detailed data collection by the acct_gather_profile plugin.
-Detailed data are typically time-series that are stored in a HDF5 file for
-the job.</p></DD>
-</DT>
 <div style="margin-left: 20px;">
+<dl>
+<dt><b>--profile</b>=&lt;all|none|[energy[,|task[,|filesystem[,|network]]]]&gt;
+</dt>
+<dd>Enables detailed data collection by the acct_gather_profile plugin.
+Detailed data are typically time-series that are stored in a HDF5 file for
+the job.</dd>
+<dd>
 <DL>
-<DT><B>All</B>
+<dt><B>All</B></dt>
 <DD>All data types are collected. (Cannot be combined with other values.)
-</DD></DT>
-<DT><B>None</B>
+</DD>
+<dt><B>None</B></dt>
 <DD>No data types are collected. This is the default. (Cannot be
 combined with other values.)
-</DD></DT>
+</DD>
 
-<DT><B>Energy</B>
-<DD>Energy data is collected.</DD></DT>
+<dt><B>Energy</B></dt>
+<DD>Energy data is collected.</DD>
 
-<DT><B>Filesystem</B>
+<dt><B>Filesystem</B></dt>
 <DD>Filesystem data is collected. Currently only
-Lustre filesystem is supported.</DD></DT>
+Lustre filesystem is supported.</DD>
 
-<DT><B>Network</B>
-<DD>Network (InfiniBand) data is collected.</DD></DT>
+<dt><B>Network</B></dt>
+<DD>Network (InfiniBand) data is collected.</DD>
 
-<DT><B>Task</B>
-<DD>Task (I/O, Memory, ...) data is collected.</DD></DT>
-
+<dt><B>Task</B></dt>
+<DD>Task (I/O, Memory, ...) data is collected.</DD>
 </DL>
+</dd>
+</dl>
 </div>
 
 <h3>Data Consolidation</h3>
@@ -257,16 +259,17 @@ Appropriately set energy=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.
 Also appropriately set EnergyIPMIFrequency in acct_gather.conf.</p>
 <p>Each data sample in the Energe Time Series contains the following data items.
-</p><DL>
-<DT><B>Date Time</B>
+</p>
+<DL>
+<dt><B>Date Time</B></dt>
 <DD>Time of day at which the data sample was taken. This can be used to
-correlate activity with other sources such as logs.</DD></DT>
-<DT><B>Time</B>
-<DD>Elapsed time since the beginning of the step.</DD></DT>
-<DT><B>Power</B>
-<DD>Power consumption during the interval.</DD></DT>
-<DT><B>CPU Frequency</B>
-<DD>CPU Frequency at time of sample in kilohertz.</DD></DT>
+correlate activity with other sources such as logs.</DD>
+<dt><B>Time</B></dt>
+<DD>Elapsed time since the beginning of the step.</DD>
+<dt><B>Power</B></dt>
+<DD>Power consumption during the interval.</DD>
+<dt><B>CPU Frequency</B></dt>
+<DD>CPU Frequency at time of sample in kilohertz.</DD>
 </DL>
 
 <h3>Filesystem Data</h3>
@@ -276,20 +279,21 @@ Appropriately set Filesystem=freq in either JobAcctGatherFrequency in slurm.conf
 or in --acctg-freq on the command line.</p>
 
 <p>Each data sample in the Filesystem Time Series contains the following data items.
-</p><DL>
-<DT><B>Date Time</B>
+</p>
+<DL>
+<dt><B>Date Time</B></dt>
 <DD>Time of day at which the data sample was taken. This can be used to
-correlate activity with other sources such as logs.</DD></DT>
-<DT><B>Time</B>
-<DD>Elapsed time since the beginning of the step.</DD></DT>
-<DT><B>Reads</B>
-<DD>Number of read operations.</DD></DT>
-<DT><B>Megabytes Read</B>
-<DD>Number of megabytes read.</DD></DT>
-<DT><B>Writes</B>
-<DD>Number of write operations.</DD></DT>
-<DT><B>Megabytes Write</B>
-<DD>Number of megabytes written.</DD></DT>
+correlate activity with other sources such as logs.</DD>
+<dt><B>Time</B></dt>
+<DD>Elapsed time since the beginning of the step.</DD>
+<dt><B>Reads</B></dt>
+<DD>Number of read operations.</DD>
+<dt><B>Megabytes Read</B></dt>
+<DD>Number of megabytes read.</DD>
+<dt><B>Writes</B></dt>
+<DD>Number of write operations.</DD>
+<dt><B>Megabytes Write</B></dt>
+<DD>Number of megabytes written.</DD>
 </DL>
 
 <h3>Network (Infiniband Data)</h3>
@@ -300,19 +304,19 @@ or in --acctg-freq on the command line.</p>
 <p>Each data sample in the Network Time Series contains the following
 data items.</p>
 <DL>
-<DT><B>Date Time</B>
+<dt><B>Date Time</B></dt>
 <DD>Time of day at which the data sample was taken. This can be used to
-correlate activity with other sources such as logs.</DD></DT>
-<DT><B>Time</B>
-<DD>Elapsed time since the beginning of the step.</DD></DT>
-<DT><B>Packets In</B>
-<DD>Number of packets coming in.</DD></DT>
-<DT><B>Megabytes Read</B>
-<DD>Number of megabytes coming in through the interface.</DD></DT>
-<DT><B>Packets Out</B>
-<DD>Number of packets going out.</DD></DT>
-<DT><B>Megabytes Write</B>
-<DD>Number of megabytes going out through the interface.</DD></DT>
+correlate activity with other sources such as logs.</DD>
+<dt><B>Time</B></dt>
+<DD>Elapsed time since the beginning of the step.</DD>
+<dt><B>Packets In</B></dt>
+<DD>Number of packets coming in.</DD>
+<dt><B>Megabytes Read</B></dt>
+<DD>Number of megabytes coming in through the interface.</DD>
+<dt><B>Packets Out</B></dt>
+<DD>Number of packets going out.</DD>
+<dt><B>Megabytes Write</B></dt>
+<DD>Number of megabytes going out through the interface.</DD>
 </DL>
 
 <h3>Task Data</h3>
@@ -323,31 +327,31 @@ or in --acctg-freq on the command line.</p>
 <p>Each data sample in the Task Time Series contains the following data
 items.</p>
 <DL>
-<DT><B>Date Time</B>
+<dt><B>Date Time</B></dt>
 <DD>Time of day at which the data sample was taken. This can be used to
-correlate activity with other sources such as logs.</DD></DT>
-<DT><B>Time</B>
-<DD>Elapsed time since the beginning of the step.</DD></DT>
-<DT><B>CPU Frequency</B>
-<DD>CPU Frequency at time of sample.</DD></DT>
-<DT><B>CPU Time</B>
-<DD>Seconds of CPU time used during the sample.</DD></DT>
-<DT><B>CPU Utilization</B>
-<DD>CPU Utilization during the interval.</DD></DT>
-<DT><B>RSS</B>
-<DD>Value of RSS at time of sample.</DD></DT>
-<DT><B>VM Size</B>
-<DD>Value of VM Size at time of sample.</DD></DT>
-<DT><B>Pages</B>
-<DD>Pages used in sample.</DD></DT>
-<DT><B>Read Megabytes</B>
-<DD>Number of megabytes read from local disk.</DD></DT>
-<DT><B>Write Megabytes</B>
-<DD>Number of megabytes written to local disk.</DD></DT>
+correlate activity with other sources such as logs.</DD>
+<dt><B>Time</B></dt>
+<DD>Elapsed time since the beginning of the step.</DD>
+<dt><B>CPU Frequency</B></dt>
+<DD>CPU Frequency at time of sample.</DD>
+<dt><B>CPU Time</B></dt>
+<DD>Seconds of CPU time used during the sample.</DD>
+<dt><B>CPU Utilization</B></dt>
+<DD>CPU Utilization during the interval.</DD>
+<dt><B>RSS</B></dt>
+<DD>Value of RSS at time of sample.</DD>
+<dt><B>VM Size</B></dt>
+<DD>Value of VM Size at time of sample.</DD>
+<dt><B>Pages</B></dt>
+<DD>Pages used in sample.</DD>
+<dt><B>Read Megabytes</B></dt>
+<DD>Number of megabytes read from local disk.</DD>
+<dt><B>Write Megabytes</B></dt>
+<DD>Number of megabytes written to local disk.</DD>
 </DL>
 
 
 
-<p style="text-align:center;">Last modified 30 January 2020</p>
+<p style="text-align:center;">Last modified 9 April 2021</p>
 
 <!--#include virtual="footer.txt"-->

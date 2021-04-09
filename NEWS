@@ -216,6 +216,13 @@ documents those changes that are of interest to users and administrators.
     the associated environment variables which lead to unexpected behavior
     from srun commands launched within the interactive step.
  -- Handle exit code from pipe when using UCX with PMIx.
+ -- Partially revert changes made in 20.11.0 to srun step behavior. This change
+    required steps to explicitly request resources, otherwise the minimal set
+    of resources required would be assigned. This broke OpenMPI's 'mpiexec'
+    alongside other use cases. This reverts the behavior such that all resources
+    on a node are assigned to the job step by default.
+ -- srun - add a new --exact option, and deprecate the --whole option (which has
+    been restored as the default behavior).
 
 * Changes in Slurm 20.11.2
 ==========================

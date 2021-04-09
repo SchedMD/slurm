@@ -2,9 +2,9 @@
 
 <h1>Quality of Service (QOS)</h1>
 
-<P>One can specify a Quality of Service (QOS) for each job submitted
+<p>One can specify a Quality of Service (QOS) for each job submitted
 to Slurm.  The quality of service associated with a job will affect
-the job in three ways:
+the job in three ways:</p>
 
 <ul>
 <li> <a href=#priority>Job Scheduling Priority</a>
@@ -14,17 +14,17 @@ the job in three ways:
 <li> <a href=#qos_other>Other QOS Options</a>
 </ul>
 
-<P> The QOS's are defined in the Slurm database using the <i>sacctmgr</i>
-utility.
+<p>The QOS's are defined in the Slurm database using the <i>sacctmgr</i>
+utility.</p>
 
 <P> Jobs request a QOS using the "--qos=" option to the
 <i>sbatch</i>, <i>salloc</i>, and <i>srun</i> commands.</P>
 
 <!-------------------------------------------------------------------------->
-<a name=priority>
+<a id=priority>
 <h2>Job Scheduling Priority</h2></a>
 
-<P> Job scheduling priority is made up of a number of factors as
+<p>Job scheduling priority is made up of a number of factors as
 described in the <a
 href="priority_multifactor.html">priority/multifactor</a> plugin.  One
 of the factors is the QOS priority.  Each QOS is defined in the Slurm
@@ -32,29 +32,29 @@ database and includes an associated priority.  Jobs that request and
 are permitted a QOS will incorporate the priority associated with that
 QOS in the job's <a
 href="priority_multifactor.html#general">multi-factor priority
-calculation.</a>
+calculation.</a></p>
 
-<P> To enable the QOS priority component of the multi-factor priority
+<p>To enable the QOS priority component of the multi-factor priority
 calculation, the "PriorityWeightQOS" configuration parameter must be
 defined in the slurm.conf file and assigned an integer value greater
-than zero.
+than zero.</p>
 
 <P> A job's QOS only affects is scheduling priority when the
 multi-factor plugin is loaded.</P>
 
 <!-------------------------------------------------------------------------->
-<a name=preemption>
+<a id=preemption>
 <h2>Job Preemption</h2></a>
 
-<P> Slurm offers two ways for a queued job to preempt a running job,
+<p>Slurm offers two ways for a queued job to preempt a running job,
 free-up the running job's resources and allocate them to the queued
 job.  See the <a href="preempt.html"> Preemption description</a> for
-details.
+details.</p>
 
-<P> The preemption method is determined by the "PreemptType"
+<p>The preemption method is determined by the "PreemptType"
 configuration parameter defined in slurm.conf.  When the "PreemptType"
 is set to "preempt/qos", a queued job's QOS will be used to determine
-whether it can preempt a running job.
+whether it can preempt a running job.</p>
 
 <P> The QOS can be assigned (using <i>sacctmgr</i>) a list of other
 QOS's that it can preempt.  When there is a queued job with a QOS that
@@ -66,32 +66,33 @@ job is considered for preemption. The QOS option takes precedence over the
 global option of the same name.</P>
 
 <!-------------------------------------------------------------------------->
-<a name=limits>
+<a id=limits>
 <h2>Job Limits</h2></a>
 
-<P> Each QOS is assigned a set of limits which will be applied to the
+<p>Each QOS is assigned a set of limits which will be applied to the
 job.  The limits mirror the limits imposed by the
 user/account/cluster/partition association defined in the Slurm
 database and described in the <a href="resource_limits.html"> Resource
 Limits section</a>.  When limits for a QOS have been defined, they
-will take precedence over the association's limits.
+will take precedence over the association's limits.</p>
 
 <!-------------------------------------------------------------------------->
-<a name=partition>
+<a id=partition>
 <h2>Partition QOS</h2></a>
-<P> A QOS can be attached to a partition.  This means a partition will have all
+<p>A QOS can be attached to a partition.  This means a partition will have all
 the same limits as a QOS.  This also gives the ability of a true 'floating'
 partition, meaning if you assign all the nodes to a partition and then in the
 Partition's QOS limit the number of GrpCPUs or GrpNodes the partition will have
 access to all the nodes, but only be able to run on the number of
-resources in it.<p>
+resources in it.</p>
+
 <p>The Partition QOS will override the job's QOS.  If the opposite is
 desired you need to have the job's QOS have the 'OverPartQOS' flag
 which will reverse the order of precedence.</p>
 
 
 <!-------------------------------------------------------------------------->
-<a name=qos_other>
+<a id=qos_other>
 <h2>Other QOS Options</h2></a>
 <ul>
 <li><b>Flags</b> Used by the slurmctld to override or enforce certain
@@ -219,15 +220,13 @@ association.</P>
 
 <h2>QOS examples</h2>
 
-<P>
-QOS manipulation examples. All QOS operations are done using
+<p>QOS manipulation examples. All QOS operations are done using
 the sacctmgr command. The default output of 'sacctmgr show qos' is
 very long given the large number of limits and options available
-so it is best to use the format option which filters the display.
+so it is best to use the format option which filters the display.</p>
 
-<P>
-By default when a cluster is added to the database a default
-qos named normal is created.
+<p>By default when a cluster is added to the database a default
+qos named normal is created.</p>
 
 <pre>
 $ sacctmgr show qos format=name,priority
@@ -236,8 +235,7 @@ $ sacctmgr show qos format=name,priority
     normal          0
 </pre>
 
-<P>
-Add a new qos
+<p>Add a new QOS</p>
 
 <pre>
 $ sacctmgr add qos zebra
@@ -253,8 +251,7 @@ $ sacctmgr show qos format=name,priority
      zebra          0
 </pre>
 
-<P>
-Set QOS priority
+<p>Set QOS priority</p>
 
 <pre>
 $ sacctmgr modify qos zebra set priority=10
@@ -268,8 +265,7 @@ $ sacctmgr show qos format=name,priority
      zebra         10
 </pre>
 
-<P>
-Set some other limits:
+<p>Set some other limits</p>
 
 <pre>
 $ sacctmgr modify qos zebra set GrpCPUs=24
@@ -283,8 +279,7 @@ $ sacctmgr show qos format=name,priority,GrpCPUs
      zebra         10       24
 </pre>
 
-<P>
-Add a qos to a user account
+<p>Add a QOS to a user account</p>
 
 <pre>
 $ sacctmgr modify user crock set qos=zebra
@@ -298,8 +293,7 @@ canis_major                          normal
 canis_major     crock                zebra
 </pre>
 
-<P>
-Users can belong to multiple qos
+<p>Users can belong to multiple QOS's</p>
 
 <pre>
 $ sacctmgr modify user crock set qos+=alligator
@@ -313,8 +307,7 @@ canis_major     crock       alligator,zebra
 
 </pre>
 
-<P>
-Finally delete a qos
+<p>Finally, delete a QOS</p>
 
 <pre>
 $ sacctmgr delete qos alligator
@@ -322,6 +315,6 @@ $ sacctmgr delete qos alligator
   alligator
 </pre>
 
-<p style="text-align: center;">Last modified 9 July 2019</p>
+<p style="text-align: center;">Last modified 9 April 2021</p>
 
-</ul></body></html>
+<!--#include virtual="footer.txt"-->
