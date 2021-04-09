@@ -40,6 +40,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  \*****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include <pthread.h>
 #include <sched.h>
 #include <poll.h>
@@ -127,7 +129,8 @@ static int _server_conn_read(eio_obj_t *obj, List objs)
 			return 0;
 		}
 
-		while ((fd = accept(obj->fd, &addr, &size)) < 0) {
+		while ((fd = accept4(obj->fd, &addr, &size,
+				     (SOCK_CLOEXEC | SOCK_NONBLOCK))) < 0) {
 			if (errno == EINTR)
 				continue;
 			if (errno == EAGAIN) /* No more connections */

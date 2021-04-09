@@ -34,6 +34,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include "config.h"
 
 #include <limits.h>
@@ -1711,8 +1713,8 @@ static void _listen_accept(void *x)
 			 __func__, con->name);
 
 	/* try to get the new file descriptor and retry on errors */
-	if ((fd = accept(con->input_fd, (struct sockaddr *) &addr,
-			 &addrlen)) < 0) {
+	if ((fd = accept4(con->input_fd, (struct sockaddr *) &addr,
+			  &addrlen, SOCK_CLOEXEC)) < 0) {
 		if (errno == EINTR) {
 			log_flag(NET, "%s: [%s] interrupt on accept()",
 				 __func__, con->name);

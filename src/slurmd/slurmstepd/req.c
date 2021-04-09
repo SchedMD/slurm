@@ -377,8 +377,8 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 
 	debug3("Called _msg_socket_accept");
 
-	while ((fd = accept(obj->fd, (struct sockaddr *)&addr,
-			    (socklen_t *)&len)) < 0) {
+	while ((fd = accept4(obj->fd, (struct sockaddr *) &addr,
+			    (socklen_t *) &len, SOCK_CLOEXEC)) < 0) {
 		if (errno == EINTR)
 			continue;
 		if ((errno == EAGAIN) ||
@@ -401,7 +401,6 @@ _msg_socket_accept(eio_obj_t *obj, List objs)
 	message_connections++;
 	slurm_mutex_unlock(&message_lock);
 
-	fd_set_close_on_exec(fd);
 	fd_set_blocking(fd);
 
 	param = xmalloc(sizeof(struct request_params));

@@ -1302,7 +1302,6 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 			xfree(newsockfd);
 			continue;
 		}
-		fd_set_close_on_exec(*newsockfd);
 
 		log_flag(PROTOCOL, "%s: accept() connection from %pA",
 			 __func__, &cli_addr);

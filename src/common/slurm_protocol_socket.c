@@ -37,6 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#define _GNU_SOURCE
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>
@@ -533,7 +535,7 @@ error:
 extern int slurm_accept_msg_conn(int fd, slurm_addr_t *addr)
 {
 	socklen_t len = sizeof(*addr);
-	return accept(fd, (struct sockaddr *) addr, &len);
+	return accept4(fd, (struct sockaddr *) addr, &len, SOCK_CLOEXEC);
 }
 
 extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
