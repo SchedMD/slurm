@@ -21,7 +21,7 @@ utility.
 <i>sbatch</i>, <i>salloc</i>, and <i>srun</i> commands.</P>
 
 <!-------------------------------------------------------------------------->
-<a name=priority>
+<a id=priority>
 <h2>Job Scheduling Priority</h2></a>
 
 <P> Job scheduling priority is made up of a number of factors as
@@ -43,7 +43,7 @@ than zero.
 multi-factor plugin is loaded.</P>
 
 <!-------------------------------------------------------------------------->
-<a name=preemption>
+<a id=preemption>
 <h2>Job Preemption</h2></a>
 
 <P> Slurm offers two ways for a queued job to preempt a running job,
@@ -66,7 +66,7 @@ job is considered for preemption. The QOS option takes precedence over the
 global option of the same name.</P>
 
 <!-------------------------------------------------------------------------->
-<a name=limits>
+<a id=limits>
 <h2>Job Limits</h2></a>
 
 <P> Each QOS is assigned a set of limits which will be applied to the
@@ -77,7 +77,7 @@ Limits section</a>.  When limits for a QOS have been defined, they
 will take precedence over the association's limits.
 
 <!-------------------------------------------------------------------------->
-<a name=partition>
+<a id=partition>
 <h2>Partition QOS</h2></a>
 <P> A QOS can be attached to a partition.  This means a partition will have all
 the same limits as a QOS.  This also gives the ability of a true 'floating'
@@ -91,7 +91,7 @@ which will reverse the order of precedence.</p>
 
 
 <!-------------------------------------------------------------------------->
-<a name=qos_other>
+<a id=qos_other>
 <h2>Other QOS Options</h2></a>
 <ul>
 <li><b>Flags</b> Used by the slurmctld to override or enforce certain
