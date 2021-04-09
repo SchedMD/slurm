@@ -75,45 +75,46 @@ configured in the
 <a href="acct_gather.conf.html">acct_gather.conf</a> file.</p>
 </div>
 <div style="margin-left: 20px;">
-<h4>slurm.conf parameters</h4>
+<br>
+<h3>slurm.conf parameters</h3>
 <div style="margin-left: 20px;">
-This enables the HDF5 plugin:
-<p><b>AcctGatherProfileType</b> = acct_gather_profile/hdf5</p>
-This sets the sampling frequency for data types:
-<p><b>JobAcctGatherFrequency</b> = &lt;seconds&gt;</p>
+<dl>
+<dt><b>AcctGatherProfileType</b>=acct_gather_profile/hdf5</dt>
+<dd>Enables the HDF5 plugin.</dd>
+<dt><b>JobAcctGatherFrequency</b>=&lt;seconds&gt;</dt>
+<dd>Sets the sampling frequency for data types.</dd>
+</dl>
 </div>
 </div>
 <div style="margin-left: 20px;">
-<h4>acct_gather.conf parameters</h4>
+<br>
+<h3>acct_gather.conf parameters</h3>
 <div style="margin-left: 20px;">
 <p>These parameters are directly used by the HDF5 Profile Plugin.</p>
 <dl>
-<dt><b>ProfileHDF5Dir</b> = &lt;path&gt;</dt>
-<p>
-This parameter is the path to the shared folder into which the
+<dt><b>ProfileHDF5Dir</b>=&lt;path&gt;</dt>
+<dd>This parameter is the path to the shared folder into which the
 acct_gather_profile plugin will write detailed data as an HDF5 file.
 The directory is assumed to be on a file system shared by the controller and
-all compute nodes. This is a required parameter.<p>
-
-<dt><b>ProfileHDF5Default</b> = [options]</dt>
-<p>
-A  comma  delimited list of data types to be collected for each job submission.
-Use this option with caution. A node-step file will be created on every
-node for every step of every job. They will not automatically be merged
+all compute nodes. This is a required parameter.</dd>
+<dt><b>ProfileHDF5Default</b>=[options]</dt>
+<dd>A comma delimited list of data types to be collected for each job
+submission. Use this option with caution. A node-step file will be created on
+every node for every step of every job. They will not automatically be merged
 into job files. (Even job files for large numbers of small jobs would fill the
 file system.) This option is intended for test environments where you
 might want to profile a series of jobs but do not want to have to
 add the --profile option to the launch scripts.
 The options are described below and in the man pages for acct_gather.conf,
-srun, salloc and sbatch commands.
-</dd>
+srun, salloc and sbatch commands.</dd>
 </dl>
 </div>
 </div>
 
 
 <div style="margin-left: 20px;">
-<h4>Time Series Control Parameters</h4>
+<br>
+<h3>Time Series Control Parameters</h3>
 <div style="margin-left: 20px;">
 <p>Other plugins add time series data to the HDF5 collection. They typically
 have a default polling frequency specified in slurm.conf in the
