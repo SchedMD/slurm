@@ -528,6 +528,8 @@ _parse_state( char* str, uint32_t* states )
 	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_RESIZING));
 	xstrcat(state_names, ",");
+	xstrcat(state_names, job_state_string(JOB_RESV_DEL_HOLD));
+	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_REVOKED));
 	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_SPECIAL_EXIT));
