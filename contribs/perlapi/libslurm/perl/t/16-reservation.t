@@ -11,11 +11,11 @@ ok(defined $slurm,  "create slurm object with default configuration");
 my $resv;
 SKIP: {
     skip "not super user", 1 if $>;
-    $resv = $slurm->create_reservation( { start_time => NO_VAL,
+    $resv = $slurm->create_reservation( { start_time => time()+10,
 					     duration => 100,
 					     flags => RESERVE_FLAG_OVERLAP | RESERVE_FLAG_IGN_JOBS,
 					     users => 'root',
-					     node_cnt => 1
+					     node_cnt => [1]
 					   } );
     ok(defined $resv, "create reservation") || diag ("create_reservation: " . $slurm->strerror());
 }
