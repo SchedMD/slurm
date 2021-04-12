@@ -101,6 +101,7 @@ COMMAND CHANGES (see man pages for details)
     the same thing as --threads-per-core.
  -- Don't display node's comment with "scontrol show nodes" unless set.
  -- Added SLURM_GPUS_ON_NODE environment variable within each job/step.
+ -- sreport - change to sorting TopUsage by the --tres option.
 
 API CHANGES
 ===========

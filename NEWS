@@ -126,6 +126,7 @@ documents those changes that are of interest to users and administrators.
  -- Add "Extra" field to node to store extra information other than a comment.
  -- scrontab - Use /tmp instead of TmpFS if TMPDIR is not set.
  -- Add ResumeTimeout, SuspendTimeout and SuspendTime to Partitions.
+ -- sreport - change to sorting TopUsage by the --tres option.
 
 * Changes in Slurm 20.11.9
 ==========================

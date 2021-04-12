@@ -89,6 +89,7 @@ extern int exit_flag;	/* program to terminate if =1 */
 extern char *fed_name;	/* Set if operating in federation mode */
 extern int input_words;	/* number of words of input permitted */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
+extern int sort_user_tres_id; /* controls sorting users (eg sort_user_dec) */
 extern char *tres_str;	/* --tres= value */
 extern List g_tres_list;/* tres list from database - unaltered */
 extern List tres_list;	/* TRES list based of tres_str (--tres=str) */

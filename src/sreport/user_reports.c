@@ -458,6 +458,7 @@ extern int user_top(int argc, char **argv)
 	int i = 0;
 	slurmdb_report_user_rec_t *slurmdb_report_user = NULL;
 	slurmdb_report_cluster_rec_t *slurmdb_report_cluster = NULL;
+	slurmdb_tres_rec_t *tres = NULL;
 
 	print_fields_list = list_create(destroy_print_field);
 
@@ -514,6 +515,10 @@ extern int user_top(int argc, char **argv)
 	_set_usage_column_width(print_fields_list, slurmdb_report_cluster_list);
 
 	print_fields_header(print_fields_list);
+
+	/* Sort by the first tres in the list */
+	tres = list_peek(tres_list);
+	sort_user_tres_id = tres->id;
 
 	cluster_itr = list_iterator_create(slurmdb_report_cluster_list);
 	while ((slurmdb_report_cluster = list_next(cluster_itr))) {
