@@ -13,6 +13,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix various potential deadlocks when altering objects in the database
     dealing with every cluster in the database.
  -- slurmrestd - handle slurmdbd connection failures without segfaulting.
+ -- slurmrestd - fix segfault for searches in slurmdb/v0.0.36/jobs.
 
 * Changes in Slurm 20.11.7
 ==========================

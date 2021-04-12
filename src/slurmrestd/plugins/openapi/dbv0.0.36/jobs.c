@@ -281,7 +281,7 @@ data_for_each_cmd_t _foreach_query_search(const char *key, data_t *data,
 
 	for (int i = 0; i < ARRAY_SIZE(csv_lists); i++) {
 		if (!xstrcasecmp(csv_lists[i].field, key)) {
-			List *list = (((void *)&args->job_cond) +
+			List *list = (((void *) args->job_cond) +
 				      csv_lists[i].offset);
 
 			if (_parse_csv_list(data, key, list, errors))
