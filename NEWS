@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
     dealing with every cluster in the database.
  -- slurmrestd - handle slurmdbd connection failures without segfaulting.
  -- slurmrestd - fix segfault for searches in slurmdb/v0.0.36/jobs.
+ -- slurmrestd - remove (non-functioning) users query parameter for
+    slurmdb/v0.0.36/jobs from openapi.json
 
 * Changes in Slurm 20.11.7
 ==========================

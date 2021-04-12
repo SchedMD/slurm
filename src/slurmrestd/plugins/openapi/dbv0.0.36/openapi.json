@@ -1305,17 +1305,6 @@
           },
           {
             "in": "query",
-            "name": "users",
-            "description": "Comma delimited list of users to match",
-            "required": false,
-            "style": "form",
-            "explode": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
             "name": "wckey",
             "description": "Comma delimited list of wckeys to match",
             "required": false,
