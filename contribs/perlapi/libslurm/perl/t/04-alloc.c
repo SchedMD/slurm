@@ -53,8 +53,9 @@ $slurm->allocation_msg_thr_destroy($thr) if $thr;
 
 # 6
 SKIP: {
+    $stepid = NO_VAL;
     skip "resource allocation fail", 1 unless $jobid;
-    $resp = $slurm->sbcast_lookup($jobid);
+    $resp = $slurm->sbcast_lookup($jobid, $stepid);
     ok(defined $resp, "sbcast lookup") or diag("sbcast_lookup: " . $slurm->strerror());
 }
 $slurm->kill_job($jobid, SIGKILL) if $jobid;
