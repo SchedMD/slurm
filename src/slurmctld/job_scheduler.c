@@ -1843,8 +1843,10 @@ skip_start:
 			if (is_job_array_head &&
 			    (job_ptr->array_task_id != NO_VAL)) {
 				/* Try starting another task of the job array */
+				job_record_t *tmp = job_ptr;
 				job_ptr = find_job_record(job_ptr->array_job_id);
-				if (job_ptr && IS_JOB_PENDING(job_ptr) &&
+				if (job_ptr && (job_ptr != tmp) &&
+				    IS_JOB_PENDING(job_ptr) &&
 				    (bb_g_job_test_stage_in(job_ptr,false) ==1))
 					goto next_task;
 			}

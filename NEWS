@@ -90,6 +90,7 @@ documents those changes that are of interest to users and administrators.
  -- auth/jwt - print an error if jwt_file= has not been set in slurmdbd.
  -- Fix RESV_DEL_HOLD not being a valid state when using squeue --states.
  -- Add missing squeue selectable states in valid states error message.
+ -- Fix scheduling last array task multiple times on error, causing segfault.
 
 * Changes in Slurm 20.11.5
 ==========================
