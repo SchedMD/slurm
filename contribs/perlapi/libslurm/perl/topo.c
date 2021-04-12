@@ -39,7 +39,7 @@ hv_to_topo_info(HV *hv, topo_info_t *topo_info)
 	FETCH_FIELD(hv, topo_info, link_speed, uint32_t, TRUE);
 	FETCH_FIELD(hv, topo_info, name, charp, FALSE);
 	FETCH_FIELD(hv, topo_info, nodes, charp, TRUE);
-	FETCH_FIELD(hv, topo_info, switches, charp, TRUE);
+	FETCH_FIELD(hv, topo_info, switches, charp, FALSE);
 	return 0;
 }
 
