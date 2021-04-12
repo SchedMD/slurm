@@ -487,7 +487,9 @@ static con_mgr_fd_t *_add_connection(con_mgr_t *mgr, con_mgr_fd_t *source,
 	if (source && source->unix_socket)
 		con->unix_socket = xstrdup(source->unix_socket);
 
-	if (addr) {
+	if (con->name) {
+		/* do nothing - connection already named */
+	} else if (addr) {
 		xassert(con->is_socket);
 		con->name = sockaddr_to_string(addr, addrlen);
 
