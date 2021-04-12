@@ -153,7 +153,6 @@ static const csv_list_t csv_lists[] = {
 	{ "reason", offsetof(slurmdb_job_cond_t, reason_list) },
 	{ "reservation", offsetof(slurmdb_job_cond_t, resv_list) },
 	{ "state", offsetof(slurmdb_job_cond_t, state_list) },
-	{ "state", offsetof(slurmdb_job_cond_t, state_list) },
 	{ "wckey", offsetof(slurmdb_job_cond_t, wckey_list) },
 };
 
