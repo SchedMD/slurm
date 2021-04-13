@@ -1477,7 +1477,7 @@ proc kill_srun {  } {
 #	-fail
 #		abort the test with failure if the condition is not met
 #	-timeout <float_number>
-#		time in seconds to wait for the command to complete before
+#		time in seconds to wait for the condition to be met before
 #		timing out (default is 60.0)
 #	-pollinterval <float_number>
 #		time in seconds between each loop execution and condition check
@@ -1555,120 +1555,149 @@ proc wait_for args {
 ################################################################
 #
 # NAME
-#	wait_for_command - waits for command output to match a pattern
+#	wait_for_command - repeat a command until it is successful or meets a specified condition
 #
 # SYNOPSIS
-#	wait_for_command ?options? command args regex ?matches_in? ?or_more? ?matches_out?
+#	wait_for_command ?options? command ?condition?
 #
 # DESCRIPTION
-#	Executes a command every poll interval until a regex
-#	pattern is matched in the output, or until timeout.
+#	A command is repeated until it meets a condition or a timeout is reached.
+#	If a condition is not specified, the command will be repeated until it
+#	is successful (the exit code is zero).
 #
 # OPTIONS
-#	-timeout <integer_number>
-#		time in seconds to wait for the command to complete before
-#		timing out (default is 120)
-#	-pollinterval <integer_number>
-#		time in seconds between each loop execution and condition check
-#		(default is 1)
+#	-fail
+#		abort the test with failure if the condition is not met by
+#		the timeout
+#	-timeout <float_number>
+#		time in seconds to wait for the condition to be met before
+#		timing out (default is 60.0)
+#	-pollinterval <float_number>
+#		time in seconds between each loop execution and condition
+#		check (default is 1.0)
 #
 # ARGUMENTS
 #	command
-#		The command to run via spawn.
-#	args
-#		The arguments to the command, as a single string.
-#	regex
-#		The regex pattern to search for in the command
-#		output. Can be a simple string.
-#	matches_in
-#		The number of times to match the regex. Defaults to 1.
-#	or_more
-#		If 1, allow for matching the regex pattern match_cnt *or more*
-#		times, instead of exactly match_cnt times. Defaults to 0.
-#	matches_out
-#		The upvar (a variable name to "pass by reference" in TCL)
-#		to set/return the number of matches found.
-#		Useful if or_more is 1 and the caller wants the	matches found.
+#		a string containing the command and arguments to execute
+#	condition
+#		The boolean expression to test. For each command invocation,
+#		the result variable will be set to the dictionary returned
+#		from run_command.
+#		The condition expression will normally involve a comparison
+#		with one or more values of this dictionary. If a condition is
+#		not specified, this condition will be used:
+#		{ [dict get $result exit_code] == 0 }
 #
 # RETURN VALUE
-#	RETURN_SUCCESS on success and RETURN_TIMEOUT on timeout.
-#	On failure, an error is logged to the output.
-#	If matches_out is specified, the number of matches will
-#	be returned via the reference/upvar matches_out.
+#	RETURN_SUCCESS if the condition is met before the timeout occurs,
+#	RETURN_TIMEOUT if the timeout occurs before the condition is met
 #
 ################################################################
 
 proc wait_for_command args {
-	global bin_sleep
-
-	set timeout       120
+	set fatal         false
+	set timeout       60
 	set poll_interval 1
-	set matches_in    1
-	set or_more       0
-	set matches_out   ""
 	while {[llength $args]} {
 		switch -glob -- [lindex $args 0] {
+			-fail   {set fatal true; set args [lrange $args 1 end]}
 			-time*  {set args [lassign $args - timeout]}
 			-poll*  {set args [lassign $args - poll_interval]}
 			-*      {fail "Unknown option: [lindex $args 0]"}
 			default break
 		}
 	}
+
 	set argument_count [llength $args]
-	if {$argument_count < 3} {
+	if {$argument_count < 1} {
 		fail "Too few arguments ($argument_count): $args"
-	} else {
-		lassign $args command arguments regex
-	}
-	if {$argument_count >= 4} { set matches_in [lindex $args 3] }
-	if {$argument_count >= 5} { set or_more [lindex $args 4] }
-	if {$argument_count == 6} { set matches_out [lindex $args 5] }
-	if {$argument_count > 6} {
+	} elseif {$argument_count > 2} {
 		fail "Too many arguments ($argument_count): $args"
 	}
-
-	if {$matches_out != ""} {
-		upvar $matches_out matches
+	lassign $args command
+	if {$argument_count == 2} {
+		set condition [lindex $args 1]
+	} else {
+		set condition { [dict get $result exit_code] == 0 }
 	}
 
-	set delay 0
-	while {$delay < $timeout} {
-		set matches 0
-		# `{*}` breaks apart a string into individual pieces
-		spawn $command {*}$arguments
-		expect {
-			-re $regex {
-				incr matches
-				exp_continue
-			}
-			timeout {
-				log_error "$command not responding after $delay seconds polling"
+	set start_time [format "%.3f" [expr [clock milliseconds] / 1000.000]]
+
+	log_debug "Waiting for $condition starting at [clock format [expr int($start_time)] -format %Y-%m-%dT%X].[lindex [split $start_time '.'] 1]"
+
+	while {1} {
+		# Run command
+		set result [run_command $command]
+
+		# Check condition
+		if {[eval expr [format "{%s}" $condition]]} {
+			set now [format "%.3f" [expr [clock milliseconds] / 1000.000]]
+			log_debug "Condition ($condition) was met"
+			return $::RETURN_SUCCESS
+		} else {
+			log_trace "Condition ($condition) was not met"
+		}
+
+		# Sleep poll interval
+		log_trace "Sleeping for $poll_interval seconds"
+		after [expr {int($poll_interval * 1000)}]
+
+		# Check if we have surpassed our timeout
+		set now [format "%.3f" [expr [clock milliseconds] / 1000.000]]
+		log_trace "Checking whether the current time ([clock format [expr int($now)] -format %Y-%m-%dT%X].[lindex [split $now '.'] 1]) is greater than the start time plus the timeout ([clock format [expr int($start_time + $timeout)] -format %Y-%m-%dT%X].[lindex [split [expr $start_time + $timeout] '.'] 1])"
+		if {$now > $start_time + $timeout} {
+			set message "Condition ($condition) did not occur before timeout ($timeout) seconds"
+			if {$fatal} {
+				fail $message
+			} else {
+				log_warn $message
 				return $::RETURN_TIMEOUT
 			}
-			eof {
-				wait
-			}
 		}
-
-		if {($matches == $matches_in) || ($or_more == 1 &&
-		                                 $matches >= $matches_in)} {
-			return $::RETURN_SUCCESS
-		}
-
-		log_debug "Polled $matches matches of '$regex', but expecting $matches_in"
-		exec $bin_sleep $poll_interval
-		incr delay $poll_interval
-
 	}
-	if {$or_more == 1} {
-		set match_str "$matches_in or more times"
-	} elseif {$matches_in == 1} {
-		set match_str "exactly $matches_in time"
-	} else {
-		set match_str "exactly $matches_in times"
-	}
-	log_error "Failed to match regex `$regex` $match_str after $timeout seconds for command `$command $arguments`."
-	return $::RETURN_TIMEOUT
+}
+
+
+################################################################
+#
+# NAME
+#	wait_for_command_match - repeat a command until its output matches the specified pattern
+#
+# SYNOPSIS
+#	wait_for_command_match ?options? command pattern
+#
+# DESCRIPTION
+#	A command is repeated until its output matches the specified pattern
+#
+# OPTIONS
+#	-fail
+#		abort the test with failure if output does not match the pattern
+#		by the timeout
+#	-timeout <float_number>
+#		time in seconds to wait for the pattern to be matched before
+#		timing out (default is 60.0)
+#	-pollinterval <float_number>
+#		time in seconds between each loop execution and match check
+#		(default is 1.0)
+#
+# ARGUMENTS
+#	command
+#		a string containing the command and arguments to execute
+#	pattern
+#		The regular expression to match against the command output
+#
+# RETURN VALUE
+#	RETURN_SUCCESS if the pattern is matched before the timeout occurs,
+#	RETURN_TIMEOUT if the timeout occurs before the pattern is matched
+#
+################################################################
+
+proc wait_for_command_match args {
+
+	set pattern [lindex $args end]
+	set args [lrange $args 0 end-1]
+
+	return [wait_for_command {*}$args "\[regexp {$pattern} \[dict get \$result output\]\] == 1"]
 }
 
 

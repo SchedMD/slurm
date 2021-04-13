@@ -47,7 +47,7 @@ proc cleanup { } {
 proc check_prolog { pattern } {
 	global prolog_out exit_code bin_grep
 
-	set rc [wait_for_command -timeout 5 "$bin_grep" "$pattern $prolog_out" $pattern]
+	set rc [wait_for_command_match -timeout 5 "$bin_grep $pattern $prolog_out" $pattern]
 	if { $rc == 0 } {
 		log_info "Prolog: Found '$pattern'"
 	} else {
@@ -59,7 +59,7 @@ proc check_prolog { pattern } {
 proc check_epilog { pattern } {
 	global epilog_out exit_code bin_grep
 
-	set rc [wait_for_command -timeout 5 "$bin_grep" "$pattern $epilog_out" $pattern]
+	set rc [wait_for_command_match -timeout 5 "$bin_grep $pattern $epilog_out" $pattern]
 	if { $rc == 0 } {
 		log_info "Epilog: Found '$pattern'"
 	} else {
