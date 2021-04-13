@@ -1146,7 +1146,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 			uint16_t scale_for_mem;
 			i = conf->cpus / (i_last_bit - i_first_bit);
 			if (req->threads_per_core &&
-			    (req->threads_per_core != NO_VAL) &&
+			    (req->threads_per_core != NO_VAL16) &&
 			    (req->threads_per_core < conf->threads))
 				scale_for_mem = req->threads_per_core;
 			else
