@@ -57,7 +57,7 @@ and group details as part of the launch credential. This is handled by setting
 <b>LaunchParameters=enable_nss_slurm</b> in slurm.conf and restarting
 slurmctld.</p>
 
-<p>Once enabled, the <span "class=commandline">scontrol getent</span> command
+<p>Once enabled, the <span class="commandline">scontrol getent</span> command
 can be used on a compute node to print all passwd and group info associated
 with job steps on that node. As an example:</p>
 
