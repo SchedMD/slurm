@@ -260,7 +260,7 @@ int slurm_auth_verify(auth_token_t *cred, char *auth_info)
 			error("%s: uid_from_string failure", __func__);
 			goto fail;
 		}
-		if (!validate_slurm_user(uid)) {
+		if ((uid != 0) && (slurm_conf.slurm_user_id != uid)) {
 			error("%s: attempt to authenticate as alternate user %s from non-SlurmUser %s",
 			      __func__, username, cred->username);
 			goto fail;
