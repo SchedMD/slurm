@@ -1249,16 +1249,20 @@ Only used for database type storage plugins, ignored otherwise.
 Identifies the plugin to be used for job tracking.
 The slurmd daemon must be restarted for a change in JobContainerType
 to take effect.
-NOTE: The \fBJobContainerType\fR applies to a job allocation, while
+\fBNOTE\fR: The \fBJobContainerType\fR applies to a job allocation, while
 \fBProctrackType\fR applies to job steps.
 Acceptable values at present include:
 .RS
 .TP 20
 \fBjob_container/cncu\fR
-used only for Cray systems (CNCU = Compute Node Clean Up)
+Used only for Cray systems (CNCU = Compute Node Clean Up)
 .TP
 \fBjob_container/none\fR
-used for all other system types
+Used for all other system types
+.TP
+\fBjob_container/tmpfs\fR
+Used to create a private namespace on the filesystem for jobs, which houses
+temporary file systems (/tmp and /dev/shm) for each job.
 .RE
 
 .TP
