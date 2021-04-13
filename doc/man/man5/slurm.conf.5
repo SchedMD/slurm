@@ -1294,6 +1294,10 @@ used only for Cray systems (CNCU = Compute Node Clean Up)
 .TP
 \fBjob_container/none\fR
 used for all other system types
+.TP
+\fBjob_container/tmpfs\fR
+Used to create a private namespace on the filesystem for jobs, which houses
+temporary file systems (/tmp and /dev/shm) for each job.
 .RE
 
 .TP
