@@ -147,13 +147,19 @@ extern int db_query_list_funcname(data_t *errors, rest_auth_context_t *auth,
 				  void *cond, const char *func_name)
 {
 	List l;
+	void *db_conn;
 
 	xassert(!*list);
 	xassert(auth);
 	xassert(errors);
 
 	errno = 0;
-	l = func(rest_auth_g_get_db_conn(auth), cond);
+	if (!(db_conn = rest_auth_g_get_db_conn(auth))) {
+		return resp_error(errors, ESLURM_DB_CONNECTION,
+				  "Failed connecting to slurmdbd", func_name);
+	}
+
+	l = func(db_conn, cond);
 
 	if (errno) {
 		return resp_error(errors, errno, NULL, func_name);
@@ -175,7 +181,15 @@ extern int db_query_rc_funcname(data_t *errors,
 				db_rc_query_func_t func,
 				const char *func_name)
 {
-	int rc = func(rest_auth_g_get_db_conn(auth), list);
+	int rc;
+	void *db_conn;
+
+	if (!(db_conn = rest_auth_g_get_db_conn(auth))) {
+		return resp_error(errors, ESLURM_DB_CONNECTION,
+				  "Failed connecting to slurmdbd", func_name);
+	}
+
+	rc = func(db_conn, list);
 
 	if (rc)
 		return resp_error(errors, rc, NULL, func_name);
@@ -185,7 +199,15 @@ extern int db_query_rc_funcname(data_t *errors,
 
 extern int db_query_commit(data_t *errors, rest_auth_context_t *auth)
 {
-	int rc = slurmdb_connection_commit(rest_auth_g_get_db_conn(auth), true);
+	int rc;
+	void *db_conn;
+
+	if (!(db_conn = rest_auth_g_get_db_conn(auth))) {
+		return resp_error(errors, ESLURM_DB_CONNECTION,
+				  "Failed connecting to slurmdbd",
+				  __func__);
+	}
+	rc = slurmdb_connection_commit(db_conn, true);
 
 	if (rc)
 		return resp_error(errors, rc, NULL,
