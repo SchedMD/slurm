@@ -47,6 +47,7 @@
 #include <sys/types.h>
 
 #include "src/common/eio.h"
+#include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/gres.h"
 #include "src/common/group_cache.h"
@@ -279,6 +280,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	slurm_addr_t     resp_addr;
 	slurm_addr_t     io_addr;
 	int            i, nodeid = NO_VAL;
+	uint16_t cpus = conf->cpus;
 
 	xassert(msg != NULL);
 	xassert(msg->complete_nodelist != NULL);
@@ -472,7 +474,16 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	job->switch_job  = msg->switch_job;
 	job->open_mode   = msg->open_mode;
 	job->options     = msg->options;
-	format_core_allocs(msg->cred, conf->node_name, conf->cpus,
+
+	/*
+	 * FIXME: This is band-aid for --threads-per-core < ThreadsPerCore
+	 * used with --mem-per-cpu.
+	 */
+	if (msg->threads_per_core && (msg->threads_per_core != NO_VAL16) &&
+	    (msg->threads_per_core < conf->threads))
+		cpus = msg->threads_per_core * conf->cores;
+
+	format_core_allocs(msg->cred, conf->node_name, cpus,
 			   &job->job_alloc_cores, &job->step_alloc_cores,
 			   &job->job_mem, &job->step_mem);
 
@@ -509,6 +520,8 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	stepd_step_rec_t *job;
 	srun_info_t  *srun = NULL;
 	char *in_name;
+	uint16_t cpus = conf->cpus;
+	char *threads_per_core_str;
 
 	xassert(msg != NULL);
 
@@ -597,7 +610,19 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	if (msg->cpus_per_node)
 		job->cpus    = msg->cpus_per_node[0];
 
-	format_core_allocs(msg->cred, conf->node_name, conf->cpus,
+	/*
+	 * FIXME: This is band-aid for --threads-per-core < ThreadsPerCore
+	 * used with --mem-per-cpu.
+	 */
+	threads_per_core_str = getenvp(job->env, "SLURM_THREADS_PER_CORE");
+	if (threads_per_core_str) {
+		uint32_t threads_per_core =
+			strtol(threads_per_core_str, NULL, 10);
+		if (threads_per_core && (threads_per_core < conf->threads))
+			cpus = threads_per_core * conf->cores;
+	}
+
+	format_core_allocs(msg->cred, conf->node_name, cpus,
 			   &job->job_alloc_cores, &job->step_alloc_cores,
 			   &job->job_mem, &job->step_mem);
 	if (job->step_mem && slurm_conf.job_acct_oom_kill)
