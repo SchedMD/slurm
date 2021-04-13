@@ -21,16 +21,16 @@ process, the response will include only those groups that the user belongs to,
 but with only the user themselves listed as a member. The full list of group
 members is not provided.</p>
 
-<h2><a name="INSTALLATION">Installation</a></h2>
+<h2><a id="INSTALLATION">Installation</a></h2>
 
 <h3>Source:</h3>
 
 <p>In your Slurm build directory, navigate to <b>contribs/nss_slurm/</b>
-and run:
+and run:</p>
 
 <pre>make &amp;&amp; make install</pre>
 
-This will install libnss_slurm.so.2 alongside your other Slurm library files
+<p>This will install libnss_slurm.so.2 alongside your other Slurm library files
 in your install path.</p>
 
 <p>Depending on your Linux distribution, you will likely need to symlink this
@@ -50,16 +50,16 @@ pam_slurm_adopt. Refer to the
 Administrator Guide</a> for instructions on managing an RPM-based install.</p>
 -->
 
-<h2><a name="SETUP">Setup</a></h2>
+<h2><a id="SETUP">Setup</a></h2>
 
 <p>The slurmctld must be configured to look up and send the appropriate passwd
 and group details as part of the launch credential. This is handled by setting
 <b>LaunchParameters=enable_nss_slurm</b> in slurm.conf and restarting
 slurmctld.</p>
 
-<p>Once enabled, the <span "class=commandline">scontrol getent</span> command
+<p>Once enabled, the <span class="commandline">scontrol getent</span> command
 can be used on a compute node to print all passwd and group info associated
-with job steps on that node. As an example:
+with job steps on that node. As an example:</p>
 
 <pre>
 tim@node0001:~$ scontrol getent node0001
@@ -77,9 +77,8 @@ Groups:
 tim:x:1000:tim
 projecta:x:1001:tim
 </pre>
-</p>
 
-<h2><a name="NSS_SLURM_CONFIG">NSS Slurm Configuration</a></h2>
+<h2><a id="NSS_SLURM_CONFIG">NSS Slurm Configuration</a></h2>
 
 <p>nss_slurm has an optional configuration file &mdash;
 <b>/etc/nss_slurm.conf</b>. This configuration file is only needed if:
@@ -93,9 +92,9 @@ explicitly set the NodeName option.</li>
 <p>NodeName and SlurmdSpoolDir are the only configuration options supported
 at this time.</p>
 
-<h2><a name="INITIAL_TESTING">Initial Testing</a></h2>
+<h2><a id="INITIAL_TESTING">Initial Testing</a></h2>
 
-Before enabling NSS Slurm directly on the node, you should use the
+<p>Before enabling NSS Slurm directly on the node, you should use the
 <b>-s slurm</b> option to <b>getent</b> within a newly launched job step
 to verify that the rest of the setup has been completed successfully. The
 <b>-s</b> option to getent allows it to query a specific database &mdash;
@@ -104,7 +103,7 @@ even if it has not been enabled by default through the system's
 processes within the job step itself &mdash; you must launch the getent
 command within a job step to see any data returned.</p>
 
-<p>As an example of a successful query:
+<p>As an example of a successful query:</p>
 
 <pre>
 tim@blackhole:~$ srun getent -s slurm passwd
@@ -113,9 +112,8 @@ tim@blackhole:~$ srun getent -s slurm group
 tim:x:1000:tim
 projecta:x:1001:tim
 </pre>
-</p>
 
-<h2><a name="NSS_CONFIG">NSS Configuration</a></h2>
+<h2><a id="NSS_CONFIG">NSS Configuration</a></h2>
 
 <p>Enabling nss_slurm is as simple as adding <b>slurm</b> to the passwd and
 group database in <b>/etc/nsswitch.conf</b>. It is recommended that
@@ -123,7 +121,7 @@ group database in <b>/etc/nsswitch.conf</b>. It is recommended that
 the sequence in which the NSS databases will be queried, and this ensures Slurm
 handles the request if able before submitting the query to other sources.</p>
 
-<p>Once enabled, test it by launching <b>getent</b> queries such as:
+<p>Once enabled, test it by launching <b>getent</b> queries such as:</p>
 
 <pre>
 tim@blackhole:~$ srun getent passwd tim
@@ -131,9 +129,8 @@ tim:x:1000:1000:Tim Wickberg:/home/tim:/bin/bash
 tim@blackhole:~$ srun getent group projecta
 projecta:x:1001:tim
 </pre>
-</p>
 
-<h2><a name="LIMITATIONS">Limitations</a></h2>
+<h2><a id="LIMITATIONS">Limitations</a></h2>
 
 <p>nss_slurm will only return results for processes within a given job step.
 It will not return any results for processes outside of these steps, such as
@@ -148,6 +145,6 @@ lookup requests &mdash; generally for info related to the user themselves,
 which is the only information nss_slurm will be able to provide &mdash; and
 overwhelm the underlying directory services.</p>
 
-<p style="text-align:center;">Last modified 18 November 2020</p>
+<p style="text-align:center;">Last modified 13 April 2021</p>
 
 <!--#include virtual="footer.txt"-->

@@ -4255,16 +4255,15 @@ systems. The value may not exceed 65533.
 If the processes in a job step are determined to be unkillable for a period
 of time specified by the \fBUnkillableStepTimeout\fR variable, the program
 specified by \fBUnkillableStepProgram\fR will be executed.
-This program can be used to take special actions to clean up the unkillable
-processes and/or notify computer administrators.
-The program will be run \fBSlurmdUser\fR (usually "root") on the compute node.
 By default no program is run.
+
+See section \fBUNKILLABLE STEP PROGRAM SCRIPT\fR for more information.
 
 .TP
 \fBUnkillableStepTimeout\fR
 The length of time, in seconds, that Slurm will wait before deciding that
 processes in a job step are unkillable (after they have been signaled with
-SIGKILL) and execute \fBUnkillableStepProgram\fR as described above.
+SIGKILL) and execute \fBUnkillableStepProgram\fR.
 The default timeout value is 60 seconds.
 If exceeded, the compute node will be drained to prevent future jobs from being
 scheduled on the node.
@@ -5591,6 +5590,21 @@ User name of the job's owner.
 .TP
 \fBSLURM_SCRIPT_CONTEXT\fR
 Identifies which epilog or prolog program is currently running.
+
+.SH "UNKILLABLE STEP PROGRAM SCRIPT"
+This program can be used to take special actions to clean up the unkillable
+processes and/or notify system administrators.
+The program will be run as \fBSlurmdUser\fR (usually "root") on the compute
+node where \fBUnkillableStepTimeout\fR was triggered.
+
+Information about the unkillable job step is passed to the script using
+environment variables.
+.TP
+\fBSLURM_JOB_ID\fR
+Job ID.
+.TP
+\fBSLURM_STEP_ID\fR
+Job Step ID.
 
 .SH "NETWORK TOPOLOGY"
 Slurm is able to optimize job allocations to minimize network contention.
