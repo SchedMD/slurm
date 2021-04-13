@@ -21,7 +21,7 @@ process, the response will include only those groups that the user belongs to,
 but with only the user themselves listed as a member. The full list of group
 members is not provided.</p>
 
-<h2><a name="INSTALLATION">Installation</a></h2>
+<h2><a id="INSTALLATION">Installation</a></h2>
 
 <h3>Source:</h3>
 
@@ -50,7 +50,7 @@ pam_slurm_adopt. Refer to the
 Administrator Guide</a> for instructions on managing an RPM-based install.</p>
 -->
 
-<h2><a name="SETUP">Setup</a></h2>
+<h2><a id="SETUP">Setup</a></h2>
 
 <p>The slurmctld must be configured to look up and send the appropriate passwd
 and group details as part of the launch credential. This is handled by setting
@@ -79,7 +79,7 @@ projecta:x:1001:tim
 </pre>
 </p>
 
-<h2><a name="NSS_SLURM_CONFIG">NSS Slurm Configuration</a></h2>
+<h2><a id="NSS_SLURM_CONFIG">NSS Slurm Configuration</a></h2>
 
 <p>nss_slurm has an optional configuration file &mdash;
 <b>/etc/nss_slurm.conf</b>. This configuration file is only needed if:
@@ -93,7 +93,7 @@ explicitly set the NodeName option.</li>
 <p>NodeName and SlurmdSpoolDir are the only configuration options supported
 at this time.</p>
 
-<h2><a name="INITIAL_TESTING">Initial Testing</a></h2>
+<h2><a id="INITIAL_TESTING">Initial Testing</a></h2>
 
 Before enabling NSS Slurm directly on the node, you should use the
 <b>-s slurm</b> option to <b>getent</b> within a newly launched job step
@@ -115,7 +115,7 @@ projecta:x:1001:tim
 </pre>
 </p>
 
-<h2><a name="NSS_CONFIG">NSS Configuration</a></h2>
+<h2><a id="NSS_CONFIG">NSS Configuration</a></h2>
 
 <p>Enabling nss_slurm is as simple as adding <b>slurm</b> to the passwd and
 group database in <b>/etc/nsswitch.conf</b>. It is recommended that
@@ -133,7 +133,7 @@ projecta:x:1001:tim
 </pre>
 </p>
 
-<h2><a name="LIMITATIONS">Limitations</a></h2>
+<h2><a id="LIMITATIONS">Limitations</a></h2>
 
 <p>nss_slurm will only return results for processes within a given job step.
 It will not return any results for processes outside of these steps, such as
@@ -148,6 +148,6 @@ lookup requests &mdash; generally for info related to the user themselves,
 which is the only information nss_slurm will be able to provide &mdash; and
 overwhelm the underlying directory services.</p>
 
-<p style="text-align:center;">Last modified 18 November 2020</p>
+<p style="text-align:center;">Last modified 13 April 2021</p>
 
 <!--#include virtual="footer.txt"-->
