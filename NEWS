@@ -7,6 +7,9 @@ documents those changes that are of interest to users and administrators.
     indefinitely.
  -- select/cons_tres - fix Dragonfly topology not selecting nodes in the same
     leaf switch when it should as well as requests with --switches option.
+ -- Fix issue where certain step requests wouldn't run if the first node in the
+    job allocation was full and there were idle resources on other nodes in
+    the job allocation.
 
 * Changes in Slurm 20.11.6
 ==========================

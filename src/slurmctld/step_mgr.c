@@ -1126,12 +1126,15 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 						cpus_used[node_inx];
 					job_blocked_cpus += job_resrcs_ptr->
 						cpus_used[node_inx];
+					if (!total_cpus)
+						job_blocked_nodes++;
 				}
 			}
 
 			if (!total_cpus) {
 				log_flag(STEPS, "%s: %pJ Skipping node. Not enough CPUs to run step here.",
 					 __func__, job_ptr);
+				bit_clear(nodes_avail, i);
 				continue;
 			}
 
@@ -1432,6 +1435,12 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				usable_cpu_cnt[i] =
 					job_resrcs_ptr->cpus[node_inx];
 
+				log_flag(STEPS, "%s: %pJ Currently running steps use %d of allocated %d CPUs on node %s",
+					 __func__, job_ptr,
+					 job_resrcs_ptr->cpus_used[node_inx],
+					 usable_cpu_cnt[i],
+					 node_record_table_ptr[i].name);
+
 				if (step_spec->flags & SSF_EXCLUSIVE) {
 					/*
 					 * If whole is given and
@@ -1453,7 +1462,14 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 						usable_cpu_cnt[i] -=
 							job_resrcs_ptr->
 							cpus_used[node_inx];
+						if (!usable_cpu_cnt[i])
+							job_blocked_nodes++;
 					}
+				}
+				if (!usable_cpu_cnt[i]) {
+					log_flag(STEPS, "%s: %pJ Skipping node. Not enough CPUs to run step here.",
+						 __func__, job_ptr);
+					bit_clear(nodes_avail, i);
 				}
 			}
 
