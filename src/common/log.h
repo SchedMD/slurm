@@ -408,21 +408,25 @@ void spank_log(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 				     ##__VA_ARGS__);			\
 	} while (0)
 
-#define log_flag_hex(flag, data, len, fmt, ...)                             \
-	for (size_t i = 0; (slurm_conf.debug_flags & DEBUG_FLAG_##flag) &&  \
-			   data && (len > 0) && (i < len) &&                \
-			   (i < (16 * 16)); ) {                             \
-		int remain = len - i;                                       \
-		int print = ((remain <= 16) ? remain : 16);                 \
-		char *phex = bytes_to_hex((data + i), print, " ");          \
-		char *pstr = bytes_to_printable((data + i), print, '.');    \
-									    \
-		format_print(LOG_LEVEL_VERBOSE,                             \
-			     #flag ": " fmt " [%04zu/%04zu] 0x%s \"%s\"",   \
-			     ##__VA_ARGS__, i, (size_t)len, phex, pstr);    \
-		i += print;                                                 \
-		xfree(phex);                                                \
-		xfree(pstr);                                                \
-	}
+/*
+ * Log data as hex dump (use log_flag_hex() instead)
+ * IN data - ptr to data
+ * IN len - number of bytes pointed by data
+ * IN fmt - message to prepend to hex dump
+ */
+extern void _log_flag_hex(const void *data, size_t len, const char *fmt, ...);
+
+/*
+ * Log data as hex dump
+ * IN data - ptr to data
+ * IN len - number of bytes pointed by data
+ * IN fmt - message to prepend to hex dump
+ */
+#define log_flag_hex(flag, data, len, fmt, ...)                  \
+	do {                                                     \
+		if (slurm_conf.debug_flags & DEBUG_FLAG_##flag)  \
+			_log_flag_hex(data, len, #flag ": " fmt, \
+				      ##__VA_ARGS__);            \
+	} while (0)
 
 #endif /* !_LOG_H */

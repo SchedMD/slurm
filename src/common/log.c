@@ -1539,3 +1539,33 @@ extern char *log_build_step_id_str(
 
 	return buf;
 }
+
+extern void _log_flag_hex(const void *data, size_t len, const char *fmt, ...)
+{
+	va_list ap;
+	char *prepend;
+	static const int hex_cols = 16, hex_rows = 16;
+
+	if (!data || !len)
+		return;
+
+	va_start(ap, fmt);
+	prepend = vxstrfmt(fmt, ap);
+	va_end(ap);
+
+	for (int i = 0; (i < len) && (i < (hex_cols * hex_rows)); ) {
+		int remain = len - i;
+		int print = (remain < hex_cols) ? remain : hex_cols;
+		char *phex = bytes_to_hex((data + i), print, " ");
+		char *pstr = bytes_to_printable((data + i), print, '.');
+
+		format_print(LOG_LEVEL_VERBOSE, "%s [%04d/%04zu] 0x%s \"%s\"",
+			     prepend, i, len, phex, pstr);
+
+		i += print;
+		xfree(phex);
+		xfree(pstr);
+	}
+
+	xfree(prepend);
+}
