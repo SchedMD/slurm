@@ -1,4 +1,4 @@
-.TH scrontab "1" "Slurm Commands" "April 2021" "Slurm Commands"
+.TH scrontab "1" "Slurm Commands" "July 2021" "Slurm Commands"
 
 .SH "NAME"
 scrontab \- manage Slurm crontab files
@@ -13,8 +13,8 @@ scrontab [-u user] [ -e | -l | -r ]
 This file can define a number of recurring batch jobs to run on a scheduled
 interval.
 .LP
-Lines must be either comments starting with '#', whitespace, or valid crontab
-entries.
+Lines must be either comments starting with '#', whitespace, valid crontab
+entries or custom variable settings.
 .LP
 Lines starting with \fB#SCRON\fR allow options to be defined for the single
 following crontab entry. Options are always reset in between each crontab
@@ -58,6 +58,17 @@ than the first. Lists are allowed, with commas separating the numbers or
 ranges being separated. Step values can be specified by entering a slash
 (/), followed by the step value, causing the job to run at the specified
 interval appropriate for that field.
+
+.LP
+Custom variables can be defined as within a regular shell script.  The `$'
+character introduces variable expansion. Simple parameter expansion is the only
+currently accepted expansion variant (i.e. ${parameter} or ${parameter:-word}
+are not supported). The variable expansion will only occur within \fBscrontab\fR
+job commands. It is not possible to expand variables in other type of lines
+(other variable definitions, comments or crontab entries). The expansion will
+happen before submitting the job, but the variable definitions will remain in
+the \fBscrontab\fR script. Unlike crontab, the user environment variables are
+ignored.
 
 .SH "OPTIONS"
 The first form of this command is used to install a new crontab from some named
@@ -132,10 +143,11 @@ following to \fBscrontab\fR:
 
 .RS
 .nf
+DIR=/home/user1
 #SCRON -p high
 #SCRON -A sub1
 #SCRON -t 1:00
-@hourly /home/user1/date.printer.job
+@hourly $DIR/date.printer.job
 .fi
 .RE
 
@@ -146,7 +158,7 @@ you would add the following to \fBscrontab\fR.
 
 .RS
 .nf
-1-5,30 8-17/2 * * wed /home/user1/example.job
+1-5,30 8-17/2 * * wed $DIR/example.job
 .fi
 .RE
 

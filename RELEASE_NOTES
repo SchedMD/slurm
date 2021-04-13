@@ -140,6 +140,7 @@ COMMAND CHANGES (see man pages for details)
     shortened state with flags appended. eg. IDLE# -> IDLE+POWERING_UP.
     Also "POWER" state flag string is "POWERED_DOWN".
  -- scrontab - add ability to update crontab from a file or standard input.
+ -- scrontab - added ability to set and expand variables.
 
 API CHANGES
 ===========

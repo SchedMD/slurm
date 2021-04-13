@@ -343,13 +343,45 @@ static job_desc_msg_t *_entry_to_job(cron_entry_t *entry, char *script)
 	return job;
 }
 
+static int _list_find_key(void *x, void *key)
+{
+	config_key_pair_t *key_pair = (config_key_pair_t *) x;
+	char *str = (char *) key;
+
+	if (!xstrcmp(key_pair->name, str))
+		return 1;
+
+	return 0;
+}
+
+static int _foreach_env_var_expand(void *x, void *arg)
+{
+	char *key = NULL;
+	config_key_pair_t *key_pair = (config_key_pair_t *) x;
+	cron_entry_t *entry = (cron_entry_t *) arg;
+
+	xstrfmtcat(key, "$%s", key_pair->name);
+	xstrsubstitute(entry->command, key, key_pair->value);
+	xfree(key);
+
+	return SLURM_SUCCESS;
+}
+
+static void _expand_variables(cron_entry_t *entry, List env_vars)
+{
+	if (!env_vars || !list_count(env_vars))
+		return;
+
+	list_for_each(env_vars, _foreach_env_var_expand, entry);
+}
+
 static void _edit_and_update_crontab(char *crontab)
 {
 	char **lines;
 	char *badline = NULL;
 	int lineno, line_start;
 	char *line;
-	List jobs;
+	List jobs, env_vars;
 	int line_count;
 	bool setup_next_entry = true;
 	char *script;
@@ -360,6 +392,7 @@ edit:
 		_edit_crontab(&crontab);
 
 	jobs = list_create((ListDelF) slurm_free_job_desc_msg);
+	env_vars = list_create(destroy_config_key_pair);
 	lines = convert_file_to_line_array(xstrdup(crontab), &line_count);
 
 	lineno = 0;
@@ -397,12 +430,33 @@ edit:
 			/* boring comment line */
 			lineno++;
 			continue;
+		} else {
+			/* check env setting. */
+			char *name = NULL, *value = NULL;
+
+			if (load_env(pos, &name, &value)) {
+				config_key_pair_t *key_pair =
+					xmalloc(sizeof(*key_pair));
+
+				xassert(name);
+				xassert(value);
+
+				key_pair->name = name;
+				key_pair->value = value;
+				list_delete_all(env_vars, _list_find_key, name);
+				list_append(env_vars, key_pair);
+
+				lineno++;
+				continue;
+			}
 		}
 
 		if (!(entry = cronspec_to_bitstring(pos))) {
 			badline = xstrdup_printf("%d", lineno);
 			break;
 		}
+
+		_expand_variables(entry, env_vars);
 
 		if (cli_filter_g_pre_submit(&opt, 0)) {
 			free_cron_entry(entry);
@@ -432,6 +486,7 @@ edit:
 	xfree(*lines);
 	xfree(lines);
 	xfree(script);
+	FREE_NULL_LIST(env_vars);
 
 	if (badline) {
 		if (first_form) {

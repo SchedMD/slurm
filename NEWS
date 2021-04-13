@@ -160,6 +160,7 @@ documents those changes that are of interest to users and administrators.
  -- Added new Script option to DebugFlags for debugging slurmscriptd.
  -- Added SlurmScriptdPidFile option to slurm.conf.
  -- scrontab - add ability to update crontab from a file or standard input.
+ -- scrontab - add ability to set and expand variables.
 
 * Changes in Slurm 20.11.9
 ==========================
