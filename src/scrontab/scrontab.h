@@ -42,6 +42,7 @@
 
 extern slurm_opt_t opt;
 
+extern bool load_env(char *line, char **key, char **value);
 extern char **convert_file_to_line_array(char *file, int *line_count);
 extern char *next_line(const void *buf, int size, void **state);
 extern int parse_scron_line(char *line, int lineno);
