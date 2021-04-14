@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "February 2021" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "April 2021" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -759,7 +759,7 @@ from commandline parameters. This option applies to job allocations.
 \fB\-\-exact\fR
 Allow a step access to only the resources requested for the step.
 By default, all non-GRES resources on each node in the step allocation will be
-used. Note that no other parallel step will have access to those resources
+used. Note that no other parallel step will have access to those CPUs
 unless \-\-overlap is specified. This option applies to step allocations.
 
 .TP
@@ -1899,8 +1899,8 @@ Slurm build time.
 
 .TP
 \fB\-\-overlap\fR
-Allow steps to overlap each other on the same resources. By default steps
-do not share resources with other parallel steps.
+Allow steps to overlap each other on the CPUs.
+By default steps do not share CPUs with other parallel steps.
 
 .TP
 \fB\-o\fR, \fB\-\-output\fR=<\fIfilename pattern\fR>
