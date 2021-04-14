@@ -303,6 +303,12 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 		command_argv[i] = NULL;	/* End of argv's (for possible execv) */
 	}
 
+	if (opt.container &&
+	    !xstrstr(slurm_conf.launch_params, "use_interactive_step")) {
+		error("--container requires LaunchParameters=use_interactive_step");
+		exit(error_exit);
+	}
+
 	if (cli_filter_g_pre_submit(&opt, het_job_offset)) {
 		error("cli_filter plugin terminated with error");
 		exit(error_exit);
