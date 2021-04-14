@@ -935,6 +935,17 @@ static slurm_cli_opt_t slurm_opt_constraint = {
 	.reset_each_pass = true,
 };
 
+COMMON_STRING_OPTION(container);
+static slurm_cli_opt_t slurm_opt_container = {
+	.name = "container",
+	.has_arg = required_argument,
+	.val = LONG_OPT_CONTAINER,
+	.set_func = arg_set_container,
+	.set_func_data = arg_set_data_container,
+	.get_func = arg_get_container,
+	.reset_func = arg_reset_container,
+};
+
 COMMON_BOOL_OPTION(contiguous, "contiguous");
 static slurm_cli_opt_t slurm_opt_contiguous = {
 	.name = "contiguous",
@@ -4921,6 +4932,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_clusters,
 	&slurm_opt_comment,
 	&slurm_opt_compress,
+	&slurm_opt_container,
 	&slurm_opt_contiguous,
 	&slurm_opt_constraint,
 	&slurm_opt_core_spec,
