@@ -97,6 +97,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where a step could be allocated more memory than the job when
     dealing with --mem-per-cpu and --threads-per-core.
  -- Fix removing qos from assoc with -= can lead to assoc with no qos
+ -- auth/jwt - fix segfault on invalid credential in slurmdbd due to
+    missing validate_slurm_user() function in context.
 
 * Changes in Slurm 20.11.5
 ==========================
