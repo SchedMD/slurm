@@ -32,6 +32,12 @@ HIGHLIGHTS
     slurm_kill_job_msg.
  -- AccountingStoreFlags=job_script allows you to store the job's batch script.
  -- AccountingStoreFlags=job_env allows you to store the job's env vars.
+ -- configure: the --with option handling has been made consistent across the
+    various optional libraries. Specifying --with-foo=/path/to/foo will only
+    check that directory for the applicable library (rather than, in some cases,
+    falling back to the default directories), and will always error the build
+    if the library is not found (instead of a mix of error messages and non-
+    fatal warning messages).
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

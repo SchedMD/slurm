@@ -62,6 +62,12 @@ documents those changes that are of interest to users and administrators.
  -- Make job accounting queries use consistent timeframes with and w/o jobs.
  -- --cpus-per-task and --threads-per-core now imply --exact.
     This fixes issues where steps would be allocated the wrong number of CPUs.
+ -- configure: the --with option handling has been made consistent across the
+    various optional libraries. Specifying --with-foo=/path/to/foo will only
+    check that directory for the applicable library (rather than, in some cases,
+    falling back to the default directories), and will always error the build
+    if the library is not found (instead of a mix of error messages and non-
+    fatal warning messages).
 
 * Changes in Slurm 20.11.6
 ==========================
