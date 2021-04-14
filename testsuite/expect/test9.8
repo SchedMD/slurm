@@ -36,25 +36,13 @@ set delay        10
 set job_name     "test$test_id"
 set sleep_time   300
 set task_cnt     60
-set user_name    [get_my_user_name]
+set jobs_list    [list]
 
 proc cleanup {} {
-	global bin_rm file_in scancel squeue user_name
+	global bin_rm file_in jobs_list
 
 	exec $bin_rm -f $file_in
-
-	# The wait_for_command handles the scancel request failing
-	# due to a very busy system. Increasing the MessageTimeout
-	# configuration parameter should fix this problem.
-	wait_for_command -fail "$scancel --quiet --user $user_name"
-
-	# Wait for our jobs to cancel so it does not interfere with other tests
-	if {![regexp {^$} [run_command_output "$squeue --noheader --user $user_name"]]} {
-		log_info "We still have some jobs in the completing state. Waiting for slurmctld to re-send job kill RPC. This could take up to 120 seconds..."
-		if [wait_for_command_match -timeout 120 "$squeue --noheader --user $user_name" {^$}] {
-			fail "Jobs not cancelling. Subsequent tests may fail!"
-		}
-	}
+	cancel_job $jobs_list
 }
 
 if {![param_contains [get_config_param "SelectTypeParameters"] "CR_*MEMORY"]} {
@@ -95,30 +83,10 @@ $srun -N1 -n1 --mem=0 $bin_sleep $sleep_time
 set start_cnt 0
 set timeout 30
 for {set inx 0} {$inx < $job_cnt} {incr inx} {
-	set sbatch_pid [spawn $sbatch --gres=craynetwork:0 --job-name=$job_name --mem-per-cpu=[expr $mem_per_step * 10] --output=/dev/null --error=/dev/null -t5 $file_in]
-	expect {
-		-re "Submitted batch job ($number)" {
-			incr start_cnt
-			exp_continue
-		}
-		-re "Unable to contact" {
-			log_error "Slurm appears to be down"
-			exp_continue
-		}
-		timeout {
-			slow_kill $sbatch_pid
-			fail "sbatch not responding"
-		}
-		eof {
-			wait
-		}
-	}
+	set job_id [submit_job -fail "--gres=craynetwork:0 --job-name=$job_name --mem-per-cpu=[expr $mem_per_step * 10] --output=/dev/null --error=/dev/null -t5 $file_in"]
+	lappend jobs_list $job_id
 }
-if {$start_cnt < $job_cnt} {
-	fail "Only $job_cnt of $start_cnt jobs submitted"
-} else {
-	log_debug "All $start_cnt jobs submitted"
-}
+log_debug "All $start_cnt jobs submitted"
 
 # Wait for at least $job_cnt jobs to be started
 # Because we want an external variable set with the match count, it is
@@ -128,7 +96,7 @@ if [
 	wait_for -timeout $delay {$job_count >= $job_cnt} {
 		set job_count [
 			regexp -all $job_name [
-				run_command_output -fail "$squeue --state R --name $job_name --user $user_name"
+				run_command_output -fail "$squeue --state R --name $job_name"
 			]
 		]
 	}
@@ -150,7 +118,7 @@ if [
 	wait_for -timeout $delay {$step_count >= $desired_tasks} {
 		set step_count [
 			regexp -all sleep [
-				run_command_output -fail "$squeue --steps --name $job_name --user $user_name"
+				run_command_output -fail "$squeue --steps --name $job_name"
 			]
 		]
 	}
