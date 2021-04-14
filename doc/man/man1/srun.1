@@ -611,7 +611,9 @@ Not compatible with the \fB\-\-cpus\-per\-task\fR option.
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR=<\fIncpus\fR>
 Request that \fIncpus\fR be allocated \fBper process\fR. This may be
 useful if the job is multithreaded and requires more than one CPU
-per task for optimal performance. The default is one CPU per process.
+per task for optimal performance. Explicitly requesting this option implies
+\fB\-\-exact\fR. The default is one CPU per process and does not imply
+\fB\-\-exact\fR.
 If \fB\-c\fR is specified without \fB\-n\fR, as many
 tasks will be allocated per node as possible while satisfying
 the \fB\-c\fR restriction. For instance on a cluster with 8 CPUs
@@ -631,7 +633,7 @@ threads per CPU for a total of two tasks.
 there are configurations and options which can result in inconsistent
 allocations when \-c has a value greater than \-c on salloc or sbatch.
 
-This option applies to job allocations.
+This option applies to job and step allocations.
 
 .TP
 \fB\-\-deadline\fR=<\fIOPT\fR>
@@ -2297,7 +2299,8 @@ applies to job allocations.
 \fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
 Restrict node selection to nodes with at least the specified number of
 threads per core. In task layout, use the specified maximum number of threads
-per core. Implies \fB\-\-cpu\-bind=threads\fR. NOTE: "Threads" refers to the
+per core. Implies \fB\-\-exact\fR and \fB\-\-cpu\-bind=threads\fR.
+NOTE: "Threads" refers to the
 number of processing units on each core rather than the number of application
 tasks to be launched per core. See additional information under \fB\-B\fR
 option above when task/affinity plugin is enabled. This option applies to job

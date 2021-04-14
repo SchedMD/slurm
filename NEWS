@@ -60,6 +60,8 @@ documents those changes that are of interest to users and administrators.
  -- Removed CacheGroups, CheckpointType, JobCheckpointDir, MemLimitEnforce,
     SchedulerPort, SchedulerRootFilter options.
  -- Make job accounting queries use consistent timeframes with and w/o jobs.
+ -- --cpus-per-task and --threads-per-core now imply --exact.
+    This fixes issues where steps would be allocated the wrong number of CPUs.
 
 * Changes in Slurm 20.11.6
 ==========================

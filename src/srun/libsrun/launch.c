@@ -234,6 +234,12 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	else if (opt_local->pn_min_memory != NO_VAL64)
 		job->ctx_params.pn_min_memory = opt_local->pn_min_memory;
 
+	/*
+	 * If the number of CPUs was specified (cpus_set==true) or
+	 * threads_per_core was specified, then we need to set exact = true.
+	 * Otherwise the step will be allocated the wrong number of CPUs
+	 * (and therefore the wrong amount memory if using mem_per_cpu).
+	 */
 	if (opt_local->overcommit) {
 		if (use_all_cpus)	/* job allocation created by srun */
 			job->ctx_params.cpu_count = job->cpu_count;
@@ -242,12 +248,18 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	} else if (opt_local->cpus_set) {
 		job->ctx_params.cpu_count = opt_local->ntasks *
 					    opt_local->cpus_per_task;
+		srun_opt->exact = true;
 	} else if (opt_local->ntasks_set) {
 		job->ctx_params.cpu_count = opt_local->ntasks;
 	} else if (use_all_cpus) {	/* job allocation created by srun */
 		job->ctx_params.cpu_count = job->cpu_count;
 	} else {
 		job->ctx_params.cpu_count = opt_local->ntasks;
+	}
+
+	if (opt_local->threads_per_core != NO_VAL) {
+		job->ctx_params.threads_per_core = opt.threads_per_core;
+		srun_opt->exact = true;
 	}
 
 	job->ctx_params.cpu_freq_min = opt_local->cpu_freq_min;
@@ -371,9 +383,6 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		xstrfmtcat(job->ctx_params.mem_per_tres, "gpu:%"PRIu64,
 			   opt.mem_per_gpu);
 	}
-
-	if (opt_local->threads_per_core != NO_VAL)
-		job->ctx_params.threads_per_core = opt.threads_per_core;
 
 	if (srun_opt->interactive) {
 		debug("interactive step launch request");
