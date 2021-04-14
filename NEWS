@@ -105,6 +105,8 @@ documents those changes that are of interest to users and administrators.
     configless mode with --conf-server
  -- sacctmgr - changed column headings to "ParentID" and "ParentName" instead
     of "Par ID" and "Par Name" respectively.
+ -- Perl API - make sure man pages are installed under the --prefix given to
+    configure.
 
 * Changes in Slurm 20.11.8
 ==========================
