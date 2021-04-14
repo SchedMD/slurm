@@ -4496,6 +4496,9 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	if (job_specs->tres_per_task)
 		debug3("   TRES_per_task=%s", job_specs->tres_per_task);
 
+	if (job_specs->container)
+		debug3("   container=%s", job_specs->container);
+
 	select_g_select_jobinfo_sprint(job_specs->select_jobinfo,
 				       buf, sizeof(buf), SELECT_PRINT_MIXED);
 	if (buf[0] != '\0')

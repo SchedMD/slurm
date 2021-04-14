@@ -1534,6 +1534,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *comment;		/* arbitrary comment */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes,
 				 * 0 otherwise,default=0 */
+	char *container;	/* OCI container bundle */
 	uint16_t core_spec;	/* specialized core/thread count,
 				 * see CORE_SPEC_THREAD */
 	char *cpu_bind;		/* binding map for map/mask_cpu - This
@@ -1673,7 +1674,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				  * default=0 (no limit) */
 	uint32_t pn_min_tmp_disk;/* minimum tmp disk per node,
 				  * default=0 */
-
 	uint32_t req_switch;    /* Minimum number of switches */
 	dynamic_plugin_data_t *select_jobinfo; /* opaque data type,
 					   * Slurm internal use only */
