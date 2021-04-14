@@ -1631,6 +1631,7 @@ static int _process_modify_assoc_results(mysql_conn_t *mysql_conn,
 						   "replace(replace("
 						   "qos, ',%s,', ','), "
 						   "',,', ','))"
+						   ", qos=if (qos=',', '', qos)"
 						   ", delta_qos=if (qos='', "
 						   "replace(concat(replace("
 						   "replace("
