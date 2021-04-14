@@ -1174,16 +1174,19 @@ proc run_command_status args {
 proc cancel_job { job_id_list {het_job 0}} {
 	global scancel
 
+	set job_list_clean [list]
 	foreach job_id $job_id_list {
-		if {$job_id == 0} {
-			continue
+		if {$job_id != 0} {
+			lappend job_list_clean $job_id
 		}
+	}
 
-		log_debug "Cancelling $job_id"
-		if {[run_command_status "$scancel -Q $job_id"]} {
-			log_warn "scancel command returned error"
-			return $::RETURN_ERROR
-		}
+	log_debug "Cancelling $job_list_clean"
+	if {[run_command_status "$scancel -Q $job_list_clean"]} {
+		log_warn "scancel command returned error"
+		return $::RETURN_ERROR
+	}
+	foreach job_id $job_list_clean {
 		if {[wait_for_job $job_id "DONE" $het_job]} {
 			log_warn "Job $job_id not ended"
 			return $::RETURN_ERROR
