@@ -59,6 +59,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix NtasksPerTRES delimiter from : to = in scontrol show job output.
  -- Removed CacheGroups, CheckpointType, JobCheckpointDir, MemLimitEnforce,
     SchedulerPort, SchedulerRootFilter options.
+ -- Make job accounting queries use consistent timeframes with and w/o jobs.
 
 * Changes in Slurm 20.11.6
 ==========================

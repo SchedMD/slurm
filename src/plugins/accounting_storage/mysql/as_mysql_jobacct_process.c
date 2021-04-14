@@ -1621,6 +1621,7 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 		}
 	}
 
+	/* Time window should be exclusive of the end time, ie [start,end) */
 	if (!job_cond->state_list || !list_count(job_cond->state_list)) {
 		/*
 		 * There's an explicit list of jobs, so don't hide
@@ -1636,7 +1637,9 @@ extern int setup_job_cond_limits(slurmdb_job_cond_t *job_cond,
 					xstrcat(*extra, " where (");
 
 				xstrfmtcat(*extra,
-					   "(t1.time_submit <= %ld) && (t1.time_end >= %ld || t1.time_end = 0))",
+					   "(t1.time_submit < %ld) && "
+					   "(t1.time_end >= %ld ||"
+					   " t1.time_end = 0))",
 					   job_cond->usage_end,
 					   job_cond->usage_start);
 			}

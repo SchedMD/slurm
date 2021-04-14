@@ -351,12 +351,14 @@ extern int slurmdb_setup_cluster_rec(slurmdb_cluster_rec_t *cluster_rec)
 
 extern void slurmdb_job_cond_def_start_end(slurmdb_job_cond_t *job_cond)
 {
+	time_t now = time(NULL);
+
 	if (!job_cond ||
 	    (job_cond->flags & JOBCOND_FLAG_RUNAWAY) ||
 	    (job_cond->flags & JOBCOND_FLAG_NO_DEFAULT_USAGE))
 		return;
 	/*
-	 * Defaults for start and end times...
+	 * Defaults for start (S) and end (E) times:
 	 * - with -j and -s:
 	 *   -S defaults to Epoch 0
 	 *   -E defaults to -S (unless no -S then Now)
@@ -373,14 +375,14 @@ extern void slurmdb_job_cond_def_start_end(slurmdb_job_cond_t *job_cond)
 	if (job_cond->state_list && list_count(job_cond->state_list)) {
 		if (!job_cond->usage_start &&
 		    (!job_cond->step_list || !list_count(job_cond->step_list)))
-			job_cond->usage_start = time(NULL);
+			job_cond->usage_start = now;
 
 		if (job_cond->usage_start && !job_cond->usage_end)
 			job_cond->usage_end = job_cond->usage_start;
 	} else if (!job_cond->step_list || !list_count(job_cond->step_list)) {
 		if (!job_cond->usage_start) {
 			struct tm start_tm;
-			job_cond->usage_start = time(NULL);
+			job_cond->usage_start = now;
 			if (!localtime_r(&job_cond->usage_start, &start_tm)) {
 				error("Couldn't get localtime from %ld",
 				      (long)job_cond->usage_start);
@@ -394,7 +396,16 @@ extern void slurmdb_job_cond_def_start_end(slurmdb_job_cond_t *job_cond)
 	}
 
 	if (!job_cond->usage_end)
-		job_cond->usage_end = time(NULL);
+		job_cond->usage_end = now;
+
+	/*
+	 * The query will be exclusive of the end time, that is [S,E).
+	 * We must adjust E when E==S to include S, and when E==Now to
+	 * include the current second.
+	 */
+	if ((job_cond->usage_end == job_cond->usage_start) ||
+	    (job_cond->usage_end == now))
+		job_cond->usage_end++;
 }
 
 static uint32_t _str_2_qos_flags(char *flags)
