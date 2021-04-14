@@ -3043,7 +3043,8 @@ end_it:
 			       sizeof(slurmdb_assoc_cond_t));
 			assoc_cond.cluster_list = local_cluster_list;
 			if (!(assoc_list_tmp =
-			      as_mysql_get_assocs(mysql_conn, uid, NULL))) {
+			      as_mysql_get_assocs(mysql_conn, uid,
+						  &assoc_cond))) {
 				FREE_NULL_LIST(local_cluster_list);
 				return rc;
 			}
