@@ -580,7 +580,10 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
-		list_append(local_cluster_list, object->cluster);
+		if (!list_find_first(local_cluster_list,
+				     slurm_find_char_in_list,
+				     object->cluster))
+			list_append(local_cluster_list, object->cluster);
 
 		/* we always have a ', ' as the first 2 chars */
 		tmp_extra = slurm_add_slash_to_quotes(extra+2);
