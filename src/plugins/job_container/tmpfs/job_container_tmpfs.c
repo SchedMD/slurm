@@ -635,14 +635,10 @@ static int _create_ns(uint32_t job_id, bool remount)
 			goto exit1;
 		}
 
-		rc = waitpid(cpid, &wstatus, 0);
-		if (rc == -1) {
+		if ((waitpid(cpid, &wstatus, 0) != cpid) || WEXITSTATUS(wstatus)) {
 			error("%s: waitpid failed", __func__);
+			rc = SLURM_ERROR;
 			goto exit1;
-		} else {
-			if (rc == cpid)
-				debug3("child exited: %d",
-				       WEXITSTATUS(wstatus));
 		}
 
 		rc = 0;
