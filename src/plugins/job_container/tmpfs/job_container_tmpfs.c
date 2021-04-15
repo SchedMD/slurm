@@ -318,7 +318,7 @@ static int _rm_data(const char *path, const struct stat *st_buf,
 	return 0;
 }
 
-extern int container_p_create(uint32_t job_id)
+static int _create_ns(uint32_t job_id)
 {
 	char job_mount[PATH_MAX];
 	char ns_holder[PATH_MAX];
@@ -556,6 +556,11 @@ exit2:
 	}
 
 	return rc;
+}
+
+extern int container_p_create(uint32_t job_id)
+{
+	return _create_ns(job_id);
 }
 
 /* Add a process to a job container, create the proctrack container to add */
