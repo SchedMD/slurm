@@ -860,6 +860,7 @@ typedef struct launch_tasks_request_msg {
 	char *tres_per_task;	/* semicolon delimited list of TRES=# values */
 	char    **env;
 	char    **argv;
+	char *container;	/* OCI Container Bundle Path */
 	char     *cwd;
 	uint16_t cpu_bind_type;	/* --cpu-bind=                    */
 	char     *cpu_bind;	/* binding map for map/mask_cpu           */

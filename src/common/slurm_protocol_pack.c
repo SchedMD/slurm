@@ -8464,6 +8464,7 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *msg,
 		packstr_array(msg->env, msg->envc, buffer);
 		packstr_array(msg->spank_job_env, msg->spank_job_env_size,
 			      buffer);
+		packstr(msg->container, buffer);
 		packstr(msg->cwd, buffer);
 		pack16(msg->cpu_bind_type, buffer);
 		packstr(msg->cpu_bind, buffer);
@@ -8813,6 +8814,7 @@ static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **msg_ptr
 		safe_unpackstr_array(&msg->env, &msg->envc, buffer);
 		safe_unpackstr_array(&msg->spank_job_env,
 				     &msg->spank_job_env_size, buffer);
+		safe_unpackstr_xmalloc(&msg->container, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->cwd, &uint32_tmp, buffer);
 		safe_unpack16(&msg->cpu_bind_type, buffer);
 		safe_unpackstr_xmalloc(&msg->cpu_bind, &uint32_tmp, buffer);

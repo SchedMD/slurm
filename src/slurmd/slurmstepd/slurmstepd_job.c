@@ -332,6 +332,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 		job->gids = copy_gids(msg->ngids, msg->gids);
 	}
 
+	job->container = xstrdup(msg->container);
 	job->cwd	= xstrdup(msg->cwd);
 	job->task_dist	= msg->task_dist;
 
