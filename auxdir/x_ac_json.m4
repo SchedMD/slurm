@@ -51,7 +51,7 @@ AC_DEFUN([X_AC_JSON], [
 
     if test -z "$x_ac_cv_json_dir"; then
       if [test -z "$with_json"] ; then
-        AC_MSG_ERROR([unable to locate json parser library])
+        AC_MSG_WARN([unable to locate json parser library])
       else
         AC_MSG_ERROR([unable to locate json parser library])
       fi

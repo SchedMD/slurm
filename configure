@@ -19500,7 +19500,8 @@ $as_echo "$x_ac_cv_json_dir" >&6; }
 
     if test -z "$x_ac_cv_json_dir"; then
       if test -z "$with_json" ; then
-        as_fn_error $? "unable to locate json parser library" "$LINENO" 5
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to locate json parser library" >&5
+$as_echo "$as_me: WARNING: unable to locate json parser library" >&2;}
       else
         as_fn_error $? "unable to locate json parser library" "$LINENO" 5
       fi
