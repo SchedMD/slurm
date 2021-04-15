@@ -1445,7 +1445,14 @@ static int _pre_task_child_privileged(
 		return rc;
 	}
 
-	if (setwd) {
+	if (job->container) {
+		/* Container jobs must start in the correct directory */
+		if (chdir(job->cwd) < 0) {
+			error("couldn't chdir to `%s': %m", job->cwd);
+			return errno;
+		}
+		debug2("%s: chdir(%s) success", __func__, job->cwd);
+	} else if (setwd) {
 		if (chdir(job->cwd) < 0) {
 			error("couldn't chdir to `%s': %m: going to /tmp instead",
 			      job->cwd);
@@ -1454,7 +1461,6 @@ static int _pre_task_child_privileged(
 				return SLURM_ERROR;
 			}
 		}
-
 	}
 
 	return rc;
