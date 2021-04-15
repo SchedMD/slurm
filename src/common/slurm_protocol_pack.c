@@ -3660,6 +3660,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpack32(&job->site_factor, buffer);
 		safe_unpackstr_xmalloc(&job->network, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->comment, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->container, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->batch_features, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&job->batch_host, &uint32_tmp, buffer);

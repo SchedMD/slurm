@@ -1231,6 +1231,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->cluster);
 		xfree(job->command);
 		xfree(job->comment);
+		xfree(job->container);
 		xfree(job->cpus_per_tres);
 		xfree(job->dependency);
 		xfree(job->exc_nodes);
