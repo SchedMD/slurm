@@ -464,7 +464,7 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 	char *port_str = NULL;
 	int state_val = NODE_STATE_UNKNOWN;
 	int address_count, alias_count, bcast_count, hostname_count, port_count;
-	uint16_t port = 0;
+	uint16_t port = slurm_conf.slurmd_port;
 
 	if ((node_ptr->nodenames == NULL) || (node_ptr->nodenames[0] == '\0'))
 		return -1;
@@ -571,8 +571,7 @@ extern int check_nodeline_info(slurm_conf_node_t *node_ptr,
 					node_ptr->port_str);
 			}
 			port = port_int;
-		} else
-			port = slurm_conf.slurmd_port;
+		}
 
 		(*_callback)(alias, hostname, address, bcast_address,
 			     port, state_val, node_ptr, config_ptr);
