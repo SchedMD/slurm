@@ -318,7 +318,7 @@ static int _rm_data(const char *path, const struct stat *st_buf,
 	return 0;
 }
 
-static int _create_ns(uint32_t job_id)
+static int _create_ns(uint32_t job_id, bool remount)
 {
 	char job_mount[PATH_MAX];
 	char ns_holder[PATH_MAX];
@@ -345,7 +345,7 @@ static int _create_ns(uint32_t job_id)
 		error("%s: mkdir %s failed: %s",
 		      __func__, job_mount, strerror(errno));
 		return -1;
-	} else if (rc && errno == EEXIST) {
+	} else if (!remount && rc && errno == EEXIST) {
 		/* stat to see if .active exists */
 		struct stat st;
 		rc = stat(active, &st);
@@ -390,7 +390,7 @@ static int _create_ns(uint32_t job_id)
 	}
 
 	rc = mkdir(src_bind, 0700);
-	if (rc) {
+	if (rc && (!remount || errno != EEXIST)) {
 		error("%s: mkdir failed %s, %s",
 		      __func__, src_bind, strerror(errno));
 		goto exit2;
@@ -560,7 +560,7 @@ exit2:
 
 extern int container_p_create(uint32_t job_id)
 {
-	return _create_ns(job_id);
+	return _create_ns(job_id, false);
 }
 
 /* Add a process to a job container, create the proctrack container to add */
