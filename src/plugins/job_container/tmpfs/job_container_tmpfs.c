@@ -164,17 +164,16 @@ extern int fini(void)
 		error("%s: Configuration not loaded", __func__);
 		return SLURM_ERROR;
 	}
+	if (step_ns_fd != -1) {
+		close(step_ns_fd);
+		step_ns_fd = -1;
+	}
 	if (umount2(jc_conf->basepath, MNT_DETACH)) {
 		error("%s: umount2: %s failed: %s",
 		      __func__, jc_conf->basepath, strerror(errno));
 		rc = SLURM_ERROR;
 	}
 	free_jc_conf();
-
-	if (step_ns_fd != -1) {
-		close(step_ns_fd);
-		step_ns_fd = -1;
-	}
 
 	return rc;
 }
