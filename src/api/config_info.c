@@ -1144,6 +1144,16 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("OCIRunTime");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->oci_runtime);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("OCIContainerIDPattern");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->oci_container_id_pattern);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("PluginDir");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->plugindir);
 	list_append(ret_list, key_pair);

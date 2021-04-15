@@ -127,6 +127,8 @@ extern uint16_t drop_priv_flag;
 #define DEFAULT_MSG_AGGR_WINDOW_MSGS 1
 #define DEFAULT_MSG_AGGR_WINDOW_TIME 100
 #define DEFAULT_MSG_TIMEOUT         10
+#define DEFAULT_OCI_CONTAINER_ID_PATTERN "%h.%u.%j.%s.%t"
+#define DEFAULT_OCI_RUNTIME         "/usr/sbin/runc"
 #define DEFAULT_POWER_PLUGIN        ""
 #if defined WITH_CGROUP
 #  define DEFAULT_PROCTRACK_TYPE      "proctrack/cgroup"

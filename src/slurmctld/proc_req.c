@@ -397,6 +397,9 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->node_features_plugins = xstrdup(conf->node_features_plugins);
 	conf_ptr->node_prefix         = xstrdup(conf->node_prefix);
 
+	conf_ptr->oci_container_id_pattern =
+		xstrdup(conf->oci_container_id_pattern);
+	conf_ptr->oci_runtime = xstrdup(conf->oci_runtime);
 	conf_ptr->over_time_limit     = conf->over_time_limit;
 
 	conf_ptr->plugindir           = xstrdup(conf->plugindir);

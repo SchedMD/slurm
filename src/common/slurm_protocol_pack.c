@@ -4375,6 +4375,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->node_features_plugins, buffer);
 		packstr(build_ptr->node_prefix, buffer);
 
+		packstr(build_ptr->oci_container_id_pattern, buffer);
+		packstr(build_ptr->oci_runtime, buffer);
 		pack16(build_ptr->over_time_limit, buffer);
 
 		packstr(build_ptr->plugindir, buffer);
@@ -5307,6 +5309,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpackstr_xmalloc(&build_ptr->node_prefix,
 		                       &uint32_tmp, buffer);
 
+		safe_unpackstr_xmalloc(&build_ptr->oci_container_id_pattern,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->oci_runtime,
+				       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->over_time_limit, buffer);
 
 		safe_unpackstr_xmalloc(&build_ptr->plugindir,
