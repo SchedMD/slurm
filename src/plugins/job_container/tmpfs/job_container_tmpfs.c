@@ -70,6 +70,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 static slurm_jc_conf_t *jc_conf = NULL;
 static int step_ns_fd = -1;
+static bool force_rm = true;
 
 static int _create_paths(uint32_t job_id,
 			 char *job_mount,
@@ -305,17 +306,31 @@ static int _mount_private_shm(void)
 static int _rm_data(const char *path, const struct stat *st_buf,
 		    int type, struct FTW *ftwbuf)
 {
+	int rc = SLURM_SUCCESS;
+
 	if (remove(path) < 0) {
+		log_level_t log_lvl;
+		if (force_rm) {
+			rc = SLURM_ERROR;
+			log_lvl = LOG_LEVEL_ERROR;
+		} else
+			log_lvl = LOG_LEVEL_DEBUG2;
+
 		if (type == FTW_NS)
-			error("%s: Unreachable file of FTW_NS type: %s",
-			      __func__, path);
-		if (type == FTW_DNR)
-			error("%s: Unreadable directory: %s", __func__, path);
-		error("%s: could not remove path: %s: %s",
-		      __func__, path, strerror(errno));
-		return errno;
+			log_var(log_lvl,
+					"%s: Unreachable file of FTW_NS type: %s",
+					__func__, path);
+		else if (type == FTW_DNR)
+			log_var(log_lvl,
+					"%s: Unreadable directory: %s",
+					__func__, path);
+
+		log_var(log_lvl,
+				"%s: could not remove path: %s: %s",
+				__func__, path, strerror(errno));
 	}
-	return 0;
+
+	return rc;
 }
 
 static int _create_ns(uint32_t job_id, bool remount)
@@ -547,6 +562,7 @@ exit1:
 exit2:
 	if (rc) {
 		/* cleanup the job mount */
+		force_rm = true;
 		if (nftw(job_mount, _rm_data, 64, FTW_DEPTH|FTW_PHYS) < 0) {
 			error("%s: Directory traversal failed: %s: %s",
 			      __func__, job_mount, strerror(errno));
@@ -701,7 +717,9 @@ static int _delete_ns(uint32_t job_id)
 	 * Does -
 	 *	a post order traversal and delete directory after processing
 	 *      contents
+	 * NOTE: Can happen EBUSY here so we need to ignore this.
 	 */
+	force_rm = false;
 	if (nftw(job_mount, _rm_data, 64, FTW_DEPTH|FTW_PHYS) < 0) {
 		error("%s: Directory traversal failed: %s: %s",
 		      __func__, job_mount, strerror(errno));
