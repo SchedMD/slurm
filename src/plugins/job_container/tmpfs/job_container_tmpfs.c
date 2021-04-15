@@ -151,7 +151,7 @@ extern int init(void)
  */
 extern int fini(void)
 {
-	int rc = 0;
+	int rc = SLURM_SUCCESS;
 
 	debug("%s unloaded", plugin_name);
 
@@ -164,11 +164,10 @@ extern int fini(void)
 		error("%s: Configuration not loaded", __func__);
 		return SLURM_ERROR;
 	}
-	rc = umount2(jc_conf->basepath, MNT_DETACH);
-	if (rc) {
+	if (umount2(jc_conf->basepath, MNT_DETACH)) {
 		error("%s: umount2: %s failed: %s",
 		      __func__, jc_conf->basepath, strerror(errno));
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
 	}
 	free_jc_conf();
 
@@ -177,7 +176,7 @@ extern int fini(void)
 		step_ns_fd = -1;
 	}
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int container_p_restore(char *dir_name, bool recover)
