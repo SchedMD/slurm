@@ -4628,6 +4628,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	job_ptr_pend->burst_buffer_state = xstrdup(job_ptr->burst_buffer_state);
 	job_ptr_pend->clusters = xstrdup(job_ptr->clusters);
 	job_ptr_pend->comment = xstrdup(job_ptr->comment);
+	job_ptr_pend->container = xstrdup(job_ptr->container);
 
 	job_ptr_pend->fed_details = _dup_job_fed_details(job_ptr->fed_details);
 
@@ -8296,6 +8297,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	job_ptr->resv_name  = xstrdup(job_desc->reservation);
 	job_ptr->restart_cnt = job_desc->restart_cnt;
 	job_ptr->comment    = xstrdup(job_desc->comment);
+	job_ptr->container = xstrdup(job_desc->container);
 	job_ptr->admin_comment = xstrdup(job_desc->admin_comment);
 
 	if (job_desc->kill_on_node_fail != NO_VAL16)
@@ -9611,6 +9613,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->burst_buffer);
 	xfree(job_ptr->burst_buffer_state);
 	xfree(job_ptr->comment);
+	xfree(job_ptr->container);
 	xfree(job_ptr->clusters);
 	xfree(job_ptr->cpus_per_tres);
 	free_job_fed_details(&job_ptr->fed_details);
@@ -17851,6 +17854,7 @@ extern job_desc_msg_t *copy_job_record_to_job_desc(job_record_t *job_ptr)
 	job_desc->bitflags 	    = job_ptr->bit_flags;
 	job_desc->clusters          = xstrdup(job_ptr->clusters);
 	job_desc->comment           = xstrdup(job_ptr->comment);
+	job_desc->container = xstrdup(job_ptr->container);
 	job_desc->contiguous        = details->contiguous;
 	job_desc->core_spec         = details->core_spec;
 	job_desc->cpu_bind          = xstrdup(details->cpu_bind);

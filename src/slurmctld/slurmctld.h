@@ -696,6 +696,7 @@ struct job_record {
 	char *clusters;			/* clusters job is submitted to with -M
 					   option */
 	char *comment;			/* arbitrary comment */
+	char *container;		/* OCI container bundle path */
 	uint32_t cpu_cnt;		/* current count of CPUs held
 					 * by the job, decremented while job is
 					 * completing */
