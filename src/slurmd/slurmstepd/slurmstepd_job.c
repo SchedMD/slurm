@@ -578,6 +578,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 	job->overcommit = (bool) msg->overcommit;
 
 	job->cwd     = xstrdup(msg->work_dir);
+	job->container = xstrdup(msg->container);
 
 	job->env     = _array_copy(msg->envc, msg->environment);
 	job->eio     = eio_handle_create(0);
@@ -665,6 +666,7 @@ stepd_step_rec_destroy(stepd_step_rec_t *job)
 	FREE_NULL_LIST(job->outgoing_cache);
 	FREE_NULL_LIST(job->job_gres_list);
 	FREE_NULL_LIST(job->step_gres_list);
+	xfree(job->container);
 	xfree(job->cpu_bind);
 	xfree(job->cwd);
 	xfree(job->envtp);

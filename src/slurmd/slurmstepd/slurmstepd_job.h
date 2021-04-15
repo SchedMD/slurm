@@ -119,6 +119,7 @@ typedef struct {		/* MPMD specifications, needed for Cray */
 } mpmd_set_t;
 
 typedef struct {
+	char *container;		/* OCI Container Bundle path	*/
 	slurmstepd_state_t state;	/* Job state			*/
 	pthread_cond_t state_cond;	/* Job state conditional	*/
 	pthread_mutex_t state_mutex;	/* Job state mutex		*/
