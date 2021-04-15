@@ -1059,6 +1059,10 @@ _read_config(void)
 
 	if (cf->control_addr == NULL)
 		fatal("Unable to establish controller machine");
+
+	conf->oci_container_id_pattern = xstrdup(cf->oci_container_id_pattern);
+	conf->oci_runtime = xstrdup(cf->oci_runtime);
+
 	if (cf->slurmctld_port == 0)
 		fatal("Unable to establish controller port");
 

@@ -113,6 +113,8 @@ typedef struct slurmd_config {
 	char         *node_name;	/* node name                       */
 	char         *node_topo_addr;   /* node's topology address         */
 	char         *node_topo_pattern;/* node's topology address pattern */
+	char *oci_container_id_pattern;	/* OCI Container id pattern        */
+	char *oci_runtime;		/* OCI Container runtime command   */
 	char         *conffile;		/* config filename                 */
 	char         *logfile;		/* slurmd logfile, if any          */
 	uint32_t     syslog_debug;	/* send output to both logfile and
