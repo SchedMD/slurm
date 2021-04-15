@@ -29,6 +29,18 @@ function slurm_cli_pre_submit(options, pack_offset)
 	-- If strict policy enforcement is a requirement than job_submit plugin should be used.
 	--]]
 
+	--[[ Dump environment in JSON format ]]--
+	env_json = slurm.json_env()
+	slurm.log_verbose("slurm_cli_pre_submit: Running with following environment variables:%s", env_json);
+
+	--[[ Dump options set when running (slurmctld default behavior is not shown here) ]]--
+	opt_json = slurm.json_cli_options(options)
+	slurm.log_verbose("slurm_cli_pre_submit: Running with following options set:%s", opt_json)
+
+	--[[ Store a variable for potential use in slurm_cli_post_submit ]]--
+	slurm.cli_store(0,options["type"])
+
+
 	if options["type"] == "srun"
 	then
 		if options["uid"] == "0" --[[or options["uid"] == SpecialUser]]--
@@ -91,6 +103,7 @@ function slurm_cli_setup_defaults(options, early_pass)
 end
 
 function slurm_cli_post_submit(offset, job_id, step_id)
-	slurm.log_info("Submitted: %d.%d component: %d", job_id, step_id, offset);
+	saved_type = slurm.cli_retrieve(0);
+	slurm.log_info("Submitted: %d.%d component: %d using: %s", job_id, step_id, offset, saved_type);
         return slurm.SUCCESS
 end
