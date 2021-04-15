@@ -2403,6 +2403,7 @@ extern void _pack_job_step_create_request_msg(
 		pack32(msg->user_id, buffer);
 		pack32(msg->min_nodes, buffer);
 		pack32(msg->max_nodes, buffer);
+		packstr(msg->container, buffer);
 		pack32(msg->cpu_count, buffer);
 		pack32(msg->cpu_freq_min, buffer);
 		pack32(msg->cpu_freq_max, buffer);
@@ -2549,6 +2550,8 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpack32(&tmp_ptr->user_id, buffer);
 		safe_unpack32(&tmp_ptr->min_nodes, buffer);
 		safe_unpack32(&tmp_ptr->max_nodes, buffer);
+		safe_unpackstr_xmalloc(&tmp_ptr->container, &uint32_tmp,
+				       buffer);
 		safe_unpack32(&tmp_ptr->cpu_count, buffer);
 		safe_unpack32(&tmp_ptr->cpu_freq_min, buffer);
 		safe_unpack32(&tmp_ptr->cpu_freq_max, buffer);

@@ -559,6 +559,8 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 		debug3("   TRES_per_socket=%s", step_spec->tres_per_socket);
 	if (step_spec->tres_per_task)
 		debug3("   TRES_per_task=%s", step_spec->tres_per_task);
+	if (step_spec->container)
+		debug3("   Container=%s", step_spec->container);
 }
 
 /*
