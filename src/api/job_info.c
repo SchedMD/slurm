@@ -1034,11 +1034,20 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	}
 
 	/****** Line (optional) ******/
-	xstrcat(out, line_end);
 	if ((job_ptr->ntasks_per_tres) &&
 	    (job_ptr->ntasks_per_tres != NO_VAL16) &&
-	    (job_ptr->ntasks_per_tres != INFINITE16))
+	    (job_ptr->ntasks_per_tres != INFINITE16)) {
+		xstrcat(out, line_end);
 		xstrfmtcat(out, "NtasksPerTRES=%u", job_ptr->ntasks_per_tres);
+	}
+
+	/****** Line (optional) ******/
+	if (job_ptr->container) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "Container=%s", job_ptr->container);
+	}
+
+	xstrcat(out, line_end);
 
 	/****** END OF JOB RECORD ******/
 	if (one_liner)
