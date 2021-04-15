@@ -10433,6 +10433,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 		pack32(msg->array_task_id,  buffer);
 
 		packstr(msg->acctg_freq,     buffer);
+		packstr(msg->container, buffer);
 		pack16(msg->cpu_bind_type,  buffer);
 		pack16(msg->cpus_per_task,  buffer);
 		pack16(msg->restart_cnt,    buffer);
@@ -10649,6 +10650,8 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 
 		safe_unpackstr_xmalloc(&launch_msg_ptr->acctg_freq,
 				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&launch_msg_ptr->container, &uint32_tmp,
+				       buffer);
 		safe_unpack16(&launch_msg_ptr->cpu_bind_type,  buffer);
 		safe_unpack16(&launch_msg_ptr->cpus_per_task,  buffer);
 		safe_unpack16(&launch_msg_ptr->restart_cnt,    buffer);

@@ -1173,6 +1173,7 @@ extern void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 				xfree(msg->argv[i]);
 			xfree(msg->argv);
 		}
+		xfree(msg->container);
 		xfree(msg->cpu_bind);
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
