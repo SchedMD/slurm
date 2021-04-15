@@ -58,6 +58,9 @@
 
 #include "read_jcconf.h"
 
+static int _create_ns(uint32_t job_id, bool remount);
+static int _delete_ns(uint32_t job_id);
+
 #if defined (__APPLE__)
 extern slurmd_conf_t *conf __attribute__((weak_import));
 #else
@@ -71,6 +74,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static slurm_jc_conf_t *jc_conf = NULL;
 static int step_ns_fd = -1;
 static bool force_rm = true;
+static List running_job_ids = NULL;
 
 static int _create_paths(uint32_t job_id,
 			 char *job_mount,
@@ -123,6 +127,70 @@ static int _create_paths(uint32_t job_id,
 	}
 
 	return SLURM_SUCCESS;
+}
+
+static int _find_job_id_in_list(uint32_t *list_job_id, uint32_t *job_id)
+{
+	return (*list_job_id == *job_id);
+}
+
+static int _append_job_in_list(void *element, void *arg)
+{
+	step_loc_t *stepd = (step_loc_t *) element;
+	List job_id_list = (List) arg;
+
+	xassert(job_id_list);
+
+	if (!list_find_first(job_id_list, (ListFindF)_find_job_id_in_list,
+			     &stepd->step_id.job_id)) {
+		if (stepd_connect(stepd->directory,
+				  stepd->nodename,
+				  &stepd->step_id,
+				  &stepd->protocol_version) != -1)
+			list_append(job_id_list, &stepd->step_id.job_id);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static int _restore_ns(const char *path, const struct stat *st_buf, int type)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t job_id;
+	char ns_holder[PATH_MAX];
+	struct stat stat_buf;
+
+	if (type == FTW_NS) {
+		error("%s: Unreachable file of FTW_NS type: %s",
+		      __func__, path);
+		rc = SLURM_ERROR;
+	} else if (type == FTW_DNR) {
+		error("%s: Unreadable directory: %s", __func__, path);
+		rc = SLURM_ERROR;
+	} else if (type == FTW_D && xstrcmp(jc_conf->basepath, path)) {
+		/* Lookup for .ns file inside. If exists, try to restore. */
+		if (snprintf(ns_holder, PATH_MAX, "%s/.ns", path) >= PATH_MAX) {
+			error("%s: Unable to build ns_holder path %s: %m",
+				  __func__, ns_holder);
+			rc = SLURM_ERROR;
+		} else if (stat(ns_holder, &stat_buf) < 0) {
+			debug3("%s: ignoring wrong ns_holder path %s: %m",
+				   __func__, ns_holder);
+		} else {
+			job_id = slurm_atoul(&(xstrrchr(path, '/')[1]));
+			/* At this point we can remount the folder. */
+			if (_create_ns(job_id, true)) {
+				rc = SLURM_ERROR;
+			/* And then, properly delete it for dead jobs. */
+			} else if (!list_find_first(
+					   running_job_ids,
+					   (ListFindF)_find_job_id_in_list,
+					   &job_id)) {
+				rc = _delete_ns(job_id);
+			}
+		}
+	}
+	return rc;
 }
 
 extern void container_p_reconfig(void)
@@ -181,6 +249,8 @@ extern int fini(void)
 
 extern int container_p_restore(char *dir_name, bool recover)
 {
+	List steps;
+
 #ifdef HAVE_NATIVE_CRAY
 	return SLURM_SUCCESS;
 #endif
@@ -236,6 +306,10 @@ extern int container_p_restore(char *dir_name, bool recover)
 
 	}
 
+	/* It could fail if no leaks, it can clean as much leaks as possible. */
+	if (umount2(jc_conf->basepath, MNT_DETACH))
+		debug2("umount2: %s failed: %s", jc_conf->basepath, strerror(errno));
+
 #if !defined(__APPLE__) && !defined(__FreeBSD__)
 	/*
 	 * MS_BIND mountflag would make mount() ignore all other mountflags
@@ -257,6 +331,27 @@ extern int container_p_restore(char *dir_name, bool recover)
 	}
 #endif
 	debug3("tmpfs: Base namespace created");
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	running_job_ids = list_create(NULL);
+
+	/* Iterate over steps, and check once per job if it's still running. */
+	(void)list_for_each(steps, _append_job_in_list, running_job_ids);
+	FREE_NULL_LIST(steps);
+
+	/*
+	 * Iterate over basepath, restore only the folders that seem bounded to
+	 * real jobs (have .ns file). NOTE: Restoring the state could be either
+	 * deleting the folder if the job is died and resources are free, or
+	 * mount it otherwise.
+	 */
+	if (ftw(jc_conf->basepath, _restore_ns, 64)) {
+		error("%s: Directory traversal failed: %s: %s",
+			  __func__, jc_conf->basepath, strerror(errno));
+		FREE_NULL_LIST(running_job_ids);
+		return SLURM_ERROR;
+	}
+	FREE_NULL_LIST(running_job_ids);
 
 	return SLURM_SUCCESS;
 }
