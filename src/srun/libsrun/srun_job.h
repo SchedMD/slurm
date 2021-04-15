@@ -93,6 +93,7 @@ typedef struct srun_job {
 	uint32_t *het_job_tid_offsets;/* map of tasks (by id) to originating
 				       * hetjob */
 
+	char *container; /* OCI container bundle path */
 	uint32_t cpu_count;	/* allocated CPUs */
 	uint32_t nhosts;	/* node count */
 	uint32_t ntasks;	/* task count */
