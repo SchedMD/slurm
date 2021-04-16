@@ -30,18 +30,19 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
 set file_in      "test$test_id.input"
 set job_cnt      10
 set delay        10
 set job_name     "test$test_id"
 set sleep_time   300
 set task_cnt     60
+set jobs_list    [list]
 
 proc cleanup {} {
-	global bin_rm file_in
+	global bin_rm file_in jobs_list
 
 	exec $bin_rm -f $file_in
+	cancel_job $jobs_list
 }
 
 if {![param_contains [get_config_param "SelectTypeParameters"] "CR_*MEMORY"]} {
@@ -82,33 +83,29 @@ $srun -N1 -n1 --mem=0 --overlap $bin_sleep $sleep_time
 set start_cnt 0
 set timeout 30
 for {set inx 0} {$inx < $job_cnt} {incr inx} {
-	set sbatch_pid [spawn $sbatch --gres=craynetwork:0 --job-name=$job_name --mem-per-cpu=[expr $mem_per_step * 10] --output=/dev/null --error=/dev/null -t5 $file_in]
-	expect {
-		-re "Submitted batch job ($number)" {
-			incr start_cnt
-			exp_continue
-		}
-		-re "Unable to contact" {
-			log_error "Slurm appears to be down"
-			exp_continue
-		}
-		timeout {
-			slow_kill $sbatch_pid
-			fail "sbatch not responding"
-		}
-		eof {
-			wait
-		}
-	}
+	set job_id [submit_job -fail "--gres=craynetwork:0 --job-name=$job_name --mem-per-cpu=[expr $mem_per_step * 10] --output=/dev/null --error=/dev/null -t5 $file_in"]
+	lappend jobs_list $job_id
 }
-if {$start_cnt < $job_cnt} {
-	log_error "$job_cnt of $start_cnt jobs submitted"
-	set exit_code 1
-} else {
-	log_debug "All $start_cnt jobs submitted"
-}
+log_debug "All $start_cnt jobs submitted"
 
-set user_name [get_my_user_name]
+# Wait for at least $job_cnt jobs to be started
+# Because we want an external variable set with the match count, it is
+# simpler to use wait_for here than wait_for_command
+set job_count 0
+if [
+	wait_for -timeout $delay {$job_count >= $job_cnt} {
+		set job_count [
+			regexp -all $job_name [
+				run_command_output -fail "$squeue --state R --name $job_name"
+			]
+		]
+	}
+] {
+	log_warn "Not all jobs were started ($job_count < $job_cnt). This is ok as long as it is at least 1"
+}
+if {$job_count < 1} {
+	fail "No jobs were started"
+}
 
 #
 # There could be hundreds of job steps, we don't want to see
@@ -116,157 +113,17 @@ set user_name [get_my_user_name]
 #
 set desired_tasks [expr $task_cnt * 2 / 3]
 
-#
-# Give the jobs a few seconds to get initiated, check for steps,
-# then kill them all
-#
-exec $bin_sleep $delay
-
-set job_count  0
-set step_count 0
-set timeout    60
-log_user 0
-while { 1 } {
-	set job_count 0
-	spawn $squeue --state R --name $job_name --user $user_name
-	expect {
-		-re "$job_name" {
-			incr job_count
-			exp_continue
-		}
-		timeout {
-			fail "squeue not responding"
-		}
-		eof {
-			wait
-		}
+# We want to see a decent number of steps running
+if [
+	wait_for -timeout $delay {$step_count >= $desired_tasks} {
+		set step_count [
+			regexp -all sleep [
+				run_command_output -fail "$squeue --steps --name $job_name"
+			]
+		]
 	}
-
-	set step_count 0
-	spawn $squeue --steps --name $job_name --user $user_name
-	expect {
-		-re "sleep" {
-			incr step_count
-			exp_continue
-		}
-		-re "error:" {
-			log_error "squeue error"
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			fail "squeue not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$step_count >= $desired_tasks || $step_count == 0} {
-		break
-	}
-	set scaled_task_cnt [expr $job_count * $desired_tasks]
-	if {$step_count >= $scaled_task_cnt} {
-		log_debug "Only started $job_count jobs, reducing step count target to $scaled_task_cnt"
-		set desired_tasks $scaled_task_cnt
-	}
-	exec $bin_sleep 3
+] {
+	fail "Only started $job_count jobs and $step_count steps. We expected at least $desired_tasks and possibly hundreds"
 }
 
-log_user 1
-if {$step_count < $desired_tasks} {
-	log_error "Only started $job_count jobs and $step_count steps. We expected at least $desired_tasks and possibly hundreds"
-	set exit_code 1
-} else {
-	log_debug "We found $job_count jobs and $step_count steps"
-}
-spawn $scancel --quiet --user $user_name
-expect {
-	eof {
-		wait
-	}
-}
-
-#
-# Give a few seconds for clean-up and ensure things are still fine
-# If message are lost, slurmctld re-sends job kill RPC 120 seconds later
-# In any case, make sure that all jobs get completed
-#
-exec $bin_sleep     10
-set completing_jobs 0
-set running_jobs    0
-spawn $squeue --noheader --user $user_name
-expect {
-	-re "test9.8.*$user_name *CG" {
-		incr completing_jobs
-		exp_continue
-	}
-	-re "test9.8.*$user_name" {
-		incr running_jobs
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-#
-# The following logic handles the scancel request failing
-# due to a very busy system (reports failure above)
-#
-# Increasing the MessageTimeout configuration parameter
-# should fix this problem.
-#
-if {$running_jobs != 0} {
-	log_error "Jobs not all cancelled"
-	set exit_code 1
-
-	spawn $scancel --quiet --user $user_name
-	expect {
-		eof {
-			wait
-		}
-	}
-}
-if {$completing_jobs != 0} {
-	log_info "Waiting for slurmctld to re-send job kill RPC"
-	log_info "This will take 120 seconds.."
-	exec $bin_sleep 120
-	set completing_jobs 0
-	spawn $squeue --noheader --user $user_name
-	expect {
-		-re "$job_name *$user_name *CG" {
-			incr completing_jobs
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	if {$completing_jobs != 0} {
-		log_error "Jobs not completing"
-		set exit_code 1
-	}
-}
-if {$completing_jobs != 0} {
-	set max_wait [expr $sleep_time - 120]
-	if {$max_wait > 0} {
-		set completing_jobs 0
-		exec $bin_sleep $max_wait
-		spawn $squeue --noheader --user $user_name
-		expect {
-			-re "$job_name *$user_name *CG" {
-				incr completing_jobs
-				exp_continue
-			}
-			eof {
-				wait
-			}
-		}
-	}
-}
-if {$completing_jobs != 0} {
-	log_error "Jobs not completing. Subsequent tests may fail!"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+log_debug "We found $job_count jobs and $step_count steps"
