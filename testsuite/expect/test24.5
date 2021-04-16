@@ -88,7 +88,8 @@ proc sub_job { cpu_cnt state } {
 
 proc sprio_args { args regex match_cnt } {
 	global sprio
-	if {[wait_for_command $sprio $args $regex $match_cnt]} {
+
+	if [wait_for_command "$sprio $args" "\[regexp -all {$regex} \[dict get \$result output\]\] == $match_cnt"] {
 		fail "sprio did not match"
 	}
 }

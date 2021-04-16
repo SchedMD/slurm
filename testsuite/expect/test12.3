@@ -211,14 +211,10 @@ if {$job_2_node_inx != 2} {
 #
 # Displaying start and end times to troubleshoot bug 9681
 #
-if [wait_for_command $sacct "-A 'slurm_test-account.1' --name=$job_name_1
-                              -X -n -P -j $job_id_1 -o jobid,jobname,start,end" \
-                              "$job_id_1.$job_name_1"] {
+if [wait_for_command_match "$sacct -A 'slurm_test-account.1' --name=$job_name_1 -X -n -P -j $job_id_1 -o jobid,jobname,start,end" "$job_id_1.$job_name_1"] {
 	fail "Accounting data for job 1 ($job_id_1) not propogated to slurmdbd"
 }
-if [wait_for_command $sacct "-A 'slurm_test-account.1' --name=$job_name_2
-                              -X -n -P -j $job_id_2 -o jobid,jobname,start,end" \
-                              "$job_id_2.$job_name_2"] {
+if [wait_for_command_match "$sacct -A 'slurm_test-account.1' --name=$job_name_2 -X -n -P -j $job_id_2 -o jobid,jobname,start,end" "$job_id_2.$job_name_2"] {
 	fail "Accounting data for job 2 ($job_id_2) not propogated to slurmdbd"
 }
 
