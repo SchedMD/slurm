@@ -263,6 +263,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	launch.argv = params->argv;
 	launch.spank_job_env = params->spank_job_env;
 	launch.spank_job_env_size = params->spank_job_env_size;
+	launch.container = xstrdup(params->container);
 	launch.cred = ctx->step_resp->cred;
 	launch.het_job_node_offset = params->het_job_node_offset;
 	launch.het_job_step_cnt = params->het_job_step_cnt;
