@@ -1338,28 +1338,12 @@ static void _poll_connections(void *x)
 	count = list_count(mgr->connections);
 
 	fds_ptr = args->fds;
-	args->fds = NULL;
 
-	slurm_mutex_unlock(&mgr->mutex);
-
-	/* Drop lock during potentially slow xrecalloc() */
-	xrecalloc(fds_ptr, ((count * 2) + 2), sizeof(*fds_ptr));
+	xrecalloc(args->fds, ((count * 2) + 2), sizeof(*args->fds));
 	xassert(sizeof(*fds_ptr) == sizeof(*args->fds));
 
-	slurm_mutex_lock(&mgr->mutex);
-
-	args->fds = fds_ptr;
 	args->nfds = 0;
-
-	if (count < list_count(mgr->connections)) {
-		/*
-		 * something changed while calling recalloc.
-		 * this is a poor man's RCU lock.
-		 */
-		log_flag(NET, "%s: connection count increased while allocating fds",
-			 __func__);
-		goto cleanup;
-	}
+	fds_ptr = args->fds;
 
 	/* Add signal fd */
 	fds_ptr->fd = mgr->sigint_fd[0];
@@ -1430,7 +1414,7 @@ static void _poll_connections(void *x)
 		 __func__, args->nfds, count);
 
 	_poll(mgr, args, mgr->connections, &_handle_poll_event, __func__);
-cleanup:
+
 	mgr->poll_active = false;
 	/* notify _watch it can run but don't send signal to event PIPE*/
 	slurm_cond_broadcast(&mgr->cond);
