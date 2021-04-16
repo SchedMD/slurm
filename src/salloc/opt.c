@@ -187,6 +187,7 @@ env_vars_t env_vars[] = {
   { "SALLOC_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
   { "SALLOC_CLUSTERS", 'M' },
   { "SLURM_CLUSTERS", 'M' },
+  { "SALLOC_CONTAINER", LONG_OPT_CONTAINER },
   { "SALLOC_CONSTRAINT", 'C' },
   { "SALLOC_CORE_SPEC", 'S' },
   { "SALLOC_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
@@ -384,6 +385,9 @@ static bool _opt_verify(void)
 		free_buf(buf);
 		xfree(opt.burst_buffer_file);
 	}
+
+	if (opt.container && opt.container && !getenv("SLURM_CONTAINER"))
+		setenvf(NULL, "SLURM_CONTAINER", "%s", opt.container);
 
 	if (opt.hint &&
 	    !validate_hint_option(&opt)) {
@@ -820,6 +824,7 @@ static void _help(void)
 "      --bbf=<file_name>       burst buffer specification file\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --comment=name          arbitrary comment\n"
+"      --container             Path to OCI container bundle\n"
 "      --cpu-freq=min[-max[:gov]] requested cpu frequency (and governor)\n"
 "      --delay-boot=mins       delay boot for desired node features\n"
 "  -d, --dependency=type:jobid[:time] defer job until condition on jobid is satisfied\n"

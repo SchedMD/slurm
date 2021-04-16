@@ -281,6 +281,9 @@ Specification of multiple KNL modes requires the use of a heterogeneous job.
 \fBBrackets\fR
 Brackets can be used to indicate that you are looking for a set of nodes with
 the different requirements contained within the brackets. For example,
+.TP
+\fB--container=<absolute path to container>\fR Path to OCI container bundle.
+.TP
 \fB--constraint="[(rack1|rack2)*1&(rack3)*2]"\fR will get you one node with
 either the "rack1" or "rack2" features and two nodes with the "rack3" feature.
 The same request without the brackets will try to find a single node that
@@ -1810,6 +1813,9 @@ Same as \fB\-\-clusters\fR
 \fBSALLOC_CONSTRAINT\fR
 Same as \fB\-C\fR, \fB\-\-constraint\fR
 .TP
+\fBSALLOC_CONTAINER\fR
+Same as \-\-container\fR.
+.TP
 \fBSALLOC_CORE_SPEC\fR
 Same as \fB\-\-core\-spec\fR
 .TP
@@ -1951,6 +1957,10 @@ for each component.
 .TP
 \fBSLURM_CLUSTER_NAME\fR
 Name of the cluster on which the job is executing.
+.TP
+\fBSLURM_CONTAINER\fR
+OCI Bundle for job.
+Only set if \-\-container\fR is specified.
 .TP
 \fBSLURM_CPUS_PER_GPU\fR
 Number of CPUs requested per allocated GPU.
