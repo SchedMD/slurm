@@ -18,10 +18,11 @@ it arbitrates contention for resources by managing a queue of pending work.</p>
 each compute node and a central <b>slurmctld</b> daemon running on a management node
 (with optional fail-over twin).
 The <b>slurmd</b> daemons provide fault-tolerant hierarchical communications.
-The user commands include: <b>sacct</b>, <b>salloc</b>, <b>sattach</b>,
-<b>sbatch</b>, <b>sbcast</b>, <b>scancel</b>, <b>scontrol</b>,
-<b>sinfo</b>, <b>sprio</b>, <b>squeue</b>, <b>srun</b>,
-<b>sshare</b>, <b>sstat</b>, <b>strigger</b> and <b>sview</b>.
+The user commands include: <b>sacct</b>, <b>sacctmgr</b>, <b>salloc</b>,
+<b>sattach</b>, <b>sbatch</b>, <b>sbcast</b>, <b>scancel</b>, <b>scontrol</b>,
+<b>scrontab</b>, <b>sdiag</b>, <b>sh5util</b>, <b>sinfo</b>, <b>sprio</b>,
+<b>squeue</b>, <b>sreport</b>, <b>srun</b>, <b>sshare</b>, <b>sstat</b>,
+<b>strigger</b> and <b>sview</b>.
 All of the commands can run anywhere in the cluster.</p>
 
 <div class="figure">
@@ -45,7 +46,7 @@ a single job step may be started that utilizes all nodes allocated to the job,
 or several job steps may independently use a portion of the allocation.</p>
 
 <div class="figure">
-  <img src="entities.gif" width=500></br>
+  <img src="entities.gif" width=550></br>
   Figure 2. Slurm entities
 </div>
 
@@ -390,6 +391,6 @@ with Slurm are provided below.
 <li><a href="mpi_guide.html#open_mpi">Open MPI</a></li>
 </ul></p>
 
-<p style="text-align:center;">Last modified 19 November 2019</p>
+<p style="text-align:center;">Last modified 16 March 2021</p>
 
 <!--#include virtual="footer.txt"-->
