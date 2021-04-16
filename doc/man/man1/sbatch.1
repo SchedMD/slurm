@@ -320,6 +320,8 @@ either the "rack1" or "rack2" features and two nodes with the "rack3" feature.
 The same request without the brackets will try to find a single node that
 meets those requirements.
 .TP
+\fB--container=<absolute path to container>\fR Path to OCI container bundle.
+.TP
 \fBParenthesis\fR
 Parenthesis can be used to group like node features together. For example,
 \fB\-\-constraint="[(knl&snc4&flat)*4&haswell*1]"\fR might be used to specify
@@ -2063,6 +2065,9 @@ Same as \fB\-\-clusters\fR
 \fBSBATCH_CONSTRAINT\fR
 Same as \fB\-C\fR, \fB\-\-constraint\fR
 .TP
+\fBSBATCH_CONTAINER\fR
+Same as \-\-container\fR.
+.TP
 \fBSBATCH_CORE_SPEC\fR
 Same as \fB\-\-core\-spec\fR
 .TP
@@ -2268,6 +2273,10 @@ Only set if the \fB\-\-cpus\-per\-gpu\fR option is specified.
 \fBSLURM_CPUS_PER_TASK\fR
 Number of cpus requested per task.
 Only set if the \fB\-\-cpus\-per\-task\fR option is specified.
+.TP
+\fBSLURM_CONTAINER\fR
+OCI Bundle for job.
+Only set if \-\-container\fR is specified.
 .TP
 \fBSLURM_DIST_PLANESIZE\fR
 Plane distribution size. Only set for plane distributions.

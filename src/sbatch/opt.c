@@ -183,6 +183,7 @@ env_vars_t env_vars[] = {
   { "SBATCH_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
   { "SBATCH_CLUSTERS", 'M' },
   { "SLURM_CLUSTERS", 'M' },
+  { "SBATCH_CONTAINER", LONG_OPT_CONTAINER },
   { "SBATCH_CONSTRAINT", 'C' },
   { "SBATCH_CORE_SPEC", 'S' },
   { "SBATCH_CPU_FREQ_REQ", LONG_OPT_CPU_FREQ },
@@ -674,6 +675,10 @@ static bool _opt_verify(void)
 		error("Cannot specify both --burst-buffer and --bbf");
 		exit(error_exit);
 	}
+
+	if (opt.container && opt.container && !getenv("SLURM_CONTAINER"))
+		setenvf(NULL, "SLURM_CONTAINER", "%s", opt.container);
+
 	/*
 	 * NOTE: this burst_buffer_file processing is intentionally different
 	 * than in salloc/srun, there is not a missing chunk of code here.
@@ -1178,6 +1183,7 @@ static void _help(void)
 "                              commands to.  Default is current cluster.\n"
 "                              Name of 'all' will submit to run on all clusters.\n"
 "                              NOTE: SlurmDBD must up.\n"
+"      --container             Path to OCI container bundle\n"
 "  -m, --distribution=type     distribution method for processes to nodes\n"
 "                              (type = block|cyclic|arbitrary)\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
