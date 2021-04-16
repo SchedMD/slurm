@@ -107,6 +107,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix removing qos from assoc with -= can lead to assoc with no qos
  -- auth/jwt - fix segfault on invalid credential in slurmdbd due to
     missing validate_slurm_user() function in context.
+ -- Fix single Port= not being applied to range of nodes in slurm.conf
 
 * Changes in Slurm 20.11.5
 ==========================
