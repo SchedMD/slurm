@@ -380,6 +380,14 @@ int main(int argc, char **argv)
 	for (i = 0; sig_array[i]; i++)
 		xsignal(sig_array[i], _signal_while_allocating);
 
+	/*
+	 * This option is a bit odd - it's not actually used as part of the
+	 * allocation, but instead just needs to be propagated to an interactive
+	 * step launch correctly to make it convenient for the user.
+	 * Thus the seemingly out of place copy here.
+	 */
+	desc->container = xstrdup(opt.container);
+
 	before = time(NULL);
 	while (true) {
 		if (job_req_list) {
