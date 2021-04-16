@@ -535,6 +535,7 @@ env_vars_t env_vars[] = {
   { "SLURM_CLUSTERS", 'M' },
   { "SLURM_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
   { "SLURM_COMPRESS", LONG_OPT_COMPRESS },
+  { "SLURM_CONTAINER", LONG_OPT_CONTAINER },
   { "SLURM_CONSTRAINT", 'C' },
   { "SLURM_CORE_SPEC", 'S' },
   { "SLURM_CPUS_PER_TASK", 'c' },
@@ -747,6 +748,9 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 
 	sropt.het_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
 	bit_set(sropt.het_grp_bits, het_job_offset);
+
+	if (opt.container && opt.container && !getenv("SLURM_CONTAINER"))
+		setenvf(NULL, "SLURM_CONTAINER", "%s", opt.container);
 
 #ifdef HAVE_NATIVE_CRAY
 	/* only fatal on the allocation */
@@ -1464,6 +1468,7 @@ static void _help(void)
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --comment=name          arbitrary comment\n"
 "      --compress[=library]    data compression library used with --bcast\n"
+"      --container             Path to OCI container bundle\n"
 "      --cpu-freq=min[-max[:gov]] requested cpu frequency (and governor)\n"
 "  -d, --dependency=type:jobid[:time] defer job until condition on jobid is satisfied\n"
 "      --deadline=time         remove the job if no ending possible before\n"
