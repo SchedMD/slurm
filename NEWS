@@ -108,6 +108,7 @@ documents those changes that are of interest to users and administrators.
  -- auth/jwt - fix segfault on invalid credential in slurmdbd due to
     missing validate_slurm_user() function in context.
  -- Fix single Port= not being applied to range of nodes in slurm.conf
+ -- Fix Jobs not requesting a tres are not starting because of that tres limit.
 
 * Changes in Slurm 20.11.5
 ==========================
