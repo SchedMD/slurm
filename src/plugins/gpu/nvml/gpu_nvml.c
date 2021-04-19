@@ -1200,6 +1200,60 @@ static char *_nvml_get_nvlink_info(nvmlDevice_t *device, int index,
 	return links_str;
 }
 
+/* MIG requires CUDA 11 and NVIDIA driver 450.80.02 or later */
+#if NVML_API_VERSION >= 11
+/*
+ * Get the MIG mode of the device
+ *
+ * If current_mode is 1, that means the device is MIG-capable and enabled.
+ * If pending_mode is different than current_mode, then current_mode will be
+ * changed to match pending_mode on the next "activation trigger" (device
+ * unbind, device reset, or machine reboot)
+ */
+static void _nvml_get_device_mig_mode(nvmlDevice_t *device,
+				      unsigned int *current_mode,
+				      unsigned int *pending_mode)
+{
+	nvmlReturn_t nvml_rc = nvmlDeviceGetMigMode(*device, current_mode,
+						    pending_mode);
+	if (nvml_rc == NVML_ERROR_NOT_SUPPORTED)
+		/* This device doesn't support MIG mode */
+		return;
+	else if (nvml_rc != NVML_SUCCESS) {
+		error("Failed to get MIG mode of the GPU: %s",
+		      nvmlErrorString(nvml_rc));
+	}
+}
+
+/*
+ * Get the MIG mode of the device
+ *
+ * If current_mode is 1, that means the device is MIG-capable and enabled.
+ * If pending_mode is different than current_mode, then current_mode will be
+ * changed to match pending_mode on the next "activation trigger" (device
+ * unbind, device reset, or machine reboot)
+ */
+static bool _nvml_is_device_mig(nvmlDevice_t *device)
+{
+	unsigned int current_mode = NVML_DEVICE_MIG_DISABLE;
+	unsigned int pending_mode = NVML_DEVICE_MIG_DISABLE;
+
+	_nvml_get_device_mig_mode(device, &current_mode, &pending_mode);
+
+	if (current_mode == NVML_DEVICE_MIG_DISABLE &&
+	    pending_mode == NVML_DEVICE_MIG_ENABLE)
+		info("MIG is disabled, but set to be enabled on next GPU reset");
+	else if (current_mode == NVML_DEVICE_MIG_ENABLE &&
+		 pending_mode == NVML_DEVICE_MIG_DISABLE)
+		info("MIG is enabled, but set to be disabled on next GPU reset");
+
+	if (current_mode == NVML_DEVICE_MIG_ENABLE)
+		return true;
+	else
+		return false;
+}
+#endif
+
 /*
  * Creates and returns a gres conf list of detected nvidia gpus on the node.
  * If an error occurs, return NULL
@@ -1267,6 +1321,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		char *device_file = NULL;
 		char *nvlinks = NULL;
 		char device_name[NVML_DEVICE_NAME_BUFFER_SIZE] = {0};
+		bool mig_mode = false;
 
 		if (!_nvml_get_handle(i, &device)) {
 			error("Creating null GRES GPU record");
@@ -1275,6 +1330,10 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 					 NULL, NULL, NULL);
 			continue;
 		}
+
+#if NVML_API_VERSION >= 11
+		mig_mode = _nvml_is_device_mig(&device);
+#endif
 
 		memset(&pci_info, 0, sizeof(pci_info));
 		_nvml_get_device_name(&device, device_name,
@@ -1323,6 +1382,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		       cpu_aff_mac_range);
 		debug2("    Core Affinity Range - Abstract: %s",
 		       cpu_aff_abs_range);
+		debug2("    MIG mode: %s", mig_mode ? "enabled" : "disabled");
 		// Print out possible memory frequencies for this device
 		_nvml_print_freqs(&device, LOG_LEVEL_DEBUG2);
 
