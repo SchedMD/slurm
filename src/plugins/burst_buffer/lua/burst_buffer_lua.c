@@ -45,6 +45,7 @@
 #include "slurm/slurm.h"
 
 #include "src/lua/slurm_lua.h"
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/plugins/burst_buffer/common/burst_buffer_common.h"
 
@@ -76,6 +77,12 @@
 const char plugin_name[]        = "burst_buffer lua plugin";
 const char plugin_type[]        = "burst_buffer/lua";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
+
+/*
+ * Most state information is in a common structure so that we can more
+ * easily use common functions from multiple burst buffer plugins.
+ */
+static bb_state_t bb_state;
 
 static const char lua_script_path[] = DEFAULT_SCRIPT_DIR "/burst_buffer.lua";
 static time_t lua_script_last_loaded = (time_t) 0;
@@ -145,11 +152,64 @@ static int _run_lua_script(const char *lua_func)
 }
 
 /*
+ * Handle timeout of burst buffer events:
+ * 1. Purge per-job burst buffer records when the stage-out has completed and
+ *    the job has been purged from Slurm
+ * 2. Test for StageInTimeout events
+ * 3. Test for StageOutTimeout events
+ */
+static void _timeout_bb_rec(void)
+{
+	/* Not implemented yet. */
+}
+
+static void _save_bb_state()
+{
+	/* Not implemented yet. */
+}
+
+static void _load_state(bool init_config)
+{
+	/* Not implemented yet. */
+}
+
+/* Perform periodic background activities */
+static void *_bb_agent(void *args)
+{
+	/* Locks: write job */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+
+	while (!bb_state.term_flag) {
+		bb_sleep(&bb_state, AGENT_INTERVAL);
+		if (!bb_state.term_flag) {
+			_load_state(false);	/* Has own locking */
+			lock_slurmctld(job_write_lock);
+			slurm_mutex_lock(&bb_state.bb_mutex);
+			_timeout_bb_rec();
+			slurm_mutex_unlock(&bb_state.bb_mutex);
+			unlock_slurmctld(job_write_lock);
+		}
+		_save_bb_state();	/* Has own locks excluding file write */
+	}
+
+	return NULL;
+}
+
+/*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
 extern int init(void)
 {
+	slurm_mutex_init(&bb_state.bb_mutex);
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	bb_load_config(&bb_state, (char *)plugin_type); /* Removes "const" */
+	log_flag(BURST_BUF, "");
+	bb_alloc_cache(&bb_state);
+	slurm_thread_create(&bb_state.bb_thread, _bb_agent, NULL);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+
 	return SLURM_SUCCESS;
 }
 
