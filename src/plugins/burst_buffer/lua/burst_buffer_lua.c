@@ -44,6 +44,9 @@
 
 #include "slurm/slurm.h"
 
+#include "src/common/assoc_mgr.h"
+#include "src/common/fd.h"
+#include "src/common/xstring.h"
 #include "src/lua/slurm_lua.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
@@ -163,14 +166,272 @@ static void _timeout_bb_rec(void)
 	/* Not implemented yet. */
 }
 
-static void _save_bb_state()
+/*
+ * Write current burst buffer state to a file.
+ */
+static void _save_bb_state(void)
 {
-	/* Not implemented yet. */
+	static time_t last_save_time = 0;
+	static int high_buffer_size = 16 * 1024;
+	time_t save_time = time(NULL);
+	bb_alloc_t *bb_alloc;
+	uint32_t rec_count = 0;
+	buf_t *buffer;
+	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
+	int i, count_offset, offset, state_fd;
+	int error_code = 0;
+	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
+
+	if ((bb_state.last_update_time <= last_save_time) &&
+	    !bb_state.term_flag)
+		return;
+
+	buffer = init_buf(high_buffer_size);
+	pack16(protocol_version, buffer);
+	count_offset = get_buf_offset(buffer);
+	pack32(rec_count, buffer);
+	/* Each allocated burst buffer is in bb_state.bb_ahash */
+	if (bb_state.bb_ahash) {
+		slurm_mutex_lock(&bb_state.bb_mutex);
+		for (i = 0; i < BB_HASH_SIZE; i++) {
+			bb_alloc = bb_state.bb_ahash[i];
+			while (bb_alloc) {
+				packstr(bb_alloc->account, buffer);
+				pack_time(bb_alloc->create_time, buffer);
+				pack32(bb_alloc->id, buffer);
+				packstr(bb_alloc->name, buffer);
+				packstr(bb_alloc->partition, buffer);
+				packstr(bb_alloc->pool, buffer);
+				packstr(bb_alloc->qos, buffer);
+				pack32(bb_alloc->user_id, buffer);
+				pack64(bb_alloc->size,	buffer);
+				rec_count++;
+				bb_alloc = bb_alloc->next;
+			}
+		}
+		save_time = time(NULL);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		offset = get_buf_offset(buffer);
+		set_buf_offset(buffer, count_offset);
+		pack32(rec_count, buffer);
+		set_buf_offset(buffer, offset);
+	}
+
+	xstrfmtcat(old_file, "%s/%s", slurm_conf.state_save_location,
+	           "burst_buffer_lua_state.old");
+	xstrfmtcat(reg_file, "%s/%s", slurm_conf.state_save_location,
+	           "burst_buffer_lua_state");
+	xstrfmtcat(new_file, "%s/%s", slurm_conf.state_save_location,
+	           "burst_buffer_lua_state.new");
+
+	state_fd = creat(new_file, 0600);
+	if (state_fd < 0) {
+		error("Can't save state, error creating file %s, %m",
+		      new_file);
+		error_code = errno;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount, rc;
+		char *data = (char *)get_buf_data(buffer);
+		high_buffer_size = MAX(nwrite, high_buffer_size);
+		while (nwrite > 0) {
+			amount = write(state_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
+		}
+
+		rc = fsync_and_close(state_fd, "burst_buffer_lua");
+		if (rc && !error_code)
+			error_code = rc;
+	}
+	if (error_code)
+		(void) unlink(new_file);
+	else {
+		/* file shuffle */
+		last_save_time = save_time;
+		(void) unlink(old_file);
+		if (link(reg_file, old_file)) {
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
+		}
+		(void) unlink(reg_file);
+		if (link(new_file, reg_file)) {
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
+		}
+		(void) unlink(new_file);
+	}
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
+	free_buf(buffer);
+}
+
+/*
+ * Open the state save file, or the backup if necessary.
+ * state_file IN - the name of the state save file used
+ * RET the file description to read from or error code
+ */
+static int _open_state_file(char **state_file)
+{
+	int state_fd;
+	struct stat stat_buf;
+
+	*state_file = xstrdup(slurm_conf.state_save_location);
+	xstrcat(*state_file, "/burst_buffer_lua_state");
+	state_fd = open(*state_file, O_RDONLY);
+	if (state_fd < 0) {
+		error("Could not open burst buffer state file %s: %m",
+		      *state_file);
+	} else if (fstat(state_fd, &stat_buf) < 0) {
+		error("Could not stat burst buffer state file %s: %m",
+		      *state_file);
+		(void) close(state_fd);
+	} else if (stat_buf.st_size < 4) {
+		error("Burst buffer state file %s too small", *state_file);
+		(void) close(state_fd);
+	} else	/* Success */
+		return state_fd;
+
+	error("NOTE: Trying backup burst buffer state save file. "
+	      "Information may be lost!");
+	xstrcat(*state_file, ".old");
+	state_fd = open(*state_file, O_RDONLY);
+	return state_fd;
+}
+
+static void _recover_bb_state(void)
+{
+	char *state_file = NULL, *data = NULL;
+	int data_allocated, data_read = 0;
+	uint16_t protocol_version = NO_VAL16;
+	uint32_t data_size = 0, rec_count = 0, name_len = 0;
+	uint32_t id = 0, user_id = 0;
+	uint64_t size = 0;
+	int i, state_fd;
+	char *account = NULL, *name = NULL;
+	char *partition = NULL, *pool = NULL, *qos = NULL;
+	char *end_ptr = NULL;
+	time_t create_time = 0;
+	bb_alloc_t *bb_alloc;
+	buf_t *buffer;
+
+	state_fd = _open_state_file(&state_file);
+	if (state_fd < 0) {
+		info("No burst buffer state file (%s) to recover",
+		     state_file);
+		xfree(state_file);
+		return;
+	}
+	data_allocated = BUF_SIZE;
+	data = xmalloc(data_allocated);
+	while (1) {
+		data_read = read(state_fd, &data[data_size], BUF_SIZE);
+		if (data_read < 0) {
+			if  (errno == EINTR)
+				continue;
+			else {
+				error("Read error on %s: %m", state_file);
+				break;
+			}
+		} else if (data_read == 0)     /* eof */
+			break;
+		data_size      += data_read;
+		data_allocated += data_read;
+		xrealloc(data, data_allocated);
+	}
+	close(state_fd);
+	xfree(state_file);
+
+	buffer = create_buf(data, data_size);
+	safe_unpack16(&protocol_version, buffer);
+	if (protocol_version == NO_VAL16) {
+		if (!ignore_state_errors)
+			fatal("Can not recover burst_buffer/datawarp state, data version incompatible, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
+		error("**********************************************************************");
+		error("Can not recover burst_buffer/datawarp state, data version incompatible");
+		error("**********************************************************************");
+		return;
+	}
+
+	safe_unpack32(&rec_count, buffer);
+	for (i = 0; i < rec_count; i++) {
+		if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+			safe_unpackstr_xmalloc(&account,   &name_len, buffer);
+			safe_unpack_time(&create_time, buffer);
+			safe_unpack32(&id, buffer);
+			safe_unpackstr_xmalloc(&name,      &name_len, buffer);
+			safe_unpackstr_xmalloc(&partition, &name_len, buffer);
+			safe_unpackstr_xmalloc(&pool,      &name_len, buffer);
+			safe_unpackstr_xmalloc(&qos,       &name_len, buffer);
+			safe_unpack32(&user_id, buffer);
+			safe_unpack64(&size, buffer);
+		}
+
+		bb_alloc = bb_alloc_name_rec(&bb_state, name, user_id);
+		bb_alloc->id = id;
+		if (name && (name[0] >='0') && (name[0] <='9')) {
+			bb_alloc->job_id = strtol(name, &end_ptr, 10);
+			bb_alloc->array_job_id = bb_alloc->job_id;
+			bb_alloc->array_task_id = NO_VAL;
+		}
+		bb_alloc->seen_time = time(NULL);
+		bb_alloc->size = size;
+		if (bb_alloc) {
+			log_flag(BURST_BUF, "Recovered burst buffer %s from user %u",
+				 bb_alloc->name, bb_alloc->user_id);
+			xfree(bb_alloc->account);
+			bb_alloc->account = account;
+			account = NULL;
+			bb_alloc->create_time = create_time;
+			xfree(bb_alloc->partition);
+			bb_alloc->partition = partition;
+			partition = NULL;
+			xfree(bb_alloc->pool);
+			bb_alloc->pool = pool;
+			pool = NULL;
+			xfree(bb_alloc->qos);
+			bb_alloc->qos = qos;
+			qos = NULL;
+		}
+		xfree(account);
+		xfree(name);
+		xfree(partition);
+		xfree(pool);
+		xfree(qos);
+	}
+
+	info("Recovered state of %d burst buffers", rec_count);
+	free_buf(buffer);
+	return;
+
+unpack_error:
+	if (!ignore_state_errors)
+		fatal("Incomplete burst buffer data checkpoint file, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
+	error("Incomplete burst buffer data checkpoint file");
+	xfree(account);
+	xfree(name);
+	xfree(partition);
+	xfree(qos);
+	free_buf(buffer);
+	return;
+}
+
+static void _apply_limits(void)
+{
+	/* Not yet implemented */
 }
 
 static void _load_state(bool init_config)
 {
-	/* Not implemented yet. */
+	_recover_bb_state();
+	_apply_limits();
+	bb_state.last_update_time = time(NULL);
+
+	return;
 }
 
 /* Perform periodic background activities */
@@ -218,6 +479,24 @@ extern int init(void)
  */
 extern int fini(void)
 {
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	log_flag(BURST_BUF, "");
+
+	slurm_mutex_lock(&bb_state.term_mutex);
+	bb_state.term_flag = true;
+	slurm_cond_signal(&bb_state.term_cond);
+	slurm_mutex_unlock(&bb_state.term_mutex);
+
+	if (bb_state.bb_thread) {
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		pthread_join(bb_state.bb_thread, NULL);
+		slurm_mutex_lock(&bb_state.bb_mutex);
+		bb_state.bb_thread = 0;
+	}
+	bb_clear_config(&bb_state.bb_config, true);
+	bb_clear_cache(&bb_state);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+
 	return SLURM_SUCCESS;
 }
 
