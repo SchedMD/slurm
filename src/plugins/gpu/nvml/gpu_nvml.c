@@ -1009,7 +1009,7 @@ static void _underscorify_tolower(char *str)
  * Get the name of the GPU
  */
 static void _nvml_get_device_name(nvmlDevice_t device, char *device_name,
-				 unsigned int size)
+				  unsigned int size)
 {
 	nvmlReturn_t nvml_rc = nvmlDeviceGetName(device, device_name, size);
 	if (nvml_rc != NVML_SUCCESS) {
@@ -1050,7 +1050,7 @@ static void _nvml_get_device_pci_info(nvmlDevice_t device, nvmlPciInfo_t *pci)
  * /dev/nvidia[minor_number].
  */
 static void _nvml_get_device_minor_number(nvmlDevice_t device,
-					 unsigned int *minor)
+					  unsigned int *minor)
 {
 	nvmlReturn_t nvml_rc = nvmlDeviceGetMinorNumber(device, minor);
 	if (nvml_rc != NVML_SUCCESS) {
