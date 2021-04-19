@@ -36,11 +36,15 @@
 
 #include "config.h"
 
+#include <lauxlib.h>
+#include <lua.h>
+#include <lualib.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 #include "slurm/slurm.h"
 
+#include "src/lua/slurm_lua.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/plugins/burst_buffer/common/burst_buffer_common.h"
 
@@ -72,6 +76,73 @@
 const char plugin_name[]        = "burst_buffer lua plugin";
 const char plugin_type[]        = "burst_buffer/lua";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
+
+static const char lua_script_path[] = DEFAULT_SCRIPT_DIR "/burst_buffer.lua";
+static time_t lua_script_last_loaded = (time_t) 0;
+static lua_State *L = NULL;
+static const char *req_fxns[] = {
+	"slurm_bb_job_process",
+	NULL
+};
+
+static void _loadscript_extra(lua_State *st)
+{
+        /* local setup */
+	/*
+	 * We may add functions later (like job_submit/lua and cli_filter/lua),
+	 * but for now we don't have any.
+	 */
+	//slurm_lua_table_register(st, NULL, slurm_functions);
+
+	/* Must be always done after we register the slurm_functions */
+	lua_setglobal(st, "slurm");
+}
+
+/*
+ * Call a function in burst_buffer.lua.
+ */
+static int _run_lua_script(const char *lua_func)
+{
+	int rc;
+
+	rc = slurm_lua_loadscript(&L, "burst_buffer/lua",
+				  lua_script_path, req_fxns,
+				  &lua_script_last_loaded, _loadscript_extra);
+
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	/*
+	 * All lua script functions should have been verified during
+	 * initialization:
+	 */
+	lua_getglobal(L, lua_func);
+	if (lua_isnil(L, -1)) {
+		error("%s: Couldn't find function %s",
+		      __func__, lua_func);
+		lua_close(L);
+		return SLURM_ERROR;
+	}
+
+	slurm_lua_stack_dump("burst_buffer/lua", "before lua_pcall", L);
+	if (lua_pcall(L, 0, 1, 0) != 0) {
+		error("%s: %s",
+		      lua_script_path, lua_tostring(L, -1));
+	} else {
+		if (lua_isnumber(L, -1)) {
+			rc = lua_tonumber(L, -1);
+		} else {
+			info("%s: non-numeric return code, returning success",
+			     lua_script_path);
+			rc = SLURM_SUCCESS;
+		}
+		lua_pop(L, 1);
+	}
+	slurm_lua_stack_dump("burst_buffer/lua", "after lua_pcall", L);
+
+	lua_close(L);
+	return rc;
+}
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -165,7 +236,13 @@ extern int bb_p_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid)
  */
 extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 {
-	return SLURM_SUCCESS;
+	int rc;
+
+	log_flag(BURST_BUF, "%pJ", job_ptr);
+	/* Run "job_process" function, validates user script */
+	rc = _run_lua_script("slurm_bb_job_process");
+	log_flag(BURST_BUF, "Return code=%d", rc);
+	return rc;
 }
 
 /*
