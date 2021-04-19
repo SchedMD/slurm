@@ -1226,6 +1226,10 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 	_nvml_get_version(version, NVML_SYSTEM_NVML_VERSION_BUFFER_SIZE);
 	debug("Systems Graphics Driver Version: %s", driver);
 	debug("NVML Library Version: %s", version);
+	debug2("NVML API Version: %u", NVML_API_VERSION);
+#ifdef NVML_NO_UNVERSIONED_FUNC_DEFS
+	debug2("NVML_NO_UNVERSIONED_FUNC_DEFS is set, for backwards compatibility");
+#endif
 
 	_nvml_get_device_count(&device_count);
 
