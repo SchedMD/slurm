@@ -141,7 +141,7 @@ static int _init_key(void)
 			   slurm_conf.state_save_location, default_key);
 	} else if (!key_file) {
 		/* Must be in slurmdbd */
-		error("No jwt_key set. Please set the jwt_key=/path/to/key/file option in AuthAltParams in slurmdbd.conf.");
+		error("No jwt_key set. Please set the jwt_key=/path/to/key/file option in AuthAltParameters in slurmdbd.conf.");
 		return ESLURM_AUTH_SKIP;
 	}
 
