@@ -1865,19 +1865,6 @@ static char **_build_mail_env(job_record_t *job_ptr, uint32_t mail_type)
 	setenvf(&my_env, "SLURM_JOB_MAIL_TYPE", "%s",
 		_mail_type_str(mail_type));
 
-	if (job_ptr->details->std_err)
-		setenvf(&my_env, "SLURM_JOB_STDERR", "%s",
-			job_ptr->details->std_err);
-	if (job_ptr->details->std_in)
-		setenvf(&my_env, "SLURM_JOB_STDIN", "%s",
-			job_ptr->details->std_in);
-	if (job_ptr->details->std_out)
-		setenvf(&my_env, "SLURM_JOB_STDOUT", "%s",
-			job_ptr->details->std_out);
-	if (job_ptr->details->work_dir)
-		setenvf(&my_env, "SLURM_JOB_WORK_DIR", "%s",
-			job_ptr->details->work_dir);
-
 	return my_env;
 }
 

@@ -18341,5 +18341,18 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 		setenvf(&my_env, "SLURM_WCKEY", "%s", job_ptr->wckey);
 	}
 
+	if (job_ptr->details->std_err)
+		setenvf(&my_env, "SLURM_JOB_STDERR", "%s",
+			job_ptr->details->std_err);
+	if (job_ptr->details->std_in)
+		setenvf(&my_env, "SLURM_JOB_STDIN", "%s",
+			job_ptr->details->std_in);
+	if (job_ptr->details->std_out)
+		setenvf(&my_env, "SLURM_JOB_STDOUT", "%s",
+			job_ptr->details->std_out);
+	if (job_ptr->details->work_dir)
+		setenvf(&my_env, "SLURM_JOB_WORK_DIR", "%s",
+			job_ptr->details->work_dir);
+
 	return my_env;
 }
