@@ -358,7 +358,7 @@ main (int argc, char **argv)
 		fatal("Unable to initialize job_container plugin.");
 	if (container_g_restore(conf->spooldir, !conf->cleanstart))
 		error("Unable to restore job_container state.");
-	if (prep_plugin_init(NULL) != SLURM_SUCCESS)
+	if (prep_g_init(NULL) != SLURM_SUCCESS)
 		fatal("failed to initialize prep plugin");
 	if (core_spec_g_init() < 0)
 		fatal("Unable to initialize core specialization plugin.");
@@ -1137,7 +1137,7 @@ _reconfigure(void)
 	gres_reconfig();
 	(void) switch_g_reconfig();
 	container_g_reconfig();
-	prep_plugin_reconfig();
+	prep_g_reconfig();
 	cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 
 	init_node_conf();
@@ -1918,7 +1918,7 @@ _slurmd_fini(void)
 	slurm_auth_fini();
 	node_fini2();
 	gres_fini();
-	prep_plugin_fini();
+	prep_g_fini();
 	slurm_topo_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	slurm_select_fini();

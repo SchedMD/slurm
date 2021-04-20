@@ -549,7 +549,7 @@ int main(int argc, char **argv)
 			fatal("failed to initialize job_submit plugin");
 		}
 	}
-	if (prep_plugin_init(&prep_callbacks) != SLURM_SUCCESS) {
+	if (prep_g_init(&prep_callbacks) != SLURM_SUCCESS) {
 		if (test_config) {
 			error("failed to initialize prep plugin");
 			test_config_rc = 1;
@@ -896,7 +896,7 @@ int main(int argc, char **argv)
 	ext_sensors_fini();
 	gres_fini();
 	job_submit_plugin_fini();
-	prep_plugin_fini();
+	prep_g_fini();
 	slurm_preempt_fini();
 	jobacct_gather_fini();
 	acct_gather_conf_destroy();

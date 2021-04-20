@@ -1452,7 +1452,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	/* Update plugin parameters as possible */
 	rc = job_submit_plugin_reconfig();
 	error_code = MAX(error_code, rc);	/* not fatal */
-	rc = prep_plugin_reconfig();
+	rc = prep_g_reconfig();
 	error_code = MAX(error_code, rc);	/* not fatal */
 	rc = switch_g_reconfig();
 	error_code = MAX(error_code, rc);	/* not fatal */

@@ -77,7 +77,7 @@ static bool prep_is_required[PREP_CALL_CNT] = { false };
  *
  * Returns a Slurm errno.
  */
-extern int prep_plugin_init(prep_callbacks_t *callbacks)
+extern int prep_g_init(prep_callbacks_t *callbacks)
 {
 	int rc = SLURM_SUCCESS;
 	char *last = NULL, *names, *tmp_plugin_list;
@@ -139,7 +139,7 @@ fini:
 	slurm_mutex_unlock(&g_context_lock);
 
 	if (rc != SLURM_SUCCESS)
-		prep_plugin_fini();
+		prep_g_fini();
 
 	return rc;
 }
@@ -149,7 +149,7 @@ fini:
  *
  * Returns a Slurm errno.
  */
-extern int prep_plugin_fini(void)
+extern int prep_g_fini(void)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -178,7 +178,7 @@ fini:
 /*
  * Perform reconfig, re-read any configuration files
  */
-extern int prep_plugin_reconfig(void)
+extern int prep_g_reconfig(void)
 {
 	int rc = SLURM_SUCCESS;
 	bool plugin_change = false;
@@ -194,9 +194,9 @@ extern int prep_plugin_reconfig(void)
 	if (plugin_change) {
 		info("%s: PrEpPlugins changed to %s",
 		     __func__, slurm_conf.prep_plugins);
-		rc = prep_plugin_fini();
+		rc = prep_g_fini();
 		if (rc == SLURM_SUCCESS)
-			rc = prep_plugin_init(NULL);
+			rc = prep_g_init(NULL);
 	}
 
 	return rc;
@@ -215,7 +215,7 @@ extern int prep_g_prolog(job_env_t *job_env, slurm_cred_t *cred)
 
 	START_TIMER;
 
-	rc = prep_plugin_init(NULL);
+	rc = prep_g_init(NULL);
 	slurm_mutex_lock(&g_context_lock);
 	for (int i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].prolog))(job_env, cred);
@@ -232,7 +232,7 @@ extern int prep_g_epilog(job_env_t *job_env, slurm_cred_t *cred)
 
 	START_TIMER;
 
-	rc = prep_plugin_init(NULL);
+	rc = prep_g_init(NULL);
 	slurm_mutex_lock(&g_context_lock);
 	for (int i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++)
 		rc = (*(ops[i].epilog))(job_env, cred);
@@ -249,7 +249,7 @@ extern void prep_g_prolog_slurmctld(job_record_t *job_ptr)
 
 	START_TIMER;
 
-	rc = prep_plugin_init(NULL);
+	rc = prep_g_init(NULL);
 	slurm_mutex_lock(&g_context_lock);
 	for (int i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		bool async = false;
@@ -270,7 +270,7 @@ extern void prep_g_epilog_slurmctld(job_record_t *job_ptr)
 
 	START_TIMER;
 
-	rc = prep_plugin_init(NULL);
+	rc = prep_g_init(NULL);
 	slurm_mutex_lock(&g_context_lock);
 	for (int i = 0; ((i < g_context_cnt) && (rc == SLURM_SUCCESS)); i++) {
 		bool async = false;
@@ -293,7 +293,7 @@ extern bool prep_g_required(prep_call_type_t type)
 	int rc;
 	bool required = false;
 
-	rc = prep_plugin_init(NULL);
+	rc = prep_g_init(NULL);
 	if (rc != SLURM_SUCCESS)
 		return required;
 

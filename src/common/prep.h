@@ -61,16 +61,16 @@ typedef enum {
  *
  * Returns a Slurm errno.
  */
-extern int prep_plugin_init(prep_callbacks_t *callbacks);
+extern int prep_g_init(prep_callbacks_t *callbacks);
 
 /*
  * Terminate the PrEpPlugins and free associated memory.
  *
  * Returns a Slurm errno.
  */
-extern int prep_plugin_fini(void);
+extern int prep_g_fini(void);
 
-extern int prep_plugin_reconfig(void);
+extern int prep_g_reconfig(void);
 
 /*
  **************************************************************************
