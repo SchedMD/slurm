@@ -553,7 +553,7 @@ static void _make_time_str(time_t * time, char *string, int size)
 	}
 }
 
-extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
+extern int jobcomp_p_log_record(job_record_t *job_ptr)
 {
 	char usr_str[32], grp_str[32], start_str[32], end_str[32], time_str[32];
 	char *json_str = NULL, *state_string = NULL;
@@ -873,7 +873,7 @@ extern void *_process_jobs(void *x)
 	struct timespec ts = {0, 0};
 	time_t now;
 
-	/* Wait for slurm_jobcomp_set_location log_url setup. */
+	/* Wait for jobcomp_p_set_location log_url setup. */
 	slurm_mutex_lock(&location_mutex);
 	ts.tv_sec = time(NULL) + INDEX_RETRY_INTERVAL;
 	slurm_cond_timedwait(&location_cond, &location_mutex, &ts);
@@ -964,7 +964,7 @@ extern int fini(void)
  * The remainder of this file implements the standard Slurm job completion
  * logging API.
  */
-extern int slurm_jobcomp_set_location(char *location)
+extern int jobcomp_p_set_location(char *location)
 {
 	int rc = SLURM_SUCCESS;
 	CURL *curl_handle;
@@ -1011,7 +1011,7 @@ extern int slurm_jobcomp_set_location(char *location)
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List slurm_jobcomp_get_jobs(slurmdb_job_cond_t * job_cond)
+extern List jobcomp_p_get_jobs(slurmdb_job_cond_t *job_cond)
 {
 	debug("%s function is not implemented", __func__);
 	return NULL;
@@ -1020,7 +1020,7 @@ extern List slurm_jobcomp_get_jobs(slurmdb_job_cond_t * job_cond)
 /*
  * expire old info from the database
  */
-extern int slurm_jobcomp_archive(slurmdb_archive_cond_t * arch_cond)
+extern int jobcomp_p_archive(slurmdb_archive_cond_t *arch_cond)
 {
 	debug("%s function is not implemented", __func__);
 	return SLURM_SUCCESS;

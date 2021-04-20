@@ -65,3 +65,4 @@ COMMAND CHANGES (see man pages for details)
 
 API CHANGES
 ===========
+ -- jobcomp plugin: change plugin API to jobcomp_p_*().

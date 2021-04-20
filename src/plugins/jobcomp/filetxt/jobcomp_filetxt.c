@@ -145,7 +145,7 @@ int fini ( void )
  * logging API.
  */
 
-extern int slurm_jobcomp_set_location ( char * location )
+extern int jobcomp_p_set_location(char *location)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -183,7 +183,7 @@ static void _make_time_str (time_t *time, char *string, int size)
 	}
 }
 
-extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
+extern int jobcomp_p_log_record(job_record_t *job_ptr)
 {
 	int rc = SLURM_SUCCESS, tmp_int, tmp_int2;
 	char job_rec[1024];
@@ -368,7 +368,7 @@ extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List slurm_jobcomp_get_jobs(slurmdb_job_cond_t *job_cond)
+extern List jobcomp_p_get_jobs(slurmdb_job_cond_t *job_cond)
 {
 	return filetxt_jobcomp_process_get_jobs(job_cond);
 }
@@ -376,7 +376,7 @@ extern List slurm_jobcomp_get_jobs(slurmdb_job_cond_t *job_cond)
 /*
  * expire old info from the database
  */
-extern int slurm_jobcomp_archive(slurmdb_archive_cond_t *arch_cond)
+extern int jobcomp_p_archive(slurmdb_archive_cond_t *arch_cond)
 {
 	return filetxt_jobcomp_process_archive(arch_cond);
 }

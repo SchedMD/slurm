@@ -64,10 +64,10 @@ typedef struct slurm_jobcomp_ops {
  * declared for slurm_jobcomp_ops_t.
  */
 static const char *syms[] = {
-	"slurm_jobcomp_set_location",
-	"slurm_jobcomp_log_record",
-	"slurm_jobcomp_get_jobs",
-	"slurm_jobcomp_archive"
+	"jobcomp_p_set_location",
+	"jobcomp_p_log_record",
+	"jobcomp_p_get_jobs",
+	"jobcomp_p_archive"
 };
 
 static slurm_jobcomp_ops_t ops;

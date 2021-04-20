@@ -41,7 +41,7 @@ for sample implementations of a Slurm job completion logging plugin.</p>
 <h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should be stubbed.</p>
 
-<p class="commandline"> int init (void)
+<p class="commandline">int init(void)</p>
 <p style="margin-left:.2in"><b>Description</b>:<br>
   Called when the plugin is loaded, before any other functions are
   called. Put global initialization here.
@@ -49,7 +49,7 @@ for sample implementations of a Slurm job completion logging plugin.</p>
   <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
   <span class="commandline">SLURM_ERROR</span> on failure.</p>
 
-<p class="commandline"> void fini (void)
+<p class="commandline">void fini(void)</p>
 <p style="margin-left:.2in"><b>Description</b>:<br>
   Called when the plugin is removed. Clear any allocated storage here.
 <p style="margin-left:.2in"><b>Returns</b>: None.</p>
@@ -62,7 +62,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 
-<p class="commandline">int slurm_jobcomp_set_location (char * location);</p>
+<p class="commandline">int jobcomp_p_set_location(char *location)</p>
 <p style="margin-left:.2in"><b>Description</b>: Specify the location to be used for job logging.</p>
 <p style="margin-left:.2in"><b>Argument</b>:<span class="commandline"> location</span>&nbsp;
 &nbsp;&nbsp;(input) specification of where logging should be done. The interpretation of
@@ -71,7 +71,7 @@ this string is at the discretion of the plugin implementation.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int slurm_jobcomp_log_record(job_record_t *job_ptr);</p>
+<p class="commandline">int jobcomp_g_log_record(job_record_t *job_ptr)</p>
 <p style="margin-left:.2in"><b>Description</b>: Note that a job is about to
 terminate or change size. The job's state will include the JOB_RESIZING flag
 if and only if it is about to change size. Otherwise the job is terminating.
@@ -85,8 +85,7 @@ job record as defined in <i>src/slurmctld/slurmctld.h</i></p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">
-List slurm_jobcomp_get_jobs(acct_job_cond_t *job_cond);</a></p>
+<p class="commandline">List jobcomp_p_get_jobs(acct_job_cond_t *job_cond)</p>
 <p style="margin-left:.2in"><b>Description</b>: Get completed job info from
 storage.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
@@ -99,8 +98,7 @@ error. Elements on the list are of type jobcomp_job_rec_t, which is
 defined in common/slurm_jobcomp.h.
 Any returned list must be destroyed to avoid memory leaks.
 
-<p class="commandline">
-void slurm_jobcomp_archive(List selected_parts, void *params)
+<p class="commandline">void jobcomp_p_archive(List selected_parts, void *params)</p>
 <p style="margin-left:.2in"><b>Description</b>: used to archive old data.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
 <span class="commandline">List selected_parts </span>
@@ -110,6 +108,6 @@ void slurm_jobcomp_archive(List selected_parts, void *params)
 <p style="margin-left:.2in"><b>Returns</b>: None</p>
 
 
-<p style="text-align:center;">Last modified 23 October 2019</p>
+<p style="text-align:center;">Last modified 20 April 2021</p>
 
 <!--#include virtual="footer.txt"-->

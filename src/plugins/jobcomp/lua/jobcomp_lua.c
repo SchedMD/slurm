@@ -186,12 +186,12 @@ extern int fini(void)
  * logging API.
  */
 
-extern int slurm_jobcomp_set_location(char * location)
+extern int jobcomp_p_set_location(char *location)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_jobcomp_log_record(job_record_t *job_ptr)
+extern int jobcomp_p_log_record(job_record_t *job_ptr)
 {
 	int rc;
 	slurm_mutex_lock(&lua_lock);
@@ -231,12 +231,12 @@ out:	slurm_mutex_unlock(&lua_lock);
 	return rc;
 }
 
-extern List slurm_jobcomp_get_jobs(void *job_cond)
+extern List jobcomp_p_get_jobs(void *job_cond)
 {
 	return NULL;
 }
 
-extern int slurm_jobcomp_archive(void *arch_cond)
+extern int jobcomp_p_archive(void *arch_cond)
 {
 	return SLURM_SUCCESS;
 }

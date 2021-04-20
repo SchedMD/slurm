@@ -77,7 +77,12 @@ const uint32_t plugin_version	= SLURM_VERSION_NUMBER;
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-int init ( void )
+extern int init(void)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int fini(void)
 {
 	return SLURM_SUCCESS;
 }
@@ -87,27 +92,22 @@ int init ( void )
  * logging API.
  */
 
-int slurm_jobcomp_set_location ( char * location )
+extern int jobcomp_p_set_location(char *location)
 {
 	return SLURM_SUCCESS;
 }
 
-int slurm_jobcomp_log_record(job_record_t *job_ptr)
+extern int jobcomp_p_log_record(job_record_t *job_ptr)
 {
 	return SLURM_SUCCESS;
 }
 
-List slurm_jobcomp_get_jobs(void *job_cond)
+extern List jobcomp_p_get_jobs(void *job_cond)
 {
 	return NULL;
 }
 
-int slurm_jobcomp_archive(void *arch_cond)
-{
-	return SLURM_SUCCESS;
-}
-
-int fini ( void )
+extern int jobcomp_p_archive(void *arch_cond)
 {
 	return SLURM_SUCCESS;
 }
