@@ -245,7 +245,6 @@ static void	_json_parse_sessions_object(json_object *jobj,
 static struct bb_total_size *_json_parse_real_size(json_object *j);
 static void	_log_script_argv(char **script_argv, char *resp_msg);
 static void	_load_state(bool init_config);
-static int	_open_part_state_file(char **state_file);
 static int	_parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 			       uid_t submit_uid);
 static void	_parse_config_links(json_object *instance, bb_configs_t *ent);
@@ -852,38 +851,6 @@ static void _save_bb_state(void)
 	free_buf(buffer);
 }
 
-/* Open the partition state save file, or backup if necessary.
- * state_file IN - the name of the state save file used
- * RET the file description to read from or error code
- */
-static int _open_part_state_file(char **state_file)
-{
-	int state_fd;
-	struct stat stat_buf;
-
-	*state_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(*state_file, "/burst_buffer_cray_state");
-	state_fd = open(*state_file, O_RDONLY);
-	if (state_fd < 0) {
-		error("Could not open burst buffer state file %s: %m",
-		      *state_file);
-	} else if (fstat(state_fd, &stat_buf) < 0) {
-		error("Could not stat burst buffer state file %s: %m",
-		      *state_file);
-		(void) close(state_fd);
-	} else if (stat_buf.st_size < 4) {
-		error("Burst buffer state file %s too small", *state_file);
-		(void) close(state_fd);
-	} else	/* Success */
-		return state_fd;
-
-	error("NOTE: Trying backup burst buffer state save file. "
-	      "Information may be lost!");
-	xstrcat(*state_file, ".old");
-	state_fd = open(*state_file, O_RDONLY);
-	return state_fd;
-}
-
 /* Recover saved burst buffer state and use it to preserve account, partition,
  * and QOS information for persistent burst buffers. */
 static void _recover_bb_state(void)
@@ -902,7 +869,7 @@ static void _recover_bb_state(void)
 	bb_alloc_t *bb_alloc;
 	buf_t *buffer;
 
-	state_fd = _open_part_state_file(&state_file);
+	state_fd = bb_open_state_file("burst_buffer_cray_state", &state_file);
 	if (state_fd < 0) {
 		info("No burst buffer state file (%s) to recover",
 		     state_file);

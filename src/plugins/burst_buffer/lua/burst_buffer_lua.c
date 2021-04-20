@@ -270,39 +270,6 @@ static void _save_bb_state(void)
 	free_buf(buffer);
 }
 
-/*
- * Open the state save file, or the backup if necessary.
- * state_file IN - the name of the state save file used
- * RET the file description to read from or error code
- */
-static int _open_state_file(char **state_file)
-{
-	int state_fd;
-	struct stat stat_buf;
-
-	*state_file = xstrdup(slurm_conf.state_save_location);
-	xstrcat(*state_file, "/burst_buffer_lua_state");
-	state_fd = open(*state_file, O_RDONLY);
-	if (state_fd < 0) {
-		error("Could not open burst buffer state file %s: %m",
-		      *state_file);
-	} else if (fstat(state_fd, &stat_buf) < 0) {
-		error("Could not stat burst buffer state file %s: %m",
-		      *state_file);
-		(void) close(state_fd);
-	} else if (stat_buf.st_size < 4) {
-		error("Burst buffer state file %s too small", *state_file);
-		(void) close(state_fd);
-	} else	/* Success */
-		return state_fd;
-
-	error("NOTE: Trying backup burst buffer state save file. "
-	      "Information may be lost!");
-	xstrcat(*state_file, ".old");
-	state_fd = open(*state_file, O_RDONLY);
-	return state_fd;
-}
-
 static void _recover_bb_state(void)
 {
 	char *state_file = NULL, *data = NULL;
@@ -319,7 +286,7 @@ static void _recover_bb_state(void)
 	bb_alloc_t *bb_alloc;
 	buf_t *buffer;
 
-	state_fd = _open_state_file(&state_file);
+	state_fd = bb_open_state_file("burst_buffer_lua_state", &state_file);
 	if (state_fd < 0) {
 		info("No burst buffer state file (%s) to recover",
 		     state_file);
