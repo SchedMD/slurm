@@ -2331,9 +2331,6 @@ void signal_step_tasks_on_node(char* node_name, step_record_t *step_ptr,
  */
 extern int slurmctld_shutdown(void);
 
-/* Update a job's record of allocated CPUs when a job step gets scheduled */
-extern void step_alloc_lps(step_record_t *step_ptr);
-
 /*
  * step_create - creates a step_record in step_specs->job_id, sets up the
  *	according to the step_specs.

@@ -1811,7 +1811,7 @@ static bool _use_one_thread_per_core(job_record_t *job_ptr)
 }
 
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
-extern void step_alloc_lps(step_record_t *step_ptr)
+static void _step_alloc_lps(step_record_t *step_ptr)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
@@ -2794,7 +2794,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	if (tmp_step_layout_used)
 		xfree(step_layout->node_list);
 
-	step_alloc_lps(step_ptr);
+	_step_alloc_lps(step_ptr);
 
 	*new_step_record = step_ptr;
 
