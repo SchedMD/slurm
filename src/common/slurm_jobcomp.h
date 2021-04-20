@@ -84,8 +84,6 @@ typedef struct {
 	char *exit_code;
 } jobcomp_job_rec_t;
 
-typedef struct slurm_jobcomp_context * slurm_jobcomp_context_t;
-
 extern void jobcomp_destroy_job(void *object);
 
 /* initialization of job completion logging */
