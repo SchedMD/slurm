@@ -301,6 +301,7 @@ static void _recover_bb_state(void)
 			safe_unpack64(&size, buffer);
 		}
 
+		slurm_mutex_lock(&bb_state.bb_mutex);
 		bb_alloc = bb_alloc_name_rec(&bb_state, name, user_id);
 		bb_alloc->id = id;
 		if (name && (name[0] >='0') && (name[0] <='9')) {
@@ -327,6 +328,7 @@ static void _recover_bb_state(void)
 			bb_alloc->qos = qos;
 			qos = NULL;
 		}
+		slurm_mutex_unlock(&bb_state.bb_mutex);
 		xfree(account);
 		xfree(name);
 		xfree(partition);
