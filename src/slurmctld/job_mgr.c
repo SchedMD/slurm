@@ -15475,7 +15475,7 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 		}
 	}
 
-	g_slurm_jobcomp_write(job_ptr);
+	jobcomp_g_write(job_ptr);
 
 	/* When starting the resized job everything is taken care of
 	 * elsewhere, so don't call it here. */

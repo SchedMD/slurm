@@ -86,13 +86,13 @@ extern int slurmdb_jobs_fix_runaway(void *db_conn, List jobs)
 /* initialization of job completion logging */
 extern int slurmdb_jobcomp_init(char *jobcomp_loc)
 {
-	return g_slurm_jobcomp_init(jobcomp_loc);
+	return jobcomp_g_init(jobcomp_loc);
 }
 
 /* terminate pthreads and free, general clean-up for termination */
 extern int slurmdb_jobcomp_fini(void)
 {
-	return g_slurm_jobcomp_fini();
+	return jobcomp_g_fini();
 }
 /*
  * get info from the storage
@@ -101,5 +101,5 @@ extern int slurmdb_jobcomp_fini(void)
  */
 extern List slurmdb_jobcomp_jobs_get(slurmdb_job_cond_t *job_cond)
 {
-	return g_slurm_jobcomp_get_jobs(job_cond);
+	return jobcomp_g_get_jobs(job_cond);
 }

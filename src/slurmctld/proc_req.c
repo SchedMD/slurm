@@ -3318,7 +3318,7 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 		 * Slurm states, where in save_all_sate() they are all indepen-
 		 * dently scheduled. So we save it manually here.
 		 */
-		(void) g_slurm_jobcomp_fini();
+		(void) jobcomp_g_fini();
 
 		/*
 		 * Wait for the backup to dump state and finish up everything.

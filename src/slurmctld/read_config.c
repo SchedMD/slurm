@@ -1173,7 +1173,7 @@ int read_slurm_conf(int recover, bool reconfig)
 			dump_config_state_lite();
 	}
 	update_logging();
-	g_slurm_jobcomp_init(slurm_conf.job_comp_loc);
+	jobcomp_g_init(slurm_conf.job_comp_loc);
 	if (slurm_sched_init() != SLURM_SUCCESS) {
 		if (test_config) {
 			error("Failed to initialize sched plugin");

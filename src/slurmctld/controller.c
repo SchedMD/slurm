@@ -840,7 +840,7 @@ int main(int argc, char **argv)
 		recover = 2;
 	}
 
-	g_slurm_jobcomp_fini();
+	jobcomp_g_fini();
 
 	/*
 	 * Since pidfile is created as user root (its owner is
