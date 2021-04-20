@@ -69,6 +69,7 @@ typedef struct {
 	uid_t uid;
 	gid_t gid;
 	char *user_name;
+	char *work_dir;
 } job_env_t;
 
 /*

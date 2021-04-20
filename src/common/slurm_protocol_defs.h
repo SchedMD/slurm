@@ -1000,6 +1000,7 @@ typedef struct kill_job_msg {
 	time_t   start_time;	/* time of job start, track job requeue */
 	slurm_step_id_t step_id;
 	time_t   time;		/* slurmctld's time of request */
+	char *work_dir;
 } kill_job_msg_t;
 
 typedef struct reattach_tasks_request_msg {
