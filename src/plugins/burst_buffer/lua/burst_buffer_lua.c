@@ -359,6 +359,7 @@ static void _apply_limits(void)
 
 static void _load_state(bool init_config)
 {
+	bb_state.last_load_time = time(NULL);
 	_recover_bb_state();
 	_apply_limits();
 	bb_state.last_update_time = time(NULL);
@@ -432,6 +433,11 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
+static void _purge_vestigial_bufs(void)
+{
+	/* Not yet implemented */
+}
+
 /*
  * Return the total burst buffer size in MB
  */
@@ -452,6 +458,18 @@ extern uint64_t bb_p_get_system_size(void)
  */
 extern int bb_p_load_state(bool init_config)
 {
+	if (!init_config)
+		return SLURM_SUCCESS;
+
+	log_flag(BURST_BUF, "");
+	_load_state(init_config); /* Has own locking */
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	bb_set_tres_pos(&bb_state);
+	_purge_vestigial_bufs();
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+
+	_save_bb_state(); /* Has own locks excluding file write */
+
 	return SLURM_SUCCESS;
 }
 
