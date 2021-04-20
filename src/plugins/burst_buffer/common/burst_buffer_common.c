@@ -60,6 +60,7 @@
 #include "slurm/slurmdb.h"
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
@@ -1959,4 +1960,53 @@ extern bool bb_valid_pool_test(bb_state_t *state_ptr, char *pool_name)
 	info("%s: Invalid pool requested (%s)", __func__, pool_name);
 
 	return false;
+}
+
+extern void bb_write_state_file(char* old_file, char *reg_file, char *new_file,
+				const char *plugin, buf_t *buffer,
+				int buffer_size, time_t save_time,
+				time_t *last_save_time)
+{
+	int state_fd, error_code = 0;
+
+	state_fd = creat(new_file, 0600);
+	if (state_fd < 0) {
+		error("Can't save state, error creating file %s, %m",
+		      new_file);
+		error_code = errno;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount, rc;
+		char *data = (char *)get_buf_data(buffer);
+		buffer_size = MAX(nwrite, buffer_size);
+		while (nwrite > 0) {
+			amount = write(state_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
+		}
+
+		rc = fsync_and_close(state_fd, plugin);
+		if (rc && !error_code)
+			error_code = rc;
+	}
+	if (error_code)
+		(void) unlink(new_file);
+	else {
+		/* file shuffle */
+		*last_save_time = save_time;
+		(void) unlink(old_file);
+		if (link(reg_file, old_file)) {
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
+		}
+		(void) unlink(reg_file);
+		if (link(new_file, reg_file)) {
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
+		}
+		(void) unlink(new_file);
+	}
 }

@@ -755,8 +755,7 @@ static void _save_bb_state(void)
 	uint32_t rec_count = 0;
 	buf_t *buffer;
 	char *old_file = NULL, *new_file = NULL, *reg_file = NULL;
-	int i, count_offset, offset, state_fd;
-	int error_code = 0;
+	int i, count_offset, offset;
 	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
 
 	if ((bb_state.last_update_time <= last_save_time) &&
@@ -806,45 +805,10 @@ static void _save_bb_state(void)
 	xstrfmtcat(new_file, "%s/%s", slurm_conf.state_save_location,
 	           "burst_buffer_cray_state.new");
 
-	state_fd = creat(new_file, 0600);
-	if (state_fd < 0) {
-		error("Can't save state, error creating file %s, %m",
-		      new_file);
-		error_code = errno;
-	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount, rc;
-		char *data = (char *)get_buf_data(buffer);
-		high_buffer_size = MAX(nwrite, high_buffer_size);
-		while (nwrite > 0) {
-			amount = write(state_fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
-				break;
-			}
-			nwrite -= amount;
-			pos    += amount;
-		}
+	bb_write_state_file(old_file, reg_file, new_file, "burst_buffer_cray",
+			    buffer, high_buffer_size, save_time,
+			    &last_save_time);
 
-		rc = fsync_and_close(state_fd, "burst_buffer_cray");
-		if (rc && !error_code)
-			error_code = rc;
-	}
-	if (error_code)
-		(void) unlink(new_file);
-	else {			/* file shuffle */
-		last_save_time = save_time;
-		(void) unlink(old_file);
-		if (link(reg_file, old_file)) {
-			debug4("unable to create link for %s -> %s: %m",
-			       reg_file, old_file);
-		}
-		(void) unlink(reg_file);
-		if (link(new_file, reg_file)) {
-			debug4("unable to create link for %s -> %s: %m",
-			       new_file, reg_file);
-		}
-		(void) unlink(new_file);
-	}
 	xfree(old_file);
 	xfree(reg_file);
 	xfree(new_file);

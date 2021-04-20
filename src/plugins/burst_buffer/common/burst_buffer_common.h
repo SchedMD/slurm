@@ -407,4 +407,21 @@ extern int bb_test_size_limit(job_record_t *job_ptr, bb_job_t *bb_job,
 /* Determine if the specified pool name is valid on this system */
 extern bool bb_valid_pool_test(bb_state_t *state_ptr, char *pool_name);
 
+/*
+ * Save buffer to state file
+ * IN old_file - state file name with ".old" appended
+ * IN reg_file - state file name
+ * IN new_file - state file name with ".new" appended
+ * IN plugin - name of plugin, just used for debugging
+ * IN buffer - write this data to the file
+ * IN buffer_size - size of buffer to create
+ * IN save_time - timestamp when state saving began
+ * OUT last_save_time - set to save_time if writing to the state save file
+ *                      succeeds
+ */
+extern void bb_write_state_file(char* old_file, char *reg_file, char *new_file,
+				const char *plugin, buf_t *buffer,
+				int buffer_size, time_t save_time,
+				time_t *last_save_time);
+
 #endif	/* __BURST_BUFFER_COMMON_H__ */
