@@ -1056,6 +1056,7 @@ static void _nvml_get_device_minor_number(nvmlDevice_t *device,
 	if (nvml_rc != NVML_SUCCESS) {
 		error("NVML: Failed to get minor number of GPU: %s",
 		      nvmlErrorString(nvml_rc));
+		*minor = NO_VAL;
 	}
 }
 
@@ -1278,6 +1279,9 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 				      NVML_DEVICE_UUID_BUFFER_SIZE);
 		_nvml_get_device_pci_info(&device, &pci_info);
 		_nvml_get_device_minor_number(&device, &minor_number);
+		if (minor_number == NO_VAL)
+			continue;
+
 		_nvml_get_device_affinity(&device, CPU_SET_SIZE, cpu_set);
 
 		// Convert from nvml cpu bitmask to slurm bitstr_t (machine fmt)
