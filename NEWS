@@ -70,6 +70,7 @@ documents those changes that are of interest to users and administrators.
     fatal warning messages).
  -- configure: replace --with-rmsi_dir option with proper handling for
     --with-rsmi=dir.
+ -- Pass additional job environment variables to MailProg.
 
 * Changes in Slurm 20.11.6
 ==========================

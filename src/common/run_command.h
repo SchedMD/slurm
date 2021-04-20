@@ -60,9 +60,10 @@ extern int run_command_count(void);
  *		 -1 for no limit (asynchronous)
  * tid IN - Thread we are calling from.
  * status OUT - Job exit code
+ * env - environment for the command, if NULL execv is used
  * Return stdout+stderr of spawned program, value must be xfreed. */
 extern char *run_command(char *script_type, char *script_path,
-			 char **script_argv, int max_wait,
+			 char **script_argv, char **env, int max_wait,
 			 pthread_t tid,
 			 int *status);
 

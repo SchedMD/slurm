@@ -1464,6 +1464,82 @@ local address itself. Changes to MailDomain will only affect new jobs.
 Fully qualified pathname to the program used to send email per user request.
 The default value is "/bin/mail" (or "/usr/bin/mail" if "/bin/mail" does not
 exist but "/usr/bin/mail" does exist).
+The program is called with arguments suitable for the default mail command,
+however additional information about the job is passed in the form of
+environment variables.
+
+Additional variables are the same as those passed to \fIPrologSlurmctld\fR and
+\fIEpilogSlurmctld\fR with additional variables in the following contexts:
+
+.RS
+.TP
+\fBALL\fR
+
+.RS
+.TP
+\fBSLURM_JOB_STATE\fR
+The base state of the job when the MailProg is called.
+.RE
+
+.RS
+.TP
+\fBSLURM_JOB_MAIL_TYPE\fR
+The mail type triggering the mail.
+.RE
+.RE
+
+.RS
+.TP
+\fBBEGIN\fR
+.RS
+.TP
+\fBSLURM_JOB_QEUEUED_TIME\fR
+The amount of time the job was queued.
+.RE
+.RE
+
+.RS
+.TP
+\fBEND, FAIL, REQUEUE, TIME_LIMIT_*\fR
+.RS
+.TP
+\fBSLURM_JOB_RUN_TIME\fR
+The amount of time the job ran for.
+.RE
+.RE
+
+.RS
+.TP
+\fBEND, FAIL\fR
+.RS
+.TP
+\fBSLURM_JOB_EXIT_CODE_MAX\fR
+Job's exit code or highest exit code for an array job.
+.RE
+
+.RS
+.TP
+\fBSLURM_JOB_EXIT_CODE_MIN\fR
+Job's minimun exit code for an array job.
+.RE
+
+.RS
+.TP
+\fBSLURM_JOB_TERM_SIGNAL_MAX\fR
+Job's highest signal for an array job.
+.RE
+.RE
+
+.RS
+.TP
+\fBSTAGE_OUT\fR
+
+.RS
+.TP
+\fBSLURM_JOB_STAGE_OUT_TIME\fR
+Job's staging out time.
+.RE
+.RE
 
 .TP
 \fBMaxArraySize\fR

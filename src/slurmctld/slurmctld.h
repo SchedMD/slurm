@@ -2807,4 +2807,11 @@ extern void crontab_submit(crontab_update_request_msg_t *req_msg,
 
 extern void crontab_add_disabled_lines(uid_t uid, int line_start, int line_end);
 
+/*
+ * Return a env** araray with common output job env variables.
+ *
+ * Used for <Pro|Epi>logSlurmctld and MailProg.
+ */
+extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete);
+
 #endif /* !_HAVE_SLURMCTLD_H */
