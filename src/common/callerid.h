@@ -45,7 +45,7 @@
 #include <netinet/in.h>
 #endif
 
-typedef struct callerid_conn {
+typedef struct {
 	uint32_t port_dst;
 	uint32_t port_src;
 	struct in6_addr ip_dst;
