@@ -722,7 +722,7 @@ int main(int argc, char **argv)
 		 */
 		restore_job_dependencies();
 
-		if (slurm_priority_init() != SLURM_SUCCESS)
+		if (priority_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize priority plugin");
 		if (slurm_sched_init() != SLURM_SUCCESS)
 			fatal("failed to initialize scheduling plugin");
@@ -772,7 +772,7 @@ int main(int argc, char **argv)
 
 		/* termination of controller */
 		switch_g_save(slurm_conf.state_save_location);
-		slurm_priority_fini();
+		priority_g_fini();
 		slurmctld_plugstack_fini();
 		shutdown_state_save();
 		slurm_mutex_lock(&purge_thread_lock);

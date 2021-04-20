@@ -86,7 +86,7 @@ extern int priority_sort_part_tier(void *x, void *y)
 /*
  * Initialize context for priority plugin
  */
-extern int slurm_priority_init(void)
+extern int priority_g_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *plugin_type = "priority";
@@ -117,7 +117,7 @@ done:
 	return retval;
 }
 
-extern int slurm_priority_fini(void)
+extern int priority_g_fini(void)
 {
 	int rc;
 
@@ -132,7 +132,7 @@ extern int slurm_priority_fini(void)
 
 extern uint32_t priority_g_set(uint32_t last_prio, job_record_t *job_ptr)
 {
-	if (slurm_priority_init() < 0)
+	if (priority_g_init() < 0)
 		return 0;
 
 	return (*(ops.set))(last_prio, job_ptr);
@@ -140,7 +140,7 @@ extern uint32_t priority_g_set(uint32_t last_prio, job_record_t *job_ptr)
 
 extern void priority_g_reconfig(bool assoc_clear)
 {
-	if (slurm_priority_init() < 0)
+	if (priority_g_init() < 0)
 		return;
 
 	(*(ops.reconfig))(assoc_clear);
@@ -150,7 +150,7 @@ extern void priority_g_reconfig(bool assoc_clear)
 
 extern void priority_g_set_assoc_usage(slurmdb_assoc_rec_t *assoc)
 {
-	if (slurm_priority_init() < 0)
+	if (priority_g_init() < 0)
 		return;
 
 	(*(ops.set_assoc_usage))(assoc);
@@ -160,7 +160,7 @@ extern void priority_g_set_assoc_usage(slurmdb_assoc_rec_t *assoc)
 extern double priority_g_calc_fs_factor(long double usage_efctv,
 					long double shares_norm)
 {
-	if (slurm_priority_init() < 0)
+	if (priority_g_init() < 0)
 		return 0.0;
 
 	return (*(ops.calc_fs_factor))
@@ -170,7 +170,7 @@ extern double priority_g_calc_fs_factor(long double usage_efctv,
 extern List priority_g_get_priority_factors_list(
 	priority_factors_request_msg_t *req_msg, uid_t uid)
 {
-	if (slurm_priority_init() < 0)
+	if (priority_g_init() < 0)
 		return NULL;
 
 	return (*(ops.get_priority_factors))(req_msg, uid);
@@ -178,7 +178,7 @@ extern List priority_g_get_priority_factors_list(
 
 extern void priority_g_job_end(job_record_t *job_ptr)
 {
-	if (slurm_priority_init() < 0)
+	if (priority_g_init() < 0)
 		return;
 
 	(*(ops.job_end))(job_ptr);
