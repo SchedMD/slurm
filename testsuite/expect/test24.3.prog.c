@@ -50,7 +50,6 @@
 /* set up some fake system */
 void *acct_db_conn = NULL;
 uint32_t cluster_cpus = 50;
-int long_flag = 1;
 int exit_code = 0;
 sshare_time_format_t time_format = SSHARE_TIME_MINS;
 char *time_format_string = "Minutes";
@@ -475,6 +474,12 @@ int main (int argc, char **argv)
 	sleep(1);
 	memset(&resp, 0, sizeof(shares_response_msg_t));
 	assoc_mgr_get_shares(NULL, 0, NULL, &resp);
+
+	/*
+	 * This is the global var from sshare.h to tell we want the long format
+	 */
+	long_flag = 1;
+
 	process(&resp, 0);
 
 	/* free memory */
