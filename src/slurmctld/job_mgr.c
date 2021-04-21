@@ -9775,6 +9775,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	buf_t *buffer;
 	assoc_mgr_lock_t locks = { .qos = READ_LOCK, .user = READ_LOCK };
 	slurmdb_user_rec_t user_rec = { 0 };
+	bool hide_job;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -9794,9 +9795,12 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	}
 
 	job_ptr = find_job_record(job_id);
+
+	hide_job = _hide_job_user_rec(job_ptr, &user_rec, show_flags);
+
 	if (job_ptr && job_ptr->het_job_list) {
 		/* Pack heterogeneous job components */
-		if (!_hide_job_user_rec(job_ptr, &user_rec, show_flags)) {
+		if (!hide_job) {
 			jobs_packed = _pack_het_job(job_ptr, show_flags,
 						       buffer, protocol_version,
 						       uid);
@@ -9804,7 +9808,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	} else if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
 		   !job_ptr->array_recs) {
 		/* Pack regular (not array) job */
-		if (!_hide_job_user_rec(job_ptr, &user_rec, show_flags)) {
+		if (!hide_job) {
 			pack_job(job_ptr, show_flags, buffer, protocol_version,
 				 uid, true);
 			jobs_packed++;
@@ -9815,8 +9819,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 		/* Either the job is not found or it is a job array */
 		if (job_ptr) {
 			packed_head = true;
-			if (!_hide_job_user_rec(job_ptr, &user_rec,
-						show_flags)) {
+			if (!hide_job) {
 				pack_job(job_ptr, show_flags, buffer,
 					 protocol_version, uid, true);
 				jobs_packed++;
