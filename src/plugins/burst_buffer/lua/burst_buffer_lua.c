@@ -36,6 +36,7 @@
 
 #include "config.h"
 
+#include <ctype.h>
 #include <lauxlib.h>
 #include <lua.h>
 #include <lualib.h>
@@ -51,6 +52,9 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/plugins/burst_buffer/common/burst_buffer_common.h"
+
+/* Script directive */
+#define DIRECTIVE_STR "BB_LUA"
 
 /*
  * These variables are required by the burst buffer plugin interface.  If they
@@ -86,6 +90,8 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
  * easily use common functions from multiple burst buffer plugins.
  */
 static bb_state_t bb_state;
+
+static int directive_len = strlen(DIRECTIVE_STR);
 
 static const char lua_script_path[] = DEFAULT_SCRIPT_DIR "/burst_buffer.lua";
 static time_t lua_script_last_loaded = (time_t) 0;
@@ -391,6 +397,196 @@ static void *_bb_agent(void *args)
 }
 
 /*
+ * Copy a batch job's burst_buffer options into a separate buffer.
+ * Merge continued lines into a single line.
+ */
+static int _xlate_batch(job_desc_msg_t *job_desc)
+{
+	char *script, *save_ptr = NULL, *tok;
+	bool is_cont = false, has_space = false;
+	int len, rc = SLURM_SUCCESS;
+
+	/*
+	 * Any command line --bb options get added to the script
+	 */
+	if (job_desc->burst_buffer) {
+		bb_add_bb_to_script(&job_desc->script, job_desc->burst_buffer);
+		xfree(job_desc->burst_buffer);
+	}
+
+	script = xstrdup(job_desc->script);
+	tok = strtok_r(script, "\n", &save_ptr);
+	while (tok) {
+		if (tok[0] != '#')
+			break; /* Quit at first non-comment */
+
+		if (xstrncmp(tok + 1, DIRECTIVE_STR, directive_len)) {
+			/* Skip lines without a burst buffer directive. */
+			is_cont = false;
+		} else {
+			if (is_cont) {
+				/*
+				 * Continuation of the previous line. Add to
+				 * the previous line without the newline and
+				 * without repeating the directive.
+				 */
+				tok += directive_len + 1; /* Add 1 for '#' */
+				while (has_space && isspace(tok[0]))
+					tok++; /* Skip extra spaces */
+			} else if (job_desc->burst_buffer) {
+				xstrcat(job_desc->burst_buffer, "\n");
+			}
+
+			len = strlen(tok);
+			if (tok[len - 1] == '\\') {
+				/* Next line is a continuation of this line. */
+				has_space = isspace(tok[len - 2]);
+				tok[len - 1] = '\0';
+				is_cont = true;
+			} else {
+				is_cont = false;
+			}
+			xstrcat(job_desc->burst_buffer, tok);
+		}
+		tok = strtok_r(NULL, "\n", &save_ptr);
+	}
+	xfree(script);
+	if (rc != SLURM_SUCCESS)
+		xfree(job_desc->burst_buffer);
+	return rc;
+}
+
+/*
+ * Given a request size and a pool name (or NULL name for default pool),
+ * return the required buffer size (rounded up by granularity)
+ */
+static uint64_t _set_granularity(uint64_t orig_size, char *bb_pool)
+{
+	burst_buffer_pool_t *pool_ptr;
+	uint64_t new_size;
+	int i;
+
+	if (!bb_pool || !xstrcmp(bb_pool, bb_state.bb_config.default_pool)) {
+		new_size = bb_granularity(orig_size,
+					  bb_state.bb_config.granularity);
+		return new_size;
+	}
+
+	for (i = 0, pool_ptr = bb_state.bb_config.pool_ptr;
+	     i < bb_state.bb_config.pool_cnt; i++, pool_ptr++) {
+		if (!xstrcmp(bb_pool, pool_ptr->name)) {
+			new_size = bb_granularity(orig_size,
+						  pool_ptr->granularity);
+			return new_size;
+		}
+	}
+	debug("Could not find pool %s", bb_pool);
+	return orig_size;
+}
+
+/* Perform basic burst_buffer option validation */
+static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
+			  uid_t submit_uid)
+{
+	char *bb_script, *save_ptr = NULL;
+	char *bb_pool, *capacity;
+	char *end_ptr = NULL, *sub_tok, *tok;
+	uint64_t tmp_cnt, swap_cnt = 0;
+	int rc = SLURM_SUCCESS;
+	bool have_bb = false, have_stage_out = false;
+
+	xassert(bb_size);
+	*bb_size = 0;
+
+	/*
+	 * Combine command line options with script, and copy the script to
+	 * job_desc->burst_buffer.
+	 */
+	if (job_desc->script)
+		rc = _xlate_batch(job_desc);
+	if ((rc != SLURM_SUCCESS) || (!job_desc->burst_buffer))
+		return rc;
+
+	/* Now validate some burst buffer options and get the size. */
+	bb_script = xstrdup(job_desc->burst_buffer);
+	tok = strtok_r(bb_script, "\n", &save_ptr);
+	while (tok) {
+		if (tok[0] != '#')
+			break; /* Quit at first non-comment */
+		tok++; /* Skip '#' */
+
+		if (xstrncmp(tok, DIRECTIVE_STR, directive_len)) {
+			/* Skip lines without a burst buffer directive. */
+			tok = strtok_r(NULL, "\n", &save_ptr);
+			continue;
+		}
+		tok += directive_len; /* Skip the directive string. */
+		while (isspace(tok[0]))
+			tok++;
+		if (!xstrncmp(tok, "jobdw", 5) &&
+		    (capacity = strstr(tok, "capacity="))) {
+			char *num_ptr = capacity + 9;
+
+			bb_pool = NULL;
+			have_bb = true;
+			tmp_cnt = bb_get_size_num(num_ptr, 1);
+			if (tmp_cnt == 0) {
+				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+				break;
+			}
+			if ((sub_tok = strstr(tok, "pool="))) {
+				bb_pool = xstrdup(sub_tok + 5);
+				if ((sub_tok = strchr(bb_pool, ' ')))
+					sub_tok[0] = '\0';
+			}
+			if (!bb_valid_pool_test(&bb_state, bb_pool))
+				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+			*bb_size += _set_granularity(tmp_cnt, bb_pool);
+			xfree(bb_pool);
+		} else if (!xstrncmp(tok, "swap", 4)) {
+			bb_pool = NULL;
+			have_bb = true;
+			tok += 4;
+			while (isspace(tok[0] && (tok[0] != '\0')))
+				tok++;
+			swap_cnt += strtol(tok, &end_ptr, 10);
+			if ((job_desc->max_nodes == 0) ||
+			    (job_desc->max_nodes == NO_VAL)) {
+				info("User %u submitted job with swap space specification, but no max node count specification. Setting max nodes to min nodes.",
+				     submit_uid);
+				if (job_desc->min_nodes == NO_VAL)
+					job_desc->min_nodes = 1;
+				job_desc->max_nodes = job_desc->min_nodes;
+			}
+			tmp_cnt = swap_cnt + job_desc->max_nodes;
+			if ((sub_tok = strstr(tok, "pool="))) {
+				bb_pool = xstrdup(sub_tok + 5);
+				if ((sub_tok = strchr(bb_pool, ' ')))
+					sub_tok[0] = '\0';
+			}
+			if (!bb_valid_pool_test(&bb_state, bb_pool))
+				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+			*bb_size += _set_granularity(tmp_cnt, bb_pool);
+			xfree(bb_pool);
+		} else if (!xstrncmp(tok, "stage_out", 9)) {
+			have_stage_out = true;
+		}
+		tok = strtok_r(NULL, "\n", &save_ptr);
+	}
+	xfree(bb_script);
+
+	if (!have_bb)
+		rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+
+	if (!have_stage_out) {
+		/* prevent sending stage out email */
+		job_desc->mail_type &= (~MAIL_JOB_STAGE_OUT);
+	}
+
+	return rc;
+}
+
+/*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
@@ -514,7 +710,70 @@ extern int bb_p_state_pack(uid_t uid, buf_t *buffer, uint16_t protocol_version)
  */
 extern int bb_p_job_validate(job_desc_msg_t *job_desc, uid_t submit_uid)
 {
-	return SLURM_SUCCESS;
+	uint64_t bb_size = 0;
+	int rc;
+
+	xassert(job_desc);
+	xassert(job_desc->tres_req_cnt);
+
+	rc = _parse_bb_opts(job_desc, &bb_size, submit_uid);
+	if (rc != SLURM_SUCCESS)
+		return rc;
+
+	if ((job_desc->burst_buffer == NULL) ||
+	    (job_desc->burst_buffer[0] == '\0'))
+		return rc;
+
+	log_flag(BURST_BUF, "job_user_id:%u, submit_uid:%d",
+		 job_desc->user_id, submit_uid);
+	log_flag(BURST_BUF, "burst_buffer:\n%s",
+		 job_desc->burst_buffer);
+
+	if (job_desc->user_id == 0) {
+		info("User root can not allocate burst buffers");
+		return ESLURM_BURST_BUFFER_PERMISSION;
+	}
+
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	if (bb_state.bb_config.allow_users) {
+		bool found_user = false;
+		for (int i = 0; bb_state.bb_config.allow_users[i]; i++) {
+			if (job_desc->user_id ==
+			    bb_state.bb_config.allow_users[i]) {
+				found_user = true;
+				break;
+			}
+		}
+		if (!found_user) {
+			rc = ESLURM_BURST_BUFFER_PERMISSION;
+			goto fini;
+		}
+	}
+
+	if (bb_state.bb_config.deny_users) {
+		bool found_user = false;
+		for (int i = 0; bb_state.bb_config.deny_users[i]; i++) {
+			if (job_desc->user_id ==
+			    bb_state.bb_config.deny_users[i]) {
+				found_user = true;
+				break;
+			}
+		}
+		if (found_user) {
+			rc = ESLURM_BURST_BUFFER_PERMISSION;
+			goto fini;
+		}
+	}
+
+	if (bb_state.tres_pos > 0) {
+		job_desc->tres_req_cnt[bb_state.tres_pos] =
+			bb_size / (1024 * 1024);
+	}
+
+fini:
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+
+	return rc;
 }
 
 /*
