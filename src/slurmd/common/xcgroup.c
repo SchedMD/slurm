@@ -582,19 +582,20 @@ int xcgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids)
 	int fstatus = SLURM_ERROR;
 	char* path = NULL;
 
-	if (pids == NULL || npids == NULL)
+	if (pids == NULL || npids == NULL || !cg->path)
 		return SLURM_ERROR;
 
 	path = _cgroup_procs_readable_path(cg);
 	if (!path) {
-		error("%s: invalid NULL path from cgroup %s",
-		      __func__, cg->name);
+		debug2("%s: unable to read '%s/cgroup.procs'", __func__,
+		       cg->path);
 		return SLURM_ERROR;
 	}
 
 	fstatus = _file_read_uint32s(path, (uint32_t**)pids, npids);
 	if (fstatus != SLURM_SUCCESS)
-		debug2("%s: unable to get pids of '%s'", __func__, cg->path);
+		debug2("%s: unable to get pids of '%s', file disappeared?",
+		       __func__, path);
 
 	xfree(path);
 	return fstatus;
