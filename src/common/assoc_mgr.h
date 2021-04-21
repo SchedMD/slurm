@@ -279,6 +279,16 @@ extern bool assoc_mgr_is_user_acct_coord(void *db_conn, uint32_t uid,
 					char *acct);
 
 /*
+ * see if user is coordinator of given acct
+ * IN: user - slurmdb_user_rec_t of user to check.
+ * IN: acct - name of account
+ * RET: true or false
+ */
+extern bool assoc_mgr_is_user_acct_coord_user_rec(void *db_conn,
+                                                 slurmdb_user_rec_t *user,
+                                                 char *acct_name);
+
+/*
  * get the share information from the association list
  * IN: uid: uid_t of user issuing the request
  * IN: req_msg: info about request

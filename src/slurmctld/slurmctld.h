@@ -2078,6 +2078,10 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 /* part_is_visible - should user be able to see this partition */
 extern bool part_is_visible(part_record_t *part_ptr, uid_t uid);
 
+/* part_is_visible_user_rec - should user be able to see this partition */
+extern bool part_is_visible_user_rec(part_record_t *part_ptr,
+				     slurmdb_user_rec_t *user);
+
 /* part_fini - free all memory associated with partition records */
 extern void part_fini (void);
 
@@ -2602,6 +2606,14 @@ extern bool validate_super_user(uid_t uid);
  * RET true if permitted to run, false otherwise
  */
 extern bool validate_operator(uid_t uid);
+
+/*
+ * validate_operator_user_rec - validate that the user is authorized at the
+ *      root, SlurmUser, or SLURMDB_ADMIN_OPERATOR level
+ * IN user - slurmdb_user_rec_t of user to check
+ * RET true if permitted to run, false otherwise
+ */
+extern bool validate_operator_user_rec(slurmdb_user_rec_t *user);
 
 /* cleanup_completing()
  *
