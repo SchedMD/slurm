@@ -502,14 +502,33 @@ int xcgroup_load(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri)
 
 int xcgroup_delete(xcgroup_t* cg)
 {
+	uint16_t retries = 0;
+
 	/*
 	 *  Simply delete cgroup with rmdir(2). If cgroup doesn't
 	 *   exist, do not propagate error back to caller.
+	 *
+	 * Do 5 retries if we receive an EBUSY, because we may be trying to
+	 * remove the directory when the kernel hasn't yet drained the cgroup
+	 * internal references (css_online), even if cgroup.procs is already
+	 * empty.
 	 */
+retry:
 	if (cg && cg->path && (rmdir(cg->path) < 0) && (errno != ENOENT)) {
-		debug2("%s: rmdir(%s): %m", __func__, cg->path);
+		if ((errno == EBUSY) && retries < 5) {
+			sleep(0.5);
+			retries++;
+			goto retry;
+		}
+		debug2("%s: did %d retries rmdir(%s): %m", __func__, retries,
+		       cg->path);
 		return SLURM_ERROR;
 	}
+
+	if (retries)
+		debug2("%s: rmdir(%s): took %"PRIu16" retries, possible cgroup filesystem slowness",
+		       __func__, cg->path, retries);
+
 	return SLURM_SUCCESS;
 }
 
@@ -618,6 +637,14 @@ int xcgroup_wait_pid_moved(xcgroup_t* cg, const char *cg_name)
 	 * short, but we need to wait to make sure the pid is
 	 * out of the step cgroup or we will occur an error
 	 * leaving the cgroup unable to be removed.
+	 *
+	 * The way it is implemented of checking whether the pid is in the
+	 * cgroup or not is not 100% reliable. In slow cgroup subsystems there
+	 * is the possibility that the internal kernel references are not
+	 * cleaned up even if the pid is not in the cgroup.procs anymore, in
+	 * that case we will receive an -EBUSY when trying to delete later the
+	 * cgroup. This is explained here:
+	 * https://bugs.schedmd.com/show_bug.cgi?id=8911#c18
 	 */
 	do {
 		xcgroup_get_pids(cg, &pids, &npids);
