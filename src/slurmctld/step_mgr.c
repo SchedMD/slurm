@@ -1827,6 +1827,7 @@ static void _step_alloc_lps(step_record_t *step_ptr)
 	}
 
 	rem_nodes = bit_set_count(step_ptr->step_node_bitmap);
+	step_ptr->memory_allocated = xcalloc(rem_nodes, sizeof(uint64_t));
 	for (i_node = i_first; i_node <= i_last; i_node++) {
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i_node))
 			continue;
@@ -1867,15 +1868,16 @@ static void _step_alloc_lps(step_record_t *step_ptr)
 		rem_nodes--;
 
 		if (step_ptr->pn_min_memory && _is_mem_resv()) {
+			uint64_t mem_use;
 			if (step_ptr->pn_min_memory & MEM_PER_CPU) {
-				uint64_t mem_use = step_ptr->pn_min_memory;
+				mem_use = step_ptr->pn_min_memory;
 				mem_use &= (~MEM_PER_CPU);
-				job_resrcs_ptr->memory_used[job_node_inx] +=
-					(mem_use * cpus_alloc);
+				mem_use *= cpus_alloc;
 			} else {
-				job_resrcs_ptr->memory_used[job_node_inx] +=
-					step_ptr->pn_min_memory;
+				mem_use = step_ptr->pn_min_memory;
 			}
+			step_ptr->memory_allocated[step_node_inx] = mem_use;
+			job_resrcs_ptr->memory_used[job_node_inx] += mem_use;
 		}
 		if (pick_step_cores) {
 			uint16_t cpus_per_core = 1;
@@ -3908,6 +3910,15 @@ extern int dump_job_step_state(void *x, void *arg)
 	packstr(step_ptr->tres_per_task, buffer);
 	jobacctinfo_pack(step_ptr->jobacct, SLURM_PROTOCOL_VERSION,
 	                 PROTOCOL_TYPE_SLURM, buffer);
+
+	if (step_ptr->memory_allocated &&
+	    step_ptr->step_layout &&
+	    step_ptr->step_layout->node_cnt)
+		pack64_array(step_ptr->memory_allocated,
+			     step_ptr->step_layout->node_cnt, buffer);
+	else
+		pack64_array(step_ptr->memory_allocated, 0, buffer);
+
 	return 0;
 }
 
@@ -3929,7 +3940,9 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	uint16_t cpus_per_task, resv_port_cnt, state;
 	uint32_t cpu_count, exit_code, name_len, srun_pid = 0, flags = 0;
 	uint32_t time_limit, cpu_freq_min, cpu_freq_max, cpu_freq_gov;
+	uint32_t tmp32;
 	uint64_t pn_min_memory;
+	uint64_t *memory_allocated = NULL;
 	time_t start_time, pre_sus_time, tot_sus_time;
 	char *host = NULL, *core_job = NULL, *submit_line = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL;
@@ -4015,6 +4028,9 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		if (jobacctinfo_unpack(&jobacct, protocol_version,
 				       PROTOCOL_TYPE_SLURM, buffer, true))
 			goto unpack_error;
+		safe_unpack64_array(&memory_allocated, &tmp32, buffer);
+		if (tmp32 == 0)
+			xfree(memory_allocated);
 	} else if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		safe_unpack32(&step_id.step_id, buffer);
 		safe_unpack32(&step_id.step_het_comp, buffer);
@@ -4171,6 +4187,67 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	if (step_ptr == NULL)
 		goto unpack_error;
 
+	/*
+	 * This is only needed for versions older than 21.08 since
+	 * memory_allocated didn't exist before then
+	 */
+	if (!memory_allocated &&
+	    step_layout && step_layout->node_list &&
+	    job_ptr->job_resrcs && job_ptr->job_resrcs->nodes &&
+	    pn_min_memory && _is_mem_resv() &&
+	    (node_name2bitmap(
+		    step_layout->node_list, false,
+		    &step_ptr->step_node_bitmap) == SLURM_SUCCESS) &&
+	    step_ptr->step_node_bitmap  &&
+	    (node_name2bitmap(
+		    job_ptr->job_resrcs->nodes, false,
+		    &job_ptr->job_resrcs->node_bitmap) == SLURM_SUCCESS) &&
+	    job_ptr->job_resrcs->node_bitmap) {
+		int job_node_inx = -1, step_node_inx = -1, i_first, i_last;
+		job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
+		uint64_t mem_use;
+
+		i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
+		if (i_first == -1)	/* empty bitmap */
+			goto unpack_error;
+		i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
+
+		memory_allocated = xcalloc(step_layout->node_cnt,
+					   sizeof(uint64_t));
+		for (int i_node = i_first; i_node <= i_last; i_node++) {
+			if (!bit_test(job_resrcs_ptr->node_bitmap, i_node))
+				continue;
+			job_node_inx++;
+			if (!bit_test(step_ptr->step_node_bitmap, i_node))
+				continue;
+			step_node_inx++;
+			if (job_node_inx >= job_resrcs_ptr->nhosts)
+				fatal("%s: node index bad", __func__);
+
+			/*
+			 * If whole allocate all cpus here instead of just the
+			 * ones requested
+			 */
+			mem_use = pn_min_memory;
+			if (mem_use & MEM_PER_CPU) {
+				int cpus_alloc;
+				mem_use &= (~MEM_PER_CPU);
+
+				if (flags & SSF_WHOLE)
+					cpus_alloc = job_resrcs_ptr->cpus
+						[job_node_inx];
+				else
+					cpus_alloc = step_layout->tasks
+						[step_node_inx] *
+						cpus_per_task;
+
+				mem_use *= cpus_alloc;
+			} else
+				mem_use = pn_min_memory;
+
+			memory_allocated[step_node_inx] = mem_use;
+		}
+	}
 	/* set new values */
 	memcpy(&step_ptr->step_id, &step_id, sizeof(step_ptr->step_id));
 
@@ -4179,6 +4256,8 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	step_ptr->cyclic_alloc = cyclic_alloc;
 	step_ptr->resv_port_cnt= resv_port_cnt;
 	step_ptr->resv_ports   = resv_ports;
+	step_ptr->memory_allocated = memory_allocated;
+	memory_allocated = NULL;
 	step_ptr->name         = name;
 	step_ptr->network      = network;
 	step_ptr->flags        = flags;
@@ -4294,6 +4373,7 @@ unpack_error:
 	xfree(tres_fmt_alloc_str);
 	xfree(cpus_per_tres);
 	xfree(mem_per_tres);
+	xfree(memory_allocated);
 	xfree(submit_line);
 	xfree(tres_bind);
 	xfree(tres_freq);

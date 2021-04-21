@@ -1974,6 +1974,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		}
 		safe_unpack16(&step_flag, buffer);
 
+		job_ptr->job_resrcs = job_resources;
 		while (step_flag == STEP_FLAG) {
 			/*
 			 * No need to put these into accounting if they
@@ -2204,6 +2205,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		}
 		safe_unpack16(&step_flag, buffer);
 
+		job_ptr->job_resrcs = job_resources;
 		while (step_flag == STEP_FLAG) {
 			/*
 			 * No need to put these into accounting if they

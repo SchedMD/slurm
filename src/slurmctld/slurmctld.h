@@ -961,6 +961,7 @@ typedef struct {
 	jobacctinfo_t *jobacct;         /* keep track of process info in the
 					 * step */
 	char *mem_per_tres;		/* semicolon delimited list of TRES=# values */
+	uint64_t *memory_allocated;	/* per node array of memory allocated */
 	char *name;			/* name of job step */
 	char *network;			/* step's network specification */
 	uint64_t pn_min_memory;		/* minimum real memory per node OR
