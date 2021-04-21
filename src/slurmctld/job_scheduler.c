@@ -2638,6 +2638,13 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	cred_arg.job_core_bitmap     = job_resrcs_ptr->core_bitmap;
 	cred_arg.job_core_spec       = job_ptr->details->core_spec;
 	cred_arg.job_mem_limit       = job_ptr->details->pn_min_memory;
+	if (cred_arg.job_mem_limit) {
+		slurm_array64_to_value_reps(job_resrcs_ptr->memory_allocated,
+					    job_resrcs_ptr->nhosts,
+					    &cred_arg.job_mem_alloc,
+					    &cred_arg.job_mem_alloc_rep_count,
+					    &cred_arg.job_mem_alloc_size);
+	}
 	cred_arg.job_nhosts          = job_resrcs_ptr->nhosts;
 	cred_arg.job_gres_list       = job_ptr->gres_list;
 /*	cred_arg.step_gres_list      = NULL; */
