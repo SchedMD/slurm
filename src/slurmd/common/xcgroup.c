@@ -968,28 +968,9 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
 		}
 	}
 
-	/*
-	 * create root cg and lock it
-	 *
-	 * we will keep the lock until the end to avoid the effect of a release
-	 * agent that would remove an existing cgroup hierarchy while we are
-	 * setting it up. As soon as the step cgroup is created, we can release
-	 * the lock.
-	 * Indeed, consecutive slurm steps could result in cg being removed
-	 * between the next EEXIST instantiation and the first addition of
-	 * a task. The release_agent will have to lock the root memory cgroup
-	 * to avoid this scenario.
-	 */
-
 	if (xcgroup_create(ns, &root_cg, "", 0, 0)
 	    != SLURM_SUCCESS) {
 		error("%s: unable to create root cgroup", calling_func);
-		return SLURM_ERROR;
-	}
-
-	if (xcgroup_lock(&root_cg) != SLURM_SUCCESS) {
-		xcgroup_destroy(&root_cg);
-		error("%s: unable to lock root cgroup", calling_func);
 		return SLURM_ERROR;
 	}
 
@@ -1059,13 +1040,6 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
 		      calling_func, &job->step_id);
 		rc = SLURM_ERROR;
 		goto endit;
-	} else {
-		/*
-		 * inhibit release agent for the step cgroup thus letting
-		 * slurmstepd being able to add new pids to the container
-		 * when the job ends (TaskEpilog,...)
-		 */
-		xcgroup_set_param(step_cg, "notify_on_release", "0");
 	}
 
 	if (callback &&
@@ -1081,7 +1055,6 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
 	}
 
 endit:
-	xcgroup_unlock(&root_cg);
 	xcgroup_destroy(&root_cg);
 
 	return rc;
