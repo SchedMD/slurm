@@ -1342,7 +1342,71 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 
 	cred = _slurm_cred_alloc();
 	slurm_mutex_lock(&cred->mutex);
-	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		if (unpack_step_id_members(&cred->step_id, buffer,
+					   protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpack32(&cred_uid, buffer);
+		cred->uid = cred_uid;
+		safe_unpack32(&cred_gid, buffer);
+		cred->gid = cred_gid;
+		safe_unpackstr_xmalloc(&cred->pw_name, &len, buffer);
+		safe_unpackstr_xmalloc(&cred->pw_gecos, &len, buffer);
+		safe_unpackstr_xmalloc(&cred->pw_dir, &len, buffer);
+		safe_unpackstr_xmalloc(&cred->pw_shell, &len, buffer);
+		safe_unpack32_array(&cred->gids, &u32_ngids, buffer);
+		cred->ngids = u32_ngids;
+		safe_unpackstr_array(&cred->gr_names, &u32_ngids, buffer);
+		if (u32_ngids && cred->ngids != u32_ngids) {
+			error("%s: mismatch on gr_names array, %u != %u",
+			      __func__, u32_ngids, cred->ngids);
+			goto unpack_error;
+		}
+		if (gres_job_state_unpack(&cred->job_gres_list, buffer,
+					  cred->step_id.job_id,
+					  protocol_version)
+		    != SLURM_SUCCESS)
+			goto unpack_error;
+		if (gres_step_state_unpack(&cred->step_gres_list,
+					   buffer, &cred->step_id,
+					   protocol_version)
+		    != SLURM_SUCCESS) {
+			goto unpack_error;
+		}
+		safe_unpack16(&cred->job_core_spec, buffer);
+		safe_unpack64(&cred->job_mem_limit, buffer);
+		safe_unpack64(&cred->step_mem_limit, buffer);
+		safe_unpackstr_xmalloc(&cred->job_constraints, &len, buffer);
+		safe_unpackstr_xmalloc(&cred->step_hostlist, &len, buffer);
+		safe_unpack16(&cred->x11, buffer);
+		safe_unpack_time(&cred->ctime, buffer);
+		safe_unpack32(&tot_core_cnt, buffer);
+		unpack_bit_str_hex(&cred->job_core_bitmap, buffer);
+		unpack_bit_str_hex(&cred->step_core_bitmap, buffer);
+		safe_unpack16(&cred->core_array_size, buffer);
+		if (cred->core_array_size) {
+			safe_unpack16_array(&cred->cores_per_socket, &len,
+					    buffer);
+			if (len != cred->core_array_size)
+				goto unpack_error;
+			safe_unpack16_array(&cred->sockets_per_node, &len,
+					    buffer);
+			if (len != cred->core_array_size)
+				goto unpack_error;
+			safe_unpack32_array(&cred->sock_core_rep_count, &len,
+					    buffer);
+			if (len != cred->core_array_size)
+				goto unpack_error;
+		}
+		safe_unpack32(&cred->job_nhosts, buffer);
+		safe_unpackstr_xmalloc(&cred->job_hostlist, &len, buffer);
+
+		/* "sigp" must be last */
+		sigp = (char **) &cred->signature;
+		safe_unpackmem_xmalloc(sigp, &len, buffer);
+		cred->siglen = len;
+		xassert(len > 0);
+	} else if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		if (unpack_step_id_members(&cred->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
@@ -1755,7 +1819,50 @@ static void _pack_cred(slurm_cred_t *cred, buf_t *buffer,
 	 */
 	uint32_t gr_names_cnt = (cred->gr_names) ? cred->ngids : 0;
 
-	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		pack_step_id(&cred->step_id, buffer, protocol_version);
+		pack32(cred_uid, buffer);
+		pack32(cred->gid, buffer);
+		packstr(cred->pw_name, buffer);
+		packstr(cred->pw_gecos, buffer);
+		packstr(cred->pw_dir, buffer);
+		packstr(cred->pw_shell, buffer);
+		pack32_array(cred->gids, cred->ngids, buffer);
+		packstr_array(cred->gr_names, gr_names_cnt, buffer);
+
+		(void) gres_job_state_pack(cred->job_gres_list, buffer,
+					   cred->step_id.job_id, false,
+					   protocol_version);
+		gres_step_state_pack(cred->step_gres_list, buffer,
+				     &cred->step_id, protocol_version);
+		pack16(cred->job_core_spec, buffer);
+		pack64(cred->job_mem_limit, buffer);
+		pack64(cred->step_mem_limit, buffer);
+		packstr(cred->job_constraints, buffer);
+		packstr(cred->step_hostlist, buffer);
+		pack16(cred->x11, buffer);
+		pack_time(cred->ctime, buffer);
+
+		if (cred->job_core_bitmap)
+			tot_core_cnt = bit_size(cred->job_core_bitmap);
+		pack32(tot_core_cnt, buffer);
+		pack_bit_str_hex(cred->job_core_bitmap, buffer);
+		pack_bit_str_hex(cred->step_core_bitmap, buffer);
+		pack16(cred->core_array_size, buffer);
+		if (cred->core_array_size) {
+			pack16_array(cred->cores_per_socket,
+				     cred->core_array_size,
+				     buffer);
+			pack16_array(cred->sockets_per_node,
+				     cred->core_array_size,
+				     buffer);
+			pack32_array(cred->sock_core_rep_count,
+				     cred->core_array_size,
+				     buffer);
+		}
+		pack32(cred->job_nhosts, buffer);
+		packstr(cred->job_hostlist, buffer);
+	} else if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		pack_step_id(&cred->step_id, buffer, protocol_version);
 		pack32(cred_uid, buffer);
 		pack32(cred->gid, buffer);
