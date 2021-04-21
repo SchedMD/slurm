@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix single Port= not being applied to range of nodes in slurm.conf
  -- Fix Jobs not requesting a tres are not starting because of that tres limit.
  -- acct_gather_energy/rapl - fix AveWatts calculation.
+ -- job_container/tmpfs - Fix issues with cleanup and slurmd restarting on
+    running jobs.
 
 * Changes in Slurm 20.11.5
 ==========================
