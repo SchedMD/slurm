@@ -9554,7 +9554,7 @@ static bool _all_parts_hidden(job_record_t *job_ptr, slurmdb_user_rec_t *user)
 static bool _hide_job_user_rec(job_record_t *job_ptr, slurmdb_user_rec_t *user,
 			       uint16_t show_flags)
 {
-	if (!(show_flags & SHOW_ALL) && IS_JOB_REVOKED(job_ptr))
+	if (!job_ptr || (!(show_flags & SHOW_ALL) && IS_JOB_REVOKED(job_ptr)))
 		return true;
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
