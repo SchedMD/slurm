@@ -6,17 +6,17 @@
 #    X_AC_NVML
 #
 #  DESCRIPTION:
-#    Determine if NVIDIA's NVML API library exists (comes with CUDA)
+#    Determine if NVIDIA's NVML API library exists (CUDA provides stubs)
 ##*****************************************************************************
 
 AC_DEFUN([X_AC_NVML],
 [
   _x_ac_nvml_dirs="/usr/local/cuda /usr/cuda"
-  _x_ac_nvml_libs="lib64 lib"
+  _x_ac_nvml_libs="lib/stubs lib64/stubs"
 
   AC_ARG_WITH(
     [nvml],
-    AS_HELP_STRING(--with-nvml=PATH, Specify path to nvml installation),
+    AS_HELP_STRING(--with-nvml=PATH, Specify path to CUDA installation),
     [AS_IF([test "x$with_nvml" != xno && test "x$with_nvml" != xyes],
            [_x_ac_nvml_dirs="$with_nvml"])])
 
@@ -24,7 +24,13 @@ AC_DEFUN([X_AC_NVML],
      AC_MSG_WARN([support for nvml disabled])
   else
     for d in $_x_ac_nvml_dirs; do
+      if [ ! test -d "$d" ]; then
+        continue
+      fi
       for bit in $_x_ac_nvml_libs; do
+        if [ ! test -d "$d/$bit" || ! test -d "$d/include" ]; then
+          continue
+        fi
         _x_ac_nvml_ldflags_save="$LDFLAGS"
         _x_ac_nvml_cppflags_save="$CPPFLAGS"
         LDFLAGS="-L$d/$bit -lnvidia-ml"
