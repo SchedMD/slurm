@@ -400,7 +400,7 @@ static int _user_job_count(List steps, uid_t uid, step_loc_t **out_stepd)
 	return user_job_cnt;
 }
 
-static int _rpc_network_callerid(struct callerid_conn *conn, char *user_name,
+static int _rpc_network_callerid(callerid_conn_t *conn, char *user_name,
 				 uint32_t *job_id)
 {
 	network_callerid_msg_t req;
@@ -440,7 +440,7 @@ static int _try_rpc(pam_handle_t *pamh, struct passwd *pwd)
 	uint32_t job_id;
 	int rc;
 	char ip_src_str[INET6_ADDRSTRLEN];
-	struct callerid_conn conn;
+	callerid_conn_t conn;
 
 	/* Gather network information for RPC call. */
 	debug("Checking file descriptors for network socket");
