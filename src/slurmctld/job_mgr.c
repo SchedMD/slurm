@@ -9715,7 +9715,7 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 
 	assoc_mgr_lock(&locks);
 	assoc_mgr_fill_in_user(acct_db_conn, &pack_info.user_rec,
-			       accounting_enforce, NULL, false);
+			       accounting_enforce, NULL, true);
 	list_for_each(job_ids, _foreach_pack_jobid, &pack_info);
 	assoc_mgr_unlock(&locks);
 
