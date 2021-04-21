@@ -9551,23 +9551,6 @@ static bool _all_parts_hidden(job_record_t *job_ptr, slurmdb_user_rec_t *user)
 }
 
 /* Determine if a given job should be seen by a specific user */
-static bool _hide_job(job_record_t *job_ptr, uid_t uid, uint16_t show_flags)
-{
-	if (!(show_flags & SHOW_ALL) && IS_JOB_REVOKED(job_ptr))
-		return true;
-
-	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-	    (job_ptr->user_id != uid) && !validate_operator(uid) &&
-	    (((slurm_mcs_get_privatedata() == 0) &&
-	      !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-	                                    job_ptr->account)) ||
-	     ((slurm_mcs_get_privatedata() == 1) &&
-	      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label) != 0))))
-		return true;
-	return false;
-}
-
-/* Determine if a given job should be seen by a specific user */
 static bool _hide_job_user_rec(job_record_t *job_ptr, slurmdb_user_rec_t *user,
 			       uint16_t show_flags)
 {
@@ -9753,11 +9736,13 @@ static int _pack_het_job(job_record_t *job_ptr, uint16_t show_flags,
 	int job_cnt = 0;
 	ListIterator iter;
 
+	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
+
 	iter = list_iterator_create(job_ptr->het_job_list);
 	while ((het_job_ptr = list_next(iter))) {
 		if (het_job_ptr->het_job_id == job_ptr->het_job_id) {
 			pack_job(het_job_ptr, show_flags, buffer,
-				 protocol_version, uid, false);
+				 protocol_version, uid, true);
 			job_cnt++;
 		} else {
 			error("%s: Bad het_job_list for %pJ",
@@ -9788,6 +9773,8 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	job_record_t *job_ptr;
 	uint32_t jobs_packed = 0, tmp_offset;
 	buf_t *buffer;
+	assoc_mgr_lock_t locks = { .qos = READ_LOCK, .user = READ_LOCK };
+	slurmdb_user_rec_t user_rec = { 0 };
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -9799,10 +9786,17 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	pack32(jobs_packed, buffer);
 	pack_time(time(NULL), buffer);
 
+	assoc_mgr_lock(&locks);
+	if (slurm_conf.private_data & PRIVATE_DATA_JOBS) {
+		user_rec.uid = uid;
+		assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
+				       accounting_enforce, NULL, true);
+	}
+
 	job_ptr = find_job_record(job_id);
 	if (job_ptr && job_ptr->het_job_list) {
 		/* Pack heterogeneous job components */
-		if (!_hide_job(job_ptr, uid, show_flags)) {
+		if (!_hide_job_user_rec(job_ptr, &user_rec, show_flags)) {
 			jobs_packed = _pack_het_job(job_ptr, show_flags,
 						       buffer, protocol_version,
 						       uid);
@@ -9810,9 +9804,9 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	} else if (job_ptr && (job_ptr->array_task_id == NO_VAL) &&
 		   !job_ptr->array_recs) {
 		/* Pack regular (not array) job */
-		if (!_hide_job(job_ptr, uid, show_flags)) {
+		if (!_hide_job_user_rec(job_ptr, &user_rec, show_flags)) {
 			pack_job(job_ptr, show_flags, buffer, protocol_version,
-				 uid, false);
+				 uid, true);
 			jobs_packed++;
 		}
 	} else {
@@ -9821,9 +9815,10 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 		/* Either the job is not found or it is a job array */
 		if (job_ptr) {
 			packed_head = true;
-			if (!_hide_job(job_ptr, uid, show_flags)) {
+			if (!_hide_job_user_rec(job_ptr, &user_rec,
+						show_flags)) {
 				pack_job(job_ptr, show_flags, buffer,
-					 protocol_version, uid, false);
+					 protocol_version, uid, true);
 				jobs_packed++;
 			}
 		}
@@ -9833,15 +9828,18 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 			if ((job_ptr->job_id == job_id) && packed_head) {
 				;	/* Already packed */
 			} else if (job_ptr->array_job_id == job_id) {
-				if (_hide_job(job_ptr, uid, show_flags))
+				if (_hide_job_user_rec(
+					    job_ptr, &user_rec, show_flags))
 					break;
 				pack_job(job_ptr, show_flags, buffer,
-					 protocol_version, uid, false);
+					 protocol_version, uid, true);
 				jobs_packed++;
 			}
 			job_ptr = job_ptr->job_array_next_j;
 		}
 	}
+
+	assoc_mgr_unlock(&locks);
 
 	if (jobs_packed == 0) {
 		free_buf(buffer);
