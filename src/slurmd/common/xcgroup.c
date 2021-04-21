@@ -532,15 +532,20 @@ retry:
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Returns the path to the cgroup.procs file over which we have permissions
+ * defined by check_mode. This path is where we'll be able to read or write
+ * pids. If there are no paths available with these permisisons, return NULL,
+ * which means the cgroup doesn't exist or we do not have permissions to modify
+ * the cg.
+ */
 static char *_cgroup_procs_check (xcgroup_t *cg, int check_mode)
 {
 	struct stat st;
-	// If possible use cgroup.procs to add the processes atomically
 	char *path = xstrdup_printf("%s/%s", cg->path, "cgroup.procs");
-	if (!((stat (path, &st) >= 0) && (st.st_mode & check_mode))) {
+
+	if (!((stat (path, &st) >= 0) && (st.st_mode & check_mode)))
 		xfree(path);
-		path = xstrdup_printf("%s/%s", cg->path, "tasks");
-	}
 
 	return path;
 }
@@ -848,41 +853,25 @@ extern int xcgroup_cpuset_init(xcgroup_t *cg)
 	return SLURM_SUCCESS;
 }
 
-static int cgroup_move_process_by_task (xcgroup_t *cg, pid_t pid)
-{
-	DIR *dir;
-	struct dirent *entry;
-	char path[PATH_MAX];
-
-	if (snprintf(path, PATH_MAX, "/proc/%d/task", (int) pid) >= PATH_MAX) {
-		error("xcgroup: move_process_by_task: path overflow!");
-		return SLURM_ERROR;
-	}
-
-	dir = opendir(path);
-	if (!dir) {
-		error("%s: opendir(%s): %m", __func__, path);
-		return SLURM_ERROR;
-	}
-
-	while ((entry = readdir(dir))) {
-		if (entry->d_name[0] != '.')
-			xcgroup_set_param(cg, "tasks", entry->d_name);
-	}
-	closedir(dir);
-	return SLURM_SUCCESS;
-}
-
 int xcgroup_move_process (xcgroup_t *cg, pid_t pid)
 {
-	char *path = _cgroup_procs_writable_path(cg);
+	char *path = NULL;
 
-	if (!path)
-		return cgroup_move_process_by_task (cg, pid);
+	/*
+	 * First we check permissions to see if we will be able to move the pid.
+	 * The path is a path to cgroup.procs and writting there will instruct
+	 * the cgroup subsystem to move the process and all its threads there.
+	 */
+	path = _cgroup_procs_writable_path(cg);
+
+	if (!path) {
+		debug2("Cannot write to cgroup.procs for %s", cg->path);
+		return SLURM_ERROR;
+	}
 
 	xfree(path);
 
-	return xcgroup_set_uint32_param (cg, "cgroup.procs", pid);
+	return xcgroup_set_uint32_param(cg, "cgroup.procs", pid);
 }
 
 extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns)
