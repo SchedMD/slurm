@@ -100,8 +100,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-noinst_PROGRAMS = libcommon.o$(EXEEXT) libeio.o$(EXEEXT) \
-	libspank.o$(EXEEXT)
+noinst_PROGRAMS = libcommon.o$(EXEEXT) libspank.o$(EXEEXT)
 subdir = src/common
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -163,12 +162,12 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
-	cbuf.lo cli_filter.lo cpu_frequency.lo cron.lo data.lo env.lo \
-	fd.lo fetch_config.lo forward.lo gpu.lo global_defaults.lo \
-	gres.lo group_cache.lo half_duplex.lo hostlist.lo \
-	job_options.lo job_resources.lo list.lo log.lo net.lo \
-	node_conf.lo node_features.lo node_select.lo pack.lo \
-	parse_config.lo parse_time.lo parse_value.lo plugin.lo \
+	cbuf.lo cli_filter.lo cpu_frequency.lo cron.lo data.lo eio.lo \
+	env.lo fd.lo fetch_config.lo forward.lo gpu.lo \
+	global_defaults.lo gres.lo group_cache.lo half_duplex.lo \
+	hostlist.lo io_hdr.lo job_options.lo job_resources.lo list.lo \
+	log.lo net.lo node_conf.lo node_features.lo node_select.lo \
+	pack.lo parse_config.lo parse_time.lo parse_value.lo plugin.lo \
 	plugrack.lo power.lo prep.lo print_fields.lo proc_args.lo \
 	read_config.lo run_command.lo run_in_daemon.lo site_factor.lo \
 	slurm_accounting_storage.lo slurm_acct_gather.lo \
@@ -201,18 +200,12 @@ libcommon_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 libdaemonize_la_LIBADD =
 am_libdaemonize_la_OBJECTS = daemonize.lo
 libdaemonize_la_OBJECTS = $(am_libdaemonize_la_OBJECTS)
-libeio_la_LIBADD =
-am_libeio_la_OBJECTS = eio.lo io_hdr.lo
-libeio_la_OBJECTS = $(am_libeio_la_OBJECTS)
 libspank_la_LIBADD =
 am_libspank_la_OBJECTS = plugstack.lo optz.lo
 libspank_la_OBJECTS = $(am_libspank_la_OBJECTS)
 am_libcommon_o_OBJECTS =
 libcommon_o_OBJECTS = $(am_libcommon_o_OBJECTS)
 libcommon_o_LDADD = $(LDADD)
-am_libeio_o_OBJECTS =
-libeio_o_OBJECTS = $(am_libeio_o_OBJECTS)
-libeio_o_LDADD = $(LDADD)
 am_libspank_o_OBJECTS =
 libspank_o_OBJECTS = $(am_libspank_o_OBJECTS)
 libspank_o_LDADD = $(LDADD)
@@ -311,9 +304,8 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(libcommon_la_SOURCES) $(EXTRA_libcommon_la_SOURCES) \
-	$(libdaemonize_la_SOURCES) $(libeio_la_SOURCES) \
-	$(libspank_la_SOURCES) $(libcommon_o_SOURCES) \
-	$(libeio_o_SOURCES) $(libspank_o_SOURCES)
+	$(libdaemonize_la_SOURCES) $(libspank_la_SOURCES) \
+	$(libcommon_o_SOURCES) $(libspank_o_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -598,7 +590,6 @@ AM_CPPFLAGS = -I$(top_srcdir) -DSBINDIR=\"$(sbindir)\"
 noinst_LTLIBRARIES = \
 	libcommon.la 			\
 	libdaemonize.la 		\
-	libeio.la  			\
 	libspank.la
 
 libcommon_la_SOURCES = \
@@ -618,6 +609,8 @@ libcommon_la_SOURCES = \
 	cron.h					\
 	data.c					\
 	data.h					\
+	eio.c					\
+	eio.h					\
 	env.c					\
 	env.h					\
 	fd.c					\
@@ -637,6 +630,8 @@ libcommon_la_SOURCES = \
 	half_duplex.h				\
 	hostlist.c				\
 	hostlist.h				\
+	io_hdr.c				\
+	io_hdr.h				\
 	job_options.c				\
 	job_options.h				\
 	job_resources.c				\
@@ -804,10 +799,6 @@ libdaemonize_la_SOURCES = \
 	daemonize.c       	 	\
 	daemonize.h
 
-libeio_la_SOURCES = \
-	eio.c eio.h	   		\
-	io_hdr.c io_hdr.h
-
 libspank_la_SOURCES = \
 	plugstack.c plugstack.h \
 	optz.c      optz.h
@@ -818,10 +809,6 @@ libcommon_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
 # This was made so we could export all symbols from libcommon
 # on multiple platforms
 libcommon_o_SOURCES = 
-
-# This was made so we could export all symbols from libeio
-# on multiple platforms
-libeio_o_SOURCES = 
 
 # This was made so we could export all symbols from libspank
 # on multiple platforms
@@ -885,9 +872,6 @@ libcommon.la: $(libcommon_la_OBJECTS) $(libcommon_la_DEPENDENCIES) $(EXTRA_libco
 
 libdaemonize.la: $(libdaemonize_la_OBJECTS) $(libdaemonize_la_DEPENDENCIES) $(EXTRA_libdaemonize_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK)  $(libdaemonize_la_OBJECTS) $(libdaemonize_la_LIBADD) $(LIBS)
-
-libeio.la: $(libeio_la_OBJECTS) $(libeio_la_DEPENDENCIES) $(EXTRA_libeio_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK)  $(libeio_la_OBJECTS) $(libeio_la_LIBADD) $(LIBS)
 
 libspank.la: $(libspank_la_OBJECTS) $(libspank_la_DEPENDENCIES) $(EXTRA_libspank_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK)  $(libspank_la_OBJECTS) $(libspank_la_LIBADD) $(LIBS)
@@ -1406,8 +1390,6 @@ uninstall-am:
 
 libcommon.o$(EXEEXT) :  $(libcommon_la_OBJECTS) $(libcommon_la_DEPENDENCIES)
 	$(LINK)  $(libcommon_la_OBJECTS)
-libeio.o$(EXEEXT) :  $(libeio_la_OBJECTS) $(libeio_la_DEPENDENCIES)
-	$(LINK)  $(libeio_la_OBJECTS)
 libspank.o$(EXEEXT) :  $(libspank_la_OBJECTS) $(libspank_la_DEPENDENCIES)
 	$(LINK)  $(libspank_la_OBJECTS)
 

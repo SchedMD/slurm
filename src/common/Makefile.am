@@ -12,12 +12,11 @@ AUTOMAKE_OPTIONS = foreign
 
 AM_CPPFLAGS     = -I$(top_srcdir) -DSBINDIR=\"$(sbindir)\"
 
-noinst_PROGRAMS = libcommon.o libeio.o libspank.o
+noinst_PROGRAMS = libcommon.o libspank.o
 
 noinst_LTLIBRARIES = 			\
 	libcommon.la 			\
 	libdaemonize.la 		\
-	libeio.la  			\
 	libspank.la
 
 libcommon_la_SOURCES =				\
@@ -37,6 +36,8 @@ libcommon_la_SOURCES =				\
 	cron.h					\
 	data.c					\
 	data.h					\
+	eio.c					\
+	eio.h					\
 	env.c					\
 	env.h					\
 	fd.c					\
@@ -56,6 +57,8 @@ libcommon_la_SOURCES =				\
 	half_duplex.h				\
 	hostlist.c				\
 	hostlist.h				\
+	io_hdr.c				\
+	io_hdr.h				\
 	job_options.c				\
 	job_options.h				\
 	job_resources.c				\
@@ -224,10 +227,6 @@ libdaemonize_la_SOURCES =  		\
 	daemonize.c       	 	\
 	daemonize.h
 
-libeio_la_SOURCES = 	   		\
-	eio.c eio.h	   		\
-	io_hdr.c io_hdr.h
-
 libspank_la_SOURCES = \
 	plugstack.c plugstack.h \
 	optz.c      optz.h
@@ -241,12 +240,6 @@ libcommon_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
 libcommon_o_SOURCES =
 libcommon.o$(EXEEXT) :  $(libcommon_la_OBJECTS) $(libcommon_la_DEPENDENCIES)
 	$(LINK)  $(libcommon_la_OBJECTS)
-
-# This was made so we could export all symbols from libeio
-# on multiple platforms
-libeio_o_SOURCES =
-libeio.o$(EXEEXT) :  $(libeio_la_OBJECTS) $(libeio_la_DEPENDENCIES)
-	$(LINK)  $(libeio_la_OBJECTS)
 
 # This was made so we could export all symbols from libspank
 # on multiple platforms

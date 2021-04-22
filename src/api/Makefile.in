@@ -206,7 +206,7 @@ libslurmfull_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_CFLAGS) $(CFLAGS) $(libslurmfull_la_LDFLAGS) $(LDFLAGS) \
 	-o $@
 am__DEPENDENCIES_1 = $(common_dir)/libcommon.la \
-	$(common_dir)/libspank.la $(common_dir)/libeio.la
+	$(common_dir)/libspank.la
 libslurmhelper_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = account_functions.lo archive_functions.lo \
 	assoc_functions.lo cluster_functions.lo \
@@ -233,8 +233,7 @@ libslurmhelper_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	-o $@
 am_libslurm_o_OBJECTS =
 libslurm_o_OBJECTS = $(am_libslurm_o_OBJECTS)
-libslurm_o_DEPENDENCIES = $(top_builddir)/src/common/libeio.o \
-	$(top_builddir)/src/common/libspank.o \
+libslurm_o_DEPENDENCIES = $(top_builddir)/src/common/libspank.o \
 	$(top_builddir)/src/common/libcommon.o
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -643,7 +642,7 @@ BUILT_SOURCES = $(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT)\
 
 
 # Note that libslurmhelper is mostly the same as libslurm, except that
-# it exports ALL symbols used by the process, libcommon, libeio, etc.
+# it exports ALL symbols used by the process, libcommon, etc.
 # Only link with libslurmhelper if you are sure you are not going to be
 # loading a plugin that could use something you yourself are not
 # calling from here.
@@ -716,7 +715,6 @@ common_dir = $(top_builddir)/src/common
 slurmapi_add = \
 	$(common_dir)/libcommon.la	\
 	$(common_dir)/libspank.la      	\
-	$(common_dir)/libeio.la		\
 	-lpthread
 
 libslurmhelper_la_SOURCES = $(slurmapi_src)
@@ -750,7 +748,7 @@ libslurm_pmi_la_LDFLAGS = \
 # This was made so we could export all symbols from libcommon
 # on multiple platforms
 libslurm_o_SOURCES = 
-libslurm_o_LDADD = $(top_builddir)/src/common/libeio.o	\
+libslurm_o_LDADD = \
 	$(top_builddir)/src/common/libspank.o	\
 	$(top_builddir)/src/common/libcommon.o
 
