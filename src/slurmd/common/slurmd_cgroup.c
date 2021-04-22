@@ -60,13 +60,8 @@
 static xcgroup_t system_cpuset_cg = {NULL, NULL, NULL, 0, 0, 0};
 static xcgroup_t system_memory_cg = {NULL, NULL, NULL, 0, 0, 0};
 
-static bool cpuset_prefix_set = false;
-static char *cpuset_prefix = "";
-
 static xcgroup_ns_t cpuset_ns = {NULL, NULL, NULL};
 static xcgroup_ns_t memory_ns = {NULL, NULL, NULL};
-
-char cpuset_meta[PATH_MAX];
 
 static char system_cgroup_path[PATH_MAX];
 
@@ -122,19 +117,11 @@ extern int init_system_cpuset_cgroup(void)
 		return SLURM_ERROR;
 	}
 
-again:
-	snprintf(cpuset_meta, sizeof(cpuset_meta), "%scpus", cpuset_prefix);
-	rc = xcgroup_get_param(&slurm_cg, cpuset_meta, &cpus, &cpus_size);
-	if (rc != SLURM_SUCCESS || cpus_size == 1) {
-		if (!cpuset_prefix_set && (rc != SLURM_SUCCESS)) {
-			cpuset_prefix_set = 1;
-			cpuset_prefix = "cpuset.";
-			goto again;
-		}
+	rc = xcgroup_get_param(&slurm_cg, "cpuset.cpus", &cpus, &cpus_size);
 
+	if (rc != SLURM_SUCCESS || cpus_size == 1) {
 		/* initialize the cpusets as it was nonexistent */
-		if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
-					&slurm_cg) != SLURM_SUCCESS) {
+		if (xcgroup_cpuset_init(&slurm_cg) != SLURM_SUCCESS) {
 			xfree(slurm_cgpath);
 			xcgroup_destroy(&slurm_cg);
 			xcgroup_ns_destroy(&cpuset_ns);
@@ -157,10 +144,8 @@ again:
 	if (xcgroup_instantiate(&system_cpuset_cg) != SLURM_SUCCESS) {
 		goto error;
 	}
-	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
-				&system_cpuset_cg) != SLURM_SUCCESS) {
+	if (xcgroup_cpuset_init(&system_cpuset_cg) != SLURM_SUCCESS)
 		goto error;
-	}
 
 	debug("system cgroup: system cpuset cgroup initialized");
 	return SLURM_SUCCESS;
@@ -352,8 +337,7 @@ static char* _system_cgroup_create_slurm_cg (xcgroup_ns_t* ns)
 
 extern int set_system_cgroup_cpus(char *phys_cpu_str)
 {
-	snprintf(cpuset_meta, sizeof(cpuset_meta), "%scpus", cpuset_prefix);
-	xcgroup_set_param(&system_cpuset_cg, cpuset_meta, phys_cpu_str);
+	xcgroup_set_param(&system_cpuset_cg, "cpuset.cpus", phys_cpu_str);
 	return SLURM_SUCCESS;
 }
 

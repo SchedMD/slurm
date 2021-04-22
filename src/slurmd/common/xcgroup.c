@@ -787,15 +787,13 @@ int xcgroup_get_uint64_param(xcgroup_t* cg, char* param, uint64_t* value)
 	return fstatus;
 }
 
-extern int xcgroup_cpuset_init(char *cpuset_prefix, bool *set, xcgroup_t *cg)
+extern int xcgroup_cpuset_init(xcgroup_t *cg)
 {
 	int fstatus = SLURM_ERROR;
-
 	char *cpuset_metafiles[] = {
-		"cpus",
-		"mems",
+		"cpuset.cpus",
+		"cpuset.mems",
 	};
-	char cpuset_meta[PATH_MAX];
 	char *cpuset_conf;
 	size_t csize = 0;
 	xcgroup_t acg;
@@ -822,17 +820,8 @@ extern int xcgroup_cpuset_init(char *cpuset_prefix, bool *set, xcgroup_t *cg)
 
 	/* inherits ancestor params */
 	for (int i = 0; i < 2; i++) {
-	again:
-		snprintf(cpuset_meta, sizeof(cpuset_meta), "%s%s",
-			 cpuset_prefix, cpuset_metafiles[i]);
-		if (xcgroup_get_param(&acg, cpuset_meta, &cpuset_conf, &csize)
-		    != SLURM_SUCCESS) {
-			if (!(*set)) {
-				*set = 1;
-				cpuset_prefix = "cpuset.";
-				goto again;
-			}
-
+		if (xcgroup_get_param(&acg, cpuset_metafiles[i], &cpuset_conf,
+				      &csize) != SLURM_SUCCESS) {
 			debug("%s: assuming no cpuset cg support for '%s'",
 			      __func__, acg.path);
 			xcgroup_destroy(&acg);
@@ -842,10 +831,11 @@ extern int xcgroup_cpuset_init(char *cpuset_prefix, bool *set, xcgroup_t *cg)
 		if (csize > 0)
 			cpuset_conf[csize-1] = '\0';
 
-		if (xcgroup_set_param(cg, cpuset_meta, cpuset_conf)
+		if (xcgroup_set_param(cg, cpuset_metafiles[i], cpuset_conf)
 		    != SLURM_SUCCESS) {
 			debug("%s: unable to write %s configuration (%s) for cpuset cg '%s'",
-			      __func__, cpuset_meta, cpuset_conf, cg->path);
+			      __func__, cpuset_metafiles[i], cpuset_conf,
+			      cg->path);
 			xcgroup_destroy(&acg);
 			xfree(cpuset_conf);
 			return fstatus;

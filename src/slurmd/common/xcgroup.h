@@ -359,6 +359,6 @@ int xcgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name);
  * OUT: SLURM_ERROR or SLURM_SUCCESS
  *
  */
-extern int xcgroup_cpuset_init(char *cpuset_prefix, bool *set, xcgroup_t *cg);
+extern int xcgroup_cpuset_init(xcgroup_t *cg);
 
 #endif

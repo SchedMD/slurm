@@ -133,9 +133,6 @@ typedef struct {
 	stepd_step_rec_t *job;
 } task_cpuset_create_callback_t;
 
-static bool cpuset_prefix_set = false;
-static char *cpuset_prefix = "";
-
 static char user_cgroup_path[PATH_MAX];
 static char job_cgroup_path[PATH_MAX];
 static char jobstep_cgroup_path[PATH_MAX];
@@ -1018,23 +1015,20 @@ static int _cgroup_create_callback(const char *calling_func,
 	if (cpus)
 		xstrfmtcat(user_alloc_cpus, ",%s", cpus);
 
-	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
-				&user_cpuset_cg) != SLURM_SUCCESS) {
+	if (xcgroup_cpuset_init(&user_cpuset_cg) != SLURM_SUCCESS) {
 		xcgroup_destroy(&user_cpuset_cg);
 		goto endit;
 	}
 	xcgroup_set_param(&user_cpuset_cg, cpuset_meta, user_alloc_cpus);
 
-	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
-				&job_cpuset_cg) != SLURM_SUCCESS) {
+	if (xcgroup_cpuset_init(&job_cpuset_cg) != SLURM_SUCCESS) {
 		xcgroup_destroy(&user_cpuset_cg);
 		xcgroup_destroy(&job_cpuset_cg);
 		goto endit;
 	}
 	xcgroup_set_param(&job_cpuset_cg, cpuset_meta, job_alloc_cpus);
 
-	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
-				&step_cpuset_cg) != SLURM_SUCCESS) {
+	if (xcgroup_cpuset_init(&step_cpuset_cg) != SLURM_SUCCESS) {
 		xcgroup_destroy(&user_cpuset_cg);
 		xcgroup_destroy(&job_cpuset_cg);
 		(void)xcgroup_delete(&step_cpuset_cg);
@@ -1049,7 +1043,7 @@ static int _cgroup_create_callback(const char *calling_func,
 	 * This is used by the Cray OOM killer
 	 */
 	snprintf(expected_usage_name, sizeof(expected_usage_name),
-		 "%sexpected_usage_in_bytes", cpuset_prefix);
+		 "cpuset.expected_usage_in_bytes");
 	snprintf(expected_usage, sizeof(expected_usage), "%"PRIu64,
 		 (uint64_t)job->step_mem * 1024 * 1024);
 	xcgroup_set_param(&step_cpuset_cg, expected_usage_name,
@@ -1099,20 +1093,12 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 		xfree(slurm_cgpath);
 		return SLURM_ERROR;
 	}
-again:
-	snprintf(cpuset_meta, sizeof(cpuset_meta), "%scpus", cpuset_prefix);
+
+	snprintf(cpuset_meta, sizeof(cpuset_meta), "cpuset.cpus");
 	rc = xcgroup_get_param(&slurm_cg, cpuset_meta, &cgroup_callback.cpus, &cpus_size);
 	if ((rc != SLURM_SUCCESS) || (cpus_size == 1)) {
-		if (!cpuset_prefix_set && (rc != SLURM_SUCCESS)) {
-			cpuset_prefix_set = 1;
-			cpuset_prefix = "cpuset.";
-			xfree(cgroup_callback.cpus);
-			goto again;
-		}
-
 		/* initialize the cpusets as it was non-existent */
-		if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
-					&slurm_cg) != SLURM_SUCCESS) {
+		if (xcgroup_cpuset_init(&slurm_cg) != SLURM_SUCCESS) {
 			xfree(cgroup_callback.cpus);
 			xfree(slurm_cgpath);
 			xcgroup_destroy(&slurm_cg);
