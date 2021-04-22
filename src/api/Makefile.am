@@ -57,8 +57,7 @@ pkglib_LTLIBRARIES = libslurmfull.la libslurm_pmi.la
 
 # BUILT_SOURCES tells automake that when "make" is called, these targets
 # need to be built before anything else.
-BUILT_SOURCES = $(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT)\
-		$(SLURM_PMI_VERSION_SCRIPT) libslurm.la
+BUILT_SOURCES = $(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) libslurm.la
 
 # Note that libslurmhelper is mostly the same as libslurm, except that
 # it exports ALL symbols used by the process, libcommon, etc.
@@ -195,7 +194,7 @@ $(FULL_VERSION_SCRIPT) :
 	(echo "{ global: *; };") > $(FULL_VERSION_SCRIPT)
 
 CLEANFILES = \
-	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) $(SLURM_PMI_VERSION_SCRIPT)
+	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT)
 
 DISTCLEANFILES = \
-	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT) $(SLURM_PMI_VERSION_SCRIPT)
+	$(VERSION_SCRIPT) $(FULL_VERSION_SCRIPT)
