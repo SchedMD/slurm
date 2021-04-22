@@ -59,8 +59,6 @@ documents those changes that are of interest to users and administrators.
  -- acct_gather_energy/rapl - fix AveWatts calculation.
  -- job_container/tmpfs - Fix issues with cleanup and slurmd restarting on
     running jobs.
- -- select/cons_common - Fix CPU allocation when job's requested
-    threads-per-core is lower than the node's configured threads-per-core.
 
 * Changes in Slurm 20.11.5
 ==========================

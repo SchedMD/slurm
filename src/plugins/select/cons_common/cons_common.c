@@ -744,12 +744,6 @@ extern int common_cpus_per_core(struct job_details *details, int node_inx)
 
 	if (details && details->mc_ptr) {
 		multi_core_data_t *mc_ptr = details->mc_ptr;
-		if ((mc_ptr->threads_per_core != NO_VAL16) &&
-		    (mc_ptr->threads_per_core)) {
-			threads_per_core = MIN(threads_per_core,
-					       mc_ptr->threads_per_core);
-		}
-
 		if ((mc_ptr->ntasks_per_core != INFINITE16) &&
 		    (mc_ptr->ntasks_per_core)) {
 			ncpus_per_core = MIN(threads_per_core,
