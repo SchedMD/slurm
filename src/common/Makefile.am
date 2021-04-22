@@ -1,12 +1,4 @@
 # Makefile for common library
-# If you are linking to this lib and know you are not linking to
-# anything else that will need variables here link to
-# $(top_builddir)/src/common/libcommon.la
-# if you are linking to a stand alone program that needs all symbols link to
-# $(top_builddir)/src/common/libcommon.o with -ldl added
-# This avoids having multiple symbols running around when there should
-# only be 1 address per symbol.  If you link to the libcommon.la in
-# a plugin you will get 2 addresses for one symbol which could lead to problems.
 
 AUTOMAKE_OPTIONS = foreign
 
