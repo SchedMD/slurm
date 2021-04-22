@@ -41,8 +41,6 @@
 #include "../cons_common/gres_select_filter.h"
 #include "gres_sched.h"
 
-#define _DEBUG 0	/* Enables module specific debugging */
-
 typedef struct node_weight_struct {
 	bitstr_t *node_bitmap;	/* bitmap of nodes with this weight */
 	uint64_t weight;	/* priority of node for scheduling work on */
@@ -179,36 +177,37 @@ static List _build_node_weight_list(bitstr_t *node_bitmap)
 /* Log avail_res_t information for a given node */
 static void _avail_res_log(avail_res_t *avail_res, char *node_name)
 {
-#if _DEBUG
 	int i;
 	char *gres_info = "";
+
+	if (!(slurm_conf.debug_flags & DEBUG_FLAG_SELECT_TYPE))
+	    return;
 
 	if (!avail_res) {
 		info("Node:%s No resources", node_name);
 		return;
 	}
 
-	info("Node:%s Sockets:%u SpecThreads:%u CPUs:Min-Max,Avail:%u-%u,%u VPUs:%u",
-	     node_name, avail_res->sock_cnt, avail_res->spec_threads,
-	     avail_res->min_cpus, avail_res->max_cpus, avail_res->avail_cpus,
-	     avail_res->vpus);
+	log_flag(SELECT_TYPE, "Node:%s Sockets:%u SpecThreads:%u CPUs:Min-Max,Avail:%u-%u,%u VPUs:%u",
+		 node_name, avail_res->sock_cnt, avail_res->spec_threads,
+		 avail_res->min_cpus, avail_res->max_cpus,
+		 avail_res->avail_cpus, avail_res->vpus);
 	gres_info = gres_sock_str(avail_res->sock_gres_list, -1);
 	if (gres_info) {
-		info("  AnySocket %s", gres_info);
+		log_flag(SELECT_TYPE, "  AnySocket %s", gres_info);
 		xfree(gres_info);
 	}
 	for (i = 0; i < avail_res->sock_cnt; i++) {
 		gres_info = gres_sock_str(avail_res->sock_gres_list, i);
 		if (gres_info) {
-			info("  Socket[%d] Cores:%u GRES:%s", i,
+			log_flag(SELECT_TYPE, "  Socket[%d] Cores:%u GRES:%s", i,
 			     avail_res->avail_cores_per_sock[i], gres_info);
 			xfree(gres_info);
 		} else {
-			info("  Socket[%d] Cores:%u", i,
+			log_flag(SELECT_TYPE, "  Socket[%d] Cores:%u", i,
 			     avail_res->avail_cores_per_sock[i]);
 		}
 	}
-#endif
 }
 
 /*
@@ -3285,10 +3284,8 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 					enforce_binding, s_p_n, &req_sock_map,
 					job_ptr->user_id, node_i);
 		if (!sock_gres_list) {	/* GRES requirement fail */
-#if _DEBUG
-			info("Test fail on node %d: gres_job_test2",
+			log_flag(SELECT_TYPE, "Test fail on node %d: gres_job_test2",
 			     node_i);
-#endif
 			return NULL;
 		}
 	}
@@ -3301,10 +3298,8 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 	FREE_NULL_BITMAP(req_sock_map);
 	if (!avail_res || (avail_res->avail_cpus == 0)) {
 		common_free_avail_res(avail_res);
-#if _DEBUG
-		info("Test fail on node %d: _allocate_cores/sockets",
-		     node_i);
-#endif
+		log_flag(SELECT_TYPE, "Test fail on node %d: _allocate_cores/sockets",
+			 node_i);
 		FREE_NULL_LIST(sock_gres_list);
 		return NULL;
 	}
@@ -3324,10 +3319,8 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 	}
 	min_cpus_per_node = ntasks_per_node * job_ptr->details->cpus_per_task;
 	if (avail_res->avail_cpus < min_cpus_per_node) {
-#if _DEBUG
-		info("Test fail on node %d: avail_cpus < min_cpus_per_node (%u < %u)",
-		     node_i, avail_res->avail_cpus, min_cpus_per_node);
-#endif
+		log_flag(SELECT_TYPE, "Test fail on node %d: avail_cpus < min_cpus_per_node (%u < %u)",
+			 node_i, avail_res->avail_cpus, min_cpus_per_node);
 		FREE_NULL_LIST(sock_gres_list);
 		common_free_avail_res(avail_res);
 		return NULL;
@@ -3357,10 +3350,8 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 			(job_ptr->details->whole_node == 1),
 			&avail_res->avail_gpus, &near_gpu_cnt);
 		if (rc != 0) {
-#if _DEBUG
-			info("Test fail on node %d: gres_select_filter_remove_unusable",
+			log_flag(SELECT_TYPE, "Test fail on node %d: gres_select_filter_remove_unusable",
 			     node_i);
-#endif
 			common_free_avail_res(avail_res);
 			return NULL;
 		}
@@ -3431,9 +3422,8 @@ extern avail_res_t *can_job_run_on_node(job_record_t *job_ptr,
 	}
 
 	if (cpus == 0) {
-#if _DEBUG
-		info("Test fail on node %d: cpus == 0", node_i);
-#endif
+		log_flag(SELECT_TYPE, "Test fail on node %d: cpus == 0",
+			 node_i);
 		bit_clear_all(core_map[node_i]);
 	}
 
