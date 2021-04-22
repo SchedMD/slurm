@@ -294,6 +294,7 @@ extern slurm_cgroup_conf_t *cgroup_g_get_conf()
 	conf_ptr->memory_swappiness = conf->memory_swappiness;
 	conf_ptr->constrain_devices = conf->constrain_devices;
 	conf_ptr->allowed_devices_file = xstrdup(conf->allowed_devices_file);
+	conf_ptr->cgroup_plugin = xstrdup(conf->cgroup_plugin);
 	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 
 	return conf_ptr;

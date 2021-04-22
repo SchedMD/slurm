@@ -77,7 +77,7 @@ typedef struct slurm_cgroup_conf {
 
 	bool      constrain_devices;
 	char *    allowed_devices_file;
-
+	char *    cgroup_plugin;
 } slurm_cgroup_conf_t;
 
 /*
