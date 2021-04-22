@@ -15,7 +15,6 @@ libslurmd_common_la_SOURCES =    \
 	fname.c fname.h \
 	job_container_plugin.c job_container_plugin.h \
 	proctrack.c proctrack.h \
-	setproctitle.c setproctitle.h \
 	slurmd_cgroup.c slurmd_cgroup.h \
 	slurmstepd_init.c slurmstepd_init.h \
 	run_script.c run_script.h \

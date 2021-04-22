@@ -65,13 +65,13 @@
 
 #include "src/slurmd/common/core_spec_plugin.h"
 #include "src/slurmd/common/slurmstepd_init.h"
-#include "src/slurmd/common/setproctitle.h"
 #include "src/common/slurm_acct_gather_energy.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/mgr.h"
 #include "src/slurmd/slurmstepd/req.h"
+#include "src/slurmd/slurmstepd/setproctitle.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
