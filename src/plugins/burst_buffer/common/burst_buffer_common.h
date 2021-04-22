@@ -330,6 +330,14 @@ extern int bb_pack_usage(uid_t uid, bb_state_t *state_ptr, buf_t *buffer,
 /* Sort preempt_bb_recs in order of DECREASING use_time */
 extern int bb_preempt_queue_sort(void *x, void *y);
 
+/*
+ * Set state (integer) in bb_job and set the state (string) in job_ptr.
+ * bb_job is used in burst buffer plugins. The string is used to display to the
+ * user and to save the job's burst buffer state in StateSaveLocation.
+ */
+extern void bb_set_job_bb_state(job_record_t *job_ptr, bb_job_t *bb_job,
+				int new_state);
+
 /* Set the bb_state's tres_pos for limit enforcement.
  * Value is set to -1 if not found. */
 extern void bb_set_tres_pos(bb_state_t *state_ptr);

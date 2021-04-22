@@ -512,6 +512,28 @@ static uint64_t _atoi(char *tok)
 	return size_u;
 }
 
+extern void bb_set_job_bb_state(job_record_t *job_ptr, bb_job_t *bb_job,
+				int new_state)
+{
+	const char *new_state_str = NULL;
+
+	xassert(bb_job);
+
+	new_state_str = bb_state_string(new_state);
+	bb_job->state = new_state;
+	if (!job_ptr) {
+		/* This should never happen, but handle it just in case. */
+		error("%s: Could not find job_ptr for JobId=%u, unable to set new burst buffer state %s in job.",
+		      __func__, bb_job->job_id, new_state_str);
+		return;
+	}
+
+	log_flag(BURST_BUF, "Modify %pJ burst buffer state from %s to %s",
+		 job_ptr, job_ptr->burst_buffer_state, new_state_str);
+	xfree(job_ptr->burst_buffer_state);
+	job_ptr->burst_buffer_state = xstrdup(new_state_str);
+}
+
 /* Set the bb_state's tres_id and tres_pos for limit enforcement.
  * Value is set to -1 if not found. */
 extern void bb_set_tres_pos(bb_state_t *state_ptr)
