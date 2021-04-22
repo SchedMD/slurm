@@ -136,7 +136,6 @@ common_dir = $(top_builddir)/src/common
 
 slurmapi_add = 			 \
 	$(common_dir)/libcommon.la	\
-	$(common_dir)/libspank.la      	\
 	-lpthread
 
 libslurmhelper_la_SOURCES = $(slurmapi_src)
@@ -172,7 +171,6 @@ libslurm_pmi_la_LDFLAGS        = \
 libslurm_o_SOURCES =
 
 libslurm_o_LDADD =				\
-	$(top_builddir)/src/common/libspank.o	\
 	$(top_builddir)/src/common/libcommon.o
 
 libslurm.o$(EXEEXT): $(libslurmhelper_la_OBJECTS) $(libslurm_o_LDADD)
