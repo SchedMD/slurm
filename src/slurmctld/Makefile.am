@@ -78,12 +78,10 @@ slurmctld_SOURCES =     \
 
 sbin_PROGRAMS = slurmctld
 
-depend_libs = $(top_builddir)/src/common/libdaemonize.la
-
-slurmctld_LDADD = $(depend_libs) $(LIB_SLURM) $(DL_LIBS)
+slurmctld_LDADD = $(LIB_SLURM) $(DL_LIBS)
 slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
-slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD) $(depend_libs)
+slurmctld_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
 force:
 $(slurmctld_DEPENDENCIES) : force

@@ -5,10 +5,7 @@ AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS     = -I$(top_srcdir) -DSBINDIR=\"$(sbindir)\"
 
 noinst_PROGRAMS = libcommon.o
-
-noinst_LTLIBRARIES = 			\
-	libcommon.la 			\
-	libdaemonize.la
+noinst_LTLIBRARIES = libcommon.la
 
 libcommon_la_SOURCES =				\
 	assoc_mgr.c				\
@@ -25,6 +22,8 @@ libcommon_la_SOURCES =				\
 	cpu_frequency.h				\
 	cron.c					\
 	cron.h					\
+	daemonize.c				\
+	daemonize.h				\
 	data.c					\
 	data.h					\
 	eio.c					\
@@ -216,11 +215,6 @@ EXTRA_libcommon_la_SOURCES = 		\
 	uthash/LICENSE			\
 	uthash/README			\
 	uthash/uthash.h
-
-
-libdaemonize_la_SOURCES =  		\
-	daemonize.c       	 	\
-	daemonize.h
 
 libcommon_la_LIBADD   = $(DL_LIBS)
 
