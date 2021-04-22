@@ -45,7 +45,9 @@
 
 #include <inttypes.h>
 
-#include "src/slurmd/common/reverse_tree.h"
+#define REVERSE_TREE_WIDTH 7
+#define REVERSE_TREE_CHILDREN_TIMEOUT 60 /* seconds */
+#define REVERSE_TREE_PARENT_RETRY 5 /* count, 1 sec per attempt */
 
 void reverse_tree_info(int rank, int num_nodes, int width,
 		       int *parent, int *num_children,

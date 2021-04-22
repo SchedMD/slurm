@@ -512,7 +512,6 @@ libslurmd_common_la_SOURCES = \
 	run_script.c run_script.h \
 	task_plugin.c task_plugin.h \
 	set_oomadj.c set_oomadj.h \
-	reverse_tree.h \
 	xcpuinfo.c xcpuinfo.h \
 	xcgroup.c xcgroup.h
 
