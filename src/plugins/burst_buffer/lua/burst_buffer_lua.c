@@ -586,6 +586,126 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 	return rc;
 }
 
+static bb_job_t *_get_bb_job(job_record_t *job_ptr)
+{
+	char *bb_specs;
+	char *end_ptr = NULL, *save_ptr = NULL, *sub_tok, *tok;
+	bool have_bb = false;
+	uint64_t tmp_cnt;
+	uint16_t new_bb_state;
+	bb_job_t *bb_job;
+
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0'))
+		return NULL;
+
+	if ((bb_job = bb_job_find(&bb_state, job_ptr->job_id)))
+		return bb_job;	/* Cached data */
+
+	bb_job = bb_job_alloc(&bb_state, job_ptr->job_id);
+	bb_job->account = xstrdup(job_ptr->account);
+	if (job_ptr->part_ptr)
+		bb_job->partition = xstrdup(job_ptr->part_ptr->name);
+	if (job_ptr->qos_ptr)
+		bb_job->qos = xstrdup(job_ptr->qos_ptr->name);
+	new_bb_state = job_ptr->burst_buffer_state ?
+		bb_state_num(job_ptr->burst_buffer_state) : BB_STATE_PENDING;
+	bb_set_job_bb_state(job_ptr, bb_job, new_bb_state);
+	bb_job->user_id = job_ptr->user_id;
+	bb_specs = xstrdup(job_ptr->burst_buffer);
+
+	tok = strtok_r(bb_specs, "\n", &save_ptr);
+	while (tok) {
+		/* Skip lines that don't have a burst buffer directive. */
+		if ((tok[0] != '#') ||
+		    xstrncmp(tok + 1, DIRECTIVE_STR, directive_len)) {
+			tok = strtok_r(NULL, "\n", &save_ptr);
+			continue;
+		}
+
+		tok += directive_len + 1; /* Add 1 for the '#' character. */
+		while (isspace(tok[0]))
+			tok++;
+
+		if (!xstrncmp(tok, "jobdw", 5)) {
+			have_bb = true;
+			if ((sub_tok = strstr(tok, "capacity="))) {
+				tmp_cnt = bb_get_size_num(sub_tok + 9, 1);
+			} else {
+				tmp_cnt = 0;
+			}
+			if ((sub_tok = strstr(tok, "pool"))) {
+				xfree(bb_job->job_pool);
+				bb_job->job_pool = xstrdup(sub_tok + 5);
+				sub_tok = strchr(bb_job->job_pool, ' ');
+				if (sub_tok)
+					sub_tok[0] = '\0';
+			} else {
+				bb_job->job_pool = xstrdup(
+					bb_state.bb_config.default_pool);
+			}
+			tmp_cnt = _set_granularity(tmp_cnt, bb_job->job_pool);
+			bb_job->req_size += tmp_cnt;
+			bb_job->total_size += tmp_cnt;
+			bb_job->use_job_buf = true;
+		} else if (!xstrncmp(tok, "swap", 4)) {
+			have_bb = true;
+			tok += 4;
+			while (isspace(tok[0]))
+				tok++;
+			bb_job->swap_size = strtol(tok, &end_ptr, 10);
+			if (job_ptr->details && job_ptr->details->max_nodes) {
+				bb_job->swap_nodes =
+					job_ptr->details->max_nodes;
+			} else if (job_ptr->details) {
+				bb_job->swap_nodes =
+					job_ptr->details->min_nodes;
+			} else {
+				bb_job->swap_nodes = 1;
+			}
+			tmp_cnt = (uint64_t) bb_job->swap_size *
+				  bb_job->swap_nodes;
+			if ((sub_tok = strstr(tok, "pool="))) {
+				xfree(bb_job->job_pool);
+				bb_job->job_pool = xstrdup(sub_tok + 5);
+				sub_tok = strchr(bb_job->job_pool, ' ' );
+				if (sub_tok)
+					sub_tok[0] = '\0';
+			} else if (!bb_job->job_pool) {
+				bb_job->job_pool = xstrdup(
+					bb_state.bb_config.default_pool);
+			}
+			tmp_cnt = _set_granularity(tmp_cnt, bb_job->job_pool);
+			bb_job->req_size += tmp_cnt;
+			bb_job->total_size += tmp_cnt;
+			bb_job->use_job_buf = true;
+		} else {
+			/* Ignore stage-in, stage-out, etc. */
+		}
+		tok = strtok_r(NULL, "\n", &save_ptr);
+	}
+	xfree(bb_specs);
+
+	if (!have_bb) {
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
+		xstrfmtcat(job_ptr->state_desc,
+			   "%s: Invalid burst buffer spec (%s)",
+			   plugin_type, job_ptr->burst_buffer);
+		job_ptr->priority = 0;
+		info("Invalid burst buffer spec for %pJ (%s)",
+		     job_ptr, job_ptr->burst_buffer);
+		bb_job_del(&bb_state, job_ptr->job_id);
+		return NULL;
+	}
+
+	if (!bb_job->job_pool)
+		bb_job->job_pool = xstrdup(bb_state.bb_config.default_pool);
+	if (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)
+		bb_job_log(&bb_state, bb_job);
+	return bb_job;
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -784,9 +904,34 @@ fini:
  */
 extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
+	bb_job_t *bb_job;
+
+	/* Initialization */
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	if (bb_state.last_load_time == 0) {
+		/* Assume request is valid for now, can't test it anyway */
+		info("Burst buffer down, skip tests for %pJ",
+		      job_ptr);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		return SLURM_SUCCESS;
+	}
+	bb_job = _get_bb_job(job_ptr);
+	if (bb_job == NULL) {
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		if (job_ptr->details->min_nodes == 0)
+			rc = ESLURM_INVALID_NODE_COUNT;
+		return rc;
+	}
+	if ((job_ptr->details->min_nodes == 0) && bb_job->use_job_buf) {
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		return ESLURM_INVALID_BURST_BUFFER_REQUEST;
+	}
 
 	log_flag(BURST_BUF, "%pJ", job_ptr);
+
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+
 	/* Run "job_process" function, validates user script */
 	rc = _run_lua_script("slurm_bb_job_process");
 	log_flag(BURST_BUF, "Return code=%d", rc);
