@@ -37,7 +37,7 @@
  \*****************************************************************************/
 
 #include "pmixp_common.h"
-#include "src/slurmd/common/reverse_tree_math.h"
+#include "src/common/reverse_tree.h"
 #include "src/common/slurm_protocol_api.h"
 #include "pmixp_coll.h"
 #include "pmixp_nspaces.h"

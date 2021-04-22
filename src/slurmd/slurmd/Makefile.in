@@ -483,8 +483,7 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 depend_libs = \
 	$(top_builddir)/src/bcast/libfile_bcast.la \
-	../common/libslurmd_common.o \
-	../common/libslurmd_reverse_tree_math.la
+	../common/libslurmd_common.o
 
 
 # These 2 depend_* should look the same in ../slurmstepd/Makefile.am

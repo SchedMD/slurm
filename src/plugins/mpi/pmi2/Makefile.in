@@ -176,7 +176,7 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-mpi_pmi2_la_DEPENDENCIES = $(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_math.la
+mpi_pmi2_la_LIBADD =
 am_mpi_pmi2_la_OBJECTS = mpi_pmi2.lo agent.lo client.lo kvs.lo info.lo \
 	pmi1.lo pmi2.lo setup.lo spawn.lo tree.lo nameserv.lo ring.lo
 mpi_pmi2_la_OBJECTS = $(am_mpi_pmi2_la_OBJECTS)
@@ -524,9 +524,6 @@ mpi_pmi2_la_SOURCES = mpi_pmi2.c \
 	ring.c ring.h
 
 mpi_pmi2_la_LDFLAGS = $(PLUGIN_FLAGS)
-mpi_pmi2_la_LIBADD = \
-	$(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_math.la
-
 all: all-am
 
 .SUFFIXES:
@@ -851,11 +848,6 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
-
-force:
-
-$(mpi_pmi2_la_LIBADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

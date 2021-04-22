@@ -181,8 +181,7 @@ am__installdirs = "$(DESTDIR)$(pkglib_v1dir)" \
 LTLIBRARIES = $(pkglib_v1_LTLIBRARIES) $(pkglib_v2_LTLIBRARIES) \
 	$(pkglib_v3_LTLIBRARIES) $(pkglib_v4_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(pmix_internal_libs) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 @HAVE_PMIX_V1_TRUE@mpi_pmix_v1_la_DEPENDENCIES =  \
 @HAVE_PMIX_V1_TRUE@	$(am__DEPENDENCIES_2)
 @HAVE_UCX_TRUE@am__objects_1 = mpi_pmix_v1_la-pmixp_dconn_ucx.lo
@@ -676,11 +675,8 @@ pmix_src = mapping.c mapping.h mpi_pmix.c pmixp_common.h pmixp_coll.h \
 	pmixp_dconn_tcp.c pmixp_conn.h pmixp_dconn.h pmixp_dconn_tcp.h \
 	pmixp_coll.c pmixp_coll_tree.c pmixp_coll_ring.c \
 	$(am__append_1)
-pmix_internal_libs = \
-	$(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_math.la
-
 pmix_ldflags = $(PLUGIN_FLAGS) $(HWLOC_LDFLAGS) $(UCX_LDFLAGS)
-pmix_libadd = $(pmix_internal_libs) $(HWLOC_LIBS) $(UCX_LIBS)
+pmix_libadd = $(HWLOC_LIBS) $(UCX_LIBS)
 
 # pkglib_v#dir is needed in each one of the below because of the way we
 # use pkglib_v#_LTLIBRARIES even though it is the same for each one it still
@@ -1887,10 +1883,6 @@ uninstall-am: uninstall-pkglib_v1LTLIBRARIES \
 
 .PRECIOUS: Makefile
 
-
-force:
-$(pmix_internal_libs): force
-	@cd `dirname $@` && $(MAKE) `basename $@`
 
 install-exec-hook:
 	rm -rf $(DESTDIR)$(pkglibdir)/mpi_pmix.so

@@ -81,6 +81,7 @@
 #include "src/common/plugstack.h"
 #include "src/common/prep.h"
 #include "src/common/read_config.h"
+#include "src/common/reverse_tree.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_acct_gather_energy.h"
@@ -104,7 +105,6 @@
 #include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/run_script.h"
-#include "src/slurmd/common/reverse_tree_math.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/slurmd/common/task_plugin.h"
 

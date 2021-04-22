@@ -21,11 +21,3 @@ mpi_pmi2_la_SOURCES = mpi_pmi2.c \
 	ring.c ring.h
 
 mpi_pmi2_la_LDFLAGS = $(PLUGIN_FLAGS)
-
-mpi_pmi2_la_LIBADD = \
-	$(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_math.la
-
-force:
-
-$(mpi_pmi2_la_LIBADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`

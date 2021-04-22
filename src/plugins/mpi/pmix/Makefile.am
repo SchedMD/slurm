@@ -23,11 +23,8 @@ if HAVE_UCX
 pmix_src += pmixp_dconn_ucx.c pmixp_dconn_ucx.h
 endif
 
-pmix_internal_libs = \
-	$(top_builddir)/src/slurmd/common/libslurmd_reverse_tree_math.la
-
 pmix_ldflags = $(PLUGIN_FLAGS) $(HWLOC_LDFLAGS) $(UCX_LDFLAGS)
-pmix_libadd = $(pmix_internal_libs) $(HWLOC_LIBS) $(UCX_LIBS)
+pmix_libadd = $(HWLOC_LIBS) $(UCX_LIBS)
 
 # pkglib_v#dir is needed in each one of the below because of the way we
 # use pkglib_v#_LTLIBRARIES even though it is the same for each one it still
@@ -96,10 +93,6 @@ endif
 endif
 endif
 endif
-
-force:
-$(pmix_internal_libs): force
-	@cd `dirname $@` && $(MAKE) `basename $@`
 
 install-exec-hook:
 	rm -rf $(DESTDIR)$(pkglibdir)/mpi_pmix.so

@@ -21,7 +21,8 @@ TESTS += xhash-test \
 	 data-test \
 	 slurm_opt-test \
 	 xstring-test \
-	 parse_time-test
+	 parse_time-test \
+	 reverse_tree-test
 
 xhash_test_CFLAGS = $(MYCFLAGS)
 xhash_test_LDADD  = $(LDADD) @CHECK_LIBS@
@@ -33,5 +34,7 @@ xstring_test_CFLAGS   = $(MYCFLAGS)
 xstring_test_LDADD    = $(LDADD) @CHECK_LIBS@
 parse_time_test_CFLAGS= $(MYCFLAGS)
 parse_time_test_LDADD = $(LDADD) @CHECK_LIBS@
+reverse_tree_test_CFLAGS = $(MYCFLAGS)
+reverse_tree_test_LDADD = $(LDADD) @CHECK_LIBS@
 endif
 

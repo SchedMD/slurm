@@ -93,6 +93,8 @@ libcommon_la_SOURCES =				\
 	read_config.c				\
 	read_config.h				\
 	ref.h					\
+	reverse_tree.c				\
+	reverse_tree.h				\
 	run_command.c				\
 	run_command.h				\
 	run_in_daemon.c				\

@@ -7,7 +7,7 @@ AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
 
 # making a .la
 
-noinst_LTLIBRARIES = libslurmd_common.la libslurmd_reverse_tree_math.la
+noinst_LTLIBRARIES = libslurmd_common.la
 noinst_PROGRAMS = libslurmd_common.o
 
 libslurmd_common_la_SOURCES =    \
@@ -33,7 +33,3 @@ libslurmd_common_o_SOURCES =
 libslurmd_common.o$(EXEEXT) : \
 	$(libslurmd_common_la_OBJECTS) $(libslurmd_common_la_DEPENDENCIES)
 	$(LINK)  $(libslurmd_common_la_OBJECTS)
-
-libslurmd_reverse_tree_math_la_SOURCES = \
-	reverse_tree_math.c \
-	reverse_tree_math.h

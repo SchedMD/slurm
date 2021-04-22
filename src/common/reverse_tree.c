@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  src/slurmd/slurmd/reverse_tree_math.c
+ *  src/common/reverse_tree.c
  *****************************************************************************
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

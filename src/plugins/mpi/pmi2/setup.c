@@ -56,10 +56,10 @@
 #include "src/common/slurm_xlator.h"
 #include "src/common/net.h"
 #include "src/common/proc_args.h"
+#include "src/common/reverse_tree.h"
 #include "src/common/slurm_mpi.h"
 #include "src/common/xstring.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
-#include "src/slurmd/common/reverse_tree_math.h"
 
 #include "setup.h"
 #include "tree.h"

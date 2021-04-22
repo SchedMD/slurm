@@ -51,11 +51,9 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/log.h"
+#include "src/common/reverse_tree.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-
-/* include code directly to allow access to static functions */
-#include "src/slurmd/common/reverse_tree_math.c"
 
 /* define the external variable */
 void *conf;
@@ -122,10 +120,10 @@ START_TEST(verify_children)
 }
 END_TEST
 
-Suite *suite_reverse_tree_math(void)
+Suite *suite_reverse_tree(void)
 {
-	Suite *s = suite_create("reverse_tree_math");
-	TCase *tc_core = tcase_create("reverse_tree_math");
+	Suite *s = suite_create("reverse_tree");
+	TCase *tc_core = tcase_create("reverse_tree");
 	tcase_set_timeout(tc_core, 60); /* Avoid timeouts with --coverage */
 	tcase_add_loop_test(tc_core, verify_children, 0, sizeof(nodes_loop) /
 			    sizeof(int));
@@ -137,10 +135,10 @@ int main(void)
 {
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
 	log_opts.stderr_level = LOG_LEVEL_DEBUG5;
-	log_init("reverse_tree_math-test", log_opts, 0, NULL);
+	log_init("reverse_tree-test", log_opts, 0, NULL);
 
 	int number_failed;
-	SRunner *sr = srunner_create(suite_reverse_tree_math());
+	SRunner *sr = srunner_create(suite_reverse_tree());
 	srunner_run_all(sr, CK_ENV);
 	number_failed = srunner_ntests_failed(sr);
 	srunner_free(sr);

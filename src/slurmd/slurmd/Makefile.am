@@ -7,8 +7,7 @@ sbin_PROGRAMS = slurmd
 
 depend_libs = \
 	$(top_builddir)/src/bcast/libfile_bcast.la \
-	../common/libslurmd_common.o \
-	../common/libslurmd_reverse_tree_math.la
+	../common/libslurmd_common.o
 
 # These 2 depend_* should look the same in ../slurmstepd/Makefile.am
 depend_ldadd = $(HWLOC_LIBS) $(PAM_LIBS) $(UTIL_LIBS)

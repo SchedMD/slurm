@@ -165,10 +165,6 @@ libslurmd_common_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(libslurmd_common_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
-libslurmd_reverse_tree_math_la_LIBADD =
-am_libslurmd_reverse_tree_math_la_OBJECTS = reverse_tree_math.lo
-libslurmd_reverse_tree_math_la_OBJECTS =  \
-	$(am_libslurmd_reverse_tree_math_la_OBJECTS)
 am_libslurmd_common_o_OBJECTS =
 libslurmd_common_o_OBJECTS = $(am_libslurmd_common_o_OBJECTS)
 libslurmd_common_o_LDADD = $(LDADD)
@@ -189,11 +185,11 @@ depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/core_spec_plugin.Plo \
 	./$(DEPDIR)/fname.Plo ./$(DEPDIR)/job_container_plugin.Plo \
-	./$(DEPDIR)/proctrack.Plo ./$(DEPDIR)/reverse_tree_math.Plo \
-	./$(DEPDIR)/run_script.Plo ./$(DEPDIR)/set_oomadj.Plo \
-	./$(DEPDIR)/setproctitle.Plo ./$(DEPDIR)/slurmd_cgroup.Plo \
-	./$(DEPDIR)/slurmstepd_init.Plo ./$(DEPDIR)/task_plugin.Plo \
-	./$(DEPDIR)/xcgroup.Plo ./$(DEPDIR)/xcpuinfo.Plo
+	./$(DEPDIR)/proctrack.Plo ./$(DEPDIR)/run_script.Plo \
+	./$(DEPDIR)/set_oomadj.Plo ./$(DEPDIR)/setproctitle.Plo \
+	./$(DEPDIR)/slurmd_cgroup.Plo ./$(DEPDIR)/slurmstepd_init.Plo \
+	./$(DEPDIR)/task_plugin.Plo ./$(DEPDIR)/xcgroup.Plo \
+	./$(DEPDIR)/xcpuinfo.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -213,9 +209,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libslurmd_common_la_SOURCES) \
-	$(libslurmd_reverse_tree_math_la_SOURCES) \
-	$(libslurmd_common_o_SOURCES)
+SOURCES = $(libslurmd_common_la_SOURCES) $(libslurmd_common_o_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -500,7 +494,7 @@ CLEANFILES = core.*
 AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
 
 # making a .la
-noinst_LTLIBRARIES = libslurmd_common.la libslurmd_reverse_tree_math.la
+noinst_LTLIBRARIES = libslurmd_common.la
 libslurmd_common_la_SOURCES = \
 	core_spec_plugin.c core_spec_plugin.h \
 	fname.c fname.h \
@@ -520,10 +514,6 @@ libslurmd_common_la_LDFLAGS = $(HWLOC_LDFLAGS) $(HWLOC_LIBS)
 # This was made so we could export all symbols from libslurm_common
 # Since the plugins loaded may need all the symbols here.
 libslurmd_common_o_SOURCES = 
-libslurmd_reverse_tree_math_la_SOURCES = \
-	reverse_tree_math.c \
-	reverse_tree_math.h
-
 all: all-am
 
 .SUFFIXES:
@@ -581,9 +571,6 @@ clean-noinstLTLIBRARIES:
 libslurmd_common.la: $(libslurmd_common_la_OBJECTS) $(libslurmd_common_la_DEPENDENCIES) $(EXTRA_libslurmd_common_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libslurmd_common_la_LINK)  $(libslurmd_common_la_OBJECTS) $(libslurmd_common_la_LIBADD) $(LIBS)
 
-libslurmd_reverse_tree_math.la: $(libslurmd_reverse_tree_math_la_OBJECTS) $(libslurmd_reverse_tree_math_la_DEPENDENCIES) $(EXTRA_libslurmd_reverse_tree_math_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK)  $(libslurmd_reverse_tree_math_la_OBJECTS) $(libslurmd_reverse_tree_math_la_LIBADD) $(LIBS)
-
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -594,7 +581,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fname.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_container_plugin.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proctrack.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reverse_tree_math.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_script.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/set_oomadj.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setproctitle.Plo@am__quote@ # am--include-marker
@@ -733,7 +719,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/fname.Plo
 	-rm -f ./$(DEPDIR)/job_container_plugin.Plo
 	-rm -f ./$(DEPDIR)/proctrack.Plo
-	-rm -f ./$(DEPDIR)/reverse_tree_math.Plo
 	-rm -f ./$(DEPDIR)/run_script.Plo
 	-rm -f ./$(DEPDIR)/set_oomadj.Plo
 	-rm -f ./$(DEPDIR)/setproctitle.Plo
@@ -791,7 +776,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/fname.Plo
 	-rm -f ./$(DEPDIR)/job_container_plugin.Plo
 	-rm -f ./$(DEPDIR)/proctrack.Plo
-	-rm -f ./$(DEPDIR)/reverse_tree_math.Plo
 	-rm -f ./$(DEPDIR)/run_script.Plo
 	-rm -f ./$(DEPDIR)/set_oomadj.Plo
 	-rm -f ./$(DEPDIR)/setproctitle.Plo
