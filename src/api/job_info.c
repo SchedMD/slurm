@@ -64,7 +64,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/strlcpy.h"
 #include "src/common/uid.h"
-#include "src/common/uthash/uthash.h"
+#include "src/common/uthash.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 

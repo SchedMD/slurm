@@ -287,8 +287,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libcommon_la_SOURCES) $(EXTRA_libcommon_la_SOURCES) \
-	$(libcommon_o_SOURCES)
+SOURCES = $(libcommon_la_SOURCES) $(libcommon_o_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -752,6 +751,7 @@ libcommon_la_SOURCES = \
 	tres_frequency.h			\
 	uid.c					\
 	uid.h					\
+	uthash.h				\
 	util-net.c				\
 	util-net.h				\
 	working_cluster.c			\
@@ -774,11 +774,6 @@ libcommon_la_SOURCES = \
 	xsignal.h				\
 	xstring.c				\
 	xstring.h
-
-EXTRA_libcommon_la_SOURCES = \
-	uthash/LICENSE			\
-	uthash/README			\
-	uthash/uthash.h
 
 libcommon_la_LIBADD = $(DL_LIBS)
 libcommon_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic

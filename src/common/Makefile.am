@@ -188,6 +188,7 @@ libcommon_la_SOURCES =				\
 	tres_frequency.h			\
 	uid.c					\
 	uid.h					\
+	uthash.h				\
 	util-net.c				\
 	util-net.h				\
 	working_cluster.c			\
@@ -210,11 +211,6 @@ libcommon_la_SOURCES =				\
 	xsignal.h				\
 	xstring.c				\
 	xstring.h
-
-EXTRA_libcommon_la_SOURCES = 		\
-	uthash/LICENSE			\
-	uthash/README			\
-	uthash/uthash.h
 
 libcommon_la_LIBADD   = $(DL_LIBS)
 
