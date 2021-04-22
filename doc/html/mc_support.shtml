@@ -145,7 +145,7 @@ by their application.  Table 1 summarizes these options.
     <td> Count of cores to reserve for system use
 </td></tr>
     <td> --thread-spec=<i>threads</i></td>
-    <td> Count of threads to reserve for system use (future)
+    <td> Count of threads to reserve for system use
 </td></tr>
 </table>
 
@@ -914,6 +914,6 @@ NodeName=dualcore[01-16] CoresPerSocket=2 ThreadsPerCore=1
 <p>For a more complete description of the various node configuration options
 see the slurm.conf man page.</p>
 <!-------------------------------------------------------------------------->
-<p style="text-align:center;">Last modified 11 January 2021</p>
+<p style="text-align:center;">Last modified 22 April 2021</p>
 
 <!--#include virtual="footer.txt"-->
