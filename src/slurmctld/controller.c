@@ -1656,13 +1656,7 @@ static int _init_tres(void)
 
 		if (!association_based_accounting) {
 			if (!tres_rec->id)
-				fatal("Unless running with a database you "
-				      "can only run with certain TRES, "
-				      "%s%s%s is not one of them.  "
-				      "Either set up "
-				      "a database preferably with a slurmdbd "
-				      "or remove this TRES from your "
-				      "configuration.",
+				fatal("slurmdbd is required to run with TRES %s%s%s. Either setup slurmdbd or remove this TRES from your configuration.",
 				      tres_rec->type, tres_rec->name ? "/" : "",
 				      tres_rec->name ? tres_rec->name : "");
 			list_append(update_object.objects, tres_rec);
