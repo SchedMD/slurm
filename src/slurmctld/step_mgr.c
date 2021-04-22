@@ -1755,10 +1755,10 @@ static void _pick_step_cores(step_record_t *step_ptr,
 			}
 			bit_set(job_resrcs_ptr->core_bitmap_used, bit_offset);
 			bit_set(step_ptr->core_bitmap_job, bit_offset);
-#if 0
-			info("step alloc N:%d S:%dC :%d",
-			     job_node_inx, sock_inx, core_inx);
-#endif
+
+			log_flag(STEPS, "%s: alloc Node:%d Socket:%d Core:%d",
+				 __func__, job_node_inx, sock_inx, core_inx);
+
 			if (--cpu_cnt == 0)
 				return;
 		}
@@ -1787,10 +1787,10 @@ static void _pick_step_cores(step_record_t *step_ptr,
 			if (bit_test(step_ptr->core_bitmap_job, bit_offset))
 				continue;   /* already taken by this step */
 			bit_set(step_ptr->core_bitmap_job, bit_offset);
-#if 0
-			info("step alloc N:%d S:%dC :%d",
-			     job_node_inx, sock_inx, core_inx);
-#endif
+
+			log_flag(STEPS, "%s: over-subscribe alloc Node:%d Socket:%d Core:%d",
+				 __func__, job_node_inx, sock_inx, core_inx);
+
 			if (--cpu_cnt == 0)
 				return;
 		}
