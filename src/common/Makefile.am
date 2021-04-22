@@ -20,118 +20,199 @@ noinst_LTLIBRARIES = 			\
 	libeio.la  			\
 	libspank.la
 
-libcommon_la_SOURCES = 			\
-	assoc_mgr.c assoc_mgr.h 	\
-	cpu_frequency.c cpu_frequency.h \
-	node_features.c node_features.h	\
-	xmalloc.c xmalloc.h 		\
-	xassert.c xassert.h		\
-	xstring.c xstring.h		\
-	xsignal.c xsignal.h		\
-	strnatcmp.c strnatcmp.h		\
-	forward.c forward.h     	\
-	strlcpy.c strlcpy.h		\
-	list.c list.h 			\
-	xhash.c xhash.h			\
-	net.c net.h                     \
-	log.c log.h			\
-	cbuf.c cbuf.h			\
-	data.c data.h			\
-	bitstring.c bitstring.h 	\
-	slurm_mpi.c slurm_mpi.h         \
-	pack.c pack.h			\
-	parse_config.c parse_config.h	\
-	parse_value.c parse_value.h	\
-	plugin.c plugin.h		\
-	plugrack.c plugrack.h		\
-	power.c power.h			\
-	print_fields.c print_fields.h	\
-	slurm_resolv.c slurm_resolv.h	\
-	fetch_config.c fetch_config.h	\
-	prep.c prep.h			\
-	read_config.c read_config.h	\
-	run_in_daemon.c run_in_daemon.h	\
-	node_select.c node_select.h	\
-	env.c env.h      		\
-	fd.c fd.h       		\
-	slurm_cred.h       		\
-	slurm_cred.c			\
-	slurm_errno.c			\
-	slurm_ext_sensors.c slurm_ext_sensors.h \
-	slurm_mcs.c			\
-	slurm_mcs.h			\
-	slurm_priority.c		\
-	slurm_priority.h		\
-	slurm_protocol_api.c		\
-	slurm_protocol_api.h		\
-	slurm_protocol_pack.c		\
-	slurm_protocol_pack.h		\
-	slurm_protocol_util.c		\
-	slurm_protocol_util.h		\
-	slurm_protocol_socket.c		\
-	slurm_protocol_common.h		\
-	slurm_protocol_interface.h	\
-	slurm_protocol_defs.c		\
-	slurm_protocol_defs.h		\
-	slurm_rlimits_info.h		\
-	slurm_rlimits_info.c		\
-	slurmdb_defs.c slurmdb_defs.h   \
-	slurmdb_pack.c slurmdb_pack.h   \
-	slurmdbd_defs.c slurmdbd_defs.h	\
-	slurmdbd_pack.c slurmdbd_pack.h	\
-	working_cluster.c working_cluster.h   \
-	workq.c workq.h			\
-	uid.c uid.h			\
-	util-net.c util-net.h		\
-	slurm_auth.c slurm_auth.h	\
-	slurm_acct_gather.c slurm_acct_gather.h \
-	slurm_accounting_storage.c slurm_accounting_storage.h \
-	slurm_jobacct_gather.c slurm_jobacct_gather.h \
-	slurm_acct_gather_energy.c slurm_acct_gather_energy.h \
-	slurm_acct_gather_profile.c slurm_acct_gather_profile.h \
-	slurm_acct_gather_interconnect.c slurm_acct_gather_interconnect.h \
-	slurm_acct_gather_filesystem.c slurm_acct_gather_filesystem.h \
-	slurm_jobcomp.c slurm_jobcomp.h	\
-	slurm_opt.c slurm_opt.h		\
-	slurm_route.c slurm_route.h	\
-	slurm_time.c slurm_time.h	\
-	slurm_topology.c slurm_topology.h \
-	switch.c switch.h		\
-	macros.h			\
-	ref.h				\
-	slurm_selecttype_info.c 	\
-	slurm_selecttype_info.h		\
-	slurm_resource_info.c 		\
-	slurm_resource_info.h		\
-	hostlist.c hostlist.h		\
-	slurm_step_layout.c slurm_step_layout.h	\
-	job_resources.c job_resources.h	\
-	parse_time.c parse_time.h	\
-	job_options.c job_options.h	\
-	global_defaults.c		\
-	timers.c timers.h		\
-	track_script.c track_script.h	\
-	slurm_xlator.h			\
-	stepd_api.c stepd_api.h		\
-	write_labelled_message.c	\
-	write_labelled_message.h	\
-	proc_args.c proc_args.h		\
-	node_conf.h node_conf.c		\
-	gpu.h gpu.c			\
-	gres.h gres.c			\
-	xcgroup_read_config.c xcgroup_read_config.h \
-	callerid.c callerid.h		\
-	group_cache.c group_cache.h	\
-	slurm_persist_conn.c slurm_persist_conn.h \
-	run_command.c run_command.h	\
-	x11_util.c x11_util.h		\
-	half_duplex.c half_duplex.h	\
-	state_control.c state_control.h	\
-	site_factor.c site_factor.h	\
-	cli_filter.c cli_filter.h	\
-	tres_bind.c tres_bind.h		\
-	cron.c cron.h			\
-	tres_frequency.c tres_frequency.h
+libcommon_la_SOURCES =				\
+	assoc_mgr.c				\
+	assoc_mgr.h				\
+	bitstring.c				\
+	bitstring.h				\
+	callerid.c				\
+	callerid.h				\
+	cbuf.c					\
+	cbuf.h					\
+	cli_filter.c				\
+	cli_filter.h				\
+	cpu_frequency.c				\
+	cpu_frequency.h				\
+	cron.c					\
+	cron.h					\
+	data.c					\
+	data.h					\
+	env.c					\
+	env.h					\
+	fd.c					\
+	fd.h					\
+	fetch_config.c				\
+	fetch_config.h				\
+	forward.c				\
+	forward.h				\
+	gpu.c					\
+	gpu.h					\
+	global_defaults.c			\
+	gres.c					\
+	gres.h					\
+	group_cache.c				\
+	group_cache.h				\
+	half_duplex.c				\
+	half_duplex.h				\
+	hostlist.c				\
+	hostlist.h				\
+	job_options.c				\
+	job_options.h				\
+	job_resources.c				\
+	job_resources.h				\
+	list.c					\
+	list.h					\
+	log.c					\
+	log.h					\
+	macros.h				\
+	net.c					\
+	net.h					\
+	node_conf.c				\
+	node_conf.h				\
+	node_features.c				\
+	node_features.h				\
+	node_select.c				\
+	node_select.h				\
+	pack.c					\
+	pack.h					\
+	parse_config.c				\
+	parse_config.h				\
+	parse_time.c				\
+	parse_time.h				\
+	parse_value.c				\
+	parse_value.h				\
+	plugin.c				\
+	plugin.h				\
+	plugrack.c				\
+	plugrack.h				\
+	power.c					\
+	power.h					\
+	prep.c					\
+	prep.h					\
+	print_fields.c				\
+	print_fields.h				\
+	proc_args.c				\
+	proc_args.h				\
+	read_config.c				\
+	read_config.h				\
+	ref.h					\
+	run_command.c				\
+	run_command.h				\
+	run_in_daemon.c				\
+	run_in_daemon.h				\
+	site_factor.c				\
+	site_factor.h				\
+	slurm_accounting_storage.c		\
+	slurm_accounting_storage.h		\
+	slurm_acct_gather.c			\
+	slurm_acct_gather.h			\
+	slurm_acct_gather_energy.c		\
+	slurm_acct_gather_energy.h		\
+	slurm_acct_gather_filesystem.c		\
+	slurm_acct_gather_filesystem.h		\
+	slurm_acct_gather_interconnect.c	\
+	slurm_acct_gather_interconnect.h	\
+	slurm_acct_gather_profile.c		\
+	slurm_acct_gather_profile.h		\
+	slurm_auth.c				\
+	slurm_auth.h				\
+	slurm_cred.h				\
+	slurm_cred.c				\
+	slurm_errno.c				\
+	slurm_ext_sensors.c			\
+	slurm_ext_sensors.h			\
+	slurm_jobacct_gather.c			\
+	slurm_jobacct_gather.h			\
+	slurm_jobcomp.c				\
+	slurm_jobcomp.h				\
+	slurm_mcs.c				\
+	slurm_mcs.h				\
+	slurm_mpi.c				\
+	slurm_mpi.h				\
+	slurm_opt.c				\
+	slurm_opt.h				\
+	slurm_persist_conn.c			\
+	slurm_persist_conn.h			\
+	slurm_priority.c			\
+	slurm_priority.h			\
+	slurm_protocol_api.c			\
+	slurm_protocol_api.h			\
+	slurm_protocol_common.h			\
+	slurm_protocol_defs.c			\
+	slurm_protocol_defs.h			\
+	slurm_protocol_interface.h		\
+	slurm_protocol_pack.c			\
+	slurm_protocol_pack.h			\
+	slurm_protocol_util.c			\
+	slurm_protocol_util.h			\
+	slurm_protocol_socket.c			\
+	slurm_resolv.c				\
+	slurm_resolv.h				\
+	slurm_resource_info.c			\
+	slurm_resource_info.h			\
+	slurm_route.c				\
+	slurm_route.h				\
+	slurm_rlimits_info.c			\
+	slurm_rlimits_info.h			\
+	slurm_selecttype_info.c			\
+	slurm_selecttype_info.h			\
+	slurm_step_layout.c			\
+	slurm_step_layout.h			\
+	slurm_time.c				\
+	slurm_time.h				\
+	slurm_topology.c			\
+	slurm_topology.h			\
+	slurm_xlator.h				\
+	slurmdb_defs.c				\
+	slurmdb_defs.h				\
+	slurmdb_pack.c				\
+	slurmdb_pack.h				\
+	slurmdbd_defs.c				\
+	slurmdbd_defs.h				\
+	slurmdbd_pack.c				\
+	slurmdbd_pack.h				\
+	state_control.c				\
+	state_control.h				\
+	stepd_api.c				\
+	stepd_api.h				\
+	strlcpy.c				\
+	strlcpy.h				\
+	strnatcmp.c				\
+	strnatcmp.h				\
+	switch.c				\
+	switch.h				\
+	timers.c				\
+	timers.h				\
+	track_script.c				\
+	track_script.h				\
+	tres_bind.c				\
+	tres_bind.h				\
+	tres_frequency.c			\
+	tres_frequency.h			\
+	uid.c					\
+	uid.h					\
+	util-net.c				\
+	util-net.h				\
+	working_cluster.c			\
+	working_cluster.h			\
+	workq.c					\
+	workq.h					\
+	write_labelled_message.c		\
+	write_labelled_message.h		\
+	x11_util.c				\
+	x11_util.h				\
+	xassert.c				\
+	xassert.h				\
+	xcgroup_read_config.c			\
+	xcgroup_read_config.h			\
+	xhash.c					\
+	xhash.h					\
+	xmalloc.c				\
+	xmalloc.h				\
+	xsignal.c				\
+	xsignal.h				\
+	xstring.c				\
+	xstring.h
 
 EXTRA_libcommon_la_SOURCES = 		\
 	uthash/LICENSE			\
