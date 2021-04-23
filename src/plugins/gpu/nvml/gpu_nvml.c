@@ -45,6 +45,7 @@
 #include "ctype.h"
 
 #include <nvml.h>
+#include <math.h>
 
 /*
  * #defines needed to test nvml.
@@ -70,6 +71,16 @@
 #define GPU_MEDIUM	((unsigned int) -2)
 #define GPU_HIGH_M1	((unsigned int) -3)
 #define GPU_HIGH	((unsigned int) -4)
+
+#define MIG_LINE_SIZE	128
+
+typedef struct {
+	char *files; /* Includes MIG cap files and parent GPU device file */
+	char *links; /* MIG doesn't support NVLinks, but use for sorting */
+	char *profile_name; /* <GPU_type>_<slice_cnt>g.<mem>gb */
+	char *unique_id;
+	/* `MIG-<GPU-UUID>/<GPU instance ID>/<compute instance ID>` */
+} nvml_mig_t;
 
 static bitstr_t	*saved_gpus = NULL;
 /*
@@ -101,6 +112,17 @@ const char	*plugin_name		= "GPU NVML plugin";
 const char	plugin_type[]		= "gpu/nvml";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
+
+static void _free_nvml_mig_members(nvml_mig_t *nvml_mig)
+{
+	if (!nvml_mig)
+		return;
+
+	xfree(nvml_mig->files);
+	xfree(nvml_mig->links);
+	xfree(nvml_mig->profile_name);
+	xfree(nvml_mig->unique_id);
+}
 
 /*
  * Converts a cpu_set returned from the NVML API into a Slurm bitstr_t
@@ -1202,6 +1224,77 @@ static char *_nvml_get_nvlink_info(nvmlDevice_t *device, int index,
 
 /* MIG requires CUDA 11 and NVIDIA driver 450.80.02 or later */
 #if NVML_API_VERSION >= 11
+
+/*
+ * Get the handle to the MIG device for the passed GPU device and MIG index
+ *
+ * device	(IN) The GPU device handle
+ * mig_index	(IN) The MIG index
+ * mig		(OUT) The MIG device handle
+ *
+ * Returns true if successful, false if not
+ */
+static bool _nvml_get_mig_handle(nvmlDevice_t *device, unsigned int mig_index,
+				 nvmlDevice_t *mig)
+{
+	nvmlReturn_t nvml_rc = nvmlDeviceGetMigDeviceHandleByIndex(*device,
+								   mig_index,
+								   mig);
+	if (nvml_rc == NVML_ERROR_NOT_FOUND)
+		/* Not found is ok */
+		return false;
+	else if (nvml_rc != NVML_SUCCESS) {
+		error("Failed to get MIG device at MIG index %u: %s",
+		      mig_index, nvmlErrorString(nvml_rc));
+		return false;
+	}
+	return true;
+}
+
+/*
+ * Get the maximum count of MIGs possible
+ */
+static void _nvml_get_max_mig_device_count(nvmlDevice_t *device,
+					   unsigned int *count)
+{
+	nvmlReturn_t nvml_rc = nvmlDeviceGetMaxMigDeviceCount(*device, count);
+	if (nvml_rc != NVML_SUCCESS) {
+		error("Failed to get MIG device count: %s",
+		      nvmlErrorString(nvml_rc));
+		*count = 0;
+		return;
+	}
+
+	if (count && (*count == 0))
+		error("MIG device count is 0; MIG is either disabled or not supported");
+}
+
+/*
+ * Get the GPU instance ID of a MIG device handle
+ */
+static void _nvml_get_gpu_instance_id(nvmlDevice_t *mig, unsigned int *gi_id)
+{
+	nvmlReturn_t nvml_rc = nvmlDeviceGetGpuInstanceId(*mig, gi_id);
+	if (nvml_rc != NVML_SUCCESS) {
+		error("Failed to get MIG GPU instance ID: %s",
+		      nvmlErrorString(nvml_rc));
+		*gi_id = 0;
+	}
+}
+
+/*
+ * Get the compute instance ID of a MIG device handle
+ */
+static void _nvml_get_compute_instance_id(nvmlDevice_t *mig, unsigned int *ci_id)
+{
+	nvmlReturn_t nvml_rc = nvmlDeviceGetComputeInstanceId(*mig, ci_id);
+	if (nvml_rc != NVML_SUCCESS) {
+		error("Failed to get MIG GPU instance ID: %s",
+		      nvmlErrorString(nvml_rc));
+		*ci_id = 0;
+	}
+}
+
 /*
  * Get the MIG mode of the device
  *
@@ -1223,6 +1316,93 @@ static void _nvml_get_device_mig_mode(nvmlDevice_t *device,
 		error("Failed to get MIG mode of the GPU: %s",
 		      nvmlErrorString(nvml_rc));
 	}
+}
+
+/*
+ * Get the minor numbers for the GPU instance and compute instance for a MIG
+ * device.
+ *
+ * gpu_index	(IN) The index of the parent GPU of the MIG device.
+ * gi_id	(IN) The GPU instance ID of the MIG device.
+ * ci_id	(IN) The compute instance ID of the MIG device.
+ * gi_minor	(OUT) The minor number of the GPU instance.
+ * ci_minor	(OUT) The minor number of the compute instance.
+ *
+ * Returns SLURM_SUCCESS on success and SLURM_ERROR on failure.
+ */
+static int _nvml_get_mig_minor_numbers(unsigned int gpu_index,
+				       unsigned int gi_id, unsigned int ci_id,
+				       unsigned int *gi_minor,
+				       unsigned int *ci_minor)
+{
+	/* Parse mig-minors file for minor numbers */
+	FILE *fp = NULL;
+	int rc = SLURM_ERROR;
+	char *path = "/proc/driver/nvidia-caps/mig-minors";
+	char gi_fmt[MIG_LINE_SIZE];
+	char ci_fmt[MIG_LINE_SIZE];
+	char tmp_str[MIG_LINE_SIZE];
+	unsigned int tmp_val;
+	int i = 0;
+
+	/* You can't have more than 7 compute instances per GPU instance */
+	xassert(ci_id <= 7);
+
+	/* Clear storage for minor numbers */
+	*gi_minor = 0;
+	*ci_minor = 0;
+
+	fp = fopen(path, "r");
+	if (!fp) {
+		error("Could not open file `%s`", path);
+		return rc;
+	}
+
+	snprintf(gi_fmt, MIG_LINE_SIZE, "gpu%u/gi%u/access", gpu_index,
+		 gi_id);
+	snprintf(ci_fmt, MIG_LINE_SIZE, "gpu%u/gi%u/ci%u/access", gpu_index,
+		 gi_id, ci_id);
+
+	while (1) {
+		int found = 0;
+		int count = 0;
+
+		i++;
+		count = fscanf(fp, "%s%u", tmp_str, &tmp_val);
+		if (count == EOF) {
+			error("mig-minors: %d: Reached end of file. Could not find GPU=%u|GI=%u|CI=%u",
+			      i, gpu_index, gi_id, ci_id);
+			break;
+		} else if (count != 2) {
+			error("mig-minors: %d: Could not find tmp_str and/or tmp_val",
+			      i);
+			break;
+		}
+
+		if (!xstrcmp(tmp_str, gi_fmt)) {
+			found = 1;
+			*gi_minor = tmp_val;
+		}
+
+		if (!xstrcmp(tmp_str, ci_fmt)) {
+			found = 1;
+			*ci_minor = tmp_val;
+		}
+
+		if (found)
+			debug3("mig-minors: %d: Found `%s %u`", i, tmp_str,
+			       tmp_val);
+
+		if ((*gi_minor != 0) && (*ci_minor != 0)) {
+			rc = SLURM_SUCCESS;
+			debug3("GPU:%u|GI:%u,GI_minor=%u|CI:%u,CI_minor=%u",
+			      gpu_index, gi_id, *gi_minor, ci_id, *ci_minor);
+			break;
+		}
+	}
+
+	fclose(fp);
+	return rc;
 }
 
 /*
@@ -1252,6 +1432,85 @@ static bool _nvml_is_device_mig(nvmlDevice_t *device)
 	else
 		return false;
 }
+
+/*
+ * Print out a MIG device and return a populated nvml_mig struct.
+ *
+ * device	(IN) The MIG device handle
+ * gpu_index	(IN) The GPU index
+ * mig_index	(IN) The MIG index
+ * gpu_uuid	(IN) The UUID string of the parent GPU
+ * nvml_mig	(OUT) An nvml_mig_t struct. This function sets profile_name,
+ * 		files, links, and unique_id. profile_name should already be
+ * 		populated with the parent GPU type string, and files should
+ * 		already be populated with the parent GPU device file.
+ *
+ * Returns SLURM_SUCCESS or SLURM_ERROR. Caller must xfree() struct fields.
+ *
+ * files includes a comma-separated string of NVIDIA capability device files
+ * (/dev/nividia-caps/...) associated with the compute instance behind this MIG
+ * device.
+ */
+static int _handle_mig(nvmlDevice_t *device, unsigned int gpu_index,
+		       unsigned int mig_index, char *gpu_uuid,
+		       nvml_mig_t *nvml_mig)
+{
+	nvmlDevice_t mig;
+	nvmlDeviceAttributes_t attributes;
+	nvmlReturn_t nvml_rc;
+	/* Use the V2 size so it can fit extra MIG info */
+	char mig_uuid[NVML_DEVICE_UUID_V2_BUFFER_SIZE] = {0};
+	unsigned int gi_id;
+	unsigned int ci_id;
+	unsigned int gi_minor;
+	unsigned int ci_minor;
+
+	xassert(nvml_mig);
+
+	if (!_nvml_get_mig_handle(device, mig_index, &mig))
+		return SLURM_ERROR;
+
+	_nvml_get_device_uuid(&mig, mig_uuid,
+			      NVML_DEVICE_UUID_V2_BUFFER_SIZE);
+	_nvml_get_gpu_instance_id(&mig, &gi_id);
+	_nvml_get_compute_instance_id(&mig, &ci_id);
+
+	if (_nvml_get_mig_minor_numbers(gpu_index, gi_id, ci_id, &gi_minor,
+					&ci_minor) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	nvml_rc = nvmlDeviceGetAttributes(mig, &attributes);
+	if (nvml_rc != NVML_SUCCESS) {
+		error("Failed to get MIG attributes: %s",
+		      nvmlErrorString(nvml_rc));
+		return SLURM_ERROR;
+	}
+
+	/* Divide MB by 1024 (2^10) to get GB, and then round */
+	xstrfmtcat(nvml_mig->profile_name, "_%ug.%lugb",
+		   attributes.gpuInstanceSliceCount,
+		   (unsigned long)roundl((long double)attributes.memorySizeMB /
+					 (long double)1024));
+
+	xstrfmtcat(nvml_mig->unique_id, "MIG-%s/%u/%u", gpu_uuid, gi_id, ci_id);
+
+	/* Allow access to both the GPU instance and the compute instance */
+	xstrfmtcat(nvml_mig->files, ",/dev/nvidia-caps/nvidia-cap%u,/dev/nvidia-caps/nvidia-cap%u",
+		   gi_minor, ci_minor);
+
+	debug2("GPU index %u, MIG index %u:", gpu_index, mig_index);
+	debug2("    MIG Profile: %s", nvml_mig->profile_name);
+	debug2("    MIG UUID: %s", mig_uuid);
+	debug2("    UniqueID: %s", nvml_mig->unique_id);
+	debug2("    GPU Instance (GI) ID: %u", gi_id);
+	debug2("    Compute Instance (CI) ID: %u", ci_id);
+	debug2("    GI Minor Number: %u", gi_minor);
+	debug2("    CI Minor Number: %u", ci_minor);
+	debug2("    Device Files: %s", nvml_mig->files);
+
+	return SLURM_SUCCESS;
+}
+
 #endif
 
 /*
@@ -1383,13 +1642,82 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		debug2("    Core Affinity Range - Abstract: %s",
 		       cpu_aff_abs_range);
 		debug2("    MIG mode: %s", mig_mode ? "enabled" : "disabled");
+
+		if (mig_mode) {
+#if NVML_API_VERSION >= 11
+			unsigned int max_mig_count;
+			unsigned int mig_count = 0;
+			char *tmp_device_name = xstrdup(device_name);
+			char *tok = xstrchr(tmp_device_name, '-');
+			if (tok) {
+				/*
+				 * Here we are clearing everything after the
+				 * first '-' so we can avoid the extra stuff
+				 * after the real type of gpu since we are going
+				 * to add a suffix here of the profile name.
+				 */
+				tok[0] = '\0';
+			}
+			_nvml_get_max_mig_device_count(&device, &max_mig_count);
+
+			/* Count number of actual MIGs */
+			for (unsigned int j = 0; j < max_mig_count; j++) {
+				nvmlDevice_t mig;
+				if (_nvml_get_mig_handle(&device, j, &mig)) {
+					/*
+					 * Assume MIG indexes start at 0 and are
+					 * contiguous
+					 */
+					xassert(j == mig_count);
+					mig_count++;
+				} else
+					break;
+			}
+			debug2("    MIG count: %u", mig_count);
+
+			for (unsigned int j = 0; j < mig_count; j++) {
+				nvml_mig_t nvml_mig = { 0 };
+				nvml_mig.files = xstrdup(device_file);
+				nvml_mig.profile_name =
+					xstrdup(tmp_device_name);
+
+				/* If MIG exists, print and and return files */
+				if (_handle_mig(&device, i, j,
+						uuid, &nvml_mig) !=
+				    SLURM_SUCCESS) {
+					_free_nvml_mig_members(&nvml_mig);
+					continue;
+				}
+
+				nvml_mig.links = gres_links_create_empty(
+					j, mig_count);
+
+				/*
+				 * Add MIG device to GRES list. MIG does not
+				 * support NVLinks. CPU affinity, CPU count, and
+				 * device name will be the same as non-MIG GPU.
+				 */
+				add_gres_to_list(gres_list_system, "gpu", 1,
+						 node_config->cpu_cnt,
+						 cpu_aff_abs_range,
+						 cpu_aff_mac_bitstr,
+						 nvml_mig.files,
+						 nvml_mig.profile_name,
+						 nvml_mig.links);
+				_free_nvml_mig_members(&nvml_mig);
+			}
+			xfree(tmp_device_name);
+#endif
+		} else {
+			add_gres_to_list(gres_list_system, "gpu", 1,
+					 node_config->cpu_cnt,
+					 cpu_aff_abs_range,
+					 cpu_aff_mac_bitstr, device_file,
+					 device_name, nvlinks);
+		}
+
 		// Print out possible memory frequencies for this device
 		_nvml_print_freqs(&device, LOG_LEVEL_DEBUG2);
-
-		add_gres_to_list(gres_list_system, "gpu", 1,
-				 node_config->cpu_cnt, cpu_aff_abs_range,
-				 cpu_aff_mac_bitstr, device_file, device_name,
-				 nvlinks);
 
 		FREE_NULL_BITMAP(cpu_aff_mac_bitstr);
 		xfree(cpu_aff_mac_range);
