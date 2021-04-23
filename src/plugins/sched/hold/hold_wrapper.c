@@ -64,13 +64,13 @@ void fini(void)
 	/* Empty. */
 }
 
-int slurm_sched_p_reconfig(void)
+extern int sched_p_reconfig(void)
 {
 	return SLURM_SUCCESS;
 }
 
-uint32_t slurm_sched_p_initial_priority(uint32_t last_prio,
-					job_record_t *job_ptr)
+extern uint32_t sched_p_initial_priority(uint32_t last_prio,
+					 job_record_t *job_ptr)
 {
 	struct stat buf;
 

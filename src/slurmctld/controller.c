@@ -604,7 +604,7 @@ int main(int argc, char **argv)
 
 		/* start in primary or backup mode */
 		if (!slurmctld_primary) {
-			slurm_sched_fini();	/* make sure shutdown */
+			sched_g_fini();	/* make sure shutdown */
 			_run_primary_prog(false);
 			run_backup();
 			agent_init();	/* Killed at any previous shutdown */
@@ -724,7 +724,7 @@ int main(int argc, char **argv)
 
 		if (priority_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize priority plugin");
-		if (slurm_sched_init() != SLURM_SUCCESS)
+		if (sched_g_init() != SLURM_SUCCESS)
 			fatal("failed to initialize scheduling plugin");
 		if (slurmctld_plugstack_init())
 			fatal("failed to initialize slurmctld_plugstack");
@@ -875,7 +875,7 @@ int main(int argc, char **argv)
 	if (cnt)
 		error("Left %d agent threads active", cnt);
 
-	slurm_sched_fini();	/* Stop all scheduling */
+	sched_g_fini();	/* Stop all scheduling */
 
 	/* Purge our local data structures */
 	configless_clear();

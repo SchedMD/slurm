@@ -11196,8 +11196,7 @@ extern void set_job_prio(job_record_t *job_ptr)
 
 	if (IS_JOB_FINISHED(job_ptr))
 		return;
-	job_ptr->priority = slurm_sched_g_initial_priority(lowest_prio,
-							   job_ptr);
+	job_ptr->priority = sched_g_initial_priority(lowest_prio, job_ptr);
 	if ((job_ptr->priority == 0) || (job_ptr->direct_set_prio))
 		return;
 

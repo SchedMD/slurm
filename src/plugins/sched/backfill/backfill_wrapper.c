@@ -93,14 +93,14 @@ void fini( void )
 	slurm_mutex_unlock( &thread_flag_mutex );
 }
 
-int slurm_sched_p_reconfig( void )
+extern int sched_p_reconfig(void)
 {
 	backfill_reconfig();
 	return SLURM_SUCCESS;
 }
 
-uint32_t slurm_sched_p_initial_priority(uint32_t last_prio,
-					job_record_t *job_ptr)
+extern uint32_t sched_p_initial_priority(uint32_t last_prio,
+					 job_record_t *job_ptr)
 {
 	return priority_g_set(last_prio, job_ptr);
 }

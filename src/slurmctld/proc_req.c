@@ -5024,7 +5024,7 @@ static void _slurm_rpc_set_debug_flags(slurm_msg_t *msg)
 	gres_reconfig();
 	priority_g_reconfig(false);
 	select_g_reconfigure();
-	(void) slurm_sched_g_reconfig();
+	(void) sched_g_reconfig();
 	(void) switch_g_reconfig();
 
 	unlock_slurmctld (config_write_lock);

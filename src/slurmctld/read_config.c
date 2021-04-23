@@ -1174,7 +1174,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	}
 	update_logging();
 	jobcomp_g_init(slurm_conf.job_comp_loc);
-	if (slurm_sched_init() != SLURM_SUCCESS) {
+	if (sched_g_init() != SLURM_SUCCESS) {
 		if (test_config) {
 			error("Failed to initialize sched plugin");
 			test_config_rc = 1;
@@ -1183,7 +1183,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		}
 	}
 	if (!reconfig && (old_preempt_mode & PREEMPT_MODE_GANG)) {
-		/* gs_init() must immediately follow slurm_sched_init() */
+		/* gs_init() must immediately follow sched_g_init() */
 		gs_init();
 	}
 	if (switch_init(1) != SLURM_SUCCESS) {
@@ -1261,13 +1261,13 @@ int read_slurm_conf(int recover, bool reconfig)
 		}
 		load_last_job_id();
 		reset_first_job_id();
-		(void) slurm_sched_g_reconfig();
+		(void) sched_g_reconfig();
 	} else if (recover == 0) {	/* Build everything from slurm.conf */
 		_set_features(node_record_table_ptr, node_record_count,
 			      recover);
 		load_last_job_id();
 		reset_first_job_id();
-		(void) slurm_sched_g_reconfig();
+		(void) sched_g_reconfig();
 	} else if (recover == 1) {	/* Load job & node state files */
 		(void) load_all_node_state(true);
 		_set_features(node_record_table_ptr, node_record_count,
@@ -1374,7 +1374,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		load_all_resv_state(recover);
 		if (recover >= 1) {
 			trigger_state_restore();
-			(void) slurm_sched_g_reconfig();
+			(void) sched_g_reconfig();
 		}
 	}
 	 if (test_config)
