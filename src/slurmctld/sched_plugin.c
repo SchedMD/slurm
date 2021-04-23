@@ -49,17 +49,14 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 
-typedef struct slurm_sched_ops {
-	uint32_t	(*initial_priority)	( uint32_t,
-						  job_record_t * );
-	int		(*reconfig)		( void );
+typedef struct {
+	int (*reconfig)(void);
 } slurm_sched_ops_t;
 
 /*
  * Must be synchronized with slurm_sched_ops_t above.
  */
 static const char *syms[] = {
-	"sched_p_initial_priority",
 	"sched_p_reconfig",
 };
 
@@ -128,13 +125,4 @@ extern int sched_g_reconfig(void)
 	gs_reconfig();
 
 	return (*(ops.reconfig))();
-}
-
-extern uint32_t sched_g_initial_priority(uint32_t last_prio,
-					 job_record_t *job_ptr)
-{
-	if (sched_g_init() < 0)
-		return SLURM_ERROR;
-
-	return (*(ops.initial_priority))( last_prio, job_ptr );
 }

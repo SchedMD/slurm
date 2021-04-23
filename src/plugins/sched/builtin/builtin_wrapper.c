@@ -44,7 +44,6 @@
 #include "src/common/plugin.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
-#include "src/common/slurm_priority.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
@@ -93,10 +92,4 @@ extern int sched_p_reconfig(void)
 {
 	builtin_reconfig();
 	return SLURM_SUCCESS;
-}
-
-extern uint32_t sched_p_initial_priority(uint32_t last_prio,
-					 job_record_t *job_ptr)
-{
-	return priority_g_set(last_prio, job_ptr);
 }
