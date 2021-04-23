@@ -2191,7 +2191,20 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 		goto unpack_error;
 	}
 	for (i = 0; i < rec_cnt; i++) {
-		if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+			safe_unpack32(&magic, buffer);
+			if (magic != GRES_MAGIC)
+				goto unpack_error;
+
+			safe_unpack64(&count64, buffer);
+			safe_unpack32(&cpu_cnt, buffer);
+			safe_unpack8(&config_flags, buffer);
+			safe_unpack32(&plugin_id, buffer);
+			safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
+			safe_unpackstr_xmalloc(&tmp_links, &utmp32, buffer);
+			safe_unpackstr_xmalloc(&tmp_name, &utmp32, buffer);
+			safe_unpackstr_xmalloc(&tmp_type, &utmp32, buffer);
+		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
