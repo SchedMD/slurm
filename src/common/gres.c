@@ -1165,10 +1165,13 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	}
 
 	if (s_p_get_string(&p->file, "MultipleFiles", tbl)) {
+		int file_count = 0;
 		if (p->config_flags & GRES_CONF_HAS_FILE)
 			fatal("File and MultipleFiles options are mutually exclusive");
 		p->count = 1;
-		_validate_file(p->file, p->name);
+		file_count = _validate_file(p->file, p->name);
+		if (file_count < 2)
+			fatal("MultipleFiles does not contain multiple files. Use File instead");
 		p->config_flags |= GRES_CONF_HAS_FILE;
 	}
 
