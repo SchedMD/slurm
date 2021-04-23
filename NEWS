@@ -72,6 +72,7 @@ documents those changes that are of interest to users and administrators.
     --with-rsmi=dir.
  -- Pass additional job environment variables to MailProg.
  -- Add SLURM_JOB_WORK_DIR to Prolog, Epilog.
+ -- Removed sched/hold plugin.
 
 * Changes in Slurm 20.11.6
 ==========================

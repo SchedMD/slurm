@@ -40,6 +40,7 @@ HIGHLIGHTS
     fatal warning messages).
  -- configure: replace --with-rmsi_dir option with proper handling for
     --with-rsmi=dir.
+ -- Removed sched/hold plugin.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
