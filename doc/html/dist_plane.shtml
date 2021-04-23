@@ -3,7 +3,7 @@
 <h1><a name="top">Plane distribution: <i>-m plane=plane_size</i></a></h1>
 
 <p>The plane distribution allocates tasks in blocks of size
-plane_size in a round-robin fashion across allocated nodes.
+<i>plane_size</i> in a round-robin fashion across allocated nodes.
 
 <p>To specify the plane distribution add to the srun command line
 <i>--distribution=plane=plane_size</i> or <i>-m plane=plane_size</i>
@@ -14,21 +14,21 @@ where <i>plane_size</i> is the requested plane/block size.
 <p>In the examples below we assume we have 21 tasks and that the
 task list is: 0, 1, 2, 3, 4, ..., 19, 20.
 
-<p>On <u>One (1)</u> node: <i>srun -N 1-1 -n 21 -m plane=4 <...></i>.
+<p>On <u>one (1)</u> node: <i>srun -N 1-1 -n 21 -m plane=4 <...></i>.
 
-<p>The distribution results in a plane distribution with plane_size 21.
-Even though the user specified a plane_size of 4 the final plane
-distribution results in a plane_size of 21.
+<p>Even though the user specified a <i>plane_size</i> of 4 the final plane
+distribution results in a <i>plane_size</i> of 21, since all the tasks landed
+on one node.
 
 <p>
 <center>
 <img src="plane_ex1.gif">
 <p>Figure 1: Process layout for <i>srun -N 1-1 -n 21 -m plane=4 <...></i>
 </center>
-
+<br>
 <p>On <u>four (4)</u> nodes: <i>srun -N 4-4 -n 21 -m plane=4 <...></i>.
 
-<p>The plane distribution with a plane_size of 4 results in the
+<p>The plane distribution with a <i>plane_size</i> of 4 results in the
 following allocation of the task ids:
 
 <p>
@@ -36,11 +36,11 @@ following allocation of the task ids:
 <img src="plane_ex2.gif">
 <p>Figure 2: Process layout for <i>srun -N 4-4 -n 21 -m plane=4 <...> </i>
 </center>
-
+<br>
 <p>On <u>four (4)</u> nodes: <i>srun -N 4-4 -n 21 -m plane=2 <...>
 </i>.
 
-<p>The plane distribution with a plane_size of 2 results in the
+<p>The plane distribution with a <i>plane_size</i> of 2 results in the
 following allocation of the task ids:
 
 <p>
@@ -59,17 +59,17 @@ node. We then schedule within each plane first and then across planes.
 
 <p>We ensure that the processes are located correctly by setting the
 process affinity to the specified/appropriate logical processor. Process
-affinity is available in Slurm when the task affinity plug-in is
+affinity is available in Slurm when the task/affinity plug-in is
 enabled.
 
 <p>On a dual-processor node with quad-core processors (see figure 4)
 the plane distribution results in:
 
 <ul>
-<li>One plane if the plane_size=8. In this case the processors are
+<li>One plane if the <i>plane_size=8</i>. In this case the processors are
 scheduled by first filling up the nodes and then scheduled across the
 nodes.</li>
-<li>Eight planes if the plane_size=1. In this case we would always
+<li>Eight planes if the <i>plane_size=1</i>. In this case we would always
 schedule across the node first.</li>
 </ul>
 
@@ -78,7 +78,7 @@ schedule across the node first.</li>
 <img src="plane_ex4.gif">
 <p>Figure 4: Quad-core dual-processor system
 </center>
-
+<br>
 <p>In a multi-core/hyper-threaded environment, two planes would
 provide better locality but potentially more contention for other
 resources.
@@ -93,10 +93,10 @@ affinity enabled</h3>
 <p>In the examples below we assume we have 21 tasks and that the
 task list is: 0, 1, 2, 3, 4, ..., 19, 20.
 
-<p>On <u>One (1)</u> node:
+<p>On <u>one (1)</u> node:
 <i>srun -N 1-1 -n 21 -m plane=4 --cpu-bind=core <...></i>.
-Even though the user specified a plane_size of 4 the final plane
-distribution results in a plane distribution with plane_size=8.
+Even though the user specified a <i>plane_size</i> of 4 the final plane
+distribution results in a plane distribution with <i>plane_size=8</i>.
 
 <p>
 <center>
@@ -104,10 +104,10 @@ distribution results in a plane distribution with plane_size=8.
 <p>Figure 5: Process layout for
 <i>srun -N 1-1 -n 21 -m plane=4 --cpu-bind=core <...></i>.
 </center>
-
+<br>
 <p>On <u>four (4)</u> nodes:
 <i>srun -N 4-4 -n 21 -m plane=4 --cpu-bind=core <...></i>.
-The plane distribution with a plane_size of 4 results in the
+The plane distribution with a <i>plane_size</i> of 4 results in the
 following allocation of the task ids:
 
 <p>
@@ -116,10 +116,10 @@ following allocation of the task ids:
 <p>Figure 6: Process layout for
 <i>srun -N 4-4 -n 21 -m plane=4 --cpu-bind=core <...></i>.
 </center>
-
+<br>
 <p>On <u>four (4)</u> nodes:
 <i>srun -N 4-4 -n 21 -m plane=2 --cpu-bind=core <...>
-</i>. The plane distribution with a plane_size of 2 results in the
+</i>. The plane distribution with a <i>plane_size</i> of 2 results in the
 following allocation of the task ids:
 
 <p>
@@ -128,8 +128,8 @@ following allocation of the task ids:
 <p>Figure 7: Process layout for
 <i>srun -N 4-4 -n 21 -m plane=2 --cpu-bind=core <...></i>.
 </center>
+<br>
 
-
-<p style="text-align:center;">Last modified 27 October 2017</p>
+<p style="text-align:center;">Last modified 22 April 2021</p>
 
 <!--#include virtual="footer.txt"-->
