@@ -241,9 +241,9 @@ static void	_node_state_log(void *gres_data, char *node_name,
 static int	_parse_gres_config(void **dest, slurm_parser_enum_t type,
 				   const char *key, const char *value,
 				   const char *line, char **leftover);
-static int	_parse_gres_config2(void **dest, slurm_parser_enum_t type,
-				    const char *key, const char *value,
-				    const char *line, char **leftover);
+static int	_parse_gres_config_node(void **dest, slurm_parser_enum_t type,
+					const char *key, const char *value,
+					const char *line, char **leftover);
 static void *	_step_state_dup(void *gres_data);
 static void *	_step_state_dup2(void *gres_data, int node_index);
 static void	_step_state_log(void *gres_data, slurm_step_id_t *step_id,
@@ -1237,9 +1237,9 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	*dest = (void *)p;
 	return 1;
 }
-static int _parse_gres_config2(void **dest, slurm_parser_enum_t type,
-			       const char *key, const char *value,
-			       const char *line, char **leftover)
+static int _parse_gres_config_node(void **dest, slurm_parser_enum_t type,
+				   const char *key, const char *value,
+				   const char *line, char **leftover)
 {
 	static s_p_options_t _gres_options[] = {
 		{"AutoDetect", S_P_STRING},
@@ -1994,7 +1994,7 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 	static s_p_options_t _gres_options[] = {
 		{"AutoDetect", S_P_STRING},
 		{"Name",     S_P_ARRAY, _parse_gres_config,  NULL},
-		{"NodeName", S_P_ARRAY, _parse_gres_config2, NULL},
+		{"NodeName", S_P_ARRAY, _parse_gres_config_node, NULL},
 		{NULL}
 	};
 
