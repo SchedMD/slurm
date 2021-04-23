@@ -80,7 +80,7 @@
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
  * (major.minor.micro combined into a single number).
  */
-const char plugin_name[]        = "Tasks containment using linux cgroup";
+const char plugin_name[]        = "Tasks containment cgroup plugin";
 const char plugin_type[]        = "task/cgroup";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
@@ -97,6 +97,9 @@ extern int init (void)
 {
 	int rc = SLURM_SUCCESS;
 	slurm_cgroup_conf_t *cg_conf;
+
+	if (!running_in_slurmstepd())
+		goto end;
 
 	/* read cgroup configuration */
 	slurm_mutex_lock(&xcgroup_config_read_mutex);
@@ -144,8 +147,8 @@ extern int init (void)
 			debug("device enforcement enabled");
 		}
 	}
-
-	debug("successfully loaded");
+end:
+	debug("%s loaded", plugin_name);
 	return rc;
 }
 
@@ -169,6 +172,7 @@ extern int fini (void)
 		rc[2] = task_cgroup_devices_fini();
 	}
 
+	debug("%s unloaded", plugin_name);
 	return MAX(rc[0], MAX(rc[1], rc[2]));
 }
 
