@@ -2,29 +2,25 @@
 
 <h1><a name="top">Slurm Scheduler Plugin API</a></h1>
 
-<h2> Overview</h2>
-<p> This document describe. Slurm scheduler plugins and the API that defines
-them. It is intended as a resource to programmers wishing to write their own Slurm
-scheduler plugins.</p>
-
-<p>It is noteworthy that two different models are used for job scheduling.
-The <b>backfill</b> scheduler let. Slurm establishes the initial job priority
-and can periodically alter job priorities to change their order within the queue.
-Developers may use the model that best fits their needs.
-Note that a separate <a href="selectplugins.html">node selection plugin</a>
-is available for controlling that aspect of scheduling.</p>
+<h2>Overview</h2>
+<p>This document describes the Slurm scheduler plugins and the API that defines
+them. It is intended as a resource to programmers wishing to write their own
+Slurm scheduler plugins.</p>
 
 <p>Slurm scheduler plugins are Slurm plugins that implement the Slurm scheduler
-API described herein. They must conform to the Slurm Plugin API with the following
-specifications:</p>
+API described herein. They must conform to the Slurm Plugin API with the
+following specifications:</p>
 <p><span class="commandline">const char plugin_type[]</span><br>
-The major type must be &quot;sched.&quot; The minor type can be any recognizable
-abbreviation for the type of scheduler. We recommend, for example:</p>
+The major type must be &quot;sched.&quot; The minor type can be any
+recognizable abbreviation for the type of scheduler. For example, the two
+provided plugins are:</p>
 <ul>
-<li><b>builtin</b> &mdash; A plugin that implements the API without providing any actual
-scheduling services. This is the default behavior and implements first-in-first-out scheduling.</li>
-<li><b>backfill</b> &mdash; Raise the priority of jobs if doing so results in their starting earlier
-without any delay in the expected initiation time of any higher priority job.</li>
+<li><b>builtin</b> &mdash; A plugin that implements the API without providing
+any actual scheduling services. This is the default behavior and implements
+strict priority-based scheduling.</li>
+<li><b>backfill</b> &mdash; Backfill scheduling can launch lower-priority jobs
+sooner if possible as long as they would not delay the expected start time of
+any higher priority job.</li>
 </ul>
 
 <p><span class="commandline">const char plugin_name[]</span><br>
@@ -32,29 +28,25 @@ Some descriptive name for the plugin.
 There is no requirement with respect to its format.</p>
 
 <p><span class="commandline">const uint32_t plugin_version</span><br>
-If specified, identifies the version of Slurm used to build this plugin and
-any attempt to load the plugin from a different version of Slurm will result
-in an error.
-If not specified, then the plugin may be loaded by Slurm commands and
-daemons from any version, however this may result in difficult to diagnose
-failures due to changes in the arguments to plugin functions or changes
-in other Slurm functions used by the plugin.</p>
+Must be set to the SLURM_VERSION_NUMBER macro, otherwise the plugin will not
+load. Used to ensure the plugin matches the current operating version of
+Slurm.</p>
 
 <h2>API Functions</h2>
 <p>The following functions must appear. Functions which are not implemented should
 be stubbed.</p>
 
-<p class="commandline"> int init (void)
+<p class="commandline">extern int init(void)</p>
 <p style="margin-left:.2in"><b>Description</b>:<br>
-  Called when the plugin is loaded, before any other functions are
-  called. Put global initialization here.
+Called when the plugin is loaded, before any other functions are
+called. Put global initialization here.</p>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
   <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
   <span class="commandline">SLURM_ERROR</span> on failure.</p>
 
-<p class="commandline"> void fini (void)
+<p class="commandline">extern void fini(void)</p>
 <p style="margin-left:.2in"><b>Description</b>:<br>
-  Called when the plugin is removed. Clear any allocated storage here.
+Called when the plugin is removed. Clear any allocated storage here.</p>
 <p style="margin-left:.2in"><b>Returns</b>: None.</p>
 
 <p><b>Note</b>: These init and fini functions are not the same as those
@@ -65,71 +57,11 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <span class="commandline">fini()</span> is called before the system's
 <span class="commandline">_fini()</span>.</p>
 
-<p class="commandline">int slurm_sched_p_reconfig (void);</p>
+<p class="commandline">extern int sched_p_reconfig(void);</p>
 <p style="margin-left:.2in"><b>Description</b>: Reread any configuration files.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: None</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On fail
-ure,
-the plugin should return SLURM_ERROR and set the errno to an appropriate value
-to indicate the reason for failure.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS.</p>
 
-<p class="commandline">int slurm_sched_p_schedule (void);</p>
-<p style="margin-left:.2in"><b>Description</b>: For passive schedulers, invoke a scheduling pass.</p>
-<p style="margin-left:.2in"><b>Arguments</b>: None</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR and set the errno to an appropriate value
-to indicate the reason for failure.</p>
-
-<p class="commandline">int slurm_sched_p_newalloc(job_record_t *job_ptr);</p>
-<p style="margin-left:.2in"><b>Description</b>: Note the successful allocation of resources to a job.</p>
-<p style="margin-left:.2in"><b>Arguments</b>: Pointer to the slurmctld job structure. This can be used to
-get partition, allocated resources, time limit, etc.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR and set the errno to an appropriate value
-to indicate the reason for failure.</p>
-
-<p class="commandline">int slurm_sched_p_freealloc(job_record_t *job_ptr);</p>
-<p style="margin-left:.2in"><b>Description</b>: Note the successful release of resources for a job.</p>
-<p style="margin-left:.2in"><b>Arguments</b>: Pointer to the slurmctld job structure. This can be used to
-get partition, allocated resources, time limit, etc.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR and set the errno to an appropriate value
-to indicate the reason for failure.</p>
-
-<p class="commandline">uint32_t slurm_sched_p_initial_priority(uint32_t last_prio, job_record_t *job_ptr);</p>
-<p style="margin-left:.2in"><b>Description</b>: Establish the initial priority of a new job.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<br>
-<b>last_prio</b> (input) default priority of the previously submitted job.
-This can be used to provide First-In-First-Out scheduling by assigning the
-new job a priority lower than this value.
-This could also be used to establish an initial priority of zero for all jobs,
-representing a "held" state.
-The scheduler plugin can then decide where and when to initiate pending jobs
-by altering their priority and (optionally) list of required nodes.<br>
-<b>job_ptr</b> (input)
-Pointer to the slurmctld job structure. This can be used to get partition,
-resource requirements, time limit, etc.</p>
-<p style="margin-left:.2in"><b>Returns</b>: The priority to be assigned to this job.</p>
-
-<p class="commandline">void slurm_sched_p_job_is_pending (void);</p>
-<p style="margin-left:.2in"><b>Description</b>: Note that some job is pending execution.</p>
-<p style="margin-left:.2in"><b>Arguments</b>: None</p>
-<p style="margin-left:.2in"><b>Returns</b>: Nothing.</p>
-
-<p class="commandline">void slurm_sched_p_partition_change (void);</p>
-<p style="margin-left:.2in"><b>Description</b>: Note that some partition state change
-happened such as time or size limits.</p>
-<p style="margin-left:.2in"><b>Arguments</b>: None</p>
-<p style="margin-left:.2in"><b>Returns</b>: Nothing.</p>
-
-<p class="commandline">char *slurm_sched_p_get_conf (void);</p></a>
-<p style="margin-left:.2in"><b>Description</b>: Return scheduler specific
-configuration information to be reported for the <i>scontrol show configuration</i>
-command.</p>
-<p style="margin-left:.2in"><b>Arguments</b>: None</p>
-<p style="margin-left:.2in"><b>Returns</b>: A string containing configuration
-information. The return value is released using the <i>xfree()</i> function.</p>
-
-<p style="text-align:center;">Last modified 23 October 2019</p>
+<p style="text-align:center;">Last modified 22 April 2021</p>
 
 <!--#include virtual="footer.txt"-->
