@@ -1595,7 +1595,7 @@ static void _add_gres_config_empty(List gres_list,
 }
 
 /*
- * Truncate the File hostrange string of a GRES record to be to be at most
+ * Truncate the File hostrange string of a GRES record to be at most
  * new_count entries. The extra entries will be removed.
  *
  * gres_conf - (in/out) The GRES record to modify.
