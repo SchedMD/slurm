@@ -219,6 +219,13 @@ typedef struct bb_state {
 					 * drained, units are bytes */
 } bb_state_t;
 
+/* Return codes for bb_test_size_limit */
+enum {
+	BB_CAN_START_NOW = 0,
+	BB_EXCEEDS_LIMITS,
+	BB_NOT_ENOUGH_RESOURCES,
+};
+
 /* Insert the contents of "burst_buffer_file" into "script_body" */
 extern void  bb_add_bb_to_script(char **script_body,
 				 const char *burst_buffer_file);
@@ -372,6 +379,22 @@ extern int bb_post_persist_create(job_record_t *job_ptr, bb_alloc_t *bb_alloc,
 
 /* Log deletion of a persistent burst buffer in the database */
 extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr);
+
+/*
+ * Test if a job can be allocated a burst buffer.
+ * This may preempt currently active stage-in for higher priority jobs.
+ *
+ * RET BB_CAN_START_NOW: Job can be started now
+ *     BB_EXCEEDS_LIMITS: Job exceeds configured limits, continue testing with
+ *                        next job
+ *     BB_NOT_ENOUGH_RESOURCES: Job needs more resources than currently
+ *                              available can not start, skip all remaining jobs
+ */
+extern int bb_test_size_limit(job_record_t *job_ptr, bb_job_t *bb_job,
+			      bb_state_t *bb_state_ptr,
+			      void (*preempt_func) (uint32_t job_id,
+						    uint32_t user_id,
+						    bool hurry) );
 
 /* Determine if the specified pool name is valid on this system */
 extern bool bb_valid_pool_test(bb_state_t *state_ptr, char *pool_name);

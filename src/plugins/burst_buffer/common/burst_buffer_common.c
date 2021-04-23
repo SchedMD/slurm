@@ -72,6 +72,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 
 #include "burst_buffer_common.h"
@@ -1621,6 +1622,296 @@ extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 
 	return rc;
 }
+
+/* Reduced burst buffer space in advanced reservation for resources already
+ * allocated to jobs. What's left is space reserved for future jobs */
+static void _rm_active_job_bb(char *resv_name, char **pool_name,
+			      int64_t *resv_space, int ds_len,
+			      bb_state_t *bb_state)
+{
+	ListIterator job_iterator;
+	job_record_t *job_ptr;
+	bb_job_t *bb_job;
+	int i;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = list_next(job_iterator))) {
+		if ((job_ptr->burst_buffer == NULL) ||
+		    (job_ptr->burst_buffer[0] == '\0') ||
+		    (xstrcmp(job_ptr->resv_name, resv_name) == 0))
+			continue;
+		bb_job = bb_job_find(bb_state,job_ptr->job_id);
+		if (!bb_job || (bb_job->state <= BB_STATE_PENDING) ||
+		    (bb_job->state >= BB_STATE_COMPLETE))
+			continue;
+		for (i = 0; i < ds_len; i++) {
+			if (xstrcmp(bb_job->job_pool, pool_name[i]))
+				continue;
+			if (resv_space[i] >= bb_job->total_size)
+				resv_space[i] -= bb_job->total_size;
+			else
+				resv_space[i] = 0;
+			break;
+		}
+	}
+	list_iterator_destroy(job_iterator);
+}
+
+extern int bb_test_size_limit(job_record_t *job_ptr, bb_job_t *bb_job,
+			      bb_state_t *bb_state_ptr,
+			      void (*preempt_func) (uint32_t job_id,
+						    uint32_t user_id,
+						    bool hurry) )
+{
+	int64_t *add_space = NULL, *avail_space = NULL, *granularity = NULL;
+	int64_t *preempt_space = NULL, *resv_space = NULL, *total_space = NULL;
+	uint64_t unfree_space;
+	burst_buffer_info_msg_t *resv_bb = NULL;
+	struct preempt_bb_recs *preempt_ptr = NULL;
+	char **pool_name, *my_pool;
+	int ds_len;
+	burst_buffer_pool_t *pool_ptr;
+	bb_buf_t *buf_ptr;
+	bb_alloc_t *bb_ptr = NULL;
+	int i, j, k, rc = BB_CAN_START_NOW;
+	bool avail_ok, do_preempt, preempt_ok;
+	time_t now = time(NULL);
+	List preempt_list = NULL;
+	ListIterator preempt_iter;
+	bb_state_t bb_state = *bb_state_ptr;
+
+	xassert(bb_job);
+
+	/* Initialize data structure */
+	ds_len = bb_state.bb_config.pool_cnt + 1;
+	add_space = xcalloc(ds_len, sizeof(int64_t));
+	avail_space = xcalloc(ds_len, sizeof(int64_t));
+	granularity = xcalloc(ds_len, sizeof(int64_t));
+	pool_name = xcalloc(ds_len, sizeof(char *));
+	preempt_space = xcalloc(ds_len, sizeof(int64_t));
+	resv_space = xcalloc(ds_len, sizeof(int64_t));
+	total_space = xcalloc(ds_len, sizeof(int64_t));
+	for (i = 0, pool_ptr = bb_state.bb_config.pool_ptr;
+	     i < bb_state.bb_config.pool_cnt; i++, pool_ptr++) {
+		unfree_space = MAX(pool_ptr->used_space,
+				   pool_ptr->unfree_space);
+		if (pool_ptr->total_space >= unfree_space)
+			avail_space[i] = pool_ptr->total_space - unfree_space;
+		granularity[i] = pool_ptr->granularity;
+		pool_name[i] = pool_ptr->name;
+		total_space[i] = pool_ptr->total_space;
+	}
+	unfree_space = MAX(bb_state.used_space, bb_state.unfree_space);
+	if (bb_state.total_space - unfree_space)
+		avail_space[i] = bb_state.total_space - unfree_space;
+	granularity[i] = bb_state.bb_config.granularity;
+	pool_name[i] = bb_state.bb_config.default_pool;
+	total_space[i] = bb_state.total_space;
+
+	/* Determine job size requirements by pool */
+	if (bb_job->total_size) {
+		for (j = 0; j < ds_len; j++) {
+			if (!xstrcmp(bb_job->job_pool, pool_name[j])) {
+				add_space[j] += bb_granularity(
+							bb_job->total_size,
+							granularity[j]);
+				break;
+			}
+		}
+	}
+	for (i = 0, buf_ptr = bb_job->buf_ptr; i < bb_job->buf_cnt;
+	     i++, buf_ptr++) {
+		if (!buf_ptr->create || (buf_ptr->state >= BB_STATE_ALLOCATING))
+			continue;
+		for (j = 0; j < ds_len; j++) {
+			if (!xstrcmp(buf_ptr->pool, pool_name[j])) {
+				add_space[j] += bb_granularity(buf_ptr->size,
+							       granularity[j]);
+				break;
+			}
+		}
+	}
+
+	/* Account for reserved resources. Reduce reservation size for
+	 * resources already claimed from the reservation. Assume node reboot
+	 * required since we have not selected the compute nodes yet. */
+	resv_bb = job_test_bb_resv(job_ptr, now, true);
+	if (resv_bb) {
+		burst_buffer_info_t *resv_bb_ptr;
+		for (i = 0, resv_bb_ptr = resv_bb->burst_buffer_array;
+		     i < resv_bb->record_count; i++, resv_bb_ptr++) {
+			if (xstrcmp(resv_bb_ptr->name, bb_state.name))
+				continue;
+			for (j = 0, pool_ptr = resv_bb_ptr->pool_ptr;
+			     j < resv_bb_ptr->pool_cnt; j++, pool_ptr++) {
+				if (pool_ptr->name) {
+					my_pool = pool_ptr->name;
+				} else {
+					my_pool =
+						bb_state.bb_config.default_pool;
+				}
+				unfree_space = MAX(pool_ptr->used_space,
+						   pool_ptr->unfree_space);
+				for (k = 0; k < ds_len; k++) {
+					if (xstrcmp(my_pool, pool_name[k]))
+						continue;
+					resv_space[k] += bb_granularity(
+							unfree_space,
+							granularity[k]);
+					break;
+				}
+			}
+			if (resv_bb_ptr->used_space) {
+				/* Pool not specified, use default */
+				my_pool = bb_state.bb_config.default_pool;
+				for (k = 0; k < ds_len; k++) {
+					if (xstrcmp(my_pool, pool_name[k]))
+						continue;
+					resv_space[k] += bb_granularity(
+							resv_bb_ptr->used_space,
+							granularity[k]);
+					break;
+				}
+			}
+#if 1
+			/* Is any of this reserved space already taken? */
+			_rm_active_job_bb(job_ptr->resv_name,
+					  pool_name, resv_space, ds_len,
+					  bb_state_ptr);
+#endif
+		}
+	}
+
+#if _DEBUG
+	info("TEST_SIZE_LIMIT for %pJ", job_ptr);
+	for (j = 0; j < ds_len; j++) {
+		info("POOL:%s ADD:%"PRIu64" AVAIL:%"PRIu64
+		     " GRANULARITY:%"PRIu64" RESV:%"PRIu64" TOTAL:%"PRIu64,
+		     pool_name[j], add_space[j], avail_space[j], granularity[j],
+		     resv_space[j], total_space[j]);
+	}
+#endif
+
+	/* Determine if resources currently are available for the job */
+	avail_ok = true;
+	for (j = 0; j < ds_len; j++) {
+		if (add_space[j] > total_space[j]) {
+			rc = BB_EXCEEDS_LIMITS;
+			goto fini;
+		}
+		if ((add_space[j] + resv_space[j]) > avail_space[j])
+			avail_ok = false;
+	}
+	if (avail_ok) {
+		rc = BB_CAN_START_NOW;
+		goto fini;
+	}
+
+	/* Identify candidate burst buffers to revoke for higher priority job */
+	preempt_list = list_create(bb_job_queue_del);
+	for (i = 0; i < BB_HASH_SIZE; i++) {
+		bb_ptr = bb_state.bb_ahash[i];
+		while (bb_ptr) {
+			if ((bb_ptr->job_id != 0) &&
+			    ((bb_ptr->name == NULL) ||
+			     ((bb_ptr->name[0] >= '0') &&
+			      (bb_ptr->name[0] <= '9'))) &&
+			    (bb_ptr->use_time > now) &&
+			    (bb_ptr->use_time > job_ptr->start_time)) {
+				if (!bb_ptr->pool) {
+					bb_ptr->name = xstrdup(
+						bb_state.bb_config.default_pool);
+				}
+				preempt_ptr = xmalloc(sizeof(
+						struct preempt_bb_recs));
+				preempt_ptr->bb_ptr = bb_ptr;
+				preempt_ptr->job_id = bb_ptr->job_id;
+				preempt_ptr->pool = bb_ptr->name;
+				preempt_ptr->size = bb_ptr->size;
+				preempt_ptr->use_time = bb_ptr->use_time;
+				preempt_ptr->user_id = bb_ptr->user_id;
+				list_push(preempt_list, preempt_ptr);
+
+				for (j = 0; j < ds_len; j++) {
+					if (xstrcmp(bb_ptr->name, pool_name[j]))
+						continue;
+					preempt_ptr->size = bb_granularity(
+								bb_ptr->size,
+								granularity[j]);
+					preempt_space[j] += preempt_ptr->size;
+					break;
+				}
+			}
+			bb_ptr = bb_ptr->next;
+		}
+	}
+
+#if _DEBUG
+	for (j = 0; j < ds_len; j++) {
+		info("POOL:%s ADD:%"PRIu64" AVAIL:%"PRIu64
+		     " GRANULARITY:%"PRIu64" PREEMPT:%"PRIu64
+		     " RESV:%"PRIu64" TOTAL:%"PRIu64,
+		     pool_name[j], add_space[j], avail_space[j], granularity[j],
+		     preempt_space[j], resv_space[j], total_space[j]);
+	}
+#endif
+
+	/* Determine if sufficient resources available after preemption */
+	rc = BB_NOT_ENOUGH_RESOURCES;
+	preempt_ok = true;
+	for (j = 0; j < ds_len; j++) {
+		if ((add_space[j] + resv_space[j]) >
+		    (avail_space[j] + preempt_space[j])) {
+			preempt_ok = false;
+			break;
+		}
+	}
+	if (!preempt_ok)
+		goto fini;
+
+	/* Now preempt/teardown the most appropriate buffers */
+	list_sort(preempt_list, bb_preempt_queue_sort);
+	preempt_iter = list_iterator_create(preempt_list);
+	while ((preempt_ptr = list_next(preempt_iter))) {
+		do_preempt = false;
+		for (j = 0; j < ds_len; j++) {
+			if (xstrcmp(preempt_ptr->pool, pool_name[j]))
+				continue;
+			if ((add_space[j] + resv_space[j]) > avail_space[j]) {
+				avail_space[j] += preempt_ptr->size;
+				preempt_space[j] -= preempt_ptr->size;
+				do_preempt = true;
+			}
+			break;
+		}
+		if (do_preempt) {
+			preempt_ptr->bb_ptr->cancelled = true;
+			preempt_ptr->bb_ptr->end_time = 0;
+			preempt_ptr->bb_ptr->state = BB_STATE_TEARDOWN;
+			preempt_ptr->bb_ptr->state_time = time(NULL);
+			preempt_func(preempt_ptr->job_id,
+				     preempt_ptr->user_id, true);
+			log_flag(BURST_BUF, "Preempting stage-in of JobId=%u for %pJ",
+				 preempt_ptr->job_id,
+				 job_ptr);
+		}
+
+	}
+	list_iterator_destroy(preempt_iter);
+
+fini:	xfree(add_space);
+	xfree(avail_space);
+	xfree(granularity);
+	xfree(pool_name);
+	xfree(preempt_space);
+	xfree(resv_space);
+	xfree(total_space);
+	if (resv_bb)
+		slurm_free_burst_buffer_info_msg(resv_bb);
+	FREE_NULL_LIST(preempt_list);
+	return rc;
+}
+
 
 /* Determine if the specified pool name is valid on this system */
 extern bool bb_valid_pool_test(bb_state_t *state_ptr, char *pool_name)
