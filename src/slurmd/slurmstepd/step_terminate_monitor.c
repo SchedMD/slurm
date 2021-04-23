@@ -44,8 +44,7 @@
 
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-static int running_flag = 0;
-static int stop_flag = 0;
+static bool running_flag = false;
 static pthread_t tid;
 static uint16_t timeout;
 static char *program_name;
@@ -71,9 +70,9 @@ void step_terminate_monitor_start(stepd_step_rec_t *job)
 	program_name = xstrdup(conf->unkillable_program);
 	slurm_conf_unlock();
 
+	running_flag = true;
 	slurm_thread_create(&tid, _monitor, job);
 
-	running_flag = 1;
 	recorded_jobid = job->step_id.job_id;
 	recorded_stepid = job->step_id.step_id;
 
@@ -85,16 +84,12 @@ void step_terminate_monitor_stop(void)
 	slurm_mutex_lock(&lock);
 
 	if (!running_flag) {
-		slurm_mutex_unlock(&lock);
-		return;
-	}
-	if (stop_flag) {
 		error("step_terminate_monitor_stop: already stopped");
 		slurm_mutex_unlock(&lock);
 		return;
 	}
 
-	stop_flag = 1;
+	running_flag = false;
 	debug("step_terminate_monitor_stop signaling condition");
 	slurm_cond_signal(&cond);
 	slurm_mutex_unlock(&lock);
@@ -119,7 +114,7 @@ static void *_monitor(void *arg)
 	ts.tv_sec = time(NULL) + 1 + timeout;
 
 	slurm_mutex_lock(&lock);
-	if (stop_flag)
+	if (!running_flag)
 		goto done;
 
 	rc = pthread_cond_timedwait(&cond, &lock, &ts);
