@@ -467,7 +467,7 @@ int main (int argc, char **argv)
 	job_list = list_create(_list_delete_job);
 
 	/* now init the priorities of the associations */
-	if (slurm_priority_init() != SLURM_SUCCESS)
+	if (priority_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize priority plugin");
 	/* on some systems that don't have multiple cores we need to
 	 * sleep to make sure the thread gets started. */
@@ -483,7 +483,7 @@ int main (int argc, char **argv)
 	process(&resp, 0);
 
 	/* free memory */
-	if (slurm_priority_fini() != SLURM_SUCCESS)
+	if (priority_g_fini() != SLURM_SUCCESS)
 		fatal("failed to finalize priority plugin");
 	if (job_list)
 		list_destroy(job_list);
