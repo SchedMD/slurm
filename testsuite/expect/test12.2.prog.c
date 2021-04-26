@@ -100,8 +100,9 @@ main (int argc, char **argv)
 	if (rank == 2) {
 		fd = open(file_read_path, O_RDONLY, S_IRUSR|S_IWUSR);
 		n = file_size/sizeof(int);
+		int j = 0;
 		for (i = 0; i < n; i++) {
-			if (read(fd, &i, sizeof(int)) != sizeof(int)) {
+			if (read(fd, &j, sizeof(int)) != sizeof(int)) {
 				fprintf(stderr, "FAILURE: read error\n");
 				exit(1);
 			}
