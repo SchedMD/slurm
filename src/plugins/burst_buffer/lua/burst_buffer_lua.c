@@ -960,10 +960,161 @@ extern time_t bb_p_job_get_est_start(job_record_t *job_ptr)
 }
 
 /*
+ * If the job (x) should be allocated a burst buffer, add it to the
+ * job_candidates list (arg).
+ */
+static int _identify_bb_candidate(void *x, void *arg)
+{
+	job_record_t *job_ptr = (job_record_t *) x;
+	List job_candidates = (List) arg;
+	bb_job_t *bb_job;
+	bb_job_queue_rec_t *job_rec;
+
+	if (!IS_JOB_PENDING(job_ptr) || (job_ptr->start_time == 0) ||
+	    (job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0'))
+		return SLURM_SUCCESS;
+
+	if (job_ptr->array_recs &&
+	    ((job_ptr->array_task_id == NO_VAL) ||
+	     (job_ptr->array_task_id == INFINITE)))
+		return SLURM_SUCCESS; /* Can't operate on job array struct */
+
+	bb_job = _get_bb_job(job_ptr);
+	if (bb_job == NULL)
+		return SLURM_SUCCESS;
+	if (bb_job->state == BB_STATE_COMPLETE) {
+		/* Job requeued or slurmctld restarted during stage-in */
+		bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_PENDING);
+	} else if (bb_job->state >= BB_STATE_POST_RUN) {
+		/* Requeued job still staging out */
+		return SLURM_SUCCESS;
+	}
+	job_rec = xmalloc(sizeof(bb_job_queue_rec_t));
+	job_rec->job_ptr = job_ptr;
+	job_rec->bb_job = bb_job;
+	list_push(job_candidates, job_rec);
+	return SLURM_SUCCESS;
+}
+
+static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
+{
+	/* Not yet implemented */
+	log_flag(BURST_BUF, "This function isn't implemented yet.");
+}
+
+static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
+{
+	char *job_pool;
+	bb_alloc_t *bb_alloc = NULL;
+
+	/* TODO: Setup arguments for the burst buffer "setup" function. */
+	if (bb_job->job_pool)
+		job_pool = bb_job->job_pool;
+	else
+		job_pool = bb_state.bb_config.default_pool;
+
+	/*
+	 * Create bb allocation for the job now. Check if it has already been
+	 * created (perhaps it was created but then slurmctld restarted).
+	 * bb_alloc is the structure that is state saved.
+	 * If we wait until the _start_stage_in thread to create bb_alloc,
+	 * we introduce a race condition where the thread could be killed
+	 * (if slurmctld is shut down) before the thread creates
+	 * bb_alloc. That race would mean the burst buffer isn't state saved.
+	 */
+	if (!(bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr))) {
+		bb_alloc = bb_alloc_job(&bb_state, job_ptr, bb_job);
+		bb_alloc->create_time = time(NULL);
+	}
+	bb_limit_add(job_ptr->user_id, bb_job->total_size, job_pool, &bb_state,
+		     true);
+
+	/* TODO: Setup arguments for the burst buffer "data_in" function. */
+	/* TODO: Create a thread to do stage in: "_start_stage_in()" */
+	return SLURM_SUCCESS;
+}
+
+static int _alloc_job_bb(job_record_t *job_ptr, bb_job_t *bb_job,
+			 bool job_ready)
+{
+	int rc = SLURM_SUCCESS;
+
+	log_flag(BURST_BUF, "start job allocate %pJ", job_ptr);
+
+	if (bb_job->state < BB_STATE_STAGING_IN) {
+		bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_STAGING_IN);
+		rc = _queue_stage_in(job_ptr, bb_job);
+		/*
+		 * TODO: _queue_stage_in() always returns success right now.
+		 * If it always returns success in the future I could change
+		 * it to return void and remove this if statement.
+		 */
+		if (rc != SLURM_SUCCESS) {
+			bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_TEARDOWN);
+			_queue_teardown(job_ptr->job_id, job_ptr->user_id,
+					true);
+		}
+	}
+
+	return rc;
+}
+
+static int _try_alloc_job_bb(void *x, void *arg)
+{
+	bb_job_queue_rec_t *job_rec = (bb_job_queue_rec_t *) x;
+	job_record_t *job_ptr = job_rec->job_ptr;
+	bb_job_t *bb_job = job_rec->bb_job;
+	int rc;
+
+	if (bb_job->state >= BB_STATE_STAGING_IN)
+		return SLURM_SUCCESS; /* Job was already allocated a buffer */
+
+	rc = bb_test_size_limit(job_ptr, bb_job, &bb_state, _queue_teardown);
+	if (rc == 0) {
+		/*
+		 * Job could start now. Allocate burst buffer and continue to
+		 * the next job.
+		 */
+		(void) _alloc_job_bb(job_ptr, bb_job, true);
+		rc = SLURM_SUCCESS;
+	} else if (rc == 1) /* Exceeds configured limits, try next job */
+		rc = SLURM_SUCCESS;
+	else /* No space currently available, break out of loop */
+		rc = SLURM_ERROR;
+
+	return rc;
+}
+
+/*
  * Attempt to allocate resources and begin file staging for pending jobs.
  */
 extern int bb_p_job_try_stage_in(List job_queue)
 {
+	List job_candidates;
+
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	log_flag(BURST_BUF, "Mutex locked");
+
+	if (bb_state.last_load_time == 0) {
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		return SLURM_SUCCESS;
+	}
+
+	/* Identify candidates to be allocated burst buffers */
+	job_candidates = list_create(xfree_ptr);
+	list_for_each(job_queue, _identify_bb_candidate, job_candidates);
+
+	/* Sort in order of expected start time */
+	list_sort(job_candidates, bb_job_queue_sort);
+
+	/* Try to allocate burst buffers for these jobs. */
+	bb_set_use_time(&bb_state);
+	list_for_each(job_candidates, _try_alloc_job_bb, NULL);
+
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+	FREE_NULL_LIST(job_candidates);
+
 	return SLURM_SUCCESS;
 }
 
@@ -978,7 +1129,48 @@ extern int bb_p_job_try_stage_in(List job_queue)
  */
 extern int bb_p_job_test_stage_in(job_record_t *job_ptr, bool test_only)
 {
-	return 1;
+	bb_job_t *bb_job = NULL;
+	int rc = 1;
+
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0'))
+		return 1;
+
+	if (job_ptr->array_recs &&
+	    ((job_ptr->array_task_id == NO_VAL) ||
+	     (job_ptr->array_task_id == INFINITE)))
+		return -1;	/* Can't operate on job array structure */
+
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	log_flag(BURST_BUF, "%pJ test_only:%d",
+		 job_ptr, (int) test_only);
+	if (bb_state.last_load_time != 0)
+		bb_job = _get_bb_job(job_ptr);
+	if (bb_job && (bb_job->state == BB_STATE_COMPLETE))
+		bb_set_job_bb_state(job_ptr, bb_job,
+				    BB_STATE_PENDING); /* job requeued */
+	if (bb_job == NULL) {
+		rc = -1;
+	} else if (bb_job->state < BB_STATE_STAGING_IN) {
+		/* Job buffer not allocated, create now if space available */
+		rc = -1;
+		if ((test_only == false) &&
+		    (bb_test_size_limit(job_ptr, bb_job, &bb_state,
+					_queue_teardown) == 0) &&
+		    (_alloc_job_bb(job_ptr, bb_job, false) == SLURM_SUCCESS)) {
+			rc = 0;	/* Setup/stage-in in progress */
+		}
+	} else if (bb_job->state == BB_STATE_STAGING_IN) {
+		rc = 0;
+	} else if (bb_job->state == BB_STATE_STAGED_IN) {
+		rc = 1;
+	} else {
+		rc = -1;	/* Requeued job still staging in */
+	}
+
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+
+	return rc;
 }
 
 /* Attempt to claim burst buffer resources.
