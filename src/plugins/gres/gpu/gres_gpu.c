@@ -467,32 +467,19 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 		if (!gres_record->count)
 			continue;
 
-		// Just move this GRES record if it's not a GPU GRES
 		if (xstrcasecmp(gres_record->name, "gpu")) {
+			/* Move record into non-GPU GRES list */
+			gres_record = list_remove(itr);
 			debug2("preserving original `%s` GRES record",
 			       gres_record->name);
-			add_gres_to_list(gres_list_non_gpu,
-					 gres_record->name,
-					 gres_record->count,
-					 gres_record->cpu_cnt,
-					 gres_record->cpus,
-					 gres_record->cpus_bitmap,
-					 gres_record->file,
-					 gres_record->type_name,
-					 gres_record->links);
+			list_append(gres_list_non_gpu, gres_record);
 			continue;
 		}
 
 		if (gres_record->count == 1) {
-			// Add device from single record
-			add_gres_to_list(gres_list_conf_single,
-					 gres_record->name, 1,
-					 gres_record->cpu_cnt,
-					 gres_record->cpus,
-					 gres_record->cpus_bitmap,
-					 gres_record->file,
-					 gres_record->type_name,
-					 gres_record->links);
+			/* Already count of 1; move into single-GPU GRES list */
+			gres_record = list_remove(itr);
+			list_append(gres_list_conf_single, gres_record);
 			continue;
 		} else if (!gres_record->file) {
 			/*
