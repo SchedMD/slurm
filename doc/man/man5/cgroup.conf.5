@@ -116,7 +116,13 @@ which case the job's RAM limit will be set to its swap space limit if
 \fBConstrainSwapSpace\fR is set to "yes".
 Also see \fBAllowedSwapSpace\fR, \fBAllowedRAMSpace\fR and
 \fBConstrainSwapSpace\fR.
-NOTE: When enabled, ConstrainRAMSpace can lead to a noticeable decline in
+
+\fBNOTE\fR: When using \fBConstrainRAMSpace\fR, if a process tries to consume
+more memory than is available, the step that process is running in will be
+killed. This differs from the behavior when using \fBOverMemoryKill\fR,
+where just the offending process will be killed.
+
+\fBNOTE\fR: When enabled, ConstrainRAMSpace can lead to a noticeable decline in
 per-node job throughout. Sites with high-throughput requirements should
 carefully weigh the tradeoff between per-node throughput, versus potential
 problems that can arise from unconstrained memory usage on the node. See

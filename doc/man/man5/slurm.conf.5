@@ -1177,8 +1177,11 @@ allocation may affect other processes and/or machine health.
 task/cgroup as a TaskPlugin and making use of ConstrainRAMSpace=yes in the
 cgroup.conf instead of using this JobAcctGather mechanism for memory
 enforcement. With OverMemoryKill, memory limit is applied against each process
-individually and is not applied to the step as a whole as it is with
-ConstrainRAMSpace=yes. Using JobAcctGather is polling based and there is a
+individually and is not applied to the step as a whole. This means that when
+jobs have a process that consumes too much memory, the process will be killed
+but the step will continue to run. When using cgroups with
+ConstrainRAMSpace=yes, a process that consumes too much memory will result in
+the job step being killed. Using JobAcctGather is polling based and there is a
 delay before a job is killed, which could lead to system Out of Memory events.
 .RE
 
