@@ -414,9 +414,13 @@ static int _sort_gpu_by_links_order(void *x, void *y)
 }
 
 /*
- * Takes the merged [slurm|gres].conf records in gres_list_conf and the GPU
- * devices detected on the node in gres_list_system and returns a final merged
- * list in gres_list_conf.
+ * Splits the merged [slurm|gres].conf records in gres_list_conf into
+ * gres_list_non_gpu and gres_list_conf_single. All GPU records are split into
+ * records of count 1 before going into gres_list_conf_single. Then,
+ * gres_list_conf_single and gres_list_system are compared, and if there are any
+ * matches, those records are added to gres_list_gpu. Finally, the old
+ * gres_list_conf is cleared, gres_list_gpu and gres_list_non_gpu are combined,
+ * and this final merged list is returned in gres_list_conf.
  *
  * If a conf GPU corresponds to a system GPU, CPUs and Links are checked to see
  * if they are the same. If not, an error is emitted and that device is excluded
@@ -430,11 +434,11 @@ static int _sort_gpu_by_links_order(void *x, void *y)
  * gres_list_conf_single: Same as gres_list_conf, except broken down so each
  * 			  GRES record has only one device file.
  *
- * A conf GPU and system GPU will correspond if the following fields are equal:
+ * A conf GPU and system GPU will be matched if the following fields are equal:
  * 	*type
  * 	*file
  */
-static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
+static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 {
 	ListIterator itr, itr2;
 	gres_slurmd_conf_t *gres_record, *sys_record;
@@ -830,16 +834,16 @@ extern int gres_p_node_config_load(List gres_conf_list,
 			log_var(log_lvl,
 				"There were 0 GPUs detected on the system");
 		log_var(log_lvl,
-			"%s: Normalizing gres.conf with system GPUs",
+			"%s: Merging gres.conf with system GPUs",
 			plugin_name);
-		_normalize_gres_conf(gres_conf_list, gres_list_system);
+		_merge_system_gres_conf(gres_conf_list, gres_list_system);
 		FREE_NULL_LIST(gres_list_system);
 
 		if (!gres_conf_list || list_is_empty(gres_conf_list))
-			log_var(log_lvl, "%s: Final normalized gres.conf list is empty",
+			log_var(log_lvl, "%s: Final merged gres.conf list is empty",
 				plugin_name);
 		else {
-			log_var(log_lvl, "%s: Final normalized gres.conf list:",
+			log_var(log_lvl, "%s: Final merged gres.conf list:",
 				plugin_name);
 			print_gres_list(gres_conf_list, log_lvl);
 		}
