@@ -968,6 +968,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	 */
 	if (slurm_cred_verify(conf->vctx, cred, &arg, protocol_version) < 0)
 		return SLURM_ERROR;
+	xassert(arg.job_mem_alloc);
 
 	if ((arg.step_id.job_id != jobid) || (arg.step_id.step_id != stepid)) {
 		error("job credential for %ps, expected %ps",
@@ -1178,26 +1179,8 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	 * Overwrite any memory limits in the RPC with contents of the
 	 * memory limit within the credential.
 	 */
-	if (arg.step_mem_limit) {
-		if (arg.step_mem_limit & MEM_PER_CPU) {
-			req->step_mem_lim  = arg.step_mem_limit &
-				(~MEM_PER_CPU);
-			req->step_mem_lim *= step_cpus_for_mem;
-		} else
-			req->step_mem_lim  = arg.step_mem_limit;
-	} else {
-		if (arg.job_mem_limit & MEM_PER_CPU) {
-			req->step_mem_lim  = arg.job_mem_limit &
-				(~MEM_PER_CPU);
-			req->step_mem_lim *= job_cpus_for_mem;
-		} else
-			req->step_mem_lim  = arg.job_mem_limit;
-	}
-	if (arg.job_mem_limit & MEM_PER_CPU) {
-		req->job_mem_lim  = arg.job_mem_limit & (~MEM_PER_CPU);
-		req->job_mem_lim *= job_cpus_for_mem;
-	} else
-		req->job_mem_lim  = arg.job_mem_limit;
+	slurm_cred_get_mem(cred, node_id, __func__, &req->job_mem_lim,
+			   &req->step_mem_lim);
 
 	/* Reset the CPU count on this node to correct value. */
 	req->job_core_spec = arg.job_core_spec;
