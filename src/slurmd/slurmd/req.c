@@ -1174,9 +1174,10 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		job_cpus  = 1;
 	}
 
-	/* Overwrite any memory limits in the RPC with contents of the
+	/*
+	 * Overwrite any memory limits in the RPC with contents of the
 	 * memory limit within the credential.
-	 * Reset the CPU count on this node to correct value. */
+	 */
 	if (arg.step_mem_limit) {
 		if (arg.step_mem_limit & MEM_PER_CPU) {
 			req->step_mem_lim  = arg.step_mem_limit &
@@ -1197,6 +1198,8 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		req->job_mem_lim *= job_cpus_for_mem;
 	} else
 		req->job_mem_lim  = arg.job_mem_limit;
+
+	/* Reset the CPU count on this node to correct value. */
 	req->job_core_spec = arg.job_core_spec;
 	req->node_cpus = step_cpus;
 #if 0
