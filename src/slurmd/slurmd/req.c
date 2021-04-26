@@ -946,7 +946,6 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	uint32_t	stepid = req->step_id.step_id;
 	int		tasks_to_launch = req->tasks_to_launch[node_id];
 	uint32_t	job_cpus = 0, step_cpus = 0;
-	uint32_t	job_cpus_for_mem = 0, step_cpus_for_mem = 0;
 
 	if (req->flags & LAUNCH_NO_ALLOC) {
 		if (super_user) {
@@ -1142,14 +1141,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		if (i_last_bit <= i_first_bit)
 			error("step credential has no CPUs selected");
 		else {
-			uint16_t scale_for_mem;
 			i = conf->cpus / (i_last_bit - i_first_bit);
-			if (req->threads_per_core &&
-			    (req->threads_per_core != NO_VAL16) &&
-			    (req->threads_per_core < conf->threads))
-				scale_for_mem = req->threads_per_core;
-			else
-				scale_for_mem = i;
 			if (i > 1) {
 				if (cpu_log)
 					info("Scaling CPU count by factor of "
@@ -1157,9 +1149,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 					     i, conf->cpus,
 					     i_last_bit, i_first_bit);
 				step_cpus *= i;
-				step_cpus_for_mem *= scale_for_mem;
 				job_cpus *= i;
-				job_cpus_for_mem *= scale_for_mem;
 			}
 		}
 		if (tasks_to_launch > step_cpus) {
