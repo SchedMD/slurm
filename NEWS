@@ -171,6 +171,8 @@ documents those changes that are of interest to users and administrators.
  -- GPUs: Use index instead of dev_num for CUDA_VISIBLE_DEVICES
  -- Don't run epilog on nodes if job never launched.
  -- QOS accrue limits only apply to the job QOS, not partition QOS.
+ -- Add --gpu-bind=per_task:<gpus_per_task> option, --gpus-per-task will now
+    set this option by default.
 
 * Changes in Slurm 20.11.9
 ==========================
