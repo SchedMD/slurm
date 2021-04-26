@@ -2189,6 +2189,10 @@ static void _set_submit_dir_env(void)
 {
 	char buf[MAXPATHLEN + 1], host[256];
 
+	/* Only set these environment variables in new allocations */
+	if (sropt.jobid != NO_VAL)
+		return;
+
 	if (setenvf(NULL, "SLURM_CLUSTER_NAME", "%s",
 		    slurm_conf.cluster_name) < 0)
 		error("unable to set SLURM_CLUSTER_NAME in environment");
