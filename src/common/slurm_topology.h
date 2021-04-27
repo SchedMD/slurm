@@ -48,7 +48,6 @@
  *  defined here but is really tree plugin related
 \*****************************************************************************/
 typedef struct {
-	uint64_t consumed_energy;	/* consumed energy, in joules */
 	int level;			/* level in hierarchy, leaf=0 */
 	uint32_t link_speed;		/* link speed, arbitrary units */
 	char *name;			/* switch name */
@@ -60,7 +59,6 @@ typedef struct {
 	char *switches;			/* name of direct descendant switches */
 	uint32_t *switches_dist;
 	uint16_t *switch_index;		/* indexes of child switches */
-	uint32_t temp;			/* temperature, in celsius */
 } switch_record_t;
 
 extern switch_record_t *switch_record_table;  /* ptr to switch records */
