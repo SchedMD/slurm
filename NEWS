@@ -76,6 +76,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix srun overwriting SLURM_SUBMIT_DIR and SLURM_SUBMIT_HOST when within an
     existing allocation.
 
+* Changes in Slurm 20.11.7
+==========================
+
 * Changes in Slurm 20.11.6
 ==========================
  -- Fix sacct assert with the --qos option.
