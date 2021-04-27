@@ -358,13 +358,64 @@ unpack_error:
 	return;
 }
 
+/* For a given user/partition/account, set it's assoc_ptr */
+static void _set_assoc_mgr_ptrs(bb_alloc_t *bb_alloc)
+{
+	/* read locks on assoc */
+	assoc_mgr_lock_t assoc_locks =
+		{ .assoc = READ_LOCK, .qos = READ_LOCK, .user = READ_LOCK };
+	slurmdb_assoc_rec_t assoc_rec;
+	slurmdb_qos_rec_t qos_rec;
+
+	memset(&assoc_rec, 0, sizeof(slurmdb_assoc_rec_t));
+	assoc_rec.acct      = bb_alloc->account;
+	assoc_rec.partition = bb_alloc->partition;
+	assoc_rec.uid       = bb_alloc->user_id;
+	assoc_mgr_lock(&assoc_locks);
+	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+				    accounting_enforce,
+				    &bb_alloc->assoc_ptr,
+				    true) == SLURM_SUCCESS) {
+		xfree(bb_alloc->assocs);
+		if (bb_alloc->assoc_ptr) {
+			bb_alloc->assocs =
+				xstrdup_printf(",%u,", bb_alloc->assoc_ptr->id);
+		}
+	}
+
+	memset(&qos_rec, 0, sizeof(slurmdb_qos_rec_t));
+	qos_rec.name = bb_alloc->qos;
+	if (assoc_mgr_fill_in_qos(acct_db_conn, &qos_rec, accounting_enforce,
+				  &bb_alloc->qos_ptr, true) != SLURM_SUCCESS)
+		verbose("Invalid QOS name: %s",
+			bb_alloc->qos);
+
+	assoc_mgr_unlock(&assoc_locks);
+}
+
 static void _apply_limits(void)
 {
-	/* Not yet implemented */
+	bb_alloc_t *bb_alloc;
+
+	for (int i = 0; i < BB_HASH_SIZE; i++) {
+		bb_alloc = bb_state.bb_ahash[i];
+		while (bb_alloc) {
+			info("Recovered buffer Name:%s User:%u Pool:%s Size:%"PRIu64,
+			     bb_alloc->name, bb_alloc->user_id,
+			     bb_alloc->pool, bb_alloc->size);
+			_set_assoc_mgr_ptrs(bb_alloc);
+			bb_limit_add(bb_alloc->user_id, bb_alloc->size,
+				     bb_alloc->pool, &bb_state, true);
+			bb_alloc = bb_alloc->next;
+		}
+	}
 }
 
 static void _load_state(bool init_config)
 {
+	if (!init_config)
+		return;
+
 	bb_state.last_load_time = time(NULL);
 	_recover_bb_state();
 	_apply_limits();
