@@ -76,9 +76,6 @@
 
 #include "burst_buffer_common.h"
 
-/* For possible future use by burst_buffer/generic */
-#define _SUPPORT_ALT_POOL 0
-
 /* Maximum poll wait time for child processes, in milliseconds */
 #define MAX_POLL_WAIT 500
 
@@ -446,7 +443,6 @@ char *bb_handle_job_script(job_record_t *job_ptr, bb_job_t *bb_job)
 	return script;
 }
 
-#if _SUPPORT_ALT_POOL
 static uint64_t _atoi(char *tok)
 {
 	char *end_ptr = NULL;
@@ -461,7 +457,6 @@ static uint64_t _atoi(char *tok)
 	}
 	return size_u;
 }
-#endif
 
 /* Set the bb_state's tres_id and tres_pos for limit enforcement.
  * Value is set to -1 if not found. */
@@ -489,16 +484,11 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 {
 	s_p_hashtbl_t *bb_hashtbl = NULL;
 	char *bb_conf, *tmp = NULL, *value;
-#if _SUPPORT_ALT_POOL
 	char *colon, *save_ptr = NULL, *tok;
 	uint32_t pool_cnt;
-#endif
 	int fd, i;
 	static s_p_options_t bb_options[] = {
 		{"AllowUsers", S_P_STRING},
-#if _SUPPORT_ALT_POOL
-		{"AltPool", S_P_STRING},
-#endif
 		{"CreateBuffer", S_P_STRING},
 		{"DefaultPool", S_P_STRING},
 		{"DenyUsers", S_P_STRING},
@@ -508,6 +498,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		{"GetSysStatus", S_P_STRING},
 		{"Granularity", S_P_STRING},
 		{"OtherTimeout", S_P_UINT32},
+		{"Pools", S_P_STRING},
 		{"StageInTimeout", S_P_UINT32},
 		{"StageOutTimeout", S_P_UINT32},
 		{"StartStageIn", S_P_STRING},
@@ -601,32 +592,36 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 			state_ptr->bb_config.granularity = 1;
 		}
 	}
-#if _SUPPORT_ALT_POOL
-	if (s_p_get_string(&tmp, "AltPool", bb_hashtbl)) {
+	if (s_p_get_string(&tmp, "Pools", bb_hashtbl)) {
 		tok = strtok_r(tmp, ",", &save_ptr);
 		while (tok) {
+			burst_buffer_pool_t *tmp_pool;
+			int inx;
 			colon = strchr(tok, ':');
 			if (colon) {
 				colon[0] = '\0';
 				pool_cnt = _atoi(colon + 1);
 			} else
 				pool_cnt = 1;
+			/* Make space */
 			state_ptr->bb_config.pool_ptr = xrealloc(
 				state_ptr->bb_config.pool_ptr,
 				sizeof(burst_buffer_pool_t) *
 				(state_ptr->bb_config.pool_cnt + 1));
-			state_ptr->bb_config.
-				pool_ptr[state_ptr->bb_config.pool_cnt].name =
-				xstrdup(tok);
-			state_ptr->bb_config.
-				pool_ptr[state_ptr->bb_config.pool_cnt].
-				avail_space = pool_cnt;
+
+			/* Initialize */
+			inx = state_ptr->bb_config.pool_cnt;
+			tmp_pool = &(state_ptr->bb_config.pool_ptr[inx]);
+			tmp_pool->granularity = 1;
+			tmp_pool->name = xstrdup(tok);
+			tmp_pool->total_space = pool_cnt;
+			tmp_pool->unfree_space = 0;
+			tmp_pool->used_space = 0;
 			state_ptr->bb_config.pool_cnt++;
 			tok = strtok_r(NULL, ",", &save_ptr);
 		}
 		xfree(tmp);
 	}
-#endif
 
 	(void) s_p_get_uint32(&state_ptr->bb_config.other_timeout,
 			     "OtherTimeout", bb_hashtbl);
@@ -668,7 +663,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		info("%s: Granularity:%"PRIu64"",  __func__,
 		     state_ptr->bb_config.granularity);
 		for (i = 0; i < state_ptr->bb_config.pool_cnt; i++) {
-			info("%s: AltPoolName[%d]:%s:%"PRIu64"", __func__, i,
+			info("%s: Pool[%d]:%s:%"PRIu64"", __func__, i,
 			     state_ptr->bb_config.pool_ptr[i].name,
 			     state_ptr->bb_config.pool_ptr[i].total_space);
 		}
