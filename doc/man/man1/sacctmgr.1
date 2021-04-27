@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "February 2021" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "April 2021" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -24,11 +24,9 @@ The intended mode of operation is to initiate the \fBsacctmgr\fR command,
 add, delete, modify, and/or list \fIassociation\fR records then
 commit the changes and exit.
 
-.TP "7"
-\f3Note: \fP
-The contents of Slurm's database are maintained in lower case. This may
-result in some \f3sacctmgr\fP output differing from that of other Slurm
-commands.
+\fBNOTE\fR: The contents of Slurm's database are maintained in lower case.
+This may result in some \f3sacctmgr\fP output differing from that of other
+Slurm commands.
 
 .SH "OPTIONS"
 
@@ -468,19 +466,22 @@ from a QOS list.
 
 Valid <operator> values include:
 .RS
-.TP 5
 \fB=\fR
+.RS 5
 Set \fIQosLevel\fP to the specified value. \fBNote:\fR the QOS that can be used
 at a given account in the hierarchy are inherited by the children of that account.
 By assigning QOS with the \fB=\fR sign only the assigned QOS can be used by the
 account and its children.
-.TP
+.RE
 \fB+=\fR
+.RS
 Add the specified <qos> value to the current \fIQosLevel\fP. The account will
 have access to this QOS and the other previously assigned to it.
-.TP
+.RE
 \fB\-=\fR
+.RS
 Remove the specified <qos> value from the current \fIQosLevel\fP.
+.RE
 .RE
 .TP
 
@@ -1272,7 +1273,8 @@ The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this QOS.
 
 .TP
-\fIGrpTRESRunMins\fP Used to limit the combined total number of TRES
+\fIGrpTRESRunMins\fP
+Used to limit the combined total number of TRES
 minutes used by all jobs running with this QOS.  This takes into
 consideration time limit of running jobs and consumes it, if the limit
 is reached no new jobs are started until other jobs finish to allow
@@ -1875,6 +1877,7 @@ Only print out the transactions affecting specified accounts.
 
 .TP
 \fIAction\fP=<Specific action the list will display>
+Only display transactions of the specified action type.
 
 .TP
 \fIActor\fP=<Specific name the list will display>

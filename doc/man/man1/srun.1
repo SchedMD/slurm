@@ -2639,9 +2639,6 @@ per task. On relatively slow processors or systems with very
 large processor counts (and large PMI data sets), higher values
 may be required.
 .TP
-\fBSLURM_CONF\fR
-The location of the Slurm configuration file.
-.TP
 \fBSLURM_ACCOUNT\fR
 Same as \fB\-A, \-\-account\fR
 .TP
@@ -2659,6 +2656,9 @@ Same as \fB-M\fR, \fB\-\-clusters\fR
 .TP
 \fBSLURM_COMPRESS\fR
 Same as \fB\-\-compress\fR
+.TP
+\fBSLURM_CONF\fR
+The location of the Slurm configuration file.
 .TP
 \fBSLURM_CONSTRAINT\fR
 Same as \fB\-C\fR, \fB\-\-constraint\fR
@@ -2683,9 +2683,6 @@ Same as \fB\-v, \-\-verbose\fR
 .TP
 \fBSLURM_DELAY_BOOT\fR
 Same as \fB\-\-delay\-boot\fR
-.TP
-\fBSLURMD_DEBUG\fR
-Same as \fB\-d, \-\-slurmd\-debug\fR
 .TP
 \fBSLURM_DEPENDENCY\fR
 Same as \fB\-P, \-\-dependency\fR=<\fIjobid\fR>
@@ -2726,14 +2723,14 @@ Also see \fBSLURM_EXIT_ERROR\fR.
 \fBSLURM_EXPORT_ENV\fR
 Same as \fB\-\-export\fR
 .TP
-\fBSLURM_GPUS\fR
-Same as \fB\-G, \-\-gpus\fR
-.TP
 \fBSLURM_GPU_BIND\fR
 Same as \fB\-\-gpu\-bind\fR
 .TP
 \fBSLURM_GPU_FREQ\fR
 Same as \fB\-\-gpu\-freq\fR
+.TP
+\fBSLURM_GPUS\fR
+Same as \fB\-G, \-\-gpus\fR
 .TP
 \fBSLURM_GPUS_PER_NODE\fR
 Same as \fB\-\-gpus\-per\-node\fR
@@ -2741,14 +2738,14 @@ Same as \fB\-\-gpus\-per\-node\fR
 \fBSLURM_GPUS_PER_TASK\fR
 Same as \fB\-\-gpus\-per\-task\fR
 .TP
+\fBSLURM_GRES\fR
+Same as \fB\-\-gres\fR. Also see \fBSLURM_STEP_GRES\fR
+.TP
 \fBSLURM_GRES_FLAGS\fR
 Same as \fB\-\-gres\-flags\fR
 .TP
 \fBSLURM_HINT\fR
 Same as \fB\-\-hint\fR
-.TP
-\fBSLURM_GRES\fR
-Same as \fB\-\-gres\fR. Also see \fBSLURM_STEP_GRES\fR
 .TP
 \fBSLURM_IMMEDIATE\fR
 Same as \fB\-I, \-\-immediate\fR
@@ -2766,8 +2763,8 @@ Same as \fB\-w\fR, \fB\-\-nodelist\fR=<\fIhost1,host2,...\fR or
 \fIfilename\fR>. If job has been resized, ensure that this nodelist is adjusted
 (or undefined) to avoid jobs steps being rejected due to down nodes.
 .TP
-\fBSLURM_JOB_NUM_NODES\fR (and \fBSLURM_NNODES\fR for backwards compatibility)
-Same as \fB\-N, \-\-nodes\fR
+\fBSLURM_JOB_NUM_NODES\fR
+Same as \fB\-N, \-\-nodes\fR.
 Total number of nodes in the job’s resource allocation.
 .TP
 \fBSLURM_KILL_BAD_EXIT\fR
@@ -2794,10 +2791,19 @@ Same as \fB\-\-mpi\fR
 \fBSLURM_NETWORK\fR
 Same as \fB\-\-network\fR
 .TP
+\fBSLURM_NNODES\fR
+Same as \fB\-N, \-\-nodes\fR. Total number of nodes in the job’s resource
+allocation. See \fBSLURM_JOB_NUM_NODES\fR. Included for backwards
+compatibility.
+.TP
 \fBSLURM_NO_KILL\fR
 Same as \fB\-k\fR, \fB\-\-no\-kill\fR
 .TP
-\fBSLURM_NTASKS\fR (and \fBSLURM_NPROCS\fR for backwards compatibility)
+\fBSLURM_NPROCS\fR
+Same as \fB\-n, \-\-ntasks\fR. See \fBSLURM_NTASKS\fR. Included for
+backwards compatibility.
+.TP
+\fBSLURM_NTASKS\fR
 Same as \fB\-n, \-\-ntasks\fR
 .TP
 \fBSLURM_NTASKS_PER_CORE\fR
@@ -2860,18 +2866,21 @@ Same as \fB\-\-resv\-ports\fR
 \fBSLURM_SIGNAL\fR
 Same as \fB\-\-signal\fR
 .TP
-\fBSLURM_STDERRMODE\fR
-Same as \fB\-e, \-\-error\fR
-.TP
-\fBSLURM_STDINMODE\fR
-Same as \fB\-i, \-\-input\fR
-.TP
 \fBSLURM_SPREAD_JOB\fR
 Same as \fB\-\-spread\-job\fR
 .TP
 \fBSLURM_SRUN_REDUCE_TASK_EXIT_MSG\fR
 if set and non-zero, successive task exit messages with the same exit code will
 be printed only once.
+.TP
+\fBSLURM_STDERRMODE\fR
+Same as \fB\-e, \-\-error\fR
+.TP
+\fBSLURM_STDINMODE\fR
+Same as \fB\-i, \-\-input\fR
+.TP
+\fBSLURM_STDOUTMODE\fR
+Same as \fB\-o, \-\-output\fR
 .TP
 \fBSLURM_STEP_GRES\fR
 Same as \fB\-\-gres\fR (only applies to job steps, not to job allocations).
@@ -2880,9 +2889,6 @@ Also see \fBSLURM_GRES\fR
 \fBSLURM_STEP_KILLED_MSG_NODE_ID\fR=ID
 If set, only the specified node will log when the job or step are killed
 by a signal.
-.TP
-\fBSLURM_STDOUTMODE\fR
-Same as \fB\-o, \-\-output\fR
 .TP
 \fBSLURM_TASK_EPILOG\fR
 Same as \fB\-\-task\-epilog\fR
@@ -2925,6 +2931,9 @@ Same as \fB\-W, \-\-wckey\fR
 \fBSLURM_WORKING_DIR\fR
 \fB\-D, \-\-chdir\fR
 .TP
+\fBSLURMD_DEBUG\fR
+Same as \fB\-d, \-\-slurmd\-debug\fR
+.TP
 \fBSRUN_EXPORT_ENV\fR
 Same as \-\-export\fR, and will override any setting for \fBSLURM_EXPORT_ENV\fR.
 
@@ -2943,18 +2952,17 @@ for each component.
 \fBSLURM_CLUSTER_NAME\fR
 Name of the cluster on which the job is executing.
 .TP
-\fBSLURM_CPU_BIND_VERBOSE\fR
-\-\-cpu\-bind verbosity (quiet,verbose).
-.TP
-\fBSLURM_CPU_BIND_TYPE\fR
-\-\-cpu\-bind type (none,rank,map_cpu:,mask_cpu:).
-.TP
 \fBSLURM_CPU_BIND_LIST\fR
 \-\-cpu\-bind map or mask list (list of Slurm CPU IDs or masks for this node,
 CPU_ID = Board_ID x threads_per_board +
 Socket_ID x threads_per_socket +
 Core_ID x threads_per_core + Thread_ID).
-
+.TP
+\fBSLURM_CPU_BIND_TYPE\fR
+\-\-cpu\-bind type (none,rank,map_cpu:,mask_cpu:).
+.TP
+\fBSLURM_CPU_BIND_VERBOSE\fR
+\-\-cpu\-bind verbosity (quiet,verbose).
 .TP
 \fBSLURM_CPU_FREQ_REQ\fR
 Contains the value requested for cpu frequency on the srun command as
@@ -2982,6 +2990,9 @@ with \-m, \-\-distribution.
 Global task IDs running on this node.
 Zero origin and comma separated.
 .TP
+\fBSLURM_HET_SIZE\fR
+Set to count of components in heterogeneous job.
+.TP
 \fBSLURM_JOB_ACCOUNT\fR
 Account name associated of the job allocation.
 .TP
@@ -2991,26 +3002,32 @@ Number of CPUS per node.
 \fBSLURM_JOB_DEPENDENCY\fR
 Set to value of the \-\-dependency option.
 .TP
-\fBSLURM_JOB_ID\fR (and \fBSLURM_JOBID\fR for backwards compatibility)
+\fBSLURM_JOB_ID\fR
 Job id of the executing job.
-
 .TP
 \fBSLURM_JOB_NAME\fR
 Set to the value of the \-\-job\-name option or the command name when srun
 is used to create a new job allocation. Not set when srun is used only to
 create a job step (i.e. within an existing job allocation).
-
+.TP
+\fBSLURM_JOB_NODELIST\fR
+List of nodes allocated to the job.
+.TP
+\fBSLURM_JOB_NODES\fR
+Total number of nodes in the job's resource allocation.
 .TP
 \fBSLURM_JOB_PARTITION\fR
 Name of the partition in which the job is running.
-
 .TP
 \fBSLURM_JOB_QOS\fR
 Quality Of Service (QOS) of the job allocation.
 .TP
 \fBSLURM_JOB_RESERVATION\fR
 Advanced reservation containing the job allocation, if any.
-
+.TP
+\fBSLURM_JOBID\fR
+Job id of the executing job. See \fBSLURM_JOB_ID\fR. Included for backwards
+compatibility.
 .TP
 \fBSLURM_LAUNCH_NODE_IPADDR\fR
 IP address of the node from which the task launch was
@@ -3018,7 +3035,6 @@ initiated (where the srun command ran from).
 .TP
 \fBSLURM_LOCALID\fR
 Node local task ID for the process within a job.
-
 .TP
 \fBSLURM_MEM_BIND_LIST\fR
 \-\-mem\-bind map or mask list (<list of IDs or masks for this node>).
@@ -3035,9 +3051,6 @@ Sort free cache pages (run zonesort on Intel KNL nodes).
 \fBSLURM_MEM_BIND_VERBOSE\fR
 \-\-mem\-bind verbosity (quiet,verbose).
 .TP
-\fBSLURM_JOB_NUM_NODES\fR
-Total number of nodes in the job's resource allocation.
-.TP
 \fBSLURM_NODE_ALIASES\fR
 Sets of node name, communication address and hostname for nodes allocated to
 the job from the cloud. Each element in the set if colon separated and each
@@ -3049,14 +3062,12 @@ SLURM_NODE_ALIASES\:=\:ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
 \fBSLURM_NODEID\fR
 The relative node ID of the current node.
 .TP
-\fBSLURM_JOB_NODELIST\fR
-List of nodes allocated to the job.
+\fBSLURM_NPROCS\fR
+Total number of processes in the current job or job step. See
+\fBSLURM_NTASKS\fR. Included for backwards compatibility.
 .TP
-\fBSLURM_NTASKS\fR (and \fBSLURM_NPROCS\fR for backwards compatibility)
+\fBSLURM_NTASKS\fR
 Total number of processes in the current job or job step.
-.TP
-\fBSLURM_HET_SIZE\fR
-Set to count of components in heterogeneous job.
 .TP
 \fBSLURM_PRIO_PROCESS\fR
 The scheduling priority (nice value) at the time of job submission.
@@ -3070,6 +3081,9 @@ IP address of srun communication host.
 .TP
 \fBSLURM_SRUN_COMM_PORT\fR
 srun communication port.
+.TP
+\fBSLURM_STEP_ID\fR
+The step ID of the current job.
 .TP
 \fBSLURM_STEP_LAUNCHER_PORT\fR
 Step launcher port.
@@ -3086,8 +3100,9 @@ Number of processes in the job step or whole heterogeneous job step.
 \fBSLURM_STEP_TASKS_PER_NODE\fR
 Number of processes per node within the step.
 .TP
-\fBSLURM_STEP_ID\fR (and \fBSLURM_STEPID\fR for backwards compatibility)
-The step ID of the current job.
+\fBSLURM_STEPID\fR
+The step ID of the current job. See \fBSLURM_STEP_ID\fR. Included for
+backwards compatibility.
 .TP
 \fBSLURM_SUBMIT_DIR\fR
 The directory from which the allocation was invoked from.

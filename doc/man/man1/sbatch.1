@@ -584,18 +584,15 @@ always propagated.
 .RS
 .TP 10
 \fB\-\-export\fR=\fIALL\fR
-.br
 Default mode if \fB\-\-export\fR is not specified. All of the users environment
 will be loaded (either from callers environment or clean environment if
 \fI\-\-get\-user\-env\fR is specified).
 .TP
 \fB\-\-export\fR=\fINONE\fR
-.br
 Only SLURM_* variables from the user environment will be defined. User must use
 absolute path to the binary to be executed that will define the environment.
 User can not specify explicit environment variables with \fINONE\fR.
 \fI\-\-get\-user\-env\fR will be ignored.
-.br
 This option is particularly important for jobs that are submitted on one cluster
 and execute on a different cluster (e.g. with different paths).
 To avoid steps inheriting environment export settings (e.g. \fINONE\fR) from
@@ -603,7 +600,6 @@ sbatch command, the environment variable SLURM_EXPORT_ENV should be set to
 \fIALL\fR in the job script.
 .TP
 \fB\-\-export\fR=<\fI[ALL,]environment variables>\fR
-.br
 Exports all SLURM_* environment variables along with explicitly defined
 variables. Multiple environment variable names should be comma separated.
 Environment variable names may be specified to propagate the current
@@ -614,13 +610,11 @@ explicitly given environment variables.
 .RS 5
 .TP 5
 Example: \fB\-\-export\fR=EDITOR,ARG1=test
-.br
 In this example, the propagated environment will only contain the
 variable \fIEDITOR\fR from the user's environment, \fISLURM_*\fR environment
 variables, and \fIARG1\fR=test.
 .TP
 Example: \fB\-\-export\fR=ALL,EDITOR=/bin/emacs
-.br
 There are two possible outcomes for this example. If the caller has the
 \fIEDITOR\fR environment variable defined, then the job's environment will
 inherit the variable from the caller's environment.  If the caller doesn't
@@ -2028,14 +2022,14 @@ Same as \fB\-\-export\fR
 \fBSBATCH_GET_USER_ENV\fR
 Same as \fB\-\-get\-user\-env\fR
 .TP
-\fBSBATCH_GPUS\fR
-Same as \fB\-G, \-\-gpus\fR
-.TP
 \fBSBATCH_GPU_BIND\fR
 Same as \fB\-\-gpu\-bind\fR
 .TP
 \fBSBATCH_GPU_FREQ\fR
 Same as \fB\-\-gpu\-freq\fR
+.TP
+\fBSBATCH_GPUS\fR
+Same as \fB\-G, \-\-gpus\fR
 .TP
 \fBSBATCH_GPUS_PER_NODE\fR
 Same as \fB\-\-gpus\-per\-node\fR
@@ -2097,9 +2091,6 @@ Same as \fB\-\-profile\fR
 \fBSBATCH_QOS\fR
 Same as \fB\-\-qos\fR
 .TP
-\fBSBATCH_RESERVATION\fR
-Same as \fB\-\-reservation\fR
-.TP
 \fBSBATCH_REQ_SWITCH\fR
 When a tree topology is used, this defines the maximum count of switches
 desired for the job allocation and optionally the maximum time to wait
@@ -2107,6 +2098,9 @@ for that number of switches. See \fB\-\-switches\fR
 .TP
 \fBSBATCH_REQUEUE\fR
 Same as \fB\-\-requeue\fR
+.TP
+\fBSBATCH_RESERVATION\fR
+Same as \fB\-\-reservation\fR
 .TP
 \fBSBATCH_SIGNAL\fR
 Same as \fB\-\-signal\fR
@@ -2174,6 +2168,9 @@ Set to "quiet" otherwise.
 For a heterogeneous job allocation, the environment variables are set separately
 for each component.
 .TP
+\fBSLURM_ARRAY_JOB_ID\fR
+Job array's master job ID number.
+.TP
 \fBSLURM_ARRAY_TASK_COUNT\fR
 Total number of tasks in a job array.
 .TP
@@ -2188,9 +2185,6 @@ Job array's minimum ID (index) number.
 .TP
 \fBSLURM_ARRAY_TASK_STEP\fR
 Job array's index step size.
-.TP
-\fBSLURM_ARRAY_JOB_ID\fR
-Job array's master job ID number.
 .TP
 \fBSLURM_CLUSTER_NAME\fR
 Name of the cluster on which the job is executing.
@@ -2216,10 +2210,6 @@ Same as \fB\-m, \-\-distribution\fR
 \fBSLURM_EXPORT_ENV\fR
 Same as \fB\-\-export\fR.
 .TP
-\fBSLURM_GPUS\fR
-Number of GPUs requested.
-Only set if the \fB\-G, \-\-gpus\fR option is specified.
-.TP
 \fBSLURM_GPU_BIND\fR
 Requested binding of tasks to GPU.
 Only set if the \fB\-\-gpu\-bind\fR option is specified.
@@ -2227,6 +2217,10 @@ Only set if the \fB\-\-gpu\-bind\fR option is specified.
 \fBSLURM_GPU_FREQ\fR
 Requested GPU frequency.
 Only set if the \fB\-\-gpu\-freq\fR option is specified.
+.TP
+\fBSLURM_GPUS\fR
+Number of GPUs requested.
+Only set if the \fB\-G, \-\-gpus\fR option is specified.
 .TP
 \fBSLURM_GPUS_PER_NODE\fR
 Requested GPU count per allocated node.
@@ -2243,10 +2237,13 @@ Only set if the \fB\-\-gpus\-per\-task\fR option is specified.
 \fBSLURM_GTIDS\fR
 Global task IDs running on this node.  Zero  origin and comma separated.
 .TP
+\fBSLURM_HET_SIZE\fR
+Set to count of components in heterogeneous job.
+.TP
 \fBSLURM_JOB_ACCOUNT\fR
 Account name associated of the job allocation.
 .TP
-\fBSLURM_JOB_ID\fR (and \fBSLURM_JOBID\fR for backwards compatibility)
+\fBSLURM_JOB_ID\fR
 The ID of the job allocation.
 .TP
 \fBSLURM_JOB_CPUS_PER_NODE\fR
@@ -2263,10 +2260,10 @@ Set to value of the \-\-dependency option.
 \fBSLURM_JOB_NAME\fR
 Name of the job.
 .TP
-\fBSLURM_JOB_NODELIST\fR (and \fBSLURM_NODELIST\fR for backwards compatibility)
+\fBSLURM_JOB_NODELIST\fR
 List of nodes allocated to the job.
 .TP
-\fBSLURM_JOB_NUM_NODES\fR (and \fBSLURM_NNODES\fR for backwards compatibility)
+\fBSLURM_JOB_NUM_NODES\fR
 Total number of nodes in the job's resource allocation.
 .TP
 \fBSLURM_JOB_PARTITION\fR
@@ -2277,6 +2274,10 @@ Quality Of Service (QOS) of the job allocation.
 .TP
 \fBSLURM_JOB_RESERVATION\fR
 Advanced reservation containing the job allocation, if any.
+.TP
+\fBSLURM_JOBID\fR
+The ID of the job allocation. See \fBSLURM_JOB_ID\fR. Included for backwards
+compatibility.
 .TP
 \fBSLURM_LOCALID\fR
 Node local task ID for the process within a job.
@@ -2291,6 +2292,10 @@ Only set if the \fB\-\-mem\-per\-gpu\fR option is specified.
 \fBSLURM_MEM_PER_NODE\fR
 Same as \fB\-\-mem\fR
 .TP
+\fBSLURM_NNODES\fR
+Total number of nodes in the job's resource allocation. See
+\fBSLURM_JOB_NUM_NODES\fR. Included for backwards compatibility.
+.TP
 \fBSLURM_NODE_ALIASES\fR
 Sets of node name, communication address and hostname for nodes allocated to
 the job from the cloud. Each element in the set if colon separated and each
@@ -2300,7 +2305,15 @@ SLURM_NODE_ALIASES=ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
 \fBSLURM_NODEID\fR
 ID of the nodes allocated.
 .TP
-\fBSLURM_NTASKS\fR (and \fBSLURM_NPROCS\fR for backwards compatibility)
+\fBSLURM_NODELIST\fR
+List of nodes allocated to the job. See \fBSLURM_JOB_NODELIST\fR. Included
+for backwards compatibility.
+.TP
+\fBSLURM_NPROCS\fR
+Same as \fB\-n, \-\-ntasks\fR. See \fBSLURM_NTASKS\fR. Included for backwards
+compatibility.
+.TP
+\fBSLURM_NTASKS\fR
 Same as \fB\-n, \-\-ntasks\fR
 .TP
 \fBSLURM_NTASKS_PER_CORE\fR
@@ -2319,9 +2332,6 @@ Only set if the \fB\-\-ntasks\-per\-node\fR option is specified.
 \fBSLURM_NTASKS_PER_SOCKET\fR
 Number of tasks requested per socket.
 Only set if the \fB\-\-ntasks\-per\-socket\fR option is specified.
-.TP
-\fBSLURM_HET_SIZE\fR
-Set to count of components in heterogeneous job.
 .TP
 \fBSLURM_PRIO_PROCESS\fR
 The  scheduling priority (nice value) at the time of job submission.
@@ -2344,6 +2354,9 @@ The directory from which \fBsbatch\fR was invoked.
 \fBSLURM_SUBMIT_HOST\fR
 The hostname of the computer from which \fBsbatch\fR was invoked.
 .TP
+\fBSLURM_TASK_PID\fR
+The process ID of the task being started.
+.TP
 \fBSLURM_TASKS_PER_NODE\fR
 Number of tasks to be initiated on each node. Values are
 comma separated and in the same order as SLURM_JOB_NODELIST.
@@ -2352,9 +2365,6 @@ count, that count is followed by "(x#)" where "#" is the
 repetition count. For example, "SLURM_TASKS_PER_NODE=2(x3),1"
 indicates that the first three nodes will each execute two
 tasks and the fourth node will execute one task.
-.TP
-\fBSLURM_TASK_PID\fR
-The process ID of the task being started.
 .TP
 \fBSLURM_TOPOLOGY_ADDR\fR
 This is set only if the  system  has  the  topology/tree  plugin

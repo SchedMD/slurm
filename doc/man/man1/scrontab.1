@@ -1,15 +1,12 @@
-.TH scrontab "1" "Slurm Commands" "January 2021" "Slurm Commands"
+.TH scrontab "1" "Slurm Commands" "April 2021" "Slurm Commands"
 
 .SH "NAME"
-.LP
 scrontab \- manage Slurm crontab files
 
 .SH "SYNOPSIS"
-.LP
 scrontab [-u user] [ -e | -l | -r ]
 
 .SH "DESCRIPTION"
-.LP
 \fBscrontab\fR is used to set, edit, and remove a user's Slurm-managed crontab.
 This file can define a number of recurring batch jobs to run on a scheduled
 interval.
@@ -83,7 +80,6 @@ Admins. Editing/removal is only permitted for root and the \fISlurmUser\fR
 account.
 
 .SH "SCRONTAB OPTIONS"
-.LP
 \fBscrontab\fR allows you to use shortcuts to specify some common time
 intervals for the specified script to run.  These include the following:
 .TP
@@ -120,12 +116,10 @@ Used as the interfactive editor if set and \fBVISUAL\fR is not defined.
 The location of the Slurm configuration file.
 
 .SH "NOTES"
-.LP
 \fBscrontab\fR is only available if the \fBScronParameters=enable\fR option has
 been enabled in the \fBslurm.conf\fR.
 
 .SH "EXAMPLES"
-.LP
 To create a job that would run at the beginning of each hour, using the 'high'
 partition, 'sub1' account and have a walltime of 1 minute, you would add the
 following to \fBscrontab\fR:

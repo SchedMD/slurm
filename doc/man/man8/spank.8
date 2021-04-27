@@ -1,4 +1,4 @@
-.TH SPANK "8" "Slurm Component" "April 2020" "Slurm Component"
+.TH SPANK "8" "Slurm Component" "April 2021" "Slurm Component"
 
 .SH "NAME"
 \fBSPANK\fR \- Slurm Plug\-in Architecture for Node and job (K)control
@@ -26,7 +26,7 @@ upgrading Slurm to a new major release.
 \fBSPANK\fR plugins are loaded in up to five separate contexts during a
 \fBSlurm\fR job. Briefly, the five contexts are:
 .TP 8
-\fBlocal\fB
+\fBlocal\fR
 In \fBlocal\fR context, the plugin is loaded by \fBsrun\fR. (i.e. the "local"
 part of a parallel job).
 .TP
@@ -37,14 +37,13 @@ part of a parallel job).
 \fBallocator\fR
 In \fBallocator\fR context, the plugin is loaded in one of the job allocation
 utilities \fBsbatch\fR or \fBsalloc\fR.
-.LP
 .TP
-\fBslurmd\fR In \fBslurmd\fR context, the plugin is loaded in the
+\fBslurmd\fR
+In \fBslurmd\fR context, the plugin is loaded in the
 \fBslurmd\fR daemon itself. \fBNote\fR: Plugins loaded in slurmd context
 persist for the entire time slurmd is running, so if configuration is
 changed or plugins are updated, slurmd must be restarted for the changes
 to take effect.
-.LP
 .TP
 \fBjob_script\fR
 In the \fBjob_script\fR context, plugins are loaded in the context of the
