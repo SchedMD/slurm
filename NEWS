@@ -78,6 +78,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 20.11.7
 ==========================
+ -- slurmd - handle configless failures gracefully instead of hanging
+    indefinitely.
 
 * Changes in Slurm 20.11.6
 ==========================
