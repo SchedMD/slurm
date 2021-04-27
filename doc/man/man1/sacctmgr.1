@@ -1,4 +1,4 @@
-.TH sacctmgr "1" "Slurm Commands" "February 2021" "Slurm Commands"
+.TH sacctmgr "1" "Slurm Commands" "March 2021" "Slurm Commands"
 
 .SH "NAME"
 sacctmgr \- Used to view and modify Slurm account information.
@@ -1272,7 +1272,8 @@ The total number of TRES minutes that can possibly be used by past,
 present and future jobs running from this QOS.
 
 .TP
-\fIGrpTRESRunMins\fP Used to limit the combined total number of TRES
+\fIGrpTRESRunMins\fP
+Used to limit the combined total number of TRES
 minutes used by all jobs running with this QOS.  This takes into
 consideration time limit of running jobs and consumes it, if the limit
 is reached no new jobs are started until other jobs finish to allow
@@ -1859,6 +1860,7 @@ Only print out the transactions affecting specified accounts.
 
 .TP
 \fIAction\fP=<Specific action the list will display>
+Only display transactions of the specified action type.
 
 .TP
 \fIActor\fP=<Specific name the list will display>
