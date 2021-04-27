@@ -9583,9 +9583,6 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, buf_t *buffer,
 		packstr(msg->nodes,    buffer);
 		packstr(msg->script,   buffer);
 		packstr(msg->work_dir, buffer);
-		packnull(buffer); /* was ckpt_dir */
-		packnull(buffer); /* was restart_dir */
-
 		packstr(msg->std_err, buffer);
 		packstr(msg->std_in, buffer);
 		packstr(msg->std_out, buffer);
@@ -9762,8 +9759,6 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 	*msg = launch_msg_ptr;
 
 	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
-		char *temp_str;
-
 		safe_unpack32(&launch_msg_ptr->job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->het_job_id, buffer);
 		safe_unpack32(&launch_msg_ptr->uid, buffer);
@@ -9813,11 +9808,6 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, buf_t *buffer,
 				       buffer);
 		safe_unpackstr_xmalloc(&launch_msg_ptr->work_dir, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
-		xfree(temp_str); /* was ckpt_dir */
-		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
-		xfree(temp_str); /* was restart_dir */
-
 		safe_unpackstr_xmalloc(&launch_msg_ptr->std_err, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&launch_msg_ptr->std_in,  &uint32_tmp,
