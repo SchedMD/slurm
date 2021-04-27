@@ -869,6 +869,20 @@ extern int bb_p_reconfig(void)
  */
 extern int bb_p_state_pack(uid_t uid, buf_t *buffer, uint16_t protocol_version)
 {
+	uint32_t rec_count = 0;
+
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	packstr(bb_state.name, buffer);
+	bb_pack_state(&bb_state, buffer, protocol_version);
+
+	if (((bb_state.bb_config.flags & BB_FLAG_PRIVATE_DATA) == 0) ||
+	    validate_operator(uid))
+		uid = 0;	/* User can see all data */
+	rec_count = bb_pack_bufs(uid, &bb_state, buffer, protocol_version);
+	(void) bb_pack_usage(uid, &bb_state, buffer, protocol_version);
+	log_flag(BURST_BUF, "record_count:%u", rec_count);
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+
 	return SLURM_SUCCESS;
 }
 
