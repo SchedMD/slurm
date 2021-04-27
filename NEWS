@@ -5,6 +5,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- slurmd - handle configless failures gracefully instead of hanging
     indefinitely.
+ -- select/cons_tres - fix Dragonfly topology not selecting nodes in the same
+    leaf switch when it should as well as requests with --switches option.
 
 * Changes in Slurm 20.11.6
 ==========================
