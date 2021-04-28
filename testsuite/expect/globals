@@ -1181,6 +1181,10 @@ proc cancel_job { job_id_list {het_job 0}} {
 		}
 	}
 
+	if {![llength $job_list_clean]} {
+		return $::RETURN_SUCCESS
+	}
+
 	log_debug "Cancelling $job_list_clean"
 	if {[run_command_status "$scancel -Q $job_list_clean"]} {
 		log_warn "scancel command returned error"
