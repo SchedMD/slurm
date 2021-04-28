@@ -1865,18 +1865,6 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 		}
 	}
 
-	/* count up leaf switches */
-	if (!req_nodes_bitmap) {
-		for (i = 0, switch_ptr = switch_record_table;
-		     i < switch_record_cnt; i++, switch_ptr++) {
-			if (switch_record_table[i].level != 0)
-				continue;
-			if (bit_overlap_any(switch_node_bitmap[i],
-					    best_nodes_bitmap))
-				leaf_switch_count++;
-		}
-	}
-
 	if (req_nodes_bitmap &&
 	    (!bit_super_set(req_nodes_bitmap, avail_nodes_bitmap))) {
 		info("%pJ requires nodes not available on any switch",
@@ -1985,25 +1973,6 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 		}
 	}
 
-	if (job_ptr->req_switch > 0) {
-		if (time_waiting >= job_ptr->wait4switch) {
-			job_ptr->best_switch = true;
-			debug3("%pJ waited %ld sec for switches use=%d",
-				job_ptr, time_waiting, leaf_switch_count);
-		} else if (leaf_switch_count > job_ptr->req_switch) {
-			/*
-			 * Allocation is for more than requested number of
-			 * switches.
-			 */
-			job_ptr->best_switch = false;
-			debug3("%pJ waited %ld sec for switches=%u found=%d wait %u",
-				job_ptr, time_waiting, job_ptr->req_switch,
-				leaf_switch_count, job_ptr->wait4switch);
-		} else {
-			job_ptr->best_switch = true;
-		}
-	}
-
 	/*
 	 * Add additional resources as required from additional leaf switches
 	 * on a round-robin basis
@@ -2067,7 +2036,38 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	}
 	rc = SLURM_ERROR;
 
-fini:	FREE_NULL_LIST(best_gres);
+fini:
+	if (job_ptr->req_switch > 0 && rc == SLURM_SUCCESS) {
+		/* req_switch == 1 here; enforced at the top of the function. */
+		leaf_switch_count = 0;
+
+		/* count up leaf switches */
+		for (i = 0, switch_ptr = switch_record_table;
+		     i < switch_record_cnt; i++, switch_ptr++) {
+			if (switch_record_table[i].level != 0)
+				continue;
+			if (bit_overlap_any(switch_node_bitmap[i], node_map))
+				leaf_switch_count++;
+		}
+		if (time_waiting >= job_ptr->wait4switch) {
+			job_ptr->best_switch = true;
+			debug3("%pJ waited %ld sec for switches use=%d",
+				job_ptr, time_waiting, leaf_switch_count);
+		} else if (leaf_switch_count > job_ptr->req_switch) {
+			/*
+			 * Allocation is for more than requested number of
+			 * switches.
+			 */
+			job_ptr->best_switch = false;
+			debug3("%pJ waited %ld sec for switches=%u found=%d wait %u",
+				job_ptr, time_waiting, job_ptr->req_switch,
+				leaf_switch_count, job_ptr->wait4switch);
+		} else {
+			job_ptr->best_switch = true;
+		}
+	}
+
+	FREE_NULL_LIST(best_gres);
 	FREE_NULL_LIST(node_weight_list);
 	FREE_NULL_BITMAP(avail_nodes_bitmap);
 	FREE_NULL_BITMAP(req_nodes_bitmap);
