@@ -359,7 +359,7 @@ static const parser_t parse_job[] = {
 	_add_parse(UINT32, resv_name, "reservation/name"),
 	/* skipping show_full */
 	_add_parse(UINT32, eligible, "time/start"),
-	_add_parse(JOB_REASON, state, "state/current"),
+	_add_parse(JOB_STATE, state, "state/current"),
 	_add_parse(JOB_REASON, state_reason_prev, "state/previous"),
 	_add_parse(UINT32, submit, "time/submission"),
 	_add_parse(JOB_STEPS, steps, "steps"),
@@ -581,7 +581,7 @@ static const parser_t parse_job_step[] = {
 			 false, req_cpufreq_gov, "CPU/governor"),
 	_add_parse(USER_ID, requid, "kill_request_user"),
 	_add_parse(UINT32, start, "time/start"),
-	_add_parse(JOB_REASON, state, "state"),
+	_add_parse(JOB_STATE, state, "state"),
 	_add_parse(UINT32, stats.act_cpufreq,
 		   "statistics/CPU/actual_frequency"),
 	_add_parse(UINT32, stats.consumed_energy, "statistics/energy/consumed"),
@@ -2773,6 +2773,17 @@ static int _dump_job_reason(const parser_t *const parse, void *obj, data_t *dst,
 	return SLURM_SUCCESS;
 }
 
+static int _dump_job_state(const parser_t *const parse, void *obj, data_t *dst,
+			   const parser_env_t *penv)
+{
+	uint32_t *state = (((void *)obj) + parse->field_offset);
+
+	xassert(data_get_type(dst) == DATA_TYPE_NULL);
+	data_set_string(dst, job_state_string(*state));
+
+	return SLURM_SUCCESS;
+}
+
 typedef struct {
 	parse_rfunc_t rfunc;
 	parse_wfunc_t wfunc;
@@ -2823,6 +2834,7 @@ const parser_funcs_t funcs[] = {
 	_add_func(NULL, _dump_wckey_tag, PARSE_WCKEY_TAG),
 	_add_func(NULL, _dump_group_id, PARSE_GROUP_ID),
 	_add_func(NULL, _dump_job_reason, PARSE_JOB_REASON),
+	_add_func(NULL, _dump_job_state, PARSE_JOB_STATE),
 	_add_func(_parse_user_id, _dump_user_id, PARSE_USER_ID),
 };
 #undef _add_func

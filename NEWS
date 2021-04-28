@@ -28,6 +28,8 @@ documents those changes that are of interest to users and administrators.
  -- scancel - fix segfault when --wckey filtering option is used.
  -- select/cons_tres - Fix memory leak.
  -- Prevent file descriptor leak in job_container/tmpfs on slurmd restart.
+ -- slurmrestd/dbv0.0.36 - Fix values dumped in job state/current and
+    job step state.
 
 * Changes in Slurm 20.11.7
 ==========================
