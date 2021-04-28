@@ -1663,7 +1663,11 @@ static void _merge_gres2(List gres_conf_list, List new_list, uint64_t count,
 		       match->name, match->type_name, match->count,
 		       match->file);
 
-		/* See if we need to merge with any more gres.conf records. */
+		/*
+		 * See if we need to merge with any more gres.conf records.
+		 * NOTE: _set_file_subset() won't run on a MultipleFiles GRES,
+		 * since match->count will always be 1 and count is always >= 1
+		 */
 		if (match->count > count) {
 			/*
 			 * Truncate excess count of gres.conf to match total
