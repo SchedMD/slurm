@@ -537,6 +537,17 @@ static uint64_t _set_granularity(uint64_t orig_size, char *bb_pool)
 	for (i = 0, pool_ptr = bb_state.bb_config.pool_ptr;
 	     i < bb_state.bb_config.pool_cnt; i++, pool_ptr++) {
 		if (!xstrcmp(bb_pool, pool_ptr->name)) {
+			if (!pool_ptr->granularity) {
+				/*
+				 * This should never happen if we initialize
+				 * the pools correctly, so if this error happens
+				 * it means we initialized the pool wrong.
+				 * This avoids a divide by 0 error.
+				 */
+				error("%s: Invalid granularity of 0 for pool %s. Setting granularity=1.",
+				      __func__, pool_ptr->name);
+				pool_ptr->granularity = 1;
+			}
 			new_size = bb_granularity(orig_size,
 						  pool_ptr->granularity);
 			return new_size;
