@@ -1173,6 +1173,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		if (file_count < 2)
 			fatal("MultipleFiles does not contain multiple files. Use File instead");
 		p->config_flags |= GRES_CONF_HAS_FILE;
+		p->config_flags |= GRES_CONF_HAS_MULT;
 	}
 
 	if (s_p_get_string(&tmp_str, "Flags", tbl)) {

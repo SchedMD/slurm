@@ -119,6 +119,13 @@ extern int common_node_config_load(List gres_conf_list,
 			if (gres_device->dev_num > max_dev_num)
 				max_dev_num = gres_device->dev_num;
 
+			/*
+			 * Don't check for file duplicates or increment the
+			 * device bitmap index if this is a MultipleFiles GRES
+			 */
+			if (gres_slurmd_conf->config_flags & GRES_CONF_HAS_MULT)
+				continue;
+
 			if ((rc == SLURM_SUCCESS) &&
 			    list_find_first(names_list, _match_name_list,
 					    one_name)) {
@@ -129,17 +136,11 @@ extern int common_node_config_load(List gres_conf_list,
 
 			(void) list_append(names_list, one_name);
 
-			/*
-			 * If count == 1, but there are multiple files then
-			 * this is a MultipleFile device. Don't touch the
-			 * index then, as the index keys into the allocation
-			 * bitmap.
-			 */
-			if (gres_slurmd_conf->count != 1)
-				index++;
+			/* Increment device bitmap index */
+			index++;
 		}
 		hostlist_destroy(hl);
-		if (gres_slurmd_conf->count == 1)
+		if (gres_slurmd_conf->config_flags & GRES_CONF_HAS_MULT)
 			index++;
 	}
 	list_iterator_destroy(itr);
