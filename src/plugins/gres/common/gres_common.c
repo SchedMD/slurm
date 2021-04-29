@@ -208,7 +208,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		return;
 
 	if (!gres_ptr)
-		goto fini;
+		return;
 
 	xassert(global_list);
 	xassert(local_list);
@@ -336,7 +336,6 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		      __func__);
 	}
 
-fini:
 	if (gres_per_node) {
 		*gres_per_node = tmp_gres_per_node;
 	}
