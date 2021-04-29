@@ -68,7 +68,7 @@ extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id)
 	if (job_ptr->prep_prolog_cnt) {
 		debug2("%s: still %u async prologs left to complete",
 		       __func__, job_ptr->prep_prolog_cnt);
-		lock_slurmctld(job_write_lock);
+		unlock_slurmctld(job_write_lock);
 		return;
 	}
 
@@ -128,7 +128,7 @@ extern void prep_epilog_slurmctld_callback(int rc, uint32_t job_id)
 	if (job_ptr->prep_epilog_cnt) {
 		debug2("%s: still %u async epilogs left to complete",
 		       __func__, job_ptr->prep_epilog_cnt);
-		lock_slurmctld(job_write_lock);
+		unlock_slurmctld(job_write_lock);
 		return;
 	}
 
