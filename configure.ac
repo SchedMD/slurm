@@ -551,6 +551,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/mcs/none/Makefile
 		 src/plugins/mcs/user/Makefile
 		 src/plugins/node_features/Makefile
+		 src/plugins/node_features/helpers/Makefile
 		 src/plugins/node_features/knl_cray/Makefile
 		 src/plugins/node_features/knl_generic/Makefile
 		 src/plugins/openapi/Makefile

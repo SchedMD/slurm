@@ -1,3 +1,3 @@
 # Makefile for node_features plugins
 
-SUBDIRS = knl_cray knl_generic
+SUBDIRS = helpers knl_cray knl_generic
