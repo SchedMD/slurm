@@ -2037,7 +2037,8 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	rc = SLURM_ERROR;
 
 fini:
-	if (job_ptr->req_switch > 0 && rc == SLURM_SUCCESS) {
+	if ((job_ptr->req_switch > 0) && (rc == SLURM_SUCCESS) &&
+	    switch_node_bitmap) {
 		/* req_switch == 1 here; enforced at the top of the function. */
 		leaf_switch_count = 0;
 
