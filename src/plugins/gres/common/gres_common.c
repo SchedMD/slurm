@@ -247,6 +247,9 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	if (reset && !usable_gres)
 		return;
 
+	if (gres_per_node)
+		*gres_per_node = tmp_gres_per_node;
+
 	if (bit_alloc) {
 		itr = list_iterator_create(gres_devices);
 		while ((gres_device = list_next(itr))) {
@@ -334,10 +337,6 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		 */
 		debug("%s: unable to set env vars, no device files configured",
 		      __func__);
-	}
-
-	if (gres_per_node) {
-		*gres_per_node = tmp_gres_per_node;
 	}
 }
 
