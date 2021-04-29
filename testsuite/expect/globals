@@ -1527,7 +1527,7 @@ proc wait_for args {
 
 	set start_time [format "%.3f" [expr [clock milliseconds] / 1000.000]]
 
-	log_debug "Waiting for $condition starting at [clock format [expr int($start_time)] -format %Y-%m-%dT%X].[lindex [split $start_time '.'] 1]"
+	log_debug "Waiting for $condition"
 
 	while {1} {
 		# Evaluate code block
@@ -1634,7 +1634,7 @@ proc wait_for_command args {
 
 	set start_time [format "%.3f" [expr [clock milliseconds] / 1000.000]]
 
-	log_debug "Waiting for $condition starting at [clock format [expr int($start_time)] -format %Y-%m-%dT%X].[lindex [split $start_time '.'] 1]"
+	log_debug "Waiting for $condition"
 
 	while {1} {
 		# Run command
