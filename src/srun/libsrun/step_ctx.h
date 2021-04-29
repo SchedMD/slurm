@@ -55,13 +55,13 @@ struct slurm_step_ctx_struct {
 
 /*
  * slurm_step_ctx_create_timeout - Create a job step and its context.
- * IN step_params - job step parameters
+ * IN step_req - job step request
  * IN timeout - in milliseconds
  * RET the step context or NULL on failure with slurm errno set
  * NOTE: Free allocated memory using slurm_step_ctx_destroy.
  */
-extern slurm_step_ctx_t *slurm_step_ctx_create_timeout(const slurm_step_ctx_params_t *step_params,
-						       int timeout);
+extern slurm_step_ctx_t *slurm_step_ctx_create_timeout(
+	job_step_create_request_msg_t *step_req, int timeout);
 
 /*
  * Return TRUE if the job step create request should be retried later
@@ -72,13 +72,13 @@ extern bool slurm_step_retry_errno(int rc);
 /*
  * slurm_step_ctx_create_no_alloc - Create a job step and its context without
  *                                  getting an allocation.
- * IN step_params - job step parameters
+ * IN step_req - job step request
  * IN step_id     - since we are faking it give me the id to use
  * RET the step context or NULL on failure with slurm errno set
  * NOTE: Free allocated memory using slurm_step_ctx_destroy.
  */
-extern slurm_step_ctx_t *slurm_step_ctx_create_no_alloc(const slurm_step_ctx_params_t *step_params,
-							uint32_t step_id);
+extern slurm_step_ctx_t *slurm_step_ctx_create_no_alloc(
+	job_step_create_request_msg_t *step_req, uint32_t step_id);
 
 /*
  * slurm_step_ctx_get - get parameters from a job step context.

@@ -115,54 +115,6 @@ _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 	ctx->step_resp->cred = slurm_cred_faker(&arg);
 }
 
-static job_step_create_request_msg_t *_create_step_request(
-	const slurm_step_ctx_params_t *step_params)
-{
-	job_step_create_request_msg_t *step_req =
-		xmalloc(sizeof(job_step_create_request_msg_t));
-	step_req->cpu_count = step_params->cpu_count;
-	step_req->cpu_freq_min = step_params->cpu_freq_min;
-	step_req->cpu_freq_max = step_params->cpu_freq_max;
-	step_req->cpu_freq_gov = step_params->cpu_freq_gov;
-	step_req->cpus_per_tres = xstrdup(step_params->cpus_per_tres);
-	step_req->ntasks_per_tres = step_params->ntasks_per_tres;
-	step_req->exc_nodes = xstrdup(step_params->exc_nodes);
-	step_req->features = xstrdup(step_params->features);
-	step_req->flags = step_params->flags;
-	step_req->immediate  = step_params->immediate;
-	step_req->max_nodes = step_params->max_nodes;
-	step_req->mem_per_tres = xstrdup(step_params->mem_per_tres);
-	step_req->min_nodes = step_params->min_nodes;
-	step_req->name = xstrdup(step_params->name);
-	step_req->network = xstrdup(step_params->network);
-	step_req->node_list = xstrdup(step_params->node_list);
-	step_req->num_tasks = step_params->task_count;
-	step_req->plane_size = step_params->plane_size;
-	step_req->pn_min_memory = step_params->pn_min_memory;
-	step_req->relative = step_params->relative;
-	step_req->resv_port_cnt = step_params->resv_port_cnt;
-	step_req->srun_pid = (uint32_t) getpid();
-	step_req->step_het_comp_cnt = step_params->step_het_comp_cnt;
-	step_req->step_het_grps = xstrdup(step_params->step_het_grps);
-	memcpy(&step_req->step_id, &step_params->step_id,
-	       sizeof(step_req->step_id));
-
-	step_req->submit_line = xstrdup(step_params->submit_line);
-
-	step_req->task_dist = step_params->task_dist;
-	step_req->threads_per_core = step_params->threads_per_core;
-	step_req->tres_bind = xstrdup(step_params->tres_bind);
-	step_req->tres_freq = xstrdup(step_params->tres_freq);
-	step_req->tres_per_step = xstrdup(step_params->tres_per_step);
-	step_req->tres_per_node = xstrdup(step_params->tres_per_node);
-	step_req->tres_per_socket = xstrdup(step_params->tres_per_socket);
-	step_req->tres_per_task = xstrdup(step_params->tres_per_task);
-	step_req->time_limit = step_params->time_limit;
-	step_req->user_id = (uint32_t)step_params->uid;
-
-	return step_req;
-}
-
 /*
  * Return TRUE if the job step create request should be retried later
  * (i.e. the errno set by slurm_step_ctx_create_timeout() is recoverable).
@@ -186,12 +138,10 @@ extern bool slurm_step_retry_errno(int rc)
  * RET the step context or NULL on failure with slurm errno set
  * NOTE: Free allocated memory using slurm_step_ctx_destroy.
  */
-extern slurm_step_ctx_t *
-slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
-			       int timeout)
+extern slurm_step_ctx_t *slurm_step_ctx_create_timeout(
+	job_step_create_request_msg_t *step_req, int timeout)
 {
 	struct slurm_step_ctx_struct *ctx = NULL;
-	job_step_create_request_msg_t *step_req = NULL;
 	job_step_create_response_msg_t *step_resp = NULL;
 	int i, rc, time_left;
 	int sock = -1;
@@ -203,6 +153,8 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 	long elapsed_time;
 	DEF_TIMERS;
 
+	xassert(step_req);
+
 	/*
 	 * We will handle the messages in the step_launch.c mesage handler,
 	 * but we need to open the socket right now so we can tell the
@@ -213,13 +165,11 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 	else
 		cc = net_stream_listen(&sock, &port);
 	if (cc < 0) {
-		error("unable to initialize step context socket: %m");
-		return (slurm_step_ctx_t *) NULL;
+		error("unable to initialize step request socket: %m");
+		return NULL;
 	}
 
-	step_req = _create_step_request(step_params);
 	step_req->port = port;
-	step_req->host = xshort_hostname();
 
 	rc = slurm_job_step_create(step_req, &step_resp);
 	if ((rc < 0) && slurm_step_retry_errno(errno)) {
@@ -249,11 +199,9 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 			     destroy_step);
 			errnum = ESLURM_ALREADY_DONE;
 		}
-		slurm_free_job_step_create_request_msg(step_req);
 		close(sock);
 		errno = errnum;
 	} else if ((rc < 0) || (step_resp == NULL)) {
-		slurm_free_job_step_create_request_msg(step_req);
 		close(sock);
 	} else {
 		ctx = xmalloc(sizeof(struct slurm_step_ctx_struct));
@@ -270,7 +218,6 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
 			step_req->step_id.step_id = step_resp->job_step_id;
 
 		ctx->step_resp	= step_resp;
-		ctx->verbose_level = step_params->verbose_level;
 		ctx->launch_state = step_launch_state_create(ctx);
 		ctx->launch_state->slurmctld_socket_fd = sock;
 	}
@@ -286,32 +233,24 @@ slurm_step_ctx_create_timeout (const slurm_step_ctx_params_t *step_params,
  * RET the step context or NULL on failure with slurm errno set
  * NOTE: Free allocated memory using slurm_step_ctx_destroy.
  */
-extern slurm_step_ctx_t *
-slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
-				uint32_t step_id)
+extern slurm_step_ctx_t *slurm_step_ctx_create_no_alloc(
+	job_step_create_request_msg_t *step_req, uint32_t step_id)
 {
 	struct slurm_step_ctx_struct *ctx = NULL;
-	job_step_create_request_msg_t *step_req = NULL;
 	job_step_create_response_msg_t *step_resp = NULL;
 	int sock = -1;
 	uint16_t port = 0;
-	int errnum = 0;
 
-	/* First copy the user's step_params into a step request struct */
-	step_req = _create_step_request(step_params);
-
+	xassert(step_req);
 	/* We will handle the messages in the step_launch.c mesage handler,
 	 * but we need to open the socket right now so we can tell the
 	 * controller which port to use.
 	 */
 	if (net_stream_listen(&sock, &port) < 0) {
-		errnum = errno;
 		error("unable to initialize step context socket: %m");
-		slurm_free_job_step_create_request_msg(step_req);
-		goto fail;
+		return NULL;
 	}
 	step_req->port = port;
-	step_req->host = xshort_hostname();
 
 	/* Then make up a reponse with only certain things filled in */
 	step_resp = (job_step_create_response_msg_t *)
@@ -351,15 +290,11 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 		step_req->step_id.step_id = step_resp->job_step_id;
 
 	ctx->step_resp	= step_resp;
-	ctx->verbose_level = step_params->verbose_level;
-
 	ctx->launch_state = step_launch_state_create(ctx);
 	ctx->launch_state->slurmctld_socket_fd = sock;
 
 	_job_fake_cred(ctx);
 
-fail:
-	errno = errnum;
 	return (slurm_step_ctx_t *)ctx;
 }
 
