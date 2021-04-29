@@ -207,45 +207,40 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	if (!gres_devices)
 		return;
 
+	if (!gres_ptr)
+		goto fini;
+
 	xassert(global_list);
 	xassert(local_list);
 
 	if (is_job) {
 		gres_job_state_t *gres_job_ptr = (gres_job_state_t *) gres_ptr;
-		if (gres_job_ptr &&
-		    (node_inx >= 0) &&
+		if ((node_inx >= 0) &&
 		    (node_inx < gres_job_ptr->node_cnt) &&
 		    gres_job_ptr->gres_bit_alloc &&
 		    gres_job_ptr->gres_bit_alloc[node_inx]) {
 			bit_alloc = gres_job_ptr->gres_bit_alloc[node_inx];
-		} else if (gres_job_ptr &&
-			   ((gres_job_ptr->gres_per_job    > 0) ||
+		} else if (((gres_job_ptr->gres_per_job    > 0) ||
 			    (gres_job_ptr->gres_per_node   > 0) ||
 			    (gres_job_ptr->gres_per_socket > 0) ||
 			    (gres_job_ptr->gres_per_task   > 0))) {
 			alloc_cnt = true;
 		}
-		if (gres_job_ptr) {
-			tmp_gres_per_node = gres_job_ptr->gres_per_node;
-		}
+		tmp_gres_per_node = gres_job_ptr->gres_per_node;
 	} else {
 		gres_step_state_t *gres_step_ptr =
 			(gres_step_state_t *) gres_ptr;
-		if (gres_step_ptr &&
-		    (gres_step_ptr->node_cnt == 1) &&
+		if ((gres_step_ptr->node_cnt == 1) &&
 		    gres_step_ptr->gres_bit_alloc &&
 		    gres_step_ptr->gres_bit_alloc[0]) {
 			bit_alloc = gres_step_ptr->gres_bit_alloc[0];
-		} else if (gres_step_ptr &&
-			   ((gres_step_ptr->gres_per_step   > 0) ||
+		} else if (((gres_step_ptr->gres_per_step   > 0) ||
 			    (gres_step_ptr->gres_per_node   > 0) ||
 			    (gres_step_ptr->gres_per_socket > 0) ||
 			    (gres_step_ptr->gres_per_task   > 0))) {
 			alloc_cnt = true;
 		}
-		if (gres_step_ptr) {
-			tmp_gres_per_node = gres_step_ptr->gres_per_node;
-		}
+		tmp_gres_per_node = gres_step_ptr->gres_per_node;
 	}
 
 	/* If we are resetting and we don't have a usable_gres we just exit */
@@ -341,6 +336,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		      __func__);
 	}
 
+fini:
 	if (gres_per_node) {
 		*gres_per_node = tmp_gres_per_node;
 	}
