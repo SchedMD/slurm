@@ -147,7 +147,7 @@ extern void parse_command_line(int argc, char **argv)
 
 static void _usage( void )
 {
-	printf("Usage: sdiag [-M cluster] [-aritT] \n");
+	printf("Usage: sdiag [-M cluster] [-aritT]\n");
 }
 
 static void _help( void )
