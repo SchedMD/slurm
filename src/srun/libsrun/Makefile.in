@@ -151,7 +151,7 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libsrun_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libsrun_la_OBJECTS = allocate.lo debugger.lo fname.lo launch.lo \
-	multi_prog.lo opt.lo srun_job.lo
+	multi_prog.lo opt.lo srun_job.lo step_ctx.lo
 libsrun_la_OBJECTS = $(am_libsrun_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -178,7 +178,8 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/allocate.Plo \
 	./$(DEPDIR)/debugger.Plo ./$(DEPDIR)/fname.Plo \
 	./$(DEPDIR)/launch.Plo ./$(DEPDIR)/multi_prog.Plo \
-	./$(DEPDIR)/opt.Plo ./$(DEPDIR)/srun_job.Plo
+	./$(DEPDIR)/opt.Plo ./$(DEPDIR)/srun_job.Plo \
+	./$(DEPDIR)/step_ctx.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -491,7 +492,8 @@ libsrun_la_SOURCES = \
 	launch.c launch.h \
 	multi_prog.c multi_prog.h \
 	opt.c opt.h \
-	srun_job.c srun_job.h
+	srun_job.c srun_job.h \
+	step_ctx.c step_ctx.h
 
 libsrun_la_LIBADD = $(DL_LIBS)
 libsrun_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic \
@@ -558,6 +560,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/multi_prog.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opt.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun_job.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_ctx.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -691,6 +694,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/multi_prog.Plo
 	-rm -f ./$(DEPDIR)/opt.Plo
 	-rm -f ./$(DEPDIR)/srun_job.Plo
+	-rm -f ./$(DEPDIR)/step_ctx.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -743,6 +747,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/multi_prog.Plo
 	-rm -f ./$(DEPDIR)/opt.Plo
 	-rm -f ./$(DEPDIR)/srun_job.Plo
+	-rm -f ./$(DEPDIR)/step_ctx.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

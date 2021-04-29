@@ -15,7 +15,9 @@ libsrun_la_SOURCES = \
 	launch.c launch.h \
 	multi_prog.c multi_prog.h \
 	opt.c opt.h \
-	srun_job.c srun_job.h
+	srun_job.c srun_job.h \
+	step_ctx.c step_ctx.h
+
 libsrun_la_LIBADD = $(DL_LIBS)
 libsrun_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic \
 	$(CRAY_JOB_LDFLAGS)

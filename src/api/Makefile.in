@@ -221,8 +221,8 @@ am__objects_2 = allocate.lo allocate_msg.lo block_info.lo \
 	init.lo init_msg.lo job_info.lo job_step_info.lo \
 	license_info.lo node_info.lo partition_info.lo pmi_server.lo \
 	reservation_info.lo signal.lo slurm_get_statistics.lo \
-	slurm_pmi.lo step_ctx.lo step_io.lo step_launch.lo submit.lo \
-	suspend.lo token.lo topo_info.lo triggers.lo reconfigure.lo \
+	slurm_pmi.lo step_io.lo step_launch.lo submit.lo suspend.lo \
+	token.lo topo_info.lo triggers.lo reconfigure.lo \
 	update_config.lo $(am__objects_1)
 am_libslurmhelper_la_OBJECTS = $(am__objects_2)
 libslurmhelper_la_OBJECTS = $(am_libslurmhelper_la_OBJECTS)
@@ -270,12 +270,12 @@ am__depfiles_remade = ./$(DEPDIR)/account_functions.Plo \
 	./$(DEPDIR)/reconfigure.Plo ./$(DEPDIR)/reservation_info.Plo \
 	./$(DEPDIR)/resource_functions.Plo ./$(DEPDIR)/signal.Plo \
 	./$(DEPDIR)/slurm_get_statistics.Plo ./$(DEPDIR)/slurm_pmi.Plo \
-	./$(DEPDIR)/step_ctx.Plo ./$(DEPDIR)/step_io.Plo \
-	./$(DEPDIR)/step_launch.Plo ./$(DEPDIR)/submit.Plo \
-	./$(DEPDIR)/suspend.Plo ./$(DEPDIR)/token.Plo \
-	./$(DEPDIR)/topo_info.Plo ./$(DEPDIR)/tres_functions.Plo \
-	./$(DEPDIR)/triggers.Plo ./$(DEPDIR)/update_config.Plo \
-	./$(DEPDIR)/usage_functions.Plo ./$(DEPDIR)/user_functions.Plo \
+	./$(DEPDIR)/step_io.Plo ./$(DEPDIR)/step_launch.Plo \
+	./$(DEPDIR)/submit.Plo ./$(DEPDIR)/suspend.Plo \
+	./$(DEPDIR)/token.Plo ./$(DEPDIR)/topo_info.Plo \
+	./$(DEPDIR)/tres_functions.Plo ./$(DEPDIR)/triggers.Plo \
+	./$(DEPDIR)/update_config.Plo ./$(DEPDIR)/usage_functions.Plo \
+	./$(DEPDIR)/user_functions.Plo \
 	./$(DEPDIR)/user_report_functions.Plo \
 	./$(DEPDIR)/wckey_functions.Plo
 am__mv = mv -f
@@ -692,8 +692,6 @@ slurmapi_src = \
 	slurm_get_statistics.c \
 	slurm_pmi.c      \
 	slurm_pmi.h	 \
-	step_ctx.c       \
-	step_ctx.h       \
 	step_io.c        \
 	step_io.h        \
 	step_launch.c    \
@@ -932,7 +930,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/signal.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_get_statistics.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_pmi.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_ctx.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_io.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_launch.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/submit.Plo@am__quote@ # am--include-marker
@@ -1118,7 +1115,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/signal.Plo
 	-rm -f ./$(DEPDIR)/slurm_get_statistics.Plo
 	-rm -f ./$(DEPDIR)/slurm_pmi.Plo
-	-rm -f ./$(DEPDIR)/step_ctx.Plo
 	-rm -f ./$(DEPDIR)/step_io.Plo
 	-rm -f ./$(DEPDIR)/step_launch.Plo
 	-rm -f ./$(DEPDIR)/submit.Plo
@@ -1214,7 +1210,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/signal.Plo
 	-rm -f ./$(DEPDIR)/slurm_get_statistics.Plo
 	-rm -f ./$(DEPDIR)/slurm_pmi.Plo
-	-rm -f ./$(DEPDIR)/step_ctx.Plo
 	-rm -f ./$(DEPDIR)/step_io.Plo
 	-rm -f ./$(DEPDIR)/step_launch.Plo
 	-rm -f ./$(DEPDIR)/submit.Plo

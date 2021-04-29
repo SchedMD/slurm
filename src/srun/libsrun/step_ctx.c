@@ -64,7 +64,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-#include "src/api/step_ctx.h"
+
+#include "step_ctx.h"
 
 int step_signals[] = {
 	SIGINT,  SIGQUIT, SIGCONT, SIGTERM, SIGHUP,

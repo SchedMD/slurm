@@ -117,7 +117,6 @@ extern int topo_info_response_msg_to_hv(topo_info_response_msg_t *topo_info_msg,
 extern int hv_to_topo_info_response_msg(HV *hv, topo_info_response_msg_t *topo_info_msg);
 
 /********** step launching functions **********/
-extern int hv_to_slurm_step_ctx_params(HV *hv, slurm_step_ctx_params_t *params);
 extern int hv_to_slurm_step_launch_params(HV *hv, slurm_step_launch_params_t
 					  *params);
 extern void free_slurm_step_launch_params_memory(slurm_step_launch_params_t

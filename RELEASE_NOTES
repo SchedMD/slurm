@@ -69,3 +69,4 @@ API CHANGES
  -- jobcomp plugin: change plugin API to jobcomp_p_*().
  -- sched plugin: change plugin API to sched_p_*() and remove
     slurm_sched_p_initial_priority() call.
+ -- step_ctx code has been removed from the api.

@@ -116,8 +116,6 @@ slurmapi_src =           \
 	slurm_get_statistics.c \
 	slurm_pmi.c      \
 	slurm_pmi.h	 \
-	step_ctx.c       \
-	step_ctx.h       \
 	step_io.c        \
 	step_io.h        \
 	step_launch.c    \

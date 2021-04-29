@@ -80,8 +80,9 @@
 #include "src/common/xstring.h"
 
 #include "src/api/step_launch.h"
-#include "src/api/step_ctx.h"
 #include "src/api/pmi_server.h"
+
+#include "src/srun/libsrun/step_ctx.h"
 
 #define STEP_ABORT_TIME 2
 

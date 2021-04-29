@@ -81,12 +81,12 @@
 #include "launch.h"
 #include "allocate.h"
 #include "srun_job.h"
+#include "step_ctx.h"
 #include "opt.h"
 #include "debugger.h"
 #include "src/srun/srun_pty.h"
 #include "multi_prog.h"
 #include "src/api/pmi_server.h"
-#include "src/api/step_ctx.h"
 #include "src/api/step_launch.h"
 
 #ifndef OPEN_MPI_PORT_ERROR

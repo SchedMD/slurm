@@ -51,6 +51,7 @@
 
 #include "src/api/step_io.h"
 #include "src/srun/libsrun/opt.h"
+#include "src/srun/libsrun/step_ctx.h"
 
 typedef enum {
 	SRUN_JOB_INIT = 0,         /* Job's initial state                   */
