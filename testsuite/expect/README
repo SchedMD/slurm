@@ -374,8 +374,6 @@ test7.1    Test priorities slurmctld assigns to jobs. Uses srun --hold and
 	   --batch options.
 test7.2    Test of PMI functions available via API library. Tests
 	   --pmi-threads option in srun command.
-test7.3    Test of slurm_step_launch API with spawn_io=true
-	   (needed by poe on IBM AIX systems).
 test7.4    Test of TotalView operation with srun, with and without bulk
 	   transfer.
 test7.5    Test of TotalView termination logic for srun.
