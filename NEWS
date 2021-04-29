@@ -85,6 +85,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where certain step requests wouldn't run if the first node in the
     job allocation was full and there were idle resources on other nodes in
     the job allocation.
+ -- Fix deadlock issue with <Prolog|Epilog>Slurmctld.
 
 * Changes in Slurm 20.11.6
 ==========================
