@@ -8999,23 +8999,21 @@ extern void gres_g_step_set_env(char ***job_env_ptr, List step_gres_list)
 	for (i = 0; i < gres_context_cnt; i++) {
 		if (!gres_context[i].ops.step_set_env)
 			continue;	/* No plugin to call */
+		if (!step_gres_list)
+			continue;
 		found = false;
-		if (step_gres_list) {
-			gres_iter = list_iterator_create(step_gres_list);
-			while ((gres_ptr = (gres_state_t *)
-				list_next(gres_iter))) {
-				if (gres_ptr->plugin_id !=
-				    gres_context[i].plugin_id)
-					continue;
-				/* Set env for all tasks in step */
-				(*(gres_context[i].ops.step_set_env))
-					(job_env_ptr,
-					 gres_ptr->gres_data,
-					 GRES_INTERNAL_FLAG_NONE);
-				found = true;
-			}
-			list_iterator_destroy(gres_iter);
+		gres_iter = list_iterator_create(step_gres_list);
+		while ((gres_ptr = (gres_state_t *)list_next(gres_iter))) {
+			if (gres_ptr->plugin_id != gres_context[i].plugin_id)
+				continue;
+			/* Set env for all tasks in step */
+			(*(gres_context[i].ops.step_set_env))
+				(job_env_ptr,
+				 gres_ptr->gres_data,
+				 GRES_INTERNAL_FLAG_NONE);
+			found = true;
 		}
+		list_iterator_destroy(gres_iter);
 		if (!found) { /* No data fond */
 			(*(gres_context[i].ops.step_set_env))
 				(job_env_ptr, NULL,
