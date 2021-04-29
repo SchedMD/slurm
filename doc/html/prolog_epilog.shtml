@@ -307,6 +307,12 @@ allocation.  This Prolog behaviour can be changed by the
 PrologFlags parameter.  The Epilog, on the other hand, always
 runs on every node of an allocation when the allocation is released.</p>
 
+<p>Prolog and Epilog scripts should be designed to be as short as possible
+and should not call Slurm commands (e.g. squeue, scontrol, sacctmgr, etc).
+Long running scripts can cause scheduling problems when jobs take a long time
+to start or finish. Slurm commands in these scripts can potentially lead to
+performance issues and should not be used.</p>
+
 <p>The task prolog is executed with the same environment as the user tasks to
 be initiated. The standard output of that program is read and processed as
 follows:<br>
@@ -665,6 +671,6 @@ the job to be requeued. Only batch jobs can be requeued. Interactive jobs
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 20 April 2021</p>
+<p style="text-align:center;">Last modified 28 April 2021</p>
 
 <!--#include virtual="footer.txt"-->
