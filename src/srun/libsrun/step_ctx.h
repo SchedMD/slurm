@@ -63,14 +63,6 @@ struct slurm_step_ctx_struct {
 extern void slurm_step_ctx_params_t_init(slurm_step_ctx_params_t *ptr);
 
 /*
- * slurm_step_ctx_create - Create a job step and its context.
- * IN step_params - job step parameters
- * RET the step context or NULL on failure with slurm errno set
- * NOTE: Free allocated memory using slurm_step_ctx_destroy.
- */
-extern slurm_step_ctx_t *slurm_step_ctx_create(const slurm_step_ctx_params_t *step_params);
-
-/*
  * slurm_step_ctx_create_timeout - Create a job step and its context.
  * IN step_params - job step parameters
  * IN timeout - in milliseconds
