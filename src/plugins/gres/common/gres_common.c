@@ -261,86 +261,82 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		return;
 	}
 
-	if (bit_alloc) {
-		itr = list_iterator_create(gres_devices);
-		while ((gres_device = list_next(itr))) {
-			int index;
-			if (!bit_test(bit_alloc, gres_device->index))
+	itr = list_iterator_create(gres_devices);
+	while ((gres_device = list_next(itr))) {
+		int index;
+		if (!bit_test(bit_alloc, gres_device->index))
+			continue;
+
+		index = use_local_dev_index ?
+			(*local_inx)++ : gres_device->dev_num;
+
+		if (reset) {
+			if (!first_device) {
+				first_inx = index;
+				first_device = gres_device;
+			}
+
+			if (!bit_test(usable_gres,
+				      use_local_dev_index ?
+				      index : gres_device->index))
 				continue;
-
-			index = use_local_dev_index ?
-				(*local_inx)++ : gres_device->dev_num;
-
-			if (reset) {
-				if (!first_device) {
-					first_inx = index;
-					first_device = gres_device;
-				}
-
-				if (!bit_test(usable_gres,
-					      use_local_dev_index ?
-					      index : gres_device->index))
-					continue;
-			}
-
-			if (global_id && !set_global_id) {
-				*global_id = gres_device->dev_num;
-				set_global_id = true;
-			}
-
-			xstrfmtcat(new_local_list, "%s%s%d", local_prefix,
-				   prefix, index);
-			local_prefix = ",";
-			//info("looking at %d and %d",
-			//     gres_device->index, gres_device->dev_num);
-			xstrfmtcat(new_global_list, "%s%s%d", global_prefix,
-				   prefix, gres_device->dev_num);
-			global_prefix = ",";
-		}
-		list_iterator_destroy(itr);
-
-		/*
-		 * Bind to the first allocated device as a fallback if the bind
-		 * request does not specify any devices within the allocation.
-		 */
-		if (reset && !new_global_list && first_device) {
-			char *usable_gres_str = bit_fmt_full(usable_gres);
-			char *usable_gres_str_hex =
-				bit_fmt_hexmask_trim(usable_gres);
-			error("Bind request %s (%s) does not specify any devices within the allocation. Binding to the first device in the allocation instead.",
-			      usable_gres_str, usable_gres_str_hex);
-			xfree(usable_gres_str);
-			xfree(usable_gres_str_hex);
-			xstrfmtcat(new_local_list, "%s%s%d", local_prefix,
-				   prefix, first_inx);
-			(*local_inx) = first_inx;
-			xstrfmtcat(new_global_list, "%s%s%d", global_prefix,
-				   prefix, first_device->dev_num);
-		}
-		if (new_global_list) {
-			xfree(*global_list);
-			*global_list = new_global_list;
-		}
-		if (new_local_list) {
-			xfree(*local_list);
-			*local_list = new_local_list;
 		}
 
-		if (flags & GRES_INTERNAL_FLAG_VERBOSE) {
-			char *usable_str;
-			char *alloc_str;
-			if (usable_gres)
-				usable_str = bit_fmt_hexmask_trim(usable_gres);
-			else
-				usable_str = xstrdup("NULL");
-			alloc_str = bit_fmt_hexmask_trim(bit_alloc);
-			fprintf(stderr, "gpu-bind: usable_gres=%s; bit_alloc=%s; local_inx=%d; global_list=%s; local_list=%s\n",
-				usable_str, alloc_str, *local_inx, *global_list,
-				*local_list);
-			xfree(alloc_str);
-			xfree(usable_str);
+		if (global_id && !set_global_id) {
+			*global_id = gres_device->dev_num;
+			set_global_id = true;
 		}
 
+		xstrfmtcat(new_local_list, "%s%s%d", local_prefix, prefix,
+			   index);
+		local_prefix = ",";
+		//info("looking at %d and %d",
+		//     gres_device->index, gres_device->dev_num);
+		xstrfmtcat(new_global_list, "%s%s%d", global_prefix, prefix,
+			   gres_device->dev_num);
+		global_prefix = ",";
+	}
+	list_iterator_destroy(itr);
+
+	/*
+	 * Bind to the first allocated device as a fallback if the bind
+	 * request does not specify any devices within the allocation.
+	 */
+	if (reset && !new_global_list && first_device) {
+		char *usable_gres_str = bit_fmt_full(usable_gres);
+		char *usable_gres_str_hex = bit_fmt_hexmask_trim(usable_gres);
+		error("Bind request %s (%s) does not specify any devices within the allocation. Binding to the first device in the allocation instead.",
+		      usable_gres_str, usable_gres_str_hex);
+		xfree(usable_gres_str);
+		xfree(usable_gres_str_hex);
+		xstrfmtcat(new_local_list, "%s%s%d", local_prefix, prefix,
+			   first_inx);
+		(*local_inx) = first_inx;
+		xstrfmtcat(new_global_list, "%s%s%d", global_prefix, prefix,
+			   first_device->dev_num);
+	}
+	if (new_global_list) {
+		xfree(*global_list);
+		*global_list = new_global_list;
+	}
+	if (new_local_list) {
+		xfree(*local_list);
+		*local_list = new_local_list;
+	}
+
+	if (flags & GRES_INTERNAL_FLAG_VERBOSE) {
+		char *usable_str;
+		char *alloc_str;
+		if (usable_gres)
+			usable_str = bit_fmt_hexmask_trim(usable_gres);
+		else
+			usable_str = xstrdup("NULL");
+		alloc_str = bit_fmt_hexmask_trim(bit_alloc);
+		fprintf(stderr, "gpu-bind: usable_gres=%s; bit_alloc=%s; local_inx=%d; global_list=%s; local_list=%s\n",
+			usable_str, alloc_str, *local_inx, *global_list,
+			*local_list);
+		xfree(alloc_str);
+		xfree(usable_str);
 	}
 }
 
