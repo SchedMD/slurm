@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "April 2021" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "May 2021" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -3046,7 +3046,7 @@ window is as large as this setting.  In an HTC environment this setting is a
 must and we advise around 10 seconds.
 .TP
 \fBmax_array_tasks\fR
-Specify the maximum number of tasks that be included in a job array.
+Specify the maximum number of tasks that can be included in a job array.
 The default limit is MaxArraySize, but this option can be used to set a lower
 limit. For example, max_array_tasks=1000 and MaxArraySize=100001 would permit
 a maximum task ID of 100000, but limit the number of tasks in any single job
