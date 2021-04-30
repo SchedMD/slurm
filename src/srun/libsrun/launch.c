@@ -415,7 +415,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 
 	for (i = 0; (!(*destroy_job)); i++) {
 		if (srun_opt->no_alloc) {
-			job->step_ctx = slurm_step_ctx_create_no_alloc(
+			job->step_ctx = step_ctx_create_no_alloc(
 				step_req, job->step_id.step_id);
 		} else {
 			if (opt_local->immediate) {
@@ -429,7 +429,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 				step_wait = ((getpid() % 10) +
 					     slurmctld_timeout) * 1000;
 			}
-			job->step_ctx = slurm_step_ctx_create_timeout(
+			job->step_ctx = step_ctx_create_timeout(
 						step_req, step_wait);
 		}
 		if (job->step_ctx != NULL) {
@@ -601,7 +601,7 @@ extern void launch_common_set_stdio_fds(srun_job_t *job,
 
 /*
  * Return TRUE if the job step create request should be retried later
- * (i.e. the errno set by slurm_step_ctx_create_timeout() is recoverable).
+ * (i.e. the errno set by step_ctx_create_timeout() is recoverable).
  */
 extern bool launch_common_step_retry_errno(int rc)
 {

@@ -1572,7 +1572,7 @@ cleanup:
 	if (!slurm_started)
 		_run_srun_epilog(job);
 
-	slurm_step_ctx_destroy(job->step_ctx);
+	step_ctx_destroy(job->step_ctx);
 
 	if (WIFEXITED(*global_rc))
 		*global_rc = WEXITSTATUS(*global_rc);

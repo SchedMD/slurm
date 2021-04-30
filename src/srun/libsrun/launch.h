@@ -86,7 +86,7 @@ extern void launch_common_set_stdio_fds(srun_job_t *job,
 /*
  * launch_common_step_retry_errno()
  * Return TRUE if the job step create request should be retried later
- * (i.e. the errno set by slurm_step_ctx_create_timeout() is recoverable).
+ * (i.e. the errno set by step_ctx_create_timeout() is recoverable).
  */
 extern bool launch_common_step_retry_errno(int rc);
 
