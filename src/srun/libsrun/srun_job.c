@@ -909,10 +909,8 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 				hostlist_push(exclude_hl,
 					      step_layout->node_list);
 			}
-			if ((slurm_step_ctx_get(job->step_ctx,
-						SLURM_STEP_CTX_RESP,
-						&step_resp) == SLURM_SUCCESS) &&
-			    step_resp->resv_ports &&
+			step_resp = job->step_ctx->step_resp;
+			if (step_resp && step_resp->resv_ports &&
 			    strcmp(step_resp->resv_ports, "(null)")) {
 				if (resv_ports)
 					xstrcat(resv_ports, ",");
@@ -944,13 +942,11 @@ static int _create_job_step(srun_job_t *job, bool use_all_cpus,
 
 			list_iterator_reset(job_iter);
 			while ((job = list_next(job_iter))) {
-				if (slurm_step_ctx_get(job->step_ctx,
-						SLURM_STEP_CTX_RESP,
-						&step_resp) == SLURM_SUCCESS) {
-					xfree(step_resp->resv_ports);
-					step_resp->resv_ports =
-						xstrdup(resv_ports);
-				}
+				if (!job->step_ctx->step_resp)
+					continue;
+				xfree(job->step_ctx->step_resp->resv_ports);
+				job->step_ctx->step_resp->resv_ports =
+					xstrdup(resv_ports);
 			}
 			xfree(resv_ports);
 		}

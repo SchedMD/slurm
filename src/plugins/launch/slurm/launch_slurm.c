@@ -254,7 +254,7 @@ static void
 _handle_openmpi_port_error(const char *tasks, const char *hosts,
 			   slurm_step_ctx_t *step_ctx)
 {
-	slurm_step_id_t step_id;
+	slurm_step_id_t step_id = step_ctx->step_req->step_id;
 	char *msg = "retrying";
 
 	if (!retry_step_begin) {
@@ -267,7 +267,6 @@ _handle_openmpi_port_error(const char *tasks, const char *hosts,
 	error("%s: tasks %s unable to claim reserved port, %s.",
 	      hosts, tasks, msg);
 
-	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEP_ID, &step_id);
 	info("Terminating job step %ps", &step_id);
 	slurm_kill_job_step(step_id.job_id, step_id.step_id, SIGKILL);
 }
@@ -701,7 +700,6 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	int rc = SLURM_SUCCESS;
 	task_state_t *task_state;
 	bool first_launch = false;
-	uint32_t def_cpu_bind_type = 0;
 	char tmp_str[128];
 	xassert(srun_opt);
 
@@ -757,10 +755,9 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.task_prolog = srun_opt->task_prolog;
 	launch_params.task_epilog = srun_opt->task_epilog;
 
-	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_DEF_CPU_BIND_TYPE,
-			   &def_cpu_bind_type);
 	if (slurm_verify_cpu_bind(NULL, &srun_opt->cpu_bind,
 				  &srun_opt->cpu_bind_type,
+				  job->step_ctx->step_resp->
 				  def_cpu_bind_type)) {
 		return SLURM_ERROR;
 	}

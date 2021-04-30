@@ -397,9 +397,8 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 
 			xrealloc(het_job_task_cnts,
 				 sizeof(uint16_t)*total_nnodes);
-			(void) slurm_step_ctx_get(job->step_ctx,
-						  SLURM_STEP_CTX_TASKS,
-						  &tmp_task_cnt);
+			tmp_task_cnt =
+				job->step_ctx->step_resp->step_layout->tasks;
 			xrealloc(het_job_tid_offsets,
 				 sizeof(uint32_t) * total_ntasks);
 
@@ -418,9 +417,7 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 
 			xrealloc(het_job_tids,
 				 sizeof(uint32_t *) * total_nnodes);
-			(void) slurm_step_ctx_get(job->step_ctx,
-						  SLURM_STEP_CTX_TIDS,
-						  &tmp_tids);
+			tmp_tids = job->step_ctx->step_resp->step_layout->tids;
 			if (!tmp_tids) {
 				fatal("%s: job %u has NULL task ID array",
 				      __func__, job->step_id.job_id);
@@ -438,9 +435,8 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 					node_tids;
 			}
 
-			(void) slurm_step_ctx_get(job->step_ctx,
-						  SLURM_STEP_CTX_NODE_LIST,
-						  &node_list);
+			node_list = job->step_ctx->step_resp->
+				step_layout->node_list;
 			if (!node_list) {
 				fatal("%s: job %u has NULL hostname",
 				      __func__, job->step_id.job_id);
@@ -449,7 +445,6 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 				xstrfmtcat(het_job_node_list, ",%s", node_list);
 			else
 				het_job_node_list = xstrdup(node_list);
-			xfree(node_list);
 			node_offset += job->nhosts;
 		}
 		list_iterator_reset(job_iter);
@@ -536,24 +531,20 @@ static void _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc)
 		if (need_mpir)
 			mpir_init(job->ntasks);
 		if (job->het_job_id && (job->het_job_id != NO_VAL)) {
-			(void) slurm_step_ctx_get(job->step_ctx,
-						  SLURM_STEP_CTX_TASKS,
-						  &tmp_task_cnt);
 			job->het_job_task_cnts = xcalloc(job->het_job_nnodes,
 							 sizeof(uint16_t));
-			memcpy(job->het_job_task_cnts, tmp_task_cnt,
+			memcpy(job->het_job_task_cnts,
+			       job->step_ctx->step_resp->step_layout->tasks,
 			       sizeof(uint16_t) * job->het_job_nnodes);
-			(void) slurm_step_ctx_get(job->step_ctx,
-						  SLURM_STEP_CTX_TIDS,
-						  &tmp_tids);
+
 			job->het_job_tids = xcalloc(job->het_job_nnodes,
 						    sizeof(uint32_t *));
-			memcpy(job->het_job_tids, tmp_tids,
+			memcpy(job->het_job_tids,
+			       job->step_ctx->step_resp->step_layout->tids,
 			       sizeof(uint32_t *) * job->het_job_nnodes);
-
-			(void) slurm_step_ctx_get(job->step_ctx,
-						  SLURM_STEP_CTX_NODE_LIST,
-						  &job->het_job_node_list);
+			job->het_job_node_list =
+				xstrdup(job->step_ctx->step_resp->
+					step_layout->node_list);
 			if (!job->het_job_node_list)
 				fatal("%s: job %u has NULL hostname",
 				      __func__, job->step_id.job_id);
@@ -585,7 +576,6 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 			       bool got_alloc)
 {
 	env_t *env = xmalloc(sizeof(env_t));
-	uint16_t *tasks = NULL;
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	xassert(srun_opt);
 
@@ -630,8 +620,6 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 	if (opt_local->job_name)
 		env->job_name = opt_local->job_name;
 
-	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_TASKS, &tasks);
-
 	env->select_jobinfo = job->select_jobinfo;
 	if (job->het_job_node_list)
 		env->nodelist = job->het_job_node_list;
@@ -646,7 +634,8 @@ static void _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 		env->ntasks = job->het_job_ntasks;
 	else
 		env->ntasks = job->ntasks;
-	env->task_count = _uint16_array_to_str(job->nhosts, tasks);
+	env->task_count = _uint16_array_to_str(
+		job->nhosts, job->step_ctx->step_resp->step_layout->tasks);
 	if (job->het_job_id != NO_VAL)
 		env->jobid = job->het_job_id;
 	else

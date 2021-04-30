@@ -152,15 +152,8 @@ extern int location_fini(void)
 
 extern slurm_step_layout_t *launch_common_get_slurm_step_layout(srun_job_t *job)
 {
-	job_step_create_response_msg_t *resp;
-
-	if (!job || !job->step_ctx)
-		return (NULL);
-
-	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &resp);
-	if (!resp)
-		return (NULL);
-	return (resp->step_layout);
+	return (!job || !job->step_ctx) ?
+		NULL : job->step_ctx->step_resp->step_layout;
 }
 
 static job_step_create_request_msg_t *_create_job_step_create_request(
@@ -500,15 +493,13 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		}
 	}
 
-	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_STEPID,
-			   &job->step_id.step_id);
+	job->step_id.step_id = job->step_ctx->step_req->step_id.step_id;
 	/*
 	 *  Number of hosts in job may not have been initialized yet if
 	 *    --jobid was used or only SLURM_JOB_ID was set in user env.
 	 *    Reset the value here just in case.
 	 */
-	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_NUM_HOSTS,
-			   &job->nhosts);
+	job->nhosts = job->step_ctx->step_resp->step_layout->node_cnt;
 
 	step_layout = launch_common_get_slurm_step_layout(job);
 	if (job->ntasks != step_layout->task_cnt)

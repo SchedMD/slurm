@@ -1517,9 +1517,7 @@ _step_step_signal(struct step_launch_state *sls, slurm_msg_t *signal_msg)
  * The TCP connection that was used to send the task_spawn_io_msg_t message
  * will be used as the user managed IO stream.  The remote end of the TCP stream
  * will be connected to the stdin, stdout, and stderr of the task.  The
- * local end of the stream is stored in the user_managed_io_t structure, and
- * is left to the user to manage (the user can retrieve the array of
- * socket descriptors using slurm_step_ctx_get()).
+ * local end of the stream is stored in the user_managed_io_t structure.
  *
  * To allow the message TCP stream to be reused for spawn IO traffic we
  * set the slurm_msg_t's conn_fd to -1 to avoid having the caller close the

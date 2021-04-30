@@ -895,25 +895,6 @@ enum node_states {
 				 * Shows local info if not in federation */
 #define SHOW_FUTURE	0x0080	/* Show future nodes */
 
-/* Define keys for ctx_key argument of slurm_step_ctx_get() */
-enum ctx_keys {
-	SLURM_STEP_CTX_STEPID,	/* get the created job step id */
-	SLURM_STEP_CTX_TASKS,	/* get array of task count on each node */
-	SLURM_STEP_CTX_TID,	/* get array of task IDs for specified node */
-	SLURM_STEP_CTX_RESP,	/* get job step create response message */
-	SLURM_STEP_CTX_CRED,
-	SLURM_STEP_CTX_SWITCH_JOB,
-	SLURM_STEP_CTX_NUM_HOSTS,
-	SLURM_STEP_CTX_HOST,
-	SLURM_STEP_CTX_JOBID,
-	SLURM_STEP_CTX_USER_MANAGED_SOCKETS,
-	SLURM_STEP_CTX_NODE_LIST,	/* step's node list, must xfree */
-	SLURM_STEP_CTX_TIDS,	/* get array of task IDs for all nodes */
-	SLURM_STEP_CTX_DEF_CPU_BIND_TYPE,
-	SLURM_STEP_CTX_STEP_HET_COMP,
-	SLURM_STEP_CTX_STEP_ID,
-};
-
 /* CR_CPU, CR_SOCKET and CR_CORE are mutually exclusive
  * CR_MEMORY may be added to any of the above values or used by itself
  * CR_ONE_TASK_PER_CORE may also be added to any of the above values */
