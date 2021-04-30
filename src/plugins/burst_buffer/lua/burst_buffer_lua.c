@@ -103,6 +103,14 @@ static const char *req_fxns[] = {
 	NULL
 };
 
+/* Description of each pool entry */
+typedef struct bb_pools {
+	char *name;
+	uint64_t granularity;
+	uint64_t quantity;
+	uint64_t free;
+} bb_pools_t;
+
 typedef struct {
 	uint32_t job_id;
 	uint32_t user_id;
@@ -128,9 +136,10 @@ static void _loadscript_extra(lua_State *st)
 /*
  * Call a function in burst_buffer.lua.
  */
-static int _run_lua_script(const char *lua_func)
+static int _run_lua_script(const char *lua_func, int (*callback) (void *x),
+			   void *callback_args)
 {
-	int rc;
+	int rc, num_args;
 
 	rc = slurm_lua_loadscript(&L, "burst_buffer/lua",
 				  lua_script_path, req_fxns,
@@ -149,6 +158,15 @@ static int _run_lua_script(const char *lua_func)
 		      __func__, lua_func);
 		lua_close(L);
 		return SLURM_ERROR;
+	}
+
+	/*
+	 * TODO: Push arguments to the stack. Maybe use a callback that
+	 * returns the number of arguments.
+	 */
+	if (callback) {
+		num_args = callback(callback_args);
+		info("XXX%sXXX: callback returned %d", __func__, num_args);
 	}
 
 	slurm_lua_stack_dump("burst_buffer/lua", "before lua_pcall", L);
@@ -422,11 +440,54 @@ static void _apply_limits(void)
 	}
 }
 
+static void _bb_free_pools(bb_pools_t *pools, int num_ent)
+{
+	for (int i = 0; i < num_ent; i++)
+		xfree(pools[i].name);
+
+	xfree(pools);
+}
+
+static int _push_pools_args(void *args)
+{
+	int test_arg = *((int *)(args));
+	info("%s: hello! arg=%d", __func__, test_arg);
+	return 42;
+}
+
+static bb_pools_t *_bb_get_pools(int *num_pools, bb_state_t *state_ptr,
+				 uint32_t timeout)
+{
+	int rc;
+	int callback_arg;
+
+	/* Call lua function. */
+	callback_arg = 13;
+	rc = _run_lua_script("slurm_bb_pools", _push_pools_args, &callback_arg);
+	log_flag(BURST_BUF, "slurm_bb_pools return code=%d", rc);
+	*num_pools = 0;
+	return NULL;
+}
+
 static void _load_state(bool init_config)
 {
+	bb_pools_t *pools;
+	int num_pools = 0;
+	uint32_t timeout;
+
 	if (!init_config)
 		return;
 
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	timeout = bb_state.bb_config.other_timeout * 1000;
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+
+	/* Load the pools information. */
+	pools = _bb_get_pools(&num_pools, &bb_state, timeout);
+	_bb_free_pools(pools, num_pools);
+
+
+	/* Load allocated burst buffers from state files. */
 	bb_state.last_load_time = time(NULL);
 	_recover_bb_state();
 	_apply_limits();
@@ -1020,7 +1081,7 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	/* Run "job_process" function, validates user script */
-	rc = _run_lua_script("slurm_bb_job_process");
+	rc = _run_lua_script("slurm_bb_job_process", NULL, NULL);
 	log_flag(BURST_BUF, "Return code=%d", rc);
 	return rc;
 }
@@ -1103,7 +1164,7 @@ static void *_start_teardown(void *x)
 
 	/* Run lua "teardown" function */
 	START_TIMER;
-	rc = _run_lua_script("slurm_bb_job_teardown");
+	rc = _run_lua_script("slurm_bb_job_teardown", NULL, NULL);
 	END_TIMER;
 	info("Teardown for JobId=%u ran for %s",
 	     teardown_args->job_id, TIME_STR);
