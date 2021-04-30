@@ -82,6 +82,14 @@ extern void launch_common_set_stdio_fds(srun_job_t *job,
 					slurm_step_io_fds_t *cio_fds,
 					slurm_opt_t *opt_local);
 
+
+/*
+ * launch_common_step_retry_errno()
+ * Return TRUE if the job step create request should be retried later
+ * (i.e. the errno set by slurm_step_ctx_create_timeout() is recoverable).
+ */
+extern bool launch_common_step_retry_errno(int rc);
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.

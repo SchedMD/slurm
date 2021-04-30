@@ -447,7 +447,7 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		      (difftime(time(NULL), srun_begin_time) >=
 		       opt_local->immediate))) ||
 		    ((rc != ESLURM_PROLOG_RUNNING) &&
-		     !slurm_step_retry_errno(rc))) {
+		     !launch_common_step_retry_errno(rc))) {
 			slurm_free_job_step_create_request_msg(step_req);
 			error("Unable to create step for job %u: %m",
 			      step_req->step_id.job_id);
@@ -597,6 +597,22 @@ extern void launch_common_set_stdio_fds(srun_job_t *job,
 			}
 		}
 	}
+}
+
+/*
+ * Return TRUE if the job step create request should be retried later
+ * (i.e. the errno set by slurm_step_ctx_create_timeout() is recoverable).
+ */
+extern bool launch_common_step_retry_errno(int rc)
+{
+	if ((rc == EAGAIN) ||
+	    (rc == ESLURM_DISABLED) ||
+	    (rc == ESLURM_INTERCONNECT_BUSY) ||
+	    (rc == ESLURM_NODES_BUSY) ||
+	    (rc == ESLURM_PORTS_BUSY) ||
+	    (rc == SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT))
+		return true;
+	return false;
 }
 
 extern int launch_g_setup_srun_opt(char **rest, slurm_opt_t *opt_local)

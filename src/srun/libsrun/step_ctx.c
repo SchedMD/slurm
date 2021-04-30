@@ -66,6 +66,7 @@
 #include "src/common/xstring.h"
 
 #include "step_ctx.h"
+#include "launch.h"
 
 int step_signals[] = {
 	SIGINT,  SIGQUIT, SIGCONT, SIGTERM, SIGHUP,
@@ -116,22 +117,6 @@ _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 }
 
 /*
- * Return TRUE if the job step create request should be retried later
- * (i.e. the errno set by slurm_step_ctx_create_timeout() is recoverable).
- */
-extern bool slurm_step_retry_errno(int rc)
-{
-	if ((rc == EAGAIN) ||
-	    (rc == ESLURM_DISABLED) ||
-	    (rc == ESLURM_INTERCONNECT_BUSY) ||
-	    (rc == ESLURM_NODES_BUSY) ||
-	    (rc == ESLURM_PORTS_BUSY) ||
-	    (rc == SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT))
-		return true;
-	return false;
-}
-
-/*
  * slurm_step_ctx_create - Create a job step and its context.
  * IN step_params - job step parameters
  * IN timeout - in milliseconds
@@ -172,7 +157,7 @@ extern slurm_step_ctx_t *slurm_step_ctx_create_timeout(
 	step_req->port = port;
 
 	rc = slurm_job_step_create(step_req, &step_resp);
-	if ((rc < 0) && slurm_step_retry_errno(errno)) {
+	if ((rc < 0) && launch_common_step_retry_errno(errno)) {
 		START_TIMER;
 		errnum = errno;
 		fds.fd = sock;
