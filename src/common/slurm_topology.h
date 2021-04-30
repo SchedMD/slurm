@@ -58,6 +58,7 @@ typedef struct {
 	uint16_t  num_switches;         /* number of descendant switches */
 	uint16_t  parent;		/* index of parent switch */
 	char *switches;			/* name of direct descendant switches */
+	uint32_t *switches_dist;
 	uint16_t *switch_index;		/* indexes of child switches */
 	uint32_t temp;			/* temperature, in celsius */
 } switch_record_t;
