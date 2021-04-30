@@ -340,7 +340,7 @@ extern void slurm_print_burst_buffer_record(FILE *out,
 			      burst_buffer_ptr->pool_ptr[i].total_space);
 		_get_size_str(u_sz_buf, sizeof(u_sz_buf),
 			      burst_buffer_ptr->pool_ptr[i].used_space);
-		xstrfmtcat(out_buf, "AltPoolName[%d]=%s Granularity=%s TotalSpace=%s FreeSpace=%s UsedSpace=%s",
+		xstrfmtcat(out_buf, "PoolName[%d]=%s Granularity=%s TotalSpace=%s FreeSpace=%s UsedSpace=%s",
 			   i, burst_buffer_ptr->pool_ptr[i].name,
 			   g_sz_buf, t_sz_buf, f_sz_buf, u_sz_buf);
 	}
