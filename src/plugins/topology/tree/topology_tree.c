@@ -118,7 +118,7 @@ static int  _parse_switches(void **dest, slurm_parser_enum_t type,
 			    const char *key, const char *value,
 			    const char *line, char **leftover);
 extern int  _read_topo_file(slurm_conf_switches_t **ptr_array[]);
-static void _find_child_switches (int sw);
+static void _find_child_switches(int sw);
 static void _validate_switches(void);
 
 
@@ -203,14 +203,14 @@ extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 	*ppattern = xstrdup("");
 
 	/* build node topology address and the associated pattern */
-	for (j=s_max_level; j>=0; j--) {
-		for (i=0; i<switch_record_cnt; i++) {
-			if ( switch_record_table[i].level != j )
+	for (j = s_max_level; j >= 0; j--) {
+		for (i = 0; i < switch_record_cnt; i++) {
+			if (switch_record_table[i].level != j)
 				continue;
-			if ( !bit_test(switch_record_table[i]. node_bitmap,
-				       node_inx) )
+			if (!bit_test(switch_record_table[i].node_bitmap,
+				      node_inx))
 				continue;
-			if ( sl == NULL ) {
+			if (sl == NULL) {
 				sl = hostlist_create(switch_record_table[i].
 						     name);
 			} else {
@@ -219,7 +219,7 @@ extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 						   name);
 			}
 		}
-		if ( sl ) {
+		if (sl) {
 			char *buf = hostlist_ranged_string_xmalloc(sl);
 			xstrcat(*paddr,buf);
 			xfree(buf);
@@ -238,10 +238,10 @@ extern int topo_get_node_addr(char* node_name, char** paddr, char** ppattern)
 }
 
 /*
- * find_child_switches creates an array of indexes to the
+ * _find_child_switches creates an array of indexes to the
  * immediate descendants of switch sw.
  */
-static void _find_child_switches (int sw)
+static void _find_child_switches(int sw)
 {
 	int i;
 	int cldx; /* index into array of child switches */
@@ -299,7 +299,7 @@ static void _validate_switches(void)
 				      sizeof(switch_record_t));
 	multi_homed_bitmap = bit_alloc(node_record_count);
 	switch_ptr = switch_record_table;
-	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
+	for (i = 0; i < switch_record_cnt; i++, switch_ptr++) {
 		ptr = ptr_array[i];
 		switch_ptr->name = xstrdup(ptr->switch_name);
 		/* See if switch name has already been defined. */
@@ -341,10 +341,10 @@ static void _validate_switches(void)
 		}
 	}
 
-	for (depth=1; ; depth++) {
+	for (depth = 1; ; depth++) {
 		bool resolved = true;
 		switch_ptr = switch_record_table;
-		for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
+		for (i=0; i < switch_record_cnt; i++, switch_ptr++) {
 			if (switch_ptr->level != -1)
 				continue;
 			hl = hostlist_create(switch_ptr->switches);
@@ -395,7 +395,7 @@ static void _validate_switches(void)
 
 	switch_levels = 0;
 	switch_ptr = switch_record_table;
-	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
+	for (i = 0; i < switch_record_cnt; i++, switch_ptr++) {
 		switch_levels = MAX(switch_levels, switch_ptr->level);
 		if (switch_ptr->node_bitmap == NULL)
 			error("switch %s has no nodes", switch_ptr->name);
@@ -457,7 +457,7 @@ static void _log_switches(void)
 	switch_record_t *switch_ptr;
 
 	switch_ptr = switch_record_table;
-	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
+	for (i = 0; i < switch_record_cnt; i++, switch_ptr++) {
 		if (!switch_ptr->nodes) {
 			switch_ptr->nodes = bitmap2node_name(switch_ptr->
 							     node_bitmap);
@@ -475,7 +475,7 @@ static int _get_switch_inx(const char *name)
 	switch_record_t *switch_ptr;
 
 	switch_ptr = switch_record_table;
-	for (i=0; i<switch_record_cnt; i++, switch_ptr++) {
+	for (i = 0; i < switch_record_cnt; i++, switch_ptr++) {
 		if (xstrcmp(switch_ptr->name, name) == 0)
 			return i;
 	}
@@ -489,7 +489,7 @@ static void _free_switch_record_table(void)
 	int i;
 
 	if (switch_record_table) {
-		for (i=0; i<switch_record_cnt; i++) {
+		for (i = 0; i < switch_record_cnt; i++) {
 			xfree(switch_record_table[i].name);
 			xfree(switch_record_table[i].nodes);
 			xfree(switch_record_table[i].switches);
@@ -609,14 +609,14 @@ static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 		return EINVAL;
 	}
 
-	if ( (host_list = hostlist_create(node_names)) == NULL) {
+	if ((host_list = hostlist_create(node_names)) == NULL) {
 		/* likely a badly formatted hostlist */
 		error("_node_name2bitmap: hostlist_create(%s) error", 
 		      node_names);
 		return EINVAL;
 	}
 
-	while ( (this_node_name = hostlist_shift(host_list)) ) {
+	while ((this_node_name = hostlist_shift(host_list)) ) {
 		node_record_t *node_ptr;
 		node_ptr = find_node_record(this_node_name);
 		if (node_ptr) {
@@ -633,7 +633,7 @@ static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 					hostlist_create(this_node_name);
 			}
 		}
-		free (this_node_name);
+		free(this_node_name);
 	}
 	hostlist_destroy(host_list);
 
