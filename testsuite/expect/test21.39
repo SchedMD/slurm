@@ -190,6 +190,8 @@ proc check_job_reason { job_id state why } {
 
 proc run_test { run_qos } {
 	global scontrol tq1 tq2 ta1 ta2 part_name
+	# TODO: Temporary globals for the extra debug info for bug10604
+	global squeue sinfo sacctmgr
 
 	if { $run_qos } {
 		set qos $tq1
@@ -205,7 +207,19 @@ proc run_test { run_qos } {
 
 	set job_id_1 [test_salloc $qos $acct 1]
 	set job_id_2 [test_salloc $qos $acct 1]
-	check_rc [wait_for_job $job_id_1 "RUNNING"]
+	# TODO Temporary debug to troubleshoot bug 10604 (revert once fixed)
+	#check_rc [wait_for_job $job_id_1 "RUNNING"]
+	set rc [wait_for_job $job_id_1 "RUNNING"]
+	if {$rc} {
+		log_warn "Job never started, extra debug information for bug10604 below before the actual fail:"
+		run_command "$squeue"
+		run_command "$sinfo"
+		run_command "$scontrol show job"
+		run_command "$scontrol show node"
+		run_command "$scontrol show partition"
+		run_command "$sacctmgr show qos -p"
+		fail "Subcommand failed with exit code $rc"
+	}
 
 	if { $run_qos } {
 		# remove test qos

@@ -86,6 +86,7 @@ documents those changes that are of interest to users and administrators.
     job allocation was full and there were idle resources on other nodes in
     the job allocation.
  -- Fix deadlock issue with <Prolog|Epilog>Slurmctld.
+ -- torque/qstat - fix printf error message in output.
 
 * Changes in Slurm 20.11.6
 ==========================

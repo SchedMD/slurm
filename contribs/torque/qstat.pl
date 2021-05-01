@@ -497,7 +497,7 @@ sub print_job_select
 		}
 		printf("   %s\n", $execHost);
 	} else {
-		printf("\n", $execHost);
+		printf("\n");
 	}
 }
 
