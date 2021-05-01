@@ -1,6 +1,6 @@
  /*****************************************************************************\
  *  test12.2.prog.c - Simple test program for Slurm regression test12.2.
- *  Usage: test12.2.prog <exit_code> <sleep_secs> <mem_kb>
+ *  Usage: test12.2.prog <exit_code> <sleep_secs> <mem_kb> <file_size> <file_stem>
  *****************************************************************************
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -43,13 +43,15 @@ main (int argc, char **argv)
 	long long int file_size;
 	int fd;
 	char *mem = NULL;
-	char *file_name;
+	char *file_stem;
+	char file_read_path[64];
+	char file_write_path[64];
 	time_t time_start = time(NULL);
 	int size, rank;
 
 	if (argc != 6) {
 		fprintf(stderr,
-			"Usage: %s <exit_code> <sleep_time> <mem_kb> <file_size>\n",
+			"Usage: %s <exit_code> <sleep_time> <mem_kb> <file_size> <file_stem>\n",
 			argv[0]);
 		exit(1);
 	}
@@ -58,7 +60,9 @@ main (int argc, char **argv)
 	sleep_time = atoi(argv[2]);
 	mem_kb     = atoi(argv[3]);
 	file_size  = atoll(argv[4]);
-	file_name  = argv[5];
+	file_stem  = argv[5];
+	sprintf(file_read_path, "%s.read", file_stem);
+	sprintf(file_write_path, "%s.write", file_stem);
 
 	rank = atoi(getenv("SLURM_PROCID"));
 
@@ -80,7 +84,7 @@ main (int argc, char **argv)
 		 * test, don't use stdio for the same reason, it
 		 * allocates memory.
 		 */
-		fd = open(file_name, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
+		fd = open(file_write_path, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
 		n = file_size/sizeof(int);
 
 		for (i = 0; i < n; i++) {
@@ -94,11 +98,11 @@ main (int argc, char **argv)
 	}
 
 	if (rank == 2) {
-		sleep(5);
-		fd = open(file_name, O_RDONLY, S_IRUSR|S_IWUSR);
+		fd = open(file_read_path, O_RDONLY, S_IRUSR|S_IWUSR);
 		n = file_size/sizeof(int);
+		int j = 0;
 		for (i = 0; i < n; i++) {
-			if (read(fd, &i, sizeof(int)) != sizeof(int)) {
+			if (read(fd, &j, sizeof(int)) != sizeof(int)) {
 				fprintf(stderr, "FAILURE: read error\n");
 				exit(1);
 			}
