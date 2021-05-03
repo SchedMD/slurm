@@ -860,6 +860,11 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
  */
 extern int init(void)
 {
+	int rc;
+
+        if ((rc = slurm_lua_init()) != SLURM_SUCCESS)
+                return rc;
+
 	slurm_mutex_init(&bb_state.bb_mutex);
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_load_config(&bb_state, (char *)plugin_type); /* Removes "const" */
@@ -893,6 +898,8 @@ extern int fini(void)
 	bb_clear_config(&bb_state.bb_config, true);
 	bb_clear_cache(&bb_state);
 	slurm_mutex_unlock(&bb_state.bb_mutex);
+
+	slurm_lua_fini();
 
 	return SLURM_SUCCESS;
 }
