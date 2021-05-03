@@ -1573,6 +1573,7 @@ extern void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 
 	xfree(msg->tres_bind);
+	xfree(msg->tres_per_task);
 	xfree(msg->tres_freq);
 	xfree(msg->x11_alloc_host);
 	xfree(msg->x11_magic_cookie);
