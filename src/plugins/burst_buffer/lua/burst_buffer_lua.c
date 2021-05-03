@@ -134,7 +134,8 @@ static void _loadscript_extra(lua_State *st)
 /*
  * Call a function in burst_buffer.lua.
  */
-static int _run_lua_script(const char *lua_func, int (*callback) (void *x),
+static int _run_lua_script(const char *lua_func,
+			   int (*callback) (lua_State *L, void *x),
 			   void *callback_args)
 {
 
@@ -177,12 +178,12 @@ static int _run_lua_script(const char *lua_func, int (*callback) (void *x),
 	 * returns the number of arguments.
 	 */
 	if (callback) {
-		num_args = callback(callback_args);
+		num_args = callback(L, callback_args);
 		info("XXX%sXXX: callback returned %d", __func__, num_args);
 	}
 
 	slurm_lua_stack_dump("burst_buffer/lua", "before lua_pcall", L);
-	if (lua_pcall(L, 0, 1, 0) != 0) {
+	if (lua_pcall(L, num_args, 1, 0) != 0) {
 		error("%s: %s",
 		      lua_script_path, lua_tostring(L, -1));
 	} else {
@@ -460,11 +461,12 @@ static void _bb_free_pools(bb_pools_t *pools, int num_ent)
 	xfree(pools);
 }
 
-static int _push_pools_args(void *args)
+static int _push_pools_args(lua_State *L, void *args)
 {
 	int test_arg = *((int *)(args));
 	info("%s: hello! arg=%d", __func__, test_arg);
-	return 42;
+	lua_pushnumber(L, test_arg);
+	return 1;
 }
 
 static bb_pools_t *_bb_get_pools(int *num_pools, bb_state_t *state_ptr,
