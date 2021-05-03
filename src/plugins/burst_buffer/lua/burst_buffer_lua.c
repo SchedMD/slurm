@@ -95,8 +95,6 @@ static bb_state_t bb_state;
 static int directive_len = strlen(DIRECTIVE_STR);
 
 static const char lua_script_path[] = DEFAULT_SCRIPT_DIR "/burst_buffer.lua";
-static time_t lua_script_last_loaded = (time_t) 0;
-static lua_State *L = NULL;
 static const char *req_fxns[] = {
 	"slurm_bb_job_process",
 	"slurm_bb_job_teardown",
@@ -139,6 +137,20 @@ static void _loadscript_extra(lua_State *st)
 static int _run_lua_script(const char *lua_func, int (*callback) (void *x),
 			   void *callback_args)
 {
+
+	/*
+	 * We don't make lua_State L or lua_script_last_loaded static.
+	 * If they were static, then only 1 thread could use them at a time.
+	 * This would be problematic for performance since these
+	 * calls can possibly last a long time. By not making them static it
+	 * means we can let these calls run in parallel, but it also means
+	 * we don't preserve the previous script. Therefore, we have to
+	 * reload the script every time even if the script hasn't changed.
+	 * Also, if there is ever a problem loading the script then we can't
+	 * fall back to the old script.
+	 */
+	lua_State *L = NULL;
+	time_t lua_script_last_loaded = (time_t) 0;
 	int rc, num_args;
 
 	rc = slurm_lua_loadscript(&L, "burst_buffer/lua",
