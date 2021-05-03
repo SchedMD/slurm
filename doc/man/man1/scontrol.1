@@ -1216,7 +1216,9 @@ the node is presently being powered up or configured.
 If the node state code is followed by "$", this indicates
 the node is currently in a reservation with a flag value of "maintenance".
 If the node state code is followed by "@", this indicates
-the node is currently scheduled to be rebooted.
+the node reboot was scheduled, but it hasn't been sent to the node, so it can
+be cancelled. If the node state code is followed by "^", this indicates that
+the node reboot was issued by slurmctld and can no longer be canceled.
 Generally only "DRAIN", "FAIL" and "RESUME" should be used.
 NOTE: The scontrol command should not be used to change node state on Cray
 systems. Use Cray tools such as \fIxtprocadmin\fR instead.

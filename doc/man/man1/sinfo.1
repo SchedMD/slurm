@@ -681,6 +681,9 @@ The node is currently in a reservation with a flag value of "maintenance".
 \fB@\fR
 The node is pending reboot.
 .TP
+\fB^\fR
+The node reboot was issued.
+.TP
 \fB\-\fR
 The node is planned by the backfill scheduler for a higher priority job.
 .TP 12
@@ -750,6 +753,9 @@ The node is currently in a reservation with a flag value of "maintenance".
 .TP
 \fBREBOOT\fR
 The node is currently scheduled to be rebooted.
+.TP
+\fBREBOOT^\fR
+The node's reboot has been issued and is waiting for the node to reboot.
 .TP
 \fBMIXED\fR
 The node has some of its CPUs \fBALLOCATED\fR while others are \fBIDLE\fR.
