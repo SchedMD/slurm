@@ -1703,10 +1703,9 @@ static int _count_cpus(job_record_t *job_ptr, bitstr_t *bitmap,
 /* Update the step's core bitmaps, create as needed.
  *	Add the specified task count for a specific node in the job's
  *	and step's allocation */
-static void _pick_step_cores(step_record_t *step_ptr,
-			     job_resources_t *job_resrcs_ptr,
-			     int job_node_inx, uint16_t task_cnt,
-			     uint16_t cpus_per_core)
+static int _pick_step_cores(step_record_t *step_ptr,
+			    job_resources_t *job_resrcs_ptr, int job_node_inx,
+			    uint16_t task_cnt, uint16_t cpus_per_core)
 {
 	int bit_offset, core_inx, i, sock_inx;
 	uint16_t sockets, cores;
@@ -1758,13 +1757,13 @@ static void _pick_step_cores(step_record_t *step_ptr,
 				 __func__, job_node_inx, sock_inx, core_inx);
 
 			if (--cpu_cnt == 0)
-				return;
+				return SLURM_SUCCESS;
 		}
 	}
 	/* The test for cores==0 is just to avoid CLANG errors.
 	 * It should never happen */
 	if (use_all_cores || (cores == 0))
-		return;
+		return SLURM_SUCCESS;
 
 	/* We need to over-subscribe one or more cores.
 	 * Use last_core_inx to avoid putting all of the extra
@@ -1795,9 +1794,11 @@ static void _pick_step_cores(step_record_t *step_ptr,
 				 __func__, job_node_inx, sock_inx, core_inx);
 
 			if (--cpu_cnt == 0)
-				return;
+				return SLURM_SUCCESS;
 		}
 	}
+
+	return SLURM_SUCCESS;
 }
 
 static bool _use_one_thread_per_core(job_record_t *job_ptr)
@@ -1944,11 +1945,11 @@ static void _step_alloc_lps(step_record_t *step_ptr)
 					cpus_per_core = n_ptr->threads;
 				}
 			}
-			_pick_step_cores(step_ptr, job_resrcs_ptr,
-					 job_node_inx,
-					 step_ptr->step_layout->
-					 tasks[step_node_inx],
-					 cpus_per_core);
+			(void) _pick_step_cores(step_ptr, job_resrcs_ptr,
+						job_node_inx,
+						step_ptr->step_layout->
+						tasks[step_node_inx],
+						cpus_per_core);
 		}
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND)
 			_dump_step_layout(step_ptr);
