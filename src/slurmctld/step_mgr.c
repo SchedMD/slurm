@@ -1815,7 +1815,7 @@ static bool _use_one_thread_per_core(job_record_t *job_ptr)
 }
 
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
-static void _step_alloc_lps(step_record_t *step_ptr)
+static int _step_alloc_lps(step_record_t *step_ptr)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
@@ -1824,18 +1824,19 @@ static void _step_alloc_lps(step_record_t *step_ptr)
 	int job_node_inx = -1, step_node_inx = -1;
 	bool first_step_node = true, pick_step_cores = true;
 	uint32_t rem_nodes;
+	int rc = SLURM_SUCCESS;
 
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
 	xassert(job_resrcs_ptr->cpus_used);
 
 	if (step_ptr->step_layout == NULL)	/* batch step */
-		return;
+		return rc;
 
 	i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
 	i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
 	if (i_first == -1)	/* empty bitmap */
-		return;
+		return rc;
 
 	xassert(job_resrcs_ptr->core_bitmap);
 	xassert(job_resrcs_ptr->core_bitmap_used);
@@ -1945,11 +1946,17 @@ static void _step_alloc_lps(step_record_t *step_ptr)
 					cpus_per_core = n_ptr->threads;
 				}
 			}
-			(void) _pick_step_cores(step_ptr, job_resrcs_ptr,
-						job_node_inx,
-						step_ptr->step_layout->
-						tasks[step_node_inx],
-						cpus_per_core);
+			if ((rc = _pick_step_cores(step_ptr, job_resrcs_ptr,
+						   job_node_inx,
+						   step_ptr->step_layout->
+						   tasks[step_node_inx],
+						   cpus_per_core))) {
+				log_flag(STEPS, "unable to pick step cores for job node %d (%s): %s",
+					 job_node_inx,
+					 node_record_table_ptr[i_node].name,
+					 slurm_strerror(rc));
+				break;
+			}
 		}
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND)
 			_dump_step_layout(step_ptr);
@@ -1967,6 +1974,7 @@ static void _step_alloc_lps(step_record_t *step_ptr)
 		info("Step Alloc GRES:");
 	gres_step_state_log(step_ptr->gres_list_alloc, job_ptr->job_id,
 			    step_ptr->step_id.step_id);
+	return rc;
 }
 
 /* Dump a job step's CPU binding information.
@@ -2848,7 +2856,8 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	if (tmp_step_layout_used)
 		xfree(step_layout->node_list);
 
-	_step_alloc_lps(step_ptr);
+	if ((ret_code = _step_alloc_lps(step_ptr)))
+		return ret_code;
 
 	*new_step_record = step_ptr;
 
