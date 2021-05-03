@@ -517,8 +517,9 @@ extern int load_all_node_state ( bool state_only )
 				}
 				if (node_state & NODE_STATE_MAINT)
 					node_ptr->node_state |= NODE_STATE_MAINT;
-				if (node_state & NODE_STATE_REBOOT)
-					node_ptr->node_state |= NODE_STATE_REBOOT;
+				if (node_state & NODE_STATE_REBOOT_REQUESTED)
+					node_ptr->node_state |=
+						NODE_STATE_REBOOT_REQUESTED;
 				if (node_state & NODE_STATE_REBOOT_ISSUED)
 					node_ptr->node_state |=
 						NODE_STATE_REBOOT_ISSUED;
@@ -1440,7 +1441,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 				}
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
-				node_ptr->node_state &= (~NODE_STATE_REBOOT);
+				node_ptr->node_state &=
+					(~NODE_STATE_REBOOT_REQUESTED);
 				node_ptr->node_state &=
 					(~NODE_STATE_REBOOT_ISSUED);
 
@@ -1658,7 +1660,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 			} else if (state_val == NODE_STATE_CANCEL_REBOOT) {
 				if (!IS_NODE_REBOOT_ISSUED(node_ptr)) {
 					node_ptr->node_state &=
-						(~NODE_STATE_REBOOT);
+						(~NODE_STATE_REBOOT_REQUESTED);
 					state_val = base_state;
 					if ((node_ptr->next_state &
 					     NODE_STATE_FLAGS) &
@@ -2311,13 +2313,13 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 			    (base_state == NODE_STATE_FUTURE) ||
 			    (node_flags & NODE_STATE_DRAIN)   ||
 			    (node_flags & NODE_STATE_FAIL)    ||
-			    (node_flags & NODE_STATE_REBOOT)  ||
+			    (node_flags & NODE_STATE_REBOOT_REQUESTED) ||
 			    (node_flags & NODE_STATE_POWERING_DOWN))
 				return true;
 			break;
 
 		case NODE_STATE_CANCEL_REBOOT:
-			if (node_flags & NODE_STATE_REBOOT)
+			if (node_flags & NODE_STATE_REBOOT_REQUESTED)
 				return true;
 			break;
 
@@ -2768,7 +2770,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 				if (IS_NODE_MAINT(node_ptr) &&
 				    !is_node_in_maint_reservation(node_inx))
 					node_flags &= (~NODE_STATE_MAINT);
-				node_flags &= (~NODE_STATE_REBOOT);
+				node_flags &= (~NODE_STATE_REBOOT_REQUESTED);
 				node_flags &= (~NODE_STATE_REBOOT_ISSUED);
 			}
 			if (reg_msg->job_count) {

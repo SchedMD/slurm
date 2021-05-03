@@ -5285,7 +5285,7 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 			bit_clear(bitmap, i);
 			continue;
 		}
-		node_ptr->node_state |= NODE_STATE_REBOOT;
+		node_ptr->node_state |= NODE_STATE_REBOOT_REQUESTED;
 		node_ptr->boot_req_time = (time_t) 0;
 		if (reboot_msg) {
 			node_ptr->next_state = reboot_msg->next_state;

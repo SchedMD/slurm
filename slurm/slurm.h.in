@@ -950,7 +950,7 @@ enum node_states {
 					     * configure a node */
 #define NODE_STATE_MAINT      SLURM_BIT(15) /* node in maintenance
 					     * reservation */
-#define NODE_STATE_REBOOT     SLURM_BIT(16) /* node reboot requested */
+#define NODE_STATE_REBOOT_REQUESTED SLURM_BIT(16) /* node reboot requested */
 #define NODE_STATE_CANCEL_REBOOT SLURM_BIT(17) /* cancel pending reboot */
 #define NODE_STATE_POWERING_DOWN SLURM_BIT(18) /* node is powering down */
 #define NODE_STATE_DYNAMIC    SLURM_BIT(19) /* node is dynamically assigned */

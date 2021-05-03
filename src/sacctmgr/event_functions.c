@@ -59,7 +59,7 @@ static uint32_t _decode_node_state(char *val)
 	else if (!xstrncasecmp(val, "REBOOT^", MAX(vallen, 7)))
 		return NODE_STATE_REBOOT_ISSUED;
 	else if (!xstrncasecmp(val, "REBOOT", MAX(vallen, 3)))
-		return NODE_STATE_REBOOT;
+		return NODE_STATE_REBOOT_REQUESTED;
 	else {
 		uint32_t j;
 		for (j = 0; j < NODE_STATE_END; j++) {
