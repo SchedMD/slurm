@@ -8997,17 +8997,18 @@ extern void gres_g_step_set_env(char ***job_env_ptr, List step_gres_list)
 	(void) gres_init();
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
-		if (!gres_context[i].ops.step_set_env)
+		slurm_gres_context_t gres_ctx = gres_context[i];
+		if (!gres_ctx.ops.step_set_env)
 			continue;	/* No plugin to call */
 		if (!step_gres_list)
 			continue;
 		found = false;
 		gres_iter = list_iterator_create(step_gres_list);
 		while ((gres_ptr = (gres_state_t *)list_next(gres_iter))) {
-			if (gres_ptr->plugin_id != gres_context[i].plugin_id)
+			if (gres_ptr->plugin_id != gres_ctx.plugin_id)
 				continue;
 			/* Set env for all tasks in step */
-			(*(gres_context[i].ops.step_set_env))
+			(*(gres_ctx.ops.step_set_env))
 				(job_env_ptr,
 				 gres_ptr->gres_data,
 				 GRES_INTERNAL_FLAG_NONE);
@@ -9015,7 +9016,7 @@ extern void gres_g_step_set_env(char ***job_env_ptr, List step_gres_list)
 		}
 		list_iterator_destroy(gres_iter);
 		if (!found) { /* No data fond */
-			(*(gres_context[i].ops.step_set_env))
+			(*(gres_ctx.ops.step_set_env))
 				(job_env_ptr, NULL,
 				 GRES_INTERNAL_FLAG_NONE);
 		}
@@ -9075,13 +9076,14 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 	(void) gres_init();
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
-		if (!gres_context[i].ops.step_reset_env)
+		slurm_gres_context_t gres_ctx = gres_context[i];
+		if (!gres_ctx.ops.step_reset_env)
 			continue;	/* No plugin to call */
 		if (!step_gres_list)
 			continue;
 		if (bind_gpu || bind_nic || map_gpu || mask_gpu) {
 			/* Set the GRES that this task can use (usable_gres) */
-			if (!xstrcmp(gres_context[i].gres_name, "gpu")) {
+			if (!xstrcmp(gres_ctx.gres_name, "gpu")) {
 				if (map_gpu) {
 					usable_gres = _get_gres_map(
 						map_gpu, local_proc_id);
@@ -9096,7 +9098,7 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 				}
 				else
 					continue;
-			} else if (!xstrcmp(gres_context[i].gres_name,
+			} else if (!xstrcmp(gres_ctx.gres_name,
 					    "nic")) {
 				if (bind_nic)
 					usable_gres = _get_usable_gres(i);
@@ -9109,10 +9111,10 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 		found = false;
 		gres_iter = list_iterator_create(step_gres_list);
 		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
-			if (gres_ptr->plugin_id != gres_context[i].plugin_id)
+			if (gres_ptr->plugin_id != gres_ctx.plugin_id)
 				continue;
 			/* task-specific binding via env */
-			(*(gres_context[i].ops.step_reset_env))
+			(*(gres_ctx.ops.step_reset_env))
 				(job_env_ptr,
 				 gres_ptr->gres_data,
 				 usable_gres,
@@ -9121,7 +9123,7 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 		}
 		list_iterator_destroy(gres_iter);
 		if (!found) { /* No data fond */
-			(*(gres_context[i].ops.step_reset_env))
+			(*(gres_ctx.ops.step_reset_env))
 				(job_env_ptr, NULL, NULL,
 				 gres_internal_flags);
 		}
