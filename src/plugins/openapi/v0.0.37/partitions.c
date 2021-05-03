@@ -154,7 +154,17 @@ static int _dump_part(data_t *p, partition_info_t *part)
 		     part->priority_job_factor);
 	data_set_int(data_key_set(d, "priority_tier"), part->priority_tier);
 	data_set_string(data_key_set(d, "qos"), part->qos_char);
-	data_set_int(data_key_set(d, "nodes_online"), part->state_up);
+	if (part->state_up == PARTITION_UP)
+		data_set_string(data_key_set(d, "state"), "UP");
+	else if (part->state_up == PARTITION_DOWN)
+		data_set_string(data_key_set(d, "state"), "DOWN");
+	else if (part->state_up == PARTITION_INACTIVE)
+		data_set_string(data_key_set(d, "state"), "INACTIVE");
+	else if (part->state_up == PARTITION_DRAIN)
+		data_set_string(data_key_set(d, "state"), "DRAIN");
+	else
+		data_set_string(data_key_set(d, "state"), "UNKNOWN");
+
 	data_set_int(data_key_set(d, "total_cpus"), part->total_cpus);
 	data_set_int(data_key_set(d, "total_nodes"), part->total_nodes);
 	data_set_string(data_key_set(d, "tres"), part->tres_fmt_str);

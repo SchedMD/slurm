@@ -1007,9 +1007,9 @@
             "type": "string",
             "description": "partition QOS name"
           },
-          "nodes_online": {
-            "type": "integer",
-            "description": "Nodes online (ready for jobs)"
+          "state": {
+            "type": "string",
+            "description": "Partition state"
           },
           "total_cpus": {
             "type": "integer",

@@ -211,6 +211,18 @@ The v0.0.35 plugin has now been deprecated.
 </tr>
 </table>
 
+<h4>replace nodes_online with state in /partitions endpoint<h4>
+<table class="tchange">
+<tr>
+	<td class="tdfield">removed path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_partitions_response".nodes_online</td>
+</tr>
+<tr>
+	<td class="tdfield">added path</td>
+	<td class="tdchange">.components.schemas."v0.0.37_partitions_response".state</td>
+</tr>
+</table>
+
 <h2>Slurm 20.11.5<h2>
 
 <h3>openapi/dbv0.0.36 (src/slurmrestd/plugins/openapi/dbv0.0.36/openapi.json)</h3>
