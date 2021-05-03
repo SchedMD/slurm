@@ -46,7 +46,7 @@ extern int scontrol_cancel_reboot(char *nodes)
 	slurm_init_update_node_msg(&node_msg);
 
 	node_msg.node_names = nodes;
-	node_msg.node_state = NODE_STATE_CANCEL_REBOOT;
+	node_msg.node_state = NODE_STATE_REBOOT_CANCEL;
 
 	if (slurm_update_node(&node_msg)) {
 		exit_code = 1;

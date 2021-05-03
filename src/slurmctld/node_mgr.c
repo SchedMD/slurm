@@ -1657,7 +1657,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 				state_val = base_state;
 				bit_clear(avail_node_bitmap, node_inx);
-			} else if (state_val == NODE_STATE_CANCEL_REBOOT) {
+			} else if (state_val == NODE_STATE_REBOOT_CANCEL) {
 				if (!IS_NODE_REBOOT_ISSUED(node_ptr)) {
 					node_ptr->node_state &=
 						(~NODE_STATE_REBOOT_REQUESTED);
@@ -2318,7 +2318,7 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 				return true;
 			break;
 
-		case NODE_STATE_CANCEL_REBOOT:
+		case NODE_STATE_REBOOT_CANCEL:
 			if (node_flags & NODE_STATE_REBOOT_REQUESTED)
 				return true;
 			break;

@@ -170,7 +170,7 @@ scontrol_update_node (int argc, char **argv)
 				update_cnt++;
 			} else if (xstrncasecmp(val, "CANCEL_REBOOT",
 				   MAX(val_len, 3)) == 0) {
-				node_msg.node_state = NODE_STATE_CANCEL_REBOOT;
+				node_msg.node_state = NODE_STATE_REBOOT_CANCEL;
 				update_cnt++;
 			} else if (xstrncasecmp(val, "DRAIN",
 				   MAX(val_len, 3)) == 0) {
