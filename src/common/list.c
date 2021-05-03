@@ -224,8 +224,8 @@ int list_count(List l)
 	if (!l)
 		return 0;
 
-	slurm_mutex_lock(&l->mutex);
 	xassert(l->magic == LIST_MAGIC);
+	slurm_mutex_lock(&l->mutex);
 	n = l->count;
 	slurm_mutex_unlock(&l->mutex);
 
