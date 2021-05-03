@@ -310,7 +310,7 @@ data_for_each_cmd_t _foreach_query_search(const char *key, data_t *data,
 
 	for (int i = 0; i < ARRAY_SIZE(int_list); i++) {
 		if (!xstrcasecmp(int_list[i].field, key)) {
-			int32_t *t = (((void *)&args->job_cond) +
+			int32_t *t = (((void *) args->job_cond) +
 				      int_list[i].offset);
 
 			if (data_convert_type(data, DATA_TYPE_INT_64) !=
