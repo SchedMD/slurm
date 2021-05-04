@@ -210,7 +210,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	if (!gres_ptr)
 		return;
 
-	/* If we are resetting and we don't have a usable_gres we just exit */
+	/* If we are setting task env but don't have usable_gres, just exit */
 	if (is_task && !usable_gres)
 		return;
 
