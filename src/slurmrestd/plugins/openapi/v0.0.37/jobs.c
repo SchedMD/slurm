@@ -1166,7 +1166,7 @@ static int _op_handler_jobs(const char *context_id,
 {
 	int rc = SLURM_SUCCESS;
 	job_info_msg_t *job_info_ptr = NULL;
-	(void) populate_response_format(resp);
+	data_t *errors = populate_response_format(resp);
 	data_t *jobs = data_set_list(data_key_set(resp, "jobs"));
 	time_t update_time = 0; /* default to unix epoch */
 
@@ -1186,6 +1186,9 @@ static int _op_handler_jobs(const char *context_id,
 			dump_job_info(job_info_ptr->job_array + i,
 				      data_list_append(jobs));
 		}
+	} else if (rc) {
+		resp_error(errors, rc, "slurm_load_jobs",
+			   "Failed while looking for jobs");
 	}
 
 done:
