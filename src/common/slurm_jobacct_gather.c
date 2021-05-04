@@ -1031,9 +1031,9 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct, uint16_t rpc_version,
 	pack8((uint8_t) 1, buffer);
 
 	if (rpc_version >= SLURM_21_08_PROTOCOL_VERSION) {
-		pack32((uint32_t)jobacct->user_cpu_sec, buffer);
+		pack64(jobacct->user_cpu_sec, buffer);
 		pack32((uint32_t)jobacct->user_cpu_usec, buffer);
-		pack32((uint32_t)jobacct->sys_cpu_sec, buffer);
+		pack64(jobacct->sys_cpu_sec, buffer);
 		pack32((uint32_t)jobacct->sys_cpu_usec, buffer);
 		pack32((uint32_t)jobacct->act_cpufreq, buffer);
 		pack64((uint64_t)jobacct->energy.consumed_energy, buffer);
@@ -1073,9 +1073,15 @@ extern void jobacctinfo_pack(jobacctinfo_t *jobacct, uint16_t rpc_version,
 		pack64_array(jobacct->tres_usage_out_tot,
 			     jobacct->tres_count, buffer);
 	} else if (rpc_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		pack32((uint32_t)jobacct->user_cpu_sec, buffer);
+		if (jobacct->user_cpu_sec > NO_VAL) {
+			pack32((uint32_t)NO_VAL, buffer);
+		} else
+			pack32((uint32_t)jobacct->user_cpu_sec, buffer);
 		pack32((uint32_t)jobacct->user_cpu_usec, buffer);
-		pack32((uint32_t)jobacct->sys_cpu_sec, buffer);
+		if (jobacct->sys_cpu_sec > NO_VAL) {
+			pack32((uint32_t)NO_VAL, buffer);
+		} else
+			pack32((uint32_t)jobacct->sys_cpu_sec, buffer);
 		pack32((uint32_t)jobacct->sys_cpu_usec, buffer);
 		pack32((uint32_t)jobacct->act_cpufreq, buffer);
 		pack64((uint64_t)jobacct->energy.consumed_energy, buffer);
@@ -1143,12 +1149,10 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct, uint16_t rpc_version,
 	}
 
 	if (rpc_version >= SLURM_21_08_PROTOCOL_VERSION) {
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->user_cpu_sec = uint32_tmp;
+		safe_unpack64(&(*jobacct)->user_cpu_sec, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
 		(*jobacct)->user_cpu_usec = uint32_tmp;
-		safe_unpack32(&uint32_tmp, buffer);
-		(*jobacct)->sys_cpu_sec = uint32_tmp;
+		safe_unpack64(&(*jobacct)->sys_cpu_sec, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
 		(*jobacct)->sys_cpu_usec = uint32_tmp;
 

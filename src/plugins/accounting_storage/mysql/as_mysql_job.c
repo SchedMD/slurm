@@ -1491,8 +1491,8 @@ extern int as_mysql_step_complete(mysql_conn_t *mysql_conn,
 			jobacct->tres_count, 1);
 
 		xstrfmtcat(query,
-			   ", user_sec=%u, user_usec=%u, "
-			   "sys_sec=%u, sys_usec=%u, "
+			   ", user_sec=%"PRIu64", user_usec=%u, "
+			   "sys_sec=%"PRIu64", sys_usec=%u, "
 			   "act_cpufreq=%u, consumed_energy=%"PRIu64", "
 			   "tres_usage_in_ave='%s', "
 			   "tres_usage_out_ave='%s', "

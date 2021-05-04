@@ -1099,8 +1099,8 @@ extern void jag_common_poll_data(
 		total_job_vsize += jobacct->tres_usage_in_tot[TRES_ARRAY_VMEM];
 
 		/* Update the cpu times */
-		jobacct->user_cpu_sec = (uint32_t)(prec->usec / (double)hertz);
-		jobacct->sys_cpu_sec = (uint32_t)(prec->ssec / (double)hertz);
+		jobacct->user_cpu_sec = (uint64_t)(prec->usec / (double)hertz);
+		jobacct->sys_cpu_sec = (uint64_t)(prec->ssec / (double)hertz);
 
 		/* compute frequency */
 		jobacct->this_sampled_cputime =
@@ -1111,7 +1111,7 @@ extern void jag_common_poll_data(
 		jobacct->act_cpufreq =
 			_update_weighted_freq(jobacct, sbuf);
 
-		log_flag(JAG, "Task %u pid %d ave_freq = %u mem size/max %"PRIu64"/%"PRIu64" vmem size/max %"PRIu64"/%"PRIu64", disk read size/max (%"PRIu64"/%"PRIu64"), disk write size/max (%"PRIu64"/%"PRIu64"), time %f(%u+%u) Energy tot/max %"PRIu64"/%"PRIu64" TotPower %"PRIu64" MaxPower %"PRIu64" MinPower %"PRIu64,
+		log_flag(JAG, "Task %u pid %d ave_freq = %u mem size/max %"PRIu64"/%"PRIu64" vmem size/max %"PRIu64"/%"PRIu64", disk read size/max (%"PRIu64"/%"PRIu64"), disk write size/max (%"PRIu64"/%"PRIu64"), time %f(%"PRIu64"+%"PRIu64") Energy tot/max %"PRIu64"/%"PRIu64" TotPower %"PRIu64" MaxPower %"PRIu64" MinPower %"PRIu64,
 			 jobacct->id.taskid,
 			 jobacct->pid,
 			 jobacct->act_cpufreq,

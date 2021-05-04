@@ -80,9 +80,9 @@ typedef struct {
 
 struct jobacctinfo {
 	pid_t pid;
-	uint32_t sys_cpu_sec;
+	uint64_t sys_cpu_sec;
 	uint32_t sys_cpu_usec;
-	uint32_t user_cpu_sec;
+	uint64_t user_cpu_sec;
 	uint32_t user_cpu_usec;
 	uint32_t act_cpufreq; /* actual cpu frequency */
 	acct_gather_energy_t energy;
