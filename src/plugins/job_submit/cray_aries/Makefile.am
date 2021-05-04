@@ -2,8 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -DDEFAULT_SCRIPT_DIR=\"$(sysconfdir)\" \
-	-I$(top_srcdir) -I$(top_srcdir)/src/common
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
