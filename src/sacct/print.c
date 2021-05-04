@@ -50,10 +50,13 @@ char outbuf[FORMAT_STRING_SIZE];
 #define SACCT_TRES_MIN  0x0004
 #define SACCT_TRES_TOT  0x0008
 
-static char *_elapsed_time_helper(uint64_t secs, uint32_t usecs)
+static char *_elapsed_time(uint64_t secs, uint64_t usecs)
 {
 	uint64_t days, hours, minutes, seconds, subsec = 0;
 	char *str = NULL;
+
+	if (secs == NO_VAL64)
+		return NULL;
 
 	if (usecs >= 1E6) {
 		secs += usecs / 1E6;
@@ -81,20 +84,6 @@ static char *_elapsed_time_helper(uint64_t secs, uint32_t usecs)
 		str = xstrdup_printf("00:%2.2"PRIu64":%2.2"PRIu64"",
 				     minutes, seconds);
 	return str;
-}
-
-static char *_elapsed_time(uint32_t secs, uint32_t usecs)
-{
-	if (secs == NO_VAL)
-		return NULL;
-	return _elapsed_time_helper(secs, usecs);
-}
-
-static char *_elapsed_time64(uint64_t secs, uint32_t usecs)
-{
-	if (secs == NO_VAL64)
-		return NULL;
-	return _elapsed_time_helper(secs, usecs);
 }
 
 static char *_find_qos_name_from_list(List qos_list, int qosid)
@@ -364,8 +353,8 @@ extern void print_fields(type_t type, void *object)
 						    confirm the values
 						    coming in are
 						    NO_VAL64 */
-		uint32_t tmp_uint32 = NO_VAL, tmp2_uint32 = NO_VAL;
-		uint64_t tmp_uint64 = NO_VAL64;
+		uint32_t tmp_uint32 = NO_VAL;
+		uint64_t tmp_uint64 = NO_VAL64, tmp2_uint64 = NO_VAL64;
 
 		memset(&outbuf, 0, sizeof(outbuf));
 		switch (field->type) {
@@ -500,7 +489,7 @@ extern void print_fields(type_t type, void *object)
 				type, object, TRES_CPU, SACCT_TRES_AVE);
 			if (tmp_uint64 != NO_VAL64) {
 				tmp_uint64 /= CPU_TIME_ADJ;
-				tmp_char = _elapsed_time64(tmp_uint64, 0);
+				tmp_char = _elapsed_time(tmp_uint64, 0);
 			}
 
 			field->print_routine(field,
@@ -1534,7 +1523,7 @@ extern void print_fields(type_t type, void *object)
 
 			if (tmp_uint64 != NO_VAL64) {
 				tmp_uint64 /= CPU_TIME_ADJ;
-				tmp_char = _elapsed_time64(tmp_uint64, 0);
+				tmp_char = _elapsed_time(tmp_uint64, 0);
 			}
 
 			field->print_routine(field,
@@ -2122,18 +2111,18 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_SYSTEMCPU:
 			switch(type) {
 			case JOB:
-				tmp_uint32 = job->sys_cpu_sec;
-				tmp2_uint32 = job->sys_cpu_usec;
+				tmp_uint64 = job->sys_cpu_sec;
+				tmp2_uint64 = job->sys_cpu_usec;
 				break;
 			case JOBSTEP:
-				tmp_uint32 = step->sys_cpu_sec;
-				tmp2_uint32 = step->sys_cpu_usec;
+				tmp_uint64 = step->sys_cpu_sec;
+				tmp2_uint64 = step->sys_cpu_usec;
 				break;
 			case JOBCOMP:
 			default:
 				break;
 			}
-			tmp_char = _elapsed_time(tmp_uint32, tmp2_uint32);
+			tmp_char = _elapsed_time(tmp_uint64, tmp2_uint64);
 
 			field->print_routine(field,
 					     tmp_char,
@@ -2210,12 +2199,12 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_TOTALCPU:
 			switch(type) {
 			case JOB:
-				tmp_uint32 = job->tot_cpu_sec;
-				tmp2_uint32 = job->tot_cpu_usec;
+				tmp_uint64 = job->tot_cpu_sec;
+				tmp2_uint64 = job->tot_cpu_usec;
 				break;
 			case JOBSTEP:
-				tmp_uint32 = step->tot_cpu_sec;
-				tmp2_uint32 = step->tot_cpu_usec;
+				tmp_uint64 = step->tot_cpu_sec;
+				tmp2_uint64 = step->tot_cpu_usec;
 				break;
 			case JOBCOMP:
 
@@ -2224,7 +2213,7 @@ extern void print_fields(type_t type, void *object)
 
 				break;
 			}
-			tmp_char = _elapsed_time(tmp_uint32, tmp2_uint32);
+			tmp_char = _elapsed_time(tmp_uint64, tmp2_uint64);
 
 			field->print_routine(field,
 					     tmp_char,
@@ -2310,19 +2299,19 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_USERCPU:
 			switch(type) {
 			case JOB:
-				tmp_uint32 = job->user_cpu_sec;
-				tmp2_uint32 = job->user_cpu_usec;
+				tmp_uint64 = job->user_cpu_sec;
+				tmp2_uint64 = job->user_cpu_usec;
 				break;
 			case JOBSTEP:
-				tmp_uint32 = step->user_cpu_sec;
-				tmp2_uint32 = step->user_cpu_usec;
+				tmp_uint64 = step->user_cpu_sec;
+				tmp2_uint64 = step->user_cpu_usec;
 				break;
 			case JOBCOMP:
 			default:
 				break;
 			}
 
-			tmp_char = _elapsed_time(tmp_uint32, tmp2_uint32);
+			tmp_char = _elapsed_time(tmp_uint64, tmp2_uint64);
 
 
 			field->print_routine(field,
