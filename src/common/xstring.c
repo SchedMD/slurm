@@ -452,34 +452,63 @@ long int xstrntol(const char *str, char **endptr, size_t n, int base)
  *   str (IN/OUT)	target string (pointer to in case of expansion)
  *   pattern (IN)	substring to look for in str
  *   replacement (IN)   string with which to replace the "pattern" string
+ *   all (IN)           replace all or not
  */
-bool _xstrsubstitute(char **str, const char *pattern, const char *replacement)
+void _xstrsubstitute(char **str, const char *pattern, const char *replacement,
+		     const bool all)
 {
 	int pat_len, rep_len;
-	char *ptr, *end_copy;
-	int pat_offset;
+	char *ptr, *end_copy, *pos = NULL;
+	int append_len, pos_offset;
 
 	if (*str == NULL || pattern == NULL || pattern[0] == '\0')
-		return 0;
+		return;
 
-	if ((ptr = strstr(*str, pattern)) == NULL)
-		return 0;
-	pat_offset = ptr - (*str);
 	pat_len = strlen(pattern);
 	if (replacement == NULL)
 		rep_len = 0;
 	else
 		rep_len = strlen(replacement);
 
-	end_copy = xstrdup(ptr + pat_len);
-	if (rep_len != 0) {
-		_makespace(str, -1, rep_len - pat_len);
-		strcpy((*str)+pat_offset, replacement);
-	}
-	strcpy((*str)+pat_offset+rep_len, end_copy);
-	xfree(end_copy);
+	append_len = rep_len - pat_len;
 
-	return 1;
+	pos_offset = 0;
+again:
+	pos = *str + pos_offset;
+
+	if ((ptr = strstr(pos, pattern)) == NULL)
+		return;
+
+	/* Get the end after the pattern */
+	end_copy = xstrdup(ptr + pat_len);
+
+	pos_offset += ptr - pos;
+
+	if (rep_len != 0) {
+		/*
+		 * If we are making this bigger, make sure we get enough space.
+		 */
+		if (append_len > 0)
+			_makespace(str, -1, append_len);
+		memcpy((*str) + pos_offset, replacement, rep_len);
+		pos_offset += rep_len;
+	}
+
+	/* add the end of new string */
+	if (end_copy) {
+		int end_len = strlen(end_copy);
+		memcpy((*str) + pos_offset, end_copy, end_len);
+
+		/* terminate the string if we are shrinking it */
+		if (append_len < 0)
+			(*str)[pos_offset + end_len] = '\0';
+		xfree(end_copy);
+	}
+
+	if (all)
+		goto again;
+
+	return;
 }
 
 /* xshort_hostname
