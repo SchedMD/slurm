@@ -41,6 +41,9 @@ HIGHLIGHTS
  -- configure: replace --with-rmsi_dir option with proper handling for
     --with-rsmi=dir.
  -- Removed sched/hold plugin.
+ -- cli_filter/lua, jobcomp/lua, job_submit/lua now load their scripts from the
+    same directory as the slurm.conf file (and thus now will respect changes
+    to the SLURM_CONF environment variable).
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

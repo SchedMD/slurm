@@ -6,7 +6,7 @@ CLEANFILES = core.*
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common \
-	      -DDEFAULT_SCRIPT_DIR=\"$(sysconfdir)\" $(lua_CFLAGS)
+	      $(lua_CFLAGS)
 
 if HAVE_LUA
 

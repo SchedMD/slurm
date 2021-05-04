@@ -94,7 +94,7 @@ const char plugin_name[]       	= "Job submit lua plugin";
 const char plugin_type[]       	= "job_submit/lua";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
-static const char lua_script_path[] = DEFAULT_SCRIPT_DIR "/job_submit.lua";
+static char *lua_script_path;
 static time_t lua_script_last_loaded = (time_t) 0;
 static lua_State *L = NULL;
 static char *user_msg = NULL;
@@ -1256,6 +1256,7 @@ int init(void)
 
 	if ((rc = slurm_lua_init()) != SLURM_SUCCESS)
 		return rc;
+	lua_script_path = get_extra_conf_path("job_submit.lua");
 
 	return slurm_lua_loadscript(&L, "job_submit/lua",
 				    lua_script_path, req_fxns,
@@ -1271,6 +1272,7 @@ int fini(void)
 		L = NULL;
 		lua_script_last_loaded = 0;
 	}
+	xfree(lua_script_path);
 
 	slurm_lua_fini();
 

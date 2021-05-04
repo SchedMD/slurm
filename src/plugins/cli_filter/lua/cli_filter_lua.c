@@ -84,7 +84,7 @@
 const char plugin_name[]       	= "cli filter defaults plugin";
 const char plugin_type[]       	= "cli_filter/lua";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
-static const char lua_script_path[] = DEFAULT_SCRIPT_DIR "/cli_filter.lua";
+static char *lua_script_path;
 static lua_State *L = NULL;
 static char **stored_data = NULL;
 static size_t stored_n = 0;
@@ -126,6 +126,7 @@ int init(void)
 
 	stored_data = xmalloc(sizeof(char *) * 24);
 	stored_sz = 24;
+	lua_script_path = get_extra_conf_path("cli_filter.lua");
 
 	return slurm_lua_loadscript(&L, "cli_filter/lua",
 				    lua_script_path, req_fxns,
@@ -137,6 +138,7 @@ int fini(void)
 	for (int i = 0; i < stored_n; i++)
 		xfree(stored_data[i]);
 	xfree(stored_data);
+	xfree(lua_script_path);
 
         lua_close(L);
 
