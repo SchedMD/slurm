@@ -292,8 +292,6 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		xstrfmtcat(new_local_list, "%s%s%d", local_prefix, prefix,
 			   index);
 		local_prefix = ",";
-		//info("looking at %d and %d",
-		//     gres_device->index, gres_device->dev_num);
 		xstrfmtcat(new_global_list, "%s%s%d", global_prefix, prefix,
 			   gres_device->dev_num);
 		global_prefix = ",";
