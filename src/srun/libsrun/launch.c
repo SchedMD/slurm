@@ -339,6 +339,9 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	step_req->tres_bind = xstrdup(opt_local->tres_bind);
 	step_req->tres_freq = xstrdup(opt_local->tres_freq);
 
+	xstrfmtcat(step_req->tres_per_step, "%scpu:%u",
+		   step_req->tres_per_step ? "," : "",
+		   step_req->cpu_count);
 	xfmt_tres(&step_req->tres_per_step, "gres:gpu", opt_local->gpus);
 
 	xfmt_tres(&step_req->tres_per_node, "gres:gpu",
@@ -357,6 +360,10 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	xfmt_tres(&step_req->tres_per_socket, "gres:gpu",
 		  opt_local->gpus_per_socket);
 
+	if (opt_local->cpus_set)
+		xstrfmtcat(step_req->tres_per_task, "%scpu:%u",
+			   step_req->tres_per_task ? "," : "",
+			   opt_local->cpus_per_task);
 	xfmt_tres(&step_req->tres_per_task, "gres:gpu",
 		  opt_local->gpus_per_task);
 
