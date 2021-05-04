@@ -171,7 +171,7 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	step_req->cpu_freq_gov = opt_local->cpu_freq_gov;
 
 	if (opt_local->cpus_per_gpu) {
-		xstrfmtcat(step_req->cpus_per_tres, "gpu:%d",
+		xstrfmtcat(step_req->cpus_per_tres, "gres:gpu:%d",
 			   opt_local->cpus_per_gpu);
 	}
 
@@ -200,7 +200,7 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 		step_req->max_nodes = opt_local->max_nodes;
 
 	if (opt_local->mem_per_gpu != NO_VAL64)
-		xstrfmtcat(step_req->mem_per_tres, "gpu:%"PRIu64,
+		xstrfmtcat(step_req->mem_per_tres, "gres:gpu:%"PRIu64,
 			   opt.mem_per_gpu);
 
 	step_req->min_nodes = job->nhosts;
@@ -339,9 +339,10 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	step_req->tres_bind = xstrdup(opt_local->tres_bind);
 	step_req->tres_freq = xstrdup(opt_local->tres_freq);
 
-	xfmt_tres(&step_req->tres_per_step, "gpu", opt_local->gpus);
+	xfmt_tres(&step_req->tres_per_step, "gres:gpu", opt_local->gpus);
 
-	xfmt_tres(&step_req->tres_per_node, "gpu", opt_local->gpus_per_node);
+	xfmt_tres(&step_req->tres_per_node, "gres:gpu",
+		  opt_local->gpus_per_node);
 	if (opt_local->gres)
 		add_tres = opt_local->gres;
 	else
@@ -353,10 +354,11 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 			step_req->tres_per_node = xstrdup(add_tres);
 	}
 
-	xfmt_tres(&step_req->tres_per_socket, "gpu",
+	xfmt_tres(&step_req->tres_per_socket, "gres:gpu",
 		  opt_local->gpus_per_socket);
 
-	xfmt_tres(&step_req->tres_per_task, "gpu", opt_local->gpus_per_task);
+	xfmt_tres(&step_req->tres_per_task, "gres:gpu",
+		  opt_local->gpus_per_task);
 
 	if (opt_local->time_limit != NO_VAL)
 		step_req->time_limit = opt_local->time_limit;

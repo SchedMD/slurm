@@ -1726,7 +1726,7 @@ extern int validate_acctg_freq(char *acctg_freq)
 /*
  * Format a tres_per_* argument
  * dest OUT - resulting string
- * prefix IN - TRES type (e.g. "gpu")
+ * prefix IN - TRES type (e.g. "gres:gpu")
  * src IN - user input, can include multiple comma-separated specifications
  */
 extern void xfmt_tres(char **dest, char *prefix, char *src)
@@ -1753,7 +1753,7 @@ extern void xfmt_tres(char **dest, char *prefix, char *src)
 /*
  * Format a tres_freq argument
  * dest OUT - resulting string
- * prefix IN - TRES type (e.g. "gpu")
+ * prefix IN - TRES type (e.g. "gres:gpu")
  * src IN - user input
  */
 extern void xfmt_tres_freq(char **dest, char *prefix, char *src)

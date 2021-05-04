@@ -8418,14 +8418,14 @@ static bool _valid_pn_min_mem(job_desc_msg_t *job_desc_msg,
 
 /*
  * Validate TRES specification of the form:
- * "name=[type:]#[,[type:]#][;name=[type:]#]"
- * For example: "gpu:kepler:2,craynetwork=1"
+ * "name=tres_type:name:[#|type:#]"
+ * For example: "cpu:2,gres:gpu:kepler:2,gres:craynetwork:1"
  */
 extern bool valid_tres_cnt(char *tres)
 {
-	char *end_ptr = NULL, *colon, *save_ptr = NULL, *sep, *tok, *tmp;
+	char *end_ptr = NULL, *value = NULL, *save_ptr = NULL, *sep, *tok, *tmp;
 	bool rc = true;
-	long long int val;
+	uint64_t count = 1;
 
 	if (!tres || (tres[0] == '\0'))
 		return true;
@@ -8433,45 +8433,79 @@ extern bool valid_tres_cnt(char *tres)
 	tmp = xstrdup(tres);
 	tok = strtok_r(tmp, ",", &save_ptr);
 	while (tok) {
-		bool valid_name = false;
-		sep = strchr(tok, ':');
-		if (sep) {
+		int pos;
+
+		/* First check to see if the last part is a count or not */
+		if ((value = strrchr(tok, ':'))) {
+			if (!value[1]) {
+				rc = false;
+				break;
+			}
+			if (isdigit(value[1])) {
+				count = strtoull(value + 1, &end_ptr, 10);
+
+				if (((count < 0) || (count == LLONG_MAX))) {
+					rc = false;
+					break;
+				}
+
+				/*
+				 * Now check that any count suffic is valid.
+				 */
+				if (suffix_mult(end_ptr) == NO_VAL64) {
+					rc = false;
+					break;
+				}
+			} else /* This isn't a value so set it to NULL */
+				value = NULL;
+		}
+
+		/* Now check to see what the first part is */
+		if (!(sep = strchr(tok, ':'))) {
+			rc = false;
+			break;
+		}
+
+		/* This means there was a sep */
+		if (value != sep) {
 			sep[0] = '\0';
 			sep++;
-		}
-		if (valid_gres_name(tok))
-			valid_name = true;
-		if (!sep) {	/* No model or count. Implicit count of 1 */
-			if (!valid_name) {
-				rc = false;
-				break;
-			}
-		} else if ((colon = strchr(sep, ':'))) {
-			/* Includes explicit "name:type:count" */
-			sep = colon + 1;	/* Points to count */
-			val = strtoll(sep, &end_ptr, 10);
-			/* First only check numeric component for validity */
-			if (((val < 0) ||
-			    (val == LLONG_MAX)) ||
-			    (!valid_name && (val != 0))) {
-				rc = false;
-				break;
-			}
+		} else
+			sep = NULL;
 
+		/* Now we zero out value since we checked against sep */
+		if (value) {
+			value[0] = '\0';
 			/*
-			 * Now check that any count suffic is valid.
+			 * This is here to handle the old craynetwork:0
+			 * Any gres that is formatted correctly and has a count
+			 * of 0 is valid to be thrown away but allow job to
+			 * allocate.
 			 */
-			if (suffix_mult(end_ptr) == NO_VAL64) {
-				rc = false;
-				break;
-			}
-		} else {
-			/*
-			 * Includes "name:type" or "name:count"
-			 * Since we don't know if there is a count,
-			 * we can not do more now.
-			 */
+			if (count == 0)
+				goto next;
 		}
+
+		/* gres doesn't have to be a TRES to be valid */
+		if (!xstrcmp(tok, "gres")) {
+			/* We only want the first part of a gres for this */
+			if ((tok = strchr(sep, ':')))
+				tok[0] = '\0';
+			pos = valid_gres_name(sep) ? 1 : -1;
+		} else {
+			slurmdb_tres_rec_t tres_rec = {
+				.type = tok,
+				.name = sep,
+			};
+
+			pos = assoc_mgr_find_tres_pos(&tres_rec, false);
+		}
+
+		if (pos == -1) {
+			rc = false;
+			break;
+		}
+	next:
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(tmp);

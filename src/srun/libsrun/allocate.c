@@ -933,21 +933,22 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 	j->clusters = xstrdup(opt_local->clusters);
 
 	if (opt_local->cpus_per_gpu)
-		xstrfmtcat(j->cpus_per_tres, "gpu:%d", opt_local->cpus_per_gpu);
+		xstrfmtcat(j->cpus_per_tres, "gres:gpu:%d",
+			   opt_local->cpus_per_gpu);
 	j->tres_bind = xstrdup(opt_local->tres_bind);
 	j->tres_freq = xstrdup(opt_local->tres_freq);
-	xfmt_tres(&j->tres_per_job,    "gpu", opt_local->gpus);
-	xfmt_tres(&j->tres_per_node,   "gpu", opt_local->gpus_per_node);
+	xfmt_tres(&j->tres_per_job,    "gres:gpu", opt_local->gpus);
+	xfmt_tres(&j->tres_per_node,   "gres:gpu", opt_local->gpus_per_node);
 	if (opt_local->gres && xstrcasecmp(opt_local->gres, "NONE")) {
 		if (j->tres_per_node)
 			xstrfmtcat(j->tres_per_node, ",%s", opt_local->gres);
 		else
 			j->tres_per_node = xstrdup(opt_local->gres);
 	}
-	xfmt_tres(&j->tres_per_socket, "gpu", opt_local->gpus_per_socket);
-	xfmt_tres(&j->tres_per_task,   "gpu", opt_local->gpus_per_task);
+	xfmt_tres(&j->tres_per_socket, "gres:gpu", opt_local->gpus_per_socket);
+	xfmt_tres(&j->tres_per_task,   "gres:gpu", opt_local->gpus_per_task);
 	if (opt_local->mem_per_gpu != NO_VAL64)
-		xstrfmtcat(j->mem_per_tres, "gpu:%"PRIu64,
+		xstrfmtcat(j->mem_per_tres, "gres:gpu:%"PRIu64,
 			   opt_local->mem_per_gpu);
 
 	rc = gres_job_state_validate(j->cpus_per_tres,

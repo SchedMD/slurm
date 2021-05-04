@@ -1065,4 +1065,10 @@ extern void gres_add_type(char *type, gres_node_state_t *gres_data,
 extern void gres_validate_node_cores(gres_node_state_t *node_gres_ptr,
 				     int cores_ctld, char *node_name);
 
+/*
+ * Prepend "gres:" to each gres for proper parsing with TRES functions
+ * caller must xfree result.
+ */
+extern char *gres_prepend_tres_type(const char *gres_str);
+
 #endif /* !_GRES_H */

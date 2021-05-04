@@ -4796,6 +4796,16 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 		goto fini;
 	}
 
+	if (!(sep = xstrstr(*save_ptr, "gres:"))) {
+		debug2("%s is not a gres", *save_ptr);
+		xfree(name);
+		*save_ptr = NULL;
+		goto fini;
+	} else {
+		sep += 5; /* strlen "gres:" */
+		*save_ptr = sep;
+	}
+
 	name = xstrdup(*save_ptr);
 	comma = strchr(name, ',');
 	if (comma) {
@@ -5209,7 +5219,7 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 		 */
 		uint32_t gpus = *num_tasks / *ntasks_per_tres;
 		char *save_ptr = NULL, *gres = NULL, *in_val;
-		xstrfmtcat(gres, "gpu:%u", gpus);
+		xstrfmtcat(gres, "gres:gpu:%u", gpus);
 		in_val = gres;
 		while ((job_gres_data = _get_next_job_gres(in_val, &cnt,
 							   *gres_list,
@@ -8149,7 +8159,7 @@ static void _handle_ntasks_per_tres_step(List new_step_list,
 		uint32_t gpus = *num_tasks / ntasks_per_tres;
 		/* For now, do type-less GPUs */
 		char *save_ptr = NULL, *gres = NULL, *in_val;
-		xstrfmtcat(gres, "gpu:%u", gpus);
+		xstrfmtcat(gres, "gres:gpu:%u", gpus);
 		in_val = gres;
 		while ((step_gres_data =
 			_get_next_step_gres(in_val, &cnt,
@@ -9779,4 +9789,15 @@ extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 	if (!use_empty_first_record)
 		list_append(gres_list, gpu_record);
 	list_iterator_destroy(itr);
+}
+
+extern char *gres_prepend_tres_type(const char *gres_str)
+{
+	char *output = NULL;
+
+	if (gres_str) {
+		output = xstrdup_printf("gres:%s", gres_str);
+		xstrsubstituteall(output, ",", ",gres:");
+	}
+	return output;
 }

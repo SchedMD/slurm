@@ -90,7 +90,7 @@ proc test_job {} {
 			incr matches
 			exp_continue
 		}
-		-re "TresPerNode=gpu:$gpu_req_cnt" {
+		-re "TresPerNode=.*gpu:$gpu_req_cnt" {
 			incr matches
 			exp_continue
 		}

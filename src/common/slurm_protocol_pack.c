@@ -2532,6 +2532,7 @@ extern int _unpack_job_step_create_request_msg(
 		safe_unpackstr_xmalloc(&tmp_ptr->tres_per_task, &uint32_tmp,
 				       buffer);
 	} else if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		char *temp_str;
 		if (unpack_step_id_members(&tmp_ptr->step_id, buffer,
 					   protocol_version) != SLURM_SUCCESS)
 			goto unpack_error;
@@ -2579,14 +2580,22 @@ extern int _unpack_job_step_create_request_msg(
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->tres_freq, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->tres_per_step, &uint32_tmp,
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->tres_per_node, &uint32_tmp,
+		tmp_ptr->tres_per_step = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->tres_per_socket, &uint32_tmp,
+		tmp_ptr->tres_per_node = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->tres_per_task, &uint32_tmp,
+		tmp_ptr->tres_per_socket = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp,
 				       buffer);
+		tmp_ptr->tres_per_task = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		char *temp_str;
 		uint16_t uint16_tmp;
@@ -2655,14 +2664,22 @@ extern int _unpack_job_step_create_request_msg(
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->tres_freq, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->tres_per_step, &uint32_tmp,
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->tres_per_node, &uint32_tmp,
+		tmp_ptr->tres_per_step = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->tres_per_socket, &uint32_tmp,
+		tmp_ptr->tres_per_node = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&tmp_ptr->tres_per_task, &uint32_tmp,
+		tmp_ptr->tres_per_socket = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp,
 				       buffer);
+		tmp_ptr->tres_per_task = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__,  protocol_version);
@@ -3204,6 +3221,7 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 			      uint16_t protocol_version)
 {
 	uint32_t uint32_tmp = 0;
+	char *temp_str;
 
 	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		safe_unpack32(&step->array_job_id, buffer);
@@ -3303,14 +3321,19 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&step->tres_freq,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&step->tres_per_step,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&step->tres_per_node,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&step->tres_per_socket,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&step->tres_per_task,
-				       &uint32_tmp, buffer);
+
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		step->tres_per_step = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		step->tres_per_node = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		step->tres_per_socket = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		step->tres_per_task = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&step->array_job_id, buffer);
 		safe_unpack32(&step->array_task_id, buffer);
@@ -3355,14 +3378,19 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&step->tres_freq,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&step->tres_per_step,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&step->tres_per_node,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&step->tres_per_socket,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&step->tres_per_task,
-				       &uint32_tmp, buffer);
+
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		step->tres_per_step = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		step->tres_per_node = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		step->tres_per_socket = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		step->tres_per_task = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
 	} else {
 		error("_unpack_job_step_info_members: protocol_version "
 		      "%hu not supported", protocol_version);
@@ -3495,6 +3523,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 {
 	uint32_t uint32_tmp = 0;
 	multi_core_data_t *mc_ptr;
+	char *temp_str;
 
 	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
@@ -3861,14 +3890,19 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 				       buffer);
 		safe_unpackstr_xmalloc(&job->tres_freq, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&job->tres_per_job, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&job->tres_per_node, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&job->tres_per_socket, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&job->tres_per_task, &uint32_tmp,
-				       buffer);
+
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		job->tres_per_job = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		job->tres_per_node = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		job->tres_per_socket = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		job->tres_per_task = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
 
 		safe_unpack16(&job->mail_type, buffer);
 		safe_unpackstr_xmalloc(&job->mail_user, &uint32_tmp, buffer);
@@ -4048,14 +4082,19 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 				       buffer);
 		safe_unpackstr_xmalloc(&job->tres_freq, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&job->tres_per_job, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&job->tres_per_node, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&job->tres_per_socket, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&job->tres_per_task, &uint32_tmp,
-				       buffer);
+
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		job->tres_per_job = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		job->tres_per_node = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		job->tres_per_socket = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		job->tres_per_task = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
 
 		safe_unpack16(&job->mail_type, buffer);
 		safe_unpackstr_xmalloc(&job->mail_user, &uint32_tmp, buffer);
@@ -6225,6 +6264,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 {
 	uint32_t uint32_tmp;
 	job_desc_msg_t *job_desc_ptr = NULL;
+	char *temp_str;
 
 	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		job_desc_ptr = xmalloc(sizeof(job_desc_msg_t));
@@ -6591,14 +6631,21 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->tres_freq,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job_desc_ptr->tres_per_job,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job_desc_ptr->tres_per_node,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job_desc_ptr->tres_per_socket,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job_desc_ptr->tres_per_task,
-				       &uint32_tmp, buffer);
+
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		job_desc_ptr->tres_per_job = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		job_desc_ptr->tres_per_node = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		job_desc_ptr->tres_per_socket =
+			gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		job_desc_ptr->tres_per_task = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+
 		if (unpack_cron_entry(&job_desc_ptr->crontab_entry,
 				      protocol_version, buffer))
 			goto unpack_error;
@@ -6783,14 +6830,20 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->tres_freq,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job_desc_ptr->tres_per_job,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job_desc_ptr->tres_per_node,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job_desc_ptr->tres_per_socket,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&job_desc_ptr->tres_per_task,
-				       &uint32_tmp, buffer);
+
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		job_desc_ptr->tres_per_job = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		job_desc_ptr->tres_per_node = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		job_desc_ptr->tres_per_socket =
+			gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
+		job_desc_ptr->tres_per_task = gres_prepend_tres_type(temp_str);
+		xfree(temp_str);
 	} else {
 		error("_unpack_job_desc_msg: protocol_version "
 		      "%hu not supported", protocol_version);

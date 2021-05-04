@@ -40,6 +40,7 @@
 #include <sys/param.h>
 
 #include "src/common/cpu_frequency.h"
+#include "src/common/gres.h"
 #include "src/common/log.h"
 #include "src/common/optz.h"
 #include "src/common/parse_time.h"
@@ -1941,7 +1942,7 @@ static int arg_set_gres(slurm_opt_t *opt, const char *arg)
 	}
 
 	xfree(opt->gres);
-	opt->gres = xstrdup(arg);
+	opt->gres = gres_prepend_tres_type(arg);
 
 	return SLURM_SUCCESS;
 }
@@ -1958,8 +1959,7 @@ static int arg_set_data_gres(slurm_opt_t *opt, const data_t *arg,
 		ADD_DATA_ERROR("GRES \"help\" not supported", rc);
 	} else {
 		xfree(opt->gres);
-		opt->gres = str;
-		str = NULL;
+		opt->gres = gres_prepend_tres_type(str);
 	}
 
 	xfree(str);

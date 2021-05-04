@@ -95,11 +95,11 @@ set match 0
 set timeout $max_job_delay
 spawn $salloc --cpus-per-gpu=$cpus_per_gpu --gpu-bind=$gpu_bind --gpu-freq=$gpu_freq --gpus=$tot_gpus --gpus-per-node=$gpus_per_node --gpus-per-task=$gpus_per_task --mem-per-gpu=$mem_per_gpu --nodes=$nb_nodes --ntasks=$ntasks -t1 ./$file_in
 expect {
-	-re "CpusPerTres=gpu:$cpus_per_gpu" {
+	-re "CpusPerTres=gres:gpu:$cpus_per_gpu" {
 		incr match
 		exp_continue
 	}
-	-re "MemPerTres=gpu:$mem_per_gpu" {
+	-re "MemPerTres=gres:gpu:$mem_per_gpu" {
 		incr match
 		exp_continue
 	}
@@ -111,15 +111,15 @@ expect {
 		incr match
 		exp_continue
 	}
-	-re "TresPerJob=gpu:$tot_gpus" {
+	-re "TresPerJob=gres:gpu:$tot_gpus" {
 		incr match
 		exp_continue
 	}
-	-re "TresPerNode=gpu:$gpus_per_node" {
+	-re "TresPerNode=gres:gpu:$gpus_per_node" {
 		incr match
 		exp_continue
 	}
-	-re "TresPerTask=gpu:$gpus_per_task" {
+	-re "TresPerTask=gres:gpu:$gpus_per_task" {
 		incr match
 		exp_continue
 	}
@@ -144,7 +144,7 @@ set sockets_per_node 1
 set match 0
 spawn $salloc --cpus-per-gpu=$cpus_per_gpu --gpus-per-socket=$gpus_per_socket --sockets-per-node=$sockets_per_node --nodes=$nb_nodes --ntasks=$ntasks -t1 ./$file_in
 expect {
-	-re "TresPerSocket=gpu:$gpus_per_socket" {
+	-re "TresPerSocket=gres:gpu:$gpus_per_socket" {
 		incr match
 		exp_continue
 	}
