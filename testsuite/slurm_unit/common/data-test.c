@@ -355,7 +355,7 @@ int main(void)
 	log_opts.stderr_level = LOG_LEVEL_DEBUG5;
 	log_init("data-test", log_opts, 0, NULL);
 
-	if (data_init(NULL, NULL)) {
+	if (data_init("", NULL)) {
 		error("data_init() failed");
 		return EXIT_FAILURE;
 	}
