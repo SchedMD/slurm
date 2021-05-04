@@ -210,6 +210,10 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	if (!gres_ptr)
 		return;
 
+	/* If we are resetting and we don't have a usable_gres we just exit */
+	if (is_task && !usable_gres)
+		return;
+
 	xassert(global_list);
 	xassert(local_list);
 	/* is_task and is_job can't both be true */
@@ -244,10 +248,6 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		}
 		tmp_gres_per_node = gres_step_ptr->gres_per_node;
 	}
-
-	/* If we are resetting and we don't have a usable_gres we just exit */
-	if (is_task && !usable_gres)
-		return;
 
 	if (gres_per_node)
 		*gres_per_node = tmp_gres_per_node;
