@@ -1211,7 +1211,7 @@ static int _handle_job_get(const char *context_id, http_request_method_t method,
 		}
 	} else {
 		resp_error(errors, rc, "slurm_load_job",
-			   "unknown job: %d", job_id);
+			   "Failed while looking for job: %u", job_id);
 	}
 
 	slurm_free_job_info_msg(job_info_ptr);
