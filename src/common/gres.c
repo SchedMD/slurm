@@ -117,7 +117,7 @@ typedef struct slurm_gres_ops {
 	void		(*step_set_env)		( char ***job_env_ptr,
 						  void *gres_ptr,
 						  gres_internal_flags_t flags);
-	void		(*step_reset_env)	( char ***job_env_ptr,
+	void		(*task_set_env)		( char ***job_env_ptr,
 						  void *gres_ptr,
 						  bitstr_t *usable_gres,
 						  gres_internal_flags_t flags);
@@ -334,7 +334,7 @@ static int _load_plugin(slurm_gres_context_t *plugin_context)
 		"gres_p_node_config_load",
 		"gres_p_job_set_env",
 		"gres_p_step_set_env",
-		"gres_p_step_reset_env",
+		"gres_p_task_set_env",
 		"gres_p_send_stepd",
 		"gres_p_recv_stepd",
 		"gres_p_get_job_info",
@@ -9077,7 +9077,7 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 	slurm_mutex_lock(&gres_context_lock);
 	for (i = 0; i < gres_context_cnt; i++) {
 		slurm_gres_context_t gres_ctx = gres_context[i];
-		if (!gres_ctx.ops.step_reset_env)
+		if (!gres_ctx.ops.task_set_env)
 			continue;	/* No plugin to call */
 		if (!step_gres_list)
 			continue;
@@ -9114,7 +9114,7 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 			if (gres_ptr->plugin_id != gres_ctx.plugin_id)
 				continue;
 			/* task-specific binding via env */
-			(*(gres_ctx.ops.step_reset_env))
+			(*(gres_ctx.ops.task_set_env))
 				(job_env_ptr,
 				 gres_ptr->gres_data,
 				 usable_gres,
@@ -9123,7 +9123,7 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 		}
 		list_iterator_destroy(gres_iter);
 		if (!found) { /* No data fond */
-			(*(gres_ctx.ops.step_reset_env))
+			(*(gres_ctx.ops.task_set_env))
 				(job_env_ptr, NULL, NULL,
 				 gres_internal_flags);
 		}
