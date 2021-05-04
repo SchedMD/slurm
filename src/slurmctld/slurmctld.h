@@ -2734,10 +2734,10 @@ extern void update_job_limit_set_tres(uint16_t **tres_limits);
 extern bool valid_tres_cnt(char *tres);
 
 /*
- * Validate the named TRES is valid for scheduling parameters.
+ * Validate the named GRES is valid for scheduling parameters.
  * This is currently a subset of all defined TRES.
  */
-extern bool valid_tres_name(char *name);
+extern bool valid_gres_name(char *name);
 
 /*
  * Check for nodes that haven't rebooted yet.

@@ -8439,7 +8439,7 @@ extern bool valid_tres_cnt(char *tres)
 			sep[0] = '\0';
 			sep++;
 		}
-		if (valid_tres_name(tok))
+		if (valid_gres_name(tok))
 			valid_name = true;
 		if (!sep) {	/* No model or count. Implicit count of 1 */
 			if (!valid_name) {
@@ -8480,10 +8480,10 @@ extern bool valid_tres_cnt(char *tres)
 }
 
 /*
- * Validate the named TRES is valid for scheduling parameters.
+ * Validate the named GRES is valid for scheduling parameters.
  * Returns FALSE if the name is invalid or the GRES count is zero.
  */
-extern bool valid_tres_name(char *name)
+extern bool valid_gres_name(char *name)
 {
 	if (!name || (name[0] == '\0'))
 		return false;
