@@ -212,6 +212,8 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 
 	xassert(global_list);
 	xassert(local_list);
+	/* is_task and is_job can't both be true */
+	xassert(!(is_task && is_job));
 
 	if (is_job) {
 		gres_job_state_t *gres_job_ptr = (gres_job_state_t *) gres_ptr;
