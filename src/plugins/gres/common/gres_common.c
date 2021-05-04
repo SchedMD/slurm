@@ -191,7 +191,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				bitstr_t *usable_gres, char *prefix,
 				int *local_inx, uint64_t *gres_per_node,
 				char **local_list, char **global_list,
-				bool reset, bool is_job, int *global_id,
+				bool is_task, bool is_job, int *global_id,
 				gres_internal_flags_t flags)
 {
 	int first_inx = -1;
@@ -244,7 +244,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	}
 
 	/* If we are resetting and we don't have a usable_gres we just exit */
-	if (reset && !usable_gres)
+	if (is_task && !usable_gres)
 		return;
 
 	if (gres_per_node)
@@ -270,7 +270,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		index = use_local_dev_index ?
 			(*local_inx)++ : gres_device->dev_num;
 
-		if (reset) {
+		if (is_task) {
 			if (!first_device) {
 				first_inx = index;
 				first_device = gres_device;
@@ -302,7 +302,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	 * Bind to the first allocated device as a fallback if the bind
 	 * request does not specify any devices within the allocation.
 	 */
-	if (reset && !new_global_list && first_device) {
+	if (is_task && !new_global_list && first_device) {
 		char *usable_gres_str = bit_fmt_full(usable_gres);
 		char *usable_gres_str_hex = bit_fmt_hexmask_trim(usable_gres);
 		error("Bind request %s (%s) does not specify any devices within the allocation. Binding to the first device in the allocation instead.",

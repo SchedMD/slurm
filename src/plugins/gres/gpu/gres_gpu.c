@@ -105,7 +105,7 @@ extern void gres_p_step_hardware_fini(void)
 static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 		     bitstr_t *usable_gres,
 		     bool *already_seen, int *local_inx,
-		     bool reset, bool is_job, gres_internal_flags_t flags)
+		     bool is_task, bool is_job, gres_internal_flags_t flags)
 {
 	char *global_list = NULL, *local_list = NULL, *slurm_env_var = NULL;
 
@@ -122,7 +122,7 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 
 	common_gres_set_env(gres_devices, env_ptr, gres_ptr, node_inx,
 			    usable_gres, "", local_inx,  NULL,
-			    &local_list, &global_list, reset, is_job, NULL,
+			    &local_list, &global_list, is_task, is_job, NULL,
 			    flags);
 
 	if (global_list) {

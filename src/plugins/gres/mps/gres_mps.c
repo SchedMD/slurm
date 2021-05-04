@@ -579,7 +579,7 @@ static uint64_t _get_dev_count(int global_id)
 static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 		     bitstr_t *usable_gres,
 		     bool *already_seen, int *local_inx,
-		     bool reset, bool is_job, gres_internal_flags_t flags)
+		     bool is_task, bool is_job, gres_internal_flags_t flags)
 {
 	char *global_list = NULL, *local_list = NULL, *perc_env = NULL;
 	char perc_str[64], *slurm_env_var = NULL;
@@ -602,7 +602,7 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 	common_gres_set_env(gres_devices, env_ptr, gres_ptr, node_inx,
 			    usable_gres, "", local_inx,
 			    &gres_per_node, &local_list, &global_list,
-			    reset, is_job, &global_id, flags);
+			    is_task, is_job, &global_id, flags);
 
 	if (perc_env) {
 		env_array_overwrite(env_ptr,
