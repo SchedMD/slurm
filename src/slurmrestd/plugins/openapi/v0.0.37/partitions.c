@@ -212,7 +212,7 @@ static int _op_handler_partitions(const char *context_id,
 			rc = ESLURM_INVALID_PARTITION_NAME;
 	}
 
-	if (!part_info_ptr || part_info_ptr->record_count == 0)
+	if (!rc && (!part_info_ptr || part_info_ptr->record_count == 0))
 		rc = ESLURM_INVALID_PARTITION_NAME;
 
 	if (rc) {
