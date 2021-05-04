@@ -235,12 +235,12 @@ static int _op_handler_nodes(const char *context_id,
 		/* no-op: nothing to do here */
 		rc = errno;
 		goto done;
-	} else if (!rc && node_info_ptr)
+	} else if (!rc && node_info_ptr && node_info_ptr->record_count)
 		for (int i = 0; !rc && i < node_info_ptr->record_count; i++)
 			rc = _dump_node(nodes,
 					   &node_info_ptr->node_array[i]);
 
-	if (!node_info_ptr || node_info_ptr->record_count == 0)
+	if (!rc && (!node_info_ptr || node_info_ptr->record_count == 0))
 		rc = ESLURM_INVALID_NODE_NAME;
 
 	if (rc) {
