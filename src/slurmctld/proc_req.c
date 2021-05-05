@@ -4798,8 +4798,8 @@ static void _slurm_rpc_requeue(slurm_msg_t *msg)
 		if (!req_ptr->job_id_str)
 			xstrfmtcat(req_ptr->job_id_str, "%u", req_ptr->job_id);
 
-		info("%s: %s: %s", __func__, req_ptr->job_id_str,
-		     slurm_strerror(error_code));
+		info("%s: Requeue of JobId=%s returned an error: %s",
+		     __func__, req_ptr->job_id_str, slurm_strerror(error_code));
 	}
 
 	/* Functions below provide their own locking
