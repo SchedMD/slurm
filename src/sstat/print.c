@@ -46,17 +46,13 @@ print_field_t *field = NULL;
 int curr_inx = 1;
 char outbuf[FORMAT_STRING_SIZE];
 
-char *_elapsed_time(long secs, long usecs);
-
-char *_elapsed_time(long secs, long usecs)
+char *_elapsed_time(uint64_t secs, uint64_t usecs)
 {
-	long	days, hours, minutes, seconds;
-	long    subsec = 0;
+	uint64_t days, hours, minutes, seconds, subsec = 0;
 	char *str = NULL;
 
-	if ((secs < 0) || (secs == NO_VAL))
+	if (secs == NO_VAL64)
 		return NULL;
-
 
 	if (usecs >= 1E6) {
 		secs += usecs / 1E6;
@@ -72,14 +68,17 @@ char *_elapsed_time(long secs, long usecs)
 	days    =  secs / 86400;
 
 	if (days)
-		str = xstrdup_printf("%ld-%2.2ld:%2.2ld:%2.2ld",
+		str = xstrdup_printf("%"PRIu64"-%2.2"PRIu64":%2.2"PRIu64":%2.2"PRIu64"",
 				     days, hours, minutes, seconds);
 	else if (hours)
-		str = xstrdup_printf("%2.2ld:%2.2ld:%2.2ld",
+		str = xstrdup_printf("%2.2"PRIu64":%2.2"PRIu64":%2.2"PRIu64"",
 				     hours, minutes, seconds);
-	else
-		str = xstrdup_printf("%2.2ld:%2.2ld.%3.3ld",
+	else if (subsec)
+		str = xstrdup_printf("%2.2"PRIu64":%2.2"PRIu64".%3.3"PRIu64"",
 				     minutes, seconds, subsec);
+	else
+		str = xstrdup_printf("00:%2.2"PRIu64":%2.2"PRIu64"",
+				     minutes, seconds);
 	return str;
 }
 
