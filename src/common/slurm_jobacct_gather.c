@@ -1177,15 +1177,15 @@ extern void jobacctinfo_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from)
 
 	dest->user_cpu_sec	+= from->user_cpu_sec;
 	dest->user_cpu_usec	+= from->user_cpu_usec;
-	while (dest->user_cpu_usec >= 1E6) {
-		dest->user_cpu_sec++;
-		dest->user_cpu_usec -= 1E6;
+	if (dest->user_cpu_usec >= 1E6) {
+		dest->user_cpu_sec += dest->user_cpu_usec / 1E6;
+		dest->user_cpu_usec = dest->user_cpu_usec % (int)1E6;
 	}
 	dest->sys_cpu_sec	+= from->sys_cpu_sec;
 	dest->sys_cpu_usec	+= from->sys_cpu_usec;
-	while (dest->sys_cpu_usec >= 1E6) {
-		dest->sys_cpu_sec++;
-		dest->sys_cpu_usec -= 1E6;
+	if (dest->sys_cpu_usec >= 1E6) {
+		dest->sys_cpu_sec += dest->sys_cpu_usec / 1E6;
+		dest->sys_cpu_usec = dest->sys_cpu_usec % (int)1E6;
 	}
 	dest->act_cpufreq 	+= from->act_cpufreq;
 	if (dest->energy.consumed_energy != NO_VAL64) {

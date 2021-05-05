@@ -55,9 +55,9 @@ static char *_elapsed_time_helper(uint64_t secs, uint32_t usecs)
 	uint64_t days, hours, minutes, seconds, subsec = 0;
 	char *str = NULL;
 
-	while (usecs >= 1E6) {
-		secs++;
-		usecs -= 1E6;
+	if (usecs >= 1E6) {
+		secs += usecs / 1E6;
+		usecs = usecs % (int)1E6;
 	}
 	if (usecs > 0) {
 		/* give me 3 significant digits to tack onto the sec */

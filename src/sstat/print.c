@@ -58,9 +58,9 @@ char *_elapsed_time(long secs, long usecs)
 		return NULL;
 
 
-	while (usecs >= 1E6) {
-		secs++;
-		usecs -= 1E6;
+	if (usecs >= 1E6) {
+		secs += usecs / 1E6;
+		usecs = usecs % (int)1E6;
 	}
 	if (usecs > 0) {
 		/* give me 3 significant digits to tack onto the sec */
