@@ -675,12 +675,12 @@ int slurm_init_msg_engine_port(uint16_t port)
 	int i;
 
 	slurm_setup_addr(&addr, port);
-	cc = slurm_init_msg_engine(&addr);
+	cc = slurm_init_msg_engine(&addr, (port == 0));
 	if ((cc < 0) && (port == 0) && (errno == EADDRINUSE)) {
 		/* All ephemeral ports are in use, test other ports */
 		for (i = 10001; i < 65536; i++) {
 			slurm_set_port(&addr, i);
-			cc = slurm_init_msg_engine(&addr);
+			cc = slurm_init_msg_engine(&addr, true);
 			if (cc >= 0)
 				break;
 		}

@@ -224,9 +224,10 @@ extern int sock_bind_listen_range(int s, uint16_t *range, bool local);
 /* In the socket implementation it creates a socket, binds to it, and
  *	listens for connections.
  * IN slurm_address 	- slurm_addr_t to bind the msg server to
+ * IN permissive 	- log failure errors at "error" or "debug" level
  * RET slurm_fd		- file descriptor of the connection created
  */
-extern int slurm_init_msg_engine(slurm_addr_t * slurm_address);
+extern int slurm_init_msg_engine(slurm_addr_t *slurm_address, bool permissive);
 
 /* In the bsd implmentation maps directly to a accept call
  * IN open_fd		- file descriptor to accept connection on

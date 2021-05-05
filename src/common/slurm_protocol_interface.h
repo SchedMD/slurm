@@ -102,9 +102,10 @@ extern ssize_t slurm_msg_sendto_timeout(int open_fd,
 /* slurm_init_msg_engine
  * opens a stream server and listens on it
  * IN slurm_address 	- slurm_addr_t to bind the server stream to
+ * IN quiet		- log failure errors at "debug" level instead
  * RET fd		- file descriptor of the stream created
  */
-extern int slurm_init_msg_engine(slurm_addr_t *slurm_address);
+extern int slurm_init_msg_engine(slurm_addr_t *slurm_address, bool quiet);
 
 /* slurm_accept_msg_conn
  * accepts a incoming stream connection on a stream server slurm_fd
