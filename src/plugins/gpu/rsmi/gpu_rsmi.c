@@ -69,17 +69,17 @@ typedef struct rsmiPciInfo_st {
 	union {
 		struct {
 #ifdef SLURM_BIGENDIAN
-			uint64_t reserved : 35;
-			uint64_t domain : 16;
-			uint64_t bus : 5;
+			uint64_t domain : 32;
+			uint64_t reserved : 16;
+			uint64_t bus : 8;
 			uint64_t device : 5;
 			uint64_t function : 3;
 #else
 			uint64_t function : 3;
 			uint64_t device : 5;
-			uint64_t bus : 5;
-			uint64_t domain : 16;
-			uint64_t reserved : 35;
+			uint64_t bus : 8;
+			uint64_t reserved : 16;
+			uint64_t domain : 32;
 #endif
 		};
 		uint64_t bdfid;
