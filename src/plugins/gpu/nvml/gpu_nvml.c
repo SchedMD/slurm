@@ -1704,7 +1704,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 						 nvml_mig.files,
 						 nvml_mig.profile_name,
 						 nvml_mig.links,
-						 NULL);
+						 nvml_mig.unique_id);
 				_free_nvml_mig_members(&nvml_mig);
 			}
 			xfree(tmp_device_name);
