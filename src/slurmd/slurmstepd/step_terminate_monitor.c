@@ -86,18 +86,18 @@ void step_terminate_monitor_stop(void)
 	slurm_mutex_lock(&lock);
 
 	if (!running_flag) {
-		error("step_terminate_monitor_stop: already stopped");
+		error("%s: already stopped", __func__);
 		slurm_mutex_unlock(&lock);
 		return;
 	}
 
 	running_flag = false;
-	debug("step_terminate_monitor_stop signaling condition");
+	debug("signaling condition");
 	slurm_cond_signal(&cond);
 	slurm_mutex_unlock(&lock);
 
 	if (pthread_join(tid, (void **) &retval) != 0)
-		error("step_terminate_monitor_stop: pthread_join: %m");
+		error("%s pthread_join: %m", __func__);
 
 	debug2("_monitor exit code: %d", retval ? *retval : 0);
 
