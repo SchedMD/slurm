@@ -295,7 +295,8 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	default:
 		/* Leave distribution set to unknown if taskcount <= nodes and
 		 * memory is set to 0. step_mgr will handle the mem=0 case. */
-		if (!opt_local->mem_per_cpu || !opt_local->pn_min_memory)
+		if (!opt_local->mem_per_cpu || !opt_local->pn_min_memory ||
+		    srun_opt->interactive)
 			base_dist = SLURM_DIST_UNKNOWN;
 		else
 			base_dist = (job->ctx_params.task_count <=
