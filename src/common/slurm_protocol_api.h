@@ -216,11 +216,10 @@ extern int slurm_init_msg_engine_port(uint16_t port);
  */
 extern int slurm_init_msg_engine_ports(uint16_t *);
 
-/* sock_bind_range()
- *
- * Try to bind() sock to any port in a given interval of ports
+/*
+ * bind() and then listen() to any port in a given range of ports
  */
-extern int sock_bind_range(int, uint16_t *, bool local);
+extern int sock_bind_listen_range(int s, uint16_t *range, bool local);
 
 /* In the socket implementation it creates a socket, binds to it, and
  *	listens for connections.

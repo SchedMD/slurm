@@ -684,6 +684,9 @@ int slurm_init_msg_engine_port(uint16_t port)
 			if (cc >= 0)
 				break;
 		}
+		if (cc < 0)
+			error("%s: all ephemeral ports, and the range (10001, 65536) are exhausted, cannot establish listening port",
+			      __func__);
 	}
 	return cc;
 }
@@ -711,17 +714,8 @@ int slurm_init_msg_engine_ports(uint16_t *ports)
 		return -1;
 	}
 
-	port = sock_bind_range(s, ports, false);
-	if (port < 0) {
-		close(s);
+	if ((port = sock_bind_listen_range(s, ports, false)) < 0)
 		return -1;
-	}
-
-	cc = listen(s, SLURM_DEFAULT_LISTEN_BACKLOG);
-	if (cc < 0) {
-		close(s);
-		return -1;
-	}
 
 	return s;
 }
@@ -2918,14 +2912,14 @@ extern void slurm_setup_addr(slurm_addr_t *sin, uint16_t port)
 }
 
 /*
- * Check if we can bind() the socket s to port port.
+ * bind() and then listen() to any port in a given range of ports
  *
  * IN: s - socket
  * IN: port - port number to attempt to bind
  * IN: local - only bind to localhost if true
  * OUT: true/false if port was bound successfully
  */
-int sock_bind_range(int s, uint16_t *range, bool local)
+extern int sock_bind_listen_range(int s, uint16_t *range, bool local)
 {
 	uint32_t count;
 	uint32_t min;
@@ -2942,7 +2936,8 @@ int sock_bind_range(int s, uint16_t *range, bool local)
 	count = num;
 
 	do {
-		if (_is_port_ok(s, port, local))
+		if ((_is_port_ok(s, port, local)) &&
+		    (!listen(s, SLURM_DEFAULT_LISTEN_BACKLOG)))
 			return port;
 
 		if (port == max)
@@ -2952,6 +2947,7 @@ int sock_bind_range(int s, uint16_t *range, bool local)
 		--count;
 	} while (count > 0);
 
+	close(s);
 	error("%s: all ports in range (%u, %u) exhausted, cannot establish listening port",
 	      __func__, min, max);
 
