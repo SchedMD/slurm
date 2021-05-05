@@ -87,6 +87,8 @@ documents those changes that are of interest to users and administrators.
     the job allocation.
  -- Fix deadlock issue with <Prolog|Epilog>Slurmctld.
  -- torque/qstat - fix printf error message in output.
+ -- When adding associations or wckeys avoid checking multiple times a user or
+    cluster name.
 
 * Changes in Slurm 20.11.6
 ==========================

@@ -523,7 +523,10 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if (!added_user_list)
 			added_user_list = list_create(NULL);
-		list_append(added_user_list, object->user);
+		if (!list_find_first(added_user_list,
+				     slurm_find_char_in_list,
+				     object->user))
+			list_append(added_user_list, object->user);
 		xstrcat(cols, "creation_time, mod_time, user");
 		xstrfmtcat(vals, "%ld, %ld, '%s'",
 			   now, now, object->user);
@@ -580,7 +583,10 @@ extern int as_mysql_add_wckeys(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
-		list_append(local_cluster_list, object->cluster);
+		if (!list_find_first(local_cluster_list,
+				     slurm_find_char_in_list,
+				     object->cluster))
+			list_append(local_cluster_list, object->cluster);
 
 		/* we always have a ', ' as the first 2 chars */
 		tmp_extra = slurm_add_slash_to_quotes(extra+2);

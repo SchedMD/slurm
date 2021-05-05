@@ -2565,7 +2565,10 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (object->is_def != 1)
 			object->is_def = 0;
 
-		list_append(local_cluster_list, object->cluster);
+		if (!list_find_first(local_cluster_list,
+				     slurm_find_char_in_list,
+				     object->cluster))
+			list_append(local_cluster_list, object->cluster);
 
 		if (object->parent_acct) {
 			parent = object->parent_acct;
@@ -2606,7 +2609,10 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(extra, ", `partition`='%s'", part);
 			if (!added_user_list)
 				added_user_list = list_create(NULL);
-			list_append(added_user_list, object->user);
+			if (!list_find_first(added_user_list,
+					     slurm_find_char_in_list,
+					     object->user))
+				list_append(added_user_list, object->user);
 		}
 
 		if (object->id) {
