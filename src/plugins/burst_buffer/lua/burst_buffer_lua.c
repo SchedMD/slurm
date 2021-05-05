@@ -52,6 +52,7 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/trigger_mgr.h"
 #include "src/plugins/burst_buffer/common/burst_buffer_common.h"
 
 /* Script directive */
@@ -97,6 +98,7 @@ static int directive_len = strlen(DIRECTIVE_STR);
 static const char lua_script_path[] = DEFAULT_SCRIPT_DIR "/burst_buffer.lua";
 static const char *req_fxns[] = {
 	"slurm_bb_job_process",
+	"slurm_bb_pools",
 	"slurm_bb_job_teardown",
 	NULL
 };
@@ -118,6 +120,8 @@ typedef struct {
 	char *pool;
 } stage_args_t;
 
+typedef int (*push_lua_args_cb_t) (lua_State *L, void *args);
+
 static void _loadscript_extra(lua_State *st)
 {
         /* local setup */
@@ -131,12 +135,69 @@ static void _loadscript_extra(lua_State *st)
 	lua_setglobal(st, "slurm");
 }
 
+static int _handle_lua_return_code(lua_State *L, const char *lua_func)
+{
+	/* Return code is always the bottom of the stack. */
+	if (!lua_isnumber(L, 1)) {
+		error("%s: %s returned a non-numeric return code, returning error",
+		      __func__, lua_func);
+		return SLURM_ERROR;
+	} else {
+		return lua_tonumber(L, 1);
+	}
+}
+
+static int _handle_lua_return(lua_State *L, const char *lua_func,
+			      char **ret_str)
+{
+	int rc = SLURM_SUCCESS;
+	int num_stack_elems = lua_gettop(L);
+
+	if (!num_stack_elems) {
+		log_flag(BURST_BUF, "%s finished and didn't return anything",
+			 lua_func);
+		return rc; /* No results, return success. */
+	}
+
+	/* Bottom of the stack should be the return code. */
+	rc = _handle_lua_return_code(L, lua_func);
+
+	if (num_stack_elems > 1) {
+		/*
+		 * Multiple results. Right now we only consider up to 2 results,
+		 * and the second should be a string.
+		 */
+		xassert(ret_str);
+
+		if (lua_isstring(L, 2)) {
+			xfree(*ret_str);
+			*ret_str = xstrdup(lua_tostring(L, 2));
+		} else {
+			/* Don't know how to handle non-strings here. */
+			error("%s: Cannot handle non-string as second return value for lua function %s.",
+			      __func__, lua_func);
+			rc = SLURM_ERROR;
+		}
+	}
+
+	if (ret_str && *ret_str)
+		log_flag(BURST_BUF, "%s return code = %d, returned string = \"%s\"",
+			 lua_func, rc, *ret_str);
+	else
+		log_flag(BURST_BUF, "%s return code = %d", lua_func, rc);
+
+	/* Pop everything from the stack. */
+	lua_pop(L, num_stack_elems);
+
+	return rc;
+}
+
 /*
  * Call a function in burst_buffer.lua.
  */
 static int _run_lua_script(const char *lua_func,
-			   int (*callback) (lua_State *L, void *x),
-			   void *callback_args)
+			   push_lua_args_cb_t push_args_cb,
+			   void *callback_args, char **ret_str)
 {
 
 	/*
@@ -152,7 +213,7 @@ static int _run_lua_script(const char *lua_func,
 	 */
 	lua_State *L = NULL;
 	time_t lua_script_last_loaded = (time_t) 0;
-	int rc, num_args;
+	int rc, num_args = 0;
 
 	rc = slurm_lua_loadscript(&L, "burst_buffer/lua",
 				  lua_script_path, req_fxns,
@@ -174,29 +235,23 @@ static int _run_lua_script(const char *lua_func,
 	}
 
 	/*
-	 * TODO: Push arguments to the stack. Maybe use a callback that
-	 * returns the number of arguments.
+	 * The callback pushes arguments to the stack which will be used by
+	 * the lua function. The callback returns the number of arguments pushed
+	 * to the stack.
 	 */
-	if (callback) {
-		num_args = callback(L, callback_args);
-		info("XXX%sXXX: callback returned %d", __func__, num_args);
-	}
+	if (push_args_cb)
+		num_args = push_args_cb(L, callback_args);
 
 	slurm_lua_stack_dump("burst_buffer/lua", "before lua_pcall", L);
-	if (lua_pcall(L, num_args, 1, 0) != 0) {
+	if (lua_pcall(L, num_args, LUA_MULTRET, 0) != 0) {
 		error("%s: %s",
 		      lua_script_path, lua_tostring(L, -1));
+		rc = SLURM_ERROR;
+		lua_pop(L, lua_gettop(L));
 	} else {
-		if (lua_isnumber(L, -1)) {
-			rc = lua_tonumber(L, -1);
-		} else {
-			info("%s: non-numeric return code, returning success",
-			     lua_script_path);
-			rc = SLURM_SUCCESS;
-		}
-		lua_pop(L, 1);
+		slurm_lua_stack_dump("burst_buffer/lua", "after lua_pcall", L);
+		rc = _handle_lua_return(L, lua_func, ret_str);
 	}
-	slurm_lua_stack_dump("burst_buffer/lua", "after lua_pcall", L);
 
 	lua_close(L);
 	return rc;
@@ -461,25 +516,30 @@ static void _bb_free_pools(bb_pools_t *pools, int num_ent)
 	xfree(pools);
 }
 
-static int _push_pools_args(lua_State *L, void *args)
-{
-	int test_arg = *((int *)(args));
-	info("%s: hello! arg=%d", __func__, test_arg);
-	lua_pushnumber(L, test_arg);
-	return 1;
-}
-
 static bb_pools_t *_bb_get_pools(int *num_pools, bb_state_t *state_ptr,
 				 uint32_t timeout)
 {
 	int rc;
-	int callback_arg;
+	char *resp_msg = NULL;
+	const char *lua_func_name = "slurm_bb_pools";
+
+	*num_pools = 0;
 
 	/* Call lua function. */
-	callback_arg = 13;
-	rc = _run_lua_script("slurm_bb_pools", _push_pools_args, &callback_arg);
+	rc = _run_lua_script(lua_func_name, NULL, NULL, &resp_msg);
+	if (rc) {
+		trigger_burst_buffer();
+		xfree(resp_msg);
+		if (resp_msg)
+			error("%s returned:%d; response:%s",
+			      lua_func_name, rc, resp_msg);
+		else
+			error("%s returned:%d", lua_func_name, rc);
+		return NULL;
+	}
+	xfree(resp_msg);
 	log_flag(BURST_BUF, "slurm_bb_pools return code=%d", rc);
-	*num_pools = 0;
+
 	return NULL;
 }
 
@@ -1102,7 +1162,7 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	/* Run "job_process" function, validates user script */
-	rc = _run_lua_script("slurm_bb_job_process", NULL, NULL);
+	rc = _run_lua_script("slurm_bb_job_process", NULL, NULL, NULL);
 	log_flag(BURST_BUF, "Return code=%d", rc);
 	return rc;
 }
@@ -1185,7 +1245,7 @@ static void *_start_teardown(void *x)
 
 	/* Run lua "teardown" function */
 	START_TIMER;
-	rc = _run_lua_script("slurm_bb_job_teardown", NULL, NULL);
+	rc = _run_lua_script("slurm_bb_job_teardown", NULL, NULL, NULL);
 	END_TIMER;
 	info("Teardown for JobId=%u ran for %s",
 	     teardown_args->job_id, TIME_STR);
