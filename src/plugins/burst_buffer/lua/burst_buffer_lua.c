@@ -255,9 +255,10 @@ static int _run_lua_script(const char *lua_func,
 		rc = SLURM_ERROR;
 		lua_pop(L, lua_gettop(L));
 	} else {
-		slurm_lua_stack_dump("burst_buffer/lua", "after lua_pcall", L);
+		slurm_lua_stack_dump("burst_buffer/lua", "after lua_pcall, before returns have been popped", L);
 		rc = _handle_lua_return(L, lua_func, ret_str);
 	}
+	slurm_lua_stack_dump("burst_buffer/lua", "after lua_pcall, after returns have been popped", L);
 
 	lua_close(L);
 	return rc;
