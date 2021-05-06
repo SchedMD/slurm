@@ -1686,8 +1686,9 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	List job_list = NULL;
 	slurmdb_user_rec_t user;
 	int only_pending = 0;
-	List use_cluster_list = as_mysql_cluster_list;
+	List use_cluster_list = NULL;
 	char *cluster_name;
+	bool locked = false;
 	assoc_mgr_lock_t locks = { NO_LOCK, NO_LOCK, NO_LOCK, NO_LOCK,
 				   READ_LOCK, NO_LOCK, NO_LOCK };
 
@@ -1732,8 +1733,11 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	if (job_cond
 	    && job_cond->cluster_list && list_count(job_cond->cluster_list))
 		use_cluster_list = job_cond->cluster_list;
-	else
+	else {
 		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
+		use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
+		locked = true;
+	}
 
 	assoc_mgr_lock(&locks);
 
@@ -1753,8 +1757,10 @@ extern List as_mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 
 	assoc_mgr_unlock(&locks);
 
-	if (use_cluster_list == as_mysql_cluster_list)
+	if (locked) {
+		FREE_NULL_LIST(use_cluster_list);
 		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
+	}
 
 	xfree(tmp);
 	xfree(tmp2);

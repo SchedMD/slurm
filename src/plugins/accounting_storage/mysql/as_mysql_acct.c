@@ -399,6 +399,7 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	ListIterator itr = NULL;
 	List ret_list = NULL;
 	List coord_list = NULL;
+	List cluster_list_tmp = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *extra = NULL, *query = NULL,
@@ -518,7 +519,8 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	user_name = uid_to_string((uid_t) uid);
 
 	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
-	itr = list_iterator_create(as_mysql_cluster_list);
+	cluster_list_tmp = list_shallow_copy(as_mysql_cluster_list);
+	itr = list_iterator_create(cluster_list_tmp);
 	while ((object = list_next(itr))) {
 		if ((rc = remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
 					user_name, acct_table, name_char,
@@ -528,6 +530,7 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			break;
 	}
 	list_iterator_destroy(itr);
+	FREE_NULL_LIST(cluster_list_tmp);
 	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	xfree(user_name);
