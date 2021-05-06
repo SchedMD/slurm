@@ -43,6 +43,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#if HAVE_JSON_C_INC
+#  include <json-c/json.h>
+#elif HAVE_JSON_INC
+#  include <json/json.h>
+#endif
+
 #include "slurm/slurm.h"
 
 #include "src/common/assoc_mgr.h"

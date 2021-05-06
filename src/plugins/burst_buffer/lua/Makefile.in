@@ -508,13 +508,13 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -DDEFAULT_SCRIPT_DIR=\"$(sysconfdir)\" \
-	-I$(top_srcdir) -I$(top_srcdir)/src/common $(lua_CFLAGS)
+	-I$(top_srcdir) -I$(top_srcdir)/src/common $(lua_CFLAGS) $(JSON_CPPFLAGS)
 
 
 # Burst buffer lua plugin.
 @HAVE_LUA_TRUE@pkglib_LTLIBRARIES = burst_buffer_lua.la
 @HAVE_LUA_TRUE@burst_buffer_lua_la_SOURCES = burst_buffer_lua.c
-@HAVE_LUA_TRUE@burst_buffer_lua_la_LDFLAGS = $(PLUGIN_FLAGS)
+@HAVE_LUA_TRUE@burst_buffer_lua_la_LDFLAGS = $(PLUGIN_FLAGS) $(JSON_LDFLAGS)
 @HAVE_LUA_TRUE@burst_buffer_lua_la_LIBADD = ../common/libburst_buffer_common.la \
 @HAVE_LUA_TRUE@			     $(top_builddir)/src/lua/libslurm_lua.la \
 @HAVE_LUA_TRUE@			     $(lua_lIBS)
