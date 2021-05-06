@@ -2958,8 +2958,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (!moved_parent) {
 			char *cluster_name;
 
-			slurm_mutex_lock(&as_mysql_cluster_list_lock);
-			itr = list_iterator_create(as_mysql_cluster_list);
+			itr = list_iterator_create(local_cluster_list);
 			while ((cluster_name = list_next(itr))) {
 				uint32_t smallest_lft = 0xFFFFFFFF;
 				while ((object = list_next(itr2))) {
@@ -2977,7 +2976,6 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 						smallest_lft);
 			}
 			list_iterator_destroy(itr);
-			slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 		}
 
 		/* make sure we don't have any other default accounts */
