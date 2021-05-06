@@ -244,8 +244,11 @@ extern gid_t *copy_gids(int ngids, gid_t *gids)
 	int size;
 	gid_t *result;
 
-	if (!ngids || !gids)
+	if (!ngids)
 		return NULL;
+
+	if (!gids)
+		fatal_abort("%s: ngids=%d but gids=NULL", __func__, ngids);
 
 	size = ngids * sizeof(gid_t);
 	result = xmalloc(size);
