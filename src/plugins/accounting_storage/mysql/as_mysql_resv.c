@@ -677,7 +677,7 @@ empty:
 	}
 
 	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 
 	itr = list_iterator_create(use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
@@ -691,7 +691,7 @@ empty:
 	}
 	list_iterator_destroy(itr);
 	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	if (query)
 		xstrcat(query, " order by cluster, time_start, resv_name;");

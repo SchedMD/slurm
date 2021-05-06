@@ -416,7 +416,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 			added++;
 			/* add it to the list and sort */
-			slurm_mutex_lock(&as_mysql_cluster_list_lock);
+			slurm_rwlock_wrlock(&as_mysql_cluster_list_lock);
 			check_itr = list_iterator_create(as_mysql_cluster_list);
 			while ((tmp_name = list_next(check_itr))) {
 				if (!xstrcmp(tmp_name, object->name))
@@ -432,7 +432,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				error("Cluster %s(%s) appears to already be in "
 				      "our cache list, not adding.", tmp_name,
 				      object->name);
-			slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+			slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 		}
 
 		if (!external_cluster) {
@@ -1298,7 +1298,7 @@ empty:
 	}
 
 	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 
 	ret_list = list_create(slurmdb_destroy_event_rec);
 
@@ -1359,7 +1359,7 @@ empty:
 	xfree(extra);
 
 	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	return ret_list;
 }

@@ -172,7 +172,7 @@ extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 
 	if (assoc_extra) {
 		if (!locked && (use_cluster_list == as_mysql_cluster_list)) {
-			slurm_mutex_lock(&as_mysql_cluster_list_lock);
+			slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 			locked = 1;
 		}
 
@@ -357,7 +357,7 @@ extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 
 empty:
 	if (!locked && (use_cluster_list == as_mysql_cluster_list)) {
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 		locked = 1;
 	}
 
@@ -443,7 +443,7 @@ empty:
 
 end_it:
 	if (locked)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	return txn_list;
 }

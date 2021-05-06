@@ -706,7 +706,7 @@ is_same_user:
 	user_name = uid_to_string((uid_t) uid);
 
 	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 
 	ret_list = list_create(xfree_ptr);
 	itr = list_iterator_create(use_cluster_list);
@@ -722,7 +722,7 @@ is_same_user:
 	xfree(user_name);
 
 	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	if (rc == SLURM_ERROR) {
 		FREE_NULL_LIST(ret_list);
@@ -769,7 +769,7 @@ empty:
 	user_name = uid_to_string((uid_t) uid);
 
 	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	ret_list = list_create(xfree_ptr);
 	itr = list_iterator_create(use_cluster_list);
 	while ((object = list_next(itr))) {
@@ -783,7 +783,7 @@ empty:
 	xfree(user_name);
 
 	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	if (rc == SLURM_ERROR) {
 		FREE_NULL_LIST(ret_list);
@@ -851,7 +851,7 @@ empty:
 	wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
 	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	//START_TIMER;
 	itr = list_iterator_create(use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
@@ -866,7 +866,7 @@ empty:
 	list_iterator_destroy(itr);
 
 	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	xfree(tmp);
 	xfree(extra);

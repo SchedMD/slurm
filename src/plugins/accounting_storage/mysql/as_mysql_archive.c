@@ -4360,12 +4360,12 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 		 */
 		new_cluster_list = true;
 		use_cluster_list = list_create(xfree_ptr);
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 		itr = list_iterator_create(as_mysql_cluster_list);
 		while ((cluster_name = list_next(itr)))
 			list_append(use_cluster_list, xstrdup(cluster_name));
 		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 	}
 
 	itr = list_iterator_create(use_cluster_list);

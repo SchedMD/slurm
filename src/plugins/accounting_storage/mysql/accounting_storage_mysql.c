@@ -71,7 +71,7 @@ List as_mysql_cluster_list = NULL;
    end of the life of the slurmdbd.
 */
 List as_mysql_total_cluster_list = NULL;
-pthread_mutex_t as_mysql_cluster_list_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_rwlock_t as_mysql_cluster_list_lock = PTHREAD_RWLOCK_INITIALIZER;
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -890,10 +890,10 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 			fatal("problem adding static tres");
 	}
 
-	slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	slurm_rwlock_wrlock(&as_mysql_cluster_list_lock);
 	if (!(as_mysql_cluster_list = _get_cluster_names(mysql_conn, 0))) {
 		error("issue getting contents of %s", cluster_table);
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 		return SLURM_ERROR;
 	}
 
@@ -904,13 +904,13 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	if (!(as_mysql_total_cluster_list =
 	      _get_cluster_names(mysql_conn, 1))) {
 		error("issue getting total contents of %s", cluster_table);
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 		return SLURM_ERROR;
 	}
 
 	if ((rc = as_mysql_convert_tables_pre_create(mysql_conn)) !=
 	    SLURM_SUCCESS) {
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 		error("issue converting tables before create");
 		return rc;
 	} else if (backup_dbd) {
@@ -919,7 +919,7 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 		 * backup (see Bug 3827). This is only handled on the primary.
 		 */
 
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 		/* We do want to set the QOS count though. */
 		if (rc == SLURM_SUCCESS)
@@ -940,13 +940,13 @@ static int _as_mysql_acct_check_tables(mysql_conn_t *mysql_conn)
 	}
 	list_iterator_destroy(itr);
 	if (rc != SLURM_SUCCESS) {
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 		return rc;
 	}
 
 	rc = as_mysql_convert_tables_post_create(mysql_conn);
 
-	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 	if (rc != SLURM_SUCCESS) {
 		error("issue converting tables after create");
 		return rc;
@@ -2658,11 +2658,11 @@ extern int init(void)
 
 extern int fini ( void )
 {
-	slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	slurm_rwlock_wrlock(&as_mysql_cluster_list_lock);
 	FREE_NULL_LIST(as_mysql_cluster_list);
 	FREE_NULL_LIST(as_mysql_total_cluster_list);
-	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
-	slurm_mutex_destroy(&as_mysql_cluster_list_lock);
+	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
+	slurm_rwlock_destroy(&as_mysql_cluster_list_lock);
 	destroy_mysql_db_info(mysql_db_info);
 	xfree(mysql_db_name);
 	xfree(default_qos_str);
@@ -2831,7 +2831,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 	skip:
 		(void) assoc_mgr_update(update_list, 0);
 
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_wrlock(&as_mysql_cluster_list_lock);
 		itr = list_iterator_create(update_list);
 		while ((object = list_next(itr))) {
 			if (!object->objects || !list_count(object->objects))
@@ -2856,7 +2856,7 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 			}
 		}
 		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 	}
 	xfree(mysql_conn->pre_commit_query);
 	FREE_NULL_LIST(update_list);

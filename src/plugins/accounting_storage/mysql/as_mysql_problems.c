@@ -148,7 +148,7 @@ extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 	    assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
 		use_cluster_list = assoc_cond->cluster_list;
 	else
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 
 	itr = list_iterator_create(use_cluster_list);
 	while ((row = mysql_fetch_row(result))) {
@@ -193,7 +193,7 @@ extern int as_mysql_acct_no_assocs(mysql_conn_t *mysql_conn,
 
 	list_iterator_destroy(itr);
 	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	return rc;
 }
@@ -243,7 +243,7 @@ extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
 	    assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
 		use_cluster_list = assoc_cond->cluster_list;
 	else
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 
 	itr = list_iterator_create(use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
@@ -257,7 +257,7 @@ extern int as_mysql_acct_no_users(mysql_conn_t *mysql_conn,
 	}
 	list_iterator_destroy(itr);
 	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	if (query)
 		xstrcat(query, " order by cluster, acct;");
@@ -340,7 +340,7 @@ extern int as_mysql_user_no_assocs_or_no_uid(
 	    assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
 		use_cluster_list = assoc_cond->cluster_list;
 	else
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 
 	itr = list_iterator_create(use_cluster_list);
 	while ((row = mysql_fetch_row(result))) {
@@ -398,7 +398,7 @@ extern int as_mysql_user_no_assocs_or_no_uid(
 
 	list_iterator_destroy(itr);
 	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	return rc;
 }

@@ -110,7 +110,7 @@ extern char *wckey_table;
  */
 extern List as_mysql_cluster_list;
 extern List as_mysql_total_cluster_list;
-extern pthread_mutex_t as_mysql_cluster_list_lock;
+extern pthread_rwlock_t as_mysql_cluster_list_lock;
 
 extern bool backup_dbd;
 
