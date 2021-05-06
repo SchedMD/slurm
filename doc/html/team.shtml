@@ -272,6 +272,7 @@ new Slurm release.</p>
 <li>Robert Tweedy (Emory University)</li>
 <br>
 <li>Garrison Vaughan</li>
+<li>Oriol Vilarrubi (SchedMD)</li>
 <li>Chad Vizino (SchedMD)</li>
 <br>
 <li>Yu Watanabe</li>
@@ -294,6 +295,6 @@ new Slurm release.</p>
 <!-- INDIVIDUALS, PLEASE KEEP IN ALPHABETICAL ORDER -->
 </ul>
 
-<p style="text-align:center;">Last modified 10 May 2020</p>
+<p style="text-align:center;">Last modified 6 May 2021</p>
 
 <!--#include virtual="footer.txt"-->
