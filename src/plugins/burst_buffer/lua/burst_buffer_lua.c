@@ -522,12 +522,69 @@ static void _bb_free_pools(bb_pools_t *pools, int num_ent)
 	xfree(pools);
 }
 
+static void _json_parse_pools_object(json_object *jobj, bb_pools_t *pools)
+{
+	enum json_type type;
+	struct json_object_iter iter;
+	int64_t x;
+	const char *p;
+
+	json_object_object_foreachC(jobj, iter) {
+		type = json_object_get_type(iter.val);
+		switch (type) {
+		case json_type_int:
+			x = json_object_get_int64(iter.val);
+			if (xstrcmp(iter.key, "granularity") == 0) {
+				pools->granularity = x;
+			} else if (xstrcmp(iter.key, "quantity") == 0) {
+				pools->quantity = x;
+			} else if (xstrcmp(iter.key, "free") == 0) {
+				pools->free = x;
+			}
+			break;
+		case json_type_string:
+			p = json_object_get_string(iter.val);
+			if (xstrcmp(iter.key, "id") == 0) {
+				pools->name = xstrdup(p);
+			}
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+static bb_pools_t * _json_parse_pools_array(json_object *jobj, char *key,
+					    int *num)
+{
+	json_object *jarray;
+	int i;
+	json_object *jvalue;
+	bb_pools_t *pools;
+
+	jarray = jobj;
+	json_object_object_get_ex(jobj, key, &jarray);
+
+	*num = json_object_array_length(jarray);
+	pools = xcalloc(*num, sizeof(bb_pools_t));
+
+	for (i = 0; i < *num; i++) {
+		jvalue = json_object_array_get_idx(jarray, i);
+		_json_parse_pools_object(jvalue, &pools[i]);
+	}
+
+	return pools;
+}
+
 static bb_pools_t *_bb_get_pools(int *num_pools, bb_state_t *state_ptr,
 				 uint32_t timeout)
 {
 	int rc;
 	char *resp_msg = NULL;
 	const char *lua_func_name = "slurm_bb_pools";
+	bb_pools_t *pools = NULL;
+	json_object *j;
+	json_object_iter iter;
 
 	*num_pools = 0;
 
@@ -543,32 +600,139 @@ static bb_pools_t *_bb_get_pools(int *num_pools, bb_state_t *state_ptr,
 			error("%s returned:%d", lua_func_name, rc);
 		return NULL;
 	}
-	xfree(resp_msg);
-	log_flag(BURST_BUF, "slurm_bb_pools return code=%d", rc);
+	if (!resp_msg) {
+		error("%s returned no pools", lua_func_name);
+		return NULL;
+	}
 
-	return NULL;
+	j = json_tokener_parse(resp_msg);
+	if (j == NULL) {
+		error("json parser failed on \"%s\"",
+		      resp_msg);
+		xfree(resp_msg);
+		return NULL;
+	}
+	xfree(resp_msg);
+
+	json_object_object_foreachC(j, iter) {
+		if (pools) {
+			error("Multiple pool objects");
+			break;
+		}
+		pools = _json_parse_pools_array(j, iter.key, num_pools);
+	}
+	json_object_put(j);	/* Frees json memory */
+
+	return pools;
+}
+
+static int _load_pools(uint32_t timeout)
+{
+	static bool first_run = true;
+	bool have_new_pools = false;
+	int num_pools = 0, i, j, pools_inx;
+	burst_buffer_pool_t *pool_ptr;
+	bb_pools_t *pools;
+	bitstr_t *pools_bitmap;
+
+	/* Load the pools information from burst_buffer.lua. */
+	pools = _bb_get_pools(&num_pools, &bb_state, timeout);
+	if (!pools) {
+		error("Didn't find any pools from burst_buffer.lua. Cannot use burst buffers until pools are defined");
+		return SLURM_ERROR;
+	}
+
+	pools_bitmap = bit_alloc(bb_state.bb_config.pool_cnt + num_pools);
+	slurm_mutex_lock(&bb_state.bb_mutex);
+
+	/* TODO: Set default pool. */
+
+	/* Put found pools into bb_state.bb_config.pool_ptr. */
+	for (i = 0; i < num_pools; i++) {
+		bool found_pool = false;
+		pool_ptr = bb_state.bb_config.pool_ptr;
+		for (j = 0; j < bb_state.bb_config.pool_cnt; j++, pool_ptr++) {
+			if (!xstrcmp(pool_ptr->name, pools[i].name)) {
+				found_pool = true;
+				break;
+			}
+		}
+		if (!found_pool) {
+			have_new_pools = true;
+			/* This is a new pool. Add it to bb_state. */
+			if (!first_run)
+				info("Newly reported pool %s", pools[i].name);
+			bb_state.bb_config.pool_ptr =
+				xrealloc(bb_state.bb_config.pool_ptr,
+					 sizeof(burst_buffer_pool_t) *
+					 (bb_state.bb_config.pool_cnt + 1));
+			pool_ptr = bb_state.bb_config.pool_ptr +
+				bb_state.bb_config.pool_cnt;
+			pool_ptr->name = xstrdup(pools[i].name);
+			bb_state.bb_config.pool_cnt++;
+		}
+
+		pools_inx = pool_ptr - bb_state.bb_config.pool_ptr;
+		bit_set(pools_bitmap, pools_inx);
+
+		if (!pools[i].granularity) {
+			info("Granularity cannot be zero. Setting granularity to 1 for pool %s",
+			     pool_ptr->name);
+			pools[i].granularity = 1;
+		}
+		/*
+		 * TODO: Put some sanity checks on values here
+		 * (check for overflow or underflow)?
+		 */
+		pool_ptr->total_space = pools[i].quantity *
+			pools[i].granularity;
+		pool_ptr->granularity = pools[i].granularity;
+		pool_ptr->unfree_space = pools[i].quantity - pools[i].free;
+		pool_ptr->unfree_space *= pools[i].granularity;
+	}
+
+	pool_ptr = bb_state.bb_config.pool_ptr;
+	for (j = 0; j < bb_state.bb_config.pool_cnt; j++, pool_ptr++) {
+		if (bit_test(pools_bitmap, j) || (pool_ptr->total_space == 0)) {
+			if (have_new_pools)
+				log_flag(BURST_BUF, "Pool name=%s, granularity=%"PRIu64", total_space=%"PRIu64", used_space=%"PRIu64", unfree_space=%"PRIu64,
+					 pool_ptr->name, pool_ptr->granularity,
+					 pool_ptr->total_space,
+					 pool_ptr->used_space,
+					 pool_ptr->unfree_space);
+			continue;
+		}
+		error("Pool %s is no longer reported by the system, setting size to zero",
+		      pool_ptr->name);
+		pool_ptr->total_space = 0;
+		pool_ptr->used_space = 0;
+		pool_ptr->unfree_space = 0;
+	}
+	first_run = false;
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+	FREE_NULL_BITMAP(pools_bitmap);
+	_bb_free_pools(pools, num_pools);
+
+	return SLURM_SUCCESS;
 }
 
 static void _load_state(bool init_config)
 {
-	bb_pools_t *pools;
-	int num_pools = 0;
 	uint32_t timeout;
-
-	if (!init_config)
-		return;
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	timeout = bb_state.bb_config.other_timeout * 1000;
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
-	/* Load the pools information. */
-	pools = _bb_get_pools(&num_pools, &bb_state, timeout);
-	_bb_free_pools(pools, num_pools);
+	if (_load_pools(timeout) != SLURM_SUCCESS)
+		return;
 
+	bb_state.last_load_time = time(NULL);
+
+	if (!init_config)
+		return;
 
 	/* Load allocated burst buffers from state files. */
-	bb_state.last_load_time = time(NULL);
 	_recover_bb_state();
 	_apply_limits();
 	bb_state.last_update_time = time(NULL);
