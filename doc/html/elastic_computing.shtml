@@ -173,7 +173,7 @@ If a job is allocated some resources from the local cluster and others from
 the cloud, only those nodes from the cloud will appear in SLURM_NODE_ALIASES.
 Each set of names and addresses is comma separated and
 the elements within the set are separated by colons. For example:<br>
-SLURM_NODE_ALIASES=ec0:123.45.67.8:foo,ec2,123.45.67.9:bar</p>
+SLURM_NODE_ALIASES=ec0:123.45.67.8:foo,ec2:123.45.67.9:bar</p>
 
 <h2>Remaining Work</h2>
 
@@ -186,6 +186,6 @@ expands (adds resources).</li>
 </ul>
 
 
-<p style="text-align:center;">Last modified 23 October 2020</p>
+<p style="text-align:center;">Last modified 6 May 2021</p>
 
 <!--#include virtual="footer.txt"-->
