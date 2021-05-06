@@ -554,4 +554,9 @@ extern void validate_spec_cores_options(slurm_opt_t *opt);
  */
 extern char *slurm_option_get_argv_str(const int argc, char **argv);
 
+/*
+ * Return a job_desc_msg_t based on slurm_opt_t.
+ */
+extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local);
+
 #endif	/* _SLURM_OPT_H_ */

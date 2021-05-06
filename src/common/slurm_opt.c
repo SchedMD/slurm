@@ -5676,3 +5676,330 @@ extern char *slurm_option_get_argv_str(const int argc, char **argv)
 
 	return submit_line;
 }
+
+extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
+{
+	job_desc_msg_t *job_desc = xmalloc_nz(sizeof(*job_desc));
+	List tmp_gres_list = NULL;
+	int rc;
+
+	slurm_init_job_desc_msg(job_desc);
+
+	if (opt_local->account)
+		job_desc->account = opt_local->account;
+	if (opt_local->acctg_freq)
+		job_desc->acctg_freq = xstrdup(opt_local->acctg_freq);
+
+	/* admin_comment not filled in here */
+	/* alloc_node not filled in here */
+	/* alloc_resp_port not filled in here */
+	/* alloc_sid not filled in here */
+	/* arg[c|v] not filled in here */
+	/* array_inx not filled in here */
+	/* array_bitmap not filled in here */
+	/* batch_features not filled in here */
+
+	if (opt_local->begin)
+		job_desc->begin_time = opt_local->begin;
+
+	if (opt_local->job_flags)
+		job_desc->bitflags |= opt_local->job_flags;
+
+	if (opt_local->burst_buffer)
+		job_desc->burst_buffer = opt_local->burst_buffer;
+
+	job_desc->clusters = opt_local->clusters;
+	job_desc->cluster_features = opt_local->c_constraint;
+	if (opt_local->comment)
+		job_desc->comment = opt_local->comment;
+	job_desc->contiguous = opt_local->contiguous;
+	if (opt_local->core_spec != NO_VAL16)
+		job_desc->core_spec = opt_local->core_spec;
+
+	/* cpu_bind not filled in here */
+	/* cpu_bind_type not filled in here */
+
+	job_desc->cpu_freq_min = opt_local->cpu_freq_min;
+	job_desc->cpu_freq_max = opt_local->cpu_freq_max;
+	job_desc->cpu_freq_gov = opt_local->cpu_freq_gov;
+
+	if (opt_local->cpus_per_gpu)
+		xstrfmtcat(job_desc->cpus_per_tres, "gres:gpu:%d",
+			   opt_local->cpus_per_gpu);
+
+	/* crontab_entry not filled in here */
+
+	if (opt_local->deadline)
+		job_desc->deadline = opt_local->deadline;
+
+	if (opt_local->delay_boot != NO_VAL)
+		job_desc->delay_boot = opt_local->delay_boot;
+
+	job_desc->dependency = opt_local->dependency;
+
+	/* end_time not filled in here */
+	/* environment not filled in here */
+	/* env_size not filled in here */
+
+	job_desc->extra = opt_local->extra;
+	job_desc->exc_nodes = opt_local->exclude;
+	job_desc->features = opt_local->constraint;
+
+	/* fed_siblings_active not filled in here */
+	/* fed_siblings_viable not filled in here */
+
+	job_desc->group_id = opt_local->gid;
+
+	/* het_job_offset not filled in here */
+
+	if (opt_local->immediate == 1)
+		job_desc->immediate = 1;
+
+	/* job_id not filled in here */
+	/* job_id_str not filled in here */
+
+	if (opt_local->no_kill)
+		job_desc->kill_on_node_fail = 0;
+
+	if (opt_local->licenses)
+		job_desc->licenses = opt_local->licenses;
+
+	job_desc->mail_type = opt_local->mail_type;
+
+	if (opt_local->mail_user)
+		job_desc->mail_user = opt_local->mail_user;
+
+	if (opt_local->mcs_label)
+		job_desc->mcs_label = opt_local->mcs_label;
+
+	if (opt_local->mem_bind)
+		job_desc->mem_bind = opt_local->mem_bind;
+	if (opt_local->mem_bind_type)
+		job_desc->mem_bind_type = opt_local->mem_bind_type;
+
+	if (opt_local->mem_per_gpu != NO_VAL64)
+		xstrfmtcat(job_desc->mem_per_tres, "gres:gpu:%"PRIu64,
+			   opt_local->mem_per_gpu);
+
+	job_desc->name = opt_local->job_name;
+
+	if (opt_local->network)
+		job_desc->network = opt_local->network;
+
+	if (opt_local->nice != NO_VAL)
+		job_desc->nice = NICE_OFFSET + opt_local->nice;
+
+	if (opt_local->ntasks_set) {
+		job_desc->bitflags |= JOB_NTASKS_SET;
+		job_desc->num_tasks = opt_local->ntasks;
+	}
+
+	if (opt_local->open_mode)
+		job_desc->open_mode = opt_local->open_mode;
+
+	/* origin_cluster is not filled in here */
+	/* other_port not filled in here */
+
+	if (opt_local->overcommit) {
+		job_desc->min_cpus = MAX(opt_local->min_nodes, 1);
+		job_desc->overcommit = opt_local->overcommit;
+	} else if (opt_local->cpus_set)
+		job_desc->min_cpus =
+			opt_local->ntasks * opt_local->cpus_per_task;
+	else if (opt_local->nodes_set && (opt_local->min_nodes == 0))
+		job_desc->min_cpus = 0;
+	else
+		job_desc->min_cpus = opt_local->ntasks;
+
+	job_desc->partition = opt_local->partition;
+
+	if (opt_local->plane_size != NO_VAL)
+		job_desc->plane_size = opt_local->plane_size;
+
+	job_desc->power_flags = opt_local->power;
+
+	if (opt_local->hold)
+		job_desc->priority = 0;
+	else if (opt_local->priority)
+		job_desc->priority = opt_local->priority;
+
+	job_desc->profile = opt_local->profile;
+
+	if (opt_local->qos)
+		job_desc->qos = opt_local->qos;
+
+	if (opt_local->reboot)
+		job_desc->reboot = 1;
+
+	/* resp_host not filled in here */
+	/* restart_cnt not filled in here */
+
+	/*
+	 * simplify the job allocation nodelist, not laying out tasks until step
+	 */
+	if (opt_local->nodelist) {
+		hostlist_t hl = hostlist_create(opt_local->nodelist);
+		xfree(opt_local->nodelist);
+		opt_local->nodelist = hostlist_ranged_string_xmalloc(hl);
+		hostlist_uniq(hl);
+		/* This memory will leak as it never gets freed */
+		job_desc->req_nodes = hostlist_ranged_string_xmalloc(hl);
+		hostlist_destroy(hl);
+	}
+
+	if (((opt_local->distribution & SLURM_DIST_STATE_BASE) ==
+	     SLURM_DIST_ARBITRARY) && !job_desc->req_nodes) {
+		error("With Arbitrary distribution you need to "
+		      "specify a nodelist or hostfile with the -w option");
+		return NULL;
+	}
+
+	/* requeue not filled in here */
+
+	job_desc->reservation = opt_local->reservation;
+
+	/* script not filled in here */
+	/* script_buf not filled in here */
+
+	if (opt_local->shared != NO_VAL16)
+		job_desc->shared = opt_local->shared;
+
+	/* site_factor not filled in here */
+
+	if (opt_local->spank_job_env_size) {
+		/* NOTE: Not copying array, but shared memory */
+		job_desc->spank_job_env = opt_local->spank_job_env;
+		job_desc->spank_job_env_size = opt_local->spank_job_env_size;
+	}
+
+	job_desc->submit_line = opt_local->submit_line;
+	job_desc->task_dist = opt_local->distribution;
+
+	if (opt_local->time_limit != NO_VAL)
+		job_desc->time_limit = opt_local->time_limit;
+	if (opt_local->time_min != NO_VAL)
+		job_desc->time_min = opt_local->time_min;
+
+	job_desc->tres_bind = xstrdup(opt_local->tres_bind);
+	job_desc->tres_freq = xstrdup(opt_local->tres_freq);
+	xfmt_tres(&job_desc->tres_per_job, "gres:gpu", opt_local->gpus);
+	xfmt_tres(&job_desc->tres_per_node, "gres:gpu",
+		  opt_local->gpus_per_node);
+	if (opt_local->gres && xstrcasecmp(opt_local->gres, "NONE")) {
+		if (job_desc->tres_per_node)
+			xstrfmtcat(job_desc->tres_per_node, ",%s",
+				   opt_local->gres);
+		else
+			job_desc->tres_per_node = xstrdup(opt_local->gres);
+	}
+	xfmt_tres(&job_desc->tres_per_socket, "gres:gpu",
+		  opt_local->gpus_per_socket);
+	xfmt_tres(&job_desc->tres_per_task, "gres:gpu",
+		  opt_local->gpus_per_task);
+
+	job_desc->user_id = opt_local->uid;
+
+	/* wait_all_nodes not filled in here */
+
+	if (opt_local->warn_flags)
+		job_desc->warn_flags = opt_local->warn_flags;
+	if (opt_local->warn_signal)
+		job_desc->warn_signal = opt_local->warn_signal;
+	if (opt_local->warn_time)
+		job_desc->warn_time = opt_local->warn_time;
+
+	if (opt_local->chdir)
+		job_desc->work_dir = opt_local->chdir;
+
+	if (opt_local->cpus_set) {
+		job_desc->bitflags |= JOB_CPUS_SET;
+		job_desc->cpus_per_task = opt_local->cpus_per_task;
+	}
+
+	/* max_cpus not filled in here */
+
+	if (opt_local->nodes_set) {
+		job_desc->min_nodes = opt_local->min_nodes;
+		if (opt_local->max_nodes)
+			job_desc->max_nodes = opt_local->max_nodes;
+	} else if (opt_local->ntasks_set && (opt_local->ntasks == 0))
+		job_desc->min_nodes = 0;
+
+	/* boards_per_node not filled in here */
+	/* sockets_per_board not filled in here */
+
+	if (opt_local->sockets_per_node != NO_VAL)
+		job_desc->sockets_per_node = opt_local->sockets_per_node;
+	if (opt_local->cores_per_socket != NO_VAL)
+		job_desc->cores_per_socket = opt_local->cores_per_socket;
+	if (opt_local->threads_per_core != NO_VAL)
+		job_desc->threads_per_core = opt_local->threads_per_core;
+
+	if (opt_local->ntasks_per_node != NO_VAL)
+		job_desc->ntasks_per_node = opt_local->ntasks_per_node;
+	if (opt_local->ntasks_per_socket != NO_VAL)
+		job_desc->ntasks_per_socket = opt_local->ntasks_per_socket;
+	if (opt_local->ntasks_per_core != NO_VAL)
+		job_desc->ntasks_per_core = opt_local->ntasks_per_core;
+
+	/* ntasks_per_board not filled in here */
+
+	if (opt_local->ntasks_per_tres != NO_VAL)
+		job_desc->ntasks_per_tres = opt_local->ntasks_per_tres;
+	else if (opt_local->ntasks_per_gpu != NO_VAL)
+		job_desc->ntasks_per_tres = opt_local->ntasks_per_gpu;
+
+	if (opt_local->pn_min_cpus > -1)
+		job_desc->pn_min_cpus = opt_local->pn_min_cpus;
+
+	if (opt_local->pn_min_memory != NO_VAL64)
+		job_desc->pn_min_memory = opt_local->pn_min_memory;
+	else if (opt_local->mem_per_cpu != NO_VAL64)
+		job_desc->pn_min_memory = opt_local->mem_per_cpu | MEM_PER_CPU;
+
+	if (opt_local->pn_min_tmp_disk != NO_VAL64)
+		job_desc->pn_min_tmp_disk = opt_local->pn_min_tmp_disk;
+
+	if (opt_local->req_switch >= 0)
+		job_desc->req_switch = opt_local->req_switch;
+
+	/* select_jobinfo not filled in here */
+	/* desc->std_[err|in|out] not filled in here */
+	/* tres_req_cnt not filled in here */
+
+	if (opt_local->wait4switch >= 0)
+		job_desc->wait4switch = opt_local->wait4switch;
+
+	job_desc->wckey = opt_local->wckey;
+
+	job_desc->x11 = opt_local->x11;
+	if (job_desc->x11) {
+		job_desc->x11_magic_cookie = opt_local->x11_magic_cookie;
+		job_desc->x11_target = opt_local->x11_target;
+		job_desc->x11_target_port = opt_local->x11_target_port;
+	}
+
+	rc = gres_job_state_validate(job_desc->cpus_per_tres,
+				     job_desc->tres_freq,
+				     job_desc->tres_per_job,
+				     job_desc->tres_per_node,
+				     job_desc->tres_per_socket,
+				     job_desc->tres_per_task,
+				     job_desc->mem_per_tres,
+				     &job_desc->num_tasks,
+				     &job_desc->min_nodes,
+				     &job_desc->max_nodes,
+				     &job_desc->ntasks_per_node,
+				     &job_desc->ntasks_per_socket,
+				     &job_desc->sockets_per_node,
+				     &job_desc->cpus_per_task,
+				     &job_desc->ntasks_per_tres,
+				     &tmp_gres_list);
+	FREE_NULL_LIST(tmp_gres_list);
+	if (rc) {
+		error("%s", slurm_strerror(rc));
+		return NULL;
+	}
+
+	return job_desc;
+}

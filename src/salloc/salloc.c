@@ -233,7 +233,8 @@ int main(int argc, char **argv)
 		if (opt.chdir && chdir(opt.chdir)) {
 			error("chdir(%s): %m", opt.chdir);
 			exit(error_exit);
-		}
+		} else if (work_dir)
+			opt.chdir = work_dir;
 
 		if ((opt.get_user_env_time >= 0) && !env_cache_set) {
 			bool no_env_cache = false;
@@ -264,10 +265,11 @@ int main(int argc, char **argv)
 			job_req_list = list_create(NULL);
 			list_append(job_req_list, desc);
 		}
-		desc = xmalloc(sizeof(job_desc_msg_t));
-		slurm_init_job_desc_msg(desc);
+
+		desc = slurm_opt_create_job_desc(&opt);
 		if (_fill_job_desc_from_opts(desc) == -1)
 			exit(error_exit);
+
 		if (het_job_inx || !het_job_fini)
 			set_env_from_opts(&opt, &env, het_job_inx);
 		else
@@ -794,221 +796,10 @@ static void _set_submit_dir_env(void)
 /* Returns 0 on success, -1 on failure */
 static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
-	int rc;
-	List tmp_gres_list = NULL;
-
-	desc->contiguous = opt.contiguous ? 1 : 0;
-	if (opt.core_spec != NO_VAL16)
-		desc->core_spec = opt.core_spec;
-	desc->extra = xstrdup(opt.extra);
-	desc->features = xstrdup(opt.constraint);
-	desc->cluster_features = xstrdup(opt.c_constraint);
-	if (opt.immediate == 1)
-		desc->immediate = 1;
-	desc->name = xstrdup(opt.job_name);
-	desc->reservation = xstrdup(opt.reservation);
-	desc->profile  = opt.profile;
-	desc->submit_line = xstrdup(opt.submit_line);
-	desc->wckey  = xstrdup(opt.wckey);
-
-	desc->x11 = opt.x11;
-	if (desc->x11) {
-		desc->x11_magic_cookie = xstrdup(opt.x11_magic_cookie);
-		desc->x11_target = xstrdup(opt.x11_target);
-		desc->x11_target_port = opt.x11_target_port;
-	}
-
-	desc->cpu_freq_min = opt.cpu_freq_min;
-	desc->cpu_freq_max = opt.cpu_freq_max;
-	desc->cpu_freq_gov = opt.cpu_freq_gov;
-
-	if (opt.req_switch >= 0)
-		desc->req_switch = opt.req_switch;
-	if (opt.wait4switch >= 0)
-		desc->wait4switch = opt.wait4switch;
-
-	desc->req_nodes = xstrdup(opt.nodelist);
-	desc->exc_nodes = xstrdup(opt.exclude);
-	desc->partition = xstrdup(opt.partition);
-
-	if (opt.nodes_set) {
-		desc->min_nodes = opt.min_nodes;
-		if (opt.max_nodes)
-			desc->max_nodes = opt.max_nodes;
-	} else if (opt.ntasks_set && (opt.ntasks == 0))
-		desc->min_nodes = 0;
-
-	desc->user_id = opt.uid;
-	desc->group_id = opt.gid;
-	if (opt.dependency)
-		desc->dependency = xstrdup(opt.dependency);
-
-	if (opt.mem_bind)
-		desc->mem_bind       = xstrdup(opt.mem_bind);
-	if (opt.mem_bind_type)
-		desc->mem_bind_type  = opt.mem_bind_type;
-	if (opt.plane_size != NO_VAL)
-		desc->plane_size     = opt.plane_size;
-	desc->task_dist  = opt.distribution;
-	if (opt.plane_size != NO_VAL)
-		desc->plane_size = opt.plane_size;
-
-	if (opt.licenses)
-		desc->licenses = xstrdup(opt.licenses);
-	desc->network = xstrdup(opt.network);
-	if (opt.nice != NO_VAL)
-		desc->nice = NICE_OFFSET + opt.nice;
-	if (opt.priority)
-		desc->priority = opt.priority;
-	desc->mail_type = opt.mail_type;
-	if (opt.mail_user)
-		desc->mail_user = xstrdup(opt.mail_user);
-	if (opt.begin)
-		desc->begin_time = opt.begin;
-	if (opt.deadline)
-		desc->deadline = opt.deadline;
-	if (opt.burst_buffer)
-		desc->burst_buffer = opt.burst_buffer;
-	if (opt.account)
-		desc->account = xstrdup(opt.account);
-	if (opt.acctg_freq)
-		desc->acctg_freq = xstrdup(opt.acctg_freq);
-	if (opt.comment)
-		desc->comment = xstrdup(opt.comment);
-	if (opt.qos)
-		desc->qos = xstrdup(opt.qos);
-
-	if (opt.chdir)
-		desc->work_dir = xstrdup(opt.chdir);
-	else if (work_dir)
-		desc->work_dir = xstrdup(work_dir);
-
-	if (opt.hold)
-		desc->priority     = 0;
-	if (opt.reboot)
-		desc->reboot = 1;
-
-	/* job constraints */
-	if (opt.pn_min_cpus > -1)
-		desc->pn_min_cpus = opt.pn_min_cpus;
-	if (opt.pn_min_memory != NO_VAL64)
-		desc->pn_min_memory = opt.pn_min_memory;
-	else if (opt.mem_per_cpu != NO_VAL64)
-		desc->pn_min_memory = opt.mem_per_cpu | MEM_PER_CPU;
-	if (opt.pn_min_tmp_disk != NO_VAL64)
-		desc->pn_min_tmp_disk = opt.pn_min_tmp_disk;
-	if (opt.overcommit) {
-		desc->min_cpus = opt.min_nodes;
-		desc->overcommit = opt.overcommit;
-	} else if (opt.cpus_set)
-		desc->min_cpus = opt.ntasks * opt.cpus_per_task;
-	else
-		desc->min_cpus = opt.ntasks;
-	if (opt.ntasks_set)
-		desc->num_tasks = opt.ntasks;
-	if (opt.cpus_set)
-		desc->cpus_per_task = opt.cpus_per_task;
-	if (opt.ntasks_per_node)
-		desc->ntasks_per_node = opt.ntasks_per_node;
-	if (opt.ntasks_per_socket > -1)
-		desc->ntasks_per_socket = opt.ntasks_per_socket;
-	if (opt.ntasks_per_core > -1)
-		desc->ntasks_per_core = opt.ntasks_per_core;
-	if (opt.ntasks_per_tres != NO_VAL)
-		desc->ntasks_per_tres = opt.ntasks_per_tres;
-	else if (opt.ntasks_per_gpu != NO_VAL)
-		desc->ntasks_per_tres = opt.ntasks_per_gpu;
-
-	/* node constraints */
-	if (opt.sockets_per_node != NO_VAL)
-		desc->sockets_per_node = opt.sockets_per_node;
-	if (opt.cores_per_socket != NO_VAL)
-		desc->cores_per_socket = opt.cores_per_socket;
-	if (opt.threads_per_core != NO_VAL)
-		desc->threads_per_core = opt.threads_per_core;
-
-	if (opt.no_kill)
-		desc->kill_on_node_fail = 0;
-	if (opt.time_limit  != NO_VAL)
-		desc->time_limit = opt.time_limit;
-	if (opt.time_min  != NO_VAL)
-		desc->time_min = opt.time_min;
-	if (opt.job_flags)
-		desc->bitflags |= opt.job_flags;
-	desc->shared = opt.shared;
+	if (!desc)
+		return -1;
 
 	desc->wait_all_nodes = saopt.wait_all_nodes;
-	if (opt.warn_flags)
-		desc->warn_flags = opt.warn_flags;
-	if (opt.warn_signal)
-		desc->warn_signal = opt.warn_signal;
-	if (opt.warn_time)
-		desc->warn_time = opt.warn_time;
-
-	if (opt.spank_job_env_size) {
-		/* NOTE: Not copying array, but shared memory */
-		desc->spank_job_env      = opt.spank_job_env;
-		desc->spank_job_env_size = opt.spank_job_env_size;
-	}
-
-	desc->power_flags = opt.power;
-	if (opt.mcs_label)
-		desc->mcs_label = xstrdup(opt.mcs_label);
-	if (opt.delay_boot != NO_VAL)
-		desc->delay_boot = opt.delay_boot;
-	if (opt.cpus_set)
-		desc->bitflags |= JOB_CPUS_SET;
-	if (opt.ntasks_set)
-		desc->bitflags |= JOB_NTASKS_SET;
-
-	desc->clusters = xstrdup(opt.clusters);
-
-	if (opt.cpus_per_gpu)
-		xstrfmtcat(desc->cpus_per_tres, "gpu:%d", opt.cpus_per_gpu);
-	if (!opt.tres_bind && ((opt.ntasks_per_tres != NO_VAL) ||
-			       (opt.ntasks_per_gpu != NO_VAL))) {
-		/* Implicit single GPU binding with ntasks-per-tres/gpu */
-		if (opt.ntasks_per_tres != NO_VAL)
-			xstrfmtcat(opt.tres_bind, "gpu:single:%d",
-				   opt.ntasks_per_tres);
-		else
-			xstrfmtcat(opt.tres_bind, "gpu:single:%d",
-				   opt.ntasks_per_gpu);
-	}
-	desc->tres_bind = xstrdup(opt.tres_bind);
-	desc->tres_freq = xstrdup(opt.tres_freq);
-	xfmt_tres(&desc->tres_per_job,    "gpu", opt.gpus);
-	xfmt_tres(&desc->tres_per_node,   "gpu", opt.gpus_per_node);
-	if (opt.gres) {
-		if (desc->tres_per_node)
-			xstrfmtcat(desc->tres_per_node, ",%s", opt.gres);
-		else
-			desc->tres_per_node = xstrdup(opt.gres);
-	}
-	xfmt_tres(&desc->tres_per_socket, "gpu", opt.gpus_per_socket);
-	xfmt_tres(&desc->tres_per_task,   "gpu", opt.gpus_per_task);
-	if (opt.mem_per_gpu != NO_VAL64)
-		xstrfmtcat(desc->mem_per_tres, "gpu:%"PRIu64, opt.mem_per_gpu);
-
-	rc = gres_job_state_validate(desc->cpus_per_tres,
-				     desc->tres_freq,
-				     desc->tres_per_job,
-				     desc->tres_per_node,
-				     desc->tres_per_socket,
-				     desc->tres_per_task,
-				     desc->mem_per_tres,
-				     &desc->num_tasks,
-				     &desc->min_nodes,
-				     &desc->max_nodes,
-				     &desc->ntasks_per_node,
-				     &desc->ntasks_per_socket,
-				     &desc->sockets_per_node,
-				     &desc->cpus_per_task,
-				     &desc->ntasks_per_tres,
-				     &tmp_gres_list);
-	FREE_NULL_LIST(tmp_gres_list);
-	if (rc)
-		return -1;
 
 	return 0;
 }
