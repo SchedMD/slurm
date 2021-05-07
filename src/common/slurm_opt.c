@@ -5685,10 +5685,8 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 
 	slurm_init_job_desc_msg(job_desc);
 
-	if (opt_local->account)
-		job_desc->account = opt_local->account;
-	if (opt_local->acctg_freq)
-		job_desc->acctg_freq = xstrdup(opt_local->acctg_freq);
+	job_desc->account = opt_local->account;
+	job_desc->acctg_freq = xstrdup(opt_local->acctg_freq);
 
 	/* admin_comment not filled in here */
 	/* alloc_node not filled in here */
@@ -5699,19 +5697,12 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 	/* array_bitmap not filled in here */
 	/* batch_features not filled in here */
 
-	if (opt_local->begin)
-		job_desc->begin_time = opt_local->begin;
-
-	if (opt_local->job_flags)
-		job_desc->bitflags |= opt_local->job_flags;
-
-	if (opt_local->burst_buffer)
-		job_desc->burst_buffer = opt_local->burst_buffer;
-
+	job_desc->begin_time = opt_local->begin;
+	job_desc->bitflags |= opt_local->job_flags;
+	job_desc->burst_buffer = opt_local->burst_buffer;
 	job_desc->clusters = opt_local->clusters;
 	job_desc->cluster_features = opt_local->c_constraint;
-	if (opt_local->comment)
-		job_desc->comment = opt_local->comment;
+	job_desc->comment = opt_local->comment;
 	job_desc->contiguous = opt_local->contiguous;
 	if (opt_local->core_spec != NO_VAL16)
 		job_desc->core_spec = opt_local->core_spec;
@@ -5729,8 +5720,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 
 	/* crontab_entry not filled in here */
 
-	if (opt_local->deadline)
-		job_desc->deadline = opt_local->deadline;
+	job_desc->deadline = opt_local->deadline;
 
 	if (opt_local->delay_boot != NO_VAL)
 		job_desc->delay_boot = opt_local->delay_boot;
@@ -5761,21 +5751,16 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 	if (opt_local->no_kill)
 		job_desc->kill_on_node_fail = 0;
 
-	if (opt_local->licenses)
-		job_desc->licenses = opt_local->licenses;
+	job_desc->licenses = opt_local->licenses;
 
 	job_desc->mail_type = opt_local->mail_type;
 
-	if (opt_local->mail_user)
-		job_desc->mail_user = opt_local->mail_user;
+	job_desc->mail_user = opt_local->mail_user;
 
-	if (opt_local->mcs_label)
-		job_desc->mcs_label = opt_local->mcs_label;
+	job_desc->mcs_label = opt_local->mcs_label;
 
-	if (opt_local->mem_bind)
-		job_desc->mem_bind = opt_local->mem_bind;
-	if (opt_local->mem_bind_type)
-		job_desc->mem_bind_type = opt_local->mem_bind_type;
+	job_desc->mem_bind = opt_local->mem_bind;
+	job_desc->mem_bind_type = opt_local->mem_bind_type;
 
 	if (opt_local->mem_per_gpu != NO_VAL64)
 		xstrfmtcat(job_desc->mem_per_tres, "gres:gpu:%"PRIu64,
@@ -5783,8 +5768,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 
 	job_desc->name = opt_local->job_name;
 
-	if (opt_local->network)
-		job_desc->network = opt_local->network;
+	job_desc->network = opt_local->network;
 
 	if (opt_local->nice != NO_VAL)
 		job_desc->nice = NICE_OFFSET + opt_local->nice;
@@ -5825,8 +5809,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 
 	job_desc->profile = opt_local->profile;
 
-	if (opt_local->qos)
-		job_desc->qos = opt_local->qos;
+	job_desc->qos = opt_local->qos;
 
 	if (opt_local->reboot)
 		job_desc->reboot = 1;
@@ -5901,15 +5884,11 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 
 	/* wait_all_nodes not filled in here */
 
-	if (opt_local->warn_flags)
-		job_desc->warn_flags = opt_local->warn_flags;
-	if (opt_local->warn_signal)
-		job_desc->warn_signal = opt_local->warn_signal;
-	if (opt_local->warn_time)
-		job_desc->warn_time = opt_local->warn_time;
+	job_desc->warn_flags = opt_local->warn_flags;
+	job_desc->warn_signal = opt_local->warn_signal;
+	job_desc->warn_time = opt_local->warn_time;
 
-	if (opt_local->chdir)
-		job_desc->work_dir = opt_local->chdir;
+	job_desc->work_dir = opt_local->chdir;
 
 	if (opt_local->cpus_set) {
 		job_desc->bitflags |= JOB_CPUS_SET;
