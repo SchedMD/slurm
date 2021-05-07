@@ -97,6 +97,7 @@ extern int common_node_config_load(List gres_conf_list,
 			gres_device = xmalloc(sizeof(gres_device_t));
 			list_append(*gres_devices, gres_device);
 
+			gres_device->dev_num = -1;
 			gres_device->index = index;
 			gres_device->path = xstrdup(one_name);
 
