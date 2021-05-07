@@ -494,6 +494,10 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 					 gres_record->links);
 			continue;
 		} else if (!gres_record->file) {
+			/*
+			 * Split this record into multiple single-GPU records
+			 * and add them to the single-GPU GRES list
+			 */
 			for (i = 0; i < gres_record->count; i++)
 				add_gres_to_list(gres_list_conf_single,
 						 gres_record->name, 1,
@@ -512,6 +516,10 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 		 */
 		hl = hostlist_create(gres_record->file);
 		while ((hl_name = hostlist_shift(hl))) {
+			/*
+			 * Split this record into multiple single-GPU,
+			 * single-file records and add to single-GPU GRES list
+			 */
 			add_gres_to_list(gres_list_conf_single,
 					 gres_record->name, 1,
 					 gres_record->cpu_cnt,
