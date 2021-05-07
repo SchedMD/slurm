@@ -107,10 +107,15 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 					     "OMPI_MCA_btl_openib_if_include"));
 	}
 
+	/*
+	 * Set use_dev_num=true so number at end of device file is used as the
+	 * global index, rather than an index relative to the total number of
+	 * NICs
+	 */
 	common_gres_set_env(gres_devices, env_ptr,
 			    usable_gres, "mlx4_", local_inx, gres_bit_alloc,
 			    &local_list, &global_list, is_task, is_job, NULL,
-			    flags);
+			    flags, true);
 
 	if (global_list) {
 		env_array_overwrite(env_ptr, slurm_env_var, global_list);

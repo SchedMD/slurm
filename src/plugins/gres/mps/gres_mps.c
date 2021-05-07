@@ -602,7 +602,7 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 	common_gres_set_env(gres_devices, env_ptr,
 			    usable_gres, "", local_inx, gres_bit_alloc,
 			    &local_list, &global_list,
-			    is_task, is_job, &global_id, flags);
+			    is_task, is_job, &global_id, flags, true);
 
 	if (perc_env) {
 		env_array_overwrite(env_ptr,

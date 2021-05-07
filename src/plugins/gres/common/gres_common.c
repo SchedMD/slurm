@@ -189,7 +189,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				int *local_inx, bitstr_t *bit_alloc,
 				char **local_list, char **global_list,
 				bool is_task, bool is_job, int *global_id,
-				gres_internal_flags_t flags)
+				gres_internal_flags_t flags, bool use_dev_num)
 {
 	int first_inx = -1;
 	bool use_local_dev_index = common_use_local_device_index();
@@ -222,11 +222,23 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	itr = list_iterator_create(gres_devices);
 	while ((gres_device = list_next(itr))) {
 		int index;
+		int global_env_index;
 		if (!bit_test(bit_alloc, gres_device->index))
 			continue;
 
+		/*
+		 * NICs want env to match the dev_num parsed from the
+		 * file name; GPUs, however, want it to match the order
+		 * they enumerate on the PCI bus, and this isn't always
+		 * the same order as the device file names
+		 */
+		if (use_dev_num)
+			global_env_index = gres_device->dev_num;
+		else
+			global_env_index = gres_device->index;
+
 		index = use_local_dev_index ?
-			(*local_inx)++ : gres_device->dev_num;
+			(*local_inx)++ : global_env_index;
 
 		if (is_task) {
 			if (!first_device) {
@@ -249,7 +261,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 			   index);
 		local_prefix = ",";
 		xstrfmtcat(new_global_list, "%s%s%d", global_prefix, prefix,
-			   gres_device->dev_num);
+			   global_env_index);
 		global_prefix = ",";
 	}
 	list_iterator_destroy(itr);

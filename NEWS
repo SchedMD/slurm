@@ -168,6 +168,7 @@ documents those changes that are of interest to users and administrators.
  -- Rename SbcastParameters to BcastParameters.
  -- Make srun sensitive to BcastParameters.
  -- RSMI: Add gres_links_create_empty() and preserve RSMI enumeration order.
+ -- GPUs: Use index instead of dev_num for CUDA_VISIBLE_DEVICES
 
 * Changes in Slurm 20.11.9
 ==========================

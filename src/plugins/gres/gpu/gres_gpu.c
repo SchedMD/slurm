@@ -123,7 +123,7 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 	common_gres_set_env(gres_devices, env_ptr,
 			    usable_gres, "", local_inx,  gres_bit_alloc,
 			    &local_list, &global_list, is_task, is_job, NULL,
-			    flags);
+			    flags, false);
 
 	if (gres_cnt) {
 		char *gpus_on_node = xstrdup_printf("%"PRIu64, gres_cnt);
@@ -1047,7 +1047,7 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 			i++;
 			if (i == dev_inx) {
 				xstrfmtcat(dev_num_str, "%s%d",
-					   sep,gres_device->dev_num);
+					   sep, gres_device->index);
 				sep = ",";
 				break;
 			}
