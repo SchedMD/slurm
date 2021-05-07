@@ -192,7 +192,7 @@ static int _check_lustre_fs(void)
  * write_bytes         9007 samples [bytes] 2 4194304 31008331389
  *
  */
-static int _read_lustre_counters(void)
+static int _read_lustre_counters(bool logged)
 {
 	char *lustre_dir;
 	DIR *proc_dir;
@@ -203,13 +203,15 @@ static int _read_lustre_counters(void)
 
 	lustre_dir = _llite_path();
 	if (!lustre_dir) {
-		error("%s: can't find Lustre stats", __func__);
+		if (!logged)
+			error("%s: can't find Lustre stats", __func__);
 		return SLURM_ERROR;
 	}
 
 	proc_dir = opendir(lustre_dir);
 	if (!proc_dir) {
-		error("%s: Cannot open %s %m", __func__, lustre_dir);
+		if (!logged)
+			error("%s: Cannot open %s %m", __func__, lustre_dir);
 		return SLURM_ERROR;
 	}
 
@@ -294,6 +296,7 @@ static int _update_node_filesystem(void)
 {
 	static int dataset_id = -1;
 	static bool first = true;
+	static int errors = 0;
 	char str[256];
 
 	enum {
@@ -319,10 +322,18 @@ static int _update_node_filesystem(void)
 
 	slurm_mutex_lock(&lustre_lock);
 
-	if (_read_lustre_counters() != SLURM_SUCCESS) {
-		error("%s: Cannot read lustre counters", __func__);
+	if (_read_lustre_counters(errors) != SLURM_SUCCESS) {
+		if (!errors)
+			error("%s: Cannot read lustre counters", __func__);
+		errors++;
 		slurm_mutex_unlock(&lustre_lock);
 		return SLURM_ERROR;
+	}
+
+	if (errors) {
+		info("%s: lustre counters successfully read after %d errors",
+		     __func__, errors);
+		errors = 0;
 	}
 
 	if (first) {
@@ -430,6 +441,7 @@ extern void acct_gather_filesystem_p_conf_values(List *data)
 extern int acct_gather_filesystem_p_get_data(acct_gather_data_t *data)
 {
 	int retval = SLURM_SUCCESS;
+	static int errors = 0;
 
 	if ((tres_pos == -1) || !data) {
 		debug2("%s: We are not tracking TRES fs/lustre", __func__);
@@ -438,10 +450,18 @@ extern int acct_gather_filesystem_p_get_data(acct_gather_data_t *data)
 
 	slurm_mutex_lock(&lustre_lock);
 
-	if (_read_lustre_counters() != SLURM_SUCCESS) {
-		error("%s: Cannot read lustre counters", __func__);
+	if (_read_lustre_counters(errors) != SLURM_SUCCESS) {
+		if (!errors)
+			error("%s: cannot read lustre counters", __func__);
+		errors++;
 		slurm_mutex_unlock(&lustre_lock);
 		return SLURM_ERROR;
+	}
+
+	if (errors) {
+		info("%s: lustre counters successfully read after %d errors",
+		     __func__, errors);
+		errors = 0;
 	}
 
 	/* Obtain the current values read from all lustre-xxxx directories */
