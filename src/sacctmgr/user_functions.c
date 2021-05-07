@@ -628,44 +628,6 @@ static int _check_coord_request(slurmdb_user_cond_t *user_cond, bool check)
 	return rc;
 }
 
-static bool _check_user_has_default_assoc(char *user_name, List assoc_list)
-{
-	ListIterator itr = list_iterator_create(assoc_list);
-	slurmdb_assoc_rec_t *assoc;
-	bool def_found = 0, any_def_found = 1;
-	char *last_cluster = NULL;
-
-	while ((assoc = list_next(itr))) {
-		if (last_cluster && xstrcmp(last_cluster, assoc->cluster)) {
-			if (!def_found) {
-				exit_code = 1;
-				fprintf(stderr,
-					" User %s on cluster %s no "
-					"longer has a default account.\n",
-					user_name, last_cluster);
-				any_def_found = 0;
-			}
-			def_found = 0;
-		}
-
-		last_cluster = assoc->cluster;
-
-		if (assoc->is_def)
-			def_found = 1;
-	}
-	list_iterator_destroy(itr);
-
-	if (!def_found) {
-		exit_code = 1;
-		fprintf(stderr,
-			" User %s on cluster %s no "
-			"longer has a default account.\n",
-			user_name, last_cluster);
-		any_def_found = 0;
-	}
-	return any_def_found;
-}
-
 /*
  * TODO: This is a duplicated function from slurmctld/proc_req.c.
  *       We can not use the original due the drop_priv feature.
@@ -2046,6 +2008,27 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 			slurmdb_connection_commit(db_conn, 0);
 			return rc;
 		}
+
+		if (rc == ESLURM_NO_REMOVE_DEFAULT_ACCOUNT) {
+			fprintf(stderr, " Error with request: %s\n",
+				slurm_strerror(rc));
+
+			while((object = list_next(itr))) {
+				fprintf(stderr,"  %s\n", object);
+			}
+			fprintf(stderr,
+				" You must change the default "
+				"account of these users or "
+				"remove the users completely "
+				"from the affected clusters "
+				"to allow these changes.\n"
+				" Changes Discarded\n");
+			list_iterator_destroy(itr);
+			FREE_NULL_LIST(ret_list);
+			slurmdb_connection_commit(db_conn, 0);
+			return rc;
+		}
+
 		if (cond_set == SA_SET_USER) {
 			printf(" Deleting users...\n");
 		} else if (cond_set & SA_SET_ASSOC) {
@@ -2101,7 +2084,6 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 			slurmdb_user_cond_t del_user_cond;
 			slurmdb_assoc_cond_t del_user_assoc_cond;
 			slurmdb_user_rec_t *user = NULL;
-			bool default_deleted = false;
 			/* Use a fresh cond here so we check all
 			   clusters and such to make sure there are no
 			   associations.
@@ -2125,11 +2107,6 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 				itr = list_iterator_create(user_list);
 				while ((user = list_next(itr))) {
 					if (user->assoc_list) {
-						if (!_check_user_has_default_assoc(
-							    user->name,
-							    user->assoc_list))
-							default_deleted = true;
-
 						continue;
 					}
 					if (!del_user_list) {
@@ -2147,19 +2124,7 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 				list_iterator_destroy(itr);
 				FREE_NULL_LIST(user_list);
 
-				if (default_deleted) {
-					rc = exit_code = 1;
-					fprintf(stderr,
-						" You must change the default "
-						"account of these users or "
-						"remove the users completely "
-						"from the affected clusters "
-						"to allow these changes.\n"
-						" Changes Discarded\n");
-					slurmdb_connection_commit(db_conn, 0);
-					goto end_it;
 
-				}
 			}
 
 			if (del_user_list) {

@@ -252,95 +252,6 @@ static int _set_rec(int *start, int argc, char **argv,
 	return rec_set;
 }
 
-static int _isdefault_old(List acct_list)
-{
-	int rc = 0;
-	slurmdb_user_cond_t user_cond;
-	List ret_list = NULL;
-
-	if (!acct_list || !list_count(acct_list))
-		return rc;
-
-	memset(&user_cond, 0, sizeof(slurmdb_user_cond_t));
-	user_cond.def_acct_list = acct_list;
-
-	ret_list = slurmdb_users_get(db_conn, &user_cond);
-	if (ret_list && list_count(ret_list)) {
-		ListIterator itr = list_iterator_create(ret_list);
-		slurmdb_user_rec_t *user = NULL;
-		fprintf(stderr," Users listed below have these "
-			"as their Default Accounts.\n");
-		while((user = list_next(itr))) {
-			fprintf(stderr, " User - %-10.10s Account - %s\n",
-				user->name, user->default_acct);
-		}
-		list_iterator_destroy(itr);
-		rc = 1;
-	}
-
-	FREE_NULL_LIST(ret_list);
-
-	return rc;
-}
-
-static int _isdefault(int cond_set, List acct_list, List assoc_list)
-{
-	int rc = 0;
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
-	char *acct;
-	char *output = NULL;
-	slurmdb_assoc_rec_t *assoc = NULL;
-
-	if (!acct_list || !list_count(acct_list)
-	    || !assoc_list || !list_count(assoc_list))
-		return rc;
-
-	/* Since not all plugins have been converted to the new style
-	   of default accounts we have to handle those that aren't.
-	   If the plugin have been converted all the associations here
-	   will have is_def set.
-	*/
-	assoc = list_peek(assoc_list);
-	if (!assoc->is_def)
-		return _isdefault_old(acct_list);
-
-	itr = list_iterator_create(acct_list);
-	itr2 = list_iterator_create(assoc_list);
-	while ((acct = list_next(itr))) {
-		while ((assoc = list_next(itr2))) {
-			char tmp[1000];
-			/* The pgsql plugin doesn't have the idea of
-			   only_defs, so thre query could return all
-			   the associations, even without defaults. */
-			if (cond_set == SA_SET_USER) {
-				if (xstrcasecmp(acct, assoc->acct))
-					continue;
-			} else {
-				snprintf(tmp, 1000, " A = %s ", assoc->acct);
-				if (!strstr(acct, tmp))
-					continue;
-			}
-			snprintf(tmp, 1000, "C = %-10s A = %-20s U = %-9s\n",
-				 assoc->cluster, assoc->acct, assoc->user);
-			if (output && strstr(output, tmp))
-				continue;
-
-			xstrcat(output, tmp);
-			rc = 1;
-		}
-		list_iterator_reset(itr2);
-	}
-	list_iterator_destroy(itr);
-	list_iterator_destroy(itr2);
-	if (output) {
-		fprintf(stderr," Users listed below have these "
-			"as their Default Accounts.\n%s", output);
-		xfree(output);
-	}
-	return rc;
-}
-
 extern int sacctmgr_add_account(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS;
@@ -1126,14 +1037,19 @@ extern int sacctmgr_delete_account(int argc, char **argv)
 	if (ret_list && list_count(ret_list)) {
 		char *object = NULL;
 		ListIterator itr = NULL;
+		itr = list_iterator_create(ret_list);
 
 		/* Check to see if person is trying to remove a default
 		 * account of a user.  _isdefault only works with the
 		 * output from slurmdb_accounts_remove, and
 		 * with a previously got assoc_list.
 		 */
-		if (_isdefault(cond_set, ret_list, local_assoc_list)) {
-			exit_code=1;
+		if (rc == ESLURM_NO_REMOVE_DEFAULT_ACCOUNT){
+			fprintf(stderr, " Error with request: %s\n",
+				slurm_strerror(rc));
+			while((object = list_next(itr))) {
+				fprintf(stderr,"  %s\n", object);
+			}
 			fprintf(stderr, " Please either remove the "
 				"accounts listed "
 				"above from list and resubmit,\n"
@@ -1143,7 +1059,7 @@ extern int sacctmgr_delete_account(int argc, char **argv)
 			slurmdb_connection_commit(db_conn, 0);
 			goto end_it;
 		}
-		itr = list_iterator_create(ret_list);
+
 		/* If there were jobs running with an association to
 		   be deleted, don't.
 		*/
