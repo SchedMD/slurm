@@ -516,10 +516,8 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (!opt.job_name)
 		desc->name = xstrdup("sbatch");
 
-	if (sbopt.array_inx)
-		desc->array_inx = xstrdup(sbopt.array_inx);
-	if (sbopt.batch_features)
-		desc->batch_features = xstrdup(sbopt.batch_features);
+	desc->array_inx = sbopt.array_inx;
+	desc->batch_features = sbopt.batch_features;
 
 	desc->wait_all_nodes = sbopt.wait_all_nodes;
 
@@ -556,12 +554,10 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->env_size = envcount(desc->environment);
 
 	desc->argc     = sbopt.script_argc;
-	desc->argv     = xmalloc(sizeof(char *) * sbopt.script_argc);
-	for (int i = 0; i < sbopt.script_argc; i++)
-		desc->argv[i] = xstrdup(sbopt.script_argv[i]);
-	desc->std_err  = xstrdup(opt.efname);
-	desc->std_in   = xstrdup(opt.ifname);
-	desc->std_out  = xstrdup(opt.ofname);
+	desc->argv     = sbopt.script_argv;
+	desc->std_err  = opt.efname;
+	desc->std_in   = opt.ifname;
+	desc->std_out  = opt.ofname;
 
 	if (sbopt.requeue != NO_VAL)
 		desc->requeue = sbopt.requeue;
