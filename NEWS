@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix false positive oom-kill events on extern step termination when
     jobacct_gather/cgroup configured.
  -- Ensure SPANK prolog and epilog run without an explicit PlugStackConfig.
+ -- Fix missing xstrdup which could result in slurmctld segfault on array jobs.
 
 * Changes in Slurm 20.02.6
 ==========================
