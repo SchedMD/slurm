@@ -62,9 +62,9 @@ typedef enum {
 } gres_internal_flags_t;
 
 typedef struct {
-	int index;
+	int index; /* GRES bitmap index */
 	int alloc;
-	int dev_num;
+	int dev_num; /* Number at the end of the device filename */
 	char *major;
 	char *path;
 } gres_device_t;
