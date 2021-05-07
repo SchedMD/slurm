@@ -773,7 +773,14 @@ _one_step_complete_msg(stepd_step_rec_t *job, int first, int last)
 			if ((retcode == 0) && (rc == 0))
 				goto finished;
 		}
-		/* on error AGAIN, send to the slurmctld instead */
+		/*
+		 * On error AGAIN, send to the slurmctld instead.
+		 * This is useful if parent_rank gave up waiting for us
+		 * on stepd_wait_for_children_slurmstepd.
+		 * If it's just busy handeling our prev messages we'll need
+		 * to handle duplicated messages in both the parent and
+		 * slurmctld.
+		 */
 		debug3("Rank %d sending complete to slurmctld instead, range "
 		       "%d to %d", step_complete.rank, first, last);
 	}  else {

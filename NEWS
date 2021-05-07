@@ -89,6 +89,8 @@ documents those changes that are of interest to users and administrators.
  -- torque/qstat - fix printf error message in output.
  -- When adding associations or wckeys avoid checking multiple times a user or
     cluster name.
+ -- Fix wrong jobacctgather information on a step on multiple nodes
+    due to timeouts sending its the information gathered on its node.
 
 * Changes in Slurm 20.11.6
 ==========================
