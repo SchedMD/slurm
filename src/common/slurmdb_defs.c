@@ -2158,13 +2158,12 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 	List total_assoc_list = list_create(NULL);
 	List arch_rec_list =
 		list_create(slurmdb_destroy_hierarchical_rec);
-	ListIterator itr, itr2;
+	ListIterator itr;
 
 	/* The list should already be sorted by lfts, do it anyway
 	 * just to make sure it is correct. */
 	list_sort(assoc_list, (ListCmpF)_sort_assoc_by_lft_dec);
 	itr = list_iterator_create(assoc_list);
-	itr2 = list_iterator_create(total_assoc_list);
 
 	while((assoc = list_next(itr))) {
 		arch_rec = xmalloc(sizeof(slurmdb_hierarchical_rec_t));
@@ -2203,19 +2202,16 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 				       last_acct_parent->assoc->cluster)) {
 			par_arch_rec = last_acct_parent;
 		} else {
-			list_iterator_reset(itr2);
-			while((par_arch_rec = list_next(itr2))) {
-				if (assoc->parent_id == par_arch_rec->assoc->id
-				    && !xstrcmp(assoc->cluster,
-						par_arch_rec->assoc->cluster)) {
-					if (assoc->user)
-						last_parent = par_arch_rec;
-					else
-						last_parent
-							= last_acct_parent
-							= par_arch_rec;
-					break;
-				}
+			par_arch_rec = list_find_first(total_assoc_list,
+						       _find_arch_in_list,
+						       assoc);
+			if (par_arch_rec) {
+				if (assoc->user)
+					last_parent = par_arch_rec;
+				else
+					last_parent
+						= last_acct_parent
+						= par_arch_rec;
 			}
 		}
 
@@ -2228,7 +2224,6 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 		list_append(total_assoc_list, arch_rec);
 	}
 	list_iterator_destroy(itr);
-	list_iterator_destroy(itr2);
 
 	FREE_NULL_LIST(total_assoc_list);
 //	info("got %d", list_count(arch_rec_list));
