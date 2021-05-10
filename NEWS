@@ -19,6 +19,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - fix segfault in slurmrestd db/jobs with numeric queries
  -- slurmrestd - add argv handling for job/submit endpoint.
  -- srun - fix broken node step allocation in a heterogeneous allocation.
+ -- Fail step creation if -n is not multiple of --ntasks-per-gpu.
 
 * Changes in Slurm 20.11.7
 ==========================
