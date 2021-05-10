@@ -134,6 +134,16 @@ int fd_get_socket_error(int fd, int *err);
 extern char *fd_resolve_path(int fd);
 
 /*
+ * Resolve peer address for a given socket (fd)
+ *
+ * Explicitly preserves value of errno.
+ *
+ * IN fd - file descriptor to resolve peer
+ * IN RET ptr to a peer address (must xfree()) or NULL on failure
+ */
+extern char *fd_resolve_peer(int fd);
+
+/*
  * Set inline Out of Band (OOB) data on socket fd
  */
 extern void fd_set_oob(int fd, int value);

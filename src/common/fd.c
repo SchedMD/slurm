@@ -48,6 +48,9 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/net.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/timers.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -288,6 +291,28 @@ extern char *fd_resolve_path(int fd)
 
 	xfree(path);
 	return resolved;
+}
+
+extern char *fd_resolve_peer(int fd)
+{
+	slurm_addr_t addr;
+	socklen_t size = sizeof(addr);
+	int err = errno;
+	char *peer;
+
+	if (fd < 0)
+		return NULL;
+
+	if (slurm_get_peer_addr(fd, &addr)) {
+		log_flag(NET, "%s: unable to resolve peername for fd:%d: %m",
+			 __func__, fd);
+		return NULL;
+	}
+
+	peer = sockaddr_to_string(&addr, size);
+
+	errno = err;
+	return peer;
 }
 
 extern void fd_set_oob(int fd, int value)
