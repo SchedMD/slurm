@@ -340,7 +340,7 @@ START_TEST(test_data_job)
 	data_set_string(arg, "gpu:10");
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_GRES, arg,
 						errors) == 0, "gres");
-	ck_assert_msg(!xstrcmp(opt.gres, "gpu:10"), "gres value");
+	ck_assert_msg(!xstrcmp(opt.gres, "gres:gpu:10"), "gres value");
 
 	data_set_string(arg, "invalid");
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_GRES_FLAGS, arg,
