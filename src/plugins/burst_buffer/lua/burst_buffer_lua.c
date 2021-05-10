@@ -1304,6 +1304,57 @@ fini:
 }
 
 /*
+ * For interactive jobs, build a script containing the relevant burst buffer
+ * commands, as needed by the Lua API.
+ */
+static int _build_bb_script(job_record_t *job_ptr, char *script_file)
+{
+	char *out_buf = NULL;
+	int rc, fd;
+
+	xassert(job_ptr);
+	xassert(job_ptr->burst_buffer);
+
+	/* Open file */
+	(void) unlink(script_file);
+	fd = creat(script_file, 0600);
+	if (fd < 0) {
+		rc = errno;
+		error("Error creating file %s, %m", script_file);
+		return rc;
+	}
+
+	/* Write burst buffer specification to the file. */
+	xstrcat(out_buf, "#!/bin/bash\n");
+	xstrcat(out_buf, job_ptr->burst_buffer);
+	safe_write(fd, out_buf, strlen(out_buf));
+
+	xfree(out_buf);
+	(void) close(fd);
+
+	return SLURM_SUCCESS;
+
+rwfail:
+	error("Failed to write %s to %s", out_buf, script_file);
+	xfree(out_buf);
+	(void) close(fd);
+
+	return SLURM_ERROR;
+}
+
+/* Push the path to the job script. Return 1 (number of arguments pushed). */
+static int _push_job_process_args(lua_State *L, void *args)
+{
+	char *script_file = (char *) args;
+
+	xassert(script_file);
+
+	lua_pushstring(L, script_file);
+
+	return 1;
+}
+
+/*
  * Secondary validation of a job submit request with respect to burst buffer
  * options. Performed after establishing job ID and creating script file.
  *
@@ -1311,7 +1362,11 @@ fini:
  */
 extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 {
-	int rc = SLURM_SUCCESS;
+	const char *lua_func_name = "slurm_bb_job_process";
+	int rc = SLURM_SUCCESS, fd = -1, hash_inx;
+	char *hash_dir = NULL, *job_dir = NULL, *script_file = NULL;
+	char *task_script_file = NULL, *resp_msg = NULL;
+	bool using_master_script = false;
 	bb_job_t *bb_job;
 
 	/* Initialization */
@@ -1339,9 +1394,81 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
+	/* Standard file location for job arrays */
+	if ((job_ptr->array_task_id != NO_VAL) &&
+	    (job_ptr->array_job_id != job_ptr->job_id)) {
+		hash_inx = job_ptr->array_job_id % 10;
+		xstrfmtcat(hash_dir, "%s/hash.%d",
+			   slurm_conf.state_save_location, hash_inx);
+		(void) mkdir(hash_dir, 0700);
+		xstrfmtcat(job_dir, "%s/job.%u", hash_dir,
+			   job_ptr->array_job_id);
+		(void) mkdir(job_dir, 0700);
+		xstrfmtcat(script_file, "%s/script", job_dir);
+		fd = open(script_file, 0);
+		if (fd >= 0) {	/* found the script */
+			close(fd);
+			using_master_script = true;
+		} else {
+			xfree(hash_dir);
+		}
+	} else {
+		hash_inx = job_ptr->job_id % 10;
+		xstrfmtcat(hash_dir, "%s/hash.%d",
+			   slurm_conf.state_save_location, hash_inx);
+		(void) mkdir(hash_dir, 0700);
+		xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
+		(void) mkdir(job_dir, 0700);
+		xstrfmtcat(script_file, "%s/script", job_dir);
+		if (job_ptr->batch_flag == 0) {
+			rc = _build_bb_script(job_ptr, script_file);
+		}
+	}
+
+
 	/* Run "job_process" function, validates user script */
-	rc = _run_lua_script("slurm_bb_job_process", NULL, NULL, NULL);
-	log_flag(BURST_BUF, "Return code=%d", rc);
+	rc = _run_lua_script(lua_func_name, _push_job_process_args,
+			     script_file, &resp_msg);
+	if (rc) {
+		if (err_msg && resp_msg) {
+			xfree(*err_msg);
+			xstrfmtcat(*err_msg, "%s: %s",
+				   plugin_type, resp_msg);
+		}
+		rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+	}
+	xfree(resp_msg);
+
+	/* Clean up */
+	xfree(hash_dir);
+	xfree(job_dir);
+	if (rc != SLURM_SUCCESS) {
+		slurm_mutex_lock(&bb_state.bb_mutex);
+		bb_job_del(&bb_state, job_ptr->job_id);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+	} else if (using_master_script) {
+		/*
+		 * Job arrays need to have script file in the "standard"
+		 * location for the remaining logic. Make hard link.
+		 */
+		hash_inx = job_ptr->job_id % 10;
+		xstrfmtcat(hash_dir, "%s/hash.%d",
+			   slurm_conf.state_save_location, hash_inx);
+		(void) mkdir(hash_dir, 0700);
+		xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
+		xfree(hash_dir);
+		(void) mkdir(job_dir, 0700);
+		xstrfmtcat(task_script_file, "%s/script", job_dir);
+		xfree(job_dir);
+		if ((link(script_file, task_script_file) != 0) &&
+		    (errno != EEXIST)) {
+			error("%s: link(%s,%s): %m",
+			      __func__, script_file, task_script_file);
+		}
+	}
+	xfree(task_script_file);
+	xfree(script_file);
+
 	return rc;
 }
 
@@ -1404,9 +1531,33 @@ static int _identify_bb_candidate(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Purge files we have created for the job.
+ * bb_state.bb_mutex is locked on function entry.
+ * job_ptr may be NULL if not found
+ */
 static void _purge_bb_files(uint32_t job_id, job_record_t *job_ptr)
 {
-	/* TODO: Not yet implemented */
+	char *hash_dir = NULL, *job_dir = NULL;
+	char *script_file = NULL;
+	int hash_inx;
+
+	hash_inx = job_id % 10;
+	xstrfmtcat(hash_dir, "%s/hash.%d",
+		   slurm_conf.state_save_location, hash_inx);
+	(void) mkdir(hash_dir, 0700);
+	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_id);
+	(void) mkdir(job_dir, 0700);
+
+	if (!job_ptr || (job_ptr->batch_flag == 0)) {
+		xstrfmtcat(script_file, "%s/script", job_dir);
+		(void) unlink(script_file);
+		xfree(script_file);
+	}
+
+	(void) unlink(job_dir);
+	xfree(job_dir);
+	xfree(hash_dir);
 }
 
 static void *_start_teardown(void *x)
