@@ -4628,6 +4628,21 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 			return -1;
 		}
 	}
+
+	/*
+	 * Ensure ntasks_per_tres is multiple of num_tasks
+	 */
+	if (job_gres_data->ntasks_per_gres &&
+	    (job_gres_data->ntasks_per_gres != NO_VAL16) &&
+	    (*num_tasks != NO_VAL)) {
+		int tmp = *num_tasks / job_gres_data->ntasks_per_gres;
+		if (tmp * job_gres_data->ntasks_per_gres != *num_tasks) {
+			error("Failed to validate job spec, -n/--ntasks has to be a multiple of --ntasks-per-%s.",
+			      job_gres_data->gres_name);
+			return -1;
+		}
+	}
+
 	/*
 	 * Ensure gres_per_job is multiple of gres_per_task
 	 * Ensure task count is consistent with GRES parameters
