@@ -51,12 +51,12 @@
 		rc = data_get_bool_converted(d, &bres);                     \
 		ck_assert_msg(rc == 0,                                      \
 			      "bool convert string:%s->%s rc:%s [%d]",      \
-			      str, (b ? "true" : "false"),                  \
+			      str ? str : "(null)", (b ? "true" : "false"),	\
 			      slurm_strerror(rc), rc);                      \
 		if (!rc)                                                    \
 			ck_assert_msg(bres == b,                            \
 				      "bool converted: %s -> %s == %s",     \
-				      str, (bres ? "true" : "false"),       \
+				      str ? str : "(null)", (bres ? "true" : "false"), \
 				      (b ? "true" : "false"));              \
 	} while (0);
 
@@ -282,7 +282,7 @@ START_TEST(test_dict_typeset)
 		      "convert 100 from string");
 	ck_assert_msg(data_get_type(d) == DATA_TYPE_STRING,
 		      "check still string type");
-	ck_assert_msg(b, 100, "check string conversion from 100");
+	ck_assert_msg(b == 100, "check string conversion from 100");
 
 	ck_assert_msg(data_convert_type(d, DATA_TYPE_INT_64) ==
 		      DATA_TYPE_INT_64, "convert 100 from string");
