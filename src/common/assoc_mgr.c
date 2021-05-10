@@ -777,8 +777,7 @@ static slurmdb_assoc_rec_t* _find_assoc_parent(
 	return parent;
 }
 
-static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc,
-				      int reset)
+static int _set_assoc_parent_and_user(slurmdb_assoc_rec_t *assoc)
 {
 	xassert(verify_assoc_lock(ASSOC_LOCK, WRITE_LOCK));
 	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
@@ -1011,7 +1010,6 @@ static int _post_assoc_list(void)
 {
 	slurmdb_assoc_rec_t *assoc = NULL;
 	ListIterator itr = NULL;
-	int reset = 1;
 	g_assoc_max_priority = 0;
 	//DEF_TIMERS;
 
@@ -1031,10 +1029,9 @@ static int _post_assoc_list(void)
 	//START_TIMER;
 	g_user_assoc_count = 0;
 	while ((assoc = list_next(itr))) {
-		_set_assoc_parent_and_user(assoc, reset);
+		_set_assoc_parent_and_user(assoc);
 		_add_assoc_hash(assoc);
 		assoc_mgr_set_assoc_tres_cnt(assoc);
-		reset = 0;
 	}
 
 	if (setup_children) {
@@ -4037,7 +4034,6 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 	 * we may have added the parent which wasn't in the list before
 	 */
 	if (parents_changed) {
-		int reset = 1;
 		g_user_assoc_count = 0;
 		slurmdb_sort_hierarchical_assoc_list(
 			assoc_mgr_assoc_list, true);
@@ -4078,11 +4074,10 @@ extern int assoc_mgr_update_assocs(slurmdb_update_object_t *update, bool locked)
 				addit = true;
 			}
 
-			_set_assoc_parent_and_user(object, reset);
+			_set_assoc_parent_and_user(object);
 
 			if (addit)
 				_add_assoc_hash(object);
-			reset = 0;
 		}
 		/* Now that we have set up the parents correctly we
 		   can update the used limits
