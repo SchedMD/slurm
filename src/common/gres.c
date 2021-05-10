@@ -12552,14 +12552,14 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list,
 }
 
 
-static void _handle_ntasks_per_tres_step(List new_step_list,
+static int _handle_ntasks_per_tres_step(List new_step_list,
 					 uint16_t ntasks_per_tres,
 					 uint32_t *num_tasks,
 					 uint32_t *cpu_count)
 {
 	gres_step_state_t *step_gres_data;
 	uint64_t cnt = 0;
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	uint64_t tmp = _get_step_gres_list_cnt(new_step_list, "gpu", NULL);
 	if ((tmp == NO_VAL64) && (*num_tasks != NO_VAL)) {
@@ -12595,7 +12595,10 @@ static void _handle_ntasks_per_tres_step(List new_step_list,
 	} else {
 		error("%s: ntasks_per_tres was specified, but there was either no task count or no GPU specification to go along with it, or both were already specified.",
 		      __func__);
+		rc = SLURM_ERROR;
 	}
+
+	return rc;
 }
 
 /*
@@ -12705,8 +12708,10 @@ extern int gres_plugin_step_state_validate(char *cpus_per_tres,
 	}
 
 	if ((ntasks_per_tres != NO_VAL16) && num_tasks && cpu_count) {
-		_handle_ntasks_per_tres_step(new_step_list, ntasks_per_tres,
-					     num_tasks, cpu_count);
+		rc = _handle_ntasks_per_tres_step(new_step_list,
+						  ntasks_per_tres,
+						  num_tasks,
+						  cpu_count);
 	}
 
 	if (list_count(new_step_list) == 0) {
