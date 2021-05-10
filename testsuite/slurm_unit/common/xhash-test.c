@@ -95,11 +95,11 @@ START_TEST(test_init_free)
 
 	/* invalid case */
 	ht = xhash_init(NULL, NULL);
-	fail_unless(ht == NULL, "allocated table without identifying function");
+	ck_assert_msg(ht == NULL, "allocated table without identifying function");
 
 	/* alloc and free */
 	ht = xhash_init(hashable_identify, NULL);
-	fail_unless(ht != NULL, "hash table was not allocated");
+	ck_assert_msg(ht != NULL, "hash table was not allocated");
 	xhash_free(ht);
 }
 END_TEST
@@ -111,15 +111,15 @@ START_TEST(test_add)
 	int i, len = sizeof(a)/sizeof(a[0]);
 	char buffer[255];
 	ht = xhash_init(hashable_identify, NULL);
-	fail_unless(xhash_add(NULL, a) == NULL, "invalid cases not null");
-	fail_unless(xhash_add(ht, NULL) == NULL, "invalid cases not null");
-	fail_unless(xhash_add(ht, a)   != NULL, "xhash_add failed");
-	fail_unless(xhash_add(ht, a+1) != NULL, "xhash_add failed");
-	fail_unless(xhash_add(ht, a+2) != NULL, "xhash_add failed");
-	fail_unless(xhash_add(ht, a+3) != NULL, "xhash_add failed");
+	ck_assert_msg(xhash_add(NULL, a) == NULL, "invalid cases not null");
+	ck_assert_msg(xhash_add(ht, NULL) == NULL, "invalid cases not null");
+	ck_assert_msg(xhash_add(ht, a)   != NULL, "xhash_add failed");
+	ck_assert_msg(xhash_add(ht, a+1) != NULL, "xhash_add failed");
+	ck_assert_msg(xhash_add(ht, a+2) != NULL, "xhash_add failed");
+	ck_assert_msg(xhash_add(ht, a+3) != NULL, "xhash_add failed");
 	for (i = 0; i < len; ++i) {
 		snprintf(buffer, sizeof(buffer), "%d", i);
-		fail_unless(xhash_get_str(ht, buffer) == (a + i),
+		ck_assert_msg(xhash_get_str(ht, buffer) == (a + i),
 				"bad hashable item returned");
 	}
 	xhash_free(ht);
@@ -133,14 +133,14 @@ START_TEST(test_find)
 	int i;
 
 	/* test bad match */
-	fail_unless(xhash_get_str(ht, "bad") == NULL  , "invalid case not null");
-	fail_unless(xhash_get_str(ht, "-1") == NULL   , "invalid case not null");
-	fail_unless(xhash_get_str(ht, "10000") == NULL, "invalid case not null");
+	ck_assert_msg(xhash_get_str(ht, "bad") == NULL  , "invalid case not null");
+	ck_assert_msg(xhash_get_str(ht, "-1") == NULL   , "invalid case not null");
+	ck_assert_msg(xhash_get_str(ht, "10000") == NULL, "invalid case not null");
 
 	/* test all good indexes */
 	for (i = 0; i < g_hashableslen; ++i) {
 		snprintf(buffer, sizeof(buffer), "%d", i);
-		fail_unless(xhash_get_str(ht, buffer) == (g_hashables + i),
+		ck_assert_msg(xhash_get_str(ht, buffer) == (g_hashables + i),
 				"bad hashable item returned");
 	}
 }
@@ -170,32 +170,32 @@ START_TEST(test_delete)
 
 	/* invalid cases */
 	xhash_delete_str(NULL, "1");
-	fail_unless(xhash_get_str(ht, "1") != NULL, "invalid case null");
+	ck_assert_msg(xhash_get_str(ht, "1") != NULL, "invalid case null");
 	/* Deleting non-existent item should do nothing. */
 	xhash_delete(ht, NULL, 0);
-	fail_unless(xhash_count(ht) == g_hashableslen,
+	ck_assert_msg(xhash_count(ht) == g_hashableslen,
 			"invalid delete has been done");
 	result = test_delete_helper();
-	fail_unless(result == 0,
+	ck_assert_msg(result == 0,
 			"no item should have been deleted, but %d were deleted",
 			result);
 
 	/* test correct deletion */
 	xhash_delete_str(ht, "10");
-	fail_unless(xhash_get_str(ht, "10") == NULL, "item not deleted");
-	fail_unless(xhash_count(ht) == (g_hashableslen-1), "bad count");
+	ck_assert_msg(xhash_get_str(ht, "10") == NULL, "item not deleted");
+	ck_assert_msg(xhash_count(ht) == (g_hashableslen-1), "bad count");
 	/* left edge */
 	xhash_delete_str(ht, "0");
-	fail_unless(xhash_get_str(ht, "0") == NULL, "item not deleted");
-	fail_unless(xhash_count(ht) == (g_hashableslen-2), "bad count");
+	ck_assert_msg(xhash_get_str(ht, "0") == NULL, "item not deleted");
+	ck_assert_msg(xhash_count(ht) == (g_hashableslen-2), "bad count");
 	/* right edge */
 	snprintf(buffer, sizeof(buffer), "%u", (g_hashableslen-2));
 	xhash_delete_str(ht, buffer);
-	fail_unless(xhash_get_str(ht, "0") == NULL, "item not deleted");
-	fail_unless(xhash_count(ht) == (g_hashableslen-3), "bad count");
+	ck_assert_msg(xhash_get_str(ht, "0") == NULL, "item not deleted");
+	ck_assert_msg(xhash_count(ht) == (g_hashableslen-3), "bad count");
 
 	result = test_delete_helper();
-	fail_unless(result == 3, "bad number of items were deleted: %d",
+	ck_assert_msg(result == 3, "bad number of items were deleted: %d",
 			result);
 }
 END_TEST
@@ -204,14 +204,14 @@ START_TEST(test_count)
 {
 	xhash_t* ht = g_ht;
 	hashable_t a[4] = {{"0", 0}, {"1", 1}, {"2", 2}, {"3", 3}};
-	fail_unless(xhash_count(ht) == g_hashableslen,
+	ck_assert_msg(xhash_count(ht) == g_hashableslen,
 		"invalid count (fixture table)");
 	ht = xhash_init(hashable_identify, NULL);
 	xhash_add(ht, a);
 	xhash_add(ht, a+1);
 	xhash_add(ht, a+2);
 	xhash_add(ht, a+3);
-	fail_unless(xhash_count(ht) == 4, "invalid count (fresh table)");
+	ck_assert_msg(xhash_count(ht) == 4, "invalid count (fresh table)");
 	xhash_free(ht);
 }
 END_TEST
@@ -228,7 +228,7 @@ START_TEST(test_walk)
 	int i;
 	xhash_walk(ht, test_walk_helper_callback, NULL);
 	for (i = 0; i < g_hashableslen; ++i) {
-		fail_unless(g_hashables[i].idn == UINT32_MAX,
+		ck_assert_msg(g_hashables[i].idn == UINT32_MAX,
 				"hashable item was not walked over");
 	}
 }

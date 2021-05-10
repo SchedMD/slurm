@@ -86,7 +86,7 @@ START_TEST(test_data_job_macros)
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_CONTIGUOUS, arg,
 						errors) == 0,
 		      "LONG_OPT_CONTIGUOUS=true");
-	ck_assert_msg(opt.contiguous, true, "contiguous=true");
+	ck_assert_msg(opt.contiguous == true, "contiguous=true");
 	data_set_bool(arg, false);
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_CONTIGUOUS, arg,
 						errors) == 0,
@@ -97,7 +97,7 @@ START_TEST(test_data_job_macros)
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_CPUS_PER_GPU,
 						arg, errors) == 0,
 		      "LONG_OPT_CPUS_PER_GPU");
-	ck_assert_msg(opt.cpus_per_gpu, 12345, "cpus_per_gpu");
+	ck_assert_msg(opt.cpus_per_gpu == 12345, "cpus_per_gpu");
 	data_set_string(arg, "0");
 	ck_assert_msg(slurm_process_option_data(&opt, LONG_OPT_CPUS_PER_GPU,
 						arg, errors) == 0,
@@ -657,7 +657,7 @@ START_TEST(test_data_job)
 						errors) != 0, "thread-spec");
 
 	data_set_string(arg, "invalid");
-	ck_assert_msg(slurm_process_option_data(&opt, 't', arg, errors), 0,
+	ck_assert_msg(slurm_process_option_data(&opt, 't', arg, errors) != 0,
 		      "time-limit");
 	data_set_string(arg, "0");
 	ck_assert_msg(slurm_process_option_data(&opt, 't', arg, errors) == 0,
