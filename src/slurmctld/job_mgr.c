@@ -8444,7 +8444,7 @@ extern bool valid_tres_cnt(char *tres)
 			if (isdigit(value[1])) {
 				count = strtoull(value + 1, &end_ptr, 10);
 
-				if (((count < 0) || (count == LLONG_MAX))) {
+				if (count == ULLONG_MAX) {
 					rc = false;
 					break;
 				}
