@@ -457,9 +457,9 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 		       opt_local->immediate))) ||
 		    ((rc != ESLURM_PROLOG_RUNNING) &&
 		     !launch_common_step_retry_errno(rc))) {
-			slurm_free_job_step_create_request_msg(step_req);
 			error("Unable to create step for job %u: %m",
 			      step_req->step_id.job_id);
+			slurm_free_job_step_create_request_msg(step_req);
 			return SLURM_ERROR;
 		}
 
@@ -495,9 +495,9 @@ extern int launch_common_create_job_step(srun_job_t *job, bool use_all_cpus,
 	if (i > 0) {
 		xsignal_block(sig_array);
 		if (*destroy_job) {
-			slurm_free_job_step_create_request_msg(step_req);
 			info("Cancelled pending step for job %u",
 			     step_req->step_id.job_id);
+			slurm_free_job_step_create_request_msg(step_req);
 			return SLURM_ERROR;
 		}
 	}
