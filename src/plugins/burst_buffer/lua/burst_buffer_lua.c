@@ -120,11 +120,8 @@ typedef struct bb_pools {
 typedef struct {
 	uint32_t job_id;
 	uint32_t user_id;
-	char **args1;
-	char **args2;
-	uint64_t bb_size;
-	char *pool;
-} stage_args_t;
+	char *job_script;
+} teardown_args_t;
 
 typedef int (*push_lua_args_cb_t) (lua_State *L, void *args);
 
@@ -1560,10 +1557,23 @@ static void _purge_bb_files(uint32_t job_id, job_record_t *job_ptr)
 	xfree(hash_dir);
 }
 
+static int _push_teardown_args(lua_State *L, void *args)
+{
+	teardown_args_t *teardown_args = (teardown_args_t *) args;
+
+	lua_pushinteger(L, teardown_args->job_id);
+	lua_pushinteger(L, teardown_args->user_id);
+	lua_pushstring(L, teardown_args->job_script);
+
+	/* Pushed 3 arguments. */
+	return 3;
+}
+
 static void *_start_teardown(void *x)
 {
 	int rc;
-	stage_args_t *teardown_args = (stage_args_t *)x;
+	char *resp_msg = NULL;
+	teardown_args_t *teardown_args = (teardown_args_t *)x;
 	job_record_t *job_ptr;
 	bb_alloc_t *bb_alloc = NULL;
 	bb_job_t *bb_job = NULL;
@@ -1574,7 +1584,8 @@ static void *_start_teardown(void *x)
 
 	/* Run lua "teardown" function */
 	START_TIMER;
-	rc = _run_lua_script("slurm_bb_job_teardown", NULL, NULL, NULL);
+	rc = _run_lua_script("slurm_bb_job_teardown", _push_teardown_args,
+			     teardown_args, &resp_msg);
 	END_TIMER;
 	info("Teardown for JobId=%u ran for %s",
 	     teardown_args->job_id, TIME_STR);
@@ -1632,6 +1643,8 @@ static void *_start_teardown(void *x)
 		unlock_slurmctld(job_write_lock);
 	}
 
+	xfree(resp_msg);
+	xfree(teardown_args->job_script);
 	xfree(teardown_args);
 
 	return NULL;
@@ -1639,18 +1652,37 @@ static void *_start_teardown(void *x)
 
 static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
 {
-	stage_args_t *teardown_args;
+	char *hash_dir = NULL, *job_script = NULL;
+	int hash_inx = job_id % 10;
+	struct stat buf;
+	teardown_args_t *teardown_args;
 	pthread_t tid;
 
-	/*
-	 * TODO: Setup arguments for the burst buffer "teardown" function and
-	 * pass arguments to _start_teardown.
-	 */
+	xstrfmtcat(hash_dir, "%s/hash.%d",
+		   slurm_conf.state_save_location, hash_inx);
+	xstrfmtcat(job_script, "%s/job.%u/script", hash_dir, job_id);
+	if (stat(job_script, &buf) == -1) {
+		int fd = creat(job_script, 0755);
+		if (fd >= 0) {
+			int len;
+			char *dummy_script = "#!/bin/bash\nexit 0\n";
+			len = strlen(dummy_script) + 1;
+			if (write(fd, dummy_script, len) != len) {
+				verbose("%s: write(%s): %m",
+					__func__, job_script);
+			}
+			close(fd);
+		}
+	}
+
 	teardown_args = xmalloc(sizeof *teardown_args);
 	teardown_args->job_id = job_id;
 	teardown_args->user_id = user_id;
+	teardown_args->job_script = job_script;
 
 	slurm_thread_create(&tid, _start_teardown, teardown_args);
+
+	xfree(hash_dir);
 }
 
 static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
