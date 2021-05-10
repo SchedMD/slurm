@@ -219,7 +219,8 @@ static int _find_type_in_gres_list(void *x, void *key)
  * NOTE: Both lists will be sorted in descending order by type_name
  * length. gres_list_conf_single is assumed to only have records of count == 1.
  */
-static void _normalize_sys_gres_types(List gres_list_system, List gres_list_conf_single)
+static void _normalize_sys_gres_types(List gres_list_system,
+				      List gres_list_conf_single)
 {
 	gres_slurmd_conf_t *sys_gres, *conf_gres;
 	ListIterator itr;
