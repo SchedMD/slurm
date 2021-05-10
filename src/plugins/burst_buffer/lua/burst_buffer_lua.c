@@ -153,6 +153,23 @@ static int _handle_lua_return_code(lua_State *L, const char *lua_func)
 	}
 }
 
+static void _print_lua_rc_msg(int rc, const char *lua_func, char **resp_msg)
+{
+	if (resp_msg) {
+		if (rc)
+			error("%s returned:%d; response:%s",
+			      lua_func, rc, *resp_msg);
+		else
+			log_flag(BURST_BUF, "%s returned:%d, response:%s",
+				 lua_func, rc, *resp_msg);
+	} else {
+		if (rc)
+			error("%s returned:%d", lua_func, rc);
+		else
+			log_flag(BURST_BUF, "%s returned:%d", lua_func, rc);
+	}
+}
+
 static int _handle_lua_return(lua_State *L, const char *lua_func,
 			      char **ret_str)
 {
@@ -186,11 +203,7 @@ static int _handle_lua_return(lua_State *L, const char *lua_func,
 		}
 	}
 
-	if (ret_str && *ret_str)
-		log_flag(BURST_BUF, "%s return code = %d, returned string = \"%s\"",
-			 lua_func, rc, *ret_str);
-	else
-		log_flag(BURST_BUF, "%s return code = %d", lua_func, rc);
+	_print_lua_rc_msg(rc, lua_func, ret_str);
 
 	/* Pop everything from the stack. */
 	lua_pop(L, num_stack_elems);
@@ -593,12 +606,6 @@ static bb_pools_t *_bb_get_pools(int *num_pools, bb_state_t *state_ptr,
 	rc = _run_lua_script(lua_func_name, NULL, NULL, &resp_msg);
 	if (rc) {
 		trigger_burst_buffer();
-		xfree(resp_msg);
-		if (resp_msg)
-			error("%s returned:%d; response:%s",
-			      lua_func_name, rc, resp_msg);
-		else
-			error("%s returned:%d", lua_func_name, rc);
 		return NULL;
 	}
 	if (!resp_msg) {
