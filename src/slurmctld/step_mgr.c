@@ -1380,8 +1380,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				char *temp;
 				temp = bitmap2node_name(step_ptr->
 							step_node_bitmap);
-				info("%s: %pS has nodes %s", __func__,
-				     step_ptr, temp);
+				log_flag(STEPS, "%s: %pS has nodes %s",
+					 __func__,step_ptr, temp);
 				xfree(temp);
 			}
 		}
@@ -1398,9 +1398,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			temp3 = step_spec->node_list;
 		else
 			temp3 = "NONE";
-		info("%s: step pick %u-%u nodes, avail:%s idle:%s picked:%s",
-		     __func__, step_spec->min_nodes, step_spec->max_nodes,
-		     temp1, temp2, temp3);
+		log_flag(STEPS, "%s: step pick %u-%u nodes, avail:%s idle:%s picked:%s",
+			 __func__, step_spec->min_nodes, step_spec->max_nodes,
+			 temp1, temp2, temp3);
 		xfree(temp1);
 		xfree(temp2);
 	}
