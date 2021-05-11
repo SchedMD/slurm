@@ -106,6 +106,8 @@ static const char *req_fxns[] = {
 	"slurm_bb_job_process",
 	"slurm_bb_pools",
 	"slurm_bb_job_teardown",
+	"slurm_bb_setup",
+	"slurm_bb_data_in",
 	NULL
 };
 
@@ -122,6 +124,16 @@ typedef struct {
 	uint32_t user_id;
 	char *job_script;
 } teardown_args_t;
+
+typedef struct {
+	uint64_t bb_size;
+	uint32_t gid;
+	uint32_t job_id;
+	char *job_script;
+	char *nodes_file;
+	char *pool;
+	uint32_t uid;
+} stage_in_args_t;
 
 typedef int (*push_lua_args_cb_t) (lua_State *L, void *args);
 
@@ -1557,6 +1569,68 @@ static void _purge_bb_files(uint32_t job_id, job_record_t *job_ptr)
 	xfree(hash_dir);
 }
 
+/*
+ * TODO: This was copied from burst_buffer_datawarp.c. Should I put it
+ * in burst_buffer_common.c?
+ */
+static void _update_system_comment(job_record_t *job_ptr, char *operation,
+				   char *resp_msg, bool update_database)
+{
+	char *sep = NULL;
+
+	if (job_ptr->system_comment &&
+	    (strlen(job_ptr->system_comment) >= 1024)) {
+		/* Avoid filling comment with repeated BB failures */
+		return;
+	}
+
+	if (job_ptr->system_comment)
+		xstrftimecat(sep, "\n%x %X");
+	else
+		xstrftimecat(sep, "%x %X");
+	xstrfmtcat(job_ptr->system_comment, "%s %s: %s: %s",
+		   sep, plugin_type, operation, resp_msg);
+	xfree(sep);
+
+	if (update_database) {
+		slurmdb_job_cond_t job_cond;
+		slurmdb_job_rec_t job_rec;
+		slurm_selected_step_t selected_step;
+		List ret_list;
+
+		memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
+		memset(&job_rec, 0, sizeof(slurmdb_job_rec_t));
+		memset(&selected_step, 0, sizeof(slurm_selected_step_t));
+
+		selected_step.array_task_id = NO_VAL;
+		selected_step.step_id.job_id = job_ptr->job_id;
+		selected_step.het_job_offset = NO_VAL;
+		selected_step.step_id.step_id = NO_VAL;
+		selected_step.step_id.step_het_comp = NO_VAL;
+		job_cond.step_list = list_create(NULL);
+		list_append(job_cond.step_list, &selected_step);
+
+		job_cond.flags = JOBCOND_FLAG_NO_WAIT |
+			JOBCOND_FLAG_NO_DEFAULT_USAGE;
+
+		job_cond.cluster_list = list_create(NULL);
+		list_append(job_cond.cluster_list, slurm_conf.cluster_name);
+
+		job_cond.usage_start = job_ptr->details->submit_time;
+
+		job_rec.system_comment = job_ptr->system_comment;
+
+		ret_list = acct_storage_g_modify_job(acct_db_conn,
+		                                     slurm_conf.slurm_user_id,
+		                                     &job_cond, &job_rec);
+
+		FREE_NULL_LIST(job_cond.cluster_list);
+		FREE_NULL_LIST(job_cond.step_list);
+		FREE_NULL_LIST(ret_list);
+	}
+}
+
+
 static int _push_teardown_args(lua_State *L, void *args)
 {
 	teardown_args_t *teardown_args = (teardown_args_t *) args;
@@ -1685,16 +1759,229 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
 	xfree(hash_dir);
 }
 
+
+/* Push arguments to the lua stack. Return the number of arguments pushed. */
+static int _push_data_in_args(lua_State *L, void *args)
+{
+	stage_in_args_t *data_in_args = (stage_in_args_t *) args;
+
+	lua_pushinteger(L, data_in_args->job_id);
+	lua_pushstring(L, data_in_args->job_script);
+
+	return 2;
+}
+
+/* Push arguments to the lua stack. Return the number of arguments pushed. */
+static int _push_setup_args(lua_State *L, void *args)
+{
+	stage_in_args_t *setup_args = (stage_in_args_t *) args;
+
+	lua_pushinteger(L, setup_args->job_id);
+	lua_pushinteger(L, setup_args->uid);
+	lua_pushinteger(L, setup_args->gid);
+	lua_pushstring(L, setup_args->pool);
+	lua_pushinteger(L, setup_args->bb_size);
+	lua_pushstring(L, setup_args->job_script);
+
+	return 6;
+}
+
+static void *_start_stage_in(void *x)
+{
+	int rc;
+	bool get_real_size = false;
+	char *resp_msg = NULL, *op = NULL;
+	stage_in_args_t *stage_in_args = (stage_in_args_t *) x;
+	job_record_t *job_ptr;
+	bb_alloc_t *bb_alloc = NULL;
+	bb_job_t *bb_job;
+	slurmctld_lock_t job_write_lock = { .job = WRITE_LOCK };
+
+	DEF_TIMERS;
+
+	op = "setup";
+	START_TIMER;
+	rc = _run_lua_script("slurm_bb_setup", _push_setup_args, stage_in_args,
+			     &resp_msg);
+	END_TIMER;
+	info("slurm_bb_setup for job JobId=%u ran for %s",
+	     stage_in_args->job_id, TIME_STR);
+
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	/*
+	 * The buffer's actual size may be larger than requested by the user.
+	 * Remove limit here and restore limit based upon actual size below
+	 * (assuming buffer allocation succeeded, or just leave it out).
+	 */
+	bb_limit_rem(stage_in_args->uid, stage_in_args->bb_size,
+		     stage_in_args->pool, &bb_state);
+	if (rc != SLURM_SUCCESS) {
+		/*
+		 * Unlock bb_mutex before locking job_write_lock to avoid
+		 * deadlock, since job_write_lock is always locked first.
+		 */
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		trigger_burst_buffer();
+		error("setup for JobId=%u failed.", stage_in_args->job_id);
+		rc = SLURM_ERROR;
+		lock_slurmctld(job_write_lock);
+		job_ptr = find_job_record(stage_in_args->job_id);
+		if (job_ptr)
+			_update_system_comment(job_ptr, "setup", resp_msg, 0);
+		unlock_slurmctld(job_write_lock);
+	} else {
+		bb_job = bb_job_find(&bb_state, stage_in_args->job_id);
+		if (!bb_job) {
+			error("unable to find bb_job record for JobId=%u",
+			      stage_in_args->job_id);
+			rc = SLURM_ERROR;
+		} else if (bb_job->total_size) {
+			/* Restore limit based upon actual size. */
+			bb_limit_add(stage_in_args->uid, bb_job->total_size,
+				     stage_in_args->pool, &bb_state, true);
+		}
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+	}
+
+	if (rc == SLURM_SUCCESS) {
+		xfree(resp_msg);
+		op = "data_in";
+		START_TIMER;
+		rc =_run_lua_script("slurm_bb_data_in", _push_data_in_args,
+				    stage_in_args, &resp_msg);
+		END_TIMER;
+		info("slurm_bb_data_in for JobId=%u ran for %s",
+		     stage_in_args->job_id, TIME_STR);
+		if (rc != SLURM_SUCCESS) {
+			trigger_burst_buffer();
+			error("slurm_bb_data_in for JobId=%u failed.",
+			      stage_in_args->job_id);
+			rc = SLURM_ERROR;
+			lock_slurmctld(job_write_lock);
+			job_ptr = find_job_record(stage_in_args->job_id);
+			if (job_ptr)
+				_update_system_comment(job_ptr, "data_in",
+						       resp_msg, 0);
+			unlock_slurmctld(job_write_lock);
+		}
+	}
+
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	bb_job = bb_job_find(&bb_state, stage_in_args->job_id);
+	if (bb_job && bb_job->req_size)
+		get_real_size = true;
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+
+	/*
+	 * TODO:
+	 * Round up job buffer size based upon "equalize_fragments"
+	 * configuration parameter.
+	 */
+	if (get_real_size) {
+	}
+
+	lock_slurmctld(job_write_lock);
+	job_ptr = find_job_record(stage_in_args->job_id);
+	if (!job_ptr) {
+		error("unable to find job record for JobId=%u",
+		      stage_in_args->job_id);
+	} else if (rc == SLURM_SUCCESS) {
+		slurm_mutex_lock(&bb_state.bb_mutex);
+		bb_job = bb_job_find(&bb_state, stage_in_args->job_id);
+		if (bb_job)
+			bb_set_job_bb_state(job_ptr, bb_job,
+					    BB_STATE_STAGED_IN);
+		if (bb_job && bb_job->total_size) {
+			/*
+			 * TODO: adjust total size to real size if real size
+			 * returns something different.
+			 */
+			bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
+			if (bb_alloc) {
+				bb_alloc->state = BB_STATE_STAGED_IN;
+				bb_alloc->state_time = time(NULL);
+				log_flag(BURST_BUF, "Setup/stage-in complete for %pJ",
+					 job_ptr);
+				queue_job_scheduler();
+				bb_state.last_update_time = time(NULL);
+			} else {
+				error("unable to find bb_alloc record for %pJ",
+				      job_ptr);
+			}
+		}
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+	} else {
+		xfree(job_ptr->state_desc);
+		job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
+		xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
+			   plugin_type, op, resp_msg);
+		job_ptr->priority = 0; /* Hold job */
+		bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
+		if (bb_alloc) {
+			bb_alloc->state_time = time(NULL);
+			bb_state.last_update_time = time(NULL);
+			if (bb_state.bb_config.flags &
+			    BB_FLAG_TEARDOWN_FAILURE) {
+				bb_alloc->state = BB_STATE_TEARDOWN;
+				bb_job = bb_job_find(&bb_state,
+						     stage_in_args->job_id);
+				if (bb_job)
+					bb_set_job_bb_state(job_ptr, bb_job,
+							    BB_STATE_TEARDOWN);
+				_queue_teardown(job_ptr->job_id,
+						job_ptr->user_id, true);
+			} else {
+				bb_alloc->state = BB_STATE_ALLOCATED;
+			}
+		} else {
+			_queue_teardown(job_ptr->job_id, job_ptr->user_id,true);
+		}
+	}
+	unlock_slurmctld(job_write_lock);
+
+	xfree(stage_in_args->job_script);
+	xfree(stage_in_args->nodes_file);
+	xfree(stage_in_args->pool);
+	xfree(stage_in_args);
+
+	return NULL;
+}
+
 static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 {
-	char *job_pool;
+	char *hash_dir = NULL, *job_dir = NULL, *job_pool;
+	char *client_nodes_file_nid = NULL;
+	int hash_inx = job_ptr->job_id % 10;
+	stage_in_args_t *stage_in_args;
 	bb_alloc_t *bb_alloc = NULL;
+	pthread_t tid;
 
-	/* TODO: Setup arguments for the burst buffer "setup" function. */
+	xstrfmtcat(hash_dir, "%s/hash.%d",
+		   slurm_conf.state_save_location, hash_inx);
+	(void) mkdir(hash_dir, 0700);
+	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
+	if (job_ptr->sched_nodes) {
+		xstrfmtcat(client_nodes_file_nid, "%s/client_nids", job_dir);
+		if (bb_write_nid_file(client_nodes_file_nid,
+				      job_ptr->sched_nodes, job_ptr))
+			xfree(client_nodes_file_nid);
+	}
+
+	stage_in_args = xmalloc(sizeof *stage_in_args);
+	stage_in_args->job_id = job_ptr->job_id;
+	stage_in_args->uid = job_ptr->user_id;
+	stage_in_args->gid = job_ptr->group_id;
 	if (bb_job->job_pool)
 		job_pool = bb_job->job_pool;
 	else
 		job_pool = bb_state.bb_config.default_pool;
+	stage_in_args->pool = xstrdup(job_pool);
+	stage_in_args->bb_size = bb_job->total_size;
+	stage_in_args->job_script = bb_handle_job_script(job_ptr, bb_job);
+	if (client_nodes_file_nid) {
+		stage_in_args->nodes_file = client_nodes_file_nid;
+		client_nodes_file_nid = NULL;
+	}
 
 	/*
 	 * Create bb allocation for the job now. Check if it has already been
@@ -1712,8 +1999,11 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 	bb_limit_add(job_ptr->user_id, bb_job->total_size, job_pool, &bb_state,
 		     true);
 
-	/* TODO: Setup arguments for the burst buffer "data_in" function. */
-	/* TODO: Create a thread to do stage in: "_start_stage_in()" */
+	slurm_thread_create(&tid, _start_stage_in, stage_in_args);
+
+	xfree(hash_dir);
+	xfree(job_dir);
+
 	return SLURM_SUCCESS;
 }
 
@@ -1726,17 +2016,7 @@ static int _alloc_job_bb(job_record_t *job_ptr, bb_job_t *bb_job,
 
 	if (bb_job->state < BB_STATE_STAGING_IN) {
 		bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_STAGING_IN);
-		rc = _queue_stage_in(job_ptr, bb_job);
-		/*
-		 * TODO: _queue_stage_in() always returns success right now.
-		 * If it always returns success in the future I could change
-		 * it to return void and remove this if statement.
-		 */
-		if (rc != SLURM_SUCCESS) {
-			bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_TEARDOWN);
-			_queue_teardown(job_ptr->job_id, job_ptr->user_id,
-					true);
-		}
+		_queue_stage_in(job_ptr, bb_job);
 	}
 
 	return rc;
