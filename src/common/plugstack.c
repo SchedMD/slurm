@@ -460,7 +460,7 @@ spank_stack_plugin_valid_for_context (struct spank_stack *stack,
 		if (p->ops.job_epilog)
 			has_epilog = true;
 
-		if (p->ops.slurmd_exit)
+		if (p->ops.init || p->ops.slurmd_exit)
 			return (1);
 		break;
 	case S_TYPE_LOCAL:

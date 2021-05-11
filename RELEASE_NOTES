@@ -44,6 +44,8 @@ HIGHLIGHTS
  -- cli_filter/lua, jobcomp/lua, job_submit/lua now load their scripts from the
     same directory as the slurm.conf file (and thus now will respect changes
     to the SLURM_CONF environment variable).
+ -- SPANK - call slurm_spank_init if defined without slurm_spank_slurmd_exit in
+    slurmd context.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
