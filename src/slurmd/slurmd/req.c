@@ -1090,11 +1090,13 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 				step_mem &= (~MEM_PER_CPU);
 				per_step = "_per_CPU";
 			}
-			info("====================");
-			info("%ps job_mem:%"PRIu64"MB%s "
-			     "step_mem:%"PRIu64"MB%s",
-			     &arg.step_id, job_mem, per_job,
-			     step_mem, per_step);
+			log_flag(CPU_BIND, "====================");
+			log_flag(CPU_BIND, "%ps job_mem:%"PRIu64"MB%s step_mem:%"PRIu64"MB%s",
+				 &arg.step_id,
+				 job_mem,
+				 per_job,
+				 step_mem,
+				 per_step);
 		}
 
 		hi = host_index + 1;	/* change from 0-origin to 1-origin */
@@ -1126,12 +1128,12 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 				who_has = "Step";
 			}
 			if (cpu_log && who_has) {
-				info("JobNode[%u] CPU[%u] %s alloc",
-				     host_index, j, who_has);
+				log_flag(CPU_BIND, "JobNode[%u] CPU[%u] %s alloc",
+					 host_index, j, who_has);
 			}
 		}
 		if (cpu_log)
-			info("====================");
+			log_flag(CPU_BIND, "====================");
 		if (step_cpus == 0) {
 			error("cons_res: zero processors allocated to step");
 			step_cpus = 1;
@@ -1144,10 +1146,11 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 			i = conf->cpus / (i_last_bit - i_first_bit);
 			if (i > 1) {
 				if (cpu_log)
-					info("Scaling CPU count by factor of "
-					     "%d (%u/(%u-%u))",
-					     i, conf->cpus,
-					     i_last_bit, i_first_bit);
+					log_flag(CPU_BIND, "Scaling CPU count by factor of %d (%u/(%u-%u))",
+						 i,
+						 conf->cpus,
+						 i_last_bit,
+						 i_first_bit);
 				step_cpus *= i;
 				job_cpus *= i;
 			}
