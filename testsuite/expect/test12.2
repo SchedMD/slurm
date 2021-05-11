@@ -256,25 +256,25 @@ set hours 0
 set mins 0
 set secs 0
 set output [run_command_output "$sacct --noheader -P --job=$job_id.$step_id --format elapsed --starttime=00:00"]
-set match  [regexp "($number):($number):($number)" $output - hours mins secs]
+set matches [scan $output "%d:%d:%d" hours mins secs]
 set value  [expr ($hours * 3600) + ($mins * 60) + $secs]
-subtest {$match} "sacct should report the elapsed time in the format HH:MM:SS" "$output"
+subtest {$matches == 3} "sacct should report the elapsed time in the format HH:MM:SS" "$output"
 subtest {[tolerance $sleep_time $value +$max_time_error]} "Elapsed time reported by sacct should be close to $sleep_time" "$value too different from $sleep_time"
 
 set hours 0
 set mins 0
 set secs 0
 set output [run_command_output "$sacct --noheader -P --job=$job_id.$step_id --format totalcpu --starttime=00:00"]
-set match  [regexp "($number):($number).($number)" $output - mins secs -]
+set matches [scan $output "%d:%d.%d" mins secs msecs]
 set value  [expr ($mins * 60) + $secs]
-subtest {$match} "sacct should report the TotalCPU time in the format MM:SS.sss" "$output"
+subtest {$matches == 3} "sacct should report the TotalCPU time in the format MM:SS.sss" "$output"
 subtest {$value <= $sleep_time} "TotalCPU reported by sacct should be less than $sleep_time secs" "$value > $sleep_time"
 
 set hours 0
 set mins 0
 set secs 0
 set output [run_command_output "$sacct --noheader -P --job=$job_id.$step_id --format mincpu --starttime=00:00"]
-set match  [regexp "($number):($number):($number)" $output - hours mins secs]
+set matches [scan $output "%d:%d:%d" hours mins secs]
 set value  [expr ($hours * 3600) + ($mins * 60) + $secs]
-subtest {$match} "sacct should report the MinCPU time in the format HH:MM:SS" "$output"
+subtest {$matches == 3} "sacct should report the MinCPU time in the format HH:MM:SS" "$output"
 subtest {$value <= $sleep_time} "MinCPU reported by sacct should be less than $sleep_time secs" "$value > $sleep_time"
