@@ -162,7 +162,6 @@ log_debug "Sizeof(unsigned long) = $ulong_bits"
 
 #
 # Tests if $test_prog actual output matches expected output
-# NOTE: The output strings are sorted so the order of lines is irrelevant
 #
 # test_minor -		The minor test number (39.18.X). If global variable
 # 			"$test_minor_in" is set, then run only that test.
@@ -186,7 +185,7 @@ log_debug "Sizeof(unsigned long) = $ulong_bits"
 set failed_tests [list]
 proc check_configuration {test_minor slurm_conf_gres gres_conf fake_gpus_conf output_expected {err_msgs ""} {errs_expected 0} } {
 	global cfgpath nodename test_prog re_word_str exit_code test_minor_in
-	global test_id failed_tests use_valgrind bin_sort file_in file_out
+	global test_id failed_tests use_valgrind file_in file_out
 	global bin_cat debug_mode
 
 	# Skip all tests not specified by the tester; force string comparison
@@ -200,29 +199,32 @@ proc check_configuration {test_minor slurm_conf_gres gres_conf fake_gpus_conf ou
 	generate_file $gres_conf $cfgpath/gres.conf
 	generate_file $fake_gpus_conf $cfgpath/fake_gpus.conf
 
-	# We don't want to sort when debugging - we want to see output in order
-	if {$debug_mode} {
-		set output_method "$bin_cat $file_out"
-	} else {
-		set output_method "$bin_sort <./$file_out"
-	}
-
 	if {$use_valgrind} {
 		make_bash_script $file_in "
 valgrind --tool=memcheck --error-limit=no --leak-check=full --show-reachable=yes --max-stackframe=16777216 --num-callers=20 --child-silent-after-fork=yes --track-origins=yes ./$test_prog \"$cfgpath\" \"$nodename\" \"$slurm_conf_gres\" >./$file_out 2>&1
-$output_method
+$bin_cat $file_out
 rm -rf ./$file_out"
 	} else {
 		make_bash_script $file_in "
 ./$test_prog \"$cfgpath\" \"$nodename\" \"$slurm_conf_gres\" >./$file_out 2>&1
-$output_method
+$bin_cat $file_out
 rm -rf ./$file_out"
 	}
 
 	##
 	### Parse the `GRES_PARSABLE` output
 	##
-	set sorted_actual ""
+	# The order of GPUs is important because it directly corresponds to the
+	# bits of the GRES bitmaps used to track the GPUs, and this shouldn't
+	# change unless we deliberately change it.
+	#
+	# Also, we will eventually want to sort GPUs by PCI bus ID if AutoDetect
+	# is used, so we need to test the order to make sure that works. We may
+	# also want to guarantee that the GPU order in gres.conf is preserved if
+	# AutoDetect is NOT used, so users can manually specify the PCI bus
+	# order.
+	#
+	set actual ""
 
 	if {!$debug_mode} {
 		log_user 0
@@ -230,11 +232,11 @@ rm -rf ./$file_out"
 	spawn ./$file_in
 	expect {
 		-re "(GRES_PARSABLE$re_word_str)" {
-			if {$sorted_actual == ""} {
-				set sorted_actual "\n"
+			if {$actual == ""} {
+				set actual "\n"
 			}
 			# Append string
-			set sorted_actual "$sorted_actual$expect_out(1,string)\n"
+			set actual "$actual$expect_out(1,string)\n"
 			exp_continue
 		}
 		timeout {
@@ -280,16 +282,16 @@ rm -rf ./$file_out"
 		}
 	}
 
-	set sorted_expected ""
-	make_bash_script $file_in "/bin/echo \"$output_expected\" | $bin_sort"
+	set expected ""
+	make_bash_script $file_in "/bin/echo \"$output_expected\""
 	spawn ./$file_in
 	expect {
 		-re "(GRES_PARSABLE$re_word_str)" {
-			if {$sorted_expected == ""} {
-				set sorted_expected "\n"
+			if {$expected == ""} {
+				set expected "\n"
 			}
 			# Append string
-			set sorted_expected "$sorted_expected$expect_out(1,string)\n"
+			set expected "$expected$expect_out(1,string)\n"
 			exp_continue
 		}
 		timeout {
@@ -304,9 +306,9 @@ rm -rf ./$file_out"
 	log_user 1
 
 	# Check the output with what is expected
-	log_debug "Actual (sorted): $sorted_actual"
-	if {$sorted_actual != $sorted_expected} {
-		log_debug "Expected (sorted): $sorted_expected"
+	log_debug "Actual: $actual"
+	if {$actual != $expected} {
+		log_debug "Expected: $expected"
 		log_error "Expected output does not match actual output for sub-test $test_minor"
 		set failed 1
 	} else {
@@ -711,8 +713,8 @@ tesla_k20m|4|0-1|(null)|${dev}2
 tesla_v100-sxm2-32gb|4|0-1|(null)|${dev}3
 "
 set expected_output "
-GRES_PARSABLE\[gpu\](1):k20m|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):k20m1|4|0-1|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):k20m|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):v100|4|0-1|(null)|${dev}3|
 "
 check_configuration 0.32 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
@@ -780,8 +782,8 @@ k20|4|0-1|(null)|${dev}6
 k20m|4|0-1|(null)|${dev}8
 "
 set expected_output "
-GRES_PARSABLE\[gpu\](1):k20|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):k20m|4|0-1|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):k20|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):k20|4|0-1|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):k20m|4|0-1|(null)|${dev}4|
 GRES_PARSABLE\[gpu\](1):k20m|4|0-1|(null)|${dev}7|
@@ -1106,12 +1108,12 @@ tesla|4|0-1|(null)|${dev}1
 gtx560|4|0-1|(null)|${dev}0
 "
 set expected_output "
-GRES_PARSABLE\[gpu\](1):gtx560|4|0-1|(null)|${dev}0|
-GRES_PARSABLE\[gpu\](1):tesla|4|0-1|(null)|${dev}1|
-GRES_PARSABLE\[gpu\](1):1080|4|0-1|(null)|${dev}2|
-GRES_PARSABLE\[mps\](100):tesla|4|0-1|(null)|${dev}1|
-GRES_PARSABLE\[mps\](100):1080|4|0-1|(null)|${dev}2|
 GRES_PARSABLE\[mps\](100):gtx560|4|0-1|(null)|${dev}0|
+GRES_PARSABLE\[gpu\](1):gtx560|4|0-1|(null)|${dev}0|
+GRES_PARSABLE\[mps\](100):tesla|4|0-1|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-1|(null)|${dev}1|
+GRES_PARSABLE\[mps\](100):1080|4|0-1|(null)|${dev}2|
+GRES_PARSABLE\[gpu\](1):1080|4|0-1|(null)|${dev}2|
 "
 
 check_configuration 1.2 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
@@ -1266,10 +1268,10 @@ Name=mps Count=100 File=${dev}0
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE\[gpu\](1):gtx560|4|0,1|(null)|${dev}0|
-GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|
 GRES_PARSABLE\[mps\](100):gtx560|4|0,1|(null)|${dev}0|
+GRES_PARSABLE\[gpu\](1):gtx560|4|0,1|(null)|${dev}0|
 GRES_PARSABLE\[mps\](100):tesla|4|2,3|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|
 "
 check_configuration 2.2 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
@@ -1287,10 +1289,10 @@ Name=mps Count=210
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE\[gpu\](1):gtx560|4|0,1|(null)|${dev}0|
-GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|
 GRES_PARSABLE\[mps\](105):gtx560|4|0,1|(null)|${dev}0|
+GRES_PARSABLE\[gpu\](1):gtx560|4|0,1|(null)|${dev}0|
 GRES_PARSABLE\[mps\](105):tesla|4|2,3|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|
 "
 check_configuration 2.4 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
@@ -1420,10 +1422,10 @@ Name=mic     Type=mickey File=${dev}4 Cores=0-3
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}1|
-GRES_PARSABLE\[tmpdisk\](1):disky|4|0-3|(null)|${dev}2|
 GRES_PARSABLE\[nic\](1):nikki|4|0-3|(null)|${dev}3|
 GRES_PARSABLE\[mic\](1):mickey|4|0-3|(null)|${dev}4|
+GRES_PARSABLE\[tmpdisk\](1):disky|4|0-3|(null)|${dev}2|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}1|
 "
 check_configuration 2.16 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
@@ -1441,10 +1443,10 @@ Name=mic     File=${dev}4 Cores=0-3
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE\[gpu\](1):(null)|4|0-3|(null)|${dev}1|
-GRES_PARSABLE\[tmpdisk\](1):(null)|4|0-3|(null)|${dev}2|
 GRES_PARSABLE\[nic\](1):(null)|4|0-3|(null)|${dev}3|
 GRES_PARSABLE\[mic\](1):(null)|4|0-3|(null)|${dev}4|
+GRES_PARSABLE\[tmpdisk\](1):(null)|4|0-3|(null)|${dev}2|
+GRES_PARSABLE\[gpu\](1):(null)|4|0-3|(null)|${dev}1|
 "
 check_configuration 2.17 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
@@ -1761,10 +1763,10 @@ Name=mps Count=100 File=${dev}1
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE\[gpu\](1):gtx560|4|0,1|(null)|${dev}0|
-GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|
 GRES_PARSABLE\[mps\](100):gtx560|4|0,1|(null)|${dev}0|
+GRES_PARSABLE\[gpu\](1):gtx560|4|0,1|(null)|${dev}0|
 GRES_PARSABLE\[mps\](100):tesla|4|2,3|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|
 "
 check_configuration 2.50 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
@@ -1831,12 +1833,12 @@ Name=mps Count=400 File=${dev}8
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE\[gpu\](1):gtx560|4|0,1|(null)|${dev}0|
-GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|
-GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}3|
 GRES_PARSABLE\[mps\](0):gtx560|4|0,1|(null)|${dev}0|
+GRES_PARSABLE\[gpu\](1):gtx560|4|0,1|(null)|${dev}0|
 GRES_PARSABLE\[mps\](200):tesla|4|2,3|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}1|
 GRES_PARSABLE\[mps\](300):tesla|4|2,3|(null)|${dev}3|
+GRES_PARSABLE\[gpu\](1):tesla|4|2,3|(null)|${dev}3|
 "
 check_configuration 2.56 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
