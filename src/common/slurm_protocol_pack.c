@@ -7120,6 +7120,9 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		safe_unpackstr_array(&job_desc_ptr->spank_job_env,
 				     &job_desc_ptr->spank_job_env_size,
 				     buffer);
+		if (envcount(job_desc_ptr->spank_job_env)
+		    != job_desc_ptr->spank_job_env_size)
+			goto unpack_error;
 		safe_unpackstr_xmalloc(&job_desc_ptr->script,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_array(&job_desc_ptr->argv,
@@ -7312,6 +7315,9 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		safe_unpackstr_array(&job_desc_ptr->spank_job_env,
 				     &job_desc_ptr->spank_job_env_size,
 				     buffer);
+		if (envcount(job_desc_ptr->spank_job_env)
+		    != job_desc_ptr->spank_job_env_size)
+			goto unpack_error;
 		safe_unpackstr_xmalloc(&job_desc_ptr->script,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_array(&job_desc_ptr->argv,
@@ -7515,6 +7521,9 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 		safe_unpackstr_array(&job_desc_ptr->spank_job_env,
 				     &job_desc_ptr->spank_job_env_size,
 				     buffer);
+		if (envcount(job_desc_ptr->spank_job_env)
+		    != job_desc_ptr->spank_job_env_size)
+			goto unpack_error;
 		safe_unpackstr_xmalloc(&job_desc_ptr->script,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_array(&job_desc_ptr->argv,
