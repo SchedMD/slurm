@@ -407,6 +407,16 @@ extern int bb_test_size_limit(job_record_t *job_ptr, bb_job_t *bb_job,
 /* Determine if the specified pool name is valid on this system */
 extern bool bb_valid_pool_test(bb_state_t *state_ptr, char *pool_name);
 
+/* Write an arbitrary string to an arbitrary file name */
+extern int bb_write_file(char *file_name, char *buf);
+
+/*
+ * Write a string representing the node IDs of a job's nodes to an arbitrary
+ * file location.
+ * RET 0 or Slurm error code
+ */
+extern int bb_write_nid_file(char *file_name, char *node_list,
+			     job_record_t *job_ptr);
 /*
  * Save buffer to state file
  * IN old_file - state file name with ".old" appended

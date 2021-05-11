@@ -272,9 +272,6 @@ static void	_test_config(void);
 static bool	_test_persistent_use_ready(bb_job_t *bb_job,
 					   job_record_t *job_ptr);
 static void	_timeout_bb_rec(void);
-static int	_write_file(char *file_name, char *buf);
-static int	_write_nid_file(char *file_name, char *node_list,
-				job_record_t *job_ptr);
 static int	_xlate_batch(job_desc_msg_t *job_desc);
 static int	_xlate_interactive(job_desc_msg_t *job_desc);
 
@@ -1235,120 +1232,6 @@ static void _load_state(bool init_config)
 	return;
 }
 
-/* Write an string representing the NIDs of a job's nodes to an arbitrary
- * file location
- * RET 0 or Slurm error code
- */
-static int _write_nid_file(char *file_name, char *node_list,
-			   job_record_t *job_ptr)
-{
-#if defined(HAVE_NATIVE_CRAY)
-	char *tmp, *sep, *buf = NULL;
-	int i, j, rc;
-
-	xassert(file_name);
-	tmp = xstrdup(node_list);
-	/* Remove any trailing "]" */
-	sep = strrchr(tmp, ']');
-	if (sep)
-		sep[0] = '\0';
-	/* Skip over "nid[" or "nid" */
-	sep = strchr(tmp, '[');
-	if (sep) {
-		sep++;
-	} else {
-		sep = tmp;
-		for (i = 0; !isdigit(sep[0]) && sep[0]; i++)
-			sep++;
-	}
-	/* Copy numeric portion */
-	buf = xmalloc(strlen(sep) + 1);
-	for (i = 0, j = 0; sep[i]; i++) {
-		/* Skip leading zeros */
-		if ((sep[i] == '0') && isdigit(sep[i+1]))
-			continue;
-		/* Copy significant digits and separator */
-		while (sep[i]) {
-			if (sep[i] == ',') {
-				buf[j++] = '\n';
-				break;
-			}
-			buf[j++] = sep[i];
-			if (sep[i] == '-')
-				break;
-			i++;
-		}
-		if (!sep[i])
-			break;
-	}
-	xfree(tmp);
-
-	if (buf[0]) {
-		rc = _write_file(file_name, buf);
-	} else {
-		error("%pJ has node list without numeric component (%s)",
-		      job_ptr, node_list);
-		rc = EINVAL;
-	}
-	xfree(buf);
-	return rc;
-#else
-	char *tok, *buf = NULL;
-	int rc;
-
-	xassert(file_name);
-	if (node_list && node_list[0]) {
-		hostlist_t hl = hostlist_create(node_list);
-		while ((tok = hostlist_shift(hl))) {
-			xstrfmtcat(buf, "%s\n", tok);
-			free(tok);
-		}
-		hostlist_destroy(hl);
-		rc = _write_file(file_name, buf);
-		xfree(buf);
-	} else {
-		error("%pJ lacks a node list",
-		      job_ptr);
-		rc = EINVAL;
-	}
-	return rc;
-#endif
-}
-
-/* Write an arbitrary string to an arbitrary file name */
-static int _write_file(char *file_name, char *buf)
-{
-	int amount, fd, nwrite, pos;
-
-	(void) unlink(file_name);
-	fd = creat(file_name, 0600);
-	if (fd < 0) {
-		error("Error creating file %s, %m", file_name);
-		return errno;
-	}
-
-	if (!buf) {
-		error("buf is NULL");
-		return SLURM_ERROR;
-	}
-
-	nwrite = strlen(buf);
-	pos = 0;
-	while (nwrite > 0) {
-		amount = write(fd, &buf[pos], nwrite);
-		if ((amount < 0) && (errno != EINTR)) {
-			error("Error writing file %s, %m", file_name);
-			close(fd);
-			return ESLURM_WRITING_TO_FILE;
-		}
-		nwrite -= amount;
-		pos    += amount;
-	}
-
-	(void) close(fd);
-	return SLURM_SUCCESS;
-}
-
 static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 {
 	char *hash_dir = NULL, *job_dir = NULL, *job_pool;
@@ -1366,8 +1249,8 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
 	if (job_ptr->sched_nodes) {
 		xstrfmtcat(client_nodes_file_nid, "%s/client_nids", job_dir);
-		if (_write_nid_file(client_nodes_file_nid,
-				    job_ptr->sched_nodes, job_ptr))
+		if (bb_write_nid_file(client_nodes_file_nid,
+				      job_ptr->sched_nodes, job_ptr))
 			xfree(client_nodes_file_nid);
 	}
 	setup_argv = xcalloc(20, sizeof(char *));	/* NULL terminated */
@@ -2691,7 +2574,7 @@ static int _build_bb_script(job_record_t *job_ptr, char *script_file)
 
 	xstrcat(out_buf, "#!/bin/bash\n");
 	xstrcat(out_buf, job_ptr->burst_buffer);
-	rc = _write_file(script_file, out_buf);
+	rc = bb_write_file(script_file, out_buf);
 	xfree(out_buf);
 
 	return rc;
@@ -3692,8 +3575,8 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	if (job_ptr->job_resrcs && job_ptr->job_resrcs->nodes &&
-	    _write_nid_file(client_nodes_file_nid, job_ptr->job_resrcs->nodes,
-			    job_ptr)) {
+	    bb_write_nid_file(client_nodes_file_nid, job_ptr->job_resrcs->nodes,
+			      job_ptr)) {
 		xfree(client_nodes_file_nid);
 	}
 
