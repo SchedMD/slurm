@@ -1428,7 +1428,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	void *array_bitmap;	/* NOTE: Set by slurmctld */
 	char *batch_features;	/* features required for batch script's node */
 	time_t begin_time;	/* delay initiation until this time */
-	uint32_t bitflags;      /* bitflags */
+	uint64_t bitflags;      /* bitflags */
 	char *burst_buffer;	/* burst buffer specifications */
 	char *clusters;		/* cluster names used for multi-cluster jobs */
 	char *cluster_features;	/* required cluster feature specification,
@@ -1607,7 +1607,7 @@ typedef struct job_info {
 	char *batch_features;	/* features required for batch script's node */
 	uint16_t batch_flag;	/* 1 if batch: queued job with script */
 	char *batch_host;	/* name of host running batch script */
-	uint32_t bitflags;      /* Various job flags */
+	uint64_t bitflags;      /* Various job flags */
 	uint16_t boards_per_node;  /* boards per node required by job   */
 	char *burst_buffer;	/* burst buffer specifications */
 	char *burst_buffer_state; /* burst buffer state info */

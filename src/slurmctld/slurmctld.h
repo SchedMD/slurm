@@ -691,7 +691,7 @@ struct job_record {
 					 * billing weight. Recalculated upon job
 					 * resize.  Cannot be calculated until
 					 * the job is alloocated resources. */
-	uint32_t bit_flags;             /* various job flags */
+	uint64_t bit_flags;             /* various job flags */
 	char *burst_buffer;		/* burst buffer specification */
 	char *burst_buffer_state;	/* burst buffer state */
 	char *clusters;			/* clusters job is submitted to with -M

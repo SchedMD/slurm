@@ -3679,7 +3679,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 			job->ntasks_per_core = mc_ptr->ntasks_per_core;
 			xfree(mc_ptr);
 		}
-		safe_unpack32(&job->bitflags, buffer);
+		safe_unpack64(&job->bitflags, buffer);
 		safe_unpackstr_xmalloc(&job->tres_alloc_str, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&job->tres_req_str, &uint32_tmp, buffer);
@@ -3867,7 +3867,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 			job->ntasks_per_core = mc_ptr->ntasks_per_core;
 			xfree(mc_ptr);
 		}
-		safe_unpack32(&job->bitflags, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		job->bitflags = uint32_tmp;
 		safe_unpackstr_xmalloc(&job->tres_alloc_str, &uint32_tmp,
 				       buffer);
 		safe_unpackstr_xmalloc(&job->tres_req_str, &uint32_tmp, buffer);
@@ -4058,7 +4059,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 			job->ntasks_per_core   = mc_ptr->ntasks_per_core;
 			xfree(mc_ptr);
 		}
-		safe_unpack32(&job->bitflags, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		job->bitflags = uint32_tmp;
 		safe_unpackstr_xmalloc(&job->tres_alloc_str,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job->tres_req_str,
@@ -5947,7 +5949,7 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 			select_g_select_jobinfo_free(select_jobinfo);
 		}
 		pack16(job_desc_ptr->wait_all_nodes, buffer);
-		pack32(job_desc_ptr->bitflags, buffer);
+		pack64(job_desc_ptr->bitflags, buffer);
 		pack32(job_desc_ptr->delay_boot, buffer);
 		packstr(job_desc_ptr->extra, buffer);
 		pack16(job_desc_ptr->x11, buffer);
@@ -6088,7 +6090,7 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 			select_g_select_jobinfo_free(select_jobinfo);
 		}
 		pack16(job_desc_ptr->wait_all_nodes, buffer);
-		pack32(job_desc_ptr->bitflags, buffer);
+		pack32((uint32_t)job_desc_ptr->bitflags, buffer);
 		pack32(job_desc_ptr->delay_boot, buffer);
 		packstr(job_desc_ptr->extra, buffer);
 		pack16(job_desc_ptr->x11, buffer);
@@ -6230,7 +6232,7 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 			select_g_select_jobinfo_free(select_jobinfo);
 		}
 		pack16(job_desc_ptr->wait_all_nodes, buffer);
-		pack32(job_desc_ptr->bitflags, buffer);
+		pack32((uint32_t)job_desc_ptr->bitflags, buffer);
 		pack32(job_desc_ptr->delay_boot, buffer);
 		packstr(job_desc_ptr->extra, buffer);
 		pack16(job_desc_ptr->x11, buffer);
@@ -6425,7 +6427,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 			goto unpack_error;
 
 		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
-		safe_unpack32(&job_desc_ptr->bitflags, buffer);
+		safe_unpack64(&job_desc_ptr->bitflags, buffer);
 		safe_unpack32(&job_desc_ptr->delay_boot, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->extra, &uint32_tmp,
 				       buffer);
@@ -6612,7 +6614,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 			goto unpack_error;
 
 		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
-		safe_unpack32(&job_desc_ptr->bitflags, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		job_desc_ptr->bitflags = uint32_tmp;
 		safe_unpack32(&job_desc_ptr->delay_boot, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->extra, &uint32_tmp,
 				       buffer);
@@ -6811,7 +6814,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 			goto unpack_error;
 
 		safe_unpack16(&job_desc_ptr->wait_all_nodes, buffer);
-		safe_unpack32(&job_desc_ptr->bitflags, buffer);
+		safe_unpack32(&uint32_tmp, buffer);
+		job_desc_ptr->bitflags = uint32_tmp;
 		safe_unpack32(&job_desc_ptr->delay_boot, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->extra, &uint32_tmp,
 				       buffer);

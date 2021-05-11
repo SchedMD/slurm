@@ -1481,7 +1481,7 @@ static void _dump_job_state(job_record_t *dump_job_ptr, buf_t *buffer)
 	list_for_each(dump_job_ptr->step_list, dump_job_step_state, buffer);
 
 	pack16((uint16_t) 0, buffer);	/* no step flag */
-	pack32(dump_job_ptr->bit_flags, buffer);
+	pack64(dump_job_ptr->bit_flags, buffer);
 	packstr(dump_job_ptr->tres_alloc_str, buffer);
 	packstr(dump_job_ptr->tres_fmt_alloc_str, buffer);
 	packstr(dump_job_ptr->tres_req_str, buffer);
@@ -1756,7 +1756,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 				goto unpack_error;
 			safe_unpack16(&step_flag, buffer);
 		}
-		safe_unpack32(&job_ptr->bit_flags, buffer);
+		safe_unpack64(&job_ptr->bit_flags, buffer);
 		job_ptr->bit_flags &= ~BACKFILL_TEST;
 		job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
 		job_ptr->bit_flags &= ~CRON_JOB;
@@ -1792,6 +1792,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&job_ptr->tres_per_task, &name_len,
 				       buffer);
 	} else if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+		uint32_t tmp32;
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
 
@@ -1979,7 +1980,8 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 				goto unpack_error;
 			safe_unpack16(&step_flag, buffer);
 		}
-		safe_unpack32(&job_ptr->bit_flags, buffer);
+		safe_unpack32(&tmp32, buffer);
+		job_ptr->bit_flags = tmp32;
 		job_ptr->bit_flags &= ~BACKFILL_TEST;
 		job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
 		job_ptr->bit_flags &= ~CRON_JOB;
@@ -2015,6 +2017,8 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&job_ptr->tres_per_task, &name_len,
 				       buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		uint32_t tmp32;
+
 		safe_unpack32(&array_job_id, buffer);
 		safe_unpack32(&array_task_id, buffer);
 
@@ -2206,7 +2210,8 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 				goto unpack_error;
 			safe_unpack16(&step_flag, buffer);
 		}
-		safe_unpack32(&job_ptr->bit_flags, buffer);
+		safe_unpack32(&tmp32, buffer);
+		job_ptr->bit_flags = tmp32;
 		job_ptr->bit_flags &= ~BACKFILL_TEST;
 		job_ptr->bit_flags &= ~BF_WHOLE_NODE_TEST;
 		job_ptr->bit_flags &= ~CRON_JOB;
@@ -4464,7 +4469,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   mcs_label=%s", job_specs->mcs_label);
 	slurm_make_time_str(&job_specs->deadline, buf, sizeof(buf));
 	debug3("   deadline=%s", buf);
-	debug3("   bitflags=0x%"PRIx32" delay_boot=%u",
+	debug3("   bitflags=0x%"PRIx64" delay_boot=%u",
 	       job_specs->bitflags, job_specs->delay_boot);
 
 	if (job_specs->cpus_per_tres)
@@ -10357,7 +10362,7 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		else
 			_pack_pending_job_details(NULL, buffer,
 						  protocol_version);
-		pack32(dump_job_ptr->bit_flags, buffer);
+		pack64(dump_job_ptr->bit_flags, buffer);
 		packstr(dump_job_ptr->tres_fmt_alloc_str, buffer);
 		packstr(dump_job_ptr->tres_fmt_req_str, buffer);
 		pack16(dump_job_ptr->start_protocol_ver, buffer);
@@ -10588,7 +10593,7 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 		else
 			_pack_pending_job_details(NULL, buffer,
 						  protocol_version);
-		pack32(dump_job_ptr->bit_flags, buffer);
+		pack32((uint32_t)dump_job_ptr->bit_flags, buffer);
 		packstr(dump_job_ptr->tres_fmt_alloc_str, buffer);
 		packstr(dump_job_ptr->tres_fmt_req_str, buffer);
 		pack16(dump_job_ptr->start_protocol_ver, buffer);
