@@ -51,7 +51,6 @@ set gres_conf_file_err	"fatal: gres.conf for $re_word_str, some records have \"F
 set key_parse_err	"error: _parse_next_key: Parsing error at unrecognized key"
 
 set debug_mode 0
-# set debug_mode 1
 
 if {[get_config_param "SwitchType"] eq "switch/cray"} {
 #	Many Cray-specific changes required in slurm.conf test files
@@ -67,6 +66,10 @@ if {[lindex $argv 0] == "v" || [lindex $argv 0] == "valgrind"} {
 	set use_valgrind 1
 	set test_minor_offset 1
 	log_info "Running tests under valgrind!"
+} elseif {[lindex $argv 0] == "d" || [lindex $argv 0] == "debug"} {
+	set debug_mode 1
+	set test_minor_offset 1
+	log_info "Running tests under debug mode!"
 }
 
 if {[lindex $argv $test_minor_offset] != ""} {
