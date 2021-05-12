@@ -18741,6 +18741,8 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 	if (job_ptr->spank_job_env_size) {
 		env_array_merge(&my_env,
 				(const char **) job_ptr->spank_job_env);
+		valid_spank_job_env(my_env, job_ptr->spank_job_env_size,
+				    job_ptr->user_id);
 	}
 
 	setenvf(&my_env, "SLURM_JOB_ACCOUNT", "%s", job_ptr->account);
