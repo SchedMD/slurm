@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 20.11.8
+==========================
+
 * Changes in Slurm 20.11.7
 ==========================
  -- slurmd - handle configless failures gracefully instead of hanging
