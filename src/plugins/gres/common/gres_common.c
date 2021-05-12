@@ -356,6 +356,7 @@ extern void common_send_stepd(buf_t *buffer, List gres_devices)
 		pack32(gres_device->dev_num, buffer);
 		packstr(gres_device->major, buffer);
 		packstr(gres_device->path, buffer);
+		packstr(gres_device->unique_id, buffer);
 	}
 	list_iterator_destroy(itr);
 
@@ -390,6 +391,8 @@ extern void common_recv_stepd(buf_t *buffer, List *gres_devices)
 		safe_unpackstr_xmalloc(&gres_device->major,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&gres_device->path,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&gres_device->unique_id,
 				       &uint32_tmp, buffer);
 		list_append(*gres_devices, gres_device);
 		/* info("adding %d %s %s", gres_device->dev_num, */

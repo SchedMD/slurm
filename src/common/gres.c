@@ -9941,6 +9941,7 @@ extern void destroy_gres_device(void *gres_device_ptr)
 		return;
 	xfree(gres_device->path);
 	xfree(gres_device->major);
+	xfree(gres_device->unique_id);
 	xfree(gres_device);
 }
 

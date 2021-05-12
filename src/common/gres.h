@@ -67,6 +67,7 @@ typedef struct {
 	int dev_num; /* Number at the end of the device filename */
 	char *major;
 	char *path;
+	char *unique_id; /* Used for GPU binding with MIGs */
 } gres_device_t;
 
 #define GRES_CONF_HAS_MULT	0x01	/* MultipleFiles is configured */
