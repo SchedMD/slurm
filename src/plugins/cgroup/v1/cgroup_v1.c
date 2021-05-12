@@ -1050,6 +1050,51 @@ extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
 	return rc;
 }
 
+extern int cgroup_p_task_constrain_set(cgroup_ctl_type_t sub,
+				       cgroup_limits_t *limits, uint32_t taskid)
+{
+	int rc = SLURM_SUCCESS;
+	task_cg_info_t *task_cg_info;
+
+	if (!limits)
+		return SLURM_ERROR;
+
+	switch (sub) {
+	case CG_TRACK:
+		break;
+	case CG_CPUS:
+		break;
+	case CG_MEMORY:
+		break;
+	case CG_DEVICES:
+		task_cg_info = list_find_first(g_task_acct_list[sub],
+					       _find_task_cg_info,
+					       &taskid);
+		if (!task_cg_info) {
+			error("Task %d is not being tracked in %s controller, cannot set constrain.",
+			      taskid, g_cg_name[sub]);
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		if (limits->allow_device)
+			rc = common_cgroup_set_param(&task_cg_info->task_cg,
+						     "devices.allow",
+						     limits->device_major);
+		else
+			rc = common_cgroup_set_param(&task_cg_info->task_cg,
+						     "devices.deny",
+						     limits->device_major);
+		break;
+	default:
+		error("cgroup subsystem %"PRIu16" not supported", sub);
+		rc = SLURM_ERROR;
+		break;
+	}
+
+	return rc;
+}
+
 /*
  * Code based on linux tools/cgroup/cgroup_event_listener.c with adapted
  * modifications for Slurm logic and needs.

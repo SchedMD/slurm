@@ -265,6 +265,19 @@ extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
 				       cgroup_limits_t *limits);
 
 /*
+ * Set constrains to the task cgroup of the specified controller, for the
+ * specified job.
+ *
+ * IN sub - To which controller we want the limits be applied to.
+ * IN limits - Struct containing the the limits to be applied.
+ * IN taskid - task to which we want the limits be applied to.
+ * RET SLURM_SUCCESS if limits were applied successfuly, SLURM_ERROR otherwise.
+ */
+extern int cgroup_p_task_constrain_set(cgroup_ctl_type_t sub,
+				       cgroup_limits_t *limits,
+				       uint32_t taskid);
+
+/*
  * Cgroup v1 function to detect OOM conditions.
  *
  * Do use memory.oom_control and cgroup.event_control, see:
