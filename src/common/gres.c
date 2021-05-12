@@ -1857,6 +1857,7 @@ static void _pack_gres_slurmd_conf(void *in, uint16_t protocol_version,
 	packstr(gres_conf->links, buffer);
 	packstr(gres_conf->name, buffer);
 	packstr(gres_conf->type_name, buffer);
+	packstr(gres_conf->unique_id, buffer);
 	pack32(gres_conf->plugin_id, buffer);
 }
 
@@ -1876,6 +1877,7 @@ static int _unpack_gres_slurmd_conf(void **object, uint16_t protocol_version,
 	safe_unpackstr_xmalloc(&gres_conf->links, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&gres_conf->name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&gres_conf->type_name, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&gres_conf->unique_id, &uint32_tmp, buffer);
 	safe_unpack32(&gres_conf->plugin_id, buffer);
 
 	*object = gres_conf;
@@ -2147,6 +2149,7 @@ extern int gres_node_config_pack(buf_t *buffer)
 			packstr(gres_slurmd_conf->links, buffer);
 			packstr(gres_slurmd_conf->name, buffer);
 			packstr(gres_slurmd_conf->type_name, buffer);
+			packstr(gres_slurmd_conf->unique_id, buffer);
 		}
 		list_iterator_destroy(iter);
 	}
@@ -2169,6 +2172,7 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 	uint8_t config_flags = 0;
 	char *tmp_cpus = NULL, *tmp_links = NULL, *tmp_name = NULL;
 	char *tmp_type = NULL;
+	char *tmp_unique_id = NULL;
 	gres_slurmd_conf_t *p;
 
 	rc = gres_init();
@@ -2204,6 +2208,7 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			safe_unpackstr_xmalloc(&tmp_links, &utmp32, buffer);
 			safe_unpackstr_xmalloc(&tmp_name, &utmp32, buffer);
 			safe_unpackstr_xmalloc(&tmp_type, &utmp32, buffer);
+			safe_unpackstr_xmalloc(&tmp_unique_id, &utmp32, buffer);
 		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
@@ -2219,8 +2224,8 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			safe_unpackstr_xmalloc(&tmp_type, &utmp32, buffer);
 		}
 
-		log_flag(GRES, "Node:%s Gres:%s Type:%s Flags:%s CPU_IDs:%s CPU#:%u Count:%"PRIu64" Links:%s",
-			 node_name, tmp_name, tmp_type,
+		log_flag(GRES, "Node:%s Gres:%s Type:%s UniqueId:%s Flags:%s CPU_IDs:%s CPU#:%u Count:%"PRIu64" Links:%s",
+			 node_name, tmp_name, tmp_type, tmp_unique_id,
 			 gres_flags2str(config_flags), tmp_cpus, cpu_cnt,
 			 count64, tmp_links);
 
@@ -2296,6 +2301,7 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			xfree(tmp_links);
 			xfree(tmp_name);
 			xfree(tmp_type);
+			xfree(tmp_unique_id);
 			continue;
 		}
 		p = xmalloc(sizeof(gres_slurmd_conf_t));
@@ -2310,6 +2316,8 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 		p->type_name = tmp_type;
 		tmp_type = NULL;	/* Nothing left to xfree */
 		p->plugin_id = plugin_id;
+		p->unique_id = tmp_unique_id;
+		tmp_unique_id = NULL;
 		if (gres_links_validate(p->links) < -1) {
 			error("%s: Ignoring invalid Links=%s for Name=%s",
 			      __func__, p->links, p->name);
@@ -9948,6 +9956,7 @@ extern void destroy_gres_slurmd_conf(void *x)
 	xfree(p->links);
 	xfree(p->name);
 	xfree(p->type_name);
+	xfree(p->unique_id);
 	xfree(p);
 }
 

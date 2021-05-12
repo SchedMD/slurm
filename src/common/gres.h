@@ -119,6 +119,9 @@ typedef struct gres_slurmd_conf {
 	/* Type of this GRES (e.g. model name) */
 	char *type_name;
 
+	/* Used for GPU binding with MIGs */
+	char *unique_id;
+
 	/* GRES ID number */
 	uint32_t plugin_id;
 } gres_slurmd_conf_t;
