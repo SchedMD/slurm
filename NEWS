@@ -9,6 +9,8 @@ documents those changes that are of interest to users and administrators.
     jobacct_gather/cgroup configured.
  -- Ensure SPANK prolog and epilog run without an explicit PlugStackConfig.
  -- Fix missing xstrdup which could result in slurmctld segfault on array jobs.
+ -- Fix security issue in PrologSlurmctld and EpilogSlurmctld by always
+    prepending SPANK_ to all user-set environment variables. CVE-2021-31215.
 
 * Changes in Slurm 20.02.6
 ==========================
