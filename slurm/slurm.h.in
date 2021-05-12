@@ -990,44 +990,42 @@ enum node_states {
 #define PRIORITY_FLAGS_NO_NORMAL_TRES	0x00000400
 
 /* These bits are set in the bitflags field of job_desc_msg_t */
-typedef enum {
-	KILL_INV_DEP = 1 << 0, /* Kill job on invalid dependency */
-	NO_KILL_INV_DEP = 1 << 1, /* Don't kill job on invalid dependency */
-	HAS_STATE_DIR = 1 << 2,	/* Used by slurmctld to track state dir */
-	BACKFILL_TEST = 1 << 3,	/* Backfill test in progress */
-	GRES_ENFORCE_BIND = 1 << 4, /* Enforce CPU/GRES binding */
-	TEST_NOW_ONLY = 1 << 5, /* Test for immediately start only */
-/*                      1 << 6, Unused */
-	NODE_REBOOT = 1 << 7, /* Waiting for node reboot */
-	SPREAD_JOB = 1 << 8, /* Spread job across max node count */
-	USE_MIN_NODES  = 1 << 9, /* Prefer minimum node count */
-	JOB_KILL_HURRY = 1 << 10, /* Avoid burst buffer stage out */
-	TRES_STR_CALC = 1 << 11, /* Avoid calculating TRES strings at the
-				  * end of a job. */
-	SIB_JOB_FLUSH = 1 << 12, /* Don't send complete to origin */
-	HET_JOB_FLAG  = 1 << 13, /* Heterogeneous job management flag */
-	JOB_NTASKS_SET = 1 << 14, /* --ntasks explicitly set */
-	JOB_CPUS_SET = 1 << 15, /* --cpus-per-tasks explicitly set */
-	BF_WHOLE_NODE_TEST = 1 << 16, /* Backfill test in progress */
-	TOP_PRIO_TMP  = 1 << 17, /* Temporary flag for top priority job
-				  * operation */
-	JOB_ACCRUE_OVER = 1 << 18, /* We have cleared the accrual count of
-				    * a job. */
-	GRES_DISABLE_BIND = 1 << 19, /* Disable CPU/GRES binding */
-	JOB_WAS_RUNNING = 1 << 20, /* Job was running */
-	RESET_ACCRUE_TIME = 1 << 21, /* Reset the job's accrue time */
-	CRON_JOB = 1 << 22, /* Job submitted through scrontab */
-	JOB_MEM_SET = 1 << 23, /* Memory limit explicity set by job */
-	JOB_RESIZED  = 1 << 24, /* Running job added/removed nodes */
-	USE_DEFAULT_ACCT = 1 << 25, /* Job submitted to default account */
-	USE_DEFAULT_PART = 1 << 26, /* Job submitted to default partition */
-	USE_DEFAULT_QOS = 1 << 27, /* Job submitted with default QOS */
-	USE_DEFAULT_WCKEY = 1 << 28, /* Job submitted with default WCKEY */
-	JOB_DEPENDENT = 1 << 29, /* Job dependent or invalid depend */
-	JOB_MAGNETIC = 1 << 30, /* Job attempting to run in a
-				 * magnetic reservation */
-	JOB_PART_ASSIGNED = 1 << 31, /* Job didn't request a partition */
-} job_bitflags_t;
+#define KILL_INV_DEP       0x00000001	/* Kill job on invalid dependency */
+#define NO_KILL_INV_DEP    0x00000002	/* Don't kill job on invalid dependency */
+#define HAS_STATE_DIR      0x00000004	/* Used by slurmctld to track state dir */
+#define BACKFILL_TEST      0x00000008	/* Backfill test in progress */
+#define GRES_ENFORCE_BIND  0x00000010	/* Enforce CPU/GRES binding */
+#define TEST_NOW_ONLY      0x00000020	/* Test for immediately start only */
+/*                         0x00000040      Unused */
+#define NODE_REBOOT        0x00000080	/* Waiting for node reboot */
+#define SPREAD_JOB         0x00000100	/* Spread job across max node count */
+#define USE_MIN_NODES      0x00000200	/* Prefer minimum node count */
+#define JOB_KILL_HURRY     0x00000400	/* Avoid burst buffer stage out */
+#define TRES_STR_CALC      0x00000800   /* Avoid calculating TRES strings at the
+					 * end of a job. */
+#define SIB_JOB_FLUSH      0x00001000   /* Don't send complete to origin */
+#define HET_JOB_FLAG       0x00002000	/* Heterogeneous job management flag */
+#define JOB_NTASKS_SET     0x00004000	/* --ntasks explicitly set */
+#define JOB_CPUS_SET       0x00008000	/* --cpus-per-tasks explicitly set */
+#define BF_WHOLE_NODE_TEST 0x00010000	/* Backfill test in progress */
+#define TOP_PRIO_TMP       0x00020000	/* Temporary flag for top priority job
+					 * operation */
+#define JOB_ACCRUE_OVER    0x00040000	/* We have cleared the accrual count of
+					 * a job. */
+#define GRES_DISABLE_BIND  0x00080000	/* Disable CPU/GRES binding */
+#define JOB_WAS_RUNNING    0x00100000  /* Job was running */
+#define RESET_ACCRUE_TIME  0x00200000   /* Reset the job's accrue time */
+#define CRON_JOB           0x00400000   /* Job submitted through scrontab */
+#define JOB_MEM_SET        0x00800000	/* Memory limit explicity set by job */
+#define JOB_RESIZED        0x01000000	/* Running job added/removed nodes */
+#define USE_DEFAULT_ACCT   0x02000000	/* Job submitted to default account */
+#define USE_DEFAULT_PART   0x04000000	/* Job submitted to default partition */
+#define USE_DEFAULT_QOS    0x08000000	/* Job submitted with default QOS */
+#define USE_DEFAULT_WCKEY  0x10000000	/* Job submitted with default WCKEY */
+#define JOB_DEPENDENT      0x20000000	/* Job dependent or invalid depend */
+#define JOB_MAGNETIC       0x40000000	/* Job attempting to run in a
+					 * magnetic reservation */
+#define JOB_PART_ASSIGNED  0x80000000   /* Job didn't request a partition */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
