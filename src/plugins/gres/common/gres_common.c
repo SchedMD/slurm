@@ -103,6 +103,8 @@ extern int common_node_config_load(List gres_conf_list,
 
 			gres_device->major = gres_device_major(
 				gres_device->path);
+			gres_device->unique_id =
+				xstrdup(gres_slurmd_conf->unique_id);
 			tmp = strlen(one_name);
 			for (i = 1;  i <= tmp; i++) {
 				if (isdigit(one_name[tmp - i])) {
