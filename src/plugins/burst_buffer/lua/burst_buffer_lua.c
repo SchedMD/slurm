@@ -56,13 +56,17 @@
 #include "src/common/xstring.h"
 #include "src/lua/slurm_lua.h"
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/trigger_mgr.h"
 #include "src/plugins/burst_buffer/common/burst_buffer_common.h"
 
 /* Script directive */
 #define DIRECTIVE_STR "BB_LUA"
+/* Hold job if pre_run fails more times than MAX_RETRY_CNT */
+#define MAX_RETRY_CNT 2
 
 /*
  * These variables are required by the burst buffer plugin interface.  If they
@@ -108,6 +112,8 @@ static const char *req_fxns[] = {
 	"slurm_bb_job_teardown",
 	"slurm_bb_setup",
 	"slurm_bb_data_in",
+	"slurm_bb_paths",
+	"slurm_bb_pre_run",
 	NULL
 };
 
@@ -135,6 +141,20 @@ typedef struct {
 	char *pool;
 	uint32_t uid;
 } stage_in_args_t;
+
+typedef struct {
+	uint32_t job_id;
+	char *job_script;
+	char *path_file;
+} paths_args_t;
+
+typedef struct {
+	uint32_t job_id;
+	char *job_script;
+	char *node_file;
+	uint32_t timeout;
+	uint32_t uid;
+} pre_run_args_t;
 
 typedef int (*push_lua_args_cb_t) (lua_State *L, void *args);
 
@@ -1549,7 +1569,8 @@ static int _identify_bb_candidate(void *x, void *arg)
 static void _purge_bb_files(uint32_t job_id, job_record_t *job_ptr)
 {
 	char *hash_dir = NULL, *job_dir = NULL;
-	char *script_file = NULL;
+	char *client_nids_file = NULL;
+	char *script_file = NULL, *path_file = NULL;
 	int hash_inx;
 
 	hash_inx = job_id % 10;
@@ -1558,6 +1579,14 @@ static void _purge_bb_files(uint32_t job_id, job_record_t *job_ptr)
 	(void) mkdir(hash_dir, 0700);
 	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_id);
 	(void) mkdir(job_dir, 0700);
+
+	xstrfmtcat(client_nids_file, "%s/client_nids", job_dir);
+	(void) unlink(client_nids_file);
+	xfree(client_nids_file);
+
+	xstrfmtcat(path_file, "%s/pathfile", job_dir);
+	(void) unlink(path_file);
+	xfree(path_file);
 
 	if (!job_ptr || (job_ptr->batch_flag == 0)) {
 		xstrfmtcat(script_file, "%s/script", job_dir);
@@ -2138,6 +2167,212 @@ extern int bb_p_job_test_stage_in(job_record_t *job_ptr, bool test_only)
 	return rc;
 }
 
+static int _push_paths_args(lua_State *L, void *args)
+{
+	paths_args_t *paths_args = (paths_args_t *) args;
+
+	lua_pushinteger(L, paths_args->job_id);
+	lua_pushstring(L, paths_args->job_script);
+	lua_pushstring(L, paths_args->path_file);
+
+	return 3;
+}
+
+/* Add key=value pairs from file_path to the job's environment */
+static void _update_job_env(job_record_t *job_ptr, char *file_path)
+{
+	struct stat stat_buf;
+	char *data_buf = NULL, *start, *sep;
+	int path_fd, i, inx = 0, env_cnt = 0;
+	ssize_t read_size;
+
+	/* Read the environment variables file */
+	path_fd = open(file_path, 0);
+	if (path_fd == -1) {
+		error("open error on file %s: %m",
+		      file_path);
+		return;
+	}
+	fd_set_close_on_exec(path_fd);
+	if (fstat(path_fd, &stat_buf) == -1) {
+		error("stat error on file %s: %m",
+		      file_path);
+		stat_buf.st_size = 2048;
+	} else if (stat_buf.st_size == 0)
+		goto fini;
+	data_buf = xmalloc_nz(stat_buf.st_size + 1);
+	while (inx < stat_buf.st_size) {
+		read_size = read(path_fd, data_buf + inx, stat_buf.st_size);
+		if (read_size < 0)
+			data_buf[inx] = '\0';
+		else
+			data_buf[inx + read_size] = '\0';
+		if (read_size > 0) {
+			inx += read_size;
+		} else if (read_size == 0) {	/* EOF */
+			break;
+		} else if (read_size < 0) {	/* error */
+			if ((errno == EAGAIN) || (errno == EINTR))
+				continue;
+			error("read error on file %s: %m",
+			      file_path);
+			break;
+		}
+	}
+	log_flag(BURST_BUF, "%s", data_buf);
+
+	/* Get count of environment variables in the file */
+	env_cnt = 0;
+	if (data_buf) {
+		for (i = 0; data_buf[i]; i++) {
+			if (data_buf[i] == '=')
+				env_cnt++;
+		}
+	}
+
+	/* Add to supplemental environment variables (in job record) */
+	if (env_cnt) {
+		xrecalloc(job_ptr->details->env_sup,
+			  MAX(job_ptr->details->env_cnt + env_cnt, 1 + env_cnt),
+			  sizeof(char *));
+		start = data_buf;
+		for (i = 0; (i < env_cnt) && start[0]; i++) {
+			sep = strchr(start, '\n');
+			if (sep)
+				sep[0] = '\0';
+			job_ptr->details->env_sup[job_ptr->details->env_cnt++] =
+				xstrdup(start);
+			if (sep)
+				start = sep + 1;
+			else
+				break;
+		}
+	}
+
+fini:	xfree(data_buf);
+	close(path_fd);
+}
+
+static int _push_pre_run_args(lua_State *L, void *args)
+{
+	pre_run_args_t *pre_run_args = (pre_run_args_t *) args;
+
+	lua_pushinteger(L, pre_run_args->job_id);
+	lua_pushstring(L, pre_run_args->job_script);
+	lua_pushstring(L, pre_run_args->node_file);
+
+	return 3;
+}
+
+/* Kill job from CONFIGURING state */
+static void _kill_job(job_record_t *job_ptr, bool hold_job)
+{
+	last_job_update = time(NULL);
+	job_ptr->end_time = last_job_update;
+	if (hold_job)
+		job_ptr->priority = 0;
+	build_cg_bitmap(job_ptr);
+	job_ptr->exit_code = 1;
+	job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
+	xfree(job_ptr->state_desc);
+	job_ptr->state_desc = xstrdup("Burst buffer pre_run error");
+
+	job_ptr->job_state  = JOB_REQUEUE;
+	job_completion_logger(job_ptr, true);
+	job_ptr->job_state = JOB_PENDING | JOB_COMPLETING;
+
+	deallocate_nodes(job_ptr, false, false, false);
+}
+
+static void *_start_pre_run(void *x)
+{
+	int rc;
+	bool nodes_ready = false, run_kill_job = false, hold_job = false;
+	char *resp_msg = NULL;
+	bb_job_t *bb_job = NULL;
+	job_record_t *job_ptr;
+	/* Locks: read job */
+	slurmctld_lock_t job_read_lock = {
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+	/* Locks: write job */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+	pre_run_args_t *pre_run_args = (pre_run_args_t *) x;
+	DEF_TIMERS;
+
+	/* Wait for node boot to complete. */
+	while (!nodes_ready) {
+		lock_slurmctld(job_read_lock);
+		job_ptr = find_job_record(pre_run_args->job_id);
+		if (!job_ptr || IS_JOB_COMPLETED(job_ptr)) {
+			unlock_slurmctld(job_read_lock);
+			return NULL;
+		}
+		if (test_job_nodes_ready(job_ptr))
+			nodes_ready = true;
+		unlock_slurmctld(job_read_lock);
+		if (!nodes_ready)
+			sleep(60);
+	}
+
+	START_TIMER;
+	rc = _run_lua_script("slurm_bb_pre_run", _push_pre_run_args,
+			     pre_run_args, &resp_msg);
+	END_TIMER;
+
+	lock_slurmctld(job_write_lock);
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	job_ptr = find_job_record(pre_run_args->job_id);
+	if ((DELTA_TIMER > 500000) || /* 0.5 secs */
+	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
+		info("pre_run for %pJ ran for %s", job_ptr, TIME_STR);
+	}
+	if (job_ptr)
+		bb_job = _get_bb_job(job_ptr);
+	if (rc != SLURM_SUCCESS) {
+		/* pre_run failure */
+		trigger_burst_buffer();
+		error("pre_run failed for JobId=%u", pre_run_args->job_id);
+		if (job_ptr) {
+			_update_system_comment(job_ptr, "pre_run", resp_msg, 0);
+			if (IS_JOB_RUNNING(job_ptr))
+				run_kill_job = true;
+			if (bb_job) {
+				bb_set_job_bb_state(job_ptr, bb_job,
+						    BB_STATE_TEARDOWN);
+				if (bb_job->retry_cnt++ > MAX_RETRY_CNT)
+					hold_job = true;
+			}
+		}
+		_queue_teardown(pre_run_args->job_id, pre_run_args->uid, true);
+	} else if (bb_job) {
+		/* pre_run success and the job's BB record exists */
+		if (bb_job->state == BB_STATE_ALLOC_REVOKE)
+			bb_set_job_bb_state(job_ptr, bb_job,
+					    BB_STATE_STAGED_IN);
+		else
+			bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_RUNNING);
+	}
+	if (job_ptr) {
+		if (run_kill_job)
+			job_ptr->job_state &= ~JOB_CONFIGURING;
+		prolog_running_decr(job_ptr);
+	}
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+	if (run_kill_job) {
+		/* bb_mutex must be unlocked before calling this */
+		_kill_job(job_ptr, hold_job);
+	}
+	unlock_slurmctld(job_write_lock);
+
+	xfree(resp_msg);
+	xfree(pre_run_args->job_script);
+	xfree(pre_run_args->node_file);
+	xfree(pre_run_args);
+
+	return NULL;
+}
+
 /* Attempt to claim burst buffer resources.
  * At this time, bb_g_job_test_stage_in() should have been run successfully AND
  * the compute nodes selected for the job.
@@ -2146,7 +2381,111 @@ extern int bb_p_job_test_stage_in(job_record_t *job_ptr, bool test_only)
  */
 extern int bb_p_job_begin(job_record_t *job_ptr)
 {
-	return SLURM_SUCCESS;
+	char *client_nodes_file_nid = NULL, *path_file = NULL;
+	char *job_dir = NULL, *resp_msg = NULL, *job_script = NULL;
+	int hash_inx = job_ptr->job_id % 10;
+	int rc = SLURM_SUCCESS;
+	pthread_t tid;
+	bb_job_t *bb_job;
+	paths_args_t paths_args;
+	pre_run_args_t *pre_run_args;
+	DEF_TIMERS;
+
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0'))
+		return SLURM_SUCCESS;
+
+	if (((!job_ptr->job_resrcs || !job_ptr->job_resrcs->nodes)) &&
+	    (job_ptr->details->min_nodes != 0)) {
+		error("%pJ lacks node allocation",
+		      job_ptr);
+		return SLURM_ERROR;
+	}
+
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	log_flag(BURST_BUF, "%pJ", job_ptr);
+
+	if (bb_state.last_load_time == 0) {
+		info("Burst buffer down, can not start %pJ",
+		      job_ptr);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		return SLURM_ERROR;
+	}
+	bb_job = _get_bb_job(job_ptr);
+	if (!bb_job) {
+		error("no job record buffer for %pJ", job_ptr);
+		xfree(job_ptr->state_desc);
+		job_ptr->state_desc =
+			xstrdup("Could not find burst buffer record");
+		job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
+		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		return SLURM_ERROR;
+	}
+	xstrfmtcat(job_dir, "%s/hash.%d/job.%u",
+		   slurm_conf.state_save_location, hash_inx, job_ptr->job_id);
+	xstrfmtcat(client_nodes_file_nid, "%s/client_nids", job_dir);
+	bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_PRE_RUN);
+
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+
+	xstrfmtcat(job_script, "%s/script", job_dir);
+
+	if (job_ptr->job_resrcs && job_ptr->job_resrcs->nodes &&
+	    bb_write_nid_file(client_nodes_file_nid, job_ptr->job_resrcs->nodes,
+			      job_ptr)) {
+		xfree(client_nodes_file_nid);
+	}
+
+	/* Create an empty "path" file which can be used by lua. */
+	xstrfmtcat(path_file, "%s/path", job_dir);
+	bb_write_file(path_file, "");
+	/* Initialize args and run the "paths" function. */
+	paths_args.job_script = job_script;
+	paths_args.job_id = job_ptr->job_id;
+	paths_args.path_file = path_file;
+	START_TIMER;
+	rc = _run_lua_script("slurm_bb_paths", _push_paths_args, &paths_args,
+			     &resp_msg);
+	END_TIMER;
+	if ((DELTA_TIMER > 200000) || /* 0.2 secs */
+	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
+		info("paths ran for %s", TIME_STR);
+
+	/* resp_msg already logged by _run_lua_script. */
+	xfree(resp_msg);
+
+	if (rc != SLURM_SUCCESS) {
+		error("paths for %pJ failed", job_ptr);
+		rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+		goto fini;
+	} else {
+		_update_job_env(job_ptr, path_file);
+	}
+
+	/* Setup for the "pre_run" function. */
+	pre_run_args = xmalloc(sizeof *pre_run_args);
+	pre_run_args->job_id = job_ptr->job_id;
+	pre_run_args->job_script = job_script; /* Point at malloc'd string */
+	job_script = NULL; /* Avoid two variables pointing at the same string */
+	pre_run_args->node_file = client_nodes_file_nid;
+	client_nodes_file_nid = NULL;
+	pre_run_args->timeout = bb_state.bb_config.other_timeout * 1000;
+	pre_run_args->uid = job_ptr->user_id;
+	if (job_ptr->details) { /* Defer launch until completion */
+		job_ptr->details->prolog_running++;
+		job_ptr->job_state |= JOB_CONFIGURING;
+	}
+
+	slurm_thread_create(&tid, _start_pre_run, pre_run_args);
+
+fini:
+	xfree(job_script);
+	xfree(path_file);
+	xfree(job_dir);
+	xfree(client_nodes_file_nid);
+
+	return rc;
 }
 
 /* Revoke allocation, but do not release resources.
