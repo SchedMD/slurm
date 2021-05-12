@@ -96,6 +96,8 @@ documents those changes that are of interest to users and administrators.
     override.
  -- jobcomp/elasticsearch - Use data_t to serialize data. The plugin now has the
     JSON-C library as a prerequisite.
+ -- scrontab - create the temporary file under the TMPDIR environment variable
+    (if set), otherwise continue to use TmpFS as configured in slurm.conf.
 
 * Changes in Slurm 20.11.8
 ==========================

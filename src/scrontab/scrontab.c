@@ -194,6 +194,12 @@ static char *_load_script_from_fd(int fd)
 	return _read_fd(fd);
 }
 
+static char *_tmp_path(void)
+{
+	char *tmpdir = getenv("TMPDIR");
+	return tmpdir ? tmpdir : slurm_conf.tmp_fs;
+}
+
 /*
  * Replace crontab with an edited version after running an editor.
  */
@@ -206,7 +212,7 @@ static void _edit_crontab(char **crontab)
 	if (!*crontab)
 		static_ref_to_cstring(*crontab, default_crontab_txt);
 
-	xstrfmtcat(filename, "%s/scrontab-XXXXXX", slurm_conf.tmp_fs);
+	xstrfmtcat(filename, "%s/scrontab-XXXXXX", _tmp_path());
 
 	/* protect against weak file permissions in old glibc */
 	umask(0077);
