@@ -1400,6 +1400,31 @@ fini:	FREE_NULL_LIST(node_weight_list);
 	return error_code;
 }
 
+static void _topo_add_dist(uint32_t *dist, int inx)
+{
+	int i;
+	for (i = 0; i < switch_record_cnt; i++) {
+		if (switch_record_table[inx].switches_dist[i] == INFINITE ||
+		    dist[i] == INFINITE) {
+			dist[i] = INFINITE;
+		} else {
+			dist[i] += switch_record_table[inx].switches_dist[i];
+		}
+	}
+}
+
+static void _topo_choose_best_switch(uint32_t *dist, int *switch_node_cnt,
+				     int rem_nodes, int i, int *best_switch)
+{
+	if (switch_node_cnt[i] && dist[i] < INFINITE &&
+	    ((*best_switch == -1) ||
+	     ((dist[i] < dist[*best_switch]) &&
+	      (switch_node_cnt[i] >= rem_nodes)) ||
+	     ((dist[i] == dist[*best_switch]) &&
+	      (switch_node_cnt[i] > switch_node_cnt[*best_switch])))) {
+		*best_switch = i;
+	}
+}
 static int _topo_weight_find(void *x, void *key)
 {
 	topo_weight_info_t *nw = (topo_weight_info_t *) x;
@@ -2121,6 +2146,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	struct job_details *details_ptr = job_ptr->details;
 	bool gres_per_job, sufficient = false;
 	uint16_t *avail_cpu_per_node = NULL;
+	uint32_t *switches_dist= NULL;
 	time_t time_waiting = 0;
 	int top_switch_inx = -1;
 	int prev_rem_nodes;
@@ -2550,6 +2576,12 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		}
 	}
 
+	switches_dist = xcalloc(switch_record_cnt, sizeof(uint32_t));
+
+	for (i = 0; i < switch_record_cnt; i++) {
+		if (switch_required[i])
+			_topo_add_dist(switches_dist, i);
+	}
 	/* Add additional resources as required from additional leaf switches */
 	prev_rem_nodes = rem_nodes + 1;
 	while (1) {
@@ -2562,15 +2594,14 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			if (switch_required[i] || !switch_node_bitmap[i] ||
 			    (switch_record_table[i].level != 0))
 				continue;
-			if (switch_node_cnt[i] &&
-			    ((top_switch_inx == -1) ||
-			     (switch_node_cnt[i] >
-			      switch_node_cnt[top_switch_inx])))
-				top_switch_inx = i;
+			_topo_choose_best_switch(switches_dist, switch_node_cnt,
+						 rem_nodes, i, &top_switch_inx);
+
 		}
 		if (top_switch_inx == -1)
 			break;
 
+		_topo_add_dist(switches_dist, top_switch_inx);
 		/*
 		 * NOTE: Ideally we would add nodes in order of resource
 		 * availability rather than in order of bitmap position, but
