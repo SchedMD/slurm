@@ -431,7 +431,6 @@ extern void free_step_record(void *x)
 	step_record_t *step_ptr = (step_record_t *) x;
 	xassert(step_ptr);
 	xassert(step_ptr->magic == STEP_MAGIC);
-	step_ptr->magic = 0;
 /*
  * FIXME: If job step record is preserved after completion,
  * the switch_g_job_step_complete() must be called upon completion
@@ -469,6 +468,7 @@ extern void free_step_record(void *x)
 	xfree(step_ptr->tres_per_node);
 	xfree(step_ptr->tres_per_socket);
 	xfree(step_ptr->tres_per_task);
+	step_ptr->magic = ~STEP_MAGIC;
 	xfree(step_ptr);
 }
 
