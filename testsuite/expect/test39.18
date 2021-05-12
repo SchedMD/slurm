@@ -62,14 +62,45 @@ set use_valgrind 0
 set test_minor_offset 0
 set test_minor_in ""
 
+# log_level_t values in log.h
+# NOTE: The test requires output from log level INFO, so can't go any lower
+set SLURM_LOG_LEVEL_INFO 3
+set SLURM_LOG_LEVEL_VERBOSE 4
+set SLURM_LOG_LEVEL_DEBUG 5
+set SLURM_LOG_LEVEL_DEBUG2 6
+set SLURM_LOG_LEVEL_DEBUG3 7
+
+set debug_level $SLURM_LOG_LEVEL_INFO
+
 if {[lindex $argv 0] == "v" || [lindex $argv 0] == "valgrind"} {
 	set use_valgrind 1
 	set test_minor_offset 1
 	log_info "Running tests under valgrind!"
-} elseif {[lindex $argv 0] == "d" || [lindex $argv 0] == "debug"} {
+} elseif {[lindex $argv 0] == "i" || [lindex $argv 0] == "info"} {
 	set debug_mode 1
 	set test_minor_offset 1
-	log_info "Running tests under debug mode!"
+	log_info "Running tests under debug mode with log level INFO"
+	set debug_level $SLURM_LOG_LEVEL_INFO
+} elseif {[lindex $argv 0] == "verbose"} {
+	set debug_mode 1
+	set test_minor_offset 1
+	log_info "Running tests under debug mode with log level VERBOSE"
+	set debug_level $SLURM_LOG_LEVEL_VERBOSE
+} elseif {[lindex $argv 0] == "d" || [lindex $argv 0] == "d1" || [lindex $argv 0] == "debug"} {
+	set debug_mode 1
+	set test_minor_offset 1
+	log_info "Running tests under debug mode with log level DEBUG"
+	set debug_level $SLURM_LOG_LEVEL_DEBUG
+} elseif {[lindex $argv 0] == "d2" || [lindex $argv 0] == "debug2"} {
+	set debug_mode 1
+	set test_minor_offset 1
+	log_info "Running tests under debug mode with log level DEBUG2"
+	set debug_level $SLURM_LOG_LEVEL_DEBUG2
+} elseif {[lindex $argv 0] == "d3" || [lindex $argv 0] == "debug3"} {
+	set debug_mode 1
+	set test_minor_offset 1
+	log_info "Running tests under debug mode with log level DEBUG3"
+	set debug_level $SLURM_LOG_LEVEL_DEBUG3
 }
 
 if {[lindex $argv $test_minor_offset] != ""} {
@@ -189,7 +220,7 @@ set failed_tests [list]
 proc check_configuration {test_minor slurm_conf_gres gres_conf fake_gpus_conf output_expected {err_msgs ""} {errs_expected 0} } {
 	global cfgpath nodename test_prog re_word_str exit_code test_minor_in
 	global test_id failed_tests use_valgrind file_in file_out
-	global bin_cat debug_mode
+	global bin_cat debug_mode debug_level
 
 	# Skip all tests not specified by the tester; force string comparison
 	if {$test_minor_in != "" && [string compare "$test_minor" "$test_minor_in"] != 0} {
@@ -204,12 +235,12 @@ proc check_configuration {test_minor slurm_conf_gres gres_conf fake_gpus_conf ou
 
 	if {$use_valgrind} {
 		make_bash_script $file_in "
-valgrind --tool=memcheck --error-limit=no --leak-check=full --show-reachable=yes --max-stackframe=16777216 --num-callers=20 --child-silent-after-fork=yes --track-origins=yes ./$test_prog \"$cfgpath\" \"$nodename\" \"$slurm_conf_gres\" >./$file_out 2>&1
+valgrind --tool=memcheck --error-limit=no --leak-check=full --show-reachable=yes --max-stackframe=16777216 --num-callers=20 --child-silent-after-fork=yes --track-origins=yes ./$test_prog \"$cfgpath\" \"$nodename\" \"$slurm_conf_gres\" $debug_level >./$file_out 2>&1
 $bin_cat $file_out
 rm -rf ./$file_out"
 	} else {
 		make_bash_script $file_in "
-./$test_prog \"$cfgpath\" \"$nodename\" \"$slurm_conf_gres\" >./$file_out 2>&1
+./$test_prog \"$cfgpath\" \"$nodename\" \"$slurm_conf_gres\" $debug_level >./$file_out 2>&1
 $bin_cat $file_out
 rm -rf ./$file_out"
 	}
@@ -354,7 +385,7 @@ rm -rf ./$file_out"
 # To better decipher the tests, temporarily increase the log verbosity in
 # test39.18.prog.c. E.g.:
 #
-#     opts.stderr_level = LOG_LEVEL_DEBUG2;
+#     opts.stderr_level = SLURM_LOG_LEVEL_DEBUG2;
 #
 # Note that there is a known issue with Expect where the regex parsing fails
 # when the output is somewhat large. So to avoid random errors, each test output

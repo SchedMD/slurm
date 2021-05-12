@@ -52,13 +52,14 @@ int main(int argc, char *argv[])
 	char *fake_gpus_conf = NULL;
 	struct stat stat_buf;
 	List gres_list = NULL;
+	log_level_t debug_level = LOG_LEVEL_INFO;
 
 	if (argc < 4) {
 		printf("FAILURE: Not enough arguments!\n");
 		exit(1);
 	}
 
-	if (argc > 4) {
+	if (argc > 5) {
 		printf("FAILURE: Too many arguments!\n");
 		exit(1);
 	}
@@ -66,6 +67,13 @@ int main(int argc, char *argv[])
 	etc_dir = argv[1];
 	node_name = argv[2];
 	slurm_conf_gres_str = argv[3];
+	if (argc == 5)
+		debug_level = atoi(argv[4]);
+
+	if (debug_level < LOG_LEVEL_INFO) {
+		printf("FAILURE: LOG_LEVEL_INFO is the lowest log level allowed!\n");
+		exit(1);
+	}
 
 	xstrfmtcat(slurm_conf, "%s/%s", etc_dir, "slurm.conf");
 	xstrfmtcat(gres_conf, "%s/%s", etc_dir, "gres.conf");
@@ -90,10 +98,7 @@ int main(int argc, char *argv[])
 	printf("gres_conf: %s\n", gres_conf);
 	printf("fake_gpus_conf: %s\n", fake_gpus_conf);
 
-	// Only log info to avoid buffer truncation in expect regex
-	opts.stderr_level = LOG_LEVEL_INFO;
-	// opts.stderr_level = LOG_LEVEL_DEBUG2;
-	// opts.stderr_level = LOG_LEVEL_DEBUG3;
+	opts.stderr_level = debug_level;
 	log_init(argv[0], opts, SYSLOG_FACILITY_USER, NULL);
 
 	// Override where Slurm looks for conf files
