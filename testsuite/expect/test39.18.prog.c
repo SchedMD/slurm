@@ -40,6 +40,33 @@
 #include "src/common/read_config.h"
 #include "src/common/xstring.h"
 
+/*
+ * test39.18.prog <etc_dir> <nodename> <conf_gres> [<debug_level>]
+ *
+ * etc_dir	The directory containing slurm.conf, gres.conf, and
+ * 		fake_gpus.conf.
+ * nodename	The name of the node.
+ * conf_gres	A string indicating the GRES ostensibly parsed from a
+ * 		slurm.conf for the node. E.g., `gpu:4`.
+ * debug_level	(optional) A number representing the log_level_t the program
+ * 		should use. If unspecified, defaults to LOG_LEVEL_INFO.
+ * 		LOG_LEVEL_INFO is the lowest log level allowed.
+ * 		Note that debug, debug2, and debug3 may produce too much output
+ * 		and cause expect to fail to parse things properly. This will
+ * 		show up as a test failure. Only use debug+ when debugging and
+ * 		developing tests, and NOT when running the tests in production.
+ *
+ * Note that slurm.conf only needs to specify the following fields:
+ *	ControlMachine=test_machine
+ *	ClusterName=test_cluster
+ *	GresTypes=gpu,mps,nic,mic,tmpdisk
+ *
+ * The actual GRES for the node is specified in conf_gres, not slurm.conf. This
+ * makes it so we don't need to re-create the slurm.conf each time we run this
+ * test runner program.
+ *
+ * However, gres.conf and fake_gpus.conf do need to be re-created for each test.
+ */
 int main(int argc, char *argv[])
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
