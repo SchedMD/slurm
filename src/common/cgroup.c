@@ -73,6 +73,9 @@ typedef struct {
 	int	(*step_constrain_set)	(cgroup_ctl_type_t sub,
 					 stepd_step_rec_t *job,
 					 cgroup_limits_t *limits);
+	int     (*task_constrain_set)   (cgroup_ctl_type_t sub,
+					 cgroup_limits_t *limits,
+					 uint32_t taskid);
 	int	(*step_start_oom_mgr)	(void);
 	cgroup_oom_t *(*step_stop_oom_mgr) (stepd_step_rec_t *job);
 	int	(*accounting_init)	(void);
@@ -106,6 +109,7 @@ static const char *syms[] = {
 	"cgroup_p_user_constrain_set",
 	"cgroup_p_job_constrain_set",
 	"cgroup_p_step_constrain_set",
+	"cgroup_p_task_constrain_set",
 	"cgroup_p_step_start_oom_mgr",
 	"cgroup_p_step_stop_oom_mgr",
 	"cgroup_p_accounting_init",
@@ -946,6 +950,15 @@ extern int cgroup_g_step_constrain_set(cgroup_ctl_type_t sub,
 		return false;
 
 	return (*(ops.step_constrain_set))(sub, job, limits);
+}
+
+extern int cgroup_g_task_constrain_set(cgroup_ctl_type_t sub,
+				       cgroup_limits_t *limits, uint32_t taskid)
+{
+	if (cgroup_g_init() < 0)
+		return false;
+
+	return (*(ops.task_constrain_set))(sub, limits, taskid);
 }
 
 extern int cgroup_g_step_start_oom_mgr()
