@@ -120,6 +120,7 @@ typedef struct bb_pools {
 } bb_pools_t;
 
 typedef struct {
+	bool hurry;
 	uint32_t job_id;
 	uint32_t user_id;
 	char *job_script;
@@ -1638,9 +1639,10 @@ static int _push_teardown_args(lua_State *L, void *args)
 	lua_pushinteger(L, teardown_args->job_id);
 	lua_pushinteger(L, teardown_args->user_id);
 	lua_pushstring(L, teardown_args->job_script);
+	lua_pushboolean(L, teardown_args->hurry);
 
-	/* Pushed 3 arguments. */
-	return 3;
+	/* Pushed 4 arguments. */
+	return 4;
 }
 
 static void *_start_teardown(void *x)
@@ -1753,6 +1755,7 @@ static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry)
 	teardown_args->job_id = job_id;
 	teardown_args->user_id = user_id;
 	teardown_args->job_script = job_script;
+	teardown_args->hurry = hurry;
 
 	slurm_thread_create(&tid, _start_teardown, teardown_args);
 
