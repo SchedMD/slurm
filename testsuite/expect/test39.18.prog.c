@@ -53,8 +53,13 @@ int main(int argc, char *argv[])
 	struct stat stat_buf;
 	List gres_list = NULL;
 
-	if (argc < 4 || argc > 4) {
-		printf("FAILURE: Not enough or too many arguments!\n");
+	if (argc < 4) {
+		printf("FAILURE: Not enough arguments!\n");
+		exit(1);
+	}
+
+	if (argc > 4) {
+		printf("FAILURE: Too many arguments!\n");
 		exit(1);
 	}
 
