@@ -1771,6 +1771,7 @@ static int _attempt_backfill(void)
 		if (!part_ptr)
 			continue;
 
+		job_ptr->bit_flags |= BACKFILL_SCHED;
 		job_ptr->last_sched_eval = now;
 		job_ptr->part_ptr = part_ptr;
 		job_ptr->priority = bf_job_priority;

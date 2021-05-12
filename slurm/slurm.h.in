@@ -1035,6 +1035,10 @@ enum node_states {
 #define JOB_MAGNETIC       SLURM_BIT(30) /* Job attempting to run in a
 					  * magnetic reservation */
 #define JOB_PART_ASSIGNED  SLURM_BIT(31) /* Job didn't request a partition */
+#define BACKFILL_SCHED     SLURM_BIT(32) /* Job was considered in last
+					  * backfill attempt if not set the
+					  * normal scheduler set
+					  * last_eval_time */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
