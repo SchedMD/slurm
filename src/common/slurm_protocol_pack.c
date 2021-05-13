@@ -3476,7 +3476,6 @@ static int
 _unpack_job_info_msg(job_info_msg_t ** msg, buf_t *buffer,
 		     uint16_t protocol_version)
 {
-	int i;
 	job_info_t *job = NULL;
 
 	xassert(msg);
@@ -3486,23 +3485,24 @@ _unpack_job_info_msg(job_info_msg_t ** msg, buf_t *buffer,
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&((*msg)->record_count), buffer);
 		safe_unpack_time(&((*msg)->last_update), buffer);
-
-		if ((*msg)->record_count) {
-			safe_xcalloc((*msg)->job_array, (*msg)->record_count,
-				     sizeof(job_info_t));
-			job = (*msg)->job_array;
-		}
-		/* load individual job info */
-		for (i = 0; i < (*msg)->record_count; i++) {
-			if (_unpack_job_info_members(&job[i], buffer,
-						     protocol_version))
-				goto unpack_error;
-		}
 	} else {
 		error("_unpack_job_info_msg: protocol_version "
 		      "%hu not supported", protocol_version);
 		goto unpack_error;
 	}
+
+	if ((*msg)->record_count) {
+		safe_xcalloc((*msg)->job_array, (*msg)->record_count,
+			     sizeof(job_info_t));
+		job = (*msg)->job_array;
+	}
+	/* load individual job info */
+	for (int i = 0; i < (*msg)->record_count; i++) {
+		if (_unpack_job_info_members(&job[i], buffer,
+					     protocol_version))
+			goto unpack_error;
+	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:

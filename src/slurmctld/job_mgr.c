@@ -9873,6 +9873,20 @@ static int _foreach_pack_jobid(void *object, void *arg)
 	return _pack_job(job_ptr, info);
 }
 
+static buf_t *_pack_init_job_info(uint16_t protocol_version)
+{
+	buf_t *buffer = init_buf(BUF_SIZE);
+
+	/* write message body header : size and time */
+	/* put in a place holder job record count of 0 for now */
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(0, buffer);
+		pack_time(time(NULL), buffer);
+	}
+
+	return buffer;
+}
+
 /*
  * pack_all_jobs - dump all job information for all jobs in
  *	machine independent form (for network transmission)
@@ -9898,12 +9912,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 
-	buffer = init_buf(BUF_SIZE);
-
-	/* write message body header : size and time */
-	/* put in a place holder job record count of 0 for now */
-	pack32(jobs_packed, buffer);
-	pack_time(time(NULL), buffer);
+	buffer = _pack_init_job_info(protocol_version);
 
 	/* write individual job records */
 	pack_info.buffer           = buffer;
@@ -9959,12 +9968,7 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 
-	buffer = init_buf(BUF_SIZE);
-
-	/* write message body header : size and time */
-	/* put in a place holder job record count of 0 for now */
-	pack32(jobs_packed, buffer);
-	pack_time(time(NULL), buffer);
+	buffer = _pack_init_job_info(protocol_version);
 
 	/* write individual job records */
 	pack_info.buffer           = buffer;
@@ -10043,12 +10047,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 
-	buffer = init_buf(BUF_SIZE);
-
-	/* write message body header : size and time */
-	/* put in a place holder job record count of 0 for now */
-	pack32(jobs_packed, buffer);
-	pack_time(time(NULL), buffer);
+	buffer = _pack_init_job_info(protocol_version);
 
 	assoc_mgr_lock(&locks);
 	if (slurm_conf.private_data & PRIVATE_DATA_JOBS) {
