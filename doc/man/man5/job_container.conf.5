@@ -1,4 +1,4 @@
-.TH "job_container.conf" "5" "Slurm Configuration File" "March 2021" "Slurm Configuration File"
+.TH "job_container.conf" "5" "Slurm Configuration File" "May 2021" "Slurm Configuration File"
 
 .SH "NAME"
 job_container.conf \- Slurm configuration file for job_container/tmpfs plugin
@@ -44,12 +44,16 @@ directory to exist. This option can be used on a global or per-line basis.
 This parameter is optional.
 
 .TP
-\fBBasepath\fR
+\fBBasePath\fR
 Specify the \fIPATH\fR that the tmpfs plugin should use to mount private /tmp
 to. This path must be readable and writable by the plugin. The plugin also
 constructs a directory for each job inside this path, which is then used for
-mounting. The basepath gets mounted as 'private' during slurmd start
+mounting. The \fBBasePath\fR gets mounted as 'private' during slurmd start
 and remains mounted until shutdown.
+
+\fBNOTE\fR: The \fBBasePath\fR parameter should not be configured to use
+/tmp or /dev/shm. Using these directories will cause conflicts when trying
+to mount and unmount the private directories for the job.
 
 .TP
 \fBInitScript\fR
