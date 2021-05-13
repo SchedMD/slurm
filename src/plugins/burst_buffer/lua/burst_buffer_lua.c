@@ -2741,7 +2741,39 @@ fini:
  */
 extern int bb_p_job_test_post_run(job_record_t *job_ptr)
 {
-	return 1;
+	bb_job_t *bb_job;
+	int rc = -1;
+
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0'))
+		return 1;
+
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	log_flag(BURST_BUF, "%pJ", job_ptr);
+
+	if (bb_state.last_load_time == 0) {
+		info("Burst buffer down, can not post_run %pJ",
+		      job_ptr);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		return -1;
+	}
+	bb_job = bb_job_find(&bb_state, job_ptr->job_id);
+	if (!bb_job) {
+		error("%pJ bb job record not found, assuming post run is complete",
+		      job_ptr);
+		rc =  1;
+	} else {
+		if (bb_job->state < BB_STATE_POST_RUN) {
+			rc = -1;
+		} else if (bb_job->state > BB_STATE_POST_RUN) {
+			rc =  1;
+		} else {
+			rc =  0;
+		}
+	}
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+
+	return rc;
 }
 
 /*
@@ -2753,7 +2785,44 @@ extern int bb_p_job_test_post_run(job_record_t *job_ptr)
  */
 extern int bb_p_job_test_stage_out(job_record_t *job_ptr)
 {
-	return 1;
+	bb_job_t *bb_job;
+	int rc = -1;
+
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0'))
+		return 1;
+
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	log_flag(BURST_BUF, "%pJ", job_ptr);
+
+	if (bb_state.last_load_time == 0) {
+		info("Burst buffer down, can not stage-out %pJ", job_ptr);
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		return -1;
+	}
+	bb_job = bb_job_find(&bb_state, job_ptr->job_id);
+	if (!bb_job) {
+		/* This is expected if the burst buffer completed teardown */
+		rc = 1;
+	} else {
+		if (bb_job->state == BB_STATE_PENDING) {
+			/*
+			 * No job BB work started before job was killed.
+			 * Alternately slurmctld daemon restarted after the
+			 * job's BB work was completed.
+			 */
+			rc =  1;
+		} else if (bb_job->state < BB_STATE_POST_RUN) {
+			rc = -1;
+		} else if (bb_job->state > BB_STATE_STAGING_OUT) {
+			rc =  1;
+		} else {
+			rc =  0;
+		}
+	}
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+
+	return rc;
 }
 
 /*
