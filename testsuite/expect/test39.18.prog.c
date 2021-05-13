@@ -53,16 +53,14 @@ int main(int argc, char *argv[])
 	struct stat stat_buf;
 	List gres_list = NULL;
 
-	if (argc < 3 || argc > 4) {
+	if (argc < 4 || argc > 4) {
 		printf("FAILURE: Not enough or too many arguments!\n");
 		exit(1);
 	}
 
 	etc_dir = argv[1];
 	node_name = argv[2];
-	if (argc >= 4) {
-		slurm_conf_gres_str = argv[3];
-	}
+	slurm_conf_gres_str = argv[3];
 
 	xstrfmtcat(slurm_conf, "%s/%s", etc_dir, "slurm.conf");
 	xstrfmtcat(gres_conf, "%s/%s", etc_dir, "gres.conf");
