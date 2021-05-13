@@ -555,9 +555,9 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 	desc->argc     = sbopt.script_argc;
 	desc->argv     = sbopt.script_argv;
-	desc->std_err  = opt.efname;
-	desc->std_in   = opt.ifname;
-	desc->std_out  = opt.ofname;
+	desc->std_err  = xstrdup(opt.efname);
+	desc->std_in   = xstrdup(opt.ifname);
+	desc->std_out  = xstrdup(opt.ofname);
 
 	if (sbopt.requeue != NO_VAL)
 		desc->requeue = sbopt.requeue;

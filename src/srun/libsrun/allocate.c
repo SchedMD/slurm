@@ -736,7 +736,7 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 	xassert(srun_opt);
 
 	if (!j->name)
-		j->name = srun_opt->cmd_name;
+		j->name = xstrdup(srun_opt->cmd_name);
 
 	if (srun_opt->argc > 0) {
 		j->argc    = 1;
@@ -744,13 +744,13 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		j->argv[0] = xstrdup(srun_opt->argv[0]);
 	}
 	if (srun_opt->cpu_bind)
-		j->cpu_bind = srun_opt->cpu_bind;
+		j->cpu_bind = xstrdup(srun_opt->cpu_bind);
 	if (srun_opt->cpu_bind_type)
 		j->cpu_bind_type = srun_opt->cpu_bind_type;
 
 	if (!j->x11 && opt.x11) {
-		j->x11_magic_cookie = opt.x11_magic_cookie;
-		j->x11_target = opt.x11_target;
+		j->x11_magic_cookie = xstrdup(opt.x11_magic_cookie);
+		j->x11_target = xstrdup(opt.x11_target);
 		j->x11_target_port = opt.x11_target_port;
 	}
 

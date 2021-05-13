@@ -5685,7 +5685,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 
 	slurm_init_job_desc_msg(job_desc);
 
-	job_desc->account = opt_local->account;
+	job_desc->account = xstrdup(opt_local->account);
 	job_desc->acctg_freq = xstrdup(opt_local->acctg_freq);
 
 	/* admin_comment not filled in here */
@@ -5699,10 +5699,10 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 
 	job_desc->begin_time = opt_local->begin;
 	job_desc->bitflags |= opt_local->job_flags;
-	job_desc->burst_buffer = opt_local->burst_buffer;
-	job_desc->clusters = opt_local->clusters;
-	job_desc->cluster_features = opt_local->c_constraint;
-	job_desc->comment = opt_local->comment;
+	job_desc->burst_buffer = xstrdup(opt_local->burst_buffer);
+	job_desc->clusters = xstrdup(opt_local->clusters);
+	job_desc->cluster_features = xstrdup(opt_local->c_constraint);
+	job_desc->comment = xstrdup(opt_local->comment);
 	job_desc->contiguous = opt_local->contiguous;
 	if (opt_local->core_spec != NO_VAL16)
 		job_desc->core_spec = opt_local->core_spec;
@@ -5725,15 +5725,15 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 	if (opt_local->delay_boot != NO_VAL)
 		job_desc->delay_boot = opt_local->delay_boot;
 
-	job_desc->dependency = opt_local->dependency;
+	job_desc->dependency = xstrdup(opt_local->dependency);
 
 	/* end_time not filled in here */
 	/* environment not filled in here */
 	/* env_size not filled in here */
 
-	job_desc->extra = opt_local->extra;
-	job_desc->exc_nodes = opt_local->exclude;
-	job_desc->features = opt_local->constraint;
+	job_desc->extra = xstrdup(opt_local->extra);
+	job_desc->exc_nodes = xstrdup(opt_local->exclude);
+	job_desc->features = xstrdup(opt_local->constraint);
 
 	/* fed_siblings_active not filled in here */
 	/* fed_siblings_viable not filled in here */
@@ -5751,24 +5751,24 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 	if (opt_local->no_kill)
 		job_desc->kill_on_node_fail = 0;
 
-	job_desc->licenses = opt_local->licenses;
+	job_desc->licenses = xstrdup(opt_local->licenses);
 
 	job_desc->mail_type = opt_local->mail_type;
 
-	job_desc->mail_user = opt_local->mail_user;
+	job_desc->mail_user = xstrdup(opt_local->mail_user);
 
-	job_desc->mcs_label = opt_local->mcs_label;
+	job_desc->mcs_label = xstrdup(opt_local->mcs_label);
 
-	job_desc->mem_bind = opt_local->mem_bind;
+	job_desc->mem_bind = xstrdup(opt_local->mem_bind);
 	job_desc->mem_bind_type = opt_local->mem_bind_type;
 
 	if (opt_local->mem_per_gpu != NO_VAL64)
 		xstrfmtcat(job_desc->mem_per_tres, "gres:gpu:%"PRIu64,
 			   opt_local->mem_per_gpu);
 
-	job_desc->name = opt_local->job_name;
+	job_desc->name = xstrdup(opt_local->job_name);
 
-	job_desc->network = opt_local->network;
+	job_desc->network = xstrdup(opt_local->network);
 
 	if (opt_local->nice != NO_VAL)
 		job_desc->nice = NICE_OFFSET + opt_local->nice;
@@ -5795,7 +5795,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 	else
 		job_desc->min_cpus = opt_local->ntasks;
 
-	job_desc->partition = opt_local->partition;
+	job_desc->partition = xstrdup(opt_local->partition);
 
 	if (opt_local->plane_size != NO_VAL)
 		job_desc->plane_size = opt_local->plane_size;
@@ -5809,7 +5809,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 
 	job_desc->profile = opt_local->profile;
 
-	job_desc->qos = opt_local->qos;
+	job_desc->qos = xstrdup(opt_local->qos);
 
 	if (opt_local->reboot)
 		job_desc->reboot = 1;
@@ -5825,7 +5825,6 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 		xfree(opt_local->nodelist);
 		opt_local->nodelist = hostlist_ranged_string_xmalloc(hl);
 		hostlist_uniq(hl);
-		/* This memory will leak as it never gets freed */
 		job_desc->req_nodes = hostlist_ranged_string_xmalloc(hl);
 		hostlist_destroy(hl);
 	}
@@ -5839,7 +5838,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 
 	/* requeue not filled in here */
 
-	job_desc->reservation = opt_local->reservation;
+	job_desc->reservation = xstrdup(opt_local->reservation);
 
 	/* script not filled in here */
 	/* script_buf not filled in here */
@@ -5850,8 +5849,12 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 	/* site_factor not filled in here */
 
 	if (opt_local->spank_job_env_size) {
-		/* NOTE: Not copying array, but shared memory */
-		job_desc->spank_job_env = opt_local->spank_job_env;
+		job_desc->spank_job_env =
+			xcalloc(opt_local->spank_job_env_size,
+				sizeof(*job_desc->spank_job_env));
+		for (int i = 0; i < opt_local->spank_job_env_size; i++)
+			job_desc->spank_job_env[i] =
+				xstrdup(opt_local->spank_job_env[i]);
 		job_desc->spank_job_env_size = opt_local->spank_job_env_size;
 	}
 
@@ -5888,7 +5891,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 	job_desc->warn_signal = opt_local->warn_signal;
 	job_desc->warn_time = opt_local->warn_time;
 
-	job_desc->work_dir = opt_local->chdir;
+	job_desc->work_dir = xstrdup(opt_local->chdir);
 
 	if (opt_local->cpus_set) {
 		job_desc->bitflags |= JOB_CPUS_SET;
@@ -5949,12 +5952,13 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 	if (opt_local->wait4switch >= 0)
 		job_desc->wait4switch = opt_local->wait4switch;
 
-	job_desc->wckey = opt_local->wckey;
+	job_desc->wckey = xstrdup(opt_local->wckey);
 
 	job_desc->x11 = opt_local->x11;
 	if (job_desc->x11) {
-		job_desc->x11_magic_cookie = opt_local->x11_magic_cookie;
-		job_desc->x11_target = opt_local->x11_target;
+		job_desc->x11_magic_cookie =
+			xstrdup(opt_local->x11_magic_cookie);
+		job_desc->x11_target = xstrdup(opt_local->x11_target);
 		job_desc->x11_target_port = opt_local->x11_target_port;
 	}
 
