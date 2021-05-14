@@ -9873,6 +9873,12 @@ static int _foreach_pack_jobid(void *object, void *arg)
 	return _pack_job(job_ptr, info);
 }
 
+/*
+ * _pack_init_job_info - create buffer with header packed for a job_info_msg_t
+ *
+ * NOTE: change _unpack_job_info_msg() in common/slurm_protocol_pack.c
+ *	whenever the data format changes
+ */
 static buf_t *_pack_init_job_info(uint16_t protocol_version)
 {
 	buf_t *buffer = init_buf(BUF_SIZE);
@@ -9900,8 +9906,6 @@ static buf_t *_pack_init_job_info(uint16_t protocol_version)
  * IN filter_uid - pack only jobs belonging to this user if not NO_VAL
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
- * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
- *	whenever the data format changes
  */
 extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 			  uint16_t show_flags, uid_t uid, uint32_t filter_uid,
@@ -9954,8 +9958,6 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
  * IN filter_uid - pack only jobs belonging to this user if not NO_VAL
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
- * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
- *	whenever the data format changes
  */
 extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 			   uint16_t show_flags, uid_t uid, uint32_t filter_uid,
@@ -10033,8 +10035,6 @@ static int _pack_het_job(job_record_t *job_ptr, uint16_t show_flags,
  * IN show_flags - job filtering options
  * IN uid - uid of user making request (for partition filtering)
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
- * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
- *	whenever the data format changes
  */
 extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 			uint32_t job_id, uint16_t show_flags, uid_t uid,
