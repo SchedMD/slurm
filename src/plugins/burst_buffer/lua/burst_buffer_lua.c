@@ -36,6 +36,8 @@
 
 #include "config.h"
 
+#define _GNU_SOURCE
+
 #include <ctype.h>
 #include <lauxlib.h>
 #include <lua.h>
@@ -53,6 +55,7 @@
 
 #include "src/common/assoc_mgr.h"
 #include "src/common/fd.h"
+#include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/lua/slurm_lua.h"
 #include "src/slurmctld/agent.h"
@@ -166,11 +169,52 @@ typedef struct {
 
 typedef int (*push_lua_args_cb_t) (lua_State *L, void *args);
 
+typedef struct {
+	void *callback_args;
+	bool done;
+	const char *lua_func;
+	push_lua_args_cb_t push_args_cb;
+	int rc; /* Return code of thread. */
+	char **ret_str;
+	uint32_t timeout;
+	pthread_mutex_t timeout_mutex;
+	pthread_cond_t timeout_cond;
+} run_script_args_t;
+
+static bool lua_shutdown = false;
+static int lua_thread_cnt = 0;
+pthread_mutex_t lua_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 /* Function prototypes */
 static void _update_system_comment(job_record_t *job_ptr, char *operation,
 				   char *resp_msg, bool update_database);
 static bb_job_t *_get_bb_job(job_record_t *job_ptr);
 static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry);
+
+static int _get_lua_thread_cnt(void)
+{
+	int cnt;
+
+	slurm_mutex_lock(&lua_thread_mutex);
+	cnt = lua_thread_cnt;
+	slurm_mutex_unlock(&lua_thread_mutex);
+
+	return cnt;
+}
+
+static void _incr_lua_thread_cnt(void)
+{
+	slurm_mutex_lock(&lua_thread_mutex);
+	lua_thread_cnt++;
+	slurm_mutex_unlock(&lua_thread_mutex);
+}
+
+static void _decr_lua_thread_cnt(void)
+{
+	slurm_mutex_lock(&lua_thread_mutex);
+	lua_thread_cnt--;
+	slurm_mutex_unlock(&lua_thread_mutex);
+}
 
 static void _loadscript_extra(lua_State *st)
 {
@@ -255,14 +299,8 @@ static int _handle_lua_return(lua_State *L, const char *lua_func,
 	return rc;
 }
 
-/*
- * Call a function in burst_buffer.lua.
- */
-static int _run_lua_script(const char *lua_func,
-			   push_lua_args_cb_t push_args_cb,
-			   void *callback_args, char **ret_str)
+static void *_start_lua_script(void *x)
 {
-
 	/*
 	 * We don't make lua_State L or lua_script_last_loaded static.
 	 * If they were static, then only 1 thread could use them at a time.
@@ -277,24 +315,29 @@ static int _run_lua_script(const char *lua_func,
 	lua_State *L = NULL;
 	time_t lua_script_last_loaded = (time_t) 0;
 	int rc, num_args = 0;
+	run_script_args_t *run_script_args = (run_script_args_t *) x;
+	void *callback_args = run_script_args->callback_args;
 
 	rc = slurm_lua_loadscript(&L, "burst_buffer/lua",
 				  lua_script_path, req_fxns,
 				  &lua_script_last_loaded, _loadscript_extra);
 
-	if (rc != SLURM_SUCCESS)
-		return rc;
+	if (rc != SLURM_SUCCESS) {
+		run_script_args->rc = rc;
+		goto fini;
+	}
 
 	/*
 	 * All lua script functions should have been verified during
 	 * initialization:
 	 */
-	lua_getglobal(L, lua_func);
+	lua_getglobal(L, run_script_args->lua_func);
 	if (lua_isnil(L, -1)) {
 		error("%s: Couldn't find function %s",
-		      __func__, lua_func);
+		      __func__, run_script_args->lua_func);
 		lua_close(L);
-		return SLURM_ERROR;
+		run_script_args->rc = SLURM_ERROR;
+		goto fini;
 	}
 
 	/*
@@ -302,22 +345,138 @@ static int _run_lua_script(const char *lua_func,
 	 * the lua function. The callback returns the number of arguments pushed
 	 * to the stack.
 	 */
-	if (push_args_cb)
-		num_args = push_args_cb(L, callback_args);
+	if (run_script_args->push_args_cb)
+		num_args = run_script_args->push_args_cb(L, callback_args);
 
 	slurm_lua_stack_dump("burst_buffer/lua", "before lua_pcall", L);
-	if (lua_pcall(L, num_args, LUA_MULTRET, 0) != 0) {
-		error("%s: %s",
-		      lua_script_path, lua_tostring(L, -1));
-		rc = SLURM_ERROR;
+
+	slurm_mutex_lock(&run_script_args->timeout_mutex);
+	slurm_cond_signal(&run_script_args->timeout_cond);
+	slurm_mutex_unlock(&run_script_args->timeout_mutex);
+	/* Run the lua command and tell the calling thread when it's done. */
+	if ((rc = lua_pcall(L, num_args, LUA_MULTRET, 0)) != 0) {
+		error("%s: %s", lua_script_path, lua_tostring(L, -1));
+		run_script_args->rc = SLURM_ERROR;
 		lua_pop(L, lua_gettop(L));
 	} else {
 		slurm_lua_stack_dump("burst_buffer/lua", "after lua_pcall, before returns have been popped", L);
-		rc = _handle_lua_return(L, lua_func, ret_str);
+		run_script_args->rc =
+			_handle_lua_return(L, run_script_args->lua_func,
+					   run_script_args->ret_str);
 	}
 	slurm_lua_stack_dump("burst_buffer/lua", "after lua_pcall, after returns have been popped", L);
 
 	lua_close(L);
+
+fini:
+	slurm_mutex_lock(&run_script_args->timeout_mutex);
+	slurm_cond_signal(&run_script_args->timeout_cond);
+	run_script_args->done = true;
+	slurm_mutex_unlock(&run_script_args->timeout_mutex);
+	return NULL;
+}
+
+/*
+ * Call a function in burst_buffer.lua.
+ */
+static int _run_lua_script(const char *lua_func, uint32_t timeout,
+			   push_lua_args_cb_t push_args_cb,
+			   void *callback_args, char **ret_str)
+{
+	struct timespec ts;
+	struct timeval now, start_time;
+	pthread_t tid;
+	run_script_args_t *run_script_args = NULL;
+	int rc, err_rc = SLURM_SUCCESS;
+	time_t elapsed_time = 0;
+
+	run_script_args = xmalloc(sizeof *run_script_args);
+	run_script_args->callback_args = callback_args;
+	run_script_args->done = false;
+	run_script_args->lua_func = lua_func;
+	run_script_args->push_args_cb = push_args_cb;
+	run_script_args->rc = SLURM_SUCCESS;
+	run_script_args->ret_str = ret_str;
+	run_script_args->timeout = timeout;
+	slurm_mutex_init(&run_script_args->timeout_mutex);
+	slurm_cond_init(&run_script_args->timeout_cond, NULL);
+
+	_incr_lua_thread_cnt();
+	slurm_mutex_lock(&run_script_args->timeout_mutex);
+	slurm_thread_create(&tid, _start_lua_script, run_script_args);
+	/*
+	 * TODO: Tell slurmctld this thread ID so it can signal this thread
+	 * via track_script_flush_job(). I will need to use
+	 * track_script_broadcast().
+	 */
+
+	/* Wait for thread to tell us it is starting. */
+	slurm_cond_wait(&run_script_args->timeout_cond,
+			&run_script_args->timeout_mutex);
+	slurm_mutex_unlock(&run_script_args->timeout_mutex);
+
+	gettimeofday(&start_time, NULL);
+	now.tv_sec = start_time.tv_sec;
+	now.tv_usec = start_time.tv_usec;
+	elapsed_time = 0;
+	while (1) {
+		bool is_thread_finished;
+
+		if (lua_shutdown) {
+			log_flag(BURST_BUF, "Sending SIGUSR1 to %s on slurmctld shutdown.",
+				 lua_func);
+			err_rc = SLURM_ERROR;
+			break;
+		}
+		gettimeofday(&now, NULL);
+		elapsed_time = (now.tv_sec - start_time.tv_sec);
+		if (elapsed_time >= timeout) {
+			error("%s hit timeout of %u seconds, sending SIGUSR1",
+			      lua_func, timeout);
+			err_rc = SLURM_ERROR;
+			break;
+		}
+
+		ts.tv_sec = now.tv_sec + 1; /* Try every 1 second. */
+		ts.tv_nsec = (now.tv_usec * 1000);
+
+		slurm_mutex_lock(&run_script_args->timeout_mutex);
+		rc = pthread_cond_timedwait(&run_script_args->timeout_cond,
+					    &run_script_args->timeout_mutex,
+					    &ts);
+		is_thread_finished = run_script_args->done;
+		slurm_mutex_unlock(&run_script_args->timeout_mutex);
+		if (is_thread_finished) {
+			/* Thread ended. */
+			break;
+		} else if (rc == ETIMEDOUT) {
+			/* Hit 1 second timeout. Keep looping. */
+			continue;
+		} else {
+			errno = rc;
+			error("%s: pthread_cond_timedwait(): %m, can't recover from this error, send SIGUSR1 to %s",
+			     __func__, lua_func);
+			err_rc = SLURM_ERROR;
+			break;
+		}
+	}
+	if (err_rc == SLURM_ERROR)
+		pthread_kill(tid, SIGUSR1);
+	if ((rc = pthread_join(tid, NULL))) {
+		error("%s: error %d in pthread_join", __func__, rc);
+		err_rc = SLURM_ERROR;
+	}
+
+	slurm_cond_destroy(&run_script_args->timeout_cond);
+	slurm_mutex_destroy(&run_script_args->timeout_mutex);
+	if (err_rc != SLURM_SUCCESS)
+		rc = err_rc;
+	else
+		rc = run_script_args->rc;
+	xfree(run_script_args);
+
+	_decr_lua_thread_cnt();
+
 	return rc;
 }
 
@@ -647,7 +806,7 @@ static bb_pools_t *_bb_get_pools(int *num_pools, bb_state_t *state_ptr,
 	*num_pools = 0;
 
 	/* Call lua function. */
-	rc = _run_lua_script(lua_func_name, NULL, NULL, &resp_msg);
+	rc = _run_lua_script(lua_func_name, timeout, NULL, NULL, &resp_msg);
 	if (rc) {
 		trigger_burst_buffer();
 		return NULL;
@@ -781,6 +940,7 @@ static int _push_post_run_args(lua_State *L, void *args)
 static void *_start_stage_out(void *x)
 {
 	int rc;
+	uint32_t timeout;
 	char *resp_msg = NULL;
 	stage_out_args_t *stage_out_args = (stage_out_args_t *) x;
 	slurmctld_lock_t job_write_lock =
@@ -790,8 +950,10 @@ static void *_start_stage_out(void *x)
 	bb_job_t *bb_job = NULL;
 	DEF_TIMERS;
 
+	timeout = bb_state.bb_config.other_timeout;
+
 	START_TIMER;
-	rc = _run_lua_script("slurm_bb_post_run", _push_post_run_args,
+	rc = _run_lua_script("slurm_bb_post_run", timeout, _push_post_run_args,
 			     stage_out_args, &resp_msg);
 	END_TIMER;
 	if ((DELTA_TIMER > 500000) || /* 0.5 secs */
@@ -830,10 +992,12 @@ static void *_start_stage_out(void *x)
 
 	if (rc == SLURM_SUCCESS) {
 		xfree(resp_msg);
+		timeout = bb_state.bb_config.stage_out_timeout;
 		START_TIMER;
 		/* Same args as post_run. */
-		rc = _run_lua_script("slurm_bb_data_out", _push_post_run_args,
-				     stage_out_args, &resp_msg);
+		rc = _run_lua_script("slurm_bb_data_out", timeout,
+				     _push_post_run_args, stage_out_args,
+				     &resp_msg);
 		END_TIMER;
 		if ((DELTA_TIMER > 1000000) || /* 10 secs */
 		    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
@@ -949,7 +1113,7 @@ static void _load_state(bool init_config)
 	uint32_t timeout;
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
-	timeout = bb_state.bb_config.other_timeout * 1000;
+	timeout = bb_state.bb_config.other_timeout;
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	if (_load_pools(timeout) != SLURM_SUCCESS)
@@ -1323,11 +1487,13 @@ extern int init(void)
         if ((rc = slurm_lua_init()) != SLURM_SUCCESS)
                 return rc;
 
+	slurm_mutex_init(&lua_thread_mutex);
 	slurm_mutex_init(&bb_state.bb_mutex);
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_load_config(&bb_state, (char *)plugin_type); /* Removes "const" */
 	log_flag(BURST_BUF, "");
 	bb_alloc_cache(&bb_state);
+	lua_shutdown = false;
 	slurm_thread_create(&bb_state.bb_thread, _bb_agent, NULL);
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
@@ -1339,6 +1505,15 @@ extern int init(void)
  */
 extern int fini(void)
 {
+	int thread_cnt, last_thread_cnt = 0;
+	lua_shutdown = true;
+	while ((thread_cnt = _get_lua_thread_cnt())) {
+		if ((last_thread_cnt != 0) && (thread_cnt != last_thread_cnt))
+			info("Waiting for %d lua script threads", thread_cnt);
+		last_thread_cnt = thread_cnt;
+		usleep(100000); /* 100 ms */
+	}
+
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	log_flag(BURST_BUF, "");
 
@@ -1356,6 +1531,8 @@ extern int fini(void)
 	bb_clear_config(&bb_state.bb_config, true);
 	bb_clear_cache(&bb_state);
 	slurm_mutex_unlock(&bb_state.bb_mutex);
+
+	slurm_mutex_destroy(&lua_thread_mutex);
 
 	slurm_lua_fini();
 
@@ -1587,6 +1764,7 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 	char *hash_dir = NULL, *job_dir = NULL, *script_file = NULL;
 	char *task_script_file = NULL, *resp_msg = NULL;
 	bool using_master_script = false;
+	uint32_t timeout;
 	bb_job_t *bb_job;
 
 	/* Initialization */
@@ -1612,6 +1790,7 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 
 	log_flag(BURST_BUF, "%pJ", job_ptr);
 
+	timeout = bb_state.bb_config.validate_timeout;
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	/* Standard file location for job arrays */
@@ -1647,7 +1826,7 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 
 
 	/* Run "job_process" function, validates user script */
-	rc = _run_lua_script(lua_func_name, _push_job_process_args,
+	rc = _run_lua_script(lua_func_name, timeout, _push_job_process_args,
 			     script_file, &resp_msg);
 	if (rc) {
 		if (err_msg && resp_msg) {
@@ -1867,6 +2046,7 @@ static int _push_teardown_args(lua_State *L, void *args)
 static void *_start_teardown(void *x)
 {
 	int rc;
+	uint32_t timeout;
 	char *resp_msg = NULL;
 	teardown_args_t *teardown_args = (teardown_args_t *)x;
 	job_record_t *job_ptr;
@@ -1877,10 +2057,11 @@ static void *_start_teardown(void *x)
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	DEF_TIMERS;
 
+	timeout = bb_state.bb_config.other_timeout;
 	/* Run lua "teardown" function */
 	START_TIMER;
-	rc = _run_lua_script("slurm_bb_job_teardown", _push_teardown_args,
-			     teardown_args, &resp_msg);
+	rc = _run_lua_script("slurm_bb_job_teardown", timeout,
+			     _push_teardown_args, teardown_args, &resp_msg);
 	END_TIMER;
 	info("Teardown for JobId=%u ran for %s",
 	     teardown_args->job_id, TIME_STR);
@@ -2011,6 +2192,7 @@ static int _push_setup_args(lua_State *L, void *args)
 static void *_start_stage_in(void *x)
 {
 	int rc;
+	uint32_t timeout;
 	bool get_real_size = false;
 	char *resp_msg = NULL, *op = NULL;
 	stage_in_args_t *stage_in_args = (stage_in_args_t *) x;
@@ -2021,10 +2203,11 @@ static void *_start_stage_in(void *x)
 
 	DEF_TIMERS;
 
+	timeout = bb_state.bb_config.other_timeout;
 	op = "setup";
 	START_TIMER;
-	rc = _run_lua_script("slurm_bb_setup", _push_setup_args, stage_in_args,
-			     &resp_msg);
+	rc = _run_lua_script("slurm_bb_setup", timeout, _push_setup_args,
+			     stage_in_args, &resp_msg);
 	END_TIMER;
 	info("slurm_bb_setup for job JobId=%u ran for %s",
 	     stage_in_args->job_id, TIME_STR);
@@ -2067,10 +2250,12 @@ static void *_start_stage_in(void *x)
 
 	if (rc == SLURM_SUCCESS) {
 		xfree(resp_msg);
+		timeout = bb_state.bb_config.stage_in_timeout;
 		op = "data_in";
 		START_TIMER;
-		rc =_run_lua_script("slurm_bb_data_in", _push_data_in_args,
-				    stage_in_args, &resp_msg);
+		rc =_run_lua_script("slurm_bb_data_in", timeout,
+				    _push_data_in_args, stage_in_args,
+				    &resp_msg);
 		END_TIMER;
 		info("slurm_bb_data_in for JobId=%u ran for %s",
 		     stage_in_args->job_id, TIME_STR);
@@ -2477,6 +2662,7 @@ static void _kill_job(job_record_t *job_ptr, bool hold_job)
 static void *_start_pre_run(void *x)
 {
 	int rc;
+	uint32_t timeout;
 	bool nodes_ready = false, run_kill_job = false, hold_job = false;
 	char *resp_msg = NULL;
 	bb_job_t *bb_job = NULL;
@@ -2505,8 +2691,10 @@ static void *_start_pre_run(void *x)
 			sleep(60);
 	}
 
+	timeout = pre_run_args->timeout;
+
 	START_TIMER;
-	rc = _run_lua_script("slurm_bb_pre_run", _push_pre_run_args,
+	rc = _run_lua_script("slurm_bb_pre_run", timeout, _push_pre_run_args,
 			     pre_run_args, &resp_msg);
 	END_TIMER;
 
@@ -2575,6 +2763,7 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	char *job_dir = NULL, *resp_msg = NULL, *job_script = NULL;
 	int hash_inx = job_ptr->job_id % 10;
 	int rc = SLURM_SUCCESS;
+	uint32_t timeout;
 	pthread_t tid;
 	bb_job_t *bb_job;
 	paths_args_t paths_args;
@@ -2631,12 +2820,13 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	xstrfmtcat(path_file, "%s/path", job_dir);
 	bb_write_file(path_file, "");
 	/* Initialize args and run the "paths" function. */
+	timeout = bb_state.bb_config.validate_timeout;
 	paths_args.job_script = job_script;
 	paths_args.job_id = job_ptr->job_id;
 	paths_args.path_file = path_file;
 	START_TIMER;
-	rc = _run_lua_script("slurm_bb_paths", _push_paths_args, &paths_args,
-			     &resp_msg);
+	rc = _run_lua_script("slurm_bb_paths", timeout, _push_paths_args,
+			     &paths_args, &resp_msg);
 	END_TIMER;
 	if ((DELTA_TIMER > 200000) || /* 0.2 secs */
 	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
@@ -2660,7 +2850,7 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	job_script = NULL; /* Avoid two variables pointing at the same string */
 	pre_run_args->node_file = client_nodes_file_nid;
 	client_nodes_file_nid = NULL;
-	pre_run_args->timeout = bb_state.bb_config.other_timeout * 1000;
+	pre_run_args->timeout = bb_state.bb_config.other_timeout;
 	pre_run_args->uid = job_ptr->user_id;
 	if (job_ptr->details) { /* Defer launch until completion */
 		job_ptr->details->prolog_running++;
