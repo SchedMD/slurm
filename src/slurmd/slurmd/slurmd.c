@@ -2061,7 +2061,7 @@ Usage: %s [OPTIONS]\n\
    -b                         Report node reboot now.\n\
    -c                         Force cleanup of slurmd shared memory.\n\
    -C                         Print node configuration information and exit.\n\
-   --conf-server host[:port]  Get confgs from slurmctld at `host[:port]`.\n\
+   --conf-server host[:port]  Get configs from slurmctld at `host[:port]`.\n\
    -d stepd                   Pathname to the slurmstepd program.\n\
    -D                         Run daemon in foreground.\n\
    -f config                  Read configuration from the specified file.\n\
