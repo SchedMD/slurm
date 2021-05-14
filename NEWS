@@ -84,6 +84,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 20.11.8
 ==========================
+ -- slurmctld - fix erroneous "StepId=CORRUPT" messages in error logs.
 
 * Changes in Slurm 20.11.7
 ==========================
