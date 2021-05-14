@@ -143,22 +143,30 @@ extern config_response_msg_t *fetch_config(char *conf_server, uint32_t flags)
 	 * slurmctld entry.
 	 */
 	if (env_conf_server || conf_server) {
-		char *server, *port;
-		ctl_entry_t *ctl = xmalloc(sizeof(*ctl));
+		char *server, *tmp, *port, *save_ptr = NULL;
 		controllers = list_create(xfree_ptr);
 
-		if (!(server = env_conf_server))
-			server = conf_server;
-		strlcpy(ctl->hostname, server, sizeof(ctl->hostname));
+		if (env_conf_server)
+			tmp = xstrdup(env_conf_server);
+		else
+			tmp = xstrdup(conf_server);
 
-		if ((port = xstrchr(ctl->hostname, ':'))) {
-			*port = '\0';
-			port++;
-			ctl->port = atoi(port);
-		} else
-			ctl->port = SLURMCTLD_PORT;
+		server = strtok_r(tmp, ",", &save_ptr);
+		while (server) {
+			ctl_entry_t *ctl = xmalloc(sizeof(*ctl));
+			strlcpy(ctl->hostname, server, sizeof(ctl->hostname));
 
-		list_push(controllers, ctl);
+			if ((port = xstrchr(ctl->hostname, ':'))) {
+				*port = '\0';
+				port++;
+				ctl->port = atoi(port);
+			} else
+				ctl->port = SLURMCTLD_PORT;
+
+			list_append(controllers, ctl);
+			server = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(tmp);
 	} else {
                 if (!(controllers = resolve_ctls_from_dns_srv())) {
                         error("%s: DNS SRV lookup failed", __func__);

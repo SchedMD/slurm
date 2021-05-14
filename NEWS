@@ -101,6 +101,8 @@ documents those changes that are of interest to users and administrators.
  -- Add ListIdleTime to "scontrol show nodes" and slurmrestd nodes output,
     which represents the time the node last became idle (i.e. no jobs on the
     node).
+ -- slurmd - allow multiple comma-separated controllers to be specified in
+    configless mode with --conf-server
 
 * Changes in Slurm 20.11.8
 ==========================

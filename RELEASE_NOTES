@@ -54,6 +54,8 @@ HIGHLIGHTS
     SLURM_DISTRIBUTION.
  -- Make --cpu-bind=threads default for --threads-per-core -- cli and env can
     override.
+ -- slurmd - allow multiple comma-separated controllers to be specified in
+    configless mode with --conf-server
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

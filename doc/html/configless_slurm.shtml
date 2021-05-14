@@ -45,6 +45,11 @@ is no local configuration file on the compute node.</p>
 slurmd --conf-server slurmctl-primary:6817
 </pre>
 Specifying the port is optional and will default to 6817 if it is not present.
+Multiple slurmctlds can be specified as a comma-separated list, in priority
+order (highest to lowest).
+<pre>
+slurmd --conf-server slurmctl-primary:6817,slurmctl-secondary
+</pre>
 </p>
 
 <p>The same information can be provided in a DNS SRV record. For example:
