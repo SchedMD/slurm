@@ -10002,8 +10002,13 @@ extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 	gpu_record->cpu_cnt = cpu_cnt;
 	if (cpu_aff_mac_bitstr)
 		gpu_record->cpus_bitmap = bit_copy(cpu_aff_mac_bitstr);
-	if (device_file)
+	if (device_file) {
+		hostlist_t hl = hostlist_create(device_file);
 		gpu_record->config_flags |= GRES_CONF_HAS_FILE;
+		if (hostlist_count(hl) > 1)
+			gpu_record->config_flags |= GRES_CONF_HAS_MULT;
+		hostlist_destroy(hl);
+	}
 	if (type)
 		gpu_record->config_flags |= GRES_CONF_HAS_TYPE;
 	gpu_record->cpus = xstrdup(cpu_aff_abs_range);
