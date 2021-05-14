@@ -3482,7 +3482,10 @@ _unpack_job_info_msg(job_info_msg_t ** msg, buf_t *buffer,
 	*msg = xmalloc(sizeof(job_info_msg_t));
 
 	/* load buffer's header (data structure version and time) */
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		safe_unpack32(&((*msg)->record_count), buffer);
+		safe_unpack_time(&((*msg)->last_update), buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&((*msg)->record_count), buffer);
 		safe_unpack_time(&((*msg)->last_update), buffer);
 	} else {

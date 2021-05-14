@@ -9879,7 +9879,10 @@ static buf_t *_pack_init_job_info(uint16_t protocol_version)
 
 	/* write message body header : size and time */
 	/* put in a place holder job record count of 0 for now */
-	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		pack32(0, buffer);
+		pack_time(time(NULL), buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(0, buffer);
 		pack_time(time(NULL), buffer);
 	}
