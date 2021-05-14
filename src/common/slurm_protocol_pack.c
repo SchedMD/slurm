@@ -3501,7 +3501,8 @@ _unpack_job_info_msg(job_info_msg_t ** msg, buf_t *buffer,
 	}
 	/* load individual job info */
 	for (int i = 0; i < (*msg)->record_count; i++) {
-		if (_unpack_job_info_members(&job[i], buffer,
+		job_info_t *job_ptr = &job[i];
+		if (_unpack_job_info_members(job_ptr, buffer,
 					     protocol_version))
 			goto unpack_error;
 	}
