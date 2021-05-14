@@ -200,6 +200,8 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	ListIterator itr;
 	char *global_prefix = "", *local_prefix = "";
 	char *new_global_list = NULL, *new_local_list = NULL;
+	int device_index = -1;
+	bool device_considered = false;
 
 	if (!gres_devices)
 		return;
@@ -228,6 +230,22 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		if (!bit_test(bit_alloc, gres_device->index))
 			continue;
 
+		/* Track physical devices if MultipleFiles is used */
+		if (device_index < gres_device->index) {
+			if ((gres_device->index - device_index) != 1)
+				error("There is a gap > 1 between gres_device->index (%d) and the prior device_index (%d)",
+				      gres_device->index, device_index);
+
+			device_index = gres_device->index;
+			device_considered = false;
+		} else if (device_index != gres_device->index)
+			error("gres_device->index was not monotonically increasing! Are gres_devices not sorted by index? device_index: %d, gres_device->index: %d",
+			      device_index, gres_device->index);
+
+		/* Continue if we already bound this physical device */
+		if (device_considered)
+			continue;
+
 		/*
 		 * NICs want env to match the dev_num parsed from the
 		 * file name; GPUs, however, want it to match the order
@@ -250,8 +268,15 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 
 			if (!bit_test(usable_gres,
 				      use_local_dev_index ?
-				      index : gres_device->index))
+				      index : gres_device->index)) {
+				/*
+				 * Since this device is not in usable_gres, skip
+				 * over any other device files associated with
+				 * it by setting device_considered = true
+				 */
+				device_considered = true;
 				continue;
+			}
 		}
 
 		if (global_id && !set_global_id) {
@@ -265,6 +290,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		xstrfmtcat(new_global_list, "%s%s%d", global_prefix, prefix,
 			   global_env_index);
 		global_prefix = ",";
+		device_considered = true;
 	}
 	list_iterator_destroy(itr);
 
