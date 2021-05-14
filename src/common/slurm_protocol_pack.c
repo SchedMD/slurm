@@ -3485,6 +3485,7 @@ _unpack_job_info_msg(job_info_msg_t ** msg, buf_t *buffer,
 	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		safe_unpack32(&((*msg)->record_count), buffer);
 		safe_unpack_time(&((*msg)->last_update), buffer);
+		safe_unpack_time(&((*msg)->last_backfill), buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&((*msg)->record_count), buffer);
 		safe_unpack_time(&((*msg)->last_update), buffer);
@@ -3505,6 +3506,11 @@ _unpack_job_info_msg(job_info_msg_t ** msg, buf_t *buffer,
 		if (_unpack_job_info_members(job_ptr, buffer,
 					     protocol_version))
 			goto unpack_error;
+		if ((job_ptr->bitflags & BACKFILL_SCHED) &&
+		    (*msg)->last_backfill &&
+		    IS_JOB_PENDING(job_ptr) &&
+		    ((*msg)->last_backfill <= job_ptr->last_sched_eval))
+			job_ptr->bitflags |= BACKFILL_LAST;
 	}
 
 	return SLURM_SUCCESS;

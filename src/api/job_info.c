@@ -581,8 +581,9 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	slurm_make_time_str(&job_ptr->last_sched_eval, time_str,
 			    sizeof(time_str));
-	xstrfmtcat(out, "LastSchedEval=%s Scheduler=%s", time_str,
-		   job_ptr->bitflags & BACKFILL_SCHED ? "Backfill" : "Main");
+	xstrfmtcat(out, "LastSchedEval=%s Scheduler=%s%s", time_str,
+		   job_ptr->bitflags & BACKFILL_SCHED ? "Backfill" : "Main",
+		   job_ptr->bitflags & BACKFILL_LAST ? ":*" : "");
 	xstrcat(out, line_end);
 
 	/****** Line 11 ******/

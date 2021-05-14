@@ -1039,6 +1039,8 @@ enum node_states {
 					  * backfill attempt if not set the
 					  * normal scheduler set
 					  * last_eval_time */
+#define BACKFILL_LAST      SLURM_BIT(33) /* Job was considered in last
+					  * schedule attempt */
 
 /* These bits are set in the x11 field of job_desc_msg_t */
 #define X11_FORWARD_ALL		0x0001	/* all nodes should setup forward */
@@ -1799,6 +1801,7 @@ typedef slurm_job_info_t job_info_t;
 #endif
 
 typedef struct job_info_msg {
+	time_t last_backfill;	/* time of late backfill run */
 	time_t last_update;	/* time of latest info */
 	uint32_t record_count;	/* number of records */
 	slurm_job_info_t *job_array;	/* the job records */

@@ -856,6 +856,7 @@ int dump_all_job_state(void)
 
 	/* write individual job records */
 	lock_slurmctld(job_read_lock);
+	pack_time(slurmctld_diag_stats.bf_when_last_cycle, buffer);
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
 		_dump_job_state(job_ptr, buffer);
@@ -1192,6 +1193,10 @@ extern int load_all_job_state(void)
 	if (saved_job_id <= slurm_conf.max_job_id)
 		job_id_sequence = MAX(saved_job_id, job_id_sequence);
 	debug3("Job id in job_state header is %u", saved_job_id);
+
+	safe_unpack_time(&buf_time, buffer); /* bf_when_last_cycle */
+	if (!slurmctld_diag_stats.bf_when_last_cycle)
+		slurmctld_diag_stats.bf_when_last_cycle = buf_time;
 
 	/*
 	 * Previously we locked the tres read lock before this loop.  It turned
@@ -9888,6 +9893,7 @@ static buf_t *_pack_init_job_info(uint16_t protocol_version)
 	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		pack32(0, buffer);
 		pack_time(time(NULL), buffer);
+		pack_time(slurmctld_diag_stats.bf_when_last_cycle, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(0, buffer);
 		pack_time(time(NULL), buffer);
