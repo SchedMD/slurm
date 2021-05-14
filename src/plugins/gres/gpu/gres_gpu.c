@@ -494,7 +494,8 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 						 gres_record->cpus_bitmap,
 						 gres_record->file,
 						 gres_record->type_name,
-						 gres_record->links);
+						 gres_record->links,
+						 gres_record->unique_id);
 			continue;
 		}
 
@@ -514,7 +515,8 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 					 gres_record->cpus,
 					 gres_record->cpus_bitmap, hl_name,
 					 gres_record->type_name,
-					 gres_record->links);
+					 gres_record->links,
+					 gres_record->unique_id);
 			free(hl_name);
 		}
 		hostlist_destroy(hl);
@@ -746,7 +748,7 @@ static void _add_fake_gpus_from_file(List gres_list_system,
 		// Add the GPU specified by the parsed line
 		add_gres_to_list(gres_list_system, "gpu", 1, cpu_count,
 				 cpu_range, cpu_aff_mac_bitstr, device_file,
-				 type, links);
+				 type, links, NULL);
 		FREE_NULL_BITMAP(cpu_aff_mac_bitstr);
 		xfree(cpu_range);
 		xfree(device_file);

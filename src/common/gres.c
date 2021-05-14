@@ -10006,7 +10006,7 @@ extern char *gres_flags2str(uint8_t config_flags)
 extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 			     int cpu_cnt, char *cpu_aff_abs_range,
 			     bitstr_t *cpu_aff_mac_bitstr, char *device_file,
-			     char *type, char *links)
+			     char *type, char *links, char *unique_id)
 {
 	gres_slurmd_conf_t *gpu_record;
 	bool use_empty_first_record = false;
@@ -10039,6 +10039,7 @@ extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 	gpu_record->name = xstrdup(name);
 	gpu_record->file = xstrdup(device_file);
 	gpu_record->links = xstrdup(links);
+	gpu_record->unique_id = xstrdup(unique_id);
 	gpu_record->count = device_cnt;
 	gpu_record->plugin_id = gres_build_id(name);
 	if (!use_empty_first_record)

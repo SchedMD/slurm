@@ -1033,7 +1033,7 @@ extern char *gres_flags2str(uint8_t config_flags);
 extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 			     int cpu_cnt, char *cpu_aff_abs_range,
 			     bitstr_t *cpu_aff_mac_bitstr, char *device_file,
-			     char *type, char *links);
+			     char *type, char *links, char *unique_id);
 
 extern int gres_find_id(void *x, void *key);
 
