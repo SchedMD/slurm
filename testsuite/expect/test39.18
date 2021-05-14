@@ -373,14 +373,14 @@ rm -rf ./$file_out"
 # fake_gpus.conf is of the following format, with each line representing one
 # GPU device:
 #
-#     type|cpu_count|cpu_range|links|device_files
+#     type|cpu_count|cpu_range|links|device_files[|unique_id]
 #
 # Optionally, cpu_range allows special keywords starting in `~` to aid in
 # testing the conversion from an NVML cpu affinity array to Slurm bitstring.
 #
 # The GRES_PARSABLE output is of the following format:
 #
-# GRES_PARSABLE[name](device_count):type|cpu_count|cpu_range|links|device_files
+# GRES_PARSABLE[name](device_count):type|cpu_count|cpu_range|links|device_files[|unique_id]
 #
 # To better decipher the tests, temporarily increase the log verbosity in
 # test39.18.prog.c. E.g.:
