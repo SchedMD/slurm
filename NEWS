@@ -86,6 +86,8 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- slurmctld - fix erroneous "StepId=CORRUPT" messages in error logs.
  -- Correct the error given when auth plugin fails to pack a credential.
+ -- Fix unused-variable compiler warning on FreeBSD in fd_resolve_path().
+ -- acct_gather_filesystem/lustre - only emit collection error once per step.
 
 * Changes in Slurm 20.11.7
 ==========================
