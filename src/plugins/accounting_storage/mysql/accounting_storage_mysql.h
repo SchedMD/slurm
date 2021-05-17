@@ -155,7 +155,8 @@ extern int remove_common(mysql_conn_t *mysql_conn,
 			 char *assoc_char,
 			 char *cluster_name,
 			 List ret_list,
-			 bool *jobs_running);
+			 bool *jobs_running,
+			 bool *default_account);
 
 extern void mod_tres_str(char **out, char *mod, char *cur,
 			 char *cur_par, char *name, char **vals,

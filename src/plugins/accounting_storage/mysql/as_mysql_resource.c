@@ -978,14 +978,14 @@ extern List as_mysql_remove_res(mysql_conn_t *mysql_conn, uint32_t uid,
 	if (query_clusters) {
 		remove_common(mysql_conn, DBD_REMOVE_CLUS_RES,
 			      now, user_name, clus_res_table,
-			      clus_char, NULL, NULL, NULL, NULL);
+			      clus_char, NULL, NULL, NULL, NULL, NULL);
 	} else {
 		remove_common(mysql_conn, DBD_REMOVE_CLUS_RES,
 			      now, user_name, clus_res_table,
-			      clus_char, NULL, NULL, NULL, NULL);
+			      clus_char, NULL, NULL, NULL, NULL, NULL);
 		remove_common(mysql_conn, DBD_REMOVE_RES,
 			      now, user_name, res_table,
-			      name_char, NULL, NULL, NULL, NULL);
+			      name_char, NULL, NULL, NULL, NULL, NULL);
 	}
 
 	xfree(clus_char);

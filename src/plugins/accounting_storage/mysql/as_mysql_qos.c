@@ -1184,7 +1184,8 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 			if ((rc = remove_common(mysql_conn, DBD_REMOVE_QOS, now,
 						user_name, qos_table, name_char,
-						assoc_char, object, NULL, NULL))
+						assoc_char, object, NULL, NULL,
+						NULL))
 			    != SLURM_SUCCESS)
 				break;
 		}
@@ -1192,7 +1193,7 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	} else
 		rc = remove_common(mysql_conn, DBD_REMOVE_QOS, now,
 				   user_name, qos_table, name_char,
-				   assoc_char, NULL, NULL, NULL);
+				   assoc_char, NULL, NULL, NULL, NULL);
 
 	FREE_NULL_LIST(cluster_list_tmp);
 	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);

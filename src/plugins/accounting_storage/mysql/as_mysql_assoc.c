@@ -1785,7 +1785,8 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 					 char *cluster_name,
 					 char *name_char,
 					 bool is_admin, List ret_list,
-					 bool *jobs_running)
+					 bool *jobs_running,
+					 bool *default_account)
 {
 	ListIterator itr = NULL;
 	MYSQL_ROW row;
@@ -1796,7 +1797,7 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 	uint32_t smallest_lft = 0xFFFFFFFF;
 
 	xassert(result);
-	if (*jobs_running)
+	if (*jobs_running || *default_account)
 		goto skip_process;
 
 	while ((row = mysql_fetch_row(result))) {
@@ -1886,9 +1887,9 @@ static int _process_remove_assoc_results(mysql_conn_t *mysql_conn,
 skip_process:
 	user_name = uid_to_string((uid_t) user->uid);
 
-	rc = remove_common(mysql_conn, DBD_REMOVE_ASSOCS, now,
-			   user_name, assoc_table, name_char,
-			   assoc_char, cluster_name, ret_list, jobs_running);
+	rc = remove_common(mysql_conn, DBD_REMOVE_ASSOCS, now, user_name,
+			   assoc_table, name_char, assoc_char, cluster_name,
+			   ret_list, jobs_running, default_account);
 end_it:
 	xfree(user_name);
 	xfree(assoc_char);
@@ -3267,7 +3268,7 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	slurmdb_user_rec_t user;
 	char *prefix = "t1";
 	List use_cluster_list = NULL;
-	bool jobs_running = 0, locked = false;;
+	bool jobs_running = 0, default_account = false, locked = false;;
 
 	if (!assoc_cond) {
 		error("we need something to change");
@@ -3369,7 +3370,8 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		rc = _process_remove_assoc_results(mysql_conn, result,
 						   &user, cluster_name,
 						   name_char, is_admin,
-						   ret_list, &jobs_running);
+						   ret_list, &jobs_running,
+						   &default_account);
 		xfree(name_char);
 		mysql_free_result(result);
 
@@ -3397,7 +3399,10 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		DB_DEBUG(DB_ASSOC, mysql_conn->conn, "didn't affect anything");
 		return ret_list;
 	}
-	if (jobs_running)
+
+	if (default_account)
+		errno = ESLURM_NO_REMOVE_DEFAULT_ACCOUNT;
+	else if (jobs_running)
 		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
 	else
 		errno = SLURM_SUCCESS;

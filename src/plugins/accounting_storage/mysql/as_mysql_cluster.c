@@ -820,7 +820,8 @@ extern List as_mysql_remove_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   object, cluster_month_table, now);
 		rc = remove_common(mysql_conn, DBD_REMOVE_CLUSTERS, now,
 				   user_name, cluster_table, name_char,
-				   assoc_char, object, ret_list, &jobs_running);
+				   assoc_char, object, ret_list, &jobs_running,
+				   NULL);
 		xfree(object);
 		if (rc != SLURM_SUCCESS)
 			break;

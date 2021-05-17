@@ -1020,7 +1020,7 @@ no_user_table:
 		if ((rc = remove_common(mysql_conn, DBD_REMOVE_USERS, now,
 					user_name, user_table, name_char,
 					assoc_char, object, ret_list,
-					&jobs_running))
+					&jobs_running, NULL))
 		    != SLURM_SUCCESS)
 			break;
 	}
@@ -1201,7 +1201,7 @@ extern List as_mysql_remove_coord(mysql_conn_t *mysql_conn, uint32_t uid,
 	user_name = uid_to_string((uid_t) uid);
 	rc = remove_common(mysql_conn, DBD_REMOVE_ACCOUNT_COORDS,
 			   now, user_name, acct_coord_table,
-			   extra, NULL, NULL, NULL, NULL);
+			   extra, NULL, NULL, NULL, NULL, NULL);
 	xfree(user_name);
 	xfree(extra);
 	if (rc == SLURM_ERROR) {

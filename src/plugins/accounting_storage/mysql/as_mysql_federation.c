@@ -695,7 +695,7 @@ extern List as_mysql_remove_federations(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		if ((rc = remove_common(mysql_conn, DBD_REMOVE_FEDERATIONS, now,
 					user_name, federation_table, name_char,
-					NULL, NULL, ret_list, NULL)))
+					NULL, NULL, ret_list, NULL, NULL)))
 			break;
 	}
 	mysql_free_result(result);

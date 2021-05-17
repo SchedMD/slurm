@@ -410,6 +410,7 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	bool jobs_running = 0;
+	bool default_account = 0;
 
 	if (!acct_cond) {
 		error("we need something to change");
@@ -525,7 +526,7 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		if ((rc = remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
 					user_name, acct_table, name_char,
 					assoc_char, object, ret_list,
-					&jobs_running))
+					&jobs_running, &default_account))
 		    != SLURM_SUCCESS)
 			break;
 	}
@@ -541,7 +542,9 @@ extern List as_mysql_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		return NULL;
 	}
 
-	if (jobs_running)
+	if (default_account)
+		errno = ESLURM_NO_REMOVE_DEFAULT_ACCOUNT;
+	else if (jobs_running)
 		errno = ESLURM_JOBS_RUNNING_ON_ASSOC;
 	else
 		errno = SLURM_SUCCESS;
