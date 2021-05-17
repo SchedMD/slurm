@@ -115,7 +115,6 @@ typedef enum {
 	NODE_LOCK,
 	PART_LOCK,
 	FED_LOCK,
-	ENTITY_COUNT
 }	lock_datatype_t;
 
 #ifndef NDEBUG

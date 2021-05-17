@@ -47,7 +47,13 @@
 
 static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static pthread_rwlock_t slurmctld_locks[ENTITY_COUNT];
+static pthread_rwlock_t slurmctld_locks[5] = {
+	PTHREAD_RWLOCK_INITIALIZER,
+	PTHREAD_RWLOCK_INITIALIZER,
+	PTHREAD_RWLOCK_INITIALIZER,
+	PTHREAD_RWLOCK_INITIALIZER,
+	PTHREAD_RWLOCK_INITIALIZER,
+};
 
 #ifndef NDEBUG
 /*
@@ -105,14 +111,7 @@ extern bool verify_lock(lock_datatype_t datatype, lock_level_t level)
 /* lock_slurmctld - Issue the required lock requests in a well defined order */
 extern void lock_slurmctld(slurmctld_lock_t lock_levels)
 {
-	static bool init_run = false;
 	xassert(_store_locks(lock_levels));
-
-	if (!init_run) {
-		init_run = true;
-		for (int i = 0; i < ENTITY_COUNT; i++)
-			slurm_rwlock_init(&slurmctld_locks[i]);
-	}
 
 	if (lock_levels.conf == READ_LOCK)
 		slurm_rwlock_rdlock(&slurmctld_locks[CONF_LOCK]);
