@@ -108,6 +108,9 @@ documents those changes that are of interest to users and administrators.
     configure.
  -- Manually powering down of nodes with scontrol now ignores
     SuspendExc<Nodes|Parts>.
+ -- SALLOC_THREADS_PER_CORE and SBATCH_THREADS_PER_CORE have been added as
+    input environment variables for salloc and sbatch, respectively. They do
+    the same thing as --threads-per-core.
 
 * Changes in Slurm 20.11.8
 ==========================
