@@ -2664,7 +2664,7 @@ skip_start:
 			continue;
 		}
 
-		if (node_space_recs >= max_backfill_job_cnt) {
+		if (node_space_recs >= (2 * max_backfill_job_cnt)) {
 			log_flag(BACKFILL, "table size limit of %u reached",
 				 max_backfill_job_cnt);
 			if ((max_backfill_job_per_part != 0) &&
