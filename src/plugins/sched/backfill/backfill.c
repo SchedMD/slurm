@@ -2664,32 +2664,6 @@ skip_start:
 			continue;
 		}
 
-		if (node_space_recs >= (2 * max_backfill_job_cnt)) {
-			log_flag(BACKFILL, "table size limit of %u reached",
-				 max_backfill_job_cnt);
-			if ((max_backfill_job_per_part != 0) &&
-			    (max_backfill_job_per_part >=
-			     max_backfill_job_cnt)) {
-				error("bf_max_job_part >= bf_max_job_test (%u >= %u)",
-				      max_backfill_job_per_part,
-				      max_backfill_job_cnt);
-			} else if ((max_backfill_job_per_user != 0) &&
-				   (max_backfill_job_per_user >
-				    max_backfill_job_cnt)) {
-				info("warning: bf_max_job_user > bf_max_job_test (%u > %u)",
-				     max_backfill_job_per_user,
-				     max_backfill_job_cnt);
-			} else if  ((max_backfill_job_per_assoc != 0) &&
-				    (max_backfill_job_per_assoc >
-				     max_backfill_job_cnt)) {
-				info("warning: bf_max_job_assoc > bf_max_job_test (%u > %u)",
-				     max_backfill_job_per_assoc,
-				     max_backfill_job_cnt);
-			}
-			_set_job_time_limit(job_ptr, orig_time_limit);
-			break;
-		}
-
 		if ((job_ptr->start_time > now) &&
 		    (job_ptr->state_reason != WAIT_BURST_BUFFER_RESOURCE) &&
 		    (job_ptr->state_reason != WAIT_BURST_BUFFER_STAGING) &&
@@ -2797,6 +2771,31 @@ skip_start:
 		bit_not(avail_bitmap);
 		if ((!bf_one_resv_per_job || !orig_start_time) &&
 		    !(job_ptr->bit_flags & JOB_MAGNETIC)) {
+			if (node_space_recs >= (2 * max_backfill_job_cnt)) {
+				log_flag(BACKFILL, "table size limit of %u reached",
+					 max_backfill_job_cnt);
+				if ((max_backfill_job_per_part != 0) &&
+				    (max_backfill_job_per_part >=
+				     max_backfill_job_cnt)) {
+					error("bf_max_job_part >= bf_max_job_test (%u >= %u)",
+					      max_backfill_job_per_part,
+					      max_backfill_job_cnt);
+				} else if ((max_backfill_job_per_user != 0) &&
+					   (max_backfill_job_per_user >
+					    max_backfill_job_cnt)) {
+					info("warning: bf_max_job_user > bf_max_job_test (%u > %u)",
+					     max_backfill_job_per_user,
+					     max_backfill_job_cnt);
+				} else if  ((max_backfill_job_per_assoc != 0) &&
+					    (max_backfill_job_per_assoc >
+					     max_backfill_job_cnt)) {
+					info("warning: bf_max_job_assoc > bf_max_job_test (%u > %u)",
+					     max_backfill_job_per_assoc,
+					     max_backfill_job_cnt);
+				}
+				_set_job_time_limit(job_ptr, orig_time_limit);
+				break;
+			}
 			_add_reservation(start_time, end_reserve, avail_bitmap,
 					 node_space, &node_space_recs);
 		}
