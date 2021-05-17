@@ -3039,8 +3039,7 @@ end_it:
 			 * since you can't query on mod time here and I don't
 			 * want to rewrite code to make it happen
 			 */
-			memset(&assoc_cond, 0,
-			       sizeof(slurmdb_assoc_cond_t));
+			memset(&assoc_cond, 0, sizeof(assoc_cond));
 			assoc_cond.cluster_list = local_cluster_list;
 			if (!(assoc_list_tmp =
 			      as_mysql_get_assocs(mysql_conn, uid,
