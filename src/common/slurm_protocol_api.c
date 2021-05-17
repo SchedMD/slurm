@@ -1596,13 +1596,14 @@ int slurm_send_node_msg(int fd, slurm_msg_t * msg)
 	 * Pack auth credential
 	 */
 	rc = auth_g_pack(auth_cred, buffer, header.version);
-	(void) auth_g_destroy(auth_cred);
 	if (rc) {
 		error("%s: auth_g_pack: %s has  authentication error: %m",
 		      __func__, rpc_num2string(header.msg_type));
+		(void) auth_g_destroy(auth_cred);
 		free_buf(buffer);
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
+	(void) auth_g_destroy(auth_cred);
 
 	/*
 	 * Pack message into buffer
