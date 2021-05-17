@@ -45,7 +45,7 @@ if [compile_against_libslurm -full $test_prog] {
 
 log_info "====test7.17.1===="
 set cpu_match 0
-spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.1" 8
+spawn ./$test_prog "gres:gpu:2" "$cfgdir" "/test7.17.1" 8
 expect {
 	-re "failure" {
 		log_error "Failure running test program test7.17.1"
@@ -67,7 +67,7 @@ if {$cpu_match != 1} {
 
 log_info "====test7.17.2===="
 set cpu_match 0
-spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.2" 16
+spawn ./$test_prog "gres:gpu:2" "$cfgdir" "/test7.17.2" 16
 expect {
 	-re "failure" {
 		log_error "Failure running program test7.17.2"
@@ -89,7 +89,7 @@ if {$cpu_match != 1} {
 
 log_info "====test7.17.3===="
 set cpu_match 0
-spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.3" 16
+spawn ./$test_prog "gres:gpu:2" "$cfgdir" "/test7.17.3" 16
 expect {
 	-re "failure" {
 		log_error "Failure running test program test7.17.3"
@@ -111,7 +111,7 @@ if {$cpu_match != 1} {
 
 log_info "====test7.17.4===="
 set cpu_match 0
-spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.4" 16
+spawn ./$test_prog "gres:gpu:2" "$cfgdir" "/test7.17.4" 16
 expect {
 	-re "failure" {
 		log_error "Failure running test program test7.17.4"
@@ -138,7 +138,7 @@ if {$cpu_match != 1} {
 # Run a job with invalid job allocation
 log_info "====test7.17.5===="
 set fail_match 0
-spawn ./$test_prog "craynetworks:100" "$cfgdir" "/test7.17.5" 16
+spawn ./$test_prog "gres:craynetworks:100" "$cfgdir" "/test7.17.5" 16
 expect {
 	-re "failure" {
 		log_debug "This error is expected"
@@ -157,7 +157,7 @@ if {$fail_match != 1} {
 # Run with no gres.conf file
 log_info "====test7.17.6===="
 set fail_match 0
-spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.6" 0
+spawn ./$test_prog "gres:gpu:2" "$cfgdir" "/test7.17.6" 0
 expect {
 	-re "failure" {
 		log_debug "This error is expected"
@@ -176,7 +176,7 @@ if {$fail_match != 1} {
 # Test with invalid job allocation
 log_info "====test7.17.7===="
 set fail_match 0
-spawn ./$test_prog "gpu:2" "$cfgdir" "/test7.17.7" 8
+spawn ./$test_prog "gres:gpu:2" "$cfgdir" "/test7.17.7" 8
 expect {
 	-re "fatal" {
 		log_debug "This error is expected"
