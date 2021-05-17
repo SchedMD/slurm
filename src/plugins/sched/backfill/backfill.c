@@ -1363,6 +1363,9 @@ static int _bf_reserve_running(void *x, void *arg)
 	if (slurm_job_preempt_mode(job_ptr) != PREEMPT_MODE_OFF)
 		return SLURM_SUCCESS;
 
+	if (*ns_recs_ptr >= (2 * max_backfill_job_cnt))
+		return SLURM_ERROR;
+
 	bitstr_t *tmp_bitmap = bit_copy(job_ptr->node_bitmap);
 
 	bit_not(tmp_bitmap);
