@@ -75,13 +75,13 @@
  * number of writers waiting semaphore to become 0, meaning that there are no
  * writers waiting to lock the resource.
  *
- * use init_locks() to initialize the locks then
- * lock_slurmctld() and unlock_slurmctld() to get the ordering so as to
+ * use lock_slurmctld() and unlock_slurmctld() to get the ordering so as to
  * prevent deadlock. The arguments indicate the lock type required for
  * each entity (job, node, etc.) in a well defined order.
  * For example: no lock on the config data structure, read lock on the job
  * and node data structures, and write lock on the partition data structure
  * would look like this: "{ NO_LOCK, READ_LOCK, READ_LOCK, WRITE_LOCK }"
+ * or "{ .job = READ_LOCK, .node = READ_LOCK, .part = WRITE_LOCK }"
  *
  * NOTE: When using lock_slurmctld() and assoc_mgr_lock(), always call
  * lock_slurmctld() before calling assoc_mgr_lock() and then call
@@ -120,10 +120,6 @@ typedef enum {
 #ifndef NDEBUG
 extern bool verify_lock(lock_datatype_t datatype, lock_level_t level);
 #endif
-
-/* init_locks - create locks used for slurmctld data structure access
- *	control */
-extern void init_locks ( void );
 
 /* lock_slurmctld - Issue the required lock requests in a well defined order */
 extern void lock_slurmctld (slurmctld_lock_t lock_levels);
