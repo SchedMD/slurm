@@ -371,7 +371,6 @@ static void _purge_bb_files(uint32_t job_id, job_record_t *job_ptr)
 {
 	char *hash_dir = NULL, *job_dir = NULL;
 	char *script_file = NULL, *path_file = NULL, *client_nids_file = NULL;
-	char *exec_host_file = NULL;
 	int hash_inx;
 
 	hash_inx = job_id % 10;
@@ -384,10 +383,6 @@ static void _purge_bb_files(uint32_t job_id, job_record_t *job_ptr)
 	xstrfmtcat(client_nids_file, "%s/client_nids", job_dir);
 	(void) unlink(client_nids_file);
 	xfree(client_nids_file);
-
-	xstrfmtcat(exec_host_file, "%s/exec_host", job_dir);
-	(void) unlink(exec_host_file);
-	xfree(exec_host_file);
 
 	xstrfmtcat(path_file, "%s/pathfile", job_dir);
 	(void) unlink(path_file);
@@ -4068,14 +4063,14 @@ extern int bb_p_job_test_stage_in(job_record_t *job_ptr, bool test_only)
  */
 extern int bb_p_job_begin(job_record_t *job_ptr)
 {
-	char *client_nodes_file_nid = NULL, *exec_host_file = NULL;
+	char *client_nodes_file_nid = NULL;
 	pre_run_args_t *pre_run_args;
 	char **pre_run_argv = NULL, **script_argv = NULL;
 	char *job_dir = NULL, *path_file, *resp_msg;
 	int arg_inx, hash_inx, rc = SLURM_SUCCESS, status = 0;
 	bb_job_t *bb_job;
 	uint32_t timeout;
-	bool do_pre_run, set_exec_host;
+	bool do_pre_run;
 	DEF_TIMERS;
 	pthread_t tid;
 
@@ -4133,23 +4128,12 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 		_set_bb_state(job_ptr, bb_job, BB_STATE_PRE_RUN);
 	else
 		_set_bb_state(job_ptr, bb_job, BB_STATE_RUNNING);
-	if (bb_state.bb_config.flags & BB_FLAG_SET_EXEC_HOST)
-		set_exec_host = true;
-	else
-		set_exec_host = false;
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	if (job_ptr->job_resrcs && job_ptr->job_resrcs->nodes &&
 	    _write_nid_file(client_nodes_file_nid, job_ptr->job_resrcs->nodes,
 			    job_ptr)) {
 		xfree(client_nodes_file_nid);
-	}
-	if (set_exec_host && !job_ptr->batch_host && job_ptr->alloc_node) {
-		xstrfmtcat(exec_host_file, "%s/exec_host", job_dir);
-		if (_write_nid_file(exec_host_file, job_ptr->alloc_node,
-				    job_ptr)) {
-			xfree(exec_host_file);
-		}
 	}
 
 	/* Run "paths" function, get DataWarp environment variables */
@@ -4217,17 +4201,6 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 			pre_run_argv[arg_inx++] =
 				xstrdup(client_nodes_file_nid);
 		}
-		if (exec_host_file) {
-#if defined(HAVE_NATIVE_CRAY)
-			pre_run_argv[arg_inx++] =
-				xstrdup("--jobexecutionnodefilenids");
-#else
-			pre_run_argv[arg_inx++] =
-				xstrdup("--jobexecutionnodefile");
-#endif
-			pre_run_argv[arg_inx++] =
-				xstrdup(exec_host_file);
-		}
 		pre_run_args = xmalloc(sizeof(pre_run_args_t));
 		pre_run_args->args    = pre_run_argv;
 		pre_run_args->job_id  = job_ptr->job_id;
@@ -4243,7 +4216,6 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 
 fini:
 	xfree(client_nodes_file_nid);
-	xfree(exec_host_file);
 	xfree(job_dir);
 	return rc;
 }
