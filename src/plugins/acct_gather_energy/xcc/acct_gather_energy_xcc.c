@@ -594,12 +594,61 @@ static void _sd650_update_node_energy(xcc_raw_single_data_t *xcc_raw)
 		 xcc_energy.ave_watts);
 }
 
+static void _sd650v2_update_node_energy(xcc_raw_single_data_t *xcc_raw)
+{
+	static uint64_t readings = 0;
+	int elapsed = 0;
+
+	if (!xcc_energy.poll_time) {
+		/* First number from the slurmd. */
+		xcc_energy.consumed_energy = 0;
+		xcc_energy.base_consumed_energy = 0;
+		xcc_energy.previous_consumed_energy = 0;
+		xcc_energy.ave_watts = xcc_raw->w;
+		xcc_energy.current_watts = xcc_raw->w;
+		readings++;
+	} else {
+		elapsed = xcc_raw->s - xcc_energy.poll_time;
+		if (elapsed) {
+			xcc_energy.previous_consumed_energy =
+						xcc_energy.consumed_energy;
+
+			/*
+			 * We have no clue about the watt variation in between
+			 * the sampling interval. Best effort: mean value.
+			 */
+			xcc_energy.consumed_energy +=
+			round((double)elapsed * 0.5 *
+			      (double)(xcc_energy.current_watts + xcc_raw->w));
+
+			xcc_energy.base_consumed_energy =
+					xcc_energy.consumed_energy -
+					xcc_energy.previous_consumed_energy;
+
+			xcc_energy.current_watts = xcc_raw->w;
+			/* ave_watts is used as TresUsageOutAve (AvePower) */
+			xcc_energy.ave_watts =
+					((xcc_energy.ave_watts * readings) +
+					 xcc_energy.current_watts) /
+					 (readings + 1);
+			readings++;
+		}
+	}
+
+	xcc_energy.poll_time = xcc_raw->s;
+
+	log_flag(ENERGY, "XCC current_watts: %u consumed energy last interval: %"PRIu64"(current reading %"PRIu64") Joules, elapsed time: %u seconds, ave watts: %u",
+		 xcc_energy.current_watts, xcc_energy.base_consumed_energy,
+		 xcc_energy.consumed_energy, elapsed, xcc_energy.ave_watts);
+}
+
 /*
  * _thread_update_node_energy calls _read_ipmi_values and updates all values
  * for node consumption.
  */
 static int _thread_update_node_energy(void)
 {
+	int rc = SLURM_SUCCESS;
 	xcc_raw_single_data_t *xcc_raw;
 
 	xcc_raw = _read_ipmi_values();
@@ -609,11 +658,21 @@ static int _thread_update_node_energy(void)
 		return SLURM_ERROR;
 	}
 
-	_sd650_update_node_energy(xcc_raw);
+	switch(xcc_raw->version) {
+	case XCC_SD650_VERSION:
+		_sd650_update_node_energy(xcc_raw);
+		break;
+	case XCC_SD650V2_VERSION:
+		_sd650v2_update_node_energy(xcc_raw);
+		break;
+	default:
+		error("Unimplemented energy calculation for returned data");
+		rc = SLURM_ERROR;
+	}
 
 	xfree(xcc_raw);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 static int _ipmi_send_profile(void)
