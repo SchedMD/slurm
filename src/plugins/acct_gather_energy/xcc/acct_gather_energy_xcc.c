@@ -85,6 +85,7 @@ slurmd_conf_t *conf = NULL;
 #define XCC_FLAG_FAKE 0x00000001
 /* Match cmd_rq[] response expectations */
 #define XCC_SD650_RESPONSE_LEN 16
+#define XCC_SD650V2_RESPONSE_LEN 40
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -210,11 +211,19 @@ typedef struct slurm_ipmi_conf {
 	uint32_t workaround_flags;
 } slurm_ipmi_conf_t;
 
+typedef enum xcc_version {
+	XCC_SD650_VERSION = 0,
+	XCC_SD650V2_VERSION
+} xcc_version_t;
+
 /* Struct to store the raw single data command reading */
 typedef struct xcc_raw_single_data {
+	xcc_version_t version;	/* Version. */
 	uint16_t fifo_inx;	/* Not used. */
 	uint32_t j;		/* Joules. */
 	uint16_t mj;		/* Millijoules. */
+	uint32_t w;		/* Watts. */
+	uint16_t mw;		/* Milliwatts. */
 	uint16_t ms;		/* Milliseconds. */
 	uint32_t s;		/* Seconds. */
 } xcc_raw_single_data_t;
@@ -442,9 +451,10 @@ static xcc_raw_single_data_t *_read_ipmi_values(void)
 
 	debug3("ipmi_cmd_raw: %s", ipmi_ctx_errormsg(ipmi_ctx));
 
-	if (rs_len != XCC_SD650_RESPONSE_LEN) {
-		error("Invalid ipmi response length for XCC raw command: %d bytes, expected %d",
-		      rs_len, XCC_SD650_RESPONSE_LEN);
+	if ((rs_len != XCC_SD650_RESPONSE_LEN) &&
+	    (rs_len != XCC_SD650V2_RESPONSE_LEN)) {
+		error("Invalid ipmi response length for XCC raw command: %d bytes, expected %d (SD650) or %d (SD650V2)",
+		      rs_len, XCC_SD650_RESPONSE_LEN, XCC_SD650V2_RESPONSE_LEN);
 		return NULL;
 	}
 
@@ -459,24 +469,46 @@ static xcc_raw_single_data_t *_read_ipmi_values(void)
 			fake_inited = true;
 		}
 
+		xcc_reading->version = XCC_SD650_VERSION;
 		xcc_reading->fifo_inx = 0;
 		// Fake metric j
 		xcc_reading->j = fake_past_read + 550 + rand() % 200;
 		fake_past_read = xcc_reading->j;
 		xcc_reading->mj = 0;
+		xcc_reading->w = 0;
+		xcc_reading->mw = 0;
 		xcc_reading->s = time(NULL); //Fake metric timestamp
 		xcc_reading->ms = 0;
-	} else {
+	} else if (rs_len == XCC_SD650_RESPONSE_LEN) {
 		/*
 		 * Ignore response header first 2 bytes:
 		 * Byte 0: command number, cmd_rq[2]. Set by freeipmi.
 		 * Byte 1: command completion code. Set by XCC IPMI.
 		 */
+		xcc_reading->version = XCC_SD650_VERSION;
+		xcc_reading->w = 0;
+		xcc_reading->mw = 0;
 		memcpy(&xcc_reading->fifo_inx, buf_rs + 2, 2);
 		memcpy(&xcc_reading->j, buf_rs + 4, 4);
 		memcpy(&xcc_reading->mj, buf_rs + 8, 2);
 		memcpy(&xcc_reading->s, buf_rs + 10, 4);
 		memcpy(&xcc_reading->ms, buf_rs + 14, 2);
+	} else {
+		/* Ignore response header first 2 bytes like above. */
+		int count = 0;
+
+		xcc_reading->version = XCC_SD650V2_VERSION;
+		xcc_reading->fifo_inx = 0;
+		xcc_reading->j = 0;
+		xcc_reading->mj = 0;
+		memcpy(&count, buf_rs + 2, 2);
+		if (count) {
+			memcpy(&xcc_reading->w, buf_rs + 4, 4);
+			xcc_reading->w /= count;
+			memcpy(&xcc_reading->mw, buf_rs + 8, 2);
+		}
+		memcpy(&xcc_reading->s, buf_rs + 34, 4);
+		memcpy(&xcc_reading->ms, buf_rs + 38, 2);
 	}
 
 	return xcc_reading;
