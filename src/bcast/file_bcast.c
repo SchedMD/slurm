@@ -313,7 +313,7 @@ static int _bcast_file(struct bcast_parameters *params)
 	memset(&bcast_msg, 0, sizeof(file_bcast_msg_t));
 	bcast_msg.fname		= params->dst_fname;
 	bcast_msg.block_no	= 1;
-	bcast_msg.force		= params->force;
+	bcast_msg.force		= (params->flags & BCAST_FLAG_FORCE);
 	bcast_msg.modes		= f_stat.st_mode;
 	bcast_msg.uid		= f_stat.st_uid;
 	bcast_msg.user_name	= uid_to_string(f_stat.st_uid);
@@ -321,7 +321,7 @@ static int _bcast_file(struct bcast_parameters *params)
 	bcast_msg.file_size	= f_stat.st_size;
 	bcast_msg.cred          = sbcast_cred->sbcast_cred;
 
-	if (params->preserve) {
+	if (params->flags & BCAST_FLAG_PRESERVE) {
 		bcast_msg.atime     = f_stat.st_atime;
 		bcast_msg.mtime     = f_stat.st_mtime;
 	}

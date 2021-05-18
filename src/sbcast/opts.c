@@ -104,10 +104,10 @@ extern void parse_command_line(int argc, char **argv)
 	if ( ( env_val = getenv("SBCAST_FANOUT") ) )
 		params.fanout = atoi(env_val);
 	if (getenv("SBCAST_FORCE"))
-		params.force = true;
+		params.flags |= BCAST_FLAG_FORCE;
 
 	if (getenv("SBCAST_PRESERVE"))
-		params.preserve = true;
+		params.flags |= BCAST_FLAG_PRESERVE;
 	if ( ( env_val = getenv("SBCAST_SIZE") ) )
 		params.block_size = _map_size(env_val);
 	else
@@ -128,7 +128,7 @@ extern void parse_command_line(int argc, char **argv)
 			params.compress = parse_compress_type(optarg);
 			break;
 		case (int)'f':
-			params.force = true;
+			params.flags |= BCAST_FLAG_FORCE;
 			break;
 		case (int)'F':
 			params.fanout = atoi(optarg);
@@ -137,7 +137,7 @@ extern void parse_command_line(int argc, char **argv)
 			params.selected_step = slurm_parse_step_str(optarg);
 			break;
 		case (int)'p':
-			params.preserve = true;
+			params.flags |= BCAST_FLAG_PRESERVE;
 			break;
 		case (int) 's':
 			params.block_size = _map_size(optarg);
@@ -243,12 +243,14 @@ static void _print_options( void )
 	info("-----------------------------");
 	info("block_size = %u", params.block_size);
 	info("compress   = %u", params.compress);
-	info("force      = %s", params.force ? "true" : "false");
+	info("force      = %s",
+	     (params.flags & BCAST_FLAG_FORCE) ? "true" : "false");
 	info("fanout     = %d", params.fanout);
 	info("jobid      = %s",
 	     slurm_get_selected_step_id(job_id_str, sizeof(job_id_str),
 					params.selected_step));
-	info("preserve   = %s", params.preserve ? "true" : "false");
+	info("preserve   = %s",
+	     (params.flags & BCAST_FLAG_PRESERVE) ? "true" : "false");
 	info("timeout    = %d", params.timeout);
 	info("verbose    = %d", params.verbose);
 	info("source     = %s", params.src_fname);

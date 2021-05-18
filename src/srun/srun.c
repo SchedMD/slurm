@@ -762,13 +762,13 @@ static int _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	params->selected_step->array_task_id = NO_VAL;
 	memcpy(&params->selected_step->step_id, &job->step_id,
 	       sizeof(params->selected_step->step_id));
-	params->force = true;
+	params->flags |= BCAST_FLAG_FORCE;
 	if (srun_opt->het_grp_bits)
 		params->selected_step->het_job_offset =
 			bit_ffs(srun_opt->het_grp_bits);
 	else
 		params->selected_step->het_job_offset = NO_VAL;
-	params->preserve = true;
+	params->flags |= BCAST_FLAG_PRESERVE;
 	params->src_fname = srun_opt->argv[0];
 	params->timeout = 0;
 	params->verbose = 0;

@@ -40,13 +40,15 @@
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_defs.h"
 
+#define BCAST_FLAG_FORCE	0x0001
+#define BCAST_FLAG_PRESERVE	0x0002
+
 struct bcast_parameters {
 	uint32_t block_size;
 	uint16_t compress;
 	char *dst_fname;
 	int fanout;
-	bool force;
-	bool preserve;
+	uint16_t flags;
 	slurm_selected_step_t *selected_step;
 	char *src_fname;
 	uint32_t step_id;
