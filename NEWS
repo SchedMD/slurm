@@ -87,6 +87,9 @@ documents those changes that are of interest to users and administrators.
     has it planned to be used in the future instead of showing as 'IDLE'.
  -- slurmd - Delay background node registration on every failure up to 128s on
     startup.
+ -- slurmctld - Always notify slurmd that node registration was accepted to
+    avoid slurmd needless attempting to re-register if there is configuration
+    issue.
 
 * Changes in Slurm 20.11.8
 ==========================
