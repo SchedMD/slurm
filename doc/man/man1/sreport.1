@@ -1,4 +1,4 @@
-.TH sreport "1" "Slurm Commands" "February 2021" "Slurm Commands"
+.TH sreport "1" "Slurm Commands" "May 2021" "Slurm Commands"
 
 .SH "NAME"
 sreport \- Generate reports from the slurm accounting data.
@@ -226,7 +226,7 @@ on separate lines.
 This report will display total usage divided amongst Allocated, Down,
 Planned Down, Idle, and Reserved time for selected clusters.
 .RS
-.IP Allocated 13
+.IP Allocated 14
 Time that nodes were in use with active jobs or an active reservation.
 This does not include reservations created with the MAINT or IGNORE_JOBS
 flags.
@@ -235,7 +235,7 @@ Time that nodes were marked as Down or time that slurmctld was not
 responding (assuming TrackSlurmctldDown is set in slurmdbd.conf).
 .IP Idle
 Time where nodes had no active jobs or reservations.
-.IP Overcommited
+.IP OverCommitted
 Time of eligible jobs waiting in the queue over the Reserved time. Unlike
 Reserved, this has no limit. It is typically useful to determine whether your
 system is overloaded and by how much.
@@ -478,7 +478,7 @@ Cluster, Login, Proper, TresCount, Used, Wckey
 .in 10
 Utilization:
 .in 14
-Allocated, Cluster, Down, Idle, Overcommitted, PlannedDown, Reported, Reserved,
+Allocated, Cluster, Down, Idle, OverCommitted, PlannedDown, Reported, Reserved,
 TresCount, TresName
 
 .TP
