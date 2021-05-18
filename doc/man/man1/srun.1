@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "April 2021" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "May 2021" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -753,7 +753,7 @@ applies to job and step allocations.
 \fB\-E\fR, \fB\-\-preserve-env\fR
 Pass the current values of environment variables SLURM_JOB_NUM_NODES and
 SLURM_NTASKS through to the \fIexecutable\fR, rather than computing them
-from commandline parameters. This option applies to job allocations.
+from command line parameters. This option applies to job allocations.
 
 .TP
 \fB\-\-exact\fR
@@ -3336,7 +3336,7 @@ This simple example demonstrates the execution of different jobs on different
 nodes in the same srun.  You can do this for any number of nodes or any
 number of jobs.  The executables are placed on the nodes sited by the
 SLURM_NODEID env var.  Starting at 0 and going to the number specified on
-the srun commandline.
+the srun command line.
 
 .nf
 $ cat test.sh
