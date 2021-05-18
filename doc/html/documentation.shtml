@@ -98,6 +98,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <ul>
 <li><a href="elastic_computing.html">Cloud Scheduling Guide</a></li>
 <li><a href="https://github.com/schedmd/slurm-gcp">Slurm on Google Cloud Platform</a></li>
+<li><a href="https://www.schedmd.com/downloads/extras/Slurm_ParallelCluster_AWS.pdf">Deploying Slurm with ParallelCluster on Your AWS Cluster</a></li>
 </ul>
 </li>
 </ul>
