@@ -482,23 +482,11 @@ static xcc_raw_single_data_t *_read_ipmi_values(void)
 	return xcc_reading;
 }
 
-/*
- * _thread_update_node_energy calls _read_ipmi_values and updates all values
- * for node consumption
- */
-static int _thread_update_node_energy(void)
+static void _sd650_update_node_energy(xcc_raw_single_data_t *xcc_raw)
 {
-	xcc_raw_single_data_t *xcc_raw;
 	static uint16_t overflows = 0; /* Number of overflows of the counter */
 	int elapsed = 0;
 	static uint64_t first_consumed_energy = 0;
-
-	xcc_raw = _read_ipmi_values();
-
-	if (!xcc_raw) {
-		error("%s could not read XCC ipmi values", __func__);
-		return SLURM_ERROR;
-	}
 
 	if (!xcc_energy.poll_time) {
 		/*
@@ -555,8 +543,6 @@ static int _thread_update_node_energy(void)
 
 	xcc_energy.poll_time = xcc_raw->s;
 
-	xfree(xcc_raw);
-
 	if (elapsed && xcc_energy.base_consumed_energy) {
 		static uint64_t readings = 0;
 		xcc_energy.current_watts =
@@ -574,6 +560,27 @@ static int _thread_update_node_energy(void)
 		 xcc_energy.current_watts, xcc_energy.base_consumed_energy,
 		 xcc_energy.consumed_energy, elapsed, first_consumed_energy,
 		 xcc_energy.ave_watts);
+}
+
+/*
+ * _thread_update_node_energy calls _read_ipmi_values and updates all values
+ * for node consumption.
+ */
+static int _thread_update_node_energy(void)
+{
+	xcc_raw_single_data_t *xcc_raw;
+
+	xcc_raw = _read_ipmi_values();
+
+	if (!xcc_raw) {
+		error("%s could not read XCC ipmi values", __func__);
+		return SLURM_ERROR;
+	}
+
+	_sd650_update_node_energy(xcc_raw);
+
+	xfree(xcc_raw);
+
 	return SLURM_SUCCESS;
 }
 
