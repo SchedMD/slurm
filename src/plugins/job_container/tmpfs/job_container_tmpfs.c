@@ -58,7 +58,7 @@
 
 #include "read_jcconf.h"
 
-static int _create_ns(uint32_t job_id, bool remount);
+static int _create_ns(uint32_t job_id, uid_t uid, bool remount);
 static int _delete_ns(uint32_t job_id);
 
 #if defined (__APPLE__)
@@ -179,7 +179,7 @@ static int _restore_ns(const char *path, const struct stat *st_buf, int type)
 		} else {
 			job_id = slurm_atoul(&(xstrrchr(path, '/')[1]));
 			/* At this point we can remount the folder. */
-			if (_create_ns(job_id, true)) {
+			if (_create_ns(job_id, 0, true)) {
 				rc = SLURM_ERROR;
 			/* And then, properly delete it for dead jobs. */
 			} else if (!list_find_first(
@@ -428,7 +428,7 @@ static int _rm_data(const char *path, const struct stat *st_buf,
 	return rc;
 }
 
-static int _create_ns(uint32_t job_id, bool remount)
+static int _create_ns(uint32_t job_id, uid_t uid, bool remount)
 {
 	char job_mount[PATH_MAX];
 	char ns_holder[PATH_MAX];
@@ -570,6 +570,14 @@ static int _create_ns(uint32_t job_id, bool remount)
 			rc = -1;
 			goto child_exit;
 		}
+
+		rc = chown(src_bind, uid, -1);
+		if (rc) {
+			error("%s: chown failed for %s: %s",
+			      __func__, src_bind, strerror(errno));
+			rc = -1;
+			goto child_exit;
+		}
 		/*
 		 * This umount is to remove the basepath mount from being
 		 * visible inside the namespace. So if a user looks up the
@@ -667,7 +675,7 @@ exit2:
 
 extern int container_p_create(uint32_t job_id, uid_t uid)
 {
-	return _create_ns(job_id, false);
+	return _create_ns(job_id, uid, false);
 }
 
 /* Add a process to a job container, create the proctrack container to add */
@@ -736,13 +744,6 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 
 	if (_create_paths(job_id, job_mount, ns_holder, src_bind, active)
 	    != SLURM_SUCCESS) {
-		return SLURM_ERROR;
-	}
-
-	rc = chown(src_bind, uid, -1);
-	if (rc) {
-		error("%s: chown failed for %s: %s",
-		      __func__, src_bind, strerror(errno));
 		return SLURM_ERROR;
 	}
 
