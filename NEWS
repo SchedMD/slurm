@@ -88,6 +88,7 @@ documents those changes that are of interest to users and administrators.
  -- Correct the error given when auth plugin fails to pack a credential.
  -- Fix unused-variable compiler warning on FreeBSD in fd_resolve_path().
  -- acct_gather_filesystem/lustre - only emit collection error once per step.
+ -- srun - leave SLURM_DIST_UNKNOWN as default for --interactive.
 
 * Changes in Slurm 20.11.7
 ==========================
