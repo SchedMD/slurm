@@ -46,6 +46,8 @@ HIGHLIGHTS
     to the SLURM_CONF environment variable).
  -- SPANK - call slurm_spank_init if defined without slurm_spank_slurmd_exit in
     slurmd context.
+ -- Add new 'PLANNED' state to a node to represent when the backfill scheduler
+    has it planned to be used in the future instead of showing as 'IDLE'.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

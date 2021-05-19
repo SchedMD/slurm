@@ -521,6 +521,8 @@ _node_state_list (void)
 	xstrcat(all_states, node_state_string(NODE_STATE_MAINT));
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_REBOOT));
+	xstrcat(all_states, ",");
+	xstrcat(all_states, node_state_string(NODE_STATE_PLANNED));
 
 	for (i = 0; i < strlen (all_states); i++)
 		all_states[i] = tolower (all_states[i]);
@@ -557,6 +559,9 @@ _node_state_id (char *str)
 			return (i);
 	}
 
+	if ((xstrncasecmp("PLANNED", str, len) == 0) ||
+	    (xstrncasecmp("PLND", str, len) == 0))
+		return NODE_STATE_PLANNED;
 	if (xstrncasecmp("DRAIN", str, len) == 0)
 		return NODE_STATE_DRAIN;
 	if (xstrncasecmp("DRAINED", str, len) == 0)

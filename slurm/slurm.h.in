@@ -882,6 +882,8 @@ enum node_states {
 #define NODE_STATE_POWERING_DOWN 0x00040000 /* node is powering down */
 #define NODE_STATE_DYNAMIC       0x00080000 /* node is dynamically assigned */
 #define NODE_STATE_REBOOT_ISSUED 0x00100000 /* node reboot passed to agent */
+#define NODE_STATE_PLANNED    0x00200000 /* node scheduled for a job in the
+					  * future */
 
 /* used to define the size of the credential.signature size
  * used to define the key size of the io_stream_header_t

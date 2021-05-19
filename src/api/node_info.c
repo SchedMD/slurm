@@ -209,6 +209,10 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 		my_state &= (~NODE_STATE_POWERING_DOWN);
 		power_str = "+POWERING_DOWN";
 	}
+	if (my_state & NODE_STATE_PLANNED) {
+		my_state &= (~NODE_STATE_PLANNED);
+		power_str = "+PLANNED";
+	}
 	slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
 				  SELECT_NODEDATA_SUBCNT,
 				  NODE_STATE_ALLOCATED,

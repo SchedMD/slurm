@@ -3498,6 +3498,7 @@ extern char *node_state_string(uint32_t inx)
 	bool res_flag        = (inx & NODE_STATE_RES);
 	bool resume_flag     = (inx & NODE_RESUME);
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
+	bool planned_flag    = (inx & NODE_STATE_PLANNED);
 	bool powered_down_flag = (inx & NODE_STATE_POWER_SAVE);
 	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
 	bool powering_down_flag = (inx & NODE_STATE_POWERING_DOWN);
@@ -3642,6 +3643,8 @@ extern char *node_state_string(uint32_t inx)
 			return "PERFCTRS";
 		if (res_flag)
 			return "RESERVED";
+		if (planned_flag)
+			return "PLANNED";
 		return "IDLE";
 	}
 	if (base == NODE_STATE_MIXED) {
@@ -3657,6 +3660,8 @@ extern char *node_state_string(uint32_t inx)
 			return "MIXED~";
 		if (no_resp_flag)
 			return "MIXED*";
+		if (planned_flag)
+			return "MIXED-";
 		return "MIXED";
 	}
 	if (base == NODE_STATE_FUTURE) {
@@ -3695,6 +3700,7 @@ extern char *node_state_string_compact(uint32_t inx)
 	bool res_flag        = (inx & NODE_STATE_RES);
 	bool resume_flag     = (inx & NODE_RESUME);
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
+	bool planned_flag    = (inx & NODE_STATE_PLANNED);
 	bool powered_down_flag = (inx & NODE_STATE_POWER_SAVE);
 	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
 	bool powering_down_flag = (inx & NODE_STATE_POWERING_DOWN);
@@ -3840,6 +3846,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "NPC";
 		if (res_flag)
 			return "RESV";
+		if (planned_flag)
+			return "PLND";
 		return "IDLE";
 	}
 	if (inx == NODE_STATE_MIXED) {
@@ -3855,6 +3863,8 @@ extern char *node_state_string_compact(uint32_t inx)
 			return "MIX~";
 		if (no_resp_flag)
 			return "MIX*";
+		if (planned_flag)
+			return "MIX-";
 		return "MIX";
 	}
 	if (inx == NODE_STATE_FUTURE) {

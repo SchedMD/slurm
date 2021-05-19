@@ -71,7 +71,8 @@ If the job under consideration can start immediately without impacting the
 expected start time of any higher priority job, then it does so.
 Otherwise the resources required by the job will be reserved during the job's
 expected execution time.
-The backfill plugin will set the expected start time for pending jobs. A job's
+The backfill plugin will set the expected start time for pending jobs setting
+these reserved nodes into a <B>'Planned'</B> state. A job's
 expected start time can be seen using the <b>squeue --start</b> command.
 </P>
 

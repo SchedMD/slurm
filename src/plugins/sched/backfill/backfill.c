@@ -209,6 +209,7 @@ static int yield_interval = YIELD_INTERVAL;
 static int yield_sleep   = YIELD_SLEEP;
 static List het_job_list = NULL;
 static xhash_t *user_usage_map = NULL; /* look up user usage when no assoc */
+static bitstr_t *planned_bitmap = NULL;
 
 /*********************** local functions *********************/
 static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
@@ -1009,6 +1010,7 @@ extern void *backfill_agent(void *args)
 #endif
 	_load_config();
 	last_backfill_time = time(NULL);
+	planned_bitmap = bit_alloc(node_record_count);
 	het_job_list = list_create(_het_job_map_del);
 	while (!stop_backfill) {
 		if (short_sleep)
@@ -1061,6 +1063,7 @@ extern void *backfill_agent(void *args)
 	}
 	FREE_NULL_LIST(het_job_list);
 	xhash_free(user_usage_map); /* May have been init'ed if used */
+	FREE_NULL_BITMAP(planned_bitmap);
 
 	return NULL;
 }
@@ -1549,6 +1552,55 @@ static bool _job_exceeds_max_bf_param(job_record_t *job_ptr,
 	return false;
 }
 
+/*
+ * Handle the planned list.
+ * set - If true we are setting bits, else we clear them.
+ */
+static void _handle_planned(bool set)
+{
+	int n_first, n_last;
+	node_record_t *node_ptr;
+	bool node_update = false;
+
+	if (!planned_bitmap)
+		return;
+
+	n_first = bit_ffs(planned_bitmap);
+	if (n_first == -1)
+		return;
+
+	n_last = bit_fls(planned_bitmap);
+
+	for (int n = n_first; n <= n_last; n++) {
+		if (!bit_test(planned_bitmap, n))
+			continue;
+		node_ptr = node_record_table_ptr + n;
+		if (set) {
+			/*
+			 * If the node is allocated ignore this flag. This only
+			 * really matters for IDLE and MIXED.
+			 */
+			if (!IS_NODE_ALLOCATED(node_ptr)) {
+				node_ptr->node_state |= NODE_STATE_PLANNED;
+				node_update = true;
+			} else
+				bit_clear(planned_bitmap, n);
+		} else {
+			node_ptr->node_state &= ~NODE_STATE_PLANNED;
+			node_update = true;
+			bit_clear(planned_bitmap, n);
+		}
+
+		log_flag(BACKFILL, "%s: %s state is %s",
+			 set ? "cleared" : "set",
+			 node_ptr->name,
+			 node_state_string(node_ptr->node_state));
+	}
+
+	if (node_update)
+		last_node_update = time(NULL);
+}
+
 static int _attempt_backfill(void)
 {
 	DEF_TIMERS;
@@ -1610,6 +1662,8 @@ static int _attempt_backfill(void)
 		debug("beginning");
 	sched_start = orig_sched_start = now = time(NULL);
 	gettimeofday(&start_tv, NULL);
+
+	_handle_planned(false);
 
 	job_queue = build_job_queue(true, true);
 	job_test_count = list_count(job_queue);
@@ -2698,6 +2752,11 @@ skip_start:
 			/* Can't start earlier in different partition. */
 			xfree(job_ptr->sched_nodes);
 			job_ptr->sched_nodes = bitmap2node_name(avail_bitmap);
+			/*
+			 * These nodes are planned.  We will set the state
+			 * afterwards.
+			 */
+			bit_or(planned_bitmap, avail_bitmap);
 		}
 		bit_not(avail_bitmap);
 		if ((!bf_one_resv_per_job || !orig_start_time) &&
@@ -2736,6 +2795,8 @@ skip_start:
 				goto next_task;
 		}
 	}
+
+	_handle_planned(true);
 
 	if (job_ptr) {
 		/* Restore preemption state if needed. */

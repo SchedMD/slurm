@@ -83,6 +83,8 @@ documents those changes that are of interest to users and administrators.
     slurmd context.
  -- job_container/tmpfs - Remove need for .active file to allow salloc without
     an interactive step to work.
+ -- Add new 'PLANNED' state to a node to represent when the backfill scheduler
+    has it planned to be used in the future instead of showing as 'IDLE'.
 
 * Changes in Slurm 20.11.8
 ==========================
