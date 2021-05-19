@@ -665,7 +665,7 @@ exit2:
 	return rc;
 }
 
-extern int container_p_create(uint32_t job_id)
+extern int container_p_create(uint32_t job_id, uid_t uid)
 {
 	return _create_ns(job_id, false);
 }

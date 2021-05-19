@@ -1471,7 +1471,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 #else
 		jobid = req->step_id.job_id;
 #endif
-		if (container_g_create(jobid))
+		if (container_g_create(jobid, req->uid))
 			error("container_g_create(%u): %m", req->step_id.job_id);
 
 		memset(&job_env, 0, sizeof(job_env));
@@ -1631,7 +1631,7 @@ static int _open_as_other(char *path_name, int flags, int mode,
 
 	*fd = -1;
 
-	if ((rc = container_g_create(jobid))) {
+	if ((rc = container_g_create(jobid, uid))) {
 		error("%s: container_g_create(%u): %m", __func__, jobid);
 		return SLURM_ERROR;
 	}
@@ -2265,7 +2265,7 @@ static void _rpc_prolog(slurm_msg_t *msg)
 		jobid = req->job_id;
 #endif
 
-		if ((rc = container_g_create(jobid)))
+		if ((rc = container_g_create(jobid, req->uid)))
 			error("container_g_create(%u): %m", req->job_id);
 		else
 			rc = _run_prolog(&job_env, req->cred, false);
@@ -2476,7 +2476,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		jobid = req->job_id;
 #endif
 
-		if ((rc = container_g_create(jobid)))
+		if ((rc = container_g_create(jobid, req->uid)))
 			error("container_g_create(%u): %m", req->job_id);
 		else
 			rc = _run_prolog(&job_env, req->cred, true);

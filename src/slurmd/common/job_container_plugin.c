@@ -48,7 +48,7 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 typedef struct job_container_ops {
-	int	(*container_p_create)	(uint32_t job_id);
+	int	(*container_p_create)	(uint32_t job_id, uid_t uid);
 	int	(*container_p_add_cont)	(uint32_t job_id, uint64_t cont_id);
 	int	(*container_p_join)	(uint32_t job_id, uid_t uid);
 	int	(*container_p_join_external)(uint32_t job_id);
@@ -174,7 +174,7 @@ done:
 }
 
 /* Create a container for the specified job */
-extern int container_g_create(uint32_t job_id)
+extern int container_g_create(uint32_t job_id, uid_t uid)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -183,7 +183,7 @@ extern int container_g_create(uint32_t job_id)
 
 	for (i = 0; ((i < g_container_context_num) && (rc == SLURM_SUCCESS));
 	     i++) {
-		rc = (*(ops[i].container_p_create))(job_id);
+		rc = (*(ops[i].container_p_create))(job_id, uid);
 	}
 
 	return rc;

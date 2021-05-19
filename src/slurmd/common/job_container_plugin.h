@@ -60,7 +60,7 @@ extern int job_container_fini(void);
  */
 
 /* Create a container for the specified job */
-extern int container_g_create(uint32_t job_id);
+extern int container_g_create(uint32_t job_id, uid_t uid);
 
 /* Add the calling process's pid to the specified job's container.
  * A proctrack container will be generated containing the process
