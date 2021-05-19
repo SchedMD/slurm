@@ -79,8 +79,7 @@ static List running_job_ids = NULL;
 static int _create_paths(uint32_t job_id,
 			 char *job_mount,
 			 char *ns_holder,
-			 char *src_bind,
-			 char *active)
+			 char *src_bind)
 {
 	jc_conf = get_slurm_jc_conf();
 
@@ -112,15 +111,6 @@ static int _create_paths(uint32_t job_id,
 		if (snprintf(src_bind, PATH_MAX, "%s/.%u", job_mount, job_id)
 		    >= PATH_MAX) {
 			error("%s: Unable to build job %u src_bind path: %m",
-			__func__, job_id);
-			return SLURM_ERROR;
-		}
-	}
-
-	if (active) {
-		if (snprintf(active, PATH_MAX, "%s/.active", job_mount)
-		    >= PATH_MAX) {
-			error("%s: Unable to build job %u active path: %m",
 			__func__, job_id);
 			return SLURM_ERROR;
 		}
@@ -433,7 +423,6 @@ static int _create_ns(uint32_t job_id, uid_t uid, bool remount)
 	char job_mount[PATH_MAX];
 	char ns_holder[PATH_MAX];
 	char src_bind[PATH_MAX];
-	char active[PATH_MAX];
 	char *result = NULL;
 	int fd;
 	int rc = 0;
@@ -445,7 +434,7 @@ static int _create_ns(uint32_t job_id, uid_t uid, bool remount)
 	return 0;
 #endif
 
-	if (_create_paths(job_id, job_mount, ns_holder, src_bind, active)
+	if (_create_paths(job_id, job_mount, ns_holder, src_bind)
 	    != SLURM_SUCCESS) {
 		return -1;
 	}
@@ -456,21 +445,8 @@ static int _create_ns(uint32_t job_id, uid_t uid, bool remount)
 		      __func__, job_mount, strerror(errno));
 		return -1;
 	} else if (!remount && rc && errno == EEXIST) {
-		/* stat to see if .active exists */
-		struct stat st;
-		rc = stat(active, &st);
-		if (rc) {
-			/*
-			 * If .active does not exist, then the directory for
-			 * the job exists but namespace is not active. This
-			 * should not happen normally. Throw error and exit
-			 */
-			error("%s: Dir %s exists but %s was not found, exiting",
-			      __func__, job_mount, active);
-			goto exit2;
-		}
 		/*
-		 * If it exists, this is coming from sbcast likely,
+		 * This is coming from sbcast likely,
 		 * exit as success
 		 */
 		rc = 0;
@@ -578,6 +554,7 @@ static int _create_ns(uint32_t job_id, uid_t uid, bool remount)
 			rc = -1;
 			goto child_exit;
 		}
+
 		/*
 		 * This umount is to remove the basepath mount from being
 		 * visible inside the namespace. So if a user looks up the
@@ -683,25 +660,9 @@ extern int container_p_join_external(uint32_t job_id)
 {
 	char job_mount[PATH_MAX];
 	char ns_holder[PATH_MAX];
-	char active[PATH_MAX];
-	int rc = 0;
-	struct stat st;
 
-	if (_create_paths(job_id, job_mount, ns_holder, NULL, active)
+	if (_create_paths(job_id, job_mount, ns_holder, NULL)
 	    != SLURM_SUCCESS) {
-		return -1;
-	}
-
-	/* assert that namespace is active */
-	rc = stat(active, &st);
-	if (rc) {
-		/*
-		 * If .active does not exist, then dont pass
-		 * the fd of the namespace. It means perhaps
-		 * namespace may not have been fully set up when
-		 * the request for the fd came in.
-		 */
-		debug("%s not found, namespace cannot be joined", active);
 		return -1;
 	}
 
@@ -726,8 +687,6 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 {
 	char job_mount[PATH_MAX];
 	char ns_holder[PATH_MAX];
-	char src_bind[PATH_MAX];
-	char active[PATH_MAX];
 	int fd;
 	int rc = 0;
 
@@ -742,7 +701,7 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 	if (job_id == 0)
 		return SLURM_SUCCESS;
 
-	if (_create_paths(job_id, job_mount, ns_holder, src_bind, active)
+	if (_create_paths(job_id, job_mount, ns_holder, NULL)
 	    != SLURM_SUCCESS) {
 		return SLURM_ERROR;
 	}
@@ -763,15 +722,6 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 		close(fd);
 		return SLURM_ERROR;
 	} else {
-		/* touch .active to imply namespace is active */
-		close(fd);
-		fd = open(active, O_CREAT|O_RDWR, S_IRWXU);
-		if (fd == -1) {
-			error("%s: open failed %s: %s",
-			      __func__, active, strerror(errno));
-			return SLURM_ERROR;
-		}
-		close(fd);
 		debug3("job entered namespace");
 	}
 
@@ -788,7 +738,7 @@ static int _delete_ns(uint32_t job_id)
 	return SLURM_SUCCESS;
 #endif
 
-	if (_create_paths(job_id, job_mount, ns_holder, NULL, NULL)
+	if (_create_paths(job_id, job_mount, ns_holder, NULL)
 	    != SLURM_SUCCESS) {
 		return SLURM_ERROR;
 	}

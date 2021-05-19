@@ -81,6 +81,8 @@ documents those changes that are of interest to users and administrators.
     to the SLURM_CONF environment variable).
  -- SPANK - call slurm_spank_init if defined without slurm_spank_slurmd_exit in
     slurmd context.
+ -- job_container/tmpfs - Remove need for .active file to allow salloc without
+    an interactive step to work.
 
 * Changes in Slurm 20.11.8
 ==========================
