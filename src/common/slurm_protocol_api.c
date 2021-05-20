@@ -2940,7 +2940,7 @@ static bool _is_port_ok(int s, uint16_t port, bool local)
 		struct sockaddr_in6 *sin = (struct sockaddr_in6 *) &addr;
 		sin->sin6_addr = in6addr_loopback;
 	} else {
-		error("%s: protocal family %u unsupported",
+		error("%s: protocol family %u unsupported",
 		      __func__, addr.ss_family);
 		return false;
 	}
