@@ -362,7 +362,19 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
  */
 extern bool cgroup_p_has_pid(pid_t pid)
 {
-	return true;
+	bool rc;
+	xcgroup_t cg;
+
+	rc = xcgroup_ns_find_by_pid(&g_cg_ns[CG_TRACK], &cg, pid);
+	if (rc != SLURM_SUCCESS)
+		return false;
+
+	rc = true;
+	if (xstrcmp(cg.path, g_step_cg[CG_TRACK].path))
+		rc = false;
+
+	xcgroup_destroy(&cg);
+	return rc;
 }
 
 extern cgroup_limits_t *cgroup_p_root_constrain_get(cgroup_ctl_type_t sub)

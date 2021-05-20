@@ -47,11 +47,9 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/log.h"
-#include "src/common/xcgroup_read_config.h"
 #include "src/common/xstring.h"
 #include "src/common/cgroup.h"
 #include "src/slurmd/common/xcpuinfo.h"
-#include "src/slurmd/common/xcgroup.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
@@ -83,31 +81,6 @@
 const char plugin_name[]      = "Process tracking via linux cgroup freezer subsystem";
 const char plugin_type[]      = "proctrack/cgroup";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
-
-static xcgroup_ns_t freezer_ns;
-
-static xcgroup_t step_freezer_cg;
-
-bool
-_slurm_cgroup_has_pid(pid_t pid)
-{
-	bool fstatus;
-	xcgroup_t cg;
-
-	fstatus = xcgroup_ns_find_by_pid(&freezer_ns, &cg, pid);
-	if (fstatus != SLURM_SUCCESS)
-		return false;
-
-	if (xstrcmp(cg.path, step_freezer_cg.path)) {
-		fstatus = false;
-	}
-	else {
-		fstatus = true;
-	}
-
-	xcgroup_destroy(&cg);
-	return fstatus;
-}
 
 int
 _slurm_cgroup_is_pid_a_slurm_task(uint64_t id, pid_t pid)
@@ -259,7 +232,7 @@ extern uint64_t proctrack_p_find(pid_t pid)
 
 extern bool proctrack_p_has_pid(uint64_t cont_id, pid_t pid)
 {
-	return _slurm_cgroup_has_pid(pid);
+	return cgroup_g_has_pid(pid);
 }
 
 extern int proctrack_p_wait(uint64_t cont_id)
@@ -288,8 +261,7 @@ extern int proctrack_p_wait(uint64_t cont_id)
 	return SLURM_SUCCESS;
 }
 
-extern int proctrack_p_get_pids(uint64_t cont_id,
-				       pid_t **pids, int *npids)
+extern int proctrack_p_get_pids(uint64_t cont_id, pid_t **pids, int *npids)
 {
 	return cgroup_g_step_get_pids(pids, npids);
 }
