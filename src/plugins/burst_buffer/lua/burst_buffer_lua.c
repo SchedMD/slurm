@@ -381,7 +381,8 @@ fini:
  */
 static int _run_lua_script(const char *lua_func, uint32_t timeout,
 			   push_lua_args_cb_t push_args_cb,
-			   void *callback_args, char **ret_str)
+			   void *callback_args, char **ret_str,
+			   bool *exit_early)
 {
 	struct timespec ts;
 	struct timeval now, start_time;
@@ -426,6 +427,8 @@ static int _run_lua_script(const char *lua_func, uint32_t timeout,
 			log_flag(BURST_BUF, "Sending SIGUSR1 to %s on slurmctld shutdown.",
 				 lua_func);
 			err_rc = SLURM_ERROR;
+			if (exit_early)
+				*exit_early = true;
 			break;
 		}
 		gettimeofday(&now, NULL);
@@ -806,7 +809,8 @@ static bb_pools_t *_bb_get_pools(int *num_pools, bb_state_t *state_ptr,
 	*num_pools = 0;
 
 	/* Call lua function. */
-	rc = _run_lua_script(lua_func_name, timeout, NULL, NULL, &resp_msg);
+	rc = _run_lua_script(lua_func_name, timeout, NULL, NULL, &resp_msg,
+			     NULL);
 	if (rc) {
 		trigger_burst_buffer();
 		return NULL;
@@ -942,6 +946,7 @@ static void *_start_stage_out(void *x)
 	int rc;
 	uint32_t timeout;
 	char *resp_msg = NULL;
+	bool exit_early = false;
 	stage_out_args_t *stage_out_args = (stage_out_args_t *) x;
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -954,12 +959,19 @@ static void *_start_stage_out(void *x)
 
 	START_TIMER;
 	rc = _run_lua_script("slurm_bb_post_run", timeout, _push_post_run_args,
-			     stage_out_args, &resp_msg);
+			     stage_out_args, &resp_msg, &exit_early);
 	END_TIMER;
 	if ((DELTA_TIMER > 500000) || /* 0.5 secs */
 	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
 		info("post_run for JobId=%u ran for %s",
 		     stage_out_args->job_id, TIME_STR);
+	}
+
+	if (exit_early) {
+		/* Killed by slurmctld, exit now. */
+		info("post_run for JobId=%u terminated by slurmctld",
+		     stage_out_args->job_id);
+		goto fini;
 	}
 
 	lock_slurmctld(job_write_lock);
@@ -997,12 +1009,19 @@ static void *_start_stage_out(void *x)
 		/* Same args as post_run. */
 		rc = _run_lua_script("slurm_bb_data_out", timeout,
 				     _push_post_run_args, stage_out_args,
-				     &resp_msg);
+				     &resp_msg, &exit_early);
 		END_TIMER;
 		if ((DELTA_TIMER > 1000000) || /* 10 secs */
 		    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
 			info("data_out for JobId=%u ran for %s",
 			     stage_out_args->job_id, TIME_STR);
+		}
+
+		if (exit_early) {
+			/* Killed by slurmctld, exit now. */
+			info("data_out for JobId=%u terminated by slurmctld",
+			     stage_out_args->job_id);
+			goto fini;
 		}
 
 		if (rc != SLURM_SUCCESS) {
@@ -1078,6 +1097,7 @@ static void *_start_stage_out(void *x)
 	}
 	unlock_slurmctld(job_write_lock);
 
+fini:
 	xfree(resp_msg);
 	xfree(stage_out_args->job_script);
 	xfree(stage_out_args);
@@ -1827,7 +1847,7 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 
 	/* Run "job_process" function, validates user script */
 	rc = _run_lua_script(lua_func_name, timeout, _push_job_process_args,
-			     script_file, &resp_msg);
+			     script_file, &resp_msg, NULL);
 	if (rc) {
 		if (err_msg && resp_msg) {
 			xfree(*err_msg);
@@ -2048,6 +2068,7 @@ static void *_start_teardown(void *x)
 	int rc;
 	uint32_t timeout;
 	char *resp_msg = NULL;
+	bool exit_early = false;
 	teardown_args_t *teardown_args = (teardown_args_t *)x;
 	job_record_t *job_ptr;
 	bb_alloc_t *bb_alloc = NULL;
@@ -2061,10 +2082,18 @@ static void *_start_teardown(void *x)
 	/* Run lua "teardown" function */
 	START_TIMER;
 	rc = _run_lua_script("slurm_bb_job_teardown", timeout,
-			     _push_teardown_args, teardown_args, &resp_msg);
+			     _push_teardown_args, teardown_args, &resp_msg,
+			     &exit_early);
 	END_TIMER;
 	info("Teardown for JobId=%u ran for %s",
 	     teardown_args->job_id, TIME_STR);
+
+	if (exit_early) {
+		/* Killed by slurmctld, exit now. */
+		info("teardown for JobId=%u terminated by slurmctld",
+		     teardown_args->job_id);
+		goto fini;
+	}
 
 	if (rc != SLURM_SUCCESS) {
 		/*
@@ -2119,6 +2148,7 @@ static void *_start_teardown(void *x)
 		unlock_slurmctld(job_write_lock);
 	}
 
+fini:
 	xfree(resp_msg);
 	xfree(teardown_args->job_script);
 	xfree(teardown_args);
@@ -2193,7 +2223,7 @@ static void *_start_stage_in(void *x)
 {
 	int rc;
 	uint32_t timeout;
-	bool get_real_size = false;
+	bool get_real_size = false, exit_early = false;
 	char *resp_msg = NULL, *op = NULL;
 	stage_in_args_t *stage_in_args = (stage_in_args_t *) x;
 	job_record_t *job_ptr;
@@ -2207,10 +2237,17 @@ static void *_start_stage_in(void *x)
 	op = "setup";
 	START_TIMER;
 	rc = _run_lua_script("slurm_bb_setup", timeout, _push_setup_args,
-			     stage_in_args, &resp_msg);
+			     stage_in_args, &resp_msg, &exit_early);
 	END_TIMER;
 	info("slurm_bb_setup for job JobId=%u ran for %s",
 	     stage_in_args->job_id, TIME_STR);
+
+	if (exit_early) {
+		/* Killed by slurmctld, exit now. */
+		info("setup for JobId=%u terminated by slurmctld",
+		     stage_in_args->job_id);
+		goto fini;
+	}
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	/*
@@ -2255,10 +2292,18 @@ static void *_start_stage_in(void *x)
 		START_TIMER;
 		rc =_run_lua_script("slurm_bb_data_in", timeout,
 				    _push_data_in_args, stage_in_args,
-				    &resp_msg);
+				    &resp_msg, &exit_early);
 		END_TIMER;
 		info("slurm_bb_data_in for JobId=%u ran for %s",
 		     stage_in_args->job_id, TIME_STR);
+
+		if (exit_early) {
+			/* Killed by slurmctld, exit now. */
+			info("data_in for JobId=%u terminated by slurmctld",
+			     stage_in_args->job_id);
+			goto fini;
+		}
+
 		if (rc != SLURM_SUCCESS) {
 			trigger_burst_buffer();
 			error("slurm_bb_data_in for JobId=%u failed.",
@@ -2346,6 +2391,8 @@ static void *_start_stage_in(void *x)
 	}
 	unlock_slurmctld(job_write_lock);
 
+fini:
+	xfree(resp_msg);
 	xfree(stage_in_args->job_script);
 	xfree(stage_in_args->nodes_file);
 	xfree(stage_in_args->pool);
@@ -2664,6 +2711,7 @@ static void *_start_pre_run(void *x)
 	int rc;
 	uint32_t timeout;
 	bool nodes_ready = false, run_kill_job = false, hold_job = false;
+	bool exit_early = false;
 	char *resp_msg = NULL;
 	bb_job_t *bb_job = NULL;
 	job_record_t *job_ptr;
@@ -2695,8 +2743,15 @@ static void *_start_pre_run(void *x)
 
 	START_TIMER;
 	rc = _run_lua_script("slurm_bb_pre_run", timeout, _push_pre_run_args,
-			     pre_run_args, &resp_msg);
+			     pre_run_args, &resp_msg, &exit_early);
 	END_TIMER;
+
+	if (exit_early) {
+		/* Killed by slurmctld, exit now. */
+		info("pre_run for JobId=%u terminated by slurmctld",
+		     pre_run_args->job_id);
+		goto fini;
+	}
 
 	lock_slurmctld(job_write_lock);
 	slurm_mutex_lock(&bb_state.bb_mutex);
@@ -2705,6 +2760,7 @@ static void *_start_pre_run(void *x)
 	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)) {
 		info("pre_run for %pJ ran for %s", job_ptr, TIME_STR);
 	}
+
 	if (job_ptr)
 		bb_job = _get_bb_job(job_ptr);
 	if (rc != SLURM_SUCCESS) {
@@ -2743,6 +2799,7 @@ static void *_start_pre_run(void *x)
 	}
 	unlock_slurmctld(job_write_lock);
 
+fini:
 	xfree(resp_msg);
 	xfree(pre_run_args->job_script);
 	xfree(pre_run_args->node_file);
@@ -2826,7 +2883,7 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	paths_args.path_file = path_file;
 	START_TIMER;
 	rc = _run_lua_script("slurm_bb_paths", timeout, _push_paths_args,
-			     &paths_args, &resp_msg);
+			     &paths_args, &resp_msg, NULL);
 	END_TIMER;
 	if ((DELTA_TIMER > 200000) || /* 0.2 secs */
 	    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
