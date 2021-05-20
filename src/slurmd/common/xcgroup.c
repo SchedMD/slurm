@@ -81,7 +81,7 @@ int _file_write_content(char* file_path, char* content, size_t csize);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_ns_create(xcgroup_ns_t *cgns, char *mnt_args, char *subsys)
+int xcgroup_ns_create(xcgroup_ns_t *cgns, char *mnt_args, const char *subsys)
 {
 	slurm_cgroup_conf_t *cg_conf;
 
