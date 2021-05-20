@@ -101,6 +101,18 @@ static int oom_pipe[2] = { -1, -1 };
 static pthread_t oom_thread;
 static pthread_mutex_t oom_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/* Accounting artifacts */
+List g_task_acct_list[CG_CTL_CNT];
+static uint32_t g_max_task_id = 0;
+/*
+ * There are potentially multiple tasks on a node, so we want to
+ * track every task cgroup and which taskid it belongs to.
+ */
+typedef struct task_cg_info {
+	xcgroup_t task_cg;
+	uint32_t taskid;
+} task_cg_info_t;
+
 static int _cgroup_init(cgroup_ctl_type_t sub)
 {
 	if (sub >= CG_CTL_CNT)
@@ -1053,23 +1065,286 @@ fail_oom_results:
 }
 #endif
 
+/***************************************
+ ***** CGROUP ACCOUNTING FUNCTIONS *****
+ **************************************/
+static int _find_task_cg_info(void *x, void *key)
+{
+	task_cg_info_t *task_cg = (task_cg_info_t*)x;
+	uint32_t taskid = *(uint32_t*)key;
+
+	if (task_cg->taskid == taskid)
+		return 1;
+
+	return 0;
+}
+
+static void _free_task_cg_info(void *object)
+{
+	task_cg_info_t *task_cg = (task_cg_info_t *)object;
+
+	if (task_cg) {
+		xcgroup_destroy(&task_cg->task_cg);
+		xfree(task_cg);
+	}
+}
+
+static int _handle_task_cgroup(cgroup_ctl_type_t sub, pid_t pid,
+			       stepd_step_rec_t *job, uint32_t taskid)
+{
+	int rc = SLURM_SUCCESS;
+	bool need_to_add = false;
+	task_cg_info_t *task_cg_info;
+	uid_t uid = job->uid;
+	gid_t gid = job->gid;
+	char *task_cgroup_path = NULL;
+
+	/* build task cgroup relative path */
+	xstrfmtcat(task_cgroup_path, "%s/task_%u", g_step_cgpath[sub], taskid);
+	if (!task_cgroup_path) {
+		error("unable to build task_%u cg relative path for %s: %m",
+		      taskid, g_step_cgpath[sub]);
+		return SLURM_ERROR;
+	}
+
+	if (!(task_cg_info = list_find_first(g_task_acct_list[sub],
+					     _find_task_cg_info,
+					     &taskid))) {
+		task_cg_info = xmalloc(sizeof(*task_cg_info));
+		task_cg_info->taskid = taskid;
+		need_to_add = true;
+	}
+
+	/*
+	 * Create task cgroup in the cg ns
+	 */
+	if (xcgroup_create(&g_cg_ns[sub], &task_cg_info->task_cg,
+			   task_cgroup_path, uid, gid) != SLURM_SUCCESS) {
+		error("unable to create task %u cgroup", taskid);
+		xfree(task_cg_info);
+		xfree(task_cgroup_path);
+		return SLURM_ERROR;
+	}
+
+	if (xcgroup_instantiate(&task_cg_info->task_cg) != SLURM_SUCCESS) {
+		_free_task_cg_info(task_cg_info);
+		error("unable to instantiate task %u cgroup", taskid);
+		xfree(task_cgroup_path);
+		return SLURM_ERROR;
+	}
+
+	/* Attach the pid to the corresponding step_x/task_y cgroup */
+	rc = xcgroup_move_process(&task_cg_info->task_cg, pid);
+	if (rc != SLURM_SUCCESS)
+		error("Unable to move pid %d to %s cg", getpid(),
+		      task_cgroup_path);
+
+	/* Add the cgroup to the list now that it is initialized. */
+	if (need_to_add)
+		list_append(g_task_acct_list[sub], task_cg_info);
+
+	xfree(task_cgroup_path);
+	return rc;
+}
+
 extern int cgroup_p_accounting_init()
 {
-	return SLURM_SUCCESS;
+	int i, rc = SLURM_SUCCESS;
+
+	if (g_step_cgpath[CG_MEMORY][0] == '\0')
+		rc = cgroup_p_initialize(CG_MEMORY);
+
+	if (rc != SLURM_SUCCESS) {
+		error("Cannot initialize cgroup memory accounting");
+		return rc;
+	}
+
+	if (g_step_cgpath[CG_CPUACCT][0] == '\0')
+		rc = cgroup_p_initialize(CG_CPUACCT);
+
+	if (rc != SLURM_SUCCESS) {
+		error("Cannot initialize cgroup cpuacct accounting");
+		return rc;
+	}
+
+	/* Create the list of tasks which will be accounted for*/
+	for (i = 0; i < CG_CTL_CNT; i++) {
+		FREE_NULL_LIST(g_task_acct_list[i]);
+		g_task_acct_list[i] = list_create(_free_task_cg_info);
+	}
+
+	return rc;
 }
 
 extern int cgroup_p_accounting_fini()
 {
-	return SLURM_SUCCESS;
+	int i, rc, tid;
+
+	/* Move the stepd outside of task_x */
+	rc = xcgroup_move_process(&g_step_cg[CG_CPUACCT], getpid());
+	if (rc != SLURM_SUCCESS) {
+		error("Unable to move pid %d to %s", getpid(),
+		      g_step_cg[CG_CPUACCT].path);
+		return rc;
+	}
+
+	rc = xcgroup_move_process(&g_step_cg[CG_MEMORY], getpid());
+	if (rc != SLURM_SUCCESS) {
+		error("Unable to move pid %d to %s", getpid(),
+		      g_step_cg[CG_MEMORY].path);
+		return rc;
+	}
+
+	/* Clean up starting from the leaves way up, the
+	 * reverse order in which the cgroup were created.
+	 */
+	for (tid = 0; tid <= g_max_task_id; tid++) {
+		xcgroup_t cgroup;
+		char *buf = NULL;
+
+		/*
+		 * rmdir all tasks this running slurmstepd was responsible for
+		 * but first ensure the stepd is not in the task_0 cgroup
+		 * anymore.
+		 */
+		xstrfmtcat(buf, "%s/task_%d", g_step_cg[CG_CPUACCT].path, tid);
+		cgroup.path = buf;
+
+		if (tid == 0)
+			xcgroup_wait_pid_moved(&cgroup, "cpuacct task_0");
+
+		if (xcgroup_delete(&cgroup) != SLURM_SUCCESS)
+			debug2("failed to delete %s %m", buf);
+		xfree(buf);
+
+		xstrfmtcat(buf, "%s/task_%d", g_step_cg[CG_MEMORY].path, tid);
+		cgroup.path = buf;
+
+		if (tid == 0)
+			xcgroup_wait_pid_moved(&cgroup, "memory task_0");
+
+		if (xcgroup_delete(&cgroup) != SLURM_SUCCESS)
+			debug2("failed to delete %s %m", buf);
+		xfree(buf);
+	}
+
+	/* Remove job/uid/step directories */
+	rc = cgroup_p_step_destroy(CG_MEMORY);
+	rc += cgroup_p_step_destroy(CG_CPUACCT);
+
+	/* Empty the lists of accounted tasks */
+	for (i = 0; i < CG_CTL_CNT; i++) {
+		FREE_NULL_LIST(g_task_acct_list[i]);
+		g_task_acct_list[i] = list_create(_free_task_cg_info);
+	}
+
+	return rc;
 }
 
 extern int cgroup_p_task_addto_accounting(pid_t pid, stepd_step_rec_t *job,
 					  uint32_t task_id)
 {
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+
+	if (task_id > g_max_task_id)
+		g_max_task_id = task_id;
+
+	debug("%ps taskid %u max_task_id %u", &job->step_id, task_id,
+	      g_max_task_id);
+
+	if (xcgroup_create_hierarchy(__func__,
+				     job,
+				     &g_cg_ns[CG_CPUACCT],
+				     &g_job_cg[CG_CPUACCT],
+				     &g_step_cg[CG_CPUACCT],
+				     &g_user_cg[CG_CPUACCT],
+				     g_job_cgpath[CG_CPUACCT],
+				     g_step_cgpath[CG_CPUACCT],
+				     g_user_cgpath[CG_CPUACCT], NULL, NULL)
+	    != SLURM_SUCCESS) {
+		return SLURM_ERROR;
+	}
+
+	if (xcgroup_create_hierarchy(__func__,
+				     job,
+				     &g_cg_ns[CG_MEMORY],
+				     &g_job_cg[CG_MEMORY],
+				     &g_step_cg[CG_MEMORY],
+				     &g_user_cg[CG_MEMORY],
+				     g_job_cgpath[CG_MEMORY],
+				     g_step_cgpath[CG_MEMORY],
+				     g_user_cgpath[CG_MEMORY], NULL, NULL)
+	    != SLURM_SUCCESS) {
+		cgroup_p_step_destroy(CG_CPUACCT);
+		return SLURM_ERROR;
+	}
+
+	_handle_task_cgroup(CG_CPUACCT, pid, job, task_id);
+	_handle_task_cgroup(CG_MEMORY, pid, job, task_id);
+
+	return rc;
 }
 
 extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
 {
-	return NULL;
+	char *cpu_time = NULL, *memory_stat = NULL, *ptr;
+	size_t cpu_time_sz = 0, memory_stat_sz = 0;
+	cgroup_acct_t *stats = NULL;
+	xcgroup_t *task_cpuacct_cg = NULL;
+	xcgroup_t *task_memory_cg = NULL;
+
+	/* Find which task cgroup to use */
+	task_memory_cg = list_find_first(g_task_acct_list[CG_MEMORY],
+					 _find_task_cg_info,
+					 &taskid);
+	task_cpuacct_cg = list_find_first(g_task_acct_list[CG_CPUACCT],
+					  _find_task_cg_info,
+					  &taskid);
+
+	/*
+	 * We should always find the task cgroup; if we don't for some reason,
+	 * just print an error and return.
+	 */
+	if (!task_cpuacct_cg) {
+		error("Could not find task_cpuacct_cg, this should never happen");
+		return NULL;
+	}
+
+	if (!task_memory_cg) {
+		error("Could not find task_memory_cg, this should never happen");
+		return NULL;
+	}
+
+	xcgroup_get_param(task_cpuacct_cg, "cpuacct.stat", &cpu_time,
+			  &cpu_time_sz);
+	xcgroup_get_param(task_memory_cg, "memory.stat", &memory_stat,
+			  &memory_stat_sz);
+
+	/*
+	 * Initialize values, a NO_VAL64 will indicate to the caller that
+	 * something happened here.
+	 */
+	stats = xmalloc(sizeof(*stats));
+	stats->usec = NO_VAL64;
+	stats->ssec = NO_VAL64;
+	stats->total_rss = NO_VAL64;
+	stats->total_pgmajfault = NO_VAL64;
+
+	if (cpu_time != NULL)
+		sscanf(cpu_time, "%*s %lu %*s %lu", &stats->usec, &stats->ssec);
+
+	if (memory_stat != NULL) {
+		if ((ptr = strstr(memory_stat, "total_rss"))) {
+			sscanf(ptr, "total_rss %lu", &stats->total_rss);
+		}
+		if ((ptr = strstr(memory_stat, "total_pgmajfault"))) {
+			sscanf(ptr, "total_pgmajfault %lu",
+			       &stats->total_pgmajfault);
+		}
+	}
+
+	xfree(cpu_time);
+	xfree(memory_stat);
+
+	return stats;
 }
