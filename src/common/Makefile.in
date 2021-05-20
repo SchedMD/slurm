@@ -154,17 +154,18 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
-	cbuf.lo cli_filter.lo cpu_frequency.lo cron.lo daemonize.lo \
-	data.lo eio.lo env.lo fd.lo fetch_config.lo forward.lo gpu.lo \
-	global_defaults.lo gres.lo group_cache.lo half_duplex.lo \
-	hostlist.lo io_hdr.lo job_options.lo job_resources.lo list.lo \
-	log.lo net.lo node_conf.lo node_features.lo node_select.lo \
-	optz.lo pack.lo parse_config.lo parse_time.lo parse_value.lo \
-	plugin.lo plugrack.lo plugstack.lo power.lo prep.lo \
-	print_fields.lo proc_args.lo read_config.lo reverse_tree.lo \
-	run_command.lo run_in_daemon.lo site_factor.lo \
-	slurm_accounting_storage.lo slurm_acct_gather.lo \
-	slurm_acct_gather_energy.lo slurm_acct_gather_filesystem.lo \
+	cbuf.lo cgroup.lo cli_filter.lo cpu_frequency.lo cron.lo \
+	daemonize.lo data.lo eio.lo env.lo fd.lo fetch_config.lo \
+	forward.lo gpu.lo global_defaults.lo gres.lo group_cache.lo \
+	half_duplex.lo hostlist.lo io_hdr.lo job_options.lo \
+	job_resources.lo list.lo log.lo net.lo node_conf.lo \
+	node_features.lo node_select.lo optz.lo pack.lo \
+	parse_config.lo parse_time.lo parse_value.lo plugin.lo \
+	plugrack.lo plugstack.lo power.lo prep.lo print_fields.lo \
+	proc_args.lo read_config.lo reverse_tree.lo run_command.lo \
+	run_in_daemon.lo site_factor.lo slurm_accounting_storage.lo \
+	slurm_acct_gather.lo slurm_acct_gather_energy.lo \
+	slurm_acct_gather_filesystem.lo \
 	slurm_acct_gather_interconnect.lo slurm_acct_gather_profile.lo \
 	slurm_auth.lo slurm_cred.lo slurm_errno.lo \
 	slurm_ext_sensors.lo slurm_jobacct_gather.lo slurm_jobcomp.lo \
@@ -210,17 +211,17 @@ depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/bitstring.Plo ./$(DEPDIR)/callerid.Plo \
-	./$(DEPDIR)/cbuf.Plo ./$(DEPDIR)/cli_filter.Plo \
-	./$(DEPDIR)/cpu_frequency.Plo ./$(DEPDIR)/cron.Plo \
-	./$(DEPDIR)/daemonize.Plo ./$(DEPDIR)/data.Plo \
-	./$(DEPDIR)/eio.Plo ./$(DEPDIR)/env.Plo ./$(DEPDIR)/fd.Plo \
-	./$(DEPDIR)/fetch_config.Plo ./$(DEPDIR)/forward.Plo \
-	./$(DEPDIR)/global_defaults.Plo ./$(DEPDIR)/gpu.Plo \
-	./$(DEPDIR)/gres.Plo ./$(DEPDIR)/group_cache.Plo \
-	./$(DEPDIR)/half_duplex.Plo ./$(DEPDIR)/hostlist.Plo \
-	./$(DEPDIR)/io_hdr.Plo ./$(DEPDIR)/job_options.Plo \
-	./$(DEPDIR)/job_resources.Plo ./$(DEPDIR)/list.Plo \
-	./$(DEPDIR)/log.Plo ./$(DEPDIR)/net.Plo \
+	./$(DEPDIR)/cbuf.Plo ./$(DEPDIR)/cgroup.Plo \
+	./$(DEPDIR)/cli_filter.Plo ./$(DEPDIR)/cpu_frequency.Plo \
+	./$(DEPDIR)/cron.Plo ./$(DEPDIR)/daemonize.Plo \
+	./$(DEPDIR)/data.Plo ./$(DEPDIR)/eio.Plo ./$(DEPDIR)/env.Plo \
+	./$(DEPDIR)/fd.Plo ./$(DEPDIR)/fetch_config.Plo \
+	./$(DEPDIR)/forward.Plo ./$(DEPDIR)/global_defaults.Plo \
+	./$(DEPDIR)/gpu.Plo ./$(DEPDIR)/gres.Plo \
+	./$(DEPDIR)/group_cache.Plo ./$(DEPDIR)/half_duplex.Plo \
+	./$(DEPDIR)/hostlist.Plo ./$(DEPDIR)/io_hdr.Plo \
+	./$(DEPDIR)/job_options.Plo ./$(DEPDIR)/job_resources.Plo \
+	./$(DEPDIR)/list.Plo ./$(DEPDIR)/log.Plo ./$(DEPDIR)/net.Plo \
 	./$(DEPDIR)/node_conf.Plo ./$(DEPDIR)/node_features.Plo \
 	./$(DEPDIR)/node_select.Plo ./$(DEPDIR)/optz.Plo \
 	./$(DEPDIR)/pack.Plo ./$(DEPDIR)/parse_config.Plo \
@@ -579,6 +580,8 @@ libcommon_la_SOURCES = \
 	callerid.h				\
 	cbuf.c					\
 	cbuf.h					\
+	cgroup.c				\
+	cgroup.h				\
 	cli_filter.c				\
 	cli_filter.h				\
 	cpu_frequency.c				\
@@ -850,6 +853,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bitstring.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/callerid.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbuf.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cgroup.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cli_filter.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpu_frequency.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cron.Plo@am__quote@ # am--include-marker
@@ -1076,6 +1080,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/bitstring.Plo
 	-rm -f ./$(DEPDIR)/callerid.Plo
 	-rm -f ./$(DEPDIR)/cbuf.Plo
+	-rm -f ./$(DEPDIR)/cgroup.Plo
 	-rm -f ./$(DEPDIR)/cli_filter.Plo
 	-rm -f ./$(DEPDIR)/cpu_frequency.Plo
 	-rm -f ./$(DEPDIR)/cron.Plo
@@ -1222,6 +1227,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/bitstring.Plo
 	-rm -f ./$(DEPDIR)/callerid.Plo
 	-rm -f ./$(DEPDIR)/cbuf.Plo
+	-rm -f ./$(DEPDIR)/cgroup.Plo
 	-rm -f ./$(DEPDIR)/cli_filter.Plo
 	-rm -f ./$(DEPDIR)/cpu_frequency.Plo
 	-rm -f ./$(DEPDIR)/cron.Plo

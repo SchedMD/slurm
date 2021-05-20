@@ -16,6 +16,8 @@ libcommon_la_SOURCES =				\
 	callerid.h				\
 	cbuf.c					\
 	cbuf.h					\
+	cgroup.c				\
+	cgroup.h				\
 	cli_filter.c				\
 	cli_filter.h				\
 	cpu_frequency.c				\
