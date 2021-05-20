@@ -35,6 +35,8 @@ Source:		%{slurm_source_dir}.tar.bz2
 # --without x11		%_without_x11 1		disable internal X11 support
 # --with ucx		%_with_ucx path		require ucx support
 # --with pmix		%_with_pmix path	require pmix support
+# --with nvml		%_with_nvml path	require nvml support
+#
 
 #  Options that are off by default (enable with --with <opt>)
 %bcond_with cray
@@ -53,6 +55,7 @@ Source:		%{slurm_source_dir}.tar.bz2
 %bcond_with lua
 %bcond_with numa
 %bcond_with pmix
+%bcond_with nvml
 
 # Use debug by default on all systems
 %bcond_without debug
@@ -347,6 +350,7 @@ notifies slurm about failed nodes.
 	%{!?_with_slurmrestd:--disable-slurmrestd} \
 	%{?_without_x11:--disable-x11} \
 	%{?_with_ucx} \
+	%{?_with_nvml} \
 	%{?_with_cflags}
 
 make %{?_smp_mflags}
