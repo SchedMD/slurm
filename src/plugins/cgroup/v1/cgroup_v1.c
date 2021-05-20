@@ -395,9 +395,23 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 	/* Custom actions for every cgroup subsystem */
 	switch (sub) {
 	case CG_TRACK:
+		break;
 	case CG_CPUS:
+		break;
 	case CG_MEMORY:
+		/*
+		 * Despite rmdir() offlines memcg, the memcg may still stay
+		 * there due to charged file caches. Some out-of-use page caches
+		 * may keep charged until memory pressure happens. Avoid this
+		 * writting to 'force_empty'. Note that when
+		 * memory.kmem.limit_in_bytes is set the charges due to kernel
+		 * pages will still be seen.
+		 */
+		xcgroup_set_param(&g_step_cg[CG_MEMORY], "memory.force_empty",
+				  "1");
+		break;
 	case CG_DEVICES:
+		break;
 	case CG_CPUACCT:
 		break;
 	default:
