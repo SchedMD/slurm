@@ -176,8 +176,7 @@ static int _cpuset_create(stepd_step_rec_t *job)
 				      &g_user_cg[CG_CPUS],
 				      g_job_cgpath[CG_CPUS],
 				      g_step_cgpath[CG_CPUS],
-				      g_user_cgpath[CG_CPUS],
-				      NULL, NULL);
+				      g_user_cgpath[CG_CPUS]);
 	return rc;
 }
 
@@ -311,8 +310,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 					     &g_user_cg[sub],
 					     g_job_cgpath[sub],
 					     g_step_cgpath[sub],
-					     g_user_cgpath[sub],
-					     NULL, NULL)
+					     g_user_cgpath[sub])
 		    != SLURM_SUCCESS) {
 			return SLURM_ERROR;
 		}
@@ -343,8 +341,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 					     &g_user_cg[sub],
 					     g_job_cgpath[sub],
 					     g_step_cgpath[sub],
-					     g_user_cgpath[sub],
-					     NULL, NULL)
+					     g_user_cgpath[sub])
 		    != SLURM_SUCCESS) {
 			return SLURM_ERROR;
 		}
@@ -381,8 +378,8 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 					     &g_user_cg[sub],
 					     g_job_cgpath[sub],
 					     g_step_cgpath[sub],
-					     g_user_cgpath[sub],
-					     NULL, NULL) != SLURM_SUCCESS) {
+					     g_user_cgpath[sub])
+		    != SLURM_SUCCESS) {
 			return SLURM_ERROR;
 		}
 		break;
@@ -1260,7 +1257,7 @@ extern int cgroup_p_task_addto_accounting(pid_t pid, stepd_step_rec_t *job,
 				     &g_user_cg[CG_CPUACCT],
 				     g_job_cgpath[CG_CPUACCT],
 				     g_step_cgpath[CG_CPUACCT],
-				     g_user_cgpath[CG_CPUACCT], NULL, NULL)
+				     g_user_cgpath[CG_CPUACCT])
 	    != SLURM_SUCCESS) {
 		return SLURM_ERROR;
 	}
@@ -1273,7 +1270,7 @@ extern int cgroup_p_task_addto_accounting(pid_t pid, stepd_step_rec_t *job,
 				     &g_user_cg[CG_MEMORY],
 				     g_job_cgpath[CG_MEMORY],
 				     g_step_cgpath[CG_MEMORY],
-				     g_user_cgpath[CG_MEMORY], NULL, NULL)
+				     g_user_cgpath[CG_MEMORY])
 	    != SLURM_SUCCESS) {
 		cgroup_p_step_destroy(CG_CPUACCT);
 		return SLURM_ERROR;

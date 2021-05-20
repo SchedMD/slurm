@@ -332,11 +332,7 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
 				    xcgroup_t *user_cg,
 				    char job_cgroup_path[],
 				    char step_cgroup_path[],
-				    char user_cgroup_path[],
-				    int (*callback)(const char *calling_func,
-						    xcgroup_ns_t *ns,
-						    void *callback_arg),
-				    void *callback_arg);
+				    char user_cgroup_path[]);
 
 /*
  * Wait for a pid to move out of a cgroup.

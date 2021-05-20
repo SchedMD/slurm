@@ -932,11 +932,7 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
 				    xcgroup_t *user_cg,
 				    char job_cgroup_path[],
 				    char step_cgroup_path[],
-				    char user_cgroup_path[],
-				    int (*callback)(const char *calling_func,
-						    xcgroup_ns_t *ns,
-						    void *callback_arg),
-				    void *callback_arg)
+				    char user_cgroup_path[])
 {
 	xcgroup_t root_cg;
 	int rc = SLURM_SUCCESS;
@@ -1057,18 +1053,6 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
 		      calling_func, &job->step_id);
 		rc = SLURM_ERROR;
 		goto endit;
-	}
-
-	if (callback &&
-	    (rc = (callback)(calling_func, ns, callback_arg)) !=
-	    SLURM_SUCCESS) {
-		/*
-		 * do not delete user/job cgroup as they can exist for
-		 * other steps, but release cgroup structures
-		 */
-		xcgroup_destroy(user_cg);
-		xcgroup_destroy(job_cg);
-		xcgroup_destroy(step_cg);
 	}
 
 endit:
