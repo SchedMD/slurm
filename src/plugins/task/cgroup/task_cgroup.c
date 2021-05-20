@@ -42,15 +42,10 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
-#include "src/common/xcgroup_read_config.h"
 #include "src/common/xstring.h"
-
+#include "src/common/cgroup.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
-
 #include "src/slurmd/slurmd/slurmd.h"
-
-#include "src/slurmd/common/xcgroup.h"
-
 #include "task_cgroup.h"
 #include "task_cgroup_cpuset.h"
 #include "task_cgroup_memory.h"
@@ -102,8 +97,8 @@ extern int init (void)
 		goto end;
 
 	/* read cgroup configuration */
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = xcgroup_get_slurm_cgroup_conf();
+	cg_conf = cgroup_g_get_conf();
+
 	/* enable subsystems based on conf */
 	if (cg_conf->constrain_cores)
 		use_cpuset = true;
@@ -115,7 +110,7 @@ extern int init (void)
 	if (cg_conf->task_affinity)
 		do_task_affinity = true;
 
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
+	cgroup_g_free_conf(cg_conf);
 
 	/* enable subsystems based on conf */
 	if (use_cpuset) {
