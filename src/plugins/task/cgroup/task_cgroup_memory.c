@@ -208,63 +208,9 @@ extern int task_cgroup_memory_init(void)
 	return SLURM_SUCCESS;
 }
 
-extern int task_cgroup_memory_fini(slurm_cgroup_conf_t *slurm_cgroup_conf)
+extern int task_cgroup_memory_fini()
 {
-	xcgroup_t memory_cg;
-
-	if (user_cgroup_path[0] == '\0' ||
-	     job_cgroup_path[0] == '\0' ||
-	     jobstep_cgroup_path[0] == '\0') {
-		xcgroup_ns_destroy(&memory_ns);
-		return SLURM_SUCCESS;
-	}
-	/*
-	 * Lock the root memcg and try to remove the different memcgs.
-	 * The reason why we are locking here is that if a concurrent
-	 * step is in the process of being executed, he could try to
-	 * create the step memcg just after we remove the job memcg,
-	 * resulting in a failure.
-	 * First, delete step memcg as all the tasks have now exited.
-	 * Then, try to remove the job memcg.
-	 * If it fails, it is due to the fact that it is still in use by an
-	 * other running step.
-	 * After that, try to remove the user memcg. If it fails, it is due
-	 * to jobs that are still running for the same user on the node or
-	 * because of tasks attached directly to the user cg by an other
-	 * component (PAM).
-	 * For now, do not try to detect if only externally attached tasks
-	 * are present to see if they can be be moved to an orhpan memcg.
-	 * That could be done in the future, if it is necessary.
-	 */
-	if (xcgroup_create(&memory_ns,&memory_cg,"",0,0) == SLURM_SUCCESS) {
-		if (xcgroup_lock(&memory_cg) == SLURM_SUCCESS) {
-			if (xcgroup_delete(&step_memory_cg) != SLURM_SUCCESS)
-				debug2("unable to remove step "
-				       "memcg : %m");
-			if (xcgroup_delete(&job_memory_cg) != SLURM_SUCCESS)
-				debug2("not removing "
-				       "job memcg : %m");
-			if (xcgroup_delete(&user_memory_cg) != SLURM_SUCCESS)
-				debug2("not removing "
-				       "user memcg : %m");
-			xcgroup_unlock(&memory_cg);
-		} else
-			error("unable to lock root memcg : %m");
-		xcgroup_destroy(&memory_cg);
-	} else
-		error("unable to create root memcg : %m");
-
-	xcgroup_destroy(&user_memory_cg);
-	xcgroup_destroy(&job_memory_cg);
-	xcgroup_destroy(&step_memory_cg);
-
-	user_cgroup_path[0]='\0';
-	job_cgroup_path[0]='\0';
-	jobstep_cgroup_path[0]='\0';
-
-	xcgroup_ns_destroy(&memory_ns);
-
-	return SLURM_SUCCESS;
+	return cgroup_g_step_destroy(CG_MEMORY);
 }
 
 /*
