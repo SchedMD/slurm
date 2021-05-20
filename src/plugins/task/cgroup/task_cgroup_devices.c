@@ -334,5 +334,5 @@ static int _read_allowed_devices_file(char **allowed_devices)
 
 extern int task_cgroup_devices_add_pid(pid_t pid)
 {
-	return xcgroup_add_pids(&step_devices_cg, &pid, 1);
+	return cgroup_g_step_addto(CG_DEVICES, &pid, 1);
 }
