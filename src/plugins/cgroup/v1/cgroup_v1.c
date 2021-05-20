@@ -251,6 +251,8 @@ extern int cgroup_p_initialize(cgroup_ctl_type_t sub)
 	case CG_CPUS:
 		break;
 	case CG_MEMORY:
+		xcgroup_set_param(&g_root_cg[sub], "memory.use_hierarchy", "1");
+		break;
 	case CG_DEVICES:
 	case CG_CPUACCT:
 		break;
@@ -485,7 +487,30 @@ fail:
 extern int cgroup_p_root_constrain_set(cgroup_ctl_type_t sub,
 				       cgroup_limits_t *limits)
 {
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+
+	if (!limits)
+		return SLURM_ERROR;
+
+	switch (sub) {
+	case CG_TRACK:
+		break;
+	case CG_CPUS:
+		break;
+	case CG_MEMORY:
+		rc = xcgroup_set_uint64_param(&g_root_cg[CG_MEMORY],
+					      "memory.swappiness",
+					      limits->swappiness);
+		break;
+	case CG_DEVICES:
+		break;
+	default:
+		error("cgroup subsystem %"PRIu16" not supported", sub);
+		rc = SLURM_ERROR;
+		break;
+	}
+
+	return rc;
 }
 
 extern int cgroup_p_user_constrain_set(cgroup_ctl_type_t sub,
