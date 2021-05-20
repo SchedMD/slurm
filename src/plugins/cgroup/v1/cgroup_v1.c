@@ -306,7 +306,22 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 	case CG_CPUS:
 		return _cpuset_create(job);
 	case CG_MEMORY:
+		break;
 	case CG_DEVICES:
+		/* create a new cgroup for that container */
+		if (xcgroup_create_hierarchy(__func__,
+					     job,
+					     &g_cg_ns[sub],
+					     &g_job_cg[sub],
+					     &g_step_cg[sub],
+					     &g_user_cg[sub],
+					     g_job_cgpath[sub],
+					     g_step_cgpath[sub],
+					     g_user_cgpath[sub],
+					     NULL, NULL) != SLURM_SUCCESS) {
+			return SLURM_ERROR;
+		}
+		break;
 	case CG_CPUACCT:
 		error("This operation is not supported for %s", g_cg_name[sub]);
 		return SLURM_ERROR;
@@ -525,6 +540,14 @@ extern int cgroup_p_job_constrain_set(cgroup_ctl_type_t sub,
 	case CG_MEMORY:
 		break;
 	case CG_DEVICES:
+		if (limits->allow_device)
+			rc = xcgroup_set_param(&g_job_cg[CG_DEVICES],
+					      "devices.allow",
+					      limits->device_major);
+		else
+			rc = xcgroup_set_param(&g_job_cg[CG_DEVICES],
+					      "devices.deny",
+					      limits->device_major);
 		break;
 	default:
 		error("cgroup subsystem %"PRIu16" not supported", sub);
@@ -571,6 +594,14 @@ extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
 	case CG_MEMORY:
 		break;
 	case CG_DEVICES:
+		if (limits->allow_device)
+			rc = xcgroup_set_param(&g_step_cg[CG_DEVICES],
+					      "devices.allow",
+					      limits->device_major);
+		else
+			rc = xcgroup_set_param(&g_step_cg[CG_DEVICES],
+					      "devices.deny",
+					      limits->device_major);
 		break;
 	default:
 		error("cgroup subsystem %"PRIu16" not supported", sub);
