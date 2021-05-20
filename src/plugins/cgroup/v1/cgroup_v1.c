@@ -107,6 +107,53 @@ static int _cgroup_init(cgroup_ctl_type_t sub)
 	return SLURM_SUCCESS;
 }
 
+static int _cpuset_create(stepd_step_rec_t *job)
+{
+	int rc;
+	char *slurm_cgpath;
+	xcgroup_t slurm_cg;
+	char *value;
+	size_t cpus_size;
+
+	/* create slurm root cg in this cg namespace */
+	slurm_cgpath = xcgroup_create_slurm_cg(&g_cg_ns[CG_CPUS]);
+	if (slurm_cgpath == NULL)
+		return SLURM_ERROR;
+
+	/* check that this cgroup has cpus allowed or initialize them */
+	if (xcgroup_load(&g_cg_ns[CG_CPUS], &slurm_cg, slurm_cgpath) !=
+	    SLURM_SUCCESS){
+		error("unable to load slurm cpuset xcgroup");
+		xfree(slurm_cgpath);
+		return SLURM_ERROR;
+	}
+
+	rc = xcgroup_get_param(&slurm_cg, "cpuset.cpus", &value, &cpus_size);
+
+	if ((rc != SLURM_SUCCESS) || (cpus_size == 1)) {
+		/* initialize the cpusets as it was non-existent */
+		if (xcgroup_cpuset_init(&slurm_cg) != SLURM_SUCCESS) {
+			xfree(slurm_cgpath);
+			xcgroup_destroy(&slurm_cg);
+			return SLURM_ERROR;
+		}
+	}
+	xfree(slurm_cgpath);
+	xcgroup_destroy(&slurm_cg);
+
+	rc = xcgroup_create_hierarchy(__func__,
+				      job,
+				      &g_cg_ns[CG_CPUS],
+				      &g_job_cg[CG_CPUS],
+				      &g_step_cg[CG_CPUS],
+				      &g_user_cg[CG_CPUS],
+				      g_job_cgpath[CG_CPUS],
+				      g_step_cgpath[CG_CPUS],
+				      g_user_cgpath[CG_CPUS],
+				      NULL, NULL);
+	return rc;
+}
+
 static int _remove_cg_subsystem(xcgroup_t root_cg, xcgroup_t step_cg,
 				xcgroup_t job_cg, xcgroup_t user_cg,
 				xcgroup_t move_to_cg, const char *log_str,
@@ -201,11 +248,12 @@ extern int cgroup_p_initialize(cgroup_ctl_type_t sub)
 
 	switch (sub) {
 	case CG_TRACK:
-		break;
 	case CG_CPUS:
+		break;
 	case CG_MEMORY:
 	case CG_DEVICES:
 	case CG_CPUACCT:
+		break;
 	default:
 		error("cgroup subsystem %"PRIu16" not supported", sub);
 		rc = SLURM_ERROR;
@@ -256,6 +304,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 		job->cont_id = (uint64_t)job->jmgr_pid;
 		break;
 	case CG_CPUS:
+		return _cpuset_create(job);
 	case CG_MEMORY:
 	case CG_DEVICES:
 	case CG_CPUACCT:
