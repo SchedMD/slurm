@@ -323,6 +323,41 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 	case CG_CPUS:
 		return _cpuset_create(job);
 	case CG_MEMORY:
+		if (xcgroup_create_hierarchy(__func__,
+					     job,
+					     &g_cg_ns[sub],
+					     &g_job_cg[sub],
+					     &g_step_cg[sub],
+					     &g_user_cg[sub],
+					     g_job_cgpath[sub],
+					     g_step_cgpath[sub],
+					     g_user_cgpath[sub],
+					     NULL, NULL)
+		    != SLURM_SUCCESS) {
+			return SLURM_ERROR;
+		}
+
+		if (xcgroup_set_param(&g_user_cg[sub], "memory.use_hierarchy",
+				      "1") != SLURM_SUCCESS) {
+			error("unable to set hierarchical accounting for %s",
+			      g_user_cgpath[sub]);
+			cgroup_p_step_destroy(sub);
+			return SLURM_ERROR;
+		}
+		if (xcgroup_set_param(&g_job_cg[sub], "memory.use_hierarchy",
+				      "1") != SLURM_SUCCESS) {
+			error("unable to set hierarchical accounting for %s",
+			      g_job_cgpath[sub]);
+			cgroup_p_step_destroy(sub);
+			return SLURM_ERROR;
+		}
+		if (xcgroup_set_param(&g_step_cg[sub], "memory.use_hierarchy",
+				      "1") != SLURM_SUCCESS) {
+			error("unable to set hierarchical accounting for %s",
+			      g_step_cg[sub].path);
+			cgroup_p_step_destroy(sub);
+			return SLURM_ERROR;
+		}
 		break;
 	case CG_DEVICES:
 		/* create a new cgroup for that container */
@@ -592,6 +627,24 @@ extern int cgroup_p_job_constrain_set(cgroup_ctl_type_t sub,
 					limits->allow_mems);
 		break;
 	case CG_MEMORY:
+		rc = xcgroup_set_uint64_param(&g_job_cg[CG_MEMORY],
+					      "memory.limit_in_bytes",
+					      limits->limit_in_bytes);
+		rc += xcgroup_set_uint64_param(&g_job_cg[CG_MEMORY],
+					       "memory.soft_limit_in_bytes",
+					       limits->soft_limit_in_bytes);
+
+		if (limits->kmem_limit_in_bytes != NO_VAL64)
+			rc += xcgroup_set_uint64_param(
+				&g_job_cg[CG_MEMORY],
+				"memory.kmem.limit_in_bytes",
+				limits->kmem_limit_in_bytes);
+
+		if (limits->memsw_limit_in_bytes != NO_VAL64)
+			rc += xcgroup_set_uint64_param(
+				&g_job_cg[CG_MEMORY],
+				"memory.memsw.limit_in_bytes",
+				limits->memsw_limit_in_bytes);
 		break;
 	case CG_DEVICES:
 		if (limits->allow_device)
@@ -646,6 +699,24 @@ extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
 #endif
 		break;
 	case CG_MEMORY:
+		rc = xcgroup_set_uint64_param(&g_step_cg[CG_MEMORY],
+					      "memory.limit_in_bytes",
+					      limits->limit_in_bytes);
+		rc += xcgroup_set_uint64_param(&g_step_cg[CG_MEMORY],
+					       "memory.soft_limit_in_bytes",
+					       limits->soft_limit_in_bytes);
+
+		if (limits->kmem_limit_in_bytes != NO_VAL64)
+			rc += xcgroup_set_uint64_param(
+				&g_step_cg[CG_MEMORY],
+				"memory.kmem.limit_in_bytes",
+				limits->kmem_limit_in_bytes);
+
+		if (limits->memsw_limit_in_bytes != NO_VAL64)
+			rc += xcgroup_set_uint64_param(
+				&g_step_cg[CG_MEMORY],
+				"memory.memsw.limit_in_bytes",
+				limits->memsw_limit_in_bytes);
 		break;
 	case CG_DEVICES:
 		if (limits->allow_device)
