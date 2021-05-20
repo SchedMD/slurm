@@ -314,16 +314,7 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 
 extern int task_cgroup_memory_attach_task(stepd_step_rec_t *job, pid_t pid)
 {
-	int fstatus = SLURM_ERROR;
-
-	if (xcgroup_add_pids(&step_memory_cg, &pid, 1) != SLURM_SUCCESS) {
-		error("unable to add task[pid=%u] to "
-		      "memory cg '%s'",pid,step_memory_cg.path);
-		fstatus = SLURM_ERROR;
-	} else
-		fstatus = SLURM_SUCCESS;
-
-	return fstatus;
+	return cgroup_g_step_addto(CG_MEMORY, &pid, 1);
 }
 
 extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
