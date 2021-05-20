@@ -90,15 +90,6 @@ static xcgroup_ns_t freezer_ns;
 
 static xcgroup_t step_freezer_cg;
 
-int _slurm_cgroup_suspend(uint64_t id)
-{
-	if (*jobstep_cgroup_path == '\0')
-		return SLURM_ERROR;
-
-	return xcgroup_set_param(&step_freezer_cg,
-				 "freezer.state", "FROZEN");
-}
-
 int _slurm_cgroup_resume(uint64_t id)
 {
 	if (*jobstep_cgroup_path == '\0')
@@ -230,7 +221,7 @@ extern int proctrack_p_signal (uint64_t id, int signal)
 	/* directly manage SIGSTOP using cgroup freezer subsystem */
 	if (signal == SIGSTOP) {
 		xfree(pids);
-		return _slurm_cgroup_suspend(id);
+		return cgroup_g_step_suspend();
 	}
 
 	/* start by resuming in case of SIGKILL */

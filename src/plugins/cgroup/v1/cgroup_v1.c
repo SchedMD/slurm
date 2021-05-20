@@ -302,7 +302,11 @@ extern int cgroup_p_step_get_pids(pid_t **pids, int *npids)
 
 extern int cgroup_p_step_suspend()
 {
-	return SLURM_SUCCESS;
+	if (*g_step_cgpath[CG_TRACK] == '\0')
+		return SLURM_ERROR;
+
+	return xcgroup_set_param(&g_step_cg[CG_TRACK], "freezer.state",
+				 "FROZEN");
 }
 
 extern int cgroup_p_step_resume()
