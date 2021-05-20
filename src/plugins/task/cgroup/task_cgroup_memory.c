@@ -44,10 +44,6 @@
 
 #include "task_cgroup.h"
 
-extern slurmd_conf_t *conf;
-
-static xcgroup_t step_memory_cg;
-
 static bool constrain_ram_space;
 static bool constrain_kmem_space;
 static bool constrain_swap_space;
@@ -367,5 +363,5 @@ extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 
 extern int task_cgroup_memory_add_pid(pid_t pid)
 {
-	return xcgroup_add_pids(&step_memory_cg, &pid, 1);
+	return cgroup_g_step_addto(CG_MEMORY, &pid, 1);
 }
