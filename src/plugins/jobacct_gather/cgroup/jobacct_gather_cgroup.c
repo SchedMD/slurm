@@ -106,58 +106,28 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 {
-	unsigned long utime, stime, total_rss, total_pgpgin;
-	char *cpu_time = NULL, *memory_stat = NULL, *ptr;
-	size_t cpu_time_size = 0, memory_stat_size = 0;
-	xcgroup_t *task_cpuacct_cg = NULL;;
-	xcgroup_t *task_memory_cg = NULL;
-	bool exit_early = false;
+	cgroup_acct_t *cgroup_acct_data;
 
-	/* Find which task cgroups to use */
-	task_memory_cg = list_find_first(task_memory_cg_list,
-					 find_task_cg_info,
-					 &taskid);
-	task_cpuacct_cg = list_find_first(task_cpuacct_cg_list,
-					  find_task_cg_info,
-					  &taskid);
+	cgroup_acct_data = cgroup_g_task_get_acct_data(taskid);
 
-	/*
-	 * We should always find the task cgroups; if we don't for some reason,
-	 * just print an error and return.
-	 */
-	if (!task_cpuacct_cg) {
-		error("Could not find task_cpuacct_cg, this should never happen");
-		exit_early = true;
-	}
-	if (!task_memory_cg) {
-		error("Could not find task_memory_cg, this should never happen");
-		exit_early = true;
-	}
-	if (exit_early)
+	if (!cgroup_acct_data) {
+		error("Cannot get cgroup accounting data for %d", taskid);
 		return;
+	}
 
-	//DEF_TIMERS;
-	//START_TIMER;
-	/* info("before"); */
-	xcgroup_get_param(task_cpuacct_cg, "cpuacct.stat",
-			  &cpu_time, &cpu_time_size);
-	if (cpu_time == NULL) {
-		debug2("failed to collect cpuacct.stat pid %d ppid %d",
+	/* We discard the data if some value was incorrect */
+	if (cgroup_acct_data->usec == NO_VAL64 &&
+	    cgroup_acct_data->ssec == NO_VAL64) {
+		debug2("failed to collect cgroup cpu stats pid %d ppid %d",
 		       prec->pid, prec->ppid);
 	} else {
-		sscanf(cpu_time, "%*s %lu %*s %lu", &utime, &stime);
-		/*
-		 * Store unnormalized times, we will normalize in when
-		 * transfering to a struct jobacctinfo in job_common_poll_data()
-		 */
-		prec->usec = utime;
-		prec->ssec = stime;
+		prec->usec = cgroup_acct_data->usec;
+		prec->ssec = cgroup_acct_data->ssec;
 	}
 
-	xcgroup_get_param(task_memory_cg, "memory.stat",
-			  &memory_stat, &memory_stat_size);
-	if (memory_stat == NULL) {
-		debug2("failed to collect memory.stat  pid %d ppid %d",
+	if (cgroup_acct_data->total_rss == NO_VAL64 &&
+	    cgroup_acct_data->total_pgmajfault == NO_VAL64) {
+		debug2("failed to collect cgroup memory stats pid %d ppid %d",
 		       prec->pid, prec->ppid);
 	} else {
 		/*
@@ -166,25 +136,18 @@ static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 		 * different than what proc presents, but is probably more
 		 * accurate on what the user is actually using.
 		 */
-		if ((ptr = strstr(memory_stat, "total_rss"))) {
-			sscanf(ptr, "total_rss %lu", &total_rss);
-			prec->tres_data[TRES_ARRAY_MEM].size_read = total_rss;
-		}
+		prec->tres_data[TRES_ARRAY_MEM].size_read =
+			cgroup_acct_data->total_rss;
 
 		/*
 		 * total_pgmajfault is what is reported in proc, so we use
 		 * the same thing here.
 		 */
-		if ((ptr = strstr(memory_stat, "total_pgmajfault"))) {
-			sscanf(ptr, "total_pgmajfault %lu", &total_pgpgin);
-			prec->tres_data[TRES_ARRAY_PAGES].size_read =
-				total_pgpgin;
-		}
+		prec->tres_data[TRES_ARRAY_PAGES].size_read =
+			cgroup_acct_data->total_pgmajfault;
 	}
 
-	xfree(cpu_time);
-	xfree(memory_stat);
-
+	xfree(cgroup_acct_data);
 	return;
 }
 
@@ -240,8 +203,8 @@ extern int fini (void)
  *    is a Linux-style stat entry. We disregard the data if they look
  *    wrong.
  */
-extern void jobacct_gather_p_poll_data(
-	List task_list, bool pgid_plugin, uint64_t cont_id, bool profile)
+extern void jobacct_gather_p_poll_data(List task_list, bool pgid_plugin,
+				       uint64_t cont_id, bool profile)
 {
 	static jag_callbacks_t callbacks;
 	static bool first = 1;
