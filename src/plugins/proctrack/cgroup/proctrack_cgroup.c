@@ -84,20 +84,9 @@ const char plugin_name[]      = "Process tracking via linux cgroup freezer subsy
 const char plugin_type[]      = "proctrack/cgroup";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-static char jobstep_cgroup_path[PATH_MAX];
-
 static xcgroup_ns_t freezer_ns;
 
 static xcgroup_t step_freezer_cg;
-
-int _slurm_cgroup_resume(uint64_t id)
-{
-	if (*jobstep_cgroup_path == '\0')
-		return SLURM_ERROR;
-
-	return xcgroup_set_param(&step_freezer_cg,
-				 "freezer.state", "THAWED");
-}
 
 bool
 _slurm_cgroup_has_pid(pid_t pid)
@@ -226,7 +215,7 @@ extern int proctrack_p_signal (uint64_t id, int signal)
 
 	/* start by resuming in case of SIGKILL */
 	if (signal == SIGKILL) {
-		_slurm_cgroup_resume(id);
+		cgroup_g_step_resume();
 	}
 
 	for (i = 0 ; i<npids ; i++) {
@@ -251,7 +240,7 @@ extern int proctrack_p_signal (uint64_t id, int signal)
 	/* resume tasks after signaling slurm tasks with SIGCONT to be sure */
 	/* that SIGTSTP received at suspend time is removed */
 	if (signal == SIGCONT) {
-		return _slurm_cgroup_resume(id);
+		return cgroup_g_step_resume();
 	}
 
 	return SLURM_SUCCESS;
