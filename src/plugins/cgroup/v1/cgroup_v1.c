@@ -86,6 +86,27 @@ const char *g_cg_name[CG_CTL_CNT] = {
 	"cpuacct"
 };
 
+static int _cgroup_init(cgroup_ctl_type_t sub)
+{
+	if (sub >= CG_CTL_CNT)
+		return SLURM_ERROR;
+
+	if (xcgroup_ns_create(&g_cg_ns[sub], "", g_cg_name[sub])
+	    != SLURM_SUCCESS) {
+		error("unable to create %s cgroup namespace", g_cg_name[sub]);
+		return SLURM_ERROR;
+	}
+
+	if (xcgroup_create(&g_cg_ns[sub], &g_root_cg[sub], "", 0, 0)
+	    != SLURM_SUCCESS) {
+		error("unable to create root %s xcgroup", g_cg_name[sub]);
+		xcgroup_ns_destroy(&g_cg_ns[sub]);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 extern int init(void)
 {
 	int i;
@@ -109,6 +130,22 @@ extern int fini(void)
 extern int cgroup_p_initialize(cgroup_ctl_type_t sub)
 {
 	int rc = SLURM_SUCCESS;
+
+	rc = _cgroup_init(sub);
+
+	switch (sub) {
+	case CG_TRACK:
+		break;
+	case CG_CPUS:
+	case CG_MEMORY:
+	case CG_DEVICES:
+	case CG_CPUACCT:
+	default:
+		error("cgroup subsystem %"PRIu16" not supported", sub);
+		rc = SLURM_ERROR;
+		break;
+	}
+
 	return rc;
 }
 

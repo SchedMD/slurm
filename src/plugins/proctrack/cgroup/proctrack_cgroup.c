@@ -49,6 +49,7 @@
 #include "src/common/log.h"
 #include "src/common/xcgroup_read_config.h"
 #include "src/common/xstring.h"
+#include "src/common/cgroup.h"
 #include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/common/xcgroup.h"
 #include "src/slurmd/slurmd/slurmd.h"
@@ -93,31 +94,6 @@ static xcgroup_t freezer_cg;
 static xcgroup_t user_freezer_cg;
 static xcgroup_t job_freezer_cg;
 static xcgroup_t step_freezer_cg;
-
-int _slurm_cgroup_init(void)
-{
-	/* initialize user/job/jobstep cgroup relative paths
-	 * and release agent path */
-	user_cgroup_path[0]='\0';
-	job_cgroup_path[0]='\0';
-	jobstep_cgroup_path[0]='\0';
-
-	/* initialize freezer cgroup namespace */
-	if (xcgroup_ns_create(&freezer_ns, "", "freezer") != SLURM_SUCCESS) {
-		error("unable to create freezer cgroup namespace");
-		return SLURM_ERROR;
-	}
-
-	/* initialize the root freezer cg */
-	if (xcgroup_create(&freezer_ns, &freezer_cg, "", 0, 0)
-	    != SLURM_SUCCESS) {
-		error("proctrack/cgroup unable to create root freezer xcgroup");
-		xcgroup_ns_destroy(&freezer_ns);
-		return SLURM_ERROR;
-	}
-
-	return SLURM_SUCCESS;
-}
 
 static int _move_current_to_root_cgroup(xcgroup_ns_t *ns)
 {
@@ -300,7 +276,7 @@ extern int init (void)
 	}
 
 	/* initialize cgroup internal data */
-	if (_slurm_cgroup_init() != SLURM_SUCCESS) {
+	if (cgroup_g_initialize(CG_TRACK) != SLURM_SUCCESS) {
 		xcpuinfo_fini();
 		return SLURM_ERROR;
 	}
