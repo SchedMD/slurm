@@ -70,11 +70,88 @@ typedef struct handle_dev_args {
 
 static char cgroup_allowed_devices_file[PATH_MAX];
 
-static void _calc_device_major(char *dev_path[PATH_MAX],
-			       char *dev_major[PATH_MAX],
-			       int lines);
+static int _handle_device_access(void *x, void *arg)
+{
+	gres_device_t *gres_device = (gres_device_t *)x;
+	handle_dev_args_t *handle_args = (handle_dev_args_t *)arg;
+	char *param;
+	cgroup_limits_t limits;
 
-static int _read_allowed_devices_file(char *allowed_devices[PATH_MAX]);
+	memset(&limits, 0, sizeof(limits));
+	limits.allow_device = false;
+
+	param = "devices.deny";
+
+	if (gres_device->alloc) {
+		param = "devices.allow";
+		limits.allow_device = false;
+	}
+
+	log_flag(GRES, "%s %s: adding %s(%s)",
+		 handle_args->is_step ? "step" : "job",
+		 param, gres_device->major, gres_device->path);
+
+	limits.device_major = gres_device->major;
+
+	if (!handle_args->is_step)
+		cgroup_g_job_constrain_set(CG_DEVICES, handle_args->job,
+					   &limits);
+	else
+		cgroup_g_step_constrain_set(CG_DEVICES, handle_args->job,
+					    &limits);
+
+
+	return SLURM_SUCCESS;
+}
+
+static void _calc_device_major(char *dev_path[PATH_MAX],
+			       char *dev_major[PATH_MAX], int lines)
+{
+	int k;
+
+	if (lines > PATH_MAX) {
+		error("more devices configured than table size (%d > %d)",
+		      lines, PATH_MAX);
+		lines = PATH_MAX;
+	}
+
+	for (k = 0; k < lines; k++)
+		dev_major[k] = gres_device_major(dev_path[k]);
+}
+
+static int _read_allowed_devices_file(char **allowed_devices)
+{
+	FILE *file;
+	int i, l, num_lines = 0;
+	char line[256];
+	glob_t globbuf;
+
+	file = fopen(cgroup_allowed_devices_file, "r");
+
+	if (file == NULL)
+		return num_lines;
+
+	for (i = 0; i < 256; i++)
+		line[i] = '\0';
+
+	while (fgets(line, sizeof(line), file)) {
+		line[strlen(line)-1] = '\0';
+		/* global pattern matching and return the list of matches*/
+		if (glob(line, GLOB_NOSORT, NULL, &globbuf)) {
+			debug3("Device %s does not exist", line);
+		} else {
+			for (l=0; l < globbuf.gl_pathc; l++) {
+				allowed_devices[num_lines] =
+					xstrdup(globbuf.gl_pathv[l]);
+				num_lines++;
+			}
+			globfree(&globbuf);
+		}
+	}
+	fclose(file);
+
+	return num_lines;
+}
 
 extern int task_cgroup_devices_init(void)
 {
@@ -131,40 +208,6 @@ extern int task_cgroup_devices_fini(void)
 	cgroup_g_step_destroy(CG_DEVICES);
 	cgroup_allowed_devices_file[0] = '\0';
 	xcpuinfo_fini();
-	return SLURM_SUCCESS;
-}
-
-static int _handle_device_access(void *x, void *arg)
-{
-	gres_device_t *gres_device = (gres_device_t *)x;
-	handle_dev_args_t *handle_args = (handle_dev_args_t *)arg;
-	char *param;
-	cgroup_limits_t limits;
-
-	memset(&limits, 0, sizeof(limits));
-	limits.allow_device = false;
-
-	param = "devices.deny";
-
-	if (gres_device->alloc) {
-		param = "devices.allow";
-		limits.allow_device = false;
-	}
-
-	log_flag(GRES, "%s %s: adding %s(%s)",
-		 handle_args->is_step ? "step" : "job",
-		 param, gres_device->major, gres_device->path);
-
-	limits.device_major = gres_device->major;
-
-	if (!handle_args->is_step)
-		cgroup_g_job_constrain_set(CG_DEVICES, handle_args->job,
-					   &limits);
-	else
-		cgroup_g_step_constrain_set(CG_DEVICES, handle_args->job,
-					    &limits);
-
-
 	return SLURM_SUCCESS;
 }
 
@@ -266,64 +309,9 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 
 extern int task_cgroup_devices_attach_task(stepd_step_rec_t *job)
 {
-	int fstatus = SLURM_ERROR;
-
 	/* tasks are automatically attached as slurmstepd is in the step cg */
-	fstatus = SLURM_SUCCESS;
-
-	return fstatus;
+	return SLURM_SUCCESS;
 }
-
-static void _calc_device_major(char *dev_path[PATH_MAX],
-			       char *dev_major[PATH_MAX],
-			       int lines)
-{
-
-	int k;
-
-	if (lines > PATH_MAX) {
-		error("more devices configured than table size "
-		      "(%d > %d)", lines, PATH_MAX);
-		lines = PATH_MAX;
-	}
-	for (k = 0; k < lines; k++)
-		dev_major[k] = gres_device_major(dev_path[k]);
-}
-
-static int _read_allowed_devices_file(char **allowed_devices)
-{
-	FILE *file;
-	int i, l, num_lines = 0;
-	char line[256];
-	glob_t globbuf;
-
-	file = fopen(cgroup_allowed_devices_file, "r");
-
-	if (file == NULL)
-		return num_lines;
-
-	for (i = 0; i < 256; i++)
-		line[i] = '\0';
-
-	while (fgets(line, sizeof(line), file)) {
-		line[strlen(line)-1] = '\0';
-		/* global pattern matching and return the list of matches*/
-		if (glob(line, GLOB_NOSORT, NULL, &globbuf)) {
-			debug3("Device %s does not exist", line);
-		} else {
-			for (l=0; l < globbuf.gl_pathc; l++) {
-				allowed_devices[num_lines] =
-					xstrdup(globbuf.gl_pathv[l]);
-				num_lines++;
-			}
-			globfree(&globbuf);
-		}
-	}
-	fclose(file);
-
-	return num_lines;
-}
-
 
 extern int task_cgroup_devices_add_pid(pid_t pid)
 {
