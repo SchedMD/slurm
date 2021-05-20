@@ -114,6 +114,70 @@ static plugin_context_t *g_context = NULL;
 static pthread_mutex_t g_context_lock =	PTHREAD_MUTEX_INITIALIZER;
 static bool init_run = false;
 
+/* Autodetect logic inspired from systemd source code */
+static void _autodetect_cgroup_version(char **type)
+{
+	struct statfs fs;
+	int cgroup_ver = -1;
+
+	xfree(*type);
+
+	if (statfs("/sys/fs/cgroup/", &fs) < 0) {
+		error("cgroup filesystem not mounted in /sys/fs/cgroup/");
+		return;
+	}
+
+        if (F_TYPE_EQUAL(fs.f_type, CGROUP2_SUPER_MAGIC))
+		cgroup_ver = 2;
+	else if (F_TYPE_EQUAL(fs.f_type, TMPFS_MAGIC)) {
+		if (statfs("/sys/fs/cgroup/systemd/", &fs) != 0) {
+			error("can't stat /sys/fs/cgroup/systemd/: %m");
+			return;
+		}
+
+		if (F_TYPE_EQUAL(fs.f_type, CGROUP2_SUPER_MAGIC)) {
+			if (statfs("/sys/fs/cgroup/unified/", &fs) != 0) {
+				error("can't stat /sys/fs/cgroup/unified/: %m");
+				return;
+			}
+			cgroup_ver = 2;
+		} else if (F_TYPE_EQUAL(fs.f_type, CGROUP_SUPER_MAGIC)) {
+			cgroup_ver = 1;
+		} else {
+			error("Unexpected fs type on /sys/fs/cgroup/systemd");
+			return;
+		}
+	} else if (F_TYPE_EQUAL(fs.f_type, SYSFS_MAGIC)) {
+                error("No filesystem mounted on /sys/fs/cgroup");
+		return;
+	} else {
+                error("Unknown filesystem type mounted on /sys/fs/cgroup");
+		return;
+	}
+
+	debug2("%s: using cgroup version %d", __func__, cgroup_ver);
+
+	if (cgroup_ver == 2)
+		*type = xstrdup("cgroup/v2");
+	else if (cgroup_ver == 1)
+		*type = xstrdup("cgroup/v1");
+}
+
+static char *_get_cgroup_plugin()
+{
+	char *cgroup_plugin = NULL;
+	slurm_cgroup_conf_t *conf;
+
+	slurm_mutex_lock(&xcgroup_config_read_mutex);
+
+	conf = xcgroup_get_slurm_cgroup_conf();
+	cgroup_plugin = xstrdup(conf->cgroup_plugin);
+
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
+
+	return cgroup_plugin;
+}
+
 /*
  * Initialize Cgroup plugins.
  *
@@ -123,7 +187,7 @@ extern int cgroup_g_init(void)
 {
 	int rc = SLURM_SUCCESS;
 	char *plugin_type = "cgroup";
-	char *type = "cgroup";
+	char *type = NULL;
 
 	if (init_run && g_context)
 		return rc;
@@ -132,6 +196,17 @@ extern int cgroup_g_init(void)
 
 	if (g_context)
 		goto done;
+
+	type = _get_cgroup_plugin();
+
+	/* Default is autodetect */
+	if (!type || !xstrcmp(type, "autodetect")) {
+		_autodetect_cgroup_version(&type);
+		if (!type) {
+			rc = SLURM_ERROR;
+			goto done;
+		}
+	}
 
 	g_context = plugin_context_create(
 		plugin_type, type, (void **)&ops, syms, sizeof(syms));

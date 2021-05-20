@@ -36,6 +36,10 @@
 #ifndef _CGROUP_H
 #define _CGROUP_H
 
+/* Check filesystem type */
+#include <linux/magic.h>
+#include <sys/vfs.h>
+
 #include "slurm/slurm.h"
 #include "src/common/slurm_opt.h"
 #include "src/slurmd/slurmd/slurmd.h"
@@ -47,6 +51,12 @@
 #include "src/common/xstring.h"
 #include "src/common/xcgroup_read_config.h"
 #include "src/plugins/cgroup/common/cgroup_common.h"
+
+#ifdef __GNUC__
+#define F_TYPE_EQUAL(a, b) (a == (__typeof__(a)) b)
+#else
+#define F_TYPE_EQUAL(a, b) (a == (__SWORD_TYPE) b)
+#endif
 
 /* Current supported cgroup controller types */
 typedef enum {
