@@ -56,6 +56,7 @@
 #include "src/common/xstring.h"
 #include "src/common/gres.h"
 #include "src/common/list.h"
+#include "src/common/cgroup.h"
 #include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
@@ -93,10 +94,6 @@ extern int task_cgroup_devices_init(void)
 	if (xcpuinfo_init() != XCPUINFO_SUCCESS)
 		return SLURM_ERROR;
 
-	/* initialize user/job/jobstep cgroup relative paths */
-	user_cgroup_path[0] = '\0';
-	job_cgroup_path[0] = '\0';
-	jobstep_cgroup_path[0] = '\0';
 	/* initialize allowed_devices_filename */
 	cgroup_allowed_devices_file[0] = '\0';
 
@@ -106,34 +103,33 @@ extern int task_cgroup_devices_init(void)
 	}
 
 	/* read cgroup configuration */
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = xcgroup_get_slurm_cgroup_conf();
+	cg_conf = cgroup_g_get_conf();
+
+	if (!cg_conf)
+		goto error;
 
 	if ((strlen(cg_conf->allowed_devices_file) + 1) >= PATH_MAX) {
 		error("device file path length exceeds limit: %s",
 		      cg_conf->allowed_devices_file);
-		slurm_mutex_unlock(&xcgroup_config_read_mutex);
 		goto error;
 	}
 	strcpy(cgroup_allowed_devices_file, cg_conf->allowed_devices_file);
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
-	if (xcgroup_ns_create(&devices_ns, "", "devices")
-	    != SLURM_SUCCESS ) {
+
+	if (cgroup_g_initialize(CG_DEVICES) != SLURM_SUCCESS) {
 		error("unable to create devices namespace");
 		goto error;
 	}
 
 	file = fopen(cgroup_allowed_devices_file, "r");
 	if (!file) {
-		debug("unable to open %s: %m",
-		      cgroup_allowed_devices_file);
+		debug("unable to open %s: %m", cgroup_allowed_devices_file);
 	} else
 		fclose(file);
 
 	return SLURM_SUCCESS;
 
 error:
-	xcgroup_ns_destroy(&devices_ns);
+	xfree(cg_conf);
 	xcpuinfo_fini();
 	return SLURM_ERROR;
 }
