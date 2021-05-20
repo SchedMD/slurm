@@ -48,6 +48,7 @@
 #include "src/slurmd/slurmd/slurmd.h"
 
 #include "src/common/xstring.h"
+#include "src/common/cgroup.h"
 
 #include "task_cgroup.h"
 
@@ -123,47 +124,25 @@ static uint64_t percent_in_bytes (uint64_t mb, float percent)
 
 extern int task_cgroup_memory_init(void)
 {
-	xcgroup_t memory_cg;
 	bool set_swappiness;
-	slurm_cgroup_conf_t *slurm_cgroup_conf;
+	slurm_cgroup_conf_t *cg_conf;
+	cgroup_limits_t limits;
 
-	/* initialize user/job/jobstep cgroup relative paths */
-	user_cgroup_path[0]='\0';
-	job_cgroup_path[0]='\0';
-	jobstep_cgroup_path[0]='\0';
-
-	/* initialize memory cgroup namespace */
-	if (xcgroup_ns_create(&memory_ns, "", "memory") != SLURM_SUCCESS) {
-		error("unable to create memory namespace. "
-			"You may need to set the Linux kernel option "
-			"cgroup_enable=memory (and reboot), or disable "
-			"ConstrainRAMSpace in cgroup.conf.");
+	if (cgroup_g_initialize(CG_MEMORY) != SLURM_SUCCESS)
 		return SLURM_ERROR;
+
+	cg_conf = cgroup_g_get_conf();
+	memset(&limits, 0, sizeof(limits));
+
+	set_swappiness = (cg_conf->memory_swappiness != NO_VAL64);
+	if (set_swappiness) {
+		limits.swappiness = true;
+		cgroup_g_root_constrain_set(CG_MEMORY, &limits);
 	}
 
-	/* Enable memory.use_hierarchy in the root of the cgroup.
-	 */
-	if (xcgroup_create(&memory_ns, &memory_cg, "", 0, 0)
-	    != SLURM_SUCCESS) {
-		error("unable to create root memory cgroup: %m");
-		return SLURM_ERROR;
-	}
-	xcgroup_set_param(&memory_cg, "memory.use_hierarchy","1");
-
-	/* read cgroup configuration */
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	slurm_cgroup_conf = xcgroup_get_slurm_cgroup_conf();
-
-	set_swappiness = (slurm_cgroup_conf->memory_swappiness != NO_VAL64);
-	if (set_swappiness)
-		xcgroup_set_uint64_param(&memory_cg, "memory.swappiness",
-					 slurm_cgroup_conf->memory_swappiness);
-
-	xcgroup_destroy(&memory_cg);
-
-	constrain_kmem_space = slurm_cgroup_conf->constrain_kmem_space;
-	constrain_ram_space = slurm_cgroup_conf->constrain_ram_space;
-	constrain_swap_space = slurm_cgroup_conf->constrain_swap_space;
+	constrain_kmem_space = cg_conf->constrain_kmem_space;
+	constrain_ram_space = cg_conf->constrain_ram_space;
+	constrain_swap_space = cg_conf->constrain_swap_space;
 
 	/*
 	 * as the swap space threshold will be configured with a
@@ -173,48 +152,43 @@ extern int task_cgroup_memory_init(void)
 	 * used for both mem and mem+swp limit during memcg creation.
 	 */
 	if ( constrain_ram_space )
-		allowed_ram_space = slurm_cgroup_conf->allowed_ram_space;
+		allowed_ram_space = cg_conf->allowed_ram_space;
 	else
 		allowed_ram_space = 100.0;
 
-	allowed_kmem_space = slurm_cgroup_conf->allowed_kmem_space;
-	allowed_swap_space = slurm_cgroup_conf->allowed_swap_space;
+	allowed_kmem_space = cg_conf->allowed_kmem_space;
+	allowed_swap_space = cg_conf->allowed_swap_space;
 
 	if ((totalram = (uint64_t) conf->real_memory_size) == 0)
 		error ("Unable to get RealMemory size");
 
-	max_kmem = percent_in_bytes(totalram, slurm_cgroup_conf->max_kmem_percent);
-	max_ram = percent_in_bytes(totalram, slurm_cgroup_conf->max_ram_percent);
-	max_swap = percent_in_bytes(totalram, slurm_cgroup_conf->max_swap_percent);
+	max_kmem = percent_in_bytes(totalram, cg_conf->max_kmem_percent);
+	max_ram = percent_in_bytes(totalram, cg_conf->max_ram_percent);
+	max_swap = percent_in_bytes(totalram, cg_conf->max_swap_percent);
 	max_swap += max_ram;
-	min_ram_space = slurm_cgroup_conf->min_ram_space * 1024 * 1024;
-	max_kmem_percent = slurm_cgroup_conf->max_kmem_percent;
-	min_kmem_space = slurm_cgroup_conf->min_kmem_space * 1024 * 1024;
+	min_ram_space = cg_conf->min_ram_space * 1024 * 1024;
+	max_kmem_percent = cg_conf->max_kmem_percent;
+	min_kmem_space = cg_conf->min_kmem_space * 1024 * 1024;
 
 	debug("task/cgroup/memory: total:%"PRIu64"M allowed:%.4g%%(%s), "
 	      "swap:%.4g%%(%s), max:%.4g%%(%"PRIu64"M) "
 	      "max+swap:%.4g%%(%"PRIu64"M) min:%"PRIu64"M "
 	      "kmem:%.4g%%(%"PRIu64"M %s) min:%"PRIu64"M "
 	      "swappiness:%"PRIu64"(%s)",
-
 	      totalram, allowed_ram_space,
 	      constrain_ram_space ? "enforced" : "permissive",
-
 	      allowed_swap_space,
 	      constrain_swap_space ? "enforced" : "permissive",
-	      slurm_cgroup_conf->max_ram_percent,
+	      cg_conf->max_ram_percent,
 	      (uint64_t) (max_ram / (1024 * 1024)),
-
-	      slurm_cgroup_conf->max_swap_percent,
+	      cg_conf->max_swap_percent,
 	      (uint64_t) (max_swap / (1024 * 1024)),
-	      slurm_cgroup_conf->min_ram_space,
-
-	      slurm_cgroup_conf->max_kmem_percent,
+	      cg_conf->min_ram_space,
+	      cg_conf->max_kmem_percent,
 	      (uint64_t) (max_kmem / (1024 * 1024)),
 	      constrain_kmem_space ? "enforced" : "permissive",
-	      slurm_cgroup_conf->min_kmem_space,
-
-	      set_swappiness ? slurm_cgroup_conf->memory_swappiness : 0,
+	      cg_conf->min_kmem_space,
+	      set_swappiness ? cg_conf->memory_swappiness : 0,
 	      set_swappiness ? "set" : "unset");
 
         /*
@@ -230,7 +204,6 @@ extern int task_cgroup_memory_init(void)
          *  in /etc/sysconfig/slurm would be the same
          */
         setenv("SLURMSTEPD_OOM_ADJ", "-1000", 0);
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 
 	return SLURM_SUCCESS;
 }
