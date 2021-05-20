@@ -46,6 +46,7 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_acct_gather_energy.h"
 #include "src/common/xstring.h"
+#include "src/common/cgroup.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmd/slurmd.h"
@@ -193,25 +194,14 @@ static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
  */
 extern int init (void)
 {
-	/* If running on the slurmctld don't do any of this since it
-	   isn't needed.
-	*/
 	if (running_in_slurmstepd()) {
 		jag_common_init(0);
 
-		/* initialize cpuinfo internal data */
 		if (xcpuinfo_init() != XCPUINFO_SUCCESS) {
 			return SLURM_ERROR;
 		}
 
-		/* enable cpuacct cgroup subsystem */
-		if (jobacct_gather_cgroup_cpuacct_init() != SLURM_SUCCESS) {
-			xcpuinfo_fini();
-			return SLURM_ERROR;
-		}
-
-		/* enable memory cgroup subsystem */
-		if (jobacct_gather_cgroup_memory_init() != SLURM_SUCCESS) {
+		if (cgroup_g_accounting_init() != SLURM_SUCCESS) {
 			xcpuinfo_fini();
 			return SLURM_ERROR;
 		}
@@ -224,10 +214,12 @@ extern int init (void)
 extern int fini (void)
 {
 	if (running_in_slurmstepd()) {
-		jobacct_gather_cgroup_cpuacct_fini();
-		jobacct_gather_cgroup_memory_fini();
+		cgroup_g_accounting_fini();
 		acct_gather_energy_fini();
 	}
+
+	debug("%s unloaded", plugin_name);
+
 	return SLURM_SUCCESS;
 }
 
