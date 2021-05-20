@@ -92,6 +92,8 @@ documents those changes that are of interest to users and administrators.
     issue.
  -- Put node into "INVAL" state upon registering with an invalid node
     configuration. Node must register with a valid configuration to continue.
+ -- Make --cpu-bind=threads default for --threads-per-core -- cli and env can
+    override.
 
 * Changes in Slurm 20.11.8
 ==========================

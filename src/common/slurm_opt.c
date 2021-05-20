@@ -4343,9 +4343,6 @@ static slurm_cli_opt_t slurm_opt_thread_spec = {
 static int arg_set_threads_per_core(slurm_opt_t *opt, const char *arg)
 {
 	opt->threads_per_core = parse_int("--threads-per-core", arg, true);
-	if (opt->srun_opt)
-		slurm_verify_cpu_bind("threads", &opt->srun_opt->cpu_bind,
-				      &opt->srun_opt->cpu_bind_type, 0);
 
 	return SLURM_SUCCESS;
 }
@@ -5610,6 +5607,22 @@ extern void validate_memory_options(slurm_opt_t *opt)
 	}
 }
 
+static void _validate_threads_per_core_option(slurm_opt_t *opt)
+{
+	if (!slurm_option_isset(opt, "threads-per-core"))
+		return;
+
+	if (!slurm_option_isset(opt, "cpu-bind")) {
+		verbose("Setting --cpu-bind=threads as a default of --threads-per-core use");
+		slurm_option_set(opt, "cpu-bind", "threads", false);
+	} else if (opt->srun_opt->cpu_bind_type == CPU_BIND_VERBOSE) {
+		verbose("Setting --cpu-bind=threads,verbose as a default of --threads-per-core use");
+		slurm_option_set(opt, "cpu-bind", "threads,verbose", false);
+	} else {
+		debug3("Not setting --cpu-bind=threads because of --threads-per-core since --cpu-bind already set by cli option or environment variable");
+	}
+}
+
 extern int validate_hint_option(slurm_opt_t *opt)
 {
 	if (slurm_option_set_by_cli(opt, LONG_OPT_HINT) &&
@@ -5707,6 +5720,7 @@ extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 {
 	_validate_ntasks_per_gpu(opt);
 	_validate_spec_cores_options(opt);
+	_validate_threads_per_core_option(opt);
 }
 
 extern char *slurm_option_get_argv_str(const int argc, char **argv)

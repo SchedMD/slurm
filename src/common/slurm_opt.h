@@ -538,6 +538,12 @@ extern void validate_memory_options(slurm_opt_t *opt);
 extern int validate_hint_option(slurm_opt_t *opt);
 
 /*
+ * Validate --threads-per-core option and set --cpu-bind=threads if
+ * not already set by user.
+ */
+extern int validate_threads_per_core_option(slurm_opt_t *opt);
+
+/*
  * Validate options that are common to salloc, sbatch, and srun.
  */
 extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt);

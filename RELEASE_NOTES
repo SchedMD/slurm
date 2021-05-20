@@ -52,6 +52,8 @@ HIGHLIGHTS
     configuration. Node must register with a valid configuration to continue.
  -- Remove SLURM_DIST_LLLP environment variable in favor of just
     SLURM_DISTRIBUTION.
+ -- Make --cpu-bind=threads default for --threads-per-core -- cli and env can
+    override.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

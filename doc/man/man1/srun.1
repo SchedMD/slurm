@@ -2311,7 +2311,8 @@ applies to job allocations.
 \fB\-\-threads\-per\-core\fR=<\fIthreads\fR>
 Restrict node selection to nodes with at least the specified number of
 threads per core. In task layout, use the specified maximum number of threads
-per core. Implies \fB\-\-exact\fR and \fB\-\-cpu\-bind=threads\fR.
+per core. Implies \fB\-\-exact\fR and \fB\-\-cpu\-bind=threads\fR unless
+overridden by command line or environment options.
 NOTE: "Threads" refers to the
 number of processing units on each core rather than the number of application
 tasks to be launched per core. See additional information under \fB\-B\fR
