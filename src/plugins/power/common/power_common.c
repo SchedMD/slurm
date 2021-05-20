@@ -264,7 +264,11 @@ extern char *power_run_script(char *script_name, char *script_path,
 	}
 	if ((cpid = fork()) == 0) {
 		int devnull;
-		devnull = open("/dev/null", O_RDWR);
+
+		if ((devnull = open("/dev/null", O_RDWR)) < 0) {
+			error("Unable to open /dev/null: %m");
+			_exit(127);
+		}
 
 		if (data_in)
 			dup2(fd_stdin[0], STDIN_FILENO);
