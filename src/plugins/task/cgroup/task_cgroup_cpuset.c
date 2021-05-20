@@ -1403,7 +1403,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
  */
 extern int task_cgroup_cpuset_add_pid(pid_t pid)
 {
-	return xcgroup_add_pids(&step_cpuset_cg, &pid, 1);
+	return cgroup_g_step_addto(CG_CPUS, &pid, 1);
 }
 
 #endif
