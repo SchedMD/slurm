@@ -496,8 +496,6 @@ int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, pid_t remote_pid)
 	}
 
 	switch (req) {
-	case REQUEST_SIGNAL_TASK_LOCAL:		/* Defunct */
-	case REQUEST_SIGNAL_TASK_GLOBAL:	/* Defunct */
 	case REQUEST_SIGNAL_CONTAINER:
 		debug("Handling REQUEST_SIGNAL_CONTAINER");
 		rc = _handle_signal_container(fd, job, uid);
