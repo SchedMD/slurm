@@ -379,6 +379,42 @@ extern bool cgroup_p_has_pid(pid_t pid)
 
 extern cgroup_limits_t *cgroup_p_root_constrain_get(cgroup_ctl_type_t sub)
 {
+	int rc = SLURM_SUCCESS;
+	cgroup_limits_t *limits = xmalloc(sizeof(*limits));
+
+	switch (sub) {
+	case CG_TRACK:
+		break;
+	case CG_CPUS:
+		rc = xcgroup_get_param(&g_root_cg[CG_CPUS], "cpuset.cpus",
+				       &limits->allow_cores,
+				       &limits->cores_size);
+
+		rc += xcgroup_get_param(&g_root_cg[CG_CPUS], "cpuset.mems",
+					&limits->allow_mems,
+					&limits->mems_size);
+
+		if (limits->cores_size > 0)
+			limits->allow_cores[(limits->cores_size)-1] = '\0';
+
+		if (limits->mems_size > 0)
+			limits->allow_mems[(limits->mems_size)-1] = '\0';
+
+		if (rc != SLURM_SUCCESS)
+			goto fail;
+		break;
+	case CG_MEMORY:
+	case CG_DEVICES:
+		break;
+	default:
+		error("cgroup subsystem %"PRIu16" not supported", sub);
+		rc = SLURM_ERROR;
+		break;
+	}
+
+	return limits;
+fail:
+	cgroup_free_limits(limits);
 	return NULL;
 }
 
@@ -392,21 +428,108 @@ extern int cgroup_p_user_constrain_set(cgroup_ctl_type_t sub,
 				       stepd_step_rec_t *job,
 				       cgroup_limits_t *limits)
 {
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+
+	if (!limits)
+		return SLURM_ERROR;
+
+	switch (sub) {
+	case CG_TRACK:
+		break;
+	case CG_CPUS:
+		rc = xcgroup_set_param(&g_user_cg[CG_CPUS], "cpuset.cpus",
+				       limits->allow_cores);
+		rc += xcgroup_set_param(&g_user_cg[CG_CPUS], "cpuset.mems",
+					limits->allow_mems);
+		break;
+	case CG_MEMORY:
+		break;
+	case CG_DEVICES:
+		break;
+	default:
+		error("cgroup subsystem %"PRIu16" not supported", sub);
+		rc = SLURM_ERROR;
+		break;
+	}
+
+	return rc;
 }
 
 extern int cgroup_p_job_constrain_set(cgroup_ctl_type_t sub,
 				      stepd_step_rec_t *job,
 				      cgroup_limits_t *limits)
 {
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+
+	if (!limits)
+		return SLURM_ERROR;
+
+	switch (sub) {
+	case CG_TRACK:
+		break;
+	case CG_CPUS:
+		rc = xcgroup_set_param(&g_job_cg[CG_CPUS], "cpuset.cpus",
+				       limits->allow_cores);
+		rc += xcgroup_set_param(&g_job_cg[CG_CPUS], "cpuset.mems",
+					limits->allow_mems);
+		break;
+	case CG_MEMORY:
+		break;
+	case CG_DEVICES:
+		break;
+	default:
+		error("cgroup subsystem %"PRIu16" not supported", sub);
+		rc = SLURM_ERROR;
+		break;
+	}
+
+	return rc;
 }
 
 extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
 				       stepd_step_rec_t *job,
 				       cgroup_limits_t *limits)
 {
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+#ifdef HAVE_NATIVE_CRAY
+	char expected_usage[32];
+#endif
+
+	if (!limits)
+		return SLURM_ERROR;
+
+	switch (sub) {
+	case CG_TRACK:
+		break;
+	case CG_CPUS:
+		rc = xcgroup_set_param(&g_step_cg[CG_CPUS], "cpuset.cpus",
+				       limits->allow_cores);
+		rc += xcgroup_set_param(&g_step_cg[CG_CPUS], "cpuset.mems",
+				       limits->allow_mems);
+#ifdef HAVE_NATIVE_CRAY
+		/*
+		 * on Cray systems, set the expected usage in bytes.
+		 * This is used by the Cray OOM killer
+		 */
+		snprintf(expected_usage, sizeof(expected_usage), "%"PRIu64,
+			 (uint64_t)job->step_mem * 1024 * 1024);
+
+		rc += xcgroup_set_param(&g_step_cg[CG_CPUS],
+					"cpuset.expected_usage_in_bytes",
+					expected_usage);
+#endif
+		break;
+	case CG_MEMORY:
+		break;
+	case CG_DEVICES:
+		break;
+	default:
+		error("cgroup subsystem %"PRIu16" not supported", sub);
+		rc = SLURM_ERROR;
+		break;
+	}
+
+	return rc;
 }
 
 extern int cgroup_p_step_start_oom_mgr()
