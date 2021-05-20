@@ -69,6 +69,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/cpu_frequency.h"
+#include "src/common/cgroup.h"
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
@@ -1766,6 +1767,12 @@ _slurmd_init(void)
 	 */
 	cpu_freq_init(conf);
 
+	/* Any plugins which use cgroup must be loaded after this */
+	if (cgroup_g_init() != SLURM_SUCCESS) {
+		error("Unable to initialize cgroup plugin");
+		return SLURM_ERROR;
+	}
+
 	/*
 	 * If configured, apply resource specialization
 	 */
@@ -1931,6 +1938,7 @@ _slurmd_fini(void)
 	job_container_fini();
 	acct_gather_conf_destroy();
 	fini_system_cgroup();
+	cgroup_g_fini();
 	route_fini();
 	xcpuinfo_fini();
 	slurm_mutex_lock(&fini_job_mutex);
