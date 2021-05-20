@@ -67,17 +67,42 @@ const char plugin_name[] = "Cgroup v1 plugin";
 const char plugin_type[] = "cgroup/v1";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
+static char g_user_cgpath[CG_CTL_CNT][PATH_MAX];
+static char g_job_cgpath[CG_CTL_CNT][PATH_MAX];
+static char g_step_cgpath[CG_CTL_CNT][PATH_MAX];
+
+static xcgroup_ns_t g_cg_ns[CG_CTL_CNT];
+
+static xcgroup_t g_root_cg[CG_CTL_CNT];
+//static xcgroup_t g_user_cg[CG_CTL_CNT];
+//static xcgroup_t g_job_cg[CG_CTL_CNT];
+//static xcgroup_t g_step_cg[CG_CTL_CNT];
+
+const char *g_cg_name[CG_CTL_CNT] = {
+	"freezer",
+	"cpuset",
+	"memory",
+	"devices",
+	"cpuacct"
+};
+
 extern int init(void)
 {
-	debug("%s loaded", plugin_name);
+	int i;
 
+	for (i = 0; i < CG_CTL_CNT; i++) {
+		g_user_cgpath[i][0] = '\0';
+		g_job_cgpath[i][0] = '\0';
+		g_step_cgpath[i][0] = '\0';
+	}
+
+	debug("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 
 extern int fini(void)
 {
 	debug("unloading %s", plugin_name);
-
 	return SLURM_SUCCESS;
 }
 
