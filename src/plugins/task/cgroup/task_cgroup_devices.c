@@ -136,54 +136,8 @@ error:
 
 extern int task_cgroup_devices_fini(void)
 {
-	xcgroup_t devices_cg;
-
-	/* Similarly to task_cgroup_{memory,cpuset}_fini(), we must lock the
-	 * root cgroup so we don't race with another job step that is
-	 * being started.  */
-        if (xcgroup_create(&devices_ns, &devices_cg,"",0,0)
-	    == SLURM_SUCCESS) {
-                if (xcgroup_lock(&devices_cg) == SLURM_SUCCESS) {
-			/* First move slurmstepd to the root devices cg
-			 * so we can remove the step/job/user devices
-			 * cg's.  */
-			xcgroup_move_process(&devices_cg, getpid());
-
-			xcgroup_wait_pid_moved(&step_devices_cg,
-					       "devices step");
-
-			if (xcgroup_delete(&step_devices_cg) != SLURM_SUCCESS)
-                                debug2("unable to remove step "
-                                       "devices : %m");
-                        if (xcgroup_delete(&job_devices_cg) != SLURM_SUCCESS)
-                                debug2("not removing "
-                                       "job devices : %m");
-                        if (xcgroup_delete(&user_devices_cg)
-			    != SLURM_SUCCESS)
-                                debug2("not removing "
-                                       "user devices : %m");
-                        xcgroup_unlock(&devices_cg);
-                } else
-                        error("unable to lock root devices : %m");
-                xcgroup_destroy(&devices_cg);
-        } else
-                error("unable to create root devices : %m");
-
-	if ( user_cgroup_path[0] != '\0' )
-		xcgroup_destroy(&user_devices_cg);
-	if ( job_cgroup_path[0] != '\0' )
-		xcgroup_destroy(&job_devices_cg);
-	if ( jobstep_cgroup_path[0] != '\0' )
-		xcgroup_destroy(&step_devices_cg);
-
-	user_cgroup_path[0] = '\0';
-	job_cgroup_path[0] = '\0';
-	jobstep_cgroup_path[0] = '\0';
-
+	cgroup_g_step_destroy(CG_DEVICES);
 	cgroup_allowed_devices_file[0] = '\0';
-
-	xcgroup_ns_destroy(&devices_ns);
-
 	xcpuinfo_fini();
 	return SLURM_SUCCESS;
 }
