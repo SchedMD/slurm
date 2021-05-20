@@ -178,6 +178,17 @@ static char *_get_cgroup_plugin()
 	return cgroup_plugin;
 }
 
+extern void cgroup_free_limits(cgroup_limits_t *limits)
+{
+	if (!limits)
+		return;
+
+	xfree(limits->allow_cores);
+	xfree(limits->allow_mems);
+	xfree(limits->device_major);
+	xfree(limits);
+}
+
 /*
  * Initialize Cgroup plugins.
  *
