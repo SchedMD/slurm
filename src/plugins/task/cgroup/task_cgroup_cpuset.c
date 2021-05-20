@@ -53,6 +53,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/xstring.h"
+#include "src/common/cgroup.h"
 #include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/common/task_plugin.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
@@ -908,18 +909,7 @@ static void _validate_mask(uint32_t task_id, hwloc_obj_t obj, cpu_set_t *ts)
 
 extern int task_cgroup_cpuset_init(void)
 {
-	/* initialize user/job/jobstep cgroup relative paths */
-	user_cgroup_path[0]='\0';
-	job_cgroup_path[0]='\0';
-	jobstep_cgroup_path[0]='\0';
-
-	/* initialize cpuset cgroup namespace */
-	if (xcgroup_ns_create(&cpuset_ns, "", "cpuset")
-	    != SLURM_SUCCESS) {
-		error("unable to create cpuset namespace");
-		return SLURM_ERROR;
-	}
-
+	cgroup_g_initialize(CG_CPUS);
 	return SLURM_SUCCESS;
 }
 
