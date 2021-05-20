@@ -542,8 +542,8 @@ int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, pid_t remote_pid)
 		debug("Handling REQUEST_STEP_TERMINATE");
 		rc = _handle_terminate(fd, job, uid);
 		break;
-	case REQUEST_STEP_COMPLETION_V2:
-		debug("Handling REQUEST_STEP_COMPLETION_V2");
+	case REQUEST_STEP_COMPLETION:
+		debug("Handling REQUEST_STEP_COMPLETION");
 		rc = _handle_completion(fd, job, uid);
 		break;
 	case REQUEST_STEP_TASK_INFO:
