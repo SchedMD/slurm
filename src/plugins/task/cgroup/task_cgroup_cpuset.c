@@ -915,50 +915,7 @@ extern int task_cgroup_cpuset_init(void)
 
 extern int task_cgroup_cpuset_fini(void)
 {
-	xcgroup_t cpuset_cg;
-
-	/* Similarly to task_cgroup_memory_fini(), we must lock the
-	 * root cgroup so we don't race with another job step that is
-	 * being started.  */
-        if (xcgroup_create(&cpuset_ns, &cpuset_cg,"",0,0) == SLURM_SUCCESS) {
-		if (xcgroup_lock(&cpuset_cg) == SLURM_SUCCESS) {
-			/* First move slurmstepd to the root cpuset cg
-			 * so we can remove the step/job/user cpuset
-			 * cg's.  */
-			xcgroup_move_process(&cpuset_cg, getpid());
-
-			xcgroup_wait_pid_moved(&step_cpuset_cg, "cpuset step");
-
-                        if (xcgroup_delete(&step_cpuset_cg) != SLURM_SUCCESS)
-                                debug2("unable to remove step "
-                                       "cpuset : %m");
-                        if (xcgroup_delete(&job_cpuset_cg) != SLURM_SUCCESS)
-                                debug2("not removing "
-                                       "job cpuset : %m");
-                        if (xcgroup_delete(&user_cpuset_cg) != SLURM_SUCCESS)
-                                debug2("not removing "
-                                       "user cpuset : %m");
-                        xcgroup_unlock(&cpuset_cg);
-                } else
-                        error("unable to lock root cpuset : %m");
-                xcgroup_destroy(&cpuset_cg);
-        } else
-                error("unable to create root cpuset : %m");
-
-	if (user_cgroup_path[0] != '\0')
-		xcgroup_destroy(&user_cpuset_cg);
-	if (job_cgroup_path[0] != '\0')
-		xcgroup_destroy(&job_cpuset_cg);
-	if (jobstep_cgroup_path[0] != '\0')
-		xcgroup_destroy(&step_cpuset_cg);
-
-	user_cgroup_path[0]='\0';
-	job_cgroup_path[0]='\0';
-	jobstep_cgroup_path[0]='\0';
-
-	xcgroup_ns_destroy(&cpuset_ns);
-
-	return SLURM_SUCCESS;
+	return cgroup_g_step_destroy(CG_CPUS);
 }
 
 static int _cgroup_create_callback(const char *calling_func,
