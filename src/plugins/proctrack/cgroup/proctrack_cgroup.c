@@ -84,14 +84,10 @@ const char plugin_name[]      = "Process tracking via linux cgroup freezer subsy
 const char plugin_type[]      = "proctrack/cgroup";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-static char user_cgroup_path[PATH_MAX];
-static char job_cgroup_path[PATH_MAX];
 static char jobstep_cgroup_path[PATH_MAX];
 
 static xcgroup_ns_t freezer_ns;
 
-static xcgroup_t user_freezer_cg;
-static xcgroup_t job_freezer_cg;
 static xcgroup_t step_freezer_cg;
 
 int _slurm_cgroup_add_pids(uint64_t id, pid_t* pids, int npids)
@@ -100,14 +96,6 @@ int _slurm_cgroup_add_pids(uint64_t id, pid_t* pids, int npids)
 		return SLURM_ERROR;
 
 	return xcgroup_add_pids(&step_freezer_cg, pids, npids);
-}
-
-int _slurm_cgroup_stick_stepd(uint64_t id, pid_t pid)
-{
-	if (*job_cgroup_path == '\0')
-		return SLURM_ERROR;
-
-	return xcgroup_add_pids(&job_freezer_cg, &pid, 1);
 }
 
 int
@@ -233,40 +221,7 @@ extern int fini (void)
  */
 extern int proctrack_p_create (stepd_step_rec_t *job)
 {
-	int fstatus;
-
-	/* create a new cgroup for that container */
-	if (xcgroup_create_hierarchy(__func__,
-				     job,
-				     &freezer_ns,
-				     &job_freezer_cg,
-				     &step_freezer_cg,
-				     &user_freezer_cg,
-				     job_cgroup_path,
-				     jobstep_cgroup_path,
-				     user_cgroup_path,
-				     NULL, NULL) != SLURM_SUCCESS)
-		return SLURM_ERROR;
-
-	/* stick slurmstepd pid to the newly created job container
-	 * (Note: we do not put it in the step container because this
-	 * container could be used to suspend/resume tasks using freezer
-	 * properties so we need to let the slurmstepd outside of
-	 * this one)
-	 */
-	fstatus = _slurm_cgroup_stick_stepd((uint64_t)job->jmgr_pid,
-					    job->jmgr_pid);
-	if (fstatus) {
-		cgroup_g_step_destroy(CG_TRACK);
-		return SLURM_ERROR;
-	}
-
-	/* we use slurmstepd pid as the identifier of the container
-	 * the corresponding cgroup could be found using
-	 * _slurm_cgroup_find_by_pid */
-	job->cont_id = (uint64_t)job->jmgr_pid;
-
-	return SLURM_SUCCESS;
+	return cgroup_g_step_create(CG_TRACK, job);
 }
 
 extern int proctrack_p_add (stepd_step_rec_t *job, pid_t pid)

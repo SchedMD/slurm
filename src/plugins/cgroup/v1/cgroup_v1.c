@@ -223,6 +223,50 @@ extern int cgroup_p_initialize(cgroup_ctl_type_t sub)
  */
 extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 {
+	switch (sub) {
+	case CG_TRACK:
+		/* create a new cgroup for that container */
+		if (xcgroup_create_hierarchy(__func__,
+					     job,
+					     &g_cg_ns[sub],
+					     &g_job_cg[sub],
+					     &g_step_cg[sub],
+					     &g_user_cg[sub],
+					     g_job_cgpath[sub],
+					     g_step_cgpath[sub],
+					     g_user_cgpath[sub],
+					     NULL, NULL)
+		    != SLURM_SUCCESS) {
+			return SLURM_ERROR;
+		}
+
+		/* stick slurmstepd pid to the newly created job container
+		 * (Note: we do not put it in the step container because this
+		 * container could be used to suspend/resume tasks using freezer
+		 * properties so we need to let the slurmstepd outside of
+		 * this one)
+		 */
+		if (xcgroup_add_pids(&g_job_cg[sub], &job->jmgr_pid, 1) !=
+		    SLURM_SUCCESS) {
+			cgroup_p_step_destroy(sub);
+			return SLURM_ERROR;
+		}
+
+		/* we use slurmstepd pid as the identifier of the container */
+		job->cont_id = (uint64_t)job->jmgr_pid;
+		break;
+	case CG_CPUS:
+	case CG_MEMORY:
+	case CG_DEVICES:
+	case CG_CPUACCT:
+		error("This operation is not supported for %s", g_cg_name[sub]);
+		return SLURM_ERROR;
+	default:
+		error("cgroup subsystem %"PRIu16" not supported", sub);
+		return SLURM_ERROR;
+		break;
+	}
+
 	return SLURM_SUCCESS;
 }
 
