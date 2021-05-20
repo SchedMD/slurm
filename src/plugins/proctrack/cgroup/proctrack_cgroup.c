@@ -90,15 +90,6 @@ static xcgroup_ns_t freezer_ns;
 
 static xcgroup_t step_freezer_cg;
 
-int
-_slurm_cgroup_get_pids(uint64_t id, pid_t **pids, int *npids)
-{
-	if (*jobstep_cgroup_path == '\0')
-		return SLURM_ERROR;
-
-	return xcgroup_get_pids(&step_freezer_cg, pids, npids);
-}
-
 int _slurm_cgroup_suspend(uint64_t id)
 {
 	if (*jobstep_cgroup_path == '\0')
@@ -229,8 +220,7 @@ extern int proctrack_p_signal (uint64_t id, int signal)
 	int slurm_task;
 
 	/* get all the pids associated with the step */
-	if (_slurm_cgroup_get_pids(id, &pids, &npids) !=
-	    SLURM_SUCCESS) {
+	if (cgroup_g_step_get_pids(&pids, &npids) != SLURM_SUCCESS) {
 		debug3("unable to get pids list for cont_id=%"PRIu64"", id);
 		/* that could mean that all the processes already exit */
 		/* the container so return success */
@@ -321,5 +311,5 @@ extern int proctrack_p_wait(uint64_t cont_id)
 extern int proctrack_p_get_pids(uint64_t cont_id,
 				       pid_t **pids, int *npids)
 {
-	return _slurm_cgroup_get_pids(cont_id, pids, npids);
+	return cgroup_g_step_get_pids(pids, npids);
 }
