@@ -272,7 +272,24 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 
 extern int cgroup_p_step_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
 {
-	return SLURM_SUCCESS;
+	if (*g_step_cgpath[sub] == '\0')
+		return SLURM_ERROR;
+
+	switch (sub) {
+	case CG_TRACK:
+	case CG_CPUS:
+	case CG_MEMORY:
+	case CG_DEVICES:
+		break;
+	case CG_CPUACCT:
+		error("This operation is not supported for %s", g_cg_name[sub]);
+		return SLURM_ERROR;
+	default:
+		error("cgroup subsystem %"PRIu16" not supported", sub);
+		return SLURM_ERROR;
+	}
+
+	return xcgroup_add_pids(&g_step_cg[sub], pids, npids);
 }
 
 extern int cgroup_p_step_get_pids(pid_t **pids, int *npids)

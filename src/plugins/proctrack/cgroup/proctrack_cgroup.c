@@ -90,14 +90,6 @@ static xcgroup_ns_t freezer_ns;
 
 static xcgroup_t step_freezer_cg;
 
-int _slurm_cgroup_add_pids(uint64_t id, pid_t* pids, int npids)
-{
-	if (*jobstep_cgroup_path == '\0')
-		return SLURM_ERROR;
-
-	return xcgroup_add_pids(&step_freezer_cg, pids, npids);
-}
-
 int
 _slurm_cgroup_get_pids(uint64_t id, pid_t **pids, int *npids)
 {
@@ -226,7 +218,7 @@ extern int proctrack_p_create (stepd_step_rec_t *job)
 
 extern int proctrack_p_add (stepd_step_rec_t *job, pid_t pid)
 {
-	return _slurm_cgroup_add_pids(job->cont_id, &pid, 1);
+	return cgroup_g_step_addto(CG_TRACK, &pid, 1);
 }
 
 extern int proctrack_p_signal (uint64_t id, int signal)
