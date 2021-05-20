@@ -75,3 +75,4 @@ API CHANGES
  -- sched plugin: change plugin API to sched_p_*() and remove
     slurm_sched_p_initial_priority() call.
  -- step_ctx code has been removed from the api.
+ -- slurm_stepd_get_info()/stepd_get_info() has been removed from the api.

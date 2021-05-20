@@ -454,7 +454,6 @@
 #define stepd_get_uid			slurm_stepd_get_uid
 #define stepd_add_extern_pid		slurm_stepd_add_extern_pid
 #define stepd_get_x11_display		slurm_stepd_get_x11_display
-#define stepd_get_info			slurm_stepd_get_info
 #define stepd_getpw			slurm_stepd_getpw
 #define xfree_struct_passwd		slurm_xfree_struct_passwd
 #define stepd_getgr			slurm_stepd_getgr

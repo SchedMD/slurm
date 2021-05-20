@@ -74,7 +74,6 @@ strong_alias(stepd_connect, slurm_stepd_connect);
 strong_alias(stepd_get_uid, slurm_stepd_get_uid);
 strong_alias(stepd_add_extern_pid, slurm_stepd_add_extern_pid);
 strong_alias(stepd_get_x11_display, slurm_stepd_get_x11_display);
-strong_alias(stepd_get_info, slurm_stepd_get_info);
 strong_alias(stepd_getpw, slurm_stepd_getpw);
 strong_alias(xfree_struct_passwd, slurm_xfree_struct_passwd);
 strong_alias(stepd_getgr, slurm_stepd_getgr);
@@ -307,47 +306,6 @@ stepd_state(int fd, uint16_t protocol_version)
 	safe_read(fd, &status, sizeof(slurmstepd_state_t));
 rwfail:
 	return status;
-}
-
-/*
- * Retrieve slurmstepd_info_t structure for a job step.
- *
- * Must be xfree'd by the caller.
- */
-slurmstepd_info_t *stepd_get_info(int fd)
-{
-	int req = REQUEST_INFO;
-	slurmstepd_info_t *step_info = xmalloc(sizeof(*step_info));
-
-	safe_write(fd, &req, sizeof(int));
-
-	safe_read(fd, &step_info->uid, sizeof(uid_t));
-	safe_read(fd, &step_info->step_id.job_id, sizeof(uint32_t));
-	safe_read(fd, &step_info->step_id.step_id, sizeof(uint32_t));
-
-	safe_read(fd, &step_info->protocol_version, sizeof(uint16_t));
-	if (step_info->protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
-		safe_read(fd, &step_info->nodeid, sizeof(uint32_t));
-		safe_read(fd, &step_info->job_mem_limit, sizeof(uint64_t));
-		safe_read(fd, &step_info->step_mem_limit, sizeof(uint64_t));
-		safe_read(fd, &step_info->step_id.step_het_comp,
-			  sizeof(uint32_t));
-	} else if (step_info->protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		safe_read(fd, &step_info->nodeid, sizeof(uint32_t));
-		safe_read(fd, &step_info->job_mem_limit, sizeof(uint64_t));
-		safe_read(fd, &step_info->step_mem_limit, sizeof(uint64_t));
-		step_info->step_id.step_het_comp = NO_VAL;
-	} else {
-		error("%s: protocol_version %hu not supported",
-		      __func__, step_info->protocol_version);
-		goto rwfail;
-	}
-
-	return step_info;
-
-rwfail:
-	xfree(step_info);
-	return NULL;
 }
 
 /*

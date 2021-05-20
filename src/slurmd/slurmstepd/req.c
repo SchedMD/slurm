@@ -82,7 +82,6 @@ static void *_handle_accept(void *arg);
 static int _handle_request(int fd, stepd_step_rec_t *job,
 			   uid_t uid, pid_t remote_pid);
 static int _handle_state(int fd, stepd_step_rec_t *job);
-static int _handle_info(int fd, stepd_step_rec_t *job);
 static int _handle_mem_limits(int fd, stepd_step_rec_t *job);
 static int _handle_uid(int fd, stepd_step_rec_t *job);
 static int _handle_nodeid(int fd, stepd_step_rec_t *job);
@@ -507,10 +506,6 @@ int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, pid_t remote_pid)
 		debug("Handling REQUEST_STATE");
 		rc = _handle_state(fd, job);
 		break;
-	case REQUEST_INFO:
-		debug("Handling REQUEST_INFO");
-		rc = _handle_info(fd, job);
-		break;
 	case REQUEST_STEP_MEM_LIMITS:
 		debug("Handling REQUEST_STEP_MEM_LIMITS");
 		rc = _handle_mem_limits(fd, job);
@@ -605,31 +600,6 @@ static int
 _handle_state(int fd, stepd_step_rec_t *job)
 {
 	safe_write(fd, &job->state, sizeof(slurmstepd_state_t));
-
-	return SLURM_SUCCESS;
-rwfail:
-	return SLURM_ERROR;
-}
-
-static int
-_handle_info(int fd, stepd_step_rec_t *job)
-{
-	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
-
-	safe_write(fd, &job->uid, sizeof(uid_t));
-	safe_write(fd, &job->step_id.job_id, sizeof(uint32_t));
-	safe_write(fd, &job->step_id.step_id, sizeof(uint32_t));
-
-	/* protocol_version was added in Slurm version 2.2,
-	 * so it needed to be added later in the data sent
-	 * for backward compatibility (so that it doesn't
-	 * get confused for a huge UID, job ID or step ID;
-	 * we should be save in avoiding huge node IDs). */
-	safe_write(fd, &protocol_version, sizeof(uint16_t));
-	safe_write(fd, &job->nodeid, sizeof(uint32_t));
-	safe_write(fd, &job->job_mem, sizeof(uint64_t));
-	safe_write(fd, &job->step_mem, sizeof(uint64_t));
-	safe_write(fd, &job->step_id.step_het_comp, sizeof(uint32_t));
 
 	return SLURM_SUCCESS;
 rwfail:

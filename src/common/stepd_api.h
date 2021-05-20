@@ -156,13 +156,6 @@ extern int stepd_connect(const char *directory, const char *nodename,
 slurmstepd_state_t stepd_state(int fd, uint16_t protocol_version);
 
 /*
- * Retrieve slurmstepd_info_t structure for a job step.
- *
- * Must be xfree'd by the caller.
- */
-slurmstepd_info_t *stepd_get_info(int fd);
-
-/*
  * Send job notification message to a batch job
  */
 int stepd_notify_job(int fd, uint16_t protocol_version, char *message);
