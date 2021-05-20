@@ -57,6 +57,12 @@
 #include "src/slurmd/common/xcgroup.h"
 #include "src/plugins/cgroup/common/cgroup_common.h"
 
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
+#define POLLRDHUP POLLHUP
+#else
+#include <sys/eventfd.h>
+#endif
+
 /* Functions */
 extern int init(void);
 extern int fini(void);

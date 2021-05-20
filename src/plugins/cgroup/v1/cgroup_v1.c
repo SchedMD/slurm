@@ -86,6 +86,21 @@ const char *g_cg_name[CG_CTL_CNT] = {
 	"cpuacct"
 };
 
+/* Cgroup v1 control items for the oom monitor */
+#define STOP_OOM 0x987987987
+
+typedef struct {
+	int cfd;	/* control file fd. */
+	int efd;	/* event file fd. */
+	int event_fd;	/* eventfd fd. */
+} oom_event_args_t;
+
+static bool oom_thread_created = false;
+static uint64_t oom_kill_count = 0;
+static int oom_pipe[2] = { -1, -1 };
+static pthread_t oom_thread;
+static pthread_mutex_t oom_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 static int _cgroup_init(cgroup_ctl_type_t sub)
 {
 	if (sub >= CG_CTL_CNT)
@@ -651,15 +666,321 @@ extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
 	return rc;
 }
 
+/*
+ * Code based on linux tools/cgroup/cgroup_event_listener.c with adapted
+ * modifications for Slurm logic and needs.
+ */
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 extern int cgroup_p_step_start_oom_mgr()
 {
+	debug("OOM not available on FreeBSD, NetBSD, or macOS");
 	return SLURM_SUCCESS;
 }
 
 extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 {
+	debug("OOM not available on FreeBSD, NetBSD, or macOS");
 	return NULL;
 }
+#else
+static int _read_fd(int fd, uint64_t *buf)
+{
+	int rc = SLURM_ERROR;
+	size_t len = sizeof(uint64_t);
+	uint64_t *buf_ptr = buf;
+	ssize_t nread;
+
+	while (len > 0 && (nread = read(fd, buf_ptr, len)) != 0) {
+		if (nread == -1) {
+			if (errno == EINTR)
+				continue;
+			error("read(): %m");
+			break;
+		}
+		len -= nread;
+		buf_ptr += nread;
+	}
+
+	if (len == 0)
+		rc = SLURM_SUCCESS;
+
+	return rc;
+}
+
+static void *_oom_event_monitor(void *x)
+{
+	oom_event_args_t *args = (oom_event_args_t *) x;
+	int ret = -1;
+	uint64_t res;
+	struct pollfd fds[2];
+
+	debug("started.");
+
+	/*
+	 * POLLPRI should only meaningful for event_fd, since according to the
+	 * poll() man page it may indicate "cgroup.events" file modified.
+	 *
+	 * POLLRDHUP should only be meaningful for oom_pipe[0], since it refers
+	 * to stream socket peer closed connection.
+	 *
+	 * POLLHUP is ignored in events member, and should be set by the Kernel
+	 * in revents even if not defined in events.
+	 *
+	 */
+	fds[0].fd = args->event_fd;
+	fds[0].events = POLLIN | POLLPRI;
+
+	fds[1].fd = oom_pipe[0];
+	fds[1].events = POLLIN | POLLRDHUP;
+
+	/*
+	 * Poll event_fd for oom_kill events plus oom_pipe[0] for stop msg.
+	 * Specifying a negative value in timeout means an infinite timeout.
+	 */
+	while (1) {
+		ret = poll(fds, 2, -1);
+
+		if (ret == -1) {
+			/* Error. */
+			if (errno == EINTR)
+				continue;
+
+			error("poll(): %m");
+			break;
+		} else if (ret == 0) {
+			/* Should not happen since infinite timeout. */
+			error("poll() timeout.");
+			break;
+		} else if (ret > 0) {
+			if (fds[0].revents & (POLLIN | POLLPRI)) {
+				/* event_fd readable. */
+				res = 0;
+				ret = _read_fd(args->event_fd, &res);
+				if (ret == SLURM_SUCCESS) {
+					slurm_mutex_lock(&oom_mutex);
+					debug3("res: %"PRIu64"", res);
+					oom_kill_count += res;
+					debug2("oom-kill event count: %"PRIu64"",
+					       oom_kill_count);
+					slurm_mutex_unlock(&oom_mutex);
+				} else
+					error("cannot read oom-kill counts.");
+			} else if (fds[0].revents & (POLLRDHUP | POLLERR |
+						     POLLHUP | POLLNVAL)) {
+				error("problem with event_fd");
+				break;
+			}
+
+			if (fds[1].revents & POLLIN) {
+				/* oom_pipe[0] readable. */
+				res = 0;
+				ret = _read_fd(oom_pipe[0], &res);
+				if (ret == SLURM_SUCCESS && res == STOP_OOM) {
+					/* Read stop msg. */
+					debug2("stop msg read.");
+					break;
+				}
+			} else if (fds[1].revents &
+				   (POLLRDHUP | POLLERR | POLLHUP | POLLNVAL)) {
+				error("problem with oom_pipe[0]");
+				break;
+			}
+		}
+	}
+
+	slurm_mutex_lock(&oom_mutex);
+	if (!oom_kill_count)
+		debug("No oom events detected.");
+	slurm_mutex_unlock(&oom_mutex);
+
+	if ((args->event_fd != -1) && (close(args->event_fd) == -1))
+		error("close(event_fd): %m");
+	if ((args->efd != -1) && (close(args->efd) == -1))
+		error("close(efd): %m");
+	if ((args->cfd != -1) && (close(args->cfd) == -1))
+		error("close(cfd): %m");
+	if ((oom_pipe[0] >= 0) && (close(oom_pipe[0]) == -1))
+		error("close(oom_pipe[0]): %m");
+	xfree(args);
+
+	debug("stopping.");
+
+	pthread_exit((void *) 0);
+}
+
+/* Cgroup v1 function to detect OOM conditions.
+ *
+ * We will use memory.oom_control and cgroup.event_control, see:
+ * https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt
+ *
+ * If we plan to support cgroup v2, we should monitor 'memory.events' file
+ * modified events. That would mean that any of the available entries changed
+ * its value upon notification. Entries include: low, high, max, oom, oom_kill.
+ * https://www.kernel.org/doc/Documentation/cgroup-v2.txt
+ */
+extern int cgroup_p_step_start_oom_mgr()
+{
+	char *control_file = NULL, *event_file = NULL, *line = NULL;
+	int rc = SLURM_SUCCESS, event_fd = -1, cfd = -1, efd = -1;
+	oom_event_args_t *event_args;
+
+	xstrfmtcat(control_file, "%s/%s", g_step_cg[CG_MEMORY].path,
+		   "memory.oom_control");
+
+	if ((cfd = open(control_file, O_RDONLY | O_CLOEXEC)) == -1) {
+		error("Cannot open %s: %m", control_file);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	xstrfmtcat(event_file, "%s/%s", g_step_cg[CG_MEMORY].path,
+		   "cgroup.event_control");
+
+	if ((efd = open(event_file, O_WRONLY | O_CLOEXEC)) == -1) {
+		error("Cannot open %s: %m", event_file);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	if ((event_fd = eventfd(0, EFD_CLOEXEC)) == -1) {
+		error("eventfd: %m");
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	xstrfmtcat(line, "%d %d", event_fd, cfd);
+
+	oom_kill_count = 0;
+
+	if (write(efd, line, strlen(line) + 1) == -1) {
+		error("Cannot write to %s", event_file);
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	if (pipe2(oom_pipe, O_CLOEXEC) == -1) {
+		error("pipe(): %m");
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	/*
+	 * Monitoring thread should be responsible for closing the fd's and
+	 * freeing the oom_event_args_t struct and members.
+	 */
+	event_args = xmalloc(sizeof(oom_event_args_t));
+	event_args->cfd = cfd;
+	event_args->efd = efd;
+	event_args->event_fd = event_fd;
+
+	slurm_mutex_init(&oom_mutex);
+	slurm_thread_create(&oom_thread, _oom_event_monitor, event_args);
+	oom_thread_created = true;
+
+fini:
+	xfree(line);
+	if (!oom_thread_created) {
+		if ((event_fd != -1) && (close(event_fd) == -1))
+			error("close: %m");
+		if ((efd != -1) && (close(efd) == -1))
+			error("close: %m");
+		if ((cfd != -1) && (close(cfd) == -1))
+			error("close: %m");
+		if ((oom_pipe[0] != -1) && (close(oom_pipe[0]) == -1))
+			error("close oom_pipe[0]: %m");
+		if ((oom_pipe[1] != -1) && (close(oom_pipe[1]) == -1))
+			error("close oom_pipe[1]: %m");
+	}
+	xfree(event_file);
+	xfree(control_file);
+
+	if (rc != SLURM_SUCCESS)
+		error("Unable to register OOM notifications for %s",
+		      g_step_cg[CG_MEMORY].path);
+	return rc;
+}
+
+/* return the value in failcnt file if it exists*/
+static uint64_t _failcnt(xcgroup_t* cg, char* param)
+{
+	uint64_t value = 0;
+
+	if (xcgroup_get_uint64_param(cg, param, &value) != SLURM_SUCCESS) {
+		debug2("unable to read '%s' from '%s'", param, cg->path);
+		value = 0;
+	}
+
+	return value;
+}
+
+extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
+{
+	cgroup_oom_t *results = NULL;
+	uint64_t stop_msg;
+	ssize_t ret;
+
+	if (!oom_thread_created) {
+		debug("OOM events were not monitored for %ps", &job->step_id);
+		goto fail_oom_results;
+	}
+
+	if (xcgroup_lock(&g_step_cg[CG_MEMORY]) != SLURM_SUCCESS) {
+		error("xcgroup_lock error: %m");
+		goto fail_oom_results;
+	}
+
+	results = xmalloc(sizeof(*results));
+
+	results->step_memsw_failcnt = _failcnt(&g_step_cg[CG_MEMORY],
+					       "memory.memsw.failcnt");
+	results->step_mem_failcnt = _failcnt(&g_step_cg[CG_MEMORY],
+					     "memory.failcnt");
+	results->job_memsw_failcnt = _failcnt(&g_job_cg[CG_MEMORY],
+					      "memory.memsw.failcnt");
+	results->job_mem_failcnt = _failcnt(&g_job_cg[CG_MEMORY],
+					    "memory.failcnt");
+
+	xcgroup_unlock(&g_step_cg[CG_MEMORY]);
+
+	/*
+	 * oom_thread created, but could have finished before we attempt
+	 * to send the stop msg. If it finished, oom_thread should had
+	 * closed the read endpoint of oom_pipe.
+	 */
+	stop_msg = STOP_OOM;
+	while (1) {
+		ret = write(oom_pipe[1], &stop_msg, sizeof(stop_msg));
+		if (ret == -1) {
+			if (errno == EINTR)
+				continue;
+			debug("oom stop msg write() failed: %m");
+		} else if (ret == 0)
+			debug("oom stop msg nothing written: %m");
+		else if (ret == sizeof(stop_msg))
+			debug2("oom stop msg write success.");
+		else
+			debug("oom stop msg not fully written.");
+		break;
+	}
+
+	debug2("attempt to join oom_thread.");
+	if (oom_thread && pthread_join(oom_thread, NULL) != 0)
+		error("pthread_join(): %m");
+
+	slurm_mutex_lock(&oom_mutex);
+	results->oom_kill_cnt = oom_kill_count;
+	slurm_mutex_unlock(&oom_mutex);
+
+fail_oom_results:
+	if ((oom_pipe[1] != -1) && (close(oom_pipe[1]) == -1)) {
+		error("close() failed on oom_pipe[1] fd, %ps: %m",
+		      &job->step_id);
+	}
+	slurm_mutex_destroy(&oom_mutex);
+
+	return results;
+}
+#endif
 
 extern int cgroup_p_accounting_init()
 {
