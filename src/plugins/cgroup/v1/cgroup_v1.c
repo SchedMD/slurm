@@ -74,9 +74,9 @@ static char g_step_cgpath[CG_CTL_CNT][PATH_MAX];
 static xcgroup_ns_t g_cg_ns[CG_CTL_CNT];
 
 static xcgroup_t g_root_cg[CG_CTL_CNT];
-//static xcgroup_t g_user_cg[CG_CTL_CNT];
-//static xcgroup_t g_job_cg[CG_CTL_CNT];
-//static xcgroup_t g_step_cg[CG_CTL_CNT];
+static xcgroup_t g_user_cg[CG_CTL_CNT];
+static xcgroup_t g_job_cg[CG_CTL_CNT];
+static xcgroup_t g_step_cg[CG_CTL_CNT];
 
 const char *g_cg_name[CG_CTL_CNT] = {
 	"freezer",
@@ -105,6 +105,72 @@ static int _cgroup_init(cgroup_ctl_type_t sub)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+static int _remove_cg_subsystem(xcgroup_t root_cg, xcgroup_t step_cg,
+				xcgroup_t job_cg, xcgroup_t user_cg,
+				xcgroup_t move_to_cg, const char *log_str,
+				xcgroup_t remove_from_cg)
+{
+	int rc = SLURM_SUCCESS;
+
+	/*
+	 * Always try to move slurmstepd process to the root cgroup, otherwise
+	 * the rmdir(2) triggered by the calls below will always fail if the pid
+	 * of stepd is in the cgroup. We don't know what other plugins will do
+	 * and whether they will attach the stepd pid to the cg.
+	 */
+	rc = xcgroup_move_process(&move_to_cg, getpid());
+	if (rc != SLURM_SUCCESS) {
+		error("Unable to move pid %d to root cgroup", getpid());
+		goto end;
+	}
+	xcgroup_wait_pid_moved(&remove_from_cg, log_str);
+
+	/*
+	 * Lock the root cgroup so we don't race with other steps that are being
+	 * started.
+	 */
+	if (xcgroup_lock(&root_cg) != SLURM_SUCCESS) {
+		error("xcgroup_lock error (%s)", log_str);
+		return SLURM_ERROR;
+	}
+
+	/* Delete step cgroup. */
+	if ((rc = xcgroup_delete(&step_cg)) != SLURM_SUCCESS) {
+		debug2("unable to remove step cg (%s): %m", log_str);
+		goto end;
+	}
+
+	/*
+	 * At this point we'll do a best effort for the job and user cgroup,
+	 * since other jobs or steps may still be alive and not let us complete
+	 * the cleanup. The last job/step in the hierarchy will be the one which
+	 * will finally remove these two directories
+	 */
+	/* Delete job cgroup. */
+	if ((rc = xcgroup_delete(&job_cg)) != SLURM_SUCCESS) {
+		debug2("not removing job cg (%s): %m", log_str);
+		rc = SLURM_SUCCESS;
+		goto end;
+	}
+	/* Delete user cgroup. */
+	if ((rc = xcgroup_delete(&user_cg)) != SLURM_SUCCESS) {
+		debug2("not removing user cg (%s): %m", log_str);
+		rc = SLURM_SUCCESS;
+		goto end;
+	}
+
+	/*
+	 * Invalidate the cgroup structs.
+	 */
+	xcgroup_destroy(&user_cg);
+	xcgroup_destroy(&job_cg);
+	xcgroup_destroy(&step_cg);
+
+end:
+	xcgroup_unlock(&root_cg);
+	return rc;
 }
 
 extern int init(void)
@@ -182,7 +248,40 @@ extern int cgroup_p_step_resume()
 
 extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 {
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+
+	/* Another plugin may have already destroyed this subsystem. */
+	if (!g_root_cg[sub].path)
+		return SLURM_ERROR;
+
+	/* Custom actions for every cgroup subsystem */
+	switch (sub) {
+	case CG_TRACK:
+	case CG_CPUS:
+	case CG_MEMORY:
+	case CG_DEVICES:
+	case CG_CPUACCT:
+		break;
+	default:
+		error("cgroup subsystem %"PRIu16" not supported", sub);
+		return SLURM_ERROR;
+		break;
+	}
+
+	rc = _remove_cg_subsystem(g_root_cg[sub],
+				  g_step_cg[sub],
+				  g_job_cg[sub],
+				  g_user_cg[sub],
+				  g_root_cg[sub],
+				  g_cg_name[sub],
+				  g_step_cg[sub]);
+
+	if (rc == SLURM_SUCCESS) {
+		xcgroup_destroy(&g_root_cg[sub]);
+		xcgroup_ns_destroy(&g_cg_ns[sub]);
+	}
+
+	return rc;
 }
 
 /*

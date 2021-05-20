@@ -90,72 +90,9 @@ static char jobstep_cgroup_path[PATH_MAX];
 
 static xcgroup_ns_t freezer_ns;
 
-static xcgroup_t freezer_cg;
 static xcgroup_t user_freezer_cg;
 static xcgroup_t job_freezer_cg;
 static xcgroup_t step_freezer_cg;
-
-static int _move_current_to_root_cgroup(xcgroup_ns_t *ns)
-{
-	xcgroup_t cg;
-	int rc;
-
-	if (xcgroup_create(ns, &cg, "", 0, 0) != SLURM_SUCCESS)
-		return SLURM_ERROR;
-
-	rc = xcgroup_move_process(&cg, getpid());
-	xcgroup_destroy(&cg);
-
-	return rc;
-}
-
-int _slurm_cgroup_destroy(void)
-{
-	if (xcgroup_lock(&freezer_cg) != SLURM_SUCCESS) {
-		error("xcgroup_lock error");
-		return SLURM_ERROR;
-	}
-
-	/*
-	 *  First move slurmstepd process to the root cgroup, otherwise
-	 *   the rmdir(2) triggered by the calls below will always fail,
-	 *   because slurmstepd is still in the cgroup!
-	 */
-	if (_move_current_to_root_cgroup(&freezer_ns) != SLURM_SUCCESS) {
-		error("Unable to move pid %d to root cgroup",
-		      getpid());
-		xcgroup_unlock(&freezer_cg);
-		return SLURM_ERROR;
-	}
-
-	xcgroup_wait_pid_moved(&job_freezer_cg, "freezer job");
-
-	if (jobstep_cgroup_path[0] != '\0') {
-		if (xcgroup_delete(&step_freezer_cg) != SLURM_SUCCESS) {
-			debug("_slurm_cgroup_destroy: problem deleting step cgroup path %s: %m",
-			      step_freezer_cg.path);
-			xcgroup_unlock(&freezer_cg);
-			return SLURM_ERROR;
-		}
-		xcgroup_destroy(&step_freezer_cg);
-	}
-
-	if (job_cgroup_path[0] != '\0') {
-		(void)xcgroup_delete(&job_freezer_cg);
-		xcgroup_destroy(&job_freezer_cg);
-	}
-
-	if (user_cgroup_path[0] != '\0') {
-		(void)xcgroup_delete(&user_freezer_cg);
-		xcgroup_destroy(&user_freezer_cg);
-	}
-
-	xcgroup_unlock(&freezer_cg);
-	xcgroup_destroy(&freezer_cg);
-	xcgroup_ns_destroy(&freezer_ns);
-
-	return SLURM_SUCCESS;
-}
 
 int _slurm_cgroup_add_pids(uint64_t id, pid_t* pids, int npids)
 {
@@ -286,7 +223,7 @@ extern int init (void)
 
 extern int fini (void)
 {
-	_slurm_cgroup_destroy();
+	cgroup_g_step_destroy(CG_TRACK);
 	xcpuinfo_fini();
 	return SLURM_SUCCESS;
 }
@@ -320,7 +257,7 @@ extern int proctrack_p_create (stepd_step_rec_t *job)
 	fstatus = _slurm_cgroup_stick_stepd((uint64_t)job->jmgr_pid,
 					    job->jmgr_pid);
 	if (fstatus) {
-		_slurm_cgroup_destroy();
+		cgroup_g_step_destroy(CG_TRACK);
 		return SLURM_ERROR;
 	}
 
@@ -394,7 +331,7 @@ extern int proctrack_p_signal (uint64_t id, int signal)
 
 extern int proctrack_p_destroy (uint64_t id)
 {
-	return _slurm_cgroup_destroy();
+	return cgroup_g_step_destroy(CG_TRACK);
 }
 
 extern uint64_t proctrack_p_find(pid_t pid)
