@@ -87,6 +87,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static bool use_cpuset  = false;
 static bool use_memory  = false;
 static bool use_devices = false;
+static bool do_task_affinity = false;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -108,6 +109,9 @@ extern int init (void)
 		use_memory = true;
 	if (cg_conf->constrain_devices)
 		use_devices = true;
+	if (cg_conf->task_affinity)
+		do_task_affinity = true;
+
 	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 
 	/* enable subsystems based on conf */
@@ -261,23 +265,10 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *job, pid_t pid)
  */
 extern int task_p_pre_launch (stepd_step_rec_t *job)
 {
-	int rc = SLURM_SUCCESS;
+	if (use_cpuset && do_task_affinity)
+		return task_cgroup_cpuset_set_task_affinity(job);
 
-	if (use_cpuset) {
-		slurm_cgroup_conf_t *cg_conf;
-
-		/* read cgroup configuration */
-		slurm_mutex_lock(&xcgroup_config_read_mutex);
-		cg_conf = xcgroup_get_slurm_cgroup_conf();
-
-		/* set affinity if requested */
-		if (cg_conf->task_affinity)
-			rc = task_cgroup_cpuset_set_task_affinity(job);
-
-		slurm_mutex_unlock(&xcgroup_config_read_mutex);
-	}
-
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 /*
