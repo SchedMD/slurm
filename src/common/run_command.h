@@ -62,7 +62,7 @@ extern int run_command_count(void);
  * status OUT - Job exit code
  * env - environment for the command, if NULL execv is used
  * Return stdout+stderr of spawned program, value must be xfreed. */
-extern char *run_command(char *script_type, char *script_path,
+extern char *run_command(const char *script_type, const char *script_path,
 			 char **script_argv, char **env, int max_wait,
 			 pthread_t tid,
 			 int *status);
