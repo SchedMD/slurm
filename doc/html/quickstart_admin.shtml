@@ -641,20 +641,25 @@ may require tens of minutes to update the database and be unresponsive
 during this time interval</b>.</p>
 
 <p>Before upgrading SlurmDBD <b>it is strongly recommended to make a backup of
-the database</b>. When using mysqldump, the default behavior is to lock the
-tables, which can cause issues if SlurmDBD is still trying to send updates to
-the database. To avoid locking the tables we recommend you use the
-<b>--single-transaction</b> flag with mysqldump. This will dump a consistent
-state of the database without blocking any applications. Note that in order for
-this flag to have the desired effect you must be using the InnoDB storage
-engine (specified by default when Slurm automatically creates any table).
-The <b>--single-transaction</b> flag permits a live logical backup (and is thus
-useful for periodic backups while in production). When upgrading Slurm, it is
-recommended to first stop the SlurmDBD daemon and then dump the database using
-mysqldump before proceeding with the upgrade, as stated in the upgrade guide a
-few paragraphs below. Note that requests intended for SlurmDBD from Slurmctld
-will be queued while SlurmDBD is down, but the queue size is limited and you
-should monitor the DBD Agent Queue size with the <b>sdiag</b> command.</p>
+the database</b>. We recommend you only backup the database used by
+<b>slurmdbd</b> to limit the time spent creating the backup and avoid potential
+problems when restoring from a file that contains multiple databases.
+If using mysqldump, the default behavior is to lock the tables, which can
+cause issues if <b>SlurmDBD</b> is still trying to send updates to the database.
+If you must make a backup while the cluster is still active we recommend you
+use the <i>--single-transaction</i> flag with mysqldump to avoid locking tables.
+This will dump a consistent state of the database without blocking any
+applications. Note that in order for this flag to have the desired effect you
+must be using the InnoDB storage engine (specified by default when Slurm
+automatically creates any table) (e.g. <span class="commandline">mysqldump
+--single-transaction --databases slurm_acct_db > backup.sql</span>).</p>
+
+<p>Our recommendation is to first stop the <b>SlurmDBD</b> daemon and then
+backup the database (using a tool like mysqldump, Percona xtrabackup or other)
+before proceeding with the upgrade. Note that requests intended for
+<b>SlurmDBD</b> from <b>Slurmctld</b> will be queued while <b>SlurmDBD</b>
+is down, but the queue size is limited and you should monitor the DBD Agent
+Queue size with the <b>sdiag</b> command.</p>
 
 <p>The slurmctld daemon must also be upgraded before or at the same time as
 the slurmd daemons on the compute nodes.
@@ -699,9 +704,10 @@ slurmd daemons on compute nodes are not down for longer than SlurmdTimeout.
 The recommended upgrade order is as follows:</p>
 <ol>
 <li>Shutdown the slurmdbd daemon</li>
-<li>Backup the Slurm database using mysqldump in case of any possible
-    failure (you may want to take this opportunity to verify that the
-    innodb_buffer_pool_size in my.cnf is at least 128M)</li>
+<li>Backup the Slurm database using mysqldump (or similar tool), e.g. <span
+    class="commandline">mysqldump --databases slurm_acct_db > backup.sql</span>.
+    You may also want to take this opportunity to verify that
+    the innodb_buffer_pool_size in my.cnf is at least 128M.</li>
 <li>Upgrade the slurmdbd daemon</li>
 <li>Restart the slurmdbd daemon</li>
 <li>Increase configured SlurmdTimeout and SlurmctldTimeout values and
@@ -744,6 +750,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 28 April 2021</p>
+<p style="text-align:center;">Last modified 21 May 2021</p>
 
 <!--#include virtual="footer.txt"-->
