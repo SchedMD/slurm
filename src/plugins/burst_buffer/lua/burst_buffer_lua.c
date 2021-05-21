@@ -1185,6 +1185,11 @@ static void *_bb_agent(void *args)
 		_save_bb_state();	/* Has own locks excluding file write */
 	}
 
+	/* Wait for lua threads to finish, then save state once more. */
+	while (_get_lua_thread_cnt())
+		usleep(100000); /* 100 ms */
+	_save_bb_state();
+
 	return NULL;
 }
 
@@ -1539,6 +1544,26 @@ extern int init(void)
 extern int fini(void)
 {
 	int thread_cnt, last_thread_cnt = 0;
+
+	/*
+	 * Tell bb_agent to stop so it doesn't try to lock slurmctld locks to
+	 * avoid this possible deadlock:
+	 * - slurmctld shutdown
+	 * - We get here and then wait for lua threads to clean up without
+	 *   first shutting down bb_agent. We have the burst buffer plugin
+	 *   context lock.
+	 * - backfill agent starts running backfill, acquires slurmctld locks,
+	 *   then calls bb_g_load() which needs the bb plugin context lock so
+	 *   it waits for this function to finish.
+	 * - bb_agent wakes up, term_flag isn't set so it tries to get
+	 *   slurmctld locks, but backfill is holding slurmctld locks.
+	 */
+	slurm_mutex_lock(&bb_state.term_mutex);
+	bb_state.term_flag = true;
+	slurm_cond_signal(&bb_state.term_cond);
+	slurm_mutex_unlock(&bb_state.term_mutex);
+
+	/* Tell lua threads to stop and wait for them to stop. */
 	lua_shutdown = true;
 	while ((thread_cnt = _get_lua_thread_cnt())) {
 		if ((last_thread_cnt != 0) && (thread_cnt != last_thread_cnt))
@@ -1549,11 +1574,6 @@ extern int fini(void)
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	log_flag(BURST_BUF, "");
-
-	slurm_mutex_lock(&bb_state.term_mutex);
-	bb_state.term_flag = true;
-	slurm_cond_signal(&bb_state.term_cond);
-	slurm_mutex_unlock(&bb_state.term_mutex);
 
 	if (bb_state.bb_thread) {
 		slurm_mutex_unlock(&bb_state.bb_mutex);
