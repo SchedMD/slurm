@@ -1188,7 +1188,8 @@ available.
 "RESUME" will also clear the "POWERING_DOWN" state of a node and make it
 eligible to be allocted.
 "UNDRAIN" clears the node from being drained (like "RESUME"), but will
-not change the node's base state (e.g. "DOWN").
+not change the node's base state (e.g. "DOWN"). "UNDRAIN" requires a valid node
+registration before new jobs can be scheduled on the node.
 Setting a node "DOWN" will cause all running and suspended jobs on that
 node to be terminated.
 "POWER_DOWN" and "POWER_UP" will use the configured \fISuspendProg\fR and

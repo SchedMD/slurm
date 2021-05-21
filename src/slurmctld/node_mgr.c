@@ -1413,6 +1413,9 @@ int update_node ( update_node_msg_t * update_node_msg )
 		       				      node_ptr->comm_name);
 						state_val = base_state;
 					}
+				} else if (node_flags & NODE_STATE_DRAIN) {
+					state_val = base_state;
+					_require_node_reg(node_ptr);
 				} else
 					state_val = base_state;
 			} else if (state_val == NODE_STATE_UNDRAIN) {
@@ -1425,6 +1428,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					acct_updated = true;
 				}
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
+				_require_node_reg(node_ptr);
 				state_val = base_state;
 			}
 
