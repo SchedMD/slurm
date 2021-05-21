@@ -547,12 +547,18 @@ static int _create_ns(uint32_t job_id, uid_t uid, bool remount)
 			goto child_exit;
 		}
 
-		rc = chown(src_bind, uid, -1);
-		if (rc) {
-			error("%s: chown failed for %s: %s",
-			      __func__, src_bind, strerror(errno));
-			rc = -1;
-			goto child_exit;
+		/*
+		 * this happens when restarting the slurmd, the ownership should
+		 * already be correct here.
+		 */
+		if (!remount) {
+			rc = chown(src_bind, uid, -1);
+			if (rc) {
+				error("%s: chown failed for %s: %s",
+				      __func__, src_bind, strerror(errno));
+				rc = -1;
+				goto child_exit;
+			}
 		}
 
 		/*
