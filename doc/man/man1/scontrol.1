@@ -648,6 +648,10 @@ automatically as needed.
 PrologFlags=Alloc as this will result in a deadlock.
 .IP
 
+\fBNOTE\fR: When using \fBwait_job\fR for an array job, use the
+\fBSLURM_JOB_ID\fR environment variable to reference the job rather than the
+\fBSLURM_ARRAY_JOB_ID\fR variable.
+
 .TP
 \fBwrite batch_script\fR <\fIjob_id\fR> [<\fIoptional_filename\fR>]
 Write the batch script for a given job_id to a file or to stdout. The file will
