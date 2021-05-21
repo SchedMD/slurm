@@ -393,9 +393,8 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 
 		if (!check_het_step) {
 			/*
-			 * SLURM_JOB_NUM_NODES is only ever set on a normal
-			 * allocation, on a het job it is
-			 * SLURM_JOB_NUM_NODES_$PACKID.
+			 * SLURM_HET_SIZE not defined for a normal allocation.
+			 * SLURM_JOB_ID defined if allocation already exists.
 			 *
 			 * Here we are seeing if we are trying to run a het step
 			 * in the normal allocation.  If so and we didn't
@@ -403,7 +402,8 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 			 * env variable and figure it out later instead of
 			 * trying to use the whole allocation.
 			 */
-			if (getenv("SLURM_JOB_NUM_NODES") &&
+			if (!getenv("SLURM_HET_SIZE") &&
+			    getenv("SLURM_JOB_ID") &&
 			    (optind >= 0) && (optind < argc)) {
 				for (int i2 = optind; i2 < argc; i2++) {
 					if (!xstrcmp(argv[i2], ":")) {
