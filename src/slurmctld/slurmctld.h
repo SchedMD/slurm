@@ -2533,8 +2533,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid);
 extern int validate_alloc_node(part_record_t *part_ptr, char *alloc_node);
 
 /*
- * validate_group - validate that the submit uid is authorized to run in
- *	this partition
+ * validate_group - validate that the uid is authorized to access the partition
  * IN part_ptr - pointer to a partition
  * IN run_uid - user to run the job as
  * RET 1 if permitted to run, 0 otherwise

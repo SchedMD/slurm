@@ -1733,8 +1733,7 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 
 
 /*
- * validate_group - validate that the submit uid is authorized to run in
- *	this partition
+ * validate_group - validate that the uid is authorized to access the partition
  * IN part_ptr - pointer to a partition
  * IN run_uid - user to run the job as
  * RET 1 if permitted to run, 0 otherwise
