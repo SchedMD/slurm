@@ -8639,7 +8639,21 @@ _pack_update_job_step_msg(step_update_request_msg_t * msg, buf_t *buffer,
 {
 	uint8_t with_jobacct = 0;
 
-	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		pack_time(msg->end_time, buffer);
+		pack32(msg->exit_code, buffer);
+		pack32(msg->job_id, buffer);
+		if (msg->jobacct)
+			with_jobacct = 1;
+		pack8(with_jobacct, buffer);
+		if (with_jobacct)
+			jobacctinfo_pack(msg->jobacct, protocol_version,
+					 PROTOCOL_TYPE_SLURM, buffer);
+		packstr(msg->name, buffer);
+		pack_time(msg->start_time, buffer);
+		pack32(msg->step_id, buffer);
+		pack32(msg->time_limit, buffer);
+	} else if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		pack_time(msg->end_time, buffer);
 		pack32(msg->exit_code, buffer);
 		pack32(msg->job_id, buffer);
@@ -8681,7 +8695,21 @@ _unpack_update_job_step_msg(step_update_request_msg_t ** msg_ptr, buf_t *buffer,
 	msg = xmalloc(sizeof(step_update_request_msg_t));
 	*msg_ptr = msg;
 
-	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		safe_unpack_time(&msg->end_time, buffer);
+		safe_unpack32(&msg->exit_code, buffer);
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack8(&with_jobacct, buffer);
+		if (with_jobacct)
+			if (jobacctinfo_unpack(&msg->jobacct, protocol_version,
+					       PROTOCOL_TYPE_SLURM, buffer, 1)
+			    != SLURM_SUCCESS)
+				goto unpack_error;
+		safe_unpackstr_xmalloc(&msg->name, &uint32_tmp, buffer);
+		safe_unpack_time(&msg->start_time, buffer);
+		safe_unpack32(&msg->step_id, buffer);
+		safe_unpack32(&msg->time_limit, buffer);
+	} else if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		safe_unpack_time(&msg->end_time, buffer);
 		safe_unpack32(&msg->exit_code, buffer);
 		safe_unpack32(&msg->job_id, buffer);
