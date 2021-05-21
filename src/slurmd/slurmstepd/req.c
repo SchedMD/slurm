@@ -90,7 +90,7 @@ static int _handle_attach(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_pid_in_container(int fd, stepd_step_rec_t *job);
 static void *_wait_extern_pid(void *args);
 static int _handle_add_extern_pid_internal(stepd_step_rec_t *job, pid_t pid);
-static int _handle_add_extern_pid(int fd, stepd_step_rec_t *job);
+static int _handle_add_extern_pid(int fd, stepd_step_rec_t *job, uid_t uid);
 static int _handle_x11_display(int fd, stepd_step_rec_t *job);
 static int _handle_getpw(int fd, stepd_step_rec_t *job, pid_t remote_pid);
 static int _handle_getgr(int fd, stepd_step_rec_t *job, pid_t remote_pid);
@@ -566,7 +566,7 @@ int _handle_request(int fd, stepd_step_rec_t *job, uid_t uid, pid_t remote_pid)
 		break;
 	case REQUEST_ADD_EXTERN_PID:
 		debug("Handling REQUEST_ADD_EXTERN_PID");
-		rc = _handle_add_extern_pid(fd, job);
+		rc = _handle_add_extern_pid(fd, job, uid);
 		break;
 	case REQUEST_X11_DISPLAY:
 		debug("Handling REQUEST_X11_DISPLAY");
@@ -1212,15 +1212,19 @@ static int _handle_add_extern_pid_internal(stepd_step_rec_t *job, pid_t pid)
 	return SLURM_SUCCESS;
 }
 
-static int
-_handle_add_extern_pid(int fd, stepd_step_rec_t *job)
+static int _handle_add_extern_pid(int fd, stepd_step_rec_t *job, uid_t uid)
 {
 	int rc = SLURM_SUCCESS;
 	pid_t pid;
 
 	safe_read(fd, &pid, sizeof(pid_t));
 
-	rc = _handle_add_extern_pid_internal(job, pid);
+	if (!_slurm_authorized_user(uid)) {
+		error("uid %u attempt to add pid %u to %ps",
+		      uid, pid, &job->step_id);
+		rc = SLURM_ERROR;
+	} else
+		rc = _handle_add_extern_pid_internal(job, pid);
 
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(int));
