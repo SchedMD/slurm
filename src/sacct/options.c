@@ -933,7 +933,7 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case 'N':
 			if (job_cond->used_nodes) {
-				error("Aleady asked for nodes '%s'",
+				error("Already asked for nodes '%s'",
 				      job_cond->used_nodes);
 				break;
 			}
