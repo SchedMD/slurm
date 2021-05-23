@@ -2205,6 +2205,11 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 
 	base_state = old & NODE_STATE_BASE;
 	node_flags = old & NODE_STATE_FLAGS;
+
+	/* Requires a valid registration from the slurmd */
+	if (old & NODE_STATE_INVALID_REG)
+		return false;
+
 	switch (new) {
 		case NODE_STATE_DOWN:
 		case NODE_STATE_DRAIN:
@@ -2625,9 +2630,11 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		last_node_update = now;
 	}
 
+	node_ptr->node_state &= ~NODE_STATE_INVALID_REG;
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 
 	if (error_code) {
+		node_ptr->node_state |= NODE_STATE_INVALID_REG;
 		if (!IS_NODE_DOWN(node_ptr)
 			&& !IS_NODE_DRAIN(node_ptr)
 			&& ! IS_NODE_FAIL(node_ptr)) {

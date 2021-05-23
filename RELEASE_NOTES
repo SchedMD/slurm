@@ -48,6 +48,8 @@ HIGHLIGHTS
     slurmd context.
  -- Add new 'PLANNED' state to a node to represent when the backfill scheduler
     has it planned to be used in the future instead of showing as 'IDLE'.
+ -- Put node into "INVAL" state upon registering with an invalid node
+    configuration. Node must register with a valid configuration to continue.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

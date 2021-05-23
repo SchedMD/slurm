@@ -90,6 +90,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - Always notify slurmd that node registration was accepted to
     avoid slurmd needless attempting to re-register if there is configuration
     issue.
+ -- Put node into "INVAL" state upon registering with an invalid node
+    configuration. Node must register with a valid configuration to continue.
 
 * Changes in Slurm 20.11.8
 ==========================
