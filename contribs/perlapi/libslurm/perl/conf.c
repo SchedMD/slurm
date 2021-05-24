@@ -676,11 +676,7 @@ hv_to_step_update_request_msg(HV *hv, step_update_request_msg_t *update_msg)
 {
 	slurm_init_update_step_msg(update_msg);
 
-	FETCH_FIELD(hv, update_msg, end_time, time_t, TRUE);
-	FETCH_FIELD(hv, update_msg, exit_code, uint32_t, TRUE);
 	FETCH_FIELD(hv, update_msg, job_id, uint32_t, TRUE);
-	FETCH_FIELD(hv, update_msg, name, charp, FALSE);
-	FETCH_FIELD(hv, update_msg, start_time, time_t, TRUE);
 	FETCH_FIELD(hv, update_msg, step_id, uint32_t, TRUE);
 	FETCH_FIELD(hv, update_msg, time_limit, uint32_t, TRUE);
 
