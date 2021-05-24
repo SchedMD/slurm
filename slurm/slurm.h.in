@@ -290,27 +290,30 @@ enum job_states {
 #define	JOB_STATE_BASE	  0x000000ff	/* Used for job_states above */
 #define	JOB_STATE_FLAGS	  0xffffff00	/* Used for state flags below */
 
-#define JOB_LAUNCH_FAILED 0x00000100
-#define JOB_UPDATE_DB     0x00000200 /* Send job start to database again */
-#define JOB_REQUEUE       0x00000400 /* Requeue job in completing state */
-#define JOB_REQUEUE_HOLD  0x00000800 /* Requeue any job in hold */
-#define JOB_SPECIAL_EXIT  0x00001000 /* Requeue an exit job in hold */
-#define	JOB_RESIZING	  0x00002000 /* Size of job about to change, flag set
-					before calling accounting functions
-					immediately before job changes size */
-#define	JOB_CONFIGURING	  0x00004000 /* Allocated nodes booting */
-#define	JOB_COMPLETING	  0x00008000 /* Waiting for epilog completion */
-#define JOB_STOPPED       0x00010000 /* Job is stopped state (holding resources,
-					but sent SIGSTOP */
-#define JOB_RECONFIG_FAIL 0x00020000 /* Node configuration for job failed,
-					not job state, just job requeue flag */
-#define	JOB_POWER_UP_NODE 0x00040000 /* Allocated powered down nodes,
-				      * waiting for reboot */
-#define JOB_REVOKED       0x00080000 /* Sibling job revoked */
-#define JOB_REQUEUE_FED   0x00100000 /* Job is being requeued by federation */
-#define JOB_RESV_DEL_HOLD 0x00200000 /* Job is hold */
-#define JOB_SIGNALING     0x00400000 /* Outgoing signal is pending */
-#define JOB_STAGE_OUT     0x00800000 /* Staging out data (burst buffer) */
+/* SLURM_BIT(0-7) are already taken with base job_states above */
+#define JOB_LAUNCH_FAILED SLURM_BIT(8)
+#define JOB_UPDATE_DB     SLURM_BIT(9)  /* Send job start to database again */
+#define JOB_REQUEUE       SLURM_BIT(10) /* Requeue job in completing state */
+#define JOB_REQUEUE_HOLD  SLURM_BIT(11) /* Requeue any job in hold */
+#define JOB_SPECIAL_EXIT  SLURM_BIT(12) /* Requeue an exit job in hold */
+#define	JOB_RESIZING	  SLURM_BIT(13) /* Size of job about to change, flag set
+					 * before calling accounting functions
+					 * immediately before job changes size
+					 */
+#define	JOB_CONFIGURING	  SLURM_BIT(14) /* Allocated nodes booting */
+#define	JOB_COMPLETING	  SLURM_BIT(15) /* Waiting for epilog completion */
+#define JOB_STOPPED       SLURM_BIT(16) /* Job is stopped state (holding
+					   resources, but sent SIGSTOP */
+#define JOB_RECONFIG_FAIL SLURM_BIT(17) /* Node configuration for job failed,
+					   not job state, just job requeue
+					   flag */
+#define	JOB_POWER_UP_NODE SLURM_BIT(18) /* Allocated powered down nodes,
+					 * waiting for reboot */
+#define JOB_REVOKED       SLURM_BIT(19) /* Sibling job revoked */
+#define JOB_REQUEUE_FED   SLURM_BIT(20) /* Job being requeued by federation */
+#define JOB_RESV_DEL_HOLD SLURM_BIT(21) /* Job is hold */
+#define JOB_SIGNALING     SLURM_BIT(22) /* Outgoing signal is pending */
+#define JOB_STAGE_OUT     SLURM_BIT(23) /* Staging out data (burst buffer) */
 
 #define READY_JOB_FATAL	   -2	/* fatal error */
 #define READY_JOB_ERROR    -1	/* ordinary error */
