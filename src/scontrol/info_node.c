@@ -86,18 +86,8 @@ scontrol_load_nodes (node_info_msg_t ** node_buffer_pptr, uint16_t show_flags)
 extern void
 scontrol_print_node(char *node_name, node_info_msg_t *node_buffer_ptr)
 {
-	int error_code, i, j, print_cnt = 0;
+	int i, j, print_cnt = 0;
 	static int last_inx = 0;
-	partition_info_msg_t *part_info_ptr = NULL;
-
-	error_code = scontrol_load_partitions(&part_info_ptr);
-	if (error_code) {
-		part_info_ptr = NULL;
-		exit_code = 1;
-		if (quiet_flag != 1)
-			slurm_perror("slurm_load_partitions error");
-	}
-	slurm_populate_node_partitions(node_buffer_ptr, part_info_ptr);
 
 	for (j = 0; j < node_buffer_ptr->record_count; j++) {
 		if (node_name) {
@@ -142,6 +132,7 @@ extern void
 scontrol_print_node_list (char *node_list)
 {
 	node_info_msg_t *node_info_ptr = NULL;
+	partition_info_msg_t *part_info_ptr = NULL;
 	hostlist_t host_list;
 	int error_code;
 	uint16_t show_flags = 0;
@@ -169,6 +160,15 @@ scontrol_print_node_list (char *node_list)
 		printf ("last_update_time=%s, records=%d\n",
 			time_str, node_info_ptr->record_count);
 	}
+
+	error_code = scontrol_load_partitions(&part_info_ptr);
+	if (error_code) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			slurm_perror("slurm_load_partitions error");
+		return;
+	}
+	slurm_populate_node_partitions(node_info_ptr, part_info_ptr);
 
 	if (node_list == NULL) {
 		scontrol_print_node (NULL, node_info_ptr);
