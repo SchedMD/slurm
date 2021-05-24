@@ -1124,6 +1124,16 @@ static void _undo_reboot_asap(node_record_t *node_ptr)
 	xfree(node_ptr->reason);
 }
 
+static void _require_node_reg(node_record_t *node_ptr)
+{
+#ifndef HAVE_FRONT_END
+	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
+#endif
+	node_ptr->last_response = time(NULL);
+	node_ptr->boot_time = 0;
+	ping_nodes_now = true;
+}
+
 /*
  * update_node - update the configuration data for one or more nodes
  * IN update_node_msg - update node request
@@ -1381,13 +1391,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 
 				if (IS_NODE_DOWN(node_ptr)) {
 					state_val = NODE_STATE_IDLE;
-#ifndef HAVE_FRONT_END
-					node_ptr->node_state |=
-							NODE_STATE_NO_RESPOND;
-#endif
-					node_ptr->last_response = now;
-					node_ptr->boot_time = 0;
-					ping_nodes_now = true;
+					_require_node_reg(node_ptr);
 				} else if (IS_NODE_FUTURE(node_ptr)) {
 					if (node_ptr->port == 0) {
 						node_ptr->port =
@@ -1399,21 +1403,19 @@ int update_node ( update_node_msg_t * update_node_msg )
 					if (!slurm_addr_is_unspec(
 						&node_ptr->slurm_addr)) {
 						state_val = NODE_STATE_IDLE;
-#ifndef HAVE_FRONT_END
-						node_ptr->node_state |=
-							NODE_STATE_NO_RESPOND;
-#endif
 						bit_clear(future_node_bitmap,
 							  node_inx);
-						node_ptr->last_response = now;
-						node_ptr->boot_time = 0;
-						ping_nodes_now = true;
+
+						_require_node_reg(node_ptr);
 					} else {
 						error("slurm_set_addr failure "
 						      "on %s",
 		       				      node_ptr->comm_name);
 						state_val = base_state;
 					}
+				} else if (node_flags & NODE_STATE_DRAIN) {
+					state_val = base_state;
+					_require_node_reg(node_ptr);
 				} else
 					state_val = base_state;
 			} else if (state_val == NODE_STATE_UNDRAIN) {
@@ -1426,6 +1428,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					acct_updated = true;
 				}
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
+				_require_node_reg(node_ptr);
 				state_val = base_state;
 			}
 
@@ -2202,6 +2205,11 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 
 	base_state = old & NODE_STATE_BASE;
 	node_flags = old & NODE_STATE_FLAGS;
+
+	/* Requires a valid registration from the slurmd */
+	if (old & NODE_STATE_INVALID_REG)
+		return false;
+
 	switch (new) {
 		case NODE_STATE_DOWN:
 		case NODE_STATE_DRAIN:
@@ -2370,6 +2378,11 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	node_ptr = find_node_record(reg_msg->node_name);
 	if (node_ptr == NULL)
 		return ENOENT;
+
+	debug3("%s: validating nodes %s in state: %s",
+	       __func__, reg_msg->node_name,
+	       node_state_string(node_ptr->node_state));
+
 	node_inx = node_ptr - node_record_table_ptr;
 	orig_node_avail = bit_test(avail_node_bitmap, node_inx);
 
@@ -2617,9 +2630,11 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		last_node_update = now;
 	}
 
+	node_ptr->node_state &= ~NODE_STATE_INVALID_REG;
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 
 	if (error_code) {
+		node_ptr->node_state |= NODE_STATE_INVALID_REG;
 		if (!IS_NODE_DOWN(node_ptr)
 			&& !IS_NODE_DRAIN(node_ptr)
 			&& ! IS_NODE_FAIL(node_ptr)) {

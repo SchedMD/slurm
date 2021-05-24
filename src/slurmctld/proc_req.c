@@ -2794,7 +2794,12 @@ static void _slurm_rpc_node_registration(slurm_msg_t *msg)
 		error("_slurm_rpc_node_registration node=%s: %s",
 		      node_reg_stat_msg->node_name,
 		      slurm_strerror(error_code));
-		slurm_send_rc_msg(msg, error_code);
+		/*
+		 * Notify slurmd that we got the registration even if we
+		 * consider it to be invalid to avoid having slurmd try to
+		 * register again continuously.
+		 */
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	} else {
 		debug2("_slurm_rpc_node_registration complete for %s %s",
 		       node_reg_stat_msg->node_name, TIME_STR);

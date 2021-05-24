@@ -1,4 +1,4 @@
-.TH sinfo "1" "Slurm Commands" "April 2021" "Slurm Commands"
+.TH sinfo "1" "Slurm Commands" "May 2021" "Slurm Commands"
 
 .SH "NAME"
 sinfo \- View information about Slurm nodes and partitions.
@@ -738,6 +738,10 @@ some point in the indefinite future for use.
 .TP
 \fBIDLE\fR
 The node is not allocated to any jobs and is available for use.
+.TP
+\fBINVAL\fR
+The node registered with an invalid configuration. The node will clear from
+this state with a valid registration (ie. a slurmd restart is required).
 .TP
 \fBMAINT\fR
 The node is currently in a reservation with a flag value of "maintenance".
