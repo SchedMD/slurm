@@ -1776,6 +1776,13 @@ static int _attempt_backfill(void)
 			break;
 		}
 
+		if (slurmctld_diag_stats.bf_last_depth_try >=
+		    max_backfill_job_cnt) {
+			log_flag(BACKFILL, "bf_max_job_test: limit of %d reached",
+				 max_backfill_job_cnt);
+			break;
+		}
+
 		job_ptr          = job_queue_rec->job_ptr;
 		part_ptr         = job_queue_rec->part_ptr;
 		bf_job_priority  = job_queue_rec->priority;
