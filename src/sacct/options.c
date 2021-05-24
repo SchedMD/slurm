@@ -1123,18 +1123,18 @@ extern void parse_command_line(int argc, char **argv)
 	}
 
 	debug("Options selected:\n"
-	      "\topt_completion=%d\n"
-	      "\topt_dup=%d\n"
+	      "\topt_completion=%s\n"
+	      "\topt_dup=%s\n"
 	      "\topt_field_list=%s\n"
 	      "\topt_help=%d\n"
-	      "\topt_no_steps=%d\n"
+	      "\topt_no_steps=%s\n"
 	      "\topt_whole_hetjob=%s",
-	      params.opt_completion,
-	      job_cond->flags & JOBCOND_FLAG_DUP,
+	      params.opt_completion ? "yes" : "no",
+	      (job_cond->flags & JOBCOND_FLAG_DUP) ? "yes" : "no",
 	      params.opt_field_list,
 	      params.opt_help,
-	      job_cond->flags & JOBCOND_FLAG_NO_STEP,
-	      job_cond->flags & JOBCOND_FLAG_WHOLE_HETJOB ? "yes" :
+	      (job_cond->flags & JOBCOND_FLAG_NO_STEP) ? "yes" : "no",
+	      (job_cond->flags & JOBCOND_FLAG_WHOLE_HETJOB) ? "yes" :
 	      (job_cond->flags & JOBCOND_FLAG_NO_WHOLE_HETJOB ? "no" : 0));
 
 	if (params.opt_completion) {

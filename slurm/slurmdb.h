@@ -183,26 +183,27 @@ enum cluster_fed_states {
  * Slurm job condition flags
  * slurmdb_job_cond_t
  */
-#define JOBCOND_FLAG_DUP      0x00000001 /* Report duplicate job entries */
-#define JOBCOND_FLAG_NO_STEP  0x00000002 /* Don't report job step info */
-#define JOBCOND_FLAG_NO_TRUNC 0x00000004 /* Report info. without truncating
-					  * the time to the usage_start and
-					  * usage_end */
-#define JOBCOND_FLAG_RUNAWAY  0x00000008 /* Report runaway jobs only */
-#define JOBCOND_FLAG_WHOLE_HETJOB    0x00000010 /* Report info about all hetjob
-						 * components
-						 */
-#define JOBCOND_FLAG_NO_WHOLE_HETJOB 0x00000020 /* Only report info about
-						 * requested hetjob components
-						 */
-#define JOBCOND_FLAG_NO_WAIT          0x00000040 /* Tell dbd plugin not to wait
-						  * around for result.
-						  */
-#define JOBCOND_FLAG_NO_DEFAULT_USAGE 0x00000080 /* Use usage_time as the
-						  * submit_time of the job.
-						  */
-#define JOBCOND_FLAG_SCRIPT  0x00000100 /* Get batch script only */
-#define JOBCOND_FLAG_ENV     0x00000200 /* Get job's env only */
+#define JOBCOND_FLAG_DUP              SLURM_BIT(0) /* Report duplicate job
+						    * entries */
+#define JOBCOND_FLAG_NO_STEP          SLURM_BIT(1) /* Don't report job step
+						    * info */
+#define JOBCOND_FLAG_NO_TRUNC         SLURM_BIT(2) /* Report info. without
+						    * truncating the time to the
+						    * usage_start and
+						    * usage_end */
+#define JOBCOND_FLAG_RUNAWAY          SLURM_BIT(3) /* Report runaway jobs onl */
+#define JOBCOND_FLAG_WHOLE_HETJOB     SLURM_BIT(4) /* Report info about all
+						    * hetjob components */
+#define JOBCOND_FLAG_NO_WHOLE_HETJOB  SLURM_BIT(5) /* Only report info about
+						    * requested hetjob
+						    * components */
+#define JOBCOND_FLAG_NO_WAIT          SLURM_BIT(6) /* Tell dbd plugin not to
+						    * wait around for result. */
+#define JOBCOND_FLAG_NO_DEFAULT_USAGE SLURM_BIT(7) /* Use usage_time as the
+						    * submit_time of the job.
+						    */
+#define JOBCOND_FLAG_SCRIPT           SLURM_BIT(8) /* Get batch script only */
+#define JOBCOND_FLAG_ENV              SLURM_BIT(9) /* Get job's env only */
 
 /* Archive / Purge time flags */
 #define SLURMDB_PURGE_BASE    0x0000ffff   /* Apply to get the number
