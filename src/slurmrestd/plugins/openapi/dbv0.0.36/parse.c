@@ -629,7 +629,7 @@ static const parser_t parse_stats_rpcs[] = {
 static const parser_enum_t parse_cluster_rec_flags[] = {
 	_add_flag(CLUSTER_FLAG_MULTSD, "MULTIPLE_SLURMD"),
 	_add_flag(CLUSTER_FLAG_FE, "FRONT_END"),
-	_add_flag(CLUSTER_FLAG_CRAY_N, "CRAY_NATIVE"),
+	_add_flag(CLUSTER_FLAG_CRAY, "CRAY_NATIVE"),
 	_add_flag(CLUSTER_FLAG_FED, "FEDERATION"),
 	_add_flag(CLUSTER_FLAG_EXT, "EXTERNAL"),
 	{0}

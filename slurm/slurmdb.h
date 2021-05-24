@@ -232,15 +232,9 @@ enum cluster_fed_states {
 #define CLUSTER_FLAG_MULTSD SLURM_BIT(7) /* This cluster is multiple slurmd */
 #define CLUSTER_FLAG_A9     SLURM_BIT(8) /* UNUSED */
 #define CLUSTER_FLAG_FE     SLURM_BIT(9) /* This cluster is a front end system*/
-#define CLUSTER_FLAG_CRAY_N SLURM_BIT(10) /* This cluster is a Native cray */
+#define CLUSTER_FLAG_CRAY   SLURM_BIT(10) /* This cluster is a Native cray */
 #define CLUSTER_FLAG_FED    SLURM_BIT(11) /* This cluster is in a federation. */
 #define CLUSTER_FLAG_EXT    SLURM_BIT(12) /* This cluster is external */
-
-
-/* Cluster Combo flags */
-#define CLUSTER_FLAG_CRAY   0x00000500 /* This cluster is a cray.
-					  Combo of CRAY_A | CRAY_N */
-
 
 /* Assoc flags */
 #define ASSOC_FLAG_DELETED  0x0001

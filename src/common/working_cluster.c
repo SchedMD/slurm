@@ -105,7 +105,7 @@ extern uint32_t slurmdb_setup_cluster_flags(void)
 	cluster_flags |= CLUSTER_FLAG_FE;
 #endif
 #ifdef HAVE_NATIVE_CRAY
-	cluster_flags |= CLUSTER_FLAG_CRAY_N;
+	cluster_flags |= CLUSTER_FLAG_CRAY;
 #endif
 	return cluster_flags;
 }
@@ -119,7 +119,7 @@ static uint32_t _str_2_cluster_flags(char *flags_in)
 		return CLUSTER_FLAG_MULTSD;
 
 	if (xstrcasestr(flags_in, "Cray"))
-		return CLUSTER_FLAG_CRAY_N;
+		return CLUSTER_FLAG_CRAY;
 
 	return (uint32_t) 0;
 }
@@ -158,7 +158,7 @@ extern char *slurmdb_cluster_flags_2_str(uint32_t flags_in)
 		xstrcat(cluster_flags, "MultipleSlurmd");
 	}
 
-	if (flags_in & CLUSTER_FLAG_CRAY_N) {
+	if (flags_in & CLUSTER_FLAG_CRAY) {
 		if (cluster_flags)
 			xstrcat(cluster_flags, ",");
 		xstrcat(cluster_flags, "Cray");
