@@ -439,7 +439,8 @@ static int _run_lua_script(const char *lua_func, uint32_t timeout,
 		}
 		gettimeofday(&now, NULL);
 		elapsed_time = (now.tv_sec - start_time.tv_sec);
-		if (elapsed_time >= timeout) {
+		/* If timeout==0, then there is no timeout. */
+		if (timeout && elapsed_time >= timeout) {
 			error("%s hit timeout of %u seconds, sending SIGUSR1",
 			      lua_func, timeout);
 			err_rc = SLURM_ERROR;
