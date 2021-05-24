@@ -28,10 +28,7 @@ source ./globals
 
 set freq_val  0
 set exit_code 0
-
-if {[get_config_param "SwitchType"] eq "switch/cray"} {
-        set timeout 60
-}
+set timeout   60
 
 if {[get_job_acct_freq] == 0} {
 	skip "This test requires JobAcctGatherFrequency to be set"
