@@ -1039,34 +1039,36 @@ enum node_states {
 #define PROP_PRIO_NICER		0x0002	/* Ensure that user tasks have a nice
 					 * value that is higher than slurmd */
 
-#define PRIORITY_FLAGS_ACCRUE_ALWAYS	0x00000001 /* Flag to always accrue age
-						    * priority to pending jobs
-						    * ignoring dependencies or
-						    * holds */
-#define PRIORITY_FLAGS_MAX_TRES 	0x00000002 /* Calculate billed_tres as
-						    * the MAX of TRES on a node
-						    * rather than the sum or
-						    * TRES. */
-#define PRIORITY_FLAGS_SIZE_RELATIVE	0x00000004 /* Enable job size
-						    * measurement relative to
-						    * its time limit */
-#define PRIORITY_FLAGS_DEPTH_OBLIVIOUS	0x00000008 /* Flag to use depth
-						    * oblivious formula for
-						    * computing hierarchical
-						    * fairshare */
-#define PRIORITY_FLAGS_CALCULATE_RUNNING 0x00000010 /* Calculate priorities for
-						     * running jobs, not only
-						     * the pending jobs. */
-#define PRIORITY_FLAGS_FAIR_TREE	0x00000020 /* Prioritize by level in
-						    * account hierarchy. */
-#define PRIORITY_FLAGS_INCR_ONLY	0x00000040 /* Priority can only
-						    * increase, never decrease
-						    * in value */
+#define PRIORITY_FLAGS_ACCRUE_ALWAYS	 SLURM_BIT(0) /* Flag to always accrue
+						       * age priority to pending
+						       * jobs ignoring
+						       * dependencies or holds
+						       */
+#define PRIORITY_FLAGS_MAX_TRES 	 SLURM_BIT(1) /* Calculate billed_tres
+						       * as the MAX of TRES on a
+						       * node rather than the
+						       * sum or TRES. */
+#define PRIORITY_FLAGS_SIZE_RELATIVE	 SLURM_BIT(2) /* Enable job size
+						       * measurement relative to
+						       * its time limit */
+#define PRIORITY_FLAGS_DEPTH_OBLIVIOUS	 SLURM_BIT(3) /* Flag to use depth
+						       * oblivious formula for
+						       * computing hierarchical
+						       * fairshare */
+#define PRIORITY_FLAGS_CALCULATE_RUNNING SLURM_BIT(4) /* Calculate priorities
+						       * for running jobs, not
+						       * only the pending jobs.
+						       */
+#define PRIORITY_FLAGS_FAIR_TREE	 SLURM_BIT(5) /* Prioritize by level in
+						       * account hierarchy. */
+#define PRIORITY_FLAGS_INCR_ONLY	 SLURM_BIT(6) /* Priority can only
+						       * increase, never
+						       * decrease in value */
 
-#define PRIORITY_FLAGS_NO_NORMAL_ASSOC	0x00000080
-#define PRIORITY_FLAGS_NO_NORMAL_PART	0x00000100
-#define PRIORITY_FLAGS_NO_NORMAL_QOS	0x00000200
-#define PRIORITY_FLAGS_NO_NORMAL_TRES	0x00000400
+#define PRIORITY_FLAGS_NO_NORMAL_ASSOC	 SLURM_BIT(7)
+#define PRIORITY_FLAGS_NO_NORMAL_PART	 SLURM_BIT(8)
+#define PRIORITY_FLAGS_NO_NORMAL_QOS	 SLURM_BIT(9)
+#define PRIORITY_FLAGS_NO_NORMAL_TRES	 SLURM_BIT(10)
 
 /* These bits are set in the bitflags field of job_desc_msg_t */
 #define KILL_INV_DEP       SLURM_BIT(0) /* Kill job on invalid dependency */
