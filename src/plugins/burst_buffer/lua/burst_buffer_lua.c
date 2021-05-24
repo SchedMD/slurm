@@ -2132,11 +2132,25 @@ static void *_start_teardown(void *x)
 	}
 
 	if (rc != SLURM_SUCCESS) {
-		/*
-		 * TODO: Do more things, also call _queue_teardown() to
-		 * requeue teardown
-		 */
-		error("Teardown function failed.");
+		trigger_burst_buffer();
+		error("Teardown for JobId=%u failed. status: %d, response: %s",
+		      teardown_args->job_id, rc, resp_msg);
+
+		lock_slurmctld(job_write_lock);
+		job_ptr = find_job_record(teardown_args->job_id);
+		if (job_ptr) {
+			job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
+			xfree(job_ptr->state_desc);
+			xstrfmtcat(job_ptr->state_desc, "%s: teardown: %s",
+				   plugin_type, resp_msg);
+			_update_system_comment(job_ptr, "teardown",
+					       resp_msg, 0);
+		}
+		unlock_slurmctld(job_write_lock);
+
+		_queue_teardown(teardown_args->job_id, teardown_args->user_id,
+				teardown_args->hurry);
+
 	} else {
 		lock_slurmctld(job_write_lock);
 		slurm_mutex_lock(&bb_state.bb_mutex);
