@@ -222,19 +222,19 @@ enum cluster_fed_states {
 #define SLURMDB_CLASS_BASE      0x00ff
 
 /* Cluster flags */
-#define CLUSTER_FLAG_A1     0x00000001 /* UNUSED */
-#define CLUSTER_FLAG_A2     0x00000002 /* UNUSED */
-#define CLUSTER_FLAG_A3     0x00000004 /* UNUSED */
-#define CLUSTER_FLAG_A4     0x00000008 /* UNUSED */
-#define CLUSTER_FLAG_A5     0x00000010 /* UNUSED */
-#define CLUSTER_FLAG_A6     0x00000020 /* UNUSED */
-#define CLUSTER_FLAG_A7     0x00000040 /* UNUSED */
-#define CLUSTER_FLAG_MULTSD 0x00000080 /* This cluster is multiple slurmd */
-#define CLUSTER_FLAG_A9     0x00000100 /* UNUSED */
-#define CLUSTER_FLAG_FE     0x00000200 /* This cluster is a front end system */
-#define CLUSTER_FLAG_CRAY_N 0x00000400 /* This cluster is a Native cray */
-#define CLUSTER_FLAG_FED    0x00000800 /* This cluster is in a federation. */
-#define CLUSTER_FLAG_EXT    0x00001000 /* This cluster is external */
+#define CLUSTER_FLAG_A1     SLURM_BIT(0) /* UNUSED */
+#define CLUSTER_FLAG_A2     SLURM_BIT(1) /* UNUSED */
+#define CLUSTER_FLAG_A3     SLURM_BIT(2) /* UNUSED */
+#define CLUSTER_FLAG_A4     SLURM_BIT(3) /* UNUSED */
+#define CLUSTER_FLAG_A5     SLURM_BIT(4) /* UNUSED */
+#define CLUSTER_FLAG_A6     SLURM_BIT(5) /* UNUSED */
+#define CLUSTER_FLAG_A7     SLURM_BIT(6) /* UNUSED */
+#define CLUSTER_FLAG_MULTSD SLURM_BIT(7) /* This cluster is multiple slurmd */
+#define CLUSTER_FLAG_A9     SLURM_BIT(8) /* UNUSED */
+#define CLUSTER_FLAG_FE     SLURM_BIT(9) /* This cluster is a front end system*/
+#define CLUSTER_FLAG_CRAY_N SLURM_BIT(10) /* This cluster is a Native cray */
+#define CLUSTER_FLAG_FED    SLURM_BIT(11) /* This cluster is in a federation. */
+#define CLUSTER_FLAG_EXT    SLURM_BIT(12) /* This cluster is external */
 
 
 /* Cluster Combo flags */
