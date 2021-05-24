@@ -189,6 +189,7 @@ static int backfill_window = BACKFILL_WINDOW;
 static int bf_job_part_count_reserve = 0;
 static int bf_max_job_array_resv = BF_MAX_JOB_ARRAY_RESV;
 static int bf_min_age_reserve = 0;
+static int bf_node_space_size = 0;
 static bool bf_running_job_reserve = false;
 static uint32_t bf_min_prio_reserve = 0;
 static List deadlock_global_list;
@@ -725,6 +726,8 @@ static void _load_config(void)
 		      max_backfill_job_cnt);
 		max_backfill_job_cnt = 100;
 	}
+
+	bf_node_space_size = (2 * max_backfill_job_cnt);
 
 	if ((tmp_ptr = xstrcasestr(sched_params, "bf_resolution="))) {
 		backfill_resolution = atoi(tmp_ptr + 14);
@@ -1363,7 +1366,7 @@ static int _bf_reserve_running(void *x, void *arg)
 	if (slurm_job_preempt_mode(job_ptr) != PREEMPT_MODE_OFF)
 		return SLURM_SUCCESS;
 
-	if (*ns_recs_ptr >= (2 * max_backfill_job_cnt))
+	if (*ns_recs_ptr >= bf_node_space_size)
 		return SLURM_ERROR;
 
 	bitstr_t *tmp_bitmap = bit_copy(job_ptr->node_bitmap);
@@ -1708,7 +1711,7 @@ static int _attempt_backfill(void)
 	slurmctld_diag_stats.bf_when_last_cycle = now;
 
 	node_space = xmalloc(sizeof(node_space_map_t) *
-			     (max_backfill_job_cnt * 2 + 1));
+			     (bf_node_space_size + 1));
 	node_space[0].begin_time = sched_start;
 	window_end = sched_start + backfill_window;
 	node_space[0].end_time = window_end;
@@ -2771,27 +2774,27 @@ skip_start:
 		bit_not(avail_bitmap);
 		if ((!bf_one_resv_per_job || !orig_start_time) &&
 		    !(job_ptr->bit_flags & JOB_MAGNETIC)) {
-			if (node_space_recs >= (2 * max_backfill_job_cnt)) {
+			if (node_space_recs >= bf_node_space_size) {
 				log_flag(BACKFILL, "table size limit of %u reached",
-					 max_backfill_job_cnt);
+					 bf_node_space_size);
 				if ((max_backfill_job_per_part != 0) &&
 				    (max_backfill_job_per_part >=
-				     max_backfill_job_cnt)) {
-					error("bf_max_job_part >= bf_max_job_test (%u >= %u)",
+				     (bf_node_space_size / 2))) {
+					error("bf_max_job_part >= bf_node_space_size / 2 (%u >= %u)",
 					      max_backfill_job_per_part,
-					      max_backfill_job_cnt);
+					      (bf_node_space_size / 2));
 				} else if ((max_backfill_job_per_user != 0) &&
 					   (max_backfill_job_per_user >
-					    max_backfill_job_cnt)) {
-					info("warning: bf_max_job_user > bf_max_job_test (%u > %u)",
+					    (bf_node_space_size / 2))) {
+					info("warning: bf_max_job_user > bf_node_space_size / 2 (%u > %u)",
 					     max_backfill_job_per_user,
-					     max_backfill_job_cnt);
+					     (bf_node_space_size / 2));
 				} else if  ((max_backfill_job_per_assoc != 0) &&
 					    (max_backfill_job_per_assoc >
-					     max_backfill_job_cnt)) {
-					info("warning: bf_max_job_assoc > bf_max_job_test (%u > %u)",
+					     (bf_node_space_size / 2))) {
+					info("warning: bf_max_job_assoc > bf_node_space_size / 2 (%u > %u)",
 					     max_backfill_job_per_assoc,
-					     max_backfill_job_cnt);
+					     (bf_node_space_size / 2));
 				}
 				_set_job_time_limit(job_ptr, orig_time_limit);
 				break;
