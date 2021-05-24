@@ -2507,6 +2507,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		 */
 		if (is_coord && (object->is_def == 1)) {
 			char *query = NULL;
+			int has_def_acct = 0;
 			/* Check if there is already a default account. */
 			xstrfmtcat(query, "select id_assoc from \"%s_%s\" "
 				   "where user='%s' && acct!='%s' && is_def=1 "
@@ -2523,15 +2524,14 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 			}
 
 			xfree(query);
-			rc = mysql_num_rows(result);
+			has_def_acct = mysql_num_rows(result);
 			mysql_free_result(result);
 
-			if (rc) {
-				error("Coordinator %s(%d) tried to change the default account of user %s to account %s.  This is only allowed on initial user creation.",
+			if (has_def_acct) {
+				debug("Coordinator %s(%d) tried to change the default account of user %s to account %s.  This is only allowed on initial user creation. Ignoring default account.",
 				      user_name, uid, object->user,
 				      object->acct);
-				rc = ESLURM_ACCESS_DENIED;
-				break;
+				object->is_def = 0;
 			}
 		}
 

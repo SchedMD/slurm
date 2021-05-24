@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
     abort_job_on_node(), abort_job_on_nodes() and kill_job_on_node().
  -- Fix swappiness not being set in cgroups.
  -- Fix coordinators for new subaccounts.
+ -- Fix coordinators when adding existing users with PrivateData=users.
 
 * Changes in Slurm 21.08.0rc2
 =============================
