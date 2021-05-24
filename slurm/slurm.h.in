@@ -3478,20 +3478,22 @@ typedef struct job_step_kill_msg {
 /*
  * NOTE:  See _signal_batch_job() controller and _rpc_signal_tasks() in slurmd.
  */
-#define KILL_JOB_BATCH	 0x0001	/* signal batch shell only */
-#define KILL_JOB_ARRAY	 0x0002	/* kill all elements of a job array */
-#define KILL_STEPS_ONLY	 0x0004	/* Do not signal batch script */
-#define KILL_FULL_JOB	 0x0008	/* Signal all steps, including batch script */
-#define KILL_FED_REQUEUE 0x0010 /* Mark job as requeued when requeued */
-#define KILL_HURRY	 0x0020	/* Skip burst buffer stage out */
-#define KILL_OOM	 0x0040	/* Kill due to Out-Of-Memory */
-#define KILL_NO_SIBS	 0x0080	/* Don't kill other sibling jobs */
-#define KILL_JOB_RESV	 0x0100	/* Job is willing to run on nodes in a
-				 * magnetic reservation. */
+#define KILL_JOB_BATCH   SLURM_BIT(0) /* signal batch shell only */
+#define KILL_JOB_ARRAY   SLURM_BIT(1) /* kill all elements of a job array */
+#define KILL_STEPS_ONLY  SLURM_BIT(2) /* Do not signal batch script */
+#define KILL_FULL_JOB    SLURM_BIT(3) /* Signal all steps, including batch
+				       * script */
+#define KILL_FED_REQUEUE SLURM_BIT(4) /* Mark job as requeued when requeued */
+#define KILL_HURRY       SLURM_BIT(5) /* Skip burst buffer stage out */
+#define KILL_OOM         SLURM_BIT(6) /* Kill due to Out-Of-Memory */
+#define KILL_NO_SIBS     SLURM_BIT(7) /* Don't kill other sibling jobs */
+#define KILL_JOB_RESV    SLURM_BIT(8) /* Job is willing to run on nodes in a
+				       * magnetic reservation. */
 
 /* Use top bit of uint16_t in conjuction with KILL_* flags to indicate signal
  * has been sent to job previously. Does not need to be passed to slurmd. */
-#define WARN_SENT	 0x8000  /* warn already sent, clear this on requeue */
+#define WARN_SENT        SLURM_BIT(15) /* warn already sent, clear this on
+					* requeue */
 
 /*
  * slurm_kill_job - send the specified signal to all steps of an existing job
