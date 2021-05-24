@@ -1593,9 +1593,155 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
+static void _free_orphan_alloc_rec(void *x)
+{
+	bb_alloc_t *rec = (bb_alloc_t *)x;
+
+	bb_limit_rem(rec->user_id, rec->size, rec->pool, &bb_state);
+	(void) bb_free_alloc_rec(&bb_state, rec);
+}
+
+/*
+ * This function should only be called from _purge_vestigial_bufs().
+ * We need to reset the burst buffer state and restart any threads that may
+ * have been running before slurmctld was shutdown, depending on the state
+ * that the burst buffer is in.
+ */
+static void _recover_job_bb(job_record_t *job_ptr, bb_alloc_t *bb_alloc,
+			    time_t defer_time, List orphan_rec_list)
+{
+	bb_job_t *bb_job;
+	uint16_t job_bb_state = bb_state_num(job_ptr->burst_buffer_state);
+
+	/*
+	 * Call _get_bb_job() to create a cache of the job's burst buffer info,
+	 * including the state. Lots of functions will call this so do it now to
+	 * create the cache, and we may need to change the burst buffer state.
+	 * The job burst buffer state is set in job_ptr and in bb_job.
+	 * bb_alloc is used for persistent burst buffers, so bb_alloc->state
+	 * isn't used for job burst buffers.
+	 */
+	bb_job = _get_bb_job(job_ptr);
+	if (!bb_job) {
+		/* This shouldn't happen. */
+		error("%s: %pJ does not have a burst buffer specification, tearing down vestigial burst buffer.",
+		      __func__, job_ptr);
+		_queue_teardown(bb_alloc->job_id, bb_alloc->user_id, false);
+		return;
+	}
+
+	switch(job_bb_state) {
+		/*
+		 * First 4 states are specific to persistent burst buffers,
+		 * which aren't used in burst_buffer/lua.
+		 */
+		case BB_STATE_ALLOCATING:
+		case BB_STATE_ALLOCATED:
+		case BB_STATE_DELETING:
+		case BB_STATE_DELETED:
+			error("%s: Unexpected burst buffer state %s for %pJ",
+			      __func__, job_ptr->burst_buffer_state, job_ptr);
+			break;
+		/* Pending states for jobs: */
+		case BB_STATE_STAGING_IN:
+		case BB_STATE_STAGED_IN:
+		case BB_STATE_ALLOC_REVOKE:
+			/*
+			 * We do not know the state of staging,
+			 * so teardown the buffer and defer the job
+			 * for at least 60 seconds (for the teardown).
+			 * Also set the burst buffer state back to PENDING.
+			 */
+			log_flag(BURST_BUF, "Purging buffer for pending %pJ",
+				 job_ptr);
+			bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_TEARDOWN);
+			_queue_teardown(bb_alloc->job_id,
+					bb_alloc->user_id, true);
+			if (job_ptr->details &&
+			    (job_ptr->details->begin_time < defer_time)) {
+				job_ptr->details->begin_time = defer_time;
+			}
+			break;
+		/* Running states for jobs: */
+		case BB_STATE_PRE_RUN:
+			/*
+			 * slurmctld will call bb_g_job_begin() which will
+			 * handle burst buffers in this state.
+			 */
+			break;
+		case BB_STATE_RUNNING:
+		case BB_STATE_SUSPEND:
+			/* Nothing to do here. */
+			break;
+		case BB_STATE_POST_RUN:
+		case BB_STATE_STAGING_OUT:
+		case BB_STATE_STAGED_OUT:
+			log_flag(BURST_BUF, "Restarting burst buffer stage out for %pJ",
+				 job_ptr);
+			/*
+			 * _pre_queue_stage_out() sets the burst buffer state
+			 * correctly and restarts the needed thread.
+			 */
+			_pre_queue_stage_out(job_ptr, bb_job);
+			break;
+		case BB_STATE_TEARDOWN:
+		case BB_STATE_TEARDOWN_FAIL:
+			log_flag(BURST_BUF, "Restarting burst buffer teardown for %pJ",
+				 job_ptr);
+			_queue_teardown(bb_alloc->job_id,
+					bb_alloc->user_id, false);
+			break;
+		case BB_STATE_COMPLETE:
+			/*
+			 * We shouldn't get here since the bb_alloc record is
+			 * removed when the job's bb state is set to
+			 * BB_STATE_COMPLETE during teardown.
+			 */
+			log_flag(BURST_BUF, "Clearing burst buffer for completed job %pJ",
+				 job_ptr);
+			list_append(orphan_rec_list, bb_alloc);
+			break;
+		default:
+			error("%s: Invalid job burst buffer state %s for %pJ",
+			      __func__, job_ptr->burst_buffer_state, job_ptr);
+			break;
+	}
+}
+
+/*
+ * Identify and purge any vestigial buffers (i.e. we have a job buffer, but
+ * the matching job is either gone or completed OR we have a job buffer and a
+ * pending job, but don't know the status of stage-in)
+ */
 static void _purge_vestigial_bufs(void)
 {
-	/* Not yet implemented */
+	List orphan_rec_list = list_create(_free_orphan_alloc_rec);
+	bb_alloc_t *bb_alloc = NULL;
+	time_t defer_time = time(NULL) + 60;
+	int i;
+
+	for (i = 0; i < BB_HASH_SIZE; i++) {
+		bb_alloc = bb_state.bb_ahash[i];
+		while (bb_alloc) {
+			job_record_t *job_ptr = NULL;
+			if (bb_alloc->job_id == 0) {
+				/* This should not happen */
+				error("Burst buffer without a job found, removing buffer.");
+				list_append(orphan_rec_list, bb_alloc);
+			} else if (!(job_ptr =
+				     find_job_record(bb_alloc->job_id))) {
+				info("Purging vestigial buffer for JobId=%u",
+				     bb_alloc->job_id);
+				_queue_teardown(bb_alloc->job_id,
+						bb_alloc->user_id, false);
+			} else {
+				_recover_job_bb(job_ptr, bb_alloc, defer_time,
+						orphan_rec_list);
+			}
+			bb_alloc = bb_alloc->next;
+		}
+	}
+	FREE_NULL_LIST(orphan_rec_list);
 }
 
 /*
