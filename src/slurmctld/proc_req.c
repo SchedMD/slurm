@@ -113,6 +113,14 @@ static uint64_t rpc_type_time[RPC_TYPE_SIZE] = { 0 };
 static uint32_t rpc_user_id[RPC_USER_SIZE] = { 0 };
 static uint32_t rpc_user_cnt[RPC_USER_SIZE] = { 0 };
 static uint64_t rpc_user_time[RPC_USER_SIZE] = { 0 };
+static char *slurmd_config_files[] = {
+	"slurm.conf", "acct_gather.conf", "cgroup.conf",
+	"cgroup_allowed_devices_file.conf", "ext_sensors.conf", "gres.conf",
+	"knl_cray.conf", "plugstack.conf", "topology.conf", NULL};
+
+static char *client_config_files[] = {"slurm.conf",
+	    "plugstack.conf", "topology.conf", NULL};
+
 
 static config_response_msg_t *config_for_slurmd = NULL;
 static config_response_msg_t *config_for_clients = NULL;
@@ -667,9 +675,14 @@ extern void configless_setup(void)
 		return;
 
 	config_for_slurmd = xmalloc(sizeof(*config_for_slurmd));
+	config_for_slurmd->config_files = list_create(destroy_config_file);
 	config_for_clients = xmalloc(sizeof(*config_for_clients));
+	config_for_clients->config_files = list_create(destroy_config_file);
 
 	load_config_response_msg(config_for_slurmd, CONFIG_REQUEST_SLURMD);
+
+	load_config_response_list(config_for_slurmd, slurmd_config_files);
+	load_config_response_list(config_for_clients, client_config_files);
 
 	/* just reuse what we already have */
 	config_for_clients->config = config_for_slurmd->config;

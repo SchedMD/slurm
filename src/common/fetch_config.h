@@ -50,4 +50,8 @@ extern int write_configs_to_conf_cache(config_response_msg_t *msg,
 
 extern void load_config_response_msg(config_response_msg_t *msg, int flags);
 
+extern void load_config_response_list(config_response_msg_t *msg,
+				      char *files[]);
+
+extern void destroy_config_file(void *object);
 #endif

@@ -1144,6 +1144,13 @@ typedef struct {
 } config_request_msg_t;
 
 typedef struct {
+	char *file_name;
+	char *file_content;
+} config_file_t;
+
+typedef struct {
+	List config_files;
+
 	char *config;
 	char *acct_gather_config;
 	char *cgroup_config;

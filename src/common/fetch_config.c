@@ -429,3 +429,42 @@ extern void load_config_response_msg(config_response_msg_t *msg, int flags)
 
 	xfree(dir);
 }
+
+static void _load_conf2list(config_response_msg_t *msg, char *file_name)
+{
+	config_file_t *conf_file = NULL;
+	buf_t *config;
+	char *file = get_extra_conf_path(file_name);
+
+	config = create_mmap_buf(file);
+	xfree(file);
+
+	/*
+	 * If we can't load a given config, then assume that one isn't required
+	 * on this system.
+	 */
+	if (!config)
+		return;
+
+	conf_file = xmalloc(sizeof(*conf_file));
+	conf_file->file_content = xstrndup(config->head, config->size);
+	conf_file->file_name = xstrdup(file_name);
+	list_append(msg->config_files, conf_file);
+
+	free_buf(config);
+}
+
+extern void load_config_response_list(config_response_msg_t *msg, char *files[])
+{
+	xassert(msg);
+
+	for (int i = 0; files[i]; i++)
+		_load_conf2list(msg, files[i]);
+}
+
+extern void destroy_config_file(void *object)
+{
+	config_file_t *conf_file = (config_file_t *)object;
+	xfree(conf_file->file_name);
+	xfree(conf_file->file_content);
+}
