@@ -2446,72 +2446,65 @@ typedef struct will_run_response_msg {
  * Resource reservation data structures.
  * Create, show, modify and delete functions are required
  */
-#define RESERVE_FLAG_MAINT	   0x0000000000000001	/* Set MAINT flag */
-#define RESERVE_FLAG_NO_MAINT	   0x0000000000000002	/* Clear MAINT flag */
-#define RESERVE_FLAG_DAILY	   0x0000000000000004	/* Set DAILY flag */
-#define RESERVE_FLAG_NO_DAILY	   0x0000000000000008	/* Clear DAILY flag */
-#define RESERVE_FLAG_WEEKLY	   0x0000000000000010	/* Set WEEKLY flag */
-#define RESERVE_FLAG_NO_WEEKLY	   0x0000000000000020	/* Clear WEEKLY flag */
-#define RESERVE_FLAG_IGN_JOBS	   0x0000000000000040	/* Ignore running jobs */
-#define RESERVE_FLAG_NO_IGN_JOB	   0x0000000000000080	/* Clear ignore running
-							 * jobs flag */
-#define RESERVE_FLAG_ANY_NODES	   0x0000000000000100	/* Use any compute
-							 * nodes */
-#define RESERVE_FLAG_NO_ANY_NODES  0x0000000000000200	/* Clear any compute
-							 * node flag */
-#define RESERVE_FLAG_STATIC        0x0000000000000400	/* Static node allocation */
-#define RESERVE_FLAG_NO_STATIC     0x0000000000000800	/* Clear static node
-							 * allocation */
-#define RESERVE_FLAG_PART_NODES	   0x0000000000001000	/* Use partition nodes
-							 * only */
-#define RESERVE_FLAG_NO_PART_NODES 0x0000000000002000	/* Clear partition
-							 * nodes only flag */
-#define RESERVE_FLAG_OVERLAP	   0x0000000000004000	/* Permit to overlap
-							 * others */
-#define RESERVE_FLAG_SPEC_NODES	   0x0000000000008000	/* Contains specific
-							 * nodes */
-#define RESERVE_FLAG_FIRST_CORES   0x0000000000010000	/* Use only first cores
-							 * on each node */
-#define RESERVE_FLAG_TIME_FLOAT	   0x0000000000020000	/* Time offset is
-							 * relative */
-#define RESERVE_FLAG_REPLACE	   0x0000000000040000	/* Replace resources
-							 * as assigned to jobs */
-#define RESERVE_FLAG_ALL_NODES	   0x0000000000080000	/* Use all compute
-							 * nodes */
-#define RESERVE_FLAG_PURGE_COMP	   0x0000000000100000	/* Purge reservation
-							 * after last job done */
-#define RESERVE_FLAG_WEEKDAY	   0x0000000000200000	/* Set WEEKDAY flag */
-#define RESERVE_FLAG_NO_WEEKDAY	   0x0000000000400000	/* Clear WEEKDAY flag */
-#define RESERVE_FLAG_WEEKEND	   0x0000000000800000	/* Set WEEKEND flag */
-#define RESERVE_FLAG_NO_WEEKEND	   0x0000000001000000	/* Clear WEEKEND flag */
-#define RESERVE_FLAG_FLEX	   0x0000000002000000	/* Set FLEX flag */
-#define RESERVE_FLAG_NO_FLEX	   0x0000000004000000	/* Clear FLEX flag */
-#define RESERVE_FLAG_DUR_PLUS	   0x0000000008000000	/* Add duration time,
-							 * only used on
-							 * modifying a
-							 * reservation */
-#define RESERVE_FLAG_DUR_MINUS	   0x0000000010000000	/* Remove duration time,
-							 * only used on
-							 * modifying a
-							 * reservation */
-#define RESERVE_FLAG_NO_HOLD_JOBS  0x0000000020000000	/* No hold jobs after
-							 * end of reservation */
-#define RESERVE_FLAG_REPLACE_DOWN  0x0000000040000000	/* Replace DOWN or
-							 * DRAINED nodes */
-#define RESERVE_FLAG_NO_PURGE_COMP 0x0000000080000000	/* Clear PURGE flag */
+#define RESERVE_FLAG_MAINT	   SLURM_BIT(0)	 /* Set MAINT flag */
+#define RESERVE_FLAG_NO_MAINT	   SLURM_BIT(1)	 /* Clear MAINT flag */
+#define RESERVE_FLAG_DAILY	   SLURM_BIT(2)	 /* Set DAILY flag */
+#define RESERVE_FLAG_NO_DAILY	   SLURM_BIT(3)	 /* Clear DAILY flag */
+#define RESERVE_FLAG_WEEKLY	   SLURM_BIT(4)	 /* Set WEEKLY flag */
+#define RESERVE_FLAG_NO_WEEKLY	   SLURM_BIT(5)	 /* Clear WEEKLY flag */
+#define RESERVE_FLAG_IGN_JOBS	   SLURM_BIT(6)	 /* Ignore running jobs */
+#define RESERVE_FLAG_NO_IGN_JOB	   SLURM_BIT(7)	 /* Clear ignore running
+						  * jobs flag */
+#define RESERVE_FLAG_ANY_NODES	   SLURM_BIT(8)	 /* Use any compute nodes */
+#define RESERVE_FLAG_NO_ANY_NODES  SLURM_BIT(9)	 /* Clear any compute
+						  * node flag */
+#define RESERVE_FLAG_STATIC        SLURM_BIT(10) /* Static node allocation */
+#define RESERVE_FLAG_NO_STATIC     SLURM_BIT(11) /* Clear static node
+						  * allocation */
+#define RESERVE_FLAG_PART_NODES	   SLURM_BIT(12) /* Use partition nodes only */
+#define RESERVE_FLAG_NO_PART_NODES SLURM_BIT(13) /* Clear partition
+						  * nodes only flag */
+#define RESERVE_FLAG_OVERLAP	   SLURM_BIT(14) /* Permit to overlap others */
+#define RESERVE_FLAG_SPEC_NODES	   SLURM_BIT(15) /* Contains specific nodes */
+#define RESERVE_FLAG_FIRST_CORES   SLURM_BIT(16) /* Use only first cores
+						  * on each node */
+#define RESERVE_FLAG_TIME_FLOAT	   SLURM_BIT(17) /* Time offset is relative */
+#define RESERVE_FLAG_REPLACE	   SLURM_BIT(18) /* Replace resources
+						  * as assigned to jobs */
+#define RESERVE_FLAG_ALL_NODES	   SLURM_BIT(19) /* Use all compute nodes */
+#define RESERVE_FLAG_PURGE_COMP	   SLURM_BIT(20) /* Purge reservation
+						  * after last job done */
+#define RESERVE_FLAG_WEEKDAY	   SLURM_BIT(21) /* Set WEEKDAY flag */
+#define RESERVE_FLAG_NO_WEEKDAY	   SLURM_BIT(22) /* Clear WEEKDAY flag */
+#define RESERVE_FLAG_WEEKEND	   SLURM_BIT(23) /* Set WEEKEND flag */
+#define RESERVE_FLAG_NO_WEEKEND	   SLURM_BIT(24) /* Clear WEEKEND flag */
+#define RESERVE_FLAG_FLEX	   SLURM_BIT(25) /* Set FLEX flag */
+#define RESERVE_FLAG_NO_FLEX	   SLURM_BIT(26) /* Clear FLEX flag */
+#define RESERVE_FLAG_DUR_PLUS	   SLURM_BIT(27) /* Add duration time,
+						  * only used on
+						  * modifying a
+						  * reservation */
+#define RESERVE_FLAG_DUR_MINUS	   SLURM_BIT(28) /* Remove duration time,
+						  * only used on
+						  * modifying a
+						  * reservation */
+#define RESERVE_FLAG_NO_HOLD_JOBS  SLURM_BIT(29) /* No hold jobs after
+						  * end of reservation */
+#define RESERVE_FLAG_REPLACE_DOWN  SLURM_BIT(30) /* Replace DOWN or
+						  * DRAINED nodes */
+#define RESERVE_FLAG_NO_PURGE_COMP SLURM_BIT(31) /* Clear PURGE flag */
 
-#define RESERVE_FLAG_MAGNETIC	   0x0000000100000000	/* Allow jobs to run
-							 * without specifying
-							 * the reservation name
-							 * if they meet
-							 * eligibility status */
-#define RESERVE_FLAG_NO_MAGNETIC   0x0000000200000000	/* Clear MAGNETIC flag
-							 */
-#define RESERVE_FLAG_SKIP	   0x0000000400000000	/* Skip/delete
-							 * next/current
-							 * reservation without
-							 * deleting the
-							 * reservation proper */
+#define RESERVE_FLAG_MAGNETIC	   SLURM_BIT(32) /* Allow jobs to run
+						  * without specifying
+						  * the reservation name
+						  * if they meet
+						  * eligibility status */
+#define RESERVE_FLAG_NO_MAGNETIC   SLURM_BIT(33) /* Clear MAGNETIC flag */
+#define RESERVE_FLAG_SKIP	   SLURM_BIT(34) /* Skip/delete
+						  * next/current
+						  * reservation without
+						  * deleting the
+						  * reservation proper */
 
 #define RESERVE_REOCCURING	(RESERVE_FLAG_DAILY | RESERVE_FLAG_WEEKLY | \
 				 RESERVE_FLAG_WEEKDAY | RESERVE_FLAG_WEEKEND)
