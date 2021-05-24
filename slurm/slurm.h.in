@@ -322,18 +322,22 @@ enum job_states {
 #define READY_JOB_STATE    SLURM_BIT(1)	/* job is ready to execute */
 #define READY_PROLOG_STATE SLURM_BIT(2)	/* PrologSlurmctld is done */
 
-#define MAIL_JOB_BEGIN     0x0001	/* Notify when job begins */
-#define MAIL_JOB_END       0x0002	/* Notify when job ends */
-#define MAIL_JOB_FAIL      0x0004	/* Notify if job fails */
-#define MAIL_JOB_REQUEUE   0x0008	/* Notify if job requeued */
-#define MAIL_JOB_TIME100   0x0010	/* Notify on reaching 100% of time limit */
-#define MAIL_JOB_TIME90    0x0020	/* Notify on reaching 90% of time limit */
-#define MAIL_JOB_TIME80    0x0040	/* Notify on reaching 80% of time limit */
-#define MAIL_JOB_TIME50    0x0080	/* Notify on reaching 50% of time limit */
-#define MAIL_JOB_STAGE_OUT 0x0100	/* Notify on completion of burst buffer
-					 * stage out */
-#define MAIL_ARRAY_TASKS   0x0200	/* Send emails for each array task */
-#define MAIL_INVALID_DEPEND 0x0400	/* Notify on job invalid dependency */
+#define MAIL_JOB_BEGIN      SLURM_BIT(0)  /* Notify when job begins */
+#define MAIL_JOB_END        SLURM_BIT(1)  /* Notify when job ends */
+#define MAIL_JOB_FAIL       SLURM_BIT(2)  /* Notify if job fails */
+#define MAIL_JOB_REQUEUE    SLURM_BIT(3)  /* Notify if job requeued */
+#define MAIL_JOB_TIME100    SLURM_BIT(4)  /* Notify on reaching 100% of time
+					   * limit */
+#define MAIL_JOB_TIME90     SLURM_BIT(5)  /* Notify on reaching 90% of time
+					   * limit */
+#define MAIL_JOB_TIME80     SLURM_BIT(6)  /* Notify on reaching 80% of time
+					   * limit */
+#define MAIL_JOB_TIME50     SLURM_BIT(7)  /* Notify on reaching 50% of time
+					   * limit */
+#define MAIL_JOB_STAGE_OUT  SLURM_BIT(8)  /* Notify on completion of burst
+					   * buffer stage out */
+#define MAIL_ARRAY_TASKS    SLURM_BIT(9)  /* Send emails for each array task */
+#define MAIL_INVALID_DEPEND SLURM_BIT(10) /* Notify on job invalid dependency */
 
 /*
  * job_array_struct_t array_flags definitions. ARRAY_TASK_REQUEUED could be
