@@ -2250,12 +2250,16 @@ Account name associated of the job allocation.
 The ID of the job allocation.
 .TP
 \fBSLURM_JOB_CPUS_PER_NODE\fR
-Count of processors available to the job on this node.
-Note the select/linear plugin allocates entire nodes to
-jobs, so the value indicates the total count of CPUs on the node.
-The select/cons_res plugin allocates individual processors
-to jobs, so this number indicates the number of processors
-on this node allocated to the job.
+Count of CPUs available to the job on the nodes in the allocation, using the
+format \fICPU_count\fR[(x\fInumber_of_nodes\fR)][,\fICPU_count\fR
+[(x\fInumber_of_nodes\fR)] ...].
+For example: SLURM_JOB_CPUS_PER_NODE='72(x2),36' indicates that on the
+first and second nodes (as listed by SLURM_JOB_NODELIST) the allocation
+has 72 CPUs, while the third node has 36 CPUs.
+\fBNOTE\fR: The \fBselect/linear\fR plugin allocates entire nodes to jobs, so
+the value indicates the total count of CPUs on allocated nodes. The
+\fBselect/cons_res\fR and \fBselect/cons_tres\fR plugins allocate individual
+CPUs to jobs, so this number indicates the number of CPUs allocated to the job.
 .TP
 \fBSLURM_JOB_DEPENDENCY\fR
 Set to value of the \-\-dependency option.
