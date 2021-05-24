@@ -2689,16 +2689,17 @@ typedef struct reservation_name_msg {
 #define PROLOG_FLAG_SERIAL 	0x0008 /* serially execute prolog/epilog */
 #define PROLOG_FLAG_X11		0x0010 /* enable slurm x11 forwarding support */
 
-#define CTL_CONF_OR             0x00000001 /*SlurmdParameters=config_overrides*/
-#define CTL_CONF_SJC            0x00000002 /* AccountingStoreFlags=job_comment*/
-#define CTL_CONF_DRJ            0x00000004 /* DisableRootJobs */
-#define CTL_CONF_ASRU           0x00000008 /* AllowSpecResourcesUsage */
-#define CTL_CONF_PAM            0x00000010 /* UsePam */
-#define CTL_CONF_WCKEY          0x00000020 /* TrackWCKey */
-#define CTL_CONF_IPV4_ENABLED	0x00000040 /* IPv4 is enabled */
-#define CTL_CONF_IPV6_ENABLED	0x00000080 /* IPv6 is enabled */
-#define CTL_CONF_SJS            0x00000200 /* AccountingStoreFlags=job_script */
-#define CTL_CONF_SJE            0x00000400 /* AccountingStoreFlags=job_env */
+#define CTL_CONF_OR             SLURM_BIT(0) /*SlurmdParameters=config_overrides*/
+#define CTL_CONF_SJC            SLURM_BIT(1) /* AccountingStoreFlags=job_comment*/
+#define CTL_CONF_DRJ            SLURM_BIT(2) /* DisableRootJobs */
+#define CTL_CONF_ASRU           SLURM_BIT(3) /* AllowSpecResourcesUsage */
+#define CTL_CONF_PAM            SLURM_BIT(4) /* UsePam */
+#define CTL_CONF_WCKEY          SLURM_BIT(5) /* TrackWCKey */
+#define CTL_CONF_IPV4_ENABLED   SLURM_BIT(6) /* IPv4 is enabled */
+#define CTL_CONF_IPV6_ENABLED   SLURM_BIT(7) /* IPv6 is enabled */
+/*                              SLURM_BIT(8) UNUSED */
+#define CTL_CONF_SJS            SLURM_BIT(9) /* AccountingStoreFlags=job_script */
+#define CTL_CONF_SJE            SLURM_BIT(10) /* AccountingStoreFlags=job_env */
 
 #define LOG_FMT_ISO8601_MS      0
 #define LOG_FMT_ISO8601         1
