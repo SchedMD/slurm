@@ -884,7 +884,7 @@ static local_cluster_usage_t *_setup_cluster_usage(mysql_conn_t *mysql_conn,
 	 * state.  We handle those later with the reservations.
 	 */
 	query = xstrdup_printf("select %s from \"%s_%s\" where "
-			       "!(state & %d) && (time_start < %ld "
+			       "!(state & %"PRIu64") && (time_start < %ld "
 			       "&& (time_end >= %ld "
 			       "|| time_end = 0)) "
 			       "order by node_name, time_start",
