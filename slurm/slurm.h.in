@@ -315,12 +315,9 @@ enum job_states {
 #define READY_JOB_FATAL	   -2	/* fatal error */
 #define READY_JOB_ERROR    -1	/* ordinary error */
 
-typedef enum {
-	READY_NONE = 0,
-	READY_NODE_STATE = 1 << 0,	/* job's node's are ready */
-	READY_JOB_STATE = 1 << 1,	/* job is ready to execute */
-	READY_PROLOG_STATE = 1 << 2,	/* PrologSlurmctld is done */
-} job_node_ready_state_t;
+#define READY_NODE_STATE   SLURM_BIT(0) /* job's node's are ready */
+#define READY_JOB_STATE    SLURM_BIT(1)	/* job is ready to execute */
+#define READY_PROLOG_STATE SLURM_BIT(2)	/* PrologSlurmctld is done */
 
 #define MAIL_JOB_BEGIN     0x0001	/* Notify when job begins */
 #define MAIL_JOB_END       0x0002	/* Notify when job ends */
