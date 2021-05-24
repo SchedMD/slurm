@@ -126,16 +126,16 @@ typedef enum {
 #define	QOS_FLAG_ADD                 0x20000000
 #define	QOS_FLAG_REMOVE              0x40000000
 
-#define	QOS_FLAG_PART_MIN_NODE       0x00000001
-#define	QOS_FLAG_PART_MAX_NODE       0x00000002
-#define	QOS_FLAG_PART_TIME_LIMIT     0x00000004
-#define	QOS_FLAG_ENFORCE_USAGE_THRES 0x00000008
-#define	QOS_FLAG_NO_RESERVE          0x00000010
-#define	QOS_FLAG_REQ_RESV            0x00000020
-#define	QOS_FLAG_DENY_LIMIT          0x00000040
-#define	QOS_FLAG_OVER_PART_QOS       0x00000080
-#define	QOS_FLAG_NO_DECAY            0x00000100
-#define	QOS_FLAG_USAGE_FACTOR_SAFE   0x00000200
+#define	QOS_FLAG_PART_MIN_NODE       SLURM_BIT(0)
+#define	QOS_FLAG_PART_MAX_NODE       SLURM_BIT(1)
+#define	QOS_FLAG_PART_TIME_LIMIT     SLURM_BIT(2)
+#define	QOS_FLAG_ENFORCE_USAGE_THRES SLURM_BIT(3)
+#define	QOS_FLAG_NO_RESERVE          SLURM_BIT(4)
+#define	QOS_FLAG_REQ_RESV            SLURM_BIT(5)
+#define	QOS_FLAG_DENY_LIMIT          SLURM_BIT(6)
+#define	QOS_FLAG_OVER_PART_QOS       SLURM_BIT(7)
+#define	QOS_FLAG_NO_DECAY            SLURM_BIT(8)
+#define	QOS_FLAG_USAGE_FACTOR_SAFE   SLURM_BIT(9)
 
 /* Define Server Resource flags */
 #define	SLURMDB_RES_FLAG_BASE        0x0fffffff /* apply to get real flags */
