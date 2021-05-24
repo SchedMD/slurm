@@ -2594,75 +2594,75 @@ typedef struct reservation_name_msg {
 } reservation_name_msg_t;
 
 
-#define DEBUG_FLAG_SELECT_TYPE	0x0000000000000001 /* SelectType plugin */
-#define DEBUG_FLAG_STEPS	0x0000000000000002 /* slurmctld steps */
-#define DEBUG_FLAG_TRIGGERS	0x0000000000000004 /* slurmctld triggers */
-#define DEBUG_FLAG_CPU_BIND	0x0000000000000008 /* CPU binding */
-#define DEBUG_FLAG_NET_RAW	0x0000000000000010 /* Raw Network dumps */
-#define DEBUG_FLAG_NO_CONF_HASH	0x0000000000000020 /* no warning about
+#define DEBUG_FLAG_SELECT_TYPE	SLURM_BIT(0) /* SelectType plugin */
+#define DEBUG_FLAG_STEPS	SLURM_BIT(1) /* slurmctld steps */
+#define DEBUG_FLAG_TRIGGERS	SLURM_BIT(2) /* slurmctld triggers */
+#define DEBUG_FLAG_CPU_BIND	SLURM_BIT(3) /* CPU binding */
+#define DEBUG_FLAG_NET_RAW	SLURM_BIT(4) /* Raw Network dumps */
+#define DEBUG_FLAG_NO_CONF_HASH	SLURM_BIT(5) /* no warning about
 						    * slurm.conf files checksum
 						    * mismatch */
-#define DEBUG_FLAG_GRES		0x0000000000000040 /* Generic Resource info */
-#define DEBUG_FLAG_TRES_NODE    0x0000000000000080 /* Print debug for limits
+#define DEBUG_FLAG_GRES		SLURM_BIT(6) /* Generic Resource info */
+#define DEBUG_FLAG_TRES_NODE    SLURM_BIT(7) /* Print debug for limits
 						    * dealing with TRES=NODE */
-#define DEBUG_FLAG_DATA 	0x0000000000000100 /* data_t logging */
-#define DEBUG_FLAG_WORKQ 	0x0000000000000200 /* Work Queue */
-#define DEBUG_FLAG_NET		0x0000000000000400 /* Network logging */
-#define DEBUG_FLAG_PRIO 	0x0000000000000800 /* debug for priority
+#define DEBUG_FLAG_DATA 	SLURM_BIT(8) /* data_t logging */
+#define DEBUG_FLAG_WORKQ 	SLURM_BIT(9) /* Work Queue */
+#define DEBUG_FLAG_NET		SLURM_BIT(10) /* Network logging */
+#define DEBUG_FLAG_PRIO 	SLURM_BIT(11) /* debug for priority
 						    * plugin */
-#define DEBUG_FLAG_BACKFILL	0x0000000000001000 /* debug for
+#define DEBUG_FLAG_BACKFILL	SLURM_BIT(12) /* debug for
 						    * sched/backfill */
-#define DEBUG_FLAG_GANG		0x0000000000002000 /* debug gang scheduler */
-#define DEBUG_FLAG_RESERVATION	0x0000000000004000 /* advanced reservations */
-#define DEBUG_FLAG_FRONT_END	0x0000000000008000 /* front-end nodes */
-#define DEBUG_FLAG_NO_REALTIME	0x0000000000010000 /* get debug when the
+#define DEBUG_FLAG_GANG		SLURM_BIT(13) /* debug gang scheduler */
+#define DEBUG_FLAG_RESERVATION	SLURM_BIT(14) /* advanced reservations */
+#define DEBUG_FLAG_FRONT_END	SLURM_BIT(15) /* front-end nodes */
+#define DEBUG_FLAG_NO_REALTIME	SLURM_BIT(16) /* get debug when the
 						    * realtime server dies
 						    * on a bluegene system */
-#define DEBUG_FLAG_SWITCH	0x0000000000020000 /* SwitchType plugin */
-#define DEBUG_FLAG_ENERGY	0x0000000000040000 /* AcctGatherEnergy plugin */
-#define DEBUG_FLAG_EXT_SENSORS	0x0000000000080000 /* ExtSensorsType plugin */
-#define DEBUG_FLAG_LICENSE	0x0000000000100000 /* AcctGatherProfile
+#define DEBUG_FLAG_SWITCH	SLURM_BIT(17) /* SwitchType plugin */
+#define DEBUG_FLAG_ENERGY	SLURM_BIT(18) /* AcctGatherEnergy plugin */
+#define DEBUG_FLAG_EXT_SENSORS	SLURM_BIT(19) /* ExtSensorsType plugin */
+#define DEBUG_FLAG_LICENSE	SLURM_BIT(20) /* AcctGatherProfile
 						    * plugin */
-#define DEBUG_FLAG_PROFILE	0x0000000000200000 /* AcctGatherProfile
+#define DEBUG_FLAG_PROFILE	SLURM_BIT(21) /* AcctGatherProfile
 						    * plugin */
-#define DEBUG_FLAG_INTERCONNECT	0x0000000000400000 /* AcctGatherInterconnect
+#define DEBUG_FLAG_INTERCONNECT	SLURM_BIT(22) /* AcctGatherInterconnect
 						    * plugin */
-#define DEBUG_FLAG_FILESYSTEM 	0x0000000000800000 /* AcctGatherFilesystem
+#define DEBUG_FLAG_FILESYSTEM 	SLURM_BIT(23) /* AcctGatherFilesystem
 						    * plugin */
-#define DEBUG_FLAG_JOB_CONT 	0x0000000001000000 /* JobContainer plugin */
-#define DEBUG_FLAG_TASK 	0x0000000002000000 /* TaskType plugin */
-#define DEBUG_FLAG_PROTOCOL	0x0000000004000000 /* Communication protocol */
-#define DEBUG_FLAG_BACKFILL_MAP	0x0000000008000000 /* Backfill scheduler node
+#define DEBUG_FLAG_JOB_CONT 	SLURM_BIT(24) /* JobContainer plugin */
+#define DEBUG_FLAG_TASK 	SLURM_BIT(25) /* TaskType plugin */
+#define DEBUG_FLAG_PROTOCOL	SLURM_BIT(26) /* Communication protocol */
+#define DEBUG_FLAG_BACKFILL_MAP	SLURM_BIT(27) /* Backfill scheduler node
 						    * map */
-#define DEBUG_FLAG_TRACE_JOBS   0x0000000010000000 /* Trace jobs by id
+#define DEBUG_FLAG_TRACE_JOBS   SLURM_BIT(28) /* Trace jobs by id
 						    * and state */
-#define DEBUG_FLAG_ROUTE 	0x0000000020000000 /* Route plugin */
-#define DEBUG_FLAG_DB_ASSOC     0x0000000040000000 /* Association debug */
-#define DEBUG_FLAG_DB_EVENT     0x0000000080000000 /* Event debug */
-#define DEBUG_FLAG_DB_JOB       0x0000000100000000 /* Database job debug */
-#define DEBUG_FLAG_DB_QOS       0x0000000200000000 /* QOS debug */
-#define DEBUG_FLAG_DB_QUERY     0x0000000400000000 /* Database query debug */
-#define DEBUG_FLAG_DB_RESV      0x0000000800000000 /* Reservation debug */
-#define DEBUG_FLAG_DB_RES       0x0000001000000000 /* Resource debug */
-#define DEBUG_FLAG_DB_STEP      0x0000002000000000 /* Database step debug */
-#define DEBUG_FLAG_DB_USAGE     0x0000004000000000 /* Usage/Rollup debug */
-#define DEBUG_FLAG_DB_WCKEY     0x0000008000000000 /* Database WCKey debug */
-#define DEBUG_FLAG_BURST_BUF    0x0000010000000000 /* Burst buffer plugin */
-#define DEBUG_FLAG_CPU_FREQ     0x0000020000000000 /* --cpu_freq debug */
-#define DEBUG_FLAG_POWER        0x0000040000000000 /* Power plugin debug */
-#define DEBUG_FLAG_TIME_CRAY    0x0000080000000000 /* Time Cray components */
-#define DEBUG_FLAG_DB_ARCHIVE	0x0000100000000000 /* DBD Archiving/Purging */
-#define DEBUG_FLAG_DB_TRES      0x0000200000000000 /* Database TRES debug */
-#define DEBUG_FLAG_ESEARCH      0x0000400000000000 /* Elasticsearch debug */
-#define DEBUG_FLAG_NODE_FEATURES 0x0000800000000000 /* Node Features debug */
-#define DEBUG_FLAG_FEDR         0x0001000000000000 /* Federation debug */
-#define DEBUG_FLAG_HETJOB	0x0002000000000000 /* Heterogeneous job debug */
-#define DEBUG_FLAG_ACCRUE       0x0004000000000000 /* Accrue counters debug */
-#define DEBUG_FLAG_POWER_SAVE   0x0008000000000000 /* Power Save debug */
-#define DEBUG_FLAG_AGENT	0x0010000000000000 /* RPC Agent debug */
-#define DEBUG_FLAG_DEPENDENCY	0x0020000000000000 /* Dependency debug */
-#define DEBUG_FLAG_JAG		0x0040000000000000 /* Job Account Gather debug */
-#define DEBUG_FLAG_CGROUP	0x0080000000000000 /* cgroup debug */
+#define DEBUG_FLAG_ROUTE 	SLURM_BIT(29) /* Route plugin */
+#define DEBUG_FLAG_DB_ASSOC     SLURM_BIT(30) /* Association debug */
+#define DEBUG_FLAG_DB_EVENT     SLURM_BIT(31) /* Event debug */
+#define DEBUG_FLAG_DB_JOB       SLURM_BIT(32) /* Database job debug */
+#define DEBUG_FLAG_DB_QOS       SLURM_BIT(33) /* QOS debug */
+#define DEBUG_FLAG_DB_QUERY     SLURM_BIT(34) /* Database query debug */
+#define DEBUG_FLAG_DB_RESV      SLURM_BIT(35) /* Reservation debug */
+#define DEBUG_FLAG_DB_RES       SLURM_BIT(36) /* Resource debug */
+#define DEBUG_FLAG_DB_STEP      SLURM_BIT(37) /* Database step debug */
+#define DEBUG_FLAG_DB_USAGE     SLURM_BIT(38) /* Usage/Rollup debug */
+#define DEBUG_FLAG_DB_WCKEY     SLURM_BIT(39) /* Database WCKey debug */
+#define DEBUG_FLAG_BURST_BUF    SLURM_BIT(40) /* Burst buffer plugin */
+#define DEBUG_FLAG_CPU_FREQ     SLURM_BIT(41) /* --cpu_freq debug */
+#define DEBUG_FLAG_POWER        SLURM_BIT(42) /* Power plugin debug */
+#define DEBUG_FLAG_TIME_CRAY    SLURM_BIT(43) /* Time Cray components */
+#define DEBUG_FLAG_DB_ARCHIVE	SLURM_BIT(44) /* DBD Archiving/Purging */
+#define DEBUG_FLAG_DB_TRES      SLURM_BIT(45) /* Database TRES debug */
+#define DEBUG_FLAG_ESEARCH      SLURM_BIT(46) /* Elasticsearch debug */
+#define DEBUG_FLAG_NODE_FEATURES SLURM_BIT(47) /* Node Features debug */
+#define DEBUG_FLAG_FEDR         SLURM_BIT(48) /* Federation debug */
+#define DEBUG_FLAG_HETJOB	SLURM_BIT(49) /* Heterogeneous job debug */
+#define DEBUG_FLAG_ACCRUE       SLURM_BIT(50) /* Accrue counters debug */
+#define DEBUG_FLAG_POWER_SAVE   SLURM_BIT(51) /* Power Save debug */
+#define DEBUG_FLAG_AGENT	SLURM_BIT(52) /* RPC Agent debug */
+#define DEBUG_FLAG_DEPENDENCY	SLURM_BIT(53) /* Dependency debug */
+#define DEBUG_FLAG_JAG		SLURM_BIT(54) /* Job Account Gather debug */
+#define DEBUG_FLAG_CGROUP	SLURM_BIT(55) /* cgroup debug */
 
 #define PREEMPT_MODE_OFF	0x0000	/* disable job preemption */
 #define PREEMPT_MODE_SUSPEND	0x0001	/* suspend jobs to preempt */
