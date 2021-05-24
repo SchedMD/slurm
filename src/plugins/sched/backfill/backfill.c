@@ -727,7 +727,17 @@ static void _load_config(void)
 		max_backfill_job_cnt = 100;
 	}
 
-	bf_node_space_size = (2 * max_backfill_job_cnt);
+	if ((tmp_ptr = xstrcasestr(sched_params, "bf_node_space_size=")))
+		bf_node_space_size = atoi(tmp_ptr + 19);
+	else
+		bf_node_space_size = max_backfill_job_cnt;
+
+	if (bf_node_space_size < 2 ||
+	    bf_node_space_size > 2 * MAX_BF_MAX_JOB_TEST) {
+		error("Invalid SchedulerParameters bf_node_space_size: %d",
+		      bf_node_space_size);
+		bf_node_space_size = max_backfill_job_cnt;
+	}
 
 	if ((tmp_ptr = xstrcasestr(sched_params, "bf_resolution="))) {
 		backfill_resolution = atoi(tmp_ptr + 14);

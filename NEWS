@@ -147,6 +147,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd/v0.0.35 - Plugin has been tagged as deprecated.
  -- srun - Job steps requiring more cores than available to be rejected unless
     '--overlap' is specificed.
+ -- Add bf_node_space_size to SchedulerParameters.
 
 * Changes in Slurm 20.11.9
 ==========================

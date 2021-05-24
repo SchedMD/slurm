@@ -2946,6 +2946,14 @@ and delay initiation of lower priority jobs.
 Also see bf_job_part_count_reserve and bf_min_age_reserve.
 Default: 0, Min: 0, Max: 2^63.
 .TP
+\fBbf_node_space_size=#\fR
+Size of backfile node_space table. Adding a single job to backfile reservations
+in the worst case can consume two node_space records.
+In the case of large clusters, configuring a relatively small value may be desirable.
+This option applies only to \fBSchedulerType=sched/backfill\fR.
+Also see bf_max_job_test and bf_running_job_reserve.
+Default: bf_max_job_test, Min: 2, Max: 2,000,000.
+.TP
 \fBbf_one_resv_per_job\fR
 Disallow adding more than one backfill reservation per job.
 The scheduling logic builds a sorted list of (job, partition) pairs. Jobs
