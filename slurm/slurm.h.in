@@ -1016,15 +1016,19 @@ enum node_states {
 #define MEM_PER_CPU  0x8000000000000000
 #define SHARED_FORCE 0x8000
 
-#define PRIVATE_DATA_JOBS	  0x0001 /* job/step data is private */
-#define PRIVATE_DATA_NODES	  0x0002 /* node data is private */
-#define PRIVATE_DATA_PARTITIONS	  0x0004 /* partition data is private */
-#define PRIVATE_DATA_USAGE	  0x0008 /* accounting usage data is private */
-#define PRIVATE_DATA_USERS	  0x0010 /* accounting user data is private */
-#define PRIVATE_DATA_ACCOUNTS	  0x0020 /* accounting account data is private*/
-#define PRIVATE_DATA_RESERVATIONS 0x0040 /* reservation data is private */
-#define PRIVATE_CLOUD_NODES	  0x0080 /* hide powered down nodes in cloud */
-#define PRIVATE_DATA_EVENTS	  0x0100 /* events are private */
+#define PRIVATE_DATA_JOBS         SLURM_BIT(0) /* job/step data is private */
+#define PRIVATE_DATA_NODES        SLURM_BIT(1) /* node data is private */
+#define PRIVATE_DATA_PARTITIONS   SLURM_BIT(2) /* partition data is private */
+#define PRIVATE_DATA_USAGE        SLURM_BIT(3) /* accounting usage data is
+						* private */
+#define PRIVATE_DATA_USERS        SLURM_BIT(4) /* accounting user data is
+						* private */
+#define PRIVATE_DATA_ACCOUNTS     SLURM_BIT(5) /* accounting account data is
+						* private */
+#define PRIVATE_DATA_RESERVATIONS SLURM_BIT(6) /* reservation data is private */
+#define PRIVATE_CLOUD_NODES       SLURM_BIT(7) /* hide powered down nodes in
+						* cloud */
+#define PRIVATE_DATA_EVENTS       SLURM_BIT(8) /* events are private */
 
 #define PRIORITY_RESET_NONE	0x0000	/* never clear */
 #define PRIORITY_RESET_NOW	0x0001	/* clear now (when slurmctld restarts) */
