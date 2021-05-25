@@ -28,13 +28,16 @@
 ############################################################################
 source ./globals
 
-set authorized     1
 set job_runnable   0
 set part_name      ""
 set part_old_state ""
 set part_new_state ""
 set read_state     ""
 set timeout        $max_job_delay
+
+if {![is_super_user]} {
+	skip "Test needs admin to update partition state"
+}
 
 # Execute a srun job in the specified partition name
 # Returns true if srun timedout with a DOWN state message, false otherwise
@@ -136,23 +139,6 @@ if {$job_runnable == 0} {
 #
 spawn $scontrol update PartitionName=$part_name State=$part_new_state
 expect {
-	-re "slurm_update error: ($re_word_str) ($re_word_str)" {
-		set access_err 0
-		set err_msg1 $expect_out(1,string)
-		set err_msg2 $expect_out(2,string)
-		if {[string compare $err_msg1 "Invalid"] == 0} {
-			set access_err 1
-		}
-		if {[string compare $err_msg2 "user"] == 0} {
-			set access_err 1
-		}
-		if {$access_err == 1} {
-			skip "User not authorized to change slurm state"
-		} else {
-			set authorized 0
-		}
-		exp_continue
-	}
 	timeout {
 		fail "scontrol not responding"
 	}
@@ -177,9 +163,7 @@ expect {
 		wait
 	}
 }
-if {$authorized == 1} {
-	subtest {[string compare $read_state $part_new_state] == 0} "scontrol should be able to change the partition state"
-}
+subtest {[string compare $read_state $part_new_state] == 0} "scontrol should be able to change the partition state"
 
 #
 # Confirm that a DOWN partition does not run any jobs
@@ -224,6 +208,4 @@ expect {
 		wait
 	}
 }
-if {$authorized == 1} {
-	subtest {[string compare $read_state $part_old_state] == 0} "scontrol should be able to change the partition state"
-}
+subtest {[string compare $read_state $part_old_state] == 0} "scontrol should be able to change the partition state"
