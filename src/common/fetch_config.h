@@ -45,8 +45,10 @@ extern config_response_msg_t *fetch_config_from_controller(uint32_t flags);
 
 extern int dump_to_memfd(char *type, char *config, char **filename);
 
+extern int find_conf_by_name(void *x, void *key);
+
 extern int write_configs_to_conf_cache(config_response_msg_t *msg,
-				       const char *dir);
+				       char *dir);
 
 extern void load_config_response_msg(config_response_msg_t *msg, int flags);
 
@@ -54,4 +56,5 @@ extern void load_config_response_list(config_response_msg_t *msg,
 				      char *files[]);
 
 extern void destroy_config_file(void *object);
+
 #endif

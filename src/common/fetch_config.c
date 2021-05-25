@@ -352,32 +352,28 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-extern int write_configs_to_conf_cache(config_response_msg_t *msg,
-				       const char *dir)
+extern int find_conf_by_name(void *x, void *key)
 {
-	if (_write_conf(dir, "slurm.conf", msg->config))
+	config_file_t *config = (config_file_t *)x;
+	char *file_name_key = (char *)key;
+	return !xstrcmp(config->file_name, file_name_key);
+}
+
+extern int write_one_config(void *x, void *arg)
+{
+	config_file_t *config = (config_file_t *) x;
+	char *dir = (char *) arg;
+	if (_write_conf(dir, config->file_name, config->file_content))
 		return SLURM_ERROR;
-	if (_write_conf(dir, "acct_gather.conf", msg->acct_gather_config))
+	return SLURM_SUCCESS;
+}
+
+extern int write_configs_to_conf_cache(config_response_msg_t *msg,
+				       char *dir)
+{
+	if (list_for_each(msg->config_files, write_one_config, dir) < 0) {
 		return SLURM_ERROR;
-	if (_write_conf(dir, "cgroup.conf", msg->cgroup_config))
-		return SLURM_ERROR;
-	if (_write_conf(dir, "cgroup_allowed_devices_file.conf",
-			msg->cgroup_allowed_devices_file_config))
-		return SLURM_ERROR;
-	if (_write_conf(dir, "ext_sensors.conf", msg->ext_sensors_config))
-		return SLURM_ERROR;
-	if (_write_conf(dir, "gres.conf", msg->gres_config))
-		return SLURM_ERROR;
-	if (_write_conf(dir, "job_container.conf", msg->job_container_config))
-		return SLURM_ERROR;
-	if (_write_conf(dir, "knl_cray.conf", msg->knl_cray_config))
-		return SLURM_ERROR;
-	if (_write_conf(dir, "knl_generic.conf", msg->knl_generic_config))
-		return SLURM_ERROR;
-	if (_write_conf(dir, "plugstack.conf", msg->plugstack_config))
-		return SLURM_ERROR;
-	if (_write_conf(dir, "topology.conf", msg->topology_config))
-		return SLURM_ERROR;
+	}
 
 	return SLURM_SUCCESS;
 }

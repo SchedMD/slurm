@@ -3191,6 +3191,7 @@ _destroy_slurm_conf(void)
 static int _establish_config_source(char **config_file, int *memfd)
 {
 	struct stat stat_buf;
+	config_file_t *config_tmp;
 	config_response_msg_t *config = NULL;
 
 	/*
@@ -3239,7 +3240,7 @@ static int _establish_config_source(char **config_file, int *memfd)
 	 * entries to fetch the configs from the slurmctld.
 	 */
 	if (!(config = fetch_config(NULL, CONFIG_REQUEST_SLURM_CONF)) ||
-	    !config->config) {
+	    !config->config_files) {
 		error("%s: failed to fetch config", __func__);
 		return SLURM_ERROR;
 	}
@@ -3248,19 +3249,31 @@ static int _establish_config_source(char **config_file, int *memfd)
 	 * memfd is always created successfully as any failure causes the
 	 * process to die with a fatal() error.
 	 */
-	*memfd = dump_to_memfd("slurm.conf", config->config, config_file);
+	if (!(config_tmp = list_find_first(config->config_files,
+					   find_conf_by_name,
+					   "slurm.conf"))) {
+		error("%s: No slurm.conf found in configuration files received.",
+		      __func__);
+		return SLURM_ERROR;
+	}
+	*memfd = dump_to_memfd("slurm.conf", config_tmp->file_content,
+			       config_file);
 	/*
 	 * If we've been handed a plugstack.conf or topology.conf file then
 	 * slurmctld thinks we'll need it. Stash it in case of an eventual
 	 * spank_stack_init() / slurm_topo_init().
 	 */
-	if (config->plugstack_config)
+	if ((config_tmp = list_find_first(config->config_files,
+					  find_conf_by_name,
+					  "plugstack.conf")))
 		plugstack_fd = dump_to_memfd("plugstack.conf",
-					     config->plugstack_config,
+					     config_tmp->file_content,
 					     &plugstack_conf);
-	if (config->topology_config)
+	if ((config_tmp = list_find_first(config->config_files,
+					  find_conf_by_name,
+					  "topology.conf")))
 		topology_fd = dump_to_memfd("topology.conf",
-					    config->topology_config,
+					    config_tmp->file_content,
 					    &topology_conf);
 	slurm_free_config_response_msg(config);
 	debug2("%s: using config_file=%s (fetched)", __func__, *config_file);
