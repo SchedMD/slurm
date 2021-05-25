@@ -73,10 +73,14 @@ static int _parse_jc_conf_internal(void **dest, slurm_parser_enum_t type,
 	int rc = 1;
 	s_p_hashtbl_t *tbl = _create_ns_hashtbl();
 	s_p_parse_line(tbl, *leftover, leftover);
-
-	if (value)
+	if (value) {
+		if (!xstrcmp(value, "/tmp") ||
+		    !xstrncmp(value, "/tmp/", 5) ||
+		    !xstrcmp(value, "/dev/shm") ||
+		    !xstrncmp(value, "/dev/shm/", 9))
+			fatal("Cannot use /tmp or /dev/shm as BasePath");
 		slurm_jc_conf.basepath = xstrdup(value);
-	else if (!s_p_get_string(&slurm_jc_conf.basepath, "BasePath", tbl)) {
+	} else if (!s_p_get_string(&slurm_jc_conf.basepath, "BasePath", tbl)) {
 		fatal("empty basepath detected, please verify %s is correct",
 		      tmpfs_conf_file);
 		rc = 0;
