@@ -351,7 +351,7 @@ rm -rf ./$file_out"
 
 	#  Check for expected errors, if applicable
 	if {$err_msgs != ""} {
-		set response "Errors: Expected $errs_expected, found $errs_actual for error regex '$err_msgs' in sub-test $test_minor"
+		set response "Errors: Expected $errs_expected match, found $errs_actual matches for error regex '$err_msgs' in sub-test $test_minor"
 		if {$errs_actual == $errs_expected} {
 			set response "(This is OK) ${response}"
 			log_info $response
