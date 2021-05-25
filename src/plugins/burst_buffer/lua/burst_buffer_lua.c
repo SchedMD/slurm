@@ -2091,6 +2091,56 @@ extern void bb_p_job_set_tres_cnt(job_record_t *job_ptr, uint64_t *tres_cnt,
 extern time_t bb_p_job_get_est_start(job_record_t *job_ptr)
 {
 	time_t est_start = time(NULL);
+	bb_job_t *bb_job;
+	int rc;
+
+	if ((job_ptr->burst_buffer == NULL) ||
+	    (job_ptr->burst_buffer[0] == '\0'))
+		return est_start;
+
+	if (job_ptr->array_recs &&
+	    ((job_ptr->array_task_id == NO_VAL) ||
+	     (job_ptr->array_task_id == INFINITE))) {
+		/* Can't operate on job array. Guess 5 minutes. */
+		est_start += 300;
+		return est_start;
+	}
+
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	if (bb_state.last_load_time == 0) {
+		/*
+		 * The plugin hasn't successfully loaded yet, so we can't know.
+		 * Guess 1 hour.
+		 */
+		est_start += 3600;
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		return est_start;
+	}
+
+	if (!(bb_job = _get_bb_job(job_ptr))) {
+		/* No bb_job record; we can't know. */
+		slurm_mutex_unlock(&bb_state.bb_mutex);
+		return est_start;
+	}
+
+	log_flag(BURST_BUF, "%pJ", job_ptr);
+
+	if (bb_job->state == BB_STATE_PENDING) {
+		rc = bb_test_size_limit(job_ptr, bb_job, &bb_state,
+					_queue_teardown);
+		if (rc == 0) { /* Could start now. */
+			;
+		} else if (rc == 1) { /* Exceeds configured limits */
+			est_start += 365 * 24 * 60 * 60;
+		} else {
+			est_start = MAX(est_start, bb_state.next_end_time);
+		}
+	} else {
+		/* Allocation or staging in progress, guess 1 minute from now */
+		est_start++;
+	}
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+
 	return est_start;
 }
 
