@@ -44,6 +44,7 @@ proc check_part_down { part_name } {
 	set matches  0
 	set timedout false
 
+	set timeout 5
 	set srun_pid [spawn $srun -p$part_name -N1 -t1 $bin_true]
 	expect {
 		-re "DOWN state" {
@@ -66,6 +67,7 @@ proc check_part_down { part_name } {
 		}
 	}
 
+	set timeout $max_job_delay
 	return $timedout
 }
 
