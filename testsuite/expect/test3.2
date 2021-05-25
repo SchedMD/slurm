@@ -29,7 +29,6 @@
 source ./globals
 
 set authorized     1
-set exit_code      0
 set job_runnable   0
 set part_name      ""
 set part_old_state ""
@@ -129,10 +128,7 @@ if {[string compare $part_new_state ""] == 0} {
 # Confirm that a DOWN partition does not run any jobs
 #
 if {$job_runnable == 0} {
-	if {![check_part_down $part_name]} {
-		log_error "Job ran in DOWN partition"
-		set exit_code 1
-	}
+	subtest {[check_part_down $part_name]} "Job should not run. srun should timeout with the partition DOWN messages"
 }
 
 #
@@ -182,20 +178,14 @@ expect {
 	}
 }
 if {$authorized == 1} {
-	if {[string compare $read_state $part_new_state] != 0} {
-		log_error "scontrol state change error"
-		set exit_code 1
-	}
+	subtest {[string compare $read_state $part_new_state] == 0} "scontrol should be able to change the partition state"
 }
 
 #
 # Confirm that a DOWN partition does not run any jobs
 #
 if {$job_runnable == 1} {
-	if {![check_part_down $part_name]} {
-		log_error "Job ran in DOWN partition"
-		set exit_code 1
-	}
+	subtest {[check_part_down $part_name]} "Job should not run. srun should timeout with the partition DOWN messages"
 }
 
 #
@@ -208,7 +198,6 @@ expect {
 	}
 	-re "slurm_update error:" {
 		log_error "scontrol update error"
-		set exit_code 1
 		exp_continue
 	}
 	timeout {
@@ -224,7 +213,10 @@ expect {
 #
 spawn  $scontrol show partition $part_name
 expect {
-
+	-re "State=($re_word_str) " {
+		set read_state $expect_out(1,string)
+		exp_continue
+	}
 	timeout {
 		fail "scontrol not responding"
 	}
@@ -232,7 +224,6 @@ expect {
 		wait
 	}
 }
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+if {$authorized == 1} {
+	subtest {[string compare $read_state $part_old_state] == 0} "scontrol should be able to change the partition state"
 }
