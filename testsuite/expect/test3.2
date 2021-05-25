@@ -28,15 +28,19 @@
 ############################################################################
 source ./globals
 
-set job_runnable   0
-set part_name      ""
-set part_old_state ""
-set part_new_state ""
-set read_state     ""
+set part_name      [default_partition]
+set part_old_state [get_partition_param $part_name "State"]
 set timeout        $max_job_delay
 
 if {![is_super_user]} {
 	skip "Test needs admin to update partition state"
+}
+
+proc cleanup {} {
+	global scontrol part_name part_old_state
+
+	# Return partition's state to its old value
+	run_command -fail "$scontrol update PartitionName=$part_name State=$part_old_state"
 }
 
 # Execute a srun job in the specified partition name
@@ -74,12 +78,6 @@ proc check_part_down { part_name } {
 }
 
 #
-# Identify a partition and its state
-#
-set part_name [default_partition]
-set part_old_state [get_partition_param $part_name "State"]
-
-#
 # Validate current partition information
 #
 if {[string compare $part_name ""] == 0} {
@@ -88,42 +86,16 @@ if {[string compare $part_name ""] == 0} {
 if {[string compare $part_old_state ""] == 0} {
 	fail "scontrol unable to identify state of partition $part_name"
 }
-if {[string compare $part_old_state "UP"] == 0} {
-	set job_runnable 1
-	set part_new_state "DOWN"
-}
-if {[string compare $part_old_state "DOWN"] == 0} {
-	set job_runnable 0
-	set part_new_state "UP"
-}
-if {[string compare $part_new_state ""] == 0} {
-	fail "State of partition $part_name is invalid: $part_old_state"
-}
+
+#
+# Change that partition's state to DOWN
+#
+run_command -fail "$scontrol update PartitionName=$part_name State=DOWN"
+set read_state [get_partition_param $part_name "State"]
+subtest {[string compare $read_state "DOWN"] == 0} "scontrol should be able to change the partition state"
 
 #
 # Confirm that a DOWN partition does not run any jobs
 #
-if {$job_runnable == 0} {
-	subtest {[check_part_down $part_name]} "Job should not run. srun should timeout with the partition DOWN messages"
-}
+subtest {[check_part_down $part_name]} "Job should not run. srun should timeout with the partition DOWN messages"
 
-#
-# Change that partition's state
-#
-run_command -fail "$scontrol update PartitionName=$part_name State=$part_new_state"
-set read_state [get_partition_param $part_name "State"]
-subtest {[string compare $read_state $part_new_state] == 0} "scontrol should be able to change the partition state"
-
-#
-# Confirm that a DOWN partition does not run any jobs
-#
-if {$job_runnable == 1} {
-	subtest {[check_part_down $part_name]} "Job should not run. srun should timeout with the partition DOWN messages"
-}
-
-#
-# Return that partition's state to its old value
-#
-run_command -fail "$scontrol update PartitionName=$part_name State=$part_old_state"
-set read_state [get_partition_param $part_name "State"]
-subtest {[string compare $read_state $part_old_state] == 0} "scontrol should be able to change the partition state"
