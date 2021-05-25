@@ -46,6 +46,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/cron.h"
+#include "src/common/fetch_config.h"
 #include "src/common/forward.h"
 #include "src/common/gres.h"
 #include "src/common/job_options.h"
@@ -11127,24 +11128,46 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern void pack_config_file(void *in, uint16_t protocol_version,
+			     buf_t *buffer)
+{
+	config_file_t *object = (config_file_t *) in;
+
+	if (!object) {
+		packnull(buffer);
+		packnull(buffer);
+		return;
+	}
+
+	packstr(object->file_name, buffer);
+	packstr(object->file_content, buffer);
+}
+
+extern int unpack_config_file(void **out, uint16_t protocol_version,
+			      buf_t *buffer)
+{
+	uint32_t uint32_tmp;
+	config_file_t *object = xmalloc(sizeof(*object));
+
+	safe_unpackstr_xmalloc(&object->file_name, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&object->file_content, &uint32_tmp, buffer);
+	*out = object;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(object);
+	*out = NULL;
+	return SLURM_ERROR;
+}
+
 extern void pack_config_response_msg(config_response_msg_t *msg,
 				     buf_t *buffer, uint16_t protocol_version)
 {
 	xassert(msg);
 
 	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
-		packstr(msg->config, buffer);
-		packstr(msg->acct_gather_config, buffer);
-		packstr(msg->cgroup_config, buffer);
-		packstr(msg->cgroup_allowed_devices_file_config, buffer);
-		packstr(msg->ext_sensors_config, buffer);
-		packstr(msg->gres_config, buffer);
-		packstr(msg->job_container_config, buffer);
-		packstr(msg->knl_cray_config, buffer);
-		packstr(msg->knl_generic_config, buffer);
-		packstr(msg->plugstack_config, buffer);
-		packstr(msg->topology_config, buffer);
-		packstr(msg->xtra_config, buffer);
+		slurm_pack_list(msg->config_files, pack_config_file, buffer,
+				protocol_version);
 		packstr(msg->slurmd_spooldir, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		packstr(msg->config, buffer);
@@ -11171,30 +11194,12 @@ extern int unpack_config_response_msg(config_response_msg_t **msg_ptr,
 	*msg_ptr = msg;
 
 	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
-		safe_unpackstr_xmalloc(&msg->config, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&msg->acct_gather_config, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&msg->cgroup_config, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&msg->cgroup_allowed_devices_file_config,
+		if (slurm_unpack_list(&msg->config_files, unpack_config_file,
+				      destroy_config_file, buffer,
+				      protocol_version) != SLURM_SUCCESS)
+			goto unpack_error;
+		safe_unpackstr_xmalloc(&msg->slurmd_spooldir,
 				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&msg->ext_sensors_config, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&msg->gres_config, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&msg->job_container_config, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&msg->knl_cray_config, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&msg->knl_generic_config, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&msg->plugstack_config, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&msg->topology_config, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&msg->xtra_config, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&msg->slurmd_spooldir, &uint32_tmp,
-				       buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpackstr_xmalloc(&msg->config, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg->acct_gather_config, &uint32_tmp,
