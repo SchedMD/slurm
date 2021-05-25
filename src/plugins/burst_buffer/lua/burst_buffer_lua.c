@@ -2934,7 +2934,7 @@ static void *_start_pre_run(void *x)
 		job_ptr = find_job_record(pre_run_args->job_id);
 		if (!job_ptr || IS_JOB_COMPLETED(job_ptr)) {
 			unlock_slurmctld(job_read_lock);
-			return NULL;
+			goto fini;
 		}
 		if (test_job_nodes_ready(job_ptr))
 			nodes_ready = true;
