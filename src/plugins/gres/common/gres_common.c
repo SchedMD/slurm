@@ -39,7 +39,6 @@
 #include "gres_common.h"
 
 #include "src/common/xstring.h"
-#include "src/common/xcgroup_read_config.h"
 
 static void _free_name_list(void *x)
 {
@@ -179,12 +178,10 @@ extern bool common_use_local_device_index(void)
 	if (!use_cgroup)
 		return use_local_index;
 
-	/* read cgroup configuration */
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = xcgroup_get_slurm_cgroup_conf();
-	if (cg_conf->constrain_devices)
+	cg_conf = cgroup_g_get_conf();
+	if (cg_conf && cg_conf->constrain_devices)
 		use_local_index = true;
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
+	cgroup_g_free_conf(cg_conf);
 
 	return use_local_index;
 }

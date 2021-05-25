@@ -37,6 +37,7 @@
 #define _GNU_SOURCE
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/cgroup.h"
 #include "src/common/gres.h"
 #include "src/common/log.h"
 #include "src/common/list.h"
@@ -872,11 +873,10 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	}
 
 	// Check if GPUs are constrained by cgroups
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = xcgroup_get_slurm_cgroup_conf();
+	cg_conf = cgroup_g_get_conf();
 	if (cg_conf && cg_conf->constrain_devices)
 		constrained_devices = true;
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
+	cgroup_g_free_conf(cg_conf);
 
 	// Check if task/cgroup plugin is loaded
 	if (xstrstr(slurm_conf.task_plugin, "cgroup"))

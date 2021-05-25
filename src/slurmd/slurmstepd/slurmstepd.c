@@ -58,10 +58,10 @@
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/stepd_api.h"
 #include "src/common/switch.h"
-#include "src/common/xcgroup_read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/common/cgroup.h"
 
 #include "src/slurmd/common/core_spec_plugin.h"
 #include "src/slurmd/common/slurmstepd_init.h"
@@ -209,7 +209,7 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 
 	fini_setproctitle();
 
-	xcgroup_fini_slurm_cgroup_conf();
+	cgroup_g_conf_fini();
 
 	xfree(cli);
 	xfree(self);
@@ -523,7 +523,7 @@ _init_from_slurmd(int sock, char **argv,
 		fatal("Failed to read conf from slurmd");
 
 	/* receive cgroup conf from slurmd */
-	if (xcgroup_read_conf(sock) != SLURM_SUCCESS)
+	if (cgroup_g_read_conf(sock) != SLURM_SUCCESS)
 		fatal("Failed to read cgroup conf from slurmd");
 
 	/* receive acct_gather conf from slurmd */

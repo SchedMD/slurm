@@ -44,6 +44,7 @@
 
 #include "src/common/gres.h"
 #include "src/common/list.h"
+#include "src/common/cgroup.h"
 
 /*
  * Common validation for what was read in from the gres.conf.
