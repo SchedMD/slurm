@@ -76,35 +76,8 @@ proc check_part_down { part_name } {
 #
 # Identify a partition and its state
 #
-spawn $scontrol show part
-expect {
-	-re "PartitionName=($re_word_str)" {
-		if {[string compare $part_name ""] == 0} {
-			set part_name $expect_out(1,string)
-		}
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-spawn $scontrol show part $part_name
-expect {
-	-re "State=($re_word_str) " {
-		set part_old_state $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
+set part_name [default_partition]
+set part_old_state [get_partition_param $part_name "State"]
 
 #
 # Validate current partition information
@@ -137,32 +110,8 @@ if {$job_runnable == 0} {
 #
 # Change that partition's state
 #
-spawn $scontrol update PartitionName=$part_name State=$part_new_state
-expect {
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-#
-# Validate partition's new state
-#
-spawn $scontrol show partition $part_name
-expect {
-	-re "State=($re_word_str) " {
-		set read_state $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$scontrol update PartitionName=$part_name State=$part_new_state"
+set read_state [get_partition_param $part_name "State"]
 subtest {[string compare $read_state $part_new_state] == 0} "scontrol should be able to change the partition state"
 
 #
@@ -175,37 +124,6 @@ if {$job_runnable == 1} {
 #
 # Return that partition's state to its old value
 #
-spawn $scontrol update PartitionName=$part_name State=$part_old_state
-expect {
-	-re "slurm_update error: Invalid user id" {
-		exp_continue
-	}
-	-re "slurm_update error:" {
-		log_error "scontrol update error"
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-#
-# Record that partition's state
-#
-spawn  $scontrol show partition $part_name
-expect {
-	-re "State=($re_word_str) " {
-		set read_state $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$scontrol update PartitionName=$part_name State=$part_old_state"
+set read_state [get_partition_param $part_name "State"]
 subtest {[string compare $read_state $part_old_state] == 0} "scontrol should be able to change the partition state"
