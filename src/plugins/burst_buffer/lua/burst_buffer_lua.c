@@ -1830,6 +1830,14 @@ extern char *bb_p_get_status(uint32_t argc, char **argv)
  */
 extern int bb_p_reconfig(void)
 {
+	/* reconfig is the place we make sure the pointers are correct */
+	for (int i = 0; i < BB_HASH_SIZE; i++) {
+		bb_alloc_t *bb_alloc = bb_state.bb_ahash[i];
+		while (bb_alloc) {
+			_set_assoc_mgr_ptrs(bb_alloc);
+			bb_alloc = bb_alloc->next;
+		}
+	}
 	return SLURM_SUCCESS;
 }
 
