@@ -38,36 +38,35 @@ set read_state     ""
 set timeout        $max_job_delay
 
 # Execute a srun job in the specified partition name
-# Returns 0 on successful completion, returns 1 otherwise
-proc run_job { part_name } {
-	global bin_printenv srun timeout
-	set rc 1
+# Returns true if srun timedout with a DOWN state message, false otherwise
+proc check_part_down { part_name } {
+	global bin_true srun timeout max_job_delay
+	set matches  0
+	set timedout false
 
-	set srun_pid [spawn $srun --output=none --error=none -p $part_name -N1-128 -t1 $bin_printenv SLURMD_NODENAME]
+	set srun_pid [spawn $srun -p$part_name -N1 -t1 $bin_true]
 	expect {
-		-re "Unable to contact" {
-			log_error "Slurm appears to be down"
-			return 1
-		}
-		-re "uid" {
-			set rc 0
+		-re "DOWN state" {
+			incr matches
 			exp_continue
 		}
-		-re "not available" {
-			slow_kill $srun_pid
+		-re "queued and waiting" {
+			incr matches
 			exp_continue
 		}
 		timeout {
-			log_error "srun not responding"
+			if {$matches == 2} {
+				set timedout true
+			}
 			slow_kill $srun_pid
-			return 1
 		}
 		eof {
+			log_error "srun didn't timeout"
 			wait
 		}
 	}
 
-	return $rc
+	return $timedout
 }
 
 #
@@ -113,11 +112,11 @@ if {[string compare $part_old_state ""] == 0} {
 	fail "scontrol unable to identify state of partition $part_name"
 }
 if {[string compare $part_old_state "UP"] == 0} {
-	set job_runable 1
+	set job_runnable 1
 	set part_new_state "DOWN"
 }
 if {[string compare $part_old_state "DOWN"] == 0} {
-	set job_runable 0
+	set job_runnable 0
 	set part_new_state "UP"
 }
 if {[string compare $part_new_state ""] == 0} {
@@ -127,8 +126,8 @@ if {[string compare $part_new_state ""] == 0} {
 #
 # Confirm that a DOWN partition does not run any jobs
 #
-if {$job_runable == 0} {
-	if {[run_job $part_name] == 0} {
+if {$job_runnable == 0} {
+	if {![check_part_down $part_name]} {
 		log_error "Job ran in DOWN partition"
 		set exit_code 1
 	}
@@ -190,8 +189,8 @@ if {$authorized == 1} {
 #
 # Confirm that a DOWN partition does not run any jobs
 #
-if {$job_runable == 1} {
-	if {[run_job $part_name] == 0} {
+if {$job_runnable == 1} {
+	if {![check_part_down $part_name]} {
 		log_error "Job ran in DOWN partition"
 		set exit_code 1
 	}
