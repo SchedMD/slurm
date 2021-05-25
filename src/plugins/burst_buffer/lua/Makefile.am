@@ -4,8 +4,8 @@ AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -DDEFAULT_SCRIPT_DIR=\"$(sysconfdir)\" \
-	-I$(top_srcdir) -I$(top_srcdir)/src/common $(lua_CFLAGS) $(JSON_CPPFLAGS)
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common \
+	      $(lua_CFLAGS) $(JSON_CPPFLAGS)
 
 if HAVE_LUA
 

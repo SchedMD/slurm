@@ -109,7 +109,7 @@ static bb_state_t bb_state;
 
 static int directive_len = strlen(DIRECTIVE_STR);
 
-static const char lua_script_path[] = DEFAULT_SCRIPT_DIR "/burst_buffer.lua";
+static char *lua_script_path;
 static const char *req_fxns[] = {
 	"slurm_bb_job_process",
 	"slurm_bb_pools",
@@ -1525,6 +1525,7 @@ extern int init(void)
 
         if ((rc = slurm_lua_init()) != SLURM_SUCCESS)
                 return rc;
+	lua_script_path = get_extra_conf_path("burst_buffer.lua");
 
 	slurm_mutex_init(&lua_thread_mutex);
 	slurm_mutex_init(&bb_state.bb_mutex);
@@ -1589,6 +1590,7 @@ extern int fini(void)
 	slurm_mutex_destroy(&lua_thread_mutex);
 
 	slurm_lua_fini();
+	xfree(lua_script_path);
 
 	return SLURM_SUCCESS;
 }
