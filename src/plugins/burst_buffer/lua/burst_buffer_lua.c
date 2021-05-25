@@ -3141,7 +3141,25 @@ fini:
  */
 extern int bb_p_job_revoke_alloc(job_record_t *job_ptr)
 {
-	return SLURM_SUCCESS;
+	bb_job_t *bb_job = NULL;
+	int rc = SLURM_SUCCESS;
+
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	if (job_ptr)
+		bb_job = _get_bb_job(job_ptr);
+	if (bb_job) {
+		if (bb_job->state == BB_STATE_RUNNING)
+			bb_set_job_bb_state(job_ptr, bb_job,
+					    BB_STATE_STAGED_IN);
+		else if (bb_job->state == BB_STATE_PRE_RUN)
+			bb_set_job_bb_state(job_ptr, bb_job,
+					    BB_STATE_ALLOC_REVOKE);
+	} else {
+		rc = SLURM_ERROR;
+	}
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+
+	return rc;
 }
 
 /*
