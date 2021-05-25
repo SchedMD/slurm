@@ -120,6 +120,7 @@ static const char *req_fxns[] = {
 	"slurm_bb_pre_run",
 	"slurm_bb_post_run",
 	"slurm_bb_data_out",
+	"slurm_bb_get_status",
 	NULL
 };
 
@@ -167,6 +168,11 @@ typedef struct {
 	char *job_script;
 	uint32_t uid;
 } stage_out_args_t;
+
+typedef struct {
+	uint32_t argc;
+	char **argv;
+} status_args_t;
 
 typedef int (*push_lua_args_cb_t) (lua_State *L, void *args);
 
@@ -1781,6 +1787,18 @@ extern int bb_p_load_state(bool init_config)
 	return SLURM_SUCCESS;
 }
 
+static int _push_status_args(lua_State *L, void *args)
+{
+	int i;
+	status_args_t *status_args = (status_args_t *) args;
+
+	for (i = 0; i < status_args->argc; i++) {
+		lua_pushstring(L, status_args->argv[i]);
+	}
+
+	return status_args->argc;
+}
+
 /*
  * Return string containing current burst buffer status
  * argc IN - count of status command arguments
@@ -1789,7 +1807,20 @@ extern int bb_p_load_state(bool init_config)
  */
 extern char *bb_p_get_status(uint32_t argc, char **argv)
 {
-	return NULL;
+	char *status_resp = NULL;
+	int rc;
+	status_args_t status_args = { .argc = argc, .argv = argv };
+
+	rc = _run_lua_script("slurm_bb_get_status",
+			     bb_state.bb_config.other_timeout,
+			     _push_status_args, &status_args, &status_resp,
+			     NULL);
+	if (rc != SLURM_SUCCESS) {
+		xfree(status_resp);
+		status_resp = xstrdup("Error running slurm_bb_get_status\n");
+	}
+
+	return status_resp;
 }
 
 /*
