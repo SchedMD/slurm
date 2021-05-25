@@ -469,7 +469,7 @@ _msg_engine(void)
 			DEF_TIMERS;
 			START_TIMER;
 			_update_logging();
-			END_TIMER3("_uplodate_log request - slurmd doesn't accept new connections during this time.",
+			END_TIMER3("_update_log request - slurmd doesn't accept new connections during this time.",
 				   5000000);
 		}
 		cli = xmalloc (sizeof (slurm_addr_t));
