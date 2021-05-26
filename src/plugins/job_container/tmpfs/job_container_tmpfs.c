@@ -153,42 +153,36 @@ static int _append_job_in_list(void *element, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static int _restore_ns(const char *path, const struct stat *st_buf, int type)
+static int _restore_ns(const char *basepath, const char *d_name)
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t job_id;
 	char ns_holder[PATH_MAX];
 	struct stat stat_buf;
 
-	if (type == FTW_NS) {
-		error("%s: Unreachable file of FTW_NS type: %s",
-		      __func__, path);
+	if (!(job_id = slurm_atoul(d_name))) {
+		debug3("ignoring %s, could not convert to jobid.", d_name);
+		return SLURM_SUCCESS;
+	}
+
+	if (snprintf(ns_holder, PATH_MAX, "%s/%s/.ns",
+		     basepath, d_name) >= PATH_MAX) {
+		error("%s: Unable to build ns_holder path for %s: %m",
+		      __func__, d_name);
 		rc = SLURM_ERROR;
-	} else if (type == FTW_DNR) {
-		error("%s: Unreadable directory: %s", __func__, path);
-		rc = SLURM_ERROR;
-	} else if (type == FTW_D && xstrcmp(jc_conf->basepath, path)) {
-		/* Lookup for .ns file inside. If exists, try to restore. */
-		if (snprintf(ns_holder, PATH_MAX, "%s/.ns", path) >= PATH_MAX) {
-			error("%s: Unable to build ns_holder path %s: %m",
-				  __func__, ns_holder);
+	} else if (stat(ns_holder, &stat_buf) < 0) {
+		debug3("ignoring wrong ns_holder path %s: %m", ns_holder);
+	} else {
+		/* here we think this is a job container */
+		debug3("attempting to restore %s", ns_holder);
+		if (_create_ns(job_id, true)) {
+			error("%s: failed to restore namespace for %d",
+			      __func__, job_id);
 			rc = SLURM_ERROR;
-		} else if (stat(ns_holder, &stat_buf) < 0) {
-			debug3("%s: ignoring wrong ns_holder path %s: %m",
-				   __func__, ns_holder);
-		} else {
-			job_id = slurm_atoul(&(xstrrchr(path, '/')[1]));
-			/* At this point we can remount the folder. */
-			if (_create_ns(job_id, true)) {
-				rc = SLURM_ERROR;
-			/* And then, properly delete it for dead jobs. */
-			} else if (!list_find_first(
-					   running_job_ids,
-					   (ListFindF)_find_job_id_in_list,
-					   &job_id)) {
-				rc = _delete_ns(job_id);
-			}
-		}
+		} else if (!list_find_first(running_job_ids,
+					    (ListFindF)_find_job_id_in_list,
+					    &job_id))
+			rc = _delete_ns(job_id);
 	}
 	return rc;
 }
@@ -249,6 +243,8 @@ extern int fini(void)
 
 extern int container_p_restore(char *dir_name, bool recover)
 {
+	DIR *dp;
+	struct dirent *ep;
 	List steps;
 
 #ifdef HAVE_NATIVE_CRAY
@@ -345,12 +341,21 @@ extern int container_p_restore(char *dir_name, bool recover)
 	 * deleting the folder if the job is died and resources are free, or
 	 * mount it otherwise.
 	 */
-	if (ftw(jc_conf->basepath, _restore_ns, 64)) {
-		error("%s: Directory traversal failed: %s: %s",
-			  __func__, jc_conf->basepath, strerror(errno));
-		FREE_NULL_LIST(running_job_ids);
+	if (!(dp = opendir(jc_conf->basepath))) {
+		error("%s: Unable to open %s", __func__, jc_conf->basepath);
 		return SLURM_ERROR;
 	}
+
+	while ((ep = readdir(dp))) {
+		if (_restore_ns(jc_conf->basepath, ep->d_name)) {
+			error("%s: Directory traversal failed: %s: %s",
+			      __func__, jc_conf->basepath, strerror(errno));
+			closedir(dp);
+			FREE_NULL_LIST(running_job_ids);
+			return SLURM_ERROR;
+		}
+	}
+	closedir(dp);
 	FREE_NULL_LIST(running_job_ids);
 
 	return SLURM_SUCCESS;
