@@ -527,7 +527,7 @@ $ srun --het-group=0 printenv SLURM_JOB_ID
 
 <p>The various MPI implementations rely heavily upon Slurm environment variables
 for proper operation.
-A single MPI applications executing in a single MPI_COMM_WORLD require a
+A single MPI application executing in a single MPI_COMM_WORLD requires a
 uniform set of environment variables that reflect a single job allocation.
 The example below shows how Slurm sets environment variables for MPI.</p>
 <pre>
