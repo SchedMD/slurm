@@ -655,8 +655,9 @@ extern List as_mysql_modify_wckeys(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	char *extra = NULL, *object = NULL, *vals = NULL;
 	char *user_name = NULL;
-	List use_cluster_list = as_mysql_cluster_list;
+	List use_cluster_list = NULL;
 	ListIterator itr;
+	bool locked = false;
 
 	if (!wckey_cond || !wckey) {
 		error("we need something to change");
@@ -700,13 +701,15 @@ is_same_user:
 		return NULL;
 	}
 
-	if (wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
-		use_cluster_list = wckey_cond->cluster_list;
-
 	user_name = uid_to_string((uid_t) uid);
 
-	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	if (wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
+		use_cluster_list = wckey_cond->cluster_list;
+	else {
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
+		use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
+		locked = true;
+	}
 
 	ret_list = list_create(xfree_ptr);
 	itr = list_iterator_create(use_cluster_list);
@@ -721,8 +724,10 @@ is_same_user:
 	xfree(extra);
 	xfree(user_name);
 
-	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	if (locked) {
+		FREE_NULL_LIST(use_cluster_list);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
+	}
 
 	if (rc == SLURM_ERROR) {
 		FREE_NULL_LIST(ret_list);
@@ -740,8 +745,9 @@ extern List as_mysql_remove_wckeys(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS;
 	char *extra = NULL, *object = NULL;
 	char *user_name = NULL;
-	List use_cluster_list = as_mysql_cluster_list;
+	List use_cluster_list = NULL;
 	ListIterator itr;
+	bool locked = false;
 
 	if (!wckey_cond) {
 		xstrcat(extra, " where deleted=0");
@@ -758,8 +764,6 @@ extern List as_mysql_remove_wckeys(mysql_conn_t *mysql_conn,
 
 	(void) _setup_wckey_cond_limits(wckey_cond, &extra);
 
-	if (wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
-		use_cluster_list = wckey_cond->cluster_list;
 empty:
 	if (!extra) {
 		error("Nothing to remove");
@@ -768,8 +772,14 @@ empty:
 
 	user_name = uid_to_string((uid_t) uid);
 
-	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	if (wckey_cond && wckey_cond->cluster_list &&
+	    list_count(wckey_cond->cluster_list)) {
+		use_cluster_list = wckey_cond->cluster_list;
+	} else {
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
+		use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
+		locked = true;
+	}
 	ret_list = list_create(xfree_ptr);
 	itr = list_iterator_create(use_cluster_list);
 	while ((object = list_next(itr))) {
@@ -782,8 +792,10 @@ empty:
 	xfree(extra);
 	xfree(user_name);
 
-	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	if (locked) {
+		FREE_NULL_LIST(use_cluster_list);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
+	}
 
 	if (rc == SLURM_ERROR) {
 		FREE_NULL_LIST(ret_list);
@@ -803,8 +815,9 @@ extern List as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 	List wckey_list = NULL;
 	int i=0, is_admin=1;
 	slurmdb_user_rec_t user;
-	List use_cluster_list = as_mysql_cluster_list;
+	List use_cluster_list = NULL;
 	ListIterator itr;
+	bool locked = false;
 
 	if (!wckey_cond) {
 		xstrcat(extra, " where deleted=0");
@@ -832,8 +845,6 @@ extern List as_mysql_get_wckeys(mysql_conn_t *mysql_conn, uid_t uid,
 
 	(void) _setup_wckey_cond_limits(wckey_cond, &extra);
 
-	if (wckey_cond->cluster_list && list_count(wckey_cond->cluster_list))
-		use_cluster_list = wckey_cond->cluster_list;
 empty:
 	xfree(tmp);
 	xstrfmtcat(tmp, "t1.%s", wckey_req_inx[i]);
@@ -850,8 +861,14 @@ empty:
 
 	wckey_list = list_create(slurmdb_destroy_wckey_rec);
 
-	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	if (wckey_cond && wckey_cond->cluster_list &&
+	    list_count(wckey_cond->cluster_list)) {
+		use_cluster_list = wckey_cond->cluster_list;
+	} else {
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
+		use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
+		locked = true;
+	}
 	//START_TIMER;
 	itr = list_iterator_create(use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
@@ -865,8 +882,8 @@ empty:
 	}
 	list_iterator_destroy(itr);
 
-	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	if (locked)
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	xfree(tmp);
 	xfree(extra);

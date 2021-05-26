@@ -50,7 +50,7 @@ static int _change_user_name(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 	xassert(user->old_name);
 	xassert(user->name);
 
-	slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	itr = list_iterator_create(as_mysql_cluster_list);
 	while ((cluster_name = list_next(itr))) {
 		// Change assoc_tables
@@ -63,7 +63,7 @@ static int _change_user_name(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 			   user->name, user->old_name);
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 	// Change coord_tables
 	xstrfmtcat(query, "update %s set user='%s' where user='%s';",
 		   acct_coord_table, user->name, user->old_name);
@@ -192,7 +192,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 	if (!list_count(user->coord_accts))
 		return SLURM_SUCCESS;
 
-	slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	itr2 = list_iterator_create(as_mysql_cluster_list);
 	itr = list_iterator_create(user->coord_accts);
 	while ((cluster_name = list_next(itr2))) {
@@ -227,7 +227,7 @@ static int _get_user_coords(mysql_conn_t *mysql_conn, slurmdb_user_rec_t *user)
 
 	}
 	list_iterator_destroy(itr2);
-	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	if (query) {
 		debug4("%d(%s:%d) query\n%s",
@@ -1003,7 +1003,7 @@ no_user_table:
 	FREE_NULL_LIST(assoc_cond.user_list);
 
 	user_name = uid_to_string((uid_t) uid);
-	slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	itr = list_iterator_create(as_mysql_cluster_list);
 	while ((object = list_next(itr))) {
 
@@ -1024,7 +1024,7 @@ no_user_table:
 			break;
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	xfree(user_name);
 	xfree(name_char);

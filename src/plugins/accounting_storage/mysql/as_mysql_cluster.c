@@ -416,7 +416,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 
 			added++;
 			/* add it to the list and sort */
-			slurm_mutex_lock(&as_mysql_cluster_list_lock);
+			slurm_rwlock_wrlock(&as_mysql_cluster_list_lock);
 			check_itr = list_iterator_create(as_mysql_cluster_list);
 			while ((tmp_name = list_next(check_itr))) {
 				if (!xstrcmp(tmp_name, object->name))
@@ -432,7 +432,7 @@ extern int as_mysql_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 				error("Cluster %s(%s) appears to already be in "
 				      "our cache list, not adding.", tmp_name,
 				      object->name);
-			slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+			slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 		}
 
 		if (!external_cluster) {
@@ -1094,8 +1094,9 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	time_t now = time(NULL);
-	List use_cluster_list = as_mysql_cluster_list;
+	List use_cluster_list = NULL;
 	slurmdb_user_rec_t user;
+	bool locked = false;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *event_req_inx[] = {
@@ -1288,8 +1289,6 @@ extern List as_mysql_get_cluster_events(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrcat(extra, ")");
 	}
 
-	if (event_cond->cluster_list && list_count(event_cond->cluster_list))
-		use_cluster_list = event_cond->cluster_list;
 empty:
 	xfree(tmp);
 	xstrfmtcat(tmp, "%s", event_req_inx[0]);
@@ -1297,8 +1296,14 @@ empty:
 		xstrfmtcat(tmp, ", %s", event_req_inx[i]);
 	}
 
-	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	if (event_cond && event_cond->cluster_list &&
+	    list_count(event_cond->cluster_list)) {
+		use_cluster_list = event_cond->cluster_list;
+	} else {
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
+		use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
+		locked = true;
+	}
 
 	ret_list = list_create(slurmdb_destroy_event_rec);
 
@@ -1358,8 +1363,10 @@ empty:
 	xfree(tmp);
 	xfree(extra);
 
-	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	if (locked) {
+		FREE_NULL_LIST(use_cluster_list);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
+	}
 
 	return ret_list;
 }

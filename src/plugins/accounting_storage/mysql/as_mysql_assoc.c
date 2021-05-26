@@ -2958,8 +2958,7 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		if (!moved_parent) {
 			char *cluster_name;
 
-			slurm_mutex_lock(&as_mysql_cluster_list_lock);
-			itr = list_iterator_create(as_mysql_cluster_list);
+			itr = list_iterator_create(local_cluster_list);
 			while ((cluster_name = list_next(itr))) {
 				uint32_t smallest_lft = 0xFFFFFFFF;
 				while ((object = list_next(itr2))) {
@@ -2977,7 +2976,6 @@ extern int as_mysql_add_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 						smallest_lft);
 			}
 			list_iterator_destroy(itr);
-			slurm_mutex_unlock(&as_mysql_cluster_list_lock);
 		}
 
 		/* make sure we don't have any other default accounts */
@@ -3077,7 +3075,8 @@ extern List as_mysql_modify_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	char *tmp_char1=NULL, *tmp_char2=NULL;
 	char *cluster_name = NULL;
 	char *prefix = "t1";
-	List use_cluster_list = as_mysql_cluster_list;
+	List use_cluster_list = NULL;
+	bool locked = false;
 
 	if (!assoc_cond || !assoc) {
 		error("we need something to change");
@@ -3172,8 +3171,11 @@ is_same_user:
 
 	if (assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
 		use_cluster_list = assoc_cond->cluster_list;
-	else
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	else {
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
+		use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
+		locked = true;
+	}
 
 	itr = list_iterator_create(use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
@@ -3214,8 +3216,10 @@ is_same_user:
 		}
 	}
 	list_iterator_destroy(itr);
-	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	if (locked) {
+		FREE_NULL_LIST(use_cluster_list);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
+	}
 	xfree(vals);
 	xfree(object);
 	xfree(extra);
@@ -3247,8 +3251,8 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 	MYSQL_ROW row;
 	slurmdb_user_rec_t user;
 	char *prefix = "t1";
-	List use_cluster_list = as_mysql_cluster_list;
-	bool jobs_running = 0;
+	List use_cluster_list = NULL;
+	bool jobs_running = 0, locked = false;;
 
 	if (!assoc_cond) {
 		error("we need something to change");
@@ -3285,8 +3289,11 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	if (assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
 		use_cluster_list = assoc_cond->cluster_list;
-	else
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	else {
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
+		use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
+		locked = true;
+	}
 
 	itr = list_iterator_create(use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
@@ -3358,8 +3365,11 @@ extern List as_mysql_remove_assocs(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 	}
 	list_iterator_destroy(itr);
-	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	if (locked) {
+		FREE_NULL_LIST(use_cluster_list);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
+	}
+
 	xfree(object);
 	xfree(extra);
 
@@ -3390,8 +3400,9 @@ extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 	int i=0, is_admin=1;
 	slurmdb_user_rec_t user;
 	char *prefix = "t1";
-	List use_cluster_list = as_mysql_cluster_list;
+	List use_cluster_list = NULL;
 	char *cluster_name = NULL;
+	bool locked = false;
 
 	if (!assoc_cond) {
 		xstrcat(extra, " where deleted=0");
@@ -3427,8 +3438,6 @@ extern List as_mysql_get_assocs(mysql_conn_t *mysql_conn, uid_t uid,
 
 	(void) _setup_assoc_cond_limits(assoc_cond, prefix, &extra);
 
-	if (assoc_cond->cluster_list && list_count(assoc_cond->cluster_list))
-		use_cluster_list = assoc_cond->cluster_list;
 empty:
 	xfree(tmp);
 	xstrfmtcat(tmp, "t1.%s", assoc_req_inx[i]);
@@ -3437,8 +3446,14 @@ empty:
 	}
 	assoc_list = list_create(slurmdb_destroy_assoc_rec);
 
-	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	if (assoc_cond && assoc_cond->cluster_list &&
+	    list_count(assoc_cond->cluster_list)) {
+		use_cluster_list = assoc_cond->cluster_list;
+	} else {
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
+		use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
+		locked = true;
+	}
 	itr = list_iterator_create(use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
 		int rc;
@@ -3452,8 +3467,10 @@ empty:
 		}
 	}
 	list_iterator_destroy(itr);
-	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	if (locked) {
+		FREE_NULL_LIST(use_cluster_list);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
+	}
 	xfree(tmp);
 	xfree(extra);
 

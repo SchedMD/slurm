@@ -591,11 +591,12 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 	MYSQL_ROW row;
 	void *curr_cluster = NULL;
 	List local_cluster_list = NULL;
-	List use_cluster_list = as_mysql_cluster_list;
+	List use_cluster_list = NULL;
 	ListIterator itr = NULL;
 	char *cluster_name = NULL;
 	/* needed if we don't have an resv_cond */
 	uint16_t with_usage = 0;
+	bool locked = false;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *resv_req_inx[] = {
@@ -667,8 +668,6 @@ extern List as_mysql_get_resvs(mysql_conn_t *mysql_conn, uid_t uid,
 
 	(void) _setup_resv_cond_limits(resv_cond, &extra);
 
-	if (resv_cond->cluster_list && list_count(resv_cond->cluster_list))
-		use_cluster_list = resv_cond->cluster_list;
 empty:
 	xfree(tmp);
 	xstrfmtcat(tmp, "t1.%s", resv_req_inx[i]);
@@ -676,8 +675,14 @@ empty:
 		xstrfmtcat(tmp, ", t1.%s", resv_req_inx[i]);
 	}
 
-	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	if (resv_cond && resv_cond->cluster_list &&
+	    list_count(resv_cond->cluster_list)) {
+		use_cluster_list = resv_cond->cluster_list;
+	} else {
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
+		use_cluster_list = as_mysql_cluster_list;
+		locked = true;
+	}
 
 	itr = list_iterator_create(use_cluster_list);
 	while ((cluster_name = list_next(itr))) {
@@ -690,8 +695,8 @@ empty:
 			   extra ? extra : "");
 	}
 	list_iterator_destroy(itr);
-	if (use_cluster_list == as_mysql_cluster_list)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	if (locked)
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	if (query)
 		xstrcat(query, " order by cluster, time_start, resv_name;");

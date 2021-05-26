@@ -909,7 +909,7 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn, time_t sent_start,
 	//START_TIMER;
 	xassert(!*rollup_stats_list_in);
 	*rollup_stats_list_in = list_create(slurmdb_destroy_rollup_stats);
-	slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
 	itr = list_iterator_create(as_mysql_cluster_list);
 	while ((cluster_name = list_next(itr))) {
 		local_rollup_t *local_rollup = xmalloc(sizeof(local_rollup_t));
@@ -950,7 +950,7 @@ extern int as_mysql_roll_usage(mysql_conn_t *mysql_conn, time_t sent_start,
 	}
 	slurm_mutex_lock(&rolledup_lock);
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	while (rolledup < roll_started) {
 		slurm_cond_wait(&rolledup_cond, &rolledup_lock);

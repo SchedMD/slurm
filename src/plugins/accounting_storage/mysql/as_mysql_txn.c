@@ -53,7 +53,7 @@ extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 	int i=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-	List use_cluster_list = as_mysql_cluster_list;
+	List use_cluster_list = NULL;
 	bool locked = 0;
 
 	/* if this changes you will need to edit the corresponding enum */
@@ -171,8 +171,10 @@ extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 	}
 
 	if (assoc_extra) {
-		if (!locked && (use_cluster_list == as_mysql_cluster_list)) {
-			slurm_mutex_lock(&as_mysql_cluster_list_lock);
+		if (!locked && !use_cluster_list) {
+			slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
+			use_cluster_list = list_shallow_copy(
+				as_mysql_cluster_list);
 			locked = 1;
 		}
 
@@ -356,8 +358,9 @@ extern List as_mysql_get_txn(mysql_conn_t *mysql_conn, uid_t uid,
 			       "set session group_concat_max_len=65536;");
 
 empty:
-	if (!locked && (use_cluster_list == as_mysql_cluster_list)) {
-		slurm_mutex_lock(&as_mysql_cluster_list_lock);
+	if (!locked && !use_cluster_list) {
+		slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
+		use_cluster_list = list_shallow_copy(as_mysql_cluster_list);
 		locked = 1;
 	}
 
@@ -442,8 +445,10 @@ empty:
 	mysql_free_result(result);
 
 end_it:
-	if (locked)
-		slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	if (locked) {
+		FREE_NULL_LIST(use_cluster_list);
+		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
+	}
 
 	return txn_list;
 }

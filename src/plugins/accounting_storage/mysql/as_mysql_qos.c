@@ -1053,6 +1053,7 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	List cluster_list_tmp = NULL;
 
 	if (!qos_cond) {
 		error("we need something to change");
@@ -1172,9 +1173,10 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	user_name = uid_to_string((uid_t) uid);
 
-	slurm_mutex_lock(&as_mysql_cluster_list_lock);
-	if (list_count(as_mysql_cluster_list)) {
-		itr = list_iterator_create(as_mysql_cluster_list);
+	slurm_rwlock_rdlock(&as_mysql_cluster_list_lock);
+	cluster_list_tmp = list_shallow_copy(as_mysql_cluster_list);
+	if (list_count(cluster_list_tmp)) {
+		itr = list_iterator_create(cluster_list_tmp);
 		while ((object = list_next(itr))) {
 			/*
 			 * remove this qos from all the associations
@@ -1204,7 +1206,8 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 				   user_name, qos_table, name_char,
 				   assoc_char, NULL, NULL, NULL);
 
-	slurm_mutex_unlock(&as_mysql_cluster_list_lock);
+	FREE_NULL_LIST(cluster_list_tmp);
+	slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
 
 	xfree(extra);
 	xfree(assoc_char);
