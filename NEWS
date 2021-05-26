@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix unused-variable compiler warning on FreeBSD in fd_resolve_path().
  -- acct_gather_filesystem/lustre - only emit collection error once per step.
  -- srun - leave SLURM_DIST_UNKNOWN as default for --interactive.
+ -- Add GRES environment variables (e.g., CUDA_VISIBLE_DEVICES) into the
+    interactive step, the same as is done for the batch step.
 
 * Changes in Slurm 20.11.7
 ==========================
