@@ -2541,13 +2541,6 @@ static void *_start_stage_in(void *x)
 	}
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
-	/*
-	 * The buffer's actual size may be larger than requested by the user.
-	 * Remove limit here and restore limit based upon actual size below
-	 * (assuming buffer allocation succeeded, or just leave it out).
-	 */
-	bb_limit_rem(stage_in_args->uid, stage_in_args->bb_size,
-		     stage_in_args->pool, &bb_state);
 	if (rc != SLURM_SUCCESS) {
 		/*
 		 * Unlock bb_mutex before locking job_write_lock to avoid
@@ -2569,6 +2562,13 @@ static void *_start_stage_in(void *x)
 			      stage_in_args->job_id);
 			rc = SLURM_ERROR;
 		} else if (bb_job->total_size) {
+			/*
+			 * The buffer's actual size may be larger than
+			 * requested by the user. Remove limit here and restore
+			 * limit based upon actual size.
+			 */
+			bb_limit_rem(stage_in_args->uid, stage_in_args->bb_size,
+				     stage_in_args->pool, &bb_state);
 			/* Restore limit based upon actual size. */
 			bb_limit_add(stage_in_args->uid, bb_job->total_size,
 				     stage_in_args->pool, &bb_state, true);
