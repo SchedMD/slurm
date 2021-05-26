@@ -226,6 +226,9 @@ static int _lua_flush_job(void *r, void *x)
 	rec->need_to_signal = true;
 	slurm_mutex_unlock(&rec->signal_mutex);
 
+	/* Detach the thread so it will free its resources when it exits. */
+	pthread_detach(rec->parent_tid);
+
 	return 0;
 }
 

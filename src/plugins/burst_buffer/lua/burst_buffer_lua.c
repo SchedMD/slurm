@@ -1128,6 +1128,18 @@ fini:
 
 	track_script_lua_remove(pthread_self());
 
+	/*
+	 * Detach thread now so resources will be cleaned up when the thread
+	 * exits. Only detach if track_script didn't interrupt the lua call:
+	 * - If a lua call is interrupted by track_script_flush() then
+	 *   track_script will pthread_join with this thread.
+	 * - If a lua call is interrupted by track_script_flush_job() then
+	 *   track_script already called pthread_detach() on this thread.
+	 */
+	if (!track_script_signal) {
+		pthread_detach(pthread_self());
+	}
+
 	return NULL;
 }
 
@@ -2448,6 +2460,18 @@ fini:
 
 	track_script_lua_remove(pthread_self());
 
+	/*
+	 * Detach thread now so resources will be cleaned up when the thread
+	 * exits. Only detach if track_script didn't interrupt the lua call:
+	 * - If a lua call is interrupted by track_script_flush() then
+	 *   track_script will pthread_join with this thread.
+	 * - If a lua call is interrupted by track_script_flush_job() then
+	 *   track_script already called pthread_detach() on this thread.
+	 */
+	if (!track_script_signal) {
+		pthread_detach(pthread_self());
+	}
+
 	return NULL;
 }
 
@@ -2696,6 +2720,18 @@ fini:
 	xfree(stage_in_args);
 
 	track_script_lua_remove(pthread_self());
+
+	/*
+	 * Detach thread now so resources will be cleaned up when the thread
+	 * exits. Only detach if track_script didn't interrupt the lua call:
+	 * - If a lua call is interrupted by track_script_flush() then
+	 *   track_script will pthread_join with this thread.
+	 * - If a lua call is interrupted by track_script_flush_job() then
+	 *   track_script already called pthread_detach() on this thread.
+	 */
+	if (!track_script_signal) {
+		pthread_detach(pthread_self());
+	}
 
 	return NULL;
 }
@@ -3107,6 +3143,18 @@ fini:
 	xfree(pre_run_args);
 
 	track_script_lua_remove(pthread_self());
+
+	/*
+	 * Detach thread now so resources will be cleaned up when the thread
+	 * exits. Only detach if track_script didn't interrupt the lua call:
+	 * - If a lua call is interrupted by track_script_flush() then
+	 *   track_script will pthread_join with this thread.
+	 * - If a lua call is interrupted by track_script_flush_job() then
+	 *   track_script already called pthread_detach() on this thread.
+	 */
+	if (!track_script_signal) {
+		pthread_detach(pthread_self());
+	}
 
 	return NULL;
 }
