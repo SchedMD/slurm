@@ -378,6 +378,42 @@ static int _sort_gpu_by_file_asc(void *x, void *y)
 }
 
 /*
+ * Sort GPUs by the order they are specified in links.
+ *
+ * It is assumed that each links string has a -1 to indicate the position of the
+ * current GPU at the position it was enumerated in. The GPUs will be sorted so
+ * the links matrix looks like this:
+ *
+ * -1, 0, ...  0, 0
+ *  0,-1, ...  0, 0
+ *  0, 0, ... -1, 0
+ *  0, 0, ...  0,-1
+ *
+ * This should preserve the original enumeration order of NVML (which is in
+ * order of PCI bus ID).
+ */
+static int _sort_gpu_by_links_order(void *x, void *y)
+{
+	gres_slurmd_conf_t *gres_record_x = *(gres_slurmd_conf_t **)x;
+	gres_slurmd_conf_t *gres_record_y = *(gres_slurmd_conf_t **)y;
+	int index_x, index_y;
+
+	/* Make null links appear last in sort */
+	if (!gres_record_x->links && gres_record_y->links)
+		return 1;
+	if (gres_record_x->links && !gres_record_y->links)
+		return -1;
+
+	index_x = gres_links_validate(gres_record_x->links);
+	index_y = gres_links_validate(gres_record_y->links);
+
+	if (index_x < -1 || index_y < -1)
+		error("%s: invalid links value found", __func__);
+
+	return (index_x - index_y);
+}
+
+/*
  * Takes the merged [slurm|gres].conf records in gres_list_conf and the GPU
  * devices detected on the node in gres_list_system and returns a final merged
  * list in gres_list_conf.
@@ -590,7 +626,10 @@ static void _normalize_gres_conf(List gres_list_conf, List gres_list_system)
 	/* Add GPUs + non-GPUs to gres_list_conf */
 	list_flush(gres_list_conf);
 	if (gres_list_gpu && list_count(gres_list_gpu)) {
+		/* Sort by device file first, in case no links */
 		list_sort(gres_list_gpu, _sort_gpu_by_file_asc);
+		/* Sort by links, which is a stand-in for PCI bus ID order */
+		list_sort(gres_list_gpu, _sort_gpu_by_links_order);
 		debug2("gres_list_gpu");
 		print_gres_list(gres_list_gpu, LOG_LEVEL_DEBUG2);
 		list_transfer(gres_list_conf, gres_list_gpu);
