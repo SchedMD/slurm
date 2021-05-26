@@ -1088,5 +1088,9 @@ extern void gres_validate_node_cores(gres_node_state_t *node_gres_ptr,
  * caller must xfree result.
  */
 extern char *gres_prepend_tres_type(const char *gres_str);
+/*
+ * Check that we have a comma-delimited list of numbers
+ */
+extern void gres_links_validate(gres_slurmd_conf_t *p);
 
 #endif /* !_GRES_H */

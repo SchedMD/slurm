@@ -256,7 +256,6 @@ static void	_validate_slurm_conf(List slurm_conf_list,
 static void	_validate_gres_conf(List gres_conf_list,
 				    slurm_gres_context_t *context_ptr);
 static int	_validate_file(char *path_name, char *gres_name);
-static void	_validate_links(gres_slurmd_conf_t *p);
 static int	_valid_gres_type(char *gres_name, gres_node_state_t *gres_data,
 				 bool config_overrides, char **reason_down);
 
@@ -882,7 +881,7 @@ static int _validate_file(char *filenames, char *gres_name)
 /*
  * Check that we have a comma-delimited list of numbers
  */
-static void _validate_links(gres_slurmd_conf_t *p)
+extern void gres_links_validate(gres_slurmd_conf_t *p)
 {
 	char *tmp, *tok, *save_ptr = NULL, *end_ptr = NULL;
 	long int val;
@@ -1119,7 +1118,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 
 	if (s_p_get_string(&p->links, "Link",  tbl) ||
 	    s_p_get_string(&p->links, "Links", tbl)) {
-		_validate_links(p);
+		gres_links_validate(p);
 	}
 
 	if (s_p_get_string(&p->type_name, "Type", tbl)) {
@@ -2223,7 +2222,7 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 		p->type_name = tmp_type;
 		tmp_type = NULL;	/* Nothing left to xfree */
 		p->plugin_id = plugin_id;
-		_validate_links(p);
+		gres_links_validate(p);
 		list_append(gres_conf_list, p);
 	}
 
