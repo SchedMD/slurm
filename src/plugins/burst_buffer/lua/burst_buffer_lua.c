@@ -289,6 +289,12 @@ static int _handle_lua_return(lua_State *L, const char *lua_func,
 
 		if (lua_isstring(L, 2)) {
 			xfree(*ret_str);
+			/*
+			 * Valgrind thinks that we leak this lua_tostring() by
+			 * calling xstrdup and not free'ing the string on the
+			 * lua stack, but lua will garbage collect it after
+			 * we pop it off the stack.
+			 */
 			*ret_str = xstrdup(lua_tostring(L, 2));
 		} else {
 			/* Don't know how to handle non-strings here. */
