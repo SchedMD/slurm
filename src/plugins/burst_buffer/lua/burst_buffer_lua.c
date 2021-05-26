@@ -3413,12 +3413,14 @@ extern int bb_p_job_cancel(job_record_t *job_ptr)
 		return SLURM_ERROR;
 	}
 
-	bb_job = _get_bb_job(job_ptr);
+	bb_job = bb_job_find(&bb_state, job_ptr->job_id);
 	if (!bb_job) {
 		/* Nothing ever allocated, nothing to clean up */
 	} else if (bb_job->state == BB_STATE_PENDING) {
 		bb_set_job_bb_state(job_ptr, bb_job, /* Nothing to clean up */
 				    BB_STATE_COMPLETE);
+	} else if (bb_job->state == BB_STATE_COMPLETE) {
+		/* Teardown already done. */
 	} else {
 		bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_TEARDOWN);
 		bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
