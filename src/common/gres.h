@@ -1089,14 +1089,19 @@ extern void gres_validate_node_cores(gres_node_state_t *node_gres_ptr,
  */
 extern char *gres_prepend_tres_type(const char *gres_str);
 /*
- * Check that we have a comma-delimited list of numbers
+ * Check that we have a comma-delimited list of numbers, and return the index of
+ * the GPU (-1) in the links string.
  *
+ * Returns a non-zero-based index of the GPU in the links string, if found.
+ * If not found, returns a negative value.
  * Return values:
- *  0: success.
+ * 0+: GPU index
  * -1: links string is NULL.
  * -2: links string is not NULL, but is invalid. Possible invalid reasons:
  *     * error parsing the comma-delimited links string
  *     * links string is an empty string
+ *     * the 'self' GPU identifier isn't found (i.e. no -1)
+ *     * there is more than one 'self' GPU identifier found
  */
 extern int gres_links_validate(char *links);
 

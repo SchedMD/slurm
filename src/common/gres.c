@@ -879,20 +879,26 @@ static int _validate_file(char *filenames, char *gres_name)
 }
 
 /*
- * Check that we have a comma-delimited list of numbers
+ * Check that we have a comma-delimited list of numbers, and return the index of
+ * the GPU (-1) in the links string.
  *
+ * Returns a non-zero-based index of the GPU in the links string, if found.
+ * If not found, returns a negative value.
  * Return values:
- *  0: success.
+ * 0+: GPU index
  * -1: links string is NULL.
  * -2: links string is not NULL, but is invalid. Possible invalid reasons:
  *     * error parsing the comma-delimited links string
  *     * links string is an empty string
+ *     * the 'self' GPU identifier isn't found (i.e. no -1)
+ *     * there is more than one 'self' GPU identifier found
  */
 extern int gres_links_validate(char *links)
 {
 	char *tmp, *tok, *save_ptr = NULL, *end_ptr = NULL;
 	long int val;
 	int rc;
+	int i;
 
 	if (!links)
 		return -1;
@@ -903,7 +909,8 @@ extern int gres_links_validate(char *links)
 
 	tmp = xstrdup(links);
 	tok = strtok_r(tmp, ",", &save_ptr);
-	rc = 0;
+	rc = -1;
+	i = 0;
 	while (tok) {
 		val = strtol(tok, &end_ptr, 10);
 		if ((val < -2) || (val > GRES_MAX_LINK) || (val == LONG_MIN) ||
@@ -913,9 +920,27 @@ extern int gres_links_validate(char *links)
 			rc = -2;
 			break;
 		}
+		if (val == -1) {
+			if (rc != -1) {
+				error("%s: links string '%s' has more than one -1",
+				      __func__, links);
+				rc = -2;
+				break;
+			}
+			rc = i;
+		}
+		i++;
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(tmp);
+
+	/* If the current GPU (-1) wasn't found, that's an error */
+	if (rc == -1) {
+		error("%s: -1 wasn't found in links string '%s'", __func__,
+		      links);
+		rc = -2;
+	}
+
 	return rc;
 }
 
