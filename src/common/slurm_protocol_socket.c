@@ -637,8 +637,8 @@ again:
 		/* NOTE: Connection refused is typically reported for
 		 * non-responsived nodes plus attempts to communicate
 		 * with terminated srun commands. */
-		error("%s: failed to connect to %pA: %s",
-		      __func__, __addr, slurm_strerror(err));
+		debug2("%s: failed to connect to %pA: %s",
+		       __func__, __addr, slurm_strerror(err));
 		return err;
 	}
 
