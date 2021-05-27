@@ -2149,6 +2149,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	uint32_t *switches_dist= NULL;
 	time_t time_waiting = 0;
 	int top_switch_inx = -1;
+	uint64_t top_switch_lowest_weight = 0;
 	int prev_rem_nodes;
 
 	if (job_ptr->req_switch) {
@@ -2288,12 +2289,14 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 				   min_nodes, req_nodes))
 			continue;
 		if (!req_nodes_bitmap &&
-		    (list_find_first(node_weight_list, _topo_node_find,
+		    (nw = list_find_first(node_weight_list, _topo_node_find,
 				    switch_node_bitmap[i]))) {
 			if ((top_switch_inx == -1) ||
-			    (switch_record_table[i].level >
-			     switch_record_table[top_switch_inx].level)) {
+			    ((switch_record_table[i].level >=
+			      switch_record_table[top_switch_inx].level) &&
+			     (nw->weight <= top_switch_lowest_weight))){
 				top_switch_inx = i;
+				top_switch_lowest_weight = nw->weight;
 			}
 		}
 	}
