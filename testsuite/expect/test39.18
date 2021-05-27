@@ -1688,7 +1688,7 @@ check_configuration 2.38 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_o
 
 
 # ##############################################################################
-# # Test 2.40 - Work with null links
+# # Test 2.40 - Test that nulled, empty, and zeroed links produce errors
 # ##############################################################################
 
 set slurm_conf_gres "gpu:tesla:4"
@@ -1704,10 +1704,10 @@ set expected_output "
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}1|
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}2|
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}3|
-GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0|${dev}4|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}4|
 "
 set err_msgs $links_err
-set expected_errs 1
+set expected_errs 3
 check_configuration 2.40 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output $err_msgs $expected_errs
 
 # ##############################################################################
