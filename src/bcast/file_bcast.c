@@ -196,11 +196,17 @@ static int _file_bcast(struct bcast_parameters *params,
 
 /* load a buffer with data from the file to broadcast,
  * return number of bytes read, zero on end of file */
-static int _get_block_none(char **buffer, int *orig_len, bool *more)
+static int _get_block_none(char **buffer, int *orig_len, bool *more,
+			   bool file_start)
 {
 	static int64_t remaining = -1;
 	static void *position;
 	int size;
+
+	if (file_start) {
+		remaining = -1;
+		position = NULL;
+	}
 
 	if (remaining < 0) {
 		*buffer = xmalloc(block_len);
@@ -221,13 +227,18 @@ static int _get_block_none(char **buffer, int *orig_len, bool *more)
 static int _get_block_lz4(struct bcast_parameters *params,
 			  char **buffer,
 			  int32_t *orig_len,
-			  bool *more)
+			  bool *more, bool file_start)
 {
 #if HAVE_LZ4
 	int size_out;
 	static int64_t remaining = -1;
 	static void *position;
 	int size;
+
+	if (file_start) {
+		remaining = -1;
+		position = NULL;
+	}
 
 	if (!f_stat.st_size) {
 		*more = false;
@@ -257,7 +268,7 @@ static int _get_block_lz4(struct bcast_parameters *params,
 #else
 	info("lz4 compression not supported, sending uncompressed file.");
 	params->compress = 0;
-	return _get_block_none(buffer, orig_len, more);
+	return _get_block_none(buffer, orig_len, more, file_start);
 #endif
 
 }
@@ -265,20 +276,21 @@ static int _get_block_lz4(struct bcast_parameters *params,
 static int _next_block(struct bcast_parameters *params,
 		       char **buffer,
 		       int32_t *orig_len,
-		       bool *more)
+		       bool *more, bool file_start)
 {
 	switch (params->compress) {
 	case COMPRESS_OFF:
-		return _get_block_none(buffer, orig_len, more);
+		return _get_block_none(buffer, orig_len, more, file_start);
 	case COMPRESS_LZ4:
-		return _get_block_lz4(params, buffer, orig_len, more);
+		return _get_block_lz4(params, buffer, orig_len, more,
+				      file_start);
 	}
 
 	/* compression type not recognized */
 	error("File compression type %u not supported,"
 	      " sending uncompressed file.", params->compress);
 	params->compress = 0;
-	return _get_block_none(buffer, orig_len, more);
+	return _get_block_none(buffer, orig_len, more, file_start);
 }
 
 /* read and broadcast the file */
@@ -290,7 +302,7 @@ static int _bcast_file(struct bcast_parameters *params)
 	int32_t orig_len = 0;
 	uint64_t size_uncompressed = 0, size_compressed = 0;
 	uint32_t time_compression = 0;
-	bool more = true;
+	bool more = true, file_start = true;
 	DEF_TIMERS;
 
 	if (params->block_size)
@@ -322,8 +334,9 @@ static int _bcast_file(struct bcast_parameters *params)
 	while (more) {
 		START_TIMER;
 		bcast_msg.block_len = _next_block(params, &buffer, &orig_len,
-						  &more);
+						  &more, file_start);
 		END_TIMER;
+		file_start = false;
 		time_compression += DELTA_TIMER;
 		size_uncompressed += orig_len;
 		size_compressed += bcast_msg.block_len;
