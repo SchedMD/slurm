@@ -722,6 +722,7 @@ static int _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	struct bcast_parameters *params;
 	int rc;
+	char *sep = NULL, *tmp = NULL;
 	xassert(srun_opt);
 
 	if ((srun_opt->argc == 0) || (srun_opt->argv[0] == NULL)) {
@@ -731,10 +732,19 @@ static int _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	params = xmalloc(sizeof(struct bcast_parameters));
 	params->block_size = 8 * 1024 * 1024;
 	params->compress = srun_opt->compress;
-	if (srun_opt->bcast_file)
+	if (srun_opt->bcast_file) {
 		params->dst_fname = xstrdup(srun_opt->bcast_file);
-	else
+	} else if ((tmp = xstrcasestr(slurm_conf.sbcast_parameters,
+				      "DestDir="))) {
+		/* skip past the key to the value */
+		params->dst_fname = xstrdup(tmp + 8);
+		/* handle a further comma-separated value */
+		if ((sep = xstrchr(params->dst_fname, ',')))
+			sep[0] = '\0';
+		xstrcatchar(params->dst_fname, '/');
+	} else {
 		xstrfmtcat(params->dst_fname, "%s/", opt_local->chdir);
+	}
 	params->fanout = 0;
 	params->selected_step = xmalloc(sizeof(*params->selected_step));
 	params->selected_step->array_task_id = NO_VAL;
