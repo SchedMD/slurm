@@ -78,8 +78,6 @@ static uint64_t max_swap;       /* Upper bound for swap                   */
 static uint64_t totalram;       /* Total real memory available on node    */
 static uint64_t min_ram_space;  /* Don't constrain RAM below this value   */
 
-static char* _system_cgroup_create_slurm_cg (xcgroup_ns_t* ns);
-
 static uint64_t _percent_in_bytes (uint64_t mb, float percent)
 {
 	return ((mb * 1024 * 1024) * (percent / 100.0));
@@ -102,7 +100,7 @@ extern int init_system_cpuset_cgroup(void)
 	}
 
 	/* create slurm root cg in this cg namespace */
-	slurm_cgpath = _system_cgroup_create_slurm_cg(&cpuset_ns);
+	slurm_cgpath = xcgroup_create_slurm_cg(&cpuset_ns);
 	if ( slurm_cgpath == NULL ) {
 		xcgroup_ns_destroy(&cpuset_ns);
 		return SLURM_ERROR;
@@ -240,7 +238,7 @@ extern int init_system_memory_cgroup(void)
 	 setenv("SLURMSTEPD_OOM_ADJ", "-1000", 0);
 
 	/* create slurm root cg in this cg namespace */
-	slurm_cgpath = _system_cgroup_create_slurm_cg(&memory_ns);
+	slurm_cgpath = xcgroup_create_slurm_cg(&memory_ns);
 	if ( slurm_cgpath == NULL ) {
 		xcgroup_ns_destroy(&memory_ns);
 		return SLURM_ERROR;
@@ -284,55 +282,6 @@ extern void fini_system_cgroup(void)
 	xcgroup_ns_destroy(&cpuset_ns);
 	xcgroup_ns_destroy(&memory_ns);
 	xcgroup_fini_slurm_cgroup_conf();
-}
-
-static char* _system_cgroup_create_slurm_cg (xcgroup_ns_t* ns)
-{
-	/* we do it here as we do not have access to the conf structure */
-	/* in libslurm (src/common/xcgroup.c) */
-	xcgroup_t slurm_cg;
-	char* pre;
-	slurm_cgroup_conf_t *cg_conf;
-
-	/* read cgroup configuration */
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = xcgroup_get_slurm_cgroup_conf();
-
-	pre = xstrdup(cg_conf->cgroup_prepend);
-
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
-
-#ifdef MULTIPLE_SLURMD
-	if ( conf->node_name != NULL )
-		xstrsubstitute(pre, "%n", conf->node_name);
-	else {
-		xfree(pre);
-		pre = (char*) xstrdup("/slurm");
-	}
-#endif
-
-	/* create slurm cgroup in the ns */
-	if (xcgroup_create(ns, &slurm_cg, pre,
-			   getuid(), getgid()) != SLURM_SUCCESS) {
-		xfree(pre);
-		return pre;
-	}
-	if (xcgroup_instantiate(&slurm_cg) != SLURM_SUCCESS) {
-		error("system cgroup: unable to build slurm cgroup for "
-		      "ns %s: %m",
-		      ns->subsystems);
-		xcgroup_destroy(&slurm_cg);
-		xfree(pre);
-		return pre;
-	}
-	else {
-		debug3("system cgroup: slurm cgroup %s successfully created "
-		       "for ns %s: %m",
-		       pre, ns->subsystems);
-		xcgroup_destroy(&slurm_cg);
-	}
-
-	return pre;
 }
 
 extern int set_system_cgroup_cpus(char *phys_cpu_str)
