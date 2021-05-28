@@ -64,6 +64,7 @@
 #include "src/common/log.h"
 #include "src/common/net.h"
 #include "src/common/plugstack.h"
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobacct_gather.h"
@@ -731,7 +732,18 @@ static int _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	}
 	params = xmalloc(sizeof(struct bcast_parameters));
 	params->block_size = 8 * 1024 * 1024;
-	params->compress = srun_opt->compress;
+	if (srun_opt->compress) {
+		params->compress = srun_opt->compress;
+	} else if ((tmp = xstrcasestr(slurm_conf.sbcast_parameters,
+				      "Compression="))) {
+		tmp += 12;
+		sep = strchr(tmp, ',');
+		if (sep)
+			sep[0] = '\0';
+		params->compress = parse_compress_type(tmp);
+		if (sep)
+			sep[0] = ',';
+	}
 	if (srun_opt->bcast_file && (srun_opt->bcast_file[0] == '/')) {
 		params->dst_fname = xstrdup(srun_opt->bcast_file);
 	} else if ((tmp = xstrcasestr(slurm_conf.sbcast_parameters,
