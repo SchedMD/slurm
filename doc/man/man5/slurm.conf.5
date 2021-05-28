@@ -462,6 +462,24 @@ This configuration parameter is also applied to launch tasks and avoid aborting
 \fBsrun\fR commands due to long running \fBProlog\fR scripts.
 
 .TP
+\fBBcastParameters\fR
+Controls sbcast command behavior. Multiple options can be specified in a comma
+separated list.
+Supported values include:
+.RS
+.TP 15
+\fBDestDir=\fR
+Destination directory for file being broadcast to allocated compute nodes.
+Default value is current working directory.
+.TP
+\fBCompression=\fR
+Specify default file compression library to be used.
+Supported values are "lz4" and "none".
+The default value with the sbcast \-\-compress option is "lz4" and "none" otherwise.
+Some compression libraries may be unavailable on some systems.
+.RE
+
+.TP
 \fBBurstBufferType\fR
 The plugin used to manage burst buffers. Acceptable values at present are:
 .RS
@@ -2701,24 +2719,6 @@ default, use TreeWidth.
 \fBroute/topology\fR
 use the switch hierarchy defined in a \fItopology.conf\fR file.
 TopologyPlugin=topology/tree is required.
-.RE
-
-.TP
-\fBSbcastParameters\fR
-Controls sbcast command behavior. Multiple options can be specified in a comma
-separated list.
-Supported values include:
-.RS
-.TP 15
-\fBDestDir=\fR
-Destination directory for file being broadcast to allocated compute nodes.
-Default value is current working directory.
-.TP
-\fBCompression=\fR
-Specify default file compression library to be used.
-Supported values are "lz4" and "none".
-The default value with the sbcast \-\-compress option is "lz4" and "none" otherwise.
-Some compression libraries may be unavailable on some systems.
 .RE
 
 .TP

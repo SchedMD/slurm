@@ -221,6 +221,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"BackupAddr", S_P_STRING},
 	{"BackupController", S_P_STRING},
 	{"BatchStartTimeout", S_P_UINT16},
+	{"BcastParameters", S_P_STRING},
 	{"BurstBufferParameters", S_P_STRING},
 	{"BurstBufferType", S_P_STRING},
 	{"CoreSpecPlugin", S_P_STRING},
@@ -3694,6 +3695,13 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	} else if (DEFAULT_ALLOW_SPEC_RESOURCE_USAGE)
 		conf->conf_flags |= CTL_CONF_ASRU;
 
+	if (!s_p_get_string(&conf->bcast_parameters, "BcastParameters",
+			    hashtbl) &&
+	    s_p_get_string(&conf->bcast_parameters, "SbcastParameters",
+			   hashtbl) && running_in_slurmctld())
+		error("SbcastParameters has been renamed to BcastParameters. Please update your configuration.");
+
+
 	(void) s_p_get_string(&conf->job_credential_private_key,
 			     "JobCredentialPrivateKey", hashtbl);
 	(void) s_p_get_string(&conf->job_credential_public_certificate,
@@ -4615,9 +4623,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (s_p_get_string(&temp_str, "SallocDefaultCommand", hashtbl))
 		fatal("SallocDefaultCommand has been removed. Please consider setting LaunchParameters=use_interactive_step instead.");
-
-	(void) s_p_get_string(&conf->bcast_parameters,
-			      "SbcastParameters", hashtbl);
 
 	(void) s_p_get_string(&conf->sched_params, "SchedulerParameters",
 			      hashtbl);

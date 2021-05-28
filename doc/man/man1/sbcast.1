@@ -16,7 +16,7 @@ allocation.
 \fBDEST\fR should be the fully qualified pathname for the
 file copy to be created on each node.
 If a fully qualified pathname is not provided, the file will be created in
-the directory specified in the \fBSbcastParameters\fR parameter in the slurm.conf
+the directory specified in the \fBBcastParameters\fR parameter in the slurm.conf
 file (if available) otherwise it will be created in the current working
 directory from which the sbcast command is invoked.
 \fBDEST\fR should be on a file system local to that node.
@@ -32,7 +32,7 @@ The optional argument specifies the data compression library to be used.
 Supported values are "lz4" (default) and "none".
 Some compression libraries may be unavailable on some systems.
 The default compression library (and enabling compression itself) may be
-set in the slurm.conf file using the SbcastParameter option.
+set in the slurm.conf file using the BcastParameters option.
 .TP
 \fB\-f\fR, \fB\-\-force\fR
 If the destination file already exists, replace it.
