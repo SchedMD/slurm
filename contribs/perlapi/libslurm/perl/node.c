@@ -78,7 +78,17 @@ node_info_to_hv(node_info_t *node_info, HV *hv)
 int
 hv_to_node_info(HV *hv, node_info_t *node_info)
 {
+	SV **svp;
+
 	memset(node_info, 0, sizeof(node_info_t));
+
+	/*
+	 * slurmcld will pack hidden nodes with a NULL name.
+	 * node_info_msg_to_hv() will create an empty has for these records.
+	 * If name is not set just return.
+	 */
+	if (!(svp = hv_fetch(hv, "name", 4, FALSE)))
+		return 0;
 
 	FETCH_FIELD(hv, node_info, arch, charp, FALSE);
 	FETCH_FIELD(hv, node_info, boot_time, time_t, TRUE);
