@@ -2762,6 +2762,7 @@ typedef struct {
 	char *authtype;		/* authentication type */
 	uint16_t batch_start_timeout;	/* max secs for batch job to start */
 	char *bb_type;		/* burst buffer plugin type */
+	char *bcast_parameters; /* bcast options */
 	time_t boot_time;	/* time slurmctld last booted */
 	void *cgroup_conf;	/* cgroup support config file */
 	char *cli_filter_plugins; /* List of cli_filter plugins to use */
@@ -2921,7 +2922,6 @@ typedef struct {
 	uint16_t ret2service;	/* 1 return DOWN node to service at
 				 * registration */
 	char *route_plugin;     /* route plugin */
-	char *sbcast_parameters; /* sbcast command options */
 	char *sched_logfile;    /* where slurm Scheduler log gets written */
 	uint16_t sched_log_level;  /* configured level of slurm Scheduler log */
 	char *sched_params;	/* SchedulerParameters OR

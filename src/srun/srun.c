@@ -734,7 +734,7 @@ static int _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	params->block_size = 8 * 1024 * 1024;
 	if (srun_opt->compress) {
 		params->compress = srun_opt->compress;
-	} else if ((tmp = xstrcasestr(slurm_conf.sbcast_parameters,
+	} else if ((tmp = xstrcasestr(slurm_conf.bcast_parameters,
 				      "Compression="))) {
 		tmp += 12;
 		sep = strchr(tmp, ',');
@@ -746,7 +746,7 @@ static int _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	}
 	if (srun_opt->bcast_file && (srun_opt->bcast_file[0] == '/')) {
 		params->dst_fname = xstrdup(srun_opt->bcast_file);
-	} else if ((tmp = xstrcasestr(slurm_conf.sbcast_parameters,
+	} else if ((tmp = xstrcasestr(slurm_conf.bcast_parameters,
 				      "DestDir="))) {
 		/* skip past the key to the value */
 		params->dst_fname = xstrdup(tmp + 8);

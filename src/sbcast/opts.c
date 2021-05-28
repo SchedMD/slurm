@@ -89,7 +89,7 @@ extern void parse_command_line(int argc, char **argv)
 		{NULL,        0,                 0, 0}
 	};
 
-	if ((tmp = xstrcasestr(slurm_conf.sbcast_parameters, "Compression="))) {
+	if ((tmp = xstrcasestr(slurm_conf.bcast_parameters, "Compression="))) {
 		tmp += 12;
 		sep = strchr(tmp, ',');
 		if (sep)
@@ -183,7 +183,7 @@ extern void parse_command_line(int argc, char **argv)
 
 	if (argv[optind+1][0] == '/') {
 		params.dst_fname = xstrdup(argv[optind+1]);
-	} else if ((tmp = xstrcasestr(slurm_conf.sbcast_parameters,
+	} else if ((tmp = xstrcasestr(slurm_conf.bcast_parameters,
 				      "DestDir="))) {
 		tmp += 8;
 		sep = strchr(tmp, ',');
