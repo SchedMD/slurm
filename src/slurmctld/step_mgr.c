@@ -3594,6 +3594,7 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 	uint64_t cpu_count = 1, mem_count = 1;
 	char *tmp_tres_str = NULL;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
+	job_record_t *job_ptr = step_ptr->job_ptr;
 
 	xassert(step_ptr);
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
@@ -3602,13 +3603,13 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 	xfree(step_ptr->tres_fmt_alloc_str);
 
 	if ((step_ptr->step_id.step_id == SLURM_EXTERN_CONT) &&
-	    step_ptr->job_ptr->tres_alloc_str) {
+	    job_ptr->tres_alloc_str) {
 		/* get the tres from the whole job */
 		step_ptr->tres_alloc_str =
-			xstrdup(step_ptr->job_ptr->tres_alloc_str);
+			xstrdup(job_ptr->tres_alloc_str);
 		if (make_formatted)
 			step_ptr->tres_fmt_alloc_str =
-				xstrdup(step_ptr->job_ptr->tres_fmt_alloc_str);
+				xstrdup(job_ptr->tres_fmt_alloc_str);
 		return;
 	}
 
@@ -3617,7 +3618,7 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 
 	if (((step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) ||
 	     (step_ptr->step_id.step_id == SLURM_INTERACTIVE_STEP)) &&
-	    step_ptr->job_ptr->job_resrcs) {
+	    job_ptr->job_resrcs) {
 		/*
 		 * FIXME: This is hardcoded to be the first node in the
 		 * allocation, but we should probably be looking at the
@@ -3632,17 +3633,16 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 		 */
 
 		/* get the cpus and memory on the first node */
-		if (step_ptr->job_ptr->job_resrcs->cpus)
-			cpu_count = step_ptr->job_ptr->job_resrcs->cpus[0];
-		if (step_ptr->job_ptr->job_resrcs->memory_allocated)
-			mem_count = step_ptr->job_ptr->job_resrcs->
-				memory_allocated[0];
+		if (job_ptr->job_resrcs->cpus)
+			cpu_count = job_ptr->job_resrcs->cpus[0];
+		if (job_ptr->job_resrcs->memory_allocated)
+			mem_count = job_ptr->job_resrcs->memory_allocated[0];
 
 		tmp_tres_str = gres_ctld_gres_on_node_as_tres(
-			step_ptr->job_ptr->gres_list, 0, true);
+			job_ptr->gres_list, 0, true);
 	} else {
 		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
-			cpu_count = (uint64_t)step_ptr->job_ptr->total_cpus;
+			cpu_count = (uint64_t)job_ptr->total_cpus;
 		else
 			cpu_count = (uint64_t)step_ptr->cpu_count;
 		mem_count = (uint64_t)step_ptr->pn_min_memory;
