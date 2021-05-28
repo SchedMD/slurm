@@ -3619,24 +3619,28 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 	if (((step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) ||
 	     (step_ptr->step_id.step_id == SLURM_INTERACTIVE_STEP)) &&
 	    job_ptr->job_resrcs) {
+		int batch_inx = 0;
+
 		/*
-		 * FIXME: This is hardcoded to be the first node in the
-		 * allocation, but we should probably be looking at the
-		 * batch_host instead.  The amount of effort involved here was
-		 * too much for the time we had.  Since the batch host is almost
-		 * always the first node in the allocation and most allocations
-		 * are homogeneous to start with this is more of a nice thing to
-		 * have instead of a real issue.  The fact that the batch step
-		 * didn't ever have GRES on the TRES before 20.11 seems to make
-		 * me think people don't care in the first place.  I am sure one
-		 * will care in the future though hence this short comment ;).
+		 * Figure out the index for the batch_host in relation to the
+		 * job specific job_resrcs structure.
 		 */
+		if (job_ptr->batch_host) {
+			batch_inx = job_get_node_inx(
+				job_ptr->batch_host, job_ptr->node_bitmap);
+			if (batch_inx == -1) {
+				error("%s: Invalid batch host %s for %pJ; this should never happen",
+				      __func__, job_ptr->batch_host, job_ptr);
+				batch_inx = 0;
+			}
+		}
 
 		/* get the cpus and memory on the first node */
 		if (job_ptr->job_resrcs->cpus)
-			cpu_count = job_ptr->job_resrcs->cpus[0];
+			cpu_count = job_ptr->job_resrcs->cpus[batch_inx];
 		if (job_ptr->job_resrcs->memory_allocated)
-			mem_count = job_ptr->job_resrcs->memory_allocated[0];
+			mem_count = job_ptr->job_resrcs->
+				memory_allocated[batch_inx];
 
 		tmp_tres_str = gres_ctld_gres_on_node_as_tres(
 			job_ptr->gres_list, 0, true);
