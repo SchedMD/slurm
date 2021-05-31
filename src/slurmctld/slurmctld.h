@@ -571,6 +571,9 @@ struct job_details {
 	int min_gres_cpu;		/* Minimum CPU count per node required
 					 * to satisfy GRES requirements,
 					 * not saved/restored, but rebuilt */
+	int min_job_gres_cpu;		/* CPU count per job required
+					 * to satisfy GRES requirements,
+					 * not saved/restored, but rebuilt */
 	uint32_t min_nodes;		/* minimum number of nodes */
 	uint32_t nice;			/* requested priority change,
 					 * NICE_OFFSET == no change */
