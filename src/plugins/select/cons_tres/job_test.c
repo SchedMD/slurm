@@ -1870,10 +1870,13 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 		for (i = i_first; ((i <= i_last) && (max_nodes > 0)); i++) {
 			if (!bit_test(req2_nodes_bitmap, i))
 				continue;
+			avail_cpus = avail_cpu_per_node[i];
+			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
+				     details_ptr, avail_res_array[i], i,
+				     cr_type);
 			rem_nodes--;
 			min_rem_nodes--;
 			max_nodes--;
-			avail_cpus = avail_cpu_per_node[i];
 			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
 			rem_max_cpus -= avail_cpus;
@@ -2023,6 +2026,9 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 				    !avail_cpu_per_node[j])
 					continue;
 				avail_cpus = avail_cpu_per_node[j];
+				_cpus_to_use(&avail_cpus, rem_max_cpus,
+					     min_rem_nodes, details_ptr,
+					     avail_res_array[j], j, cr_type);
 				rem_nodes--;
 				min_rem_nodes--;
 				max_nodes--;
@@ -2078,6 +2084,9 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 				    !avail_cpu_per_node[j])
 					continue;
 				avail_cpus = avail_cpu_per_node[j];
+				_cpus_to_use(&avail_cpus, rem_max_cpus,
+					     min_rem_nodes, details_ptr,
+					     avail_res_array[j], j, cr_type);
 				rem_nodes--;
 				min_rem_nodes--;
 				max_nodes--;
