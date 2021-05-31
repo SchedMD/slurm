@@ -882,6 +882,8 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	}
 
 	if (is_cons_tres) {
+		uint32_t ntasks_per_node = details_ptr->ntasks_per_node;
+		ntasks_per_node = MAX(ntasks_per_node, 1);
 		if (details_ptr->mc_ptr &&
 		    details_ptr->mc_ptr->sockets_per_node)
 			sockets_per_node =
@@ -890,6 +892,11 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		details_ptr->min_gres_cpu = gres_select_util_job_min_cpu_node(
 			sockets_per_node,
 			details_ptr->ntasks_per_node,
+			job_ptr->gres_list_req);
+		details_ptr->min_job_gres_cpu = gres_select_util_job_min_cpus(
+			details_ptr->min_nodes,
+			sockets_per_node,
+			ntasks_per_node * details_ptr->min_nodes,
 			job_ptr->gres_list_req);
 	} else if (exc_cores && *exc_cores)
 		exc_core_bitmap = *exc_cores;
