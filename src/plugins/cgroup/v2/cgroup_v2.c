@@ -400,6 +400,11 @@ extern int init(void)
 	 * Before enabling the controllers in the parent, we need to move out
 	 * all the processes which systemd started (slurmd) to a child.
 	 */
+	/* FIXME:
+	 * This is ok if we are slurmd, but if we are slurmstepd we need to
+	 * add more here because the move_pid with getpid will move stepd
+	 * in slurmd.
+	 */
 	xstrfmtcat(slurmd_cgpath, "%s/slurmd/",cg_root);
 	_xcgroup_instantiate(slurmd_cgpath, (uid_t) 0, (gid_t) 0);
 	_xcgroup_move_pid(slurmd_cgpath, getpid());
@@ -443,6 +448,37 @@ extern int cgroup_p_initialize(cgroup_ctl_type_t sub)
 	default:
 		break;
 	}
+	return SLURM_SUCCESS;
+}
+
+/*
+ * As part of the initialization, the slurmd directory is already created, so
+ * this function will remain probably empty or just need to check if init is ok.
+ */
+extern int cgroup_p_system_create(cgroup_ctl_type_t sub)
+{
+	/*
+	 * DEV_NOTES
+	 * This directory refers to $cg_root/slurmd/
+	 */
+	return SLURM_SUCCESS;
+}
+
+extern int cgroup_p_system_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
+{
+	/*
+	 * DEV_NOTES
+	 * Add the pid to $cg_root/slurmd/cgroup.procs
+	 */
+	return SLURM_SUCCESS;
+}
+
+extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub)
+{
+	/*
+	 * DEV_NOTES
+	 * Move our pid to / and remove $cg_root/slurmd
+	 */
 	return SLURM_SUCCESS;
 }
 
@@ -580,6 +616,28 @@ extern int cgroup_p_root_constrain_set(cgroup_ctl_type_t sub,
 	/* DEV_NOTES
 	 * memory.swappiness is not available in v2, do nothing
 	 * for the rest, empty. Like in v1.
+	 */
+	return SLURM_SUCCESS;
+}
+
+extern cgroup_limits_t *cgroup_p_system_constrain_get(cgroup_ctl_type_t sub)
+{
+	/*
+	 * DEV_NOTES
+	 * For future usage, just return the requested constrains from the
+	 * $cg_root/slurmd/
+	 *
+	 */
+	return NULL;
+}
+
+extern int cgroup_p_system_constrain_set(cgroup_ctl_type_t sub,
+					 cgroup_limits_t *limits)
+{
+	/*
+	 * DEV_NOTES
+	 * Set the requiret limits in $cg_root/slurmd/
+	 *
 	 */
 	return SLURM_SUCCESS;
 }
