@@ -2459,11 +2459,6 @@ static int _memory_spec_init(void)
 		      "system memory cgroup");
 		return SLURM_ERROR;
 	}
-	if (disable_system_cgroup_mem_oom()) {
-		error("Resource spec: unable to disable OOM Killer in "
-		      "system memory cgroup");
-		return SLURM_ERROR;
-	}
 	pid = getpid();
 	if (attach_system_memory_pid(pid) != SLURM_SUCCESS) {
 		error("Resource spec: unable to attach slurmd to "
