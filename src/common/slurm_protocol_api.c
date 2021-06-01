@@ -2023,7 +2023,11 @@ _send_and_recv_msg(int fd, slurm_msg_t *req,
 		   slurm_msg_t *resp, int timeout)
 {
 	int rc = slurm_send_recv_msg(fd, req, resp, timeout);
-	(void) close(fd);
+
+	if (close(fd))
+		error("%s: closing fd:%d error: %m",
+		      __func__, fd);
+
 	return rc;
 }
 
