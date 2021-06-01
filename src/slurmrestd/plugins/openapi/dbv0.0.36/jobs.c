@@ -152,7 +152,6 @@ static const csv_list_t csv_lists[] = {
 	{ "reason", offsetof(slurmdb_job_cond_t, reason_list) },
 	{ "reservation", offsetof(slurmdb_job_cond_t, resv_list) },
 	{ "state", offsetof(slurmdb_job_cond_t, state_list) },
-	{ "state", offsetof(slurmdb_job_cond_t, state_list) },
 	{ "wckey", offsetof(slurmdb_job_cond_t, wckey_list) },
 };
 
@@ -280,7 +279,7 @@ data_for_each_cmd_t _foreach_query_search(const char *key, data_t *data,
 
 	for (int i = 0; i < ARRAY_SIZE(csv_lists); i++) {
 		if (!xstrcasecmp(csv_lists[i].field, key)) {
-			List *list = (((void *)&args->job_cond) +
+			List *list = (((void *) args->job_cond) +
 				      csv_lists[i].offset);
 
 			if (_parse_csv_list(data, key, list, errors))
@@ -310,7 +309,7 @@ data_for_each_cmd_t _foreach_query_search(const char *key, data_t *data,
 
 	for (int i = 0; i < ARRAY_SIZE(int_list); i++) {
 		if (!xstrcasecmp(int_list[i].field, key)) {
-			int32_t *t = (((void *)&args->job_cond) +
+			int32_t *t = (((void *) args->job_cond) +
 				      int_list[i].offset);
 
 			if (data_convert_type(data, DATA_TYPE_INT_64) !=
