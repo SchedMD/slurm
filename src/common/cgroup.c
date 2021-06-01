@@ -129,7 +129,6 @@ static void _pack_cgroup_conf(slurm_cgroup_conf_t *cg_conf, buf_t *buffer);
 static int _unpack_cgroup_conf(buf_t *buffer);
 static void _read_slurm_cgroup_conf_int(void);
 static slurm_cgroup_conf_t *_get_slurm_cgroup_conf(void);
-static void xcgroup_reconfig_slurm_cgroup_conf(void);
 static int xcgroup_write_conf(int fd);
 static int xcgroup_read_conf(int fd);
 static void xcgroup_fini_slurm_cgroup_conf(void);
@@ -430,21 +429,6 @@ static slurm_cgroup_conf_t *_get_slurm_cgroup_conf(void)
 	}
 
 	return &slurm_cgroup_conf;
-}
-
-static void xcgroup_reconfig_slurm_cgroup_conf(void)
-{
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-
-	if (slurm_cgroup_conf_inited) {
-		_clear_slurm_cgroup_conf(&slurm_cgroup_conf);
-		FREE_NULL_BUFFER(cg_conf_buf);
-		slurm_cgroup_conf_inited = false;
-	}
-	(void)_get_slurm_cgroup_conf();
-
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
-
 }
 
 static int xcgroup_write_conf(int fd)
@@ -938,7 +922,16 @@ extern List cgroup_g_get_conf_list(void)
 
 extern void cgroup_g_reconfig()
 {
-	xcgroup_reconfig_slurm_cgroup_conf();
+	slurm_mutex_lock(&xcgroup_config_read_mutex);
+
+	if (slurm_cgroup_conf_inited) {
+		_clear_slurm_cgroup_conf(&slurm_cgroup_conf);
+		FREE_NULL_BUFFER(cg_conf_buf);
+		slurm_cgroup_conf_inited = false;
+	}
+	(void)_get_slurm_cgroup_conf();
+
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 }
 
 extern void cgroup_g_conf_fini()
