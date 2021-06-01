@@ -66,7 +66,7 @@
 #include "slurm/slurm.h"
 #include "src/common/slurm_xlator.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/xcgroup_read_config.h"
+#include "src/common/cgroup.h"
 
 typedef enum {
 	CALLERID_ACTION_NEWEST,
@@ -267,8 +267,7 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 		cgroup_suffix = xstrdup_printf("_%s", opts.node_name);
 
 	/* read cgroup configuration */
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = xcgroup_get_slurm_cgroup_conf();
+	cg_conf = cgroup_g_get_conf();
 
 	/* pick a cgroup that is likely to exist */
 	if (cg_conf->constrain_ram_space ||
@@ -295,7 +294,7 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 		 */
 		uidcg[0] = '\0';
 	}
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
+	cgroup_g_free_conf(cg_conf);
 
 	if (opts.node_name)
 		xfree(cgroup_suffix);
@@ -837,7 +836,7 @@ cleanup:
 	xfree(buf);
 	xfree(opts.node_name);
 	xfree(opts.pam_service);
-	xcgroup_fini_slurm_cgroup_conf();
+	cgroup_g_conf_fini();
 	return rc;
 }
 
