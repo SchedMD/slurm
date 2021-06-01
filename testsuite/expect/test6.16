@@ -43,9 +43,9 @@ proc cleanup {} {
 # Build input script file
 #
 make_bash_script $file_in "
-  $srun -N1 -n1 --mem=10 $bin_sleep $max_job_delay &
-  $srun -N1 -n1 --mem=10 $bin_sleep $max_job_delay &
-  $srun -N1 -n1 --mem=10 $bin_sleep $max_job_delay
+  $srun -N1 -n1 --overlap --mem=10 $bin_sleep $max_job_delay &
+  $srun -N1 -n1 --overlap --mem=10 $bin_sleep $max_job_delay &
+  $srun -N1 -n1 --overlap --mem=10 $bin_sleep $max_job_delay
 "
 
 #
