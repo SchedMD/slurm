@@ -86,8 +86,7 @@ int xcgroup_ns_create(xcgroup_ns_t *cgns, char *mnt_args, const char *subsys)
 	slurm_cgroup_conf_t *cg_conf;
 
 	/* read cgroup configuration */
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = xcgroup_get_slurm_cgroup_conf();
+	cg_conf = cgroup_g_get_conf();
 
 	cgns->mnt_point = xstrdup_printf("%s/%s",
 					 cg_conf->cgroup_mountpoint,
@@ -112,10 +111,10 @@ int xcgroup_ns_create(xcgroup_ns_t *cgns, char *mnt_args, const char *subsys)
 		}
 	}
 
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
+	cgroup_g_free_conf(cg_conf);
 	return SLURM_SUCCESS;
 clean:
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
+	cgroup_g_free_conf(cg_conf);
 	xcgroup_ns_destroy(cgns);
 	return SLURM_ERROR;
 }
@@ -328,14 +327,11 @@ int xcgroup_ns_load(xcgroup_ns_t *cgns, char *subsys)
 	slurm_cgroup_conf_t *cg_conf;
 
 	/* read cgroup configuration */
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = xcgroup_get_slurm_cgroup_conf();
-
+	cg_conf = cgroup_g_get_conf();
 	cgns->mnt_point = xstrdup_printf("%s/%s",
 					 cg_conf->cgroup_mountpoint,
 					 subsys);
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
-
+	cgroup_g_free_conf(cg_conf);
 	cgns->mnt_args = NULL;
 	cgns->subsystems = xstrdup(subsys);
 	return SLURM_SUCCESS;
@@ -882,12 +878,11 @@ extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns)
 	slurm_cgroup_conf_t *cg_conf;
 
 	/* read cgroup configuration */
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = xcgroup_get_slurm_cgroup_conf();
+	cg_conf = cgroup_g_get_conf();
 
 	pre = xstrdup(cg_conf->cgroup_prepend);
 
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
+	cgroup_g_free_conf(cg_conf);
 
 #ifdef MULTIPLE_SLURMD
 	if (conf->node_name) {

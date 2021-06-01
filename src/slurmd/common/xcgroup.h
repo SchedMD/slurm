@@ -39,8 +39,7 @@
 
 #include <dirent.h>
 #include <sys/types.h>
-
-#include "src/common/xcgroup_read_config.h"
+#include "src/common/cgroup.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #define MAX_MOVE_WAIT 5000
