@@ -128,7 +128,7 @@ static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *cg_conf);
 static void _pack_cgroup_conf(slurm_cgroup_conf_t *cg_conf, buf_t *buffer);
 static int _unpack_cgroup_conf(buf_t *buffer);
 static void _read_slurm_cgroup_conf_int(void);
-static slurm_cgroup_conf_t *xcgroup_get_slurm_cgroup_conf(void);
+static slurm_cgroup_conf_t *_get_slurm_cgroup_conf(void);
 static void xcgroup_reconfig_slurm_cgroup_conf(void);
 static int xcgroup_write_conf(int fd);
 static int xcgroup_read_conf(int fd);
@@ -414,7 +414,7 @@ static void _read_slurm_cgroup_conf_int(void)
 	return;
 }
 
-static slurm_cgroup_conf_t *xcgroup_get_slurm_cgroup_conf(void)
+static slurm_cgroup_conf_t *_get_slurm_cgroup_conf(void)
 {
 	if (!slurm_cgroup_conf_inited) {
 		memset(&slurm_cgroup_conf, 0, sizeof(slurm_cgroup_conf_t));
@@ -441,7 +441,7 @@ static void xcgroup_reconfig_slurm_cgroup_conf(void)
 		FREE_NULL_BUFFER(cg_conf_buf);
 		slurm_cgroup_conf_inited = false;
 	}
-	(void)xcgroup_get_slurm_cgroup_conf();
+	(void)_get_slurm_cgroup_conf();
 
 	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 
@@ -453,7 +453,7 @@ static int xcgroup_write_conf(int fd)
 
 	slurm_mutex_lock(&xcgroup_config_read_mutex);
 	if (!slurm_cgroup_conf_inited)
-		(void)xcgroup_get_slurm_cgroup_conf();
+		(void)_get_slurm_cgroup_conf();
 
 	len = get_buf_offset(cg_conf_buf);
 	safe_write(fd, &len, sizeof(int));
@@ -520,7 +520,7 @@ static bool xcgroup_mem_cgroup_job_confinement(void)
 
 	/* read cgroup configuration */
 	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = xcgroup_get_slurm_cgroup_conf();
+	cg_conf = _get_slurm_cgroup_conf();
 
 	if ((cg_conf->constrain_ram_space ||
 	     cg_conf->constrain_swap_space) &&
@@ -588,7 +588,7 @@ static char *_get_cgroup_plugin()
 
 	slurm_mutex_lock(&xcgroup_config_read_mutex);
 
-	conf = xcgroup_get_slurm_cgroup_conf();
+	conf = _get_slurm_cgroup_conf();
 	cgroup_plugin = xstrdup(conf->cgroup_plugin);
 
 	slurm_mutex_unlock(&xcgroup_config_read_mutex);
@@ -776,7 +776,7 @@ extern slurm_cgroup_conf_t *cgroup_g_get_conf()
 
 	slurm_mutex_lock(&xcgroup_config_read_mutex);
 
-	conf = xcgroup_get_slurm_cgroup_conf();
+	conf = _get_slurm_cgroup_conf();
 	conf_ptr = xmalloc(sizeof(*conf_ptr));
 
 	conf_ptr->cgroup_automount = conf->cgroup_automount;
@@ -816,7 +816,7 @@ extern List cgroup_g_get_conf_list(void)
 	List cgroup_conf_l;
 
 	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = xcgroup_get_slurm_cgroup_conf();
+	cg_conf = _get_slurm_cgroup_conf();
 
 	/* Fill list with cgroup config key pairs */
 	cgroup_conf_l = list_create(destroy_config_key_pair);
