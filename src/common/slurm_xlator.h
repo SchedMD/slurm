@@ -460,11 +460,6 @@
 #define xfree_struct_group_array	slurm_xfree_struct_group_array
 #define stepd_get_namespace_fd		slurm_stepd_get_namespace_fd
 
-/* xcgroup_read_config.[ch] */
-#define xcgroup_config_read_mutex       slurm_xcgroup_config_read_mutex
-#define xcgroup_get_slurm_cgroup_conf   slurm_xcgroup_get_slurm_cgroup_conf
-#define xcgroup_fini_slurm_cgroup_conf  slurm_xcgroup_fini_slurm_cgroup_conf
-
 #endif /* USE_ALIAS */
 
 /* Include the function definitions after redefining their names. */
@@ -489,7 +484,6 @@
 #include "src/common/switch.h"
 #include "src/common/working_cluster.h"
 #include "src/common/xassert.h"
-#include "src/common/xcgroup_read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"

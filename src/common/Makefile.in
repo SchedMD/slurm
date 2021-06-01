@@ -180,9 +180,8 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	stepd_api.lo strlcpy.lo strnatcmp.lo switch.lo timers.lo \
 	track_script.lo tres_bind.lo tres_frequency.lo uid.lo \
 	util-net.lo working_cluster.lo workq.lo \
-	write_labelled_message.lo x11_util.lo xassert.lo \
-	xcgroup_read_config.lo xhash.lo xmalloc.lo xsignal.lo \
-	xstring.lo
+	write_labelled_message.lo x11_util.lo xassert.lo xhash.lo \
+	xmalloc.lo xsignal.lo xstring.lo
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -266,9 +265,8 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/working_cluster.Plo ./$(DEPDIR)/workq.Plo \
 	./$(DEPDIR)/write_labelled_message.Plo \
 	./$(DEPDIR)/x11_util.Plo ./$(DEPDIR)/xassert.Plo \
-	./$(DEPDIR)/xcgroup_read_config.Plo ./$(DEPDIR)/xhash.Plo \
-	./$(DEPDIR)/xmalloc.Plo ./$(DEPDIR)/xsignal.Plo \
-	./$(DEPDIR)/xstring.Plo
+	./$(DEPDIR)/xhash.Plo ./$(DEPDIR)/xmalloc.Plo \
+	./$(DEPDIR)/xsignal.Plo ./$(DEPDIR)/xstring.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -769,8 +767,6 @@ libcommon_la_SOURCES = \
 	x11_util.h				\
 	xassert.c				\
 	xassert.h				\
-	xcgroup_read_config.c			\
-	xcgroup_read_config.h			\
 	xhash.c					\
 	xhash.h					\
 	xmalloc.c				\
@@ -946,7 +942,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/write_labelled_message.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/x11_util.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xassert.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcgroup_read_config.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xhash.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xmalloc.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xsignal.Plo@am__quote@ # am--include-marker
@@ -1173,7 +1168,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/write_labelled_message.Plo
 	-rm -f ./$(DEPDIR)/x11_util.Plo
 	-rm -f ./$(DEPDIR)/xassert.Plo
-	-rm -f ./$(DEPDIR)/xcgroup_read_config.Plo
 	-rm -f ./$(DEPDIR)/xhash.Plo
 	-rm -f ./$(DEPDIR)/xmalloc.Plo
 	-rm -f ./$(DEPDIR)/xsignal.Plo
@@ -1320,7 +1314,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/write_labelled_message.Plo
 	-rm -f ./$(DEPDIR)/x11_util.Plo
 	-rm -f ./$(DEPDIR)/xassert.Plo
-	-rm -f ./$(DEPDIR)/xcgroup_read_config.Plo
 	-rm -f ./$(DEPDIR)/xhash.Plo
 	-rm -f ./$(DEPDIR)/xmalloc.Plo
 	-rm -f ./$(DEPDIR)/xsignal.Plo

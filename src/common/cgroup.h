@@ -40,16 +40,33 @@
 #include <linux/magic.h>
 #include <sys/vfs.h>
 
+#include <pwd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <inttypes.h>
+
+#include "config.h"
+
 #include "slurm/slurm.h"
-#include "src/common/slurm_opt.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+#include "src/common/log.h"
+#include "src/common/list.h"
+#include "src/common/macros.h"
+#include "src/common/pack.h"
+#include "src/common/parse_config.h"
+#include "src/common/parse_time.h"
+#include "src/common/read_config.h"
 #include "src/common/plugin.h"
+#include "src/common/slurm_opt.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/xcgroup_read_config.h"
 #include "src/plugins/cgroup/common/cgroup_common.h"
 
 #ifdef __GNUC__
@@ -57,6 +74,14 @@
 #else
 #define F_TYPE_EQUAL(a, b) (a == (__SWORD_TYPE) b)
 #endif
+
+/*  Default lower bound on memory limit in MB. This is required so we
+ *   don't immediately kill slurmstepd on mem cgroup creation if
+ *   an administrator or user sets and absurdly low mem limit.
+ */
+#define XCGROUP_DEFAULT_MIN_RAM 30
+
+extern pthread_mutex_t xcgroup_config_read_mutex;
 
 /* Current supported cgroup controller types */
 typedef enum {
@@ -101,8 +126,41 @@ typedef struct {
 	uint64_t total_pgmajfault;
 } cgroup_acct_t;
 
-extern void cgroup_free_limits(cgroup_limits_t *limits);
+/* Slurm cgroup plugins configuration parameters */
+typedef struct slurm_cgroup_conf {
 
+	bool      cgroup_automount;
+	char *    cgroup_mountpoint;
+
+	char *    cgroup_prepend;
+
+	bool      constrain_cores;
+	bool      task_affinity;
+
+	bool      constrain_ram_space;
+	float     allowed_ram_space;
+	float     max_ram_percent;       /* Upper bound on memory as % of RAM*/
+
+	uint64_t  min_ram_space;         /* Lower bound on memory limit (MB) */
+
+	bool      constrain_kmem_space;
+	float     allowed_kmem_space;
+	float     max_kmem_percent;
+	uint64_t  min_kmem_space;
+
+	bool      constrain_swap_space;
+	float     allowed_swap_space;
+	float     max_swap_percent;      /* Upper bound on swap as % of RAM  */
+	uint64_t  memory_swappiness;
+
+	bool      constrain_devices;
+	char *    allowed_devices_file;
+	char *    cgroup_plugin;
+} slurm_cgroup_conf_t;
+
+
+/* global functions */
+extern void cgroup_free_limits(cgroup_limits_t *limits);
 extern int cgroup_g_init(void);
 extern int cgroup_g_fini(void);
 extern int cgroup_g_initialize(cgroup_ctl_type_t sub);

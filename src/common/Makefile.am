@@ -205,8 +205,6 @@ libcommon_la_SOURCES =				\
 	x11_util.h				\
 	xassert.c				\
 	xassert.h				\
-	xcgroup_read_config.c			\
-	xcgroup_read_config.h			\
 	xhash.c					\
 	xhash.h					\
 	xmalloc.c				\
