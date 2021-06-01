@@ -129,7 +129,6 @@ static void _pack_cgroup_conf(slurm_cgroup_conf_t *cg_conf, buf_t *buffer);
 static int _unpack_cgroup_conf(buf_t *buffer);
 static void _read_slurm_cgroup_conf_int(void);
 static slurm_cgroup_conf_t *_get_slurm_cgroup_conf(void);
-static int xcgroup_read_conf(int fd);
 static void xcgroup_fini_slurm_cgroup_conf(void);
 static bool xcgroup_mem_cgroup_job_confinement(void);
 
@@ -428,39 +427,6 @@ static slurm_cgroup_conf_t *_get_slurm_cgroup_conf(void)
 	}
 
 	return &slurm_cgroup_conf;
-}
-
-static int xcgroup_read_conf(int fd)
-{
-	int len, rc;
-	buf_t *buffer = NULL;
-
-	xcgroup_fini_slurm_cgroup_conf();
-
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	memset(&slurm_cgroup_conf, 0, sizeof(slurm_cgroup_conf_t));
-
-	safe_read(fd, &len, sizeof(int));
-
-	buffer = init_buf(len);
-	safe_read(fd, buffer->head, len);
-
-	rc = _unpack_cgroup_conf(buffer);
-
-	if (rc == SLURM_ERROR)
-		fatal("%s: problem with unpack of cgroup.conf", __func__);
-
-	FREE_NULL_BUFFER(buffer);
-
-	slurm_cgroup_conf_inited = true;
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
-
-	return SLURM_SUCCESS;
-rwfail:
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
-	FREE_NULL_BUFFER(buffer);
-
-	return SLURM_ERROR;
 }
 
 static void xcgroup_fini_slurm_cgroup_conf(void)
@@ -940,7 +906,35 @@ rwfail:
 
 extern int cgroup_g_read_conf(int fd)
 {
-	return xcgroup_read_conf(fd);
+	int len, rc;
+	buf_t *buffer = NULL;
+
+	xcgroup_fini_slurm_cgroup_conf();
+
+	slurm_mutex_lock(&xcgroup_config_read_mutex);
+	memset(&slurm_cgroup_conf, 0, sizeof(slurm_cgroup_conf_t));
+
+	safe_read(fd, &len, sizeof(int));
+
+	buffer = init_buf(len);
+	safe_read(fd, buffer->head, len);
+
+	rc = _unpack_cgroup_conf(buffer);
+
+	if (rc == SLURM_ERROR)
+		fatal("%s: problem with unpack of cgroup.conf", __func__);
+
+	FREE_NULL_BUFFER(buffer);
+
+	slurm_cgroup_conf_inited = true;
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
+
+	return SLURM_SUCCESS;
+rwfail:
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
+	FREE_NULL_BUFFER(buffer);
+
+	return SLURM_ERROR;
 }
 
 extern bool cgroup_g_memcg_job_confinement()
