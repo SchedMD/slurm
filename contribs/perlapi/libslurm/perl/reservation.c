@@ -165,6 +165,8 @@ hv_to_reserve_info_msg(HV *hv, reserve_info_msg_t *resv_info_msg)
 int
 hv_to_update_reservation_msg(HV *hv, resv_desc_msg_t *resv_msg)
 {
+	SV **svp;
+
 	slurm_init_resv_desc_msg(resv_msg);
 
  	FETCH_FIELD(hv, resv_msg, accounts, charp, FALSE);
@@ -174,7 +176,23 @@ hv_to_update_reservation_msg(HV *hv, resv_desc_msg_t *resv_msg)
 	FETCH_FIELD(hv, resv_msg, flags, uint64_t, FALSE);
 	FETCH_FIELD(hv, resv_msg, licenses, charp, FALSE);
 	FETCH_FIELD(hv, resv_msg, name, charp, FALSE);
-	FETCH_PTR_FIELD(hv, resv_msg, node_cnt, "SLURM::uint32_t", FALSE);
+	svp = hv_fetch(hv, "node_cnt", 8, FALSE);
+	if (svp) {
+		AV *av;
+		int i, n;
+		if (!SvROK(*svp) || (SvTYPE(SvRV(*svp)) != SVt_PVAV)) {
+			Perl_warn (aTHX_ "node_cnt is not an array reference");
+			return -1;
+		}
+
+		av = (AV*)SvRV(*svp);
+		n = av_len(av) + 1;
+		resv_msg->node_cnt = xmalloc((n + 1) * sizeof(uint32_t));
+		for (i = 0 ; i < n; i++) {
+			resv_msg->node_cnt[i] =
+				(uint32_t)SvIV(*(av_fetch(av, i ,FALSE)));
+		}
+	}
 	FETCH_FIELD(hv, resv_msg, node_list, charp, FALSE);
 	FETCH_FIELD(hv, resv_msg, partition, charp, FALSE);
 	FETCH_FIELD(hv, resv_msg, start_time, time_t, FALSE);
