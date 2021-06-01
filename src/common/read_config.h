@@ -74,6 +74,7 @@ extern uint16_t drop_priv_flag;
 #define DEFAULT_AUTH_TYPE          "auth/munge"
 #define DEFAULT_AUTH_TOKEN_LIFESPAN 1800
 #define DEFAULT_BATCH_START_TIMEOUT 10
+#define DEFAULT_BCAST_EXCLUDE       "/lib,/usr/lib,/lib64,/usr/lib64"
 #define DEFAULT_COMPLETE_WAIT       0
 #define DEFAULT_CRED_TYPE           "cred/munge"
 #define DEFAULT_EPILOG_MSG_TIME     2000

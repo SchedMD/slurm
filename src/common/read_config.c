@@ -191,6 +191,7 @@ static int _defunct_option(void **dest, slurm_parser_enum_t type,
 			   const char *line, char **leftover);
 static int _validate_and_set_defaults(slurm_conf_t *conf,
                                       s_p_hashtbl_t *hashtbl);
+static int _validate_bcast_exclude(slurm_conf_t *conf);
 static uint16_t *_parse_srun_ports(const char *);
 
 s_p_options_t slurm_conf_options[] = {
@@ -221,6 +222,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"BackupAddr", S_P_STRING},
 	{"BackupController", S_P_STRING},
 	{"BatchStartTimeout", S_P_UINT16},
+	{"BcastExclude", S_P_STRING},
 	{"BcastParameters", S_P_STRING},
 	{"BurstBufferParameters", S_P_STRING},
 	{"BurstBufferType", S_P_STRING},
@@ -2789,6 +2791,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->authinfo);
 	xfree (ctl_conf_ptr->authtype);
 	xfree (ctl_conf_ptr->bb_type);
+	xfree(ctl_conf_ptr->bcast_exclude);
 	xfree (ctl_conf_ptr->bcast_parameters);
 	FREE_NULL_LIST(ctl_conf_ptr->cgroup_conf);
 	xfree(ctl_conf_ptr->cli_filter_plugins);
@@ -2936,6 +2939,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->authtype);
 	ctl_conf_ptr->batch_start_timeout	= 0;
 	xfree (ctl_conf_ptr->bb_type);
+	xfree(ctl_conf_ptr->bcast_exclude);
 	xfree(ctl_conf_ptr->bcast_parameters);
 	xfree(ctl_conf_ptr->cli_filter_plugins);
 	xfree (ctl_conf_ptr->cluster_name);
@@ -3613,6 +3617,32 @@ static int _validate_accounting_storage_enforce(char *acct_enforce_str,
 	return rc;
 }
 
+static int _validate_bcast_exclude(slurm_conf_t *conf)
+{
+	int rc = SLURM_SUCCESS;
+	char *tmp_str = NULL, *tok = NULL, *saveptr = NULL;
+
+	if (!xstrcasecmp(conf->bcast_exclude, "none"))
+		return rc;
+
+	tmp_str = xstrdup(conf->bcast_exclude);
+	tok = strtok_r(tmp_str, ",", &saveptr);
+	while (tok) {
+		if (tok[0] != '/') {
+			error("Invalid path for BcastExclude: %s",
+			      tok);
+			xfree(conf->bcast_exclude);
+			conf->bcast_exclude = xstrdup(DEFAULT_BCAST_EXCLUDE);
+			rc = SLURM_ERROR;
+			break;
+		}
+		tok = strtok_r(NULL, ",", &saveptr);
+	}
+
+	xfree(tmp_str);
+	return rc;
+}
+
 /*
  *
  * IN/OUT ctl_conf_ptr - a configuration as loaded by read_slurm_conf_ctl
@@ -3711,6 +3741,13 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (!s_p_get_string(&conf->authtype, "AuthType", hashtbl))
 		conf->authtype = xstrdup(DEFAULT_AUTH_TYPE);
+
+	if (s_p_get_string(&conf->bcast_exclude, "BcastExclude", hashtbl)) {
+		if (_validate_bcast_exclude(conf) != SLURM_SUCCESS)
+			return SLURM_ERROR;
+	} else {
+		conf->bcast_exclude = xstrdup(DEFAULT_BCAST_EXCLUDE);
+	}
 
 	(void) s_p_get_string(&conf->bb_type, "BurstBufferType", hashtbl);
 

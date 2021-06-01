@@ -298,6 +298,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	conf_ptr->batch_start_timeout = conf->batch_start_timeout;
 	conf_ptr->boot_time           = slurmctld_config.boot_time;
 	conf_ptr->bb_type             = xstrdup(conf->bb_type);
+	conf_ptr->bcast_exclude       = xstrdup(conf->bcast_exclude);
 	conf_ptr->bcast_parameters = xstrdup(conf->bcast_parameters);
 
 

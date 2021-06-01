@@ -649,6 +649,11 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(*key_pair));
+	key_pair->name = xstrdup("BcastExclude");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->bcast_exclude);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(*key_pair));
 	key_pair->name = xstrdup("BcastParameters");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->bcast_parameters);
 	list_append(ret_list, key_pair);

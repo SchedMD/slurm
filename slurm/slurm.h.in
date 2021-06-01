@@ -2759,6 +2759,7 @@ typedef struct {
 	char *authtype;		/* authentication type */
 	uint16_t batch_start_timeout;	/* max secs for batch job to start */
 	char *bb_type;		/* burst buffer plugin type */
+	char *bcast_exclude;	/* Bcast exclude library paths */
 	char *bcast_parameters; /* bcast options */
 	time_t boot_time;	/* time slurmctld last booted */
 	void *cgroup_conf;	/* cgroup support config file */
