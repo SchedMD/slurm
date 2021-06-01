@@ -97,6 +97,9 @@ expect {
 		incr matches
 		exp_continue
 	}
+	-re "error:" {
+		fail "scancel had an unexpected error"
+	}
 	timeout {
 		fail "scancel not responding"
 	}
