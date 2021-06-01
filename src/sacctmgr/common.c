@@ -628,12 +628,12 @@ static print_field_t *_get_print_field(char *object)
 		field->print_routine = print_fields_str;
 	} else if (!xstrncasecmp("ParentID", object, MAX(command_len, 7))) {
 		field->type = PRINT_PID;
-		field->name = xstrdup("Par ID");
-		field->len = 6;
+		field->name = xstrdup("ParentID");
+		field->len = 8;
 		field->print_routine = print_fields_uint;
 	} else if (!xstrncasecmp("ParentName", object, MAX(command_len, 7))) {
 		field->type = PRINT_PNAME;
-		field->name = xstrdup("Par Name");
+		field->name = xstrdup("ParentName");
 		field->len = 10;
 		field->print_routine = print_fields_str;
 	} else if (!xstrncasecmp("Partition", object, MAX(command_len, 4))) {

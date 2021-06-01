@@ -103,6 +103,8 @@ documents those changes that are of interest to users and administrators.
     node).
  -- slurmd - allow multiple comma-separated controllers to be specified in
     configless mode with --conf-server
+ -- sacctmgr - changed column headings to "ParentID" and "ParentName" instead
+    of "Par ID" and "Par Name" respectively.
 
 * Changes in Slurm 20.11.8
 ==========================
