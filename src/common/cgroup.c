@@ -129,7 +129,6 @@ static void _pack_cgroup_conf(slurm_cgroup_conf_t *cg_conf, buf_t *buffer);
 static int _unpack_cgroup_conf(buf_t *buffer);
 static void _read_slurm_cgroup_conf_int(void);
 static slurm_cgroup_conf_t *_get_slurm_cgroup_conf(void);
-static bool xcgroup_mem_cgroup_job_confinement(void);
 
 /* Local functions */
 static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *cg_conf)
@@ -426,25 +425,6 @@ static slurm_cgroup_conf_t *_get_slurm_cgroup_conf(void)
 	}
 
 	return &slurm_cgroup_conf;
-}
-
-static bool xcgroup_mem_cgroup_job_confinement(void)
-{
-	slurm_cgroup_conf_t *cg_conf;
-	bool status = false;
-
-	/* read cgroup configuration */
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = _get_slurm_cgroup_conf();
-
-	if ((cg_conf->constrain_ram_space ||
-	     cg_conf->constrain_swap_space) &&
-	    xstrstr(slurm_conf.task_plugin, "cgroup"))
-		status = true;
-
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
-
-	return status;
 }
 
 /* Autodetect logic inspired from systemd source code */
@@ -933,7 +913,21 @@ rwfail:
 
 extern bool cgroup_g_memcg_job_confinement()
 {
-	return xcgroup_mem_cgroup_job_confinement();
+	slurm_cgroup_conf_t *cg_conf;
+	bool status = false;
+
+	/* read cgroup configuration */
+	slurm_mutex_lock(&xcgroup_config_read_mutex);
+	cg_conf = _get_slurm_cgroup_conf();
+
+	if ((cg_conf->constrain_ram_space ||
+	     cg_conf->constrain_swap_space) &&
+	    xstrstr(slurm_conf.task_plugin, "cgroup"))
+		status = true;
+
+	slurm_mutex_unlock(&xcgroup_config_read_mutex);
+
+	return status;
 }
 
 extern cgroup_limits_t *cgroup_g_root_constrain_get(cgroup_ctl_type_t sub)
