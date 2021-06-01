@@ -137,12 +137,6 @@ expect {
 		wait
 	}
 }
-
-# TODO: Temporary commands to debug bug 10606 (remove once fixed)
-run_command "$squeue"
-run_command "$scontrol show jobs"
-run_command "ps auwwwwex"
-
 reconfigure -fail
 
 #
@@ -298,11 +292,6 @@ if {$job_id == 0} {
 if {$matches != 2} {
 	fail "Spank options not processed by sbatch ($matches != 2)"
 }
-
-# TODO: Temporary commands to debug bug 10606 (remove once fixed)
-run_command "$squeue"
-run_command "$scontrol show jobs"
-run_command "ps auwwwwex"
 
 #
 # Wait for job to complete and check for files
