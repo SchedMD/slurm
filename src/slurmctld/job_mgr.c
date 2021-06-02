@@ -7286,7 +7286,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	    (job_desc->time_min == NO_VAL))
 		job_desc->time_min = 1;
 	if ((accounting_enforce & ACCOUNTING_ENFORCE_LIMITS) &&
-	    (!acct_policy_validate(job_desc, part_ptr,
+	    (!acct_policy_validate(job_desc, part_ptr, part_ptr_list,
 				   assoc_ptr, qos_ptr, &acct_reason,
 				   &acct_policy_limit_set, 0))) {
 		if (err_msg) {
@@ -12343,6 +12343,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 
 	if (!operator && (accounting_enforce & ACCOUNTING_ENFORCE_LIMITS)) {
 		if (!acct_policy_validate(job_specs, job_ptr->part_ptr,
+					  job_ptr->part_ptr_list,
 					  job_ptr->assoc_ptr, job_ptr->qos_ptr,
 					  NULL, &acct_policy_limit_set,
 					  true)) {
@@ -12888,6 +12889,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 				max_reset = false,
 				time_min_reset = false;
 			if (!acct_policy_validate(job_specs, use_part_ptr,
+						  use_part_list,
 						  use_assoc_ptr, use_qos_ptr,
 						  &acct_reason,
 						  &acct_policy_limit_set,

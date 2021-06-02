@@ -81,7 +81,9 @@ extern void acct_policy_alter_job(job_record_t *job_ptr,
  * acct_policy_validate - validate that a job request can be satisfied without
  * exceeding any association or QOS limit.
  * job_desc IN - job descriptor being submitted
- * part_ptr IN - pointer to (one) partition to which the job is being submitted
+ * part_ptr IN - first partition to which the job is being submitted
+ * part_ptr_list IN - list of partitions to which the job is being submitted
+ *                    (can be NULL)
  * assoc_in IN - pointer to association to which the job is being submitted
  * qos_ptr IN - pointer to QOS to which the job is being submitted
  * state_reason OUT - if non-NULL, set to reason for rejecting the job
@@ -92,6 +94,7 @@ extern void acct_policy_alter_job(job_record_t *job_ptr,
  */
 extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 part_record_t *part_ptr,
+				 List part_ptr_list,
 				 slurmdb_assoc_rec_t *assoc_in,
 				 slurmdb_qos_rec_t *qos_ptr,
 				 uint32_t *state_reason,

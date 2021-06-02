@@ -65,9 +65,16 @@ typedef enum {
 typedef struct het_job_limits {
 	slurmdb_assoc_rec_t *assoc_ptr;
 	job_record_t *job_ptr;
-	slurmdb_qos_rec_t *qos_ptr_1;
-	slurmdb_qos_rec_t *qos_ptr_2;
 } het_job_limits_t;
+
+typedef struct acct_policy_validate_args {
+	acct_policy_limit_set_t *acct_policy_limit_set;
+	slurmdb_assoc_rec_t *assoc_in;
+	job_desc_msg_t *job_desc;
+	slurmdb_qos_rec_t *job_qos_ptr;
+	uint32_t *reason;
+	bool update_call;
+} acct_policy_validate_args_t;
 
 static void _apply_limit_factor(uint64_t *limit, double limit_factor)
 {
@@ -2928,7 +2935,7 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 				  uint32_t *reason,
 				  acct_policy_limit_set_t *
 					acct_policy_limit_set,
-				  bool update_call)
+				  bool update_call, bool locked)
 {
 	slurmdb_qos_rec_t qos_rec;
 	slurmdb_assoc_rec_t *assoc_ptr = assoc_in;
@@ -2955,7 +2962,12 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 
 	slurmdb_init_qos_rec(&qos_rec, 0, INFINITE);
 
-	assoc_mgr_lock(&locks);
+	if (!locked)
+		assoc_mgr_lock(&locks);
+
+	verify_assoc_lock(ASSOC_LOCK, READ_LOCK);
+	verify_assoc_lock(QOS_LOCK, READ_LOCK);
+	verify_assoc_lock(TRES_LOCK, READ_LOCK);
 
 	assoc_mgr_set_qos_tres_cnt(&qos_rec);
 
@@ -3263,9 +3275,30 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 		parent = 1;
 	}
 end_it:
-	assoc_mgr_unlock(&locks);
+	if (!locked)
+		assoc_mgr_unlock(&locks);
 	slurmdb_free_qos_rec_members(&qos_rec);
 
+	return rc;
+}
+
+static int _list_acct_policy_validate(void *x, void *arg)
+{
+	part_record_t *part_ptr = (part_record_t *) x;
+	acct_policy_validate_args_t *args = (acct_policy_validate_args_t *) arg;
+	slurmdb_qos_rec_t *qos_ptr_1 = NULL, *qos_ptr_2 = NULL;
+	job_record_t job_rec;
+	bool rc;
+
+	job_rec.qos_ptr = args->job_qos_ptr;
+	job_rec.part_ptr = part_ptr;
+	acct_policy_set_qos_order(&job_rec, &qos_ptr_1, &qos_ptr_2);
+	rc = _acct_policy_validate(args->job_desc, part_ptr, args->assoc_in,
+				   qos_ptr_1, qos_ptr_2, args->reason,
+				   args->acct_policy_limit_set,
+				   args->update_call, true);
+	if (!rc)
+		return SLURM_ERROR; /* Break out of list_for_each. */
 	return rc;
 }
 
@@ -3273,7 +3306,9 @@ end_it:
  * acct_policy_validate - validate that a job request can be satisfied without
  * exceeding any association or QOS limit.
  * job_desc IN - job descriptor being submitted
- * part_ptr IN - pointer to (one) partition to which the job is being submitted
+ * part_ptr IN - first partition to which the job is being submitted
+ * part_ptr_list IN - list of partitions to which the job is being submitted
+ *                    (can be NULL)
  * assoc_in IN - pointer to association to which the job is being submitted
  * qos_ptr IN - pointer to QOS to which the job is being submitted
  * state_reason OUT - if non-NULL, set to reason for rejecting the job
@@ -3284,26 +3319,34 @@ end_it:
  */
 extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 part_record_t *part_ptr,
+				 List part_ptr_list,
 				 slurmdb_assoc_rec_t *assoc_in,
 				 slurmdb_qos_rec_t *qos_ptr,
 				 uint32_t *reason,
 				 acct_policy_limit_set_t *acct_policy_limit_set,
 				 bool update_call)
 {
-	slurmdb_qos_rec_t *qos_ptr_1 = NULL, *qos_ptr_2 = NULL;
-	job_record_t job_rec;
-	bool rc;
+	int rc = true;
 	assoc_mgr_lock_t locks =
 		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
+	acct_policy_validate_args_t args = {
+		.acct_policy_limit_set = acct_policy_limit_set,
+		.assoc_in = assoc_in, .job_desc = job_desc,
+		.job_qos_ptr = qos_ptr, .reason = reason,
+		.update_call = update_call };
 
 	assoc_mgr_lock(&locks);
-	job_rec.qos_ptr = qos_ptr;
-	job_rec.part_ptr = part_ptr;
-	acct_policy_set_qos_order(&job_rec, &qos_ptr_1, &qos_ptr_2);
+	if (!part_ptr_list) {
+		if (_list_acct_policy_validate(part_ptr, &args) == SLURM_ERROR)
+			rc = false;
+		assoc_mgr_unlock(&locks);
+		return rc;
+	}
+
+	if (list_for_each(part_ptr_list, _list_acct_policy_validate, &args) < 0)
+		rc = false;
 	assoc_mgr_unlock(&locks);
-	rc = _acct_policy_validate(job_desc, part_ptr, assoc_in,
-				   qos_ptr_1, qos_ptr_2, reason,
-				   acct_policy_limit_set, update_call);
+
 	return rc;
 }
 
@@ -3335,7 +3378,6 @@ extern bool acct_policy_validate_het_job(List submit_job_list)
 		{ .assoc = READ_LOCK, .qos = READ_LOCK, .tres = READ_LOCK };
 	List het_job_limit_list;
 	ListIterator iter1, iter2;
-	slurmdb_qos_rec_t *qos_ptr_1, *qos_ptr_2;
 	job_record_t *job_ptr1, *job_ptr2;
 	het_job_limits_t *job_limit1, *job_limit2;
 	bool rc = true;
@@ -3355,14 +3397,9 @@ extern bool acct_policy_validate_het_job(List submit_job_list)
 	iter1 = list_iterator_create(submit_job_list);
 	assoc_mgr_lock(&locks);
 	while ((job_ptr1 = list_next(iter1))) {
-		qos_ptr_1 = NULL;
-		qos_ptr_2 = NULL;
-		acct_policy_set_qos_order(job_ptr1, &qos_ptr_1, &qos_ptr_2);
 		job_limit1 = xmalloc(sizeof(het_job_limits_t));
 		job_limit1->assoc_ptr = job_ptr1->assoc_ptr;
 		job_limit1->job_ptr   = job_ptr1;
-		job_limit1->qos_ptr_1 = qos_ptr_1;
-		job_limit1->qos_ptr_2 = qos_ptr_2;
 		list_append(het_job_limit_list, job_limit1);
 	}
 	assoc_mgr_unlock(&locks);
@@ -3403,11 +3440,11 @@ extern bool acct_policy_validate_het_job(List submit_job_list)
 				 * validated when each individual component of
 				 * the heterogeneous job was created.
 				*/
-				rc = _acct_policy_validate(&job_desc,
+				rc = acct_policy_validate(&job_desc,
 						job_ptr1->part_ptr,
+						job_ptr1->part_ptr_list,
 						job_limit1->assoc_ptr,
-						job_limit1->qos_ptr_1,
-						job_limit1->qos_ptr_2,
+						job_ptr1->qos_ptr,
 						&reason,
 						&acct_policy_limit_set,
 						false);
@@ -4233,6 +4270,7 @@ extern int acct_policy_update_pending_job(job_record_t *job_ptr)
 		job_desc.time_limit = job_ptr->time_limit;
 
 	if (!acct_policy_validate(&job_desc, job_ptr->part_ptr,
+				  job_ptr->part_ptr_list,
 				  job_ptr->assoc_ptr, job_ptr->qos_ptr,
 				  &job_ptr->state_reason,
 				  &acct_policy_limit_set, 0)) {
