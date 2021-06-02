@@ -130,7 +130,7 @@ override any limits used by the requested partition's QOS limits.
 <li><b>PartitionTimeLimit</b> If set, jobs using this QOS will be able to
 override the requested partition's TimeLimit.
 
-<li><b>RequiresReservaton</b> If set, jobs using this QOS must designate a
+<li><b>RequiresReservation</b> If set, jobs using this QOS must designate a
 reservation when submitting a job.  This option can be useful in
 restricting usage of a QOS that may have greater preemptive capability
 or additional resources to be allowed only within a reservation.
@@ -315,6 +315,6 @@ $ sacctmgr delete qos alligator
   alligator
 </pre>
 
-<p style="text-align: center;">Last modified 9 April 2021</p>
+<p style="text-align: center;">Last modified 2 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
