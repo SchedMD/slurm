@@ -761,8 +761,11 @@ Allow a step access to only the resources requested for the step.
 By default, all non-GRES resources on each node in the step allocation will be
 used. This option only applies to step allocations.
 .br
-\fBNOTE\fR: No other parallel step will have access to those CPUs unless
-\-\-overlap is specified.
+\fBNOTE\fR: Parallel steps will either be blocked or rejected until requested
+step resources are available unless \-\-overlap is specified. Job resources
+can be held after the completion of an srun command while Slurm does job
+cleanup. Step epilogs and/or SPANK plugins can further delay the release of
+step resources.
 
 .TP
 \fB\-\-epilog\fR=<\fIexecutable\fR>
