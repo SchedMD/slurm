@@ -12426,22 +12426,20 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			 * request.
 			 */
 			if (job_ptr->batch_flag) {
-				bitstr_t *batch_host_bitmap;
-				if (node_name2bitmap(job_ptr->batch_host, false,
-						     &batch_host_bitmap))
+				int batch_inx = node_name_get_inx(
+					job_ptr->batch_host);
+
+				if (batch_inx == -1)
 					error("%s: Invalid batch host %s for %pJ; this should never happen",
 					      __func__, job_ptr->batch_host,
 					      job_ptr);
-				else if (!bit_overlap_any(batch_host_bitmap,
-							  new_req_bitmap)) {
+				else if (!bit_test(new_req_bitmap, batch_inx)) {
 					error("%s: Batch host %s for %pJ is not in the requested node list %s. You cannot remove the batch host from a job when resizing.",
 					      __func__, job_ptr->batch_host,
 					      job_ptr, job_specs->req_nodes);
 					error_code = ESLURM_INVALID_NODE_NAME;
-					bit_free(batch_host_bitmap);
 					goto fini;
-				} else
-					bit_free(batch_host_bitmap);
+				}
 			}
 
 			sched_info("%s: setting nodes to %s for %pJ",
