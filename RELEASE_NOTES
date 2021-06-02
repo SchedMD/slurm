@@ -56,6 +56,8 @@ HIGHLIGHTS
     override.
  -- slurmd - allow multiple comma-separated controllers to be specified in
     configless mode with --conf-server
+ -- configure - add --with-systemdsystemunitdir option to automatically install
+    the Slurm unit files.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

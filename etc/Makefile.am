@@ -32,3 +32,10 @@ slurmd.service: Makefile $(srcdir)/slurmd.service.in
 
 slurmrestd.service: Makefile $(srcdir)/slurmrestd.service.in
 	$(edit) $(srcdir)/slurmrestd.service.in > slurmrestd.service
+
+if WITH_SYSTEMD_UNITS
+systemdsystemunit_DATA = slurmctld.service slurmdbd.service slurmd.service
+if WITH_SLURMRESTD
+systemdsystemunit_DATA += slurmrestd.service
+endif
+endif

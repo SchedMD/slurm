@@ -31,18 +31,23 @@ AC_DEFUN([X_AC_SYSTEMD],
 	    fi
 	    AC_SUBST(SYSTEMD_TASKSMAX_OPTION)
 
-	    # In the future we might want to enable the configure option
-	    #  --with-systemdsystemunitdir=DIR, so that users can specify
-	    # at configure time the directory to install the .service files.
-	    # https://www.freedesktop.org/software/systemd/man/daemon.html#Installing%20Systemd%20Service%20Files
-
-	    #AC_CACHE_CHECK([for systemd system unit dir],
-	    #		[_cv_systemd_systemunitdir],
-	    #		[PKG_CHECK_VAR([SYSTEMD_SYSTEM_UNIT_DIR],
-	    #				[systemd],
-	    #				[systemdsystemunitdir],
-	    #				[_cv_systemd_systemunitdir=$SYSTEMD_SYSTEM_UNIT_DIR],
-	    #				[_cv_systemd_systemunitdir=no])])
 	fi
 
+	# Adding a --with-systemdsystemunitdir option.
+	# https://www.freedesktop.org/software/systemd/man/daemon.html#Installing%20Systemd%20Service%20Files
+	AC_ARG_WITH([systemdsystemunitdir],
+		    [AS_HELP_STRING([--with-systemdsystemunitdir=DIR],
+				    [Directory for systemd service files])],,
+		    [with_systemdsystemunitdir=no])
+
+	AS_IF([test "x$with_systemdsystemunitdir" = "xyes"],
+	      [def_systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)
+	      AS_IF([test "x$def_systemdsystemunitdir" = "x"],
+		    [AC_MSG_ERROR([systemd support requested but pkg-config unable to query systemd package])])])
+
+	AS_IF([test "x$with_systemdsystemunitdir" != "xno"],
+	      [AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])])
+
+	AM_CONDITIONAL([WITH_SYSTEMD_UNITS],
+		       [test "x$with_systemdsystemunitdir" != "xno"])
 ])

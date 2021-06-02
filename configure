@@ -645,6 +645,9 @@ MUNGE_DIR
 MUNGE_LDFLAGS
 MUNGE_CPPFLAGS
 MUNGE_LIBS
+WITH_SYSTEMD_UNITS_FALSE
+WITH_SYSTEMD_UNITS_TRUE
+systemdsystemunitdir
 SYSTEMD_TASKSMAX_OPTION
 READLINE_LIBS
 HAVE_MAN2HTML
@@ -1013,6 +1016,7 @@ enable_slurmrestd
 with_slurmrestd_port
 with_netloc
 with_readline
+with_systemdsystemunitdir
 with_munge
 enable_multiple_slurmd
 with_libcurl
@@ -1768,6 +1772,8 @@ Optional Packages:
                           set slurmrestd default port [6820]
   --with-netloc=PATH      Specify path to netloc installation
   --without-readline      compile without readline support
+  --with-systemdsystemunitdir=DIR
+                          Directory for systemd service files
   --with-munge=PATH       Specify path to munge installation
   --with-libcurl=PREFIX   look for the curl library in PREFIX/lib and headers
                           in PREFIX/include
@@ -24503,19 +24509,38 @@ $as_echo "#define HAVE_SYSTEMD 1" >>confdefs.h
 	    fi
 
 
-	    # In the future we might want to enable the configure option
-	    #  --with-systemdsystemunitdir=DIR, so that users can specify
-	    # at configure time the directory to install the .service files.
-	    # https://www.freedesktop.org/software/systemd/man/daemon.html#Installing%20Systemd%20Service%20Files
-
-	    #AC_CACHE_CHECK([for systemd system unit dir],
-	    #		[_cv_systemd_systemunitdir],
-	    #		[PKG_CHECK_VAR([SYSTEMD_SYSTEM_UNIT_DIR],
-	    #				[systemd],
-	    #				[systemdsystemunitdir],
-	    #				[_cv_systemd_systemunitdir=$SYSTEMD_SYSTEM_UNIT_DIR],
-	    #				[_cv_systemd_systemunitdir=no])])
 	fi
+
+	# Adding a --with-systemdsystemunitdir option.
+	# https://www.freedesktop.org/software/systemd/man/daemon.html#Installing%20Systemd%20Service%20Files
+
+# Check whether --with-systemdsystemunitdir was given.
+if test "${with_systemdsystemunitdir+set}" = set; then :
+  withval=$with_systemdsystemunitdir;
+else
+  with_systemdsystemunitdir=no
+fi
+
+
+	if test "x$with_systemdsystemunitdir" = "xyes"; then :
+  def_systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)
+	      if test "x$def_systemdsystemunitdir" = "x"; then :
+  as_fn_error $? "systemd support requested but pkg-config unable to query systemd package" "$LINENO" 5
+fi
+fi
+
+	if test "x$with_systemdsystemunitdir" != "xno"; then :
+  systemdsystemunitdir=$with_systemdsystemunitdir
+
+fi
+
+	 if test "x$with_systemdsystemunitdir" != "xno"; then
+  WITH_SYSTEMD_UNITS_TRUE=
+  WITH_SYSTEMD_UNITS_FALSE='#'
+else
+  WITH_SYSTEMD_UNITS_TRUE='#'
+  WITH_SYSTEMD_UNITS_FALSE=
+fi
 
 
 
@@ -25423,6 +25448,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_MAN2HTML_TRUE}" && test -z "${HAVE_MAN2HTML_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_MAN2HTML\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${WITH_SYSTEMD_UNITS_TRUE}" && test -z "${WITH_SYSTEMD_UNITS_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_SYSTEMD_UNITS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_MUNGE_TRUE}" && test -z "${WITH_MUNGE_FALSE}"; then
