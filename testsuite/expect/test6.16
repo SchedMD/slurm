@@ -29,13 +29,13 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_in     "test$test_id.input"
 set job_id      0
 
 proc cleanup {} {
-	global file_in
+	global file_in job_id
 
+	cancel_job $job_id
 	exec rm -f $file_in
 }
 
@@ -70,7 +70,6 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id RUNNING] != 0} {
-	cancel_job $job_id
 	fail "Error starting job $job_id"
 }
 # Wait for job steps to begin
@@ -109,8 +108,4 @@ expect {
 }
 if {$matches != 3} {
 	fail "scancel with multiple step_id failed"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
