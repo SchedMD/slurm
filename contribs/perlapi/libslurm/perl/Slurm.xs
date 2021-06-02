@@ -1117,7 +1117,7 @@ slurm_job_step_layout_get(slurm_t self, uint32_t job_id, uint32_t step_id_in)
 		RETVAL
 
 HV *
-slurm_job_step_stat(slurm_t self, uint32_t job_id, uint32_t step_id_in, char *nodelist=NULL, uint16_t protocol_version)
+slurm_job_step_stat(slurm_t self, uint32_t job_id, uint32_t step_id_in, char *nodelist=NULL, uint16_t protocol_version=NO_VAL16)
 	PREINIT:
 		int rc;
 		job_step_stat_response_msg_t *resp_msg;
