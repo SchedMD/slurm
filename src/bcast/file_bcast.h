@@ -42,6 +42,7 @@
 
 #define BCAST_FLAG_FORCE	0x0001
 #define BCAST_FLAG_PRESERVE	0x0002
+#define BCAST_FLAG_SEND_LIBS	0x0004
 
 struct bcast_parameters {
 	uint32_t block_size;
