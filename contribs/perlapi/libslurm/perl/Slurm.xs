@@ -545,47 +545,6 @@ slurm_terminate_job_step(slurm_t self, uint32_t job_id, uint32_t step_id)
 		job_id, step_id
 
 
-#####################################################################
-MODULE=Slurm PACKAGE=Slurm::Stepctx PREFIX=slurm_step_
-
-int
-slurm_step_launch(slurm_step_ctx_t *ctx, HV *params, HV *callbacks=NULL)
-	PREINIT:
-		slurm_step_launch_params_t lp;
-		slurm_step_launch_callbacks_t *cb = NULL;
-	CODE:
-		if (hv_to_slurm_step_launch_params(params, &lp) < 0) {
-			Perl_warn( aTHX_ "failed to convert slurm_step_launch_params_t");
-			RETVAL = SLURM_ERROR;
-		} else {
-			if (callbacks) {
-				set_slcb(callbacks);
-				cb = &slcb;
-			}
-			RETVAL = slurm_step_launch(ctx, &lp, cb);
-			free_slurm_step_launch_params_memory(&lp);
-		}
-	OUTPUT:
-		RETVAL
-
-
-int
-slurm_step_launch_wait_start(slurm_step_ctx_t *ctx)
-
-void
-slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
-
-void
-slurm_step_launch_abort(slurm_step_ctx_t *ctx)
-
-void
-slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, uint16_t signo)
-
-# TODO: this function is not implemented in libslurm
-#void
-#slurm_step_launch_fwd_wake(slurm_step_ctx_t *ctx)
-
-
 ######################################################################
 #	SLURM CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 ######################################################################

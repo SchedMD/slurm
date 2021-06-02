@@ -7,7 +7,6 @@ use Carp;
 
 use Slurm::Hostlist;
 use Slurm::Bitstr;
-use Slurm::Stepctx;
 use Slurm::Constant;
 
 sub import {
@@ -1559,7 +1558,7 @@ If ':constant' if specified, all constants are exported.
 
 =head1 SEE ALSO
 
-L<Slurm::Constant>, L<Slurm::Hostlist>, L<Slurm::Stepctx>, L<Slurm::Bitstr>
+L<Slurm::Constant>, L<Slurm::Hostlist>, L<Slurm::Bitstr>
 
 <slurm/slurm.h> for various hash reference structures.
 

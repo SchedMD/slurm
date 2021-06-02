@@ -431,7 +431,6 @@ perl_sources = \
 	       $(perl_dir)/lib/Slurm/Bitstr.pm \
 	       $(perl_dir)/lib/Slurm/Constant.pm \
 	       $(perl_dir)/lib/Slurm/Hostlist.pm \
-	       $(perl_dir)/lib/Slurm/Stepctx.pm \
 	       $(perl_dir)/typemap \
 	       $(perl_dir)/classmap \
 	       $(perl_dir)/bitstr.h \
