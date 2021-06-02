@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_in     "test$test_id.input"
 set job_id      0
 
@@ -106,8 +105,4 @@ expect {
 }
 if {$matches != 3} {
 	fail "scancel with multiple step_id failed"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
