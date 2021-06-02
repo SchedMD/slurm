@@ -759,8 +759,10 @@ from command line parameters. This option applies to job allocations.
 \fB\-\-exact\fR
 Allow a step access to only the resources requested for the step.
 By default, all non-GRES resources on each node in the step allocation will be
-used. Note that no other parallel step will have access to those CPUs
-unless \-\-overlap is specified. This option applies to step allocations.
+used.
+.br
+\fBNOTE\fR: No other parallel step will have access to those CPUs unless
+\-\-overlap is specified. This option applies to step allocations.
 
 .TP
 \fB\-\-epilog\fR=<\fIexecutable\fR>
