@@ -158,6 +158,8 @@ struct slurm_cred_context {
 
 /*
  * Completion of slurm job credential type, slurm_cred_t:
+ *
+ * FIXME: 2 versions after 21.08 you can remove job_mem_limit and step_mem_limit
  */
 #define CRED_MAGIC 0x0b0b0b
 struct slurm_job_credential {
@@ -1530,8 +1532,6 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 			goto unpack_error;
 		}
 		safe_unpack16(&cred->job_core_spec, buffer);
-		safe_unpack64(&cred->job_mem_limit, buffer);
-		safe_unpack64(&cred->step_mem_limit, buffer);
 		safe_unpackstr_xmalloc(&cred->job_constraints, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->step_hostlist, &len, buffer);
 		safe_unpack16(&cred->x11, buffer);
@@ -2017,8 +2017,6 @@ static void _pack_cred(slurm_cred_t *cred, buf_t *buffer,
 		gres_step_state_pack(cred->step_gres_list, buffer,
 				     &cred->step_id, protocol_version);
 		pack16(cred->job_core_spec, buffer);
-		pack64(cred->job_mem_limit, buffer);
-		pack64(cred->step_mem_limit, buffer);
 		packstr(cred->job_constraints, buffer);
 		packstr(cred->step_hostlist, buffer);
 		pack16(cred->x11, buffer);

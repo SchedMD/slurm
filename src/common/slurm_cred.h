@@ -135,6 +135,8 @@ int slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, buf_t *buffer);
  * sock_core_rep_count is based upon the nodes allocated to the
  * JOB, but the bits set in core_bitmap are those cores allocated
  * to this STEP
+ *
+ * FIXME: 2 versions after 21.08 you can remove job_mem_limit and step_mem_limit
  */
 typedef struct {
 	slurm_step_id_t step_id;
