@@ -811,6 +811,18 @@ extern void node_fini2 (void)
 	node_record_count = 0;
 }
 
+extern int node_name_get_inx(char *node_name)
+{
+	node_record_t *node_ptr = NULL;
+
+	if (node_name)
+		node_ptr = find_node_record(node_name);
+
+	if (!node_ptr)
+		return -1;
+
+	return (node_ptr - node_record_table_ptr);
+}
 
 /*
  * node_name2bitmap - given a node name regular expression, build a bitmap

@@ -311,6 +311,11 @@ extern void init_node_conf(void);
 extern void node_fini2 (void);
 
 /*
+ * given a node name return inx in node_record_table_ptr
+ */
+extern int node_name_get_inx(char *node_name);
+
+/*
  * node_name2bitmap - given a node name regular expression, build a bitmap
  *	representation
  * IN node_names  - list of nodes
