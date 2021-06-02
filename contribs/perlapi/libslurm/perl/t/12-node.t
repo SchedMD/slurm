@@ -57,7 +57,8 @@ SKIP: {
 	$err_msg = $slurm->strerror() unless $rc == SLURM_SUCCESS;
 	ok($rc == SLURM_SUCCESS, "update node") || diag("update_node failed: $err_msg");
 
-	$rc = $slurm->update_node({node_names => $node->{name}, state => NODE_RESUME, features => 'test'});
+
+	$rc = $slurm->update_node({node_names => $node->{name}, state => NODE_RESUME, features => 'test', fetures_act => ''});
 	$err_msg = $slurm->strerror() unless $rc == SLURM_SUCCESS;
 	ok($rc == SLURM_SUCCESS, "update node") || diag("update_node failed: $err_msg");
 }
