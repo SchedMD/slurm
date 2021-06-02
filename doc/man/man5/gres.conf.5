@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "December 2020" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "May 2021" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
@@ -227,6 +227,8 @@ An optional arbitrary string identifying the type of device.
 For example, this might be used to identify a specific model of GPU, which users
 can then specify in a job request.
 If \fBType\fR is specified, then \fBCount\fR is limited in size (currently 1024).
+A restart of the \fBslurmctld\fR and \fBslurmd\fR daemons is required for changes
+to the \fBType\fR option to take effect.
 
 .SH "EXAMPLES"
 .LP
