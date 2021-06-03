@@ -1130,6 +1130,7 @@ slurm_job_step_stat(slurm_t self, uint32_t job_id, uint32_t step_id_in, char *no
 			    */
 		step_id.job_id = job_id;
 		step_id.step_id = step_id_in;
+		step_id.step_het_comp = NO_VAL;
                 rc = slurm_job_step_stat(&step_id, nodelist,
 					 protocol_version, &resp_msg);
 		if (rc == SLURM_SUCCESS) {
@@ -1161,6 +1162,7 @@ slurm_job_step_get_pids(slurm_t self, uint32_t job_id, uint32_t step_id_in, char
 			    */
 		step_id.job_id = job_id;
 		step_id.step_id = step_id_in;
+		step_id.step_het_comp = NO_VAL;
 		rc = slurm_job_step_get_pids(&step_id, nodelist, &resp_msg);
 		if (rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
