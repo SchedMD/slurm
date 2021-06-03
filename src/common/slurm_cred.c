@@ -1293,7 +1293,7 @@ extern void slurm_cred_get_mem(slurm_cred_t *cred, int node_id,
 
 	if (rep_idx < 0)
 		error("%s: node_id=%d, not found in job_mem_alloc_rep_count requested job memory not reset.",
-		      __func__, node_id);
+		      func_name, node_id);
 	else
 		*job_mem_limit = cred->job_mem_alloc[rep_idx];
 
@@ -1303,7 +1303,7 @@ extern void slurm_cred_get_mem(slurm_cred_t *cred, int node_id,
 					     node_id);
 		if (rep_idx < 0)
 			error("%s: node_id=%d, not found in step_mem_alloc_rep_count",
-			      __func__, node_id);
+			      func_name, node_id);
 		else
 			*step_mem_limit = cred->step_mem_alloc[rep_idx];
 	} else {
