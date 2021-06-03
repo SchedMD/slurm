@@ -222,9 +222,28 @@ extern void data_destroy_static(void)
 	slurm_mutex_unlock(&init_mutex);
 }
 
+static bool _plugin_loaded(const char *plugin)
+{
+	if (plugin_count <= 0)
+		return false;
+
+	for (int i = 0; i < plugin_count; i++)
+		if (!xstrcasecmp(plugin, plugin_types[i]))
+			return true;
+
+	return false;
+}
+
 static void _plugrack_foreach(const char *full_type, const char *fq_path,
 			      const plugin_handle_t id)
 {
+	if (_plugin_loaded(full_type)) {
+		log_flag(DATA, "%s: serializer plugin type %s already loaded",
+			 __func__, full_type);
+		/* effectively a no-op if already loaded */
+		return;
+	}
+
 	plugin_count++;
 	xrecalloc(plugin_handles, plugin_count, sizeof(*plugin_handles));
 	xrecalloc(plugin_types, plugin_count, sizeof(*plugin_types));
@@ -316,22 +335,31 @@ static int _register_mime_types(List mime_types_list, size_t plugin_index,
 
 static void _load_plugins(void)
 {
-	xassert(mime_types_list == NULL);
-	mime_types_list = list_create(xfree_ptr);
+	if (!mime_types_list) {
+		mime_types_list = list_create(xfree_ptr);
 
-	/* Load serializer plugins */
-	xassert(g_context_cnt == -1);
-	g_context_cnt = 0;
+		/* Load serializer plugins */
+		xassert(g_context_cnt == -1);
+		g_context_cnt = 0;
 
-	xrecalloc(plugins, (plugin_count + 1),
-		  sizeof(serializer_funcs_t));
-	xrecalloc(g_context, (plugin_count + 1), sizeof(plugin_context_t *));
+		xrecalloc(plugins, (plugin_count + 1),
+			  sizeof(serializer_funcs_t));
+		xrecalloc(g_context, (plugin_count + 1),
+			  sizeof(plugin_context_t *));
+
+	}
 
 	for (size_t i = 0; (i < plugin_count); i++) {
 		const char **mime_types;
 
 		if (plugin_handles[i] == PLUGIN_INVALID_HANDLE)
 			fatal("Invalid plugin to load?");
+
+		if (plugins[i].serialize) {
+			log_flag(DATA, "%s: serializer plugin type %s already loaded",
+				 __func__, plugin_types[i]);
+			continue;
+		}
 
 		if (plugin_get_syms(plugin_handles[i], ARRAY_SIZE(syms),
 				    syms, (void **)&plugins[g_context_cnt])
@@ -346,6 +374,10 @@ static void _load_plugins(void)
 		_register_mime_types(mime_types_list, i, mime_types);
 
 		g_context_cnt++;
+
+		if (plugins[i].serialize)
+			log_flag(DATA, "%s: serializer plugin type %s loaded",
+				 __func__, plugin_types[i]);
 	}
 }
 
@@ -357,7 +389,7 @@ extern int data_init(const char *plugin_list, plugrack_foreach_t listf)
 	slurm_mutex_lock(&init_mutex);
 
 	if (initialized)
-		goto cleanup;
+		goto load_plugins;
 	initialized = true;
 
 	if (!rc && (reg_rc = regcomp(&bool_pattern_null_re, bool_pattern_null,
@@ -390,6 +422,8 @@ extern int data_init(const char *plugin_list, plugrack_foreach_t listf)
 		rc = ESLURM_DATA_REGEX_COMPILE;
 	}
 
+load_plugins:
+
 	if (!rc && (!plugin_list || plugin_list[0] != '\0')) {
 		_find_plugins(plugin_list, listf);
 
@@ -397,7 +431,6 @@ extern int data_init(const char *plugin_list, plugrack_foreach_t listf)
 			_load_plugins();
 	}
 
-cleanup:
 	slurm_mutex_unlock(&init_mutex);
 
 	return rc;

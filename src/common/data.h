@@ -132,7 +132,8 @@ typedef data_for_each_cmd_t (*DataDictForFConst) (const char *key, const data_t 
  * Initialize static structs needed by data functions and
  * 	load serializer plugins
  *
- * WARNING: must be called only once before any data commands
+ * It is safe to call this function multiple times with different plugins as
+ * they will be loaded only once.
  *
  * IN plugins - comma delimited list of plugins or "list"
  * 	pass NULL to load all found or "" to load none of them
