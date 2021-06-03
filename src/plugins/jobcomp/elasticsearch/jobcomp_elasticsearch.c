@@ -50,6 +50,7 @@
 #include <unistd.h>
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/data.h"
 #include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/parse_time.h"
@@ -99,13 +100,6 @@ const char plugin_type[] = "jobcomp/elasticsearch";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
 #define INDEX_RETRY_INTERVAL 30
-#define JOBCOMP_DATA_FORMAT "{\"jobid\":%u,\"username\":\"%s\","	\
-	"\"user_id\":%u,\"groupname\":\"%s\",\"group_id\":%u,"		\
-	"\"@start\":\"%s\",\"@end\":\"%s\",\"elapsed\":%ld,"		\
-	"\"partition\":\"%s\",\"alloc_node\":\"%s\","			\
-	"\"nodes\":\"%s\",\"total_cpus\":%u,\"total_nodes\":%u,"	\
-	"\"derived_ec\":\"%s\",\"exit_code\":\"%s\","			\
-	"\"state\":\"%s\",\"cpu_hours\":%.6f"
 
 /* These are defined here so when we link with something other than
  * the slurmctld we will have these symbols defined. They will get
@@ -378,83 +372,6 @@ cleanup_global_init:
 	return rc;
 }
 
-static char _convert_dec_hex(char x)
-{
-	if (x <= 9)
-		x += '0';
-	else
-		x += 'A' - 10;
-
-	return x;
-}
-
-/* Escape characters according to RFC7159 and ECMA-262 11.8.4.2 */
-static char *_json_escape(const char *str)
-{
-	char *ret = NULL;
-	int i, o, len;
-
-	len = strlen(str) * 2 + 128;
-	ret = xmalloc(len);
-	for (i = 0, o = 0; str[i]; ++i) {
-		if (o >= MAX_STR_LEN) {
-			break;
-		} else if ((o + 8) >= len) {
-			len *= 2;
-			ret = xrealloc(ret, len);
-		}
-		switch (str[i]) {
-		case '\\':
-			ret[o++] = '\\';
-			ret[o++] = '\\';
-			break;
-		case '"':
-			ret[o++] = '\\';
-			ret[o++] = '\"';
-			break;
-		case '\n':
-			ret[o++] = '\\';
-			ret[o++] = 'n';
-			break;
-		case '\b':
-			ret[o++] = '\\';
-			ret[o++] = 'b';
-			break;
-		case '\f':
-			ret[o++] = '\\';
-			ret[o++] = 'f';
-			break;
-		case '\r':
-			ret[o++] = '\\';
-			ret[o++] = 'r';
-			break;
-		case '\t':
-			ret[o++] = '\\';
-			ret[o++] = 't';
-			break;
-			break;
-		case '/':
-			ret[o++] = '\\';
-			ret[o++] = '/';
-			break;
-		default:
-			/* use hex for all other control characters */
-			if (str[i] <= 0x1f || str[i] == '\'' || str[i] == '<' ||
-			    str[i] == 0x5C) {
-				ret[o++] = '\\';
-				ret[o++] = 'u';
-				ret[o++] = '0';
-				ret[o++] = '0';
-				ret[o++] =
-					_convert_dec_hex((0xf0 & str[i]) >> 4);
-				ret[o++] = _convert_dec_hex(0x0f & str[i]);
-			} else /* normal character */
-				ret[o++] = str[i];
-		}
-	}
-	return ret;
-}
-
 /* Saves the state of all jobcomp data for further indexing retries */
 static int _save_state(void)
 {
@@ -556,15 +473,16 @@ static void _make_time_str(time_t * time, char *string, int size)
 extern int jobcomp_p_log_record(job_record_t *job_ptr)
 {
 	char usr_str[32], grp_str[32], start_str[32], end_str[32], time_str[32];
-	char *json_str = NULL, *state_string = NULL;
+	char *state_string = NULL;
 	char *exit_code_str = NULL, *derived_ec_str = NULL;
 	buf_t *script;
 	enum job_states job_state;
 	int i, tmp_int, tmp_int2;
 	time_t elapsed_time;
 	uint32_t time_limit;
-	uint16_t ntasks_per_node;
 	struct job_node *jnode;
+	data_t *record = NULL;
+	int rc;
 
 	if (list_count(jobslist) > MAX_JOBS) {
 		error("%s: Limit of %d enqueued jobs in memory waiting to be indexed reached. Job %lu discarded",
@@ -631,187 +549,177 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 		tmp_int = WEXITSTATUS(job_ptr->exit_code);
 	xstrfmtcat(exit_code_str, "%d:%d", tmp_int, tmp_int2);
 
-	{
-		char *alloc_node = _json_escape(job_ptr->alloc_node);
-		char *part = _json_escape(job_ptr->partition);
+	record = data_set_dict(data_new());
 
-		json_str = xstrdup_printf(
-			JOBCOMP_DATA_FORMAT, job_ptr->job_id, usr_str,
-			job_ptr->user_id, grp_str, job_ptr->group_id, start_str,
-			end_str, elapsed_time, part, job_ptr->alloc_node,
-			job_ptr->nodes, job_ptr->total_cpus,
-			job_ptr->total_nodes, derived_ec_str, exit_code_str,
-			state_string,
-			((float) elapsed_time * (float) job_ptr->total_cpus) /
-				(float) 3600);
-
-		xfree(alloc_node);
-		xfree(part);
-	}
+	data_set_int(data_key_set(record, "jobid"), job_ptr->job_id);
+	data_set_string(data_key_set(record, "username"), usr_str);
+	data_set_int(data_key_set(record, "user_id"), job_ptr->user_id);
+	data_set_string(data_key_set(record, "groupname"), grp_str);
+	data_set_int(data_key_set(record, "group_id"), job_ptr->group_id);
+	data_set_string(data_key_set(record, "@start"), start_str);
+	data_set_string(data_key_set(record, "@end"), end_str);
+	data_set_int(data_key_set(record, "elapsed"), elapsed_time);
+	data_set_string(data_key_set(record, "partition"), job_ptr->partition);
+	data_set_string(data_key_set(record, "alloc_node"),
+			job_ptr->alloc_node);
+	data_set_string(data_key_set(record, "nodes"), job_ptr->nodes);
+	data_set_int(data_key_set(record, "total_cpus"), job_ptr->total_cpus);
+	data_set_int(data_key_set(record, "total_nodes"), job_ptr->total_nodes);
+	data_set_string_own(data_key_set(record, "derived_ec"), derived_ec_str);
+	derived_ec_str = NULL;
+	data_set_string_own(data_key_set(record, "exit_code"), exit_code_str);
+	exit_code_str = NULL;
+	data_set_string(data_key_set(record, "state"), state_string);
+	data_set_float(data_key_set(record, "cpu_hours"),
+		       ((elapsed_time * job_ptr->total_cpus) / 3600.0f));
 
 	if (job_ptr->array_task_id != NO_VAL) {
-		xstrfmtcat(json_str, ",\"array_job_id\":%lu",
-			   (unsigned long) job_ptr->array_job_id);
-		xstrfmtcat(json_str, ",\"array_task_id\":%lu",
-			   (unsigned long) job_ptr->array_task_id);
+		data_set_int(data_key_set(record, "array_job_id"),
+			     job_ptr->array_job_id);
+		data_set_int(data_key_set(record, "array_task_id"),
+			     job_ptr->array_task_id);
 	}
 
 	if (job_ptr->het_job_id != NO_VAL) {
 		/* Continue supporting the old terms. */
-		xstrfmtcat(json_str, ",\"pack_job_id\":%lu",
-			   (unsigned long) job_ptr->het_job_id);
-		xstrfmtcat(json_str, ",\"pack_job_offset\":%lu",
-			   (unsigned long) job_ptr->het_job_offset);
-		xstrfmtcat(json_str, ",\"het_job_id\":%lu",
-			   (unsigned long) job_ptr->het_job_id);
-		xstrfmtcat(json_str, ",\"het_job_offset\":%lu",
-			   (unsigned long) job_ptr->het_job_offset);
+		data_set_int(data_key_set(record, "pack_job_id"),
+			     job_ptr->het_job_id);
+		data_set_int(data_key_set(record, "pack_job_offset"),
+			     job_ptr->het_job_offset);
+		data_set_int(data_key_set(record, "het_job_id"),
+			     job_ptr->het_job_id);
+		data_set_int(data_key_set(record, "het_job_offset"),
+			     job_ptr->het_job_offset);
 	}
 
 	if (job_ptr->details && job_ptr->details->submit_time) {
 		_make_time_str(&job_ptr->details->submit_time,
 			       time_str, sizeof(time_str));
-		xstrfmtcat(json_str, ",\"@submit\":\"%s\"", time_str);
+		data_set_string(data_key_set(record, "@submit"), time_str);
 	}
 
 	if (job_ptr->details && job_ptr->details->begin_time) {
 		_make_time_str(&job_ptr->details->begin_time,
 			       time_str, sizeof(time_str));
-		xstrfmtcat(json_str, ",\"@eligible\":\"%s\"", time_str);
+		data_set_string(data_key_set(record, "@eligible"), time_str);
 		if (job_ptr->start_time) {
 			int64_t queue_wait = (int64_t)difftime(
 				job_ptr->start_time,
 				job_ptr->details->begin_time);
-			xstrfmtcat(json_str, ",\"queue_wait\":%"PRIi64,
-				   queue_wait);
+			data_set_int(data_key_set(record, "@queue_wait"),
+				     queue_wait);
 		}
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->work_dir && job_ptr->details->work_dir[0])) {
-		char *str = _json_escape(job_ptr->details->work_dir);
-		xstrfmtcat(json_str, ",\"work_dir\":\"%s\"", str);
-		xfree(str);
+		data_set_string(data_key_set(record, "work_dir"),
+				job_ptr->details->work_dir);
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->std_err && job_ptr->details->std_err[0])) {
-		char *str = _json_escape(job_ptr->details->std_err);
-		xstrfmtcat(json_str, ",\"std_err\":\"%s\"", str);
-		xfree(str);
+		data_set_string(data_key_set(record, "std_err"),
+				job_ptr->details->std_err);
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->std_in && job_ptr->details->std_in[0])) {
-		char *str = _json_escape(job_ptr->details->std_in);
-		xstrfmtcat(json_str, ",\"std_in\":\"%s\"", str);
-		xfree(str);
+		data_set_string(data_key_set(record, "std_in"),
+				job_ptr->details->std_in);
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->std_out && job_ptr->details->std_out[0])) {
-		char *str = _json_escape(job_ptr->details->std_out);
-		xstrfmtcat(json_str, ",\"std_out\":\"%s\"", str);
-		xfree(str);
+		data_set_string(data_key_set(record, "std_out"),
+				job_ptr->details->std_out);
 	}
 
 	if (job_ptr->assoc_ptr != NULL) {
-		char *str = _json_escape(job_ptr->assoc_ptr->cluster);
-		xstrfmtcat(json_str, ",\"cluster\":\"%s\"", str);
-		xfree(str);
+		data_set_string(data_key_set(record, "cluster"),
+				job_ptr->assoc_ptr->cluster);
 	}
 
 	if (job_ptr->qos_ptr != NULL) {
-		char *str = _json_escape(job_ptr->qos_ptr->name);
-		xstrfmtcat(json_str, ",\"qos\":\"%s\"", str);
-		xfree(str);
+		data_set_string(data_key_set(record, "qos"),
+				job_ptr->qos_ptr->name);
 	}
 
 	if (job_ptr->details && (job_ptr->details->num_tasks != NO_VAL)) {
-		xstrfmtcat(json_str, ",\"ntasks\":%u",
-			   job_ptr->details->num_tasks);
+		data_set_int(data_key_set(record, "ntasks"),
+			     job_ptr->details->num_tasks);
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->ntasks_per_node != NO_VAL16)) {
-		ntasks_per_node = job_ptr->details->ntasks_per_node;
-		xstrfmtcat(json_str, ",\"ntasks_per_node\":%hu",
-			   ntasks_per_node);
+		data_set_int(data_key_set(record, "ntasks_per_node"),
+			     job_ptr->details->ntasks_per_node);
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->ntasks_per_tres != NO_VAL16)) {
-		xstrfmtcat(json_str, ",\"ntasks_per_tres\":%hu",
-			   job_ptr->details->ntasks_per_tres);
+		data_set_int(data_key_set(record, "ntasks_per_tres"),
+			     job_ptr->details->ntasks_per_tres);
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->cpus_per_task != NO_VAL16)) {
-		xstrfmtcat(json_str, ",\"cpus_per_task\":%hu",
-			   job_ptr->details->cpus_per_task);
+		data_set_int(data_key_set(record, "cpus_per_task"),
+			     job_ptr->details->cpus_per_task);
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->orig_dependency
 		&& job_ptr->details->orig_dependency[0])) {
-		char *str = _json_escape(job_ptr->details->orig_dependency);
-		xstrfmtcat(json_str, ",\"orig_dependency\":\"%s\"", str);
-		xfree(str);
+		data_set_string(data_key_set(record, "orig_dependency"),
+				job_ptr->details->orig_dependency);
 	}
 
 	if (job_ptr->details
 	    && (job_ptr->details->exc_nodes
 		&& job_ptr->details->exc_nodes[0])) {
-		xstrfmtcat(json_str, ",\"excluded_nodes\":\"%s\"",
-			   job_ptr->details->exc_nodes);
+		data_set_string(data_key_set(record, "excluded_nodes"),
+				job_ptr->details->exc_nodes);
 	}
 
 	if (time_limit != INFINITE) {
-		xstrfmtcat(json_str, ",\"time_limit\":%lu",
-			   (unsigned long) time_limit * 60);
+		data_set_int(data_key_set(record, "time_limit"),
+			     (time_limit * 60));
 	}
 
 	if (job_ptr->name && job_ptr->name[0]) {
-		char *str = _json_escape(job_ptr->name);
-		xstrfmtcat(json_str, ",\"job_name\":\"%s\"", str);
-		xfree(str);
+		data_set_string(data_key_set(record, "job_name"),
+				job_ptr->name);
 	}
 
 	if (job_ptr->resv_name && job_ptr->resv_name[0]) {
-		char *str = _json_escape(job_ptr->resv_name);
-		xstrfmtcat(json_str, ",\"reservation_name\":\"%s\"", str);
-		xfree(str);
+		data_set_string(data_key_set(record, "reservation_name"),
+				job_ptr->resv_name);
 	}
 
 	if (job_ptr->wckey && job_ptr->wckey[0]) {
-		char *str = _json_escape(job_ptr->wckey);
-		xstrfmtcat(json_str, ",\"wc_key\":\"%s\"", str);
-		xfree(str);
+		data_set_string(data_key_set(record, "wc_key"), job_ptr->wckey);
 	}
 
 	if (job_ptr->tres_fmt_req_str && job_ptr->tres_fmt_req_str[0]) {
-		char *str = _json_escape(job_ptr->tres_fmt_req_str);
-		xstrfmtcat(json_str, ",\"tres_req\":\"%s\"", str);
-		xfree(str);
+		data_set_string(data_key_set(record, "tres_req"),
+				job_ptr->tres_fmt_req_str);
 	}
 
 	if (job_ptr->tres_fmt_alloc_str && job_ptr->tres_fmt_alloc_str[0]) {
-		char *str = _json_escape(job_ptr->tres_fmt_alloc_str);
-		xstrfmtcat(json_str, ",\"tres_alloc\":\"%s\"", str);
-		xfree(str);
+		data_set_string(data_key_set(record, "tres_alloc"),
+				job_ptr->tres_fmt_alloc_str);
 	}
 
 	if (job_ptr->account && job_ptr->account[0]) {
-		char *str = _json_escape(job_ptr->account);
-		xstrfmtcat(json_str, ",\"account\":\"%s\"", str);
-		xfree(str);
+		data_set_string(data_key_set(record, "account"),
+				job_ptr->account);
 	}
 
 	script = get_job_script(job_ptr);
 	if (script) {
-		char *script_str = _json_escape(script->head);
-		xstrfmtcat(json_str, ",\"script\":\"%s\"", script_str);
-		xfree(script_str);
+		data_set_string(data_key_set(record, "script"),
+				get_buf_data(script));
 	}
 	free_buf(script);
 
@@ -822,7 +730,6 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 		char *parent_accounts = NULL;
 		char **acc_aux = NULL;
 		int nparents = 0;
-		char *escaped_str = NULL;
 
 		assoc_mgr_lock(&locks);
 
@@ -845,23 +752,22 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 			xstrfmtcat(parent_accounts, "/%s", acc_aux[i]);
 		xfree(acc_aux);
 
-		escaped_str = _json_escape(parent_accounts);
-		xstrfmtcat(json_str, ",\"parent_accounts\":\"%s\"",
-			   escaped_str);
-		xfree(escaped_str);
+		data_set_string(data_key_set(record, "parent_accounts"),
+				parent_accounts);
 
 		xfree(parent_accounts);
 
 		assoc_mgr_unlock(&locks);
 	}
 
-	xfree(derived_ec_str);
-	xfree(exit_code_str);
-	xstrcat(json_str, "}");
 	jnode = xmalloc(sizeof(struct job_node));
-	jnode->serialized_job = json_str;
+
+	if ((rc = data_g_serialize(&jnode->serialized_job, record,
+				   MIME_TYPE_JSON, DATA_SER_FLAGS_COMPACT))) {
+		xfree(jnode);
+		return rc;
+	}
 	list_enqueue(jobslist, jnode);
-	json_str = NULL;
 
 	return SLURM_SUCCESS;
 }
@@ -922,7 +828,14 @@ static void _jobslist_del(void *x)
  */
 extern int init(void)
 {
+	int rc;
 	char *tmp_ptr = NULL;
+
+	if ((rc = data_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
+		error("%s: unable to load JSON serializer: %s", __func__,
+		      slurm_strerror(rc));
+		return rc;
+	}
 
 	/*                                                      12345678 */
 	if ((tmp_ptr = xstrcasestr(slurm_conf.job_comp_params, "timeout="))) {

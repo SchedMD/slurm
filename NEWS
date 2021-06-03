@@ -94,6 +94,8 @@ documents those changes that are of interest to users and administrators.
     configuration. Node must register with a valid configuration to continue.
  -- Make --cpu-bind=threads default for --threads-per-core -- cli and env can
     override.
+ -- jobcomp/elasticsearch - Use data_t to serialize data. The plugin now has the
+    JSON-C library as a prerequisite.
 
 * Changes in Slurm 20.11.8
 ==========================
