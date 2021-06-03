@@ -5434,9 +5434,6 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 	while (tok) {
 		if (xstrcasecmp(tok, "Accrue") == 0)
 			(*flags_out) |= DEBUG_FLAG_ACCRUE;
-		if (!xstrcasecmp(tok, "JobAccountGather") ||
-		    !xstrcasecmp(tok, "JAG"))
-			(*flags_out) |= DEBUG_FLAG_JAG;
 		else if (xstrcasecmp(tok, "Agent") == 0)
 			(*flags_out) |= DEBUG_FLAG_AGENT;
 		else if (xstrcasecmp(tok, "Backfill") == 0)
@@ -5499,6 +5496,9 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_INTERCONNECT;
 		else if (xstrcasecmp(tok, "Filesystem") == 0)
 			(*flags_out) |= DEBUG_FLAG_FILESYSTEM;
+		else if (!xstrcasecmp(tok, "JobAccountGather") ||
+			 !xstrcasecmp(tok, "JAG"))
+			(*flags_out) |= DEBUG_FLAG_JAG;
 		else if (xstrcasecmp(tok, "JobContainer") == 0)
 			(*flags_out) |= DEBUG_FLAG_JOB_CONT;
 		else if (xstrcasecmp(tok, "License") == 0)
