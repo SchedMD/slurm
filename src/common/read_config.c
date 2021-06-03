@@ -3607,7 +3607,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
                                       s_p_hashtbl_t *hashtbl)
 {
 	char *temp_str = NULL;
-	long long_suspend_time;
 	bool truth;
 	uint16_t uint16_tmp;
 	uint64_t def_cpu_per_gpu = 0, def_mem_per_gpu = 0, tot_prio_weight;
@@ -4825,17 +4824,13 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		conf->suspend_rate = DEFAULT_SUSPEND_RATE;
 	if (s_p_get_string(&temp_str, "SuspendTime", hashtbl)) {
 		if (!xstrcasecmp(temp_str, "NONE"))
-			long_suspend_time = -1;
+			conf->suspend_time = INFINITE;
 		else
-			long_suspend_time = atoi(temp_str);
+			 /* -1 converts to INFINITE */
+			conf->suspend_time = atoi(temp_str);
 		xfree(temp_str);
-		if (long_suspend_time < -1) {
-			error("SuspendTime value (%ld) is less than -1",
-			      long_suspend_time);
-		} else
-			conf->suspend_time = long_suspend_time + 1;
 	} else {
-		conf->suspend_time = 0;
+		conf->suspend_time = INFINITE;
 	}
 	if (!s_p_get_uint16(&conf->suspend_timeout, "SuspendTimeout", hashtbl))
 		conf->suspend_timeout = DEFAULT_SUSPEND_TIMEOUT;

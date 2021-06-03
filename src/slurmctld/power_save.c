@@ -958,7 +958,7 @@ static int _init_power_config(void)
 	     i++, node_ptr++) {
 		node_ptr->suspend_time =
 			((node_ptr->suspend_time == NO_VAL) ?
-				slurm_conf.suspend_time - 1 :
+				slurm_conf.suspend_time :
 				node_ptr->suspend_time);
 		node_ptr->suspend_timeout =
 			((node_ptr->suspend_timeout == NO_VAL16) ?
@@ -970,7 +970,8 @@ static int _init_power_config(void)
 				node_ptr->resume_timeout);
 	}
 
-	if ((slurm_conf.suspend_time - 1) < 0 && !partition_suspend_time_set) { /* not an error */
+	if ((slurm_conf.suspend_time == INFINITE) &&
+	    !partition_suspend_time_set) { /* not an error */
 		debug("power_save module disabled, SuspendTime < 0");
 		return -1;
 	}
