@@ -2651,20 +2651,16 @@ extern int _unpack_job_step_create_request_msg(
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->tres_freq, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp,
-				       buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		tmp_ptr->tres_per_step = gres_prepend_tres_type(temp_str);
 		xfree(temp_str);
-		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp,
-				       buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		tmp_ptr->tres_per_node = gres_prepend_tres_type(temp_str);
 		xfree(temp_str);
-		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp,
-				       buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		tmp_ptr->tres_per_socket = gres_prepend_tres_type(temp_str);
 		xfree(temp_str);
-		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp,
-				       buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		tmp_ptr->tres_per_task = gres_prepend_tres_type(temp_str);
 		xfree(temp_str);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
@@ -2737,20 +2733,16 @@ extern int _unpack_job_step_create_request_msg(
 				       buffer);
 		safe_unpackstr_xmalloc(&tmp_ptr->tres_freq, &uint32_tmp,
 				       buffer);
-		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp,
-				       buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		tmp_ptr->tres_per_step = gres_prepend_tres_type(temp_str);
 		xfree(temp_str);
-		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp,
-				       buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		tmp_ptr->tres_per_node = gres_prepend_tres_type(temp_str);
 		xfree(temp_str);
-		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp,
-				       buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		tmp_ptr->tres_per_socket = gres_prepend_tres_type(temp_str);
 		xfree(temp_str);
-		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp,
-				       buffer);
+		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		tmp_ptr->tres_per_task = gres_prepend_tres_type(temp_str);
 		xfree(temp_str);
 	} else {
@@ -3392,10 +3384,8 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		step->mem_per_tres = gres_prepend_tres_type(temp_str);
 		xfree(temp_str);
-		safe_unpackstr_xmalloc(&step->tres_bind,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&step->tres_freq,
-				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->tres_bind, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->tres_freq, &uint32_tmp, buffer);
 
 		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		step->tres_per_step = gres_prepend_tres_type(temp_str);
@@ -3451,10 +3441,8 @@ _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
 		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		step->mem_per_tres = gres_prepend_tres_type(temp_str);
 		xfree(temp_str);
-		safe_unpackstr_xmalloc(&step->tres_bind,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&step->tres_freq,
-				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->tres_bind, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&step->tres_freq, &uint32_tmp, buffer);
 
 		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		step->tres_per_step = gres_prepend_tres_type(temp_str);
@@ -3976,10 +3964,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		job->mem_per_tres = gres_prepend_tres_type(temp_str);
 		xfree(temp_str);
-		safe_unpackstr_xmalloc(&job->tres_bind, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&job->tres_freq, &uint32_tmp,
-				       buffer);
+		safe_unpackstr_xmalloc(&job->tres_bind, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->tres_freq, &uint32_tmp, buffer);
 
 		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		job->tres_per_job = gres_prepend_tres_type(temp_str);
@@ -4171,10 +4157,8 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		job->mem_per_tres = gres_prepend_tres_type(temp_str);
 		xfree(temp_str);
-		safe_unpackstr_xmalloc(&job->tres_bind, &uint32_tmp,
-				       buffer);
-		safe_unpackstr_xmalloc(&job->tres_freq, &uint32_tmp,
-				       buffer);
+		safe_unpackstr_xmalloc(&job->tres_bind, &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job->tres_freq, &uint32_tmp, buffer);
 
 		safe_unpackstr_xmalloc(&temp_str, &uint32_tmp, buffer);
 		job->tres_per_job = gres_prepend_tres_type(temp_str);
