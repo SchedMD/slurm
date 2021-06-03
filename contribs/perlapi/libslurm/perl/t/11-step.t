@@ -54,8 +54,8 @@ SKIP: {
 # 6
 SKIP: {
     skip "no steps in system", 1 unless @{$resp->{job_steps}};
-    my $layout = $slurm->job_step_layout_get($resp->{job_steps}->[0]->{job_id},
-					     $resp->{job_steps}->[0]->{step_id});
+    my $layout = $slurm->job_step_layout_get($resp->{job_steps}->[0]->{step_id}->{job_id},
+					     $resp->{job_steps}->[0]->{step_id}->{step_id});
     ok(ref($layout) eq "HASH" || $slurm->get_errno() == ESLURM_INVALID_JOB_ID, "job step layout get")
 	or diag("job_step_layout_get: " . $slurm->strerror());
 }
@@ -64,8 +64,8 @@ SKIP: {
 # 7
 SKIP: {
     skip "no steps in system", 1 unless @{$resp->{job_steps}};
-    my $layout = $slurm->job_step_stat($resp->{job_steps}->[0]->{job_id},
-				       $resp->{job_steps}->[0]->{step_id});
+    my $layout = $slurm->job_step_stat($resp->{job_steps}->[0]->{step_id}->{job_id},
+				       $resp->{job_steps}->[0]->{step_id}->{step_id});
     ok(ref($layout) eq "HASH" || $slurm->get_errno() == ESLURM_INVALID_JOB_ID, "job step stat")
 	or diag("job_step_stat: " . $slurm->strerror());
 }
@@ -74,8 +74,8 @@ SKIP: {
 # 8
 SKIP: {
     skip "no steps in system", 1 unless @{$resp->{job_steps}};
-    my $layout = $slurm->job_step_get_pids($resp->{job_steps}->[0]->{job_id},
-					   $resp->{job_steps}->[0]->{step_id});
+    my $layout = $slurm->job_step_get_pids($resp->{job_steps}->[0]->{step_id}->{job_id},
+					   $resp->{job_steps}->[0]->{step_id}->{step_id});
     ok(ref($layout) eq "HASH" || $slurm->get_errno() == ESLURM_INVALID_JOB_ID, "job step get pids")
 	or diag("job_step_get_pids: " . $slurm->strerror());
 }
