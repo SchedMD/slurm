@@ -1299,6 +1299,12 @@ extern void slurm_cred_get_mem(slurm_cred_t *cred, int node_id,
 	else
 		*job_mem_limit = cred->job_mem_alloc[rep_idx];
 
+	if (!step_mem_limit) {
+		log_flag(CPU_BIND, "%s: Memory extracted from credential for %ps job_mem_limit= %"PRIu64,
+			 func_name, &cred->step_id, *job_mem_limit);
+		return;
+	}
+
 	if (cred->step_mem_alloc) {
 		rep_idx = _get_rep_count_idx(cred->step_mem_alloc_rep_count,
 					     cred->step_mem_alloc_size,
@@ -1311,6 +1317,7 @@ extern void slurm_cred_get_mem(slurm_cred_t *cred, int node_id,
 	} else {
 		*step_mem_limit = *job_mem_limit;
 	}
+
 	log_flag(CPU_BIND, "Memory extracted from credential for %ps job_mem_limit= %"PRIu64" step_mem_limit=%"PRIu64,
 		 &cred->step_id, *job_mem_limit, *step_mem_limit);
 }
