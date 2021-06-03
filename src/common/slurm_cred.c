@@ -1766,59 +1766,6 @@ int slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, buf_t *buffer)
 	return SLURM_SUCCESS;
 }
 
-void
-slurm_cred_print(slurm_cred_t *cred)
-{
-	char *spec_type;
-	int spec_count;
-	int i;
-	char str[128];
-
-	if (cred == NULL)
-		return;
-
-	slurm_mutex_lock(&cred->mutex);
-
-	xassert(cred->magic == CRED_MAGIC);
-
-	if (cred->job_core_spec == NO_VAL16) {
-		spec_type  = "Cores";
-		spec_count = 0;
-	} else if (cred->job_core_spec & CORE_SPEC_THREAD) {
-		spec_type  = "Threads";
-		spec_count = cred->job_core_spec & (~CORE_SPEC_THREAD);
-	} else {
-		spec_type  = "Cores";
-		spec_count = cred->job_core_spec;
-	}
-	info("Cred: Jobid             %u",  cred->step_id.job_id);
-	info("Cred: Stepid            %u",  cred->step_id.step_id);
-	info("Cred: UID               %u",  (uint32_t) cred->uid);
-	info("Cred: Job_constraints   %s",  cred->job_constraints );
-	info("Cred: Job_core_spec     %d %s", spec_count, spec_type );
-	info("Cred: Job_mem_limit     %"PRIu64"",  cred->job_mem_limit );
-	info("Cred: Step_mem_limit    %"PRIu64"",  cred->step_mem_limit );
-	info("Cred: Step hostlist     %s",  cred->step_hostlist );
-	info("Cred: ctime             %s",  slurm_ctime2(&cred->ctime) );
-	info("Cred: siglen            %u",  cred->siglen        );
-	info("Cred: job_core_bitmap   %s",
-	     bit_fmt(str, sizeof(str), cred->job_core_bitmap));
-	info("Cred: step_core_bitmap  %s",
-	     bit_fmt(str, sizeof(str), cred->step_core_bitmap));
-	info("Cred: sockets_per_node, cores_per_socket, rep_count");
-	for (i=0; i<cred->core_array_size; i++) {
-		info("      socks:%u cores:%u reps:%u",
-		     cred->sockets_per_node[i],
-		     cred->cores_per_socket[i],
-		     cred->sock_core_rep_count[i]);
-	}
-	info("Cred: job_nhosts        %u",   cred->job_nhosts    );
-	info("Cred: job_hostlist      %s",   cred->job_hostlist  );
-
-	slurm_mutex_unlock(&cred->mutex);
-
-}
-
 static void
 _verifier_ctx_init(slurm_cred_ctx_t ctx)
 {
