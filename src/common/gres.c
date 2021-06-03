@@ -8162,7 +8162,7 @@ static int _handle_ntasks_per_tres_step(List new_step_list,
 		xstrfmtcat(gres, "gres:gpu:%u", gpus);
 		in_val = gres;
 		if (*num_tasks != ntasks_per_tres * gpus) {
-			log_flag(GRES, "%s: -n/--ntasks %u is not a multiply of --ntasks-per-gpu=%u",
+			log_flag(GRES, "%s: -n/--ntasks %u is not a multiple of --ntasks-per-gpu=%u",
 				 __func__, *num_tasks, ntasks_per_tres);
 			return ESLURM_INVALID_GRES;
 		}
