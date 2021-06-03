@@ -223,6 +223,27 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 		step_req->cpu_count =
 			opt_local->ntasks * opt_local->cpus_per_task;
 		srun_opt->exact = true;
+	} else if (opt_local->gpus_per_task && opt_local->cpus_per_gpu) {
+		char *save_ptr = NULL, *tmp_str, *tok, *sep;
+		int gpus_per_task = 0;
+
+		tmp_str = xstrdup(opt_local->gpus_per_task);
+
+		tok = strtok_r(tmp_str, ",", &save_ptr);
+		while (tok) {
+			int tmp;
+			sep = xstrchr(tok, ':');
+			if (sep)
+				tmp =+ atoi(sep + 1);
+			else
+				tmp =+ atoi(tok);
+			if (tmp > 0)
+				gpus_per_task =+ tmp;
+			tok = strtok_r(NULL, ",", &save_ptr);
+		}
+		xfree(tmp_str);
+		step_req->cpu_count = opt_local->ntasks * gpus_per_task *
+				      opt_local->cpus_per_gpu;
 	} else if (opt_local->ntasks_set) {
 		step_req->cpu_count = opt_local->ntasks;
 	} else if (use_all_cpus) {	/* job allocation created by srun */
