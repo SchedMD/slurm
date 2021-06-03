@@ -1078,27 +1078,6 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		else
 			req->x11 = 0;
 
-		if (cpu_log) {
-			char *per_job = "", *per_step = "";
-			uint64_t job_mem  = arg.job_mem_limit;
-			uint64_t step_mem = arg.step_mem_limit;
-			if (job_mem & MEM_PER_CPU) {
-				job_mem &= (~MEM_PER_CPU);
-				per_job = "_per_CPU";
-			}
-			if (step_mem & MEM_PER_CPU) {
-				step_mem &= (~MEM_PER_CPU);
-				per_step = "_per_CPU";
-			}
-			log_flag(CPU_BIND, "====================");
-			log_flag(CPU_BIND, "%ps job_mem:%"PRIu64"MB%s step_mem:%"PRIu64"MB%s",
-				 &arg.step_id,
-				 job_mem,
-				 per_job,
-				 step_mem,
-				 per_step);
-		}
-
 		hi = host_index + 1;	/* change from 0-origin to 1-origin */
 		for (i=0; hi; i++) {
 			if (hi > arg.sock_core_rep_count[i]) {
