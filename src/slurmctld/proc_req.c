@@ -771,6 +771,14 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 	cred_arg.job_core_spec   = job_ptr->details->core_spec;
 	cred_arg.job_hostlist    = job_resrcs_ptr->nodes;
 	cred_arg.job_mem_limit   = job_ptr->details->pn_min_memory;
+	if (cred_arg.job_mem_limit) {
+		slurm_array64_to_value_reps(job_resrcs_ptr->memory_allocated,
+					    job_resrcs_ptr->nhosts,
+					    &cred_arg.job_mem_alloc,
+					    &cred_arg.job_mem_alloc_rep_count,
+					    &cred_arg.job_mem_alloc_size);
+	}
+
 	cred_arg.job_nhosts      = job_resrcs_ptr->nhosts;
 	cred_arg.job_gres_list   = job_ptr->gres_list;
 	cred_arg.step_gres_list  = step_ptr->gres_list;
@@ -782,8 +790,14 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 #else
 	cred_arg.step_hostlist   = step_ptr->step_layout->node_list;
 #endif
-	if (step_ptr->pn_min_memory)
+	if (step_ptr->pn_min_memory) {
 		cred_arg.step_mem_limit  = step_ptr->pn_min_memory;
+		slurm_array64_to_value_reps(step_ptr->memory_allocated,
+					    step_ptr->step_layout->node_cnt,
+					    &cred_arg.step_mem_alloc,
+					    &cred_arg.step_mem_alloc_rep_count,
+					    &cred_arg.step_mem_alloc_size);
+	}
 
 	cred_arg.cores_per_socket    = job_resrcs_ptr->cores_per_socket;
 	cred_arg.sockets_per_node    = job_resrcs_ptr->sockets_per_node;
@@ -792,6 +806,10 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 	*slurm_cred = slurm_cred_create(slurmctld_config.cred_ctx, &cred_arg,
 					protocol_version);
 
+	xfree(cred_arg.job_mem_alloc);
+	xfree(cred_arg.job_mem_alloc_rep_count);
+	xfree(cred_arg.step_mem_alloc);
+	xfree(cred_arg.step_mem_alloc_rep_count);
 	if (*slurm_cred == NULL) {
 		error("slurm_cred_create error");
 		return ESLURM_INVALID_JOB_CREDENTIAL;

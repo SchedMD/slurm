@@ -135,6 +135,8 @@ int slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, buf_t *buffer);
  * sock_core_rep_count is based upon the nodes allocated to the
  * JOB, but the bits set in core_bitmap are those cores allocated
  * to this STEP
+ *
+ * FIXME: 2 versions after 21.08 you can remove job_mem_limit and step_mem_limit
  */
 typedef struct {
 	slurm_step_id_t step_id;
@@ -163,6 +165,10 @@ typedef struct {
 	uint64_t  job_mem_limit;	/* MB of memory reserved per node OR
 					 * real memory per CPU | MEM_PER_CPU,
 					 * default=0 (no limit) */
+
+	uint64_t *job_mem_alloc;	/* Per node allocated mem in rep.cnt. */
+	uint32_t *job_mem_alloc_rep_count;
+	uint32_t job_mem_alloc_size;	/* Size of memory arrays above */
 	uint32_t  job_nhosts;		/* count of nodes allocated to JOB */
 	List job_gres_list;		/* Generic resources allocated to JOB */
 	uint16_t  x11;			/* x11 flag set on job */
@@ -173,6 +179,10 @@ typedef struct {
 	uint64_t  step_mem_limit;	/* MB of memory reserved per node OR
 					 * real memory per CPU | MEM_PER_CPU,
 					 * default=0 (no limit) */
+	uint64_t *step_mem_alloc;	/* Per node allocated mem in rep.cnt. */
+	uint32_t *step_mem_alloc_rep_count;
+	uint32_t step_mem_alloc_size;	/* Size of memory arrays above */
+
 	List step_gres_list;		/* Generic resources allocated to STEP */
 } slurm_cred_arg_t;
 
@@ -223,6 +233,19 @@ int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg);
  */
 extern void *slurm_cred_get_arg(slurm_cred_t *cred, int cred_arg_type);
 
+/*
+ * Return index in rep_count array corresponding to absolute node index
+ * cred - job credential to use for memory setting
+ * node_id - absolute index of host
+ * func_name - name of the calling function (for logging purpose)
+ * jot_mem_limit - UPDATED job memory limit
+ * step_mem_limit - UPDATED step memory limit
+ */
+extern void slurm_cred_get_mem(slurm_cred_t *cred,
+			      int node_id,
+			      const char *func_name,
+			      uint64_t *job_mem_limit,
+			      uint64_t *step_mem_limit);
 /*
  * Verify the signed credential `cred,' and return cred contents in
  * the cred_arg structure. The credential is cached and cannot be reused.

@@ -1689,6 +1689,21 @@ extern char *slurm_get_selected_step_id(
 extern void xlate_array_task_str(char **array_task_str,
 				 uint32_t array_max_tasks, void **array_bitmap);
 
+/*
+ * slurm_array64_to_value_reps - Compress array into an array that represents
+ *                               the number of repeated values compressed.
+ *
+ * IN array - Array of values.
+ * IN array_cnt - Count of elements in 'array'.
+ * OUT values - Array of values compressed.
+ * OUT values_reps - How many each corrisponding element in 'values' there are.
+ * OUT values_cnt - Count of elements in 'values' and 'values_reps'.
+ */
+extern void slurm_array64_to_value_reps(uint64_t *array, uint32_t array_cnt,
+					uint64_t **values,
+					uint32_t **values_reps,
+					uint32_t *values_cnt);
+
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\
 		char *ptr = (char *) buf;				\

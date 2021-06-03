@@ -961,6 +961,7 @@ typedef struct {
 	jobacctinfo_t *jobacct;         /* keep track of process info in the
 					 * step */
 	char *mem_per_tres;		/* semicolon delimited list of TRES=# values */
+	uint64_t *memory_allocated;	/* per node array of memory allocated */
 	char *name;			/* name of job step */
 	char *network;			/* step's network specification */
 	uint64_t pn_min_memory;		/* minimum real memory per node OR
@@ -2821,5 +2822,15 @@ extern void crontab_add_disabled_lines(uid_t uid, int line_start, int line_end);
  * Used for <Pro|Epi>logSlurmctld and MailProg.
  */
 extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete);
+
+/*
+ * Given a full system bitmap return the nth bit set where node_name is in it
+ * IN - node_name - name of node
+ * IN - node_bitmap - full system bitmap
+ *
+ * Used when you have a job/step specific array and you want to find the index
+ * where that node is represented in that array.
+ */
+extern int job_get_node_inx(char *node_name, bitstr_t *node_bitmap);
 
 #endif /* !_HAVE_SLURMCTLD_H */

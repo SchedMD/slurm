@@ -6158,3 +6158,45 @@ out:
 	if (!array_bitmap)
 		bit_free(task_bitmap);
 }
+
+extern void slurm_array64_to_value_reps(uint64_t *array, uint32_t array_cnt,
+					uint64_t **values,
+					uint32_t **values_reps,
+					uint32_t *values_cnt)
+{
+	uint64_t prev_value = array[0];
+	int values_inx = 0;
+
+	xassert(values);
+	xassert(values_reps);
+	xassert(values_cnt);
+
+	if (!array)
+		return;
+
+	*values_cnt = 1;
+
+	/* Figure out how big the compressed arrays should be */
+	prev_value = array[0];
+	for (int i = 0; i < array_cnt; i++) {
+		if (prev_value != array[i]) {
+			prev_value = array[i];
+			(*values_cnt)++;
+		}
+	}
+
+	*values = xcalloc(*values_cnt, sizeof(**values));
+	*values_reps = xcalloc(*values_cnt, sizeof(**values_reps));
+
+	prev_value = (*values)[0] = array[0];
+	for (int i = 0; i < array_cnt; i++) {
+		if (prev_value != array[i]) {
+			prev_value = array[i];
+			values_inx++;
+			(*values)[values_inx] = array[i];
+		}
+		(*values_reps)[values_inx]++;
+	}
+
+
+}

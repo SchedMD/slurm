@@ -94,9 +94,19 @@ static void _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 	arg.job_nhosts     = node_cnt;
 	arg.job_hostlist   = ctx->step_resp->step_layout->node_list;
 	arg.job_mem_limit  = 0;
+	arg.job_mem_alloc = xmalloc(sizeof(uint64_t));
+	arg.job_mem_alloc[0] = 0;
+	arg.job_mem_alloc_rep_count = xmalloc(sizeof(uint64_t));
+	arg.job_mem_alloc_rep_count[0] = node_cnt;
+	arg.job_mem_alloc_size = 1;
 
 	arg.step_hostlist  = ctx->step_req->node_list;
 	arg.step_mem_limit = 0;
+	arg.step_mem_alloc = xmalloc(sizeof(uint64_t));
+	arg.step_mem_alloc[0] = 0;
+	arg.step_mem_alloc_rep_count = xmalloc(sizeof(uint64_t));
+	arg.step_mem_alloc_rep_count[0] = node_cnt;
+	arg.step_mem_alloc_size = 1;
 
 	arg.job_gres_list     = NULL;
 	arg.job_constraints   = NULL;

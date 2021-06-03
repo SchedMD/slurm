@@ -1974,6 +1974,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		}
 		safe_unpack16(&step_flag, buffer);
 
+		job_ptr->job_resrcs = job_resources;
 		while (step_flag == STEP_FLAG) {
 			/*
 			 * No need to put these into accounting if they
@@ -2204,6 +2205,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		}
 		safe_unpack16(&step_flag, buffer);
 
+		job_ptr->job_resrcs = job_resources;
 		while (step_flag == STEP_FLAG) {
 			/*
 			 * No need to put these into accounting if they
@@ -18894,4 +18896,34 @@ extern char **job_common_env_vars(job_record_t *job_ptr, bool is_complete)
 	}
 
 	return my_env;
+}
+
+extern int job_get_node_inx(char *node_name, bitstr_t *node_bitmap)
+{
+	int node_inx = -1, i_first, i_last = -2;
+	int node_cnt = 0;
+
+	if (!node_name)
+		return -1;
+
+	xassert(node_bitmap);
+
+	node_inx = node_name_get_inx(node_name);
+	if (node_inx == -1)
+		return -1;
+
+	i_first = bit_ffs(node_bitmap);
+	i_last = -2;
+
+	if (i_first != -1)
+		i_last = bit_fls(node_bitmap);
+
+	for (int i = i_first; i <= i_last; i++) {
+		if (!bit_test(node_bitmap, i))
+			continue;
+		if (i == node_inx)
+			break;
+		node_cnt++;
+	}
+	return node_cnt;
 }

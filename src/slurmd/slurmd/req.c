@@ -946,7 +946,6 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	uint32_t	stepid = req->step_id.step_id;
 	int		tasks_to_launch = req->tasks_to_launch[node_id];
 	uint32_t	job_cpus = 0, step_cpus = 0;
-	uint32_t	job_cpus_for_mem = 0, step_cpus_for_mem = 0;
 
 	if (req->flags & LAUNCH_NO_ALLOC) {
 		if (super_user) {
@@ -968,6 +967,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	 */
 	if (slurm_cred_verify(conf->vctx, cred, &arg, protocol_version) < 0)
 		return SLURM_ERROR;
+	xassert(arg.job_mem_alloc);
 
 	if ((arg.step_id.job_id != jobid) || (arg.step_id.step_id != stepid)) {
 		error("job credential for %ps, expected %ps",
@@ -1078,25 +1078,6 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		else
 			req->x11 = 0;
 
-		if (cpu_log) {
-			char *per_job = "", *per_step = "";
-			uint64_t job_mem  = arg.job_mem_limit;
-			uint64_t step_mem = arg.step_mem_limit;
-			if (job_mem & MEM_PER_CPU) {
-				job_mem &= (~MEM_PER_CPU);
-				per_job = "_per_CPU";
-			}
-			if (step_mem & MEM_PER_CPU) {
-				step_mem &= (~MEM_PER_CPU);
-				per_step = "_per_CPU";
-			}
-			info("====================");
-			info("%ps job_mem:%"PRIu64"MB%s "
-			     "step_mem:%"PRIu64"MB%s",
-			     &arg.step_id, job_mem, per_job,
-			     step_mem, per_step);
-		}
-
 		hi = host_index + 1;	/* change from 0-origin to 1-origin */
 		for (i=0; hi; i++) {
 			if (hi > arg.sock_core_rep_count[i]) {
@@ -1126,12 +1107,12 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 				who_has = "Step";
 			}
 			if (cpu_log && who_has) {
-				info("JobNode[%u] CPU[%u] %s alloc",
-				     host_index, j, who_has);
+				log_flag(CPU_BIND, "JobNode[%u] CPU[%u] %s alloc",
+					 host_index, j, who_has);
 			}
 		}
 		if (cpu_log)
-			info("====================");
+			log_flag(CPU_BIND, "====================");
 		if (step_cpus == 0) {
 			error("cons_res: zero processors allocated to step");
 			step_cpus = 1;
@@ -1141,24 +1122,16 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		if (i_last_bit <= i_first_bit)
 			error("step credential has no CPUs selected");
 		else {
-			uint16_t scale_for_mem;
 			i = conf->cpus / (i_last_bit - i_first_bit);
-			if (req->threads_per_core &&
-			    (req->threads_per_core != NO_VAL16) &&
-			    (req->threads_per_core < conf->threads))
-				scale_for_mem = req->threads_per_core;
-			else
-				scale_for_mem = i;
 			if (i > 1) {
 				if (cpu_log)
-					info("Scaling CPU count by factor of "
-					     "%d (%u/(%u-%u))",
-					     i, conf->cpus,
-					     i_last_bit, i_first_bit);
+					log_flag(CPU_BIND, "Scaling CPU count by factor of %d (%u/(%u-%u))",
+						 i,
+						 conf->cpus,
+						 i_last_bit,
+						 i_first_bit);
 				step_cpus *= i;
-				step_cpus_for_mem *= scale_for_mem;
 				job_cpus *= i;
-				job_cpus_for_mem *= scale_for_mem;
 			}
 		}
 		if (tasks_to_launch > step_cpus) {
@@ -1174,36 +1147,16 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 		job_cpus  = 1;
 	}
 
-	/* Overwrite any memory limits in the RPC with contents of the
+	/*
+	 * Overwrite any memory limits in the RPC with contents of the
 	 * memory limit within the credential.
-	 * Reset the CPU count on this node to correct value. */
-	if (arg.step_mem_limit) {
-		if (arg.step_mem_limit & MEM_PER_CPU) {
-			req->step_mem_lim  = arg.step_mem_limit &
-				(~MEM_PER_CPU);
-			req->step_mem_lim *= step_cpus_for_mem;
-		} else
-			req->step_mem_lim  = arg.step_mem_limit;
-	} else {
-		if (arg.job_mem_limit & MEM_PER_CPU) {
-			req->step_mem_lim  = arg.job_mem_limit &
-				(~MEM_PER_CPU);
-			req->step_mem_lim *= job_cpus_for_mem;
-		} else
-			req->step_mem_lim  = arg.job_mem_limit;
-	}
-	if (arg.job_mem_limit & MEM_PER_CPU) {
-		req->job_mem_lim  = arg.job_mem_limit & (~MEM_PER_CPU);
-		req->job_mem_lim *= job_cpus_for_mem;
-	} else
-		req->job_mem_lim  = arg.job_mem_limit;
+	 */
+	slurm_cred_get_mem(cred, node_id, __func__, &req->job_mem_lim,
+			   &req->step_mem_lim);
+
+	/* Reset the CPU count on this node to correct value. */
 	req->job_core_spec = arg.job_core_spec;
 	req->node_cpus = step_cpus;
-#if 0
-	info("%ps node_id:%d mem orig:%"PRIu64" cpus:%u limit:%"PRIu64"",
-	     &req->step_id, node_id, arg.job_mem_limit,
-	     step_cpus, req->job_mem_lim);
-#endif
 
 	*step_hset = s_hset;
 	slurm_cred_free_args(&arg);
@@ -1799,9 +1752,6 @@ _get_user_env(batch_job_launch_msg_t *req)
 static void
 _set_batch_job_limits(slurm_msg_t *msg)
 {
-	int i;
-	uint32_t alloc_lps = 0, last_bit = 0;
-	bool cpu_log = slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND;
 	slurm_cred_arg_t arg;
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
 
@@ -1809,52 +1759,8 @@ _set_batch_job_limits(slurm_msg_t *msg)
 		return;
 	req->job_core_spec = arg.job_core_spec;	/* Prevent user reset */
 
-	if (cpu_log) {
-		char *per_job = "";
-		uint64_t job_mem  = arg.job_mem_limit;
-		if (job_mem & MEM_PER_CPU) {
-			job_mem &= (~MEM_PER_CPU);
-			per_job = "_per_CPU";
-		}
-		info("====================");
-		info("batch_job:%u job_mem:%"PRIu64"MB%s", req->job_id,
-		     job_mem, per_job);
-	}
-	if (cpu_log || (arg.job_mem_limit & MEM_PER_CPU)) {
-		if (arg.job_nhosts > 0) {
-			last_bit = arg.sockets_per_node[0] *
-				arg.cores_per_socket[0];
-			for (i=0; i<last_bit; i++) {
-				if (!bit_test(arg.job_core_bitmap, i))
-					continue;
-				if (cpu_log)
-					info("JobNode[0] CPU[%u] Job alloc",i);
-				alloc_lps++;
-			}
-		}
-		if (cpu_log)
-			info("====================");
-		if (alloc_lps == 0) {
-			error("_set_batch_job_limit: alloc_lps is zero");
-			alloc_lps = 1;
-		}
-
-		/* NOTE: alloc_lps is the count of allocated resources
-		 * (typically cores). Convert to CPU count as needed */
-		if (last_bit < 1)
-			error("Batch job credential allocates no CPUs");
-		else {
-			i = conf->cpus / last_bit;
-			if (i > 1)
-				alloc_lps *= i;
-		}
-	}
-
-	if (arg.job_mem_limit & MEM_PER_CPU) {
-		req->job_mem = arg.job_mem_limit & (~MEM_PER_CPU);
-		req->job_mem *= alloc_lps;
-	} else
-		req->job_mem = arg.job_mem_limit;
+	/* We only should ever have 1 in here so just get the first */
+	slurm_cred_get_mem(req->cred, 0, __func__, &req->job_mem, NULL);
 
 	/*
 	 * handle x11 settings here since this is the only access to the cred
@@ -1931,8 +1837,7 @@ static int _convert_job_mem(slurm_msg_t *msg)
 	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
 	slurm_cred_arg_t arg;
 	hostset_t j_hset = NULL;
-	int rc, hi, host_index, job_cpus;
-	int i, i_first_bit = 0, i_last_bit = 0;
+	int rc, host_index;
 
 	rc = slurm_cred_verify(conf->vctx, req->cred, &arg,
 			       msg->protocol_version);
@@ -1949,61 +1854,16 @@ static int _convert_job_mem(slurm_msg_t *msg)
 
 	req->nnodes = arg.job_nhosts;
 
-	if (arg.job_mem_limit == 0)
-		goto fini;
-	if ((arg.job_mem_limit & MEM_PER_CPU) == 0) {
-		req->job_mem_limit = arg.job_mem_limit;
-		goto fini;
-	}
-
-	/* Assume 1 CPU on error */
-	req->job_mem_limit = arg.job_mem_limit & (~MEM_PER_CPU);
-
 	if (!(j_hset = hostset_create(arg.job_hostlist))) {
 		error("%s: Unable to parse credential hostlist: `%s'",
-		      __func__, arg.step_hostlist);
+		      __func__, arg.job_hostlist);
 		goto fini;
 	}
 	host_index = hostset_find(j_hset, conf->node_name);
 	hostset_destroy(j_hset);
 
-	hi = host_index + 1;	/* change from 0-origin to 1-origin */
-	for (i = 0; hi; i++) {
-		if (hi > arg.sock_core_rep_count[i]) {
-			i_first_bit += arg.sockets_per_node[i] *
-				arg.cores_per_socket[i] *
-				arg.sock_core_rep_count[i];
-			i_last_bit = i_first_bit +
-				arg.sockets_per_node[i] *
-				arg.cores_per_socket[i] *
-				arg.sock_core_rep_count[i];
-			hi -= arg.sock_core_rep_count[i];
-		} else {
-			i_first_bit += arg.sockets_per_node[i] *
-				arg.cores_per_socket[i] * (hi - 1);
-			i_last_bit = i_first_bit +
-				arg.sockets_per_node[i] *
-				arg.cores_per_socket[i];
-			break;
-		}
-	}
-
-	/* Now count the allocated processors on this node */
-	job_cpus = 0;
-	for (i = i_first_bit; i < i_last_bit; i++) {
-		if (bit_test(arg.job_core_bitmap, i))
-			job_cpus++;
-	}
-
-	/* NOTE: alloc_lps is the count of allocated resources
-	 * (typically cores). Convert to CPU count as needed */
-	if (i_last_bit > i_first_bit) {
-		i = conf->cpus / (i_last_bit - i_first_bit);
-		if (i > 1)
-			job_cpus *= i;
-	}
-
-	req->job_mem_limit *= job_cpus;
+	slurm_cred_get_mem(req->cred, host_index, __func__, &req->job_mem_limit,
+			   NULL);
 
 fini:	slurm_cred_free_args(&arg);
 	return SLURM_SUCCESS;
