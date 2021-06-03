@@ -1914,7 +1914,7 @@ static int _convert_job_mem(slurm_msg_t *msg)
 
 	if (!(j_hset = hostset_create(arg.job_hostlist))) {
 		error("%s: Unable to parse credential hostlist: `%s'",
-		      __func__, arg.step_hostlist);
+		      __func__, arg.job_hostlist);
 		goto fini;
 	}
 	host_index = hostset_find(j_hset, conf->node_name);
