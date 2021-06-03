@@ -90,7 +90,7 @@ bool power_save_enabled = false;
 bool power_save_started = false;
 bool power_save_debug = false;
 
-int suspend_rate, resume_timeout, resume_rate, suspend_timeout;
+int suspend_rate, resume_rate, max_timeout;
 char *suspend_prog = NULL, *resume_prog = NULL, *resume_fail_prog = NULL;
 char *exc_nodes = NULL, *exc_parts = NULL;
 time_t last_config = (time_t) 0;
@@ -750,11 +750,10 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id) //us
 /* reap child processes previously forked to modify node state. */
 static void _reap_procs(void)
 {
-	int delay, max_timeout, rc, status;
+	int delay, rc, status;
 	ListIterator iter;
 	proc_track_struct_t *proc_track;
 
-	max_timeout = MAX(suspend_timeout, resume_timeout);
 	iter = list_iterator_create(proc_track_list);
 	while ((proc_track = list_next(iter))) {
 		rc = waitpid(proc_track->child_pid, &status, WNOHANG);
@@ -818,17 +817,16 @@ static int  _kill_procs(void)
 /* shutdown power save daemons */
 static void _shutdown_power(void)
 {
-	int i, proc_cnt, max_timeout;
+	int i, proc_cnt, shutdown_timeout;
 
-	max_timeout = MAX(suspend_timeout, resume_timeout);
-	max_timeout = MIN(max_timeout, MAX_SHUTDOWN_DELAY);
+	shutdown_timeout = MIN(max_timeout, MAX_SHUTDOWN_DELAY);
 	/* Try to avoid orphan processes */
 	for (i = 0; ; i++) {
 		_reap_procs();
 		proc_cnt = list_count(proc_track_list);
 		if (proc_cnt == 0)	/* all procs completed */
 			break;
-		if (i >= max_timeout) {
+		if (i >= shutdown_timeout) {
 			error("power_save: orphaning %d processes which are "
 			      "not terminating so slurmctld can exit",
 			      proc_cnt);
@@ -861,6 +859,13 @@ static int _set_partition_options(void *x, void *arg)
 	part_record_t *part_ptr = (part_record_t *)x;
 	node_record_t *node_ptr;
 	int i;
+
+	if (part_ptr->resume_timeout != NO_VAL16)
+		max_timeout = MAX(max_timeout, part_ptr->resume_timeout);
+
+	if (part_ptr->suspend_timeout != NO_VAL16)
+		max_timeout = MAX(max_timeout, part_ptr->resume_timeout);
+
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
 	     i++, node_ptr++) {
 		if (!bit_test(part_ptr->node_bitmap, i))
@@ -904,10 +909,10 @@ static int _init_power_config(void)
 	last_work_scan  = 0;
 	last_log	= 0;
 	suspend_rate = slurm_conf.suspend_rate;
-	resume_timeout = slurm_conf.resume_timeout;
 	resume_rate = slurm_conf.resume_rate;
 	slurmd_timeout = slurm_conf.slurmd_timeout;
-	suspend_timeout = slurm_conf.suspend_timeout;
+	max_timeout = MAX(slurm_conf.suspend_timeout,
+			  slurm_conf.resume_timeout);
 	_clear_power_config();
 	if (slurm_conf.suspend_program)
 		suspend_prog = xstrdup(slurm_conf.suspend_program);
