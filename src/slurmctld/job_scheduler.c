@@ -2639,11 +2639,20 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	cred_arg.job_core_spec       = job_ptr->details->core_spec;
 	cred_arg.job_mem_limit       = job_ptr->details->pn_min_memory;
 	if (cred_arg.job_mem_limit) {
-		slurm_array64_to_value_reps(job_resrcs_ptr->memory_allocated,
-					    job_resrcs_ptr->nhosts,
-					    &cred_arg.job_mem_alloc,
-					    &cred_arg.job_mem_alloc_rep_count,
-					    &cred_arg.job_mem_alloc_size);
+		int batch_inx = job_get_node_inx(
+			job_ptr->batch_host, job_ptr->node_bitmap);
+
+		if (batch_inx == -1) {
+			error("%s: Invalid batch host %s for %pJ; this should never happen",
+			      __func__, job_ptr->batch_host, job_ptr);
+			batch_inx = 0;
+		}
+		cred_arg.job_mem_alloc = xmalloc(sizeof(uint64_t));
+		cred_arg.job_mem_alloc[0] =
+			job_resrcs_ptr->memory_allocated[batch_inx];
+		cred_arg.job_mem_alloc_rep_count = xmalloc(sizeof(uint64_t));
+		cred_arg.job_mem_alloc_rep_count[0] = 1;
+		cred_arg.job_mem_alloc_size = 1;
 	}
 	cred_arg.job_nhosts          = job_resrcs_ptr->nhosts;
 	cred_arg.job_gres_list       = job_ptr->gres_list;

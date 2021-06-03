@@ -1754,25 +1754,14 @@ _set_batch_job_limits(slurm_msg_t *msg)
 {
 	slurm_cred_arg_t arg;
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
-	hostset_t j_hset = NULL;
-	int host_index = 0;
 
 	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS)
 		return;
 	req->job_core_spec = arg.job_core_spec;	/* Prevent user reset */
 
-	if (!(j_hset = hostset_create(arg.job_hostlist))) {
-		/* This should never happen - indicates a bug */
-		error("%s: Unable to parse credentail hostlist: '%s', assuming host_index = 0.",
-		      __func__, arg.job_hostlist);
-		host_index = 0;
-	} else {
-		host_index = hostset_find(j_hset, conf->node_name);
-		hostset_destroy(j_hset);
-	}
+	/* We only should ever have 1 in here so just get the first */
+	slurm_cred_get_mem(req->cred, 0, __func__, &req->job_mem, NULL);
 
-	slurm_cred_get_mem(req->cred, host_index, __func__, &req->job_mem,
-			   NULL);
 	/*
 	 * handle x11 settings here since this is the only access to the cred
 	 * on the batch step.
