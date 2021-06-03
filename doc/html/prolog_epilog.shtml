@@ -322,6 +322,10 @@ sets an environment variable for the user task<br>
 clears an environment variable from the user task<br>
 <span class="commandline">print ...</span>
 writes to the task's standard output.<br>
+Special treatment is given to the <b>SLURM_PROLOG_CPU_MASK</b> variable when
+set in the task prolog. The variable is interpreted as a coma separated list
+of hex maps. It allows you to specify the CPU(s) that will be bound to a
+task and is applied using sched_setaffinity.
 The above functionality is limited to the task prolog script.</p>
 
 <p>Unless otherwise specified, these environment variables are available
@@ -658,6 +662,6 @@ the job to be requeued. Only batch jobs can be requeued. Interactive jobs
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 28 April 2021</p>
+<p style="text-align:center;">Last modified 8 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
