@@ -302,7 +302,7 @@ static int _index_job(const char *jobcomp)
 		goto cleanup_easy_init;
 	}
 
-	slist = curl_slist_append(slist, "Content-Type: application/json");
+	slist = curl_slist_append(slist, "Content-Type: " MIME_TYPE_JSON);
 
 	if (slist == NULL) {
 		error("%s: curl_slist_append: %m", plugin_type);
