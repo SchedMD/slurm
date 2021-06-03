@@ -1157,11 +1157,6 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	/* Reset the CPU count on this node to correct value. */
 	req->job_core_spec = arg.job_core_spec;
 	req->node_cpus = step_cpus;
-#if 0
-	info("%ps node_id:%d mem orig:%"PRIu64" cpus:%u limit:%"PRIu64"",
-	     &req->step_id, node_id, arg.job_mem_limit,
-	     step_cpus, req->job_mem_lim);
-#endif
 
 	*step_hset = s_hset;
 	slurm_cred_free_args(&arg);
