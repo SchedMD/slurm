@@ -141,6 +141,11 @@ typedef data_for_each_cmd_t (*DataDictForFConst) (const char *key, const data_t 
  * RET SLURM_SUCCESS or error
  */
 extern int data_init(const char *plugins, plugrack_foreach_t listf);
+/*
+ * Cleanup static structs needed by data functions and load serializer plugins
+ *
+ * WARNING: must be called only once after all data commands complete
+ */
 extern void data_destroy_static(void);
 
 /*
