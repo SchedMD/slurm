@@ -6164,7 +6164,7 @@ extern void slurm_array64_to_value_reps(uint64_t *array, uint32_t array_cnt,
 					uint32_t **values_reps,
 					uint32_t *values_cnt)
 {
-	uint64_t prev_value = array[0];
+	uint64_t prev_value;
 	int values_inx = 0;
 
 	xassert(values);
