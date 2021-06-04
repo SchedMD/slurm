@@ -2629,8 +2629,11 @@ _slurmd_job_log_init(stepd_step_rec_t *job)
 		}
 	}
 
-	verbose("debug level is '%s'",
-		log_num2string(conf->log_opts.stderr_level));
+	verbose("debug levels are stderr='%s', logfile='%s', syslog='%s'",
+		log_num2string(conf->log_opts.stderr_level),
+		log_num2string(conf->log_opts.logfile_level),
+		log_num2string(conf->log_opts.syslog_level));
+
 	return SLURM_SUCCESS;
 }
 

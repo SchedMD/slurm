@@ -306,7 +306,8 @@ static slurmd_conf_t *read_slurmd_conf_lite(int fd)
 	 */
 	log_alter(confl->log_opts, 0, confl->logfile);
 	log_set_timefmt(slurm_conf.log_fmt);
-	debug2("debug level is '%s'.", log_num2string(confl->debug_level));
+	debug2("debug level read from slurmd is '%s'.",
+		log_num2string(confl->debug_level));
 
 	confl->acct_freq_task = NO_VAL16;
 	tmp_int = acct_gather_parse_freq(PROFILE_TASK,
