@@ -246,6 +246,7 @@ extern int container_p_restore(char *dir_name, bool recover)
 	DIR *dp;
 	struct dirent *ep;
 	List steps;
+	int rc = SLURM_SUCCESS;
 
 #ifdef HAVE_NATIVE_CRAY
 	return SLURM_SUCCESS;
@@ -347,18 +348,16 @@ extern int container_p_restore(char *dir_name, bool recover)
 	}
 
 	while ((ep = readdir(dp))) {
-		if (_restore_ns(jc_conf->basepath, ep->d_name)) {
-			error("%s: Directory traversal failed: %s: %s",
-			      __func__, jc_conf->basepath, strerror(errno));
-			closedir(dp);
-			FREE_NULL_LIST(running_job_ids);
-			return SLURM_ERROR;
-		}
+		if (_restore_ns(jc_conf->basepath, ep->d_name))
+			rc = SLURM_ERROR;
 	}
 	closedir(dp);
 	FREE_NULL_LIST(running_job_ids);
 
-	return SLURM_SUCCESS;
+	if (rc)
+		error("Encountered an error while restoring job containers.");
+
+	return rc;
 }
 
 static int _mount_private_tmp(char *path)
