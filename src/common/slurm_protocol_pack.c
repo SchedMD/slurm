@@ -11910,6 +11910,7 @@ static void _pack_file_bcast(file_bcast_msg_t * msg , buf_t *buffer,
 		pack16(msg->compress, buffer);
 		pack16(msg->last_block, buffer);
 		pack16(msg->force, buffer);
+		pack16(msg->flags, buffer);
 		pack16(msg->modes, buffer);
 
 		pack32(msg->uid, buffer);
@@ -11966,6 +11967,7 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , buf_t *buffer,
 		safe_unpack16(&msg->compress, buffer);
 		safe_unpack16(&msg->last_block, buffer);
 		safe_unpack16(&msg->force, buffer);
+		safe_unpack16(&msg->flags, buffer);
 		safe_unpack16(&msg->modes, buffer);
 
 		safe_unpack32(&msg->uid, buffer);

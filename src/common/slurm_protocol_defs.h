@@ -1196,6 +1196,7 @@ typedef struct file_bcast_msg {
 	uint16_t last_block;	/* last block of bcast if set (flag) */
 	uint16_t force;		/* replace existing file if set (flag) */
 	uint16_t compress;	/* compress file if set, use compress_type */
+	uint16_t flags;		/* flags from file_bcast_flags_t */
 	uint16_t modes;		/* access rights for destination file */
 	uint32_t uid;		/* owner for destination file */
 	char *user_name;
