@@ -160,6 +160,7 @@ extern bool acct_policy_job_time_out(job_record_t *job_ptr);
  * acct_policy_handle_accrue_time - Set accrue time if we are under a limit.  If
  * we are a task array we will also split off things to handle them
  * individually.
+ * NOTE: Accrue limits are *not* checked for partition QOS.
  */
 extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 					  bool assoc_mgr_locked);
@@ -167,10 +168,12 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 /*
  * acct_policy_add_accrue_time - Implicitly add job to the accrue_cnt of the
  * assoc and QOS of the job/part.
+ * NOTE: Accrue limits are *not* checked for partition QOS.
  */
 extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 					bool assoc_mgr_locked);
 
+/* NOTE: Accrue limits are *not* checked for partition QOS. */
 extern void acct_policy_remove_accrue_time(job_record_t *job_ptr,
 					   bool assoc_mgr_locked);
 

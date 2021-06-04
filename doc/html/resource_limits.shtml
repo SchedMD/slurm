@@ -185,6 +185,8 @@ list) as in the following examples: </p>
   until after previous jobs are removed from pending in this group.
   This limit does not determine if the job can run or not, it only limits the
   age factor of the priority.
+  When set on a QOS, this limit only applies to the job's QOS and not the
+  partition's QOS.
 </li>
 
 <li><b>GrpSubmitJobs=</b> The total number of jobs able to be submitted

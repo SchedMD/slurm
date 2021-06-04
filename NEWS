@@ -170,6 +170,7 @@ documents those changes that are of interest to users and administrators.
  -- RSMI: Add gres_links_create_empty() and preserve RSMI enumeration order.
  -- GPUs: Use index instead of dev_num for CUDA_VISIBLE_DEVICES
  -- Don't run epilog on nodes if job never launched.
+ -- QOS accrue limits only apply to the job QOS, not partition QOS.
 
 * Changes in Slurm 20.11.9
 ==========================

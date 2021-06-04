@@ -98,6 +98,7 @@ HIGHLIGHTS
     EpilogSlurmctld. This avoids fork() calls from slurmctld, and can avoid
     performance issues if the slurmctld has a large memory footprint.
  -- Pass JSON of job to node mappings to ResumeProgram.
+ -- QOS accrue limits only apply to the job QOS, not partition QOS.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
