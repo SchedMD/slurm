@@ -765,6 +765,7 @@ job_rec_to_hv(slurmdb_job_rec_t* rec, HV* hv)
     STORE_FIELD(hv, rec, tot_cpu_usec,    uint32_t);
     STORE_FIELD(hv, rec, track_steps,     uint16_t);
     STORE_FIELD(hv, rec, tres_alloc_str,  charp);
+    STORE_FIELD(hv, rec, tres_req_str,    charp);
     STORE_FIELD(hv, rec, uid,             uint32_t);
     STORE_FIELD(hv, rec, used_gres,       charp);
     STORE_FIELD(hv, rec, user,            charp);
