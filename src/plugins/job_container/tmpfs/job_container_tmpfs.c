@@ -153,7 +153,7 @@ static int _append_job_in_list(void *element, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static int _restore_ns(const char *basepath, const char *d_name)
+static int _restore_ns(const char *d_name)
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t job_id;
@@ -166,7 +166,7 @@ static int _restore_ns(const char *basepath, const char *d_name)
 	}
 
 	if (snprintf(ns_holder, PATH_MAX, "%s/%s/.ns",
-		     basepath, d_name) >= PATH_MAX) {
+		     jc_conf->basepath, d_name) >= PATH_MAX) {
 		error("%s: Unable to build ns_holder path for %s: %m",
 		      __func__, d_name);
 		rc = SLURM_ERROR;
@@ -348,7 +348,7 @@ extern int container_p_restore(char *dir_name, bool recover)
 	}
 
 	while ((ep = readdir(dp))) {
-		if (_restore_ns(jc_conf->basepath, ep->d_name))
+		if (_restore_ns(ep->d_name))
 			rc = SLURM_ERROR;
 	}
 	closedir(dp);
