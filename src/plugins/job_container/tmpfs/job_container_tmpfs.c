@@ -157,33 +157,23 @@ static int _restore_ns(const char *d_name)
 {
 	int rc = SLURM_SUCCESS;
 	uint32_t job_id;
-	char ns_holder[PATH_MAX];
-	struct stat stat_buf;
 
 	if (!(job_id = slurm_atoul(d_name))) {
 		debug3("ignoring %s, could not convert to jobid.", d_name);
 		return SLURM_SUCCESS;
 	}
 
-	if (snprintf(ns_holder, PATH_MAX, "%s/%s/.ns",
-		     jc_conf->basepath, d_name) >= PATH_MAX) {
-		error("%s: Unable to build ns_holder path for %s: %m",
-		      __func__, d_name);
+	/* here we think this is a job container */
+	debug3("attempting to restore namespace for job %u", job_id);
+	if (_create_ns(job_id, true)) {
+		error("%s: failed to restore namespace for %u",
+		      __func__, job_id);
 		rc = SLURM_ERROR;
-	} else if (stat(ns_holder, &stat_buf) < 0) {
-		debug3("ignoring wrong ns_holder path %s: %m", ns_holder);
-	} else {
-		/* here we think this is a job container */
-		debug3("attempting to restore %s", ns_holder);
-		if (_create_ns(job_id, true)) {
-			error("%s: failed to restore namespace for %d",
-			      __func__, job_id);
-			rc = SLURM_ERROR;
-		} else if (!list_find_first(running_job_ids,
-					    (ListFindF)_find_job_id_in_list,
-					    &job_id))
-			rc = _delete_ns(job_id);
-	}
+	} else if (!list_find_first(running_job_ids,
+				    (ListFindF)_find_job_id_in_list,
+				    &job_id))
+		rc = _delete_ns(job_id);
+
 	return rc;
 }
 
@@ -483,9 +473,13 @@ static int _create_ns(uint32_t job_id, bool remount)
 
 	fd = open(ns_holder, O_CREAT|O_RDWR, S_IRWXU);
 	if (fd == -1) {
-		error("%s: open failed %s: %s",
-		      __func__, ns_holder, strerror(errno));
-		rc = -1;
+		if (!remount) {
+			error("%s: open failed %s: %s",
+			      __func__, ns_holder, strerror(errno));
+			rc = -1;
+		} else
+			debug3("ignoring wrong ns_holder path %s: %m",
+			       ns_holder);
 		goto exit2;
 	}
 	close(fd);
