@@ -4100,7 +4100,7 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 						     &cred_arg->gids);
 
 	flags = O_WRONLY | O_CREAT;
-	if (req->force)
+	if (req->flags & FILE_BCAST_FORCE)
 		flags |= O_TRUNC;
 	else
 		flags |= O_EXCL;
