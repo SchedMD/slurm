@@ -6886,7 +6886,8 @@ static sock_gres_t *_build_sock_gres_by_topo(
 	gres_node_state_t *alt_node_gres_ptr,
 	uint32_t user_id, const uint32_t node_inx)
 {
-	int i, j, s, c, tot_cores;
+	int i, j, s, c;
+	uint32_t tot_cores;
 	sock_gres_t *sock_gres;
 	int64_t add_gres;
 	uint64_t avail_gres, min_gres = 1;
