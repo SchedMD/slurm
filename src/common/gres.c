@@ -7144,11 +7144,19 @@ static sock_gres_t *_build_sock_gres_by_topo(
 		    (avail_gres > sock_gres->max_node_gres))
 			sock_gres->max_node_gres = avail_gres;
 
+		tot_cores = sockets * cores_per_sock;
+		if ((core_bitmap && (tot_cores != bit_size(core_bitmap))) ||
+		    (node_gres_ptr->topo_core_bitmap[i] &&
+		     (tot_cores != bit_size(node_gres_ptr->topo_core_bitmap[i])))) {
+			error("%s: Core bitmaps size mismatch on node %s",
+			      __func__, node_name);
+			match = false;
+			break;
+		}
 		/*
 		 * If some GRES is available on every socket,
 		 * treat like no topo_core_bitmap is specified
 		 */
-		tot_cores = sockets * cores_per_sock;
 		if (node_gres_ptr->topo_core_bitmap &&
 		    node_gres_ptr->topo_core_bitmap[i]) {
 			use_all_sockets = true;
@@ -7191,13 +7199,6 @@ static sock_gres_t *_build_sock_gres_by_topo(
 		}
 
 		/* Constrained by core */
-		if (core_bitmap)
-			tot_cores = MIN(tot_cores, bit_size(core_bitmap));
-		if (node_gres_ptr->topo_core_bitmap[i]) {
-			tot_cores = MIN(tot_cores,
-					bit_size(node_gres_ptr->
-						 topo_core_bitmap[i]));
-		}
 		for (s = 0; ((s < sockets) && avail_gres); s++) {
 			if (enforce_binding && core_bitmap) {
 				for (c = 0; c < cores_per_sock; c++) {
@@ -7212,8 +7213,6 @@ static sock_gres_t *_build_sock_gres_by_topo(
 			}
 			for (c = 0; c < cores_per_sock; c++) {
 				j = (s * cores_per_sock) + c;
-				if (j >= tot_cores)
-					break;	/* Off end of core bitmap */
 				if (node_gres_ptr->topo_core_bitmap[i] &&
 				    !bit_test(node_gres_ptr->topo_core_bitmap[i],
 					      j))
