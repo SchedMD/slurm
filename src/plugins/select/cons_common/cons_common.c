@@ -180,7 +180,7 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 				 int *cpu_alloc_size, bool entire_sockets_only,
 				 bitstr_t *req_sock_map)
 {
-	uint16_t cpu_count = 0, cpu_cnt = 0, part_cpu_limit = 0xffff;
+	uint16_t cpu_count = 0, cpu_cnt = 0, part_cpu_limit = INFINITE16;
 	uint16_t si, cps, avail_cpus = 0, num_tasks = 0;
 	uint32_t c;
 	uint32_t core_begin;
@@ -193,8 +193,8 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	uint16_t cores_per_socket = select_node_record[node_i].cores;
 	uint16_t threads_per_core = select_node_record[node_i].vpus;
 	uint16_t min_cores = 1, min_sockets = 1, ntasks_per_socket = 0;
-	uint16_t ncpus_per_core = 0xffff;	/* Usable CPUs per core */
-	uint16_t ntasks_per_core = 0xffff;
+	uint16_t ncpus_per_core = INFINITE16;	/* Usable CPUs per core */
+	uint16_t ntasks_per_core = INFINITE16;
 	uint32_t free_cpu_count = 0, used_cpu_count = 0;
 	int tmp_cpt = 0; /* cpus_per_task */
 	uint16_t free_cores[sockets];
@@ -353,10 +353,10 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 			part_cpu_limit = job_ptr->part_ptr->max_cpus_per_node -
 				used_cpu_count;
 			if ((part_cpu_limit == 1) &&
-			    (((ntasks_per_core != 0xffff) &&
+			    (((ntasks_per_core != INFINITE16) &&
 			      (ntasks_per_core > part_cpu_limit)) ||
 			     (ntasks_per_socket > part_cpu_limit) ||
-			     ((ncpus_per_core != 0xffff) &&
+			     ((ncpus_per_core != INFINITE16) &&
 			      (ncpus_per_core > part_cpu_limit)) ||
 			     (cpus_per_task > part_cpu_limit))) {
 				/* insufficient available CPUs on this node */
@@ -728,18 +728,18 @@ extern void common_free_avail_res(avail_res_t *avail_res)
 
 /*
  * Return the number of usable logical processors by a given job on
- * some specified node. Returns 0xffff if no limit.
+ * some specified node. Returns INFINITE16 if no limit.
  */
 extern int common_cpus_per_core(struct job_details *details, int node_inx)
 {
-	uint16_t ncpus_per_core = 0xffff;	/* Usable CPUs per core */
+	uint16_t ncpus_per_core = INFINITE16;	/* Usable CPUs per core */
 	uint16_t threads_per_core = select_node_record[node_inx].vpus;
 
 	if (is_cons_tres &&
 	    (slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
 	    (details->min_gres_cpu > 0)) {
 		/* May override default of 1 CPU per core */
-		uint16_t pu_per_core = 0xffff;	/* Usable CPUs per core */
+		uint16_t pu_per_core = INFINITE16;	/* Usable CPUs per core */
 		uint16_t vpus_per_core = select_node_record[node_inx].vpus;
 		return MIN(vpus_per_core, pu_per_core);
 	}

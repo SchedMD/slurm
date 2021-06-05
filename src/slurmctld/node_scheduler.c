@@ -148,7 +148,7 @@ static uint32_t reboot_weight = 0;
 
 /*
  * _get_ntasks_per_core - Retrieve the value of ntasks_per_core from
- *	the given job_details record.  If it wasn't set, return 0xffff.
+ *	the given job_details record.  If it wasn't set, return INFINITE16.
  *	Intended for use with the adjust_cpus_nppcu function.
  */
 static uint16_t _get_ntasks_per_core(struct job_details *details)
@@ -156,7 +156,7 @@ static uint16_t _get_ntasks_per_core(struct job_details *details)
 	if (details->mc_ptr)
 		return details->mc_ptr->ntasks_per_core;
 	else
-		return 0xffff;
+		return INFINITE16;
 }
 
 /*
