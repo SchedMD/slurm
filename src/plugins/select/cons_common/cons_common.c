@@ -730,7 +730,7 @@ extern void common_free_avail_res(avail_res_t *avail_res)
  * Return the number of usable logical processors by a given job on
  * some specified node. Returns INFINITE16 if no limit.
  */
-extern int common_cpus_per_core(struct job_details *details, int node_inx)
+extern uint16_t common_cpus_per_core(struct job_details *details, int node_inx)
 {
 	uint16_t ncpus_per_core = INFINITE16;	/* Usable CPUs per core */
 	uint16_t threads_per_core = select_node_record[node_inx].vpus;

@@ -136,7 +136,7 @@ extern uint64_t common_get_def_mem_per_gpu(List job_defaults_list);
 extern void common_free_avail_res(avail_res_t *avail_res);
 
 /* Determine how many cpus per core we can use */
-extern int common_cpus_per_core(struct job_details *details, int node_inx);
+extern uint16_t common_cpus_per_core(struct job_details *details, int node_inx);
 
 extern void common_init(void);
 extern void common_fini(void);
