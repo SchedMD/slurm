@@ -308,7 +308,7 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 		 */
 		if (sock_gres->cnt_by_sock && enforce_binding) {
 			for (s = 0; s < sockets; s++) {
-				if (avail_cores_by_sock[s] == 0) {
+				if (!avail_cores_by_sock[s]) {
 					sock_gres->total_cnt -=
 						sock_gres->cnt_by_sock[s];
 					sock_gres->cnt_by_sock[s] = 0;
@@ -318,7 +318,7 @@ extern int gres_select_filter_remove_unusable(List sock_gres_list,
 		} else if (sock_gres->cnt_by_sock) { /* NO enforce_binding */
 			near_gres_cnt = sock_gres->total_cnt;
 			for (s = 0; s < sockets; s++) {
-				if (avail_cores_by_sock[s] == 0) {
+				if (!avail_cores_by_sock[s]) {
 					near_gres_cnt -=
 						sock_gres->cnt_by_sock[s];
 				}
