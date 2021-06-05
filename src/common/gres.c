@@ -7081,7 +7081,7 @@ static sock_gres_t *_build_sock_gres_by_topo(
 	uint32_t tot_cores;
 	sock_gres_t *sock_gres;
 	int64_t add_gres;
-	uint64_t avail_gres, min_gres = 1;
+	uint64_t avail_gres, min_gres = 0;
 	bool match = false;
 	bool use_busy_dev = false;
 
@@ -7325,14 +7325,12 @@ static sock_gres_t *_build_sock_gres_by_topo(
 
 
 	/*
-	 * If sockets-per-node (s_p_n) not specified then identify sockets
-	 * which are required to satisfy gres_per_node or task specification
-	 * so that allocated tasks can be distributed over multiple sockets
-	 * if necessary.
+	 * Identify sockets which are required to satisfy
+	 * gres_per_node or task specification so that allocated tasks
+	 * can be distributed over multiple sockets if necessary.
 	 */
 	add_gres = min_gres - sock_gres->cnt_any_sock;
-	if (match && core_bitmap && (s_p_n == NO_VAL) && (add_gres > 0) &&
-	    job_gres_ptr->gres_per_node) {
+	if (match && core_bitmap && (add_gres > 0)) {
 		int avail_sock = 0, best_sock_inx = -1;
 		bool *avail_sock_flag = xcalloc(sockets, sizeof(bool));
 		for (s = 0; s < sockets; s++) {
