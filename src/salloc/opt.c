@@ -486,8 +486,6 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	validate_memory_options(&opt);
-
         /* Check to see if user has specified enough resources to
 	 * satisfy the plane distribution with the specified
 	 * plane_size.

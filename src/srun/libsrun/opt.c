@@ -748,8 +748,6 @@ static void _opt_args(int argc, char **argv, int het_job_offset)
 	sropt.het_grp_bits = bit_alloc(MAX_HET_JOB_COMPONENTS);
 	bit_set(sropt.het_grp_bits, het_job_offset);
 
-	validate_memory_options(&opt);
-
 #ifdef HAVE_NATIVE_CRAY
 	/* only fatal on the allocation */
 	if (opt.network && opt.shared && (sropt.jobid == NO_VAL))

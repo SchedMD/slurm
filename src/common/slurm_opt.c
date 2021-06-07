@@ -5585,7 +5585,17 @@ extern bool slurm_option_get_next_set(slurm_opt_t *opt, char **name,
 	return false;
 }
 
-extern void validate_memory_options(slurm_opt_t *opt)
+/*
+ * Validate that the three memory options (--mem, --mem-per-cpu, --mem-per-gpu)
+ * and their associated environment variables are set mutually exclusively.
+ *
+ * This will fatal() if multiple CLI options are specified simultaneously.
+ * If any of the CLI options are specified, the other options are reset to
+ * clear anything that may have been set through the environment.
+ * Otherwise, if multiple environment variables are set simultaneously,
+ * this will fatal().
+ */
+static void _validate_memory_options(slurm_opt_t *opt)
 {
 	if ((slurm_option_set_by_cli(opt, LONG_OPT_MEM) +
 	     slurm_option_set_by_cli(opt, LONG_OPT_MEM_PER_CPU) +
@@ -5721,6 +5731,7 @@ extern void validate_options_salloc_sbatch_srun(slurm_opt_t *opt)
 	_validate_ntasks_per_gpu(opt);
 	_validate_spec_cores_options(opt);
 	_validate_threads_per_core_option(opt);
+	_validate_memory_options(opt);
 }
 
 extern char *slurm_option_get_argv_str(const int argc, char **argv)
