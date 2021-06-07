@@ -174,6 +174,8 @@ struct node_record {
 	char *tres_fmt_str;		/* tres this node has */
 	uint64_t *tres_cnt;		/* tres this node has. NO_PACK*/
 	char *mcs_label;		/* mcs_label if mcs plugin in use */
+	uint16_t vpus;	                /* number of threads we are using per
+					 * core */
 };
 extern node_record_t *node_record_table_ptr;  /* ptr to node records */
 extern int node_record_count;		/* count in node_record_table_ptr */

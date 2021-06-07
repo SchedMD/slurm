@@ -620,6 +620,7 @@ extern node_record_t *create_node_record(config_record_t *config_ptr,
 {
 	node_record_t *node_ptr;
 	int old_buffer_size, new_buffer_size;
+	uint32_t tot_cores;
 
 	last_node_update = time (NULL);
 	xassert(config_ptr);
@@ -672,6 +673,16 @@ extern node_record_t *create_node_record(config_record_t *config_ptr,
 	node_ptr->next_state = NO_VAL;
 	node_ptr->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
 	node_ptr->magic = NODE_MAGIC;
+
+	/*
+	 * Here we determine if this node is scheduling threads or not.
+	 * We will set vpus to be the number of schedulable threads.
+	 */
+	tot_cores = config_ptr->tot_sockets * config_ptr->cores;
+	if (tot_cores >= config_ptr->cpus)
+		node_ptr->vpus = 1;
+	else
+		node_ptr->vpus = config_ptr->threads;
 
 	return node_ptr;
 }
