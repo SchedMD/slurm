@@ -1375,6 +1375,9 @@ alloc_job:
 	job_res->nodes            = bitmap2node_name(node_bitmap);
 	job_res->nhosts           = n;
 	job_res->ncpus            = job_res->nhosts;
+	job_res->threads_per_core = job_ptr->details->mc_ptr->threads_per_core;
+	job_res->cr_type = cr_type;
+
 	if (job_ptr->details->ntasks_per_node)
 		job_res->ncpus   *= details_ptr->ntasks_per_node;
 	/* See if # of cpus increases with ntasks_per_tres */

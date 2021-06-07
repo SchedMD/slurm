@@ -555,6 +555,8 @@ extern void pack_job_resources(job_resources_t *job_resrcs_ptr, buf_t *buffer,
 		pack32(job_resrcs_ptr->node_req, buffer);
 		packstr(job_resrcs_ptr->nodes, buffer);
 		pack8(job_resrcs_ptr->whole_node, buffer);
+		pack16(job_resrcs_ptr->threads_per_core, buffer);
+		pack16(job_resrcs_ptr->cr_type, buffer);
 
 		if (job_resrcs_ptr->cpu_array_reps)
 			pack32_array(job_resrcs_ptr->cpu_array_reps,
@@ -724,6 +726,8 @@ extern int unpack_job_resources(job_resources_t **job_resrcs_pptr,
 		safe_unpack32(&job_resrcs->node_req, buffer);
 		safe_unpackstr_xmalloc(&job_resrcs->nodes, &tmp32, buffer);
 		safe_unpack8(&job_resrcs->whole_node, buffer);
+		safe_unpack16(&job_resrcs->threads_per_core, buffer);
+		safe_unpack16(&job_resrcs->cr_type, buffer);
 
 		safe_unpack32_array(&job_resrcs->cpu_array_reps,
 				    &tmp32, buffer);

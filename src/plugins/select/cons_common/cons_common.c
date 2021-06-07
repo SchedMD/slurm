@@ -1266,6 +1266,10 @@ extern int select_p_job_expand(job_record_t *from_job_ptr,
 	new_job_resrcs_ptr->nodes = bitmap2node_name(new_job_resrcs_ptr->
 						     node_bitmap);
 	new_job_resrcs_ptr->whole_node = to_job_resrcs_ptr->whole_node;
+	new_job_resrcs_ptr->threads_per_core =
+		to_job_resrcs_ptr->threads_per_core;
+	new_job_resrcs_ptr->cr_type = to_job_resrcs_ptr->cr_type;
+
 	build_job_resources(new_job_resrcs_ptr, node_record_table_ptr);
 	xfree(to_job_ptr->node_addr);
 	to_job_ptr->node_addr = xcalloc(node_cnt, sizeof(slurm_addr_t));

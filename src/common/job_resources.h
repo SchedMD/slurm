@@ -112,6 +112,7 @@ struct job_resources {
 	uint16_t *cpus;
 	uint16_t *cpus_used;
 	uint16_t *cores_per_socket;
+	uint16_t  cr_type;
 	uint64_t *memory_allocated;
 	uint64_t *memory_used;
 	uint32_t  nhosts;
@@ -122,6 +123,7 @@ struct job_resources {
 	uint32_t *sock_core_rep_count;
 	uint16_t *sockets_per_node;
 	uint16_t *tasks_per_node;
+	uint16_t  threads_per_core;
 	uint8_t   whole_node;
 };
 
