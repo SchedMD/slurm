@@ -133,6 +133,7 @@ extern int build_job_resources_cpu_array(job_resources_t *job_resrcs_ptr)
 {
 	int cpu_count = 0, i;
 	uint32_t last_cpu_cnt = NO_VAL;
+	int j, i_first, i_last, node_cpu_count;
 
 	if (job_resrcs_ptr->nhosts == 0)
 		return cpu_count;	/* no work to do */
@@ -150,9 +151,21 @@ extern int build_job_resources_cpu_array(job_resources_t *job_resrcs_ptr)
 	job_resrcs_ptr->cpu_array_value = xcalloc(job_resrcs_ptr->nhosts,
 						  sizeof(uint16_t));
 
-	for (i=0; i<job_resrcs_ptr->nhosts; i++) {
-		if (job_resrcs_ptr->cpus[i] != last_cpu_cnt) {
-			last_cpu_cnt = job_resrcs_ptr->cpus[i];
+	i_first = bit_ffs(job_resrcs_ptr->node_bitmap);
+	if (i_first != -1)
+		i_last = bit_fls(job_resrcs_ptr->node_bitmap);
+	else
+		i_last = -2;
+
+	for (i = i_first, j = 0; i <= i_last; i++) {
+		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
+			continue;
+
+		node_cpu_count = job_resources_get_node_cpu_cnt(
+			job_resrcs_ptr, j, i);
+
+		if (node_cpu_count != last_cpu_cnt) {
+			last_cpu_cnt = node_cpu_count;
 			job_resrcs_ptr->cpu_array_value[
 				job_resrcs_ptr->cpu_array_cnt]
 				= last_cpu_cnt;
@@ -164,6 +177,7 @@ extern int build_job_resources_cpu_array(job_resources_t *job_resrcs_ptr)
 				job_resrcs_ptr->cpu_array_cnt-1]++;
 		}
 		cpu_count += last_cpu_cnt;
+		j++;
 	}
 	return cpu_count;
 }
