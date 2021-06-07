@@ -888,21 +888,20 @@ static int _validate_file(char *filenames, char *gres_name)
  *     * error parsing the comma-delimited links string
  *     * links string is an empty string
  */
-extern int gres_links_validate(gres_slurmd_conf_t *p)
+extern int gres_links_validate(char *links)
 {
 	char *tmp, *tok, *save_ptr = NULL, *end_ptr = NULL;
 	long int val;
 	int rc;
 
-	if (!p->links)
+	if (!links)
 		return -1;
-	if (p->links[0] == '\0') {
+	if (links[0] == '\0') {
 		error("%s: Links is an empty string", __func__);
-		xfree(p->links);
 		return -2;
 	}
 
-	tmp = xstrdup(p->links);
+	tmp = xstrdup(links);
 	tok = strtok_r(tmp, ",", &save_ptr);
 	rc = 0;
 	while (tok) {
@@ -910,9 +909,8 @@ extern int gres_links_validate(gres_slurmd_conf_t *p)
 		if ((val < -2) || (val > GRES_MAX_LINK) || (val == LONG_MIN) ||
 		    (end_ptr[0] != '\0')) {
 			error("%s: Failed to parse token '%s' in links string '%s'",
-			      __func__, tok, p->links);
+			      __func__, tok, links);
 			rc = -2;
-			xfree(p->links);
 			break;
 		}
 		tok = strtok_r(NULL, ",", &save_ptr);
@@ -1130,9 +1128,11 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 
 	if (s_p_get_string(&p->links, "Link",  tbl) ||
 	    s_p_get_string(&p->links, "Links", tbl)) {
-		if (gres_links_validate(p) < -1)
+		if (gres_links_validate(p->links) < -1) {
 			error("gres.conf: Ignoring invalid Links=%s for Name=%s",
 			      p->links, p->name);
+			xfree(p->links);
+		}
 
 	}
 
@@ -2237,9 +2237,11 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 		p->type_name = tmp_type;
 		tmp_type = NULL;	/* Nothing left to xfree */
 		p->plugin_id = plugin_id;
-		if (gres_links_validate(p) < -1)
+		if (gres_links_validate(p->links) < -1) {
 			error("%s: Ignoring invalid Links=%s for Name=%s",
 			      __func__, p->links, p->name);
+			xfree(p->links);
+		}
 		list_append(gres_conf_list, p);
 	}
 

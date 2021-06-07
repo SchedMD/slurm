@@ -1098,6 +1098,6 @@ extern char *gres_prepend_tres_type(const char *gres_str);
  *     * error parsing the comma-delimited links string
  *     * links string is an empty string
  */
-extern int gres_links_validate(gres_slurmd_conf_t *p);
+extern int gres_links_validate(char *links);
 
 #endif /* !_GRES_H */
