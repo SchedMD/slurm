@@ -1799,3 +1799,20 @@ extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr,
 
 	return node_offset;
 }
+
+extern uint16_t job_resources_get_node_cpu_cnt(job_resources_t *job_resrcs_ptr,
+					       int job_node_inx,
+					       int sys_node_inx)
+{
+	uint16_t cpu_count = job_resrcs_ptr->cpus[job_node_inx];
+
+	if (((job_resrcs_ptr->cr_type & CR_CORE) ||
+	     (job_resrcs_ptr->cr_type & CR_SOCKET)) &&
+	    (job_resrcs_ptr->threads_per_core <
+	     node_record_table_ptr[sys_node_inx].vpus)) {
+		cpu_count /= node_record_table_ptr[sys_node_inx].vpus;
+		cpu_count *= job_resrcs_ptr->threads_per_core;
+	}
+
+	return cpu_count;
+}

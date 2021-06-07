@@ -1614,7 +1614,6 @@ alloc_job:
 			avail_mem = select_node_record[i].real_memory -
 				select_node_record[i].mem_spec_limit;
 			if (save_mem & MEM_PER_CPU) {	/* Memory per CPU */
-				uint16_t cpu_count = job_res->cpus[j];
 				/*
 				 * If the job requested less threads that we
 				 * allocated but requested memory based on cpu
@@ -1622,15 +1621,9 @@ alloc_job:
 				 * getting more memory than we are actually
 				 * expecting.
 				 */
-				if (((cr_type & CR_CORE) ||
-				     (cr_type & CR_SOCKET)) &&
-				    (job_ptr->details->mc_ptr->
-				     threads_per_core <
-				     select_node_record[i].vpus)) {
-					cpu_count /= select_node_record[i].vpus;
-					cpu_count *= job_ptr->details->
-						mc_ptr->threads_per_core;
-				}
+				uint16_t cpu_count =
+					job_resources_get_node_cpu_cnt(
+						job_res, j, i);
 				needed_mem = cpu_count *
 					(save_mem & (~MEM_PER_CPU));
 			} else if (save_mem) {		/* Memory per node */

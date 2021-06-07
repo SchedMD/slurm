@@ -321,4 +321,8 @@ extern void remove_job_from_cores(job_resources_t *job_resrcs_ptr,
 extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr, 
 					     int node_inx);
 
+extern uint16_t job_resources_get_node_cpu_cnt(job_resources_t *job_resrcs_ptr,
+					       int job_node_inx,
+					       int sys_node_inx);
+
 #endif /* !_JOB_RESOURCES_H */
