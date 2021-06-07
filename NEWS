@@ -166,6 +166,8 @@ documents those changes that are of interest to users and administrators.
     only attempt to allocate as much as needed from the allocation instead
     of always trying to allocate every node in the allocation.
  -- Jobs that request the whole node now check to see if any gres are allocated.
+ -- Rename SbcastParameters to BcastParameters.
+ -- Make srun sensitive to BcastParameters.
 
 * Changes in Slurm 20.11.9
 ==========================
