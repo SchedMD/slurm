@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - add argv handling for job/submit endpoint.
  -- srun - fix broken node step allocation in a heterogeneous allocation.
  -- Fail step creation if -n is not multiple of --ntasks-per-gpu.
+ -- job_container/tmpfs - Fix slowdown on teardown.
 
 * Changes in Slurm 20.11.7
 ==========================
