@@ -15821,7 +15821,7 @@ void batch_requeue_fini(job_record_t *job_ptr)
 				&job_ptr->details->ntasks_per_node,
 				&job_ptr->details->mc_ptr->ntasks_per_socket,
 				&job_ptr->details->mc_ptr->sockets_per_node,
-				&job_ptr->details->cpus_per_task,
+				&job_ptr->details->orig_cpus_per_task,
 				&job_ptr->details->ntasks_per_tres,
 				&job_ptr->gres_list);
 		}
