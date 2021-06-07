@@ -739,7 +739,8 @@ Work Queue details
 
 .TP
 \fBDefCpuPerGPU\fR
-Default count of CPUs allocated per allocated GPU.
+Default count of CPUs allocated per allocated GPU. This value is used only if
+the job didn't specify --cpus-per-task and --cpus-per-gpu.
 
 .TP
 \fBDefMemPerCPU\fR
@@ -5097,7 +5098,8 @@ The default value is "NO".
 
 .TP
 \fBDefCpuPerGPU\fR
-Default count of CPUs allocated per allocated GPU.
+Default count of CPUs allocated per allocated GPU. This value is used only if
+the job didn't specify --cpus-per-task and --cpus-per-gpu.
 
 .TP
 \fBDefMemPerCPU\fR

@@ -240,9 +240,11 @@ static void _set_gpu_defaults(job_record_t *job_ptr)
 		last_mem_per_gpu = common_get_def_mem_per_gpu(
 			last_part_ptr->job_defaults_list);
 	}
-	if (last_cpu_per_gpu != NO_VAL64)
+	if ((last_cpu_per_gpu != NO_VAL64) &&
+	    (job_ptr->details->orig_cpus_per_task == NO_VAL16))
 		cpu_per_gpu = last_cpu_per_gpu;
-	else if (def_cpu_per_gpu != NO_VAL64)
+	else if ((def_cpu_per_gpu != NO_VAL64) &&
+		 (job_ptr->details->orig_cpus_per_task == NO_VAL16))
 		cpu_per_gpu = def_cpu_per_gpu;
 	else
 		cpu_per_gpu = 0;
