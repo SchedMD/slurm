@@ -37,7 +37,28 @@
 #ifndef _CGROUP_COMMON_H
 #define _CGROUP_COMMON_H
 
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/mount.h>
+#include <sys/file.h>
+
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
+#include "src/common/log.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+#include "src/common/slurm_protocol_defs.h"
+
+extern size_t common_file_getsize(int fd);
+extern int common_file_write_uint64s(char* file_path, uint64_t* values, int nb);
+extern int common_file_read_uint64s(char* file_path, uint64_t** pvalues,
+				    int* pnb);
+extern int common_file_write_uint32s(char* file_path, uint32_t* values, int nb);
+extern int common_file_read_uint32s(char* file_path, uint32_t** pvalues,
+				    int* pnb);
+extern int common_file_write_content(char* file_path, char* content,
+				     size_t csize);
+extern int common_file_read_content(char* file_path, char** content,
+				    size_t *csize);
 #endif /* !_CGROUP_COMMON_H */

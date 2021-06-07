@@ -53,14 +53,22 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
-#include "src/slurmd/common/xcgroup.h"
 #include "src/plugins/cgroup/common/cgroup_common.h"
 
+#include "xcgroup.h"
+
+// http://lists.debian.org/debian-boot/2012/04/msg00047.html
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 #define POLLRDHUP POLLHUP
+#define	MS_NOSUID MNT_NOSUID
+#define	MS_NOEXEC MNT_NOEXEC
+#define	MS_NODEV 0
+#define	umount(d) unmount(d, 0)
 #else
 #include <sys/eventfd.h>
 #endif
+
+#define MAX_MOVE_WAIT 5000
 
 /* Functions */
 extern int init(void);
@@ -98,4 +106,5 @@ extern int cgroup_p_accounting_fini();
 extern int cgroup_p_task_addto_accounting(pid_t pid, stepd_step_rec_t *job,
 					  uint32_t task_id);
 extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid);
+
 #endif /* !_CGROUP_V1_H */

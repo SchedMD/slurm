@@ -1,8 +1,9 @@
 /*****************************************************************************\
- *  cgroup.h - cgroup related primitives headers
+ *  xcgroup.h - Cgroup v1 internal functions
  *****************************************************************************
  *  Copyright (C) 2009 CEA/DAM/DIF
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
+ *  Modified by Felip Moll <felip.moll@schedmd.com> 2021 SchedMD
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -34,24 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _XCGROUP_H_
-#define _XCGROUP_H_
-
-#include <dirent.h>
-#include <sys/types.h>
-#include "src/common/cgroup.h"
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
-
-#define MAX_MOVE_WAIT 5000
-
-// http://lists.debian.org/debian-boot/2012/04/msg00047.html
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
-#define	MS_NOSUID	MNT_NOSUID
-#define	MS_NOEXEC	MNT_NOEXEC
-#define	MS_NODEV	0
-
-#define	umount(d)	unmount(d, 0)
-#endif
+#ifndef _XCGROUP_H
+#define _XCGROUP_H
 
 typedef struct xcgroup_ns {
 	char* mnt_point;  /* mount point to use for the associated cgroup */
@@ -69,6 +54,7 @@ typedef struct xcgroup {
 	int      fd;      /* used for locking */
 } xcgroup_t;
 
+/* Cgroup v1 internal functions */
 /*
  * create a cgroup namespace for tasks containment
  *
@@ -76,12 +62,13 @@ typedef struct xcgroup {
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_ns_create(xcgroup_ns_t* cgns, char* mnt_args, const char* subsys);
+extern int xcgroup_ns_create(xcgroup_ns_t* cgns, char* mnt_args,
+			     const char* subsys);
 
 /*
  * destroy a cgroup namespace
  */
-void xcgroup_ns_destroy(xcgroup_ns_t* cgns);
+extern void xcgroup_ns_destroy(xcgroup_ns_t* cgns);
 
 /*
  * mount a cgroup namespace
@@ -92,7 +79,7 @@ void xcgroup_ns_destroy(xcgroup_ns_t* cgns);
  *
  * If an error occurs, errno will be set.
  */
-int xcgroup_ns_mount(xcgroup_ns_t* cgns);
+extern int xcgroup_ns_mount(xcgroup_ns_t* cgns);
 
 /*
  * umount a cgroup namespace
@@ -103,7 +90,7 @@ int xcgroup_ns_mount(xcgroup_ns_t* cgns);
  *
  * If an error occurs, errno will be set.
  */
-int xcgroup_ns_umount(xcgroup_ns_t* cgns);
+extern int xcgroup_ns_umount(xcgroup_ns_t* cgns);
 
 /*
  * test if cgroup namespace is currently available (mounted)
@@ -112,7 +99,7 @@ int xcgroup_ns_umount(xcgroup_ns_t* cgns);
  *  - 0 if not available
  *  - 1 if available
  */
-int xcgroup_ns_is_available(xcgroup_ns_t* cgns);
+extern int xcgroup_ns_is_available(xcgroup_ns_t* cgns);
 
 /*
  * load a cgroup from a cgroup namespace given a pid
@@ -121,7 +108,7 @@ int xcgroup_ns_is_available(xcgroup_ns_t* cgns);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid);
+extern int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid);
 
 /*
  * load a cgroup namespace
@@ -130,7 +117,7 @@ int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_ns_load(xcgroup_ns_t *cgns, char *subsys);
+extern int xcgroup_ns_load(xcgroup_ns_t *cgns, char *subsys);
 
 /*
  * create a cgroup structure
@@ -139,13 +126,13 @@ int xcgroup_ns_load(xcgroup_ns_t *cgns, char *subsys);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_create(xcgroup_ns_t* cgns, xcgroup_t* cg,
-		   char* uri, uid_t uid, gid_t gid);
+extern int xcgroup_create(xcgroup_ns_t* cgns, xcgroup_t* cg,
+			  char* uri, uid_t uid, gid_t gid);
 
 /*
  * destroy a cgroup internal structure
  */
-void xcgroup_destroy(xcgroup_t* cg);
+extern void xcgroup_destroy(xcgroup_t* cg);
 
 /*
  * lock a cgroup (must have been instantiated)
@@ -155,7 +142,7 @@ void xcgroup_destroy(xcgroup_t* cg);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_lock(xcgroup_t* cg);
+extern int xcgroup_lock(xcgroup_t* cg);
 
 /*
  * unlock a cgroup
@@ -164,7 +151,7 @@ int xcgroup_lock(xcgroup_t* cg);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_unlock(xcgroup_t* cg);
+extern int xcgroup_unlock(xcgroup_t* cg);
 
 /*
  * instantiate a cgroup in a cgroup namespace (mkdir)
@@ -173,7 +160,7 @@ int xcgroup_unlock(xcgroup_t* cg);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_instantiate(xcgroup_t* cg);
+extern int xcgroup_instantiate(xcgroup_t* cg);
 
 /*
  * load a cgroup from a cgroup namespace into a structure
@@ -182,7 +169,7 @@ int xcgroup_instantiate(xcgroup_t* cg);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_load(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri);
+extern int xcgroup_load(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri);
 
 /*
  * delete a cgroup instance in a cgroup namespace (rmdir)
@@ -191,7 +178,7 @@ int xcgroup_load(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_delete(xcgroup_t* cg);
+extern int xcgroup_delete(xcgroup_t* cg);
 
 /*
  * add a list of pids to a cgroup
@@ -200,7 +187,7 @@ int xcgroup_delete(xcgroup_t* cg);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_add_pids(xcgroup_t* cg, pid_t* pids, int npids);
+extern int xcgroup_add_pids(xcgroup_t* cg, pid_t* pids, int npids);
 
 /*
  * extract the pids list of a cgroup
@@ -211,7 +198,7 @@ int xcgroup_add_pids(xcgroup_t* cg, pid_t* pids, int npids);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids);
+extern int xcgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids);
 
 /*
  * set a cgroup parameter
@@ -225,7 +212,7 @@ int xcgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_set_param(xcgroup_t* cg, char* parameter, char* content);
+extern int xcgroup_set_param(xcgroup_t* cg, char* parameter, char* content);
 
 /*
  * get a cgroup parameter
@@ -241,8 +228,8 @@ int xcgroup_set_param(xcgroup_t* cg, char* parameter, char* content);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_get_param(xcgroup_t* cg, char* param, char **content,
-		      size_t *csize);
+extern int xcgroup_get_param(xcgroup_t* cg, char* param, char **content,
+			     size_t *csize);
 
 /*
  * set a cgroup parameter in the form of a uint32_t
@@ -256,7 +243,8 @@ int xcgroup_get_param(xcgroup_t* cg, char* param, char **content,
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_set_uint32_param(xcgroup_t* cg, char* parameter, uint32_t value);
+extern int xcgroup_set_uint32_param(xcgroup_t* cg, char* parameter,
+				    uint32_t value);
 
 /*
  * get a cgroup parameter in the form of a uint32_t
@@ -270,7 +258,8 @@ int xcgroup_set_uint32_param(xcgroup_t* cg, char* parameter, uint32_t value);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_get_uint32_param(xcgroup_t* cg, char* param, uint32_t* value);
+extern int xcgroup_get_uint32_param(xcgroup_t* cg, char* param,
+				    uint32_t* value);
 
 /*
  * set a cgroup parameter in the form of a uint64_t
@@ -284,7 +273,8 @@ int xcgroup_get_uint32_param(xcgroup_t* cg, char* param, uint32_t* value);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_set_uint64_param(xcgroup_t* cg, char* parameter, uint64_t value);
+extern int xcgroup_set_uint64_param(xcgroup_t* cg, char* parameter,
+				    uint64_t value);
 
 /*
  * get a cgroup parameter in the form of a uint64_t
@@ -298,7 +288,8 @@ int xcgroup_set_uint64_param(xcgroup_t* cg, char* parameter, uint64_t value);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_get_uint64_param(xcgroup_t* cg, char* param, uint64_t* value);
+extern int xcgroup_get_uint64_param(xcgroup_t* cg, char* param,
+				    uint64_t* value);
 
 
 /*
@@ -312,7 +303,7 @@ int xcgroup_get_uint64_param(xcgroup_t* cg, char* param, uint64_t* value);
  *   - SLURM_ERROR
  *   - SLURM_SUCCESS
  */
-int xcgroup_move_process(xcgroup_t *cg, pid_t pid);
+extern int xcgroup_move_process(xcgroup_t *cg, pid_t pid);
 
 extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns);
 
@@ -338,7 +329,7 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
  *
  * Must call xcgroup_move_process before this function.
  */
-int xcgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name);
+extern int xcgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name);
 
 /*
  * Init cpuset cgroup

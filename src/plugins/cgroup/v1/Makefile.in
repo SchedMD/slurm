@@ -177,7 +177,7 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 cgroup_v1_la_DEPENDENCIES = ../common/libcgroup_common.la
-am_cgroup_v1_la_OBJECTS = cgroup_v1.lo
+am_cgroup_v1_la_OBJECTS = cgroup_v1.lo xcgroup.lo
 cgroup_v1_la_OBJECTS = $(am_cgroup_v1_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -201,7 +201,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/cgroup_v1.Plo
+am__depfiles_remade = ./$(DEPDIR)/cgroup_v1.Plo \
+	./$(DEPDIR)/xcgroup.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -507,7 +508,7 @@ AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = cgroup_v1.la
 
 # Cgroup v1 plugin.
-cgroup_v1_la_SOURCES = cgroup_v1.c cgroup_v1.h
+cgroup_v1_la_SOURCES = cgroup_v1.c cgroup_v1.h xcgroup.c xcgroup.h
 cgroup_v1_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 cgroup_v1_la_LIBADD = ../common/libcgroup_common.la
 all: all-am
@@ -589,6 +590,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cgroup_v1.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcgroup.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -718,6 +720,7 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/cgroup_v1.Plo
+	-rm -f ./$(DEPDIR)/xcgroup.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -764,6 +767,7 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/cgroup_v1.Plo
+	-rm -f ./$(DEPDIR)/xcgroup.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

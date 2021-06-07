@@ -3,6 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2009 CEA/DAM/DIF
  *  Written by Matthieu Hautreux <matthieu.hautreux@cea.fr>
+ *  Modified by Felip Moll <felip.moll@schedmd.com> 2021 SchedMD
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -34,45 +35,35 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include <dirent.h>
-#include <fcntl.h>
-#include <inttypes.h>
-#include <limits.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/file.h>
-#include <sys/mount.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#include "slurm/slurm.h"
-#include "slurm/slurm_errno.h"
-#include "src/common/log.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
-#include "src/slurmd/slurmd/slurmd.h"
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
-
-#include "xcgroup.h"
-
-/* internal functions */
-size_t _file_getsize(int fd);
-int _file_read_uint32s(char* file_path, uint32_t** pvalues, int* pnb);
-int _file_write_uint32s(char* file_path, uint32_t* values, int nb);
-int _file_read_uint64s(char* file_path, uint64_t** pvalues, int* pnb);
-int _file_write_uint64s(char* file_path, uint64_t* values, int nb);
-int _file_read_content(char* file_path, char** content, size_t *csize);
-int _file_write_content(char* file_path, char* content, size_t csize);
-
+#include "cgroup_v1.h"
 
 /*
- * -----------------------------------------------------------------------------
- * xcgroup_ns primitives xcgroup_ns primitives xcgroup_ns primitives
- * xcgroup_ns primitives xcgroup_ns primitives xcgroup_ns primitives
- * xcgroup_ns primitives xcgroup_ns primitives xcgroup_ns primitives
- * -----------------------------------------------------------------------------
+ * Returns the path to the cgroup.procs file over which we have permissions
+ * defined by check_mode. This path is where we'll be able to read or write
+ * pids. If there are no paths available with these permisisons, return NULL,
+ * which means the cgroup doesn't exist or we do not have permissions to modify
+ * the cg.
  */
+static char *_cgroup_procs_check (xcgroup_t *cg, int check_mode)
+{
+	struct stat st;
+	char *path = xstrdup_printf("%s/%s", cg->path, "cgroup.procs");
+
+	if (!((stat (path, &st) >= 0) && (st.st_mode & check_mode)))
+		xfree(path);
+
+	return path;
+}
+
+static char *_cgroup_procs_readable_path (xcgroup_t *cg)
+{
+	return _cgroup_procs_check(cg, S_IRUSR);
+}
+
+static char *_cgroup_procs_writable_path (xcgroup_t *cg)
+{
+	return _cgroup_procs_check(cg, S_IWUSR);
+}
 
 /*
  * create a cgroup namespace for tasks containment
@@ -81,7 +72,8 @@ int _file_write_content(char* file_path, char* content, size_t csize);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_ns_create(xcgroup_ns_t *cgns, char *mnt_args, const char *subsys)
+extern int xcgroup_ns_create(xcgroup_ns_t *cgns, char *mnt_args,
+			     const char *subsys)
 {
 	slurm_cgroup_conf_t *cg_conf;
 
@@ -122,7 +114,7 @@ clean:
 /*
  * destroy a cgroup namespace
  */
-void xcgroup_ns_destroy(xcgroup_ns_t* cgns)
+extern void xcgroup_ns_destroy(xcgroup_ns_t* cgns)
 {
 	xfree(cgns->mnt_point);
 	xfree(cgns->mnt_args);
@@ -138,7 +130,7 @@ void xcgroup_ns_destroy(xcgroup_ns_t* cgns)
  *
  * If an error occurs, errno will be set.
  */
-int xcgroup_ns_mount(xcgroup_ns_t* cgns)
+extern int xcgroup_ns_mount(xcgroup_ns_t* cgns)
 {
 	int fstatus;
 	char* options;
@@ -221,7 +213,7 @@ int xcgroup_ns_mount(xcgroup_ns_t* cgns)
  *
  * If an error occurs, errno will be set.
  */
-int xcgroup_ns_umount(xcgroup_ns_t* cgns)
+extern int xcgroup_ns_umount(xcgroup_ns_t* cgns)
 {
 	if (umount(cgns->mnt_point))
 		return SLURM_ERROR;
@@ -235,7 +227,7 @@ int xcgroup_ns_umount(xcgroup_ns_t* cgns)
  *  - SLURM_ERROR : not available
  *  - SLURM_SUCCESS : ready to be used
  */
-int xcgroup_ns_is_available(xcgroup_ns_t* cgns)
+extern int xcgroup_ns_is_available(xcgroup_ns_t* cgns)
 {
 	int fstatus = 0;
 	char* value;
@@ -265,7 +257,7 @@ int xcgroup_ns_is_available(xcgroup_ns_t* cgns)
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid)
+extern int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid)
 {
 	int fstatus = SLURM_ERROR;
 	char file_path[PATH_MAX];
@@ -289,7 +281,7 @@ int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid)
 	 * multiple lines of the form :
 	 * num_mask:subsystems:relative_path
 	 */
-	fstatus = _file_read_content(file_path, &buf, &fsize);
+	fstatus = common_file_read_content(file_path, &buf, &fsize);
 	if (fstatus == SLURM_SUCCESS) {
 		fstatus = SLURM_ERROR;
 		p = buf;
@@ -322,7 +314,7 @@ int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid)
 	return fstatus;
 }
 
-int xcgroup_ns_load(xcgroup_ns_t *cgns, char *subsys)
+extern int xcgroup_ns_load(xcgroup_ns_t *cgns, char *subsys)
 {
 	slurm_cgroup_conf_t *cg_conf;
 
@@ -337,16 +329,8 @@ int xcgroup_ns_load(xcgroup_ns_t *cgns, char *subsys)
 	return SLURM_SUCCESS;
 }
 
-/*
- * -----------------------------------------------------------------------------
- * xcgroup primitives xcgroup primitives xcgroup primitives xcgroup primitives
- * xcgroup primitives xcgroup primitives xcgroup primitives xcgroup primitives
- * xcgroup primitives xcgroup primitives xcgroup primitives xcgroup primitives
- * -----------------------------------------------------------------------------
- */
-
-int xcgroup_create(xcgroup_ns_t* cgns, xcgroup_t* cg,
-		   char* uri, uid_t uid,  gid_t gid)
+extern int xcgroup_create(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri,
+			  uid_t uid,  gid_t gid)
 {
 	int fstatus = SLURM_ERROR;
 	char file_path[PATH_MAX];
@@ -369,7 +353,7 @@ int xcgroup_create(xcgroup_ns_t* cgns, xcgroup_t* cg,
 	return SLURM_SUCCESS;
 }
 
-void xcgroup_destroy(xcgroup_t* cg)
+extern void xcgroup_destroy(xcgroup_t* cg)
 {
 	cg->ns = NULL;
 	xfree(cg->name);
@@ -378,7 +362,7 @@ void xcgroup_destroy(xcgroup_t* cg)
 	cg->gid = -1;
 }
 
-int xcgroup_lock(xcgroup_t* cg)
+extern int xcgroup_lock(xcgroup_t* cg)
 {
 	int fstatus = SLURM_ERROR;
 
@@ -401,7 +385,7 @@ int xcgroup_lock(xcgroup_t* cg)
 	return fstatus;
 }
 
-int xcgroup_unlock(xcgroup_t* cg)
+extern int xcgroup_unlock(xcgroup_t* cg)
 {
 	int fstatus = SLURM_ERROR;
 
@@ -415,7 +399,7 @@ int xcgroup_unlock(xcgroup_t* cg)
 	return fstatus;
 }
 
-int xcgroup_instantiate(xcgroup_t* cg)
+extern int xcgroup_instantiate(xcgroup_t* cg)
 {
 	int fstatus = SLURM_ERROR;
 	mode_t cmask;
@@ -465,7 +449,7 @@ int xcgroup_instantiate(xcgroup_t* cg)
 	return fstatus;
 }
 
-int xcgroup_load(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri)
+extern int xcgroup_load(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri)
 {
 	int fstatus = SLURM_ERROR;
 	char file_path[PATH_MAX];
@@ -496,7 +480,7 @@ int xcgroup_load(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri)
 	return SLURM_SUCCESS;
 }
 
-int xcgroup_delete(xcgroup_t* cg)
+extern int xcgroup_delete(xcgroup_t* cg)
 {
 	uint16_t retries = 0;
 
@@ -528,42 +512,14 @@ retry:
 	return SLURM_SUCCESS;
 }
 
-/*
- * Returns the path to the cgroup.procs file over which we have permissions
- * defined by check_mode. This path is where we'll be able to read or write
- * pids. If there are no paths available with these permisisons, return NULL,
- * which means the cgroup doesn't exist or we do not have permissions to modify
- * the cg.
- */
-static char *_cgroup_procs_check (xcgroup_t *cg, int check_mode)
-{
-	struct stat st;
-	char *path = xstrdup_printf("%s/%s", cg->path, "cgroup.procs");
-
-	if (!((stat (path, &st) >= 0) && (st.st_mode & check_mode)))
-		xfree(path);
-
-	return path;
-}
-
-static char *_cgroup_procs_readable_path (xcgroup_t *cg)
-{
-	return _cgroup_procs_check(cg, S_IRUSR);
-}
-
-static char *_cgroup_procs_writable_path (xcgroup_t *cg)
-{
-	return _cgroup_procs_check(cg, S_IWUSR);
-}
-
 /* This call is not intended to be used to move thread pids
  */
-int xcgroup_add_pids(xcgroup_t* cg, pid_t* pids, int npids)
+extern int xcgroup_add_pids(xcgroup_t* cg, pid_t* pids, int npids)
 {
 	int fstatus = SLURM_ERROR;
 	char* path = _cgroup_procs_writable_path(cg);
 
-	fstatus = _file_write_uint32s(path, (uint32_t*)pids, npids);
+	fstatus = common_file_write_uint32s(path, (uint32_t*)pids, npids);
 	if (fstatus != SLURM_SUCCESS)
 		debug2("%s: unable to add pids to '%s'", __func__, cg->path);
 
@@ -573,7 +529,7 @@ int xcgroup_add_pids(xcgroup_t* cg, pid_t* pids, int npids)
 
 /* This call is not intended to be used to get thread pids
  */
-int xcgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids)
+extern int xcgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids)
 {
 	int fstatus = SLURM_ERROR;
 	char* path = NULL;
@@ -588,7 +544,7 @@ int xcgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids)
 		return SLURM_ERROR;
 	}
 
-	fstatus = _file_read_uint32s(path, (uint32_t**)pids, npids);
+	fstatus = common_file_read_uint32s(path, (uint32_t**)pids, npids);
 	if (fstatus != SLURM_SUCCESS)
 		debug2("%s: unable to get pids of '%s', file disappeared?",
 		       __func__, path);
@@ -597,7 +553,7 @@ int xcgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids)
 	return fstatus;
 }
 
-int xcgroup_set_param(xcgroup_t* cg, char* param, char* content)
+extern int xcgroup_set_param(xcgroup_t* cg, char* param, char* content)
 {
 	int fstatus = SLURM_ERROR;
 	char file_path[PATH_MAX];
@@ -614,7 +570,7 @@ int xcgroup_set_param(xcgroup_t* cg, char* param, char* content)
 		return fstatus;
 	}
 
-	fstatus = _file_write_content(file_path, content, strlen(content));
+	fstatus = common_file_write_content(file_path, content, strlen(content));
 	if (fstatus != SLURM_SUCCESS)
 		debug2("%s: unable to set parameter '%s' to '%s' for '%s'",
 			__func__, param, content, cpath);
@@ -625,7 +581,7 @@ int xcgroup_set_param(xcgroup_t* cg, char* param, char* content)
 	return fstatus;
 }
 
-int xcgroup_wait_pid_moved(xcgroup_t* cg, const char *cg_name)
+extern int xcgroup_wait_pid_moved(xcgroup_t* cg, const char *cg_name)
 {
 	pid_t *pids = NULL;
 	int npids = 0;
@@ -668,7 +624,8 @@ int xcgroup_wait_pid_moved(xcgroup_t* cg, const char *cg_name)
 	return SLURM_SUCCESS;
 }
 
-int xcgroup_get_param(xcgroup_t* cg, char* param, char **content, size_t *csize)
+extern int xcgroup_get_param(xcgroup_t* cg, char* param, char **content,
+			     size_t *csize)
 {
 	int fstatus = SLURM_ERROR;
 	char file_path[PATH_MAX];
@@ -678,7 +635,7 @@ int xcgroup_get_param(xcgroup_t* cg, char* param, char **content, size_t *csize)
 		debug2("unable to build filepath for '%s' and"
 		       " parameter '%s' : %m", cpath, param);
 	} else {
-		fstatus = _file_read_content(file_path, content, csize);
+		fstatus = common_file_read_content(file_path, content, csize);
 		if (fstatus != SLURM_SUCCESS)
 			debug2("%s: unable to get parameter '%s' for '%s'",
 				__func__, param, cpath);
@@ -686,7 +643,7 @@ int xcgroup_get_param(xcgroup_t* cg, char* param, char **content, size_t *csize)
 	return fstatus;
 }
 
-int xcgroup_set_uint32_param(xcgroup_t* cg, char* param, uint32_t value)
+extern int xcgroup_set_uint32_param(xcgroup_t* cg, char* param, uint32_t value)
 {
 	int fstatus = SLURM_ERROR;
 	char file_path[PATH_MAX];
@@ -698,7 +655,7 @@ int xcgroup_set_uint32_param(xcgroup_t* cg, char* param, uint32_t value)
 		return fstatus;
 	}
 
-	fstatus = _file_write_uint32s(file_path, &value, 1);
+	fstatus = common_file_write_uint32s(file_path, &value, 1);
 	if (fstatus != SLURM_SUCCESS)
 		debug2("%s: unable to set parameter '%s' to '%u' for '%s'",
 			__func__, param, value, cpath);
@@ -709,7 +666,7 @@ int xcgroup_set_uint32_param(xcgroup_t* cg, char* param, uint32_t value)
 	return fstatus;
 }
 
-int xcgroup_get_uint32_param(xcgroup_t* cg, char* param, uint32_t* value)
+extern int xcgroup_get_uint32_param(xcgroup_t* cg, char* param, uint32_t* value)
 {
 	int fstatus = SLURM_ERROR;
 	char file_path[PATH_MAX];
@@ -721,7 +678,7 @@ int xcgroup_get_uint32_param(xcgroup_t* cg, char* param, uint32_t* value)
 		debug2("unable to build filepath for '%s' and"
 		       " parameter '%s' : %m", cpath, param);
 	} else {
-		fstatus = _file_read_uint32s(file_path, &values, &vnb);
+		fstatus = common_file_read_uint32s(file_path, &values, &vnb);
 		if (fstatus != SLURM_SUCCESS) {
 			debug2("%s: unable to get parameter '%s' for '%s'",
 				__func__, param, cpath);
@@ -737,7 +694,7 @@ int xcgroup_get_uint32_param(xcgroup_t* cg, char* param, uint32_t* value)
 	return fstatus;
 }
 
-int xcgroup_set_uint64_param(xcgroup_t* cg, char* param, uint64_t value)
+extern int xcgroup_set_uint64_param(xcgroup_t* cg, char* param, uint64_t value)
 {
 	int fstatus = SLURM_ERROR;
 	char file_path[PATH_MAX];
@@ -749,7 +706,7 @@ int xcgroup_set_uint64_param(xcgroup_t* cg, char* param, uint64_t value)
 		return fstatus;
 	}
 
-	fstatus = _file_write_uint64s(file_path, &value, 1);
+	fstatus = common_file_write_uint64s(file_path, &value, 1);
 	if (fstatus != SLURM_SUCCESS)
 		debug2("%s: unable to set parameter '%s' to '%"PRIu64"' for "
 			"'%s'", __func__, param, value, cpath);
@@ -760,7 +717,7 @@ int xcgroup_set_uint64_param(xcgroup_t* cg, char* param, uint64_t value)
 	return fstatus;
 }
 
-int xcgroup_get_uint64_param(xcgroup_t* cg, char* param, uint64_t* value)
+extern int xcgroup_get_uint64_param(xcgroup_t* cg, char* param, uint64_t* value)
 {
 	int fstatus = SLURM_ERROR;
 	char file_path[PATH_MAX];
@@ -773,7 +730,7 @@ int xcgroup_get_uint64_param(xcgroup_t* cg, char* param, uint64_t* value)
 		       " parameter '%s' : %m", cpath, param);
 	}
 	else {
-		fstatus = _file_read_uint64s(file_path, &values, &vnb);
+		fstatus = common_file_read_uint64s(file_path, &values, &vnb);
 		if (fstatus != SLURM_SUCCESS) {
 			debug2("%s: unable to get parameter '%s' for '%s'",
 				__func__, param, cpath);
@@ -850,7 +807,7 @@ extern int xcgroup_cpuset_init(xcgroup_t *cg)
 	return SLURM_SUCCESS;
 }
 
-int xcgroup_move_process (xcgroup_t *cg, pid_t pid)
+extern int xcgroup_move_process (xcgroup_t *cg, pid_t pid)
 {
 	char *path = NULL;
 
@@ -1044,349 +1001,4 @@ endit:
 	xcgroup_destroy(&root_cg);
 
 	return rc;
-}
-
-/*
- * -----------------------------------------------------------------------------
- * internal primitives internal primitives internal primitives
- * internal primitives internal primitives internal primitives
- * internal primitives internal primitives internal primitives
- * -----------------------------------------------------------------------------
- */
-
-size_t _file_getsize(int fd)
-{
-	int rc;
-	size_t fsize;
-	off_t offset;
-	char c;
-
-	/* store current position and rewind */
-	offset = lseek(fd, 0, SEEK_CUR);
-	if (offset < 0)
-		return -1;
-	if (lseek(fd, 0, SEEK_SET) < 0)
-		error("%s: lseek(0): %m", __func__);
-
-	/* get file size */
-	fsize = 0;
-	do {
-		rc = read(fd, (void*)&c, 1);
-		if (rc > 0)
-			fsize++;
-	} while ((rc < 0 && errno == EINTR) || rc > 0);
-
-	/* restore position */
-	if (lseek(fd, offset, SEEK_SET) < 0)
-		error("%s: lseek(): %m", __func__);
-
-	if (rc < 0)
-		return -1;
-	else
-		return fsize;
-}
-
-int _file_write_uint64s(char* file_path, uint64_t* values, int nb)
-{
-	int fstatus;
-	int rc;
-	int fd;
-	char tstr[256];
-	uint64_t value;
-	int i;
-
-	/* open file for writing */
-	fd = open(file_path, O_WRONLY, 0700);
-	if (fd < 0) {
-		debug2("%s: unable to open '%s' for writing : %m",
-			__func__, file_path);
-		return SLURM_ERROR;
-	}
-
-	/* add one value per line */
-	fstatus = SLURM_SUCCESS;
-	for (i = 0; i < nb ; i++) {
-
-		value = values[i];
-
-		rc = snprintf(tstr, sizeof(tstr), "%"PRIu64"", value);
-		if (rc < 0) {
-			debug2("unable to build %"PRIu64" string value, "
-			       "skipping", value);
-			fstatus = SLURM_ERROR;
-			continue;
-		}
-
-		do {
-			rc = write(fd, tstr, strlen(tstr)+1);
-		}
-		while (rc < 0 && errno == EINTR);
-		if (rc < 1) {
-			debug2("%s: unable to add value '%s' to file '%s' : %m",
-				__func__, tstr, file_path);
-			if (errno != ESRCH)
-				fstatus = SLURM_ERROR;
-		}
-
-	}
-
-	/* close file */
-	close(fd);
-
-	return fstatus;
-}
-
-int _file_read_uint64s(char* file_path, uint64_t** pvalues, int* pnb)
-{
-	int rc;
-	int fd;
-
-	size_t fsize;
-	char* buf;
-	char* p;
-
-	uint64_t* pa=NULL;
-	int i;
-
-	/* check input pointers */
-	if (pvalues == NULL || pnb == NULL)
-		return SLURM_ERROR;
-
-	/* open file for reading */
-	fd = open(file_path, O_RDONLY, 0700);
-	if (fd < 0) {
-		debug2("%s: unable to open '%s' for reading : %m",
-			__func__, file_path);
-		return SLURM_ERROR;
-	}
-
-	/* get file size */
-	fsize=_file_getsize(fd);
-	if (fsize == -1) {
-		close(fd);
-		return SLURM_ERROR;
-	}
-
-	/* read file contents */
-	buf = xmalloc(fsize + 1);
-	do {
-		rc = read(fd, buf, fsize);
-	} while (rc < 0 && errno == EINTR);
-	close(fd);
-	buf[fsize]='\0';
-
-	/* count values (splitted by \n) */
-	i=0;
-	if (rc > 0) {
-		p = buf;
-		while (xstrchr(p, '\n') != NULL) {
-			i++;
-			p = xstrchr(p, '\n') + 1;
-		}
-	}
-
-	/* build uint64_t list */
-	if (i > 0) {
-		pa = (uint64_t*) xmalloc(sizeof(uint64_t) * i);
-		p = buf;
-		i = 0;
-		while (xstrchr(p, '\n') != NULL) {
-			long long unsigned int ll_tmp;
-			sscanf(p, "%llu", &ll_tmp);
-			pa[i++] = ll_tmp;
-			p = xstrchr(p, '\n') + 1;
-		}
-	}
-
-	/* free buffer */
-	xfree(buf);
-
-	/* set output values */
-	*pvalues = pa;
-	*pnb = i;
-
-	return SLURM_SUCCESS;
-}
-
-int _file_write_uint32s(char* file_path, uint32_t* values, int nb)
-{
-	int rc;
-	int fd;
-	char tstr[256];
-
-	/* open file for writing */
-	if ((fd = open(file_path, O_WRONLY, 0700)) < 0) {
-		error("%s: unable to open '%s' for writing: %m",
-			__func__, file_path);
-		return SLURM_ERROR;
-	}
-
-	/* add one value per line */
-	for (int i = 0; i < nb; i++) {
-		uint32_t value = values[i];
-
-		if (snprintf(tstr, sizeof(tstr), "%u", value) < 0)
-			fatal("%s: unable to build %u string value",
-			      __func__, value);
-
-		/* write terminating NUL byte */
-		safe_write(fd, tstr, strlen(tstr) + 1);
-	}
-
-	/* close file */
-	close(fd);
-	return SLURM_SUCCESS;
-
-rwfail:
-	rc = errno;
-	error("%s: write pid %s to %s failed: %m",
-	      __func__, tstr, file_path);
-	close(fd);
-	return rc;;
-}
-
-int _file_read_uint32s(char* file_path, uint32_t** pvalues, int* pnb)
-{
-	int rc;
-	int fd;
-
-	size_t fsize;
-	char* buf;
-	char* p;
-
-	uint32_t* pa=NULL;
-	int i;
-
-	/* check input pointers */
-	if (pvalues == NULL || pnb == NULL)
-		return SLURM_ERROR;
-
-	/* open file for reading */
-	fd = open(file_path, O_RDONLY, 0700);
-	if (fd < 0) {
-		debug2("%s: unable to open '%s' for reading : %m",
-			__func__, file_path);
-		return SLURM_ERROR;
-	}
-
-	/* get file size */
-	fsize =_file_getsize(fd);
-	if (fsize == -1) {
-		close(fd);
-		return SLURM_ERROR;
-	}
-
-	/* read file contents */
-	buf = xmalloc(fsize + 1);
-	do {
-		rc = read(fd, buf, fsize);
-	} while (rc < 0 && errno == EINTR);
-	close(fd);
-	buf[fsize]='\0';
-
-	/* count values (splitted by \n) */
-	i=0;
-	if (rc > 0) {
-		p = buf;
-		while (xstrchr(p, '\n') != NULL) {
-			i++;
-			p = xstrchr(p, '\n') + 1;
-		}
-	}
-
-	/* build uint32_t list */
-	if (i > 0) {
-		pa = (uint32_t*) xmalloc(sizeof(uint32_t) * i);
-		p = buf;
-		i = 0;
-		while (xstrchr(p, '\n') != NULL) {
-			sscanf(p, "%u", pa+i);
-			p = xstrchr(p, '\n') + 1;
-			i++;
-		}
-	}
-
-	/* free buffer */
-	xfree(buf);
-
-	/* set output values */
-	*pvalues = pa;
-	*pnb = i;
-
-	return SLURM_SUCCESS;
-}
-
-int _file_write_content(char* file_path, char* content, size_t csize)
-{
-	int fd;
-
-	/* open file for writing */
-	if ((fd = open(file_path, O_WRONLY, 0700)) < 0) {
-		error("%s: unable to open '%s' for writing: %m",
-			__func__, file_path);
-		return SLURM_ERROR;
-	}
-
-	safe_write(fd, content, csize);
-
-	/* close file */
-	close(fd);
-	return SLURM_SUCCESS;
-
-rwfail:
-	error("%s: unable to write %zu bytes to cgroup %s: %m",
-	      __func__, csize, file_path);
-	close(fd);
-	return SLURM_ERROR;
-}
-
-int _file_read_content(char* file_path, char** content, size_t *csize)
-{
-	int fstatus;
-	int rc;
-	int fd;
-	size_t fsize;
-	char* buf;
-
-	fstatus = SLURM_ERROR;
-
-	/* check input pointers */
-	if (content == NULL || csize == NULL)
-		return fstatus;
-
-	/* open file for reading */
-	fd = open(file_path, O_RDONLY, 0700);
-	if (fd < 0) {
-		debug2("%s: unable to open '%s' for reading : %m",
-			__func__, file_path);
-		return fstatus;
-	}
-
-	/* get file size */
-	fsize=_file_getsize(fd);
-	if (fsize == -1) {
-		close(fd);
-		return fstatus;
-	}
-
-	/* read file contents */
-	buf = xmalloc(fsize + 1);
-	buf[fsize]='\0';
-	do {
-		rc = read(fd, buf, fsize);
-	} while (rc < 0 && errno == EINTR);
-
-	/* set output values */
-	if (rc >= 0) {
-		*content = buf;
-		*csize = rc;
-		fstatus = SLURM_SUCCESS;
-	} else {
-		xfree(buf);
-	}
-
-	/* close file */
-	close(fd);
-
-	return fstatus;
 }
