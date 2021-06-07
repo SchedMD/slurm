@@ -2630,13 +2630,14 @@ static void _sbast_cache_add(sbcast_cred_t *sbcast_cred)
 /* Extract contents of an sbcast credential verifying the digital signature.
  * NOTE: We can only perform the full credential validation once with
  *	Munge without generating a credential replay error, so we only
- *	verify the credential for block one. All others must have a
- *	recent signature on file (in our cache) or the slurmd must have
- *	recently been restarted.
+ *	verify the credential for block one of the executable file. All other
+ *	blocks or shared object files must have a recent signature on file
+ *	(in our cache) or the slurmd must have recently been restarted.
  * RET 0 on success, -1 on error */
 sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 				       sbcast_cred_t *sbcast_cred,
 				       uint16_t block_no,
+				       uint16_t flags,
 				       uint16_t protocol_version)
 {
 	sbcast_cred_arg_t *arg;
@@ -2654,7 +2655,7 @@ sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 	if (now > sbcast_cred->expiration)
 		return NULL;
 
-	if (block_no == 1) {
+	if (block_no == 1 && !(flags & FILE_BCAST_SO)) {
 		buffer = init_buf(4096);
 		_pack_sbcast_cred(sbcast_cred, buffer, protocol_version);
 		/* NOTE: the verification checks that the credential was

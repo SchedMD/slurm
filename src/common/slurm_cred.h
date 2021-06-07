@@ -400,6 +400,7 @@ void delete_sbcast_cred(sbcast_cred_t *sbcast_cred);
 sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 				       sbcast_cred_t *sbcast_cred,
 				       uint16_t block_no,
+				       uint16_t flags,
 				       uint16_t protocol_version);
 void pack_sbcast_cred(sbcast_cred_t *sbcast_cred, buf_t *buffer,
 		      uint16_t protocol_Version);
