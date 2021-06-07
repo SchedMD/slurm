@@ -4057,15 +4057,17 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 
 	file_info->last_update = time(NULL);
 
-	if (req->last_block && fchmod(file_info->fd, (req->modes & 0777))) {
+	if ((req->flags & FILE_BCAST_LAST_BLOCK) &&
+	    fchmod(file_info->fd, (req->modes & 0777))) {
 		error("sbcast: uid:%u can't chmod `%s`: %m",
 		      key.uid, key.fname);
 	}
-	if (req->last_block && fchown(file_info->fd, key.uid, key.gid)) {
+	if ((req->flags & FILE_BCAST_LAST_BLOCK) &&
+	    fchown(file_info->fd, key.uid, key.gid)) {
 		error("sbcast: uid:%u gid:%u can't chown `%s`: %m",
 		      key.uid, key.gid, key.fname);
 	}
-	if (req->last_block && req->atime) {
+	if ((req->flags & FILE_BCAST_LAST_BLOCK) && req->atime) {
 		struct utimbuf time_buf;
 		time_buf.actime  = req->atime;
 		time_buf.modtime = req->mtime;
@@ -4077,7 +4079,7 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 
 	_fb_rdunlock();
 
-	if (req->last_block) {
+	if (req->flags & FILE_BCAST_LAST_BLOCK) {
 		_file_bcast_close_file(&key);
 	}
 

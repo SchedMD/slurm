@@ -11908,7 +11908,6 @@ static void _pack_file_bcast(file_bcast_msg_t * msg , buf_t *buffer,
 	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		pack32(msg->block_no, buffer);
 		pack16(msg->compress, buffer);
-		pack16(msg->last_block, buffer);
 		pack16(msg->flags, buffer);
 		pack16(msg->modes, buffer);
 
@@ -11928,9 +11927,11 @@ static void _pack_file_bcast(file_bcast_msg_t * msg , buf_t *buffer,
 		pack_sbcast_cred(msg->cred, buffer, protocol_version);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		uint16_t force = (msg->flags & FILE_BCAST_FORCE) ? 1 : 0;
+		uint16_t last_block =
+			(msg->flags & FILE_BCAST_LAST_BLOCK) ? 1 : 0;
 		pack32(msg->block_no, buffer);
 		pack16(msg->compress, buffer);
-		pack16(msg->last_block, buffer);
+		pack16(last_block, buffer);
 		pack16(force, buffer);
 		pack16(msg->modes, buffer);
 
@@ -11965,7 +11966,6 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , buf_t *buffer,
 	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->block_no, buffer);
 		safe_unpack16(&msg->compress, buffer);
-		safe_unpack16(&msg->last_block, buffer);
 		safe_unpack16(&msg->flags, buffer);
 		safe_unpack16(&msg->modes, buffer);
 
@@ -11989,10 +11989,12 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , buf_t *buffer,
 		if (msg->cred == NULL)
 			goto unpack_error;
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		uint16_t force;
+		uint16_t last_block, force;
 		safe_unpack32(&msg->block_no, buffer);
 		safe_unpack16(&msg->compress, buffer);
-		safe_unpack16(&msg->last_block, buffer);
+		safe_unpack16(&last_block, buffer);
+		if (last_block)
+			msg->flags |= FILE_BCAST_LAST_BLOCK;
 		safe_unpack16(&force, buffer);
 		if (force)
 			msg->flags |= FILE_BCAST_FORCE;

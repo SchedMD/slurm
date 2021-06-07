@@ -347,12 +347,12 @@ static int _bcast_file(struct bcast_parameters *params)
 		bcast_msg.uncomp_len = orig_len;
 		bcast_msg.block = buffer;
 		if (!more)
-			bcast_msg.last_block = 1;
+			bcast_msg.flags |= FILE_BCAST_LAST_BLOCK;
 
 		rc = _file_bcast(params, &bcast_msg, sbcast_cred);
 		if (rc != SLURM_SUCCESS)
 			break;
-		if (bcast_msg.last_block)
+		if (bcast_msg.flags & FILE_BCAST_LAST_BLOCK)
 			break;	/* end of file */
 		bcast_msg.block_no++;
 		bcast_msg.block_offset += orig_len;
