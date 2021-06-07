@@ -1090,7 +1090,14 @@ extern void gres_validate_node_cores(gres_node_state_t *node_gres_ptr,
 extern char *gres_prepend_tres_type(const char *gres_str);
 /*
  * Check that we have a comma-delimited list of numbers
+ *
+ * Return values:
+ *  0: success.
+ * -1: links string is NULL.
+ * -2: links string is not NULL, but is invalid. Possible invalid reasons:
+ *     * error parsing the comma-delimited links string
+ *     * links string is an empty string
  */
-extern void gres_links_validate(gres_slurmd_conf_t *p);
+extern int gres_links_validate(gres_slurmd_conf_t *p);
 
 #endif /* !_GRES_H */

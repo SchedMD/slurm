@@ -880,33 +880,45 @@ static int _validate_file(char *filenames, char *gres_name)
 
 /*
  * Check that we have a comma-delimited list of numbers
+ *
+ * Return values:
+ *  0: success.
+ * -1: links string is NULL.
+ * -2: links string is not NULL, but is invalid. Possible invalid reasons:
+ *     * error parsing the comma-delimited links string
+ *     * links string is an empty string
  */
-extern void gres_links_validate(gres_slurmd_conf_t *p)
+extern int gres_links_validate(gres_slurmd_conf_t *p)
 {
 	char *tmp, *tok, *save_ptr = NULL, *end_ptr = NULL;
 	long int val;
+	int rc;
 
 	if (!p->links)
-		return;
+		return -1;
 	if (p->links[0] == '\0') {
+		error("%s: Links is an empty string", __func__);
 		xfree(p->links);
-		return;
+		return -2;
 	}
 
 	tmp = xstrdup(p->links);
 	tok = strtok_r(tmp, ",", &save_ptr);
+	rc = 0;
 	while (tok) {
 		val = strtol(tok, &end_ptr, 10);
 		if ((val < -2) || (val > GRES_MAX_LINK) || (val == LONG_MIN) ||
 		    (end_ptr[0] != '\0')) {
-			error("gres.conf: Ignoring invalid Link (%s) for Name=%s",
-			      tok, p->name);
+			error("%s: Failed to parse token '%s' in links string '%s'",
+			      __func__, tok, p->links);
+			rc = -2;
 			xfree(p->links);
 			break;
 		}
 		tok = strtok_r(NULL, ",", &save_ptr);
 	}
 	xfree(tmp);
+	return rc;
 }
 
 /*
@@ -1118,7 +1130,10 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 
 	if (s_p_get_string(&p->links, "Link",  tbl) ||
 	    s_p_get_string(&p->links, "Links", tbl)) {
-		gres_links_validate(p);
+		if (gres_links_validate(p) < -1)
+			error("gres.conf: Ignoring invalid Links=%s for Name=%s",
+			      p->links, p->name);
+
 	}
 
 	if (s_p_get_string(&p->type_name, "Type", tbl)) {
@@ -2222,7 +2237,9 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 		p->type_name = tmp_type;
 		tmp_type = NULL;	/* Nothing left to xfree */
 		p->plugin_id = plugin_id;
-		gres_links_validate(p);
+		if (gres_links_validate(p) < -1)
+			error("%s: Ignoring invalid Links=%s for Name=%s",
+			      __func__, p->links, p->name);
 		list_append(gres_conf_list, p);
 	}
 
