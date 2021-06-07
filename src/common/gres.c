@@ -4561,6 +4561,15 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 			return -1;
 	}
 
+	/* make sure --cpu-per-gres is not combined with --cpus-per-task */
+	if (job_gres_data->cpus_per_gres &&
+	    (*cpus_per_task != NO_VAL16)) {
+		error("--cpus-per-%s is mutually exclusive with --cpus-per-task",
+		      job_gres_data->gres_name);
+		return -1;
+	}
+
+
 	/*
 	 * Ensure gres_per_job is multiple of gres_per_node
 	 * Ensure node count is consistent with GRES parameters
