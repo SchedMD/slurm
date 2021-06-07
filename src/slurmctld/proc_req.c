@@ -771,7 +771,7 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 	cred_arg.job_core_spec   = job_ptr->details->core_spec;
 	cred_arg.job_hostlist    = job_resrcs_ptr->nodes;
 	cred_arg.job_mem_limit   = job_ptr->details->pn_min_memory;
-	if (cred_arg.job_mem_limit) {
+	if (job_resrcs_ptr->memory_allocated) {
 		slurm_array64_to_value_reps(job_resrcs_ptr->memory_allocated,
 					    job_resrcs_ptr->nhosts,
 					    &cred_arg.job_mem_alloc,
@@ -790,7 +790,7 @@ static int _make_step_cred(step_record_t *step_ptr, slurm_cred_t **slurm_cred,
 #else
 	cred_arg.step_hostlist   = step_ptr->step_layout->node_list;
 #endif
-	if (step_ptr->pn_min_memory) {
+	if (step_ptr->memory_allocated) {
 		cred_arg.step_mem_limit  = step_ptr->pn_min_memory;
 		slurm_array64_to_value_reps(step_ptr->memory_allocated,
 					    step_ptr->step_layout->node_cnt,

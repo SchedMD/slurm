@@ -2907,7 +2907,7 @@ extern void launch_prolog(job_record_t *job_ptr)
 	cred_arg.job_nhosts          = job_ptr->job_resrcs->nhosts;
 	cred_arg.job_constraints     = job_ptr->details->features;
 	cred_arg.job_mem_limit       = job_ptr->details->pn_min_memory;
-	if (cred_arg.job_mem_limit) {
+	if (job_resrcs_ptr->memory_allocated) {
 		slurm_array64_to_value_reps(job_resrcs_ptr->memory_allocated,
 					    job_resrcs_ptr->nhosts,
 					    &cred_arg.job_mem_alloc,

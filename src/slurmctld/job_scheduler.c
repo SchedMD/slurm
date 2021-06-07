@@ -2638,7 +2638,7 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	cred_arg.job_core_bitmap     = job_resrcs_ptr->core_bitmap;
 	cred_arg.job_core_spec       = job_ptr->details->core_spec;
 	cred_arg.job_mem_limit       = job_ptr->details->pn_min_memory;
-	if (cred_arg.job_mem_limit) {
+	if (job_resrcs_ptr->memory_allocated) {
 		int batch_inx = job_get_node_inx(
 			job_ptr->batch_host, job_ptr->node_bitmap);
 
