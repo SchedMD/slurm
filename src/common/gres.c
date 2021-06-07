@@ -4557,8 +4557,11 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 
 	/* gres_per_socket requires sockets-per-node count specification */
 	if (job_gres_data->gres_per_socket) {
-		if (*sockets_per_node == NO_VAL16)
+		if (*sockets_per_node == NO_VAL16) {
+			error("--%ss-per-socket option requires --sockets-per-node specification",
+			      job_gres_data->gres_name);
 			return -1;
+		}
 	}
 
 	/* make sure --cpu-per-gres is not combined with --cpus-per-task */

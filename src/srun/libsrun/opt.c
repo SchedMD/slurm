@@ -1278,13 +1278,6 @@ static bool _opt_verify(void)
 		opt.x11_magic_cookie = x11_get_xauth();
 	}
 
-	/* Validate allocation request only. */
-	if ((sropt.jobid == NO_VAL) &&
-	    opt.gpus_per_socket && (opt.sockets_per_node == NO_VAL)) {
-		error("--gpus-per-socket option requires --sockets-per-node specification");
-		exit(error_exit);
-	}
-
 	return verified;
 }
 

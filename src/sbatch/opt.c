@@ -995,11 +995,6 @@ static bool _opt_verify(void)
 	cpu_freq_set_env("SLURM_CPU_FREQ_REQ",
 			 opt.cpu_freq_min, opt.cpu_freq_max, opt.cpu_freq_gov);
 
-	if (opt.gpus_per_socket && (opt.sockets_per_node == NO_VAL)) {
-		error("--gpus-per-socket option requires --sockets-per-node specification");
-		exit(error_exit);
-	}
-
 	return verified;
 }
 
