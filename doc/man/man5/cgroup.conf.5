@@ -1,4 +1,4 @@
-.TH "cgroup.conf" "5" "Slurm Configuration File" "April 2021" "Slurm Configuration File"
+.TH "cgroup.conf" "5" "Slurm Configuration File" "June 2021" "Slurm Configuration File"
 
 .SH "NAME"
 cgroup.conf \- Slurm configuration file for the cgroup support
@@ -20,7 +20,7 @@ Slurm daemons, daemon receipt of the SIGHUP signal, or execution
 of the command "scontrol reconfigure" unless otherwise noted.
 
 .LP
-For general Slurm Cgroups information, see the Cgroups Guide at
+For general Slurm cgroups information, see the Cgroups Guide at
 <https://slurm.schedmd.com/cgroups.html>.
 
 .LP
@@ -62,7 +62,7 @@ The percentage supplied may be expressed as floating point number, e.g. 101.5.
 Sets the cgroup soft memory limit at the allocated memory size and then sets the
 job/step hard memory limit at the (AllowedRAMSpace/100) * allocated memory. If
 the job/step exceeds the hard limit, then it might trigger Out Of Memory (OOM)
-events (including oom-kill) which will be logged to kernel log ringbuffer
+events (including oom-kill) which will be logged to kernel log ring buffer
 (dmesg in Linux). Setting AllowedRAMSpace above 100 may cause system Out of
 Memory (OOM) events as it allows job/step to allocate more memory than
 configured to the nodes.  Reducing configured node available memory to avoid
@@ -217,7 +217,7 @@ after updating the file.
 .TP
 \fB/etc/slurm/cgroup.conf\fR:
 This example cgroup.conf file shows a configuration that enables the more
-commonly used cgroup enforcment mechanisms.
+commonly used cgroup enforcement mechanisms.
 
 .nf
 ###
