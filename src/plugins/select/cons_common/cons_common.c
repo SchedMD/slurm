@@ -180,8 +180,9 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 				 int *cpu_alloc_size, bool entire_sockets_only,
 				 bitstr_t *req_sock_map)
 {
-	uint16_t cpu_count = 0, cpu_cnt = 0, part_cpu_limit = INFINITE16;
-	uint16_t si, cps, avail_cpus = 0, num_tasks = 0;
+	uint16_t cpu_count = 0, part_cpu_limit = INFINITE16;
+	uint16_t cps, avail_cpus = 0, num_tasks = 0;
+	uint16_t req_sock_cpus = 0;
 	uint32_t c;
 	uint32_t core_begin;
 	uint32_t core_end;
@@ -200,7 +201,10 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	uint16_t free_cores[sockets];
 	uint16_t used_cores[sockets];
 	uint32_t used_cpu_array[sockets];
+	uint16_t cpu_cnt[sockets];
+	uint16_t max_cpu_per_req_sock = INFINITE16;
 	avail_res_t *avail_res = xmalloc(sizeof(avail_res_t));
+	bitstr_t *tmp_core = NULL;
 
 
 	if (is_cons_tres) {
@@ -214,6 +218,7 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	memset(free_cores, 0, sockets * sizeof(uint16_t));
 	memset(used_cores, 0, sockets * sizeof(uint16_t));
 	memset(used_cpu_array, 0, sockets * sizeof(uint32_t));
+	memset(cpu_cnt, 0, sockets * sizeof(uint16_t));
 
 	if (entire_sockets_only && details_ptr->whole_node &&
 	    (details_ptr->core_spec != NO_VAL16)) {
@@ -454,10 +459,13 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 
 	for (i = 0; i < sockets; i++) {
 		uint16_t tmp = free_cores[i] * threads_per_core;
-		if ((tmp == 0) && req_sock_map && bit_test(req_sock_map, i)) {
-			/* no available resources on required socket */
-			num_tasks = 0;
-			goto fini;
+		if (req_sock_map && bit_test(req_sock_map, i)) {
+			if (tmp == 0) {
+				/* no available resources on required socket */
+				num_tasks = 0;
+				goto fini;
+			}
+			req_sock_cpus += tmp;
 		}
 		avail_cpus += tmp;
 		if (ntasks_per_socket)
@@ -524,29 +532,96 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	} else
 		cps = cores_per_socket * threads_per_core;
 
-	si = 9999;
 	tmp_cpt = cpus_per_task;
-	for (c = core_begin; c < core_end && (avail_cpus > 0); c++) {
-		if (!bit_test(core_map, c))
+	if (req_sock_map) {
+		i = 0;
+		tmp_core = bit_alloc(bit_size(core_map));
+		if (req_sock_cpus > avail_cpus) {
+			max_cpu_per_req_sock = avail_cpus /
+					       bit_set_count(req_sock_map);
+		}
+	} else {
+		i = sockets;
+	}
+
+	for ( ; ((i < sockets) && (avail_cpus > 0)); i++) {
+		if (bit_test(req_sock_map, i)) {
+			for (j = 0; j < cores_per_socket &&
+				    free_cores[i]; j++) {
+				c = (i * cores_per_socket) + j;
+				if (!bit_test(core_map, c))
+					continue;
+				/*
+				 * this socket has free cores, but make sure we don't
+				 * use more than are needed for ntasks_per_socket
+				 */
+				if (!cpu_cnt[i]) {	/* Start use of next socket */
+					cpu_cnt[i] = threads_per_core;
+				} else {	/* Continued use of same socket */
+					if (cpu_cnt[i] >= cps) {
+						/* do not allocate this core */
+						bit_clear(core_map, c);
+						continue;
+					}
+					cpu_cnt[i] += threads_per_core;
+				}
+				free_cores[i]--;
+				/*
+				 * we have to ensure that cpu_count is not bigger than
+				 * avail_cpus due to hyperthreading or this would break
+				 * the selection logic providing more CPUs than allowed
+				 * after task-related data processing of stage 3
+				 */
+				if (avail_cpus >= threads_per_core) {
+					int used;
+					if (is_cons_tres &&
+					    (slurm_conf.select_type_param &
+					     CR_ONE_TASK_PER_CORE) &&
+					    (details_ptr->min_gres_cpu > 0)) {
+						used = threads_per_core;
+					} else if ((ntasks_per_core == 1) &&
+						   (cpus_per_task > threads_per_core)) {
+						used = MIN(tmp_cpt, threads_per_core);
+					} else
+						used = threads_per_core;
+					avail_cpus -= used;
+					cpu_count  += used;
+					if (tmp_cpt <= used)
+						tmp_cpt = cpus_per_task;
+					else
+						tmp_cpt -= used;
+				} else {
+					cpu_count += avail_cpus;
+					avail_cpus = 0;
+				}
+
+				bit_set(tmp_core, c);
+				if (cpu_cnt[i] > max_cpu_per_req_sock)
+					break;
+			}
+		}
+	}
+	for (c = core_begin; c < core_end ; c++) {
+		if (!bit_test(core_map, c) || (tmp_core &&
+					       bit_test(tmp_core, c)))
 			continue;
 
 		/* Socket index */
 		i = (uint16_t) ((c - core_begin) / cores_per_socket);
-		if (free_cores[i] > 0) {
+		if (free_cores[i] > 0 && (avail_cpus > 0)) {
 			/*
 			 * this socket has free cores, but make sure we don't
 			 * use more than are needed for ntasks_per_socket
 			 */
-			if (si != i) {	/* Start use of next socket */
-				si = i;
-				cpu_cnt = threads_per_core;
+			if (!cpu_cnt[i]) {	/* Start use of next socket */
+				cpu_cnt[i] = threads_per_core;
 			} else {	/* Continued use of same socket */
-				if (cpu_cnt >= cps) {
+				if (cpu_cnt[i] >= cps) {
 					/* do not allocate this core */
 					bit_clear(core_map, c);
 					continue;
 				}
-				cpu_cnt += threads_per_core;
+				cpu_cnt[i] += threads_per_core;
 			}
 			free_cores[i]--;
 			/*
@@ -581,9 +656,6 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 		} else
 			bit_clear(core_map, c);
 	}
-	/* clear leftovers */
-	if (c < core_end)
-		bit_nclear(core_map, c, core_end - 1);
 
 fini:
 	/* if num_tasks == 0 then clear all bits on this node */
@@ -627,6 +699,7 @@ fini:
 		avail_res->spec_threads = spec_threads;
 		avail_res->vpus = select_node_record[node_i].vpus;
 	}
+	FREE_NULL_BITMAP(tmp_core);
 
 	return avail_res;
 }
