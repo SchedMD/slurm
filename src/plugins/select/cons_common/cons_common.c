@@ -175,6 +175,32 @@ static bool _check_ntasks_per_sock(uint16_t core, uint16_t socket,
 	}
 	return false;
 }
+
+static void _count_used_cpus(uint16_t threads_per_core, uint16_t cpus_per_task,
+			     uint16_t ntasks_per_core, bool use_tpc,
+			     int *remain_cpt, uint16_t *avail_cpus,
+			     uint16_t *cpu_count)
+{
+	if (*avail_cpus >= threads_per_core) {
+		int used;
+		if (use_tpc) {
+			used = threads_per_core;
+		} else if ((ntasks_per_core == 1) &&
+			   (cpus_per_task > threads_per_core)) {
+			used = MIN(*remain_cpt, threads_per_core);
+		} else
+			used = threads_per_core;
+		*avail_cpus -= used;
+		*cpu_count  += used;
+		if (*remain_cpt <= used)
+			*remain_cpt = cpus_per_task;
+		else
+			*remain_cpt -= used;
+	} else {
+		*cpu_count += *avail_cpus;
+		*avail_cpus = 0;
+	}
+}
 /*
  * _allocate_sc - Given the job requirements, determine which CPUs/cores
  *                from the given node can be allocated (if any) to this
@@ -221,6 +247,7 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 	uint16_t max_cpu_per_req_sock = INFINITE16;
 	avail_res_t *avail_res = xmalloc(sizeof(avail_res_t));
 	bitstr_t *tmp_core = NULL;
+	bool use_tpc = false;
 
 
 	if (is_cons_tres) {
@@ -560,6 +587,11 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 		i = sockets;
 	}
 
+	if (is_cons_tres &&
+	    (slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
+	    (details_ptr->min_gres_cpu > 0)) {
+		use_tpc = true;
+	}
 	for ( ; ((i < sockets) && (avail_cpus > 0)); i++) {
 		if (bit_test(req_sock_map, i)) {
 			for (j = 0; j < cores_per_socket &&
@@ -584,28 +616,10 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 				 * the selection logic providing more CPUs than allowed
 				 * after task-related data processing of stage 3
 				 */
-				if (avail_cpus >= threads_per_core) {
-					int used;
-					if (is_cons_tres &&
-					    (slurm_conf.select_type_param &
-					     CR_ONE_TASK_PER_CORE) &&
-					    (details_ptr->min_gres_cpu > 0)) {
-						used = threads_per_core;
-					} else if ((ntasks_per_core == 1) &&
-						   (cpus_per_task > threads_per_core)) {
-						used = MIN(tmp_cpt, threads_per_core);
-					} else
-						used = threads_per_core;
-					avail_cpus -= used;
-					cpu_count  += used;
-					if (tmp_cpt <= used)
-						tmp_cpt = cpus_per_task;
-					else
-						tmp_cpt -= used;
-				} else {
-					cpu_count += avail_cpus;
-					avail_cpus = 0;
-				}
+				_count_used_cpus(threads_per_core,
+						 cpus_per_task, ntasks_per_core,
+						 use_tpc, &tmp_cpt, &avail_cpus,
+						 &cpu_count);
 
 				bit_set(tmp_core, c);
 				if (cpu_cnt[i] > max_cpu_per_req_sock)
@@ -636,29 +650,9 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 			 * the selection logic providing more CPUs than allowed
 			 * after task-related data processing of stage 3
 			 */
-			if (avail_cpus >= threads_per_core) {
-				int used;
-				if (is_cons_tres &&
-				    (slurm_conf.select_type_param &
-				     CR_ONE_TASK_PER_CORE) &&
-				    (details_ptr->min_gres_cpu > 0)) {
-					used = threads_per_core;
-				} else if ((ntasks_per_core == 1) &&
-					   (cpus_per_task > threads_per_core)) {
-					used = MIN(tmp_cpt, threads_per_core);
-				} else
-					used = threads_per_core;
-				avail_cpus -= used;
-				cpu_count  += used;
-				if (tmp_cpt <= used)
-					tmp_cpt = cpus_per_task;
-				else
-					tmp_cpt -= used;
-			} else {
-				cpu_count += avail_cpus;
-				avail_cpus = 0;
-			}
-
+			_count_used_cpus(threads_per_core, cpus_per_task,
+				         ntasks_per_core, use_tpc, &tmp_cpt,
+					 &avail_cpus, &cpu_count);
 		} else
 			bit_clear(core_map, c);
 	}
