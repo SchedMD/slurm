@@ -4849,6 +4849,10 @@ extern bool acct_policy_is_job_preempt_exempt(job_record_t *job_ptr)
 	return now < preempt_time;
 }
 
+/*
+ * WARNING: Since we only look at the first partition's QOS, this function
+ * must only be used in places where we loop over all partitions in the job.
+ */
 extern void acct_policy_set_qos_order(job_record_t *job_ptr,
 				      slurmdb_qos_rec_t **qos_ptr_1,
 				      slurmdb_qos_rec_t **qos_ptr_2)

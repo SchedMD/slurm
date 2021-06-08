@@ -193,6 +193,16 @@ extern time_t acct_policy_get_preemptable_time(job_record_t *job_ptr);
  */
 extern bool acct_policy_is_job_preempt_exempt(job_record_t *job_ptr);
 
+/*
+ * acct_policy_set_qos_order - Set the pointers qos_ptr_1 and qos_ptr_2 to
+ * the job's QOS and the first partition's QOS. If the job has the flag
+ * OverPartQOS, then set qos_ptr_1 to the job's QOS, otherwise set qos_ptr_1 to
+ * the first partition's QOS. Set qos_ptr_2 to the other (lower priority) QOS
+ * only if it exists and is different from qos_ptr_1.
+ *
+ * WARNING: Since we only look at the first partition's QOS, this function
+ * must only be used in places where we loop over all partitions in the job.
+ */
 extern void acct_policy_set_qos_order(job_record_t *job_ptr,
 				      slurmdb_qos_rec_t **qos_ptr_1,
 				      slurmdb_qos_rec_t **qos_ptr_2);
