@@ -159,6 +159,22 @@ static void _dump_job_res(struct job_resources *job)
 	     job->nhosts, str);
 }
 
+static bool _check_ntasks_per_sock(uint16_t core, uint16_t socket,
+				   uint16_t threads_per_core, uint16_t cps,
+				   uint16_t *cpu_cnt, bitstr_t * core_map)
+{
+	if (!cpu_cnt[socket]) {	/* Start use of next socket */
+		cpu_cnt[socket] = threads_per_core;
+	} else {	/* Continued use of same socket */
+		if (cpu_cnt[socket] >= cps) {
+			/* do not allocate this core */
+			bit_clear(core_map, core);
+			return true;
+		}
+		cpu_cnt[socket] += threads_per_core;
+	}
+	return false;
+}
 /*
  * _allocate_sc - Given the job requirements, determine which CPUs/cores
  *                from the given node can be allocated (if any) to this
@@ -555,15 +571,11 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 				 * this socket has free cores, but make sure we don't
 				 * use more than are needed for ntasks_per_socket
 				 */
-				if (!cpu_cnt[i]) {	/* Start use of next socket */
-					cpu_cnt[i] = threads_per_core;
-				} else {	/* Continued use of same socket */
-					if (cpu_cnt[i] >= cps) {
-						/* do not allocate this core */
-						bit_clear(core_map, c);
-						continue;
-					}
-					cpu_cnt[i] += threads_per_core;
+				if (_check_ntasks_per_sock(c, i,
+							   threads_per_core,
+							   cps, cpu_cnt,
+							   core_map)) {
+					continue;
 				}
 				free_cores[i]--;
 				/*
@@ -613,16 +625,10 @@ static avail_res_t *_allocate_sc(job_record_t *job_ptr, bitstr_t *core_map,
 			 * this socket has free cores, but make sure we don't
 			 * use more than are needed for ntasks_per_socket
 			 */
-			if (!cpu_cnt[i]) {	/* Start use of next socket */
-				cpu_cnt[i] = threads_per_core;
-			} else {	/* Continued use of same socket */
-				if (cpu_cnt[i] >= cps) {
-					/* do not allocate this core */
-					bit_clear(core_map, c);
-					continue;
-				}
-				cpu_cnt[i] += threads_per_core;
-			}
+			if (_check_ntasks_per_sock(c, i, threads_per_core, cps,
+						   cpu_cnt, core_map))
+				continue;
+
 			free_cores[i]--;
 			/*
 			 * we have to ensure that cpu_count is not bigger than
