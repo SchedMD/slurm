@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "May 2021" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "June 2021" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -759,8 +759,13 @@ from command line parameters. This option applies to job allocations.
 \fB\-\-exact\fR
 Allow a step access to only the resources requested for the step.
 By default, all non-GRES resources on each node in the step allocation will be
-used. Note that no other parallel step will have access to those CPUs
-unless \-\-overlap is specified. This option applies to step allocations.
+used. This option only applies to step allocations.
+.br
+\fBNOTE\fR: Parallel steps will either be blocked or rejected until requested
+step resources are available unless \-\-overlap is specified. Job resources
+can be held after the completion of an srun command while Slurm does job
+cleanup. Step epilogs and/or SPANK plugins can further delay the release of
+step resources.
 
 .TP
 \fB\-\-epilog\fR=<\fIexecutable\fR>
@@ -871,9 +876,10 @@ See also the \fB\-\-gpus\-per\-node\fR, \fB\-\-gpus\-per\-socket\fR and
 .TP
 \fB\-\-gpu\-bind\fR=[verbose,]<\fItype\fR>
 Bind tasks to specific GPUs.
-By default every spawned task can access every GPU allocated to the job.
+By default every spawned task can access every GPU allocated to the step.
 If "verbose," is specified before <\fItype\fR>, then print out GPU binding
-information.
+debug information to the stderr of the tasks. GPU binding is ignored if there is
+only one task.
 
 Supported \fItype\fR options:
 .RS

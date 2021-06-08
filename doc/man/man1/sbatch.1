@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "May 2021" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "June 2021" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -681,9 +681,10 @@ See also the \fB\-\-gpus\-per\-node\fR, \fB\-\-gpus\-per\-socket\fR and
 .TP
 \fB\-\-gpu\-bind\fR=[verbose,]<\fItype\fR>
 Bind tasks to specific GPUs.
-By default every spawned task can access every GPU allocated to the job.
+By default every spawned task can access every GPU allocated to the step.
 If "verbose," is specified before <\fItype\fR>, then print out GPU binding
-information.
+debug information to the stderr of the tasks. GPU binding is ignored if there is
+only one task.
 
 Supported \fItype\fR options:
 .RS

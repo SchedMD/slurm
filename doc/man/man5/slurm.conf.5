@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "May 2021" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "June 2021" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -798,7 +798,7 @@ Multiple options may be comma separated.
 .RS
 .TP
 \fBdisable_remote_singleton\fR
-By default, when a federated job has a singleton dependeny, each cluster in the
+By default, when a federated job has a singleton dependency, each cluster in the
 federation must clear the singleton dependency before the job's singleton
 dependency is considered satisfied. Enabling this option means that only the
 origin cluster must clear the singleton dependency. This option must be set
@@ -1584,7 +1584,7 @@ It only takes effect upon restart of the slurmctld daemon.
 The maximum job id to be used for jobs submitted to Slurm without a specific
 requested value. Job ids are unsigned 32bit integers with the first 26 bits
 reserved for local job ids and the remaining 6 bits reserved for a cluster id
-to identify a federated job's origin. The maximun allowed local job id is
+to identify a federated job's origin. The maximum allowed local job id is
 67,108,863 (0x3FFFFFF). The default value is 67,043,328 (0x03ff0000).
 \fBMaxJobId\fR only applies to the local job id and not the federated job id.
 Job id values generated will be incremented by 1 for each subsequent job. Once
@@ -3173,7 +3173,7 @@ Allow running jobs to request additional nodes be merged in with the current
 job allocation.
 .TP
 \fBpreempt_reorder_count=#\fR
-Specify how many attempts should be made in reording preemptable jobs to
+Specify how many attempts should be made in reordering preemptable jobs to
 minimize the count of jobs preempted.
 The default value is 1. High values may adversely impact performance.
 The logic to support this option is only available in the select/cons_res and
@@ -3458,7 +3458,7 @@ boards and minimizes the number of sockets (within minimum boards)
 used for the allocation.
 This default behavior can be overridden specifying a particular
 "\-m" parameter with srun/salloc/sbatch.
-Without this option, cores will be allocated cyclicly across the sockets.
+Without this option, cores will be allocated cyclically across the sockets.
 .TP
 \fBCR_LLN\fR
 Schedule resources to jobs on the least loaded nodes (based upon the number
@@ -3566,7 +3566,7 @@ Log errors and verbose informational messages and even more debugging messages
 The short, or long, hostname of the machine where Slurm control daemon is
 executed (i.e. the name returned by the command "hostname \-s").
 This hostname is optionally followed by the address, either the IP address or
-a name by which the address can be identifed, enclosed in parentheses (e.g.
+a name by which the address can be identified, enclosed in parentheses (e.g.
 SlurmctldHost=slurmctl-primary(12.34.56.78)). This value must be specified at
 least once. If specified more than once, the first hostname named will be
 where the daemon runs.
@@ -3626,7 +3626,7 @@ power_save thread will do work sooner if there are node state changes. Default
 is 10 seconds.
 .TP
 \fBpower_save_min_interval\fR
-How often the power_save thread, at a minimun, looks to resume and suspend
+How often the power_save thread, at a minimum, looks to resume and suspend
 nodes. Default is 0.
 .TP
 \fBmax_dbd_msg_action\fR
@@ -3701,7 +3701,7 @@ becomes the primary server. By default no program is executed.
 When using virtual IP addresses to manage High Available Slurm services,
 this program can be used to add the IP address to an interface (and optionally
 try to kill the unresponsive  slurmctld daemon and flush the ARP caches on
-nodes on the local ethernet fabric).
+nodes on the local Ethernet fabric).
 See also the related "SlurmctldPrimaryOffProg" parameter.
 .TP
 \fBSlurmctldSyslogDebug\fR
@@ -5607,7 +5607,7 @@ Location of the slurm.conf file. Available in \fBProlog\fR and \fBEpilog\fR.
 \fBSLURMD_NODENAME\fR
 Name of the node running the task. In the case of a parallel job executing
 on multiple compute nodes, the various tasks will have this environment
-variable set to different values on each compute node. Availble in
+variable set to different values on each compute node. Available in
 \fBProlog\fR and \fBEpilog\fR.
 .TP
 \fBSLURM_JOB_ACCOUNT\fR
