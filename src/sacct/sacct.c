@@ -162,6 +162,7 @@ int main(int argc, char **argv)
 {
 	enum {
 		SACCT_LIST,
+		SACCT_LIST_DATA,
 		SACCT_HELP,
 		SACCT_USAGE
 	} op;
@@ -177,6 +178,8 @@ int main(int argc, char **argv)
 
 	if (params.opt_help)
 		op = SACCT_HELP;
+	else if (params.mimetype)
+		op = SACCT_LIST_DATA;
 	else
 		op = SACCT_LIST;
 
@@ -193,6 +196,9 @@ int main(int argc, char **argv)
 		else
 			do_list();
 		break;
+	case SACCT_LIST_DATA:
+		dump_data(argc, argv);
+		break;
 	case SACCT_HELP:
 		do_help();
 		break;
@@ -205,6 +211,7 @@ int main(int argc, char **argv)
 	sacct_fini();
 
 #if MEMORY_LEAK_DEBUG
+	data_fini();
 	slurm_auth_fini();
 	slurm_conf_destroy();
 	log_fini();

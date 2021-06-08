@@ -254,6 +254,10 @@ See the \fBDEFAULT TIME WINDOW\fR for details about how this option
 changes the default \-S and \-E options.
 
 .TP
+\f3\-\-json\fP
+Dump job information as JSON. All other formating arugments will be ignored.
+
+.TP
 \f3\-k\fP\f3,\fP \f3\-\-timelimit-min\fP
 Only send data about jobs with this timelimit.  If used with
 timelimit_max this will be the minimum timelimit of the range.
@@ -483,6 +487,10 @@ into consideration.
 
 \fBNOTE\fR: Without including steps, utilization statistics for job
 allocation(s) will be reported as zero.
+
+.TP
+\f3\-\-yaml\fP
+Dump job information as YAML. All other formating arugments will be ignored.
 
 .SS "Job Accounting Fields"
 The following describes each job accounting field:

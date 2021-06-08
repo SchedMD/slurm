@@ -38,6 +38,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/data.h"
 #include "src/common/parse_time.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
@@ -56,6 +57,8 @@
 #define OPT_LONG_WHETJOB   0x106
 #define OPT_LONG_LOCAL_UID 0x107
 #define OPT_LONG_ENV       0x108
+#define OPT_LONG_JSON      0x109
+#define OPT_LONG_YAML      0x110
 
 #define JOB_HASH_SIZE 1000
 
@@ -379,6 +382,8 @@ sacct [<OPTION>]                                                            \n \
                    jobs. Adding .step will display the specific job step of \n\
                    that job. (A step id of 'batch' will display the         \n\
                    information about the batch step.)                       \n\
+     --json:                                                                \n\
+                   Produce JSON output                                      \n\
      -k, --timelimit-min:                                                   \n\
                    Only send data about jobs with this timelimit.           \n\
                    If used with timelimit_max this will be the minimum      \n\
@@ -472,6 +477,8 @@ sacct [<OPTION>]                                                            \n \
      -X, --allocations:                                                     \n\
 	           Only show statistics relevant to the job allocation      \n\
 	           itself, not taking steps into consideration.             \n\
+     --yaml:                                                                \n\
+                   Produce YAML output                                      \n\
 	                                                                    \n\
      Note, valid start/end time formats are...                              \n\
 	           HH:MM[:SS] [AM|PM]                                       \n\
@@ -757,6 +764,8 @@ extern void parse_command_line(int argc, char **argv)
                 {"wckeys",         required_argument, 0,    'W'},
                 {"whole-hetjob",   optional_argument, 0,    OPT_LONG_WHETJOB},
                 {"associations",   required_argument, 0,    'x'},
+                {"json", no_argument, 0, OPT_LONG_JSON},
+                {"yaml", no_argument, 0, OPT_LONG_YAML},
                 {0,                0,		      0,    0}};
 
 	params.opt_uid = getuid();
@@ -1039,6 +1048,14 @@ extern void parse_command_line(int argc, char **argv)
 			/* 't' is deprecated and was replaced with 'X'.	*/
 		case 'X':
 			job_cond->flags |= JOBCOND_FLAG_NO_STEP;
+			break;
+		case OPT_LONG_JSON:
+			params.mimetype = MIME_TYPE_JSON;
+			data_init(MIME_TYPE_JSON_PLUGIN, NULL);
+			break;
+		case OPT_LONG_YAML:
+			params.mimetype = MIME_TYPE_YAML;
+			data_init(MIME_TYPE_YAML_PLUGIN, NULL);
 			break;
 		case ':':
 		case '?':	/* getopt() has explained it */
