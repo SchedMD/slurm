@@ -386,7 +386,8 @@ static void _filter_job_records(void)
 			 * not begin with a '*', act on all wckeys with the same
 			 * name, default or not.
 			 */
-			if ((opt.wckey[0] != '*') && (job_key[0] == '*'))
+			if ((opt.wckey[0] != '*') && job_key &&
+			    (job_key[0] == '*'))
 				job_key++;
 
 			if (xstrcmp(job_key, opt.wckey) != 0) {

@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- job_container/tmpfs - Fix issue when restarting slurmd where the namespace
     mount points could disappear.
  -- sacct - avoid truncating JobId at 34 characters.
+ -- scancel - fix segfault when --wckey filtering option is used.
 
 * Changes in Slurm 20.11.7
 ==========================
