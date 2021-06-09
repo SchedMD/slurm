@@ -130,7 +130,7 @@ the <b>slurmctld</b> daemon to notify the <b>slurmd</b> daemons on allocated
 nodes that the job is to be ended. The <b>slurmd</b> daemon does the following:
 <ol>
 <li>Send a SIGCONT and SIGTERM signal to any user tasks</li> 
-<li>Wait <b>KilLWait</b> seconds if there are any user tasks</li>
+<li>Wait <b>KillWait</b> seconds if there are any user tasks</li>
 <li>Send a SIGKILL signal to any user tasks</li>
 <li>Wait for all tasks to complete</li>
 <li>Execute any <b>Epilog</b> program</li>
@@ -138,6 +138,6 @@ nodes that the job is to be ended. The <b>slurmd</b> daemon does the following:
 </ol>
 
 
-<p style="text-align:center;">Last modified 17 June 2020</p>
+<p style="text-align:center;">Last modified 9 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
