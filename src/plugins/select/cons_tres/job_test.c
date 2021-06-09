@@ -582,7 +582,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 				gres_sched_add(
 					job_ptr->gres_list_req,
 					avail_res_array[i]->sock_gres_list,
-					avail_cpus);
+					&avail_cpus);
 			}
 		}
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
@@ -863,7 +863,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 					gres_sched_add(
 						job_ptr->gres_list_req,
 						avail_res_array[i]->
-						sock_gres_list, avail_cpus);
+						sock_gres_list, &avail_cpus);
 				}
 			}
 			for (i = (best_fit_req - 1);
@@ -907,7 +907,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 					gres_sched_add(
 						job_ptr->gres_list_req,
 						avail_res_array[i]->
-						sock_gres_list, avail_cpus);
+						sock_gres_list, &avail_cpus);
 				}
 			}
 		} else {
@@ -1003,7 +1003,7 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 					gres_sched_add(
 						job_ptr->gres_list_req,
 						avail_res_array[i]->
-						sock_gres_list, avail_cpus);
+						sock_gres_list, &avail_cpus);
 				}
 			}
 		}
@@ -1119,7 +1119,7 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 					gres_sched_add(
 						job_ptr->gres_list_req,
 						avail_res_array[i]->
-						sock_gres_list, avail_cpus);
+						sock_gres_list, &avail_cpus);
 				}
 			} else {	/* node not selected (yet) */
 				debug("%pJ required node %s lacks available resources",
@@ -1189,7 +1189,7 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 				gres_sched_add(
 					job_ptr->gres_list_req,
 					avail_res_array[i]->sock_gres_list,
-					avail_cpus);
+					&avail_cpus);
 			}
 			if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 			    gres_sched_test(job_ptr->gres_list_req,
@@ -1303,7 +1303,7 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 					gres_sched_add(
 						job_ptr->gres_list_req,
 						avail_res_array[i]->
-						sock_gres_list, avail_cpus);
+						sock_gres_list, &avail_cpus);
 				}
 			} else {	/* node not selected (yet) */
 				debug("%pJ required node %s lacks available resources",
@@ -1386,7 +1386,7 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 						job_ptr->gres_list_req,
 						avail_res_array[i]->
 						sock_gres_list,
-						avail_cpus);
+						&avail_cpus);
 				}
 				if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 				    gres_sched_test(job_ptr->gres_list_req,
@@ -1678,7 +1678,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 				gres_sched_add(
 					job_ptr->gres_list_req,
 					avail_res_array[i]->sock_gres_list,
-					avail_cpus);
+					&avail_cpus);
 			}
 		}
 
@@ -1903,7 +1903,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 				gres_sched_add(
 					job_ptr->gres_list_req,
 					avail_res_array[i]->sock_gres_list,
-					avail_cpus);
+					&avail_cpus);
 			}
 		}
 
@@ -2059,7 +2059,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 						job_ptr->gres_list_req,
 						avail_res_array[j]->
 						sock_gres_list,
-						avail_cpus);
+						&avail_cpus);
 				}
 				bit_set(node_map, j);
 				if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
@@ -2117,7 +2117,7 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 						job_ptr->gres_list_req,
 						avail_res_array[j]->
 						sock_gres_list,
-						avail_cpus);
+						&avail_cpus);
 				}
 				bit_set(node_map, j);
 				if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
@@ -2324,7 +2324,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 				gres_sched_add(
 					job_ptr->gres_list_req,
 					avail_res_array[i]->sock_gres_list,
-					avail_cpus);
+					&avail_cpus);
 			}
 		}
 
@@ -2554,7 +2554,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 				gres_sched_add(
 					job_ptr->gres_list_req,
 					avail_res_array[i]->sock_gres_list,
-					avail_cpus);
+					&avail_cpus);
 			}
 		}
 
@@ -2656,7 +2656,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 						job_ptr->gres_list_req,
 						avail_res_array[j]->
 						sock_gres_list,
-						avail_cpus);
+						&avail_cpus);
 				}
 				bit_set(node_map, j);
 				if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
@@ -2725,7 +2725,7 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 				gres_sched_add(
 					job_ptr->gres_list_req,
 					avail_res_array[i]->sock_gres_list,
-					avail_cpus);
+					&avail_cpus);
 			}
 			bit_set(node_map, i);
 			if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
@@ -2874,7 +2874,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 					gres_sched_add(
 						job_ptr->gres_list_req,
 						avail_res_array[i]->
-						sock_gres_list, avail_cpus);
+						sock_gres_list, &avail_cpus);
 				}
 			} else {	/* node not selected (yet) */
 				debug("%pJ required node %s not available",
@@ -2969,7 +2969,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 				gres_sched_add(
 					job_ptr->gres_list_req,
 					avail_res_array[i]->sock_gres_list,
-					avail_cpus);
+					&avail_cpus);
 			}
 			if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 			    gres_sched_test(job_ptr->gres_list_req,
@@ -3083,7 +3083,7 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 					gres_sched_add(
 						job_ptr->gres_list_req,
 						avail_res_array[i]->
-						sock_gres_list, avail_cpus);
+						sock_gres_list, &avail_cpus);
 				}
 			} else {	/* node not selected (yet) */
 				debug("%pJ required node %s lacks available resources",
@@ -3153,7 +3153,7 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 				gres_sched_add(
 					job_ptr->gres_list_req,
 					avail_res_array[i]->sock_gres_list,
-					avail_cpus);
+					&avail_cpus);
 			}
 			if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 			    gres_sched_test(job_ptr->gres_list_req,

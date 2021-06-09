@@ -205,10 +205,10 @@ extern bool gres_sched_test2(List job_gres_list, List sock_gres_list,
  * Update a job's total_gres counter as we add a node to potential allocation
  * IN job_gres_list - List of job's GRES requirements (job_gres_state_t)
  * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
- * IN avail_cpus - CPUs currently available on this node
+ * IN/OUT avail_cpus - CPUs currently available on this node
  */
 extern void gres_sched_add(List job_gres_list, List sock_gres_list,
-			   uint16_t avail_cpus)
+			   uint16_t *avail_cpus)
 {
 	ListIterator iter;
 	gres_state_t *job_gres_state;
@@ -230,8 +230,9 @@ extern void gres_sched_add(List job_gres_list, List sock_gres_list,
 		if (!sock_data)		/* None of this GRES available */
 			continue;
 		if (job_data->cpus_per_gres) {
-			gres_limit = avail_cpus / job_data->cpus_per_gres;
+			gres_limit = *avail_cpus / job_data->cpus_per_gres;
 			gres_limit = MIN(gres_limit, sock_data->total_cnt);
+			*avail_cpus = gres_limit * job_data->cpus_per_gres;
 		} else
 			gres_limit = sock_data->total_cnt;
 		job_data->total_gres += gres_limit;
