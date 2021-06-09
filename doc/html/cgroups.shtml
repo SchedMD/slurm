@@ -17,7 +17,7 @@ virtual filesystem.</li>
 a set of parameters to the cgroups in a hierarchy.</li>
 <li><b>Hierarchy</b> - a set of cgroups organized in a tree structure, with one
 or more associated subsystems.</li>
-<li><b>State Objects</b> - pseudofiles that represent the state of a cgroup or
+<li><b>State Objects</b> - pseudo-files that represent the state of a cgroup or
 apply controls to a cgroup:
 <ul>
 <li><i>tasks</i> - identifies the processes (PIDs) in the cgroup.
@@ -155,6 +155,6 @@ hierarchies:</p>
 use more than one node will have a cgroup structure on each node.</p>
 
 
-<p style="text-align:center;">Last modified 16 June 2020</p>
+<p style="text-align:center;">Last modified 9 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
