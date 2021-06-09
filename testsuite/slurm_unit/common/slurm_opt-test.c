@@ -263,8 +263,7 @@ START_TEST(test_data_job)
 	data_set_string(arg, "invalid");
 	ck_assert_msg(slurm_process_option_data(&opt, 'm', arg, errors) != 0,
 		      "distribution");
-	ck_assert_msg(opt.distribution == SLURM_DIST_UNKNOWN,
-		      "distribution value");
+	ck_assert_msg(opt.distribution == SLURM_ERROR, "distribution value");
 	ck_assert_msg(opt.plane_size == NO_VAL, "distribution value");
 
 	data_set_string(arg, "cyclic:block:fcyclic");
