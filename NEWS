@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
  -- Fail step creation if -n is not multiple of --ntasks-per-gpu.
  -- job_container/tmpfs - Fix slowdown on teardown.
  -- Fix problem with SlurmctldProlog where requeued jobs would never launch.
+ -- job_container/tmpfs - Fix issue when restarting slurmd where the namespace
+    mount points could disappear.
 
 * Changes in Slurm 20.11.7
 ==========================
