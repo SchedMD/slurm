@@ -1393,7 +1393,7 @@ static slurm_cli_opt_t slurm_opt_disable_status = {
 static int arg_set_distribution(slurm_opt_t *opt, const char *arg)
 {
 	opt->distribution = verify_dist_type(arg, &opt->plane_size);
-	if (opt->distribution == SLURM_DIST_UNKNOWN) {
+	if (opt->distribution == SLURM_ERROR) {
 		error("Invalid --distribution specification");
 		exit(-1);
 	}
@@ -1412,7 +1412,7 @@ static int arg_set_data_distribution(slurm_opt_t *opt, const data_t *arg,
 		/* FIXME: ignore SLURM_DIST_PLANESIZE envvar for slurmrestd */
 		opt->distribution = verify_dist_type(str, &opt->plane_size);
 
-		if (opt->distribution == SLURM_DIST_UNKNOWN) {
+		if (opt->distribution == SLURM_ERROR) {
 			rc = SLURM_ERROR;
 			ADD_DATA_ERROR("Invalid distribution", rc);
 		}
