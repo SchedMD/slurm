@@ -11501,6 +11501,8 @@ documents those changes that are of interest to users and administrators.
  -- BLUEGENE - critical fix where jobs would be killed incorrectly.
  -- BLUEGENE - fix for sview putting multiple ionodes on to nodelists when
     viewing the jobs tab.
+ -- Remove SLURM_DIST_LLLP environment variable in favor of just
+    SLURM_DISTRIBUTION.
 
 * Changes in SLURM 2.1.0
 ========================

@@ -1343,7 +1343,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "state", "smallint unsigned not null" },
 		{ "step_name", "text not null" },
 		{ "task_cnt", "int unsigned not null" },
-		{ "task_dist", "smallint default 0 not null" },
+		{ "task_dist", "int default 0 not null" },
 		{ "time_start", "bigint unsigned default 0 not null" },
 		{ "time_end", "bigint unsigned default 0 not null" },
 		{ "time_suspended", "bigint unsigned default 0 not null" },

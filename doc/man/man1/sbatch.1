@@ -962,25 +962,38 @@ Note that the SlurmDBD must be up for this option to work properly.
 
 .TP
 \fB\-m\fR, \fB\-\-distribution\fR=
-\fIarbitrary\fR|<\fIblock\fR|\fIcyclic\fR|\fIplane=<options>\fR[:\fIblock\fR|\fIcyclic\fR|\fIfcyclic\fR]>
+\fI*\fR|\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>
+\fR[:\fI*\fR|\fIblock\fR|\fIcyclic\fR|\fIfcyclic\fR[:\fI*\fR|\fIblock\fR|
+\fIcyclic\fR|\fIfcyclic\fR]][,\fIPack\fR|\fINoPack\fR]
 
 Specify alternate distribution methods for remote processes.
-In sbatch, this only sets environment variables that will be used by
-subsequent srun requests.
-This option controls the assignment of tasks to the nodes on which
+For job allocation, this sets environment variables that will be used by
+subsequent srun requests and also affects which cores will be selected for
+job allocation.
+
+This option controls the distribution of tasks to the nodes on which
 resources have been allocated, and the distribution of those resources
 to tasks for binding (task affinity). The first distribution
-method (before the ":") controls the distribution of resources across
-nodes. The optional second distribution method (after the ":")
-controls the distribution of resources across sockets within a node.
-Note that with select/cons_res, the number of cpus allocated on each
-socket and node may be different. Refer to
+method (before the first ":") controls the distribution of tasks to nodes. 
+The second distribution method (after the first ":")
+controls the distribution of allocated CPUs across sockets for binding
+to tasks. The third distribution method (after the second ":") controls
+the distribution of allocated CPUs across cores for binding to tasks.
+The second and third distributions apply only if task affinity is enabled.
+The third distribution is supported only if the task/cgroup plugin is
+configured. The default value for each distribution type is specified by *.
+
+Note that with select/cons_res and select/cons_tres, the number of CPUs
+allocated to each socket and node may be different. Refer to
 https://slurm.schedmd.com/mc_support.html
-for more information on resource allocation, assignment of tasks to
+for more information on resource allocation, distribution of tasks to
 nodes, and binding of tasks to CPUs.
 .RS
+First distribution method (distribution of tasks across nodes):
 
-First distribution method:
+.TP
+.B *
+Use the default method for distributing tasks to nodes (block).
 .TP
 .B block
 The block distribution method will distribute tasks to a node such
@@ -1021,7 +1034,7 @@ https://slurm.schedmd.com/dist_plane.html
 .B arbitrary
 The arbitrary method of distribution will allocate processes in\-order
 as listed in file designated by the environment variable
-SLURM_HOSTFILE.  If this variable is listed it will override any
+SLURM_HOSTFILE.  If this variable is listed it will over ride any
 other method specified.  If not set the method will default to block.
 Inside the hostfile must contain at minimum the number of hosts
 requested and be one per line or comma separated.  If specifying a
@@ -1032,27 +1045,78 @@ will be laid out on the nodes in the order of the file.
 controls the nodes to be allocated to the job and not the allocation of
 CPUs on those nodes. This option is meant primarily to control a job step's
 task layout in an existing job allocation for the srun command.
+.br
+\fBNOTE:\fR If the number of tasks is given and a list of requested nodes is
+also given, the number of nodes used from that list will be reduced to match
+that of the number of tasks if the number of nodes in the list is greater than
+the number of tasks.
 
 .TP
-Second distribution method:
+Second distribution method (distribution of CPUs across sockets for binding):
+
+.TP
+.B *
+Use the default method for distributing CPUs across sockets (cyclic).
 .TP
 .B block
-The block distribution method will distribute tasks to sockets such
-that consecutive tasks share a socket.
+The block distribution method will distribute allocated CPUs 
+consecutively from the same socket for binding to tasks, before using
+the next consecutive socket.
 .TP
 .B cyclic
-The cyclic distribution method will distribute tasks to sockets such
-that consecutive tasks are distributed over consecutive sockets (in a
-round\-robin fashion).
+The cyclic distribution method will distribute allocated CPUs for
+binding to a given task consecutively from the same socket, and
+from the next consecutive socket for the next task, in a 
+round\-robin fashion across sockets. 
 Tasks requiring more than one CPU will have all of those CPUs allocated on a
 single socket if possible.
 .TP
 .B fcyclic
-The fcyclic distribution method will distribute tasks to sockets such
-that consecutive tasks are distributed over consecutive sockets (in a
-round\-robin fashion).
+The fcyclic distribution method will distribute allocated CPUs 
+for binding to tasks from consecutive sockets in a
+round\-robin fashion across the sockets.
 Tasks requiring more than one CPU will have each CPUs allocated in a cyclic
 fashion across sockets.
+
+.TP
+Third distribution method (distribution of CPUs across cores for binding):
+
+.TP
+.B *
+Use the default method for distributing CPUs across cores
+(inherited from second distribution method).
+.TP
+.B block
+The block distribution method will distribute allocated CPUs 
+consecutively from the same core for binding to tasks, before using
+the next consecutive core.
+.TP
+.B cyclic
+The cyclic distribution method will distribute allocated CPUs for
+binding to a given task consecutively from the same core, and
+from the next consecutive core for the next task, in a 
+round\-robin fashion across cores. 
+.TP
+.B fcyclic
+The fcyclic distribution method will distribute allocated CPUs 
+for binding to tasks from consecutive cores in a
+round\-robin fashion across the cores.
+
+
+.TP
+Optional control for task distribution over nodes:
+
+.TP
+.B Pack
+Rather than evenly distributing a job step's tasks evenly across its allocated
+nodes, pack them as tightly as possible on the nodes.
+This only applies when the "block" task distribution method is used.
+.TP
+.B NoPack
+Rather than packing a job step's tasks as tightly as possible on the nodes,
+distribute them evenly.
+This user option will supersede the SelectTypeParameters CR_Pack_Nodes
+configuration parameter.
 .RE
 
 .TP

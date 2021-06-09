@@ -286,7 +286,7 @@ char *getenvp(char **env, const char *name)
 int setup_env(env_t *env, bool preserve_env)
 {
 	int rc = SLURM_SUCCESS;
-	char *addr, *dist = NULL, *lllp_dist = NULL;
+	char *addr, *dist = NULL;
 	char addrbuf[INET6_ADDRSTRLEN];
 
 	if (env == NULL)
@@ -368,12 +368,14 @@ int setup_env(env_t *env, bool preserve_env)
 		rc = SLURM_ERROR;
 	}
 
-	set_distribution(env->distribution, &dist, &lllp_dist);
-	if (dist)
+	set_distribution(env->distribution, &dist);
+	if (dist) {
 		if (setenvf(&env->env, "SLURM_DISTRIBUTION", "%s", dist)) {
 			error("Can't set SLURM_DISTRIBUTION env variable");
 			rc = SLURM_ERROR;
 		}
+		xfree(dist);
+	}
 
 	if ((env->distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
 		if (setenvf(&env->env, "SLURM_DIST_PLANESIZE", "%u",
@@ -381,13 +383,6 @@ int setup_env(env_t *env, bool preserve_env)
 			error("Can't set SLURM_DIST_PLANESIZE env variable");
 			rc = SLURM_ERROR;
 		}
-
-	if (lllp_dist)
-		if (setenvf(&env->env, "SLURM_DIST_LLLP", "%s", lllp_dist)) {
-			error("Can't set SLURM_DIST_LLLP env variable");
-			rc = SLURM_ERROR;
-		}
-
 
 	if (env->cpu_bind_type && !env->batch_flag &&
 	    (env->stepid != SLURM_INTERACTIVE_STEP)) {
@@ -936,7 +931,7 @@ extern int env_array_for_job(char ***dest,
 			     const job_desc_msg_t *desc, int het_job_offset)
 {
 	char *tmp = NULL;
-	char *dist = NULL, *lllp_dist = NULL;
+	char *dist = NULL;
 	char *key, *value;
 	slurm_step_layout_t *step_layout = NULL;
 	int i, rc = SLURM_SUCCESS;
@@ -970,19 +965,16 @@ extern int env_array_for_job(char ***dest,
 	env_array_overwrite_het_fmt(dest, "SLURM_JOB_PARTITION", het_job_offset,
 				    "%s", alloc->partition);
 
-	set_distribution(desc->task_dist, &dist, &lllp_dist);
+	set_distribution(desc->task_dist, &dist);
 	if (dist) {
 		env_array_overwrite_het_fmt(dest, "SLURM_DISTRIBUTION",
 					    het_job_offset, "%s", dist);
+		xfree(dist);
 	}
 	if ((desc->task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE) {
 		env_array_overwrite_het_fmt(dest, "SLURM_DIST_PLANESIZE",
 					    het_job_offset, "%u",
 					    desc->plane_size);
-	}
-	if (lllp_dist) {
-		env_array_overwrite_het_fmt(dest, "SLURM_DIST_LLLP",
-					    het_job_offset, "%s", lllp_dist);
 	}
 	tmp = uint32_compressed_to_str(alloc->num_cpu_groups,
 					alloc->cpus_per_node,

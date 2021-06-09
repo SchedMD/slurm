@@ -53,9 +53,11 @@ void print_slurm_version(void);
 /* print the available gres options */
 void print_gres_help(void);
 
-/* set distribution type strings from distribution type const */
-void set_distribution(task_dist_states_t distribution,
-		      char **dist, char **lllp_dist);
+/*
+ * Set distribution type strings from distribution type const.
+ * The value is xmalloc'd and returned in *dist; caller must free.
+ */
+void set_distribution(task_dist_states_t distribution, char **dist);
 
 /* verify the requested distribution type */
 task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size);
