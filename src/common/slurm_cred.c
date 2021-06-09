@@ -1626,8 +1626,19 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 			goto unpack_error;
 		}
 		safe_unpack16(&cred->job_core_spec, buffer);
+
 		safe_unpack64(&cred->job_mem_limit, buffer);
+		cred->job_mem_alloc_size = 1;
+		cred->job_mem_alloc = xmalloc(sizeof(uint64_t));
+		cred->job_mem_alloc[0] = cred->job_mem_limit;
+		cred->job_mem_alloc_rep_count = xmalloc(sizeof(uint64_t));
+
 		safe_unpack64(&cred->step_mem_limit, buffer);
+		cred->step_mem_alloc_size = 1;
+		cred->step_mem_alloc = xmalloc(sizeof(uint64_t));
+		cred->step_mem_alloc[0] = cred->step_mem_limit;
+		cred->step_mem_alloc_rep_count = xmalloc(sizeof(uint64_t));
+
 		safe_unpackstr_xmalloc(&cred->job_constraints, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->step_hostlist, &len, buffer);
 		safe_unpack16(&cred->x11, buffer);
@@ -1651,6 +1662,10 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 				goto unpack_error;
 		}
 		safe_unpack32(&cred->job_nhosts, buffer);
+
+		cred->job_mem_alloc_rep_count[0] = cred->job_nhosts;
+		cred->step_mem_alloc_rep_count[0] = cred->job_nhosts;
+
 		safe_unpackstr_xmalloc(&cred->job_hostlist, &len, buffer);
 
 		/* "sigp" must be last */
@@ -1689,8 +1704,19 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 			goto unpack_error;
 		}
 		safe_unpack16(&cred->job_core_spec, buffer);
+
 		safe_unpack64(&cred->job_mem_limit, buffer);
+		cred->job_mem_alloc_size = 1;
+		cred->job_mem_alloc = xmalloc(sizeof(uint64_t));
+		cred->job_mem_alloc[0] = cred->job_mem_limit;
+		cred->job_mem_alloc_rep_count = xmalloc(sizeof(uint64_t));
+
 		safe_unpack64(&cred->step_mem_limit, buffer);
+		cred->step_mem_alloc_size = 1;
+		cred->step_mem_alloc = xmalloc(sizeof(uint64_t));
+		cred->step_mem_alloc[0] = cred->step_mem_limit;
+		cred->step_mem_alloc_rep_count = xmalloc(sizeof(uint64_t));
+
 		safe_unpackstr_xmalloc(&cred->job_constraints, &len, buffer);
 		safe_unpackstr_xmalloc(&cred->step_hostlist, &len, buffer);
 		safe_unpack16(&cred->x11, buffer);
@@ -1714,6 +1740,10 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 				goto unpack_error;
 		}
 		safe_unpack32(&cred->job_nhosts, buffer);
+
+		cred->job_mem_alloc_rep_count[0] = cred->job_nhosts;
+		cred->step_mem_alloc_rep_count[0] = cred->job_nhosts;
+
 		safe_unpackstr_xmalloc(&cred->job_hostlist, &len, buffer);
 
 		/* "sigp" must be last */
