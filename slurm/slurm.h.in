@@ -2962,6 +2962,7 @@ typedef struct {
 	uint16_t suspend_timeout;/* time required in order to perform a node
 				  * suspend operation */
 	char *switch_type;	/* switch or interconnect type */
+	char *switch_param;	/* SwitchParameters */
 	char *task_epilog;	/* pathname of task launch epilog */
 	char *task_plugin;	/* task launch plugin */
 	uint32_t task_plugin_param;	/* see CPU_BIND_* */

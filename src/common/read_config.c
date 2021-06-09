@@ -393,6 +393,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SuspendRate", S_P_UINT16},
 	{"SuspendTime", S_P_STRING},
 	{"SuspendTimeout", S_P_UINT16},
+	{"SwitchParameters", S_P_STRING},
 	{"SwitchType", S_P_STRING},
 	{"TaskEpilog", S_P_STRING},
 	{"TaskProlog", S_P_STRING},
@@ -2875,6 +2876,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->suspend_exc_nodes);
 	xfree (ctl_conf_ptr->suspend_exc_parts);
 	xfree (ctl_conf_ptr->suspend_program);
+	xfree (ctl_conf_ptr->switch_param);
 	xfree (ctl_conf_ptr->switch_type);
 	xfree (ctl_conf_ptr->task_epilog);
 	xfree (ctl_conf_ptr->task_plugin);
@@ -3068,6 +3070,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->suspend_time		= NO_VAL16;
 	ctl_conf_ptr->suspend_timeout		= 0;
 	xfree (ctl_conf_ptr->switch_type);
+	xfree(ctl_conf_ptr->switch_param);
 	xfree (ctl_conf_ptr->task_epilog);
 	xfree (ctl_conf_ptr->task_plugin);
 	ctl_conf_ptr->task_plugin_param		= 0;
@@ -4829,6 +4832,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	}
 	if (!s_p_get_uint16(&conf->suspend_timeout, "SuspendTimeout", hashtbl))
 		conf->suspend_timeout = DEFAULT_SUSPEND_TIMEOUT;
+
+	(void) s_p_get_string(&conf->switch_param, "SwitchParameters",
+			      hashtbl);
 
 	/* see above for switch_type, order dependent */
 

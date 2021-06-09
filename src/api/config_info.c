@@ -1731,6 +1731,11 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("SwitchParameters");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->switch_param);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SwitchType");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->switch_type);
 	list_append(ret_list, key_pair);

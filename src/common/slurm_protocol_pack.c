@@ -4417,6 +4417,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		pack16(build_ptr->suspend_rate, buffer);
 		pack32(build_ptr->suspend_time, buffer);
 		pack16(build_ptr->suspend_timeout, buffer);
+		packstr(build_ptr->switch_param, buffer);
 		packstr(build_ptr->switch_type, buffer);
 
 		packstr(build_ptr->task_epilog, buffer);
@@ -5406,6 +5407,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		safe_unpack16(&build_ptr->suspend_rate, buffer);
 		safe_unpack32(&build_ptr->suspend_time, buffer);
 		safe_unpack16(&build_ptr->suspend_timeout, buffer);
+		safe_unpackstr_xmalloc(&build_ptr->switch_param,
+		                       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&build_ptr->switch_type,
 		                       &uint32_tmp, buffer);
 
