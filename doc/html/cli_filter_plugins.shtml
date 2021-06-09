@@ -110,6 +110,9 @@ This function is called by the salloc, sbatch, or srun command line interface
 command line, or script (#SBATCH). The hook may be run multiple times per job
 component, once for an early pass (if implemented by the CLI), and again for
 the main pass.
+Note that this call is skipped for any srun command run within an existing job
+allocation to prevent settings from overriding the set of options that have been
+populated for the job based on the job environment.
 The options and early arguments are meant to be passed to <b>slurm_option_set()</b>
 which will set the option if it is in the appropriate pass. Failures to set
 an option may be a symptom of trying to set the option on the wrong pass. Given
@@ -169,6 +172,6 @@ cli_filter_p_post_submit().<br>
 <span class="commandline">stepid</span>
 (input) step id of the job if appropriate, NO_VAL otherwise<br>
 
-<p style="text-align:center;">Last modified 26 February 2021</p>
+<p style="text-align:center;">Last modified 9 June 2021</p>
 
 <!--#include virtual="footer.txt"-->

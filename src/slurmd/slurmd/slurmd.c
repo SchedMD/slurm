@@ -387,11 +387,10 @@ main (int argc, char **argv)
 	_msg_engine();
 
 	/*
-	 * Close fd here, otherwise we'll deadlock since create_pidfile()
-	 * flocks the pidfile.
+	 * Unlink now while the slurm_conf.pidfile is still accessible,
+	 * but do not close until later. Closing the file will release
+	 * the flock, which will then let a new slurmd process start.
 	 */
-	if (pidfd >= 0)			/* valid pidfd, non-error */
-		(void) close(pidfd);	/* Ignore errors */
 	if (unlink(slurm_conf.slurmd_pidfile) < 0)
 		error("Unable to remove pidfile `%s': %m",
 		      slurm_conf.slurmd_pidfile);
@@ -402,6 +401,13 @@ main (int argc, char **argv)
 	slurm_cred_fini();	/* must be after _destroy_conf() */
 	group_cache_purge();
 	file_bcast_purge();
+
+	/*
+	 * Explicitly close the pidfile after all other shutdown has completed
+	 * which will release the flock.
+	 */
+	if (pidfd >= 0)			/* valid pidfd, non-error */
+		(void) close(pidfd);	/* Ignore errors */
 
 	info("Slurmd shutdown completing");
 	log_fini();
