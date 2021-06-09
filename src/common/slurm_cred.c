@@ -1272,7 +1272,7 @@ static int _get_rep_count_idx(uint32_t *rep_count, uint32_t rep_count_size,
 			      int idx)
 {
 	int rep_count_sum = 0;
-	for (int i=0; i< rep_count_size; i++) {
+	for (int i = 0; i < rep_count_size; i++) {
 		if (rep_count_sum >= idx)
 			return i;
 		rep_count_sum++;
