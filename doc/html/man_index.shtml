@@ -26,7 +26,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="sshare.html">sshare</a></td><td>Tool for listing the shares of associations to a cluster.</td></tr>
 <tr><td><a href="sstat.html">sstat</a></td><td>Display various status information of a running job/step.</td></tr>
 <tr><td><a href="strigger.html">strigger</a></td><td>Used set, get or clear Slurm trigger information.</td></tr>
-<tr><td><a href="sview.html">sview</a></td><td>graphical user interface to view and modif. Slurm state.</td></tr>
+<tr><td><a href="sview.html">sview</a></td><td>graphical user interface to view and modify Slurm state.</td></tr>
 </table>
 
 <h2>Configuration Files</h2>
@@ -54,6 +54,6 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="spank.html">SPANK</a></td><td>Slurm Plug-in Architecture for Node and job (K)control</td></tr>
 </table>
 
-<p style="text-align:center;">Last modified 3 March 2021</p>
+<p style="text-align:center;">Last modified 9 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
