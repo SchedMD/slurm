@@ -38,36 +38,23 @@
 
 #include "cgroup_v2.h"
 
-/*
- * These variables are required by the generic plugin interface.  If they
- * are not found in the plugin, the plugin loader will ignore it.
- *
- * plugin_name - a string giving a human-readable description of the
- * plugin.  There is no maximum length, but the symbol must refer to
- * a valid string.
- *
- * plugin_type - a string suggesting the type of the plugin or its
- * applicability to a particular form of data or method of data handling.
- * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  Slurm uses the higher-level plugin
- * interface which requires this string to be of the form
- *
- *	<application>/<method>
- *
- * where <application> is a description of the intended application of
- * the plugin (e.g., "select" for Slurm node selection) and <method>
- * is a description of how this plugin satisfies that application.  Slurm will
- * only load select plugins if the plugin_type string has a
- * prefix of "select/".
- *
- * plugin_version - an unsigned 32-bit integer containing the Slurm version
- * (major.minor.micro combined into a single number).
- */
+#define SLURMD_CGDIR "/system"
+#define JOBS_CGDIR "/jobs"
+
 const char plugin_name[] = "Cgroup v2 plugin";
 const char plugin_type[] = "cgroup/v2";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
-static char *cg_root = NULL;
+static xcgroup_ns_t g_cg_ns;
+
+static xcgroup_t g_root_cg;
+static xcgroup_t g_job_cg;
+static xcgroup_t g_step_cg;
+static xcgroup_t g_step_user_cg;
+static xcgroup_t g_step_slurm_cg;
+static xcgroup_t g_sys_cg;
+
+static cgroup_oom_t *g_oom_step_results = NULL;
 
 static bool avail_controllers[CG_CTL_CNT];
 static bool enabled_controllers[CG_CTL_CNT];
@@ -79,208 +66,34 @@ const char *g_ctl_name[CG_CTL_CNT] = {
 	"cpu"
 };
 
-/* FIXME, THIS IS IN common/xcgroup.c currently*/
-/* FIXME, THIS IS IN common/xcgroup.c currently*/
-/* FIXME, THIS IS IN common/xcgroup.c currently*/
-/* FIXME, THIS IS IN common/xcgroup.c currently*/
-size_t _file_getsize(int fd)
-{
-	int rc;
-	size_t fsize;
-	off_t offset;
-	char c;
-
-	/* store current position and rewind */
-	offset = lseek(fd, 0, SEEK_CUR);
-	if (offset < 0)
-		return -1;
-	if (lseek(fd, 0, SEEK_SET) < 0)
-		error("%s: lseek(0): %m", __func__);
-
-	/* get file size */
-	fsize = 0;
-	do {
-		rc = read(fd, (void*)&c, 1);
-		if (rc > 0)
-			fsize++;
-	} while ((rc < 0 && errno == EINTR) || rc > 0);
-
-	/* restore position */
-	if (lseek(fd, offset, SEEK_SET) < 0)
-		error("%s: lseek(): %m", __func__);
-
-	if (rc < 0)
-		return -1;
-	else
-		return fsize;
-}
-
-static int _file_read_content(char* file_path, char** content, size_t *csize)
-{
-	int fstatus;
-	int rc;
-	int fd;
-	size_t fsize;
-	char* buf;
-
-	fstatus = SLURM_ERROR;
-
-	/* check input pointers */
-	if (content == NULL || csize == NULL)
-		return fstatus;
-
-	/* open file for reading */
-	fd = open(file_path, O_RDONLY, 0700);
-	if (fd < 0) {
-		debug2("%s: unable to open '%s' for reading : %m",
-			__func__, file_path);
-		return fstatus;
-	}
-
-	/* get file size */
-	fsize=_file_getsize(fd);
-	if (fsize == -1) {
-		close(fd);
-		return fstatus;
-	}
-
-	/* read file contents */
-	buf = xmalloc(fsize + 1);
-	buf[fsize]='\0';
-	do {
-		rc = read(fd, buf, fsize);
-	} while (rc < 0 && errno == EINTR);
-
-	/* set output values */
-	if (rc >= 0) {
-		*content = buf;
-		*csize = rc;
-		fstatus = SLURM_SUCCESS;
-	} else {
-		xfree(buf);
-	}
-
-	/* close file */
-	close(fd);
-
-	return fstatus;
-}
-
-int _file_write_content(char* file_path, const char* content, size_t csize)
-{
-	int fd;
-
-	/* open file for writing */
-	if ((fd = open(file_path, O_WRONLY, 0700)) < 0) {
-		error("%s: unable to open '%s' for writing: %m",
-			__func__, file_path);
-		return SLURM_ERROR;
-	}
-
-	safe_write(fd, content, csize);
-
-	/* close file */
-	close(fd);
-	return SLURM_SUCCESS;
-
-rwfail:
-	error("%s: unable to write %zu bytes to cgroup %s: %m",
-	      __func__, csize, file_path);
-	close(fd);
-	return SLURM_ERROR;
-}
-
-int _xcgroup_set_param(char* cpath, char* param, const char* content)
-{
-	int fstatus = SLURM_ERROR;
-	char file_path[PATH_MAX];
-
-	if (!content) {
-		debug2("%s: no content given, nothing to do.", __func__);
-		return fstatus;
-	}
-
-	if (snprintf(file_path, PATH_MAX, "%s/%s", cpath, param) >= PATH_MAX) {
-		debug2("unable to build filepath for '%s' and"
-		       " parameter '%s' : %m", cpath, param);
-		return fstatus;
-	}
-
-	fstatus = _file_write_content(file_path, content, strlen(content));
-	if (fstatus != SLURM_SUCCESS)
-		debug2("%s: unable to set parameter '%s' to '%s' for '%s'",
-			__func__, param, content, cpath);
-	else
-		debug3("%s: parameter '%s' set to '%s' for '%s'",
-			__func__, param, content, cpath);
-
-	return fstatus;
-}
-
-int _xcgroup_instantiate(char *file_path, uid_t uid, gid_t gid)
-{
-	/* build cgroup */
-	if (mkdir(file_path, 0755)) {
-		if (errno != EEXIST) {
-			error("%s: unable to create cgroup '%s' : %m",
-			      __func__, file_path);
-			return SLURM_ERROR;
-		} else
-			debug2("%s: cgroup '%s' already exists",
-			       __func__, file_path);
-	}
-
-	/* change cgroup ownership as requested */
-	if (chown(file_path, uid, gid))
-		error("%s: unable to chown %d:%d cgroup '%s' : %m",
-		      __func__, uid, gid, file_path);
-
-	return SLURM_SUCCESS;
-}
-
-int _xcgroup_move_pid(char *path, pid_t pid)
-{
-	int rc;
-	char *param = NULL;
-
-	if (!path)
-		return SLURM_ERROR;
-
-	xstrfmtcat(param, "%d", pid);
-	rc = _xcgroup_set_param(path, "cgroup.procs", (const char *)param);
-
-	debug("Writting %s to %s/cgroup.procs", param, path);
-
-	xfree(param);
-	return rc;
-}
-
-/****************************************************************************/
-/****************************************************************************/
-/****************************************************************************/
-/****************************************************************************/
-
 /*
  * The cgroup v2 documented way to know which is the process root in the cgroup
  * hierarchy, is just to read /proc/self/cgroup. In Unified hierarchies this
  * must contain only one line. If there are more lines this would mean we are
  * in Hybrid or in Legacy cgroup.
  */
-static void _set_cg_root()
+static void _set_g_cg_ns()
 {
 	char *buf, *start = NULL, *p;
 	size_t sz;
 	int fs;
 	struct stat st;
 
-	fs = _file_read_content("/proc/self/cgroup", &buf, &sz);
+	fs = common_file_read_content("/proc/self/cgroup", &buf, &sz);
 	if (fs != SLURM_SUCCESS)
 		debug2("cannot read /proc/self/cgroup contents: %m");
 
 	/*
 	 * In Unified mode there will be just one line containing the path
 	 * of the cgroup, so get it as our root and replace the \n:
-	 * "0::/user.slice/user-1001.slice/session-1.scope\n"
+	 * "0::/system.slice/slurmd<nodename>.service\n"
+	 *
+	 * The final path will look like this:
+	 * /sys/fs/cgroup/system.slice/slurmd.service/
+	 *
+	 * If we have multiple slurmd, we will likely have one unit file per
+	 * node, and the path takes the name of the service file, e.g:
+	 * /sys/fs/cgroup/system.slice/slurmd-<nodename>.service/
 	 */
 	if ((p = xstrchr(buf, ':')) != NULL) {
 		if ((p + 2) < (buf + sz - 1))
@@ -290,13 +103,28 @@ static void _set_cg_root()
 	if (start && *start != '\0') {
 		if ((p = xstrchr(start, '\n')))
 			*p = '\0';
-		xstrfmtcat(cg_root, "/sys/fs/cgroup%s", start);
-		if (stat(cg_root, &st) < 0) {
-			error("cannot read cgroup path %s: %m", cg_root);
-			xfree(cg_root);
+
+		/*
+		 * Note: if we are slurmstepd, we'll be already in /system
+		 * because we've been initiated by slurmd. So strip the last
+		 * directory in that case.
+		 */
+		if (running_in_slurmstepd()) {
+			if (xstrcasecmp(xbasename(start), "system"))
+				goto err;
+			p = xstrrchr(start, '/');
+			*p = '\0';
+		}
+
+		xstrfmtcat(g_cg_ns.mnt_point, "/sys/fs/cgroup%s", start);
+		if (stat(g_cg_ns.mnt_point, &st) < 0) {
+			error("cannot read cgroup path %s: %m",
+			      g_cg_ns.mnt_point);
+			xfree(g_cg_ns.mnt_point);
 		}
 	}
 
+err:
 	xfree(buf);
 }
 
@@ -307,16 +135,20 @@ static void _set_cg_root()
  * available (e.g. the memory.*, cpu.*, cpuset.* ... files) to control the
  * cgroup.
  */
-static int _enable_subtree_control(char *path)
+static int _enable_subtree_control(const char *path)
 {
 	int i, rc = SLURM_SUCCESS;
 	char *param = NULL;
+	xcgroup_t *parent = xmalloc(sizeof(*parent));
+
+	parent->path = xstrdup(path);
 
 	for (i = 0; i < CG_CTL_CNT; i++) {
 		if (avail_controllers[i]) {
-			xstrfmtcat(param,"+%s",g_ctl_name[i]);
-			rc = _xcgroup_set_param(path, "cgroup.subtree_control",
-					       param);
+			xstrfmtcat(param, "+%s", g_ctl_name[i]);
+			rc = common_cgroup_set_param(parent,
+						     "cgroup.subtree_control",
+						     param);
 			xfree(param);
 			if (rc != SLURM_SUCCESS) {
 				error("Cannot enable %s in %s/cgroup.subtree_control",
@@ -332,6 +164,7 @@ static int _enable_subtree_control(char *path)
 		}
 	}
 
+	common_cgroup_destroy(parent);
 	return rc;
 }
 
@@ -339,14 +172,14 @@ static int _enable_subtree_control(char *path)
  * Read the cgroup.controllers file of the root to detect which are the
  * available controllers in this system.
  */
-static int _set_controllers()
+static int _check_avail_controllers()
 {
 	char *buf, *ptr, *save_ptr, *ctl_filepath = NULL;
 	size_t sz;
 	int fs;
 
-	xstrfmtcat(ctl_filepath, "%s/cgroup.controllers", cg_root);
-	fs = _file_read_content(ctl_filepath, &buf, &sz);
+	xstrfmtcat(ctl_filepath, "%s/cgroup.controllers", g_cg_ns.mnt_point);
+	fs = common_file_read_content(ctl_filepath, &buf, &sz);
 	if (fs != SLURM_SUCCESS || !buf) {
 		error("cannot read %s: %m", ctl_filepath);
 		return fs;
@@ -364,7 +197,74 @@ static int _set_controllers()
 	}
 	xfree(buf);
 
+	/* Field not used in v2 */
+	g_cg_ns.subsystems = NULL;
+
 	return SLURM_SUCCESS;
+}
+
+static void _record_oom_step_stats()
+{
+	char *mem_events = NULL, *mem_swap_events = NULL, *ptr;
+	size_t sz;
+	uint64_t job_kills, step_kills, job_swkills, step_swkills;
+
+	if (!avail_controllers[CG_MEMORY])
+		return;
+
+	/* Get latest stats for the step */
+	if (common_cgroup_get_param(&g_step_user_cg, "memory.events",
+				    &mem_events, &sz) != SLURM_SUCCESS)
+		error("Cannot read %s/memory.events", g_step_user_cg.path);
+
+	if (common_cgroup_get_param(&g_step_user_cg, "memory.swap.events",
+				    &mem_swap_events, &sz) != SLURM_SUCCESS)
+		error("Cannot read %s/memory.swap.events", g_step_user_cg.path);
+
+	if (mem_events != NULL) {
+		if ((ptr = strstr(mem_events, "oom_kill"))) {
+			sscanf(ptr, "oom_kill %lu", &step_kills);
+		}
+		xfree(mem_events);
+	}
+
+	if (mem_swap_events != NULL) {
+		if ((ptr = strstr(mem_swap_events, "fail"))) {
+			sscanf(ptr, "fail %lu", &step_swkills);
+		}
+		xfree(mem_swap_events);
+	}
+
+	/* Get stats for the job */
+	if (common_cgroup_get_param(&g_job_cg, "memory.events", &mem_events,
+				    &sz) != SLURM_SUCCESS)
+		error("Cannot read %s/memory.events", g_step_user_cg.path);
+
+	if (common_cgroup_get_param(&g_job_cg, "memory.swap.events",
+				    &mem_swap_events, &sz) != SLURM_SUCCESS)
+		error("Cannot read %s/memory.swap.events", g_step_user_cg.path);
+
+
+	if (mem_events != NULL) {
+		if ((ptr = strstr(mem_events, "oom_kill"))) {
+			sscanf(ptr, "oom_kill %lu", &job_kills);
+		}
+		xfree(mem_events);
+	}
+
+	if (mem_swap_events != NULL) {
+		if ((ptr = strstr(mem_swap_events, "fail"))) {
+			sscanf(ptr, "fail %lu", &job_swkills);
+		}
+		xfree(mem_swap_events);
+	}
+
+	/* Return stats */
+	g_oom_step_results = xmalloc(sizeof(*g_oom_step_results));
+	g_oom_step_results->job_mem_failcnt = job_kills;
+	g_oom_step_results->job_memsw_failcnt = job_swkills;
+	g_oom_step_results->step_mem_failcnt = step_kills;
+	g_oom_step_results->step_memsw_failcnt = step_swkills;
 }
 
 /*
@@ -382,51 +282,72 @@ static int _set_controllers()
  */
 extern int init(void)
 {
-	char *slurmd_cgpath = NULL;
-
 	/*
 	 * Check our current root dir. Systemd MUST have Delegated it to us,
 	 * so we want slurmd to be started by systemd
 	 */
-	_set_cg_root();
-	if (cg_root == NULL)
+	_set_g_cg_ns();
+	if (g_cg_ns.mnt_point == NULL)
 		return SLURM_ERROR;
 
 	/* Check available controllers in cgroup.controller and enable them. */
-	if (_set_controllers() != SLURM_SUCCESS)
-		error("Some controllers could not be enabled.");
+	if (_check_avail_controllers() != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	/*
+	 * Setup the paths for system (where slurmd will reside) and slurm
+	 * (where jobs will reside).
+	 */
+	common_cgroup_create(&g_cg_ns, &g_sys_cg, SLURMD_CGDIR, (uid_t) 0,
+			     (gid_t) 0);
+	common_cgroup_create(&g_cg_ns, &g_root_cg, JOBS_CGDIR, (uid_t) 0,
+			     (gid_t) 0);
+
+	if (!running_in_slurmd())
+		goto init_end;
 
 	/*
 	 * Before enabling the controllers in the parent, we need to move out
-	 * all the processes which systemd started (slurmd) to a child.
+	 * the process which systemd started (slurmd) to a leaf and prepare the
+	 * system for initializing stepds.
 	 */
-	/* FIXME:
-	 * This is ok if we are slurmd, but if we are slurmstepd we need to
-	 * add more here because the move_pid with getpid will move stepd
-	 * in slurmd.
-	 */
-	xstrfmtcat(slurmd_cgpath, "%s/slurmd/",cg_root);
-	_xcgroup_instantiate(slurmd_cgpath, (uid_t) 0, (gid_t) 0);
-	_xcgroup_move_pid(slurmd_cgpath, getpid());
-	xfree(slurmd_cgpath);
+	common_cgroup_instantiate(&g_sys_cg);
+	common_cgroup_move_process(&g_sys_cg, getpid());
+	common_cgroup_instantiate(&g_root_cg);
 
-	if (_enable_subtree_control(cg_root) != SLURM_SUCCESS) {
-		error("Cannot enable subtree_control");
+	if (_enable_subtree_control(g_cg_ns.mnt_point) != SLURM_SUCCESS) {
+		error("Cannot enable subtree_control at the top cg level %s",
+		      g_cg_ns.mnt_point);
 		return SLURM_ERROR;
 	}
 
 	/*
+	 * Now we should have controllers available in the root, enable them
+	 * for future childs.
+	 */
+	_enable_subtree_control(g_root_cg.path);
+
+	/*
 	 * We are ready now to start job steps, which will be created under
-	 * cg_root/slurmd. Per each new step we'll need to first move it
+	 * g_sys_cg.path/slurmd. Per each new step we'll need to first move it
 	 * out of slurmd directory.
 	 */
-
+init_end:
 	debug("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 
 extern int fini(void)
 {
+	/*
+	 * Clear up the namespace and cgroups memory. Don't rmdir anything since
+	 * we may not be stopping yet. When the process terminates systemd will
+	 * remove the directories.
+	 */
+	common_cgroup_ns_destroy(&g_cg_ns);
+	common_cgroup_destroy(&g_sys_cg);
+	common_cgroup_destroy(&g_root_cg);
+
 	debug("unloading %s", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -453,32 +374,28 @@ extern int cgroup_p_initialize(cgroup_ctl_type_t sub)
 
 /*
  * As part of the initialization, the slurmd directory is already created, so
- * this function will remain probably empty or just need to check if init is ok.
+ * this function will remain empty.
  */
 extern int cgroup_p_system_create(cgroup_ctl_type_t sub)
 {
-	/*
-	 * DEV_NOTES
-	 * This directory refers to $cg_root/slurmd/
-	 */
 	return SLURM_SUCCESS;
 }
 
+/*
+ * As part of the initialization, the slurmd directory is already created, so
+ * this function will remain empty.
+ */
 extern int cgroup_p_system_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
 {
-	/*
-	 * DEV_NOTES
-	 * Add the pid to $cg_root/slurmd/cgroup.procs
-	 */
 	return SLURM_SUCCESS;
 }
 
+/*
+ * There's no need to do any cleanup, when systemd terminates the cgroup is
+ * automatically removed by systemd.
+ */
 extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub)
 {
-	/*
-	 * DEV_NOTES
-	 * Move our pid to / and remove $cg_root/slurmd
-	 */
 	return SLURM_SUCCESS;
 }
 
@@ -490,30 +407,111 @@ extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub)
 extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 {
 	/* PSEUDO_CODE:
+	 *
+	 * We need an extra two directories per each step:
+	 *  step_x/slurm
+	 *  step_x/user
+	 *
+	 * And we then need to put the stepd into slurm/ because:
+	 *
+	 * we do not put it in the step container because this
+	 * container could be used to suspend/resume tasks using freezer
+	 * properties so we need to let the slurmstepd outside of
+	 * this one)
+	 */
+	int rc = SLURM_SUCCESS;
+	char *new_path = NULL;
+	char tmp_char[64];
 
-	   The slurmstepd process cannot be in a non-leaf directory, so we need
-	   to think how to manage this hierarchy. The processes forked by stepd
-	   will be created in the stepd cgroup, and we want to move them to
-	   a specific dedicated directory. Probably we'd need the following:
+	/* Job cgroup */
+	xstrfmtcat(new_path, "%s/job_%u", g_root_cg.name, job->step_id.job_id);
+	if (common_cgroup_create(&g_cg_ns, &g_job_cg, new_path, 0, 0) !=
+	    SLURM_SUCCESS) {
+		error("unable to create job %u cgroup", job->step_id.job_id);
+		rc = SLURM_ERROR;
+		goto endit;
+	}
+	if (common_cgroup_instantiate(&g_job_cg) != SLURM_SUCCESS) {
+		common_cgroup_destroy(&g_job_cg);
+		error("unable to instantiate job %u cgroup",
+		      job->step_id.job_id);
+		rc = SLURM_ERROR;
+		goto endit;
+	}
+	xfree(new_path);
+	_enable_subtree_control(g_job_cg.path);
 
-	   // Hierarchy
-	   mkdir($cg_root/uid_<x>);
-	   _enable_subtree_controller($cg_root/uid_<x>);
+	/* Step cgroup */
+	xstrfmtcat(new_path, "%s/step_%s", g_job_cg.name,
+		   log_build_step_id_str(&job->step_id, tmp_char,
+					 sizeof(tmp_char),
+					 STEP_ID_FLAG_NO_PREFIX |
+					 STEP_ID_FLAG_NO_JOB));
 
-	   mkdir($cg_root/uid_<x>/job_<y>);
-	   _enable_subtree_controller($cg_root/uid_<x>/job_<y>);
+	if (common_cgroup_create(&g_cg_ns, &g_step_cg, new_path, 0, 0) !=
+	    SLURM_SUCCESS) {
+		error("unable to create step %ps cgroup", &job->step_id);
+		rc = SLURM_ERROR;
+		goto endit;
+	}
+	if (common_cgroup_instantiate(&g_step_cg) != SLURM_SUCCESS) {
+		common_cgroup_destroy(&g_step_cg);
+		error("unable to instantiate step %ps cgroup", &job->step_id);
+		rc = SLURM_ERROR;
+		goto endit;
+	}
+	xfree(new_path);
+	_enable_subtree_control(g_step_cg.path);
 
-	   mkdir($cg_root/uid_<x>/job_<y>/step_<z>);
-	   _enable_subtree_controller($cg_root/uid_<x>/job_<y>/step_<z>);
+	/* Step User processes cgroup */
+	xstrfmtcat(new_path, "%s/user", g_step_cg.name);
+	if (common_cgroup_create(&g_cg_ns, &g_step_user_cg, new_path, 0, 0) !=
+	    SLURM_SUCCESS) {
+		error("unable to create step %ps user procs cgroup",
+		      &job->step_id);
+		rc = SLURM_ERROR;
+		goto endit;
+	}
+	if (common_cgroup_instantiate(&g_step_user_cg) != SLURM_SUCCESS) {
+		common_cgroup_destroy(&g_step_user_cg);
+		error("unable to instantiate step %ps user procs cgroup",
+		      &job->step_id);
+		rc = SLURM_ERROR;
+		goto endit;
+	}
+	xfree(new_path);
 
-	   // Leafs for slurm processes and for user processes
-	   mkdir($cg_root/uid_<x>/job_<y>/step_<z>/slurm/);
-	   mkdir($cg_root/uid_<x>/job_<y>/step_<z>/user/);
+	/* Step Slurm processes cgroup */
+	xstrfmtcat(new_path, "%s/slurm", g_step_cg.name);
+	if (common_cgroup_create(&g_cg_ns, &g_step_slurm_cg, new_path, 0, 0) !=
+	    SLURM_SUCCESS) {
+		error("unable to create step %ps slurm procs cgroup",
+		      &job->step_id);
+		rc = SLURM_ERROR;
+		goto endit;
+	}
+	if (common_cgroup_instantiate(&g_step_slurm_cg) != SLURM_SUCCESS) {
+		common_cgroup_destroy(&g_step_slurm_cg);
+		error("unable to instantiate step %ps slurm procs cgroup",
+		      &job->step_id);
+		rc = SLURM_ERROR;
+		goto endit;
+	}
+	xfree(new_path);
 
-	   _xcgroup_move_pid($cg_root/uid_<x>/job_<y>/step_<z>/slurm/,
-	                     job->jmgr_pid);
-	*/
-	return SLURM_SUCCESS;
+	/*
+	 * We need to remove this stepd from the user processes because limits
+	 * or freeze operations could affect and deadlock stepd.
+	 */
+	if (common_cgroup_move_process(&g_step_slurm_cg, job->jmgr_pid) !=
+	    SLURM_SUCCESS) {
+		error("unable to move stepd pid to its dedicated cgroup");
+		rc = SLURM_ERROR;
+	}
+	/* Do use slurmstepd pid as the identifier of the container */
+	job->cont_id = (uint64_t)job->jmgr_pid;
+endit:
+	return rc;
 }
 
 /*
@@ -527,13 +525,23 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
  */
 extern int cgroup_p_step_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
 {
-	int rc = SLURM_SUCCESS;
-	/* PSEUDO_CODE:
-	   if (enabled_controllers[sub]) {
-	      for p in *pids do:
-	           _xcgroup_move_pid(step_path, p);
-	   }
-	*/
+	int i, j, rc;
+	pid_t *user_pids = xmalloc(sizeof(*user_pids) * npids);
+	pid_t stepd_pid = getpid();
+
+	/*
+	 * Remove our stepd pid from the list, we want it always in the slurm
+	 * processes's dedicated cgroup and not in the step user's cgroup.
+	 */
+	for (i = 0, j = 0; i < npids; i++)
+		if (pids[i] != stepd_pid) {
+			user_pids[j] = pids[i];
+			j++;
+		}
+
+	rc = common_cgroup_add_pids(&g_step_user_cg, user_pids, j);
+
+	xfree(user_pids);
 	return rc;
 }
 
@@ -542,80 +550,206 @@ extern int cgroup_p_step_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
  */
 extern int cgroup_p_step_get_pids(pid_t **pids, int *npids)
 {
-	/* DEV_NOTES/PSEUDO_CODE:
-	   We may want to determine if there are any task_X directory and if so
-	   read the processes inside them instead of reading the step ones.
+	pid_t *pids_slurm = NULL;
+	pid_t *pids_user = NULL;
+	pid_t *pid_list = NULL;
+	int npids_slurm, npids_user, i, j;
 
-	   if there are task_x directories, then:
-	      for all task_x dir:
-                  read task_x/cgroup.procs and put them into **pids
-	   else:
-               read step_x/cgroup.procs and put them into **pids
+	/*
+	 * DEV_NOTES:
+	 *  We may want to determine if there are any task_X directory and if so
+	 *  read the processes inside them instead of reading the step ones only.
+	 *
+	 *  We are including also the slurmstepd pids here at the moment.
+	 *
+	 *  if there are task_x directories, then:
+	 *     for all task_x dir:
+         *         read task_x/cgroup.procs and put them into **pids
+	 *  else:
+         *      read step_x/cgroup.procs and put them into **pids
 	 */
+	common_cgroup_get_pids(&g_step_slurm_cg, &pids_slurm, &npids_slurm);
+	common_cgroup_get_pids(&g_step_user_cg, &pids_user, &npids_user);
+	*npids = npids_slurm + npids_user;
+
+	if ((npids_slurm + npids_user) <= 0)
+		return SLURM_SUCCESS;
+
+	pid_list = xmalloc(sizeof(*pid_list) * (*npids));
+
+	for (i = 0; i < npids_slurm; i++)
+		pid_list[i] = pids_slurm[i];
+
+	for (i = 0, j = npids_slurm; j < *npids; i++, j++)
+		pid_list[j] = pids_user[i];
+
+	*pids = pid_list;
+
+	xfree(pids_slurm);
+	xfree(pids_user);
+
 	return SLURM_SUCCESS;
 }
 
 extern int cgroup_p_step_suspend()
 {
-	/* PSEUDO_CODE:
-	//similar to xcgroup_set_param
-	   echo 1 > $cg_root/uid_x/job_z/step_y/cgroup.freeze
-	*/
-	return SLURM_SUCCESS;
+	/* Another plugin already requesed termination */
+	if (g_step_user_cg.path == NULL)
+		return SLURM_SUCCESS;
+
+	/*
+	 * Freezing of the cgroup may take some time; when this action is
+	 * completed, the “frozen” value in the cgroup.events control file will
+	 * be updated to “1” and the corresponding notification will be issued.
+	 */
+	return common_cgroup_set_param(&g_step_user_cg, "cgroup.freeze", "1");
 }
 
 extern int cgroup_p_step_resume()
 {
-	/* PSEUDO_CODE:
-           //similar to xcgroup_set_param
-	   echo 0 > $cg_root/uid_x/job_z/step_y/cgroup.freeze
-	*/
-	return SLURM_SUCCESS;
+	/* Another plugin already requesed termination */
+	if (g_step_user_cg.path == NULL)
+		return SLURM_SUCCESS;
+
+	return common_cgroup_set_param(&g_step_user_cg, "cgroup.freeze", "0");
 }
 
+/* FIXME: Need to take into account tasks when accounting is supported */
 extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 {
-	/* DEV_NOTES/PSEUDO_CODE
-	 * - Iterate over the tree,
+	int rc = SLURM_SUCCESS;
+	xcgroup_t init_root;
 
-	 if there are any task_x in the step:
-	   rmdir the task_x, log an error if cgroup.procs is not empty
-	 else
-	   rmdir the step_x, log an error if cgroup.procs is not empty
-
-	 set all enabled_controllers[] to false.
+	/*
+	 * Multiple plugins can ask us to destroy the step. If we have
+	 * destroyed it before, just leave.
 	 */
-	return SLURM_SUCCESS;
+	if (!g_step_slurm_cg.path)
+		return rc;
+
+	/* We need to record the oom stats prior to remove the cgroup. */
+	_record_oom_step_stats();
+
+	/*
+	 * Move ourselves to the init root
+	 * Create a fake cgroup to call the move process function.
+	 */
+	init_root.ns = NULL;
+	init_root.name = NULL;
+	init_root.path = xstrdup("/sys/fs/cgroup");
+	init_root.uid = 0;
+	init_root.gid = 0;
+	rc = common_cgroup_move_process(&init_root, getpid());
+	if (rc != SLURM_SUCCESS) {
+		error("Unable to move pid %d to init root cgroup %s", getpid(),
+		      init_root.path);
+		goto end;
+	}
+
+	/* Rmdir this job's stepd cgroup */
+	if ((rc = common_cgroup_delete(&g_step_slurm_cg)) != SLURM_SUCCESS) {
+		debug2("unable to remove slurm's step cgroup (%s): %m",
+		       g_step_slurm_cg.path);
+		goto end;
+	}
+	common_cgroup_destroy(&g_step_slurm_cg);
+
+	/* Rmdir this job's user processes cgroup */
+	if ((rc = common_cgroup_delete(&g_step_user_cg)) != SLURM_SUCCESS) {
+		debug2("unable to remove user's step cgroup (%s): %m",
+		       g_step_user_cg.path);
+		goto end;
+	}
+	common_cgroup_destroy(&g_step_user_cg);
+
+	/* Rmdir this step's processes cgroup */
+	if ((rc = common_cgroup_delete(&g_step_cg)) != SLURM_SUCCESS) {
+		debug2("unable to remove step cgroup (%s): %m",
+		       g_step_cg.path);
+		goto end;
+	}
+	common_cgroup_destroy(&g_step_cg);
+
+	/* That's a try to rmdir if no more steps are in this job */
+	if ((rc = common_cgroup_delete(&g_job_cg)) != SLURM_SUCCESS) {
+		debug2("unable to remove job's step cgroup (%s): %m",
+		       g_job_cg.path);
+		goto end;
+	}
+	common_cgroup_destroy(&g_job_cg);
+
+end:
+	common_cgroup_destroy(&init_root);
+	return rc;
 }
 
+/* Return true if the user pid is in this step/task cgroup */
 extern bool cgroup_p_has_pid(pid_t pid)
 {
-	/* PSEUDO_CODE:
-
-	  //could reuse parts of xcgroup_ns_find_by_pid
-
-	  if pid found in $cg_root/uid_x/step_y/cgroup.procs or in
-	  step_y/task_z/cgroup.procs then
-	        return true
+	/*
+	 * DEV_NOTES:
+	 * We may want to determine also if there are any task_X directory and
+	 * if so read the processes inside them instead of reading the step
+	 * ones. Also, we are not including also the slurmstepd pids.
 	 */
+
+	pid_t *pids_user = NULL;
+	int npids_user, i;
+
+	common_cgroup_get_pids(&g_step_user_cg, &pids_user, &npids_user);
+	for (i = 0; i < npids_user; i++)
+		if (pids_user[i] == pid)
+			return true;
+
+	xfree(pids_user);
 	return false;
 }
 
 extern cgroup_limits_t *cgroup_p_root_constrain_get(cgroup_ctl_type_t sub)
 {
-	/* DEV_NOTES
-	 * Same as cgroup v1 but changing paths, it is a
-	 * xcgroup_get_param
-	 */
+ 	int rc = SLURM_SUCCESS;
+	cgroup_limits_t *limits = xmalloc(sizeof(*limits));
+
+	switch (sub) {
+	case CG_TRACK:
+		break;
+	case CG_CPUS:
+		rc = common_cgroup_get_param(&g_root_cg, "cpuset.cpus",
+					     &limits->allow_cores,
+					     &limits->cores_size);
+		rc += common_cgroup_get_param(&g_root_cg, "cpuset.mems",
+					      &limits->allow_mems,
+					      &limits->mems_size);
+
+		if (limits->cores_size > 0)
+			limits->allow_cores[(limits->cores_size)-1] = '\0';
+		if (limits->mems_size > 0)
+			limits->allow_mems[(limits->mems_size)-1] = '\0';
+
+		if (rc != SLURM_SUCCESS)
+			goto fail;
+		break;
+	case CG_MEMORY:
+	case CG_DEVICES:
+		break;
+	default:
+		error("cgroup subsystem %"PRIu16" not supported", sub);
+		rc = SLURM_ERROR;
+		break;
+	}
+
+	return limits;
+fail:
+	cgroup_free_limits(limits);
 	return NULL;
 }
 
 extern int cgroup_p_root_constrain_set(cgroup_ctl_type_t sub,
 				       cgroup_limits_t *limits)
 {
-	/* DEV_NOTES
-	 * memory.swappiness is not available in v2, do nothing
-	 * for the rest, empty. Like in v1.
+	/*
+	 * No constrain is needed for our root in v2, they are applied to jobs,
+	 * steps or to the slurmd cgroup only
 	 */
 	return SLURM_SUCCESS;
 }
@@ -626,30 +760,49 @@ extern cgroup_limits_t *cgroup_p_system_constrain_get(cgroup_ctl_type_t sub)
 	 * DEV_NOTES
 	 * For future usage, just return the requested constrains from the
 	 * $cg_root/slurmd/
-	 *
 	 */
-	return NULL;
+	cgroup_limits_t *limits = NULL;
+	return limits;
 }
 
 extern int cgroup_p_system_constrain_set(cgroup_ctl_type_t sub,
 					 cgroup_limits_t *limits)
 {
-	/*
-	 * DEV_NOTES
-	 * Set the requiret limits in $cg_root/slurmd/
-	 *
-	 */
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+
+	if (!limits)
+		return SLURM_ERROR;
+
+	switch (sub) {
+	case CG_TRACK:
+		break;
+	case CG_CPUS:
+		rc = common_cgroup_set_param(&g_sys_cg, "cpuset.cpus",
+					     limits->allow_cores);
+		//rc += common_cgroup_set_param(&g_sys_cg, "cpuset.mems",
+		//				limits->allow_mems);
+		break;
+	case CG_MEMORY:
+		common_cgroup_set_uint64_param(&g_sys_cg,
+					       "memory.limit_in_bytes",
+					       limits->limit_in_bytes);
+		break;
+	case CG_DEVICES:
+		break;
+	default:
+		error("cgroup subsystem %"PRIu16" not supported", sub);
+		rc = SLURM_ERROR;
+		break;
+	}
+
+	return rc;
 }
 
 extern int cgroup_p_user_constrain_set(cgroup_ctl_type_t sub,
 				       stepd_step_rec_t *job,
 				       cgroup_limits_t *limits)
 {
-	/* DEV_NOTES
-	 * Same as cgroup v1 but changing paths, it is a
-	 * xcgroup_get_param on cpuset.cpus and cpuset.mems only.
-	 */
+	/* There's no user directory in cgroup v2 hierarchy. */
 	return SLURM_SUCCESS;
 }
 
@@ -657,55 +810,121 @@ extern int cgroup_p_job_constrain_set(cgroup_ctl_type_t sub,
 				      stepd_step_rec_t *job,
 				      cgroup_limits_t *limits)
 {
-	/* DEV_NOTES
-	 * Close to cgroup v1 but changing paths, and there's no kmem
-	 * constrain support currently in v2. CG_DEVICES is not supported
-	 * as a file interface, so here we need to interact with eBPF.
+	/* DEV_NOTES - EXPERIMENTAL
+	 * There's no kmem constrain support currently in v2.
+	 * Memory limits have changed to high, low, min, max.
+	 * Swap limits are controlled with different files too.
+	 * Device control is not supported as a file interface, so here we
+	 * need to interact with eBPF.
 	 */
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+
+	if (!limits)
+		return SLURM_ERROR;
+
+	switch (sub) {
+	case CG_TRACK:
+		break;
+	case CG_CPUS:
+		rc = common_cgroup_set_param(&g_job_cg, "cpuset.cpus",
+					     limits->allow_cores);
+		rc += common_cgroup_set_param(&g_job_cg, "cpuset.mems",
+					      limits->allow_mems);
+		break;
+	case CG_MEMORY:
+		rc = common_cgroup_set_uint64_param(&g_job_cg,
+						    "memory.max",
+						    limits->limit_in_bytes);
+		if (limits->memsw_limit_in_bytes != NO_VAL64)
+			rc += common_cgroup_set_uint64_param(
+				&g_job_cg,
+				"memory.swap.max",
+				limits->memsw_limit_in_bytes);
+		break;
+	case CG_DEVICES:
+		break;
+	default:
+		error("cgroup subsystem %"PRIu16" not supported", sub);
+		rc = SLURM_ERROR;
+		break;
+	}
+
+	return rc;
 }
 
 extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
 				       stepd_step_rec_t *job,
 				       cgroup_limits_t *limits)
 {
-	/* DEV_NOTES
-	 * Close to cgroup v1 but changing paths, and there's no kmem
-	 * constrain support currently in v2. CG_DEVICES is not supported
-	 * as a file interface, so here we need to interact with eBPF.
+	/* DEV_NOTES - EXPERIMENTAL
+	 * There's no kmem constrain support currently in v2.
+	 * Memory limits have changed to high, low, min, max.
+	 * Swap limits are controlled with different files too.
+	 * Device control is not supported as a file interface, so here we
+	 * need to interact with eBPF.
 	 */
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+
+	if (!limits)
+		return SLURM_ERROR;
+
+	switch (sub) {
+	case CG_TRACK:
+		break;
+	case CG_CPUS:
+		rc = common_cgroup_set_param(&g_step_user_cg, "cpuset.cpus",
+					     limits->allow_cores);
+		rc += common_cgroup_set_param(&g_step_user_cg, "cpuset.mems",
+					      limits->allow_mems);
+		break;
+	case CG_MEMORY:
+		rc = common_cgroup_set_uint64_param(&g_step_user_cg,
+						    "memory.max",
+						    limits->limit_in_bytes);
+		if (limits->memsw_limit_in_bytes != NO_VAL64)
+			rc += common_cgroup_set_uint64_param(
+				&g_step_user_cg,
+				"memory.swap.max",
+				limits->memsw_limit_in_bytes);
+		break;
+	case CG_DEVICES:
+		break;
+	default:
+		error("cgroup subsystem %"PRIu16" not supported", sub);
+		rc = SLURM_ERROR;
+		break;
+	}
+
+	return rc;
 }
 
 extern int cgroup_p_step_start_oom_mgr()
 {
-	/* DEV_NOTES
-	 * Just return, no need to start anything
-	 */
+	/* Just return, no need to start anything. */
 	return SLURM_SUCCESS;
 }
 
 extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 {
-	/* DEV_NOTES
-	 * Read $cg_root/uid_x/step_y/cgroup.events->oom_kill
-	 * and return, no need to stop anything
-	 */
-	return NULL;
+	return g_oom_step_results;
 }
 
 extern int cgroup_p_accounting_init()
 {
-	/* DEV_NOTES
-	 * add +cpu +mem to $cg_root/uid_x/step_y/cgroup.subtree_control if
-	 * it is available.
+	/*
+	 * Accounting controllers are implictly enabled in when enabling cpu
+	 * and mem in subtree_control.
+	 */
+	/*
+	 * DEV_NOTES - We need to modify the structure creating task_X and
+	 * moving pids there.
 	 */
 	return SLURM_SUCCESS;
 }
 
 extern int cgroup_p_accounting_fini()
 {
-	/* DEV_NOTES
+	/* DEV_NOTES - IMPLEMENT ME
 	 * Destroy the step calling cgroup_p_step_destroy
 	 * ... may need the task_acct_list ..
 	 * just return
@@ -716,7 +935,7 @@ extern int cgroup_p_accounting_fini()
 extern int cgroup_p_task_addto_accounting(pid_t pid, stepd_step_rec_t *job,
 					  uint32_t task_id)
 {
-	/* DEV_NOTES
+	/* DEV_NOTES - IMPLEMENT ME
 	 * create step_y/task_z
 	 * enable +cpu +mem cgroup.subtree_control
 	 * and attach pid to cgroup.procs
