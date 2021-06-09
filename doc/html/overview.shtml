@@ -150,7 +150,7 @@ building block approach. These plugins presently include:
 
 <li><a href="switchplugins.html">Switch or interconnect</a>:
   Plugin to interface with a switch or interconnect.
-  For most systems (ethernet or infiniband) this is not needed.
+  For most systems (Ethernet or InfiniBand) this is not needed.
 </li>
 
 <li><a href="taskplugins.html">Task Affinity</a>:
@@ -238,6 +238,6 @@ PartitionName=DEFAULT MaxTime=UNLIMITED MaxNodes=4096
 PartitionName=batch Nodes=lx[0041-9999]
 </pre>
 
-<p style="text-align:center;">Last modified 7 Februrary 2020</p>
+<p style="text-align:center;">Last modified 9 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
