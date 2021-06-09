@@ -31,19 +31,11 @@ source ./globals
 set file_in     "test$test_id.input"
 set job_id      0
 
-# TODO: Temporary variables to debug bug 9647 (remove once fixed)
-set config_dir  [get_conf_path]
-
 proc cleanup {} {
 	global job_id bin_rm file_in
 
 	cancel_job $job_id
 	exec $bin_rm -f $file_in
-
-	# TODO: Temporary cleanup of debug for bug 9647 (remove once fixed)
-	global config_dir scontrol
-    restore_conf $config_dir/slurm.conf
-    run_command "$scontrol reconfigure"
 }
 
 #
@@ -53,12 +45,6 @@ proc cleanup {} {
 if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can be run only for Administrators"
 }
-
-# TODO: Temporarily increase logging to debug bug 9647 (remove once fixed)
-save_conf $config_dir/slurm.conf
-run_command -none "$bin_echo SlurmctldDebug=debug3 >> $config_dir/slurm.conf"
-run_command -none "$bin_echo SlurmdDebug=debug3 >> $config_dir/slurm.conf"
-# Allow the test's existing reconfigure call to establish these values
 
 #
 # Have a job running when the reconfigure happens
@@ -84,7 +70,6 @@ if {$job_id == 0} {
 	fail "sbatch job submit failed"
 }
 if {[wait_for_job $job_id RUNNING] != 0} {
-	cancel_job $job_id
 	fail "Waiting for job $job_id to start"
 }
 
