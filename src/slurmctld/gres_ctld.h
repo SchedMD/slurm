@@ -39,6 +39,9 @@
 
 #include "src/common/gres.h"
 
+extern uint64_t gres_ctld_get_step_mem_on_node(List gres_list, int node_inx,
+					       char *gres_name);
+
 /*
  * Fill in job_gres_list with the total amount of GRES on a node.
  * OUT job_gres_list - This list will be destroyed and remade with all GRES on
@@ -185,6 +188,8 @@ extern void gres_ctld_set_node_tres_cnt(List gres_list,
  * IN tasks_on_node - number of tasks to be launched on this node
  * IN rem_nodes - desired additional node count to allocate, including this node
  * IN job_id, step_id - ID of the step being allocated.
+ * OUT step_node_mem_alloc - the amount of memory allocated to the step on this
+ * 		node based on mem_per_gres requirements.
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_step_alloc(List step_gres_list,
@@ -192,7 +197,8 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 				List job_gres_list,
 				int node_offset, bool first_step_node,
 				uint16_t tasks_on_node, uint32_t rem_nodes,
-				uint32_t job_id, uint32_t step_id);
+				uint32_t job_id, uint32_t step_id,
+				uint64_t *step_node_mem_alloc);
 
 /*
  * Deallocate resource to a step and update job and step gres information

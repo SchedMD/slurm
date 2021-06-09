@@ -305,6 +305,8 @@ typedef struct gres_step_state {
 	 * identical to that of the job for simplicity. Bits in node_in_use
 	 * are set for those node of the job that are used by this step and
 	 * gres_bit_alloc are also set if the job's gres_bit_alloc is set
+	 * gres_cnt_node_alloc is an array the same size as the number of nodes
+	 * in the job because node_cnt is the same as the job.
 	 */
 	uint64_t total_gres;		/* allocated GRES for this step */
 	uint64_t gross_gres;		/* used during the scheduling phase,
@@ -950,6 +952,9 @@ extern void gres_step_state_log(List gres_list, uint32_t job_id,
  * IN max_rem_nodes - maximum nodes remaining for step (including this one)
  * IN ignore_alloc - if set ignore resources already allocated to running steps
  * IN job_id, step_id - ID of the step being allocated.
+ * IN test_mem - true if we should test if mem_per_gres would exceed a limit.
+ * IN job_resrcs_ptr - pointer to this job's job_resources_t; used to know
+ *                     how much of the job's memory is available.
  * RET Count of available cores on this node (sort of):
  *     NO_VAL64 if no limit or 0 if node is not usable
  */
@@ -957,7 +962,8 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 			       int node_offset, bool first_step_node,
 			       uint16_t cpus_per_task, int max_rem_nodes,
 			       bool ignore_alloc,
-			       uint32_t job_id, uint32_t step_id);
+			       uint32_t job_id, uint32_t step_id,
+			       bool test_mem, job_resources_t *job_resrcs_ptr);
 
 /*
  * Build a string containing the GRES details for a given node and socket

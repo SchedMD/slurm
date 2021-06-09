@@ -1190,6 +1190,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			uint64_t tmp_mem;
 			uint32_t tmp_cpus, avail_cpus, total_cpus;
 			uint32_t avail_tasks, total_tasks;
+			bool test_mem_per_gres = false;
 
 			avail_cpus = total_cpus = usable_cpu_cnt[i];;
 			if (_is_mem_resv() &&
@@ -1231,7 +1232,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 					usable_cpu_cnt[i] = avail_cpus;
 					fail_mode = ESLURM_INVALID_TASK_MEMORY;
 				}
-			}
+			} else if (_is_mem_resv())
+				test_mem_per_gres = true;
 
 			/* ignore current step allocations */
 			gres_cpus = gres_step_test(step_gres_list,
@@ -1240,7 +1242,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 						   first_step_node,
 						   cpus_per_task,
 						   max_rem_nodes, true,
-						   job_ptr->job_id, NO_VAL);
+						   job_ptr->job_id, NO_VAL,
+						   test_mem_per_gres,
+						   job_resrcs_ptr);
 			total_cpus = MIN(total_cpus, gres_cpus);
 			/* consider current step allocations */
 			gres_cpus = gres_step_test(step_gres_list,
@@ -1249,7 +1253,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 						   first_step_node,
 						   cpus_per_task,
 						   max_rem_nodes, false,
-						   job_ptr->job_id, NO_VAL);
+						   job_ptr->job_id, NO_VAL,
+						   test_mem_per_gres,
+						   job_resrcs_ptr);
 			if (gres_cpus < avail_cpus) {
 				log_flag(STEPS, "%s: %pJ Usable CPUs for GRES %"PRIu64" from %d previously available",
 					 __func__, job_ptr, gres_cpus,
@@ -1900,14 +1906,12 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		error("%s: lack memory allocation details to enforce memory limits for %pJ",
 		      __func__, job_ptr);
 		step_ptr->pn_min_memory = 0;
-	} else if (!step_ptr->pn_min_memory) {
-		/* If we aren't requesting any memory grab it from the job */
-		step_ptr->pn_min_memory = job_ptr->details->pn_min_memory;
 	}
 
 	rem_nodes = bit_set_count(step_ptr->step_node_bitmap);
 	step_ptr->memory_allocated = xcalloc(rem_nodes, sizeof(uint64_t));
 	for (i_node = i_first; i_node <= i_last; i_node++) {
+		uint64_t gres_step_node_mem_alloc = 0;
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i_node))
 			continue;
 		job_node_inx++;
@@ -1944,9 +1948,15 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 				     step_ptr->step_layout->
 				     tasks[step_node_inx],
 				     rem_nodes, job_ptr->job_id,
-				     step_ptr->step_id.step_id);
+				     step_ptr->step_id.step_id,
+				     &gres_step_node_mem_alloc);
 		first_step_node = false;
 		rem_nodes--;
+		if (!step_ptr->pn_min_memory && !gres_step_node_mem_alloc) {
+			/* If we aren't requesting memory get it from the job */
+			step_ptr->pn_min_memory =
+				job_ptr->details->pn_min_memory;
+		}
 
 		if (step_ptr->pn_min_memory && _is_mem_resv()) {
 			uint64_t mem_use;
@@ -1959,6 +1969,11 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			}
 			step_ptr->memory_allocated[step_node_inx] = mem_use;
 			job_resrcs_ptr->memory_used[job_node_inx] += mem_use;
+		} else if (_is_mem_resv()) {
+			step_ptr->memory_allocated[step_node_inx] =
+				gres_step_node_mem_alloc;
+			job_resrcs_ptr->memory_used[job_node_inx] +=
+				gres_step_node_mem_alloc;
 		}
 		if (pick_step_cores) {
 			uint16_t cpus_per_core = 1;
@@ -2083,12 +2098,11 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	if (i_first == -1)	/* empty bitmap */
 		return;
 
-	if (step_ptr->pn_min_memory && _is_mem_resv() &&
+	if (step_ptr->memory_allocated && _is_mem_resv() &&
 	    ((job_resrcs_ptr->memory_allocated == NULL) ||
 	     (job_resrcs_ptr->memory_used == NULL))) {
 		error("%s: lack memory allocation details to enforce memory limits for %pJ",
 		      __func__, job_ptr);
-		step_ptr->pn_min_memory = 0;
 	}
 
 	for (i_node = i_first; i_node <= i_last; i_node++) {
@@ -2114,7 +2128,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			      cpus_alloc, job_node_inx);
 			job_resrcs_ptr->cpus_used[job_node_inx] = 0;
 		}
-		if (step_ptr->pn_min_memory && _is_mem_resv()) {
+		if (step_ptr->memory_allocated && _is_mem_resv()) {
 			uint64_t mem_use =
 				step_ptr->memory_allocated[step_node_inx];
 			if (job_resrcs_ptr->memory_used[job_node_inx] >=
@@ -2985,6 +2999,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 		last_bit = -2;
 	for (i = first_bit; i <= last_bit; i++) {
 		uint16_t cpus, cpus_used;
+		bool test_mem_per_gres = false;
 
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
@@ -3091,6 +3106,9 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 					job_resrcs_ptr->memory_used[pos];
 				usable_mem /= mem_use;
 				usable_cpus = MIN(usable_cpus, usable_mem);
+			} else if ((!step_ptr->pn_min_memory) &&
+				   _is_mem_resv()) {
+				test_mem_per_gres = true;
 			}
 
 			gres_cpus = gres_step_test(step_ptr->gres_list_req,
@@ -3100,7 +3118,9 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 						   step_ptr->cpus_per_task,
 						   rem_nodes, false,
 						   job_ptr->job_id,
-						   step_ptr->step_id.step_id);
+						   step_ptr->step_id.step_id,
+						   test_mem_per_gres,
+						   job_resrcs_ptr);
 			if (usable_cpus > gres_cpus)
 				usable_cpus = gres_cpus;
 			if (usable_cpus <= 0) {

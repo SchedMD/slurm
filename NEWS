@@ -6,6 +6,9 @@ documents those changes that are of interest to users and administrators.
  -- Load bf_when_last_cycle from job state only if protocol version >= 21.08.
  -- Docs - remove man3 section entirely.
  -- Enable OCI container execution support as a technical preview.
+ -- Set step memory when using MemPerGPU or DefMemPerGPU. Previously a step's
+    memory was not set even when it requested --mem-per-gpu and at least one
+    GPU.
 
 * Changes in Slurm 21.08.0rc1
 =============================

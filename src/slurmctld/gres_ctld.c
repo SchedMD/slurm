@@ -46,6 +46,7 @@ typedef struct {
 	int rc;
 	List step_gres_list_alloc;
 	gres_state_t *step_gres_ptr;
+	uint64_t *step_node_mem_alloc;
 	slurm_step_id_t tmp_step_id;
 } foreach_step_alloc_t;
 
@@ -1818,10 +1819,12 @@ static uint64_t _step_get_gres_avail(gres_job_state_t *job_gres_ptr,
 }
 
 static int _step_alloc(gres_step_state_t *step_gres_ptr,
+		       gres_step_state_t *step_req_gres_ptr,
 		       gres_job_state_t *job_gres_ptr,
 		       uint32_t plugin_id, int node_offset,
 		       slurm_step_id_t *step_id,
-		       uint64_t *gres_needed, uint64_t *max_gres)
+		       uint64_t *gres_needed, uint64_t *max_gres,
+		       uint64_t *step_node_mem_alloc)
 {
 	uint64_t gres_alloc;
 	bitstr_t *gres_bit_alloc;
@@ -1829,6 +1832,7 @@ static int _step_alloc(gres_step_state_t *step_gres_ptr,
 
 	xassert(job_gres_ptr);
 	xassert(step_gres_ptr);
+	xassert(step_req_gres_ptr);
 
 	if (job_gres_ptr->node_cnt == 0)	/* no_consume */
 		return SLURM_SUCCESS;
@@ -1866,8 +1870,23 @@ static int _step_alloc(gres_step_state_t *step_gres_ptr,
 	}
 
 	if (step_gres_ptr->gres_cnt_node_alloc &&
-	    (node_offset < step_gres_ptr->node_cnt))
+	    (node_offset < step_gres_ptr->node_cnt)) {
 		step_gres_ptr->gres_cnt_node_alloc[node_offset] = gres_alloc;
+		/*
+		 * Calculate memory allocated to the step based on the
+		 * mem_per_gres limit.
+		 * FIXME: Currently the only option that sets mem_per_gres is
+		 * --mem-per-gpu. Adding another option will require a change
+		 * here - perhaps we should take the MAX of all mem_per_gres.
+		 * Similar logic is in gres_select_util_job_mem_set(),
+		 * which would also need to be changed if another
+		 * mem_per_gres option was added.
+		 */
+		if (step_req_gres_ptr->mem_per_gres &&
+		    (step_req_gres_ptr->mem_per_gres != NO_VAL64))
+			*step_node_mem_alloc +=
+				step_req_gres_ptr->mem_per_gres * gres_alloc;
+	}
 	step_gres_ptr->total_gres += gres_alloc;
 
 	if (step_gres_ptr->node_in_use == NULL) {
@@ -1995,10 +2014,11 @@ static int _step_alloc_type(gres_state_t *job_gres_ptr,
 		job_data_ptr->type_id,
 		job_data_ptr->type_name);
 
-	args->rc = _step_alloc(step_alloc_data_ptr, job_data_ptr,
+	args->rc = _step_alloc(step_alloc_data_ptr, step_data_ptr, job_data_ptr,
 			       args->step_gres_ptr->plugin_id,
 			       args->node_offset, &args->tmp_step_id,
-			       &args->gres_needed, &args->max_gres);
+			       &args->gres_needed, &args->max_gres,
+			       args->step_node_mem_alloc);
 
 	if (args->rc != SLURM_SUCCESS) {
 		return -1;
@@ -2029,7 +2049,8 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 				List job_gres_list,
 				int node_offset, bool first_step_node,
 				uint16_t tasks_on_node, uint32_t rem_nodes,
-				uint32_t job_id, uint32_t step_id)
+				uint32_t job_id, uint32_t step_id,
+				uint64_t *step_node_mem_alloc)
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator step_gres_iter;
@@ -2046,6 +2067,9 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 
 	if (!*step_gres_list_alloc)
 		*step_gres_list_alloc = list_create(gres_step_list_delete);
+
+	xassert(step_node_mem_alloc);
+	*step_node_mem_alloc = 0;
 
 	tmp_step_id.job_id = job_id;
 	tmp_step_id.step_het_comp = NO_VAL;
@@ -2073,6 +2097,7 @@ extern int gres_ctld_step_alloc(List step_gres_list,
 		args.rc = SLURM_SUCCESS;
 		args.step_gres_list_alloc = *step_gres_list_alloc;
 		args.step_gres_ptr = step_gres_ptr;
+		args.step_node_mem_alloc = step_node_mem_alloc;
 		args.tmp_step_id = tmp_step_id;
 
 		(void)list_for_each(job_gres_list, (ListForF) _step_alloc_type,

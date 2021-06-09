@@ -8129,6 +8129,7 @@ static int _step_get_gres_cnt(void *x, void *arg)
 		foreach_gres_cnt->gres_cnt = 0;
 
 	gres_job_state = job_gres_ptr->gres_data;
+
 	if ((node_offset >= gres_job_state->node_cnt) &&
 	    (gres_job_state->node_cnt != 0)) { /* GRES is type no_consume */
 		error("gres/%s: %s %ps node offset invalid (%d >= %u)",
@@ -8169,7 +8170,9 @@ static int _step_get_gres_cnt(void *x, void *arg)
 
 static uint64_t _step_test(void *step_gres_data, bool first_step_node,
 			   uint16_t cpus_per_task, int max_rem_nodes,
-			   bool ignore_alloc, uint64_t gres_cnt)
+			   bool ignore_alloc, uint64_t gres_cnt, bool test_mem,
+			   int node_offset, slurm_step_id_t *step_id,
+			   job_resources_t *job_resrcs_ptr)
 {
 	gres_step_state_t *step_gres_ptr = (gres_step_state_t *) step_gres_data;
 	uint64_t core_cnt, min_gres = 1, task_cnt;
@@ -8214,6 +8217,25 @@ static uint64_t _step_test(void *step_gres_data, bool first_step_node,
 	} else {
 		gres_cnt = 0;
 		core_cnt = NO_VAL64;
+	}
+
+	/* Test if there is enough memory available to run the step. */
+	if (test_mem && core_cnt && gres_cnt && step_gres_ptr->mem_per_gres &&
+	    (step_gres_ptr->mem_per_gres != NO_VAL64)) {
+		uint64_t mem_per_gres, mem_req, mem_avail;
+
+		mem_per_gres = step_gres_ptr->mem_per_gres;
+		mem_req = min_gres * mem_per_gres;
+		mem_avail = job_resrcs_ptr->memory_allocated[node_offset];
+		if (!ignore_alloc)
+			mem_avail -= job_resrcs_ptr->memory_used[node_offset];
+
+		if (mem_avail < mem_req) {
+			log_flag(STEPS, "%s: JobId=%u: Usable memory on node: %"PRIu64" is less than requested %"PRIu64", skipping the node",
+				 __func__, step_id->job_id, mem_avail,
+				 mem_req);
+			core_cnt = 0;
+		}
 	}
 
 	if (core_cnt != 0) {
@@ -9565,6 +9587,9 @@ extern void gres_step_state_log(List gres_list, uint32_t job_id,
  * IN max_rem_nodes - maximum nodes remaining for step (including this one)
  * IN ignore_alloc - if set ignore resources already allocated to running steps
  * IN job_id, step_id - ID of the step being allocated.
+ * IN test_mem - true if we should test if mem_per_gres would exceed a limit.
+ * IN job_resrcs_ptr - pointer to this job's job_resources_t; used to know
+ *                     how much of the job's memory is available.
  * RET Count of available cores on this node (sort of):
  *     NO_VAL64 if no limit or 0 if node is not usable
  */
@@ -9572,7 +9597,8 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 			       int node_offset, bool first_step_node,
 			       uint16_t cpus_per_task, int max_rem_nodes,
 			       bool ignore_alloc,
-			       uint32_t job_id, uint32_t step_id)
+			       uint32_t job_id, uint32_t step_id,
+			       bool test_mem, job_resources_t *job_resrcs_ptr)
 {
 	uint64_t core_cnt, tmp_cnt;
 	ListIterator step_gres_iter;
@@ -9626,7 +9652,10 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 		}
 		tmp_cnt = _step_test(step_data_ptr, first_step_node,
 				     cpus_per_task, max_rem_nodes,
-				     ignore_alloc, foreach_gres_cnt.gres_cnt);
+				     ignore_alloc, foreach_gres_cnt.gres_cnt,
+				     test_mem, node_offset,
+				     &tmp_step_id,
+				     job_resrcs_ptr);
 		if ((tmp_cnt != NO_VAL64) && (tmp_cnt < core_cnt))
 			core_cnt = tmp_cnt;
 
