@@ -21,7 +21,7 @@ SKIP: {
 	$slurm->print_topo_info_msg($fh, $resp);
 	seek($fh, 0, 0);
 	while(<$fh>) {
-	    $print_ok = 1 if /^Switch\s+=\s+\w+$/;
+	    $print_ok = 1 if /^SwitchName=/;
 	}
     }
     close($fh);
@@ -37,7 +37,7 @@ SKIP: {
     $slurm->print_topo_record($fh, $resp->{topo_array}->[0], 1);
     seek($fh, 0, 0);
     while(<$fh>) {
-	$print_ok = 1 if /^Switch\s+=\s+\w+$/;
+	$print_ok = 1 if /^SwitchName=/;
     }
     close($fh);
     ok($print_ok, "print topo record");

@@ -183,14 +183,19 @@ slurm_job_state_num(slurm_t self, char *state_name)
 			    */
 
 char_xfree *
-slurm_reservation_flags_string(slurm_t self, uint16_t flags)
+slurm_reservation_flags_string(slurm_t self, HV *resv_hv)
 	CODE:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self
 			      out of the mix Slurm-> doesn't work,
 			      only Slurm::
 			    */
-		RETVAL = slurm_reservation_flags_string(flags);
+		reserve_info_t resv;
+		if (hv_to_reserve_info(resv_hv, &resv) < 0) {
+			XSRETURN_UNDEF;
+		}
+
+		RETVAL = slurm_reservation_flags_string(&resv);
 	OUTPUT:
 		RETVAL
 
@@ -538,47 +543,6 @@ slurm_terminate_job_step(slurm_t self, uint32_t job_id, uint32_t step_id)
 			    */
 	C_ARGS:
 		job_id, step_id
-
-
-#####################################################################
-MODULE=Slurm PACKAGE=Slurm::Stepctx PREFIX=slurm_step_
-
-int
-slurm_step_launch(slurm_step_ctx_t *ctx, HV *params, HV *callbacks=NULL)
-	PREINIT:
-		slurm_step_launch_params_t lp;
-		slurm_step_launch_callbacks_t *cb = NULL;
-	CODE:
-		if (hv_to_slurm_step_launch_params(params, &lp) < 0) {
-			Perl_warn( aTHX_ "failed to convert slurm_step_launch_params_t");
-			RETVAL = SLURM_ERROR;
-		} else {
-			if (callbacks) {
-				set_slcb(callbacks);
-				cb = &slcb;
-			}
-			RETVAL = slurm_step_launch(ctx, &lp, cb);
-			free_slurm_step_launch_params_memory(&lp);
-		}
-	OUTPUT:
-		RETVAL
-
-
-int
-slurm_step_launch_wait_start(slurm_step_ctx_t *ctx)
-
-void
-slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
-
-void
-slurm_step_launch_abort(slurm_step_ctx_t *ctx)
-
-void
-slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, uint16_t signo)
-
-# TODO: this function is not implemented in libslurm
-#void
-#slurm_step_launch_fwd_wake(slurm_step_ctx_t *ctx)
 
 
 ######################################################################
@@ -1153,10 +1117,10 @@ slurm_job_step_layout_get(slurm_t self, uint32_t job_id, uint32_t step_id_in)
 		RETVAL
 
 HV *
-slurm_job_step_stat(slurm_t self, uint32_t job_id, uint32_t step_id_in, char *nodelist=NULL, uint16_t protocol_version)
+slurm_job_step_stat(slurm_t self, uint32_t job_id, uint32_t step_id_in, char *nodelist=NULL, uint16_t protocol_version=NO_VAL16)
 	PREINIT:
 		int rc;
-		job_step_stat_response_msg_t *resp_msg;
+		job_step_stat_response_msg_t *resp_msg = NULL;
 		slurm_step_id_t step_id;
 	CODE:
 		if (self); /* this is needed to avoid a warning about
@@ -1166,6 +1130,7 @@ slurm_job_step_stat(slurm_t self, uint32_t job_id, uint32_t step_id_in, char *no
 			    */
 		step_id.job_id = job_id;
 		step_id.step_id = step_id_in;
+		step_id.step_het_comp = NO_VAL;
                 rc = slurm_job_step_stat(&step_id, nodelist,
 					 protocol_version, &resp_msg);
 		if (rc == SLURM_SUCCESS) {
@@ -1197,6 +1162,7 @@ slurm_job_step_get_pids(slurm_t self, uint32_t job_id, uint32_t step_id_in, char
 			    */
 		step_id.job_id = job_id;
 		step_id.step_id = step_id_in;
+		step_id.step_het_comp = NO_VAL;
 		rc = slurm_job_step_get_pids(&step_id, nodelist, &resp_msg);
 		if (rc == SLURM_SUCCESS) {
 			RETVAL = newHV();
@@ -1759,7 +1725,7 @@ slurm_sprint_reservation_info(slurm_t self, HV *resv_info, int one_liner=0)
 ######################################################################
 
 int
-slurm_ping(slurm_t self, uint16_t primary=1)
+slurm_ping(slurm_t self, uint16_t primary=0)
 	INIT:
 		if (self); /* this is needed to avoid a warning about
 			      unused variables.  But if we take slurm_t self

@@ -533,8 +533,8 @@ int hv_to_slurm_ctl_conf(HV *hv, slurm_conf_t *conf)
 	FETCH_FIELD(hv, conf, priority_weight_fs, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, priority_weight_js, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, priority_weight_part, uint32_t, TRUE);
-	FETCH_FIELD(hv, conf, priority_weight_qos, uint32_t, TRUE);
-	FETCH_FIELD(hv, conf, priority_weight_tres, charp, TRUE);
+	FETCH_FIELD(hv, conf, priority_weight_qos, uint32_t, FALSE);
+	FETCH_FIELD(hv, conf, priority_weight_tres, charp, FALSE);
 	FETCH_FIELD(hv, conf, private_data, uint16_t, TRUE);
 	FETCH_FIELD(hv, conf, proctrack_type, charp, FALSE);
 	FETCH_FIELD(hv, conf, prolog, charp, FALSE);

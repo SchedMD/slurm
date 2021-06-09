@@ -31,7 +31,7 @@ SKIP: {
 SKIP: {
     my ($fh, $print_ok);
     skip "failed to open temporary file", 1 unless open($fh, '+>', undef);
-    $slurm->print_node_table($fh, $resp->{node_array}->[0], 1, 1);
+    $slurm->print_node_table($fh, $resp->{node_array}->[0], 1);
     seek($fh, 0, 0);
     while(<$fh>) {
 	$print_ok = 1 if /^NodeName=\w+/;
@@ -57,7 +57,8 @@ SKIP: {
 	$err_msg = $slurm->strerror() unless $rc == SLURM_SUCCESS;
 	ok($rc == SLURM_SUCCESS, "update node") || diag("update_node failed: $err_msg");
 
-	$rc = $slurm->update_node({node_names => $node->{name}, state => NODE_RESUME, features => 'test'});
+
+	$rc = $slurm->update_node({node_names => $node->{name}, state => NODE_RESUME, features => 'test', fetures_act => ''});
 	$err_msg = $slurm->strerror() unless $rc == SLURM_SUCCESS;
 	ok($rc == SLURM_SUCCESS, "update node") || diag("update_node failed: $err_msg");
 }

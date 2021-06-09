@@ -96,6 +96,8 @@ slurm_print_node_info_msg ( FILE * out, node_info_msg_t * node_info_msg_ptr,
 		 time_str, node_info_msg_ptr->record_count);
 
 	for (i = 0; i < node_info_msg_ptr-> record_count; i++) {
+		if (!node_ptr[i].name)
+			continue;
 		slurm_print_node_table ( out, & node_ptr[i],
 					 one_liner ) ;
 	}

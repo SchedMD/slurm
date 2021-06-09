@@ -13,6 +13,9 @@ ok(defined $slurm,  "create slurm object with default configuration");
 my $trig_set;
 SKIP: {
     skip "not super user", 1 if $>;
+    my $conf = $slurm->load_ctl_conf();
+    skip "SlurmUser is not root", 1 if $conf->{slurm_user_id} != 0;
+
     my $rc = $slurm->set_trigger( { trig_type => TRIGGER_TYPE_RECONFIG,
 				    res_type => TRIGGER_RES_TYPE_NODE,
 				    program => "/bin/true",

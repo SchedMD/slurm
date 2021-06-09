@@ -10,6 +10,7 @@ my $slurm = Slurm::new();
 ok(defined $slurm,  "create slurm object with default configuration");
 
 
+my %env = ('PATH' => $ENV{'PATH'});
 $job_desc = {
     min_nodes => 1,
     num_tasks => 1,
@@ -18,6 +19,7 @@ $job_desc = {
     name => "perlapi_test",
     stdout => "/dev/null",
     stderr => "/dev/null",
+    environment => \%env,
 };
 
 
@@ -45,12 +47,12 @@ SKIP: {
 	or diag("resume: " . $slurm->strerror());
 }
 
-
+sleep(10);
 # 5
 SKIP: {
     skip "not super user", 1 if $>;
     skip "no job", 1 unless $jobid;
-    $rc = $slurm->requeue($jobid);
+    $rc = $slurm->requeue($jobid, 0);
     ok($rc == SLURM_SUCCESS, "requeue") or diag("requeue: " . $slurm->strerror());
 }
 

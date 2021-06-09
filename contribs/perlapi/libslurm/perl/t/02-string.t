@@ -1,5 +1,5 @@
 #!/usr/bin/perl -T
-use Test::More tests => 16;
+use Test::More tests => 13;
 use Slurm qw(:constant);
 
 
@@ -7,7 +7,7 @@ use Slurm qw(:constant);
 my $slurm = Slurm::new();
 ok(defined $slurm,  "create slurm object with default configuration");
 
-my ($str, $num);
+my ($str, $num, $reservation);
 
 # 2
 $str = $slurm->preempt_mode_string(PREEMPT_MODE_REQUEUE);
@@ -45,7 +45,14 @@ cmp_ok($num, "==", JOB_TIMEOUT, "job state num compact");
 
 
 # 9
-$str = $slurm->reservation_flags_string(RESERVE_FLAG_DAILY);
+$reservation = {
+    flags => RESERVE_FLAG_DAILY,
+    node_cnt => 1,
+    end_time => 0,
+    start_time => 0,
+    name => "test_reservation"
+};
+$str = $slurm->reservation_flags_string($reservation);
 cmp_ok($str, "eq", "DAILY", "reservation flags string");
 
 

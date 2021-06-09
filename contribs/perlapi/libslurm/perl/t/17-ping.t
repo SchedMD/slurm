@@ -19,8 +19,8 @@ ok($rc == SLURM_SUCCESS, "ping primary controller");
 
 # 4
 SKIP: {
-    skip "no backup control machine configured", 1 unless $resp->{backup_controller};
-    $rc = $slurm->ping(2);
+    skip "no backup control machine configured", 1 unless $resp->{control_cnt} > 1;
+    $rc = $slurm->ping(1);
     ok($rc == SLURM_SUCCESS, "ping backup control machine") || diag ("ping backup controller: " . $slurm->strerror());
 }
 
@@ -36,7 +36,7 @@ SKIP: {
 # 6
 SKIP: {
     skip "better not testing this", 1;
-    skip "no backup control machine configured", 1 unless $resp->{backup_controller};
+    skip "no backup control machine configured", 1 unless $resp->{control_cnt} > 1;
     #$rc = $slurm->takeover();
     ok($rc == SLURM_SUCCESS, "takeover");
 }
@@ -54,7 +54,13 @@ SKIP: {
 SKIP: {
     skip "not super user", 1 if $>;
     $rc = $slurm->set_schedlog_level(1);
-    ok($rc == SLURM_SUCCESS, "set sched log level") || diag("set_sched_log_level" . $slurm->strerror());
+    if ($rc != SLURM_SUCCESS) {
+	    my $errno = $slurm->get_errno();
+	    if ($errno == ESLURM_DISABLED) {
+		    skip("SlurmSchedLogFile not set cannot test", 1);
+	    }
+    }
+    ok($rc == SLURM_SUCCESS, "set sched log level") ||  diag("set_sched_log_level" . $slurm->strerror());
 }
 
 

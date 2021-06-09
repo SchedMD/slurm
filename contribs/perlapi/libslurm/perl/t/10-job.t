@@ -11,6 +11,7 @@ my ($jobid, $time, $resp, $rc);
 
 
 # 2
+my %env = ('PATH' => $ENV{'PATH'});
 my $job_desc = {
     min_nodes => 1,
     num_tasks => 1,
@@ -19,6 +20,7 @@ my $job_desc = {
     name => "perlapi_test",
     stdout => "/dev/null",
     stderr => "/dev/null",
+    environment => \%env,
 };
 $resp = $slurm->submit_batch_job($job_desc);
 ok($resp, "submit batch job") or diag ("submit_batch_job: " . $slurm->strerror());
@@ -56,8 +58,9 @@ ok(defined $rc, "notify job") or diag("notify_job: " . $slurm->strerror());
 
 
 # 9
-TODO: {
+SKIP: {
     local $TODO = "do not know how to test";
+    skip($TODO,1);
     my $jid = $slurm->pid2jobid(1234);
     ok(defined $jid, "pid2jobid");
 }

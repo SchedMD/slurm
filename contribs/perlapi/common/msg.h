@@ -328,7 +328,7 @@ static inline void * SV2ptr(SV *sv)
 		if ( (svp = hv_fetch (hv, #field, strlen(#field), FALSE)) ) { \
 			ptr->field = (type) (SV2##type (*svp)); \
 		} else if (required) { \
-			Perl_warn (aTHX_ "Required field \"" #field "\" missing in HV"); \
+			Perl_warn (aTHX_ "Required field \"" #field "\" missing in HV at %s:%d",__FILE__,__LINE__); \
 			return -1; \
 		} \
 	} while (0)
