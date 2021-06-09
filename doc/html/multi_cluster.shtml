@@ -43,11 +43,11 @@ scheduled end times.</p>
 accessible to and from the submission host.</p>
 
 <h2>Multi-Cluster Configuration</h2>
-<p>The multi-cluster functionality requires the use of the slurmDBD.
+<p>The multi-cluster functionality requires the use of the SlurmDBD.
 The AccountingStorageType in the slurm.conf file must be set to the
 accounting_storage/slurmdbd plugin and the MUNGE or authentication
 keys must be installed to allow each cluster to communicate with the
-slurmDBD.  Note that MUNGE can be configured to use different keys for
+SlurmDBD.  Note that MUNGE can be configured to use different keys for
 communications within a cluster and across clusters if desired.
 See <a href="accounting.html">accounting</a> for details.</p>
 
@@ -59,6 +59,6 @@ option will become active for all of the clusters listed by the
 See also the <a href="federation.html">Slurm Federated Scheduling Guide<a/>.
 </p>
 
-<p style="text-align:center;">Last modified 16 April 2019</p>
+<p style="text-align:center;">Last modified 9 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
