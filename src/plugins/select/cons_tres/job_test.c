@@ -102,6 +102,8 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			    uint32_t max_nodes, uint32_t req_nodes,
 			    avail_res_t **avail_res_array, uint16_t cr_type,
 			    bool prefer_alloc_nodes, bool first_pass);
+static int64_t  _get_rem_max_cpus(struct job_details *details_ptr,
+				  int rem_nodes);
 static int _node_weight_find(void *x, void *key);
 static void _node_weight_free(void *x);
 static int _node_weight_sort(void *x, void *y);
@@ -259,6 +261,23 @@ static bool _enough_nodes(int avail_nodes, int rem_nodes,
 		needed_nodes = rem_nodes;
 
 	return (avail_nodes >= needed_nodes);
+}
+
+static int64_t  _get_rem_max_cpus(struct job_details *details_ptr,
+				  int rem_nodes)
+{
+	int64_t rem_max_cpus = details_ptr->min_cpus;
+
+	if (details_ptr->max_cpus != NO_VAL)
+		rem_max_cpus = details_ptr->max_cpus;
+	if (details_ptr->min_gres_cpu)
+		rem_max_cpus = MAX(rem_max_cpus,
+				   details_ptr->min_gres_cpu * rem_nodes);
+	if (details_ptr->min_job_gres_cpu)
+		rem_max_cpus = MAX(rem_max_cpus, details_ptr->min_job_gres_cpu);
+
+	return rem_max_cpus;
+
 }
 
 /*
@@ -515,13 +534,13 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 
 	avail_cpu_per_node = xcalloc(select_node_cnt, sizeof(uint16_t));
 	rem_cpus = details_ptr->min_cpus;
-	rem_max_cpus = details_ptr->max_cpus;
 	min_rem_nodes = min_nodes;
 	if ((gres_per_job = gres_sched_init(job_ptr->gres_list_req))) {
 		rem_nodes = MIN(min_nodes, req_nodes);
 		consec_gres = xcalloc(consec_size, sizeof(List));
 	} else
 		rem_nodes = MAX(min_nodes, req_nodes);
+	rem_max_cpus = _get_rem_max_cpus(details_ptr, rem_nodes);
 
 	/*
 	 * If there are required nodes, first determine the resources they
@@ -1049,7 +1068,6 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 	if (job_ptr->gres_list_req && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
 		enforce_binding = true;
 	rem_cpus = details_ptr->min_cpus;
-	rem_max_cpus = details_ptr->max_cpus;
 	min_rem_nodes = min_nodes;
 	if ((details_ptr->num_tasks != NO_VAL) &&
 	    (details_ptr->num_tasks != 0))
@@ -1058,6 +1076,7 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 		rem_nodes = MIN(min_nodes, req_nodes);
 	else
 		rem_nodes = MAX(min_nodes, req_nodes);
+	rem_max_cpus = _get_rem_max_cpus(details_ptr, rem_nodes);
 
 	i_start = bit_ffs(node_map);
 	if (i_start >= 0)
@@ -1232,7 +1251,6 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 	if (job_ptr->gres_list_req && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
 		enforce_binding = true;
 	rem_cpus = details_ptr->min_cpus;
-	rem_max_cpus = details_ptr->max_cpus;
 	min_rem_nodes = min_nodes;
 	if ((details_ptr->num_tasks != NO_VAL) &&
 	    (details_ptr->num_tasks != 0))
@@ -1241,6 +1259,7 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 		rem_nodes = MIN(min_nodes, req_nodes);
 	else
 		rem_nodes = MAX(min_nodes, req_nodes);
+	rem_max_cpus = _get_rem_max_cpus(details_ptr, rem_nodes);
 
 	i_start = bit_ffs(node_map);
 	if (i_start >= 0)
@@ -1583,12 +1602,12 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 	if (job_ptr->gres_list_req && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
 		enforce_binding = true;
 	rem_cpus = details_ptr->min_cpus;
-	rem_max_cpus = details_ptr->max_cpus;
 	min_rem_nodes = min_nodes;
 	if ((gres_per_job = gres_sched_init(job_ptr->gres_list_req)))
 		rem_nodes = MIN(min_nodes, req_nodes);
 	else
 		rem_nodes = MAX(min_nodes, req_nodes);
+	rem_max_cpus = _get_rem_max_cpus(details_ptr, rem_nodes);
 
 	/* Validate availability of required nodes */
 	if (job_ptr->details->req_node_bitmap) {
@@ -2228,12 +2247,13 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 	if (job_ptr->gres_list_req && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
 		enforce_binding = true;
 	rem_cpus = details_ptr->min_cpus;
-	rem_max_cpus = details_ptr->max_cpus;
 	min_rem_nodes = min_nodes;
 	if ((gres_per_job = gres_sched_init(job_ptr->gres_list_req)))
 		rem_nodes = MIN(min_nodes, req_nodes);
 	else
 		rem_nodes = MAX(min_nodes, req_nodes);
+
+	rem_max_cpus = _get_rem_max_cpus(details_ptr, rem_nodes);
 
 	/* Validate availability of required nodes */
 	if (job_ptr->details->req_node_bitmap) {
@@ -2803,7 +2823,6 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 	if (job_ptr->gres_list_req && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
 		enforce_binding = true;
 	rem_cpus = details_ptr->min_cpus;
-	rem_max_cpus = details_ptr->max_cpus;
 	min_rem_nodes = min_nodes;
 	if ((details_ptr->num_tasks != NO_VAL) &&
 	    (details_ptr->num_tasks != 0))
@@ -2812,6 +2831,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 		rem_nodes = MIN(min_nodes, req_nodes);
 	else
 		rem_nodes = MAX(min_nodes, req_nodes);
+	rem_max_cpus = _get_rem_max_cpus(details_ptr, rem_nodes);
 
 	i_start = bit_ffs(node_map);
 	if (i_start >= 0)
@@ -3012,7 +3032,6 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 	if (job_ptr->gres_list_req && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
 		enforce_binding = true;
 	rem_cpus = details_ptr->min_cpus;
-	rem_max_cpus = details_ptr->max_cpus;
 	min_rem_nodes = min_nodes;
 	if ((details_ptr->num_tasks != NO_VAL) &&
 	    (details_ptr->num_tasks != 0))
@@ -3021,6 +3040,7 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 		rem_nodes = MIN(min_nodes, req_nodes);
 	else
 		rem_nodes = MAX(min_nodes, req_nodes);
+	rem_max_cpus = _get_rem_max_cpus(details_ptr, rem_nodes);
 
 	i_start = bit_ffs(node_map);
 	if (i_start >= 0)
