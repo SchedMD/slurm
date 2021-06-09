@@ -369,11 +369,13 @@ int setup_env(env_t *env, bool preserve_env)
 	}
 
 	set_distribution(env->distribution, &dist);
-	if (dist)
+	if (dist) {
 		if (setenvf(&env->env, "SLURM_DISTRIBUTION", "%s", dist)) {
 			error("Can't set SLURM_DISTRIBUTION env variable");
 			rc = SLURM_ERROR;
 		}
+		xfree(dist);
+	}
 
 	if ((env->distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
 		if (setenvf(&env->env, "SLURM_DIST_PLANESIZE", "%u",
@@ -967,6 +969,7 @@ extern int env_array_for_job(char ***dest,
 	if (dist) {
 		env_array_overwrite_het_fmt(dest, "SLURM_DISTRIBUTION",
 					    het_job_offset, "%s", dist);
+		xfree(dist);
 	}
 	if ((desc->task_dist & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE) {
 		env_array_overwrite_het_fmt(dest, "SLURM_DIST_PLANESIZE",

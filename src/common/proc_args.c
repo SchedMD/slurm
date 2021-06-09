@@ -86,98 +86,11 @@ void print_gres_help(void)
 
 void set_distribution(task_dist_states_t distribution, char **dist)
 {
-	if (((int)distribution >= 0)
-	    && ((distribution & SLURM_DIST_STATE_BASE) != SLURM_DIST_UNKNOWN)) {
-		switch (distribution & SLURM_DIST_STATE_BASE) {
-		case SLURM_DIST_CYCLIC:
-			*dist      = "cyclic";
-			break;
-		case SLURM_DIST_BLOCK:
-			*dist      = "block";
-			break;
-		case SLURM_DIST_PLANE:
-			*dist      = "plane";
-			break;
-		case SLURM_DIST_ARBITRARY:
-			*dist      = "arbitrary";
-			break;
-		case SLURM_DIST_CYCLIC_CYCLIC:
-			*dist      = "cyclic:cyclic";
-			break;
-		case SLURM_DIST_CYCLIC_BLOCK:
-			*dist      = "cyclic:block";
-			break;
-		case SLURM_DIST_BLOCK_CYCLIC:
-			*dist      = "block:cyclic";
-			break;
-		case SLURM_DIST_BLOCK_BLOCK:
-			*dist      = "block:block";
-			break;
-		case SLURM_DIST_CYCLIC_CFULL:
-			*dist      = "cyclic:fcyclic";
-			break;
-		case SLURM_DIST_BLOCK_CFULL:
-			*dist      = "block:fcyclic";
-			break;
-		case SLURM_DIST_CYCLIC_CYCLIC_CYCLIC:
-			*dist      = "cyclic:cyclic:cyclic";
-			break;
-		case SLURM_DIST_CYCLIC_CYCLIC_BLOCK:
-			*dist      = "cyclic:cyclic:block";
-			break;
-		case SLURM_DIST_CYCLIC_CYCLIC_CFULL:
-			*dist      = "cyclic:cyclic:fcyclic";
-			break;
-		case SLURM_DIST_CYCLIC_BLOCK_CYCLIC:
-			*dist      = "cyclic:block:cyclic";
-			break;
-		case SLURM_DIST_CYCLIC_BLOCK_BLOCK:
-			*dist      = "cyclic:block:block";
-			break;
-		case SLURM_DIST_CYCLIC_BLOCK_CFULL:
-			*dist      = "cyclic:cylic:cyclic";
-			break;
-		case SLURM_DIST_CYCLIC_CFULL_CYCLIC:
-			*dist      = "cyclic:cylic:cyclic";
-			break;
-		case SLURM_DIST_CYCLIC_CFULL_BLOCK:
-			*dist      = "cyclic:fcyclic:block";
-			break;
-		case SLURM_DIST_CYCLIC_CFULL_CFULL:
-			*dist      = "cyclic:fcyclic:fcyclic";
-			break;
-		case SLURM_DIST_BLOCK_CYCLIC_CYCLIC:
-			*dist      = "block:cyclic:cyclic";
-			break;
-		case SLURM_DIST_BLOCK_CYCLIC_BLOCK:
-			*dist      = "block:cyclic:block";
-			break;
-		case SLURM_DIST_BLOCK_CYCLIC_CFULL:
-			*dist      = "block:cyclic:fcyclic";
-			break;
-		case SLURM_DIST_BLOCK_BLOCK_CYCLIC:
-			*dist      = "block:block:cyclic";
-			break;
-		case SLURM_DIST_BLOCK_BLOCK_BLOCK:
-			*dist      = "block:block:block";
-			break;
-		case SLURM_DIST_BLOCK_BLOCK_CFULL:
-			*dist      = "block:block:fcyclic";
-			break;
-		case SLURM_DIST_BLOCK_CFULL_CYCLIC:
-			*dist      = "block:fcyclic:cyclic";
-			break;
-		case SLURM_DIST_BLOCK_CFULL_BLOCK:
-			*dist      = "block:fcyclic:block";
-			break;
-		case SLURM_DIST_BLOCK_CFULL_CFULL:
-			*dist      = "block:fcyclic:fcyclic";
-			break;
-		default:
-			error("unknown dist, type 0x%X", distribution);
-			break;
-		}
-	}
+	if (((int)distribution <= 0) || (distribution == SLURM_DIST_UNKNOWN))
+		return; /* distribution not set */
+
+	if ((distribution & SLURM_DIST_STATE_BASE) != SLURM_DIST_UNKNOWN)
+		*dist = xstrdup(format_task_dist_states(distribution));
 }
 
 /*

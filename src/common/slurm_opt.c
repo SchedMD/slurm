@@ -1423,7 +1423,8 @@ static int arg_set_data_distribution(slurm_opt_t *opt, const data_t *arg,
 }
 static char *arg_get_distribution(slurm_opt_t *opt)
 {
-	char *dist = xstrdup(format_task_dist_states(opt->distribution));
+	char *dist = NULL;
+	set_distribution(opt->distribution, &dist);
 	if (opt->distribution == SLURM_DIST_PLANE)
 		xstrfmtcat(dist, "=%u", opt->plane_size);
 	return dist;

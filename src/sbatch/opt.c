@@ -824,8 +824,11 @@ static bool _opt_verify(void)
 		 het_job_env.cpus_per_task = opt.cpus_per_task;
 
 	set_distribution(opt.distribution, &dist);
-	if (dist)
-		 het_job_env.dist = xstrdup(dist);
+	if (dist) {
+		/* set_distribution() xmalloc'd dist; just point at it. */
+		het_job_env.dist = dist;
+		dist = NULL;
+	}
 	if ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
 		 het_job_env.plane_size = opt.plane_size;
 
