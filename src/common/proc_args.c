@@ -86,11 +86,22 @@ void print_gres_help(void)
 
 void set_distribution(task_dist_states_t distribution, char **dist)
 {
+	task_dist_states_t dist_flag = 0;
+
 	if (((int)distribution <= 0) || (distribution == SLURM_DIST_UNKNOWN))
 		return; /* distribution not set */
 
 	if ((distribution & SLURM_DIST_STATE_BASE) != SLURM_DIST_UNKNOWN)
 		*dist = xstrdup(format_task_dist_states(distribution));
+	if ((dist_flag = (distribution & SLURM_DIST_STATE_FLAGS))) {
+		if (dist_flag == SLURM_DIST_PACK_NODES)
+			xstrfmtcat(*dist, "%spack", *dist ? "," : "");
+		else if (dist_flag == SLURM_DIST_NO_PACK_NODES)
+			xstrfmtcat(*dist, "%snopack", *dist ? "," : "");
+		else
+			error("%s: Unknown distribution flag value: 0x%x",
+			      __func__, dist_flag);
+	}
 }
 
 /*
