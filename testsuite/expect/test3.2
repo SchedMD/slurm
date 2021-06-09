@@ -28,79 +28,53 @@
 ############################################################################
 source ./globals
 
-set authorized     1
-set exit_code      0
-set job_runnable   0
-set part_name      ""
-set part_old_state ""
-set part_new_state ""
-set read_state     ""
+set part_name      [default_partition]
+set part_old_state [get_partition_param $part_name "State"]
 set timeout        $max_job_delay
 
-# Execute a srun job in the specified partition name
-# Returns 0 on successful completion, returns 1 otherwise
-proc run_job { part_name } {
-	global bin_printenv srun timeout
-	set rc 1
+if {![is_super_user]} {
+	skip "Test needs admin to update partition state"
+}
 
-	set srun_pid [spawn $srun --output=none --error=none -p $part_name -N1-128 -t1 $bin_printenv SLURMD_NODENAME]
+proc cleanup {} {
+	global scontrol part_name part_old_state
+
+	# Return partition's state to its old value
+	run_command -fail "$scontrol update PartitionName=$part_name State=$part_old_state"
+}
+
+# Execute a srun job in the specified partition name
+# Returns true if srun timedout with a DOWN state message, false otherwise
+proc check_part_down { part_name } {
+	global bin_true srun timeout max_job_delay
+	set matches  0
+	set timedout false
+
+	set timeout 5
+	set srun_pid [spawn $srun -p$part_name -N1 -t1 $bin_true]
 	expect {
-		-re "Unable to contact" {
-			log_error "Slurm appears to be down"
-			return 1
-		}
-		-re "uid" {
-			set rc 0
+		-re "DOWN state" {
+			incr matches
 			exp_continue
 		}
-		-re "not available" {
-			slow_kill $srun_pid
+		-re "queued and waiting" {
+			incr matches
 			exp_continue
 		}
 		timeout {
-			log_error "srun not responding"
+			if {$matches == 2} {
+				set timedout true
+			}
 			slow_kill $srun_pid
-			return 1
 		}
 		eof {
+			log_error "srun didn't timeout"
 			wait
 		}
 	}
 
-	return $rc
-}
-
-#
-# Identify a partition and its state
-#
-spawn $scontrol show part
-expect {
-	-re "PartitionName=($re_word_str)" {
-		if {[string compare $part_name ""] == 0} {
-			set part_name $expect_out(1,string)
-		}
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-spawn $scontrol show part $part_name
-expect {
-	-re "State=($re_word_str) " {
-		set part_old_state $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
+	set timeout $max_job_delay
+	return $timedout
 }
 
 #
@@ -112,126 +86,16 @@ if {[string compare $part_name ""] == 0} {
 if {[string compare $part_old_state ""] == 0} {
 	fail "scontrol unable to identify state of partition $part_name"
 }
-if {[string compare $part_old_state "UP"] == 0} {
-	set job_runable 1
-	set part_new_state "DOWN"
-}
-if {[string compare $part_old_state "DOWN"] == 0} {
-	set job_runable 0
-	set part_new_state "UP"
-}
-if {[string compare $part_new_state ""] == 0} {
-	fail "State of partition $part_name is invalid: $part_old_state"
-}
+
+#
+# Change that partition's state to DOWN
+#
+run_command -fail "$scontrol update PartitionName=$part_name State=DOWN"
+set read_state [get_partition_param $part_name "State"]
+subtest {[string compare $read_state "DOWN"] == 0} "scontrol should be able to change the partition state"
 
 #
 # Confirm that a DOWN partition does not run any jobs
 #
-if {$job_runable == 0} {
-	if {[run_job $part_name] == 0} {
-		log_error "Job ran in DOWN partition"
-		set exit_code 1
-	}
-}
+subtest {[check_part_down $part_name]} "Job should not run. srun should timeout with the partition DOWN messages"
 
-#
-# Change that partition's state
-#
-spawn $scontrol update PartitionName=$part_name State=$part_new_state
-expect {
-	-re "slurm_update error: ($re_word_str) ($re_word_str)" {
-		set access_err 0
-		set err_msg1 $expect_out(1,string)
-		set err_msg2 $expect_out(2,string)
-		if {[string compare $err_msg1 "Invalid"] == 0} {
-			set access_err 1
-		}
-		if {[string compare $err_msg2 "user"] == 0} {
-			set access_err 1
-		}
-		if {$access_err == 1} {
-			skip "User not authorized to change slurm state"
-		} else {
-			set authorized 0
-		}
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-#
-# Validate partition's new state
-#
-spawn $scontrol show partition $part_name
-expect {
-	-re "State=($re_word_str) " {
-		set read_state $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$authorized == 1} {
-	if {[string compare $read_state $part_new_state] != 0} {
-		log_error "scontrol state change error"
-		set exit_code 1
-	}
-}
-
-#
-# Confirm that a DOWN partition does not run any jobs
-#
-if {$job_runable == 1} {
-	if {[run_job $part_name] == 0} {
-		log_error "Job ran in DOWN partition"
-		set exit_code 1
-	}
-}
-
-#
-# Return that partition's state to its old value
-#
-spawn $scontrol update PartitionName=$part_name State=$part_old_state
-expect {
-	-re "slurm_update error: Invalid user id" {
-		exp_continue
-	}
-	-re "slurm_update error:" {
-		log_error "scontrol update error"
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-#
-# Record that partition's state
-#
-spawn  $scontrol show partition $part_name
-expect {
-
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
