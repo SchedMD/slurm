@@ -131,7 +131,7 @@ A <a href="http://www.bsc.es/marenostrum-support-services/services/slurm-simulat
 is available to assess various scheduling policies using historic workload data.
 Under simulation, jobs are not actually executed. Instead, a job execution trace
 from a real system, or a synthetic trace, are used.<br>
-<b>NOTE:</b> This sofware is currently not maintained.</li><br>
+<b>NOTE:</b> This software is currently not maintained.</li><br>
 
 <li><b>PAM Module (pam_slurm)</b><br>
 Pluggable Authentication Module (PAM) for restricting access to compute nodes
@@ -242,8 +242,8 @@ STUBL is a collection of supplemental tools and utility scripts for Slurm.<br>
 <dd>Analogous to the PBS "showbf -S" command.</dd>
 <dt>snodes</dt>
 <dd>A customized version of sinfo. Displays node information in an
-   easy-to-interpet format. Filters can be applied to view (1) specific nodes,
-   (2) nodes in a specific partition, or (3) nodes in a specifc state.</dd>
+   easy-to-interpret format. Filters can be applied to view (1) specific nodes,
+   (2) nodes in a specific partition, or (3) nodes in a specific state.</dd>
 <dt>sqstat</dt>
 <dd>A customized version of squeue that produces output analogous to the PBS
     qstat and xqstat commands (requires clush).</dd>
@@ -407,6 +407,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 3 December 2020</p>
+<p style="text-align:center;">Last modified 9 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
