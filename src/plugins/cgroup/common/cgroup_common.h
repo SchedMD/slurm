@@ -41,6 +41,8 @@
 #include <unistd.h>
 #include <sys/mount.h>
 #include <sys/file.h>
+#include <sys/stat.h>
+#include <limits.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
@@ -49,6 +51,21 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_protocol_defs.h"
+
+typedef struct xcgroup_ns {
+	char* mnt_point;  /* mount point to use for the associated cgroup */
+	char* mnt_args;   /* mount args to use in addition */
+	char* subsystems; /* list of comma separated subsystems to provide */
+} xcgroup_ns_t;
+
+typedef struct xcgroup {
+	xcgroup_ns_t* ns; /* xcgroup namespace of this xcgroup */
+	char*    name;    /* name of the xcgroup relative to the ns */
+	char*    path;    /* absolute path of the xcgroup in the ns */
+	uid_t    uid;     /* uid of the owner */
+	gid_t    gid;     /* gid of the owner */
+	int      fd;      /* used for locking */
+} xcgroup_t;
 
 extern size_t common_file_getsize(int fd);
 extern int common_file_write_uint64s(char* file_path, uint64_t* values, int nb);
@@ -61,4 +78,121 @@ extern int common_file_write_content(char* file_path, char* content,
 				     size_t csize);
 extern int common_file_read_content(char* file_path, char** content,
 				    size_t *csize);
+
+/*
+ * instantiate a cgroup in a cgroup namespace (mkdir)
+ *
+ * returned values:
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
+ */
+extern int common_cgroup_instantiate(xcgroup_t *cg);
+
+/*
+ * create a cgroup structure
+ *
+ * returned values:
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
+ */
+extern int common_cgroup_create(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri,
+				uid_t uid, gid_t gid);
+
+/*
+ * Move process 'pid' (and all its threads) to cgroup 'cg'
+ *
+ *  This call ensures that pid and all its threads are moved to the
+ *   cgroup cg. If the cgroup.procs file is not writable, then threads
+ *   must be moved individually and this call can be racy.
+ *
+ *  returns:
+ *   - SLURM_ERROR
+ *   - SLURM_SUCCESS
+ */
+extern int common_cgroup_move_process(xcgroup_t *cg, pid_t pid);
+
+/*
+ * set a cgroup parameter
+ *
+ * param must correspond to a file of the cgroup that
+ * will be written with the value content
+ *
+ * i.e. xcgroup_set_params(&cf,"memory.swappiness","10");
+ *
+ * returned values:
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
+ */
+extern int common_cgroup_set_param(xcgroup_t* cg, char* param, char* content);
+
+/*
+ * destroy a cgroup namespace
+ */
+extern void common_cgroup_ns_destroy(xcgroup_ns_t* cgns);
+
+/*
+ * destroy a cgroup internal structure
+ */
+extern void common_cgroup_destroy(xcgroup_t* cg);
+
+/*
+ * delete a cgroup instance in a cgroup namespace (rmdir)
+ *
+ * returned values:
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
+ */
+extern int common_cgroup_delete(xcgroup_t* cg);
+
+/*
+ * add a list of pids to a cgroup
+ *
+ * returned values:
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
+ */
+extern int common_cgroup_add_pids(xcgroup_t* cg, pid_t* pids, int npids);
+
+/*
+ * extract the pids list of a cgroup
+ *
+ * pids array must be freed using xfree(...)
+ *
+ * returned values:
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
+ */
+extern int common_cgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids);
+
+/*
+ * get a cgroup parameter
+ *
+ * param must correspond to a file of the cgroup that
+ * will be read for its content
+ *
+ * i.e. xcgroup_get_param(&cg,"memory.swappiness",&value,&size);
+ *
+ * on success, content must be free using xfree
+ *
+ * returned values:
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
+ */
+extern int common_cgroup_get_param(xcgroup_t* cg, char* param, char **content,
+				   size_t *csize);
+
+/*
+ * set a cgroup parameter in the form of a uint64_t
+ *
+ * param must correspond to a file of the cgroup that
+ * will be written with the uint64_t value
+ *
+ * i.e. xcgroup_set_uint64_param(&cf,"memory.swappiness",value);
+ *
+ * returned values:
+ *  - SLURM_ERROR
+ *  - SLURM_SUCCESS
+ */
+extern int common_cgroup_set_uint64_param(xcgroup_t* cg, char* parameter,
+					  uint64_t value);
 #endif /* !_CGROUP_COMMON_H */
