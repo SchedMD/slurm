@@ -50,6 +50,8 @@ HIGHLIGHTS
     has it planned to be used in the future instead of showing as 'IDLE'.
  -- Put node into "INVAL" state upon registering with an invalid node
     configuration. Node must register with a valid configuration to continue.
+ -- Remove SLURM_DIST_LLLP environment variable in favor of just
+    SLURM_DISTRIBUTION.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

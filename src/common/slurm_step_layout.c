@@ -930,10 +930,7 @@ extern char *slurm_step_layout_type_name(task_dist_states_t task_dist)
 	}
 
 	if (!name) {
-		/*
-		 * SLURM_DIST_NO_LLLP or SLURM_DIST_UNKNOWN
-		 * No distribution specified for lllp
-		 */
+		/* SLURM_DIST_UNKNOWN - No distribution specified */
 		xstrfmtcatat(name, &pos, "%s", "Unknown");
 	}
 

@@ -659,7 +659,7 @@ static int _set_options(int argc, char **argv)
 static bool _opt_verify(void)
 {
 	bool verified = true;
-	char *dist = NULL, *dist_lllp = NULL;
+	char *dist = NULL;
 	hostlist_t hl = NULL;
 	int hl_cnt = 0;
 
@@ -823,13 +823,11 @@ static bool _opt_verify(void)
 	if (opt.cpus_set)
 		 het_job_env.cpus_per_task = opt.cpus_per_task;
 
-	set_distribution(opt.distribution, &dist, &dist_lllp);
+	set_distribution(opt.distribution, &dist);
 	if (dist)
 		 het_job_env.dist = xstrdup(dist);
 	if ((opt.distribution & SLURM_DIST_STATE_BASE) == SLURM_DIST_PLANE)
 		 het_job_env.plane_size = opt.plane_size;
-	if (dist_lllp)
-		 het_job_env.dist_lllp = xstrdup(dist_lllp);
 
 	/* massage the numbers */
 	if ((opt.nodes_set || opt.extra_set)				&&
@@ -1305,7 +1303,6 @@ extern void init_envs(sbatch_env_t *local_env)
 {
 	local_env->cpus_per_task	= NO_VAL;
 	local_env->dist			= NULL;
-	local_env->dist_lllp		= NULL;
 	local_env->mem_bind		= NULL;
 	local_env->mem_bind_sort	= NULL;
 	local_env->mem_bind_verbose	= NULL;
@@ -1351,12 +1348,6 @@ extern void set_envs(char ***array_ptr, sbatch_env_t *local_env,
 					 het_job_offset, "%s",
 					 local_env->mem_bind_verbose)) {
 		error("Can't set SLURM_MEM_BIND_VERBOSE env variable");
-	}
-	if (local_env->dist_lllp &&
-	    !env_array_overwrite_het_fmt(array_ptr, "SLURM_DIST_LLLP",
-					 het_job_offset, "%s",
-					 local_env->dist_lllp)) {
-		error("Can't set SLURM_DIST_LLLP env variable");
 	}
 	if (local_env->ntasks != NO_VAL) {
 		if (!env_array_overwrite_het_fmt(array_ptr, "SLURM_NPROCS",
