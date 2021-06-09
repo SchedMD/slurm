@@ -9899,15 +9899,15 @@ static int _pack_job(void *object, void *arg)
 	    (pack_info->filter_uid != job_ptr->user_id))
 		return SLURM_SUCCESS;
 
-	if (((pack_info->show_flags & SHOW_ALL) == 0) &&
-	    (!pack_info->privileged) &&
-	    _all_parts_hidden(job_ptr, &pack_info->user_rec))
-		return SLURM_SUCCESS;
+	if (!pack_info->privileged) {
+		if (((pack_info->show_flags & SHOW_ALL) == 0) &&
+		    _all_parts_hidden(job_ptr, &pack_info->user_rec))
+			return SLURM_SUCCESS;
 
-	if (!pack_info->privileged &&
-	    _hide_job_user_rec(job_ptr, &pack_info->user_rec,
-			       pack_info->show_flags))
-		return SLURM_SUCCESS;
+		if (_hide_job_user_rec(job_ptr, &pack_info->user_rec,
+				       pack_info->show_flags))
+			return SLURM_SUCCESS;
+	}
 
 	pack_job(job_ptr, pack_info->show_flags, pack_info->buffer,
 		 pack_info->protocol_version, pack_info->uid,
