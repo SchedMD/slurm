@@ -158,7 +158,7 @@ of key-pair information may require extra time.
 This can be done by setting an environment variable PMI_TIME before
 executing srun to launch the tasks.
 The default value of PMI_TIME is 500 and this is the number of
-microseconds alloted to transmit each key-pair.
+microseconds allotted to transmit each key-pair.
 We have executed up to 16,000 tasks with a value of PMI_TIME=4000.</p>
 
 <p>The individual slurmd daemons on compute nodes will initiate messages
@@ -190,6 +190,6 @@ the hard limit in order to process all of the standard input and output
 connections to the launched tasks. It is recommended that you set the
 open file hard limit to 8192 across the cluster.</p>
 
-<p style="text-align:center;">Last modified 9 October 2019</p>
+<p style="text-align:center;">Last modified 9 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
