@@ -23,7 +23,7 @@ use of pam_slurm_adopt is also strongly recommended.</li>
 <p><b>Note</b>: Slurm is not directly launching the user application in case 3,
 which may prevent the desired behavior of binding tasks to CPUs and/or
 accounting. Some versions of some MPI implementations work, so testing your
-particular installation may be required to determie the actual behavior.</p>
+particular installation may be required to determine the actual behavior.</p>
 
 <p>Two Slurm parameters control which MPI implementation will be
 supported. Proper configuration is essential for Slurm to establish the
@@ -85,7 +85,7 @@ Note also that Intel MPI doesn't officially support PMIx, so thought it can
 run there is not any guarantee.
 </p>
 
-<p>Altough it is recommended to build PMIx from the
+<p>Although it is recommended to build PMIx from the
 <a href="https://github.com/openpmix/openpmix/releases">packaged releases</a>,
 here is an example on how to build PMIx v2.1 by cloning the git repository:
 </p>
@@ -311,7 +311,7 @@ directories.
 <li><i>SLURM_PMIX_DIRECT_CONN</i> (default - yes) enables (1/yes/true) or
 disables (0/no/false) controls wheter direct connections between slurmstepd's
 are established or Slurm RPCs are used for data exchange. Direct connection
-shows better performanse for fully-packed nodes when PMIx is running in the
+shows better performance for fully-packed nodes when PMIx is running in the
 direct-modex mode.
 </ul>
 
@@ -357,7 +357,7 @@ $ salloc -n4 sh   # allocates 4 processors and spawns shell for job
 <p>If the ports reserved for a job step are found by the Open MPI library
 to be in use, a message of this form will be printed and the job step
 will be re-launched:<br>
-<i>srun: error: sun000: task 0 unble to claim reserved port, retrying</i><br>
+<i>srun: error: sun000: task 0 unable to claim reserved port, retrying</i><br>
 After three failed attempts, the job step will be aborted.
 Repeated failures should be reported to your system administrator in
 order to rectify the problem by cancelling the processes holding those
@@ -444,7 +444,7 @@ PMI implementation. Instead one must point to the desired library just
 exporting the environment variable mentioned above, which will then be dlopened
 by IMPI. Also, there is no official support provided by Intel against PMIx
 libraries. Since IMPI is based on MPICH, using PMIx with Intel may work due
-PMIx mantaining compatibility with pmi and pmi2, which are the ones used in
+PMIx maintaining compatibility with pmi and pmi2, which are the ones used in
 MPICH, but it is not guaranteed to run in all cases.
 </p>
 <li>Use the <i>srun</i> command to launch the MPI job:</li>
@@ -487,7 +487,8 @@ which provides the server side functionality but the client side must implement 
 and the other interface calls.<br>
 
 <p>
-This does require that the MPICH intallation have been installed with the <i>--with-pmi=pmi2</i> configure option.<br>
+This does require that the MPICH installation be installed with the
+<i>--with-pmi=pmi2</i> configure option.<br>
 
 <p>
 To check if the MPI version you are using supports PMI2 check for PMI2_* symbols in the MPI library.
@@ -587,6 +588,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 5 April 2021</p>
+<p style="text-align:center;">Last modified 9 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
