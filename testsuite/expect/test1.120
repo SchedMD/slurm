@@ -1,0 +1,133 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test --distribution options
+############################################################################
+# Copyright (C) 2021 SchedMD LLC
+# Written by Brian Christiansen <brian@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+proc dist_good {opt regex match} {
+	global test_id srun number
+	set cmd "$srun -Jtest$test_id -t1 -n1 -m$opt env"
+
+	set matches 0
+	log_user 0
+	set pid [spawn {*}$cmd]
+	expect {
+		-re $regex {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			fail "$client not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	subtest {$matches == $match} "$cmd found option '$regex' ($matches)"
+	log_user 1
+}
+
+
+proc dist_bad {opt} {
+	global test_id srun number
+	set cmd "$srun -Jtest$test_id -t1 -n1 -m$opt env"
+
+	set matches 0
+	log_user 1
+	set pid [spawn {*}$cmd]
+	expect {
+		"error: Invalid --distribution specification" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			fail "$client not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	subtest {$matches == 1} "$cmd error'ed out' ($matches)"
+	log_user 1
+}
+
+
+set node_dist_opts {
+	"block"
+	"cyclic"
+}
+
+set sock_core_dist_opts {
+	"block"
+	"cyclic"
+	"fcyclic"
+}
+
+foreach node_option $node_dist_opts {
+	dist_good $node_option "SLURM_DISTRIBUTION=$node_option" 1
+}
+
+foreach node_option $node_dist_opts {
+	foreach sock_option $sock_core_dist_opts {
+		set opt "$node_option:$sock_option"
+		dist_good $opt "SLURM_DISTRIBUTION=$opt" 1
+	}
+}
+
+foreach node_option $node_dist_opts {
+	foreach sock_option $sock_core_dist_opts {
+		foreach core_option $sock_core_dist_opts {
+			set opt "$node_option:$sock_option:$core_option"
+			dist_good $opt "SLURM_DISTRIBUTION=$opt" 1
+		}
+	}
+}
+
+
+dist_good "*" "SLURM_DISTRIBUTION=block" 1
+dist_good "*:*" "SLURM_DISTRIBUTION=block:cyclic" 1
+dist_good "*:*:*" "SLURM_DISTRIBUTION=block:cyclic:cyclic" 1
+dist_good "*:block:*" "SLURM_DISTRIBUTION=block:block:block" 1
+
+dist_good "pack" "SLURM_DISTRIBUTION=pack" 1
+dist_good "nopack" "SLURM_DISTRIBUTION=nopack" 1
+dist_good "*,pack" "SLURM_DISTRIBUTION=block,pack" 1
+dist_good "*,nopack" "SLURM_DISTRIBUTION=block,nopack" 1
+dist_good "block,nopack" "SLURM_DISTRIBUTION=block,nopack" 1
+dist_good "block:block:block,nopack" "SLURM_DISTRIBUTION=block:block:block,nopack" 1
+
+dist_good "plane=1" "SLURM_DISTRIBUTION=plane\|SLURM_DIST_PLANESIZE=1" 2
+
+
+dist_bad "blocker"
+dist_bad "block:cyclicer"
+dist_bad "block:cyclic:cyclicer"
+dist_bad "**"
+dist_bad "*:**"
+dist_bad "*:*:**"
+dist_bad ","
+dist_bad ",packer"
+dist_bad ",nopacker"
+dist_bad ",pack"
+dist_bad ",nopack"
