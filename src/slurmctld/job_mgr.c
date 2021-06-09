@@ -146,6 +146,7 @@ typedef struct {
 	uint16_t  show_flags;
 	uid_t     uid;
 	slurmdb_user_rec_t user_rec;
+	bool privileged;
 } _foreach_pack_job_info_t;
 
 typedef struct {
@@ -9878,7 +9879,6 @@ static bool _hide_job_user_rec(job_record_t *job_ptr, slurmdb_user_rec_t *user,
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
 	    (job_ptr->user_id != user->uid) &&
-	    !validate_operator_user_rec(user) &&
 	    (((slurm_mcs_get_privatedata() == 0) &&
 	      !assoc_mgr_is_user_acct_coord_user_rec(acct_db_conn, user,
 						     job_ptr->account)) ||
@@ -9900,11 +9900,12 @@ static int _pack_job(void *object, void *arg)
 		return SLURM_SUCCESS;
 
 	if (((pack_info->show_flags & SHOW_ALL) == 0) &&
-	    (pack_info->uid != 0) &&
+	    (!pack_info->privileged) &&
 	    _all_parts_hidden(job_ptr, &pack_info->user_rec))
 		return SLURM_SUCCESS;
 
-	if (_hide_job_user_rec(job_ptr, &pack_info->user_rec,
+	if (!pack_info->privileged &&
+	    _hide_job_user_rec(job_ptr, &pack_info->user_rec,
 			       pack_info->show_flags))
 		return SLURM_SUCCESS;
 
@@ -9991,6 +9992,7 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	assoc_mgr_lock(&locks);
 	assoc_mgr_fill_in_user(acct_db_conn, &pack_info.user_rec,
 			       accounting_enforce, NULL, true);
+	pack_info.privileged = validate_operator_user_rec(&pack_info.user_rec);
 	list_for_each(job_list, _pack_job, &pack_info);
 	assoc_mgr_unlock(&locks);
 
@@ -10045,6 +10047,7 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 	assoc_mgr_lock(&locks);
 	assoc_mgr_fill_in_user(acct_db_conn, &pack_info.user_rec,
 			       accounting_enforce, NULL, true);
+	pack_info.privileged = validate_operator_user_rec(&pack_info.user_rec);
 	list_for_each(job_ids, _foreach_pack_jobid, &pack_info);
 	assoc_mgr_unlock(&locks);
 
@@ -10102,7 +10105,7 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	buf_t *buffer;
 	assoc_mgr_lock_t locks = { .qos = READ_LOCK, .user = READ_LOCK };
 	slurmdb_user_rec_t user_rec = { 0 };
-	bool hide_job;
+	bool hide_job = false;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -10110,15 +10113,14 @@ extern int pack_one_job(char **buffer_ptr, int *buffer_size,
 	buffer = _pack_init_job_info(protocol_version);
 
 	assoc_mgr_lock(&locks);
-	if (slurm_conf.private_data & PRIVATE_DATA_JOBS) {
-		user_rec.uid = uid;
-		assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
-				       accounting_enforce, NULL, true);
-	}
+	user_rec.uid = uid;
+	assoc_mgr_fill_in_user(acct_db_conn, &user_rec,
+			       accounting_enforce, NULL, true);
 
 	job_ptr = find_job_record(job_id);
 
-	hide_job = _hide_job_user_rec(job_ptr, &user_rec, show_flags);
+	if (!validate_operator_user_rec(&user_rec))
+		hide_job = _hide_job_user_rec(job_ptr, &user_rec, show_flags);
 
 	if (job_ptr && job_ptr->het_job_list) {
 		/* Pack heterogeneous job components */
