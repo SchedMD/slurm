@@ -713,7 +713,8 @@ _forkexec_slurmstepd(uint16_t type, void *req,
 				     "memory", delta_time);
 			}
 			if (rc != SLURM_SUCCESS)
-				error("slurmstepd return code %d", rc);
+				error("slurmstepd return code %d: %s",
+				      rc, slurm_strerror(rc));
 
 			cc = SLURM_SUCCESS;
 			cc = write(to_stepd[1], &cc, sizeof(int));
