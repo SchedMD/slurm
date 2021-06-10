@@ -168,6 +168,7 @@ documents those changes that are of interest to users and administrators.
  -- Jobs that request the whole node now check to see if any gres are allocated.
  -- Rename SbcastParameters to BcastParameters.
  -- Make srun sensitive to BcastParameters.
+ -- RSMI: Add gres_links_create_empty() and preserve RSMI enumeration order.
 
 * Changes in Slurm 20.11.9
 ==========================

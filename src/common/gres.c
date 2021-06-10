@@ -879,6 +879,33 @@ static int _validate_file(char *filenames, char *gres_name)
 }
 
 /*
+ * Create and return a comma-separated zeroed-out links string with a -1 in the
+ * given GPU position indicated by index. Caller must xfree() the returned
+ * string.
+ *
+ * Used to record the enumeration order (PCI bus ID order) of GPUs for sorting,
+ * even when the GPU does not support nvlinks. E.g. for three total GPUs, their
+ * links strings would look like this:
+ *
+ * GPU at index 0: -1,0,0
+ * GPU at index 1: 0,-1,0
+ * GPU at index 2: -0,0,-1
+ */
+extern char *gres_links_create_empty(unsigned int index,
+				     unsigned int device_count)
+{
+	char *links_str = NULL;
+
+	for (unsigned int i = 0; i < device_count; ++i) {
+		xstrfmtcat(links_str, "%s%d",
+			   i ? "," : "",
+			   (i == index) ? -1 : 0);
+	}
+
+	return links_str;
+}
+
+/*
  * Check that we have a comma-delimited list of numbers, and return the index of
  * the GPU (-1) in the links string.
  *

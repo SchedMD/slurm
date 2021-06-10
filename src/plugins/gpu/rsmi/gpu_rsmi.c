@@ -1065,7 +1065,7 @@ static List _get_system_gpu_list_rsmi(node_config_load_t *node_config)
 	// Loop through all the GPUs on the system and add to gres_list_system
 	for (i = 0; i < device_count; ++i) {
 		unsigned int minor_number = 0;
-		char *device_file = NULL;
+		char *device_file = NULL, *links = NULL;
 		char device_name[RSMI_STRING_BUFFER_SIZE] = {0};
 		char device_brand[RSMI_STRING_BUFFER_SIZE] = {0};
 		rsmiPciInfo_t pci_info;
@@ -1079,6 +1079,9 @@ static List _get_system_gpu_list_rsmi(node_config_load_t *node_config)
 		_rsmi_get_device_pci_info(i, &pci_info);
 		_rsmi_get_device_unique_id(i, &uuid);
 
+		/* Use links to record PCI bus ID order */
+		links = gres_links_create_empty(i, device_count);
+
 		xstrfmtcat(device_file, "/dev/dri/renderD%u", minor_number);
 
 		debug2("GPU index %u:", i);
@@ -1088,6 +1091,7 @@ static List _get_system_gpu_list_rsmi(node_config_load_t *node_config)
 		debug2("    PCI Domain/Bus/Device/Function: %u:%u:%u.%u",
 		       pci_info.domain,
 		       pci_info.bus, pci_info.device, pci_info.function);
+		debug2("    Links: %s", links);
 		debug2("    Device File (minor number): %s", device_file);
 		if (minor_number != i+128)
 			debug("Note: GPU index %u is different from minor # %u",
@@ -1098,9 +1102,10 @@ static List _get_system_gpu_list_rsmi(node_config_load_t *node_config)
 
 		add_gres_to_list(gres_list_system, "gpu", 1,
 				 node_config->cpu_cnt, NULL, NULL,
-				 device_file, device_brand, NULL);
+				 device_file, device_brand, links);
 
 		xfree(device_file);
+		xfree(links);
 	}
 
 	rsmi_shut_down();
