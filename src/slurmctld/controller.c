@@ -2512,8 +2512,8 @@ extern void set_cluster_tres(bool assoc_mgr_locked)
 		if (!node_ptr->name)
 			continue;
 
-		cpu_count += node_ptr->config_ptr->cpus;
-		mem_count += node_ptr->config_ptr->real_memory;
+		cpu_count = node_ptr->config_ptr->cpus;
+		mem_count = node_ptr->config_ptr->real_memory;
 
 		cluster_cpus += cpu_count;
 		if (mem_tres)
