@@ -365,13 +365,13 @@ static int _sort_gpu_by_file(void *x, void *y, bool asc)
 		return -(val1 - val2);
 }
 
-/* Sort gres/gpu records by "File" value in ascending order (nulls first) */
+/* Sort gres/gpu records by "File" value in descending order (nulls first) */
 static int _sort_gpu_by_file_desc(void *x, void *y)
 {
 	return _sort_gpu_by_file(x, y, false);
 }
 
-/* Sort gres/gpu records by "File" value in descending order */
+/* Sort gres/gpu records by "File" value in ascending order */
 static int _sort_gpu_by_file_asc(void *x, void *y)
 {
 	return _sort_gpu_by_file(x, y, true);
