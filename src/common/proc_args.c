@@ -167,8 +167,10 @@ static task_dist_states_t _parse_dist_base(const char *str)
 	}
 
 	tmp = xstrdup(str);
-	if (!(dist_base = strtok_r(tmp, ",", &flag_str)))
+	if (!(dist_base = strtok_r(tmp, ",", &flag_str))) {
+		xfree(tmp);
 		return SLURM_ERROR;
+	}
 
 	i = 0;
 	token = strtok_r(dist_base, ":", &save_ptr);
