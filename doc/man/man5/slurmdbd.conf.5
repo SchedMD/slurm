@@ -1,10 +1,10 @@
-.TH "slurmdbd.conf" "5" "Slurm Configuration File" "November 2020" "Slurm Configuration File"
+.TH "slurmdbd.conf" "5" "Slurm Configuration File" "June 2021" "Slurm Configuration File"
 
 .SH "NAME"
 slurmdbd.conf \- Slurm Database Daemon (SlurmDBD) configuration file
 
 .SH "DESCRIPTION"
-\fBslurmdb.conf\fP is an ASCII file which describes Slurm Database
+\fBslurmdbd.conf\fP is an ASCII file which describes Slurm Database
 Daemon (SlurmDBD) configuration information.
 The file location can be modified at system build time using the
 DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
@@ -14,7 +14,7 @@ The contents of the file are case insensitive except for the names of nodes
 and files. Any text following a "#" in the configuration file is treated
 as a comment through the end of that line.
 Changes to the configuration file take effect upon restart of
-SlurmDbd or daemon receipt of the SIGHUP signal unless otherwise noted.
+SlurmDBD or daemon receipt of the SIGHUP signal unless otherwise noted.
 .LP
 This file should be only on the computer where SlurmDBD executes and
 should only be readable by the user which executes SlurmDBD (e.g. "slurm").
@@ -446,7 +446,7 @@ and above.
 .TP
 \fBusage\fR
 prevents users from viewing usage of any other user.
-This applys to sreport.
+This applies to sreport.
 .TP
 \fBusers\fR
 prevents users from viewing information of any user
