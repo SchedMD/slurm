@@ -62,7 +62,7 @@ details.</li>
 EXCEPT for <b>CR_MEMORY</b> which assumes <b>OverSubscribe=Yes</b>.</li>
 
 <li>The consumable resource plugin is enabled via SelectType and
-SelectTypeParameter in the slurm.conf.</li>
+SelectTypeParameters in the slurm.conf.</li>
 
 <pre>
 # Excerpt from sample slurm.conf file
@@ -364,6 +364,6 @@ programs that will take advantage of all the CPUs on a node but only need
 one mpi process per node.</p>
 
 
-<p style="text-align:center;">Last modified 26 June 2020</p>
+<p style="text-align:center;">Last modified 9 June 2021</p>
 
 <!--#include virtual="footer.txt"-->

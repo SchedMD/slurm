@@ -138,14 +138,14 @@ different <CODE>OverSubscribe</CODE> settings will be allocated to jobs. Note th
 sharing with the <CODE>srun --oversubscribe</CODE> option. Conversely, "non-shared"
 jobs are jobs that are submitted to partitions configured with
 <CODE>OverSubscribe=NO</CODE> or <CODE>OverSubscribe=YES</CODE> and the job did <U>not</U>
-request sharable resources.
+request shareable resources.
 </P>
 <TABLE CELLPADDING=3 CELLSPACING=1 BORDER=1>
-<TR><TH>&nbsp;</TH><TH>First job "sharable"</TH><TH>First job not
-"sharable"</TH></TR>
-<TR><TH>Second job "sharable"</TH><TD>Both jobs can run on the same nodes and may
-share resources</TD><TD>Jobs do not run on the same nodes</TD></TR>
-<TR><TH>Second job not "sharable"</TH><TD>Jobs do not run on the same nodes</TD>
+<TR><TH>&nbsp;</TH><TH>First job "shareable"</TH><TH>First job not
+"shareable"</TH></TR>
+<TR><TH>Second job "shareable"</TH><TD>Both jobs can run on the same nodes and
+may share resources</TD><TD>Jobs do not run on the same nodes</TD></TR>
+<TR><TH>Second job not "shareable"</TH><TD>Jobs do not run on the same nodes</TD>
 <TD>Jobs can run on the same nodes but will not share resources</TD></TR>
 </TABLE>
 <P>
@@ -264,6 +264,6 @@ the accounting plugin, which periodically gathers data about running jobs. Set
 values suitable for your system.</P>
 
 
-<p style="text-align:center;">Last modified 26 June 2020</p>
+<p style="text-align:center;">Last modified 9 June 2021</p>
 
 <!--#include virtual="footer.txt"-->

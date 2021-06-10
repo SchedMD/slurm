@@ -203,7 +203,7 @@ them (eg. &lt;ArrayJobID&gt;_&lt;ArrayTaskId&gt;).
 
 <p>The scontrol command will operate on all elements of a job array if the
 job ID specified is <i>ArrayJobID</i>.
-Individual job array tasks can be modifed using the
+Individual job array tasks can be modified using the
 <i>ArrayJobID</i>_<i>ArrayTaskID</i> as shown below.</p>
 
 <pre>
@@ -326,7 +326,7 @@ The maximum MaxArraySize supported in Slurm is 4000001.
 for users to submit large numbers of jobs very quickly.</p>
 
 <p>The sched/backfill plugin has been modified to improve performance with
-job arrays. Once one element of a job array is discovered to not be runable
+job arrays. Once one element of a job array is discovered to not be runnable
 or impact the scheduling of pending jobs, the remaining elements of that job
 array will be quickly skipped.</p>
 
@@ -337,6 +337,6 @@ manage large job counts.
 Each task of the job array will have a unique Slurm "job_id", but
 all will have the same "array_job_id" value.</p>
 
-<p style="text-align:center;">Last modified 23 September 2019</p>
+<p style="text-align:center;">Last modified 9 June 2021</p>
 
 <!--#include virtual="footer.txt"-->

@@ -65,7 +65,7 @@ see these MCS_labels.</p>
 MCS plugin implementation. So labels can be configured to be enforced or set
 on demand, and the specific MCS Plugin is responsible for checking the validity
 of these labels. When enforced, the MCS Plugin implementation will always
-associate a MCS label to a submited job, either the default value or the one
+associate a MCS label to a submitted job, either the default value or the one
 requested by the user (if it's considered correct).</p>
 
 <p>The selection (exclusivity) of nodes can be filtered on MCS labels either
@@ -98,7 +98,7 @@ if MCS' privatedata and PrivateData's privatedata=jobs, jobs information is
 filtered based on their MCS labels<br>
 </li>
 <li>
-if MCS' privatedata and PrivateData's privatedata=nodes, nodes informations is
+if MCS' privatedata and PrivateData's privatedata=nodes, nodes information is
 filtered based on their MCS labels<br>
 </li>
 </ul>
@@ -247,6 +247,6 @@ NodeName=node0001 Arch=x86_64 CoresPerSocket=4
 for details on developing additional MCS plugins.</p>
 
 
-<p style="text-align:center;">Last modified 10 October 2019</p>
+<p style="text-align:center;">Last modified 9 June 2021</p>
 
 <!--#include virtual="footer.txt"-->

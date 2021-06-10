@@ -270,7 +270,7 @@ be set to <code class="commandline">CUDA_DEVICE_ORDER=PCI_BUS_ID</code>.</p>
 <p>GPU device files (e.g. <i>/dev/nvidia1</i>) are
 based on the Linux minor number assignment, while NVML's device numbers are
 assigned via PCI bus ID, from lowest to highest. Mapping between these two is
-indeterministic and system dependent, and could vary between boots after
+nondeterministic and system dependent, and could vary between boots after
 hardware or OS changes. For the most part, this assignment seems fairly stable.
 However, an after-bootup check is required to guarantee that a GPU device is
 assigned to a specific device file.</p>
@@ -351,7 +351,7 @@ Name=mps Count=400
 <a id="MPS_config_example_2"></a>
 <PRE>
 # Example 2 of gres.conf
-# Configure support for four differernt GPU types (with MPS)
+# Configure support for four different GPU types (with MPS)
 AutoDetect=nvml
 Name=gpu Type=gtx1080 File=/dev/nvidia0 Cores=0,1
 Name=gpu Type=gtx1070 File=/dev/nvidia1 Cores=0,1
@@ -434,6 +434,6 @@ CVE-2018-6260</a> and in the
 <a href="https://nvidia.custhelp.com/app/answers/detail/a_id/4772">
 Security Bulletin: NVIDIA GPU Display Driver - February 2019</a>.</p>
 
-<p style="text-align: center;">Last modified 22 December 2020</p>
+<p style="text-align: center;">Last modified 9 June 2021</p>
 
 <!--#include virtual="footer.txt"-->

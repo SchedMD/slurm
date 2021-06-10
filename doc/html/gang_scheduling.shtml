@@ -52,14 +52,15 @@ socket/core/CPU resources allocated by the <I>select/cons_res</I> and
 systems without ALPS.
 </LI>
 <LI>
-<B>SelectTypeParameter</B>: Since resources will be getting overallocated
+<B>SelectTypeParameters</B>: Since resources will be getting overallocated
 with jobs (suspended jobs remain in memory), the resource selection plugin
 should be configured to track the amount of memory used by each job to ensure
 that memory page swapping does not occur.
 When <I>select/linear</I> is chosen, we recommend setting
-<I>SelectTypeParameter=CR_Memory</I>.
+<I>SelectTypeParameters=CR_Memory</I>.
 When <I>select/cons_res</I> or <I>select/cons_tres</I> are chosen, we recommend
-including Memory as a resource (e.g. <I>SelectTypeParameter=CR_Core_Memory</I>).
+including Memory as a resource
+(e.g. <I>SelectTypeParameters=CR_Core_Memory</I>).
 </LI>
 <LI>
 <B>DefMemPerCPU</B>: Since job requests may not explicitly specify
@@ -356,7 +357,7 @@ In both examples 6 jobs are submitted. Each job requests 2 CPUs per node, and
 all of the nodes contain two quad-core processors. The timeslicer will
 initially let the first 4 jobs run and suspend the last 2 jobs.
 The manner in which these jobs are timesliced depends upon the configured
-<I>SelectTypeParameter</I>.
+<I>SelectTypeParameters</I>.
 </P>
 <P>
 In the first example <I>CR_Core_Memory</I> is configured. Note that jobs 46
@@ -522,6 +523,6 @@ Use of the scancel command to send SIGSTOP and SIGCONT signals would stop a
 job without releasing its CPUs for allocation to other jobs and would be a
 preferable mechanism in many cases.</P>
 
-<p style="text-align:center;">Last modified 10 March 2020</p>
+<p style="text-align:center;">Last modified 9 June 2021</p>
 
 <!--#include virtual="footer.txt"-->

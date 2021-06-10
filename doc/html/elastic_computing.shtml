@@ -60,7 +60,7 @@ won't be known until creation of the node and that Slurm will be notified of
 the node's address (e.g. scontrol update nodename=&lt;name&gt;
 nodeaddr=&lt;addr&gt;). Since Slurm communications rely on the node
 configuration found in the slurm.conf, Slurm will tell the client command,
-after waiting for all nodes to boot, each node's ip address. However, in
+after waiting for all nodes to boot, each node's IP address. However, in
 environments where the nodes are in DNS, this step can be avoided by
 configuring this option.
 <dt><b>SlurmctldParameters=idle_on_node_suspend</b>
@@ -187,6 +187,6 @@ expands (adds resources).</li>
 </ul>
 
 
-<p style="text-align:center;">Last modified 4 June 2021</p>
+<p style="text-align:center;">Last modified 9 June 2021</p>
 
 <!--#include virtual="footer.txt"-->

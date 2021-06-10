@@ -210,7 +210,7 @@ to allocate resources then the resources will be reserved for the job.
 </p>
 
 <p>
-If an origin cluster is down, then the remote siblings will cooridinate with a
+If an origin cluster is down, then the remote siblings will coordinate with a
 job's viable siblings to schedule the job. When the origin cluster comes back
 up, it will sync with the other siblings.
 </p>
@@ -460,6 +460,6 @@ issuing the command on the cluster or using the <b>--cluster/-M</b>  option.
 	<li>sview grid is disabled in a federated view.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 15 October 2020</p>
+<p style="text-align:center;">Last modified 9 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
