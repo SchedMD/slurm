@@ -10371,6 +10371,7 @@ extern int gres_plugin_job_min_cpu_node(uint32_t sockets_per_node,
 		tmp = cpus_per_gres * total_gres;
 		min_cpus = MAX(min_cpus, tmp);
 	}
+	list_iterator_destroy(job_gres_iter);
 	return min_cpus;
 }
 

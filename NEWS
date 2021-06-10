@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
     mount points could disappear.
  -- sacct - avoid truncating JobId at 34 characters.
  -- scancel - fix segfault when --wckey filtering option is used.
+ -- select/cons_tres - Fix memory leak.
 
 * Changes in Slurm 20.11.7
 ==========================
