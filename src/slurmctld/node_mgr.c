@@ -782,7 +782,6 @@ static bool _node_is_hidden(node_record_t *node_ptr,
 
 	if ((slurm_conf.private_data & PRIVATE_DATA_NODES) &&
 	    (slurm_mcs_get_privatedata() == 1) &&
-	    !validate_operator(pack_info->uid) &&
 	    (mcs_g_check_mcs_label(pack_info->uid, node_ptr->mcs_label) != 0))
 		return true;
 
@@ -843,7 +842,7 @@ extern void pack_all_node(char **buffer_ptr, int *buffer_size,
 	buf_t *buffer;
 	time_t now = time(NULL);
 	node_record_t *node_ptr = node_record_table_ptr;
-	bool hidden;
+	bool hidden, privileged = validate_operator(uid);
 	pack_node_info_t pack_info = {0};
 	part_record_t **visible_parts_save;
 
@@ -883,7 +882,8 @@ extern void pack_all_node(char **buffer_ptr, int *buffer_size,
 			 * of NULL and let the caller deal with it.
 			 */
 			hidden = false;
-			if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
+			if (((show_flags & SHOW_ALL) == 0) &&
+			    !privileged &&
 			    (_node_is_hidden(node_ptr, &pack_info)))
 				hidden = true;
 			else if (IS_NODE_FUTURE(node_ptr) &&
@@ -944,7 +944,7 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 	buf_t *buffer;
 	time_t now = time(NULL);
 	node_record_t *node_ptr;
-	bool hidden;
+	bool hidden, privileged = validate_operator(uid);
 	pack_node_info_t pack_info = {0};
 	part_record_t **visible_parts_save;
 
@@ -980,7 +980,8 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 			node_ptr = node_record_table_ptr;
 		if (node_ptr) {
 			hidden = false;
-			if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
+			if (((show_flags & SHOW_ALL) == 0) &&
+			    !privileged &&
 			    (_node_is_hidden(node_ptr, &pack_info)))
 				hidden = true;
 			else if (IS_NODE_FUTURE(node_ptr) &&
