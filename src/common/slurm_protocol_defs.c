@@ -3523,7 +3523,7 @@ extern char *node_state_string(uint32_t inx)
 		else
 			return "MAINT";
 	}
-	if (reboot_flag) {
+	if (reboot_flag || reboot_issued_flag) {
 		if ((base == NODE_STATE_ALLOCATED) ||
 		    (base == NODE_STATE_MIXED))
 			;
@@ -3755,7 +3755,7 @@ extern char *node_state_string_compact(uint32_t inx)
 		else
 			return "MAINT";
 	}
-	if (reboot_flag) {
+	if (reboot_flag || reboot_issued_flag) {
 		if ((inx == NODE_STATE_ALLOCATED) || (inx == NODE_STATE_MIXED))
 			;
 		else if (reboot_issued_flag)
