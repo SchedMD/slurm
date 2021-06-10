@@ -10029,7 +10029,8 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 	pack_info.uid              = uid;
 	pack_info.has_qos_lock = true;
 	pack_info.user_rec.uid = uid;
-	_build_allowed_parts(&pack_info);
+	if (!(pack_info.show_flags & SHOW_ALL))
+		_build_allowed_parts(&pack_info);
 
 	assoc_mgr_lock(&locks);
 	assoc_mgr_fill_in_user(acct_db_conn, &pack_info.user_rec,
@@ -10086,7 +10087,8 @@ extern void pack_spec_jobs(char **buffer_ptr, int *buffer_size, List job_ids,
 	pack_info.uid              = uid;
 	pack_info.has_qos_lock = true;
 	pack_info.user_rec.uid = uid;
-	_build_allowed_parts(&pack_info);
+	if (!(pack_info.show_flags & SHOW_ALL))
+		_build_allowed_parts(&pack_info);
 
 	assoc_mgr_lock(&locks);
 	assoc_mgr_fill_in_user(acct_db_conn, &pack_info.user_rec,
