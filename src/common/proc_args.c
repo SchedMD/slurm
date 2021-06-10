@@ -141,7 +141,11 @@ static task_dist_states_t _parse_plane_dist(const char *tok,
 
 static void _parse_dist_flag(char *flag_str, task_dist_states_t *result)
 {
-	if (!result || !*result) {
+	xassert(result);
+	if (!result)
+		return;
+
+	if (!*result) {
 		*result = SLURM_ERROR;
 		return;
 	}
