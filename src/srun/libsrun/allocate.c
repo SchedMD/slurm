@@ -743,6 +743,9 @@ static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 		j->argv    = (char **) xmalloc(sizeof(char *) * 2);
 		j->argv[0] = xstrdup(srun_opt->argv[0]);
 	}
+
+	j->container = xstrdup(opt_local->container);
+
 	if (srun_opt->cpu_bind)
 		j->cpu_bind = xstrdup(srun_opt->cpu_bind);
 	if (srun_opt->cpu_bind_type)
