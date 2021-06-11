@@ -1824,6 +1824,9 @@ static void _step_alloc_lps(step_record_t *step_ptr)
 		error("%s: lack memory allocation details to enforce memory limits for %pJ",
 		      __func__, job_ptr);
 		step_ptr->pn_min_memory = 0;
+	} else if (!step_ptr->pn_min_memory) {
+		/* If we aren't requesting any memory grab it from the job */
+		step_ptr->pn_min_memory = job_ptr->details->pn_min_memory;
 	}
 
 	rem_nodes = bit_set_count(step_ptr->step_node_bitmap);
