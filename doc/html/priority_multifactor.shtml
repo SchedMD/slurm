@@ -5,7 +5,7 @@
 <h2>Contents</h2>
 <UL>
 <LI> <a href=#intro>Introduction</a>
-<LI> <a href=#mfjppintro>Multi-factor Job Priority Plugin</a>
+<LI> <a href=#mfjppintro>Multifactor Job Priority Plugin</a>
 <LI> <a href=#general>Job Priority Factors In General</a>
 <LI> <a href=#age>Age Factor</a>
 <LI> <a href=#assoc>Association Factor</a>
@@ -32,13 +32,13 @@ scheduler.</p>
 plugin. The default value for this variable is "priority/basic" which enables
 simple FIFO scheduling. (See <a href="#config">Configuration</a> below)</p>
 
-<p>The Multi-factor Job Priority plugin provides a very versatile facility for
+<p>The Multifactor Job Priority plugin provides a very versatile facility for
 ordering the queue of jobs waiting to be scheduled.</p>
 
 <a name=mfjppintro>
-<h2>Multi-factor 'Factors'</h2></a>
+<h2>Multifactor 'Factors'</h2></a>
 
-<P> There are nine factors in the Multi-factor Job Priority plugin that
+<P> There are nine factors in the Multifactor Job Priority plugin that
 influence job priority:</P>
 
 <DL>
@@ -276,11 +276,11 @@ factor as it is currently configured.</P>
 <a name=config>
 <h2>Configuration</h2></a>
 
-<P> The following slurm.conf (SLURM_CONFIG_FILE) parameters are used to configure the Multi-factor Job Priority Plugin.  See slurm.conf(5) man page for more details.</P>
+<P> The following slurm.conf (SLURM_CONFIG_FILE) parameters are used to configure the Multifactor Job Priority Plugin.  See slurm.conf(5) man page for more details.</P>
 
 <DL>
 <DT> PriorityType
-<DD> Set this value to "priority/multifactor" to enable the Multi-factor Job Priority Plugin.  The default value for this variable is "priority/basic" which enables simple FIFO scheduling.
+<DD> Set this value to "priority/multifactor" to enable the Multifactor Job Priority Plugin.  The default value for this variable is "priority/basic" which enables simple FIFO scheduling.
 <DT> PriorityDecayHalfLife
 <DD> This determines the contribution of historical usage on the
   composite usage value.  The larger the number, the longer past usage
@@ -377,14 +377,14 @@ PriorityType=priority/multifactor.
 <h2>Configuration Example</h2></a>
 
 <P> The following are sample slurm.conf file settings for the
-  Multi-factor Job Priority Plugin.</P>
+  Multifactor Job Priority Plugin.</P>
 
 <P> The first example is for running the plugin applying decay over
   time to reduce usage.  Hard limits can be used in this
   configuration, but will have less effect since usage will decay
   over time instead of having no decay over time.</P>
 <PRE>
-# Activate the Multi-factor Job Priority Plugin with decay
+# Activate the Multifactor Job Priority Plugin with decay
 PriorityType=priority/multifactor
 
 # 2 week half-life
@@ -398,7 +398,7 @@ PriorityFavorSmall=NO
 PriorityMaxAge=14-0
 
 # This next group determines the weighting of each of the
-# components of the Multi-factor Job Priority Plugin.
+# components of the Multifactor Job Priority Plugin.
 # The default value for each of the following is 1.
 PriorityWeightAge=1000
 PriorityWeightFairshare=10000
@@ -410,7 +410,7 @@ PriorityWeightQOS=0 # don't use the qos factor
 <P> This example is for running the plugin with no decay on usage,
   thus making a reset of usage necessary.</P>
 <PRE>
-# Activate the Multi-factor Job Priority Plugin with decay
+# Activate the Multifactor Job Priority Plugin with decay
 PriorityType=priority/multifactor
 
 # apply no decay
@@ -427,7 +427,7 @@ PriorityFavorSmall=NO
 PriorityMaxAge=14-0
 
 # This next group determines the weighting of each of the
-# components of the Multi-factor Job Priority Plugin.
+# components of the Multifactor Job Priority Plugin.
 # The default value for each of the following is 1.
 PriorityWeightAge=1000
 PriorityWeightFairshare=10000
