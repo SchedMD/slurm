@@ -32,8 +32,28 @@ scheduler.</p>
 plugin. The default value for this variable is "priority/basic" which enables
 simple FIFO scheduling. (See <a href="#config">Configuration</a> below)</p>
 
-<p>The Multifactor Job Priority plugin provides a very versatile facility for
-ordering the queue of jobs waiting to be scheduled.</p>
+<p>In most cases it is preferable to use the Multifactor Priority plugin, which
+is enabled by setting <i>PriorityType=priority/multifactor</i>. This provides
+a very versatile method of ordering the queue of jobs waiting to be scheduled
+based on several <a href="#mfjppintro">factors</a>.</p>
+
+<p>There are several several considerations the scheduler makes when making
+scheduling decisions. Jobs are selected to be evaluated by the scheduler
+in the following order:</p>
+
+<ol>
+<li>Jobs that can preempt</li>
+<li>Jobs with an advanced reservation</li>
+<li>Partition PriorityTier</li>
+<li>Job priority</li>
+<li>Job submit time</li>
+<li>Job ID</li>
+</ol>
+
+<p>This is important to keep in mind because the job with the highest priority
+may not be the first to be evaluated by the scheduler. The job priority is
+considered when there are multiple jobs that can be evaluated at once, such
+as jobs requesting partitions with the same PriorityTier.</p>
 
 <a name=mfjppintro>
 <h2>Multifactor 'Factors'</h2></a>
