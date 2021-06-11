@@ -48,8 +48,10 @@ static char *_cgroup_procs_check (xcgroup_t *cg, int check_mode)
 	struct stat st;
 	char *path = xstrdup_printf("%s/%s", cg->path, "cgroup.procs");
 
-	if (!((stat (path, &st) >= 0) && (st.st_mode & check_mode)))
+	if (!((stat (path, &st) >= 0) && (st.st_mode & check_mode))) {
+		error("%s: failed on path %s: %m", __func__, path);
 		xfree(path);
+	}
 
 	return path;
 }
