@@ -24,11 +24,16 @@
 <a name=intro>
 <h2>Introduction</h2></a>
 
-<P> By default, Slurm assigns job priority on a First In, First Out (FIFO) basis.  FIFO scheduling should be configured when Slurm is controlled by an external scheduler.</P>
+<p>By default, Slurm assigns job priority on a First In, First Out (FIFO) basis.
+FIFO scheduling should be configured when Slurm is controlled by an external
+scheduler.</p>
 
-<P> The <i>PriorityType</i> parameter in the slurm.conf file selects the priority plugin.  The default value for this variable is "priority/basic" which enables simple FIFO scheduling. (See <a href="#config">Configuration</a> below)</P>
+<p>The <i>PriorityType</i> parameter in the slurm.conf file selects the priority
+plugin. The default value for this variable is "priority/basic" which enables
+simple FIFO scheduling. (See <a href="#config">Configuration</a> below)</p>
 
-<P> The Multi-factor Job Priority plugin provides a very versatile facility for ordering the queue of jobs waiting to be scheduled.</P>
+<p>The Multi-factor Job Priority plugin provides a very versatile facility for
+ordering the queue of jobs waiting to be scheduled.</p>
 
 <a name=mfjppintro>
 <h2>Multi-factor 'Factors'</h2></a>
@@ -431,6 +436,6 @@ PriorityWeightPartition=1000
 PriorityWeightQOS=0 # don't use the qos factor
 </PRE>
 
-<p style="text-align:center;">Last modified 24 November 2020</p>
+<p style="text-align:center;">Last modified 11 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
