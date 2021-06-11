@@ -3594,7 +3594,7 @@ no_aggregate:
 extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 				bool assoc_mgr_locked, bool make_formatted)
 {
-	uint64_t cpu_count = 1, mem_count = 1;
+	uint64_t cpu_count = 1, mem_count = 0;
 	char *tmp_tres_str = NULL;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 	job_record_t *job_ptr = step_ptr->job_ptr;
