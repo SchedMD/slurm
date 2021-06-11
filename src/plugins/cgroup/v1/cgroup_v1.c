@@ -415,7 +415,7 @@ extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub)
 
 	/* Another plugin may have already destroyed this subsystem. */
 	if (!g_sys_cg[sub].path)
-		return SLURM_ERROR;
+		return SLURM_SUCCESS;
 
 	/* Custom actions for every cgroup subsystem */
 	switch (sub) {
@@ -655,11 +655,6 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 				  g_root_cg[sub],
 				  g_cg_name[sub],
 				  g_step_cg[sub]);
-
-	if (rc == SLURM_SUCCESS) {
-		common_cgroup_destroy(&g_root_cg[sub]);
-		common_cgroup_ns_destroy(&g_cg_ns[sub]);
-	}
 
 	return rc;
 }
