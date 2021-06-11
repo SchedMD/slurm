@@ -1314,9 +1314,13 @@ extern void slurm_cred_get_mem(slurm_cred_t *cred, int node_id,
 			      func_name, node_id);
 		else
 			*step_mem_limit = cred->step_mem_alloc[rep_idx];
-	} else {
-		*step_mem_limit = *job_mem_limit;
 	}
+
+	/*
+	 * If we are not set or we were sent 0 go with the job_mem_limit value.
+	 */
+	if (!(*step_mem_limit))
+		*step_mem_limit = *job_mem_limit;
 
 	log_flag(CPU_BIND, "Memory extracted from credential for %ps job_mem_limit= %"PRIu64" step_mem_limit=%"PRIu64,
 		 &cred->step_id, *job_mem_limit, *step_mem_limit);
