@@ -2075,12 +2075,18 @@ The default value is "site_factor/none".
 .TP
 \fBPriorityType\fR
 This specifies the plugin to be used in establishing a job's scheduling
-priority. Supported values are "priority/basic" (jobs are prioritized
-by order of arrival), "priority/multifactor" (jobs are prioritized based
-upon size, age, fair\-share of allocation, etc).
+priority.
 Also see \fBPriorityFlags\fR for configuration options.
 The default value is "priority/basic".
-
+.RS
+.TP
+\fBpriority/basic\fR
+Jobs are evaluated in a First In, First Out (FIFO) manner.
+.TP
+\fBpriority/multifactor\fR
+Jobs are assigned a priority based upon a variety of factors
+that include size, age, Fairshare, etc.
+.RE
 .RS
 .nr step 1 1
 When not FIFO scheduling, jobs are prioritized in the following order:
@@ -2090,12 +2096,13 @@ When not FIFO scheduling, jobs are prioritized in the following order:
 .br
 2. Jobs with an advanced reservation
 .br
-3. Partition Priority Tier
+3. Partition PriorityTier
 .br
-4. Job Priority
+4. Job priority
 .br
-5. Job Id
+5. Job submit time
 .br
+6. Job ID
 .RE
 
 .TP
