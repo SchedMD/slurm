@@ -133,11 +133,14 @@ static int _append_job_in_list(void *element, void *arg)
 
 	if (!list_find_first(job_id_list, (ListFindF)_find_job_id_in_list,
 			     &stepd->step_id.job_id)) {
-		if (stepd_connect(stepd->directory,
-				  stepd->nodename,
-				  &stepd->step_id,
-				  &stepd->protocol_version) != -1)
+		int fd = stepd_connect(stepd->directory,
+				       stepd->nodename,
+				       &stepd->step_id,
+				       &stepd->protocol_version);
+		if (fd != -1) {
 			list_append(job_id_list, &stepd->step_id.job_id);
+			close(fd);
+		}
 	}
 
 	return SLURM_SUCCESS;

@@ -187,6 +187,13 @@ partition with the greater <I>PriorityTier</I> value will preempt the job in the
 partition with the lesser <I>PriorityTier</I> value. If the <I>PriorityTier</I>
 values of the two partitions are equal then no preemption will occur. The
 default <I>PriorityTier</I> value is 1.
+<br>
+<b>NOTE</b>: In addition to being used for partition based preemption,
+<i>PriorityTier</i> also has an effect on scheduling. The scheduler will
+evaluate jobs in the partition(s) with the highest <i>PriorityTier</i>
+before evaluating jobs in other partitions, regardless of which jobs have
+the highest Priority. The scheduler will consider the job priority when
+evaluating jobs within the partition(s) with the same <i>PriorityTier</i>.
 </LI>
 <LI>
 <B>OverSubscribe</B>: Configure the partition's <I>OverSubscribe</I> setting to
@@ -505,6 +512,6 @@ order to support ideal placements such as this, which can quickly complicate
 the design. Any and all help is welcome here!
 </P>
 
-<p style="text-align:center;">Last modified 10 April 2020</p>
+<p style="text-align:center;">Last modified 10 June 2021</p>
 
 <!--#include virtual="footer.txt"-->

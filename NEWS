@@ -121,6 +121,7 @@ documents those changes that are of interest to users and administrators.
  -- sacct - avoid truncating JobId at 34 characters.
  -- scancel - fix segfault when --wckey filtering option is used.
  -- select/cons_tres - Fix memory leak.
+ -- Prevent file descriptor leak in job_container/tmpfs on slurmd restart.
 
 * Changes in Slurm 20.11.7
 ==========================

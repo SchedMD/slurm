@@ -5402,11 +5402,11 @@ Also see PriorityTier.
 
 .TP
 \fBPriorityTier\fR
-Jobs submitted to a partition with a higher priority tier value will be
-dispatched before pending jobs in partition with lower priority tier value and,
-if possible, they will preempt running jobs from partitions with lower priority
-tier values.
-Note that a partition's priority tier takes precedence over a job's priority.
+Jobs submitted to a partition with a higher \fBPriorityTier\fR value will be
+evaluated by the scheduler before pending jobs in a partition with a lower
+\fBPriorityTier\fR value. They will also be considered for preemption of running
+jobs in partition(s) with lower \fBPriorityTier\fR values if
+\fIPreemptType=preempt/partition_prio\fR.
 The value may not exceed 65533.
 Also see PriorityJobFactor.
 
