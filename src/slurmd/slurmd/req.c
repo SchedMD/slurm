@@ -92,9 +92,9 @@
 #include "src/common/stepd_api.h"
 #include "src/common/uid.h"
 #include "src/common/util-net.h"
-#include "src/common/xcgroup_read_config.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/common/cgroup.h"
 
 #include "src/bcast/file_bcast.h"
 
@@ -450,7 +450,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		goto rwfail;
 
 	/* send cgroup conf over to slurmstepd */
-	if (xcgroup_write_conf(fd) < 0)
+	if (cgroup_g_write_conf(fd) < 0)
 		goto rwfail;
 
 	/* send acct_gather.conf over to slurmstepd */

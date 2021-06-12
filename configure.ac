@@ -495,6 +495,10 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/burst_buffer/common/Makefile
 		 src/plugins/burst_buffer/datawarp/Makefile
 		 src/plugins/burst_buffer/generic/Makefile
+		 src/plugins/cgroup/Makefile
+		 src/plugins/cgroup/common/Makefile
+		 src/plugins/cgroup/v1/Makefile
+		 src/plugins/cgroup/v2/Makefile
 		 src/plugins/cli_filter/Makefile
 		 src/plugins/cli_filter/common/Makefile
 		 src/plugins/cli_filter/lua/Makefile

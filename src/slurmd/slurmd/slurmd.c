@@ -69,6 +69,7 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
 #include "src/common/cpu_frequency.h"
+#include "src/common/cgroup.h"
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
 #include "src/common/fetch_config.h"
@@ -100,10 +101,10 @@
 #include "src/common/stepd_api.h"
 #include "src/common/switch.h"
 #include "src/common/uid.h"
-#include "src/common/xcgroup_read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/xsignal.h"
+#include "src/common/cgroup.h"
 
 #include "src/slurmd/common/core_spec_plugin.h"
 #include "src/slurmd/common/job_container_plugin.h"
@@ -858,7 +859,6 @@ _read_config(void)
 	slurm_conf_t *cf = NULL;
 	int cc;
 	bool cgroup_mem_confinement = false;
-
 #ifndef HAVE_FRONT_END
 	bool cr_flag = false, gang_flag = false;
 	bool config_overrides = false;
@@ -1066,7 +1066,8 @@ _read_config(void)
 
 	slurm_conf_unlock();
 
-	cgroup_mem_confinement = xcgroup_mem_cgroup_job_confinement();
+	cgroup_mem_confinement = cgroup_g_memcg_job_confinement();
+
 	if (slurm_conf.job_acct_oom_kill && cgroup_mem_confinement)
 		fatal("Jobs memory is being constrained by both TaskPlugin cgroup and JobAcctGather plugin. This enables two incompatible memory enforcement mechanisms, one of them must be disabled.");
 }
@@ -1104,7 +1105,7 @@ _reconfigure(void)
 
 	_reconfig = 0;
 	slurm_conf_reinit(conf->conffile);
-	xcgroup_reconfig_slurm_cgroup_conf();
+	cgroup_g_reconfig();
 	_read_config();
 
 	/*
@@ -1766,6 +1767,12 @@ _slurmd_init(void)
 	 */
 	cpu_freq_init(conf);
 
+	/* Any plugins which use cgroup must be loaded after this */
+	if (cgroup_g_init() != SLURM_SUCCESS) {
+		error("Unable to initialize cgroup plugin");
+		return SLURM_ERROR;
+	}
+
 	/*
 	 * If configured, apply resource specialization
 	 */
@@ -1931,6 +1938,7 @@ _slurmd_fini(void)
 	job_container_fini();
 	acct_gather_conf_destroy();
 	fini_system_cgroup();
+	cgroup_g_fini();
 	route_fini();
 	xcpuinfo_fini();
 	slurm_mutex_lock(&fini_job_mutex);
@@ -2428,7 +2436,7 @@ static int _memory_spec_init(void)
 		      "configured for this node");
 		return SLURM_SUCCESS;
 	}
-	if (!xcgroup_mem_cgroup_job_confinement()) {
+	if (!cgroup_g_memcg_job_confinement()) {
 		if (slurm_conf.select_type_param & CR_MEMORY) {
 			error("Resource spec: Limited MemSpecLimit support. "
 			     "Slurmd daemon not memory constrained. "
@@ -2448,11 +2456,6 @@ static int _memory_spec_init(void)
 	if (set_system_cgroup_mem_limit(conf->mem_spec_limit)
 			!= SLURM_SUCCESS) {
 		error("Resource spec: unable to set memory limit in "
-		      "system memory cgroup");
-		return SLURM_ERROR;
-	}
-	if (disable_system_cgroup_mem_oom()) {
-		error("Resource spec: unable to disable OOM Killer in "
 		      "system memory cgroup");
 		return SLURM_ERROR;
 	}

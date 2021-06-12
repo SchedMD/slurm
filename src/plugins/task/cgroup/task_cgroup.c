@@ -42,15 +42,10 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
-#include "src/common/xcgroup_read_config.h"
 #include "src/common/xstring.h"
-
+#include "src/common/cgroup.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
-
 #include "src/slurmd/slurmd/slurmd.h"
-
-#include "src/slurmd/common/xcgroup.h"
-
 #include "task_cgroup.h"
 #include "task_cgroup_cpuset.h"
 #include "task_cgroup_memory.h"
@@ -80,13 +75,14 @@
  * plugin_version - an unsigned 32-bit integer containing the Slurm version
  * (major.minor.micro combined into a single number).
  */
-const char plugin_name[]        = "Tasks containment using linux cgroup";
+const char plugin_name[]        = "Tasks containment cgroup plugin";
 const char plugin_type[]        = "task/cgroup";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
 static bool use_cpuset  = false;
 static bool use_memory  = false;
 static bool use_devices = false;
+static bool do_task_affinity = false;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -97,9 +93,12 @@ extern int init (void)
 	int rc = SLURM_SUCCESS;
 	slurm_cgroup_conf_t *cg_conf;
 
+	if (!running_in_slurmstepd())
+		goto end;
+
 	/* read cgroup configuration */
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = xcgroup_get_slurm_cgroup_conf();
+	cg_conf = cgroup_g_get_conf();
+
 	/* enable subsystems based on conf */
 	if (cg_conf->constrain_cores)
 		use_cpuset = true;
@@ -108,7 +107,10 @@ extern int init (void)
 		use_memory = true;
 	if (cg_conf->constrain_devices)
 		use_devices = true;
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
+	if (cg_conf->task_affinity)
+		do_task_affinity = true;
+
+	cgroup_g_free_conf(cg_conf);
 
 	/* enable subsystems based on conf */
 	if (use_cpuset) {
@@ -140,8 +142,8 @@ extern int init (void)
 			debug("device enforcement enabled");
 		}
 	}
-
-	debug("successfully loaded");
+end:
+	debug("%s loaded", plugin_name);
 	return rc;
 }
 
@@ -165,6 +167,7 @@ extern int fini (void)
 		rc[2] = task_cgroup_devices_fini();
 	}
 
+	debug("%s unloaded", plugin_name);
 	return MAX(rc[0], MAX(rc[1], rc[2]));
 }
 
@@ -261,23 +264,10 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *job, pid_t pid)
  */
 extern int task_p_pre_launch (stepd_step_rec_t *job)
 {
-	int rc = SLURM_SUCCESS;
+	if (use_cpuset && do_task_affinity)
+		return task_cgroup_cpuset_set_task_affinity(job);
 
-	if (use_cpuset) {
-		slurm_cgroup_conf_t *cg_conf;
-
-		/* read cgroup configuration */
-		slurm_mutex_lock(&xcgroup_config_read_mutex);
-		cg_conf = xcgroup_get_slurm_cgroup_conf();
-
-		/* set affinity if requested */
-		if (cg_conf->task_affinity)
-			rc = task_cgroup_cpuset_set_task_affinity(job);
-
-		slurm_mutex_unlock(&xcgroup_config_read_mutex);
-	}
-
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -307,53 +297,6 @@ extern int task_p_post_term (stepd_step_rec_t *job, stepd_step_task_info_t *task
 extern int task_p_post_step (stepd_step_rec_t *job)
 {
 	return fini();
-}
-
-extern char* task_cgroup_create_slurm_cg (xcgroup_ns_t* ns) {
-
-	/* we do it here as we do not have access to the conf structure */
-	/* in libslurm (src/common/xcgroup.c) */
-	xcgroup_t slurm_cg;
-	char *pre;
-	slurm_cgroup_conf_t *cg_conf;
-
-	/* read cgroup configuration */
-	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	cg_conf = xcgroup_get_slurm_cgroup_conf();
-
-	pre = xstrdup(cg_conf->cgroup_prepend);
-
-	slurm_mutex_unlock(&xcgroup_config_read_mutex);
-
-#ifdef MULTIPLE_SLURMD
-	if ( conf->node_name != NULL )
-		xstrsubstitute(pre,"%n", conf->node_name);
-	else {
-		xfree(pre);
-		pre = (char*) xstrdup("/slurm");
-	}
-#endif
-
-	/* create slurm cgroup in the ns (it could already exist) */
-	if (xcgroup_create(ns,&slurm_cg,pre,
-			   getuid(), getgid()) != XCGROUP_SUCCESS) {
-		xfree(pre);
-		return pre;
-	}
-	if (xcgroup_instantiate(&slurm_cg) != XCGROUP_SUCCESS) {
-		error("unable to build slurm cgroup for ns %s: %m",
-		      ns->subsystems);
-		xcgroup_destroy(&slurm_cg);
-		xfree(pre);
-		return pre;
-	}
-	else {
-		debug3("slurm cgroup %s successfully created for ns %s: %m",
-		       pre,ns->subsystems);
-		xcgroup_destroy(&slurm_cg);
-	}
-
-	return pre;
 }
 
 /*

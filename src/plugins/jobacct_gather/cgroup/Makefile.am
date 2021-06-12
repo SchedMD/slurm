@@ -10,9 +10,6 @@ pkglib_LTLIBRARIES = jobacct_gather_cgroup.la
 
 # Null job completion logging plugin.
 jobacct_gather_cgroup_la_SOURCES = jobacct_gather_cgroup.c \
-                                   jobacct_gather_cgroup_cpuacct.c \
-                                   jobacct_gather_cgroup_memory.c \
-                                   jobacct_gather_cgroup_blkio.c \
                                    jobacct_gather_cgroup.h
 
 jobacct_gather_cgroup_la_LDFLAGS = $(PLUGIN_FLAGS)

@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for jobacct_gather/cgroup plugin
+# Makefile for cgroup/v2 plugin
 
 VPATH = @srcdir@
 am__is_gnu_make = { \
@@ -91,7 +91,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/jobacct_gather/cgroup
+subdir = src/plugins/cgroup/v2
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_check_zlib.m4 \
@@ -176,19 +176,16 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-jobacct_gather_cgroup_la_DEPENDENCIES =  \
-	../common/libjobacct_gather_common.la
-am_jobacct_gather_cgroup_la_OBJECTS = jobacct_gather_cgroup.lo
-jobacct_gather_cgroup_la_OBJECTS =  \
-	$(am_jobacct_gather_cgroup_la_OBJECTS)
+cgroup_v2_la_DEPENDENCIES = ../common/libcgroup_common.la
+am_cgroup_v2_la_OBJECTS = cgroup_v2.lo
+cgroup_v2_la_OBJECTS = $(am_cgroup_v2_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-jobacct_gather_cgroup_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(jobacct_gather_cgroup_la_LDFLAGS) \
-	$(LDFLAGS) -o $@
+cgroup_v2_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(cgroup_v2_la_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -204,7 +201,7 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/jobacct_gather_cgroup.Plo
+am__depfiles_remade = ./$(DEPDIR)/cgroup_v2.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -224,7 +221,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(jobacct_gather_cgroup_la_SOURCES)
+SOURCES = $(cgroup_v2_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -506,15 +503,13 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
-AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common $(HWLOC_CPPFLAGS)
-pkglib_LTLIBRARIES = jobacct_gather_cgroup.la
+AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common
+pkglib_LTLIBRARIES = cgroup_v2.la
 
-# Null job completion logging plugin.
-jobacct_gather_cgroup_la_SOURCES = jobacct_gather_cgroup.c \
-                                   jobacct_gather_cgroup.h
-
-jobacct_gather_cgroup_la_LDFLAGS = $(PLUGIN_FLAGS)
-jobacct_gather_cgroup_la_LIBADD = ../common/libjobacct_gather_common.la
+# Cgroup v2 plugin.
+cgroup_v2_la_SOURCES = cgroup_v2.c cgroup_v2.h
+cgroup_v2_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+cgroup_v2_la_LIBADD = ../common/libcgroup_common.la
 all: all-am
 
 .SUFFIXES:
@@ -528,9 +523,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/jobacct_gather/cgroup/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/cgroup/v2/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/plugins/jobacct_gather/cgroup/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/cgroup/v2/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -584,8 +579,8 @@ clean-pkglibLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-jobacct_gather_cgroup.la: $(jobacct_gather_cgroup_la_OBJECTS) $(jobacct_gather_cgroup_la_DEPENDENCIES) $(EXTRA_jobacct_gather_cgroup_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(jobacct_gather_cgroup_la_LINK) -rpath $(pkglibdir) $(jobacct_gather_cgroup_la_OBJECTS) $(jobacct_gather_cgroup_la_LIBADD) $(LIBS)
+cgroup_v2.la: $(cgroup_v2_la_OBJECTS) $(cgroup_v2_la_DEPENDENCIES) $(EXTRA_cgroup_v2_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(cgroup_v2_la_LINK) -rpath $(pkglibdir) $(cgroup_v2_la_OBJECTS) $(cgroup_v2_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -593,7 +588,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_gather_cgroup.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cgroup_v2.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -722,7 +717,7 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/jobacct_gather_cgroup.Plo
+		-rm -f ./$(DEPDIR)/cgroup_v2.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -768,7 +763,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/jobacct_gather_cgroup.Plo
+		-rm -f ./$(DEPDIR)/cgroup_v2.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -806,10 +801,6 @@ uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
-
-force:
-$(jobacct_gather_cgroup_la_LIBADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

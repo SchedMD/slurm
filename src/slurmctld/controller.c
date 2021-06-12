@@ -90,9 +90,9 @@
 #include "src/common/timers.h"
 #include "src/common/track_script.h"
 #include "src/common/uid.h"
-#include "src/common/xcgroup_read_config.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/common/cgroup.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
@@ -877,7 +877,7 @@ int main(int argc, char **argv)
 
 	/* Purge our local data structures */
 	configless_clear();
-	xcgroup_fini_slurm_cgroup_conf();
+	cgroup_g_conf_fini();
 	power_save_fini();
 	job_fini();
 	part_fini();	/* part_fini() must precede node_fini() */
@@ -1021,7 +1021,7 @@ static void _reconfigure_slurm(void)
 
 	gs_reconfig();
 	unlock_slurmctld(config_write_lock);
-	xcgroup_reconfig_slurm_cgroup_conf();
+	cgroup_g_reconfig();
 	assoc_mgr_set_missing_uids();
 	start_power_mgr(&slurmctld_config.thread_id_power);
 	trigger_reconfig();

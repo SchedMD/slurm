@@ -53,6 +53,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_resource_info.h"
 #include "src/common/xstring.h"
+#include "src/common/cgroup.h"
 #include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/common/task_plugin.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
@@ -126,25 +127,6 @@ static uint16_t bind_mode_ldom =
 			    CPU_BIND_LDMAP;
 
 #endif
-
-typedef struct {
-	char *cpus;
-	char *cpuset_meta;
-	stepd_step_rec_t *job;
-} task_cpuset_create_callback_t;
-
-static bool cpuset_prefix_set = false;
-static char *cpuset_prefix = "";
-
-static char user_cgroup_path[PATH_MAX];
-static char job_cgroup_path[PATH_MAX];
-static char jobstep_cgroup_path[PATH_MAX];
-
-static xcgroup_ns_t cpuset_ns;
-
-static xcgroup_t user_cpuset_cg;
-static xcgroup_t job_cpuset_cg;
-static xcgroup_t step_cpuset_cg;
 
 #ifdef HAVE_HWLOC
 
@@ -499,7 +481,7 @@ static int _task_cgroup_cpuset_dist_cyclic(
 	}
 
 	if ((nsockets == 0) || (ncores == 0))
-		return XCGROUP_ERROR;
+		return SLURM_ERROR;
 	cps = (ncores + nsockets - 1) / nsockets;
 	tpc = (nthreads + ncores - 1) / ncores;
 
@@ -684,16 +666,16 @@ static int _task_cgroup_cpuset_dist_cyclic(
 		error("hwloc_get_obj_below_by_type() failing, "
 		      "task/affinity plugin may be required to address bug "
 		      "fixed in HWLOC version 1.11.5");
-		return XCGROUP_ERROR;
+		return SLURM_ERROR;
 	} else if (sock_loop > npdist) {
 		char buf[128] = "";
 		hwloc_bitmap_snprintf(buf, sizeof(buf), cpuset);
 		error("task[%u] infinite loop broken while trying "
 		      "to provision compute elements using %s (bitmap:%s)",
 		      taskid, format_task_dist_states(job->task_dist), buf);
-		return XCGROUP_ERROR;
+		return SLURM_ERROR;
 	} else
-		return XCGROUP_SUCCESS;
+		return SLURM_SUCCESS;
 }
 
 static int _task_cgroup_cpuset_dist_block(
@@ -778,7 +760,7 @@ static int _task_cgroup_cpuset_dist_block(
 			error("hwloc_get_obj_below_by_type() "
 			      "failing, task/affinity plugin may be required"
 			      "to address bug fixed in HWLOC version 1.11.5");
-			return XCGROUP_ERROR;
+			return SLURM_ERROR;
 		} else if (core_loop > npdist) {
 			char buf[128] = "";
 			hwloc_bitmap_snprintf(buf, sizeof(buf), cpuset);
@@ -786,9 +768,9 @@ static int _task_cgroup_cpuset_dist_block(
 			      "trying to provision compute elements using %s (bitmap:%s)",
 			      taskid, format_task_dist_states(job->task_dist),
 			      buf);
-			return XCGROUP_ERROR;
+			return SLURM_ERROR;
 		} else
-			return XCGROUP_SUCCESS;
+			return SLURM_SUCCESS;
 	}
 
 	if (hwloc_compare_types(hwtype, HWLOC_OBJ_CORE) >= 0) {
@@ -848,7 +830,7 @@ static int _task_cgroup_cpuset_dist_block(
 		FREE_NULL_BITMAP(spec_threads);
 	}
 
-	return XCGROUP_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 
@@ -911,239 +893,93 @@ static void _validate_mask(uint32_t task_id, hwloc_obj_t obj, cpu_set_t *ts)
 
 extern int task_cgroup_cpuset_init(void)
 {
-	/* initialize user/job/jobstep cgroup relative paths */
-	user_cgroup_path[0]='\0';
-	job_cgroup_path[0]='\0';
-	jobstep_cgroup_path[0]='\0';
-
-	/* initialize cpuset cgroup namespace */
-	if (xcgroup_ns_create(&cpuset_ns, "", "cpuset")
-	    != XCGROUP_SUCCESS) {
-		error("unable to create cpuset namespace");
-		return SLURM_ERROR;
-	}
-
+	cgroup_g_initialize(CG_CPUS);
 	return SLURM_SUCCESS;
 }
 
 extern int task_cgroup_cpuset_fini(void)
 {
-	xcgroup_t cpuset_cg;
-
-	/* Similarly to task_cgroup_memory_fini(), we must lock the
-	 * root cgroup so we don't race with another job step that is
-	 * being started.  */
-        if (xcgroup_create(&cpuset_ns, &cpuset_cg,"",0,0) == XCGROUP_SUCCESS) {
-		if (xcgroup_lock(&cpuset_cg) == XCGROUP_SUCCESS) {
-			/* First move slurmstepd to the root cpuset cg
-			 * so we can remove the step/job/user cpuset
-			 * cg's.  */
-			xcgroup_move_process(&cpuset_cg, getpid());
-
-			xcgroup_wait_pid_moved(&step_cpuset_cg, "cpuset step");
-
-                        if (xcgroup_delete(&step_cpuset_cg) != SLURM_SUCCESS)
-                                debug2("unable to remove step "
-                                       "cpuset : %m");
-                        if (xcgroup_delete(&job_cpuset_cg) != XCGROUP_SUCCESS)
-                                debug2("not removing "
-                                       "job cpuset : %m");
-                        if (xcgroup_delete(&user_cpuset_cg) != XCGROUP_SUCCESS)
-                                debug2("not removing "
-                                       "user cpuset : %m");
-                        xcgroup_unlock(&cpuset_cg);
-                } else
-                        error("unable to lock root cpuset : %m");
-                xcgroup_destroy(&cpuset_cg);
-        } else
-                error("unable to create root cpuset : %m");
-
-	if (user_cgroup_path[0] != '\0')
-		xcgroup_destroy(&user_cpuset_cg);
-	if (job_cgroup_path[0] != '\0')
-		xcgroup_destroy(&job_cpuset_cg);
-	if (jobstep_cgroup_path[0] != '\0')
-		xcgroup_destroy(&step_cpuset_cg);
-
-	user_cgroup_path[0]='\0';
-	job_cgroup_path[0]='\0';
-	jobstep_cgroup_path[0]='\0';
-
-	xcgroup_ns_destroy(&cpuset_ns);
-
-	return SLURM_SUCCESS;
-}
-
-static int _cgroup_create_callback(const char *calling_func,
-				   xcgroup_ns_t *ns,
-				   void *callback_arg)
-{
-	task_cpuset_create_callback_t *cgroup_callback =
-		(task_cpuset_create_callback_t *)callback_arg;
-	char *cpuset_meta = cgroup_callback->cpuset_meta;
-	char *cpus = cgroup_callback->cpus;
-	stepd_step_rec_t *job = cgroup_callback->job;
-	char *user_alloc_cpus = NULL;
-	char *job_alloc_cpus = NULL;
-	char *step_alloc_cpus = NULL;
-	pid_t pid;
-	int rc = SLURM_ERROR;
-#ifdef HAVE_NATIVE_CRAY
-	char expected_usage_name[PATH_MAX];
-	char expected_usage[32];
-#endif
-
-	/*
-	 * build job and job steps allocated cores lists
-	 */
-	debug("%s: job abstract cores are '%s'",
-	      calling_func, job->job_alloc_cores);
-	debug("%s: step abstract cores are '%s'",
-	      calling_func, job->step_alloc_cores);
-	if (xcpuinfo_abs_to_mac(job->job_alloc_cores,
-				&job_alloc_cpus) != SLURM_SUCCESS) {
-		error("%s: unable to build job physical cores",
-		      calling_func);
-		goto endit;
-	}
-	if (xcpuinfo_abs_to_mac(job->step_alloc_cores,
-				&step_alloc_cpus) != SLURM_SUCCESS) {
-		error("%s: unable to build step physical cores",
-		      calling_func);
-		goto endit;
-	}
-	debug("%s: job physical CPUs are '%s'",
-	      calling_func, job_alloc_cpus);
-	debug("%s: step physical CPUs are '%s'",
-	      calling_func, step_alloc_cpus);
-
-	/*
-	 * check that user's cpuset cgroup is consistent and add the job's CPUs
-	 */
-	user_alloc_cpus = xstrdup(job_alloc_cpus);
-	if (cpus)
-		xstrfmtcat(user_alloc_cpus, ",%s", cpus);
-
-	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
-				&user_cpuset_cg) != XCGROUP_SUCCESS) {
-		xcgroup_destroy(&user_cpuset_cg);
-		goto endit;
-	}
-	xcgroup_set_param(&user_cpuset_cg, cpuset_meta, user_alloc_cpus);
-
-	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
-				&job_cpuset_cg) != XCGROUP_SUCCESS) {
-		xcgroup_destroy(&user_cpuset_cg);
-		xcgroup_destroy(&job_cpuset_cg);
-		goto endit;
-	}
-	xcgroup_set_param(&job_cpuset_cg, cpuset_meta, job_alloc_cpus);
-
-	if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
-				&step_cpuset_cg) != XCGROUP_SUCCESS) {
-		xcgroup_destroy(&user_cpuset_cg);
-		xcgroup_destroy(&job_cpuset_cg);
-		(void)xcgroup_delete(&step_cpuset_cg);
-		xcgroup_destroy(&step_cpuset_cg);
-		goto endit;
-	}
-	xcgroup_set_param(&step_cpuset_cg, cpuset_meta, step_alloc_cpus);
-
-#ifdef HAVE_NATIVE_CRAY
-	/*
-	 * on Cray systems, set the expected usage in bytes.
-	 * This is used by the Cray OOM killer
-	 */
-	snprintf(expected_usage_name, sizeof(expected_usage_name),
-		 "%sexpected_usage_in_bytes", cpuset_prefix);
-	snprintf(expected_usage, sizeof(expected_usage), "%"PRIu64,
-		 (uint64_t)job->step_mem * 1024 * 1024);
-	xcgroup_set_param(&step_cpuset_cg, expected_usage_name,
-			  expected_usage);
-#endif
-
-	/* attach the slurmstepd to the step cpuset cgroup */
-	pid = getpid();
-	rc = xcgroup_add_pids(&step_cpuset_cg, &pid, 1);
-	if (rc != XCGROUP_SUCCESS) {
-		error("%s: unable to add slurmstepd to cpuset cg '%s'",
-		      calling_func, step_cpuset_cg.path);
-		rc = SLURM_ERROR;
-	} else
-		rc = SLURM_SUCCESS;
-
-	/* validate the requested cpu frequency and set it */
-	cpu_freq_cgroup_validate(job, step_alloc_cpus);
-endit:
-	xfree(user_alloc_cpus);
-	xfree(job_alloc_cpus);
-	xfree(step_alloc_cpus);
-	return rc;
+	return cgroup_g_step_destroy(CG_CPUS);
 }
 
 extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 {
-	int rc;
-	char cpuset_meta[PATH_MAX];
-	char *slurm_cgpath;
-	xcgroup_t slurm_cg;
-	size_t cpus_size;
-	task_cpuset_create_callback_t cgroup_callback = {
-		.cpuset_meta = cpuset_meta,
-		.job = job,
-	};
+	cgroup_limits_t limits, *root_limits = NULL;
+	char *job_alloc_cpus = NULL;
+	char *step_alloc_cpus = NULL;
+	pid_t pid;
+	int rc = SLURM_SUCCESS;
 
-	/* create slurm root cg in this cg namespace */
-	slurm_cgpath = xcgroup_create_slurm_cg(&cpuset_ns);
-	if (slurm_cgpath == NULL)
-		return SLURM_ERROR;
+	/* First create the cpuset hierarchy for this job */
+	if ((rc = cgroup_g_step_create(CG_CPUS, job)) != SLURM_SUCCESS)
+		return rc;
 
-	/* check that this cgroup has cpus allowed or initialize them */
-	if (xcgroup_load(&cpuset_ns, &slurm_cg, slurm_cgpath) !=
-	    XCGROUP_SUCCESS){
-		error("unable to load slurm cpuset xcgroup");
-		xfree(slurm_cgpath);
-		return SLURM_ERROR;
+	/* Then constrain the user/job/step to the required cores/cpus */
+
+	/* build job and job steps allocated cores lists */
+	debug("job abstract cores are '%s'", job->job_alloc_cores);
+	debug("step abstract cores are '%s'", job->step_alloc_cores);
+
+	if (xcpuinfo_abs_to_mac(job->job_alloc_cores,
+				&job_alloc_cpus) != SLURM_SUCCESS) {
+		error("unable to build job physical cores");
+		goto endit;
 	}
-again:
-	snprintf(cpuset_meta, sizeof(cpuset_meta), "%scpus", cpuset_prefix);
-	rc = xcgroup_get_param(&slurm_cg, cpuset_meta, &cgroup_callback.cpus, &cpus_size);
-	if ((rc != XCGROUP_SUCCESS) || (cpus_size == 1)) {
-		if (!cpuset_prefix_set && (rc != XCGROUP_SUCCESS)) {
-			cpuset_prefix_set = 1;
-			cpuset_prefix = "cpuset.";
-			xfree(cgroup_callback.cpus);
-			goto again;
-		}
-
-		/* initialize the cpusets as it was non-existent */
-		if (xcgroup_cpuset_init(cpuset_prefix, &cpuset_prefix_set,
-					&slurm_cg) != XCGROUP_SUCCESS) {
-			xfree(cgroup_callback.cpus);
-			xfree(slurm_cgpath);
-			xcgroup_destroy(&slurm_cg);
-			return SLURM_ERROR;
-		}
+	if (xcpuinfo_abs_to_mac(job->step_alloc_cores,
+				&step_alloc_cpus) != SLURM_SUCCESS) {
+		error("unable to build step physical cores");
+		goto endit;
 	}
-	xfree(slurm_cgpath);
-	xcgroup_destroy(&slurm_cg);
+	debug("job physical CPUs are '%s'", job_alloc_cpus);
+	debug("step physical CPUs are '%s'", step_alloc_cpus);
 
-	if (cgroup_callback.cpus && (cpus_size > 1))
-		cgroup_callback.cpus[cpus_size-1] = '\0';
+	/*
+	 * check that user's cpuset cgroup is consistent and add the job's CPUs
+	 */
+	root_limits = cgroup_g_root_constrain_get(CG_CPUS);
 
-	rc = xcgroup_create_hierarchy(__func__,
-				      job,
-				      &cpuset_ns,
-				      &job_cpuset_cg,
-				      &step_cpuset_cg,
-				      &user_cpuset_cg,
-				      job_cgroup_path,
-				      jobstep_cgroup_path,
-				      user_cgroup_path,
-				      _cgroup_create_callback,
-				      &cgroup_callback);
+	if (!root_limits)
+		goto endit;
 
-	xfree(cgroup_callback.cpus);
+	memset(&limits, 0, sizeof(limits));
+	limits.allow_mems = root_limits->allow_mems;
+
+	/* User constrain */
+	limits.allow_cores = xstrdup_printf(
+		"%s,%s", job_alloc_cpus, root_limits->allow_cores);
+	rc = cgroup_g_user_constrain_set(CG_CPUS, job, &limits);
+	xfree(limits.allow_cores);
+	if (rc != SLURM_SUCCESS)
+		goto endit;
+
+	/* Job constrain */
+	limits.allow_cores = job_alloc_cpus;
+	rc = cgroup_g_job_constrain_set(CG_CPUS, job, &limits);
+	if (rc != SLURM_SUCCESS)
+		goto endit;
+
+	/* Step constrain */
+	limits.allow_cores = step_alloc_cpus;
+	rc = cgroup_g_step_constrain_set(CG_CPUS, job, &limits);
+	if (rc != SLURM_SUCCESS)
+		goto endit;
+
+	/* attach the slurmstepd to the step cpuset cgroup */
+	pid = getpid();
+	rc = cgroup_g_step_addto(CG_CPUS, &pid, 1);
+
+	/* validate the requested cpu frequency and set it */
+	cpu_freq_cgroup_validate(job, step_alloc_cpus);
+
+	if (rc != SLURM_SUCCESS) {
+		/* Everything went wrong, do the cleanup */
+		cgroup_g_step_destroy(CG_CPUS);
+	}
+
+endit:
+	xfree(job_alloc_cpus);
+	xfree(step_alloc_cpus);
+	cgroup_free_limits(root_limits);
 	return rc;
 }
 
@@ -1476,7 +1312,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
  */
 extern int task_cgroup_cpuset_add_pid(pid_t pid)
 {
-	return xcgroup_add_pids(&step_cpuset_cg, &pid, 1);
+	return cgroup_g_step_addto(CG_CPUS, &pid, 1);
 }
 
 #endif

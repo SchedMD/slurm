@@ -16,6 +16,8 @@ libcommon_la_SOURCES =				\
 	callerid.h				\
 	cbuf.c					\
 	cbuf.h					\
+	cgroup.c				\
+	cgroup.h				\
 	cli_filter.c				\
 	cli_filter.h				\
 	cpu_frequency.c				\
@@ -203,8 +205,6 @@ libcommon_la_SOURCES =				\
 	x11_util.h				\
 	xassert.c				\
 	xassert.h				\
-	xcgroup_read_config.c			\
-	xcgroup_read_config.h			\
 	xhash.c					\
 	xhash.h					\
 	xmalloc.c				\

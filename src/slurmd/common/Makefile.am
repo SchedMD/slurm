@@ -20,9 +20,7 @@ libslurmd_common_la_SOURCES =    \
 	run_script.c run_script.h \
 	task_plugin.c task_plugin.h \
 	set_oomadj.c set_oomadj.h \
-	xcpuinfo.c xcpuinfo.h \
-	xcgroup.c xcgroup.h
-
+	xcpuinfo.c xcpuinfo.h
 
 libslurmd_common_la_LDFLAGS  = $(HWLOC_LDFLAGS) $(HWLOC_LIBS)
 

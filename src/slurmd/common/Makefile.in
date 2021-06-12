@@ -155,7 +155,7 @@ libslurmd_common_la_LIBADD =
 am_libslurmd_common_la_OBJECTS = core_spec_plugin.lo fname.lo \
 	job_container_plugin.lo proctrack.lo slurmd_cgroup.lo \
 	slurmstepd_init.lo run_script.lo task_plugin.lo set_oomadj.lo \
-	xcpuinfo.lo xcgroup.lo
+	xcpuinfo.lo
 libslurmd_common_la_OBJECTS = $(am_libslurmd_common_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -188,7 +188,7 @@ am__depfiles_remade = ./$(DEPDIR)/core_spec_plugin.Plo \
 	./$(DEPDIR)/proctrack.Plo ./$(DEPDIR)/run_script.Plo \
 	./$(DEPDIR)/set_oomadj.Plo ./$(DEPDIR)/slurmd_cgroup.Plo \
 	./$(DEPDIR)/slurmstepd_init.Plo ./$(DEPDIR)/task_plugin.Plo \
-	./$(DEPDIR)/xcgroup.Plo ./$(DEPDIR)/xcpuinfo.Plo
+	./$(DEPDIR)/xcpuinfo.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -504,8 +504,7 @@ libslurmd_common_la_SOURCES = \
 	run_script.c run_script.h \
 	task_plugin.c task_plugin.h \
 	set_oomadj.c set_oomadj.h \
-	xcpuinfo.c xcpuinfo.h \
-	xcgroup.c xcgroup.h
+	xcpuinfo.c xcpuinfo.h
 
 libslurmd_common_la_LDFLAGS = $(HWLOC_LDFLAGS) $(HWLOC_LIBS)
 
@@ -584,7 +583,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmd_cgroup.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd_init.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task_plugin.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcgroup.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcpuinfo.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -721,7 +719,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/slurmd_cgroup.Plo
 	-rm -f ./$(DEPDIR)/slurmstepd_init.Plo
 	-rm -f ./$(DEPDIR)/task_plugin.Plo
-	-rm -f ./$(DEPDIR)/xcgroup.Plo
 	-rm -f ./$(DEPDIR)/xcpuinfo.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -777,7 +774,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/slurmd_cgroup.Plo
 	-rm -f ./$(DEPDIR)/slurmstepd_init.Plo
 	-rm -f ./$(DEPDIR)/task_plugin.Plo
-	-rm -f ./$(DEPDIR)/xcgroup.Plo
 	-rm -f ./$(DEPDIR)/xcpuinfo.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic

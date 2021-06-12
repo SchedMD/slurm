@@ -81,8 +81,8 @@
 #include "src/common/slurm_topology.h"
 #include "src/common/switch.h"
 #include "src/common/uid.h"
-#include "src/common/xcgroup_read_config.h"
 #include "src/common/xstring.h"
+#include "src/common/cgroup.h"
 
 #include "src/slurmctld/acct_policy.h"
 #include "src/slurmctld/agent.h"
@@ -293,7 +293,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	if (strstr(conf->job_acct_gather_type, "cgroup") ||
 	    strstr(conf->proctrack_type, "cgroup") ||
 	    strstr(conf->task_plugin, "cgroup"))
-		conf_ptr->cgroup_conf = xcgroup_get_conf_list();
+		conf_ptr->cgroup_conf = cgroup_g_get_conf_list();
 
 	conf_ptr->cli_filter_plugins  = xstrdup(conf->cli_filter_plugins);
 	conf_ptr->cluster_name        = xstrdup(conf->cluster_name);
@@ -3248,7 +3248,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		in_progress = false;
 		gs_reconfig();
 		unlock_slurmctld(config_write_lock);
-		xcgroup_reconfig_slurm_cgroup_conf();
+		cgroup_g_reconfig();
 		assoc_mgr_set_missing_uids();
 		start_power_mgr(&slurmctld_config.thread_id_power);
 		trigger_reconfig();

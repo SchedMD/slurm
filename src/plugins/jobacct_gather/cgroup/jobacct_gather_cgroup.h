@@ -40,59 +40,12 @@
 \*****************************************************************************/
 
 #include "src/common/slurm_jobacct_gather.h"
-#include "src/common/xcgroup_read_config.h"
-#include "src/slurmd/common/xcgroup.h"
-
-/*
- * There are potentially multiple tasks on a node, so we want to
- * track every task cgroup and which taskid it belongs to.
- */
-typedef struct task_cg_info {
-	xcgroup_t task_cg;
-	uint32_t taskid;
-} task_cg_info_t;
-
-extern List task_memory_cg_list;
-extern List task_cpuacct_cg_list;
 
 extern int jobacct_gather_cgroup_cpuacct_init(void);
-
 extern int jobacct_gather_cgroup_cpuacct_fini(void);
-
-extern int jobacct_gather_cgroup_cpuacct_attach_task(
-	pid_t pid, jobacct_id_t *jobacct_id);
-
+extern int jobacct_gather_cgroup_cpuacct_attach_task(pid_t pid,
+						     jobacct_id_t *jobacct_id);
 extern int jobacct_gather_cgroup_memory_init(void);
-
 extern int jobacct_gather_cgroup_memory_fini(void);
-
-extern int jobacct_gather_cgroup_memory_attach_task(
-	pid_t pid, jobacct_id_t *jobacct_id);
-
-/* FIXME: Enable when kernel support ready. */
- /* extern xcgroup_t task_blkio_cg; */
-/* extern int jobacct_gather_cgroup_blkio_init( */
-/* 	slurm_cgroup_conf_t *slurm_cgroup_conf); */
-
-/* extern int jobacct_gather_cgroup_blkio_fini( */
-/* 	slurm_cgroup_conf_t *slurm_cgroup_conf); */
-
-/* extern int jobacct_gather_cgroup_blkio_attach_task( */
-/* 	pid_t pid, jobacct_id_t *jobacct_id); */
-
-extern int find_task_cg_info(void *x, void *key);
-
-extern void free_task_cg_info(void *task_cg);
-
-extern int create_jobacct_cgroups(const char *calling_func,
-				  const jobacct_id_t *jobacct_id,
-				  pid_t pid,
-				  xcgroup_ns_t *ns,
-				  xcgroup_t *job_cg,
-				  xcgroup_t *step_cg,
-				  List task_cg_list,
-				  xcgroup_t *user_cg,
-				  char job_cgroup_path[],
-				  char step_cgroup_path[],
-				  char task_cgroup_path[],
-				  char user_cgroup_path[]);
+extern int jobacct_gather_cgroup_memory_attach_task(pid_t pid,
+						    jobacct_id_t *jobacct_id);
