@@ -1765,6 +1765,9 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	if (use_all_cores || (cores == 0))
 		return SLURM_SUCCESS;
 
+	if (!(step_ptr->flags & SSF_OVERCOMMIT))
+		return ESLURM_NODES_BUSY;
+
 	/* We need to over-subscribe one or more cores.
 	 * Use last_core_inx to avoid putting all of the extra
 	 * work onto core zero */

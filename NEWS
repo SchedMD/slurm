@@ -145,6 +145,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix joining a CNCU job_container on a Native Cray build before executing the
     UnkillableStepProgram for a HetJob step.
  -- slurmrestd/v0.0.35 - Plugin has been tagged as deprecated.
+ -- srun - Job steps requiring more cores than available to be rejected unless
+    '--overlap' is specificed.
 
 * Changes in Slurm 20.11.9
 ==========================
