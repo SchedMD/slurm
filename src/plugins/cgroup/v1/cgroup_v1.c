@@ -1205,7 +1205,7 @@ fini:
 }
 
 /* return the value in failcnt file if it exists*/
-static uint64_t _failcnt(xcgroup_t* cg, char* param)
+static uint64_t _failcnt(xcgroup_t *cg, char *param)
 {
 	uint64_t value = 0;
 

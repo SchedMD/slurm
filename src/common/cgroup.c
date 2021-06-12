@@ -127,7 +127,6 @@ static bool slurm_cgroup_conf_exist = true;
 static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *cg_conf);
 static void _pack_cgroup_conf(slurm_cgroup_conf_t *cg_conf, buf_t *buffer);
 static int _unpack_cgroup_conf(buf_t *buffer);
-static void _read_slurm_cgroup_conf_int(void);
 static slurm_cgroup_conf_t *_get_slurm_cgroup_conf(void);
 
 /* Local functions */
@@ -256,7 +255,7 @@ unpack_error:
  * read_slurm_cgroup_conf - load the Slurm cgroup configuration from the
  *	cgroup.conf file.
  */
-static void _read_slurm_cgroup_conf_int(void)
+static void _read_slurm_cgroup_conf(void)
 {
 	s_p_options_t options[] = {
 		{"CgroupAutomount", S_P_BOOLEAN},
@@ -413,7 +412,7 @@ static slurm_cgroup_conf_t *_get_slurm_cgroup_conf(void)
 {
 	if (!slurm_cgroup_conf_inited) {
 		memset(&slurm_cgroup_conf, 0, sizeof(slurm_cgroup_conf_t));
-		_read_slurm_cgroup_conf_int();
+		_read_slurm_cgroup_conf();
 		/*
 		 * Initialize and pack cgroup.conf info into a buffer that can
 		 * be used by slurmd to send to stepd every time, instead of

@@ -66,11 +66,11 @@ static char *_cgroup_procs_writable_path (xcgroup_t *cg)
 	return _cgroup_procs_check(cg, S_IWUSR);
 }
 
-static int _set_uint32_param(xcgroup_t* cg, char* param, uint32_t value)
+static int _set_uint32_param(xcgroup_t *cg, char *param, uint32_t value)
 {
 	int fstatus = SLURM_ERROR;
 	char file_path[PATH_MAX];
-	char* cpath = cg->path;
+	char *cpath = cg->path;
 
 	if (snprintf(file_path, PATH_MAX, "%s/%s", cpath, param) >= PATH_MAX) {
 		debug2("unable to build filepath for '%s' and"
@@ -121,7 +121,7 @@ extern size_t common_file_getsize(int fd)
 		return fsize;
 }
 
-extern int common_file_write_uint64s(char* file_path, uint64_t* values, int nb)
+extern int common_file_write_uint64s(char *file_path, uint64_t *values, int nb)
 {
 	int fstatus;
 	int rc;
@@ -171,17 +171,17 @@ extern int common_file_write_uint64s(char* file_path, uint64_t* values, int nb)
 	return fstatus;
 }
 
-extern int common_file_read_uint64s(char* file_path, uint64_t** pvalues,
-				    int* pnb)
+extern int common_file_read_uint64s(char *file_path, uint64_t** pvalues,
+				    int *pnb)
 {
 	int rc;
 	int fd;
 
 	size_t fsize;
-	char* buf;
-	char* p;
+	char *buf;
+	char *p;
 
-	uint64_t* pa=NULL;
+	uint64_t *pa=NULL;
 	int i;
 
 	/* check input pointers */
@@ -244,7 +244,7 @@ extern int common_file_read_uint64s(char* file_path, uint64_t** pvalues,
 	return SLURM_SUCCESS;
 }
 
-extern int common_file_write_uint32s(char* file_path, uint32_t* values, int nb)
+extern int common_file_write_uint32s(char *file_path, uint32_t *values, int nb)
 {
 	int rc;
 	int fd;
@@ -288,10 +288,10 @@ extern int common_file_read_uint32s(char *file_path, uint32_t **pvalues,
 	int fd;
 
 	size_t fsize;
-	char* buf;
-	char* p;
+	char *buf;
+	char *p;
 
-	uint32_t* pa=NULL;
+	uint32_t *pa=NULL;
 	int i;
 
 	/* check input pointers */
@@ -378,14 +378,14 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-extern int common_file_read_content(char* file_path, char** content,
+extern int common_file_read_content(char *file_path, char** content,
 				    size_t *csize)
 {
 	int fstatus;
 	int rc;
 	int fd;
 	size_t fsize;
-	char* buf;
+	char *buf;
 
 	fstatus = SLURM_ERROR;
 
@@ -436,7 +436,7 @@ extern int common_cgroup_instantiate(xcgroup_t *cg)
 	mode_t cmask;
 	mode_t omask;
 
-	char* file_path;
+	char *file_path;
 	uid_t uid;
 	gid_t gid;
 
@@ -477,7 +477,7 @@ extern int common_cgroup_instantiate(xcgroup_t *cg)
 	return fstatus;
 }
 
-extern int common_cgroup_create(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri,
+extern int common_cgroup_create(xcgroup_ns_t *cgns, xcgroup_t *cg, char *uri,
 				uid_t uid,  gid_t gid)
 {
 	int fstatus = SLURM_ERROR;
@@ -522,11 +522,11 @@ extern int common_cgroup_move_process (xcgroup_t *cg, pid_t pid)
 	return _set_uint32_param(cg, "cgroup.procs", pid);
 }
 
-extern int common_cgroup_set_param(xcgroup_t* cg, char* param, char* content)
+extern int common_cgroup_set_param(xcgroup_t *cg, char *param, char *content)
 {
 	int fstatus = SLURM_ERROR;
 	char file_path[PATH_MAX];
-	char* cpath = cg->path;
+	char *cpath = cg->path;
 
 	if (!content) {
 		debug2("%s: no content given, nothing to do.", __func__);
@@ -551,14 +551,14 @@ extern int common_cgroup_set_param(xcgroup_t* cg, char* param, char* content)
 	return fstatus;
 }
 
-extern void common_cgroup_ns_destroy(xcgroup_ns_t* cgns)
+extern void common_cgroup_ns_destroy(xcgroup_ns_t *cgns)
 {
 	xfree(cgns->mnt_point);
 	xfree(cgns->mnt_args);
 	xfree(cgns->subsystems);
 }
 
-extern void common_cgroup_destroy(xcgroup_t* cg)
+extern void common_cgroup_destroy(xcgroup_t *cg)
 {
 	cg->ns = NULL;
 	xfree(cg->name);
@@ -567,7 +567,7 @@ extern void common_cgroup_destroy(xcgroup_t* cg)
 	cg->gid = -1;
 }
 
-extern int common_cgroup_delete(xcgroup_t* cg)
+extern int common_cgroup_delete(xcgroup_t *cg)
 {
 	uint16_t retries = 0;
 
@@ -599,10 +599,10 @@ retry:
 	return SLURM_SUCCESS;
 }
 
-extern int common_cgroup_add_pids(xcgroup_t* cg, pid_t* pids, int npids)
+extern int common_cgroup_add_pids(xcgroup_t *cg, pid_t *pids, int npids)
 {
 	int rc = SLURM_ERROR;
-	char* path = _cgroup_procs_writable_path(cg);
+	char *path = _cgroup_procs_writable_path(cg);
 
 	rc = common_file_write_uint32s(path, (uint32_t*)pids, npids);
 	if (rc != SLURM_SUCCESS)
@@ -612,10 +612,10 @@ extern int common_cgroup_add_pids(xcgroup_t* cg, pid_t* pids, int npids)
 	return rc;
 }
 
-extern int common_cgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids)
+extern int common_cgroup_get_pids(xcgroup_t *cg, pid_t **pids, int *npids)
 {
 	int fstatus = SLURM_ERROR;
-	char* path = NULL;
+	char *path = NULL;
 
 	if (pids == NULL || npids == NULL || !cg->path)
 		return SLURM_ERROR;
@@ -636,12 +636,12 @@ extern int common_cgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids)
 	return fstatus;
 }
 
-extern int common_cgroup_get_param(xcgroup_t* cg, char* param, char **content,
+extern int common_cgroup_get_param(xcgroup_t *cg, char *param, char **content,
 				   size_t *csize)
 {
 	int fstatus = SLURM_ERROR;
 	char file_path[PATH_MAX];
-	char* cpath = cg->path;
+	char *cpath = cg->path;
 
 	if (snprintf(file_path, PATH_MAX, "%s/%s", cpath, param) >= PATH_MAX) {
 		debug2("unable to build filepath for '%s' and"
@@ -655,12 +655,12 @@ extern int common_cgroup_get_param(xcgroup_t* cg, char* param, char **content,
 	return fstatus;
 }
 
-extern int common_cgroup_set_uint64_param(xcgroup_t* cg, char* param,
+extern int common_cgroup_set_uint64_param(xcgroup_t *cg, char *param,
 					  uint64_t value)
 {
 	int fstatus = SLURM_ERROR;
 	char file_path[PATH_MAX];
-	char* cpath = cg->path;
+	char *cpath = cg->path;
 
 	if (snprintf(file_path, PATH_MAX, "%s/%s", cpath, param) >= PATH_MAX) {
 		debug2("unable to build filepath for '%s' and"

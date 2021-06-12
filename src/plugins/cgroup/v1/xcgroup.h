@@ -46,8 +46,8 @@
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-extern int xcgroup_ns_create(xcgroup_ns_t* cgns, char* mnt_args,
-			     const char* subsys);
+extern int xcgroup_ns_create(xcgroup_ns_t *cgns, char *mnt_args,
+			     const char *subsys);
 
 /*
  * mount a cgroup namespace
@@ -58,7 +58,7 @@ extern int xcgroup_ns_create(xcgroup_ns_t* cgns, char* mnt_args,
  *
  * If an error occurs, errno will be set.
  */
-extern int xcgroup_ns_mount(xcgroup_ns_t* cgns);
+extern int xcgroup_ns_mount(xcgroup_ns_t *cgns);
 
 /*
  * umount a cgroup namespace
@@ -69,7 +69,7 @@ extern int xcgroup_ns_mount(xcgroup_ns_t* cgns);
  *
  * If an error occurs, errno will be set.
  */
-extern int xcgroup_ns_umount(xcgroup_ns_t* cgns);
+extern int xcgroup_ns_umount(xcgroup_ns_t *cgns);
 
 /*
  * test if cgroup namespace is currently available (mounted)
@@ -78,7 +78,7 @@ extern int xcgroup_ns_umount(xcgroup_ns_t* cgns);
  *  - 0 if not available
  *  - 1 if available
  */
-extern int xcgroup_ns_is_available(xcgroup_ns_t* cgns);
+extern int xcgroup_ns_is_available(xcgroup_ns_t *cgns);
 
 /*
  * load a cgroup from a cgroup namespace given a pid
@@ -87,7 +87,7 @@ extern int xcgroup_ns_is_available(xcgroup_ns_t* cgns);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-extern int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid);
+extern int xcgroup_ns_find_by_pid(xcgroup_ns_t *cgns, xcgroup_t *cg, pid_t pid);
 
 /*
  * load a cgroup namespace
@@ -106,7 +106,7 @@ extern int xcgroup_ns_load(xcgroup_ns_t *cgns, char *subsys);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-extern int xcgroup_lock(xcgroup_t* cg);
+extern int xcgroup_lock(xcgroup_t *cg);
 
 /*
  * unlock a cgroup
@@ -115,7 +115,7 @@ extern int xcgroup_lock(xcgroup_t* cg);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-extern int xcgroup_unlock(xcgroup_t* cg);
+extern int xcgroup_unlock(xcgroup_t *cg);
 
 /*
  * load a cgroup from a cgroup namespace into a structure
@@ -124,7 +124,7 @@ extern int xcgroup_unlock(xcgroup_t* cg);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-extern int xcgroup_load(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri);
+extern int xcgroup_load(xcgroup_ns_t *cgns, xcgroup_t *cg, char *uri);
 
 /*
  * get a cgroup parameter in the form of a uint32_t
@@ -138,8 +138,8 @@ extern int xcgroup_load(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-extern int xcgroup_get_uint32_param(xcgroup_t* cg, char* param,
-				    uint32_t* value);
+extern int xcgroup_get_uint32_param(xcgroup_t *cg, char *param,
+				    uint32_t *value);
 
 /*
  * get a cgroup parameter in the form of a uint64_t
@@ -153,8 +153,8 @@ extern int xcgroup_get_uint32_param(xcgroup_t* cg, char* param,
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-extern int xcgroup_get_uint64_param(xcgroup_t* cg, char* param,
-				    uint64_t* value);
+extern int xcgroup_get_uint64_param(xcgroup_t *cg, char *param,
+				    uint64_t *value);
 
 
 extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns);

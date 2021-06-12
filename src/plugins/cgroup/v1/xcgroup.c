@@ -92,14 +92,14 @@ clean:
  *
  * If an error occurs, errno will be set.
  */
-extern int xcgroup_ns_mount(xcgroup_ns_t* cgns)
+extern int xcgroup_ns_mount(xcgroup_ns_t *cgns)
 {
 	int fstatus;
-	char* options;
+	char *options;
 	char opt_combined[1024];
 
-	char* mnt_point;
-	char* p;
+	char *mnt_point;
+	char *p;
 
 	mode_t cmask;
 	mode_t omask;
@@ -175,7 +175,7 @@ extern int xcgroup_ns_mount(xcgroup_ns_t* cgns)
  *
  * If an error occurs, errno will be set.
  */
-extern int xcgroup_ns_umount(xcgroup_ns_t* cgns)
+extern int xcgroup_ns_umount(xcgroup_ns_t *cgns)
 {
 	if (umount(cgns->mnt_point))
 		return SLURM_ERROR;
@@ -189,10 +189,10 @@ extern int xcgroup_ns_umount(xcgroup_ns_t* cgns)
  *  - SLURM_ERROR : not available
  *  - SLURM_SUCCESS : ready to be used
  */
-extern int xcgroup_ns_is_available(xcgroup_ns_t* cgns)
+extern int xcgroup_ns_is_available(xcgroup_ns_t *cgns)
 {
 	int fstatus = 0;
-	char* value;
+	char *value;
 	size_t s;
 	xcgroup_t cg;
 
@@ -219,16 +219,16 @@ extern int xcgroup_ns_is_available(xcgroup_ns_t* cgns)
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-extern int xcgroup_ns_find_by_pid(xcgroup_ns_t* cgns, xcgroup_t* cg, pid_t pid)
+extern int xcgroup_ns_find_by_pid(xcgroup_ns_t *cgns, xcgroup_t *cg, pid_t pid)
 {
 	int fstatus = SLURM_ERROR;
 	char file_path[PATH_MAX];
-	char* buf;
+	char *buf;
 	size_t fsize;
-	char* p;
-	char* e;
-	char* entry;
-	char* subsys;
+	char *p;
+	char *e;
+	char *entry;
+	char *subsys;
 
 	/* build pid cgroup meta filepath */
 	if (snprintf(file_path, PATH_MAX, "/proc/%u/cgroup",
@@ -291,7 +291,7 @@ extern int xcgroup_ns_load(xcgroup_ns_t *cgns, char *subsys)
 	return SLURM_SUCCESS;
 }
 
-extern int xcgroup_lock(xcgroup_t* cg)
+extern int xcgroup_lock(xcgroup_t *cg)
 {
 	int fstatus = SLURM_ERROR;
 
@@ -314,7 +314,7 @@ extern int xcgroup_lock(xcgroup_t* cg)
 	return fstatus;
 }
 
-extern int xcgroup_unlock(xcgroup_t* cg)
+extern int xcgroup_unlock(xcgroup_t *cg)
 {
 	int fstatus = SLURM_ERROR;
 
@@ -328,7 +328,7 @@ extern int xcgroup_unlock(xcgroup_t* cg)
 	return fstatus;
 }
 
-extern int xcgroup_load(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri)
+extern int xcgroup_load(xcgroup_ns_t *cgns, xcgroup_t *cg, char *uri)
 {
 	int fstatus = SLURM_ERROR;
 	char file_path[PATH_MAX];
@@ -359,7 +359,7 @@ extern int xcgroup_load(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri)
 	return SLURM_SUCCESS;
 }
 
-extern int xcgroup_wait_pid_moved(xcgroup_t* cg, const char *cg_name)
+extern int xcgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name)
 {
 	pid_t *pids = NULL;
 	int npids = 0;
@@ -402,7 +402,7 @@ extern int xcgroup_wait_pid_moved(xcgroup_t* cg, const char *cg_name)
 	return SLURM_SUCCESS;
 }
 
-extern int xcgroup_get_uint32_param(xcgroup_t* cg, char* param, uint32_t* value)
+extern int xcgroup_get_uint32_param(xcgroup_t *cg, char *param, uint32_t *value)
 {
 	int fstatus = SLURM_ERROR;
 	char file_path[PATH_MAX];
@@ -430,7 +430,7 @@ extern int xcgroup_get_uint32_param(xcgroup_t* cg, char* param, uint32_t* value)
 	return fstatus;
 }
 
-extern int xcgroup_get_uint64_param(xcgroup_t* cg, char* param, uint64_t* value)
+extern int xcgroup_get_uint64_param(xcgroup_t *cg, char *param, uint64_t *value)
 {
 	int fstatus = SLURM_ERROR;
 	char file_path[PATH_MAX];
