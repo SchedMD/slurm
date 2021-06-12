@@ -1732,6 +1732,16 @@ static int _pick_step_cores(step_record_t *step_ptr,
 			cpu_cnt += (cpus_per_core - 1);
 			cpu_cnt /= cpus_per_core;
 		}
+
+		if (cpu_cnt > job_resrcs_ptr->cpus[job_node_inx]) {
+			/* Node can never fullfill step request */
+			log_flag(STEPS, "%s: For step %pS node %d doesn't have enough cpus (%u) to full request of %u",
+				 __func__, step_ptr, job_node_inx,
+				 job_resrcs_ptr->cpus[job_node_inx],
+				 cpu_cnt);
+			return ESLURM_TOO_MANY_REQUESTED_CPUS;
+		}
+
 	}
 
 	/* select idle cores first */
