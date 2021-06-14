@@ -475,7 +475,7 @@ static void _block_sync_core_bitmap(job_record_t *job_ptr,
 	uint16_t cpus_per_task = job_ptr->details->cpus_per_task;
 	job_resources_t *job_res = job_ptr->job_resrcs;
 	bool alloc_cores = false, alloc_sockets = false;
-	uint16_t ntasks_per_core = 0xffff;
+	uint16_t ntasks_per_core = INFINITE16;
 	int tmp_cpt = 0;
 	int count, core_min, b_min, elig, s_min, comb_idx, sock_idx;
 	int elig_idx, comb_brd_idx, sock_list_idx, comb_min, board_num;
@@ -891,8 +891,8 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 	bitstr_t *core_map;
 	bool *sock_used, *sock_avoid;
 	bool alloc_cores = false, alloc_sockets = false;
-	uint16_t ntasks_per_socket = 0xffff;
-	uint16_t ntasks_per_core = 0xffff;
+	uint16_t ntasks_per_socket = INFINITE16;
+	uint16_t ntasks_per_core = INFINITE16;
 	int error_code = SLURM_SUCCESS;
 	int tmp_cpt = 0; /* cpus_per_task */
 
@@ -964,7 +964,7 @@ static int _cyclic_sync_core_bitmap(job_record_t *job_ptr,
 		core_cnt = 0;
 		cpus = job_res->cpus[i];
 
-		if (ntasks_per_socket != 0xffff) {
+		if (ntasks_per_socket != INFINITE16) {
 			int x_cpus, cpus_per_socket;
 			uint32_t total_cpus = 0;
 			uint32_t *cpus_cnt;
