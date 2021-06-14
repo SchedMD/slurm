@@ -109,7 +109,7 @@ static uint32_t g_max_task_id = 0;
  * There are potentially multiple tasks on a node, so we want to
  * track every task cgroup and which taskid it belongs to.
  */
-typedef struct task_cg_info {
+typedef struct {
 	xcgroup_t task_cg;
 	uint32_t taskid;
 } task_cg_info_t;
