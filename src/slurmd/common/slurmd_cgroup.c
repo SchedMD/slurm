@@ -140,7 +140,7 @@ extern int init_system_memory_cgroup(void)
 	       constrain_kmem_space?"enforced":"permissive",
 	       (unsigned long) cg_conf->min_kmem_space);
 
-	cgroup_g_free_conf(cg_conf);
+	cgroup_free_conf(cg_conf);
 
         /*
          *  Warning: OOM Killer must be disabled for slurmstepd

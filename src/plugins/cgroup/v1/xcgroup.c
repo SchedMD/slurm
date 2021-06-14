@@ -75,10 +75,10 @@ extern int xcgroup_ns_create(xcgroup_ns_t *cgns, char *mnt_args,
 		}
 	}
 
-	cgroup_g_free_conf(cg_conf);
+	cgroup_free_conf(cg_conf);
 	return SLURM_SUCCESS;
 clean:
-	cgroup_g_free_conf(cg_conf);
+	cgroup_free_conf(cg_conf);
 	common_cgroup_ns_destroy(cgns);
 	return SLURM_ERROR;
 }
@@ -285,7 +285,7 @@ extern int xcgroup_ns_load(xcgroup_ns_t *cgns, char *subsys)
 	cgns->mnt_point = xstrdup_printf("%s/%s",
 					 cg_conf->cgroup_mountpoint,
 					 subsys);
-	cgroup_g_free_conf(cg_conf);
+	cgroup_free_conf(cg_conf);
 	cgns->mnt_args = NULL;
 	cgns->subsystems = xstrdup(subsys);
 	return SLURM_SUCCESS;
@@ -532,7 +532,7 @@ extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns)
 
 	pre = xstrdup(cg_conf->cgroup_prepend);
 
-	cgroup_g_free_conf(cg_conf);
+	cgroup_free_conf(cg_conf);
 
 #ifdef MULTIPLE_SLURMD
 	if (conf->node_name) {

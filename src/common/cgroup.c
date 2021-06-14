@@ -655,7 +655,7 @@ extern bool cgroup_g_has_pid(pid_t pid)
 	return (*(ops.has_pid))(pid);
 }
 
-extern void cgroup_g_free_conf(cgroup_conf_t *cg_conf)
+extern void cgroup_free_conf(cgroup_conf_t *cg_conf)
 {
 	if (!cg_conf)
 		return;

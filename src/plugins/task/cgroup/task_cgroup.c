@@ -110,7 +110,7 @@ extern int init (void)
 	if (cg_conf->task_affinity)
 		do_task_affinity = true;
 
-	cgroup_g_free_conf(cg_conf);
+	cgroup_free_conf(cg_conf);
 
 	/* enable subsystems based on conf */
 	if (use_cpuset) {

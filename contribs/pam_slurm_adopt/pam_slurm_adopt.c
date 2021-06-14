@@ -294,7 +294,7 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 		 */
 		uidcg[0] = '\0';
 	}
-	cgroup_g_free_conf(cg_conf);
+	cgroup_free_conf(cg_conf);
 
 	if (opts.node_name)
 		xfree(cgroup_suffix);

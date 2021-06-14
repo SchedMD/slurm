@@ -464,7 +464,7 @@ static void _get_node_energy_up(acct_gather_energy_t *energy)
 	cg_conf = cgroup_g_get_conf();
 	if (cg_conf && cg_conf->constrain_devices)
 		constrained_devices = true;
-	cgroup_g_free_conf(cg_conf);
+	cgroup_free_conf(cg_conf);
 
 	// Check if task/cgroup plugin is loaded
 	if (xstrstr(slurm_conf.task_plugin, "cgroup"))

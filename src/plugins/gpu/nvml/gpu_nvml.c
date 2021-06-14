@@ -876,7 +876,7 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	cg_conf = cgroup_g_get_conf();
 	if (cg_conf && cg_conf->constrain_devices)
 		constrained_devices = true;
-	cgroup_g_free_conf(cg_conf);
+	cgroup_free_conf(cg_conf);
 
 	// Check if task/cgroup plugin is loaded
 	if (xstrstr(slurm_conf.task_plugin, "cgroup"))
