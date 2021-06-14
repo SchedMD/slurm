@@ -43,7 +43,7 @@
  * which means the cgroup doesn't exist or we do not have permissions to modify
  * the cg.
  */
-static char *_cgroup_procs_check (xcgroup_t *cg, int check_mode)
+static char *_cgroup_procs_check(xcgroup_t *cg, int check_mode)
 {
 	struct stat st;
 	char *path = xstrdup_printf("%s/%s", cg->path, "cgroup.procs");
@@ -56,12 +56,12 @@ static char *_cgroup_procs_check (xcgroup_t *cg, int check_mode)
 	return path;
 }
 
-static char *_cgroup_procs_readable_path (xcgroup_t *cg)
+static char *_cgroup_procs_readable_path(xcgroup_t *cg)
 {
 	return _cgroup_procs_check(cg, S_IRUSR);
 }
 
-static char *_cgroup_procs_writable_path (xcgroup_t *cg)
+static char *_cgroup_procs_writable_path(xcgroup_t *cg)
 {
 	return _cgroup_procs_check(cg, S_IWUSR);
 }
@@ -171,7 +171,7 @@ extern int common_file_write_uint64s(char *file_path, uint64_t *values, int nb)
 	return fstatus;
 }
 
-extern int common_file_read_uint64s(char *file_path, uint64_t** pvalues,
+extern int common_file_read_uint64s(char *file_path, uint64_t **pvalues,
 				    int *pnb)
 {
 	int rc;
@@ -378,7 +378,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-extern int common_file_read_content(char *file_path, char** content,
+extern int common_file_read_content(char *file_path, char **content,
 				    size_t *csize)
 {
 	int fstatus;

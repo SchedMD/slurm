@@ -68,15 +68,15 @@ typedef struct {
 } xcgroup_t;
 
 extern size_t common_file_getsize(int fd);
-extern int common_file_write_uint64s(char* file_path, uint64_t* values, int nb);
-extern int common_file_read_uint64s(char* file_path, uint64_t** pvalues,
-				    int* pnb);
-extern int common_file_write_uint32s(char* file_path, uint32_t* values, int nb);
-extern int common_file_read_uint32s(char* file_path, uint32_t** pvalues,
-				    int* pnb);
-extern int common_file_write_content(char* file_path, char* content,
+extern int common_file_write_uint64s(char *file_path, uint64_t *values, int nb);
+extern int common_file_read_uint64s(char *file_path, uint64_t **pvalues,
+				    int *pnb);
+extern int common_file_write_uint32s(char *file_path, uint32_t *values, int nb);
+extern int common_file_read_uint32s(char *file_path, uint32_t **pvalues,
+				    int *pnb);
+extern int common_file_write_content(char *file_path, char *content,
 				     size_t csize);
-extern int common_file_read_content(char* file_path, char** content,
+extern int common_file_read_content(char *file_path, char **content,
 				    size_t *csize);
 
 /*
@@ -95,7 +95,7 @@ extern int common_cgroup_instantiate(xcgroup_t *cg);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-extern int common_cgroup_create(xcgroup_ns_t* cgns, xcgroup_t* cg, char* uri,
+extern int common_cgroup_create(xcgroup_ns_t *cgns, xcgroup_t *cg, char *uri,
 				uid_t uid, gid_t gid);
 
 /*
@@ -123,17 +123,17 @@ extern int common_cgroup_move_process(xcgroup_t *cg, pid_t pid);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-extern int common_cgroup_set_param(xcgroup_t* cg, char* param, char* content);
+extern int common_cgroup_set_param(xcgroup_t *cg, char *param, char *content);
 
 /*
  * destroy a cgroup namespace
  */
-extern void common_cgroup_ns_destroy(xcgroup_ns_t* cgns);
+extern void common_cgroup_ns_destroy(xcgroup_ns_t *cgns);
 
 /*
  * destroy a cgroup internal structure
  */
-extern void common_cgroup_destroy(xcgroup_t* cg);
+extern void common_cgroup_destroy(xcgroup_t *cg);
 
 /*
  * delete a cgroup instance in a cgroup namespace (rmdir)
@@ -142,7 +142,7 @@ extern void common_cgroup_destroy(xcgroup_t* cg);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-extern int common_cgroup_delete(xcgroup_t* cg);
+extern int common_cgroup_delete(xcgroup_t *cg);
 
 /*
  * add a list of pids to a cgroup
@@ -151,7 +151,7 @@ extern int common_cgroup_delete(xcgroup_t* cg);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-extern int common_cgroup_add_pids(xcgroup_t* cg, pid_t* pids, int npids);
+extern int common_cgroup_add_pids(xcgroup_t *cg, pid_t *pids, int npids);
 
 /*
  * extract the pids list of a cgroup
@@ -162,7 +162,7 @@ extern int common_cgroup_add_pids(xcgroup_t* cg, pid_t* pids, int npids);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-extern int common_cgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids);
+extern int common_cgroup_get_pids(xcgroup_t *cg, pid_t **pids, int *npids);
 
 /*
  * get a cgroup parameter
@@ -178,7 +178,7 @@ extern int common_cgroup_get_pids(xcgroup_t* cg, pid_t **pids, int *npids);
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-extern int common_cgroup_get_param(xcgroup_t* cg, char* param, char **content,
+extern int common_cgroup_get_param(xcgroup_t *cg, char *param, char **content,
 				   size_t *csize);
 
 /*
@@ -193,6 +193,7 @@ extern int common_cgroup_get_param(xcgroup_t* cg, char* param, char **content,
  *  - SLURM_ERROR
  *  - SLURM_SUCCESS
  */
-extern int common_cgroup_set_uint64_param(xcgroup_t* cg, char* parameter,
+extern int common_cgroup_set_uint64_param(xcgroup_t *cg, char *parameter,
 					  uint64_t value);
+
 #endif /* !_CGROUP_COMMON_H */
