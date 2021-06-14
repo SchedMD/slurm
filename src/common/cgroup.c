@@ -40,40 +40,40 @@
 
 /*Symbols provided by the plugin */
 typedef struct slurm_ops {
-	int     (*initialize)		(cgroup_ctl_type_t sub);
-	int     (*system_create)        (cgroup_ctl_type_t sub);
-	int     (*system_addto)		(cgroup_ctl_type_t sub, pid_t *pids,
+	int	(*initialize)		(cgroup_ctl_type_t sub);
+	int	(*system_create)	(cgroup_ctl_type_t sub);
+	int	(*system_addto)		(cgroup_ctl_type_t sub, pid_t *pids,
 					 int npids);
-	int     (*system_destroy)      (cgroup_ctl_type_t sub);
-	int     (*step_create)		(cgroup_ctl_type_t sub,
+	int	(*system_destroy)	(cgroup_ctl_type_t sub);
+	int	(*step_create)		(cgroup_ctl_type_t sub,
 					 stepd_step_rec_t *job);
-	int     (*step_addto)		(cgroup_ctl_type_t sub, pid_t *pids,
+	int	(*step_addto)		(cgroup_ctl_type_t sub, pid_t *pids,
 					 int npids);
-	int     (*step_get_pids)	(pid_t **pids, int *npids);
-	int     (*step_suspend)		(void);
-	int     (*step_resume)		(void);
-	int     (*step_destroy)		(cgroup_ctl_type_t sub);
-	bool    (*has_pid)              (pid_t pid);
+	int	(*step_get_pids)	(pid_t **pids, int *npids);
+	int	(*step_suspend)		(void);
+	int	(*step_resume)		(void);
+	int	(*step_destroy)		(cgroup_ctl_type_t sub);
+	bool	(*has_pid)		(pid_t pid);
 	cgroup_limits_t *(*root_constrain_get) (cgroup_ctl_type_t sub);
-	int     (*root_constrain_set)   (cgroup_ctl_type_t sub,
+	int	(*root_constrain_set)	(cgroup_ctl_type_t sub,
 					 cgroup_limits_t *limits);
 	cgroup_limits_t *(*system_constrain_get) (cgroup_ctl_type_t sub);
-	int     (*system_constrain_set) (cgroup_ctl_type_t sub,
+	int	(*system_constrain_set)	(cgroup_ctl_type_t sub,
 					 cgroup_limits_t *limits);
-	int     (*user_constrain_set)   (cgroup_ctl_type_t sub,
+	int	(*user_constrain_set)	(cgroup_ctl_type_t sub,
 					 stepd_step_rec_t *job,
 					 cgroup_limits_t *limits);
-	int     (*job_constrain_set)    (cgroup_ctl_type_t sub,
+	int	(*job_constrain_set)	(cgroup_ctl_type_t sub,
 					 stepd_step_rec_t *job,
 					 cgroup_limits_t *limits);
-	int     (*step_constrain_set)   (cgroup_ctl_type_t sub,
+	int	(*step_constrain_set)	(cgroup_ctl_type_t sub,
 					 stepd_step_rec_t *job,
 					 cgroup_limits_t *limits);
-	int     (*step_start_oom_mgr)   (void);
+	int	(*step_start_oom_mgr)	(void);
 	cgroup_oom_t *(*step_stop_oom_mgr) (stepd_step_rec_t *job);
-	int     (*accounting_init)	(void);
-	int     (*accounting_fini)	(void);
-	int     (*task_addto_accounting) (pid_t pid,
+	int	(*accounting_init)	(void);
+	int	(*accounting_fini)	(void);
+	int	(*task_addto_accounting)(pid_t pid,
 					  stepd_step_rec_t *job,
 					  uint32_t task_id);
 	cgroup_acct_t *(*task_get_acct_data) (uint32_t taskid);
