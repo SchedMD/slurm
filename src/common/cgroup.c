@@ -391,9 +391,9 @@ static void _read_slurm_cgroup_conf(void)
 			slurm_cgroup_conf.constrain_devices = false;
 
 		s_p_get_string(&slurm_cgroup_conf.allowed_devices_file,
-                               "AllowedDevicesFile", tbl);
-                if (! slurm_cgroup_conf.allowed_devices_file)
-                        slurm_cgroup_conf.allowed_devices_file =
+			       "AllowedDevicesFile", tbl);
+		if (!slurm_cgroup_conf.allowed_devices_file)
+			slurm_cgroup_conf.allowed_devices_file =
 				get_extra_conf_path(
 					"cgroup_allowed_devices_file.conf");
 
@@ -439,7 +439,7 @@ static void _autodetect_cgroup_version(char **type)
 		return;
 	}
 
-        if (F_TYPE_EQUAL(fs.f_type, CGROUP2_SUPER_MAGIC))
+	if (F_TYPE_EQUAL(fs.f_type, CGROUP2_SUPER_MAGIC))
 		cgroup_ver = 2;
 	else if (F_TYPE_EQUAL(fs.f_type, TMPFS_MAGIC)) {
 		if (statfs("/sys/fs/cgroup/systemd/", &fs) != 0) {
@@ -460,10 +460,10 @@ static void _autodetect_cgroup_version(char **type)
 			return;
 		}
 	} else if (F_TYPE_EQUAL(fs.f_type, SYSFS_MAGIC)) {
-                error("No filesystem mounted on /sys/fs/cgroup");
+		error("No filesystem mounted on /sys/fs/cgroup");
 		return;
 	} else {
-                error("Unknown filesystem type mounted on /sys/fs/cgroup");
+		error("Unknown filesystem type mounted on /sys/fs/cgroup");
 		return;
 	}
 

@@ -639,7 +639,7 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 		 * running jobacct_gather/cgroup.
 		 */
 		if (!xstrcmp(slurm_conf.job_acct_gather_type,
-		             "jobacct_gather/cgroup"))
+			     "jobacct_gather/cgroup"))
 			common_cgroup_set_param(&g_step_cg[CG_MEMORY],
 						"memory.force_empty", "1");
 		break;
