@@ -33,8 +33,9 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#ifndef _CGROUP_H
-#define _CGROUP_H
+
+#ifndef _COMMON_CGROUP_H_
+#define _COMMON_CGROUP_H_
 
 /* Check filesystem type */
 #include <linux/magic.h>
@@ -209,4 +210,5 @@ extern int cgroup_g_accounting_fini();
 extern int cgroup_g_task_addto_accounting(pid_t pid, stepd_step_rec_t *job,
 					  uint32_t task_id);
 extern cgroup_acct_t *cgroup_g_task_get_acct_data(uint32_t taskid);
-#endif /* !_SLURM_CGROUP_H */
+
+#endif
