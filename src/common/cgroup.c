@@ -913,7 +913,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-extern bool cgroup_g_memcg_job_confinement(void)
+extern bool cgroup_memcg_job_confinement(void)
 {
 	cgroup_conf_t *cg_conf;
 	bool status = false;

@@ -1066,7 +1066,7 @@ _read_config(void)
 
 	slurm_conf_unlock();
 
-	cgroup_mem_confinement = cgroup_g_memcg_job_confinement();
+	cgroup_mem_confinement = cgroup_memcg_job_confinement();
 
 	if (slurm_conf.job_acct_oom_kill && cgroup_mem_confinement)
 		fatal("Jobs memory is being constrained by both TaskPlugin cgroup and JobAcctGather plugin. This enables two incompatible memory enforcement mechanisms, one of them must be disabled.");
@@ -2436,7 +2436,7 @@ static int _memory_spec_init(void)
 		      "configured for this node");
 		return SLURM_SUCCESS;
 	}
-	if (!cgroup_g_memcg_job_confinement()) {
+	if (!cgroup_memcg_job_confinement()) {
 		if (slurm_conf.select_type_param & CR_MEMORY) {
 			error("Resource spec: Limited MemSpecLimit support. "
 			     "Slurmd daemon not memory constrained. "

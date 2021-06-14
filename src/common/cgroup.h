@@ -185,7 +185,7 @@ extern void cgroup_g_reconfig(void);
 extern void cgroup_g_conf_fini(void);
 extern int cgroup_write_conf(int fd);
 extern int cgroup_read_conf(int fd);
-extern bool cgroup_g_memcg_job_confinement(void);
+extern bool cgroup_memcg_job_confinement(void);
 extern cgroup_limits_t *cgroup_g_root_constrain_get(cgroup_ctl_type_t sub);
 extern int cgroup_g_root_constrain_set(cgroup_ctl_type_t sub,
 				       cgroup_limits_t *limits);
