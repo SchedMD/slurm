@@ -38,19 +38,19 @@
 #define _CGROUP_COMMON_H
 
 #include <fcntl.h>
-#include <unistd.h>
-#include <sys/mount.h>
-#include <sys/file.h>
-#include <sys/stat.h>
 #include <limits.h>
+#include <sys/file.h>
+#include <sys/mount.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 
 #include "src/common/log.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_protocol_defs.h"
 
 typedef struct {
 	char *mnt_point;	/* mount point to use */
