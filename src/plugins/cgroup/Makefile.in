@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for route plugins
+# Makefile for cgroup plugins
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -454,7 +454,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = common v1 v2
+SUBDIRS = common v1
 all: all-recursive
 
 .SUFFIXES:

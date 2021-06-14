@@ -1,3 +1,3 @@
-# Makefile for route plugins
+# Makefile for cgroup plugins
 
-SUBDIRS = common v1 v2
+SUBDIRS = common v1
