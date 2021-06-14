@@ -1559,15 +1559,10 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
 	if (cpu_time != NULL)
 		sscanf(cpu_time, "%*s %lu %*s %lu", &stats->usec, &stats->ssec);
 
-	if (memory_stat != NULL) {
-		if ((ptr = strstr(memory_stat, "total_rss"))) {
-			sscanf(ptr, "total_rss %lu", &stats->total_rss);
-		}
-		if ((ptr = strstr(memory_stat, "total_pgmajfault"))) {
-			sscanf(ptr, "total_pgmajfault %lu",
-			       &stats->total_pgmajfault);
-		}
-	}
+	if ((ptr = xstrstr(memory_stat, "total_rss")))
+		sscanf(ptr, "total_rss %lu", &stats->total_rss);
+	if ((ptr = xstrstr(memory_stat, "total_pgmajfault")))
+		sscanf(ptr, "total_pgmajfault %lu", &stats->total_pgmajfault);
 
 	xfree(cpu_time);
 	xfree(memory_stat);
