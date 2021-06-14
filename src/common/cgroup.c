@@ -38,8 +38,8 @@
 
 #define DEFAULT_CGROUP_BASEDIR "/sys/fs/cgroup"
 
-/*Symbols provided by the plugin */
-typedef struct slurm_ops {
+/* Symbols provided by the plugin */
+typedef struct {
 	int	(*initialize)		(cgroup_ctl_type_t sub);
 	int	(*system_create)	(cgroup_ctl_type_t sub);
 	int	(*system_addto)		(cgroup_ctl_type_t sub, pid_t *pids,
