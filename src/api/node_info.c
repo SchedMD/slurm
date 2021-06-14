@@ -403,6 +403,12 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	}
 	xstrcat(out, line_end);
 
+	/****** Line ******/
+	slurm_make_time_str((time_t *)&node_ptr->last_idle, time_str,
+			    sizeof(time_str));
+	xstrfmtcat(out, "LastIdleTime=%s", time_str);
+	xstrcat(out, line_end);
+
 	/****** TRES Line ******/
 	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 				     SELECT_NODEDATA_TRES_ALLOC_FMT_STR,

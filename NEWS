@@ -98,6 +98,9 @@ documents those changes that are of interest to users and administrators.
     JSON-C library as a prerequisite.
  -- scrontab - create the temporary file under the TMPDIR environment variable
     (if set), otherwise continue to use TmpFS as configured in slurm.conf.
+ -- Add ListIdleTime to "scontrol show nodes" and slurmrestd nodes output,
+    which represents the time the node last became idle (i.e. no jobs on the
+    node).
 
 * Changes in Slurm 20.11.8
 ==========================

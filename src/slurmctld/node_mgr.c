@@ -954,6 +954,7 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack32(dump_node_ptr->reason_uid, buffer);
 
 		pack_time(dump_node_ptr->boot_time, buffer);
+		pack_time(dump_node_ptr->last_idle, buffer);
 		pack_time(dump_node_ptr->reason_time, buffer);
 		pack_time(dump_node_ptr->slurmd_start_time, buffer);
 

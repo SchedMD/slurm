@@ -2212,6 +2212,7 @@ typedef struct node_info {
 	char *gres;		/* list of a node's generic resources */
 	char *gres_drain;	/* list of drained GRES */
 	char *gres_used;	/* list of GRES in current use */
+	time_t last_idle;	/* time node last become idle */
 	char *mcs_label;	/* mcs label if mcs plugin in use */
 	uint64_t mem_spec_limit; /* MB memory limit for specialization */
 	char *name;		/* node name to slurm */

@@ -146,6 +146,7 @@ static int _dump_node(data_t *p, node_info_t *node)
 	data_set_int(data_key_set(d, "cpu_load"), node->cpu_load);
 	data_set_int(data_key_set(d, "free_memory"), node->free_mem);
 	data_set_int(data_key_set(d, "cpus"), node->cpus);
+	data_set_int(data_key_set(d, "last_idle"), node->last_idle);
 	/* cpu_spec_list intentionally omitted */
 	/* energy intentionally omitted */
 	/* ext_sensors intentionally omitted */
