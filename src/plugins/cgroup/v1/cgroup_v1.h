@@ -44,12 +44,12 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/bitstring.h"
+#include "src/common/cgroup.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/cgroup.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
