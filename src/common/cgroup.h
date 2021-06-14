@@ -75,6 +75,11 @@
 #define F_TYPE_EQUAL(a, b) (a == (__SWORD_TYPE) b)
 #endif
 
+/* Not defined in non-supported v2 linux versions -- e.g centos7 */
+#ifndef CGROUP2_SUPER_MAGIC
+#define CGROUP2_SUPER_MAGIC 0x63677270
+#endif
+
 /*  Default lower bound on memory limit in MB. This is required so we
  *   don't immediately kill slurmstepd on mem cgroup creation if
  *   an administrator or user sets and absurdly low mem limit.
