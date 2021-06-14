@@ -47,7 +47,7 @@
 extern int xcgroup_ns_create(xcgroup_ns_t *cgns, char *mnt_args,
 			     const char *subsys)
 {
-	slurm_cgroup_conf_t *cg_conf;
+	cgroup_conf_t *cg_conf;
 
 	/* read cgroup configuration */
 	cg_conf = cgroup_g_get_conf();
@@ -278,7 +278,7 @@ extern int xcgroup_ns_find_by_pid(xcgroup_ns_t *cgns, xcgroup_t *cg, pid_t pid)
 
 extern int xcgroup_ns_load(xcgroup_ns_t *cgns, char *subsys)
 {
-	slurm_cgroup_conf_t *cg_conf;
+	cgroup_conf_t *cg_conf;
 
 	/* read cgroup configuration */
 	cg_conf = cgroup_g_get_conf();
@@ -525,7 +525,7 @@ extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns)
 {
 	xcgroup_t slurm_cg;
 	char *pre;
-	slurm_cgroup_conf_t *cg_conf;
+	cgroup_conf_t *cg_conf;
 
 	/* read cgroup configuration */
 	cg_conf = cgroup_g_get_conf();

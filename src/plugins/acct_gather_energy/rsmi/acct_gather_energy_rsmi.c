@@ -453,7 +453,7 @@ static void _add_energy(acct_gather_energy_t *energy_tot,
  */
 static void _get_node_energy_up(acct_gather_energy_t *energy)
 {
-	slurm_cgroup_conf_t *cg_conf;
+	cgroup_conf_t *cg_conf;
 	bool task_cgroup = false;
 	bool constrained_devices = false;
 	bool cgroups_active = false;

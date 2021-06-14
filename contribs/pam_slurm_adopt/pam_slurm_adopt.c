@@ -252,7 +252,7 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 	char uidcg[PATH_MAX];
 	char *cgroup_suffix = "";
 	char *cgroup_res = "";
-	slurm_cgroup_conf_t *cg_conf;
+	cgroup_conf_t *cg_conf;
 
 	if (opts.action_unknown == CALLERID_ACTION_DENY) {
 		debug("Denying due to action_unknown=deny");

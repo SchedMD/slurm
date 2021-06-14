@@ -118,19 +118,19 @@ static bool init_run = false;
 
 pthread_mutex_t xcgroup_config_read_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static slurm_cgroup_conf_t slurm_cgroup_conf;
+static cgroup_conf_t slurm_cgroup_conf;
 static buf_t *cg_conf_buf = NULL;
 static bool slurm_cgroup_conf_inited = false;
 static bool slurm_cgroup_conf_exist = true;
 
 /* local functions */
-static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *cg_conf);
-static void _pack_cgroup_conf(slurm_cgroup_conf_t *cg_conf, buf_t *buffer);
+static void _clear_slurm_cgroup_conf(cgroup_conf_t *cg_conf);
+static void _pack_cgroup_conf(cgroup_conf_t *cg_conf, buf_t *buffer);
 static int _unpack_cgroup_conf(buf_t *buffer);
-static slurm_cgroup_conf_t *_get_slurm_cgroup_conf(void);
+static cgroup_conf_t *_get_slurm_cgroup_conf(void);
 
 /* Local functions */
-static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *cg_conf)
+static void _clear_slurm_cgroup_conf(cgroup_conf_t *cg_conf)
 {
 	if (!cg_conf)
 		return;
@@ -157,7 +157,7 @@ static void _clear_slurm_cgroup_conf(slurm_cgroup_conf_t *cg_conf)
 	xfree(cg_conf->cgroup_plugin);
 }
 
-static void _pack_cgroup_conf(slurm_cgroup_conf_t *cg_conf, buf_t *buffer)
+static void _pack_cgroup_conf(cgroup_conf_t *cg_conf, buf_t *buffer)
 {
 	/*
 	 * No protocol version needed, at the time of writing we are only
@@ -408,10 +408,10 @@ static void _read_slurm_cgroup_conf(void)
 	return;
 }
 
-static slurm_cgroup_conf_t *_get_slurm_cgroup_conf(void)
+static cgroup_conf_t *_get_slurm_cgroup_conf(void)
 {
 	if (!slurm_cgroup_conf_inited) {
-		memset(&slurm_cgroup_conf, 0, sizeof(slurm_cgroup_conf_t));
+		memset(&slurm_cgroup_conf, 0, sizeof(cgroup_conf_t));
 		_read_slurm_cgroup_conf();
 		/*
 		 * Initialize and pack cgroup.conf info into a buffer that can
@@ -478,7 +478,7 @@ static void _autodetect_cgroup_version(char **type)
 static char *_get_cgroup_plugin(void)
 {
 	char *cgroup_plugin = NULL;
-	slurm_cgroup_conf_t *conf;
+	cgroup_conf_t *conf;
 
 	slurm_mutex_lock(&xcgroup_config_read_mutex);
 
@@ -655,7 +655,7 @@ extern bool cgroup_g_has_pid(pid_t pid)
 	return (*(ops.has_pid))(pid);
 }
 
-extern void cgroup_g_free_conf(slurm_cgroup_conf_t *cg_conf)
+extern void cgroup_g_free_conf(cgroup_conf_t *cg_conf)
 {
 	if (!cg_conf)
 		return;
@@ -666,10 +666,10 @@ extern void cgroup_g_free_conf(slurm_cgroup_conf_t *cg_conf)
 	xfree(cg_conf);
 }
 
-extern slurm_cgroup_conf_t *cgroup_g_get_conf(void)
+extern cgroup_conf_t *cgroup_g_get_conf(void)
 {
-	slurm_cgroup_conf_t *conf;
-	slurm_cgroup_conf_t *conf_ptr;
+	cgroup_conf_t *conf;
+	cgroup_conf_t *conf_ptr;
 
 	slurm_mutex_lock(&xcgroup_config_read_mutex);
 
@@ -708,7 +708,7 @@ extern slurm_cgroup_conf_t *cgroup_g_get_conf(void)
  */
 extern List cgroup_g_get_conf_list(void)
 {
-	slurm_cgroup_conf_t *cg_conf;
+	cgroup_conf_t *cg_conf;
 	config_key_pair_t *key_pair;
 	List cgroup_conf_l;
 
@@ -888,7 +888,7 @@ extern int cgroup_g_read_conf(int fd)
 	cgroup_g_conf_fini();
 
 	slurm_mutex_lock(&xcgroup_config_read_mutex);
-	memset(&slurm_cgroup_conf, 0, sizeof(slurm_cgroup_conf_t));
+	memset(&slurm_cgroup_conf, 0, sizeof(cgroup_conf_t));
 
 	safe_read(fd, &len, sizeof(int));
 
@@ -915,7 +915,7 @@ rwfail:
 
 extern bool cgroup_g_memcg_job_confinement(void)
 {
-	slurm_cgroup_conf_t *cg_conf;
+	cgroup_conf_t *cg_conf;
 	bool status = false;
 
 	/* read cgroup configuration */

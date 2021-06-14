@@ -91,7 +91,7 @@ static bool do_task_affinity = false;
 extern int init (void)
 {
 	int rc = SLURM_SUCCESS;
-	slurm_cgroup_conf_t *cg_conf;
+	cgroup_conf_t *cg_conf;
 
 	if (!running_in_slurmstepd())
 		goto end;

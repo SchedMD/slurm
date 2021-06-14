@@ -157,7 +157,7 @@ extern int task_cgroup_devices_init(void)
 {
 	uint16_t cpunum;
 	FILE *file = NULL;
-	slurm_cgroup_conf_t *cg_conf;
+	cgroup_conf_t *cg_conf;
 
 	/* initialize cpuinfo internal data */
 	if (xcpuinfo_init() != XCPUINFO_SUCCESS)

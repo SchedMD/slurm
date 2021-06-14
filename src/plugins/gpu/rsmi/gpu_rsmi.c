@@ -791,7 +791,7 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	uint64_t mem_bitmask = 0, gpu_bitmask = 0;
 	bool freq_set = false, freq_logged = false;
 	char *tmp = NULL;
-	slurm_cgroup_conf_t *cg_conf;
+	cgroup_conf_t *cg_conf;
 	bool task_cgroup = false;
 	bool constrained_devices = false;
 	bool cgroups_active = false;

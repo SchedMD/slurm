@@ -70,7 +70,7 @@ static uint64_t percent_in_bytes (uint64_t mb, float percent)
 extern int task_cgroup_memory_init(void)
 {
 	bool set_swappiness;
-	slurm_cgroup_conf_t *cg_conf;
+	cgroup_conf_t *cg_conf;
 	cgroup_limits_t limits;
 
 	if (cgroup_g_initialize(CG_MEMORY) != SLURM_SUCCESS)

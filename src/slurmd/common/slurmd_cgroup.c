@@ -84,7 +84,7 @@ extern int init_system_cpuset_cgroup(void)
 
 extern int init_system_memory_cgroup(void)
 {
-	slurm_cgroup_conf_t *cg_conf;
+	cgroup_conf_t *cg_conf;
 
 	if (cgroup_g_initialize(CG_MEMORY) != SLURM_SUCCESS)
 		return SLURM_ERROR;
@@ -206,7 +206,7 @@ extern int attach_system_memory_pid(pid_t pid)
 
 extern bool check_corespec_cgroup_job_confinement(void)
 {
-	slurm_cgroup_conf_t *cg_conf;
+	cgroup_conf_t *cg_conf;
 
 	cg_conf = cgroup_g_get_conf();
 

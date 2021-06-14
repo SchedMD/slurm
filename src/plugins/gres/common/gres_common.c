@@ -161,7 +161,7 @@ extern int common_node_config_load(List gres_conf_list,
 
 extern bool common_use_local_device_index(void)
 {
-	slurm_cgroup_conf_t *cg_conf;
+	cgroup_conf_t *cg_conf;
 	bool use_cgroup = false;
 	static bool use_local_index = false;
 	static bool is_set = false;
