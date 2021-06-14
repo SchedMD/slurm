@@ -149,11 +149,12 @@ If a single job can not be entirely placed within a single network leaf
 switch, the job will be spread across as many leaf switches as possible
 in order to optimize the job's network bandwidth.</p>
 
-<p><b>NOTE</b>: Slurm first identifies the network switches which provide the
-best fit for pending jobs and then selects the nodes with the lowest "weight"
-within those switches. If optimizing resource selection by node weight is more
+<p><b>NOTE</b>: When using the <i>topology/tree</i> plugin, Slurm identifies
+the network switches which provide the best fit for pending jobs. If nodes
+have a <i>Weight</i> defined, this will override the resource selection based
+on network topology. If optimizing resource selection by node weight is more
 important than optimizing network topology then do NOT use the
-topology/tree plugin.</p>
+<i>topology/tree</i> plugin.</p>
 
 <p><b>NOTE</b>: The <b>topology.conf</b> file for an Infiniband switch can be
 automatically generated using the <b>slurmibtopology</b> tool found here:<br>
@@ -194,6 +195,6 @@ The value will be set component types listed in SLURM_TOPOLOGY_ADDR.
 Each component will be identified as either "switch" or "node".
 A period is used to separate each hardware component type.</p>
 
-<p style="text-align:center;">Last modified 20 May 2021</p>
+<p style="text-align:center;">Last modified 14 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
