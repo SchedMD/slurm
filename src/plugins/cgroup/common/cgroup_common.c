@@ -73,18 +73,18 @@ static int _set_uint32_param(xcgroup_t *cg, char *param, uint32_t value)
 	char *cpath = cg->path;
 
 	if (snprintf(file_path, PATH_MAX, "%s/%s", cpath, param) >= PATH_MAX) {
-		debug2("unable to build filepath for '%s' and"
-		       " parameter '%s' : %m", cpath, param);
+		debug2("unable to build filepath for '%s' and parameter '%s' : %m",
+		       cpath, param);
 		return fstatus;
 	}
 
 	fstatus = common_file_write_uint32s(file_path, &value, 1);
 	if (fstatus != SLURM_SUCCESS)
 		debug2("%s: unable to set parameter '%s' to '%u' for '%s'",
-			__func__, param, value, cpath);
+		       __func__, param, value, cpath);
 	else
 		debug3("%s: parameter '%s' set to '%u' for '%s'",
-			__func__, param, value, cpath);
+		       __func__, param, value, cpath);
 
 	return fstatus;
 }
@@ -134,7 +134,7 @@ extern int common_file_write_uint64s(char *file_path, uint64_t *values, int nb)
 	fd = open(file_path, O_WRONLY, 0700);
 	if (fd < 0) {
 		debug2("%s: unable to open '%s' for writing : %m",
-			__func__, file_path);
+		       __func__, file_path);
 		return SLURM_ERROR;
 	}
 
@@ -146,8 +146,8 @@ extern int common_file_write_uint64s(char *file_path, uint64_t *values, int nb)
 
 		rc = snprintf(tstr, sizeof(tstr), "%"PRIu64"", value);
 		if (rc < 0) {
-			debug2("unable to build %"PRIu64" string value, "
-			       "skipping", value);
+			debug2("unable to build %"PRIu64" string value, skipping",
+			       value);
 			fstatus = SLURM_ERROR;
 			continue;
 		}
@@ -158,7 +158,7 @@ extern int common_file_write_uint64s(char *file_path, uint64_t *values, int nb)
 		while (rc < 0 && errno == EINTR);
 		if (rc < 1) {
 			debug2("%s: unable to add value '%s' to file '%s' : %m",
-				__func__, tstr, file_path);
+			       __func__, tstr, file_path);
 			if (errno != ESRCH)
 				fstatus = SLURM_ERROR;
 		}
@@ -192,7 +192,7 @@ extern int common_file_read_uint64s(char *file_path, uint64_t **pvalues,
 	fd = open(file_path, O_RDONLY, 0700);
 	if (fd < 0) {
 		debug2("%s: unable to open '%s' for reading : %m",
-			__func__, file_path);
+		       __func__, file_path);
 		return SLURM_ERROR;
 	}
 
@@ -253,7 +253,7 @@ extern int common_file_write_uint32s(char *file_path, uint32_t *values, int nb)
 	/* open file for writing */
 	if ((fd = open(file_path, O_WRONLY, 0700)) < 0) {
 		error("%s: unable to open '%s' for writing: %m",
-			__func__, file_path);
+		      __func__, file_path);
 		return SLURM_ERROR;
 	}
 
@@ -302,7 +302,7 @@ extern int common_file_read_uint32s(char *file_path, uint32_t **pvalues,
 	fd = open(file_path, O_RDONLY, 0700);
 	if (fd < 0) {
 		debug2("%s: unable to open '%s' for reading : %m",
-			__func__, file_path);
+		       __func__, file_path);
 		return SLURM_ERROR;
 	}
 
@@ -361,7 +361,7 @@ extern int common_file_write_content(char *file_path, char *content,
 	/* open file for writing */
 	if ((fd = open(file_path, O_WRONLY, 0700)) < 0) {
 		error("%s: unable to open '%s' for writing: %m",
-			__func__, file_path);
+		      __func__, file_path);
 		return SLURM_ERROR;
 	}
 
@@ -397,7 +397,7 @@ extern int common_file_read_content(char *file_path, char **content,
 	fd = open(file_path, O_RDONLY, 0700);
 	if (fd < 0) {
 		debug2("%s: unable to open '%s' for reading : %m",
-			__func__, file_path);
+		       __func__, file_path);
 		return fstatus;
 	}
 
@@ -486,8 +486,8 @@ extern int common_cgroup_create(xcgroup_ns_t *cgns, xcgroup_t *cg, char *uri,
 	/* build cgroup absolute path*/
 	if (snprintf(file_path, PATH_MAX, "%s%s", cgns->mnt_point,
 		      uri) >= PATH_MAX) {
-		debug2("unable to build cgroup '%s' absolute path in ns '%s' "
-		       ": %m", uri, cgns->subsystems);
+		debug2("unable to build cgroup '%s' absolute path in ns '%s' : %m",
+		       uri, cgns->subsystems);
 		return fstatus;
 	}
 
@@ -534,8 +534,8 @@ extern int common_cgroup_set_param(xcgroup_t *cg, char *param, char *content)
 	}
 
 	if (snprintf(file_path, PATH_MAX, "%s/%s", cpath, param) >= PATH_MAX) {
-		debug2("unable to build filepath for '%s' and"
-		       " parameter '%s' : %m", cpath, param);
+		debug2("unable to build filepath for '%s' and parameter '%s' : %m",
+		       cpath, param);
 		return fstatus;
 	}
 
@@ -543,10 +543,10 @@ extern int common_cgroup_set_param(xcgroup_t *cg, char *param, char *content)
 					    strlen(content));
 	if (fstatus != SLURM_SUCCESS)
 		debug2("%s: unable to set parameter '%s' to '%s' for '%s'",
-			__func__, param, content, cpath);
+		       __func__, param, content, cpath);
 	else
 		debug3("%s: parameter '%s' set to '%s' for '%s'",
-			__func__, param, content, cpath);
+		       __func__, param, content, cpath);
 
 	return fstatus;
 }
@@ -587,8 +587,8 @@ retry:
 			retries++;
 			goto retry;
 		}
-		debug2("%s: did %d retries rmdir(%s): %m", __func__, retries,
-		       cg->path);
+		debug2("%s: did %d retries rmdir(%s): %m",
+		       __func__, retries, cg->path);
 		return SLURM_ERROR;
 	}
 
@@ -622,8 +622,8 @@ extern int common_cgroup_get_pids(xcgroup_t *cg, pid_t **pids, int *npids)
 
 	path = _cgroup_procs_readable_path(cg);
 	if (!path) {
-		debug2("%s: unable to read '%s/cgroup.procs'", __func__,
-		       cg->path);
+		debug2("%s: unable to read '%s/cgroup.procs'",
+		       __func__, cg->path);
 		return SLURM_ERROR;
 	}
 
@@ -644,8 +644,8 @@ extern int common_cgroup_get_param(xcgroup_t *cg, char *param, char **content,
 	char *cpath = cg->path;
 
 	if (snprintf(file_path, PATH_MAX, "%s/%s", cpath, param) >= PATH_MAX) {
-		debug2("unable to build filepath for '%s' and"
-		       " parameter '%s' : %m", cpath, param);
+		debug2("unable to build filepath for '%s' and parameter '%s' : %m",
+		       cpath, param);
 	} else {
 		fstatus = common_file_read_content(file_path, content, csize);
 		if (fstatus != SLURM_SUCCESS)
@@ -663,18 +663,18 @@ extern int common_cgroup_set_uint64_param(xcgroup_t *cg, char *param,
 	char *cpath = cg->path;
 
 	if (snprintf(file_path, PATH_MAX, "%s/%s", cpath, param) >= PATH_MAX) {
-		debug2("unable to build filepath for '%s' and"
-		       " parameter '%s' : %m", cpath, param);
+		debug2("unable to build filepath for '%s' and parameter '%s' : %m",
+		       cpath, param);
 		return fstatus;
 	}
 
 	fstatus = common_file_write_uint64s(file_path, &value, 1);
 	if (fstatus != SLURM_SUCCESS)
-		debug2("%s: unable to set parameter '%s' to '%"PRIu64"' for "
-			"'%s'", __func__, param, value, cpath);
+		debug2("%s: unable to set parameter '%s' to '%"PRIu64"' for '%s'",
+		       __func__, param, value, cpath);
 	else
 		debug3("%s: parameter '%s' set to '%"PRIu64"' for '%s'",
-			__func__, param, value, cpath);
+		       __func__, param, value, cpath);
 
 	return fstatus;
 }
