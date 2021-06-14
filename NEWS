@@ -111,6 +111,7 @@ documents those changes that are of interest to users and administrators.
  -- SALLOC_THREADS_PER_CORE and SBATCH_THREADS_PER_CORE have been added as
     input environment variables for salloc and sbatch, respectively. They do
     the same thing as --threads-per-core.
+ -- Distinguish queued reboot requests (REBOOT) from issued reboots (REBOOT^).
 
 * Changes in Slurm 20.11.8
 ==========================
