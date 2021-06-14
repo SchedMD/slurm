@@ -52,19 +52,19 @@
 #include "src/common/xstring.h"
 #include "src/common/slurm_protocol_defs.h"
 
-typedef struct xcgroup_ns {
-	char* mnt_point;  /* mount point to use for the associated cgroup */
-	char* mnt_args;   /* mount args to use in addition */
-	char* subsystems; /* list of comma separated subsystems to provide */
+typedef struct {
+	char *mnt_point;	/* mount point to use */
+	char *mnt_args;		/* additional mount args */
+	char *subsystems;	/* comma-separated subsystems to provide */
 } xcgroup_ns_t;
 
-typedef struct xcgroup {
-	xcgroup_ns_t* ns; /* xcgroup namespace of this xcgroup */
-	char*    name;    /* name of the xcgroup relative to the ns */
-	char*    path;    /* absolute path of the xcgroup in the ns */
-	uid_t    uid;     /* uid of the owner */
-	gid_t    gid;     /* gid of the owner */
-	int      fd;      /* used for locking */
+typedef struct {
+	xcgroup_ns_t *ns;	/* xcgroup namespace of this xcgroup */
+	char *name;		/* name of the xcgroup relative to the ns */
+	char *path;		/* absolute path of the xcgroup in the ns */
+	uid_t uid;		/* uid of the owner */
+	gid_t gid;		/* gid of the owner */
+	int fd;			/* used for locking */
 } xcgroup_t;
 
 extern size_t common_file_getsize(int fd);
