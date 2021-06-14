@@ -522,8 +522,11 @@ extern int cgroup_g_init(void)
 
 	type = _get_cgroup_plugin();
 
-	/* Default is autodetect */
-	if (!type || !xstrcmp(type, "autodetect")) {
+	/* Default is cgroup/v1 */
+	if (!type)
+		type = xstrdup("cgroup/v1");
+
+	if (!xstrcmp(type, "autodetect")) {
 		_autodetect_cgroup_version(&type);
 		if (!type) {
 			rc = SLURM_ERROR;
