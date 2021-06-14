@@ -8339,7 +8339,6 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list,
 	gres_step_state_t *step_gres_data;
 	gres_key_t job_search_key;
 	uint16_t cpus_per_gres;
-	uint64_t mem_per_gres;
 
 	if (!step_gres_list || (list_count(step_gres_list) == 0))
 		return;
@@ -8398,15 +8397,6 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list,
 		    step_gres_data->gres_per_task &&
 		    (job_gres_data->gres_per_task <
 		     step_gres_data->gres_per_task)) {
-			*rc = ESLURM_INVALID_GRES;
-			break;
-		}
-		if (job_gres_data->mem_per_gres)
-			mem_per_gres = job_gres_data->mem_per_gres;
-		else
-			mem_per_gres = job_gres_data->def_mem_per_gres;
-		if (mem_per_gres && step_gres_data->mem_per_gres &&
-		    (mem_per_gres < step_gres_data->mem_per_gres)) {
 			*rc = ESLURM_INVALID_GRES;
 			break;
 		}
