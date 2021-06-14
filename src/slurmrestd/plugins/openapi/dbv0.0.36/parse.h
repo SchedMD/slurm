@@ -72,6 +72,7 @@ typedef enum {
 	PARSE_JOB_EXIT_CODE, /* int32_t */
 	PARSE_JOB_REASON, /* uint32_t <-> enum job_state_reason */
 	PARSE_JOB, /* slurmdb_job_rec_t* */
+	PARSE_JOB_STATE, /* uint32_t <-> JOB_STATE_FLAGS */
 	PARSE_JOB_STEP, /* slurmdb_step_rec_t* */
 	PARSE_JOB_STEPS, /* slurmdb_job_rec_t->steps -> list of slurmdb_step_rec_t *'s*/
 	PARSE_QOS_ID, /* uint32_t of QOS id */
