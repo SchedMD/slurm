@@ -133,7 +133,7 @@ typedef struct {
 } cgroup_acct_t;
 
 /* Slurm cgroup plugins configuration parameters */
-typedef struct slurm_cgroup_conf {
+typedef struct {
 
 	bool      cgroup_automount;
 	char *    cgroup_mountpoint;
