@@ -880,7 +880,7 @@ rwfail:
 	return -1;
 }
 
-extern int cgroup_g_read_conf(int fd)
+extern int cgroup_read_conf(int fd)
 {
 	int len, rc;
 	buf_t *buffer = NULL;
