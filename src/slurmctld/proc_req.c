@@ -293,7 +293,7 @@ static void _fill_ctld_conf(slurm_conf_t *conf_ptr)
 	if (strstr(conf->job_acct_gather_type, "cgroup") ||
 	    strstr(conf->proctrack_type, "cgroup") ||
 	    strstr(conf->task_plugin, "cgroup"))
-		conf_ptr->cgroup_conf = cgroup_g_get_conf_list();
+		conf_ptr->cgroup_conf = cgroup_get_conf_list();
 
 	conf_ptr->cli_filter_plugins  = xstrdup(conf->cli_filter_plugins);
 	conf_ptr->cluster_name        = xstrdup(conf->cluster_name);

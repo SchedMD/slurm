@@ -178,7 +178,7 @@ extern bool common_use_local_device_index(void)
 	if (!use_cgroup)
 		return use_local_index;
 
-	cg_conf = cgroup_g_get_conf();
+	cg_conf = cgroup_get_conf();
 	if (cg_conf && cg_conf->constrain_devices)
 		use_local_index = true;
 	cgroup_free_conf(cg_conf);

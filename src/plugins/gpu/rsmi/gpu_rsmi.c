@@ -815,7 +815,7 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	}
 
 	// Check if GPUs are constrained by cgroups
-	cg_conf = cgroup_g_get_conf();
+	cg_conf = cgroup_get_conf();
 	if (cg_conf && cg_conf->constrain_devices)
 		constrained_devices = true;
 	cgroup_free_conf(cg_conf);

@@ -50,7 +50,7 @@ extern int xcgroup_ns_create(xcgroup_ns_t *cgns, char *mnt_args,
 	cgroup_conf_t *cg_conf;
 
 	/* read cgroup configuration */
-	cg_conf = cgroup_g_get_conf();
+	cg_conf = cgroup_get_conf();
 
 	cgns->mnt_point = xstrdup_printf("%s/%s",
 					 cg_conf->cgroup_mountpoint,
@@ -281,7 +281,7 @@ extern int xcgroup_ns_load(xcgroup_ns_t *cgns, char *subsys)
 	cgroup_conf_t *cg_conf;
 
 	/* read cgroup configuration */
-	cg_conf = cgroup_g_get_conf();
+	cg_conf = cgroup_get_conf();
 	cgns->mnt_point = xstrdup_printf("%s/%s",
 					 cg_conf->cgroup_mountpoint,
 					 subsys);
@@ -528,7 +528,7 @@ extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns)
 	cgroup_conf_t *cg_conf;
 
 	/* read cgroup configuration */
-	cg_conf = cgroup_g_get_conf();
+	cg_conf = cgroup_get_conf();
 
 	pre = xstrdup(cg_conf->cgroup_prepend);
 

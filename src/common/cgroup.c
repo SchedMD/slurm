@@ -666,7 +666,7 @@ extern void cgroup_free_conf(cgroup_conf_t *cg_conf)
 	xfree(cg_conf);
 }
 
-extern cgroup_conf_t *cgroup_g_get_conf(void)
+extern cgroup_conf_t *cgroup_get_conf(void)
 {
 	cgroup_conf_t *conf;
 	cgroup_conf_t *conf_ptr;
@@ -706,7 +706,7 @@ extern cgroup_conf_t *cgroup_g_get_conf(void)
  *      cgroup.conf  file and return a key pair <name,value> ordered list.
  * RET List with cgroup.conf <name,value> pairs if no error, NULL otherwise.
  */
-extern List cgroup_g_get_conf_list(void)
+extern List cgroup_get_conf_list(void)
 {
 	cgroup_conf_t *cg_conf;
 	config_key_pair_t *key_pair;

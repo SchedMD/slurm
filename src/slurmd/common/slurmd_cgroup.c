@@ -89,7 +89,7 @@ extern int init_system_memory_cgroup(void)
 	if (cgroup_g_initialize(CG_MEMORY) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	cg_conf = cgroup_g_get_conf();
+	cg_conf = cgroup_get_conf();
 
 	constrain_kmem_space = cg_conf->constrain_kmem_space;
 	constrain_ram_space = cg_conf->constrain_ram_space;
@@ -208,7 +208,7 @@ extern bool check_corespec_cgroup_job_confinement(void)
 {
 	cgroup_conf_t *cg_conf;
 
-	cg_conf = cgroup_g_get_conf();
+	cg_conf = cgroup_get_conf();
 
 	if (cg_conf->constrain_cores &&
 	    xstrstr(slurm_conf.task_plugin, "cgroup"))

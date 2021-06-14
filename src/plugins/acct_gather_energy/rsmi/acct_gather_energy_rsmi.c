@@ -461,7 +461,7 @@ static void _get_node_energy_up(acct_gather_energy_t *energy)
 	uint16_t i;
 
 	// Check if GPUs are constrained by cgroups
-	cg_conf = cgroup_g_get_conf();
+	cg_conf = cgroup_get_conf();
 	if (cg_conf && cg_conf->constrain_devices)
 		constrained_devices = true;
 	cgroup_free_conf(cg_conf);

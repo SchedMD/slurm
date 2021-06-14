@@ -76,7 +76,7 @@ extern int task_cgroup_memory_init(void)
 	if (cgroup_g_initialize(CG_MEMORY) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	cg_conf = cgroup_g_get_conf();
+	cg_conf = cgroup_get_conf();
 	memset(&limits, 0, sizeof(limits));
 
 	set_swappiness = (cg_conf->memory_swappiness != NO_VAL64);

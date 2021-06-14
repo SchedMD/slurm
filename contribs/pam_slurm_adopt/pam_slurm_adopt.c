@@ -267,7 +267,7 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 		cgroup_suffix = xstrdup_printf("_%s", opts.node_name);
 
 	/* read cgroup configuration */
-	cg_conf = cgroup_g_get_conf();
+	cg_conf = cgroup_get_conf();
 
 	/* pick a cgroup that is likely to exist */
 	if (cg_conf->constrain_ram_space ||

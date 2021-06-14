@@ -97,7 +97,7 @@ extern int init (void)
 		goto end;
 
 	/* read cgroup configuration */
-	cg_conf = cgroup_g_get_conf();
+	cg_conf = cgroup_get_conf();
 
 	/* enable subsystems based on conf */
 	if (cg_conf->constrain_cores)

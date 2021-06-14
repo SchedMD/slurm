@@ -172,7 +172,7 @@ extern int task_cgroup_devices_init(void)
 	}
 
 	/* read cgroup configuration */
-	cg_conf = cgroup_g_get_conf();
+	cg_conf = cgroup_get_conf();
 
 	if (!cg_conf)
 		goto error;
