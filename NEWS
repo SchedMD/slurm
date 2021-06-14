@@ -124,6 +124,7 @@ documents those changes that are of interest to users and administrators.
  -- Prevent file descriptor leak in job_container/tmpfs on slurmd restart.
  -- slurmrestd/dbv0.0.36 - Fix values dumped in job state/current and
     job step state.
+ -- slurmrestd/dbv0.0.36 - Correct description for previous state property.
 
 * Changes in Slurm 20.11.7
 ==========================
