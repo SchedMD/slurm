@@ -1684,7 +1684,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 						(node_ptr->node_state &
 						 NODE_STATE_FLAGS);
 
-				if (!IS_NODE_REBOOT(node_ptr) &&
+				if (!IS_NODE_REBOOT_REQUESTED(node_ptr) &&
 				    !IS_NODE_REBOOT_ISSUED(node_ptr))
 					node_ptr->next_state = NO_VAL;
 				bit_clear(rs_node_bitmap, node_inx);
@@ -4049,7 +4049,7 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 		       __func__, job_ptr, node_ptr->name);
 		node_ptr->last_busy = now;
 		trigger_node_drained(node_ptr);
-		if (!IS_NODE_REBOOT(node_ptr) &&
+		if (!IS_NODE_REBOOT_REQUESTED(node_ptr) &&
 		    !IS_NODE_REBOOT_ISSUED(node_ptr))
 			clusteracct_storage_g_node_down(acct_db_conn,
 			                                node_ptr, now, NULL,

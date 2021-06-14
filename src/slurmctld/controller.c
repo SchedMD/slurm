@@ -1767,7 +1767,7 @@ static void _queue_reboot_msg(void)
 		/* Allow nodes in maintenance reservations to reboot
 		 * (they previously could not).
 		 */
-		if (!IS_NODE_REBOOT(node_ptr))
+		if (!IS_NODE_REBOOT_REQUESTED(node_ptr))
 			continue;	/* No reboot needed */
 		else if (IS_NODE_REBOOT_ISSUED(node_ptr)) {
 			debug2("%s: Still waiting for boot of node %s",
