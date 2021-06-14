@@ -117,7 +117,7 @@ extern int common_cgroup_move_process(xcgroup_t *cg, pid_t pid);
  * param must correspond to a file of the cgroup that
  * will be written with the value content
  *
- * i.e. xcgroup_set_params(&cf,"memory.swappiness","10");
+ * i.e. common_cgroup_set_params(&cf, "memory.swappiness", "10");
  *
  * returned values:
  *  - SLURM_ERROR
@@ -170,7 +170,7 @@ extern int common_cgroup_get_pids(xcgroup_t *cg, pid_t **pids, int *npids);
  * param must correspond to a file of the cgroup that
  * will be read for its content
  *
- * i.e. xcgroup_get_param(&cg,"memory.swappiness",&value,&size);
+ * i.e. common_cgroup_get_param(&cg, "memory.swappiness", &value, &size);
  *
  * on success, content must be free using xfree
  *
@@ -187,7 +187,7 @@ extern int common_cgroup_get_param(xcgroup_t *cg, char *param, char **content,
  * param must correspond to a file of the cgroup that
  * will be written with the uint64_t value
  *
- * i.e. xcgroup_set_uint64_param(&cf,"memory.swappiness",value);
+ * i.e. common_cgroup_set_uint64_param(&cf, "memory.swappiness", value);
  *
  * returned values:
  *  - SLURM_ERROR
