@@ -154,8 +154,8 @@ extern int common_file_write_uint64s(char *file_path, uint64_t *values, int nb)
 
 		do {
 			rc = write(fd, tstr, strlen(tstr)+1);
-		}
-		while (rc < 0 && errno == EINTR);
+		} while (rc < 0 && errno == EINTR);
+
 		if (rc < 1) {
 			debug2("%s: unable to add value '%s' to file '%s' : %m",
 			       __func__, tstr, file_path);
