@@ -223,7 +223,7 @@ extern int common_file_read_uint64s(char *file_path, uint64_t **pvalues,
 
 	/* build uint64_t list */
 	if (i > 0) {
-		pa = (uint64_t*) xmalloc(sizeof(uint64_t) * i);
+		pa = xcalloc(i, sizeof(uint64_t));
 		p = buf;
 		i = 0;
 		while (xstrchr(p, '\n') != NULL) {
@@ -333,7 +333,7 @@ extern int common_file_read_uint32s(char *file_path, uint32_t **pvalues,
 
 	/* build uint32_t list */
 	if (i > 0) {
-		pa = (uint32_t*) xmalloc(sizeof(uint32_t) * i);
+		pa = xcalloc(i, sizeof(uint32_t));
 		p = buf;
 		i = 0;
 		while (xstrchr(p, '\n') != NULL) {
