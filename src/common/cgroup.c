@@ -107,7 +107,7 @@ static const char *syms[] = {
 	"cgroup_p_accounting_init",
 	"cgroup_p_accounting_fini",
 	"cgroup_p_task_addto_accounting",
-	"cgroup_p_task_get_acct_data"
+	"cgroup_p_task_get_acct_data",
 };
 
 /* Local variables */
