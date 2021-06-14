@@ -427,16 +427,14 @@ static cgroup_conf_t *_get_slurm_cgroup_conf(void)
 }
 
 /* Autodetect logic inspired from systemd source code */
-static void _autodetect_cgroup_version(char **type)
+static char *_autodetect_cgroup_version(void)
 {
 	struct statfs fs;
 	int cgroup_ver = -1;
 
-	xfree(*type);
-
 	if (statfs("/sys/fs/cgroup/", &fs) < 0) {
 		error("cgroup filesystem not mounted in /sys/fs/cgroup/");
-		return;
+		return NULL;
 	}
 
 	if (F_TYPE_EQUAL(fs.f_type, CGROUP2_SUPER_MAGIC))
@@ -444,35 +442,37 @@ static void _autodetect_cgroup_version(char **type)
 	else if (F_TYPE_EQUAL(fs.f_type, TMPFS_MAGIC)) {
 		if (statfs("/sys/fs/cgroup/systemd/", &fs) != 0) {
 			error("can't stat /sys/fs/cgroup/systemd/: %m");
-			return;
+			return NULL;
 		}
 
 		if (F_TYPE_EQUAL(fs.f_type, CGROUP2_SUPER_MAGIC)) {
 			if (statfs("/sys/fs/cgroup/unified/", &fs) != 0) {
 				error("can't stat /sys/fs/cgroup/unified/: %m");
-				return;
+				return NULL;
 			}
 			cgroup_ver = 2;
 		} else if (F_TYPE_EQUAL(fs.f_type, CGROUP_SUPER_MAGIC)) {
 			cgroup_ver = 1;
 		} else {
 			error("Unexpected fs type on /sys/fs/cgroup/systemd");
-			return;
+			return NULL;
 		}
 	} else if (F_TYPE_EQUAL(fs.f_type, SYSFS_MAGIC)) {
 		error("No filesystem mounted on /sys/fs/cgroup");
-		return;
+		return NULL;
 	} else {
 		error("Unknown filesystem type mounted on /sys/fs/cgroup");
-		return;
+		return NULL;
 	}
 
 	debug2("%s: using cgroup version %d", __func__, cgroup_ver);
 
 	if (cgroup_ver == 2)
-		*type = xstrdup("cgroup/v2");
+		return xstrdup("cgroup/v2");
 	else if (cgroup_ver == 1)
-		*type = xstrdup("cgroup/v1");
+		return xstrdup("cgroup/v1");
+
+	return NULL;
 }
 
 static char *_get_cgroup_plugin(void)
@@ -527,8 +527,7 @@ extern int cgroup_g_init(void)
 		type = xstrdup("cgroup/v1");
 
 	if (!xstrcmp(type, "autodetect")) {
-		_autodetect_cgroup_version(&type);
-		if (!type) {
+		if (!(type = _autodetect_cgroup_version())) {
 			rc = SLURM_ERROR;
 			goto done;
 		}
