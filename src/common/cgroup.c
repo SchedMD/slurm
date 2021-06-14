@@ -416,7 +416,7 @@ static cgroup_conf_t *_get_slurm_cgroup_conf(void)
 		/*
 		 * Initialize and pack cgroup.conf info into a buffer that can
 		 * be used by slurmd to send to stepd every time, instead of
-		 * re-packing every time we want to send to slurmsetpd
+		 * re-packing every time we want to send to slurmstepd
 		 */
 		cg_conf_buf = init_buf(0);
 		_pack_cgroup_conf(&slurm_cgroup_conf, cg_conf_buf);
