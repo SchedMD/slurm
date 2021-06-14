@@ -136,6 +136,14 @@ paths in a single quote string to avoid shell replacements.</p>
 </tr>
 </table>
 
+<h4>Correct description for previous state</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.36_job".properties.state.properties.previous</td>
+</tr>
+</table>
+
 <h2>Slurm 20.11.3<h2>
 
 <h3>openapi/dbv0.0.36 (src/slurmrestd/plugins/openapi/dbv0.0.36/openapi.json)</h3>
