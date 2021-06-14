@@ -501,7 +501,7 @@ extern int common_cgroup_create(xcgroup_ns_t *cgns, xcgroup_t *cg, char *uri,
 	return SLURM_SUCCESS;
 }
 
-extern int common_cgroup_move_process (xcgroup_t *cg, pid_t pid)
+extern int common_cgroup_move_process(xcgroup_t *cg, pid_t pid)
 {
 	char *path = NULL;
 
