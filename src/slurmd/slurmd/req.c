@@ -450,7 +450,7 @@ _send_slurmstepd_init(int fd, int type, void *req,
 		goto rwfail;
 
 	/* send cgroup conf over to slurmstepd */
-	if (cgroup_g_write_conf(fd) < 0)
+	if (cgroup_write_conf(fd) < 0)
 		goto rwfail;
 
 	/* send acct_gather.conf over to slurmstepd */

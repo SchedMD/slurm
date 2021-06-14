@@ -860,7 +860,7 @@ extern void cgroup_g_conf_fini(void)
 	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 }
 
-extern int cgroup_g_write_conf(int fd)
+extern int cgroup_write_conf(int fd)
 {
 	int len;
 
