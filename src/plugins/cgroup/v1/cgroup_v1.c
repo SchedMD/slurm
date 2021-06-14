@@ -594,7 +594,7 @@ extern int cgroup_p_step_get_pids(pid_t **pids, int *npids)
 	return common_cgroup_get_pids(&g_step_cg[CG_TRACK], pids, npids);
 }
 
-extern int cgroup_p_step_suspend()
+extern int cgroup_p_step_suspend(void)
 {
 	if (*g_step_cgpath[CG_TRACK] == '\0')
 		return SLURM_ERROR;
@@ -603,7 +603,7 @@ extern int cgroup_p_step_suspend()
 				       "FROZEN");
 }
 
-extern int cgroup_p_step_resume()
+extern int cgroup_p_step_resume(void)
 {
 	if (*g_step_cgpath[CG_TRACK] == '\0')
 		return SLURM_ERROR;
@@ -975,7 +975,7 @@ extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
  * modifications for Slurm logic and needs.
  */
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
-extern int cgroup_p_step_start_oom_mgr()
+extern int cgroup_p_step_start_oom_mgr(void)
 {
 	debug("OOM not available on FreeBSD, NetBSD, or macOS");
 	return SLURM_SUCCESS;
@@ -1122,7 +1122,7 @@ static void *_oom_event_monitor(void *x)
  * its value upon notification. Entries include: low, high, max, oom, oom_kill.
  * https://www.kernel.org/doc/Documentation/cgroup-v2.txt
  */
-extern int cgroup_p_step_start_oom_mgr()
+extern int cgroup_p_step_start_oom_mgr(void)
 {
 	char *control_file = NULL, *event_file = NULL, *line = NULL;
 	int rc = SLURM_SUCCESS, event_fd = -1, cfd = -1, efd = -1;
@@ -1373,7 +1373,7 @@ static int _handle_task_cgroup(cgroup_ctl_type_t sub, pid_t pid,
 	return rc;
 }
 
-extern int cgroup_p_accounting_init()
+extern int cgroup_p_accounting_init(void)
 {
 	int i, rc = SLURM_SUCCESS;
 
@@ -1402,7 +1402,7 @@ extern int cgroup_p_accounting_init()
 	return rc;
 }
 
-extern int cgroup_p_accounting_fini()
+extern int cgroup_p_accounting_fini(void)
 {
 	int i, rc, tid;
 

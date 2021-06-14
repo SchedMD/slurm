@@ -71,8 +71,8 @@ typedef struct slurm_ops {
 					 cgroup_limits_t *limits);
 	int     (*step_start_oom_mgr)   (void);
 	cgroup_oom_t *(*step_stop_oom_mgr) (stepd_step_rec_t *job);
-	int     (*accounting_init)	();
-	int     (*accounting_fini)	();
+	int     (*accounting_init)	(void);
+	int     (*accounting_fini)	(void);
 	int     (*task_addto_accounting) (pid_t pid,
 					  stepd_step_rec_t *job,
 					  uint32_t task_id);
@@ -475,7 +475,7 @@ static void _autodetect_cgroup_version(char **type)
 		*type = xstrdup("cgroup/v1");
 }
 
-static char *_get_cgroup_plugin()
+static char *_get_cgroup_plugin(void)
 {
 	char *cgroup_plugin = NULL;
 	slurm_cgroup_conf_t *conf;
@@ -623,7 +623,7 @@ extern int cgroup_g_step_get_pids(pid_t **pids, int *npids)
 	return (*(ops.step_get_pids))(pids, npids);
 }
 
-extern int cgroup_g_step_suspend()
+extern int cgroup_g_step_suspend(void)
 {
 	if (cgroup_g_init() < 0)
 		return SLURM_ERROR;
@@ -631,7 +631,7 @@ extern int cgroup_g_step_suspend()
 	return (*(ops.step_suspend))();
 }
 
-extern int cgroup_g_step_resume()
+extern int cgroup_g_step_resume(void)
 {
 	if (cgroup_g_init() < 0)
 		return SLURM_ERROR;
@@ -666,7 +666,7 @@ extern void cgroup_g_free_conf(slurm_cgroup_conf_t *cg_conf)
 	xfree(cg_conf);
 }
 
-extern slurm_cgroup_conf_t *cgroup_g_get_conf()
+extern slurm_cgroup_conf_t *cgroup_g_get_conf(void)
 {
 	slurm_cgroup_conf_t *conf;
 	slurm_cgroup_conf_t *conf_ptr;
@@ -833,7 +833,7 @@ extern List cgroup_g_get_conf_list(void)
 	return cgroup_conf_l;
 }
 
-extern void cgroup_g_reconfig()
+extern void cgroup_g_reconfig(void)
 {
 	slurm_mutex_lock(&xcgroup_config_read_mutex);
 
@@ -847,7 +847,7 @@ extern void cgroup_g_reconfig()
 	slurm_mutex_unlock(&xcgroup_config_read_mutex);
 }
 
-extern void cgroup_g_conf_fini()
+extern void cgroup_g_conf_fini(void)
 {
 	slurm_mutex_lock(&xcgroup_config_read_mutex);
 
@@ -913,7 +913,7 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-extern bool cgroup_g_memcg_job_confinement()
+extern bool cgroup_g_memcg_job_confinement(void)
 {
 	slurm_cgroup_conf_t *cg_conf;
 	bool status = false;
@@ -958,7 +958,7 @@ extern cgroup_limits_t *cgroup_g_system_constrain_get(cgroup_ctl_type_t sub)
 }
 
 extern int cgroup_g_system_constrain_set(cgroup_ctl_type_t sub,
-				       cgroup_limits_t *limits)
+					 cgroup_limits_t *limits)
 {
 	if (cgroup_g_init() < 0)
 		return false;
@@ -1012,7 +1012,7 @@ extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *job)
 	return (*(ops.step_stop_oom_mgr))(job);
 }
 
-extern int cgroup_g_accounting_init()
+extern int cgroup_g_accounting_init(void)
 {
 	if (cgroup_g_init() < 0)
 		return false;
@@ -1020,7 +1020,7 @@ extern int cgroup_g_accounting_init()
 	return (*(ops.accounting_init))();
 }
 
-extern int cgroup_g_accounting_fini()
+extern int cgroup_g_accounting_fini(void)
 {
 	if (cgroup_g_init() < 0)
 		return false;
