@@ -80,11 +80,11 @@ static int _set_uint32_param(xcgroup_t *cg, char *param, uint32_t value)
 
 	fstatus = common_file_write_uint32s(file_path, &value, 1);
 	if (fstatus != SLURM_SUCCESS)
-		debug2("%s: unable to set parameter '%s' to '%u' for '%s'",
-		       __func__, param, value, cpath);
+		debug2("unable to set parameter '%s' to '%u' for '%s'",
+		       param, value, cpath);
 	else
-		debug3("%s: parameter '%s' set to '%u' for '%s'",
-		       __func__, param, value, cpath);
+		debug3("parameter '%s' set to '%u' for '%s'",
+		       param, value, cpath);
 
 	return fstatus;
 }
@@ -133,8 +133,7 @@ extern int common_file_write_uint64s(char *file_path, uint64_t *values, int nb)
 	/* open file for writing */
 	fd = open(file_path, O_WRONLY, 0700);
 	if (fd < 0) {
-		debug2("%s: unable to open '%s' for writing : %m",
-		       __func__, file_path);
+		debug2("unable to open '%s' for writing : %m", file_path);
 		return SLURM_ERROR;
 	}
 
@@ -157,8 +156,8 @@ extern int common_file_write_uint64s(char *file_path, uint64_t *values, int nb)
 		} while (rc < 0 && errno == EINTR);
 
 		if (rc < 1) {
-			debug2("%s: unable to add value '%s' to file '%s' : %m",
-			       __func__, tstr, file_path);
+			debug2("unable to add value '%s' to file '%s' : %m",
+			       tstr, file_path);
 			if (errno != ESRCH)
 				fstatus = SLURM_ERROR;
 		}
@@ -191,8 +190,7 @@ extern int common_file_read_uint64s(char *file_path, uint64_t **pvalues,
 	/* open file for reading */
 	fd = open(file_path, O_RDONLY, 0700);
 	if (fd < 0) {
-		debug2("%s: unable to open '%s' for reading : %m",
-		       __func__, file_path);
+		debug2("unable to open '%s' for reading : %m", file_path);
 		return SLURM_ERROR;
 	}
 
@@ -301,8 +299,7 @@ extern int common_file_read_uint32s(char *file_path, uint32_t **pvalues,
 	/* open file for reading */
 	fd = open(file_path, O_RDONLY, 0700);
 	if (fd < 0) {
-		debug2("%s: unable to open '%s' for reading : %m",
-		       __func__, file_path);
+		debug2("unable to open '%s' for reading : %m", file_path);
 		return SLURM_ERROR;
 	}
 
@@ -396,8 +393,7 @@ extern int common_file_read_content(char *file_path, char **content,
 	/* open file for reading */
 	fd = open(file_path, O_RDONLY, 0700);
 	if (fd < 0) {
-		debug2("%s: unable to open '%s' for reading : %m",
-		       __func__, file_path);
+		debug2("unable to open '%s' for reading : %m", file_path);
 		return fstatus;
 	}
 
@@ -529,7 +525,7 @@ extern int common_cgroup_set_param(xcgroup_t *cg, char *param, char *content)
 	char *cpath = cg->path;
 
 	if (!content) {
-		debug2("%s: no content given, nothing to do.", __func__);
+		debug2("no content given, nothing to do");
 		return fstatus;
 	}
 
@@ -542,8 +538,8 @@ extern int common_cgroup_set_param(xcgroup_t *cg, char *param, char *content)
 	fstatus = common_file_write_content(file_path, content,
 					    strlen(content));
 	if (fstatus != SLURM_SUCCESS)
-		debug2("%s: unable to set parameter '%s' to '%s' for '%s'",
-		       __func__, param, content, cpath);
+		debug2("unable to set parameter '%s' to '%s' for '%s'",
+		       param, content, cpath);
 	else
 		debug3("%s: parameter '%s' set to '%s' for '%s'",
 		       __func__, param, content, cpath);
@@ -572,7 +568,7 @@ extern int common_cgroup_delete(xcgroup_t *cg)
 	int retries = 0;
 
 	if (!cg || !cg->path) {
-		debug2("%s: invalid control group", __func__);
+		debug2("invalid control group");
 		return SLURM_SUCCESS;
 	}
 
@@ -592,14 +588,13 @@ extern int common_cgroup_delete(xcgroup_t *cg)
 			retries++;
 			continue;
 		}
-		debug2("%s: did %d retries rmdir(%s): %m",
-		       __func__, retries, cg->path);
+		debug2("did %d retries rmdir(%s): %m", retries, cg->path);
 		return SLURM_ERROR;
 	}
 
 	if (retries)
-		debug2("%s: rmdir(%s): took %d retries, possible cgroup filesystem slowness",
-		       __func__, cg->path, retries);
+		debug2("rmdir(%s): took %d retries, possible cgroup filesystem slowness",
+		       cg->path, retries);
 
 	return SLURM_SUCCESS;
 }
@@ -611,7 +606,7 @@ extern int common_cgroup_add_pids(xcgroup_t *cg, pid_t *pids, int npids)
 
 	rc = common_file_write_uint32s(path, (uint32_t*)pids, npids);
 	if (rc != SLURM_SUCCESS)
-		debug2("%s: unable to add pids to '%s'", __func__, cg->path);
+		debug2("unable to add pids to '%s'", cg->path);
 
 	xfree(path);
 	return rc;
@@ -627,15 +622,13 @@ extern int common_cgroup_get_pids(xcgroup_t *cg, pid_t **pids, int *npids)
 
 	path = _cgroup_procs_readable_path(cg);
 	if (!path) {
-		debug2("%s: unable to read '%s/cgroup.procs'",
-		       __func__, cg->path);
+		debug2("unable to read '%s/cgroup.procs'", cg->path);
 		return SLURM_ERROR;
 	}
 
 	fstatus = common_file_read_uint32s(path, (uint32_t**)pids, npids);
 	if (fstatus != SLURM_SUCCESS)
-		debug2("%s: unable to get pids of '%s', file disappeared?",
-		       __func__, path);
+		debug2("unable to get pids of '%s', file disappeared?", path);
 
 	xfree(path);
 	return fstatus;
@@ -654,8 +647,8 @@ extern int common_cgroup_get_param(xcgroup_t *cg, char *param, char **content,
 	} else {
 		fstatus = common_file_read_content(file_path, content, csize);
 		if (fstatus != SLURM_SUCCESS)
-			debug2("%s: unable to get parameter '%s' for '%s'",
-			       __func__, param, cpath);
+			debug2("unable to get parameter '%s' for '%s'",
+			       param, cpath);
 	}
 	return fstatus;
 }
@@ -675,8 +668,8 @@ extern int common_cgroup_set_uint64_param(xcgroup_t *cg, char *param,
 
 	fstatus = common_file_write_uint64s(file_path, &value, 1);
 	if (fstatus != SLURM_SUCCESS)
-		debug2("%s: unable to set parameter '%s' to '%"PRIu64"' for '%s'",
-		       __func__, param, value, cpath);
+		debug2("unable to set parameter '%s' to '%"PRIu64"' for '%s'",
+		       param, value, cpath);
 	else
 		debug3("%s: parameter '%s' set to '%"PRIu64"' for '%s'",
 		       __func__, param, value, cpath);
