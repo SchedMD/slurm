@@ -211,10 +211,10 @@ end:
 	return rc;
 }
 
-static int _remove_cg_subsystem(xcgroup_t root_cg, xcgroup_t step_cg,
-				xcgroup_t job_cg, xcgroup_t user_cg,
-				xcgroup_t move_to_cg, const char *log_str,
-				xcgroup_t remove_from_cg)
+static int _remove_cg_subsystem(xcgroup_t *root_cg, xcgroup_t *step_cg,
+				xcgroup_t *job_cg, xcgroup_t *user_cg,
+				xcgroup_t *move_to_cg, const char *log_str,
+				xcgroup_t *remove_from_cg)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -224,24 +224,24 @@ static int _remove_cg_subsystem(xcgroup_t root_cg, xcgroup_t step_cg,
 	 * of stepd is in the cgroup. We don't know what other plugins will do
 	 * and whether they will attach the stepd pid to the cg.
 	 */
-	rc = common_cgroup_move_process(&move_to_cg, getpid());
+	rc = common_cgroup_move_process(move_to_cg, getpid());
 	if (rc != SLURM_SUCCESS) {
 		error("Unable to move pid %d to root cgroup", getpid());
 		goto end;
 	}
-	xcgroup_wait_pid_moved(&remove_from_cg, log_str);
+	xcgroup_wait_pid_moved(remove_from_cg, log_str);
 
 	/*
 	 * Lock the root cgroup so we don't race with other steps that are being
 	 * started.
 	 */
-	if (xcgroup_lock(&root_cg) != SLURM_SUCCESS) {
+	if (xcgroup_lock(root_cg) != SLURM_SUCCESS) {
 		error("xcgroup_lock error (%s)", log_str);
 		return SLURM_ERROR;
 	}
 
 	/* Delete step cgroup. */
-	if ((rc = common_cgroup_delete(&step_cg)) != SLURM_SUCCESS) {
+	if ((rc = common_cgroup_delete(step_cg)) != SLURM_SUCCESS) {
 		debug2("unable to remove step cg (%s): %m", log_str);
 		goto end;
 	}
@@ -253,13 +253,13 @@ static int _remove_cg_subsystem(xcgroup_t root_cg, xcgroup_t step_cg,
 	 * will finally remove these two directories
 	 */
 	/* Delete job cgroup. */
-	if ((rc = common_cgroup_delete(&job_cg)) != SLURM_SUCCESS) {
+	if ((rc = common_cgroup_delete(job_cg)) != SLURM_SUCCESS) {
 		debug2("not removing job cg (%s): %m", log_str);
 		rc = SLURM_SUCCESS;
 		goto end;
 	}
 	/* Delete user cgroup. */
-	if ((rc = common_cgroup_delete(&user_cg)) != SLURM_SUCCESS) {
+	if ((rc = common_cgroup_delete(user_cg)) != SLURM_SUCCESS) {
 		debug2("not removing user cg (%s): %m", log_str);
 		rc = SLURM_SUCCESS;
 		goto end;
@@ -268,12 +268,12 @@ static int _remove_cg_subsystem(xcgroup_t root_cg, xcgroup_t step_cg,
 	/*
 	 * Invalidate the cgroup structs.
 	 */
-	common_cgroup_destroy(&user_cg);
-	common_cgroup_destroy(&job_cg);
-	common_cgroup_destroy(&step_cg);
+	common_cgroup_destroy(user_cg);
+	common_cgroup_destroy(job_cg);
+	common_cgroup_destroy(step_cg);
 
 end:
-	xcgroup_unlock(&root_cg);
+	xcgroup_unlock(root_cg);
 	return rc;
 }
 
@@ -654,13 +654,13 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 		break;
 	}
 
-	rc = _remove_cg_subsystem(g_root_cg[sub],
-				  g_step_cg[sub],
-				  g_job_cg[sub],
-				  g_user_cg[sub],
-				  g_root_cg[sub],
+	rc = _remove_cg_subsystem(&g_root_cg[sub],
+				  &g_step_cg[sub],
+				  &g_job_cg[sub],
+				  &g_user_cg[sub],
+				  &g_root_cg[sub],
 				  g_cg_name[sub],
-				  g_step_cg[sub]);
+				  &g_step_cg[sub]);
 
 	return rc;
 }
