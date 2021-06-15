@@ -219,11 +219,19 @@ extern bool check_corespec_cgroup_job_confinement(void)
 
 extern void attach_system_cgroup_pid(pid_t pid)
 {
-	cgroup_g_initialize(CG_CPUS);
-	cgroup_g_system_create(CG_CPUS);
-	cgroup_g_system_addto(CG_CPUS, &pid, 1);
+	if (check_corespec_cgroup_job_confinement()) {
+		if (cgroup_g_initialize(CG_CPUS) ||
+		    cgroup_g_system_create(CG_CPUS) ||
+		    cgroup_g_system_addto(CG_CPUS, &pid, 1))
+			error("%s: failed to add stepd pid %d to system cpuset cgroup",
+			      __func__, pid);
+	}
 
-	cgroup_g_initialize(CG_MEMORY);
-	cgroup_g_system_create(CG_MEMORY);
-	cgroup_g_system_addto(CG_MEMORY, &pid, 1);
+	if (cgroup_memcg_job_confinement()) {
+		if (cgroup_g_initialize(CG_MEMORY) ||
+		    cgroup_g_system_create(CG_MEMORY) ||
+		    cgroup_g_system_addto(CG_MEMORY, &pid, 1))
+			error("%s: failed to add stepd pid %d to system memory cgroup",
+			      __func__, pid);
+	}
 }
