@@ -23,6 +23,7 @@ diagrams, tables, histograms and/or apply customized filters when searching.
 <p>The plugin requires additional libraries for compilation:</p>
 <ul>
 	<li><a href="https://curl.se/libcurl">libcurl</a> development files</li>
+	<li><a href="download.html#json">JSON-C</a></li>
 </ul>
 
 <h2>Configuration</h2>
