@@ -39,4 +39,6 @@
 
 extern int slurmscriptd_init(void);
 
+extern int slurmscriptd_fini(void);
+
 #endif /* !_HAVE_SLURMSCRIPTD_H */
