@@ -66,6 +66,8 @@ slurmctld_SOURCES =     \
 	slurmctld.h	\
 	slurmctld_plugstack.c \
 	slurmctld_plugstack.h \
+	slurmscriptd.c \
+	slurmscriptd.h \
 	srun_comm.c	\
 	srun_comm.h	\
 	state_save.c	\

@@ -116,6 +116,7 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmctld_plugstack.h"
+#include "slurmscriptd.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
@@ -301,6 +302,8 @@ int main(int argc, char **argv)
 	slurm_conf_init(conf_file);
 
 	update_logging();
+
+	slurmscriptd_init();
 
 	memset(&slurmctld_diag_stats, 0, sizeof(slurmctld_diag_stats));
 	/*
