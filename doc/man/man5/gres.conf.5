@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "May 2021" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "June 2021" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
@@ -326,6 +326,21 @@ NodeName=tux[0\-7] AutoDetect=nvml
 NodeName=tux[8\-11] AutoDetect=rsmi
 .br
 NodeName=tux[12\-15] Name=gpu File=/dev/nvidia[0\-3]
+.br
+
+.LP
+.br
+##################################################################
+.br
+# Slurm's Generic Resource (GRES) configuration file
+.br
+# Define 'bandwidth' GRES to use as a way to limit the
+.br
+# resource use on these nodes for workflow purposes
+.br
+##################################################################
+.br
+NodeName=tux[0\-7] Name=bandwidth Type=lustre Count=4G Flags=CountOnly
 .br
 
 .SH "COPYING"
