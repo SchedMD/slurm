@@ -571,6 +571,11 @@ extern int common_cgroup_delete(xcgroup_t *cg)
 {
 	int retries = 0;
 
+	if (!cg || !cg->path) {
+		debug2("%s: invalid control group", __func__);
+		return SLURM_SUCCESS;
+	}
+
 	/*
 	 *  Simply delete cgroup with rmdir(2). If cgroup doesn't
 	 *   exist, do not propagate error back to caller.
@@ -580,8 +585,9 @@ extern int common_cgroup_delete(xcgroup_t *cg)
 	 * internal references (css_online), even if cgroup.procs is already
 	 * empty.
 	 */
+
 retry:
-	if (cg && cg->path && (rmdir(cg->path) < 0) && (errno != ENOENT)) {
+	if ((rmdir(cg->path) < 0) && (errno != ENOENT)) {
 		if ((errno == EBUSY) && retries < 5) {
 			sleep(0.5);
 			retries++;
