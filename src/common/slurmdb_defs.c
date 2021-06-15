@@ -2184,10 +2184,8 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 		 */
 		if (!assoc->parent_id) {
 			arch_rec->sort_name = assoc->cluster;
-
 			list_append(arch_rec_list, arch_rec);
 			list_append(total_assoc_list, arch_rec);
-
 			continue;
 		}
 
@@ -2196,13 +2194,14 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 		else
 			arch_rec->sort_name = assoc->acct;
 
-		if (last_parent && assoc->parent_id == last_parent->assoc->id
-		    && !xstrcmp(assoc->cluster, last_parent->assoc->cluster)) {
+		if (last_parent &&
+		    (assoc->parent_id == last_parent->assoc->id) &&
+		    !xstrcmp(assoc->cluster, last_parent->assoc->cluster)) {
 			par_arch_rec = last_parent;
-		} else if (last_acct_parent
-			   && (assoc->parent_id == last_acct_parent->assoc->id)
-			   && !xstrcmp(assoc->cluster,
-				       last_acct_parent->assoc->cluster)) {
+		} else if (last_acct_parent &&
+			   (assoc->parent_id == last_acct_parent->assoc->id) &&
+			   !xstrcmp(assoc->cluster,
+				    last_acct_parent->assoc->cluster)) {
 			par_arch_rec = last_acct_parent;
 		} else {
 			par_arch_rec = list_find_first(total_assoc_list,
