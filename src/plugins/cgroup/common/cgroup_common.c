@@ -586,12 +586,11 @@ extern int common_cgroup_delete(xcgroup_t *cg)
 	 * empty.
 	 */
 
-retry:
-	if ((rmdir(cg->path) < 0) && (errno != ENOENT)) {
+	while ((rmdir(cg->path) < 0) && (errno != ENOENT)) {
 		if ((errno == EBUSY) && retries < 5) {
 			sleep(0.5);
 			retries++;
-			goto retry;
+			continue;
 		}
 		debug2("%s: did %d retries rmdir(%s): %m",
 		       __func__, retries, cg->path);
