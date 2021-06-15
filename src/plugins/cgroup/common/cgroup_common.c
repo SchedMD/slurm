@@ -524,6 +524,9 @@ extern int common_cgroup_set_param(xcgroup_t *cg, char *param, char *content)
 	char file_path[PATH_MAX];
 	char *cpath = cg->path;
 
+	if (!cpath || !param)
+		return fstatus;
+
 	if (!content) {
 		debug2("no content given, nothing to do");
 		return fstatus;
