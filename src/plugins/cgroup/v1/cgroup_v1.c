@@ -301,7 +301,8 @@ extern int cgroup_p_initialize(cgroup_ctl_type_t sub)
 {
 	int rc = SLURM_SUCCESS;
 
-	rc = _cgroup_init(sub);
+	if ((rc = _cgroup_init(sub)))
+		return rc;
 
 	switch (sub) {
 	case CG_TRACK:
