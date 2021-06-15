@@ -569,7 +569,7 @@ extern void common_cgroup_destroy(xcgroup_t *cg)
 
 extern int common_cgroup_delete(xcgroup_t *cg)
 {
-	uint16_t retries = 0;
+	int retries = 0;
 
 	/*
 	 *  Simply delete cgroup with rmdir(2). If cgroup doesn't
@@ -593,7 +593,7 @@ retry:
 	}
 
 	if (retries)
-		debug2("%s: rmdir(%s): took %"PRIu16" retries, possible cgroup filesystem slowness",
+		debug2("%s: rmdir(%s): took %d retries, possible cgroup filesystem slowness",
 		       __func__, cg->path, retries);
 
 	return SLURM_SUCCESS;
