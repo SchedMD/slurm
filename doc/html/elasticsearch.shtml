@@ -19,25 +19,13 @@ visualization tools also let you easily create different types of dashboards,
 diagrams, tables, histograms and/or apply customized filters when searching.
 </p>
 
+<h2>Prerequisites</h2>
+<p>The plugin requires additional libraries for compilation:</p>
+<ul>
+	<li><a href="https://curl.se/libcurl">libcurl</a> development files</li>
+</ul>
+
 <h2>Configuration</h2>
-<p>
-The plugin requires the <a href="https://curl.haxx.se/libcurl/">libcurl</a>
-library to be installed and usable on the controller, and the development
-libraries to be available at configure time. At Slurm configuration time,
-the configure script should emit a message like this if the appropriate
-library and headers have been successfully located:
-
-<pre>checking whether libcurl is usable... yes</pre>
-
-There are two <b>configure</b> options to control whether to look for the
-library or not and where:
-
-<pre>
---with-libcurl=PREFIX	look for the curl library in PREFIX/lib and headers in
-PREFIX/include (default PREFIX is curl-config path or $PATH).
---without-libcurl
-</pre>
-</p>
 
 <p>The Elasticsearch instance should be running and reachable from the multiple
 <a href="slurm.conf.html#OPT_SlurmctldAddr">SlurmctldHost</a> configured.
