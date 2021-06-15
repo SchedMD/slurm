@@ -1220,28 +1220,44 @@ Only used for database type storage plugins, ignored otherwise.
 .TP
 \fBJobCompType\fR
 The job completion logging mechanism type.
-Acceptable values at present include "jobcomp/none", "jobcomp/elasticsearch",
-"jobcomp/filetxt", "jobcomp/lua", "jobcomp/mysql" and "jobcomp/script".
-The default value is "jobcomp/none", which means that upon job completion
-the record of the job is purged from the system.  If using the accounting
-infrastructure this plugin may not be of interest since the information
-here is redundant.
-The value "jobcomp/elasticsearch" indicates that a record of the job
-should be written to an Elasticsearch server specified by the
-\fBJobCompLoc\fR parameter.
-NOTE: More information is available at the Slurm web site
+Acceptable values at present include:
+.RS
+.TP
+\fBjobcomp/none\fR
+Upon job completion, a record of the job is purged from the system.
+If using the accounting infrastructure this plugin may not be of interest
+since some of the information is redundant.
+
+.TP
+\fBjobcomp/elasticsearch\fR
+Upon job completion, a record of the job should be written to an
+Elasticsearch server, specified by the \fBJobCompLoc\fR parameter.
+.br
+\fBNOTE\fR: More information is available at the Slurm web site
 ( https://slurm.schedmd.com/elasticsearch.html ).
-The value "jobcomp/filetxt" indicates that a record of the job should be
-written to a text file specified by the \fBJobCompLoc\fR parameter.
-The value "jobcomp/lua" indicates that a record of the job should processed by
-the "jobcomp.lua" script located in the default script directory
-(typically the subdirectory "etc" of the installation directory).
-The value "jobcomp/mysql" indicates that a record of the job should be
-written to a MySQL or MariaDB database specified by the \fBJobCompLoc\fR
-parameter.
-The value "jobcomp/script" indicates that a script specified by the
-\fBJobCompLoc\fR parameter is to be executed with environment variables
-indicating the job information.
+
+.TP
+\fBjobcomp/filetxt\fR
+Upon job completion, a record of the job should be written to a text file,
+specified by the \fBJobCompLoc\fR parameter.
+
+.TP
+\fBjobcomp/lua\fR
+Upon job completion, a record of the job should be processed by the
+\fIjobcomp.lua\fR script, located in the default script directory
+(typically the subdirectory \fIetc\fR of the installation directory.
+
+.TP
+\fBjobcomp/mysql\fR
+Upon job completion, a record of the job should be written to a MySQL
+or MariaDB database, specified by the \fBJobCompLoc\fR parameter.
+
+.TP
+\fBjobcomp/script\fR
+Upon job completion, a script specified by the \fBJobCompLoc\fR parameter is
+to be executed with environment variables providing the job information.
+.RE
+
 .TP
 \fBJobCompUser\fR
 The user account for accessing the job completion database.

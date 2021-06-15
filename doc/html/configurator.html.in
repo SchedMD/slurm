@@ -575,8 +575,7 @@ log goes to syslog, string "%h" in name gets replaced with hostname)
 <P>
 
 <H2>Job Completion Logging</H2>
-Define the job completion logging mechanism to be used. SlurmDBD and None are
-recommended.<BR>
+Define the job completion logging mechanism to be used. Defaults to None.
 Select one value for <B>JobCompType</B>:<BR>
 <input type="radio" name="job_comp_type" value="none" checked> <B>None</B>:
 No job completion logging<BR>
@@ -584,13 +583,12 @@ No job completion logging<BR>
 Write job completion info to an Elasticsearch server<BR>
 <input type="radio" name="job_comp_type" value="filetxt"> <B>FileTxt</B>:
 Write job completion status to a text file<BR>
+<input type="radio" name="job_comp_type" value="lua"> <B>Lua</B>:
+Use a script called jobcomp.lua to log job completion<BR>
 <input type="radio" name="job_comp_type" value="script"> <B>Script</B>:
 Use an arbitrary script to log job completion<BR>
 <input type="radio" name="job_comp_type" value="mysql"> <B>MySQL</B>:
 Write completion status to a MySQL or MariaDB database<BR>
-<input type="radio" name="job_comp_type" value="slurmdbd"> <B>SlurmDBD</B>:
-Write completion status to Slurm a database daemon (serving multiple Slurm clusters)
-which will write to some database<BR>
 <P>
 <input type="text" name="job_comp_loc" value=""> <B>JobCompLoc</B>:
 This is the location of the text file to be written to (if JobCompType=filetxt),
