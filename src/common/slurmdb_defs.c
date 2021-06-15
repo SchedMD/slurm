@@ -2160,8 +2160,10 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 		list_create(slurmdb_destroy_hierarchical_rec);
 	ListIterator itr;
 
-	/* The list should already be sorted by lfts, do it anyway
-	 * just to make sure it is correct. */
+	/*
+	 * The list should already be sorted by lfts, do it anyway
+	 * just to make sure it is correct.
+	 */
 	list_sort(assoc_list, (ListCmpF)_sort_assoc_by_lft_dec);
 	itr = list_iterator_create(assoc_list);
 
@@ -2171,14 +2173,15 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 			list_create(slurmdb_destroy_hierarchical_rec);
 		arch_rec->assoc = assoc;
 
-		/* To speed things up we are first looking if we have
-		   a parent_id to look for.  If that doesn't work see
-		   if the last parent we had was what we are looking
-		   for.  Then if that isn't panning out look at the
-		   last account parent.  If still we don't have it we
-		   will look for it in the list.  If it isn't there we
-		   will just add it to the parent and call it good
-		*/
+		/*
+		 * To speed things up we are first looking if we have
+		 * a parent_id to look for.  If that doesn't work see
+		 * if the last parent we had was what we are looking
+		 * for.  Then if that isn't panning out look at the
+		 * last account parent.  If still we don't have it we
+		 * will look for it in the list.  If it isn't there we
+		 * will just add it to the parent and call it good
+		 */
 		if (!assoc->parent_id) {
 			arch_rec->sort_name = assoc->cluster;
 
@@ -2226,7 +2229,7 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 	list_iterator_destroy(itr);
 
 	FREE_NULL_LIST(total_assoc_list);
-//	info("got %d", list_count(arch_rec_list));
+/*	info("got %d", list_count(arch_rec_list)); */
 	_sort_slurmdb_hierarchical_rec_list(arch_rec_list);
 
 	return arch_rec_list;
