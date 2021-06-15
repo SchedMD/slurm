@@ -236,9 +236,17 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 			if (job_ptr->alias_list)
 				xstrcat(job_ptr->alias_list, ",");
 			xstrcat(job_ptr->alias_list, node_ptr->name);
-			xstrcat(job_ptr->alias_list, ":");
+			if (job_ptr->start_protocol_ver <
+			    SLURM_21_08_PROTOCOL_VERSION)
+				xstrcat(job_ptr->alias_list, ":");
+			else
+				xstrcat(job_ptr->alias_list, ":[");
 			xstrcat(job_ptr->alias_list, node_ptr->comm_name);
-			xstrcat(job_ptr->alias_list, ":");
+			if (job_ptr->start_protocol_ver <
+			    SLURM_21_08_PROTOCOL_VERSION)
+				xstrcat(job_ptr->alias_list, ":");
+			else
+				xstrcat(job_ptr->alias_list, "]:");
 			xstrcat(job_ptr->alias_list, node_ptr->node_hostname);
 		}
 	}

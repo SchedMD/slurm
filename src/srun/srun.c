@@ -877,7 +877,13 @@ static void _set_node_alias(void)
 	aliases = xstrdup(tmp);
 	slurm_name = strtok_r(aliases, ":", &save_ptr);
 	while (slurm_name) {
-		addr = strtok_r(NULL, ":", &save_ptr);
+		/* Checking for [] around address */
+		if (save_ptr[0] == '[') {
+			save_ptr++;
+			addr = strtok_r(NULL, "]", &save_ptr);
+			save_ptr++;
+		} else
+			addr = strtok_r(NULL, ":", &save_ptr);
 		if (!addr)
 			break;
 		slurm_reset_alias(slurm_name, addr, addr);
