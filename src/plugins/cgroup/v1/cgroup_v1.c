@@ -315,7 +315,7 @@ extern int cgroup_p_initialize(cgroup_ctl_type_t sub)
 	case CG_CPUACCT:
 		break;
 	default:
-		error("cgroup subsystem %"PRIu16" not supported", sub);
+		error("cgroup subsystem %u not supported", sub);
 		rc = SLURM_ERROR;
 		break;
 	}
@@ -377,7 +377,7 @@ extern int cgroup_p_system_create(cgroup_ctl_type_t sub)
 		}
 		break;
 	default:
-		error("cgroup subsystem %"PRIu16" not supported", sub);
+		error("cgroup subsystem %u not supported", sub);
 		return SLURM_ERROR;
 		break;
 	}
@@ -402,7 +402,7 @@ extern int cgroup_p_system_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
 		error("This operation is not supported for %s", g_cg_name[sub]);
 		return SLURM_ERROR;
 	default:
-		error("cgroup subsystem %"PRIu16" not supported", sub);
+		error("cgroup subsystem %u not supported", sub);
 		return SLURM_ERROR;
 	}
 
@@ -432,7 +432,7 @@ extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub)
 	case CG_CPUACCT:
 		break;
 	default:
-		error("cgroup subsystem %"PRIu16" not supported", sub);
+		error("cgroup subsystem %u not supported", sub);
 		return SLURM_ERROR;
 		break;
 	}
@@ -556,7 +556,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 		error("This operation is not supported for %s", g_cg_name[sub]);
 		return SLURM_ERROR;
 	default:
-		error("cgroup subsystem %"PRIu16" not supported", sub);
+		error("cgroup subsystem %u not supported", sub);
 		return SLURM_ERROR;
 		break;
 	}
@@ -579,7 +579,7 @@ extern int cgroup_p_step_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
 		error("This operation is not supported for %s", g_cg_name[sub]);
 		return SLURM_ERROR;
 	default:
-		error("cgroup subsystem %"PRIu16" not supported", sub);
+		error("cgroup subsystem %u not supported", sub);
 		return SLURM_ERROR;
 	}
 
@@ -649,7 +649,7 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 	case CG_CPUACCT:
 		break;
 	default:
-		error("cgroup subsystem %"PRIu16" not supported", sub);
+		error("cgroup subsystem %u not supported", sub);
 		return SLURM_ERROR;
 		break;
 	}
@@ -715,7 +715,7 @@ extern cgroup_limits_t *cgroup_p_root_constrain_get(cgroup_ctl_type_t sub)
 	case CG_DEVICES:
 		break;
 	default:
-		error("cgroup subsystem %"PRIu16" not supported", sub);
+		error("cgroup subsystem %u not supported", sub);
 		rc = SLURM_ERROR;
 		break;
 	}
@@ -747,7 +747,7 @@ extern int cgroup_p_root_constrain_set(cgroup_ctl_type_t sub,
 	case CG_DEVICES:
 		break;
 	default:
-		error("cgroup subsystem %"PRIu16" not supported", sub);
+		error("cgroup subsystem %u not supported", sub);
 		rc = SLURM_ERROR;
 		break;
 	}
@@ -766,7 +766,7 @@ extern cgroup_limits_t *cgroup_p_system_constrain_get(cgroup_ctl_type_t sub)
 	case CG_DEVICES:
 		break;
 	default:
-		error("cgroup subsystem %"PRIu16" not supported", sub);
+		error("cgroup subsystem %u not supported", sub);
 		break;
 	}
 
@@ -798,7 +798,7 @@ extern int cgroup_p_system_constrain_set(cgroup_ctl_type_t sub,
 	case CG_DEVICES:
 		break;
 	default:
-		error("cgroup subsystem %"PRIu16" not supported", sub);
+		error("cgroup subsystem %u not supported", sub);
 		rc = SLURM_ERROR;
 		break;
 	}
@@ -830,7 +830,7 @@ extern int cgroup_p_user_constrain_set(cgroup_ctl_type_t sub,
 	case CG_DEVICES:
 		break;
 	default:
-		error("cgroup subsystem %"PRIu16" not supported", sub);
+		error("cgroup subsystem %u not supported", sub);
 		rc = SLURM_ERROR;
 		break;
 	}
@@ -888,7 +888,7 @@ extern int cgroup_p_job_constrain_set(cgroup_ctl_type_t sub,
 						     limits->device_major);
 		break;
 	default:
-		error("cgroup subsystem %"PRIu16" not supported", sub);
+		error("cgroup subsystem %u not supported", sub);
 		rc = SLURM_ERROR;
 		break;
 	}
@@ -961,7 +961,7 @@ extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
 						     limits->device_major);
 		break;
 	default:
-		error("cgroup subsystem %"PRIu16" not supported", sub);
+		error("cgroup subsystem %u not supported", sub);
 		rc = SLURM_ERROR;
 		break;
 	}
