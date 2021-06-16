@@ -17,6 +17,12 @@ mechanism. Support is currently provided for Graphics Processing Units (GPUs),
 CUDA Multi-Process Service (MPS), and
 Intel&reg; Many Integrated Core (MIC) processors.</P>
 
+<p>
+Slurm also allows you to define a GRES which does not have integrated support.
+Slurm will respect it like a supported GRES for the purposes of scheduling
+and accounting but its functionality will be relatively limited.
+</p>
+
 <!-------------------------------------------------------------------------->
 <a id="Configuration"></a>
 <h2>Configuration</h2>
@@ -434,6 +440,6 @@ CVE-2018-6260</a> and in the
 <a href="https://nvidia.custhelp.com/app/answers/detail/a_id/4772">
 Security Bulletin: NVIDIA GPU Display Driver - February 2019</a>.</p>
 
-<p style="text-align: center;">Last modified 9 June 2021</p>
+<p style="text-align: center;">Last modified 15 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
