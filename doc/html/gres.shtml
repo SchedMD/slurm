@@ -22,8 +22,8 @@ devices, through an extensible plugin mechanism.</p>
 <a id="Configuration"></a>
 <h2>Configuration</h2>
 
-<P>Slurm supports no generic resources in the default configuration.
-One must explicitly specify which resources are to be managed in the
+<P>By default, no GRES are enabled in the cluster's configuration.
+You must explicitly specify which GRES are to be managed in the
 <I>slurm.conf</I> configuration file. The configuration parameters of
 interest are <B>GresTypes</B> and <B>Gres</B>.
 </P>
@@ -38,7 +38,7 @@ than configured will be placed in a DRAIN state.</P>
 
 <P>Snippet from an example <I>slurm.conf</I> file:</P>
 <PRE>
-# Configure support for our four GPUs (with MPS), plus bandwidth
+# Configure four GPUs (with MPS), plus bandwidth
 GresTypes=gpu,mps,bandwidth
 NodeName=tux[0-7] Gres=gpu:tesla:2,gpu:kepler:2,mps:400,bandwidth:lustre:no_consume:4G
 </PRE>
@@ -78,7 +78,7 @@ To view available <I>gres.conf</I> configuration parameters, see the <a href="gr
 
 <P>Example <I>gres.conf</I> file:</P>
 <PRE>
-# Configure support for four GPUs (with MPS), plus bandwidth
+# Configure four GPUs (with MPS), plus bandwidth
 AutoDetect=nvml
 Name=gpu Type=gp100  File=/dev/nvidia0 Cores=0,1
 Name=gpu Type=gp100  File=/dev/nvidia1 Cores=0,1
@@ -339,7 +339,7 @@ Some example configurations for Slurm's gres.conf file are shown below.</p>
 
 <PRE>
 # Example 1 of gres.conf
-# Configure support for four GPUs (with MPS)
+# Configure four GPUs (with MPS)
 AutoDetect=nvml
 Name=gpu Type=gp100 File=/dev/nvidia0 Cores=0,1
 Name=gpu Type=gp100 File=/dev/nvidia1 Cores=0,1
@@ -352,7 +352,7 @@ Name=mps Count=400
 <a id="MPS_config_example_2"></a>
 <PRE>
 # Example 2 of gres.conf
-# Configure support for four different GPU types (with MPS)
+# Configure four different GPU types (with MPS)
 AutoDetect=nvml
 Name=gpu Type=gtx1080 File=/dev/nvidia0 Cores=0,1
 Name=gpu Type=gtx1070 File=/dev/nvidia1 Cores=0,1
@@ -364,8 +364,8 @@ Name=mps Count=1100   File=/dev/nvidia2
 Name=mps Count=1000   File=/dev/nvidia3
 </PRE>
 
-<P><B>NOTE:</B> Slurm support for gres/mps requires the use of the
-select/cons_tres plugin.</P>
+<p><b>NOTE:</b> <i>gres/mps</i> requires the use of the <i>select/cons_tres</i>
+plugin.</p>
 
 <p>Job requests for MPS will be processed the same as any other GRES except
 that the request must be satisfied using only one GPU per node and only one
