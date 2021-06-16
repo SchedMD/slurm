@@ -5,7 +5,7 @@
 <h2>Contents</h2>
 <UL>
 <LI> <a href=#intro>Introduction</a>
-<LI> <a href=#mfjppintro>Multi-factor Job Priority Plugin</a>
+<LI> <a href=#mfjppintro>Multifactor Job Priority Plugin</a>
 <LI> <a href=#general>Job Priority Factors In General</a>
 <LI> <a href=#age>Age Factor</a>
 <LI> <a href=#assoc>Association Factor</a>
@@ -24,16 +24,41 @@
 <a name=intro>
 <h2>Introduction</h2></a>
 
-<P> By default, Slurm assigns job priority on a First In, First Out (FIFO) basis.  FIFO scheduling should be configured when Slurm is controlled by an external scheduler.</P>
+<p>By default, Slurm assigns job priority on a First In, First Out (FIFO) basis.
+FIFO scheduling should be configured when Slurm is controlled by an external
+scheduler.</p>
 
-<P> The <i>PriorityType</i> parameter in the slurm.conf file selects the priority plugin.  The default value for this variable is "priority/basic" which enables simple FIFO scheduling. (See <a href="#config">Configuration</a> below)</P>
+<p>The <i>PriorityType</i> parameter in the slurm.conf file selects the priority
+plugin. The default value for this variable is "priority/basic" which enables
+simple FIFO scheduling. (See <a href="#config">Configuration</a> below)</p>
 
-<P> The Multi-factor Job Priority plugin provides a very versatile facility for ordering the queue of jobs waiting to be scheduled.</P>
+<p>In most cases it is preferable to use the Multifactor Priority plugin, which
+is enabled by setting <i>PriorityType=priority/multifactor</i>. This provides
+a very versatile method of ordering the queue of jobs waiting to be scheduled
+based on several <a href="#mfjppintro">factors</a>.</p>
+
+<p>There are several several considerations the scheduler makes when making
+scheduling decisions. Jobs are selected to be evaluated by the scheduler
+in the following order:</p>
+
+<ol>
+<li>Jobs that can preempt</li>
+<li>Jobs with an advanced reservation</li>
+<li>Partition PriorityTier</li>
+<li>Job priority</li>
+<li>Job submit time</li>
+<li>Job ID</li>
+</ol>
+
+<p>This is important to keep in mind because the job with the highest priority
+may not be the first to be evaluated by the scheduler. The job priority is
+considered when there are multiple jobs that can be evaluated at once, such
+as jobs requesting partitions with the same PriorityTier.</p>
 
 <a name=mfjppintro>
-<h2>Multi-factor 'Factors'</h2></a>
+<h2>Multifactor 'Factors'</h2></a>
 
-<P> There are nine factors in the Multi-factor Job Priority plugin that
+<P> There are nine factors in the Multifactor Job Priority plugin that
 influence job priority:</P>
 
 <DL>
@@ -271,11 +296,11 @@ factor as it is currently configured.</P>
 <a name=config>
 <h2>Configuration</h2></a>
 
-<P> The following slurm.conf (SLURM_CONFIG_FILE) parameters are used to configure the Multi-factor Job Priority Plugin.  See slurm.conf(5) man page for more details.</P>
+<P> The following slurm.conf (SLURM_CONFIG_FILE) parameters are used to configure the Multifactor Job Priority Plugin.  See slurm.conf(5) man page for more details.</P>
 
 <DL>
 <DT> PriorityType
-<DD> Set this value to "priority/multifactor" to enable the Multi-factor Job Priority Plugin.  The default value for this variable is "priority/basic" which enables simple FIFO scheduling.
+<DD> Set this value to "priority/multifactor" to enable the Multifactor Job Priority Plugin.  The default value for this variable is "priority/basic" which enables simple FIFO scheduling.
 <DT> PriorityDecayHalfLife
 <DD> This determines the contribution of historical usage on the
   composite usage value.  The larger the number, the longer past usage
@@ -372,14 +397,14 @@ PriorityType=priority/multifactor.
 <h2>Configuration Example</h2></a>
 
 <P> The following are sample slurm.conf file settings for the
-  Multi-factor Job Priority Plugin.</P>
+  Multifactor Job Priority Plugin.</P>
 
 <P> The first example is for running the plugin applying decay over
   time to reduce usage.  Hard limits can be used in this
   configuration, but will have less effect since usage will decay
   over time instead of having no decay over time.</P>
 <PRE>
-# Activate the Multi-factor Job Priority Plugin with decay
+# Activate the Multifactor Job Priority Plugin with decay
 PriorityType=priority/multifactor
 
 # 2 week half-life
@@ -393,7 +418,7 @@ PriorityFavorSmall=NO
 PriorityMaxAge=14-0
 
 # This next group determines the weighting of each of the
-# components of the Multi-factor Job Priority Plugin.
+# components of the Multifactor Job Priority Plugin.
 # The default value for each of the following is 1.
 PriorityWeightAge=1000
 PriorityWeightFairshare=10000
@@ -405,7 +430,7 @@ PriorityWeightQOS=0 # don't use the qos factor
 <P> This example is for running the plugin with no decay on usage,
   thus making a reset of usage necessary.</P>
 <PRE>
-# Activate the Multi-factor Job Priority Plugin with decay
+# Activate the Multifactor Job Priority Plugin with decay
 PriorityType=priority/multifactor
 
 # apply no decay
@@ -422,7 +447,7 @@ PriorityFavorSmall=NO
 PriorityMaxAge=14-0
 
 # This next group determines the weighting of each of the
-# components of the Multi-factor Job Priority Plugin.
+# components of the Multifactor Job Priority Plugin.
 # The default value for each of the following is 1.
 PriorityWeightAge=1000
 PriorityWeightFairshare=10000
@@ -431,6 +456,6 @@ PriorityWeightPartition=1000
 PriorityWeightQOS=0 # don't use the qos factor
 </PRE>
 
-<p style="text-align:center;">Last modified 24 November 2020</p>
+<p style="text-align:center;">Last modified 11 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
