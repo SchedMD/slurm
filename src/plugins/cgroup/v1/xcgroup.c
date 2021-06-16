@@ -110,8 +110,8 @@ extern int xcgroup_ns_mount(xcgroup_ns_t *cgns)
 	fstatus = mkdir(cgns->mnt_point, 0755);
 	if (fstatus && errno != EEXIST) {
 		if (cgns->mnt_point[0] != '/') {
-			debug("unable to create cgroup ns directory '%s'"
-			      " : do not start with '/'", cgns->mnt_point);
+			debug("unable to create cgroup ns directory '%s' : do not start with '/'",
+			      cgns->mnt_point);
 			umask(omask);
 			return SLURM_ERROR;
 		}
@@ -121,8 +121,8 @@ extern int xcgroup_ns_mount(xcgroup_ns_t *cgns)
 			*p = '\0';
 			fstatus = mkdir(mnt_point, 0755);
 			if (fstatus && errno != EEXIST) {
-				debug("unable to create cgroup ns required "
-				      "directory '%s'", mnt_point);
+				debug("unable to create cgroup ns required directory '%s'",
+				      mnt_point);
 				xfree(mnt_point);
 				umask(omask);
 				return SLURM_ERROR;
@@ -134,8 +134,8 @@ extern int xcgroup_ns_mount(xcgroup_ns_t *cgns)
 	}
 
 	if (fstatus && errno != EEXIST) {
-		debug("unable to create cgroup ns directory '%s'"
-		      " : %m", cgns->mnt_point);
+		debug("unable to create cgroup ns directory '%s' : %m",
+		      cgns->mnt_point);
 		umask(omask);
 		return SLURM_ERROR;
 	}
@@ -299,14 +299,12 @@ extern int xcgroup_lock(xcgroup_t *cg)
 		return fstatus;
 
 	if ((cg->fd = open(cg->path, O_RDONLY)) < 0) {
-		debug2("%s: error from open of cgroup '%s' : %m",
-		       __func__, cg->path);
+		debug2("error from open of cgroup '%s' : %m", cg->path);
 		return fstatus;
 	}
 
 	if (flock(cg->fd,  LOCK_EX) < 0) {
-		debug2("%s: error locking cgroup '%s' : %m",
-		       __func__, cg->path);
+		debug2("error locking cgroup '%s' : %m", cg->path);
 		close(cg->fd);
 	} else
 		fstatus = SLURM_SUCCESS;
@@ -319,8 +317,7 @@ extern int xcgroup_unlock(xcgroup_t *cg)
 	int fstatus = SLURM_ERROR;
 
 	if (flock(cg->fd,  LOCK_UN) < 0) {
-		debug2("%s: error unlocking cgroup '%s' : %m",
-		       __func__, cg->path);
+		debug2("error unlocking cgroup '%s' : %m", cg->path);
 	} else
 		fstatus = SLURM_SUCCESS;
 
@@ -338,14 +335,14 @@ extern int xcgroup_load(xcgroup_ns_t *cgns, xcgroup_t *cg, char *uri)
 	/* build cgroup absolute path*/
 	if (snprintf(file_path, PATH_MAX, "%s%s", cgns->mnt_point,
 		      uri) >= PATH_MAX) {
-		debug2("unable to build cgroup '%s' absolute path in ns '%s' "
-		       ": %m", uri, cgns->subsystems);
+		debug2("unable to build cgroup '%s' absolute path in ns '%s' : %m",
+		       uri, cgns->subsystems);
 		return fstatus;
 	}
 
 	if (stat((const char*)file_path, &buf)) {
-		debug2("%s: unable to get cgroup '%s' entry '%s' properties"
-		       ": %m", __func__, cgns->mnt_point, file_path);
+		debug2("unable to get cgroup '%s' entry '%s' properties: %m",
+		       cgns->mnt_point, file_path);
 		return fstatus;
 	}
 
@@ -411,16 +408,15 @@ extern int xcgroup_get_uint32_param(xcgroup_t *cg, char *param, uint32_t *value)
 	int vnb;
 
 	if (snprintf(file_path, PATH_MAX, "%s/%s", cpath, param) >= PATH_MAX) {
-		debug2("unable to build filepath for '%s' and"
-		       " parameter '%s' : %m", cpath, param);
+		debug2("unable to build filepath for '%s' and parameter '%s' : %m",
+		       cpath, param);
 	} else {
 		fstatus = common_file_read_uint32s(file_path, &values, &vnb);
 		if (fstatus != SLURM_SUCCESS) {
-			debug2("%s: unable to get parameter '%s' for '%s'",
-				__func__, param, cpath);
+			debug2("unable to get parameter '%s' for '%s'",
+			       param, cpath);
 		} else if (vnb < 1) {
-			debug2("%s: empty parameter '%s' for '%s'",
-				__func__, param, cpath);
+			debug2("empty parameter '%s' for '%s'", param, cpath);
 		} else {
 			*value = values[0];
 			fstatus = SLURM_SUCCESS;
@@ -439,17 +435,15 @@ extern int xcgroup_get_uint64_param(xcgroup_t *cg, char *param, uint64_t *value)
 	int vnb;
 
 	if (snprintf(file_path, PATH_MAX, "%s/%s", cpath, param) >= PATH_MAX) {
-		debug2("unable to build filepath for '%s' and"
-		       " parameter '%s' : %m", cpath, param);
-	}
-	else {
+		debug2("unable to build filepath for '%s' and parameter '%s' : %m",
+		       cpath, param);
+	} else {
 		fstatus = common_file_read_uint64s(file_path, &values, &vnb);
 		if (fstatus != SLURM_SUCCESS) {
-			debug2("%s: unable to get parameter '%s' for '%s'",
-				__func__, param, cpath);
+			debug2("unable to get parameter '%s' for '%s'",
+			       param, cpath);
 		} else if (vnb < 1) {
-			debug2("%s: empty parameter '%s' for '%s'",
-				__func__, param, cpath);
+			debug2("empty parameter '%s' for '%s'", param, cpath);
 		} else {
 			*value = values[0];
 			fstatus = SLURM_SUCCESS;
@@ -475,16 +469,16 @@ extern int xcgroup_cpuset_init(xcgroup_t *cg)
 	acg_name = xstrdup(cg->name);
 	p = xstrrchr(acg_name, '/');
 	if (!p) {
-		debug2("%s: unable to get ancestor path for cpuset cg '%s' : %m",
-		       __func__, cg->path);
+		debug2("unable to get ancestor path for cpuset cg '%s' : %m",
+		       cg->path);
 		xfree(acg_name);
 		return fstatus;
 	} else
 		*p = '\0';
 
 	if (xcgroup_load(cg->ns, &acg, acg_name) != SLURM_SUCCESS) {
-		debug2("%s: unable to load ancestor for cpuset cg '%s' : %m",
-		       __func__, cg->path);
+		debug2("unable to load ancestor for cpuset cg '%s' : %m",
+		       cg->path);
 		xfree(acg_name);
 		return fstatus;
 	}
@@ -495,8 +489,8 @@ extern int xcgroup_cpuset_init(xcgroup_t *cg)
 		if (common_cgroup_get_param(&acg, cpuset_metafiles[i],
 					    &cpuset_conf, &csize) !=
 		    SLURM_SUCCESS) {
-			debug("%s: assuming no cpuset cg support for '%s'",
-			      __func__, acg.path);
+			debug("assuming no cpuset cg support for '%s'",
+			      acg.path);
 			common_cgroup_destroy(&acg);
 			return fstatus;
 		}
@@ -506,9 +500,8 @@ extern int xcgroup_cpuset_init(xcgroup_t *cg)
 
 		if (common_cgroup_set_param(cg, cpuset_metafiles[i],
 					    cpuset_conf) != SLURM_SUCCESS) {
-			debug("%s: unable to write %s configuration (%s) for cpuset cg '%s'",
-			      __func__, cpuset_metafiles[i], cpuset_conf,
-			      cg->path);
+			debug("unable to write %s configuration (%s) for cpuset cg '%s'",
+			      cpuset_metafiles[i], cpuset_conf, cg->path);
 			common_cgroup_destroy(&acg);
 			xfree(cpuset_conf);
 			return fstatus;
