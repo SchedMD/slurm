@@ -173,10 +173,7 @@ char *cli_filter_json_set_options(slurm_opt_t *options)
 char *cli_filter_json_env(void)
 {
 	char *json = NULL, *sep = "{";
-	static size_t len = 0;
-
-	if (!len)
-		len = strlen(SPANK_OPTION_ENV_PREFIX);
+	static const size_t len = strlen(SPANK_OPTION_ENV_PREFIX);
 
 	for (char **ptr = environ; ptr && *ptr; ptr++) {
 		char *key, *value, *key_esc, *value_esc;
