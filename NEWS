@@ -120,6 +120,7 @@ documents those changes that are of interest to users and administrators.
  -- service files - change dependency to network-online rather than just
     network to ensure DNS and other services are available.
  -- RSMI: Fix incorrect PCI BDF bits.
+ -- plugins/cli_filter - Convert to using data_t to serialize JSON.
 
 * Changes in Slurm 20.11.8
 ==========================

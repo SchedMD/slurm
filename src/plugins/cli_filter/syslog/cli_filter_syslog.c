@@ -47,6 +47,7 @@
 
 #include "slurm/slurm_errno.h"
 #include "src/common/slurm_xlator.h"
+#include "src/common/data.h"
 #include "src/common/slurm_opt.h"
 #include "src/common/cli_filter.h"
 #include "src/plugins/cli_filter/common/cli_filter_common.h"
@@ -111,8 +112,15 @@ static char *_retrieve_data(int key)
  */
 extern int init(void)
 {
+	int rc;
 	stored_data = xmalloc(sizeof(char *) * 24);
 	stored_sz = 24;
+
+	if ((rc = data_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
+		error("%s: unable to load JSON serializer: %s", __func__,
+		      slurm_strerror(rc));
+		return rc;
+	}
 
         return SLURM_SUCCESS;
 }
