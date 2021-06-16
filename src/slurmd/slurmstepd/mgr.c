@@ -191,7 +191,8 @@ static void *_x11_signal_handler(void *arg);
  * Batch job management prototypes:
  */
 static char * _make_batch_dir(stepd_step_rec_t *job);
-static char * _make_batch_script(batch_job_launch_msg_t *msg, char *path);
+static int _make_batch_script(batch_job_launch_msg_t *msg,
+			      stepd_step_rec_t *job);
 static int    _send_complete_batch_script_msg(stepd_step_rec_t *job,
 					      int err, int status);
 
@@ -400,9 +401,8 @@ mgr_launch_batch_job_setup(batch_job_launch_msg_t *msg, slurm_addr_t *cli)
 
 	xfree(job->argv[0]);
 
-	if ((job->argv[0] = _make_batch_script(msg, job->batchdir)) == NULL) {
+	if (_make_batch_script(msg, job))
 		goto cleanup;
-	}
 
 	/* this is the new way of setting environment variables */
 	env_array_for_batch_job(&job->env, msg, conf->node_name);
@@ -2282,8 +2282,10 @@ error:
 	return NULL;
 }
 
-static char *_make_batch_script(batch_job_launch_msg_t *msg, char *path)
+static int _make_batch_script(batch_job_launch_msg_t *msg,
+			      stepd_step_rec_t *job)
 {
+	char *path = job->batchdir;
 	int flags = O_RDWR | O_CREAT | O_EXCL | O_CLOEXEC;
 	int fd, length;
 	char *script = NULL;
@@ -2291,13 +2293,13 @@ static char *_make_batch_script(batch_job_launch_msg_t *msg, char *path)
 
 	if (msg->script == NULL) {
 		error("%s: called with NULL script", __func__);
-		return NULL;
+		return SLURM_ERROR;
 	}
 
 	/* note: should replace this with a length as part of msg */
 	if ((length = strlen(msg->script)) < 1) {
 		error("%s: called with empty script", __func__);
-		return NULL;
+		return SLURM_ERROR;
 	}
 
 	xstrfmtcat(script, "%s/%s", path, "slurm_script");
@@ -2332,13 +2334,13 @@ static char *_make_batch_script(batch_job_launch_msg_t *msg, char *path)
 		goto error;
 	}
 
-	return script;
+	job->argv[0] = script;
+	return SLURM_SUCCESS;
 
 error:
 	(void) unlink(script);
 	xfree(script);
-	return NULL;
-
+	return SLURM_ERROR;
 }
 
 extern int stepd_drain_node(char *reason)
