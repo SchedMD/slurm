@@ -40,19 +40,161 @@
 
 #include "slurm/slurm_errno.h"
 
+#include "src/common/eio.h"
+#include "src/common/fd.h"
 #include "src/common/log.h"
+
+/* Constants */
+enum {
+	SLURMSCRIPTD_REQUEST_RUN_PROLOG,
+	SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE,
+	SLURMSCRIPTD_SHUTDOWN,
+};
+
+/* Function prototypes */
+static bool _msg_readable(eio_obj_t *obj);
+static int _msg_accept(eio_obj_t *obj, List objs);
+
+/* Global variables */
+struct io_operations msg_ops = {
+	.readable = _msg_readable,
+	.handle_read = _msg_accept,
+};
 
 static int slurmctld_readfd = -1;
 static int slurmctld_writefd = -1;
 static int slurmscriptd_readfd = -1;
 static int slurmscriptd_writefd = -1;
 static pid_t slurmscriptd_pid;
+static eio_handle_t *msg_handle = NULL;
+static pthread_t slurmctld_listener_tid;
+static pthread_mutex_t write_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static void _slurmscriptd_msg_handler(void)
+static bool _msg_readable(eio_obj_t *obj)
 {
-	while (true) {
-		;
+	debug3("Called %s", __func__);
+	if (obj->shutdown) {
+		debug2("%s: false, shutdown", __func__);
+		return false;
 	}
+	return true;
+}
+
+static int _write_msg(int fd, int req)
+{
+	slurm_mutex_lock(&write_mutex);
+	safe_write(fd, &req, sizeof(int));
+	slurm_mutex_unlock(&write_mutex);
+
+	return SLURM_SUCCESS;
+
+rwfail:
+	error("%s: read/write op failed", __func__);
+	slurm_mutex_unlock(&write_mutex);
+	return SLURM_ERROR;
+}
+
+static int _handle_run_prolog(void)
+{
+	int rc;
+
+	rc = _write_msg(slurmscriptd_writefd,
+			SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE);
+	return rc;
+}
+
+static int _handle_prolog_complete(void)
+{
+	int rc;
+
+	rc = SLURM_SUCCESS;
+
+	return rc;
+}
+
+static int _handle_shutdown(void)
+{
+	eio_signal_shutdown(msg_handle);
+
+	return SLURM_ERROR; /* Don't handle any more requests. */
+}
+
+static int _handle_request(int fd)
+{
+	int req, rc = SLURM_SUCCESS;
+
+	if ((rc = read(fd, &req, sizeof(int))) != sizeof(int)) {
+		if (rc == 0) { /* EOF, normal */
+			return -1;
+		} else {
+			debug3("%s: leaving on read error: %m", __func__);
+			return SLURM_ERROR;
+		}
+	}
+
+	switch (req) {
+		case SLURMSCRIPTD_REQUEST_RUN_PROLOG:
+			debug2("Handling SLURMSCRIPTD_REQUEST_RUN_PROLOG");
+			rc = _handle_run_prolog();
+			break;
+		case SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE:
+			debug2("Handling SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE");
+			rc = _handle_prolog_complete();
+			break;
+		case SLURMSCRIPTD_SHUTDOWN:
+			debug2("Handling SLURMSCRIPTD_SHUTDOWN");
+			rc = _handle_shutdown();
+			break;
+		default:
+			error("%s: slurmscriptd: Unrecognied request: %d",
+			      __func__, req);
+			rc = SLURM_ERROR;
+			break;
+	}
+
+	return rc;
+}
+
+static int _msg_accept(eio_obj_t *obj, List objs)
+{
+	int rc;
+
+	while (true) {
+		rc = _handle_request(obj->fd);
+		if (rc != SLURM_SUCCESS)
+			break;
+	}
+
+	return rc;
+}
+
+static void _setup_eio(int fd)
+{
+	eio_obj_t *eio_obj;
+
+	fd_set_nonblocking(fd);
+
+	eio_obj = eio_obj_create(fd, &msg_ops, NULL);
+	msg_handle = eio_handle_create(0);
+	eio_new_initial_obj(msg_handle, eio_obj);
+}
+
+static void _slurmscriptd_mainloop(void)
+{
+	_setup_eio(slurmscriptd_readfd);
+
+	debug("%s: started", __func__);
+	eio_handle_mainloop(msg_handle);
+	debug("%s: finished", __func__);
+}
+
+static void *_slurmctld_listener_thread(void *x)
+{
+	debug("%s: started listening to slurmscriptd", __func__);
+	eio_handle_mainloop(msg_handle);
+	debug("%s: finished", __func__);
+
+	return NULL;
 }
 
 static void _kill_slurmscriptd(void)
@@ -76,6 +218,15 @@ static void _kill_slurmscriptd(void)
 			error("%s: Unable to reap slurmscriptd child process", __func__);
 		}
 	}
+}
+
+extern int slurmscriptd_msg_test(void)
+{
+	int rc;
+
+	rc = _write_msg(slurmctld_writefd, SLURMSCRIPTD_REQUEST_RUN_PROLOG);
+
+	return rc;
 }
 
 extern int slurmscriptd_init(void)
@@ -140,6 +291,10 @@ extern int slurmscriptd_init(void)
 			      __func__);
 		}
 
+		slurm_mutex_init(&write_mutex);
+		_setup_eio(slurmctld_readfd);
+		slurm_thread_create(&slurmctld_listener_tid,
+				    _slurmctld_listener_thread, NULL);
 		debug("slurmctld: slurmscriptd fork()'d and initialized.");
 	} else { /* child (slurmscriptd_pid == 0) */
 		ssize_t i;
@@ -175,7 +330,8 @@ extern int slurmscriptd_init(void)
 		}
 
 		debug("slurmscriptd: Got ack from slurmctld, initialization successful");
-		_slurmscriptd_msg_handler();
+		slurm_mutex_init(&write_mutex);
+		_slurmscriptd_mainloop();
 		/* We never want to return from here, only exit. */
 		_exit(0);
 	}
@@ -185,7 +341,12 @@ extern int slurmscriptd_init(void)
 
 extern int slurmscriptd_fini(void)
 {
+	debug("%s starting", __func__);
+	eio_signal_shutdown(msg_handle);
+	_write_msg(slurmctld_writefd, SLURMSCRIPTD_SHUTDOWN);
 	_kill_slurmscriptd();
+	pthread_join(slurmctld_listener_tid, NULL);
+	slurm_mutex_destroy(&write_mutex);
 	(void) close(slurmctld_writefd);
 	(void) close(slurmctld_readfd);
 

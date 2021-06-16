@@ -303,8 +303,6 @@ int main(int argc, char **argv)
 
 	update_logging();
 
-	slurmscriptd_init();
-
 	memset(&slurmctld_diag_stats, 0, sizeof(slurmctld_diag_stats));
 	/*
 	 * Calculate speed of gettimeofday() for sdiag.
@@ -422,6 +420,13 @@ int main(int argc, char **argv)
 	 */
 	if (xsignal_block(controller_sigarray) < 0)
 		error("Unable to block signals");
+
+	/*
+	 * This creates a thread to listen to slurmscriptd, so this needs to
+	 * happen after we block signals so that thread doesn't catch any
+	 * signals.
+	 */
+	slurmscriptd_init();
 
 	association_based_accounting = slurm_with_slurmdbd();
 	accounting_enforce = slurm_conf.accounting_storage_enforce;
@@ -2137,6 +2142,9 @@ static void *_slurmctld_background(void *no_data)
 			     batch_sched_delay)) {
 				call_schedule = true;
 				job_sched_cnt = 0;
+				/* Testing slurmscriptd. */
+				slurmscriptd_msg_test();
+				/* End testing slurmscriptd. */
 			}
 			slurm_mutex_unlock(&sched_cnt_mutex);
 		}

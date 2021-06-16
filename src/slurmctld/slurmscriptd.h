@@ -41,4 +41,6 @@ extern int slurmscriptd_init(void);
 
 extern int slurmscriptd_fini(void);
 
+extern int slurmscriptd_msg_test(void);
+
 #endif /* !_HAVE_SLURMSCRIPTD_H */
