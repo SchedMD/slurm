@@ -213,8 +213,7 @@ end:
 
 static int _remove_cg_subsystem(xcgroup_t *root_cg, xcgroup_t *step_cg,
 				xcgroup_t *job_cg, xcgroup_t *user_cg,
-				xcgroup_t *move_to_cg, const char *log_str,
-				xcgroup_t *remove_from_cg)
+				const char *log_str)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -224,12 +223,12 @@ static int _remove_cg_subsystem(xcgroup_t *root_cg, xcgroup_t *step_cg,
 	 * of stepd is in the cgroup. We don't know what other plugins will do
 	 * and whether they will attach the stepd pid to the cg.
 	 */
-	rc = common_cgroup_move_process(move_to_cg, getpid());
+	rc = common_cgroup_move_process(root_cg, getpid());
 	if (rc != SLURM_SUCCESS) {
 		error("Unable to move pid %d to root cgroup", getpid());
 		goto end;
 	}
-	xcgroup_wait_pid_moved(remove_from_cg, log_str);
+	xcgroup_wait_pid_moved(step_cg, log_str);
 
 	/*
 	 * Lock the root cgroup so we don't race with other steps that are being
@@ -659,9 +658,7 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 				  &g_step_cg[sub],
 				  &g_job_cg[sub],
 				  &g_user_cg[sub],
-				  &g_root_cg[sub],
-				  g_cg_name[sub],
-				  &g_step_cg[sub]);
+				  g_cg_name[sub]);
 
 	return rc;
 }
