@@ -156,7 +156,7 @@ static void _advance_time(time_t *res_time, int day_cnt);
 static int  _build_account_list(char *accounts, int *account_cnt,
 				char ***account_list, bool *account_not);
 static int  _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
-			    bool *user_not);
+			    bool *user_not, bool strict);
 static void _clear_job_resv(slurmctld_resv_t *resv_ptr);
 static slurmctld_resv_t *_copy_resv(slurmctld_resv_t *resv_orig_ptr);
 static void _del_resv_rec(void *x);
@@ -1349,10 +1349,11 @@ static int  _update_account_list(slurmctld_resv_t *resv_ptr,
  * OUT user_list - list of the user's uid, CALLER MUST XFREE;
  * OUT user_not  - true of user_list is that of users to be blocked
  *                 from reservation access
+ * IN strict     - true if an invalid user invalidates the reservation
  * RETURN 0 on success
  */
 static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
-			   bool *user_not)
+			   bool *user_not, bool strict)
 {
 	char *last = NULL, *tmp = NULL, *tok;
 	int u_cnt = 0, i;
@@ -1384,15 +1385,21 @@ static int _build_uid_list(char *users, int *user_cnt, uid_t **user_list,
 		}
 		if (uid_from_string (tok, &u_tmp) < 0) {
 			info("Reservation request has invalid user %s", tok);
-			goto inval;
+			if (strict)
+				goto inval;
+		} else {
+			u_list[u_cnt++] = u_tmp;
 		}
-		u_list[u_cnt++] = u_tmp;
 		tok = strtok_r(NULL, ",", &last);
 	}
-	*user_cnt  = u_cnt;
-	*user_list = u_list;
-	xfree(tmp);
-	return SLURM_SUCCESS;
+	if (u_cnt > 0) {
+		*user_cnt  = u_cnt;
+		*user_list = u_list;
+		xfree(tmp);
+		return SLURM_SUCCESS;
+	} else {
+		info("Reservation request has no valid users");
+	}
 
  inval:	xfree(tmp);
 	xfree(u_list);
@@ -2564,7 +2571,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 	}
 	if (resv_desc_ptr->users) {
 		rc = _build_uid_list(resv_desc_ptr->users,
-				     &user_cnt, &user_list, &user_not);
+				     &user_cnt, &user_list, &user_not, true);
 		if (rc)
 			goto bad_parse;
 	}
@@ -3690,7 +3697,7 @@ static bool _validate_one_reservation(slurmctld_resv_t *resv_ptr)
 		int rc, user_cnt = 0;
 		uid_t *user_list = NULL;
 		rc = _build_uid_list(resv_ptr->users,
-				     &user_cnt, &user_list, &user_not);
+				     &user_cnt, &user_list, &user_not, false);
 		if (rc) {
 			error("Reservation %s has invalid users (%s)",
 			      resv_ptr->name, resv_ptr->users);
