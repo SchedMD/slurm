@@ -725,14 +725,14 @@ static spank_f *spank_plugin_get_fn (struct spank_plugin *sp, step_fn_t type)
 static int _do_call_stack(struct spank_stack *stack,
 	step_fn_t type, void * job, int taskid)
 {
-	int rc = 0;
+	int rc = SLURM_SUCCESS;
 	ListIterator i;
 	struct spank_plugin *sp;
 	struct spank_handle spank[1];
 	const char *fn_name;
 
 	if (!stack)
-		return (-1);
+		return ESPANK_BAD_ARG;
 
 	_spank_handle_init(spank, stack, job, taskid, type);
 	fn_name = _step_fn_name(type);
@@ -756,12 +756,12 @@ static int _do_call_stack(struct spank_stack *stack,
 			      "%s() failed with rc=%d", name, fn_name, rc);
 			break;
 		} else
-			rc = 0;
+			rc = SLURM_SUCCESS;
 	}
 
 	list_iterator_destroy(i);
 
-	return (rc);
+	return rc;
 }
 
 struct spank_stack *spank_stack_init(enum spank_context_type context)
