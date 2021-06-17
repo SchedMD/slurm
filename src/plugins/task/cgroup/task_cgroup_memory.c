@@ -297,9 +297,9 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 		return SLURM_ERROR;
 
 	/* Set the associated memory limits for the job and for the step. */
-	if (_memcg_initialize(job, job->job_mem, true) != SLURM_SUCCESS)
+	if (_memcg_initialize(job, job->job_mem, false) != SLURM_SUCCESS)
 		return SLURM_ERROR;
-	if (_memcg_initialize(job, job->step_mem, false) != SLURM_SUCCESS)
+	if (_memcg_initialize(job, job->step_mem, true) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	if (cgroup_g_step_start_oom_mgr() == SLURM_SUCCESS)
