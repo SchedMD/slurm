@@ -135,6 +135,9 @@ documents those changes that are of interest to users and administrators.
     job step state.
  -- slurmrestd/dbv0.0.36 - Correct description for previous state property.
  -- perlapi/libslurmdb - expose tres_req_str to job hash.
+ -- scrontab - close and reopen temporary crontab file to deal with editors
+    that do not change the original file, but instead write out then rename
+    a new file.
 
 * Changes in Slurm 20.11.7
 ==========================
