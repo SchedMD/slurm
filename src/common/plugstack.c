@@ -756,7 +756,7 @@ static int _do_call_stack(struct spank_stack *stack,
 		rc = (*spank_fn) (spank, sp->ac, sp->argv);
 		debug2("spank: %s: %s = %d", name, fn_name, rc);
 
-		if ((rc < 0) && sp->required) {
+		if (rc && sp->required) {
 			error("spank: required plugin %s: "
 			      "%s() failed with rc=%d", name, fn_name, rc);
 			break;

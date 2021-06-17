@@ -74,7 +74,7 @@ option processing.
 .TP
 \fBslurm_spank_job_prolog\fR
 Called at the same time as the job prolog. If this function returns a
-negative value and the \fBSPANK\fR plugin that contains it is required in the
+non\-zero value and the \fBSPANK\fR plugin that contains it is required in the
 \fBplugstack.conf\fR, the node that this is run on will be drained.
 
 .TP
@@ -123,7 +123,7 @@ In local context, called before \fBsrun\fR exits.
 .TP
 \fBslurm_spank_job_epilog\fR
 Called at the same time as the job epilog. If this function returns a
-negative value and the \fBSPANK\fR plugin that contains it is required in the
+non\-zero value and the \fBSPANK\fR plugin that contains it is required in the
 \fBplugstack.conf\fR, the node that this is run on will be drained.
 .TP
 \fBslurm_spank_slurmd_exit\fR

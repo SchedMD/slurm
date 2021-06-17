@@ -173,6 +173,8 @@ documents those changes that are of interest to users and administrators.
  -- QOS accrue limits only apply to the job QOS, not partition QOS.
  -- Add --gpu-bind=per_task:<gpus_per_task> option, --gpus-per-task will now
     set this option by default.
+ -- Treat any return code from SPANK plugin that is not SLURM_SUCCESS to be an
+    error or rejection.
 
 * Changes in Slurm 20.11.9
 ==========================

@@ -99,6 +99,9 @@ HIGHLIGHTS
     performance issues if the slurmctld has a large memory footprint.
  -- Pass JSON of job to node mappings to ResumeProgram.
  -- QOS accrue limits only apply to the job QOS, not partition QOS.
+ -- Any return code from SPANK plugin or SPANK function that is not
+    SLURM_SUCCESS (zero) will be considered to be an error. Previously, only
+    negative return codes were considered an error.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
