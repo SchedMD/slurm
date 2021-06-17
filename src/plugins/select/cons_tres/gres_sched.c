@@ -216,7 +216,7 @@ extern void gres_sched_add(List job_gres_list, List sock_gres_list,
 	sock_gres_t *sock_data;
 	uint64_t gres_limit;
 
-	if (!job_gres_list)
+	if (!job_gres_list || !(*avail_cpus))
 		return;
 
 	iter = list_iterator_create(job_gres_list);
