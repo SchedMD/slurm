@@ -43,6 +43,8 @@
 #include "src/common/eio.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/xmalloc.h"
+#include "src/slurmctld/slurmscriptd.h"
 
 /* Constants */
 enum {
@@ -80,10 +82,17 @@ static bool _msg_readable(eio_obj_t *obj)
 	return true;
 }
 
-static int _write_msg(int fd, int req)
+static int _write_msg(int fd, int req, buf_t *buffer)
 {
+	int len;
+
 	slurm_mutex_lock(&write_mutex);
 	safe_write(fd, &req, sizeof(int));
+	if (buffer) {
+		len = get_buf_offset(buffer);
+		safe_write(fd, &len, sizeof(int));
+		safe_write(fd, get_buf_data(buffer), len);
+	}
 	slurm_mutex_unlock(&write_mutex);
 
 	return SLURM_SUCCESS;
@@ -94,13 +103,41 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int _handle_run_prolog(void)
+static int _handle_run_prolog(int fd)
 {
-	int rc;
+	int rc, len;
+	uint32_t job_id, tmp_size, env_cnt, i;
+	char *script, *incoming_buffer;
+	char **env;
+	buf_t *buffer;
+
+	safe_read(fd, &len, sizeof(int));
+	incoming_buffer = xmalloc(len);
+	safe_read(fd, incoming_buffer, len);
+	buffer = create_buf(incoming_buffer, len);
+
+	safe_unpack32(&job_id, buffer);
+	safe_unpackstr_xmalloc(&script, &tmp_size, buffer);
+	safe_unpack32(&env_cnt, buffer);
+	safe_unpackstr_array(&env, &env_cnt, buffer);
+
+	info("%s: got run prolog for job %u, script:%s",
+	     __func__, job_id, script);
+	for (i = 0; i < env_cnt; i++) {
+		info("%s: env[%u]=%s", __func__, i, env[i]);
+	}
 
 	rc = _write_msg(slurmscriptd_writefd,
-			SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE);
+			SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE, NULL);
 	return rc;
+
+unpack_error:
+	error("%s: Failed to unpack message", __func__);
+	return SLURM_ERROR;
+
+rwfail:
+	error("%s: read/write op failed", __func__);
+	return SLURM_ERROR;
 }
 
 static int _handle_prolog_complete(void)
@@ -135,7 +172,7 @@ static int _handle_request(int fd)
 	switch (req) {
 		case SLURMSCRIPTD_REQUEST_RUN_PROLOG:
 			debug2("Handling SLURMSCRIPTD_REQUEST_RUN_PROLOG");
-			rc = _handle_run_prolog();
+			rc = _handle_run_prolog(fd);
 			break;
 		case SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE:
 			debug2("Handling SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE");
@@ -220,13 +257,35 @@ static void _kill_slurmscriptd(void)
 	}
 }
 
-extern int slurmscriptd_msg_test(void)
+extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
+				      char *script, char **env)
 {
-	int rc;
+	buf_t *buffer;
+	uint32_t env_var_cnt = 0;
 
-	rc = _write_msg(slurmctld_writefd, SLURMSCRIPTD_REQUEST_RUN_PROLOG);
+	info("%s: jobid:%u, is_epilog:%u, script:%s",
+	     __func__, job_id, is_epilog, script);
+	if (is_epilog)
+		return; // Not testing epilog right now
 
-	return rc;
+	buffer = init_buf(0);
+	pack32(job_id, buffer);
+	packstr(script, buffer);
+	/*
+	 * Pack the environment. We don't know how many environment variables
+	 * there are, but we need to pack the number of environment variables
+	 * so we know how to unpack. So we have to loop env twice: once
+	 * to get the number of environment variables so we can pack that first,
+	 * then again to pack the environment.
+	 */
+	while (env && env[env_var_cnt])
+		env_var_cnt++;
+	pack32(env_var_cnt, buffer);
+	if (env_var_cnt)
+		packstr_array(env, env_var_cnt, buffer);
+
+	_write_msg(slurmctld_writefd, SLURMSCRIPTD_REQUEST_RUN_PROLOG, buffer);
+	FREE_NULL_BUFFER(buffer);
 }
 
 extern int slurmscriptd_init(void)
@@ -343,7 +402,7 @@ extern int slurmscriptd_fini(void)
 {
 	debug("%s starting", __func__);
 	eio_signal_shutdown(msg_handle);
-	_write_msg(slurmctld_writefd, SLURMSCRIPTD_SHUTDOWN);
+	_write_msg(slurmctld_writefd, SLURMSCRIPTD_SHUTDOWN, NULL);
 	_kill_slurmscriptd();
 	pthread_join(slurmctld_listener_tid, NULL);
 	slurm_mutex_destroy(&write_mutex);

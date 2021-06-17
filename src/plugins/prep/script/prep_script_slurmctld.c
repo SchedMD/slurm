@@ -46,6 +46,7 @@
 
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/slurmscriptd.h"
 
 #include "prep_script.h"
 
@@ -76,6 +77,9 @@ extern void slurmctld_script(job_record_t *job_ptr, bool is_epilog)
 	else
 		script_arg->script = xstrdup(slurm_conf.epilog_slurmctld);
 	script_arg->my_env = _build_env(job_ptr, is_epilog);
+
+	slurmscriptd_run_prepilog(job_ptr->job_id, is_epilog,
+				  script_arg->script, script_arg->my_env);
 
 	debug2("%s: creating a new thread for JobId=%u",
 	       __func__, script_arg->job_id);

@@ -2142,9 +2142,6 @@ static void *_slurmctld_background(void *no_data)
 			     batch_sched_delay)) {
 				call_schedule = true;
 				job_sched_cnt = 0;
-				/* Testing slurmscriptd. */
-				slurmscriptd_msg_test();
-				/* End testing slurmscriptd. */
 			}
 			slurm_mutex_unlock(&sched_cnt_mutex);
 		}

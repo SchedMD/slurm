@@ -41,6 +41,16 @@ extern int slurmscriptd_init(void);
 
 extern int slurmscriptd_fini(void);
 
-extern int slurmscriptd_msg_test(void);
+/*
+ * slurmscriptd_run_prepilog
+ * Tell slurmscriptd to run PrologSlurmctld or EpilogSlurmctld for the job
+ * IN job_id - Job that wants to run the script
+ * IN is_epilog - True if the EpilogSlurmctld should run; false if the
+ *                PrologSlurmctld should run
+ * IN script - Full path to the script that needs to run
+ * IN env - Environment to pass to the script
+ */
+extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
+				      char *script, char **env);
 
 #endif /* !_HAVE_SLURMSCRIPTD_H */
