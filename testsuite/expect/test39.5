@@ -76,6 +76,9 @@ proc test_gpus_cnt {srun_opts expected_gpus_times_tasks expected_job_gpus} {
 	} else {
 		set jobid [submit_job -subtest "$srun_opts -t1 -J test_sbatch_$test_id --wrap='$srun -l ./$file_in1'"]
 		if {$jobid != 0} {
+			if {[wait_for_job -pollinterval 0.1 $jobid "DONE"] != 0} {
+				fail "Job did not complete within timeout"
+			}
 			if {[wait_for_file -pollinterval 0.1 "./slurm-$jobid.out"]} {
 				fail "No output created within timeout"
 			}
