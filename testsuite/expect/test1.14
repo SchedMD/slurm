@@ -186,7 +186,11 @@ proc test_gpus {node_name} {
 
 testproc test_cpus
 
+if {[param_contains [get_config_param "SchedulerParameters"] "defer"]} {
+	skip_following_testprocs "Skipping immediate test since SchedulerParameters=defer is set"
+}
 testproc test_cpus_immediate
+run_following_testprocs
 
 set node_name [get_nodes_by_request "--gres=gpu:2 -n1 -t1"]
 if { [llength $node_name] != 1 } {
