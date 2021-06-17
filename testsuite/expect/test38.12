@@ -51,7 +51,6 @@ proc cleanup {} {
 set het_job_id 0
 set component(0) 0
 set matches 0
-set index 0
 set timeout $max_job_delay
 spawn $salloc -t1 -N1 : -N1 : -N1 $bin_bash
 expect {
@@ -80,14 +79,15 @@ if {$het_job_id == 0} {
 
 log_debug "Collect Nodenames"
 
-send "$squeue -j $het_job_id -o\"NAME=%N\" --noheader\r"
+send "$squeue -j $het_job_id -o\"%N,%i\" --noheader\r"
 expect {
 	-re "--noheader" {
 		exp_continue
 	}
-	-re "NAME=($re_word_str)" {
-		set component($index) $expect_out(1,string)
-		incr index
+	-re "($re_word_str),$het_job_id\\+($number)" {
+		set node_name $expect_out(1,string)
+		set index $expect_out(2,string)
+		set component($index) $node_name
 		exp_continue
 	}
 	-re "$test_prompt" {
@@ -97,8 +97,8 @@ expect {
 		fail "squeue not responding"
 	}
 }
-if {$index != 3} {
-	fail "squeue failure ($index != 3)"
+if {[array size component] != 3} {
+	fail "squeue failure ([array size component] != 3)"
 }
 
 log_info "Test Sending Srun w/ --label To Various Components"
