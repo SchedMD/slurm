@@ -56,7 +56,7 @@ extern "C" {
 #define SLURM_SUCCESS   0
 #define SLURM_ERROR    -1
 
-enum {
+typedef enum {
 	/* General Message error codes */
 	SLURM_UNEXPECTED_MSG_ERROR = 			1000,
 	SLURM_COMMUNICATIONS_CONNECTION_ERROR,
@@ -310,7 +310,7 @@ enum {
 	ESLURM_DATA_REGEX_COMPILE,
 	ESLURM_DATA_UNKNOWN_MIME_TYPE,
 	ESLURM_DATA_TOO_LARGE,
-};
+} slurm_err_t;
 
 /* look up an errno value */
 char * slurm_strerror(int errnum);
