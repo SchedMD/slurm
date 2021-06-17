@@ -39,6 +39,8 @@ documents those changes that are of interest to users and administrators.
     was used to build Slurm.
  -- Clear allocated cpus for running steps in a job before handling requested
     nodes on new step.
+ -- Don't reject a step if not enough nodes are available. Instead, defer the
+    step until enough nodes are available to satisfy the request.
 
 * Changes in Slurm 20.11.7
 ==========================

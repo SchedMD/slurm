@@ -1425,6 +1425,27 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		nodes_picked_cnt = bit_set_count(nodes_picked);
 		log_flag(STEPS, "%s: step picked %d of %u nodes",
 			 __func__, nodes_picked_cnt, step_spec->min_nodes);
+
+		/*
+		 * First do a basic test - if there aren't enough nodes for
+		 * this step to run on then we need to defer execution of this
+		 * step. As long as there aren't enough nodes for this
+		 * step we can never test if the step requested too
+		 * many CPUs, too much memory, etc. so we just bail right here.
+		 */
+		if (nodes_avail)
+			node_avail_cnt = bit_set_count(nodes_avail);
+		else
+			node_avail_cnt = 0;
+		if ((node_avail_cnt + nodes_picked_cnt) <
+		    step_spec->min_nodes) {
+			log_flag(STEPS, "%s: Step requested more nodes (%u) than are available (%d), deferring step until enough nodes are available.",
+				 __func__, step_spec->min_nodes,
+				 node_avail_cnt);
+			*return_code = ESLURM_NODES_BUSY;
+			goto cleanup;
+		}
+
 		if (nodes_idle)
 			node_avail_cnt = bit_set_count(nodes_idle);
 		else
