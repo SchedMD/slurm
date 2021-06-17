@@ -63,6 +63,11 @@ struct io_operations msg_ops = {
 	.handle_read = _msg_accept,
 };
 
+typedef struct {
+	buf_t *buffer;
+	int req;
+} req_args_t;
+
 static int slurmctld_readfd = -1;
 static int slurmctld_writefd = -1;
 static int slurmscriptd_readfd = -1;
@@ -84,7 +89,7 @@ static bool _msg_readable(eio_obj_t *obj)
 
 static int _write_msg(int fd, int req, buf_t *buffer)
 {
-	int len;
+	int len = 0;
 
 	slurm_mutex_lock(&write_mutex);
 	safe_write(fd, &req, sizeof(int));
@@ -92,7 +97,8 @@ static int _write_msg(int fd, int req, buf_t *buffer)
 		len = get_buf_offset(buffer);
 		safe_write(fd, &len, sizeof(int));
 		safe_write(fd, get_buf_data(buffer), len);
-	}
+	} else /* Write 0 length so the receiver knows not to read anymore */
+		safe_write(fd, &len, sizeof(int));
 	slurm_mutex_unlock(&write_mutex);
 
 	return SLURM_SUCCESS;
@@ -103,18 +109,12 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int _handle_run_prolog(int fd)
+static int _handle_run_prolog(buf_t *buffer)
 {
-	int rc, len;
+	int rc;
 	uint32_t job_id, tmp_size, env_cnt, i;
-	char *script, *incoming_buffer;
+	char *script;
 	char **env;
-	buf_t *buffer;
-
-	safe_read(fd, &len, sizeof(int));
-	incoming_buffer = xmalloc(len);
-	safe_read(fd, incoming_buffer, len);
-	buffer = create_buf(incoming_buffer, len);
 
 	safe_unpack32(&job_id, buffer);
 	safe_unpackstr_xmalloc(&script, &tmp_size, buffer);
@@ -134,10 +134,6 @@ static int _handle_run_prolog(int fd)
 unpack_error:
 	error("%s: Failed to unpack message", __func__);
 	return SLURM_ERROR;
-
-rwfail:
-	error("%s: read/write op failed", __func__);
-	return SLURM_ERROR;
 }
 
 static int _handle_prolog_complete(void)
@@ -156,23 +152,14 @@ static int _handle_shutdown(void)
 	return SLURM_ERROR; /* Don't handle any more requests. */
 }
 
-static int _handle_request(int fd)
+static int _handle_request(int req, buf_t *buffer)
 {
-	int req, rc = SLURM_SUCCESS;
-
-	if ((rc = read(fd, &req, sizeof(int))) != sizeof(int)) {
-		if (rc == 0) { /* EOF, normal */
-			return -1;
-		} else {
-			debug3("%s: leaving on read error: %m", __func__);
-			return SLURM_ERROR;
-		}
-	}
+	int rc;
 
 	switch (req) {
 		case SLURMSCRIPTD_REQUEST_RUN_PROLOG:
 			debug2("Handling SLURMSCRIPTD_REQUEST_RUN_PROLOG");
-			rc = _handle_run_prolog(fd);
+			rc = _handle_run_prolog(buffer);
 			break;
 		case SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE:
 			debug2("Handling SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE");
@@ -192,17 +179,62 @@ static int _handle_request(int fd)
 	return rc;
 }
 
+static void *_handle_accept(void *args)
+{
+	req_args_t *req_args = (req_args_t *)args;
+
+	_handle_request(req_args->req, req_args->buffer);
+	FREE_NULL_BUFFER(req_args->buffer);
+
+	return NULL;
+}
+
 static int _msg_accept(eio_obj_t *obj, List objs)
 {
-	int rc;
+	int rc = SLURM_SUCCESS, req, buf_len = 0;
+	char *incoming_buffer = NULL;
+	buf_t *buffer = NULL;
+	req_args_t *req_args;
 
 	while (true) {
-		rc = _handle_request(obj->fd);
-		if (rc != SLURM_SUCCESS)
-			break;
+		if ((rc = read(obj->fd, &req, sizeof(int))) != sizeof(int)) {
+			if (rc == 0) { /* EOF, normal */
+				break;
+			} else {
+				debug3("%s: leaving on read error: %m", __func__);
+				rc = SLURM_ERROR;
+				break;
+			}
+		}
+		/*
+		 * We always write the length of the buffer so we can read
+		 * the whole thing right here. We write a 0 for the length if
+		 * no additional data was sent.
+		 */
+		safe_read(obj->fd, &buf_len, sizeof(int));
+		if (buf_len) {
+			incoming_buffer = xmalloc(buf_len);
+			safe_read(obj->fd, incoming_buffer, buf_len);
+			buffer = create_buf(incoming_buffer, buf_len);
+		}
+
+		req_args = xmalloc(sizeof *req_args);
+		req_args->req = req;
+		req_args->buffer = buffer;
+		slurm_thread_create_detached(NULL, _handle_accept, req_args);
+
+		/*
+		 * xmalloc()'d data will be xfree()'d by _handle_accept()
+		 */
+		incoming_buffer = NULL;
+		buffer = NULL;
+		req_args = NULL;
 	}
 
 	return rc;
+rwfail:
+	error("%s: read/write op failed", __func__);
+	return SLURM_ERROR;
 }
 
 static void _setup_eio(int fd)
@@ -401,9 +433,9 @@ extern int slurmscriptd_init(void)
 extern int slurmscriptd_fini(void)
 {
 	debug("%s starting", __func__);
-	eio_signal_shutdown(msg_handle);
 	_write_msg(slurmctld_writefd, SLURMSCRIPTD_SHUTDOWN, NULL);
 	_kill_slurmscriptd();
+	eio_signal_shutdown(msg_handle);
 	pthread_join(slurmctld_listener_tid, NULL);
 	slurm_mutex_destroy(&write_mutex);
 	(void) close(slurmctld_writefd);
