@@ -138,6 +138,8 @@ documents those changes that are of interest to users and administrators.
  -- scrontab - close and reopen temporary crontab file to deal with editors
     that do not change the original file, but instead write out then rename
     a new file.
+ -- sstat - fix linking so that it will work when --without-shared-libslurm
+    was used to build Slurm.
 
 * Changes in Slurm 20.11.7
 ==========================

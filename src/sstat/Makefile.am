@@ -10,7 +10,7 @@ bin_PROGRAMS = sstat
 sstat_LDADD = $(LIB_SLURM) $(DL_LIBS)
 sstat_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
-noinst_HEADERS = sstat.h
+sstat_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 sstat_SOURCES =		\
 	options.c	\
