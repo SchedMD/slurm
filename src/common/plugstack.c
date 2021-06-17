@@ -636,9 +636,9 @@ static int _spank_conf_include (struct spank_stack *stack,
 	return (rc);
 }
 
-static int
-_spank_handle_init(struct spank_handle *spank, struct spank_stack *stack,
-		void * arg, int taskid, step_fn_t fn)
+static void _spank_handle_init(struct spank_handle *spank,
+			       struct spank_stack *stack, void *arg, int taskid,
+			       step_fn_t fn)
 {
 	memset(spank, 0, sizeof(*spank));
 	spank->magic = SPANK_MAGIC;
@@ -653,7 +653,6 @@ _spank_handle_init(struct spank_handle *spank, struct spank_stack *stack,
 			spank->task = ((stepd_step_rec_t *) arg)->task[taskid];
 		}
 	}
-	return (0);
 }
 
 static const char *_step_fn_name(step_fn_t type)
@@ -735,11 +734,7 @@ static int _do_call_stack(struct spank_stack *stack,
 	if (!stack)
 		return (-1);
 
-	if (_spank_handle_init(spank, stack, job, taskid, type) < 0) {
-		error("spank: Failed to initialize handle for plugins");
-		return (-1);
-	}
-
+	_spank_handle_init(spank, stack, job, taskid, type);
 	fn_name = _step_fn_name(type);
 
 	i = list_iterator_create(stack->plugin_list);
