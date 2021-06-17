@@ -35,6 +35,8 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+#include <slurm/slurm_errno.h>
+
 #ifndef SPANK_H
 #define SPANK_H
 
@@ -166,24 +168,11 @@ enum spank_item {
 
 typedef enum spank_item spank_item_t;
 
-/*  SPANK error codes.
+/*
+ * SPANK error codes match the Slurm internal error codes and the inheirted
+ * POSIX error codes.
  */
-enum spank_err {
-    ESPANK_SUCCESS     = 0, /* Success.                                      */
-    ESPANK_ERROR       = 1, /* Generic error.                                */
-    ESPANK_BAD_ARG     = 2, /* Bad argument.                                 */
-    ESPANK_NOT_TASK    = 3, /* Not in task context.                          */
-    ESPANK_ENV_EXISTS  = 4, /* Environment variable exists && !overwrite     */
-    ESPANK_ENV_NOEXIST = 5, /* No such environment variable                  */
-    ESPANK_NOSPACE     = 6, /* Buffer too small.                             */
-    ESPANK_NOT_REMOTE  = 7, /* Function only may be called in remote context */
-    ESPANK_NOEXIST     = 8, /* Id/pid doesn't exist on this node             */
-    ESPANK_NOT_EXECD   = 9, /* Lookup by pid requested, but no tasks running */
-    ESPANK_NOT_AVAIL   = 10,/* SPANK item not available from this callback   */
-    ESPANK_NOT_LOCAL   = 11,/* Function only valid in local/alloc context    */
-};
-
-typedef enum spank_err spank_err_t;
+typedef slurm_err_t spank_err_t;
 
 /*
  *  SPANK plugin context
