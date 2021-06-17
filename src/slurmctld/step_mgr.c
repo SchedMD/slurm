@@ -3648,6 +3648,11 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 		tmp_tres_str = gres_ctld_gres_on_node_as_tres(
 			job_ptr->gres_list, 0, true);
 	} else {
+		if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
+			cpu_count = (uint64_t)job_ptr->total_cpus;
+		else
+			cpu_count = (uint64_t)step_ptr->cpu_count;
+
 		for (int i = 0; i < bit_set_count(step_ptr->step_node_bitmap);
 		     i++)
 			mem_count += step_ptr->memory_allocated[i];
