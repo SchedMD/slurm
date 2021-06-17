@@ -50,10 +50,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#if HAVE_LIBZ
-# include <zlib.h>
-#endif
-
 #if HAVE_LZ4
 # include <lz4.h>
 #endif
@@ -222,76 +218,6 @@ static int _get_block_none(char **buffer, int *orig_len, bool *more)
 	return size;
 }
 
-static int _get_block_zlib(struct bcast_parameters *params,
-			   char **buffer,
-			   int *orig_len,
-			   bool *more)
-{
-#if HAVE_LIBZ
-	static z_stream strm;
-	int chunk = (256 * 1024);
-	int flush = Z_NO_FLUSH;
-
-	static int64_t remaining = -1;
-	static int max_out;
-	static void *position;
-	int chunk_remaining, out_remaining, chunk_bite, size = 0;
-
-	/* allocate deflate state, compress each block independently */
-	strm.zalloc = Z_NULL;
-	strm.zfree = Z_NULL;
-	strm.opaque = Z_NULL;
-	strm.avail_in = 0;
-	strm.next_in = Z_NULL;
-	if (deflateInit(&strm, Z_DEFAULT_COMPRESSION) != Z_OK) {
-		error("File compression configuration error,"
-		      "sending uncompressed file.");
-		params->compress = 0;
-		return _get_block_none(buffer, orig_len, more);
-	}
-
-	/* first pass through, initialize */
-	if (remaining < 0) {
-		remaining = f_stat.st_size;
-		max_out = deflateBound(&strm, block_len);
-		*buffer = xmalloc(max_out);
-		position = src;
-	}
-
-	chunk_remaining = MIN(block_len, remaining);
-	out_remaining = max_out;
-	strm.next_out = (void *) *buffer;
-	while (chunk_remaining) {
-		strm.next_in = position;
-		chunk_bite = MIN(chunk, chunk_remaining);
-		strm.avail_in = chunk_bite;
-		strm.avail_out = out_remaining;
-
-		if (chunk_remaining <= chunk)
-			flush = Z_FINISH;
-
-		if (deflate(&strm, flush) == Z_STREAM_ERROR)
-			fatal("Error compressing file");
-
-		position += chunk_bite;
-		size += chunk_bite;
-		chunk_remaining -= chunk_bite;
-		out_remaining = strm.avail_out;
-	}
-	remaining -= size;
-
-	(void) deflateEnd(&strm);
-
-	*orig_len = size;
-	*more = (remaining) ? true : false;
-	return (max_out - out_remaining);
-#else
-	info("zlib compression not supported, sending uncompressed file.");
-	params->compress = 0;
-	return _get_block_none(buffer, orig_len, more);
-#endif
-}
-
 static int _get_block_lz4(struct bcast_parameters *params,
 			  char **buffer,
 			  int32_t *orig_len,
@@ -344,8 +270,6 @@ static int _next_block(struct bcast_parameters *params,
 	switch (params->compress) {
 	case COMPRESS_OFF:
 		return _get_block_none(buffer, orig_len, more);
-	case COMPRESS_ZLIB:
-		return _get_block_zlib(params, buffer, orig_len, more);
 	case COMPRESS_LZ4:
 		return _get_block_lz4(params, buffer, orig_len, more);
 	}
@@ -439,64 +363,6 @@ static int _bcast_file(struct bcast_parameters *params)
 }
 
 
-static int _decompress_data_zlib(file_bcast_msg_t *req)
-{
-#if HAVE_LIBZ
-	z_stream strm;
-	int chunk = (256 * 1024); /* must match common/file_bcast.c */
-	int ret;
-	int flush = Z_NO_FLUSH, have;
-	unsigned char zlib_out[chunk];
-	int64_t buf_in_offset = 0;
-	int64_t buf_out_offset = 0;
-	char *out_buf;
-
-	/* Perform decompression */
-	strm.zalloc = Z_NULL;
-	strm.zfree = Z_NULL;
-	strm.opaque = Z_NULL;
-	strm.avail_in = 0;
-	strm.next_in = Z_NULL;
-	ret = inflateInit(&strm);
-	if (ret != Z_OK)
-		return -1;
-
-	out_buf = xmalloc(req->uncomp_len);
-
-	while (req->block_len > buf_in_offset) {
-		strm.next_in = (unsigned char *) (req->block + buf_in_offset);
-		strm.avail_in = MIN(chunk, req->block_len - buf_in_offset);
-		buf_in_offset += strm.avail_in;
-		if (buf_in_offset >= req->block_len)
-			flush = Z_FINISH;
-		do {
-			strm.avail_out = chunk;
-			strm.next_out = zlib_out;
-			ret = inflate(&strm, flush);
-			switch (ret) {
-			case Z_NEED_DICT:
-				/* ret = Z_DATA_ERROR;      and fall through */
-			case Z_DATA_ERROR:
-			case Z_MEM_ERROR:
-				(void)inflateEnd(&strm);
-				xfree(out_buf);
-				return -1;
-			}
-			have = chunk - strm.avail_out;
-			memcpy(out_buf + buf_out_offset, zlib_out, have);
-			buf_out_offset += have;
-		} while (strm.avail_out == 0);
-	}
-	(void)inflateEnd(&strm);
-	xfree(req->block);
-	req->block = out_buf;
-	req->block_len = buf_out_offset;
-	return 0;
-#else
-	return -1;
-#endif
-}
-
 static int _decompress_data_lz4(file_bcast_msg_t *req)
 {
 #if HAVE_LZ4
@@ -542,8 +408,6 @@ extern int bcast_decompress_data(file_bcast_msg_t *req)
 	switch (req->compress) {
 	case COMPRESS_OFF:
 		return 0;
-	case COMPRESS_ZLIB:
-		return _decompress_data_zlib(req);
 	case COMPRESS_LZ4:
 		return _decompress_data_lz4(req);
 	}

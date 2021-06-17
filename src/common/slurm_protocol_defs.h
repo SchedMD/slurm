@@ -1167,9 +1167,9 @@ typedef struct kvs_get_msg {
 } kvs_get_msg_t;
 
 enum compress_type {
-	COMPRESS_OFF = 0x0,	/* no compression */
-	COMPRESS_ZLIB,		/* zlib (aka gzip) compression */
-	COMPRESS_LZ4		/* lz4 compression */
+	COMPRESS_OFF = 0,	/* no compression */
+				/* = 1 was zlib */
+	COMPRESS_LZ4 = 2,	/* lz4 compression */
 };
 
 typedef struct file_bcast_msg {

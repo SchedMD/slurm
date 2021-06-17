@@ -1563,18 +1563,13 @@ uint16_t parse_compress_type(const char *arg)
 	if (!arg) {
 #if HAVE_LZ4
 		return COMPRESS_LZ4;
-#elif HAVE_LIBZ
-		return COMPRESS_ZLIB;
 #else
-		error("No compression library available,"
-		      " compression disabled.");
+		error("No compression library available, compression disabled.");
 		return COMPRESS_OFF;
 #endif
 	}
 
-	if (!strcasecmp(arg, "zlib"))
-		return COMPRESS_ZLIB;
-	else if (!strcasecmp(arg, "lz4"))
+	if (!strcasecmp(arg, "lz4"))
 		return COMPRESS_LZ4;
 	else if (!strcasecmp(arg, "none"))
 		return COMPRESS_OFF;

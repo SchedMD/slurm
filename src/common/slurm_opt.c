@@ -906,8 +906,6 @@ static char *arg_get_compress(slurm_opt_t *opt)
 
 	if (opt->srun_opt->compress == COMPRESS_LZ4)
 		return xstrdup("lz4");
-	if (opt->srun_opt->compress == COMPRESS_ZLIB)
-		return xstrdup("zlib");
 	return xstrdup("none");
 }
 static void arg_reset_compress(slurm_opt_t *opt)

@@ -80,6 +80,9 @@ COMMAND CHANGES (see man pages for details)
     This fixes issues where steps would be allocated the wrong number of CPUs.
  -- scrontab - create the temporary file under the TMPDIR environment variable
     (if set), otherwise continue to use TmpFS as configured in slurm.conf.
+ -- sbcast / srun --bcast - removed support for zlib compression. lz4 is vastly
+    superior in performance, and (counter-intuitively) zlib could provide worse
+    performance than no compression at all on many systems.
 
 API CHANGES
 ===========
