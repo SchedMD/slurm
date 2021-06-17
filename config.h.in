@@ -124,9 +124,6 @@
 /* Define to 1 if you have the `ucp' library (-lucp). */
 #undef HAVE_LIBUCP
 
-/* Define to 1 if you have `z' library (-lz) */
-#undef HAVE_LIBZ
-
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
 

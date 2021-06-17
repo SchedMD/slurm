@@ -94,7 +94,6 @@ target_triplet = @target@
 subdir = src/bcast
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
-	$(top_srcdir)/auxdir/ax_check_zlib.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
 	$(top_srcdir)/auxdir/ax_lib_hdf5.m4 \
 	$(top_srcdir)/auxdir/ax_pthread.m4 \
@@ -149,8 +148,7 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libfile_bcast_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+libfile_bcast_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libfile_bcast_la_OBJECTS = libfile_bcast_la-file_bcast.lo
 libfile_bcast_la_OBJECTS = $(am_libfile_bcast_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -410,9 +408,6 @@ UTIL_LIBS = @UTIL_LIBS@
 VERSION = @VERSION@
 YAML_CPPFLAGS = @YAML_CPPFLAGS@
 YAML_LDFLAGS = @YAML_LDFLAGS@
-ZLIB_CPPFLAGS = @ZLIB_CPPFLAGS@
-ZLIB_LDFLAGS = @ZLIB_LDFLAGS@
-ZLIB_LIBS = @ZLIB_LIBS@
 _libcurl_config = @_libcurl_config@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -480,9 +475,9 @@ AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/src/common
 BCAST_LIB = libfile_bcast.la
 libfile_bcast_la_SOURCES = file_bcast.c file_bcast.h
-libfile_bcast_la_LIBADD = $(ZLIB_LIBS) $(LZ4_LIBS)
-libfile_bcast_la_LDFLAGS = $(LIB_LDFLAGS) $(ZLIB_LDFLAGS) $(LZ4_LDFLAGS)
-libfile_bcast_la_CFLAGS = $(ZLIB_CPPFLAGS) $(LZ4_CPPFLAGS) $(AM_CFLAGS)
+libfile_bcast_la_LIBADD = $(LZ4_LIBS)
+libfile_bcast_la_LDFLAGS = $(LIB_LDFLAGS) $(LZ4_LDFLAGS)
+libfile_bcast_la_CFLAGS = $(LZ4_CPPFLAGS) $(AM_CFLAGS)
 noinst_LTLIBRARIES = $(BCAST_LIB)
 all: all-am
 

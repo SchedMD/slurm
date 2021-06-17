@@ -223,7 +223,6 @@ AM_CONDITIONAL(BUILD_HDF5, test "$with_hdf5" = "yes")
 # the 1.8 API.
 AC_DEFINE([H5_NO_DEPRECATED_SYMBOLS], [1], [Make sure we get the 1.8 HDF5 API])
 
-AX_CHECK_ZLIB([], [])
 X_AC_LZ4
 X_AC_HWLOC
 X_AC_NVML
