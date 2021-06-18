@@ -3110,6 +3110,7 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, buf_t *buffer,
 		pack_time(run_time, buffer);
 
 		packstr(slurm_conf.cluster_name, buffer);
+		packstr(step_ptr->container, buffer);
 		if (step_ptr->job_ptr->part_ptr)
 			packstr(step_ptr->job_ptr->part_ptr->name, buffer);
 		else

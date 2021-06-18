@@ -285,6 +285,12 @@ slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr,
 		xstrfmtcat(out, "TresPerTask=%s", job_step_ptr->tres_per_task);
 	}
 
+	/****** Line (optional) ******/
+	if (job_step_ptr->container) {
+		xstrcat(out, line_end);
+		xstrfmtcat(out, "Container=%s", job_step_ptr->container);
+	}
+
 	/****** END OF JOB RECORD ******/
 	if (one_liner)
 		xstrcat(out, "\n");
