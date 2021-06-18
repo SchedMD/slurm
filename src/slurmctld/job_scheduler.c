@@ -138,8 +138,8 @@ extern diag_stats_t slurmctld_diag_stats;
 
 static int _find_singleton_job (void *x, void *key)
 {
-	struct job_record *qjob_ptr = (struct job_record *) x;
-	struct job_record *job_ptr = (struct job_record *) key;
+	job_record_t *qjob_ptr = (job_record_t *) x;
+	job_record_t *job_ptr = (job_record_t *) key;
 
 	xassert (qjob_ptr->magic == JOB_MAGIC);
 

@@ -95,7 +95,7 @@ static uint32_t _gen_job_prio(job_record_t *job_ptr)
 }
 
 /* Return grace_time for job */
-static uint32_t _get_grace_time(struct job_record *job_ptr)
+static uint32_t _get_grace_time(job_record_t *job_ptr)
 {
 	if (!job_ptr->qos_ptr)
 		return 0;

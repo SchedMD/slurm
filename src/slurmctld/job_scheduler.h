@@ -289,8 +289,8 @@ extern bool update_job_dependency_list(job_record_t *job_ptr,
  * 			same array as reject_array_job, then set job_ptr's
  * 			reason to match reject_array_job.
  */
-extern void fill_array_reasons(struct job_record *job_ptr,
-			       struct job_record *reject_arr_job);
+extern void fill_array_reasons(job_record_t *job_ptr,
+			       job_record_t *reject_arr_job);
 
 
 /* Add a job_queue_rec_t to job_queue */
