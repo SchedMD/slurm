@@ -23941,6 +23941,8 @@ fi
       if test "x$x_ac_slurmrestd" = "xyes"; then
         as_fn_error $? "unable to build slurmrestd without http-parser and json libraries" "$LINENO" 5
       else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to build slurmrestd without http-parser and json libraries" >&5
+$as_echo "$as_me: WARNING: unable to build slurmrestd without http-parser and json libraries" >&2;}
         x_ac_slurmrestd=no
       fi
     fi

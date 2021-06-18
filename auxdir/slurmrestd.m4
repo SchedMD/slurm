@@ -34,6 +34,7 @@ AC_DEFUN([X_AC_SLURMRESTD],
       if test "x$x_ac_slurmrestd" = "xyes"; then
         AC_MSG_ERROR([unable to build slurmrestd without http-parser and json libraries])
       else
+        AC_MSG_WARN([unable to build slurmrestd without http-parser and json libraries])
         x_ac_slurmrestd=no
       fi
     fi
