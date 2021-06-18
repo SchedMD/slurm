@@ -1068,11 +1068,6 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 				continue;
 			}
 			node_ptr = node_record_table_ptr + i;
-			if (!bit_test(node_map, i)) {
-				debug("%pJ required node %s not available",
-				      job_ptr, node_ptr->name);
-				continue;
-			}
 			if (!avail_res_array[i] ||
 			    !avail_res_array[i]->avail_cpus) {
 				debug("%pJ required node %s lacks available resources",
@@ -1244,11 +1239,6 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 				continue;
 			}
 			node_ptr = node_record_table_ptr + i;
-			if (!bit_test(node_map, i)) {
-				debug("%pJ required node %s not available",
-				      job_ptr, node_ptr->name);
-				continue;
-			}
 			if (!avail_res_array[i] ||
 			    !avail_res_array[i]->avail_cpus) {
 				debug("%pJ required node %s lacks available resources",
@@ -2808,11 +2798,6 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 				continue;
 			}
 			node_ptr = node_record_table_ptr + i;
-			if (!bit_test(node_map, i)) {
-				debug("%pJ required node %s not available",
-				      job_ptr, node_ptr->name);
-				goto fini;
-			}
 			if (!avail_res_array[i] ||
 			    !avail_res_array[i]->avail_cpus) {
 				debug("%pJ required node %s lacks available resources",
@@ -3009,11 +2994,6 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 				continue;
 			}
 			node_ptr = node_record_table_ptr + i;
-			if (!bit_test(node_map, i)) {
-				debug("%pJ required node %s not available",
-				      job_ptr, node_ptr->name);
-				goto fini;
-			}
 			if (!avail_res_array[i] ||
 			    !avail_res_array[i]->avail_cpus) {
 				debug("%pJ required node %s lacks available resources",
