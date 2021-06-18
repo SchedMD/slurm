@@ -44,12 +44,14 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/xmalloc.h"
+#include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"
 
 /* Constants */
 enum {
-	SLURMSCRIPTD_REQUEST_RUN_PROLOG,
+	SLURMSCRIPTD_REQUEST_RUN_PREPILOG,
 	SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE,
+	SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE,
 	SLURMSCRIPTD_SHUTDOWN,
 };
 
@@ -109,26 +111,116 @@ rwfail:
 	return SLURM_ERROR;
 }
 
-static int _handle_run_prolog(buf_t *buffer)
+/*
+ * Run a script with a given timeout.
+ * Return the status or SLURM_ERROR if fork() fails.
+ *
+ * TODO: I copied this from src/plugins/prep/script/prep_script_slurmctld.c
+ * Finish implementing missing features.
+ */
+static int _run_script(char *script, char **env, uint32_t job_id,
+		       char *script_name, int timeout)
 {
-	int rc;
-	uint32_t job_id, tmp_size, env_cnt, i;
-	char *script;
+	pid_t cpid;
+	int status = SLURM_ERROR, wait_rc;
+	char *argv[2];
+
+	argv[0] = script;
+	argv[1] = NULL;
+
+	if ((cpid = fork()) < 0) {
+		error("slurmctld_script fork error: %m");
+		return status;
+	} else if (cpid == 0) {
+		/* child process */
+		closeall(0);
+		setpgid(0, 0);
+		execve(argv[0], argv, env);
+		_exit(127);
+	}
+
+	/* TODO: Use track_script_rec_add to track process? */
+	/* Start tracking this new process */
+	/* track_script_rec_add(script_arg->job_id, cpid, pthread_self()); */
+	while (1) {
+		wait_rc = waitpid_timeout(__func__, cpid, &status, timeout);
+
+		if (wait_rc < 0) {
+			if (errno == EINTR)
+				continue;
+			error("%s: waitpid error: %m", __func__);
+			break;
+		} else if (wait_rc > 0) {
+			break;
+		}
+	}
+
+	/* TODO: Use track_script_broadcast? */
+	/*
+	if (track_script_broadcast(pthread_self(), status)) {
+		info("slurmctld_script JobId=%u %s killed by signal %u",
+		     script_arg->job_id,
+		     script_arg->is_epilog ? "epilog" : "prolog",
+		     WTERMSIG(status));
+	} else if (status != 0) {
+	 */
+	if (status != 0) {
+		error("%s JobId=%u %s exit status %u:%u",
+		      __func__, job_id, script_name, WEXITSTATUS(status),
+		      WTERMSIG(status));
+	} else {
+		debug2("%s JobId=%u %s completed", __func__,
+		       job_id, script_name);
+	}
+
+	/* TODO: Use track_script_remove? */
+	/*
+	 * Use pthread_self here instead of track_script_rec->tid to avoid any
+	 * potential for race.
+	 */
+	/* track_script_remove(pthread_self()); */
+	return status;
+}
+
+static int _handle_run_prepilog(buf_t *buffer)
+{
+	int rc, status, resp_rpc;
+	uint32_t job_id, tmp_size, env_cnt;
+	uint16_t timeout;
+	bool is_epilog;
+	char *script, *script_name;
 	char **env;
+	buf_t *resp_buffer;
 
 	safe_unpack32(&job_id, buffer);
+	safe_unpackbool(&is_epilog, buffer);
 	safe_unpackstr_xmalloc(&script, &tmp_size, buffer);
 	safe_unpack32(&env_cnt, buffer);
 	safe_unpackstr_array(&env, &env_cnt, buffer);
+	safe_unpack16(&timeout, buffer);
 
-	info("%s: got run prolog for job %u, script:%s",
-	     __func__, job_id, script);
-	for (i = 0; i < env_cnt; i++) {
+	if (is_epilog) {
+		script_name = "epilog_slurmctld";
+		resp_rpc = SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE;
+	} else {
+		script_name = "prolog_slurmctld";
+		resp_rpc = SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE;
+	}
+
+	info("%s: got run %s for job %u, script:%s",
+	     __func__, script_name, job_id, script);
+	for (uint32_t i = 0; i < env_cnt; i++) {
 		info("%s: env[%u]=%s", __func__, i, env[i]);
 	}
 
-	rc = _write_msg(slurmscriptd_writefd,
-			SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE, NULL);
+	status = _run_script(script, env, job_id, script_name, timeout);
+
+	resp_buffer = init_buf(0);
+	pack32(job_id, resp_buffer);
+	pack32(status, resp_buffer);
+	rc = _write_msg(slurmscriptd_writefd, resp_rpc, resp_buffer);
+	FREE_NULL_BUFFER(resp_buffer);
+
 	return rc;
 
 unpack_error:
@@ -136,13 +228,25 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static int _handle_prolog_complete(void)
+static int _handle_prepilog_complete(buf_t *buffer, bool is_epilog)
 {
 	int rc;
+	uint32_t status, job_id;
 
+	safe_unpack32(&job_id, buffer);
+	safe_unpack32(&status, buffer);
+
+	if (is_epilog)
+		prep_epilog_slurmctld_callback((int)status, job_id);
+	else
+		prep_prolog_slurmctld_callback((int)status, job_id);
 	rc = SLURM_SUCCESS;
 
 	return rc;
+
+unpack_error:
+	error("%s: Failed to unpack message", __func__);
+	return SLURM_ERROR;
 }
 
 static int _handle_shutdown(void)
@@ -157,13 +261,17 @@ static int _handle_request(int req, buf_t *buffer)
 	int rc;
 
 	switch (req) {
-		case SLURMSCRIPTD_REQUEST_RUN_PROLOG:
-			debug2("Handling SLURMSCRIPTD_REQUEST_RUN_PROLOG");
-			rc = _handle_run_prolog(buffer);
+		case SLURMSCRIPTD_REQUEST_RUN_PREPILOG:
+			debug2("Handling SLURMSCRIPTD_REQUEST_RUN_PREPILOG");
+			rc = _handle_run_prepilog(buffer);
 			break;
 		case SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE:
 			debug2("Handling SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE");
-			rc = _handle_prolog_complete();
+			rc = _handle_prepilog_complete(buffer, false);
+			break;
+		case SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE:
+			debug2("Handling SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE");
+			rc = _handle_prepilog_complete(buffer, true);
 			break;
 		case SLURMSCRIPTD_SHUTDOWN:
 			debug2("Handling SLURMSCRIPTD_SHUTDOWN");
@@ -295,13 +403,9 @@ extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 	buf_t *buffer;
 	uint32_t env_var_cnt = 0;
 
-	info("%s: jobid:%u, is_epilog:%u, script:%s",
-	     __func__, job_id, is_epilog, script);
-	if (is_epilog)
-		return; // Not testing epilog right now
-
 	buffer = init_buf(0);
 	pack32(job_id, buffer);
+	packbool(is_epilog, buffer);
 	packstr(script, buffer);
 	/*
 	 * Pack the environment. We don't know how many environment variables
@@ -315,8 +419,10 @@ extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 	pack32(env_var_cnt, buffer);
 	if (env_var_cnt)
 		packstr_array(env, env_var_cnt, buffer);
+	pack16(slurm_conf.prolog_epilog_timeout, buffer);
 
-	_write_msg(slurmctld_writefd, SLURMSCRIPTD_REQUEST_RUN_PROLOG, buffer);
+	_write_msg(slurmctld_writefd, SLURMSCRIPTD_REQUEST_RUN_PREPILOG,
+		   buffer);
 	FREE_NULL_BUFFER(buffer);
 }
 

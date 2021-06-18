@@ -50,118 +50,21 @@
 
 #include "prep_script.h"
 
-typedef struct {
-	void (*callback) (int rc, uint32_t job_id);
-	bool is_epilog;
-	uint32_t job_id;
-	char *script;
-	char **my_env;
-} run_script_arg_t;
-
 static char **_build_env(job_record_t *job_ptr, bool is_epilog);
-static void *_run_script(void *arg);
 
 extern void slurmctld_script(job_record_t *job_ptr, bool is_epilog)
 {
-	run_script_arg_t *script_arg = xmalloc(sizeof(*script_arg));
+	char **my_env;
 
+	my_env = _build_env(job_ptr, is_epilog);
 	if (!is_epilog)
-		script_arg->callback = prolog_slurmctld_callback;
+		slurmscriptd_run_prepilog(job_ptr->job_id, is_epilog,
+					 slurm_conf.prolog_slurmctld, my_env);
 	else
-		script_arg->callback = epilog_slurmctld_callback;
+		slurmscriptd_run_prepilog(job_ptr->job_id, is_epilog,
+					  slurm_conf.epilog_slurmctld, my_env);
 
-	script_arg->is_epilog = is_epilog;
-	script_arg->job_id = job_ptr->job_id;
-	if (!is_epilog)
-		script_arg->script = xstrdup(slurm_conf.prolog_slurmctld);
-	else
-		script_arg->script = xstrdup(slurm_conf.epilog_slurmctld);
-	script_arg->my_env = _build_env(job_ptr, is_epilog);
-
-	slurmscriptd_run_prepilog(job_ptr->job_id, is_epilog,
-				  script_arg->script, script_arg->my_env);
-
-	debug2("%s: creating a new thread for JobId=%u",
-	       __func__, script_arg->job_id);
-	slurm_thread_create_detached(NULL, _run_script, script_arg);
-}
-
-static void _destroy_run_script_arg(run_script_arg_t *script_arg)
-{
-	xfree(script_arg->script);
-	for (int i=0; script_arg->my_env[i]; i++)
-		xfree(script_arg->my_env[i]);
-	xfree(script_arg->my_env);
-	xfree(script_arg);
-}
-
-static void *_run_script(void *arg)
-{
-	run_script_arg_t *script_arg = (run_script_arg_t *) arg;
-	pid_t cpid;
-	int status, wait_rc;
-	char *argv[2];
-
-	argv[0] = script_arg->script;
-	argv[1] = NULL;
-
-	if ((cpid = fork()) < 0) {
-		status = SLURM_ERROR;
-		error("slurmctld_script fork error: %m");
-		goto fini;
-	} else if (cpid == 0) {
-		/* child process */
-		closeall(0);
-		setpgid(0, 0);
-		execve(argv[0], argv, script_arg->my_env);
-		_exit(127);
-	}
-
-	/* Start tracking this new process */
-	track_script_rec_add(script_arg->job_id, cpid, pthread_self());
-
-	while (1) {
-		wait_rc = waitpid_timeout(__func__, cpid, &status,
-					  slurm_conf.prolog_epilog_timeout);
-		if (wait_rc < 0) {
-			if (errno == EINTR)
-				continue;
-			error("%s: waitpid error: %m", __func__);
-			break;
-		} else if (wait_rc > 0) {
-			break;
-		}
-	}
-
-	if (track_script_broadcast(pthread_self(), status)) {
-		info("slurmctld_script JobId=%u %s killed by signal %u",
-		     script_arg->job_id,
-		     script_arg->is_epilog ? "epilog" : "prolog",
-		     WTERMSIG(status));
-	} else if (status != 0) {
-		error("%s JobId=%u %s exit status %u:%u", __func__,
-		      script_arg->job_id,
-		      script_arg->is_epilog ? "epilog" : "prolog",
-		      WEXITSTATUS(status), WTERMSIG(status));
-	} else {
-		debug2("%s JobId=%u %s completed", __func__,
-		       script_arg->job_id,
-		       script_arg->is_epilog ? "epilog" : "prolog");
-	}
-
-fini:
-	/* let the PrEp plugin control know we've finished */
-	if (script_arg->callback)
-		(*(script_arg->callback))(status, script_arg->job_id);
-
-	_destroy_run_script_arg(script_arg);
-
-	/*
-	 * Use pthread_self here instead of track_script_rec->tid to avoid any
-	 * potential for race.
-	 */
-	track_script_remove(pthread_self());
-	return NULL;
+	xfree(my_env);
 }
 
 static char **_build_env(job_record_t *job_ptr, bool is_epilog)
