@@ -36,9 +36,11 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
 #include <arpa/inet.h>
 #include <grp.h>
 #include <fcntl.h>
+#include <pwd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 

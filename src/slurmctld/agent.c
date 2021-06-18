@@ -78,6 +78,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
 #include "src/common/list.h"

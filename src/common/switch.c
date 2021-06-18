@@ -62,7 +62,7 @@ typedef struct slurm_switch_ops {
 					    uint32_t job_id, uint32_t step_id );
 	int          (*build_jobinfo)     ( switch_jobinfo_t *jobinfo,
 					    slurm_step_layout_t *step_layout,
-					    char *network);
+					    step_record_t *step_ptr );
 	int          (*duplicate_jobinfo) ( switch_jobinfo_t *source,
 					    switch_jobinfo_t **dest);
 	void         (*free_jobinfo)      ( switch_jobinfo_t *jobinfo );
@@ -360,9 +360,9 @@ extern int  switch_g_alloc_jobinfo(dynamic_plugin_data_t **jobinfo,
 		((switch_jobinfo_t **)&jobinfo_ptr->data, job_id, step_id);
 }
 
-extern int  switch_g_build_jobinfo(dynamic_plugin_data_t *jobinfo,
-				   slurm_step_layout_t *step_layout, char
-				   *network)
+extern int switch_g_build_jobinfo(dynamic_plugin_data_t *jobinfo,
+				  slurm_step_layout_t *step_layout,
+				  step_record_t *step_ptr)
 {
 	void *data = NULL;
 	uint32_t plugin_id;
@@ -376,7 +376,7 @@ extern int  switch_g_build_jobinfo(dynamic_plugin_data_t *jobinfo,
 	} else
 		plugin_id = switch_context_default;
 
-	return (*(ops[plugin_id].build_jobinfo))(data, step_layout, network);
+	return (*(ops[plugin_id].build_jobinfo))(data, step_layout, step_ptr);
 }
 
 extern int  switch_g_duplicate_jobinfo(dynamic_plugin_data_t *source,

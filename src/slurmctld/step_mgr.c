@@ -2751,8 +2751,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 			fatal("%s: switch_g_alloc_jobinfo error", __func__);
 
 		if (switch_g_build_jobinfo(step_ptr->switch_job,
-					   step_layout,
-					   step_ptr->network) < 0) {
+					   step_layout, step_ptr) < 0) {
 			delete_step_record(job_ptr, step_ptr);
 			if (tmp_step_layout_used)
 				xfree(step_layout->node_list);

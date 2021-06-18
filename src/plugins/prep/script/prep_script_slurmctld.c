@@ -34,6 +34,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"

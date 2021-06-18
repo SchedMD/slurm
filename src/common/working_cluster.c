@@ -38,10 +38,11 @@
 
 #include <string.h>
 
+#include "src/common/env.h"
+#include "src/common/node_select.h"
 #include "src/common/slurmdb_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/node_select.h"
 
 /*
  * This functions technically should go in the slurmdb_defs.c, but

@@ -64,7 +64,6 @@
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/switch.h"
 #include "src/common/timers.h"
 #include "src/common/xmalloc.h"
 

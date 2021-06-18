@@ -57,6 +57,7 @@
 #include <unistd.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"

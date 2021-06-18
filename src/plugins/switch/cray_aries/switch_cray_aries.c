@@ -180,7 +180,7 @@ extern int switch_p_alloc_jobinfo(
 
 extern int switch_p_build_jobinfo(switch_jobinfo_t *switch_job,
 				  slurm_step_layout_t *step_layout,
-				  char *network)
+				  step_record_t *step_ptr)
 {
 #if defined(HAVE_NATIVE_CRAY) || defined(HAVE_CRAY_NETWORK)
 	int rc, cnt = 0;

@@ -46,6 +46,7 @@
 
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /* opaque data structures - no peeking! */
@@ -112,12 +113,13 @@ extern int  switch_g_alloc_jobinfo (dynamic_plugin_data_t **jobinfo,
  * OUT jobinfo  - storage for a switch job credential
  * IN  step_layout - the layout of the step with at least the nodes,
  *                   tasks_per_node and tids set
- * IN  network  - plugin-specific network info (e.g. protocol)
+ * IN  step_ptr    - step_record_t for this step
+ * NOTE: step_ptr will be NULL for "srun --no-allocate" calls
  * NOTE: storage must be freed using g_switch_g_free_jobinfo
  */
-extern int  switch_g_build_jobinfo(dynamic_plugin_data_t *jobinfo,
-				   slurm_step_layout_t *step_layout,
-				   char *network);
+extern int switch_g_build_jobinfo(dynamic_plugin_data_t *jobinfo,
+				  slurm_step_layout_t *step_layout,
+				  step_record_t *step_ptr);
 
 /* duplicate a job's switch credential
  * IN  source  - storage for a switch job credential
