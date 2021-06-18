@@ -448,6 +448,7 @@ extern void free_step_record(void *x)
 	}
 	resv_port_free(step_ptr);
 
+	xfree(step_ptr->container);
 	xfree(step_ptr->host);
 	xfree(step_ptr->name);
 	slurm_step_layout_destroy(step_ptr->step_layout);
@@ -2519,6 +2520,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 		break;
 	}
 
+	step_ptr->container = xstrdup(step_specs->container);
 	step_ptr->gres_list = step_gres_list;
 	step_gres_list      = (List) NULL;
 	gres_step_state_log(step_ptr->gres_list, job_ptr->job_id,
