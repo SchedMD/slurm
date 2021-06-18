@@ -850,14 +850,6 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 						avail_res_array[i]->
 						sock_gres_list, &avail_cpus);
 				}
-				/* enforce the max_cpus limit */
-				if ((details_ptr->max_cpus != NO_VAL) &&
-				    (total_cpus + avail_cpus >
-				     details_ptr->max_cpus)) {
-					debug2("%pJ can't use node %d without exceeding job limit",
-					       job_ptr, i);
-					continue;
-				}
 				total_cpus += avail_cpus;
 				bit_set(node_map, i);
 				rem_nodes--;
@@ -894,13 +886,6 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 						job_ptr->gres_list_req,
 						avail_res_array[i]->
 						sock_gres_list, &avail_cpus);
-				}
-				if ((details_ptr->max_cpus != NO_VAL) &&
-				    (total_cpus + avail_cpus >
-				     details_ptr->max_cpus)) {
-					debug2("%pJ can't use node %d without exceeding job limit",
-					       job_ptr, i);
-					continue;
 				}
 				total_cpus += avail_cpus;
 				rem_cpus -= avail_cpus;
@@ -990,13 +975,6 @@ static int _eval_nodes(job_record_t *job_ptr, gres_mc_data_t *mc_ptr,
 						job_ptr->gres_list_req,
 						avail_res_array[i]->
 						sock_gres_list, &avail_cpus);
-				}
-				if ((details_ptr->max_cpus != NO_VAL) &&
-				    (total_cpus + avail_cpus >
-				     details_ptr->max_cpus)) {
-					debug2("%pJ can't use node %d without exceeding job limit",
-					       job_ptr, i);
-					continue;
 				}
 				total_cpus += avail_cpus;
 				rem_cpus -= avail_cpus;
@@ -1172,13 +1150,6 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 			if (avail_cpus == 0)
 				continue;
 			total_cpus += avail_cpus;
-			if ((details_ptr->max_cpus != NO_VAL) &&
-			    (total_cpus > details_ptr->max_cpus)) {
-				debug2("%pJ can't use node %d without exceeding job limit",
-				       job_ptr, i);
-				total_cpus -= avail_cpus;
-				continue;
-			}
 			rem_cpus -= avail_cpus;
 			rem_max_cpus -= avail_cpus;
 			rem_nodes--;
@@ -1367,14 +1338,6 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 				if (avail_cpus == 0)
 					continue;
 				total_cpus += avail_cpus;
-				if ((details_ptr->max_cpus != NO_VAL) &&
-				    (total_cpus > details_ptr->max_cpus)) {
-					debug2("%pJ can't use node %d without exceeding job limit",
-					       job_ptr,
-					       i);
-					total_cpus -= avail_cpus;
-					continue;
-				}
 				rem_cpus -= avail_cpus;
 				rem_max_cpus -= avail_cpus;
 				rem_nodes--;
@@ -2951,14 +2914,6 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 			i = max_cpu_idx;
 			last_max_cpu_cnt = avail_res_array[i]->max_cpus;
 			total_cpus += avail_cpus;
-			if ((details_ptr->max_cpus != NO_VAL) &&
-			    (total_cpus > details_ptr->max_cpus)) {
-				debug2("%pJ can't use node %d without exceeding job limit",
-				       job_ptr, i);
-				bit_clear(nwt->node_bitmap, i);
-				total_cpus -= avail_cpus;
-				continue;
-			}
 			rem_cpus -= avail_cpus;
 			rem_max_cpus -= avail_cpus;
 			rem_nodes--;
@@ -3136,13 +3091,6 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 			if (avail_cpus == 0)
 				continue;
 			total_cpus += avail_cpus;
-			if ((details_ptr->max_cpus != NO_VAL) &&
-			    (total_cpus > details_ptr->max_cpus)) {
-				debug2("%pJ can't use node %d without exceeding job limit",
-				       job_ptr, i);
-				total_cpus -= avail_cpus;
-				continue;
-			}
 			rem_cpus -= avail_cpus;
 			rem_max_cpus -= avail_cpus;
 			rem_nodes--;
