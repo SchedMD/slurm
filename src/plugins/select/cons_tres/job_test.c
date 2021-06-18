@@ -1074,31 +1074,35 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 				      job_ptr, node_ptr->name);
 				goto fini;
 			}
+			if (max_nodes <= 0) {
+				info("%pJ requires nodes exceed maximum node limit",
+				     job_ptr);
+				goto fini;
+			}
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type);
-			if ((avail_cpus > 0) && (max_nodes > 0)) {
-				total_cpus += avail_cpus;
-				rem_cpus   -= avail_cpus;
-				rem_max_cpus -= avail_cpus;
-				rem_nodes--;
-				min_rem_nodes--;
-				/* leaving bitmap set, decr max limit */
-				max_nodes--;
-				if (gres_per_job) {
-					gres_sched_add(
-						job_ptr->gres_list_req,
-						avail_res_array[i]->
-						sock_gres_list, &avail_cpus);
-				}
-			} else {	/* node not selected (yet) */
+			if (gres_per_job) {
+				gres_sched_add(
+					job_ptr->gres_list_req,
+					avail_res_array[i]-> sock_gres_list,
+					&avail_cpus);
+			}
+			if (avail_cpus <= 0) {
 				debug("%pJ required node %s lacks available resources",
 				      job_ptr, node_ptr->name);
 				goto fini;
 			}
+			total_cpus += avail_cpus;
+			rem_cpus   -= avail_cpus;
+			rem_max_cpus -= avail_cpus;
+			rem_nodes--;
+			min_rem_nodes--;
+			/* leaving bitmap set, decr max limit */
+			max_nodes--;
 		}
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 		    gres_sched_test(job_ptr->gres_list_req, job_ptr->job_id)) {
@@ -1142,6 +1146,12 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type);
+			if (gres_per_job) {
+				gres_sched_add(
+					job_ptr->gres_list_req,
+					avail_res_array[i]->sock_gres_list,
+					&avail_cpus);
+			}
 			if (avail_cpus == 0)
 				continue;
 			total_cpus += avail_cpus;
@@ -1151,12 +1161,6 @@ static int _eval_nodes_spread(job_record_t *job_ptr,
 			min_rem_nodes--;
 			max_nodes--;
 			bit_set(node_map, i);
-			if (gres_per_job) {
-				gres_sched_add(
-					job_ptr->gres_list_req,
-					avail_res_array[i]->sock_gres_list,
-					&avail_cpus);
-			}
 			if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 			    gres_sched_test(job_ptr->gres_list_req,
 					    job_ptr->job_id)) {
@@ -1245,32 +1249,35 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 				      job_ptr, node_ptr->name);
 				goto fini;
 			}
+			if (max_nodes <= 0) {
+				info("%pJ requires nodes exceed maximum node limit",
+				     job_ptr);
+				goto fini;
+			}
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type);
-			if ((avail_cpus > 0) && (max_nodes > 0)) {
-				total_cpus += avail_cpus;
-				rem_cpus   -= avail_cpus;
-				rem_max_cpus -= avail_cpus;
-				rem_nodes--;
-				min_rem_nodes--;
-				/* leaving bitmap set, decr max limit */
-				if (max_nodes)
-					max_nodes--;
-				if (gres_per_job) {
-					gres_sched_add(
-						job_ptr->gres_list_req,
-						avail_res_array[i]->
-						sock_gres_list, &avail_cpus);
-				}
-			} else {	/* node not selected (yet) */
+			if (gres_per_job) {
+				gres_sched_add(
+					job_ptr->gres_list_req,
+					avail_res_array[i]->
+					sock_gres_list, &avail_cpus);
+			}
+			if (avail_cpus <= 0) {
 				debug("%pJ required node %s lacks available resources",
 				      job_ptr, node_ptr->name);
 				goto fini;
 			}
+			total_cpus += avail_cpus;
+			rem_cpus   -= avail_cpus;
+			rem_max_cpus -= avail_cpus;
+			rem_nodes--;
+			min_rem_nodes--;
+			/* leaving bitmap set, decr max limit */
+			max_nodes--;
 		}
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 		    gres_sched_test(job_ptr->gres_list_req, job_ptr->job_id)) {
@@ -1325,6 +1332,13 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 				_cpus_to_use(&avail_cpus, rem_max_cpus,
 					     min_rem_nodes, details_ptr,
 					     avail_res_array[i], i, cr_type);
+				if (gres_per_job) {
+					gres_sched_add(
+						job_ptr->gres_list_req,
+						avail_res_array[i]->
+						sock_gres_list,
+						&avail_cpus);
+				}
 				if (avail_cpus == 0)
 					continue;
 				total_cpus += avail_cpus;
@@ -1334,13 +1348,6 @@ static int _eval_nodes_busy(job_record_t *job_ptr,
 				min_rem_nodes--;
 				max_nodes--;
 				bit_set(node_map, i);
-				if (gres_per_job) {
-					gres_sched_add(
-						job_ptr->gres_list_req,
-						avail_res_array[i]->
-						sock_gres_list,
-						&avail_cpus);
-				}
 				if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 				    gres_sched_test(job_ptr->gres_list_req,
 						    job_ptr->job_id)) {
@@ -1614,6 +1621,12 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type);
+			if (gres_per_job) {
+				gres_sched_add(
+					job_ptr->gres_list_req,
+					avail_res_array[i]->sock_gres_list,
+					&avail_cpus);
+			}
 			if (avail_cpus == 0) {
 				log_flag(SELECT_TYPE, "%pJ insufficient resources on required node",
 				       job_ptr);
@@ -1627,12 +1640,6 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
 			rem_max_cpus -= avail_cpus;
-			if (gres_per_job) {
-				gres_sched_add(
-					job_ptr->gres_list_req,
-					avail_res_array[i]->sock_gres_list,
-					&avail_cpus);
-			}
 		}
 
 		node_ptr = node_record_table_ptr + i;
@@ -1846,18 +1853,18 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type);
-			rem_nodes--;
-			min_rem_nodes--;
-			max_nodes--;
-			total_cpus += avail_cpus;
-			rem_cpus   -= avail_cpus;
-			rem_max_cpus -= avail_cpus;
 			if (gres_per_job) {
 				gres_sched_add(
 					job_ptr->gres_list_req,
 					avail_res_array[i]->sock_gres_list,
 					&avail_cpus);
 			}
+			rem_nodes--;
+			min_rem_nodes--;
+			max_nodes--;
+			total_cpus += avail_cpus;
+			rem_cpus   -= avail_cpus;
+			rem_max_cpus -= avail_cpus;
 		}
 
 		for (i = 0, switch_ptr = switch_record_table;
@@ -2001,12 +2008,6 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 				_cpus_to_use(&avail_cpus, rem_max_cpus,
 					     min_rem_nodes, details_ptr,
 					     avail_res_array[j], j, cr_type);
-				rem_nodes--;
-				min_rem_nodes--;
-				max_nodes--;
-				total_cpus += avail_cpus;
-				rem_cpus   -= avail_cpus;
-				rem_max_cpus -= avail_cpus;
 				if (gres_per_job) {
 					gres_sched_add(
 						job_ptr->gres_list_req,
@@ -2014,6 +2015,12 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 						sock_gres_list,
 						&avail_cpus);
 				}
+				rem_nodes--;
+				min_rem_nodes--;
+				max_nodes--;
+				total_cpus += avail_cpus;
+				rem_cpus   -= avail_cpus;
+				rem_max_cpus -= avail_cpus;
 				bit_set(node_map, j);
 				if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 				    (!gres_per_job ||
@@ -2059,12 +2066,6 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 				_cpus_to_use(&avail_cpus, rem_max_cpus,
 					     min_rem_nodes, details_ptr,
 					     avail_res_array[j], j, cr_type);
-				rem_nodes--;
-				min_rem_nodes--;
-				max_nodes--;
-				total_cpus += avail_cpus;
-				rem_cpus   -= avail_cpus;
-				rem_max_cpus -= avail_cpus;
 				if (gres_per_job) {
 					gres_sched_add(
 						job_ptr->gres_list_req,
@@ -2072,6 +2073,12 @@ static int _eval_nodes_dfly(job_record_t *job_ptr,
 						sock_gres_list,
 						&avail_cpus);
 				}
+				rem_nodes--;
+				min_rem_nodes--;
+				max_nodes--;
+				total_cpus += avail_cpus;
+				rem_cpus   -= avail_cpus;
+				rem_max_cpus -= avail_cpus;
 				bit_set(node_map, j);
 				if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 				    (!gres_per_job ||
@@ -2804,31 +2811,35 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 				      job_ptr, node_ptr->name);
 				goto fini;
 			}
+			if (max_nodes <= 0) {
+				info("%pJ requires nodes exceed maximum node limit",
+				     job_ptr);
+				goto fini;
+			}
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type);
-			if ((avail_cpus > 0) && (max_nodes > 0)) {
-				total_cpus += avail_cpus;
-				rem_cpus   -= avail_cpus;
-				rem_max_cpus -= avail_cpus;
-				rem_nodes--;
-				min_rem_nodes--;
-				/* leaving bitmap set, decr max limit */
-				max_nodes--;
-				if (gres_per_job) {
-					gres_sched_add(
-						job_ptr->gres_list_req,
-						avail_res_array[i]->
-						sock_gres_list, &avail_cpus);
-				}
-			} else {	/* node not selected (yet) */
+			if (gres_per_job) {
+				gres_sched_add(
+					job_ptr->gres_list_req,
+					avail_res_array[i]->
+					sock_gres_list, &avail_cpus);
+			}
+			if (avail_cpus <= 0) {
 				debug("%pJ required node %s not available",
 				      job_ptr, node_ptr->name);
 				goto fini;
 			}
+			total_cpus += avail_cpus;
+			rem_cpus   -= avail_cpus;
+			rem_max_cpus -= avail_cpus;
+			rem_nodes--;
+			min_rem_nodes--;
+			/* leaving bitmap set, decr max limit */
+			max_nodes--;
 		}
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 		    gres_sched_test(job_ptr->gres_list_req, job_ptr->job_id)) {
@@ -2897,6 +2908,12 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 				break;
 			}
 			i = max_cpu_idx;
+			if (gres_per_job) {
+				gres_sched_add(
+					job_ptr->gres_list_req,
+					avail_res_array[i]->sock_gres_list,
+					&avail_cpus);
+			}
 			last_max_cpu_cnt = avail_res_array[i]->max_cpus;
 			total_cpus += avail_cpus;
 			rem_cpus -= avail_cpus;
@@ -2905,12 +2922,6 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 			min_rem_nodes--;
 			max_nodes--;
 			bit_set(node_map, i);
-			if (gres_per_job) {
-				gres_sched_add(
-					job_ptr->gres_list_req,
-					avail_res_array[i]->sock_gres_list,
-					&avail_cpus);
-			}
 			if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 			    gres_sched_test(job_ptr->gres_list_req,
 					    job_ptr->job_id)) {
@@ -3000,31 +3011,35 @@ static int _eval_nodes_serial(job_record_t *job_ptr,
 				      job_ptr, node_ptr->name);
 				goto fini;
 			}
+			if (max_nodes <= 0) {
+				info("%pJ requires nodes exceed maximum node limit",
+				     job_ptr);
+				goto fini;
+			}
 			_select_cores(job_ptr, mc_ptr, enforce_binding, i,
 				      &avail_cpus, max_nodes, min_rem_nodes,
 				      avail_core, avail_res_array, first_pass);
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
 				     cr_type);
-			if ((avail_cpus > 0) && (max_nodes > 0)) {
-				total_cpus += avail_cpus;
-				rem_cpus   -= avail_cpus;
-				rem_max_cpus -= avail_cpus;
-				rem_nodes--;
-				min_rem_nodes--;
-				/* leaving bitmap set, decr max limit */
-				max_nodes--;
-				if (gres_per_job) {
-					gres_sched_add(
-						job_ptr->gres_list_req,
-						avail_res_array[i]->
-						sock_gres_list, &avail_cpus);
-				}
-			} else {	/* node not selected (yet) */
+			if (gres_per_job) {
+				gres_sched_add(
+					job_ptr->gres_list_req,
+					avail_res_array[i]->
+					sock_gres_list, &avail_cpus);
+			}
+			if (avail_cpus <= 0) {
 				debug("%pJ required node %s lacks available resources",
 				      job_ptr, node_ptr->name);
 				goto fini;
 			}
+			total_cpus += avail_cpus;
+			rem_cpus   -= avail_cpus;
+			rem_max_cpus -= avail_cpus;
+			rem_nodes--;
+			min_rem_nodes--;
+			/* leaving bitmap set, decr max limit */
+			max_nodes--;
 		}
 		if ((rem_nodes <= 0) && (rem_cpus <= 0) &&
 		    gres_sched_test(job_ptr->gres_list_req, job_ptr->job_id)) {
