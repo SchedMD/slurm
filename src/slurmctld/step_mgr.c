@@ -1267,11 +1267,15 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		}
 		if (!bit_super_set(selected_nodes, nodes_avail)) {
 			/*
-			 * If some nodes still have some memory allocated
-			 * to other steps, just defer the execution of the
-			 * step
+			 * If some nodes still have some memory or CPUs
+			 * allocated to other steps, just defer the execution
+			 * of the step
 			 */
-			if (mem_blocked_nodes == 0) {
+			if (job_blocked_nodes) {
+				*return_code = ESLURM_NODES_BUSY;
+				log_flag(STEPS, "%s: some requested nodes %s still have CPUs used by other steps",
+					 __func__, step_spec->node_list);
+			} else if (mem_blocked_nodes == 0) {
 				*return_code = ESLURM_INVALID_TASK_MEMORY;
 				info("%s: requested nodes %s have inadequate memory",
 				     __func__, step_spec->node_list);
