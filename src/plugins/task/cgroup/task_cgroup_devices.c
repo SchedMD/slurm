@@ -84,7 +84,7 @@ static int _handle_device_access(void *x, void *arg)
 
 	if (gres_device->alloc) {
 		param = "devices.allow";
-		limits.allow_device = false;
+		limits.allow_device = true;
 	}
 
 	log_flag(GRES, "%s %s: adding %s(%s)",
