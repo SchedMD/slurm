@@ -161,6 +161,7 @@ static List _build_gpu_list(List gres_list)
 			gpu_record->name = xstrdup(gres_record->name);
 			gpu_record->plugin_id = gres_record->plugin_id;
 			gpu_record->type_name = xstrdup(gres_record->type_name);
+			gpu_record->unique_id = xstrdup(gres_record->unique_id);
 			list_append(gpu_list, gpu_record);
 			free(f_name);
 		}
@@ -216,6 +217,7 @@ static List _build_mps_list(List gres_list)
 			mps_record->name = xstrdup(gres_record->name);
 			mps_record->plugin_id = gres_record->plugin_id;
 			mps_record->type_name = xstrdup(gres_record->type_name);
+			mps_record->unique_id = xstrdup(gres_record->unique_id);
 			list_append(mps_list, mps_record);
 		} else {
 			mps_file_recs++;
@@ -243,6 +245,8 @@ static List _build_mps_list(List gres_list)
 				mps_record->plugin_id = gres_record->plugin_id;
 				mps_record->type_name =
 					xstrdup(gres_record->type_name);
+				mps_record->unique_id =
+					xstrdup(gres_record->unique_id);
 				list_append(mps_list, mps_record);
 				free(f_name);
 			}
@@ -362,6 +366,9 @@ static int _merge_lists(List gres_conf_list, List gpu_conf_list,
 				xfree(mps_record->type_name);
 				mps_record->type_name =
 					xstrdup(gpu_record->type_name);
+				xfree(mps_record->unique_id);
+				mps_record->unique_id =
+					xstrdup(gpu_record->unique_id);
 				list_append(gres_conf_list, mps_record);
 				(void) list_remove(mps_itr);
 				break;
@@ -383,6 +390,7 @@ static int _merge_lists(List gres_conf_list, List gpu_conf_list,
 			mps_record->name = xstrdup("mps");
 			mps_record->plugin_id = gres_build_id("mps");
 			mps_record->type_name = xstrdup(gpu_record->type_name);
+			mps_record->unique_id = xstrdup(gpu_record->unique_id);
 			list_append(gres_conf_list, mps_record);
 		}
 		list_append(gres_conf_list, gpu_record);
