@@ -812,9 +812,7 @@ extern uint16_t common_cpus_per_core(struct job_details *details, int node_inx)
 	    (slurm_conf.select_type_param & CR_ONE_TASK_PER_CORE) &&
 	    (details->min_gres_cpu > 0)) {
 		/* May override default of 1 CPU per core */
-		uint16_t pu_per_core = INFINITE16;	/* Usable CPUs per core */
-		uint16_t vpus_per_core = select_node_record[node_inx].vpus;
-		return MIN(vpus_per_core, pu_per_core);
+		return select_node_record[node_inx].vpus;
 	}
 
 	if (details && details->mc_ptr) {
