@@ -673,6 +673,7 @@ static void _delete_job_details(job_record_t *job_entry)
 	xfree(job_entry->details->std_in);
 	xfree(job_entry->details->mc_ptr);
 	xfree(job_entry->details->mem_bind);
+	xfree(job_entry->details->req_context);
 	xfree(job_entry->details->std_out);
 	xfree(job_entry->details->submit_line);
 	FREE_NULL_BITMAP(job_entry->details->req_node_bitmap);
@@ -4701,6 +4702,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 		job_ptr_pend->select_jobinfo =
 			select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 	}
+	job_ptr_pend->selinux_context = xstrdup(job_ptr->selinux_context);
 	job_ptr_pend->sched_nodes = NULL;
 	if (job_ptr->spank_job_env_size) {
 		job_ptr_pend->spank_job_env =
@@ -4791,6 +4793,7 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 		details_new->req_node_bitmap =
 			bit_copy(job_details->req_node_bitmap);
 	}
+	details_new->req_context = xstrdup(job_details->req_context);
 	details_new->req_nodes = xstrdup(job_details->req_nodes);
 	details_new->std_err = xstrdup(job_details->std_err);
 	details_new->std_in = xstrdup(job_details->std_in);
@@ -8387,6 +8390,7 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 	detail_ptr->orig_max_cpus   = job_desc->max_cpus;
 	detail_ptr->min_nodes  = job_desc->min_nodes;
 	detail_ptr->max_nodes  = job_desc->max_nodes;
+	detail_ptr->req_context = xstrdup(job_desc->req_context);
 	detail_ptr->x11        = job_desc->x11;
 	detail_ptr->x11_magic_cookie = xstrdup(job_desc->x11_magic_cookie);
 	detail_ptr->x11_target = xstrdup(job_desc->x11_target);
@@ -8507,6 +8511,8 @@ static int _copy_job_desc_to_job_record(job_desc_msg_t *job_desc,
 		detail_ptr->max_nodes =
 			MIN(node_record_count, detail_ptr->num_tasks);
 	}
+
+	job_ptr->selinux_context = xstrdup(job_desc->selinux_context);
 
 	return SLURM_SUCCESS;
 }

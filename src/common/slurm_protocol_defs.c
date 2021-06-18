@@ -1069,6 +1069,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		xfree(msg->origin_cluster);
 		xfree(msg->partition);
 		xfree(msg->qos);
+		xfree(msg->req_context);
 		xfree(msg->req_nodes);
 		xfree(msg->reservation);
 		xfree(msg->resp_host);
@@ -1076,6 +1077,7 @@ extern void slurm_free_job_desc_msg(job_desc_msg_t *msg)
 		free_buf(msg->script_buf);
 		select_g_select_jobinfo_free(msg->select_jobinfo);
 		msg->select_jobinfo = NULL;
+		xfree(msg->selinux_context);
 		xfree(msg->std_err);
 		xfree(msg->std_in);
 		xfree(msg->std_out);

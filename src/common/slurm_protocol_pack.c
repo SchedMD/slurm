@@ -6678,6 +6678,7 @@ static void _pack_job_desc_msg(job_desc_msg_t *job_desc_ptr, buf_t *buffer,
 		packstr(job_desc_ptr->acctg_freq, buffer);
 		pack32(job_desc_ptr->num_tasks,  buffer);
 
+		packstr(job_desc_ptr->req_context, buffer);
 		packstr(job_desc_ptr->req_nodes, buffer);
 		packstr(job_desc_ptr->exc_nodes, buffer);
 		packstr_array(job_desc_ptr->environment,
@@ -7146,6 +7147,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, buf_t *buffer,
 				       &uint32_tmp, buffer);
 		safe_unpack32(&job_desc_ptr->num_tasks,  buffer);
 
+		safe_unpackstr_xmalloc(&job_desc_ptr->req_context,
+				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->req_nodes,
 				       &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_desc_ptr->exc_nodes,
