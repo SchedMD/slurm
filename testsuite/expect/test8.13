@@ -143,7 +143,7 @@ proc test_user_resv_delete {AccountingStorageEnforce test_user resv_user expecte
 		run_command -subtest -user $test_user "$scontrol delete reservationname=$resv_name"
 		run_command -subtest -xfail "$scontrol show reservationname=$resv_name"
 	} else {
-		log_info "Confirm that reservation non-member user CANNOT not delete reservation"
+		log_info "Confirm that reservation non-member user CANNOT delete reservation"
 		set output [run_command_output -subtest -xfail -user $test_user "$scontrol delete reservationname=$resv_name"]
 		set rc [regexp -all -nocase {invalid user id} $output]
 		subtest {$rc == 1} "Message \"invalid user id\" should be shown when $test_user attempt to delete reservation $resv_name"
