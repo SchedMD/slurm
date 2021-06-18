@@ -3280,6 +3280,7 @@ unpack_error:
  * OUT step - pointer to the job step info buffer
  * IN/OUT buffer - source of the unpack, contains pointers that are
  *			automatically updated
+ * Note: This is packed by _pack_ctld_job_step_info()
  */
 static int
 _unpack_job_step_info_members(job_step_info_t * step, buf_t *buffer,
