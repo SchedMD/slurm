@@ -676,7 +676,7 @@ static bool _opt_verify(void)
 		exit(error_exit);
 	}
 
-	if (opt.container && opt.container && !getenv("SLURM_CONTAINER"))
+	if (opt.container && !getenv("SLURM_CONTAINER"))
 		setenvf(NULL, "SLURM_CONTAINER", "%s", opt.container);
 
 	/*
