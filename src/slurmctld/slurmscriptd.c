@@ -43,6 +43,7 @@
 #include "src/common/eio.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/track_script.h"
 #include "src/common/xmalloc.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"
@@ -78,6 +79,8 @@ static pid_t slurmscriptd_pid;
 static eio_handle_t *msg_handle = NULL;
 static pthread_t slurmctld_listener_tid;
 static pthread_mutex_t write_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int script_count = 0;
+static pthread_mutex_t script_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static bool _msg_readable(eio_obj_t *obj)
 {
@@ -111,12 +114,23 @@ rwfail:
 	return SLURM_ERROR;
 }
 
+static void _decr_script_cnt(void)
+{
+	slurm_mutex_lock(&script_count_mutex);
+	script_count--;
+	slurm_mutex_unlock(&script_count_mutex);
+}
+
+static void _incr_script_cnt(void)
+{
+	slurm_mutex_lock(&script_count_mutex);
+	script_count++;
+	slurm_mutex_unlock(&script_count_mutex);
+}
+
 /*
  * Run a script with a given timeout.
  * Return the status or SLURM_ERROR if fork() fails.
- *
- * TODO: I copied this from src/plugins/prep/script/prep_script_slurmctld.c
- * Finish implementing missing features.
  */
 static int _run_script(char *script, char **env, uint32_t job_id,
 		       char *script_name, int timeout)
@@ -139,9 +153,8 @@ static int _run_script(char *script, char **env, uint32_t job_id,
 		_exit(127);
 	}
 
-	/* TODO: Use track_script_rec_add to track process? */
 	/* Start tracking this new process */
-	/* track_script_rec_add(script_arg->job_id, cpid, pthread_self()); */
+	track_script_rec_add(job_id, cpid, pthread_self());
 	while (1) {
 		wait_rc = waitpid_timeout(__func__, cpid, &status, timeout);
 
@@ -155,17 +168,11 @@ static int _run_script(char *script, char **env, uint32_t job_id,
 		}
 	}
 
-	/* TODO: Use track_script_broadcast? */
-	/*
 	if (track_script_broadcast(pthread_self(), status)) {
-		info("slurmctld_script JobId=%u %s killed by signal %u",
-		     script_arg->job_id,
-		     script_arg->is_epilog ? "epilog" : "prolog",
-		     WTERMSIG(status));
+		info("%s: slurmscriptd: JobId=%u %s killed by signal %u",
+		     __func__, job_id, script_name, WTERMSIG(status));
 	} else if (status != 0) {
-	 */
-	if (status != 0) {
-		error("%s JobId=%u %s exit status %u:%u",
+		error("%s: slurmscriptd: JobId=%u %s exit status %u:%u",
 		      __func__, job_id, script_name, WEXITSTATUS(status),
 		      WTERMSIG(status));
 	} else {
@@ -173,12 +180,11 @@ static int _run_script(char *script, char **env, uint32_t job_id,
 		       job_id, script_name);
 	}
 
-	/* TODO: Use track_script_remove? */
 	/*
 	 * Use pthread_self here instead of track_script_rec->tid to avoid any
 	 * potential for race.
 	 */
-	/* track_script_remove(pthread_self()); */
+	track_script_remove(pthread_self());
 	return status;
 }
 
@@ -235,6 +241,7 @@ static int _handle_prepilog_complete(buf_t *buffer, bool is_epilog)
 	else
 		prep_prolog_slurmctld_callback((int)status, job_id);
 	rc = SLURM_SUCCESS;
+	_decr_script_cnt();
 
 	return rc;
 
@@ -245,7 +252,14 @@ unpack_error:
 
 static int _handle_shutdown(void)
 {
+	/* Kill all running scripts. */
+	track_script_flush();
+
 	eio_signal_shutdown(msg_handle);
+
+#ifdef MEMORY_LEAK_DEBUG
+	track_script_fini();
+#endif
 
 	return SLURM_ERROR; /* Don't handle any more requests. */
 }
@@ -368,6 +382,17 @@ static void *_slurmctld_listener_thread(void *x)
 	return NULL;
 }
 
+static int _script_cnt(void)
+{
+	int cnt;
+
+	slurm_mutex_lock(&script_count_mutex);
+	cnt = script_count;
+	slurm_mutex_unlock(&script_count_mutex);
+
+	return cnt;
+}
+
 static void _kill_slurmscriptd(void)
 {
 	int status;
@@ -378,10 +403,8 @@ static void _kill_slurmscriptd(void)
 		return;
 	}
 
-	if (kill(slurmscriptd_pid, SIGTERM) < 0) {
-		error("%s: kill failed when trying to SIGTERM slurmscriptd: %m",
-		      __func__);
-	}
+	/* Tell slurmscriptd to shutdown, then wait for it to finish. */
+	_write_msg(slurmctld_writefd, SLURMSCRIPTD_SHUTDOWN, NULL);
 	if (waitpid(slurmscriptd_pid, &status, 0) < 0) {
 		if (WIFEXITED(status)) {
 			/* Exited normally. */
@@ -415,6 +438,7 @@ extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 		packstr_array(env, env_var_cnt, buffer);
 	pack16(slurm_conf.prolog_epilog_timeout, buffer);
 
+	_incr_script_cnt();
 	_write_msg(slurmctld_writefd, SLURMSCRIPTD_REQUEST_RUN_PREPILOG,
 		   buffer);
 	FREE_NULL_BUFFER(buffer);
@@ -482,6 +506,7 @@ extern int slurmscriptd_init(void)
 			      __func__);
 		}
 
+		slurm_mutex_init(&script_count_mutex);
 		slurm_mutex_init(&write_mutex);
 		_setup_eio(slurmctld_readfd);
 		slurm_thread_create(&slurmctld_listener_tid,
@@ -532,9 +557,21 @@ extern int slurmscriptd_init(void)
 
 extern int slurmscriptd_fini(void)
 {
+	int pc, last_pc = 0;
+
 	debug("%s starting", __func__);
-	_write_msg(slurmctld_writefd, SLURMSCRIPTD_SHUTDOWN, NULL);
 	_kill_slurmscriptd();
+
+	/* Wait until all script complete messages have been processed. */
+	while ((pc = _script_cnt()) > 0) {
+		if ((last_pc != 0) && (last_pc != pc)) {
+			info("waiting for %d running processes", pc);
+		}
+		last_pc = pc;
+		usleep(100000);
+	}
+
+	/* Now shutdown communications. */
 	eio_signal_shutdown(msg_handle);
 	pthread_join(slurmctld_listener_tid, NULL);
 	slurm_mutex_destroy(&write_mutex);
