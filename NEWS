@@ -140,6 +140,14 @@ documents those changes that are of interest to users and administrators.
     a new file.
  -- sstat - fix linking so that it will work when --without-shared-libslurm
     was used to build Slurm.
+ -- Clear allocated cpus for running steps in a job before handling requested
+    nodes on new step.
+ -- Don't reject a step if not enough nodes are available. Instead, defer the
+    step until enough nodes are available to satisfy the request.
+ -- Don't reject a step if it requests at least one specific node that is
+    already allocated to another step. Instead, defer the step until the
+    requested node(s) become available.
+ -- Return error for a step requesting more memory than the allocation has.
 
 * Changes in Slurm 20.11.7
 ==========================

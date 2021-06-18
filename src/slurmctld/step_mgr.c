@@ -1243,6 +1243,17 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		}
 	}
 
+	/*
+	 * If all nodes are blocked because of memory we have requested the
+	 * wrong thing.
+	 */
+	if (mem_blocked_nodes == job_ptr->node_cnt) {
+		*return_code = ESLURM_INVALID_TASK_MEMORY;
+		log_flag(STEPS, "%s: allocation has inadequate memory for request",
+			 __func__);
+		return NULL;
+	}
+
 	if (step_spec->min_nodes == INFINITE) {	/* use all nodes */
 		xfree(usable_cpu_cnt);
 		FREE_NULL_BITMAP(select_nodes_avail);
@@ -1278,11 +1289,15 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		}
 		if (!bit_super_set(selected_nodes, nodes_avail)) {
 			/*
-			 * If some nodes still have some memory allocated
-			 * to other steps, just defer the execution of the
-			 * step
+			 * If some nodes still have some memory or CPUs
+			 * allocated to other steps, just defer the execution
+			 * of the step
 			 */
-			if (mem_blocked_nodes == 0) {
+			if (job_blocked_nodes) {
+				*return_code = ESLURM_NODES_BUSY;
+				log_flag(STEPS, "%s: some requested nodes %s still have CPUs used by other steps",
+					 __func__, step_spec->node_list);
+			} else if (mem_blocked_nodes == 0) {
 				*return_code = ESLURM_INVALID_TASK_MEMORY;
 				info("%s: requested nodes %s have inadequate memory",
 				     __func__, step_spec->node_list);
@@ -1436,6 +1451,27 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		nodes_picked_cnt = bit_set_count(nodes_picked);
 		log_flag(STEPS, "%s: step picked %d of %u nodes",
 			 __func__, nodes_picked_cnt, step_spec->min_nodes);
+
+		/*
+		 * First do a basic test - if there aren't enough nodes for
+		 * this step to run on then we need to defer execution of this
+		 * step. As long as there aren't enough nodes for this
+		 * step we can never test if the step requested too
+		 * many CPUs, too much memory, etc. so we just bail right here.
+		 */
+		if (nodes_avail)
+			node_avail_cnt = bit_set_count(nodes_avail);
+		else
+			node_avail_cnt = 0;
+		if ((node_avail_cnt + nodes_picked_cnt) <
+		    step_spec->min_nodes) {
+			log_flag(STEPS, "%s: Step requested more nodes (%u) than are available (%d), deferring step until enough nodes are available.",
+				 __func__, step_spec->min_nodes,
+				 node_avail_cnt);
+			*return_code = ESLURM_NODES_BUSY;
+			goto cleanup;
+		}
+
 		if (nodes_idle)
 			node_avail_cnt = bit_set_count(nodes_idle);
 		else
