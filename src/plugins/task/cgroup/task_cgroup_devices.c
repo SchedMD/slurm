@@ -74,23 +74,15 @@ static int _handle_device_access(void *x, void *arg)
 {
 	gres_device_t *gres_device = (gres_device_t *)x;
 	handle_dev_args_t *handle_args = (handle_dev_args_t *)arg;
-	char *param;
 	cgroup_limits_t limits;
-
-	memset(&limits, 0, sizeof(limits));
-	limits.allow_device = false;
-
-	param = "devices.deny";
-
-	if (gres_device->alloc) {
-		param = "devices.allow";
-		limits.allow_device = true;
-	}
 
 	log_flag(GRES, "%s %s: adding %s(%s)",
 		 handle_args->is_step ? "step" : "job",
-		 param, gres_device->major, gres_device->path);
+		 gres_device->alloc ? "devices.allow" : "devices.deny",
+		 gres_device->major, gres_device->path);
 
+	memset(&limits, 0, sizeof(limits));
+	limits.allow_device = gres_device->alloc;
 	limits.device_major = gres_device->major;
 
 	if (!handle_args->is_step)
