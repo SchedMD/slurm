@@ -207,12 +207,6 @@ static int _handle_run_prepilog(buf_t *buffer)
 		resp_rpc = SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE;
 	}
 
-	info("%s: got run %s for job %u, script:%s",
-	     __func__, script_name, job_id, script);
-	for (uint32_t i = 0; i < env_cnt; i++) {
-		info("%s: env[%u]=%s", __func__, i, env[i]);
-	}
-
 	status = _run_script(script, env, job_id, script_name, timeout);
 
 	resp_buffer = init_buf(0);
