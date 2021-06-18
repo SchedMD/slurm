@@ -1232,6 +1232,17 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		}
 	}
 
+	/*
+	 * If all nodes are blocked because of memory we have requested the
+	 * wrong thing.
+	 */
+	if (mem_blocked_nodes == job_ptr->node_cnt) {
+		*return_code = ESLURM_INVALID_TASK_MEMORY;
+		log_flag(STEPS, "%s: allocation has inadequate memory for request",
+			 __func__);
+		return NULL;
+	}
+
 	if (step_spec->min_nodes == INFINITE) {	/* use all nodes */
 		xfree(usable_cpu_cnt);
 		FREE_NULL_BITMAP(select_nodes_avail);
