@@ -143,7 +143,7 @@ proc test_user_resv_delete {AccountingStorageEnforce test_user resv_user expecte
 		run_command -subtest -user $test_user "$scontrol delete reservationname=$resv_name"
 		run_command -subtest -xfail "$scontrol show reservationname=$resv_name"
 	} else {
-		log_info "Confirm that reservation non-member user CANNOT not delete reservation"
+		log_info "Confirm that reservation non-member user CANNOT delete reservation"
 		# TODO: Add -subtest -xfail once bug 10676 is fixed (>=21.08)
 		set output [run_command_output -user $test_user "$scontrol delete reservationname=$resv_name"]
 		set rc [regexp -all -nocase {invalid user id} $output]
