@@ -1276,14 +1276,14 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		error_code = node_name2bitmap(step_spec->node_list, false,
 					      &selected_nodes);
 		if (error_code) {
-			info("%s: invalid node list %s", __func__,
+			log_flag(STEPS, "%s: invalid node list %s", __func__,
 			     step_spec->node_list);
 			FREE_NULL_BITMAP(selected_nodes);
 			goto cleanup;
 		}
 		if (!bit_super_set(selected_nodes, job_ptr->node_bitmap)) {
-			info("%s: requested nodes %s not part of %pJ",
-			     __func__, step_spec->node_list, job_ptr);
+			log_flag(STEPS, "%s: requested nodes %s not part of %pJ",
+				 __func__, step_spec->node_list, job_ptr);
 			FREE_NULL_BITMAP(selected_nodes);
 			goto cleanup;
 		}
@@ -1299,12 +1299,12 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 					 __func__, step_spec->node_list);
 			} else if (mem_blocked_nodes == 0) {
 				*return_code = ESLURM_INVALID_TASK_MEMORY;
-				info("%s: requested nodes %s have inadequate memory",
-				     __func__, step_spec->node_list);
+				log_flag(STEPS, "%s: requested nodes %s have inadequate memory",
+					 __func__, step_spec->node_list);
 			} else {
 				*return_code = ESLURM_NODES_BUSY;
-				info ("%s: some requested nodes %s still have memory used by other steps",
-				      __func__, step_spec->node_list);
+				log_flag(STEPS, "%s: some requested nodes %s still have memory used by other steps",
+					 __func__, step_spec->node_list);
 			}
 			FREE_NULL_BITMAP(selected_nodes);
 			goto cleanup;
@@ -1330,9 +1330,10 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			 */
 			node_cnt = bit_set_count(selected_nodes);
 			if (node_cnt > step_spec->max_nodes) {
-				info("%s: requested nodes %s exceed max node count for %pJ (%d > %u)",
-				     __func__, step_spec->node_list, job_ptr,
-				     node_cnt, step_spec->max_nodes);
+				log_flag(STEPS, "%s: requested nodes %s exceed max node count for %pJ (%d > %u)",
+					 __func__, step_spec->node_list,
+					 job_ptr, node_cnt,
+					 step_spec->max_nodes);
 				FREE_NULL_BITMAP(selected_nodes);
 				goto cleanup;
 			} else if (step_spec->min_nodes &&
@@ -1365,8 +1366,8 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		relative_nodes = bit_pick_cnt(job_ptr->node_bitmap,
 					      step_spec->relative);
 		if (relative_nodes == NULL) {
-			info("%s: Invalid relative value (%u) for %pJ",
-			     __func__, step_spec->relative, job_ptr);
+			log_flag(STEPS, "%s: Invalid relative value (%u) for %pJ",
+				 __func__, step_spec->relative, job_ptr);
 			goto cleanup;
 		}
 		bit_and_not(nodes_avail, relative_nodes);
@@ -1437,9 +1438,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		step_spec->min_nodes = (i > step_spec->min_nodes) ?
 					i : step_spec->min_nodes ;
 		if (step_spec->max_nodes < step_spec->min_nodes) {
-			info("%s: %pJ max node less than min node count (%u < %u)",
-			     __func__, job_ptr, step_spec->max_nodes,
-			     step_spec->min_nodes);
+			log_flag(STEPS, "%s: %pJ max node less than min node count (%u < %u)",
+				 __func__, job_ptr, step_spec->max_nodes,
+				 step_spec->min_nodes);
 			*return_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
 			goto cleanup;
 		}
