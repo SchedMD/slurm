@@ -93,7 +93,7 @@ extern char **environ;
  **********************************************************************/
 static int _launch_tasks(slurm_step_ctx_t *ctx,
 			 launch_tasks_request_msg_t *launch_msg,
-			 uint32_t timeout, char *nodelist, int start_nodeid);
+			 uint32_t timeout, char *nodelist);
 static char *_lookup_cwd(void);
 static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 			      char *hostname, int nodeid);
@@ -407,7 +407,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 	memcpy(launch.resp_port, ctx->launch_state->resp_port,
 	       (sizeof(uint16_t) * launch.num_resp_port));
 	rc = _launch_tasks(ctx, &launch, params->msg_timeout,
-			   launch.complete_nodelist, 0);
+			   launch.complete_nodelist);
 
 	/* clean up */
 	xfree(launch.resp_port);
@@ -430,14 +430,12 @@ fail1:
  *		first component of the job step
  * IN params - job step parameters
  * IN node_list - list of extra nodes to add
- * IN start_nodeid - in the global scheme which node id is the first
- *                   node in node_list.
  * RET SLURM_SUCCESS or SLURM_ERROR (with errno set)
  */
 extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 				 slurm_step_ctx_t *first_ctx,
 				 const slurm_step_launch_params_t *params,
-				 char *node_list, int start_nodeid)
+				 char *node_list)
 {
 	launch_tasks_request_msg_t launch;
 	char **env = NULL;
@@ -600,8 +598,7 @@ extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 		       (sizeof(uint16_t) * launch.num_resp_port));
 	}
 
-	rc = _launch_tasks(ctx, &launch, params->msg_timeout,
-			   node_list, start_nodeid);
+	rc = _launch_tasks(ctx, &launch, params->msg_timeout, node_list);
 
 fail1:
 	/* clean up */
@@ -1687,7 +1684,7 @@ static int _fail_step_tasks(slurm_step_ctx_t *ctx, char *node, int ret_code)
 
 static int _launch_tasks(slurm_step_ctx_t *ctx,
 			 launch_tasks_request_msg_t *launch_msg,
-			 uint32_t timeout, char *nodelist, int start_nodeid)
+			 uint32_t timeout, char *nodelist)
 {
 #ifdef HAVE_FRONT_END
 	slurm_cred_arg_t cred_args;
@@ -1703,7 +1700,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	if (ctx->verbose_level) {
 		char *name = NULL;
 		hostlist_t hl = hostlist_create(nodelist);
-		int i = start_nodeid;
+		int i = 0;
 		while ((name = hostlist_shift(hl))) {
 			_print_launch_msg(launch_msg, name, i++);
 			free(name);

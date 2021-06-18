@@ -847,8 +847,8 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 		}
 	} else {
 		if (slurm_step_launch_add(job->step_ctx, job->step_ctx,
-					  &launch_params, job->nodelist,
-					  job->fir_nodeid) != SLURM_SUCCESS) {
+					  &launch_params, job->nodelist)
+			!= SLURM_SUCCESS) {
 			rc = errno;
 			*local_global_rc = errno;
 			error("Application launch add failed: %m");

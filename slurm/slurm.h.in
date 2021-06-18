@@ -3621,7 +3621,7 @@ extern int slurm_step_launch(slurm_step_ctx_t *ctx,
 extern int slurm_step_launch_add(slurm_step_ctx_t *ctx,
 				 slurm_step_ctx_t *first_ctx,
 				 const slurm_step_launch_params_t *params,
-				 char *node_list, int start_nodeid);
+				 char *node_list);
 
 /*
  * Block until all tasks have started.
