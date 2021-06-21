@@ -2175,6 +2175,13 @@
             "type": "string",
             "description": "User allowed to use this node"
           },
+          "partitions": {
+            "type": "array",
+            "description": "assigned partitions",
+            "items": {
+              "type": "string"
+            }
+          },
           "port": {
             "type": "integer",
             "description": "TCP port number of the slurmd"

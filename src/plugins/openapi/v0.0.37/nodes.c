@@ -193,7 +193,25 @@ static int _dump_node(data_t *p, node_info_t *node)
 		data_set_string_own(data_key_set(d, "owner"),
 				    uid_to_string_or_null(node->owner));
 	}
-	// FIXME: data_set_string(data_key_set(d, "partitions"), node->partitions);
+
+	if (node->partitions) {
+		data_t *p = data_set_list(data_key_set(d, "partitions"));
+		char *str = xstrdup(node->partitions);
+		char *save_ptr = NULL;
+		char *token = NULL;
+
+		/* API provides as a CSV list */
+		token = strtok_r(str, ",", &save_ptr);
+		while (token) {
+			data_set_string(data_list_append(p), token);
+			token = strtok_r(NULL, ",", &save_ptr);
+		}
+
+		xfree(str);
+	} else {
+		data_set_list(data_key_set(d, "partitions"));
+	}
+
 	data_set_int(data_key_set(d, "port"), node->port);
 	data_set_int(data_key_set(d, "real_memory"), node->real_memory);
 	data_set_string(data_key_set(d, "reason"), node->reason);
@@ -286,10 +304,21 @@ static int _op_handler_nodes(const char *context_id,
 		/* no-op: nothing to do here */
 		rc = errno;
 		goto done;
-	} else if (!rc && node_info_ptr && node_info_ptr->record_count)
+	} else if (!rc && node_info_ptr && node_info_ptr->record_count) {
+		partition_info_msg_t *part_info_ptr = NULL;
+
+		if (!(rc = slurm_load_partitions(update_time, &part_info_ptr,
+						 SHOW_ALL))) {
+			slurm_populate_node_partitions(node_info_ptr,
+						       part_info_ptr);
+
+			slurm_free_partition_info_msg(part_info_ptr);
+		}
+
 		for (int i = 0; !rc && i < node_info_ptr->record_count; i++)
 			rc = _dump_node(nodes,
 					   &node_info_ptr->node_array[i]);
+	}
 
 	if (!rc && (!node_info_ptr || node_info_ptr->record_count == 0))
 		rc = ESLURM_INVALID_NODE_NAME;

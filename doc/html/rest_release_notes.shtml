@@ -170,6 +170,10 @@ paths in a single quote string to avoid shell replacements.</p>
        <td class="tdfield">add path</td>
        <td class="tdchange">.components.schemas."v0.0.37_node".properties.alloc_memory</td>
 </tr>
+<tr class="trchange">
+       <td class="tdfield">add path</td>
+       <td class="tdchange">.components.schemas."v0.0.37_node".properties.partitions</td>
+</tr>
 </table>
 
 <h2>Slurm 20.11.5<h2>
