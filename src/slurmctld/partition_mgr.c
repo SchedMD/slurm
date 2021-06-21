@@ -204,8 +204,8 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 	while ((this_node_name = hostlist_shift(host_list))) {
 		node_ptr = find_node_record_no_alias(this_node_name);
 		if (node_ptr == NULL) {
-			error("build_part_bitmap: invalid node name %s",
-				this_node_name);
+			error("%s: invalid node name %s",
+			      __func__, this_node_name);
 			free(this_node_name);
 			FREE_NULL_BITMAP(old_bitmap);
 			hostlist_destroy(host_list);
@@ -401,8 +401,8 @@ static int _delete_part_record(char *name)
 	if ((name == NULL) || (i != 0))
 		return 0;
 
-	error("_delete_part_record: attempt to delete non-existent "
-	      "partition %s", name);
+	error("%s: attempt to delete non-existent partition %s",
+	      __func__, name);
 	return ENOENT;
 }
 
@@ -678,8 +678,8 @@ int load_all_part_state(void)
 				error_code = EINVAL;
 			}
 		} else {
-			error("load_all_part_state: protocol_version "
-			      "%hu not supported", protocol_version);
+			error("%s: protocol_version %hu not supported",
+			      __func__, protocol_version);
 			goto unpack_error;
 		}
 		/* validity test as possible */
@@ -1184,8 +1184,8 @@ void pack_part(part_record_t *part_ptr, buf_t *buffer, uint16_t protocol_version
 				      job_defaults_pack, buffer,
 				      protocol_version);
 	} else {
-		error("pack_part: protocol_version "
-		      "%hu not supported", protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, protocol_version);
 	}
 }
 
