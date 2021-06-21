@@ -6,7 +6,7 @@
  *  Written by Aditi Gaur <agaur@lbl.gov>
  *  All rights reserved.
  *
- *  This file is part of SLURM, a resource management program.
+ *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
  *  Please also read the included file: DISCLAIMER.
  *
