@@ -83,7 +83,6 @@ part_record_t *default_part_loc = NULL;	/* default partition location */
 time_t last_part_update = (time_t) 0;	/* time of last update to partition records */
 uint16_t part_max_priority = DEF_PART_MAX_PRIORITY;
 
-static int    _delete_part_record(char *name);
 static int    _dump_part_state(void *x, void *arg);
 static void   _list_delete_part(void *part_entry);
 static int    _match_part_ptr(void *part_ptr, void *key);
@@ -279,7 +278,6 @@ static void _unlink_free_nodes(bitstr_t *old_bitmap, part_record_t *part_ptr)
  * create_part_record - create a partition record
  * RET a pointer to the record or NULL if error
  * global: part_list - global partition list
- * NOTE: allocates memory that should be xfreed with _delete_part_record
  */
 part_record_t *create_part_record(const char *name)
 {
@@ -380,32 +378,6 @@ part_record_t *create_part_record(const char *name)
 
 	return part_ptr;
 }
-
-
-/*
- * _delete_part_record - delete record for partition with specified name
- * IN name - name of the desired node, delete all partitions if NULL
- * RET 0 on success, errno otherwise
- * global: part_list - global partition list
- */
-static int _delete_part_record(char *name)
-{
-	int i;
-
-	last_part_update = time(NULL);
-	if (name == NULL)
-		i = list_flush(part_list);
-	else
-		i = list_delete_all(part_list, &list_find_part, name);
-
-	if ((name == NULL) || (i != 0))
-		return 0;
-
-	error("%s: attempt to delete non-existent partition %s",
-	      __func__, name);
-	return ENOENT;
-}
-
 
 /* dump_all_part_state - save the state of all partitions to file */
 int dump_all_part_state(void)
@@ -931,7 +903,7 @@ void init_part_conf(void)
 	FREE_NULL_BITMAP(default_part.node_bitmap);
 
 	if (part_list)		/* delete defunct partitions */
-		(void) _delete_part_record(NULL);
+		list_flush(part_list);
 	else
 		part_list = list_create(_list_delete_part);
 
@@ -1268,7 +1240,8 @@ extern int update_part(update_part_msg_t * part_desc, bool create_flag)
 					  part_ptr, false)) {
 
 		if (create_flag)
-			_delete_part_record(part_ptr->name);
+			list_delete_all(part_list, &list_find_part,
+					part_desc->name);
 
 		return ESLURM_INVALID_TRES_BILLING_WEIGHTS;
 	}
