@@ -2330,7 +2330,7 @@ static int _make_batch_script(batch_job_launch_msg_t *msg,
 	munmap(output, length);
 
 	if (chown(script, (uid_t) msg->uid, (gid_t) -1) < 0) {
-		error("chown(%s): %m", path);
+		error("chown(%s): %m", script);
 		goto error;
 	}
 
