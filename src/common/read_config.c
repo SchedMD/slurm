@@ -4082,15 +4082,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 
 	if (!s_p_get_uint16(&conf->msg_timeout, "MessageTimeout", hashtbl))
 		conf->msg_timeout = DEFAULT_MSG_TIMEOUT;
-	else if (conf->msg_timeout > 100) {
-		if (getuid() == 0) {
-			info("WARNING: MessageTimeout is too high for "
-				"effective fault-tolerance");
-		} else {
-			debug("WARNING: MessageTimeout is too high for "
-				"effective fault-tolerance");
-		}
-	}
+	else if ((conf->msg_timeout > 100) && running_in_daemon())
+		error("MessageTimeout is too high for effective fault-tolerance");
 
 	if (!s_p_get_uint32(&conf->min_job_age, "MinJobAge", hashtbl))
 		conf->min_job_age = DEFAULT_MIN_JOB_AGE;
