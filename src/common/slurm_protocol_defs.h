@@ -1151,6 +1151,7 @@ typedef struct {
 typedef struct {
 	List config_files;
 
+	/* Remove 2 versions after 21.08 */
 	char *config;
 	char *acct_gather_config;
 	char *cgroup_config;
@@ -1162,7 +1163,9 @@ typedef struct {
 	char *knl_generic_config;
 	char *plugstack_config;
 	char *topology_config;
-	char *xtra_config;	/* in case we forgot one ;) */
+	char *xtra_config;	/* in case we forgot one ;)
+				 * shouldn't be used - for new versions just
+				 * use the List */
 
 	char *slurmd_spooldir;
 } config_response_msg_t;
