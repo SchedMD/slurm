@@ -357,10 +357,12 @@ static char *_batch_script_path(stepd_step_rec_t *job)
 extern void
 batch_finish(stepd_step_rec_t *job, int rc)
 {
+	char *script = _batch_script_path(job);
 	step_complete.step_rc = _get_exit_code(job);
 
-	if (job->argv[0] && (unlink(job->argv[0]) < 0))
-		error("unlink(%s): %m", job->argv[0]);
+	if (unlink(script) < 0)
+		error("unlink(%s): %m", script);
+	xfree(script);
 
 	if (job->aborted) {
 		if (job->step_id.step_id != SLURM_BATCH_SCRIPT)
