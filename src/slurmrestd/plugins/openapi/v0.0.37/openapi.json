@@ -1261,7 +1261,8 @@
             "description": "Charge resources used by this job to specified account"
           },
           "accrue_time": {
-            "type": "string",
+            "type": "integer",
+            "format": "int64",
             "description": "time job is eligible for running"
           },
           "admin_comment": {
@@ -1388,11 +1389,13 @@
             "description": "highest exit code of all job steps"
           },
           "eligible_time": {
-            "type": "string",
+            "type": "integer",
+            "format": "int64",
             "description": "time job is eligible for running"
           },
           "end_time": {
-            "type": "string",
+            "type": "integer",
+            "format": "int64",
             "description": "time of termination, actual or expected"
           },
           "excluded_nodes": {
@@ -1534,11 +1537,13 @@
             "description": "minimum tmp disk per node"
           },
           "preempt_time": {
-            "type": "string",
+            "type": "integer",
+            "format": "int64",
             "description": "preemption signal time"
           },
           "pre_sus_time": {
-            "type": "string",
+            "type": "integer",
+            "format": "int64",
             "description": "time job ran prior to last suspend"
           },
           "priority": {
@@ -1569,7 +1574,8 @@
             "description": "enable or disable job requeue option"
           },
           "resize_time": {
-            "type": "string",
+            "type": "integer",
+            "format": "int64",
             "description": "time of latest size change"
           },
           "restart_cnt": {
@@ -1600,7 +1606,8 @@
             "description": "sockets per node required by job"
           },
           "start_time": {
-            "type": "string",
+            "type": "integer",
+            "format": "int64",
             "description": "time execution begins, actual or expected"
           },
           "state_description": {
@@ -1624,11 +1631,13 @@
             "description": "pathname of job's stdout file"
           },
           "submit_time": {
-            "type": "string",
+            "type": "integer",
+            "format": "int64",
             "description": "time of job submission"
           },
           "suspend_time": {
-            "type": "string",
+            "type": "integer",
+            "format": "int64",
             "description": "time job last suspended or resumed"
           },
           "system_comment": {
@@ -1772,7 +1781,8 @@
             "description": "features required for batch script's node"
           },
           "begin_time": {
-            "type": "string",
+            "type": "integer",
+            "format": "int64",
             "description": "Submit the batch script to the Slurm controller immediately, like normal, but tell the controller to defer the allocation of the job until the specified time."
           },
           "burst_buffer": {
