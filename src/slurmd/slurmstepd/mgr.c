@@ -346,6 +346,11 @@ static uint32_t _get_exit_code(stepd_step_rec_t *job)
 	return step_rc;
 }
 
+static char *_batch_script_path(stepd_step_rec_t *job)
+{
+	return xstrdup_printf("%s/%s", job->batchdir, "slurm_script");
+}
+
 /*
  * Send batch exit code to slurmctld. Non-zero rc will DRAIN the node.
  */
@@ -2285,7 +2290,6 @@ error:
 static int _make_batch_script(batch_job_launch_msg_t *msg,
 			      stepd_step_rec_t *job)
 {
-	char *path = job->batchdir;
 	int flags = O_RDWR | O_CREAT | O_EXCL | O_CLOEXEC;
 	int fd, length;
 	char *script = NULL;
@@ -2302,7 +2306,7 @@ static int _make_batch_script(batch_job_launch_msg_t *msg,
 		return SLURM_ERROR;
 	}
 
-	xstrfmtcat(script, "%s/%s", path, "slurm_script");
+	script = _batch_script_path(job);
 
 	if ((fd = open(script, flags, S_IRWXU)) < 0) {
 		error("couldn't open `%s': %m", script);
