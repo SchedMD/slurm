@@ -112,6 +112,14 @@ paths in a single quote string to avoid shell replacements.</p>
 </tr>
 </table>
 
+<h4>Correct preemption_mode type to list of strings</h4>
+<table class="tchange">
+<tr class="trchange">
+       <td class="tdfield">modify path</td>
+       <td class="tdchange">.components.schemas."v0.0.37_partition".properties.preemption_mode</td>
+</tr>
+</table>
+
 <h2>Slurm 20.11.5<h2>
 
 <h3>openapi/dbv0.0.36 (src/slurmrestd/plugins/openapi/dbv0.0.36/openapi.json)</h3>

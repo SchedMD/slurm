@@ -908,8 +908,11 @@
             }
           },
           "preemption_mode": {
-            "type": "string",
-            "description": "preemption type"
+            "type": "array",
+            "description": "preemption type",
+            "items": {
+              "type": "string"
+            }
           },
           "allowed_allocation_nodes": {
             "type": "string",
