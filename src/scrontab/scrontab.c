@@ -100,6 +100,8 @@ static void _parse_args(int argc, char **argv)
 	while ((c = getopt(argc, argv, "elru:v")) != -1) {
 		switch (c) {
 		case 'e':
+			if (!isatty(STDIN_FILENO))
+				fatal("Standard input is not a TTY");
 			edit_only = true;
 			break;
 		case 'l':
