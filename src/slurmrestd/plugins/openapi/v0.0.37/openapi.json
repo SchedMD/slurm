@@ -2220,9 +2220,33 @@
             "type": "string",
             "description": "TRES on node"
           },
+          "tres_used": {
+            "type": "string",
+            "description": "TRES used on node"
+          },
+          "tres_weighted": {
+            "type": "number",
+            "format": "double",
+            "description": "TRES weight used on node"
+          },
           "slurmd_version": {
             "type": "string",
             "description": "Slurmd version"
+          },
+          "alloc_cpus": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Allocated CPUs"
+          },
+          "idle_cpus": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Idle CPUs"
+          },
+          "alloc_memory": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Allocated memory (MB)"
           }
         }
       },

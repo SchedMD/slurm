@@ -45,6 +45,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/data.h"
+#include "src/common/node_select.h"
 #include "src/common/ref.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
@@ -124,6 +125,11 @@ static void _add_node_state_flags(data_t *flags, uint32_t state)
 
 static int _dump_node(data_t *p, node_info_t *node)
 {
+	int rc;
+	uint16_t alloc_cpus = 0;
+	uint64_t alloc_memory = 0;
+	char *node_alloc_tres = NULL;
+	double node_tres_weighted = 0;
 	data_t *d;
 
 	if (!node->name) {
@@ -189,7 +195,6 @@ static int _dump_node(data_t *p, node_info_t *node)
 	data_set_int(data_key_set(d, "reason_changed_at"), node->reason_time);
 	data_set_string_own(data_key_set(d, "reason_set_by_user"),
 			    uid_to_string_or_null(node->reason_uid));
-	// TODO: dynamic_plugin_data_t *select_nodeinfo;  /* opaque data structure,
 	data_set_int(data_key_set(d, "slurmd_start_time"), node->slurmd_start_time);
 	data_set_int(data_key_set(d, "sockets"), node->sockets);
 	data_set_int(data_key_set(d, "threads"), node->threads);
@@ -197,6 +202,46 @@ static int _dump_node(data_t *p, node_info_t *node)
 	data_set_int(data_key_set(d, "weight"), node->weight);
 	data_set_string(data_key_set(d, "tres"), node->tres_fmt_str);
 	data_set_string(data_key_set(d, "slurmd_version"), node->version);
+
+	/* Data from node->select_nodeinfo */
+	if ((rc = slurm_get_select_nodeinfo(
+		     node->select_nodeinfo, SELECT_NODEDATA_SUBCNT,
+		     NODE_STATE_ALLOCATED, &alloc_cpus))) {
+		error("%s: slurm_get_select_nodeinfo(%s, SELECT_NODEDATA_SUBCNT): %s",
+		      __func__, node->node_hostname, slurm_strerror(rc));
+		return rc;
+	}
+	if ((rc = slurm_get_select_nodeinfo(
+		     node->select_nodeinfo, SELECT_NODEDATA_MEM_ALLOC,
+		     NODE_STATE_ALLOCATED, &alloc_memory))) {
+		error("%s: slurm_get_select_nodeinfo(%s, SELECT_NODEDATA_MEM_ALLOC): %s",
+		      __func__, node->node_hostname, slurm_strerror(rc));
+		return rc;
+	}
+	if ((rc = select_g_select_nodeinfo_get(
+		     node->select_nodeinfo, SELECT_NODEDATA_TRES_ALLOC_FMT_STR,
+		     NODE_STATE_ALLOCATED, &node_alloc_tres))) {
+		error("%s: slurm_get_select_nodeinfo(%s, SELECT_NODEDATA_TRES_ALLOC_FMT_STR): %s",
+		      __func__, node->node_hostname, slurm_strerror(rc));
+		return rc;
+	}
+	if ((rc = select_g_select_nodeinfo_get(
+		     node->select_nodeinfo, SELECT_NODEDATA_TRES_ALLOC_WEIGHTED,
+		     NODE_STATE_ALLOCATED, &node_tres_weighted))) {
+		error("%s: slurm_get_select_nodeinfo(%s, SELECT_NODEDATA_TRES_ALLOC_WEIGHTED): %s",
+		      __func__, node->node_hostname, slurm_strerror(rc));
+		return rc;
+	}
+
+	data_set_int(data_key_set(d, "alloc_memory"), alloc_memory);
+	data_set_int(data_key_set(d, "alloc_cpus"), alloc_cpus);
+	data_set_int(data_key_set(d, "idle_cpus"), (node->cpus - alloc_cpus));
+	if (node_alloc_tres)
+		data_set_string_own(data_key_set(d, "tres_used"),
+				    node_alloc_tres);
+	else
+		data_set_null(data_key_set(d, "tres_used"));
+	data_set_float(data_key_set(d, "tres_weighted"), node_tres_weighted);
 
 	return SLURM_SUCCESS;
 }

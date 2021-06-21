@@ -148,6 +148,30 @@ paths in a single quote string to avoid shell replacements.</p>
 </tr>
 </table>
 
+<h4>Add new fields to node properties</h4>
+<table class="tchange">
+<tr class="trchange">
+       <td class="tdfield">add path</td>
+       <td class="tdchange">.components.schemas."v0.0.37_node".properties.tres_used</td>
+</tr>
+<tr class="trchange">
+       <td class="tdfield">add path</td>
+       <td class="tdchange">.components.schemas."v0.0.37_node".properties.tres_weighted</td>
+</tr>
+<tr class="trchange">
+       <td class="tdfield">add path</td>
+       <td class="tdchange">.components.schemas."v0.0.37_node".properties.alloc_cpus</td>
+</tr>
+<tr class="trchange">
+       <td class="tdfield">add path</td>
+       <td class="tdchange">.components.schemas."v0.0.37_node".properties.idle_cpus</td>
+</tr>
+<tr class="trchange">
+       <td class="tdfield">add path</td>
+       <td class="tdchange">.components.schemas."v0.0.37_node".properties.alloc_memory</td>
+</tr>
+</table>
+
 <h2>Slurm 20.11.5<h2>
 
 <h3>openapi/dbv0.0.36 (src/slurmrestd/plugins/openapi/dbv0.0.36/openapi.json)</h3>
