@@ -251,7 +251,7 @@ extern int container_p_restore(char *dir_name, bool recover)
 		return SLURM_ERROR;
 	}
 
-	debug("namepsace.conf read successfully");
+	debug("job_container.conf read successfully");
 
 	if (jc_conf->auto_basepath) {
 		int fstatus;
