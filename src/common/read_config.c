@@ -4088,10 +4088,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_uint32(&conf->min_job_age, "MinJobAge", hashtbl))
 		conf->min_job_age = DEFAULT_MIN_JOB_AGE;
 	else if (conf->min_job_age < 2) {
-		if (getuid() == 0)
-			info("WARNING: MinJobAge must be at least 2");
-		else
-			debug("WARNING: MinJobAge must be at least 2");
+		if (running_in_slurmctld())
+			error("MinJobAge must be at least 2");
 		conf->min_job_age = 2;
 	}
 
