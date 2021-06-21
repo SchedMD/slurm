@@ -59,6 +59,9 @@ void print_gres_help(void);
  */
 void set_distribution(task_dist_states_t distribution, char **dist);
 
+/* check if path2 is subpath of path2 */
+extern bool subpath(char *path1, char *path2);
+
 /* verify the requested distribution type */
 task_dist_states_t verify_dist_type(const char *arg, uint32_t *plane_size);
 

@@ -1579,6 +1579,60 @@ uint16_t parse_compress_type(const char *arg)
 	return COMPRESS_OFF;
 }
 
+/*
+ * IN: char pointer to path1
+ * IN: char pointer to path2
+ *
+ * RET: true if path2 is a subpath of path1; false otherwise
+ *
+ * Examples:
+ *
+ * path1	path2		ret
+ * ---------------------------------
+ * NULL		NULL		true
+ * NULL		/foo		false
+ * /foo		NULL		true
+ * /foo/bar	/foo		true
+ * /foo/bar	/bar		false
+ * /foo/bar	/foo/b		false
+ * /foo		/foo/bar	false
+ * /foo		/foo/		true
+ */
+extern bool subpath(char *path1, char *path2)
+{
+	bool ret = true;
+	char *p1 = NULL, *p2 = NULL;
+	char *tok1 = NULL, *tok2 = NULL;
+	char *save_ptr1 = NULL, *save_ptr2 = NULL;
+
+	if (!path2)
+		return true;
+	else if (!path1)
+		return false;
+
+	/* Both non-NULL. */
+	p1 = xstrdup(path1);
+	p2 = xstrdup(path2);
+	tok1 = strtok_r(p1, "/", &save_ptr1);
+	tok2 = strtok_r(p2, "/", &save_ptr2);
+
+	while (tok1 && tok2) {
+		if (xstrcmp(tok1, tok2)) {
+			ret = false;
+			break;
+		}
+		tok1 = strtok_r(NULL, "/", &save_ptr1);
+		tok2 = strtok_r(NULL, "/", &save_ptr2);
+	}
+
+	if (tok2 && !tok1)
+		ret = false;
+
+	xfree(p1);
+	xfree(p2);
+	return ret;
+}
+
 extern int validate_acctg_freq(char *acctg_freq)
 {
 	int i;
