@@ -423,7 +423,9 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
  * RET - List of gres_device_t containing all devices from all GRES with alloc
  *       set correctly if the device is allocated to the job/step.
  */
-extern List gres_g_get_devices(List gres_list, bool is_job);
+extern List gres_g_get_devices(List gres_list, bool is_job,
+			       uint16_t accel_bind_type, char *tres_bind_str,
+			       int local_proc_id);
 
 /* Send GRES information to slurmstepd on the specified file descriptor */
 extern void gres_g_send_stepd(int fd, slurm_msg_t *msg);

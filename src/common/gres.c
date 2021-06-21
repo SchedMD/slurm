@@ -268,6 +268,11 @@ static void	_validate_gres_conf(List gres_conf_list,
 static int	_validate_file(char *path_name, char *gres_name);
 static int	_valid_gres_type(char *gres_name, gres_node_state_t *gres_data,
 				 bool config_overrides, char **reason_down);
+static void _parse_tres_bind(uint16_t accel_bind_type, char *tres_bind_str,
+			     tres_bind_t *tres_bind);
+static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
+			    tres_bind_t *tres_bind, bitstr_t **usable_gres_ptr);
+
 
 extern uint32_t gres_build_id(char *name)
 {
@@ -7926,7 +7931,9 @@ static int _find_device(void *x, void *key)
 	return 0;
 }
 
-extern List gres_g_get_devices(List gres_list, bool is_job)
+extern List gres_g_get_devices(List gres_list, bool is_job,
+			       uint16_t accel_bind_type, char *tres_bind_str,
+			       int local_proc_id)
 {
 	int j;
 	ListIterator gres_itr, dev_itr;
@@ -7936,6 +7943,8 @@ extern List gres_g_get_devices(List gres_list, bool is_job)
 	gres_device_t *gres_device;
 	List gres_devices;
 	List device_list = NULL;
+	bitstr_t *usable_gres = NULL;
+	tres_bind_t tres_bind;
 
 	(void) gres_init();
 
@@ -7967,6 +7976,11 @@ extern List gres_g_get_devices(List gres_list, bool is_job)
 
 	if (!gres_list)
 		return device_list;
+
+	if (accel_bind_type || tres_bind_str)
+		_parse_tres_bind(accel_bind_type, tres_bind_str, &tres_bind);
+	else
+		memset(&tres_bind, 0, sizeof(tres_bind));
 
 	slurm_mutex_lock(&gres_context_lock);
 	gres_itr = list_iterator_create(gres_list);
@@ -8010,7 +8024,15 @@ extern List gres_g_get_devices(List gres_list, bool is_job)
 
 		dev_itr = list_iterator_create(gres_devices);
 		while ((gres_device = list_next(dev_itr))) {
-			if (bit_test(local_bit_alloc[0], gres_device->index)) {
+			if (!bit_test(local_bit_alloc[0], gres_device->index))
+				continue;
+			if (_get_usable_gres(gres_context[j].gres_name, j,
+					     local_proc_id,
+					     &tres_bind, &usable_gres) ==
+			    SLURM_ERROR)
+				continue;
+			if (!usable_gres ||
+			    bit_test(usable_gres, gres_device->index)) {
 				gres_device_t *gres_device2;
 				/*
 				 * search for the device among the unique
@@ -8029,6 +8051,7 @@ extern List gres_g_get_devices(List gres_list, bool is_job)
 				if (gres_device2)
 					gres_device2->alloc = 1;
 			}
+			FREE_NULL_BITMAP(usable_gres);
 		}
 		list_iterator_destroy(dev_itr);
 	}
