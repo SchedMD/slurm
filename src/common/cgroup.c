@@ -390,9 +390,8 @@ static void _read_slurm_cgroup_conf(void)
 				     "ConstrainDevices", tbl))
 			slurm_cgroup_conf.constrain_devices = false;
 
-		s_p_get_string(&slurm_cgroup_conf.allowed_devices_file,
-			       "AllowedDevicesFile", tbl);
-		if (!slurm_cgroup_conf.allowed_devices_file)
+		if (!s_p_get_string(&slurm_cgroup_conf.allowed_devices_file,
+				    "AllowedDevicesFile", tbl))
 			slurm_cgroup_conf.allowed_devices_file =
 				get_extra_conf_path(
 					"cgroup_allowed_devices_file.conf");
