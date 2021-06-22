@@ -24,6 +24,7 @@ slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) $(DL_LIBS) $(depend_ldadd)
 slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(depend_ldflags)
 
 slurmstepd_SOURCES = 	        	\
+	container.c container.h	\
 	slurmstepd.c slurmstepd.h	\
 	mgr.c mgr.h			\
 	task.c task.h			\

@@ -150,11 +150,12 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 PROGRAMS = $(sbin_PROGRAMS)
-am_slurmstepd_OBJECTS = slurmstepd.$(OBJEXT) mgr.$(OBJEXT) \
-	task.$(OBJEXT) slurmstepd_job.$(OBJEXT) io.$(OBJEXT) \
-	ulimits.$(OBJEXT) pdebug.$(OBJEXT) pam_ses.$(OBJEXT) \
-	setproctitle.$(OBJEXT) req.$(OBJEXT) multi_prog.$(OBJEXT) \
-	step_terminate_monitor.$(OBJEXT) x11_forwarding.$(OBJEXT)
+am_slurmstepd_OBJECTS = container.$(OBJEXT) slurmstepd.$(OBJEXT) \
+	mgr.$(OBJEXT) task.$(OBJEXT) slurmstepd_job.$(OBJEXT) \
+	io.$(OBJEXT) ulimits.$(OBJEXT) pdebug.$(OBJEXT) \
+	pam_ses.$(OBJEXT) setproctitle.$(OBJEXT) req.$(OBJEXT) \
+	multi_prog.$(OBJEXT) step_terminate_monitor.$(OBJEXT) \
+	x11_forwarding.$(OBJEXT)
 slurmstepd_OBJECTS = $(am_slurmstepd_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -181,11 +182,11 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/io.Po ./$(DEPDIR)/mgr.Po \
-	./$(DEPDIR)/multi_prog.Po ./$(DEPDIR)/pam_ses.Po \
-	./$(DEPDIR)/pdebug.Po ./$(DEPDIR)/req.Po \
-	./$(DEPDIR)/setproctitle.Po ./$(DEPDIR)/slurmstepd.Po \
-	./$(DEPDIR)/slurmstepd_job.Po \
+am__depfiles_remade = ./$(DEPDIR)/container.Po ./$(DEPDIR)/io.Po \
+	./$(DEPDIR)/mgr.Po ./$(DEPDIR)/multi_prog.Po \
+	./$(DEPDIR)/pam_ses.Po ./$(DEPDIR)/pdebug.Po \
+	./$(DEPDIR)/req.Po ./$(DEPDIR)/setproctitle.Po \
+	./$(DEPDIR)/slurmstepd.Po ./$(DEPDIR)/slurmstepd_job.Po \
 	./$(DEPDIR)/step_terminate_monitor.Po ./$(DEPDIR)/task.Po \
 	./$(DEPDIR)/ulimits.Po ./$(DEPDIR)/x11_forwarding.Po
 am__mv = mv -f
@@ -501,6 +502,7 @@ AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
 slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) $(DL_LIBS) $(depend_ldadd)
 slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(depend_ldflags)
 slurmstepd_SOURCES = \
+	container.c container.h	\
 	slurmstepd.c slurmstepd.h	\
 	mgr.c mgr.h			\
 	task.c task.h			\
@@ -609,6 +611,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/container.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mgr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/multi_prog.Po@am__quote@ # am--include-marker
@@ -750,7 +753,8 @@ clean-am: clean-generic clean-libtool clean-sbinPROGRAMS \
 	mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/io.Po
+		-rm -f ./$(DEPDIR)/container.Po
+	-rm -f ./$(DEPDIR)/io.Po
 	-rm -f ./$(DEPDIR)/mgr.Po
 	-rm -f ./$(DEPDIR)/multi_prog.Po
 	-rm -f ./$(DEPDIR)/pam_ses.Po
@@ -808,7 +812,8 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/io.Po
+		-rm -f ./$(DEPDIR)/container.Po
+	-rm -f ./$(DEPDIR)/io.Po
 	-rm -f ./$(DEPDIR)/mgr.Po
 	-rm -f ./$(DEPDIR)/multi_prog.Po
 	-rm -f ./$(DEPDIR)/pam_ses.Po
