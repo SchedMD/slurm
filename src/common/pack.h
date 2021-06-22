@@ -75,7 +75,7 @@ typedef struct {
 #define size_buf(__buf)			(__buf->size)
 
 extern buf_t *create_buf(char *data, uint32_t size);
-extern buf_t *create_mmap_buf(char *file);
+extern buf_t *create_mmap_buf(const char *file);
 extern void free_buf(buf_t *my_buf);
 extern buf_t *init_buf(uint32_t size);
 extern void grow_buf(buf_t *my_buf, uint32_t size);

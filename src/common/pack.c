@@ -137,7 +137,7 @@ buf_t *create_buf(char *data, uint32_t size)
  * create_mmap_buf - create an mmap()'d read-only buffer from
  * the supplied file.
  */
-buf_t *create_mmap_buf(char *file)
+buf_t *create_mmap_buf(const char *file)
 {
 	buf_t *my_buf;
 	int fd;
