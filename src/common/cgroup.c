@@ -379,8 +379,7 @@ static void _read_slurm_cgroup_conf(void)
 		if (s_p_get_uint64(&slurm_cgroup_conf.memory_swappiness,
 				     "MemorySwappiness", tbl)) {
 			if (slurm_cgroup_conf.memory_swappiness > 100) {
-				error("Value for MemorySwappiness is too high,"
-				      " rounding down to 100.");
+				error("Value for MemorySwappiness is too high, rounding down to 100.");
 				slurm_cgroup_conf.memory_swappiness = 100;
 			}
 		}
