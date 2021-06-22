@@ -5619,6 +5619,9 @@ in the job being requeued to be executed on another node if possible. Only
 batch jobs can be requeued.
 Interactive jobs (salloc and srun) will be cancelled if the
 PrologSlurmctld fails.
+If slurmcltd is stopped while either PrologSlurmctld or EpilogSlurmctld is
+running, the script will be killed with SIGKILL. The script will restart when
+slurmctld restarts.
 
 
 Information about the job is passed to the script using environment
