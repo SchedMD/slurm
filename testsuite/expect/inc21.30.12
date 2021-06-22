@@ -30,80 +30,34 @@ proc inc21_30_12 { } {
 	global salloc srun acct bin_sleep grpwall_num number exit_code qostest
 
 	log_info "Starting Grpwall test (Within: inc21.30.12)"
-	set job_id1 0
-	set job_id2 0
-	set timeout 120
+	set job_id_list     [list]
+	set jobs            5.0
+	set grpwall_per_job [expr $grpwall_num * 1.1 / $jobs]
+	set sleep_time      [expr int(ceil($grpwall_per_job * 60))]
+	set job_time        [expr int(ceil($grpwall_per_job))]
+	set timeout         120
 
 	# Since wall is a decayed variable lets reset it to make sure the test
 	# gets exactly what we would expect.
 	incr exit_code [reset_qos_usage "" $qostest]
 
-	spawn $salloc --account=$acct --qos=$qostest -N2 -t1 $srun $bin_sleep [expr $grpwall_num * 60 + 1]
-	expect {
-		-re "Granted job allocation ($number)" {
-			set job_id1 $expect_out(1,string)
-			log_debug "Job $job_id1 has been submitted. (Within: inc21.30.12)"
-		}
-		-re "Job violates accounting/QOS policy" {
-			log_error "This job should not be pending, but is. (Within: inc21.30.12)"
-			set exit_code 1
-		}
-		-re "error" {
-			log_error "Job allocation should not have failed. (Within: inc21.30.12)"
-			set exit_code 1
-		}
-		timeout {
-			log_error "salloc not responding. (Within: inc21.30.12)"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
+	log_debug "Running $jobs jobs of $sleep_time seconds of duration to ensure that we reach the Grpwall limit of $grpwall_num minutes (Within: inc21.30.12)"
+	for {set i 0} {$i < $jobs} {incr i} {
+		lappend job_id_list [submit_job -fail "--account=$acct --qos=$qostest -N1 -t$job_time --wrap '$bin_sleep $sleep_time' -o /dev/null -e /dev/null"]
+	}
+	foreach job_id $job_id_list {
+		wait_job_reason $job_id COMPLETED
 	}
 
-	if {$job_id1 == 0} {
-		log_error "Job was not submitted"
-		set exit_code 1
-	} else {
-		# Cancel job
-		wait_for_job $job_id1 DONE
-	}
-
-	set match 0
-	spawn $salloc -I --account=$acct --qos=$qostest -N2 -t1 $srun -I $bin_sleep 10
-	expect {
-		-re "Job violates accounting/QOS policy" {
-			log_debug "Job waiting for resources. This is expected. (Within: inc21.30.12)"
-			set match 1
-		}
-		-re "Granted job allocation ($number)" {
-			set job_id2 $expect_out(1,string)
-			log_error "Job $job_id2 should be waiting for resources, but is not. (Within: inc21.30.12)"
-			set exit_code 1
-		}
-		timeout {
-			log_error "salloc is not responding (Within: inc21.30.12)"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$match != 1} {
-		log_error "Job was submitted when it should not have been"
-		set exit_code 1
-	}
+	log_debug "Submiting the final job and check that it is set Pending with Reason QOSGrpWallLimit (Within: inc21.30.12)"
+	set job_id [submit_job -fail "--account=$acct --qos=$qostest -N1 -t$job_time --wrap '$bin_sleep $sleep_time' -o /dev/null -e /dev/null"]
+	lappend job_id_list $job_id
+	# Subtest of the limit
+	set exit_code [wait_job_reason $job_id PENDING QOSGrpWallLimit]
 
 	# Reset the QoS usage
 	incr exit_code [reset_qos_usage "" $qostest]
 
-	# Cancel job
-	if {$exit_code} {
-		cancel_job $job_id2
-		cancel_job $job_id1
-	} else {
-		cancel_job $job_id2
-	}
-
+	# Cancel jobs
+	cancel_job $job_id_list
 }
