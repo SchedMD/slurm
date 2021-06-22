@@ -150,6 +150,7 @@ documents those changes that are of interest to users and administrators.
     already allocated to another step. Instead, defer the step until the
     requested node(s) become available.
  -- Return error for a step requesting more memory than the allocation has.
+ -- slurmrestd - add description for slurmdb/job endpoint.
 
 * Changes in Slurm 20.11.7
 ==========================
