@@ -21344,19 +21344,8 @@ fi
      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for nvml disabled" >&5
 $as_echo "$as_me: WARNING: support for nvml disabled" >&2;}
   else
-    for d in $_x_ac_nvml_dirs; do
-      if  ! test -d "$d" ; then
-        continue
-      fi
-      for bit in $_x_ac_nvml_libs; do
-        if  ! test -d "$d/$bit" || ! test -d "$d/include" ; then
-          continue
-        fi
-        _x_ac_nvml_ldflags_save="$LDFLAGS"
-        _x_ac_nvml_cppflags_save="$CPPFLAGS"
-        LDFLAGS="-L$d/$bit -lnvidia-ml"
-        CPPFLAGS="-I$d/include $CPPFLAGS"
-        ac_fn_c_check_header_mongrel "$LINENO" "nvml.h" "ac_cv_header_nvml_h" "$ac_includes_default"
+    # Check if libnvml is already in the system paths
+    ac_fn_c_check_header_mongrel "$LINENO" "nvml.h" "ac_cv_header_nvml_h" "$ac_includes_default"
 if test "x$ac_cv_header_nvml_h" = xyes; then :
   ac_nvml_h=yes
 else
@@ -21364,7 +21353,7 @@ else
 fi
 
 
-        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for nvmlInit in -lnvidia-ml" >&5
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for nvmlInit in -lnvidia-ml" >&5
 $as_echo_n "checking for nvmlInit in -lnvidia-ml... " >&6; }
 if ${ac_cv_lib_nvidia_ml_nvmlInit+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -21406,18 +21395,88 @@ else
   ac_nvml=no
 fi
 
-        LDFLAGS="$_x_ac_nvml_ldflags_save"
-        CPPFLAGS="$_x_ac_nvml_cppflags_save"
+
+    if  test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ; then
+          # found in system path
+          nvml_includes=""
+          nvml_libs="-lnvidia-ml"
+    else
+      #try to find libnvml
+      for d in $_x_ac_nvml_dirs; do
+        if  ! test -d "$d" ; then
+          continue
+        fi
+        for bit in $_x_ac_nvml_libs; do
+          if  ! test -d "$d/$bit" || ! test -d "$d/include" ; then
+            continue
+          fi
+          _x_ac_nvml_ldflags_save="$LDFLAGS"
+          _x_ac_nvml_cppflags_save="$CPPFLAGS"
+          LDFLAGS="-L$d/$bit -lnvidia-ml"
+          CPPFLAGS="-I$d/include $CPPFLAGS"
+          ac_fn_c_check_header_mongrel "$LINENO" "nvml.h" "ac_cv_header_nvml_h" "$ac_includes_default"
+if test "x$ac_cv_header_nvml_h" = xyes; then :
+  ac_nvml_h=yes
+else
+  ac_nvml_h=no
+fi
+
+
+          { $as_echo "$as_me:${as_lineno-$LINENO}: checking for nvmlInit in -lnvidia-ml" >&5
+$as_echo_n "checking for nvmlInit in -lnvidia-ml... " >&6; }
+if ${ac_cv_lib_nvidia_ml_nvmlInit+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lnvidia-ml  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char nvmlInit ();
+int
+main ()
+{
+return nvmlInit ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_nvidia_ml_nvmlInit=yes
+else
+  ac_cv_lib_nvidia_ml_nvmlInit=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_nvidia_ml_nvmlInit" >&5
+$as_echo "$ac_cv_lib_nvidia_ml_nvmlInit" >&6; }
+if test "x$ac_cv_lib_nvidia_ml_nvmlInit" = xyes; then :
+  ac_nvml=yes
+else
+  ac_nvml=no
+fi
+
+          LDFLAGS="$_x_ac_nvml_ldflags_save"
+          CPPFLAGS="$_x_ac_nvml_cppflags_save"
+          if  test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ; then
+            nvml_includes="-I$d/include"
+            nvml_libs="-L$d/$bit -lnvidia-ml"
+            break
+          fi
+        done
         if  test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ; then
-          nvml_includes="-I$d/include"
-          nvml_libs="-L$d/$bit -lnvidia-ml"
           break
         fi
       done
-      if  test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ; then
-        break
-      fi
-    done
+    fi
 
     if  test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ; then
       NVML_LIBS="$nvml_libs"
