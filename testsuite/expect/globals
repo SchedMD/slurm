@@ -2511,15 +2511,18 @@ proc wait_job_reason args {
 		# Check if both state and reason are the desired ones
 		if {$job_state == $desired_state} {
 			set found 0
+			set reason_msg ""
 			if {$desired_reason_list == ""} {
 				set found 1
 			}
 			foreach desired_reason $desired_reason_list {
 				if {$job_reason == $desired_reason } {
+					set reason_msg " with reason $job_reason"
 					set found 1
 				}
 			}
 			if {$found} {
+				log_debug "Job $job_id found $job_state$reason_msg"
 				set rc $::RETURN_SUCCESS
 				break
 			}
