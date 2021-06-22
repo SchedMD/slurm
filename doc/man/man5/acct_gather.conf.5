@@ -43,6 +43,13 @@ appear to be unknown by Slurm and silently ignored. If you decide to change
 plugin types you may also have to change the related options.
 
 .SH acct_gather_energy/IPMI
+Required entry in slurm.conf:
+.RS
+.nf
+AcctGatherEnergyType=acct_gather_energy/ipmi
+.fi
+.RE
+
 Options used for acct_gather_energy/ipmi are as follows:
 
 .RS
@@ -97,6 +104,13 @@ Specify BMC Password.
 .RE
 
 .SH acct_gather_energy/XCC
+Required entry in slurm.conf:
+.RS
+.nf
+AcctGatherEnergyType=acct_gather_energy/xcc
+.fi
+.RE
+
 Options used for acct_gather_energy/xcc include only in-band communications
 with XClarity Controller, thus a reduced set of configurations is supported:
 
@@ -113,6 +127,13 @@ thread. Default is 10 seconds.
 .RE
 
 .SH acct_gather_profile/HDF5
+Required entry in slurm.conf:
+.RS
+.nf
+AcctGatherProfileType=acct_gather_profile/hdf5
+.fi
+.RE
+
 Options used for acct_gather_profile/hdf5 are as follows:
 
 .RS
@@ -155,6 +176,13 @@ Network (InfiniBand) data is collected.
 Task (I/O, Memory, ...) data is collected.
 
 .SH acct_gather_profile/InfluxDB
+Required entry in slurm.conf:
+.RS
+.nf
+AcctGatherProfileType=acct_gather_profile/influxdb
+.fi
+.RE
+
 The InfluxDB plugin provides the same information as the HDF5 plugin but will
 instead send information to the configured InfluxDB server.
 .P
@@ -263,6 +291,13 @@ using the stored time series.
 
 .RS
 .SH acct_gather_interconnect/OFED
+Required entry in slurm.conf:
+.RS
+.nf
+AcctGatherInterconnectType=acct_gather_interconnect/ofed
+.fi
+.RE
+
 Options used for acct_gather_interconnect/ofed are as follows:
 
 .RS
