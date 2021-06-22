@@ -153,6 +153,7 @@ documents those changes that are of interest to users and administrators.
     requested node(s) become available.
  -- Return error for a step requesting more memory than the allocation has.
  -- slurmrestd - add description for slurmdb/job endpoint.
+ -- Better handling of --mem=0.
 
 * Changes in Slurm 20.11.7
 ==========================

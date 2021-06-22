@@ -153,50 +153,32 @@ static uint32_t _determine_profile(void)
 	return profile;
 }
 
-static int _create_directories(void)
+static void _create_directories(void)
 {
-	int rc;
-	struct stat st;
-	char   *user_dir = NULL;
+	char *user_dir = NULL;
 
 	xassert(g_job);
 	xassert(hdf5_conf.dir);
+
+	xstrfmtcat(user_dir, "%s/%s", hdf5_conf.dir, g_job->user_name);
+
 	/*
-	 * If profile director does not exist, try to create it.
-	 *  Otherwise, ensure path is a directory as expected, and that
-	 *  we have permission to write to it.
-	 *  also make sure the subdirectory tmp exists.
+	 * To avoid race conditions (TOCTOU) with stat() calls, always
+	 * attempt to create the ProfileHDF5Dir and the user directory within.
 	 */
+	if (((mkdir(hdf5_conf.dir, 0755)) < 0) && (errno != EEXIST))
+		fatal("mkdir(%s): %m", hdf5_conf.dir);
+	if (chmod(hdf5_conf.dir, 0755) < 0)
+		fatal("chmod(%s): %m", hdf5_conf.dir);
 
-	if (((rc = stat(hdf5_conf.dir, &st)) < 0) && (errno == ENOENT)) {
-		if (mkdir(hdf5_conf.dir, 0755) < 0)
-			fatal("mkdir(%s): %m", hdf5_conf.dir);
-	} else if (rc < 0)
-		fatal("Unable to stat acct_gather_profile_dir: %s: %m",
-		      hdf5_conf.dir);
-	else if (!S_ISDIR(st.st_mode))
-		fatal("acct_gather_profile_dir: %s: Not a directory!",
-		      hdf5_conf.dir);
-	else if (access(hdf5_conf.dir, R_OK|W_OK|X_OK) < 0)
-		fatal("Incorrect permissions on acct_gather_profile_dir: %s",
-		      hdf5_conf.dir);
-	if (chmod(hdf5_conf.dir, 0755) == -1)
-		error("%s: chmod(%s): %m", __func__, hdf5_conf.dir);
-
-	user_dir = xstrdup_printf("%s/%s", hdf5_conf.dir, g_job->user_name);
-	if (((rc = stat(user_dir, &st)) < 0) && (errno == ENOENT)) {
-		if (mkdir(user_dir, 0700) < 0)
-			fatal("mkdir(%s): %m", user_dir);
-	}
-	if (chmod(user_dir, 0700) == -1)
-		error("%s: chmod(%s): %m", __func__, user_dir);
-	if (chown(user_dir, (uid_t)g_job->uid,
-		  (gid_t)g_job->gid) < 0)
-		error("chown(%s): %m", user_dir);
+	if (((mkdir(user_dir, 0700)) < 0) && (errno != EEXIST))
+		fatal("mkdir(%s): %m", user_dir);
+	if (chmod(user_dir, 0700) < 0)
+		fatal("chmod(%s): %m", user_dir);
+	if (chown(user_dir, g_job->uid, g_job->gid) < 0)
+		fatal("chown(%s): %m", user_dir);
 
 	xfree(user_dir);
-
-	return SLURM_SUCCESS;
 }
 
 /*
