@@ -39,4 +39,8 @@
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
+extern void setup_container(stepd_step_rec_t *job);
+extern void cleanup_container(stepd_step_rec_t *job);
+extern void container_run(stepd_step_rec_t *job, stepd_step_task_info_t *task);
+
 #endif /* _STEP_CONTAINER_H */

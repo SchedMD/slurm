@@ -205,6 +205,9 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 	if (conf->hwloc_xml)
 		(void)remove(conf->hwloc_xml);
 
+	if (job->container)
+		cleanup_container(job);
+
 	run_command_shutdown();
 
 #ifdef MEMORY_LEAK_DEBUG
@@ -699,6 +702,9 @@ _step_setup(slurm_addr_t *cli, slurm_addr_t *self, slurm_msg_t *msg)
 		error("_step_setup: no job returned");
 		return NULL;
 	}
+
+	if (job->container)
+		setup_container(job);
 
 	job->jmgr_pid = getpid();
 	job->jobacct = jobacctinfo_create(NULL);

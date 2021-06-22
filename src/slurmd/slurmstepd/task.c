@@ -80,6 +80,7 @@
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/task_plugin.h"
 #include "src/slurmd/slurmd/slurmd.h"
+#include "src/slurmd/slurmstepd/container.h"
 #include "src/slurmd/slurmstepd/pdebug.h"
 #include "src/slurmd/slurmstepd/task.h"
 #include "src/slurmd/slurmstepd/ulimits.h"
@@ -535,6 +536,9 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 			   job->step_id.job_id, job->step_id.step_id,
 			   job->node_name);
 	}
+
+	if (job->container)
+		container_run(job, task);
 
 	execve(task->argv[0], task->argv, job->env);
 	saved_errno = errno;
