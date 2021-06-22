@@ -20,7 +20,7 @@ or control. Slurm's epilog should be configured to purge
 these tasks when the job's allocation is relinquished. The
 use of pam_slurm_adopt is also strongly recommended.</li>
 </ol>
-<p><b>Note</b>: Slurm is not directly launching the user application in case 3,
+<p><b>NOTE</b>: Slurm is not directly launching the user application in case 3,
 which may prevent the desired behavior of binding tasks to CPUs and/or
 accounting. Some versions of some MPI implementations work, so testing your
 particular installation may be required to determine the actual behavior.</p>
@@ -34,7 +34,7 @@ The <i>srun</i> option <i>--mpi=</i> (or the equivalent environment
 variable <i>SLURM_MPI_TYPE</i> can be used to specify when a
 different MPI implementation is to be supported for an individual job).</p>
 
-<p><b>Note</b>: Use of an MPI implementation without the appropriate Slurm
+<p><b>NOTE</b>: Use of an MPI implementation without the appropriate Slurm
 plugin may result in application failure. If multiple MPI implementations
 are used on a system then some users may be required to explicitly specify
 a suitable Slurm MPI plugin.</p>
@@ -149,8 +149,8 @@ user@testbox:~/slurm/17.11/testbox/slurm$ ../../slurm/configure \
 &gt; -ta slurm-17.11.1.tar.bz2
 </pre>
 
-<p>NOTE: It is also possible to build against multiple PMIx versions with a ':'
-separator. For instance to build against 1.2 and 2.1:</p>
+<p><b>NOTE</b>: It is also possible to build against multiple PMIx versions
+with a ':' separator. For instance to build against 1.2 and 2.1:</p>
 
 <pre>
 ...
@@ -158,9 +158,9 @@ separator. For instance to build against 1.2 and 2.1:</p>
 ...
 </pre>
 
-<p>NOTE: When submitting a job, the desired version can then be selected using
-any of the available from --mpi=list. The default for pmix will be the highest
-version of the library:</p>
+<p><b>NOTE</b>: When submitting a job, the desired version can then be selected
+using any of the available from --mpi=list. The default for pmix will be the
+highest version of the library:</p>
 
 <pre>
 user@testbox:~/t$ srun --mpi=list
@@ -224,14 +224,15 @@ lrwxrwxrwx 1 user user       15 Dec  6 19:35 libpmi.so.0 -> libpmi.so.0.0.0
 user@testbox:~/slurm/17.11/testbox/lib$
 </pre>
 
-<p>NOTE: Since both Slurm and PMIx provide libpmi[2].so libraries, we recommend
+<p><b>NOTE</b>: Since both Slurm and PMIx provide libpmi[2].so libraries, we
+recommend
 to install both pieces of software in different locations. Otherwise, both
 libraries provided by Slurm and PMIx might end up being installed under standard
 locations like /usr/lib64 and the package manager erroring out and reporting
 the conflict. It is planned to alleviate that by putting these libraries in a
 separate libpmi-slurm package.</p>
 
-<p>NOTE: If you are setting up a test environment using multiple-slurmd,
+<p><b>NOTE</b>: If you are setting up a test environment using multiple-slurmd,
 the TmpFS option in your slurm.conf needs to be specified and the number of
 directory paths created needs to equal the number of nodes. These directories
 are used by the Slurm PMIx plugin to create temporal files and/or UNIX sockets.
@@ -439,8 +440,8 @@ Slurm Process Management Interface (PMI) library:</li>
 <pre>
 <i>export I_MPI_PMI_LIBRARY=/path/to/slurm/pmi/library/libpmi.so</i>
 </pre>
-<p>NOTE: Due to licensing reasons IMPI doesn't link directly to any external
-PMI implementation. Instead one must point to the desired library just
+<p><b>NOTE</b>: Due to licensing reasons IMPI doesn't link directly to any
+external PMI implementation. Instead one must point to the desired library just
 exporting the environment variable mentioned above, which will then be dlopened
 by IMPI. Also, there is no official support provided by Intel against PMIx
 libraries. Since IMPI is based on MPICH, using PMIx with Intel may work due
@@ -588,6 +589,6 @@ $ srun -N4 -n16 a.out
 
 <hr size=4 width="100%">
 
-<p style="text-align:center;">Last modified 9 June 2021</p>
+<p style="text-align:center;">Last modified 22 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
