@@ -94,8 +94,7 @@ static bool _cores_on_gres(bitstr_t *core_bitmap, bitstr_t *alloc_core_bitmap,
 static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 		      int node_index, int node_offset, char *gres_name,
 		      uint32_t job_id, char *node_name,
-		      bitstr_t *core_bitmap, uint32_t plugin_id,
-		      uint32_t user_id)
+		      bitstr_t *core_bitmap, uint32_t plugin_id)
 {
 	int j, sz1, sz2;
 	int64_t gres_cnt, i;
@@ -546,7 +545,7 @@ static int _job_alloc_whole_node_internal(
 	gres_key_t *job_search_key, gres_node_state_t *node_state_ptr,
 	List job_gres_list, int node_cnt, int node_index, int node_offset,
 	int type_index, uint32_t job_id, char *node_name,
-	bitstr_t *core_bitmap, uint32_t user_id)
+	bitstr_t *core_bitmap)
 {
 	gres_state_t *job_gres_ptr;
 	gres_job_state_t *job_state_ptr;
@@ -579,8 +578,7 @@ static int _job_alloc_whole_node_internal(
 			  node_cnt, node_index, node_offset,
 			  job_state_ptr->gres_name,
 			  job_id, node_name, core_bitmap,
-			  job_gres_ptr->plugin_id,
-			  user_id);
+			  job_gres_ptr->plugin_id);
 }
 
 static void _job_select_whole_node_internal(
@@ -699,13 +697,12 @@ extern int gres_ctld_job_select_whole_node(
  * IN node_name   - name of the node (for logging)
  * IN core_bitmap - cores allocated to this job on this node (NULL if not
  *                  available)
- * IN user_id     - job's user ID
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_job_alloc(List job_gres_list, List node_gres_list,
 			       int node_cnt, int node_index, int node_offset,
 			       uint32_t job_id, char *node_name,
-			       bitstr_t *core_bitmap, uint32_t user_id)
+			       bitstr_t *core_bitmap)
 {
 	int rc = SLURM_ERROR, rc2;
 	ListIterator job_gres_iter,  node_gres_iter;
@@ -740,7 +737,7 @@ extern int gres_ctld_job_alloc(List job_gres_list, List node_gres_list,
 				 node_gres_ptr->gres_data, node_cnt, node_index,
 				 node_offset, job_state_ptr->gres_name,
 				 job_id, node_name, core_bitmap,
-				 job_gres_ptr->plugin_id, user_id);
+				 job_gres_ptr->plugin_id);
 		if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
 	}
@@ -762,14 +759,13 @@ extern int gres_ctld_job_alloc(List job_gres_list, List node_gres_list,
  * IN node_name   - name of the node (for logging)
  * IN core_bitmap - cores allocated to this job on this node (NULL if not
  *                  available)
- * IN user_id     - job's user ID
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_job_alloc_whole_node(
 	List job_gres_list, List node_gres_list,
 	int node_cnt, int node_index, int node_offset,
 	uint32_t job_id, char *node_name,
-	bitstr_t *core_bitmap, uint32_t user_id)
+	bitstr_t *core_bitmap)
 {
 	int rc = SLURM_ERROR, rc2;
 	ListIterator node_gres_iter;
@@ -801,7 +797,7 @@ extern int gres_ctld_job_alloc_whole_node(
 				&job_search_key, node_state_ptr,
 				job_gres_list, node_cnt, node_index,
 				node_offset, -1, job_id, node_name,
-				core_bitmap, user_id);
+				core_bitmap);
 			if (rc2 != SLURM_SUCCESS)
 				rc = rc2;
 		} else {
@@ -812,7 +808,7 @@ extern int gres_ctld_job_alloc_whole_node(
 					&job_search_key, node_state_ptr,
 					job_gres_list, node_cnt, node_index,
 					node_offset, j, job_id, node_name,
-					core_bitmap, user_id);
+					core_bitmap);
 				if (rc2 != SLURM_SUCCESS)
 					rc = rc2;
 			}
@@ -826,7 +822,7 @@ extern int gres_ctld_job_alloc_whole_node(
 static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 			int node_offset, char *gres_name, uint32_t job_id,
 			char *node_name, bool old_job, uint32_t plugin_id,
-			uint32_t user_id, bool job_fini)
+			bool job_fini)
 {
 	int i, j, len, sz1, sz2;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
@@ -1036,14 +1032,13 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
  *		    registration, the GRES type and topology. This results in
  *		    some incorrect internal bookkeeping, but does not cause
  *		    failures in terms of allocating GRES to jobs.
- * IN user_id     - job's user ID
  * IN: job_fini   - job fully terminating on this node (not just a test)
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
 				 int node_offset, uint32_t job_id,
 				 char *node_name, bool old_job,
-				 uint32_t user_id, bool job_fini)
+				 bool job_fini)
 {
 	int rc = SLURM_SUCCESS, rc2;
 	ListIterator job_gres_iter;
@@ -1072,7 +1067,7 @@ extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
 				   node_gres_ptr->gres_data, node_offset,
 				   job_gres_ptr->gres_name, job_id,
 				   node_name, old_job,
-				   job_gres_ptr->plugin_id, user_id, job_fini);
+				   job_gres_ptr->plugin_id, job_fini);
 		if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
 	}

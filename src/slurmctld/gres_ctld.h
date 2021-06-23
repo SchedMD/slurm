@@ -73,7 +73,7 @@ extern int gres_ctld_job_alloc_whole_node(
 	List job_gres_list, List node_gres_list,
 	int node_cnt, int node_index, int node_offset,
 	uint32_t job_id, char *node_name,
-	bitstr_t *core_bitmap, uint32_t user_id);
+	bitstr_t *core_bitmap);
 
 /*
  * Select and allocate GRES to a job and update node and job GRES information
@@ -93,7 +93,7 @@ extern int gres_ctld_job_alloc_whole_node(
 extern int gres_ctld_job_alloc(List job_gres_list, List node_gres_list,
 			       int node_cnt, int node_index, int node_offset,
 			       uint32_t job_id, char *node_name,
-			       bitstr_t *core_bitmap, uint32_t user_id);
+			       bitstr_t *core_bitmap);
 
 /*
  * Deallocate resource from a job and update node and job gres information
@@ -115,7 +115,7 @@ extern int gres_ctld_job_alloc(List job_gres_list, List node_gres_list,
 extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
 				 int node_offset, uint32_t job_id,
 				 char *node_name, bool old_job,
-				 uint32_t user_id, bool job_fini);
+				 bool job_fini);
 
 /*
  * Merge one job's gres allocation into another job's gres allocation.
