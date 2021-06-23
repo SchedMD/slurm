@@ -86,7 +86,7 @@ static bool _msg_readable(eio_obj_t *obj)
 {
 	debug3("Called %s", __func__);
 	if (obj->shutdown) {
-		debug2("%s: false, shutdown", __func__);
+		log_flag(SCRIPT, "%s: false, shutdown", __func__);
 		return false;
 	}
 	return true;
@@ -176,8 +176,8 @@ static int _run_script(char *script, char **env, uint32_t job_id,
 		      __func__, job_id, script_name, WEXITSTATUS(status),
 		      WTERMSIG(status));
 	} else {
-		debug2("%s JobId=%u %s completed", __func__,
-		       job_id, script_name);
+		log_flag(SCRIPT, "%s JobId=%u %s completed",
+			 __func__, job_id, script_name);
 	}
 
 	/*
@@ -270,19 +270,19 @@ static int _handle_request(int req, buf_t *buffer)
 
 	switch (req) {
 		case SLURMSCRIPTD_REQUEST_RUN_PREPILOG:
-			debug2("Handling SLURMSCRIPTD_REQUEST_RUN_PREPILOG");
+			log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_RUN_PREPILOG");
 			rc = _handle_run_prepilog(buffer);
 			break;
 		case SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE:
-			debug2("Handling SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE");
+			log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE");
 			rc = _handle_prepilog_complete(buffer, false);
 			break;
 		case SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE:
-			debug2("Handling SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE");
+			log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE");
 			rc = _handle_prepilog_complete(buffer, true);
 			break;
 		case SLURMSCRIPTD_SHUTDOWN:
-			debug2("Handling SLURMSCRIPTD_SHUTDOWN");
+			log_flag(SCRIPT, "Handling SLURMSCRIPTD_SHUTDOWN");
 			rc = _handle_shutdown();
 			break;
 		default:

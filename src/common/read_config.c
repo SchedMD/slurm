@@ -5390,6 +5390,11 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Route");
 	}
+	if (debug_flags & DEBUG_FLAG_SCRIPT) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "Script");
+	}
 	if (debug_flags & DEBUG_FLAG_SELECT_TYPE) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5552,6 +5557,8 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_RESERVATION;
 		else if (xstrcasecmp(tok, "Route") == 0)
 			(*flags_out) |= DEBUG_FLAG_ROUTE;
+		else if (xstrcasecmp(tok, "Script") == 0)
+			(*flags_out) |= DEBUG_FLAG_SCRIPT;
 		else if (xstrcasecmp(tok, "SelectType") == 0)
 			(*flags_out) |= DEBUG_FLAG_SELECT_TYPE;
 		else if (xstrcasecmp(tok, "Steps") == 0)
