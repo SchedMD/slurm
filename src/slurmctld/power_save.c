@@ -948,10 +948,9 @@ static int _init_power_config(void)
 			       NULL, 10);
 	}
 
-	if (part_list) {
-		list_for_each(part_list, _set_partition_options,
-			      &partition_suspend_time_set);
-	}
+	/* Figure out per-partition options and push to node level. */
+	list_for_each(part_list, _set_partition_options,
+		      &partition_suspend_time_set);
 
 	/* Apply global options to node level if not set at partition level. */
 	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
