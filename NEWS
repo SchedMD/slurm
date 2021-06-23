@@ -154,6 +154,9 @@ documents those changes that are of interest to users and administrators.
  -- Define and separate node power state transitions. Previously a powering
     down node was in both states, POWERING_OFF and POWERED_OFF. These are now
     separated.
+ -- Create a new process called slurmscriptd which runs PrologSlurmctld and
+    EpilogSlurmctld. This avoids fork() calls from slurmctld, and can avoid
+    performance issues if the slurmctld has a large memory footprint.
 
 * Changes in Slurm 20.11.9
 ==========================

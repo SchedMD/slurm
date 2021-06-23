@@ -94,6 +94,9 @@ HIGHLIGHTS
     POWER_UP -> POWERING_UP
     POWER_DOWN -> POWERED_DOWN
     POWER_DOWN now represents a node pending power down
+ -- Create a new process called slurmscriptd which runs PrologSlurmctld and
+    EpilogSlurmctld. This avoids fork() calls from slurmctld, and can avoid
+    performance issues if the slurmctld has a large memory footprint.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
