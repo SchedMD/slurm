@@ -213,6 +213,8 @@ static int _handle_run_prepilog(buf_t *buffer)
 		resp_rpc = SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE;
 	}
 
+	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_RUN_PREPILOG (%s) for JobId=%u",
+		 script_name, job_id);
 	status = _run_script(script, env, job_id, script_name, timeout);
 
 	resp_buffer = init_buf(0);
@@ -236,10 +238,15 @@ static int _handle_prepilog_complete(buf_t *buffer, bool is_epilog)
 	safe_unpack32(&job_id, buffer);
 	safe_unpack32(&status, buffer);
 
-	if (is_epilog)
+	if (is_epilog) {
+		log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE for JobId=%u",
+			 job_id);
 		prep_epilog_slurmctld_callback((int)status, job_id);
-	else
+	} else {
+		log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE for JobId=%u",
+			 job_id);
 		prep_prolog_slurmctld_callback((int)status, job_id);
+	}
 	rc = SLURM_SUCCESS;
 	_decr_script_cnt();
 
@@ -252,6 +259,7 @@ unpack_error:
 
 static int _handle_shutdown(void)
 {
+	log_flag(SCRIPT, "Handling SLURMSCRIPTD_SHUTDOWN");
 	/* Kill all running scripts. */
 	track_script_flush();
 
@@ -270,19 +278,15 @@ static int _handle_request(int req, buf_t *buffer)
 
 	switch (req) {
 		case SLURMSCRIPTD_REQUEST_RUN_PREPILOG:
-			log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_RUN_PREPILOG");
 			rc = _handle_run_prepilog(buffer);
 			break;
 		case SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE:
-			log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE");
 			rc = _handle_prepilog_complete(buffer, false);
 			break;
 		case SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE:
-			log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE");
 			rc = _handle_prepilog_complete(buffer, true);
 			break;
 		case SLURMSCRIPTD_SHUTDOWN:
-			log_flag(SCRIPT, "Handling SLURMSCRIPTD_SHUTDOWN");
 			rc = _handle_shutdown();
 			break;
 		default:
