@@ -1819,28 +1819,10 @@ static int _step_alloc(gres_step_state_t *step_gres_ptr,
 		      job_gres_ptr->gres_name, __func__);
 		return SLURM_ERROR;
 	}
-	if (gres_needed > gres_avail) {
-		error("gres/%s: %s for %ps, step's > job's "
-		      "for node %d (%"PRIu64" > %"PRIu64")",
-		      job_gres_ptr->gres_name, __func__,
-		      step_id, node_offset, gres_needed, gres_avail);
-		return SLURM_ERROR;
-	}
 
 	if (!job_gres_ptr->gres_cnt_step_alloc) {
 		job_gres_ptr->gres_cnt_step_alloc =
 			xcalloc(job_gres_ptr->node_cnt, sizeof(uint64_t));
-	}
-
-	if (gres_needed >
-	    (gres_avail - job_gres_ptr->gres_cnt_step_alloc[node_offset])) {
-		error("gres/%s: %s for %ps, step's > job's "
-		      "remaining for node %d (%"PRIu64" > "
-		      "(%"PRIu64" - %"PRIu64"))",
-		      job_gres_ptr->gres_name, __func__,
-		      step_id, node_offset, gres_needed, gres_avail,
-		      job_gres_ptr->gres_cnt_step_alloc[node_offset]);
-		return SLURM_ERROR;
 	}
 	gres_avail -= job_gres_ptr->gres_cnt_step_alloc[node_offset];
 	if (max_gres)
@@ -2008,6 +1990,14 @@ extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
 
 		if (args.rc != SLURM_SUCCESS)
 			rc = args.rc;
+
+		if (args.gres_needed && args.gres_needed != INFINITE64 &&
+		    rc == SLURM_SUCCESS) {
+			error("gres/%s: %s for %ps, step's > job's for node %d (gres still needed: %ld)",
+			      step_gres_ptr->gres_name, __func__, &tmp_step_id,
+			      node_offset, args.gres_needed);
+			rc = SLURM_ERROR;
+		}
 	}
 	list_iterator_destroy(step_gres_iter);
 
