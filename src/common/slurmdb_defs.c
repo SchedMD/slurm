@@ -2532,7 +2532,7 @@ extern void log_assoc_rec(slurmdb_assoc_rec_t *assoc_ptr,
 {
 	xassert(assoc_ptr);
 
-	if (get_log_level() > LOG_LEVEL_DEBUG2)
+	if (get_log_level() >= LOG_LEVEL_DEBUG2)
 		return;
 
 	debug2("association rec id : %u", assoc_ptr->id);
