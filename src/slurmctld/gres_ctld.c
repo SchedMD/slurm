@@ -1785,9 +1785,10 @@ static int _step_alloc(gres_step_state_t *step_gres_ptr,
 		       gres_job_state_t *job_gres_ptr,
 		       uint32_t plugin_id, int node_offset,
 		       slurm_step_id_t *step_id,
-		       uint64_t gres_needed, uint64_t max_gres)
+		       uint64_t *gres_needed, uint64_t *max_gres)
 {
 	uint64_t gres_avail;
+	uint64_t gres_alloc;
 	bitstr_t *gres_bit_alloc;
 	int i, len;
 
@@ -1843,18 +1844,19 @@ static int _step_alloc(gres_step_state_t *step_gres_ptr,
 	}
 	gres_avail -= job_gres_ptr->gres_cnt_step_alloc[node_offset];
 	if (max_gres)
-		gres_needed = MIN(gres_avail, max_gres);
+		*gres_needed = MIN(gres_avail, *max_gres);
+	gres_alloc = *gres_needed;
 
 	if (step_gres_ptr->gres_cnt_node_alloc &&
 	    (node_offset < step_gres_ptr->node_cnt))
-		step_gres_ptr->gres_cnt_node_alloc[node_offset] = gres_needed;
-	step_gres_ptr->total_gres += gres_needed;
+		step_gres_ptr->gres_cnt_node_alloc[node_offset] = gres_alloc;
+	step_gres_ptr->total_gres += gres_alloc;
 
 	if (step_gres_ptr->node_in_use == NULL) {
 		step_gres_ptr->node_in_use = bit_alloc(job_gres_ptr->node_cnt);
 	}
 	bit_set(step_gres_ptr->node_in_use, node_offset);
-	job_gres_ptr->gres_cnt_step_alloc[node_offset] += gres_needed;
+	job_gres_ptr->gres_cnt_step_alloc[node_offset] += gres_alloc;
 
 	if ((job_gres_ptr->gres_bit_alloc == NULL) ||
 	    (job_gres_ptr->gres_bit_alloc[node_offset] == NULL)) {
@@ -1867,9 +1869,9 @@ static int _step_alloc(gres_step_state_t *step_gres_ptr,
 	len = bit_size(gres_bit_alloc);
 	if (gres_id_shared(plugin_id)) {
 		for (i = 0; i < len; i++) {
-			if (gres_needed > 0) {
+			if (gres_alloc > 0) {
 				if (bit_test(gres_bit_alloc, i))
-					gres_needed = 0;
+					gres_alloc = 0;
 			} else {
 				bit_clear(gres_bit_alloc, i);
 			}
@@ -1881,15 +1883,15 @@ static int _step_alloc(gres_step_state_t *step_gres_ptr,
 				job_gres_ptr->gres_bit_step_alloc[node_offset]);
 		}
 		for (i = 0; i < len; i++) {
-			if (gres_needed > 0) {
+			if (gres_alloc > 0) {
 				if (bit_test(gres_bit_alloc, i))
-					gres_needed--;
+					gres_alloc--;
 			} else {
 				bit_clear(gres_bit_alloc, i);
 			}
 		}
 	}
-	if (gres_needed) {
+	if (gres_alloc) {
 		error("gres/%s: %s %ps oversubscribed resources on node %d",
 		      job_gres_ptr->gres_name, __func__, step_id, node_offset);
 	}
@@ -1933,7 +1935,8 @@ static int _step_alloc_type(gres_state_t *job_gres_ptr,
 	args->rc = _step_alloc(step_data_ptr, job_data_ptr,
 			       args->step_gres_ptr->plugin_id,
 			       args->node_offset, &args->tmp_step_id,
-			       args->gres_needed, args->max_gres);
+			       &args->gres_needed, &args->max_gres);
+
 	return 0;
 }
 
