@@ -126,8 +126,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 		shared_gres = true;
 		gres_per_bit = job_gres_ptr->gres_per_node;
 	}
-	if (gres_id_shared(plugin_id) &&
-	    (node_gres_ptr->gres_cnt_alloc != 0)) {
+	if (shared_gres && (node_gres_ptr->gres_cnt_alloc != 0)) {
 		/* We must use the ONE already active GRES of this type */
 		use_busy_dev = true;
 	}
@@ -317,7 +316,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 		int64_t gres_avail = node_gres_ptr->gres_cnt_avail;
 
 		i = bit_size(node_gres_ptr->gres_bit_alloc);
-		if (gres_id_shared(plugin_id))
+		if (shared_gres)
 			gres_avail = i;
 		else if (i < gres_avail) {
 			error("gres/%s: node %s gres bitmap size bad (%"PRIi64" < %"PRIi64")",
@@ -392,7 +391,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 			sz2 = bit_size(node_gres_ptr->topo_gres_bitmap[i]);
 
 			if ((sz1 != sz2) && log_cnt_err) {
-				if (gres_id_shared(plugin_id))
+				if (shared_gres)
 					log_type = "File";
 				else
 					log_type = "Count";
