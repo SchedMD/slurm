@@ -643,7 +643,7 @@ extern int load_all_node_state ( bool state_only )
 					SLURM_MIN_PROTOCOL_VERSION;
 
 			if (!IS_NODE_POWER_SAVE(node_ptr))
-				node_ptr->last_idle = now;
+				node_ptr->last_busy = now;
 		}
 
 		xfree(features);
@@ -954,7 +954,7 @@ static void _pack_node(node_record_t *dump_node_ptr, buf_t *buffer,
 		pack32(dump_node_ptr->reason_uid, buffer);
 
 		pack_time(dump_node_ptr->boot_time, buffer);
-		pack_time(dump_node_ptr->last_idle, buffer);
+		pack_time(dump_node_ptr->last_busy, buffer);
 		pack_time(dump_node_ptr->reason_time, buffer);
 		pack_time(dump_node_ptr->slurmd_start_time, buffer);
 
@@ -1549,9 +1549,9 @@ int update_node ( update_node_msg_t * update_node_msg )
 				bit_set (idle_node_bitmap, node_inx);
 				bit_set (up_node_bitmap, node_inx);
 				if (IS_NODE_POWER_SAVE(node_ptr))
-					node_ptr->last_idle = 0;
+					node_ptr->last_busy = 0;
 				else
-					node_ptr->last_idle = now;
+					node_ptr->last_busy = now;
 			} else if (state_val == NODE_STATE_ALLOCATED) {
 				if (!IS_NODE_DRAIN(node_ptr) &&
 				    !IS_NODE_FAIL(node_ptr)  &&
@@ -1613,7 +1613,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					info("powering down node %s",
 					     this_node_name);
 				}
-				node_ptr->last_idle = 1;
+				node_ptr->last_busy = 1;
 				node_ptr->next_state = NO_VAL;
 				bit_clear(rs_node_bitmap, node_inx);
 				free(this_node_name);
@@ -1621,7 +1621,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 			} else if (state_val == NODE_STATE_POWER_UP) {
 				if (!IS_NODE_POWER_SAVE(node_ptr)) {
 					if (IS_NODE_POWER_UP(node_ptr)) {
-						node_ptr->last_idle = now;
+						node_ptr->last_busy = now;
 						node_ptr->node_state |=
 							NODE_STATE_POWER_SAVE;
 						info("power up request "
@@ -1633,7 +1633,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 							this_node_name);
 					}
 				} else {
-					node_ptr->last_idle = now;
+					node_ptr->last_busy = now;
 					info("powering up node %s",
 					     this_node_name);
 				}
@@ -2671,12 +2671,12 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		info("Node %s now responding", node_ptr->name);
 
 		/*
-		 * Set last_idle in case that the node came up out of band or
+		 * Set last_busy in case that the node came up out of band or
 		 * came up after ResumeTimeout so that it can be suspended at a
 		 * later point.
 		 */
 		if (IS_NODE_POWER_UP(node_ptr) || IS_NODE_POWER_SAVE(node_ptr))
-			node_ptr->last_idle = now;
+			node_ptr->last_busy = now;
 
 		/*
 		 * Set last_response if it's expected. Otherwise let it get
@@ -2751,7 +2751,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			} else {
 				node_ptr->node_state = NODE_STATE_IDLE |
 					node_flags;
-				node_ptr->last_idle = now;
+				node_ptr->last_busy = now;
 			}
 			last_node_update = now;
 
@@ -2791,7 +2791,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 			} else {
 				node_ptr->node_state = NODE_STATE_IDLE |
 						       node_flags;
-				node_ptr->last_idle = now;
+				node_ptr->last_busy = now;
 			}
 			node_ptr->next_state = NO_VAL;
 			bit_clear(rs_node_bitmap, node_inx);
@@ -2832,7 +2832,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		} else if (IS_NODE_ALLOCATED(node_ptr) &&
 			   (reg_msg->job_count == 0)) {	/* job vanished */
 			node_ptr->node_state = NODE_STATE_IDLE | node_flags;
-			node_ptr->last_idle = now;
+			node_ptr->last_busy = now;
 			last_node_update = now;
 		} else if (IS_NODE_COMPLETING(node_ptr) &&
 			   (reg_msg->job_count == 0)) {	/* job already done */
@@ -3161,7 +3161,7 @@ extern int validate_nodes_via_front_end(
 					node_ptr->node_state =
 						NODE_STATE_IDLE |
 						node_flags;
-					node_ptr->last_idle = now;
+					node_ptr->last_busy = now;
 				}
 				if (!IS_NODE_DRAIN(node_ptr) &&
 				    !IS_NODE_FAIL(node_ptr)) {
@@ -3188,7 +3188,7 @@ extern int validate_nodes_via_front_end(
 					node_ptr->node_state =
 						NODE_STATE_IDLE |
 						node_flags;
-					node_ptr->last_idle = now;
+					node_ptr->last_busy = now;
 				}
 				trigger_node_up(node_ptr);
 				if (!IS_NODE_DRAIN(node_ptr) &&
@@ -3206,7 +3206,7 @@ extern int validate_nodes_via_front_end(
 				update_node_state = true;
 				node_ptr->node_state = NODE_STATE_IDLE |
 					node_flags;
-				node_ptr->last_idle = now;
+				node_ptr->last_busy = now;
 			} else if (IS_NODE_COMPLETING(node_ptr) &&
 				   (node_ptr->comp_job_cnt == 0)) {
 				/* job already done */
@@ -3340,7 +3340,7 @@ static void _node_did_resp(node_record_t *node_ptr)
 	}
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	if (IS_NODE_UNKNOWN(node_ptr)) {
-		node_ptr->last_idle = now;
+		node_ptr->last_busy = now;
 		if (node_ptr->run_job_cnt) {
 			node_ptr->node_state = NODE_STATE_ALLOCATED |
 					       node_flags;
@@ -3357,7 +3357,7 @@ static void _node_did_resp(node_record_t *node_ptr)
 	     (node_ptr->boot_req_time != 0)    ||
 	     ((slurm_conf.ret2service == 1) &&
 	      !xstrcmp(node_ptr->reason, "Not responding")))) {
-		node_ptr->last_idle = now;
+		node_ptr->last_busy = now;
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		info("node_did_resp: node %s returned to service",
 		     node_ptr->name);
@@ -3862,7 +3862,7 @@ extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
 
 	if ((node_ptr->run_job_cnt  == 0) &&
 	    (node_ptr->comp_job_cnt == 0)) {
-		node_ptr->last_idle = now;
+		node_ptr->last_busy = now;
 		bit_set(idle_node_bitmap, inx);
 		if (IS_NODE_DRAIN(node_ptr) || IS_NODE_FAIL(node_ptr)) {
 			trigger_node_drained(node_ptr);
@@ -3879,7 +3879,7 @@ extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
 		node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
 	else {
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
-		node_ptr->last_idle = now;
+		node_ptr->last_busy = now;
 	}
 	last_node_update = now;
 }
@@ -4020,7 +4020,7 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 		bit_set(idle_node_bitmap, inx);
 		debug3("%s: %pJ node %s is DRAINED",
 		       __func__, job_ptr, node_ptr->name);
-		node_ptr->last_idle = now;
+		node_ptr->last_busy = now;
 		trigger_node_drained(node_ptr);
 		if (!IS_NODE_REBOOT(node_ptr))
 			clusteracct_storage_g_node_down(acct_db_conn,
@@ -4039,7 +4039,7 @@ void make_node_idle(node_record_t *node_ptr, job_record_t *job_ptr)
 		if (!IS_NODE_NO_RESPOND(node_ptr) &&
 		    !IS_NODE_COMPLETING(node_ptr))
 			bit_set(idle_node_bitmap, inx);
-		node_ptr->last_idle = now;
+		node_ptr->last_busy = now;
 	}
 
 fini:

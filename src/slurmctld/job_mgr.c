@@ -16424,7 +16424,7 @@ static int _suspend_job_nodes(job_record_t *job_ptr, bool indf_susp)
 					       node_flags;
 		} else {
 			node_ptr->node_state = NODE_STATE_IDLE | node_flags;
-			node_ptr->last_idle  = now;
+			node_ptr->last_busy  = now;
 		}
 	}
 	last_job_update = last_node_update = now;

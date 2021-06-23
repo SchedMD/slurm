@@ -1958,7 +1958,7 @@ static int _restore_node_state(int recover,
 		node_ptr->cpu_spec_list = old_node_ptr->cpu_spec_list;
 		old_node_ptr->cpu_spec_list = NULL;
 		node_ptr->core_spec_cnt = old_node_ptr->core_spec_cnt;
-		node_ptr->last_idle     = old_node_ptr->last_idle;
+		node_ptr->last_busy     = old_node_ptr->last_busy;
 		node_ptr->boards        = old_node_ptr->boards;
 		node_ptr->tot_sockets       = old_node_ptr->tot_sockets;
 		node_ptr->threads       = old_node_ptr->threads;

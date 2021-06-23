@@ -346,7 +346,7 @@ static void _do_power_work(time_t now)
 		    ((resume_rate == 0) || (resume_cnt < resume_rate))	&&
 		    !IS_NODE_POWERING_DOWN(node_ptr) &&
 		    (IS_NODE_ALLOCATED(node_ptr) ||
-		     (node_ptr->last_idle > (now - idle_time)))) {
+		     (node_ptr->last_busy > (now - idle_time)))) {
 			if (wake_node_bitmap == NULL) {
 				wake_node_bitmap =
 					bit_alloc(node_record_count);
@@ -371,8 +371,8 @@ static void _do_power_work(time_t now)
 		    (node_ptr->sus_job_cnt == 0)			&&
 		    (!IS_NODE_COMPLETING(node_ptr))			&&
 		    (!IS_NODE_POWER_UP(node_ptr))			&&
-		    (node_ptr->last_idle != 0)				&&
-		    (node_ptr->last_idle < (now - idle_time))		&&
+		    (node_ptr->last_busy != 0)				&&
+		    (node_ptr->last_busy < (now - idle_time))		&&
 		    ((avoid_node_bitmap == NULL) ||
 		     (bit_test(avoid_node_bitmap, i) == 0))) {
 			if (sleep_node_bitmap == NULL) {
@@ -428,7 +428,7 @@ static void _do_power_work(time_t now)
 			    !IS_NODE_FAIL(node_ptr))
 				make_node_avail(i);
 
-			node_ptr->last_idle = 0;
+			node_ptr->last_busy = 0;
 			node_ptr->power_save_req_time = 0;
 		}
 
@@ -451,7 +451,7 @@ static void _do_power_work(time_t now)
 			bit_set(power_node_bitmap, i);
 			bit_clear(booting_node_bitmap, i);
 			bit_clear(resume_node_bitmap, i);
-			node_ptr->last_idle = 0;
+			node_ptr->last_busy = 0;
 			node_ptr->boot_req_time = 0;
 
 			if (resume_fail_prog) {
