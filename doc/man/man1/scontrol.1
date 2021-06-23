@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "May 2021" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "June 2021" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -1233,9 +1233,39 @@ Update slurm.conf with any changes meant to be persistent across normal
 restarts of slurmctld or the execution of \fBscontrol reconfig\fR.
 
 .SS NODES \- SPECIFICATIONS FOR SHOW COMMAND
+
+.TP
+\fIAllocMem\fP
+The total memory, in MB, currently allocated by jobs on the node.
+
+.TP
+\fICPUSpecList\fP
+The list of Slurm abstract CPU IDs on this node reserved for
+exclusive use by the Slurm compute node daemons (slurmd, slurmstepd).
+
+.TP
+\fIFreeMem\fP
+The total memory, in MB, currently free on the node as reported by the OS.
+
+.TP
+\fILastBusyTime\fP
+The last time the node was busy (i.e. last time the node had jobs on it). This
+time is used in PowerSave to determine when to suspend nodes (e.g. now -
+LastBusy > SuspendTime).
+
+.TP
+\fIMemSpecLimit\fP
+The combined memory limit, in megabytes, on this node for the Slurm compute
+node daemons (slurmd, slurmstepd).
+
+.TP
+\fIRealMemory\fP
+The total memory, in MB, on the node.
+
 .TP
 The meaning of the energy information is as follows:
 
+.RS
 .TP
 \fICurrentWatts\fP
 The instantaneous power consumption of the node at the time of the last node
@@ -1255,10 +1285,12 @@ the slurmd daemon and the last node energy accounting sample, in joules.
 If the reported value is "n/s" (not supported), the node does not support the
 configured \fBAcctGatherEnergyType\fR plugin. If the reported value is zero, energy
 accounting for nodes is disabled.
+.RE
 
 .TP
 The meaning of the external sensors information is as follows:
 
+.RS
 .TP
 \fIExtSensorsJoules\fP
 The energy consumed by the node between the last time it was powered on
@@ -1278,34 +1310,7 @@ node sample, in celsius.
 .PP
 If the reported value is "n/s" (not supported), the node does not support the
 configured \fBExtSensorsType\fR plugin.
-
-.TP
-The meaning of the resource specialization information is as follows:
-
-.TP
-\fICPUSpecList\fP
-The list of Slurm abstract CPU IDs on this node reserved for
-exclusive use by the Slurm compute node daemons (slurmd, slurmstepd).
-
-.TP
-\fIMemSpecLimit\fP
-The combined memory limit, in megabytes, on this node for the Slurm compute
-node daemons (slurmd, slurmstepd).
-
-.TP
-The meaning of the memory information is as follows:
-
-.TP
-\fIRealMemory\fP
-The total memory, in MB, on the node.
-
-.TP
-\fIAllocMem\fP
-The total memory, in MB, currently allocated by jobs on the node.
-
-.TP
-\fIFreeMem\fP
-The total memory, in MB, currently free on the node as reported by the OS.
+.RE
 
 .SS FRONTEND \- SPECIFICATIONS FOR UPDATE COMMAND
 .TP

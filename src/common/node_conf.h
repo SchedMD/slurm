@@ -101,7 +101,7 @@ struct node_record {
 	uint32_t cpu_bind;		/* default CPU binding type */
 	time_t slurmd_start_time;	/* Time of slurmd startup */
 	time_t last_response;		/* last response from the node */
-	time_t last_idle;		/* time node last become idle */
+	time_t last_busy;		/* time node was last busy (no jobs) */
 	uint16_t cpus;			/* count of processors on the node */
 	uint16_t boards; 		/* count of boards configured */
 	uint16_t tot_sockets;		/* number of sockets per node */

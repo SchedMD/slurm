@@ -404,9 +404,9 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	xstrcat(out, line_end);
 
 	/****** Line ******/
-	slurm_make_time_str((time_t *)&node_ptr->last_idle, time_str,
+	slurm_make_time_str((time_t *)&node_ptr->last_busy, time_str,
 			    sizeof(time_str));
-	xstrfmtcat(out, "LastIdleTime=%s", time_str);
+	xstrfmtcat(out, "LastBusyTime=%s", time_str);
 	xstrcat(out, line_end);
 
 	/****** TRES Line ******/
