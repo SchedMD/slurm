@@ -239,7 +239,7 @@ function _nodes() {
 echo $(scontrol show nodes | grep NodeName | cut -c 10- | cut -f 1 -d' ' | paste -s -d ' ') ;
 }
 function _features() {
-echo $(scontrol -o show nodes|cut -d' ' -f7|sed 's/Features=//'|sort -u|tr -d '()'|paste -d, -s) ;
+echo $(scontrol -o show nodes|cut -d' ' -f8|sed 's/AvailableFeatures=//'|sort -u|tr -d '()'|paste -s -d ' ') ;
 }
 function _users() {
 echo $(sacctmgr -pn list users | cut -d'|' -f1) ;
@@ -835,16 +835,20 @@ _scontrol()
     local cur=${COMP_WORDS[COMP_CWORD]}
     local prev=${COMP_WORDS[COMP_CWORD-1]}
 
-    local commands="abort cluster create completing delete details\
-		    errnumstr help hold notify oneliner\
-		    pidinfo listpids ping quit reboot_nodes reconfigure release\
-		    requeue requeuehold schedloglevel resume schedloglevel\
-		    script setdebug setdebugflags show shutdown suspend\
-		    takeover uhold update verbose version wait_job"
+    local commands="abort cancel_reboot create completing delete\
+		    errnumstr fsdampeningfactor help hold listpids notify\
+		    pidinfo ping reboot_nodes reconfigure release requeue\
+		    requeuehold resume schedloglevel setdebug setdebugflags\
+		    show shutdown suspend takeover top token uhold update\
+		    version wait_job write"
 
-    local shortoptions="-a -d -h -M -o -Q -v -V "
-    local longoptions="--all --details --help --hide --cluster --oneliner \
-			--quiet --verbose --version"
+    local dependency_types="after: afterany: afternotok: afterok: singleton:"
+    local mail_types="none begin end fail requeue all stage_out time_limit\
+    		      time_limit_90 time_limit_80 time_limit_50 array_tasks"
+    local shortoptions="-a -d -F -h -M -o -Q -u -v -V "
+    local longoptions="--all --cluster --details --federation --future --help\
+		       --hide --local --oneliner --quiet --sibling --uid\
+		       --verbose --version"
 
     # Check whether we are in the middle of an option. If so serve them.
     remainings=$(compute_set_diff "$longoptions" "${COMP_WORDS[*]}")
@@ -864,16 +868,52 @@ _scontrol()
     shutdown) # scontrol shutdown object
 	offer "slurmctld controller"
 	;;
-    setdebug) # scontrol setdebug value
-	offer "quiet info warning error debug debug2 debug3 debug4 debug5 " # FIXME
+    schedloglevel)
+	offer "disable enable"
 	;;
-    uhold | suspend | release | requeue | resume | hold )
+    setdebug) # scontrol setdebug value
+	offer "quiet fatal error info verbose debug debug2 debug3 debug4 debug5 "
+	;;
+    setdebugflags)
+	parameters="+accrue +agent +backfill +backfillmap +burstbuffer +cgroup\
+		    +cpu_bind +cpufrequency +data +dependency +elasticsearch\
+		    +energy +extsensors	+federation +frontend +gres +hetjob\
+		    +gang +jobaccountgather +jobcontainer +license +network\
+		    +networkraw +nodefeatures +no_conf_hash +power +priority\
+		    +profile +protocol +reservation +route +script +selecttype\
+		    +steps +switch +timecray +tracejobs +triggers +workqueue\
+		    -accrue -agent -backfill -backfillmap -burstbuffer -cgroup\
+		    -cpu_bind -cpufrequency -data -dependency -elasticsearch\
+		    -energy -extsensors	-federation -frontend -gres -hetjob\
+		    -gang -jobaccountgather -jobcontainer -license -network\
+		    -networkraw -nodefeatures -no_conf_hash -power -priority\
+		    -profile -protocol -reservation -route -script -selecttype\
+		    -steps -switch -timecray -tracejobs -triggers -workqueue"
+
+	param=$(find_first_partial_occurence "${COMP_WORDS[*]}" "$parameters")
+	[[ $param == "" ]] && { offer "$parameters" ; return ; }
+
+	offer "$parameters"
+	;;
+    uhold | suspend | release | requeue | requeuehold | resume | hold | notify | listpids | top)
 	offer "$(_jobs)"
-	;; #TODO notify
+	;;
+    reboot_nodes)
+	parameters="all asap nextstate= reason= $(_nodes)"
+
+	param=$(find_first_partial_occurence "${COMP_WORDS[*]}" "$parameters")
+	[[ $param == "" ]] && { offer "$parameters" ; return ; }
+
+	if param "nextstate" ; then offer_many "resume down"
+	else offer "$parameters" ; fi
+	;;
+    cancel_reboot)
+	offer "$(_nodes)"
+	;;
     show) # scontrol show object [id]
-	objects="aliases config block daemons frontend hostlist hostlistsorted\
-		 hostnames job nodes partitions reservations slurmd steps\
-		 submp topology"
+	objects="aliases assoc_mgr bbstat burstbuffer config daemons dwstat\
+		 federation frontend hostlist hostlistsorted hostnames job\
+		 nodes partitions reservations slurmd steps topology"
 
 	# Search for the current object in the argument list
 	object=$(find_first_occurence "${COMP_WORDS[*]}" "$objects")
@@ -886,7 +926,7 @@ _scontrol()
 	if param "nodes"        ; then offer_list "$(_nodes)"        ; fi
 	if param "partitions"   ; then offer "$(_partitions)"   ; fi
 	if param "reservations" ; then offer "$(_reservations)"  ; fi
-	#TODO if object "steps"
+	if param "steps"        ; then offer "$(_step)" ; fi
 	;;
     delete) # scontrol delete objectname=id
 	parameters="partitionname= reservationname="
@@ -916,26 +956,37 @@ _scontrol()
 	# Otherwise, process the others based on the first one
 	case $param in
 	jobid)
-	    local parameters="account=<account> conn-type=<type> \
-			      contiguous=<yes|no> dependency=<dependency_list>\
-			      eligibletime=yyyy-mm-dd excnodelist=<nodes>\
-			      features=<features> geometry=<geo> gres=<list>\
-			      jobid=<job_id> licenses=<name>\
+	    local parameters="account=<account> admincomment=<spec>\
+			      arraytaskthrottle=<count> comment=<spec>\
+			      contiguous=<yes|no> cpuspertask=<count>\
+			      deadline=<time_spec> delayboot=<time_spec>\
+			      dependency=<dependency_list>\
+			      eligibletime=<time_spec> endtime=<time_spec>\
+			      excnodelist=<nodes>\
+			      features=<features> gres=<list>\
+			      jobid=<job_id> jobname=<name> licenses=<name>\
+			      mailtype=<types> mailuser=<name>\
 			      mincpusnode=<count> minmemorycpu=<megabytes>\
 			      minmemorynode=<megabytes>\
 			      mintmpdisknode=<megabytes> name=<name>\
-			      nice[=delta] nodelist=<nodes>\
+			      nice=<delta> nodelist=<nodes>\
 			      numcpus=<min_count[-max_count]\
 			      numnodes=<min_count[-max_count]>\
-			      numtasks=<count> partition=<name>\
-			      priority=<number> qos=<name> reqcores=<count>\
-			      reqnodelist=<nodes> reqsockets=<count>\
+			      numtasks=<count> oversubscribe=<yes|no>\
+			      partition=<name> priority=<number> qos=<name>\
+			      reboot=<yes|no> reqcores=<count>\
+			      reqnodelist=<nodes>\
+			      reqnodes=<min_count[-max_count]>\
+			      reqprocs=<count> reqsockets=<count>\
 			      reqthreads=<count> requeue=<0|1>\
-			      reservationname=<name> rotate=<yes|no>\
-			      shared=<yes|no> starttime=yyyy-mm-dd\
+			      reservationname=<name> resetaccruetime\
+			      shared=<yes|no> sitefactor=<number>\
+			      starttime=<time_spec> stdout=<path>\
 			      switches=<count>[@<max-time-to-wait>]\
-			      timelimit=[d-]h:m:s userid=<UID or name>\
-			      wckey=<key>"
+			      taskspernode=<count>\
+			      timelimit=<time_spec> timemin=<time_spec>\
+			      userid=<UID or name> wait-for-switch=<seconds>\
+			      wckey=<key> workdir=<path>"
 
 	    remainings=$(compute_set_diff "$parameters" "${COMP_WORDS[*]}")
 
@@ -946,22 +997,34 @@ _scontrol()
 	    if   param "account"         ; then offer_many "$(_accounts)"
 	    elif param "excnodelist"     ; then offer_many "$(_nodes)"
 	    elif param "nodelist"        ; then offer_many "$(_nodes)"
+	    elif param "reqnodelist"     ; then offer_many "$(_nodes)"
 	    elif param "features"        ; then offer_many "$(_features)"
 	    elif param "gres"            ; then offer_many "$(_gres)"
+	    elif param "jobid"           ; then offer_many "$(_jobs)"
+	    elif param "jobname"         ; then offer_many "$(_jobnames)"
+	    elif param "name"            ; then offer_many "$(_jobnames)"
 	    elif param "licences"        ; then offer_many "$(_licenses)"
+	    elif param "userid"          ; then offer_many "$(_users)"
+	    elif param "mailuser"        ; then offer_many "$(_users)"
 	    elif param "partition"       ; then offer_many "$(_partitions)"
 	    elif param "reservationname" ; then offer_many "$(_reservations)"
 	    elif param "qos"             ; then offer_many "$(_qos)"
 	    elif param "wckey"           ; then offer_many "$(wckeys)"
-	    elif param "conn-type"       ; then offer_many "MESH TORUS NAV"
-	    elif param "rotate"          ; then offer_many "yes no"
+	    elif param "contiguous"      ; then offer_many "yes no"
+	    elif param "oversubscribe"   ; then offer_many "yes no"
+	    elif param "reboot"          ; then offer_many "yes no"
 	    elif param "shared"          ; then offer_many "yes no"
+	    elif param "dependency"      ; then offer_many "$dependency_types"
+	    elif param "mailtype"        ; then offer_many "$mail_types"
 	    else offer "$(sed 's/\=[^ ]*/\=/g' <<< $remainings)"
 	    fi
 	    ;;
 	nodename)
-	    local parameters="features=<features> gres=<gres> \
-	       reason=<reason> state=<state> weight=<weight>"
+	    local parameters="activefeatures=<features> \
+		  availablefeatures=<features> comment=<comment> \
+		  cpubind=<binding> extra=<comment> gres=<gres> \
+		  nodeaddr=<name> nodehostname=<name> nodename=<name> \
+		  reason=<reason> state=<state> weight=<weight>"
 
 	    remainings=$(compute_set_diff "$parameters" "${COMP_WORDS[*]}")
 
@@ -970,7 +1033,10 @@ _scontrol()
 		    return ; }
 
 	    # Test all potential arguments and server corresponding values
-	    if param "features"   ; then offer_many "$(_features)"
+	    if param "activefeatures"      ; then offer_many "$(_features)"
+	    elif param "availablefeatures" ; then offer_many "$(_features)"
+	    elif param "cpubind"  ; then offer_many "none board socket ldom\
+						     core thread off"
 	    elif param "gres"     ; then offer_many "$(_gres)"
 	    elif param "state"    ; then offer_many "noresp drain fail future\
 						     resume power_down\
@@ -980,17 +1046,22 @@ _scontrol()
 	    ;;
 	partitionname)
 	    local parameters="allowgroups=<name> allocnodes=<node_list>\
-			      alternate=<partition_name> default=yes|no\
-			      defaulttime=d-h:m:s|unlimited defmempercpu=<MB>\
-			      defmempercnode=<MB> disablerootjobs=yes|no\
-			      gracetime=<seconds> hidden=yes|no\
-			      maxmempercpu=<MB> maxmempercnode=<MB>\
-			      maxnodes=<count> maxtime=d-h:m:s|unlimited\
+			      alternate=<partition_name> cpubind=<binding>\
+			      default=<yes|no> defaulttime=<d-h:m:s|unlimited>\
+			      defmempercpu=<MB> defmempernode=<MB>\
+			      disablerootjobs=<yes|no> gracetime=<seconds>\
+			      hidden=<yes|no> jobdefaults=<specs>\
+			      maxmempercpu=<MB> maxmempernode=<MB>\
+			      maxnodes=<count> maxtime=<d-h:m:s|unlimited>\
 			      minnodes=<count> nodes=<name>\
-			      preemptmode=off|cancel|requeue|suspend\
-			      priority=count rootonly=yes|no reqresv=<yes|no>\
-			      shared=yes|no|exclusive|force\
-			      state=up|down|drain|inactive"
+			      overtimelimit=<count>\
+			      oversubscribe=<yes|no|exclusive|force>[:<job_count>]\
+			      preemptmode=<mode> priority=<count>\
+			      priorityjobfactor=<count> prioritytier=<count>\
+			      qos=<qos> rootonly=<yes|no> reqresv=<yes|no>\
+			      shared=<yes|no|exclusive|force>[:<job_count>]\
+			      state=<up|down|drain|inactive>\
+			      tresbillingweights=<billing_weights>"
 
 	    remainings=$(compute_set_diff "$parameters" "${COMP_WORDS[*]}")
 	    # If a new named argument is about to be entered, serve the list of options
@@ -999,30 +1070,38 @@ _scontrol()
 
 	    # Test all potential arguments and server corresponding values
 	    if   param "allocnodes"  ; then offer_many "$(_nodes)"
-	    elif param "nodes"       ; then offer_many "$(_nodes)"
 	    elif param "alternate"   ; then offer_many "$(_partitions)"
+	    elif param "cpubind"     ; then offer_many "none board socket ldom\
+							core thread off"
 	    elif param "default"     ; then offer_many  "yes no"
-	    elif param "preemptmode" ; then offer_many "off cancel\
-							requeue suspend"
-	    elif param "shared"      ; then offer_many "yes no exclusive force"
-	    elif param "state"       ; then offer_many "up down drain inactive"
 	    elif param "disablerootjobs" ; then offer_many "yes no"
 	    elif param "hidden"      ; then offer_many "yes no"
+	    elif param "jobdefaults" ; then offer_many "DefCpuPerGPU=\
+							DefMemPerGPU"
+	    elif param "nodes"       ; then offer_many "$(_nodes)"
+	    elif param "oversubscribe"; then offer_many "yes no exclusive force"
+	    elif param "preemptmode" ; then offer_many "off cancel\
+							requeue suspend"
+	    elif param "qos"         ; then offer_many "$(_qos)"
 	    elif param "rootonly"    ; then offer_many "yes no"
 	    elif param "reqresv"     ; then offer_many "yes no"
+	    elif param "shared"      ; then offer_many "yes no exclusive force"
+	    elif param "state"       ; then offer_many "up down drain inactive"
 	    else offer "$(sed 's/\=[^ ]*/\=/g' <<< $remainings)"
 	    fi
 	    ;;
 	reservationname)
-	    local parameters="accounts=<account_list> corecnt=<num>\
-			      duration=[days-]hours:minutes:seconds\
-			      endtime=yyyy-mm-dd[thh:mm[:ss]]\
-			      features=<feature_list>\
-			      flags=maint,overlap,ignore_jobs,daily,weekly\
-			      licenses=<license> nodecnt=<count>\
-			      nodes=<node_list> users=<user_list>\
+	    local parameters="accounts=<account_list> burstbuffer=<buffer_spec>\
+			      corecnt=<num>\
+			      duration=<[days-]hours:minutes:seconds>\
+			      endtime=<time_spec> features=<feature_list>\
+			      flags=<flags> groups=<group_list>\
+			      licenses=<licenses> maxstartdelay=<timespec>\
+			      nodecnt=<count> nodes=<node_list>\
 			      partitionname=<partition_list>\
-			      starttime=yyyy-mm-dd[thh:mm[:ss]]"
+			      reservationname=<name>\
+			      skip starttime=<time_spec>\
+			      tres=<tres_spec> users=<user_list>"
 
 	    remainings=$(compute_set_diff "$parameters" "${COMP_WORDS[*]}")
 	    # If a new named argument is about to be entered, serve the list of options
@@ -1035,12 +1114,18 @@ _scontrol()
 	    elif param "nodes"    ; then offer_many "$(_nodes)"
 	    elif param "features" ; then offer_many "$(_features)"
 	    elif param "users"    ; then offer_many "$(_users)"
-	    elif param "flags"    ; then offer_many "daily first_cores\
-						     ignore_jobs license_only\
-						     maint overlap part_nodes\
-						     spec_nodes static_alloc\
-						     time_float weekly"
+	    elif param "flags"    ; then offer_many "any_nodes daily flex\
+						     first_cores ignore_jobs\
+						     license_only maint\
+						     magnetic\
+						     no_hold_jobs_after\
+						     overlap part_nodes\
+						     purge_comp replace\
+						     replace_down spec_nodes\
+						     static_alloc time_float\
+						     weekday weekend weekly"
 	    elif param "partitioname" ; then offer_many "$(_partitions)"
+	    elif param "reservationname" ; then offer_many "$(_reservations)"
 	    else offer "$(sed 's/\=[^ ]*/\=/g' <<< $remainings)"
 	    fi
 	    ;;
@@ -1052,6 +1137,7 @@ _scontrol()
 	    [[ $cur == "" && $prev != "=" ]] && { offer "$remainings" ;
 		    return ; }
 	    if param "stepid" ; then offer_list "$(_step)" ;
+	    else offer "$(sed 's/\=[^ ]*/\=/g' <<< $remainings)"
 	    fi
 	    ;;
 
@@ -1066,64 +1152,85 @@ _scontrol()
 	# Process object
 	case $param in
 	partition)
-	    local parameters="allocnodes=<node_list> allowgroups=<name>\
-			      alternate=<partition_name> default=yes|no\
-			      defaulttime=d-h:m:s|unlimited defmempercpu=<MB>\
-			      defmempercnode=<MB> disablerootjobs=yes|no\
-			      gracetime=<seconds> hidden=yes|no\
-			      maxmempercpu=<MB> maxmempercnode=<MB>\
-			      maxnodes=<count> maxtime=d-h:m:s|unlimited\
+	    local parameters="allowgroups=<name> allocnodes=<node_list>\
+			      alternate=<partition_name> cpubind=<binding>\
+			      default=<yes|no> defaulttime=<d-h:m:s|unlimited>\
+			      defmempercpu=<MB> defmempernode=<MB>\
+			      disablerootjobs=<yes|no> gracetime=<seconds>\
+			      hidden=<yes|no> jobdefaults=<specs>\
+			      maxmempercpu=<MB> maxmempernode=<MB>\
+			      maxnodes=<count> maxtime=<d-h:m:s|unlimited>\
 			      minnodes=<count> nodes=<name>\
-			      preemptmode=off|cancel|requeue|suspend\
-			      priority=count rootonly=yes|no reqresv=<yes|no>\
-			      shared=yes|no|exclusive|force\
-			      state=up|down|drain|inactive"
+			      overtimelimit=<count>\
+			      oversubscribe=<yes|no|exclusive|force>[:<job_count>]\
+			      preemptmode=<mode> priority=<count>\
+			      priorityjobfactor=<count> prioritytier=<count>\
+			      qos=<qos> rootonly=<yes|no> reqresv=<yes|no>\
+			      shared=<yes|no|exclusive|force>[:<job_count>]\
+			      state=<up|down|drain|inactive>\
+			      tresbillingweights=<billing_weights>"
 
 	    remainings=$(compute_set_diff "$parameters" "${COMP_WORDS[*]}")
 	    # If a new named argument is about to be entered, serve the list of options
-	    [[ $cur == "" && $prev != "=" ]] && { offer "$remainings" ; return ; }
-	    if   param "allocnodes"  ; then offer_many "$(_nodes)"
-	    elif param "nodes"       ; then offer_many "$(_nodes)"
-	    elif param "alternate"   ; then offer_many "$(_partitions)"
-	    elif param "default"     ; then offer_many  "yes no"
-	    elif param "preemptmode" ; then offer_many "off cancel\
-							requeue suspend"
-	    elif param "shared"      ; then offer_many "yes no exclusive force"
-	    elif param "state"       ; then offer_many "up down drain inactive"
-	    elif param "disablerootjobs" ; then offer_many "yes no"
-	    elif param "hidden"      ; then offer_many "yes no"
-	    elif param "rootonly"    ; then offer_many "yes no"
-	    elif param "reqresv"     ; then offer_many "yes no"
-	    fi
-	    ;;
-	reservation)
-	    local parameters="accounts=<account_list> corecnt=<num>\
-	                      duration=[days-]hours:minutes:seconds\
-	                      endtime=yyyy-mm-dd[thh:mm[:ss]]\
-                              features=<feature_list>\
-                              flags=maint,overlap,ignore_jobs,daily,weekly\
-                              licenses=<license> nodecnt=<count>\
-                              nodes=<node_list> users=<user_list>\
-	                      partitionname=<partition_list>\
-                              starttime=yyyy-mm-dd[thh:mm[:ss]]"
-
-	    remainings=$(compute_set_diff "$parameters" "${COMP_WORDS[*]}")
-	    # If a new named argument is about to be entered, serve the list of
-	    # options
 	    [[ $cur == "" && $prev != "=" ]] && { offer "$remainings" ;
 		    return ; }
 
 	    # Test all potential arguments and server corresponding values
+	    if   param "allocnodes"  ; then offer_many "$(_nodes)"
+	    elif param "alternate"   ; then offer_many "$(_partitions)"
+	    elif param "cpubind"     ; then offer_many "none board socket ldom\
+							core thread off"
+	    elif param "default"     ; then offer_many  "yes no"
+	    elif param "disablerootjobs" ; then offer_many "yes no"
+	    elif param "hidden"      ; then offer_many "yes no"
+	    elif param "jobdefaults" ; then offer_many "DefCpuPerGPU=\
+							DefMemPerGPU"
+	    elif param "nodes"       ; then offer_many "$(_nodes)"
+	    elif param "oversubscribe"; then offer_many "yes no exclusive force"
+	    elif param "preemptmode" ; then offer_many "off cancel\
+							requeue suspend"
+	    elif param "qos"         ; then offer_many "$(_qos)"
+	    elif param "rootonly"    ; then offer_many "yes no"
+	    elif param "reqresv"     ; then offer_many "yes no"
+	    elif param "shared"      ; then offer_many "yes no exclusive force"
+	    elif param "state"       ; then offer_many "up down drain inactive"
+	    else offer "$(sed 's/\=[^ ]*/\=/g' <<< $remainings)"
+	    fi
+	    ;;
+	reservation)
+	    local parameters="accounts=<account_list> burstbuffer=<buffer_spec>\
+			      corecnt=<num>\
+			      duration=<[days-]hours:minutes:seconds>\
+			      endtime=<time_spec> features=<feature_list>\
+			      flags=<flags> groups=<group_list>\
+			      licenses=<licenses> maxstartdelay=<timespec>\
+			      nodecnt=<count> nodes=<node_list>\
+			      partitionname=<partition_list>\
+			      reservationname=<name>\
+			      starttime=<time_spec>\
+			      tres=<tres_spec> users=<user_list>"
+
+	    remainings=$(compute_set_diff "$parameters" "${COMP_WORDS[*]}")
+	    # If a new named argument is about to be entered, serve the list of options
+	    [[ $cur == "" && $prev != "=" ]] && { offer "$remainings" ;
+		    return ; }
+
+	    # test all potential arguments and server corresponding values
 	    if   param "accounts" ; then offer_many  "$(_accounts)"
 	    elif param "licences" ; then offer_many "$(_licenses)"
 	    elif param "nodes"    ; then offer_many "$(_nodes)"
 	    elif param "features" ; then offer_many "$(_features)"
 	    elif param "users"    ; then offer_many "$(_users)"
-	    elif param "flags"    ; then offer_many "daily first_cores\
-						     ignore_jobs license_only\
-						     maint overlap part_nodes\
-						     spec_nodes static_alloc\
-						     time_float weekly"
+	    elif param "flags"    ; then offer_many "any_nodes daily flex\
+						     first_cores ignore_jobs\
+						     license_only maint\
+						     magnetic\
+						     no_hold_jobs_after\
+						     overlap part_nodes\
+						     purge_comp replace\
+						     replace_down spec_nodes\
+						     static_alloc time_float\
+						     weekday weekend weekly"
 	    elif param "partitioname" ; then offer_many "$(_partitions)"
 	    else offer "$(sed 's/\=[^ ]*/\=/g' <<< $remainings)"
 	    fi
