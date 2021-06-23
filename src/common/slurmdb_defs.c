@@ -2208,12 +2208,9 @@ extern List slurmdb_get_acct_hierarchical_rec_list(List assoc_list)
 						       _find_arch_in_list,
 						       assoc);
 			if (par_arch_rec) {
-				if (assoc->user)
-					last_parent = par_arch_rec;
-				else
-					last_parent
-						= last_acct_parent
-						= par_arch_rec;
+				last_parent = par_arch_rec;
+				if (!assoc->user)
+					last_acct_parent = par_arch_rec;
 			}
 		}
 
