@@ -135,6 +135,14 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 		xfree(job_gres_ptr->type_name);
 
 	xfree(node_gres_ptr->gres_used);	/* Clear cache */
+
+	/*
+	 * Check if no nodes, then the next 2 checks were added long before job
+	 * resizing was allowed. They are not errors as we need to keep the
+	 * original size around for any steps that might still be out there with
+	 * the larger size.  If the job was sized up the gres_job_merge()
+	 * function handles the resize so we are set there.
+	 */
 	if (job_gres_ptr->node_cnt == 0) {
 		job_gres_ptr->node_cnt = node_cnt;
 		if (job_gres_ptr->gres_bit_alloc) {
@@ -143,13 +151,6 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 			xfree(job_gres_ptr->gres_bit_alloc);
 		}
 	}
-	/*
-	 * These next 2 checks were added long before job resizing was allowed.
-	 * They are not errors as we need to keep the original size around for
-	 * any steps that might still be out there with the larger size.  If the
-	 * job was sized up the gres_job_merge() function handles the
-	 * resize so we are set there.
-	 */
 	else if (job_gres_ptr->node_cnt < node_cnt) {
 		debug2("gres/%s: job %u node_cnt is now larger than it was when allocated from %u to %d",
 		       gres_name, job_id, job_gres_ptr->node_cnt, node_cnt);
