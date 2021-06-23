@@ -8532,6 +8532,9 @@ static uint64_t _mem_per_node_part(part_record_t *part_ptr)
 	int node_inx = -1;
 	node_record_t *node_ptr;
 
+	if (!part_ptr)
+		return 0;
+
 	if (part_ptr->node_bitmap)
 		node_inx = bit_ffs(part_ptr->node_bitmap);
 	if (node_inx >= 0) {
