@@ -1781,13 +1781,31 @@ static uint64_t _step_get_gres_needed(void *step_gres_data,
 
 	return gres_needed;
 }
+
+static uint64_t _step_get_gres_avail(gres_job_state_t *job_gres_ptr,
+				     int node_offset)
+{
+	uint64_t gres_avail;
+
+	if (job_gres_ptr->gres_cnt_node_alloc)
+		gres_avail = job_gres_ptr->gres_cnt_node_alloc[node_offset];
+	else {
+		error("gres/%s: %s gres_cnt_node_alloc is not allocated",
+		      job_gres_ptr->gres_name, __func__);
+		return SLURM_ERROR;
+	}
+
+	gres_avail -= job_gres_ptr->gres_cnt_step_alloc[node_offset];
+
+	return gres_avail;
+}
+
 static int _step_alloc(gres_step_state_t *step_gres_ptr,
 		       gres_job_state_t *job_gres_ptr,
 		       uint32_t plugin_id, int node_offset,
 		       slurm_step_id_t *step_id,
 		       uint64_t *gres_needed, uint64_t *max_gres)
 {
-	uint64_t gres_avail;
 	uint64_t gres_alloc;
 	bitstr_t *gres_bit_alloc;
 	int i, len;
@@ -1812,22 +1830,23 @@ static int _step_alloc(gres_step_state_t *step_gres_ptr,
 			xcalloc(step_gres_ptr->node_cnt, sizeof(uint64_t));
 	}
 
-	if (job_gres_ptr->gres_cnt_node_alloc)
-		gres_avail = job_gres_ptr->gres_cnt_node_alloc[node_offset];
-	else {
-		error("gres/%s: %s gres_cnt_node_alloc is not allocated",
-		      job_gres_ptr->gres_name, __func__);
-		return SLURM_ERROR;
+	if (!job_gres_ptr->gres_cnt_step_alloc) {
+		job_gres_ptr->gres_cnt_step_alloc = xcalloc(
+			job_gres_ptr->node_cnt, sizeof(uint64_t));
 	}
 
-	if (!job_gres_ptr->gres_cnt_step_alloc) {
-		job_gres_ptr->gres_cnt_step_alloc =
-			xcalloc(job_gres_ptr->node_cnt, sizeof(uint64_t));
+	gres_alloc = _step_get_gres_avail(job_gres_ptr, node_offset);
+	if (*gres_needed != INFINITE64) {
+		if (*max_gres) {
+			gres_alloc = MIN(gres_alloc, *max_gres);
+			*max_gres -= gres_alloc;
+		} else
+			gres_alloc = MIN(gres_alloc,*gres_needed);
+		if (gres_alloc < *gres_needed)
+			*gres_needed -= gres_alloc;
+		else
+			*gres_needed = 0;
 	}
-	gres_avail -= job_gres_ptr->gres_cnt_step_alloc[node_offset];
-	if (max_gres)
-		*gres_needed = MIN(gres_avail, *max_gres);
-	gres_alloc = *gres_needed;
 
 	if (step_gres_ptr->gres_cnt_node_alloc &&
 	    (node_offset < step_gres_ptr->node_cnt))
