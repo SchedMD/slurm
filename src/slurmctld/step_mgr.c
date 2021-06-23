@@ -1164,14 +1164,17 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 					job_resrcs_ptr->cpus_used[node_inx];
 				job_blocked_cpus +=
 					job_resrcs_ptr->cpus_used[node_inx];
-				if (!usable_cpu_cnt[i])
+				if (!usable_cpu_cnt[i]) {
 					job_blocked_nodes++;
+					log_flag(STEPS, "%s: %pJ Skipping node %s. Not enough CPUs to run step here.",
+						 __func__,
+						 job_ptr,
+						 node_record_table_ptr[i].name);
+				}
 			}
 		}
 
 		if (!usable_cpu_cnt[i]) {
-			log_flag(STEPS, "%s: %pJ Skipping node. Not enough CPUs to run step here.",
-				 __func__, job_ptr);
 			bit_clear(nodes_avail, i);
 			continue;
 		}
@@ -1202,9 +1205,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 					usable_cpu_cnt[i] = avail_cpus;
 					fail_mode = ESLURM_INVALID_TASK_MEMORY;
 				}
-				log_flag(STEPS, "%s: %pJ Based on --mem-per-cpu=%"PRIu64" we have %d usable cpus on node, usable memory was: %"PRIu64,
+				log_flag(STEPS, "%s: %pJ Based on --mem-per-cpu=%"PRIu64" we have %d/%d usable of available cpus on node, usable memory was: %"PRIu64,
 					 __func__, job_ptr, mem_use, tmp_cpus,
-					 tmp_mem);
+					 avail_cpus, tmp_mem);
 			} else if (_is_mem_resv() && step_spec->pn_min_memory) {
 				uint64_t mem_use = step_spec->pn_min_memory;
 				/* ignore current step allocations */
@@ -1243,6 +1246,9 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 						   max_rem_nodes, false,
 						   job_ptr->job_id, NO_VAL);
 			if (gres_cpus < avail_cpus) {
+				log_flag(STEPS, "%s: %pJ Usable CPUs for GRES %"PRIu64" from %d previously available",
+					 __func__, job_ptr, gres_cpus,
+					 avail_cpus);
 				avail_cpus = gres_cpus;
 				usable_cpu_cnt[i] = avail_cpus;
 				fail_mode = ESLURM_INVALID_GRES;
@@ -1260,12 +1266,20 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				if ((step_spec->min_nodes == INFINITE) ||
 				    (step_spec->min_nodes ==
 				     job_ptr->node_cnt)) {
+					log_flag(STEPS, "%s: %pJ All nodes in allocation required, but can't use them now",
+						 __func__, job_ptr);
 					FREE_NULL_BITMAP(nodes_avail);
 					FREE_NULL_BITMAP(select_nodes_avail);
 					xfree(usable_cpu_cnt);
 					*return_code = ESLURM_NODES_BUSY;
-					if (total_tasks == 0)
+					if (total_tasks == 0) {
 						*return_code = fail_mode;
+						log_flag(STEPS, "%s: %pJ Step cannot ever run in the allocation: %s",
+							 __func__,
+							job_ptr,
+							slurm_strerror(
+								fail_mode));
+					}
 					return NULL;
 				}
 				bit_clear(nodes_avail, i);
@@ -1613,11 +1627,10 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 						  up_node_bitmap)) {
 				*return_code = ESLURM_NODE_NOT_AVAIL;
 			}
-			debug2("Have %d nodes with %d cpus which is less "
-			       "than what the user is asking for (%d cpus) "
-			       "aborting.",
-			       nodes_picked_cnt, cpus_picked_cnt,
-			       step_spec->cpu_count);
+			log_flag(STEPS, "Have %d nodes with %d cpus which is less than what the user is asking for (%d cpus) aborting.",
+				 nodes_picked_cnt,
+				 cpus_picked_cnt,
+				 step_spec->cpu_count);
 			goto cleanup;
 		}
 	}
@@ -2103,6 +2116,14 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			    mem_use) {
 				job_resrcs_ptr->memory_used[job_node_inx] -=
 					mem_use;
+				log_flag(STEPS, "Deallocating %"PRIu64"MB of memory on node %d (%s) now used: %"PRIu64" of %"PRIu64,
+					 mem_use,
+					 job_node_inx,
+					 node_record_table_ptr[i_node].name,
+					 job_resrcs_ptr->
+						memory_used[job_node_inx],
+					 job_resrcs_ptr->
+						memory_allocated[job_node_inx]);
 			} else {
 				error("%s: Allocated memory underflow for %pS (freed memeory=%"PRIu64")",
 				      __func__, step_ptr, mem_use);
