@@ -1248,6 +1248,12 @@ exclusive use by the Slurm compute node daemons (slurmd, slurmstepd).
 The total memory, in MB, currently free on the node as reported by the OS.
 
 .TP
+\fILastBusyTime\fP
+The last time the node was busy (i.e. last time the node had jobs on it). This
+time is used in PowerSave to determine when to suspend nodes (e.g. now -
+LastBusy > SuspendTime).
+
+.TP
 \fIMemSpecLimit\fP
 The combined memory limit, in megabytes, on this node for the Slurm compute
 node daemons (slurmd, slurmstepd).
