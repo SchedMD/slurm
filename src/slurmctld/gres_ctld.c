@@ -40,6 +40,7 @@
 
 typedef struct {
 	uint64_t gres_needed;
+	gres_key_t *job_search_key;
 	uint64_t max_gres;
 	int node_offset;
 	int rc;
@@ -1933,10 +1934,18 @@ static int _step_alloc_type(gres_state_t *job_gres_ptr,
 	gres_step_state_t *step_data_ptr = (gres_step_state_t *)
 		args->step_gres_ptr->gres_data;
 
+	/* This isn't the gres we are looking for */
+	if (!gres_find_job_by_key_with_cnt(job_gres_ptr, args->job_search_key))
+		return 0;
+
 	args->rc = _step_alloc(step_data_ptr, job_data_ptr,
 			       args->step_gres_ptr->plugin_id,
 			       args->node_offset, &args->tmp_step_id,
 			       &args->gres_needed, &args->max_gres);
+
+	if (args->rc != SLURM_SUCCESS) {
+		return -1;
+	}
 
 	return 0;
 }
@@ -1960,7 +1969,7 @@ extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
 {
 	int rc = SLURM_SUCCESS;
 	ListIterator step_gres_iter;
-	gres_state_t *step_gres_ptr, *job_gres_ptr;
+	gres_state_t *step_gres_ptr;
 	slurm_step_id_t tmp_step_id;
 
 	if (step_gres_list == NULL)
@@ -1991,21 +2000,15 @@ extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
 		args.gres_needed = _step_get_gres_needed(
 			step_data_ptr, first_step_node, tasks_on_node,
 			rem_nodes, &args.max_gres);
-		if (!(job_gres_ptr = list_find_first(
-			      job_gres_list,
-			      gres_find_job_by_key_with_cnt,
-			      &job_search_key))) {
-			/* job lack resources required by the step */
-			rc = ESLURM_INVALID_GRES;
-			break;
-		}
 
+		args.job_search_key = &job_search_key;
 		args.node_offset = node_offset;
 		args.rc = SLURM_SUCCESS;
 		args.step_gres_ptr = step_gres_ptr;
 		args.tmp_step_id = tmp_step_id;
 
-		_step_alloc_type(job_gres_ptr, &args);
+		(void)list_for_each(job_gres_list, (ListForF) _step_alloc_type,
+				    &args);
 
 		if (args.rc != SLURM_SUCCESS)
 			rc = args.rc;
