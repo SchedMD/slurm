@@ -63,6 +63,8 @@ HIGHLIGHTS
  -- Distinguish queued reboot requests (REBOOT@) from issued reboots (REBOOT^).
  -- auth/jwt - add support for RS256 tokens. Also permit the username in the
     'username' field in addition to the 'sun' (Slurm UserName) field.
+ -- service files - change dependency to network-online rather than just
+    network to ensure DNS and other services are available.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

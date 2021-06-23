@@ -1,6 +1,7 @@
 [Unit]
 Description=Slurm DBD accounting daemon
-After=network.target munge.service mysql.service mysqld.service mariadb.service
+After=network-online.target munge.service mysql.service mysqld.service mariadb.service
+Wants=network-online.target
 ConditionPathExists=@sysconfdir@/slurmdbd.conf
 
 [Service]

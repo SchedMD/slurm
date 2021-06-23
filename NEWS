@@ -117,6 +117,8 @@ documents those changes that are of interest to users and administrators.
  -- auth/jwt - add support for RS256 tokens.
  -- Relax reservation purge due to any invalid uid after creation time.
  -- Reject srun that requests both --exclusive and --overlap.
+ -- service files - change dependency to network-online rather than just
+    network to ensure DNS and other services are available.
 
 * Changes in Slurm 20.11.8
 ==========================
