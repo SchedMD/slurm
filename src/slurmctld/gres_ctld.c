@@ -101,7 +101,6 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 	int64_t gres_cnt, i;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
-	bool type_array_updated = false;
 	bitstr_t *alloc_core_bitmap = NULL;
 	uint64_t gres_per_bit = 1;
 	bool log_cnt_err = true;
@@ -422,7 +421,6 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 				break;
 			}
 		}
-		type_array_updated = true;
 	} else if (job_gres_ptr->gres_bit_alloc[node_offset]) {
 		int len;	/* length of the gres bitmap on this node */
 		len = bit_size(job_gres_ptr->gres_bit_alloc[node_offset]);
@@ -506,7 +504,6 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 				break;
 			}
 		}
-		type_array_updated = true;
 		if (job_gres_ptr->type_name && job_gres_ptr->type_name[0]) {
 			/*
 			 * We may not know how many GRES of this type will be
@@ -525,9 +522,7 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 				break;
 			}
 		}
-	}
-
-	if (!type_array_updated && job_gres_ptr->type_name) {
+	} else if (job_gres_ptr->type_name) {
 		gres_cnt = job_gres_ptr->gres_per_node;
 		for (j = 0; j < node_gres_ptr->type_cnt; j++) {
 			int64_t k;
@@ -836,7 +831,6 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 	int i, j, len, sz1, sz2;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
 	gres_node_state_t *node_gres_ptr = (gres_node_state_t *) node_gres_data;
-	bool type_array_updated = false;
 	uint64_t gres_cnt = 0, k;
 	uint64_t gres_per_bit = 1;
 
@@ -962,7 +956,6 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 				}
 			}
 		}
-		type_array_updated = true;
 	} else if (job_gres_ptr->gres_bit_alloc &&
 		   job_gres_ptr->gres_bit_alloc[node_offset] &&
 		   node_gres_ptr->topo_gres_cnt_alloc) {
@@ -1013,10 +1006,7 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 				}
  			}
 		}
-		type_array_updated = true;
-	}
-
-	if (!type_array_updated && job_gres_ptr->type_name) {
+	} else if (job_gres_ptr->type_name) {
 		gres_cnt = job_gres_ptr->gres_per_node;
 		for (j = 0; j < node_gres_ptr->type_cnt; j++) {
 			if (job_gres_ptr->type_id !=
