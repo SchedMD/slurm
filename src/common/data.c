@@ -662,7 +662,9 @@ data_t *data_new(void)
 
 static void _check_magic(const data_t *data)
 {
-	xassert(data);
+	if (!data)
+		return;
+
 	xassert(data->type > DATA_TYPE_NONE);
 	xassert(data->type < DATA_TYPE_MAX);
 	xassert(data->magic == DATA_MAGIC);
@@ -925,6 +927,9 @@ const data_t *data_key_get_const(const data_t *data, const char *key)
 	const data_list_node_t *i;
 
 	_check_magic(data);
+	if (!data)
+		return NULL;
+
 	xassert(data->type == DATA_TYPE_DICT);
 	if (!key || data->type != DATA_TYPE_DICT)
 		return NULL;
@@ -955,6 +960,9 @@ data_t *data_key_get(data_t *data, const char *key)
 	data_list_node_t *i;
 
 	_check_magic(data);
+	if (!data)
+		return NULL;
+
 	xassert(data->type == DATA_TYPE_DICT);
 	if (!key || data->type != DATA_TYPE_DICT)
 		return NULL;
@@ -985,6 +993,10 @@ data_t *data_key_set(data_t *data, const char *key)
 	data_t *d;
 
 	_check_magic(data);
+
+	if (!data)
+		return NULL;
+
 	xassert(data->type == DATA_TYPE_DICT);
 	xassert(key && key[0]);
 	if (!key || !key[0] || data->type != DATA_TYPE_DICT)
@@ -1020,6 +1032,9 @@ bool data_key_unset(data_t *data, const char *key)
 	data_list_node_t *i;
 
 	_check_magic(data);
+	if (!data)
+		return false;
+
 	xassert(data->type == DATA_TYPE_DICT);
 	if (!key || data->type != DATA_TYPE_DICT)
 		return NULL;
@@ -1846,6 +1861,9 @@ extern data_t *data_resolve_dict_path(data_t *data, const char *path)
 
 	_check_magic(data);
 
+	if (!data)
+		return NULL;
+
 	token = strtok_r(str, "/", &save_ptr);
 	while (token && found) {
 		xstrtrim(token);
@@ -1880,6 +1898,9 @@ extern const data_t *data_resolve_dict_path_const(const data_t *data,
 
 	_check_magic(data);
 
+	if (!data)
+		return NULL;
+
 	token = strtok_r(str, "/", &save_ptr);
 	while (token && found) {
 		xstrtrim(token);
@@ -1913,6 +1934,9 @@ extern data_t *data_define_dict_path(data_t *data, const char *path)
 
 	_check_magic(data);
 
+	if (!data)
+		return NULL;
+
 	token = strtok_r(str, "/", &save_ptr);
 	while (token && found) {
 		xstrtrim(token);
@@ -1941,6 +1965,9 @@ extern data_t *data_define_dict_path(data_t *data, const char *path)
 
 data_t *data_copy(data_t *dest, const data_t *src)
 {
+	if (!src || !dest)
+		return NULL;
+
 	_check_magic(src);
 	_check_magic(dest);
 
