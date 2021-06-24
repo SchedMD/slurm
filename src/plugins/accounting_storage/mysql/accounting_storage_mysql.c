@@ -288,14 +288,14 @@ static bool _check_jobs_before_remove(mysql_conn_t *mysql_conn,
 		xfree(object);
 	} else {
 		query = xstrdup_printf(
-			"select t0.id_assoc from \"%s_%s\" as t0, "
-			"\"%s_%s\" as t1, \"%s_%s\" as t2 "
+			"select t0.id_assoc from \"%s_%s\" as t2 STRAIGHT_JOIN "
+			"\"%s_%s\" as t1 STRAIGHT_JOIN \"%s_%s\" as t0 "
 			"where t1.lft between "
 			"t2.lft and t2.rgt && (%s) "
 			"and t0.id_assoc=t1.id_assoc limit 1;",
+			cluster_name, assoc_table,
+			cluster_name, assoc_table,
 			cluster_name, job_table,
-			cluster_name, assoc_table,
-			cluster_name, assoc_table,
 			assoc_char);
 	}
 
