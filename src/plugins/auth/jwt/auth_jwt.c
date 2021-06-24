@@ -113,25 +113,20 @@ __thread char *thread_username = NULL;
  *		requestor for a given username and duration.
  */
 
+const char *jwt_key_field = "jwt_key=";
+
 static int _init_key(void)
 {
-	char *key_file = NULL;
+	char *begin, *key_file = NULL;
 
-	if (slurm_conf.authalt_params && slurm_conf.authalt_params[0]) {
-		const char *jwt_key_field = "jwt_key=";
-		char *begin = xstrcasestr(slurm_conf.authalt_params,
-					  jwt_key_field);
+	if ((begin = xstrstr(slurm_conf.authalt_params, jwt_key_field))) {
+		char *start = begin + sizeof(jwt_key_field);
+		char *end = NULL;
 
-		/* find the begin and ending offsets of the jwt_key */
-		if (begin) {
-			char *start = begin + sizeof(jwt_key_field);
-			char *end = NULL;
-
-			if ((end = xstrstr(start, ",")))
-				key_file = xstrndup(start, (end - start));
-			else
-				key_file = xstrdup(start);
-		}
+		if ((end = xstrstr(start, ",")))
+			key_file = xstrndup(start, (end - start));
+		else
+			key_file = xstrdup(start);
 	}
 
 	if (!key_file && slurm_conf.state_save_location) {
