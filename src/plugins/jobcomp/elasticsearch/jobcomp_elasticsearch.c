@@ -552,6 +552,7 @@ extern int jobcomp_p_log_record(job_record_t *job_ptr)
 	record = data_set_dict(data_new());
 
 	data_set_int(data_key_set(record, "jobid"), job_ptr->job_id);
+	data_set_string(data_key_set(record, "container"), job_ptr->container);
 	data_set_string(data_key_set(record, "username"), usr_str);
 	data_set_int(data_key_set(record, "user_id"), job_ptr->user_id);
 	data_set_string(data_key_set(record, "groupname"), grp_str);
