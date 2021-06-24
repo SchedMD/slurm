@@ -3618,6 +3618,7 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 				     &job->array_bitmap);
 
 		safe_unpack32(&job->assoc_id, buffer);
+		safe_unpackstr_xmalloc(&job->container, &uint32_tmp, buffer);
 		safe_unpack32(&job->delay_boot, buffer);
 		safe_unpack32(&job->job_id, buffer);
 		safe_unpack32(&job->user_id, buffer);
