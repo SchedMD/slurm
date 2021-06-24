@@ -58,6 +58,7 @@ char *job_req_inx[] = {
 	"t1.array_max_tasks",
 	"t1.array_task_str",
 	"t1.constraints",
+	"t1.container",
 	"t1.cpus_req",
 	"t1.derived_ec",
 	"t1.derived_es",
@@ -115,6 +116,7 @@ enum {
 	JOB_REQ_ARRAY_MAX,
 	JOB_REQ_ARRAY_STR,
 	JOB_REQ_CONSTRAINTS,
+	JOB_REQ_CONTAINER,
 	JOB_REQ_REQ_CPUS,
 	JOB_REQ_DERIVED_EC,
 	JOB_REQ_DERIVED_ES,
@@ -823,6 +825,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		job->admin_comment = xstrdup(row[JOB_REQ_ADMIN_COMMENT]);
 		job->system_comment = xstrdup(row[JOB_REQ_SYSTEM_COMMENT]);
 		job->constraints = xstrdup(row[JOB_REQ_CONSTRAINTS]);
+		job->container = xstrdup(row[JOB_REQ_CONTAINER]);
 		job->flags = slurm_atoul(row[JOB_REQ_FLAGS]);
 		job->state_reason_prev = slurm_atoul(row[JOB_REQ_STATE_REASON]);
 
@@ -1089,6 +1092,7 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 				atof(step_row[STEP_REQ_ACT_CPUFREQ]);
 			step->stats.consumed_energy = slurm_atoull(
 				step_row[STEP_REQ_CONSUMED_ENERGY]);
+			step->container = xstrdup(step_row[STEP_REQ_CONTAINER]);
 
 			if (step_row[STEP_REQ_TRES])
 				step->tres_alloc_str =
