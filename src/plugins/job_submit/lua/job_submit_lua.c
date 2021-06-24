@@ -493,6 +493,8 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushstring(L, job_desc->clusters);
 	} else if (!xstrcmp(name, "comment")) {
 		lua_pushstring(L, job_desc->comment);
+	} else if (!xstrcmp(name, "container")) {
+		lua_pushstring(L, job_desc->container);
 	} else if (!xstrcmp(name, "contiguous")) {
 		lua_pushnumber(L, job_desc->contiguous);
 	} else if (!xstrcmp(name, "cores_per_socket")) {
@@ -767,6 +769,11 @@ static int _set_job_req_field(lua_State *L)
 		xfree(job_desc->comment);
 		if (strlen(value_str))
 			job_desc->comment = xstrdup(value_str);
+	} else if (!xstrcmp(name, "container")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->container);
+		if (strlen(value_str))
+			job_desc->container = xstrdup(value_str);
 	} else if (!xstrcmp(name, "contiguous")) {
 		job_desc->contiguous = luaL_checknumber(L, 3);
 	} else if (!xstrcmp(name, "cores_per_socket")) {

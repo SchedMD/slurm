@@ -376,6 +376,8 @@ extern int slurm_lua_job_record_field(lua_State *L, const job_record_t *job_ptr,
 		lua_pushstring(L, job_ptr->burst_buffer);
 	} else if (!xstrcmp(name, "comment")) {
 		lua_pushstring(L, job_ptr->comment);
+	} else if (!xstrcmp(name, "container")) {
+		lua_pushstring(L, job_ptr->container);
 	} else if (!xstrcmp(name, "cpus_per_tres")) {
 		lua_pushstring(L, job_ptr->cpus_per_tres);
 	} else if (!xstrcmp(name, "delay_boot")) {
