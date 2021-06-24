@@ -89,6 +89,9 @@ COMMAND CHANGES (see man pages for details)
     performance than no compression at all on many systems.
  -- sacctmgr - changed column headings to "ParentID" and "ParentName" instead
     of "Par ID" and "Par Name" respectively.
+ -- SALLOC_THREADS_PER_CORE and SBATCH_THREADS_PER_CORE have been added as
+    input environment variables for salloc and sbatch, respectively. They do
+    the same thing as --threads-per-core.
 
 API CHANGES
 ===========
