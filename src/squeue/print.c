@@ -577,6 +577,18 @@ int _print_job_cluster_name(job_info_t * job, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_container(job_info_t *job, int width, bool right, char *suffix)
+{
+	if (!job)		/* Print the Header instead */
+		_print_str("CONTAINER", width, right, true);
+	else
+		_print_str(job->container, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_core_spec(job_info_t * job, int width, bool right, char* suffix)
 {
 	char spec[FORMAT_STRING_SIZE];
@@ -2387,6 +2399,19 @@ int _print_step_cluster_name(job_step_info_t *step, int width, bool right,
 		_print_str("CLUSTER", width, right, true);
 	else
 		_print_str(step->cluster, width, right, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_container(job_step_info_t *step, int width, bool right,
+			  char *suffix)
+{
+	if (!step)		/* Print the Header instead */
+		_print_str("CONTAINER", width, right, true);
+	else
+		_print_str(step->container, width, right, true);
 
 	if (suffix)
 		printf("%s", suffix);

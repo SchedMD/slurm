@@ -954,6 +954,12 @@ extern int parse_long_format( char* format_long )
 							     field_size,
 							     right_justify,
 							     suffix);
+			else if (!xstrncasecmp(token, "container",
+					       strlen("container")))
+				step_format_add_container(params.format_list,
+							  field_size,
+							  right_justify,
+							  suffix);
 			else if (!xstrncasecmp(token, "numtasks",
 					       strlen("numtask")))
 				step_format_add_num_tasks( params.format_list,
@@ -1113,6 +1119,11 @@ extern int parse_long_format( char* format_long )
 							field_size,
 							right_justify,
 							suffix  );
+			else if (!xstrcasecmp(token, "container"))
+				job_format_add_container(params.format_list,
+						       field_size,
+						       right_justify,
+						       suffix );
 			else if (!xstrcasecmp(token, "jobid"))
 				job_format_add_job_id2(params.format_list,
 						       field_size,
