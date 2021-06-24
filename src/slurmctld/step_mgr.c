@@ -4810,6 +4810,7 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 	step_ptr->step_id.step_id = SLURM_BATCH_SCRIPT;
 	step_ptr->step_id.step_het_comp = NO_VAL;
 	step_ptr->batch_step = 1;
+	step_ptr->container = xstrdup(job_ptr->container);
 
 #ifndef HAVE_FRONT_END
 	if (node_name2bitmap(job_ptr->batch_host, false,
@@ -4894,6 +4895,7 @@ static step_record_t *_build_interactive_step(
 	step_ptr->step_id.job_id = job_ptr->job_id;
 	step_ptr->step_id.step_id = SLURM_INTERACTIVE_STEP;
 	step_ptr->step_id.step_het_comp = NO_VAL;
+	step_ptr->container = xstrdup(job_ptr->container);
 
 	step_ptr->port = step_specs->port;
 	step_ptr->srun_pid = step_specs->srun_pid;

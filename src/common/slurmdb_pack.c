@@ -4097,6 +4097,7 @@ extern void slurmdb_pack_job_rec(void *object, uint16_t protocol_version,
 		packstr(job->blockid, buffer);
 		packstr(job->cluster, buffer);
 		packstr(job->constraints, buffer);
+		packstr(job->container, buffer);
 		pack64(job->db_index, buffer);
 		pack32((uint32_t)job->derived_ec, buffer);
 		packstr(job->derived_es, buffer);
@@ -4396,6 +4397,8 @@ extern int slurmdb_unpack_job_rec(void **job, uint16_t protocol_version,
 		safe_unpackstr_xmalloc(&job_ptr->blockid, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->cluster, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&job_ptr->constraints,
+				       &uint32_tmp, buffer);
+		safe_unpackstr_xmalloc(&job_ptr->container,
 				       &uint32_tmp, buffer);
 		safe_unpack64(&job_ptr->db_index, buffer);
 		safe_unpack32(&uint32_tmp, buffer);
@@ -4910,6 +4913,7 @@ extern void slurmdb_pack_step_rec(slurmdb_step_rec_t *step,
 {
 
 	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		packstr(step->container, buffer);
 		pack32(step->elapsed, buffer);
 		pack_time(step->end, buffer);
 		pack32((uint32_t)step->exitcode, buffer);
@@ -5010,6 +5014,8 @@ extern int slurmdb_unpack_step_rec(slurmdb_step_rec_t **step,
 	*step = step_ptr;
 
 	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		safe_unpackstr_xmalloc(&step_ptr->container, &uint32_tmp,
+				       buffer);
 		safe_unpack32(&step_ptr->elapsed, buffer);
 		safe_unpack_time(&step_ptr->end, buffer);
 		safe_unpack32(&uint32_tmp, buffer);

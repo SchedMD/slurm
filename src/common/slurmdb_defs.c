@@ -933,6 +933,7 @@ extern void slurmdb_destroy_job_rec(void *object)
 		xfree(job->blockid);
 		xfree(job->cluster);
 		xfree(job->constraints);
+		xfree(job->container);
 		xfree(job->derived_es);
 		xfree(job->env);
 		xfree(job->jobname);
@@ -1015,6 +1016,7 @@ extern void slurmdb_destroy_step_rec(void *object)
 {
 	slurmdb_step_rec_t *step = (slurmdb_step_rec_t *)object;
 	if (step) {
+		xfree(step->container);
 		xfree(step->nodes);
 		xfree(step->pid_str);
 		slurmdb_free_slurmdb_stats_members(&step->stats);

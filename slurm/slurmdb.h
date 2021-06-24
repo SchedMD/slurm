@@ -788,6 +788,7 @@ typedef struct {
 	char	*blockid;
 	char    *cluster;
 	char    *constraints;
+	char *container; /* OCI Container Bundle path */
 	uint64_t db_index; /* index in the table */
 	uint32_t derived_ec;
 	char	*derived_es; /* aka "comment" */
@@ -1053,6 +1054,7 @@ typedef struct {
 } slurmdb_reservation_rec_t;
 
 typedef struct {
+	char *container;
 	uint32_t elapsed;
 	time_t end;
 	int32_t exitcode;
