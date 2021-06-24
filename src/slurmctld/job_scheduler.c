@@ -4245,10 +4245,17 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 	uint16_t protocol_version = SLURM_PROTOCOL_VERSION;
 	wait_boot_arg_t *wait_boot_arg;
 	pthread_t tid;
+	static bool power_save_on = false;
+	static time_t sched_update = 0;
+
+	if (sched_update != slurm_conf.last_update) {
+		power_save_on = power_save_test();
+		sched_update = slurm_conf.last_update;
+	}
 
 	if ((job_ptr->details == NULL) || (job_ptr->node_bitmap == NULL))
 		return SLURM_SUCCESS;
-	if (power_save_test())
+	if (power_save_on)
 		return power_job_reboot(job_ptr);
 	if ((slurm_conf.reboot_program == NULL) ||
 	    (slurm_conf.reboot_program[0] == '\0'))
