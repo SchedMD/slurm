@@ -2271,6 +2271,8 @@ extern int drain_nodes(char *nodes, char *reason, uint32_t reason_uid)
 static bool _valid_node_state_change(uint32_t old, uint32_t new)
 {
 	uint32_t base_state, node_flags;
+	static bool power_save_on = false;
+	static time_t sched_update = 0;
 
 	if (old == new)
 		return true;
@@ -2282,16 +2284,26 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 	if (old & NODE_STATE_INVALID_REG)
 		return false;
 
+	if (sched_update != slurm_conf.last_update) {
+		power_save_on = power_save_test();
+		sched_update = slurm_conf.last_update;
+	}
+
 	switch (new) {
 		case NODE_STATE_DOWN:
 		case NODE_STATE_DRAIN:
 		case NODE_STATE_FAIL:
 		case NODE_STATE_NO_RESPOND:
+		case NODE_STATE_UNDRAIN:
+			return true;
+
 		case NODE_STATE_POWER_SAVE:
 		case NODE_STATE_POWER_UP:
 		case (NODE_STATE_POWER_SAVE | NODE_STATE_POWER_UP):
-		case NODE_STATE_UNDRAIN:
-			return true;
+			if (power_save_on)
+				return true;
+			info("attempt to do power work on node but PowerSave is disabled");
+			break;
 
 		case NODE_RESUME:
 			if ((base_state == NODE_STATE_DOWN)   ||
