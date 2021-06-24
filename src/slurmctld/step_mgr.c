@@ -3896,6 +3896,7 @@ extern int dump_job_step_state(void *x, void *arg)
 	pack32(step_ptr->srun_pid, buffer);
 	pack16(step_ptr->port, buffer);
 	pack16(step_ptr->cpus_per_task, buffer);
+	packstr(step_ptr->container, buffer);
 	pack16(step_ptr->resv_port_cnt, buffer);
 	pack16(step_ptr->state, buffer);
 	pack16(step_ptr->start_protocol_ver, buffer);
@@ -3992,7 +3993,8 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	uint64_t pn_min_memory;
 	uint64_t *memory_allocated = NULL;
 	time_t start_time, pre_sus_time, tot_sus_time;
-	char *host = NULL, *core_job = NULL, *submit_line = NULL;
+	char *host = NULL, *container = NULL, *core_job = NULL;
+	char *submit_line = NULL;
 	char *resv_ports = NULL, *name = NULL, *network = NULL;
 	char *tres_alloc_str = NULL, *tres_fmt_alloc_str = NULL;
 	char *cpus_per_tres = NULL, *mem_per_tres = NULL, *tres_bind = NULL;
@@ -4013,6 +4015,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 		safe_unpack32(&srun_pid, buffer);
 		safe_unpack16(&port, buffer);
 		safe_unpack16(&cpus_per_task, buffer);
+		safe_unpackstr_xmalloc(&container, &name_len, buffer);
 		safe_unpack16(&resv_port_cnt, buffer);
 		safe_unpack16(&state, buffer);
 		safe_unpack16(&start_protocol_ver, buffer);
@@ -4303,6 +4306,7 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	/* set new values */
 	memcpy(&step_ptr->step_id, &step_id, sizeof(step_ptr->step_id));
 
+	step_ptr->container = container;
 	step_ptr->cpu_count    = cpu_count;
 	step_ptr->cpus_per_task= cpus_per_task;
 	step_ptr->cyclic_alloc = cyclic_alloc;
