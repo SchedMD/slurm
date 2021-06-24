@@ -1158,14 +1158,23 @@ static bool _job_runnable_now(job_record_t *job_ptr)
 {
 	uint16_t cleaning = 0;
 
-	if (IS_JOB_REVOKED(job_ptr))
+	if (IS_JOB_REVOKED(job_ptr)) {
+		log_flag(BACKFILL, "%pJ revoked during bf yield", job_ptr);
 		return false;
-	if (!IS_JOB_PENDING(job_ptr))	/* Started in other partition */
+	}
+	if (!IS_JOB_PENDING(job_ptr)) {	/* Started in other partition */
+		log_flag(BACKFILL, "%pJ started in other partition during bf yield",
+			 job_ptr);
 		return false;
-	if (job_ptr->priority == 0)	/* Job has been held */
+	}
+	if (job_ptr->priority == 0) {	/* Job has been held */
+		log_flag(BACKFILL, "%pJ job held during bf yield", job_ptr);
 		return false;
-	if (IS_JOB_COMPLETING(job_ptr))	/* Started, requeue and completing */
+	}
+	if (IS_JOB_COMPLETING(job_ptr)) { /* Started, requeue and completing */
+		log_flag(BACKFILL, "%pJ job started during bf yield", job_ptr);
 		return false;
+	}
 	/*
 	 * Already reserved resources for either bf_max_job_array_resv or
 	 * max_run_tasks number of jobs in the array. If max_run_tasks is 0, it
@@ -1180,8 +1189,10 @@ static bool _job_runnable_now(job_record_t *job_ptr)
 
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_CLEANING, &cleaning);
-	if (cleaning)			/* Started, requeue and completing */
+	if (cleaning) {			/* Started, requeue and completing */
+		log_flag(BACKFILL, "%pJ job cleaning after bf yield", job_ptr);
 		return false;
+	}
 
 	return true;
 }
@@ -1807,6 +1818,8 @@ static int _attempt_backfill(void)
 		    (job_ptr->array_task_id != NO_VAL)) {
 			/* Job array element started in other partition,
 			 * reset pointer to "master" job array record */
+			log_flag(BACKFILL, "%pJ array scheduled during bf yield, try master",
+				 job_ptr);
 			job_ptr = find_job_record(job_ptr->array_job_id);
 			if (!job_ptr)	/* All task array elements started */
 				continue;
@@ -2136,6 +2149,8 @@ next_task:
 				 * Job array element started in other partition,
 				 * reset pointer to "master" job array record
 				 */
+				log_flag(BACKFILL, "%pJ array scheduled during bf yield, try master",
+					 job_ptr);
 				job_ptr = find_job_record(
 						job_ptr->array_job_id);
 				if (!job_ptr)
@@ -2149,9 +2164,14 @@ next_task:
 			 */
 			if (!_job_runnable_now(job_ptr))
 				continue;
-			if (!avail_front_end(job_ptr))
+			if (!avail_front_end(job_ptr)) {
+				log_flag(BACKFILL, "%pJ no frontend available after bf yield",
+					 job_ptr);
 				continue;	/* No available frontend */
+			}
 			if (!job_independent(job_ptr)) {
+				log_flag(BACKFILL, "%pJ no longer independent after bf yield",
+					 job_ptr);
 				/* No longer independent
 				 * (e.g. another singleton started) */
 				continue;
