@@ -155,6 +155,7 @@ documents those changes that are of interest to users and administrators.
  -- Return error for a step requesting more memory than the allocation has.
  -- slurmrestd - add description for slurmdb/job endpoint.
  -- Better handling of --mem=0.
+ -- Ignore DefCpuPerGpu when --cpus-per-task given.
 
 * Changes in Slurm 20.11.7
 ==========================
