@@ -59,6 +59,7 @@ print_field_t fields[] = {
 	{10, "Cluster", print_fields_str, PRINT_CLUSTER},
 	{14, "Comment", print_fields_str, PRINT_COMMENT},
 	{19, "Constraints", print_fields_str, PRINT_CONSTRAINTS},
+	{19, "Container", print_fields_str, PRINT_CONTAINER},
 	{14, "ConsumedEnergy", print_fields_str, PRINT_CONSUMED_ENERGY},
 	{17, "ConsumedEnergyRaw", print_fields_uint64,
 	 PRINT_CONSUMED_ENERGY_RAW},
