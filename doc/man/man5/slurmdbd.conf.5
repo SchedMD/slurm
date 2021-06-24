@@ -139,7 +139,13 @@ will permit for communication.
 Used to define alternative authentication plugins options. Multiple options may
 be comma separated.
 .RS
-.TP 15
+.TP
+\fBjwks=\fR
+Absolute path to JWKS file. Only RS256 keys are supported, although other
+key types may be listed in the file. If set, no HS256 key will be loaded by
+default (and token generation is disabled), although the jwt_key setting may
+be used to explicitly re\-enable HS256 key use (and token generation).
+.TP
 \fBjwt_key=\fR
 Absolute path to JWT key file. Key must be HS256, and should only be accessible
 by SlurmUser.
