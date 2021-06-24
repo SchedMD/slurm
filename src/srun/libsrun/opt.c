@@ -389,6 +389,8 @@ extern int initialize_and_process_args(int argc, char **argv, int *argc_off)
 		_set_options(argc, argv);
 		_opt_args(argc, argv, i);
 
+
+
 		if (argc_off)
 			*argc_off = optind;
 
@@ -867,6 +869,26 @@ static bool _opt_verify(void)
 	int hl_cnt = 0;
 
 	validate_options_salloc_sbatch_srun(&opt);
+
+	/*
+	 * If they are requesting block without 'nopack' and the system
+	 * is setup to pack nodes set it here.
+	 */
+	if ((slurm_conf.select_type_param & CR_PACK_NODES) &&
+	    !(opt.distribution & SLURM_DIST_NO_PACK_NODES) &&
+	    ((opt.distribution & SLURM_DIST_BLOCK) ||
+	     (opt.distribution == SLURM_DIST_UNKNOWN)))
+		opt.distribution |= SLURM_DIST_PACK_NODES;
+
+	/*
+	 * If we are packing the nodes in an allocation set min_nodes to
+	 * 1. The slurmctld will adjust the max_nodes to the approriate
+	 * number if the allocation is homogeneous.
+	 */
+	if ((opt.distribution & SLURM_DIST_PACK_NODES) &&
+	    slurm_option_set_by_env(&opt, 'N'))
+		opt.min_nodes = 1;
+
 
 	/*
 	 *  Do not set slurmd debug level higher than DEBUG2,

@@ -162,6 +162,9 @@ documents those changes that are of interest to users and administrators.
  -- scrontab - add ability to update crontab from a file or standard input.
  -- scrontab - add ability to set and expand variables.
  -- Pass JSON of job to node mappings to ResumeProgram.
+ -- If running steps in an allocation with CR_PACK_NODE or -mpack the srun will
+    only attempt to allocate as much as needed from the allocation instead
+    of always trying to allocate every node in the allocation.
 
 * Changes in Slurm 20.11.9
 ==========================

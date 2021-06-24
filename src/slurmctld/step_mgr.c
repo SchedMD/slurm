@@ -1432,6 +1432,14 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		    job_ptr->job_resrcs->cpu_array_value[0];
 		step_spec->min_nodes = (i > step_spec->min_nodes) ?
 					i : step_spec->min_nodes ;
+
+		/*
+		 * If we are trying to pack the nodes we only want the minimum
+		 * it takes to satisfy the request.
+		 */
+		if (step_spec->task_dist & SLURM_DIST_PACK_NODES)
+			step_spec->max_nodes = step_spec->min_nodes;
+
 		if (step_spec->max_nodes < step_spec->min_nodes) {
 			log_flag(STEPS, "%s: %pJ max node less than min node count (%u < %u)",
 				 __func__, job_ptr, step_spec->max_nodes,
