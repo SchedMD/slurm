@@ -2125,6 +2125,7 @@ static void _process_job_start(slurmdbd_conn_t *slurmdbd_conn,
 	}
 	job.user_id = job_start_msg->uid;
 	job.group_id = job_start_msg->gid;
+	job.container = xstrdup(job_start_msg->container);
 	job.het_job_id = job_start_msg->het_job_id;
 	job.het_job_offset = job_start_msg->het_job_offset;
 	job.job_id = job_start_msg->job_id;
