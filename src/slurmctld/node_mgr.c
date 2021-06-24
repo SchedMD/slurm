@@ -1613,7 +1613,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 					info("powering down node %s",
 					     this_node_name);
 				}
-				node_ptr->last_busy = 1;
+				node_ptr->node_state |=
+					NODE_STATE_MAN_POWER_DOWN;
 				node_ptr->next_state = NO_VAL;
 				bit_clear(rs_node_bitmap, node_inx);
 				free(this_node_name);
@@ -1621,9 +1622,10 @@ int update_node ( update_node_msg_t * update_node_msg )
 			} else if (state_val == NODE_STATE_POWER_UP) {
 				if (!IS_NODE_POWER_SAVE(node_ptr)) {
 					if (IS_NODE_POWER_UP(node_ptr)) {
-						node_ptr->last_busy = now;
 						node_ptr->node_state |=
 							NODE_STATE_POWER_SAVE;
+						node_ptr->node_state |=
+							NODE_STATE_MAN_POWER_UP;
 						info("power up request "
 						     "repeating for node %s",
 						     this_node_name);
@@ -1633,7 +1635,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 							this_node_name);
 					}
 				} else {
-					node_ptr->last_busy = now;
+					node_ptr->node_state |=
+						NODE_STATE_MAN_POWER_UP;
 					info("powering up node %s",
 					     this_node_name);
 				}
@@ -2268,6 +2271,8 @@ extern int drain_nodes(char *nodes, char *reason, uint32_t reason_uid)
 static bool _valid_node_state_change(uint32_t old, uint32_t new)
 {
 	uint32_t base_state, node_flags;
+	static bool power_save_on = false;
+	static time_t sched_update = 0;
 
 	if (old == new)
 		return true;
@@ -2279,16 +2284,26 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 	if (old & NODE_STATE_INVALID_REG)
 		return false;
 
+	if (sched_update != slurm_conf.last_update) {
+		power_save_on = power_save_test();
+		sched_update = slurm_conf.last_update;
+	}
+
 	switch (new) {
 		case NODE_STATE_DOWN:
 		case NODE_STATE_DRAIN:
 		case NODE_STATE_FAIL:
 		case NODE_STATE_NO_RESPOND:
+		case NODE_STATE_UNDRAIN:
+			return true;
+
 		case NODE_STATE_POWER_SAVE:
 		case NODE_STATE_POWER_UP:
 		case (NODE_STATE_POWER_SAVE | NODE_STATE_POWER_UP):
-		case NODE_STATE_UNDRAIN:
-			return true;
+			if (power_save_on)
+				return true;
+			info("attempt to do power work on node but PowerSave is disabled");
+			break;
 
 		case NODE_RESUME:
 			if ((base_state == NODE_STATE_DOWN)   ||

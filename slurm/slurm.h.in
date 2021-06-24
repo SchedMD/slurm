@@ -959,6 +959,8 @@ enum node_states {
 					     * future */
 #define NODE_STATE_INVALID_REG SLURM_BIT(22) /* invalid registration, don't
 					      * ping */
+#define NODE_STATE_MAN_POWER_DOWN SLURM_BIT(23) /* manual node power down */
+#define NODE_STATE_MAN_POWER_UP SLURM_BIT(24) /* manual node power up */
 
 /* used to define the size of the credential.signature size
  * used to define the key size of the io_stream_header_t

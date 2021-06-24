@@ -58,6 +58,8 @@ HIGHLIGHTS
     configless mode with --conf-server
  -- configure - add --with-systemdsystemunitdir option to automatically install
     the Slurm unit files.
+ -- Manually powering down of nodes with scontrol now ignores
+    SuspendExc<Nodes|Parts>.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
