@@ -80,6 +80,7 @@ strong_alias(xstrdup,		slurm_xstrdup);
 strong_alias(xstrdup_printf,	slurm_xstrdup_printf);
 strong_alias(xstrndup,		slurm_xstrndup);
 strong_alias(xbasename,		slurm_xbasename);
+strong_alias(xdirname,		slurm_xdirname);
 strong_alias(_xstrsubstitute,   slurm_xstrsubstitute);
 strong_alias(xshort_hostname,   slurm_xshort_hostname);
 strong_alias(xstring_is_whitespace, slurm_xstring_is_whitespace);
@@ -364,6 +365,39 @@ char * xbasename(char *path)
 
 	p = strrchr(path , '/');
 	return (p ? (p + 1) : path);
+}
+
+/*
+ * Specialized dirname implementation which returns the result of removing the
+ * basename to the given path, or a "." (dot) if the given path doesn't contain
+ * a slash.
+ *
+ * NOTE: This implementation differs from the libgen/libc ones, and it does not
+ *	 conform to the XPG 4.2 or any other standard. For instance, given
+ *	 "/tmp/" as an argument, a conformant implementation would return "/",
+ *	 but this will return "/tmp".
+ *
+ * NOTE: This doesn't handle multiple and contiguous slashes.
+ *
+ * IN:	char pointer to a path
+ * RET:	the path without the xbasename or a dot if no slashes
+ */
+char *xdirname(const char *path)
+{
+	char *fname = xstrdup(path);
+	char *slash;
+
+	if (!fname)
+		return xstrdup(".");
+
+	if (!(slash = strrchr(fname, '/'))) {
+		xfree(fname);
+		return xstrdup(".");
+	}
+
+	*slash = '\0';
+
+	return fname;
 }
 
 /*

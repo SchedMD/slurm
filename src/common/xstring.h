@@ -144,6 +144,11 @@ long int xstrntol(const char *str, char **endptr, size_t n, int base);
 char *xbasename(char *path);
 
 /*
+ * Specialized dirname implementation
+ */
+char *xdirname(const char *path);
+
+/*
 ** Find the first instance of a sub-string "pattern" in the string "str",
 ** and replace it with the string "replacement".
 ** If it wasn't found returns 0, otherwise 1
