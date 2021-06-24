@@ -2131,6 +2131,19 @@ next_task:
 			test_time_count = 0;
 			START_TIMER;
 
+			if ((job_ptr->array_task_id != bf_array_task_id) &&
+			    (bf_array_task_id == NO_VAL)) {
+				/*
+				 * Job array element started in other partition,
+				 * reset pointer to "master" job array record
+				 */
+				job_ptr = find_job_record(
+						job_ptr->array_job_id);
+				if (!job_ptr)
+					/* All task array elements started */
+					continue;
+			}
+
 			/*
 			 * With bf_continue configured, the original job could
 			 * have been scheduled. Revalidate the job record here.
