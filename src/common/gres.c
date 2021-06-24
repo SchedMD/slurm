@@ -8717,10 +8717,13 @@ extern uint64_t gres_step_count(List step_gres_list, char *gres_name)
 			if (gres_ptr->plugin_id != gres_context[i].plugin_id)
 				continue;
 			gres_step_ptr = (gres_step_state_t*)gres_ptr->gres_data;
+			/* gres_cnt_node_alloc has one element in slurmstepd */
 			if (gres_cnt == NO_VAL64)
-				gres_cnt = gres_step_ptr->gres_per_node;
+				gres_cnt =
+					gres_step_ptr->gres_cnt_node_alloc[0];
 			else
-				gres_cnt += gres_step_ptr->gres_per_node;
+				gres_cnt +=
+					gres_step_ptr->gres_cnt_node_alloc[0];
 		}
 		list_iterator_destroy(gres_iter);
 		break;
