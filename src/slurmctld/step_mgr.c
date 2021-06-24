@@ -1901,7 +1901,9 @@ static void _step_alloc_lps(step_record_t *step_ptr)
 				step_ptr->cpus_per_task;
 
 		job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
-		gres_ctld_step_alloc(step_ptr->gres_list, job_ptr->gres_list,
+		gres_ctld_step_alloc(step_ptr->gres_list,
+				     &step_ptr->gres_list_alloc,
+				     job_ptr->gres_list_alloc,
 				     job_node_inx, first_step_node,
 				     step_ptr->step_layout->
 				     tasks[step_node_inx],
@@ -3708,8 +3710,8 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 		     i++)
 			mem_count += step_ptr->memory_allocated[i];
 
-		tmp_tres_str = gres_ctld_gres_2_tres_str(step_ptr->gres_list,
-							 true);
+		tmp_tres_str = gres_ctld_gres_2_tres_str(
+			step_ptr->gres_list_alloc, true);
 	}
 
 	xstrfmtcat(step_ptr->tres_alloc_str,
@@ -4665,7 +4667,7 @@ extern void rebuild_step_bitmaps(job_record_t *job_ptr,
 	while ((step_ptr = list_next(step_iterator))) {
 		if (step_ptr->state < JOB_RUNNING)
 			continue;
-		gres_ctld_step_state_rebase(step_ptr->gres_list,
+		gres_ctld_step_state_rebase(step_ptr->gres_list_alloc,
 					    orig_job_node_bitmap,
 					    job_ptr->job_resrcs->node_bitmap);
 		if (step_ptr->core_bitmap_job == NULL)
@@ -4717,8 +4719,8 @@ extern int post_job_step(step_record_t *step_ptr)
 	job_record_t *job_ptr = step_ptr->job_ptr;
 
 	_step_dealloc_lps(step_ptr);
-	gres_ctld_step_dealloc(step_ptr->gres_list,
-			       job_ptr->gres_list, job_ptr->job_id,
+	gres_ctld_step_dealloc(step_ptr->gres_list_alloc,
+			       job_ptr->gres_list_alloc, job_ptr->job_id,
 			       step_ptr->step_id.step_id);
 
 	/* Don't need to set state. Will be destroyed in next steps. */

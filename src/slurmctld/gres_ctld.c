@@ -44,6 +44,7 @@ typedef struct {
 	uint64_t max_gres;
 	int node_offset;
 	int rc;
+	List step_gres_list_alloc;
 	gres_state_t *step_gres_ptr;
 	slurm_step_id_t tmp_step_id;
 } foreach_step_alloc_t;
@@ -1926,6 +1927,39 @@ static int _step_alloc(gres_step_state_t *step_gres_ptr,
 	return SLURM_SUCCESS;
 }
 
+static gres_step_state_t *_step_get_alloc_gres_ptr(List step_gres_list_alloc,
+						   uint32_t plugin_id,
+						   char *gres_name,
+						   uint32_t type_id,
+						   char *type_name)
+{
+	gres_key_t step_search_key;
+	gres_step_state_t *step_alloc_gres_ptr;
+	gres_state_t *step_gres_ptr;
+	/* Find in job_gres_list_alloc if it exists */
+	step_search_key.plugin_id = plugin_id;
+	step_search_key.type_id = type_id;
+
+	if (!(step_gres_ptr = list_find_first(step_gres_list_alloc,
+					      gres_find_step_by_key,
+					      &step_search_key))) {
+		step_alloc_gres_ptr = xmalloc(sizeof(*step_alloc_gres_ptr));
+		step_alloc_gres_ptr->type_id = type_id;
+		step_alloc_gres_ptr->type_name = xstrdup(type_name);
+
+		step_gres_ptr = xmalloc(sizeof(*step_gres_ptr));
+		step_gres_ptr->plugin_id = plugin_id;
+		step_gres_ptr->gres_data = step_alloc_gres_ptr;
+		step_gres_ptr->gres_name = xstrdup(gres_name);
+		step_gres_ptr->state_type = GRES_STATE_TYPE_STEP;
+
+		list_append(step_gres_list_alloc, step_gres_ptr);
+	} else
+		step_alloc_gres_ptr = step_gres_ptr->gres_data;
+
+	return step_alloc_gres_ptr;
+}
+
 static int _step_alloc_type(gres_state_t *job_gres_ptr,
 			    foreach_step_alloc_t *args)
 {
@@ -1933,12 +1967,20 @@ static int _step_alloc_type(gres_state_t *job_gres_ptr,
 		job_gres_ptr->gres_data;
 	gres_step_state_t *step_data_ptr = (gres_step_state_t *)
 		args->step_gres_ptr->gres_data;
+	gres_step_state_t *step_alloc_data_ptr;
 
 	/* This isn't the gres we are looking for */
 	if (!gres_find_job_by_key_with_cnt(job_gres_ptr, args->job_search_key))
 		return 0;
 
-	args->rc = _step_alloc(step_data_ptr, job_data_ptr,
+	step_alloc_data_ptr = _step_get_alloc_gres_ptr(
+		args->step_gres_list_alloc,
+		args->step_gres_ptr->plugin_id,
+		args->step_gres_ptr->gres_name,
+		job_data_ptr->type_id,
+		job_data_ptr->type_name);
+
+	args->rc = _step_alloc(step_alloc_data_ptr, job_data_ptr,
 			       args->step_gres_ptr->plugin_id,
 			       args->node_offset, &args->tmp_step_id,
 			       &args->gres_needed, &args->max_gres);
@@ -1947,6 +1989,10 @@ static int _step_alloc_type(gres_state_t *job_gres_ptr,
 		return -1;
 	}
 
+	step_data_ptr->total_gres += step_alloc_data_ptr->total_gres;
+	if (step_data_ptr->node_cnt == 0)
+		step_data_ptr->node_cnt = job_data_ptr->node_cnt;
+
 	return 0;
 }
 
@@ -1954,7 +2000,8 @@ static int _step_alloc_type(gres_state_t *job_gres_ptr,
  * Allocate resource to a step and update job and step gres information
  * IN step_gres_list - step's gres_list built by
  *		gres_step_state_validate()
- * IN job_gres_list - job's gres_list built by gres_job_state_validate()
+ * OUT step_gres_list_alloc - step's list of allocated gres
+ * IN job_gres_list - job's allocated gres_list built by gres_ctld_job_alloc()
  * IN node_offset - job's zero-origin index to the node of interest
  * IN first_step_node - true if this is the first node in the step's allocation
  * IN tasks_on_node - number of tasks to be launched on this node
@@ -1962,7 +2009,9 @@ static int _step_alloc_type(gres_state_t *job_gres_ptr,
  * IN job_id, step_id - ID of the step being allocated.
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
+extern int gres_ctld_step_alloc(List step_gres_list,
+				List *step_gres_list_alloc,
+				List job_gres_list,
 				int node_offset, bool first_step_node,
 				uint16_t tasks_on_node, uint32_t rem_nodes,
 				uint32_t job_id, uint32_t step_id)
@@ -1979,6 +2028,9 @@ extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
 		      __func__, job_id);
 		return SLURM_ERROR;
 	}
+
+	if (!*step_gres_list_alloc)
+		*step_gres_list_alloc = list_create(gres_step_list_delete);
 
 	tmp_step_id.job_id = job_id;
 	tmp_step_id.step_het_comp = NO_VAL;
@@ -2004,6 +2056,7 @@ extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
 		args.job_search_key = &job_search_key;
 		args.node_offset = node_offset;
 		args.rc = SLURM_SUCCESS;
+		args.step_gres_list_alloc = *step_gres_list_alloc;
 		args.step_gres_ptr = step_gres_ptr;
 		args.tmp_step_id = tmp_step_id;
 
@@ -2073,8 +2126,11 @@ static int _step_dealloc(gres_state_t *step_gres_ptr, List job_gres_list,
 
 		if (step_data_ptr->gres_cnt_node_alloc)
 			gres_cnt = step_data_ptr->gres_cnt_node_alloc[i];
-		else
-			gres_cnt = step_data_ptr->gres_per_node;
+		else {
+			error("gres/%s: %s %ps dealloc, gres_cnt_node_alloc is NULL",
+			      job_data_ptr->gres_name, __func__, step_id);
+			return SLURM_ERROR;
+		}
 
 		if (job_data_ptr->gres_cnt_step_alloc) {
 			if (job_data_ptr->gres_cnt_step_alloc[i] >=
@@ -2122,9 +2178,8 @@ static int _step_dealloc(gres_state_t *step_gres_ptr, List job_gres_list,
 
 /*
  * Deallocate resource to a step and update job and step gres information
- * IN step_gres_list - step's gres_list built by
- *		gres_step_state_validate()
- * IN job_gres_list - job's gres_list built by gres_job_state_validate()
+ * IN step_gres_list_alloc - steps's list for allocated gres.
+ * IN job_gres_list - job's allocated gres_list built by gres_ctld_job_alloc()
  * IN job_id, step_id - ID of the step being allocated.
  * RET SLURM_SUCCESS or error code
  */

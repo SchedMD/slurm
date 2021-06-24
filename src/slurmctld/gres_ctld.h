@@ -177,7 +177,8 @@ extern void gres_ctld_set_node_tres_cnt(List gres_list,
  * Allocate resource to a step and update job and step gres information
  * IN step_gres_list - step's gres_list built by
  *		gres_step_state_validate()
- * IN job_gres_list - job's gres_list built by gres_job_state_validate()
+ * OUT step_gres_list_alloc - step's list of allocated gres
+ * IN job_gres_list - job's allocated gres_list built by gres_ctld_job_alloc()
  * IN node_offset - job's zero-origin index to the node of interest
  * IN first_step_node - true if this is node zero of the step
  *                      (do initialization)
@@ -186,20 +187,22 @@ extern void gres_ctld_set_node_tres_cnt(List gres_list,
  * IN job_id, step_id - ID of the step being allocated.
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_ctld_step_alloc(List step_gres_list, List job_gres_list,
+extern int gres_ctld_step_alloc(List step_gres_list,
+				List *step_gres_list_alloc,
+				List job_gres_list,
 				int node_offset, bool first_step_node,
 				uint16_t tasks_on_node, uint32_t rem_nodes,
 				uint32_t job_id, uint32_t step_id);
 
 /*
  * Deallocate resource to a step and update job and step gres information
- * IN step_gres_list - step's gres_list built by
- *		gres_step_state_validate()
- * IN job_gres_list - job's gres_list built by gres_job_state_validate()
+ * IN step_gres_list_alloc - step's list of allocated gres
+ * IN job_gres_list - job's allocated gres_list built by gres_ctld_job_alloc()
  * IN job_id, step_id - ID of the step being allocated.
  * RET SLURM_SUCCESS or error code
  */
-extern int gres_ctld_step_dealloc(List step_gres_list, List job_gres_list,
+extern int gres_ctld_step_dealloc(List step_gres_list_alloc,
+				  List job_gres_list,
 				  uint32_t job_id, uint32_t step_id);
 
 /*
