@@ -2309,20 +2309,10 @@ static void _gres_2_tres_str_internal(char **tres_str,
 		tres_req.name = xstrdup_printf("%s:%s", gres_name, gres_type);
 		tres_rec = assoc_mgr_find_tres_rec(&tres_req);
 		xfree(tres_req.name);
-	} else {
-		/*
-		 * Job allocated GRES without "type"
-		 * specification, but Slurm is only accounting
-		 * for this GRES by specific "type", so pick
-		 * some valid "type" to get some accounting.
-		 * Although the reported "type" may not be
-		 * accurate, it is better than nothing...
-		 */
-		tres_rec = assoc_mgr_find_tres_rec2(&tres_req);
-	}
 
-	if (tres_rec)
-		_gres_add_2_tres_str(tres_str, tres_rec, count);
+		if (tres_rec)
+			_gres_add_2_tres_str(tres_str, tres_rec, count);
+	}
 }
 
 /*
