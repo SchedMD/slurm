@@ -4636,7 +4636,7 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 	    (job_gres_data->ntasks_per_gres != NO_VAL16) &&
 	    (*num_tasks != NO_VAL)) {
 		int tmp = *num_tasks / job_gres_data->ntasks_per_gres;
-		if (tmp * job_gres_data->ntasks_per_gres != *num_tasks) {
+		if ((tmp * job_gres_data->ntasks_per_gres) != *num_tasks) {
 			error("Failed to validate job spec, -n/--ntasks has to be a multiple of --ntasks-per-%s.",
 			      job_gres_data->gres_name);
 			return -1;
