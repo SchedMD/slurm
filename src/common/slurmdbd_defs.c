@@ -1197,6 +1197,7 @@ extern void slurmdbd_free_step_complete_msg(dbd_step_comp_msg_t *msg)
 extern void slurmdbd_free_step_start_msg(dbd_step_start_msg_t *msg)
 {
 	if (msg) {
+		xfree(msg->container);
 		xfree(msg->name);
 		xfree(msg->nodes);
 		xfree(msg->node_inx);

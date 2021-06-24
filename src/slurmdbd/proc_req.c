@@ -3023,6 +3023,7 @@ static int _step_start(slurmdbd_conn_t *slurmdbd_conn, persist_msg_t *msg,
 	job.assoc_id = step_start_msg->assoc_id;
 	if (step_start_msg->db_index != NO_VAL64)
 		job.db_index = step_start_msg->db_index;
+	step.container = xstrdup(step_start_msg->container);
 	job.job_id = step_start_msg->step_id.job_id;
 	step.name = step_start_msg->name;
 	job.nodes = step_start_msg->nodes;

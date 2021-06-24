@@ -368,6 +368,7 @@ typedef struct dbd_step_comp_msg {
 typedef struct dbd_step_start_msg {
 	uint32_t assoc_id;	/* accounting association id */
 	uint64_t db_index;	/* index into the db for this job */
+	char *container;	/* OCI Container Bundle path */
 	char *   name;		/* step name */
 	char *   nodes;		/* hosts allocated to the step */
 	char *   node_inx;	/* bitmap index of hosts allocated to

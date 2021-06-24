@@ -1077,6 +1077,7 @@ static void _pack_step_start_msg(dbd_step_start_msg_t *msg,
 	if (rpc_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		pack32(msg->assoc_id, buffer);
 		pack64(msg->db_index, buffer);
+		packstr(msg->container, buffer);
 		packstr(msg->name, buffer);
 		packstr(msg->nodes, buffer);
 		packstr(msg->node_inx, buffer);
@@ -1137,6 +1138,7 @@ static int _unpack_step_start_msg(dbd_step_start_msg_t **msg,
 	if (rpc_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		safe_unpack32(&msg_ptr->assoc_id, buffer);
 		safe_unpack64(&msg_ptr->db_index, buffer);
+		safe_unpackstr_xmalloc(&msg_ptr->container, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&msg_ptr->node_inx, &uint32_tmp, buffer);
