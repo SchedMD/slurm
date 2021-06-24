@@ -1368,6 +1368,7 @@ static void _dump_job_state(job_record_t *dump_job_ptr, buf_t *buffer)
 
 	pack32(dump_job_ptr->assoc_id, buffer);
 	packstr(dump_job_ptr->batch_features, buffer);
+	packstr(dump_job_ptr->container, buffer);
 	pack32(dump_job_ptr->delay_boot, buffer);
 	pack32(dump_job_ptr->job_id, buffer);
 	pack32(dump_job_ptr->user_id, buffer);
@@ -1541,6 +1542,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	uint16_t wait_all_nodes, warn_flags = 0, warn_signal, warn_time;
 	acct_policy_limit_set_t limit_set;
 	uint16_t start_protocol_ver = SLURM_MIN_PROTOCOL_VERSION;
+	char *container = NULL;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
@@ -1598,6 +1600,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 
 		safe_unpack32(&assoc_id, buffer);
 		safe_unpackstr_xmalloc(&batch_features, &name_len, buffer);
+		safe_unpackstr_xmalloc(&container, &name_len, buffer);
 		safe_unpack32(&delay_boot, buffer);
 		safe_unpack32(&job_id, buffer);
 
@@ -2335,6 +2338,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	job_ptr->alloc_resp_port = alloc_resp_port;
 	job_ptr->alloc_sid    = alloc_sid;
 	job_ptr->assoc_id     = assoc_id;
+	job_ptr->container = container;
 	job_ptr->delay_boot   = delay_boot;
 	xfree(job_ptr->admin_comment);
 	job_ptr->admin_comment = admin_comment;
