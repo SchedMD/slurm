@@ -2262,6 +2262,15 @@ static void _gres_add_2_tres_str(char **tres_str, slurmdb_tres_rec_t *tres_rec,
 		/* New gres */
 		xstrfmtcat(*tres_str, "%s%u=%"PRIu64, *tres_str ? "," : "",
 			   tres_rec->id, count);
+	} else {
+		/* Add gres counts together */
+		char *tmp_str = xstrdup_printf("%u=", tres_rec->id);
+		char *cut = xstrstr(*tres_str, tmp_str) + strlen(tmp_str);
+		xfree(tmp_str);
+
+		cut[0] = 0;
+		xstrfmtcat(*tres_str, "%"PRIu64"%s", old_count + count,
+			   xstrstr(cut + 1, ","));
 	}
 }
 
