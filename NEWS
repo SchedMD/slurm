@@ -106,6 +106,8 @@ documents those changes that are of interest to users and administrators.
     of "Par ID" and "Par Name" respectively.
  -- Perl API - make sure man pages are installed under the --prefix given to
     configure.
+ -- Manually powering down of nodes with scontrol now ignores
+    SuspendExc<Nodes|Parts>.
 
 * Changes in Slurm 20.11.8
 ==========================

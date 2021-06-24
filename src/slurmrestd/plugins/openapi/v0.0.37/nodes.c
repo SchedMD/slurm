@@ -94,6 +94,8 @@ static const node_state_flags_t node_state_flags[] = {
 	{ NODE_STATE_DRAIN, "DRAINING" },
 	{ NODE_STATE_FAIL, "FAILED" },
 	{ NODE_STATE_MAINT, "MAINTENANCE" },
+	{ NODE_STATE_MAN_POWER_DOWN, "MAN_POWER_DOWN" },
+	{ NODE_STATE_MAN_POWER_UP, "MAN_POWER_UP" },
 	{ NODE_STATE_NET, "PERFCTRS" }, /* net performance counters */
 	{ NODE_STATE_REBOOT, "REBOOTING" },
 	{ NODE_STATE_RES, "RESERVED" },

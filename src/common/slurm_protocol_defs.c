@@ -3580,6 +3580,10 @@ extern char *node_state_string(uint32_t inx)
 		return "CANCEL_REBOOT";
 	if (inx == NODE_STATE_CLOUD)
 		return "CLOUD";
+	if (inx == NODE_STATE_MAN_POWER_DOWN)
+		return "MAN_POWER_DOWN";
+	if (inx == NODE_STATE_MAN_POWER_UP)
+		return "MAN_POWER_UP";
 	if (inx == NODE_STATE_POWERING_DOWN)
 		return "POWERING_DOWN";
 	if (inx == NODE_STATE_POWER_SAVE)
@@ -3786,6 +3790,10 @@ extern char *node_state_string_compact(uint32_t inx)
 		return "CANC_R";
 	if (inx == NODE_STATE_CLOUD)
 		return "CLOUD";
+	if (inx == NODE_STATE_MAN_POWER_DOWN)
+		return "MAN_POW_DN";
+	if (inx == NODE_STATE_MAN_POWER_UP)
+		return "MAN_POW_UP";
 	if (inx == NODE_STATE_POWERING_DOWN)
 		return "POWRNG_DN";
 	if (inx == NODE_STATE_POWER_SAVE)

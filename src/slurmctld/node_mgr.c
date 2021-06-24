@@ -1613,7 +1613,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 					info("powering down node %s",
 					     this_node_name);
 				}
-				node_ptr->last_busy = 1;
+				node_ptr->node_state |=
+					NODE_STATE_MAN_POWER_DOWN;
 				node_ptr->next_state = NO_VAL;
 				bit_clear(rs_node_bitmap, node_inx);
 				free(this_node_name);
@@ -1621,9 +1622,10 @@ int update_node ( update_node_msg_t * update_node_msg )
 			} else if (state_val == NODE_STATE_POWER_UP) {
 				if (!IS_NODE_POWER_SAVE(node_ptr)) {
 					if (IS_NODE_POWER_UP(node_ptr)) {
-						node_ptr->last_busy = now;
 						node_ptr->node_state |=
 							NODE_STATE_POWER_SAVE;
+						node_ptr->node_state |=
+							NODE_STATE_MAN_POWER_UP;
 						info("power up request "
 						     "repeating for node %s",
 						     this_node_name);
@@ -1633,7 +1635,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 							this_node_name);
 					}
 				} else {
-					node_ptr->last_busy = now;
+					node_ptr->node_state |=
+						NODE_STATE_MAN_POWER_UP;
 					info("powering up node %s",
 					     this_node_name);
 				}
