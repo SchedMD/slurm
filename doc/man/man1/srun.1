@@ -2994,6 +2994,10 @@ with \-m, \-\-distribution.
 \fBSLURM_GTIDS\fR
 Global task IDs running on this node.
 Zero origin and comma separated.
+It is read internally by pmi if Slurm was built with pmi support. Leaving
+the variable set may cause problems when using external packages from
+within the job (Abaqus and Ansys have been known to have problems when
+it is set - consult the appropriate documentation for 3rd party software).
 .TP
 \fBSLURM_HET_SIZE\fR
 Set to count of components in heterogeneous job.
