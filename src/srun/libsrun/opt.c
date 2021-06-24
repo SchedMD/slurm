@@ -946,6 +946,7 @@ static bool _opt_verify(void)
 		if (sropt.cpu_bind_type & ~CPU_BIND_VERBOSE) {
 			if (opt.verbose)
 				info("--hint and --cpu-bind (other than --cpu-bind=verbose) are mutually exclusive. Ignoring --hint.");
+			slurm_option_reset(&opt, "hint");
 		} else {
 			xassert(opt.ntasks_per_core == NO_VAL);
 			xassert(opt.threads_per_core == NO_VAL);
