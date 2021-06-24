@@ -1268,6 +1268,8 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 
 	if (step_ptr->submit_line)
 		xstrcat(query, ", submit_line");
+	if (step_ptr->container)
+		xstrcat(query, ", container");
 
 	xstrfmtcat(query,
 		   ") values (%"PRIu64", %d, %u, %d, '%s', %d, '%s', %d, %d, "
@@ -1283,6 +1285,8 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 
 	if (step_ptr->submit_line)
 		xstrfmtcat(query, ", '%s'", step_ptr->submit_line);
+	if (step_ptr->container)
+		xstrfmtcat(query, ", '%s'", step_ptr->container);
 
 	xstrfmtcat(query,
 		   ") on duplicate key update "
@@ -1297,6 +1301,9 @@ extern int as_mysql_step_start(mysql_conn_t *mysql_conn,
 
 	if (step_ptr->submit_line)
 		xstrfmtcat(query, ", submit_line='%s'", step_ptr->submit_line);
+
+	if (step_ptr->container)
+		xstrfmtcat(query, ", container='%s'", step_ptr->container);
 
 	DB_DEBUG(DB_STEP, mysql_conn->conn, "query\n%s", query);
 	rc = mysql_db_query(mysql_conn, query);
