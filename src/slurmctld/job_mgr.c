@@ -99,6 +99,7 @@
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
+#include "src/slurmctld/power_save.h"
 #include "src/slurmctld/preempt.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/reservation.h"
@@ -15148,6 +15149,13 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 	job_record_t *job_ptr;
 	node_record_t *node_ptr = node_record_table_ptr + node_inx;
 	time_t batch_startup_time, node_boot_time = (time_t) 0, startup_time;
+	static bool power_save_on = false;
+	static time_t sched_update = 0;
+
+	if (sched_update != slurm_conf.last_update) {
+		power_save_on = power_save_test();
+		sched_update = slurm_conf.last_update;
+	}
 
 	if (node_ptr->boot_time > (slurm_conf.msg_timeout + 5)) {
 		/* allow for message timeout and other delays */
@@ -15163,8 +15171,7 @@ static void _purge_missing_jobs(int node_inx, time_t now)
 		    (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))) ||
 		    (!bit_test(job_ptr->node_bitmap, node_inx)))
 			continue;
-		if ((job_ptr->batch_flag != 0)			&&
-		    (slurm_conf.suspend_time != 0) /* power mgmt on */	&&
+		if ((job_ptr->batch_flag != 0) && power_save_on &&
 		    (job_ptr->start_time < node_boot_time)) {
 			startup_time = batch_startup_time -
 				slurm_conf.resume_timeout;
