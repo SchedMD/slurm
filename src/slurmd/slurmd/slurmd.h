@@ -63,7 +63,6 @@ typedef struct {
 	uint32_t step_id;
 	char *node_list;
 	char *partition;
-	char *resv_id;
 	char **spank_job_env;
 	uint32_t spank_job_env_size;
 	uid_t uid;

@@ -5391,7 +5391,6 @@ static void _free_job_env(job_env_t *env_ptr)
 			xfree(env_ptr->gres_job_env[i]);
 		xfree(env_ptr->gres_job_env);
 	}
-	xfree(env_ptr->resv_id);
 	/* NOTE: spank_job_env is just a pointer without allocated memory */
 }
 

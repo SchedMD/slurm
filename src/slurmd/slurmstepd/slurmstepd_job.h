@@ -222,7 +222,6 @@ typedef struct {
 	jobacctinfo_t *jobacct;
 	uint8_t        open_mode;	/* stdout/err append or truncate */
 	job_options_t  options;
-	uint32_t       resv_id;		/* Cray/BASIL reservation ID	*/
 	uint16_t       restart_cnt;	/* batch job restart count	*/
 	char	      *job_alloc_cores;	/* needed by the SPANK cpuset plugin */
 	char	      *step_alloc_cores;/* needed by the SPANK cpuset plugin */
