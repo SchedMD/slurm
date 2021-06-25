@@ -1896,12 +1896,14 @@ extern const data_t *data_resolve_dict_path_const(const data_t *data,
 	const data_t *found = data;
 	char *save_ptr = NULL;
 	char *token = NULL;
-	char *str = xstrdup(path);
+	char *str;
 
 	_check_magic(data);
 
 	if (!data)
 		return NULL;
+
+	str = xstrdup(path);
 
 	token = strtok_r(str, "/", &save_ptr);
 	while (token && found) {
