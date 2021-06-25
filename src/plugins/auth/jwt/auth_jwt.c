@@ -166,6 +166,7 @@ static void _init_jwks(void)
 	if (data_g_deserialize(&jwks, buf->head, buf->size, MIME_TYPE_JSON))
 		fatal("%s: failed to deserialize jwks file `%s`",
 		      __func__, key_file);
+	free_buf(buf);
 
 	/* force everything to be a string */
 	(void) data_convert_tree(jwks, DATA_TYPE_STRING);
@@ -237,6 +238,7 @@ extern int init(void)
 
 extern int fini(void)
 {
+	FREE_NULL_DATA(jwks);
 	free_buf(key);
 
 	return SLURM_SUCCESS;
