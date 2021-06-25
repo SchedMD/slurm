@@ -107,6 +107,7 @@ COMMAND CHANGES (see man pages for details)
  -- Don't display node's comment with "scontrol show nodes" unless set.
  -- Added SLURM_GPUS_ON_NODE environment variable within each job/step.
  -- sreport - change to sorting TopUsage by the --tres option.
+ -- slurmrestd - do not run allow operation as SlurmUser/root by default.
 
 API CHANGES
 ===========

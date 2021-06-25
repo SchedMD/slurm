@@ -108,6 +108,7 @@ static size_t oas_plugin_count = 0;
 static plugrack_t *oas_rack = NULL;
 
 bool unshare_sysv = true;
+bool check_user = true;
 
 /* SIGPIPE handler - mostly a no-op */
 static void _sigpipe_handler(int signum)
@@ -157,6 +158,8 @@ static void _parse_env(void)
 		while (token) {
 			if (!xstrcasecmp(token, "disable_unshare_sysv")) {
 				unshare_sysv = false;
+			} else if (!xstrcasecmp(token, "disable_user_check")) {
+				check_user = false;
 			} else {
 				fatal("Unexpected value in SLURMRESTD_SECURITY=%s",
 				      token);
@@ -316,6 +319,10 @@ static void _lock_down(void)
 		fatal("Unable to setgid: %m");
 	if (uid != 0 && setuid(uid))
 		fatal("Unable to setuid: %m");
+	if (check_user && (getuid() == 0))
+		fatal("slurmrestd should not be run as the root user.");
+	if (check_user && (slurm_conf.slurm_user_id == getuid()))
+		fatal("slurmrestd should not be run as SlurmUser");
 }
 
 /* simple wrapper to hand over operations router in http context */

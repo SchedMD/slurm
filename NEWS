@@ -127,6 +127,7 @@ documents those changes that are of interest to users and administrators.
  -- scrontab - Use /tmp instead of TmpFS if TMPDIR is not set.
  -- Add ResumeTimeout, SuspendTimeout and SuspendTime to Partitions.
  -- sreport - change to sorting TopUsage by the --tres option.
+ -- slurmrestd - do not run allow operation as SlurmUser/root by default.
 
 * Changes in Slurm 20.11.9
 ==========================
