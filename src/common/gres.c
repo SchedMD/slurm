@@ -112,13 +112,16 @@ typedef struct slurm_gres_ops {
 	int		(*node_config_load)	( List gres_conf_list,
 						  node_config_load_t *node_conf);
 	void		(*job_set_env)		( char ***job_env_ptr,
-						  void *gres_ptr, int node_inx,
+						  bitstr_t *gres_bit_alloc,
+						  uint64_t gres_cnt,
 						  gres_internal_flags_t flags);
-	void		(*step_set_env)		( char ***job_env_ptr,
-						  void *gres_ptr,
+	void		(*step_set_env)		( char ***step_env_ptr,
+						  bitstr_t *gres_bit_alloc,
+						  uint64_t gres_cnt,
 						  gres_internal_flags_t flags);
-	void		(*task_set_env)		( char ***job_env_ptr,
-						  void *gres_ptr,
+	void		(*task_set_env)		( char ***step_env_ptr,
+						  bitstr_t *gres_bit_alloc,
+						  uint64_t gres_cnt,
 						  bitstr_t *usable_gres,
 						  gres_internal_flags_t flags);
 	void		(*send_stepd)		( buf_t *buffer );
@@ -7502,6 +7505,26 @@ extern List gres_job_test2(List job_gres_list, List node_gres_list,
 	return sock_gres_list;
 }
 
+static void _accumulate_job_set_env_info(gres_state_t *gres_ptr,
+					 int node_inx,
+					 bitstr_t **gres_bit_alloc,
+					 int *gres_cnt)
+{
+	gres_job_state_t *gres_job_ptr =
+		(gres_job_state_t *) gres_ptr->gres_data;
+	if ((node_inx >= 0) && (node_inx < gres_job_ptr->node_cnt) &&
+	    gres_job_ptr->gres_bit_alloc &&
+	    gres_job_ptr->gres_bit_alloc[node_inx]) {
+		if (!*gres_bit_alloc) {
+			*gres_bit_alloc = bit_alloc(bit_size(
+				gres_job_ptr->gres_bit_alloc[node_inx]));
+		}
+		bit_or(*gres_bit_alloc, gres_job_ptr->gres_bit_alloc[node_inx]);
+	}
+	gres_cnt += gres_job_ptr->gres_cnt_node_alloc[node_inx];
+
+}
+
 /*
  * Set environment variables as required for a batch job
  * IN/OUT job_env_ptr - environment variable array
@@ -7514,15 +7537,14 @@ extern void gres_g_job_set_env(char ***job_env_ptr, List job_gres_list,
 	int i;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr = NULL;
-	bool found;
-
+	int gres_cnt = 0;
+	bitstr_t *gres_bit_alloc = NULL;
 	(void) gres_init();
 
 	slurm_mutex_lock(&gres_context_lock);
 	for (i=0; i<gres_context_cnt; i++) {
 		if (gres_context[i].ops.job_set_env == NULL)
 			continue;	/* No plugin to call */
-		found = false;
 		if (job_gres_list) {
 			gres_iter = list_iterator_create(job_gres_list);
 			while ((gres_ptr = (gres_state_t *)
@@ -7530,25 +7552,17 @@ extern void gres_g_job_set_env(char ***job_env_ptr, List job_gres_list,
 				if (gres_ptr->plugin_id !=
 				    gres_context[i].plugin_id)
 					continue;
-				(*(gres_context[i].ops.job_set_env))
-					(job_env_ptr, gres_ptr->gres_data,
-					 node_inx,
-					 GRES_INTERNAL_FLAG_NONE);
-				found = true;
+				_accumulate_job_set_env_info(gres_ptr, node_inx,
+							     &gres_bit_alloc,
+							     &gres_cnt);
 			}
 			list_iterator_destroy(gres_iter);
 		}
-		/*
-		 * We call the job_set_env of the gres even if this one is not
-		 * requested in the job. This may be convenient on certain
-		 * plugins, i.e. setting an env variable to say the GRES is not
-		 * available.
-		 */
-		if (!found) {
-			(*(gres_context[i].ops.job_set_env))
-				(job_env_ptr, NULL, node_inx,
-				 GRES_INTERNAL_FLAG_NONE);
-		}
+		(*(gres_context[i].ops.job_set_env))(job_env_ptr,
+						     gres_bit_alloc, gres_cnt,
+						     GRES_INTERNAL_FLAG_NONE);
+		gres_cnt = 0;
+		FREE_NULL_BITMAP(gres_bit_alloc);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 }
@@ -9042,6 +9056,26 @@ end:
 	return usable_gres;
 }
 
+static void _accumulate_step_set_env_info(gres_state_t *gres_ptr,
+					 bitstr_t **gres_bit_alloc,
+					 int *gres_cnt)
+{
+	gres_step_state_t *gres_step_ptr =
+		(gres_step_state_t *)gres_ptr->gres_data;
+
+	if ((gres_step_ptr->node_cnt == 1) &&
+	    gres_step_ptr->gres_bit_alloc &&
+	    gres_step_ptr->gres_bit_alloc[0]) {
+		if (!*gres_bit_alloc) {
+			*gres_bit_alloc = bit_alloc(bit_size(
+				gres_step_ptr->gres_bit_alloc[0]));
+		}
+		bit_or(*gres_bit_alloc, gres_step_ptr->gres_bit_alloc[0]);
+	}
+	if (gres_step_ptr->gres_cnt_node_alloc)
+		*gres_cnt += gres_step_ptr->gres_cnt_node_alloc[0];
+}
+
 /*
  * Set environment as required for all tasks of a job step
  * IN/OUT job_env_ptr - environment variable array
@@ -9052,7 +9086,8 @@ extern void gres_g_step_set_env(char ***job_env_ptr, List step_gres_list)
 	int i;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr = NULL;
-	bool found;
+	int gres_cnt = 0;
+	bitstr_t *gres_bit_alloc = NULL;
 
 	(void) gres_init();
 	slurm_mutex_lock(&gres_context_lock);
@@ -9062,24 +9097,19 @@ extern void gres_g_step_set_env(char ***job_env_ptr, List step_gres_list)
 			continue;	/* No plugin to call */
 		if (!step_gres_list)
 			continue;
-		found = false;
 		gres_iter = list_iterator_create(step_gres_list);
 		while ((gres_ptr = (gres_state_t *)list_next(gres_iter))) {
 			if (gres_ptr->plugin_id != gres_ctx.plugin_id)
 				continue;
-			/* Set env for all tasks in step */
-			(*(gres_ctx.ops.step_set_env))
-				(job_env_ptr,
-				 gres_ptr->gres_data,
-				 GRES_INTERNAL_FLAG_NONE);
-			found = true;
+			_accumulate_step_set_env_info(
+				gres_ptr, &gres_bit_alloc, &gres_cnt);
 		}
 		list_iterator_destroy(gres_iter);
-		if (!found) { /* No data fond */
-			(*(gres_ctx.ops.step_set_env))
-				(job_env_ptr, NULL,
-				 GRES_INTERNAL_FLAG_NONE);
-		}
+		(*(gres_ctx.ops.step_set_env))(job_env_ptr, gres_bit_alloc,
+					       gres_cnt,
+					       GRES_INTERNAL_FLAG_NONE);
+		gres_cnt = 0;
+		FREE_NULL_BITMAP(gres_bit_alloc);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
 }
@@ -9105,9 +9135,10 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 	bool bind_nic = accel_bind_type & ACCEL_BIND_CLOSEST_NIC;
 	char *sep, *map_gpu = NULL, *mask_gpu = NULL;
 	bitstr_t *usable_gres = NULL;
-	bool found;
 	gres_internal_flags_t gres_internal_flags = GRES_INTERNAL_FLAG_NONE;
 	int tasks_per_gres = 0;
+	int gres_cnt = 0;
+	bitstr_t *gres_bit_alloc = NULL;
 
 	if (!bind_gpu && tres_bind && (sep = strstr(tres_bind, "gpu:"))) {
 		sep += 4;
@@ -9168,25 +9199,19 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 				continue;
 			}
 		}
-		found = false;
 		gres_iter = list_iterator_create(step_gres_list);
-		while ((gres_ptr = (gres_state_t *) list_next(gres_iter))) {
+		while ((gres_ptr = (gres_state_t *)list_next(gres_iter))) {
 			if (gres_ptr->plugin_id != gres_ctx.plugin_id)
 				continue;
-			/* task-specific binding via env */
-			(*(gres_ctx.ops.task_set_env))
-				(job_env_ptr,
-				 gres_ptr->gres_data,
-				 usable_gres,
-				 gres_internal_flags);
-			found = true;
+			_accumulate_step_set_env_info(
+				gres_ptr, &gres_bit_alloc, &gres_cnt);
 		}
 		list_iterator_destroy(gres_iter);
-		if (!found) { /* No data fond */
-			(*(gres_ctx.ops.task_set_env))
-				(job_env_ptr, NULL, NULL,
-				 gres_internal_flags);
-		}
+		(*(gres_ctx.ops.task_set_env))(job_env_ptr, gres_bit_alloc,
+					       gres_cnt, usable_gres,
+					       gres_internal_flags);
+		gres_cnt = 0;
+		FREE_NULL_BITMAP(gres_bit_alloc);
 		FREE_NULL_BITMAP(usable_gres);
 	}
 	slurm_mutex_unlock(&gres_context_lock);

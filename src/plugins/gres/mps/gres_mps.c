@@ -576,14 +576,14 @@ static uint64_t _get_dev_count(int global_id)
 	return count;
 }
 
-static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
-		     bitstr_t *usable_gres,
+static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
+		     bitstr_t *usable_gres, uint64_t gres_per_node,
 		     bool *already_seen, int *local_inx,
 		     bool is_task, bool is_job, gres_internal_flags_t flags)
 {
 	char *global_list = NULL, *local_list = NULL, *perc_env = NULL;
 	char perc_str[64], *slurm_env_var = NULL;
-	uint64_t count_on_dev, gres_per_node = 0, percentage;
+	uint64_t count_on_dev, percentage;
 	int global_id = -1;
 
 	if (is_job)
@@ -599,9 +599,9 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
 					  "CUDA_MPS_ACTIVE_THREAD_PERCENTAGE"));
 	}
 
-	common_gres_set_env(gres_devices, env_ptr, gres_ptr, node_inx,
-			    usable_gres, "", local_inx,
-			    &gres_per_node, &local_list, &global_list,
+	common_gres_set_env(gres_devices, env_ptr,
+			    usable_gres, "", local_inx, gres_bit_alloc,
+			    &local_list, &global_list,
 			    is_task, is_job, &global_id, flags);
 
 	if (perc_env) {
@@ -650,8 +650,9 @@ static void _set_env(char ***env_ptr, void *gres_ptr, int node_inx,
  * Set environment variables as appropriate for a job (i.e. all tasks) based
  * upon the job's GRES state.
  */
-extern void gres_p_job_set_env(char ***job_env_ptr, void *gres_ptr,
-			       int node_inx,
+extern void gres_p_job_set_env(char ***job_env_ptr,
+			       bitstr_t *gres_bit_alloc,
+			       uint64_t gres_per_node,
 			       gres_internal_flags_t flags)
 {
 	/*
@@ -665,7 +666,7 @@ extern void gres_p_job_set_env(char ***job_env_ptr, void *gres_ptr,
 	int local_inx = 0;
 	bool already_seen = false;
 
-	_set_env(job_env_ptr, gres_ptr, node_inx, NULL,
+	_set_env(job_env_ptr, gres_bit_alloc, NULL, gres_per_node,
 		 &already_seen, &local_inx, false, true, flags);
 }
 
@@ -673,13 +674,15 @@ extern void gres_p_job_set_env(char ***job_env_ptr, void *gres_ptr,
  * Set environment variables as appropriate for a step (i.e. all tasks) based
  * upon the job step's GRES state.
  */
-extern void gres_p_step_set_env(char ***step_env_ptr, void *gres_ptr,
+extern void gres_p_step_set_env(char ***step_env_ptr,
+				bitstr_t *gres_bit_alloc,
+				uint64_t gres_per_node,
 				gres_internal_flags_t flags)
 {
 	static int local_inx = 0;
 	static bool already_seen = false;
 
-	_set_env(step_env_ptr, gres_ptr, 0, NULL,
+	_set_env(step_env_ptr, gres_bit_alloc, NULL, gres_per_node,
 		 &already_seen, &local_inx, false, false, flags);
 }
 
@@ -687,14 +690,16 @@ extern void gres_p_step_set_env(char ***step_env_ptr, void *gres_ptr,
  * Reset environment variables as appropriate for a job (i.e. this one task)
  * based upon the job step's GRES state and assigned CPUs.
  */
-extern void gres_p_task_set_env(char ***step_env_ptr, void *gres_ptr,
-				  bitstr_t *usable_gres,
-				  gres_internal_flags_t flags)
+extern void gres_p_task_set_env(char ***step_env_ptr,
+				bitstr_t *gres_bit_alloc,
+				bitstr_t *usable_gres,
+				uint64_t gres_per_node,
+				gres_internal_flags_t flags)
 {
 	static int local_inx = 0;
 	static bool already_seen = false;
 
-	_set_env(step_env_ptr, gres_ptr, 0, usable_gres,
+	_set_env(step_env_ptr, gres_bit_alloc, usable_gres, gres_per_node,
 		 &already_seen, &local_inx, true, false, flags);
 }
 

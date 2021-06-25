@@ -187,27 +187,21 @@ extern bool common_use_local_device_index(void)
 }
 
 extern void common_gres_set_env(List gres_devices, char ***env_ptr,
-				void *gres_ptr, int node_inx,
 				bitstr_t *usable_gres, char *prefix,
-				int *local_inx, uint64_t *gres_per_node,
+				int *local_inx, bitstr_t *bit_alloc,
 				char **local_list, char **global_list,
 				bool is_task, bool is_job, int *global_id,
 				gres_internal_flags_t flags)
 {
 	int first_inx = -1;
-	bitstr_t *bit_alloc = NULL;
 	bool use_local_dev_index = common_use_local_device_index();
 	bool set_global_id = false;
 	gres_device_t *gres_device, *first_device = NULL;
 	ListIterator itr;
 	char *global_prefix = "", *local_prefix = "";
 	char *new_global_list = NULL, *new_local_list = NULL;
-	uint64_t tmp_gres_per_node = 0;
 
 	if (!gres_devices)
-		return;
-
-	if (!gres_ptr)
 		return;
 
 	/* If we are setting task env but don't have usable_gres, just exit */
@@ -218,29 +212,6 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	xassert(local_list);
 	/* is_task and is_job can't both be true */
 	xassert(!(is_task && is_job));
-
-	if (is_job) {
-		gres_job_state_t *gres_job_ptr = (gres_job_state_t *) gres_ptr;
-		if ((node_inx >= 0) &&
-		    (node_inx < gres_job_ptr->node_cnt) &&
-		    gres_job_ptr->gres_bit_alloc &&
-		    gres_job_ptr->gres_bit_alloc[node_inx]) {
-			bit_alloc = gres_job_ptr->gres_bit_alloc[node_inx];
-		}
-		tmp_gres_per_node = gres_job_ptr->gres_cnt_node_alloc[node_inx];
-	} else {
-		gres_step_state_t *gres_step_ptr =
-			(gres_step_state_t *) gres_ptr;
-		if ((gres_step_ptr->node_cnt == 1) &&
-		    gres_step_ptr->gres_bit_alloc &&
-		    gres_step_ptr->gres_bit_alloc[0]) {
-			bit_alloc = gres_step_ptr->gres_bit_alloc[0];
-		}
-		tmp_gres_per_node = gres_step_ptr->gres_cnt_node_alloc[0];
-	}
-
-	if (gres_per_node)
-		*gres_per_node = tmp_gres_per_node;
 
 	if (!bit_alloc) {
 		/*
