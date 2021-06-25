@@ -447,7 +447,7 @@ static void _validate_switches(void)
 
 	for (i = 0; i < switch_record_cnt; i++) {
 		switch_record_table[i].switches_dist = xcalloc(
-			switch_record_cnt, sizeof(uint32_t *));
+			switch_record_cnt, sizeof(uint32_t));
 	}
 	for (i = 0; i < switch_record_cnt; i++) {
 		for (j = i + 1; j < switch_record_cnt; j++) {
