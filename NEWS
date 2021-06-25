@@ -112,6 +112,8 @@ documents those changes that are of interest to users and administrators.
     input environment variables for salloc and sbatch, respectively. They do
     the same thing as --threads-per-core.
  -- Distinguish queued reboot requests (REBOOT) from issued reboots (REBOOT^).
+ -- Set the maximum number of open files per process to 4096 to avoid
+    performance issues when closing the entire range with closeall().
 
 * Changes in Slurm 20.11.8
 ==========================

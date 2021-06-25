@@ -63,8 +63,9 @@ extern void print_rlimits( void );
 /*
  * Max out the RLIMIT_NOFILE setting.
  *
+ * But still cap at 4096 to avoid performance issues with massive values.
  * Handled through this so cross-platform issues can be isolated.
  */
-extern void rlimits_maximize_nofile(void);
+extern void rlimits_increase_nofile(void);
 
 #endif /*__SLURM_RLIMITS_INFO_H__*/
