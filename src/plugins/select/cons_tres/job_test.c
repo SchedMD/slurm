@@ -2699,6 +2699,7 @@ fini:
 	}
 	xfree(switch_node_cnt);
 	xfree(switch_required);
+	xfree(switches_dist);
 	return rc;
 }
 
