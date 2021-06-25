@@ -120,7 +120,7 @@ static int _init_key(void)
 	char *begin, *key_file = NULL;
 
 	if ((begin = xstrstr(slurm_conf.authalt_params, jwt_key_field))) {
-		char *start = begin + sizeof(jwt_key_field);
+		char *start = begin + strlen(jwt_key_field);
 		char *end = NULL;
 
 		if ((end = xstrstr(start, ",")))
