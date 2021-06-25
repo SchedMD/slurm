@@ -48,7 +48,12 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"
 
-/* Constants */
+/*
+ *****************************************************************************
+ * The following are meant to be used by both slurmscriptd and slurmctld
+ *****************************************************************************
+ */
+
 enum {
 	SLURMSCRIPTD_REQUEST_RUN_PREPILOG,
 	SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE,
@@ -56,11 +61,9 @@ enum {
 	SLURMSCRIPTD_SHUTDOWN,
 };
 
-/* Function prototypes */
 static bool _msg_readable(eio_obj_t *obj);
 static int _msg_accept(eio_obj_t *obj, List objs);
 
-/* Global variables */
 struct io_operations msg_ops = {
 	.readable = _msg_readable,
 	.handle_read = _msg_accept,
@@ -71,16 +74,31 @@ typedef struct {
 	int req;
 } req_args_t;
 
+static eio_handle_t *msg_handle = NULL;
+static pthread_mutex_t write_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/*
+ *****************************************************************************
+ * The following are meant to be used by only slurmctld
+ *****************************************************************************
+ */
 static int slurmctld_readfd = -1;
 static int slurmctld_writefd = -1;
-static int slurmscriptd_readfd = -1;
-static int slurmscriptd_writefd = -1;
 static pid_t slurmscriptd_pid;
-static eio_handle_t *msg_handle = NULL;
 static pthread_t slurmctld_listener_tid;
-static pthread_mutex_t write_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int script_count = 0;
 static pthread_mutex_t script_count_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/*
+ *****************************************************************************
+ * The following are meant to be used by only slurmscriptd
+ *****************************************************************************
+ */
+static int slurmscriptd_readfd = -1;
+static int slurmscriptd_writefd = -1;
+
+
+/* Function definitions: */
 
 static bool _msg_readable(eio_obj_t *obj)
 {
