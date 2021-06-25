@@ -114,6 +114,7 @@ documents those changes that are of interest to users and administrators.
  -- Distinguish queued reboot requests (REBOOT) from issued reboots (REBOOT^).
  -- Set the maximum number of open files per process to 4096 to avoid
     performance issues when closing the entire range with closeall().
+ -- auth/jwt - add support for RS256 tokens.
 
 * Changes in Slurm 20.11.8
 ==========================

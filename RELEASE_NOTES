@@ -61,6 +61,7 @@ HIGHLIGHTS
  -- Manually powering down of nodes with scontrol now ignores
     SuspendExc<Nodes|Parts>.
  -- Distinguish queued reboot requests (REBOOT@) from issued reboots (REBOOT^).
+ -- auth/jwt - add support for RS256 tokens.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
