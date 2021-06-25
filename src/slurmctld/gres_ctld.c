@@ -2252,6 +2252,19 @@ void gres_ctld_step_state_rebase(List gres_list,
 	return;
 }
 
+static void _gres_add_2_tres_str(char **tres_str, slurmdb_tres_rec_t *tres_rec,
+				 uint64_t count)
+{
+	uint64_t old_count;
+
+	old_count = slurmdb_find_tres_count_in_string(*tres_str, tres_rec->id);
+	if (old_count == INFINITE64) {
+		/* New gres */
+		xstrfmtcat(*tres_str, "%s%u=%"PRIu64, *tres_str ? "," : "",
+			   tres_rec->id, count);
+	}
+}
+
 static void _gres_2_tres_str_internal(char **tres_str,
 				      char *gres_name, char *gres_type,
 				      uint64_t count)
@@ -2274,13 +2287,8 @@ static void _gres_2_tres_str_internal(char **tres_str,
 	tres_req.name = gres_name;
 	tres_rec = assoc_mgr_find_tres_rec(&tres_req);
 
-	if (tres_rec &&
-	    slurmdb_find_tres_count_in_string(
-		    *tres_str, tres_rec->id) == INFINITE64)
-		/* New gres */
-		xstrfmtcat(*tres_str, "%s%u=%"PRIu64,
-			   *tres_str ? "," : "",
-			   tres_rec->id, count);
+	if (tres_rec)
+		_gres_add_2_tres_str(tres_str, tres_rec, count);
 
 	if (gres_type) {
 		/*
@@ -2304,13 +2312,8 @@ static void _gres_2_tres_str_internal(char **tres_str,
 		tres_rec = assoc_mgr_find_tres_rec2(&tres_req);
 	}
 
-	if (tres_rec &&
-	    slurmdb_find_tres_count_in_string(
-		    *tres_str, tres_rec->id) == INFINITE64)
-		/* New GRES */
-		xstrfmtcat(*tres_str, "%s%u=%"PRIu64,
-			   *tres_str ? "," : "",
-			   tres_rec->id, count);
+	if (tres_rec)
+		_gres_add_2_tres_str(tres_str, tres_rec, count);
 }
 
 /*
