@@ -5279,12 +5279,13 @@ static void _slurm_rpc_reboot_nodes(slurm_msg_t *msg)
 		if (!bit_test(bitmap, i))
 			continue;
 		if (IS_NODE_FUTURE(node_ptr) ||
-		    IS_NODE_REBOOT(node_ptr) ||
+		    IS_NODE_REBOOT_REQUESTED(node_ptr) ||
+		    IS_NODE_REBOOT_ISSUED(node_ptr) ||
 		    (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))) {
 			bit_clear(bitmap, i);
 			continue;
 		}
-		node_ptr->node_state |= NODE_STATE_REBOOT;
+		node_ptr->node_state |= NODE_STATE_REBOOT_REQUESTED;
 		node_ptr->boot_req_time = (time_t) 0;
 		if (reboot_msg) {
 			node_ptr->next_state = reboot_msg->next_state;

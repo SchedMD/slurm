@@ -3499,7 +3499,8 @@ extern char *node_state_string(uint32_t inx)
 	bool fail_flag       = (inx & NODE_STATE_FAIL);
 	bool maint_flag      = (inx & NODE_STATE_MAINT);
 	bool net_flag        = (inx & NODE_STATE_NET);
-	bool reboot_flag     = (inx & NODE_STATE_REBOOT);
+	bool reboot_flag     = (inx & NODE_STATE_REBOOT_REQUESTED);
+	bool reboot_issued_flag = (inx & NODE_STATE_REBOOT_ISSUED);
 	bool res_flag        = (inx & NODE_STATE_RES);
 	bool resume_flag     = (inx & NODE_RESUME);
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
@@ -3522,10 +3523,12 @@ extern char *node_state_string(uint32_t inx)
 		else
 			return "MAINT";
 	}
-	if (reboot_flag) {
+	if (reboot_flag || reboot_issued_flag) {
 		if ((base == NODE_STATE_ALLOCATED) ||
 		    (base == NODE_STATE_MIXED))
 			;
+		else if (reboot_issued_flag)
+			return "REBOOT^";
 		else if (no_resp_flag)
 			return "REBOOT*";
 		else
@@ -3537,6 +3540,8 @@ extern char *node_state_string(uint32_t inx)
 		    || (base == NODE_STATE_MIXED)) {
 			if (maint_flag)
 				return "DRAINING$";
+			if (reboot_issued_flag)
+				return "DRAINING^";
 			if (reboot_flag)
 				return "DRAINING@";
 			if (power_up_flag)
@@ -3551,6 +3556,8 @@ extern char *node_state_string(uint32_t inx)
 		} else {
 			if (maint_flag)
 				return "DRAINED$";
+			if (reboot_issued_flag)
+				return "DRAINED^";
 			if (reboot_flag)
 				return "DRAINED@";
 			if (power_up_flag)
@@ -3576,7 +3583,9 @@ extern char *node_state_string(uint32_t inx)
 		}
 	}
 
-	if (inx == NODE_STATE_CANCEL_REBOOT)
+	if (inx == NODE_STATE_REBOOT_ISSUED)
+		return "REBOOT^";
+	if (inx == NODE_STATE_REBOOT_CANCEL)
 		return "CANCEL_REBOOT";
 	if (inx == NODE_STATE_CLOUD)
 		return "CLOUD";
@@ -3593,6 +3602,8 @@ extern char *node_state_string(uint32_t inx)
 	if (base == NODE_STATE_DOWN) {
 		if (maint_flag)
 			return "DOWN$";
+		if (reboot_issued_flag)
+			return "DOWN^";
 		if (reboot_flag)
 			return "DOWN@";
 		if (power_up_flag)
@@ -3609,6 +3620,8 @@ extern char *node_state_string(uint32_t inx)
 	if (base == NODE_STATE_ALLOCATED) {
 		if (maint_flag)
 			return "ALLOCATED$";
+		if (reboot_issued_flag)
+			return "ALLOCATED^";
 		if (reboot_flag)
 			return "ALLOCATED@";
 		if (power_up_flag)
@@ -3626,6 +3639,8 @@ extern char *node_state_string(uint32_t inx)
 	if (comp_flag) {
 		if (maint_flag)
 			return "COMPLETING$";
+		if (reboot_issued_flag)
+			return "COMPLETING^";
 		if (reboot_flag)
 			return "COMPLETING@";
 		if (power_up_flag)
@@ -3641,6 +3656,8 @@ extern char *node_state_string(uint32_t inx)
 	if (base == NODE_STATE_IDLE) {
 		if (maint_flag)
 			return "IDLE$";
+		if (reboot_issued_flag)
+			return "IDLE^";
 		if (reboot_flag)
 			return "IDLE@";
 		if (power_up_flag)
@@ -3662,6 +3679,8 @@ extern char *node_state_string(uint32_t inx)
 	if (base == NODE_STATE_MIXED) {
 		if (maint_flag)
 			return "MIXED$";
+		if (reboot_issued_flag)
+			return "MIXED^";
 		if (reboot_flag)
 			return "MIXED@";
 		if (power_up_flag)
@@ -3679,6 +3698,8 @@ extern char *node_state_string(uint32_t inx)
 	if (base == NODE_STATE_FUTURE) {
 		if (maint_flag)
 			return "FUTURE$";
+		if (reboot_issued_flag)
+			return "FUTURE^";
 		if (reboot_flag)
 			return "FUTURE@";
 		if (power_up_flag)
@@ -3708,7 +3729,8 @@ extern char *node_state_string_compact(uint32_t inx)
 	bool fail_flag       = (inx & NODE_STATE_FAIL);
 	bool maint_flag      = (inx & NODE_STATE_MAINT);
 	bool net_flag        = (inx & NODE_STATE_NET);
-	bool reboot_flag     = (inx & NODE_STATE_REBOOT);
+	bool reboot_flag     = (inx & NODE_STATE_REBOOT_REQUESTED);
+	bool reboot_issued_flag = (inx & NODE_STATE_REBOOT_ISSUED);
 	bool res_flag        = (inx & NODE_STATE_RES);
 	bool resume_flag     = (inx & NODE_RESUME);
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
@@ -3733,9 +3755,11 @@ extern char *node_state_string_compact(uint32_t inx)
 		else
 			return "MAINT";
 	}
-	if (reboot_flag) {
+	if (reboot_flag || reboot_issued_flag) {
 		if ((inx == NODE_STATE_ALLOCATED) || (inx == NODE_STATE_MIXED))
 			;
+		else if (reboot_issued_flag)
+			return "BOOT^";
 		else if (no_resp_flag)
 			return "BOOT*";
 		else
@@ -3747,6 +3771,8 @@ extern char *node_state_string_compact(uint32_t inx)
 		    || (inx == NODE_STATE_MIXED)) {
 			if (maint_flag)
 				return "DRNG$";
+			if (reboot_issued_flag)
+				return "DRNG^";
 			if (reboot_flag)
 				return "DRNG@";
 			if (power_up_flag)
@@ -3761,6 +3787,8 @@ extern char *node_state_string_compact(uint32_t inx)
 		} else {
 			if (maint_flag)
 				return "DRAIN$";
+			if (reboot_issued_flag)
+				return "DRAIN^";
 			if (reboot_flag)
 				return "DRAIN@";
 			if (power_up_flag)
@@ -3786,7 +3814,9 @@ extern char *node_state_string_compact(uint32_t inx)
 		}
 	}
 
-	if (inx == NODE_STATE_CANCEL_REBOOT)
+	if (inx == NODE_STATE_REBOOT_ISSUED)
+		return "BOOT^";
+	if (inx == NODE_STATE_REBOOT_CANCEL)
 		return "CANC_R";
 	if (inx == NODE_STATE_CLOUD)
 		return "CLOUD";
@@ -3803,6 +3833,8 @@ extern char *node_state_string_compact(uint32_t inx)
 	if (inx == NODE_STATE_DOWN) {
 		if (maint_flag)
 			return "DOWN$";
+		if (reboot_issued_flag)
+			return "DOWN^";
 		if (reboot_flag)
 			return "DOWN@";
 		if (power_up_flag)
@@ -3819,6 +3851,8 @@ extern char *node_state_string_compact(uint32_t inx)
 	if (inx == NODE_STATE_ALLOCATED) {
 		if (maint_flag)
 			return "ALLOC$";
+		if (reboot_issued_flag)
+			return "ALLOC^";
 		if (reboot_flag)
 			return "ALLOC@";
 		if (power_up_flag)
@@ -3836,6 +3870,8 @@ extern char *node_state_string_compact(uint32_t inx)
 	if (comp_flag) {
 		if (maint_flag)
 			return "COMP$";
+		if (reboot_issued_flag)
+			return "COMP^";
 		if (reboot_flag)
 			return "COMP@";
 		if (power_up_flag)
@@ -3851,6 +3887,8 @@ extern char *node_state_string_compact(uint32_t inx)
 	if (inx == NODE_STATE_IDLE) {
 		if (maint_flag)
 			return "IDLE$";
+		if (reboot_issued_flag)
+			return "IDLE^";
 		if (reboot_flag)
 			return "IDLE@";
 		if (power_up_flag)
@@ -3872,6 +3910,8 @@ extern char *node_state_string_compact(uint32_t inx)
 	if (inx == NODE_STATE_MIXED) {
 		if (maint_flag)
 			return "MIX$";
+		if (reboot_issued_flag)
+			return "MIX^";
 		if (reboot_flag)
 			return "MIX@";
 		if (power_up_flag)
@@ -3889,6 +3929,8 @@ extern char *node_state_string_compact(uint32_t inx)
 	if (inx == NODE_STATE_FUTURE) {
 		if (maint_flag)
 			return "FUTR$";
+		if (reboot_issued_flag)
+			return "FUTR^";
 		if (reboot_flag)
 			return "FUTR@";
 		if (power_up_flag)

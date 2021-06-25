@@ -520,7 +520,9 @@ _node_state_list (void)
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_MAINT));
 	xstrcat(all_states, ",");
-	xstrcat(all_states, node_state_string(NODE_STATE_REBOOT));
+	xstrcat(all_states, node_state_string(NODE_STATE_REBOOT_REQUESTED));
+	xstrcat(all_states, ",");
+	xstrcat(all_states, node_state_string(NODE_STATE_REBOOT_ISSUED));
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_PLANNED));
 
@@ -589,8 +591,10 @@ _node_state_id (char *str)
 		return NODE_STATE_FAIL;
 	if (_node_state_equal (NODE_STATE_MAINT, str))
 		return NODE_STATE_MAINT;
-	if (_node_state_equal (NODE_STATE_REBOOT, str))
-		return NODE_STATE_REBOOT;
+	if (_node_state_equal (NODE_STATE_REBOOT_REQUESTED, str))
+		return NODE_STATE_REBOOT_REQUESTED;
+	if (_node_state_equal (NODE_STATE_REBOOT_ISSUED, str))
+		return NODE_STATE_REBOOT_ISSUED;
 	if (_node_state_equal(NODE_STATE_CLOUD, str))
 		return NODE_STATE_CLOUD;
 

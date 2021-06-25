@@ -165,8 +165,8 @@
 	(_X->node_state & NODE_STATE_POWER_UP)
 #define IS_NODE_MAINT(_X)		\
 	(_X->node_state & NODE_STATE_MAINT)
-#define IS_NODE_REBOOT(_X)		\
-	(_X->node_state & NODE_STATE_REBOOT)
+#define IS_NODE_REBOOT_REQUESTED(_X)	\
+	(_X->node_state & NODE_STATE_REBOOT_REQUESTED)
 #define IS_NODE_REBOOT_ISSUED(_X)	\
 	(_X->node_state & NODE_STATE_REBOOT_ISSUED)
 #define IS_NODE_RUNNING_JOB(_X)		\

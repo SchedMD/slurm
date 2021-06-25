@@ -60,6 +60,7 @@ HIGHLIGHTS
     the Slurm unit files.
  -- Manually powering down of nodes with scontrol now ignores
     SuspendExc<Nodes|Parts>.
+ -- Distinguish queued reboot requests (REBOOT@) from issued reboots (REBOOT^).
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

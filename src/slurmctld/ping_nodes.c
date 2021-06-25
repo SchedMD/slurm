@@ -266,7 +266,7 @@ void ping_nodes (void)
 		    IS_NODE_POWER_SAVE(node_ptr) ||
 		    IS_NODE_POWER_UP(node_ptr) ||
 		    IS_NODE_INVALID_REG(node_ptr) ||
-		    (IS_NODE_DOWN(node_ptr) && IS_NODE_REBOOT(node_ptr)))
+		    IS_NODE_REBOOT_ISSUED(node_ptr))
 			continue;
 		if ((slurm_conf.slurmd_timeout == 0) && (!restart_flag) &&
 		    (!IS_NODE_UNKNOWN(node_ptr)) &&
