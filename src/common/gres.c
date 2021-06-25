@@ -4565,7 +4565,7 @@ static int _test_gres_cnt(gres_job_state_t *job_gres_data,
 	}
 
 	/* make sure --cpu-per-gres is not combined with --cpus-per-task */
-	if (job_gres_data->cpus_per_gres &&
+	if (!running_in_slurmctld() && job_gres_data->cpus_per_gres &&
 	    (*cpus_per_task != NO_VAL16)) {
 		error("--cpus-per-%s is mutually exclusive with --cpus-per-task",
 		      job_gres_data->gres_name);
