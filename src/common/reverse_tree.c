@@ -220,4 +220,3 @@ int reverse_tree_direct_children(int rank, int num_nodes, int width,
 	}
 	return i;
 }
-/* Original commented test converted into a unit test */
