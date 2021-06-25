@@ -60,6 +60,7 @@ enum {
 	SLURMSCRIPTD_REQUEST_RUN_PREPILOG,
 	SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE,
 	SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE,
+	SLURMSCRIPTD_REQUEST_FLUSH,
 	SLURMSCRIPTD_SHUTDOWN,
 };
 
@@ -277,6 +278,15 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static int _handle_flush(void)
+{
+	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_FLUSH");
+	/* Kill all running scripts */
+	track_script_flush();
+
+	return SLURM_SUCCESS;
+}
+
 static int _handle_shutdown(void)
 {
 	log_flag(SCRIPT, "Handling SLURMSCRIPTD_SHUTDOWN");
@@ -310,6 +320,9 @@ static int _handle_request(int req, buf_t *buffer)
 			break;
 		case SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE:
 			rc = _handle_prepilog_complete(buffer, true);
+			break;
+		case SLURMSCRIPTD_REQUEST_FLUSH:
+			rc = _handle_flush();
 			break;
 		case SLURMSCRIPTD_SHUTDOWN:
 			rc = _handle_shutdown();
@@ -458,6 +471,11 @@ static void _kill_slurmscriptd(void)
 			error("%s: Unable to reap slurmscriptd child process", __func__);
 		}
 	}
+}
+
+extern void slurmscriptd_flush(void)
+{
+	_write_msg(slurmctld_writefd, SLURMSCRIPTD_REQUEST_FLUSH, NULL);
 }
 
 extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,

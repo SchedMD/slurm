@@ -42,6 +42,11 @@ extern int slurmscriptd_init(void);
 extern int slurmscriptd_fini(void);
 
 /*
+ * slurmscriptd_flush - kill all running scripts.
+ */
+extern void slurmscriptd_flush(void);
+
+/*
  * slurmscriptd_run_prepilog
  * Tell slurmscriptd to run PrologSlurmctld or EpilogSlurmctld for the job
  * IN job_id - Job that wants to run the script

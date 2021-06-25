@@ -776,7 +776,7 @@ int main(int argc, char **argv)
 
 		/* kill all scripts running by the slurmctld */
 		track_script_flush();
-		slurmscriptd_fini();
+		slurmscriptd_flush();
 
 		bb_g_fini();
 		power_g_fini();
@@ -828,6 +828,7 @@ int main(int argc, char **argv)
 		recover = 2;
 	}
 
+	slurmscriptd_fini();
 	jobcomp_g_fini();
 
 	/*
