@@ -12613,7 +12613,8 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			orig_ntasks_per_socket = job_specs->ntasks_per_socket;
 		}
 		if (job_specs->cpus_per_task == NO_VAL16)
-			job_specs->cpus_per_task = detail_ptr->cpus_per_task;
+			job_specs->cpus_per_task =
+				detail_ptr->orig_cpus_per_task;
 		gres_list = gres_job_state_dup(job_ptr->gres_list);
 		if ((error_code = gres_job_state_validate(
 						job_specs->cpus_per_tres,
