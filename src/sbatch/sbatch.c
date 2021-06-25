@@ -855,10 +855,5 @@ static int _set_rlimit_env(void)
 		debug ("propagating RLIMIT_%s=%lu", rli->name, cur);
 	}
 
-	/*
-	 *  Now increase NOFILE to the max available for this srun
-	 */
-	rlimits_increase_nofile();
-
 	return rc;
 }
