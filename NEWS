@@ -158,6 +158,7 @@ documents those changes that are of interest to users and administrators.
     EpilogSlurmctld. This avoids fork() calls from slurmctld, and can avoid
     performance issues if the slurmctld has a large memory footprint.
  -- Added new Script option to DebugFlags for debugging slurmscriptd.
+ -- Added SlurmScriptdPidFile option to slurm.conf.
 
 * Changes in Slurm 20.11.9
 ==========================

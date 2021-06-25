@@ -381,6 +381,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmdSpoolDir", S_P_STRING},
 	{"SlurmdSyslogDebug", S_P_STRING},
 	{"SlurmdTimeout", S_P_UINT16},
+	{"SlurmScriptdPidFile", S_P_STRING},
 	{"SlurmSchedLogFile", S_P_STRING},
 	{"SlurmSchedLogLevel", S_P_UINT16},
 	{"SrunEpilog", S_P_STRING},
@@ -2876,6 +2877,7 @@ extern void free_slurm_conf(slurm_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->slurmctld_addr);
 	xfree (ctl_conf_ptr->slurmctld_logfile);
 	xfree (ctl_conf_ptr->slurmctld_pidfile);
+	xfree (ctl_conf_ptr->slurmscriptd_pidfile);
 	xfree (ctl_conf_ptr->slurmctld_plugstack);
 	xfree (ctl_conf_ptr->slurmctld_primary_off_prog);
 	xfree (ctl_conf_ptr->slurmctld_primary_on_prog);
@@ -3076,6 +3078,7 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
  	ctl_conf_ptr->slurmd_port		= NO_VAL;
 	xfree (ctl_conf_ptr->slurmd_spooldir);
 	ctl_conf_ptr->slurmd_timeout		= NO_VAL16;
+	xfree (ctl_conf_ptr->slurmscriptd_pidfile);
 	xfree (ctl_conf_ptr->srun_prolog);
 	xfree (ctl_conf_ptr->srun_epilog);
 	xfree (ctl_conf_ptr->state_save_location);
@@ -4706,6 +4709,11 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_string(&conf->slurmctld_pidfile,
 			    "SlurmctldPidFile", hashtbl))
 		conf->slurmctld_pidfile = xstrdup(DEFAULT_SLURMCTLD_PIDFILE);
+
+	if (!s_p_get_string(&conf->slurmscriptd_pidfile,
+			    "SlurmScriptdPidFile", hashtbl))
+		conf->slurmscriptd_pidfile =
+			xstrdup(DEFAULT_SLURMSCRIPTD_PIDFILE);
 
 	(void) s_p_get_string(&conf->slurmctld_plugstack, "SlurmctldPlugstack",
 			      hashtbl);

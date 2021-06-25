@@ -40,11 +40,13 @@
 
 #include "slurm/slurm_errno.h"
 
+#include "src/common/daemonize.h"
 #include "src/common/eio.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/track_script.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"
 
@@ -283,6 +285,11 @@ static int _handle_shutdown(void)
 
 	eio_signal_shutdown(msg_handle);
 
+	if (unlink(slurm_conf.slurmscriptd_pidfile) < 0) {
+		verbose("Unable to remove pidfile '%s': %m",
+			slurm_conf.slurmscriptd_pidfile);
+	}
+
 #ifdef MEMORY_LEAK_DEBUG
 	track_script_fini();
 #endif
@@ -386,8 +393,25 @@ static void _setup_eio(int fd)
 	eio_new_initial_obj(msg_handle, eio_obj);
 }
 
+static void _init_pidfile(void)
+{
+	if (!xstrcmp(slurm_conf.slurmscriptd_pidfile,
+		     slurm_conf.slurmd_pidfile)) {
+		error("SlurmscriptdPid == SlurmdPid, use different names");
+	}
+	if (!xstrcmp(slurm_conf.slurmscriptd_pidfile,
+		     slurm_conf.slurmctld_pidfile))
+		error("SlurmscriptdPid == SlurmctldPid, use different names");
+
+	/* Don't close the fd returned here since we need to keep the
+	 * fd open to maintain the write lock */
+	(void) create_pidfile(slurm_conf.slurmscriptd_pidfile,
+	                      slurm_conf.slurm_user_id);
+}
+
 static void _slurmscriptd_mainloop(void)
 {
+	_init_pidfile();
 	_setup_eio(slurmscriptd_readfd);
 
 	debug("%s: started", __func__);

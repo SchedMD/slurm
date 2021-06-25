@@ -112,6 +112,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     SchedulerPort, SchedulerRootFilter options.
  -- Added Script DebugFlags for debugging slurmscriptd (the process that runs
     slurmctld scripts such as PrologSlurmctld and EpilogSlurmctld).
+ -- Added SlurmScriptdPidFile to slurm.conf.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
