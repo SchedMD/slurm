@@ -429,22 +429,19 @@ static int arg_set__unknown_salloc(slurm_opt_t *opt, const char *arg)
 {
 	fprintf(stderr, "Try \"salloc --help\" for more information\n");
 
-	exit(-1);
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
 static int arg_set__unknown_sbatch(slurm_opt_t *opt, const char *arg)
 {
 	fprintf(stderr,	"Try \"sbatch --help\" for more information\n");
 
-	exit(-1);
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
 static int arg_set__unknown_srun(slurm_opt_t *opt, const char *arg)
 {
 	fprintf(stderr,	"Try \"srun --help\" for more information\n");
 
-	exit(-1);
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
 static char *arg_get__unknown_(slurm_opt_t *opt)
 {
