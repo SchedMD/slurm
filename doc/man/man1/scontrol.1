@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "May 2021" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "June 2021" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -321,65 +321,113 @@ restarting the slurmctld daemon, which would set DebugFlags based upon the
 contents of the slurm.conf configuration file.
 
 .TP
-\fBshow\fP \fIENTITY\fP \fIID\fP
-or
-.TP
-\fBshow\fP \fIENTITY\fP=\fIID\fP
+\fBshow\fR \fIENTITY\fR[=\fIID\fR] or \fIENTITY\fR [\fIID\fR]
 Display the state of the specified entity with the specified identification.
-\fIENTITY\fP may be \fIaliases\fP, \fIassoc_mgr\fP, \fIbbstat\fP,
-\fIburstbuffer\fP, \fIconfig\fP, \fIdaemons\fP, \fIdwstat\fP,
-\fIfederation\fP, \fIfrontend\fP, \fIjob\fP, \fInode\fP,
-\fIpartition\fP, \fIreservation\fP, \fIslurmd\fP, \fIstep\fP,
-\fItopology\fP, \fIhostlist\fP, \fIhostlistsorted\fP or \fIhostnames\fP
-\fIID\fP can be used to identify a specific element of the identified
-entity: job ID, node name, partition name, reservation name, or job step ID for
-\fIjob\fP, \fInode\fP, \fIpartition\fP, or \fIstep\fP respectively.
-For an \fIENTITY\fP of \fIbbstat\fP or \fIdwstat\fP (they are equivalent)
-optional arguments are the options of the local status command.
-The status commands will be executed by the slurmctld daemon and its response
-returned to the user.
-For an \fIENTITY\fP of \fItopology\fP, the \fIID\fP may be a node or switch name.
-If one node name is specified, all switches connected to that node (and
-their parent switches) will be shown.
-If more than one node name is specified, only switches that connect to all
-named nodes will be shown.
-\fIaliases\fP will return all \fINodeName\fP values associated to a given
-\fINodeHostname\fP (useful to get the list of virtual nodes associated with a
+.RS
+.TP
+\fBaliases\fR
+Returns all \fINodeName\fP values associated with a given \fINodeHostname\fP
+(useful to get the list of virtual nodes associated with a
 real node in a configuration where multiple slurmd daemons execute on a single
 compute node).
-\fIassoc_mgr\fP displays the current contents of the slurmctld's internal cache
-for users, associations and/or qos. The \fIID\fP may be users=<user1>,[...,<userN>],
-accounts=<acct1>,[...,<acctN>], qos=<qos1>,[...,<qosN>] and/or
+.TP
+\fBassoc_mgr\fR
+Displays the current contents of the slurmctld's internal cache
+for users, associations and/or qos. The \fIID\fP may be users=<user1>,
+[...,<userN>],accounts=<acct1>,[...,<acctN>], qos=<qos1>,[...,<qosN>] and/or
 flags=<users,assoc,qos>, used to filter the desired section to be displayed. If
 no flags are specified, all sections are displayed.
-\fIburstbuffer\fP displays the current status of the BurstBuffer plugin.
-\fIconfig\fP displays parameter names from the configuration files in mixed
+.TP
+\fBbbstat\fR
+Displays output from Cray's burst buffer status tool. Options following
+\fBbbstat\fR are passed directly to the dwstat command by the slurmctld daemon
+and the response returned to the user. Equivalent to \fBdwstat\fR.
+.TP
+\fBburstbuffer\fR
+Displays the current status of the BurstBuffer plugin.
+.TP
+\fBconfig\fR
+Displays parameter names from the configuration files in mixed
 case (e.g. SlurmdPort=7003) while derived parameters names are in upper case
 only (e.g. SLURM_VERSION).
-\fIhostnames\fP takes an optional hostlist expression as input and
-writes a list of individual host names to standard output (one per
-line). If no hostlist expression is supplied, the contents of the
-SLURM_JOB_NODELIST environment variable is used. For example "tux[1\-3]"
-is mapped to "tux1","tux2" and "tux3" (one hostname per line).
-\fIhostlist\fP takes a list of host names and prints the hostlist
-expression for them (the inverse of \fIhostnames\fP).
-\fIhostlist\fP can also take the absolute pathname of a file
+.TP
+\fBdaemons\fR
+Reports which daemons should be running on this node.
+.TP
+\fBdwstat\fR
+Displays output from Cray's burst buffer status tool. Options following
+\fBdwstat\fR are passed directly to the dwstat command by the slurmctld daemon
+and the response returned to the user. Equivalent to \fBbbstat\fR.
+.TP
+\fBfederation\fR
+The federation name that the controller is part of and the
+sibling clusters part of the federation will be listed.
+.TP
+\fBfrontend\fR
+Shows configured frontend nodes.
+.TP
+\fBhostlist\fR
+Takes a list of host names and prints the hostlist
+expression for them (the inverse of \fBhostnames\fR).
+\fBhostlist\fR can also take the absolute pathname of a file
 (beginning with the character '/') containing a list of hostnames.
 Multiple node names may be specified using simple node range expressions
 (e.g. "lx[10\-20]"). All other \fIID\fP values must identify a single
 element. The job step ID is of the form "job_id.step_id", (e.g. "1234.1").
-\fIslurmd\fP reports the current status of the slurmd daemon executing
+\fBslurmd\fR reports the current status of the slurmd daemon executing
 on the same node from which the scontrol command is executed (the
 local host). It can be useful to diagnose problems.
-By default \fIhostlist\fP does not sort the node list or make it
+By default \fBhostlist\fR does not sort the node list or make it
 unique (e.g. tux2,tux1,tux2 = tux[2,1-2]).  If you wanted a sorted
-list use \fIhostlistsorted\fP (e.g. tux2,tux1,tux2 = tux[1-2,2]).
+list use \fBhostlistsorted\fR (e.g. tux2,tux1,tux2 = tux[1-2,2]).
 By default, all elements of the entity type specified are printed.
-For an \fIENTITY\fP of \fIjob\fP, if the job does not specify
-socket-per-node, cores-per-socket or threads-per-core then it
-will display '*' in ReqS:C:T=*:*:* field. For an \fIENTITY\fP of
-\fIfederation\fP, the federation name that the controller is part of and the
-sibling clusters part of the federation will be listed.
+.TP
+\fBhostlistsorted\fR
+Takes a list of host names and prints a sorted, unique hostlist
+expression for them. See \fBhostlist\fR.
+.TP
+\fBhostnames\fR
+Takes an optional hostlist expression as input and
+writes a list of individual host names to standard output (one per
+line). If no hostlist expression is supplied, the contents of the
+SLURM_JOB_NODELIST environment variable is used. For example "tux[1\-3]"
+is mapped to "tux1","tux2" and "tux3" (one hostname per line).
+.TP
+\fBjob\fR
+Displays statistics about all jobs by default. If an optional jobid is
+specified, details for just that job will be displayed.
+If the job does not specify socket-per-node, cores-per-socket or
+threads-per-core then it will display '*' in the ReqS:C:T=*:*:* field.
+.TP
+\fBnode\fR
+Displays statistics about all nodes by default. If an optional nodename is
+specified, details for just that node will be displayed.
+.TP
+\fBpartition\fR
+Displays statistics about all partitions by default. If an optional partition
+name is specified, details for just that partition will be displayed.
+.TP
+\fBreservation\fR
+Displays statistics about all reservations by default. If an optional
+reservation name is specified, details for just that reservation will be
+displayed.
+.TP
+\fBslurmd\fR
+Displays statistics for the slurmd running on the current node.
+.TP
+\fBstep\fR
+Displays statistics about all job steps by default. If an optional jobid
+is specified, details about steps for just that job will be displayed.
+If a jobid.stepid is specified, details for just that step will be displayed.
+.TP
+\fBtopology\fR
+Displays information about the defined topology layout. If a switch is
+specified, information about that switch will be shown.
+If one node name is specified, all switches connected to that node (and
+their parent switches) will be shown.
+If more than one node name is specified, only switches that connect to all
+named nodes will be shown.
+.RE
 
 .TP
 \fBshutdown\fP \fIOPTION\fP
