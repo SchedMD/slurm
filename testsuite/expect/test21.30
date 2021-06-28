@@ -1,7 +1,7 @@
 #!/usr/bin/env expect
 ############################################################################
 # Purpose: Test of Slurm functionality
-#         Test that checks if the QOS limits are enforced.
+#          Test that checks if the QOS limits are enforced.
 ############################################################################
 # Copyright (C) 2012 SchedMD LLC
 # Written by Nathan Yee <nyee32@schedmd.com>
@@ -46,6 +46,38 @@ source ./inc21.30.17
 
 if {[param_contains [get_config_param "SchedulerParameters"] "defer"]} {
 	skip "This test is not compatible with SchedulerParameters containing defer"
+}
+
+#
+# Check accounting configuration and terminate if limits not enforced.
+#
+if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
+	skip "This test can't be run without a usable AccountStorageType"
+} elseif {![param_contains [get_config_param "AccountingStorageEnforce"] "limits"]} {
+	skip "This test can't be run without enforcing limits"
+}
+if {![is_super_user]} {
+	skip "Test can only be ran as SlurmUser"
+}
+
+# Determine what the selecttype param is
+set select_type_parameters [get_config_param "SelectTypeParameters"]
+if {[param_contains $select_type_parameters "CR_SOCKET*"]} {
+	skip "This test is incompatible with CR_SOCKET allocations"
+}
+if {[param_contains $select_type_parameters "CR_CORE*"]} {
+	set selectparam 1
+}
+if {[param_contains $select_type_parameters "CR_ONE_TASK_PER_CORE"]} {
+	set one_task_pc 1
+}
+
+#
+# Some tests will not work properly when allocating sockets or whole nodes to
+# jobs
+#
+if {[check_config_select "linear"] || [default_part_exclusive]} {
+	skip "This test is incompatible with exclusive node allocations"
 }
 
 set exit_code	0
@@ -163,18 +195,6 @@ if {[get_config_param "PriorityType"] eq "priority/multifactor"} {
 	set prio_multifactor 0
 }
 
-# Determine what the selecttype param is
-set select_type_parameters [get_config_param "SelectTypeParameters"]
-if {[param_contains $select_type_parameters "CR_SOCKET*"]} {
-	skip "This test is incompatible with CR_SOCKET allocations"
-}
-if {[param_contains $select_type_parameters "CR_CORE*"]} {
-	set selectparam 1
-}
-if {[param_contains $select_type_parameters "CR_ONE_TASK_PER_CORE"]} {
-	set one_task_pc 1
-}
-
 set got_node 0
 spawn $srun -N1 printenv SLURM_NODELIST
 expect {
@@ -246,7 +266,7 @@ proc cleanup {} {
 		}
 	}
 
-	#delete account
+	# delete account
 	spawn $sacctmgr -i  delete account $acct
 	expect {
 		-re "Deleting accounts" {
@@ -277,25 +297,6 @@ proc cleanup {} {
 			}
 		}
 	}
-}
-
-#
-# Check accounting configuration and terminate if limits not enforced.
-#
-if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
-	skip "This test can't be run without a usable AccountStorageType"
-} elseif {![param_contains [get_config_param "AccountingStorageEnforce"] "limits"]} {
-	skip "This test can't be run without enforcing limits"
-}
-if {![is_super_user]} {
-	skip "Test can only be ran as SlurmUser"
-}
-
-#
-# Some tests will not work properly when allocating sockets or whole nodes to jobs
-#
-if {[check_config_select "linear"] || [default_part_exclusive]} {
-	skip "This test is incompatible with exclusive node allocations"
 }
 
 # Remove any vestigial accounts or qos
