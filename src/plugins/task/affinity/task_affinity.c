@@ -186,10 +186,10 @@ extern int task_p_slurmd_launch_request (launch_tasks_request_msg_t *req,
 {
 	char buf_type[100];
 
+	_update_bind_type(req);
 	if (((conf->sockets >= 1)
 	     && ((conf->cores > 1) || (conf->threads > 1)))
 	    || (!(req->cpu_bind_type & CPU_BIND_NONE))) {
-		_update_bind_type(req);
 
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 		debug("task affinity : before lllp distribution cpu bind "
