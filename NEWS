@@ -116,6 +116,7 @@ documents those changes that are of interest to users and administrators.
     performance issues when closing the entire range with closeall().
  -- auth/jwt - add support for RS256 tokens.
  -- Relax reservation purge due to any invalid uid after creation time.
+ -- Reject srun that requests both --exclusive and --overlap.
 
 * Changes in Slurm 20.11.8
 ==========================

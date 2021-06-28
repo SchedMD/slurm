@@ -972,6 +972,12 @@ static bool _opt_verify(void)
 	if (opt.exclude && !_valid_node_list(&opt.exclude))
 		exit(error_exit);
 
+	if (slurm_option_set_by_cli(&opt, LONG_OPT_EXCLUSIVE) &&
+	    slurm_option_set_by_cli(&opt, LONG_OPT_OVERLAP)) {
+		error("--exclusive and --overlap are mutually exclusive");
+		verified = false;
+	}
+
 	if (opt.nodefile) {
 		char *tmp;
 		xfree(opt.nodelist);
