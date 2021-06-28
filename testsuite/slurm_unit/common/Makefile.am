@@ -1,6 +1,10 @@
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS = bitstring hostlist slurm_protocol_defs slurm_protocol_pack \
+SUBDIRS = bitstring \
+	  hostlist \
+	  slurm_protocol_defs \
+	  slurm_protocol_pack \
+	  slurmdb_defs \
 	  slurmdb_pack
 
 AM_CPPFLAGS = -I$(top_srcdir) -ldl -lpthread

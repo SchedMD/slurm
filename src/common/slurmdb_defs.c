@@ -2846,7 +2846,10 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 	}
 
 	itr = list_iterator_create(char_list);
-	if (names) {
+	if (!xstrcmp(names, "")) {
+		list_append(char_list, xstrdup(""));
+		count = 1;
+	} else if (names) {
 		if (names[i] == '\"' || names[i] == '\'') {
 			quote_c = names[i];
 			quote = 1;
@@ -2879,7 +2882,7 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 						      name, tmp);
 						xfree(tmp);
 						xfree(name);
-						break;
+						goto end_it;
 					}
 					xfree(name);
 
@@ -2892,7 +2895,7 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 							      "subtract from "
 							      "it in the same "
 							      "line");
-							break;
+							goto end_it;
 						}
 						add_set = 1;
 						name = xstrdup_printf(
@@ -2906,7 +2909,7 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 							      "subtract from "
 							      "it in the same "
 							      "line");
-							break;
+							goto end_it;
 						}
 						equal_set = 1;
 						name = xstrdup_printf("%u", id);
@@ -2916,25 +2919,23 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 								 name))
 							break;
 					}
-					list_iterator_reset(itr);
 
 					if (!tmp_char) {
 						list_append(char_list, name);
 						count++;
 					} else
 						xfree(name);
-				} else if (!(i-start) && !option) {
-					list_append(char_list, xstrdup(""));
-					count++;
+
+					list_iterator_reset(itr);
 				}
 
 				i++;
 				start = i;
-				if (!names[i]) {
+				if (names[i] == ' ') {
 					error("There is a problem with "
 					      "your request.  It appears you "
 					      "have spaces inside your list.");
-					break;
+					goto end_it;
 				}
 			}
 			i++;
@@ -2991,15 +2992,11 @@ extern int slurmdb_addto_qos_char_list(List char_list, List qos_list,
 				if (!xstrcasecmp(tmp_char, name))
 					break;
 			}
-
 			if (!tmp_char) {
 				list_append(char_list, name);
 				count++;
 			} else
 				xfree(name);
-		} else if (!(i-start) && !option) {
-			list_append(char_list, xstrdup(""));
-			count++;
 		}
 	}
 	if (!count) {

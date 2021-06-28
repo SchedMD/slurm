@@ -139,7 +139,7 @@ static int _addto_state_char_list(List char_list, char *names)
 				}
 				i++;
 				start = i;
-				if (!names[i]) {
+				if (names[i] == ' ') {
 					info("There is a problem with "
 					     "your request.  It appears you "
 					     "have spaces inside your list.");

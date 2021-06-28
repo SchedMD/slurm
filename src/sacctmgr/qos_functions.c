@@ -83,7 +83,7 @@ static uint16_t _parse_preempt_modes(char *names)
 
 				i++;
 				start = i;
-				if (!names[i]) {
+				if (names[i] == ' ') {
 					info("There is a problem with "
 					     "your request.  It appears you "
 					     "have spaces inside your list.");
