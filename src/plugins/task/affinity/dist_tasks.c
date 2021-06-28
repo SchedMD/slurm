@@ -291,8 +291,8 @@ static void _validate_map(launch_tasks_request_msg_t *req, char *avail_mask)
 	xfree(tmp_map);
 
 	if (!superset) {
-		info("Ignoring user CPU binding outside of job "
-		     "step allocation");
+		info("Ignoring user CPU binding outside of job step allocation, allocated CPUs are: %s.",
+		     avail_mask);
 		req->cpu_bind_type &= (~CPU_BIND_MAP);
 		req->cpu_bind_type |=   CPU_BIND_MASK;
 		xfree(req->cpu_bind);
@@ -341,8 +341,8 @@ static void _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask)
 	}
 
 	if (!superset) {
-		info("Ignoring user CPU binding outside of job "
-		     "step allocation");
+		info("Ignoring user CPU binding outside of job step allocation, allocated CPUs are: %s.",
+		     avail_mask);
 	}
 
 	xfree(req->cpu_bind);
