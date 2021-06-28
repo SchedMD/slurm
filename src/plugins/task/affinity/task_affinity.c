@@ -258,9 +258,14 @@ static void _numa_set_preferred(nodemask_t *new_mask)
 extern int task_p_pre_launch (stepd_step_rec_t *job)
 {
 	int rc = SLURM_SUCCESS;
+	char tmp_str[128];
 
-	debug("affinity %ps, task:%u bind:%u",
-	      &job->step_id, job->envtp->procid, job->cpu_bind_type);
+	if (get_log_level() >= LOG_LEVEL_DEBUG) {
+		slurm_sprint_cpu_bind_type(tmp_str, job->cpu_bind_type);
+
+		debug("affinity %ps, task:%u bind:%s",
+		      &job->step_id, job->envtp->procid, tmp_str);
+	}
 
 	/*** CPU binding support ***/
 	if (job->cpu_bind_type) {
