@@ -106,6 +106,7 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmctld_plugstack.h"
+#include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
@@ -5623,6 +5624,7 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 		job_ptr->job_state      = JOB_CANCELLED | JOB_COMPLETING;
 		if (flags & KILL_FED_REQUEUE)
 			job_ptr->job_state |= JOB_REQUEUE;
+		slurmscriptd_flush_job(job_ptr->job_id);
 		track_script_flush_job(job_ptr->job_id);
 		build_cg_bitmap(job_ptr);
 		job_completion_logger(job_ptr, false);
@@ -5642,6 +5644,7 @@ extern int job_signal(job_record_t *job_ptr, uint16_t signal,
 		job_ptr->start_time	= now;
 		job_ptr->end_time	= now;
 		srun_allocate_abort(job_ptr);
+		slurmscriptd_flush_job(job_ptr->job_id);
 		track_script_flush_job(job_ptr->job_id);
 		job_completion_logger(job_ptr, false);
 		if (flags & KILL_FED_REQUEUE) {
@@ -6380,8 +6383,10 @@ static int _job_complete(job_record_t *job_ptr, uid_t uid, bool requeue,
 
 	/* Check for and cleanup stuck scripts */
 	if (IS_JOB_PENDING(job_ptr) || IS_JOB_CONFIGURING(job_ptr) ||
-	    (job_ptr->details && job_ptr->details->prolog_running))
+	    (job_ptr->details && job_ptr->details->prolog_running)) {
+		slurmscriptd_flush_job(job_ptr->job_id);
 		track_script_flush_job(job_ptr->job_id);
+	}
 
 	info("%s: %pJ done", __func__, job_ptr);
 	return SLURM_SUCCESS;

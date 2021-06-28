@@ -61,6 +61,7 @@ enum {
 	SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE,
 	SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE,
 	SLURMSCRIPTD_REQUEST_FLUSH,
+	SLURMSCRIPTD_REQUEST_FLUSH_JOB,
 	SLURMSCRIPTD_SHUTDOWN,
 };
 
@@ -287,6 +288,23 @@ static int _handle_flush(void)
 	return SLURM_SUCCESS;
 }
 
+static int _handle_flush_job(buf_t *buffer)
+{
+	uint32_t job_id;
+
+	safe_unpack32(&job_id, buffer);
+	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_FLUSH_JOB for JobId=%u",
+		 job_id);
+
+	track_script_flush_job(job_id);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("%s: Failed to unpack message", __func__);
+	return SLURM_ERROR;
+}
+
 static int _handle_shutdown(void)
 {
 	log_flag(SCRIPT, "Handling SLURMSCRIPTD_SHUTDOWN");
@@ -323,6 +341,9 @@ static int _handle_request(int req, buf_t *buffer)
 			break;
 		case SLURMSCRIPTD_REQUEST_FLUSH:
 			rc = _handle_flush();
+			break;
+		case SLURMSCRIPTD_REQUEST_FLUSH_JOB:
+			rc = _handle_flush_job(buffer);
 			break;
 		case SLURMSCRIPTD_SHUTDOWN:
 			rc = _handle_shutdown();
@@ -476,6 +497,17 @@ static void _kill_slurmscriptd(void)
 extern void slurmscriptd_flush(void)
 {
 	_write_msg(slurmctld_writefd, SLURMSCRIPTD_REQUEST_FLUSH, NULL);
+}
+
+extern void slurmscriptd_flush_job(uint32_t job_id)
+{
+	buf_t *buffer;
+
+	buffer = init_buf(0);
+	pack32(job_id, buffer);
+
+	_write_msg(slurmctld_writefd, SLURMSCRIPTD_REQUEST_FLUSH_JOB, buffer);
+	FREE_NULL_BUFFER(buffer);
 }
 
 extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
