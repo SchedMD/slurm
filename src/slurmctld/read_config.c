@@ -797,7 +797,10 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr->priority_job_factor = part->priority_job_factor;
 	part_ptr->priority_tier  = part->priority_tier;
 	part_ptr->qos_char       = xstrdup(part->qos_char);
+	part_ptr->resume_timeout = part->resume_timeout;
 	part_ptr->state_up       = part->state_up;
+	part_ptr->suspend_time   = part->suspend_time;
+	part_ptr->suspend_timeout = part->suspend_timeout;
 	part_ptr->grace_time     = part->grace_time;
 	part_ptr->cr_type        = part->cr_type;
 

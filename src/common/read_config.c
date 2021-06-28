@@ -1285,9 +1285,12 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"QOS", S_P_STRING},
 		{"RootOnly", S_P_BOOLEAN}, /* YES or NO */
 		{"ReqResv", S_P_BOOLEAN}, /* YES or NO */
+		{"ResumeTimeout", S_P_UINT16},
 		{"SelectTypeParameters", S_P_STRING},
 		{"Shared", S_P_STRING}, /* YES, NO, or FORCE */
 		{"State", S_P_STRING}, /* UP, DOWN, INACTIVE or DRAIN */
+		{"SuspendTime", S_P_UINT32},
+		{"SuspendTimeout", S_P_UINT16},
 		{"TRESBillingWeights", S_P_STRING},
 		{NULL}
 	};
@@ -1582,6 +1585,10 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 		    && !s_p_get_string(&p->qos_char, "QOS", dflt))
 			p->qos_char = NULL;
 
+		if (!s_p_get_uint16(&p->resume_timeout, "ResumeTimeout", tbl) &&
+		    !s_p_get_uint16(&p->resume_timeout, "ResumeTimeout", dflt))
+			p->resume_timeout = NO_VAL16;
+
 		if (s_p_get_string(&tmp, "SelectTypeParameters", tbl)) {
 			if (xstrncasecmp(tmp, "CR_Core_Memory", 14) == 0)
 				p->cr_type = CR_CORE | CR_MEMORY;
@@ -1642,6 +1649,16 @@ static int _parse_partitionname(void **dest, slurm_parser_enum_t type,
 			xfree(tmp);
 		} else
 			p->max_share = 1;
+
+		if (!s_p_get_uint32(&p->suspend_time, "SuspendTime", tbl) &&
+		    !s_p_get_uint32(&p->suspend_time, "SuspendTime", dflt))
+			p->suspend_time = NO_VAL;
+
+		if (!s_p_get_uint16(&p->suspend_timeout, "SuspendTimeout",
+				    tbl) &&
+		    !s_p_get_uint16(&p->suspend_timeout, "SuspendTimeout",
+				    dflt))
+			p->suspend_timeout = NO_VAL16;
 
 		if (s_p_get_string(&tmp, "State", tbl) ||
 		    s_p_get_string(&tmp, "State", dflt)) {

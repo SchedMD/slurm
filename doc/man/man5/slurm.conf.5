@@ -5444,6 +5444,18 @@ Possible values are "YES" and "NO".
 The default value is "NO".
 
 .TP
+\fBResumeTimeout\fR
+Maximum time permitted (in seconds) between when a node resume request
+is issued and when the node is actually available for use.
+Nodes which fail to respond in this time frame will be marked DOWN and
+the jobs scheduled on the node requeued.
+Nodes which reboot after this time frame will be marked DOWN with a reason of
+"Node unexpectedly rebooted."
+For nodes that are in multiple partitions with this option set,
+the highest time will take effect. If not set on any partition, the node will
+use the \fBResumeTimeout\fR value set for the entire cluster.
+
+.TP
 \fBRootOnly\fR
 Specifies if only user ID zero (i.e. user \fIroot\fR) may allocate resources
 in this partition. User root may allocate resources for any other user,
@@ -5497,6 +5509,27 @@ Designates that no new jobs may be queued on the partition,
 and jobs already queued may not be allocated nodes and run.
 See also the "Alternate" partition specification.
 .RE
+
+.TP
+\fBSuspendTime\fR
+Nodes which remain idle or down for this number of seconds will be placed into
+power save mode by \fBSuspendProgram\fR.
+For efficient system utilization, it is recommended that the value of
+\fBSuspendTime\fR be at least as large as the sum of \fBSuspendTimeout\fR
+plus \fBResumeTimeout\fR.
+For nodes that are in multiple partitions with this option set,
+the highest time will take effect. If not set on any partition, the node will
+use the \fBSuspendTime\fR value set for the entire cluster.
+
+.TP
+\fBSuspendTimeout\fR
+Maximum time permitted (in seconds) between when a node suspend request
+is issued and when the node is shutdown.
+At that time the node must be ready for a resume request to be issued
+as needed for new work.
+For nodes that are in multiple partitions with this option set,
+the highest time will take effect. If not set on any partition, the node will
+use the \fBSuspendTimeout\fR value set for the entire cluster.
 
 .TP
 \fBTRESBillingWeights\fR

@@ -90,7 +90,7 @@ bool power_save_enabled = false;
 bool power_save_started = false;
 bool power_save_debug = false;
 
-int idle_time, suspend_rate, resume_timeout, resume_rate, suspend_timeout;
+int suspend_rate, resume_timeout, resume_rate, suspend_timeout;
 char *suspend_prog = NULL, *resume_prog = NULL, *resume_fail_prog = NULL;
 char *exc_nodes = NULL, *exc_parts = NULL;
 time_t last_config = (time_t) 0;
@@ -374,7 +374,7 @@ static void _do_power_work(time_t now)
 		    (!IS_NODE_POWER_UP(node_ptr))			&&
 		    (IS_NODE_MAN_POWER_DOWN(node_ptr) ||
 		     ((node_ptr->last_busy != 0) &&
-		      (node_ptr->last_busy < (now - idle_time))	&&
+		      (node_ptr->last_busy < (now - node_ptr->suspend_time)) &&
 		      ((avoid_node_bitmap == NULL) ||
 		       (bit_test(avoid_node_bitmap, i) == 0))))) {
 			if (sleep_node_bitmap == NULL) {
@@ -415,8 +415,8 @@ static void _do_power_work(time_t now)
 		}
 
 		if (IS_NODE_POWERING_DOWN(node_ptr) &&
-		    (node_ptr->power_save_req_time + suspend_timeout < now)) {
-
+		    ((node_ptr->power_save_req_time + node_ptr->suspend_timeout)
+		     < now)) {
 			node_ptr->node_state &= (~NODE_STATE_POWERING_DOWN);
 
 			if (IS_NODE_CLOUD(node_ptr) && cloud_reg_addrs) {
@@ -439,11 +439,12 @@ static void _do_power_work(time_t now)
 		 * Down nodes as if not resumed by ResumeTimeout
 		 */
 		if (bit_test(booting_node_bitmap, i) &&
-		    (now > node_ptr->boot_req_time + resume_timeout)  &&
+		    (now >
+		     (node_ptr->boot_req_time + node_ptr->resume_timeout)) &&
 		    IS_NODE_POWER_UP(node_ptr) &&
 		    IS_NODE_NO_RESPOND(node_ptr)) {
 			info("node %s not resumed by ResumeTimeout(%d) - marking down and power_save",
-			     node_ptr->name, resume_timeout);
+			     node_ptr->name, node_ptr->resume_timeout);
 			/*
 			 * set_node_down_ptr() will remove the node from the
 			 * avail_node_bitmap.
@@ -855,6 +856,40 @@ static void _clear_power_config(void)
 	FREE_NULL_LIST(partial_node_list);
 }
 
+static int _set_partition_options(void *x, void *arg)
+{
+	part_record_t *part_ptr = (part_record_t *)x;
+	node_record_t *node_ptr;
+	int i;
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		if (!bit_test(part_ptr->node_bitmap, i))
+			continue;
+
+		if (node_ptr->suspend_time == NO_VAL)
+			node_ptr->suspend_time = part_ptr->suspend_time;
+		else if (part_ptr->suspend_time != NO_VAL)
+			node_ptr->suspend_time = MAX(node_ptr->suspend_time,
+						     part_ptr->suspend_time);
+
+		if (node_ptr->resume_timeout == NO_VAL16)
+			node_ptr->resume_timeout = part_ptr->resume_timeout;
+		else if (part_ptr->resume_timeout != NO_VAL16)
+			node_ptr->resume_timeout = MAX(
+				node_ptr->resume_timeout,
+				part_ptr->resume_timeout);
+
+		if (node_ptr->suspend_timeout == NO_VAL16)
+			node_ptr->suspend_timeout = part_ptr->suspend_timeout;
+		else if (part_ptr->suspend_timeout != NO_VAL16)
+			node_ptr->suspend_timeout = MAX(
+				node_ptr->suspend_timeout,
+				part_ptr->suspend_timeout);
+	}
+
+	return 0;
+}
+
 /*
  * Initialize power_save module parameters.
  * Return 0 on valid configuration to run power saving,
@@ -863,10 +898,11 @@ static void _clear_power_config(void)
 static int _init_power_config(void)
 {
 	char *tmp_ptr;
+	node_record_t *node_ptr;
+	int i;
 	last_config = slurm_conf.last_update;
 	last_work_scan  = 0;
 	last_log	= 0;
-	idle_time = slurm_conf.suspend_time - 1;
 	suspend_rate = slurm_conf.suspend_rate;
 	resume_timeout = slurm_conf.resume_timeout;
 	resume_rate = slurm_conf.resume_rate;
@@ -901,7 +937,28 @@ static int _init_power_config(void)
 			       NULL, 10);
 	}
 
-	if (idle_time < 0) {	/* not an error */
+	if (part_list) {
+		list_for_each(part_list, _set_partition_options, NULL);
+	}
+
+	/* Apply global options to node level if not set at partition level. */
+	for (i = 0, node_ptr = node_record_table_ptr; i < node_record_count;
+	     i++, node_ptr++) {
+		node_ptr->suspend_time =
+			((node_ptr->suspend_time == NO_VAL) ?
+				slurm_conf.suspend_time - 1 :
+				node_ptr->suspend_time);
+		node_ptr->suspend_timeout =
+			((node_ptr->suspend_timeout == NO_VAL16) ?
+				slurm_conf.suspend_timeout :
+				node_ptr->suspend_timeout);
+		node_ptr->resume_timeout =
+			((node_ptr->resume_timeout == NO_VAL16) ?
+				slurm_conf.resume_timeout :
+				node_ptr->resume_timeout);
+	}
+
+	if ((slurm_conf.suspend_time - 1) < 0) { /* not an error */
 		debug("power_save module disabled, SuspendTime < 0");
 		return -1;
 	}
