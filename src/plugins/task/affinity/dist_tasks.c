@@ -267,7 +267,6 @@ void batch_bind(batch_job_launch_msg_t *req)
 	slurm_cred_free_args(&arg);
 }
 
-/* The job has specialized cores, synchronize user map with available cores */
 static void _validate_map(launch_tasks_request_msg_t *req, char *avail_mask)
 {
 	char *tmp_map, *save_ptr = NULL, *tok;
@@ -300,7 +299,6 @@ static void _validate_map(launch_tasks_request_msg_t *req, char *avail_mask)
 	}
 }
 
-/* The job has specialized cores, synchronize user mask with available cores */
 static void _validate_mask(launch_tasks_request_msg_t *req, char *avail_mask)
 {
 	char *new_mask = NULL, *save_ptr = NULL, *tok;
