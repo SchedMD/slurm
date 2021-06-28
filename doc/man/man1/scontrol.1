@@ -333,10 +333,24 @@ compute node).
 .TP
 \fBassoc_mgr\fR
 Displays the current contents of the slurmctld's internal cache
-for users, associations and/or qos. The \fIID\fP may be users=<user1>,
-[...,<userN>],accounts=<acct1>,[...,<acctN>], qos=<qos1>,[...,<qosN>] and/or
-flags=<users,assoc,qos>, used to filter the desired section to be displayed. If
-no flags are specified, all sections are displayed.
+for users, associations and/or qos. The output can be filtered by different
+record types:
+.RS
+.TP
+\fBusers\fR=<\fIuser1\fR>[...,<\fIuserN\fR>]
+Limit the User Records displayed to those with the specified user name(s).
+.TP
+\fBaccounts\fR=<\fIacct1\fR>[...,<\fIacctN\fR>]
+Limit the Association Records displayed to those with the specified account
+name(s).
+.TP
+\fBqos\fR=<\fIqos1\fR>[...,<\fIqosN\fR>]
+Limit the QOS Records displayed to those with the specified QOS name(s).
+.TP
+\fBflags\fR=users|assoc|qos
+Specify the desired record type to be displayed. If no flags are specified,
+all record types are displayed.
+.RE
 .TP
 \fBbbstat\fR
 Displays output from Cray's burst buffer status tool. Options following
