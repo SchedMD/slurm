@@ -1434,21 +1434,6 @@ extern int cgroup_p_accounting_fini(void)
 {
 	int i, rc, tid;
 
-	/* Move the stepd outside of task_x */
-	rc = common_cgroup_move_process(&g_step_cg[CG_CPUACCT], getpid());
-	if (rc != SLURM_SUCCESS) {
-		error("Unable to move pid %d to %s", getpid(),
-		      g_step_cg[CG_CPUACCT].path);
-		return rc;
-	}
-
-	rc = common_cgroup_move_process(&g_step_cg[CG_MEMORY], getpid());
-	if (rc != SLURM_SUCCESS) {
-		error("Unable to move pid %d to %s", getpid(),
-		      g_step_cg[CG_MEMORY].path);
-		return rc;
-	}
-
 	/* Clean up starting from the leaves way up, the
 	 * reverse order in which the cgroup were created.
 	 */
@@ -1457,15 +1442,10 @@ extern int cgroup_p_accounting_fini(void)
 		char *buf = NULL;
 
 		/*
-		 * rmdir all tasks this running slurmstepd was responsible for
-		 * but first ensure the stepd is not in the task_0 cgroup
-		 * anymore.
+		 * rmdir all tasks this running slurmstepd was responsible for.
 		 */
 		xstrfmtcat(buf, "%s/task_%d", g_step_cg[CG_CPUACCT].path, tid);
 		cgroup.path = buf;
-
-		if (tid == 0)
-			xcgroup_wait_pid_moved(&cgroup, "cpuacct task_0");
 
 		if (common_cgroup_delete(&cgroup) != SLURM_SUCCESS)
 			debug2("failed to delete %s %m", buf);
@@ -1473,9 +1453,6 @@ extern int cgroup_p_accounting_fini(void)
 
 		xstrfmtcat(buf, "%s/task_%d", g_step_cg[CG_MEMORY].path, tid);
 		cgroup.path = buf;
-
-		if (tid == 0)
-			xcgroup_wait_pid_moved(&cgroup, "memory task_0");
 
 		if (common_cgroup_delete(&cgroup) != SLURM_SUCCESS)
 			debug2("failed to delete %s %m", buf);
