@@ -1989,6 +1989,8 @@ static slurm_cli_opt_t slurm_opt_gpus_per_task = {
 static int arg_set_gres(slurm_opt_t *opt, const char *arg)
 {
 	if (!xstrcasecmp(arg, "help") || !xstrcasecmp(arg, "list")) {
+		if (opt->scron_opt)
+			return SLURM_ERROR;
 		print_gres_help();
 		exit(0);
 	}
@@ -2094,6 +2096,9 @@ static slurm_cli_opt_t slurm_opt_gres_flags = {
 
 static int arg_set_help(slurm_opt_t *opt, const char *arg)
 {
+	if (opt->scron_opt)
+		return SLURM_ERROR;
+
 	if (opt->help_func)
 		(opt->help_func)();
 	else
@@ -4633,6 +4638,9 @@ static slurm_cli_opt_t slurm_opt_use_min_nodes = {
 
 static int arg_set_usage(slurm_opt_t *opt, const char *arg)
 {
+	if(opt->scron_opt)
+		return SLURM_ERROR;
+
 	if (opt->usage_func)
 		(opt->usage_func)();
 	else
@@ -4689,6 +4697,9 @@ static slurm_cli_opt_t slurm_opt_verbose = {
 
 static int arg_set_version(slurm_opt_t *opt, const char *arg)
 {
+	if (opt->scron_opt)
+		return SLURM_ERROR;
+
 	print_slurm_version();
 	exit(0);
 }
