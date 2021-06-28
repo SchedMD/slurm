@@ -70,6 +70,7 @@ const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 static char g_user_cgpath[CG_CTL_CNT][PATH_MAX];
 static char g_job_cgpath[CG_CTL_CNT][PATH_MAX];
 static char g_step_cgpath[CG_CTL_CNT][PATH_MAX];
+static uint16_t g_step_active_cnt[CG_CTL_CNT];
 
 static xcgroup_ns_t g_cg_ns[CG_CTL_CNT];
 
@@ -284,6 +285,7 @@ extern int init(void)
 		g_user_cgpath[i][0] = '\0';
 		g_job_cgpath[i][0] = '\0';
 		g_step_cgpath[i][0] = '\0';
+		g_step_active_cnt[i] = 0;
 	}
 
 	debug("%s loaded", plugin_name);
@@ -467,21 +469,25 @@ end:
  */
 extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 {
+	int rc = SLURM_SUCCESS;
+
+	/* Don't let other plugins destroy our structs. */
+	g_step_active_cnt[sub]++;
+
 	switch (sub) {
 	case CG_TRACK:
 		/* create a new cgroup for that container */
-		if (xcgroup_create_hierarchy(__func__,
-					     job,
-					     &g_cg_ns[sub],
-					     &g_job_cg[sub],
-					     &g_step_cg[sub],
-					     &g_user_cg[sub],
-					     g_job_cgpath[sub],
-					     g_step_cgpath[sub],
-					     g_user_cgpath[sub])
-		    != SLURM_SUCCESS) {
-			return SLURM_ERROR;
-		}
+		if ((rc = xcgroup_create_hierarchy(__func__,
+						   job,
+						   &g_cg_ns[sub],
+						   &g_job_cg[sub],
+						   &g_step_cg[sub],
+						   &g_user_cg[sub],
+						   g_job_cgpath[sub],
+						   g_step_cgpath[sub],
+						   g_user_cgpath[sub]))
+		    != SLURM_SUCCESS)
+			goto step_c_err;
 
 		/* stick slurmstepd pid to the newly created job container
 		 * (Note: we do not put it in the step container because this
@@ -492,78 +498,84 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 		if (common_cgroup_add_pids(&g_job_cg[sub], &job->jmgr_pid, 1) !=
 		    SLURM_SUCCESS) {
 			cgroup_p_step_destroy(sub);
-			return SLURM_ERROR;
+			goto step_c_err;
 		}
 
 		/* we use slurmstepd pid as the identifier of the container */
 		job->cont_id = (uint64_t)job->jmgr_pid;
 		break;
 	case CG_CPUS:
-		return _cpuset_create(job);
+		if ((rc = _cpuset_create(job))!= SLURM_SUCCESS)
+			goto step_c_err;
+		break;
 	case CG_MEMORY:
-		if (xcgroup_create_hierarchy(__func__,
-					     job,
-					     &g_cg_ns[sub],
-					     &g_job_cg[sub],
-					     &g_step_cg[sub],
-					     &g_user_cg[sub],
-					     g_job_cgpath[sub],
-					     g_step_cgpath[sub],
-					     g_user_cgpath[sub])
+		if ((rc = xcgroup_create_hierarchy(__func__,
+						   job,
+						   &g_cg_ns[sub],
+						   &g_job_cg[sub],
+						   &g_step_cg[sub],
+						   &g_user_cg[sub],
+						   g_job_cgpath[sub],
+						   g_step_cgpath[sub],
+						   g_user_cgpath[sub]))
 		    != SLURM_SUCCESS) {
-			return SLURM_ERROR;
+			goto step_c_err;
 		}
-
-		if (common_cgroup_set_param(&g_user_cg[sub],
-					    "memory.use_hierarchy",
-					    "1") != SLURM_SUCCESS) {
+		if ((rc = common_cgroup_set_param(&g_user_cg[sub],
+						  "memory.use_hierarchy",
+						  "1")) != SLURM_SUCCESS) {
 			error("unable to set hierarchical accounting for %s",
 			      g_user_cgpath[sub]);
 			cgroup_p_step_destroy(sub);
-			return SLURM_ERROR;
+			break;
 		}
-		if (common_cgroup_set_param(&g_job_cg[sub],
-					    "memory.use_hierarchy",
-					    "1") != SLURM_SUCCESS) {
+		if ((rc = common_cgroup_set_param(&g_job_cg[sub],
+						  "memory.use_hierarchy",
+						  "1")) != SLURM_SUCCESS) {
 			error("unable to set hierarchical accounting for %s",
 			      g_job_cgpath[sub]);
 			cgroup_p_step_destroy(sub);
-			return SLURM_ERROR;
+			break;
 		}
-		if (common_cgroup_set_param(&g_step_cg[sub],
-					    "memory.use_hierarchy",
-					    "1") != SLURM_SUCCESS) {
+		if ((rc = common_cgroup_set_param(&g_step_cg[sub],
+						  "memory.use_hierarchy",
+						  "1") != SLURM_SUCCESS)) {
 			error("unable to set hierarchical accounting for %s",
 			      g_step_cg[sub].path);
 			cgroup_p_step_destroy(sub);
-			return SLURM_ERROR;
+			break;
 		}
 		break;
 	case CG_DEVICES:
 		/* create a new cgroup for that container */
-		if (xcgroup_create_hierarchy(__func__,
-					     job,
-					     &g_cg_ns[sub],
-					     &g_job_cg[sub],
-					     &g_step_cg[sub],
-					     &g_user_cg[sub],
-					     g_job_cgpath[sub],
-					     g_step_cgpath[sub],
-					     g_user_cgpath[sub])
-		    != SLURM_SUCCESS) {
-			return SLURM_ERROR;
-		}
+		if ((rc = xcgroup_create_hierarchy(__func__,
+						   job,
+						   &g_cg_ns[sub],
+						   &g_job_cg[sub],
+						   &g_step_cg[sub],
+						   &g_user_cg[sub],
+						   g_job_cgpath[sub],
+						   g_step_cgpath[sub],
+						   g_user_cgpath[sub]))
+		    != SLURM_SUCCESS)
+			goto step_c_err;
 		break;
 	case CG_CPUACCT:
 		error("This operation is not supported for %s", g_cg_name[sub]);
-		return SLURM_ERROR;
+		rc = SLURM_ERROR;
+		goto step_c_err;
 	default:
 		error("cgroup subsystem %u not supported", sub);
-		return SLURM_ERROR;
-		break;
+		rc = SLURM_ERROR;
+		goto step_c_err;
 	}
 
-	return SLURM_SUCCESS;
+	return rc;
+
+step_c_err:
+	/* step cgroup is not created */
+	g_step_active_cnt[sub]--;
+	return rc;
 }
 
 extern int cgroup_p_step_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
@@ -618,9 +630,20 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 {
 	int rc = SLURM_SUCCESS;
 
-	/* Another plugin may have already destroyed this subsystem. */
-	if (!g_root_cg[sub].path)
-		return SLURM_ERROR;
+	/* Only destroy the step if we're the only ones using it. */
+	if (g_step_active_cnt[sub] == 0) {
+		debug("called without a previous init. This shouldn't happen!");
+		return SLURM_SUCCESS;
+	}
+	/* Only destroy the step if we're the only ones using it. */
+	if (g_step_active_cnt[sub] > 1) {
+		g_step_active_cnt[sub]--;
+		debug2("Not destroying %s step dir, resource busy by %d other plugin",
+		       g_cg_name[sub], g_step_active_cnt[sub]);
+		return SLURM_SUCCESS;
+	}
+
+	g_step_active_cnt[sub] = 0;
 
 	/* Custom actions for every cgroup subsystem */
 	switch (sub) {
@@ -1386,6 +1409,8 @@ extern int cgroup_p_accounting_init(void)
 		return rc;
 	}
 
+	g_step_active_cnt[CG_MEMORY]++;
+
 	if (g_step_cgpath[CG_CPUACCT][0] == '\0')
 		rc = cgroup_p_initialize(CG_CPUACCT);
 
@@ -1393,6 +1418,8 @@ extern int cgroup_p_accounting_init(void)
 		error("Cannot initialize cgroup cpuacct accounting");
 		return rc;
 	}
+
+	g_step_active_cnt[CG_CPUACCT]++;
 
 	/* Create the list of tasks which will be accounted for*/
 	for (i = 0; i < CG_CTL_CNT; i++) {
