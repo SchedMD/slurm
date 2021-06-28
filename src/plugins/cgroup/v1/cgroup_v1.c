@@ -242,10 +242,8 @@ static int _remove_cg_subsystem(xcgroup_t *root_cg, xcgroup_t *step_cg,
 	}
 
 	/* Delete step cgroup. */
-	if ((rc = common_cgroup_delete(step_cg)) != SLURM_SUCCESS) {
-		debug2("unable to remove step cg (%s): %m", log_str);
+	if ((rc = common_cgroup_delete(step_cg)) != SLURM_SUCCESS)
 		goto end;
-	}
 
 	/*
 	 * At this point we'll do a best effort for the job and user cgroup,
@@ -255,13 +253,11 @@ static int _remove_cg_subsystem(xcgroup_t *root_cg, xcgroup_t *step_cg,
 	 */
 	/* Delete job cgroup. */
 	if ((rc = common_cgroup_delete(job_cg)) != SLURM_SUCCESS) {
-		debug2("not removing job cg (%s): %m", log_str);
 		rc = SLURM_SUCCESS;
 		goto end;
 	}
 	/* Delete user cgroup. */
 	if ((rc = common_cgroup_delete(user_cg)) != SLURM_SUCCESS) {
-		debug2("not removing user cg (%s): %m", log_str);
 		rc = SLURM_SUCCESS;
 		goto end;
 	}

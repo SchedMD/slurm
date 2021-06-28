@@ -42,6 +42,8 @@
 #include <sys/file.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <dirent.h>
 #include <unistd.h>
 
 #include "slurm/slurm.h"

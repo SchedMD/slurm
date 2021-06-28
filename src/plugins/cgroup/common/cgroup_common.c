@@ -89,6 +89,29 @@ static int _set_uint32_param(xcgroup_t *cg, char *param, uint32_t value)
 	return fstatus;
 }
 
+static bool _is_empty_dir(const char *dirpath)
+{
+	DIR *d;
+	struct dirent *dir;
+	bool empty = true;
+
+	if (!(d = opendir(dirpath)))
+		return empty;
+
+	while ((dir = readdir(d))) {
+		if (dir->d_type == DT_DIR &&
+		    (strcmp(dir->d_name, ".") && strcmp(dir->d_name, ".."))) {
+			empty = false;
+			debug2("Found at least one child directory: %s/%s",
+			       dirpath, dir->d_name);
+			break;
+		}
+	}
+
+	closedir(d);
+	return empty;
+}
+
 extern size_t common_file_getsize(int fd)
 {
 	int rc;
@@ -568,7 +591,8 @@ extern void common_cgroup_destroy(xcgroup_t *cg)
 
 extern int common_cgroup_delete(xcgroup_t *cg)
 {
-	int retries = 0;
+	int retries = 0, npids = -1;
+	pid_t *pids = NULL;
 
 	if (!cg || !cg->path) {
 		debug2("invalid control group");
@@ -576,22 +600,49 @@ extern int common_cgroup_delete(xcgroup_t *cg)
 	}
 
 	/*
-	 *  Simply delete cgroup with rmdir(2). If cgroup doesn't
-	 *   exist, do not propagate error back to caller.
-	 *
-	 * Do 5 retries if we receive an EBUSY, because we may be trying to
-	 * remove the directory when the kernel hasn't yet drained the cgroup
-	 * internal references (css_online), even if cgroup.procs is already
-	 * empty.
+	 * Do 5 retries if we receive an EBUSY and there are no pids, because we
+	 * may be trying to remove the directory when the kernel hasn't yet
+	 * drained the cgroup internal references (css_online), even if
+	 * cgroup.procs is already empty.
 	 */
-
 	while ((rmdir(cg->path) < 0) && (errno != ENOENT)) {
-		if ((errno == EBUSY) && retries < 5) {
-			sleep(0.5);
-			retries++;
-			continue;
+		if (errno == EBUSY) {
+			/*
+			 * Do not rely in ENOTEMPTY since in cgroupfs a
+			 * non-empty dir. removal will return EBUSY.
+			 */
+			if (!_is_empty_dir(cg->path)) {
+				debug2("Cannot rmdir(%s), cgroup is not empty",
+				       cg->path);
+				return SLURM_ERROR;
+			}
+
+			if (npids == -1) {
+				/* Do not retry on a 'really' busy cgroup */
+				if ((common_cgroup_get_pids(cg, &pids, &npids)
+				     != SLURM_SUCCESS))
+					return SLURM_ERROR;
+
+				if (npids > 0) {
+					xfree(pids);
+					debug3("Not removing %s, found %d pids",
+					       cg->path, npids);
+					return SLURM_ERROR;
+				}
+			}
+
+			if (retries < 5) {
+				retries++;
+				continue;
+			}
+
+			debug2("Unable to rmdir(%s), did %d retries: %m",
+			       cg->path, retries);
+		} else {
+			debug2("Unable to rmdir(%s), unexpected error: %m",
+			       cg->path);
 		}
-		debug2("did %d retries rmdir(%s): %m", retries, cg->path);
+
 		return SLURM_ERROR;
 	}
 
