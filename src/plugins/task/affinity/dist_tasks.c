@@ -404,7 +404,9 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 		if (!avail_mask) {
 			error("Could not determine allocated CPUs");
 		} else if ((whole_nodes == 0) &&
-			   (req->job_core_spec == NO_VAL16)) {
+			   (req->job_core_spec == NO_VAL16) &&
+			   (!(req->cpu_bind_type & CPU_BIND_MAP)) &&
+			   (!(req->cpu_bind_type & CPU_BIND_MASK))) {
 			info("entire node must be allocated, "
 			     "disabling affinity");
 			xfree(req->cpu_bind);
