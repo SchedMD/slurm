@@ -354,7 +354,7 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 					 * ",,this".
 					 */
 					start = i + 1;
-					if (!names[i + 1]) {
+					if (names[i + 1] == ' ') {
 						info("There is a problem "
 						     "with your request. "
 						     "It appears you have "
@@ -369,7 +369,7 @@ extern int slurm_addto_char_list_with_case(List char_list, char *names,
 					 * Skip over the "," so it is
 					 * not included in the char list
 					 */
-					start = ++i;
+					start = i + 1;
 				}
 			} else if (names[i] == ']') {
 				brack_not = true;
