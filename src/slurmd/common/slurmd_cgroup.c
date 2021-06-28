@@ -118,27 +118,26 @@ extern int init_system_memory_cgroup(void)
 	max_swap += max_ram;
 	min_ram_space = cg_conf->min_ram_space * 1024 * 1024;
 
-	debug ("system cgroup: memory: total:%luM allowed:%.4g%%(%s), "
-	       "swap:%.4g%%(%s), max:%.4g%%(%luM) "
-	       "max+swap:%.4g%%(%luM) min:%luM "
-	       "kmem:%.4g%%(%luM %s) min:%luM",
-	       (unsigned long) totalram,
-	       allowed_ram_space,
-	       constrain_ram_space?"enforced":"permissive",
-
-	       allowed_swap_space,
-	       constrain_swap_space?"enforced":"permissive",
-	       cg_conf->max_ram_percent,
-	       (unsigned long) (max_ram/(1024*1024)),
-
-	       cg_conf->max_swap_percent,
-	       (unsigned long) (max_swap/(1024*1024)),
-	       (unsigned long) cg_conf->min_ram_space,
-
-	       cg_conf->max_kmem_percent,
-	       (unsigned long)(max_kmem/(1024*1024)),
-	       constrain_kmem_space?"enforced":"permissive",
-	       (unsigned long) cg_conf->min_kmem_space);
+	if (running_in_slurmd()) {
+		debug("system cgroup: memory: total:%luM allowed:%.4g%%(%s), "
+		      "swap:%.4g%%(%s), max:%.4g%%(%luM) "
+		      "max+swap:%.4g%%(%luM) min:%luM "
+		      "kmem:%.4g%%(%luM %s) min:%luM",
+		      (unsigned long) totalram,
+		      allowed_ram_space,
+		      constrain_ram_space?"enforced":"permissive",
+		      allowed_swap_space,
+		      constrain_swap_space?"enforced":"permissive",
+		      cg_conf->max_ram_percent,
+		      (unsigned long) (max_ram/(1024*1024)),
+		      cg_conf->max_swap_percent,
+		      (unsigned long) (max_swap/(1024*1024)),
+		      (unsigned long) cg_conf->min_ram_space,
+		      cg_conf->max_kmem_percent,
+		      (unsigned long)(max_kmem/(1024*1024)),
+		      constrain_kmem_space?"enforced":"permissive",
+		      (unsigned long) cg_conf->min_kmem_space);
+	}
 
 	cgroup_free_conf(cg_conf);
 
@@ -159,7 +158,9 @@ extern int init_system_memory_cgroup(void)
 	 if (cgroup_g_system_create(CG_MEMORY) != SLURM_SUCCESS)
 		 return SLURM_ERROR;
 
-	 debug("system cgroup: system memory cgroup initialized");
+	 if (running_in_slurmd())
+		 debug("system cgroup: system memory cgroup initialized");
+
 	 return SLURM_SUCCESS;
 }
 
@@ -210,7 +211,8 @@ extern bool check_corespec_cgroup_job_confinement(void)
 
 	cg_conf = cgroup_get_conf();
 
-	if (cg_conf->constrain_cores &&
+	if ((conf->cpu_spec_list || conf->core_spec_cnt) &&
+	    cg_conf->constrain_cores &&
 	    xstrstr(slurm_conf.task_plugin, "cgroup"))
 		return true;
 
@@ -219,17 +221,14 @@ extern bool check_corespec_cgroup_job_confinement(void)
 
 extern void attach_system_cgroup_pid(pid_t pid)
 {
-	if (check_corespec_cgroup_job_confinement()) {
-		if (cgroup_g_initialize(CG_CPUS) ||
-		    cgroup_g_system_create(CG_CPUS) ||
-		    cgroup_g_system_addto(CG_CPUS, &pid, 1))
-			error("%s: failed to add stepd pid %d to system cpuset cgroup",
-			      __func__, pid);
-	}
+	if (check_corespec_cgroup_job_confinement() &&
+	    (init_system_cpuset_cgroup() ||
+	     cgroup_g_system_addto(CG_CPUS, &pid, 1)))
+		error("%s: failed to add stepd pid %d to system cpuset cgroup",
+		      __func__, pid);
 
-	if (cgroup_memcg_job_confinement()) {
-		if (cgroup_g_initialize(CG_MEMORY) ||
-		    cgroup_g_system_create(CG_MEMORY) ||
+	if (conf->mem_spec_limit && cgroup_memcg_job_confinement()) {
+		if (init_system_memory_cgroup() ||
 		    cgroup_g_system_addto(CG_MEMORY, &pid, 1))
 			error("%s: failed to add stepd pid %d to system memory cgroup",
 			      __func__, pid);

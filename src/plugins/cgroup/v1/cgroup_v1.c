@@ -336,7 +336,8 @@ extern int cgroup_p_system_create(cgroup_ctl_type_t sub)
 
 	switch (sub) {
 	case CG_CPUS:
-		return _cpuset_create(NULL);
+		rc = _cpuset_create(NULL);
+		break;
 	case CG_MEMORY:
 		/* create slurm root cg in this cg namespace */
 		slurm_cgpath = xcgroup_create_slurm_cg(&g_cg_ns[sub]);
@@ -445,7 +446,8 @@ extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub)
 	xcgroup_wait_pid_moved(&g_sys_cg[sub], g_cg_name[sub]);
 
 	if ((rc = common_cgroup_delete(&g_sys_cg[sub])) != SLURM_SUCCESS) {
-		debug2("unable to remove system cg (%s): %m", g_cg_name[sub]);
+		debug2("not removing system cg (%s), there may be attached stepds: %m",
+		       g_cg_name[sub]);
 		goto end;
 	}
 	common_cgroup_destroy(&g_sys_cg[sub]);
