@@ -1137,6 +1137,9 @@ void pack_part(part_record_t *part_ptr, buf_t *buffer, uint16_t protocol_version
 		pack16(part_ptr->priority_tier, buffer);
 		pack16(part_ptr->state_up, buffer);
 		pack16(part_ptr->cr_type, buffer);
+		pack16(part_ptr->resume_timeout, buffer);
+		pack16(part_ptr->suspend_timeout, buffer);
+		pack32(part_ptr->suspend_time, buffer);
 
 		packstr(part_ptr->allow_accounts, buffer);
 		packstr(part_ptr->allow_groups, buffer);

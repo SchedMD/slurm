@@ -3143,6 +3143,9 @@ _unpack_partition_info_members(partition_info_t * part, buf_t *buffer,
 		safe_unpack16(&part->priority_tier, buffer);
 		safe_unpack16(&part->state_up,     buffer);
 		safe_unpack16(&part->cr_type ,     buffer);
+		safe_unpack16(&part->resume_timeout, buffer);
+		safe_unpack16(&part->suspend_timeout, buffer);
+		safe_unpack32(&part->suspend_time, buffer);
 
 		safe_unpackstr_xmalloc(&part->allow_accounts, &uint32_tmp,
 				       buffer);

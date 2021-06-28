@@ -2394,7 +2394,13 @@ typedef struct partition_info {
 	uint16_t priority_job_factor;	/* job priority weight factor */
 	uint16_t priority_tier;	/* tier for scheduling and preemption */
 	char *qos_char;	        /* The partition QOS name */
+	uint16_t resume_timeout; /* time required in order to perform a node
+				  * resume operation */
 	uint16_t state_up;	/* see PARTITION_ states above */
+	uint32_t suspend_time;  /* node idle for this long before power save
+				 * mode */
+	uint16_t suspend_timeout; /* time required in order to perform a node
+				   * suspend operation */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	char    *tres_fmt_str;	/* str of configured TRES in partition */
