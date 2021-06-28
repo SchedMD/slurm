@@ -165,6 +165,7 @@ documents those changes that are of interest to users and administrators.
  -- slurmrestd - add description for slurmdb/job endpoint.
  -- Better handling of --mem=0.
  -- Ignore DefCpuPerGpu when --cpus-per-task given.
+ -- sacct - fix segfault when printing StepId (or when using --long).
 
 * Changes in Slurm 20.11.7
 ==========================
