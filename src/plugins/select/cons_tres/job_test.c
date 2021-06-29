@@ -1413,15 +1413,70 @@ static void _topo_add_dist(uint32_t *dist, int inx)
 	}
 }
 
+static int _topo_compare_switches(int i, int j, int rem_nodes,
+				  int *switch_node_cnt)
+{
+	while (1) {
+		bool i_fit = switch_node_cnt[i] >= rem_nodes;
+		bool j_fit = switch_node_cnt[j] >= rem_nodes;
+
+		if (i_fit && j_fit) {
+			if (switch_node_cnt[i] < switch_node_cnt[j])
+				return 1;
+			if (switch_node_cnt[i] > switch_node_cnt[j])
+				return -1;
+			break;
+		} else if (i_fit) {
+			return 1;
+		} else if (j_fit) {
+			return -1;
+		}
+
+		if (((switch_record_table[i].parent != i) ||
+		     (switch_record_table[j].parent != j)) &&
+		    (switch_record_table[i].parent !=
+		     switch_record_table[j].parent)) {
+			i = switch_record_table[i].parent;
+			j = switch_record_table[j].parent;
+			continue;
+		}
+
+		break;
+	}
+
+	if (switch_node_cnt[i] > switch_node_cnt[j])
+		return 1;
+	if (switch_node_cnt[i] < switch_node_cnt[j])
+		return -1;
+	if (switch_record_table[i].level < switch_record_table[j].level)
+		return 1;
+	if (switch_record_table[i].level > switch_record_table[j].level)
+		return -1;
+	return 0;
+
+}
 static void _topo_choose_best_switch(uint32_t *dist, int *switch_node_cnt,
 				     int rem_nodes, int i, int *best_switch)
 {
-	if (switch_node_cnt[i] && dist[i] < INFINITE &&
-	    ((*best_switch == -1) ||
-	     ((dist[i] < dist[*best_switch]) &&
-	      (switch_node_cnt[i] >= rem_nodes)) ||
-	     ((dist[i] == dist[*best_switch]) &&
-	      (switch_node_cnt[i] > switch_node_cnt[*best_switch])))) {
+	int tcs = 0;
+
+	if (*best_switch == -1 || dist[i] == INFINITE || !switch_node_cnt[i]) {
+		/*
+		 * If first possibility
+		 */
+		if (switch_node_cnt[i] && dist[i] < INFINITE)
+			*best_switch = i;
+		return;
+	}
+
+	tcs = _topo_compare_switches(i, *best_switch, rem_nodes,
+				     switch_node_cnt);
+	if (((dist[i] < dist[*best_switch]) && (tcs >= 0)) ||
+	    ((dist[i] == dist[*best_switch]) && (tcs > 0))) {
+		/*
+		 * If closer and fit request OR
+		 * same distance and tightest fit (less resource waste)
+		 */
 		*best_switch = i;
 	}
 }
