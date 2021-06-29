@@ -332,7 +332,7 @@ static int arg_set_##field(slurm_opt_t *opt, const char *arg)	\
 {								\
 	if ((opt->field = str_to_mbytes(arg)) == NO_VAL64) {	\
 		error("Invalid " #option " specification");	\
-		exit(-1);					\
+		return SLURM_ERROR;				\
 	}							\
 								\
 	return SLURM_SUCCESS;					\
@@ -429,22 +429,19 @@ static int arg_set__unknown_salloc(slurm_opt_t *opt, const char *arg)
 {
 	fprintf(stderr, "Try \"salloc --help\" for more information\n");
 
-	exit(-1);
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
 static int arg_set__unknown_sbatch(slurm_opt_t *opt, const char *arg)
 {
 	fprintf(stderr,	"Try \"sbatch --help\" for more information\n");
 
-	exit(-1);
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
 static int arg_set__unknown_srun(slurm_opt_t *opt, const char *arg)
 {
 	fprintf(stderr,	"Try \"srun --help\" for more information\n");
 
-	exit(-1);
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
 static char *arg_get__unknown_(slurm_opt_t *opt)
 {
@@ -479,7 +476,7 @@ static int arg_set_accel_bind_type(slurm_opt_t *opt, const char *arg)
 
 	if (!opt->srun_opt->accel_bind_type) {
 		error("Invalid --accel-bind specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -531,7 +528,7 @@ static int arg_set_acctg_freq(slurm_opt_t *opt, const char *arg)
 	xfree(opt->acctg_freq);
 	opt->acctg_freq = xstrdup(arg);
 	if (validate_acctg_freq(opt->acctg_freq))
-		exit(-1);
+		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
 }
@@ -701,7 +698,7 @@ static int arg_set_begin(slurm_opt_t *opt, const char *arg)
 {
 	if (!(opt->begin = parse_time(arg, 0))) {
 		error("Invalid --begin specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -1032,7 +1029,7 @@ static int arg_set_cpu_bind(slurm_opt_t *opt, const char *arg)
 
 	if (slurm_verify_cpu_bind(arg, &opt->srun_opt->cpu_bind,
 				  &opt->srun_opt->cpu_bind_type, 0))
-		exit(-1);
+		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
 }
@@ -1086,7 +1083,7 @@ static int arg_set_cpu_freq(slurm_opt_t *opt, const char *arg)
 	if (cpu_freq_verify_cmdline(arg, &opt->cpu_freq_min,
 				    &opt->cpu_freq_max, &opt->cpu_freq_gov)) {
 		error("Invalid --cpu-freq argument");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -1209,7 +1206,7 @@ static int arg_set_deadline(slurm_opt_t *opt, const char *arg)
 {
 	if (!(opt->deadline = parse_time(arg, 0))) {
 		error("Invalid --deadline specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -1282,7 +1279,7 @@ static int arg_set_delay_boot(slurm_opt_t *opt, const char *arg)
 {
 	if ((opt->delay_boot = time_str2secs(arg)) == NO_VAL) {
 		error("Invalid --delay-boot specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -1404,7 +1401,7 @@ static int arg_set_distribution(slurm_opt_t *opt, const char *arg)
 	opt->distribution = verify_dist_type(arg, &opt->plane_size);
 	if (opt->distribution == SLURM_ERROR) {
 		error("Invalid --distribution specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -1539,7 +1536,7 @@ static int arg_set_exclusive(slurm_opt_t *opt, const char *arg)
 		opt->shared = JOB_SHARED_MCS;
 	} else {
 		error("Invalid --exclusive specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -1674,7 +1671,7 @@ static int arg_set_extra_node_info(slurm_opt_t *opt, const char *arg)
 
 	if (!opt->extra_set) {
 		error("Invalid --extra-node-info specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -1730,7 +1727,7 @@ static int arg_set_get_user_env(slurm_opt_t *opt, const char *arg)
 		opt->get_user_env_mode = 2;
 	else {
 		error("Invalid --get-user-env specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -1795,12 +1792,12 @@ static int arg_set_gid(slurm_opt_t *opt, const char *arg)
 {
 	if (getuid() != 0) {
 		error("--gid only permitted by root user");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	if (gid_from_string(arg, &opt->gid) < 0) {
 		error("Invalid --gid specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -1841,7 +1838,7 @@ static int arg_set_gpu_bind(slurm_opt_t *opt, const char *arg)
 	xstrfmtcat(opt->tres_bind, "gpu:%s", opt->gpu_bind);
 	if (tres_bind_verify_cmdline(opt->tres_bind)) {
 		error("Invalid --gpu-bind argument: %s", opt->tres_bind);
-		exit(1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -1895,7 +1892,7 @@ static int arg_set_gpu_freq(slurm_opt_t *opt, const char *arg)
 	xstrfmtcat(opt->tres_freq, "gpu:%s", opt->gpu_freq);
 	if (tres_freq_verify_cmdline(opt->tres_freq)) {
 		error("Invalid --gpu-freq argument: %s", opt->tres_freq);
-		exit(1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -1992,6 +1989,8 @@ static slurm_cli_opt_t slurm_opt_gpus_per_task = {
 static int arg_set_gres(slurm_opt_t *opt, const char *arg)
 {
 	if (!xstrcasecmp(arg, "help") || !xstrcasecmp(arg, "list")) {
+		if (opt->scron_opt)
+			return SLURM_ERROR;
 		print_gres_help();
 		exit(0);
 	}
@@ -2042,7 +2041,7 @@ static int arg_set_gres_flags(slurm_opt_t *opt, const char *arg)
 		opt->job_flags |= GRES_ENFORCE_BIND;
 	} else {
 		error("Invalid --gres-flags specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -2097,6 +2096,9 @@ static slurm_cli_opt_t slurm_opt_gres_flags = {
 
 static int arg_set_help(slurm_opt_t *opt, const char *arg)
 {
+	if (opt->scron_opt)
+		return SLURM_ERROR;
+
 	if (opt->help_func)
 		(opt->help_func)();
 	else
@@ -2319,7 +2321,7 @@ static int arg_set_kill_command(slurm_opt_t *opt, const char *arg)
 
 	if (!(opt->salloc_opt->kill_command_signal = sig_name2num(arg))) {
 		error("Invalid --kill-command specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -2389,7 +2391,7 @@ static int arg_set_kill_on_invalid_dep(slurm_opt_t *opt, const char *arg)
 		opt->job_flags |= NO_KILL_INV_DEP;
 	else {
 		error("Invalid --kill-on-invalid-dep specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -2459,7 +2461,7 @@ static int arg_set_mail_type(slurm_opt_t *opt, const char *arg)
 	opt->mail_type |= parse_mail_type(arg);
 	if (opt->mail_type == INFINITE16) {
 		error("Invalid --mail-type specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -2557,7 +2559,7 @@ static int arg_set_mem(slurm_opt_t *opt, const char *arg)
 {
 	if ((opt->pn_min_memory = str_to_mbytes(arg)) == NO_VAL64) {
 		error("Invalid --mem specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	/*
@@ -2599,7 +2601,7 @@ static int arg_set_mem_bind(slurm_opt_t *opt, const char *arg)
 {
 	xfree(opt->mem_bind);
 	if (slurm_verify_mem_bind(arg, &opt->mem_bind, &opt->mem_bind_type))
-		exit(-1);
+		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
 }
@@ -2767,7 +2769,7 @@ static int arg_set_nice(slurm_opt_t *opt, const char *arg)
 	if (llabs(tmp_nice) > (NICE_OFFSET - 3)) {
 		error("Invalid --nice value, out of range (+/- %u)",
 		      NICE_OFFSET - 3);
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	opt->nice = (int) tmp_nice;
@@ -2841,7 +2843,7 @@ static int arg_set_no_kill(slurm_opt_t *opt, const char *arg)
 		opt->no_kill = false;
 	else {
 		error("Invalid --no-kill specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -3022,7 +3024,7 @@ static int arg_set_nodes(slurm_opt_t *opt, const char *arg)
 {
 	if (!(opt->nodes_set = verify_node_count(arg, &opt->min_nodes,
 					   &opt->max_nodes)))
-		exit(-1);
+		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
 
@@ -3551,11 +3553,11 @@ static int arg_set_priority(slurm_opt_t *opt, const char *arg)
 		long long priority = strtoll(arg, NULL, 10);
 		if (priority < 0) {
 			error("Priority must be >= 0");
-			exit(-1);
+			return SLURM_ERROR;
 		}
 		if (priority >= NO_VAL) {
 			error("Priority must be < %u", NO_VAL);
-			exit(-1);
+			return SLURM_ERROR;
 		}
 		opt->priority = priority;
 	}
@@ -3608,7 +3610,7 @@ static int arg_set_profile(slurm_opt_t *opt, const char *arg)
 
 	if (opt->profile == ACCT_GATHER_PROFILE_NOT_SET) {
 		error("invalid --profile=%s option", arg);
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -3873,7 +3875,7 @@ static int arg_set_signal(slurm_opt_t *opt, const char *arg)
 	if (get_signal_opts((char *) arg, &opt->warn_signal,
 			    &opt->warn_time, &opt->warn_flags)) {
 		error("Invalid --signal specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -4376,7 +4378,7 @@ static int arg_set_time_limit(slurm_opt_t *opt, const char *arg)
 	time_limit = time_str2mins(arg);
 	if (time_limit == NO_VAL) {
 		error("Invalid --time specification");
-		exit(-1);
+		return SLURM_ERROR;
 	} else if (time_limit == 0) {
 		time_limit = INFINITE;
 	}
@@ -4427,7 +4429,7 @@ static int arg_set_time_min(slurm_opt_t *opt, const char *arg)
 	time_min = time_str2mins(arg);
 	if (time_min == NO_VAL) {
 		error("Invalid --time-min specification");
-		exit(-1);
+		return SLURM_ERROR;
 	} else if (time_min == 0) {
 		time_min = INFINITE;
 	}
@@ -4487,12 +4489,12 @@ static int arg_set_uid(slurm_opt_t *opt, const char *arg)
 {
 	if (getuid() != 0) {
 		error("--uid only permitted by root user");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	if (uid_from_string(arg, &opt->uid) < 0) {
 		error("Invalid --uid specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -4538,7 +4540,7 @@ static int arg_set_umask(slurm_opt_t *opt, const char *arg)
 
 	if ((opt->sbatch_opt->umask < 0) || (opt->sbatch_opt->umask > 0777)) {
 		error("Invalid -W umask= specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
@@ -4636,6 +4638,9 @@ static slurm_cli_opt_t slurm_opt_use_min_nodes = {
 
 static int arg_set_usage(slurm_opt_t *opt, const char *arg)
 {
+	if(opt->scron_opt)
+		return SLURM_ERROR;
+
 	if (opt->usage_func)
 		(opt->usage_func)();
 	else
@@ -4692,6 +4697,9 @@ static slurm_cli_opt_t slurm_opt_verbose = {
 
 static int arg_set_version(slurm_opt_t *opt, const char *arg)
 {
+	if (opt->scron_opt)
+		return SLURM_ERROR;
+
 	print_slurm_version();
 	exit(0);
 }
@@ -4784,7 +4792,7 @@ static int arg_set_wait_all_nodes(slurm_opt_t *opt, const char *arg)
 
 	if (tmp > 1) {
 		error("Invalid --wait-all-nodes specification");
-		exit(-1);
+		return SLURM_ERROR;
 	}
 
 	if (opt->salloc_opt)
