@@ -87,8 +87,8 @@ Slurm version specifically does <b>not</b> support PMIx v2.x and above.</li>
 If running PMIx v1, it is recommended to run at least 1.2.5 since older
 versions may have some compatibility issues with support of pmi and pmi2 APIs.
 
-Note also that Intel MPI doesn't officially support PMIx, so thought it can
-run there is not any guarantee.
+Note also that Intel MPI doesn't officially support PMIx. It may work, but there
+is no guarantee that it will.
 </p>
 
 <p>Although it is recommended to build PMIx from the
