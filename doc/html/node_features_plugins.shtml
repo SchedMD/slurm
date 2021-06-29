@@ -93,7 +93,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   node data structures.
 <p style="margin-left:.2in"><b>Arguments</b>: <br>
   <span class="commandline"> node_list:</span> Regular expression identifying
-  the nodes to be updated. Update information about all nodes is value is NULL.<br>
+  the nodes to be updated. Update information about all nodes if value is NULL.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
   <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
   <span class="commandline">SLURM_ERROR</span> on failure.</p>
@@ -234,6 +234,6 @@ The system <span class="commandline">_init()</span> is called before the Slurm
   True if user can change node active features to other available features.</p>
 
 
-<p style="text-align:center;">Last modified 23 October 2019</p>
+<p style="text-align:center;">Last modified 29 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
