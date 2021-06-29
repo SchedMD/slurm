@@ -31,8 +31,8 @@ proper environment for the MPI job, such as setting the appropriate
 environment variables. The <i>MpiDefault</i> configuration parameter
 in <i>slurm.conf</i> establishes the system default MPI to be supported.
 The <i>srun</i> option <i>--mpi=</i> (or the equivalent environment
-variable <i>SLURM_MPI_TYPE</i> can be used to specify when a
-different MPI implementation is to be supported for an individual job).</p>
+variable <i>SLURM_MPI_TYPE</i>) can be used to specify when a
+different MPI implementation is to be supported for an individual job.</p>
 
 <p><b>NOTE</b>: Use of an MPI implementation without the appropriate Slurm
 plugin may result in application failure. If multiple MPI implementations
