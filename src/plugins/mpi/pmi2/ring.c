@@ -10,7 +10,7 @@
  * This file is part of Slurm, a resource management program.
  * For details, see <https://slurm.schedmd.com/>.
  * Please also read the included file: DISCLAIMER.
- * 
+ *
  * LLNL Preamble Notice
  *
  * A. This notice is required to be provided under our contract with
@@ -244,7 +244,7 @@ static int pmix_stepd_send(const char* buf, uint32_t size, int rank)
 	free(host); /* strdup-ed */
 
 	return rc;
-} 
+}
 
 /* allocate resources to track PMIX_Ring state */
 int pmix_ring_init(const pmi2_job_info_t* job, char*** env)

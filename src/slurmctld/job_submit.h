@@ -79,7 +79,7 @@ extern int job_submit_plugin_submit(job_desc_msg_t *job_desc,
 
 /*
  * Execute the job_modify() function in each job submit plugin.
- * This should be called 
+ * This should be called
  * If any plugin function returns anything other than SLURM_SUCCESS
  * then stop and forward it's return value.
  */

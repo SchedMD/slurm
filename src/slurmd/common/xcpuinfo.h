@@ -113,7 +113,7 @@ int xcpuinfo_mac_to_abs(char *in_range, char **out_range);
 
 /*
  * Use xcpuinfo internal data to convert an abstract range
- * of cores (slurm internal format) into the equivalent 
+ * of cores (slurm internal format) into the equivalent
  * map of cores
  *
  * range is of the form 0-1,4-5

@@ -768,7 +768,7 @@ _cancel_job_id (void *ci)
 		     (error_code == ESLURM_INVALID_JOB_ID)) &&
 		    (cancel_info->sig == SIGKILL)) {
 			error_code = 0;	/* Ignore error if job done */
-		}	
+		}
 	}
 
 	/* Purposely free the struct passed in here, so the caller doesn't have

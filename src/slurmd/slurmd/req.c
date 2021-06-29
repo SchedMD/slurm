@@ -4554,7 +4554,7 @@ static int _epilog_complete(uint32_t jobid, int rc)
 		error("Unable to send epilog complete message: %m");
 		return SLURM_ERROR;
 	}
-	
+
 	debug("JobId=%u: sent epilog complete msg: rc = %d", jobid, rc);
 
 	return SLURM_SUCCESS;

@@ -158,7 +158,7 @@ static int _job_test_dfly(job_record_t *job_ptr, bitstr_t *bitmap,
 			  uint32_t req_nodes);
 static int _job_test_hypercube(job_record_t *job_ptr, bitstr_t *bitmap,
 			 uint32_t min_nodes, uint32_t max_nodes,
-			 uint32_t req_nodes);		     
+			 uint32_t req_nodes);
 static int _job_test_topo(job_record_t *job_ptr, bitstr_t *bitmap,
 			  uint32_t min_nodes, uint32_t max_nodes,
 			  uint32_t req_nodes);
@@ -744,7 +744,7 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *bitmap,
 		return _job_test_hypercube(job_ptr, bitmap,
 					   min_nodes, max_nodes, req_nodes);
 	}
-	
+
 	if (switch_record_cnt && switch_record_table &&
 	    ((topo_optional == false) || job_ptr->req_switch)) {
 		/* Perform optimized resource selection based upon topology */
@@ -1026,7 +1026,7 @@ _hypercube_update_variance(
 	int * min_extra_nodes, int64_t * min_variance)
 {
 //XXX use actual node count?
-	int64_t variance = summed_squares - 
+	int64_t variance = summed_squares -
 		squared_sums * squared_sums / node_count;
 
 	/* Don't calculate if we've used too many nodes */
@@ -1182,7 +1182,7 @@ static void _hypercube_add_nodes(job_record_t *job_ptr, bitstr_t *avail_bitmap,
 	 * side further right to pick up a new switch and add more of the needed
 	 * nodes.
 	 */
-	(*end_index)++;						
+	(*end_index)++;
 	if (*end_index == hypercube_switch_cnt) { /* Handle wrap-around */
 		*end_index = 0;
 		*distance_offset =
@@ -1193,45 +1193,45 @@ static void _hypercube_add_nodes(job_record_t *job_ptr, bitstr_t *avail_bitmap,
 
 /* Variance based best-fit cluster algorithm:
  * 	 Loop through all of the Hilbert Curves that were created.
- * Each Hilbert Curve is essentially a particular ordering of all the 
+ * Each Hilbert Curve is essentially a particular ordering of all the
  * switches in the network. For each Hilbert Curve, the algorithm loops
  * through all clusters of neighboring nodes, but only tests clusters that
- * either have their leftmost switch completed saturated (all available 
- * nodes for the switch are in the cluster) or their rightmost switch 
- * completed saturated, also called left-saturated clusters and 
- * right-saturated clusters. The algorithm starts at the left (top) of 
+ * either have their leftmost switch completed saturated (all available
+ * nodes for the switch are in the cluster) or their rightmost switch
+ * completed saturated, also called left-saturated clusters and
+ * right-saturated clusters. The algorithm starts at the left (top) of
  * the table and works its way to the right (down).
- * 	  The algorithm starts by adding nodes from the switch at the top of 
+ * 	  The algorithm starts by adding nodes from the switch at the top of
  * the table to the cluster. If after the nodes are added, the cluster
  * still needs more nodes, the algorithm continues down (right) the table
- * adding the number of nodes the next switch has available to the 
+ * adding the number of nodes the next switch has available to the
  * cluster. It continues adding nodes until it has enough for the cluster.
- * If the cluster only needs 4 more nodes and the next rightmost switch 
+ * If the cluster only needs 4 more nodes and the next rightmost switch
  * has 8 nodes available, the cluster only adds the 4 needed nodes to the
  * cluster: called adding a partial. When the algorithm moves to the next
  * cluster, it will pick up where it left off and will add the remaining 4
- * nodes on the switch before moving to the next switch in the table. 
- * 	  Once the algorithm has added enough nodes to the cluster, it 
- * computes the variance for the cluster of nodes. If this cluster is 
+ * nodes on the switch before moving to the next switch in the table.
+ * 	  Once the algorithm has added enough nodes to the cluster, it
+ * computes the variance for the cluster of nodes. If this cluster is
  * the best-fit cluster found so far, it saves the cluster's information.
- * To move on to testing the next cluster, first it removes all the nodes 
- * from the leftmost switch. Then the algorithm repeats the process of 
+ * To move on to testing the next cluster, first it removes all the nodes
+ * from the leftmost switch. Then the algorithm repeats the process of
  * adding nodes to the cluster from rightmost switch until it has enough.
  * 		If the rightside of the cluster reaches the bottom of the table,
  * then it loops back around to the top most switch in the table and
  * continues. The algorithm continues until the leftmost switch of the
  * cluster has reached the end of the table. At which point it knows
- * that it has tested all possible left-saturated clusters. 
+ * that it has tested all possible left-saturated clusters.
  * 	  Although this algorithm could be run in reverse order on the table
- * in order to test all right-saturated clusters, it would result in 
+ * in order to test all right-saturated clusters, it would result in
  * redundant calculations. Instead, all right-saturated clusters are
  * tested during the node adding process of the left-saturated clusters
- * algorithm. While running the left-saturated clusters algorithm 
- * described above, anytime nodes are added from the rightmost switch 
- * resulting in all the available nodes from that switch being in the 
+ * algorithm. While running the left-saturated clusters algorithm
+ * described above, anytime nodes are added from the rightmost switch
+ * resulting in all the available nodes from that switch being in the
  * cluster and the cluster still needs more nodes, then create a temporary
- * cluster equal to the current cluster. 
- * 	  Use this temporary cluster to test the right-saturated cluster 
+ * cluster equal to the current cluster.
+ * 	  Use this temporary cluster to test the right-saturated cluster
  * starting at the rightmost switch in the cluster and moving left (up the
  * table). Since the temporary cluster needs more nodes, add nodes by
  * moving up/left in the table (rather than right, like is done for the
@@ -1239,15 +1239,15 @@ static void _hypercube_add_nodes(job_record_t *job_ptr, bitstr_t *avail_bitmap,
  * its variance and remember it if it is the best fit cluster found so far.
  * Then erase the temporary cluster and continue with the original cluster
  * where the algorithm left off. By doing this right-saturated clusters
- * calcution everytime the rightmost switch of a cluster is fully added, 
- * the algorithm tests every possible right-saturated cluster. 
- * 
+ * calcution everytime the rightmost switch of a cluster is fully added,
+ * the algorithm tests every possible right-saturated cluster.
+ *
  * 	  Equation used to calculate the variance of a cluster:
  * Variance = sum(x^2) - sum(x)^2/num(x), where sum(x) is the sum of all
  * values of x, and num(x) is the number of x values summed
- * 
+ *
  * *** Important Note: There isn't actually a 'cluster' struct, but rather
- * a cluster is described by its necesary characteristics including: 
+ * a cluster is described by its necesary characteristics including:
  * start_index, end_index, summed_squares, squared_sums, and rem_nodes ***
  */
 static void _explore_hypercube(job_record_t *job_ptr, bitstr_t *avail_bitmap,
@@ -1417,7 +1417,7 @@ static void _explore_hypercube(job_record_t *job_ptr, bitstr_t *avail_bitmap,
 			 * completely allocated to other jobs, keep sliding
 			 * right until we find a switch with free nodes
 			 */
-			while ((start_index < hypercube_switch_cnt) && 
+			while ((start_index < hypercube_switch_cnt) &&
 				(hypercube_switches[dim][start_index]->
 				 avail_cnt == 0)) {
 				if (start_index == end_index)
@@ -1430,7 +1430,7 @@ static void _explore_hypercube(job_record_t *job_ptr, bitstr_t *avail_bitmap,
 	bit_free(tmp_bitmap);
 }
 
-/* a hypercube topology version of _job_test - 
+/* a hypercube topology version of _job_test -
  * does most of the real work for select_p_job_test(), which
  *	pretty much just handles load-leveling and max_share logic */
 static int _job_test_hypercube(job_record_t *job_ptr, bitstr_t *bitmap,
@@ -1499,7 +1499,7 @@ static int _job_test_hypercube(job_record_t *job_ptr, bitstr_t *bitmap,
 			avail_bitmap, node_idx, node_idx + cnt);
 
 		/* If the switch has nodes that are required, loop through them */
-		if (req_nodes_bitmap && (hypercube_switch_table[i].avail_cnt != 0) && 
+		if (req_nodes_bitmap && (hypercube_switch_table[i].avail_cnt != 0) &&
 		    (bit_set_count_range(
 			     req_nodes_bitmap, node_idx, node_idx + cnt) > 0)) {
 			int j;
@@ -1568,7 +1568,7 @@ static int _job_test_hypercube(job_record_t *job_ptr, bitstr_t *bitmap,
 			cur_node_index = -1;
 			do {
 				// min_direction == 1 moves up the table
-				// min_direction == -1 moves down the table 	
+				// min_direction == -1 moves down the table
 				switch_index += min_direction;
 				if (switch_index == hypercube_switch_cnt) {
 					switch_index = 0;
@@ -1597,13 +1597,13 @@ static int _job_test_hypercube(job_record_t *job_ptr, bitstr_t *bitmap,
 		alloc_nodes++;
 		node_counter++;
 	}
-fini:	
+fini:
 	/* If we allocated sufficient CPUs and nodes, we were successful */
 	if ((rem_cpus <= 0) && (bit_set_count(bitmap) >= min_nodes)) {
 		rc = SLURM_SUCCESS;
 		/* Job's total_cpus is needed for SELECT_MODE_WILL_RUN */
 		job_ptr->total_cpus = total_cpus;
-	} else { 
+	} else {
 		rc = EINVAL;
 		if (alloc_nodes > max_nodes) {
 			info("%pJ requires more nodes than allowed",

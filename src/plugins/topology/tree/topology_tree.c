@@ -113,7 +113,7 @@ static void _destroy_switches(void *ptr);
 static void _free_switch_record_table(void);
 static int  _get_switch_inx(const char *name);
 static void _log_switches(void);
-static int  _node_name2bitmap(char *node_names, bitstr_t **bitmap, 
+static int  _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 			      hostlist_t *invalid_hostlist);
 static int  _parse_switches(void **dest, slurm_parser_enum_t type,
 			    const char *key, const char *value,
@@ -315,8 +315,8 @@ static void _validate_switches(void)
 		if (ptr->nodes) {
 			switch_ptr->level = 0;	/* leaf switch */
 			switch_ptr->nodes = xstrdup(ptr->nodes);
-			if (_node_name2bitmap(ptr->nodes, 
-					      &switch_ptr->node_bitmap, 
+			if (_node_name2bitmap(ptr->nodes,
+					      &switch_ptr->node_bitmap,
 					      &invalid_hl)) {
 				fatal("Invalid node name (%s) in switch "
 				      "config (%s)",
@@ -631,7 +631,7 @@ static void _destroy_switches(void *ptr)
  * NOTE: call FREE_NULL_BITMAP(bitmap) and hostlist_destroy(invalid_hostlist)
  *       to free memory when variables are no longer required
  */
-static int _node_name2bitmap(char *node_names, bitstr_t **bitmap, 
+static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 			     hostlist_t *invalid_hostlist)
 {
 	char *this_node_name;
@@ -648,7 +648,7 @@ static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 
 	if ((host_list = hostlist_create(node_names)) == NULL) {
 		/* likely a badly formatted hostlist */
-		error("_node_name2bitmap: hostlist_create(%s) error", 
+		error("_node_name2bitmap: hostlist_create(%s) error",
 		      node_names);
 		return EINVAL;
 	}
@@ -657,7 +657,7 @@ static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 		node_record_t *node_ptr;
 		node_ptr = find_node_record(this_node_name);
 		if (node_ptr) {
-			bit_set(my_bitmap, 
+			bit_set(my_bitmap,
 				(bitoff_t) (node_ptr - node_record_table_ptr));
 		} else {
 			debug2("_node_name2bitmap: invalid node specified %s",
@@ -666,7 +666,7 @@ static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 				hostlist_push_host(*invalid_hostlist,
 						   this_node_name);
 			} else {
-				*invalid_hostlist = 
+				*invalid_hostlist =
 					hostlist_create(this_node_name);
 			}
 		}

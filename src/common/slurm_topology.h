@@ -81,18 +81,18 @@ struct hypercube_switch {
 	int *node_index; /* index of the connected nodes in the node_record_table */
 };
 
-extern int hypercube_dimensions; /* number of dimensions in hypercube 
+extern int hypercube_dimensions; /* number of dimensions in hypercube
  network topolopy - determined by max number of switch connections*/
 
 /* table of hypercube_switch records */
-extern struct hypercube_switch *hypercube_switch_table; 
+extern struct hypercube_switch *hypercube_switch_table;
 extern int hypercube_switch_cnt; /* size of hypercube_switch_table */
 
 /* An array of hilbert curves, where each hilbert curve
- * is a list of pointers to the hypercube_switch records in the 
+ * is a list of pointers to the hypercube_switch records in the
  * hypercube_switch_table. Each list of pointers is sorted in accordance
  * with the sorting of the Hilbert curve. */
-extern struct hypercube_switch ***hypercube_switches; 
+extern struct hypercube_switch ***hypercube_switches;
 
 /*****************************************************************************\
  *  Slurm topology functions

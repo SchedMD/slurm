@@ -7683,7 +7683,7 @@ _pack_job_desc_list_msg(List job_req_list, buf_t *buffer,
 	job_desc_msg_t *req;
 	ListIterator iter;
 	uint16_t cnt = 0;
- 
+
 	if (job_req_list)
 		cnt = list_count(job_req_list);
 	pack16(cnt, buffer);
@@ -7710,7 +7710,7 @@ _unpack_job_desc_list_msg(List *job_req_list, buf_t *buffer,
 	job_desc_msg_t *req;
 	uint16_t cnt = 0;
 	int i;
- 
+
 	*job_req_list = NULL;
 
 	safe_unpack16(&cnt, buffer);

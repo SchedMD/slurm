@@ -100,7 +100,7 @@
  *   | Bit_0  | Bit_1  | Bit_2  | Bit_3  | Bit_4  | Bit_5  | Bit_6  | Bit_7  |
  *
  * If a job changes size (relinquishes nodes), the node_bitmap will remain
- * unchanged, but cpus, cpus_used, cpus_array_*, and memory_used will be 
+ * unchanged, but cpus, cpus_used, cpus_array_*, and memory_used will be
  * updated (e.g. cpus and mem_used on that node cleared).
  */
 struct job_resources {
@@ -318,7 +318,7 @@ extern void remove_job_from_cores(job_resources_t *job_resrcs_ptr,
 
 /* Given a job pointer and a global node index, return the index of that
  * node in the job_resrcs_ptr->cpus. Return -1 if invalid */
-extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr, 
+extern int job_resources_node_inx_to_cpu_inx(job_resources_t *job_resrcs_ptr,
 					     int node_inx);
 
 extern uint16_t job_resources_get_node_cpu_cnt(job_resources_t *job_resrcs_ptr,

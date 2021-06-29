@@ -208,7 +208,7 @@ extern void prolog_slurmctld(job_record_t *job_ptr);
  */
 extern int reboot_job_nodes(job_record_t *job_ptr);
 
-/* If a job can run in multiple partitions, make sure that the one 
+/* If a job can run in multiple partitions, make sure that the one
  * actually used is first in the string. Needed for job state save/restore */
 extern void rebuild_job_part_list(job_record_t *job_ptr);
 

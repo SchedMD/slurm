@@ -745,7 +745,7 @@ int slurm_open_msg_conn(slurm_addr_t * slurm_address)
 }
 
 /*
- * Calls connect to make a connection-less datagram connection 
+ * Calls connect to make a connection-less datagram connection
  *	primary or secondary slurmctld message engine
  * IN/OUT addr       - address of controller contacted
  * IN/OUT use_backup - IN: whether to try the backup first or not

@@ -3014,7 +3014,7 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 	bool placed = false;
 	int i, j;
 
-#if 0	
+#if 0
 	info("add job start:%u end:%u", start_time, end_reserve);
 	for (j = 0; ; ) {
 		info("node start:%u end:%u",

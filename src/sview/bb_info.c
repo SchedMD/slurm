@@ -458,7 +458,7 @@ static List _create_bb_info_list(burst_buffer_info_msg_t *bb_info_ptr)
 				while ((sview_bb_info_ptr =
 					list_next(last_list_itr))) {
 					if (bb_resv_ptr->job_id &&
-					    (bb_resv_ptr->job_id != 
+					    (bb_resv_ptr->job_id !=
 					     sview_bb_info_ptr->bb_ptr->job_id))
 						continue;
 					if (bb_resv_ptr->name &&

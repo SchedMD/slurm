@@ -345,7 +345,7 @@ extern pid_t find_ancestor(pid_t process, char *process_name)
 		if (buf_used >= 0)
 			rbuf[buf_used] = '\0';
 		else
-			rbuf[0] = '\0';	
+			rbuf[0] = '\0';
 		if ((buf_used <= 0) || (buf_used >= 4096)) {
 			close(fd);
 			pid = 0;
@@ -365,7 +365,7 @@ extern pid_t find_ancestor(pid_t process, char *process_name)
 		if (buf_used >= 0)
 			rbuf[buf_used] = '\0';
 		else
-			rbuf[0] = '\0';	
+			rbuf[0] = '\0';
 		if ((buf_used <= 0) || (buf_used >= 4096)) {
 			close(fd);
 			continue;

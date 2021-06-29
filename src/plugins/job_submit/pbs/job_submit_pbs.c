@@ -211,7 +211,7 @@ static void _xlate_before(char *depend, uint32_t submit_uid, uint32_t my_job_id)
 		} else if ((submit_uid != job_ptr->user_id) &&
 			   !validate_super_user(submit_uid)) {
 			error("%s: Security violation: uid %u trying to alter "
-			      "job %u belonging to uid %u", 
+			      "job %u belonging to uid %u",
 			      plugin_type, submit_uid, job_ptr->job_id,
 			      job_ptr->user_id);
 		} else if ((!IS_JOB_PENDING(job_ptr)) ||

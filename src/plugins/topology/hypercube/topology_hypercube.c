@@ -95,31 +95,31 @@ static char* topo_conf = NULL;
 typedef struct switch_data_struct switch_data;
 struct switch_data_struct {
 	char *name;			/* switch name */
-	bitstr_t *node_bitmap;	/* bitmap of nodes connectwed to switch */	
+	bitstr_t *node_bitmap;	/* bitmap of nodes connectwed to switch */
 	int *coordinates; /* coordinates of switch within hypercube topology */
 	int *orig_coordinates;/*original switch coordinates in hypercube topology*/
 	uint32_t link_speed;		/* link speed, arbitrary units */
-	
+
 	switch_data **sw_conns; /* pointers to connected switches */
 	int *sw_conn_speed; /* speed of connection to connected switches */
 	int sw_conn_cnt; /* number of switches connected to this switch */
 	char *switches;   /* name of direct descendant switches */
-	
+
 	node_record_t **node_conns; /* pointers to connected nodes */
 	int *node_index; /* index of connected nodes in node_record_table */
 	int node_conn_cnt; /* number of nodes connected to this switch */
 	char *nodes;			/* name of direct descendant nodes */
-	
+
 	int rack_number; /* the number of the rack this switch is located in */
 	int iru_number; /* the number of the IRU this switch is located in */
 	int switch_number; /* the switch number for this switch within its IRU */
-	
+
 	int rank; /* the hilbert rank for this switch */
 	int index; /* the index of the switch within the switch record table */
 	int distance; /* distance between to start switch in ranked switch table */
 };
 
-static switch_data *switch_data_table = NULL; 
+static switch_data *switch_data_table = NULL;
 static int switch_data_cnt = 0; /* size of switch_data_table */
 
 
@@ -139,7 +139,7 @@ extern int  _read_topo_file(slurm_conf_switches_t **ptr_array[]);
 static int  _parse_switches(void **dest, slurm_parser_enum_t type,
 				const char *key, const char *value,
 				const char *line, char **leftover);
-static int  _node_name2bitmap(char *node_names, bitstr_t **bitmap, 
+static int  _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 				  hostlist_t *invalid_hostlist);
 static int _parse_connected_nodes(switch_data *sw_record);
 static void _update_switch_connections(void);
@@ -148,7 +148,7 @@ static int _parse_link_speed(char **sw_name);
 static int _char2int(char coord);
 static int _get_connection_time(const switch_data *sw_ptr1,
 				const switch_data *sw_ptr2);
-static void _resize_switch_connections(switch_data *sw_record, 
+static void _resize_switch_connections(switch_data *sw_record,
 				       int conns_space, int conn_count );
 static void _update_location_info(switch_data *switch_ptr);
 //////////////////////////////////////////////////////////////////////////////
@@ -167,7 +167,7 @@ static void _build_hypercube_switch_table( int num_curves);
 static void _transform_coordinates( int curve_num );
 static void _generate_hilbert_integers(void);
 			  // ( position [n], # bits, dimension )
-static void _axes_to_transpose(unsigned int* X, int b, int n); 
+static void _axes_to_transpose(unsigned int* X, int b, int n);
 static void _sort_switches_by_rank( int curve_num );
 static void _create_sorted_switch_distances(int curve_num,
 					    switch_data **ranked_switch_table);
@@ -224,10 +224,10 @@ extern int topo_build_config(void)
 }
 
 /*
- * topo_generate_node_ranking  - Reads in topology.conf file and the switch 
+ * topo_generate_node_ranking  - Reads in topology.conf file and the switch
  * connection information for the Hypercube network topology. Use Hilbert Curves
- * to sort switches into multiple 1 dimensional tables which are used in the 
- * select plugin to find the best-fit cluster of nodes for a job. 
+ * to sort switches into multiple 1 dimensional tables which are used in the
+ * select plugin to find the best-fit cluster of nodes for a job.
  */
 extern bool topo_generate_node_ranking(void)
 {
@@ -268,7 +268,7 @@ extern bool topo_generate_node_ranking(void)
 	// Free the old switch data table since it is no longer needed
 	_free_switch_data_table();
 
-	// Return false to prevent Slurm from doing additional node ordering 
+	// Return false to prevent Slurm from doing additional node ordering
 	return false;
 }
 
@@ -307,7 +307,7 @@ static void _validate_switches(void)
 	switch_data_table = xmalloc(sizeof(switch_data) * switch_data_cnt);
 	switch_ptr = switch_data_table;
 
-	// loops through all the conf_switches found in config file 
+	// loops through all the conf_switches found in config file
 	// parses data into switch_data structs to build the record_table
 	for (i = 0; i < switch_data_cnt; i++, switch_ptr++) {
 		switch_data_table[i].index = i;
@@ -328,7 +328,7 @@ static void _validate_switches(void)
 		if (ptr->nodes) {
 			switch_ptr->nodes = xstrdup(ptr->nodes);
 			if (_node_name2bitmap(ptr->nodes,
-					      &switch_ptr->node_bitmap, 
+					      &switch_ptr->node_bitmap,
 					      &invalid_hl)) {
 				fatal("Invalid node name (%s) in switch config (%s)",
 				      ptr->nodes, ptr->switch_name);
@@ -437,7 +437,7 @@ static int  _parse_switches(void **dest, slurm_parser_enum_t type,
  * RET 0 if no error, otherwise EINVAL
  * NOTE: call FREE_NULL_BITMAP(bitmap) and hostlist_destroy(invalid_hostlist)
  *       to free memory when variables are no longer required	*/
-static int _node_name2bitmap(char *node_names, bitstr_t **bitmap, 
+static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 			     hostlist_t *invalid_hostlist)
 {
 	char *this_node_name;
@@ -454,7 +454,7 @@ static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 
 	if ( (host_list = hostlist_create(node_names)) == NULL) {
 		/* likely a badly formatted hostlist */
-		error("_node_name2bitmap: hostlist_create(%s) error", 
+		error("_node_name2bitmap: hostlist_create(%s) error",
 			  node_names);
 		return EINVAL;
 	}
@@ -463,7 +463,7 @@ static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 		node_record_t *node_ptr;
 		node_ptr = find_node_record(this_node_name);
 		if (node_ptr) {
-			bit_set(my_bitmap, 
+			bit_set(my_bitmap,
 				(bitoff_t) (node_ptr - node_record_table_ptr));
 		} else {
 			fatal("Node \"%s\" specified in topology.conf but "
@@ -479,11 +479,11 @@ static int _node_name2bitmap(char *node_names, bitstr_t **bitmap,
 }
 
 
-/* parses a switch's node list string and adds pointers to the 
+/* parses a switch's node list string and adds pointers to the
 	connected nodes' data structs */
 static int _parse_connected_nodes(switch_data *sw_record)
 {
-	int max_nodes = 256; 
+	int max_nodes = 256;
 	sw_record->node_conns = xmalloc(max_nodes * sizeof(node_record_t *));
 	sw_record->node_index = xmalloc(max_nodes * sizeof(int));
 	char * node_name = strtok(sw_record->nodes," ,");
@@ -502,7 +502,7 @@ static int _parse_connected_nodes(switch_data *sw_record)
 		node_record_t *node_ptr = find_node_record(node_name);
 		if (node_ptr) {
 			sw_record->node_conns[conn_count] = node_ptr;
-			sw_record->node_index[conn_count] = (int) 
+			sw_record->node_index[conn_count] = (int)
 				(node_ptr - node_record_table_ptr);
 			conn_count++;
 		} else {
@@ -541,7 +541,7 @@ static int _parse_connected_nodes(switch_data *sw_record)
 		}
 	}
 
-	tmp_node_conns = xrealloc(sw_record->node_conns, 
+	tmp_node_conns = xrealloc(sw_record->node_conns,
 				  conn_count * sizeof(node_record_t *));
 	tmp_node_index = xrealloc(sw_record->node_index,
 				  conn_count * sizeof(int));
@@ -586,7 +586,7 @@ static void _update_switch_connections(void)
 		if (switch_ptr->sw_conn_cnt < hypercube_dimensions) {
 			error(
 "Switch %s is only connected to %d switches in %d-dimension hypercube topology",
-				switch_ptr->name, 
+				switch_ptr->name,
 				switch_ptr->sw_conn_cnt, hypercube_dimensions);
 		}
 #endif
@@ -594,7 +594,7 @@ static void _update_switch_connections(void)
 }
 
 
-/* parses a switch's switch list string and adds pointers to the 
+/* parses a switch's switch list string and adds pointers to the
 	connected switches' data structs */
 static int _parse_connected_switches(switch_data *sw_record)
 {
@@ -631,7 +631,7 @@ static int _parse_connected_switches(switch_data *sw_record)
 		}
 		sw_name = strtok (NULL, ",-");
 
-		// parses the link speed for this switch connection 
+		// parses the link speed for this switch connection
 		link_speed = _parse_link_speed(&sw_name);
 		if (link_speed < 1) {
 			fatal("Invalid switch speed of %s between switches "
@@ -640,25 +640,25 @@ static int _parse_connected_switches(switch_data *sw_record)
 			return 0; /* For CLANG false positive */
 		}
 
-		// creates final connection speed by dividing the 
+		// creates final connection speed by dividing the
 		// connection time between the two switches by the link_speed
-		sw_record->sw_conn_speed[conn_count] = 
+		sw_record->sw_conn_speed[conn_count] =
 			_get_connection_time(sw_record, ptr) / link_speed;
 		conn_count++;
 	}
-	
+
 	// resize memory allocated for switch connections to right size
 	_resize_switch_connections( sw_record, conns_space, conn_count );
-	
+
 	return conn_count;
 }
 
 
-// Parses the link speed for this switch connection 
+// Parses the link speed for this switch connection
 static int _parse_link_speed(char **sw_name)
 {
 	int link_speed = 0;
-	
+
 	if (_char2int(*sw_name[0]) > -1) {
 		//if there is a link speed for this connection
 		int counter = 0;
@@ -672,7 +672,7 @@ static int _parse_link_speed(char **sw_name)
 		if (link_speed < 1) {
 			return link_speed;
 		}
-			
+
 		*sw_name = strtok(NULL, ",-");
 	} else {
 		link_speed = default_link_speed;
@@ -706,21 +706,21 @@ static int _get_connection_time(const switch_data *sw_ptr1,
 	} else {
 		return switch_time_diff_rack;
 	}
-} 
+}
 
 
 // resize memory allocated for switch connections to right size
-static void _resize_switch_connections(switch_data * sw_record, 
+static void _resize_switch_connections(switch_data * sw_record,
 				       int conns_space, int conn_count)
 {
 
 	// resize switch connections if there are less than originally allocated for
 	if (conn_count < conns_space) {
 		switch_data **tmp_sw_conns = xrealloc(
-			sw_record->sw_conns, 
+			sw_record->sw_conns,
 			conn_count * sizeof(struct switch_data*));
 		int * tmp_sw_conn_speed = xrealloc(
-			sw_record->sw_conn_speed, 
+			sw_record->sw_conn_speed,
 			conn_count * sizeof(int));
 
 		if ((tmp_sw_conns != NULL) && (tmp_sw_conn_speed != NULL)) {
@@ -741,7 +741,7 @@ static void _update_location_info(switch_data * switch_ptr)
 	int name_len = strlen(name);
 	uint32_t sw_num[3] = {0, 0, 0}; // numbers store rack, IRU & switch numbers
 	char name_char[3] = {'r', 'i', 's'};
-	int i, j = 0; 
+	int i, j = 0;
 
 	// loop through all characters in servers name extracting numbers
 	for (i = 0; i < 3; i++) {
@@ -776,11 +776,11 @@ static void _update_location_info(switch_data * switch_ptr)
 
 /*
  * Sets coordinates for the switches in accordance with the hypercube topology
- * - First, it picks one switch to be the starting point of the coordinate 
+ * - First, it picks one switch to be the starting point of the coordinate
  * system and assigns it all zero coordinates
- * - Second, move outwards from starting switch, by assigning coordinates to 
+ * - Second, move outwards from starting switch, by assigning coordinates to
  * all of the switches connected to the starting switch. Each of these
- * secondary switches has zeros for coordinates except has a 1 in 1 of its 
+ * secondary switches has zeros for coordinates except has a 1 in 1 of its
  * dimensions, with each switch having a 1 in a different dimension.
  * - Lastly, continue to move out from the secondary switches by finding others
  *  switches that they are connected to, giving them coordinates, & repeating
@@ -789,7 +789,7 @@ static int _coordinate_switches(void)
 {
 	int counter, j;
 
-	// create a temp record_table that will store all switches that 
+	// create a temp record_table that will store all switches that
 	// have been assigned coordinates
 	switch_data ** coordinated_switch_data_table =
 		xmalloc(sizeof(struct switch_data*) * switch_data_cnt);
@@ -803,11 +803,11 @@ static int _coordinate_switches(void)
 	switch_ptr = &switch_data_table[counter];
 	while (switch_ptr->sw_conn_cnt < hypercube_dimensions) {
 		switch_ptr = &switch_data_table[++counter];
-	}	
+	}
 
 	coordinated_switch_data_table[coordinated_switch_data_count] = switch_ptr;
 	coordinated_switch_data_count++;
-	
+
 	/* Add 1st round of switches to coordinate system and assign coordinates */
 	for (j = 0; j < switch_ptr->sw_conn_cnt; j++) {
 		switch_ptr->sw_conns[j]->coordinates[j] = 1;
@@ -845,19 +845,19 @@ static void _zero_coordinates(void)
 
 /*
  * Finds & adds neighboring switch to coordinated table & gives them coordinates
- * - In order for a switch to be given coordinates, it has to be connected 
+ * - In order for a switch to be given coordinates, it has to be connected
  * to two switches that already have coordinates. When a neighboring switch is
  * found without coordinates it is added to a temp list. Then once that switch
- * is found by another neighboring switch, the new switch is added to the 
- * coordinated switch list and given coordinates equal to the OR of the 
+ * is found by another neighboring switch, the new switch is added to the
+ * coordinated switch list and given coordinates equal to the OR of the
  * coordinates of the two neighboring switches that found it.
- * - If the program cannot find any more uncoordinated switches with two 
+ * - If the program cannot find any more uncoordinated switches with two
  * coordinated neighbors, but there are still switches that need coordinates,
  * then the program resorts to coordinating switches based on only 1 neighbor
  */
 static int _find_new_switches(switch_data **switch_table, int record_count)
 {
-	switch_data **temp_record_table = xmalloc( 
+	switch_data **temp_record_table = xmalloc(
 		sizeof(struct switch_data*) * switch_data_cnt);
 	int i, j, temp_record_count = 0, old_record_count = record_count;
 	switch_data *switch_ptr;
@@ -866,14 +866,14 @@ static int _find_new_switches(switch_data **switch_table, int record_count)
 	for (i = 0; i < record_count; i++) {
 		switch_ptr = switch_table[i];
 
-		// loop through all of the switches that a switch is connected to 
+		// loop through all of the switches that a switch is connected to
 		for (j = 0; j < switch_ptr->sw_conn_cnt; j++) {
 			int index = _get_switch_index(
-				temp_record_table, 
+				temp_record_table,
 				temp_record_count, switch_ptr->sw_conns[j]);
 
 			/*
-			 * If this is an uncoordinated switch and it was on the 
+			 * If this is an uncoordinated switch and it was on the
 			 * temp_record_table, meaning that it was already found by
 			 * one neighboring switch, then give it coordinates and
 			 * add it to the switch_table
@@ -891,7 +891,7 @@ static int _find_new_switches(switch_data **switch_table, int record_count)
 			 * but it doesn't have coordinates, then add it to the
 			 * temp_record_table
 			 */
-			else if (_get_switch_index(switch_table, record_count, 
+			else if (_get_switch_index(switch_table, record_count,
 						   switch_ptr->sw_conns[j]) < 0) {
 				_copy_coordinate(switch_ptr, switch_ptr->sw_conns[j]);
 				temp_record_table[temp_record_count] =
@@ -952,7 +952,7 @@ static void _or_coordinates(const switch_data *src_ptr, switch_data *dest_ptr)
 	int i;
 
 	for (i = 0; i < hypercube_dimensions; i++) {
-		dest_ptr->coordinates[i] = src_ptr->coordinates[i] | 
+		dest_ptr->coordinates[i] = src_ptr->coordinates[i] |
 			dest_ptr->coordinates[i];
 	}
 }
@@ -976,7 +976,7 @@ static void _copy_coordinate(const switch_data *src_switch_ptr,
 
 
 /*
- * Allocates memory for hypercube_switch_table and hypercube_switches and  
+ * Allocates memory for hypercube_switch_table and hypercube_switches and
  * copy important data from switch_data_table to hypercube_switch_table
  */
 static void _build_hypercube_switch_table(int num_curves)
@@ -985,19 +985,19 @@ static void _build_hypercube_switch_table(int num_curves)
 
 	_free_hypercube_switch_table();
 	hypercube_switch_cnt = switch_data_cnt;
-	hypercube_switch_table = 
+	hypercube_switch_table =
 		xmalloc(sizeof(struct hypercube_switch) * switch_data_cnt);
-	
+
 	// copy important data from switch_data_table to hypercube_switch_table
 	for (i = 0; i < switch_data_cnt; i++ ) {
 		hypercube_switch_table[i].switch_index =
 			switch_data_table[i].index;
 		hypercube_switch_table[i].switch_name = xmalloc(
 			strlen(switch_data_table[i].name) + 1);
-			
-		strcpy(hypercube_switch_table[i].switch_name, 
+
+		strcpy(hypercube_switch_table[i].switch_name,
 			switch_data_table[i].name);
-		hypercube_switch_table[i].node_bitmap = 
+		hypercube_switch_table[i].node_bitmap =
 			bit_copy(switch_data_table[i].node_bitmap);
 		hypercube_switch_table[i].node_cnt =
 			switch_data_table[i].node_conn_cnt;
@@ -1031,7 +1031,7 @@ static void _transform_coordinates(int curve_num)
 	int i, j, dim;
 
 	// if it is the first curve, set up orig_coordinates struct
-	// and copy coordinates to orig_coordinates to be stored 
+	// and copy coordinates to orig_coordinates to be stored
 	if (curve_num == 0) {
 		for (i = 0; i < switch_data_cnt; i++) {
 			for (j = 0; j < hypercube_dimensions; j++) {
@@ -1056,7 +1056,7 @@ static void _transform_coordinates(int curve_num)
 	for (i = 0; i < switch_data_cnt; i++) {
 		int temp = switch_data_table[i].coordinates[curve_num];
 
-		switch_data_table[i].coordinates[curve_num] = 
+		switch_data_table[i].coordinates[curve_num] =
 			switch_data_table[i].coordinates[dim];
 		switch_data_table[i].coordinates[dim] = -1 * temp;
 	}
@@ -1064,7 +1064,7 @@ static void _transform_coordinates(int curve_num)
 	// uncenter the coordinates back to the range [0,1]
 	for (i = 0; i < switch_data_cnt; i++) {
 		for (j = 0; j < hypercube_dimensions; j++) {
-			switch_data_table[i].coordinates[j] = 
+			switch_data_table[i].coordinates[j] =
 				(switch_data_table[i].coordinates[j] + 1 ) / 2;
 		}
 	}
@@ -1073,7 +1073,7 @@ static void _transform_coordinates(int curve_num)
 
 /*
  * Creates Hilbert integers for each of the switches in the topology.
- * Hilbert Curve algorithm and AxestoTranspose function taken from torus 
+ * Hilbert Curve algorithm and AxestoTranspose function taken from torus
  * topology plugin and modified slightly to account for hypercube topology.
  */
 static void _generate_hilbert_integers(void)
@@ -1093,7 +1093,7 @@ static void _generate_hilbert_integers(void)
 		}
 
 		/*
-		 * Gray encode switch coordinates and then use the output to 
+		 * Gray encode switch coordinates and then use the output to
 		 * create switch's rank
 		 */
 		_axes_to_transpose(hilbert, 1, hypercube_dimensions);
@@ -1111,7 +1111,7 @@ static void _generate_hilbert_integers(void)
 /* Runs Hilbert Curve Algorithm on switch coordinates to create Gray code
  * that can be used to make the Hilbert Integer for the switch */
 // 			      ( position [n], # bits, dimension )
-static void _axes_to_transpose(unsigned int * x, int b, int n) 
+static void _axes_to_transpose(unsigned int * x, int b, int n)
 {
 	unsigned int p, q, t;
 	int i;
@@ -1156,7 +1156,7 @@ static void _sort_switches_by_rank(int curve_num)
 {
 	int i, j, min_inx;
 	uint32_t min_val;
-	switch_data ** ranked_switch_table = xmalloc( 
+	switch_data ** ranked_switch_table = xmalloc(
 		sizeof(struct switch_data*) * switch_data_cnt);
 
 	for (i = 0; i < switch_data_cnt; i++) {
@@ -1174,11 +1174,11 @@ static void _sort_switches_by_rank(int curve_num)
 			}
 		}
 
-		if (min_inx != i) {	// swap records 
+		if (min_inx != i) {	// swap records
 			switch_data * sw_record_tmp = ranked_switch_table[i];
 
 			ranked_switch_table[i] = ranked_switch_table[min_inx];
-			ranked_switch_table[min_inx] = sw_record_tmp; 
+			ranked_switch_table[min_inx] = sw_record_tmp;
 		}
 	}
 
@@ -1200,32 +1200,32 @@ static void _create_sorted_switch_distances(
 
 	/* Create distance from switches to first switch in ranked table */
 	total_distance += _get_switch_distance(
-		ranked_switch_table[0], 
+		ranked_switch_table[0],
 		ranked_switch_table[switch_data_cnt - 1]);
 	ranked_switch_table[0]->distance = total_distance;
 
 	/* Keep adding up so we have distance back to [0] */
 	for (i = 1; i < switch_data_cnt; i++) {
 		total_distance += _get_switch_distance(
-			ranked_switch_table[i], 
+			ranked_switch_table[i],
 			ranked_switch_table[i - 1]);
 		ranked_switch_table[i]->distance = total_distance;
 	}
 
 	/* Copy distances to hypercube_switch_table and add sorted pointers */
-	hypercube_switches[curve_num] = 
+	hypercube_switches[curve_num] =
 		xmalloc(sizeof(struct hypercube_switch *) * switch_data_cnt);
 
 	for (i = 0; i < switch_data_cnt; i++ ) {
 		int index = ranked_switch_table[i]->index;
-		
-		hypercube_switch_table[index].distance[curve_num] = 
+
+		hypercube_switch_table[index].distance[curve_num] =
 			ranked_switch_table[i]->distance;
 		hypercube_switches[curve_num][i] =
 			&hypercube_switch_table[index];
 	}
 }
-	
+
 
 /* returns the connection distance for two neighbor switches in ranked table */
 static int _get_switch_distance(const switch_data *sw_ptr1,

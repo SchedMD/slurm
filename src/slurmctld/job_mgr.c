@@ -12271,7 +12271,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 	is_coord_oldacc = assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
 							     job_ptr->account);
 	is_coord_newacc = assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-							   job_specs->account);	
+							   job_specs->account);
 	if ((job_ptr->user_id != uid) && !operator) {
 		/*
 		 * Fail if we are not coordinators of the current account or
@@ -18111,7 +18111,7 @@ extern bool job_hold_requeue(job_record_t *job_ptr)
 
 	/*
 	 * Test if user wants to requeue the job
-	 * in hold or with a special exit value. 
+	 * in hold or with a special exit value.
 	 */
 	if (state & JOB_SPECIAL_EXIT) {
 		/*

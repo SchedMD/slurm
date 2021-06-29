@@ -899,7 +899,7 @@ extern int launch_p_step_wait(srun_job_t *job, bool got_alloc,
 	     (job->het_job_id == NO_VAL)) {	/* Not hetjob step */
 		retry_step_begin = false;
 		step_ctx_destroy(job->step_ctx);
-		if (got_alloc) 
+		if (got_alloc)
 			rc = create_job_step(job, true, opt_local);
 		else
 			rc = create_job_step(job, false, opt_local);

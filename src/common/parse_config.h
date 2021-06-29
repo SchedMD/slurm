@@ -340,7 +340,7 @@ int s_p_parse_line(s_p_hashtbl_t *hashtbl, const char *line, char **leftover);
 
 /*
  * s_p_hashtbl_merge
- * 
+ *
  * Merge the contents of two s_p_hashtbl_t data structures. Anything in
  * from_hashtbl that does not also appear in to_hashtbl is transfered to it.
  * This is intended primary to support multiple lines of DEFAULT configuration

@@ -2580,7 +2580,7 @@ static int _test_size_limit(job_record_t *job_ptr, bb_job_t *bb_job)
 
 	}
 	list_iterator_destroy(preempt_iter);
-	
+
 fini:	xfree(add_space);
 	xfree(avail_space);
 	xfree(granularity);

@@ -2677,7 +2677,7 @@ sbcast_cred_arg_t *extract_sbcast_cred(slurm_cred_ctx_t ctx,
 		}
 
 		sbcast_iter = list_iterator_create(sbcast_cache_list);
-		while ((next_cache_rec = 
+		while ((next_cache_rec =
 			(struct sbcast_cache *) list_next(sbcast_iter))) {
 			if ((next_cache_rec->expire == sbcast_cred->expiration) &&
 			    (next_cache_rec->value  == sig_num)) {

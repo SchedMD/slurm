@@ -110,7 +110,7 @@ void* xhash_add(xhash_t* table, void* item);
 void* xhash_pop(xhash_t* table, const char* key, uint32_t len);
 
 /** Remove an item associated with a key string from the hash table but
- *      does not call the table's free_func on the item. 
+ *      does not call the table's free_func on the item.
  *  Wrapper to xhash_pop
  *  @param key is null-terminated unique key
  *  @returns the removed item

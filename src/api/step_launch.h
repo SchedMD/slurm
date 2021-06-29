@@ -135,7 +135,7 @@ int step_launch_notify_io_failure(step_launch_state_t *sls, int node_id);
  * job step setup, clear this flag when the node makes its initial
  * connection.
  */
-int step_launch_clear_questionable_state(step_launch_state_t *sls, 
+int step_launch_clear_questionable_state(step_launch_state_t *sls,
 					 int node_id);
 
 

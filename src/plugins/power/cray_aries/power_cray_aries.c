@@ -1142,7 +1142,7 @@ static void _get_node_energy_counter(void)
 						(ents[i].time_usec +
 						 usecs_day) -
 						node_ptr->power->time_usec;
-				}	
+				}
 				if (delta_time &&
 				    (node_ptr->power->joule_counter <
 				     ents[i].joule_counter)) {
@@ -1351,7 +1351,7 @@ static void _set_node_caps(void)
 
 /* For every job needing level power caps across it's nodes, set each of its
  * node's power cap to the average cap based upon the global cap and recent
- * usage. */ 
+ * usage. */
 static void _level_power_by_job(void)
 {
 	int i, i_first, i_last;

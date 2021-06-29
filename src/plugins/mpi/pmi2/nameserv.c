@@ -133,7 +133,7 @@ name_publish_up(char *name, char *port)
 unpack_error:
 	if (resp_buf)
 		free_buf(resp_buf);
-	
+
 	return rc;
 }
 
@@ -160,7 +160,7 @@ name_unpublish_up(char *name)
 unpack_error:
 	if (resp_buf)
 		free_buf(resp_buf);
-	
+
 	return rc;
 }
 
@@ -186,6 +186,6 @@ name_lookup_up(char *name)
 unpack_error:
 	if (resp_buf)
 		free_buf(resp_buf);
-	
+
 	return port;
 }

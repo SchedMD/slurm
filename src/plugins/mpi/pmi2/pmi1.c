@@ -184,7 +184,7 @@ _handle_barrier_in(int fd, int lrank, client_req_t *req)
 	if (tasks_to_wait == 0 && children_to_wait == 0) {
 		rc = temp_kvs_send();
 		if (rc != SLURM_SUCCESS) {
-			error("mpi/pmi2: failed to send temp kvs to %s", 
+			error("mpi/pmi2: failed to send temp kvs to %s",
 			      tree_info.parent_node ?: "srun");
 			send_kvs_fence_resp_to_clients(
 				rc,
@@ -282,7 +282,7 @@ _handle_put(int fd, int lrank, client_req_t *req)
 	client_req_get_str(req, KEY_KEY, &key);
 	client_req_get_str(req, VALUE_KEY, &val);
 	xfree(kvsname);
-	
+
 	/* no need to add k-v to hash. just get it ready to be up-forward */
 	rc = temp_kvs_add(key, val);
 	xfree(key);
@@ -314,10 +314,10 @@ _handle_get(int fd, int lrank, client_req_t *req)
 	client_req_get_str(req, KVSNAME_KEY, &kvsname); /* not used */
 	client_req_get_str(req, KEY_KEY, &key);
 	xfree(kvsname);
-	
+
 	val = kvs_get(key);
 	xfree(key);
-	
+
 	resp = client_resp_new();
 	if (val != NULL) {
 		client_resp_append(resp, CMD_KEY"="GETRESULT_CMD" "
@@ -339,7 +339,7 @@ _handle_getbyidx(int fd, int lrank, client_req_t *req)
 {
 	/* not used in MPICH2 */
 	error("mpi/pmi2: PMI1 request of '" GETBYIDX_CMD "' not supported");
-	
+
 	return SLURM_ERROR;
 }
 
@@ -355,7 +355,7 @@ _handle_publish_name(int fd, int lrank, client_req_t *req)
 	client_req_parse_body(req);
 	client_req_get_str(req, SERVICE_KEY, &service);
 	client_req_get_str(req, PORT_KEY, &port);
-	
+
 	rc = name_publish_up(service, port);
 	xfree(service);
 	xfree(port);
@@ -382,7 +382,7 @@ _handle_unpublish_name(int fd, int lrank, client_req_t *req)
 
 	client_req_parse_body(req);
 	client_req_get_str(req, SERVICE_KEY, &service);
-	
+
 	rc = name_unpublish_up(service);
 	xfree(service);
 

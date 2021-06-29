@@ -162,7 +162,7 @@ slurm_populate_node_partitions(node_info_msg_t *node_buffer_ptr,
 					sep = ",";
 				xstrfmtcat(node_ptr->partitions, "%s%s", sep,
 					   part_ptr->name);
-			}		
+			}
 		}
 	}
 }

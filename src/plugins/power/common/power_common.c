@@ -105,7 +105,7 @@ extern void get_cluster_power(node_record_t *node_record_table_ptr,
 			}
 			*alloc_watts += node_ptr->power->cap_watts;
 			*used_watts += node_ptr->power->current_watts;
-		}	
+		}
 	}
 }
 

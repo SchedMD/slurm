@@ -167,7 +167,7 @@ static int _parse_exc_nodes(void)
 			}
 		} else {
 			ext_node_cnt = bit_set_count(exc_node_cnt_bitmap);
-		}	
+		}
 		ext_part_struct = xmalloc(sizeof(exc_node_partital_t));
 		ext_part_struct->exc_node_cnt = (int) ext_node_cnt;
 		ext_part_struct->exc_node_cnt_bitmap = exc_node_cnt_bitmap;

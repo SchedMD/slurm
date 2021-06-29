@@ -2503,7 +2503,7 @@ extern int create_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto bad_parse;
 		}
 	} else if (resv_desc_ptr->duration == INFINITE) {
-		resv_desc_ptr->end_time = resv_desc_ptr->start_time + 
+		resv_desc_ptr->end_time = resv_desc_ptr->start_time +
 					  YEAR_SECONDS;
 	} else if (resv_desc_ptr->duration) {
 		resv_desc_ptr->end_time = resv_desc_ptr->start_time +
@@ -6909,7 +6909,7 @@ extern int set_node_maint_mode(bool reset_all)
 	}
 
 	if (!reset_all) {
-		/* NODE_STATE_RES already cleared above, 
+		/* NODE_STATE_RES already cleared above,
 		 * clear RESERVE_FLAG_MAINT for expired reservations */
 		iter = list_iterator_create(resv_list);
 		while ((resv_ptr = list_next(iter))) {
