@@ -129,6 +129,8 @@ documents those changes that are of interest to users and administrators.
  -- sreport - change to sorting TopUsage by the --tres option.
  -- slurmrestd - do not run allow operation as SlurmUser/root by default.
  -- Allow map_cpu and mask_cpu for non-whole node allocation.
+ -- TaskPluginParam=verbose is now treated as a default. Previously it would be
+    applied regardless of the job specifying a --cpu-bind.
 
 * Changes in Slurm 20.11.9
 ==========================

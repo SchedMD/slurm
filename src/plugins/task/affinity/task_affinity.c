@@ -155,10 +155,6 @@ static void _update_bind_type(launch_tasks_request_msg_t *req)
 			set_bind = true;
 		}
 	}
-	if (slurm_conf.task_plugin_param & CPU_BIND_VERBOSE) {
-		req->cpu_bind_type |= CPU_BIND_VERBOSE;
-		set_bind = true;
-	}
 
 	if (set_bind) {
 		char bind_str[128];
