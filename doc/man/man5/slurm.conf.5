@@ -4002,8 +4002,8 @@ automatically try to interact with anything opened on ports 8192\-60000.
 Configure SrunPortRange to use a range of ports above those used by RSIP,
 ideally 1000 or more ports, for example "SrunPortRange=60001\-63000".
 
-\fBNote\fR: A sufficient number of ports must be configured based on the
-estimated number of srun on the submission nodes considering that srun opens
+\fBNote\fR: \fBSrunPortRange\fR must be large enough to cover the expected
+number of srun ports created on a given submission node. A single srun opens
 3 listening ports plus 2 more for every 48 hosts. Example:
 .RS
 .TP 18
