@@ -102,15 +102,13 @@
   Set <b><i>JobSubmitPlugins=job_submit/cray_aries</i></b> to use.
   This plugin is primarily used to set a gres=craynetwork value which
   is used to limit the number of applications that can run on a node
-  at once.  For a node without MICs on it that number at most is 4.
-  Nodes with MICs the number drops to 2.  This craynetwork gres needs
+  at once.  That number can be at most 4. This craynetwork gres needs
   to be set up in your slurm.conf to ensure proper functionality.
   In example...
   <pre>
     ...
     Grestypes=craynetwork
-    NodeName=nid000[00-10] gres=craynetwork:4 #node without MIC
-    NodeName=nid000[11-20] gres=craynetwork:2 #node with MIC
+    NodeName=nid000[00-10] gres=craynetwork:4
     ...
   </pre>
 </p>
@@ -218,6 +216,6 @@ is down and prevents any new jobs from being started.
 </p>
 
 
-<p style="text-align:center;">Last modified 20 August 2020</p>
+<p style="text-align:center;">Last modified 29 June 2021</p>
 
 <!--#include virtual="footer.txt"-->

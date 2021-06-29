@@ -92,8 +92,7 @@ building block approach. These plugins presently include:
 </li>
 
 <li><a href="gres.html">Generic Resources</a>: Provide interface to
-  control generic resources like Processing Units (GPUs) and Intel&reg;
-  Many Integrated Core (MIC) processors.
+  control generic resources, including Graphical Processing Units (GPUs).
 </li>
 
 <li><a href="job_submit_plugins.html">Job Submit</a>:
@@ -238,6 +237,6 @@ PartitionName=DEFAULT MaxTime=UNLIMITED MaxNodes=4096
 PartitionName=batch Nodes=lx[0041-9999]
 </pre>
 
-<p style="text-align:center;">Last modified 9 June 2021</p>
+<p style="text-align:center;">Last modified 29 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
