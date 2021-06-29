@@ -125,20 +125,25 @@ extern int task_p_slurmd_launch_request (launch_tasks_request_msg_t *req,
 					 uint32_t node_id)
 {
 	char buf_type[100];
+	bool have_debug_flag = slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND;
 
 	if (((conf->sockets >= 1) &&
 	     ((conf->cores > 1) || (conf->threads > 1))) ||
 	    (!(req->cpu_bind_type & CPU_BIND_NONE))) {
 
-		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
-		debug("task affinity : before lllp distribution cpu bind "
-		      "method is '%s' (%s)", buf_type, req->cpu_bind);
+		if (have_debug_flag) {
+			slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
+			log_flag(CPU_BIND, "task affinity : before lllp distribution cpu bind method is '%s' (%s)",
+				 buf_type, req->cpu_bind);
+		}
 
 		lllp_distribution(req, node_id);
 
-		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
-		debug("task affinity : after lllp distribution cpu bind "
-		      "method is '%s' (%s)", buf_type, req->cpu_bind);
+		if (have_debug_flag) {
+			slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
+			log_flag(CPU_BIND, "task affinity : after lllp distribution cpu bind method is '%s' (%s)",
+				 buf_type, req->cpu_bind);
+		}
 	}
 
 	return SLURM_SUCCESS;
