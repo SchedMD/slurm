@@ -15,7 +15,7 @@ OpenMPI).</li>
 <li>Slurm creates a resource allocation for the job and then
 mpirun launches tasks using some mechanism other than Slurm,
 such as SSH or RSH.
-These tasks initiated outside of Slurm's monitoring
+These tasks are initiated outside of Slurm's monitoring
 or control. Slurm's epilog should be configured to purge
 these tasks when the job's allocation is relinquished. The
 use of pam_slurm_adopt is also strongly recommended.</li>
