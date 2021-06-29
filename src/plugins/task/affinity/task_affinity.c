@@ -108,62 +108,6 @@ extern int fini (void)
 	return SLURM_SUCCESS;
 }
 
-/* cpu bind enforcement, update binding type based upon the
- *	TaskPluginParam configuration parameter */
-static void _update_bind_type(launch_tasks_request_msg_t *req)
-{
-	bool set_bind = false;
-
-	if (req->step_id.step_id == SLURM_INTERACTIVE_STEP)
-		return;
-
-	if ((req->cpu_bind_type & (~CPU_BIND_VERBOSE)) == 0) {
-		if (slurm_conf.task_plugin_param & CPU_BIND_NONE) {
-			req->cpu_bind_type |= CPU_BIND_NONE;
-			req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
-			req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
-			req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
-			req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
-			set_bind = true;
-		} else if (slurm_conf.task_plugin_param & CPU_BIND_TO_SOCKETS) {
-			req->cpu_bind_type &= (~CPU_BIND_NONE);
-			req->cpu_bind_type |= CPU_BIND_TO_SOCKETS;
-			req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
-			req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
-			req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
-			set_bind = true;
-		} else if (slurm_conf.task_plugin_param & CPU_BIND_TO_CORES) {
-			req->cpu_bind_type &= (~CPU_BIND_NONE);
-			req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
-			req->cpu_bind_type |= CPU_BIND_TO_CORES;
-			req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
-			req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
-			set_bind = true;
-		} else if (slurm_conf.task_plugin_param & CPU_BIND_TO_THREADS) {
-			req->cpu_bind_type &= (~CPU_BIND_NONE);
-			req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
-			req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
-			req->cpu_bind_type |= CPU_BIND_TO_THREADS;
-			req->cpu_bind_type &= (~CPU_BIND_TO_LDOMS);
-			set_bind = true;
-		} else if (slurm_conf.task_plugin_param & CPU_BIND_TO_LDOMS) {
-			req->cpu_bind_type &= (~CPU_BIND_NONE);
-			req->cpu_bind_type &= (~CPU_BIND_TO_SOCKETS);
-			req->cpu_bind_type &= (~CPU_BIND_TO_CORES);
-			req->cpu_bind_type &= (~CPU_BIND_TO_THREADS);
-			req->cpu_bind_type &= CPU_BIND_TO_LDOMS;
-			set_bind = true;
-		}
-	}
-
-	if (set_bind) {
-		char bind_str[128];
-		slurm_sprint_cpu_bind_type(bind_str, req->cpu_bind_type);
-		info("task affinity : enforcing '%s' cpu bind method",
-		     bind_str);
-	}
-}
-
 /*
  * task_p_slurmd_batch_request()
  */
@@ -182,7 +126,6 @@ extern int task_p_slurmd_launch_request (launch_tasks_request_msg_t *req,
 {
 	char buf_type[100];
 
-	_update_bind_type(req);
 	if (((conf->sockets >= 1) &&
 	     ((conf->cores > 1) || (conf->threads > 1))) ||
 	    (!(req->cpu_bind_type & CPU_BIND_NONE))) {
