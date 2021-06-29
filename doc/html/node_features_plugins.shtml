@@ -100,7 +100,7 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 
 <p class="commandline"> int node_features_p_job_valid(char *job_features)
 <p style="margin-left:.2in"><b>Description</b>:<br>
-  Determine of the user's job constraint string is valid.
+  Determine if the user's job constraint string is valid.
   This may be used to limit the type of operators supported (Slurm's active
   feature logic only supports the AND operator) and prevent illegal
   combinations of node features (e.g. multiple NUMA modes).
