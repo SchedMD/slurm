@@ -399,7 +399,7 @@ sudo make install
 </li>
 
 <li><b>Slurm-web</b><br>
-Slurm-web is a free software, distributed under the GPL version 2 license,
+Slurm-web is a free software, distributed under the GPL version 3 license,
 that provides both a HTTP REST API (based on JSON format) and a web GUI
 with dashboards and graphical views of the current state of your
 Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
@@ -407,6 +407,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 9 June 2021</p>
+<p style="text-align:center;">Last modified 29 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
