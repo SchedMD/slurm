@@ -2184,8 +2184,16 @@ static void _set_def_cpu_bind(job_record_t *job_ptr)
 		       CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS |
 		       CPU_BIND_TO_BOARDS;
 	if ((job_ptr->details->cpu_bind_type != NO_VAL16) &&
-	    (job_ptr->details->cpu_bind_type & bind_to_bits))
+	    (job_ptr->details->cpu_bind_type & bind_to_bits)) {
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND) {
+			char tmp_str[128];
+			slurm_sprint_cpu_bind_type(tmp_str,
+				job_ptr->details->cpu_bind_type);
+			log_flag(CPU_BIND, "%pJ CpuBind='%s' already set for job/allocation using it as a default for new step.",
+				 job_ptr, tmp_str);
+		}
 		return;		/* Already set */
+	}
 	bind_bits = job_ptr->details->cpu_bind_type & CPU_BIND_VERBOSE;
 
 	/*
@@ -2212,6 +2220,13 @@ static void _set_def_cpu_bind(job_record_t *job_ptr)
 	}
 	if (!node_fail && (node_bind != NO_VAL)) {
 		job_ptr->details->cpu_bind_type = bind_bits | node_bind;
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND) {
+			char tmp_str[128];
+			slurm_sprint_cpu_bind_type(tmp_str,
+				job_ptr->details->cpu_bind_type);
+			log_flag(CPU_BIND, "%pJ setting default CpuBind to nodes default '%s' for new step.",
+				 job_ptr, tmp_str);
+		}
 		return;
 	}
 
@@ -2219,12 +2234,30 @@ static void _set_def_cpu_bind(job_record_t *job_ptr)
 	if (job_ptr->part_ptr && job_ptr->part_ptr->cpu_bind) {
 		job_ptr->details->cpu_bind_type = bind_bits |
 						  job_ptr->part_ptr->cpu_bind;
+		if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND) {
+			char tmp_str[128];
+			slurm_sprint_cpu_bind_type(tmp_str,
+				job_ptr->details->cpu_bind_type);
+			log_flag(CPU_BIND, "%pJ setting default CpuBind to partition default '%s' for new step.",
+				 job_ptr, tmp_str);
+
+		}
 		return;
 	}
 
 	/* Use global default from TaskPluginParams */
 	job_ptr->details->cpu_bind_type = bind_bits |
 					  slurm_conf.task_plugin_param;
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND) {
+		char tmp_str[128];
+		slurm_sprint_cpu_bind_type(tmp_str,
+			job_ptr->details->cpu_bind_type);
+		log_flag(CPU_BIND, "%pJ setting default CpuBind to TaskPluginParam '%s' for new step.",
+			 job_ptr, tmp_str);
+
+	}
+
 	return;
 }
 
