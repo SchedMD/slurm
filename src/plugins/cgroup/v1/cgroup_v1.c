@@ -643,8 +643,6 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 		return SLURM_SUCCESS;
 	}
 
-	g_step_active_cnt[sub] = 0;
-
 	/* Custom actions for every cgroup subsystem */
 	switch (sub) {
 	case CG_TRACK:
@@ -684,6 +682,11 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 				  &g_job_cg[sub],
 				  &g_user_cg[sub],
 				  g_cg_name[sub]);
+
+	if (rc == SLURM_SUCCESS) {
+		g_step_active_cnt[sub] = 0;
+		g_step_cgpath[sub][0] = '\0';
+	}
 
 	return rc;
 }
