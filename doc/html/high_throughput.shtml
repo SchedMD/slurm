@@ -155,7 +155,6 @@ per second on a sustained basis on one cluster follows. Note that every
 environment is different and this set of parameters will not work well
 in every case, but it may serve as a good starting point.</li>
 <ul>
-<li>assoc_limit_continue</li>
 <li>batch_sched_delay=20</li>
 <li>bf_continue</li>
 <li>bf_interval=300</li>
@@ -222,6 +221,6 @@ appropriate for your environment.</li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 5 December 2018</p>
+<p style="text-align:center;">Last modified 29 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
