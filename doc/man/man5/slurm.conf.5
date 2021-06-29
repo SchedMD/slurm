@@ -397,7 +397,7 @@ Additional information to be used for authentication of communications
 between the Slurm daemons (slurmctld and slurmd) and the Slurm
 clients.  The interpretation of this option is specific to the
 configured \fBAuthType\fR.
-Multiple options may be specified in a comma delimited list.
+Multiple options may be specified in a comma-delimited list.
 If not specified, the default authentication information will be used.
 .RS
 .TP 14
@@ -474,7 +474,7 @@ Use Cray DataWarp API to provide burst buffer functionality.
 
 .TP
 \fBCliFilterPlugins\fR
-A comma delimited list of command line interface option filter/modification
+A comma-delimited list of command line interface option filter/modification
 plugins. The specified plugins will be executed in the order listed.
 These are intended to be site\-specific plugins which can be used to set
 default job parameters and/or logging events.
@@ -950,7 +950,7 @@ The default value is 2 seconds.
 
 .TP
 \fBGresTypes\fR
-A comma delimited list of generic resources to be managed (e.g.
+A comma-delimited list of generic resources to be managed (e.g.
 \fIGresTypes=gpu,mps\fR).
 These resources may have an associated GRES plugin of the same name providing
 additional functionality.
@@ -1314,7 +1314,7 @@ The default value is 1.
 
 .TP
 \fBJobSubmitPlugins\fR
-A comma delimited list of job submission plugins to be used.
+A comma-delimited list of job submission plugins to be used.
 The specified plugins will be executed in the order listed.
 These are intended to be site\-specific plugins which can be used to set
 default job parameters and/or logging events.
@@ -3697,7 +3697,7 @@ The default value is "/var/run/slurmctld.pid".
 
 .TP
 \fBSlurmctldPlugstack\fR
-A comma delimited list of Slurm controller plugins to be started when the
+A comma-delimited list of Slurm controller plugins to be started when the
 daemon begins and terminated when it ends.
 Only the plugin's init and fini functions are called.
 
@@ -4635,7 +4635,7 @@ node. If \fBCPUs\fR is omitted, its default will be set equal to the product of
 
 .TP
 \fBCpuSpecList\fR
-A comma delimited list of Slurm abstract CPU IDs reserved for system use.
+A comma-delimited list of Slurm abstract CPU IDs reserved for system use.
 The list will be expanded to include all other CPUs, if any, on the same cores.
 These cores will not be available for allocation to user jobs.
 Depending upon the \fBTaskPluginParam\fR option of \fBSlurmdOffSpec\fR,
@@ -4649,7 +4649,7 @@ This option has no effect unless cgroup job confinement is also configured
 
 .TP
 \fBFeatures\fR
-A comma delimited list of arbitrary strings indicative of some
+A comma-delimited list of arbitrary strings indicative of some
 characteristic associated with the node.
 There is no value or count associated with a feature at this time, a node
 either has a feature or it does not.
@@ -4664,7 +4664,7 @@ Boolean operations.
 
 .TP
 \fBGres\fR
-A comma delimited list of generic resources specifications for a node.
+A comma-delimited list of generic resources specifications for a node.
 The format is: "<name>[:<type>][:no_consume]:<number>[K|M|G]".
 The first field is the resource name, which matches the GresType configuration
 parameter name.

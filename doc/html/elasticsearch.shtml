@@ -65,7 +65,7 @@ reindex API references on how to copy data from one index to another if needed.
 </li>
 <li>
 <a href="slurm.conf.html#OPT_JobCompParams"><b>JobCompParams</b></a> should be
-set to the Elasticsearch server connecting comma delimited options:
+set to the Elasticsearch server connecting comma-delimited options:
 <ul>
 <li>
 <pre>JobCompParams=timeout=5</pre>
@@ -146,6 +146,6 @@ restored.</p>
 <p>The Elasticsearch plugin was created as part of Alejandro Sanchez's
 <a href="https://upcommons.upc.edu/handle/2117/79252">Master's Thesis</a>.</p>
 
-<p style="text-align:center;">Last modified 5 April 2019</p>
+<p style="text-align:center;">Last modified 29 June 2021</p>
 
 <!--#include virtual="footer.txt"-->

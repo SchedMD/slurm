@@ -98,7 +98,7 @@ acct_gather_profile plugin will write detailed data as an HDF5 file.
 The directory is assumed to be on a file system shared by the controller and
 all compute nodes. This is a required parameter.</dd>
 <dt><b>ProfileHDF5Default</b>=[options]</dt>
-<dd>A comma delimited list of data types to be collected for each job
+<dd>A comma-delimited list of data types to be collected for each job
 submission. Use this option with caution. A node-step file will be created on
 every node for every step of every job. They will not automatically be merged
 into job files. (Even job files for large numbers of small jobs would fill the
@@ -352,6 +352,6 @@ correlate activity with other sources such as logs.</DD>
 
 
 
-<p style="text-align:center;">Last modified 9 April 2021</p>
+<p style="text-align:center;">Last modified 29 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
