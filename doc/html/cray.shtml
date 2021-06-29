@@ -78,7 +78,7 @@
 
 <li>AcctGatherEnergyType</li>
 <p>
-  Set <b><i>AcctGatherEnergyType=acct_gather_energy/pm_counters/i></b> to
+  Set <b><i>AcctGatherEnergyType=acct_gather_energy/pm_counters</i></b> to
   have the Cray XC baseboard management controller report energy usage
   data to Slurm.
 </p>
@@ -216,6 +216,6 @@ is down and prevents any new jobs from being started.
 </p>
 
 
-<p style="text-align:center;">Last modified 29 June 2021</p>
+<p style="text-align:center;">Last modified 30 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
