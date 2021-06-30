@@ -277,6 +277,17 @@ end:
 	return rc;
 }
 
+static int _rmdir_task(void *x, void *arg)
+{
+	task_cg_info_t *t = (task_cg_info_t *) x;
+
+	if (common_cgroup_delete(&t->task_cg) != SLURM_SUCCESS)
+		debug2("taskid: %d, failed to delete %s %m", t->taskid,
+		       t->task_cg.path);
+
+	return SLURM_SUCCESS;
+}
+
 extern int init(void)
 {
 	int i;
@@ -1435,42 +1446,18 @@ extern int cgroup_p_accounting_init(void)
 
 extern int cgroup_p_accounting_fini(void)
 {
-	int i, rc, tid;
+	int rc;
 
-	/* Clean up starting from the leaves way up, the
-	 * reverse order in which the cgroup were created.
-	 */
-	for (tid = 0; tid <= g_max_task_id; tid++) {
-		xcgroup_t cgroup;
-		char *buf = NULL;
+	/* Empty the lists of accounted tasks, do a best effort in rmdir */
+	(void) list_for_each(g_task_acct_list[CG_MEMORY], _rmdir_task, NULL);
+	list_flush(g_task_acct_list[CG_MEMORY]);
 
-		/*
-		 * rmdir all tasks this running slurmstepd was responsible for.
-		 */
-		xstrfmtcat(buf, "%s/task_%d", g_step_cg[CG_CPUACCT].path, tid);
-		cgroup.path = buf;
-
-		if (common_cgroup_delete(&cgroup) != SLURM_SUCCESS)
-			debug2("failed to delete %s %m", buf);
-		xfree(buf);
-
-		xstrfmtcat(buf, "%s/task_%d", g_step_cg[CG_MEMORY].path, tid);
-		cgroup.path = buf;
-
-		if (common_cgroup_delete(&cgroup) != SLURM_SUCCESS)
-			debug2("failed to delete %s %m", buf);
-		xfree(buf);
-	}
+	(void) list_for_each(g_task_acct_list[CG_CPUACCT], _rmdir_task, NULL);
+	list_flush(g_task_acct_list[CG_CPUACCT]);
 
 	/* Remove job/uid/step directories */
 	rc = cgroup_p_step_destroy(CG_MEMORY);
 	rc += cgroup_p_step_destroy(CG_CPUACCT);
-
-	/* Empty the lists of accounted tasks */
-	for (i = 0; i < CG_CTL_CNT; i++) {
-		FREE_NULL_LIST(g_task_acct_list[i]);
-		g_task_acct_list[i] = list_create(_free_task_cg_info);
-	}
 
 	return rc;
 }
