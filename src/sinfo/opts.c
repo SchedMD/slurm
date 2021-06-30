@@ -997,6 +997,10 @@ static int _parse_long_format (char* format_long)
 					 field_size,
 					 right_justify,
 					 suffix );
+		} else if (!xstrcasecmp(token, "extra")) {
+			params.match_flags.extra_flag = true;
+			format_add_extra(params.format_list, field_size,
+					 right_justify, suffix);
 		} else if (!xstrcasecmp(token, "features")) {
 			params.match_flags.features_flag = true;
 			format_add_features( params.format_list,
@@ -1335,6 +1339,8 @@ void _print_options( void )
 					"true" : "false");
 	printf("disk_flag       = %s\n", params.match_flags.disk_flag ?
 			"true" : "false");
+	printf("extra_flag      = %s\n",
+	       params.match_flags.extra_flag ? "true" : "false");
 	printf("features_flag   = %s\n", params.match_flags.features_flag ?
 			"true" : "false");
 	printf("features_flag_act = %s\n", params.match_flags.features_act_flag?

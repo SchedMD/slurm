@@ -95,8 +95,9 @@ scontrol_update_node (int argc, char **argv)
 				return -1;
 			}
 			update_cnt++;
-
-
+		} else if (!xstrncasecmp(tag, "Extra", MAX(tag_len, 1))) {
+			node_msg.extra = val;
+			update_cnt++;
 		} else if (!xstrncasecmp(tag, "Features", MAX(tag_len, 1)) ||
 			   !xstrncasecmp(tag, "AvailableFeatures",
 					 MAX(tag_len,3))) {

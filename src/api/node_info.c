@@ -497,6 +497,12 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 		xstrcat(out, line_end);
 	}
 
+	/****** Line (optional) ******/
+	if (node_ptr->extra) {
+		xstrfmtcat(out, "Extra=%s", node_ptr->extra);
+		xstrcat(out, line_end);
+	}
+
 	xstrcat(out, "\n");
 
 	return out;
