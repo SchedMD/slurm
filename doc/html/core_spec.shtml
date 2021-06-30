@@ -3,7 +3,7 @@
 <h1>Core Specialization</h1>
 <p>Core specialization is a feature designed to isolate system overhead
 (system interrupts, etc.) to designated cores on a compute node.
-This can reduce applications interrupts ranks to improve completion time.
+This can reduce context switching in applications to improve completion time.
 The job will be charged for all allocated cores, but will not be able to
 directly use the specialized cores.</p>
 
@@ -108,6 +108,6 @@ system use.</p>
 cores for their job, the configuration parameter <i>AllowSpecResourceUsage</i>
 must be set to a value of <i>1</i>.</p>
 
-<p style="text-align:center;">Last modified 6 September 2018</p>
+<p style="text-align:center;">Last modified 30 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
