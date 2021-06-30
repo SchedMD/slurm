@@ -450,10 +450,15 @@ proc inc21_21_submit_test { limit } {
 # Function that tests an association's grpwall limit
 #
 proc inc21_21_grpwall { test_type limit } {
+	global bin_sleep ta test_qos
 
-	global number bin_id ta srun bin_sleep bin_rm file_in test_qos
-	set job_id 0
-	set timeout 120
+	set job_id_list     [list]
+	set jobs            5.0
+	set grpwall_num     [lindex $limit 1]
+	set grpwall_per_job [expr $grpwall_num * 1.1 / $jobs]
+	set sleep_time      [expr int(ceil($grpwall_per_job * 60))]
+	set job_time        [expr int(ceil($grpwall_per_job))]
+	set timeout         120
 
 	log_info "====== Test $test_type within: inc21.21_tests function: inc21_21_grpwall) ======"
 
@@ -464,57 +469,26 @@ proc inc21_21_grpwall { test_type limit } {
 	# gets exactly what we would expect.
 	reset_qos_usage "" $test_qos
 
-	make_bash_script $file_in "
-	$bin_sleep 61
-	"
+	log_debug "Running $jobs jobs of $sleep_time seconds of duration to ensure that we reach the Grpwall limit of $grpwall_num minutes"
+	for {set i 0} {$i < $jobs} {incr i} {
+		lappend job_id_list [submit_job -fail "--account=$ta -N1 -t$job_time --wrap '$bin_sleep $sleep_time' -o /dev/null -e /dev/null"]
+	}
 
-	set matches 0
-	log_info "Sleeping for a bit...hang tight"
-	spawn $srun -v [lindex $limit 0][lindex $limit 1] --account=$ta \
-	    -I $file_in
-	expect {
-		-re "launching ($number)" {
-			set job_id $expect_out(1,string)
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "srun not responding [test_info $test_type \"inc21_21_grpwall\"]"
-		}
-		eof {
-			wait
+	foreach job_id $job_id_list {
+		if {[wait_job_reason $job_id COMPLETED] != $::RETURN_SUCCESS} {
+			fail "Job $job_id did not complete"
 		}
 	}
 
-	if {$job_id != 0 && [wait_for_job $job_id "DONE"] != 0} {
-		fail "Job $job_id did not complete [test_info $test_type \"inc21_21_grpwall\"]"
+	log_debug "Submitting the final job and check that it is set Pending with Reason AssocGrpWallLimit"
+	set job_id [submit_job -fail "--account=$ta -N1 -t$job_time --wrap '$bin_sleep $sleep_time' -o /dev/null -e /dev/null"]
+	lappend job_id_list $job_id
+	# Subtest of the limit
+	if {[wait_job_reason $job_id PENDING AssocGrpWallLimit] != $::RETURN_SUCCESS} {
+		cancel_job $job_id_list
+		fail "Job should not have run"
 	}
 
-	if { $matches != 1 } {
-		fail "Job didn't launch with correct limit [test_info $test_type \"inc21_21_grpwall\"]"
-	}
-
-	set matches 0
-	spawn $srun -v [lindex $limit 0][lindex $limit 1] --account=$ta \
-	    -I $bin_id
-	expect {
-		-re "Job violates accounting/QOS policy" {
-			log_info "This error is expected, not a problem [test_info $test_type \"inc21_21_grpwall\"]"
-			exp_continue
-		}
-		-re "launching ($number)" {
-			set job_id $expect_out(1,string)
-			fail "Job should not have run [test_info $test_type \"inc21_21_grpwall\"]"
-		}
-		timeout {
-			fail "srun not responding [test_info $test_type \"inc21_21_grpwall\"]"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$job_id != 0 && [wait_for_job $job_id "DONE"] != 0} {
-		fail "Job $job_id did not complete [test_info $test_type \"inc21_21_grpwall\"]"
-	}
+	# Cancel jobs
+	cancel_job $job_id_list
 }
