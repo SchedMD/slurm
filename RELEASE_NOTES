@@ -100,6 +100,7 @@ COMMAND CHANGES (see man pages for details)
     input environment variables for salloc and sbatch, respectively. They do
     the same thing as --threads-per-core.
  -- Don't display node's comment with "scontrol show nodes" unless set.
+ -- Added SLURM_GPUS_ON_NODE environment variable within each job/step.
 
 API CHANGES
 ===========
