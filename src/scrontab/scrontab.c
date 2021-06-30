@@ -197,7 +197,7 @@ static char *_load_script_from_fd(int fd)
 static char *_tmp_path(void)
 {
 	char *tmpdir = getenv("TMPDIR");
-	return tmpdir ? tmpdir : slurm_conf.tmp_fs;
+	return tmpdir ? tmpdir : "/tmp";
 }
 
 /*

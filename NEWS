@@ -124,6 +124,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix testing array job after regaining locks in backfill.
  -- Don't display node's comment with "scontrol show nodes" unless set.
  -- Add "Extra" field to node to store extra information other than a comment.
+ -- scrontab - Use /tmp instead of TmpFS if TMPDIR is not set.
 
 * Changes in Slurm 20.11.9
 ==========================
