@@ -1358,6 +1358,13 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 	super_user = _slurm_authorized_user(msg->auth_uid);
 
+	if (req->step_id.step_id == SLURM_INTERACTIVE_STEP) {
+		req->cpu_bind_type = CPU_BIND_NONE;
+		xfree(req->cpu_bind);
+		req->mem_bind_type = MEM_BIND_NONE;
+		xfree(req->mem_bind);
+	}
+
 	if ((super_user == false) && (msg->auth_uid != req->uid)) {
 		error("launch task request from uid %u", msg->auth_uid);
 		errnum = ESLURM_USER_ID_MISSING;	/* or invalid user */
