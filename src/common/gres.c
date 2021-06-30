@@ -7508,7 +7508,7 @@ extern List gres_job_test2(List job_gres_list, List node_gres_list,
 static void _accumulate_job_set_env_info(gres_state_t *gres_ptr,
 					 int node_inx,
 					 bitstr_t **gres_bit_alloc,
-					 int *gres_cnt)
+					 uint64_t *gres_cnt)
 {
 	gres_job_state_t *gres_job_ptr =
 		(gres_job_state_t *) gres_ptr->gres_data;
@@ -7522,7 +7522,6 @@ static void _accumulate_job_set_env_info(gres_state_t *gres_ptr,
 		bit_or(*gres_bit_alloc, gres_job_ptr->gres_bit_alloc[node_inx]);
 	}
 	gres_cnt += gres_job_ptr->gres_cnt_node_alloc[node_inx];
-
 }
 
 /*
@@ -7537,7 +7536,7 @@ extern void gres_g_job_set_env(char ***job_env_ptr, List job_gres_list,
 	int i;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr = NULL;
-	int gres_cnt = 0;
+	uint64_t gres_cnt = 0;
 	bitstr_t *gres_bit_alloc = NULL;
 	(void) gres_init();
 
@@ -9058,7 +9057,7 @@ end:
 
 static void _accumulate_step_set_env_info(gres_state_t *gres_ptr,
 					 bitstr_t **gres_bit_alloc,
-					 int *gres_cnt)
+					 uint64_t *gres_cnt)
 {
 	gres_step_state_t *gres_step_ptr =
 		(gres_step_state_t *)gres_ptr->gres_data;
@@ -9086,7 +9085,7 @@ extern void gres_g_step_set_env(char ***job_env_ptr, List step_gres_list)
 	int i;
 	ListIterator gres_iter;
 	gres_state_t *gres_ptr = NULL;
-	int gres_cnt = 0;
+	uint64_t gres_cnt = 0;
 	bitstr_t *gres_bit_alloc = NULL;
 
 	(void) gres_init();
@@ -9137,7 +9136,7 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 	bitstr_t *usable_gres = NULL;
 	gres_internal_flags_t gres_internal_flags = GRES_INTERNAL_FLAG_NONE;
 	int tasks_per_gres = 0;
-	int gres_cnt = 0;
+	uint64_t gres_cnt = 0;
 	bitstr_t *gres_bit_alloc = NULL;
 
 	if (!bind_gpu && tres_bind && (sep = strstr(tres_bind, "gpu:"))) {
