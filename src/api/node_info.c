@@ -491,13 +491,13 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 		xstrcat(out, line_end);
 	}
 
-	/****** Line ******/
-	xstrfmtcat(out, "Comment=%s", node_ptr->comment);
+	/****** Line (optional) ******/
+	if (node_ptr->comment) {
+		xstrfmtcat(out, "Comment=%s", node_ptr->comment);
+		xstrcat(out, line_end);
+	}
 
-	if (one_liner)
-		xstrcat(out, "\n");
-	else
-		xstrcat(out, "\n\n");
+	xstrcat(out, "\n");
 
 	return out;
 }

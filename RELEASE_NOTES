@@ -97,6 +97,7 @@ COMMAND CHANGES (see man pages for details)
  -- SALLOC_THREADS_PER_CORE and SBATCH_THREADS_PER_CORE have been added as
     input environment variables for salloc and sbatch, respectively. They do
     the same thing as --threads-per-core.
+ -- Don't display node's comment with "scontrol show nodes" unless set.
 
 API CHANGES
 ===========

@@ -122,6 +122,7 @@ documents those changes that are of interest to users and administrators.
  -- RSMI: Fix incorrect PCI BDF bits.
  -- plugins/cli_filter - Convert to using data_t to serialize JSON.
  -- Fix testing array job after regaining locks in backfill.
+ -- Don't display node's comment with "scontrol show nodes" unless set.
 
 * Changes in Slurm 20.11.9
 ==========================
