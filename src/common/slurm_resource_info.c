@@ -300,32 +300,6 @@ extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		       CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS |
 		       CPU_BIND_TO_BOARDS;
 
-	if (arg == NULL) {
-		if (((*flags & bind_to_bits) != 0) ||	/* already set values */
-		   ((*flags & bind_bits) != 0) ||	/* already set values */
-		    (*cpu_bind != NULL) ||		/* already set values */
-		    (default_cpu_bind == 0))		/* no system defaults */
-			return SLURM_SUCCESS;
-
-		/* set system defaults */
-		xfree(*cpu_bind);
-		if (default_cpu_bind & CPU_BIND_NONE)
-			*flags = CPU_BIND_NONE;
-		else if (default_cpu_bind & CPU_BIND_TO_SOCKETS)
-			*flags = CPU_BIND_TO_SOCKETS;
-		else if (default_cpu_bind & CPU_BIND_TO_CORES)
-			*flags = CPU_BIND_TO_CORES;
-		else if (default_cpu_bind & CPU_BIND_TO_THREADS)
-			*flags |= CPU_BIND_TO_THREADS;
-		else if (default_cpu_bind & CPU_BIND_TO_LDOMS)
-			*flags |= CPU_BIND_TO_LDOMS;
-		else if (default_cpu_bind & CPU_BIND_TO_BOARDS)
-			*flags |= CPU_BIND_TO_BOARDS;
-		if (default_cpu_bind & CPU_BIND_VERBOSE)
-			*flags |= CPU_BIND_VERBOSE;
-		return SLURM_SUCCESS;
-	}
-
     	buf = xstrdup(arg);
     	p = buf;
 	/* change all ',' delimiters not followed by a digit to ';'  */
