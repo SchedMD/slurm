@@ -2670,7 +2670,7 @@ extern void slurm_free_will_run_response_msg(will_run_response_msg_t *msg)
 	}
 }
 
-inline void slurm_free_forward_data_msg(forward_data_msg_t *msg)
+extern void slurm_free_forward_data_msg(forward_data_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->address);
