@@ -8893,7 +8893,7 @@ extern uint64_t gres_step_count(List step_gres_list, char *gres_name)
  * This function only works with task/cgroup and constrained devices or
  * if the job step has access to the entire node's resources.
  */
-static bitstr_t * _get_usable_gres(int context_inx)
+static bitstr_t * _get_usable_gres_internal(int context_inx)
 {
 #if defined(__APPLE__)
 	return NULL;
@@ -9296,6 +9296,51 @@ static void _parse_tres_bind(uint16_t accel_bind_type, char *tres_bind_str,
 	}
 }
 
+static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
+			    tres_bind_t *tres_bind, bitstr_t **usable_gres_ptr)
+{
+	bitstr_t *usable_gres;
+
+	*usable_gres_ptr = NULL;
+
+	if (!tres_bind->bind_gpu && !tres_bind->bind_nic &&
+	    !tres_bind->map_gpu && !tres_bind->mask_gpu &&
+	    !tres_bind->gpus_per_task)
+		return SLURM_SUCCESS;
+
+	if (!xstrcmp(gres_name, "gpu")) {
+		if (tres_bind->map_gpu) {
+			usable_gres = _get_gres_map(tres_bind->map_gpu,
+						    proc_id);
+		} else if (tres_bind->mask_gpu) {
+			usable_gres = _get_gres_mask(tres_bind->mask_gpu,
+						     proc_id);
+		} else if (tres_bind->bind_gpu) {
+			usable_gres = _get_usable_gres_internal(context_inx);
+			_filter_usable_gres(usable_gres,
+					    tres_bind->tasks_per_gres,
+					    proc_id);
+		} else if (tres_bind->gpus_per_task) {
+			usable_gres = _get_usable_gres_internal(context_inx);
+			_filter_gres_per_task(usable_gres,
+					      tres_bind->gpus_per_task,
+					      proc_id);
+		} else
+			return SLURM_ERROR;
+	} else if (!xstrcmp(gres_name, "nic")) {
+		if (tres_bind->bind_nic)
+			usable_gres = _get_usable_gres_internal(context_inx);
+		else
+			return SLURM_ERROR;
+	} else {
+		return SLURM_ERROR;
+	}
+
+	*usable_gres_ptr = usable_gres;
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * Set environment as required for all tasks of a job step
  * IN/OUT job_env_ptr - environment variable array
@@ -9367,43 +9412,11 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 			continue;	/* No plugin to call */
 		if (!step_gres_list)
 			continue;
-		if (tres_bind.bind_gpu || tres_bind.bind_nic ||
-		    tres_bind.map_gpu || tres_bind.mask_gpu ||
-		    tres_bind.gpus_per_task) {
-			/* Set the GRES that this task can use (usable_gres) */
-			if (!xstrcmp(gres_ctx.gres_name, "gpu")) {
-				if (tres_bind.map_gpu) {
-					usable_gres = _get_gres_map(
-						tres_bind.map_gpu,
-						local_proc_id);
-				} else if (tres_bind.mask_gpu) {
-					usable_gres = _get_gres_mask(
-						tres_bind.mask_gpu,
-						local_proc_id);
-				} else if (tres_bind.bind_gpu) {
-					usable_gres = _get_usable_gres(i);
-					_filter_usable_gres(
-						usable_gres,
-						tres_bind.tasks_per_gres,
-						local_proc_id);
-				} else if (tres_bind.gpus_per_task) {
-					usable_gres = _get_usable_gres(i);
-					_filter_gres_per_task(
-						usable_gres,
-						tres_bind.gpus_per_task,
-						local_proc_id);
-				} else
-					continue;
-			} else if (!xstrcmp(gres_ctx.gres_name,
-					    "nic")) {
-				if (tres_bind.bind_nic)
-					usable_gres = _get_usable_gres(i);
-				else
-					continue;
-			} else {
-				continue;
-			}
-		}
+
+		if (_get_usable_gres(gres_ctx.gres_name, i, local_proc_id,
+				     &tres_bind, &usable_gres) == SLURM_ERROR)
+			continue;
+
 		gres_iter = list_iterator_create(step_gres_list);
 		while ((gres_ptr = (gres_state_t *)list_next(gres_iter))) {
 			if (gres_ptr->plugin_id != gres_ctx.plugin_id)
