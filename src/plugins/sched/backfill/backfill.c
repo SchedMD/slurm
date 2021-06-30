@@ -1731,8 +1731,7 @@ static int _attempt_backfill(void)
 	bit_clear_all(bf_ignore_node_bitmap);
 
 	while (1) {
-		uint32_t bf_array_task_id, bf_job_priority,
-			prio_reserve;
+		uint32_t bf_job_priority, prio_reserve;
 		bool get_boot_time = false;
 
 		/* Run some final guaranteed logic after each job iteration */
@@ -1753,7 +1752,12 @@ static int _attempt_backfill(void)
 		job_ptr          = job_queue_rec->job_ptr;
 		part_ptr         = job_queue_rec->part_ptr;
 		bf_job_priority  = job_queue_rec->priority;
-		bf_array_task_id = job_queue_rec->array_task_id;
+
+		if (job_ptr->array_recs &&
+		    (job_queue_rec->array_task_id == NO_VAL))
+			is_job_array_head = true;
+		else
+			is_job_array_head = false;
 
 		if (job_ptr->resv_list)
 			job_queue_rec_resv_list(job_queue_rec);
@@ -1799,8 +1803,8 @@ static int _attempt_backfill(void)
 			START_TIMER;
 		}
 
-		if ((job_ptr->array_task_id != bf_array_task_id) &&
-		    (bf_array_task_id == NO_VAL)) {
+		if (is_job_array_head &&
+		    (job_ptr->array_task_id != NO_VAL)) {
 			/* Job array element started in other partition,
 			 * reset pointer to "master" job array record */
 			job_ptr = find_job_record(job_ptr->array_job_id);
@@ -1943,11 +1947,6 @@ static int _attempt_backfill(void)
 
 		orig_start_time = job_ptr->start_time;
 		orig_time_limit = job_ptr->time_limit;
-
-		if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL))
-			is_job_array_head = true;
-		else
-			is_job_array_head = false;
 
 next_task:
 		/*
@@ -2131,8 +2130,8 @@ next_task:
 			test_time_count = 0;
 			START_TIMER;
 
-			if ((job_ptr->array_task_id != bf_array_task_id) &&
-			    (bf_array_task_id == NO_VAL)) {
+			if (is_job_array_head &&
+			    (job_ptr->array_task_id != NO_VAL)) {
 				/*
 				 * Job array element started in other partition,
 				 * reset pointer to "master" job array record
