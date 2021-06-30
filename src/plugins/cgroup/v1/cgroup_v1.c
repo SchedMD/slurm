@@ -1400,8 +1400,7 @@ static int _handle_task_cgroup(cgroup_ctl_type_t sub, pid_t pid,
 	/* Attach the pid to the corresponding step_x/task_y cgroup */
 	rc = common_cgroup_move_process(&task_cg_info->task_cg, pid);
 	if (rc != SLURM_SUCCESS)
-		error("Unable to move pid %d to %s cg", getpid(),
-		      task_cgroup_path);
+		error("Unable to move pid %d to %s cg", pid, task_cgroup_path);
 
 	/* Add the cgroup to the list now that it is initialized. */
 	if (need_to_add)
