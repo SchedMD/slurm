@@ -205,7 +205,7 @@ static char *_tmp_path(void)
  */
 static void _edit_crontab(char **crontab)
 {
-	int fd, wstatus;
+	int fd, wstatus, err;
 	pid_t pid;
 	char *editor, *filename = NULL;
 
@@ -217,10 +217,8 @@ static void _edit_crontab(char **crontab)
 	/* protect against weak file permissions in old glibc */
 	umask(0077);
 	fd = mkstemp(filename);
-	if (fd < 0) {
-		xfree(filename);
-		fatal("could not create temp file");
-	}
+	if (fd < 0)
+		fatal("error creating temp crontab file '%s': %m", filename);
 	safe_write(fd, *crontab, strlen(*crontab));
 	close(fd);
 
@@ -257,9 +255,10 @@ static void _edit_crontab(char **crontab)
 
 	fd = open(filename, O_RDONLY);
 	if (fd < 0) {
+		err = errno;
 		unlink(filename);
-		xfree(filename);
-		fatal("could not reopen temp file");
+		fatal("error reopening temp crontab file '%s': %s",
+		      filename, strerror(err));
 	}
 
 	*crontab = _load_script_from_fd(fd);
@@ -269,10 +268,11 @@ static void _edit_crontab(char **crontab)
 	return;
 
 rwfail:
+	err = errno;
 	close(fd);
 	unlink(filename);
-	xfree(filename);
-	fatal("failed to write to temp crontab file");
+	fatal("error writing to temp crontab file '%s': %s",
+	      filename, strerror(err));
 }
 
 static job_desc_msg_t *_entry_to_job(cron_entry_t *entry, char *script)
