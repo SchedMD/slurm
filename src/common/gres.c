@@ -9433,7 +9433,6 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 		FREE_NULL_BITMAP(usable_gres);
 	}
 	slurm_mutex_unlock(&gres_context_lock);
-	FREE_NULL_BITMAP(usable_gres);
 }
 
 static void _step_state_log(void *gres_data, slurm_step_id_t *step_id,
