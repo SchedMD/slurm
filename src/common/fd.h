@@ -39,6 +39,7 @@
 #define _FD_H
 
 #include <fcntl.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -48,9 +49,14 @@
 /* close all FDs >= a specified value */
 static inline void closeall(int fd)
 {
-	int fdlimit = sysconf(_SC_OPEN_MAX);
+	struct rlimit rlim;
 
-	while (fd < fdlimit)
+	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
+		error("getrlimit(RLIMIT_NOFILE): %m");
+		rlim.rlim_cur = 4096;
+	}
+
+	while (fd < rlim.rlim_cur)
 		close(fd++);
 }
 
