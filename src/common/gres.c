@@ -7521,7 +7521,7 @@ static void _accumulate_job_set_env_info(gres_state_t *gres_ptr,
 		}
 		bit_or(*gres_bit_alloc, gres_job_ptr->gres_bit_alloc[node_inx]);
 	}
-	gres_cnt += gres_job_ptr->gres_cnt_node_alloc[node_inx];
+	*gres_cnt += gres_job_ptr->gres_cnt_node_alloc[node_inx];
 }
 
 /*
