@@ -509,7 +509,7 @@ extern int common_cgroup_move_process(xcgroup_t *cg, pid_t pid)
 	path = _cgroup_procs_writable_path(cg);
 
 	if (!path) {
-		debug2("Cannot write to cgroup.procs for %s", cg->path);
+		error("Cannot write to cgroup.procs for %s", cg->path);
 		return SLURM_ERROR;
 	}
 
@@ -609,7 +609,7 @@ extern int common_cgroup_add_pids(xcgroup_t *cg, pid_t *pids, int npids)
 
 	rc = common_file_write_uint32s(path, (uint32_t*)pids, npids);
 	if (rc != SLURM_SUCCESS)
-		debug2("unable to add pids to '%s'", cg->path);
+		error("unable to add pids to '%s'", cg->path);
 
 	xfree(path);
 	return rc;
@@ -625,7 +625,7 @@ extern int common_cgroup_get_pids(xcgroup_t *cg, pid_t **pids, int *npids)
 
 	path = _cgroup_procs_readable_path(cg);
 	if (!path) {
-		debug2("unable to read '%s/cgroup.procs'", cg->path);
+		error("unable to read '%s/cgroup.procs'", cg->path);
 		return SLURM_ERROR;
 	}
 
