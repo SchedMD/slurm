@@ -77,7 +77,7 @@ static char *start_argv[] = {
 	"/bin/sh", "-c", "echo 'start disabled'; exit 1", NULL };
 
 static char *_generate_pattern(const char *pattern, stepd_step_rec_t *job,
-			       int task_id, char *rootfs_path)
+			       int task_id, char *rootfs_path, char **cmd_args)
 {
 	char *buffer = NULL, *offset = NULL;
 
@@ -89,6 +89,33 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *job,
 			switch (*(++b)) {
 			case '%':
 				xstrfmtcatat(buffer, &offset, "%s", "%");
+				break;
+			case '@':
+				for (char **arg = cmd_args; arg && *arg;
+				     arg++) {
+					if (arg != cmd_args)
+						xstrfmtcatat(buffer, &offset,
+							     " ");
+
+					xstrfmtcatat(buffer, &offset, "'");
+
+					/*
+					 * POSIX 1003.1 2.2.2 only bans a single
+					 * quote in single quotes for escaping
+					 */
+
+					for (char *c = *arg; *c != '\0'; c++) {
+						if (*c == '\'')
+							xstrfmtcatat(buffer,
+								     &offset,
+								     "'\"'\"'");
+
+						xstrfmtcatat(buffer, &offset,
+							     "%c", *c);
+					}
+
+					xstrfmtcatat(buffer, &offset, "'");
+				}
 				break;
 			case 'b':
 				xstrfmtcatat(buffer, &offset, "%s", job->cwd);
@@ -324,7 +351,7 @@ static int _modify_config(stepd_step_rec_t *job, data_t *config,
 		stepd_step_task_info_t *task = job->task[0];
 		data_t *args = data_set_list(
 			data_define_dict_path(config, "/process/args/"));
-		char *gen;
+		char *gen, **old_argv = task->argv;
 
 		/* move args to the config.json for runtime to handle */
 		for (int i = 0; i < task->argc; i++) {
@@ -348,34 +375,37 @@ static int _modify_config(stepd_step_rec_t *job, data_t *config,
 		 * info needed
 		 */
 		gen = _generate_pattern(oci_conf->runtime_create, job, task->id,
-					rootfs_path);
+					rootfs_path, old_argv);
 		if (gen)
 			create_argv[2] = gen;
 
 		gen = _generate_pattern(oci_conf->runtime_delete, job, task->id,
-					rootfs_path);
+					rootfs_path, old_argv);
 		if (gen)
 			delete_argv[2] = gen;
 
 		gen = _generate_pattern(oci_conf->runtime_kill, job, task->id,
-					rootfs_path);
+					rootfs_path, old_argv);
 		if (gen)
 			kill_argv[2] = gen;
 
 		gen = _generate_pattern(oci_conf->runtime_query, job, task->id,
-					rootfs_path);
+					rootfs_path, old_argv);
 		if (gen)
 			query_argv[2] = gen;
 
 		gen = _generate_pattern(oci_conf->runtime_run, job, task->id,
-					rootfs_path);
+					rootfs_path, old_argv);
+
 		if (gen)
 			run_argv[2] = gen;
 
 		gen = _generate_pattern(oci_conf->runtime_start, job, task->id,
-					rootfs_path);
+					rootfs_path, old_argv);
 		if (gen)
 			start_argv[2] = gen;
+
+		env_array_free(old_argv);
 	}
 
 	return SLURM_SUCCESS;
@@ -388,7 +418,7 @@ static void _generate_bundle_path(stepd_step_rec_t *job, char *rootfs_path)
 	/* write new config.json in spool dir or requested pattern */
 	if (oci_conf->container_path) {
 		path = _generate_pattern(oci_conf->container_path, job,
-					 job->task[0]->id, rootfs_path);
+					 job->task[0]->id, rootfs_path, NULL);
 	} else if (job->step_id.step_id == SLURM_BATCH_SCRIPT) {
 		xstrfmtcat(path, "%s/oci-job%05u-batch/", conf->spooldir,
 			   job->step_id.job_id);
