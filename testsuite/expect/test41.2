@@ -30,7 +30,6 @@ set pyapi $test_dir/py_api
 set pypath $test_dir/py_path
 set usock $test_dir/slurmrestd.sock
 set scripts "[$bin_pwd]/${test_name}_scripts"
-set content "dbv0.0.36,v0.0.36"
 
 if {![file exists $slurmrestd]} {
 	skip "slurmrestd not installed"
@@ -59,90 +58,94 @@ if {[run_command_status -nolog "$bin_unshare -V"]} {
 proc cleanup {} {
 }
 
-set result [run_command -nolog -fail -subtest -stdin \
-	"GET /openapi HTTP/1.1\r\nConnection: Close\r\n\r\n" "$slurmrestd -s $content -a rest_auth/local"]
+foreach content_path [glob -type d $scripts/*] {
+	set content [file tail $content_path]
+	log_debug [concat "content: " $content]
+	set result [run_command -nolog -fail -subtest -stdin \
+		"GET /openapi HTTP/1.1\r\nConnection: Close\r\n\r\n" "$slurmrestd -s $content -a rest_auth/local"]
 
-set lines [split [dict get $result "output"] "\n"]
-set found 0
-set fd [open $spec "w"]
-set printed 0
-set cntlng 99999999999999
-# Filter out the response headers by the first empty line
-foreach line $lines {
-	if {$cntlng <= $printed} {
-		break;
-	}
-	if {$cntlng <= $printed + [string bytelength $line]} {
-		set line [string range $line 0 [expr {$cntlng - $printed - 1}]]
-	}
-
-	if {$found} {
-		set printed [expr {$printed + [string bytelength $line] + 1}]
-		puts $fd [concat $line "\n"]
-	} else {
-		set matched ""
-		regexp -expanded {Content-Length:\s+(\d+)} $line matched cntlng
-		if {$matched != ""} {
-			log_debug "max length: $cntlng"
+	set lines [split [dict get $result "output"] "\n"]
+	set found 0
+	set fd [open $spec "w"]
+	set printed 0
+	set cntlng 1.0E+10
+	# Filter out the response headers by the first empty line
+	foreach line $lines {
+		if {$cntlng <= $printed} {
+			break;
+		}
+		if {$cntlng <= $printed + [string bytelength $line]} {
+			set line [string range $line 0 [expr {$cntlng - $printed - 1}]]
 		}
 
-		log_debug [concat "header: " $line]
+		if {$found} {
+			set printed [expr {$printed + [string bytelength $line] + 1}]
+			puts $fd [concat $line "\n"]
+		} else {
+			set matched ""
+			regexp -expanded {Content-Length:\s+(\d+)} $line matched cntlng
+			if {$matched != ""} {
+				log_debug "max length: $cntlng"
+			}
+
+			log_debug [concat "header: " $line]
+		}
+
+		if {$line eq "\r"} {
+			set found 1
+		}
+	}
+	close $fd
+	unset lines
+
+	set rc [run_command_status -nolog "$bin_jq -h"]
+	if {$rc != 0} {
+		subskip "jq not found"
+	} else {
+		run_command_status -subtest "$bin_jq . '$spec' >/dev/null"
 	}
 
-	if {$line eq "\r"} {
-		set found 1
+	# move into the test dir since install oas leaves trash in the cwd
+	cd $test_dir
+
+	run_command -nolog -subtest \
+		"$bin_oasgen generate -i '$spec' -g python --strict-spec=true -o '$pyapi'"
+
+	run_command -nolog -subtest \
+		"$bin_py3 '$pyapi/setup.py' install --prefix='$pypath'"
+
+	# Add the installed path to make sure python will find it
+	if { [info exists ::env(PYTHONPATH)] } {
+		set env(PYTHONPATH) [join [list $pypath:$pyapi $env(PYTHONPATH)] ":"]
+	} else {
+		set env(PYTHONPATH) $pypath:$pyapi
 	}
-}
-close $fd
-unset lines
 
-set rc [run_command_status -nolog "$bin_jq -h"]
-if {$rc != 0} {
-	subskip "jq not found"
-} else {
-	run_command_status -subtest "$bin_jq . '$spec' >/dev/null"
-}
+	foreach script [glob -type f $scripts/$content/*.py] {
+		log_debug "running: $script"
 
-# move into the test dir since install oas leaves trash in the cwd
-cd $test_dir
+		file delete $usock
+		log_debug "forking slurmrestd"
+		set restpid [exec $slurmrestd "-vv" "-s" $content "-a" "rest_auth/local" "unix:${usock}" "&"]
 
-run_command -nolog -subtest \
-	"$bin_oasgen generate -i '$spec' -g python --strict-spec=true -o '$pyapi'"
+		#wait for slurmrestd to start
+		run_command_status -timeout 10 -subtest "while \[ \! -S ${usock} \]; do sleep 0.1; done"
 
-run_command -nolog -subtest \
-	"$bin_py3 '$pyapi/setup.py' install --prefix='$pypath'"
+		# To avoid collisions with any existing listening service, we will
+		# unshare the network namespace and use socat to talk to the unix
+		# socket since python will not
+		run_command -subtest "$bin_unshare -U -r -n bash -c '
+				$bin_ip link set lo up
+				$bin_socat TCP-LISTEN:80 UNIX-CONNECT:${usock} &
+				SOPID=\$!
+				$bin_py3 $script
+				rc=$?
+				kill -9 \$SOPID
+				wait
+				exit \$rc
+			'
+		"
 
-# Add the installed path to make sure python will find it
-if { [info exists ::env(PYTHONPATH)] } {
-	set env(PYTHONPATH) [join [list $pypath:$pyapi $env(PYTHONPATH)] ":"]
-} else {
-	set env(PYTHONPATH) $pypath:$pyapi
-}
-
-foreach script [glob -type f $scripts/*.py] {
-	log_debug "running: $script"
-
-	file delete $usock
-	log_debug "forking slurmrestd"
-	set restpid [exec $slurmrestd "-vv" "-s" $content "-a" "rest_auth/local" "unix:${usock}" "&"]
-
-	#wait for slurmrestd to start
-	run_command_status -timeout 10 -subtest "while \[ \! -S ${usock} \]; do sleep 0.1; done"
-
-	# To avoid collisions with any existing listening service, we will
-	# unshare the network namespace and use socat to talk to the unix
-	# socket since python will not
-	run_command -subtest "$bin_unshare -U -r -n bash -c '
-			$bin_ip link set lo up
-			$bin_socat TCP-LISTEN:80 UNIX-CONNECT:${usock} &
-			SOPID=\$!
-			$bin_py3 $script
-			rc=$?
-			kill -9 \$SOPID
-			wait
-			exit \$rc
-		'
-	"
-
-	run_command -nolog -fail "$bin_kill -s INT $restpid"
+		run_command -nolog -fail "$bin_kill -s INT $restpid"
+	}
 }
