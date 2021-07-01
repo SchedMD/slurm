@@ -74,7 +74,7 @@ int io_hdr_unpack(io_hdr_t *hdr, buf_t *buffer)
 	return SLURM_SUCCESS;
 
     unpack_error:
-	error("io_hdr_unpack error: %m");
+	error("%s: error: %m", __func__);
 	return SLURM_ERROR;
 }
 
@@ -118,7 +118,7 @@ int io_hdr_read_fd(int fd, io_hdr_t *hdr)
 	int n = 0;
 	buf_t *buffer = init_buf(io_hdr_packed_size());
 
-	debug3("Entering io_hdr_read_fd");
+	debug3("Entering %s", __func__);
 	n = _full_read(fd, buffer->head, io_hdr_packed_size());
 	if (n <= 0)
 		goto fail;
@@ -128,7 +128,7 @@ int io_hdr_read_fd(int fd, io_hdr_t *hdr)
 	}
 
 fail:
-	debug3("Leaving  io_hdr_read_fd");
+	debug3("Leaving %s", __func__);
 	free_buf(buffer);
 	return n;
 }
@@ -155,7 +155,7 @@ io_init_msg_validate(struct slurm_io_init_msg *msg, const char *sig)
 		return SLURM_ERROR;
 	}
 
-	debug2("Leaving  io_init_msg_validate");
+	debug2("Leaving %s", __func__);
 	return SLURM_SUCCESS;
 }
 
@@ -190,7 +190,7 @@ static int io_init_msg_unpack(struct slurm_io_init_msg *hdr, buf_t *buffer)
 	return SLURM_SUCCESS;
 
     unpack_error:
-	error("unpack error in io_init_msg_unpack");
+	error("%s: unpack error", __func__);
 	return SLURM_ERROR;
 }
 
@@ -225,7 +225,7 @@ io_init_msg_read_from_fd(int fd, struct slurm_io_init_msg *msg)
 
 	xassert(msg);
 
-	debug2("Entering io_init_msg_read_from_fd");
+	debug2("Entering %s", __func__);
 	if (wait_fd_readable(fd, 300)) {
 		error("io_init_msg_read timed out");
 		return SLURM_ERROR;
@@ -242,7 +242,6 @@ io_init_msg_read_from_fd(int fd, struct slurm_io_init_msg *msg)
 	io_init_msg_unpack(msg, buf);
 
 	free_buf(buf);
-
-	debug2("Leaving  io_init_msg_read_from_fd");
+	debug2("Leaving %s", __func__);
 	return SLURM_SUCCESS;
 }
