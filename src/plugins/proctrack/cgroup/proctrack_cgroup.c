@@ -147,7 +147,6 @@ extern int init (void)
 
 extern int fini (void)
 {
-	cgroup_g_step_destroy(CG_TRACK);
 	xcpuinfo_fini();
 	return SLURM_SUCCESS;
 }

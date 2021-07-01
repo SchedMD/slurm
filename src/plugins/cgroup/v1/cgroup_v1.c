@@ -612,7 +612,10 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 {
 	int rc = SLURM_SUCCESS;
 
-	/* Only destroy the step if we're the only ones using it. */
+	/*
+	 * Only destroy the step if we're the only ones using it. Log it unless
+	 * loaded from slurmd, where we will not create any step but call fini.
+	 */
 	if (g_step_active_cnt[sub] == 0) {
 		debug("called without a previous init. This shouldn't happen!");
 		return SLURM_SUCCESS;
