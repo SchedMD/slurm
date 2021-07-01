@@ -1158,14 +1158,23 @@ static bool _job_runnable_now(job_record_t *job_ptr)
 {
 	uint16_t cleaning = 0;
 
-	if (IS_JOB_REVOKED(job_ptr))
+	if (IS_JOB_REVOKED(job_ptr)) {
+		log_flag(BACKFILL, "%pJ revoked during bf yield", job_ptr);
 		return false;
-	if (!IS_JOB_PENDING(job_ptr))	/* Started in other partition */
+	}
+	if (!IS_JOB_PENDING(job_ptr)) {	/* Started in other partition */
+		log_flag(BACKFILL, "%pJ started in other partition during bf yield",
+			 job_ptr);
 		return false;
-	if (job_ptr->priority == 0)	/* Job has been held */
+	}
+	if (job_ptr->priority == 0) {	/* Job has been held */
+		log_flag(BACKFILL, "%pJ job held during bf yield", job_ptr);
 		return false;
-	if (IS_JOB_COMPLETING(job_ptr))	/* Started, requeue and completing */
+	}
+	if (IS_JOB_COMPLETING(job_ptr)) { /* Started, requeue and completing */
+		log_flag(BACKFILL, "%pJ job started during bf yield", job_ptr);
 		return false;
+	}
 	/*
 	 * Already reserved resources for either bf_max_job_array_resv or
 	 * max_run_tasks number of jobs in the array. If max_run_tasks is 0, it
@@ -1180,8 +1189,10 @@ static bool _job_runnable_now(job_record_t *job_ptr)
 
 	select_g_select_jobinfo_get(job_ptr->select_jobinfo,
 				    SELECT_JOBDATA_CLEANING, &cleaning);
-	if (cleaning)			/* Started, requeue and completing */
+	if (cleaning) {			/* Started, requeue and completing */
+		log_flag(BACKFILL, "%pJ job cleaning after bf yield", job_ptr);
 		return false;
+	}
 
 	return true;
 }
@@ -1731,8 +1742,7 @@ static int _attempt_backfill(void)
 	bit_clear_all(bf_ignore_node_bitmap);
 
 	while (1) {
-		uint32_t bf_array_task_id, bf_job_priority,
-			prio_reserve;
+		uint32_t bf_job_priority, prio_reserve;
 		bool get_boot_time = false;
 
 		/* Run some final guaranteed logic after each job iteration */
@@ -1753,7 +1763,12 @@ static int _attempt_backfill(void)
 		job_ptr          = job_queue_rec->job_ptr;
 		part_ptr         = job_queue_rec->part_ptr;
 		bf_job_priority  = job_queue_rec->priority;
-		bf_array_task_id = job_queue_rec->array_task_id;
+
+		if (job_ptr->array_recs &&
+		    (job_queue_rec->array_task_id == NO_VAL))
+			is_job_array_head = true;
+		else
+			is_job_array_head = false;
 
 		if (job_ptr->resv_list)
 			job_queue_rec_resv_list(job_queue_rec);
@@ -1799,10 +1814,12 @@ static int _attempt_backfill(void)
 			START_TIMER;
 		}
 
-		if ((job_ptr->array_task_id != bf_array_task_id) &&
-		    (bf_array_task_id == NO_VAL)) {
+		if (is_job_array_head &&
+		    (job_ptr->array_task_id != NO_VAL)) {
 			/* Job array element started in other partition,
 			 * reset pointer to "master" job array record */
+			log_flag(BACKFILL, "%pJ array scheduled during bf yield, try master",
+				 job_ptr);
 			job_ptr = find_job_record(job_ptr->array_job_id);
 			if (!job_ptr)	/* All task array elements started */
 				continue;
@@ -1943,11 +1960,6 @@ static int _attempt_backfill(void)
 
 		orig_start_time = job_ptr->start_time;
 		orig_time_limit = job_ptr->time_limit;
-
-		if (job_ptr->array_recs && (job_ptr->array_task_id == NO_VAL))
-			is_job_array_head = true;
-		else
-			is_job_array_head = false;
 
 next_task:
 		/*
@@ -2131,15 +2143,35 @@ next_task:
 			test_time_count = 0;
 			START_TIMER;
 
+			if (is_job_array_head &&
+			    (job_ptr->array_task_id != NO_VAL)) {
+				/*
+				 * Job array element started in other partition,
+				 * reset pointer to "master" job array record
+				 */
+				log_flag(BACKFILL, "%pJ array scheduled during bf yield, try master",
+					 job_ptr);
+				job_ptr = find_job_record(
+						job_ptr->array_job_id);
+				if (!job_ptr)
+					/* All task array elements started */
+					continue;
+			}
+
 			/*
 			 * With bf_continue configured, the original job could
 			 * have been scheduled. Revalidate the job record here.
 			 */
 			if (!_job_runnable_now(job_ptr))
 				continue;
-			if (!avail_front_end(job_ptr))
+			if (!avail_front_end(job_ptr)) {
+				log_flag(BACKFILL, "%pJ no frontend available after bf yield",
+					 job_ptr);
 				continue;	/* No available frontend */
+			}
 			if (!job_independent(job_ptr)) {
+				log_flag(BACKFILL, "%pJ no longer independent after bf yield",
+					 job_ptr);
 				/* No longer independent
 				 * (e.g. another singleton started) */
 				continue;
