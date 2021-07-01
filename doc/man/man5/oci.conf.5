@@ -1,0 +1,118 @@
+.TH "oci.conf" "5" "Slurm Configuration File" "July 2021" "Slurm Configuration File"
+
+.SH "NAME"
+oci.conf \- Slurm configuration file for containers.
+
+.SH "DESCRIPTION"
+Slurm supports calling OCI compliant runtimes. \fBoci.conf\fP is an ASCII
+file which defines parameters used by OCI runtime interface.
+
+.LP
+Parameter names are case insensitive.
+Any text following a "#" in the configuration file is treated
+as a comment through the end of that line.
+Changes to the configuration file take effect upon restart of Slurm daemons.
+
+.LP
+The following oci.conf parameters are defined to control the behavior
+of the \fB--container\fR argument of \fBsalloc\fR, \fBsrun\fR, and \fBsbatch\fR
+
+.TP
+\fBContainerPath\fR
+Override path pattern for placement of the generated OCI Container bundle
+directory. See the section \fBOCI Pattern\fR for details on pattern
+replacement.
+.sp
+Default is unique directory generated in \fBSlurmdSpoolDir\fR.
+
+.TP
+\fBRunTimeCreate\fR
+Pattern for OCI runtime create operation.  See the section \fBOCI Pattern\fR
+for details on pattern replacement.
+.sp
+Default: (disabled)
+
+.TP
+\fBRunTimeDelete\fR
+Pattern for OCI runtime delete operation.  See the section \fBOCI Pattern\fR
+for details on pattern replacement.
+.sp
+Default: (disabled)
+
+.TP
+\fBRunTimeKill\fR
+Pattern for OCI runtime kill operation.  See the section \fBOCI Pattern\fR
+for details on pattern replacement.
+.sp
+Default: (disabled)
+
+.TP
+\fBRunTimeQuery\fR
+Pattern for OCI runtime query operation (also known as state).  See the section
+\fBOCI Pattern\fR for details on pattern replacement.
+.sp
+Default: (disabled)
+
+.TP
+\fBOCIRunTimeRun\fR
+Pattern for OCI runtime run operation. This is not provided in the OCI runtime
+specification (<=v1.0) but is provided by multiple OCI runtimes to simplify
+execution of containers. If provided, it will be used in the place of create
+and start operations. It avoids the need to poll state of the container
+resulting in less monitoring overhead. See the section \fBOCI Pattern\fR for
+details on pattern replacement.
+.sp
+Default: (disabled)
+
+.TP
+\fBRunTimeStart\fR
+Pattern for OCI runtime statrt operation.  See the section \fBOCI Pattern\fR
+for details on pattern replacement.
+.sp
+Default: (disabled)
+
+.SH "NOTES"
+.LP
+OCI container support is disabled if oci.conf does not exist. If disabled, any
+user passing \fB--container\fR will be doing so in a purely advisor manner.
+
+.SH "OCI Pattern"
+
+All of the OCI patterns will replace the following characters:
+.sp
+replacements:
+.IP \(bu 10
+%% - replace as "%"
+.IP \(bu
+%b - replace as OCI Bundle Path
+.IP \(bu
+%j - replace as numeric job id
+.IP \(bu
+%n - replace as nodename
+.IP \(bu
+%s - replace as numeric step id
+.IP \(bu
+%t - replace as numeric step task id
+.IP \(bu
+%u - replace as user name
+
+.SH "COPYING"
+Copyright (C) 2021 SchedMD LLC.
+
+.LP
+This file is part of Slurm, a resource management program.
+For details, see <https://slurm.schedmd.com/>.
+.LP
+Slurm is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+.SH "SEE ALSO"
+.LP
+\fBslurm.conf\fR(5)

@@ -153,9 +153,9 @@ PROGRAMS = $(sbin_PROGRAMS)
 am_slurmstepd_OBJECTS = container.$(OBJEXT) slurmstepd.$(OBJEXT) \
 	mgr.$(OBJEXT) task.$(OBJEXT) slurmstepd_job.$(OBJEXT) \
 	io.$(OBJEXT) ulimits.$(OBJEXT) pdebug.$(OBJEXT) \
-	pam_ses.$(OBJEXT) setproctitle.$(OBJEXT) req.$(OBJEXT) \
-	multi_prog.$(OBJEXT) step_terminate_monitor.$(OBJEXT) \
-	x11_forwarding.$(OBJEXT)
+	pam_ses.$(OBJEXT) setproctitle.$(OBJEXT) \
+	read_oci_conf.$(OBJEXT) req.$(OBJEXT) multi_prog.$(OBJEXT) \
+	step_terminate_monitor.$(OBJEXT) x11_forwarding.$(OBJEXT)
 slurmstepd_OBJECTS = $(am_slurmstepd_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -185,8 +185,9 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/container.Po ./$(DEPDIR)/io.Po \
 	./$(DEPDIR)/mgr.Po ./$(DEPDIR)/multi_prog.Po \
 	./$(DEPDIR)/pam_ses.Po ./$(DEPDIR)/pdebug.Po \
-	./$(DEPDIR)/req.Po ./$(DEPDIR)/setproctitle.Po \
-	./$(DEPDIR)/slurmstepd.Po ./$(DEPDIR)/slurmstepd_job.Po \
+	./$(DEPDIR)/read_oci_conf.Po ./$(DEPDIR)/req.Po \
+	./$(DEPDIR)/setproctitle.Po ./$(DEPDIR)/slurmstepd.Po \
+	./$(DEPDIR)/slurmstepd_job.Po \
 	./$(DEPDIR)/step_terminate_monitor.Po ./$(DEPDIR)/task.Po \
 	./$(DEPDIR)/ulimits.Po ./$(DEPDIR)/x11_forwarding.Po
 am__mv = mv -f
@@ -512,6 +513,7 @@ slurmstepd_SOURCES = \
 	pdebug.c pdebug.h		\
 	pam_ses.c pam_ses.h		\
 	setproctitle.c setproctitle.h	\
+	read_oci_conf.h read_oci_conf.c \
 	req.c req.h			\
 	multi_prog.c multi_prog.h	\
 	step_terminate_monitor.c step_terminate_monitor.h \
@@ -617,6 +619,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/multi_prog.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pam_ses.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdebug.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_oci_conf.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/req.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setproctitle.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd.Po@am__quote@ # am--include-marker
@@ -759,6 +762,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/multi_prog.Po
 	-rm -f ./$(DEPDIR)/pam_ses.Po
 	-rm -f ./$(DEPDIR)/pdebug.Po
+	-rm -f ./$(DEPDIR)/read_oci_conf.Po
 	-rm -f ./$(DEPDIR)/req.Po
 	-rm -f ./$(DEPDIR)/setproctitle.Po
 	-rm -f ./$(DEPDIR)/slurmstepd.Po
@@ -818,6 +822,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/multi_prog.Po
 	-rm -f ./$(DEPDIR)/pam_ses.Po
 	-rm -f ./$(DEPDIR)/pdebug.Po
+	-rm -f ./$(DEPDIR)/read_oci_conf.Po
 	-rm -f ./$(DEPDIR)/req.Po
 	-rm -f ./$(DEPDIR)/setproctitle.Po
 	-rm -f ./$(DEPDIR)/slurmstepd.Po
