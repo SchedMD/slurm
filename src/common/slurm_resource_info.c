@@ -326,10 +326,6 @@ extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		return SLURM_SUCCESS;
 	}
 
-	/* Start with system default verbose flag (if set) */
-	if (default_cpu_bind & CPU_BIND_VERBOSE)
-		*flags |= CPU_BIND_VERBOSE;
-
     	buf = xstrdup(arg);
     	p = buf;
 	/* change all ',' delimiters not followed by a digit to ';'  */
@@ -451,22 +447,6 @@ extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
 		}
 	}
 	xfree(buf);
-
-	/* Set system default CPU binding as needed */
-	if ((rc == SLURM_SUCCESS) && (*flags & (~CPU_BIND_VERBOSE)) == 0) {
-                if (default_cpu_bind & CPU_BIND_NONE)
-                        *flags = CPU_BIND_NONE;
-                else if (default_cpu_bind & CPU_BIND_TO_SOCKETS)
-                        *flags = CPU_BIND_TO_SOCKETS;
-                else if (default_cpu_bind & CPU_BIND_TO_CORES)
-                        *flags = CPU_BIND_TO_CORES;
-                else if (default_cpu_bind & CPU_BIND_TO_THREADS)
-                        *flags |= CPU_BIND_TO_THREADS;
-                else if (default_cpu_bind & CPU_BIND_TO_LDOMS)
-                        *flags |= CPU_BIND_TO_LDOMS;
-                else if (default_cpu_bind & CPU_BIND_TO_BOARDS)
-                        *flags |= CPU_BIND_TO_BOARDS;
-	}
 
 	return rc;
 }
