@@ -268,7 +268,7 @@ extern int switch_g_node_fini(void);
  * that needs to be performed in the same process as switch_g_job_fini()
  *
  */
-extern int switch_g_job_preinit(dynamic_plugin_data_t *jobinfo);
+extern int switch_g_job_preinit(stepd_step_rec_t *job);
 
 /*
  * initialize switch_g on node for job. This function is run from the

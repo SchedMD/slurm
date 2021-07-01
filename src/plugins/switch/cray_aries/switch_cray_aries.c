@@ -436,7 +436,7 @@ extern int switch_p_node_fini(void)
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_preinit(switch_jobinfo_t *jobinfo)
+extern int switch_p_job_preinit(stepd_step_rec_t *job)
 {
 	return SLURM_SUCCESS;
 }

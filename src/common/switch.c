@@ -80,7 +80,7 @@ typedef struct slurm_switch_ops {
 					    char *buf, size_t size);
 	int          (*node_init)         ( void );
 	int          (*node_fini)         ( void );
-	int          (*job_preinit)       ( switch_jobinfo_t *jobinfo );
+	int          (*job_preinit)       ( stepd_step_rec_t *job );
 	int          (*job_init)          ( stepd_step_rec_t *job );
 	int          (*job_suspend_test)  ( switch_jobinfo_t *jobinfo );
 	void         (*job_suspend_info_get)( switch_jobinfo_t *jobinfo,
@@ -556,21 +556,12 @@ extern int switch_g_node_fini(void)
 	return (*(ops[switch_context_default].node_fini)) ();
 }
 
-extern int switch_g_job_preinit(dynamic_plugin_data_t *jobinfo)
+extern int switch_g_job_preinit(stepd_step_rec_t *job)
 {
-	void *data = NULL;
-	uint32_t plugin_id;
-
 	if ( switch_init(0) < 0 )
 		return SLURM_ERROR;
 
-	if (jobinfo) {
-		data      = jobinfo->data;
-		plugin_id = jobinfo->plugin_id;
-	} else
-		plugin_id = switch_context_default;
-
-	return (*(ops[plugin_id].job_preinit)) (data);
+	return (*(ops[switch_context_default].job_preinit))(job);
 }
 
 extern int switch_g_job_init(stepd_step_rec_t *job)

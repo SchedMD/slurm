@@ -177,7 +177,7 @@ int switch_p_node_fini ( void )
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_preinit ( switch_jobinfo_t *jobinfo )
+int switch_p_job_preinit(stepd_step_rec_t *job)
 {
 	return SLURM_SUCCESS;
 }

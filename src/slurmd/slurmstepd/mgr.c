@@ -1183,7 +1183,7 @@ job_manager(stepd_step_rec_t *job)
 
 	if (!job->batch && (job->step_id.step_id != SLURM_EXTERN_CONT) &&
 	    (job->step_id.step_id != SLURM_INTERACTIVE_STEP) &&
-	    (switch_g_job_preinit(job->switch_job) < 0)) {
+	    (switch_g_job_preinit(job) < 0)) {
 		rc = ESLURM_INTERCONNECT_FAILURE;
 		goto fail1;
 	}
