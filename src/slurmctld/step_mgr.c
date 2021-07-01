@@ -461,6 +461,7 @@ extern void free_step_record(void *x)
 	xfree(step_ptr->tres_per_node);
 	xfree(step_ptr->tres_per_socket);
 	xfree(step_ptr->tres_per_task);
+	xfree(step_ptr->memory_allocated);
 	step_ptr->magic = ~STEP_MAGIC;
 	xfree(step_ptr);
 }
