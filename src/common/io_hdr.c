@@ -159,14 +159,29 @@ io_init_msg_validate(struct slurm_io_init_msg *msg, const char *sig)
 }
 
 
-static void io_init_msg_pack(struct slurm_io_init_msg *hdr, buf_t *buffer)
+static int io_init_msg_pack(struct slurm_io_init_msg *hdr, buf_t *buffer)
 {
 	/* If this function changes, io_init_msg_packed_size must change. */
-	pack16(hdr->version, buffer);
-       	pack32(hdr->nodeid, buffer);
-	pack32(hdr->stdout_objs, buffer);
-	pack32(hdr->stderr_objs, buffer);
-	packmem((char *) hdr->io_key, (uint32_t) SLURM_IO_KEY_SIZE, buffer);
+	if (hdr->version == SLURM_PROTOCOL_VERSION) {
+		pack16(hdr->version, buffer);
+		pack32(hdr->nodeid, buffer);
+		pack32(hdr->stdout_objs, buffer);
+		pack32(hdr->stderr_objs, buffer);
+		packmem((char *) hdr->io_key,
+			(uint32_t) SLURM_IO_KEY_SIZE, buffer);
+	} else if (hdr->version == IO_PROTOCOL_VERSION) {
+		pack16(hdr->version, buffer);
+		pack32(hdr->nodeid, buffer);
+		pack32(hdr->stdout_objs, buffer);
+		pack32(hdr->stderr_objs, buffer);
+		packmem((char *) hdr->io_key,
+			(uint32_t) SLURM_IO_KEY_SIZE, buffer);
+	} else {
+		error("Invalid IO init header version");
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 
@@ -177,13 +192,17 @@ static int io_init_msg_unpack(struct slurm_io_init_msg *hdr, buf_t *buffer)
 	char *tmp_ptr = NULL;
 
 	safe_unpack16(&hdr->version, buffer);
-	safe_unpack32(&hdr->nodeid, buffer);
-	safe_unpack32(&hdr->stdout_objs, buffer);
-	safe_unpack32(&hdr->stderr_objs, buffer);
-	safe_unpackmem_ptr(&tmp_ptr, &val, buffer);
-	if (val != SLURM_IO_KEY_SIZE)
+	if (hdr->version == IO_PROTOCOL_VERSION ||
+	    hdr->version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&hdr->nodeid, buffer);
+		safe_unpack32(&hdr->stdout_objs, buffer);
+		safe_unpack32(&hdr->stderr_objs, buffer);
+		safe_unpackmem_ptr(&tmp_ptr, &val, buffer);
+		if (val != SLURM_IO_KEY_SIZE)
+			goto unpack_error;
+		memcpy(hdr->io_key, tmp_ptr, SLURM_IO_KEY_SIZE);
+	} else
 		goto unpack_error;
-	memcpy(hdr->io_key, tmp_ptr, SLURM_IO_KEY_SIZE);
 
 	return SLURM_SUCCESS;
 
@@ -204,7 +223,8 @@ io_init_msg_write_to_fd(int fd, struct slurm_io_init_msg *msg)
 	debug2("%s: entering", __func__);
 	msg->version = IO_PROTOCOL_VERSION;
 	debug2("%s: msg->nodeid = %d", __func__, msg->nodeid);
-	io_init_msg_pack(msg, buf);
+	if (io_init_msg_pack(msg, buf) != SLURM_SUCCESS)
+		goto rwfail;
 
 	safe_write(fd, buf->head, get_buf_offset(buf));
 	rc = SLURM_SUCCESS;
