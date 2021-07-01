@@ -284,8 +284,7 @@ void slurm_print_cpu_bind_help(void)
  * RET SLURM_SUCCESS, SLURM_ERROR (-1) on failure, 1 for return for "help" arg
  */
 extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
-				 cpu_bind_type_t *flags,
-				 uint32_t default_cpu_bind)
+				 cpu_bind_type_t *flags)
 {
 	char *buf, *p, *tok;
 	int bind_bits, bind_to_bits;
