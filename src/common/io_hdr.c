@@ -221,7 +221,6 @@ int
 io_init_msg_read_from_fd(int fd, struct slurm_io_init_msg *msg)
 {
 	buf_t *buf;
-	int n;
 
 	xassert(msg);
 
@@ -232,16 +231,16 @@ io_init_msg_read_from_fd(int fd, struct slurm_io_init_msg *msg)
 	}
 
 	buf = init_buf(io_init_msg_packed_size());
-	n = _full_read(fd, buf->head, io_init_msg_packed_size());
-	if (n != io_init_msg_packed_size()) {
-		error("io_init_msg_read too small");
-		free_buf(buf);
-		return SLURM_ERROR;
-	}
-	debug3("  read %d bytes", n);
+	safe_read(fd, buf->head, io_init_msg_packed_size());
+
 	io_init_msg_unpack(msg, buf);
 
 	free_buf(buf);
 	debug2("Leaving %s", __func__);
 	return SLURM_SUCCESS;
+
+rwfail:
+	free_buf(buf);
+	error("%s: reading slurm_io_init_msg failed: %m",__func__);
+	return SLURM_ERROR;
 }
