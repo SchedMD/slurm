@@ -1121,7 +1121,7 @@ int read_slurm_conf(int recover, bool reconfig)
 	_init_all_slurm_conf();
 
 	if (reconfig)
-		cgroup_g_reconfig();
+		cgroup_conf_reinit();
 	else
 		slurm_cgroup_conf_init();
 

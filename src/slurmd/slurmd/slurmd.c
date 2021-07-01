@@ -1108,7 +1108,7 @@ _reconfigure(void)
 
 	_reconfig = 0;
 	slurm_conf_reinit(conf->conffile);
-	cgroup_g_reconfig();
+	cgroup_conf_reinit();
 	_read_config();
 
 	/*

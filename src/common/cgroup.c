@@ -798,10 +798,9 @@ extern List cgroup_get_conf_list(void)
 	return cgroup_conf_l;
 }
 
-extern void cgroup_g_reconfig(void)
+extern void cgroup_conf_reinit(void)
 {
-	xassert(cg_conf_inited);
-	_cgroup_conf_fini();
+	slurm_cgroup_conf_destroy();
 	slurm_cgroup_conf_init();
 }
 

@@ -182,7 +182,7 @@ extern int cgroup_g_step_resume(void);
 extern int cgroup_g_step_destroy(cgroup_ctl_type_t sub);
 extern bool cgroup_g_has_pid(pid_t pid);
 extern List cgroup_get_conf_list(void);
-extern void cgroup_g_reconfig(void);
+extern void cgroup_conf_reinit(void);
 extern int cgroup_write_conf(int fd);
 extern int cgroup_read_conf(int fd);
 extern bool cgroup_memcg_job_confinement(void);
