@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "June 2021" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "July 2021" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -282,8 +282,6 @@ Specification of multiple KNL modes requires the use of a heterogeneous job.
 Brackets can be used to indicate that you are looking for a set of nodes with
 the different requirements contained within the brackets. For example,
 .TP
-\fB--container=<absolute path to container>\fR Path to OCI container bundle.
-.TP
 \fB--constraint="[(rack1|rack2)*1&(rack3)*2]"\fR will get you one node with
 either the "rack1" or "rack2" features and two nodes with the "rack3" feature.
 The same request without the brackets will try to find a single node that
@@ -296,6 +294,10 @@ that four nodes with the features "knl", "snc4" and "flat" plus one node with
 the feature "haswell" are required. All options within parenthesis should be
 grouped with AND (e.g. "&") operands.
 .RE
+
+.TP
+\fB--container=<absolute path to container>\fR
+Path to OCI container bundle.
 
 .TP
 \fB\-\-contiguous\fR

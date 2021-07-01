@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "June 2021" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "July 2021" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -307,8 +307,6 @@ either the "rack1" or "rack2" features and two nodes with the "rack3" feature.
 The same request without the brackets will try to find a single node that
 meets those requirements.
 .TP
-\fB--container=<absolute path to container>\fR Path to OCI container bundle.
-.TP
 \fBParenthesis\fR
 Parenthesis can be used to group like node features together. For example,
 \fB\-\-constraint="[(knl&snc4&flat)*4&haswell*1]"\fR might be used to specify
@@ -324,6 +322,10 @@ other operators are currently supported for job steps.
 .br
 This option applies to job and step allocations.
 .RE
+
+.TP
+\fB--container=<absolute path to container>\fR
+Path to OCI container bundle.
 
 .TP
 \fB\-\-contiguous\fR

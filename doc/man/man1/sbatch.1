@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "June 2021" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "July 2021" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -320,8 +320,6 @@ either the "rack1" or "rack2" features and two nodes with the "rack3" feature.
 The same request without the brackets will try to find a single node that
 meets those requirements.
 .TP
-\fB--container=<absolute path to container>\fR Path to OCI container bundle.
-.TP
 \fBParenthesis\fR
 Parenthesis can be used to group like node features together. For example,
 \fB\-\-constraint="[(knl&snc4&flat)*4&haswell*1]"\fR might be used to specify
@@ -329,6 +327,10 @@ that four nodes with the features "knl", "snc4" and "flat" plus one node with
 the feature "haswell" are required. All options within parenthesis should be
 grouped with AND (e.g. "&") operands.
 .RE
+
+.TP
+\fB--container=<absolute path to container>\fR
+Path to OCI container bundle.
 
 .TP
 \fB\-\-contiguous\fR
