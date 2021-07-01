@@ -1117,6 +1117,10 @@ slurm_cred_destroy(slurm_cred_t *cred)
 	FREE_NULL_LIST(cred->step_gres_list);
 	xfree(cred->step_hostlist);
 	xfree(cred->signature);
+	xfree(cred->job_mem_alloc);
+	xfree(cred->job_mem_alloc_rep_count);
+	xfree(cred->step_mem_alloc);
+	xfree(cred->step_mem_alloc_rep_count);
 
 	cred->magic = ~CRED_MAGIC;
 	slurm_mutex_unlock(&cred->mutex);
