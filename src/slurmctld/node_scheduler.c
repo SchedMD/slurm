@@ -2945,6 +2945,9 @@ extern void launch_prolog(job_record_t *job_ptr)
 	prolog_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
 						 &cred_arg,
 						 protocol_version);
+	xfree(cred_arg.job_mem_alloc);
+	xfree(cred_arg.job_mem_alloc_rep_count);
+
 	if (!prolog_msg_ptr->cred) {
 		error("%s: slurm_cred_create failure for %pJ",
 		      __func__, job_ptr);
