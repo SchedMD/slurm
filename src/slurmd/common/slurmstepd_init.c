@@ -68,8 +68,6 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, buf_t *buffer)
 	pack32(conf->daemonize, buffer);
 	packstr(conf->node_topo_addr, buffer);
 	packstr(conf->node_topo_pattern, buffer);
-	packstr(conf->oci_container_id_pattern, buffer);
-	packstr(conf->oci_runtime, buffer);
 	pack16(conf->port, buffer);
 	packstr(conf->gres, buffer);
 }
@@ -108,9 +106,6 @@ extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, buf_t *buffer)
 		conf->daemonize = uint32_tmp;
 		safe_unpackstr_xmalloc(&conf->node_topo_addr, &uint32_tmp, buffer);
 		safe_unpackstr_xmalloc(&conf->node_topo_pattern, &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&conf->oci_container_id_pattern,
-				       &uint32_tmp, buffer);
-		safe_unpackstr_xmalloc(&conf->oci_runtime, &uint32_tmp, buffer);
 		safe_unpack16(&conf->port, buffer);
 		safe_unpackstr_xmalloc(&conf->gres, &uint32_tmp, buffer);
 	}
