@@ -123,6 +123,9 @@ documents those changes that are of interest to users and administrators.
  -- plugins/cli_filter - Convert to using data_t to serialize JSON.
  -- Fix testing array job after regaining locks in backfill.
 
+* Changes in Slurm 20.11.9
+==========================
+
 * Changes in Slurm 20.11.8
 ==========================
  -- slurmctld - fix erroneous "StepId=CORRUPT" messages in error logs.
