@@ -49,6 +49,8 @@ libcommon_la_SOURCES =				\
 	half_duplex.h				\
 	hostlist.c				\
 	hostlist.h				\
+	http.h					\
+	http.c					\
 	io_hdr.c				\
 	io_hdr.h				\
 	job_options.c				\
