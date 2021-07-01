@@ -84,16 +84,12 @@ extern int init_system_cpuset_cgroup(void)
 
 extern int init_system_memory_cgroup(void)
 {
-	cgroup_conf_t *cg_conf;
-
 	if (cgroup_g_initialize(CG_MEMORY) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	cg_conf = cgroup_get_conf();
-
-	constrain_kmem_space = cg_conf->constrain_kmem_space;
-	constrain_ram_space = cg_conf->constrain_ram_space;
-	constrain_swap_space = cg_conf->constrain_swap_space;
+	constrain_kmem_space = slurm_cgroup_conf.constrain_kmem_space;
+	constrain_ram_space = slurm_cgroup_conf.constrain_ram_space;
+	constrain_swap_space = slurm_cgroup_conf.constrain_swap_space;
 
 	/*
 	 * as the swap space threshold will be configured with a
@@ -103,20 +99,23 @@ extern int init_system_memory_cgroup(void)
 	 * used for both mem and mem+swp limit during memcg creation.
 	 */
 	if ( constrain_ram_space )
-		allowed_ram_space = cg_conf->allowed_ram_space;
+		allowed_ram_space = slurm_cgroup_conf.allowed_ram_space;
 	else
 		allowed_ram_space = 100.0;
 
-	allowed_swap_space = cg_conf->allowed_swap_space;
+	allowed_swap_space = slurm_cgroup_conf.allowed_swap_space;
 
 	if ((totalram = (uint64_t) conf->real_memory_size) == 0)
 		error ("system cgroup: Unable to get RealMemory size");
 
-	max_kmem = _percent_in_bytes(totalram, cg_conf->max_kmem_percent);
-	max_ram = _percent_in_bytes(totalram, cg_conf->max_ram_percent);
-	max_swap = _percent_in_bytes(totalram, cg_conf->max_swap_percent);
+	max_kmem = _percent_in_bytes(totalram,
+				     slurm_cgroup_conf.max_kmem_percent);
+	max_ram = _percent_in_bytes(totalram,
+				    slurm_cgroup_conf.max_ram_percent);
+	max_swap = _percent_in_bytes(totalram,
+				     slurm_cgroup_conf.max_swap_percent);
 	max_swap += max_ram;
-	min_ram_space = cg_conf->min_ram_space * 1024 * 1024;
+	min_ram_space = slurm_cgroup_conf.min_ram_space * 1024 * 1024;
 
 	if (running_in_slurmd()) {
 		debug("system cgroup: memory: total:%luM allowed:%.4g%%(%s), "
@@ -128,18 +127,16 @@ extern int init_system_memory_cgroup(void)
 		      constrain_ram_space?"enforced":"permissive",
 		      allowed_swap_space,
 		      constrain_swap_space?"enforced":"permissive",
-		      cg_conf->max_ram_percent,
+		      slurm_cgroup_conf.max_ram_percent,
 		      (unsigned long) (max_ram/(1024*1024)),
-		      cg_conf->max_swap_percent,
+		      slurm_cgroup_conf.max_swap_percent,
 		      (unsigned long) (max_swap/(1024*1024)),
-		      (unsigned long) cg_conf->min_ram_space,
-		      cg_conf->max_kmem_percent,
+		      (unsigned long) slurm_cgroup_conf.min_ram_space,
+		      slurm_cgroup_conf.max_kmem_percent,
 		      (unsigned long)(max_kmem/(1024*1024)),
 		      constrain_kmem_space?"enforced":"permissive",
-		      (unsigned long) cg_conf->min_kmem_space);
+		      (unsigned long) slurm_cgroup_conf.min_kmem_space);
 	}
-
-	cgroup_free_conf(cg_conf);
 
         /*
          *  Warning: OOM Killer must be disabled for slurmstepd
@@ -168,7 +165,6 @@ extern void fini_system_cgroup(void)
 {
 	cgroup_g_system_destroy(CG_CPUS);
 	cgroup_g_system_destroy(CG_MEMORY);
-	cgroup_g_conf_fini();
 }
 
 extern int set_system_cgroup_cpus(char *phys_cpu_str)
@@ -207,12 +203,8 @@ extern int attach_system_memory_pid(pid_t pid)
 
 extern bool check_corespec_cgroup_job_confinement(void)
 {
-	cgroup_conf_t *cg_conf;
-
-	cg_conf = cgroup_get_conf();
-
 	if ((conf->cpu_spec_list || conf->core_spec_cnt) &&
-	    cg_conf->constrain_cores &&
+	    slurm_cgroup_conf.constrain_cores &&
 	    xstrstr(slurm_conf.task_plugin, "cgroup"))
 		return true;
 

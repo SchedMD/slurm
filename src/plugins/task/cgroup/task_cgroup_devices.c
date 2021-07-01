@@ -149,7 +149,6 @@ extern int task_cgroup_devices_init(void)
 {
 	uint16_t cpunum;
 	FILE *file = NULL;
-	cgroup_conf_t *cg_conf;
 
 	/* initialize cpuinfo internal data */
 	if (xcpuinfo_init() != XCPUINFO_SUCCESS)
@@ -163,18 +162,13 @@ extern int task_cgroup_devices_init(void)
 		goto error;
 	}
 
-	/* read cgroup configuration */
-	cg_conf = cgroup_get_conf();
-
-	if (!cg_conf)
-		goto error;
-
-	if ((strlen(cg_conf->allowed_devices_file) + 1) >= PATH_MAX) {
+	if ((strlen(slurm_cgroup_conf.allowed_devices_file) + 1) >= PATH_MAX) {
 		error("device file path length exceeds limit: %s",
-		      cg_conf->allowed_devices_file);
+		      slurm_cgroup_conf.allowed_devices_file);
 		goto error;
 	}
-	strcpy(cgroup_allowed_devices_file, cg_conf->allowed_devices_file);
+	strcpy(cgroup_allowed_devices_file,
+	       slurm_cgroup_conf.allowed_devices_file);
 
 	if (cgroup_g_initialize(CG_DEVICES) != SLURM_SUCCESS) {
 		error("unable to create devices namespace");
@@ -190,7 +184,6 @@ extern int task_cgroup_devices_init(void)
 	return SLURM_SUCCESS;
 
 error:
-	xfree(cg_conf);
 	xcpuinfo_fini();
 	return SLURM_ERROR;
 }

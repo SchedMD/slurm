@@ -856,7 +856,6 @@ int main(int argc, char **argv)
 
 	/* Purge our local data structures */
 	configless_clear();
-	cgroup_g_conf_fini();
 	power_save_fini();
 	job_fini();
 	part_fini();	/* part_fini() must precede node_fini() */
@@ -891,6 +890,7 @@ int main(int argc, char **argv)
 	slurm_conf_destroy();
 	cluster_rec_free();
 	track_script_fini();
+	slurm_cgroup_conf_destroy();
 	usleep(500000);
 }
 #else

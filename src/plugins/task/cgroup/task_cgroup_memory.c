@@ -70,24 +70,20 @@ static uint64_t percent_in_bytes (uint64_t mb, float percent)
 extern int task_cgroup_memory_init(void)
 {
 	bool set_swappiness;
-	cgroup_conf_t *cg_conf;
 	cgroup_limits_t limits;
 
 	if (cgroup_g_initialize(CG_MEMORY) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
-	cg_conf = cgroup_get_conf();
-	memset(&limits, 0, sizeof(limits));
-
-	set_swappiness = (cg_conf->memory_swappiness != NO_VAL64);
+	set_swappiness = (slurm_cgroup_conf.memory_swappiness != NO_VAL64);
 	if (set_swappiness) {
 		limits.swappiness = true;
 		cgroup_g_root_constrain_set(CG_MEMORY, &limits);
 	}
 
-	constrain_kmem_space = cg_conf->constrain_kmem_space;
-	constrain_ram_space = cg_conf->constrain_ram_space;
-	constrain_swap_space = cg_conf->constrain_swap_space;
+	constrain_kmem_space = slurm_cgroup_conf.constrain_kmem_space;
+	constrain_ram_space = slurm_cgroup_conf.constrain_ram_space;
+	constrain_swap_space = slurm_cgroup_conf.constrain_swap_space;
 
 	/*
 	 * as the swap space threshold will be configured with a
@@ -97,23 +93,26 @@ extern int task_cgroup_memory_init(void)
 	 * used for both mem and mem+swp limit during memcg creation.
 	 */
 	if ( constrain_ram_space )
-		allowed_ram_space = cg_conf->allowed_ram_space;
+		allowed_ram_space = slurm_cgroup_conf.allowed_ram_space;
 	else
 		allowed_ram_space = 100.0;
 
-	allowed_kmem_space = cg_conf->allowed_kmem_space;
-	allowed_swap_space = cg_conf->allowed_swap_space;
+	allowed_kmem_space = slurm_cgroup_conf.allowed_kmem_space;
+	allowed_swap_space = slurm_cgroup_conf.allowed_swap_space;
 
 	if ((totalram = (uint64_t) conf->real_memory_size) == 0)
 		error ("Unable to get RealMemory size");
 
-	max_kmem = percent_in_bytes(totalram, cg_conf->max_kmem_percent);
-	max_ram = percent_in_bytes(totalram, cg_conf->max_ram_percent);
-	max_swap = percent_in_bytes(totalram, cg_conf->max_swap_percent);
+	max_kmem = percent_in_bytes(totalram,
+				    slurm_cgroup_conf.max_kmem_percent);
+	max_ram = percent_in_bytes(totalram,
+				   slurm_cgroup_conf.max_ram_percent);
+	max_swap = percent_in_bytes(totalram,
+				    slurm_cgroup_conf.max_swap_percent);
 	max_swap += max_ram;
-	min_ram_space = cg_conf->min_ram_space * 1024 * 1024;
-	max_kmem_percent = cg_conf->max_kmem_percent;
-	min_kmem_space = cg_conf->min_kmem_space * 1024 * 1024;
+	min_ram_space = slurm_cgroup_conf.min_ram_space * 1024 * 1024;
+	max_kmem_percent = slurm_cgroup_conf.max_kmem_percent;
+	min_kmem_space = slurm_cgroup_conf.min_kmem_space * 1024 * 1024;
 
 	debug("task/cgroup/memory: total:%"PRIu64"M allowed:%.4g%%(%s), "
 	      "swap:%.4g%%(%s), max:%.4g%%(%"PRIu64"M) "
@@ -124,16 +123,16 @@ extern int task_cgroup_memory_init(void)
 	      constrain_ram_space ? "enforced" : "permissive",
 	      allowed_swap_space,
 	      constrain_swap_space ? "enforced" : "permissive",
-	      cg_conf->max_ram_percent,
+	      slurm_cgroup_conf.max_ram_percent,
 	      (uint64_t) (max_ram / (1024 * 1024)),
-	      cg_conf->max_swap_percent,
+	      slurm_cgroup_conf.max_swap_percent,
 	      (uint64_t) (max_swap / (1024 * 1024)),
-	      cg_conf->min_ram_space,
-	      cg_conf->max_kmem_percent,
+	      slurm_cgroup_conf.min_ram_space,
+	      slurm_cgroup_conf.max_kmem_percent,
 	      (uint64_t) (max_kmem / (1024 * 1024)),
 	      constrain_kmem_space ? "enforced" : "permissive",
-	      cg_conf->min_kmem_space,
-	      set_swappiness ? cg_conf->memory_swappiness : 0,
+	      slurm_cgroup_conf.min_kmem_space,
+	      set_swappiness ? slurm_cgroup_conf.memory_swappiness : 0,
 	      set_swappiness ? "set" : "unset");
 
         /*

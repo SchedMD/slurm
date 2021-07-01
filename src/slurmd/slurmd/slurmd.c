@@ -1704,6 +1704,15 @@ _slurmd_init(void)
 	build_all_frontend_info(true);
 
 	/*
+	 * This needs to happen before _read_config where we will try to attach
+	 * the slurmd pid to system cgroup.
+	 */
+	if (cgroup_g_init() != SLURM_SUCCESS) {
+		error("Unable to initialize cgroup plugin");
+		return SLURM_ERROR;
+	}
+
+	/*
 	 * Read global slurm config file, override necessary values from
 	 * defaults and command line.
 	 */
@@ -1769,12 +1778,6 @@ _slurmd_init(void)
 	 * Check for cpu frequency set capabilities on this node
 	 */
 	cpu_freq_init(conf);
-
-	/* Any plugins which use cgroup must be loaded after this */
-	if (cgroup_g_init() != SLURM_SUCCESS) {
-		error("Unable to initialize cgroup plugin");
-		return SLURM_ERROR;
-	}
 
 	/*
 	 * If configured, apply resource specialization

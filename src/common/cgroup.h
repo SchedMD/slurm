@@ -87,8 +87,6 @@
  */
 #define XCGROUP_DEFAULT_MIN_RAM 30
 
-extern pthread_mutex_t xcgroup_config_read_mutex;
-
 /* Current supported cgroup controller types */
 typedef enum {
 	CG_TRACK,
@@ -163,7 +161,12 @@ typedef struct {
 	char *cgroup_plugin;
 } cgroup_conf_t;
 
+
+extern cgroup_conf_t slurm_cgroup_conf;
+
 /* global functions */
+extern int slurm_cgroup_conf_init(void);
+extern void slurm_cgroup_conf_destroy(void);
 extern void cgroup_free_limits(cgroup_limits_t *limits);
 extern int cgroup_g_init(void);
 extern int cgroup_g_fini(void);
@@ -178,11 +181,8 @@ extern int cgroup_g_step_suspend(void);
 extern int cgroup_g_step_resume(void);
 extern int cgroup_g_step_destroy(cgroup_ctl_type_t sub);
 extern bool cgroup_g_has_pid(pid_t pid);
-extern void cgroup_free_conf(cgroup_conf_t *cg_conf);
-extern cgroup_conf_t *cgroup_get_conf(void);
 extern List cgroup_get_conf_list(void);
 extern void cgroup_g_reconfig(void);
-extern void cgroup_g_conf_fini(void);
 extern int cgroup_write_conf(int fd);
 extern int cgroup_read_conf(int fd);
 extern bool cgroup_memcg_job_confinement(void);

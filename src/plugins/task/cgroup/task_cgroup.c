@@ -91,26 +91,20 @@ static bool do_task_affinity = false;
 extern int init (void)
 {
 	int rc = SLURM_SUCCESS;
-	cgroup_conf_t *cg_conf;
 
 	if (!running_in_slurmstepd())
 		goto end;
 
-	/* read cgroup configuration */
-	cg_conf = cgroup_get_conf();
-
 	/* enable subsystems based on conf */
-	if (cg_conf->constrain_cores)
+	if (slurm_cgroup_conf.constrain_cores)
 		use_cpuset = true;
-	if (cg_conf->constrain_ram_space ||
-	    cg_conf->constrain_swap_space)
+	if (slurm_cgroup_conf.constrain_ram_space ||
+	    slurm_cgroup_conf.constrain_swap_space)
 		use_memory = true;
-	if (cg_conf->constrain_devices)
+	if (slurm_cgroup_conf.constrain_devices)
 		use_devices = true;
-	if (cg_conf->task_affinity)
+	if (slurm_cgroup_conf.task_affinity)
 		do_task_affinity = true;
-
-	cgroup_free_conf(cg_conf);
 
 	/* enable subsystems based on conf */
 	if (use_cpuset) {

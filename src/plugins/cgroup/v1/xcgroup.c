@@ -40,19 +40,14 @@
 extern int xcgroup_ns_create(xcgroup_ns_t *cgns, char *mnt_args,
 			     const char *subsys)
 {
-	cgroup_conf_t *cg_conf;
-
-	/* read cgroup configuration */
-	cg_conf = cgroup_get_conf();
-
 	cgns->mnt_point = xstrdup_printf("%s/%s",
-					 cg_conf->cgroup_mountpoint,
+					 slurm_cgroup_conf.cgroup_mountpoint,
 					 subsys);
 	cgns->mnt_args = xstrdup(mnt_args);
 	cgns->subsystems = xstrdup(subsys);
 
 	if (!xcgroup_ns_is_available(cgns)) {
-		if (cg_conf->cgroup_automount) {
+		if (slurm_cgroup_conf.cgroup_automount) {
 			if (xcgroup_ns_mount(cgns)) {
 				error("unable to mount %s cgroup "
 				      "namespace: %s",
@@ -67,10 +62,8 @@ extern int xcgroup_ns_create(xcgroup_ns_t *cgns, char *mnt_args,
 		}
 	}
 
-	cgroup_free_conf(cg_conf);
 	return SLURM_SUCCESS;
 clean:
-	cgroup_free_conf(cg_conf);
 	common_cgroup_ns_destroy(cgns);
 	return SLURM_ERROR;
 }
@@ -458,14 +451,8 @@ extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns)
 {
 	xcgroup_t slurm_cg;
 	char *pre;
-	cgroup_conf_t *cg_conf;
 
-	/* read cgroup configuration */
-	cg_conf = cgroup_get_conf();
-
-	pre = xstrdup(cg_conf->cgroup_prepend);
-
-	cgroup_free_conf(cg_conf);
+	pre = xstrdup(slurm_cgroup_conf.cgroup_prepend);
 
 #ifdef MULTIPLE_SLURMD
 	if (conf->node_name) {

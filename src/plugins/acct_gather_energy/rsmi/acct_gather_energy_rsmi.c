@@ -453,7 +453,6 @@ static void _add_energy(acct_gather_energy_t *energy_tot,
  */
 static void _get_node_energy_up(acct_gather_energy_t *energy)
 {
-	cgroup_conf_t *cg_conf;
 	bool task_cgroup = false;
 	bool constrained_devices = false;
 	bool cgroups_active = false;
@@ -461,10 +460,8 @@ static void _get_node_energy_up(acct_gather_energy_t *energy)
 	uint16_t i;
 
 	// Check if GPUs are constrained by cgroups
-	cg_conf = cgroup_get_conf();
-	if (cg_conf && cg_conf->constrain_devices)
-		constrained_devices = true;
-	cgroup_free_conf(cg_conf);
+	slurm_cgroup_conf_init();
+	constrained_devices = slurm_cgroup_conf.constrain_devices;
 
 	// Check if task/cgroup plugin is loaded
 	if (xstrstr(slurm_conf.task_plugin, "cgroup"))

@@ -161,7 +161,6 @@ extern int common_node_config_load(List gres_conf_list,
 
 extern bool common_use_local_device_index(void)
 {
-	cgroup_conf_t *cg_conf;
 	bool use_cgroup = false;
 	static bool use_local_index = false;
 	static bool is_set = false;
@@ -178,10 +177,9 @@ extern bool common_use_local_device_index(void)
 	if (!use_cgroup)
 		return use_local_index;
 
-	cg_conf = cgroup_get_conf();
-	if (cg_conf && cg_conf->constrain_devices)
+	slurm_cgroup_conf_init();
+	if (slurm_cgroup_conf.constrain_devices)
 		use_local_index = true;
-	cgroup_free_conf(cg_conf);
 
 	return use_local_index;
 }

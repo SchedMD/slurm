@@ -252,7 +252,6 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 	char uidcg[PATH_MAX];
 	char *cgroup_suffix = "";
 	char *cgroup_res = "";
-	cgroup_conf_t *cg_conf;
 
 	if (opts.action_unknown == CALLERID_ACTION_DENY) {
 		debug("Denying due to action_unknown=deny");
@@ -266,16 +265,13 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 	if (opts.node_name)
 		cgroup_suffix = xstrdup_printf("_%s", opts.node_name);
 
-	/* read cgroup configuration */
-	cg_conf = cgroup_get_conf();
-
 	/* pick a cgroup that is likely to exist */
-	if (cg_conf->constrain_ram_space ||
-	    cg_conf->constrain_swap_space) {
+	if (slurm_cgroup_conf.constrain_ram_space ||
+	    slurm_cgroup_conf.constrain_swap_space) {
 		cgroup_res = "memory";
-	} else if (cg_conf->constrain_cores) {
+	} else if (slurm_cgroup_conf.constrain_cores) {
 		cgroup_res = "cpuset";
-	} else if (cg_conf->constrain_devices) {
+	} else if (slurm_cgroup_conf.constrain_devices) {
 		cgroup_res = "devices";
 	} else {
 		/* last resort, from proctrack/cgroup */
@@ -283,18 +279,18 @@ static int _indeterminate_multiple(pam_handle_t *pamh, List steps, uid_t uid,
 	}
 
 	if (snprintf(uidcg, PATH_MAX, "%s/%s/slurm%s/uid_%u",
-		     cg_conf->cgroup_mountpoint, cgroup_res, cgroup_suffix, uid)
+		     slurm_cgroup_conf.cgroup_mountpoint, cgroup_res,
+		     cgroup_suffix, uid)
 	    >= PATH_MAX) {
 		info("snprintf: '%s/%s/slurm%s/uid_%u' longer than PATH_MAX of %d",
-		     cg_conf->cgroup_mountpoint, cgroup_res, cgroup_suffix,
-		     uid, PATH_MAX);
+		     slurm_cgroup_conf.cgroup_mountpoint, cgroup_res,
+		     cgroup_suffix, uid, PATH_MAX);
 		/* Make the uidcg an empty string. This will effectively switch
 		 * to a (somewhat) random selection of job rather than picking
 		 * the latest, but how did you overflow PATH_MAX chars anyway?
 		 */
 		uidcg[0] = '\0';
 	}
-	cgroup_free_conf(cg_conf);
 
 	if (opts.node_name)
 		xfree(cgroup_suffix);
@@ -769,6 +765,7 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 	 * in case the config file won't load on this node for some reason.
 	 */
 	slurm_conf_init(NULL);
+	slurm_cgroup_conf_init();
 
 	/*
 	 * Check if there are any steps on the node from any user. A failure here
@@ -832,11 +829,11 @@ PAM_EXTERN int pam_sm_acct_mgmt(pam_handle_t *pamh, int flags
 	rc = _action_unknown(pamh, &pwd, steps);
 
 cleanup:
+	slurm_cgroup_conf_destroy();
 	FREE_NULL_LIST(steps);
 	xfree(buf);
 	xfree(opts.node_name);
 	xfree(opts.pam_service);
-	cgroup_g_conf_fini();
 	return rc;
 }
 

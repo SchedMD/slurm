@@ -847,7 +847,6 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	unsigned int gpu_freq_num = 0, mem_freq_num = 0;
 	bool freq_set = false, freq_logged = false;
 	char *tmp = NULL;
-	cgroup_conf_t *cg_conf;
 	bool task_cgroup = false;
 	bool constrained_devices = false;
 	bool cgroups_active = false;
@@ -873,10 +872,9 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	}
 
 	// Check if GPUs are constrained by cgroups
-	cg_conf = cgroup_get_conf();
-	if (cg_conf && cg_conf->constrain_devices)
+	slurm_cgroup_conf_init();
+	if (slurm_cgroup_conf.constrain_devices)
 		constrained_devices = true;
-	cgroup_free_conf(cg_conf);
 
 	// Check if task/cgroup plugin is loaded
 	if (xstrstr(slurm_conf.task_plugin, "cgroup"))
