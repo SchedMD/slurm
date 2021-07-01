@@ -2850,8 +2850,6 @@ typedef struct {
 	char *node_features_plugins; /* List of node_features plugins to use */
 	char *node_prefix;      /* prefix of nodes in partition, only set in
 				   bluegene clusters NULL otherwise */
-	char *oci_runtime;	/* OCI runtime to execute for containers */
-	char *oci_container_id_pattern; /* OCI container id pattern */
 	uint16_t over_time_limit; /* job's time limit can be exceeded by this
 				   * number of minutes before cancellation */
 	char *plugindir;	/* pathname to plugins */

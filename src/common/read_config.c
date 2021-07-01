@@ -303,8 +303,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"MpiParams", S_P_STRING},
 	{"NodeFeaturesPlugins", S_P_STRING},
 	{"OverTimeLimit", S_P_UINT16},
-	{"OCIRunTime", S_P_STRING},
-	{"OCIContainerIDPattern", S_P_STRING},
 	{"PluginDir", S_P_STRING},
 	{"PlugStackConfig", S_P_STRING},
 	{"PowerParameters", S_P_STRING},
@@ -2998,8 +2996,6 @@ void init_slurm_conf(slurm_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->next_job_id		= NO_VAL;
 	xfree(ctl_conf_ptr->node_features_plugins);
 	xfree (ctl_conf_ptr->node_prefix);
-	xfree(ctl_conf_ptr->oci_runtime);
-	xfree(ctl_conf_ptr->oci_container_id_pattern);
 	ctl_conf_ptr->over_time_limit           = 0;
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
@@ -4205,14 +4201,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		xfree(conf->accounting_storage_user);
 		conf->accounting_storage_user = xstrdup("N/A");
 	}
-
-	if (!s_p_get_string(&conf->oci_runtime, "OCIRunTime", hashtbl))
-		conf->oci_runtime = xstrdup(DEFAULT_OCI_RUNTIME);
-
-	if (!s_p_get_string(&conf->oci_container_id_pattern,
-			    "OCIContainerIDPattern", hashtbl))
-		conf->oci_container_id_pattern =
-			xstrdup(DEFAULT_OCI_CONTAINER_ID_PATTERN);
 
 	(void) s_p_get_uint16(&conf->over_time_limit, "OverTimeLimit", hashtbl);
 

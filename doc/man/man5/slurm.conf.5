@@ -1193,34 +1193,6 @@ delay before a job is killed, which could lead to system Out of Memory events.
 .RE
 
 .TP
-\fBOCIRunTime\fR
-Path to the OCI compliant runtime to start container tasks.
-.sp
-Default: /usr/sbin/runc
-
-.TP
-\fBOCIContainerIDPattern\fR
-Pattern to use to generate <container id> passed to OCI runtime. Certain OCI
-runtimes may have different rules or requirements on <container id> field.
-.sp
-Default: %n.%u.%j.%s.%t
-.sp
-Possible replacements:
-.IP \(bu 10
-%% - replace as "%"
-.IP \(bu
-%j - replace as numeric job id
-.IP \(bu
-%n - replace as nodename
-.IP \(bu
-%s - replace as numeric step id
-.IP \(bu
-%t - replace as numeric step task id
-.IP \(bu
-%u - replace as user name
-.RE
-
-.TP
 \fBJobCompHost\fR
 The name of the machine hosting the job completion database.
 Only used for database type storage plugins, ignored otherwise.
