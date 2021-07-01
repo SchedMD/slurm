@@ -968,6 +968,17 @@ _alloc_io_buf(void)
 	return buf;
 }
 
+static void _free_io_buf(void *ptr)
+{
+	struct io_buf *buf = (struct io_buf *) ptr;
+
+	if (!buf)
+		return;
+
+	xfree(buf->data);
+	xfree(buf);
+}
+
 static void
 _init_stdio_eio_objs(slurm_step_io_fds_t fds, client_io_t *cio)
 {
@@ -1123,12 +1134,12 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 		eio_new_initial_obj(cio->eio, obj);
 	}
 
-	cio->free_incoming = list_create(NULL); /* FIXME! Needs destructor */
+	cio->free_incoming = list_create(_free_io_buf);
 	cio->incoming_count = 0;
 	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
 		list_enqueue(cio->free_incoming, _alloc_io_buf());
 	}
-	cio->free_outgoing = list_create(NULL); /* FIXME! Needs destructor */
+	cio->free_outgoing = list_create(_free_io_buf);
 	cio->outgoing_count = 0;
 	for (i = 0; i < STDIO_MAX_FREE_BUF; i++) {
 		list_enqueue(cio->free_outgoing, _alloc_io_buf());
