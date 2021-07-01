@@ -448,11 +448,6 @@ AC_CONFIG_FILES([Makefile
 		 src/slurmrestd/plugins/auth/Makefile
 		 src/slurmrestd/plugins/auth/jwt/Makefile
 		 src/slurmrestd/plugins/auth/local/Makefile
-		 src/slurmrestd/plugins/openapi/Makefile
-		 src/slurmrestd/plugins/openapi/v0.0.35/Makefile
-		 src/slurmrestd/plugins/openapi/v0.0.36/Makefile
-		 src/slurmrestd/plugins/openapi/v0.0.37/Makefile
-		 src/slurmrestd/plugins/openapi/dbv0.0.36/Makefile
 		 src/sprio/Makefile
 		 src/squeue/Makefile
 		 src/srun/Makefile
@@ -557,6 +552,11 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/node_features/Makefile
 		 src/plugins/node_features/knl_cray/Makefile
 		 src/plugins/node_features/knl_generic/Makefile
+		 src/plugins/openapi/Makefile
+		 src/plugins/openapi/v0.0.35/Makefile
+		 src/plugins/openapi/v0.0.36/Makefile
+		 src/plugins/openapi/v0.0.37/Makefile
+		 src/plugins/openapi/dbv0.0.36/Makefile
 		 src/plugins/power/Makefile
 		 src/plugins/power/common/Makefile
 		 src/plugins/power/cray_aries/Makefile

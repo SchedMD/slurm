@@ -195,7 +195,7 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = openapi auth
+DIST_SUBDIRS = auth
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -449,7 +449,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-@WITH_SLURMRESTD_TRUE@SUBDIRS = openapi auth
+@WITH_SLURMRESTD_TRUE@SUBDIRS = auth
 all: all-recursive
 
 .SUFFIXES:

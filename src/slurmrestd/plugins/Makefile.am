@@ -1,3 +1,3 @@
 if WITH_SLURMRESTD
-SUBDIRS = openapi auth
+SUBDIRS = auth
 endif
