@@ -77,7 +77,7 @@ static char *start_argv[] = {
 	"/bin/sh", "-c", "echo 'start disabled'; exit 1", NULL };
 
 static char *_generate_pattern(const char *pattern, stepd_step_rec_t *job,
-			       int task_id)
+			       int task_id, char *rootfs_path)
 {
 	char *buffer = NULL, *offset = NULL;
 
@@ -100,6 +100,10 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *job,
 			case 'n':
 				xstrfmtcatat(buffer, &offset, "%s",
 					     job->node_name);
+				break;
+			case 'r':
+				xstrfmtcatat(buffer, &offset, "%s",
+					     rootfs_path);
 				break;
 			case 's':
 				xstrfmtcatat(buffer, &offset, "%u",
@@ -213,7 +217,8 @@ rwfail:
 	return rc;
 }
 
-static int _modify_config(stepd_step_rec_t *job, data_t *config)
+static int _modify_config(stepd_step_rec_t *job, data_t *config,
+			  char *rootfs_path)
 {
 	data_t *mnts, *env;
 
@@ -342,27 +347,33 @@ static int _modify_config(stepd_step_rec_t *job, data_t *config)
 		 * Generate all the operations for later while we have all the
 		 * info needed
 		 */
-		gen = _generate_pattern(oci_conf->runtime_create, job, task->id);
+		gen = _generate_pattern(oci_conf->runtime_create, job, task->id,
+					rootfs_path);
 		if (gen)
 			create_argv[2] = gen;
 
-		gen = _generate_pattern(oci_conf->runtime_delete, job, task->id);
+		gen = _generate_pattern(oci_conf->runtime_delete, job, task->id,
+					rootfs_path);
 		if (gen)
 			delete_argv[2] = gen;
 
-		gen = _generate_pattern(oci_conf->runtime_kill, job, task->id);
+		gen = _generate_pattern(oci_conf->runtime_kill, job, task->id,
+					rootfs_path);
 		if (gen)
 			kill_argv[2] = gen;
 
-		gen = _generate_pattern(oci_conf->runtime_query, job, task->id);
+		gen = _generate_pattern(oci_conf->runtime_query, job, task->id,
+					rootfs_path);
 		if (gen)
 			query_argv[2] = gen;
 
-		gen = _generate_pattern(oci_conf->runtime_run, job, task->id);
+		gen = _generate_pattern(oci_conf->runtime_run, job, task->id,
+					rootfs_path);
 		if (gen)
 			run_argv[2] = gen;
 
-		gen = _generate_pattern(oci_conf->runtime_start, job, task->id);
+		gen = _generate_pattern(oci_conf->runtime_start, job, task->id,
+					rootfs_path);
 		if (gen)
 			start_argv[2] = gen;
 	}
@@ -370,14 +381,14 @@ static int _modify_config(stepd_step_rec_t *job, data_t *config)
 	return SLURM_SUCCESS;
 }
 
-static void _generate_bundle_path(stepd_step_rec_t *job)
+static void _generate_bundle_path(stepd_step_rec_t *job, char *rootfs_path)
 {
 	char *path = NULL;
 
 	/* write new config.json in spool dir or requested pattern */
 	if (oci_conf->container_path) {
 		path = _generate_pattern(oci_conf->container_path, job,
-					 job->task[0]->id);
+					 job->task[0]->id, rootfs_path);
 	} else if (job->step_id.step_id == SLURM_BATCH_SCRIPT) {
 		xstrfmtcat(path, "%s/oci-job%05u-batch/", conf->spooldir,
 			   job->step_id.job_id);
@@ -400,6 +411,7 @@ extern void setup_container(stepd_step_rec_t *job)
 	char *jconfig = NULL;
 	data_t *config = NULL;
 	char *out = NULL;
+	char *rootfs_path = NULL;
 
 	if ((rc = get_oci_conf(&oci_conf)) && (rc != ENOENT))
 		fatal("Error loading oci.conf: %s", slurm_strerror(rc));
@@ -425,14 +437,29 @@ extern void setup_container(stepd_step_rec_t *job)
 
 	xfree(jconfig);
 
-	_generate_bundle_path(job);
+	if ((rc = data_retrieve_dict_path_string(config, "/root/path/",
+						 &rootfs_path))) {
+		debug("%s: unable to find /root/path/", __func__);
+		goto error;
+	}
+
+	if (rootfs_path[0] != '/') {
+		/* always provide absolute path */
+		char *t = NULL;
+
+		xstrfmtcat(t, "%s/%s", job->container, rootfs_path);
+		xfree(rootfs_path);
+		rootfs_path = t;
+	}
+
+	_generate_bundle_path(job, rootfs_path);
 
 	if ((rc = _mkpath(job->cwd, job->uid, job->gid)))
 		goto error;
 
 	xstrfmtcat(jconfig, "%s/config.json", job->cwd);
 
-	if ((rc = _modify_config(job, config)))
+	if ((rc = _modify_config(job, config, rootfs_path)))
 		goto error;
 
 	if ((rc = data_g_serialize(&out, config, MIME_TYPE_JSON,
@@ -451,6 +478,7 @@ error:
 	if (rc)
 		error("%s: container setup failed: %s",
 		      __func__, slurm_strerror(rc));
+	xfree(rootfs_path);
 	xfree(out);
 	xfree(jconfig);
 	FREE_NULL_DATA(config);
