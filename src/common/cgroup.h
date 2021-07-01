@@ -167,7 +167,14 @@ extern cgroup_conf_t slurm_cgroup_conf;
 /* global functions */
 extern int slurm_cgroup_conf_init(void);
 extern void slurm_cgroup_conf_destroy(void);
+extern void cgroup_conf_reinit(void);
 extern void cgroup_free_limits(cgroup_limits_t *limits);
+extern List cgroup_get_conf_list(void);
+extern int cgroup_write_conf(int fd);
+extern int cgroup_read_conf(int fd);
+extern bool cgroup_memcg_job_confinement(void);
+
+/* global plugin functions */
 extern int cgroup_g_init(void);
 extern int cgroup_g_fini(void);
 extern int cgroup_g_initialize(cgroup_ctl_type_t sub);
@@ -181,11 +188,6 @@ extern int cgroup_g_step_suspend(void);
 extern int cgroup_g_step_resume(void);
 extern int cgroup_g_step_destroy(cgroup_ctl_type_t sub);
 extern bool cgroup_g_has_pid(pid_t pid);
-extern List cgroup_get_conf_list(void);
-extern void cgroup_conf_reinit(void);
-extern int cgroup_write_conf(int fd);
-extern int cgroup_read_conf(int fd);
-extern bool cgroup_memcg_job_confinement(void);
 extern cgroup_limits_t *cgroup_g_root_constrain_get(cgroup_ctl_type_t sub);
 extern int cgroup_g_root_constrain_set(cgroup_ctl_type_t sub,
 				       cgroup_limits_t *limits);
