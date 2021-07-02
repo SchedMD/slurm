@@ -1724,10 +1724,10 @@ Name=gpu Type=tesla File=${dev}4 Cores=0-3 Links=0,-1,2
 "
 set fake_gpus_conf ""
 set expected_output "
-GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}1|
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0,-1|${dev}2|
-GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}3|
 GRES_PARSABLE\[gpu\](1):tesla|4|0-3|0,-1,2|${dev}4|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}1|
+GRES_PARSABLE\[gpu\](1):tesla|4|0-3|(null)|${dev}3|
 "
 check_configuration 2.42 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
