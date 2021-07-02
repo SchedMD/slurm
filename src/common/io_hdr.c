@@ -149,8 +149,7 @@ io_init_msg_validate(struct slurm_io_init_msg *msg, const char *sig)
 		return SLURM_ERROR;
 	}
 
-	if (memcmp((void *)sig, (void *)msg->cred_signature,
-		   SLURM_IO_KEY_SIZE)) {
+	if (memcmp((void *) sig, (void *) msg->io_key, SLURM_IO_KEY_SIZE)) {
 		error("Invalid IO init header signature");
 		return SLURM_ERROR;
 	}
@@ -167,8 +166,7 @@ static void io_init_msg_pack(struct slurm_io_init_msg *hdr, buf_t *buffer)
        	pack32(hdr->nodeid, buffer);
 	pack32(hdr->stdout_objs, buffer);
 	pack32(hdr->stderr_objs, buffer);
-	packmem((char *) hdr->cred_signature,
-		(uint32_t) SLURM_IO_KEY_SIZE, buffer);
+	packmem((char *) hdr->io_key, (uint32_t) SLURM_IO_KEY_SIZE, buffer);
 }
 
 
@@ -185,7 +183,7 @@ static int io_init_msg_unpack(struct slurm_io_init_msg *hdr, buf_t *buffer)
 	safe_unpackmem_ptr(&tmp_ptr, &val, buffer);
 	if (val != SLURM_IO_KEY_SIZE)
 		goto unpack_error;
-	memcpy(hdr->cred_signature, tmp_ptr, SLURM_IO_KEY_SIZE);
+	memcpy(hdr->io_key, tmp_ptr, SLURM_IO_KEY_SIZE);
 
 	return SLURM_SUCCESS;
 

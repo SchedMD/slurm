@@ -1647,7 +1647,7 @@ _send_io_init_msg(int sock, srun_key_t *key, stepd_step_rec_t *job, bool init)
 {
 	struct slurm_io_init_msg msg;
 
-	memcpy(msg.cred_signature, key->data, SLURM_IO_KEY_SIZE);
+	memcpy(msg.io_key, key->data, SLURM_IO_KEY_SIZE);
 	msg.nodeid = job->nodeid;
 	/*
 	 * The initial message does not need the node_offset it is needed for
