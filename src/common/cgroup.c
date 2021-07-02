@@ -122,7 +122,7 @@ static bool init_run = false;
 
 cgroup_conf_t slurm_cgroup_conf;
 
-static pthread_mutex_t cg_conf_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t cg_conf_lock = PTHREAD_RWLOCK_INITIALIZER;
 static buf_t *cg_conf_buf = NULL;
 static bool cg_conf_inited = false;
 static bool cg_conf_exist = true;
@@ -138,13 +138,13 @@ static char *_autodetect_cgroup_version(void);
 /* Local functions */
 static void _cgroup_conf_fini()
 {
-	slurm_mutex_lock(&cg_conf_lock);
+	slurm_rwlock_wrlock(&cg_conf_lock);
 
 	_clear_slurm_cgroup_conf();
 	cg_conf_inited = false;
 	FREE_NULL_BUFFER(cg_conf_buf);
 
-	slurm_mutex_unlock(&cg_conf_lock);
+	slurm_rwlock_unlock(&cg_conf_lock);
 }
 
 static void _clear_slurm_cgroup_conf()
@@ -477,7 +477,7 @@ extern int cgroup_conf_init(void)
 {
 	int rc = SLURM_SUCCESS;
 
-	slurm_mutex_lock(&cg_conf_lock);
+	slurm_rwlock_wrlock(&cg_conf_lock);
 
 	if (!cg_conf_inited) {
 		_clear_slurm_cgroup_conf();
@@ -493,7 +493,7 @@ extern int cgroup_conf_init(void)
 	} else
 		rc = SLURM_ERROR;
 
-	slurm_mutex_unlock(&cg_conf_lock);
+	slurm_rwlock_unlock(&cg_conf_lock);
 	return rc;
 }
 
@@ -533,7 +533,7 @@ extern List cgroup_get_conf_list(void)
 
 	xassert(cg_conf_inited);
 
-	slurm_mutex_lock(&cg_conf_lock);
+	slurm_rwlock_rdlock(&cg_conf_lock);
 
 	/* Fill list with cgroup config key pairs */
 	cgroup_conf_l = list_create(destroy_config_key_pair);
@@ -648,7 +648,7 @@ extern List cgroup_get_conf_list(void)
 
 	list_sort(cgroup_conf_l, (ListCmpF) sort_key_pairs);
 
-	slurm_mutex_unlock(&cg_conf_lock);
+	slurm_rwlock_unlock(&cg_conf_lock);
 
 	return cgroup_conf_l;
 }
@@ -659,15 +659,15 @@ extern int cgroup_write_conf(int fd)
 
 	xassert(cg_conf_inited);
 
-	slurm_mutex_lock(&cg_conf_lock);
+	slurm_rwlock_rdlock(&cg_conf_lock);
 	len = get_buf_offset(cg_conf_buf);
 	safe_write(fd, &len, sizeof(int));
 	safe_write(fd, get_buf_data(cg_conf_buf), len);
-	slurm_mutex_unlock(&cg_conf_lock);
+	slurm_rwlock_unlock(&cg_conf_lock);
 
 	return SLURM_SUCCESS;
 rwfail:
-	slurm_mutex_unlock(&cg_conf_lock);
+	slurm_rwlock_unlock(&cg_conf_lock);
 	return SLURM_ERROR;
 }
 
@@ -676,7 +676,7 @@ extern int cgroup_read_conf(int fd)
 	int len, rc;
 	buf_t *buffer = NULL;
 
-	slurm_mutex_lock(&cg_conf_lock);
+	slurm_rwlock_wrlock(&cg_conf_lock);
 
 	if (cg_conf_inited)
 		_clear_slurm_cgroup_conf();
@@ -693,11 +693,11 @@ extern int cgroup_read_conf(int fd)
 	FREE_NULL_BUFFER(buffer);
 
 	cg_conf_inited = true;
-	slurm_mutex_unlock(&cg_conf_lock);
+	slurm_rwlock_unlock(&cg_conf_lock);
 
 	return SLURM_SUCCESS;
 rwfail:
-	slurm_mutex_unlock(&cg_conf_lock);
+	slurm_rwlock_unlock(&cg_conf_lock);
 	FREE_NULL_BUFFER(buffer);
 
 	return SLURM_ERROR;
@@ -710,14 +710,14 @@ extern bool cgroup_memcg_job_confinement(void)
 	xassert(cg_conf_inited);
 
 	/* read cgroup configuration */
-	slurm_mutex_lock(&cg_conf_lock);
+	slurm_rwlock_rdlock(&cg_conf_lock);
 
 	if ((slurm_cgroup_conf.constrain_ram_space ||
 	     slurm_cgroup_conf.constrain_swap_space) &&
 	    xstrstr(slurm_conf.task_plugin, "cgroup"))
 		status = true;
 
-	slurm_mutex_unlock(&cg_conf_lock);
+	slurm_rwlock_unlock(&cg_conf_lock);
 
 	return status;
 }
