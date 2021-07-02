@@ -1054,11 +1054,6 @@ static void *_start_stage_out(void *x)
 		}
 		slurm_mutex_lock(&bb_state.bb_mutex);
 		bb_job = _get_bb_job(job_ptr);
-		/*
-		 * TODO: Do I really want to only change the state to TEARDOWN
-		 * if it succeeded? Even if it fails we're going to teardown
-		 * anyway.
-		 */
 		if ((rc == SLURM_SUCCESS) && bb_job)
 			bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_TEARDOWN);
 		bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
