@@ -2002,7 +2002,7 @@
             "description": "Allocate resources for the job from the named reservation."
           },
           "signal": {
-            "pattern": "[B:]<sig_num>[@<sig_time>]",
+            "pattern": "(B:|)sig_num(@sig_time|)",
             "type": "string",
             "description": "When a job is within sig_time seconds of its end time, send it the signal sig_num."
           },
