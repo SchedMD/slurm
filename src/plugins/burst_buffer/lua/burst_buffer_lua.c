@@ -1341,8 +1341,7 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 		tok += directive_len; /* Skip the directive string. */
 		while (isspace(tok[0]))
 			tok++;
-		if (!xstrncmp(tok, "jobdw", 5) &&
-		    (capacity = strstr(tok, "capacity="))) {
+		if ((capacity = strstr(tok, "capacity="))) {
 			char *num_ptr = capacity + 9;
 
 			bb_pool = NULL;
@@ -1420,13 +1419,9 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 		while (isspace(tok[0]))
 			tok++;
 
-		if (!xstrncmp(tok, "jobdw", 5)) {
+		if ((sub_tok = strstr(tok, "capacity="))) {
 			have_bb = true;
-			if ((sub_tok = strstr(tok, "capacity="))) {
-				tmp_cnt = bb_get_size_num(sub_tok + 9, 1);
-			} else {
-				tmp_cnt = 0;
-			}
+			tmp_cnt = bb_get_size_num(sub_tok + 9, 1);
 			if ((sub_tok = strstr(tok, "pool"))) {
 				xfree(bb_job->job_pool);
 				bb_job->job_pool = xstrdup(sub_tok + 5);
