@@ -734,6 +734,8 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		xfree(value);
 		info("%s: DestroyBuffer:%s",  __func__,
 		     state_ptr->bb_config.destroy_buffer);
+		info("%s: Flags:%s",
+		     __func__, slurm_bb_flags2str(state_ptr->bb_config.flags));
 		info("%s: GetSysState:%s",  __func__,
 		     state_ptr->bb_config.get_sys_state);
 		info("%s: GetSysStatus:%s",  __func__,
