@@ -1465,6 +1465,32 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 	return bb_job;
 }
 
+/* Validate burst buffer configuration */
+static void _test_config(void)
+{
+	if (bb_state.bb_config.get_sys_state) {
+		error("%s: found get_sys_state which is unused in this plugin, unsetting",
+		      plugin_type);
+		xfree(bb_state.bb_config.get_sys_state);
+	}
+	if (bb_state.bb_config.get_sys_status) {
+		error("%s: found get_sys_status which is unused in this plugin, unsetting",
+		      plugin_type);
+		xfree(bb_state.bb_config.get_sys_status);
+	}
+	if (bb_state.bb_config.flags & BB_FLAG_ENABLE_PERSISTENT) {
+		error("%s: found flags=EnablePersistent: persistent burst buffers don't exist in this plugin, setting DisablePersistent",
+		      plugin_type);
+		bb_state.bb_config.flags &= (~BB_FLAG_ENABLE_PERSISTENT);
+		bb_state.bb_config.flags |= BB_FLAG_DISABLE_PERSISTENT;
+	}
+	if (bb_state.bb_config.flags & BB_FLAG_EMULATE_CRAY) {
+		error("%s: found flags=EmulateCray which is invalid for this plugin, unsetting",
+		      plugin_type);
+		bb_state.bb_config.flags &= (~BB_FLAG_EMULATE_CRAY);
+	}
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -1481,6 +1507,7 @@ extern int init(void)
 	slurm_mutex_init(&bb_state.bb_mutex);
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_load_config(&bb_state, (char *)plugin_type); /* Removes "const" */
+	_test_config();
 	log_flag(BURST_BUF, "");
 	bb_alloc_cache(&bb_state);
 	lua_shutdown = false;
@@ -1760,6 +1787,12 @@ extern char *bb_p_get_status(uint32_t argc, char **argv)
  */
 extern int bb_p_reconfig(void)
 {
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	log_flag(BURST_BUF, "");
+	bb_load_config(&bb_state, (char *) plugin_type); /* Remove "const" */
+	_test_config();
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+
 	/* reconfig is the place we make sure the pointers are correct */
 	for (int i = 0; i < BB_HASH_SIZE; i++) {
 		bb_alloc_t *bb_alloc = bb_state.bb_ahash[i];
