@@ -49,7 +49,7 @@ proc inc21_30_12 { } {
 		wait_job_reason $job_id COMPLETED
 	}
 
-	log_debug "Submiting the final job and check that it is set Pending with Reason QOSGrpWallLimit (Within: inc21.30.12)"
+	log_debug "Submitting the final job and check that it is set Pending with Reason QOSGrpWallLimit (Within: inc21.30.12)"
 	set job_id [submit_job -fail "--account=$acct --qos=$qostest -N1 -t$job_time --wrap '$bin_sleep $sleep_time' -o /dev/null -e /dev/null"]
 	lappend job_id_list $job_id
 	# Subtest of the limit
