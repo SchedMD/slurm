@@ -944,7 +944,7 @@ static void *_start_stage_out(void *x)
 {
 	int rc;
 	uint32_t timeout, argc;
-	char *resp_msg = NULL;
+	char *resp_msg = NULL, *op;
 	char **argv;
 	bool track_script_signal = false;
 	stage_out_args_t *stage_out_args = (stage_out_args_t *) x;
@@ -964,8 +964,9 @@ static void *_start_stage_out(void *x)
 
 	timeout = bb_state.bb_config.other_timeout;
 
+	op = "slurm_bb_post_run";
 	START_TIMER;
-	rc = _run_lua_script("slurm_bb_post_run", timeout, argc, argv,
+	rc = _run_lua_script(op, timeout, argc, argv,
 			     stage_out_args->job_id, &resp_msg,
 			     &track_script_signal);
 	END_TIMER;
@@ -986,16 +987,9 @@ static void *_start_stage_out(void *x)
 	job_ptr = find_job_record(stage_out_args->job_id);
 	if (rc != SLURM_SUCCESS) {
 		trigger_burst_buffer();
-		error("post_run failed for JobId=%u", stage_out_args->job_id);
+		error("post_run failed for JobId=%u, status: %d, response: %s",
+		      stage_out_args->job_id, rc, resp_msg);
 		rc = SLURM_ERROR;
-		if (job_ptr) {
-			job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
-			xfree(job_ptr->state_desc);
-			xstrfmtcat(job_ptr->state_desc, "%s: post_run: %s",
-				   plugin_type, resp_msg);
-			bb_update_system_comment(job_ptr, "post_run",
-						 resp_msg, 1);
-		}
 	}
 	if (!job_ptr) {
 		error("unable to find job record for JobId=%u",
@@ -1013,9 +1007,10 @@ static void *_start_stage_out(void *x)
 	if (rc == SLURM_SUCCESS) {
 		xfree(resp_msg);
 		timeout = bb_state.bb_config.stage_out_timeout;
+		op = "slurm_bb_data_out";
 		START_TIMER;
 		/* Same args as post_run. */
-		rc = _run_lua_script("slurm_bb_data_out", timeout, argc, argv,
+		rc = _run_lua_script(op, timeout, argc, argv,
 				     stage_out_args->job_id, &resp_msg,
 				     &track_script_signal);
 		END_TIMER;
@@ -1034,21 +1029,9 @@ static void *_start_stage_out(void *x)
 
 		if (rc != SLURM_SUCCESS) {
 			trigger_burst_buffer();
-			error("data_out failed for JobId=%u",
-			      stage_out_args->job_id);
+			error("data_out failed for JobId=%u, status: %d, response: %s",
+			      stage_out_args->job_id, rc, resp_msg);
 			rc = SLURM_ERROR;
-			lock_slurmctld(job_write_lock);
-			job_ptr = find_job_record(stage_out_args->job_id);
-			if (job_ptr) {
-				job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
-				xfree(job_ptr->state_desc);
-				xstrfmtcat(job_ptr->state_desc,
-					   "%s: stage-out: %s",
-					   plugin_type, resp_msg);
-				bb_update_system_comment(job_ptr, "data_out",
-							 resp_msg, 1);
-			}
-			unlock_slurmctld(job_write_lock);
 		}
 	}
 
@@ -1058,7 +1041,13 @@ static void *_start_stage_out(void *x)
 		error("unable to find job record for JobId=%u",
 		      stage_out_args->job_id);
 	} else {
-		if (rc == SLURM_SUCCESS) {
+		if (rc != SLURM_SUCCESS) {
+			job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
+			xfree(job_ptr->state_desc);
+			xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
+				   plugin_type, op, resp_msg);
+			bb_update_system_comment(job_ptr, op, resp_msg, 1);
+		} else {
 			job_ptr->job_state &= (~JOB_STAGE_OUT);
 			xfree(job_ptr->state_desc);
 			last_job_update = time(NULL);
