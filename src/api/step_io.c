@@ -1217,6 +1217,8 @@ client_io_handler_destroy(client_io_t *cio)
 	xfree(cio->listensock);
 	eio_handle_destroy(cio->eio);
 	xfree(cio->io_key);
+	FREE_NULL_LIST(cio->free_incoming);
+	FREE_NULL_LIST(cio->free_outgoing);
 	xfree(cio);
 }
 
