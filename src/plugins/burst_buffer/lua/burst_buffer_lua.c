@@ -2299,7 +2299,7 @@ static void _update_system_comment(job_record_t *job_ptr, char *operation,
 
 static void *_start_teardown(void *x)
 {
-	int rc;
+	int rc, retry_count = 0;
 	uint32_t timeout, argc;
 	char *resp_msg = NULL;
 	char **argv;
@@ -2323,86 +2323,107 @@ static void *_start_teardown(void *x)
 
 	timeout = bb_state.bb_config.other_timeout;
 	/* Run lua "teardown" function */
-	START_TIMER;
-	rc = _run_lua_script("slurm_bb_job_teardown", timeout, argc, argv,
-			     &resp_msg, &track_script_signal);
-	END_TIMER;
-	info("Teardown for JobId=%u ran for %s",
-	     teardown_args->job_id, TIME_STR);
+	while (1) {
+		START_TIMER;
+		rc = _run_lua_script("slurm_bb_job_teardown", timeout, argc, argv,
+				     &resp_msg, &track_script_signal);
+		END_TIMER;
+		info("Teardown for JobId=%u ran for %s",
+		     teardown_args->job_id, TIME_STR);
 
-	if (track_script_signal) {
-		/* Killed by slurmctld, exit now. */
-		info("teardown for JobId=%u terminated by slurmctld",
-		     teardown_args->job_id);
-		goto fini;
-	}
-
-	if (rc != SLURM_SUCCESS) {
-		trigger_burst_buffer();
-		error("Teardown for JobId=%u failed. status: %d, response: %s",
-		      teardown_args->job_id, rc, resp_msg);
-
-		lock_slurmctld(job_write_lock);
-		job_ptr = find_job_record(teardown_args->job_id);
-		if (job_ptr) {
-			job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
-			xfree(job_ptr->state_desc);
-			xstrfmtcat(job_ptr->state_desc, "%s: teardown: %s",
-				   plugin_type, resp_msg);
-			_update_system_comment(job_ptr, "teardown",
-					       resp_msg, 0);
+		if (track_script_signal) {
+			/* Killed by slurmctld, exit now. */
+			info("teardown for JobId=%u terminated by slurmctld",
+			     teardown_args->job_id);
+			goto fini;
 		}
-		unlock_slurmctld(job_write_lock);
 
-		_queue_teardown(teardown_args->job_id, teardown_args->user_id,
-				teardown_args->hurry);
+		if (rc != SLURM_SUCCESS) {
+			int sleep_time = 10; /* Arbitrary time */
 
-	} else {
-		lock_slurmctld(job_write_lock);
-		slurm_mutex_lock(&bb_state.bb_mutex);
-		job_ptr = find_job_record(teardown_args->job_id);
-		_purge_bb_files(teardown_args->job_id, job_ptr);
-		if (job_ptr) {
-			if ((bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr))){
-				bb_limit_rem(bb_alloc->user_id, bb_alloc->size,
-					     bb_alloc->pool, &bb_state);
-				(void) bb_free_alloc_rec(&bb_state, bb_alloc);
-			}
-			if ((bb_job = _get_bb_job(job_ptr)))
-				bb_set_job_bb_state(job_ptr, bb_job,
-						    BB_STATE_COMPLETE);
-			job_ptr->job_state &= (~JOB_STAGE_OUT);
-			if (!IS_JOB_PENDING(job_ptr) &&	/* No email if requeue */
-			    (job_ptr->mail_type & MAIL_JOB_STAGE_OUT)) {
-				/*
-				 * NOTE: If a job uses multiple burst buffer
-				 * plugins, the message will be sent after the
-				 * teardown completes in the first plugin
-				 */
-				mail_job_info(job_ptr, MAIL_JOB_STAGE_OUT);
-				job_ptr->mail_type &= (~MAIL_JOB_STAGE_OUT);
+			/*
+			 * To prevent an infinite loop of teardown failures,
+			 * limit the number of times we retry teardown and
+			 * sleep in between tries.
+			 * Give up trying teardown if it fails after retrying
+			 * a certain number of times.
+			 */
+			trigger_burst_buffer();
+			if (retry_count >= MAX_RETRY_CNT) {
+				error("Teardown for JobId=%u failed %d times. We won't retry teardown anymore. Removing burst buffer.",
+				      teardown_args->job_id, retry_count);
+				break;
+			} else {
+				error("Teardown for JobId=%u failed. status: %d, response: %s. Retrying after %d seconds. Current retry count=%d, max retries=%d",
+				      teardown_args->job_id, rc, resp_msg,
+				      sleep_time, retry_count, MAX_RETRY_CNT);
+				retry_count++;
+
+				lock_slurmctld(job_write_lock);
+				job_ptr =
+					find_job_record(teardown_args->job_id);
+				if (job_ptr) {
+					job_ptr->state_reason =
+						FAIL_BURST_BUFFER_OP;
+					xfree(job_ptr->state_desc);
+					xstrfmtcat(job_ptr->state_desc, "%s: teardown: %s",
+						   plugin_type, resp_msg);
+					_update_system_comment(job_ptr,
+							       "teardown",
+							       resp_msg, 0);
+				}
+				unlock_slurmctld(job_write_lock);
+				sleep(sleep_time);
 			}
 		} else {
-			/*
-			 * This will happen when slurmctld restarts and needs
-			 * to clear vestigial buffers
-			 */
-			char buf_name[32];
-			snprintf(buf_name, sizeof(buf_name), "%u",
-				 teardown_args->job_id);
-			bb_alloc = bb_find_name_rec(buf_name,
-						    teardown_args->user_id,
-						    &bb_state);
-			if (bb_alloc) {
-				bb_limit_rem(bb_alloc->user_id, bb_alloc->size,
-					     bb_alloc->pool, &bb_state);
-				(void) bb_free_alloc_rec(&bb_state, bb_alloc);
-			}
-
+			break; /* Success, break out of loop */
 		}
-		slurm_mutex_unlock(&bb_state.bb_mutex);
-		unlock_slurmctld(job_write_lock);
 	}
+
+	lock_slurmctld(job_write_lock);
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	job_ptr = find_job_record(teardown_args->job_id);
+	_purge_bb_files(teardown_args->job_id, job_ptr);
+	if (job_ptr) {
+		if ((bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr))){
+			bb_limit_rem(bb_alloc->user_id, bb_alloc->size,
+				     bb_alloc->pool, &bb_state);
+			(void) bb_free_alloc_rec(&bb_state, bb_alloc);
+		}
+		if ((bb_job = _get_bb_job(job_ptr)))
+			bb_set_job_bb_state(job_ptr, bb_job,
+					    BB_STATE_COMPLETE);
+		job_ptr->job_state &= (~JOB_STAGE_OUT);
+		if (!IS_JOB_PENDING(job_ptr) &&	/* No email if requeue */
+		    (job_ptr->mail_type & MAIL_JOB_STAGE_OUT)) {
+			/*
+			 * NOTE: If a job uses multiple burst buffer
+			 * plugins, the message will be sent after the
+			 * teardown completes in the first plugin
+			 */
+			mail_job_info(job_ptr, MAIL_JOB_STAGE_OUT);
+			job_ptr->mail_type &= (~MAIL_JOB_STAGE_OUT);
+		}
+	} else {
+		/*
+		 * This will happen when slurmctld restarts and needs
+		 * to clear vestigial buffers
+		 */
+		char buf_name[32];
+		snprintf(buf_name, sizeof(buf_name), "%u",
+			 teardown_args->job_id);
+		bb_alloc = bb_find_name_rec(buf_name,
+					    teardown_args->user_id,
+					    &bb_state);
+		if (bb_alloc) {
+			bb_limit_rem(bb_alloc->user_id, bb_alloc->size,
+				     bb_alloc->pool, &bb_state);
+			(void) bb_free_alloc_rec(&bb_state, bb_alloc);
+		}
+
+	}
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+	unlock_slurmctld(job_write_lock);
 
 fini:
 	xfree(resp_msg);
