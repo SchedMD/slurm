@@ -186,7 +186,12 @@ again:
 		cred = NULL;
 		slurm_seterrno(ESLURM_AUTH_CRED_INVALID);
 	} else if ((bad_cred_test > 0) && cred->m_str) {
-		int i = ((int) time(NULL)) % strlen(cred->m_str);
+		/*
+		 * Avoid changing the trailing ':' character, or any of the
+		 * trailing base64 padding which could leave the base64 stream
+		 * intact, and fail to cause the failure we desire.
+		 */
+		int i = ((int) time(NULL)) % (strlen(cred->m_str) - 4);
 		cred->m_str[i]++;	/* random position in credential */
 	}
 
