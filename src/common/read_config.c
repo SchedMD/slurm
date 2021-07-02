@@ -4823,7 +4823,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_uint16(&conf->suspend_rate, "SuspendRate", hashtbl))
 		conf->suspend_rate = DEFAULT_SUSPEND_RATE;
 	if (s_p_get_string(&temp_str, "SuspendTime", hashtbl)) {
-		if (!xstrcasecmp(temp_str, "NONE"))
+		if (!xstrcasecmp(temp_str, "NONE") ||
+		    !xstrcasecmp(temp_str, "INFINITE") ||
+		    !xstrcasecmp(temp_str, "-1"))
 			conf->suspend_time = INFINITE;
 		else
 			 /* -1 converts to INFINITE */

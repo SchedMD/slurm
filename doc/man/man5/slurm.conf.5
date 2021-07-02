@@ -4081,8 +4081,8 @@ power save mode by \fBSuspendProgram\fR.
 For efficient system utilization, it is recommended that the value of
 \fBSuspendTime\fR be at least as large as the sum of \fBSuspendTimeout\fR
 plus \fBResumeTimeout\fR.
-Setting \fBSuspendTime\fR to anything but -1 will enable power save mode.
--1 is the default.
+Setting \fBSuspendTime\fR to anything but INFINITE (or -1) will enable power
+save mode. INFINITE is the default.
 
 .TP
 \fBSuspendTimeout\fR
