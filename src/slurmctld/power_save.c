@@ -1038,20 +1038,6 @@ static bool _valid_prog(char *file_name)
 	return true;
 }
 
-/*
- * config_power_mgr - Read power management configuration
- */
-extern void config_power_mgr(void)
-{
-	slurm_mutex_lock(&power_mutex);
-	if (!power_save_config) {
-		if (_init_power_config() == 0)
-			power_save_enabled = true;
-		power_save_config = true;
-	}
-	slurm_cond_signal(&power_cond);
-	slurm_mutex_unlock(&power_mutex);
-}
 
 /*
  * start_power_mgr - Start power management thread as needed. The thread
@@ -1113,10 +1099,17 @@ static void *_init_power_save(void *arg)
                 NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	time_t now, boot_time = 0, last_power_scan = 0;
 
-	if (power_save_config && !power_save_enabled) {
+	if (!_init_power_config())
+		power_save_enabled = true;
+	else if (node_features_g_node_power())
+		fatal("PowerSave required with NodeFeatures plugin, "
+		      "but not fully configured (SuspendProgram, "
+		      "ResumeProgram and SuspendTime all required)");
+	else {
 		debug("power_save mode not enabled");
 		goto fini;
 	}
+	power_save_config = true;
 
 	resume_node_bitmap  = bit_alloc(node_record_count);
 

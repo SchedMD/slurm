@@ -579,20 +579,7 @@ int main(int argc, char **argv)
 			fatal("failed to initialize switch plugin");
 		}
 	}
-	config_power_mgr();
 	agent_init();
-	if (node_features_g_node_power() && !power_save_test()) {
-		if (test_config) {
-			error("PowerSave required with NodeFeatures plugin, "
-			      "but not fully configured (SuspendProgram, "
-			      "ResumeProgram and SuspendTime all required)");
-			test_config_rc = 1;
-		} else {
-			fatal("PowerSave required with NodeFeatures plugin, "
-			      "but not fully configured (SuspendProgram, "
-			      "ResumeProgram and SuspendTime all required)");
-		}
-	}
 
 	while (1) {
 		/* initialization for each primary<->backup switch */

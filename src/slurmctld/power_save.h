@@ -46,11 +46,6 @@
 /* Global Variables */
 extern bool cloud_reg_addrs;
 
-/*
- * config_power_mgr - Read power management configuration
- */
-extern void config_power_mgr(void);
-
 /* start_power_mgr - Start power management thread as needed. The thread
  *	terminates automatically at slurmctld shutdown time.
  * IN thread_id - pointer to thread ID of the started pthread.
