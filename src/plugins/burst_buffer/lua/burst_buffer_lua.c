@@ -2396,11 +2396,6 @@ static void *_start_teardown(void *x)
 		job_ptr->job_state &= (~JOB_STAGE_OUT);
 		if (!IS_JOB_PENDING(job_ptr) &&	/* No email if requeue */
 		    (job_ptr->mail_type & MAIL_JOB_STAGE_OUT)) {
-			/*
-			 * NOTE: If a job uses multiple burst buffer
-			 * plugins, the message will be sent after the
-			 * teardown completes in the first plugin
-			 */
 			mail_job_info(job_ptr, MAIL_JOB_STAGE_OUT);
 			job_ptr->mail_type &= (~MAIL_JOB_STAGE_OUT);
 		}
