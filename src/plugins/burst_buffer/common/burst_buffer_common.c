@@ -266,6 +266,7 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini)
 	xfree(config_ptr->deny_users);
 	xfree(config_ptr->deny_users_str);
 	xfree(config_ptr->destroy_buffer);
+	xfree(config_ptr->directive_str);
 	xfree(config_ptr->get_sys_state);
 	xfree(config_ptr->get_sys_status);
 	config_ptr->granularity = 1;
@@ -571,6 +572,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		{"DefaultPool", S_P_STRING},
 		{"DenyUsers", S_P_STRING},
 		{"DestroyBuffer", S_P_STRING},
+		{"Directive", S_P_STRING},
 		{"Flags", S_P_STRING},
 		{"GetSysState", S_P_STRING},
 		{"GetSysStatus", S_P_STRING},
@@ -648,6 +650,8 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 					state_ptr->bb_config.deny_users_str);
 	}
 	s_p_get_string(&state_ptr->bb_config.destroy_buffer, "DestroyBuffer",
+		       bb_hashtbl);
+	s_p_get_string(&state_ptr->bb_config.directive_str, "Directive",
 		       bb_hashtbl);
 
 	if (s_p_get_string(&tmp, "Flags", bb_hashtbl)) {
@@ -734,6 +738,8 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		xfree(value);
 		info("%s: DestroyBuffer:%s",  __func__,
 		     state_ptr->bb_config.destroy_buffer);
+		info("%s: Directive:%s",
+		     __func__, state_ptr->bb_config.directive_str);
 		info("%s: Flags:%s",
 		     __func__, slurm_bb_flags2str(state_ptr->bb_config.flags));
 		info("%s: GetSysState:%s",  __func__,

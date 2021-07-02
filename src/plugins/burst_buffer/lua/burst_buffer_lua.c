@@ -69,7 +69,7 @@
 #include "src/plugins/burst_buffer/common/burst_buffer_common.h"
 
 /* Script directive */
-#define DIRECTIVE_STR "BB_LUA"
+#define DEFAULT_DIRECTIVE_STR "BB_LUA"
 /* Hold job if pre_run fails more times than MAX_RETRY_CNT */
 #define MAX_RETRY_CNT 2
 
@@ -108,7 +108,7 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
  */
 static bb_state_t bb_state;
 
-static int directive_len = strlen(DIRECTIVE_STR);
+static char *directive_str;
 
 static char *lua_script_path;
 static const char *req_fxns[] = {
@@ -1196,6 +1196,10 @@ static int _xlate_batch(job_desc_msg_t *job_desc)
 	char *script, *save_ptr = NULL, *tok;
 	bool is_cont = false, has_space = false;
 	int len, rc = SLURM_SUCCESS;
+	int directive_len;
+
+	xassert(directive_str);
+	directive_len = strlen(directive_str);
 
 	/*
 	 * Any command line --bb options get added to the script
@@ -1211,7 +1215,7 @@ static int _xlate_batch(job_desc_msg_t *job_desc)
 		if (tok[0] != '#')
 			break; /* Quit at first non-comment */
 
-		if (xstrncmp(tok + 1, DIRECTIVE_STR, directive_len)) {
+		if (xstrncmp(tok + 1, directive_str, directive_len)) {
 			/* Skip lines without a burst buffer directive. */
 			is_cont = false;
 		} else {
@@ -1295,10 +1299,18 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 	char *sub_tok, *tok;
 	uint64_t tmp_cnt;
 	int rc = SLURM_SUCCESS;
+	int directive_len;
 	bool have_bb = false, have_stage_out = false;
 
 	xassert(bb_size);
 	*bb_size = 0;
+
+	if (!directive_str) {
+		error("%s: We don't have a directive! Can't parse burst buffer request",
+		      __func__);
+		return SLURM_ERROR;
+	}
+	directive_len = strlen(directive_str);
 
 	/*
 	 * Combine command line options with script, and copy the script to
@@ -1317,7 +1329,7 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 			break; /* Quit at first non-comment */
 		tok++; /* Skip '#' */
 
-		if (xstrncmp(tok, DIRECTIVE_STR, directive_len)) {
+		if (xstrncmp(tok, directive_str, directive_len)) {
 			/* Skip lines without a burst buffer directive. */
 			tok = strtok_r(NULL, "\n", &save_ptr);
 			continue;
@@ -1369,6 +1381,7 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 	bool have_bb = false;
 	uint64_t tmp_cnt;
 	uint16_t new_bb_state;
+	int directive_len;
 	bb_job_t *bb_job;
 
 	if ((job_ptr->burst_buffer == NULL) ||
@@ -1377,6 +1390,13 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 
 	if ((bb_job = bb_job_find(&bb_state, job_ptr->job_id)))
 		return bb_job;	/* Cached data */
+
+	if (!directive_str) {
+		error("%s: We don't have a directive! Can't parse burst buffer request",
+		      __func__);
+		return NULL;
+	}
+	directive_len = strlen(directive_str);
 
 	bb_job = bb_job_alloc(&bb_state, job_ptr->job_id);
 	bb_job->account = xstrdup(job_ptr->account);
@@ -1394,7 +1414,7 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 	while (tok) {
 		/* Skip lines that don't have a burst buffer directive. */
 		if ((tok[0] != '#') ||
-		    xstrncmp(tok + 1, DIRECTIVE_STR, directive_len)) {
+		    xstrncmp(tok + 1, directive_str, directive_len)) {
 			tok = strtok_r(NULL, "\n", &save_ptr);
 			continue;
 		}
@@ -1471,6 +1491,10 @@ static void _test_config(void)
 		      plugin_type);
 		bb_state.bb_config.flags &= (~BB_FLAG_EMULATE_CRAY);
 	}
+	if (bb_state.bb_config.directive_str)
+		directive_str = bb_state.bb_config.directive_str;
+	else
+		directive_str = DEFAULT_DIRECTIVE_STR;
 }
 
 /*
