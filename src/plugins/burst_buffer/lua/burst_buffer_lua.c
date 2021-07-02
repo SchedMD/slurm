@@ -1308,8 +1308,8 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 {
 	char *bb_script, *save_ptr = NULL;
 	char *bb_pool, *capacity;
-	char *end_ptr = NULL, *sub_tok, *tok;
-	uint64_t tmp_cnt, swap_cnt = 0;
+	char *sub_tok, *tok;
+	uint64_t tmp_cnt;
 	int rc = SLURM_SUCCESS;
 	bool have_bb = false, have_stage_out = false;
 
@@ -1361,31 +1361,6 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
 			*bb_size += _set_granularity(tmp_cnt, bb_pool);
 			xfree(bb_pool);
-		} else if (!xstrncmp(tok, "swap", 4)) {
-			bb_pool = NULL;
-			have_bb = true;
-			tok += 4;
-			while (isspace(tok[0] && (tok[0] != '\0')))
-				tok++;
-			swap_cnt += strtol(tok, &end_ptr, 10);
-			if ((job_desc->max_nodes == 0) ||
-			    (job_desc->max_nodes == NO_VAL)) {
-				info("User %u submitted job with swap space specification, but no max node count specification. Setting max nodes to min nodes.",
-				     submit_uid);
-				if (job_desc->min_nodes == NO_VAL)
-					job_desc->min_nodes = 1;
-				job_desc->max_nodes = job_desc->min_nodes;
-			}
-			tmp_cnt = swap_cnt + job_desc->max_nodes;
-			if ((sub_tok = strstr(tok, "pool="))) {
-				bb_pool = xstrdup(sub_tok + 5);
-				if ((sub_tok = strchr(bb_pool, ' ')))
-					sub_tok[0] = '\0';
-			}
-			if (!bb_valid_pool_test(&bb_state, bb_pool))
-				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
-			*bb_size += _set_granularity(tmp_cnt, bb_pool);
-			xfree(bb_pool);
 		} else if (!xstrncmp(tok, "stage_out", 9)) {
 			have_stage_out = true;
 		}
@@ -1407,7 +1382,7 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 {
 	char *bb_specs;
-	char *end_ptr = NULL, *save_ptr = NULL, *sub_tok, *tok;
+	char *save_ptr = NULL, *sub_tok, *tok;
 	bool have_bb = false;
 	uint64_t tmp_cnt;
 	uint16_t new_bb_state;
@@ -1459,37 +1434,6 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 				if (sub_tok)
 					sub_tok[0] = '\0';
 			} else {
-				bb_job->job_pool = xstrdup(
-					bb_state.bb_config.default_pool);
-			}
-			tmp_cnt = _set_granularity(tmp_cnt, bb_job->job_pool);
-			bb_job->req_size += tmp_cnt;
-			bb_job->total_size += tmp_cnt;
-			bb_job->use_job_buf = true;
-		} else if (!xstrncmp(tok, "swap", 4)) {
-			have_bb = true;
-			tok += 4;
-			while (isspace(tok[0]))
-				tok++;
-			bb_job->swap_size = strtol(tok, &end_ptr, 10);
-			if (job_ptr->details && job_ptr->details->max_nodes) {
-				bb_job->swap_nodes =
-					job_ptr->details->max_nodes;
-			} else if (job_ptr->details) {
-				bb_job->swap_nodes =
-					job_ptr->details->min_nodes;
-			} else {
-				bb_job->swap_nodes = 1;
-			}
-			tmp_cnt = (uint64_t) bb_job->swap_size *
-				  bb_job->swap_nodes;
-			if ((sub_tok = strstr(tok, "pool="))) {
-				xfree(bb_job->job_pool);
-				bb_job->job_pool = xstrdup(sub_tok + 5);
-				sub_tok = strchr(bb_job->job_pool, ' ' );
-				if (sub_tok)
-					sub_tok[0] = '\0';
-			} else if (!bb_job->job_pool) {
 				bb_job->job_pool = xstrdup(
 					bb_state.bb_config.default_pool);
 			}
