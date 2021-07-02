@@ -208,7 +208,7 @@ io_init_msg_write_to_fd(int fd, struct slurm_io_init_msg *msg)
 	debug2("%s: msg->nodeid = %d", __func__, msg->nodeid);
 	io_init_msg_pack(msg, buf);
 
-	safe_write(fd, buf->head, io_init_msg_packed_size());
+	safe_write(fd, buf->head, get_buf_offset(buf));
 	rc = SLURM_SUCCESS;
 
 rwfail:
