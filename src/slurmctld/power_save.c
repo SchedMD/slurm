@@ -858,7 +858,12 @@ static int _set_partition_options(void *x, void *arg)
 {
 	part_record_t *part_ptr = (part_record_t *)x;
 	node_record_t *node_ptr;
+	bool *suspend_time_set = (bool *)arg;
 	int i;
+
+	if ((part_ptr->suspend_time != INFINITE) &&
+	    (part_ptr->suspend_time != NO_VAL))
+		*suspend_time_set = true;
 
 	if (part_ptr->resume_timeout != NO_VAL16)
 		max_timeout = MAX(max_timeout, part_ptr->resume_timeout);
@@ -905,6 +910,7 @@ static int _init_power_config(void)
 	char *tmp_ptr;
 	node_record_t *node_ptr;
 	int i;
+	bool partition_suspend_time_set = false;
 	last_config = slurm_conf.last_update;
 	last_work_scan  = 0;
 	last_log	= 0;
@@ -943,7 +949,8 @@ static int _init_power_config(void)
 	}
 
 	if (part_list) {
-		list_for_each(part_list, _set_partition_options, NULL);
+		list_for_each(part_list, _set_partition_options,
+			      &partition_suspend_time_set);
 	}
 
 	/* Apply global options to node level if not set at partition level. */
@@ -963,7 +970,7 @@ static int _init_power_config(void)
 				node_ptr->resume_timeout);
 	}
 
-	if ((slurm_conf.suspend_time - 1) < 0) { /* not an error */
+	if ((slurm_conf.suspend_time - 1) < 0 && !partition_suspend_time_set) { /* not an error */
 		debug("power_save module disabled, SuspendTime < 0");
 		return -1;
 	}
