@@ -111,15 +111,20 @@ foreach content_path [glob -type d $scripts/*] {
 	run_command -nolog -subtest \
 		"$bin_oasgen generate -i '$spec' -g python --strict-spec=true -o '$pyapi'"
 
-	run_command -nolog -subtest \
-		"$bin_py3 '$pyapi/setup.py' install --prefix='$pypath'"
+	# Python requires PYTHONPATH point to the site-packages dir (not a parent)
+	set py_include_path [string trim [run_command_output -fail \
+		"$bin_py3 -c 'import sys; print(\"lib/python%d.%d/site-packages\" %
+		(sys.version_info\[0\], sys.version_info\[1\]))'" ] ]
 
 	# Add the installed path to make sure python will find it
 	if { [info exists ::env(PYTHONPATH)] } {
-		set env(PYTHONPATH) [join [list $pypath:$pyapi $env(PYTHONPATH)] ":"]
+		set env(PYTHONPATH) [join [list "$pypath/$py_include_path" $pyapi $env(PYTHONPATH)] ":"]
 	} else {
-		set env(PYTHONPATH) $pypath:$pyapi
+		set env(PYTHONPATH) "$pypath/$py_include_path:$pyapi"
 	}
+
+	run_command -nolog -subtest \
+		"$bin_py3 '$pyapi/setup.py' install --prefix='$pypath'"
 
 	foreach script [glob -type f $scripts/$content/*.py] {
 		log_debug "running: $script"
