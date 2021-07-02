@@ -5999,20 +5999,19 @@ slurm_bb_flags2str(uint32_t bb_flags)
 	return bb_str;
 }
 
-extern uint32_t
-slurm_bb_str2flags(char *bb_str)
+extern uint32_t slurm_bb_str2flags(char *bb_str)
 {
 	uint32_t bb_flags = 0;
 
-	if (bb_str && strstr(bb_str, "DisablePersistent"))
+	if (xstrcasestr(bb_str, "DisablePersistent"))
 		bb_flags |= BB_FLAG_DISABLE_PERSISTENT;
-	if (bb_str && strstr(bb_str, "EmulateCray"))
+	if (xstrcasestr(bb_str, "EmulateCray"))
 		bb_flags |= BB_FLAG_EMULATE_CRAY;
-	if (bb_str && strstr(bb_str, "EnablePersistent"))
+	if (xstrcasestr(bb_str, "EnablePersistent"))
 		bb_flags |= BB_FLAG_ENABLE_PERSISTENT;
-	if (bb_str && strstr(bb_str, "PrivateData"))
+	if (xstrcasestr(bb_str, "PrivateData"))
 		bb_flags |= BB_FLAG_PRIVATE_DATA;
-	if (bb_str && strstr(bb_str, "TeardownFailure"))
+	if (xstrcasestr(bb_str, "TeardownFailure"))
 		bb_flags |= BB_FLAG_TEARDOWN_FAILURE;
 
 	return bb_flags;
