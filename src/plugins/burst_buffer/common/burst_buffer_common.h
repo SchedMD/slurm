@@ -404,6 +404,10 @@ extern int bb_test_size_limit(job_record_t *job_ptr, bb_job_t *bb_job,
 						    uint32_t user_id,
 						    bool hurry) );
 
+/* Update "system_comment" in a job record. */
+extern void bb_update_system_comment(job_record_t *job_ptr, char *operation,
+				     char *resp_msg, bool update_database);
+
 /* Determine if the specified pool name is valid on this system */
 extern bool bb_valid_pool_test(bb_state_t *state_ptr, char *pool_name);
 

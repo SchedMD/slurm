@@ -188,8 +188,6 @@ static int lua_thread_cnt = 0;
 pthread_mutex_t lua_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Function prototypes */
-static void _update_system_comment(job_record_t *job_ptr, char *operation,
-				   char *resp_msg, bool update_database);
 static bb_job_t *_get_bb_job(job_record_t *job_ptr);
 static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry);
 
@@ -995,8 +993,8 @@ static void *_start_stage_out(void *x)
 			xfree(job_ptr->state_desc);
 			xstrfmtcat(job_ptr->state_desc, "%s: post_run: %s",
 				   plugin_type, resp_msg);
-			_update_system_comment(job_ptr, "post_run",
-					       resp_msg, 1);
+			bb_update_system_comment(job_ptr, "post_run",
+						 resp_msg, 1);
 		}
 	}
 	if (!job_ptr) {
@@ -1047,8 +1045,8 @@ static void *_start_stage_out(void *x)
 				xstrfmtcat(job_ptr->state_desc,
 					   "%s: stage-out: %s",
 					   plugin_type, resp_msg);
-				_update_system_comment(job_ptr, "data_out",
-						       resp_msg, 1);
+				bb_update_system_comment(job_ptr, "data_out",
+							 resp_msg, 1);
 			}
 			unlock_slurmctld(job_write_lock);
 		}
@@ -2210,67 +2208,6 @@ static void _purge_bb_files(uint32_t job_id, job_record_t *job_ptr)
 	xfree(hash_dir);
 }
 
-/*
- * TODO: This was copied from burst_buffer_datawarp.c. Should I put it
- * in burst_buffer_common.c?
- */
-static void _update_system_comment(job_record_t *job_ptr, char *operation,
-				   char *resp_msg, bool update_database)
-{
-	char *sep = NULL;
-
-	if (job_ptr->system_comment &&
-	    (strlen(job_ptr->system_comment) >= 1024)) {
-		/* Avoid filling comment with repeated BB failures */
-		return;
-	}
-
-	if (job_ptr->system_comment)
-		xstrftimecat(sep, "\n%x %X");
-	else
-		xstrftimecat(sep, "%x %X");
-	xstrfmtcat(job_ptr->system_comment, "%s %s: %s: %s",
-		   sep, plugin_type, operation, resp_msg);
-	xfree(sep);
-
-	if (update_database) {
-		slurmdb_job_cond_t job_cond;
-		slurmdb_job_rec_t job_rec;
-		slurm_selected_step_t selected_step;
-		List ret_list;
-
-		memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
-		memset(&job_rec, 0, sizeof(slurmdb_job_rec_t));
-		memset(&selected_step, 0, sizeof(slurm_selected_step_t));
-
-		selected_step.array_task_id = NO_VAL;
-		selected_step.step_id.job_id = job_ptr->job_id;
-		selected_step.het_job_offset = NO_VAL;
-		selected_step.step_id.step_id = NO_VAL;
-		selected_step.step_id.step_het_comp = NO_VAL;
-		job_cond.step_list = list_create(NULL);
-		list_append(job_cond.step_list, &selected_step);
-
-		job_cond.flags = JOBCOND_FLAG_NO_WAIT |
-			JOBCOND_FLAG_NO_DEFAULT_USAGE;
-
-		job_cond.cluster_list = list_create(NULL);
-		list_append(job_cond.cluster_list, slurm_conf.cluster_name);
-
-		job_cond.usage_start = job_ptr->details->submit_time;
-
-		job_rec.system_comment = job_ptr->system_comment;
-
-		ret_list = acct_storage_g_modify_job(acct_db_conn,
-		                                     slurm_conf.slurm_user_id,
-		                                     &job_cond, &job_rec);
-
-		FREE_NULL_LIST(job_cond.cluster_list);
-		FREE_NULL_LIST(job_cond.step_list);
-		FREE_NULL_LIST(ret_list);
-	}
-}
-
 static void *_start_teardown(void *x)
 {
 	int rc, retry_count = 0;
@@ -2343,9 +2280,9 @@ static void *_start_teardown(void *x)
 					xfree(job_ptr->state_desc);
 					xstrfmtcat(job_ptr->state_desc, "%s: teardown: %s",
 						   plugin_type, resp_msg);
-					_update_system_comment(job_ptr,
-							       "teardown",
-							       resp_msg, 0);
+					bb_update_system_comment(job_ptr,
+								 "teardown",
+								 resp_msg, 0);
 				}
 				unlock_slurmctld(job_write_lock);
 				sleep(sleep_time);
@@ -2510,7 +2447,7 @@ static void *_start_stage_in(void *x)
 		lock_slurmctld(job_write_lock);
 		job_ptr = find_job_record(stage_in_args->job_id);
 		if (job_ptr)
-			_update_system_comment(job_ptr, "setup", resp_msg, 0);
+			bb_update_system_comment(job_ptr, "setup", resp_msg, 0);
 		unlock_slurmctld(job_write_lock);
 	} else {
 		bb_job = bb_job_find(&bb_state, stage_in_args->job_id);
@@ -2567,8 +2504,8 @@ static void *_start_stage_in(void *x)
 			lock_slurmctld(job_write_lock);
 			job_ptr = find_job_record(stage_in_args->job_id);
 			if (job_ptr)
-				_update_system_comment(job_ptr, "data_in",
-						       resp_msg, 0);
+				bb_update_system_comment(job_ptr, "data_in",
+							 resp_msg, 0);
 			unlock_slurmctld(job_write_lock);
 		}
 	}
@@ -3026,7 +2963,8 @@ static void *_start_pre_run(void *x)
 		trigger_burst_buffer();
 		error("pre_run failed for JobId=%u", pre_run_args->job_id);
 		if (job_ptr) {
-			_update_system_comment(job_ptr, "pre_run", resp_msg, 0);
+			bb_update_system_comment(job_ptr, "pre_run", resp_msg,
+						 0);
 			if (IS_JOB_RUNNING(job_ptr))
 				run_kill_job = true;
 			if (bb_job) {

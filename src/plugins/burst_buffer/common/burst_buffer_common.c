@@ -1942,6 +1942,63 @@ fini:	xfree(add_space);
 	return rc;
 }
 
+extern void bb_update_system_comment(job_record_t *job_ptr, char *operation,
+				     char *resp_msg, bool update_database)
+{
+	char *sep = NULL;
+
+	if (job_ptr->system_comment &&
+	    (strlen(job_ptr->system_comment) >= 1024)) {
+		/* Avoid filling comment with repeated BB failures */
+		return;
+	}
+
+	if (job_ptr->system_comment)
+		xstrftimecat(sep, "\n%x %X");
+	else
+		xstrftimecat(sep, "%x %X");
+	xstrfmtcat(job_ptr->system_comment, "%s %s: %s: %s",
+		   sep, plugin_type, operation, resp_msg);
+	xfree(sep);
+
+	if (update_database) {
+		slurmdb_job_cond_t job_cond;
+		slurmdb_job_rec_t job_rec;
+		slurm_selected_step_t selected_step;
+		List ret_list;
+
+		memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
+		memset(&job_rec, 0, sizeof(slurmdb_job_rec_t));
+		memset(&selected_step, 0, sizeof(slurm_selected_step_t));
+
+		selected_step.array_task_id = NO_VAL;
+		selected_step.step_id.job_id = job_ptr->job_id;
+		selected_step.het_job_offset = NO_VAL;
+		selected_step.step_id.step_id = NO_VAL;
+		selected_step.step_id.step_het_comp = NO_VAL;
+		job_cond.step_list = list_create(NULL);
+		list_append(job_cond.step_list, &selected_step);
+
+		job_cond.flags = JOBCOND_FLAG_NO_WAIT |
+			JOBCOND_FLAG_NO_DEFAULT_USAGE;
+
+		job_cond.cluster_list = list_create(NULL);
+		list_append(job_cond.cluster_list, slurm_conf.cluster_name);
+
+		job_cond.usage_start = job_ptr->details->submit_time;
+
+		job_rec.system_comment = job_ptr->system_comment;
+
+		ret_list = acct_storage_g_modify_job(acct_db_conn,
+		                                     slurm_conf.slurm_user_id,
+		                                     &job_cond, &job_rec);
+
+		FREE_NULL_LIST(job_cond.cluster_list);
+		FREE_NULL_LIST(job_cond.step_list);
+		FREE_NULL_LIST(ret_list);
+	}
+}
+
 
 /* Determine if the specified pool name is valid on this system */
 extern bool bb_valid_pool_test(bb_state_t *state_ptr, char *pool_name)

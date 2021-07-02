@@ -1323,63 +1323,6 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 	return rc;
 }
 
-static void _update_system_comment(job_record_t *job_ptr, char *operation,
-				   char *resp_msg, bool update_database)
-{
-	char *sep = NULL;
-
-	if (job_ptr->system_comment &&
-	    (strlen(job_ptr->system_comment) >= 1024)) {
-		/* Avoid filling comment with repeated BB failures */
-		return;
-	}
-
-	if (job_ptr->system_comment)
-		xstrftimecat(sep, "\n%x %X");
-	else
-		xstrftimecat(sep, "%x %X");
-	xstrfmtcat(job_ptr->system_comment, "%s %s: %s: %s",
-		   sep, plugin_type, operation, resp_msg);
-	xfree(sep);
-
-	if (update_database) {
-		slurmdb_job_cond_t job_cond;
-		slurmdb_job_rec_t job_rec;
-		slurm_selected_step_t selected_step;
-		List ret_list;
-
-		memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
-		memset(&job_rec, 0, sizeof(slurmdb_job_rec_t));
-		memset(&selected_step, 0, sizeof(slurm_selected_step_t));
-
-		selected_step.array_task_id = NO_VAL;
-		selected_step.step_id.job_id = job_ptr->job_id;
-		selected_step.het_job_offset = NO_VAL;
-		selected_step.step_id.step_id = NO_VAL;
-		selected_step.step_id.step_het_comp = NO_VAL;
-		job_cond.step_list = list_create(NULL);
-		list_append(job_cond.step_list, &selected_step);
-
-		job_cond.flags = JOBCOND_FLAG_NO_WAIT |
-			JOBCOND_FLAG_NO_DEFAULT_USAGE;
-
-		job_cond.cluster_list = list_create(NULL);
-		list_append(job_cond.cluster_list, slurm_conf.cluster_name);
-
-		job_cond.usage_start = job_ptr->details->submit_time;
-
-		job_rec.system_comment = job_ptr->system_comment;
-
-		ret_list = acct_storage_g_modify_job(acct_db_conn,
-		                                     slurm_conf.slurm_user_id,
-		                                     &job_cond, &job_rec);
-
-		FREE_NULL_LIST(job_cond.cluster_list);
-		FREE_NULL_LIST(job_cond.step_list);
-		FREE_NULL_LIST(ret_list);
-	}
-}
-
 static void *_start_stage_in(void *x)
 {
 	stage_args_t *stage_args = (stage_args_t *) x;
@@ -1448,7 +1391,7 @@ static void *_start_stage_in(void *x)
 		lock_slurmctld(job_write_lock);
 		job_ptr = find_job_record(stage_args->job_id);
 		if (job_ptr)
-			_update_system_comment(job_ptr, "setup", resp_msg, 0);
+			bb_update_system_comment(job_ptr, "setup", resp_msg, 0);
 		unlock_slurmctld(job_write_lock);
 	} else {
 		bb_job = bb_job_find(&bb_state, stage_args->job_id);
@@ -1506,8 +1449,8 @@ static void *_start_stage_in(void *x)
 			lock_slurmctld(job_write_lock);
 			job_ptr = find_job_record(stage_args->job_id);
 			if (job_ptr)
-				_update_system_comment(job_ptr, "data_in",
-						       resp_msg, 0);
+				bb_update_system_comment(job_ptr, "data_in",
+							 resp_msg, 0);
 			unlock_slurmctld(job_write_lock);
 		}
 	}
@@ -1756,8 +1699,8 @@ static void *_start_stage_out(void *x)
 			xfree(job_ptr->state_desc);
 			xstrfmtcat(job_ptr->state_desc, "%s: post_run: %s",
 				   plugin_type, resp_msg);
-			_update_system_comment(job_ptr, "post_run",
-					       resp_msg, 1);
+			bb_update_system_comment(job_ptr, "post_run",
+						 resp_msg, 1);
 		}
 	}
 	if (!job_ptr) {
@@ -1821,8 +1764,8 @@ static void *_start_stage_out(void *x)
 				xstrfmtcat(job_ptr->state_desc,
 					   "%s: stage-out: %s",
 					   plugin_type, resp_msg);
-				_update_system_comment(job_ptr, "data_out",
-						       resp_msg, 1);
+				bb_update_system_comment(job_ptr, "data_out",
+							 resp_msg, 1);
 			}
 			unlock_slurmctld(job_write_lock);
 		}
@@ -2022,8 +1965,8 @@ static void *_start_teardown(void *x)
 			xfree(job_ptr->state_desc);
 			xstrfmtcat(job_ptr->state_desc, "%s: teardown: %s",
 				   plugin_type, resp_msg);
-			_update_system_comment(job_ptr, "teardown",
-					       resp_msg, 0);
+			bb_update_system_comment(job_ptr, "teardown",
+						 resp_msg, 0);
 		}
 		unlock_slurmctld(job_write_lock);
 
@@ -3758,7 +3701,8 @@ static void *_start_pre_run(void *x)
 		error("dws_pre_run for %pJ status:%u response:%s",
 		      job_ptr, status, resp_msg);
 		if (job_ptr) {
-			_update_system_comment(job_ptr, "pre_run", resp_msg, 0);
+			bb_update_system_comment(job_ptr, "pre_run", resp_msg,
+						 0);
 			if (IS_JOB_RUNNING(job_ptr))
 				run_kill_job = true;
 			if (bb_job) {
@@ -4061,10 +4005,9 @@ static int _create_bufs(job_record_t *job_ptr, bb_job_t *bb_job,
 				job_ptr->state_desc = xstrdup(
 					"Burst buffer create_persistent error");
 				buf_ptr->state = BB_STATE_COMPLETE;
-				_update_system_comment(job_ptr,
-						       "create_persistent",
-						       "Duplicate buffer name",
-						       0);
+				bb_update_system_comment(
+						job_ptr, "create_persistent",
+						"Duplicate buffer name", 0);
 				rc++;
 				break;
 			} else if (bb_alloc) {
@@ -4353,8 +4296,8 @@ static void *_create_persistent(void *x)
 			xfree(job_ptr->state_desc);
 			xstrfmtcat(job_ptr->state_desc, "%s",
 				   resp_msg);
-			_update_system_comment(job_ptr, "create_persistent",
-					       resp_msg, 0);
+			bb_update_system_comment(job_ptr, "create_persistent",
+						 resp_msg, 0);
 		}
 		slurm_mutex_lock(&bb_state.bb_mutex);
 		_reset_buf_state(create_args->user_id, create_args->job_id,
@@ -4505,8 +4448,8 @@ static void *_destroy_persistent(void *x)
 			error("unable to find job record for JobId=%u",
 			      destroy_args->job_id);
 		} else {
-			_update_system_comment(job_ptr, "teardown",
-					       resp_msg, 0);
+			bb_update_system_comment(job_ptr, "teardown",
+						 resp_msg, 0);
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 			xfree(job_ptr->state_desc);
 			xstrfmtcat(job_ptr->state_desc, "%s",
