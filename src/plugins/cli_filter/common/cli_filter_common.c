@@ -98,6 +98,7 @@ char *cli_filter_json_set_options(slurm_opt_t *options)
 
 	FREE_NULL_DATA(d);
 	xfree(plugin);
+	xfree(name);
 
 	return json;
 }
