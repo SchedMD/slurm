@@ -37,6 +37,8 @@
 #ifndef SLURM_HTTP_H
 #define SLURM_HTTP_H
 
+#include "src/common/data.h"
+
 /*
  * HTTP status codes from rfc2616&rfc7231 for http1.1
  */
@@ -121,5 +123,18 @@ typedef enum {
  */
 extern http_request_method_t get_http_method(const char *str);
 extern const char *get_http_method_string(const http_request_method_t method);
+
+/*
+ * Parses url path into a data struct.
+ * IN query rfc3986&rfc1866 query string
+ * 	application/x-www-form-urlencoded
+ * 	breaks /path/to/url/ -> [path,to,url]
+ * 	into a data_t sequence
+ * IN convert_types if true, call data_convert_type() on each value
+ * IN allow_templates - allow sections to be template variables e.g.: "{name}"
+ * RET data ptr or NULL on error
+ */
+extern data_t *parse_url_path(const char *path, bool convert_types,
+			      bool allow_templates);
 
 #endif /* SLURM_HTTP_H */

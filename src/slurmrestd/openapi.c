@@ -50,7 +50,6 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmrestd/http.h"
-#include "src/slurmrestd/http_url.h"
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 

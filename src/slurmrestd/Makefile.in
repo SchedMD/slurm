@@ -159,9 +159,8 @@ am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
 @WITH_SLURMRESTD_TRUE@am_libslurmrest_ref_la_rpath =
-am__objects_1 = conmgr.$(OBJEXT) http.$(OBJEXT) http_url.$(OBJEXT) \
-	openapi.$(OBJEXT) operations.$(OBJEXT) slurmrestd.$(OBJEXT) \
-	rest_auth.$(OBJEXT)
+am__objects_1 = conmgr.$(OBJEXT) http.$(OBJEXT) openapi.$(OBJEXT) \
+	operations.$(OBJEXT) slurmrestd.$(OBJEXT) rest_auth.$(OBJEXT)
 @WITH_SLURMRESTD_TRUE@am_slurmrestd_OBJECTS = $(am__objects_1)
 slurmrestd_OBJECTS = $(am_slurmrestd_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -186,9 +185,8 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/conmgr.Po ./$(DEPDIR)/http.Po \
-	./$(DEPDIR)/http_url.Po ./$(DEPDIR)/openapi.Po \
-	./$(DEPDIR)/operations.Po ./$(DEPDIR)/rest_auth.Po \
-	./$(DEPDIR)/slurmrestd.Po
+	./$(DEPDIR)/openapi.Po ./$(DEPDIR)/operations.Po \
+	./$(DEPDIR)/rest_auth.Po ./$(DEPDIR)/slurmrestd.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -511,7 +509,6 @@ REF = usage.txt
 SRCS = \
 	conmgr.h conmgr.c \
 	http.c http.h \
-	http_url.c http_url.h \
 	openapi.c openapi.h \
 	operations.c operations.h \
 	slurmrestd.c \
@@ -642,7 +639,6 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/conmgr.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/http_url.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/openapi.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/operations.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rest_auth.Po@am__quote@ # am--include-marker
@@ -826,7 +822,6 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 distclean: distclean-recursive
 		-rm -f ./$(DEPDIR)/conmgr.Po
 	-rm -f ./$(DEPDIR)/http.Po
-	-rm -f ./$(DEPDIR)/http_url.Po
 	-rm -f ./$(DEPDIR)/openapi.Po
 	-rm -f ./$(DEPDIR)/operations.Po
 	-rm -f ./$(DEPDIR)/rest_auth.Po
@@ -878,7 +873,6 @@ installcheck-am:
 maintainer-clean: maintainer-clean-recursive
 		-rm -f ./$(DEPDIR)/conmgr.Po
 	-rm -f ./$(DEPDIR)/http.Po
-	-rm -f ./$(DEPDIR)/http_url.Po
 	-rm -f ./$(DEPDIR)/openapi.Po
 	-rm -f ./$(DEPDIR)/operations.Po
 	-rm -f ./$(DEPDIR)/rest_auth.Po

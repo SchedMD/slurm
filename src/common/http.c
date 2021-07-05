@@ -44,6 +44,8 @@
 #include "slurm/slurm.h"
 
 #include "src/common/http.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 typedef struct {
@@ -102,6 +104,147 @@ static const http_status_code_txt_t http_status_codes[] = {
 	{ HTTP_STATUS_CODE_SRVERR_HTTP_VERSION_NOT_SUPPORTED,
 	  "HTTP VERSION NOT SUPPORTED" },
 };
+
+/*
+ * chars that can pass without decoding.
+ * rfc3986: unreserved characters.
+ */
+static bool _is_valid_url_char(char buffer)
+{
+	return (isxdigit(buffer) || buffer == '~' || buffer == '-' ||
+		buffer == '.' || buffer == '_');
+}
+
+/*
+ * decodes % sequence.
+ * IN ptr pointing to % character
+ * RET \0 on error or decoded character
+ */
+static unsigned char _decode_seq(const char *ptr)
+{
+	if (isxdigit(*(ptr + 1)) && isxdigit(*(ptr + 2))) {
+		/* using unsigned char to avoid any rollover */
+		unsigned char high = *(ptr + 1);
+		unsigned char low = *(ptr + 2);
+		unsigned char decoded = (slurm_char_to_hex(high) << 4) +
+					slurm_char_to_hex(low);
+
+		//TODO: find more invalid characters?
+		if (decoded == '\0') {
+			error("%s: invalid URL escape sequence for 0x00",
+			      __func__);
+			return '\0';
+		} else if (decoded == 0xff) {
+			error("%s: invalid URL escape sequence for 0xff",
+			      __func__);
+			return '\0';
+		}
+
+		debug5("%s: URL decoded: 0x%c%c -> %c",
+		       __func__, high, low, decoded);
+
+		return decoded;
+	} else {
+		debug("%s: invalid URL escape sequence: %s", __func__, ptr);
+		return '\0';
+	}
+}
+
+static int _add_path(data_t *d, char **buffer, bool convert_types)
+{
+	if (!xstrcasecmp(*buffer, ".")) {
+		debug5("%s: ignoring path . entry", __func__);
+	} else if (!xstrcasecmp(*buffer, "..")) {
+		//TODO: pop last directory off sequence instead of fail
+		debug5("%s: rejecting path .. entry", __func__);
+		return SLURM_ERROR;
+	} else {
+		data_t *c = data_list_append(d);
+		data_set_string(c, *buffer);
+
+		if (convert_types)
+			data_convert_type(c, DATA_TYPE_NONE);
+
+		xfree(*buffer);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern data_t *parse_url_path(const char *path, bool convert_types,
+			      bool allow_templates)
+{
+	int rc = SLURM_SUCCESS;
+	data_t *d = data_set_list(data_new());
+	char *buffer = NULL;
+
+	/* extract each word */
+	for (const char *ptr = path; !rc && *ptr != '\0'; ++ptr) {
+		if (_is_valid_url_char(*ptr)) {
+			xstrcatchar(buffer, *ptr);
+			continue;
+		}
+
+		switch (*ptr) {
+		case '{': /* OASv3.0.3 section 4.7.8.2 template variable */
+			if (!allow_templates) {
+				debug("%s: unexpected OAS template character: %c",
+				      __func__, *ptr);
+				rc = SLURM_ERROR;
+				break;
+			} else {
+				/* find end of template */
+				char *end = xstrstr(ptr, "}");
+
+				if (!end) {
+					debug("%s: missing terminated OAS template character: }",
+					      __func__);
+					rc = SLURM_ERROR;
+					break;
+				}
+
+				xstrncat(buffer, ptr, (end - ptr + 1));
+				ptr = end;
+				break;
+			}
+		case '%': /* rfc3986 */
+		{
+			const char c = _decode_seq(ptr);
+			if (c != '\0') {
+				/* shift past the hex value */
+				ptr += 2;
+
+				xstrcatchar(buffer, c);
+			} else {
+				debug("%s: invalid URL escape sequence: %s",
+				      __func__, ptr);
+				rc = SLURM_ERROR;
+				break;
+			}
+			break;
+		}
+		case '/': /* rfc3986 */
+			if (buffer != NULL)
+				rc = _add_path(d, &buffer, convert_types);
+			break;
+		default:
+			debug("%s: unexpected URL character: %c",
+			      __func__, *ptr);
+			rc = SLURM_ERROR;
+		}
+	}
+
+	/* last part of path */
+	if (!rc && buffer != NULL)
+		rc = _add_path(d, &buffer, convert_types);
+
+	if (rc) {
+		FREE_NULL_DATA(d);
+		return NULL;
+	}
+
+	return d;
+}
 
 extern const char *get_http_status_code_string(http_status_code_t code)
 {
