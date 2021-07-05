@@ -40,8 +40,6 @@
 #include "src/common/io_hdr.h"
 #include "src/common/slurm_protocol_defs.h"
 
-#define IO_PROTOCOL_VERSION 0xb001
-
 /* If this changes, io_hdr_pack|unpack must change. */
 int g_io_hdr_size = sizeof(uint32_t) + 3*sizeof(uint16_t);
 

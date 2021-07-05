@@ -55,6 +55,8 @@
 #define SLURM_IO_ALLSTDIN 3
 #define SLURM_IO_CONNECTION_TEST 4
 
+#define IO_PROTOCOL_VERSION 0xb001
+
 struct slurm_io_init_msg {
 	uint16_t      version;
 	unsigned char io_key[SLURM_IO_KEY_SIZE];
