@@ -251,7 +251,7 @@ static int _foreach_user_coord_add(void *x, void *arg)
 	xassert(uc->magic == MAGIC_USER_COORD);
 	xassert(args->magic == MAGIC_USER_COORD_ADD);
 
-	if ((args->rc = slurmdb_coord_add(rest_auth_g_get_db_conn(args->auth),
+	if ((args->rc = slurmdb_coord_add(openapi_get_db_conn(args->auth),
 					  uc->acct_list, &uc->user_cond)))
 		rc = resp_error(args->errors, args->rc, NULL,
 				"slurmdb_coord_add");

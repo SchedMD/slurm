@@ -68,7 +68,7 @@ static int _op_handler_diag(const char *context_id,
 
 	debug4("%s:[%s] diag handler called", __func__, context_id);
 
-	if ((rc = slurmdb_get_stats(rest_auth_g_get_db_conn(auth), &stats_rec)))
+	if ((rc = slurmdb_get_stats(openapi_get_db_conn(auth), &stats_rec)))
 		resp_error(errors, rc, NULL, "slurmdb_get_stats");
 	else
 		rc = dump(PARSE_STATS_REC, stats_rec,

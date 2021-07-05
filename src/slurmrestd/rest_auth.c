@@ -255,6 +255,15 @@ extern void rest_auth_g_clear(void)
 	auth_g_thread_clear();
 }
 
+extern void *openapi_get_db_conn(void *ctxt)
+{
+	/*
+	 * Implements authentication translation from the generic openapi
+	 * version to the rest pointer
+	 */
+	return rest_auth_g_get_db_conn(ctxt);
+}
+
 extern void *rest_auth_g_get_db_conn(rest_auth_context_t *context)
 {
 	_check_magic(context);

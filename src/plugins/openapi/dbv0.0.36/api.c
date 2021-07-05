@@ -152,7 +152,7 @@ extern int db_query_list_funcname(data_t *errors, void *auth, List *list,
 	xassert(errors);
 
 	errno = 0;
-	if (!(db_conn = rest_auth_g_get_db_conn(auth))) {
+	if (!(db_conn = openapi_get_db_conn(auth))) {
 		return resp_error(errors, ESLURM_DB_CONNECTION,
 				  "Failed connecting to slurmdbd", func_name);
 	}
@@ -180,7 +180,7 @@ extern int db_query_rc_funcname(data_t *errors, void *auth, List list,
 	int rc;
 	void *db_conn;
 
-	if (!(db_conn = rest_auth_g_get_db_conn(auth))) {
+	if (!(db_conn = openapi_get_db_conn(auth))) {
 		return resp_error(errors, ESLURM_DB_CONNECTION,
 				  "Failed connecting to slurmdbd", func_name);
 	}
@@ -198,7 +198,7 @@ extern int db_query_commit(data_t *errors, void *auth)
 	int rc;
 	void *db_conn;
 
-	if (!(db_conn = rest_auth_g_get_db_conn(auth))) {
+	if (!(db_conn = openapi_get_db_conn(auth))) {
 		return resp_error(errors, ESLURM_DB_CONNECTION,
 				  "Failed connecting to slurmdbd",
 				  __func__);

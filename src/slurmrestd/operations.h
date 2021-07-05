@@ -95,4 +95,13 @@ extern int operations_router(on_http_request_args_t *args);
  */
 extern void *get_operation_db_conn(rest_auth_context_t *auth);
 
+/*
+ * Retrieve db_conn for slurmdbd calls.
+ * WARNING: Only valid inside of openapi_handler_t()
+ * RET NULL on error or db_conn pointer
+ *
+ * Note: this is not implemented here but must be in the caller
+ */
+extern void *openapi_get_db_conn(void *ctxt);
+
 #endif /* SLURMRESTD_OPERATIONS_H */
