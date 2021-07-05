@@ -557,6 +557,10 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Time limit specification required, but not provided"	},
 	{ ESLURM_INVALID_KNL,
 	  "Invalid KNL configuration (MCDRAM or NUMA option)"	},
+	{ ESLURM_PLUGIN_INVALID,
+	  "Plugin has invalid format or unable to be loaded"	},
+	{ ESLURM_PLUGIN_INCOMPLETE,
+	  "Plugin missing required symbol or function"		},
 
 	/* REST errors */
 	{ ESLURM_REST_INVALID_QUERY,

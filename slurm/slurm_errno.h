@@ -310,6 +310,8 @@ typedef enum {
 	/* plugin and custom errors */
 	ESLURM_MISSING_TIME_LIMIT       = 8000,
 	ESLURM_INVALID_KNL,
+	ESLURM_PLUGIN_INVALID,
+	ESLURM_PLUGIN_INCOMPLETE,
 
 	/* REST errors */
 	ESLURM_REST_INVALID_QUERY = 9000,
