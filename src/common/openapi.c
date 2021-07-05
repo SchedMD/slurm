@@ -39,6 +39,8 @@
 #include "slurm/slurm.h"
 
 #include "src/common/openapi.h"
+#include "src/common/plugin.h"
+#include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -152,6 +154,11 @@ struct openapi_s {
 	slurm_openapi_ops_t *ops;
 	int context_cnt;
 	plugin_context_t **context;
+
+	plugin_handle_t *plugin_handles;
+	char **plugin_types;
+	size_t plugin_count;
+	plugrack_t *rack;
 };
 
 /*
@@ -806,31 +813,97 @@ extern int find_path_tag(openapi_t *oas, const data_t *dpath, data_t *params,
 	return tag;
 }
 
-extern int init_openapi(openapi_t **oas, const plugin_handle_t *plugin_handles,
-			const size_t plugin_count)
+static void _oas_plugrack_foreach(const char *full_type, const char *fq_path,
+				  const plugin_handle_t id, void *arg)
 {
+	openapi_t *oas = arg;
+	xassert(oas->magic == MAGIC_OAS);
+
+	oas->plugin_count += 1;
+	xrecalloc(oas->plugin_handles, oas->plugin_count,
+		  sizeof(*oas->plugin_handles));
+	xrecalloc(oas->plugin_types, oas->plugin_count,
+		  sizeof(*oas->plugin_types));
+
+	oas->plugin_types[oas->plugin_count - 1] = xstrdup(full_type);
+	oas->plugin_handles[oas->plugin_count - 1] = id;
+
+	debug5("%s: OAS plugin type:%s path:%s",
+	       __func__, full_type, fq_path);
+}
+
+extern int init_openapi(openapi_t **oas, const char *plugins,
+			plugrack_foreach_t listf)
+{
+
 	openapi_t *t = NULL;
 	int rc = SLURM_SUCCESS;
 
 	xassert(!*oas);
 	destroy_openapi(*oas);
 
-	t = xmalloc(sizeof(*t));
+	*oas = t = xmalloc(sizeof(*t));
 	t->magic = MAGIC_OAS;
 	t->paths = list_create(_list_delete_path_t);
 
-	t->ops = xcalloc((plugin_count + 1), sizeof(*t->ops));
-	t->context = xcalloc((plugin_count + 1), sizeof(*t->context));
-	t->spec = xcalloc((plugin_count + 1), sizeof(*t->spec));
+	t->rack = plugrack_create("openapi");
+	plugrack_read_dir(t->rack, slurm_conf.plugindir);
 
-	for (size_t i = 0; (i < plugin_count); i++) {
-		if (plugin_handles[i] == PLUGIN_INVALID_HANDLE) {
+	if (plugins && !xstrcasecmp(plugins, "list")) {
+		plugrack_foreach(t->rack, listf, oas);
+		return SLURM_SUCCESS;
+	} else if (plugins) {
+		/* User provide which plugins they want */
+		char *type, *last = NULL;
+		char *pbuf = xstrdup(plugins);
+
+		type = strtok_r(pbuf, ",", &last);
+		while (type) {
+			xstrtrim(type);
+
+			/* Permit both prefix and no-prefix for plugin names. */
+			if (xstrncmp(type, "openapi/", 8) == 0)
+				type += 8;
+			type = xstrdup_printf("openapi/%s", type);
+			xstrtrim(type);
+
+			_oas_plugrack_foreach(type, NULL, PLUGIN_INVALID_HANDLE,
+					      t);
+
+			xfree(type);
+			type = strtok_r(NULL, ",", &last);
+		}
+
+		xfree(pbuf);
+	} else /* Add all possible */
+		plugrack_foreach(t->rack, _oas_plugrack_foreach, t);
+
+	if (!t->plugin_count) {
+		error("No OAS plugins to load. Nothing to do.");
+		rc = SLURM_PLUGIN_NAME_INVALID;
+	}
+
+	for (size_t i = 0; i < t->plugin_count; i++) {
+		if ((t->plugin_handles[i] == PLUGIN_INVALID_HANDLE) &&
+		    (t->plugin_handles[i] =
+		     plugrack_use_by_type(t->rack, t->plugin_types[i])) ==
+		    PLUGIN_INVALID_HANDLE)
+				fatal("Unable to find plugin: %s",
+				      t->plugin_types[i]);
+	}
+
+	t->ops = xcalloc((t->plugin_count + 1), sizeof(*t->ops));
+	t->context = xcalloc((t->plugin_count + 1), sizeof(*t->context));
+	t->spec = xcalloc((t->plugin_count + 1), sizeof(*t->spec));
+
+	for (size_t i = 0; (i < t->plugin_count); i++) {
+		if (t->plugin_handles[i] == PLUGIN_INVALID_HANDLE) {
 			error("Invalid plugin to load?");
 			rc = ESLURM_PLUGIN_INVALID;
 			break;
 		}
 
-		if (plugin_get_syms(plugin_handles[i], ARRAY_SIZE(syms), syms,
+		if (plugin_get_syms(t->plugin_handles[i], ARRAY_SIZE(syms), syms,
 				    (void **)&t->ops[t->context_cnt]) <
 		    ARRAY_SIZE(syms)) {
 			error("Incomplete plugin detected");
@@ -852,16 +925,13 @@ extern int init_openapi(openapi_t **oas, const plugin_handle_t *plugin_handles,
 	     i++)
 		(*(t->ops[i].init))();
 
-	if (!rc)
-		*oas = t;
-	else
-		destroy_openapi(t);
-
 	return rc;
 }
 
 extern void destroy_openapi(openapi_t *oas)
 {
+	int rc;
+
 	if (!oas)
 		return;
 
@@ -882,6 +952,17 @@ extern void destroy_openapi(openapi_t *oas)
 		FREE_NULL_DATA(oas->spec[i]);
 	xfree(oas->spec);
 	xfree(oas->ops);
+
+	for (size_t i = 0; i < oas->plugin_count; i++) {
+		plugrack_release_by_type(oas->rack, oas->plugin_types[i]);
+		xfree(oas->plugin_types[i]);
+	}
+	xfree(oas->plugin_types);
+	if ((rc = plugrack_destroy(oas->rack)))
+		fatal_abort("unable to clean up plugrack: %s",
+			    slurm_strerror(rc));
+	oas->rack = NULL;
+
 	oas->magic = ~MAGIC_OAS;
 	xfree(oas);
 }

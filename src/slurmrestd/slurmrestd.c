@@ -102,11 +102,6 @@ static size_t auth_plugin_count = 0;
 static plugrack_t *auth_rack = NULL;
 
 static char *oas_specs = NULL;
-static plugin_handle_t *oas_plugin_handles = NULL;
-static char **oas_plugin_types = NULL;
-static size_t oas_plugin_count = 0;
-static plugrack_t *oas_rack = NULL;
-
 bool unshare_sysv = true;
 bool check_user = true;
 
@@ -347,22 +342,6 @@ static void _auth_plugrack_foreach(const char *full_type, const char *fq_path,
 	       __func__, full_type, fq_path);
 }
 
-static void _oas_plugrack_foreach(const char *full_type, const char *fq_path,
-				  const plugin_handle_t id, void *arg)
-{
-	oas_plugin_count += 1;
-	xrecalloc(oas_plugin_handles, oas_plugin_count,
-		  sizeof(*oas_plugin_handles));
-	xrecalloc(oas_plugin_types, oas_plugin_count,
-		  sizeof(*oas_plugin_types));
-
-	oas_plugin_types[oas_plugin_count - 1] = xstrdup(full_type);
-	oas_plugin_handles[oas_plugin_count - 1] = id;
-
-	debug5("%s: OAS plugin type:%s path:%s",
-	       __func__, full_type, fq_path);
-}
-
 static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 				   const plugin_handle_t id, void *arg)
 {
@@ -464,53 +443,14 @@ int main(int argc, char **argv)
 	if (init_rest_auth(auth_plugin_handles, auth_plugin_count))
 		fatal("Unable to initialize rest authentication");
 
-	oas_rack = plugrack_create("openapi");
-	plugrack_read_dir(oas_rack, slurm_conf.plugindir);
-
 	if (oas_specs && !xstrcasecmp(oas_specs, "list")) {
 		info("Possible OpenAPI plugins:");
-		plugrack_foreach(oas_rack, _plugrack_foreach_list, NULL);
-		exit(0);
-	} else if (oas_specs) {
-		/* User provide which plugins they want */
-		char *type, *last = NULL;
-
-		type = strtok_r(oas_specs, ",", &last);
-		while (type) {
-			xstrtrim(type);
-
-			/* Permit both prefix and no-prefix for plugin names. */
-			if (xstrncmp(type, "openapi/", 8) == 0)
-				type += 8;
-			type = xstrdup_printf("openapi/%s", type);
-			xstrtrim(type);
-
-			_oas_plugrack_foreach(type, NULL, PLUGIN_INVALID_HANDLE,
-					      NULL);
-
-			xfree(type);
-			type = strtok_r(NULL, ",", &last);
-		}
-
-		xfree(oas_specs);
-	} else /* Add all possible */
-		plugrack_foreach(oas_rack, _oas_plugrack_foreach, NULL);
-
-	if (!oas_plugin_count)
-		fatal("No OAS plugins to load. Nothing to do.");
-
-	for (size_t i = 0; i < oas_plugin_count; i++) {
-		if ((oas_plugin_handles[i] == PLUGIN_INVALID_HANDLE) &&
-		    (oas_plugin_handles[i] =
-		     plugrack_use_by_type(oas_rack, oas_plugin_types[i])) ==
-		    PLUGIN_INVALID_HANDLE)
-				fatal("Unable to find plugin: %s",
-				      oas_plugin_types[i]);
-	}
-
-	if (init_openapi(&openapi_state, oas_plugin_handles, oas_plugin_count))
+		exit(init_openapi(&openapi_state, oas_specs,
+				  _plugrack_foreach_list));
+	} else if (init_openapi(&openapi_state, oas_specs, NULL))
 		fatal("Unable to initialize OpenAPI structures");
 
+	xfree(oas_specs);
 	bind_operation_handler("/openapi.yaml", _op_handler_openapi, 0);
 	bind_operation_handler("/openapi.json", _op_handler_openapi, 0);
 	bind_operation_handler("/openapi", _op_handler_openapi, 0);
@@ -570,18 +510,8 @@ int main(int argc, char **argv)
 	destroy_openapi(openapi_state);
 	openapi_state = NULL;
 	free_con_mgr(conmgr);
-	data_fini();
 
-	for (size_t i = 0; i < oas_plugin_count; i++) {
-		plugrack_release_by_type(oas_rack, oas_plugin_types[i]);
-		xfree(oas_plugin_types[i]);
-	}
-	xfree(oas_plugin_types);
-	if ((rc = plugrack_destroy(oas_rack)))
-		fatal_abort("unable to clean up plugrack: %s",
-			    slurm_strerror(rc));
-	oas_rack = NULL;
-	xfree(oas_plugin_handles);
+	data_fini();
 	for (size_t i = 0; i < auth_plugin_count; i++) {
 		plugrack_release_by_type(auth_rack, auth_plugin_types[i]);
 		xfree(auth_plugin_types[i]);

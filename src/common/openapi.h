@@ -45,7 +45,7 @@
 #include "src/common/data.h"
 #include "src/common/http.h"
 #include "src/common/list.h"
-#include "src/common/plugin.h"
+#include "src/common/plugrack.h"
 
 /*
  * Opaque type for tracking state
@@ -100,12 +100,13 @@ extern int find_path_tag(openapi_t *oas, const data_t *path, data_t *params,
 /*
  * Init the OAS data structs.
  * IN/OUT oas - openapi state (must point to NULL)
- * IN plugin_handles - array of plugin handles loaded
- * IN plugin_count - number of plugins loaded
+ * IN plugins - comma delimited list of plugins or "list"
+ * 	pass NULL to load all found or "" to load none of them
+ * IN listf - function to call if plugins="list" (may be NULL)
  * RET SLURM_SUCCESS or error
  */
-extern int init_openapi(openapi_t **oas, const plugin_handle_t *plugin_handles,
-			const size_t plugin_count);
+extern int init_openapi(openapi_t **oas, const char *plugins,
+			plugrack_foreach_t listf);
 
 /*
  * Free openapi

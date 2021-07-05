@@ -137,7 +137,7 @@ extern int bind_operation_handler(const char *str_path,
 	debug3("%s: binding %s to 0x%"PRIxPTR,
 	       __func__, str_path, (uintptr_t) callback);
 
-	path_tag = register_path_tag(NULL, str_path);
+	path_tag = register_path_tag(openapi_state, str_path);
 	if (path_tag == -1)
 		fatal_abort("%s: failure registering OpenAPI for path: %s",
 			    __func__, str_path);
