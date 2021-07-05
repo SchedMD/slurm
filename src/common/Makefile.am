@@ -70,6 +70,8 @@ libcommon_la_SOURCES =				\
 	node_features.h				\
 	node_select.c				\
 	node_select.h				\
+	openapi.c				\
+	openapi.h				\
 	optz.c					\
 	optz.h					\
 	pack.c					\

@@ -43,17 +43,17 @@
 
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/openapi.h"
 #include "src/common/parse_time.h"
 #include "src/common/ref.h"
-#include "src/common/slurm_protocol_api.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/strlcpy.h"
 #include "src/common/uid.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 
 #include "src/plugins/openapi/dbv0.0.37/api.h"
