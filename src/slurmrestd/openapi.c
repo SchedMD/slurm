@@ -54,8 +54,6 @@
 #include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 
-decl_static_data(openapi_json);
-
 #define MAGIC_PATH 0x1111beef
 
 static pthread_rwlock_t paths_lock = PTHREAD_RWLOCK_INITIALIZER;
