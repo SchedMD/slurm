@@ -46,10 +46,10 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 #include "src/slurmrestd/rest_auth.h"
 
+openapi_t *openapi_state = NULL;
 static pthread_rwlock_t paths_lock = PTHREAD_RWLOCK_INITIALIZER;
 static List paths = NULL;
 
@@ -60,7 +60,7 @@ typedef struct {
 	/* unique tag per path */
 	int tag;
 	/* handler's callback to call on match */
-	operation_handler_t callback;
+	openapi_handler_t callback;
 	/* tag to hand to handler */
 	int callback_tag;
 } path_t;
@@ -127,8 +127,7 @@ static int _match_path_key(void *x, void *ptr)
 }
 
 extern int bind_operation_handler(const char *str_path,
-				  operation_handler_t callback,
-				  int callback_tag)
+				  openapi_handler_t callback, int callback_tag)
 {
 	int path_tag;
 	path_t *path;
@@ -138,7 +137,7 @@ extern int bind_operation_handler(const char *str_path,
 	debug3("%s: binding %s to 0x%"PRIxPTR,
 	       __func__, str_path, (uintptr_t) callback);
 
-	path_tag = register_path_tag(str_path);
+	path_tag = register_path_tag(NULL, str_path);
 	if (path_tag == -1)
 		fatal_abort("%s: failure registering OpenAPI for path: %s",
 			    __func__, str_path);
@@ -166,7 +165,7 @@ exists:
 static int _rm_path_callback(void *x, void *ptr)
 {
 	path_t *path = (path_t *)x;
-	operation_handler_t callback = ptr;
+	openapi_handler_t callback = ptr;
 
 	_check_path_magic(path);
 
@@ -175,12 +174,12 @@ static int _rm_path_callback(void *x, void *ptr)
 
 	debug5("%s: removing tag %d for callback %"PRIxPTR,
 	       __func__, path->tag, (uintptr_t) callback);
-	unregister_path_tag(path->tag);
+	unregister_path_tag(openapi_state, path->tag);
 
 	return 1;
 }
 
-extern int unbind_operation_handler(operation_handler_t callback)
+extern int unbind_operation_handler(openapi_handler_t callback)
 {
 	slurm_rwlock_wrlock(&paths_lock);
 
@@ -236,7 +235,7 @@ static int _resolve_path(on_http_request_args_t *args, int *path_tag,
 	/* attempt to identify path leaf types */
 	(void) data_convert_tree(path, DATA_TYPE_NONE);
 
-	*path_tag = find_path_tag(path, params, args->method);
+	*path_tag = find_path_tag(openapi_state, path, params, args->method);
 
 	FREE_NULL_DATA(path);
 
@@ -426,7 +425,7 @@ static int _resolve_mime(on_http_request_args_t *args, const char **read_mime,
 }
 
 static int _call_handler(on_http_request_args_t *args, data_t *params,
-			 data_t *query, operation_handler_t callback,
+			 data_t *query, openapi_handler_t callback,
 			 int callback_tag, const char *write_mime)
 {
 	int rc;
@@ -502,7 +501,7 @@ extern int operations_router(on_http_request_args_t *args)
 	data_t *params = NULL;
 	int path_tag;
 	path_t *path = NULL;
-	operation_handler_t callback = NULL;
+	openapi_handler_t callback = NULL;
 	int callback_tag;
 	const char *read_mime = NULL;
 	const char *write_mime = NULL;

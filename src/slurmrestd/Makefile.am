@@ -10,7 +10,6 @@ REF = usage.txt
 SRCS = \
 	conmgr.h conmgr.c \
 	http.c http.h \
-	openapi.c openapi.h \
 	operations.c operations.h \
 	slurmrestd.c \
 	rest_auth.h rest_auth.c

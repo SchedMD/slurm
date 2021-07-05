@@ -53,7 +53,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 
 #include "src/plugins/openapi/dbv0.0.36/api.h"
@@ -83,7 +82,7 @@ static int _foreach_account(void *x, void *arg)
 }
 
 /* based on sacctmgr_list_account() */
-static int _dump_accounts(data_t *resp, rest_auth_context_t *auth,
+static int _dump_accounts(data_t *resp, void *auth,
 			  slurmdb_account_cond_t *acct_cond)
 {
 	int rc = SLURM_SUCCESS;
@@ -121,7 +120,7 @@ typedef struct {
 	int magic;
 	List acct_list;
 	data_t *errors;
-	rest_auth_context_t *auth;
+	void *auth;
 } foreach_update_acct_t;
 
 static data_for_each_cmd_t _foreach_update_acct(data_t *data, void *arg)
@@ -154,8 +153,7 @@ static data_for_each_cmd_t _foreach_update_acct(data_t *data, void *arg)
 	}
 }
 
-static int _update_accts(data_t *query, data_t *resp, rest_auth_context_t *auth,
-			 bool commit)
+static int _update_accts(data_t *query, data_t *resp, void *auth, bool commit)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
@@ -192,8 +190,7 @@ static int _foreach_delete_acct(void *x, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static int _delete_account(data_t *resp, rest_auth_context_t *auth,
-			   char *account)
+static int _delete_account(data_t *resp, void *auth, char *account)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
@@ -225,9 +222,8 @@ static int _delete_account(data_t *resp, rest_auth_context_t *auth,
 }
 
 extern int op_handler_account(const char *context_id,
-			      http_request_method_t method,
-			      data_t *parameters, data_t *query, int tag,
-			      data_t *resp, rest_auth_context_t *auth)
+			      http_request_method_t method, data_t *parameters,
+			      data_t *query, int tag, data_t *resp, void *auth)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
@@ -263,8 +259,7 @@ extern int op_handler_account(const char *context_id,
 /* based on sacctmgr_list_account() */
 extern int op_handler_accounts(const char *context_id,
 			       http_request_method_t method, data_t *parameters,
-			       data_t *query, int tag, data_t *resp,
-			       rest_auth_context_t *auth)
+			       data_t *query, int tag, data_t *resp, void *auth)
 {
 	if (method == HTTP_REQUEST_GET) {
 		slurmdb_account_cond_t acct_cond = {

@@ -53,7 +53,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 
 #include "src/plugins/openapi/dbv0.0.36/api.h"
@@ -83,7 +82,7 @@ static int _foreach_cluster(void *x, void *arg)
 }
 
 static int _dump_clusters(data_t *resp, data_t *errors, char *cluster,
-			  rest_auth_context_t *auth)
+			  void *auth)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_tres_cond_t tres_cond = {
@@ -132,7 +131,7 @@ static int _foreach_del_cluster(void *x, void *arg)
 }
 
 static int _delete_cluster(data_t *resp, data_t *errors, char *cluster,
-			   rest_auth_context_t *auth)
+			   void *auth)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_cluster_cond_t cluster_cond = {
@@ -173,7 +172,7 @@ typedef struct {
 	List cluster_list;
 	List tres_list;
 	data_t *errors;
-	rest_auth_context_t *auth;
+	void *auth;
 } foreach_update_cluster_t;
 
 static data_for_each_cmd_t _foreach_update_cluster(data_t *data, void *arg)
@@ -205,7 +204,7 @@ static data_for_each_cmd_t _foreach_update_cluster(data_t *data, void *arg)
 }
 
 static int _update_clusters(data_t *query, data_t *resp, data_t *errors,
-			    rest_auth_context_t *auth, bool commit)
+			    void *auth, bool commit)
 {
 	int rc = SLURM_SUCCESS;
 	foreach_update_cluster_t args = {
@@ -236,8 +235,7 @@ static int _update_clusters(data_t *query, data_t *resp, data_t *errors,
 
 extern int op_handler_cluster(const char *context_id,
 			      http_request_method_t method, data_t *parameters,
-			      data_t *query, int tag, data_t *resp,
-			      rest_auth_context_t *auth)
+			      data_t *query, int tag, data_t *resp, void *auth)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
@@ -255,8 +253,7 @@ extern int op_handler_cluster(const char *context_id,
 
 extern int op_handler_clusters(const char *context_id,
 			       http_request_method_t method, data_t *parameters,
-			       data_t *query, int tag, data_t *resp,
-			       rest_auth_context_t *auth)
+			       data_t *query, int tag, data_t *resp, void *auth)
 {
 	data_t *errors = populate_response_format(resp);
 	int rc = SLURM_SUCCESS;

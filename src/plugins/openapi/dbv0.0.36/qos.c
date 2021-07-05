@@ -53,7 +53,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 
 #include "src/plugins/openapi/dbv0.0.36/api.h"
@@ -75,8 +74,7 @@ static int _foreach_qos(slurmdb_qos_rec_t *qos, data_t *dqos_list,
 		    &penv);
 }
 
-static int _dump_qos(data_t *resp, rest_auth_context_t *auth, List g_qos_list,
-		     char *qos_name)
+static int _dump_qos(data_t *resp, void *auth, List g_qos_list, char *qos_name)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
@@ -116,7 +114,7 @@ static int _foreach_delete_qos(void *x, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static int _delete_qos(data_t *resp, rest_auth_context_t *auth, data_t *errors,
+static int _delete_qos(data_t *resp, void *auth, data_t *errors,
 		       slurmdb_qos_cond_t *qos_cond)
 {
 	int rc = SLURM_SUCCESS;
@@ -145,7 +143,7 @@ typedef struct {
 	List qos_list;
 	List g_tres_list;
 	data_t *errors;
-	rest_auth_context_t *auth;
+	void *auth;
 } foreach_update_qos_t;
 
 static data_for_each_cmd_t _foreach_update_qos(data_t *data, void *arg)
@@ -176,8 +174,7 @@ static data_for_each_cmd_t _foreach_update_qos(data_t *data, void *arg)
 	}
 }
 
-static int _update_qos(data_t *query, data_t *resp, rest_auth_context_t *auth,
-		       bool commit)
+static int _update_qos(data_t *query, data_t *resp, void *auth, bool commit)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
@@ -212,7 +209,7 @@ static int _update_qos(data_t *query, data_t *resp, rest_auth_context_t *auth,
 
 extern int op_handler_qos(const char *context_id, http_request_method_t method,
 			  data_t *parameters, data_t *query, int tag,
-			  data_t *resp, rest_auth_context_t *auth)
+			  data_t *resp, void *auth)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);

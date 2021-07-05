@@ -51,7 +51,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 
 #include "src/plugins/openapi/dbv0.0.36/api.h"
@@ -141,9 +140,9 @@ extern int resp_error(data_t *errors, int error_code, const char *why,
 	return error_code;
 }
 
-extern int db_query_list_funcname(data_t *errors, rest_auth_context_t *auth,
-				  List *list, db_list_query_func_t func,
-				  void *cond, const char *func_name)
+extern int db_query_list_funcname(data_t *errors, void *auth, List *list,
+				  db_list_query_func_t func, void *cond,
+				  const char *func_name)
 {
 	List l;
 	void *db_conn;
@@ -175,10 +174,8 @@ extern int db_query_list_funcname(data_t *errors, rest_auth_context_t *auth,
 	return SLURM_SUCCESS;
 }
 
-extern int db_query_rc_funcname(data_t *errors,
-				rest_auth_context_t *auth, List list,
-				db_rc_query_func_t func,
-				const char *func_name)
+extern int db_query_rc_funcname(data_t *errors, void *auth, List list,
+				db_rc_query_func_t func, const char *func_name)
 {
 	int rc;
 	void *db_conn;
@@ -196,7 +193,7 @@ extern int db_query_rc_funcname(data_t *errors,
 	return rc;
 }
 
-extern int db_query_commit(data_t *errors, rest_auth_context_t *auth)
+extern int db_query_commit(data_t *errors, void *auth)
 {
 	int rc;
 	void *db_conn;

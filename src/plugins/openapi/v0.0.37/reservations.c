@@ -49,7 +49,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 
 #include "src/plugins/openapi/v0.0.37/api.h"
@@ -137,10 +136,9 @@ static int _dump_res(data_t *p, reserve_info_t *res)
 }
 
 static int _op_handler_reservations(const char *context_id,
-				  http_request_method_t method,
-				  data_t *parameters, data_t *query,
-				  int tag, data_t *d,
-				  rest_auth_context_t *auth)
+				    http_request_method_t method,
+				    data_t *parameters, data_t *query, int tag,
+				    data_t *d, void *auth)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(d);

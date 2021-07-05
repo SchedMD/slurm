@@ -53,12 +53,11 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 
 #include "src/plugins/openapi/dbv0.0.37/api.h"
 
-static const operation_handler_t ops[] = {
+static const openapi_handler_t ops[] = {
 	/* Warning: order matters */
 	op_handler_clusters,
 	op_handler_tres,
@@ -72,7 +71,7 @@ static const operation_handler_t ops[] = {
 static int _op_handler_config(const char *context_id,
 			      http_request_method_t method, data_t *parameters,
 			      data_t *query, int tag, data_t *resp,
-			      rest_auth_context_t *auth)
+			      void *auth)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);

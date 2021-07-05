@@ -38,8 +38,11 @@
 #define SLURMRESTD_OPERATIONS_H
 
 #include "src/common/data.h"
+#include "src/common/openapi.h"
 #include "src/slurmrestd/http.h"
 #include "src/slurmrestd/rest_auth.h"
+
+extern openapi_t *openapi_state;
 
 /*
  * setup locks.
@@ -47,21 +50,6 @@
  */
 extern int init_operations(void);
 extern void destroy_operations(void);
-
-/*
- * Callback from operations manager.
- * we are not passing any http information to make this generic.
- * RET SLURM_SUCCESS or error to kill the connection
- */
-typedef int (*operation_handler_t)(
-	const char *context_id, /* context id of client */
-	http_request_method_t method, /* request method */
-	data_t *parameters, /* openapi parameters */
-	data_t *query, /* query sent by client */
-	int tag, /* tag associated with path */
-	data_t *resp, /* data to populate with response */
-	rest_auth_context_t *auth /* authentication context */
-);
 
 /*
  * Bind callback handler for a given URL pattern.
@@ -82,8 +70,7 @@ typedef int (*operation_handler_t)(
  * IN tag - arbitrary tag passed to handler when path matched
  * RET SLURM_SUCCESS or error
  */
-extern int bind_operation_handler(const char *path,
-				  operation_handler_t callback,
+extern int bind_operation_handler(const char *path, openapi_handler_t callback,
 				  int tag);
 
 /*
@@ -92,7 +79,7 @@ extern int bind_operation_handler(const char *path,
  * IN path path to remove
  * RET SLURM_SUCCESS or error
  */
-extern int unbind_operation_handler(operation_handler_t callback);
+extern int unbind_operation_handler(openapi_handler_t callback);
 
 /*
  * Parses incoming requests and calls handlers.

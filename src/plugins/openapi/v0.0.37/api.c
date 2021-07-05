@@ -43,12 +43,12 @@
 
 #include "src/common/data.h"
 #include "src/common/log.h"
+#include "src/common/openapi.h"
 #include "src/common/ref.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 
 #include "src/plugins/openapi/v0.0.37/api.h"

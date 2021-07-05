@@ -49,7 +49,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 
 typedef enum {
@@ -166,9 +165,8 @@ static int _dump_part(data_t *p, partition_info_t *part)
 
 static int _op_handler_partitions(const char *context_id,
 				  http_request_method_t method,
-				  data_t *parameters, data_t *query,
-				  int tag, data_t *resp,
-				  rest_auth_context_t *auth)
+				  data_t *parameters, data_t *query, int tag,
+				  data_t *resp, void *auth)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *d = data_set_dict(resp);

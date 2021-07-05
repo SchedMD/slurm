@@ -53,7 +53,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 
 #include "src/plugins/openapi/dbv0.0.37/api.h"
@@ -85,8 +84,7 @@ static int _foreach_user(void *x, void *arg)
 		return 0;
 }
 
-static int _dump_users(data_t *resp, data_t *errors, rest_auth_context_t *auth,
-		       char *user_name)
+static int _dump_users(data_t *resp, data_t *errors, void *auth, char *user_name)
 {
 	int rc = SLURM_SUCCESS;
 	List user_list = NULL;
@@ -271,7 +269,7 @@ static void _destroy_user_coord_t(void *x)
 	xfree(uc);
 }
 
-static int _update_users(data_t *query, data_t *resp, rest_auth_context_t *auth,
+static int _update_users(data_t *query, data_t *resp, void *auth,
 			 bool commit)
 {
 	int rc = SLURM_SUCCESS;
@@ -328,7 +326,7 @@ static int _foreach_delete_user(void *x, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static int _delete_user(data_t *resp, rest_auth_context_t *auth,
+static int _delete_user(data_t *resp, void *auth,
 			char *user_name, data_t *errors)
 {
 	int rc = SLURM_SUCCESS;
@@ -366,7 +364,7 @@ static int _delete_user(data_t *resp, rest_auth_context_t *auth,
 extern int op_handler_users(const char *context_id,
 			    http_request_method_t method,
 			    data_t *parameters, data_t *query, int tag,
-			    data_t *resp, rest_auth_context_t *auth)
+			    data_t *resp, void *auth)
 {
 	data_t *errors = populate_response_format(resp);
 
@@ -380,7 +378,7 @@ extern int op_handler_users(const char *context_id,
 
 static int op_handler_user(const char *context_id, http_request_method_t method,
 			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, rest_auth_context_t *auth)
+			   data_t *resp, void *auth)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);

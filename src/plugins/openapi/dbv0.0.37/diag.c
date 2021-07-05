@@ -51,7 +51,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 
 #include "src/plugins/openapi/dbv0.0.37/api.h"
@@ -60,7 +59,7 @@
 static int _op_handler_diag(const char *context_id,
 			    http_request_method_t method, data_t *parameters,
 			    data_t *query, int tag, data_t *resp,
-			    rest_auth_context_t *auth)
+			    void *auth)
 {
 	data_t *errors = populate_response_format(resp);
 	parser_env_t penv = { 0 };

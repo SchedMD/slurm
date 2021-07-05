@@ -53,7 +53,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 
 #include "src/plugins/openapi/dbv0.0.37/api.h"
@@ -68,7 +67,7 @@ static int _foreach_delete_assoc(void *x, void *arg)
 	return DATA_FOR_EACH_CONT;
 }
 
-static int _dump_assoc_cond(data_t *resp, rest_auth_context_t *auth,
+static int _dump_assoc_cond(data_t *resp, void *auth,
 			    data_t *errors, slurmdb_assoc_cond_t *cond)
 {
 	int rc = SLURM_SUCCESS;
@@ -117,7 +116,7 @@ static int _dump_assoc_cond(data_t *resp, rest_auth_context_t *auth,
 static int _dump_associations(const char *context_id,
 			      http_request_method_t method, data_t *parameters,
 			      data_t *query, int tag, data_t *resp,
-			      rest_auth_context_t *auth, data_t *errors)
+			      void *auth, data_t *errors)
 {
 	int rc;
 	slurmdb_assoc_cond_t assoc_cond = {
@@ -129,7 +128,7 @@ static int _dump_associations(const char *context_id,
 	return rc;
 }
 
-static int _dump_association(data_t *resp, rest_auth_context_t *auth,
+static int _dump_association(data_t *resp, void *auth,
 			     data_t *errors, char *account, char *cluster,
 			     char *user, char *partition)
 {
@@ -159,9 +158,9 @@ static int _dump_association(data_t *resp, rest_auth_context_t *auth,
 	return rc;
 }
 
-static int _delete_assoc(data_t *resp, rest_auth_context_t *auth,
-			 data_t *errors, char *account, char *cluster,
-			 char *user, char *partition)
+static int _delete_assoc(data_t *resp, void *auth, data_t *errors,
+			 char *account, char *cluster, char *user,
+			 char *partition)
 {
 	int rc = SLURM_SUCCESS;
 	List removed;
@@ -242,7 +241,7 @@ static data_for_each_cmd_t _foreach_update_assoc(data_t *data, void *arg)
 }
 
 static int _update_assocations(data_t *query, data_t *resp,
-			       rest_auth_context_t *auth, bool commit)
+			       void *auth, bool commit)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
@@ -283,7 +282,7 @@ static int _update_assocations(data_t *query, data_t *resp,
 static int op_handler_association(const char *context_id,
 				  http_request_method_t method,
 				  data_t *parameters, data_t *query, int tag,
-				  data_t *resp, rest_auth_context_t *auth)
+				  data_t *resp, void *auth)
 {
 	data_t *errors = populate_response_format(resp);
 	char *user = NULL; /* optional */
@@ -319,7 +318,7 @@ static int op_handler_association(const char *context_id,
 extern int op_handler_associations(const char *context_id,
 				   http_request_method_t method,
 				   data_t *parameters, data_t *query, int tag,
-				   data_t *resp, rest_auth_context_t *auth)
+				   data_t *resp, void *auth)
 {
 	data_t *errors = populate_response_format(resp);
 

@@ -55,6 +55,7 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
+#include "src/common/openapi.h"
 #include "src/common/plugrack.h"
 #include "src/common/proc_args.h"
 #include "src/common/read_config.h"
@@ -67,7 +68,6 @@
 
 #include "src/slurmrestd/conmgr.h"
 #include "src/slurmrestd/http.h"
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 #include "src/slurmrestd/rest_auth.h"
 
@@ -369,6 +369,13 @@ static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
 	info("%s", full_type);
 }
 
+static int _op_handler_openapi(const char *context_id,
+			       http_request_method_t method, data_t *parameters,
+			       data_t *query, int tag, data_t *resp, void *auth)
+{
+	return get_openapi_specification(openapi_state, resp);
+}
+
 int main(int argc, char **argv)
 {
 	int rc = SLURM_SUCCESS, parse_rc = SLURM_SUCCESS;
@@ -501,8 +508,13 @@ int main(int argc, char **argv)
 				      oas_plugin_types[i]);
 	}
 
-	if (init_openapi(oas_plugin_handles, oas_plugin_count))
+	if (init_openapi(&openapi_state, oas_plugin_handles, oas_plugin_count))
 		fatal("Unable to initialize OpenAPI structures");
+
+	bind_operation_handler("/openapi.yaml", _op_handler_openapi, 0);
+	bind_operation_handler("/openapi.json", _op_handler_openapi, 0);
+	bind_operation_handler("/openapi", _op_handler_openapi, 0);
+	bind_operation_handler("/openapi/v3", _op_handler_openapi, 0);
 
 	/* Sanity check modes */
 	if (run_mode.stdin_socket) {
@@ -550,10 +562,13 @@ int main(int argc, char **argv)
 	if (conmgr->exit_on_error)
 		parse_rc = conmgr->error;
 
+	unbind_operation_handler(_op_handler_openapi);
+
 	/* cleanup everything */
 	destroy_rest_auth();
 	destroy_operations();
-	destroy_openapi();
+	destroy_openapi(openapi_state);
+	openapi_state = NULL;
 	free_con_mgr(conmgr);
 	data_fini();
 

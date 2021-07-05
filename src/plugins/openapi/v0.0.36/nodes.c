@@ -51,7 +51,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 
 #include "src/plugins/openapi/v0.0.36/api.h"
@@ -153,8 +152,7 @@ static int _dump_node(data_t *p, node_info_t *node)
 
 static int _op_handler_nodes(const char *context_id,
 			     http_request_method_t method, data_t *parameters,
-			     data_t *query, int tag, data_t *d,
-			     rest_auth_context_t *auth)
+			     data_t *query, int tag, data_t *d, void *auth)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(d);

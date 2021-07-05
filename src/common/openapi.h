@@ -54,6 +54,21 @@ struct openapi_s;
 typedef struct openapi_s openapi_t;
 
 /*
+ * Callback from openapi caller.
+ * we are not passing any http information to make this generic.
+ * RET SLURM_SUCCESS or error to kill the connection
+ */
+typedef int (*openapi_handler_t)(
+	const char *context_id, /* context id of client */
+	http_request_method_t method, /* request method */
+	data_t *parameters, /* openapi parameters */
+	data_t *query, /* query sent by client */
+	int tag, /* tag associated with path */
+	data_t *resp, /* data to populate with response */
+	void *auth /* authentication context */
+);
+
+/*
  * Register a given unique tag against a path.
  *
  * IN path - path to assign to given tag

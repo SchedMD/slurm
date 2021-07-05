@@ -53,7 +53,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 
 #include "src/plugins/openapi/dbv0.0.36/api.h"
@@ -79,8 +78,7 @@ static int _foreach_wckey(void *x, void *arg)
 	return 1;
 }
 
-static int _dump_wckeys(data_t *resp, data_t *errors, char *wckey,
-			rest_auth_context_t *auth)
+static int _dump_wckeys(data_t *resp, data_t *errors, char *wckey, void *auth)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_wckey_cond_t wckey_cond = {
@@ -123,8 +121,7 @@ static int _foreach_del_wckey(void *x, void *arg)
 	return 1;
 }
 
-static int _delete_wckey(data_t *resp, data_t *errors, char *wckey,
-			 rest_auth_context_t *auth)
+static int _delete_wckey(data_t *resp, data_t *errors, char *wckey, void *auth)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_wckey_cond_t wckey_cond = {
@@ -162,7 +159,7 @@ typedef struct {
 	int magic;
 	List wckey_list;
 	data_t *errors;
-	rest_auth_context_t *auth;
+	void *auth;
 } foreach_update_wckey_t;
 
 static data_for_each_cmd_t _foreach_update_wckey(data_t *data, void *arg)
@@ -194,7 +191,7 @@ static data_for_each_cmd_t _foreach_update_wckey(data_t *data, void *arg)
 }
 
 static int _update_wckeys(data_t *query, data_t *resp, data_t *errors,
-			  rest_auth_context_t *auth, bool commit)
+			  void *auth, bool commit)
 {
 	int rc = SLURM_SUCCESS;
 	foreach_update_wckey_t args = {
@@ -222,9 +219,8 @@ static int _update_wckeys(data_t *query, data_t *resp, data_t *errors,
 }
 
 extern int op_handler_wckey(const char *context_id,
-			    http_request_method_t method,
-			    data_t *parameters, data_t *query, int tag,
-			    data_t *resp, rest_auth_context_t *auth)
+			    http_request_method_t method, data_t *parameters,
+			    data_t *query, int tag, data_t *resp, void *auth)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
@@ -244,8 +240,7 @@ extern int op_handler_wckey(const char *context_id,
 
 extern int op_handler_wckeys(const char *context_id,
 			     http_request_method_t method, data_t *parameters,
-			     data_t *query, int tag, data_t *resp,
-			     rest_auth_context_t *auth)
+			     data_t *query, int tag, data_t *resp, void *auth)
 {
 	data_t *errors = populate_response_format(resp);
 	int rc = SLURM_SUCCESS;

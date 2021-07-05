@@ -53,7 +53,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#include "src/slurmrestd/openapi.h"
 #include "src/slurmrestd/operations.h"
 
 #include "src/plugins/openapi/dbv0.0.37/api.h"
@@ -380,8 +379,7 @@ data_for_each_cmd_t _foreach_query_search(const char *key, data_t *data,
 
 static int _dump_jobs(const char *context_id, http_request_method_t method,
 		      data_t *parameters, data_t *query, int tag, data_t *resp,
-		      rest_auth_context_t *auth, data_t *errors,
-		      slurmdb_job_cond_t *job_cond)
+		      void *auth, data_t *errors, slurmdb_job_cond_t *job_cond)
 {
 	int rc = SLURM_SUCCESS;
 	slurmdb_assoc_cond_t assoc_cond = {
@@ -422,7 +420,7 @@ static int _dump_jobs(const char *context_id, http_request_method_t method,
 /* based on get_data() in sacct/options.c */
 extern int op_handler_jobs(const char *context_id, http_request_method_t method,
 			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, rest_auth_context_t *auth)
+			   data_t *resp, void *auth)
 {
 	data_t *errors = populate_response_format(resp);
 
@@ -454,7 +452,7 @@ extern int op_handler_jobs(const char *context_id, http_request_method_t method,
 /* based on get_data() in sacct/options.c */
 static int _op_handler_job(const char *context_id, http_request_method_t method,
 			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, rest_auth_context_t *auth)
+			   data_t *resp, void *auth)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
