@@ -12,6 +12,7 @@ proc ModulesHelp { } {
 # CONFIGURATION
 conflict	xt-pbs pbs torque
 set slurmdir	"@prefix@"
+set slurmlibdir	"@libdir@"
 set perldir	[exec perl -e "use Config; \$T=\$Config{installsitearch}; \$P=\$Config{installprefix}; \$P1=\"\$P/local\"; \$T =~ s/\$P1//; \$T =~ s/\$P//; print \$T;"]
 
 set version "UNKNOWN"
@@ -27,7 +28,7 @@ prepend-path	PATH		"$slurmdir/bin"
 
 prepend-path	MANPATH		"$slurmdir/share/man"
 
-prepend-path    PKG_CONFIG_PATH "@libdir@/pkgconfig"
+prepend-path    PKG_CONFIG_PATH "$slurmlibdir/pkgconfig"
 
 prepend-path	PERL5LIB	"$slurmdir/$perldir"
 
