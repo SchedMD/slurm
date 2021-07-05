@@ -332,7 +332,7 @@ static void *_setup_http_context(con_mgr_fd_t *con)
 }
 
 static void _auth_plugrack_foreach(const char *full_type, const char *fq_path,
-			      const plugin_handle_t id)
+				   const plugin_handle_t id, void *arg)
 {
 	auth_plugin_count += 1;
 	xrecalloc(auth_plugin_handles, auth_plugin_count,
@@ -348,7 +348,7 @@ static void _auth_plugrack_foreach(const char *full_type, const char *fq_path,
 }
 
 static void _oas_plugrack_foreach(const char *full_type, const char *fq_path,
-			      const plugin_handle_t id)
+				  const plugin_handle_t id, void *arg)
 {
 	oas_plugin_count += 1;
 	xrecalloc(oas_plugin_handles, oas_plugin_count,
@@ -364,7 +364,7 @@ static void _oas_plugrack_foreach(const char *full_type, const char *fq_path,
 }
 
 static void _plugrack_foreach_list(const char *full_type, const char *fq_path,
-				   const plugin_handle_t id)
+				   const plugin_handle_t id, void *arg)
 {
 	info("%s", full_type);
 }
@@ -415,7 +415,7 @@ int main(int argc, char **argv)
 
 	if (rest_auth && !xstrcasecmp(rest_auth, "list")) {
 		info("Possible REST authentication plugins:");
-		plugrack_foreach(auth_rack, _plugrack_foreach_list);
+		plugrack_foreach(auth_rack, _plugrack_foreach_list, NULL);
 		exit(0);
 	} else if (rest_auth) {
 		/* User provide which plugins they want */
@@ -432,7 +432,7 @@ int main(int argc, char **argv)
 			xstrtrim(type);
 
 			_auth_plugrack_foreach(type, NULL,
-					       PLUGIN_INVALID_HANDLE);
+					       PLUGIN_INVALID_HANDLE, NULL);
 
 			xfree(type);
 			type = strtok_r(NULL, ",", &last);
@@ -440,7 +440,7 @@ int main(int argc, char **argv)
 
 		xfree(rest_auth);
 	} else /* Add all possible */
-		plugrack_foreach(auth_rack, _auth_plugrack_foreach);
+		plugrack_foreach(auth_rack, _auth_plugrack_foreach, NULL);
 
 	if (!auth_plugin_count)
 		fatal("No authentication plugins to load.");
@@ -462,7 +462,7 @@ int main(int argc, char **argv)
 
 	if (oas_specs && !xstrcasecmp(oas_specs, "list")) {
 		info("Possible OpenAPI plugins:");
-		plugrack_foreach(oas_rack, _plugrack_foreach_list);
+		plugrack_foreach(oas_rack, _plugrack_foreach_list, NULL);
 		exit(0);
 	} else if (oas_specs) {
 		/* User provide which plugins they want */
@@ -478,8 +478,8 @@ int main(int argc, char **argv)
 			type = xstrdup_printf("openapi/%s", type);
 			xstrtrim(type);
 
-			_oas_plugrack_foreach(type, NULL,
-					      PLUGIN_INVALID_HANDLE);
+			_oas_plugrack_foreach(type, NULL, PLUGIN_INVALID_HANDLE,
+					      NULL);
 
 			xfree(type);
 			type = strtok_r(NULL, ",", &last);
@@ -487,7 +487,7 @@ int main(int argc, char **argv)
 
 		xfree(oas_specs);
 	} else /* Add all possible */
-		plugrack_foreach(oas_rack, _oas_plugrack_foreach);
+		plugrack_foreach(oas_rack, _oas_plugrack_foreach, NULL);
 
 	if (!oas_plugin_count)
 		fatal("No OAS plugins to load. Nothing to do.");

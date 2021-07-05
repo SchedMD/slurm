@@ -95,7 +95,7 @@ int plugrack_print_mpi_plugins(plugrack_t *rack);
  * Call function f for each plugin found in rack
  */
 typedef void (*plugrack_foreach_t)(const char *full_type, const char *fq_path,
-				   const plugin_handle_t id);
-extern void plugrack_foreach(plugrack_t *rack, plugrack_foreach_t f);
+				   const plugin_handle_t id, void *arg);
+extern void plugrack_foreach(plugrack_t *rack, plugrack_foreach_t f, void *arg);
 
 #endif /*__PLUGRACK_H__*/

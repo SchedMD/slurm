@@ -236,7 +236,7 @@ static bool _plugin_loaded(const char *plugin)
 }
 
 static void _plugrack_foreach(const char *full_type, const char *fq_path,
-			      const plugin_handle_t id)
+			      const plugin_handle_t id, void *arg)
 {
 	if (_plugin_loaded(full_type)) {
 		log_flag(DATA, "%s: serializer plugin type %s already loaded",
@@ -269,13 +269,13 @@ static void _find_plugins(const char *plugin_list, plugrack_foreach_t listf)
 
 	if (listf && !xstrcasecmp(plugin_list, "list")) {
 		/* call list function ptr and then load all */
-		plugrack_foreach(rack, listf);
+		plugrack_foreach(rack, listf, NULL);
 		plugin_list = NULL;
 	}
 
 	if (!plugin_list) {
 		/* no filter specified: load them all */
-		plugrack_foreach(rack, _plugrack_foreach);
+		plugrack_foreach(rack, _plugrack_foreach, NULL);
 	} else if (plugin_list[0] == '\0') {
 		log_flag(DATA, "not loading any serializer plugins");
 	} else {
@@ -293,8 +293,8 @@ static void _find_plugins(const char *plugin_list, plugrack_foreach_t listf)
 				type += 11;
 			type = xstrdup_printf("serializer/%s", type);
 
-			_plugrack_foreach(type, NULL,
-					  PLUGIN_INVALID_HANDLE);
+			_plugrack_foreach(type, NULL, PLUGIN_INVALID_HANDLE,
+					  NULL);
 
 			xfree(type);
 			type = strtok_r(NULL, ",", &last);
