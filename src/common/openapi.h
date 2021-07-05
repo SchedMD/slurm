@@ -34,7 +34,73 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+/*
+ * Based on OpenAPI 3.0.2 spec (OAS):
+ * 	https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md
+ */
+
 #ifndef SLURM_OPENAPI_H
 #define SLURM_OPENAPI_H
+
+#include "src/common/data.h"
+#include "src/common/http.h"
+#include "src/common/list.h"
+#include "src/common/plugin.h"
+
+/*
+ * Opaque type for tracking state
+ */
+struct openapi_s;
+typedef struct openapi_s openapi_t;
+
+/*
+ * Register a given unique tag against a path.
+ *
+ * IN path - path to assign to given tag
+ * RET -1 on error or >0 tag value for path.
+ *
+ * Can safely be called multiple times for same path.
+ */
+extern int register_path_tag(openapi_t *oas, const char *path);
+
+/*
+ * Unregister a given unique tag against a path.
+ *
+ * IN tag - path tag to remove
+ */
+extern void unregister_path_tag(openapi_t *oas, int tag);
+
+/*
+ * Find tag assigned to given path
+ * IN path - split up path to match
+ * IN/OUT params - on match, will populate any OAS parameters in path.
+ * 	params must be DATA_TYPE_DICT.
+ *
+ * IN method - HTTP method to match
+ * RET -1 if tag not found or tag given to register_path_tag()
+ */
+extern int find_path_tag(openapi_t *oas, const data_t *path, data_t *params,
+			 http_request_method_t method);
+
+/*
+ * Init the OAS data structs.
+ * IN/OUT oas - openapi state (must point to NULL)
+ * IN plugin_handles - array of plugin handles loaded
+ * IN plugin_count - number of plugins loaded
+ * RET SLURM_SUCCESS or error
+ */
+extern int init_openapi(openapi_t **oas, const plugin_handle_t *plugin_handles,
+			const size_t plugin_count);
+
+/*
+ * Free openapi
+ */
+extern void destroy_openapi(openapi_t *oas);
+
+
+/*
+ * Joins all of the loaded specs into a single spec
+ */
+extern int get_openapi_specification(openapi_t *oas, data_t *resp);
 
 #endif /* SLURM_OPENAPI_H */
