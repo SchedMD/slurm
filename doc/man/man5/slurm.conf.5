@@ -2604,7 +2604,9 @@ might be useful.
 The program executes as \fBSlurmUser\fR.
 The argument to the program will be the names of nodes to
 be removed from power savings mode (using Slurm's hostlist
-expression format).
+expression format). A job to node mapping is available in JSON format by
+reading the temporary file specified by the \fBSLURM_RESUME_FILE\fR environment
+variable.
 By default no program is run.
 
 .TP

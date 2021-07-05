@@ -61,7 +61,9 @@
 #include <unistd.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/data.h"
 #include "src/common/env.h"
+#include "src/common/fetch_config.h"
 #include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
@@ -84,6 +86,7 @@
 typedef struct proc_track_struct {
 	pid_t  child_pid;	/* pid of process		*/
 	time_t child_time;	/* start time of process	*/
+	int tmp_fd;
 } proc_track_struct_t;
 static List proc_track_list = NULL;
 
@@ -105,6 +108,7 @@ static uint16_t power_save_interval = 10;
 static uint16_t power_save_min_interval = 0;
 
 bool cloud_reg_addrs = false;
+List resume_job_list = NULL;
 
 typedef struct exc_node_partital {
 	int exc_node_cnt;
@@ -120,13 +124,14 @@ float suspend_cnt_f, resume_cnt_f;
 static void  _clear_power_config(void);
 static void  _do_failed_nodes(char *hosts);
 static void  _do_power_work(time_t now);
-static void  _do_resume(char *host);
+static void  _do_resume(char *host, char *json);
 static void  _do_suspend(char *host);
 static int   _init_power_config(void);
 static void *_init_power_save(void *arg);
 static int   _kill_procs(void);
 static void  _reap_procs(void);
-static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id);
+static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id,
+		       char *json);
 static void  _shutdown_power(void);
 static bool  _valid_prog(char *file_name);
 
@@ -263,12 +268,17 @@ static int _pick_exc_nodes(void *x, void *arg)
 /* Perform any power change work to nodes */
 static void _do_power_work(time_t now)
 {
-	int i, wake_cnt = 0, susp_total = 0;
+	int i, susp_total = 0;
 	time_t delta_t;
 	uint32_t susp_state;
 	bitstr_t *avoid_node_bitmap = NULL, *failed_node_bitmap = NULL;
 	bitstr_t *wake_node_bitmap = NULL, *sleep_node_bitmap = NULL;
 	node_record_t *node_ptr;
+	data_t *resume_json_data = NULL;
+	data_t *jobs_data = NULL;
+	ListIterator iter;
+	bitstr_t *job_power_node_bitmap;
+	uint32_t *job_id_ptr;
 
 	if (last_work_scan == 0) {
 		if (exc_nodes && (_parse_exc_nodes() != SLURM_SUCCESS))
@@ -336,6 +346,91 @@ static void _do_power_work(time_t now)
 			avoid_node_bitmap = bit_copy(exc_node_bitmap);
 	}
 
+
+	/*
+	 * Buid job to node mapping for json output
+	 * all_nodes = all nodes that need to be resumed this iteration
+	 * jobs[] - list of job to node mapping of nodes that the job needs to
+	 * be resumed for job. Multiple jobs can request the same nodes. Report
+	 * all jobs to node mapping for this iteration.
+	 * e.g.
+	 * {
+	 * all_nodes: n[1-3]
+	 * jobs: [{job_id:123, nodes:n[1-3]}, {job_id:124, nodes:n[1-3]}]
+	 * }
+	 */
+	resume_json_data = data_set_dict(data_new());
+	jobs_data = data_set_list(data_key_set(resume_json_data, "jobs"));
+
+	job_power_node_bitmap = bit_alloc(node_record_count);
+
+	iter = list_iterator_create(resume_job_list);
+	while ((job_id_ptr = list_next(iter))) {
+		int i, i_first, i_last;
+		char *nodes;
+		job_record_t *job_ptr;
+		data_t *job_node_data;
+		bitstr_t *need_resume_bitmap, *to_resume_bitmap;
+
+		if ((resume_rate > 0) && (resume_cnt >= resume_rate)) {
+			log_flag(POWER_SAVE, "resume rate reached");
+			break;
+		}
+
+		if (!(job_ptr = find_job_record(*job_id_ptr))) {
+			log_flag(POWER_SAVE, "%pJ needed resuming but is gone now",
+				 job_ptr);
+			list_delete_item(iter);
+			continue;
+		}
+		if (!IS_JOB_CONFIGURING(job_ptr)) {
+			log_flag(POWER_SAVE, "%pJ needed resuming but isn't configuring anymore",
+				 job_ptr);
+			list_delete_item(iter);
+			continue;
+		}
+		if (!bit_overlap_any(job_ptr->node_bitmap, power_node_bitmap)) {
+			log_flag(POWER_SAVE, "%pJ needed resuming but nodes aren't power_save anymore",
+				 job_ptr);
+			list_delete_item(iter);
+			continue;
+		}
+
+		to_resume_bitmap = bit_alloc(node_record_count);
+
+		need_resume_bitmap = bit_copy(job_ptr->node_bitmap);
+		bit_and(need_resume_bitmap, power_node_bitmap);
+
+		i_first = bit_ffs(need_resume_bitmap);
+		if (i_first >= 0)
+			i_last = bit_fls(need_resume_bitmap);
+		else
+			i_last = i_first - 1;
+		for (i = i_first; i <= i_last; i++) {
+			if ((resume_rate == 0) || (resume_cnt < resume_rate)) {
+				resume_cnt++;
+				resume_cnt_f++;
+
+				bit_set(job_power_node_bitmap, i);
+				bit_set(to_resume_bitmap, i);
+			}
+		}
+
+		job_node_data = data_set_dict(data_list_append(jobs_data));
+		data_set_int(data_key_set(job_node_data, "job_id"),
+			     job_ptr->job_id);
+		nodes = bitmap2node_name(to_resume_bitmap);
+		data_set_string_own(data_key_set(job_node_data, "nodes"),
+				    nodes);
+
+		/* No more jobs to power up, remove job from list */
+		if (!bit_overlap_any(need_resume_bitmap, job_ptr->node_bitmap))
+			list_delete_item(iter);
+
+		FREE_NULL_BITMAP(need_resume_bitmap);
+		FREE_NULL_BITMAP(to_resume_bitmap);
+	}
+
 	/* Build bitmaps identifying each node which should change state */
 	for (i = 0, node_ptr = node_record_table_ptr;
 	     i < node_record_count; i++, node_ptr++) {
@@ -345,18 +440,19 @@ static void _do_power_work(time_t now)
 			susp_total++;
 
 		/* Resume nodes as appropriate */
-		if (susp_state &&
+		if ((bit_test(job_power_node_bitmap, i)) ||
+		    (susp_state &&
 		    ((resume_rate == 0) || (resume_cnt < resume_rate))	&&
 		    !IS_NODE_POWERING_DOWN(node_ptr) &&
-		    (IS_NODE_ALLOCATED(node_ptr) ||
-		     IS_NODE_POWER_UP(node_ptr))) {
+		    IS_NODE_POWER_UP(node_ptr))) {
 			if (wake_node_bitmap == NULL) {
 				wake_node_bitmap =
 					bit_alloc(node_record_count);
 			}
-			wake_cnt++;
-			resume_cnt++;
-			resume_cnt_f++;
+			if (!(bit_test(job_power_node_bitmap, i))) {
+				resume_cnt++;
+				resume_cnt_f++;
+			}
 			node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 			node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
 			node_ptr->node_state |=   NODE_STATE_POWERING_UP;
@@ -365,6 +461,8 @@ static void _do_power_work(time_t now)
 			node_ptr->boot_req_time = now;
 			bit_set(booting_node_bitmap, i);
 			bit_set(wake_node_bitmap,    i);
+
+			bit_clear(job_power_node_bitmap, i);
 		}
 
 		/* Suspend nodes as appropriate */
@@ -499,13 +597,21 @@ static void _do_power_work(time_t now)
 	}
 
 	if (wake_node_bitmap) {
-		char *nodes;
+		char *nodes, *json = NULL;
 		nodes = bitmap2node_name(wake_node_bitmap);
+
+		data_set_string(data_key_set(resume_json_data, "all_nodes"),
+				nodes);
+		if (data_g_serialize(&json, resume_json_data, MIME_TYPE_JSON,
+				     DATA_SER_FLAGS_COMPACT))
+			error("failed to generate json for resume job/node list");
+
 		if (nodes)
-			_do_resume(nodes);
+			_do_resume(nodes, json);
 		else
 			error("power_save: bitmap2nodename");
 		xfree(nodes);
+		xfree(json);
 		FREE_NULL_BITMAP(wake_node_bitmap);
 		/* last_node_update could be changed already by another thread!
 		last_node_update = now; */
@@ -521,6 +627,9 @@ static void _do_power_work(time_t now)
 		xfree(nodes);
 		FREE_NULL_BITMAP(failed_node_bitmap);
 	}
+
+	FREE_NULL_DATA(resume_json_data);
+	FREE_NULL_BITMAP(job_power_node_bitmap);
 }
 
 /*
@@ -608,7 +717,7 @@ extern int power_job_reboot(job_record_t *job_ptr)
 			job_ptr->wait_all_nodes = 1;
 			job_ptr->bit_flags |= NODE_REBOOT;
 			pid = _run_prog(resume_prog, nodes, reboot_features,
-					job_ptr->job_id);
+					job_ptr->job_id, NULL);
 			if (power_save_debug)
 				info("%s: pid %d reboot nodes %s features %s",
 				     __func__, (int) pid, nodes,
@@ -628,7 +737,7 @@ extern int power_job_reboot(job_record_t *job_ptr)
 			job_ptr->wait_all_nodes = 1;
 			job_ptr->bit_flags |= NODE_REBOOT;
 			pid = _run_prog(resume_prog, nodes, NULL,
-					job_ptr->job_id);
+					job_ptr->job_id, NULL);
 			if (power_save_debug)
 				info("%s: pid %d reboot nodes %s",
 				     __func__, (int) pid, nodes);
@@ -648,15 +757,15 @@ extern int power_job_reboot(job_record_t *job_ptr)
 
 static void _do_failed_nodes(char *hosts)
 {
-	pid_t pid = _run_prog(resume_fail_prog, hosts, NULL, 0);
+	pid_t pid = _run_prog(resume_fail_prog, hosts, NULL, 0, NULL);
 	if (power_save_debug)
 		info("power_save: pid %d handle failed nodes %s",
 		     (int)pid, hosts);
 }
 
-static void _do_resume(char *host)
+static void _do_resume(char *host, char *json)
 {
-	pid_t pid = _run_prog(resume_prog, host, NULL, 0);
+	pid_t pid = _run_prog(resume_prog, host, NULL, 0, json);
 	if (power_save_debug)
 		info("power_save: pid %d waking nodes %s",
 		     (int) pid, host);
@@ -664,7 +773,7 @@ static void _do_resume(char *host)
 
 static void _do_suspend(char *host)
 {
-	pid_t pid = _run_prog(suspend_prog, host, NULL, 0);
+	pid_t pid = _run_prog(suspend_prog, host, NULL, 0, NULL);
 	if (power_save_debug)
 		info("power_save: pid %d suspending nodes %s",
 		     (int) pid, host);
@@ -675,11 +784,14 @@ static void _do_suspend(char *host)
  * arg1 IN	- first program argument, the hostlist expression
  * arg2 IN	- second program argumentor NULL
  * job_id IN	- Passed as SLURM_JOB_ID environment variable
+ * json IN	- Passed as tmp file in SLURM_RESUME_FILE environment variable
  */
-static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id) //use common
+static pid_t _run_prog(char *prog, char *arg1, char *arg2,
+		       uint32_t job_id, char *json)
 {
-	char *argv[4], *pname;
+	char *argv[4], *pname, *tmp_file = NULL;
 	pid_t child;
+	int tmp_fd = -1;
 
 	if (prog == NULL)	/* disabled, useful for testing */
 		return -1;
@@ -693,6 +805,10 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id) //us
 	argv[2] = arg2;
 	argv[3] = NULL;
 
+	if (json &&
+	    ((tmp_fd = dump_to_memfd("resumeprog", json, &tmp_file)) == -1))
+		error("failed to create tmp file for ResumeProgram");
+
 	child = fork();
 	if (child == 0) {
 		char **env = NULL;
@@ -704,6 +820,9 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id) //us
 		if (job_id)
 			env_array_append_fmt(&env, "SLURM_JOB_ID", "%u",
 					     job_id);
+		if (tmp_file)
+			env_array_append(&env, "SLURM_RESUME_FILE", tmp_file);
+
 		execve(prog, argv, env);
 		_exit(1);
 	} else if (child < 0) {
@@ -714,8 +833,11 @@ static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id) //us
 		proc_track = xmalloc(sizeof(proc_track_struct_t));
 		proc_track->child_pid = child;
 		proc_track->child_time = time(NULL);
+		proc_track->tmp_fd = tmp_fd;
 		list_append(proc_track_list, proc_track);
 	}
+
+	xfree(tmp_file);
 	return child;
 }
 
@@ -749,6 +871,9 @@ static void _reap_procs(void)
 			error("power_save: program signaled: %s",
 			      strsignal(WTERMSIG(status)));
 		}
+
+		if (proc_track->tmp_fd != -1)
+			close(proc_track->tmp_fd);
 
 		list_delete_item(iter);
 	}
@@ -879,6 +1004,7 @@ static int _set_partition_options(void *x, void *arg)
  */
 static int _init_power_config(void)
 {
+	int rc;
 	char *tmp_ptr;
 	node_record_t *node_ptr;
 	int i;
@@ -992,6 +1118,12 @@ static int _init_power_config(void)
 		xfree(resume_fail_prog);
 	}
 
+	if ((rc = data_init(MIME_TYPE_JSON_PLUGIN, NULL))) {
+		error("%s: unable to load JSON serializer: %s",
+		      __func__, slurm_strerror(rc));
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -1079,8 +1211,24 @@ extern void power_save_fini(void)
 	if (power_save_started) {     /* Already running */
 		power_save_started = false;
 		FREE_NULL_LIST(proc_track_list);
+		FREE_NULL_LIST(resume_job_list);
 	}
 	slurm_mutex_unlock(&power_mutex);
+}
+
+static int _build_resume_job_list(void *object, void *arg)
+{
+	job_record_t *job_ptr = (job_record_t *)object;
+
+	if (IS_JOB_CONFIGURING(job_ptr) &&
+	    bit_overlap_any(job_ptr->node_bitmap,
+			    power_node_bitmap)) {
+		uint32_t *tmp = xmalloc(sizeof(uint32_t));
+		*tmp = job_ptr->job_id;
+		list_append(resume_job_list, tmp);
+	}
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1103,6 +1251,18 @@ static void *_init_power_save(void *arg)
 	if (!power_save_enabled) {
 		debug("power_save mode not enabled");
 		goto fini;
+	}
+
+	/*
+	 * Build up resume_job_list list in case shut down before resuming
+	 * jobs/nodes without having to state save the list.
+	 */
+	if (!resume_job_list) {
+		resume_job_list = list_create(xfree_ptr);
+
+		lock_slurmctld(node_write_lock);
+		list_for_each(job_list, _build_resume_job_list, NULL);
+		unlock_slurmctld(node_write_lock);
 	}
 
 	while (slurmctld_config.shutdown_time == 0) {

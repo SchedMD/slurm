@@ -49,11 +49,34 @@ come and go out of DNS.
 failed nodes (using Slurm's hostlist expression format).
 <dt><b>ResumeProgram</b>
 <dd>The program executed when a node has been allocated and should be made
-available for use.If the <i>slurmd</i> daemon fails to respond within the
+available for use. If the <i>slurmd</i> daemon fails to respond within the
 configured <b>SlurmdTimeout</b> value with an updated BootTime, the node will
 be placed in a DOWN state and the job requesting the node will be requeued.
 If the node isn't actually rebooted (i.e. when multiple-slurmd is configured)
 starting slurmd with "-b" option might be useful.
+The argument to the program is the names of nodes (using Slurm's hostlist
+expression format) to power up. A job to node mapping is available in JSON
+format by reading the temporary file specified by the <b>SLURM_RESUME_FILE</b>
+environment variable.
+
+<br>
+e.g.
+<pre>
+SLURM_RESUME_FILE=/proc/1647372/fd/7:
+{
+   "all_nodes" : "cloud[1-3]",
+   "jobs" : [
+      {
+         "job_id" : 140814,
+         "nodes" : "cloud[1-3]",
+      },
+      {
+         "job_id" : 140815
+         "nodes" : "cloud[1-2]",
+      }
+   ]
+}
+</pre>
 <dt><b>ResumeTimeout</b>
 <dd>Maximum time permitted (in seconds) between when a node resume request
 is issued and when the node is actually available for use. Nodes which fail to
@@ -219,6 +242,6 @@ expands (adds resources).</li>
 </ul>
 
 
-<p style="text-align:center;">Last modified 9 July 2021</p>
+<p style="text-align:center;">Last modified 16 July 2021</p>
 
 <!--#include virtual="footer.txt"-->

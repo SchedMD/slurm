@@ -161,6 +161,7 @@ documents those changes that are of interest to users and administrators.
  -- Added SlurmScriptdPidFile option to slurm.conf.
  -- scrontab - add ability to update crontab from a file or standard input.
  -- scrontab - add ability to set and expand variables.
+ -- Pass JSON of job to node mappings to ResumeProgram.
 
 * Changes in Slurm 20.11.9
 ==========================

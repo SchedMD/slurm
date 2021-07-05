@@ -45,6 +45,7 @@
 
 /* Global Variables */
 extern bool cloud_reg_addrs;
+extern List resume_job_list;
 
 /*
  * config_power_mgr - Read power management configuration

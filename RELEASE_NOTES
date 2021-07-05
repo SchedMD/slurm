@@ -97,6 +97,7 @@ HIGHLIGHTS
  -- Create a new process called slurmscriptd which runs PrologSlurmctld and
     EpilogSlurmctld. This avoids fork() calls from slurmctld, and can avoid
     performance issues if the slurmctld has a large memory footprint.
+ -- Pass JSON of job to node mappings to ResumeProgram.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

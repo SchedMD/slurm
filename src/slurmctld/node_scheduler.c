@@ -83,6 +83,7 @@
 #include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmctld_plugstack.h"
+#include "src/slurmctld/power_save.h"
 
 #define _DEBUG	0
 #define MAX_FEATURES  64	/* max exclusive features "[fs1|fs2]"=2 */
@@ -2614,9 +2615,15 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	job_ptr->state_reason = WAIT_NO_REASON;
 	xfree(job_ptr->state_desc);
 
-	if (job_ptr->job_resrcs && job_ptr->job_resrcs->nodes)
+	if (job_ptr->job_resrcs && job_ptr->job_resrcs->nodes) {
 		job_ptr->nodes = xstrdup(job_ptr->job_resrcs->nodes);
-	else {
+		if (resume_job_list &&
+		    bit_overlap_any(job_ptr->node_bitmap, power_node_bitmap)) {
+			uint32_t *tmp = xmalloc(sizeof(uint32_t));
+			*tmp = job_ptr->job_id;
+			list_append(resume_job_list, tmp);
+		}
+	} else {
 		error("Select plugin failed to set job resources, nodes");
 		/* Do not attempt to allocate the select_bitmap nodes since
 		 * select plugin failed to set job resources */
