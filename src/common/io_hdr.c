@@ -219,7 +219,6 @@ io_init_msg_write_to_fd(int fd, struct slurm_io_init_msg *msg)
 	xassert(msg);
 
 	debug2("%s: entering", __func__);
-	msg->version = IO_PROTOCOL_VERSION;
 	debug2("%s: msg->nodeid = %d", __func__, msg->nodeid);
 	if (io_init_msg_pack(msg, buf) != SLURM_SUCCESS)
 		goto rwfail;
