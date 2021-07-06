@@ -2210,6 +2210,7 @@ typedef struct node_info {
 	char *cpu_spec_list;	/* node's specialized cpus */
 	acct_gather_energy_t *energy;	 /* energy data */
 	ext_sensors_data_t *ext_sensors; /* external sensor data */
+	char *extra;		/* arbitrary sting */
 	power_mgmt_data_t *power;        /* power management data */
 	char *features;		/* list of a node's available features */
 	char *features_act;	/* list of a node's current active features,
@@ -3019,6 +3020,7 @@ typedef struct submit_response_msg {
 typedef struct slurm_update_node_msg {
 	char *comment;		/* arbitrary comment */
 	uint32_t cpu_bind;	/* default CPU binding type */
+	char *extra;		/* arbitrary string */
 	char *features;		/* new available feature for node */
 	char *features_act;	/* new active feature for node */
 	char *gres;		/* new generic resources for node */

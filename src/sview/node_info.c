@@ -54,6 +54,7 @@ enum {
 	SORTID_CORES,
 	SORTID_CURRENT_WATTS,
 	SORTID_ERR_CPUS,
+	SORTID_EXTRA,
 	SORTID_FREE_MEM,
 	SORTID_GRES,
 	SORTID_IDLE_CPUS,
@@ -118,6 +119,8 @@ static display_data_t display_data_node[] = {
 	{G_TYPE_STRING, SORTID_USED_CPUS, "Used CPU Count", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_ERR_CPUS, "Error CPU Count", false,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_EXTRA, "Extra", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
 	{G_TYPE_STRING, SORTID_IDLE_CPUS, "Idle CPU Count", false,
 	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
@@ -460,6 +463,11 @@ static void _layout_node_record(GtkTreeView *treeview,
 						 SORTID_COMMENT),
 				   node_ptr->comment);
 
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_node,
+						 SORTID_EXTRA),
+				   node_ptr->extra);
+
 	if (node_ptr->version == NULL) {
 		snprintf(tmp_version, sizeof(tmp_version), "N/A");
 	} else {
@@ -602,6 +610,7 @@ static void _update_node_record(sview_node_info_t *sview_node_info_ptr,
 			   SORTID_CPUS,      tmp_cpus,
 			   SORTID_CURRENT_WATTS, tmp_current_watts,
 			   SORTID_CPU_LOAD,  tmp_cpu_load,
+			   SORTID_EXTRA, node_ptr->extra,
 			   SORTID_FREE_MEM,  tmp_free_mem,
 			   SORTID_TMP_DISK,  tmp_disk,
 			   SORTID_IDLE_CPUS, tmp_idle_cpus,

@@ -102,6 +102,7 @@ typedef struct {
 	char *gres_used;
 	char *cluster_name;
 	char *comment;
+	char *extra;
 	char *reason;
 	time_t reason_time;
 	uint32_t reason_uid;
@@ -128,6 +129,7 @@ struct sinfo_match_flags {
 	bool threads_flag;
 	bool sct_flag;
 	bool disk_flag;
+	bool extra_flag;
 	bool features_flag;
 	bool features_act_flag;
 	bool groups_flag;

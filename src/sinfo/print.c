@@ -605,6 +605,19 @@ int _print_disk(sinfo_data_t * sinfo_data, int width,
 	return SLURM_SUCCESS;
 }
 
+int _print_extra(sinfo_data_t *sinfo_data, int width, bool right_justify,
+		 char *suffix)
+{
+	if (sinfo_data)
+		_print_str(sinfo_data->extra, width, right_justify, true);
+	else
+		_print_str("EXTRA", width, right_justify, true);
+
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_features(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {

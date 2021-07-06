@@ -54,7 +54,6 @@ static void _get_sinfo_from_void(sinfo_data_t **s1, sinfo_data_t **s2,
 				 void *v1, void *v2);
 static int _sort_by_avail(void *void1, void *void2);
 static int _sort_by_cluster_name(void *void1, void *void2);
-static int _sort_by_comment(void *void1, void *void2);
 static int _sort_by_cpu_load(void *void1, void *void2);
 static int _sort_by_free_mem(void *void1, void *void2);
 static int _sort_by_cpus(void *void1, void *void2);
@@ -158,8 +157,6 @@ void sort_sinfo_list(List sinfo_list)
 			list_sort(sinfo_list, _sort_by_priority_tier);
 		else if (params.sort[i] == 'P')
 			list_sort(sinfo_list, _sort_by_partition);
-		else if (params.sort[i] == 'q')
-			list_sort(sinfo_list, _sort_by_comment);
 		else if (params.sort[i] == 'r')
 			list_sort(sinfo_list, _sort_by_root);
 		else if (params.sort[i] == 'R')
@@ -247,26 +244,6 @@ static int _sort_by_cluster_name(void *void1, void *void2)
 	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
 
 	diff = xstrcmp(sinfo1->cluster_name, sinfo2->cluster_name);
-
-	if (reverse_order)
-		diff = -diff;
-	return diff;
-}
-
-static int _sort_by_comment(void *void1, void *void2)
-{
-	int diff;
-	sinfo_data_t *sinfo1;
-	sinfo_data_t *sinfo2;
-	char *val1 = "", *val2 = "";
-
-	_get_sinfo_from_void(&sinfo1, &sinfo2, void1, void2);
-
-	if (sinfo1->comment)
-		val1 = sinfo1->reason;
-	if (sinfo2->comment)
-		val2 = sinfo2->reason;
-	diff = xstrcmp(val1, val2);
 
 	if (reverse_order)
 		diff = -diff;

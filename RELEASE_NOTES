@@ -65,6 +65,7 @@ HIGHLIGHTS
     'username' field in addition to the 'sun' (Slurm UserName) field.
  -- service files - change dependency to network-online rather than just
     network to ensure DNS and other services are available.
+ -- Add "Extra" field to node to store extra information other than a comment.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
@@ -97,6 +98,7 @@ COMMAND CHANGES (see man pages for details)
  -- SALLOC_THREADS_PER_CORE and SBATCH_THREADS_PER_CORE have been added as
     input environment variables for salloc and sbatch, respectively. They do
     the same thing as --threads-per-core.
+ -- Don't display node's comment with "scontrol show nodes" unless set.
 
 API CHANGES
 ===========

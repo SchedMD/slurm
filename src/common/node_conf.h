@@ -127,6 +127,7 @@ struct node_record {
 	uint16_t no_share_job_cnt;	/* count of jobs running that will
 					 * not share nodes */
 	char *comment;			/* arbitrary comment */
+	char *extra;			/* arbitrary string */
 	char *reason; 			/* why a node is DOWN or DRAINING */
 	time_t reason_time;		/* Time stamp when reason was
 					 * set, ignore if no reason is set. */

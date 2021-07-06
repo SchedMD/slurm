@@ -1980,6 +1980,9 @@ static int _restore_node_state(int recover,
 		node_ptr->comment = old_node_ptr->comment;
 		old_node_ptr->comment = NULL;
 
+		node_ptr->extra = old_node_ptr->extra;
+		old_node_ptr->extra = NULL;
+
 		if (node_ptr->reason == NULL) {
 			/* Recover only if not explicitly set in slurm.conf */
 			node_ptr->reason = old_node_ptr->reason;
