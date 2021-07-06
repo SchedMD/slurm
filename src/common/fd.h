@@ -47,18 +47,7 @@
 #include "src/common/macros.h"
 
 /* close all FDs >= a specified value */
-static inline void closeall(int fd)
-{
-	struct rlimit rlim;
-
-	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
-		error("getrlimit(RLIMIT_NOFILE): %m");
-		rlim.rlim_cur = 4096;
-	}
-
-	while (fd < rlim.rlim_cur)
-		close(fd++);
-}
+extern void closeall(int fd);
 
 void fd_set_close_on_exec(int fd);
 /*

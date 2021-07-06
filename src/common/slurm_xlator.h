@@ -112,6 +112,7 @@
 #define bit_copybits		slurm_bit_copybits
 
 /* fd.[ch] functions */
+#define closeall		slurm_closeall
 #define fd_set_blocking		slurm_fd_set_blocking
 #define fd_set_nonblocking	slurm_fd_set_nonblocking
 #define send_fd_over_pipe	slurm_send_fd_over_pipe

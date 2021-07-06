@@ -60,6 +60,7 @@
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h
  * for details.
  */
+strong_alias(closeall, slurm_closeall);
 strong_alias(fd_set_blocking,	slurm_fd_set_blocking);
 strong_alias(fd_set_nonblocking,slurm_fd_set_nonblocking);
 strong_alias(fd_get_socket_error, slurm_fd_get_socket_error);
@@ -69,6 +70,18 @@ strong_alias(receive_fd_over_pipe, slurm_receive_fd_over_pipe);
 static int fd_get_lock(int fd, int cmd, int type);
 static pid_t fd_test_lock(int fd, int type);
 
+extern void closeall(int fd)
+{
+	struct rlimit rlim;
+
+	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0) {
+		error("getrlimit(RLIMIT_NOFILE): %m");
+		rlim.rlim_cur = 4096;
+	}
+
+	while (fd < rlim.rlim_cur)
+		close(fd++);
+}
 
 void fd_set_close_on_exec(int fd)
 {
