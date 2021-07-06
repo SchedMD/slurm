@@ -260,7 +260,9 @@ static void _find_plugins(const char *plugin_list, plugrack_foreach_t listf)
 {
 	int rc;
 
-	rack = plugrack_create("serializer");
+	if (!rack)
+		rack = plugrack_create("serializer");
+
 	if ((rc = plugrack_read_dir(rack, slurm_conf.plugindir)))
 		fatal("%s: plugrack_read_dir(%s) failed: %s",
 		      __func__, slurm_conf.plugindir, slurm_strerror(rc));
