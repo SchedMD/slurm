@@ -362,7 +362,6 @@ list_find_first (List l, ListFindF f, void *key)
 
 	xassert(l != NULL);
 	xassert(f != NULL);
-	xassert(key != NULL);
 	xassert(l->magic == LIST_MAGIC);
 	slurm_mutex_lock(&l->mutex);
 
