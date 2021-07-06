@@ -165,6 +165,7 @@ documents those changes that are of interest to users and administrators.
  -- If running steps in an allocation with CR_PACK_NODE or -mpack the srun will
     only attempt to allocate as much as needed from the allocation instead
     of always trying to allocate every node in the allocation.
+ -- Jobs that request the whole node now check to see if any gres are allocated.
 
 * Changes in Slurm 20.11.9
 ==========================

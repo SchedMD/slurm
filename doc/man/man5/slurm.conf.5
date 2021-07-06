@@ -1963,6 +1963,10 @@ higher PriorityTier partitions will suspend jobs in lower PriorityTier
 partitions to run on the released resources. Only when the preemptor job ends
 will the suspended jobs will be resumed by the Gang scheduler.
 .br
+
+\fBNOTE:\fR Suspended jobs will not release GRES. Higher priority jobs will not
+be able to preempt to gain access to GRES.
+.br
 If \fBPreemptType=preempt/qos\fR is configured and if the preempted job(s) and
 the preemptor job are on the same partition, then they will share resources with
 the Gang scheduler (time-slicing). If not (i.e. if the preemptees and preemptor
@@ -5347,8 +5351,8 @@ Jobs that run in partitions with \fBOverSubscribe=EXCLUSIVE\fR will have
 exclusive access to all allocated nodes.
 .TP
 \fBFORCE\fR
-Makes all resources in the partition available for oversubscription without
-any means for users to disable it.
+Makes all resources (except GRES) in the partition available for
+oversubscription without any means for users to disable it.
 May be followed with a colon and maximum number of jobs in
 running or suspended state.
 For example \fBOverSubscribe=FORCE:4\fR enables each node, socket or
@@ -5374,8 +5378,8 @@ in the slurmdbd log stating: "We have more allocated time than is possible."
 
 .TP
 \fBYES\fR
-Makes all resources in the partition available for sharing upon request by
-the job.
+Makes all resources (except GRES) in the partition available for sharing upon
+request by the job.
 Resources will only be over\-subscribed when explicitly requested
 by the user using the "\-\-oversubscribe" option on job submission.
 May be followed with a colon and maximum number of jobs in

@@ -714,6 +714,14 @@ static int _verify_node_state(part_res_record_t *cr_part_ptr,
 			gres_list = node_usage[i].gres_list;
 		else
 			gres_list = node_ptr->gres_list;
+
+		if ((job_ptr->details->whole_node == WHOLE_NODE_REQUIRED) &&
+		    gres_node_state_list_has_alloc_gres(gres_list)) {
+			debug3("node %s has GRES in use (whole node requested)",
+			       node_ptr->name);
+			goto clear_bit;
+		}
+
 		gres_cores = gres_job_test(job_ptr->gres_list_req,
 					   gres_list, true,
 					   NULL, 0, 0, job_ptr->job_id,
