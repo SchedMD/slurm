@@ -107,8 +107,11 @@ char *cli_filter_json_env(void)
 {
 	int rc;
 	char *json = NULL;
-	static const size_t len = strlen(SPANK_OPTION_ENV_PREFIX);
+	static size_t len = 0;
 	data_t *d = data_set_dict(data_new());
+
+	if (!len)
+		len = strlen(SPANK_OPTION_ENV_PREFIX);
 
 	for (char **ptr = environ; ptr && *ptr; ptr++) {
 		char *key, *value;
