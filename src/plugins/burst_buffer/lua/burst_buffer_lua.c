@@ -493,18 +493,6 @@ static int _run_lua_script(const char *lua_func, uint32_t timeout,
 }
 
 /*
- * Handle timeout of burst buffer events:
- * 1. Purge per-job burst buffer records when the stage-out has completed and
- *    the job has been purged from Slurm
- * 2. Test for StageInTimeout events
- * 3. Test for StageOutTimeout events
- */
-static void _timeout_bb_rec(void)
-{
-	/* Not implemented yet. */
-}
-
-/*
  * Write current burst buffer state to a file.
  */
 static void _save_bb_state(void)
@@ -1162,19 +1150,10 @@ static void _load_state(bool init_config)
 /* Perform periodic background activities */
 static void *_bb_agent(void *args)
 {
-	/* Locks: write job */
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-
 	while (!bb_state.term_flag) {
 		bb_sleep(&bb_state, AGENT_INTERVAL);
 		if (!bb_state.term_flag) {
 			_load_state(false);	/* Has own locking */
-			lock_slurmctld(job_write_lock);
-			slurm_mutex_lock(&bb_state.bb_mutex);
-			_timeout_bb_rec();
-			slurm_mutex_unlock(&bb_state.bb_mutex);
-			unlock_slurmctld(job_write_lock);
 		}
 		_save_bb_state();	/* Has own locks excluding file write */
 	}
@@ -1531,17 +1510,8 @@ extern int fini(void)
 	int thread_cnt, last_thread_cnt = 0;
 
 	/*
-	 * Tell bb_agent to stop so it doesn't try to lock slurmctld locks to
-	 * avoid this possible deadlock:
-	 * - slurmctld shutdown
-	 * - We get here and then wait for lua threads to clean up without
-	 *   first shutting down bb_agent. We have the burst buffer plugin
-	 *   context lock.
-	 * - backfill agent starts running backfill, acquires slurmctld locks,
-	 *   then calls bb_g_load() which needs the bb plugin context lock so
-	 *   it waits for this function to finish.
-	 * - bb_agent wakes up, term_flag isn't set so it tries to get
-	 *   slurmctld locks, but backfill is holding slurmctld locks.
+	 * Tell bb_agent to stop. It will do one more state save after all
+	 * threads have completed.
 	 */
 	slurm_mutex_lock(&bb_state.term_mutex);
 	bb_state.term_flag = true;
