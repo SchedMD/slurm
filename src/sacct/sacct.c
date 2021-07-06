@@ -35,6 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/slurm_auth.c"
+
 #include "sacct.h"
 
 /*
@@ -201,5 +203,12 @@ int main(int argc, char **argv)
 	}
 
 	sacct_fini();
+
+#if MEMORY_LEAK_DEBUG
+	slurm_auth_fini();
+	slurm_conf_destroy();
+	log_fini();
+#endif
+
 	return (rc);
 }
