@@ -193,7 +193,7 @@ static void *_window_manager(void *arg);
  * General declarations
  **********************************************************************/
 static void *_io_thr(void *);
-static int _send_io_init_msg(int sock, srun_key_t *key, stepd_step_rec_t *job,
+static int _send_io_init_msg(int sock, srun_info_t *srun, stepd_step_rec_t *job,
 			     bool init);
 static void _send_eof_msg(struct task_read_info *out);
 static struct io_buf *_task_build_message(struct task_read_info *out,
@@ -1560,7 +1560,7 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *job,
 	}
 
 	fd_set_blocking(sock);  /* just in case... */
-	_send_io_init_msg(sock, srun->key, job, true);
+	_send_io_init_msg(sock, srun, job, true);
 
 	debug5("  back from _send_io_init_msg");
 	fd_set_nonblocking(sock);
@@ -1614,7 +1614,7 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *job)
 	}
 
 	fd_set_blocking(sock);  /* just in case... */
-	_send_io_init_msg(sock, srun->key, job, false);
+	_send_io_init_msg(sock, srun, job, false);
 
 	debug5("  back from _send_io_init_msg");
 	fd_set_nonblocking(sock);
@@ -1643,13 +1643,13 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *job)
 }
 
 static int
-_send_io_init_msg(int sock, srun_key_t *key, stepd_step_rec_t *job, bool init)
+_send_io_init_msg(int sock, srun_info_t *srun, stepd_step_rec_t *job, bool init)
 {
 	struct slurm_io_init_msg msg;
 
-	msg.io_key = xmalloc(key->len);
-	msg.io_key_len = key->len;
-	memcpy(msg.io_key, key->data, key->len);
+	msg.io_key = xmalloc(srun->key->len);
+	msg.io_key_len = srun->key->len;
+	memcpy(msg.io_key, srun->key->data, srun->key->len);
 	msg.nodeid = job->nodeid;
 	msg.version = IO_PROTOCOL_VERSION;
 	/*
