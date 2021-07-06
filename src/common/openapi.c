@@ -842,6 +842,10 @@ extern int init_openapi(openapi_t **oas, const char *plugins,
 	xassert(!*oas);
 	destroy_openapi(*oas);
 
+	/* must have JSON plugin to parse the openapi.json */
+	if ((rc = data_init(MIME_TYPE_JSON_PLUGIN, NULL)))
+		return rc;
+
 	*oas = t = xmalloc(sizeof(*t));
 	t->magic = MAGIC_OAS;
 	t->paths = list_create(_list_delete_path_t);
