@@ -37,7 +37,7 @@ set access_err  0
 
 # Cluster
 array set clus_req {}
-set clus_req(qos) "''"
+set clus_req(qos) ""
 
 # Accounts
 array set acct_req1 {}

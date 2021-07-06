@@ -49,7 +49,7 @@ proc reset_qos { } {
 	global sacctmgr qos_main exit_code qos_test
 
 	set removed 0
-	spawn $sacctmgr -i mod qos $qos_test(0) set preempt=''
+	spawn $sacctmgr -i mod qos $qos_test(0) set preempt=
 	expect {
 		"Modified qos" {
 			set removed 1
