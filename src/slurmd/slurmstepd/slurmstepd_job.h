@@ -55,7 +55,8 @@
 #include "src/common/stepd_api.h"
 
 typedef struct {
-	unsigned char data[SLURM_IO_KEY_SIZE];
+	char *data;
+	uint32_t len;
 } srun_key_t;
 
 typedef struct {
@@ -263,6 +264,8 @@ srun_info_t * srun_info_create(slurm_cred_t *cred, slurm_addr_t *respaddr,
 			       slurm_addr_t *ioaddr, uint16_t protocol_version);
 
 void  srun_info_destroy(srun_info_t *srun);
+
+void srun_key_destroy(srun_key_t *key);
 
 stepd_step_task_info_t * task_info_create(int taskid, int gtaskid,
 					  char *ifname, char *ofname,

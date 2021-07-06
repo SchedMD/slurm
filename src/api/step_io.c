@@ -828,7 +828,7 @@ _create_listensock_eio(int fd, client_io_t *cio)
 
 static int _read_io_init_msg(int fd, client_io_t *cio, slurm_addr_t *host)
 {
-	struct slurm_io_init_msg msg;
+	struct slurm_io_init_msg msg = { 0 };
 
 	if (io_init_msg_read_from_fd(fd, &msg) != SLURM_SUCCESS) {
 		error("failed reading io init message");
@@ -870,9 +870,11 @@ static int _read_io_init_msg(int fd, client_io_t *cio, slurm_addr_t *host)
 	if (cio->sls)
 		step_launch_clear_questionable_state(cio->sls, msg.nodeid);
 
+	xfree(msg.io_key);
 	return SLURM_SUCCESS;
 
     fail:
+	xfree(msg.io_key);
 	if (fd > STDERR_FILENO)
 		close(fd);
 	return SLURM_ERROR;
@@ -1093,6 +1095,7 @@ client_io_t *client_io_handler_create(slurm_step_io_fds_t fds, int num_tasks,
 		return NULL;
 	}
 	cio->io_key = xmalloc(siglen);
+	cio->io_key_len = siglen;
 	memcpy(cio->io_key, sig, siglen);
 	/* no need to free "sig", it is just a pointer into the credential */
 

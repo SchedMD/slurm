@@ -724,14 +724,10 @@ srun_info_create(slurm_cred_t *cred, slurm_addr_t *resp_addr,
 
 	slurm_cred_get_signature(cred, &data, &len);
 
-	len = len > SLURM_IO_KEY_SIZE ? SLURM_IO_KEY_SIZE : len;
-
 	if (data != NULL) {
+		key->len = len;
+		key->data = xmalloc(len);
 		memcpy((void *) key->data, data, len);
-
-		if (len < SLURM_IO_KEY_SIZE)
-			memset( (void *) (key->data + len), 0,
-				SLURM_IO_KEY_SIZE - len);
 	}
 
 	if (ioaddr != NULL)
@@ -744,8 +740,14 @@ srun_info_create(slurm_cred_t *cred, slurm_addr_t *resp_addr,
 extern void
 srun_info_destroy(srun_info_t *srun)
 {
-	xfree(srun->key);
+	srun_key_destroy(srun->key);
 	xfree(srun);
+}
+
+extern void srun_key_destroy(srun_key_t *key)
+{
+	xfree(key->data);
+	xfree(key);
 }
 
 static stepd_step_task_info_t *_task_info_create(int taskid, int gtaskid,

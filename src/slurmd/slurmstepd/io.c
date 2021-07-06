@@ -1647,7 +1647,9 @@ _send_io_init_msg(int sock, srun_key_t *key, stepd_step_rec_t *job, bool init)
 {
 	struct slurm_io_init_msg msg;
 
-	memcpy(msg.io_key, key->data, SLURM_IO_KEY_SIZE);
+	msg.io_key = xmalloc(key->len);
+	msg.io_key_len = key->len;
+	memcpy(msg.io_key, key->data, key->len);
 	msg.nodeid = job->nodeid;
 	msg.version = IO_PROTOCOL_VERSION;
 	/*
@@ -1668,9 +1670,11 @@ _send_io_init_msg(int sock, srun_key_t *key, stepd_step_rec_t *job, bool init)
 
 	if (io_init_msg_write_to_fd(sock, &msg) != SLURM_SUCCESS) {
 		error("Couldn't sent slurm_io_init_msg");
+		xfree(msg.io_key);
 		return SLURM_ERROR;
 	}
 
+	xfree(msg.io_key);
 
 	return SLURM_SUCCESS;
 }

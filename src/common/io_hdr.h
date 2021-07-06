@@ -59,7 +59,8 @@
 
 struct slurm_io_init_msg {
 	uint16_t      version;
-	unsigned char io_key[SLURM_IO_KEY_SIZE];
+	char          *io_key;
+	uint32_t      io_key_len;
 	uint32_t      nodeid;
 	uint32_t      stdout_objs;
 	uint32_t      stderr_objs;

@@ -147,7 +147,7 @@ io_init_msg_validate(struct slurm_io_init_msg *msg, const char *sig)
 		return SLURM_ERROR;
 	}
 
-	if (memcmp((void *) sig, (void *) msg->io_key, SLURM_IO_KEY_SIZE)) {
+	if (memcmp((void *) sig, (void *) msg->io_key, msg->io_key_len)) {
 		error("Invalid IO init header signature");
 		return SLURM_ERROR;
 	}
@@ -172,8 +172,14 @@ static int io_init_msg_pack(struct slurm_io_init_msg *hdr, buf_t *buffer)
 		pack32(hdr->nodeid, buffer);
 		pack32(hdr->stdout_objs, buffer);
 		pack32(hdr->stderr_objs, buffer);
-		packmem((char *) hdr->io_key,
-			(uint32_t) SLURM_IO_KEY_SIZE, buffer);
+		if (hdr->io_key_len >= SLURM_IO_KEY_SIZE) {
+			packmem((char *) hdr->io_key,
+				(uint32_t) SLURM_IO_KEY_SIZE, buffer);
+		} else {
+			char tmp_key[SLURM_IO_KEY_SIZE] = { 0 };
+			memcpy(tmp_key, hdr->io_key, hdr->io_key_len);
+			packmem(tmp_key, (uint32_t) SLURM_IO_KEY_SIZE, buffer);
+		}
 	} else {
 		error("Invalid IO init header version");
 		return SLURM_ERROR;
@@ -186,8 +192,6 @@ static int io_init_msg_pack(struct slurm_io_init_msg *hdr, buf_t *buffer)
 static int io_init_msg_unpack(struct slurm_io_init_msg *hdr, buf_t *buffer)
 {
 	/* If this function changes, io_init_msg_packed_size must change. */
-	uint32_t val;
-	char *tmp_ptr = NULL;
 
 	safe_unpack16(&hdr->version, buffer);
 	if (hdr->version == IO_PROTOCOL_VERSION ||
@@ -195,10 +199,7 @@ static int io_init_msg_unpack(struct slurm_io_init_msg *hdr, buf_t *buffer)
 		safe_unpack32(&hdr->nodeid, buffer);
 		safe_unpack32(&hdr->stdout_objs, buffer);
 		safe_unpack32(&hdr->stderr_objs, buffer);
-		safe_unpackmem_ptr(&tmp_ptr, &val, buffer);
-		if (val != SLURM_IO_KEY_SIZE)
-			goto unpack_error;
-		memcpy(hdr->io_key, tmp_ptr, SLURM_IO_KEY_SIZE);
+		safe_unpackmem_xmalloc(&hdr->io_key, &hdr->io_key_len, buffer);
 	} else
 		goto unpack_error;
 
