@@ -175,6 +175,7 @@ typedef struct {
 	uint32_t argc;
 	char **argv;
 	bool done;
+	uint32_t job_id;
 	const char *lua_func;
 	int rc; /* Return code of thread. */
 	char **ret_str;
@@ -241,25 +242,23 @@ static int _handle_lua_return_code(lua_State *L, const char *lua_func)
 	}
 }
 
-static void _print_lua_rc_msg(int rc, const char *lua_func, char **resp_msg)
+static void _print_lua_rc_msg(int rc, const char *lua_func, uint32_t job_id,
+			      char *resp_msg)
 {
-	if (resp_msg) {
-		if (rc)
-			error("%s returned:%d; response:%s",
-			      lua_func, rc, *resp_msg);
-		else
-			log_flag(BURST_BUF, "%s returned:%d, response:%s",
-				 lua_func, rc, *resp_msg);
-	} else {
-		if (rc)
-			error("%s returned:%d", lua_func, rc);
-		else
-			log_flag(BURST_BUF, "%s returned:%d", lua_func, rc);
-	}
+	/*
+	 * Some burst buffer APIs don't run for a specific job. But if they
+	 * do run for a specific job, log the job ID.
+	 */
+	if (job_id)
+		log_flag(BURST_BUF, "%s for JobId=%u returned, status=%d, response=%s",
+			 lua_func, job_id, rc, resp_msg);
+	else
+		log_flag(BURST_BUF, "%s returned, status=%d, response=%s",
+			 lua_func, rc, resp_msg);
 }
 
 static int _handle_lua_return(lua_State *L, const char *lua_func,
-			      char **ret_str)
+			      uint32_t job_id, char **ret_str)
 {
 	int rc = SLURM_SUCCESS;
 	int num_stack_elems = lua_gettop(L);
@@ -297,7 +296,10 @@ static int _handle_lua_return(lua_State *L, const char *lua_func,
 		}
 	}
 
-	_print_lua_rc_msg(rc, lua_func, ret_str);
+	if (ret_str)
+		_print_lua_rc_msg(rc, lua_func, job_id, *ret_str);
+	else
+		_print_lua_rc_msg(rc, lua_func, job_id, NULL);
 
 	/* Pop everything from the stack. */
 	lua_pop(L, num_stack_elems);
@@ -362,6 +364,7 @@ static void *_start_lua_script(void *x)
 		slurm_lua_stack_dump("burst_buffer/lua", "after lua_pcall, before returns have been popped", L);
 		run_script_args->rc =
 			_handle_lua_return(L, run_script_args->lua_func,
+					   run_script_args->job_id,
 					   run_script_args->ret_str);
 	}
 	slurm_lua_stack_dump("burst_buffer/lua", "after lua_pcall, after returns have been popped", L);
@@ -395,6 +398,7 @@ static int _run_lua_script(const char *lua_func, uint32_t timeout,
 	run_script_args->argc = argc;
 	run_script_args->argv = argv;
 	run_script_args->done = false;
+	run_script_args->job_id = job_id;
 	run_script_args->lua_func = lua_func;
 	run_script_args->rc = SLURM_SUCCESS;
 	run_script_args->ret_str = ret_str;
