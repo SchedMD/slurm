@@ -210,6 +210,7 @@ extern void data_fini(void)
 		if ((rc = plugrack_destroy(rack)))
 			fatal_abort("unable to clean up serializer plugrack: %s",
 				    slurm_strerror(rc));
+		rack = NULL;
 
 		xfree(plugin_handles);
 		xfree(plugin_types);
