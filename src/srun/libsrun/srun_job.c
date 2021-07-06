@@ -2175,7 +2175,7 @@ static int _set_rlimit_env(void)
 	/*
 	 *  Now increase NOFILE to the max available for this srun
 	 */
-	rlimits_increase_nofile();
+	rlimits_adjust_nofile();
 
 	return rc;
 }
