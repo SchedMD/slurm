@@ -1651,7 +1651,12 @@ _send_io_init_msg(int sock, srun_info_t *srun, stepd_step_rec_t *job, bool init)
 	msg.io_key_len = srun->key->len;
 	memcpy(msg.io_key, srun->key->data, srun->key->len);
 	msg.nodeid = job->nodeid;
-	msg.version = IO_PROTOCOL_VERSION;
+
+	if (srun->protocol_version >= SLURM_21_08_PROTOCOL_VERSION)
+		msg.version = SLURM_PROTOCOL_VERSION;
+	else
+		msg.version = IO_PROTOCOL_VERSION;
+
 	/*
 	 * The initial message does not need the node_offset it is needed for
 	 * sattach

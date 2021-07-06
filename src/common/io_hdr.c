@@ -142,7 +142,8 @@ io_init_msg_validate(struct slurm_io_init_msg *msg, const char *sig)
 	debug3("  msg->version = %x", msg->version);
 	debug3("  msg->nodeid = %u", msg->nodeid);
 
-	if (msg->version != IO_PROTOCOL_VERSION) {
+	if (msg->version == IO_PROTOCOL_VERSION ||
+	    msg->version < SLURM_MIN_PROTOCOL_VERSION) {
 		error("Invalid IO init header version");
 		return SLURM_ERROR;
 	}
@@ -159,14 +160,24 @@ io_init_msg_validate(struct slurm_io_init_msg *msg, const char *sig)
 
 static int io_init_msg_pack(struct slurm_io_init_msg *hdr, buf_t *buffer)
 {
-	/* If this function changes, io_init_msg_packed_size must change. */
 	if (hdr->version == SLURM_PROTOCOL_VERSION) {
+		uint32_t top_offset, tail_offset;
+		uint32_t len = 0;
+
+		top_offset = get_buf_offset(buffer);
+
+		pack32(len, buffer);
 		pack16(hdr->version, buffer);
 		pack32(hdr->nodeid, buffer);
 		pack32(hdr->stdout_objs, buffer);
 		pack32(hdr->stderr_objs, buffer);
-		packmem((char *) hdr->io_key,
-			(uint32_t) SLURM_IO_KEY_SIZE, buffer);
+		packmem((char *) hdr->io_key, hdr->io_key_len, buffer);
+
+		tail_offset = get_buf_offset(buffer);
+		len = tail_offset - top_offset - sizeof(len);
+		set_buf_offset(buffer, top_offset);
+		pack32(len, buffer);
+		set_buf_offset(buffer, tail_offset);
 	} else if (hdr->version == IO_PROTOCOL_VERSION) {
 		pack16(hdr->version, buffer);
 		pack32(hdr->nodeid, buffer);
@@ -194,7 +205,7 @@ static int io_init_msg_unpack(struct slurm_io_init_msg *hdr, buf_t *buffer)
 	/* If this function changes, io_init_msg_packed_size must change. */
 
 	safe_unpack16(&hdr->version, buffer);
-	if (hdr->version == IO_PROTOCOL_VERSION ||
+	if (hdr->version != IO_PROTOCOL_VERSION &&
 	    hdr->version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&hdr->nodeid, buffer);
 		safe_unpack32(&hdr->stdout_objs, buffer);
@@ -236,7 +247,8 @@ rwfail:
 int
 io_init_msg_read_from_fd(int fd, struct slurm_io_init_msg *msg)
 {
-	buf_t *buf;
+	buf_t *buf = NULL;
+	uint32_t len;
 
 	xassert(msg);
 
@@ -246,8 +258,10 @@ io_init_msg_read_from_fd(int fd, struct slurm_io_init_msg *msg)
 		return SLURM_ERROR;
 	}
 
-	buf = init_buf(io_init_msg_packed_size());
-	safe_read(fd, buf->head, io_init_msg_packed_size());
+	safe_read(fd, &len, sizeof(uint32_t));
+	len = ntohl(len);
+	buf = init_buf(len);
+	safe_read(fd, buf->head, len);
 
 	io_init_msg_unpack(msg, buf);
 
