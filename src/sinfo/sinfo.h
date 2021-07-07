@@ -186,6 +186,7 @@ struct sinfo_parameters {
 	struct sinfo_match_flags match_flags;
 
 	char* format;
+	char *mimetype; /* --yaml or --json */
 	char* nodes;
 	char* partition;
 	char* sort;

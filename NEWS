@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- Check that the step requests at least as many gres as nodes.
  -- sacct - Add --json and --yaml arguments.
  -- squeue - Add --json and --yaml arguments.
+ -- sinfo - Add --json and --yaml arguments.
 
 * Changes in Slurm 21.08.0rc1
 =============================

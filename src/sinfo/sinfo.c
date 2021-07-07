@@ -75,6 +75,8 @@ static pthread_mutex_t sinfo_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 /*************
  * Functions *
  *************/
+extern int dump_data(int argc, char **argv);
+
 static void _free_sinfo_format(void *object);
 static void _free_params(void);
 void *      _build_part_info(void *args);
@@ -121,6 +123,9 @@ int main(int argc, char **argv)
 		opts.stderr_level += params.verbose;
 		log_alter(opts, SYSLOG_FACILITY_USER, NULL);
 	}
+
+	if (params.mimetype)
+		exit(dump_data(argc, argv));
 
 	while (1) {
 		if ((!params.no_header) &&

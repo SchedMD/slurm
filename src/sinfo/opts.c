@@ -59,6 +59,8 @@
 #define OPT_LONG_LOCAL     0x103
 #define OPT_LONG_NOCONVERT 0x104
 #define OPT_LONG_FEDR      0x105
+#define OPT_LONG_JSON      0x106
+#define OPT_LONG_YAML      0x107
 
 /* FUNCTIONS */
 static List  _build_state_list( char* str );
@@ -118,6 +120,8 @@ extern void parse_command_line(int argc, char **argv)
 		{"usage",     no_argument,       0, OPT_LONG_USAGE},
 		{"verbose",   no_argument,       0, 'v'},
 		{"version",   no_argument,       0, 'V'},
+                {"json", no_argument, 0, OPT_LONG_JSON},
+                {"yaml", no_argument, 0, OPT_LONG_YAML},
 		{NULL,        0,                 0, 0}
 	};
 
@@ -289,6 +293,14 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case OPT_LONG_LOCAL:
 			params.local = true;
+			break;
+		case OPT_LONG_JSON:
+			params.mimetype = MIME_TYPE_JSON;
+			data_init(MIME_TYPE_JSON_PLUGIN, NULL);
+			break;
+		case OPT_LONG_YAML:
+			params.mimetype = MIME_TYPE_YAML;
+			data_init(MIME_TYPE_YAML_PLUGIN, NULL);
 			break;
 		}
 	}
@@ -1418,6 +1430,7 @@ Usage: sinfo [OPTIONS]\n\
   -h, --noheader             no headers on output\n\
   --hide                     do not show hidden or non-accessible partitions\n\
   -i, --iterate=seconds      specify an iteration period\n\
+      --json                 Produce JSON output\n\
       --local                show only local cluster in a federation.\n\
                              Overrides --federation.\n\
   -l, --long                 long output - displays more information\n\
@@ -1438,6 +1451,7 @@ Usage: sinfo [OPTIONS]\n\
   -T, --reservation          show only reservation information\n\
   -v, --verbose              verbosity level\n\
   -V, --version              output version information and exit\n\
+      --yaml                 Produce YAML output\n\
 \nHelp options:\n\
   --help                     show this help message\n\
   --usage                    display brief usage message\n");

@@ -10,7 +10,7 @@ sinfo_LDADD = $(LIB_SLURM) $(DL_LIBS)
 sinfo_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
 noinst_HEADERS = sinfo.h print.h
-sinfo_SOURCES = sinfo.c opts.c print.c sort.c
+sinfo_SOURCES = data.c sinfo.c opts.c print.c sort.c
 
 force:
 $(sinfo_LDADD) : force
