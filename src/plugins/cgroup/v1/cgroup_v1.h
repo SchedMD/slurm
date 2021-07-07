@@ -72,38 +72,263 @@
 /* Functions */
 extern int init(void);
 extern int fini(void);
+
+/*
+ * Create the cgroup namespace and the root cgroup objects. This two entities
+ * are the basic ones used by any other function and contain information about
+ * the cg paths, mount points, name, ownership, and so on. The creation of the
+ * root namespace may involve also automounting the cgroup subsystem. Set also
+ * any specific required parameter on the root cgroup depending on the
+ * controller.
+ *
+ * This function *does not* involve any mkdir.
+ *
+ * A subsystem is a synonym for cgroup controller used typically in legacy mode
+ * (cgroup v1).
+ *
+ * IN sub - Controller to initialize.
+ * RET SLURM_SUCCESS or error
+ */
 extern int cgroup_p_initialize(cgroup_ctl_type_t sub);
+
+/*
+ * Create the system directories for the specified controller and set any
+ * required parameters. These directories are the ones where slurmd and
+ * slurmstepd will be put if CoreSpecLimit, MemSpecLimit or CoreSpecCnt are set
+ * in slurm.conf. Current supported controllers are only cpuset and memory.
+ *
+ * IN sub - Controller to initialize.
+ * RET SLURM_SUCCESS or error
+ */
 extern int cgroup_p_system_create(cgroup_ctl_type_t sub);
+
+/*
+ * Add pids to the system cgroups. Typically these pids will be slurmstepd pids.
+ *
+ * IN sub - To which controller will the pids be added.
+ * IN pids - Array of pids to add.
+ * IN npids - Count of pids in the array.
+ * RET SLURM_SUCCESS if pids were correctly added or SLURM_ERROR otherwise.
+ */
 extern int cgroup_p_system_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids);
+
+/*
+ * rmdir the system cgroup controller and destroy the xcgroup global objects.
+ * It will move our pid first to the root cgroup, otherwise removal would return
+ * EBUSY.
+ *
+ * IN sub - Which controller will be destroyed.
+ * RET SLURM_SUCCESS if destroy was successful, SLURM_ERROR otherwise.
+ */
 extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub);
+
+/*
+ * Create the directories for a job step in the given controller, set also any
+ * needed default parameters. Initialize also the step cgroup objects.
+ * Every controller may have its own specific settings. This function is called
+ * from a slurmstepd only once. Record also that we're using this step object.
+ *
+ * The directory path will be /<root_cg>/<nodename>/<uid>/<jobid>/<stepid>/
+ *
+ * IN sub - Under which controller will the directory hierarchy be created.
+ * IN job - Step record which is used to create the path in the hierarchy.
+ * RET SLURM_SUCCESS if creation was successful, SLURM_ERROR otherwise.
+ */
 extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job);
+
+/*
+ * Given a controller, add the specified pids to cgroup.procs of the step. Note
+ * that this function will always be called from slurmstepd, which will already
+ * have created the step hierarchy and will have the step cgroup objects
+ * initialized.
+ *
+ * IN sub - Under which controller will the directory hierarchy be created.
+ * IN pids - Array of pids to add.
+ * IN npids - Count of pids in the array.
+ * RET SLURM_SUCCESS if addition was possible, SLURM_ERROR otherwise.
+ */
 extern int cgroup_p_step_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids);
+
+/*
+ * Get the pids under the freezer controller for this step.
+ *
+ * OUT pids - Array of pids containing the pids in this step.
+ * OUT npids - Count of pids in the array.
+ * RET SLURM_SUCCESS if pids were correctly obtained, SLURM_ERROR otherwise.
+ */
 extern int cgroup_p_step_get_pids(pid_t **pids, int *npids);
+
+/*
+ * Suspend the step using the freezer controller.
+ *
+ * RET SLURM_SUCCESS if operation was successful, SLURM_ERROR otherwise.
+ */
 extern int cgroup_p_step_suspend();
+
+/*
+ * Resume the step using the freezer controller.
+ *
+ * RET SLURM_SUCCESS if operation was successful, SLURM_ERROR otherwise.
+ */
 extern int cgroup_p_step_resume();
+
+/*
+ * If the caller (typically from a plugin) is the only one using this step
+ * object, rmdir the controller's step directories and destroy the associated
+ * cgroup objects. Decrement the step object's active usage count.
+ *
+ * IN sub - Which controller will be destroyed for this step.
+ * RET SLURM_SUCCESS if operation was successful, SLURM_ERROR otherwise.
+ */
 extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub);
+
+/*
+ * Given a pid, determine if this pid is being tracked by the freezer container.
+ *
+ * RET true if pid was found, false in any other case.
+ */
 extern bool cgroup_p_has_pid(pid_t pid);
+
+/*
+ * Obtain the constrains set to the root cgroup of the specified controller.
+ *
+ * IN sub - From which controller we want the limits.
+ * RET cgroup_limits_t object if limits could be obtained, NULL otherwise.
+ */
 extern cgroup_limits_t *cgroup_p_root_constrain_get(cgroup_ctl_type_t sub);
+
+/*
+ * Set constrains to the root cgroup of the specified controller.
+ *
+ * IN sub - To which controller we want the limits be applied to.
+ * IN limits - Struct containing the the limits to be applied.
+ * RET SLURM_SUCCESS if limits were applied successfuly, SLURM_ERROR otherwise.
+ */
 extern int cgroup_p_root_constrain_set(cgroup_ctl_type_t sub,
 				       cgroup_limits_t *limits);
+
+/*
+ * Obtain the constrains set to the system cgroup of the specified controller.
+ *
+ * IN sub - From which controller we want the limits.
+ * RET cgroup_limits_t object if limits could be obtained, NULL otherwise.
+ */
 extern cgroup_limits_t *cgroup_p_system_constrain_get(cgroup_ctl_type_t sub);
+
+/*
+ * Set constrains to the system cgroup of the specified controller.
+ *
+ * IN sub - To which controller we want the limits be applied to.
+ * IN limits - Struct containing the the limits to be applied.
+ * RET SLURM_SUCCESS if limits were applied successfuly, SLURM_ERROR otherwise.
+ */
 extern int cgroup_p_system_constrain_set(cgroup_ctl_type_t sub,
 					 cgroup_limits_t *limits);
+
+/*
+ * Set constrains to the user cgroup of the specified controller, for the
+ * specified job.
+ *
+ * IN sub - To which controller we want the limits be applied to.
+ * IN job - Step to which we want the limits be applied to.
+ * IN limits - Struct containing the the limits to be applied.
+ * RET SLURM_SUCCESS if limits were applied successfuly, SLURM_ERROR otherwise.
+ */
 extern int cgroup_p_user_constrain_set(cgroup_ctl_type_t sub,
 				       stepd_step_rec_t *job,
 				       cgroup_limits_t *limits);
+
+/*
+ * Set constrains to the job cgroup of the specified controller, for the
+ * specified job.
+ *
+ * IN sub - To which controller we want the limits be applied to.
+ * IN job - Step to which we want the limits be applied to.
+ * IN limits - Struct containing the the limits to be applied.
+ * RET SLURM_SUCCESS if limits were applied successfuly, SLURM_ERROR otherwise.
+ */
 extern int cgroup_p_job_constrain_set(cgroup_ctl_type_t sub,
 				      stepd_step_rec_t *job,
 				      cgroup_limits_t *limits);
+
+/*
+ * Set constrains to the step cgroup of the specified controller, for the
+ * specified job.
+ *
+ * IN sub - To which controller we want the limits be applied to.
+ * IN job - Step to which we want the limits be applied to.
+ * IN limits - Struct containing the the limits to be applied.
+ * RET SLURM_SUCCESS if limits were applied successfuly, SLURM_ERROR otherwise.
+ */
 extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
 				       stepd_step_rec_t *job,
 				       cgroup_limits_t *limits);
+
+/*
+ * Cgroup v1 function to detect OOM conditions.
+ *
+ * Do use memory.oom_control and cgroup.event_control, see:
+ * https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt
+ *
+ * Start a monitoring thread which will read the event files with a polling
+ * mechanism and wait for a stop signal. When the stop signal is received this
+ * thread will communicate the detected OOMs. This is not a 100% reliable method
+ * since events can be triggered with more than just OOMs, e.g. rmdirs.
+ *
+ * RET SLURM_SUCCESS if monitoring thread is started, SLURM_ERROR otherwise.
+ */
 extern int cgroup_p_step_start_oom_mgr();
+
+/*
+ * Signal the monitoring thread with a stop message and get the results.
+ *
+ * IN job - Step record.
+ * RET cgroup_oom_t - Struct containing the oom information for this step.
+ */
 extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job);
+
+/*
+ * Initialize the accounting controllers, actually memory and cpuacct. Record
+ * that the caller will be using these objects. Initialize also an empty task
+ * list. This function is typically called from jobacctgather.
+ *
+ * RET SLURM_SUCESS if all controllers used for accounting are initialized.
+ *     SLURM_ERROR otherwise.
+ */
 extern int cgroup_p_accounting_init();
+
+/*
+ * Remove the task_X directories created under the accounting controllers
+ * (actually only memory and cpuacct) for this step, rmdir the hierarchy and
+ * destroy the xcgroup objects. Decrease the counter which says we're using
+ * these controllers. This function is typically called from jobacctgather.
+ *
+ * RET SLURM_SUCESS if all controllers used for accounting are finalized.
+ *     SLURM_ERROR otherwise.
+ */
 extern int cgroup_p_accounting_fini();
+
+/*
+ * Add a task_X directories to the accounting controllers (actually only memory
+ * and cpuacct) for this step and record we're tracking this task. Add the
+ * specified pid to this task.
+ *
+ * IN pid - pid to add to the task.
+ * IN job - step record to creat the task directories and add the pid to.
+ * IN task_id - task number to form the path and create the task_x directory.
+ * RET SLURM_SUCESS if the task was succesfully created and the pid added to
+ *     all accounting controllers.
+ */
 extern int cgroup_p_task_addto_accounting(pid_t pid, stepd_step_rec_t *job,
 					  uint32_t task_id);
+
+/*
+ * Given a task id return the accounting data reading the accounting controller
+ * files for this step.
+ *
+ * IN task_id - task number we want the data from, for the current step.
+ * RET cgroup_acct_t - struct containing the required data.
+ */
 extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid);
 
 #endif /* !_CGROUP_V1_H */

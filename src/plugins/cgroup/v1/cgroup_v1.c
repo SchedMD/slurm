@@ -336,12 +336,6 @@ extern int cgroup_p_initialize(cgroup_ctl_type_t sub)
 	return rc;
 }
 
-/*
- * cgroup_p_step_create - Description Description Description
- * IN/OUT param1 - description description
- * IN param2 - description description
- * RET zero on success, EINVAL otherwise
- */
 extern int cgroup_p_system_create(cgroup_ctl_type_t sub)
 {
 	char *slurm_cgpath, *sys_cgpath = NULL;
@@ -472,12 +466,6 @@ end:
 	return rc;
 }
 
-/*
- * cgroup_p_step_create - Description Description Description
- * IN/OUT param1 - description description
- * IN param2 - description description
- * RET zero on success, EINVAL otherwise
- */
 extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 {
 	int rc = SLURM_SUCCESS;
@@ -1150,16 +1138,6 @@ static void *_oom_event_monitor(void *x)
 	pthread_exit((void *) 0);
 }
 
-/* Cgroup v1 function to detect OOM conditions.
- *
- * We will use memory.oom_control and cgroup.event_control, see:
- * https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt
- *
- * If we plan to support cgroup v2, we should monitor 'memory.events' file
- * modified events. That would mean that any of the available entries changed
- * its value upon notification. Entries include: low, high, max, oom, oom_kill.
- * https://www.kernel.org/doc/Documentation/cgroup-v2.txt
- */
 extern int cgroup_p_step_start_oom_mgr(void)
 {
 	char *control_file = NULL, *event_file = NULL, *line = NULL;
@@ -1242,7 +1220,6 @@ fini:
 	return rc;
 }
 
-/* return the value in failcnt file if it exists*/
 static uint64_t _failcnt(xcgroup_t *cg, char *param)
 {
 	uint64_t value = 0;
