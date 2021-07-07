@@ -131,6 +131,8 @@ documents those changes that are of interest to users and administrators.
  -- Allow map_cpu and mask_cpu for non-whole node allocation.
  -- TaskPluginParam=verbose is now treated as a default. Previously it would be
     applied regardless of the job specifying a --cpu-bind.
+ -- Add "node_reg_mem_percent" SlurmctldParameter to define percentage of
+    memory nodes are allowed to register with.
 
 * Changes in Slurm 20.11.9
 ==========================

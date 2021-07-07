@@ -3637,6 +3637,17 @@ Mark nodes as idle, regardless of current state, when suspending nodes with
 \fBSuspendProgram\fR so that nodes will be eligible to be resumed at a later
 time.
 .TP
+\fBnode_reg_mem_percent=#\fR
+Percentage of memory a node is allowed to register with without being marked as
+invalid with low memory. Default is 100. For State=CLOUD nodes, the default is
+95. To disable this for cloud nodes set it to 100. \fIconfig_overrides\fR takes
+precendence over this option.
+
+It's recommended that \fItask/cgroup\fR with \fIConstrainRamSpace\fR is
+configured. A memory cgroup limit won't be set more than the actual memory on
+the node. If needed, configure \fIAllowedRamSpace\fR in the cgroup.conf to add
+a buffer.
+.TP
 \fBpower_save_interval\fR
 How often the power_save thread looks to resume and suspend nodes. The
 power_save thread will do work sooner if there are node state changes. Default

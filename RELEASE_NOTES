@@ -74,6 +74,8 @@ HIGHLIGHTS
     cache usage since the kernel cgroup memory is no longer freed immediately.
  -- TaskPluginParam=verbose is now treated as a default. Previously it would be
     applied regardless of the job specifying a --cpu-bind.
+ -- Add "node_reg_mem_percent" SlurmctldParameter to define percentage of
+    memory nodes are allowed to register with.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

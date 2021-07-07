@@ -90,6 +90,9 @@
 /* No need to change we always pack SLURM_PROTOCOL_VERSION */
 #define NODE_STATE_VERSION        "PROTOCOL_VERSION"
 
+#define DEFAULT_NODE_REG_MEM_PERCENT 100.0
+#define DEFAULT_CLOUD_REG_MEM_PERCENT 95.0
+
 typedef enum {
 	FEATURE_MODE_IND,  /* Print each node change indivually */
 	FEATURE_MODE_COMB, /* Try to combine like changes */
@@ -2526,6 +2529,8 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	int sockets1, sockets2;	/* total sockets on node */
 	int cores1, cores2;	/* total cores on node */
 	int threads1, threads2;	/* total threads on node */
+	static time_t sched_update = 0;
+	static double conf_node_reg_mem_percent = -1;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 
@@ -2539,6 +2544,20 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	debug3("%s: validating nodes %s in state: %s",
 	       __func__, reg_msg->node_name,
 	       node_state_string(node_ptr->node_state));
+
+	if (sched_update != slurm_conf.last_update) {
+		char *tmp_ptr;
+		if ((tmp_ptr = xstrcasestr(slurm_conf.slurmctld_params,
+					   "node_reg_mem_percent="))) {
+			conf_node_reg_mem_percent = strtod(tmp_ptr + 21, NULL);
+			if (errno) {
+				conf_node_reg_mem_percent = -1;
+				error("%s: Unable to convert %s value to double",
+				      __func__, tmp_ptr);
+			}
+			sched_update = slurm_conf.last_update;
+		}
+	}
 
 	node_inx = node_ptr - node_record_table_ptr;
 	orig_node_avail = bit_test(avail_node_bitmap, node_inx);
@@ -2684,14 +2703,30 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		node_ptr->cpus    = reg_msg->cpus;
 	}
 	if (!(slurm_conf.conf_flags & CTL_CONF_OR)) {
-		if (reg_msg->real_memory < config_ptr->real_memory) {
-			debug("Node %s has low real_memory size (%"PRIu64" < %"PRIu64")",
+		double node_reg_mem_percent;
+		if (conf_node_reg_mem_percent == -1) {
+			if (IS_NODE_CLOUD(node_ptr))
+				node_reg_mem_percent =
+					DEFAULT_CLOUD_REG_MEM_PERCENT;
+			else
+				node_reg_mem_percent =
+					DEFAULT_NODE_REG_MEM_PERCENT;
+		} else
+			node_reg_mem_percent = conf_node_reg_mem_percent;
+
+		if (config_ptr->real_memory &&
+		    ((((double)reg_msg->real_memory /
+		       config_ptr->real_memory) * 100) <
+		     node_reg_mem_percent)) {
+			debug("Node %s has low real_memory size (%"PRIu64" / %"PRIu64") < %.2f%%",
 			      reg_msg->node_name, reg_msg->real_memory,
-			      config_ptr->real_memory);
+			      config_ptr->real_memory, node_reg_mem_percent);
 			error_code  = EINVAL;
 			if (reason_down)
 				xstrcat(reason_down, ", ");
-			xstrcat(reason_down, "Low RealMemory");
+			xstrfmtcat(reason_down, "Low RealMemory (reported:%"PRIu64" < %.2f%% of configured:%"PRIu64")",
+				   reg_msg->real_memory, node_reg_mem_percent,
+				   config_ptr->real_memory);
 		}
 
 		if (reg_msg->tmp_disk < config_ptr->tmp_disk) {
