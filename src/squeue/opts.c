@@ -47,6 +47,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "src/common/data.h"
 #include "src/common/read_config.h"
 #include "src/common/xstring.h"
 #include "src/common/proc_args.h"
@@ -65,6 +66,8 @@
 #define OPT_LONG_SIBLING      0x107
 #define OPT_LONG_FEDR         0x108
 #define OPT_LONG_ME           0x109
+#define OPT_LONG_JSON         0x110
+#define OPT_LONG_YAML         0x111
 
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
@@ -136,6 +139,8 @@ parse_command_line( int argc, char* *argv )
 		{"users",      required_argument, 0, 'u'},
 		{"verbose",    no_argument,       0, 'v'},
 		{"version",    no_argument,       0, 'V'},
+		{"json", no_argument, 0, OPT_LONG_JSON},
+		{"yaml", no_argument, 0, OPT_LONG_YAML},
 		{NULL,         0,                 0, 0}
 	};
 
@@ -351,6 +356,14 @@ parse_command_line( int argc, char* *argv )
 		case OPT_LONG_USAGE:
 			_usage();
 			exit(0);
+		case OPT_LONG_JSON:
+			params.mimetype = MIME_TYPE_JSON;
+			data_init(MIME_TYPE_JSON_PLUGIN, NULL);
+			break;
+		case OPT_LONG_YAML:
+			params.mimetype = MIME_TYPE_YAML;
+			data_init(MIME_TYPE_YAML_PLUGIN, NULL);
+			break;
 		}
 	}
 
@@ -2181,6 +2194,7 @@ Usage: squeue [OPTIONS]\n\
   -i, --iterate=seconds           specify an interation period\n\
   -j, --job=job(s)                comma separated list of jobs IDs\n\
                                   to view, default is all\n\
+      --json                      Produce JSON output\n\
       --local                     Report information only about jobs on the\n\
                                   local cluster. Overrides --federation.\n\
   -l, --long                      long report\n\
@@ -2214,6 +2228,7 @@ Usage: squeue [OPTIONS]\n\
   -V, --version                   output version information and exit\n\
   -w, --nodelist=hostlist         list of nodes to view, default is \n\
 				  all nodes\n\
+      --yaml                      Produce YAML output\n\
 \nHelp options:\n\
   --help                          show this help message\n\
   --usage                         display a brief summary of squeue options\n");

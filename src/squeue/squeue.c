@@ -61,6 +61,7 @@ int max_line_size;
 /*************
  * Functions *
  *************/
+extern int dump_data(int argc, char **argv);
 static int  _get_info(bool clear_old, bool log_cluster_name);
 static int  _get_window_width( void );
 static int  _multi_cluster(List clusters);
@@ -84,6 +85,9 @@ main (int argc, char **argv)
 
 	if (params.clusters)
 		working_cluster_rec = list_peek(params.clusters);
+
+	if (params.mimetype)
+		exit(dump_data(argc, argv));
 
 	while (1) {
 		if ((!params.no_header) &&

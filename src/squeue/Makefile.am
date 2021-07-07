@@ -11,7 +11,7 @@ squeue_LDADD = 	$(LIB_SLURM) $(DL_LIBS)
 squeue_DEPENDENCIES = $(LIB_SLURM_BUILD)
 
 noinst_HEADERS = squeue.h print.h
-squeue_SOURCES = squeue.c print.c opts.c sort.c
+squeue_SOURCES = data.c squeue.c print.c opts.c sort.c
 
 force:
 $(squeue_LDADD) : force
