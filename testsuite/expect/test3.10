@@ -30,17 +30,26 @@
 source ./globals
 
 set authorized     1
-set exit_code      0
 set file_err       "test$test_id.error"
 set file_in        "test$test_id.input"
 set file_out       "test$test_id.output"
 set job_id         0
 
+proc cleanup {} {
+	global file_in file_out file_err job_id
+
+	cancel_job $job_id
+	file delete $file_in $file_out $file_err
+}
+
+make_bash_script $file_in "
+$bin_echo Job \$SLURM_JOB_ID is running
+$bin_sleep 120
+"
+
 #
 # Start a batch job
 #
-exec rm -f $file_in $file_out $file_err
-make_bash_script $file_in "$bin_sleep 120"
 spawn $sbatch --output=$file_out --error=$file_err -t1 ./$file_in
 expect {
 	-re "Submitted batch job ($number)" {
@@ -54,12 +63,13 @@ expect {
 if {$job_id == 0} {
 	fail "Batch submit failure"
 }
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-	cancel_job $job_id
-	fail "Waiting for job to start"
-}
-# Add delay to make sure job step fully starts
-exec $bin_sleep 2
+# Wait for the job to start running.
+# If the slurmd gets the job notify request before the tasks have actually been
+# started, the asynchronous call can fail to write to the job's standard error.
+wait_for_job -fail $job_id "RUNNING"
+wait_for_file -fail $file_out
+wait_for_command_match -fail "$bin_cat $file_out" "is running"
+
 #
 # Send the batch job a message
 #
@@ -74,39 +84,26 @@ expect {
 	}
 }
 if {$authorized == 0} {
-	cancel_job $job_id
-	exec rm -f $file_in $file_out $file_err
 	skip "You are not authorized to run this test"
 }
-cancel_job $job_id
 
 #
 # Test stderr file
 #
-if {[wait_for_file $file_err] == 0} {
-	set got_message 0
-	spawn cat $file_err
-	expect {
-		-re "TEST_NOTIFY" {
-			set got_message 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
+wait_for_file -fail $file_err
+set got_message 0
+spawn cat $file_err
+expect {
+	-re "TEST_NOTIFY" {
+		set got_message 1
+		exp_continue
 	}
-	if {$got_message != 1} {
-		log_error "Message not received"
-		set exit_code 1
+	eof {
+		wait
 	}
-} else {
-	set exit_code 1
 }
-if {$exit_code == 0} {
-	log_debug "So far, so good"
-	exec rm -f $file_in $file_out $file_err
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+if {$got_message != 1} {
+	fail "Message not received"
 }
 
 #
@@ -143,7 +140,6 @@ expect {
 	}
 }
 if {$authorized == 0} {
-	cancel_job $job_id
 	skip "You are not authorized to run this test"
 }
 
@@ -167,11 +163,4 @@ expect {
 }
 if {$matches == 0} {
 	fail "Notification not received by srun"
-}
-
-if {[cancel_job $job_id] != 0} {
-	fail "Unable to cancel job ($job_id)"
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
