@@ -341,7 +341,7 @@ extern int xcgroup_load(xcgroup_ns_t *cgns, xcgroup_t *cg, char *uri)
 	return SLURM_SUCCESS;
 }
 
-extern int xcgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name)
+extern void xcgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name)
 {
 	pid_t *pids = NULL;
 	int npids = 0;
@@ -380,8 +380,6 @@ extern int xcgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name)
 	else
 		error("Pid %d is still in the %s cgroup.  It might be left uncleaned after the job.",
 		      pid, cg_name);
-
-	return SLURM_SUCCESS;
 }
 
 extern int xcgroup_get_uint32_param(xcgroup_t *cg, char *param, uint32_t *value)

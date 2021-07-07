@@ -172,7 +172,7 @@ extern int xcgroup_create_hierarchy(const char *calling_func,
  *
  * Must call xcgroup_move_process before this function.
  */
-extern int xcgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name);
+extern void xcgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name);
 
 /*
  * Init cpuset cgroup
