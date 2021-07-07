@@ -42,6 +42,12 @@ set file_in     "test.$test_id.input"
 set test_acct	"slurm_test-account.1"
 set step_id	0
 
+# TODO: Remove this precondition check once 20.11 is no longer supported
+regexp {(\d+).(\d+).(\S+)} [get_config_param SLURM_VERSION] - major minor release
+if {$major < 21} {
+	skip "This test is disabled in Slurm versions older than 21.08 (see bugs 11453 and 9681)"
+}
+
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test can't be run on a front end system"
 }
