@@ -5404,6 +5404,22 @@ but still allow suspension due to preemption.
 .RE
 
 .TP
+\fBOverTimeLimit\fR
+Number of minutes by which a job can exceed its time limit before
+being canceled.
+Normally a job's time limit is treated as a \fIhard\fR limit and the job will be
+killed upon reaching that limit.
+Configuring \fBOverTimeLimit\fR will result in the job's time limit being
+treated like a \fIsoft\fR limit.
+Adding the \fBOverTimeLimit\fR value to the \fIsoft\fR time limit provides a
+\fIhard\fR time limit, at which point the job is canceled.
+This is particularly useful for backfill scheduling, which bases upon
+each job's soft time limit.
+If not set, the \fBOverTimeLimit\fR value for the entire cluster will be used.
+May not exceed 65533 minutes.
+A value of "UNLIMITED" is also supported.
+
+.TP
 \fBPartitionName\fR
 Name by which the partition may be referenced (e.g. "Interactive").
 This name can be specified by users when submitting jobs.
