@@ -91,15 +91,37 @@ typedef struct {
 	slurmdb_job_cond_t *job_cond;
 } foreach_query_search_t;
 
+data_for_each_cmd_t _foreach_list_entry(data_t *data, void *arg)
+{
+	List list = arg;
+
+	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
+		return DATA_FOR_EACH_FAIL;
+
+	if (slurm_addto_char_list(list, data_get_string(data)) < 1)
+		return DATA_FOR_EACH_FAIL;
+
+	return DATA_FOR_EACH_CONT;
+}
+
 static int _parse_csv_list(data_t *src, const char *key, List *list,
 			   data_t *errors)
 {
+	if (!*list)
+		*list = list_create(xfree_ptr);
+
+	if (data_get_type(src) == DATA_TYPE_LIST) {
+		if (data_list_for_each(src, _foreach_list_entry, *list) < 0)
+			return resp_error(errors, ESLURM_REST_INVALID_QUERY,
+					  "error parsing CSV in form of list",
+					  key);
+
+		return SLURM_SUCCESS;
+	}
+
 	if (data_convert_type(src, DATA_TYPE_STRING) != DATA_TYPE_STRING)
 		return resp_error(errors, ESLURM_REST_INVALID_QUERY,
 				  "format must be a string", key);
-
-	if (!*list)
-		*list = list_create(xfree_ptr);
 
 	if (slurm_addto_char_list(*list, data_get_string(src)) < 1)
 		return resp_error(errors, ESLURM_REST_INVALID_QUERY,

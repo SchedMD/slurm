@@ -255,6 +255,14 @@ The v0.0.35 plugin has now been deprecated.
 </tr>
 </table>
 
+<h4>Accept Job Query CSV parameters as a list (JSON array)</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">path</td>
+	<td class="tdchange">.paths."/jobs/".get.parameters</td>
+</tr>
+</table>
+
 <h2>Slurm 20.11.1<h2>
 
 <h3>openapi/v0.0.36 (src/slurmrestd/plugins/openapi/v0.0.36/openapi.json)</h3>
