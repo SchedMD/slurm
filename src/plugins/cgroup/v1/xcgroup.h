@@ -39,140 +39,113 @@
 #define _XCGROUP_H
 
 /* Cgroup v1 internal functions */
+
 /*
- * create a cgroup namespace for tasks containment
+ * Create a cgroup namespace and try to mount it if when it is not available and
+ * CgroupAutomount option is set.
  *
- * returned values:
- *  - SLURM_ERROR
- *  - SLURM_SUCCESS
+ * RET SLURM_SUCCESS if cgroup namespace is created and available, SLURM_ERROR
+ *     otherwise.
  */
 extern int xcgroup_ns_create(xcgroup_ns_t *cgns, char *mnt_args,
 			     const char *subsys);
 
 /*
- * mount a cgroup namespace
+ * Mount a cgroup namespace. If an error occurs, errno will be set.
  *
- * returned values:
- *  - SLURM_ERROR
- *  - SLURM_SUCCESS
- *
- * If an error occurs, errno will be set.
+ * IN cgns - Cgroup namespace to mount.
+ * RET SLURM_SUCCESS if cgroup namespace is created and mounted, SLURM_ERROR
+ *     otherwise.
  */
 extern int xcgroup_ns_mount(xcgroup_ns_t *cgns);
 
 /*
- * umount a cgroup namespace
+ * Umount a cgroup namespace. If an error occurs, errno will be set.
  *
- * returned values:
- *  - SLURM_ERROR
- *  - SLURM_SUCCESS
- *
- * If an error occurs, errno will be set.
+ * IN cgns - Cgroup namespace to umount.
+ * RET SLURM_SUCCESS if umount operation succeeded. SLURM_ERROR otherwise.
  */
 extern int xcgroup_ns_umount(xcgroup_ns_t *cgns);
 
 /*
- * test if cgroup namespace is currently available (mounted)
+ * Check that a cgroup namespace is ready to be used.
  *
- * returned values:
- *  - 0 if not available
- *  - 1 if available
+ * IN cgns - Cgroup namespace to check for availability.
+ * RET SLURM_ERROR if it is not available, and SLURM_SUCCESS if ready.
  */
 extern int xcgroup_ns_is_available(xcgroup_ns_t *cgns);
 
 /*
- * load a cgroup from a cgroup namespace given a pid
+ * Obtain cgroup in a specific namespace that owns a specified pid.
  *
- * returned values:
- *  - SLURM_ERROR
- *  - SLURM_SUCCESS
+ * IN cgns - Cgroup namespace to look into.
+ * OUT cg - The cgroup which contains the pid in this namespace.
+ * IN pid - Pid we want the cgroup containing it.
+ * RET SLURM_SUCCESS if pid was found, SLURM_ERROR in all other cases.
  */
 extern int xcgroup_ns_find_by_pid(xcgroup_ns_t *cgns, xcgroup_t *cg, pid_t pid);
 
 /*
- * lock a cgroup (must have been instantiated)
- * (system level using flock)
+ * Use filesystem lock over a cgroup path typically to avoid removal from one
+ * step when another one is creating it.
  *
- * returned values:
- *  - SLURM_ERROR
- *  - SLURM_SUCCESS
+ * IN cg - Cgroup object containing path to lock.
+ * RETURN SLURM_SUCCESS if lock was successful, SLURM_ERROR otherwise.
  */
 extern int xcgroup_lock(xcgroup_t *cg);
 
 /*
- * unlock a cgroup
+ * Unlock a cgroup using filesystem lock.
  *
- * returned values:
- *  - SLURM_ERROR
- *  - SLURM_SUCCESS
+ * IN cg - Cgroup object containing path to unlock.
+ * RETURN SLURM_SUCCESS if unlock was successful, SLURM_ERROR otherwise.
  */
 extern int xcgroup_unlock(xcgroup_t *cg);
 
 /*
- * load a cgroup from a cgroup namespace into a structure
+ * Set the cgroup struct parameters for a given cgroup from a namespace.
  *
- * returned values:
- *  - SLURM_ERROR
- *  - SLURM_SUCCESS
+ * IN cgns - Cgroup namespace where the cgroup resides.
+ * OUT cg - Cgroup to fill data in.
+ * IN uri - Relative path of the cgroup.
+ * RETURN SLURM_SUCCESS if file operations over the generated path are ok.
+ *        SLURM_ERROR otherwise.
  */
 extern int xcgroup_load(xcgroup_ns_t *cgns, xcgroup_t *cg, char *uri);
 
 /*
- * get a cgroup parameter in the form of a uint32_t
+ * Given a cgroup, wait for our pid to disappear from this cgroup. This is
+ * typically called from slurmstepd, so it will efectively wait for the pid of
+ * slurmstepd to be removed from the cgroup.
  *
- * param must correspond to a file of the cgroup that
- * will be read for its content
+ * IN cg - cgroup where we will look into until our pid disappears.
+ * IN cg_name - cgroup name for custom logging purposes.
+ */
+extern void xcgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name);
+
+/*
+ * Get a uint32 from a cgroup  for the specified parameter.
  *
- * i.e. xcgroup_get_uint32_param(&cg,"memory.swappiness",&value);
+ * IN cg - cgroup to get the value from.
+ * IN param - string describing the filename of the parameter.
+ * OUT value - pointer to a uint32_t which we will set with the info.
  *
- * returned values:
- *  - SLURM_ERROR
- *  - SLURM_SUCCESS
+ * RETURN SLURM_SUCCESS if OUT parameter is valid, SLURM_ERROR otherwise.
  */
 extern int xcgroup_get_uint32_param(xcgroup_t *cg, char *param,
 				    uint32_t *value);
 
 /*
- * get a cgroup parameter in the form of a uint64_t
+ * Get a uint64 from a cgroup  for the specified parameter.
  *
- * param must correspond to a file of the cgroup that
- * will be read for its content
+ * IN cg - cgroup to get the value from.
+ * IN param - string describing the filename of the parameter.
+ * OUT value - pointer to a uint64_t which we will set with the info.
  *
- * i.e. xcgroup_get_uint64_param(&cg,"memory.swappiness",&value);
- *
- * returned values:
- *  - SLURM_ERROR
- *  - SLURM_SUCCESS
+ * RETURN SLURM_SUCCESS if OUT parameter is valid, SLURM_ERROR otherwise.
  */
 extern int xcgroup_get_uint64_param(xcgroup_t *cg, char *param,
 				    uint64_t *value);
-
-
-extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns);
-
-/*
- * Create normal hierarchy for Slurm jobs/steps
- *
- * returned values:
- *  - SLURM_ERROR
- *  - SLURM_SUCCESS
- */
-extern int xcgroup_create_hierarchy(const char *calling_func,
-				    stepd_step_rec_t *job,
-				    xcgroup_ns_t *ns,
-				    xcgroup_t *job_cg,
-				    xcgroup_t *step_cg,
-				    xcgroup_t *user_cg,
-				    char job_cgroup_path[],
-				    char step_cgroup_path[],
-				    char user_cgroup_path[]);
-
-/*
- * Wait for a pid to move out of a cgroup.
- *
- * Must call xcgroup_move_process before this function.
- */
-extern void xcgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name);
 
 /*
  * Init cpuset cgroup
@@ -189,5 +162,39 @@ extern void xcgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name);
  *
  */
 extern int xcgroup_cpuset_init(xcgroup_t *cg);
+
+/*
+ * Create a slurm cgroup object from a namespace. It will contain the path,
+ * ownership and so on.
+ *
+ * IN ns - Namespace where the cgroup will reside.
+ * RET char * - String containing the name of the slurm's root of the cgroup.
+ */
+extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns);
+
+/*
+ * Create a cgroup hierarchy in the cgroupfs.
+ *
+ * IN calling_func - Name of the caller, for logging purposes.
+ * IN job - Step record which contains required info for creating the paths.
+ * IN ns - Namespace used to build paths.
+ * OUT job_cg - Up to the job level directory cgroup.
+ * OUT step_cg - Up to the step level directory cgroup. Typically the inner one.
+ * OUT user_cg - Up to the user step level directory cgroup.
+ * OUT job_cgroup_path - Path to job level directory.
+ * OUT step_cgroup_path - Path to step level directory.
+ * OUT user_cgroup_path - Path to user level directory.
+ * RET SLURM_SUCCESS if full hierarchy was created and xcgroup objects were
+ *     initialized. SLURM_ERROR otherwise, and changes to filesystem undone.
+ */
+extern int xcgroup_create_hierarchy(const char *calling_func,
+				    stepd_step_rec_t *job,
+				    xcgroup_ns_t *ns,
+				    xcgroup_t *job_cg,
+				    xcgroup_t *step_cg,
+				    xcgroup_t *user_cg,
+				    char job_cgroup_path[],
+				    char step_cgroup_path[],
+				    char user_cgroup_path[]);
 
 #endif

@@ -37,13 +37,6 @@
 
 #include "cgroup_v1.h"
 
-/*
- * create a cgroup namespace for tasks containment
- *
- * returned values:
- *  - SLURM_ERROR
- *  - SLURM_SUCCESS
- */
 extern int xcgroup_ns_create(xcgroup_ns_t *cgns, char *mnt_args,
 			     const char *subsys)
 {
@@ -58,7 +51,6 @@ extern int xcgroup_ns_create(xcgroup_ns_t *cgns, char *mnt_args,
 	cgns->mnt_args = xstrdup(mnt_args);
 	cgns->subsystems = xstrdup(subsys);
 
-	/* check that freezer cgroup namespace is available */
 	if (!xcgroup_ns_is_available(cgns)) {
 		if (cg_conf->cgroup_automount) {
 			if (xcgroup_ns_mount(cgns)) {
@@ -83,15 +75,6 @@ clean:
 	return SLURM_ERROR;
 }
 
-/*
- * mount a cgroup namespace
- *
- * returned values:
- *  - SLURM_ERROR
- *  - SLURM_SUCCESS
- *
- * If an error occurs, errno will be set.
- */
 extern int xcgroup_ns_mount(xcgroup_ns_t *cgns)
 {
 	int fstatus;
@@ -166,15 +149,6 @@ extern int xcgroup_ns_mount(xcgroup_ns_t *cgns)
 	return SLURM_SUCCESS;
 }
 
-/*
- * umount a cgroup namespace
- *
- * returned values:
- *  - SLURM_ERROR
- *  - SLURM_SUCCESS
- *
- * If an error occurs, errno will be set.
- */
 extern int xcgroup_ns_umount(xcgroup_ns_t *cgns)
 {
 	if (umount(cgns->mnt_point))
@@ -182,13 +156,6 @@ extern int xcgroup_ns_umount(xcgroup_ns_t *cgns)
 	return SLURM_SUCCESS;
 }
 
-/*
- * check that a cgroup namespace is ready to be used
- *
- * returned values:
- *  - SLURM_ERROR : not available
- *  - SLURM_SUCCESS : ready to be used
- */
 extern int xcgroup_ns_is_available(xcgroup_ns_t *cgns)
 {
 	int fstatus = 0;
@@ -211,14 +178,6 @@ extern int xcgroup_ns_is_available(xcgroup_ns_t *cgns)
 	return fstatus;
 }
 
-/*
- * Look for the cgroup in a specific cgroup namespace that owns
- * a particular pid
- *
- * returned values:
- *  - SLURM_ERROR
- *  - SLURM_SUCCESS
- */
 extern int xcgroup_ns_find_by_pid(xcgroup_ns_t *cgns, xcgroup_t *cg, pid_t pid)
 {
 	int fstatus = SLURM_ERROR;
@@ -239,8 +198,7 @@ extern int xcgroup_ns_find_by_pid(xcgroup_ns_t *cgns, xcgroup_t *cg, pid_t pid)
 	}
 
 	/*
-	 * read file content
-	 * multiple lines of the form :
+	 * read file content multiple lines of the form:
 	 * num_mask:subsystems:relative_path
 	 */
 	fstatus = common_file_read_content(file_path, &buf, &fsize);
@@ -350,10 +308,9 @@ extern void xcgroup_wait_pid_moved(xcgroup_t *cg, const char *cg_name)
 	pid_t pid = getpid();
 
 	/*
-	 * There is a delay in the cgroup system when moving the
-	 * pid from one cgroup to another.  This is usually
-	 * short, but we need to wait to make sure the pid is
-	 * out of the step cgroup or we will occur an error
+	 * There is a delay in the cgroup system when moving the pid from one
+	 * cgroup to another. This is usually short, but we need to wait to make
+	 * sure the pid is out of the step cgroup or we will occur an error
 	 * leaving the cgroup unable to be removed.
 	 *
 	 * The way it is implemented of checking whether the pid is in the
