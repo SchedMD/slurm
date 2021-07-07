@@ -90,15 +90,6 @@ extern int xcgroup_ns_is_available(xcgroup_ns_t *cgns);
 extern int xcgroup_ns_find_by_pid(xcgroup_ns_t *cgns, xcgroup_t *cg, pid_t pid);
 
 /*
- * load a cgroup namespace
- *
- * returned values:
- *  - SLURM_ERROR
- *  - SLURM_SUCCESS
- */
-extern int xcgroup_ns_load(xcgroup_ns_t *cgns, char *subsys);
-
-/*
  * lock a cgroup (must have been instantiated)
  * (system level using flock)
  *

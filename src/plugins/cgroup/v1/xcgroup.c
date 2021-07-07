@@ -276,21 +276,6 @@ extern int xcgroup_ns_find_by_pid(xcgroup_ns_t *cgns, xcgroup_t *cg, pid_t pid)
 	return fstatus;
 }
 
-extern int xcgroup_ns_load(xcgroup_ns_t *cgns, char *subsys)
-{
-	cgroup_conf_t *cg_conf;
-
-	/* read cgroup configuration */
-	cg_conf = cgroup_get_conf();
-	cgns->mnt_point = xstrdup_printf("%s/%s",
-					 cg_conf->cgroup_mountpoint,
-					 subsys);
-	cgroup_free_conf(cg_conf);
-	cgns->mnt_args = NULL;
-	cgns->subsystems = xstrdup(subsys);
-	return SLURM_SUCCESS;
-}
-
 extern int xcgroup_lock(xcgroup_t *cg)
 {
 	int fstatus = SLURM_ERROR;
