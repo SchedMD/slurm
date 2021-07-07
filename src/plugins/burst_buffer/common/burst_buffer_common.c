@@ -1717,6 +1717,7 @@ extern int bb_test_size_limit(job_record_t *job_ptr, bb_job_t *bb_job,
 	bb_state_t bb_state = *bb_state_ptr;
 
 	xassert(bb_job);
+	xassert(preempt_func);
 
 	/* Initialize data structure */
 	ds_len = bb_state.bb_config.pool_cnt + 1;
