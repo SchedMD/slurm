@@ -208,6 +208,8 @@ struct slurm_job_credential {
 	char     *step_hostlist;/* hostnames for which the cred is ok	*/
 	uint16_t  x11;		/* x11 flags set on job allocation	*/
 
+	char *selinux_context;
+
 	char     *signature; 	/* credential signature			*/
 	uint32_t siglen;	/* signature length in bytes		*/
 };
@@ -663,6 +665,8 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	cred->job_hostlist    = xstrdup(arg->job_hostlist);
 	cred->ctime  = time(NULL);
 
+	cred->selinux_context = xstrdup(arg->selinux_context);
+
 	if (_fill_cred_gids(cred, arg) != SLURM_SUCCESS)
 		goto fail;
 
@@ -769,6 +773,9 @@ slurm_cred_copy(slurm_cred_t *cred)
 	rcred->job_constraints = xstrdup(cred->job_constraints);
 	rcred->job_nhosts      = cred->job_nhosts;
 	rcred->job_hostlist    = xstrdup(cred->job_hostlist);
+
+	rcred->selinux_context = xstrdup(cred->selinux_context);
+
 	rcred->ctime  = cred->ctime;
 	rcred->siglen = cred->siglen;
 	/* Assumes signature is a string, otherwise use xmalloc and memcpy */
@@ -855,6 +862,9 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->job_constraints = xstrdup(arg->job_constraints);
 	cred->job_nhosts      = arg->job_nhosts;
 	cred->job_hostlist    = xstrdup(arg->job_hostlist);
+
+	cred->selinux_context = xstrdup(arg->selinux_context);
+
 	cred->ctime  = time(NULL);
 	cred->siglen = SLURM_IO_KEY_SIZE;
 
@@ -975,6 +985,8 @@ static void _copy_cred_to_arg(slurm_cred_t *cred, slurm_cred_arg_t *arg)
 	arg->job_constraints = xstrdup(cred->job_constraints);
 	arg->job_nhosts      = cred->job_nhosts;
 	arg->job_hostlist    = xstrdup(cred->job_hostlist);
+
+	arg->selinux_context = xstrdup(cred->selinux_context);
 }
 
 int slurm_cred_get_args(slurm_cred_t *cred, slurm_cred_arg_t *arg)
@@ -1593,6 +1605,8 @@ slurm_cred_t *slurm_cred_unpack(buf_t *buffer, uint16_t protocol_version)
 				goto unpack_error;
 		}
 
+		safe_unpackstr_xmalloc(&cred->selinux_context, &len, buffer);
+
 		/* "sigp" must be last */
 		sigp = (char **) &cred->signature;
 		safe_unpackmem_xmalloc(sigp, &len, buffer);
@@ -2047,6 +2061,7 @@ static void _pack_cred(slurm_cred_t *cred, buf_t *buffer,
 				     cred->step_mem_alloc_size,
 				     buffer);
 		}
+		packstr(cred->selinux_context, buffer);
 	} else if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		pack_step_id(&cred->step_id, buffer, protocol_version);
 		pack32(cred_uid, buffer);
