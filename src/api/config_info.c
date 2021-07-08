@@ -408,6 +408,24 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 			fprintf(fp, " TRESBillingWeights=%s",
 			        p[i].billing_weights_str);
 
+		if (p[i].resume_timeout == INFINITE16)
+	                fprintf(fp, " ResumeTimeout=INFINITE");
+		else if (p[i].resume_timeout != NO_VAL16)
+	                fprintf(fp, " ResumeTimeout=%d",
+				p[i].resume_timeout);
+
+		if (p[i].suspend_timeout == INFINITE16)
+	                fprintf(fp, " SuspendTimeout=INFINITE");
+		else if (p[i].suspend_timeout != NO_VAL16)
+	                fprintf(fp, " SuspendTimeout=%d",
+				p[i].suspend_timeout);
+
+		if (p[i].suspend_time == INFINITE)
+	                fprintf(fp, " SuspendTime=INFINITE");
+		else if (p[i].suspend_time != NO_VAL)
+	                fprintf(fp, " SuspendTime=%d",
+				p[i].suspend_time);
+
 		fprintf(fp, "\n");
 	}
 
