@@ -814,7 +814,7 @@ static void _set_freq(bitstr_t *gpus, char *gpu_freq)
 	}
 
 	// Check if GPUs are constrained by cgroups
-	slurm_cgroup_conf_init();
+	cgroup_conf_init();
 	if (slurm_cgroup_conf.constrain_devices)
 		constrained_devices = true;
 

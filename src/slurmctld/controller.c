@@ -890,7 +890,7 @@ int main(int argc, char **argv)
 	slurm_conf_destroy();
 	cluster_rec_free();
 	track_script_fini();
-	slurm_cgroup_conf_destroy();
+	cgroup_conf_destroy();
 	usleep(500000);
 }
 #else

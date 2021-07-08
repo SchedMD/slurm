@@ -461,11 +461,16 @@
 #define xfree_struct_group_array	slurm_xfree_struct_group_array
 #define stepd_get_namespace_fd		slurm_stepd_get_namespace_fd
 
+/* cgroup.[ch] functions */
+#define cgroup_conf_init		slurm_cgroup_conf_init
+#define cgroup_conf_destroy		slurm_cgroup_conf_destroy
+
 #endif /* USE_ALIAS */
 
 /* Include the function definitions after redefining their names. */
 #include "src/common/bitstring.h"
 #include "src/common/callerid.h"
+#include "src/common/cgroup.h"
 #include "src/common/eio.h"
 #include "src/common/env.h"
 #include "src/common/hostlist.h"

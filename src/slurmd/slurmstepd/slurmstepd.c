@@ -210,7 +210,7 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 
 	fini_setproctitle();
 
-	slurm_cgroup_conf_destroy();
+	cgroup_conf_destroy();
 
 	xfree(cli);
 	xfree(self);

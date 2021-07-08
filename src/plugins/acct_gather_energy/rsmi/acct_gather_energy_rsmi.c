@@ -460,7 +460,7 @@ static void _get_node_energy_up(acct_gather_energy_t *energy)
 	uint16_t i;
 
 	// Check if GPUs are constrained by cgroups
-	slurm_cgroup_conf_init();
+	cgroup_conf_init();
 	constrained_devices = slurm_cgroup_conf.constrain_devices;
 
 	// Check if task/cgroup plugin is loaded

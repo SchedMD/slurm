@@ -177,7 +177,7 @@ extern bool common_use_local_device_index(void)
 	if (!use_cgroup)
 		return use_local_index;
 
-	slurm_cgroup_conf_init();
+	cgroup_conf_init();
 	if (slurm_cgroup_conf.constrain_devices)
 		use_local_index = true;
 

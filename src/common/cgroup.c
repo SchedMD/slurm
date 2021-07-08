@@ -36,6 +36,10 @@
 
 #include "src/common/cgroup.h"
 
+/* Define slurm-specific aliases for use by plugins, see slurm_xlator.h. */
+strong_alias(cgroup_conf_init, slurm_cgroup_conf_init);
+strong_alias(cgroup_conf_destroy, slurm_cgroup_conf_destroy);
+
 #define DEFAULT_CGROUP_BASEDIR "/sys/fs/cgroup"
 
 /* Symbols provided by the plugin */
@@ -464,12 +468,12 @@ static char *_autodetect_cgroup_version(void)
 }
 
 /*
- * slurm_cgroup_conf_init - load the cgroup.conf configuration.
+ * cgroup_conf_init - load the cgroup.conf configuration.
  *
  * RET SLURM_SUCCESS if conf file is initialized. If the cgroup conf was
  *     already initialized, return SLURM_ERROR.
  */
-extern int slurm_cgroup_conf_init(void)
+extern int cgroup_conf_init(void)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -493,7 +497,7 @@ extern int slurm_cgroup_conf_init(void)
 	return rc;
 }
 
-extern void slurm_cgroup_conf_destroy(void)
+extern void cgroup_conf_destroy(void)
 {
 	xassert(cg_conf_inited);
 	_cgroup_conf_fini();
@@ -501,8 +505,8 @@ extern void slurm_cgroup_conf_destroy(void)
 
 extern void cgroup_conf_reinit(void)
 {
-	slurm_cgroup_conf_destroy();
-	slurm_cgroup_conf_init();
+	cgroup_conf_destroy();
+	cgroup_conf_init();
 }
 
 extern void cgroup_free_limits(cgroup_limits_t *limits)
@@ -737,7 +741,7 @@ extern int cgroup_g_init(void)
 	if (g_context)
 		goto done;
 
-	slurm_cgroup_conf_init();
+	cgroup_conf_init();
 	type = xstrdup(slurm_cgroup_conf.cgroup_plugin);
 
 	/* Default is cgroup/v1 */
@@ -781,7 +785,7 @@ extern int cgroup_g_fini(void)
 	g_context = NULL;
 	slurm_mutex_unlock(&g_context_lock);
 
-	slurm_cgroup_conf_destroy();
+	cgroup_conf_destroy();
 
 	return rc;
 }

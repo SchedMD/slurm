@@ -165,8 +165,8 @@ typedef struct {
 extern cgroup_conf_t slurm_cgroup_conf;
 
 /* global functions */
-extern int slurm_cgroup_conf_init(void);
-extern void slurm_cgroup_conf_destroy(void);
+extern int cgroup_conf_init(void);
+extern void cgroup_conf_destroy(void);
 extern void cgroup_conf_reinit(void);
 extern void cgroup_free_limits(cgroup_limits_t *limits);
 extern List cgroup_get_conf_list(void);
