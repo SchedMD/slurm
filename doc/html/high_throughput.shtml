@@ -183,13 +183,11 @@ are enabled a separate slurmctld thread has to be created for every job start
 Current architecture requires acquisition of a job write lock in every thread,
 which is a costly operation that severely limits scheduler throughput.
 <li><b>SlurmctldDebug</b>:
-More detailed logging will decrease system throughput. Set to 2 (log errors
-only) or 3 (general information logging). Each increment in the logging level
-will increase the number of message by a factor of about 3.</li>
+More detailed logging will decrease system throughput. Set to <i>error</i> or
+<i>info</i> for regular operations with high throughput workload.</li>
 <li><b>SlurmdDebug</b>:
-More detailed logging will decrease system throughput. Set to 2 (log errors
-only) or 3 (general information logging). Each increment in the logging level
-will increase the number of message by a factor of about 3.</li>
+More detailed logging will decrease system throughput. Set to <i>error</i> or
+<i>info</i> for regular operations with high throughput workload.</li>
 <li><b>SlurmdLogFile</b>:
 Writing to local storage is recommended.</li>
 <li><b>TaskPlugin</b>:
@@ -221,6 +219,6 @@ appropriate for your environment.</li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 29 June 2021</p>
+<p style="text-align:center;">Last modified 14 July 2021</p>
 
 <!--#include virtual="footer.txt"-->
