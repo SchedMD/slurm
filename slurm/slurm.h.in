@@ -1812,6 +1812,7 @@ typedef struct job_info {
 						* process using
 						* slurm_get_select_jobinfo()
 						*/
+	char *selinux_context;
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
 	uint16_t show_flags;	/* conveys level of details requested */
 	uint32_t site_factor;	/* factor to consider in priority */

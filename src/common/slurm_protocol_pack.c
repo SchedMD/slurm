@@ -3824,6 +3824,9 @@ _unpack_job_info_members(job_info_t * job, buf_t *buffer,
 
 		safe_unpack16(&job->mail_type, buffer);
 		safe_unpackstr_xmalloc(&job->mail_user, &uint32_tmp, buffer);
+
+		safe_unpackstr_xmalloc(&job->selinux_context, &uint32_tmp,
+				       buffer);
 	} else if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		safe_unpack32(&job->array_job_id, buffer);
 		safe_unpack32(&job->array_task_id, buffer);

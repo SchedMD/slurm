@@ -10517,6 +10517,8 @@ void pack_job(job_record_t *dump_job_ptr, uint16_t show_flags, buf_t *buffer,
 
 		pack16(dump_job_ptr->mail_type, buffer);
 		packstr(dump_job_ptr->mail_user, buffer);
+
+		packstr(dump_job_ptr->selinux_context, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		detail_ptr = dump_job_ptr->details;
 		pack32(dump_job_ptr->array_job_id, buffer);

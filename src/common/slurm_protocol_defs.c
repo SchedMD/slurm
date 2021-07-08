@@ -1267,6 +1267,7 @@ extern void slurm_free_job_info_members(job_info_t * job)
 		select_g_select_jobinfo_free(job->select_jobinfo);
 		job->select_jobinfo = NULL;
 		free_job_resources(&job->job_resrcs);
+		xfree(job->selinux_context);
 		xfree(job->state_desc);
 		xfree(job->std_err);
 		xfree(job->std_in);
