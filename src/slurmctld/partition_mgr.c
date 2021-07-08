@@ -1167,7 +1167,7 @@ void pack_part(part_record_t *part_ptr, buf_t *buffer, uint16_t protocol_version
  * IN billing_weights_str - suggested billing weights
  * IN part_ptr - pointer to partition
  * IN fail - whether the inner function should fatal if the string is invalid.
- * RET return SLURM_ERROR on error, SLURM_SUCESS otherwise.
+ * RET return SLURM_ERROR on error, SLURM_SUCCESS otherwise.
  */
 extern int set_partition_billing_weights(char *billing_weights_str,
 					 part_record_t *part_ptr, bool fail)

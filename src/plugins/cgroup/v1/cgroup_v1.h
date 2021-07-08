@@ -292,7 +292,7 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job);
  * that the caller will be using these objects. Initialize also an empty task
  * list. This function is typically called from jobacctgather.
  *
- * RET SLURM_SUCESS if all controllers used for accounting are initialized.
+ * RET SLURM_SUCCESS if all controllers used for accounting are initialized.
  *     SLURM_ERROR otherwise.
  */
 extern int cgroup_p_accounting_init();
@@ -303,7 +303,7 @@ extern int cgroup_p_accounting_init();
  * destroy the xcgroup objects. Decrease the counter which says we're using
  * these controllers. This function is typically called from jobacctgather.
  *
- * RET SLURM_SUCESS if all controllers used for accounting are finalized.
+ * RET SLURM_SUCCESS if all controllers used for accounting are finalized.
  *     SLURM_ERROR otherwise.
  */
 extern int cgroup_p_accounting_fini();
@@ -316,7 +316,7 @@ extern int cgroup_p_accounting_fini();
  * IN pid - pid to add to the task.
  * IN job - step record to creat the task directories and add the pid to.
  * IN task_id - task number to form the path and create the task_x directory.
- * RET SLURM_SUCESS if the task was succesfully created and the pid added to
+ * RET SLURM_SUCCESS if the task was succesfully created and the pid added to
  *     all accounting controllers.
  */
 extern int cgroup_p_task_addto_accounting(pid_t pid, stepd_step_rec_t *job,

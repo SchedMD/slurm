@@ -4028,7 +4028,7 @@ static bool _job_has_pending_updates(fed_job_info_t *job_info)
  * IN  spec_features  - cluster features that the job requested.
  * OUT cluster_bitmap - bitmap of clusters that have matching features.
  * RET SLURM_ERROR if no cluster has any of the requested features,
- *     SLURM_SUCESS otherwise.
+ *     SLURM_SUCCESS otherwise.
  */
 static int _validate_cluster_features(char *spec_features,
 				      uint64_t *cluster_bitmap)
