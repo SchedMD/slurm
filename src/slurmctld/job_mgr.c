@@ -1513,6 +1513,8 @@ static void _dump_job_state(job_record_t *dump_job_ptr, buf_t *buffer)
 	packstr(dump_job_ptr->tres_per_node, buffer);
 	packstr(dump_job_ptr->tres_per_socket, buffer);
 	packstr(dump_job_ptr->tres_per_task, buffer);
+
+	packstr(dump_job_ptr->selinux_context, buffer);
 }
 
 /* Unpack a job's state information from a buffer */
@@ -1811,6 +1813,9 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		safe_unpackstr_xmalloc(&job_ptr->tres_per_socket, &name_len,
 				       buffer);
 		safe_unpackstr_xmalloc(&job_ptr->tres_per_task, &name_len,
+				       buffer);
+
+		safe_unpackstr_xmalloc(&job_ptr->selinux_context, &name_len,
 				       buffer);
 	} else if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		uint32_t tmp32;
