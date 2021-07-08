@@ -1708,11 +1708,11 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 
-	if (slurm_ctl_conf_ptr->suspend_time == 0) {
-		snprintf(tmp_str, sizeof(tmp_str), "NONE");
+	if (slurm_ctl_conf_ptr->suspend_time == INFINITE) {
+		snprintf(tmp_str, sizeof(tmp_str), "INFINITE");
 	} else {
-		snprintf(tmp_str, sizeof(tmp_str), "%d sec",
-			 ((int)slurm_ctl_conf_ptr->suspend_time - 1));
+		snprintf(tmp_str, sizeof(tmp_str), "%u sec",
+			 slurm_ctl_conf_ptr->suspend_time);
 	}
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SuspendTime");
