@@ -46,6 +46,10 @@
 
 #define _GNU_SOURCE
 
+#if HAVE_SYS_PRCTL_H
+#  include <sys/prctl.h>
+#endif
+
 #include <limits.h>	/* For LONG_MIN, LONG_MAX */
 #include <signal.h>
 #include <stdlib.h>
@@ -1105,6 +1109,12 @@ static void *_init_power_save(void *arg)
         slurmctld_lock_t node_write_lock = {
                 NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	time_t now, boot_time = 0, last_power_scan = 0;
+
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "powersave", NULL, NULL, NULL) < 0) {
+		error("%s: cannot set my name to %s %m", __func__, "powersave");
+	}
+#endif
 
 	if (!_init_power_config())
 		power_save_enabled = true;
