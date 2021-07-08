@@ -461,14 +461,13 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 		xstrfmtcat(out, "ExtSensorsTemp=%u",
 			   node_ptr->ext_sensors->temperature);
 
-	xstrcat(out, line_end);
-
 	/****** Line ******/
 	if (node_ptr->reason && node_ptr->reason[0])
 		xstrcat(reason_str, node_ptr->reason);
 	if (reason_str) {
 		int inx = 1;
 		char *save_ptr = NULL, *tok, *user_name;
+		xstrcat(out, line_end);
 		tok = strtok_r(reason_str, "\n", &save_ptr);
 		while (tok) {
 			if (inx == 1) {
@@ -488,22 +487,24 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 			tok = strtok_r(NULL, "\n", &save_ptr);
 		}
 		xfree(reason_str);
-		xstrcat(out, line_end);
 	}
 
 	/****** Line (optional) ******/
 	if (node_ptr->comment) {
-		xstrfmtcat(out, "Comment=%s", node_ptr->comment);
 		xstrcat(out, line_end);
+		xstrfmtcat(out, "Comment=%s", node_ptr->comment);
 	}
 
 	/****** Line (optional) ******/
 	if (node_ptr->extra) {
-		xstrfmtcat(out, "Extra=%s", node_ptr->extra);
 		xstrcat(out, line_end);
+		xstrfmtcat(out, "Extra=%s", node_ptr->extra);
 	}
 
-	xstrcat(out, "\n");
+	if (one_liner)
+		xstrcat(out, "\n");
+	else
+		xstrcat(out, "\n\n");
 
 	return out;
 }
