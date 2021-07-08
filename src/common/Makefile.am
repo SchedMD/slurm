@@ -214,7 +214,7 @@ libcommon_la_SOURCES =				\
 	xstring.c				\
 	xstring.h
 
-libcommon_la_LIBADD   = $(DL_LIBS)
+libcommon_la_LIBADD   = $(DL_LIBS) $(libselinux_LIBS)
 
 libcommon_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
 

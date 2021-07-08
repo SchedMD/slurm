@@ -703,6 +703,8 @@ CHECK_LIBS
 CHECK_CFLAGS
 WITH_CGROUP_FALSE
 WITH_CGROUP_TRUE
+libselinux_LIBS
+libselinux_CFLAGS
 HAVE_UCX_FALSE
 HAVE_UCX_TRUE
 UCX_LIBS
@@ -994,6 +996,7 @@ with_freeipmi
 with_rrdtool
 with_ucx
 enable_x11
+enable_selinux
 enable_glibtest
 enable_gtktest
 enable_cray_network
@@ -1039,6 +1042,8 @@ CXXCPP
 PKG_CONFIG
 PKG_CONFIG_PATH
 PKG_CONFIG_LIBDIR
+libselinux_CFLAGS
+libselinux_LIBS
 CHECK_CFLAGS
 CHECK_LIBS
 GLIB_CFLAGS
@@ -1699,6 +1704,7 @@ Optional Features:
                           enable --get-user-env option to load user
                           environment without .login
   --disable-x11           disable internal X11 support
+  --enable-selinux        enable internal X11 support
   --disable-glibtest      do not try to compile and run a test GLIB program
   --disable-gtktest       do not try to compile and run a test GTK+ program
   --enable-cray-network   Run Slurm on a non-Cray system with a Cray network
@@ -1797,6 +1803,10 @@ Some influential environment variables:
               directories to add to pkg-config's search path
   PKG_CONFIG_LIBDIR
               path overriding pkg-config's built-in search path
+  libselinux_CFLAGS
+              C compiler flags for libselinux, overriding pkg-config
+  libselinux_LIBS
+              linker flags for libselinux, overriding pkg-config
   CHECK_CFLAGS
               C compiler flags for CHECK, overriding pkg-config
   CHECK_LIBS  linker flags for CHECK, overriding pkg-config
@@ -22304,6 +22314,101 @@ $as_echo "$x_ac_x11" >&6; }
 
 $as_echo "#define WITH_SLURM_X11 1" >>confdefs.h
 
+  fi
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether Slurm internal SELinux support is enabled" >&5
+$as_echo_n "checking whether Slurm internal SELinux support is enabled... " >&6; }
+  # Check whether --enable-selinux was given.
+if test "${enable_selinux+set}" = set; then :
+  enableval=$enable_selinux;  case "$enableval" in
+        yes) x_ac_x11=yes ;;
+         no) x_ac_x11=no ;;
+          *) { $as_echo "$as_me:${as_lineno-$LINENO}: result: doh!" >&5
+$as_echo "doh!" >&6; }
+             as_fn_error $? "bad value \"$enableval\" for --enable-selinux" "$LINENO" 5
+      esac
+
+
+fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $x_ac_selinux" >&5
+$as_echo "$x_ac_selinux" >&6; }
+  if test "$x_ac_selinux" != no; then
+
+$as_echo "#define WITH_SELINUX 1" >>confdefs.h
+
+
+pkg_failed=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libselinux" >&5
+$as_echo_n "checking for libselinux... " >&6; }
+
+if test -n "$libselinux_CFLAGS"; then
+    pkg_cv_libselinux_CFLAGS="$libselinux_CFLAGS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libselinux\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libselinux") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_libselinux_CFLAGS=`$PKG_CONFIG --cflags "libselinux" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+if test -n "$libselinux_LIBS"; then
+    pkg_cv_libselinux_LIBS="$libselinux_LIBS"
+ elif test -n "$PKG_CONFIG"; then
+    if test -n "$PKG_CONFIG" && \
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libselinux\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libselinux") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; then
+  pkg_cv_libselinux_LIBS=`$PKG_CONFIG --libs "libselinux" 2>/dev/null`
+		      test "x$?" != "x0" && pkg_failed=yes
+else
+  pkg_failed=yes
+fi
+ else
+    pkg_failed=untried
+fi
+
+
+
+if test $pkg_failed = yes; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
+        _pkg_short_errors_supported=yes
+else
+        _pkg_short_errors_supported=no
+fi
+        if test $_pkg_short_errors_supported = yes; then
+	        libselinux_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libselinux" 2>&1`
+        else
+	        libselinux_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libselinux" 2>&1`
+        fi
+	# Put the nasty error message in config.log where it belongs
+	echo "$libselinux_PKG_ERRORS" >&5
+
+	as_fn_error $? "cannot locate libselinux" "$LINENO" 5
+elif test $pkg_failed = untried; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+	as_fn_error $? "cannot locate libselinux" "$LINENO" 5
+else
+	libselinux_CFLAGS=$pkg_cv_libselinux_CFLAGS
+	libselinux_LIBS=$pkg_cv_libselinux_LIBS
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+fi
   fi
 
 

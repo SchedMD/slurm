@@ -135,6 +135,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_rrdtool.m4 \
 	$(top_srcdir)/auxdir/x_ac_rsmi.m4 \
+	$(top_srcdir)/auxdir/x_ac_selinux.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_systemd.m4 \
 	$(top_srcdir)/auxdir/x_ac_ucx.m4 \
@@ -462,6 +463,8 @@ infodir = @infodir@
 install_sh = @install_sh@
 libdir = @libdir@
 libexecdir = @libexecdir@
+libselinux_CFLAGS = @libselinux_CFLAGS@
+libselinux_LIBS = @libselinux_LIBS@
 localedir = @localedir@
 localstatedir = @localstatedir@
 lua_CFLAGS = @lua_CFLAGS@
@@ -500,7 +503,7 @@ depend_libs = ../common/libslurmd_common.o
 depend_ldadd = $(HWLOC_LIBS) $(PAM_LIBS) $(UTIL_LIBS)
 depend_ldflags = $(HWLOC_LDFLAGS)
 AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
-slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) $(DL_LIBS) $(depend_ldadd)
+slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) $(DL_LIBS) $(depend_ldadd) $(libselinux_LIBS)
 slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(depend_ldflags)
 slurmstepd_SOURCES = \
 	container.c container.h	\
