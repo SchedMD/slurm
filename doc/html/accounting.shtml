@@ -294,12 +294,23 @@ allow the conversion to proceed:
 <i>[Warning] InnoDB: Cannot add field ... in table ... because after adding it, the row size is Y which is greater than maximum allowed size (X) for a record on index leaf page.</i>
 </pre>
 
-You can check your default row format value by showing the
-<i>innodb_default_row_format</i> variable, and how the tables are created
-by running:
-
+You can see what the default row format is by showing the
+<i>innodb_default_row_format</i> variable:
 <pre>
-mysql> SHOW TABLE STATUS IN table_name;
+mysql> SHOW VARIABLES LIKE 'innodb_default_row_format';
++---------------------------+---------+
+| Variable_name             | Value   |
++---------------------------+---------+
+| innodb_default_row_format | dynamic |
++---------------------------+---------+
+1 row in set (0.001 sec)
+</pre>
+
+You can also see how the tables are created by running the following command,
+where <i>db_name</i> is the name of your Slurm database (StorageLoc) set in
+your slurmdbd.conf:
+<pre>
+mysql> SHOW TABLE STATUS IN db_name;
 </pre>
 </p>
 
@@ -812,7 +823,7 @@ completely. This is meant to clean up after typographical errors.
 Removing user associations or accounts, however, will cause slurmctld to lose
 track of usage data for that user/account.</p>
 
-<p style="text-align:center;">Last modified 9 June 2021</p>
+<p style="text-align:center;">Last modified 14 July 2021</p>
 
 <!--#include virtual="footer.txt"-->
 
