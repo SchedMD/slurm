@@ -1,6 +1,6 @@
 # Makefile for burst buffer plugins
 
-SUBDIRS = generic
+SUBDIRS = common generic
 
 if WITH_JSON_PARSER
 SUBDIRS += datawarp
