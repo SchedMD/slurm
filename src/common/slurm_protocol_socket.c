@@ -570,7 +570,8 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 				       buffer[0], retry_cnt);
 			retry_cnt++;
 			close(quiesce_fd);
-			quiesce_fd = open(quiesce_status, O_RDONLY);
+			quiesce_fd = open(quiesce_status,
+					  (O_RDONLY | O_CLOEXEC));
 		}
 		if (quiesce_fd >= 0)
 			close(quiesce_fd);

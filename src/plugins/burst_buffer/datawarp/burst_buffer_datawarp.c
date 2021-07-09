@@ -2960,13 +2960,12 @@ static void _update_job_env(job_record_t *job_ptr, char *file_path)
 	ssize_t read_size;
 
 	/* Read the DataWarp generated environment variable file */
-	path_fd = open(file_path, 0);
+	path_fd = open(file_path, O_CLOEXEC);
 	if (path_fd == -1) {
 		error("open error on file %s: %m",
 		      file_path);
 		return;
 	}
-	fd_set_close_on_exec(path_fd);
 	if (fstat(path_fd, &stat_buf) == -1) {
 		error("stat error on file %s: %m",
 		      file_path);

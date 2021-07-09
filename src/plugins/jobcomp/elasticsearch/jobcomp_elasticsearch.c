@@ -406,7 +406,8 @@ static int _save_state(void)
 	xstrcat(old_file, ".old");
 
 	slurm_mutex_lock(&save_lock);
-	fd = open(new_file, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
+	fd = open(new_file, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR |
+		  O_CLOEXEC);
 	if (fd < 0) {
 		error("%s: Can't save jobcomp state, open file %s error %m",
 		      plugin_type, new_file);
@@ -414,7 +415,6 @@ static int _save_state(void)
 	} else {
 		int pos = 0, nwrite, amount, rc2;
 		char *data;
-		fd_set_close_on_exec(fd);
 		nwrite = get_buf_offset(buffer);
 		data = (char *) get_buf_data(buffer);
 		high_buffer_size = MAX(nwrite, high_buffer_size);
