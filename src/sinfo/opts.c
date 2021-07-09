@@ -1142,6 +1142,11 @@ static int _parse_long_format (char* format_long)
 						  field_size,
 						  right_justify,
 						  suffix );
+		} else if (!xstrcasecmp(token, "statecomplete")) {
+			params.match_flags.statecomplete_flag = true;
+			format_add_state_complete(params.format_list,
+						  field_size, right_justify,
+						  suffix );
 		} else if (!xstrcasecmp(token, "statelong")) {
 			params.match_flags.state_flag = true;
 			format_add_state_long( params.format_list,
@@ -1383,6 +1388,8 @@ void _print_options( void )
 			"true" : "false");
 	printf("state_flag      = %s\n", params.match_flags.state_flag ?
 			"true" : "false");
+	printf("statecomplete_flag = %s\n",
+	       params.match_flags.statecomplete_flag ? "true" : "false");
 	printf("weight_flag     = %s\n", params.match_flags.weight_flag ?
 			"true" : "false");
 	printf("-----------------------------\n\n");

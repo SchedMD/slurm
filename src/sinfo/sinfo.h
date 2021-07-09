@@ -151,6 +151,7 @@ struct sinfo_match_flags {
 	bool root_flag;
 	bool oversubscribe_flag;
 	bool state_flag;
+	bool statecomplete_flag;
 	bool weight_flag;
 	bool reason_timestamp_flag;
 	bool reason_user_flag;

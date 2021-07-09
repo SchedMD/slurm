@@ -136,6 +136,7 @@ documents those changes that are of interest to users and administrators.
  -- Show correct number of SocketsPerBoard in slurmd -C with hwloc2.
  -- Alter sreport's cluster utilization report column name from
     'Reserved' to 'Planned' to match the nomenclature of the 'Planned' node.
+ -- Add StateComplete format option to sinfo to show base_state+flags.
 
 * Changes in Slurm 20.11.9
 ==========================
