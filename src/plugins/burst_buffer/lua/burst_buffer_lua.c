@@ -1281,7 +1281,7 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 	uint64_t tmp_cnt;
 	int rc = SLURM_SUCCESS;
 	int directive_len;
-	bool have_bb = false, have_stage_out = false;
+	bool have_bb = false;
 
 	xassert(bb_size);
 	*bb_size = 0;
@@ -1347,8 +1347,6 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
 			*bb_size += _set_granularity(tmp_cnt, bb_pool);
 			xfree(bb_pool);
-		} else if (!xstrncmp(tok, "stage_out", 9)) {
-			have_stage_out = true;
 		}
 		tok = strtok_r(NULL, "\n", &save_ptr);
 	}
@@ -1356,11 +1354,6 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 
 	if (!have_bb)
 		rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
-
-	if (!have_stage_out) {
-		/* prevent sending stage out email */
-		job_desc->mail_type &= (~MAIL_JOB_STAGE_OUT);
-	}
 
 	return rc;
 }
@@ -1439,8 +1432,6 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 			bb_job->req_size += tmp_cnt;
 			bb_job->total_size += tmp_cnt;
 			bb_job->use_job_buf = true;
-		} else {
-			/* Ignore stage-in, stage-out, etc. */
 		}
 		tok = strtok_r(NULL, "\n", &save_ptr);
 	}
