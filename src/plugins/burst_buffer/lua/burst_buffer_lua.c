@@ -798,7 +798,7 @@ static bb_pools_t * _json_parse_pools_array(json_object *jobj, char *key,
 }
 
 static bb_pools_t *_bb_get_pools(int *num_pools, bb_state_t *state_ptr,
-				 uint32_t timeout)
+				 uint32_t timeout, int *out_rc)
 {
 	int rc;
 	char *resp_msg = NULL;
@@ -812,12 +812,13 @@ static bb_pools_t *_bb_get_pools(int *num_pools, bb_state_t *state_ptr,
 	/* Call lua function. */
 	rc = _run_lua_script(lua_func_name, timeout, 0, NULL, 0, &resp_msg,
 			     NULL);
-	if (rc) {
+	*out_rc = rc;
+	if (rc != SLURM_SUCCESS) {
 		trigger_burst_buffer();
 		return NULL;
 	}
 	if (!resp_msg) {
-		error("%s returned no pools", lua_func_name);
+		/* This is okay - pools are not required. */
 		return NULL;
 	}
 
@@ -846,16 +847,21 @@ static int _load_pools(uint32_t timeout)
 {
 	static bool first_run = true;
 	bool have_new_pools = false;
-	int num_pools = 0, i, j, pools_inx;
+	int num_pools = 0, i, j, pools_inx, rc;
 	burst_buffer_pool_t *pool_ptr;
 	bb_pools_t *pools;
 	bitstr_t *pools_bitmap;
 
 	/* Load the pools information from burst_buffer.lua. */
-	pools = _bb_get_pools(&num_pools, &bb_state, timeout);
-	if (!pools) {
-		error("Didn't find any pools from burst_buffer.lua. Cannot use burst buffers until pools are defined");
+	pools = _bb_get_pools(&num_pools, &bb_state, timeout, &rc);
+	if (rc != SLURM_SUCCESS) {
+		error("Get pools returned error %d, cannot use pools unless get pools returns success",
+		      rc);
 		return SLURM_ERROR;
+	}
+	if (!pools) {
+		/* Pools are not required. */
+		return SLURM_SUCCESS;
 	}
 
 	pools_bitmap = bit_alloc(bb_state.bb_config.pool_cnt + num_pools);
@@ -1304,7 +1310,10 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 	if ((rc != SLURM_SUCCESS) || (!job_desc->burst_buffer))
 		return rc;
 
-	/* Now validate some burst buffer options and get the size. */
+	/*
+	 * Now validate that burst buffer was requested and get the pool and
+	 * size if specified.
+	 */
 	bb_script = xstrdup(job_desc->burst_buffer);
 	tok = strtok_r(bb_script, "\n", &save_ptr);
 	while (tok) {
@@ -1317,6 +1326,14 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 			tok = strtok_r(NULL, "\n", &save_ptr);
 			continue;
 		}
+
+		/*
+		 * We only require that the directive is here.
+		 * Specifying a pool is optional. Any other needed validation
+		 * can be done by the burst_buffer.lua script.
+		 */
+		have_bb = true;
+
 		tok += directive_len; /* Skip the directive string. */
 		while (isspace(tok[0]))
 			tok++;
@@ -1324,7 +1341,6 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 			char *num_ptr = capacity + 9;
 
 			bb_pool = NULL;
-			have_bb = true;
 			tmp_cnt = bb_get_size_num(num_ptr, 1);
 			if (tmp_cnt == 0) {
 				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
@@ -1402,12 +1418,18 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 			continue;
 		}
 
+		/*
+		 * We only require that the directive is here.
+		 * Specifying a pool is optional. Any other needed validation
+		 * can be done by the burst_buffer.lua script.
+		 */
+		have_bb = true;
+
 		tok += directive_len + 1; /* Add 1 for the '#' character. */
 		while (isspace(tok[0]))
 			tok++;
 
 		if ((sub_tok = strstr(tok, "capacity="))) {
-			have_bb = true;
 			tmp_cnt = bb_get_size_num(sub_tok + 9, 1);
 			if ((sub_tok = strstr(tok, "pool"))) {
 				xfree(bb_job->job_pool);
@@ -1443,8 +1465,6 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 		return NULL;
 	}
 
-	if (!bb_job->job_pool)
-		bb_job->job_pool = xstrdup(bb_state.bb_config.default_pool);
 	if (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF)
 		bb_job_log(&bb_state, bb_job);
 	return bb_job;
@@ -2096,8 +2116,12 @@ extern time_t bb_p_job_get_est_start(job_record_t *job_ptr)
 	log_flag(BURST_BUF, "%pJ", job_ptr);
 
 	if (bb_job->state == BB_STATE_PENDING) {
-		rc = bb_test_size_limit(job_ptr, bb_job, &bb_state,
-					_queue_teardown);
+		if (bb_job->job_pool && bb_job->req_size)
+			rc = bb_test_size_limit(job_ptr, bb_job, &bb_state,
+						_queue_teardown);
+		else
+			rc = 0;
+
 		if (rc == 0) { /* Could start now. */
 			;
 		} else if (rc == 1) { /* Exceeds configured limits */
@@ -2592,7 +2616,7 @@ fini:
 
 static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 {
-	char *hash_dir = NULL, *job_dir = NULL, *job_pool;
+	char *hash_dir = NULL, *job_dir = NULL;
 	char *client_nodes_file_nid = NULL;
 	int hash_inx = job_ptr->job_id % 10;
 	stage_in_args_t *stage_in_args;
@@ -2615,10 +2639,9 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 	stage_in_args->uid = job_ptr->user_id;
 	stage_in_args->gid = job_ptr->group_id;
 	if (bb_job->job_pool)
-		job_pool = bb_job->job_pool;
+		stage_in_args->pool = xstrdup(bb_job->job_pool);
 	else
-		job_pool = bb_state.bb_config.default_pool;
-	stage_in_args->pool = xstrdup(job_pool);
+		stage_in_args->pool = NULL;
 	stage_in_args->bb_size = bb_job->total_size;
 	stage_in_args->job_script = bb_handle_job_script(job_ptr, bb_job);
 	if (client_nodes_file_nid) {
@@ -2639,8 +2662,8 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 		bb_alloc = bb_alloc_job(&bb_state, job_ptr, bb_job);
 		bb_alloc->create_time = time(NULL);
 	}
-	bb_limit_add(job_ptr->user_id, bb_job->total_size, job_pool, &bb_state,
-		     true);
+	bb_limit_add(job_ptr->user_id, bb_job->total_size, bb_job->job_pool,
+		     &bb_state, true);
 
 	slurm_thread_create(&tid, _start_stage_in, stage_in_args);
 
@@ -2675,7 +2698,12 @@ static int _try_alloc_job_bb(void *x, void *arg)
 	if (bb_job->state >= BB_STATE_STAGING_IN)
 		return SLURM_SUCCESS; /* Job was already allocated a buffer */
 
-	rc = bb_test_size_limit(job_ptr, bb_job, &bb_state, _queue_teardown);
+	if (bb_job->job_pool && bb_job->req_size)
+		rc = bb_test_size_limit(job_ptr, bb_job, &bb_state,
+					_queue_teardown);
+	else
+		rc = 0;
+
 	if (rc == 0) {
 		/*
 		 * Job could start now. Allocate burst buffer and continue to
@@ -2759,11 +2787,18 @@ extern int bb_p_job_test_stage_in(job_record_t *job_ptr, bool test_only)
 	} else if (bb_job->state < BB_STATE_STAGING_IN) {
 		/* Job buffer not allocated, create now if space available */
 		rc = -1;
-		if ((test_only == false) &&
-		    (bb_test_size_limit(job_ptr, bb_job, &bb_state,
-					_queue_teardown) == 0) &&
-		    (_alloc_job_bb(job_ptr, bb_job, false) == SLURM_SUCCESS)) {
-			rc = 0;	/* Setup/stage-in in progress */
+		if (test_only)
+			goto fini;
+		if (bb_job->job_pool && bb_job->req_size) {
+			if ((bb_test_size_limit(job_ptr, bb_job, &bb_state,
+						_queue_teardown) == 0) &&
+			    (_alloc_job_bb(job_ptr, bb_job, false) ==
+			     SLURM_SUCCESS)) {
+				rc = 0; /* Setup/stage-in in progress */
+			}
+		} else if (_alloc_job_bb(job_ptr, bb_job, false) ==
+			   SLURM_SUCCESS) {
+			rc = 0; /* Setup/stage-in in progress */
 		}
 	} else if (bb_job->state == BB_STATE_STAGING_IN) {
 		rc = 0;
@@ -2773,6 +2808,7 @@ extern int bb_p_job_test_stage_in(job_record_t *job_ptr, bool test_only)
 		rc = -1;	/* Requeued job still staging in */
 	}
 
+fini:
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	return rc;
