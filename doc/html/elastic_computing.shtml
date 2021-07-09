@@ -54,6 +54,12 @@ configured <b>SlurmdTimeout</b> value with an updated BootTime, the node will
 be placed in a DOWN state and the job requesting the node will be requeued.
 If the node isn't actually rebooted (i.e. when multiple-slurmd is configured)
 starting slurmd with "-b" option might be useful.
+<dt><b>ResumeTimeout</b>
+<dd>Maximum time permitted (in seconds) between when a node resume request
+is issued and when the node is actually available for use. Nodes which fail to
+respond in this time frame will be marked DOWN and the jobs scheduled on the
+node requeued. Nodes which reboot after this time frame will be marked DOWN
+with a reason of "Node unexpectedly rebooted." The default value is 60 seconds.
 <dt><b>SlurmctldParameters=cloud_dns</b>
 <dd>By default, Slurm expects that the network addresses for cloud nodes
 won't be known until creation of the node and that Slurm will be notified of
@@ -77,6 +83,11 @@ relinquished to the cloud.
 <dt><b>SuspendTime</b>
 <dd>The time interval that a node will be left idle or down before a request is
 made to relinquish it. Units are in seconds.
+<dt><b>SuspendTimeout</b>
+<dd>Maximum time permitted (in seconds) between when a node suspend request
+is issued and when the node is shutdown. At that time the node must be ready
+for a resume request to be issued as needed for new work. The default value is
+30 seconds.
 <dt><b>TCPTimeout</b>
 <dd>Time permitted for TCP connections to be established. This value may need
 to be increased from the default (2 seconds) to account for latency between
