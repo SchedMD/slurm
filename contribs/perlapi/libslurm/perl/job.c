@@ -14,6 +14,7 @@
 		*/
 
 #include "src/common/job_resources.h"
+#include "src/common/xstring.h"
 
 #include "bitstr.h"
 #include "slurm-perl.h"
@@ -45,7 +46,7 @@ static uint32_t _threads_per_core(char *host)
 
 	for (i = 0; i < job_node_ptr->record_count; i++) {
 		if (job_node_ptr->node_array[i].name &&
-		    !strcmp(host, job_node_ptr->node_array[i].name)) {
+		    !xstrcmp(host, job_node_ptr->node_array[i].name)) {
 			threads = job_node_ptr->node_array[i].threads;
 			break;
 		}
