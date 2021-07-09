@@ -117,6 +117,7 @@ static const char *req_fxns[] = {
 	"slurm_bb_job_teardown",
 	"slurm_bb_setup",
 	"slurm_bb_data_in",
+	"slurm_bb_real_size",
 	"slurm_bb_paths",
 	"slurm_bb_pre_run",
 	"slurm_bb_post_run",
@@ -2424,6 +2425,7 @@ static void *_start_stage_in(void *x)
 	bool get_real_size = false, track_script_signal = false;
 	char *resp_msg = NULL, *op = NULL;
 	char **argv;
+	long real_size = 0;
 	stage_in_args_t *stage_in_args = (stage_in_args_t *) x;
 	job_record_t *job_ptr;
 	bb_alloc_t *bb_alloc = NULL;
@@ -2460,13 +2462,7 @@ static void *_start_stage_in(void *x)
 		goto fini;
 	}
 
-	slurm_mutex_lock(&bb_state.bb_mutex);
 	if (rc != SLURM_SUCCESS) {
-		/*
-		 * Unlock bb_mutex before locking job_write_lock to avoid
-		 * deadlock, since job_write_lock is always locked first.
-		 */
-		slurm_mutex_unlock(&bb_state.bb_mutex);
 		trigger_burst_buffer();
 		error("setup for JobId=%u failed.", stage_in_args->job_id);
 		rc = SLURM_ERROR;
@@ -2475,25 +2471,6 @@ static void *_start_stage_in(void *x)
 		if (job_ptr)
 			bb_update_system_comment(job_ptr, "setup", resp_msg, 0);
 		unlock_slurmctld(job_write_lock);
-	} else {
-		bb_job = bb_job_find(&bb_state, stage_in_args->job_id);
-		if (!bb_job) {
-			error("unable to find bb_job record for JobId=%u",
-			      stage_in_args->job_id);
-			rc = SLURM_ERROR;
-		} else if (bb_job->total_size) {
-			/*
-			 * The buffer's actual size may be larger than
-			 * requested by the user. Remove limit here and restore
-			 * limit based upon actual size.
-			 */
-			bb_limit_rem(stage_in_args->uid, stage_in_args->bb_size,
-				     stage_in_args->pool, &bb_state);
-			/* Restore limit based upon actual size. */
-			bb_limit_add(stage_in_args->uid, bb_job->total_size,
-				     stage_in_args->pool, &bb_state, true);
-		}
-		slurm_mutex_unlock(&bb_state.bb_mutex);
 	}
 
 	if (rc == SLURM_SUCCESS) {
@@ -2542,12 +2519,44 @@ static void *_start_stage_in(void *x)
 		get_real_size = true;
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
-	/*
-	 * TODO:
-	 * Round up job buffer size based upon "equalize_fragments"
-	 * configuration parameter.
-	 */
 	if (get_real_size) {
+		xfree(resp_msg);
+		argc = 1;
+		argv = xcalloc(argc + 1, sizeof(char *)); /* NULL terminated */
+		argv[0] = xstrdup_printf("%u", stage_in_args->job_id);
+
+		START_TIMER;
+		op = "slurm_bb_real_size";
+		rc = _run_lua_script(op, timeout, argc, argv,
+				     stage_in_args->job_id, &resp_msg,
+				     &track_script_signal);
+		END_TIMER;
+		if ((DELTA_TIMER > 200000) || /* 0.2 secs */
+		    (slurm_conf.debug_flags & DEBUG_FLAG_BURST_BUF))
+			info("%s for JobId=%u ran for %s",
+			     op, stage_in_args->job_id, TIME_STR);
+
+		if (track_script_signal) {
+			/* Killed by slurmctld, exit now. */
+			info("%s for JobId=%u terminated by slurmctld",
+			     op, stage_in_args->job_id);
+			goto fini;
+		}
+
+		if (rc != SLURM_SUCCESS) {
+			error("%s for JobId=%u failed, status:%u, response:%s",
+			      op, stage_in_args->job_id, rc, resp_msg);
+		} else if (resp_msg) {
+			char *end_ptr;
+
+			real_size = strtol(resp_msg, &end_ptr, 10);
+			if ((real_size < 0) || (real_size == LONG_MAX) ||
+			    (end_ptr == resp_msg)) {
+				error("%s return value=\"%s\" is invalid, discarding result",
+				      op, resp_msg);
+				real_size = 0;
+			}
+		}
 	}
 
 	lock_slurmctld(job_write_lock);
@@ -2563,11 +2572,34 @@ static void *_start_stage_in(void *x)
 					    BB_STATE_STAGED_IN);
 		if (bb_job && bb_job->total_size) {
 			/*
-			 * TODO: adjust total size to real size if real size
-			 * returns something different.
+			 * Adjust total size to real size if real size
+			 * returns something bigger.
 			 */
+			if (((uint64_t)real_size) > bb_job->req_size) {
+				info("%pJ total_size increased from %"PRIu64" to %"PRIu64,
+				     job_ptr,
+				     bb_job->req_size, real_size);
+				bb_job->total_size = real_size;
+				bb_limit_rem(stage_in_args->uid,
+					     stage_in_args->bb_size,
+					     stage_in_args->pool, &bb_state);
+				/* Restore limit based upon actual size. */
+				bb_limit_add(stage_in_args->uid,
+					     bb_job->total_size,
+					     stage_in_args->pool, &bb_state,
+					     true);
+			}
 			bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
 			if (bb_alloc) {
+				if (bb_alloc->size != bb_job->total_size) {
+					/*
+					 * bb_alloc is state saved, so we need
+					 * to update bb_alloc in case slurmctld
+					 * restarts.
+					 */
+					bb_alloc->size = bb_job->total_size;
+					bb_state.last_update_time = time(NULL);
+				}
 				bb_alloc->state = BB_STATE_STAGED_IN;
 				bb_alloc->state_time = time(NULL);
 				log_flag(BURST_BUF, "Setup/stage-in complete for %pJ",
