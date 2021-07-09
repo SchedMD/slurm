@@ -171,7 +171,7 @@ static int io_init_msg_pack(struct slurm_io_init_msg *hdr, buf_t *buffer)
 		pack32(hdr->nodeid, buffer);
 		pack32(hdr->stdout_objs, buffer);
 		pack32(hdr->stderr_objs, buffer);
-		packmem((char *) hdr->io_key, hdr->io_key_len, buffer);
+		packmem(hdr->io_key, hdr->io_key_len, buffer);
 
 		tail_offset = get_buf_offset(buffer);
 		len = tail_offset - top_offset - sizeof(len);
@@ -184,12 +184,11 @@ static int io_init_msg_pack(struct slurm_io_init_msg *hdr, buf_t *buffer)
 		pack32(hdr->stdout_objs, buffer);
 		pack32(hdr->stderr_objs, buffer);
 		if (hdr->io_key_len >= SLURM_IO_KEY_SIZE) {
-			packmem((char *) hdr->io_key,
-				(uint32_t) SLURM_IO_KEY_SIZE, buffer);
+			packmem(hdr->io_key, SLURM_IO_KEY_SIZE, buffer);
 		} else {
 			char tmp_key[SLURM_IO_KEY_SIZE] = { 0 };
 			memcpy(tmp_key, hdr->io_key, hdr->io_key_len);
-			packmem(tmp_key, (uint32_t) SLURM_IO_KEY_SIZE, buffer);
+			packmem(tmp_key, SLURM_IO_KEY_SIZE, buffer);
 		}
 	} else {
 		error("Invalid IO init header version");
