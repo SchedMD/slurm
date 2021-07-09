@@ -87,6 +87,7 @@ static int    dbd_sigarray[] = {	/* blocked signals for this process */
 	SIGPIPE, SIGALRM, SIGABRT, SIGHUP, 0 };
 static int    debug_level = 0;		/* incremented for -v on command line */
 static int    foreground = 0;		/* run process as a daemon */
+static int    setwd = 0;		/* change working directory -s  */
 static log_options_t log_opts = 	/* Log to stderr & syslog */
 	LOG_OPTS_INITIALIZER;
 static int	 new_nice = 0;
@@ -164,7 +165,7 @@ int main(int argc, char **argv)
 	}
 
 	_become_slurm_user();
-	if (foreground == 0)
+	if (foreground == 0 || setwd)
 		_set_work_dir();
 	log_config();
 	init_dbd_stats();
@@ -461,7 +462,7 @@ static void _parse_commandline(int argc, char **argv)
 	char *tmp_char;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "Dhn:R::vV")) != -1)
+	while ((c = getopt(argc, argv, "Dhn:R::svV")) != -1)
 		switch (c) {
 		case 'D':
 			foreground = 1;
@@ -486,6 +487,9 @@ static void _parse_commandline(int argc, char **argv)
 				lft_rgt_list = list_create(xfree_ptr);
 				slurm_addto_char_list(lft_rgt_list, optarg);
 			}
+			break;
+		case 's':
+			setwd = 1;
 			break;
 		case 'v':
 			debug_level++;
@@ -517,6 +521,8 @@ static void _usage(char *prog_name)
 		"\n\t\tLft and rgt values are used to distinguish "
 		"\n\t\thierarical groups in the slurm accounting database.  "
 		"\n\t\tThis option should be very rarely used.\n");
+	fprintf(stderr, "  -s         \t"
+		"Change working directory to LogFile dirname or /var/tmp/.\n");
 	fprintf(stderr, "  -v         \t"
 		"Verbose mode. Multiple -v's increase verbosity.\n");
 	fprintf(stderr, "  -V         \t"

@@ -128,6 +128,7 @@
 				 * 1 = recover saved job state,
 				 *     node DOWN/DRAIN state & reason information
 				 * 2 = recover state saved from last shutdown */
+#define DEFAULT_SETWD     0
 #define MIN_CHECKIN_TIME  3	/* Nodes have this number of seconds to
 				 * check-in before we ping them */
 #define SHUTDOWN_WAIT     2	/* Time to wait for backup server shutdown */
@@ -200,6 +201,7 @@ static int	bu_thread_cnt = 0;
 static pthread_cond_t bu_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t bu_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int	daemonize = DEFAULT_DAEMONIZE;
+static int	setwd = DEFAULT_SETWD;
 static int	debug_level = 0;
 static char *	debug_logfile = NULL;
 static bool	dump_core = false;
@@ -369,7 +371,7 @@ int main(int argc, char **argv)
 	if (create_clustername_file)
 		_create_clustername_file();
 
-	if (daemonize)
+	if (daemonize || setwd)
 		_set_work_dir();
 
 	if (stat(slurm_conf.mail_prog, &stat_buf) != 0) {
@@ -2576,7 +2578,7 @@ static void _parse_commandline(int argc, char **argv)
 	char *tmp_char;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "cdDf:hiL:n:rRvV")) != -1) {
+	while ((c = getopt(argc, argv, "cdDf:hiL:n:rRsvV")) != -1) {
 		switch (c) {
 		case 'c':
 			recover = 0;
@@ -2615,6 +2617,9 @@ static void _parse_commandline(int argc, char **argv)
 			break;
 		case 'R':
 			recover = 2;
+			break;
+		case 's':
+			setwd = 1;
 			break;
 		case 'v':
 			debug_level++;
@@ -2669,6 +2674,8 @@ static void _usage(char *prog_name)
 	fprintf(stderr, "  -R      "
 			"\tRecover full state from last checkpoint.\n");
 #endif
+	fprintf(stderr, "  -s      "
+			"\tChange working directory to SlurmctldLogFile/StateSaveLocation.\n");
 	fprintf(stderr, "  -v      "
 			"\tVerbose mode. Multiple -v's increase verbosity.\n");
 	fprintf(stderr, "  -V      "

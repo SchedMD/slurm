@@ -1272,6 +1272,7 @@ _init_conf(void)
 	conf->log_opts    = lopts;
 	conf->debug_level = LOG_LEVEL_INFO;
 	conf->spooldir	  = xstrdup(DEFAULT_SPOOLDIR);
+	conf->setwd	  = false;
 	conf->print_gres   = false;
 	conf->dynamic = false;
 
@@ -1392,7 +1393,7 @@ static void _print_gres(void)
 static void
 _process_cmdline(int ac, char **av)
 {
-	static char *opt_string = "bcCd:Df:F::GhL:Mn:N:vV";
+	static char *opt_string = "bcCd:Df:F::GhL:Mn:N:svV";
 	int c;
 	char *tmp_char;
 
@@ -1460,6 +1461,9 @@ _process_cmdline(int ac, char **av)
 		case 'N':
 			xfree(conf->node_name);
 			conf->node_name = xstrdup(optarg);
+			break;
+		case 's':
+			conf->setwd = true;
 			break;
 		case 'v':
 			conf->debug_level++;
@@ -1829,7 +1833,7 @@ _slurmd_init(void)
 		_stepd_cleanup_batch_dirs(conf->spooldir, conf->node_name);
 	}
 
-	if (conf->daemonize) {
+	if (conf->daemonize || conf->setwd) {
 		if (_set_work_dir() != SLURM_SUCCESS)
 			return SLURM_ERROR;
 	}
@@ -2050,6 +2054,7 @@ Usage: %s [OPTIONS]\n\
    -M                         Use mlock() to lock slurmd pages into memory.\n\
    -n value                   Run the daemon at the specified nice value.\n\
    -N node                    Run the daemon for specified nodename.\n\
+   -s                         Change working directory to SlurmdLogFile/SlurmdSpoolDir.\n\
    -v                         Verbose mode. Multiple -v's increase verbosity.\n\
    -V                         Print version information and exit.\n",
 		conf->prog);
