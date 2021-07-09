@@ -867,8 +867,6 @@ static int _load_pools(uint32_t timeout)
 	pools_bitmap = bit_alloc(bb_state.bb_config.pool_cnt + num_pools);
 	slurm_mutex_lock(&bb_state.bb_mutex);
 
-	/* TODO: Set default pool. */
-
 	/* Put found pools into bb_state.bb_config.pool_ptr. */
 	for (i = 0; i < num_pools; i++) {
 		bool found_pool = false;
@@ -1241,20 +1239,16 @@ static int _xlate_batch(job_desc_msg_t *job_desc)
 }
 
 /*
- * Given a request size and a pool name (or NULL name for default pool),
- * return the required buffer size (rounded up by granularity)
+ * Given a request size and a pool name, return the required buffer size
+ * (rounded up by granularity). If no pool name is given then return 0.
  */
 static uint64_t _set_granularity(uint64_t orig_size, char *bb_pool)
 {
 	burst_buffer_pool_t *pool_ptr;
-	uint64_t new_size;
 	int i;
 
-	if (!bb_pool || !xstrcmp(bb_pool, bb_state.bb_config.default_pool)) {
-		new_size = bb_granularity(orig_size,
-					  bb_state.bb_config.granularity);
-		return new_size;
-	}
+	if (!bb_pool)
+		return 0;
 
 	for (i = 0, pool_ptr = bb_state.bb_config.pool_ptr;
 	     i < bb_state.bb_config.pool_cnt; i++, pool_ptr++) {
@@ -1270,9 +1264,7 @@ static uint64_t _set_granularity(uint64_t orig_size, char *bb_pool)
 				      __func__, pool_ptr->name);
 				pool_ptr->granularity = 1;
 			}
-			new_size = bb_granularity(orig_size,
-						  pool_ptr->granularity);
-			return new_size;
+			return bb_granularity(orig_size, pool_ptr->granularity);
 		}
 	}
 	debug("Could not find pool %s", bb_pool);
@@ -1438,8 +1430,10 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 				if (sub_tok)
 					sub_tok[0] = '\0';
 			} else {
-				bb_job->job_pool = xstrdup(
-					bb_state.bb_config.default_pool);
+				/* Must specify pool with capacity. */
+				error("%s: Must specify pool with capacity for burst buffer",
+				      __func__);
+				have_bb = false;
 			}
 			tmp_cnt = _set_granularity(tmp_cnt, bb_job->job_pool);
 			bb_job->req_size += tmp_cnt;
@@ -1498,6 +1492,11 @@ static void _test_config(void)
 		directive_str = bb_state.bb_config.directive_str;
 	else
 		directive_str = DEFAULT_DIRECTIVE_STR;
+	if (bb_state.bb_config.default_pool) {
+		error("%s: found DefaultPool=%s, but DefaultPool is unused for this plugin, unsetting",
+		      plugin_type, bb_state.bb_config.default_pool);
+		xfree(bb_state.bb_config.default_pool);
+	}
 }
 
 /*
