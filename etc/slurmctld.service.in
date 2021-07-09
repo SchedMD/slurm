@@ -7,7 +7,7 @@ ConditionPathExists=@sysconfdir@/slurm.conf
 [Service]
 Type=simple
 EnvironmentFile=-/etc/sysconfig/slurmctld
-ExecStart=@sbindir@/slurmctld -D $SLURMCTLD_OPTIONS
+ExecStart=@sbindir@/slurmctld -D -s $SLURMCTLD_OPTIONS
 ExecReload=/bin/kill -HUP $MAINPID
 LimitNOFILE=65536
 @SYSTEMD_TASKSMAX_OPTION@

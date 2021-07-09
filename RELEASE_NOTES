@@ -115,6 +115,9 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Added Script DebugFlags for debugging slurmscriptd (the process that runs
     slurmctld scripts such as PrologSlurmctld and EpilogSlurmctld).
  -- Rename SbcastParameters to BcastParameters.
+ -- systemd service files - add new '-s' option to each daemon which will
+    change the working directory even with the -D option. (Ensures any core
+    files are placed in an accessible location, rather than /.)
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
