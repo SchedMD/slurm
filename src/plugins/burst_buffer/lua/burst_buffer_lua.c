@@ -1271,14 +1271,43 @@ static uint64_t _set_granularity(uint64_t orig_size, char *bb_pool)
 	return orig_size;
 }
 
+/*
+ * IN tok - a line in a burst buffer specification containing "capacity="
+ * IN capacity_ptr - pointer to the first character after "capacity=" within tok
+ * OUT pool - return a malloc'd string of the pool name, caller is responsible
+ *            to free
+ * OUT size - return the number specified after "capacity="
+ */
+static int _parse_capacity(char *tok, char *capacity_ptr, char **pool,
+			   uint64_t *size)
+{
+	char *sub_tok;
+
+	xassert(size);
+	xassert(pool);
+
+	*size = bb_get_size_num(capacity_ptr, 1);
+	if ((sub_tok = strstr(tok, "pool="))) {
+		*pool = xstrdup(sub_tok + 5);
+		sub_tok = strchr(*pool, ' ');
+		if (sub_tok)
+			sub_tok[0] = '\0';
+	} else {
+		error("%s: Must specify pool with capacity for burst buffer",
+		      plugin_type);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /* Perform basic burst_buffer option validation */
 static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 			  uid_t submit_uid)
 {
 	char *bb_script, *save_ptr = NULL;
-	char *bb_pool, *capacity;
-	char *sub_tok, *tok;
-	uint64_t tmp_cnt;
+	char *capacity;
+	char *tok;
 	int rc = SLURM_SUCCESS;
 	int directive_len;
 	bool have_bb = false;
@@ -1330,23 +1359,24 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 		while (isspace(tok[0]))
 			tok++;
 		if ((capacity = strstr(tok, "capacity="))) {
-			char *num_ptr = capacity + 9;
+			char *tmp_pool = NULL;
+			uint64_t tmp_cnt = 0;
 
-			bb_pool = NULL;
-			tmp_cnt = bb_get_size_num(num_ptr, 1);
-			if (tmp_cnt == 0) {
+			if ((rc = _parse_capacity(tok, capacity + 9, &tmp_pool,
+						  &tmp_cnt) != SLURM_SUCCESS)) {
+				have_bb = false;
+			} else if (tmp_cnt == 0) {
+				error("%s: Invalid capacity (must be greater than 0) in burst buffer line:%s",
+				      plugin_type, tok);
 				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+			} else if (!bb_valid_pool_test(&bb_state, tmp_pool)) {
+				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
+			} else
+				*bb_size += _set_granularity(tmp_cnt, tmp_pool);
+
+			xfree(tmp_pool);
+			if (rc != SLURM_SUCCESS)
 				break;
-			}
-			if ((sub_tok = strstr(tok, "pool="))) {
-				bb_pool = xstrdup(sub_tok + 5);
-				if ((sub_tok = strchr(bb_pool, ' ')))
-					sub_tok[0] = '\0';
-			}
-			if (!bb_valid_pool_test(&bb_state, bb_pool))
-				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
-			*bb_size += _set_granularity(tmp_cnt, bb_pool);
-			xfree(bb_pool);
 		}
 		tok = strtok_r(NULL, "\n", &save_ptr);
 	}
@@ -1363,7 +1393,6 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 	char *bb_specs;
 	char *save_ptr = NULL, *sub_tok, *tok;
 	bool have_bb = false;
-	uint64_t tmp_cnt;
 	uint16_t new_bb_state;
 	int directive_len;
 	bb_job_t *bb_job;
@@ -1415,19 +1444,17 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 			tok++;
 
 		if ((sub_tok = strstr(tok, "capacity="))) {
-			tmp_cnt = bb_get_size_num(sub_tok + 9, 1);
-			if ((sub_tok = strstr(tok, "pool"))) {
-				xfree(bb_job->job_pool);
-				bb_job->job_pool = xstrdup(sub_tok + 5);
-				sub_tok = strchr(bb_job->job_pool, ' ');
-				if (sub_tok)
-					sub_tok[0] = '\0';
-			} else {
-				/* Must specify pool with capacity. */
-				error("%s: Must specify pool with capacity for burst buffer",
-				      __func__);
+			char *tmp_pool = NULL;
+			uint64_t tmp_cnt = 0;
+
+			if (_parse_capacity(tok, sub_tok + 9, &tmp_pool,
+					    &tmp_cnt) != SLURM_SUCCESS) {
 				have_bb = false;
+				xfree(tmp_pool);
+				break;
 			}
+			xfree(bb_job->job_pool);
+			bb_job->job_pool = tmp_pool;
 			tmp_cnt = _set_granularity(tmp_cnt, bb_job->job_pool);
 			bb_job->req_size += tmp_cnt;
 			bb_job->total_size += tmp_cnt;
