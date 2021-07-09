@@ -76,13 +76,51 @@ strong_alias(job_share_string, slurm_job_share_string);
 strong_alias(job_state_string, slurm_job_state_string);
 strong_alias(job_state_string_compact, slurm_job_state_string_compact);
 strong_alias(job_state_num, slurm_job_state_num);
+strong_alias(valid_base_state, slurm_valid_base_state);
+strong_alias(node_state_base_string, slurm_node_state_base_string);
+strong_alias(node_state_flag_string, slurm_node_state_flag_string);
+strong_alias(node_state_flag_string_single, slurm_node_state_flag_string_single);
 strong_alias(node_state_string, slurm_node_state_string);
 strong_alias(node_state_string_compact, slurm_node_state_string_compact);
+strong_alias(node_state_string_complete, slurm_node_state_string_complete);
 strong_alias(private_data_string, slurm_private_data_string);
 strong_alias(accounting_enforce_string, slurm_accounting_enforce_string);
 strong_alias(cray_nodelist2nids, slurm_cray_nodelist2nids);
 strong_alias(reservation_flags_string, slurm_reservation_flags_string);
 strong_alias(print_multi_line_string, slurm_print_multi_line_string);
+
+typedef struct {
+	uint32_t flag;
+	const char *str;
+} node_state_flags_t;
+
+static const node_state_flags_t node_states[] = {
+	{ NODE_STATE_DOWN, "DOWN" },
+	{ NODE_STATE_IDLE, "IDLE" },
+	{ NODE_STATE_ALLOCATED, "ALLOCATED" },
+	{ NODE_STATE_ERROR, "ERROR" },
+	{ NODE_STATE_MIXED, "MIXED" },
+	{ NODE_STATE_FUTURE, "FUTURE" },
+	{ NODE_STATE_UNKNOWN, "UNKNOWN" },
+};
+
+static const node_state_flags_t node_state_flags[] = {
+	{ NODE_STATE_COMPLETING, "COMPLETING" },
+	{ NODE_STATE_DRAIN, "DRAINING" },
+	{ NODE_STATE_FAIL, "FAILED" },
+	{ NODE_STATE_MAINT, "MAINTENANCE" },
+	{ NODE_STATE_MAN_POWER_DOWN, "MAN_POWER_DOWN" },
+	{ NODE_STATE_MAN_POWER_UP, "MAN_POWER_UP" },
+	{ NODE_STATE_NET, "PERFCTRS" }, /* net performance counters */
+	{ NODE_STATE_REBOOT_REQUESTED, "REBOOT_REQUESTED" },
+	{ NODE_STATE_REBOOT_ISSUED, "REBOOT_ISSUED" },
+	{ NODE_STATE_RES, "RESERVED" },
+	{ NODE_RESUME, "RESUME" },
+	{ NODE_STATE_NO_RESPOND, "NOT_RESPONDING" },
+	{ NODE_STATE_POWER_UP, "POWERING_UP" },
+	{ NODE_STATE_POWERING_DOWN, "POWERING_DOWN" },
+};
+
 
 static void _free_all_front_end_info(front_end_info_msg_t *msg);
 
@@ -3493,6 +3531,72 @@ extern uint16_t bb_state_num(char *tok)
 	if (!xstrcasecmp(tok, "complete"))
 		return BB_STATE_COMPLETE;
 	return 0;
+}
+
+extern bool valid_base_state(uint32_t state)
+{
+	for (int i = 0; i < ARRAY_SIZE(node_states); i++) {
+		if (node_states[i].flag == (state & NODE_STATE_BASE))
+			return true;
+	}
+	return false;
+}
+
+extern const char *node_state_base_string(uint32_t state)
+{
+	state &= NODE_STATE_BASE;
+
+	for (int i = 0; i < ARRAY_SIZE(node_states); i++)
+		if (node_states[i].flag == state)
+			return node_states[i].str;
+
+	return "INVALID";
+}
+
+extern const char *node_state_flag_string_single(uint32_t *state)
+{
+	uint32_t flags = *state & NODE_STATE_FLAGS;
+
+	if (!flags)
+		return NULL;
+
+	for (int i = 0; i < ARRAY_SIZE(node_state_flags); i++) {
+		if (flags & node_state_flags[i].flag) {
+			*state &= ~node_state_flags[i].flag;
+			return node_state_flags[i].str;
+		}
+	}
+	/*
+	 * clear lowest flag bit, in order to guarantee that flags goes to 0 on
+	 * repeated calls. Any uncaught flags are unknown here.
+	 */
+	*state &= ~(flags & -flags);
+	return "?";
+}
+
+extern char *node_state_flag_string(uint32_t state)
+{
+	uint32_t flags = state & NODE_STATE_FLAGS;
+	const char *flag_str = NULL;
+	char *state_str = NULL;
+
+	while ((flag_str = node_state_flag_string_single(&flags))) {
+		xstrfmtcat(state_str, "+%s", flag_str);
+	}
+	return state_str;
+}
+
+extern char *node_state_string_complete(uint32_t state)
+{
+	char *state_str = NULL, *flags_str = NULL;
+
+	state_str = xstrdup(node_state_base_string(state));
+	if ((flags_str = node_state_flag_string(state))) {
+		xstrcat(state_str, flags_str);
+		xfree(flags_str);
+	}
+
+	return state_str;
 }
 
 extern char *node_state_string(uint32_t inx)

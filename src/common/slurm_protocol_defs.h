@@ -1616,8 +1616,34 @@ extern char *job_state_string_compact(uint32_t inx);
 /* Caller must xfree() the return value */
 extern char *job_state_string_complete(uint32_t state);
 extern uint32_t job_state_num(const char *state_name);
+/*
+ * Returns true is the node's base state is a known base state.
+ */
+extern bool valid_base_state(uint32_t state);
+/*
+ * Return the string representing a given node base state.
+ */
+extern const char *node_state_base_string(uint32_t state);
+/*
+ * Return the string representing a single node state flag.
+ *
+ * Clears the flag bit in the passed state variable.
+ */
+extern const char *node_state_flag_string_single(uint32_t *state);
+/*
+ * Return + separated string of node state flags.
+ *
+ * Caller must xfree() the return value.
+ */
+extern char *node_state_flag_string(uint32_t state);
 extern char *node_state_string(uint32_t inx);
 extern char *node_state_string_compact(uint32_t inx);
+/*
+ * Return node base state + flags strings.
+ *
+ * Caller must xfree() the return value.
+ */
+extern char *node_state_string_complete(uint32_t inx);
 
 extern uint16_t power_flags_id(const char *power_flags);
 extern char    *power_flags_str(uint16_t power_flags);
