@@ -39,7 +39,7 @@
 /*
  * Returns the path to the cgroup.procs file over which we have permissions
  * defined by check_mode. This path is where we'll be able to read or write
- * pids. If there are no paths available with these permisisons, return NULL,
+ * pids. If there are no paths available with these permissions, return NULL,
  * which means the cgroup doesn't exist or we do not have permissions to modify
  * the cg.
  */
