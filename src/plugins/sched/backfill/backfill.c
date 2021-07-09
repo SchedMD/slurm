@@ -112,6 +112,7 @@
 #define MAX_BF_JOB_PART_COUNT_RESERVE  100000
 #define MAX_BF_MAX_JOB_ARRAY_RESV      1000
 #define MAX_BF_MAX_JOB_START           10000
+#define DEF_BF_MAX_JOB_TEST            500
 #define MAX_BF_MAX_JOB_TEST            1000000
 #define MAX_BF_MAX_TIME                3600
 #define MAX_BF_MIN_AGE_RESERVE         (30 * 24 * 60 * 60) /* 30 days */
@@ -197,7 +198,7 @@ static bool bf_hetjob_immediate = false;
 static uint16_t bf_hetjob_prio = 0;
 static bool bf_one_resv_per_job = false;
 static uint32_t job_start_cnt = 0;
-static int max_backfill_job_cnt = 100;
+static int max_backfill_job_cnt = DEF_BF_MAX_JOB_TEST;
 static int max_backfill_job_per_assoc = 0;
 static int max_backfill_job_per_part = 0;
 static int max_backfill_job_per_user = 0;
@@ -718,13 +719,13 @@ static void _load_config(void)
 		fatal("Invalid parameter max_job_bf. The option is no longer supported, please use bf_max_job_test instead.");
 	}
 	else
-		max_backfill_job_cnt = 100;
+		max_backfill_job_cnt = DEF_BF_MAX_JOB_TEST;
 
 	if (max_backfill_job_cnt < 1 ||
 	    max_backfill_job_cnt > MAX_BF_MAX_JOB_TEST) {
 		error("Invalid SchedulerParameters bf_max_job_test: %d",
 		      max_backfill_job_cnt);
-		max_backfill_job_cnt = 100;
+		max_backfill_job_cnt = DEF_BF_MAX_JOB_TEST;
 	}
 
 	if ((tmp_ptr = xstrcasestr(sched_params, "bf_node_space_size=")))
