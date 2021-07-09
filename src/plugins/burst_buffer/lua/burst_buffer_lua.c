@@ -1960,12 +1960,15 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 	}
 	bb_job = _get_bb_job(job_ptr);
 	if (bb_job == NULL) {
+		/* No burst buffer specification */
 		slurm_mutex_unlock(&bb_state.bb_mutex);
-		if (job_ptr->details->min_nodes == 0)
-			rc = ESLURM_INVALID_NODE_COUNT;
-		return rc;
+		return SLURM_SUCCESS;
 	}
-	if ((job_ptr->details->min_nodes == 0) && bb_job->use_job_buf) {
+	if (job_ptr->details->min_nodes == 0) {
+		/*
+		 * Since persistent burst buffers aren't allowed in this
+		 * plugin, 0-node jobs are never allowed to have burst buffers.
+		 */
 		slurm_mutex_unlock(&bb_state.bb_mutex);
 		return ESLURM_INVALID_BURST_BUFFER_REQUEST;
 	}
@@ -3050,8 +3053,7 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	    (job_ptr->burst_buffer[0] == '\0'))
 		return SLURM_SUCCESS;
 
-	if (((!job_ptr->job_resrcs || !job_ptr->job_resrcs->nodes)) &&
-	    (job_ptr->details->min_nodes != 0)) {
+	if (!job_ptr->job_resrcs || !job_ptr->job_resrcs->nodes) {
 		error("%pJ lacks node allocation",
 		      job_ptr);
 		return SLURM_ERROR;
