@@ -67,6 +67,11 @@ HIGHLIGHTS
     network to ensure DNS and other services are available.
  -- Add "Extra" field to node to store extra information other than a comment.
  -- Add ResumeTimeout, SuspendTimeout and SuspendTime to Partitions.
+ -- The memory.force_empty parameters is no longer set by jobacct_gather/cgroup
+    when deleting the cgroup. This previously caused a significant delay (~2s)
+    when terminating a job, and is not believed to have provided any perceivable
+    benefit. However, this may lead to slightly higher reported kernel mem page
+    cache usage since the kernel cgroup memory is no longer freed immediately.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
