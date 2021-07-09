@@ -9958,6 +9958,15 @@ static int _build_allowed_parts(_foreach_pack_job_info_t *pack_info)
 	part_record_t **part_ptr_save = pack_info->allowed_parts;
 	list_for_each(part_list, _foreach_add_visible_part, pack_info);
 	pack_info->allowed_parts = part_ptr_save;
+	if (get_log_level() >= LOG_LEVEL_DEBUG3) {
+		char *tmp_str = NULL;
+		for (int i = 0; pack_info->allowed_parts[i]; i++)
+			xstrfmtcat(tmp_str, "%s%s", tmp_str ? "," : "",
+				   pack_info->allowed_parts[i]->name);
+		debug3("%s: uid:%d allowed_parts:%s", __func__, pack_info->uid,
+		       tmp_str);
+		xfree(tmp_str);
+	}
 
 	return SLURM_SUCCESS;
 }
