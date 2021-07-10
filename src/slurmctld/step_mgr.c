@@ -222,9 +222,6 @@ static int _purge_duplicate_steps(void *x, void *arg)
 		return 1;
 	}
 
-	if (step_specs->step_id.step_id == NO_VAL)
-		return 0;
-
 	/*
 	 * See if we have the same step id.  If we do check to see if we
 	 * have the same step_het_comp or if the step's is NO_VAL,
@@ -2315,9 +2312,12 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	if (step_specs->user_id != job_ptr->user_id)
 		return ESLURM_ACCESS_DENIED ;
 
-	if (list_delete_first(job_ptr->step_list, _purge_duplicate_steps,
-			      step_specs) < 0)
-		return ESLURM_DUPLICATE_STEP_ID;
+	if (step_specs->step_id.step_id != NO_VAL) {
+		if (list_delete_first(job_ptr->step_list,
+				      _purge_duplicate_steps,
+				      step_specs) < 0)
+			return ESLURM_DUPLICATE_STEP_ID;
+	}
 
 	if ((job_ptr->details == NULL) || IS_JOB_SUSPENDED(job_ptr))
 		return ESLURM_DISABLED;
