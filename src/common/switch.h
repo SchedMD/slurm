@@ -172,24 +172,6 @@ extern int switch_g_job_step_complete(dynamic_plugin_data_t *jobinfo,
 	char *nodelist);
 
 /*
- * Note that the job step has completed execution on the specified
- * nodelist. The job step is not necessarily completed on all
- * nodes, but switch resources associated with it on the specified
- * nodes are no longer in use.
- */
-extern int switch_g_job_step_part_comp(dynamic_plugin_data_t *jobinfo,
-	char *nodelist);
-
-/*
- * Return true if the switch plugin processes partial job step
- * completion calls (i.e. switch_g_job_step_part_comp). Support
- * of partition completions is compute intensive, so it should
- * be avoided unless switch resources are in short supply (e.g.
- * switch/nrt). Otherwise return false.
- */
-extern bool switch_g_part_comp(void);
-
-/*
  * Restore the switch allocation information "jobinfo" for an already
  * allocated job step, most likely to restore the switch information
  * after a call to switch_g_clear().

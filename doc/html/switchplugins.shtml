@@ -287,30 +287,6 @@ node ranges. (e.g. "linux[1-20]" or "linux[2,4,6,8]").</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-<p class="commandline">int switch_p_job_step_part_comp (switch_jobinfo_t switch_job,
-char *nodelist);</p>
-<p style="margin-left:.2in"><b>Description</b>: Note that the job step has completed
-execution on the specified node list. The job step is not necessarily completed on all
-nodes, but switch resources associated with it on the specified nodes are no longer
-in use.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> switch_job</span> &nbsp;&nbsp;&nbsp;(input)
-The completed job's switch credential.<br>
-<span class="commandline"> nodelist</span>&nbsp; &nbsp;&nbsp;(input) A list of nodes
-on which the job step has completed. This may contain expressions to specify node ranges.
-(e.g. "linux[1-20]" or "linux[2,4,6,8]").</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR and set the errno to an appropriate value
-to indicate the reason for failure.</p>
-
-<p class="commandline">bool switch_p_part_comp (void);</p>
-<p style="margin-left:.2in"><b>Description</b>: Indicate if the switch plugin should
-process partial job step completions (i.e. switch_g_job_step_part_comp). Support
-of partition completions is compute intensive, so it should be avoided unless switch
-resources are in short supply (e.g. former switch/nrt).</p>
-<p style="margin-left:.2in"><b>Returns</b>: True if partition step completions are
-to be recorded. False if only full job step completions are to be noted.</p>
-
 <p class="commandline">void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t switch_job);</p>
 <p style="margin-left:.2in"><b>Description</b>: Print the contents of a job's
 switch credential to a file.</p>
@@ -584,6 +560,6 @@ structure representing the slurmstepd's view of the job step.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if the job step has been resumed and SLURM_ERROR otherwise.</p>
 
 
-<p style="text-align:center;">Last modified 7 March 2019</p>
+<p style="text-align:center;">Last modified 10 July 2021</p>
 
 <!--#include virtual="footer.txt"-->

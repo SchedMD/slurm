@@ -919,17 +919,6 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 	return SLURM_SUCCESS;
 }
 
-extern int switch_p_job_step_part_comp(switch_jobinfo_t *jobinfo,
-				       char *nodelist)
-{
-	return SLURM_SUCCESS;
-}
-
-extern bool switch_p_part_comp(void)
-{
-	return false;
-}
-
 extern int switch_p_job_step_allocated(switch_jobinfo_t *jobinfo,
 				       char *nodelist)
 {

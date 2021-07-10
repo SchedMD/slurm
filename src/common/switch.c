@@ -114,9 +114,6 @@ typedef struct slurm_switch_ops {
 	int          (*free_nodeinfo)     ( switch_node_info_t **nodeinfo );
 	int          (*step_complete)     ( switch_jobinfo_t *jobinfo,
 					    char *nodelist );
-	int          (*step_part_comp)    ( switch_jobinfo_t *jobinfo,
-					    char *nodelist );
-	bool         (*part_comp)         ( void );
 	int          (*step_allocated)    ( switch_jobinfo_t *jobinfo,
 					    char *nodelist );
 	int          (*state_clear)       ( void );
@@ -168,8 +165,6 @@ static const char *syms[] = {
 	"switch_p_unpack_node_info",
 	"switch_p_free_node_info",
 	"switch_p_job_step_complete",
-	"switch_p_job_step_part_comp",
-	"switch_p_part_comp",
 	"switch_p_job_step_allocated",
 	"switch_p_libstate_clear",
 	"switch_p_slurmctld_init",
@@ -771,33 +766,6 @@ extern int switch_g_job_step_complete(dynamic_plugin_data_t *jobinfo,
 
 	return (*(ops[plugin_id].step_complete))(data, nodelist);
 }
-
-extern int switch_g_job_step_part_comp(dynamic_plugin_data_t *jobinfo,
-				       char *nodelist)
-{
-	void *data = NULL;
-	uint32_t plugin_id;
-
-	if ( switch_init(0) < 0 )
-		return SLURM_ERROR;
-
-	if (jobinfo) {
-		data      = jobinfo->data;
-		plugin_id = jobinfo->plugin_id;
-	} else
-		plugin_id = switch_context_default;
-
-	return (*(ops[plugin_id].step_part_comp))(data, nodelist);
-}
-
-extern bool switch_g_part_comp(void)
-{
-	if ( switch_init(0) < 0 )
-		return false;
-
-	return (*(ops[switch_context_default].part_comp))( );
-}
-
 
 extern int switch_g_job_step_allocated(dynamic_plugin_data_t *jobinfo,
 				       char *nodelist)
