@@ -19,15 +19,15 @@ AC_DEFUN([X_AC_SELINUX],
     [selinux],
     AS_HELP_STRING(--enable-selinux, enable internal X11 support),
     [ case "$enableval" in
-        yes) x_ac_x11=yes ;;
-         no) x_ac_x11=no ;;
+        yes) x_ac_selinux=yes ;;
+         no) x_ac_selinux=no ;;
           *) AC_MSG_RESULT([doh!])
              AC_MSG_ERROR([bad value "$enableval" for --enable-selinux])
       esac
     ]
   )
   AC_MSG_RESULT([$x_ac_selinux])
-  if test "$x_ac_selinux" != no; then
+  if test "$x_ac_selinux" = yes; then
     AC_DEFINE(WITH_SELINUX, 1, [Using internal Slurm SELinux support])
     PKG_CHECK_MODULES([libselinux], [libselinux], ,
       [AC_MSG_ERROR(cannot locate libselinux)])
