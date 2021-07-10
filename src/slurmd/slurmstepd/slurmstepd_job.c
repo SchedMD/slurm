@@ -268,6 +268,9 @@ static void _slurm_cred_to_step_rec(slurm_cred_t *cred, stepd_step_rec_t *job)
 	job->gr_names = cred_arg.gr_names;
 	cred_arg.gr_names = NULL;
 
+	job->selinux_context = cred_arg.selinux_context;
+	cred_arg.selinux_context = NULL;
+
 	slurm_cred_free_args(&cred_arg);
 }
 

@@ -70,6 +70,10 @@
 #  endif
 #endif
 
+#ifdef WITH_SELINUX
+#include <selinux/selinux.h>
+#endif
+
 #include "slurm/slurm_errno.h"
 
 #include "src/common/cbuf.h"
@@ -2819,6 +2823,19 @@ _run_script_as_user(const char *name, const char *path, stepd_step_rec_t *job,
 
 		argv[0] = (char *)xstrdup(path);
 		argv[1] = NULL;
+
+#ifdef WITH_SELINUX
+		if (setexeccon(job->selinux_context)) {
+			error("Failed to set SELinux context to %s: %m",
+			      job->selinux_context);
+			_exit(1);
+		}
+#else
+		if (job->selinux_context) {
+			error("Built without SELinux support but context was specified");
+			_exit(1);
+		}
+#endif
 
 		sprivs.gid_list = NULL;	/* initialize to prevent xfree */
 		if (_drop_privileges(job, true, &sprivs, false) < 0) {

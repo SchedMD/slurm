@@ -248,6 +248,8 @@ typedef struct {
 	char *x11_target;		/* remote target. unix socket if port == 0 */
 	uint16_t x11_target_port;	/* remote x11 port to connect back to */
 	char *x11_xauthority;		/* temporary XAUTHORITY location, or NULL */
+
+	char *selinux_context;
 } stepd_step_rec_t;
 
 
