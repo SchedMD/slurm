@@ -3814,34 +3814,32 @@ extern int step_epilog_complete(job_record_t *job_ptr, char *node_name)
 	return rc;
 }
 
-static void _suspend_job_step(job_record_t *job_ptr, step_record_t *step_ptr,
-			      time_t now)
+static int _suspend_job_step(void *x, void *arg)
 {
-	if ((job_ptr->suspend_time)
-	&&  (job_ptr->suspend_time > step_ptr->start_time)) {
+	step_record_t *step_ptr = (step_record_t *) x;
+	job_record_t *job_ptr = step_ptr->job_ptr;
+	time_t *now = (time_t *) arg;
+
+	if (step_ptr->state != JOB_RUNNING)
+		return 0;
+
+	if ((job_ptr->suspend_time) &&
+	    (job_ptr->suspend_time > step_ptr->start_time)) {
 		step_ptr->pre_sus_time +=
-			difftime(now, job_ptr->suspend_time);
+			difftime(*now, job_ptr->suspend_time);
 	} else {
 		step_ptr->pre_sus_time +=
-			difftime(now, step_ptr->start_time);
+			difftime(*now, step_ptr->start_time);
 	}
 
+	return 0;
 }
 
 /* Update time stamps for job step suspend */
 extern void suspend_job_step(job_record_t *job_ptr)
 {
 	time_t now = time(NULL);
-	ListIterator step_iterator;
-	step_record_t *step_ptr;
-
-	step_iterator = list_iterator_create (job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator))) {
-		if (step_ptr->state != JOB_RUNNING)
-			continue;
-		_suspend_job_step(job_ptr, step_ptr, now);
-	}
-	list_iterator_destroy (step_iterator);
+	list_for_each(job_ptr->step_list, _suspend_job_step, &now);
 }
 
 static void _resume_job_step(job_record_t *job_ptr, step_record_t *step_ptr,
