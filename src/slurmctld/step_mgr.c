@@ -3569,21 +3569,6 @@ no_aggregate:
 			switch_g_free_jobinfo (step_ptr->switch_job);
 			step_ptr->switch_job = NULL;
 		}
-	} else if (switch_g_part_comp() && step_ptr->switch_job) {
-		/* release switch windows on completed nodes,
-		 * must translate range numbers to nodelist */
-		hostlist_t hl;
-		char *node_list;
-
-		hl = _step_range_to_hostlist(step_ptr,
-			req->range_first, req->range_last);
-		node_list = hostlist_ranged_string_xmalloc(hl);
-		debug2("partial switch release for %pS, nodes %s",
-			step_ptr, node_list);
-		switch_g_job_step_part_comp(
-			step_ptr->switch_job, node_list);
-		hostlist_destroy(hl);
-		xfree(node_list);
 	}
 
 	if (max_rc)
