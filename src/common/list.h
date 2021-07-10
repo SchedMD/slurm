@@ -202,6 +202,18 @@ void *list_remove_first(List l, ListFindF f, void *key);
 int list_delete_all(List l, ListFindF f, void *key);
 
 /*
+ *  Traverses list [l] using [f] to match each item with [key].
+ *  Removes the first item from the list for which the function [f] returns
+ *    a positive value; if a deletion function was specified when the list was
+ *    created, it will be called to deallocate each item being removed.
+ *  If [f] returns a negative value, processing is stopped without removing
+ *    any items.
+ *  Returns 0 if no item was found, 1 if an item was removed, -1 if processing
+ *    was stopped.
+ */
+int list_delete_first(List l, ListFindF f, void *key);
+
+/*
  *  Traverses list [l] and deletes 'key' from it.
  *  Removes this ptr from the list; if a deletion function was specified when
  *  the list was created, it will be called to deallocate each item being
