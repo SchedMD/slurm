@@ -894,6 +894,42 @@ static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 	return NULL;
 }
 
+static int _mark_busy_nodes(void *x, void *arg)
+{
+	step_record_t *step_ptr = (step_record_t *) x;
+	bitstr_t *busy = (bitstr_t *) arg;
+
+	if (step_ptr->state < JOB_RUNNING)
+		return 0;
+
+	/*
+	 * Don't consider the batch and extern steps when
+	 * looking for "idle" nodes.
+	 */
+	if ((step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) ||
+	    (step_ptr->step_id.step_id == SLURM_EXTERN_CONT) ||
+	    (step_ptr->step_id.step_id == SLURM_INTERACTIVE_STEP))
+		return 0;
+
+	if (!step_ptr->step_node_bitmap) {
+		error("%s: %pS has no step_node_bitmap",
+		      __func__, step_ptr);
+		return 0;
+	}
+
+	bit_or(busy, step_ptr->step_node_bitmap);
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_STEPS) {
+		char *temp;
+		temp = bitmap2node_name(step_ptr->step_node_bitmap);
+		log_flag(STEPS, "%s: %pS has nodes %s",
+			 __func__, step_ptr, temp);
+		xfree(temp);
+	}
+
+	return 0;
+}
+
 /*
  * _pick_step_nodes - select nodes for a job step that satisfy its requirements
  *	we satisfy the super-set of constraints.
@@ -923,8 +959,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	int cpu_cnt, i, max_rem_nodes;
 	int mem_blocked_nodes = 0, mem_blocked_cpus = 0;
 	int job_blocked_nodes = 0, job_blocked_cpus = 0;
-	ListIterator step_iterator;
-	step_record_t *step_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 	uint32_t *usable_cpu_cnt = NULL;
 	uint64_t gres_cpus;
@@ -1345,37 +1379,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 		FREE_NULL_BITMAP(relative_nodes);
 	} else {
 		nodes_idle = bit_alloc (bit_size (nodes_avail) );
-		step_iterator = list_iterator_create(job_ptr->step_list);
-		while ((step_ptr = list_next(step_iterator))) {
-			if (step_ptr->state < JOB_RUNNING)
-				continue;
-
-			/*
-			 * Don't consider the batch and extern steps when
-			 * looking for "idle" nodes.
-			 */
-			if ((step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) ||
-			    (step_ptr->step_id.step_id == SLURM_EXTERN_CONT) ||
-			    (step_ptr->step_id.step_id == SLURM_INTERACTIVE_STEP))
-				continue;
-
-			if (!step_ptr->step_node_bitmap) {
-				error("%s: %pS has no step_node_bitmap",
-				      __func__, step_ptr);
-				continue;
-			}
-
-			bit_or(nodes_idle, step_ptr->step_node_bitmap);
-			if (slurm_conf.debug_flags & DEBUG_FLAG_STEPS) {
-				char *temp;
-				temp = bitmap2node_name(step_ptr->
-							step_node_bitmap);
-				log_flag(STEPS, "%s: %pS has nodes %s",
-					 __func__,step_ptr, temp);
-				xfree(temp);
-			}
-		}
-		list_iterator_destroy (step_iterator);
+		list_for_each(job_ptr->step_list, _mark_busy_nodes, nodes_idle);
 		bit_not(nodes_idle);
 		bit_and(nodes_idle, nodes_avail);
 	}
