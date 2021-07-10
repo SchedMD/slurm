@@ -110,8 +110,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 				       bitstr_t *nodes_bitmap, int node_cnt,
 				       int cpu_cnt, uint32_t *usable_cpu_cnt);
-static int _purge_duplicate_steps(job_record_t *job_ptr,
-				  job_step_create_request_msg_t *step_specs);
 static hostlist_t _step_range_to_hostlist(step_record_t *step_ptr,
 					  uint32_t range_first,
 					  uint32_t range_last);
@@ -211,43 +209,34 @@ static step_record_t *_create_step_record(job_record_t *job_ptr,
 }
 
 /* Purge any duplicate job steps for this PID */
-static int _purge_duplicate_steps(job_record_t *job_ptr,
-				  job_step_create_request_msg_t *step_specs)
+static int _purge_duplicate_steps(void *x, void *arg)
 {
-	ListIterator step_iterator;
-	step_record_t *step_ptr;
-	int rc = SLURM_SUCCESS;
-	xassert(job_ptr);
+	step_record_t *step_ptr = (step_record_t *) x;
+	job_step_create_request_msg_t *step_specs =
+		(job_step_create_request_msg_t *) arg;
 
-	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator))) {
-		if ((step_ptr->step_id.step_id == SLURM_PENDING_STEP)   &&
-		    (step_ptr->state    == JOB_PENDING)          &&
-		    (step_ptr->srun_pid	== step_specs->srun_pid) &&
-		    (xstrcmp(step_ptr->host, step_specs->host) == 0)) {
-			list_remove (step_iterator);
-			free_step_record(step_ptr);
-			break;
-		}
-
-		if (step_specs->step_id.step_id == NO_VAL)
-			continue;
-
-		/*
-		 * See if we have the same step id.  If we do check to see if we
-		 * have the same step_het_comp or if the step's is NO_VAL,
-		 * meaning this step is not a het step.
-		 */
-		if ((step_specs->step_id.step_id ==
-		     step_ptr->step_id.step_id) &&
-		    ((step_specs->step_id.step_het_comp ==
-		      step_ptr->step_id.step_het_comp) ||
-		     (step_ptr->step_id.step_het_comp == NO_VAL)))
-			rc = ESLURM_DUPLICATE_STEP_ID;
+	if ((step_ptr->step_id.step_id == SLURM_PENDING_STEP) &&
+	    (step_ptr->state == JOB_PENDING) &&
+	    (step_ptr->srun_pid	== step_specs->srun_pid) &&
+	    (!xstrcmp(step_ptr->host, step_specs->host))) {
+		return 1;
 	}
-	list_iterator_destroy(step_iterator);
 
-	return rc;
+	if (step_specs->step_id.step_id == NO_VAL)
+		return 0;
+
+	/*
+	 * See if we have the same step id.  If we do check to see if we
+	 * have the same step_het_comp or if the step's is NO_VAL,
+	 * meaning this step is not a het step.
+	 */
+	if ((step_specs->step_id.step_id == step_ptr->step_id.step_id) &&
+	    ((step_specs->step_id.step_het_comp ==
+		step_ptr->step_id.step_het_comp) ||
+	     (step_ptr->step_id.step_het_comp == NO_VAL)))
+		return -1;
+
+	return 0;
 }
 
 /* The step with a state of PENDING is used as a placeholder for a host and
@@ -2326,9 +2315,9 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	if (step_specs->user_id != job_ptr->user_id)
 		return ESLURM_ACCESS_DENIED ;
 
-	ret_code = _purge_duplicate_steps(job_ptr, step_specs);
-	if (ret_code != SLURM_SUCCESS)
-		return ret_code;
+	if (list_delete_first(job_ptr->step_list, _purge_duplicate_steps,
+			      step_specs) < 0)
+		return ESLURM_DUPLICATE_STEP_ID;
 
 	if ((job_ptr->details == NULL) || IS_JOB_SUSPENDED(job_ptr))
 		return ESLURM_DISABLED;
