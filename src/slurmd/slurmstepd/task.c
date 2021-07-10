@@ -54,6 +54,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#ifdef WITH_SELINUX
+#include <selinux/selinux.h>
+#endif
+
 /* FIXME: Come up with a real solution for EUID instead of substituting RUID */
 #if defined(__NetBSD__)
 #define eaccess(p,m) (access((p),(m)))
@@ -458,6 +462,19 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 		error("Failed to invoke spank plugin stack");
 		_exit(1);
 	}
+
+#ifdef WITH_SELINUX
+	if (setexeccon(job->selinux_context)) {
+		error("Failed to set SELinux context to %s: %m",
+		      job->selinux_context);
+		_exit(1);
+	}
+#else
+	if (job->selinux_context) {
+		error("Built without SELinux support but context was specified");
+		_exit(1);
+	}
+#endif
 
 	if (slurm_conf.task_prolog)
 		_run_script_and_set_env("slurm task_prolog",

@@ -19,7 +19,7 @@ depend_ldflags = $(HWLOC_LDFLAGS)
 
 AM_CPPFLAGS = -I$(top_srcdir) $(HWLOC_CPPFLAGS)
 
-slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) $(DL_LIBS) $(depend_ldadd)
+slurmstepd_LDADD = $(depend_libs) $(LIB_SLURM) $(DL_LIBS) $(depend_ldadd) $(libselinux_LIBS)
 
 slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(depend_ldflags)
 

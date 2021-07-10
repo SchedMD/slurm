@@ -606,6 +606,8 @@ static int _get_job_req_field(const job_desc_msg_t *job_desc, const char *name)
 		lua_pushstring(L, job_desc->qos);
 	} else if (!xstrcmp(name, "reboot")) {
 		lua_pushnumber(L, job_desc->reboot);
+	} else if (!xstrcmp(name, "req_context")) {
+		lua_pushstring(L, job_desc->req_context);
 	} else if (!xstrcmp(name, "req_nodes")) {
 		lua_pushstring(L, job_desc->req_nodes);
 	} else if (!xstrcmp(name, "req_switch")) {
@@ -908,6 +910,11 @@ static int _set_job_req_field(lua_State *L)
 		xfree(job_desc->script);
 		if (strlen(value_str))
 			job_desc->script = xstrdup(value_str);
+	} else if (!xstrcmp(name, "selinux_context")) {
+		value_str = luaL_checkstring(L, 3);
+		xfree(job_desc->selinux_context);
+		if (strlen(value_str))
+			job_desc->selinux_context = xstrdup(value_str);
 	} else if (!xstrcmp(name, "shared") ||
 		   !xstrcmp(name, "oversubscribe")) {
 		job_desc->shared = luaL_checknumber(L, 3);

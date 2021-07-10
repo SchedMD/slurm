@@ -135,6 +135,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_rrdtool.m4 \
 	$(top_srcdir)/auxdir/x_ac_rsmi.m4 \
+	$(top_srcdir)/auxdir/x_ac_selinux.m4 \
 	$(top_srcdir)/auxdir/x_ac_setproctitle.m4 \
 	$(top_srcdir)/auxdir/x_ac_systemd.m4 \
 	$(top_srcdir)/auxdir/x_ac_ucx.m4 \
@@ -151,7 +152,8 @@ CONFIG_CLEAN_VPATH_FILES =
 PROGRAMS = $(noinst_PROGRAMS)
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	cbuf.lo cgroup.lo cli_filter.lo cpu_frequency.lo cron.lo \
 	daemonize.lo data.lo eio.lo env.lo fd.lo fetch_config.lo \
@@ -538,6 +540,8 @@ infodir = @infodir@
 install_sh = @install_sh@
 libdir = @libdir@
 libexecdir = @libexecdir@
+libselinux_CFLAGS = @libselinux_CFLAGS@
+libselinux_LIBS = @libselinux_LIBS@
 localedir = @localedir@
 localstatedir = @localstatedir@
 lua_CFLAGS = @lua_CFLAGS@
@@ -773,7 +777,7 @@ libcommon_la_SOURCES = \
 	xstring.c				\
 	xstring.h
 
-libcommon_la_LIBADD = $(DL_LIBS)
+libcommon_la_LIBADD = $(DL_LIBS) $(libselinux_LIBS)
 libcommon_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
 
 # This was made so we could export all symbols from libcommon

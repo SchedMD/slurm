@@ -173,6 +173,8 @@ typedef struct {
 	List job_gres_list;		/* Generic resources allocated to JOB */
 	uint16_t  x11;			/* x11 flag set on job */
 
+	char *selinux_context;
+
 	/* STEP specific info */
 	bitstr_t *step_core_bitmap;	/* cores allocated to STEP */
 	char     *step_hostlist;	/* list of nodes allocated to STEP */

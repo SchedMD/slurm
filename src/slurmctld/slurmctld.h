@@ -590,6 +590,7 @@ struct job_details {
 	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */
 	time_t preempt_start_time;	/* time that preeption began to start
 					 * this job */
+	char *req_context;		/* requested SELinux context */
 	char *req_nodes;		/* required nodes */
 	uint16_t requeue;		/* controls ability requeue job */
 	uint8_t share_res;		/* set if job can share resources with
@@ -832,6 +833,7 @@ struct job_record {
 	char *resp_host;		/* host for srun communications */
 	char *sched_nodes;		/* list of nodes scheduled for job */
 	dynamic_plugin_data_t *select_jobinfo;/* opaque data, BlueGene */
+	char *selinux_context;		/* SELinux context */
 	uint32_t site_factor;		/* factor to consider in priority */
 	char **spank_job_env;		/* environment variables for job prolog
 					 * and epilog scripts as set by SPANK

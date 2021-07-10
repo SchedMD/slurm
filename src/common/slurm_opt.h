@@ -85,6 +85,7 @@ enum {
 	LONG_OPT_COMMENT,
 	LONG_OPT_COMPRESS,
 	LONG_OPT_CONTAINER,
+	LONG_OPT_CONTEXT,
 	LONG_OPT_CONTIGUOUS,
 	LONG_OPT_CORE,
 	LONG_OPT_CORESPERSOCKET,
@@ -369,6 +370,7 @@ typedef struct {
 	char *c_constraint;		/* --cluster-constraint		*/
 	char *gres;			/* --gres			*/
 	char *container;		/* --container			*/
+	char *context;			/* --context			*/
 	bool contiguous;		/* --contiguous			*/
 	char *nodefile;			/* --nodefile			*/
 	char *nodelist;			/* --nodelist=node1,node2,...	*/

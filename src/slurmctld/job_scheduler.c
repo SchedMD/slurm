@@ -2672,6 +2672,8 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	cred_arg.sockets_per_node    = job_resrcs_ptr->sockets_per_node;
 	cred_arg.sock_core_rep_count = job_resrcs_ptr->sock_core_rep_count;
 
+	cred_arg.selinux_context = job_ptr->selinux_context;
+
 	launch_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
 						 &cred_arg, protocol_version);
 

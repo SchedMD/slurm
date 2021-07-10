@@ -1676,9 +1676,12 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				  * default=0 (no limit) */
 	uint32_t pn_min_tmp_disk;/* minimum tmp disk per node,
 				  * default=0 */
+	char *req_context;	/* requested selinux context */
 	uint32_t req_switch;    /* Minimum number of switches */
 	dynamic_plugin_data_t *select_jobinfo; /* opaque data type,
 					   * Slurm internal use only */
+	char *selinux_context;	/* used internally in the slurmctld,
+				   DON'T PACK */
 	char *std_err;		/* pathname of stderr */
 	char *std_in;		/* pathname of stdin */
 	char *std_out;		/* pathname of stdout */
@@ -1809,6 +1812,7 @@ typedef struct job_info {
 						* process using
 						* slurm_get_select_jobinfo()
 						*/
+	char *selinux_context;
 	uint16_t shared;	/* 1 if job can share nodes with other jobs */
 	uint16_t show_flags;	/* conveys level of details requested */
 	uint32_t site_factor;	/* factor to consider in priority */

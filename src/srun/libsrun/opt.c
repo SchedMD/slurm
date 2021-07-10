@@ -276,6 +276,7 @@ static slurm_opt_t *_opt_copy(void)
 	opt_dup->srun_opt->cmd_name = xstrdup(sropt.cmd_name);
 	opt_dup->comment = xstrdup(opt.comment);
 	opt.constraint = NULL;		/* Moved by memcpy */
+	opt_dup->context = xstrdup(opt.context);
 	opt_dup->srun_opt->cpu_bind = xstrdup(sropt.cpu_bind);
 	opt_dup->chdir = xstrdup(opt.chdir);
 	opt_dup->dependency = xstrdup(opt.dependency);

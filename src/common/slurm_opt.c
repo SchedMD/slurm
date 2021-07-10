@@ -39,6 +39,10 @@
 #include <getopt.h>
 #include <sys/param.h>
 
+#ifdef WITH_SELINUX
+#include <selinux/selinux.h>
+#endif
+
 #include "src/common/cpu_frequency.h"
 #include "src/common/gres.h"
 #include "src/common/log.h"
@@ -941,6 +945,32 @@ static slurm_cli_opt_t slurm_opt_container = {
 	.set_func_data = arg_set_data_container,
 	.get_func = arg_get_container,
 	.reset_func = arg_reset_container,
+};
+
+COMMON_STRING_OPTION_SET(context);
+COMMON_STRING_OPTION_SET_DATA(context);
+COMMON_STRING_OPTION_GET(context);
+static void arg_reset_context(slurm_opt_t *opt)
+{
+	xfree(opt->context);
+
+#ifdef WITH_SELINUX
+	if (is_selinux_enabled() == 1) {
+		char *context;
+		getcon(&context);
+		opt->context = xstrdup(context);
+		freecon(context);
+	}
+#endif
+}
+static slurm_cli_opt_t slurm_opt_context = {
+	.name = "context",
+	.has_arg = required_argument,
+	.val = LONG_OPT_CONTEXT,
+	.set_func = arg_set_context,
+	.set_func_data = arg_set_data_context,
+	.get_func = arg_get_context,
+	.reset_func = arg_reset_context,
 };
 
 COMMON_BOOL_OPTION(contiguous, "contiguous");
@@ -4941,6 +4971,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_comment,
 	&slurm_opt_compress,
 	&slurm_opt_container,
+	&slurm_opt_context,
 	&slurm_opt_contiguous,
 	&slurm_opt_constraint,
 	&slurm_opt_core_spec,
@@ -5793,6 +5824,7 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
 	job_desc->clusters = xstrdup(opt_local->clusters);
 	job_desc->cluster_features = xstrdup(opt_local->c_constraint);
 	job_desc->comment = xstrdup(opt_local->comment);
+	job_desc->req_context = xstrdup(opt_local->context);
 	job_desc->contiguous = opt_local->contiguous;
 	if (opt_local->core_spec != NO_VAL16)
 		job_desc->core_spec = opt_local->core_spec;
