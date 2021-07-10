@@ -15815,7 +15815,6 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 		make_node_idle(node_ptr, job_ptr);
 #endif
 
-	step_epilog_complete(job_ptr, node_name);
 	/* nodes_completing is out of date, rebuild when next saved */
 	xfree(job_ptr->nodes_completing);
 	if (!IS_JOB_COMPLETING(job_ptr)) {	/* COMPLETED */

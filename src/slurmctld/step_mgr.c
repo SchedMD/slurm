@@ -110,10 +110,6 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 static bitstr_t *_pick_step_nodes_cpus(job_record_t *job_ptr,
 				       bitstr_t *nodes_bitmap, int node_cnt,
 				       int cpu_cnt, uint32_t *usable_cpu_cnt);
-static hostlist_t _step_range_to_hostlist(step_record_t *step_ptr,
-					  uint32_t range_first,
-					  uint32_t range_last);
-static int _step_hostname_to_inx(step_record_t *step_ptr, char *node_name);
 static void _step_dealloc_lps(step_record_t *step_ptr);
 static step_record_t *_build_interactive_step(
 	job_record_t *job_ptr_in,
@@ -3716,91 +3712,6 @@ extern void step_set_alloc_tres(step_record_t *step_ptr, uint32_t node_count,
 		assoc_mgr_unlock(&locks);
 
 	return;
-}
-
-/* convert a range of nodes allocated to a step to a hostlist with
- * names of those nodes */
-static hostlist_t _step_range_to_hostlist(step_record_t *step_ptr,
-					  uint32_t range_first,
-					  uint32_t range_last)
-{
-	int i, node_inx = -1;
-	hostlist_t hl = hostlist_create(NULL);
-
-	for (i = 0; i < node_record_count; i++) {
-		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
-			continue;
-		node_inx++;
-		if ((node_inx >= range_first)
-		&&  (node_inx <= range_last)) {
-			hostlist_push_host(hl,
-				node_record_table_ptr[i].name);
-		}
-	}
-
-	return hl;
-}
-
-/* convert a single node name to it's offset within a step's
- * nodes allocation. returns -1 on error */
-static int _step_hostname_to_inx(step_record_t *step_ptr, char *node_name)
-{
-	node_record_t *node_ptr;
-	int i, node_inx, node_offset = 0;
-
-	node_ptr = find_node_record(node_name);
-	if (node_ptr == NULL)
-		return -1;
-	node_inx = node_ptr - node_record_table_ptr;
-
-	for (i = 0; i < node_inx; i++) {
-		if (bit_test(step_ptr->step_node_bitmap, i))
-			node_offset++;
-	}
-	return node_offset;
-}
-
-extern int step_epilog_complete(job_record_t *job_ptr, char *node_name)
-{
-	int rc = 0, node_inx, step_offset;
-	ListIterator step_iterator;
-	step_record_t *step_ptr;
-	node_record_t *node_ptr;
-
-	if (!switch_g_part_comp()) {
-		/* don't bother with partial completions */
-		return 0;
-	}
-	if ((node_ptr = find_node_record(node_name)) == NULL)
-		return 0;
-	node_inx = node_ptr - node_record_table_ptr;
-
-	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator))) {
-		if (step_ptr->state != JOB_RUNNING)
-			continue;
-		if ((!step_ptr->switch_job)
-		||  (bit_test(step_ptr->step_node_bitmap, node_inx) == 0))
-			continue;
-		if (step_ptr->exit_node_bitmap) {
-			step_offset = _step_hostname_to_inx(
-					step_ptr, node_name);
-			if ((step_offset < 0)
-			||  bit_test(step_ptr->exit_node_bitmap,
-					step_offset))
-				continue;
-			bit_set(step_ptr->exit_node_bitmap,
-				step_offset);
-		}
-		rc++;
-		debug2("partial switch release for %pS, epilog on %s",
-			step_ptr, node_name);
-		switch_g_job_step_part_comp(
-			step_ptr->switch_job, node_name);
-	}
-	list_iterator_destroy (step_iterator);
-
-	return rc;
 }
 
 static int _suspend_job_step(void *x, void *arg)

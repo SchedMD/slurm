@@ -2379,15 +2379,6 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 					       uint16_t plane_size);
 
 /*
- * step_epilog_complete - note completion of epilog on some node and
- *	release it's switch windows if appropriate. can perform partition
- *	switch window releases.
- * IN job_ptr - pointer to job which has completed epilog
- * IN node_name - name of node which has completed epilog
- */
-extern int step_epilog_complete(job_record_t *job_ptr, char *node_name);
-
-/*
  * step_partial_comp - Note the completion of a job step on at least
  *	some of its nodes
  * IN req     - step_completion_msg RPC from slurmstepd
