@@ -1108,6 +1108,8 @@ static void *_init_power_save(void *arg)
         /* Locks: Write jobs and nodes */
         slurmctld_lock_t node_write_lock = {
                 NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	slurmctld_lock_t init_config_locks = {
+		.conf = READ_LOCK, .node = WRITE_LOCK, .part = WRITE_LOCK };
 	time_t now, boot_time = 0, last_power_scan = 0;
 
 #if HAVE_SYS_PRCTL_H
@@ -1116,15 +1118,18 @@ static void *_init_power_save(void *arg)
 	}
 #endif
 
+	lock_slurmctld(init_config_locks);
 	if (!_init_power_config())
 		power_save_enabled = true;
-	else if (node_features_g_node_power())
+	unlock_slurmctld(init_config_locks);
+
+	if (!power_save_enabled) {
+		debug("power_save mode not enabled");
+		goto fini;
+	} else if (node_features_g_node_power()) {
 		fatal("PowerSave required with NodeFeatures plugin, "
 		      "but not fully configured (SuspendProgram, "
 		      "ResumeProgram and SuspendTime all required)");
-	else {
-		debug("power_save mode not enabled");
-		goto fini;
 	}
 	power_save_config = true;
 
@@ -1135,11 +1140,14 @@ static void *_init_power_save(void *arg)
 
 		_reap_procs();
 
-		if ((last_config != slurm_conf.last_update) &&
-		    (_init_power_config())) {
-			info("power_save mode has been disabled due to "
-			     "configuration changes");
-			goto fini;
+		if (last_config != slurm_conf.last_update) {
+			lock_slurmctld(init_config_locks);
+			if (_init_power_config()) {
+				unlock_slurmctld(init_config_locks);
+				info("power_save mode has been disabled due to configuration changes");
+				goto fini;
+			}
+			unlock_slurmctld(init_config_locks);
 		}
 
 		now = time(NULL);
