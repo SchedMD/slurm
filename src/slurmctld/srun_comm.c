@@ -265,44 +265,46 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 	}
 }
 
+static int _srun_ping(void *x, void *arg)
+{
+	job_record_t *job_ptr = (job_record_t *) x;
+	time_t *old = (time_t *) arg;
+	slurm_addr_t *addr;
+	srun_ping_msg_t *msg_arg;
+
+	xassert(job_ptr->magic == JOB_MAGIC);
+
+	if (!IS_JOB_RUNNING(job_ptr) || (job_ptr->time_last_active > *old))
+		return 0;
+
+	if (!job_ptr->other_port || !job_ptr->alloc_node || !job_ptr->resp_host)
+		return 0;
+
+	addr = xmalloc(sizeof(*addr));
+	msg_arg = xmalloc(sizeof(*msg_arg));
+
+	slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
+	msg_arg->job_id = job_ptr->job_id;
+
+	_srun_agent_launch(addr, job_ptr->alloc_node, SRUN_PING, msg_arg,
+			   job_ptr->start_protocol_ver);
+
+	return 0;
+}
+
 /*
  * srun_ping - Ping all allocations srun/salloc that have not been heard from
  * recently. This does not ping sruns inside a allocation from sbatch or salloc.
  */
 extern void srun_ping (void)
 {
-	ListIterator job_iterator;
-	job_record_t *job_ptr;
-	slurm_addr_t * addr;
-	time_t now = time(NULL);
-	time_t old = now - (slurm_conf.inactive_limit / 3) +
-	             slurm_conf.msg_timeout + 1;
-	srun_ping_msg_t *msg_arg;
+	time_t old = time(NULL) - (slurm_conf.inactive_limit / 3) +
+		     slurm_conf.msg_timeout + 1;
 
 	if (slurm_conf.inactive_limit == 0)
 		return;		/* No limit, don't bother pinging */
 
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		xassert (job_ptr->magic == JOB_MAGIC);
-
-		if (!IS_JOB_RUNNING(job_ptr))
-			continue;
-
-		if ((job_ptr->time_last_active <= old) && job_ptr->other_port
-		    &&  job_ptr->alloc_node && job_ptr->resp_host) {
-			addr = xmalloc(sizeof(slurm_addr_t));
-			slurm_set_addr(addr, job_ptr->other_port,
-				job_ptr->resp_host);
-			msg_arg = xmalloc(sizeof(srun_ping_msg_t));
-			msg_arg->job_id  = job_ptr->job_id;
-			_srun_agent_launch(addr, job_ptr->alloc_node,
-					   SRUN_PING, msg_arg,
-					   job_ptr->start_protocol_ver);
-		}
-	}
-
-	list_iterator_destroy(job_iterator);
+	list_for_each(job_list, _srun_ping, &old);
 }
 
 /*
