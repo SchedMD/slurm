@@ -3396,6 +3396,66 @@ extern int pack_ctld_job_step_info_response_msg(
 	return error_code;
 }
 
+typedef struct {
+	node_record_t *node_ptr;
+	bool node_fail;
+} kill_step_on_node_args_t;
+
+static int _kill_step_on_node(void *x, void *arg)
+{
+	step_record_t *step_ptr = (step_record_t *) x;
+	kill_step_on_node_args_t *args = (kill_step_on_node_args_t *) arg;
+	int step_node_inx = 0;
+	int bit_position = args->node_ptr - node_record_table_ptr;
+	int i_first, i_last, rem = 0;
+	uint32_t step_rc = 0;
+	step_complete_msg_t req;
+
+	if (step_ptr->state != JOB_RUNNING)
+		return 0;
+	if (!bit_test(step_ptr->step_node_bitmap, bit_position))
+		return 0;
+
+	/* Remove step allocation from the job's allocation */
+	i_first = bit_ffs(step_ptr->step_node_bitmap);
+	i_last = bit_fls(step_ptr->step_node_bitmap);
+	for (int i = i_first; i <= i_last; i++) {
+		if (i == bit_position)
+			break;
+		if (bit_test(step_ptr->step_node_bitmap, i))
+			step_node_inx++;
+	}
+
+	memset(&req, 0, sizeof(step_complete_msg_t));
+	memcpy(&req.step_id, &step_ptr->step_id, sizeof(req.step_id));
+
+	req.range_first = step_node_inx;
+	req.range_last = step_node_inx;
+	req.step_rc = 9;
+	req.jobacct = NULL;	/* No accounting */
+	(void) step_partial_comp(&req, 0, false, &rem, &step_rc);
+
+	if (args->node_fail && !(step_ptr->flags & SSF_NO_KILL)) {
+		info("Killing %pS due to failed node %s",
+		     step_ptr, args->node_ptr->name);
+
+		/*
+		 * Never signal tasks on a front_end system.
+		 * Otherwise signal step on all nodes
+		 */
+#ifndef HAVE_FRONT_END
+		signal_step_tasks(step_ptr, SIGKILL, REQUEST_TERMINATE_TASKS);
+#endif
+	} else {
+		info("Killing %pS on failed node %s",
+		     step_ptr, args->node_ptr->name);
+		signal_step_tasks_on_node(args->node_ptr->name, step_ptr,
+					  SIGKILL, REQUEST_TERMINATE_TASKS);
+	}
+
+	return 0;
+}
+
 /*
  * kill_step_on_node - determine if the specified job has any job steps
  *	allocated to the specified node and kill them unless no_kill flag
@@ -3407,70 +3467,15 @@ extern int pack_ctld_job_step_info_response_msg(
 extern void kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
 			      bool node_fail)
 {
-#ifdef HAVE_FRONT_END
-	static bool front_end = true;
-#else
-	static bool front_end = false;
-#endif
-	ListIterator step_iterator;
-	step_record_t *step_ptr;
-	int i, i_first, i_last;
-	uint32_t step_rc = 0;
-	int bit_position, rem = 0, step_node_inx;
-	step_complete_msg_t req;
+	kill_step_on_node_args_t args = {
+		node_ptr = node_ptr,
+		node_fail = node_fail,
+	};
 
 	if (!job_ptr || !node_ptr)
 		return;
 
-	bit_position = node_ptr - node_record_table_ptr;
-	step_iterator = list_iterator_create (job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator))) {
-		if (step_ptr->state != JOB_RUNNING)
-			continue;
-		if (!bit_test(step_ptr->step_node_bitmap, bit_position))
-			continue;
-
-		/* Remove step allocation from the job's allocation */
-		i_first = bit_ffs(step_ptr->step_node_bitmap);
-		i_last = bit_fls(step_ptr->step_node_bitmap);
-		for (i = i_first, step_node_inx = 0; i <= i_last; i++) {
-			if (i == bit_position)
-				break;
-			if (bit_test(step_ptr->step_node_bitmap, i))
-				step_node_inx++;
-		}
-		memset(&req, 0, sizeof(step_complete_msg_t));
-
-		memcpy(&req.step_id, &step_ptr->step_id, sizeof(req.step_id));
-
-		req.range_first = step_node_inx;
-		req.range_last = step_node_inx;
-		req.step_rc = 9;
-		req.jobacct = NULL;	/* No accounting */
-		(void) step_partial_comp(&req, 0, false, &rem, &step_rc);
-
-		if (node_fail && !(step_ptr->flags & SSF_NO_KILL)) {
-			info("Killing %pS due to failed node %s", step_ptr,
-			     node_ptr->name);
-
-			/*
-			 * Never signal tasks on a front_end system.
-			 * Otherwise signal step on all nodes
-			 */
-			if (!front_end) {
-				signal_step_tasks(step_ptr, SIGKILL,
-						  REQUEST_TERMINATE_TASKS);
-			}
-		} else {
-			info("Killing %pS on failed node %s", step_ptr,
-			     node_ptr->name);
-			signal_step_tasks_on_node(node_ptr->name, step_ptr,
-						  SIGKILL,
-						  REQUEST_TERMINATE_TASKS);
-		}
-	}
-
-	list_iterator_destroy (step_iterator);
+	list_for_each(job_ptr->step_list, _kill_step_on_node, &args);
 }
 
 /*
