@@ -3702,7 +3702,7 @@ extern char *node_state_string(uint32_t inx)
 	}
 
 	if (inx == NODE_STATE_REBOOT_ISSUED)
-		return "REBOOT^";
+		return "REBOOT_ISSUED";
 	if (inx == NODE_STATE_REBOOT_CANCEL)
 		return "CANCEL_REBOOT";
 	if (inx == NODE_STATE_CLOUD)
