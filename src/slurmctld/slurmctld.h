@@ -2191,12 +2191,6 @@ extern void rebuild_step_bitmaps(job_record_t *job_ptr,
 				 bitstr_t *orig_job_node_bitmap);
 
 /*
- * After a job has fully completed run this to release the resouces
- * and remove it from the system.
- */
-extern int post_job_step(step_record_t *step_ptr);
-
-/*
  * Create the extern step and add it to the job.
  */
 extern step_record_t *build_extern_step(job_record_t *job_ptr);

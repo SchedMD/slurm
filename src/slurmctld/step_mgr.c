@@ -113,6 +113,7 @@ static step_record_t *_build_interactive_step(
 	job_record_t *job_ptr_in,
 	job_step_create_request_msg_t *step_specs,
 	uint16_t protocol_version);
+static int _post_job_step(step_record_t *step_ptr);
 
 /* Determine how many more CPUs are required for a job step */
 static int  _opt_cpu_cnt(uint32_t step_min_cpus, bitstr_t *node_bitmap,
@@ -308,7 +309,7 @@ static void _internal_step_complete(job_record_t *job_ptr,
 
 	step_ptr->state |= JOB_COMPLETING;
 	select_g_step_finish(step_ptr, false);
-	post_job_step(step_ptr);
+	_post_job_step(step_ptr);
 }
 
 /*
@@ -388,7 +389,7 @@ extern void delete_step_records(job_record_t *job_ptr)
 
 	/*
 	 * NOTE: cannot use list_for_each() here, as _internal_step_complete()
-	 * will call into post_job_step() which will then remove the record
+	 * will call into _post_job_step() which will then remove the record
 	 * from the List, which requires the List be unlocked
 	 */
 	last_job_update = time(NULL);
@@ -4653,7 +4654,7 @@ extern void rebuild_step_bitmaps(job_record_t *job_ptr,
  * the job_ptr->step_list so make sure you don't call this if you are
  * already holding a lock on that list (list_for_each).
  */
-extern int post_job_step(step_record_t *step_ptr)
+static int _post_job_step(step_record_t *step_ptr)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
 
