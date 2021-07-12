@@ -320,9 +320,6 @@ static void _internal_step_complete(job_record_t *job_ptr,
 
 	/* Don't need to set state. Will be destroyed in next steps. */
 	/* step_ptr->state = JOB_COMPLETE; */
-
-	delete_step_record(job_ptr, step_ptr);
-	_wake_pending_steps(job_ptr);
 }
 
 /*
@@ -418,8 +415,12 @@ extern void delete_step_records(job_record_t *job_ptr)
 				continue;
 			/* _internal_step_complete() will purge step record */
 			_internal_step_complete(job_ptr, step_ptr);
+			delete_step_record(job_ptr, step_ptr);
+			_wake_pending_steps(job_ptr);
 		} else {
 			_internal_step_complete(job_ptr, step_ptr);
+			delete_step_record(job_ptr, step_ptr);
+			_wake_pending_steps(job_ptr);
 			list_remove (step_iterator);
 			free_step_record(step_ptr);
 		}
@@ -3701,6 +3702,8 @@ no_aggregate:
 		}
 
 		_internal_step_complete(step_ptr->job_ptr, step_ptr);
+		delete_step_record(step_ptr->job_ptr, step_ptr);
+		_wake_pending_steps(step_ptr->job_ptr);
 
 		last_job_update = time(NULL);
 	}
