@@ -3296,8 +3296,7 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, buf_t *buffer,
 
 /*
  * pack_ctld_job_step_info_response_msg - packs job step info
- * IN job_id - specific id or NO_VAL for all
- * IN step_id - specific id or NO_VAL for all
+ * IN step_id - specific id or NO_VAL/NO_VAL for all
  * IN uid - user issuing request
  * IN show_flags - job step filtering options
  * OUT buffer - location to store data, pointers automatically advanced
@@ -3305,8 +3304,8 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, buf_t *buffer,
  * NOTE: MUST free_buf buffer
  */
 extern int pack_ctld_job_step_info_response_msg(
-	uint32_t job_id, uint32_t step_id, uid_t uid,
-	uint16_t show_flags, buf_t *buffer, uint16_t protocol_version)
+	slurm_step_id_t *step_id, uid_t uid, uint16_t show_flags,
+	buf_t *buffer, uint16_t protocol_version)
 {
 	ListIterator job_iterator;
 	ListIterator step_iterator;
@@ -3322,8 +3321,9 @@ extern int pack_ctld_job_step_info_response_msg(
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
-		if ((job_id != NO_VAL) && (job_id != job_ptr->job_id) &&
-		    (job_id != job_ptr->array_job_id))
+		if ((step_id->job_id != NO_VAL) &&
+		    (step_id->job_id != job_ptr->job_id) &&
+		    (step_id->job_id != job_ptr->array_job_id))
 			continue;
 
 		valid_job = 1;
@@ -3343,8 +3343,8 @@ extern int pack_ctld_job_step_info_response_msg(
 
 		step_iterator = list_iterator_create(job_ptr->step_list);
 		while ((step_ptr = list_next(step_iterator))) {
-			if ((step_id != NO_VAL) &&
-			    (step_ptr->step_id.step_id != step_id))
+			if ((step_id->step_id != NO_VAL) &&
+			    (step_ptr->step_id.step_id != step_id->step_id))
 				continue;
 			_pack_ctld_job_step_info(step_ptr, buffer,
 						 protocol_version);
