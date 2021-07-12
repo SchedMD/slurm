@@ -233,12 +233,13 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 	while ((step_ptr = list_next(step_iterator))) {
 		if (step_ptr->step_node_bitmap == NULL)   /* pending step */
 			continue;
+		if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT)
+			continue;
 		if ((bit_position >= 0) &&
 		    (!bit_test(step_ptr->step_node_bitmap, bit_position)))
 			continue;	/* job step not on this node */
 		if ( (step_ptr->port    == 0)    ||
 		     (step_ptr->host    == NULL) ||
-		     (step_ptr->batch_step)      ||
 		     (step_ptr->host[0] == '\0') )
 			continue;
 		addr = xmalloc(sizeof(slurm_addr_t));
@@ -315,8 +316,10 @@ static int _srun_step_timeout(void *x, void *arg)
 
 	xassert(step_ptr);
 
-	if (step_ptr->batch_step || !step_ptr->port ||
-	    !step_ptr->host || (step_ptr->host[0] == '\0'))
+	if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT)
+		return 0;
+
+	if (!step_ptr->port || !step_ptr->host || (step_ptr->host[0] == '\0'))
 		return 0;
 
 	addr = xmalloc(sizeof(*addr));
@@ -454,7 +457,7 @@ extern void srun_job_complete(job_record_t *job_ptr)
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = list_next(step_iterator))) {
-		if (step_ptr->batch_step)	/* batch script itself */
+		if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT)
 			continue;
 		srun_step_complete(step_ptr);
 	}
