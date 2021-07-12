@@ -2118,6 +2118,24 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 extern void bb_p_job_set_tres_cnt(job_record_t *job_ptr, uint64_t *tres_cnt,
 				  bool locked)
 {
+	bb_job_t *bb_job;
+
+	if (!tres_cnt) {
+		error("No tres_cnt given when looking at %pJ",
+		      job_ptr);
+	}
+
+	if (bb_state.tres_pos < 0) {
+		/* BB not defined in AccountingStorageTRES */
+		return;
+	}
+
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	if ((bb_job = _get_bb_job(job_ptr))) {
+		tres_cnt[bb_state.tres_pos] =
+			bb_job->total_size / (1024 * 1024);
+	}
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 }
 
 /*
@@ -3412,9 +3430,43 @@ extern int bb_p_job_cancel(job_record_t *job_ptr)
 
 /*
  * Translate a burst buffer string to it's equivalent TRES string
+ * For example:
+ *   "bb/lua=2M" -> "1004=2"
  * Caller must xfree the return value
  */
 extern char *bb_p_xlate_bb_2_tres_str(char *burst_buffer)
 {
-	return NULL;
+	char *save_ptr = NULL, *sep, *tmp, *tok;
+	char *result = NULL;
+	uint64_t size, total = 0;
+
+	if (!burst_buffer || (bb_state.tres_id < 1))
+		return result;
+
+	tmp = xstrdup(burst_buffer);
+	tok = strtok_r(tmp, ",", &save_ptr);
+	while (tok) {
+		sep = strchr(tok, ':');
+		if (sep) {
+			if (!xstrncmp(tok, "lua:", 4))
+				tok += 4;
+			else
+				tok = NULL;
+		}
+
+		if (tok) {
+			uint64_t mb_xlate = 1024 * 1024;
+			size = bb_get_size_num(tok,
+					       bb_state.bb_config.granularity);
+			total += (size + mb_xlate - 1) / mb_xlate;
+		}
+
+		tok = strtok_r(NULL, ",", &save_ptr);
+	}
+	xfree(tmp);
+
+	if (total)
+		xstrfmtcat(result, "%d=%"PRIu64, bb_state.tres_id, total);
+
+	return result;
 }
