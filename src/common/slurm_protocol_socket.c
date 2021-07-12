@@ -496,7 +496,8 @@ extern int slurm_init_msg_engine(slurm_addr_t *addr, bool quiet)
 	if (quiet)
 		log_lvl = LOG_LEVEL_DEBUG;
 
-	if ((fd = socket(addr->ss_family, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+	if ((fd = socket(addr->ss_family, SOCK_STREAM | SOCK_CLOEXEC,
+			 IPPROTO_TCP)) < 0) {
 		format_print(log_lvl, "Error creating slurm stream socket: %m");
 		return fd;
 	}
@@ -587,7 +588,8 @@ extern int slurm_open_stream(slurm_addr_t *addr, bool retry)
 	for (retry_cnt=0; ; retry_cnt++) {
 		int rc;
 
-		fd = socket(addr->ss_family, SOCK_STREAM, IPPROTO_TCP);
+		fd = socket(addr->ss_family, SOCK_STREAM | SOCK_CLOEXEC,
+			    IPPROTO_TCP);
 		if (fd < 0) {
 			error("Error creating slurm stream socket: %m");
 			slurm_seterrno(errno);

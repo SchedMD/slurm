@@ -168,9 +168,8 @@ _create_socket(const char *name)
 	}
 
 	/* create a unix domain stream socket */
-	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0)
+	if ((fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0)) < 0)
 		return -1;
-	fd_set_close_on_exec(fd);
 
 	memset(&addr, 0, sizeof(addr));
 	addr.sun_family = AF_UNIX;

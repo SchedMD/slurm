@@ -1252,7 +1252,6 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 			fatal("slurm_init_msg_engine_port error %m");
 			return NULL;	/* Fix CLANG false positive */
 		}
-		fd_set_close_on_exec(fds[i].fd);
 		if (slurm_get_stream_addr(fds[i].fd, &srv_addr)) {
 			error("slurm_get_stream_addr error %m");
 		} else {

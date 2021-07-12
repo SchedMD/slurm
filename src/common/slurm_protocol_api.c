@@ -837,8 +837,7 @@ int slurm_init_msg_engine_ports(uint16_t *ports)
 int slurm_open_msg_conn(slurm_addr_t * slurm_address)
 {
 	int fd = slurm_open_stream(slurm_address, false);
-	if (fd >= 0)
-		fd_set_close_on_exec(fd);
+
 	return fd;
 }
 

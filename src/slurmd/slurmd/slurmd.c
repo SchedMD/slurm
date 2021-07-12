@@ -572,8 +572,6 @@ static void _handle_connection(int fd, slurm_addr_t *cli)
 	arg->fd       = fd;
 	arg->cli_addr = cli;
 
-	fd_set_close_on_exec(fd);
-
 	_increment_thd_count();
 	slurm_thread_create_detached(NULL, _service_connection, arg);
 }
@@ -1545,8 +1543,6 @@ _create_msg_socket(void)
 		      conf->port);
 		exit(1);
 	}
-
-	fd_set_close_on_exec(ld);
 
 	conf->lfd = ld;
 

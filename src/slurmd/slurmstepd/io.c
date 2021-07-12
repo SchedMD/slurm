@@ -1560,7 +1560,6 @@ io_initial_client_connect(srun_info_t *srun, stepd_step_rec_t *job,
 
 	debug5("  back from _send_io_init_msg");
 	fd_set_nonblocking(sock);
-	fd_set_close_on_exec(sock);
 
 	/* Now set up the eio object */
 	client = xmalloc(sizeof(*client));
@@ -1614,7 +1613,6 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *job)
 
 	debug5("  back from _send_io_init_msg");
 	fd_set_nonblocking(sock);
-	fd_set_close_on_exec(sock);
 
 	/* Now set up the eio object */
 	client = xmalloc(sizeof(*client));

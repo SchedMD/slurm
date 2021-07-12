@@ -388,7 +388,6 @@ int pmixp_stepd_init(const stepd_step_rec_t *job, char ***env)
 		rc = SLURM_ERROR;
 		goto err_usock;
 	}
-	fd_set_close_on_exec(fd);
 	pmixp_info_srv_usock_set(path, fd);
 
 

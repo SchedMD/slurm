@@ -196,7 +196,6 @@ int eio_message_socket_accept(eio_obj_t *obj, List objs)
 	}
 
 	net_set_keep_alive(fd);
-	fd_set_close_on_exec(fd);
 	fd_set_blocking(fd);
 
 	debug2("%s: got message connection from %pA %d", __func__, &addr, fd);

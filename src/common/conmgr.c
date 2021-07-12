@@ -437,10 +437,6 @@ static con_mgr_fd_t *_add_connection(con_mgr_t *mgr, con_mgr_fd_t *source,
 		net_set_keep_alive(output_fd);
 	}
 
-	/* stop listening sockets from surviving exec */
-	if (is_listen)
-		fd_set_close_on_exec(input_fd);
-
 	con = xmalloc(sizeof(*con));
 	*con = (con_mgr_fd_t){
 		.magic = MAGIC_CON_MGR_FD,
@@ -1816,7 +1812,7 @@ static int _create_socket(void *x, void *arg)
 
 	/* check for name local sockets */
 	if (unixsock) {
-		int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+		int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
 		struct sockaddr_un addr = {
 			.sun_family = AF_UNIX,
 		};
@@ -1876,7 +1872,7 @@ static int _create_socket(void *x, void *arg)
 		 */
 		int fd;
 		int one = 1;
-		fd = socket(addr->ai_family, addr->ai_socktype,
+		fd = socket(addr->ai_family, addr->ai_socktype | SOCK_CLOEXEC,
 			    addr->ai_protocol);
 		if (fd < 0)
 			fatal("%s: [%s] Unable to create socket: %m",
