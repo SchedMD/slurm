@@ -116,7 +116,7 @@ static step_record_t *_build_interactive_step(
 	job_record_t *job_ptr_in,
 	job_step_create_request_msg_t *step_specs,
 	uint16_t protocol_version);
-static int _post_job_step(step_record_t *step_ptr);
+static void _wake_pending_steps(job_record_t *job_ptr);
 
 /* Determine how many more CPUs are required for a job step */
 static int  _opt_cpu_cnt(uint32_t step_min_cpus, bitstr_t *node_bitmap,
@@ -312,7 +312,17 @@ static void _internal_step_complete(job_record_t *job_ptr,
 
 	step_ptr->state |= JOB_COMPLETING;
 	select_g_step_finish(step_ptr, false);
-	_post_job_step(step_ptr);
+
+	_step_dealloc_lps(step_ptr);
+	gres_ctld_step_dealloc(step_ptr->gres_list_alloc,
+			       job_ptr->gres_list_alloc, job_ptr->job_id,
+			       step_ptr->step_id.step_id);
+
+	/* Don't need to set state. Will be destroyed in next steps. */
+	/* step_ptr->state = JOB_COMPLETE; */
+
+	delete_step_record(job_ptr, step_ptr);
+	_wake_pending_steps(job_ptr);
 }
 
 /*
@@ -392,8 +402,8 @@ extern void delete_step_records(job_record_t *job_ptr)
 
 	/*
 	 * NOTE: cannot use list_for_each() here, as _internal_step_complete()
-	 * will call into _post_job_step() which will then remove the record
-	 * from the List, which requires the List be unlocked
+	 * will remove the record from the List, which requires the List
+	 * be unlocked
 	 */
 	last_job_update = time(NULL);
 	step_iterator = list_iterator_create(job_ptr->step_list);
@@ -4688,28 +4698,6 @@ extern void rebuild_step_bitmaps(job_record_t *job_ptr,
 	list_for_each(job_ptr->step_list, _rebuild_bitmaps,
 		      orig_job_node_bitmap);
 
-}
-
-/* NOTE: this function will call delete_step_record which will lock
- * the job_ptr->step_list so make sure you don't call this if you are
- * already holding a lock on that list (list_for_each).
- */
-static int _post_job_step(step_record_t *step_ptr)
-{
-	job_record_t *job_ptr = step_ptr->job_ptr;
-
-	_step_dealloc_lps(step_ptr);
-	gres_ctld_step_dealloc(step_ptr->gres_list_alloc,
-			       job_ptr->gres_list_alloc, job_ptr->job_id,
-			       step_ptr->step_id.step_id);
-
-	/* Don't need to set state. Will be destroyed in next steps. */
-	/* step_ptr->state = JOB_COMPLETE; */
-
-	delete_step_record(job_ptr, step_ptr);
-	_wake_pending_steps(job_ptr);
-
-	return SLURM_SUCCESS;
 }
 
 extern step_record_t *build_extern_step(job_record_t *job_ptr)
