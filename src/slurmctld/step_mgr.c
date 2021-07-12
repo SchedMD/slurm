@@ -420,8 +420,6 @@ extern void delete_step_records(job_record_t *job_ptr)
 			_internal_step_complete(job_ptr, step_ptr);
 			srun_step_signal(step_ptr, 0);
 			delete_step_record(job_ptr, step_ptr);
-			list_remove (step_iterator);
-			free_step_record(step_ptr);
 		}
 	}
 	list_iterator_destroy(step_iterator);
