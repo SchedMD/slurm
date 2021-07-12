@@ -948,7 +948,6 @@ static void *_start_stage_out(void *x)
 	slurmctld_lock_t job_write_lock =
 		{ NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	job_record_t *job_ptr;
-	bb_alloc_t *bb_alloc = NULL;
 	bb_job_t *bb_job = NULL;
 	DEF_TIMERS;
 
@@ -1050,37 +1049,20 @@ static void *_start_stage_out(void *x)
 			last_job_update = time(NULL);
 		}
 		slurm_mutex_lock(&bb_state.bb_mutex);
-		bb_job = _get_bb_job(job_ptr);
-		if ((rc == SLURM_SUCCESS) && bb_job)
-			bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_TEARDOWN);
-		bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
-		if (bb_alloc) {
-			if (rc == SLURM_SUCCESS) {
-				log_flag(BURST_BUF, "Stage-out/post-run complete for %pJ",
-					 job_ptr);
-				bb_alloc->state = BB_STATE_TEARDOWN;
-				bb_alloc->state_time = time(NULL);
-			} else {
-				/*
-				 * TODO: Why change bb_alloc->state to
-				 * staged_in on failure?
-				 * */
-				if (bb_state.bb_config.flags &
-				    BB_FLAG_TEARDOWN_FAILURE) {
-					bb_alloc->state = BB_STATE_TEARDOWN;
-					_queue_teardown(stage_out_args->job_id,
-							stage_out_args->uid,
-							false);
-				} else
-					bb_alloc->state = BB_STATE_STAGED_IN;
-			}
-			bb_state.last_update_time = time(NULL);
-		} else if (bb_job && bb_job->total_size) {
-			error("unable to find bb record for %pJ", job_ptr);
-		}
 		if (rc == SLURM_SUCCESS) {
+			log_flag(BURST_BUF, "Stage-out/post-run complete for %pJ",
+				 job_ptr);
+			bb_job = _get_bb_job(job_ptr);
+			if (bb_job)
+				bb_set_job_bb_state(job_ptr, bb_job,
+						    BB_STATE_TEARDOWN);
 			_queue_teardown(stage_out_args->job_id,
 					stage_out_args->uid, false);
+		} else if (bb_state.bb_config.flags &
+			   BB_FLAG_TEARDOWN_FAILURE) {
+			_queue_teardown(stage_out_args->job_id,
+					stage_out_args->uid,
+					false);
 		}
 		slurm_mutex_unlock(&bb_state.bb_mutex);
 	}
@@ -1615,8 +1597,6 @@ static void _recover_job_bb(job_record_t *job_ptr, bb_alloc_t *bb_alloc,
 	 * including the state. Lots of functions will call this so do it now to
 	 * create the cache, and we may need to change the burst buffer state.
 	 * The job burst buffer state is set in job_ptr and in bb_job.
-	 * bb_alloc is used for persistent burst buffers, so bb_alloc->state
-	 * isn't used for job burst buffers.
 	 */
 	bb_job = _get_bb_job(job_ptr);
 	if (!bb_job) {
@@ -2139,7 +2119,7 @@ extern time_t bb_p_job_get_est_start(job_record_t *job_ptr)
 	if (bb_job->state == BB_STATE_PENDING) {
 		if (bb_job->job_pool && bb_job->req_size)
 			rc = bb_test_size_limit(job_ptr, bb_job, &bb_state,
-						_queue_teardown);
+						NULL);
 		else
 			rc = 0;
 
@@ -2600,12 +2580,9 @@ static void *_start_stage_in(void *x)
 					bb_alloc->size = bb_job->total_size;
 					bb_state.last_update_time = time(NULL);
 				}
-				bb_alloc->state = BB_STATE_STAGED_IN;
-				bb_alloc->state_time = time(NULL);
 				log_flag(BURST_BUF, "Setup/stage-in complete for %pJ",
 					 job_ptr);
 				queue_job_scheduler();
-				bb_state.last_update_time = time(NULL);
 			} else {
 				error("unable to find bb_alloc record for %pJ",
 				      job_ptr);
@@ -2618,25 +2595,13 @@ static void *_start_stage_in(void *x)
 		xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
 			   plugin_type, op, resp_msg);
 		job_ptr->priority = 0; /* Hold job */
-		bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
-		if (bb_alloc) {
-			bb_alloc->state_time = time(NULL);
-			bb_state.last_update_time = time(NULL);
-			if (bb_state.bb_config.flags &
-			    BB_FLAG_TEARDOWN_FAILURE) {
-				bb_alloc->state = BB_STATE_TEARDOWN;
-				bb_job = bb_job_find(&bb_state,
-						     stage_in_args->job_id);
-				if (bb_job)
-					bb_set_job_bb_state(job_ptr, bb_job,
-							    BB_STATE_TEARDOWN);
-				_queue_teardown(job_ptr->job_id,
-						job_ptr->user_id, true);
-			} else {
-				bb_alloc->state = BB_STATE_ALLOCATED;
-			}
-		} else {
-			_queue_teardown(job_ptr->job_id, job_ptr->user_id,true);
+		if (bb_state.bb_config.flags & BB_FLAG_TEARDOWN_FAILURE) {
+			bb_job = bb_job_find(&bb_state, stage_in_args->job_id);
+			if (bb_job)
+				bb_set_job_bb_state(job_ptr, bb_job,
+						    BB_STATE_TEARDOWN);
+			_queue_teardown(job_ptr->job_id,
+					job_ptr->user_id, true);
 		}
 	}
 	unlock_slurmctld(job_write_lock);
@@ -2751,8 +2716,7 @@ static int _try_alloc_job_bb(void *x, void *arg)
 		return SLURM_SUCCESS; /* Job was already allocated a buffer */
 
 	if (bb_job->job_pool && bb_job->req_size)
-		rc = bb_test_size_limit(job_ptr, bb_job, &bb_state,
-					_queue_teardown);
+		rc = bb_test_size_limit(job_ptr, bb_job, &bb_state, NULL);
 	else
 		rc = 0;
 
@@ -2794,7 +2758,6 @@ extern int bb_p_job_try_stage_in(List job_queue)
 	list_sort(job_candidates, bb_job_queue_sort);
 
 	/* Try to allocate burst buffers for these jobs. */
-	bb_set_use_time(&bb_state);
 	list_for_each(job_candidates, _try_alloc_job_bb, NULL);
 
 	slurm_mutex_unlock(&bb_state.bb_mutex);
@@ -2843,7 +2806,7 @@ extern int bb_p_job_test_stage_in(job_record_t *job_ptr, bool test_only)
 			goto fini;
 		if (bb_job->job_pool && bb_job->req_size) {
 			if ((bb_test_size_limit(job_ptr, bb_job, &bb_state,
-						_queue_teardown) == 0) &&
+						NULL) == 0) &&
 			    (_alloc_job_bb(job_ptr, bb_job, false) ==
 			     SLURM_SUCCESS)) {
 				rc = 0; /* Setup/stage-in in progress */
@@ -3381,7 +3344,6 @@ extern int bb_p_job_test_stage_out(job_record_t *job_ptr)
 extern int bb_p_job_cancel(job_record_t *job_ptr)
 {
 	bb_job_t *bb_job;
-	bb_alloc_t *bb_alloc;
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	log_flag(BURST_BUF, "%pJ", job_ptr);
@@ -3403,13 +3365,6 @@ extern int bb_p_job_cancel(job_record_t *job_ptr)
 		/* Teardown already done. */
 	} else {
 		bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_TEARDOWN);
-		bb_alloc = bb_find_alloc_rec(&bb_state, job_ptr);
-		if (bb_alloc) {
-			bb_alloc->state = BB_STATE_TEARDOWN;
-			bb_alloc->state_time = time(NULL);
-			bb_state.last_update_time = time(NULL);
-
-		}
 		_queue_teardown(job_ptr->job_id, job_ptr->user_id, true);
 	}
 	slurm_mutex_unlock(&bb_state.bb_mutex);
