@@ -407,22 +407,6 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t *jobinfo)
-{
-	return;
-}
-
-extern char *switch_p_sprint_jobinfo(switch_jobinfo_t *switch_jobinfo,
-				     char *buf, size_t size)
-{
-	if (buf && size) {
-		buf[0] = '\0';
-		return buf;
-	}
-
-	return NULL ;
-}
-
 /*
  * switch functions for job initiation
  */

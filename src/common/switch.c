@@ -74,10 +74,6 @@ typedef struct slurm_switch_ops {
 					    uint16_t protocol_version );
 	int          (*get_jobinfo)       ( switch_jobinfo_t *switch_job,
 					    int key, void *data);
-	void         (*print_jobinfo)     ( FILE *fp,
-					    switch_jobinfo_t *jobinfo );
-	char *       (*string_jobinfo)    ( switch_jobinfo_t *jobinfo,
-					    char *buf, size_t size);
 	int          (*node_init)         ( void );
 	int          (*node_fini)         ( void );
 	int          (*job_preinit)       ( stepd_step_rec_t *job );
@@ -142,8 +138,6 @@ static const char *syms[] = {
 	"switch_p_pack_jobinfo",
 	"switch_p_unpack_jobinfo",
 	"switch_p_get_jobinfo",
-	"switch_p_print_jobinfo",
-	"switch_p_sprint_jobinfo",
 	"switch_p_node_init",
 	"switch_p_node_fini",
 	"switch_p_job_preinit",
@@ -498,41 +492,6 @@ extern int  switch_g_get_jobinfo(dynamic_plugin_data_t *jobinfo,
 		plugin_id = switch_context_default;
 
 	return (*(ops[plugin_id].get_jobinfo))(jobdata, data_type, data);
-}
-
-extern void switch_g_print_jobinfo(FILE *fp, dynamic_plugin_data_t *jobinfo)
-{
-	void *data = NULL;
-	uint32_t plugin_id;
-
-	if ( switch_init(0) < 0 )
-		return;
-
-	if (jobinfo) {
-		data      = jobinfo->data;
-		plugin_id = jobinfo->plugin_id;
-	} else
-		plugin_id = switch_context_default;
-
-	(*(ops[plugin_id].print_jobinfo))(fp, data);
-}
-
-extern char *switch_g_sprint_jobinfo(dynamic_plugin_data_t *jobinfo,
-				     char *buf, size_t size)
-{
-	void *data = NULL;
-	uint32_t plugin_id;
-
-	if ( switch_init(0) < 0 )
-		return NULL;
-
-	if (jobinfo) {
-		data      = jobinfo->data;
-		plugin_id = jobinfo->plugin_id;
-	} else
-		plugin_id = switch_context_default;
-
-	return (*(ops[plugin_id].string_jobinfo))(data, buf, size);
 }
 
 extern int switch_g_node_init(void)

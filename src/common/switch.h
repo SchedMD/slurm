@@ -184,21 +184,6 @@ extern int switch_g_job_step_allocated(dynamic_plugin_data_t *jobinfo,
  */
 extern int switch_g_slurmctld_init(void);
 
-/* write job credential string representation to a file
- * IN fp      - an open file pointer
- * IN jobinfo - a switch job credential
- */
-extern void switch_g_print_jobinfo(FILE *fp, dynamic_plugin_data_t *jobinfo);
-
-/* write job credential to a string
- * IN jobinfo - a switch job credential
- * OUT buf    - location to write job credential contents
- * IN size    - byte size of buf
- * RET        - the string, same as buf
- */
-extern char *switch_g_sprint_jobinfo(dynamic_plugin_data_t *jobinfo,
-				     char *buf, size_t size);
-
 /********************************************************************\
  * JOB LAUNCH AND MANAGEMENT FUNCTIONS RELATED TO SWITCH CREDENTIAL *
 \********************************************************************/
