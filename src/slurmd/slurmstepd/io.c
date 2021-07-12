@@ -987,14 +987,12 @@ _init_task_stdio_fds(stepd_step_task_info_t *task, stepd_step_rec_t *job)
 		int pin[2];
 
 		debug5("  stdin uses an eio object");
-		if (pipe(pin) < 0) {
+		if (pipe2(pin, O_CLOEXEC) < 0) {
 			error("stdin pipe: %m");
 			return SLURM_ERROR;
 		}
 		task->stdin_fd = pin[0];
-		fd_set_close_on_exec(task->stdin_fd);
 		task->to_stdin = pin[1];
-		fd_set_close_on_exec(task->to_stdin);
 		fd_set_nonblocking(task->to_stdin);
 		task->in = _create_task_in_eio(task->to_stdin, job);
 		eio_new_initial_obj(job->eio, (void *)task->in);

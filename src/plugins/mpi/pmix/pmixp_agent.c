@@ -227,9 +227,7 @@ static void _shutdown_timeout_fds(void);
 
 #define SETUP_FDS(fds) { \
 	fd_set_nonblocking(fds[0]);	\
-	fd_set_close_on_exec(fds[0]);	\
 	fd_set_nonblocking(fds[1]);	\
-	fd_set_close_on_exec(fds[1]);	\
 	}
 
 static int _setup_timeout_fds(void)
@@ -239,14 +237,14 @@ static int _setup_timeout_fds(void)
 	timer_data.work_in = timer_data.work_out = -1;
 	timer_data.stop_in = timer_data.stop_out = -1;
 
-	if (pipe(fds)) {
+	if (pipe2(fds, O_CLOEXEC)) {
 		return SLURM_ERROR;
 	}
 	SETUP_FDS(fds);
 	timer_data.work_in = fds[0];
 	timer_data.work_out = fds[1];
 
-	if (pipe(fds)) {
+	if (pipe2(fds, O_CLOEXEC)) {
 		_shutdown_timeout_fds();
 		return SLURM_ERROR;
 	}
