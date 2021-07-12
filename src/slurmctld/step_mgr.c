@@ -3867,8 +3867,6 @@ extern int dump_job_step_state(void *x, void *arg)
 				    &step_ptr->step_id,
 				    SLURM_PROTOCOL_VERSION);
 
-	pack16(step_ptr->batch_step, buffer);
-
 	pack_slurm_step_layout(step_ptr->step_layout, buffer,
 			       SLURM_PROTOCOL_VERSION);
 
@@ -3988,8 +3986,6 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 					   &step_id, protocol_version)
 		    != SLURM_SUCCESS)
 			goto unpack_error;
-
-		safe_unpack16(&batch_step, buffer);
 
 		if (unpack_slurm_step_layout(&step_layout, buffer,
 					     protocol_version))
@@ -4260,7 +4256,6 @@ extern int load_step_state(job_record_t *job_ptr, buf_t *buffer,
 	step_ptr->pn_min_memory= pn_min_memory;
 	step_ptr->host         = host;
 	host                   = NULL;  /* re-used, nothing left to free */
-	step_ptr->batch_step   = batch_step;
 	step_ptr->start_time   = start_time;
 	step_ptr->time_limit   = time_limit;
 	step_ptr->pre_sus_time = pre_sus_time;
@@ -4760,7 +4755,6 @@ extern step_record_t *build_batch_step(job_record_t *job_ptr_in)
 	step_ptr->step_id.job_id = job_ptr->job_id;
 	step_ptr->step_id.step_id = SLURM_BATCH_SCRIPT;
 	step_ptr->step_id.step_het_comp = NO_VAL;
-	step_ptr->batch_step = 1;
 	step_ptr->container = xstrdup(job_ptr->container);
 
 #ifndef HAVE_FRONT_END

@@ -950,7 +950,6 @@ typedef struct depend_spec {
 typedef struct {
 	uint32_t magic;			/* magic cookie to test data integrity */
 					/* DO NOT ALPHABETIZE */
-	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
 	char *container;		/* OCI Container bundle path */
 	bitstr_t *core_bitmap_job;	/* bitmap of cores allocated to this
 					 * step relative to job's nodes,
