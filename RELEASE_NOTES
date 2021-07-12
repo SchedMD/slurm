@@ -66,6 +66,7 @@ HIGHLIGHTS
  -- service files - change dependency to network-online rather than just
     network to ensure DNS and other services are available.
  -- Add "Extra" field to node to store extra information other than a comment.
+ -- Add ResumeTimeout, SuspendTimeout and SuspendTime to Partitions.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================

@@ -394,7 +394,13 @@ typedef struct {
 	slurmdb_qos_rec_t *qos_ptr; /* pointer to the quality of
 				     * service record attached to this
 				     * partition confirm the value before use */
+	uint16_t resume_timeout; /* time required in order to perform a node
+				  * resume operation */
 	uint16_t state_up;	/* See PARTITION_* states in slurm.h */
+	uint32_t suspend_time;  /* node idle for this long before power save
+				 * mode */
+	uint16_t suspend_timeout; /* time required in order to perform a node
+				   * suspend operation */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
 	uint32_t max_cpu_cnt;	/* max # of cpus on a node in the partition */

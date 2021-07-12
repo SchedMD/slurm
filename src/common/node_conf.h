@@ -171,6 +171,12 @@ struct node_record {
 	bitstr_t *node_spec_bitmap;	/* node cpu specialization bitmap */
 	uint32_t owner;			/* User allowed to use node or NO_VAL */
 	uint16_t owner_job_cnt;		/* Count of exclusive jobs by "owner" */
+	uint16_t resume_timeout; 	/* time required in order to perform a
+					 * node resume operation */
+	uint32_t suspend_time; 		/* node idle for this long before
+					 * power save mode */
+	uint16_t suspend_timeout;	/* time required in order to perform a
+					 * node suspend operation */
 	char *tres_str;                 /* tres this node has */
 	char *tres_fmt_str;		/* tres this node has */
 	uint64_t *tres_cnt;		/* tres this node has. NO_PACK*/

@@ -673,6 +673,9 @@ extern node_record_t *create_node_record(config_record_t *config_ptr,
 	node_ptr->next_state = NO_VAL;
 	node_ptr->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
 	node_ptr->magic = NODE_MAGIC;
+	node_ptr->resume_timeout = NO_VAL16;
+	node_ptr->suspend_time = NO_VAL;
+	node_ptr->suspend_timeout = NO_VAL16;
 
 	/*
 	 * Here we determine if this node is scheduling threads or not.

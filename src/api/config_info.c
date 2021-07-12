@@ -408,6 +408,24 @@ void slurm_write_ctl_conf ( slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr,
 			fprintf(fp, " TRESBillingWeights=%s",
 			        p[i].billing_weights_str);
 
+		if (p[i].resume_timeout == INFINITE16)
+	                fprintf(fp, " ResumeTimeout=INFINITE");
+		else if (p[i].resume_timeout != NO_VAL16)
+	                fprintf(fp, " ResumeTimeout=%d",
+				p[i].resume_timeout);
+
+		if (p[i].suspend_timeout == INFINITE16)
+	                fprintf(fp, " SuspendTimeout=INFINITE");
+		else if (p[i].suspend_timeout != NO_VAL16)
+	                fprintf(fp, " SuspendTimeout=%d",
+				p[i].suspend_timeout);
+
+		if (p[i].suspend_time == INFINITE)
+	                fprintf(fp, " SuspendTime=INFINITE");
+		else if (p[i].suspend_time != NO_VAL)
+	                fprintf(fp, " SuspendTime=%d",
+				p[i].suspend_time);
+
 		fprintf(fp, "\n");
 	}
 
@@ -1708,11 +1726,11 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	key_pair->value = xstrdup(tmp_str);
 	list_append(ret_list, key_pair);
 
-	if (slurm_ctl_conf_ptr->suspend_time == 0) {
-		snprintf(tmp_str, sizeof(tmp_str), "NONE");
+	if (slurm_ctl_conf_ptr->suspend_time == INFINITE) {
+		snprintf(tmp_str, sizeof(tmp_str), "INFINITE");
 	} else {
-		snprintf(tmp_str, sizeof(tmp_str), "%d sec",
-			 ((int)slurm_ctl_conf_ptr->suspend_time - 1));
+		snprintf(tmp_str, sizeof(tmp_str), "%u sec",
+			 slurm_ctl_conf_ptr->suspend_time);
 	}
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SuspendTime");

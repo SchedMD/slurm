@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "June 2021" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "July 2021" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -2602,11 +2602,6 @@ The argument to the program will be the names of nodes to
 be removed from power savings mode (using Slurm's hostlist
 expression format).
 By default no program is run.
-Related configuration options include \fBResumeTimeout\fR, \fBResumeRate\fR,
-\fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, \fBSuspendProgram\fR,
-\fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
-More information is available at the Slurm web site
-( https://slurm.schedmd.com/power_save.html ).
 
 .TP
 \fBResumeRate\fR
@@ -2617,9 +2612,6 @@ power surges if a large number of nodes in power save mode are
 assigned work at the same time (e.g. a large job starts).
 A value of zero results in no limits being imposed.
 The default value is 300 nodes per minute.
-Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR,
-\fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, \fBSuspendProgram\fR,
-\fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
 
 .TP
 \fBResumeTimeout\fR
@@ -2630,11 +2622,6 @@ the jobs scheduled on the node requeued.
 Nodes which reboot after this time frame will be marked DOWN with a reason of
 "Node unexpectedly rebooted."
 The default value is 60 seconds.
-Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
-\fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR, \fBSuspendProgram\fR,
-\fBSuspendExcNodes\fR and \fBSuspendExcParts\fR.
-More information is available at the Slurm web site
-( https://slurm.schedmd.com/power_save.html ).
 
 .TP
 \fBResvEpilog\fR
@@ -4058,9 +4045,6 @@ For example "nid[10-20]:4,nid[60-70]" will exclude 4 nodes in the set
 "nid[10-20]:4" plus all nodes in the set "nid[60-70]" while
 "nid[1-3],nid[10-20]:4" will exclude 4 nodes from the set "nid[1-3],nid[10-20]".
 By default no nodes are excluded.
-Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR,
-\fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTime\fR,
-\fBSuspendTimeout\fR, and \fBSuspendExcParts\fR.
 
 .TP
 \fBSuspendExcParts\fR
@@ -4068,9 +4052,6 @@ Specifies the partitions whose nodes are to not be placed in power save
 mode, even if the node remains idle for an extended period of time.
 Multiple partitions can be identified and separated by commas.
 By default no nodes are excluded.
-Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR,
-\fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTime\fR
-\fBSuspendTimeout\fR, and \fBSuspendExcNodes\fR.
 
 .TP
 \fBSuspendProgram\fR
@@ -4084,9 +4065,6 @@ The argument to the program will be the names of nodes to
 be placed into power savings mode (using Slurm's hostlist
 expression format).
 By default, no program is run.
-Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR,
-\fBResumeRate\fR, \fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR,
-\fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
 
 .TP
 \fBSuspendRate\fR
@@ -4095,21 +4073,13 @@ The value is number of nodes per minute and it can be used to prevent
 a large drop in power consumption (e.g. after a large job completes).
 A value of zero results in no limits being imposed.
 The default value is 60 nodes per minute.
-Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR,
-\fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendTime\fR, \fBSuspendTimeout\fR,
-\fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
 
 .TP
 \fBSuspendTime\fR
 Nodes which remain idle or down for this number of seconds will be placed into
 power save mode by \fBSuspendProgram\fR.
-For efficient system utilization, it is recommended that the value of
-\fBSuspendTime\fR be at least as large as the sum of \fBSuspendTimeout\fR
-plus \fBResumeTimeout\fR.
-A value of \-1 disables power save mode and is the default.
-Related configuration options include \fBResumeTimeout\fR, \fBResumeProgram\fR,
-\fBResumeRate\fR, \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTimeout\fR,
-\fBSuspendExcNodes\fR, and \fBSuspendExcParts\fR.
+Setting \fBSuspendTime\fR to anything but INFINITE (or -1) will enable power
+save mode. INFINITE is the default.
 
 .TP
 \fBSuspendTimeout\fR
@@ -4118,11 +4088,6 @@ is issued and when the node is shutdown.
 At that time the node must be ready for a resume request to be issued
 as needed for new work.
 The default value is 30 seconds.
-Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
-\fBResumeTimeout\fR, \fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendProgram\fR,
-\fBSuspendExcNodes\fR and \fBSuspendExcParts\fR.
-More information is available at the Slurm web site
-( https://slurm.schedmd.com/power_save.html ).
 
 .TP
 \fBSwitchParameters\fR
@@ -5477,6 +5442,18 @@ Possible values are "YES" and "NO".
 The default value is "NO".
 
 .TP
+\fBResumeTimeout\fR
+Maximum time permitted (in seconds) between when a node resume request
+is issued and when the node is actually available for use.
+Nodes which fail to respond in this time frame will be marked DOWN and
+the jobs scheduled on the node requeued.
+Nodes which reboot after this time frame will be marked DOWN with a reason of
+"Node unexpectedly rebooted."
+For nodes that are in multiple partitions with this option set,
+the highest time will take effect. If not set on any partition, the node will
+use the \fBResumeTimeout\fR value set for the entire cluster.
+
+.TP
 \fBRootOnly\fR
 Specifies if only user ID zero (i.e. user \fIroot\fR) may allocate resources
 in this partition. User root may allocate resources for any other user,
@@ -5530,6 +5507,29 @@ Designates that no new jobs may be queued on the partition,
 and jobs already queued may not be allocated nodes and run.
 See also the "Alternate" partition specification.
 .RE
+
+.TP
+\fBSuspendTime\fR
+Nodes which remain idle or down for this number of seconds will be placed into
+power save mode by \fBSuspendProgram\fR.
+For efficient system utilization, it is recommended that the value of
+\fBSuspendTime\fR be at least as large as the sum of \fBSuspendTimeout\fR
+plus \fBResumeTimeout\fR.
+For nodes that are in multiple partitions with this option set,
+the highest time will take effect. If not set on any partition, the node will
+use the \fBSuspendTime\fR value set for the entire cluster.
+Setting \fBSuspendTime\fR to anything but "INFINITE" will enable power save
+mode.
+
+.TP
+\fBSuspendTimeout\fR
+Maximum time permitted (in seconds) between when a node suspend request
+is issued and when the node is shutdown.
+At that time the node must be ready for a resume request to be issued
+as needed for new work.
+For nodes that are in multiple partitions with this option set,
+the highest time will take effect. If not set on any partition, the node will
+use the \fBSuspendTimeout\fR value set for the entire cluster.
 
 .TP
 \fBTRESBillingWeights\fR

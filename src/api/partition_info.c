@@ -369,6 +369,37 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 			   part_ptr->billing_weights_str);
 	}
 
+	/****** Line ******/
+	if ((part_ptr->resume_timeout != NO_VAL16) ||
+	    (part_ptr->suspend_timeout != NO_VAL16) ||
+	    (part_ptr->suspend_time != NO_VAL)) {
+		xstrcat(out, line_end);
+
+		if (part_ptr->resume_timeout == NO_VAL16)
+			xstrcat(out, "ResumeTimeout=GLOBAL");
+		else if (part_ptr->resume_timeout == INFINITE16)
+			xstrcat(out, "ResumeTimeout=INFINITE");
+		else
+			xstrfmtcat(out, "ResumeTimeout=%d",
+				part_ptr->resume_timeout);
+
+		if (part_ptr->suspend_timeout == NO_VAL16)
+			xstrcat(out, " SuspendTimeout=GLOBAL");
+		else if (part_ptr->suspend_timeout == INFINITE16)
+			xstrcat(out, " SuspendTimeout=INFINITE");
+		else
+			xstrfmtcat(out, " SuspendTimeout=%d",
+				part_ptr->suspend_timeout);
+
+		if (part_ptr->suspend_time == NO_VAL)
+			xstrcat(out, " SuspendTime=GLOBAL");
+		else if (part_ptr->suspend_time == INFINITE)
+			xstrcat(out, " SuspendTime=INFINITE");
+		else
+			xstrfmtcat(out, " SuspendTime=%d",
+				part_ptr->suspend_time);
+	}
+
 	if (one_liner)
 		xstrcat(out, "\n");
 	else

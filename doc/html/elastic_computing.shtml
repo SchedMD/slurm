@@ -54,6 +54,12 @@ configured <b>SlurmdTimeout</b> value with an updated BootTime, the node will
 be placed in a DOWN state and the job requesting the node will be requeued.
 If the node isn't actually rebooted (i.e. when multiple-slurmd is configured)
 starting slurmd with "-b" option might be useful.
+<dt><b>ResumeTimeout</b>
+<dd>Maximum time permitted (in seconds) between when a node resume request
+is issued and when the node is actually available for use. Nodes which fail to
+respond in this time frame will be marked DOWN and the jobs scheduled on the
+node requeued. Nodes which reboot after this time frame will be marked DOWN
+with a reason of "Node unexpectedly rebooted." The default value is 60 seconds.
 <dt><b>SlurmctldParameters=cloud_dns</b>
 <dd>By default, Slurm expects that the network addresses for cloud nodes
 won't be known until creation of the node and that Slurm will be notified of
@@ -77,6 +83,11 @@ relinquished to the cloud.
 <dt><b>SuspendTime</b>
 <dd>The time interval that a node will be left idle or down before a request is
 made to relinquish it. Units are in seconds.
+<dt><b>SuspendTimeout</b>
+<dd>Maximum time permitted (in seconds) between when a node suspend request
+is issued and when the node is shutdown. At that time the node must be ready
+for a resume request to be issued as needed for new work. The default value is
+30 seconds.
 <dt><b>TCPTimeout</b>
 <dd>Time permitted for TCP connections to be established. This value may need
 to be increased from the default (2 seconds) to account for latency between
@@ -138,6 +149,27 @@ PartitionName=debug MaxTime=1:00:00 Nodes=tux[0-32] Default=yes
 PartitionName=batch MaxTime=8:00:00 Nodes=tux[0-127],ec[0-127] Default=no
 </pre>
 
+<p><b>ResumeTimeout</b>, <b>SuspendTimeout</b> and <b>SuspendTime</b> can be
+applied at the partition level. If a node is in multiple partitions and these
+options are configured on the partitions, the higher value will be used for the
+node. If the option is not set, it will use the global setting. Configuring
+<b>SuspendTime</b> on a partition will enable power save mode if the global
+SuspendTime is not set.
+</p>
+
+<p>By default, when power save mode is enabled Slurm attempts to "suspend" all
+nodes unless excluded by <b>SuspendExcNodes</b> or <b>SuspendExcParts</b>. For
+bursting from on-premise scenarios this can be tricky to have to remember to
+add on-premise nodes to the excluded options. By setting the global
+<b>SuspendTime</b> to <b>INFINITE</b> and configuring <b>SuspendTime</b> on
+cloud specific partitions, you can avoid having to exclude nodes.
+</p>
+
+<p>If power save mode is enabled globally, disable power save mode for a
+specific partition, by setting <b>SuspendTime</b> to <b>INFINITE</b>.
+</p>
+
+
 <h2>Operational Details</h2>
 
 <p>When the slurmctld daemon starts, all nodes with a state of CLOUD will be
@@ -187,6 +219,6 @@ expands (adds resources).</li>
 </ul>
 
 
-<p style="text-align:center;">Last modified 9 June 2021</p>
+<p style="text-align:center;">Last modified 9 July 2021</p>
 
 <!--#include virtual="footer.txt"-->

@@ -273,9 +273,15 @@ typedef struct slurm_conf_partition {
 	char    *qos_char;      /* Name of QOS associated with partition */
 	bool     req_resv_flag; /* 1 if partition can only be used in a
 				 * reservation */
+	uint16_t resume_timeout; /* time required in order to perform a node
+				  * resume operation */
 	bool     root_only_flag;/* 1 if allocate/submit RPC can only be
 				   issued by user root */
 	uint16_t state_up;	/* for states see PARTITION_* in slurm.h */
+	uint32_t suspend_time;  /* node idle for this long before power save
+				 * mode */
+	uint16_t suspend_timeout; /* time required in order to perform a node
+				   * suspend operation */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
 } slurm_conf_partition_t;
