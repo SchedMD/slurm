@@ -4422,34 +4422,29 @@ static void _signal_step_timelimit(job_record_t *job_ptr, step_record_t *step_pt
 	return;
 }
 
-extern void check_job_step_time_limit(job_record_t *job_ptr, time_t now)
+extern int check_job_step_time_limit(void *x, void *arg)
 {
-	ListIterator step_iterator;
-	step_record_t *step_ptr;
+	step_record_t *step_ptr = (step_record_t *) x;
+	time_t *now = (time_t *) arg;
 	uint32_t job_run_mins = 0;
 
-	xassert(job_ptr);
+	if (step_ptr->state != JOB_RUNNING)
+		return 0;
 
-	if (job_ptr->job_state != JOB_RUNNING)
-		return;
+	if (step_ptr->time_limit == INFINITE || step_ptr->time_limit == NO_VAL)
+		return 0;
 
-	step_iterator = list_iterator_create (job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator))) {
-		if (step_ptr->state != JOB_RUNNING)
-			continue;
-		if (step_ptr->time_limit == INFINITE ||
-		    step_ptr->time_limit == NO_VAL)
-			continue;
-		job_run_mins = (uint32_t) (((now - step_ptr->start_time) -
-				step_ptr->tot_sus_time) / 60);
-		if (job_run_mins >= step_ptr->time_limit) {
-			/* this step has timed out */
-			info("%s: %pS has timed out (%u)",
-			     __func__, step_ptr, step_ptr->time_limit);
-			_signal_step_timelimit(job_ptr, step_ptr, now);
-		}
+	job_run_mins = (uint32_t) (((*now - step_ptr->start_time) -
+				   step_ptr->tot_sus_time) / 60);
+
+	if (job_run_mins >= step_ptr->time_limit) {
+		/* this step has timed out */
+		info("%s: %pS has timed out (%u)",
+		     __func__, step_ptr, step_ptr->time_limit);
+		_signal_step_timelimit(step_ptr->job_ptr, step_ptr, *now);
 	}
-	list_iterator_destroy (step_iterator);
+
+	return 0;
 }
 
 /* Return true if memory is a reserved resources, false otherwise */

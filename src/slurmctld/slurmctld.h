@@ -1745,10 +1745,8 @@ extern int job_update_tres_cnt(job_record_t *job_ptr, int node_inx);
 /*
  * check_job_step_time_limit - terminate jobsteps which have exceeded
  * their time limit
- * IN job_ptr - pointer to job containing steps to check
- * IN now - current time to use for the limit check
  */
-extern void check_job_step_time_limit(job_record_t *job_ptr, time_t now);
+extern int check_job_step_time_limit(void *x, void *arg);
 
 /*
  * Kill job or job step

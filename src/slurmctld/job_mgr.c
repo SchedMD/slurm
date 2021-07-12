@@ -9154,9 +9154,8 @@ void job_time_limit(void)
 		 * check if any individual job steps have exceeded
 		 * their time limit
 		 */
-		if (job_ptr->step_list &&
-		    (list_count(job_ptr->step_list) > 0))
-			check_job_step_time_limit(job_ptr, now);
+		list_for_each(job_ptr->step_list, check_job_step_time_limit,
+			      &now);
 
 		acct_policy_job_time_out(job_ptr);
 
