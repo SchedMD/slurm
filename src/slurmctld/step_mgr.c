@@ -383,6 +383,24 @@ static int _step_signal(void *object, void *arg)
 	return rc;
 }
 
+static int _step_not_cleaning(void *x, void *arg)
+{
+	step_record_t *step_ptr = (step_record_t *) x;
+
+	if (step_ptr->step_id.step_id != SLURM_PENDING_STEP) {
+		uint16_t cleaning = 0;
+		select_g_select_jobinfo_get(step_ptr->select_jobinfo,
+					    SELECT_JOBDATA_CLEANING,
+					    &cleaning);
+		if (cleaning)	/* Step already in cleanup. */
+			return 0;
+	} else {
+		srun_step_signal(step_ptr, 0);
+	}
+
+	return 1;
+}
+
 /*
  * delete_step_records - Delete step record for specified job_ptr.
  * This function is called when a step fails to run to completion. For example,
@@ -392,34 +410,10 @@ static int _step_signal(void *object, void *arg)
  */
 extern void delete_step_records(job_record_t *job_ptr)
 {
-	ListIterator step_iterator;
-	step_record_t *step_ptr;
-
 	xassert(job_ptr);
 
-	/*
-	 * NOTE: cannot use list_for_each() here, as _internal_step_complete()
-	 * will remove the record from the List, which requires the List
-	 * be unlocked
-	 */
 	last_job_update = time(NULL);
-	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator))) {
-		/* Only check if not a pending step */
-		if (step_ptr->step_id.step_id != SLURM_PENDING_STEP) {
-			uint16_t cleaning = 0;
-			select_g_select_jobinfo_get(step_ptr->select_jobinfo,
-						    SELECT_JOBDATA_CLEANING,
-						    &cleaning);
-			if (cleaning)	/* Step already in cleanup. */
-				continue;
-		} else {
-			srun_step_signal(step_ptr, 0);
-		}
-		_internal_step_complete(job_ptr, step_ptr);
-		list_delete_ptr(job_ptr->step_list, step_ptr);
-	}
-	list_iterator_destroy(step_iterator);
+	list_delete_all(job_ptr->step_list, _step_not_cleaning, NULL);
 }
 
 /* free_step_record - delete a step record's data structures */
