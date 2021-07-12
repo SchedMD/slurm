@@ -131,11 +131,7 @@ fail:
 	return n;
 }
 
-
-
-
-int
-io_init_msg_validate(struct slurm_io_init_msg *msg, const char *sig)
+extern int io_init_msg_validate(io_init_msg_t *msg, const char *sig)
 {
 	debug2("Entering io_init_msg_validate");
 
@@ -158,7 +154,7 @@ io_init_msg_validate(struct slurm_io_init_msg *msg, const char *sig)
 }
 
 
-static int io_init_msg_pack(struct slurm_io_init_msg *hdr, buf_t *buffer)
+static int io_init_msg_pack(io_init_msg_t *hdr, buf_t *buffer)
 {
 	if (hdr->version == SLURM_PROTOCOL_VERSION) {
 		uint32_t top_offset, tail_offset;
@@ -199,7 +195,7 @@ static int io_init_msg_pack(struct slurm_io_init_msg *hdr, buf_t *buffer)
 }
 
 
-static int io_init_msg_unpack(struct slurm_io_init_msg *hdr, buf_t *buffer)
+static int io_init_msg_unpack(io_init_msg_t *hdr, buf_t *buffer)
 {
 	/* If this function changes, io_init_msg_packed_size must change. */
 
@@ -222,7 +218,7 @@ static int io_init_msg_unpack(struct slurm_io_init_msg *hdr, buf_t *buffer)
 
 
 int
-io_init_msg_write_to_fd(int fd, struct slurm_io_init_msg *msg)
+io_init_msg_write_to_fd(int fd, io_init_msg_t *msg)
 {
 	int rc = SLURM_ERROR;
 	buf_t *buf = init_buf(io_init_msg_packed_size());
@@ -243,8 +239,7 @@ rwfail:
 	return rc;
 }
 
-int
-io_init_msg_read_from_fd(int fd, struct slurm_io_init_msg *msg)
+extern int io_init_msg_read_from_fd(int fd, io_init_msg_t *msg)
 {
 	buf_t *buf = NULL;
 	uint32_t len;

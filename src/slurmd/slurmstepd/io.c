@@ -1645,7 +1645,7 @@ io_client_connect(srun_info_t *srun, stepd_step_rec_t *job)
 static int
 _send_io_init_msg(int sock, srun_info_t *srun, stepd_step_rec_t *job, bool init)
 {
-	struct slurm_io_init_msg msg;
+	io_init_msg_t msg;
 
 	msg.io_key = xmalloc(srun->key->len);
 	msg.io_key_len = srun->key->len;

@@ -828,7 +828,7 @@ _create_listensock_eio(int fd, client_io_t *cio)
 
 static int _read_io_init_msg(int fd, client_io_t *cio, slurm_addr_t *host)
 {
-	struct slurm_io_init_msg msg = { 0 };
+	io_init_msg_t msg = { 0 };
 
 	if (io_init_msg_read_from_fd(fd, &msg) != SLURM_SUCCESS) {
 		error("failed reading io init message");

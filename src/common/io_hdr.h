@@ -57,14 +57,14 @@
 
 #define IO_PROTOCOL_VERSION 0xb001
 
-struct slurm_io_init_msg {
+typedef struct {
 	uint16_t      version;
 	char          *io_key;
 	uint32_t      io_key_len;
 	uint32_t      nodeid;
 	uint32_t      stdout_objs;
 	uint32_t      stderr_objs;
-};
+} io_init_msg_t;
 
 
 typedef struct slurm_io_header {
@@ -87,8 +87,8 @@ int io_hdr_read_fd(int fd, io_hdr_t *hdr);
 /*
  * Validate io init msg
  */
-int io_init_msg_validate(struct slurm_io_init_msg *msg, const char *sig);
-int io_init_msg_write_to_fd(int fd, struct slurm_io_init_msg *msg);
-int io_init_msg_read_from_fd(int fd, struct slurm_io_init_msg *msg);
+int io_init_msg_validate(io_init_msg_t *msg, const char *sig);
+int io_init_msg_write_to_fd(int fd, io_init_msg_t *msg);
+int io_init_msg_read_from_fd(int fd, io_init_msg_t *msg);
 
 #endif /* !_HAVE_IO_HDR_H */
