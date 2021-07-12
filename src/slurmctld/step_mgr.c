@@ -3403,10 +3403,9 @@ extern int pack_ctld_job_step_info_response_msg(
  * IN job_ptr - pointer to an active job record
  * IN node_ptr - pointer to a node record
  * IN node_fail - true of removed node has failed
- * RET count of killed job steps
  */
-extern int kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
-			     bool node_fail)
+extern void kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
+			      bool node_fail)
 {
 #ifdef HAVE_FRONT_END
 	static bool front_end = true;
@@ -3417,11 +3416,11 @@ extern int kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
 	step_record_t *step_ptr;
 	int i, i_first, i_last;
 	uint32_t step_rc = 0;
-	int bit_position, found = 0, rem = 0, step_node_inx;
+	int bit_position, rem = 0, step_node_inx;
 	step_complete_msg_t req;
 
-	if ((job_ptr == NULL) || (node_ptr == NULL))
-		return found;
+	if (!job_ptr || !node_ptr)
+		return;
 
 	bit_position = node_ptr - node_record_table_ptr;
 	step_iterator = list_iterator_create (job_ptr->step_list);
@@ -3469,11 +3468,9 @@ extern int kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
 						  SIGKILL,
 						  REQUEST_TERMINATE_TASKS);
 		}
-		found++;
 	}
 
 	list_iterator_destroy (step_iterator);
-	return found;
 }
 
 /*

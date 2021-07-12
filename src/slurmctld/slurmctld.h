@@ -1794,10 +1794,9 @@ extern int kill_running_job_by_node_name(char *node_name);
  * IN job_ptr - pointer to an active job record
  * IN node_ptr - pointer to a node record
  * IN node_fail - true of removed node has failed
- * RET count of killed job steps
  */
-extern int kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
-			     bool node_fail);
+extern void kill_step_on_node(job_record_t *job_ptr, node_record_t *node_ptr,
+			      bool node_fail);
 
 /* list_compare_config - compare two entry from the config list based upon
  *	weight, see common/list.h for documentation */
