@@ -178,43 +178,14 @@ slurm_populate_node_partitions(node_info_msg_t *node_buffer_ptr,
 char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 {
 	uint32_t my_state = node_ptr->node_state;
-	char *cloud_str = "", *comp_str = "", *drain_str = "", *power_str = "";
 	char time_str[32];
-	char *out = NULL, *reason_str = NULL;
+	char *out = NULL, *reason_str = NULL, *complete_state = NULL;
 	uint16_t alloc_cpus = 0;
 	int idle_cpus;
 	uint64_t alloc_memory;
 	char *node_alloc_tres = NULL;
 	char *line_end = (one_liner) ? " " : "\n   ";
 
-	if (my_state & NODE_STATE_CLOUD) {
-		my_state &= (~NODE_STATE_CLOUD);
-		cloud_str = "+CLOUD";
-	}
-	if (my_state & NODE_STATE_COMPLETING) {
-		my_state &= (~NODE_STATE_COMPLETING);
-		comp_str = "+COMPLETING";
-	}
-	if (my_state & NODE_STATE_DRAIN) {
-		my_state &= (~NODE_STATE_DRAIN);
-		drain_str = "+DRAIN";
-	}
-	if (my_state & NODE_STATE_FAIL) {
-		my_state &= (~NODE_STATE_FAIL);
-		drain_str = "+FAIL";
-	}
-	if (my_state & NODE_STATE_POWER_SAVE) {
-		my_state &= (~NODE_STATE_POWER_SAVE);
-		power_str = "+POWER";
-	}
-	if (my_state & NODE_STATE_POWERING_DOWN) {
-		my_state &= (~NODE_STATE_POWERING_DOWN);
-		power_str = "+POWERING_DOWN";
-	}
-	if (my_state & NODE_STATE_PLANNED) {
-		my_state &= (~NODE_STATE_PLANNED);
-		power_str = "+PLANNED";
-	}
 	slurm_get_select_nodeinfo(node_ptr->select_nodeinfo,
 				  SELECT_NODEDATA_SUBCNT,
 				  NODE_STATE_ALLOCATED,
@@ -353,10 +324,11 @@ char *slurm_sprint_node_table(node_info_t *node_ptr, int one_liner)
 	}
 
 	/****** Line ******/
-	xstrfmtcat(out, "State=%s%s%s%s%s ThreadsPerCore=%u TmpDisk=%u Weight=%u ",
-		   node_state_string(my_state),
-		   cloud_str, comp_str, drain_str, power_str,
-		   node_ptr->threads, node_ptr->tmp_disk, node_ptr->weight);
+	complete_state = node_state_string_complete(my_state);
+	xstrfmtcat(out, "State=%s ThreadsPerCore=%u TmpDisk=%u Weight=%u ",
+		   complete_state, node_ptr->threads, node_ptr->tmp_disk,
+		   node_ptr->weight);
+	xfree(complete_state);
 
 	if (node_ptr->owner == NO_VAL) {
 		xstrcat(out, "Owner=N/A ");
