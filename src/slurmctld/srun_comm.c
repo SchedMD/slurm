@@ -430,6 +430,16 @@ extern int srun_user_message(job_record_t *job_ptr, char *msg)
 	return ESLURM_DISABLED;
 }
 
+static int _srun_job_complete(void *x, void *arg)
+{
+	step_record_t *step_ptr = (step_record_t *) x;
+
+	if (step_ptr->step_id.step_id != SLURM_BATCH_SCRIPT)
+		srun_step_complete(step_ptr);
+
+	return 0;
+}
+
 /*
  * srun_job_complete - notify srun of a job's termination
  * IN job_ptr - pointer to the slurmctld job record
@@ -438,8 +448,6 @@ extern void srun_job_complete(job_record_t *job_ptr)
 {
 	slurm_addr_t * addr;
 	srun_job_complete_msg_t *msg_arg;
-	ListIterator step_iterator;
-	step_record_t *step_ptr;
 
 	xassert(job_ptr);
 
@@ -455,13 +463,7 @@ extern void srun_job_complete(job_record_t *job_ptr)
 				   job_ptr->start_protocol_ver);
 	}
 
-	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator))) {
-		if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT)
-			continue;
-		srun_step_complete(step_ptr);
-	}
-	list_iterator_destroy(step_iterator);
+	list_for_each(job_ptr->step_list, _srun_job_complete, NULL);
 }
 
 /*
