@@ -791,6 +791,10 @@ static bb_pools_t * _json_parse_pools_array(json_object *jobj, char *key,
 	pools = xcalloc(*num, sizeof(bb_pools_t));
 
 	for (i = 0; i < *num; i++) {
+		pools[i].free = NO_VAL64;
+		pools[i].granularity = NO_VAL64;
+		pools[i].quantity = NO_VAL64;
+
 		jvalue = json_object_array_get_idx(jarray, i);
 		_json_parse_pools_object(jvalue, &pools[i]);
 	}
@@ -896,20 +900,51 @@ static int _load_pools(uint32_t timeout)
 		pools_inx = pool_ptr - bb_state.bb_config.pool_ptr;
 		bit_set(pools_bitmap, pools_inx);
 
-		if (!pools[i].granularity) {
-			info("Granularity cannot be zero. Setting granularity to 1 for pool %s",
-			     pool_ptr->name);
+		if (!pools[i].granularity ||
+		    (pools[i].granularity == NO_VAL64)) {
+			if (first_run || !found_pool)
+				log_flag(BURST_BUF, "Granularity cannot be zero. Setting granularity to 1 for pool %s",
+					 pool_ptr->name);
 			pools[i].granularity = 1;
 		}
-		/*
-		 * TODO: Put some sanity checks on values here
-		 * (check for overflow or underflow)?
-		 */
+		if (pools[i].quantity == NO_VAL64) {
+			if (first_run || !found_pool)
+				log_flag(BURST_BUF, "Quantity unset for pool %s, setting to zero",
+					 pool_ptr->name);
+			pools[i].quantity = 0;
+		}
 		pool_ptr->total_space = pools[i].quantity *
 			pools[i].granularity;
 		pool_ptr->granularity = pools[i].granularity;
-		pool_ptr->unfree_space = pools[i].quantity - pools[i].free;
-		pool_ptr->unfree_space *= pools[i].granularity;
+
+		/*
+		 * Set unfree space. We use pool_ptr->used_space to track
+		 * usage of pools within Slurm and this plugin also always
+		 * updates pool_ptr->unfree_space at the same time. But we
+		 * have unfree_space as a way for the burst buffer API to say
+		 * that something external to Slurm is using space, or as a
+		 * way to not allow some space to be used.
+		 */
+		if (pools[i].free != NO_VAL64) {
+			if (pools[i].quantity >= pools[i].free) {
+				pool_ptr->unfree_space =
+					pools[i].quantity - pools[i].free;
+				pool_ptr->unfree_space *= pools[i].granularity;
+			} else {
+				error("Underflow on pool=%s: Free space=%"PRIu64" bigger than quantity=%"PRIu64", setting free space equal to quantity",
+				      pools[i].name, pools[i].free,
+				      pools[i].quantity);
+				pool_ptr->unfree_space = 0;
+			}
+		} else if (!found_pool) {
+			/*
+			 * Free space not specified. This is a new pool since
+			 * found_pool==false, so set unfree space to 0. Don't
+			 * change unfree space for pools that already exist if
+			 * it wasn't specified.
+			 */
+			pool_ptr->unfree_space = 0;
+		}
 	}
 
 	pool_ptr = bb_state.bb_config.pool_ptr;
