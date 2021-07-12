@@ -733,14 +733,38 @@ void signal_step_tasks_on_node(char* node_name, step_record_t *step_ptr,
 	return;
 }
 
+typedef struct {
+	int config_start_count;
+	int start_count;
+	time_t max_age;
+} wake_steps_args_t;
+
+static int _wake_steps(void *x, void *arg)
+{
+	step_record_t *step_ptr = (step_record_t *) x;
+	wake_steps_args_t *args = (wake_steps_args_t *) arg;
+
+	if (step_ptr->state != JOB_PENDING)
+		return 0;
+
+	if ((args->start_count < args->config_start_count) ||
+	    (step_ptr->time_last_active <= args->max_age)) {
+		srun_step_signal(step_ptr, 0);
+		/*
+		 * Step never started, no need to check SELECT_JOBDATA_CLEANING.
+		 */
+		args->start_count++;
+		return 1;
+	}
+
+	return 0;
+}
+
 /* A step just completed, signal srun processes with pending steps to retry */
 static void _wake_pending_steps(job_record_t *job_ptr)
 {
 	static int config_start_count = -1, config_max_age = -1;
-	ListIterator step_iterator;
-	step_record_t *step_ptr;
-	int start_count = 0;
-	time_t max_age;
+	wake_steps_args_t args;
 
 	if (!IS_JOB_RUNNING(job_ptr))
 		return;
@@ -769,25 +793,14 @@ static void _wake_pending_steps(job_record_t *job_ptr)
 				config_max_age = param;
 		}
 	}
-	max_age = time(NULL) - config_max_age;
+	args.max_age = time(NULL) - config_max_age;
 
 	/* We do not know which steps can use currently available resources.
 	 * Try to start a bit more based upon step sizes. Effectiveness
 	 * varies with step sizes, constraints and order. */
-	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator))) {
-		if ((step_ptr->state == JOB_PENDING) &&
-		    ((start_count < config_start_count) ||
-		     (step_ptr->time_last_active <= max_age))) {
-			srun_step_signal(step_ptr, 0);
-			list_remove(step_iterator);
-			/* Step never started, no need to check
-			 * SELECT_JOBDATA_CLEANING. */
-			free_step_record(step_ptr);
-			start_count++;
-		}
-	}
-	list_iterator_destroy (step_iterator);
+	args.config_start_count = config_start_count;
+	args.start_count = 0;
+	list_delete_all(job_ptr->step_list, _wake_steps, &args);
 }
 
 /* Pick nodes to be allocated to a job step. If a CPU count is also specified,
