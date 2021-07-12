@@ -4462,6 +4462,27 @@ static bool _is_mem_resv(void)
 	return mem_resv_value;
 }
 
+typedef struct {
+	int mod_cnt;
+	uint32_t time_limit;
+} update_step_args_t;
+
+static int _update_step(void *x, void *arg)
+{
+	step_record_t *step_ptr = (step_record_t *) x;
+	update_step_args_t *args = (update_step_args_t *) arg;
+
+	if (step_ptr->state != JOB_RUNNING)
+		return 0;
+
+	step_ptr->time_limit = args->time_limit;
+	args->mod_cnt++;
+
+	info("Updating %pS time limit to %u", step_ptr, args->time_limit);
+
+	return 0;
+}
+
 /*
  * Process job step update request from specified user,
  * RET - 0 or error code
@@ -4470,9 +4491,7 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 {
 	job_record_t *job_ptr;
 	step_record_t *step_ptr = NULL;
-	step_record_t *step2_ptr = NULL;
-	ListIterator step_iterator;
-	int mod_cnt = 0;
+	update_step_args_t args = { .mod_cnt = 0 };
 	slurm_step_id_t step_id;
 
 	job_ptr = find_job_record(req->job_id);
@@ -4497,16 +4516,8 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 	 * any steps with any time limit
 	 */
 	if (req->step_id == NO_VAL) {
-		step_iterator = list_iterator_create(job_ptr->step_list);
-		while ((step2_ptr = list_next(step_iterator))) {
-			if (step2_ptr->state != JOB_RUNNING)
-				continue;
-			step2_ptr->time_limit = req->time_limit;
-			mod_cnt++;
-			info("Updating %pS time limit to %u",
-			     step2_ptr, req->time_limit);
-		}
-		list_iterator_destroy (step_iterator);
+		args.time_limit = req->time_limit;
+		list_for_each(job_ptr->step_list, _update_step, &args);
 	} else {
 		step_ptr = find_step_record(job_ptr, &step_id);
 
@@ -4514,12 +4525,12 @@ extern int update_step(step_update_request_msg_t *req, uid_t uid)
 			return ESLURM_INVALID_JOB_ID;
 		if (req->time_limit) {
 			step_ptr->time_limit = req->time_limit;
-			mod_cnt++;
+			args.mod_cnt++;
 			info("Updating %pS time limit to %u",
 			     step_ptr, req->time_limit);
 		}
 	}
-	if (mod_cnt)
+	if (args.mod_cnt)
 		last_job_update = time(NULL);
 
 	return SLURM_SUCCESS;
