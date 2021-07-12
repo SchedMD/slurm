@@ -3083,9 +3083,13 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 }
 
 typedef struct {
+	slurm_step_id_t *step_id;
+	uint16_t show_flags;
+	uid_t uid;
 	uint32_t steps_packed;
 	buf_t *buffer;
 	uint16_t proto_version;
+	bool valid_job;
 } pack_step_args_t;
 
 /* Pack the data for a specific job step record */
@@ -3300,6 +3304,54 @@ static int _pack_ctld_job_step_info(void *x, void *arg)
 	return 0;
 }
 
+static int _pack_job_steps(void *x, void *arg)
+{
+	job_record_t *job_ptr = (job_record_t *) x;
+	pack_step_args_t *args = (pack_step_args_t *) arg;
+
+	if ((args->step_id->job_id != NO_VAL) &&
+	    (args->step_id->job_id != job_ptr->job_id) &&
+	    (args->step_id->job_id != job_ptr->array_job_id))
+		return 0;
+
+	args->valid_job = 1;
+
+	if (((args->show_flags & SHOW_ALL) == 0) && (args->uid != 0) &&
+	    (job_ptr->part_ptr) &&
+	    !part_is_visible(job_ptr->part_ptr, args->uid))
+		return 0;
+
+	if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
+	    (job_ptr->user_id != args->uid) && !validate_operator(args->uid)) {
+		if (slurm_mcs_get_privatedata()) {
+			if (mcs_g_check_mcs_label(args->uid,
+						  job_ptr->mcs_label))
+				return 0;
+		} else if (!assoc_mgr_is_user_acct_coord(acct_db_conn,
+							 args->uid,
+							 job_ptr->account)) {
+			return 0;
+		}
+	}
+
+	/*
+	 * Pack a single requested step, or pack all steps.
+	 */
+	if (args->step_id->step_id != NO_VAL ) {
+		step_record_t *step_ptr = find_step_record(job_ptr,
+							   args->step_id);
+		if (!step_ptr)
+			return 0;
+		_pack_ctld_job_step_info(step_ptr, args);
+	} else {
+		list_for_each(job_ptr->step_list,
+			      _pack_ctld_job_step_info,
+			      args);
+	}
+
+	return 0;
+}
+
 /*
  * pack_ctld_job_step_info_response_msg - packs job step info
  * IN step_id - specific id or NO_VAL/NO_VAL for all
@@ -3313,62 +3365,25 @@ extern int pack_ctld_job_step_info_response_msg(
 	slurm_step_id_t *step_id, uid_t uid, uint16_t show_flags,
 	buf_t *buffer, uint16_t protocol_version)
 {
-	ListIterator job_iterator;
 	int error_code = 0;
 	uint32_t tmp_offset;
-	job_record_t *job_ptr;
 	time_t now = time(NULL);
-	int valid_job = 0;
 	pack_step_args_t args = {
+		.step_id = step_id,
+		.show_flags = show_flags,
+		.uid = uid,
 		.steps_packed = 0,
 		.buffer = buffer,
 		.proto_version = protocol_version,
+		.valid_job = false,
 	};
 
 	pack_time(now, buffer);
 	pack32(args.steps_packed, buffer);	/* steps_packed placeholder */
 
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
+	list_for_each(job_list, _pack_job_steps, &args);
 
-		if ((step_id->job_id != NO_VAL) &&
-		    (step_id->job_id != job_ptr->job_id) &&
-		    (step_id->job_id != job_ptr->array_job_id))
-			continue;
-
-		valid_job = 1;
-
-		if (((show_flags & SHOW_ALL) == 0) && (uid != 0) &&
-		    (job_ptr->part_ptr) && !part_is_visible(job_ptr->part_ptr, uid))
-			continue;
-
-		if ((slurm_conf.private_data & PRIVATE_DATA_JOBS) &&
-		    (job_ptr->user_id != uid) && !validate_operator(uid) &&
-		    (((slurm_mcs_get_privatedata() == 0) &&
-		      !assoc_mgr_is_user_acct_coord(acct_db_conn, uid,
-						    job_ptr->account)) ||
-		     ((slurm_mcs_get_privatedata() == 1) &&
-		      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label) != 0))))
-			continue;
-
-		/*
-		 * Pack a single requested step, or pack all steps.
-		 */
-		if (step_id->step_id != NO_VAL ) {
-			step_record_t *step_ptr =
-				find_step_record(job_ptr, step_id);
-			if (!step_ptr)
-				continue;
-			_pack_ctld_job_step_info(step_ptr, &args);
-		} else {
-			list_for_each(job_ptr->step_list,
-				      _pack_ctld_job_step_info,
-				      &args);
-		}
-	}
-	list_iterator_destroy(job_iterator);
-
-	if (list_count(job_list) && !valid_job && !args.steps_packed)
+	if (list_count(job_list) && !args.valid_job && !args.steps_packed)
 		error_code = ESLURM_INVALID_JOB_ID;
 
 	/* put the real record count in the message body header */
