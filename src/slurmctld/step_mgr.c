@@ -4548,6 +4548,60 @@ static int _get_node_cores(int node_inx)
 	return socks * cores;
 }
 
+static int _rebuild_bitmaps(void *x, void *arg)
+{
+	int i_first, i_last, i_size;
+	int old_core_offset = 0, new_core_offset = 0, node_core_count;
+	bool old_node_set, new_node_set;
+	bitstr_t *orig_step_core_bitmap;
+	step_record_t *step_ptr = (step_record_t *) x;
+	bitstr_t *orig_job_node_bitmap = (bitstr_t *) arg;
+	job_record_t *job_ptr = step_ptr->job_ptr;
+
+	if (step_ptr->state < JOB_RUNNING)
+		return 0;
+
+	gres_ctld_step_state_rebase(step_ptr->gres_list_alloc,
+				    orig_job_node_bitmap,
+				    job_ptr->job_resrcs->node_bitmap);
+	if (!step_ptr->core_bitmap_job)
+		return 0;
+
+	orig_step_core_bitmap = step_ptr->core_bitmap_job;
+	i_size = bit_size(job_ptr->job_resrcs->core_bitmap);
+	step_ptr->core_bitmap_job = bit_alloc(i_size);
+	i_first = MIN(bit_ffs(orig_job_node_bitmap),
+		      bit_ffs(job_ptr->job_resrcs->node_bitmap));
+	i_last  = MAX(bit_fls(orig_job_node_bitmap),
+		      bit_fls(job_ptr->job_resrcs->node_bitmap));
+	for (int i = i_first; i <= i_last; i++) {
+		old_node_set = bit_test(orig_job_node_bitmap, i);
+		new_node_set = bit_test(job_ptr->job_resrcs->node_bitmap, i);
+		if (!old_node_set && !new_node_set)
+			continue;
+		node_core_count = _get_node_cores(i);
+		if (old_node_set && new_node_set) {
+			for (int j = 0; j < node_core_count; j++) {
+				if (!bit_test(orig_step_core_bitmap,
+					      old_core_offset + j))
+					continue;
+				bit_set(step_ptr->core_bitmap_job,
+					new_core_offset + j);
+				bit_set(job_ptr->job_resrcs->
+					core_bitmap_used,
+					new_core_offset + j);
+			}
+		}
+		if (old_node_set)
+			old_core_offset += node_core_count;
+		if (new_node_set)
+			new_core_offset += node_core_count;
+	}
+	bit_free(orig_step_core_bitmap);
+
+	return 0;
+}
+
 /*
  * Rebuild a job step's core_bitmap_job after a job has just changed size
  * job_ptr IN - job that was just re-sized
@@ -4556,61 +4610,12 @@ static int _get_node_cores(int node_inx)
 extern void rebuild_step_bitmaps(job_record_t *job_ptr,
 				 bitstr_t *orig_job_node_bitmap)
 {
-	step_record_t *step_ptr;
-	ListIterator step_iterator;
-	bitstr_t *orig_step_core_bitmap;
-	int i, j, i_first, i_last, i_size;
-	int old_core_offset, new_core_offset, node_core_count;
-	bool old_node_set, new_node_set;
-
 	if (job_ptr->step_list == NULL)
 		return;
 
-	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator))) {
-		if (step_ptr->state < JOB_RUNNING)
-			continue;
-		gres_ctld_step_state_rebase(step_ptr->gres_list_alloc,
-					    orig_job_node_bitmap,
-					    job_ptr->job_resrcs->node_bitmap);
-		if (step_ptr->core_bitmap_job == NULL)
-			continue;
-		orig_step_core_bitmap = step_ptr->core_bitmap_job;
-		i_size = bit_size(job_ptr->job_resrcs->core_bitmap);
-		step_ptr->core_bitmap_job = bit_alloc(i_size);
-		old_core_offset = 0;
-		new_core_offset = 0;
-		i_first = MIN(bit_ffs(orig_job_node_bitmap),
-			      bit_ffs(job_ptr->job_resrcs->node_bitmap));
-		i_last  = MAX(bit_fls(orig_job_node_bitmap),
-			      bit_fls(job_ptr->job_resrcs->node_bitmap));
-		for (i = i_first; i <= i_last; i++) {
-			old_node_set = bit_test(orig_job_node_bitmap, i);
-			new_node_set = bit_test(job_ptr->job_resrcs->
-						node_bitmap, i);
-			if (!old_node_set && !new_node_set)
-				continue;
-			node_core_count = _get_node_cores(i);
-			if (old_node_set && new_node_set) {
-				for (j = 0; j < node_core_count; j++) {
-					if (!bit_test(orig_step_core_bitmap,
-						      old_core_offset + j))
-						continue;
-					bit_set(step_ptr->core_bitmap_job,
-						new_core_offset + j);
-					bit_set(job_ptr->job_resrcs->
-						core_bitmap_used,
-						new_core_offset + j);
-				}
-			}
-			if (old_node_set)
-				old_core_offset += node_core_count;
-			if (new_node_set)
-				new_core_offset += node_core_count;
-		}
-		bit_free(orig_step_core_bitmap);
-	}
-	list_iterator_destroy (step_iterator);
+	list_for_each(job_ptr->step_list, _rebuild_bitmaps,
+		      orig_job_node_bitmap);
+
 }
 
 /* NOTE: this function will call delete_step_record which will lock
