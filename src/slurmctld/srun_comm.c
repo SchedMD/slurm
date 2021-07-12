@@ -307,29 +307,29 @@ extern void srun_ping (void)
 	list_for_each(job_list, _srun_ping, &old);
 }
 
-/*
- * srun_step_timeout - notify srun of a job step's imminent timeout
- * IN step_ptr - pointer to the slurmctld step record
- * IN timeout_val - when it is going to time out
- */
-extern void srun_step_timeout(step_record_t *step_ptr, time_t timeout_val)
+static int _srun_step_timeout(void *x, void *arg)
 {
+	step_record_t *step_ptr = (step_record_t *) x;
 	slurm_addr_t *addr;
 	srun_timeout_msg_t *msg_arg;
 
 	xassert(step_ptr);
 
-	if (step_ptr->batch_step || !step_ptr->port
-	    || !step_ptr->host || (step_ptr->host[0] == '\0'))
-		return;
+	if (step_ptr->batch_step || !step_ptr->port ||
+	    !step_ptr->host || (step_ptr->host[0] == '\0'))
+		return 0;
 
-	addr = xmalloc(sizeof(slurm_addr_t));
+	addr = xmalloc(sizeof(*addr));
+	msg_arg = xmalloc(sizeof(*msg_arg));
+
 	slurm_set_addr(addr, step_ptr->port, step_ptr->host);
-	msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
 	memcpy(&msg_arg->step_id, &step_ptr->step_id, sizeof(msg_arg->step_id));
-	msg_arg->timeout  = timeout_val;
+	msg_arg->timeout = step_ptr->job_ptr->end_time;
+
 	_srun_agent_launch(addr, step_ptr->host, SRUN_TIMEOUT, msg_arg,
 			   step_ptr->start_protocol_ver);
+
+	return 0;
 }
 
 /*
@@ -340,8 +340,6 @@ extern void srun_timeout(job_record_t *job_ptr)
 {
 	slurm_addr_t * addr;
 	srun_timeout_msg_t *msg_arg;
-	ListIterator step_iterator;
-	step_record_t *step_ptr;
 
 	xassert(job_ptr);
 	if (!IS_JOB_RUNNING(job_ptr))
@@ -359,11 +357,7 @@ extern void srun_timeout(job_record_t *job_ptr)
 				   msg_arg, job_ptr->start_protocol_ver);
 	}
 
-
-	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator)))
-		srun_step_timeout(step_ptr, job_ptr->end_time);
-	list_iterator_destroy(step_iterator);
+	list_for_each(job_ptr->step_list, _srun_step_timeout, NULL);
 }
 
 /*

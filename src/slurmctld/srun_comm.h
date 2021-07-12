@@ -122,13 +122,6 @@ extern void srun_ping (void);
 extern void srun_response(slurm_step_id_t *step_id);
 
 /*
- * srun_step_timeout - notify srun of a job step's imminent timeout
- * IN step_ptr - pointer to the slurmctld step record
- * IN timeout_val - when it is going to time out
- */
-extern void srun_step_timeout(step_record_t *step_ptr, time_t timeout_val);
-
-/*
  * srun_timeout - notify srun of a job's timeout
  * IN job_ptr - pointer to the slurmctld job record
  */
