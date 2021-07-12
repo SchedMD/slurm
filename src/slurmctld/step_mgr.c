@@ -417,7 +417,7 @@ extern void delete_step_records(job_record_t *job_ptr)
 			srun_step_signal(step_ptr, 0);
 		}
 		_internal_step_complete(job_ptr, step_ptr);
-		delete_step_record(job_ptr, step_ptr);
+		list_delete_ptr(job_ptr->step_list, step_ptr);
 	}
 	list_iterator_destroy(step_iterator);
 }
