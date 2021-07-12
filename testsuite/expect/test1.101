@@ -76,11 +76,11 @@ expect {
 	}
 }
 
-set node_cnt 99
+set node_cnt -1
 send "echo \$SLURM_NNODES\r"
 expect {
 	-re "($number)" {
-		if { $node_cnt == 99 } {
+		if { $node_cnt == -1 } {
 			set node_cnt $expect_out(1,string)
 		}
 		exp_continue
