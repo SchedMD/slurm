@@ -99,8 +99,6 @@ static int  _opt_cpu_cnt(uint32_t step_min_cpus, bitstr_t *node_bitmap,
 			 uint32_t *usable_cpu_cnt);
 static int  _opt_node_cnt(uint32_t step_min_nodes, uint32_t step_max_nodes,
 			  int nodes_avail, int nodes_picked_cnt);
-static void _pack_ctld_job_step_info(step_record_t *step, buf_t *buffer,
-				     uint16_t protocol_version);
 static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 				  job_step_create_request_msg_t *step_spec,
 				  List step_gres_list, int cpus_per_task,
@@ -3084,14 +3082,18 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	return step_layout;
 }
 
-/* Pack the data for a specific job step record
- * IN step - pointer to a job step record
- * IN/OUT buffer - location to store data, pointers automatically advanced
- * IN protocol_version - slurm protocol version of client
- */
-static void _pack_ctld_job_step_info(step_record_t *step_ptr, buf_t *buffer,
-				     uint16_t protocol_version)
+typedef struct {
+	uint32_t steps_packed;
+	buf_t *buffer;
+	uint16_t proto_version;
+} pack_step_args_t;
+
+/* Pack the data for a specific job step record */
+static int _pack_ctld_job_step_info(void *x, void *arg)
 {
+	step_record_t *step_ptr = (step_record_t *) x;
+	pack_step_args_t *args = (pack_step_args_t *) arg;
+	buf_t *buffer = args->buffer;
 	uint32_t task_cnt, cpu_cnt;
 	char *node_list = NULL;
 	time_t begin_time, run_time;
@@ -3123,11 +3125,11 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, buf_t *buffer,
 	cpu_cnt = step_ptr->cpu_count;
 #endif
 
-	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+	if (args->proto_version >= SLURM_21_08_PROTOCOL_VERSION) {
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
 
-		pack_step_id(&step_ptr->step_id, buffer, protocol_version);
+		pack_step_id(&step_ptr->step_id, buffer, args->proto_version);
 
 		pack32(step_ptr->job_ptr->user_id, buffer);
 		pack32(cpu_cnt, buffer);
@@ -3167,7 +3169,7 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, buf_t *buffer,
 		packstr(step_ptr->network, buffer);
 		pack_bit_str_hex(pack_bitstr, buffer);
 		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
-					     protocol_version);
+					     args->proto_version);
 		packstr(step_ptr->tres_fmt_alloc_str, buffer);
 		pack16(step_ptr->start_protocol_ver, buffer);
 
@@ -3180,11 +3182,11 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, buf_t *buffer,
 		packstr(step_ptr->tres_per_node, buffer);
 		packstr(step_ptr->tres_per_socket, buffer);
 		packstr(step_ptr->tres_per_task, buffer);
-	} else if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+	} else if (args->proto_version >= SLURM_20_11_PROTOCOL_VERSION) {
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
 
-		pack_step_id(&step_ptr->step_id, buffer, protocol_version);
+		pack_step_id(&step_ptr->step_id, buffer, args->proto_version);
 
 		pack32(step_ptr->job_ptr->user_id, buffer);
 		pack32(cpu_cnt, buffer);
@@ -3223,7 +3225,7 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, buf_t *buffer,
 		packstr(step_ptr->network, buffer);
 		pack_bit_str_hex(pack_bitstr, buffer);
 		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
-					     protocol_version);
+					     args->proto_version);
 		packstr(step_ptr->tres_fmt_alloc_str, buffer);
 		pack16(step_ptr->start_protocol_ver, buffer);
 
@@ -3235,10 +3237,10 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, buf_t *buffer,
 		packstr(step_ptr->tres_per_node, buffer);
 		packstr(step_ptr->tres_per_socket, buffer);
 		packstr(step_ptr->tres_per_task, buffer);
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+	} else if (args->proto_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(step_ptr->job_ptr->array_job_id, buffer);
 		pack32(step_ptr->job_ptr->array_task_id, buffer);
-		pack_step_id(&step_ptr->step_id, buffer, protocol_version);
+		pack_step_id(&step_ptr->step_id, buffer, args->proto_version);
 		pack32(step_ptr->job_ptr->user_id, buffer);
 		pack32(cpu_cnt, buffer);
 		pack32(step_ptr->cpu_freq_min, buffer);
@@ -3276,7 +3278,7 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, buf_t *buffer,
 		packstr(step_ptr->network, buffer);
 		pack_bit_str_hex(pack_bitstr, buffer);
 		select_g_select_jobinfo_pack(step_ptr->select_jobinfo, buffer,
-					     protocol_version);
+					     args->proto_version);
 		packstr(step_ptr->tres_fmt_alloc_str, buffer);
 		pack16(step_ptr->start_protocol_ver, buffer);
 
@@ -3289,9 +3291,13 @@ static void _pack_ctld_job_step_info(step_record_t *step_ptr, buf_t *buffer,
 		packstr(step_ptr->tres_per_socket, buffer);
 		packstr(step_ptr->tres_per_task, buffer);
 	} else {
-		error("%s: protocol_version %hu not supported", __func__,
-		      protocol_version);
+		error("%s: protocol_version %hu not supported",
+		      __func__, args->proto_version);
 	}
+
+	args->steps_packed++;
+
+	return 0;
 }
 
 /*
@@ -3308,19 +3314,23 @@ extern int pack_ctld_job_step_info_response_msg(
 	buf_t *buffer, uint16_t protocol_version)
 {
 	ListIterator job_iterator;
-	ListIterator step_iterator;
 	int error_code = 0;
-	uint32_t steps_packed = 0, tmp_offset;
-	step_record_t *step_ptr;
+	uint32_t tmp_offset;
 	job_record_t *job_ptr;
 	time_t now = time(NULL);
 	int valid_job = 0;
+	pack_step_args_t args = {
+		.steps_packed = 0,
+		.buffer = buffer,
+		.proto_version = protocol_version,
+	};
 
 	pack_time(now, buffer);
-	pack32(steps_packed, buffer);	/* steps_packed placeholder */
+	pack32(args.steps_packed, buffer);	/* steps_packed placeholder */
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
+
 		if ((step_id->job_id != NO_VAL) &&
 		    (step_id->job_id != job_ptr->job_id) &&
 		    (step_id->job_id != job_ptr->array_job_id))
@@ -3341,27 +3351,31 @@ extern int pack_ctld_job_step_info_response_msg(
 		      (mcs_g_check_mcs_label(uid, job_ptr->mcs_label) != 0))))
 			continue;
 
-		step_iterator = list_iterator_create(job_ptr->step_list);
-		while ((step_ptr = list_next(step_iterator))) {
-			if ((step_id->step_id != NO_VAL) &&
-			    (step_ptr->step_id.step_id != step_id->step_id))
+		/*
+		 * Pack a single requested step, or pack all steps.
+		 */
+		if (step_id->step_id != NO_VAL ) {
+			step_record_t *step_ptr =
+				find_step_record(job_ptr, step_id);
+			if (!step_ptr)
 				continue;
-			_pack_ctld_job_step_info(step_ptr, buffer,
-						 protocol_version);
-			steps_packed++;
+			_pack_ctld_job_step_info(step_ptr, &args);
+		} else {
+			list_for_each(job_ptr->step_list,
+				      _pack_ctld_job_step_info,
+				      &args);
 		}
-		list_iterator_destroy(step_iterator);
 	}
 	list_iterator_destroy(job_iterator);
 
-	if (list_count(job_list) && !valid_job && !steps_packed)
+	if (list_count(job_list) && !valid_job && !args.steps_packed)
 		error_code = ESLURM_INVALID_JOB_ID;
 
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);
 	set_buf_offset(buffer, 0);
 	pack_time(now, buffer);
-	pack32(steps_packed, buffer);
+	pack32(args.steps_packed, buffer);
 	set_buf_offset(buffer, tmp_offset);
 
 	return error_code;
