@@ -388,6 +388,11 @@ extern void delete_step_records(job_record_t *job_ptr)
 
 	xassert(job_ptr);
 
+	/*
+	 * NOTE: cannot use list_for_each() here, as _internal_step_complete()
+	 * will call into post_job_step() which will then remove the record
+	 * from the List, which requires the List be unlocked
+	 */
 	last_job_update = time(NULL);
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = list_next(step_iterator))) {
