@@ -4347,12 +4347,12 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void _signal_step_timelimit(job_record_t *job_ptr, step_record_t *step_ptr,
-				   time_t now)
+static void _signal_step_timelimit(step_record_t *step_ptr, time_t now)
 {
 #ifndef HAVE_FRONT_END
 	int i;
 #endif
+	job_record_t *job_ptr = step_ptr->job_ptr;
 	kill_job_msg_t *kill_step;
 	agent_arg_t *agent_args = NULL;
 
@@ -4441,7 +4441,7 @@ extern int check_job_step_time_limit(void *x, void *arg)
 		/* this step has timed out */
 		info("%s: %pS has timed out (%u)",
 		     __func__, step_ptr, step_ptr->time_limit);
-		_signal_step_timelimit(step_ptr->job_ptr, step_ptr, *now);
+		_signal_step_timelimit(step_ptr, *now);
 	}
 
 	return 0;
