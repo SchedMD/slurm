@@ -200,6 +200,39 @@ extern void srun_allocate_abort(job_record_t *job_ptr)
 	}
 }
 
+typedef struct {
+	int bit_position;
+	char *node_name;
+} srun_node_fail_args_t;
+
+static int _srun_node_fail(void *x, void *arg)
+{
+	step_record_t *step_ptr = (step_record_t *) x;
+	srun_node_fail_args_t *args = (srun_node_fail_args_t *) arg;
+	slurm_addr_t *addr;
+	srun_node_fail_msg_t *msg_arg;
+
+	if (!step_ptr->step_node_bitmap)   /* pending step */
+		return 0;
+	if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT)
+		return 0;
+	if ((args->bit_position >= 0) &&
+	    (!bit_test(step_ptr->step_node_bitmap, args->bit_position)))
+		return 0;	/* job step not on this node */
+	if (!step_ptr->port || !step_ptr->host || (step_ptr->host[0] == '\0'))
+		return 0;
+
+	addr = xmalloc(sizeof(*addr));
+	slurm_set_addr(addr, step_ptr->port, step_ptr->host);
+	msg_arg = xmalloc(sizeof(*msg_arg));
+	memcpy(&msg_arg->step_id, &step_ptr->step_id, sizeof(msg_arg->step_id));
+	msg_arg->nodelist = xstrdup(args->node_name);
+	_srun_agent_launch(addr, step_ptr->host, SRUN_NODE_FAIL,
+			   msg_arg, step_ptr->start_protocol_ver);
+
+	return 0;
+}
+
 /*
  * srun_node_fail - notify srun of a node's failure
  * IN job_ptr - job to notify
@@ -210,11 +243,12 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 #ifndef HAVE_FRONT_END
 	node_record_t *node_ptr;
 #endif
-	int bit_position = -1;
+	srun_node_fail_args_t args = {
+		.bit_position = -1,
+		.node_name = node_name,
+	};
 	slurm_addr_t * addr;
 	srun_node_fail_msg_t *msg_arg;
-	ListIterator step_iterator;
-	step_record_t *step_ptr;
 
 	xassert(job_ptr);
 	xassert(node_name);
@@ -226,32 +260,10 @@ extern void srun_node_fail(job_record_t *job_ptr, char *node_name)
 #else
 	if (!node_name || (node_ptr = find_node_record(node_name)) == NULL)
 		return;
-	bit_position = node_ptr - node_record_table_ptr;
+	args.bit_position = node_ptr - node_record_table_ptr;
 #endif
 
-	step_iterator = list_iterator_create(job_ptr->step_list);
-	while ((step_ptr = list_next(step_iterator))) {
-		if (step_ptr->step_node_bitmap == NULL)   /* pending step */
-			continue;
-		if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT)
-			continue;
-		if ((bit_position >= 0) &&
-		    (!bit_test(step_ptr->step_node_bitmap, bit_position)))
-			continue;	/* job step not on this node */
-		if ( (step_ptr->port    == 0)    ||
-		     (step_ptr->host    == NULL) ||
-		     (step_ptr->host[0] == '\0') )
-			continue;
-		addr = xmalloc(sizeof(slurm_addr_t));
-		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
-		msg_arg = xmalloc(sizeof(srun_node_fail_msg_t));
-		memcpy(&msg_arg->step_id, &step_ptr->step_id,
-		       sizeof(msg_arg->step_id));
-		msg_arg->nodelist = xstrdup(node_name);
-		_srun_agent_launch(addr, step_ptr->host, SRUN_NODE_FAIL,
-				   msg_arg, step_ptr->start_protocol_ver);
-	}
-	list_iterator_destroy(step_iterator);
+	list_for_each(job_ptr->step_list, _srun_node_fail, &args);
 
 	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
 		addr = xmalloc(sizeof(slurm_addr_t));
