@@ -11152,11 +11152,13 @@ extern void pack_config_file(void *in, uint16_t protocol_version,
 	config_file_t *object = (config_file_t *) in;
 
 	if (!object) {
+		packbool(0, buffer);
 		packnull(buffer);
 		packnull(buffer);
 		return;
 	}
 
+	packbool(object->exists, buffer);
 	packstr(object->file_name, buffer);
 	packstr(object->file_content, buffer);
 }
@@ -11167,6 +11169,7 @@ extern int unpack_config_file(void **out, uint16_t protocol_version,
 	uint32_t uint32_tmp;
 	config_file_t *object = xmalloc(sizeof(*object));
 
+	unpackbool(&object->exists, buffer);
 	safe_unpackstr_xmalloc(&object->file_name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&object->file_content, &uint32_tmp, buffer);
 	*out = object;

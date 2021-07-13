@@ -3265,16 +3265,20 @@ static int _establish_config_source(char **config_file, int *memfd)
 	 */
 	if ((config_tmp = list_find_first(config->config_files,
 					  find_conf_by_name,
-					  "plugstack.conf")))
-		plugstack_fd = dump_to_memfd("plugstack.conf",
-					     config_tmp->file_content,
-					     &plugstack_conf);
+					  "plugstack.conf"))) {
+		if (config_tmp->exists)
+			plugstack_fd = dump_to_memfd("plugstack.conf",
+						     config_tmp->file_content,
+						     &plugstack_conf);
+	}
 	if ((config_tmp = list_find_first(config->config_files,
 					  find_conf_by_name,
-					  "topology.conf")))
-		topology_fd = dump_to_memfd("topology.conf",
-					    config_tmp->file_content,
-					    &topology_conf);
+					  "topology.conf"))) {
+		if (config_tmp->exists)
+			topology_fd = dump_to_memfd("topology.conf",
+						    config_tmp->file_content,
+						    &topology_conf);
+	}
 	slurm_free_config_response_msg(config);
 	debug2("%s: using config_file=%s (fetched)", __func__, *config_file);
 

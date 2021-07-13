@@ -249,7 +249,8 @@ int dump_to_memfd(char *type, char *config, char **filename)
 	xfree(*filename);
 	xstrfmtcat(*filename, "/proc/%lu/fd/%d", (unsigned long) pid, fd);
 
-	safe_write(fd, config, strlen(config));
+	if (config)
+		safe_write(fd, config, strlen(config));
 
 	return fd;
 
@@ -269,7 +270,8 @@ rwfail:
 	xfree(*filename);
 	xstrfmtcat(*filename, "/proc/%lu/fd/%d", (unsigned long) pid, fd);
 
-	safe_write(fd, config, strlen(config));
+	if (config)
+		safe_write(fd, config, strlen(config));
 
 	return fd;
 
@@ -313,7 +315,8 @@ static void _init_minimal_conf_server_config(List controllers)
 	xfree(filename);
 }
 
-static int _write_conf(const char *dir, const char *name, const char *content)
+static int _write_conf(const char *dir, const char *name, const char *content,
+		      bool exists)
 {
 	char *file = NULL, *file_final = NULL;
 	int fd = -1;
@@ -321,17 +324,20 @@ static int _write_conf(const char *dir, const char *name, const char *content)
 	xstrfmtcat(file, "%s/%s.new", dir, name);
 	xstrfmtcat(file_final, "%s/%s", dir, name);
 
-	if (!content) {
+	if (!exists) {
 		(void) unlink(file_final);
 		goto cleanup;
 	}
+
 
 	if ((fd = open(file, O_CREAT|O_WRONLY|O_TRUNC|O_CLOEXEC, 0644)) < 0) {
 		error("%s: could not open config file `%s`", __func__, file);
 		goto rwfail;
 	}
 
-	safe_write(fd, content, strlen(content));
+	if (content)
+		safe_write(fd, content, strlen(content));
+
 	close(fd);
 	fd = -1;
 
@@ -363,7 +369,8 @@ extern int write_one_config(void *x, void *arg)
 {
 	config_file_t *config = (config_file_t *) x;
 	char *dir = (char *) arg;
-	if (_write_conf(dir, config->file_name, config->file_content))
+	if (_write_conf(dir, config->file_name, config->file_content,
+		        config->exists))
 		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
@@ -431,21 +438,29 @@ static void _load_conf2list(config_response_msg_t *msg, char *file_name)
 	config_file_t *conf_file = NULL;
 	buf_t *config;
 	char *file = get_extra_conf_path(file_name);
+	bool config_exists = true;
 
 	config = create_mmap_buf(file);
 	xfree(file);
 
 	/*
-	 * If we can't load a given config, then assume that one isn't required
-	 * on this system.
+	 * If we failed to mmap the file, it likely doesn't exist.
+	 * However, since Linux 2.6.16, EINVAL likely indicates an empty file.
+	 * We do need to create that blank file, as certain plugins - cgroup
+	 * especially - treat the absence of the file differently than an
+	 * empty file.
 	 */
-	if (!config)
-		return;
+	if (!config && errno != EINVAL)
+		config_exists = false;
 
 	conf_file = xmalloc(sizeof(*conf_file));
-	conf_file->file_content = xstrndup(config->head, config->size);
+	conf_file->exists = config_exists;
+	if (config)
+		conf_file->file_content = xstrndup(config->head, config->size);
 	conf_file->file_name = xstrdup(file_name);
 	list_append(msg->config_files, conf_file);
+
+	debug("config file %s: %d", file_name, config_exists);
 
 	free_buf(config);
 }

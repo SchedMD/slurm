@@ -1144,6 +1144,7 @@ typedef struct {
 } config_request_msg_t;
 
 typedef struct {
+	bool exists;
 	char *file_name;
 	char *file_content;
 } config_file_t;
