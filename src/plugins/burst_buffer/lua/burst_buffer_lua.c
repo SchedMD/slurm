@@ -1456,6 +1456,13 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 		 */
 		have_bb = true;
 
+		/*
+		 * Is % symbol replacement required? Only done on lines with
+		 * directive_str
+		 */
+		if (strchr(tok, (int) '%'))
+			bb_job->need_symbol_replacement = true;
+
 		tok += directive_len + 1; /* Add 1 for the '#' character. */
 		while (isspace(tok[0]))
 			tok++;
