@@ -4015,6 +4015,31 @@ proc node_range_to_list {node_range_expression} {
 }
 
 
+################################################################
+#
+# NAME
+#	range_to_list - converts a range expression into a list with the numbers of the range
+#
+# SYNOPSIS
+#	range_to_list ?range_expression?
+#
+# DESCRIPTION
+#	Expands a range expression defined by the following EBNF into a numeric list
+#		<expression> ::= <range> {, <range>}*
+#		<range> ::= <integer> - <integer> | <integer>
+#
+# RETURN VALUE
+#	Returns the list of integer numbers defined by the range_expression
+#
+################################################################
+
+proc range_to_list {range_expression} {
+	set node_range_expression \[$range_expression\]
+	set range_list [node_range_to_list $node_range_expression]
+	return $range_list
+}
+
+
 #####################################################################
 #
 # NAME
@@ -6193,7 +6218,7 @@ proc submit_job args {
 }
 
 
-################################################################################
+################################################################
 #
 # NAME
 #	compile_against_libslurm - compiles a test program against either libslurm.so or libslurmfull.so
