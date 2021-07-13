@@ -31,6 +31,7 @@ set file_in1       "test$test_id.input1"
 set file_in2       "test$test_id.input2"
 set number_commas  "\[0-9_,\]+"
 set one_task_pc    0
+set cpu_to_socket  {}
 
 proc cleanup {} {
 	global bin_rm file_in1 file_in2
@@ -38,16 +39,22 @@ proc cleanup {} {
 }
 
 proc test_gpus_cnt {srun_opts expected_gpus_times_tasks expected_job_gpus} {
-	global file_in1 test_id srun number_commas
+	global file_in1 test_id srun number_commas cpu_to_socket
+
 	set match 0
 	set job_gpus 0
+	set cpus_allowed_list [list]
+	set allocated_sockets 0
+
 	set srun_pid [spawn /bin/sh -c "$srun $srun_opts -t1 -J test$test_id -l ./$file_in1"]
 	expect {
-		-re "JOB_GRES=gpu:(\[0-9\]+)|CUDA_VISIBLE_DEVICES:($number_commas)" {
+		-re "JOB_GRES=gpu:(\[0-9\]+)|CUDA_VISIBLE_DEVICES:($number_commas)|Cpus_allowed_list:\t(\[0-9,-\]+)" {
 			if {[string first "JOB_GRES" $expect_out(0,string)] != -1} {
 				set job_gpus $expect_out(1,string)
 			} elseif {[string first "CUDA" $expect_out(0,string)] != -1} {
 				incr match [cuda_count $expect_out(2,string)]
+			} elseif {[string first "Cpus_allowed_list" $expect_out(0,string)] != -1} {
+				lappend cpus_allowed_list $expect_out(3,string)
 			}
 			exp_continue
 		}
@@ -58,6 +65,17 @@ proc test_gpus_cnt {srun_opts expected_gpus_times_tasks expected_job_gpus} {
 			wait
 		}
 	}
+	if [llength $cpus_allowed_list] {
+		set allocated_sockets_dict {}
+		foreach allocated_cpus_expression $cpus_allowed_list {
+			foreach cpu_id [range_to_list $allocated_cpus_expression] {
+				dict set allocated_sockets_dict [dict get $cpu_to_socket $cpu_id] true
+				}
+		}
+		set allocated_sockets [dict size $allocated_sockets_dict]
+	}
+	set expected_gpus_times_tasks [expr [regsub {allocated_sockets} $expected_gpus_times_tasks $allocated_sockets]]
+	set expected_job_gpus [expr [regsub {allocated_sockets} $expected_job_gpus $allocated_sockets]]
 	if {$match != $expected_gpus_times_tasks} {
 		fail "srun $srun_opts failure tasks*gpus ($match != $expected_gpus_times_tasks)"
 	}
@@ -121,13 +139,22 @@ if {$gpus_per_node > 1 && $sockets_per_node > 1} {
 	set gpus_per_socket $gpus_per_node
 }
 
+# Build up cpu/socket mapping for determining the number of allocated sockets
+set output [run_command -fail "$bin_lscpu -a --parse=cpu,socket -y"]
+foreach line [split $output "\n"] {
+	if {[regexp {^(\d+),(\d+)$} $line {} cpu_id socket_id] == 1} {
+		dict set cpu_to_socket $cpu_id $socket_id
+	}
+}
+
 #
 # Build input script files
 #
 make_bash_script $file_in1 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
 if \[ \$SLURM_PROCID -eq 0 \]; then
-$scontrol -dd show job \$SLURM_JOB_ID | grep \"JOB_GRES=\"
+$scontrol -dd show job \$SLURM_JOB_ID | grep JOB_GRES=
 fi
+grep Cpus_allowed_list /proc/\$SLURM_TASK_PID/status
 exit 0"
 
 make_bash_script $file_in2 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
@@ -244,7 +271,7 @@ test_gpus_cnt "--gpus-per-task=1 --tasks-per-node=$use_tasks_per_node -N $nb_nod
 log_info "TEST: -c1 and --cpus-per-gpu=\$cpus_per_socket implicit task count with one GPU"
 test_gpus_cnt "--gres=gpu:1 -c 1 --cpus-per-gpu=$cpus_per_socket" $cpus_per_socket 1
 test_gpus_cnt "--gpus=1 --sockets-per-node=1 -c 1 --cpus-per-gpu=$cpus_per_socket" $cpus_per_socket 1
-test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 -c 1 --cpus-per-gpu=$cpus_per_socket -mblock:cyclic" [expr $cpus_per_socket * $sockets_per_node] $sockets_per_node
+test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 -c 1 --cpus-per-gpu=$cpus_per_socket -mblock:cyclic" "$cpus_per_socket*allocated_sockets" "allocated_sockets"
 test_gpus_cnt "--gpus-per-socket=1 --sockets-per-node=1 -c 1 --cpus-per-gpu=$cpus_per_socket -mblock:block" $cpus_per_socket 1
 
 log_info "TEST -c1 --cpus-per-gpu=\$cpus_per_socket with 1 GPU per socket"
