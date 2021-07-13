@@ -48,6 +48,9 @@ static bool running_flag = false;
 static pthread_t tid;
 static uint16_t timeout;
 static char *program_name;
+#ifdef HAVE_NATIVE_CRAY
+static uint32_t recorded_het_jobid = NO_VAL;
+#endif
 static uint32_t recorded_jobid = NO_VAL;
 static uint32_t recorded_stepid = NO_VAL;
 
@@ -73,6 +76,9 @@ void step_terminate_monitor_start(stepd_step_rec_t *job)
 	running_flag = true;
 	slurm_thread_create(&tid, _monitor, job);
 
+#ifdef HAVE_NATIVE_CRAY
+	recorded_het_jobid = job->het_job_id;
+#endif
 	recorded_jobid = job->step_id.job_id;
 	recorded_stepid = job->step_id.step_id;
 
@@ -224,6 +230,7 @@ static int _call_external_program(stepd_step_rec_t *job)
 		/* child */
 		char *argv[2];
 		char **env = NULL;
+		uint32_t jobid;
 
 		/* container_g_join needs to be called in the
 		   forked process part of the fork to avoid a race
@@ -231,9 +238,16 @@ static int _call_external_program(stepd_step_rec_t *job)
 		   detacts itself from a child before we add the pid
 		   to the container in the parent of the fork.
 		*/
-		if (container_g_join(recorded_jobid, getuid())
-		    != SLURM_SUCCESS)
-			error("container_g_join(%u): %m", recorded_jobid);
+#ifdef HAVE_NATIVE_CRAY
+		if (recorded_het_jobid && (recorded_het_jobid != NO_VAL))
+			jobid = recorded_het_jobid;
+		else
+			jobid = recorded_jobid;
+#else
+		jobid = recorded_jobid;
+#endif
+		if (container_g_join(jobid, getuid()) != SLURM_SUCCESS)
+			error("container_g_join(%u): %m", jobid);
 		env = env_array_create();
 		env_array_append_fmt(&env, "SLURM_JOBID", "%u", recorded_jobid);
 		env_array_append_fmt(&env, "SLURM_JOB_ID", "%u", recorded_jobid);
