@@ -160,6 +160,7 @@ cset bjobs     	 "${slurm_dir}/bin/bjobs"
 cset bkill     	 "${slurm_dir}/bin/bkill"
 cset bsub     	 "${slurm_dir}/bin/bsub"
 
+cset influx	"/usr/bin/influx"
 # If using MPICH-2 or other version of MPI requiring pmi libary, use this
 #cset mpicc	"/home/jette/mpich2-install/bin/mpicc"
 #cset use_pmi	1
@@ -2803,6 +2804,74 @@ proc get_mps_count_by_index { index hostname } {
 	log_user 1
 
 	return $count
+}
+
+
+################################################################
+#
+# NAME
+#	check_influxdb_access - determines if user can access to the desired influxdb
+#
+# SYNOPSIS
+#	check_influxdb_access host port database
+#
+# DESCRIPTION
+#	It uses the global $influx CLI command to try to connect and use
+#	the desired database.
+#
+# RETURN VALUE
+#	Returns true if we can connect to host:port and use the database,
+#	false otherwise
+#
+################################################################
+
+proc check_influxdb_access {host port database} {
+	global influx
+	set connected 0
+	set access 0
+
+	if {![file executable $influx]} {
+		log_warn "Cannot execute influx command: $influx"
+		return false
+	}
+
+	set log_user_save [log_user -info]
+	log_user 0
+	spawn $influx -host $host -port $port
+	expect {
+		-re "Connected to" {
+			set connected 1
+			send "use $database\r"
+			exp_continue
+		}
+		-re "Using database" {
+			set access 1
+			send "quit\r"
+		}
+		-re "unable to parse authentication credentials" {
+			send "quit\r"
+		}
+		-re "authorization failed" {
+			send "quit\r"
+		}
+		timeout {
+			fail "InfluxDB instance not responding"
+		}
+		eof {
+			wait
+		}
+	}
+	log_user $log_user_save
+
+	if {!$connected} {
+		log_warn "Cannot connect to $host:$port"
+		return false
+	}
+	if {!$access} {
+		log_warn "Connected to $host:$port, but cannot use $database"
+		return false
+	}
+	return true
 }
 
 

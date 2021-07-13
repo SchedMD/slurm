@@ -1,0 +1,87 @@
+#!/usr/bin/env expect
+############################################################################
+# Purpose: Test of Slurm functionality
+#	   Test acct_gather_profile/influxdb (--profile=task)
+############################################################################
+# Copyright (C) 2021 SchedMD LLC.
+# Written by Alejandro Sanchez <alex@schedmd.com>
+#
+# This file is part of Slurm, a resource management program.
+# For details, see <https://slurm.schedmd.com/>.
+# Please also read the included file: DISCLAIMER.
+#
+# Slurm is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free
+# Software Foundation; either version 2 of the License, or (at your option)
+# any later version.
+#
+# Slurm is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Slurm; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+############################################################################
+source ./globals
+
+set file_out    "$test_name.output"
+set file_prog   "$test_name.prog"
+set job_id      0
+
+if {[get_config_param "FrontendName"] ne "MISSING"} {
+	skip "This test is incompatible with front-end systems"
+}
+if {[get_config_param "JobAcctGatherType"] eq "jobacct_gather/none"} {
+	skip "This test cannot run on JobAcctGatherType of none"
+}
+if {[get_config_param "AcctGatherProfileType"] ne "acct_gather_profile/influxdb"} {
+	skip "This test requires an usable acct_gather_profile/influxdb"
+}
+
+#
+# Check if we can access to the ProfileInfluxDBDatabase into ProfileInfluxDBHost
+#
+# ProfileInfluxDB[User|Pass] aren't packed on REQUEST_BUILD_INFO RPC
+# on purpose, so this test requires auth-free access to the InfluxDB
+# instance and database.
+#
+set database [get_config_param "ProfileInfluxDBDatabase"]
+set hostport [split [get_config_param "ProfileInfluxDBHost"] ":"]
+set host [lindex $hostport 0]
+set port [lindex $hostport end]
+if {![check_influxdb_access $host $port $database]} {
+	skip "This test requires disabled auth to $host:$port instance $database database"
+}
+
+proc cleanup { } {
+	global bin_rm file_prog file_out job_id
+	run_command -nolog "$bin_rm -f $file_out $file_prog"
+	cancel_job $job_id
+}
+
+# Build the program to be run. It will use allocate some memory for a while.
+run_command -fail -nolog "$bin_cc $file_prog.c -o $file_prog"
+run_command -fail -nolog "$bin_chmod 700 $file_prog"
+
+log_info "Submitting a job to account task metrics"
+set job_rss 200
+set mb_request [expr $job_rss * 2]
+set sleep_secs 8
+set job_id [submit_job -fail "--output=$file_out --acctg-freq=1 --profile=task -t10 --mem=$mb_request --wrap '$srun --verbose ./$file_prog $job_rss $sleep_secs'"]
+
+if {[wait_for_job $job_id "DONE"] != 0} {
+	fail "Waiting for job $job_id to complete"
+}
+
+log_info "Retrieving InfluxDB metrics for job $job_id"
+
+set idb_rss 0
+set query "select job,max(value) from \"RSS\" where job = '$job_id' AND step = '0' AND time > now() - 1h"
+set output [run_command_output -fail "$influx -host $host -port $port -database $database -format column -execute \"$query\""]
+if {![regexp "${job_id}${whitespace}($number)" $output - idb_rss]} {
+	fail "Unable to get RSS from InfluxDB"
+}
+set idb_rss [expr $idb_rss / 1024]
+subtest {[tolerance $job_rss $idb_rss "10"]} "RSS on InfluxDB ${idb_rss}MB of job $job_id should be close to ${job_rss}MB"
