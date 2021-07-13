@@ -1761,6 +1761,22 @@ static void _purge_vestigial_bufs(void)
 extern uint64_t bb_p_get_system_size(void)
 {
 	uint64_t size = 0;
+
+	/*
+	 * Add up the space of all the pools.
+	 * Don't add bb_state.total_space - it is always zero since we don't
+	 * use DefaultPool in this plugin.
+	 * Even though the pools in this plugin are really unitless and can
+	 * be used for a lot more than just "bytes", we have to convert to MB
+	 * to satisfy the burst buffer plugin API.
+	 */
+	slurm_mutex_lock(&bb_state.bb_mutex);
+	for (int i = 0; i < bb_state.bb_config.pool_cnt; i++) {
+		size += bb_state.bb_config.pool_ptr[i].total_space;
+	}
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+	size /= (1024 * 1024); /* to MB */
+
 	return size;
 }
 
