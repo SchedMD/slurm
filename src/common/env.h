@@ -304,6 +304,12 @@ void env_array_set_environment(char **env_array);
  */
 char **env_array_from_file(const char *filename);
 
+
+/*
+ * Write environment to specified file name.
+ */
+int env_array_to_file(const char *filename, const char **env_array);
+
 /*
  * Return an array of strings representing the specified user's default
  * environment variables following a two-prongged approach.

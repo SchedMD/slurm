@@ -1885,6 +1885,36 @@ char **env_array_from_file(const char *fname)
 	return env;
 }
 
+int env_array_to_file(const char *filename, const char **env_array)
+{
+	int outfd = -1;
+	int rc = SLURM_SUCCESS;
+
+	outfd = open(filename, (O_WRONLY | O_CREAT | O_EXCL), 0600);
+	if (outfd < 0) {
+		error("%s: unable to open %s: %m",
+		      __func__, filename);
+		goto rwfail;
+	}
+
+	for (const char **p = env_array; p && *p; p++) {
+		safe_write(outfd, *p, strlen(*p));
+		safe_write(outfd, "\0", 1);
+	}
+
+	(void) close(outfd);
+
+	return rc;
+
+rwfail:
+	rc = errno;
+
+	if (outfd >= 0)
+		(void) close(outfd);
+
+	return rc;
+}
+
 /*
  * Load user environment from a cache file located in
  * <state_save_location>/env_username
