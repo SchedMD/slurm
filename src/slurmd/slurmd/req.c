@@ -4915,6 +4915,7 @@ _rpc_abort_job(slurm_msg_t *msg)
 			      node_id);
 	job_env.jobid = req->step_id.job_id;
 	job_env.node_list = req->nodes;
+	job_env.het_job_id = req->het_job_id;
 	job_env.spank_job_env = req->spank_job_env;
 	job_env.spank_job_env_size = req->spank_job_env_size;
 	job_env.work_dir = req->work_dir;
@@ -5164,6 +5165,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 
 	job_env.jobid = req->step_id.job_id;
 	job_env.node_list = req->nodes;
+	job_env.het_job_id = req->het_job_id;
 	job_env.spank_job_env = req->spank_job_env;
 	job_env.spank_job_env_size = req->spank_job_env_size;
 	job_env.work_dir = req->work_dir;

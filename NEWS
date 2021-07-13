@@ -139,6 +139,9 @@ documents those changes that are of interest to users and administrators.
  -- Add StateComplete format option to sinfo to show base_state+flags.
  -- "scontrol show node" now shows State as base_state+flags instead of
     shortened state with flags appended.
+ -- slurmd/req - add missing job_env_t's het_job_id initialization off the
+    request in _rpc_{abort,terminate}_job(). This caused problems for Native
+    Cray builds when joining a CNCU job_container plugin with Epilog configured.
 
 * Changes in Slurm 20.11.9
 ==========================
