@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set authorized     1
 set file_err       "test$test_id.error"
 set file_in        "test$test_id.input"
 set file_out       "test$test_id.output"
@@ -73,19 +72,7 @@ wait_for_command_match -fail "$bin_cat $file_out" "is running"
 #
 # Send the batch job a message
 #
-spawn $scontrol notify $job_id TEST_NOTIFY
-expect {
-	-re "Invalid user id" {
-		set authorized 0
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$authorized == 0} {
-	skip "You are not authorized to run this test"
-}
+run_command -fail "$scontrol notify $job_id TEST_NOTIFY"
 
 #
 # Test stderr file
@@ -129,19 +116,7 @@ if {$job_id == 0} {
 #
 # Send the program a message
 #
-spawn $scontrol notify $job_id TEST_NOTIFY
-expect {
-	-re "Invalid user id" {
-		set authorized 0
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$authorized == 0} {
-	skip "You are not authorized to run this test"
-}
+run_command -fail "$scontrol notify $job_id TEST_NOTIFY"
 
 #
 # Look for the message
