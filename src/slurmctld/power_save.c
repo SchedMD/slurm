@@ -915,6 +915,9 @@ static int _init_power_config(void)
 	node_record_t *node_ptr;
 	int i;
 	bool partition_suspend_time_set = false;
+	slurmctld_lock_t init_config_locks = {
+		.conf = READ_LOCK, .node = WRITE_LOCK, .part = WRITE_LOCK };
+
 	last_config = slurm_conf.last_update;
 	last_work_scan  = 0;
 	last_log	= 0;
@@ -952,6 +955,7 @@ static int _init_power_config(void)
 			       NULL, 10);
 	}
 
+	lock_slurmctld(init_config_locks);
 	/* Figure out per-partition options and push to node level. */
 	list_for_each(part_list, _set_partition_options,
 		      &partition_suspend_time_set);
@@ -972,6 +976,7 @@ static int _init_power_config(void)
 				slurm_conf.resume_timeout :
 				node_ptr->resume_timeout);
 	}
+	unlock_slurmctld(init_config_locks);
 
 	if ((slurm_conf.suspend_time == INFINITE) &&
 	    !partition_suspend_time_set) { /* not an error */
@@ -1049,6 +1054,21 @@ static bool _valid_prog(char *file_name)
 	return true;
 }
 
+extern void config_power_mgr(void)
+{
+	slurm_mutex_lock(&power_mutex);
+	if (!power_save_config) {
+		if (!_init_power_config())
+			power_save_enabled = true;
+		if (!power_save_enabled && node_features_g_node_power()) {
+			fatal("PowerSave required with NodeFeatures plugin, but not fully configured (SuspendProgram, ResumeProgram and SuspendTime all required)");
+		}
+
+		power_save_config = true;
+	}
+	slurm_cond_signal(&power_cond);
+	slurm_mutex_unlock(&power_mutex);
+}
 
 /*
  * start_power_mgr - Start power management thread as needed. The thread
@@ -1108,8 +1128,6 @@ static void *_init_power_save(void *arg)
         /* Locks: Write jobs and nodes */
         slurmctld_lock_t node_write_lock = {
                 NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
-	slurmctld_lock_t init_config_locks = {
-		.conf = READ_LOCK, .node = WRITE_LOCK, .part = WRITE_LOCK };
 	time_t now, boot_time = 0, last_power_scan = 0;
 
 #if HAVE_SYS_PRCTL_H
@@ -1117,21 +1135,10 @@ static void *_init_power_save(void *arg)
 		error("%s: cannot set my name to %s %m", __func__, "powersave");
 	}
 #endif
-
-	lock_slurmctld(init_config_locks);
-	if (!_init_power_config())
-		power_save_enabled = true;
-	unlock_slurmctld(init_config_locks);
-
 	if (!power_save_enabled) {
 		debug("power_save mode not enabled");
 		goto fini;
-	} else if (node_features_g_node_power()) {
-		fatal("PowerSave required with NodeFeatures plugin, "
-		      "but not fully configured (SuspendProgram, "
-		      "ResumeProgram and SuspendTime all required)");
 	}
-	power_save_config = true;
 
 	resume_node_bitmap  = bit_alloc(node_record_count);
 
@@ -1141,13 +1148,10 @@ static void *_init_power_save(void *arg)
 		_reap_procs();
 
 		if (last_config != slurm_conf.last_update) {
-			lock_slurmctld(init_config_locks);
 			if (_init_power_config()) {
-				unlock_slurmctld(init_config_locks);
 				info("power_save mode has been disabled due to configuration changes");
 				goto fini;
 			}
-			unlock_slurmctld(init_config_locks);
 		}
 
 		now = time(NULL);
