@@ -52,6 +52,7 @@
 
 static s_p_options_t options[] = {
 	{"ContainerPath", S_P_STRING},
+	{"CreateEnvFile", S_P_BOOLEAN},
 	{"RunTimeCreate", S_P_STRING},
 	{"RunTimeDelete", S_P_STRING},
 	{"RunTimeKill", S_P_STRING},
@@ -83,6 +84,7 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 		fatal("Could not parse %s file: %s", OCI_CONF, conf_path);
 
 	(void) s_p_get_string(&oci->container_path, "ContainerPath", tbl);
+	(void) s_p_get_boolean(&oci->create_env_file, "CreateEnvFile", tbl);
 	(void) s_p_get_string(&oci->runtime_create, "RunTimeCreate", tbl);
 	(void) s_p_get_string(&oci->runtime_delete, "RunTimeDelete", tbl);
 	(void) s_p_get_string(&oci->runtime_kill, "RunTimeKill", tbl);

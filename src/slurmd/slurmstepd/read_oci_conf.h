@@ -40,6 +40,7 @@
 
 typedef struct {
 	char *container_path; /* path pattern to use for holding OCI container config */
+	bool create_env_file; /* create file with environment */
 	char *runtime_create; /* OCI runtime pattern to execute query for containers */
 	char *runtime_delete; /* OCI runtime pattern to execute query for containers */
 	char *runtime_kill; /* OCI runtime pattern to execute query for containers */

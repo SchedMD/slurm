@@ -57,6 +57,7 @@
  * /tmp/slurm was choosen since runc will always mount it private
  */
 #define SLURM_CONTAINER_BATCH_SCRIPT "/tmp/slurm/startup"
+#define SLURM_CONTAINER_ENV_FILE "environment"
 #define SLURM_CONTAINER_STDIN "/tmp/slurm/stdin"
 #define SLURM_CONTAINER_STDOUT "/tmp/slurm/stdout"
 #define SLURM_CONTAINER_STDERR "/tmp/slurm/stderr"
@@ -119,6 +120,10 @@ static char *_generate_pattern(const char *pattern, stepd_step_rec_t *job,
 				break;
 			case 'b':
 				xstrfmtcatat(buffer, &offset, "%s", job->cwd);
+				break;
+			case 'e':
+				xstrfmtcatat(buffer, &offset, "%s/%s",
+					     job->cwd, SLURM_CONTAINER_ENV_FILE);
 				break;
 			case 'j':
 				xstrfmtcatat(buffer, &offset, "%u",
@@ -247,7 +252,9 @@ rwfail:
 static int _modify_config(stepd_step_rec_t *job, data_t *config,
 			  char *rootfs_path)
 {
+	int rc = SLURM_SUCCESS;
 	data_t *mnts, *env;
+	char **cmd_env = NULL;
 
 	/* Disable terminal to ensure stdin/err/out are used */
 	data_set_bool(data_define_dict_path(config, "/process/terminal/"),
@@ -330,9 +337,51 @@ static int _modify_config(stepd_step_rec_t *job, data_t *config,
 	if (data_get_type(env) != DATA_TYPE_LIST)
 		data_set_list(env);
 
+	if (oci_conf->create_env_file) {
+		cmd_env = env_array_create();
+		env_array_merge(&cmd_env, (const char **) job->env);
+	}
+
 	/* set/append requested env */
-	for (char **ptr = job->env; *ptr != NULL; ptr++)
+	for (char **ptr = job->env; *ptr != NULL; ptr++) {
 		data_set_string(data_list_append(env), *ptr);
+
+		if (oci_conf->create_env_file) {
+			char *name = xstrdup(*ptr);
+			char *value = xstrstr(name, "=");
+
+			if (value) {
+				*value = '\0';
+				value++;
+			}
+
+			env_array_append(&cmd_env, name, value);
+
+			xfree(name);
+		}
+	}
+
+	if (oci_conf->create_env_file) {
+		char *envfile = NULL;
+
+		/* keep _generate_pattern() in sync with this path */
+		xstrfmtcat(envfile, "%s/%s",
+			   job->cwd, SLURM_CONTAINER_ENV_FILE);
+
+		rc = env_array_to_file(envfile, (const char **) cmd_env);
+
+		if (!rc && chown(envfile, job->uid, job->gid) < 0) {
+			error("%s: chown(%s): %m", __func__, envfile);
+			rc = errno;
+		}
+
+		if (!rc && chmod(envfile, 0750) < 0) {
+			error("%s: chmod(%s, 750): %m", __func__, envfile);
+			rc = errno;
+		}
+
+		xfree(envfile);
+	}
 
 	/* Overwrite args */
 	if (job->node_tasks <= 0) {
@@ -408,7 +457,9 @@ static int _modify_config(stepd_step_rec_t *job, data_t *config,
 		env_array_free(old_argv);
 	}
 
-	return SLURM_SUCCESS;
+	env_array_free(cmd_env);
+
+	return rc;
 }
 
 static void _generate_bundle_path(stepd_step_rec_t *job, char *rootfs_path)

@@ -26,6 +26,13 @@ replacement.
 Default is unique directory generated in \fBSlurmdSpoolDir\fR.
 
 .TP
+\fBCreateEnvFile=(true|false)\fR
+Create environment file for container. File will have one environment variable
+per line.
+.sp
+Default is false.
+
+.TP
 \fBRunTimeCreate\fR
 Pattern for OCI runtime create operation.  See the section \fBOCI Pattern\fR
 for details on pattern replacement.
@@ -88,6 +95,8 @@ replacements:
      enclosed with single quotes and escaped.
 .IP \(bu
 %b - replace as OCI Bundle Path
+.IP \(bu
+%e - replace as path to file containing environment if \fBCreateEnvFile=true\fR.
 .IP \(bu
 %j - replace as numeric job id
 .IP \(bu
