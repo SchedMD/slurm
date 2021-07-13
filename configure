@@ -21424,6 +21424,8 @@ fi
           _x_ac_nvml_cppflags_save="$CPPFLAGS"
           LDFLAGS="-L$d/$bit -lnvidia-ml"
           CPPFLAGS="-I$d/include $CPPFLAGS"
+          $as_unset ac_cv_header_nvml_h
+          $as_unset ac_cv_lib_nvidia_ml_nvmlInit
           ac_fn_c_check_header_mongrel "$LINENO" "nvml.h" "ac_cv_header_nvml_h" "$ac_includes_default"
 if test "x$ac_cv_header_nvml_h" = xyes; then :
   ac_nvml_h=yes

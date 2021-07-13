@@ -45,6 +45,8 @@ AC_DEFUN([X_AC_NVML],
           _x_ac_nvml_cppflags_save="$CPPFLAGS"
           LDFLAGS="-L$d/$bit -lnvidia-ml"
           CPPFLAGS="-I$d/include $CPPFLAGS"
+          $as_unset ac_cv_header_nvml_h
+          $as_unset ac_cv_lib_nvidia_ml_nvmlInit
           AC_CHECK_HEADER([nvml.h], [ac_nvml_h=yes], [ac_nvml_h=no])
           AC_CHECK_LIB([nvidia-ml], [nvmlInit], [ac_nvml=yes], [ac_nvml=no])
           LDFLAGS="$_x_ac_nvml_ldflags_save"
