@@ -176,20 +176,6 @@ a node's switch state record.</p>
 &nbsp;&nbsp;(input/output) a previously allocated node switch state record.</p>
 <p style="margin-left:.2in"><b>Returns</b>: None</p>
 
-<p class="commandline">char * switch_p_sprintf_node_info (switch_node_info_t switch_node,
-char *buf, size_t size);</p>
-<p style="margin-left:.2in"><b>Description</b>: Print the contents of a node's switch state
-record to a buffer.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> switch_node</span>&nbsp; &nbsp;&nbsp;(input) a
-node's switch state record.<br>
-<span class="commandline"> buf</span>&nbsp; &nbsp;&nbsp;(input/output) point to
-buffer into which the switch state record is to be written.<br>
-of buf in bytes.<br>
-<span class="commandline"> size</span>&nbsp; &nbsp;&nbsp;(input) size
-of buf in bytes.</p>
-<p style="margin-left:.2in"><b>Returns</b>: Location of buffer, same as <i>buf</i>.</p>
-
 <h3>Job's Switch Credential Management Functions</h3>
 <p class="commandline">int switch_p_alloc_jobinfo(switch_jobinfo_t
   *switch_job, uint32_t job_id, uint32_t step_id);</p>
@@ -286,28 +272,6 @@ node ranges. (e.g. "linux[1-20]" or "linux[2,4,6,8]").</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
-
-<p class="commandline">void switch_p_print_jobinfo(FILE *fp, switch_jobinfo_t switch_job);</p>
-<p style="margin-left:.2in"><b>Description</b>: Print the contents of a job's
-switch credential to a file.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> fp</span>&nbsp; &nbsp;&nbsp;(input) pointer to an open file.<br>
-<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) a job's
-switch credential.</p>
-<p style="margin-left:.2in"><b>Returns</b>: None.</p>
-
-<p class="commandline">char *switch_p_sprint_jobinfo(switch_jobinfo_t switch_job,
-char *buf, size_t size);</p>
-<p style="margin-left:.2in"><b>Description</b>: Print the contents of a job's
-switch credential to a buffer.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) a job's
-switch credential.<br>
-<span class="commandline"> buf</span>&nbsp; &nbsp;&nbsp;(input/output) pointer to
-buffer into which the job credential information is to be written.<br>
-<span class="commandline"> size</span>&nbsp; &nbsp;&nbsp;(input) size of buf in
-bytes</p>
-<p style="margin-left:.2in"><b>Returns</b>: location of buffer, same as <i>buf</i>.</p>
 
 <p class="commandline">int switch_p_get_data_jobinfo(switch_jobinfo_t switch_job,
 int key, void *resulting_data);</p>
