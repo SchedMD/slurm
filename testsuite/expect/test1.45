@@ -59,29 +59,8 @@ echo Result: \${result\[*\]}
 #
 # Run job to determine what nodes are available
 #
-spawn $sbatch -N$min_nodes-$max_nodes -n$num_procs -O -t1 --output=$file_out $file_in
-expect {
-	-re "nodes *: ($number)" {
-		if {$expect_out(1,string) != 3} {
-			log_error "Failed to process --nodes option"
-			set exit_code 1
-		}
-		exp_continue
-	}
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "Job not submitted"
-}
+set job_id [submit_job -fail "-N$min_nodes-$max_nodes -n$num_procs -O -t1 --output=$file_out $file_in"]
+
 if {[wait_for_job $job_id "DONE"] != 0} {
 	cancel_job $job_id
 	fail "Job did not complete"
