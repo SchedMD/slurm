@@ -360,13 +360,12 @@ main (int argc, char **argv)
 		fatal("failed to initialize prep plugin");
 	if (core_spec_g_init() < 0)
 		fatal("Unable to initialize core specialization plugin.");
-	if (switch_g_node_init() < 0)
-		fatal("Unable to initialize interconnect.");
+	if (switch_init(0) < 0)
+		fatal("Unable to initialize switch plugin.");
 	if (node_features_g_init() != SLURM_SUCCESS)
 		fatal("failed to initialize node_features plugin");
 	if (conf->cleanstart && switch_g_clear_node_state())
 		fatal("Unable to clear interconnect state.");
-	switch_g_slurmd_init();
 	file_bcast_init();
 
 	_create_msg_socket();
@@ -1921,7 +1920,6 @@ _slurmd_fini(void)
 	assoc_mgr_fini(false);
 	node_features_g_fini();
 	core_spec_g_fini();
-	switch_g_node_fini();
 	jobacct_gather_fini();
 	acct_gather_profile_fini();
 	save_cred_state(conf->vctx);

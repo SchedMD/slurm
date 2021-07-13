@@ -69,8 +69,6 @@ extern int  switch_init(bool only_default);
 
 extern int switch_g_reconfig(void);
 
-extern int switch_g_slurmd_init(void);
-
 /* terminate the switch plugin and free all memory */
 extern int switch_fini (void);
 
@@ -179,33 +177,9 @@ extern int switch_g_job_step_complete(dynamic_plugin_data_t *jobinfo,
 extern int switch_g_job_step_allocated(dynamic_plugin_data_t *jobinfo,
 	char *nodelist);
 
-/*
- * Initialize the switch plugin on the slurmctld.
- */
-extern int switch_g_slurmctld_init(void);
-
 /********************************************************************\
  * JOB LAUNCH AND MANAGEMENT FUNCTIONS RELATED TO SWITCH CREDENTIAL *
 \********************************************************************/
-
-/*
- * Setup node for switch_g use.
- *
- * This function is run from the top level slurmd only once per
- * slurmd run. It may be used, for instance, to perform some one-time
- * switch_g setup or spawn an error handling thread.
- *
- */
-extern int switch_g_node_init(void);
-
-/*
- * Finalize switch_g on node.
- *
- * This function is called once as slurmd exits (slurmd will wait for
- * this function to return before continuing the exit process)
- */
-extern int switch_g_node_fini(void);
-
 
 /*
  * Notes on job related switch_g functions:
@@ -340,11 +314,6 @@ extern int switch_g_job_attach(dynamic_plugin_data_t *jobinfo, char ***env,
  * Clear switch state on this node
  */
 extern int switch_g_clear_node_state(void);
-
-/*
- * Initialize slurmd step switch state
- */
-extern int switch_g_slurmd_step_init(void);
 
 /*
  * Allocate storage for a node's switch state record

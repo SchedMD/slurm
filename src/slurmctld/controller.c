@@ -571,14 +571,6 @@ int main(int argc, char **argv)
 			fatal("failed to initialize node_features plugin");
 		}
 	}
-	if (switch_g_slurmctld_init() != SLURM_SUCCESS) {
-		if (test_config) {
-			error("failed to initialize switch plugin");
-			test_config_rc = 1;
-		} else {
-			fatal("failed to initialize switch plugin");
-		}
-	}
 	agent_init();
 
 	while (1) {

@@ -410,15 +410,6 @@ unpack_error:
 /*
  * switch functions for job initiation
  */
-extern int switch_p_node_init(void)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int switch_p_node_fini(void)
-{
-	return SLURM_SUCCESS;
-}
 
 extern int switch_p_job_preinit(stepd_step_rec_t *job)
 {
@@ -905,21 +896,6 @@ extern int switch_p_job_step_complete(switch_jobinfo_t *jobinfo,
 
 extern int switch_p_job_step_allocated(switch_jobinfo_t *jobinfo,
 				       char *nodelist)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int switch_p_slurmctld_init(void)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int switch_p_slurmd_init(void)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int switch_p_slurmd_step_init(void)
 {
 	return SLURM_SUCCESS;
 }

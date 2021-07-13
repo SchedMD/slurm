@@ -74,8 +74,6 @@ typedef struct slurm_switch_ops {
 					    uint16_t protocol_version );
 	int          (*get_jobinfo)       ( switch_jobinfo_t *switch_job,
 					    int key, void *data);
-	int          (*node_init)         ( void );
-	int          (*node_fini)         ( void );
 	int          (*job_preinit)       ( stepd_step_rec_t *job );
 	int          (*job_init)          ( stepd_step_rec_t *job );
 	int          (*job_suspend_test)  ( switch_jobinfo_t *jobinfo );
@@ -113,9 +111,6 @@ typedef struct slurm_switch_ops {
 	int          (*step_allocated)    ( switch_jobinfo_t *jobinfo,
 					    char *nodelist );
 	int          (*state_clear)       ( void );
-	int          (*slurmctld_init)    ( void );
-	int          (*slurmd_init)       ( void );
-	int          (*slurmd_step_init)  ( void );
 	int          (*reconfig)          ( void );
 	int          (*job_step_pre_suspend)( stepd_step_rec_t *job );
 	int          (*job_step_post_suspend)( stepd_step_rec_t *job );
@@ -138,8 +133,6 @@ static const char *syms[] = {
 	"switch_p_pack_jobinfo",
 	"switch_p_unpack_jobinfo",
 	"switch_p_get_jobinfo",
-	"switch_p_node_init",
-	"switch_p_node_fini",
 	"switch_p_job_preinit",
 	"switch_p_job_init",
 	"switch_p_job_suspend_test",
@@ -161,9 +154,6 @@ static const char *syms[] = {
 	"switch_p_job_step_complete",
 	"switch_p_job_step_allocated",
 	"switch_p_libstate_clear",
-	"switch_p_slurmctld_init",
-	"switch_p_slurmd_init",
-	"switch_p_slurmd_step_init",
 	"switch_p_reconfig",
 	"switch_p_job_step_pre_suspend",
 	"switch_p_job_step_post_suspend",
@@ -494,22 +484,6 @@ extern int  switch_g_get_jobinfo(dynamic_plugin_data_t *jobinfo,
 	return (*(ops[plugin_id].get_jobinfo))(jobdata, data_type, data);
 }
 
-extern int switch_g_node_init(void)
-{
-	if ( switch_init(1) < 0 )
-		return SLURM_ERROR;
-
-	return (*(ops[switch_context_default].node_init)) ();
-}
-
-extern int switch_g_node_fini(void)
-{
-	if ( switch_init(0) < 0 )
-		return SLURM_ERROR;
-
-	return (*(ops[switch_context_default].node_fini)) ();
-}
-
 extern int switch_g_job_preinit(stepd_step_rec_t *job)
 {
 	if ( switch_init(0) < 0 )
@@ -742,30 +716,6 @@ extern int switch_g_job_step_allocated(dynamic_plugin_data_t *jobinfo,
 		plugin_id = switch_context_default;
 
 	return (*(ops[plugin_id].step_allocated))(data, nodelist);
-}
-
-extern int switch_g_slurmctld_init(void)
-{
-	if ( switch_init(1) < 0 )
-		return SLURM_ERROR;
-
-	return (*(ops[switch_context_default].slurmctld_init)) ();
-}
-
-extern int switch_g_slurmd_init(void)
-{
-	if ( switch_init(1) < 0 )
-		return SLURM_ERROR;
-
-	return (*(ops[switch_context_default].slurmd_init)) ();
-}
-
-extern int switch_g_slurmd_step_init(void)
-{
-	if ( switch_init(1) < 0 )
-		return SLURM_ERROR;
-
-	return (*(ops[switch_context_default].slurmd_step_init)) ();
 }
 
 extern int switch_g_job_step_pre_suspend(stepd_step_rec_t *job)

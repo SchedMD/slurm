@@ -549,8 +549,6 @@ _init_from_slurmd(int sock, char **argv,
 	step_complete.jobacct = jobacctinfo_create(NULL);
 	slurm_mutex_unlock(&step_complete.lock);
 
-	switch_g_slurmd_step_init();
-
 	debug3("slurmstepd rank %d, parent = %pA",
 	       step_complete.rank, &step_complete.parent_addr);
 

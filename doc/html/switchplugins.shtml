@@ -325,25 +325,6 @@ pointer to where the requested data should be stored. </p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
-
-<h3>Node Specific Switch Management Functions</h3>
-<p class="commandline">int switch_p_node_init (void);</p>
-<p style="margin-left:.2in"><b>Description</b>: This function is run from the top level slurmd
-only once per slurmd run. It may be used, for instance, to perform some one-time
-interconnect setup or spawn an error handling thread.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> None</span></p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR and set the errno to an appropriate value
-to indicate the reason for failure.</p>
-
-<p class="commandline">int switch_p_node_fini (void);</p>
-<p style="margin-left:.2in"><b>Description</b>: This function is called once as slurmd exits
-(slurmd will wait for this function to return before continuing the exit process).</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> None</span></p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR and set the errno to an appropriate value
-to indicate the reason for failure.</p>
-
 <h3>Job Step Management Functions</h3>
 <pre>
 =========================================================================
