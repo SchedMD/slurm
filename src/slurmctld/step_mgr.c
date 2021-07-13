@@ -89,6 +89,9 @@ typedef struct {
 
 static void _build_pending_step(job_record_t *job_ptr,
 				job_step_create_request_msg_t *step_specs);
+static int _step_partial_comp(step_record_t *step_ptr,
+			      step_complete_msg_t *req, bool finish,
+			      int *rem, uint32_t *max_rc);
 static int  _count_cpus(job_record_t *job_ptr, bitstr_t *bitmap,
 			uint32_t *usable_cpu_cnt);
 static step_record_t *_create_step_record(job_record_t *job_ptr,
@@ -3434,7 +3437,7 @@ static int _kill_step_on_node(void *x, void *arg)
 	req.range_last = step_node_inx;
 	req.step_rc = 9;
 	req.jobacct = NULL;	/* No accounting */
-	(void) step_partial_comp(&req, 0, false, &rem, &step_rc);
+	(void) _step_partial_comp(step_ptr, &req, false, &rem, &step_rc);
 
 	if (args->node_fail && !(step_ptr->flags & SSF_NO_KILL)) {
 		info("Killing %pS due to failed node %s",
@@ -3494,10 +3497,6 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 {
 	job_record_t *job_ptr;
 	step_record_t *step_ptr;
-	int nodes, rem_nodes;
-#ifndef HAVE_FRONT_END
-	int range_bits, set_bits;
-#endif
 
 	xassert(rem);
 
@@ -3531,15 +3530,28 @@ extern int step_partial_comp(step_complete_msg_t *req, uid_t uid, bool finish,
 		     job_ptr, req->step_id.step_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
-	if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) {
-		error("%s: batch step received for %pJ. This should never happen.",
-		      __func__, job_ptr);
-		return ESLURM_INVALID_JOB_ID;
-	}
 	if (req->range_last < req->range_first) {
 		error("%s: %pS range=%u-%u",
 		      __func__, step_ptr, req->range_first, req->range_last);
 		return EINVAL;
+	}
+
+	return _step_partial_comp(step_ptr, req, finish, rem, max_rc);
+}
+
+static int _step_partial_comp(step_record_t *step_ptr,
+			      step_complete_msg_t *req, bool finish,
+			      int *rem, uint32_t *max_rc)
+{
+	int nodes, rem_nodes;
+#ifndef HAVE_FRONT_END
+	int range_bits, set_bits;
+#endif
+
+	if (step_ptr->step_id.step_id == SLURM_BATCH_SCRIPT) {
+		error("%s: batch step received for %pJ. This should never happen.",
+		      __func__, step_ptr->job_ptr);
+		return ESLURM_INVALID_JOB_ID;
 	}
 
 	/* we have been adding task average frequencies for
@@ -3645,7 +3657,7 @@ no_aggregate:
 			return SLURM_SUCCESS;
 		}
 
-		_internal_step_complete(job_ptr, step_ptr);
+		_internal_step_complete(step_ptr->job_ptr, step_ptr);
 
 		last_job_update = time(NULL);
 	}
