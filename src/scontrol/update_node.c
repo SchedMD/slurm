@@ -189,6 +189,18 @@ scontrol_update_node (int argc, char **argv)
 				   MAX(val_len, 3)) == 0) {
 				node_msg.node_state = NODE_RESUME;
 				update_cnt++;
+			} else if (xstrncasecmp(val, "POWER_DOWN_ASAP",
+				   MAX(val_len, 12)) == 0) {
+				node_msg.node_state =
+					NODE_STATE_POWER_SAVE |
+					NODE_STATE_POWER_DRAIN;
+				update_cnt++;
+			} else if (xstrncasecmp(val, "POWER_DOWN_FORCE",
+				   MAX(val_len, 12)) == 0) {
+				node_msg.node_state =
+					NODE_STATE_POWER_SAVE |
+					NODE_STATE_MAN_POWER_DOWN;
+				update_cnt++;
 			} else if (xstrncasecmp(val, "POWER_DOWN",
 				   MAX(val_len, 7)) == 0) {
 				node_msg.node_state = NODE_STATE_POWER_SAVE;

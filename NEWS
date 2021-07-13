@@ -148,6 +148,8 @@ documents those changes that are of interest to users and administrators.
  -- srun - Job steps requiring more cores than available to be rejected unless
     '--overlap' is specificed.
  -- Add bf_node_space_size to SchedulerParameters.
+ -- Add scontrol update node state=POWER_DOWN_FORCE and POWER_DOWN_ASAP as new
+    ways to power off and reset especially CLOUD nodes.
 
 * Changes in Slurm 20.11.9
 ==========================
