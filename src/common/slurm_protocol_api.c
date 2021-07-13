@@ -2171,16 +2171,26 @@ tryagain:
 
 		if ((rc == 0) && (!comm_cluster_rec)
 		    && (response_msg->msg_type == RESPONSE_SLURM_RC)
-		    && ((((return_code_msg_t *)response_msg->data)->return_code)
-			== ESLURM_IN_STANDBY_MODE)
+		    && ((((return_code_msg_t *) response_msg->data)->return_code
+			 == ESLURM_IN_STANDBY_MODE) ||
+		        (((return_code_msg_t *) response_msg->data)->return_code
+			 == ESLURM_IN_STANDBY_USE_BACKUP))
 		    && (have_backup)
 		    && (difftime(time(NULL), start_time)
 			< (slurmctld_timeout + (slurmctld_timeout / 2)))) {
-			log_flag(NET, "%s: Primary not responding, backup not in control. Sleeping and retry.",
-				 __func__);
+			if (((return_code_msg_t *)
+			     response_msg->data)->return_code
+			     == ESLURM_IN_STANDBY_MODE) {
+				log_flag(NET, "%s: Primary not responding, backup not in control. Sleeping and retry.",
+					 __func__);
+				sleep(slurmctld_timeout / 2);
+				use_backup = false;
+			} else {
+				log_flag(NET, "%s: Primary was contacted, but says it is the backup in standby.  Trying the backup",
+					 __func__);
+				use_backup = true;
+			}
 			slurm_free_return_code_msg(response_msg->data);
-			sleep(slurmctld_timeout / 2);
-			use_backup = false;
 			if ((fd = slurm_open_controller_conn(&ctrl_addr,
 							     &use_backup,
 							     comm_cluster_rec))
