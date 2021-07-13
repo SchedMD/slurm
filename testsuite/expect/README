@@ -433,6 +433,7 @@ test12.7   Validate that -D shows the correct state when jobs are requeued.
 test12.8   Validate that a job step reports TIMEOUT inside accounting.
 test12.9   Test of sacct functionality for array jobs.
 test12.10  Test of sacct with -s R, -S and -E options
+test12.11  Test acct_gather_profile/influxdb.
 
 test13.#   Testing of switch plugins
 ====================================
