@@ -29,23 +29,7 @@ source ./globals
 #
 # Check if we have auth/munge configured
 #
-log_user 0
-set auth_munge 0
-spawn $scontrol show config
-expect {
-	-re "AuthType *= auth/munge" {
-		set auth_munge 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-log_user 1
-if {$auth_munge == 0} {
+if {[get_config_param "AuthType"] != "auth/munge"} {
 	skip "Not running auth/munge, test is not applicable"
 }
 
