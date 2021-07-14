@@ -50,6 +50,7 @@
 #include "slurm/slurm_errno.h"
 
 #include "src/common/macros.h"
+#include "src/common/timers.h"
 #include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -66,7 +67,11 @@ static int uid_cache_used = 0;
 static int _getpwnam_r (const char *name, struct passwd *pwd, char *buf,
 		size_t bufsiz, struct passwd **result)
 {
+	DEF_TIMERS;
 	int rc;
+
+	START_TIMER;
+
 	while (1) {
 		rc = getpwnam_r(name, pwd, buf, bufsiz, result);
 		if (rc == EINTR)
@@ -75,6 +80,9 @@ static int _getpwnam_r (const char *name, struct passwd *pwd, char *buf,
 			*result = NULL;
 		break;
 	}
+
+	END_TIMER2(__func__);
+
 	return (rc);
 }
 
