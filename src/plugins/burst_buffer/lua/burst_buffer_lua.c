@@ -2775,19 +2775,13 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 	return SLURM_SUCCESS;
 }
 
-static int _alloc_job_bb(job_record_t *job_ptr, bb_job_t *bb_job,
-			 bool job_ready)
+static void _alloc_job_bb(job_record_t *job_ptr, bb_job_t *bb_job,
+			  bool job_ready)
 {
-	int rc = SLURM_SUCCESS;
-
 	log_flag(BURST_BUF, "start job allocate %pJ", job_ptr);
 
-	if (bb_job->state < BB_STATE_STAGING_IN) {
-		bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_STAGING_IN);
-		_queue_stage_in(job_ptr, bb_job);
-	}
-
-	return rc;
+	bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_STAGING_IN);
+	_queue_stage_in(job_ptr, bb_job);
 }
 
 static int _try_alloc_job_bb(void *x, void *arg)
@@ -2810,7 +2804,7 @@ static int _try_alloc_job_bb(void *x, void *arg)
 		 * Job could start now. Allocate burst buffer and continue to
 		 * the next job.
 		 */
-		(void) _alloc_job_bb(job_ptr, bb_job, true);
+		_alloc_job_bb(job_ptr, bb_job, true);
 		rc = SLURM_SUCCESS;
 	} else if (rc == 1) /* Exceeds configured limits, try next job */
 		rc = SLURM_SUCCESS;
@@ -2891,13 +2885,12 @@ extern int bb_p_job_test_stage_in(job_record_t *job_ptr, bool test_only)
 			goto fini;
 		if (bb_job->job_pool && bb_job->req_size) {
 			if ((bb_test_size_limit(job_ptr, bb_job, &bb_state,
-						NULL) == 0) &&
-			    (_alloc_job_bb(job_ptr, bb_job, false) ==
-			     SLURM_SUCCESS)) {
+						NULL) == 0)) {
+				_alloc_job_bb(job_ptr, bb_job, false);
 				rc = 0; /* Setup/stage-in in progress */
 			}
-		} else if (_alloc_job_bb(job_ptr, bb_job, false) ==
-			   SLURM_SUCCESS) {
+		} else {
+			_alloc_job_bb(job_ptr, bb_job, false);
 			rc = 0; /* Setup/stage-in in progress */
 		}
 	} else if (bb_job->state == BB_STATE_STAGING_IN) {
