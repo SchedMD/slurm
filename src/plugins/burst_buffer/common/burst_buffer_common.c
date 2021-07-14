@@ -43,6 +43,7 @@
 #include "config.h"
 
 #define _GNU_SOURCE	/* For POLLRDHUP */
+#include <ctype.h>
 #include <fcntl.h>
 #include <poll.h>
 #include <stdlib.h>
@@ -941,9 +942,17 @@ extern uint64_t bb_get_size_num(char *tok, uint64_t granularity)
 	uint64_t bb_size_i, mult;
 	uint64_t bb_size_u = 0;
 
+	errno = 0;
 	bb_size_i = (uint64_t) strtoull(tok, &tmp, 10);
-	if ((bb_size_i > 0) && tmp) {
-		bb_size_u = bb_size_i;
+	if ((errno == ERANGE) || !bb_size_i || (tok == tmp)) {
+		/*
+		 * Either the value in tok was too big, zero was specified, or
+		 * there were no numbers in tok.
+		 */
+		return 0;
+	}
+	bb_size_u = bb_size_i;
+	if (tmp && !isspace(tmp[0])) {
 		unit = xstrdup(tmp);
 		strtok(unit, " ");
 		if (!xstrcasecmp(unit, "n") ||
