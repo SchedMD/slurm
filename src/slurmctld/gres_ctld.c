@@ -235,9 +235,9 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 
 	pre_alloc_gres_cnt = node_gres_ptr->gres_cnt_alloc;
 	pre_alloc_type_cnt = xcalloc(node_gres_ptr->type_cnt,
-				     sizeof(pre_alloc_type_cnt));
+				     sizeof(*pre_alloc_type_cnt));
 	memcpy(pre_alloc_type_cnt, node_gres_ptr->type_cnt_alloc,
-	       sizeof(pre_alloc_type_cnt) * node_gres_ptr->type_cnt);
+	       sizeof(*pre_alloc_type_cnt) * node_gres_ptr->type_cnt);
 	/*
 	 * select/cons_tres pre-selects the resources and we just need to update
 	 * the data structures to reflect the selected GRES.
