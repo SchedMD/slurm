@@ -710,7 +710,7 @@ typedef struct {
 	uint64_t over_secs; /* number of cpu seconds overcommitted */
 	uint64_t pdown_secs; /* number of cpu seconds planned down */
 	time_t period_start; /* when this record was started */
-	uint64_t resv_secs; /* number of cpu seconds reserved */
+	uint64_t plan_secs; /* number of cpu seconds planned */
 	slurmdb_tres_rec_t tres_rec;
 } slurmdb_cluster_accounting_rec_t;
 

@@ -421,7 +421,7 @@ typedef struct {
 	char *over_secs;
 	char *pdown_secs;
 	char *time_start;
-	char *resv_secs;
+	char *plan_secs;
 	char *tres_id;
 	char *tres_cnt;
 	char *creation_time;
@@ -438,7 +438,7 @@ static void _free_local_cluster_members(local_cluster_usage_t *object)
 		xfree(object->over_secs);
 		xfree(object->pdown_secs);
 		xfree(object->time_start);
-		xfree(object->resv_secs);
+		xfree(object->plan_secs);
 		xfree(object->tres_id);
 		xfree(object->tres_cnt);
 		xfree(object->creation_time);
@@ -777,7 +777,7 @@ char *cluster_req_inx[] = {
 	"down_secs",
 	"pdown_secs",
 	"idle_secs",
-	"resv_secs",
+	"plan_secs",
 	"over_secs",
 	"creation_time",
 	"mod_time",
@@ -792,7 +792,7 @@ enum {
 	CLUSTER_DCPU,
 	CLUSTER_PDCPU,
 	CLUSTER_ICPU,
-	CLUSTER_RCPU,
+	CLUSTER_PCPU,
 	CLUSTER_OCPU,
 	CLUSTER_CREATION_TIME,
 	CLUSTER_MOD_TIME,
@@ -2277,7 +2277,7 @@ static void _pack_local_cluster_usage(local_cluster_usage_t *object,
 	packstr(object->down_secs, buffer);
 	packstr(object->pdown_secs, buffer);
 	packstr(object->idle_secs, buffer);
-	packstr(object->resv_secs, buffer);
+	packstr(object->plan_secs, buffer);
 	packstr(object->over_secs, buffer);
 	packstr(object->creation_time, buffer);
 	packstr(object->mod_time, buffer);
@@ -2299,7 +2299,7 @@ static int _unpack_local_cluster_usage(local_cluster_usage_t *object,
 		safe_unpackstr_xmalloc(&object->down_secs, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->pdown_secs, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->idle_secs, &tmp32, buffer);
-		safe_unpackstr_xmalloc(&object->resv_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->plan_secs, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->over_secs, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->creation_time, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->mod_time, &tmp32, buffer);
@@ -2311,7 +2311,7 @@ static int _unpack_local_cluster_usage(local_cluster_usage_t *object,
 		safe_unpackstr_xmalloc(&object->alloc_secs, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->down_secs, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->idle_secs, &tmp32, buffer);
-		safe_unpackstr_xmalloc(&object->resv_secs, &tmp32, buffer);
+		safe_unpackstr_xmalloc(&object->plan_secs, &tmp32, buffer);
 		safe_unpackstr_xmalloc(&object->over_secs, &tmp32, buffer);
 	}
 
@@ -3906,7 +3906,7 @@ static buf_t *_pack_archive_cluster_usage(MYSQL_RES *result, char *cluster_name,
 		usage.down_secs = row[CLUSTER_DCPU];
 		usage.pdown_secs = row[CLUSTER_PDCPU];
 		usage.idle_secs = row[CLUSTER_ICPU];
-		usage.resv_secs = row[CLUSTER_RCPU];
+		usage.plan_secs = row[CLUSTER_PCPU];
 		usage.over_secs = row[CLUSTER_OCPU];
 		usage.creation_time = row[CLUSTER_CREATION_TIME];
 		usage.mod_time = row[CLUSTER_MOD_TIME];
@@ -3974,7 +3974,7 @@ static char *_load_cluster_usage(uint16_t rpc_version, buf_t *buffer,
 			   object.down_secs,
 			   object.pdown_secs,
 			   object.idle_secs,
-			   object.resv_secs,
+			   object.plan_secs,
 			   object.over_secs,
 			   object.creation_time,
 			   object.mod_time,

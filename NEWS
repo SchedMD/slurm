@@ -134,6 +134,8 @@ documents those changes that are of interest to users and administrators.
  -- Add "node_reg_mem_percent" SlurmctldParameter to define percentage of
     memory nodes are allowed to register with.
  -- Show correct number of SocketsPerBoard in slurmd -C with hwloc2.
+ -- Alter sreport's cluster utilization report column name from
+    'Reserved' to 'Planned' to match the nomenclature of the 'Planned' node.
 
 * Changes in Slurm 20.11.9
 ==========================

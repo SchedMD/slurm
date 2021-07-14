@@ -49,7 +49,7 @@ enum {
 	PRINT_CLUSTER_TRES_IDLE,
 	PRINT_CLUSTER_TRES_PLAN_DOWN,
 	PRINT_CLUSTER_TRES_OVER,
-	PRINT_CLUSTER_TRES_RESV,
+	PRINT_CLUSTER_TRES_PLAN,
 	PRINT_CLUSTER_TRES_REPORTED,
 	PRINT_CLUSTER_ACCT,
 	PRINT_CLUSTER_USER_LOGIN,
@@ -476,9 +476,11 @@ static int _setup_print_fields_list(List format_list)
 				field->len = 12;
 			field->print_routine = slurmdb_report_print_time;
 		} else if (!xstrncasecmp("reserved", object,
-					 MAX(command_len, 3))) {
-			field->type = PRINT_CLUSTER_TRES_RESV;
-			field->name = xstrdup("Reserved");
+					 MAX(command_len, 3)) ||
+			   !xstrncasecmp("planned", object,
+					 MAX(command_len, 4))) {
+			field->type = PRINT_CLUSTER_TRES_PLAN;
+			field->name = xstrdup("Planned");
 			if (time_format == SLURMDB_REPORT_TIME_SECS_PER
 			   || time_format == SLURMDB_REPORT_TIME_MINS_PER
 			   || time_format == SLURMDB_REPORT_TIME_HOURS_PER)
@@ -1404,8 +1406,8 @@ static void _cluster_util_tres_report(slurmdb_tres_rec_t *tres,
 					     total_reported,
 					     (curr_inx == field_count));
 			break;
-		case PRINT_CLUSTER_TRES_RESV:
-			field->print_routine(field, total_acct->resv_secs,
+		case PRINT_CLUSTER_TRES_PLAN:
+			field->print_routine(field, total_acct->plan_secs,
 					     total_reported,
 					     (curr_inx == field_count));
 			break;
@@ -1538,8 +1540,8 @@ extern int cluster_utilization(int argc, char **argv)
 						   accting->down_secs);
 			total_acct.idle_secs = MAX(total_acct.idle_secs,
 						   accting->idle_secs);
-			total_acct.resv_secs = MAX(total_acct.resv_secs,
-						   accting->resv_secs);
+			total_acct.plan_secs = MAX(total_acct.plan_secs,
+						   accting->plan_secs);
 			total_acct.over_secs = MAX(total_acct.over_secs,
 						   accting->over_secs);
 			total_acct.pdown_secs = MAX(total_acct.pdown_secs,
@@ -1550,7 +1552,7 @@ extern int cluster_utilization(int argc, char **argv)
 				accting->down_secs +
 				accting->pdown_secs +
 				accting->idle_secs +
-				accting->resv_secs;
+				accting->plan_secs;
 
 			total_acct.tres_rec.alloc_secs = MAX(
 				total_acct.tres_rec.alloc_secs,
@@ -1574,9 +1576,9 @@ extern int cluster_utilization(int argc, char **argv)
 			sreport_set_usage_col_width(
 				field, total_acct.idle_secs);
 			break;
-		case PRINT_CLUSTER_TRES_RESV:
+		case PRINT_CLUSTER_TRES_PLAN:
 			sreport_set_usage_col_width(
-				field, total_acct.resv_secs);
+				field, total_acct.plan_secs);
 			break;
 		case PRINT_CLUSTER_TRES_OVER:
 			sreport_set_usage_col_width(

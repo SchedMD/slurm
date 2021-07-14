@@ -1223,7 +1223,7 @@ extern int create_cluster_tables(mysql_conn_t *mysql_conn, char *cluster_name)
 		{ "down_secs", "bigint unsigned default 0 not null" },
 		{ "pdown_secs", "bigint unsigned default 0 not null" },
 		{ "idle_secs", "bigint unsigned default 0 not null" },
-		{ "resv_secs", "bigint unsigned default 0 not null" },
+		{ "plan_secs", "bigint unsigned default 0 not null" },
 		{ "over_secs", "bigint unsigned default 0 not null" },
 		{ NULL, NULL}
 	};

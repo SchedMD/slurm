@@ -4229,7 +4229,7 @@ extern int slurmdb_add_cluster_accounting_to_tres_list(
 
 	tres_rec->alloc_secs += accting->alloc_secs
 		+ accting->down_secs + accting->idle_secs
-		+ accting->resv_secs + accting->pdown_secs;
+		+ accting->plan_secs + accting->pdown_secs;
 	tres_rec->count += accting->tres_rec.count;
 	tres_rec->rec_count++;
 
@@ -4317,7 +4317,7 @@ extern int slurmdb_sum_accounting_list(
 	total_acct->alloc_secs += accting->alloc_secs;
 	total_acct->down_secs  += accting->down_secs;
 	total_acct->idle_secs  += accting->idle_secs;
-	total_acct->resv_secs  += accting->resv_secs;
+	total_acct->plan_secs  += accting->plan_secs;
 	total_acct->over_secs  += accting->over_secs;
 	total_acct->pdown_secs += accting->pdown_secs;
 	total_acct->tres_rec.count += accting->tres_rec.count;

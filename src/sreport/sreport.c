@@ -976,7 +976,7 @@ sreport [<OPTION>] [<COMMAND>]                                             \n\
              - Cluster, Count, Login, Proper, Used, Wckey                  \n\
        - Utilization                                                       \n\
              - Allocated, Cluster, Count, Down, Idle, Overcommitted,       \n\
-               PlannedDown, Reported, Reserved                             \n\
+               Planned, PlannedDown, Reported                              \n\
                                                                            \n\
        Job                                                                 \n\
        - Sizes                                                             \n\

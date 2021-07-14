@@ -534,7 +534,7 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		"down_secs",
 		"pdown_secs",
 		"idle_secs",
-		"resv_secs",
+		"plan_secs",
 		"over_secs",
 		"count",
 		"time_start",
@@ -546,7 +546,7 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		CLUSTER_DCPU,
 		CLUSTER_PDCPU,
 		CLUSTER_ICPU,
-		CLUSTER_RCPU,
+		CLUSTER_PCPU,
 		CLUSTER_OCPU,
 		CLUSTER_CNT,
 		CLUSTER_START,
@@ -610,7 +610,7 @@ static int _get_cluster_usage(mysql_conn_t *mysql_conn, uid_t uid,
 		accounting_rec->pdown_secs = slurm_atoull(row[CLUSTER_PDCPU]);
 		accounting_rec->idle_secs = slurm_atoull(row[CLUSTER_ICPU]);
 		accounting_rec->over_secs = slurm_atoull(row[CLUSTER_OCPU]);
-		accounting_rec->resv_secs = slurm_atoull(row[CLUSTER_RCPU]);
+		accounting_rec->plan_secs = slurm_atoull(row[CLUSTER_PCPU]);
 		accounting_rec->period_start = slurm_atoul(row[CLUSTER_START]);
 		list_append(cluster_rec->accounting_list, accounting_rec);
 	}

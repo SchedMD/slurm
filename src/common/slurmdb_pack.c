@@ -689,7 +689,7 @@ extern void slurmdb_pack_cluster_accounting_rec(void *in,
 		pack64(object->over_secs, buffer);
 		pack64(object->pdown_secs, buffer);
 		pack_time(object->period_start, buffer);
-		pack64(object->resv_secs, buffer);
+		pack64(object->plan_secs, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);
@@ -719,7 +719,7 @@ extern int slurmdb_unpack_cluster_accounting_rec(void **object,
 		safe_unpack64(&object_ptr->over_secs, buffer);
 		safe_unpack64(&object_ptr->pdown_secs, buffer);
 		safe_unpack_time(&object_ptr->period_start, buffer);
-		safe_unpack64(&object_ptr->resv_secs, buffer);
+		safe_unpack64(&object_ptr->plan_secs, buffer);
 	} else {
 		error("%s: protocol_version %hu not supported",
 		      __func__, protocol_version);

@@ -48,6 +48,8 @@ HIGHLIGHTS
     slurmd context.
  -- Add new 'PLANNED' state to a node to represent when the backfill scheduler
     has it planned to be used in the future instead of showing as 'IDLE'.
+    sreport also has changed it's cluster utilization report column name from
+    'Reserved' to 'Planned' to match this nomenclature.
  -- Put node into "INVAL" state upon registering with an invalid node
     configuration. Node must register with a valid configuration to continue.
  -- Remove SLURM_DIST_LLLP environment variable in favor of just

@@ -666,7 +666,7 @@ static void _setup_cluster_tres_usage(mysql_conn_t *mysql_conn,
 			   "(creation_time, mod_time, "
 			   "time_start, id_tres, count, "
 			   "alloc_secs, down_secs, pdown_secs, "
-			   "idle_secs, over_secs, resv_secs) "
+			   "idle_secs, over_secs, plan_secs) "
 			   "values (%ld, %ld, %ld, %u, %"PRIu64", "
 			   "%"PRIu64", %"PRIu64", %"PRIu64", "
 			   "%"PRIu64", %"PRIu64", %"PRIu64")",
@@ -718,7 +718,7 @@ static int _process_cluster_usage(mysql_conn_t *mysql_conn,
 		   "pdown_secs=VALUES(pdown_secs), "
 		   "idle_secs=VALUES(idle_secs), "
 		   "over_secs=VALUES(over_secs), "
-		   "resv_secs=VALUES(resv_secs)",
+		   "plan_secs=VALUES(plan_secs)",
 		   now);
 
 	/* Spacing out the inserts here instead of doing them
@@ -1937,7 +1937,7 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 			   "insert into \"%s_%s\" (creation_time, "
 			   "mod_time, time_start, id_tres, count, "
 			   "alloc_secs, down_secs, pdown_secs, "
-			   "idle_secs, over_secs, resv_secs) "
+			   "idle_secs, over_secs, plan_secs) "
 			   "select %ld, %ld, "
 			   "%ld, id_tres, @CPU:=MAX(count), "
 			   "@ASUM:=SUM(alloc_secs), "
@@ -1945,14 +1945,14 @@ extern int as_mysql_nonhour_rollup(mysql_conn_t *mysql_conn,
 			   "@PDSUM:=SUM(pdown_secs), "
 			   "@ISUM:=SUM(idle_secs), "
 			   "@OSUM:=SUM(over_secs), "
-			   "@RSUM:=SUM(resv_secs) from \"%s_%s\" where "
+			   "@PSUM:=SUM(plan_secs) from \"%s_%s\" where "
 			   "(time_start < %ld && time_start >= %ld) "
 			   "group by deleted, id_tres "
 			   "on duplicate key update "
 			   "mod_time=%ld, count=@CPU, "
 			   "alloc_secs=@ASUM, down_secs=@DSUM, "
 			   "pdown_secs=@PDSUM, idle_secs=@ISUM, "
-			   "over_secs=@OSUM, resv_secs=@RSUM;",
+			   "over_secs=@OSUM, plan_secs=@PSUM;",
 			   cluster_name,
 			   run_month ? cluster_month_table : cluster_day_table,
 			   now, now, curr_start,
