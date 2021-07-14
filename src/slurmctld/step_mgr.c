@@ -416,11 +416,10 @@ extern void delete_step_records(job_record_t *job_ptr)
 			/* _internal_step_complete() will purge step record */
 			_internal_step_complete(job_ptr, step_ptr);
 			delete_step_record(job_ptr, step_ptr);
-			_wake_pending_steps(job_ptr);
 		} else {
 			_internal_step_complete(job_ptr, step_ptr);
+			srun_step_signal(step_ptr, 0);
 			delete_step_record(job_ptr, step_ptr);
-			_wake_pending_steps(job_ptr);
 			list_remove (step_iterator);
 			free_step_record(step_ptr);
 		}
