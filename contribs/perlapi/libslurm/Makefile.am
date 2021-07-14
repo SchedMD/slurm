@@ -13,7 +13,6 @@ perl_sources = \
 	       $(perl_dir)/lib/Slurm/Hostlist.pm \
 	       $(perl_dir)/typemap \
 	       $(perl_dir)/classmap \
-	       $(perl_dir)/bitstr.h \
 	       $(perl_dir)/slurm-perl.h \
 	       $(perl_dir)/alloc.c \
 	       $(perl_dir)/conf.c \

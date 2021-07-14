@@ -7,36 +7,13 @@
 
 #include <msg.h>
 
-
-/* these declaration are not in slurm.h */
-#ifndef xfree
-#define xfree(__p) slurm_xfree((void **)&(__p))
-#define xmalloc(__sz) \
-	slurm_xcalloc(1, __sz, true, false, __FILE__, __LINE__, __func__)
-#endif
-
-extern void slurm_xfree(void **);
-extern void *slurm_xcalloc(size_t, size_t, bool, bool, const char *, int, const char *);
+#undef VERSION /* avoid conflicting defintion in config.h */
+#include "src/common/slurm_xlator.h"
+#include "src/common/list.h"
+#include "src/common/xmalloc.h"
+#include "src/common/slurm_protocol_defs.h"
 
 extern void slurm_api_clear_config(void);
-
-extern void slurm_list_iterator_destroy(ListIterator itr);
-
-/*********** entity reason/state/flags string functions **********/
-extern char *slurm_preempt_mode_string(uint16_t preempt_mode);
-extern uint16_t slurm_preempt_mode_num(const char *preempt_mode);
-extern char *slurm_job_reason_string(enum job_state_reason inx);
-extern char *slurm_job_state_string(uint32_t inx);
-extern char *slurm_job_state_string_compact(uint32_t inx);
-extern int   slurm_job_state_num(const char *state_name);
-extern char *slurm_node_state_string(uint32_t inx);
-extern char *slurm_node_state_string_compact(uint32_t inx);
-extern char *slurm_reservation_flags_string(reserve_info_t *resv);
-extern void  slurm_private_data_string(uint16_t private_data,
-				       char *str, int str_len);
-extern void  slurm_accounting_enforce_string(uint16_t enforce,
-					     char *str, int str_len);
-
 
 /********** resource allocation related conversion functions **********/
 extern int hv_to_job_desc_msg(HV *hv, job_desc_msg_t *job_desc);

@@ -10,7 +10,6 @@
 #include <unistd.h>
 
 #include "slurm-perl.h"
-#include "bitstr.h"
 
 /* Custom typemap that free's memory after copying to perl stack. */
 typedef char char_xfree;
@@ -112,7 +111,7 @@ slurm_strerror(slurm_t self, int errnum=0)
 #
 # These functions are made object method instead of class method.
 
-char *
+const char *
 slurm_preempt_mode_string(slurm_t self, uint16_t preempt_mode);
 	CODE:
 		if (self); /* this is needed to avoid a warning about
@@ -2179,7 +2178,7 @@ slurm_bit_fmt_binmask(bitstr_t *b)
 		RETVAL
 
 # ditto
-int
+void
 slurm_bit_unfmt_binmask(bitstr_t *b, char *str)
 
 void

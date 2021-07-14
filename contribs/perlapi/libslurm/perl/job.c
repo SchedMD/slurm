@@ -5,7 +5,6 @@
 #include <EXTERN.h>
 #include <perl.h>
 #include <XSUB.h>
-#include <slurm/slurm.h>
 #include "ppport.h"
 
 #undef VERSION /* MakeMaker defines VERSION to some version we don't care
@@ -13,11 +12,9 @@
 		* included from src/common/job_resources.h below.
 		*/
 
+#include "slurm-perl.h"
 #include "src/common/job_resources.h"
 #include "src/common/xstring.h"
-
-#include "bitstr.h"
-#include "slurm-perl.h"
 
 static node_info_msg_t *job_node_ptr = NULL;
 
