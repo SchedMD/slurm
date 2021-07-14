@@ -268,7 +268,11 @@ static int _getgrnam_r (const char *name, struct group *grp, char *buf,
 static int _getgrgid_r (gid_t gid, struct group *grp, char *buf,
 		size_t bufsiz, struct group **result)
 {
+	DEF_TIMERS;
 	int rc;
+
+	START_TIMER;
+
 	while (1) {
 		rc = getgrgid_r (gid, grp, buf, bufsiz, result);
 		if (rc == EINTR)
@@ -277,6 +281,9 @@ static int _getgrgid_r (gid_t gid, struct group *grp, char *buf,
 			*result = NULL;
 		break;
 	}
+
+	END_TIMER2(__func__);
+
 	return rc;
 }
 
