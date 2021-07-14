@@ -371,6 +371,7 @@ edit:
 		}
 
 		if (cli_filter_g_pre_submit(&opt, 0)) {
+			free_cron_entry(entry);
 			badline = xstrdup_printf("%d-%d", line_start, lineno);
 			printf("cli_filter plugin terminated with error\n");
 			break;
