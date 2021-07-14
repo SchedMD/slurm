@@ -1071,32 +1071,34 @@ static void *_start_stage_out(void *x)
 		error("unable to find job record for JobId=%u",
 		      stage_out_args->job_id);
 	} else {
+		slurm_mutex_lock(&bb_state.bb_mutex);
+		bb_job = _get_bb_job(job_ptr);
 		if (rc != SLURM_SUCCESS) {
 			job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
 			xfree(job_ptr->state_desc);
 			xstrfmtcat(job_ptr->state_desc, "%s: %s: %s",
 				   plugin_type, op, resp_msg);
 			bb_update_system_comment(job_ptr, op, resp_msg, 1);
+			if (bb_state.bb_config.flags &
+			    BB_FLAG_TEARDOWN_FAILURE) {
+				if (bb_job)
+					bb_set_job_bb_state(job_ptr, bb_job,
+							    BB_STATE_TEARDOWN);
+				_queue_teardown(stage_out_args->job_id,
+						stage_out_args->uid,
+						false);
+			}
 		} else {
 			job_ptr->job_state &= (~JOB_STAGE_OUT);
 			xfree(job_ptr->state_desc);
 			last_job_update = time(NULL);
-		}
-		slurm_mutex_lock(&bb_state.bb_mutex);
-		if (rc == SLURM_SUCCESS) {
 			log_flag(BURST_BUF, "Stage-out/post-run complete for %pJ",
 				 job_ptr);
-			bb_job = _get_bb_job(job_ptr);
 			if (bb_job)
 				bb_set_job_bb_state(job_ptr, bb_job,
 						    BB_STATE_TEARDOWN);
 			_queue_teardown(stage_out_args->job_id,
 					stage_out_args->uid, false);
-		} else if (bb_state.bb_config.flags &
-			   BB_FLAG_TEARDOWN_FAILURE) {
-			_queue_teardown(stage_out_args->job_id,
-					stage_out_args->uid,
-					false);
 		}
 		slurm_mutex_unlock(&bb_state.bb_mutex);
 	}
