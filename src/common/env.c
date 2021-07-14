@@ -2290,3 +2290,49 @@ extern char *find_quote_token(char *tmp, char *sep, char **last)
 
 	}
 }
+
+extern void env_merge_filter(slurm_opt_t *opt, job_desc_msg_t *desc)
+{
+	extern char **environ;
+	int i, len;
+	char *save_env[2] = { NULL, NULL }, *tmp, *tok, *last = NULL;
+
+	tmp = xstrdup(opt->export_env);
+	tok = find_quote_token(tmp, ",", &last);
+	while (tok) {
+
+		if (xstrcasecmp(tok, "ALL") == 0) {
+			env_array_merge(&desc->environment,
+					(const char **)environ);
+			tok = find_quote_token(NULL, ",", &last);
+			continue;
+		}
+
+		if (strchr(tok, '=')) {
+			save_env[0] = tok;
+			env_array_merge(&desc->environment,
+					(const char **)save_env);
+		} else {
+			len = strlen(tok);
+			for (i = 0; environ[i]; i++) {
+				if (xstrncmp(tok, environ[i], len) ||
+				    (environ[i][len] != '='))
+					continue;
+				save_env[0] = environ[i];
+				env_array_merge(&desc->environment,
+						(const char **)save_env);
+				break;
+			}
+		}
+		tok = find_quote_token(NULL, ",", &last);
+	}
+	xfree(tmp);
+
+	for (i = 0; environ[i]; i++) {
+		if (xstrncmp("SLURM_", environ[i], 6))
+			continue;
+		save_env[0] = environ[i];
+		env_array_merge(&desc->environment,
+				(const char **)save_env);
+	}
+}

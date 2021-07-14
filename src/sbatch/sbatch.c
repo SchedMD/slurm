@@ -70,7 +70,6 @@
 #define MAX_WAIT_SLEEP_TIME 32
 
 static void  _add_bb_to_script(char **script_body, char *burst_buffer_file);
-static void  _env_merge_filter(job_desc_msg_t *desc);
 static int   _fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void *_get_script_buffer(const char *filename, int *size);
 static int   _job_wait(uint32_t job_id);
@@ -454,57 +453,6 @@ static int _job_wait(uint32_t job_id)
 	return ec;
 }
 
-
-/* Propagate select user environment variables to the job.
- * If ALL is among the specified variables propagate
- * the entire user environment as well.
- */
-static void _env_merge_filter(job_desc_msg_t *desc)
-{
-	extern char **environ;
-	int i, len;
-	char *save_env[2] = { NULL, NULL }, *tmp, *tok, *last = NULL;
-
-	tmp = xstrdup(opt.export_env);
-	tok = find_quote_token(tmp, ",", &last);
-	while (tok) {
-
-		if (xstrcasecmp(tok, "ALL") == 0) {
-			env_array_merge(&desc->environment,
-					(const char **)environ);
-			tok = find_quote_token(NULL, ",", &last);
-			continue;
-		}
-
-		if (strchr(tok, '=')) {
-			save_env[0] = tok;
-			env_array_merge(&desc->environment,
-					(const char **)save_env);
-		} else {
-			len = strlen(tok);
-			for (i = 0; environ[i]; i++) {
-				if (xstrncmp(tok, environ[i], len) ||
-				    (environ[i][len] != '='))
-					continue;
-				save_env[0] = environ[i];
-				env_array_merge(&desc->environment,
-						(const char **)save_env);
-				break;
-			}
-		}
-		tok = find_quote_token(NULL, ",", &last);
-	}
-	xfree(tmp);
-
-	for (i = 0; environ[i]; i++) {
-		if (xstrncmp("SLURM_", environ[i], 6))
-			continue;
-		save_env[0] = environ[i];
-		env_array_merge(&desc->environment,
-				(const char **)save_env);
-	}
-}
-
 /* Returns 0 on success, -1 on failure */
 static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
@@ -538,7 +486,7 @@ static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 				      (const char **)environ);
 		opt.get_user_env_time = 0;
 	} else {
-		_env_merge_filter(desc);
+		env_merge_filter(&opt, desc);
 		opt.get_user_env_time = 0;
 	}
 	if (opt.get_user_env_time >= 0) {

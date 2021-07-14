@@ -375,4 +375,11 @@ extern void set_env_from_opts(slurm_opt_t *opt, char ***dest,
  */
 extern char *find_quote_token(char *tmp, char *sep, char **last);
 
+/*
+ * Propagate select user environment variables to the job.
+ * If ALL is among the specified export variables, propagate the entire user
+ * environment as well.
+ */
+extern void env_merge_filter(slurm_opt_t *opt, job_desc_msg_t *desc);
+
 #endif
