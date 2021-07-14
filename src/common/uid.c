@@ -246,7 +246,11 @@ gid_from_uid (uid_t uid)
 static int _getgrnam_r (const char *name, struct group *grp, char *buf,
 		size_t bufsiz, struct group **result)
 {
+	DEF_TIMERS;
 	int rc;
+
+	START_TIMER;
+
 	while (1) {
 		rc = getgrnam_r (name, grp, buf, bufsiz, result);
 		if (rc == EINTR)
@@ -255,6 +259,9 @@ static int _getgrnam_r (const char *name, struct group *grp, char *buf,
 			*result = NULL;
 		break;
 	}
+
+	END_TIMER2(__func__);
+
 	return (rc);
 }
 
