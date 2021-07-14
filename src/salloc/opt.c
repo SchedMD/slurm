@@ -393,7 +393,7 @@ static bool _opt_verify(void)
 		xfree(opt.burst_buffer_file);
 	}
 
-	if (opt.container && opt.container && !getenv("SLURM_CONTAINER"))
+	if (opt.container && !getenv("SLURM_CONTAINER"))
 		setenvf(NULL, "SLURM_CONTAINER", "%s", opt.container);
 
 	if (opt.hint &&
