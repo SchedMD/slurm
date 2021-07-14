@@ -686,9 +686,6 @@ unpack_error:
 /* For a given user/partition/account, set it's assoc_ptr */
 static void _set_assoc_mgr_ptrs(bb_alloc_t *bb_alloc)
 {
-	/* read locks on assoc */
-	assoc_mgr_lock_t assoc_locks =
-		{ .assoc = READ_LOCK, .qos = READ_LOCK, .user = READ_LOCK };
 	slurmdb_assoc_rec_t assoc_rec;
 	slurmdb_qos_rec_t qos_rec;
 
@@ -696,7 +693,6 @@ static void _set_assoc_mgr_ptrs(bb_alloc_t *bb_alloc)
 	assoc_rec.acct      = bb_alloc->account;
 	assoc_rec.partition = bb_alloc->partition;
 	assoc_rec.uid       = bb_alloc->user_id;
-	assoc_mgr_lock(&assoc_locks);
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
 				    accounting_enforce,
 				    &bb_alloc->assoc_ptr,
@@ -715,13 +711,17 @@ static void _set_assoc_mgr_ptrs(bb_alloc_t *bb_alloc)
 		verbose("Invalid QOS name: %s",
 			bb_alloc->qos);
 
-	assoc_mgr_unlock(&assoc_locks);
 }
 
 static void _apply_limits(void)
 {
 	bb_alloc_t *bb_alloc;
+	/* read locks on assoc */
+	assoc_mgr_lock_t assoc_locks =
+		{ .assoc = READ_LOCK, .qos = READ_LOCK, .user = READ_LOCK };
 
+	assoc_mgr_lock(&assoc_locks);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	for (int i = 0; i < BB_HASH_SIZE; i++) {
 		bb_alloc = bb_state.bb_ahash[i];
 		while (bb_alloc) {
@@ -734,6 +734,8 @@ static void _apply_limits(void)
 			bb_alloc = bb_alloc->next;
 		}
 	}
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+	assoc_mgr_unlock(&assoc_locks);
 }
 
 static void _bb_free_pools(bb_pools_t *pools, int num_ent)
@@ -874,8 +876,8 @@ static int _load_pools(uint32_t timeout)
 		return SLURM_SUCCESS;
 	}
 
-	pools_bitmap = bit_alloc(bb_state.bb_config.pool_cnt + num_pools);
 	slurm_mutex_lock(&bb_state.bb_mutex);
+	pools_bitmap = bit_alloc(bb_state.bb_config.pool_cnt + num_pools);
 
 	/* Put found pools into bb_state.bb_config.pool_ptr. */
 	for (i = 0; i < num_pools; i++) {
@@ -1154,9 +1156,7 @@ static void _load_state(bool init_config)
 {
 	uint32_t timeout;
 
-	slurm_mutex_lock(&bb_state.bb_mutex);
 	timeout = bb_state.bb_config.other_timeout;
-	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	if (_load_pools(timeout) != SLURM_SUCCESS)
 		return;
@@ -1381,6 +1381,12 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 			char *tmp_pool = NULL;
 			uint64_t tmp_cnt = 0;
 
+			/*
+			 * Lock bb_mutex since we iterate through pools in
+			 * bb_state in bb_valid_pool_test() and
+			 * _set_granularity().
+			 */
+			slurm_mutex_lock(&bb_state.bb_mutex);
 			if ((rc = _parse_capacity(tok, capacity + 9, &tmp_pool,
 						  &tmp_cnt) != SLURM_SUCCESS)) {
 				have_bb = false;
@@ -1392,6 +1398,7 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 				rc = ESLURM_INVALID_BURST_BUFFER_REQUEST;
 			} else
 				*bb_size += _set_granularity(tmp_cnt, tmp_pool);
+			slurm_mutex_unlock(&bb_state.bb_mutex);
 
 			xfree(tmp_pool);
 			if (rc != SLURM_SUCCESS)
@@ -1407,6 +1414,7 @@ static int _parse_bb_opts(job_desc_msg_t *job_desc, uint64_t *bb_size,
 	return rc;
 }
 
+/* Note: bb_mutex is locked on entry */
 static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 {
 	char *bb_specs;
@@ -1849,11 +1857,15 @@ extern char *bb_p_get_status(uint32_t argc, char **argv)
  */
 extern int bb_p_reconfig(void)
 {
+	/* read locks on assoc */
+	assoc_mgr_lock_t assoc_locks =
+		{ .assoc = READ_LOCK, .qos = READ_LOCK, .user = READ_LOCK };
+
+	assoc_mgr_lock(&assoc_locks);
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	log_flag(BURST_BUF, "");
 	bb_load_config(&bb_state, (char *) plugin_type); /* Remove "const" */
 	_test_config();
-	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	/* reconfig is the place we make sure the pointers are correct */
 	for (int i = 0; i < BB_HASH_SIZE; i++) {
@@ -1863,6 +1875,9 @@ extern int bb_p_reconfig(void)
 			bb_alloc = bb_alloc->next;
 		}
 	}
+	slurm_mutex_unlock(&bb_state.bb_mutex);
+	assoc_mgr_unlock(&assoc_locks);
+
 	return SLURM_SUCCESS;
 }
 
@@ -2625,12 +2640,12 @@ static void *_start_stage_in(void *x)
 	}
 
 	lock_slurmctld(job_write_lock);
+	slurm_mutex_lock(&bb_state.bb_mutex);
 	job_ptr = find_job_record(stage_in_args->job_id);
 	if (!job_ptr) {
 		error("unable to find job record for JobId=%u",
 		      stage_in_args->job_id);
 	} else if (rc == SLURM_SUCCESS) {
-		slurm_mutex_lock(&bb_state.bb_mutex);
 		bb_job = bb_job_find(&bb_state, stage_in_args->job_id);
 		if (bb_job)
 			bb_set_job_bb_state(job_ptr, bb_job,
@@ -2673,7 +2688,6 @@ static void *_start_stage_in(void *x)
 				      job_ptr);
 			}
 		}
-		slurm_mutex_unlock(&bb_state.bb_mutex);
 	} else {
 		xfree(job_ptr->state_desc);
 		job_ptr->state_reason = FAIL_BURST_BUFFER_OP;
@@ -2689,6 +2703,7 @@ static void *_start_stage_in(void *x)
 					job_ptr->user_id, true);
 		}
 	}
+	slurm_mutex_unlock(&bb_state.bb_mutex);
 	unlock_slurmctld(job_write_lock);
 
 fini:
