@@ -89,7 +89,11 @@ static int _getpwnam_r (const char *name, struct passwd *pwd, char *buf,
 extern int slurm_getpwuid_r (uid_t uid, struct passwd *pwd, char *buf,
 			     size_t bufsiz, struct passwd **result)
 {
+	DEF_TIMERS;
 	int rc;
+
+	START_TIMER;
+
 	while (1) {
 		rc = getpwuid_r(uid, pwd, buf, bufsiz, result);
 		if (rc == EINTR)
@@ -98,6 +102,9 @@ extern int slurm_getpwuid_r (uid_t uid, struct passwd *pwd, char *buf,
 			*result = NULL;
 		break;
 	}
+
+	END_TIMER2(__func__);
+
 	return rc;
 }
 
