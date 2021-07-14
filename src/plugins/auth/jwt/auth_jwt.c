@@ -152,7 +152,8 @@ static void _init_jwks(void)
 	if (!(begin = xstrstr(slurm_conf.authalt_params, jwks_key_field)))
 		return;
 
-	data_init(MIME_TYPE_JSON_PLUGIN, NULL);
+	if (data_init(MIME_TYPE_JSON_PLUGIN, NULL))
+		fatal("%s: data_init() failed", __func__);
 
 	start = begin + strlen(jwks_key_field);
 	if ((end = xstrstr(start, ",")))
