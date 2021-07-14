@@ -395,7 +395,7 @@ cluster_accounting_rec_to_hv(slurmdb_cluster_accounting_rec_t* ar, HV* hv)
     STORE_FIELD(hv, ar, over_secs,    uint64_t);
     STORE_FIELD(hv, ar, pdown_secs,   uint64_t);
     STORE_FIELD(hv, ar, period_start, time_t);
-    STORE_FIELD(hv, ar, resv_secs,    uint64_t);
+    STORE_FIELD(hv, ar, plan_secs,    uint64_t);
 
     rh = (HV*)sv_2mortal((SV*)newHV());
     if (tres_rec_to_hv(&ar->tres_rec, rh) < 0) {
