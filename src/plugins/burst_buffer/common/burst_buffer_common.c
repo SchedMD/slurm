@@ -267,6 +267,7 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini)
 	xfree(config_ptr->deny_users_str);
 	xfree(config_ptr->destroy_buffer);
 	xfree(config_ptr->directive_str);
+	config_ptr->flags = 0;
 	xfree(config_ptr->get_sys_state);
 	xfree(config_ptr->get_sys_status);
 	config_ptr->granularity = 1;
