@@ -45,16 +45,15 @@ wait_for_command_match  "$sacct -X -n -j $job_id" "RUNNING"
 
 set out [run_command_output -fail "$seff $job_id"]
 subtest {[regexp "State: RUNNING"  $out]} "Job should be reported as RUNNING by seff"
-subtest {[regexp "WARNING: Efficiency statistics may be misleading for RUNNING jobs." $out]} "seff output should contain warning about staistics for RUNNING job"
+subtest {[regexp "WARNING: Efficiency statistics may be misleading for RUNNING jobs." $out]} "seff output should contain warning about statistics for RUNNING job"
 
 wait_for_command_match "$sacct -X -n -j $job_id" "COMPLETED"
 set out [run_command_output -fail "$seff $job_id"]
 subtest {[regexp "State: COMPLETED"  $out]} "Job should be reported as COMPLETED by seff"
 subtest {[regexp "Cores: \(\\d+\)" $out {} cores] || \
          [regexp "Cores per node: \(\\d+\)" $out {} cores]} "seff should report the number of cores (per node) based on the configuration"
-# On select/linear or other configs, cores could be > 1
-if {$cores > 5} {
-	subskip "Not subtesting CPU Efficency if Cores ($cores) > 5"
-} else {
-	subtest {[regexp -line "CPU Efficiency: 0.00% of 00:00:$cores\\d core-walltime" $out]} "Job efficiency should be 0.00% of >=10s*Cores core-walltime"
-}
+
+regexp "Job Wall-clock time: 00:00:\(\\d+\)" $out {} wall_clock_time
+subtest {[tolerance 10 $wall_clock_time +7]} "Wall time should be close to 10s" "${wall_clock_time}s not in tolerance range of 10s"
+set cpu_time [expr $cores * $wall_clock_time]
+subtest {[regexp -line "CPU Efficiency: 0.00% of 00:00:$cpu_time core-walltime" $out]} "Job efficiency should be 0.00% of (Cores * Wall-clock time = $cpu_time) core-walltime"
