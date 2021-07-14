@@ -453,7 +453,11 @@ static int _job_wait(uint32_t job_id)
 	return ec;
 }
 
-/* Returns 0 on success, -1 on failure */
+/*
+ * Returns 0 on success, -1 on failure
+ * A copy of this exists in src/plugins/openapi/v0.0.xx/jobs.c. If this changes
+ * please do the same there.
+ */
 static int _fill_job_desc_from_opts(job_desc_msg_t *desc)
 {
 	extern char **environ;

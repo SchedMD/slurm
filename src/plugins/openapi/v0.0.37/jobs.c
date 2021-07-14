@@ -315,237 +315,64 @@ static data_for_each_cmd_t _per_job_param(const char *key, const data_t *data,
  * copied from _fill_job_desc_from_opts() in src/sbatch/sbatch.c
  * Returns 0 on success, -1 on failure
  */
-static int _fill_job_desc_from_sbatch_opts(slurm_opt_t *opt,
-					   job_desc_msg_t *desc)
+static int _fill_job_desc_from_opts(slurm_opt_t *opt, job_desc_msg_t *desc)
 {
 	const sbatch_opt_t *sbopt = opt->sbatch_opt;
-	int i;
+	extern char **environ;
 
-	/*
-	 * Handle environment first since many of the options will
-	 * append to the environment
-	 */
-	env_array_free(desc->environment);
-	if (opt->environment)
-		desc->environment = env_array_copy(
-			(const char **)opt->environment);
-	else
+	if (!desc)
+		return -1;
+
+	if (!opt->job_name)
+		desc->name = xstrdup("openapi");
+
+	desc->array_inx = sbopt->array_inx;
+	desc->batch_features = sbopt->batch_features;
+	desc->container = xstrdup(opt->container);
+
+	desc->wait_all_nodes = sbopt->wait_all_nodes;
+
+	desc->environment = NULL;
+	if (sbopt->export_file) {
+		desc->environment = env_array_from_file(sbopt->export_file);
+		if (desc->environment == NULL)
+			exit(1);
+	}
+	if (opt->export_env == NULL) {
+		env_array_merge(&desc->environment, (const char **) environ);
+	} else if (!xstrcasecmp(opt->export_env, "ALL")) {
+		env_array_merge(&desc->environment, (const char **) environ);
+	} else if (!xstrcasecmp(opt->export_env, "NONE")) {
 		desc->environment = env_array_create();
+		env_array_merge_slurm(&desc->environment,
+				      (const char **)environ);
+		opt->get_user_env_time = 0;
+	} else {
+		env_merge_filter(opt, desc);
+		opt->get_user_env_time = 0;
+	}
+	if (opt->get_user_env_time >= 0) {
+		env_array_overwrite(&desc->environment,
+				    "SLURM_GET_USER_ENV", "1");
+	}
 
-	if (opt->get_user_env_time >= 0)
-		env_array_overwrite(&desc->environment, "SLURM_GET_USER_ENV",
-				    "1");
-
-	desc->contiguous = opt->contiguous ? 1 : 0;
-	if (opt->core_spec != NO_VAL16)
-		desc->core_spec = opt->core_spec;
-	desc->features = xstrdup(opt->constraint);
-	desc->cluster_features = xstrdup(opt->c_constraint);
-	if (opt->job_name)
-		desc->name = xstrdup(opt->job_name);
-	else
-		desc->name = xstrdup("sbatch");
-	desc->reservation = xstrdup(opt->reservation);
-	desc->wckey = xstrdup(opt->wckey);
-
-	desc->req_nodes = xstrdup(opt->nodelist);
-	desc->extra = xstrdup(opt->extra);
-	desc->exc_nodes = xstrdup(opt->exclude);
-	desc->partition = xstrdup(opt->partition);
-	desc->profile = opt->profile;
-	if (opt->licenses)
-		desc->licenses = xstrdup(opt->licenses);
-	if (opt->nodes_set) {
-		desc->min_nodes = opt->min_nodes;
-		if (opt->max_nodes)
-			desc->max_nodes = opt->max_nodes;
-	} else if (opt->ntasks_set && (opt->ntasks == 0))
-		desc->min_nodes = 0;
-	if (opt->ntasks_per_node)
-		desc->ntasks_per_node = opt->ntasks_per_node;
-	if (opt->ntasks_per_tres != NO_VAL)
-		desc->ntasks_per_tres = opt->ntasks_per_tres;
-	else if (opt->ntasks_per_gpu != NO_VAL)
-		desc->ntasks_per_tres = opt->ntasks_per_gpu;
-
-	/* Disable sending uid/gid as it is handled by auth layer */
-	/* desc->user_id = opt->uid; */
-	/* desc->group_id = opt->gid; */
-	if (opt->dependency)
-		desc->dependency = xstrdup(opt->dependency);
-
-	if (sbopt->array_inx)
-		desc->array_inx = xstrdup(sbopt->array_inx);
-	if (sbopt->batch_features)
-		desc->batch_features = xstrdup(sbopt->batch_features);
-	if (opt->mem_bind)
-		desc->mem_bind = xstrdup(opt->mem_bind);
-	if (opt->mem_bind_type)
-		desc->mem_bind_type = opt->mem_bind_type;
-	if (opt->plane_size != NO_VAL)
-		desc->plane_size = opt->plane_size;
-	desc->task_dist = opt->distribution;
 	if ((opt->distribution & SLURM_DIST_STATE_BASE) ==
 	    SLURM_DIST_ARBITRARY) {
 		env_array_overwrite_fmt(&desc->environment,
-					"SLURM_ARBITRARY_NODELIST", "%s",
-					opt->nodelist);
+					"SLURM_ARBITRARY_NODELIST",
+					"%s", desc->req_nodes);
 	}
 
-	desc->network = xstrdup(opt->network);
-	if (opt->nice != NO_VAL)
-		desc->nice = NICE_OFFSET + opt->nice;
-	if (opt->priority)
-		desc->priority = opt->priority;
+	desc->env_size = envcount(desc->environment);
 
-	desc->mail_type = opt->mail_type;
-	if (opt->mail_user)
-		desc->mail_user = xstrdup(opt->mail_user);
-	if (opt->begin)
-		desc->begin_time = opt->begin;
-	if (opt->deadline)
-		desc->deadline = opt->deadline;
-	if (opt->delay_boot != NO_VAL)
-		desc->delay_boot = opt->delay_boot;
-	if (opt->account)
-		desc->account = xstrdup(opt->account);
-	if (opt->burst_buffer)
-		desc->burst_buffer = opt->burst_buffer;
-	if (opt->comment)
-		desc->comment = xstrdup(opt->comment);
-	if (opt->qos)
-		desc->qos = xstrdup(opt->qos);
+	desc->argc     = sbopt->script_argc;
+	desc->argv     = sbopt->script_argv;
+	desc->std_err  = xstrdup(opt->efname);
+	desc->std_in   = xstrdup(opt->ifname);
+	desc->std_out  = xstrdup(opt->ofname);
 
-	if (opt->hold)
-		desc->priority = 0;
-	if (opt->reboot)
-		desc->reboot = 1;
-
-	/* job constraints */
-	if (opt->pn_min_cpus > -1)
-		desc->pn_min_cpus = opt->pn_min_cpus;
-	if (opt->pn_min_memory != NO_VAL64)
-		desc->pn_min_memory = opt->pn_min_memory;
-	else if (opt->mem_per_cpu != NO_VAL64)
-		desc->pn_min_memory = opt->mem_per_cpu | MEM_PER_CPU;
-	if (opt->pn_min_tmp_disk != NO_VAL64)
-		desc->pn_min_tmp_disk = opt->pn_min_tmp_disk;
-	if (opt->overcommit) {
-		desc->min_cpus = MAX(opt->min_nodes, 1);
-		desc->overcommit = opt->overcommit;
-	} else if (opt->cpus_set)
-		desc->min_cpus = opt->ntasks * opt->cpus_per_task;
-	else if (opt->nodes_set && (opt->min_nodes == 0))
-		desc->min_cpus = 0;
-	else
-		desc->min_cpus = opt->ntasks;
-
-	if (opt->ntasks_set)
-		desc->num_tasks = opt->ntasks;
-	if (opt->cpus_set)
-		desc->cpus_per_task = opt->cpus_per_task;
-	if (opt->ntasks_per_socket > -1)
-		desc->ntasks_per_socket = opt->ntasks_per_socket;
-	if (opt->ntasks_per_core > -1)
-		desc->ntasks_per_core = opt->ntasks_per_core;
-
-	/* node constraints */
-	if (opt->sockets_per_node != NO_VAL)
-		desc->sockets_per_node = opt->sockets_per_node;
-	if (opt->cores_per_socket != NO_VAL)
-		desc->cores_per_socket = opt->cores_per_socket;
-	if (opt->threads_per_core != NO_VAL)
-		desc->threads_per_core = opt->threads_per_core;
-
-	if (opt->no_kill)
-		desc->kill_on_node_fail = 0;
-	if (opt->time_limit != NO_VAL)
-		desc->time_limit = opt->time_limit;
-	if (opt->time_min != NO_VAL)
-		desc->time_min = opt->time_min;
-	if (opt->shared != NO_VAL16)
-		desc->shared = opt->shared;
-
-	desc->wait_all_nodes = sbopt->wait_all_nodes;
-	if (opt->warn_flags)
-		desc->warn_flags = opt->warn_flags;
-	if (opt->warn_signal)
-		desc->warn_signal = opt->warn_signal;
-	if (opt->warn_time)
-		desc->warn_time = opt->warn_time;
-
-	desc->argc = sbopt->script_argc;
-	desc->argv = xmalloc(sizeof(char *) * sbopt->script_argc);
-	for (i = 0; i < sbopt->script_argc; i++)
-		desc->argv[i] = xstrdup(sbopt->script_argv[i]);
-	desc->open_mode = opt->open_mode;
-	desc->std_err = xstrdup(opt->efname);
-	desc->std_in = xstrdup(opt->ifname);
-	desc->std_out = xstrdup(opt->ofname);
-	desc->work_dir = xstrdup(opt->chdir);
 	if (sbopt->requeue != NO_VAL)
 		desc->requeue = sbopt->requeue;
-	if (opt->acctg_freq)
-		desc->acctg_freq = xstrdup(opt->acctg_freq);
-
-	if (opt->spank_job_env_size) {
-		desc->spank_job_env_size = opt->spank_job_env_size;
-		desc->spank_job_env = xmalloc(sizeof(char *) *
-					      opt->spank_job_env_size);
-		for (i = 0; i < opt->spank_job_env_size; i++)
-			desc->spank_job_env[i] = xstrdup(opt->spank_job_env[i]);
-	}
-
-	desc->cpu_freq_min = opt->cpu_freq_min;
-	desc->cpu_freq_max = opt->cpu_freq_max;
-	desc->cpu_freq_gov = opt->cpu_freq_gov;
-
-	if (opt->req_switch >= 0)
-		desc->req_switch = opt->req_switch;
-	if (opt->wait4switch >= 0)
-		desc->wait4switch = opt->wait4switch;
-
-	desc->power_flags = opt->power;
-	if (opt->job_flags)
-		desc->bitflags = opt->job_flags;
-	if (opt->mcs_label)
-		desc->mcs_label = xstrdup(opt->mcs_label);
-
-	if (opt->cpus_per_gpu)
-		xstrfmtcat(desc->cpus_per_tres, "gpu:%d", opt->cpus_per_gpu);
-	if (opt->gpu_bind)
-		xstrfmtcat(opt->tres_bind, "gpu:%s", opt->gpu_bind);
-	if (tres_bind_verify_cmdline(opt->tres_bind)) {
-		error("Invalid --tres-bind argument: %s. Ignored",
-		      opt->tres_bind);
-		xfree(opt->tres_bind);
-	}
-	desc->tres_bind = xstrdup(opt->tres_bind);
-	xfmt_tres_freq(&opt->tres_freq, "gpu", opt->gpu_freq);
-	if (tres_freq_verify_cmdline(opt->tres_freq)) {
-		error("Invalid --tres-freq argument: %s. Ignored",
-		      opt->tres_freq);
-		xfree(opt->tres_freq);
-	}
-	desc->tres_freq = xstrdup(opt->tres_freq);
-	xfmt_tres(&desc->tres_per_job, "gpu", opt->gpus);
-	xfmt_tres(&desc->tres_per_node, "gpu", opt->gpus_per_node);
-	if (opt->gres) {
-		if (desc->tres_per_node)
-			xstrfmtcat(desc->tres_per_node, ",%s", opt->gres);
-		else
-			desc->tres_per_node = xstrdup(opt->gres);
-	}
-	xfmt_tres(&desc->tres_per_socket, "gpu", opt->gpus_per_socket);
-	xfmt_tres(&desc->tres_per_task, "gpu", opt->gpus_per_task);
-	if (opt->mem_per_gpu != NO_VAL64)
-		xstrfmtcat(desc->mem_per_tres, "gpu:%" PRIu64,
-			   opt->mem_per_gpu);
-
-	desc->clusters = xstrdup(opt->clusters);
-
-	/* update env size after all changes */
-	desc->env_size = envcount(desc->environment);
 
 	return 0;
 }
@@ -557,7 +384,7 @@ static job_desc_msg_t *_parse_job_desc(const data_t *job, data_t *errors,
 				       bool update_only)
 {
 	int rc = SLURM_SUCCESS;
-	job_desc_msg_t *req = xmalloc(sizeof(*req));
+	job_desc_msg_t *req = NULL;
 	char *opt_string = NULL;
 	sbatch_opt_t sbopt = { 0 };
 	slurm_opt_t opt = { .sbatch_opt = &sbopt };
@@ -574,14 +401,14 @@ static job_desc_msg_t *_parse_job_desc(const data_t *job, data_t *errors,
 		goto cleanup;
 	}
 
-	slurm_init_job_desc_msg(req);
-	if (!update_only)
-		req->task_dist = SLURM_DIST_UNKNOWN;
-
-	if (_fill_job_desc_from_sbatch_opts(&opt, req)) {
+	req = slurm_opt_create_job_desc(&opt);
+	if (_fill_job_desc_from_opts(&opt, req) == -1) {
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
+
+	if (!update_only)
+		req->task_dist = SLURM_DIST_UNKNOWN;
 
 	if (!update_only && (!req->environment || !req->env_size)) {
 		/*
