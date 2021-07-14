@@ -31,6 +31,9 @@ set pypath $test_dir/py_path
 set usock $test_dir/slurmrestd.sock
 set scripts "[$bin_pwd]/${test_name}_scripts"
 
+# Avoid fatal on slurmrestd because it should not be run as SlurmUser
+set env(SLURMRESTD_SECURITY) disable_user_check
+
 if {![file exists $slurmrestd]} {
 	skip "slurmrestd not installed"
 }
