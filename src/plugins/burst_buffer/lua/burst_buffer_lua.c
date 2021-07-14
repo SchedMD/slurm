@@ -804,8 +804,7 @@ static bb_pools_t * _json_parse_pools_array(json_object *jobj, char *key,
 	return pools;
 }
 
-static bb_pools_t *_bb_get_pools(int *num_pools, bb_state_t *state_ptr,
-				 uint32_t timeout, int *out_rc)
+static bb_pools_t *_bb_get_pools(int *num_pools, uint32_t timeout, int *out_rc)
 {
 	int rc;
 	char *resp_msg = NULL;
@@ -865,7 +864,7 @@ static int _load_pools(uint32_t timeout)
 	bitstr_t *pools_bitmap;
 
 	/* Load the pools information from burst_buffer.lua. */
-	pools = _bb_get_pools(&num_pools, &bb_state, timeout, &rc);
+	pools = _bb_get_pools(&num_pools, timeout, &rc);
 	if (rc != SLURM_SUCCESS) {
 		error("Get pools returned error %d, cannot use pools unless get pools returns success",
 		      rc);
