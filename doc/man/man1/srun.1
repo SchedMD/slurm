@@ -432,7 +432,6 @@ the list.
 To simplify support for large task counts, the lists may follow a map with an
 asterisk and repetition count.
 For example "map_cpu:0x0f*4,0xf0*4".
-Not supported unless the entire node is allocated to the job.
 .TP
 .B mask_cpu:<list>
 Bind by setting CPU masks on tasks (or ranks) as specified where <list> is
@@ -448,7 +447,6 @@ the list.
 To simplify support for large task counts, the lists may follow a map with an
 asterisk and repetition count.
 For example "mask_cpu:0x0f*4,0xf0*4".
-Not supported unless the entire node is allocated to the job.
 .TP
 .B rank_ldom
 Bind to a NUMA locality domain by rank. Not supported unless the entire

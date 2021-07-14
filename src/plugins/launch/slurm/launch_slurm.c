@@ -756,14 +756,14 @@ extern int launch_p_step_launch(srun_job_t *job, slurm_step_io_fds_t *cio_fds,
 	launch_params.task_prolog = srun_opt->task_prolog;
 	launch_params.task_epilog = srun_opt->task_epilog;
 
-	if (slurm_verify_cpu_bind(NULL, &srun_opt->cpu_bind,
-				  &srun_opt->cpu_bind_type,
-				  job->step_ctx->step_resp->
-				  def_cpu_bind_type)) {
-		return SLURM_ERROR;
+	if (!srun_opt->cpu_bind_type &&
+	    job->step_ctx->step_resp->def_cpu_bind_type)
+		srun_opt->cpu_bind_type =
+			job->step_ctx->step_resp->def_cpu_bind_type;
+	if (get_log_level() >= LOG_LEVEL_VERBOSE) {
+		slurm_sprint_cpu_bind_type(tmp_str, srun_opt->cpu_bind_type);
+		verbose("CpuBindType=%s", tmp_str);
 	}
-	slurm_sprint_cpu_bind_type(tmp_str, srun_opt->cpu_bind_type);
-	verbose("CpuBindType=%s", tmp_str);
 	launch_params.cpu_bind = srun_opt->cpu_bind;
 	launch_params.cpu_bind_type = srun_opt->cpu_bind_type;
 

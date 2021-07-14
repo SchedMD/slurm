@@ -4157,13 +4157,9 @@ TaskPlugin=task/affinity,task/cray_aries,task/cgroup
 \fBTaskPluginParam\fR
 Optional parameters for the task plugin.
 Multiple options should be comma separated.
-If \fBNone\fR, \fBBoards\fR, \fBSockets\fR, \fBCores\fR, \fBThreads\fR,
-and/or \fBVerbose\fR are specified, they will override
-the \fB\-\-cpu\-bind\fR option specified by the user
-in the \fBsrun\fR command.
 \fBNone\fR, \fBBoards\fR, \fBSockets\fR, \fBCores\fR and \fBThreads\fR are mutually
-exclusive and since they decrease scheduling flexibility are not generally
-recommended (select no more than one of them).
+exclusive and treated as a last possible source of --cpu-bind default. See also
+Node and Partition CpuBind options.
 
 .RS
 .TP 10
@@ -4196,8 +4192,7 @@ completely unavailable to Slurm daemons and jobs spawned by Slurm).
 This option may not be used with the \fBtask/cray_aries\fR plugin.
 .TP
 \fBVerbose\fR
-Verbosely report binding before tasks run.
-Overrides user options.
+Verbosely report binding before tasks run by default.
 .TP
 \fBAutobind\fR
 Set a default binding in the event that "auto binding" doesn't find a match.
