@@ -42,7 +42,7 @@ proc cleanup {} {
 }
 
 # Build prog
-exec $bin_cc -o $file_prog $file_prog.c
+run_command -fail "$bin_cc -o $file_prog $file_prog.c"
 
 #
 # Build input script files
@@ -119,13 +119,7 @@ proc test_signaling { batch full } {
 	}
 
 	log_debug "Signal the job"
-	set cmd_str "$scancel -s SIGUSR1 $params $job_id"
-	spawn [lindex $cmd_str 0] {*}[lrange $cmd_str 1 end]
-	expect {
-		eof {
-			wait
-		}
-	}
+	run_command -fail "$scancel -s SIGUSR1 $params $job_id"
 
 	#
 	# Wait for job completion
