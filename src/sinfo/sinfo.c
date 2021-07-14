@@ -861,6 +861,19 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 			return false;
 	}
 
+	if (params.match_flags.statecomplete_flag) {
+		char *state1, *state2;
+		int rc = true;
+		state1 = node_state_string_complete(node_ptr->node_state);
+		state2 = node_state_string_complete(sinfo_ptr->node_state);
+		rc = xstrcmp(state1, state2);
+		xfree(state1);
+		xfree(state2);
+
+		if (rc)
+			return false;
+	}
+
 	select_g_select_nodeinfo_get(node_ptr->select_nodeinfo,
 				     SELECT_NODEDATA_MEM_ALLOC,
 				     NODE_STATE_ALLOCATED,

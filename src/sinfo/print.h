@@ -141,6 +141,8 @@ void print_sinfo_reservation(reserve_info_msg_t *resv_ptr);
 	format_add_function(list,wid,right,suffix,_print_size)
 #define format_add_state_compact(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_state_compact)
+#define format_add_state_complete(list,wid,right,suffix) \
+	format_add_function(list,wid,right,suffix,_print_state_complete)
 #define format_add_state_long(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_state_long)
 #define format_add_time(list,wid,right,suffix) \
@@ -246,6 +248,8 @@ int _print_size(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_state_compact(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
+int _print_state_complete(sinfo_data_t * sinfo_data, int width,
+			  bool right_justify, char *suffix);
 int _print_state_long(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix);
 int _print_time(sinfo_data_t * sinfo_data, int width,
