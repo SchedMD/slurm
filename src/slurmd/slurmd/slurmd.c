@@ -1342,7 +1342,8 @@ _print_config(void)
 				&conf->block_map, &conf->block_map_inv);
 	printf("CPUs=%u Boards=%u SocketsPerBoard=%u CoresPerSocket=%u "
 	       "ThreadsPerCore=%u ",
-	       conf->actual_cpus, conf->actual_boards, conf->actual_sockets,
+	       conf->actual_cpus, conf->actual_boards,
+	       (conf->actual_sockets / conf->actual_boards),
 	       conf->actual_cores, conf->actual_threads);
 
 	get_memory(&conf->real_memory_size);

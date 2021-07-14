@@ -133,6 +133,7 @@ documents those changes that are of interest to users and administrators.
     applied regardless of the job specifying a --cpu-bind.
  -- Add "node_reg_mem_percent" SlurmctldParameter to define percentage of
     memory nodes are allowed to register with.
+ -- Show correct number of SocketsPerBoard in slurmd -C with hwloc2.
 
 * Changes in Slurm 20.11.9
 ==========================
