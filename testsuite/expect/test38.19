@@ -121,17 +121,21 @@ set matches [run_command_output -fail "sort -u $file_out|wc -l"]
 subtest {$matches == 2} "Job should be granted and output match the expected" "$matches != 2"
 
 log_info "SUBTEST: Confirm het job srun with gres runs in non-het job sbatch"
-set matches 0
-set job_id [submit_job -fail "-N2 --gpus=2 -o $file_out --wrap=\"$srun --gpus=1 echo ok : --gpus=1 echo ok\""]
-lappend job_id_list $job_id
-if {[wait_for_job $job_id "DONE"] != 0} {
-	fail "Job $job_id did not complete"
+if [check_config_select "cons_tres"] {
+	set matches 0
+	set job_id [submit_job -fail "-N2 --gpus=2 -o $file_out --wrap=\"$srun --gpus=1 echo ok : --gpus=1 echo ok\""]
+	lappend job_id_list $job_id
+	if {[wait_for_job $job_id "DONE"] != 0} {
+		fail "Job $job_id did not complete"
+	}
+	if {[wait_for_file $file_out] != 0} {
+		fail "No output file"
+	}
+	set matches [run_command_output -fail "grep ok $file_out|wc -l"]
+	subtest {$matches == 2} "Job should be granted and output match the expected" "$matches != 2"
+} else {
+	subskip "Subtest requires SelectType=select/cons_tres (Job should be granted and output match the expected)"
 }
-if {[wait_for_file $file_out] != 0} {
-	fail "No output file"
-}
-set matches [run_command_output -fail "grep ok $file_out|wc -l"]
-subtest {$matches == 2} "Job should be granted and output match the expected" "$matches != 2"
 
 log_info "SUBTEST: Confirm het job srun fails in het job salloc"
 set matches 0
