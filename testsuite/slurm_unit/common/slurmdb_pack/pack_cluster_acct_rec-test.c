@@ -53,7 +53,7 @@ START_TEST(pack_1702_null_cluster_accounting_rec)
 	ck_assert(pack_car.over_secs    == unpack_car->over_secs);
 	ck_assert(pack_car.pdown_secs   == unpack_car->pdown_secs);
 	ck_assert(pack_car.period_start == unpack_car->period_start);
-	ck_assert(pack_car.resv_secs    == unpack_car->resv_secs);
+	ck_assert(pack_car.plan_secs    == unpack_car->plan_secs);
 
 	ck_assert(btr->alloc_secs       == atr->alloc_secs);
 	ck_assert(btr->rec_count        == atr->rec_count);
