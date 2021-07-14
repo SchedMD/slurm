@@ -2241,7 +2241,7 @@ static int _foreach_step(void *x, void *arg)
 		hostlist_iterator_t itr = hostlist_iterator_create(host_list);
 
 		while ((host = hostlist_next(itr)))
-			data_set_string(data_list_append(d), host);
+			data_set_string_own(data_list_append(d), host);
 
 		hostlist_iterator_destroy(itr);
 	}
