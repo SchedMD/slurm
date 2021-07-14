@@ -1081,7 +1081,7 @@ extern void print_fields(type_t type, void *object)
 			case JOBSTEP:
 				id = xmalloc(FORMAT_STRING_SIZE);
 				log_build_step_id_str(&step->step_id, id,
-						      sizeof(id),
+						      FORMAT_STRING_SIZE,
 						      (STEP_ID_FLAG_NO_PREFIX |
 						       STEP_ID_FLAG_NO_JOB));
 				tmp_char = xstrdup_printf("%u.%s",
