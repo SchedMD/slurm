@@ -147,7 +147,7 @@ exit 0"
 set match 0
 set multi_socket 0
 set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --nodes=1 \
-			  --ntasks=1 --cpus-per-task=$cpus_per_socket -t1 -l \
+			  --ntasks=1 -t1 -l \
 			  ./$file_in]
 
 expect {
