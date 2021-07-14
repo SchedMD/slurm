@@ -963,7 +963,7 @@ extern void print_fields(type_t type, void *object)
 				id = NULL;
 				break;
 			case JOBSTEP:
-				tmp_int = 64;
+				tmp_int = FORMAT_STRING_SIZE;
 				tmp_char = xmalloc(tmp_int);
 				tmp_int2 =
 					snprintf(tmp_char, tmp_int, "%s.", id);
@@ -993,15 +993,16 @@ extern void print_fields(type_t type, void *object)
 				tmp_char = xstrdup_printf("%u", job->jobid);
 				break;
 			case JOBSTEP:
-				id = xmalloc(FORMAT_STRING_SIZE);
-				log_build_step_id_str(&step->step_id, id,
-						      FORMAT_STRING_SIZE,
-						      (STEP_ID_FLAG_NO_PREFIX |
-						       STEP_ID_FLAG_NO_JOB));
-				tmp_char = xstrdup_printf("%u.%s",
-							  step->job_ptr->jobid,
-							  id);
-				xfree(id);
+				tmp_int = FORMAT_STRING_SIZE;
+				tmp_char = xmalloc(tmp_int);
+				tmp_int2 = snprintf(tmp_char, tmp_int, "%u.",
+						    step->job_ptr->jobid);
+				tmp_int -= tmp_int2;
+				log_build_step_id_str(&step->step_id,
+						      tmp_char + tmp_int2,
+						      tmp_int,
+						      STEP_ID_FLAG_NO_PREFIX |
+						      STEP_ID_FLAG_NO_JOB);
 				break;
 			case JOBCOMP:
 				tmp_char = xstrdup_printf("%u",
