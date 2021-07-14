@@ -30,6 +30,9 @@ if {![file exists $slurmrestd]} {
 	skip "slurmrestd not installed"
 }
 
+# Avoid fatal on slurmrestd because it should not be run as SlurmUser
+set env(SLURMRESTD_SECURITY) disable_user_check
+
 run_command -subtest        "$slurmrestd -h"
 run_command -subtest        "$slurmrestd -h"
 run_command -subtest -xfail "$slurmrestd --invalid"
