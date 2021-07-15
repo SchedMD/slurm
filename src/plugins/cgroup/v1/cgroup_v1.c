@@ -205,6 +205,7 @@ static int _cpuset_create(stepd_step_rec_t *job)
 	}
 
 end:
+	xfree(value);
 	xfree(sys_cgpath);
 	xfree(slurm_cgpath);
 	common_cgroup_destroy(&slurm_cg);
