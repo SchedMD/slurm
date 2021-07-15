@@ -1658,8 +1658,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 				if ((new_state == NODE_STATE_FAIL) &&
 				    (nonstop_ops.node_fail))
 					(nonstop_ops.node_fail)(NULL, node_ptr);
-			} else if (state_val & NODE_STATE_POWERED_DOWN) {
-				if ((state_val & NODE_STATE_POWERING_UP) &&
+			} else if (state_val & NODE_STATE_POWER_DOWN) {
+				if ((state_val & NODE_STATE_POWER_UP) &&
 				    (IS_NODE_POWERING_UP(node_ptr))) {
 					/* Clear any reboot op in progress */
 					node_ptr->node_state &=
@@ -1678,7 +1678,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					info("powering down node %s",
 					     this_node_name);
 
-				if (state_val & NODE_STATE_POWER_DOWN) {
+				if (state_val & NODE_STATE_POWERED_DOWN) {
 					/* Force power down */
 					_make_node_down(node_ptr, now);
 					kill_running_job_by_node_name(
@@ -1704,7 +1704,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				bit_clear(rs_node_bitmap, node_inx);
 				free(this_node_name);
 				continue;
-			} else if (state_val == NODE_STATE_POWERING_UP) {
+			} else if (state_val == NODE_STATE_POWER_UP) {
 				if (!IS_NODE_POWERED_DOWN(node_ptr)) {
 					if (IS_NODE_POWERING_UP(node_ptr)) {
 						node_ptr->node_state |=
@@ -2382,11 +2382,11 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 		case NODE_STATE_UNDRAIN:
 			return true;
 
-		case NODE_STATE_POWERED_DOWN:
-		case NODE_STATE_POWERING_UP:
-		case (NODE_STATE_POWERED_DOWN | NODE_STATE_POWERING_UP):
-		case (NODE_STATE_POWERED_DOWN | NODE_STATE_POWER_DOWN):
-		case (NODE_STATE_POWERED_DOWN | NODE_STATE_POWER_DRAIN):
+		case NODE_STATE_POWER_DOWN:
+		case NODE_STATE_POWER_UP:
+		case (NODE_STATE_POWER_DOWN | NODE_STATE_POWER_UP):
+		case (NODE_STATE_POWER_DOWN | NODE_STATE_POWERED_DOWN):
+		case (NODE_STATE_POWER_DOWN | NODE_STATE_POWER_DRAIN):
 			if (power_save_on)
 				return true;
 			info("attempt to do power work on node but PowerSave is disabled");
