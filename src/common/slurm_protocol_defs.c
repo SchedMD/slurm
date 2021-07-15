@@ -107,7 +107,7 @@ static const node_state_flags_t node_states[] = {
 static const node_state_flags_t node_state_flags[] = {
 	{ NODE_STATE_CLOUD, "CLOUD" },
 	{ NODE_STATE_COMPLETING, "COMPLETING" },
-	{ NODE_STATE_DRAIN, "DRAINING" },
+	{ NODE_STATE_DRAIN, "DRAIN" },
 	{ NODE_STATE_DYNAMIC, "DYNAMIC" },
 	{ NODE_STATE_INVALID_REG, "INVALID_REG" },
 	{ NODE_STATE_FAIL, "FAILED" },
