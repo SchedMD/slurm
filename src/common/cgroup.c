@@ -460,9 +460,9 @@ static char *_autodetect_cgroup_version(void)
 	debug2("%s: using cgroup version %d", __func__, cgroup_ver);
 
 	if (cgroup_ver == 2)
-		return xstrdup("cgroup/v2");
+		return "cgroup/v2";
 	else if (cgroup_ver == 1)
-		return xstrdup("cgroup/v1");
+		return "cgroup/v1";
 
 	return NULL;
 }
@@ -742,11 +742,11 @@ extern int cgroup_g_init(void)
 		goto done;
 
 	cgroup_conf_init();
-	type = xstrdup(slurm_cgroup_conf.cgroup_plugin);
+	type = slurm_cgroup_conf.cgroup_plugin;
 
 	/* Default is cgroup/v1 */
 	if (!type)
-		type = xstrdup("cgroup/v1");
+		type = "cgroup/v1";
 
 	if (!xstrcmp(type, "autodetect")) {
 		if (!(type = _autodetect_cgroup_version())) {
@@ -766,7 +766,6 @@ extern int cgroup_g_init(void)
 	init_run = true;
 
 done:
-	xfree(type);
 	slurm_mutex_unlock(&g_context_lock);
 
 	return rc;
