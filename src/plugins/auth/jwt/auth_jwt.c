@@ -310,6 +310,7 @@ data_for_each_cmd_t _verify_rs256_jwt(data_t *d, void *arg)
  */
 int auth_p_verify(auth_token_t *cred, char *auth_info)
 {
+	int rc;
 	const char *alg;
 	jwt_t *unverified_jwt = NULL, *jwt = NULL;
 	char *username = NULL;
@@ -331,8 +332,9 @@ int auth_p_verify(auth_token_t *cred, char *auth_info)
 		goto fail;
 	}
 
-	if (jwt_decode(&unverified_jwt, cred->token, NULL, 0)) {
-		error("%s: initial jwt_decode failure", __func__);
+	if ((rc = jwt_decode(&unverified_jwt, cred->token, NULL, 0))) {
+		error("%s: initial jwt_decode failure: %s",
+		      __func__, slurm_strerror(rc));
 		goto fail;
 	}
 
@@ -372,9 +374,11 @@ int auth_p_verify(auth_token_t *cred, char *auth_info)
 			goto fail;
 		}
 
-		if (jwt_decode(&jwt, cred->token, (unsigned char *) key->head,
-			       key->size)) {
-			error("%s: jwt_decode failure", __func__);
+		if ((rc = jwt_decode(&jwt, cred->token,
+				     (unsigned char *) key->head,
+				     key->size))) {
+			error("%s: jwt_decode failure: %s",
+			      __func__, slurm_strerror(rc));
 			goto fail;
 		}
 	} else {
