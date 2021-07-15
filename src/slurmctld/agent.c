@@ -1243,7 +1243,7 @@ static int _setup_requeue(agent_arg_t *agent_arg_ptr, thd_t *thread_ptr,
 		if (node_ptr &&
 		    (IS_NODE_DOWN(node_ptr) ||
 		     IS_NODE_POWERING_DOWN(node_ptr) ||
-		     IS_NODE_POWER_SAVE(node_ptr))) {
+		     IS_NODE_POWERED_DOWN(node_ptr))) {
 			--(*count);
 		} else if (agent_arg_ptr) {
 			debug("%s: got the name %s to resend out of %d",
@@ -1309,7 +1309,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 			if (node_ptr &&
 			    (IS_NODE_DOWN(node_ptr) ||
 			     IS_NODE_POWERING_DOWN(node_ptr) ||
-			     IS_NODE_POWER_SAVE(node_ptr))) {
+			     IS_NODE_POWERED_DOWN(node_ptr))) {
 				/* Do not re-send RPC to DOWN node */
 				if (count)
 					count--;
@@ -2200,7 +2200,7 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 			return -1;	/* invalid request?? */
 		}
 		xfree(hostname);
-		if (!IS_NODE_POWER_SAVE(node_ptr) &&
+		if (!IS_NODE_POWERED_DOWN(node_ptr) &&
 		    !IS_NODE_POWERING_DOWN(node_ptr) &&
 		    !IS_NODE_NO_RESPOND(node_ptr)) {
 			nodes_ready = 1;

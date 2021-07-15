@@ -155,8 +155,8 @@
 	(_X->node_state & NODE_STATE_MAN_POWER_UP)
 #define IS_NODE_NO_RESPOND(_X)		\
 	(_X->node_state & NODE_STATE_NO_RESPOND)
-#define IS_NODE_POWER_SAVE(_X)		\
-	(_X->node_state & NODE_STATE_POWER_SAVE)
+#define IS_NODE_POWERED_DOWN(_X)		\
+	(_X->node_state & NODE_STATE_POWERED_DOWN)
 #define IS_NODE_POWERING_DOWN(_X)	\
 	(_X->node_state & NODE_STATE_POWERING_DOWN)
 #define IS_NODE_FAIL(_X)		\

@@ -712,7 +712,7 @@ extern void create_search_popup(GtkAction *action, gpointer user_data)
 			 "PerfCTRs", true, -1},
 			{G_TYPE_NONE, NODE_STATE_IDLE | NODE_STATE_PLANNED,
 			 "Planned", true, -1},
-			{G_TYPE_NONE, NODE_STATE_POWER_SAVE,
+			{G_TYPE_NONE, NODE_STATE_POWERED_DOWN,
 			 "Power Down", true, -1},
 			{G_TYPE_NONE, NODE_STATE_POWER_UP,
 			 "Power Up", true, -1},

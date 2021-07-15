@@ -71,7 +71,7 @@ sub IS_NODE_DRAINING   { (($_[0]->{node_state} & NODE_STATE_DRAIN) &&
 sub IS_NODE_DRAINED    { (IS_NODE_DRAIN($_[0]) && !IS_NODE_DRAINING($_[0])) }
 sub IS_NODE_COMPLETING { ($_[0]->{node_state} & NODE_STATE_COMPLETING) }
 sub IS_NODE_NO_RESPOND { ($_[0]->{node_state} & NODE_STATE_NO_RESPOND) }
-sub IS_NODE_POWER_SAVE { ($_[0]->{node_state} & NODE_STATE_POWER_SAVE) }
+sub IS_NODE_POWERED_DOWN { ($_[0]->{node_state} & NODE_STATE_POWERED_DOWN) }
 sub IS_NODE_POWER_UP   { ($_[0]->{node_state} & NODE_STATE_POWER_UP) }
 sub IS_NODE_FAIL       { ($_[0]->{node_state} & NODE_STATE_FAIL) }
 sub IS_NODE_MAINT      { ($_[0]->{node_state} & NODE_STATE_MAINT) }
@@ -1539,7 +1539,7 @@ The following are functions to test job/node state, based on the macros defined 
 
 =head3 $cond = IS_NODE_NO_RESPOND($node);
 
-=head3 $cond = IS_NODE_POWER_SAVE($node);
+=head3 $cond = IS_NODE_POWERED_DOWN($node);
 
 =head3 $cond = IS_NODE_POWER_UP($node);
 

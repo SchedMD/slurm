@@ -234,7 +234,7 @@ static int _pick_exc_nodes(void *x, void *arg)
 			    IS_NODE_DOWN(node_ptr)			||
 			    IS_NODE_DRAIN(node_ptr)			||
 			    IS_NODE_POWER_UP(node_ptr)			||
-			    IS_NODE_POWER_SAVE(node_ptr)		||
+			    IS_NODE_POWERED_DOWN(node_ptr)		||
 			    IS_NODE_POWERING_DOWN(node_ptr)		||
 			    (node_ptr->sus_job_cnt > 0))
 				continue;
@@ -339,7 +339,7 @@ static void _do_power_work(time_t now)
 	/* Build bitmaps identifying each node which should change state */
 	for (i = 0, node_ptr = node_record_table_ptr;
 	     i < node_record_count; i++, node_ptr++) {
-		susp_state = IS_NODE_POWER_SAVE(node_ptr);
+		susp_state = IS_NODE_POWERED_DOWN(node_ptr);
 
 		if (susp_state)
 			susp_total++;
@@ -358,7 +358,7 @@ static void _do_power_work(time_t now)
 			resume_cnt++;
 			resume_cnt_f++;
 			node_ptr->node_state &= (~NODE_STATE_MAN_POWER_UP);
-			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
+			node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
 			node_ptr->node_state |=   NODE_STATE_POWER_UP;
 			node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
 			bit_clear(power_node_bitmap, i);
@@ -429,7 +429,7 @@ static void _do_power_work(time_t now)
 		    ((node_ptr->power_save_req_time + node_ptr->suspend_timeout)
 		     < now)) {
 			node_ptr->node_state &= (~NODE_STATE_POWERING_DOWN);
-			node_ptr->node_state |= NODE_STATE_POWER_SAVE;
+			node_ptr->node_state |= NODE_STATE_POWERED_DOWN;
 
 			if (IS_NODE_CLOUD(node_ptr) && cloud_reg_addrs) {
 				/* Reset hostname and addr to node's name. */
@@ -463,7 +463,7 @@ static void _do_power_work(time_t now)
 			 */
 			set_node_down_ptr(node_ptr, "ResumeTimeout reached");
 			node_ptr->node_state &= (~NODE_STATE_POWER_UP);
-			node_ptr->node_state |= NODE_STATE_POWER_SAVE;
+			node_ptr->node_state |= NODE_STATE_POWERED_DOWN;
 			bit_set(power_node_bitmap, i);
 			bit_clear(booting_node_bitmap, i);
 			node_ptr->last_busy = 0;
@@ -569,7 +569,7 @@ extern int power_job_reboot(job_record_t *job_ptr)
 		node_ptr = node_record_table_ptr + i;
 		resume_cnt++;
 		resume_cnt_f++;
-		node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
+		node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
 		node_ptr->node_state |=   NODE_STATE_POWER_UP;
 		node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
 		bit_clear(power_node_bitmap, i);

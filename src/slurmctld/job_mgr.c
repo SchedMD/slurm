@@ -8932,7 +8932,7 @@ extern bool test_job_nodes_ready(job_record_t *job_ptr)
 		front_end_record_t *front_end_ptr =
 			find_front_end_record(job_ptr->batch_host);
 		if (!front_end_ptr ||
-		    IS_NODE_POWER_SAVE(front_end_ptr) ||
+		    IS_NODE_POWERED_DOWN(front_end_ptr) ||
 		    IS_NODE_POWER_UP(front_end_ptr)) {
 			return false;
 		}
@@ -8941,7 +8941,7 @@ extern bool test_job_nodes_ready(job_record_t *job_ptr)
 		node_record_t *node_ptr =
 			find_node_record(job_ptr->batch_host);
 		if (!node_ptr ||
-		    IS_NODE_POWER_SAVE(node_ptr) ||
+		    IS_NODE_POWERED_DOWN(node_ptr) ||
 		    IS_NODE_POWER_UP(node_ptr)) {
 			return false;
 		}

@@ -1092,7 +1092,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
 			node_ptr = node_record_table_ptr + i;
-			if (IS_NODE_POWER_SAVE(node_ptr) ||
+			if (IS_NODE_POWERED_DOWN(node_ptr) ||
 			    IS_NODE_FUTURE(node_ptr) ||
 			    IS_NODE_NO_RESPOND(node_ptr)) {
 				/*

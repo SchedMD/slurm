@@ -491,10 +491,10 @@ extern int load_all_node_state ( bool state_only )
 			if (IS_NODE_CLOUD(node_ptr) ||
 			    (node_state & NODE_STATE_DYNAMIC)) {
 				if ((!power_save_mode) &&
-				    ((node_state & NODE_STATE_POWER_SAVE) ||
+				    ((node_state & NODE_STATE_POWERED_DOWN) ||
 				     (node_state & NODE_STATE_POWERING_DOWN) ||
 	 			     (node_state & NODE_STATE_POWER_UP))) {
-					node_state &= (~NODE_STATE_POWER_SAVE);
+					node_state &= (~NODE_STATE_POWERED_DOWN);
 					node_state &= (~NODE_STATE_POWER_UP);
 					node_state &= (~NODE_STATE_POWERING_DOWN);
 					if (hs)
@@ -524,11 +524,11 @@ extern int load_all_node_state ( bool state_only )
 				if (node_state & NODE_STATE_FAIL)
 					node_ptr->node_state |=
 						NODE_STATE_FAIL;
-				if ((node_state & NODE_STATE_POWER_SAVE) ||
+				if ((node_state & NODE_STATE_POWERED_DOWN) ||
 				    (node_state & NODE_STATE_POWERING_DOWN)) {
 					uint32_t power_flag =
 						node_state &
-						(NODE_STATE_POWER_SAVE |
+						(NODE_STATE_POWERED_DOWN |
 						 NODE_STATE_POWERING_DOWN);
 					if (power_save_mode &&
 					    IS_NODE_UNKNOWN(node_ptr)) {
@@ -606,10 +606,10 @@ extern int load_all_node_state ( bool state_only )
 			gres_list		= NULL;	/* Nothing to free */
 		} else {
 			if ((!power_save_mode) &&
-			    ((node_state & NODE_STATE_POWER_SAVE) ||
+			    ((node_state & NODE_STATE_POWERED_DOWN) ||
 			     (node_state & NODE_STATE_POWERING_DOWN) ||
  			     (node_state & NODE_STATE_POWER_UP))) {
-				node_state &= (~NODE_STATE_POWER_SAVE);
+				node_state &= (~NODE_STATE_POWERED_DOWN);
 				node_state &= (~NODE_STATE_POWERING_DOWN);
 				node_state &= (~NODE_STATE_POWER_UP);
 				if (hs)
@@ -701,7 +701,7 @@ extern int load_all_node_state ( bool state_only )
 				node_ptr->protocol_version =
 					SLURM_MIN_PROTOCOL_VERSION;
 
-			if (!IS_NODE_POWER_SAVE(node_ptr))
+			if (!IS_NODE_POWERED_DOWN(node_ptr))
 				node_ptr->last_busy = now;
 		}
 
@@ -774,7 +774,7 @@ int list_compare_config (void *config_entry1, void *config_entry2)
 static bool _is_cloud_hidden(node_record_t *node_ptr)
 {
 	if (((slurm_conf.private_data & PRIVATE_CLOUD_NODES) == 0) &&
-	    IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))
+	    IS_NODE_CLOUD(node_ptr) && IS_NODE_POWERED_DOWN(node_ptr))
 		return true;
 	return false;
 }
@@ -1518,7 +1518,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					node_ptr->node_state &=
 						(~NODE_STATE_POWERING_DOWN);
 					node_ptr->node_state |=
-						NODE_STATE_POWER_SAVE;
+						NODE_STATE_POWERED_DOWN;
 
 					if (IS_NODE_CLOUD(node_ptr) &&
 					    cloud_reg_addrs)
@@ -1616,11 +1616,11 @@ int update_node ( update_node_msg_t * update_node_msg )
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				node_ptr->node_state &= (~NODE_STATE_FAIL);
 				if (!IS_NODE_NO_RESPOND(node_ptr) ||
-				     IS_NODE_POWER_SAVE(node_ptr))
+				     IS_NODE_POWERED_DOWN(node_ptr))
 					make_node_avail(node_inx);
 				bit_set (idle_node_bitmap, node_inx);
 				bit_set (up_node_bitmap, node_inx);
-				if (IS_NODE_POWER_SAVE(node_ptr))
+				if (IS_NODE_POWERED_DOWN(node_ptr))
 					node_ptr->last_busy = 0;
 				else
 					node_ptr->last_busy = now;
@@ -1636,7 +1636,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				uint32_t new_state = state_val;
 				if ((IS_NODE_ALLOCATED(node_ptr) ||
 				     IS_NODE_MIXED(node_ptr)) &&
-				    (IS_NODE_POWER_SAVE(node_ptr) ||
+				    (IS_NODE_POWERED_DOWN(node_ptr) ||
 				     IS_NODE_POWER_UP(node_ptr))) {
 					info("%s: DRAIN/FAIL request for node %s which is allocated and being powered up. Requeuing jobs",
 					     __func__, this_node_name);
@@ -1658,7 +1658,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				if ((new_state == NODE_STATE_FAIL) &&
 				    (nonstop_ops.node_fail))
 					(nonstop_ops.node_fail)(NULL, node_ptr);
-			} else if (state_val & NODE_STATE_POWER_SAVE) {
+			} else if (state_val & NODE_STATE_POWERED_DOWN) {
 				if ((state_val & NODE_STATE_POWER_UP) &&
 				    (IS_NODE_POWER_UP(node_ptr))) {
 					/* Clear any reboot op in progress */
@@ -1669,9 +1669,9 @@ int update_node ( update_node_msg_t * update_node_msg )
 					continue;
 				}
 
-				if (IS_NODE_POWER_SAVE(node_ptr)) {
+				if (IS_NODE_POWERED_DOWN(node_ptr)) {
 					node_ptr->node_state &=
-						(~NODE_STATE_POWER_SAVE);
+						(~NODE_STATE_POWERED_DOWN);
 					info("power down request repeating "
 					     "for node %s", this_node_name);
 				} else
@@ -1705,10 +1705,10 @@ int update_node ( update_node_msg_t * update_node_msg )
 				free(this_node_name);
 				continue;
 			} else if (state_val == NODE_STATE_POWER_UP) {
-				if (!IS_NODE_POWER_SAVE(node_ptr)) {
+				if (!IS_NODE_POWERED_DOWN(node_ptr)) {
 					if (IS_NODE_POWER_UP(node_ptr)) {
 						node_ptr->node_state |=
-							NODE_STATE_POWER_SAVE;
+							NODE_STATE_POWERED_DOWN;
 						node_ptr->node_state |=
 							NODE_STATE_MAN_POWER_UP;
 						info("power up request "
@@ -2382,11 +2382,11 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 		case NODE_STATE_UNDRAIN:
 			return true;
 
-		case NODE_STATE_POWER_SAVE:
+		case NODE_STATE_POWERED_DOWN:
 		case NODE_STATE_POWER_UP:
-		case (NODE_STATE_POWER_SAVE | NODE_STATE_POWER_UP):
-		case (NODE_STATE_POWER_SAVE | NODE_STATE_MAN_POWER_DOWN):
-		case (NODE_STATE_POWER_SAVE | NODE_STATE_POWER_DRAIN):
+		case (NODE_STATE_POWERED_DOWN | NODE_STATE_POWER_UP):
+		case (NODE_STATE_POWERED_DOWN | NODE_STATE_MAN_POWER_DOWN):
+		case (NODE_STATE_POWERED_DOWN | NODE_STATE_POWER_DRAIN):
 			if (power_save_on)
 				return true;
 			info("attempt to do power work on node but PowerSave is disabled");
@@ -2817,7 +2817,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	if (IS_NODE_NO_RESPOND(node_ptr) ||
 	    IS_NODE_POWER_UP(node_ptr) ||
 	    IS_NODE_POWERING_DOWN(node_ptr) ||
-	    IS_NODE_POWER_SAVE(node_ptr)) {
+	    IS_NODE_POWERED_DOWN(node_ptr)) {
 		info("Node %s now responding", node_ptr->name);
 
 		/*
@@ -2825,13 +2825,14 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		 * came up after ResumeTimeout so that it can be suspended at a
 		 * later point.
 		 */
-		if (IS_NODE_POWER_UP(node_ptr) || IS_NODE_POWER_SAVE(node_ptr))
+		if (IS_NODE_POWER_UP(node_ptr) ||
+		    IS_NODE_POWERED_DOWN(node_ptr))
 			node_ptr->last_busy = now;
 
 		/*
 		 * Set last_response if it's expected. Otherwise let it get
 		 * marked at "unexpectedly rebooted". Not checked with
-		 * IS_NODE_POWER_SAVE() above to allow ReturnToService !=2
+		 * IS_NODE_POWERED_DOWN() above to allow ReturnToService !=2
 		 * catch nodes [re]booting unexpectedly.
 		 */
 		if (IS_NODE_POWER_UP(node_ptr))
@@ -2839,7 +2840,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 		node_ptr->node_state &= (~NODE_STATE_POWER_UP);
-		node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
+		node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
 		node_ptr->node_state &= (~NODE_STATE_POWERING_DOWN);
 		if (!is_node_in_maint_reservation(node_inx))
 			node_ptr->node_state &= (~NODE_STATE_MAINT);
@@ -3599,7 +3600,7 @@ void node_not_resp (char *name, time_t msg_time, slurm_msg_type_t resp_type)
 
 	if (IS_NODE_NO_RESPOND(node_ptr) ||
 	    IS_NODE_POWERING_DOWN(node_ptr) ||
-	    IS_NODE_POWER_SAVE(node_ptr))
+	    IS_NODE_POWERED_DOWN(node_ptr))
 		return;		/* Already known to be not responding */
 
 	if (node_ptr->last_response >= msg_time) {
@@ -3631,7 +3632,7 @@ extern void node_no_resp_msg(void)
 	for (i = 0; i < node_record_count; i++) {
 		node_ptr = &node_record_table_ptr[i];
 		if (!node_ptr->not_responding ||
-		    IS_NODE_POWER_SAVE(node_ptr) ||
+		    IS_NODE_POWERED_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_DOWN(node_ptr) ||
 		    IS_NODE_POWER_UP(node_ptr))
 			continue;
@@ -3811,7 +3812,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 		if (IS_NODE_FUTURE(node_ptr))
 			continue;
 		if (IS_NODE_CLOUD(node_ptr) &&
-		    (IS_NODE_POWER_SAVE(node_ptr) ||
+		    (IS_NODE_POWERED_DOWN(node_ptr) ||
 		     IS_NODE_POWERING_DOWN(node_ptr)))
 			continue;
 		if (kill_agent_args->protocol_version >
@@ -3872,7 +3873,7 @@ void push_reconfig_to_slurmd(void)
 		if (IS_NODE_FUTURE(node_ptr))
 			continue;
 		if (IS_NODE_CLOUD(node_ptr) &&
-		    (IS_NODE_POWER_SAVE(node_ptr) ||
+		    (IS_NODE_POWERED_DOWN(node_ptr) ||
 		     IS_NODE_POWERING_DOWN(node_ptr)))
 			continue;
 

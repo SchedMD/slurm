@@ -115,7 +115,7 @@ static const node_state_flags_t node_state_flags[] = {
 	{ NODE_STATE_MAN_POWER_DOWN, "MAN_POWER_DOWN" },
 	{ NODE_STATE_MAN_POWER_UP, "MAN_POWER_UP" },
 	{ NODE_STATE_NET, "PERFCTRS" }, /* net performance counters */
-	{ NODE_STATE_POWER_SAVE, "POWER_DOWN" },
+	{ NODE_STATE_POWERED_DOWN, "POWERED_DOWN" },
 	{ NODE_STATE_REBOOT_REQUESTED, "REBOOT_REQUESTED" },
 	{ NODE_STATE_REBOOT_ISSUED, "REBOOT_ISSUED" },
 	{ NODE_STATE_RES, "RESERVED" },
@@ -3618,7 +3618,7 @@ extern char *node_state_string(uint32_t inx)
 	bool resume_flag     = (inx & NODE_RESUME);
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
 	bool planned_flag    = (inx & NODE_STATE_PLANNED);
-	bool powered_down_flag = (inx & NODE_STATE_POWER_SAVE);
+	bool powered_down_flag = (inx & NODE_STATE_POWERED_DOWN);
 	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
 	bool powering_down_flag = (inx & NODE_STATE_POWERING_DOWN);
 	bool power_down_flag = (inx & NODE_STATE_MAN_POWER_DOWN);
@@ -3713,7 +3713,7 @@ extern char *node_state_string(uint32_t inx)
 		return "MAN_POWER_UP";
 	if (inx == NODE_STATE_POWERING_DOWN)
 		return "POWERING_DOWN";
-	if (inx == NODE_STATE_POWER_SAVE)
+	if (inx == NODE_STATE_POWERED_DOWN)
 		return "POWER_DOWN";
 	if (inx == NODE_STATE_POWER_UP)
 		return "POWER_UP";
@@ -3865,7 +3865,7 @@ extern char *node_state_string_compact(uint32_t inx)
 	bool resume_flag     = (inx & NODE_RESUME);
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
 	bool planned_flag    = (inx & NODE_STATE_PLANNED);
-	bool powered_down_flag = (inx & NODE_STATE_POWER_SAVE);
+	bool powered_down_flag = (inx & NODE_STATE_POWERED_DOWN);
 	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
 	bool powering_down_flag = (inx & NODE_STATE_POWERING_DOWN);
 	bool power_down_flag = (inx & NODE_STATE_MAN_POWER_DOWN);
@@ -3961,7 +3961,7 @@ extern char *node_state_string_compact(uint32_t inx)
 		return "MAN_POW_UP";
 	if (inx == NODE_STATE_POWERING_DOWN)
 		return "POWRNG_DN";
-	if (inx == NODE_STATE_POWER_SAVE)
+	if (inx == NODE_STATE_POWERED_DOWN)
 		return "POW_DN";
 	if (inx == NODE_STATE_POWER_UP)
 		return "POW_UP";
