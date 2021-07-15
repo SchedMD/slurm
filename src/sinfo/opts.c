@@ -514,6 +514,8 @@ _node_state_list (void)
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_POWERED_DOWN));
 	xstrcat(all_states, ",");
+	xstrcat(all_states, node_state_string(NODE_STATE_POWER_DOWN));
+	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_POWERING_UP));
 	xstrcat(all_states, ",");
 	xstrcat(all_states, node_state_string(NODE_STATE_FAIL));
@@ -585,6 +587,8 @@ _node_state_id (char *str)
 		return NODE_STATE_POWERING_DOWN;
 	if (_node_state_equal (NODE_STATE_POWERED_DOWN, str))
 		return NODE_STATE_POWERED_DOWN;
+	if (_node_state_equal (NODE_STATE_POWER_DOWN, str))
+		return NODE_STATE_POWER_DOWN;
 	if (_node_state_equal (NODE_STATE_POWERING_UP, str))
 		return NODE_STATE_POWERING_UP;
 	if (_node_state_equal (NODE_STATE_FAIL, str))
