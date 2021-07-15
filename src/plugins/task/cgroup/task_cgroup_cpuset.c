@@ -966,11 +966,6 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 	/* validate the requested cpu frequency and set it */
 	cpu_freq_cgroup_validate(job, step_alloc_cpus);
 
-	if (rc != SLURM_SUCCESS) {
-		/* Everything went wrong, do the cleanup */
-		cgroup_g_step_destroy(CG_CPUS);
-	}
-
 endit:
 	xfree(job_alloc_cpus);
 	xfree(step_alloc_cpus);
