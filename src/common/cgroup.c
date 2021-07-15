@@ -459,11 +459,18 @@ static char *_autodetect_cgroup_version(void)
 
 	debug2("%s: using cgroup version %d", __func__, cgroup_ver);
 
-	if (cgroup_ver == 2)
-		return "cgroup/v2";
-	else if (cgroup_ver == 1)
-		return "cgroup/v1";
 
+	switch (cgroup_ver) {
+	case 1:
+		return "cgroup/v1";
+		break;
+	case 2:
+		return "cgroup/v2";
+		break;
+	default:
+		error("unsupported cgroup version %d", cgroup_ver);
+		break;
+	}
 	return NULL;
 }
 
