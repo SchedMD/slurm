@@ -307,11 +307,6 @@ extern int task_cgroup_memory_create(stepd_step_rec_t *job)
 	return SLURM_SUCCESS;
 }
 
-extern int task_cgroup_memory_attach_task(stepd_step_rec_t *job, pid_t pid)
-{
-	return cgroup_g_step_addto(CG_MEMORY, &pid, 1);
-}
-
 extern int task_cgroup_memory_check_oom(stepd_step_rec_t *job)
 {
 	cgroup_oom_t *results;

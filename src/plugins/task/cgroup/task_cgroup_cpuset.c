@@ -973,16 +973,6 @@ endit:
 	return rc;
 }
 
-extern int task_cgroup_cpuset_attach_task(stepd_step_rec_t *job)
-{
-	int fstatus = SLURM_ERROR;
-
-	/* tasks are automatically attached as slurmstepd is in the step cg */
-	fstatus = SLURM_SUCCESS;
-
-	return fstatus;
-}
-
 /* affinity should be set using sched_setaffinity to not force */
 /* user to have to play with the cgroup hierarchy to modify it */
 extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)

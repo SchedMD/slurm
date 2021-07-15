@@ -235,17 +235,17 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *job, pid_t pid)
 
 	if (use_cpuset) {
 		/* attach the task to the cpuset cgroup */
-		rc[0] = task_cgroup_cpuset_attach_task(job);
+		rc[0] = task_cgroup_cpuset_add_pid(pid);
 	}
 
 	if (use_memory) {
 		/* attach the task to the memory cgroup */
-		rc[1] = task_cgroup_memory_attach_task(job, pid);
+		rc[1] = task_cgroup_memory_add_pid(pid);
 	}
 
 	if (use_devices) {
 		/* attach the task to the devices cgroup */
-		rc[2] = task_cgroup_devices_attach_task(job);
+		rc[2] = task_cgroup_devices_add_pid(pid);
 	}
 
 	return MAX(rc[0], MAX(rc[1], rc[2]));

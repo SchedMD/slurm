@@ -46,9 +46,6 @@ extern int task_cgroup_cpuset_fini(void);
 /* create user/job/jobstep cpuset cgroups */
 extern int task_cgroup_cpuset_create(stepd_step_rec_t *job);
 
-/* create a task cgroup and attach the task to it */
-extern int task_cgroup_cpuset_attach_task(stepd_step_rec_t *job);
-
 /* set a task affinity based on its local id and job information */
 extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job);
 

@@ -285,12 +285,6 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	return SLURM_SUCCESS;
 }
 
-extern int task_cgroup_devices_attach_task(stepd_step_rec_t *job)
-{
-	/* tasks are automatically attached as slurmstepd is in the step cg */
-	return SLURM_SUCCESS;
-}
-
 extern int task_cgroup_devices_add_pid(pid_t pid)
 {
 	return cgroup_g_step_addto(CG_DEVICES, &pid, 1);
