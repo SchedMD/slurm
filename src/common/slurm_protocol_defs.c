@@ -112,7 +112,7 @@ static const node_state_flags_t node_state_flags[] = {
 	{ NODE_STATE_INVALID_REG, "INVALID_REG" },
 	{ NODE_STATE_FAIL, "FAILED" },
 	{ NODE_STATE_MAINT, "MAINTENANCE" },
-	{ NODE_STATE_MAN_POWER_DOWN, "MAN_POWER_DOWN" },
+	{ NODE_STATE_POWER_DOWN, "POWER_DOWN" },
 	{ NODE_STATE_MAN_POWER_UP, "MAN_POWER_UP" },
 	{ NODE_STATE_NET, "PERFCTRS" }, /* net performance counters */
 	{ NODE_STATE_POWERED_DOWN, "POWERED_DOWN" },
@@ -3621,7 +3621,7 @@ extern char *node_state_string(uint32_t inx)
 	bool powered_down_flag = (inx & NODE_STATE_POWERED_DOWN);
 	bool power_up_flag   = (inx & NODE_STATE_POWERING_UP);
 	bool powering_down_flag = (inx & NODE_STATE_POWERING_DOWN);
-	bool power_down_flag = (inx & NODE_STATE_MAN_POWER_DOWN);
+	bool power_down_flag = (inx & NODE_STATE_POWER_DOWN);
 
 	if (inx & NODE_STATE_INVALID_REG)
 		return "INVAL";
@@ -3707,8 +3707,8 @@ extern char *node_state_string(uint32_t inx)
 		return "CANCEL_REBOOT";
 	if (inx == NODE_STATE_CLOUD)
 		return "CLOUD";
-	if (inx == NODE_STATE_MAN_POWER_DOWN)
-		return "MAN_POWER_DOWN";
+	if (inx == NODE_STATE_POWER_DOWN)
+		return "POWER_DOWN";
 	if (inx == NODE_STATE_MAN_POWER_UP)
 		return "MAN_POWER_UP";
 	if (inx == NODE_STATE_POWERING_DOWN)
@@ -3868,7 +3868,7 @@ extern char *node_state_string_compact(uint32_t inx)
 	bool powered_down_flag = (inx & NODE_STATE_POWERED_DOWN);
 	bool power_up_flag   = (inx & NODE_STATE_POWERING_UP);
 	bool powering_down_flag = (inx & NODE_STATE_POWERING_DOWN);
-	bool power_down_flag = (inx & NODE_STATE_MAN_POWER_DOWN);
+	bool power_down_flag = (inx & NODE_STATE_POWER_DOWN);
 
 	if (inx & NODE_STATE_INVALID_REG)
 		return "INVAL";
@@ -3955,8 +3955,8 @@ extern char *node_state_string_compact(uint32_t inx)
 		return "CANC_R";
 	if (inx == NODE_STATE_CLOUD)
 		return "CLOUD";
-	if (inx == NODE_STATE_MAN_POWER_DOWN)
-		return "MAN_POW_DN";
+	if (inx == NODE_STATE_POWER_DOWN)
+		return "POW_DN";
 	if (inx == NODE_STATE_MAN_POWER_UP)
 		return "MAN_POW_UP";
 	if (inx == NODE_STATE_POWERING_DOWN)

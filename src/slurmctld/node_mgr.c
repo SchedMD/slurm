@@ -1678,7 +1678,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					info("powering down node %s",
 					     this_node_name);
 
-				if (state_val & NODE_STATE_MAN_POWER_DOWN) {
+				if (state_val & NODE_STATE_POWER_DOWN) {
 					/* Force power down */
 					_make_node_down(node_ptr, now);
 					kill_running_job_by_node_name(
@@ -1699,7 +1699,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				}
 
 				node_ptr->node_state |=
-					NODE_STATE_MAN_POWER_DOWN;
+					NODE_STATE_POWER_DOWN;
 				node_ptr->next_state = NO_VAL;
 				bit_clear(rs_node_bitmap, node_inx);
 				free(this_node_name);
@@ -2385,7 +2385,7 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 		case NODE_STATE_POWERED_DOWN:
 		case NODE_STATE_POWERING_UP:
 		case (NODE_STATE_POWERED_DOWN | NODE_STATE_POWERING_UP):
-		case (NODE_STATE_POWERED_DOWN | NODE_STATE_MAN_POWER_DOWN):
+		case (NODE_STATE_POWERED_DOWN | NODE_STATE_POWER_DOWN):
 		case (NODE_STATE_POWERED_DOWN | NODE_STATE_POWER_DRAIN):
 			if (power_save_on)
 				return true;

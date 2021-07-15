@@ -150,7 +150,7 @@
 #define IS_NODE_INVALID_REG(_X)	\
 	(_X->node_state & NODE_STATE_INVALID_REG)
 #define IS_NODE_MAN_POWER_DOWN(_X)		\
-	(_X->node_state & NODE_STATE_MAN_POWER_DOWN)
+	(_X->node_state & NODE_STATE_POWER_DOWN)
 #define IS_NODE_MAN_POWER_UP(_X)		\
 	(_X->node_state & NODE_STATE_MAN_POWER_UP)
 #define IS_NODE_NO_RESPOND(_X)		\

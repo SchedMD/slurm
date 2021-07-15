@@ -397,7 +397,7 @@ static void _do_power_work(time_t now)
 			suspend_cnt++;
 			suspend_cnt_f++;
 			node_ptr->node_state |= NODE_STATE_POWERING_DOWN;
-			node_ptr->node_state &= (~NODE_STATE_MAN_POWER_DOWN);
+			node_ptr->node_state &= (~NODE_STATE_POWER_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
 			bit_set(power_node_bitmap,   i);
 			bit_set(sleep_node_bitmap,   i);
