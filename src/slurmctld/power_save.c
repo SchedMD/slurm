@@ -114,7 +114,6 @@ List partial_node_list;
 
 bitstr_t *exc_node_bitmap = NULL;
 
-bitstr_t *resume_node_bitmap = NULL;
 int   suspend_cnt,   resume_cnt;
 float suspend_cnt_f, resume_cnt_f;
 
@@ -127,7 +126,6 @@ static int   _init_power_config(void);
 static void *_init_power_save(void *arg);
 static int   _kill_procs(void);
 static void  _reap_procs(void);
-static void  _re_wake(void);
 static pid_t _run_prog(char *prog, char *arg1, char *arg2, uint32_t job_id);
 static void  _shutdown_power(void);
 static bool  _valid_prog(char *file_name);
@@ -366,7 +364,6 @@ static void _do_power_work(time_t now)
 			bit_clear(power_node_bitmap, i);
 			node_ptr->boot_req_time = now;
 			bit_set(booting_node_bitmap, i);
-			bit_set(resume_node_bitmap,  i);
 			bit_set(wake_node_bitmap,    i);
 		}
 
@@ -469,7 +466,6 @@ static void _do_power_work(time_t now)
 			node_ptr->node_state |= NODE_STATE_POWER_SAVE;
 			bit_set(power_node_bitmap, i);
 			bit_clear(booting_node_bitmap, i);
-			bit_clear(resume_node_bitmap, i);
 			node_ptr->last_busy = 0;
 			node_ptr->boot_req_time = 0;
 
@@ -580,7 +576,6 @@ extern int power_job_reboot(job_record_t *job_ptr)
 		bit_clear(avail_node_bitmap, i);
 		node_ptr->boot_req_time = now;
 		bit_set(booting_node_bitmap, i);
-		bit_set(resume_node_bitmap,  i);
 	}
 
 	if (job_ptr->details && job_ptr->details->features &&
@@ -648,45 +643,6 @@ extern int power_job_reboot(job_record_t *job_ptr)
 	last_node_update = now;
 
 	return rc;
-}
-
-/* If slurmctld crashes, the node state that it recovers could differ
- * from the actual hardware state (e.g. ResumeProgram failed to complete).
- * To address that, when a node that should be powered up for a running
- * job is not responding, they try running ResumeProgram again. */
-static void _re_wake(void)
-{
-	node_record_t *node_ptr;
-	bitstr_t *wake_node_bitmap = NULL;
-	int i;
-
-	node_ptr = node_record_table_ptr;
-	for (i=0; i<node_record_count; i++, node_ptr++) {
-		if (IS_NODE_ALLOCATED(node_ptr)   &&
-		    IS_NODE_NO_RESPOND(node_ptr)  &&
-		    !IS_NODE_POWER_SAVE(node_ptr) &&
-		    (bit_test(resume_node_bitmap,  i) == 0)) {
-			if (wake_node_bitmap == NULL) {
-				wake_node_bitmap =
-					bit_alloc(node_record_count);
-			}
-			bit_set(wake_node_bitmap, i);
-		}
-	}
-
-	if (wake_node_bitmap) {
-		char *nodes;
-		nodes = bitmap2node_name(wake_node_bitmap);
-		if (nodes) {
-			pid_t pid = _run_prog(resume_prog, nodes, NULL, 0);
-			if (power_save_debug)
-				info("power_save: pid %d rewaking nodes %s",
-				     (int) pid, nodes);
-		} else
-			error("power_save: bitmap2nodename");
-		xfree(nodes);
-		FREE_NULL_BITMAP(wake_node_bitmap);
-	}
 }
 
 static void _do_failed_nodes(char *hosts)
@@ -1133,9 +1089,6 @@ extern void power_save_fini(void)
  */
 static void *_init_power_save(void *arg)
 {
-        /* Locks: Read nodes */
-        slurmctld_lock_t node_read_lock = {
-                NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
         /* Locks: Write jobs and nodes */
         slurmctld_lock_t node_write_lock = {
                 NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
@@ -1150,8 +1103,6 @@ static void *_init_power_save(void *arg)
 		debug("power_save mode not enabled");
 		goto fini;
 	}
-
-	resume_node_bitmap  = bit_alloc(node_record_count);
 
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
@@ -1177,20 +1128,9 @@ static void *_init_power_save(void *arg)
 			unlock_slurmctld(node_write_lock);
 			last_power_scan = now;
 		}
-
-		if (slurmd_timeout &&
-		    (now > (boot_time + (slurmd_timeout / 2)))) {
-			lock_slurmctld(node_read_lock);
-			_re_wake();
-			unlock_slurmctld(node_read_lock);
-			/* prevent additional executions */
-			boot_time += (365 * 24 * 60 * 60);
-			slurmd_timeout = 0;
-		}
 	}
 
 fini:	_clear_power_config();
-	FREE_NULL_BITMAP(resume_node_bitmap);
 	_shutdown_power();
 	slurm_mutex_lock(&power_mutex);
 	list_destroy(proc_track_list);
