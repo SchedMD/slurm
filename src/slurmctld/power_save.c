@@ -385,6 +385,15 @@ static void _do_power_work(time_t now)
 				sleep_node_bitmap =
 					bit_alloc(node_record_count);
 			}
+
+			/* Clear power_down_asap */
+			if (IS_NODE_MAN_POWER_DOWN(node_ptr) &&
+			    IS_NODE_DRAIN(node_ptr)) {
+				clusteracct_storage_g_node_up(acct_db_conn,
+							      node_ptr, now);
+				node_ptr->node_state &= (~NODE_STATE_DRAIN);
+			}
+
 			suspend_cnt++;
 			suspend_cnt_f++;
 			node_ptr->node_state |= NODE_STATE_POWER_SAVE;
