@@ -1710,7 +1710,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 						node_ptr->node_state |=
 							NODE_STATE_POWERED_DOWN;
 						node_ptr->node_state |=
-							NODE_STATE_MAN_POWER_UP;
+							NODE_STATE_POWER_UP;
 						info("power up request "
 						     "repeating for node %s",
 						     this_node_name);
@@ -1721,7 +1721,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					}
 				} else {
 					node_ptr->node_state |=
-						NODE_STATE_MAN_POWER_UP;
+						NODE_STATE_POWER_UP;
 					info("powering up node %s",
 					     this_node_name);
 				}

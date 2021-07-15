@@ -357,7 +357,7 @@ static void _do_power_work(time_t now)
 			wake_cnt++;
 			resume_cnt++;
 			resume_cnt_f++;
-			node_ptr->node_state &= (~NODE_STATE_MAN_POWER_UP);
+			node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 			node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
 			node_ptr->node_state |=   NODE_STATE_POWERING_UP;
 			node_ptr->node_state |=   NODE_STATE_NO_RESPOND;

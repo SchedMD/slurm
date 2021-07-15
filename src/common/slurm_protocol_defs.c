@@ -113,7 +113,7 @@ static const node_state_flags_t node_state_flags[] = {
 	{ NODE_STATE_FAIL, "FAILED" },
 	{ NODE_STATE_MAINT, "MAINTENANCE" },
 	{ NODE_STATE_POWER_DOWN, "POWER_DOWN" },
-	{ NODE_STATE_MAN_POWER_UP, "MAN_POWER_UP" },
+	{ NODE_STATE_POWER_UP, "POWER_UP" },
 	{ NODE_STATE_NET, "PERFCTRS" }, /* net performance counters */
 	{ NODE_STATE_POWERED_DOWN, "POWERED_DOWN" },
 	{ NODE_STATE_REBOOT_REQUESTED, "REBOOT_REQUESTED" },
@@ -3709,8 +3709,8 @@ extern char *node_state_string(uint32_t inx)
 		return "CLOUD";
 	if (inx == NODE_STATE_POWER_DOWN)
 		return "POWER_DOWN";
-	if (inx == NODE_STATE_MAN_POWER_UP)
-		return "MAN_POWER_UP";
+	if (inx == NODE_STATE_POWER_UP)
+		return "POWER_UP";
 	if (inx == NODE_STATE_POWERING_DOWN)
 		return "POWERING_DOWN";
 	if (inx == NODE_STATE_POWERED_DOWN)
@@ -3957,8 +3957,8 @@ extern char *node_state_string_compact(uint32_t inx)
 		return "CLOUD";
 	if (inx == NODE_STATE_POWER_DOWN)
 		return "POW_DN";
-	if (inx == NODE_STATE_MAN_POWER_UP)
-		return "MAN_POW_UP";
+	if (inx == NODE_STATE_POWER_UP)
+		return "POW_UP";
 	if (inx == NODE_STATE_POWERING_DOWN)
 		return "POWRNG_DN";
 	if (inx == NODE_STATE_POWERED_DOWN)
