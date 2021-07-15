@@ -1192,7 +1192,8 @@ Step 4 is performed by slurmd and the task plugin.
 				See man page</font></p>
 			</td>
 			<td width="60%">
-				<p align="LEFT"><font style="font-size: 8pt" size="1">Controls binding of tasks to CPUs</font></p>
+				<p align="LEFT"><font style="font-size: 8pt" size="1">Controls binding of tasks to CPUs
+				(srun only)</font></p>
 			</td>
 		</tr>
 		<tr>
@@ -1306,7 +1307,7 @@ SLURMD_NODENAME<br>
 		<tr>
 			<td width="30%">
 				<p align="CENTER"><font style="font-size: 8pt" size="1">
-srun/salloc/sbatch option:
+srun option:
 <font face="Courier New, monospace">--cpu-bind=verbose</font></font></p>
 			</td>
 			<td width="70%">
@@ -3521,6 +3522,6 @@ and binding for this job. For example, task id 2 is bound to CPU id 2.
 </center>
 
 
-<p style="text-align:center;">Last modified 26 June 2020</p>
+<p style="text-align:center;">Last modified 15 July 2021</p>
 
 <!--#include virtual="footer.txt"-->
