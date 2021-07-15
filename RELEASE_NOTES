@@ -131,7 +131,8 @@ COMMAND CHANGES (see man pages for details)
  -- sreport - change to sorting TopUsage by the --tres option.
  -- slurmrestd - do not run allow operation as SlurmUser/root by default.
  -- "scontrol show node" now shows State as base_state+flags instead of
-    shortened state with flags appended.
+    shortened state with flags appended. eg. IDLE# -> IDLE+POWERING_UP.
+    Also "POWER" state flag string is "POWERED_DOWN".
 
 API CHANGES
 ===========
