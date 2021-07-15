@@ -237,6 +237,7 @@ static int _pick_exc_nodes(void *x, void *arg)
 			    IS_NODE_DRAIN(node_ptr)			||
 			    IS_NODE_POWER_UP(node_ptr)			||
 			    IS_NODE_POWER_SAVE(node_ptr)		||
+			    IS_NODE_POWERING_DOWN(node_ptr)		||
 			    (node_ptr->sus_job_cnt > 0))
 				continue;
 			bit_set(exc_node_cnt_bitmap, i);
@@ -376,6 +377,7 @@ static void _do_power_work(time_t now)
 		    (node_ptr->sus_job_cnt == 0)			&&
 		    (!IS_NODE_COMPLETING(node_ptr))			&&
 		    (!IS_NODE_POWER_UP(node_ptr))			&&
+		    (!IS_NODE_POWERING_DOWN(node_ptr))			&&
 		    (IS_NODE_MAN_POWER_DOWN(node_ptr) ||
 		     ((node_ptr->last_busy != 0) &&
 		      (node_ptr->last_busy < (now - node_ptr->suspend_time)) &&
@@ -396,7 +398,6 @@ static void _do_power_work(time_t now)
 
 			suspend_cnt++;
 			suspend_cnt_f++;
-			node_ptr->node_state |= NODE_STATE_POWER_SAVE;
 			node_ptr->node_state |= NODE_STATE_POWERING_DOWN;
 			node_ptr->node_state &= (~NODE_STATE_MAN_POWER_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
@@ -431,6 +432,7 @@ static void _do_power_work(time_t now)
 		    ((node_ptr->power_save_req_time + node_ptr->suspend_timeout)
 		     < now)) {
 			node_ptr->node_state &= (~NODE_STATE_POWERING_DOWN);
+			node_ptr->node_state |= NODE_STATE_POWER_SAVE;
 
 			if (IS_NODE_CLOUD(node_ptr) && cloud_reg_addrs) {
 				/* Reset hostname and addr to node's name. */

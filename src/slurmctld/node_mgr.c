@@ -492,6 +492,7 @@ extern int load_all_node_state ( bool state_only )
 			    (node_state & NODE_STATE_DYNAMIC)) {
 				if ((!power_save_mode) &&
 				    ((node_state & NODE_STATE_POWER_SAVE) ||
+				     (node_state & NODE_STATE_POWERING_DOWN) ||
 	 			     (node_state & NODE_STATE_POWER_UP))) {
 					node_state &= (~NODE_STATE_POWER_SAVE);
 					node_state &= (~NODE_STATE_POWER_UP);
@@ -523,7 +524,12 @@ extern int load_all_node_state ( bool state_only )
 				if (node_state & NODE_STATE_FAIL)
 					node_ptr->node_state |=
 						NODE_STATE_FAIL;
-				if (node_state & NODE_STATE_POWER_SAVE) {
+				if ((node_state & NODE_STATE_POWER_SAVE) ||
+				    (node_state & NODE_STATE_POWERING_DOWN)) {
+					uint32_t power_flag =
+						node_state &
+						(NODE_STATE_POWER_SAVE |
+						 NODE_STATE_POWERING_DOWN);
 					if (power_save_mode &&
 					    IS_NODE_UNKNOWN(node_ptr)) {
 						orig_flags = node_ptr->
@@ -532,10 +538,10 @@ extern int load_all_node_state ( bool state_only )
 						node_ptr->node_state =
 							NODE_STATE_IDLE |
 							orig_flags |
-							NODE_STATE_POWER_SAVE;
+							power_flag;
 					} else if (power_save_mode) {
 						node_ptr->node_state |=
-							NODE_STATE_POWER_SAVE;
+							power_flag;
 					} else if (hs)
 						hostset_insert(hs, node_name);
 					else
@@ -601,8 +607,10 @@ extern int load_all_node_state ( bool state_only )
 		} else {
 			if ((!power_save_mode) &&
 			    ((node_state & NODE_STATE_POWER_SAVE) ||
+			     (node_state & NODE_STATE_POWERING_DOWN) ||
  			     (node_state & NODE_STATE_POWER_UP))) {
 				node_state &= (~NODE_STATE_POWER_SAVE);
+				node_state &= (~NODE_STATE_POWERING_DOWN);
 				node_state &= (~NODE_STATE_POWER_UP);
 				if (hs)
 					hostset_insert(hs, node_name);
@@ -1509,6 +1517,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 				if (IS_NODE_POWERING_DOWN(node_ptr)) {
 					node_ptr->node_state &=
 						(~NODE_STATE_POWERING_DOWN);
+					node_ptr->node_state |=
+						NODE_STATE_POWER_SAVE;
 
 					if (IS_NODE_CLOUD(node_ptr) &&
 					    cloud_reg_addrs)
@@ -2806,6 +2816,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 
 	if (IS_NODE_NO_RESPOND(node_ptr) ||
 	    IS_NODE_POWER_UP(node_ptr) ||
+	    IS_NODE_POWERING_DOWN(node_ptr) ||
 	    IS_NODE_POWER_SAVE(node_ptr)) {
 		info("Node %s now responding", node_ptr->name);
 
@@ -3587,6 +3598,7 @@ void node_not_resp (char *name, time_t msg_time, slurm_msg_type_t resp_type)
 	}
 
 	if (IS_NODE_NO_RESPOND(node_ptr) ||
+	    IS_NODE_POWERING_DOWN(node_ptr) ||
 	    IS_NODE_POWER_SAVE(node_ptr))
 		return;		/* Already known to be not responding */
 
@@ -3596,15 +3608,13 @@ void node_not_resp (char *name, time_t msg_time, slurm_msg_type_t resp_type)
 		return;
 	}
 
-	if (!IS_NODE_POWER_SAVE(node_ptr)) {
-		node_ptr->node_state |= NODE_STATE_NO_RESPOND;
+	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 #ifdef HAVE_FRONT_END
-		last_front_end_update = time(NULL);
+	last_front_end_update = time(NULL);
 #else
-		last_node_update = time(NULL);
-		bit_clear (avail_node_bitmap, (node_ptr - node_record_table_ptr));
+	last_node_update = time(NULL);
+	bit_clear (avail_node_bitmap, (node_ptr - node_record_table_ptr));
 #endif
-	}
 
 	return;
 }
@@ -3622,6 +3632,7 @@ extern void node_no_resp_msg(void)
 		node_ptr = &node_record_table_ptr[i];
 		if (!node_ptr->not_responding ||
 		    IS_NODE_POWER_SAVE(node_ptr) ||
+		    IS_NODE_POWERING_DOWN(node_ptr) ||
 		    IS_NODE_POWER_UP(node_ptr))
 			continue;
 		if (no_resp_hostlist) {
@@ -3799,7 +3810,9 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if (IS_NODE_FUTURE(node_ptr))
 			continue;
-		if (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))
+		if (IS_NODE_CLOUD(node_ptr) &&
+		    (IS_NODE_POWER_SAVE(node_ptr) ||
+		     IS_NODE_POWERING_DOWN(node_ptr)))
 			continue;
 		if (kill_agent_args->protocol_version >
 		    node_record_table_ptr[i].protocol_version)
@@ -3858,7 +3871,9 @@ void push_reconfig_to_slurmd(void)
 	for (int i = 0; i < node_record_count; i++, node_ptr++) {
 		if (IS_NODE_FUTURE(node_ptr))
 			continue;
-		if (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))
+		if (IS_NODE_CLOUD(node_ptr) &&
+		    (IS_NODE_POWER_SAVE(node_ptr) ||
+		     IS_NODE_POWERING_DOWN(node_ptr)))
 			continue;
 
 		if (node_ptr->protocol_version == SLURM_PROTOCOL_VERSION) {

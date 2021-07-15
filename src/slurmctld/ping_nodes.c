@@ -264,6 +264,7 @@ void ping_nodes (void)
 	     i < node_record_count; i++, node_ptr++) {
 		if (IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_POWER_SAVE(node_ptr) ||
+		    IS_NODE_POWERING_DOWN(node_ptr) ||
 		    IS_NODE_POWER_UP(node_ptr) ||
 		    IS_NODE_INVALID_REG(node_ptr) ||
 		    IS_NODE_REBOOT_ISSUED(node_ptr))
@@ -455,7 +456,9 @@ extern void run_health_check(void)
 		} else {
 			node_ptr = node_record_table_ptr + i;
 		}
-		if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_FUTURE(node_ptr) ||
+		if (IS_NODE_NO_RESPOND(node_ptr) ||
+		    IS_NODE_FUTURE(node_ptr) ||
+		    IS_NODE_POWERING_DOWN(node_ptr) ||
 		    IS_NODE_POWER_SAVE(node_ptr))
 			continue;
 		if (node_states != HEALTH_CHECK_NODE_ANY) {
@@ -549,7 +552,9 @@ extern void update_nodes_acct_gather_data(void)
 #else
 	for (i = 0, node_ptr = node_record_table_ptr;
 	     i < node_record_count; i++, node_ptr++) {
-		if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_FUTURE(node_ptr) ||
+		if (IS_NODE_NO_RESPOND(node_ptr) ||
+		    IS_NODE_FUTURE(node_ptr) ||
+		    IS_NODE_POWERING_DOWN(node_ptr) ||
 		    IS_NODE_POWER_SAVE(node_ptr))
 			continue;
 		if (agent_args->protocol_version > node_ptr->protocol_version)

@@ -444,7 +444,9 @@ static void _set_slurmd_addr(void)
 			continue;
 		if (IS_NODE_FUTURE(node_ptr))
 			continue;
-		if (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))
+		if (IS_NODE_CLOUD(node_ptr) &&
+		    (IS_NODE_POWERING_DOWN(node_ptr) ||
+		     IS_NODE_POWER_SAVE(node_ptr)))
 				continue;
 		if (node_ptr->port == 0)
 			node_ptr->port = slurm_conf.slurmd_port;
@@ -1912,8 +1914,10 @@ static int _restore_node_state(int recover,
 			node_ptr->node_state |= NODE_STATE_DRAIN;
 		if ((!power_save_mode) &&
 		    (IS_NODE_POWER_SAVE(node_ptr) ||
+		     IS_NODE_POWERING_DOWN(node_ptr) ||
 		     IS_NODE_POWER_UP(node_ptr))) {
 			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
+			node_ptr->node_state &= (~NODE_STATE_POWERING_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_POWER_UP);
 			if (hs)
 				hostset_insert(hs, node_ptr->name);
