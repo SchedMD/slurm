@@ -943,11 +943,10 @@ enum node_states {
 #define NODE_STATE_COMPLETING SLURM_BIT(10) /* node is completing allocated
 					     * job */
 #define NODE_STATE_NO_RESPOND SLURM_BIT(11) /* node is not responding */
-#define NODE_STATE_POWER_SAVE SLURM_BIT(12) /* node is powered down by slurm */
+#define NODE_STATE_POWERED_DOWN SLURM_BIT(12) /* node is powered down */
 #define NODE_STATE_FAIL       SLURM_BIT(13) /* node is failing, do not allocate
 					     * new work */
-#define NODE_STATE_POWER_UP   SLURM_BIT(14) /* restore power or otherwise
-					     * configure a node */
+#define NODE_STATE_POWERING_UP SLURM_BIT(14) /* node is powering up */
 #define NODE_STATE_MAINT      SLURM_BIT(15) /* node in maintenance
 					     * reservation */
 #define NODE_STATE_REBOOT_REQUESTED SLURM_BIT(16) /* node reboot requested */
@@ -959,8 +958,9 @@ enum node_states {
 					     * future */
 #define NODE_STATE_INVALID_REG SLURM_BIT(22) /* invalid registration, don't
 					      * ping */
-#define NODE_STATE_MAN_POWER_DOWN SLURM_BIT(23) /* manual node power down */
-#define NODE_STATE_MAN_POWER_UP SLURM_BIT(24) /* manual node power up */
+#define NODE_STATE_POWER_DOWN SLURM_BIT(23) /* manual node power down */
+#define NODE_STATE_POWER_UP SLURM_BIT(24) /* manual node power up */
+#define NODE_STATE_POWER_DRAIN SLURM_BIT(25) /* signal power down asap */
 
 /* used to define the size of the credential.signature size
  * used to define the key size of the io_stream_header_t

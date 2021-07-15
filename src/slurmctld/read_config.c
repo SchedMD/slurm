@@ -444,7 +444,9 @@ static void _set_slurmd_addr(void)
 			continue;
 		if (IS_NODE_FUTURE(node_ptr))
 			continue;
-		if (IS_NODE_CLOUD(node_ptr) && IS_NODE_POWER_SAVE(node_ptr))
+		if (IS_NODE_CLOUD(node_ptr) &&
+		    (IS_NODE_POWERING_DOWN(node_ptr) ||
+		     IS_NODE_POWERED_DOWN(node_ptr)))
 				continue;
 		if (node_ptr->port == 0)
 			node_ptr->port = slurm_conf.slurmd_port;
@@ -504,7 +506,7 @@ static void _build_bitmaps(void)
 		if ((IS_NODE_IDLE(node_ptr) && (job_cnt == 0)) ||
 		    IS_NODE_DOWN(node_ptr))
 			bit_set(idle_node_bitmap, i);
-		if (IS_NODE_POWER_UP(node_ptr))
+		if (IS_NODE_POWERING_UP(node_ptr))
 			bit_set(booting_node_bitmap, i);
 		if (IS_NODE_COMPLETING(node_ptr))
 			bit_set(cg_node_bitmap, i);
@@ -519,7 +521,7 @@ static void _build_bitmaps(void)
 				make_node_avail(i);
 			bit_set(up_node_bitmap, i);
 		}
-		if (IS_NODE_POWER_SAVE(node_ptr))
+		if (IS_NODE_POWERED_DOWN(node_ptr))
 			bit_set(power_node_bitmap, i);
 		if (IS_NODE_POWERING_DOWN(node_ptr))
 			bit_clear(avail_node_bitmap, i);
@@ -1911,10 +1913,12 @@ static int _restore_node_state(int recover,
 		if (drain_flag)
 			node_ptr->node_state |= NODE_STATE_DRAIN;
 		if ((!power_save_mode) &&
-		    (IS_NODE_POWER_SAVE(node_ptr) ||
-		     IS_NODE_POWER_UP(node_ptr))) {
-			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
-			node_ptr->node_state &= (~NODE_STATE_POWER_UP);
+		    (IS_NODE_POWERED_DOWN(node_ptr) ||
+		     IS_NODE_POWERING_DOWN(node_ptr) ||
+		     IS_NODE_POWERING_UP(node_ptr))) {
+			node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
+			node_ptr->node_state &= (~NODE_STATE_POWERING_DOWN);
+			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
 			if (hs)
 				hostset_insert(hs, node_ptr->name);
 			else
@@ -1923,7 +1927,7 @@ static int _restore_node_state(int recover,
 
 		if (IS_NODE_DYNAMIC(node_ptr) ||
 		    (IS_NODE_CLOUD(node_ptr) &&
-		     !IS_NODE_POWER_SAVE(node_ptr))) {
+		     !IS_NODE_POWERED_DOWN(node_ptr))) {
 			/* Preserve NodeHostname + NodeAddr set by scontrol */
 			set_node_comm_name(node_ptr,
 					   old_node_ptr->comm_name,

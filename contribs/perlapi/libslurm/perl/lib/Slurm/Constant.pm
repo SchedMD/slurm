@@ -204,7 +204,7 @@ This package export constants for use with Slurm. This includes enumerations and
 
 =item * NODE_STATE_NO_RESPOND 0x0800
 
-=item * NODE_STATE_POWER_SAVE 0x1000
+=item * NODE_STATE_POWERED_DOWN 0x1000
 
 =item * NODE_STATE_FAIL       0x2000
 

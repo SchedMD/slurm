@@ -150,19 +150,19 @@
 #define IS_NODE_INVALID_REG(_X)	\
 	(_X->node_state & NODE_STATE_INVALID_REG)
 #define IS_NODE_MAN_POWER_DOWN(_X)		\
-	(_X->node_state & NODE_STATE_MAN_POWER_DOWN)
+	(_X->node_state & NODE_STATE_POWER_DOWN)
 #define IS_NODE_MAN_POWER_UP(_X)		\
-	(_X->node_state & NODE_STATE_MAN_POWER_UP)
+	(_X->node_state & NODE_STATE_POWER_UP)
 #define IS_NODE_NO_RESPOND(_X)		\
 	(_X->node_state & NODE_STATE_NO_RESPOND)
-#define IS_NODE_POWER_SAVE(_X)		\
-	(_X->node_state & NODE_STATE_POWER_SAVE)
+#define IS_NODE_POWERED_DOWN(_X)		\
+	(_X->node_state & NODE_STATE_POWERED_DOWN)
 #define IS_NODE_POWERING_DOWN(_X)	\
 	(_X->node_state & NODE_STATE_POWERING_DOWN)
 #define IS_NODE_FAIL(_X)		\
 	(_X->node_state & NODE_STATE_FAIL)
-#define IS_NODE_POWER_UP(_X)		\
-	(_X->node_state & NODE_STATE_POWER_UP)
+#define IS_NODE_POWERING_UP(_X)		\
+	(_X->node_state & NODE_STATE_POWERING_UP)
 #define IS_NODE_MAINT(_X)		\
 	(_X->node_state & NODE_STATE_MAINT)
 #define IS_NODE_REBOOT_REQUESTED(_X)	\

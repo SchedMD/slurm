@@ -575,7 +575,7 @@ int main(int argc, char *argv[])
 		/* Return the nodes to service */
 		slurm_init_update_node_msg(&node_msg);
 		node_msg.node_names = argv[1];
-		node_msg.node_state = NODE_STATE_POWER_SAVE |
+		node_msg.node_state = NODE_STATE_POWER_DOWN |
 				      NODE_STATE_POWER_UP;
 		rc = slurm_update_node(&node_msg);
 		if (rc != SLURM_SUCCESS) {

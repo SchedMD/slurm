@@ -986,6 +986,15 @@ _unpack_update_node_msg(update_node_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr(&tmp_ptr->reason, buffer);
 		safe_unpack32(&tmp_ptr->reason_uid, buffer);
 		safe_unpack32(&tmp_ptr->weight, buffer);
+
+		if (tmp_ptr->node_state & NODE_STATE_POWERED_DOWN) {
+			tmp_ptr->node_state &= ~NODE_STATE_POWERED_DOWN;
+			tmp_ptr->node_state |= NODE_STATE_POWER_DOWN;
+		}
+		if (tmp_ptr->node_state & NODE_STATE_POWERING_UP) {
+			tmp_ptr->node_state &= ~NODE_STATE_POWERING_UP;
+			tmp_ptr->node_state |= NODE_STATE_POWER_UP;
+		}
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&tmp_ptr->cpu_bind, buffer);
 		safe_unpackstr(&tmp_ptr->features, buffer);
@@ -998,6 +1007,15 @@ _unpack_update_node_msg(update_node_msg_t ** msg, buf_t *buffer,
 		safe_unpackstr(&tmp_ptr->reason, buffer);
 		safe_unpack32(&tmp_ptr->reason_uid, buffer);
 		safe_unpack32(&tmp_ptr->weight, buffer);
+
+		if (tmp_ptr->node_state & NODE_STATE_POWERED_DOWN) {
+			tmp_ptr->node_state &= ~NODE_STATE_POWERED_DOWN;
+			tmp_ptr->node_state |= NODE_STATE_POWER_DOWN;
+		}
+		if (tmp_ptr->node_state & NODE_STATE_POWERING_UP) {
+			tmp_ptr->node_state &= ~NODE_STATE_POWERING_UP;
+			tmp_ptr->node_state |= NODE_STATE_POWER_UP;
+		}
 	} else {
 		error("_unpack_update_node_msg: protocol_version "
 		      "%hu not supported", protocol_version);
