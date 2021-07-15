@@ -207,7 +207,7 @@ scontrol_update_node (int argc, char **argv)
 				update_cnt++;
 			} else if (xstrncasecmp(val, "POWER_UP",
 				   MAX(val_len, 7)) == 0) {
-				node_msg.node_state = NODE_STATE_POWER_UP;
+				node_msg.node_state = NODE_STATE_POWERING_UP;
 				update_cnt++;
 			} else if (xstrncasecmp(val, "UNDRAIN",
 				   MAX(val_len, 3)) == 0) {

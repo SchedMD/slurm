@@ -493,9 +493,9 @@ extern int load_all_node_state ( bool state_only )
 				if ((!power_save_mode) &&
 				    ((node_state & NODE_STATE_POWERED_DOWN) ||
 				     (node_state & NODE_STATE_POWERING_DOWN) ||
-	 			     (node_state & NODE_STATE_POWER_UP))) {
+	 			     (node_state & NODE_STATE_POWERING_UP))) {
 					node_state &= (~NODE_STATE_POWERED_DOWN);
-					node_state &= (~NODE_STATE_POWER_UP);
+					node_state &= (~NODE_STATE_POWERING_UP);
 					node_state &= (~NODE_STATE_POWERING_DOWN);
 					if (hs)
 						hostset_insert(hs, node_name);
@@ -571,10 +571,10 @@ extern int load_all_node_state ( bool state_only )
 				if (node_state & NODE_STATE_REBOOT_ISSUED)
 					node_ptr->node_state |=
 						NODE_STATE_REBOOT_ISSUED;
-				if (node_state & NODE_STATE_POWER_UP) {
+				if (node_state & NODE_STATE_POWERING_UP) {
 					if (power_save_mode) {
 						node_ptr->node_state |=
-							NODE_STATE_POWER_UP;
+							NODE_STATE_POWERING_UP;
 					} else if (hs)
 						hostset_insert(hs, node_name);
 					else
@@ -608,10 +608,10 @@ extern int load_all_node_state ( bool state_only )
 			if ((!power_save_mode) &&
 			    ((node_state & NODE_STATE_POWERED_DOWN) ||
 			     (node_state & NODE_STATE_POWERING_DOWN) ||
- 			     (node_state & NODE_STATE_POWER_UP))) {
+ 			     (node_state & NODE_STATE_POWERING_UP))) {
 				node_state &= (~NODE_STATE_POWERED_DOWN);
 				node_state &= (~NODE_STATE_POWERING_DOWN);
-				node_state &= (~NODE_STATE_POWER_UP);
+				node_state &= (~NODE_STATE_POWERING_UP);
 				if (hs)
 					hostset_insert(hs, node_name);
 				else
@@ -1637,7 +1637,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				if ((IS_NODE_ALLOCATED(node_ptr) ||
 				     IS_NODE_MIXED(node_ptr)) &&
 				    (IS_NODE_POWERED_DOWN(node_ptr) ||
-				     IS_NODE_POWER_UP(node_ptr))) {
+				     IS_NODE_POWERING_UP(node_ptr))) {
 					info("%s: DRAIN/FAIL request for node %s which is allocated and being powered up. Requeuing jobs",
 					     __func__, this_node_name);
 					kill_running_job_by_node_name(
@@ -1659,11 +1659,11 @@ int update_node ( update_node_msg_t * update_node_msg )
 				    (nonstop_ops.node_fail))
 					(nonstop_ops.node_fail)(NULL, node_ptr);
 			} else if (state_val & NODE_STATE_POWERED_DOWN) {
-				if ((state_val & NODE_STATE_POWER_UP) &&
-				    (IS_NODE_POWER_UP(node_ptr))) {
+				if ((state_val & NODE_STATE_POWERING_UP) &&
+				    (IS_NODE_POWERING_UP(node_ptr))) {
 					/* Clear any reboot op in progress */
 					node_ptr->node_state &=
-						(~NODE_STATE_POWER_UP);
+						(~NODE_STATE_POWERING_UP);
 					node_ptr->last_response = now;
 					free(this_node_name);
 					continue;
@@ -1691,7 +1691,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				if (IS_NODE_DOWN(node_ptr)) {
 					/* Abort any power up request */
 					node_ptr->node_state &=
-						(~NODE_STATE_POWER_UP);
+						(~NODE_STATE_POWERING_UP);
 					node_ptr->node_state =
 						NODE_STATE_IDLE |
 						(node_ptr->node_state &
@@ -1704,9 +1704,9 @@ int update_node ( update_node_msg_t * update_node_msg )
 				bit_clear(rs_node_bitmap, node_inx);
 				free(this_node_name);
 				continue;
-			} else if (state_val == NODE_STATE_POWER_UP) {
+			} else if (state_val == NODE_STATE_POWERING_UP) {
 				if (!IS_NODE_POWERED_DOWN(node_ptr)) {
-					if (IS_NODE_POWER_UP(node_ptr)) {
+					if (IS_NODE_POWERING_UP(node_ptr)) {
 						node_ptr->node_state |=
 							NODE_STATE_POWERED_DOWN;
 						node_ptr->node_state |=
@@ -2383,8 +2383,8 @@ static bool _valid_node_state_change(uint32_t old, uint32_t new)
 			return true;
 
 		case NODE_STATE_POWERED_DOWN:
-		case NODE_STATE_POWER_UP:
-		case (NODE_STATE_POWERED_DOWN | NODE_STATE_POWER_UP):
+		case NODE_STATE_POWERING_UP:
+		case (NODE_STATE_POWERED_DOWN | NODE_STATE_POWERING_UP):
 		case (NODE_STATE_POWERED_DOWN | NODE_STATE_MAN_POWER_DOWN):
 		case (NODE_STATE_POWERED_DOWN | NODE_STATE_POWER_DRAIN):
 			if (power_save_on)
@@ -2815,7 +2815,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 	}
 
 	if (IS_NODE_NO_RESPOND(node_ptr) ||
-	    IS_NODE_POWER_UP(node_ptr) ||
+	    IS_NODE_POWERING_UP(node_ptr) ||
 	    IS_NODE_POWERING_DOWN(node_ptr) ||
 	    IS_NODE_POWERED_DOWN(node_ptr)) {
 		info("Node %s now responding", node_ptr->name);
@@ -2825,7 +2825,7 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		 * came up after ResumeTimeout so that it can be suspended at a
 		 * later point.
 		 */
-		if (IS_NODE_POWER_UP(node_ptr) ||
+		if (IS_NODE_POWERING_UP(node_ptr) ||
 		    IS_NODE_POWERED_DOWN(node_ptr))
 			node_ptr->last_busy = now;
 
@@ -2835,11 +2835,11 @@ extern int validate_node_specs(slurm_msg_t *slurm_msg, bool *newly_up)
 		 * IS_NODE_POWERED_DOWN() above to allow ReturnToService !=2
 		 * catch nodes [re]booting unexpectedly.
 		 */
-		if (IS_NODE_POWER_UP(node_ptr))
+		if (IS_NODE_POWERING_UP(node_ptr))
 			node_ptr->last_response = now;
 
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
-		node_ptr->node_state &= (~NODE_STATE_POWER_UP);
+		node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
 		node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
 		node_ptr->node_state &= (~NODE_STATE_POWERING_DOWN);
 		if (!is_node_in_maint_reservation(node_inx))
@@ -3284,7 +3284,7 @@ extern int validate_nodes_via_front_end(
 			update_node_state = true;
 			/* This is handled by the select/cray plugin */
 			node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
-			node_ptr->node_state &= (~NODE_STATE_POWER_UP);
+			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
 		}
 
 		if (reg_msg->status != ESLURMD_PROLOG_FAILED) {
@@ -3475,10 +3475,10 @@ static void _node_did_resp(node_record_t *node_ptr)
 	    waiting_for_node_power_down(node_ptr))
 		return;
 	node_ptr->last_response = now;
-	if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_POWER_UP(node_ptr)) {
+	if (IS_NODE_NO_RESPOND(node_ptr) || IS_NODE_POWERING_UP(node_ptr)) {
 		info("Node %s now responding", node_ptr->name);
 		node_ptr->node_state &= (~NODE_STATE_NO_RESPOND);
-		node_ptr->node_state &= (~NODE_STATE_POWER_UP);
+		node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
 		if (!is_node_in_maint_reservation(node_inx))
 			node_ptr->node_state &= (~NODE_STATE_MAINT);
 		last_node_update = now;
@@ -3634,7 +3634,7 @@ extern void node_no_resp_msg(void)
 		if (!node_ptr->not_responding ||
 		    IS_NODE_POWERED_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_DOWN(node_ptr) ||
-		    IS_NODE_POWER_UP(node_ptr))
+		    IS_NODE_POWERING_UP(node_ptr))
 			continue;
 		if (no_resp_hostlist) {
 			(void) hostlist_push_host(no_resp_hostlist,
@@ -4001,7 +4001,7 @@ extern void make_node_comp(node_record_t *node_ptr, job_record_t *job_ptr,
 		}
 	}
 
-	if (!IS_NODE_DOWN(node_ptr) && !IS_NODE_POWER_UP(node_ptr)) {
+	if (!IS_NODE_DOWN(node_ptr) && !IS_NODE_POWERING_UP(node_ptr)) {
 		/* Don't verify RPC if node in DOWN or POWER_UP state */
 		(node_ptr->comp_job_cnt)++;
 		node_ptr->node_state |= NODE_STATE_COMPLETING;
@@ -4347,7 +4347,8 @@ extern bool waiting_for_node_boot(node_record_t *node_ptr)
 {
 	xassert(node_ptr);
 
-	if ((IS_NODE_POWER_UP(node_ptr) || IS_NODE_REBOOT_ISSUED(node_ptr)) &&
+	if ((IS_NODE_POWERING_UP(node_ptr) ||
+	     IS_NODE_REBOOT_ISSUED(node_ptr)) &&
 	    (node_ptr->boot_time < node_ptr->boot_req_time)) {
 		debug("Still waiting for boot of node %s", node_ptr->name);
 		return true;

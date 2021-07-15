@@ -1765,7 +1765,7 @@ static void _queue_reboot_msg(void)
                  */
 		if (IS_NODE_IDLE(node_ptr)
                     && !IS_NODE_NO_RESPOND(node_ptr)
-                    && !IS_NODE_POWER_UP(node_ptr)
+                    && !IS_NODE_POWERING_UP(node_ptr)
                     && node_ptr->sus_job_cnt == 0)
 			want_reboot = true;
 		else if (IS_NODE_FUTURE(node_ptr) &&

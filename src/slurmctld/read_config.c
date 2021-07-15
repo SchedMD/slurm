@@ -506,7 +506,7 @@ static void _build_bitmaps(void)
 		if ((IS_NODE_IDLE(node_ptr) && (job_cnt == 0)) ||
 		    IS_NODE_DOWN(node_ptr))
 			bit_set(idle_node_bitmap, i);
-		if (IS_NODE_POWER_UP(node_ptr))
+		if (IS_NODE_POWERING_UP(node_ptr))
 			bit_set(booting_node_bitmap, i);
 		if (IS_NODE_COMPLETING(node_ptr))
 			bit_set(cg_node_bitmap, i);
@@ -1915,10 +1915,10 @@ static int _restore_node_state(int recover,
 		if ((!power_save_mode) &&
 		    (IS_NODE_POWERED_DOWN(node_ptr) ||
 		     IS_NODE_POWERING_DOWN(node_ptr) ||
-		     IS_NODE_POWER_UP(node_ptr))) {
+		     IS_NODE_POWERING_UP(node_ptr))) {
 			node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
 			node_ptr->node_state &= (~NODE_STATE_POWERING_DOWN);
-			node_ptr->node_state &= (~NODE_STATE_POWER_UP);
+			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
 			if (hs)
 				hostset_insert(hs, node_ptr->name);
 			else

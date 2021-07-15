@@ -161,8 +161,8 @@
 	(_X->node_state & NODE_STATE_POWERING_DOWN)
 #define IS_NODE_FAIL(_X)		\
 	(_X->node_state & NODE_STATE_FAIL)
-#define IS_NODE_POWER_UP(_X)		\
-	(_X->node_state & NODE_STATE_POWER_UP)
+#define IS_NODE_POWERING_UP(_X)		\
+	(_X->node_state & NODE_STATE_POWERING_UP)
 #define IS_NODE_MAINT(_X)		\
 	(_X->node_state & NODE_STATE_MAINT)
 #define IS_NODE_REBOOT_REQUESTED(_X)	\

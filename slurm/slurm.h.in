@@ -946,8 +946,7 @@ enum node_states {
 #define NODE_STATE_POWERED_DOWN SLURM_BIT(12) /* node is powered down */
 #define NODE_STATE_FAIL       SLURM_BIT(13) /* node is failing, do not allocate
 					     * new work */
-#define NODE_STATE_POWER_UP   SLURM_BIT(14) /* restore power or otherwise
-					     * configure a node */
+#define NODE_STATE_POWERING_UP SLURM_BIT(14) /* node is powering up */
 #define NODE_STATE_MAINT      SLURM_BIT(15) /* node in maintenance
 					     * reservation */
 #define NODE_STATE_REBOOT_REQUESTED SLURM_BIT(16) /* node reboot requested */

@@ -576,7 +576,7 @@ int main(int argc, char *argv[])
 		slurm_init_update_node_msg(&node_msg);
 		node_msg.node_names = argv[1];
 		node_msg.node_state = NODE_STATE_POWERED_DOWN |
-				      NODE_STATE_POWER_UP;
+				      NODE_STATE_POWERING_UP;
 		rc = slurm_update_node(&node_msg);
 		if (rc != SLURM_SUCCESS) {
 			error("%s: slurm_update_node(\'%s\', \'IDLE\'): %s\n",

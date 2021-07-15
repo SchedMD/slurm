@@ -265,7 +265,7 @@ void ping_nodes (void)
 		if (IS_NODE_FUTURE(node_ptr) ||
 		    IS_NODE_POWERED_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_DOWN(node_ptr) ||
-		    IS_NODE_POWER_UP(node_ptr) ||
+		    IS_NODE_POWERING_UP(node_ptr) ||
 		    IS_NODE_INVALID_REG(node_ptr) ||
 		    IS_NODE_REBOOT_ISSUED(node_ptr))
 			continue;

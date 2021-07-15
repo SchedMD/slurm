@@ -233,7 +233,7 @@ static int _pick_exc_nodes(void *x, void *arg)
 			    IS_NODE_COMPLETING(node_ptr)		||
 			    IS_NODE_DOWN(node_ptr)			||
 			    IS_NODE_DRAIN(node_ptr)			||
-			    IS_NODE_POWER_UP(node_ptr)			||
+			    IS_NODE_POWERING_UP(node_ptr)			||
 			    IS_NODE_POWERED_DOWN(node_ptr)		||
 			    IS_NODE_POWERING_DOWN(node_ptr)		||
 			    (node_ptr->sus_job_cnt > 0))
@@ -359,7 +359,7 @@ static void _do_power_work(time_t now)
 			resume_cnt_f++;
 			node_ptr->node_state &= (~NODE_STATE_MAN_POWER_UP);
 			node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
-			node_ptr->node_state |=   NODE_STATE_POWER_UP;
+			node_ptr->node_state |=   NODE_STATE_POWERING_UP;
 			node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
 			bit_clear(power_node_bitmap, i);
 			node_ptr->boot_req_time = now;
@@ -373,7 +373,8 @@ static void _do_power_work(time_t now)
 		    (IS_NODE_IDLE(node_ptr) || IS_NODE_DOWN(node_ptr))	&&
 		    (node_ptr->sus_job_cnt == 0)			&&
 		    (!IS_NODE_COMPLETING(node_ptr))			&&
-		    (!IS_NODE_POWER_UP(node_ptr))			&&
+		    (!IS_NODE_POWERING_UP(node_ptr))			&&
+		    (!IS_NODE_POWERING_UP(node_ptr))			&&
 		    (!IS_NODE_POWERING_DOWN(node_ptr))			&&
 		    (IS_NODE_MAN_POWER_DOWN(node_ptr) ||
 		     ((node_ptr->last_busy != 0) &&
@@ -453,7 +454,7 @@ static void _do_power_work(time_t now)
 		if (bit_test(booting_node_bitmap, i) &&
 		    (now >
 		     (node_ptr->boot_req_time + node_ptr->resume_timeout)) &&
-		    IS_NODE_POWER_UP(node_ptr) &&
+		    IS_NODE_POWERING_UP(node_ptr) &&
 		    IS_NODE_NO_RESPOND(node_ptr)) {
 			info("node %s not resumed by ResumeTimeout(%d) - marking down and power_save",
 			     node_ptr->name, node_ptr->resume_timeout);
@@ -462,7 +463,7 @@ static void _do_power_work(time_t now)
 			 * avail_node_bitmap.
 			 */
 			set_node_down_ptr(node_ptr, "ResumeTimeout reached");
-			node_ptr->node_state &= (~NODE_STATE_POWER_UP);
+			node_ptr->node_state &= (~NODE_STATE_POWERING_UP);
 			node_ptr->node_state |= NODE_STATE_POWERED_DOWN;
 			bit_set(power_node_bitmap, i);
 			bit_clear(booting_node_bitmap, i);
@@ -570,7 +571,7 @@ extern int power_job_reboot(job_record_t *job_ptr)
 		resume_cnt++;
 		resume_cnt_f++;
 		node_ptr->node_state &= (~NODE_STATE_POWERED_DOWN);
-		node_ptr->node_state |=   NODE_STATE_POWER_UP;
+		node_ptr->node_state |=   NODE_STATE_POWERING_UP;
 		node_ptr->node_state |=   NODE_STATE_NO_RESPOND;
 		bit_clear(power_node_bitmap, i);
 		bit_clear(avail_node_bitmap, i);

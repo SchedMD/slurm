@@ -1177,7 +1177,8 @@ extern int select_p_job_ready(job_record_t *job_ptr)
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 		node_ptr = node_record_table_ptr + i;
-		if (IS_NODE_POWERED_DOWN(node_ptr) || IS_NODE_POWER_UP(node_ptr))
+		if (IS_NODE_POWERED_DOWN(node_ptr) ||
+		    IS_NODE_POWERING_UP(node_ptr))
 			return 0;
 	}
 

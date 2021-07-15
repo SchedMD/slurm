@@ -102,7 +102,7 @@ extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id)
 				continue;
 			bit_clear(booting_node_bitmap, i);
 			node_record_table_ptr[i].node_state &=
-				(~NODE_STATE_POWER_UP);
+				(~NODE_STATE_POWERING_UP);
 		}
 	}
 

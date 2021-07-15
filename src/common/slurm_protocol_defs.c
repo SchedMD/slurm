@@ -122,7 +122,7 @@ static const node_state_flags_t node_state_flags[] = {
 	{ NODE_RESUME, "RESUME" },
 	{ NODE_STATE_NO_RESPOND, "NOT_RESPONDING" },
 	{ NODE_STATE_PLANNED, "PLANNED" },
-	{ NODE_STATE_POWER_UP, "POWERING_UP" },
+	{ NODE_STATE_POWERING_UP, "POWERING_UP" },
 	{ NODE_STATE_POWERING_DOWN, "POWERING_DOWN" },
 };
 
@@ -3619,7 +3619,7 @@ extern char *node_state_string(uint32_t inx)
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
 	bool planned_flag    = (inx & NODE_STATE_PLANNED);
 	bool powered_down_flag = (inx & NODE_STATE_POWERED_DOWN);
-	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
+	bool power_up_flag   = (inx & NODE_STATE_POWERING_UP);
 	bool powering_down_flag = (inx & NODE_STATE_POWERING_DOWN);
 	bool power_down_flag = (inx & NODE_STATE_MAN_POWER_DOWN);
 
@@ -3715,7 +3715,7 @@ extern char *node_state_string(uint32_t inx)
 		return "POWERING_DOWN";
 	if (inx == NODE_STATE_POWERED_DOWN)
 		return "POWER_DOWN";
-	if (inx == NODE_STATE_POWER_UP)
+	if (inx == NODE_STATE_POWERING_UP)
 		return "POWER_UP";
 	if (base == NODE_STATE_DOWN) {
 		if (maint_flag)
@@ -3866,7 +3866,7 @@ extern char *node_state_string_compact(uint32_t inx)
 	bool no_resp_flag    = (inx & NODE_STATE_NO_RESPOND);
 	bool planned_flag    = (inx & NODE_STATE_PLANNED);
 	bool powered_down_flag = (inx & NODE_STATE_POWERED_DOWN);
-	bool power_up_flag   = (inx & NODE_STATE_POWER_UP);
+	bool power_up_flag   = (inx & NODE_STATE_POWERING_UP);
 	bool powering_down_flag = (inx & NODE_STATE_POWERING_DOWN);
 	bool power_down_flag = (inx & NODE_STATE_MAN_POWER_DOWN);
 
@@ -3963,7 +3963,7 @@ extern char *node_state_string_compact(uint32_t inx)
 		return "POWRNG_DN";
 	if (inx == NODE_STATE_POWERED_DOWN)
 		return "POW_DN";
-	if (inx == NODE_STATE_POWER_UP)
+	if (inx == NODE_STATE_POWERING_UP)
 		return "POW_UP";
 	if (inx == NODE_STATE_DOWN) {
 		if (maint_flag)
