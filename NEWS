@@ -150,6 +150,9 @@ documents those changes that are of interest to users and administrators.
  -- Add bf_node_space_size to SchedulerParameters.
  -- Add scontrol update node state=POWER_DOWN_FORCE and POWER_DOWN_ASAP as new
     ways to power off and reset especially CLOUD nodes.
+ -- Define and separate node power state transitions. Previously a powering
+    down node was in both states, POWERING_OFF and POWERED_OFF. These are now
+    separated.
 
 * Changes in Slurm 20.11.9
 ==========================
