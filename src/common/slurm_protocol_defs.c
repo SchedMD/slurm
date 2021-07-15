@@ -3714,9 +3714,9 @@ extern char *node_state_string(uint32_t inx)
 	if (inx == NODE_STATE_POWERING_DOWN)
 		return "POWERING_DOWN";
 	if (inx == NODE_STATE_POWERED_DOWN)
-		return "POWER_DOWN";
+		return "POWERED_DOWN";
 	if (inx == NODE_STATE_POWERING_UP)
-		return "POWER_UP";
+		return "POWERING_UP";
 	if (base == NODE_STATE_DOWN) {
 		if (maint_flag)
 			return "DOWN$";
@@ -3960,11 +3960,11 @@ extern char *node_state_string_compact(uint32_t inx)
 	if (inx == NODE_STATE_POWER_UP)
 		return "POW_UP";
 	if (inx == NODE_STATE_POWERING_DOWN)
-		return "POWRNG_DN";
+		return "POWRING_DN";
 	if (inx == NODE_STATE_POWERED_DOWN)
-		return "POW_DN";
+		return "POWERED_DN";
 	if (inx == NODE_STATE_POWERING_UP)
-		return "POW_UP";
+		return "POWERING_UP";
 	if (inx == NODE_STATE_DOWN) {
 		if (maint_flag)
 			return "DOWN$";
