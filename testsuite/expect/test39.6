@@ -146,17 +146,10 @@ exit 0"
 #
 set match 0
 set multi_socket 0
-if {$gpu_cnt > $cpus_per_node} {
-	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt \
-	                          --nodes=1 --ntasks=1 \
-	                          --cpus-per-task=$cpus_per_socket \
-	                          -t1 -l ./$file_in]
-} else {
-	set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt \
-	                          --nodes=1 --ntasks=1 \
-	                          --cpus-per-task=$cpus_per_socket \
-	                          -t1 -l ./$file_in]
-}
+set srun_pid [spawn $srun --cpus-per-gpu=1 --gpus-per-node=$gpu_cnt --nodes=1 \
+			  --ntasks=1 -t1 -l \
+			  ./$file_in]
+
 expect {
 	-re "CUDA_VISIBLE_DEVICES:($number_commas)" {
 		incr match [cuda_count $expect_out(1,string)]
