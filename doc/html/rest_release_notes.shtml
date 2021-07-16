@@ -46,6 +46,21 @@ paths in a single quote string to avoid shell replacements.</p>
 <h4>Deprecation notice</h4>
 The v0.0.35 plugin has now been deprecated.
 
+<h3>openapi/dbv0.0.37 (src/plugins/openapi/dbv0.0.37/openapi.json)</h3>
+
+<h4>add plugin</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">new dbv0.0.37 openapi plugin</td>
+	<td class="tdchange">
+		<ul>
+			<li>clone of existing dbv0.0.36 openapi plugin</li>
+			<li>all paths renamed from v0.0.36 to v0.0.37</li>
+		</ul>
+	</td>
+</tr>
+</table>
+
 <h3>openapi/v0.0.37 (src/slurmrestd/plugins/openapi/v0.0.37/openapi.json)</h3>
 
 <h4>add plugin</h4>
