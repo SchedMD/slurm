@@ -11172,7 +11172,7 @@ extern int unpack_config_file(void **out, uint16_t protocol_version,
 	uint32_t uint32_tmp;
 	config_file_t *object = xmalloc(sizeof(*object));
 
-	unpackbool(&object->exists, buffer);
+	safe_unpackbool(&object->exists, buffer);
 	safe_unpackstr_xmalloc(&object->file_name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&object->file_content, &uint32_tmp, buffer);
 	*out = object;
