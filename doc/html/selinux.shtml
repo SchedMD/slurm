@@ -1,0 +1,106 @@
+<!--#include virtual="header.txt"-->
+
+<h1>SELinux</h1>
+
+<p>Starting with version 21.08, Slurm includes support for setting an SELinux
+context for jobs as a technology preview. The implementation may change in
+future releases, and support for it is not enabled by default.</p>
+
+<h2><a id="INSTALLATION">Installation</a></h2>
+
+<h3>Source:</h3>
+
+<p>SELinux support is disabled by default and must be enabled at configure time.
+It requires the libselinux1 library and development headers to build.</p>
+
+<pre>configure --enable-selinux</pre>
+
+<h2><a id="SETUP">Setup</a></h2>
+
+<p>Once a version of Slurm that supports SELinux is installed, you will need to
+enable and create a job_submit plugin that will perform verification of the
+SELinux context, before passing it along to the slurmctld. At this time, there
+is not a reliable and secure way to get/verify contexts internally so you MUST
+create this script and perform verification in the job_submit plugin.</p>
+
+<p>Example:</p>
+<pre>
+function slurm_job_submit(job_desc, part_list, submit_uid)
+  if job_desc.req_context then
+    local element = 0
+    for str in string.gmatch(job_desc.req_context, "([^:]+)") do
+      if element == 0 and str ~= "unconfined_u" then
+        slurm.log_user("Error: invalid SELinux context")
+        return slurm.ERROR
+      elseif element == 1 and str ~= "unconfined_r" then
+        slurm.log_user("Error: %s is not a valid SELinux role")
+        return slurm.ERROR
+      end
+      element = element + 1
+    end
+    job_desc.selinux_context = job_desc.req_context
+  else
+    -- Force a specific context if one wasn't requested
+    job_desc.selinux_context = unconfined_u:unconfined_r:slurm_t:s0
+  end
+  return slurm.SUCCESS
+end
+</pre>
+
+<p>Note that <b>job_desc.selinux_context</b> is set based on the contents of
+<b>job_desc.req_context</b> if they are considered valid.
+<b>job_desc.selinux_context</b> is what set the context that will be used.</p>
+
+<h2><a id="INITIAL_TESTING">Initial Testing</a></h2>
+
+<p>id is very useful for showing what context a user is currently in. As a test
+to make sure that we are switching contexts, you can run a quick test with srun.
+</p>
+
+<pre>
+mcmult@master:~$ srun id
+uid=1000(mcmult) gid=1000(mcmult) groups=1000(mcmult),27(sudo) context=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
+mcmult@master:~$ srun --context=unconfined_u:unconfined_r:unconfined_t:s0 id
+uid=1000(mcmult) gid=1000(mcmult) groups=1000(mcmult),27(sudo) context=unconfined_u:unconfined_r:unconfined_t:s0
+</pre>
+
+<h2><a id="ACCOUNTING">Accounting</a></h2>
+
+<p>There is currently no support for tracking the SELinux context in Slurm's
+accounting. This may change as support evolves in future releases.
+If you need to keep track of the SELinux Context, it is possible to store it in
+the admin comment field as part of your job_submit plugin as is show in the
+example below.</p>
+
+<p>Example:</p>
+<pre>
+function slurm_job_submit(job_desc, part_list, submit_uid)
+  if job_desc.req_context then
+    local element = 0
+    for str in string.gmatch(job_desc.req_context, "([^:]+)") do
+      if element == 0 and str ~= "unconfined_u" then
+        slurm.log_user("Error: invalid SELinux context")
+        return slurm.ERROR
+      elseif element == 1 and str ~= "unconfined_r" then
+        slurm.log_user("Error: %s is not a valid SELinux role")
+        return slurm.ERROR
+      end
+      element = element + 1
+    end
+    job_desc.selinux_context = job_desc.req_context
+  else
+    -- Force a specifc context if one wasn't requested
+    job_desc.selinux_context = unconfined_u:unconfined_r:slurm_t:s0
+  end
+  <b>job_desc.admin_comment = "SELinuxContext=" + job_desc.selinux_context</b>
+  return slurm.SUCCESS
+end
+</pre>
+
+<p>Note the addition of setting "job_desc.admin_comment" before returning. This
+will set the admin comment to show what context we will try to set for the job.
+</p>
+
+<p style="text-align:center;">Last modified 27 July 2021</p>
+
+<!--#include virtual="footer.txt"-->

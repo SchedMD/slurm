@@ -98,6 +98,7 @@ generated_html = \
 	schedplugins.html \
 	select_design.html \
 	selectplugins.html \
+	selinux.html \
 	site_factor.html \
 	slurm.html \
 	slurmctld_plugstack.html \
