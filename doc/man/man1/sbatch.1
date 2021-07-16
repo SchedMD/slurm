@@ -168,6 +168,9 @@ If not specified, the scontrol show job will display 'ReqS:C:T=*:*:*'. This
 option applies to job allocations.
 \fBNOTE:\fR This option is mutually exclusive with \fB\-\-hint\fR,
 \fB\-\-threads\-per\-core\fR and \fB\-\-ntasks\-per\-core\fR.
+.br
+\fBNOTE\fR: This option may implicitly set the number of tasks (if \fB-n\fR
+was not specified) as one task per requested thread.
 
 .TP
 \fB\-\-batch\fR=<\fIlist\fR>
@@ -345,6 +348,9 @@ plugins, both of which can modify the node ordering.
 Restrict node selection to nodes with at least the specified number of
 cores per socket.  See additional information under \fB\-B\fR option
 above when task/affinity plugin is enabled.
+.br
+\fBNOTE\fR: This option may implicitly set the number of tasks (if \fB-n\fR
+was not specified) as one task per requested thread.
 
 .TP
 \fB\-\-cpu\-freq\fR =<\fIp1\fR[\-\fIp2\fR[:\fIp3\fR]]>
@@ -1801,6 +1807,9 @@ To have the signal sent at preemption time see the
 Restrict node selection to nodes with at least the specified number of
 sockets.  See additional information under \fB\-B\fR option above when
 task/affinity plugin is enabled.
+.br
+\fBNOTE\fR: This option may implicitly set the number of tasks (if \fB-n\fR
+was not specified) as one task per requested thread.
 
 .TP
 \fB\-\-spread\-job\fR
@@ -1864,6 +1873,9 @@ per core. NOTE: "Threads" refers to the number of processing units on
 each core rather than the number of application tasks to be launched per core.
 See additional information under \fB\-B\fR option above when task/affinity
 plugin is enabled.
+.br
+\fBNOTE\fR: This option may implicitly set the number of tasks (if \fB-n\fR
+was not specified) as one task per requested thread.
 
 .TP
 \fB\-\-time\-min\fR=<\fItime\fR>

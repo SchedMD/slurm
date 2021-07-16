@@ -153,8 +153,14 @@ CR_Core, CR_Core_Memory, CR_Socket, or CR_Socket_Memory for this option
 to be honored.
 If not specified, the scontrol show job will display 'ReqS:C:T=*:*:*'. This
 option applies to job allocations.
+
 \fBNOTE:\fR This option is mutually exclusive with \fB\-\-hint\fR,
 \fB\-\-threads\-per\-core\fR and \fB\-\-ntasks\-per\-core\fR.
+.br
+\fBNOTE\fR: If the number of sockets, cores and threads were all specified,
+the number of nodes was specified (as a fixed number, not a range) and the
+number of tasks was NOT specified, srun will implicitly calculate the number
+of tasks as one task per thread.
 
 .TP
 \fB\-\-bb\fR=<\fIspec\fR>
@@ -2170,6 +2176,9 @@ AllowSpecResourcesUsage is enabled, the job will be allowed to override
 CoreSpecCount and use the specialized resources on nodes it is allocated.
 This option can not be used with the \fB\-\-thread\-spec\fR option. This option
 applies to job allocations.
+.br
+\fBNOTE\fR: This option may implicitly impact the number of tasks if \fB-n\fR
+was not specified.
 
 .TP
 \fB\-\-signal\fR=[R:]<\fIsig_num\fR>[@<\fIsig_time\fR>]
@@ -2220,6 +2229,9 @@ step allocations.
 Restrict node selection to nodes with at least the specified number of
 sockets.  See additional information under \fB\-B\fR option above when
 task/affinity plugin is enabled. This option applies to job allocations.
+.br
+\fBNOTE\fR: This option may implicitly impact the number of tasks if \fB-n\fR
+was not specified.
 
 .TP
 \fB\-\-spread\-job\fR
@@ -2324,6 +2336,9 @@ number of processing units on each core rather than the number of application
 tasks to be launched per core. See additional information under \fB\-B\fR
 option above when task/affinity plugin is enabled. This option applies to job
 and step allocations.
+.br
+\fBNOTE\fR: This option may implicitly impact the number of tasks if \fB-n\fR
+was not specified.
 
 .TP
 \fB\-\-time\-min\fR=<\fItime\fR>
