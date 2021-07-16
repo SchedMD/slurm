@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "October 2021" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "November 2021" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -5303,7 +5303,8 @@ days\-hours, days\-hours:minutes, days\-hours:minutes:seconds or
 "UNLIMITED".
 Time resolution is one minute and second values are rounded up to
 the next minute.
-This limit does not apply to jobs executed by SlurmUser or user root.
+The job TimeLimit may be updated by root, SlurmUser or an Operator to a
+value higher than the configured MaxTime after job submission.
 
 .TP
 \fBMinNodes\fR
