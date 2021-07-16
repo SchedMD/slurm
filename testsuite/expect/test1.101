@@ -76,11 +76,11 @@ expect {
 	}
 }
 
-set node_cnt 99
-send "echo \$SLURM_NNODES\r"
+set node_cnt -1
+send "echo SLURM_NNODES=\$SLURM_NNODES\r"
 expect {
-	-re "($number)" {
-		if { $node_cnt == 99 } {
+	-re "SLURM_NNODES=($number)" {
+		if { $node_cnt == -1 } {
 			set node_cnt $expect_out(1,string)
 		}
 		exp_continue
@@ -98,9 +98,7 @@ set exec_cnt 0
 send "$srun -l --bcast=/tmp/test$test_id ./$file_in\r"
 expect {
 	-re "not supported" {
-		log_warn "srun --bcast option not supported on this system type (e.g. front-end)"
-		set exec_cnt $node_cnt
-		exp_continue
+		skip "srun --bcast option not supported on this system type (e.g. front-end)"
 	}
 	-re "($number): /tmp/test$test_id" {
 		incr exec_cnt
