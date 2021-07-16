@@ -286,6 +286,89 @@ static int _rmdir_task(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
+static int _find_task_cg_info(void *x, void *key)
+{
+	task_cg_info_t *task_cg = (task_cg_info_t*)x;
+	uint32_t taskid = *(uint32_t*)key;
+
+	if (task_cg->taskid == taskid)
+		return 1;
+
+	return 0;
+}
+
+static void _free_task_cg_info(void *object)
+{
+	task_cg_info_t *task_cg = (task_cg_info_t *)object;
+
+	if (task_cg) {
+		common_cgroup_destroy(&task_cg->task_cg);
+		xfree(task_cg);
+	}
+}
+
+static int _handle_task_cgroup(cgroup_ctl_type_t sub, pid_t pid,
+			       stepd_step_rec_t *job, uint32_t taskid)
+{
+	int rc = SLURM_SUCCESS;
+	bool need_to_add = false;
+	task_cg_info_t *task_cg_info;
+	uid_t uid = job->uid;
+	gid_t gid = job->gid;
+	char *task_cgroup_path = NULL;
+
+	/* build task cgroup relative path */
+	xstrfmtcat(task_cgroup_path, "%s/task_%u", g_step_cgpath[sub], taskid);
+	if (!task_cgroup_path) {
+		error("unable to build task_%u cg relative path for %s: %m",
+		      taskid, g_step_cgpath[sub]);
+		return SLURM_ERROR;
+	}
+
+	if (!(task_cg_info = list_find_first(g_task_acct_list[sub],
+					     _find_task_cg_info,
+					     &taskid))) {
+		task_cg_info = xmalloc(sizeof(*task_cg_info));
+		task_cg_info->taskid = taskid;
+		need_to_add = true;
+	}
+
+	/*
+	 * Create task cgroup in the cg ns
+	 */
+	if (common_cgroup_create(&g_cg_ns[sub], &task_cg_info->task_cg,
+				 task_cgroup_path, uid, gid) != SLURM_SUCCESS) {
+		error("unable to create task %u cgroup", taskid);
+		xfree(task_cg_info);
+		xfree(task_cgroup_path);
+		return SLURM_ERROR;
+	}
+
+	if (common_cgroup_instantiate(&task_cg_info->task_cg) != SLURM_SUCCESS)
+	{
+		_free_task_cg_info(task_cg_info);
+		error("unable to instantiate task %u cgroup", taskid);
+		xfree(task_cgroup_path);
+		return SLURM_ERROR;
+	}
+
+	/* set notify on release flag */
+	common_cgroup_set_param(&task_cg_info->task_cg, "notify_on_release",
+				"0");
+
+	/* Attach the pid to the corresponding step_x/task_y cgroup */
+	rc = common_cgroup_move_process(&task_cg_info->task_cg, pid);
+	if (rc != SLURM_SUCCESS)
+		error("Unable to move pid %d to %s cg", pid, task_cgroup_path);
+
+	/* Add the cgroup to the list now that it is initialized. */
+	if (need_to_add)
+		list_append(g_task_acct_list[sub], task_cg_info);
+
+	xfree(task_cgroup_path);
+	return rc;
+}
+
 extern int init(void)
 {
 	int i;
@@ -1275,89 +1358,6 @@ fail_oom_results:
 /***************************************
  ***** CGROUP ACCOUNTING FUNCTIONS *****
  **************************************/
-static int _find_task_cg_info(void *x, void *key)
-{
-	task_cg_info_t *task_cg = (task_cg_info_t*)x;
-	uint32_t taskid = *(uint32_t*)key;
-
-	if (task_cg->taskid == taskid)
-		return 1;
-
-	return 0;
-}
-
-static void _free_task_cg_info(void *object)
-{
-	task_cg_info_t *task_cg = (task_cg_info_t *)object;
-
-	if (task_cg) {
-		common_cgroup_destroy(&task_cg->task_cg);
-		xfree(task_cg);
-	}
-}
-
-static int _handle_task_cgroup(cgroup_ctl_type_t sub, pid_t pid,
-			       stepd_step_rec_t *job, uint32_t taskid)
-{
-	int rc = SLURM_SUCCESS;
-	bool need_to_add = false;
-	task_cg_info_t *task_cg_info;
-	uid_t uid = job->uid;
-	gid_t gid = job->gid;
-	char *task_cgroup_path = NULL;
-
-	/* build task cgroup relative path */
-	xstrfmtcat(task_cgroup_path, "%s/task_%u", g_step_cgpath[sub], taskid);
-	if (!task_cgroup_path) {
-		error("unable to build task_%u cg relative path for %s: %m",
-		      taskid, g_step_cgpath[sub]);
-		return SLURM_ERROR;
-	}
-
-	if (!(task_cg_info = list_find_first(g_task_acct_list[sub],
-					     _find_task_cg_info,
-					     &taskid))) {
-		task_cg_info = xmalloc(sizeof(*task_cg_info));
-		task_cg_info->taskid = taskid;
-		need_to_add = true;
-	}
-
-	/*
-	 * Create task cgroup in the cg ns
-	 */
-	if (common_cgroup_create(&g_cg_ns[sub], &task_cg_info->task_cg,
-				 task_cgroup_path, uid, gid) != SLURM_SUCCESS) {
-		error("unable to create task %u cgroup", taskid);
-		xfree(task_cg_info);
-		xfree(task_cgroup_path);
-		return SLURM_ERROR;
-	}
-
-	if (common_cgroup_instantiate(&task_cg_info->task_cg) != SLURM_SUCCESS)
-	{
-		_free_task_cg_info(task_cg_info);
-		error("unable to instantiate task %u cgroup", taskid);
-		xfree(task_cgroup_path);
-		return SLURM_ERROR;
-	}
-
-	/* set notify on release flag */
-	common_cgroup_set_param(&task_cg_info->task_cg, "notify_on_release",
-				"0");
-
-	/* Attach the pid to the corresponding step_x/task_y cgroup */
-	rc = common_cgroup_move_process(&task_cg_info->task_cg, pid);
-	if (rc != SLURM_SUCCESS)
-		error("Unable to move pid %d to %s cg", pid, task_cgroup_path);
-
-	/* Add the cgroup to the list now that it is initialized. */
-	if (need_to_add)
-		list_append(g_task_acct_list[sub], task_cg_info);
-
-	xfree(task_cgroup_path);
-	return rc;
-}
-
 extern int cgroup_p_accounting_init(void)
 {
 	int i, rc = SLURM_SUCCESS;
