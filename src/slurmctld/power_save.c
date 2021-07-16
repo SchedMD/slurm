@@ -376,7 +376,7 @@ static void _do_power_work(time_t now)
 		    (!IS_NODE_POWERING_UP(node_ptr))			&&
 		    (!IS_NODE_POWERING_UP(node_ptr))			&&
 		    (!IS_NODE_POWERING_DOWN(node_ptr))			&&
-		    (IS_NODE_MAN_POWER_DOWN(node_ptr) ||
+		    (IS_NODE_POWER_DOWN(node_ptr) ||
 		     ((node_ptr->last_busy != 0) &&
 		      (node_ptr->last_busy < (now - node_ptr->suspend_time)) &&
 		      ((avoid_node_bitmap == NULL) ||
@@ -387,7 +387,7 @@ static void _do_power_work(time_t now)
 			}
 
 			/* Clear power_down_asap */
-			if (IS_NODE_MAN_POWER_DOWN(node_ptr) &&
+			if (IS_NODE_POWER_DOWN(node_ptr) &&
 			    IS_NODE_DRAIN(node_ptr)) {
 				clusteracct_storage_g_node_up(acct_db_conn,
 							      node_ptr, now);
