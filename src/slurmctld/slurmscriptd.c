@@ -68,6 +68,8 @@ enum {
 	SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE,
 	SLURMSCRIPTD_REQUEST_FLUSH,
 	SLURMSCRIPTD_REQUEST_FLUSH_JOB,
+	SLURMSCRIPTD_REQUEST_RUN_BB_LUA,
+	SLURMSCRIPTD_REQUEST_BB_LUA_COMPLETE,
 	SLURMSCRIPTD_SHUTDOWN,
 };
 
@@ -340,6 +342,88 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static int _handle_run_bb_lua(buf_t *buffer)
+{
+	uint32_t job_id, tmp_size, argc = 0, status, i;
+	char *script_func, *resp_msg = NULL;
+	char **argv = NULL;
+	buf_t *resp_buffer;
+
+	safe_unpack32(&job_id, buffer);
+	safe_unpackstr_xmalloc(&script_func, &tmp_size, buffer);
+	safe_unpackstr_array(&argv, &argc, buffer);
+	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_RUN_BB_LUA for JobId=%u: func=%s, argc=%u",
+		 job_id, script_func, argc);
+	for (i = 0; i < argc; i++) {
+		info("XXX %s: arg[%u]=%s", __func__, i, argv[i]);
+	}
+
+	/* TODO: run the script */
+
+	/* Initialize resp and status to non-zero for debugging */
+	xstrfmtcat(resp_msg, "Hello from _handle_run_lua, finished func %s for job %u",
+		   script_func, job_id);
+	status = 42;
+
+	/* Send complete message */
+	resp_buffer = init_buf(0);
+	pack32(job_id, resp_buffer);
+	packstr(script_func, resp_buffer);
+	pack32(status, resp_buffer);
+	packstr(resp_msg, resp_buffer);
+	_write_msg(slurmscriptd_writefd, SLURMSCRIPTD_REQUEST_BB_LUA_COMPLETE,
+		   resp_buffer);
+
+	FREE_NULL_BUFFER(resp_buffer);
+	xfree(script_func);
+	xfree(resp_msg);
+	for (i = 0; i < argc; i++)
+		xfree(argv[i]);
+	xfree(argv);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("%s: Failed to unpack message", __func__);
+
+	xfree(script_func);
+	xfree(resp_msg);
+	for (i = 0; i < argc; i++)
+		xfree(argv[i]);
+	xfree(argv);
+
+	return SLURM_ERROR;
+}
+
+static int _handle_bb_lua_complete(buf_t *buffer)
+{
+	uint32_t job_id, tmp_size, status;
+	char *script_func = NULL, *resp_msg = NULL;
+
+	safe_unpack32(&job_id, buffer);
+	safe_unpackstr_xmalloc(&script_func, &tmp_size, buffer);
+	safe_unpack32(&status, buffer);
+	safe_unpackstr_xmalloc(&resp_msg, &tmp_size, buffer);
+
+	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_BB_LUA_COMPLETE for JobId=%u: func=%s, status=%u, resp=%s",
+		 job_id, script_func, status, resp_msg);
+
+	_decr_script_cnt();
+
+	xfree(script_func);
+	xfree(resp_msg);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("%s: Failed to unpack message", __func__);
+
+	xfree(script_func);
+	xfree(resp_msg);
+
+	return SLURM_ERROR;
+}
+
 static int _handle_shutdown(void)
 {
 	log_flag(SCRIPT, "Handling SLURMSCRIPTD_SHUTDOWN");
@@ -370,6 +454,12 @@ static int _handle_request(int req, buf_t *buffer)
 			break;
 		case SLURMSCRIPTD_REQUEST_FLUSH_JOB:
 			rc = _handle_flush_job(buffer);
+			break;
+		case SLURMSCRIPTD_REQUEST_RUN_BB_LUA:
+			rc = _handle_run_bb_lua(buffer);
+			break;
+		case SLURMSCRIPTD_REQUEST_BB_LUA_COMPLETE:
+			rc = _handle_bb_lua_complete(buffer);
 			break;
 		case SLURMSCRIPTD_SHUTDOWN:
 			rc = _handle_shutdown();
@@ -518,6 +608,31 @@ extern void slurmscriptd_flush_job(uint32_t job_id)
 
 	_write_msg(slurmctld_writefd, SLURMSCRIPTD_REQUEST_FLUSH_JOB, buffer);
 	FREE_NULL_BUFFER(buffer);
+}
+
+extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
+				   uint32_t argc, char **argv, char **resp)
+{
+	buf_t *buffer;
+
+	/*
+	 * TODO: Save this pending RPC in a list or map.
+	 */
+
+	/* Send the RPC. */
+	buffer = init_buf(0);
+	pack32(job_id, buffer);
+	packstr(function, buffer);
+	packstr_array(argv, argc, buffer);
+
+	_incr_script_cnt();
+	_write_msg(slurmctld_writefd, SLURMSCRIPTD_REQUEST_RUN_BB_LUA, buffer);
+	FREE_NULL_BUFFER(buffer);
+
+	/* TODO: Wait for a response. */
+
+	/* TODO: Return rc and resp_msg. */
+	return SLURM_SUCCESS;
 }
 
 extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,

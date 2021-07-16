@@ -65,6 +65,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/trigger_mgr.h"
 #include "src/plugins/burst_buffer/common/burst_buffer_common.h"
 
@@ -394,6 +395,8 @@ static int _run_lua_script(const char *lua_func, uint32_t timeout,
 	run_script_args_t *run_script_args = NULL;
 	int rc, err_rc = SLURM_SUCCESS;
 	time_t elapsed_time = 0;
+
+	slurmscriptd_run_bb_lua(job_id, (char *) lua_func, argc, argv, ret_str);
 
 	run_script_args = xmalloc(sizeof *run_script_args);
 	run_script_args->argc = argc;
