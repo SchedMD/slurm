@@ -95,7 +95,7 @@ proc _get_mem {prog} {
 
 	set output [run_command_output -fail "$prog --noheader -p --job=$job_id.$step_id --format maxrss,maxrsstask,averss --noconvert"]
 
-	dict set subtest cond [regexp "($number).($number).($number)" $output - mem_used mem_task ave_used]
+	dict set subtest cond [regexp "($number)\\D($number)\\D($number)" $output - mem_used mem_task ave_used]
 	dict set subtest desc "$prog_base should provide the right output format"
 	dict set subtest diag "$output"
 	lappend result $subtest
@@ -132,7 +132,7 @@ proc _get_file_size {prog} {
 
 	set output [run_command_output -fail "$prog --noheader -p --job=$job_id.$step_id --format MaxDiskWrite,AveDiskWrite,MaxDiskRead,AveDiskRead,MaxDiskWriteTask,MaxDiskReadTask --noconvert"]
 
-	dict set subtest cond [regexp "($float)(\[MGT\]*).($float)(\[MGT\]*).($float)(\[MGT\]*).($float)(\[MGT\]*).($number).($number)" $output \
+	dict set subtest cond [regexp "($float)(\[MGT\]*)\\D($float)(\[MGT\]*)\\D($float)(\[MGT\]*)\\D($float)(\[MGT\]*)\\D($number)\\D($number)" $output \
 			       - \
 			       max_disk_write scale1 \
 			       ave_disk_write scale2 \
