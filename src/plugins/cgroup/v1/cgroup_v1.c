@@ -103,8 +103,8 @@ static int oom_pipe[2] = { -1, -1 };
 static pthread_t oom_thread;
 static pthread_mutex_t oom_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/* Accounting artifacts */
-List g_task_acct_list[CG_CTL_CNT];
+/* Task tracking artifacts */
+List g_task_list[CG_CTL_CNT];
 static uint32_t g_max_task_id = 0;
 /*
  * There are potentially multiple tasks on a node, so we want to
@@ -325,7 +325,7 @@ static int _handle_task_cgroup(cgroup_ctl_type_t sub, pid_t pid,
 		return SLURM_ERROR;
 	}
 
-	if (!(task_cg_info = list_find_first(g_task_acct_list[sub],
+	if (!(task_cg_info = list_find_first(g_task_list[sub],
 					     _find_task_cg_info,
 					     &taskid))) {
 		task_cg_info = xmalloc(sizeof(*task_cg_info));
@@ -363,7 +363,7 @@ static int _handle_task_cgroup(cgroup_ctl_type_t sub, pid_t pid,
 
 	/* Add the cgroup to the list now that it is initialized. */
 	if (need_to_add)
-		list_append(g_task_acct_list[sub], task_cg_info);
+		list_append(g_task_list[sub], task_cg_info);
 
 	xfree(task_cgroup_path);
 	return rc;
@@ -1067,7 +1067,7 @@ extern int cgroup_p_task_constrain_set(cgroup_ctl_type_t sub,
 	case CG_MEMORY:
 		break;
 	case CG_DEVICES:
-		task_cg_info = list_find_first(g_task_acct_list[sub],
+		task_cg_info = list_find_first(g_task_list[sub],
 					       _find_task_cg_info,
 					       &taskid);
 		if (!task_cg_info) {
@@ -1429,8 +1429,8 @@ extern int cgroup_p_accounting_init(void)
 
 	/* Create the list of tasks which will be accounted for*/
 	for (i = 0; i < CG_CTL_CNT; i++) {
-		FREE_NULL_LIST(g_task_acct_list[i]);
-		g_task_acct_list[i] = list_create(_free_task_cg_info);
+		FREE_NULL_LIST(g_task_list[i]);
+		g_task_list[i] = list_create(_free_task_cg_info);
 	}
 
 	return rc;
@@ -1441,11 +1441,11 @@ extern int cgroup_p_accounting_fini(void)
 	int rc;
 
 	/* Empty the lists of accounted tasks, do a best effort in rmdir */
-	(void) list_for_each(g_task_acct_list[CG_MEMORY], _rmdir_task, NULL);
-	list_flush(g_task_acct_list[CG_MEMORY]);
+	(void) list_for_each(g_task_list[CG_MEMORY], _rmdir_task, NULL);
+	list_flush(g_task_list[CG_MEMORY]);
 
-	(void) list_for_each(g_task_acct_list[CG_CPUACCT], _rmdir_task, NULL);
-	list_flush(g_task_acct_list[CG_CPUACCT]);
+	(void) list_for_each(g_task_list[CG_CPUACCT], _rmdir_task, NULL);
+	list_flush(g_task_list[CG_CPUACCT]);
 
 	/* Remove job/uid/step directories */
 	rc = cgroup_p_step_destroy(CG_MEMORY);
@@ -1507,10 +1507,10 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
 	xcgroup_t *task_memory_cg = NULL;
 
 	/* Find which task cgroup to use */
-	task_memory_cg = list_find_first(g_task_acct_list[CG_MEMORY],
+	task_memory_cg = list_find_first(g_task_list[CG_MEMORY],
 					 _find_task_cg_info,
 					 &taskid);
-	task_cpuacct_cg = list_find_first(g_task_acct_list[CG_CPUACCT],
+	task_cpuacct_cg = list_find_first(g_task_list[CG_CPUACCT],
 					  _find_task_cg_info,
 					  &taskid);
 
