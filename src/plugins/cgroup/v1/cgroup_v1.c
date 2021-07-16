@@ -378,6 +378,8 @@ extern int init(void)
 		g_job_cgpath[i][0] = '\0';
 		g_step_cgpath[i][0] = '\0';
 		g_step_active_cnt[i] = 0;
+		FREE_NULL_LIST(g_task_list[i]);
+		g_task_list[i] = list_create(_free_task_cg_info);
 	}
 
 	debug("%s loaded", plugin_name);
@@ -1405,7 +1407,7 @@ fail_oom_results:
  **************************************/
 extern int cgroup_p_accounting_init(void)
 {
-	int i, rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 
 	if (g_step_cgpath[CG_MEMORY][0] == '\0')
 		rc = cgroup_p_initialize(CG_MEMORY);
@@ -1426,12 +1428,6 @@ extern int cgroup_p_accounting_init(void)
 	}
 
 	g_step_active_cnt[CG_CPUACCT]++;
-
-	/* Create the list of tasks which will be accounted for*/
-	for (i = 0; i < CG_CTL_CNT; i++) {
-		FREE_NULL_LIST(g_task_list[i]);
-		g_task_list[i] = list_create(_free_task_cg_info);
-	}
 
 	return rc;
 }
