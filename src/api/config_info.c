@@ -1664,6 +1664,11 @@ extern void *slurm_ctl_conf_2_key_pairs(slurm_conf_t *slurm_ctl_conf_ptr)
 	list_append(ret_list, key_pair);
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
+	key_pair->name = xstrdup("SlurmscriptdPidFile");
+	key_pair->value = xstrdup(slurm_ctl_conf_ptr->slurmscriptd_pidfile);
+	list_append(ret_list, key_pair);
+
+	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("SlurmctldPlugstack");
 	key_pair->value = xstrdup(slurm_ctl_conf_ptr->slurmctld_plugstack);
 	list_append(ret_list, key_pair);
@@ -2168,6 +2173,7 @@ static void _write_key_pairs(FILE* out, void *key_pairs)
 		    !xstrcasecmp(key_pair->name, "SlurmctldPidFile") ||
 		    !xstrcasecmp(key_pair->name, "SlurmdPidFile") ||
 		    !xstrcasecmp(key_pair->name, "SlurmSchedLogFile") ||
+		    !xstrcasecmp(key_pair->name, "SlurmScriptdPidFile") ||
 		    !xstrcasecmp(key_pair->name, "SlurmEventHandlerLogfile")) {
 			list_append(logging_list, temp);
 			continue;

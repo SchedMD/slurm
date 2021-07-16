@@ -116,6 +116,7 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmctld_plugstack.h"
+#include "slurmscriptd.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
@@ -419,6 +420,13 @@ int main(int argc, char **argv)
 	 */
 	if (xsignal_block(controller_sigarray) < 0)
 		error("Unable to block signals");
+
+	/*
+	 * This creates a thread to listen to slurmscriptd, so this needs to
+	 * happen after we block signals so that thread doesn't catch any
+	 * signals.
+	 */
+	slurmscriptd_init();
 
 	association_based_accounting = slurm_with_slurmdbd();
 	accounting_enforce = slurm_conf.accounting_storage_enforce;
@@ -768,6 +776,7 @@ int main(int argc, char **argv)
 
 		/* kill all scripts running by the slurmctld */
 		track_script_flush();
+		slurmscriptd_flush();
 
 		bb_g_fini();
 		power_g_fini();
@@ -819,6 +828,7 @@ int main(int argc, char **argv)
 		recover = 2;
 	}
 
+	slurmscriptd_fini();
 	jobcomp_g_fini();
 
 	/*
@@ -2945,6 +2955,24 @@ static void _kill_old_slurmctld(void)
 			fatal ("unable to wait for readw lock: %m");
 		(void) close(fd); /* Ignore errors */
 	}
+	/*
+	 * Now that we've killed thd old slurmctld, kill the old slurmscriptd.
+	 * If it was still communicating with the old slurmctld, it would have
+	 * been killed when we sent SIGTERM to the old slurmctld. So we just
+	 * use SIGKILL here.
+	 */
+	oldpid = read_pidfile(slurm_conf.slurmscriptd_pidfile, &fd);
+	if (oldpid != (pid_t) 0) {
+		info ("killing old slurmscriptd[%ld]", (long) oldpid);
+		kill(oldpid, SIGKILL);
+
+		/*
+		 * Wait for slurmscriptd to terminate
+		 */
+		if (fd_get_readw_lock(fd) < 0)
+			fatal("unable to wait for readw lock on slurmscriptd: %m");
+		(void) close(fd); /* Ignore errors */
+	}
 }
 
 /* NOTE: No need to lock the config data since we are still single-threaded */
@@ -2952,6 +2980,9 @@ static void _init_pidfile(void)
 {
 	if (!xstrcmp(slurm_conf.slurmctld_pidfile, slurm_conf.slurmd_pidfile))
 		error("SlurmctldPid == SlurmdPid, use different names");
+	if (!xstrcmp(slurm_conf.slurmctld_pidfile,
+		     slurm_conf.slurmscriptd_pidfile))
+		error("SlurmctldPid == SlurmscriptdPid, use different names");
 
 	/* Don't close the fd returned here since we need to keep the
 	 * fd open to maintain the write lock */

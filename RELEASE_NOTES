@@ -94,6 +94,9 @@ HIGHLIGHTS
     POWER_UP -> POWERING_UP
     POWER_DOWN -> POWERED_DOWN
     POWER_DOWN now represents a node pending power down
+ -- Create a new process called slurmscriptd which runs PrologSlurmctld and
+    EpilogSlurmctld. This avoids fork() calls from slurmctld, and can avoid
+    performance issues if the slurmctld has a large memory footprint.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
@@ -107,6 +110,9 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Removed DefaultStorage{Host,Loc,Pass,Port,Type,User} options.
  -- Removed CacheGroups, CheckpointType, JobCheckpointDir, MemLimitEnforce,
     SchedulerPort, SchedulerRootFilter options.
+ -- Added Script DebugFlags for debugging slurmscriptd (the process that runs
+    slurmctld scripts such as PrologSlurmctld and EpilogSlurmctld).
+ -- Added SlurmScriptdPidFile to slurm.conf.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

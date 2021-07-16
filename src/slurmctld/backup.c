@@ -65,6 +65,7 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/slurmscriptd.h"
 #include "src/slurmctld/trigger_mgr.h"
 
 #define _DEBUG		0
@@ -204,6 +205,8 @@ void run_backup(void)
 	}
 
 	if (slurmctld_config.shutdown_time != 0) {
+		/* Shutdown slurmscriptd running on backup controller. */
+		slurmscriptd_fini();
 		/*
 		 * Since pidfile is created as user root (its owner is
 		 *   changed to SlurmUser) SlurmUser may not be able to
@@ -213,7 +216,6 @@ void run_backup(void)
 		if (unlink(slurm_conf.slurmctld_pidfile) < 0)
 			verbose("Unable to remove pidfile '%s': %m",
 			        slurm_conf.slurmctld_pidfile);
-
 		info("BackupController terminating");
 		pthread_join(slurmctld_config.thread_id_sig, NULL);
 		log_fini();

@@ -1,8 +1,8 @@
 /*****************************************************************************\
- *  prep_script_slurmctld.c - PrologSlurmctld / EpilogSlurmctld handling
+ *  slurmscriptd.h - Definitions of functions and structures for slurmscriptd.
  *****************************************************************************
- *  Copyright (C) 2020 SchedMD LLC.
- *  Written by Tim Wickberg <tim@schedmd.com>
+ *  Copyright (C) 2021 SchedMD LLC.
+ *  Written by Marshall Garey <marshall@schedmd.com>
  *
  *  This file is part of Slurm, a resource management program.
  *  For details, see <https://slurm.schedmd.com/>.
@@ -34,46 +34,33 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/common/env.h"
-#include "src/common/fd.h"
-#include "src/common/log.h"
-#include "src/common/macros.h"
-#include "src/common/prep.h"
-#include "src/common/track_script.h"
-#include "src/common/uid.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
+#ifndef _HAVE_SLURMSCRIPTD_H
+#define _HAVE_SLURMSCRIPTD_H
 
-#include "src/slurmctld/locks.h"
-#include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/slurmscriptd.h"
+extern int slurmscriptd_init(void);
 
-#include "prep_script.h"
+extern int slurmscriptd_fini(void);
 
-static char **_build_env(job_record_t *job_ptr, bool is_epilog);
+/*
+ * slurmscriptd_flush - kill all running scripts.
+ */
+extern void slurmscriptd_flush(void);
 
-extern void slurmctld_script(job_record_t *job_ptr, bool is_epilog)
-{
-	char **my_env;
+/*
+ * slurmscriptd_flush_job - kill all running script for a specific job
+ */
+extern void slurmscriptd_flush_job(uint32_t job_id);
 
-	my_env = _build_env(job_ptr, is_epilog);
-	if (!is_epilog)
-		slurmscriptd_run_prepilog(job_ptr->job_id, is_epilog,
-					 slurm_conf.prolog_slurmctld, my_env);
-	else
-		slurmscriptd_run_prepilog(job_ptr->job_id, is_epilog,
-					  slurm_conf.epilog_slurmctld, my_env);
+/*
+ * slurmscriptd_run_prepilog
+ * Tell slurmscriptd to run PrologSlurmctld or EpilogSlurmctld for the job
+ * IN job_id - Job that wants to run the script
+ * IN is_epilog - True if the EpilogSlurmctld should run; false if the
+ *                PrologSlurmctld should run
+ * IN script - Full path to the script that needs to run
+ * IN env - Environment to pass to the script
+ */
+extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
+				      char *script, char **env);
 
-	xfree(my_env);
-}
-
-static char **_build_env(job_record_t *job_ptr, bool is_epilog)
-{
-	char **my_env;
-
-	my_env = job_common_env_vars(job_ptr, is_epilog);
-	setenvf(&my_env, "SLURM_SCRIPT_CONTEXT", "%s_slurmctld",
-		is_epilog ? "epilog" : "prolog");
-
-	return my_env;
-}
+#endif /* !_HAVE_SLURMSCRIPTD_H */
