@@ -229,23 +229,23 @@ extern int task_p_pre_setuid (stepd_step_rec_t *job)
  * task_p_pre_launch_priv() is called prior to exec of application task.
  * in privileged mode, just after slurm_spank_task_init_privileged
  */
-extern int task_p_pre_launch_priv(stepd_step_rec_t *job, pid_t pid)
+extern int task_p_pre_launch_priv(stepd_step_rec_t *job, uint32_t taskid)
 {
 	int rc[3] = {0};
 
 	if (use_cpuset) {
 		/* attach the task to the cpuset cgroup */
-		rc[0] = task_cgroup_cpuset_add_pid(pid);
+		rc[0] = task_cgroup_cpuset_add_pid(job->task[taskid]->pid);
 	}
 
 	if (use_memory) {
 		/* attach the task to the memory cgroup */
-		rc[1] = task_cgroup_memory_add_pid(pid);
+		rc[1] = task_cgroup_memory_add_pid(job->task[taskid]->pid);
 	}
 
 	if (use_devices) {
 		/* attach the task to the devices cgroup */
-		rc[2] = task_cgroup_devices_add_pid(pid);
+		rc[2] = task_cgroup_devices_add_pid(job->task[taskid]->pid);
 	}
 
 	return MAX(rc[0], MAX(rc[1], rc[2]));
