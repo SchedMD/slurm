@@ -79,7 +79,7 @@ typedef struct {
 	int	(*step_start_oom_mgr)	(void);
 	cgroup_oom_t *(*step_stop_oom_mgr) (stepd_step_rec_t *job);
 	int	(*task_addto)		(cgroup_ctl_type_t sub,
-					 stepd_step_rec_t *job,
+					 stepd_step_rec_t *job, pid_t pid,
 					 uint32_t task_id);
 	cgroup_acct_t *(*task_get_acct_data) (uint32_t taskid);
 } slurm_ops_t;
@@ -974,12 +974,12 @@ extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *job)
 }
 
 extern int cgroup_g_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
-			       uint32_t task_id)
+			       pid_t pid, uint32_t task_id)
 {
 	if (cgroup_g_init() < 0)
 		return false;
 
-	return (*(ops.task_addto))(sub, job, task_id);
+	return (*(ops.task_addto))(sub, job, pid, task_id);
 }
 
 extern cgroup_acct_t *cgroup_g_task_get_acct_data(uint32_t taskid)

@@ -307,11 +307,13 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job);
  * IN sub - controller we're managing
  * IN job - step record to create the task directories and add the pid to.
  * IN task_id - task number to form the path and create the task_x directory.
+ * IN pid - pid to add to. Note, the task_id may not coincide with job->task[i]
+ *          so we may not know where the pid is stored in the job struct.
  * RET SLURM_SUCCESS if the task was succesfully created and the pid added to
  *     all accounting controllers.
  */
 extern int cgroup_p_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
-			       uint32_t task_id);
+			       pid_t pid, uint32_t task_id);
 
 /*
  * Given a task id return the accounting data reading the accounting controller

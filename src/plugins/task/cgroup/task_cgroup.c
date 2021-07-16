@@ -245,7 +245,8 @@ extern int task_p_pre_launch_priv(stepd_step_rec_t *job, uint32_t taskid)
 
 	if (use_devices) {
 		/* attach the task to the devices cgroup */
-		rc[2] = task_cgroup_devices_add_pid(job, taskid);
+		rc[2] = task_cgroup_devices_add_pid(job, job->task[taskid]->pid,
+						    taskid);
 	}
 
 	return MAX(rc[0], MAX(rc[1], rc[2]));

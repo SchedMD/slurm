@@ -302,13 +302,14 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	return SLURM_SUCCESS;
 }
 
-extern int task_cgroup_devices_add_pid(stepd_step_rec_t *job, uint32_t taskid)
+extern int task_cgroup_devices_add_pid(stepd_step_rec_t *job, pid_t pid,
+				       uint32_t taskid)
 {
 	List device_list = NULL;
 	handle_dev_args_t handle_args;
 
 	/* This plugin constrain devices to task level. */
-	if (cgroup_g_task_addto(CG_DEVICES, job, taskid) != SLURM_SUCCESS)
+	if (cgroup_g_task_addto(CG_DEVICES, job, pid, taskid) != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	/*

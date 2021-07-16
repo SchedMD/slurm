@@ -227,9 +227,9 @@ extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 		return SLURM_ERROR;
 	}
 
-	rc[0] = cgroup_g_task_addto(CG_CPUACCT, jobacct_id->job,
+	rc[0] = cgroup_g_task_addto(CG_CPUACCT, jobacct_id->job, pid,
 				    jobacct_id->taskid);
-	rc[1] = cgroup_g_task_addto(CG_MEMORY, jobacct_id->job,
+	rc[1] = cgroup_g_task_addto(CG_MEMORY, jobacct_id->job, pid,
 				    jobacct_id->taskid);
 
 	return MAX(rc[0], rc[1]);

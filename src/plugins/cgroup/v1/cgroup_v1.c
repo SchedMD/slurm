@@ -308,7 +308,7 @@ static void _free_task_cg_info(void *object)
 }
 
 static int _handle_task_cgroup(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
-			       uint32_t taskid)
+			       pid_t pid, uint32_t taskid)
 {
 	int rc = SLURM_SUCCESS;
 	bool need_to_add = false;
@@ -356,11 +356,9 @@ static int _handle_task_cgroup(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
 				"0");
 
 	/* Attach the pid to the corresponding step_x/task_y cgroup */
-	rc = common_cgroup_move_process(&task_cg_info->task_cg,
-					job->task[taskid]->pid);
+	rc = common_cgroup_move_process(&task_cg_info->task_cg, pid);
 	if (rc != SLURM_SUCCESS)
-		error("Unable to move pid %d to %s cg", job->task[taskid]->pid,
-		      task_cgroup_path);
+		error("Unable to move pid %d to %s cg", pid, task_cgroup_path);
 
 	/* Add the cgroup to the list now that it is initialized. */
 	if (need_to_add)
@@ -1433,7 +1431,7 @@ fail_oom_results:
  ***** CGROUP TASK FUNCTIONS *****
  **************************************/
 extern int cgroup_p_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
-			       uint32_t task_id)
+			       pid_t pid, uint32_t task_id)
 {
 	if (task_id > g_max_task_id)
 		g_max_task_id = task_id;
@@ -1441,7 +1439,7 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
 	debug("%ps taskid %u max_task_id %u", &job->step_id, task_id,
 	      g_max_task_id);
 
-	return _handle_task_cgroup(sub, job, task_id);
+	return _handle_task_cgroup(sub, job, pid, task_id);
 }
 
 extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
