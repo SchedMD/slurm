@@ -208,10 +208,8 @@ extern int cgroup_g_task_constrain_set(cgroup_ctl_type_t sub,
 				       uint32_t taskid);
 extern int cgroup_g_step_start_oom_mgr(void);
 extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *job);
-extern int cgroup_g_accounting_init(void);
-extern int cgroup_g_accounting_fini(void);
-extern int cgroup_g_task_addto_accounting(pid_t pid, stepd_step_rec_t *job,
-					  uint32_t task_id);
+extern int cgroup_g_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
+			       pid_t pid, uint32_t task_id);
 extern cgroup_acct_t *cgroup_g_task_get_acct_data(uint32_t taskid);
 
 #endif

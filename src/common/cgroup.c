@@ -78,11 +78,9 @@ typedef struct {
 					 uint32_t taskid);
 	int	(*step_start_oom_mgr)	(void);
 	cgroup_oom_t *(*step_stop_oom_mgr) (stepd_step_rec_t *job);
-	int	(*accounting_init)	(void);
-	int	(*accounting_fini)	(void);
-	int	(*task_addto_accounting)(pid_t pid,
-					  stepd_step_rec_t *job,
-					  uint32_t task_id);
+	int	(*task_addto)		(cgroup_ctl_type_t sub,
+					 stepd_step_rec_t *job, pid_t pid,
+					 uint32_t task_id);
 	cgroup_acct_t *(*task_get_acct_data) (uint32_t taskid);
 } slurm_ops_t;
 
@@ -112,9 +110,7 @@ static const char *syms[] = {
 	"cgroup_p_task_constrain_set",
 	"cgroup_p_step_start_oom_mgr",
 	"cgroup_p_step_stop_oom_mgr",
-	"cgroup_p_accounting_init",
-	"cgroup_p_accounting_fini",
-	"cgroup_p_task_addto_accounting",
+	"cgroup_p_task_addto",
 	"cgroup_p_task_get_acct_data",
 };
 
@@ -977,29 +973,13 @@ extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *job)
 	return (*(ops.step_stop_oom_mgr))(job);
 }
 
-extern int cgroup_g_accounting_init(void)
+extern int cgroup_g_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
+			       pid_t pid, uint32_t task_id)
 {
 	if (cgroup_g_init() < 0)
 		return false;
 
-	return (*(ops.accounting_init))();
-}
-
-extern int cgroup_g_accounting_fini(void)
-{
-	if (cgroup_g_init() < 0)
-		return false;
-
-	return (*(ops.accounting_fini))();
-}
-
-extern int cgroup_g_task_addto_accounting(pid_t pid, stepd_step_rec_t *job,
-					  uint32_t task_id)
-{
-	if (cgroup_g_init() < 0)
-		return false;
-
-	return (*(ops.task_addto_accounting))(pid, job, task_id);
+	return (*(ops.task_addto))(sub, job, pid, task_id);
 }
 
 extern cgroup_acct_t *cgroup_g_task_get_acct_data(uint32_t taskid)

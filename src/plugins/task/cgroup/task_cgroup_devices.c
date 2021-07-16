@@ -287,7 +287,14 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	return SLURM_SUCCESS;
 }
 
-extern int task_cgroup_devices_add_pid(pid_t pid)
+extern int task_cgroup_devices_add_pid(stepd_step_rec_t *job, pid_t pid,
+				       uint32_t taskid)
 {
+	return cgroup_g_step_addto(CG_DEVICES, &pid, 1);
+}
+
+extern int task_cgroup_devices_add_extern_pid(pid_t pid)
+{
+	/* Only in the extern step we will not create specific tasks */
 	return cgroup_g_step_addto(CG_DEVICES, &pid, 1);
 }

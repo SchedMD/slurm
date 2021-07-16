@@ -301,39 +301,19 @@ extern int cgroup_p_step_start_oom_mgr();
 extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job);
 
 /*
- * Initialize the accounting controllers, actually memory and cpuacct. Record
- * that the caller will be using these objects. Initialize also an empty task
- * list. This function is typically called from jobacctgather.
+ * Add a task_X directories to the specified controllers of this step and
+ * record we're tracking this task. Add the task pid to the controller.
  *
- * RET SLURM_SUCCESS if all controllers used for accounting are initialized.
- *     SLURM_ERROR otherwise.
- */
-extern int cgroup_p_accounting_init();
-
-/*
- * Remove the task_X directories created under the accounting controllers
- * (actually only memory and cpuacct) for this step, rmdir the hierarchy and
- * destroy the xcgroup objects. Decrease the counter which says we're using
- * these controllers. This function is typically called from jobacctgather.
- *
- * RET SLURM_SUCCESS if all controllers used for accounting are finalized.
- *     SLURM_ERROR otherwise.
- */
-extern int cgroup_p_accounting_fini();
-
-/*
- * Add a task_X directories to the accounting controllers (actually only memory
- * and cpuacct) for this step and record we're tracking this task. Add the
- * specified pid to this task.
- *
- * IN pid - pid to add to the task.
- * IN job - step record to creat the task directories and add the pid to.
+ * IN sub - controller we're managing
+ * IN job - step record to create the task directories and add the pid to.
  * IN task_id - task number to form the path and create the task_x directory.
+ * IN pid - pid to add to. Note, the task_id may not coincide with job->task[i]
+ *          so we may not know where the pid is stored in the job struct.
  * RET SLURM_SUCCESS if the task was succesfully created and the pid added to
  *     all accounting controllers.
  */
-extern int cgroup_p_task_addto_accounting(pid_t pid, stepd_step_rec_t *job,
-					  uint32_t task_id);
+extern int cgroup_p_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
+			       pid_t pid, uint32_t task_id);
 
 /*
  * Given a task id return the accounting data reading the accounting controller

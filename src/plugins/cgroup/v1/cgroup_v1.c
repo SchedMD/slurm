@@ -307,8 +307,8 @@ static void _free_task_cg_info(void *object)
 	}
 }
 
-static int _handle_task_cgroup(cgroup_ctl_type_t sub, pid_t pid,
-			       stepd_step_rec_t *job, uint32_t taskid)
+static int _handle_task_cgroup(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
+			       pid_t pid, uint32_t taskid)
 {
 	int rc = SLURM_SUCCESS;
 	bool need_to_add = false;
@@ -369,6 +369,17 @@ static int _handle_task_cgroup(cgroup_ctl_type_t sub, pid_t pid,
 	return rc;
 }
 
+static int _all_tasks_destroy(cgroup_ctl_type_t sub)
+{
+	int rc;
+
+	/* Empty the lists of accounted tasks, do a best effort in rmdir */
+	rc = list_for_each(g_task_list[sub], _rmdir_task, NULL);
+	list_flush(g_task_list[sub]);
+
+	return rc;
+}
+
 extern int init(void)
 {
 	int i;
@@ -395,6 +406,10 @@ extern int fini(void)
 extern int cgroup_p_initialize(cgroup_ctl_type_t sub)
 {
 	int rc = SLURM_SUCCESS;
+
+	/* Only initialize if not inited */
+	if (g_cg_ns[sub].mnt_point)
+		return rc;
 
 	if ((rc = _cgroup_init(sub)))
 		return rc;
@@ -629,9 +644,18 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 			goto step_c_err;
 		break;
 	case CG_CPUACCT:
-		error("This operation is not supported for %s", g_cg_name[sub]);
-		rc = SLURM_ERROR;
-		goto step_c_err;
+		if ((rc = xcgroup_create_hierarchy(__func__,
+						   job,
+						   &g_cg_ns[sub],
+						   &g_job_cg[sub],
+						   &g_step_cg[sub],
+						   &g_user_cg[sub],
+						   g_job_cgpath[sub],
+						   g_step_cgpath[sub],
+						   g_user_cgpath[sub]))
+		    != SLURM_SUCCESS)
+			goto step_c_err;
+		break;
 	default:
 		error("cgroup subsystem %u not supported", sub);
 		rc = SLURM_ERROR;
@@ -713,6 +737,9 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 		       g_cg_name[sub], g_step_active_cnt[sub]);
 		return SLURM_SUCCESS;
 	}
+
+	/* Remove any possible task directories first */
+	_all_tasks_destroy(sub);
 
 	/* Custom actions for every cgroup subsystem */
 	switch (sub) {
@@ -1403,95 +1430,18 @@ fail_oom_results:
 #endif
 
 /***************************************
- ***** CGROUP ACCOUNTING FUNCTIONS *****
+ ***** CGROUP TASK FUNCTIONS *****
  **************************************/
-extern int cgroup_p_accounting_init(void)
+extern int cgroup_p_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
+			       pid_t pid, uint32_t task_id)
 {
-	int rc = SLURM_SUCCESS;
-
-	if (g_step_cgpath[CG_MEMORY][0] == '\0')
-		rc = cgroup_p_initialize(CG_MEMORY);
-
-	if (rc != SLURM_SUCCESS) {
-		error("Cannot initialize cgroup memory accounting");
-		return rc;
-	}
-
-	g_step_active_cnt[CG_MEMORY]++;
-
-	if (g_step_cgpath[CG_CPUACCT][0] == '\0')
-		rc = cgroup_p_initialize(CG_CPUACCT);
-
-	if (rc != SLURM_SUCCESS) {
-		error("Cannot initialize cgroup cpuacct accounting");
-		return rc;
-	}
-
-	g_step_active_cnt[CG_CPUACCT]++;
-
-	return rc;
-}
-
-extern int cgroup_p_accounting_fini(void)
-{
-	int rc;
-
-	/* Empty the lists of accounted tasks, do a best effort in rmdir */
-	(void) list_for_each(g_task_list[CG_MEMORY], _rmdir_task, NULL);
-	list_flush(g_task_list[CG_MEMORY]);
-
-	(void) list_for_each(g_task_list[CG_CPUACCT], _rmdir_task, NULL);
-	list_flush(g_task_list[CG_CPUACCT]);
-
-	/* Remove job/uid/step directories */
-	rc = cgroup_p_step_destroy(CG_MEMORY);
-	rc += cgroup_p_step_destroy(CG_CPUACCT);
-
-	return rc;
-}
-
-extern int cgroup_p_task_addto_accounting(pid_t pid, stepd_step_rec_t *job,
-					  uint32_t task_id)
-{
-	int rc = SLURM_SUCCESS;
-
 	if (task_id > g_max_task_id)
 		g_max_task_id = task_id;
 
 	debug("%ps taskid %u max_task_id %u", &job->step_id, task_id,
 	      g_max_task_id);
 
-	if (xcgroup_create_hierarchy(__func__,
-				     job,
-				     &g_cg_ns[CG_CPUACCT],
-				     &g_job_cg[CG_CPUACCT],
-				     &g_step_cg[CG_CPUACCT],
-				     &g_user_cg[CG_CPUACCT],
-				     g_job_cgpath[CG_CPUACCT],
-				     g_step_cgpath[CG_CPUACCT],
-				     g_user_cgpath[CG_CPUACCT])
-	    != SLURM_SUCCESS) {
-		return SLURM_ERROR;
-	}
-
-	if (xcgroup_create_hierarchy(__func__,
-				     job,
-				     &g_cg_ns[CG_MEMORY],
-				     &g_job_cg[CG_MEMORY],
-				     &g_step_cg[CG_MEMORY],
-				     &g_user_cg[CG_MEMORY],
-				     g_job_cgpath[CG_MEMORY],
-				     g_step_cgpath[CG_MEMORY],
-				     g_user_cgpath[CG_MEMORY])
-	    != SLURM_SUCCESS) {
-		cgroup_p_step_destroy(CG_CPUACCT);
-		return SLURM_ERROR;
-	}
-
-	_handle_task_cgroup(CG_CPUACCT, pid, job, task_id);
-	_handle_task_cgroup(CG_MEMORY, pid, job, task_id);
-
-	return rc;
+	return _handle_task_cgroup(sub, job, pid, task_id);
 }
 
 extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)

@@ -142,7 +142,13 @@ extern int init (void)
 			return SLURM_ERROR;
 		}
 
-		if (cgroup_g_accounting_init() != SLURM_SUCCESS) {
+		/* Initialize the controllers which we want accounting for. */
+		if (cgroup_g_initialize(CG_MEMORY) != SLURM_SUCCESS) {
+			xcpuinfo_fini();
+			return SLURM_ERROR;
+		}
+
+		if (cgroup_g_initialize(CG_CPUACCT) != SLURM_SUCCESS) {
 			xcpuinfo_fini();
 			return SLURM_ERROR;
 		}
@@ -155,7 +161,10 @@ extern int init (void)
 extern int fini (void)
 {
 	if (running_in_slurmstepd()) {
-		cgroup_g_accounting_fini();
+		/* Remove job/uid/step directories */
+		cgroup_g_step_destroy(CG_MEMORY);
+		cgroup_g_step_destroy(CG_CPUACCT);
+
 		acct_gather_energy_fini();
 	}
 
@@ -208,6 +217,20 @@ extern int jobacct_gather_p_endpoll(void)
 
 extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
-	return cgroup_g_task_addto_accounting(pid, jobacct_id->job,
-					      jobacct_id->taskid);
+	int rc[2];
+
+	if (cgroup_g_step_create(CG_CPUACCT, jobacct_id->job) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	if (cgroup_g_step_create(CG_MEMORY, jobacct_id->job) != SLURM_SUCCESS) {
+		cgroup_g_step_destroy(CG_CPUACCT);
+		return SLURM_ERROR;
+	}
+
+	rc[0] = cgroup_g_task_addto(CG_CPUACCT, jobacct_id->job, pid,
+				    jobacct_id->taskid);
+	rc[1] = cgroup_g_task_addto(CG_MEMORY, jobacct_id->job, pid,
+				    jobacct_id->taskid);
+
+	return MAX(rc[0], rc[1]);
 }
