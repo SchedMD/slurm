@@ -577,20 +577,7 @@ static void _handle_first_form(char **new_crontab)
 		input_desc = STDIN_FILENO;
 		*new_crontab = _read_fd(input_desc);
 	} else {
-		struct stat sb;
-		int ret;
-
-		ret = stat(infile, &sb);
-		if (ret < 0)
-			fatal("failed to stat %s", infile);
-
-		if (!S_ISREG(sb.st_mode)) {
-			printf("%s is not a regular file\n", infile);
-			exit(1);
-		}
-
-		input_desc = open(infile, O_RDONLY);
-		if (input_desc < 0)
+		if ((input_desc = open(infile, O_RDONLY)) < 0)
 			fatal("failed to open %s", infile);
 
 		*new_crontab = _read_fd(input_desc);
