@@ -238,6 +238,11 @@ static int _handle_run_prepilog(buf_t *buffer)
 	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_RUN_PREPILOG (%s) for JobId=%u",
 		 script_name, job_id);
 	status = _run_script(script, env, job_id, script_name, timeout);
+	xfree(script);
+	for (int i = 0; i < env_cnt; i++) {
+		xfree(env[i]);
+	}
+	xfree(env);
 
 	resp_buffer = init_buf(0);
 	pack32(job_id, resp_buffer);
@@ -364,6 +369,7 @@ static void *_handle_accept(void *args)
 
 	_handle_request(req_args->req, req_args->buffer);
 	FREE_NULL_BUFFER(req_args->buffer);
+	xfree(req_args);
 
 	return NULL;
 }
