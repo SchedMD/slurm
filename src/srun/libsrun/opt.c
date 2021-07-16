@@ -617,6 +617,7 @@ env_vars_t env_vars[] = {
   { "SLURM_WORKING_DIR", 'D' },
   { "SLURMD_DEBUG", LONG_OPT_SLURMD_DEBUG },
   { "SRUN_CONTAINER", LONG_OPT_CONTAINER },
+  { "SLURM_DEBUG", 'v'},
   { NULL }
 };
 

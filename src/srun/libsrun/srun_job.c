@@ -661,8 +661,7 @@ static void _post_opts(List opt_list)
 		list_sort(opt_list, _sort_by_offset);
 }
 
-extern void init_srun(int argc, char **argv,
-		      log_options_t *logopt, int debug_level,
+extern void init_srun(int argc, char **argv, log_options_t *logopt,
 		      bool handle_signals)
 {
 	bool het_job_fini = false;
@@ -741,8 +740,7 @@ extern void init_srun(int argc, char **argv,
 		logopt->stderr_level -= opt.quiet;
 		logopt->prefix_level = 1;
 		log_alter(*logopt, 0, NULL);
-	} else
-		opt.verbose = debug_level;
+	}
 
 	(void) _set_rlimit_env();
 	_set_prio_process_env();

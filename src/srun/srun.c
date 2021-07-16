@@ -134,7 +134,6 @@ static void  _setup_job_env(srun_job_t *job, List srun_job_list,
 			    bool got_alloc);
 static void  _setup_one_job_env(slurm_opt_t *opt_local, srun_job_t *job,
 				bool got_alloc);
-static int   _slurm_debug_env_val (void);
 static char *_uint16_array_to_str(int count, const uint16_t *array);
 
 /*
@@ -169,14 +168,11 @@ static bool _enable_het_job_steps(void)
 
 int srun(int ac, char **av)
 {
-	int debug_level;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	bool got_alloc = false;
 	List srun_job_list = NULL;
 
 	slurm_conf_init(NULL);
-	debug_level = _slurm_debug_env_val();
-	logopt.stderr_level += debug_level;
 	log_init(xbasename(av[0]), logopt, 0, NULL);
 	_set_exit_code();
 
@@ -188,7 +184,7 @@ int srun(int ac, char **av)
 
 	_setup_env_working_cluster();
 
-	init_srun(ac, av, &logopt, debug_level, 1);
+	init_srun(ac, av, &logopt, 1);
 	if (opt_list) {
 		if (!_enable_het_job_steps())
 			fatal("Job steps that span multiple components of a heterogeneous job are not currently supported");
@@ -799,21 +795,6 @@ static void _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	xfree(params->exclude);
 	xfree(params->src_fname);
 	xfree(params);
-}
-
-static int _slurm_debug_env_val (void)
-{
-	long int level = 0;
-	const char *val;
-
-	if ((val = getenv ("SLURM_DEBUG"))) {
-		char *p;
-		if ((level = strtol (val, &p, 10)) < -LOG_LEVEL_INFO)
-			level = -LOG_LEVEL_INFO;
-		if (p && *p != '\0')
-			level = 0;
-	}
-	return ((int) level);
 }
 
 /*
