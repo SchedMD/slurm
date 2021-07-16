@@ -331,7 +331,7 @@ static const parser_t parse_job[] = {
 	/* skipping show_full */
 	_add_parse(UINT32, eligible, "time/start"),
 	_add_parse(JOB_STATE, state, "state/current"),
-	_add_parse(JOB_REASON, state_reason_prev, "state/previous"),
+	_add_parse(JOB_REASON, state_reason_prev, "state/reason"),
 	_add_parse(UINT32, submit, "time/submission"),
 	_add_parse(JOB_STEPS, steps, "steps"),
 	_add_parse(UINT32, suspended, "time/suspended"),

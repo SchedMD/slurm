@@ -2717,7 +2717,7 @@
                 "type": "string",
                 "description": "Current state of job"
               },
-              "previous": {
+              "reason": {
                 "type": "string",
                 "description": "Last reason job didn't run"
               }

@@ -64,6 +64,18 @@ The v0.0.35 plugin has now been deprecated.
 </tr>
 </table>
 
+<h4>rename previous -> reason</h4>
+<table class="tchange">
+<tr class="trchange">
+	<td class="tdfield">previous path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_job".properties.state.previous</td>
+</tr>
+<tr class="trchange">
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_job".properties.state.reason</td>
+</tr>
+</table>
+
 <h3>openapi/v0.0.37 (src/plugins/openapi/v0.0.37/openapi.json)</h3>
 
 <h4>add plugin</h4>
