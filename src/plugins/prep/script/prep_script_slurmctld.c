@@ -64,6 +64,8 @@ extern void slurmctld_script(job_record_t *job_ptr, bool is_epilog)
 		slurmscriptd_run_prepilog(job_ptr->job_id, is_epilog,
 					  slurm_conf.epilog_slurmctld, my_env);
 
+	for (int i = 0; my_env[i]; i++)
+		xfree(my_env[i]);
 	xfree(my_env);
 }
 
