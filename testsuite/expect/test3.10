@@ -89,9 +89,7 @@ expect {
 		wait
 	}
 }
-if {$got_message != 1} {
-	fail "Message not received"
-}
+subtest {$got_message} "Message TEST_NOTIFY should be received by batch job"
 
 #
 # Start a test program
@@ -121,11 +119,11 @@ run_command -fail "$scontrol notify $job_id TEST_NOTIFY"
 #
 # Look for the message
 #
-set matches 0
+set got_message 0
 set spawn_id $srun_spawn_id
 expect {
 	-re "TEST_NOTIFY" {
-		set matches 1
+		set got_message 1
 		exp_continue
 	}
 	timeout {
@@ -136,6 +134,4 @@ expect {
 		wait
 	}
 }
-if {$matches == 0} {
-	fail "Notification not received by srun"
-}
+subtest {$got_message} "Message TEST_NOTIFY should be received by srun"
