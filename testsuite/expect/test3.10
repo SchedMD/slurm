@@ -90,6 +90,7 @@ expect {
 	}
 }
 subtest {$got_message} "Message TEST_NOTIFY should be received by batch job"
+cancel_job $job_id
 
 #
 # Start a test program
@@ -134,3 +135,4 @@ expect {
 	}
 }
 subtest {$got_message} "Message TEST_NOTIFY should be received by srun"
+cancel_job $job_id
