@@ -902,8 +902,6 @@ extern int cgroup_p_system_constrain_set(cgroup_ctl_type_t sub,
 	case CG_CPUS:
 		rc = common_cgroup_set_param(&g_sys_cg[CG_CPUS], "cpuset.cpus",
 					     limits->allow_cores);
-		//rc += common_cgroup_set_param(&g_sys_cg[CG_CPUS], "cpuset.mems",
-		//				limits->allow_mems);
 		break;
 	case CG_MEMORY:
 		common_cgroup_set_uint64_param(&g_sys_cg[CG_MEMORY],
@@ -1029,7 +1027,8 @@ extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
 	case CG_CPUS:
 		rc = common_cgroup_set_param(&g_step_cg[CG_CPUS], "cpuset.cpus",
 					     limits->allow_cores);
-		rc += common_cgroup_set_param(&g_step_cg[CG_CPUS], "cpuset.mems",
+		rc += common_cgroup_set_param(&g_step_cg[CG_CPUS],
+					      "cpuset.mems",
 					      limits->allow_mems);
 #ifdef HAVE_NATIVE_CRAY
 		/*
