@@ -108,6 +108,7 @@ typedef struct {
 	pthread_mutex_t mutex;
 	int rc;
 	char *resp_msg;
+	bool track_script_signalled;
 } script_response_t;
 
 static int slurmctld_readfd = -1;
@@ -190,7 +191,8 @@ static void _script_resp_map_remove(char *key)
 }
 
 static void _wait_for_script_resp(script_response_t *script_resp,
-				  int *status, char **resp_msg)
+				  int *status, char **resp_msg,
+				  bool *track_script_signalled)
 {
 	slurm_mutex_lock(&script_resp->mutex);
 	slurm_cond_wait(&script_resp->cond, &script_resp->mutex);
@@ -198,6 +200,8 @@ static void _wait_for_script_resp(script_response_t *script_resp,
 	*status = script_resp->rc;
 	if (resp_msg)
 		*resp_msg = xstrdup(script_resp->resp_msg);
+	if (track_script_signalled)
+		*track_script_signalled = script_resp->track_script_signalled;
 	slurm_mutex_unlock(&script_resp->mutex);
 }
 
@@ -455,6 +459,7 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 			  bool *track_script_signalled)
 {
 	int pfd[2] = {-1, -1};
+	bool got_resp = false;
 	int status;
 	char *resp = NULL;
 	pid_t cpid;
@@ -465,17 +470,17 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 	*track_script_signalled = false;
 
 	if (pipe(pfd) != 0) {
-		*resp_msg = xstrdup_printf("%s: error trying to run %s for JobId=%u; pipe(): %m",
-					   __func__, script_func, job_id);
-		error("%s", *resp_msg);
+		*resp_msg = xstrdup_printf("pipe(): %m");
+		error("%s: Error running %s for JobId=%u: %s",
+		      __func__, script_func, job_id, *resp_msg);
 		return 127;
 	}
 
 	cpid = fork();
 	if (cpid < 0) { /* fork() failed */
-		*resp_msg = xstrdup_printf("%s: error trying to run %s for JobId=%u; fork(): %m",
-					   __func__, script_func, job_id);
-		error("%s", *resp_msg);
+		*resp_msg = xstrdup_printf("fork(): %m");
+		error("%s: Error running %s for JobId=%u: %s",
+		      __func__, script_func, job_id, *resp_msg);
 		close(pfd[0]);
 		close(pfd[1]);
 		return 127;
@@ -513,9 +518,13 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 			} else {
 				new_wait = max_wait - _tot_wait(&tstart);
 				if (new_wait <= 0) {
-					error("%s: %s for JobId=%u poll timeout @ %d msec",
+					*resp_msg =
+						xstrdup_printf("Timeout @ %d msec",
+							       max_wait);
+					error("%s: Error running %s for JobId=%u: %s",
 					      __func__, script_func, job_id,
-					      max_wait);
+					      *resp_msg);
+					got_resp = false;
 					break;
 				}
 				new_wait = MIN(new_wait, MAX_POLL_WAIT);
@@ -524,8 +533,10 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 			if (i == 0) {
 				continue;
 			} else if (i < 0) {
-				error("%s: %s for JobId=%u poll():%m",
-				      __func__, script_func, job_id);
+				*resp_msg = xstrdup_printf("poll():%m");
+				error("%s: Error running %s for JobId=%u: %s",
+				      __func__, script_func, job_id, *resp_msg);
+				got_resp = false;
 				break;
 			}
 			if ((fds.revents & POLLIN) == 0)
@@ -537,10 +548,13 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 			} else if (i < 0) {
 				if (errno == EAGAIN)
 					continue;
-				error("%s: %s for JobId=%u read(): %m",
-				      __func__, script_func, job_id);
+				*resp_msg = xstrdup_printf("read(): %m");
+				error("%s: Error running %s for JobId=%u: %s",
+				      __func__, script_func, job_id, *resp_msg);
+				got_resp = false;
 				break;
 			} else {
+				got_resp = true;
 				resp_offset += i;
 				if (resp_offset + 1024 >= resp_size) {
 					resp_size *= 2;
@@ -561,14 +575,18 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 		track_script_remove(pthread_self());
 	}
 
-	*resp_msg = resp;
+	if (got_resp)
+		*resp_msg = resp;
+	else
+		xfree(resp);
+
 	return status;
 }
 
 static int _handle_run_bb_lua(buf_t *buffer)
 {
 	bool track_script_signalled;
-	uint32_t job_id, tmp_size, argc = 0, status, i, timeout;
+	uint32_t job_id, tmp_size, argc = 0, status, i, timeout, rc;
 	char *script_func = NULL, *resp_msg = NULL, *key = NULL;
 	char **argv = NULL;
 	buf_t *resp_buffer;
@@ -580,23 +598,22 @@ static int _handle_run_bb_lua(buf_t *buffer)
 	safe_unpack32(&timeout, buffer);
 	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_RUN_BB_LUA for JobId=%u: func=%s, timeout=%u seconds, argc=%u, key=%s",
 		 job_id, script_func, timeout, argc, key);
-	for (i = 0; i < argc; i++) {
-		info("XXX %s: arg[%u]=%s", __func__, i, argv[i]);
-	}
 
 	/* Run the script */
 	status = _run_bb_script(script_func, job_id, timeout, argc, argv,
 				&resp_msg, &track_script_signalled);
-
-	info("XXX %s: bb_g_run_script returned %d, %s",
-	     __func__, status, resp_msg);
+	/* Extract return code from exit status. */
+	if (WIFEXITED(status))
+		rc = WEXITSTATUS(status);
+	else
+		rc = (uint32_t) SLURM_ERROR;
 
 	/* Send complete message */
 	resp_buffer = init_buf(0);
 	packstr(key, resp_buffer);
 	pack32(job_id, resp_buffer);
 	packstr(script_func, resp_buffer);
-	pack32(status, resp_buffer);
+	pack32(rc, resp_buffer);
 	packstr(resp_msg, resp_buffer);
 	packbool(track_script_signalled, resp_buffer);
 	_write_msg(slurmscriptd_writefd, SLURMSCRIPTD_REQUEST_BB_LUA_COMPLETE,
@@ -660,6 +677,7 @@ static int _handle_bb_lua_complete(buf_t *buffer)
 	} else {
 		script_resp->resp_msg = resp_msg;
 		script_resp->rc = (int) status;
+		script_resp->track_script_signalled = track_script_signalled;
 		slurm_mutex_lock(&script_resp->mutex);
 		slurm_cond_signal(&script_resp->cond);
 		slurm_mutex_unlock(&script_resp->mutex);
@@ -869,7 +887,7 @@ extern void slurmscriptd_flush_job(uint32_t job_id)
 
 extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 				   uint32_t argc, char **argv, uint32_t timeout,
-				   char **resp)
+				   char **resp, bool *track_script_signalled)
 {
 	int rc;
 	buf_t *buffer;
@@ -899,23 +917,11 @@ extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 	FREE_NULL_BUFFER(buffer);
 
 	/*
-	 * Block until the script is done. _wait_for_script_resp() sets rc
-	 * and resp.
+	 * Block until the script is done. _wait_for_script_resp() sets rc,
+	 * resp, and track_script_signalled.
 	 */
-	_wait_for_script_resp(script_resp, &rc, resp);
+	_wait_for_script_resp(script_resp, &rc, resp, track_script_signalled);
 	_script_resp_map_remove(script_resp->key);
-
-	/*
-	 * TODO: Since we're just testing right now and not actually running
-	 * the script, return success and free the resp. We've already logged
-	 * rc and resp. When we actually run the script we will of course
-	 * pass the results back out of this function.
-	 */
-	rc = SLURM_SUCCESS;
-	if (resp) {
-		xfree(*resp);
-		*resp = NULL;
-	}
 
 	return rc;
 }

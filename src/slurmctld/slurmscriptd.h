@@ -61,11 +61,13 @@ extern void slurmscriptd_flush_job(uint32_t job_id);
  * IN argv - arguments for the script
  * IN timeout - timeout in seconds
  * OUT resp - response message from the script
+ * OUT track_script_signalled - true if the script was killed by track_script,
+ *                              false otherwise.
  * RET return code of the script or SLURM_ERROR if there was some other failure
  */
 extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 				   uint32_t argc, char **argv, uint32_t timeout,
-				   char **resp);
+				   char **resp, bool *track_script_signalled);
 
 /*
  * slurmscriptd_run_prepilog

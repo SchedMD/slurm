@@ -790,7 +790,10 @@ extern int bb_g_run_script(char *func, uint32_t job_id, uint32_t argc,
 	for (i = 0; i < g_context_cnt; i++) {
 		rc2 = (*(ops[i].run_script))(func, job_id, argc, argv,
 					     resp_msg);
-		rc = MAX(rc, rc2);
+		if (rc2 != SLURM_SUCCESS) {
+			rc = rc2;
+			break;
+		}
 	}
 	slurm_mutex_unlock(&g_context_lock);
 
