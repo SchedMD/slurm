@@ -29,9 +29,9 @@
 ############################################################################
 source ./globals
 
-set file_err       "test$test_id.error"
-set file_in        "test$test_id.input"
-set file_out       "test$test_id.output"
+set file_err       "$test_name.error"
+set file_in        "$test_name.input"
+set file_out       "$test_name.output"
 set job_id         0
 
 proc cleanup {} {
