@@ -29,18 +29,27 @@
 ############################################################################
 source ./globals
 
-set authorized     1
-set exit_code      0
-set file_err       "test$test_id.error"
-set file_in        "test$test_id.input"
-set file_out       "test$test_id.output"
+set file_err       "$test_name.error"
+set file_in        "$test_name.input"
+set file_out       "$test_name.output"
 set job_id         0
+set timeout        $max_job_delay
+
+proc cleanup {} {
+	global file_in file_out file_err job_id
+
+	cancel_job $job_id
+	file delete $file_in $file_out $file_err
+}
+
+make_bash_script $file_in "
+$bin_echo Job \$SLURM_JOB_ID is running
+$bin_sleep 120
+"
 
 #
-# Start a batch job
+# Start and subtest a batch job
 #
-exec rm -f $file_in $file_out $file_err
-make_bash_script $file_in "$bin_sleep 120"
 spawn $sbatch --output=$file_out --error=$file_err -t1 ./$file_in
 expect {
 	-re "Submitted batch job ($number)" {
@@ -54,66 +63,40 @@ expect {
 if {$job_id == 0} {
 	fail "Batch submit failure"
 }
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-	cancel_job $job_id
-	fail "Waiting for job to start"
-}
-# Add delay to make sure job step fully starts
-exec $bin_sleep 2
+# Wait for the job to start running.
+# If the slurmd gets the job notify request before the tasks have actually been
+# started, the asynchronous call can fail to write to the job's standard error.
+wait_for_job -fail $job_id "RUNNING"
+wait_for_file -fail $file_out
+wait_for_command_match -fail "$bin_cat $file_out" "is running"
+
 #
 # Send the batch job a message
 #
-spawn $scontrol notify $job_id TEST_NOTIFY
+run_command -fail "$scontrol notify $job_id TEST_NOTIFY"
+
+#
+# Test stderr file
+#
+wait_for_file -fail $file_err
+set got_message 0
+spawn cat $file_err
 expect {
-	-re "Invalid user id" {
-		set authorized 0
+	-re "TEST_NOTIFY" {
+		set got_message 1
 		exp_continue
 	}
 	eof {
 		wait
 	}
 }
-if {$authorized == 0} {
-	cancel_job $job_id
-	exec rm -f $file_in $file_out $file_err
-	skip "You are not authorized to run this test"
-}
+subtest {$got_message} "Message TEST_NOTIFY should be received by batch job"
 cancel_job $job_id
 
 #
-# Test stderr file
-#
-if {[wait_for_file $file_err] == 0} {
-	set got_message 0
-	spawn cat $file_err
-	expect {
-		-re "TEST_NOTIFY" {
-			set got_message 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	if {$got_message != 1} {
-		log_error "Message not received"
-		set exit_code 1
-	}
-} else {
-	set exit_code 1
-}
-if {$exit_code == 0} {
-	log_debug "So far, so good"
-	exec rm -f $file_in $file_out $file_err
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
-
-#
-# Start a test program
+# Start and subtest srun
 #
 set job_id         0
-set timeout $max_job_delay
 set srun_pid [spawn $srun -N1 -t1 -v $bin_sleep 10]
 set srun_spawn_id $spawn_id
 expect {
@@ -132,30 +115,16 @@ if {$job_id == 0} {
 #
 # Send the program a message
 #
-spawn $scontrol notify $job_id TEST_NOTIFY
-expect {
-	-re "Invalid user id" {
-		set authorized 0
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$authorized == 0} {
-	cancel_job $job_id
-	skip "You are not authorized to run this test"
-}
+run_command -fail "$scontrol notify $job_id TEST_NOTIFY"
 
 #
 # Look for the message
 #
-set matches 0
+set got_message 0
 set spawn_id $srun_spawn_id
 expect {
 	-re "TEST_NOTIFY" {
-		set matches 1
-		exp_continue
+		set got_message 1
 	}
 	timeout {
 		slow_kill $srun_pid
@@ -165,13 +134,50 @@ expect {
 		wait
 	}
 }
-if {$matches == 0} {
-	fail "Notification not received by srun"
+subtest {$got_message} "Message TEST_NOTIFY should be received by srun"
+cancel_job $job_id
+
+#
+# Start and subtest salloc
+#
+set job_id         0
+set salloc_pid [spawn $salloc -N1 -t1 $bin_sleep 10]
+set salloc_spawn_id $spawn_id
+expect {
+	-re "Granted job allocation ($number)" {
+		set job_id $expect_out(1,string)
+	}
+	timeout {
+		slow_kill $salloc_pid
+		fail "salloc not responding"
+	}
+}
+if {$job_id == 0} {
+	fail "salloc failed to create job"
 }
 
-if {[cancel_job $job_id] != 0} {
-	fail "Unable to cancel job ($job_id)"
+#
+# Send the program a message
+#
+run_command -fail "$scontrol notify $job_id TEST_NOTIFY"
+
+#
+# Look for the message
+#
+set got_message 0
+set spawn_id $salloc_spawn_id
+expect {
+	-re "TEST_NOTIFY" {
+		set got_message 1
+# 		exp_send "exit\n"
+	}
+	timeout {
+		slow_kill $salloc_pid
+		fail "salloc not responding"
+	}
+	eof {
+		wait
+	}
 }
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$got_message} "Message TEST_NOTIFY should be received by salloc"
+cancel_job $job_id
