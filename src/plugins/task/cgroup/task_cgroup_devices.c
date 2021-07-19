@@ -319,6 +319,17 @@ extern int task_cgroup_devices_add_pid(stepd_step_rec_t *job, pid_t pid,
 		return SLURM_ERROR;
 
 	/*
+	 * We do not explicitly constrain devices on the task level of these
+	 * specific steps (they all only have 1 task anyway). e.g. an
+	 * salloc --gres=gpu must have access to the allocated GPUs. If we do
+	 * add the pid (e.g. bash) we'd get constrained.
+	 */
+	if ((job->step_id.step_id == SLURM_BATCH_SCRIPT) ||
+	    (job->step_id.step_id == SLURM_EXTERN_CONT) ||
+	    (job->step_id.step_id == SLURM_INTERACTIVE_STEP))
+		return SLURM_SUCCESS;
+
+	/*
 	 * Apply gres constrains by getting the allowed devices for this task
 	 * from gres plugin. We do not apply here the limits read from the
 	 * cgroup_allowed_devices.conf file because they are already applied at
