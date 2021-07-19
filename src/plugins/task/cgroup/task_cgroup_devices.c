@@ -109,7 +109,6 @@ static int _handle_device_access(void *x, void *arg)
 		cgroup_g_task_constrain_set(CG_DEVICES, &limits,
 					    handle_args->taskid);
 
-
 	return SLURM_SUCCESS;
 }
 
@@ -242,9 +241,9 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	limits.allow_device = true;
 
 	/*
-	 * with the current cgroup devices subsystem design (whitelist only
+	 * With the current cgroup devices subsystem design (whitelist only
 	 * supported) we need to allow all different devices that are supposed
-	 * to be allowed by* default.
+	 * to be allowed by default.
 	 */
 	for (k = 0; k < allow_lines; k++) {
 		debug2("Default access allowed to device %s(%s) for job",
@@ -254,11 +253,8 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 		limits.device_major = NULL;
 	}
 
-	/*
-         * allow or deny access to devices according to job GRES permissions
-         */
+	/* Allow or deny access to devices according to job GRES permissions. */
 	device_list = gres_g_get_devices(job_gres_list, true, 0, NULL, 0);
-
 
 	if (device_list) {
 		handle_args.cgroup_type = CGROUP_TYPE_JOB;
@@ -271,11 +267,6 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	if ((job->step_id.step_id != SLURM_BATCH_SCRIPT) &&
 	    (job->step_id.step_id != SLURM_EXTERN_CONT) &&
 	    (job->step_id.step_id != SLURM_INTERACTIVE_STEP)) {
-		/*
-		 * with the current cgroup devices subsystem design (whitelist
-		 * only supported) we need to allow all different devices that
-		 * are supposed to be allowed by default.
-		 */
 		for (k = 0; k < allow_lines; k++) {
 			debug2("Default access allowed to device %s(%s) for step",
 			       allowed_dev_major[k], allowed_devices[k]);
@@ -285,8 +276,8 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 		}
 
 		/*
-		 * allow or deny access to devices according to GRES permissions
-		 * for the step
+		 * Allow or deny access to devices according to GRES permissions
+		 * for the step.
 		 */
 		device_list = gres_g_get_devices(step_gres_list, false, 0, NULL,
 						 0);
