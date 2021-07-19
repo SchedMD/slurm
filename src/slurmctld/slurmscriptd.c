@@ -53,6 +53,7 @@
 #include "src/common/track_script.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"
 
@@ -443,9 +444,9 @@ static int _handle_run_bb_lua(buf_t *buffer)
 	/* TODO: run the script */
 
 	/* Initialize resp and status to non-zero for debugging */
-	xstrfmtcat(resp_msg, "Hello from _handle_run_lua, finished func %s for job %u",
-		   script_func, job_id);
-	status = 42;
+	status = bb_g_run_script(script_func, job_id, argc, argv, &resp_msg);
+	info("XXX %s: bb_g_run_script returned %d, %s",
+	     __func__, status, resp_msg);
 
 	/* Send complete message */
 	resp_buffer = init_buf(0);

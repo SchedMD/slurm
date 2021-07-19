@@ -5113,6 +5113,23 @@ _json_parse_sessions_object(json_object *jobj, bb_sessions_t *ent)
 }
 
 /*
+ * Run a script in the burst buffer plugin
+ *
+ * func IN - script function to run
+ * jobid IN - job id for which we are running the script (0 if not for a job)
+ * argc IN - number of arguments to pass to script
+ * argv IN - argument list to pass to script
+ * resp_msg OUT - string returned by script
+ *
+ * Returns the status of the script.
+ */
+extern int bb_p_run_script(char *func, uint32_t job_id, uint32_t argc,
+			   char **argv, char **resp_msg)
+{
+	return 0;
+}
+
+/*
  * Translate a burst buffer string to it's equivalent TRES string
  * (e.g. "cray:2G,generic:4M" -> "1004=2048,1005=4")
  * Caller must xfree the return value

@@ -1565,6 +1565,16 @@ extern int init(void)
                 return rc;
 	lua_script_path = get_extra_conf_path("burst_buffer.lua");
 
+	/*
+	 * slurmscriptd calls bb_g_init() and then bb_g_run_script(). We only
+	 * need to initialize lua to run the script. We don't want
+	 * slurmscriptd to read from or write to the state save location, nor
+	 * do we need slurmscriptd to load the configuration file.
+	 */
+	if (!running_in_slurmctld()) {
+		return SLURM_SUCCESS;
+	}
+
 	slurm_mutex_init(&lua_thread_mutex);
 	slurm_mutex_init(&bb_state.bb_mutex);
 	slurm_mutex_lock(&bb_state.bb_mutex);
@@ -3461,6 +3471,28 @@ extern int bb_p_job_cancel(job_record_t *job_ptr)
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Run a script in the burst buffer plugin
+ *
+ * func IN - script function to run
+ * jobid IN - job id for which we are running the script (0 if not for a job)
+ * argc IN - number of arguments to pass to script
+ * argv IN - argument list to pass to script
+ * resp_msg OUT - string returned by script
+ *
+ * Returns the status of the script.
+ */
+extern int bb_p_run_script(char *func, uint32_t job_id, uint32_t argc,
+			   char **argv, char **resp_msg)
+{
+	xassert(resp_msg);
+
+	info("XXX %s", __func__);
+	*resp_msg = xstrdup("Test resp_msg");
+
+	return 42;
 }
 
 /*
