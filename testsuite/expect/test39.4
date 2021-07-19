@@ -32,6 +32,11 @@ set job_id      0
 set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
 
 set gpu_cnt [get_highest_gres_count 1 "gpu"]
+
+if {![check_config_select "cons_tres"]} {
+	skip "The test is only compatible with cons_tres"
+}
+
 if {$gpu_cnt < 1} {
 	skip "This test requires 1 or more GPUs on 1 node of the default partition"
 }
