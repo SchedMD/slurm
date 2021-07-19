@@ -124,7 +124,6 @@ set spawn_id $srun_spawn_id
 expect {
 	-re "TEST_NOTIFY" {
 		set got_message 1
-		exp_continue
 	}
 	timeout {
 		slow_kill $srun_pid
