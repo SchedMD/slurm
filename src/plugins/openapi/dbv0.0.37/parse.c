@@ -2240,8 +2240,10 @@ static int _foreach_step(void *x, void *arg)
 			data_define_dict_path(dstep, "nodes/list"));
 		hostlist_iterator_t itr = hostlist_iterator_create(host_list);
 
-		while ((host = hostlist_next(itr)))
-			data_set_string_own(data_list_append(d), host);
+		while ((host = hostlist_next(itr))) {
+			data_set_string(data_list_append(d), host);
+			free(host);
+		}
 
 		hostlist_iterator_destroy(itr);
 	}
