@@ -562,6 +562,11 @@ end:
 	return rc;
 }
 
+/*
+ * Each call to this function counts as one active user of the step directories,
+ * so the number of calls to this function must mach the number of calls of
+ * cgroup_p_step_destroy in each plugin.
+ */
 extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 {
 	int rc = SLURM_SUCCESS;

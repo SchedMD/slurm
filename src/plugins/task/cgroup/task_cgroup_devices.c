@@ -76,6 +76,7 @@ typedef struct handle_dev_args {
 } handle_dev_args_t;
 
 static char cgroup_allowed_devices_file[PATH_MAX];
+static bool is_first_task = true;
 
 static int _handle_device_access(void *x, void *arg)
 {
@@ -222,8 +223,12 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	cgroup_limits_t limits;
 	handle_dev_args_t handle_args;
 
-	if (cgroup_g_step_create(CG_DEVICES, job) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+	if (is_first_task) {
+		/* Only do once in this plugin. */
+		if (cgroup_g_step_create(CG_DEVICES, job) != SLURM_SUCCESS)
+			return SLURM_ERROR;
+		is_first_task = false;
+	}
 
 	/*
          * create the entry with major minor for the default allowed devices

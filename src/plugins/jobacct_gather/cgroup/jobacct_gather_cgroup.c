@@ -82,6 +82,8 @@ const char plugin_name[] = "Job accounting gather cgroup plugin";
 const char plugin_type[] = "jobacct_gather/cgroup";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
 
+static bool is_first_task = true;
+
 static void _prec_extra(jag_prec_t *prec, uint32_t taskid)
 {
 	cgroup_acct_t *cgroup_acct_data;
@@ -219,12 +221,18 @@ extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
 	int rc[2];
 
-	if (cgroup_g_step_create(CG_CPUACCT, jobacct_id->job) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+	if (is_first_task) {
+		/* Only do once in this plugin */
+		if (cgroup_g_step_create(CG_CPUACCT, jobacct_id->job)
+		    != SLURM_SUCCESS)
+			return SLURM_ERROR;
 
-	if (cgroup_g_step_create(CG_MEMORY, jobacct_id->job) != SLURM_SUCCESS) {
-		cgroup_g_step_destroy(CG_CPUACCT);
-		return SLURM_ERROR;
+		if (cgroup_g_step_create(CG_MEMORY, jobacct_id->job)
+		    != SLURM_SUCCESS) {
+			cgroup_g_step_destroy(CG_CPUACCT);
+			return SLURM_ERROR;
+		}
+		is_first_task = false;
 	}
 
 	rc[0] = cgroup_g_task_addto(CG_CPUACCT, jobacct_id->job, pid,
