@@ -36,10 +36,13 @@
 
 #include "config.h"
 
+#define _GNU_SOURCE	/* For POLLRDHUP */
+
 #if HAVE_SYS_PRCTL_H
 #  include <sys/prctl.h>
 #endif
 
+#include <poll.h>
 #include <signal.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -56,6 +59,8 @@
 #include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"
+
+#define MAX_POLL_WAIT 500 /* in milliseconds */
 
 /*
  *****************************************************************************
@@ -264,6 +269,17 @@ static void _incr_script_cnt(void)
 	slurm_mutex_unlock(&script_count_mutex);
 }
 
+static int _tot_wait (struct timeval *start_time)
+{
+	struct timeval end_time;
+	int msec_delay;
+
+	gettimeofday(&end_time, NULL);
+	msec_delay =   (end_time.tv_sec  - start_time->tv_sec ) * 1000;
+	msec_delay += ((end_time.tv_usec - start_time->tv_usec + 500) / 1000);
+	return msec_delay;
+}
+
 /*
  * Run a script with a given timeout.
  * Return the status or SLURM_ERROR if fork() fails.
@@ -424,9 +440,135 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+/*
+ * Run the burst buffer script in a fork()'d process so that if the script
+ * runs for longer than the timeout, or if the script is cancelled, we can
+ * SIGTERM/SIGKILL the process. This is based on the code in run_command(),
+ * but instead of calling exec() in the child, we call a burst buffer plugin
+ * API to run the script.
+ *
+ * Set the response of the script in resp_msg.
+ * Return the exit code of the script.
+ */
+static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
+			  uint32_t argc, char **argv, char **resp_msg,
+			  bool *track_script_signalled)
+{
+	int pfd[2] = {-1, -1};
+	int status;
+	char *resp = NULL;
+	pid_t cpid;
+
+	xassert(resp_msg);
+	xassert(track_script_signalled);
+
+	*track_script_signalled = false;
+
+	if (pipe(pfd) != 0) {
+		*resp_msg = xstrdup_printf("%s: error trying to run %s for JobId=%u; pipe(): %m",
+					   __func__, script_func, job_id);
+		error("%s", *resp_msg);
+		return 127;
+	}
+
+	cpid = fork();
+	if (cpid < 0) { /* fork() failed */
+		*resp_msg = xstrdup_printf("%s: error trying to run %s for JobId=%u; fork(): %m",
+					   __func__, script_func, job_id);
+		error("%s", *resp_msg);
+		close(pfd[0]);
+		close(pfd[1]);
+		return 127;
+	} else if (cpid == 0) { /* child - run the script */
+		int exit_code;
+		close(pfd[0]); /* Close the read fd, we're only writing */
+		setpgid(0, 0);
+
+		exit_code = bb_g_run_script(script_func, job_id, argc, argv,
+					    &resp);
+		if (resp)
+			write(pfd[1], resp, strlen(resp));
+		_exit(exit_code);
+	} else { /* parent */
+		int new_wait, max_wait;
+		int resp_offset = 0, resp_size = 0;
+		struct pollfd fds;
+		struct timeval tstart;
+
+		max_wait = timeout * 1000; /* convert to milliseconds */
+		resp_size = 1024;
+		resp = xmalloc(resp_size);
+		close(pfd[1]); /* Close the write fd, we're only reading */
+		gettimeofday(&tstart, NULL);
+		track_script_rec_add(job_id, cpid, pthread_self());
+
+		while (1) {
+			int i;
+
+			fds.fd = pfd[0];
+			fds.events = POLLIN | POLLHUP | POLLRDHUP;
+			fds.revents = 0;
+			if (!max_wait) {
+				new_wait = MAX_POLL_WAIT;
+			} else {
+				new_wait = max_wait - _tot_wait(&tstart);
+				if (new_wait <= 0) {
+					error("%s: %s for JobId=%u poll timeout @ %d msec",
+					      __func__, script_func, job_id,
+					      max_wait);
+					break;
+				}
+				new_wait = MIN(new_wait, MAX_POLL_WAIT);
+			}
+			i = poll(&fds, 1, new_wait);
+			if (i == 0) {
+				continue;
+			} else if (i < 0) {
+				error("%s: %s for JobId=%u poll():%m",
+				      __func__, script_func, job_id);
+				break;
+			}
+			if ((fds.revents & POLLIN) == 0)
+				break;
+			i = read(pfd[0], resp + resp_offset,
+				 resp_size - resp_offset);
+			if (i == 0) {
+				break;
+			} else if (i < 0) {
+				if (errno == EAGAIN)
+					continue;
+				error("%s: %s for JobId=%u read(): %m",
+				      __func__, script_func, job_id);
+				break;
+			} else {
+				resp_offset += i;
+				if (resp_offset + 1024 >= resp_size) {
+					resp_size *= 2;
+					resp = xrealloc(resp, resp_size);
+				}
+			}
+		}
+		killpg(cpid, SIGTERM);
+		usleep(10000);
+		killpg(cpid, SIGKILL);
+		waitpid(cpid, &status, 0);
+		close(pfd[0]);
+
+		/* If we were killed by track_script, let the caller know. */
+		*track_script_signalled =
+			track_script_broadcast(pthread_self(), status);
+
+		track_script_remove(pthread_self());
+	}
+
+	*resp_msg = resp;
+	return status;
+}
+
 static int _handle_run_bb_lua(buf_t *buffer)
 {
-	uint32_t job_id, tmp_size, argc = 0, status, i;
+	bool track_script_signalled;
+	uint32_t job_id, tmp_size, argc = 0, status, i, timeout;
 	char *script_func = NULL, *resp_msg = NULL, *key = NULL;
 	char **argv = NULL;
 	buf_t *resp_buffer;
@@ -435,16 +577,17 @@ static int _handle_run_bb_lua(buf_t *buffer)
 	safe_unpack32(&job_id, buffer);
 	safe_unpackstr_xmalloc(&script_func, &tmp_size, buffer);
 	safe_unpackstr_array(&argv, &argc, buffer);
-	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_RUN_BB_LUA for JobId=%u: func=%s, argc=%u, key=%s",
-		 job_id, script_func, argc, key);
+	safe_unpack32(&timeout, buffer);
+	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_RUN_BB_LUA for JobId=%u: func=%s, timeout=%u seconds, argc=%u, key=%s",
+		 job_id, script_func, timeout, argc, key);
 	for (i = 0; i < argc; i++) {
 		info("XXX %s: arg[%u]=%s", __func__, i, argv[i]);
 	}
 
-	/* TODO: run the script */
+	/* Run the script */
+	status = _run_bb_script(script_func, job_id, timeout, argc, argv,
+				&resp_msg, &track_script_signalled);
 
-	/* Initialize resp and status to non-zero for debugging */
-	status = bb_g_run_script(script_func, job_id, argc, argv, &resp_msg);
 	info("XXX %s: bb_g_run_script returned %d, %s",
 	     __func__, status, resp_msg);
 
@@ -455,6 +598,7 @@ static int _handle_run_bb_lua(buf_t *buffer)
 	packstr(script_func, resp_buffer);
 	pack32(status, resp_buffer);
 	packstr(resp_msg, resp_buffer);
+	packbool(track_script_signalled, resp_buffer);
 	_write_msg(slurmscriptd_writefd, SLURMSCRIPTD_REQUEST_BB_LUA_COMPLETE,
 		   resp_buffer);
 
@@ -484,6 +628,7 @@ unpack_error:
 static int _handle_bb_lua_complete(buf_t *buffer)
 {
 	int rc = SLURM_SUCCESS;
+	bool track_script_signalled;
 	uint32_t job_id, tmp_size, status;
 	char *script_func = NULL, *resp_msg = NULL, *key = NULL;
 	script_response_t *script_resp;
@@ -493,9 +638,11 @@ static int _handle_bb_lua_complete(buf_t *buffer)
 	safe_unpackstr_xmalloc(&script_func, &tmp_size, buffer);
 	safe_unpack32(&status, buffer);
 	safe_unpackstr_xmalloc(&resp_msg, &tmp_size, buffer);
+	safe_unpackbool(&track_script_signalled, buffer);
 
-	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_BB_LUA_COMPLETE for JobId=%u: func=%s, status=%u, resp=%s, key=%s",
-		 job_id, script_func, status, resp_msg, key);
+	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_BB_LUA_COMPLETE for JobId=%u: func=%s, status=%u, resp=%s, track_script_signalled=%s, key=%s",
+		 job_id, script_func, status, resp_msg,
+		 track_script_signalled ? "true" : "false", key);
 
 	_decr_script_cnt();
 
@@ -721,7 +868,8 @@ extern void slurmscriptd_flush_job(uint32_t job_id)
 }
 
 extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
-				   uint32_t argc, char **argv, char **resp)
+				   uint32_t argc, char **argv, uint32_t timeout,
+				   char **resp)
 {
 	int rc;
 	buf_t *buffer;
@@ -744,6 +892,7 @@ extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 	pack32(job_id, buffer);
 	packstr(function, buffer);
 	packstr_array(argv, argc, buffer);
+	pack32(timeout, buffer);
 
 	_incr_script_cnt();
 	_write_msg(slurmctld_writefd, SLURMSCRIPTD_REQUEST_RUN_BB_LUA, buffer);

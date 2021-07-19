@@ -396,7 +396,12 @@ static int _run_lua_script(const char *lua_func, uint32_t timeout,
 	int rc, err_rc = SLURM_SUCCESS;
 	time_t elapsed_time = 0;
 
-	slurmscriptd_run_bb_lua(job_id, (char *) lua_func, argc, argv, ret_str);
+	int status;
+	status = slurmscriptd_run_bb_lua(job_id, (char *) lua_func, argc, argv,
+					 timeout, ret_str);
+	info("XXX %s: status from scriptd=%d, resp=%s",
+	     __func__, status, *ret_str);
+	xfree(*ret_str);
 
 	run_script_args = xmalloc(sizeof *run_script_args);
 	run_script_args->argc = argc;

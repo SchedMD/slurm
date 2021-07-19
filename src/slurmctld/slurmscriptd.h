@@ -59,11 +59,13 @@ extern void slurmscriptd_flush_job(uint32_t job_id);
  * IN function - the function in the lua script we should run
  * IN argc - number of arguments
  * IN argv - arguments for the script
+ * IN timeout - timeout in seconds
  * OUT resp - response message from the script
  * RET return code of the script or SLURM_ERROR if there was some other failure
  */
 extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
-				   uint32_t argc, char **argv, char **resp);
+				   uint32_t argc, char **argv, uint32_t timeout,
+				   char **resp);
 
 /*
  * slurmscriptd_run_prepilog
