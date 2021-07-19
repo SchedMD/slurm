@@ -113,7 +113,7 @@ bitstr_t *up_node_bitmap    = NULL;  	/* bitmap of non-down nodes */
 bitstr_t *rs_node_bitmap    = NULL; 	/* bitmap of resuming nodes */
 
 static void 	_dump_node_state(node_record_t *dump_node_ptr, buf_t *buffer);
-static int	_drain_node(node_record_t *node_ptr, char *reason,
+static void	_drain_node(node_record_t *node_ptr, char *reason,
 			    uint32_t reason_uid);
 static front_end_record_t * _front_end_reg(
 				slurm_node_registration_status_msg_t *reg_msg);
@@ -2269,24 +2269,21 @@ static void _update_config_ptr(bitstr_t *bitmap, config_record_t *config_ptr)
 	}
 }
 
-static int _drain_node(node_record_t *node_ptr, char *reason,
-		       uint32_t reason_uid)
+static void _drain_node(node_record_t *node_ptr, char *reason,
+			uint32_t reason_uid)
 {
 	int node_inx;
 	time_t now = time(NULL);
 
-	node_inx = node_ptr - node_record_table_ptr;
-	if (node_ptr == NULL) {
-		error("drain_nodes: node %s does not exist", node_ptr->name);
-		return ESLURM_INVALID_NODE_NAME;
-	}
+	xassert(node_ptr);
 
 	if (IS_NODE_DRAIN(node_ptr)) {
 		/* state already changed, nothing to do */
-		return SLURM_SUCCESS;
+		return;
 	}
 
 	node_ptr->node_state |= NODE_STATE_DRAIN;
+	node_inx = node_ptr - node_record_table_ptr;
 	bit_clear(avail_node_bitmap, node_inx);
 	info("drain_nodes: node %s state set to DRAIN",
 	     node_ptr->name);
@@ -2305,7 +2302,6 @@ static int _drain_node(node_record_t *node_ptr, char *reason,
 						node_ptr, now, NULL,
 						reason_uid);
 	}
-	return SLURM_SUCCESS;
 }
 
 /*
@@ -2318,7 +2314,7 @@ static int _drain_node(node_record_t *node_ptr, char *reason,
  */
 extern int drain_nodes(char *nodes, char *reason, uint32_t reason_uid)
 {
-	int error_code = 0;
+	int error_code = SLURM_SUCCESS;
 	node_record_t *node_ptr;
 	char  *this_node_name ;
 	hostlist_t host_list;
@@ -2334,11 +2330,15 @@ extern int drain_nodes(char *nodes, char *reason, uint32_t reason_uid)
 	}
 
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
-		node_ptr = find_node_record (this_node_name);
-		error_code = _drain_node(node_ptr, reason, reason_uid);
-		free (this_node_name);
-		if (error_code)
+		if (!(node_ptr = find_node_record(this_node_name))) {
+			error_code = ESLURM_INVALID_NODE_NAME;
+			error("drain_nodes: node %s does not exist",
+			      this_node_name);
+			xfree(this_node_name);
 			break;
+		}
+		free (this_node_name);
+		_drain_node(node_ptr, reason, reason_uid);
 	}
 	last_node_update = time (NULL);
 
