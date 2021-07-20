@@ -2908,6 +2908,7 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 				break;
 			}
 			i = max_cpu_idx;
+			avail_cpus = avail_cpu_per_node[i];
 			if (gres_per_job) {
 				gres_sched_add(
 					job_ptr->gres_list_req,
