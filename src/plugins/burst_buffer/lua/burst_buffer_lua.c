@@ -2444,7 +2444,7 @@ static void *_start_stage_in(void *x)
 
 	slurm_mutex_lock(&bb_state.bb_mutex);
 	bb_job = bb_job_find(&bb_state, stage_in_args->job_id);
-	if (bb_job && bb_job->req_size)
+	if ((rc == SLURM_SUCCESS) && bb_job && bb_job->req_size)
 		get_real_size = true;
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
