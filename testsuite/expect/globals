@@ -3958,10 +3958,10 @@ proc wait_for_node args {
 #####################################################################
 #
 # NAME
-#	list2hostlist - converts a TCL list into a Slurm hostlist using scontrol
+#	node_list_to_range - converts a TCL list into a Slurm hostlist using scontrol
 #
 # SYNOPSIS
-#	list2hostlist nodes_list
+#	node_list_to_range nodes_list
 #
 # ARGUMENTS
 #
@@ -3973,7 +3973,7 @@ proc wait_for_node args {
 #
 #####################################################################
 
-proc list2hostlist {nodes_list} {
+proc node_list_to_range {nodes_list} {
 	global scontrol
 
 	set comalist [join $nodes_list ,]
@@ -4982,7 +4982,7 @@ proc count_gres { gres_param } {
 
 proc get_highest_gres_count { node_count gres_name } {
 
-	set available_nodes [list2hostlist [get_nodes_by_state]]
+	set available_nodes [node_list_to_range [get_nodes_by_state]]
 	set gres_dict [get_gres_count $gres_name $available_nodes]
 	set gres_count [list]
 
@@ -5165,7 +5165,7 @@ proc get_highest_mps_count { node_count } {
 	# We cannot use get_highest_gres_count because we need "per gpu",
 	# so we get all the mps per node and all gpus per node, to create
 	# a mps_per_gpu list to sort and get the count.
-	set available_nodes [list2hostlist [get_nodes_by_state]]
+	set available_nodes [node_list_to_range [get_nodes_by_state]]
 	set mps_dict [get_gres_count "mps" $available_nodes]
 	set gpu_dict [get_gres_count "gpu" $available_nodes]
 	set mps_per_gpu [list]
