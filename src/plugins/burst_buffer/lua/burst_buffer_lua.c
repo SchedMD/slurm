@@ -56,7 +56,6 @@
 #include "src/common/assoc_mgr.h"
 #include "src/common/fd.h"
 #include "src/common/run_command.h"
-#include "src/common/track_script.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/lua/slurm_lua.h"

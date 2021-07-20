@@ -46,7 +46,6 @@
 #include "src/common/track_script.h"
 
 static List track_script_thd_list = NULL;
-static List track_script_lua_thd_list = NULL;
 static pthread_mutex_t flush_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t flush_cond = PTHREAD_COND_INITIALIZER;
 static int flush_cnt = 0;
@@ -58,18 +57,6 @@ typedef struct {
 	pthread_mutex_t timer_mutex;
 	pthread_cond_t timer_cond;
 } track_script_rec_t;
-
-/*
- * These track threads that are running a lua script. Since they are threads,
- * not processes, they need to be handeled differently.
- */
-typedef struct {
-	uint32_t job_id;
-	pthread_t parent_tid;
-	pthread_t script_tid;
-	bool need_to_signal;
-	pthread_mutex_t signal_mutex;
-} track_script_thd_rec_t;
 
 typedef struct {
 	pthread_t tid;
@@ -85,15 +72,6 @@ static void _track_script_rec_destroy(void *arg)
 	pthread_detach(r->tid);
 	slurm_cond_destroy(&r->timer_cond);
 	slurm_mutex_destroy(&r->timer_mutex);
-	xfree(r);
-}
-
-static void _track_script_thd_rec_destroy(void *arg)
-{
-	track_script_thd_rec_t *r = (track_script_thd_rec_t *)arg;
-	debug3("destroying job %u script thread, parent tid %lu",
-	       r->job_id, (unsigned long) r->parent_tid);
-	slurm_mutex_destroy(&(r->signal_mutex));
 	xfree(r);
 }
 
@@ -157,36 +135,9 @@ static void *_track_script_rec_cleanup(void *arg)
 	return NULL;
 }
 
-static void *_track_script_thd_rec_cleanup(void *arg)
-{
-	track_script_thd_rec_t *r = (track_script_thd_rec_t *)arg;
-
-	debug("Script for jobid=%u found running, script tid=%lu, parent tid=%lu. Ignore errors about not finding this thread id after this.",
-	      r->job_id, (unsigned long)r->script_tid,
-	      (unsigned long)r->parent_tid);
-
-	slurm_mutex_lock(&r->signal_mutex);
-	r->need_to_signal = true;
-	slurm_mutex_unlock(&r->signal_mutex);
-
-	pthread_join(r->parent_tid, NULL);
-
-	slurm_mutex_lock(&flush_mutex);
-	flush_cnt++;
-	slurm_cond_signal(&flush_cond);
-	slurm_mutex_unlock(&flush_mutex);
-
-	return NULL;
-}
-
 static void _make_cleanup_thread(track_script_rec_t *r)
 {
 	slurm_thread_create_detached(NULL, _track_script_rec_cleanup, r);
-}
-
-static void _make_thd_cleanup_thread(track_script_thd_rec_t *r)
-{
-	slurm_thread_create_detached(NULL, _track_script_thd_rec_cleanup, r);
 }
 
 static int _flush_job(void *r, void *x)
@@ -211,38 +162,9 @@ static int _flush_job(void *r, void *x)
 	return 0;
 }
 
-static int _lua_flush_job(void *r, void *x)
-{
-	track_script_thd_rec_t *rec = (track_script_thd_rec_t *) r;
-	uint32_t job_id = *(uint32_t *) x;
-
-	if (rec->job_id != job_id)
-		return 0;
-
-	debug("%s: killing running script for completed job %u",
-	      __func__, job_id);
-
-	slurm_mutex_lock(&rec->signal_mutex);
-	rec->need_to_signal = true;
-	slurm_mutex_unlock(&rec->signal_mutex);
-
-	/* Detach the thread so it will free its resources when it exits. */
-	pthread_detach(rec->parent_tid);
-
-	return 0;
-}
-
 static int _match_tid(void *object, void *key)
 {
 	pthread_t tid0 = ((track_script_rec_t *)object)->tid;
-	pthread_t tid1 = *(pthread_t *)key;
-
-	return (tid0 == tid1);
-}
-
-static int _match_lua_tid(void *object, void *key)
-{
-	pthread_t tid0 = ((track_script_thd_rec_t *)object)->parent_tid;
 	pthread_t tid1 = *(pthread_t *)key;
 
 	return (tid0 == tid1);
@@ -260,32 +182,16 @@ static int _reset_cpid(void *object, void *key)
 	return -1;
 }
 
-static int _reset_lua_tid(void *object, void *key)
-{
-	if (!_match_lua_tid(object,
-			    &((track_script_thd_rec_t *)key)->parent_tid))
-		return 0;
-
-	((track_script_thd_rec_t *)object)->script_tid =
-		((track_script_thd_rec_t *)key)->script_tid;
-
-	/* Exit for_each after we found the one we care about. */
-	return -1;
-}
-
 extern void track_script_init(void)
 {
 	FREE_NULL_LIST(track_script_thd_list);
-	FREE_NULL_LIST(track_script_lua_thd_list);
 	track_script_thd_list = list_create(_track_script_rec_destroy);
-	track_script_lua_thd_list = list_create(_track_script_thd_rec_destroy);
 }
 
 extern void track_script_flush(void)
 {
 	int count;
 	List tmp_list = list_create(_track_script_rec_destroy);
-	List tmp_list2 = list_create(_track_script_thd_rec_destroy);
 
 	/*
 	 * Transfer list within mutex and work off of copy to prevent race
@@ -295,13 +201,10 @@ extern void track_script_flush(void)
 	slurm_mutex_lock(&flush_mutex);
 
 	list_transfer(tmp_list, track_script_thd_list);
-	list_transfer(tmp_list2, track_script_lua_thd_list);
 
 	count = list_count(tmp_list);
-	count += list_count(tmp_list2);
 	if (!count) {
 		FREE_NULL_LIST(tmp_list);
-		FREE_NULL_LIST(tmp_list2);
 		slurm_mutex_unlock(&flush_mutex);
 		return;
 	}
@@ -310,8 +213,6 @@ extern void track_script_flush(void)
 	/* kill all scripts we are tracking */
 	(void) list_for_each(tmp_list,
 			     (ListForF)_make_cleanup_thread, NULL);
-	(void) list_for_each(tmp_list2,
-			     (ListForF)_make_thd_cleanup_thread, NULL);
 
 	while (flush_cnt < count) {
 		slurm_cond_wait(&flush_cond, &flush_mutex);
@@ -320,7 +221,6 @@ extern void track_script_flush(void)
 	}
 
 	FREE_NULL_LIST(tmp_list);
-	FREE_NULL_LIST(tmp_list2);
 	slurm_mutex_unlock(&flush_mutex);
 
 }
@@ -330,14 +230,11 @@ extern void track_script_flush_job(uint32_t job_id)
 	(void)list_for_each(track_script_thd_list,
 			    (ListFindF) _flush_job,
 			    &job_id);
-	(void)list_for_each(track_script_lua_thd_list,
-			    (ListFindF) _lua_flush_job, &job_id);
 }
 
 extern void track_script_fini(void)
 {
 	FREE_NULL_LIST(track_script_thd_list);
-	FREE_NULL_LIST(track_script_lua_thd_list);
 }
 
 extern void track_script_rec_add(uint32_t job_id, pid_t cpid, pthread_t tid)
@@ -351,19 +248,6 @@ extern void track_script_rec_add(uint32_t job_id, pid_t cpid, pthread_t tid)
 	slurm_mutex_init(&track_script_rec->timer_mutex);
 	slurm_cond_init(&track_script_rec->timer_cond, NULL);
 	list_append(track_script_thd_list, track_script_rec);
-}
-
-extern void track_script_lua_rec_add(uint32_t job_id, pthread_t script_tid,
-					pthread_t parent_tid)
-{
-	track_script_thd_rec_t *rec = xmalloc(sizeof *rec);
-
-	rec->job_id = job_id;
-	rec->script_tid = script_tid; /* 0 if not running yet. */
-	rec->parent_tid = parent_tid;
-	rec->need_to_signal = false;
-	slurm_mutex_init(&rec->signal_mutex);
-	list_append(track_script_lua_thd_list, rec);
 }
 
 static int _script_broadcast(void *object, void *key)
@@ -392,30 +276,6 @@ static int _script_broadcast(void *object, void *key)
 	return -1;
 }
 
-static int _lua_script_broadcast(void *object, void *key)
-{
-	bool rc;
-	track_script_thd_rec_t *script_rec = (track_script_thd_rec_t *)object;
-	foreach_broadcast_rec_t *bcast_rec = (foreach_broadcast_rec_t *)key;
-
-	if (!_match_lua_tid(object, &bcast_rec->tid))
-		return 0;
-
-	rc = false;
-
-	slurm_mutex_lock(&script_rec->signal_mutex);
-	if (script_rec->need_to_signal) {
-		/* slurmctld wants to kill this thread, return true */
-		rc = true;
-	}
-	slurm_mutex_unlock(&script_rec->signal_mutex);
-
-	bcast_rec->rc = rc;
-
-	/* Exit for_each after we found the one we care about. */
-	return -1;
-}
-
 extern bool track_script_broadcast(pthread_t tid, int status)
 {
 	foreach_broadcast_rec_t tmp_rec;
@@ -425,23 +285,6 @@ extern bool track_script_broadcast(pthread_t tid, int status)
 	tmp_rec.status = status;
 
 	if (list_for_each(track_script_thd_list, _script_broadcast, &tmp_rec))
-		return tmp_rec.rc;
-
-	debug("%s: didn't find track_script for tid %lu",
-	      __func__, (unsigned long) tid);
-	return true;
-}
-
-extern bool track_script_lua_broadcast(pthread_t tid)
-{
-	foreach_broadcast_rec_t tmp_rec;
-
-	memset(&tmp_rec, 0, sizeof(tmp_rec));
-	tmp_rec.tid = tid;
-	tmp_rec.status = 0; /* unused */
-
-	if (list_for_each(track_script_lua_thd_list, _lua_script_broadcast,
-			  &tmp_rec))
 		return tmp_rec.rc;
 
 	debug("%s: didn't find track_script for tid %lu",
@@ -460,16 +303,6 @@ extern void track_script_remove(pthread_t tid)
 		       __func__);
 }
 
-extern void track_script_lua_remove(pthread_t tid)
-{
-	if (!list_delete_all(track_script_lua_thd_list, _match_lua_tid, &tid))
-		error("%s: thread %lu not found",
-		      __func__, (unsigned long) tid);
-	else
-		debug2("%s: thread running script from job removed",
-		       __func__);
-}
-
 extern void track_script_reset_cpid(pthread_t tid, pid_t cpid)
 {
 	track_script_rec_t tmp_rec;
@@ -477,14 +310,4 @@ extern void track_script_reset_cpid(pthread_t tid, pid_t cpid)
 	tmp_rec.cpid = cpid;
 
 	(void)list_for_each(track_script_thd_list, _reset_cpid, &tmp_rec);
-}
-
-extern void track_script_reset_lua_tid(pthread_t tid, pthread_t lua_tid)
-{
-	track_script_thd_rec_t tmp_rec;
-	tmp_rec.parent_tid = tid;
-	tmp_rec.script_tid = lua_tid;
-
-	(void)list_for_each(track_script_lua_thd_list, _reset_lua_tid,
-			    &tmp_rec);
 }

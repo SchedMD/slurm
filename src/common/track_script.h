@@ -63,40 +63,14 @@ extern void track_script_flush_job(uint32_t job_id);
 extern void track_script_rec_add(uint32_t job_id, pid_t cpid, pthread_t tid);
 
 /*
- * create, initialize, and add a track_script_thd_rec_t to the track_script
- * system.
- * IN job_id - Job id we are running this script under
- * IN script_tid - thread id of the script running the lua file, or 0 if
- *                 not running a separate thread yet.
- * IN parent_tid - thread that will create the script_tid thread.
- */
-extern void track_script_lua_rec_add(uint32_t job_id, pthread_t script_tid,
-				     pthread_t parent_tid);
-
-/*
  * Signal script thread to end
  */
 extern bool track_script_broadcast(pthread_t tid, int status);
 
-/*
- * Return true if track_script_flush_job() was called for the job that
- * this thread is making lua calls for.
- */
-extern bool track_script_lua_broadcast(pthread_t tid);
-
 /* Remove this thread from the track_script system */
 extern void track_script_remove(pthread_t tid);
 
-/*
- * Remove this thread from the track_script system. Used only for threads
- * added by track_script_lua_rec_add.
- */
-extern void track_script_lua_remove(pthread_t tid);
-
 /* Set the thread's cpid (script pid) or clear with 0 */
 extern void track_script_reset_cpid(pthread_t tid, pid_t cpid);
-
-/* Set the track_script_thd_rec_t thread's script_tid or clear with 0 */
-extern void track_script_reset_lua_tid(pthread_t tid, pthread_t lua_tid);
 
 #endif // __TRACK_SCRIPT_H__
