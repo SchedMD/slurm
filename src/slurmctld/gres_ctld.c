@@ -277,7 +277,7 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 		      gres_name, job_id, node_name,
 		      i - node_gres_ptr->gres_cnt_avail,
 		      i, node_gres_ptr->gres_cnt_avail);
-		/* proceed with request, give job what is available */
+		return SLURM_ERROR;
 	}
 
 	/*
