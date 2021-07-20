@@ -1411,6 +1411,18 @@ static void _test_config(void)
 	}
 
 	/*
+	 * Burst buffer APIs that would use ValidateTimeout
+	 * (slurm_bb_job_process and slurm_bb_paths) are actually called
+	 * directly from slurmctld, not through SlurmScriptd. Because of this,
+	 * they cannot be killed, so there is no timeout for them. Therefore,
+	 * ValidateTimeout doesn't matter in this plugin.
+	 */
+	if (bb_state.bb_config.validate_timeout &&
+	    (bb_state.bb_config.validate_timeout != DEFAULT_VALIDATE_TIMEOUT))
+		info("%s: ValidateTimeout is not used in this plugin, ignoring",
+		     plugin_type);
+
+	/*
 	 * Test time limits. In order to prevent overflow when converting
 	 * the time limits in seconds to milliseconds (multiply by 1000),
 	 * the maximum value for time limits is 2073600 seconds (24 days).
@@ -1926,7 +1938,6 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 	char *hash_dir = NULL, *job_dir = NULL, *script_file = NULL;
 	char *task_script_file = NULL, *resp_msg = NULL;
 	bool using_master_script = false;
-	uint32_t timeout;
 	bb_job_t *bb_job;
 	DEF_TIMERS;
 
@@ -1956,7 +1967,6 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 
 	log_flag(BURST_BUF, "%pJ", job_ptr);
 
-	timeout = bb_state.bb_config.validate_timeout;
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	/* Standard file location for job arrays */
@@ -1993,7 +2003,7 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 
 	/* Run "job_process" function, validates user script */
 	START_TIMER;
-	rc = _run_lua_script(lua_func_name, timeout, 1, &script_file,
+	rc = _run_lua_script(lua_func_name, 0, 1, &script_file,
 			     job_ptr->job_id, false, &resp_msg, NULL);
 	END_TIMER;
 	log_flag(BURST_BUF, "%s ran for %s", lua_func_name, TIME_STR);
@@ -3000,7 +3010,7 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	char *job_dir = NULL, *resp_msg = NULL, *job_script = NULL;
 	int hash_inx = job_ptr->job_id % 10;
 	int rc = SLURM_SUCCESS;
-	uint32_t timeout, argc;
+	uint32_t argc;
 	char **argv;
 	pthread_t tid;
 	bb_job_t *bb_job;
@@ -3056,14 +3066,13 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	xstrfmtcat(path_file, "%s/path", job_dir);
 	bb_write_file(path_file, "");
 	/* Initialize args and run the "paths" function. */
-	timeout = bb_state.bb_config.validate_timeout;
 	argc = 3;
 	argv = xcalloc(argc + 1, sizeof (char *)); /* NULL-terminated */
 	argv[0] = xstrdup_printf("%u", job_ptr->job_id);
 	argv[1] = xstrdup_printf("%s", job_script);
 	argv[2] = xstrdup_printf("%s", path_file);
 	START_TIMER;
-	rc = _run_lua_script("slurm_bb_paths", timeout, argc, argv,
+	rc = _run_lua_script("slurm_bb_paths", 0, argc, argv,
 			     job_ptr->job_id, false, &resp_msg, NULL);
 	END_TIMER;
 	log_flag(BURST_BUF, "slurm_bb_paths ran for %s", TIME_STR);
