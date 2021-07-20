@@ -6410,13 +6410,14 @@ extern int slurm_get_rep_count_inx(
 	int rep_count_sum = 0;
 
 	for (int i = 0; i < rep_count_size; i++) {
-		if (rep_count_sum >= inx)
-			return i;
-		rep_count_sum++;
-		if (rep_count[i] == 0)
+		if (rep_count[i] == 0) {
 			error("%s: rep_count should never be zero",
 			      __func__);
+			return -1;
+		}
 		rep_count_sum += rep_count[i];
+		if (rep_count_sum > inx)
+			return i;
 	}
 
 	return -1;
