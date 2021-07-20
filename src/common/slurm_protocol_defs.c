@@ -6403,3 +6403,21 @@ extern void slurm_array64_to_value_reps(uint64_t *array, uint32_t array_cnt,
 
 
 }
+
+extern int slurm_get_rep_count_inx(
+	uint32_t *rep_count, uint32_t rep_count_size, int inx)
+{
+	int rep_count_sum = 0;
+
+	for (int i = 0; i < rep_count_size; i++) {
+		if (rep_count_sum >= inx)
+			return i;
+		rep_count_sum++;
+		if (rep_count[i] == 0)
+			error("%s: rep_count should never be zero",
+			      __func__);
+		rep_count_sum += rep_count[i];
+	}
+
+	return -1;
+}

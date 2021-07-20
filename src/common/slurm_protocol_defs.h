@@ -1748,6 +1748,20 @@ extern void slurm_array64_to_value_reps(uint64_t *array, uint32_t array_cnt,
 					uint32_t **values_reps,
 					uint32_t *values_cnt);
 
+/*
+ * slurm_get_rep_count_inx - given a compressed array of counts and the actual
+ *                           index you are looking for if the array was
+ *                           uncompressed return the matching index for the
+ *                           compressed array.
+ * IN rep_count - compressed array
+ * IN rep_count_size - size of compressed_array
+ * IN inx - uncompressed index
+ *
+ * RET - compressed index or -1 on failure.
+ */
+extern int slurm_get_rep_count_inx(
+	uint32_t *rep_count, uint32_t rep_count_size, int inx);
+
 #define safe_read(fd, buf, size) do {					\
 		int remaining = size;					\
 		char *ptr = (char *) buf;				\

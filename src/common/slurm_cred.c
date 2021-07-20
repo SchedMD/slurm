@@ -1284,30 +1284,14 @@ slurm_cred_get_signature(slurm_cred_t *cred, char **datap, uint32_t *datalen)
 	return SLURM_SUCCESS;
 }
 
-static int _get_rep_count_idx(uint32_t *rep_count, uint32_t rep_count_size,
-			      int idx)
-{
-	int rep_count_sum = 0;
-	for (int i = 0; i < rep_count_size; i++) {
-		if (rep_count_sum >= idx)
-			return i;
-		rep_count_sum++;
-		if (rep_count[i] == 0)
-			error("%s: rep_count should never be zero",
-			      __func__);
-		rep_count_sum += rep_count[i];
-	}
-	return -1;
-}
-
 extern void slurm_cred_get_mem(slurm_cred_t *cred, int node_id,
 			       const char *func_name,
 			       uint64_t *job_mem_limit,
 			       uint64_t *step_mem_limit)
 {
-	int rep_idx = _get_rep_count_idx(cred->job_mem_alloc_rep_count,
-					 cred->job_mem_alloc_size,
-					 node_id);
+	int rep_idx = slurm_get_rep_count_inx(cred->job_mem_alloc_rep_count,
+					      cred->job_mem_alloc_size,
+					      node_id);
 
 	if (rep_idx < 0)
 		error("%s: node_id=%d, not found in job_mem_alloc_rep_count requested job memory not reset.",
@@ -1322,9 +1306,10 @@ extern void slurm_cred_get_mem(slurm_cred_t *cred, int node_id,
 	}
 
 	if (cred->step_mem_alloc) {
-		rep_idx = _get_rep_count_idx(cred->step_mem_alloc_rep_count,
-					     cred->step_mem_alloc_size,
-					     node_id);
+		rep_idx = slurm_get_rep_count_inx(
+			cred->step_mem_alloc_rep_count,
+			cred->step_mem_alloc_size,
+			node_id);
 		if (rep_idx < 0)
 			error("%s: node_id=%d, not found in step_mem_alloc_rep_count",
 			      func_name, node_id);
