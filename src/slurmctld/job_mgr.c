@@ -5479,55 +5479,6 @@ static int _job_fail(job_record_t *job_ptr, uint32_t job_state)
 }
 
 /*
- * job_fail - terminate a job due to initiation failure
- * IN job_id - ID of the job to be killed
- * IN job_state - desired job state (JOB_BOOT_FAIL, JOB_NODE_FAIL, etc.)
- * RET 0 on success, otherwise ESLURM error code
- */
-extern int job_fail(uint32_t job_id, uint32_t job_state)
-{
-	job_record_t *job_ptr, *het_job, *het_job_leader;
-	ListIterator iter;
-	int rc = SLURM_SUCCESS, rc1;
-
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL) {
-		error("job_fail: invalid JobId=%u", job_id);
-		return ESLURM_INVALID_JOB_ID;
-	}
-
-	if (job_ptr->het_job_id == 0)
-		return _job_fail(job_ptr, job_state);
-
-	het_job_leader = find_job_record(job_ptr->het_job_id);
-	if (!het_job_leader) {
-		error("%s: Hetjob leader %pJ not found",
-		      __func__, job_ptr);
-		return _job_fail(job_ptr, job_state);
-	}
-	if (!het_job_leader->het_job_list) {
-		error("%s: Hetjob leader %pJ job list is NULL",
-		      __func__, job_ptr);
-		return _job_fail(job_ptr, job_state);
-	}
-
-	iter = list_iterator_create(het_job_leader->het_job_list);
-	while ((het_job = list_next(iter))) {
-		if (het_job_leader->het_job_id != het_job->het_job_id) {
-			error("%s: Bad het_job_list for %pJ",
-			      __func__, het_job_leader);
-			continue;
-		}
-		rc1 = _job_fail(het_job, job_state);
-		if (rc1 != SLURM_SUCCESS)
-			rc = rc1;
-	}
-	list_iterator_destroy(iter);
-
-	return rc;
-}
-
-/*
  * Signal a job based upon job pointer.
  * Authentication and authorization checks must be performed before calling.
  */

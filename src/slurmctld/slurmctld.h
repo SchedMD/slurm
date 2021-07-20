@@ -1531,15 +1531,6 @@ extern int job_end_time(job_alloc_info_msg_t *time_req_msg,
 /* job_fini - free all memory associated with job records */
 extern void job_fini (void);
 
-/*
- * job_fail - terminate a job due to initiation failure
- * IN job_id - id of the job to be killed
- * IN job_state - desired job state (JOB_BOOT_FAIL, JOB_NODE_FAIL, etc.)
- * RET 0 on success, otherwise ESlurm error code
- */
-extern int job_fail(uint32_t job_id, uint32_t job_state);
-
-
 /* job_hold_requeue()
  *
  * Requeue the job based upon its current state.
