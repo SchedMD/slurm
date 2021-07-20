@@ -3982,6 +3982,32 @@ proc node_list_to_range {nodes_list} {
 }
 
 
+################################################################
+#
+# NAME
+#	list_to_range - converts a list of integer numbers to a range expression
+#
+# SYNOPSIS
+#	list_to_range ?numeric_list?
+#
+# DESCRIPTION
+#	Collapse a numeric list to a range expression defined by the following
+#	EBNF:
+#		<expression> ::= <range> {, <range>}*
+#		<range> ::= <integer> - <integer> | <integer>
+#
+# RETURN VALUE
+#	a range expression representing the numeric elements on the given list.
+#
+################################################################
+
+proc list_to_range {range_expression} {
+	set node_range_expression \[$range_expression\]
+	set range_list [node_list_to_range $node_range_expression]
+	return $range_list
+}
+
+
 #####################################################################
 #
 # NAME
