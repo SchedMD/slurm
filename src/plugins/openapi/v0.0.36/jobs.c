@@ -342,7 +342,7 @@ static int _fill_job_desc_from_opts(slurm_opt_t *opt, job_desc_msg_t *desc)
 	if (!opt->job_name)
 		desc->name = xstrdup("openapi");
 
-	desc->array_inx = sbopt->array_inx;
+	desc->array_inx = xstrdup(sbopt->array_inx);
 	desc->batch_features = sbopt->batch_features;
 	desc->container = xstrdup(opt->container);
 
