@@ -53,6 +53,10 @@ array set qos_2 {}
 
 set access_err  0
 
+# Get the location of the slurm.conf file
+set config_dir [get_conf_path]
+set config_file $config_dir/slurm.conf
+
 #
 # Verify preconditions
 #
@@ -260,10 +264,6 @@ proc run_test { run_qos } {
 cleanup_accounts
 create_accounts
 
-# Get the location of the slurm.conf file
-set config_dir [get_conf_path]
-set config_file $config_dir/slurm.conf
-
 #
 # Copy slurm.conf file
 #
@@ -271,6 +271,10 @@ save_conf $config_file
 
 # Comment out PrologFlags in the slurm.conf
 exec $bin_sed -i {s/^\(PrologFlags=\)/#\1/gI} $config_file
+
+# TODO: Temporarily increase logging to debug bug 10604 (remove once fixed)
+run_command -none "$bin_echo SlurmctldDebug=debug3 >> $config_file"
+# Allow the test's existing reconfigure call to establish these values
 
 reconfigure -fail
 
