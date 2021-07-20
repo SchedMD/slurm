@@ -1323,7 +1323,7 @@ extern void slurm_cred_get_mem(slurm_cred_t *cred, int node_id,
 	if (!(*step_mem_limit))
 		*step_mem_limit = *job_mem_limit;
 
-	log_flag(CPU_BIND, "Memory extracted from credential for %ps job_mem_limit= %"PRIu64" step_mem_limit=%"PRIu64,
+	log_flag(CPU_BIND, "Memory extracted from credential for %ps job_mem_limit=%"PRIu64" step_mem_limit=%"PRIu64,
 		 &cred->step_id, *job_mem_limit, *step_mem_limit);
 }
 
