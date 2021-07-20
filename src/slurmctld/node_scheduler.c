@@ -2617,12 +2617,6 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 
 	if (job_ptr->job_resrcs && job_ptr->job_resrcs->nodes) {
 		job_ptr->nodes = xstrdup(job_ptr->job_resrcs->nodes);
-		if (resume_job_list &&
-		    bit_overlap_any(job_ptr->node_bitmap, power_node_bitmap)) {
-			uint32_t *tmp = xmalloc(sizeof(uint32_t));
-			*tmp = job_ptr->job_id;
-			list_append(resume_job_list, tmp);
-		}
 	} else {
 		error("Select plugin failed to set job resources, nodes");
 		/* Do not attempt to allocate the select_bitmap nodes since
@@ -2702,8 +2696,14 @@ extern int select_nodes(job_record_t *job_ptr, bool test_only,
 	gs_job_start(job_ptr);
 	power_g_job_start(job_ptr);
 
-	if (bit_overlap_any(job_ptr->node_bitmap, power_node_bitmap))
+	if (bit_overlap_any(job_ptr->node_bitmap, power_node_bitmap)) {
 		job_ptr->job_state |= JOB_POWER_UP_NODE;
+		if (resume_job_list) {
+			uint32_t *tmp = xmalloc(sizeof(uint32_t));
+			*tmp = job_ptr->job_id;
+			list_append(resume_job_list, tmp);
+		}
+	}
 	if (configuring || IS_JOB_POWER_UP_NODE(job_ptr) ||
 	    !bit_super_set(job_ptr->node_bitmap, avail_node_bitmap)) {
 		/* This handles nodes explicitly requesting node reboot */
