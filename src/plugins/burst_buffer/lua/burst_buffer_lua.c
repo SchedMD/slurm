@@ -1376,6 +1376,9 @@ static bb_job_t *_get_bb_job(job_record_t *job_ptr)
 /* Validate burst buffer configuration */
 static void _test_config(void)
 {
+	/* 24-day max time limit. (2073600 seconds) */
+	static uint32_t max_timeout = (60 * 60 * 24 * 24);
+
 	if (bb_state.bb_config.get_sys_state) {
 		error("%s: found get_sys_state which is unused in this plugin, unsetting",
 		      plugin_type);
@@ -1405,6 +1408,31 @@ static void _test_config(void)
 		error("%s: found DefaultPool=%s, but DefaultPool is unused for this plugin, unsetting",
 		      plugin_type, bb_state.bb_config.default_pool);
 		xfree(bb_state.bb_config.default_pool);
+	}
+
+	/*
+	 * Test time limits. In order to prevent overflow when converting
+	 * the time limits in seconds to milliseconds (multiply by 1000),
+	 * the maximum value for time limits is 2073600 seconds (24 days).
+	 * 2073600 * 1000 is still less than the maximum 32-bit signed integer.
+	 */
+	if (bb_state.bb_config.other_timeout > max_timeout) {
+		error("%s: OtherTimeout=%u exceeds maximum allowed timeout=%u, setting OtherTimeout to maximum",
+		      plugin_type, bb_state.bb_config.other_timeout,
+		      max_timeout);
+		bb_state.bb_config.other_timeout = max_timeout;
+	}
+	if (bb_state.bb_config.stage_in_timeout > max_timeout) {
+		error("%s: StageInTimeout=%u exceeds maximum allowed timeout=%u, setting StageInTimeout to maximum",
+		      plugin_type, bb_state.bb_config.stage_in_timeout,
+		      max_timeout);
+		bb_state.bb_config.stage_in_timeout = max_timeout;
+	}
+	if (bb_state.bb_config.stage_out_timeout > max_timeout) {
+		error("%s: StageOutTimeout=%u exceeds maximum allowed timeout=%u, setting StageOutTimeout to maximum",
+		      plugin_type, bb_state.bb_config.stage_out_timeout,
+		      max_timeout);
+		bb_state.bb_config.stage_out_timeout = max_timeout;
 	}
 }
 
