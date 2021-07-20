@@ -28,158 +28,98 @@ source ./globals
 
 set exit_code   0
 set job_id      0
+set job_id_list [list]
 
 set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
 
 set gpu_cnt [get_highest_gres_count 1 "gpu"]
+
+if {![check_config_select "cons_tres"]} {
+	skip "The test is only compatible with cons_tres"
+}
+
 if {$gpu_cnt < 1} {
 	skip "This test requires 1 or more GPUs on 1 node of the default partition"
 }
 log_debug "GPU count is $gpu_cnt"
 
+proc cleanup {} {
+	global job_id_list
+	cancel_job $job_id_list
+}
+
+if {![regexp {(\d+).(\d+).(\S+)} [get_config_param SLURM_VERSION] - major minor release]} {
+	fail "Unable to get SLURM_VERSION"
+}
+
 #
 # Request more GPUs per node than exist on a single node
 #
 log_info "==== TEST 1 ===="
-spawn $sbatch --gpus-per-node=[expr $gpu_cnt + 1] -N1 --output=/dev/null -t1 --wrap $bin_hostname
-expect {
-	-re "Submitted batch job ($number)" {
-		cancel_job $expect_out(1,string)
-		log_error "Batch request not rejected"
-		set exit_code 1
-		exp_continue
-	}
-	-re "error: " {
-		log_debug "Error is expected, no worries"
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
+set output [run_command_output -xfail -subtest "$sbatch --gpus-per-node=[expr $gpu_cnt + 1] -N1 --output=/dev/null -t1 --wrap $bin_hostname"]
+subtest {[regexp "sbatch: error: Batch job submission failed: Requested node configuration is not available" $output]} "Job should be rejected at submit time"
+if {[regexp "Submitted batch job ($number)" $output - job_id]} {
+	lappend job_id_list $job_id
 }
 
 #
 # Specify 1 node and more GPUs than exist on a single node
 #
 log_info "==== TEST 2 ===="
-spawn $sbatch --gpus-per-node=$gpu_cnt --gres=[expr $gpu_cnt + 1] -N1 --output=/dev/null -t1 --wrap $bin_hostname
-expect {
-	-re "Submitted batch job ($number)" {
-		cancel_job $expect_out(1,string)
-		log_error "Batch request not rejected"
-		set exit_code 1
-		exp_continue
-	}
-	-re "error: " {
-		log_debug "Error is expected, no worries"
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
+set output [run_command_output -xfail -subtest "$sbatch --gpus-per-node=$gpu_cnt --gres=[expr $gpu_cnt + 1] -N1 --output=/dev/null -t1 --wrap $bin_hostname"]
+if {$major < 21} {
+	subtest {[regexp "sbatch: error: Batch job submission failed: Invalid generic resource \\(gres\\) specification" $output]} "Job should be rejected at submit time"
+} else {
+	subtest {[regexp "sbatch: _get_next_gres: Invalid GRES job specification" $output]} "Job should be rejected at submit time"
+}
+if {[regexp "Submitted batch job ($number)" $output - job_id]} {
+	lappend job_id_list $job_id
 }
 
 #
 # Specify inconsistent --cpus-per-task and --gpus-per-task/--cpus-per-gpu
 #
 log_info "==== TEST 3 ===="
-spawn $sbatch --gpus-per-task=1 --cpus-per-gpu=1 --cpus-per-task=2 -N1 --output=/dev/null -t1 --wrap $bin_hostname
-expect {
-	-re "Submitted batch job ($number)" {
-		cancel_job $expect_out(1,string)
-		log_error "Batch request not rejected"
-		set exit_code 1
-		exp_continue
-	}
-	-re "error: " {
-		log_debug "Error is expected, no worries"
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
+set output [run_command_output -xfail -subtest "$sbatch --gpus-per-task=1 --cpus-per-gpu=1 --cpus-per-task=2 -N1 --output=/dev/null -t1 --wrap $bin_hostname"]
+if {$major < 21} {
+	subtest {[regexp "sbatch: error: Batch job submission failed: Invalid generic resource \\(gres\\) specification" $output]} "Job should be rejected at submit time"
+} else {
+	subtest {[regexp "sbatch: error: Failed to validate job spec. --gpus-per-task used without either --gpus or -n/--ntasks is not allowed." $output]} "Job should be rejected at submit time"
+}
+if {[regexp "Submitted batch job ($number)" $output - job_id]} {
+	lappend job_id_list $job_id
 }
 
 #
 # Specify inconsistent tasks per node
 #
 log_info "==== TEST 4 ===="
-spawn $sbatch --gpus-per-task=1 --gpus-per-node=1 -n2 -N1 --output=/dev/null -t1 --wrap $bin_hostname
-expect {
-	-re "Submitted batch job ($number)" {
-		cancel_job $expect_out(1,string)
-		log_error "Batch request not rejected"
-		set exit_code 1
-		exp_continue
-	}
-	-re "error: " {
-		log_debug "Error is expected, no worries"
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
+set output [run_command_output -xfail -subtest "$sbatch --gpus-per-task=1 --gpus-per-node=1 -n2 -N1 --output=/dev/null -t1 --wrap $bin_hostname"]
+subtest {[regexp "sbatch: error: Batch job submission failed: Requested node configuration is not available" $output]} "Job should be rejected at submit time"
+if {[regexp "Submitted batch job ($number)" $output - job_id]} {
+	lappend job_id_list $job_id
 }
 
 #
 # Specify gpus-per-socket, but no sockets-per-node count
 #
 log_info "==== TEST 5 ===="
-spawn $sbatch --gpus-per-socket=1 -N1 --output=/dev/null -t1 --wrap $bin_hostname
-expect {
-	-re "Submitted batch job ($number)" {
-		cancel_job $expect_out(1,string)
-		log_error "Batch request not rejected"
-		set exit_code 1
-		exp_continue
-	}
-	-re "error: " {
-		log_debug "Error is expected, no worries"
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
+set output [run_command_output -xfail -subtest "$sbatch --gpus-per-socket=1 -N1 --output=/dev/null -t1 --wrap $bin_hostname"]
+subtest {[regexp "sbatch: error: --gpus-per-socket option requires --sockets-per-node specification" $output]} "Job should be rejected at submit time"
+if {[regexp "Submitted batch job ($number)" $output - job_id]} {
+	lappend job_id_list $job_id
 }
 
 #
 # Specify inconsistent tasks per node (variation of test 4)
 #
 log_info "==== TEST 6 ===="
-spawn $sbatch --gpus-per-task=1 --gpus-per-node=2 --ntasks-per-node=1 -N1 --output=/dev/null -t1 --wrap $bin_hostname
-expect {
-	-re "Submitted batch job ($number)" {
-		cancel_job $expect_out(1,string)
-		log_error "Batch request not rejected"
-		set exit_code 1
-		exp_continue
-	}
-	-re "error: " {
-		log_debug "Error is expected, no worries"
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
+set output [run_command_output -xfail -subtest "$sbatch --gpus-per-task=1 --gpus-per-node=2 --ntasks-per-node=1 -N1 --output=/dev/null -t1 --wrap $bin_hostname"]
+if {$major < 21} {
+	subtest {[regexp "sbatch: error: Batch job submission failed: Invalid generic resource \\(gres\\) specification" $output]} "Job should be rejected at submit time"
+} else {
+	subtest {[regexp "sbatch: error: Failed to validate job spec. Based on --gres=gpu and --gpus-per-task requested number of tasks per node differ from --ntasks-per-node." $output]} "Job should be rejected at submit time"
 }
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+if {[regexp "Submitted batch job ($number)" $output - job_id]} {
+	lappend job_id_list $job_id
 }
