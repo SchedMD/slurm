@@ -8259,6 +8259,7 @@ static int _handle_ntasks_per_tres_step(List new_step_list,
 					    &save_ptr, &rc))) {
 			/* Simulate a tres_per_job specification */
 			step_gres_data->gres_per_step = cnt;
+			step_gres_data->ntasks_per_gres = ntasks_per_tres;
 			step_gres_data->total_gres =
 				MAX(step_gres_data->total_gres, cnt);
 			in_val = NULL;

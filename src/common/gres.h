@@ -283,6 +283,7 @@ typedef struct gres_step_state {
 	uint64_t gres_per_socket;
 	uint64_t gres_per_task;
 	uint64_t mem_per_gres;
+	uint16_t ntasks_per_gres;
 
 	/*
 	 * Allocated resources details

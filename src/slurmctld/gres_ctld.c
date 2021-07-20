@@ -1765,6 +1765,8 @@ static uint64_t _step_get_gres_needed(void *step_gres_data,
 		gres_needed = step_gres_ptr->gres_per_node;
 	} else if (step_gres_ptr->gres_per_task) {
 		gres_needed = step_gres_ptr->gres_per_task * tasks_on_node;
+	} else if (step_gres_ptr->ntasks_per_gres) {
+		gres_needed = tasks_on_node / step_gres_ptr->ntasks_per_gres;
 	} else if (step_gres_ptr->gres_per_step && (rem_nodes == 1)) {
 		gres_needed = step_gres_ptr->gres_per_step -
 			      step_gres_ptr->total_gres;
