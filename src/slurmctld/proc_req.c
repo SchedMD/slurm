@@ -116,7 +116,7 @@ static uint64_t rpc_user_time[RPC_USER_SIZE] = { 0 };
 static char *slurmd_config_files[] = {
 	"slurm.conf", "acct_gather.conf", "cgroup.conf",
 	"cgroup_allowed_devices_file.conf", "ext_sensors.conf", "gres.conf",
-	"job_container.conf", "knl_cray.conf", "plugstack.conf",
+	"helpers.conf", "job_container.conf", "knl_cray.conf", "plugstack.conf",
 	"topology.conf", NULL};
 
 static char *client_config_files[] = {"slurm.conf",
