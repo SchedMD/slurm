@@ -94,18 +94,6 @@ extern void prep_prolog_slurmctld_callback(int rc, uint32_t job_id)
 
 	prolog_running_decr(job_ptr);
 
-	if (power_save_test()) {
-		/* Wait for node to register after booting */
-	} else if (job_ptr->node_bitmap) {
-		for (int i=0; i < node_record_count; i++) {
-			if (bit_test(job_ptr->node_bitmap, i) == 0)
-				continue;
-			bit_clear(booting_node_bitmap, i);
-			node_record_table_ptr[i].node_state &=
-				(~NODE_STATE_POWERING_UP);
-		}
-	}
-
 	unlock_slurmctld(job_write_lock);
 }
 
