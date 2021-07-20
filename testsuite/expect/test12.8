@@ -70,6 +70,13 @@ if {$job_id == 0} {
 
 if {[wait_for_job $job_id "DONE"] != 0} {
 	log_error "Error waiting for job $job_id to complete"
+
+	# TODO Temporary debug to troubleshoot bug 11887 (revert once fixed)
+	run_command "$squeue"
+	run_command "$sinfo"
+	run_command "$scontrol show job"
+	run_command "$scontrol show node"
+
 	cancel_job $job_id
 	set exit_code 1
 }
