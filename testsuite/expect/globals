@@ -210,6 +210,7 @@ cset bin_perldoc "/usr/bin/perldoc"
 cset bin_hostname "hostname"
 
 cset bin_kill	"kill"
+cset bin_lscpu	"lscpu"
 cset bin_make	"make"
 cset bin_mv	"mv"
 cset bin_od	"od"
