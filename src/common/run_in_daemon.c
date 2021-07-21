@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  run_in_deamon.c - functions to determine if you are a given daemon or not
+ *  run_in_daemon.c - functions to determine if you are a given daemon or not
  *****************************************************************************
  *  Copyright (C) 2020 SchedMD LLC
  *  Written by Danny Auble <da@schedmd.com>
