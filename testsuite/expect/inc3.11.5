@@ -40,7 +40,7 @@ proc inc3_11_5 {} {
 	#
 	log_info "+++++ STARTING TEST 5 (Within: inc3.11.5) +++++"
 	# Make the reservation
-	set ret_code [create_res $res_name "StartTime=now+60minutes Duration=60 Nodes=[list2hostlist [get_nodes_by_state idle,power_down,powering_down]] user=$user_name"]
+	set ret_code [create_res $res_name "StartTime=now+60minutes Duration=60 Nodes=[node_list_to_range [get_nodes_by_state idle,power_down,powering_down]] user=$user_name"]
 	if {$ret_code != 0} {
 		fail "Unable to create a valid reservation (Within: inc3.11.5)"
 	}
