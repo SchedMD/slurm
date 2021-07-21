@@ -52,6 +52,9 @@ extern bool running_in_daemon(void);
 /* check if running in the slurmctld */
 extern bool running_in_slurmctld(void);
 
+/* call this if you don't want the cached value for running_in_slurmctld */
+extern bool running_in_slurmctld_reset(void);
+
 /* check if running in the slurmd */
 extern bool running_in_slurmd(void);
 

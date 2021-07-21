@@ -628,6 +628,19 @@ extern int slurmscriptd_init(int argc, char **argv)
 		char *log_prefix;
 
 		/*
+		 * Since running_in_slurmctld() is called before we fork()'d,
+		 * the result is cached in static variables, so calling it now
+		 * would return true even though we're now slurmscriptd.
+		 * Reset those cached variables so running_in_slurmctld()
+		 * returns false if called from slurmscriptd.
+		 * But first change slurm_prog_name since that is
+		 * read by run_in_daemon().
+		 */
+		xfree(slurm_prog_name);
+		slurm_prog_name = xstrdup(proc_name);
+		running_in_slurmctld_reset();
+
+		/*
 		 * Change the process name to slurmscriptd.
 		 * Since slurmscriptd logs to the slurmctld log file, add a
 		 * prefix to make it clear which daemon a log comes from.
