@@ -101,6 +101,8 @@ libcommon_la_SOURCES =				\
 	run_command.h				\
 	run_in_daemon.c				\
 	run_in_daemon.h				\
+	setproctitle.c				\
+	setproctitle.h				\
 	site_factor.c				\
 	site_factor.h				\
 	slurm_accounting_storage.c		\

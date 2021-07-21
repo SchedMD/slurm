@@ -164,9 +164,9 @@ am_libcommon_la_OBJECTS = assoc_mgr.lo bitstring.lo callerid.lo \
 	parse_config.lo parse_time.lo parse_value.lo plugin.lo \
 	plugrack.lo plugstack.lo power.lo prep.lo print_fields.lo \
 	proc_args.lo read_config.lo reverse_tree.lo run_command.lo \
-	run_in_daemon.lo site_factor.lo slurm_accounting_storage.lo \
-	slurm_acct_gather.lo slurm_acct_gather_energy.lo \
-	slurm_acct_gather_filesystem.lo \
+	run_in_daemon.lo setproctitle.lo site_factor.lo \
+	slurm_accounting_storage.lo slurm_acct_gather.lo \
+	slurm_acct_gather_energy.lo slurm_acct_gather_filesystem.lo \
 	slurm_acct_gather_interconnect.lo slurm_acct_gather_profile.lo \
 	slurm_auth.lo slurm_cred.lo slurm_errno.lo \
 	slurm_ext_sensors.lo slurm_jobacct_gather.lo slurm_jobcomp.lo \
@@ -231,7 +231,8 @@ am__depfiles_remade = ./$(DEPDIR)/assoc_mgr.Plo \
 	./$(DEPDIR)/prep.Plo ./$(DEPDIR)/print_fields.Plo \
 	./$(DEPDIR)/proc_args.Plo ./$(DEPDIR)/read_config.Plo \
 	./$(DEPDIR)/reverse_tree.Plo ./$(DEPDIR)/run_command.Plo \
-	./$(DEPDIR)/run_in_daemon.Plo ./$(DEPDIR)/site_factor.Plo \
+	./$(DEPDIR)/run_in_daemon.Plo ./$(DEPDIR)/setproctitle.Plo \
+	./$(DEPDIR)/site_factor.Plo \
 	./$(DEPDIR)/slurm_accounting_storage.Plo \
 	./$(DEPDIR)/slurm_acct_gather.Plo \
 	./$(DEPDIR)/slurm_acct_gather_energy.Plo \
@@ -664,6 +665,8 @@ libcommon_la_SOURCES = \
 	run_command.h				\
 	run_in_daemon.c				\
 	run_in_daemon.h				\
+	setproctitle.c				\
+	setproctitle.h				\
 	site_factor.c				\
 	site_factor.h				\
 	slurm_accounting_storage.c		\
@@ -892,6 +895,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/reverse_tree.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_command.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/run_in_daemon.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setproctitle.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/site_factor.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_accounting_storage.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_acct_gather.Plo@am__quote@ # am--include-marker
@@ -1118,6 +1122,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/reverse_tree.Plo
 	-rm -f ./$(DEPDIR)/run_command.Plo
 	-rm -f ./$(DEPDIR)/run_in_daemon.Plo
+	-rm -f ./$(DEPDIR)/setproctitle.Plo
 	-rm -f ./$(DEPDIR)/site_factor.Plo
 	-rm -f ./$(DEPDIR)/slurm_accounting_storage.Plo
 	-rm -f ./$(DEPDIR)/slurm_acct_gather.Plo
@@ -1264,6 +1269,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/reverse_tree.Plo
 	-rm -f ./$(DEPDIR)/run_command.Plo
 	-rm -f ./$(DEPDIR)/run_in_daemon.Plo
+	-rm -f ./$(DEPDIR)/setproctitle.Plo
 	-rm -f ./$(DEPDIR)/site_factor.Plo
 	-rm -f ./$(DEPDIR)/slurm_accounting_storage.Plo
 	-rm -f ./$(DEPDIR)/slurm_acct_gather.Plo

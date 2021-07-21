@@ -50,6 +50,7 @@
 #include "src/common/gres.h"
 #include "src/common/node_select.h"
 #include "src/common/plugstack.h"
+#include "src/common/setproctitle.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_acct_gather_profile.h"
@@ -72,7 +73,6 @@
 #include "src/slurmd/slurmstepd/container.h"
 #include "src/slurmd/slurmstepd/mgr.h"
 #include "src/slurmd/slurmstepd/req.h"
-#include "src/slurmd/slurmstepd/setproctitle.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
