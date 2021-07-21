@@ -99,7 +99,7 @@ if {[wait_for_job $job_id "RUNNING"]} {
 set step_cnt 0
 wait_for {$step_cnt == $steps_started} {
 	set step_cnt 0
-	spawn $squeue -s --state=RUNNING
+	spawn $squeue -s --state=RUNNING -o %i --noheader
 	expect {
 		-re "($job_id)\\.($number)" {
 			incr step_cnt
