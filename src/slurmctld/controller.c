@@ -426,7 +426,7 @@ int main(int argc, char **argv)
 	 * happen after we block signals so that thread doesn't catch any
 	 * signals.
 	 */
-	slurmscriptd_init();
+	slurmscriptd_init(argc, argv);
 
 	association_based_accounting = slurm_with_slurmdbd();
 	accounting_enforce = slurm_conf.accounting_storage_enforce;

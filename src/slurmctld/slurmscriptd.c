@@ -34,6 +34,12 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
+#if HAVE_SYS_PRCTL_H
+#  include <sys/prctl.h>
+#endif
+
 #include <signal.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -44,6 +50,7 @@
 #include "src/common/eio.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/setproctitle.h"
 #include "src/common/track_script.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -546,7 +553,7 @@ extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 	FREE_NULL_BUFFER(buffer);
 }
 
-extern int slurmscriptd_init(void)
+extern int slurmscriptd_init(int argc, char **argv)
 {
 	int to_slurmscriptd[2] = {-1, -1};
 	int to_slurmctld[2] = {-1, -1};
@@ -617,6 +624,26 @@ extern int slurmscriptd_init(void)
 	} else { /* child (slurmscriptd_pid == 0) */
 		ssize_t i;
 		int rc = SLURM_ERROR, ack;
+		char *proc_name = "slurmscriptd";
+		char *log_prefix;
+
+		/*
+		 * Change the process name to slurmscriptd.
+		 * Since slurmscriptd logs to the slurmctld log file, add a
+		 * prefix to make it clear which daemon a log comes from.
+		 */
+		init_setproctitle(argc, argv);
+		setproctitle("%s", proc_name);
+#if HAVE_SYS_PRCTL_H
+		if (prctl(PR_SET_NAME, proc_name, NULL, NULL, NULL) < 0) {
+			error("%s: cannot set my name to %s %m",
+			      __func__, proc_name);
+		}
+#endif
+		/* log_set_fpfx takes control of an xmalloc()'d string */
+		log_prefix = xstrdup_printf("%s: ", proc_name);
+		log_set_fpfx(&log_prefix);
+
 		/* Close extra fd's. */
 		if (close(to_slurmscriptd[1]) < 0) {
 			error("%s: slurmscriptd: Unable to close write to_slurmscriptd in child: %m",
