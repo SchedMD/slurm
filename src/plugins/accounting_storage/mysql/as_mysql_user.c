@@ -131,6 +131,7 @@ no_assocs:
 			wckey_cond.user_list = user_cond->assoc_cond->user_list;
 	}
 	wckey_cond.name_list = user_cond->def_wckey_list;
+	wckey_cond.only_defs = 1;
 
 	tmp_list = as_mysql_get_wckeys(mysql_conn, uid, &wckey_cond);
 	if (tmp_list) {
