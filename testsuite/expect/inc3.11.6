@@ -40,13 +40,13 @@ proc inc3_11_6 {} {
 	#
 	log_info "+++++ STARTING TEST 6 (Within: inc3.11.6) +++++"
 	# Make the reservation
-	set ret_code [create_res $res_name "StartTime=now+60minutes Duration=60 Nodes=[list2hostlist [get_nodes_by_state]] user=$user_name"]
+	set ret_code [create_res $res_name "StartTime=now+60minutes Duration=60 Nodes=[node_list_to_range [get_nodes_by_state]] user=$user_name"]
 	if {$ret_code != 0} {
 		fail "Unable to create a valid reservation (Within: inc3.11.6)"
 	}
 
 	# Test for time reservation conflict (front overlap)
-	set ret_code [create_res $res_name_test "StartTime=now+30minutes Duration=60 Nodes=[list2hostlist [get_nodes_by_state]] user=$user_name"]
+	set ret_code [create_res $res_name_test "StartTime=now+30minutes Duration=60 Nodes=[node_list_to_range [get_nodes_by_state]] user=$user_name"]
 	if {$ret_code == 0} {
 		delete_res $res_name_test
 		delete_res $res_name
@@ -63,13 +63,13 @@ proc inc3_11_6 {} {
 
 
 	# Make the reservation
-	set ret_code [create_res $res_name "StartTime=now+30minutes Duration=60 Nodes=[list2hostlist [get_nodes_by_state]] user=$user_name"]
+	set ret_code [create_res $res_name "StartTime=now+30minutes Duration=60 Nodes=[node_list_to_range [get_nodes_by_state]] user=$user_name"]
 	if {$ret_code != 0} {
 		fail "Unable to create a valid reservation. (Within: inc3.11.6)"
 	}
 
 	# Test for time reservation conflict (trail overlap)
-	set ret_code [create_res $res_name_test "StartTime=now+60minutes Duration=60 Nodes=[list2hostlist [get_nodes_by_state]] user=$user_name"]
+	set ret_code [create_res $res_name_test "StartTime=now+60minutes Duration=60 Nodes=[node_list_to_range [get_nodes_by_state]] user=$user_name"]
 	if {$ret_code == 0} {
 		delete_res $res_name_test
 		delete_res $res_name

@@ -210,6 +210,7 @@ cset bin_perldoc "/usr/bin/perldoc"
 cset bin_hostname "hostname"
 
 cset bin_kill	"kill"
+cset bin_lscpu	"lscpu"
 cset bin_make	"make"
 cset bin_mv	"mv"
 cset bin_od	"od"
@@ -3965,10 +3966,10 @@ proc wait_for_node args {
 #####################################################################
 #
 # NAME
-#	list2hostlist - converts a TCL list into a Slurm hostlist using scontrol
+#	node_list_to_range - converts a TCL list into a Slurm hostlist using scontrol
 #
 # SYNOPSIS
-#	list2hostlist nodes_list
+#	node_list_to_range nodes_list
 #
 # ARGUMENTS
 #
@@ -3980,12 +3981,96 @@ proc wait_for_node args {
 #
 #####################################################################
 
-proc list2hostlist {nodes_list} {
+proc node_list_to_range {nodes_list} {
 	global scontrol
 
 	set comalist [join $nodes_list ,]
 	set hostlist [run_command_output -fail "$scontrol show hostlist $comalist"]
 	set hostlist [string trimright $hostlist "\r\n"]
+}
+
+
+################################################################
+#
+# NAME
+#	list_to_range - converts a list of integer numbers to a range expression
+#
+# SYNOPSIS
+#	list_to_range ?numeric_list?
+#
+# DESCRIPTION
+#	Collapse a numeric list to a range expression defined by the following
+#	EBNF:
+#		<expression> ::= <range> {, <range>}*
+#		<range> ::= <integer> - <integer> | <integer>
+#
+# RETURN VALUE
+#	a range expression representing the numeric elements on the given list.
+#
+################################################################
+
+proc list_to_range {range_expression} {
+	set node_range_expression \[$range_expression\]
+	set range_list [node_list_to_range $node_range_expression]
+	return $range_list
+}
+
+
+#####################################################################
+#
+# NAME
+#	node_range_to_list - converts a node range expression into a list of nodes using scontrol
+#
+# SYNOPSIS
+#	node_range_to_list node_range_expression
+#
+# ARGUMENTS
+#
+#	node_range_expression
+#		a node range expression accepted by scontrol
+#
+# RETURN VALUE
+#	a list contining all node names expanded from the node range expression
+#
+#####################################################################
+
+proc node_range_to_list {node_range_expression} {
+	global scontrol
+
+	set node_list [list]
+	set output [run_command_output -fail "$scontrol show hostnames $node_range_expression"]
+	foreach line [split $output "\n"] {
+		if {$line eq ""} {
+			break
+		}
+		lappend node_list $line
+	}
+	return $node_list
+}
+
+
+################################################################
+#
+# NAME
+#	range_to_list - converts a range expression into a list with the numbers of the range
+#
+# SYNOPSIS
+#	range_to_list ?range_expression?
+#
+# DESCRIPTION
+#	Expands a range expression defined by the following EBNF into a numeric list
+#		<expression> ::= <range> {, <range>}*
+#		<range> ::= <integer> - <integer> | <integer>
+#
+# RETURN VALUE
+#	Returns the list of integer numbers defined by the range_expression
+#
+################################################################
+
+proc range_to_list {range_expression} {
+	set node_range_expression \[$range_expression\]
+	set range_list [node_range_to_list $node_range_expression]
+	return $range_list
 }
 
 
@@ -4989,7 +5074,7 @@ proc count_gres { gres_param } {
 
 proc get_highest_gres_count { node_count gres_name } {
 
-	set available_nodes [list2hostlist [get_nodes_by_state]]
+	set available_nodes [node_list_to_range [get_nodes_by_state]]
 	set gres_dict [get_gres_count $gres_name $available_nodes]
 	set gres_count [list]
 
@@ -5172,7 +5257,7 @@ proc get_highest_mps_count { node_count } {
 	# We cannot use get_highest_gres_count because we need "per gpu",
 	# so we get all the mps per node and all gpus per node, to create
 	# a mps_per_gpu list to sort and get the count.
-	set available_nodes [list2hostlist [get_nodes_by_state]]
+	set available_nodes [node_list_to_range [get_nodes_by_state]]
 	set mps_dict [get_gres_count "mps" $available_nodes]
 	set gpu_dict [get_gres_count "gpu" $available_nodes]
 	set mps_per_gpu [list]
@@ -6167,7 +6252,7 @@ proc submit_job args {
 }
 
 
-################################################################################
+################################################################
 #
 # NAME
 #	compile_against_libslurm - compiles a test program against either libslurm.so or libslurmfull.so
