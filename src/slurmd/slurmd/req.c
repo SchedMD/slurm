@@ -1386,6 +1386,7 @@ static void
 _rpc_launch_tasks(slurm_msg_t *msg)
 {
 	int      errnum = SLURM_SUCCESS;
+	int task_g_slurmd_launch_request_rc;
 	uint16_t port;
 	char     host[HOST_NAME_MAX];
 	gid_t req_gid = auth_g_get_gid(msg->auth_cred);
@@ -1395,6 +1396,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 #ifndef HAVE_FRONT_END
 	bool     first_job_run;
 #endif
+	char *errmsg = NULL;
+
 	slurm_addr_t self;
 	slurm_addr_t *cli = &msg->orig_addr;
 	hostset_t step_hset = NULL;
@@ -1470,7 +1473,8 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 
 	/* Must follow _check_job_credential(), which sets some req fields */
-	task_g_slurmd_launch_request(req, node_id);
+	task_g_slurmd_launch_request_rc =
+		task_g_slurmd_launch_request(req, node_id);
 
 #ifndef HAVE_FRONT_END
 	if (first_job_run) {
@@ -1607,7 +1611,11 @@ done:
 	if (step_hset)
 		hostset_destroy(step_hset);
 
-	if (slurm_send_rc_msg(msg, errnum) < 0) {
+	if (task_g_slurmd_launch_request_rc)
+		xstrfmtcat(errmsg, "Failed to apply binding on %s, slurmd log may contain more details",
+			   conf->node_name);
+
+	if (slurm_send_rc_err_msg(msg, errnum, errmsg) < 0) {
 		error("%s: unable to send return code to address:port=%pA msg_type=%u: %m",
 		      __func__, &msg->address, msg->msg_type);
 

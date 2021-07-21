@@ -126,6 +126,7 @@ extern int task_p_slurmd_launch_request (launch_tasks_request_msg_t *req,
 {
 	char buf_type[100];
 	bool have_debug_flag = slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND;
+	int rc;
 
 	if (have_debug_flag) {
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
@@ -133,7 +134,7 @@ extern int task_p_slurmd_launch_request (launch_tasks_request_msg_t *req,
 			 buf_type, req->cpu_bind);
 	}
 
-	lllp_distribution(req, node_id);
+	rc = lllp_distribution(req, node_id);
 
 	if (have_debug_flag) {
 		slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
@@ -141,7 +142,7 @@ extern int task_p_slurmd_launch_request (launch_tasks_request_msg_t *req,
 			 buf_type, req->cpu_bind);
 	}
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*
