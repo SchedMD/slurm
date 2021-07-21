@@ -73,10 +73,12 @@ enum {
 
 static bool _msg_readable(eio_obj_t *obj);
 static int _msg_accept(eio_obj_t *obj, List objs);
+static int _handle_close(eio_obj_t *obj, List objs);
 
 struct io_operations msg_ops = {
 	.readable = _msg_readable,
 	.handle_read = _msg_accept,
+	.handle_close = _handle_close,
 };
 
 typedef struct {
@@ -109,6 +111,28 @@ static int slurmscriptd_writefd = -1;
 
 
 /* Function definitions: */
+
+static int _handle_close(eio_obj_t *obj, List objs)
+{
+	debug3("Called %s", __func__);
+
+	/*
+	 * This happens on normal shutdown, but it also happens when either
+	 * slurmctld or slurmscriptd are killed (e.g., by fatal(), SIGKILL)
+	 * and then the pipe is closed because the process closed.
+	 * If that happens then we want to shutdown instead of run forever.
+	 * Also, if this is slurmscriptd, then we want to kill any running
+	 * scripts.
+	 */
+	log_flag(SCRIPT, "close() on pipe");
+
+	obj->shutdown = true;
+
+	if (!running_in_slurmctld()) /* Only do this for slurmscriptd */
+		track_script_flush();
+
+	return SLURM_SUCCESS; /* Note: Return value is ignored by eio. */
+}
 
 static bool _msg_readable(eio_obj_t *obj)
 {
@@ -323,10 +347,6 @@ static int _handle_shutdown(void)
 	track_script_flush();
 
 	eio_signal_shutdown(msg_handle);
-
-#ifdef MEMORY_LEAK_DEBUG
-	track_script_fini();
-#endif
 
 	return SLURM_ERROR; /* Don't handle any more requests. */
 }
@@ -667,6 +687,11 @@ extern int slurmscriptd_init(int argc, char **argv)
 		debug("slurmscriptd: Got ack from slurmctld, initialization successful");
 		slurm_mutex_init(&write_mutex);
 		_slurmscriptd_mainloop();
+
+#ifdef MEMORY_LEAK_DEBUG
+		track_script_fini();
+#endif
+
 		/* We never want to return from here, only exit. */
 		_exit(0);
 	}
