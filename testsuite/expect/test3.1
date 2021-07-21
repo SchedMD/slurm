@@ -28,14 +28,21 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
 set job_id      0
+set file_in     "$test_name.input"
+
+# TODO Temporary variables to troubleshoot bug 9647 (remove once fixed)
+set file_out    "$test_name.output"
 
 proc cleanup {} {
-	global job_id bin_rm file_in
+	global job_id file_in
 
 	cancel_job $job_id
-	exec $bin_rm -f $file_in
+	file delete $file_in
+
+	# TODO Cleanup debug variables for bug 9647 (remove once fixed)
+	global file_out
+	file delete $file_out
 }
 
 #
@@ -49,10 +56,13 @@ if {[string compare [get_admin_level] "Administrator"]} {
 #
 # Have a job running when the reconfigure happens
 #
+# TODO Temporarily adding verbosity to troubleshoot bug 9647 (revert once fixed)
 make_bash_script $file_in "
-  $srun $bin_sleep 60
+  $srun -v -v -v $bin_sleep 60
+  #$srun $bin_sleep 60
 "
-set sbatch_pid [spawn $sbatch -N1 --output=/dev/null -t2 $file_in]
+# TODO Temporarily saving output to troubleshoot bug 9647 (revert once fixed)
+set sbatch_pid [spawn $sbatch -N1 --output=$file_out -t2 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -79,5 +89,8 @@ if {[wait_for_job $job_id RUNNING] != 0} {
 reconfigure -fail
 
 if {[wait_for_job $job_id RUNNING] != 0} {
+	# TODO Temporary debug to troubleshoot bug 9647 (revert once fixed)
+	run_command "$bin_cat $file_out"
+
 	fail "Job $job_id not running after reconfiguration"
 }
