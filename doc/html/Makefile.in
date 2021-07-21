@@ -585,6 +585,7 @@ html_DATA = \
 	network_multi_cluster.gif \
 	network_srun.gif \
 	network_standard.gif \
+	node_lifecycle.png \
 	plane_ex1.gif \
 	plane_ex2.gif \
 	plane_ex3.gif \
