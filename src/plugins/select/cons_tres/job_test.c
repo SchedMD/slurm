@@ -2777,7 +2777,6 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 	List node_weight_list = NULL;
 	node_weight_type *nwt;
 	ListIterator iter;
-	uint16_t *avail_cpu_per_node = NULL;
 	bool enforce_binding = false;
 
 	if (job_ptr->gres_list_req && (job_ptr->bit_flags & GRES_ENFORCE_BIND))
@@ -2871,13 +2870,13 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 	 */
 	if (max_nodes == 0)
 		all_done = true;
-	avail_cpu_per_node = xcalloc(select_node_cnt, sizeof(uint16_t));
 	node_weight_list = _build_node_weight_list(orig_node_map);
 	iter = list_iterator_create(node_weight_list);
 	while (!all_done && (nwt = (node_weight_type *) list_next(iter))) {
 		int last_max_cpu_cnt = -1;
 		while (!all_done) {
 			int max_cpu_idx = -1;
+			uint16_t max_cpu_avail_cpus = 0;
 			for (i = i_start; i <= i_end; i++) {
 				/* Node not available or already selected */
 				if (!bit_test(nwt->node_bitmap, i) ||
@@ -2892,23 +2891,23 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 					     avail_res_array[i], i, cr_type);
 				if (avail_cpus == 0)
 					continue;
-				avail_cpu_per_node[i] = avail_cpus;
 				if ((max_cpu_idx == -1) ||
 				    (avail_res_array[max_cpu_idx]->max_cpus <
 				     avail_res_array[i]->max_cpus)) {
 					max_cpu_idx = i;
+					max_cpu_avail_cpus = avail_cpus;
 					if (avail_res_array[max_cpu_idx]->
 					    max_cpus == last_max_cpu_cnt)
 						break;
 				}
 			}
 			if ((max_cpu_idx == -1) ||
-			    (avail_cpu_per_node[max_cpu_idx] == 0)) {
+			    (max_cpu_avail_cpus == 0)) {
 				/* No more usable nodes left, get next weight */
 				break;
 			}
 			i = max_cpu_idx;
-			avail_cpus = avail_cpu_per_node[i];
+			avail_cpus = max_cpu_avail_cpus;
 			if (gres_per_job) {
 				gres_sched_add(
 					job_ptr->gres_list_req,
@@ -2950,7 +2949,6 @@ static int _eval_nodes_lln(job_record_t *job_ptr,
 
 fini:	FREE_NULL_LIST(node_weight_list);
 	bit_free(orig_node_map);
-	xfree(avail_cpu_per_node);
 	return error_code;
 }
 
