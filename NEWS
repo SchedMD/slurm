@@ -158,7 +158,6 @@ documents those changes that are of interest to users and administrators.
     EpilogSlurmctld. This avoids fork() calls from slurmctld, and can avoid
     performance issues if the slurmctld has a large memory footprint.
  -- Added new Script option to DebugFlags for debugging slurmscriptd.
- -- Added SlurmScriptdPidFile option to slurm.conf.
  -- scrontab - add ability to update crontab from a file or standard input.
  -- scrontab - add ability to set and expand variables.
  -- Pass JSON of job to node mappings to ResumeProgram.

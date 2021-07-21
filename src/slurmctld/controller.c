@@ -2955,24 +2955,6 @@ static void _kill_old_slurmctld(void)
 			fatal ("unable to wait for readw lock: %m");
 		(void) close(fd); /* Ignore errors */
 	}
-	/*
-	 * Now that we've killed thd old slurmctld, kill the old slurmscriptd.
-	 * If it was still communicating with the old slurmctld, it would have
-	 * been killed when we sent SIGTERM to the old slurmctld. So we just
-	 * use SIGKILL here.
-	 */
-	oldpid = read_pidfile(slurm_conf.slurmscriptd_pidfile, &fd);
-	if (oldpid != (pid_t) 0) {
-		info ("killing old slurmscriptd[%ld]", (long) oldpid);
-		kill(oldpid, SIGKILL);
-
-		/*
-		 * Wait for slurmscriptd to terminate
-		 */
-		if (fd_get_readw_lock(fd) < 0)
-			fatal("unable to wait for readw lock on slurmscriptd: %m");
-		(void) close(fd); /* Ignore errors */
-	}
 }
 
 /* NOTE: No need to lock the config data since we are still single-threaded */
@@ -2980,9 +2962,6 @@ static void _init_pidfile(void)
 {
 	if (!xstrcmp(slurm_conf.slurmctld_pidfile, slurm_conf.slurmd_pidfile))
 		error("SlurmctldPid == SlurmdPid, use different names");
-	if (!xstrcmp(slurm_conf.slurmctld_pidfile,
-		     slurm_conf.slurmscriptd_pidfile))
-		error("SlurmctldPid == SlurmscriptdPid, use different names");
 
 	/* Don't close the fd returned here since we need to keep the
 	 * fd open to maintain the write lock */

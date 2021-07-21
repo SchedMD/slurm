@@ -333,8 +333,6 @@ int slurm_ctl_conf_to_hv(slurm_conf_t *conf, HV *hv)
 	if (conf->slurmd_spooldir)
 		STORE_FIELD(hv, conf, slurmd_spooldir, charp);
 	STORE_FIELD(hv, conf, slurmd_timeout, uint16_t);
-	if (conf->slurmscriptd_pidfile)
-		STORE_FIELD(hv, conf, slurmscriptd_pidfile, charp);
 	STORE_FIELD(hv, conf, slurmd_user_id, uint32_t);
 	if (conf->slurmd_user_name)
 		STORE_FIELD(hv, conf, slurmd_user_name, charp);
@@ -588,7 +586,6 @@ int hv_to_slurm_ctl_conf(HV *hv, slurm_conf_t *conf)
 	FETCH_FIELD(hv, conf, slurmd_port, uint32_t, TRUE);
 	FETCH_FIELD(hv, conf, slurmd_spooldir, charp, FALSE);
 	FETCH_FIELD(hv, conf, slurmd_timeout, uint16_t, TRUE);
-	FETCH_FIELD(hv, conf, slurmscriptd_pidfile, charp, FALSE);
 	FETCH_FIELD(hv, conf, srun_epilog, charp, FALSE);
 	FETCH_PTR_FIELD(hv, conf, srun_port_range, "SLURM::port_range", FALSE);
 	FETCH_FIELD(hv, conf, srun_prolog, charp, FALSE);

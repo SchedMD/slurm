@@ -4583,7 +4583,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, buf_t *buffer,
 		packstr(build_ptr->slurmd_spooldir, buffer);
 		pack16(build_ptr->slurmd_syslog_debug, buffer);
 		pack16(build_ptr->slurmd_timeout, buffer);
-		packstr(build_ptr->slurmscriptd_pidfile, buffer);
 		packstr(build_ptr->srun_epilog, buffer);
 		pack16(build_ptr->srun_port_range[0], buffer);
 		pack16(build_ptr->srun_port_range[1], buffer);
@@ -5564,8 +5563,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **build_buffer_ptr,
 		                       &uint32_tmp, buffer);
 		safe_unpack16(&build_ptr->slurmd_syslog_debug, buffer);
 		safe_unpack16(&build_ptr->slurmd_timeout, buffer);
-		safe_unpackstr_xmalloc(&build_ptr->slurmscriptd_pidfile,
-		                       &uint32_tmp, buffer);
 
 		safe_unpackstr_xmalloc(&build_ptr->srun_epilog,
 		                       &uint32_tmp, buffer);
