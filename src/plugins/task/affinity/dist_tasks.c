@@ -423,10 +423,13 @@ extern int lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 			   (!(req->cpu_bind_type & CPU_BIND_MAP)) &&
 			   (!(req->cpu_bind_type & CPU_BIND_MASK))) {
 
-			if (!(req->cpu_bind_type & CPU_BIND_NONE))
+			if (!(req->cpu_bind_type & CPU_BIND_NONE)) {
 				rc = SLURM_ERROR;
-			info("entire node must be allocated, "
-			     "disabling affinity");
+				slurm_sprint_cpu_bind_type(buf_type,
+							   req->cpu_bind_type);
+				info("Entire node must be allocated for %s, disabling affinity",
+				     buf_type);
+			}
 			xfree(req->cpu_bind);
 			req->cpu_bind = avail_mask;
 			req->cpu_bind_type &= (~bind_mode);
