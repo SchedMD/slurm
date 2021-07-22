@@ -130,8 +130,8 @@ static void _get_unique_job_node_cnt(job_record_t *job_ptr,
 			uint64_t init_cnt = bit_set_count(
 				job_ptr->job_resrcs->node_bitmap);
 			*node_cnt = init_cnt - overlap_cnt;
-			log_flag(TRES_NODE, "%s: %pJ unique allocated node count changed from %"PRIu64" to %"PRIu64,
-				 __func__, job_ptr, init_cnt, *node_cnt);
+			debug2("%s: %pJ unique allocated node count changed from %"PRIu64" to %"PRIu64,
+			       __func__, job_ptr, init_cnt, *node_cnt);
 		}
 	} else if (job_ptr->details && job_ptr->details->req_node_bitmap &&
 		   grp_node_bitmap) {
@@ -139,7 +139,7 @@ static void _get_unique_job_node_cnt(job_record_t *job_ptr,
 			job_ptr->details->req_node_bitmap, grp_node_bitmap);
 		if (overlap_cnt <= *node_cnt) {
 			*node_cnt -=  overlap_cnt;
-			log_flag(TRES_NODE, "%s: %pJ unique allocated node count changed from %"PRIu64" to %"PRIu64,
+			debug2("%s: %pJ unique allocated node count changed from %"PRIu64" to %"PRIu64,
 				 __func__, job_ptr, *node_cnt + overlap_cnt, *node_cnt);
 		}
 	}

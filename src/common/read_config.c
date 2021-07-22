@@ -5410,11 +5410,6 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "TimeCray");
 	}
-	if (debug_flags & DEBUG_FLAG_TRES_NODE) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "TRESNode");
-	}
 	if (debug_flags & DEBUG_FLAG_TRACE_JOBS) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5555,8 +5550,6 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_TASK;
 		else if (xstrcasecmp(tok, "TraceJobs") == 0)
 			(*flags_out) |= DEBUG_FLAG_TRACE_JOBS;
-		else if (xstrcasecmp(tok, "TRESNode") == 0)
-			(*flags_out) |= DEBUG_FLAG_TRES_NODE;
 		else if (xstrcasecmp(tok, "Trigger") == 0)
 			(*flags_out) |= DEBUG_FLAG_TRIGGERS;
 		else if (xstrcasecmp(tok, "Triggers") == 0)
