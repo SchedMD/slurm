@@ -555,7 +555,7 @@ int main(int argc, char **argv)
 	destroy_operations();
 	destroy_openapi();
 	free_con_mgr(conmgr);
-	data_destroy_static();
+	data_fini();
 
 	for (size_t i = 0; i < oas_plugin_count; i++) {
 		plugrack_release_by_type(oas_rack, oas_plugin_types[i]);

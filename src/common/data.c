@@ -177,7 +177,7 @@ static bool _regex_quick_match(const char *str, const regex_t *preg)
 	}
 }
 
-extern void data_destroy_static(void)
+extern void data_fini(void)
 {
 	int rc;
 

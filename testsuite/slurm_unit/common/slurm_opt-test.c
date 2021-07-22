@@ -801,7 +801,7 @@ int main(void)
 	srunner_free(sr);
 
 	/* Cleanup */
-	data_destroy_static();
+	data_fini();
 
 	return (number_failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
