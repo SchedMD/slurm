@@ -218,6 +218,8 @@ static void _add_job_running_prolog(uint32_t job_id);
 static void _remove_job_running_prolog(uint32_t job_id);
 static int  _match_jobid(void *s0, void *s1);
 static void _wait_for_job_running_prolog(uint32_t job_id);
+static int _wait_for_request_launch_prolog(uint32_t job_id,
+					    bool *first_job_run);
 static bool _requeue_setup_env_fail(void);
 
 /*
@@ -2323,44 +2325,10 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 		goto done;
 	}
 
-	if (slurm_conf.prolog_flags & PROLOG_FLAG_ALLOC) {
-		struct timespec ts = {0, 0};
-		struct timeval now;
-		int retry_cnt = 0;
-		/*
-		 * We want to wait until the rpc_prolog is ran before
-		 * continuing. Since we are already locked on prolog_mutex here
-		 * we don't have to unlock to wait on the
-		 * conf->prolog_running_cond.
-		 */
-		while (first_job_run) {
-			retry_cnt++;
-			/*
-			 * This race should only happen for at most a second as
-			 * we are only waiting for the other rpc to get here.
-			 * We should wait here for msg_timeout * 2, in case of
-			 * REQUEST_LAUNCH_PROLOG lost in forwarding tree the
-			 * direct retry from slurmctld will happen after
-			 * MessageTimeout.
-			 */
-			if (retry_cnt > (slurm_conf.msg_timeout * 2)) {
-				rc = ESLURMD_PROLOG_FAILED;
-				slurm_mutex_unlock(&prolog_mutex);
-				error("Waiting for JobId=%u REQUEST_LAUNCH_PROLOG notification failed, giving up after %u sec",
-				      req->job_id,
-				      slurm_conf.msg_timeout * 2);
-				goto done;
-			}
-
-			gettimeofday(&now, NULL);
-			ts.tv_sec = now.tv_sec + 1;
-			ts.tv_nsec = now.tv_usec * 1000;
-
-			slurm_cond_timedwait(&conf->prolog_running_cond,
-					     &prolog_mutex, &ts);
-			first_job_run = !slurm_cred_jobid_cached(conf->vctx,
-								 req->job_id);
-		}
+	rc = _wait_for_request_launch_prolog(req->job_id, &first_job_run);
+	if (rc != SLURM_SUCCESS) {
+		slurm_mutex_unlock(&prolog_mutex);
+		goto done;
 	}
 
 	/*
@@ -5906,6 +5874,52 @@ static void _wait_for_job_running_prolog(uint32_t job_id)
 	debug("Finished wait for job %d's prolog to complete", job_id);
 }
 
+/* Wait for the job's prolog launch request */
+static int _wait_for_request_launch_prolog(uint32_t job_id,
+					   bool *first_job_run)
+{
+	struct timespec ts = {0, 0};
+	struct timeval now;
+	int retry_cnt = 0;
+
+	if (!(slurm_conf.prolog_flags & PROLOG_FLAG_ALLOC) || !(*first_job_run))
+		return SLURM_SUCCESS;
+
+	/*
+	 * We want to wait until the rpc_prolog is ran before
+	 * continuing. Since we are already locked on prolog_mutex here
+	 * we don't have to unlock to wait on the
+	 * conf->prolog_running_cond.
+	 */
+	debug("Waiting for job %d's prolog launch request", job_id);
+	while (*first_job_run) {
+		retry_cnt++;
+		/*
+		 * This race should only happen for at most a second as
+		 * we are only waiting for the other rpc to get here.
+		 * We should wait here for msg_timeout * 2, in case of
+		 * REQUEST_LAUNCH_PROLOG lost in forwarding tree the
+		 * direct retry from slurmctld will happen after
+		 * MessageTimeout.
+		 */
+		if (retry_cnt > (slurm_conf.msg_timeout * 2)) {
+			error("Waiting for JobId=%u REQUEST_LAUNCH_PROLOG notification failed, giving up after %u sec",
+			      job_id, slurm_conf.msg_timeout * 2);
+			return ESLURMD_PROLOG_FAILED;
+		}
+
+		gettimeofday(&now, NULL);
+		ts.tv_sec = now.tv_sec + 1;
+		ts.tv_nsec = now.tv_usec * 1000;
+
+		slurm_cond_timedwait(&conf->prolog_running_cond,
+				     &prolog_mutex, &ts);
+		*first_job_run = !slurm_cred_jobid_cached(conf->vctx, job_id);
+	}
+	debug("Finished wait for job %d's prolog launch request", job_id);
+
+	return SLURM_SUCCESS;
+}
 
 static void
 _rpc_forward_data(slurm_msg_t *msg)
