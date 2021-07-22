@@ -8535,6 +8535,7 @@ static void _pack_complete_prolog_msg(complete_prolog_msg_t *msg, buf_t *buffer,
 {
 	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
+		packstr(msg->node_name, buffer);
 		pack32(msg->prolog_rc, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(msg->job_id, buffer);
@@ -8549,7 +8550,9 @@ static int _unpack_complete_prolog_msg(complete_prolog_msg_t **msg_ptr,
 	*msg_ptr = msg;
 
 	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+		uint32_t uint32_tmp = 0;
 		safe_unpack32(&msg->job_id, buffer);
+		safe_unpackstr_xmalloc(&msg->node_name, &uint32_tmp, buffer);
 		safe_unpack32(&msg->prolog_rc, buffer);
 	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&msg->job_id, buffer);

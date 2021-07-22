@@ -1205,6 +1205,7 @@ extern void slurm_free_prolog_launch_msg(prolog_launch_msg_t * msg)
 
 extern void slurm_free_complete_prolog_msg(complete_prolog_msg_t * msg)
 {
+	xfree(msg->node_name);
 	xfree(msg);
 }
 

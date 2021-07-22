@@ -701,6 +701,7 @@ typedef struct complete_batch_script {
 
 typedef struct complete_prolog {
 	uint32_t job_id;
+	char *node_name;
 	uint32_t prolog_rc;
 } complete_prolog_msg_t;
 
