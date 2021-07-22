@@ -1472,6 +1472,13 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	}
 
 #ifndef HAVE_FRONT_END
+	errnum = _wait_for_request_launch_prolog(req->step_id.job_id,
+						 &first_job_run);
+	if (errnum != SLURM_SUCCESS) {
+		slurm_mutex_unlock(&prolog_mutex);
+		goto done;
+	}
+
 	if (first_job_run) {
 		int rc;
 		job_env_t job_env;
