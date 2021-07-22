@@ -372,11 +372,6 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		    IS_NODE_POWERING_UP(node_ptr)) {
 			/* Issue the KILL RPC, but don't verify response */
 			down_node_cnt++;
-			if (job_ptr->node_bitmap_cg == NULL) {
-				error("deallocate_nodes: node_bitmap_cg is "
-				      "not set");
-				build_cg_bitmap(job_ptr);
-			}
 			bit_clear(job_ptr->node_bitmap_cg, i);
 			job_update_tres_cnt(job_ptr, i);
 			/*
