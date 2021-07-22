@@ -72,6 +72,16 @@
 #define DEFAULT_DIRECTIVE_STR "BB_LUA"
 /* Hold job if pre_run fails more times than MAX_RETRY_CNT */
 #define MAX_RETRY_CNT 2
+/*
+ * Limit the number of burst buffers APIs allowed to run in parallel so that we
+ * don't exceed process or system resource limits (such as number of processes
+ * or max open files) when we run scripts through slurmscriptd. We limit this
+ * per "stage" (stage in, pre run, stage out, teardown) so that if we hit the
+ * maximum in stage in (for example) we won't block all jobs from completing.
+ * We also do this so that if 1000+ jobs complete or get cancelled all at
+ * once they won't all run teardown at the same time.
+ */
+#define MAX_BURST_BUFFERS_PER_STAGE 128
 
 /*
  * These variables are required by the burst buffer plugin interface.  If they
@@ -173,6 +183,15 @@ typedef struct {
 static int lua_thread_cnt = 0;
 pthread_mutex_t lua_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/*
+ * Count of burst buffer API calls in each stage.
+ * These variables are protected by stage_cnt_mutex.
+ */
+#define DEF_STAGE_THROTTLE \
+	static pthread_mutex_t stage_cnt_mutex = PTHREAD_MUTEX_INITIALIZER;\
+	static pthread_cond_t stage_cnt_cond = PTHREAD_COND_INITIALIZER;\
+	static int stage_cnt = 0;
+
 /* Function prototypes */
 static bb_job_t *_get_bb_job(job_record_t *job_ptr);
 static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry);
@@ -200,6 +219,29 @@ static void _decr_lua_thread_cnt(void)
 	slurm_mutex_lock(&lua_thread_mutex);
 	lua_thread_cnt--;
 	slurm_mutex_unlock(&lua_thread_mutex);
+}
+
+static void _stage_throttle_start(pthread_mutex_t *mutex, pthread_cond_t *cond,
+				  int *cnt)
+{
+	slurm_mutex_lock(mutex);
+	while (1) {
+		if (*cnt < MAX_BURST_BUFFERS_PER_STAGE) {
+			*cnt = *cnt + 1;
+			break;
+		}
+		slurm_cond_wait(cond, mutex);
+	}
+	slurm_mutex_unlock(mutex);
+}
+
+static void _stage_throttle_fini(pthread_mutex_t *mutex, pthread_cond_t *cond,
+				 int *cnt)
+{
+	slurm_mutex_lock(mutex);
+	*cnt = *cnt - 1;
+	slurm_cond_broadcast(cond);
+	slurm_mutex_unlock(mutex);
 }
 
 static void _loadscript_extra(lua_State *st)
@@ -865,6 +907,8 @@ static void *_start_stage_out(void *x)
 	job_record_t *job_ptr;
 	bb_job_t *bb_job = NULL;
 	DEF_TIMERS;
+	DEF_STAGE_THROTTLE;
+	_stage_throttle_start(&stage_cnt_mutex, &stage_cnt_cond, &stage_cnt);
 
 	argc = 2;
 	argv = xcalloc(argc + 1, sizeof(char *)); /* NULL-terminated */
@@ -978,6 +1022,7 @@ static void *_start_stage_out(void *x)
 	unlock_slurmctld(job_write_lock);
 
 fini:
+	_stage_throttle_fini(&stage_cnt_mutex, &stage_cnt_cond, &stage_cnt);
 	xfree(resp_msg);
 	xfree(stage_out_args->job_script);
 	xfree(stage_out_args);
@@ -2235,6 +2280,8 @@ static void *_start_teardown(void *x)
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	DEF_TIMERS;
+	DEF_STAGE_THROTTLE;
+	_stage_throttle_start(&stage_cnt_mutex, &stage_cnt_cond, &stage_cnt);
 
 	argc = 3;
 	argv = xcalloc(argc + 1, sizeof(char *)); /* NULL-terminated */
@@ -2243,6 +2290,7 @@ static void *_start_teardown(void *x)
 	argv[2] = xstrdup_printf("%s", teardown_args->hurry ? "true" : "false");
 
 	timeout = bb_state.bb_config.other_timeout;
+
 	/* Run lua "teardown" function */
 	while (1) {
 		START_TIMER;
@@ -2343,6 +2391,7 @@ static void *_start_teardown(void *x)
 	unlock_slurmctld(job_write_lock);
 
 fini:
+	_stage_throttle_fini(&stage_cnt_mutex, &stage_cnt_cond, &stage_cnt);
 	xfree(resp_msg);
 	xfree(teardown_args->job_script);
 	xfree(teardown_args);
@@ -2402,6 +2451,8 @@ static void *_start_stage_in(void *x)
 	slurmctld_lock_t job_write_lock = { .job = WRITE_LOCK };
 
 	DEF_TIMERS;
+	DEF_STAGE_THROTTLE;
+	_stage_throttle_start(&stage_cnt_mutex, &stage_cnt_cond, &stage_cnt);
 
 	argc = 6;
 	argv = xcalloc(argc + 1, sizeof (char *)); /* NULL-terminated */
@@ -2592,6 +2643,7 @@ static void *_start_stage_in(void *x)
 	unlock_slurmctld(job_write_lock);
 
 fini:
+	_stage_throttle_fini(&stage_cnt_mutex, &stage_cnt_cond, &stage_cnt);
 	xfree(resp_msg);
 	xfree(stage_in_args->job_script);
 	xfree(stage_in_args->nodes_file);
@@ -2906,6 +2958,8 @@ static void *_start_pre_run(void *x)
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 	pre_run_args_t *pre_run_args = (pre_run_args_t *) x;
 	DEF_TIMERS;
+	DEF_STAGE_THROTTLE;
+	_stage_throttle_start(&stage_cnt_mutex, &stage_cnt_cond, &stage_cnt);
 
 	argc = 3;
 	argv = xcalloc(argc + 1, sizeof (char *)); /* NULL-terminated */
@@ -2989,6 +3043,7 @@ static void *_start_pre_run(void *x)
 	unlock_slurmctld(job_write_lock);
 
 fini:
+	_stage_throttle_fini(&stage_cnt_mutex, &stage_cnt_cond, &stage_cnt);
 	xfree(resp_msg);
 	xfree(pre_run_args->job_script);
 	xfree(pre_run_args->node_file);
