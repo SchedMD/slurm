@@ -91,6 +91,7 @@ const char	plugin_type[]		= "gres/gpu";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 static char	*gres_name		= "gpu";
 static List	gres_devices		= NULL;
+static uint32_t	node_flags		= 0;
 
 extern void gres_p_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq)
 {
@@ -116,8 +117,21 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 
 	if (*already_seen) {
 		global_list = xstrdup(getenvp(*env_ptr, slurm_env_var));
-		local_list = xstrdup(getenvp(*env_ptr,
-					     "CUDA_VISIBLE_DEVICES"));
+
+		/*
+		 * Determine which existing env to check for local list.  We
+		 * only need one since they are all the same and this is only
+		 * for printing an error later.
+		 */
+		if (node_flags & GRES_CONF_ENV_NVML)
+			local_list = xstrdup(getenvp(*env_ptr,
+						     "CUDA_VISIBLE_DEVICES"));
+		else if (node_flags & GRES_CONF_ENV_RSMI)
+			local_list = xstrdup(getenvp(*env_ptr,
+						     "ROCR_VISIBLE_DEVICES"));
+		else if (node_flags & GRES_CONF_ENV_OPENCL)
+			local_list = xstrdup(getenvp(*env_ptr,
+						     "GPU_DEVICE_ORDINAL"));
 	}
 
 	common_gres_set_env(gres_devices, env_ptr,
@@ -138,12 +152,15 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 	}
 
 	if (local_list) {
-		env_array_overwrite(
-			env_ptr, "CUDA_VISIBLE_DEVICES", local_list);
-		env_array_overwrite(
-			env_ptr, "GPU_DEVICE_ORDINAL", local_list);
-		env_array_overwrite(
-			env_ptr, "ROCR_VISIBLE_DEVICES", local_list);
+		if (node_flags & GRES_CONF_ENV_NVML)
+			env_array_overwrite(env_ptr, "CUDA_VISIBLE_DEVICES",
+					    local_list);
+		if (node_flags & GRES_CONF_ENV_RSMI)
+			env_array_overwrite(env_ptr, "ROCR_VISIBLE_DEVICES",
+					    local_list);
+		if (node_flags & GRES_CONF_ENV_OPENCL)
+			env_array_overwrite(env_ptr, "GPU_DEVICE_ORDINAL",
+					    local_list);
 		xfree(local_list);
 		*already_seen = true;
 	}
@@ -805,6 +822,24 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 }
 
+static int _set_env_types_on_node_flags(void *x, void *arg)
+{
+	gres_slurmd_conf_t *gres_slurmd_conf = (gres_slurmd_conf_t *)x;
+
+	if (gres_slurmd_conf->config_flags & GRES_CONF_ENV_NVML)
+		node_flags |= GRES_CONF_ENV_NVML;
+	if (gres_slurmd_conf->config_flags & GRES_CONF_ENV_RSMI)
+		node_flags |= GRES_CONF_ENV_RSMI;
+	if (gres_slurmd_conf->config_flags & GRES_CONF_ENV_OPENCL)
+		node_flags |= GRES_CONF_ENV_OPENCL;
+
+	/* No need to continue if all are set */
+	if ((node_flags & GRES_CONF_ENV_SET) == GRES_CONF_ENV_SET)
+		return -1;
+
+	return 0;
+}
+
 /*
  * We could load gres state or validate it using various mechanisms here.
  * This only validates that the configuration was specified in gres.conf or
@@ -854,6 +889,16 @@ extern int gres_p_node_config_load(List gres_conf_list,
 	}
 
 	rc = common_node_config_load(gres_conf_list, gres_name, &gres_devices);
+
+	/*
+	 * See what envs the gres_slurmd_conf records want to set (if one
+	 * record wants an env, assume every record on this node wants that
+	 * env). Check node_flags when setting envs later in stepd.
+	 */
+	node_flags = 0;
+	(void) list_for_each(gres_conf_list,
+			     _set_env_types_on_node_flags,
+			     NULL);
 
 	if (rc != SLURM_SUCCESS)
 		fatal("%s failed to load configuration", plugin_name);
@@ -922,12 +967,21 @@ extern void gres_p_task_set_env(char ***step_env_ptr,
 extern void gres_p_send_stepd(buf_t *buffer)
 {
 	common_send_stepd(buffer, gres_devices);
+
+	pack32(node_flags, buffer);
 }
 
 /* Receive GPU-specific GRES information from slurmd via a buffer */
 extern void gres_p_recv_stepd(buf_t *buffer)
 {
 	common_recv_stepd(buffer, &gres_devices);
+
+	safe_unpack32(&node_flags, buffer);
+
+	return;
+
+unpack_error:
+	error("%s: failed", __func__);
 }
 
 /*
@@ -1063,10 +1117,12 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 		list_iterator_destroy(iter);
 	}
 	if (dev_num_str) {
-		xstrfmtcat((*epilog_env_ptr)[env_inx++],
-			   "CUDA_VISIBLE_DEVICES=%s", dev_num_str);
-		xstrfmtcat((*epilog_env_ptr)[env_inx++],
-			   "GPU_DEVICE_ORDINAL=%s", dev_num_str);
+		if (node_flags & GRES_CONF_ENV_NVML)
+			xstrfmtcat((*epilog_env_ptr)[env_inx++],
+				   "CUDA_VISIBLE_DEVICES=%s", dev_num_str);
+		if (node_flags & GRES_CONF_ENV_OPENCL)
+			xstrfmtcat((*epilog_env_ptr)[env_inx++],
+				   "GPU_DEVICE_ORDINAL=%s", dev_num_str);
 		xfree(dev_num_str);
 	}
 

@@ -1099,7 +1099,7 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	bool cores_flag = false, cpus_flag = false;
 	char *type_str = NULL;
 	char *autodetect_string = NULL;
-	bool autodetect = false;
+	bool autodetect = false, no_gpu_env = false;
 
 	tbl = s_p_hashtbl_create(_gres_options);
 	s_p_parse_line(tbl, *leftover, leftover);
@@ -1194,8 +1194,25 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	if (s_p_get_string(&tmp_str, "Flags", tbl)) {
 		if (xstrcasestr(tmp_str, "CountOnly"))
 			p->config_flags |= GRES_CONF_COUNT_ONLY;
+
+		if (xstrcasestr(tmp_str, "nvidia_gpu_env"))
+			p->config_flags |= GRES_CONF_ENV_NVML;
+		if (xstrcasestr(tmp_str, "amd_gpu_env"))
+			p->config_flags |= GRES_CONF_ENV_RSMI;
+		if (xstrcasestr(tmp_str, "opencl_env"))
+			p->config_flags |= GRES_CONF_ENV_OPENCL;
+
+		/* String 'no_gpu_env' will clear all gpu env vars */
+		if (xstrcasestr(tmp_str, "no_gpu_env"))
+			no_gpu_env = true;
 		xfree(tmp_str);
 	}
+
+	/* By default, all env vars are set */
+	if (!no_gpu_env &&
+	    !(p->config_flags & GRES_CONF_ENV_SET) &&
+	    !xstrcasecmp(p->name, "gpu"))
+		p->config_flags |= GRES_CONF_ENV_SET;
 
 	if (s_p_get_string(&p->links, "Link",  tbl) ||
 	    s_p_get_string(&p->links, "Links", tbl)) {
@@ -1265,6 +1282,7 @@ static int _parse_gres_config_node(void **dest, slurm_parser_enum_t type,
 		{"Count", S_P_STRING},	/* Number of Gres available */
 		{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource */
 		{"Cores", S_P_STRING},	/* Cores to bind to Gres resource */
+		{"EnvVars", S_P_STRING}, /* Restrict which env vars are set */
 		{"File",  S_P_STRING},	/* Path to Gres device */
 		{"Files",  S_P_STRING},	/* Path to Gres device */
 		{"Flags", S_P_STRING},	/* GRES Flags */
@@ -10119,6 +10137,24 @@ extern char *gres_flags2str(uint32_t config_flags)
 	if (config_flags & GRES_CONF_HAS_TYPE) {
 		strcat(flag_str, sep);
 		strcat(flag_str, "HAS_TYPE");
+		sep = ",";
+	}
+
+	if (config_flags & GRES_CONF_ENV_NVML) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "ENV_NVML");
+		sep = ",";
+	}
+
+	if (config_flags & GRES_CONF_ENV_RSMI) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "ENV_RSMI");
+		sep = ",";
+	}
+
+	if (config_flags & GRES_CONF_ENV_OPENCL) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "ENV_OPENCL");
 		sep = ",";
 	}
 

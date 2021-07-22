@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "June 2021" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "July 2021" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
@@ -170,6 +170,25 @@ Allowed values at present are:
 Do not attempt to load plugin as this GRES will only be used to track counts of
 GRES used. This avoids attempting to load non-existent plugin which can
 affect filesystems with high latency metadata operations for non-existent files.
+.TP
+\fBnvidia_gpu_env\fR
+Set environment variable \fICUDA_VISIBLE_DEVICES\fR for all GPUs on the
+specified node(s).
+.TP
+\fBamd_gpu_env\fR
+Set environment variable \fIROCR_VISIBLE_DEVICES\fR for all GPUs on the
+specified node(s).
+.TP
+\fBopencl_env\fR
+Set environment variable \fIGPU_DEVICE_ORDINAL\fR for all GPUs on the
+specified node(s).
+.TP
+\fBno_gpu_env\fR
+Set no gpu specific environment variables.
+.TP
+Note that there is a known issue with the AMD ROCm runtime where \fIROCR_VISIBLE_DEVICES\fR is processed first, and then \fICUDA_VISIBLE_DEVICES\fR is processed. To avoid the issues caused by this, set \fIFlags=amd_gpu_env\fR for AMD GPUs so only \fIROCR_VISIBLE_DEVICES\fR is set.
+.TP
+Note if no *_gpu_env flags are given all environment variables will be set unless autodetect is used where \fInvidia_gpu_env\fR will be set for \fIAutoDetect=nvml\fR, and \fIamd_gpu_env\fR is set for \fIAutoDetect=rsmi\fR.
 .RE
 
 .TP

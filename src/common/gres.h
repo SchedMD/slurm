@@ -76,6 +76,12 @@ typedef struct {
 #define GRES_CONF_COUNT_ONLY SLURM_BIT(3) /* GRES lacks plugin to load */
 #define GRES_CONF_LOADED     SLURM_BIT(4) /* used to avoid loading a plugin
 					   * multiple times */
+#define GRES_CONF_ENV_NVML   SLURM_BIT(5) /* Set CUDA_VISIBLE_DEVICES */
+#define GRES_CONF_ENV_RSMI   SLURM_BIT(6) /* Set ROCR_VISIBLE_DEVICES */
+#define GRES_CONF_ENV_OPENCL SLURM_BIT(7) /* Set GPU_DEVICE_ORDINAL */
+
+#define GRES_CONF_ENV_SET    0x000000E0   /* Easy check if any of
+					   * GRES_CONF_ENV_* are set. */
 
 #define GRES_NO_CONSUME		0x0001	/* Requesting no consume of resources */
 
