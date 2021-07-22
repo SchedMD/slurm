@@ -392,6 +392,18 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		agent_args->node_count++;
 	}
 #endif
+	if (job_ptr->details->prolog_running) {
+		/*
+		 * Job wasn't launched on nodes so don't run epilog on nodes.
+		 * Cleanup completing nodes after EpilogSlurmctld is completed
+		 * in prep_epilog_slurmctld_callback().
+		 */
+		job_ptr->bit_flags |= NOT_LAUNCHED;
+		slurm_free_kill_job_msg(kill_job);
+		hostlist_destroy(agent_args->hostlist);
+		xfree(agent_args);
+		return;
+	}
 
 	if ((agent_args->node_count - down_node_cnt) == 0) {
 		/* Can not wait for epilog complete to release licenses and
