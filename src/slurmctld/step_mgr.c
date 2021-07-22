@@ -397,6 +397,7 @@ static int _step_not_cleaning(void *x, void *arg)
 	} else {
 		srun_step_signal(step_ptr, 0);
 	}
+	_internal_step_complete(step_ptr->job_ptr, step_ptr);
 
 	return 1;
 }
