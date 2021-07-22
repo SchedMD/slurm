@@ -7891,27 +7891,32 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static void
-_pack_complete_prolog_msg(
-	complete_prolog_msg_t * msg, buf_t *buffer,
-	uint16_t protocol_version)
+static void _pack_complete_prolog_msg(complete_prolog_msg_t *msg, buf_t *buffer,
+				      uint16_t protocol_version)
 {
-	pack32((uint32_t)msg->job_id, buffer);
-	pack32((uint32_t)msg->prolog_rc, buffer);
+	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		pack32(msg->prolog_rc, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		pack32(msg->job_id, buffer);
+		pack32(msg->prolog_rc, buffer);
+	}
 }
 
-static int
-_unpack_complete_prolog_msg(
-	complete_prolog_msg_t ** msg_ptr, buf_t *buffer,
-	uint16_t protocol_version)
+static int _unpack_complete_prolog_msg(complete_prolog_msg_t **msg_ptr,
+				       buf_t *buffer, uint16_t protocol_version)
 {
-	complete_prolog_msg_t *msg;
-
-	msg = xmalloc(sizeof(complete_prolog_msg_t));
+	complete_prolog_msg_t *msg = xmalloc(sizeof(*msg));
 	*msg_ptr = msg;
 
-	safe_unpack32(&msg->job_id, buffer);
-	safe_unpack32(&msg->prolog_rc, buffer);
+	if (protocol_version >= SLURM_22_05_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->prolog_rc, buffer);
+	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+		safe_unpack32(&msg->job_id, buffer);
+		safe_unpack32(&msg->prolog_rc, buffer);
+	}
+
 	return SLURM_SUCCESS;
 
 unpack_error:
