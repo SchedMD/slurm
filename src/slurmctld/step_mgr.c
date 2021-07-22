@@ -264,7 +264,7 @@ static void _build_pending_step(job_record_t *job_ptr,
 
 }
 
-static void _internal_step_complete(step_record_t *step_ptr)
+static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 {
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
 	job_record_t *job_ptr = step_ptr->job_ptr;
@@ -285,7 +285,7 @@ static void _internal_step_complete(step_record_t *step_ptr)
 	if (IS_JOB_FINISHED(job_ptr) &&
 	    job_ptr->tres_alloc_cnt &&
 	    (job_ptr->tres_alloc_cnt[TRES_ENERGY] != NO_VAL64) &&
-	    (list_count(job_ptr->step_list) == 1)) {
+	    (remaining == 1)) {
 		set_job_tres_alloc_str(job_ptr, false);
 		/* This flag says we have processed the tres alloc including
 		 * energy from all steps, so don't process or handle it again
@@ -386,6 +386,7 @@ static int _step_signal(void *object, void *arg)
 static int _step_not_cleaning(void *x, void *arg)
 {
 	step_record_t *step_ptr = (step_record_t *) x;
+	int *remaining = (int *) arg;
 
 	if (step_ptr->step_id.step_id != SLURM_PENDING_STEP) {
 		uint16_t cleaning = 0;
@@ -397,8 +398,9 @@ static int _step_not_cleaning(void *x, void *arg)
 	} else {
 		srun_step_signal(step_ptr, 0);
 	}
-	_internal_step_complete(step_ptr);
+	_internal_step_complete(step_ptr, *remaining);
 
+	(*remaining)--;
 	return 1;
 }
 
@@ -411,10 +413,12 @@ static int _step_not_cleaning(void *x, void *arg)
  */
 extern void delete_step_records(job_record_t *job_ptr)
 {
+	int remaining;
 	xassert(job_ptr);
 
+	remaining = list_count(job_ptr->step_list);
 	last_job_update = time(NULL);
-	list_delete_all(job_ptr->step_list, _step_not_cleaning, NULL);
+	list_delete_all(job_ptr->step_list, _step_not_cleaning, &remaining);
 }
 
 /* free_step_record - delete a step record's data structures */
@@ -3729,6 +3733,8 @@ no_aggregate:
 	/* The step has finished, finish it completely */
 	if (!*rem && finish) {
 		uint16_t cleaning = 0;
+		int remaining;
+
 		if (step_ptr->step_id.step_id == SLURM_PENDING_STEP)
 			return SLURM_SUCCESS;
 
@@ -3743,7 +3749,8 @@ no_aggregate:
 			return SLURM_SUCCESS;
 		}
 
-		_internal_step_complete(step_ptr);
+		remaining = list_count(step_ptr->job_ptr->step_list);
+		_internal_step_complete(step_ptr, remaining);
 		delete_step_record(step_ptr->job_ptr, step_ptr);
 		_wake_pending_steps(step_ptr->job_ptr);
 
