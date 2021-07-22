@@ -1724,6 +1724,9 @@ _slurmd_init(void)
 	 */
 	_read_config();
 
+	if (!(node_rec = find_node_record(conf->node_name)))
+		return SLURM_ERROR;
+
 	/*
 	 * slurmd -G, calling it here rather than from _process_cmdline
 	 * since it relies on gres_init and _read_config.
@@ -1753,8 +1756,7 @@ _slurmd_init(void)
 
 	fini_job_cnt = cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
 	fini_job_id = xmalloc(sizeof(uint32_t) * fini_job_cnt);
-	node_rec = find_node_record2(conf->node_name);
-	if (node_rec && node_rec->config_ptr) {
+	if (node_rec->config_ptr) {
 		(void) gres_init_node_config(conf->node_name,
 					     node_rec->config_ptr->gres,
 					     &gres_list);
