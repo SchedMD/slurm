@@ -17,7 +17,7 @@ AC_DEFUN([X_AC_SELINUX],
   AC_MSG_CHECKING([whether Slurm internal SELinux support is enabled])
   AC_ARG_ENABLE(
     [selinux],
-    AS_HELP_STRING(--enable-selinux, enable internal X11 support),
+    AS_HELP_STRING(--enable-selinux, enable internal SELinux support),
     [ case "$enableval" in
         yes) x_ac_selinux=yes ;;
          no) x_ac_selinux=no ;;

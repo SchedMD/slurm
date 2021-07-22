@@ -1704,7 +1704,7 @@ Optional Features:
                           enable --get-user-env option to load user
                           environment without .login
   --disable-x11           disable internal X11 support
-  --enable-selinux        enable internal X11 support
+  --enable-selinux        enable internal SELinux support
   --disable-glibtest      do not try to compile and run a test GLIB program
   --disable-gtktest       do not try to compile and run a test GTK+ program
   --enable-cray-network   Run Slurm on a non-Cray system with a Cray network
