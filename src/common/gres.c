@@ -10168,7 +10168,8 @@ extern char *gres_flags2str(uint32_t config_flags)
 extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 			     int cpu_cnt, char *cpu_aff_abs_range,
 			     bitstr_t *cpu_aff_mac_bitstr, char *device_file,
-			     char *type, char *links, char *unique_id)
+			     char *type, char *links, char *unique_id,
+			     uint32_t flags)
 {
 	gres_slurmd_conf_t *gpu_record;
 	bool use_empty_first_record = false;
@@ -10187,6 +10188,12 @@ extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 	gpu_record->cpu_cnt = cpu_cnt;
 	if (cpu_aff_mac_bitstr)
 		gpu_record->cpus_bitmap = bit_copy(cpu_aff_mac_bitstr);
+	gpu_record->config_flags = flags;
+
+	/* Set all by default */
+	if (!(flags & GRES_CONF_ENV_SET))
+		flags |= GRES_CONF_ENV_SET;
+
 	if (device_file) {
 		hostlist_t hl = hostlist_create(device_file);
 		gpu_record->config_flags |= GRES_CONF_HAS_FILE;

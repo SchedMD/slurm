@@ -1585,7 +1585,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 			error("Creating null GRES GPU record");
 			add_gres_to_list(gres_list_system, "gpu", 1,
 					 node_config->cpu_cnt, NULL, NULL,
-					 NULL, NULL, NULL, NULL);
+					 NULL, NULL, NULL, NULL, 0);
 			continue;
 		}
 
@@ -1703,7 +1703,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 						 nvml_mig.files,
 						 nvml_mig.profile_name,
 						 nvml_mig.links,
-						 nvml_mig.unique_id);
+						 nvml_mig.unique_id, 0);
 				_free_nvml_mig_members(&nvml_mig);
 			}
 			xfree(tmp_device_name);
@@ -1713,7 +1713,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 					 node_config->cpu_cnt,
 					 cpu_aff_abs_range,
 					 cpu_aff_mac_bitstr, device_file,
-					 device_name, nvlinks, NULL);
+					 device_name, nvlinks, NULL, 0);
 		}
 
 		// Print out possible memory frequencies for this device
