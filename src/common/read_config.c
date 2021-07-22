@@ -5290,11 +5290,6 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "ExtSensors");
 	}
-	if (debug_flags & DEBUG_FLAG_FILESYSTEM) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "Filesystem");
-	}
 	if (debug_flags & DEBUG_FLAG_FEDR) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5355,20 +5350,10 @@ extern char * debug_flags2str(uint64_t debug_flags)
 			xstrcat(rc, ",");
 		xstrcat(rc, "NO_CONF_HASH");
 	}
-	if (debug_flags & DEBUG_FLAG_NO_REALTIME) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "NoRealTime");
-	}
 	if (debug_flags & DEBUG_FLAG_POWER) {
 		if (rc)
 			xstrcat(rc, ",");
 		xstrcat(rc, "Power");
-	}
-	if (debug_flags & DEBUG_FLAG_POWER_SAVE) {
-		if (rc)
-			xstrcat(rc, ",");
-		xstrcat(rc, "PowerSave");
 	}
 	if (debug_flags & DEBUG_FLAG_PRIO) {
 		if (rc)
@@ -5531,8 +5516,6 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_FEDR;
 		else if (xstrcasecmp(tok, "Interconnect") == 0)
 			(*flags_out) |= DEBUG_FLAG_INTERCONNECT;
-		else if (xstrcasecmp(tok, "Filesystem") == 0)
-			(*flags_out) |= DEBUG_FLAG_FILESYSTEM;
 		else if (!xstrcasecmp(tok, "JobAccountGather") ||
 			 !xstrcasecmp(tok, "JAG"))
 			(*flags_out) |= DEBUG_FLAG_JAG;
@@ -5550,8 +5533,6 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_NO_CONF_HASH;
 		else if (xstrcasecmp(tok, "NodeFeatures") == 0)
 			(*flags_out) |= DEBUG_FLAG_NODE_FEATURES;
-		else if (xstrcasecmp(tok, "NoRealTime") == 0)
-			(*flags_out) |= DEBUG_FLAG_NO_REALTIME;
 		else if (xstrcasecmp(tok, "Priority") == 0)
 			(*flags_out) |= DEBUG_FLAG_PRIO;
 		else if (xstrcasecmp(tok, "Profile") == 0)
@@ -5584,8 +5565,6 @@ extern int debug_str2flags(char *debug_flags, uint64_t *flags_out)
 			(*flags_out) |= DEBUG_FLAG_CPU_FREQ;
 		else if (xstrcasecmp(tok, "Power") == 0)
 			(*flags_out) |= DEBUG_FLAG_POWER;
-		else if (xstrcasecmp(tok, "PowerSave") == 0)
-			(*flags_out) |= DEBUG_FLAG_POWER_SAVE;
 		else if (xstrcasecmp(tok, "TimeCray") == 0)
 			(*flags_out) |= DEBUG_FLAG_TIME_CRAY;
 		else if (xstrcasecmp(tok, "WorkQueue") == 0 ||

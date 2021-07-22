@@ -373,24 +373,24 @@ static void _do_power_work(time_t now)
 		bitstr_t *need_resume_bitmap, *to_resume_bitmap;
 
 		if ((resume_rate > 0) && (resume_cnt >= resume_rate)) {
-			log_flag(POWER_SAVE, "resume rate reached");
+			log_flag(POWER, "resume rate reached");
 			break;
 		}
 
 		if (!(job_ptr = find_job_record(*job_id_ptr))) {
-			log_flag(POWER_SAVE, "%pJ needed resuming but is gone now",
+			log_flag(POWER, "%pJ needed resuming but is gone now",
 				 job_ptr);
 			list_delete_item(iter);
 			continue;
 		}
 		if (!IS_JOB_CONFIGURING(job_ptr)) {
-			log_flag(POWER_SAVE, "%pJ needed resuming but isn't configuring anymore",
+			log_flag(POWER, "%pJ needed resuming but isn't configuring anymore",
 				 job_ptr);
 			list_delete_item(iter);
 			continue;
 		}
 		if (!bit_overlap_any(job_ptr->node_bitmap, power_node_bitmap)) {
-			log_flag(POWER_SAVE, "%pJ needed resuming but nodes aren't power_save anymore",
+			log_flag(POWER, "%pJ needed resuming but nodes aren't power_save anymore",
 				 job_ptr);
 			list_delete_item(iter);
 			continue;
@@ -1108,7 +1108,7 @@ static int _init_power_config(void)
 		return -1;
 	}
 
-	if (slurm_conf.debug_flags & DEBUG_FLAG_POWER_SAVE)
+	if (slurm_conf.debug_flags & DEBUG_FLAG_POWER)
 		power_save_debug = true;
 	else
 		power_save_debug = false;
