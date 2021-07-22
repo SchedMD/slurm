@@ -1899,7 +1899,7 @@ static int _notify_slurmctld_prolog_fini(
 	req.job_id	= job_id;
 	req.prolog_rc	= prolog_return_code;
 
-	req_msg.msg_type= REQUEST_COMPLETE_PROLOG;
+	req_msg.msg_type = REQUEST_COMPLETE_PROLOG;
 	req_msg.data	= &req;
 
 	/*
@@ -2102,9 +2102,9 @@ static int _spawn_prolog_stepd(slurm_msg_t *msg)
 		int rc;
 
 		debug3("%s: call to _forkexec_slurmstepd", __func__);
-		rc =  _forkexec_slurmstepd(LAUNCH_TASKS, (void *)launch_req,
-					   cli, &self, step_hset,
-					   msg->protocol_version);
+		rc = _forkexec_slurmstepd(LAUNCH_TASKS, (void *)launch_req,
+					  cli, &self, step_hset,
+					  msg->protocol_version);
 		debug3("%s: return from _forkexec_slurmstepd %d",
 		       __func__, rc);
 
