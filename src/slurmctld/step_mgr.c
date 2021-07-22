@@ -264,10 +264,10 @@ static void _build_pending_step(job_record_t *job_ptr,
 
 }
 
-static void _internal_step_complete(job_record_t *job_ptr,
-				    step_record_t *step_ptr)
+static void _internal_step_complete(step_record_t *step_ptr)
 {
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
+	job_record_t *job_ptr = step_ptr->job_ptr;
 	bool add_energy = true;
 
 	if ((slurm_conf.prolog_flags & PROLOG_FLAG_CONTAIN) &&
@@ -397,7 +397,7 @@ static int _step_not_cleaning(void *x, void *arg)
 	} else {
 		srun_step_signal(step_ptr, 0);
 	}
-	_internal_step_complete(step_ptr->job_ptr, step_ptr);
+	_internal_step_complete(step_ptr);
 
 	return 1;
 }
@@ -3743,7 +3743,7 @@ no_aggregate:
 			return SLURM_SUCCESS;
 		}
 
-		_internal_step_complete(step_ptr->job_ptr, step_ptr);
+		_internal_step_complete(step_ptr);
 		delete_step_record(step_ptr->job_ptr, step_ptr);
 		_wake_pending_steps(step_ptr->job_ptr);
 
