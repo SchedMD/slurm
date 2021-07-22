@@ -4030,7 +4030,7 @@ extern int kill_job_by_front_end_name(char *node_name)
 				acct_policy_add_job_submit(job_ptr);
 
 				if (!job_ptr->node_bitmap_cg ||
-				    bit_set_count(job_ptr->node_bitmap_cg) == 0)
+				    bit_ffs(job_ptr->node_bitmap_cg) == -1)
 					batch_requeue_fini(job_ptr);
 			} else {
 				info("Killing %pJ on failed node %s",
@@ -4294,7 +4294,7 @@ extern int kill_running_job_by_node_name(char *node_name)
 				acct_policy_add_job_submit(job_ptr);
 
 				if (!job_ptr->node_bitmap_cg ||
-				    bit_set_count(job_ptr->node_bitmap_cg) == 0)
+				    bit_ffs(job_ptr->node_bitmap_cg) == -1)
 					batch_requeue_fini(job_ptr);
 			} else {
 				info("Killing %pJ on failed node %s",
@@ -18226,7 +18226,7 @@ extern void build_cg_bitmap(job_record_t *job_ptr)
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
 	if (job_ptr->node_bitmap) {
 		job_ptr->node_bitmap_cg = bit_copy(job_ptr->node_bitmap);
-		if (bit_set_count(job_ptr->node_bitmap_cg) == 0)
+		if (bit_ffs(job_ptr->node_bitmap_cg) == -1)
 			job_ptr->job_state &= (~JOB_COMPLETING);
 	} else {
 		error("build_cg_bitmap: node_bitmap is NULL");
