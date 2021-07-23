@@ -4426,6 +4426,9 @@ static int _find_node_state_with_alloc_gres(void *x, void *key)
 
 extern bool gres_node_state_list_has_alloc_gres(List gres_list)
 {
+	if (!gres_list)
+		return false;
+
 	return list_find_first(gres_list,
 			       _find_node_state_with_alloc_gres, NULL);
 }
