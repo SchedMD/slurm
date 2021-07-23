@@ -607,7 +607,7 @@ extern int common_cgroup_delete(xcgroup_t *cg)
 	pid_t *pids = NULL;
 
 	if (!cg || !cg->path) {
-		log_flag(CGROUP, "invalid control group");
+		error("invalid control group");
 		return SLURM_SUCCESS;
 	}
 
@@ -651,8 +651,8 @@ extern int common_cgroup_delete(xcgroup_t *cg)
 			log_flag(CGROUP, "Unable to rmdir(%s), did %d retries: %m",
 				 cg->path, retries);
 		} else {
-			log_flag(CGROUP, "Unable to rmdir(%s), unexpected error: %m",
-				 cg->path);
+			error("Unable to rmdir(%s), unexpected error: %m",
+			      cg->path);
 		}
 
 		return SLURM_ERROR;

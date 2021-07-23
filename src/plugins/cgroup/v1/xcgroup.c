@@ -86,7 +86,7 @@ extern int xcgroup_ns_mount(xcgroup_ns_t *cgns)
 	fstatus = mkdir(cgns->mnt_point, 0755);
 	if (fstatus && errno != EEXIST) {
 		if (cgns->mnt_point[0] != '/') {
-			log_flag(CGROUP, "unable to create cgroup ns directory '%s' : do not start with '/'",
+			error("unable to create cgroup ns directory '%s' : do not start with '/'",
 			      cgns->mnt_point);
 			umask(omask);
 			return SLURM_ERROR;
@@ -97,8 +97,8 @@ extern int xcgroup_ns_mount(xcgroup_ns_t *cgns)
 			*p = '\0';
 			fstatus = mkdir(mnt_point, 0755);
 			if (fstatus && errno != EEXIST) {
-				log_flag(CGROUP, "unable to create cgroup ns required directory '%s'",
-					 mnt_point);
+				error("unable to create cgroup ns required directory '%s'",
+				      mnt_point);
 				xfree(mnt_point);
 				umask(omask);
 				return SLURM_ERROR;
@@ -124,7 +124,7 @@ extern int xcgroup_ns_mount(xcgroup_ns_t *cgns)
 		if (snprintf(opt_combined, sizeof(opt_combined), "%s,%s",
 			     cgns->subsystems, cgns->mnt_args)
 		    >= sizeof(opt_combined)) {
-			log_flag(CGROUP, "unable to build cgroup options string");
+			error("unable to build cgroup options string");
 			return SLURM_ERROR;
 		}
 		options = opt_combined;
@@ -235,12 +235,12 @@ extern int xcgroup_lock(xcgroup_t *cg)
 		return fstatus;
 
 	if ((cg->fd = open(cg->path, O_RDONLY)) < 0) {
-		log_flag(CGROUP, "error from open of cgroup '%s' : %m", cg->path);
+		error("error from open of cgroup '%s' : %m", cg->path);
 		return fstatus;
 	}
 
 	if (flock(cg->fd,  LOCK_EX) < 0) {
-		log_flag(CGROUP, "error locking cgroup '%s' : %m", cg->path);
+		error("error locking cgroup '%s' : %m", cg->path);
 		close(cg->fd);
 	} else
 		fstatus = SLURM_SUCCESS;
@@ -253,7 +253,7 @@ extern int xcgroup_unlock(xcgroup_t *cg)
 	int fstatus = SLURM_ERROR;
 
 	if (flock(cg->fd,  LOCK_UN) < 0) {
-		log_flag(CGROUP, "error unlocking cgroup '%s' : %m", cg->path);
+		error("error unlocking cgroup '%s' : %m", cg->path);
 	} else
 		fstatus = SLURM_SUCCESS;
 
