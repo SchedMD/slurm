@@ -340,7 +340,7 @@ static bool _nvml_get_handle(int index, nvmlDevice_t *device)
 	nvmlReturn_t nvml_rc;
 	nvml_rc = nvmlDeviceGetHandleByIndex(index, device);
 	if (nvml_rc != NVML_SUCCESS) {
-		error("NVML: Failed to get device handle for GPU %d: %s", index,
+		error("Failed to get device handle for GPU %d: %s", index,
 		      nvmlErrorString(nvml_rc));
 		return false;
 	}
@@ -982,8 +982,8 @@ static void _nvml_get_driver(char *driver, unsigned int len)
 {
 	nvmlReturn_t nvml_rc = nvmlSystemGetDriverVersion(driver, len);
 	if (nvml_rc != NVML_SUCCESS) {
-		error("NVML: Failed to get the version of the system's graphics"
-		      "driver: %s", nvmlErrorString(nvml_rc));
+		error("Failed to get the NVIDIA graphics driver version: %s",
+		      nvmlErrorString(nvml_rc));
 		driver[0] = '\0';
 	}
 }
@@ -995,8 +995,8 @@ static void _nvml_get_version(char *version, unsigned int len)
 {
 	nvmlReturn_t nvml_rc = nvmlSystemGetNVMLVersion(version, len);
 	if (nvml_rc != NVML_SUCCESS) {
-		error("NVML: Failed to get the version of the system's graphics"
-		      "version: %s", nvmlErrorString(nvml_rc));
+		error("Failed to get the NVML library version: %s",
+		      nvmlErrorString(nvml_rc));
 		version[0] = '\0';
 	}
 }
@@ -1008,7 +1008,7 @@ static void _nvml_get_device_count(unsigned int *device_count)
 {
 	nvmlReturn_t nvml_rc = nvmlDeviceGetCount(device_count);
 	if (nvml_rc != NVML_SUCCESS) {
-		error("NVML: Failed to get device count: %s",
+		error("Failed to get device count: %s",
 		      nvmlErrorString(nvml_rc));
 		*device_count = 0;
 	}
@@ -1035,7 +1035,7 @@ static void _nvml_get_device_name(nvmlDevice_t *device, char *device_name,
 {
 	nvmlReturn_t nvml_rc = nvmlDeviceGetName(*device, device_name, size);
 	if (nvml_rc != NVML_SUCCESS) {
-		error("NVML: Failed to get name of the GPU: %s",
+		error("Failed to get name of the GPU: %s",
 		      nvmlErrorString(nvml_rc));
 	}
 	_underscorify_tolower(device_name);
@@ -1049,7 +1049,7 @@ static void _nvml_get_device_uuid(nvmlDevice_t *device, char *uuid,
 {
 	nvmlReturn_t nvml_rc = nvmlDeviceGetUUID(*device, uuid, len);
 	if (nvml_rc != NVML_SUCCESS) {
-		error("NVML: Failed to get UUID of GPU: %s",
+		error("Failed to get UUID of GPU: %s",
 		      nvmlErrorString(nvml_rc));
 	}
 }
@@ -1061,7 +1061,7 @@ static void _nvml_get_device_pci_info(nvmlDevice_t *device, nvmlPciInfo_t *pci)
 {
 	nvmlReturn_t nvml_rc = nvmlDeviceGetPciInfo(*device, pci);
 	if (nvml_rc != NVML_SUCCESS) {
-		error("NVML: Failed to get PCI info of GPU: %s",
+		error("Failed to get PCI info of GPU: %s",
 		      nvmlErrorString(nvml_rc));
 	}
 }
@@ -1076,7 +1076,7 @@ static void _nvml_get_device_minor_number(nvmlDevice_t *device,
 {
 	nvmlReturn_t nvml_rc = nvmlDeviceGetMinorNumber(*device, minor);
 	if (nvml_rc != NVML_SUCCESS) {
-		error("NVML: Failed to get minor number of GPU: %s",
+		error("Failed to get minor number of GPU: %s",
 		      nvmlErrorString(nvml_rc));
 		*minor = NO_VAL;
 	}
@@ -1097,7 +1097,7 @@ static void _nvml_get_device_affinity(nvmlDevice_t *device, unsigned int size,
 {
 	nvmlReturn_t nvml_rc = nvmlDeviceGetCpuAffinity(*device, size, cpu_set);
 	if (nvml_rc != NVML_SUCCESS) {
-		error("NVML: Failed to get cpu affinity of GPU: %s",
+		error("Failed to get cpu affinity of GPU: %s",
 		      nvmlErrorString(nvml_rc));
 	}
 }
@@ -1121,8 +1121,8 @@ static char *_nvml_get_nvlink_remote_pcie(nvmlDevice_t *device,
 	memset(&pci_info, 0, sizeof(pci_info));
 	nvml_rc = nvmlDeviceGetNvLinkRemotePciInfo(*device, lane, &pci_info);
 	if (nvml_rc != NVML_SUCCESS) {
-		error("NVML: Failed to get PCI info of endpoint device for lane"
-		      " %d: %s", lane, nvmlErrorString(nvml_rc));
+		error("Failed to get PCI info of endpoint device for lane %d: %s",
+		      lane, nvmlErrorString(nvml_rc));
 		return xstrdup("");
 	} else {
 		return xstrdup(pci_info.busId);
@@ -1177,21 +1177,21 @@ static char *_nvml_get_nvlink_info(nvmlDevice_t *device, int index,
 	for (i = 0; i < NVML_NVLINK_MAX_LINKS; ++i) {
 		nvml_rc = nvmlDeviceGetNvLinkState(*device, i, &is_active);
 		if (nvml_rc == NVML_ERROR_INVALID_ARGUMENT) {
-			debug3("NVML: Device/lane %d is invalid", i);
+			debug3("Device/lane %d is invalid", i);
 			continue;
 		} else if (nvml_rc == NVML_ERROR_NOT_SUPPORTED) {
-			debug3("NVML: Device %d does not support "
+			debug3("Device %d does not support "
 			       "nvmlDeviceGetNvLinkState()", i);
 			break;
 		} else if (nvml_rc != NVML_SUCCESS) {
-			error("NVML: Failed to get nvlink info from GPU: %s",
+			error("Failed to get nvlink info from GPU: %s",
 			      nvmlErrorString(nvml_rc));
 		}
 		// See if nvlink lane is active
 		if (is_active == NVML_FEATURE_ENABLED) {
 			char *busid;
 			int k;
-			debug3("NVML: nvlink %d is enabled", i);
+			debug3("nvlink %d is enabled", i);
 
 			/*
 			 * Count link endpoints to determine single and double
@@ -1207,7 +1207,7 @@ static char *_nvml_get_nvlink_info(nvmlDevice_t *device, int index,
 			}
 			xfree(busid);
 		} else
-			debug3("NVML: nvlink %d is disabled", i);
+			debug3("nvlink %d is disabled", i);
 	}
 
 	// Convert links to comma separated string
