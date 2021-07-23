@@ -237,13 +237,13 @@ static unsigned int _xlate_freq_code(char *gpu_freq)
 		return 0;
 	if ((gpu_freq[0] >= '0') && (gpu_freq[0] <= '9'))
 		return 0;	/* Pure numeric value */
-	if (!strcasecmp(gpu_freq, "low"))
+	if (!xstrcasecmp(gpu_freq, "low"))
 		return GPU_LOW;
-	else if (!strcasecmp(gpu_freq, "medium"))
+	else if (!xstrcasecmp(gpu_freq, "medium"))
 		return GPU_MEDIUM;
-	else if (!strcasecmp(gpu_freq, "highm1"))
+	else if (!xstrcasecmp(gpu_freq, "highm1"))
 		return GPU_HIGH_M1;
-	else if (!strcasecmp(gpu_freq, "high"))
+	else if (!xstrcasecmp(gpu_freq, "high"))
 		return GPU_HIGH;
 
 	debug("%s: %s: Invalid job GPU frequency (%s)",
@@ -266,7 +266,7 @@ static void _parse_gpu_freq2(char *gpu_freq, unsigned int *gpu_freq_code,
 		if (sep) {
 			sep[0] = '\0';
 			sep++;
-			if (!strcasecmp(tok, "memory")) {
+			if (!xstrcasecmp(tok, "memory")) {
 				if (!(*mem_freq_code = _xlate_freq_code(sep)) &&
 				    !(*mem_freq_value =_xlate_freq_value(sep))){
 					debug("Invalid job GPU memory frequency: %s",
@@ -276,7 +276,7 @@ static void _parse_gpu_freq2(char *gpu_freq, unsigned int *gpu_freq_code,
 				debug("%s: %s: Invalid job device frequency type: %s",
 				      plugin_type, __func__, tok);
 			}
-		} else if (!strcasecmp(tok, "verbose")) {
+		} else if (!xstrcasecmp(tok, "verbose")) {
 			*verbose_flag = true;
 		} else {
 			if (!(*gpu_freq_code = _xlate_freq_code(tok)) &&
