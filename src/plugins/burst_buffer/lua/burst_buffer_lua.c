@@ -192,6 +192,16 @@ pthread_mutex_t lua_thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 	static pthread_cond_t stage_cnt_cond = PTHREAD_COND_INITIALIZER;\
 	static int stage_cnt = 0;
 
+/*
+ * stage throttle doesn't guarantee the order each thread will start. For
+ * stage_in we need to run burst_buffer.lua in job priority order so that
+ * highest priority jobs can start as soon as possible. With this we only queue
+ * up to MAX_BURST_BUFFERS_PER_STAGE _start_stage_in threads at once, so we
+ * don't use stage throttle for stage_in.
+ * This variable is protected by bb_state.bb_mutex.
+ */
+static int stage_in_cnt = 0;
+
 /* Function prototypes */
 static bb_job_t *_get_bb_job(job_record_t *job_ptr);
 static void _queue_teardown(uint32_t job_id, uint32_t user_id, bool hurry);
@@ -2451,8 +2461,6 @@ static void *_start_stage_in(void *x)
 	slurmctld_lock_t job_write_lock = { .job = WRITE_LOCK };
 
 	DEF_TIMERS;
-	DEF_STAGE_THROTTLE;
-	_stage_throttle_start(&stage_cnt_mutex, &stage_cnt_cond, &stage_cnt);
 
 	argc = 6;
 	argv = xcalloc(argc + 1, sizeof (char *)); /* NULL-terminated */
@@ -2639,11 +2647,11 @@ static void *_start_stage_in(void *x)
 					job_ptr->user_id, true);
 		}
 	}
+	stage_in_cnt--;
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 	unlock_slurmctld(job_write_lock);
 
 fini:
-	_stage_throttle_fini(&stage_cnt_mutex, &stage_cnt_cond, &stage_cnt);
 	xfree(resp_msg);
 	xfree(stage_in_args->job_script);
 	xfree(stage_in_args->nodes_file);
@@ -2705,6 +2713,7 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 	bb_limit_add(job_ptr->user_id, bb_job->total_size, bb_job->job_pool,
 		     &bb_state, true);
 
+	stage_in_cnt++;
 	slurm_thread_create_detached(&tid, _start_stage_in, stage_in_args);
 
 	xfree(hash_dir);
@@ -2736,6 +2745,9 @@ static int _try_alloc_job_bb(void *x, void *arg)
 		rc = bb_test_size_limit(job_ptr, bb_job, &bb_state, NULL);
 	else
 		rc = 0;
+
+	if (stage_in_cnt >= MAX_BURST_BUFFERS_PER_STAGE)
+		return SLURM_ERROR; /* Break out of loop */
 
 	if (rc == 0) {
 		/*
@@ -2819,6 +2831,8 @@ extern int bb_p_job_test_stage_in(job_record_t *job_ptr, bool test_only)
 	} else if (bb_job->state < BB_STATE_STAGING_IN) {
 		/* Job buffer not allocated, create now if space available */
 		rc = -1;
+		if (stage_in_cnt >= MAX_BURST_BUFFERS_PER_STAGE)
+			goto fini;
 		if (test_only)
 			goto fini;
 		if (bb_job->job_pool && bb_job->req_size) {
