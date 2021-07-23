@@ -302,7 +302,8 @@ static void _read_slurm_cgroup_conf(void)
 	/* Get the cgroup.conf path and validate the file */
 	conf_path = get_extra_conf_path("cgroup.conf");
 	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
-		debug2("%s: No cgroup.conf file (%s)", __func__, conf_path);
+		log_flag(CGROUP, "%s: No cgroup.conf file (%s)", __func__,
+			 conf_path);
 		cg_conf_exist = false;
 	} else {
 		debug("Reading cgroup.conf file %s", conf_path);
@@ -326,7 +327,7 @@ static void _read_slurm_cgroup_conf(void)
 
 		if (s_p_get_string(&tmp_str, "CgroupReleaseAgentDir", tbl)) {
 			xfree(tmp_str);
-			debug("Ignoring obsolete CgroupReleaseAgentDir option.");
+			log_flag(CGROUP, "Ignoring obsolete CgroupReleaseAgentDir option.");
 		}
 
 		/* cgroup prepend directory */
@@ -457,7 +458,7 @@ static char *_autodetect_cgroup_version(void)
 		return NULL;
 	}
 
-	debug2("%s: using cgroup version %d", __func__, cgroup_ver);
+	log_flag(CGROUP, "%s: using cgroup version %d", __func__, cgroup_ver);
 
 
 	switch (cgroup_ver) {

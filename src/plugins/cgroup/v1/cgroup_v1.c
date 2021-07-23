@@ -191,7 +191,8 @@ static int _cpuset_create(stepd_step_rec_t *job)
 		    != SLURM_SUCCESS)
 			goto end;
 
-		debug("system cgroup: system cpuset cgroup initialized");
+		log_flag(CGROUP,
+			 "system cgroup: system cpuset cgroup initialized");
 	} else {
 		rc = xcgroup_create_hierarchy(__func__,
 					      job,
@@ -280,8 +281,8 @@ static int _rmdir_task(void *x, void *arg)
 	task_cg_info_t *t = (task_cg_info_t *) x;
 
 	if (common_cgroup_delete(&t->task_cg) != SLURM_SUCCESS)
-		debug2("taskid: %d, failed to delete %s %m", t->taskid,
-		       t->task_cg.path);
+		log_flag(CGROUP, "taskid: %d, failed to delete %s %m",
+			 t->taskid, t->task_cg.path);
 
 	return SLURM_SUCCESS;
 }
@@ -549,8 +550,8 @@ extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub)
 	xcgroup_wait_pid_moved(&g_sys_cg[sub], g_cg_name[sub]);
 
 	if ((rc = common_cgroup_delete(&g_sys_cg[sub])) != SLURM_SUCCESS) {
-		debug2("not removing system cg (%s), there may be attached stepds: %m",
-		       g_cg_name[sub]);
+		log_flag(CGROUP, "not removing system cg (%s), there may be attached stepds: %m",
+			 g_cg_name[sub]);
 		goto end;
 	}
 	common_cgroup_destroy(&g_sys_cg[sub]);
@@ -732,14 +733,14 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 	 * loaded from slurmd, where we will not create any step but call fini.
 	 */
 	if (g_step_active_cnt[sub] == 0) {
-		debug("called without a previous init. This shouldn't happen!");
+		log_flag(CGROUP, "called without a previous init. This shouldn't happen!");
 		return SLURM_SUCCESS;
 	}
 	/* Only destroy the step if we're the only ones using it. */
 	if (g_step_active_cnt[sub] > 1) {
 		g_step_active_cnt[sub]--;
-		debug2("Not destroying %s step dir, resource busy by %d other plugin",
-		       g_cg_name[sub], g_step_active_cnt[sub]);
+		log_flag(CGROUP, "Not destroying %s step dir, resource busy by %d other plugin",
+			 g_cg_name[sub], g_step_active_cnt[sub]);
 		return SLURM_SUCCESS;
 	}
 
@@ -1135,13 +1136,13 @@ extern int cgroup_p_task_constrain_set(cgroup_ctl_type_t sub,
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)
 extern int cgroup_p_step_start_oom_mgr(void)
 {
-	debug("OOM not available on FreeBSD, NetBSD, or macOS");
+	log_flag(CGROUP, "OOM not available on FreeBSD, NetBSD, or macOS");
 	return SLURM_SUCCESS;
 }
 
 extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 {
-	debug("OOM not available on FreeBSD, NetBSD, or macOS");
+	log_flag(CGROUP, "OOM not available on FreeBSD, NetBSD, or macOS");
 	return NULL;
 }
 #else
@@ -1239,7 +1240,7 @@ static void *_oom_event_monitor(void *x)
 				ret = _read_fd(oom_pipe[0], &res);
 				if (ret == SLURM_SUCCESS && res == STOP_OOM) {
 					/* Read stop msg. */
-					debug2("stop msg read.");
+					log_flag(CGROUP, "stop msg read.");
 					break;
 				}
 			} else if (fds[1].revents &
@@ -1357,7 +1358,8 @@ static uint64_t _failcnt(xcgroup_t *cg, char *param)
 	uint64_t value = 0;
 
 	if (xcgroup_get_uint64_param(cg, param, &value) != SLURM_SUCCESS) {
-		debug2("unable to read '%s' from '%s'", param, cg->path);
+		log_flag(CGROUP, "unable to read '%s' from '%s'",
+			 param, cg->path);
 		value = 0;
 	}
 
@@ -1371,7 +1373,8 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 	ssize_t ret;
 
 	if (!oom_thread_created) {
-		debug("OOM events were not monitored for %ps", &job->step_id);
+		log_flag(CGROUP, "OOM events were not monitored for %ps",
+			 &job->step_id);
 		goto fail_oom_results;
 	}
 
@@ -1404,17 +1407,17 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 		if (ret == -1) {
 			if (errno == EINTR)
 				continue;
-			debug("oom stop msg write() failed: %m");
+			log_flag(CGROUP, "oom stop msg write() failed: %m");
 		} else if (ret == 0)
-			debug("oom stop msg nothing written: %m");
+			log_flag(CGROUP, "oom stop msg nothing written: %m");
 		else if (ret == sizeof(stop_msg))
-			debug2("oom stop msg write success.");
+			log_flag(CGROUP, "oom stop msg write success.");
 		else
-			debug("oom stop msg not fully written.");
+			log_flag(CGROUP, "oom stop msg not fully written.");
 		break;
 	}
 
-	debug2("attempt to join oom_thread.");
+	log_flag(CGROUP, "attempt to join oom_thread.");
 	if (oom_thread && pthread_join(oom_thread, NULL) != 0)
 		error("pthread_join(): %m");
 
@@ -1442,8 +1445,8 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
 	if (task_id > g_max_task_id)
 		g_max_task_id = task_id;
 
-	debug("%ps taskid %u max_task_id %u", &job->step_id, task_id,
-	      g_max_task_id);
+	log_flag(CGROUP, "%ps taskid %u max_task_id %u", &job->step_id, task_id,
+		 g_max_task_id);
 
 	return _handle_task_cgroup(sub, job, pid, task_id);
 }
