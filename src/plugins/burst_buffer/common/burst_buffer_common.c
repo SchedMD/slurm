@@ -1161,6 +1161,12 @@ extern bb_job_t *bb_job_alloc(bb_state_t *state_ptr, uint32_t job_id)
 	bb_job->magic = BB_JOB_MAGIC;
 	bb_job->next = state_ptr->bb_jhash[inx];
 	bb_job->job_id = job_id;
+	/*
+	 * Zero or positive integers are valid file descriptors. We need
+	 * to initialize this to an invalid file descriptor so when we delete
+	 * bb_job we can check if we ever opened a file.
+	 */
+	bb_job->memfd = -1;
 	state_ptr->bb_jhash[inx] = bb_job;
 
 	return bb_job;
@@ -1217,7 +1223,12 @@ static void _bb_job_del2(bb_job_t *bb_job)
 	int i;
 
 	if (bb_job) {
-		(void) close(bb_job->memfd);
+		/*
+		 * We only set memfd if symbol replacement was used, so only
+		 * attempt to close it if it was set.
+		 */
+		if (bb_job->memfd != -1)
+			(void) close(bb_job->memfd);
 
 		xfree(bb_job->account);
 		for (i = 0; i < bb_job->buf_cnt; i++) {
