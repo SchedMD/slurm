@@ -3328,6 +3328,14 @@ extern int bb_p_job_test_stage_out(job_record_t *job_ptr)
 		/* This is expected if the burst buffer completed teardown */
 		rc = 1;
 	} else {
+		/*
+		 * bb_g_job_test_stage_out() is called when purging old jobs
+		 * from slurmctld and when testing for dependencies.
+		 * We don't want the job to be purged until teardown is done
+		 * (teardown happens right after stage_out). Once teardown is
+		 * done the state will be BB_STATE_COMPLETE. We also free
+		 * bb_job so it doesn't stay around forever.
+		 */
 		if (bb_job->state == BB_STATE_PENDING) {
 			/*
 			 * No job BB work started before job was killed.
@@ -3337,7 +3345,8 @@ extern int bb_p_job_test_stage_out(job_record_t *job_ptr)
 			rc =  1;
 		} else if (bb_job->state < BB_STATE_POST_RUN) {
 			rc = -1;
-		} else if (bb_job->state > BB_STATE_STAGING_OUT) {
+		} else if (bb_job->state == BB_STATE_COMPLETE) {
+			bb_job_del(&bb_state, bb_job->job_id);
 			rc =  1;
 		} else {
 			rc =  0;
