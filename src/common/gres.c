@@ -1847,6 +1847,13 @@ static void _pack_gres_slurmd_conf(void *in, uint16_t protocol_version,
 {
 	gres_slurmd_conf_t *gres_conf = (gres_slurmd_conf_t *)in;
 
+	/*
+	 * Ignore protocol_version at the time of writing this only deals with
+	 * communication from the slurmd to a new stepd which should always be
+	 * the same version.  This function is called from slurm_pack_list which
+	 * requires protocol_version.
+	 */
+
 	/* Pack gres_slurmd_conf_t */
 	pack8(gres_conf->config_flags, buffer);
 	pack64(gres_conf->count, buffer);
@@ -1866,6 +1873,13 @@ static int _unpack_gres_slurmd_conf(void **object, uint16_t protocol_version,
 {
 	uint32_t uint32_tmp;
 	gres_slurmd_conf_t *gres_conf = xmalloc(sizeof(*gres_conf));
+
+	/*
+	 * Ignore protocol_version at the time of writing this only deals with
+	 * communication from the slurmd to a new stepd which should always be
+	 * the same version.  This function is called from slurm_unpack_list
+	 * which requires protocol_version.
+	 */
 
 	/* Unpack gres_slurmd_conf_t */
 	safe_unpack8(&gres_conf->config_flags, buffer);
