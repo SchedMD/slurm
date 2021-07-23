@@ -8,6 +8,7 @@
 <a href="#Running_Jobs">Running Jobs</a><br>
 <a href="#GPU_Management">GPU Management</a><br>
 <a href="#MPS_Management">MPS Management</a><br>
+<a href="#MIG_Management">MIG Management</a><br>
 
 <!-------------------------------------------------------------------------->
 <a id="Overview"></a>
@@ -434,6 +435,36 @@ CVE-2018-6260</a> and in the
 <a href="https://nvidia.custhelp.com/app/answers/detail/a_id/4772">
 Security Bulletin: NVIDIA GPU Display Driver - February 2019</a>.</p>
 
-<p style="text-align: center;">Last modified 17 June 2021</p>
+<a id="MIG_Management"></a>
+<h2>MIG Management</h2>
+
+<p>Beginning in version 21.08, Slurm now supports NVIDIA
+<i>Multi-Instance GPU</i> (MIG) devices. This feature allows some newer NVIDIA
+GPUs (like the A100) to split up a GPU into up to seven separate, isolated GPU
+instances. Slurm can treat these MIG instances as individual GPUs, complete with
+cgroup isolation and task binding.</p>
+
+<p>To configure MIGs in Slurm, specify
+<code class="commandline">AutoDetect=nvml</code> in <i>gres.conf</i> for the
+nodes with MIGs, and specify <code class="commandline">Gres</code>
+in <i>slurm.conf</i> as if the MIGs were regular GPUs. An optional
+GRES type can be specified to distinguish MIGs of different sizes from each
+other, as well as from other GPUs in the cluster. This type must be a substring
+of the "MIG Profile" string as reported by the node in its slurmd log under the
+<code class="commandline">debug2</code> log level. Other MIG attributes will be
+displayed as well, including MIG UUID, GPU Instance (GI) ID, Compute Instance
+(CI) ID, GI and CI minor numbers, the associated MIG device files, and
+"UniqueID" (the value Slurm will use to select MIGs via
+<code class="commandline">CUDA_VISIBLE_DEVICES</code>).</p>
+
+<p>The sanity-check AutoDetect mode is not supported for MIGs.
+Slurm expects MIG devices to already be partitioned, and does not support
+dynamic MIG partitioning.</p>
+
+<p>For more information on NVIDIA MIGs (including how to partition them), see
+<a href="https://docs.nvidia.com/datacenter/tesla/mig-user-guide/index.html">
+the MIG user guide</a>.</p>
+
+<p style="text-align: center;">Last modified 23 June 2021</p>
 
 <!--#include virtual="footer.txt"-->
