@@ -130,6 +130,9 @@ by referencing the environment variables as a data structure containing
 named elements. For example:<br>
 if (job_desc.environment.LANGUAGE == "en_US") then<br>
 ....</p>
+<p><b>NOTE</b>: Only sbatch sends the environment to slurmctld. salloc and srun
+do not send the environment to slurmctld, so <i>job_desc.environment</i> is not
+available in the job_sumit plugin for these jobs.</p>
 
 
 <p class="commandline">
@@ -286,6 +289,6 @@ cp job_submit_mine.so file \
    /usr/local/lib/slurm/job_submit_mine.so
 </pre>
 
-<p style="text-align:center;">Last modified 18 December 2019</p>
+<p style="text-align:center;">Last modified 26 July 2021</p>
 
 <!--#include virtual="footer.txt"-->
