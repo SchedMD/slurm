@@ -1223,8 +1223,8 @@ static void *_oom_event_monitor(void *x)
 					slurm_mutex_lock(&oom_mutex);
 					debug3("res: %"PRIu64"", res);
 					oom_kill_count += res;
-					debug2("oom-kill event count: %"PRIu64"",
-					       oom_kill_count);
+					debug("oom-kill event count: %"PRIu64"",
+					      oom_kill_count);
 					slurm_mutex_unlock(&oom_mutex);
 				} else
 					error("cannot read oom-kill counts.");
