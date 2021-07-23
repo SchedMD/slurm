@@ -487,9 +487,6 @@ extern int common_cgroup_instantiate(xcgroup_t *cg)
 			      __func__, file_path);
 			umask(omask);
 			return fstatus;
-		} else {
-			log_flag(CGROUP, "cgroup '%s' already exists",
-				 file_path);
 		}
 	}
 	umask(omask);
