@@ -258,7 +258,7 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 			     bool suspended, bool preempted)
 {
-	int i, node_count = 0;
+	int i, i_first, i_last, node_count = 0;
 	kill_job_msg_t *kill_job = NULL;
 	agent_arg_t *agent_args = NULL;
 	int down_node_cnt = 0;
@@ -340,10 +340,16 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	if (!job_ptr->node_bitmap_cg)
 		build_cg_bitmap(job_ptr);
 	use_protocol_version = SLURM_PROTOCOL_VERSION;
-	for (i = 0, node_ptr = node_record_table_ptr;
-	     i < node_record_count; i++, node_ptr++) {
+
+	i_first = bit_ffs(job_ptr->node_bitmap_cg);
+	if (i_first >= 0)
+		i_last = bit_fls(job_ptr->node_bitmap_cg);
+	else
+		i_last = i_first - 1;
+	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(job_ptr->node_bitmap_cg, i))
 			continue;
+		node_ptr = &node_record_table_ptr[i];
 		if (IS_NODE_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_UP(node_ptr)) {
 			/* Issue the KILL RPC, but don't verify response */
