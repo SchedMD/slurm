@@ -129,7 +129,7 @@ typedef struct gres_slurmd_conf {
 
 
 /* Extra data and functions to be passed in to the node_config_load() */
-typedef struct node_config_load {
+typedef struct {
 	/* How many CPUs there are configured on the node */
 	uint32_t cpu_cnt;
 	/* A pointer to the mac_to_abs function */
