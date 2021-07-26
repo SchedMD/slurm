@@ -1102,7 +1102,8 @@ static List _get_system_gpu_list_rsmi(node_config_load_t *node_config)
 
 		add_gres_to_list(gres_list_system, "gpu", 1,
 				 node_config->cpu_cnt, NULL, NULL,
-				 device_file, device_brand, links, NULL, 0);
+				 device_file, device_brand, links, NULL,
+				 GRES_CONF_ENV_RSMI);
 
 		xfree(device_file);
 		xfree(links);
