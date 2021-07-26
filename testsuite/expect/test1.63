@@ -68,6 +68,10 @@ expect {
 	}
 	-re "OUCH!" {
 		incr match_sig
+
+		# Avoid the next SIGINTs being consecutive with initial SIGINT
+		sleep 2
+
 		exec $bin_kill -INT $srun_pid
 		exec $bin_kill -INT $srun_pid
 		exp_continue
