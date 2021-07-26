@@ -955,6 +955,8 @@ extern void gres_step_state_log(List gres_list, uint32_t job_id,
  * IN test_mem - true if we should test if mem_per_gres would exceed a limit.
  * IN job_resrcs_ptr - pointer to this job's job_resources_t; used to know
  *                     how much of the job's memory is available.
+ * OUT err_code - If an error occurred, set this to tell the caller why the
+ *                error happend.
  * RET Count of available cores on this node (sort of):
  *     NO_VAL64 if no limit or 0 if node is not usable
  */
@@ -963,7 +965,8 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 			       uint16_t cpus_per_task, int max_rem_nodes,
 			       bool ignore_alloc,
 			       uint32_t job_id, uint32_t step_id,
-			       bool test_mem, job_resources_t *job_resrcs_ptr);
+			       bool test_mem, job_resources_t *job_resrcs_ptr,
+			       int *err_code);
 
 /*
  * Build a string containing the GRES details for a given node and socket

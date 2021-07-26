@@ -8172,7 +8172,7 @@ static uint64_t _step_test(void *step_gres_data, bool first_step_node,
 			   uint16_t cpus_per_task, int max_rem_nodes,
 			   bool ignore_alloc, uint64_t gres_cnt, bool test_mem,
 			   int node_offset, slurm_step_id_t *step_id,
-			   job_resources_t *job_resrcs_ptr)
+			   job_resources_t *job_resrcs_ptr, int *err_code)
 {
 	gres_step_state_t *step_gres_ptr = (gres_step_state_t *) step_gres_data;
 	uint64_t core_cnt, min_gres = 1, task_cnt;
@@ -8235,6 +8235,7 @@ static uint64_t _step_test(void *step_gres_data, bool first_step_node,
 				 __func__, step_id->job_id, mem_avail,
 				 mem_req);
 			core_cnt = 0;
+			*err_code = ESLURM_INVALID_TASK_MEMORY;
 		}
 	}
 
@@ -9580,6 +9581,8 @@ extern void gres_step_state_log(List gres_list, uint32_t job_id,
  * IN test_mem - true if we should test if mem_per_gres would exceed a limit.
  * IN job_resrcs_ptr - pointer to this job's job_resources_t; used to know
  *                     how much of the job's memory is available.
+ * OUT err_code - If an error occurred, set this to tell the caller why the
+ *                error happend.
  * RET Count of available cores on this node (sort of):
  *     NO_VAL64 if no limit or 0 if node is not usable
  */
@@ -9588,7 +9591,8 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 			       uint16_t cpus_per_task, int max_rem_nodes,
 			       bool ignore_alloc,
 			       uint32_t job_id, uint32_t step_id,
-			       bool test_mem, job_resources_t *job_resrcs_ptr)
+			       bool test_mem, job_resources_t *job_resrcs_ptr,
+			       int *err_code)
 {
 	uint64_t core_cnt, tmp_cnt;
 	ListIterator step_gres_iter;
@@ -9606,6 +9610,7 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 		cpus_per_task = 1;
 	core_cnt = NO_VAL64;
 	(void) gres_init();
+	*err_code = SLURM_SUCCESS;
 
 	tmp_step_id.job_id = job_id;
 	tmp_step_id.step_het_comp = NO_VAL;
@@ -9645,7 +9650,7 @@ extern uint64_t gres_step_test(List step_gres_list, List job_gres_list,
 				     ignore_alloc, foreach_gres_cnt.gres_cnt,
 				     test_mem, node_offset,
 				     &tmp_step_id,
-				     job_resrcs_ptr);
+				     job_resrcs_ptr, err_code);
 		if ((tmp_cnt != NO_VAL64) && (tmp_cnt < core_cnt))
 			core_cnt = tmp_cnt;
 

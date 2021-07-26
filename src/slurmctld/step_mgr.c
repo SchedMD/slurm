@@ -1191,6 +1191,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			uint32_t tmp_cpus, avail_cpus, total_cpus;
 			uint32_t avail_tasks, total_tasks;
 			bool test_mem_per_gres = false;
+			int err_code = SLURM_SUCCESS;
 
 			avail_cpus = total_cpus = usable_cpu_cnt[i];;
 			if (_is_mem_resv() &&
@@ -1244,7 +1245,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 						   max_rem_nodes, true,
 						   job_ptr->job_id, NO_VAL,
 						   test_mem_per_gres,
-						   job_resrcs_ptr);
+						   job_resrcs_ptr, &err_code);
 			total_cpus = MIN(total_cpus, gres_cpus);
 			/* consider current step allocations */
 			gres_cpus = gres_step_test(step_gres_list,
@@ -1255,14 +1256,18 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 						   max_rem_nodes, false,
 						   job_ptr->job_id, NO_VAL,
 						   test_mem_per_gres,
-						   job_resrcs_ptr);
+						   job_resrcs_ptr,
+						   &err_code);
 			if (gres_cpus < avail_cpus) {
 				log_flag(STEPS, "%s: %pJ Usable CPUs for GRES %"PRIu64" from %d previously available",
 					 __func__, job_ptr, gres_cpus,
 					 avail_cpus);
 				avail_cpus = gres_cpus;
 				usable_cpu_cnt[i] = avail_cpus;
-				fail_mode = ESLURM_INVALID_GRES;
+				if (err_code != SLURM_SUCCESS)
+					fail_mode = err_code;
+				else
+					fail_mode = ESLURM_INVALID_GRES;
 			}
 
 			avail_tasks = avail_cpus;
@@ -3000,6 +3005,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 	for (i = first_bit; i <= last_bit; i++) {
 		uint16_t cpus, cpus_used;
 		bool test_mem_per_gres = false;
+		int err_code = SLURM_SUCCESS;
 
 		if (!bit_test(job_ptr->node_bitmap, i))
 			continue;
@@ -3120,7 +3126,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 						   job_ptr->job_id,
 						   step_ptr->step_id.step_id,
 						   test_mem_per_gres,
-						   job_resrcs_ptr);
+						   job_resrcs_ptr, &err_code);
 			if (usable_cpus > gres_cpus)
 				usable_cpus = gres_cpus;
 			if (usable_cpus <= 0) {
