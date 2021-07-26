@@ -27,7 +27,7 @@ source ./globals
 
 set spec $test_dir/openapi.spec
 set pyapi $test_dir/py_api
-set pypath $test_dir/py_path
+set pyenv $test_dir/env
 set usock $test_dir/slurmrestd.sock
 set scripts "[$bin_pwd]/${test_name}_scripts"
 
@@ -56,6 +56,10 @@ if {[run_command_status -nolog "$bin_ip -V"]} {
 
 if {[run_command_status -nolog "$bin_unshare -V"]} {
 	skip "$bin_unshare not found"
+}
+
+if {[run_command_status -nolog "$bin_virtualenv  --version"]} {
+	skip "$bin_virtualenv not found"
 }
 
 proc cleanup {} {
@@ -115,19 +119,10 @@ foreach content_path [glob -type d $scripts/*] {
 		"$bin_oasgen generate -i '$spec' -g python --strict-spec=true -o '$pyapi'"
 
 	run_command -nolog -subtest \
-		"$bin_py3 '$pyapi/setup.py' install --prefix='$pypath'"
+		"$bin_virtualenv $pyenv"
 
-	# Python requires PYTHONPATH point to the site-packages dir (not a parent)
-	set py_include_path [string trim [run_command_output -fail \
-		"$bin_py3 -c 'import sys; print(\"lib/python%d.%d/site-packages\" %
-		(sys.version_info\[0\], sys.version_info\[1\]))'" ] ]
-
-	# Add the installed path to make sure python will find it
-	if { [info exists ::env(PYTHONPATH)] } {
-		set env(PYTHONPATH) [join [list "$pypath/$py_include_path" $pyapi $env(PYTHONPATH)] ":"]
-	} else {
-		set env(PYTHONPATH) "$pypath/$py_include_path:$pyapi"
-	}
+	run_command -nolog -subtest \
+		"source $pyenv/bin/activate; pip3 install '$pyapi'"
 
 	foreach script [glob -type f $scripts/$content/*.py] {
 		log_debug "running: $script"
@@ -146,6 +141,7 @@ foreach content_path [glob -type d $scripts/*] {
 				$bin_ip link set lo up
 				$bin_socat TCP-LISTEN:80 UNIX-CONNECT:${usock} &
 				SOPID=\$!
+				source $pyenv/bin/activate;
 				$bin_py3 $script
 				rc=$?
 				kill -9 \$SOPID
