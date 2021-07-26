@@ -918,13 +918,13 @@ extern void gres_p_task_set_env(char ***step_env_ptr,
 		 &already_seen, &local_inx, true, false, flags);
 }
 
-/* Send GRES information to slurmstepd on the specified file descriptor */
+/* Send GPU-specific GRES information to slurmstepd via a buffer */
 extern void gres_p_send_stepd(buf_t *buffer)
 {
 	common_send_stepd(buffer, gres_devices);
 }
 
-/* Receive GRES information from slurmd on the specified file descriptor */
+/* Receive GPU-specific GRES information from slurmd via a buffer */
 extern void gres_p_recv_stepd(buf_t *buffer)
 {
 	common_recv_stepd(buffer, &gres_devices);
