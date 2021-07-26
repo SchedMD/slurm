@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 ==========================
  -- burst_buffer - add missing common directory to the Makefile SUBDIRS.
  -- sacct - fix truncation when printing jobidraw field.
+ -- GRES - Fix loading state of jobs using --gpus to request gpus.
 
 * Changes in Slurm 20.11.8
 ==========================

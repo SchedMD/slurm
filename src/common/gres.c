@@ -10547,18 +10547,18 @@ static int _job_alloc(void *job_gres_data, void *node_gres_data, int node_cnt,
 	 * select/cons_tres pre-selects the resources and we just need to update
 	 * the data structures to reflect the selected GRES.
 	 */
-	if (job_gres_ptr->total_node_cnt) {
-		/* Resuming job */
-		if (job_gres_ptr->gres_cnt_node_alloc[node_offset]) {
-			gres_cnt = job_gres_ptr->
-				   gres_cnt_node_alloc[node_offset];
-		} else if (job_gres_ptr->gres_bit_alloc[node_offset]) {
-			gres_cnt = bit_set_count(
-				    job_gres_ptr->gres_bit_alloc[node_offset]);
-			gres_cnt *= gres_per_bit;
+	/* Resuming job */
+	if (job_gres_ptr->gres_cnt_node_alloc[node_offset]) {
+		gres_cnt = job_gres_ptr->
+			gres_cnt_node_alloc[node_offset];
+	} else if (job_gres_ptr->gres_bit_alloc[node_offset]) {
+		gres_cnt = bit_set_count(
+			job_gres_ptr->gres_bit_alloc[node_offset]);
+		gres_cnt *= gres_per_bit;
+	} else if (job_gres_ptr->total_node_cnt) {
 		/* Using pre-selected GRES */
-		} else if (job_gres_ptr->gres_cnt_node_select &&
-			   job_gres_ptr->gres_cnt_node_select[node_index]) {
+		if (job_gres_ptr->gres_cnt_node_select &&
+		    job_gres_ptr->gres_cnt_node_select[node_index]) {
 			gres_cnt = job_gres_ptr->
 				   gres_cnt_node_select[node_index];
 		} else if (job_gres_ptr->gres_bit_select &&

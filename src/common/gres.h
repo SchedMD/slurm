@@ -213,6 +213,8 @@ typedef struct gres_job_state {
 	 * Once specific nodes are selected for the job allocation, select
 	 * portions of these arrays are copied to gres_bit_alloc and
 	 * gres_cnt_node_alloc. The fields can then be cleared.
+	 * These are also not used after allocation and should not be used when
+	 * restoring state after a slurmctld restart.
 	 */
 	uint32_t total_node_cnt;	/* cluster total node count */
 	bitstr_t **gres_bit_select;	/* Per node GRES selected,
