@@ -8113,15 +8113,16 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 			continue;
 		}
 
+		if (_get_usable_gres(gres_context[j].gres_name, j,
+				     local_proc_id, &tres_bind,
+				     &usable_gres) == SLURM_ERROR)
+			continue;
+
 		dev_itr = list_iterator_create(gres_devices);
 		while ((gres_device = list_next(dev_itr))) {
 			if (!bit_test(local_bit_alloc[0], gres_device->index))
 				continue;
-			if (_get_usable_gres(gres_context[j].gres_name, j,
-					     local_proc_id,
-					     &tres_bind, &usable_gres) ==
-			    SLURM_ERROR)
-				continue;
+
 			if (!usable_gres ||
 			    bit_test(usable_gres, gres_device->index)) {
 				gres_device_t *gres_device2;
@@ -8142,9 +8143,9 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 				if (gres_device2)
 					gres_device2->alloc = 1;
 			}
-			FREE_NULL_BITMAP(usable_gres);
 		}
 		list_iterator_destroy(dev_itr);
+		FREE_NULL_BITMAP(usable_gres);
 	}
 	list_iterator_destroy(gres_itr);
 	slurm_mutex_unlock(&gres_context_lock);
