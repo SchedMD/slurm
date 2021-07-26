@@ -224,6 +224,7 @@ cset bin_sleep  "sleep"
 cset bin_sort	"sort"
 cset bin_sum	"sum"
 cset bin_sudo	"sudo"
+cset bin_systemd_detect_virt "systemd-detect-virt"
 cset bin_touch	"touch"
 cset bin_true	"true"
 cset bin_uname	"uname"
@@ -3204,6 +3205,41 @@ proc get_total_cpus {} {
 	return $cpu_cnt
 }
 
+################################################################
+#
+# NAME
+#	is_running_in_container
+#
+# SYNOPSIS
+#	is_running_in_container
+#
+# DESCRIPTION
+#	Determine if test script is running inside of a container.
+#
+# RETURN VALUE
+#	true if container detected or systemd-detect-virt is not found,
+#	false otherwise
+#
+################################################################
+
+proc is_running_in_container {} {
+	global bin_systemd_detect_virt
+
+	if {[run_command_status -nolog -none "$bin_systemd_detect_virt --version"]} {
+		log_warn "$bin_systemd_detect_virt not found, assuming container"
+		return true
+	}
+
+	set result [run_command -nolog -none "$bin_systemd_detect_virt -c"]
+	set output [string trimright [dict get $result output] "\r\n"]
+	if { $output != "none"} {
+		log_debug "Detected container type: $output"
+	}
+	if {[dict get $result exit_code]} {
+		return false
+	}
+	return true
+}
 
 ################################################################
 #
