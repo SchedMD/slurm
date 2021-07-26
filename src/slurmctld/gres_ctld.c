@@ -233,6 +233,10 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 							    sizeof(uint64_t));
 	}
 
+	/*
+	 * Grab these here since node_gres_ptr->[gres|type]_cnt_alloc can change
+	 * later.
+	 */
 	pre_alloc_gres_cnt = node_gres_ptr->gres_cnt_alloc;
 	pre_alloc_type_cnt = xcalloc(node_gres_ptr->type_cnt,
 				     sizeof(*pre_alloc_type_cnt));
@@ -608,6 +612,10 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 		}
 	}
 
+	/* If we are already allocated (state restore) end now. */
+	if (!job_gres_ptr->total_node_cnt)
+		goto already_alloced;
+
 	/*
 	 * Here we fill job_gres_list_alloc with
 	 * one entry for each type of gres separately
@@ -660,6 +668,9 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 				->gres_bit_alloc[node_offset] = bit_copy(
 				job_gres_ptr->gres_bit_alloc[node_offset]);
 	}
+
+already_alloced:
+
 	xfree(pre_alloc_type_cnt);
 
 	return SLURM_SUCCESS;
