@@ -41,9 +41,8 @@ set limit_stack      5021
 set matches          0
 
 proc cleanup {} {
-	global bin_rm file_err file_in file_prog_get file_out
-
-	exec $bin_rm -f $file_err $file_in $file_prog_get $file_out
+	global file_err file_in file_prog_get file_out
+	file delete $file_err $file_in $file_prog_get $file_out
 }
 
 if {[get_config_param "FrontendName"] ne "MISSING" && ![is_super_user]} {
@@ -51,11 +50,9 @@ if {[get_config_param "FrontendName"] ne "MISSING" && ![is_super_user]} {
 }
 
 #
-# Delete left-over programs and rebuild them.
 # We use our own program to get ulimit values since the output
 # of the ulimit program is inconsistent across systems.
 #
-exec $bin_rm -f $file_prog_get $file_err $file_in $file_out
 exec $bin_cc -O ${file_prog_get}.c -o $file_prog_get
 exec $bin_chmod 700 $file_prog_get
 
