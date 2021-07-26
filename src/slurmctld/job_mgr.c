@@ -17872,32 +17872,32 @@ extern int job_end_time(job_alloc_info_msg_t *time_req_msg,
 	return SLURM_SUCCESS;
 }
 
+static int _update_job_nodes_str(void *x, void *arg)
+{
+	job_record_t *job_ptr = x;
+
+	if ((!IS_JOB_COMPLETING(job_ptr)) || !job_ptr->node_bitmap)
+		return 0;
+
+	xfree(job_ptr->nodes_completing);
+	if (job_ptr->node_bitmap_cg)
+		job_ptr->nodes_completing =
+			bitmap2node_name(job_ptr->node_bitmap_cg);
+	else
+		job_ptr->nodes_completing =
+			bitmap2node_name(job_ptr->node_bitmap);
+
+	return 0;
+}
+
 /* Reset nodes_completing field for all jobs. */
 extern void update_job_nodes_completing(void)
 {
-	ListIterator job_iterator;
-	job_record_t *job_ptr;
-
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 
 	if (!job_list)
 		return;
-
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if ((!IS_JOB_COMPLETING(job_ptr)) ||
-		    (job_ptr->node_bitmap == NULL))
-			continue;
-		xfree(job_ptr->nodes_completing);
-		if (job_ptr->node_bitmap_cg) {
-			job_ptr->nodes_completing =
-				bitmap2node_name(job_ptr->node_bitmap_cg);
-		} else {
-			job_ptr->nodes_completing =
-				bitmap2node_name(job_ptr->node_bitmap);
-		}
-	}
-	list_iterator_destroy(job_iterator);
+	list_for_each(job_list, _update_job_nodes_str, NULL);
 }
 
 /*
