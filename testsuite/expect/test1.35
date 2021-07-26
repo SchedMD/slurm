@@ -56,8 +56,8 @@ cleanup
 #
 make_bash_script $file_in "
   for ((i = 0; i < $steps_started; i++)); do
-    $srun --overlap -N1 -n1 $step_mem_opt -J$test_name printenv SLURM_JOB_ID
-    $srun --overlap -N1 -n1 $step_mem_opt -J$test_name $bin_sleep 60 &
+    $srun --mpi=none --overlap -N1 -n1 $step_mem_opt -J$test_name printenv SLURM_JOB_ID
+    $srun --mpi=none --overlap -N1 -n1 $step_mem_opt -J$test_name $bin_sleep 60 &
   done
   wait
 "
@@ -99,7 +99,7 @@ if {[wait_for_job $job_id "RUNNING"]} {
 set step_cnt 0
 wait_for {$step_cnt == $steps_started} {
 	set step_cnt 0
-	spawn $squeue -s --state=RUNNING
+	spawn $squeue -s --state=RUNNING -o %i --noheader
 	expect {
 		-re "($job_id)\\.($number)" {
 			incr step_cnt
