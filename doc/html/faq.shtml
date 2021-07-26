@@ -499,7 +499,7 @@ exits.</p>
 &quot;srun: First task exited 30s ago&quot;
 followed by &quot;srun Job Failed&quot;?</b></a><br>
 The srun command monitors when tasks exit. By default, 30 seconds
-after the first task exists, the job is killed.
+after the first task exits, the job is killed.
 This typically indicates some type of job failure and continuing
 to execute a parallel job when one of the tasks has exited is
 not normally productive. This behavior can be changed using srun's
@@ -2324,6 +2324,6 @@ account	sufficient  pam_slurm_adopt.so join_container=false
 </pre>
 
 
-<p style="text-align:center;">Last modified 4 March 2021</p>
+<p style="text-align:center;">Last modified 26 July 2021</p>
 
 <!--#include virtual="footer.txt"-->
