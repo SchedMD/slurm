@@ -15,11 +15,11 @@ void ouch(int sig)
 
 int main()
 {
-	struct sigaction act;
-  
-	act.sa_handler = ouch;
+	struct sigaction act = {
+		.sa_handler = ouch,
+		.sa_flags = SA_NODEFER,
+	};
 	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
 	sigaction(SIGINT, &act, 0);
 
 	printf("Hello World!\n");
