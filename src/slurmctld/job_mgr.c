@@ -1443,11 +1443,16 @@ static int _dump_job_state(void *object, void *arg)
 	packdouble(dump_job_ptr->billable_tres, buffer);
 
 	if (IS_JOB_COMPLETING(dump_job_ptr)) {
-		if (dump_job_ptr->nodes_completing == NULL) {
-			dump_job_ptr->nodes_completing =
-				bitmap2node_name(dump_job_ptr->node_bitmap);
+		char *nodes_completing = NULL;
+		if (dump_job_ptr->node_bitmap_cg) {
+			nodes_completing = bitmap2node_name(
+						dump_job_ptr->node_bitmap_cg);
+		} else {
+			nodes_completing = bitmap2node_name(
+						dump_job_ptr->node_bitmap);
 		}
-		packstr(dump_job_ptr->nodes_completing, buffer);
+		packstr(nodes_completing, buffer);
+		xfree(nodes_completing);
 	}
 	packstr(dump_job_ptr->nodes, buffer);
 	packstr(dump_job_ptr->partition, buffer);

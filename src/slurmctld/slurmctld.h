@@ -810,7 +810,8 @@ struct job_record {
 					 * instead of total_nodes */
 	char *nodes_completing;		/* nodes still in completing state
 					 * for this job, used to ensure
-					 * epilog is not re-run for job */
+					 * epilog is not re-run for job
+					 * used only to dump/load nodes from/to dump file */
 	char *origin_cluster;		/* cluster name that the job was
 					 * submitted from */
 	uint16_t other_port;		/* port for client communications */
