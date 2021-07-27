@@ -4297,7 +4297,6 @@ extern int reboot_job_nodes(job_record_t *job_ptr)
 		bit_set(booting_node_bitmap, i);
 		bit_set(wait_boot_arg->node_bitmap, i);
 		node_ptr->boot_req_time = now;
-		node_ptr->last_response = now + slurm_conf.resume_timeout;
 	}
 
 	if (job_ptr->details->features &&

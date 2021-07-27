@@ -258,11 +258,13 @@ extern void set_job_alias_list(job_record_t *job_ptr)
 extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 			     bool suspended, bool preempted)
 {
-	int i;
+	int i, i_first, i_last, node_count = 0;
 	kill_job_msg_t *kill_job = NULL;
 	agent_arg_t *agent_args = NULL;
 	int down_node_cnt = 0;
 	node_record_t *node_ptr;
+	hostlist_t hostlist = NULL;
+	uint16_t use_protocol_version = 0;
 #ifdef HAVE_FRONT_END
 	front_end_record_t *front_end_ptr;
 #endif
@@ -277,40 +279,13 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		error("select_g_job_fini(%pJ): %m", job_ptr);
 	epilog_slurmctld(job_ptr);
 
-	agent_args = xmalloc(sizeof(agent_arg_t));
-	if (timeout)
-		agent_args->msg_type = REQUEST_KILL_TIMELIMIT;
-	else if (preempted)
-		agent_args->msg_type = REQUEST_KILL_PREEMPTED;
-	else
-		agent_args->msg_type = REQUEST_TERMINATE_JOB;
-	agent_args->retry = 0;	/* re_kill_job() resends as needed */
-	agent_args->hostlist = hostlist_create(NULL);
-	kill_job = xmalloc(sizeof(kill_job_msg_t));
-	last_node_update    = time(NULL);
-	kill_job->job_gres_info =
-		gres_g_epilog_build_env(job_ptr->gres_list_req, job_ptr->nodes);
-	kill_job->step_id.job_id    = job_ptr->job_id;
-	kill_job->het_job_id = job_ptr->het_job_id;
-	kill_job->step_id.step_id = NO_VAL;
-	kill_job->step_id.step_het_comp = NO_VAL;
-	kill_job->job_state = job_ptr->job_state;
-	kill_job->job_uid   = job_ptr->user_id;
-	kill_job->job_gid   = job_ptr->group_id;
-	kill_job->nodes     = xstrdup(job_ptr->nodes);
-	kill_job->time      = time(NULL);
-	kill_job->start_time = job_ptr->start_time;
-	kill_job->select_jobinfo = select_g_select_jobinfo_copy(
-			job_ptr->select_jobinfo);
-	kill_job->spank_job_env = xduparray(job_ptr->spank_job_env_size,
-					    job_ptr->spank_job_env);
-	kill_job->spank_job_env_size = job_ptr->spank_job_env_size;
-	kill_job->work_dir = job_ptr->details->work_dir;
+	if (!job_ptr->details->prolog_running)
+		hostlist = hostlist_create(NULL);
 
 #ifdef HAVE_FRONT_END
 	if (job_ptr->batch_host &&
 	    (front_end_ptr = job_ptr->front_end_ptr)) {
-		agent_args->protocol_version = front_end_ptr->protocol_version;
+		use_protocol_version = front_end_ptr->protocol_version;
 		if (IS_NODE_DOWN(front_end_ptr)) {
 			/* Issue the KILL RPC, but don't verify response */
 			front_end_ptr->job_cnt_comp = 0;
@@ -357,26 +332,28 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 			}
 		}
 
-		hostlist_push_host(agent_args->hostlist, job_ptr->batch_host);
-		agent_args->node_count++;
+		if (hostlist)
+			hostlist_push_host(hostlist, job_ptr->batch_host);
+		node_count++;
 	}
 #else
 	if (!job_ptr->node_bitmap_cg)
 		build_cg_bitmap(job_ptr);
-	agent_args->protocol_version = SLURM_PROTOCOL_VERSION;
-	for (i = 0, node_ptr = node_record_table_ptr;
-	     i < node_record_count; i++, node_ptr++) {
+	use_protocol_version = SLURM_PROTOCOL_VERSION;
+
+	i_first = bit_ffs(job_ptr->node_bitmap_cg);
+	if (i_first >= 0)
+		i_last = bit_fls(job_ptr->node_bitmap_cg);
+	else
+		i_last = i_first - 1;
+	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(job_ptr->node_bitmap_cg, i))
 			continue;
+		node_ptr = &node_record_table_ptr[i];
 		if (IS_NODE_DOWN(node_ptr) ||
 		    IS_NODE_POWERING_UP(node_ptr)) {
 			/* Issue the KILL RPC, but don't verify response */
 			down_node_cnt++;
-			if (job_ptr->node_bitmap_cg == NULL) {
-				error("deallocate_nodes: node_bitmap_cg is "
-				      "not set");
-				build_cg_bitmap(job_ptr);
-			}
 			bit_clear(job_ptr->node_bitmap_cg, i);
 			job_update_tres_cnt(job_ptr, i);
 			/*
@@ -390,30 +367,90 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 		}
 		make_node_comp(node_ptr, job_ptr, suspended);
 
-		if (agent_args->protocol_version > node_ptr->protocol_version)
-			agent_args->protocol_version =
-				node_ptr->protocol_version;
-		hostlist_push_host(agent_args->hostlist, node_ptr->name);
-		agent_args->node_count++;
+		if (use_protocol_version > node_ptr->protocol_version)
+			use_protocol_version = node_ptr->protocol_version;
+		if (hostlist)
+			hostlist_push_host(hostlist, node_ptr->name);
+		node_count++;
 	}
 #endif
+	if (job_ptr->details->prolog_running) {
+		/* Job wasn't launched on nodes so don't run epilog on nodes. */
+		if (job_ptr->epilog_running) {
+			/*
+			 * Cleanup completing nodes after EpilogSlurmctld is
+			 * completed in prep_epilog_slurmctld_callback().
+			 */
+			job_ptr->bit_flags |= NOT_LAUNCHED;
+		} else if (job_ptr->node_bitmap_cg) {
+			/* No async epilog running so cleanup now. */
+			i_first = bit_ffs(job_ptr->node_bitmap_cg);
+			if (i_first >= 0)
+				i_last = bit_fls(job_ptr->node_bitmap_cg);
+			else
+				i_last = i_first - 1;
+			for (int i = i_first; i <= i_last; i++) {
+				if (!bit_test(job_ptr->node_bitmap_cg, i))
+					continue;
+				job_epilog_complete(
+					job_ptr->job_id,
+					node_record_table_ptr[i].name, 0);
+			}
+			if ((job_ptr->node_cnt == 0) &&
+			    !job_ptr->epilog_running)
+				cleanup_completing(job_ptr);
+		}
 
-	if ((agent_args->node_count - down_node_cnt) == 0) {
+		return;
+	}
+
+	if ((node_count - down_node_cnt) == 0) {
 		/* Can not wait for epilog complete to release licenses and
 		 * update gang scheduling table */
 		cleanup_completing(job_ptr);
 	}
 
-	if (agent_args->node_count == 0) {
+	if (node_count == 0) {
 		if (job_ptr->details->expanding_jobid == 0) {
 			error("%s: %pJ allocated no nodes to be killed on",
 			      __func__, job_ptr);
 		}
-		slurm_free_kill_job_msg(kill_job);
-		hostlist_destroy(agent_args->hostlist);
-		xfree(agent_args);
+		hostlist_destroy(hostlist);
 		return;
 	}
+
+	agent_args = xmalloc(sizeof(agent_arg_t));
+	if (timeout)
+		agent_args->msg_type = REQUEST_KILL_TIMELIMIT;
+	else if (preempted)
+		agent_args->msg_type = REQUEST_KILL_PREEMPTED;
+	else
+		agent_args->msg_type = REQUEST_TERMINATE_JOB;
+	agent_args->retry = 0;	/* re_kill_job() resends as needed */
+	agent_args->protocol_version = use_protocol_version;
+	agent_args->hostlist = hostlist;
+	agent_args->node_count = node_count;
+
+	kill_job = xmalloc(sizeof(kill_job_msg_t));
+	last_node_update = time(NULL);
+	kill_job->job_gres_info =
+		gres_g_epilog_build_env(job_ptr->gres_list_req, job_ptr->nodes);
+	kill_job->step_id.job_id = job_ptr->job_id;
+	kill_job->het_job_id = job_ptr->het_job_id;
+	kill_job->step_id.step_id = NO_VAL;
+	kill_job->step_id.step_het_comp = NO_VAL;
+	kill_job->job_state = job_ptr->job_state;
+	kill_job->job_uid = job_ptr->user_id;
+	kill_job->job_gid = job_ptr->group_id;
+	kill_job->nodes = xstrdup(job_ptr->nodes);
+	kill_job->time = time(NULL);
+	kill_job->start_time = job_ptr->start_time;
+	kill_job->select_jobinfo = select_g_select_jobinfo_copy(
+		job_ptr->select_jobinfo);
+	kill_job->spank_job_env = xduparray(job_ptr->spank_job_env_size,
+					    job_ptr->spank_job_env);
+	kill_job->spank_job_env_size = job_ptr->spank_job_env_size;
+	kill_job->work_dir = job_ptr->details->work_dir;
 
 	agent_args->msg_args = kill_job;
 	agent_queue_request(agent_args);
