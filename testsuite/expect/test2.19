@@ -194,7 +194,7 @@ proc test_part {acct qos part qos_con } {
 			if { $qos_con == 1 } {
 				log_debug "This error is expected"
 			} else {
-				log_error "This error should not have occured"
+				log_error "This error should not have occurred"
 				set exit_code 1
 			}
 			exp_continue
