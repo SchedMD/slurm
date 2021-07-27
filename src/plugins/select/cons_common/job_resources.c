@@ -311,6 +311,7 @@ extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action)
 	List node_gres_list;
 	int i, i_first, i_last, n;
 	bitstr_t *core_bitmap;
+	bool new_alloc = true;
 
 	if (!job || !job->core_bitmap) {
 		error("%pJ has no job_resrcs info",
@@ -329,6 +330,9 @@ extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action)
 		i_last = bit_fls(job->node_bitmap);
 	else
 		i_last = -2;
+
+	if (job_ptr->gres_list_alloc)
+		new_alloc = false;
 
 	for (i = i_first, n = -1; i <= i_last; i++) {
 		if (!bit_test(job->node_bitmap, i))
@@ -351,14 +355,14 @@ extern int job_res_add_job(job_record_t *job_ptr, job_res_job_action_t action)
 					&job_ptr->gres_list_alloc,
 					node_gres_list, job->nhosts,
 					i, n, job_ptr->job_id,
-					node_ptr->name, core_bitmap);
+					node_ptr->name, core_bitmap, new_alloc);
 			else
 				gres_ctld_job_alloc(
 					job_ptr->gres_list_req,
 					&job_ptr->gres_list_alloc,
 					node_gres_list, job->nhosts,
 					i, n, job_ptr->job_id,
-					node_ptr->name, core_bitmap);
+					node_ptr->name, core_bitmap, new_alloc);
 
 			gres_node_state_log(node_gres_list, node_ptr->name);
 			FREE_NULL_BITMAP(core_bitmap);

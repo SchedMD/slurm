@@ -67,14 +67,14 @@ extern int gres_ctld_job_select_whole_node(
  * IN node_name   - name of the node (for logging)
  * IN core_bitmap - cores allocated to this job on this node (NULL if not
  *                  available)
- * IN user_id     - job's user ID
+ * IN new_alloc   - If this is a new allocation or not.
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_job_alloc_whole_node(
 	List job_gres_list, List *job_alloc_gres_list, List node_gres_list,
 	int node_cnt, int node_index, int node_offset,
 	uint32_t job_id, char *node_name,
-	bitstr_t *core_bitmap);
+	bitstr_t *core_bitmap, bool new_alloc);
 
 /*
  * Select and allocate GRES to a job and update node and job GRES information
@@ -89,14 +89,14 @@ extern int gres_ctld_job_alloc_whole_node(
  * IN node_name   - name of the node (for logging)
  * IN core_bitmap - cores allocated to this job on this node (NULL if not
  *                  available)
- * IN user_id     - job's user ID
+ * IN new_alloc   - If this is a new allocation or not.
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_job_alloc(List job_gres_list, List *job_alloc_gres_list,
 			       List node_gres_list, int node_cnt,
 			       int node_index, int node_offset,
 			       uint32_t job_id, char *node_name,
-			       bitstr_t *core_bitmap);
+			       bitstr_t *core_bitmap, bool new_alloc);
 
 /*
  * Deallocate resource from a job and update node and job gres information

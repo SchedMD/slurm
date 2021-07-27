@@ -2765,6 +2765,7 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 	uint16_t cpu_cnt;
 	node_record_t *node_ptr;
 	List gres_list;
+	bool new_alloc = true;
 
 	if (cr_ptr == NULL) {
 		error("%s: cr_ptr not initialized", pre_err);
@@ -2795,6 +2796,10 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 	if (i_first == -1)	/* job has no nodes */
 		i_last = -2;
 	node_offset = -1;
+
+	if (job_ptr->gres_list_alloc)
+		new_alloc = false;
+
 	for (i = i_first; i <= i_last; i++) {
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 			continue;
@@ -2824,7 +2829,7 @@ static int _add_job_to_nodes(struct cr_record *cr_ptr,
 					    &job_ptr->gres_list_alloc,
 					    gres_list, node_cnt, i, node_offset,
 					    job_ptr->job_id, node_ptr->name,
-					    NULL);
+					    NULL, new_alloc);
 			gres_node_state_log(gres_list, node_ptr->name);
 		}
 
@@ -3026,6 +3031,7 @@ static void _init_node_cr(void)
 	/* record running and suspended jobs in node_cr_records */
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = list_next(job_iterator))) {
+		bool new_alloc = true;
 		if (!IS_JOB_RUNNING(job_ptr) && !IS_JOB_SUSPENDED(job_ptr))
 			continue;
 		if ((job_resrcs_ptr = job_ptr->job_resrcs) == NULL) {
@@ -3067,6 +3073,10 @@ static void _init_node_cr(void)
 		i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
 		if (i_first == -1)
 			i_last = -2;
+
+		if (job_ptr->gres_list_alloc)
+			new_alloc = false;
+
 		for (i = i_first; i <= i_last; i++) {
 			if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 				continue;
@@ -3097,7 +3107,7 @@ static void _init_node_cr(void)
 						    i, node_offset,
 						    job_ptr->job_id,
 						    node_ptr->name,
-						    NULL);
+						    NULL, new_alloc);
 			}
 
 			part_cr_ptr = cr_ptr->nodes[i].parts;

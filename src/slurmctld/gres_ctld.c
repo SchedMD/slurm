@@ -155,7 +155,7 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 		      void *node_gres_data, int node_cnt, int node_index,
 		      int node_offset, char *gres_name, uint32_t job_id,
 		      char *node_name, bitstr_t *core_bitmap,
-		      uint32_t plugin_id)
+		      uint32_t plugin_id, bool new_alloc)
 {
 	int j, sz1, sz2;
 	int64_t gres_cnt, i;
@@ -612,8 +612,8 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 		}
 	}
 
-	/* If we are already allocated (state restore) end now. */
-	if (!job_gres_ptr->total_node_cnt)
+	/* If we are already allocated (state restore | reconfig) end now. */
+	if (!new_alloc)
 		goto already_alloced;
 
 	/*
@@ -680,7 +680,7 @@ static int _job_alloc_whole_node_internal(
 	gres_key_t *job_search_key, gres_node_state_t *node_state_ptr,
 	List job_gres_list, List *job_gres_list_alloc, int node_cnt,
 	int node_index, int node_offset, int type_index, uint32_t job_id,
-	char *node_name, bitstr_t *core_bitmap)
+	char *node_name, bitstr_t *core_bitmap, bool new_alloc)
 {
 	gres_state_t *job_gres_ptr;
 	gres_job_state_t *job_state_ptr;
@@ -717,7 +717,7 @@ static int _job_alloc_whole_node_internal(
 			  node_cnt, node_index, node_offset,
 			  job_state_ptr->gres_name,
 			  job_id, node_name, core_bitmap,
-			  job_gres_ptr->plugin_id);
+			  job_gres_ptr->plugin_id, new_alloc);
 }
 
 static void _job_select_whole_node_internal(
@@ -837,13 +837,14 @@ extern int gres_ctld_job_select_whole_node(
  * IN node_name   - name of the node (for logging)
  * IN core_bitmap - cores allocated to this job on this node (NULL if not
  *                  available)
+ * IN new_alloc   - If this is a new allocation or not.
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_job_alloc(List job_gres_list, List *job_gres_list_alloc,
 			       List node_gres_list, int node_cnt,
 			       int node_index, int node_offset,
 			       uint32_t job_id, char *node_name,
-			       bitstr_t *core_bitmap)
+			       bitstr_t *core_bitmap, bool new_alloc)
 {
 	int rc = SLURM_ERROR, rc2;
 	ListIterator job_gres_iter,  node_gres_iter;
@@ -881,7 +882,7 @@ extern int gres_ctld_job_alloc(List job_gres_list, List *job_gres_list_alloc,
 				 node_gres_ptr->gres_data, node_cnt, node_index,
 				 node_offset, job_state_ptr->gres_name,
 				 job_id, node_name, core_bitmap,
-				 job_gres_ptr->plugin_id);
+				 job_gres_ptr->plugin_id, new_alloc);
 		if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
 	}
@@ -904,13 +905,14 @@ extern int gres_ctld_job_alloc(List job_gres_list, List *job_gres_list_alloc,
  * IN node_name   - name of the node (for logging)
  * IN core_bitmap - cores allocated to this job on this node (NULL if not
  *                  available)
+ * IN new_alloc   - If this is a new allocation or not.
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_job_alloc_whole_node(
 	List job_gres_list, List *job_gres_list_alloc, List node_gres_list,
 	int node_cnt, int node_index, int node_offset,
 	uint32_t job_id, char *node_name,
-	bitstr_t *core_bitmap)
+	bitstr_t *core_bitmap, bool new_alloc)
 {
 	int rc = SLURM_ERROR, rc2;
 	ListIterator node_gres_iter;
@@ -943,7 +945,7 @@ extern int gres_ctld_job_alloc_whole_node(
 				job_gres_list, job_gres_list_alloc,
 				node_cnt, node_index,
 				node_offset, -1, job_id, node_name,
-				core_bitmap);
+				core_bitmap, new_alloc);
 			if (rc2 != SLURM_SUCCESS)
 				rc = rc2;
 		} else {
@@ -955,7 +957,7 @@ extern int gres_ctld_job_alloc_whole_node(
 					job_gres_list, job_gres_list_alloc,
 					node_cnt, node_index,
 					node_offset, j, job_id, node_name,
-					core_bitmap);
+					core_bitmap, new_alloc);
 				if (rc2 != SLURM_SUCCESS)
 					rc = rc2;
 			}
