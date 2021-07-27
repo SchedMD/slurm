@@ -99,6 +99,8 @@ static int _valid_gpu_bind(char *arg)
 		return _valid_num_list(arg + 8);
 	if (!strncmp(arg, "mask_gpu:", 9))
 		return _valid_num_list(arg + 9);
+	if (!xstrncmp(arg, "per_task:", 9))
+		return _valid_num(arg + 9);
 	return -1;
 }
 

@@ -63,35 +63,51 @@
 
 #include "task_cgroup.h"
 
+enum cgroup_types {
+	CGROUP_TYPE_JOB,
+	CGROUP_TYPE_STEP,
+	CGROUP_TYPE_TASK
+};
+
 typedef struct handle_dev_args {
-	bool is_step;
+	uint32_t cgroup_type;
+	uint32_t taskid;
 	stepd_step_rec_t *job;
 } handle_dev_args_t;
 
 static char cgroup_allowed_devices_file[PATH_MAX];
+static bool is_first_task = true;
 
 static int _handle_device_access(void *x, void *arg)
 {
 	gres_device_t *gres_device = (gres_device_t *)x;
 	handle_dev_args_t *handle_args = (handle_dev_args_t *)arg;
 	cgroup_limits_t limits;
+	char *t_str = NULL;
 
+	if ((slurm_conf.debug_flags & DEBUG_FLAG_GRES) &&
+	    (handle_args->cgroup_type == CGROUP_TYPE_TASK))
+		xstrfmtcat(t_str, "task_%d", handle_args->taskid);
 	log_flag(GRES, "%s %s: adding %s(%s)",
-		 handle_args->is_step ? "step" : "job",
+		 handle_args->cgroup_type == CGROUP_TYPE_JOB ? "job" :
+		 handle_args->cgroup_type == CGROUP_TYPE_STEP ? "step" : t_str,
 		 gres_device->alloc ? "devices.allow" : "devices.deny",
 		 gres_device->major, gres_device->path);
+	xfree(t_str);
 
 	memset(&limits, 0, sizeof(limits));
 	limits.allow_device = gres_device->alloc;
 	limits.device_major = gres_device->major;
 
-	if (!handle_args->is_step)
+	if (handle_args->cgroup_type == CGROUP_TYPE_JOB)
 		cgroup_g_job_constrain_set(CG_DEVICES, handle_args->job,
 					   &limits);
-	else
+	else if (handle_args->cgroup_type == CGROUP_TYPE_STEP)
 		cgroup_g_step_constrain_set(CG_DEVICES, handle_args->job,
 					    &limits);
-
+	else if (handle_args->cgroup_type == CGROUP_TYPE_TASK)
+		cgroup_g_task_constrain_set(CG_DEVICES, &limits,
+					    handle_args->taskid);
 
 	return SLURM_SUCCESS;
 }
@@ -206,8 +222,12 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	cgroup_limits_t limits;
 	handle_dev_args_t handle_args;
 
-	if (cgroup_g_step_create(CG_DEVICES, job) != SLURM_SUCCESS)
-		return SLURM_ERROR;
+	if (is_first_task) {
+		/* Only do once in this plugin. */
+		if (cgroup_g_step_create(CG_DEVICES, job) != SLURM_SUCCESS)
+			return SLURM_ERROR;
+		is_first_task = false;
+	}
 
 	/*
          * create the entry with major minor for the default allowed devices
@@ -221,9 +241,9 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	limits.allow_device = true;
 
 	/*
-	 * with the current cgroup devices subsystem design (whitelist only
+	 * With the current cgroup devices subsystem design (whitelist only
 	 * supported) we need to allow all different devices that are supposed
-	 * to be allowed by* default.
+	 * to be allowed by default.
 	 */
 	for (k = 0; k < allow_lines; k++) {
 		debug2("Default access allowed to device %s(%s) for job",
@@ -233,13 +253,11 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 		limits.device_major = NULL;
 	}
 
-	/*
-         * allow or deny access to devices according to job GRES permissions
-         */
-	device_list = gres_g_get_devices(job_gres_list, true);
+	/* Allow or deny access to devices according to job GRES permissions. */
+	device_list = gres_g_get_devices(job_gres_list, true, 0, NULL, 0);
 
 	if (device_list) {
-		handle_args.is_step = false;
+		handle_args.cgroup_type = CGROUP_TYPE_JOB;
 		handle_args.job = job;
 		list_for_each(device_list, _handle_device_access,
 			      &handle_args);
@@ -249,11 +267,6 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	if ((job->step_id.step_id != SLURM_BATCH_SCRIPT) &&
 	    (job->step_id.step_id != SLURM_EXTERN_CONT) &&
 	    (job->step_id.step_id != SLURM_INTERACTIVE_STEP)) {
-		/*
-		 * with the current cgroup devices subsystem design (whitelist
-		 * only supported) we need to allow all different devices that
-		 * are supposed to be allowed by default.
-		 */
 		for (k = 0; k < allow_lines; k++) {
 			debug2("Default access allowed to device %s(%s) for step",
 			       allowed_dev_major[k], allowed_devices[k]);
@@ -263,13 +276,14 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 		}
 
 		/*
-		 * allow or deny access to devices according to GRES permissions
-		 * for the step
+		 * Allow or deny access to devices according to GRES permissions
+		 * for the step.
 		 */
-		device_list = gres_g_get_devices(step_gres_list, false);
+		device_list = gres_g_get_devices(step_gres_list, false, 0, NULL,
+						 0);
 
 		if (device_list) {
-			handle_args.is_step = true;
+			handle_args.cgroup_type = CGROUP_TYPE_STEP;
 			handle_args.job = job;
 			list_for_each(device_list, _handle_device_access,
 				      &handle_args);
@@ -285,7 +299,51 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	return SLURM_SUCCESS;
 }
 
-extern int task_cgroup_devices_add_pid(pid_t pid)
+extern int task_cgroup_devices_add_pid(stepd_step_rec_t *job, pid_t pid,
+				       uint32_t taskid)
 {
+	List device_list = NULL;
+	handle_dev_args_t handle_args;
+
+	/* This plugin constrain devices to task level. */
+	if (cgroup_g_task_addto(CG_DEVICES, job, pid, taskid) != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	/*
+	 * We do not explicitly constrain devices on the task level of these
+	 * specific steps (they all only have 1 task anyway). e.g. an
+	 * salloc --gres=gpu must have access to the allocated GPUs. If we do
+	 * add the pid (e.g. bash) we'd get constrained.
+	 */
+	if ((job->step_id.step_id == SLURM_BATCH_SCRIPT) ||
+	    (job->step_id.step_id == SLURM_EXTERN_CONT) ||
+	    (job->step_id.step_id == SLURM_INTERACTIVE_STEP))
+		return SLURM_SUCCESS;
+
+	/*
+	 * Apply gres constrains by getting the allowed devices for this task
+	 * from gres plugin. We do not apply here the limits read from the
+	 * cgroup_allowed_devices.conf file because they are already applied at
+	 * job level from task_cgroup_devices_create() and inherited further
+	 * down the tree.
+	 */
+	device_list = gres_g_get_devices(job->step_gres_list, false,
+					 job->accel_bind_type, job->tres_bind,
+					 taskid);
+	if (device_list) {
+		handle_args.cgroup_type = CGROUP_TYPE_TASK;
+		handle_args.job = job;
+		handle_args.taskid = taskid;
+		list_for_each(device_list, _handle_device_access,
+			      &handle_args);
+		FREE_NULL_LIST(device_list);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+extern int task_cgroup_devices_add_extern_pid(pid_t pid)
+{
+	/* Only in the extern step we will not create specific tasks */
 	return cgroup_g_step_addto(CG_DEVICES, &pid, 1);
 }

@@ -103,8 +103,8 @@ static int oom_pipe[2] = { -1, -1 };
 static pthread_t oom_thread;
 static pthread_mutex_t oom_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/* Accounting artifacts */
-List g_task_acct_list[CG_CTL_CNT];
+/* Task tracking artifacts */
+List g_task_list[CG_CTL_CNT];
 static uint32_t g_max_task_id = 0;
 /*
  * There are potentially multiple tasks on a node, so we want to
@@ -286,6 +286,100 @@ static int _rmdir_task(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
+static int _find_task_cg_info(void *x, void *key)
+{
+	task_cg_info_t *task_cg = (task_cg_info_t*)x;
+	uint32_t taskid = *(uint32_t*)key;
+
+	if (task_cg->taskid == taskid)
+		return 1;
+
+	return 0;
+}
+
+static void _free_task_cg_info(void *object)
+{
+	task_cg_info_t *task_cg = (task_cg_info_t *)object;
+
+	if (task_cg) {
+		common_cgroup_destroy(&task_cg->task_cg);
+		xfree(task_cg);
+	}
+}
+
+static int _handle_task_cgroup(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
+			       pid_t pid, uint32_t taskid)
+{
+	int rc = SLURM_SUCCESS;
+	bool need_to_add = false;
+	task_cg_info_t *task_cg_info;
+	uid_t uid = job->uid;
+	gid_t gid = job->gid;
+	char *task_cgroup_path = NULL;
+
+	/* build task cgroup relative path */
+	xstrfmtcat(task_cgroup_path, "%s/task_%u", g_step_cgpath[sub], taskid);
+	if (!task_cgroup_path) {
+		error("unable to build task_%u cg relative path for %s: %m",
+		      taskid, g_step_cgpath[sub]);
+		return SLURM_ERROR;
+	}
+
+	if (!(task_cg_info = list_find_first(g_task_list[sub],
+					     _find_task_cg_info,
+					     &taskid))) {
+		task_cg_info = xmalloc(sizeof(*task_cg_info));
+		task_cg_info->taskid = taskid;
+		need_to_add = true;
+	}
+
+	/*
+	 * Create task cgroup in the cg ns
+	 */
+	if (common_cgroup_create(&g_cg_ns[sub], &task_cg_info->task_cg,
+				 task_cgroup_path, uid, gid) != SLURM_SUCCESS) {
+		error("unable to create task %u cgroup", taskid);
+		xfree(task_cg_info);
+		xfree(task_cgroup_path);
+		return SLURM_ERROR;
+	}
+
+	if (common_cgroup_instantiate(&task_cg_info->task_cg) != SLURM_SUCCESS)
+	{
+		_free_task_cg_info(task_cg_info);
+		error("unable to instantiate task %u cgroup", taskid);
+		xfree(task_cgroup_path);
+		return SLURM_ERROR;
+	}
+
+	/* set notify on release flag */
+	common_cgroup_set_param(&task_cg_info->task_cg, "notify_on_release",
+				"0");
+
+	/* Attach the pid to the corresponding step_x/task_y cgroup */
+	rc = common_cgroup_move_process(&task_cg_info->task_cg, pid);
+	if (rc != SLURM_SUCCESS)
+		error("Unable to move pid %d to %s cg", pid, task_cgroup_path);
+
+	/* Add the cgroup to the list now that it is initialized. */
+	if (need_to_add)
+		list_append(g_task_list[sub], task_cg_info);
+
+	xfree(task_cgroup_path);
+	return rc;
+}
+
+static int _all_tasks_destroy(cgroup_ctl_type_t sub)
+{
+	int rc;
+
+	/* Empty the lists of accounted tasks, do a best effort in rmdir */
+	rc = list_for_each(g_task_list[sub], _rmdir_task, NULL);
+	list_flush(g_task_list[sub]);
+
+	return rc;
+}
+
 extern int init(void)
 {
 	int i;
@@ -295,6 +389,8 @@ extern int init(void)
 		g_job_cgpath[i][0] = '\0';
 		g_step_cgpath[i][0] = '\0';
 		g_step_active_cnt[i] = 0;
+		FREE_NULL_LIST(g_task_list[i]);
+		g_task_list[i] = list_create(_free_task_cg_info);
 	}
 
 	debug("%s loaded", plugin_name);
@@ -310,6 +406,10 @@ extern int fini(void)
 extern int cgroup_p_initialize(cgroup_ctl_type_t sub)
 {
 	int rc = SLURM_SUCCESS;
+
+	/* Only initialize if not inited */
+	if (g_cg_ns[sub].mnt_point)
+		return rc;
 
 	if ((rc = _cgroup_init(sub)))
 		return rc;
@@ -462,6 +562,11 @@ end:
 	return rc;
 }
 
+/*
+ * Each call to this function counts as one active user of the step directories,
+ * so the number of calls to this function must mach the number of calls of
+ * cgroup_p_step_destroy in each plugin.
+ */
 extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 {
 	int rc = SLURM_SUCCESS;
@@ -544,9 +649,18 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 			goto step_c_err;
 		break;
 	case CG_CPUACCT:
-		error("This operation is not supported for %s", g_cg_name[sub]);
-		rc = SLURM_ERROR;
-		goto step_c_err;
+		if ((rc = xcgroup_create_hierarchy(__func__,
+						   job,
+						   &g_cg_ns[sub],
+						   &g_job_cg[sub],
+						   &g_step_cg[sub],
+						   &g_user_cg[sub],
+						   g_job_cgpath[sub],
+						   g_step_cgpath[sub],
+						   g_user_cgpath[sub]))
+		    != SLURM_SUCCESS)
+			goto step_c_err;
+		break;
 	default:
 		error("cgroup subsystem %u not supported", sub);
 		rc = SLURM_ERROR;
@@ -628,6 +742,9 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 		       g_cg_name[sub], g_step_active_cnt[sub]);
 		return SLURM_SUCCESS;
 	}
+
+	/* Remove any possible task directories first */
+	_all_tasks_destroy(sub);
 
 	/* Custom actions for every cgroup subsystem */
 	switch (sub) {
@@ -785,8 +902,6 @@ extern int cgroup_p_system_constrain_set(cgroup_ctl_type_t sub,
 	case CG_CPUS:
 		rc = common_cgroup_set_param(&g_sys_cg[CG_CPUS], "cpuset.cpus",
 					     limits->allow_cores);
-		//rc += common_cgroup_set_param(&g_sys_cg[CG_CPUS], "cpuset.mems",
-		//				limits->allow_mems);
 		break;
 	case CG_MEMORY:
 		common_cgroup_set_uint64_param(&g_sys_cg[CG_MEMORY],
@@ -912,7 +1027,8 @@ extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
 	case CG_CPUS:
 		rc = common_cgroup_set_param(&g_step_cg[CG_CPUS], "cpuset.cpus",
 					     limits->allow_cores);
-		rc += common_cgroup_set_param(&g_step_cg[CG_CPUS], "cpuset.mems",
+		rc += common_cgroup_set_param(&g_step_cg[CG_CPUS],
+					      "cpuset.mems",
 					      limits->allow_mems);
 #ifdef HAVE_NATIVE_CRAY
 		/*
@@ -960,6 +1076,51 @@ extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
 		break;
 	default:
 		error("cgroup subsystem %u not supported", sub);
+		rc = SLURM_ERROR;
+		break;
+	}
+
+	return rc;
+}
+
+extern int cgroup_p_task_constrain_set(cgroup_ctl_type_t sub,
+				       cgroup_limits_t *limits, uint32_t taskid)
+{
+	int rc = SLURM_SUCCESS;
+	task_cg_info_t *task_cg_info;
+
+	if (!limits)
+		return SLURM_ERROR;
+
+	switch (sub) {
+	case CG_TRACK:
+		break;
+	case CG_CPUS:
+		break;
+	case CG_MEMORY:
+		break;
+	case CG_DEVICES:
+		task_cg_info = list_find_first(g_task_list[sub],
+					       _find_task_cg_info,
+					       &taskid);
+		if (!task_cg_info) {
+			error("Task %d is not being tracked in %s controller, cannot set constrain.",
+			      taskid, g_cg_name[sub]);
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		if (limits->allow_device)
+			rc = common_cgroup_set_param(&task_cg_info->task_cg,
+						     "devices.allow",
+						     limits->device_major);
+		else
+			rc = common_cgroup_set_param(&task_cg_info->task_cg,
+						     "devices.deny",
+						     limits->device_major);
+		break;
+	default:
+		error("cgroup subsystem %"PRIu16" not supported", sub);
 		rc = SLURM_ERROR;
 		break;
 	}
@@ -1273,184 +1434,18 @@ fail_oom_results:
 #endif
 
 /***************************************
- ***** CGROUP ACCOUNTING FUNCTIONS *****
+ ***** CGROUP TASK FUNCTIONS *****
  **************************************/
-static int _find_task_cg_info(void *x, void *key)
+extern int cgroup_p_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,
+			       pid_t pid, uint32_t task_id)
 {
-	task_cg_info_t *task_cg = (task_cg_info_t*)x;
-	uint32_t taskid = *(uint32_t*)key;
-
-	if (task_cg->taskid == taskid)
-		return 1;
-
-	return 0;
-}
-
-static void _free_task_cg_info(void *object)
-{
-	task_cg_info_t *task_cg = (task_cg_info_t *)object;
-
-	if (task_cg) {
-		common_cgroup_destroy(&task_cg->task_cg);
-		xfree(task_cg);
-	}
-}
-
-static int _handle_task_cgroup(cgroup_ctl_type_t sub, pid_t pid,
-			       stepd_step_rec_t *job, uint32_t taskid)
-{
-	int rc = SLURM_SUCCESS;
-	bool need_to_add = false;
-	task_cg_info_t *task_cg_info;
-	uid_t uid = job->uid;
-	gid_t gid = job->gid;
-	char *task_cgroup_path = NULL;
-
-	/* build task cgroup relative path */
-	xstrfmtcat(task_cgroup_path, "%s/task_%u", g_step_cgpath[sub], taskid);
-	if (!task_cgroup_path) {
-		error("unable to build task_%u cg relative path for %s: %m",
-		      taskid, g_step_cgpath[sub]);
-		return SLURM_ERROR;
-	}
-
-	if (!(task_cg_info = list_find_first(g_task_acct_list[sub],
-					     _find_task_cg_info,
-					     &taskid))) {
-		task_cg_info = xmalloc(sizeof(*task_cg_info));
-		task_cg_info->taskid = taskid;
-		need_to_add = true;
-	}
-
-	/*
-	 * Create task cgroup in the cg ns
-	 */
-	if (common_cgroup_create(&g_cg_ns[sub], &task_cg_info->task_cg,
-				 task_cgroup_path, uid, gid) != SLURM_SUCCESS) {
-		error("unable to create task %u cgroup", taskid);
-		xfree(task_cg_info);
-		xfree(task_cgroup_path);
-		return SLURM_ERROR;
-	}
-
-	if (common_cgroup_instantiate(&task_cg_info->task_cg) != SLURM_SUCCESS)
-	{
-		_free_task_cg_info(task_cg_info);
-		error("unable to instantiate task %u cgroup", taskid);
-		xfree(task_cgroup_path);
-		return SLURM_ERROR;
-	}
-
-	/* set notify on release flag */
-	common_cgroup_set_param(&task_cg_info->task_cg, "notify_on_release",
-				"0");
-
-	/* Attach the pid to the corresponding step_x/task_y cgroup */
-	rc = common_cgroup_move_process(&task_cg_info->task_cg, pid);
-	if (rc != SLURM_SUCCESS)
-		error("Unable to move pid %d to %s cg", pid, task_cgroup_path);
-
-	/* Add the cgroup to the list now that it is initialized. */
-	if (need_to_add)
-		list_append(g_task_acct_list[sub], task_cg_info);
-
-	xfree(task_cgroup_path);
-	return rc;
-}
-
-extern int cgroup_p_accounting_init(void)
-{
-	int i, rc = SLURM_SUCCESS;
-
-	if (g_step_cgpath[CG_MEMORY][0] == '\0')
-		rc = cgroup_p_initialize(CG_MEMORY);
-
-	if (rc != SLURM_SUCCESS) {
-		error("Cannot initialize cgroup memory accounting");
-		return rc;
-	}
-
-	g_step_active_cnt[CG_MEMORY]++;
-
-	if (g_step_cgpath[CG_CPUACCT][0] == '\0')
-		rc = cgroup_p_initialize(CG_CPUACCT);
-
-	if (rc != SLURM_SUCCESS) {
-		error("Cannot initialize cgroup cpuacct accounting");
-		return rc;
-	}
-
-	g_step_active_cnt[CG_CPUACCT]++;
-
-	/* Create the list of tasks which will be accounted for*/
-	for (i = 0; i < CG_CTL_CNT; i++) {
-		FREE_NULL_LIST(g_task_acct_list[i]);
-		g_task_acct_list[i] = list_create(_free_task_cg_info);
-	}
-
-	return rc;
-}
-
-extern int cgroup_p_accounting_fini(void)
-{
-	int rc;
-
-	/* Empty the lists of accounted tasks, do a best effort in rmdir */
-	(void) list_for_each(g_task_acct_list[CG_MEMORY], _rmdir_task, NULL);
-	list_flush(g_task_acct_list[CG_MEMORY]);
-
-	(void) list_for_each(g_task_acct_list[CG_CPUACCT], _rmdir_task, NULL);
-	list_flush(g_task_acct_list[CG_CPUACCT]);
-
-	/* Remove job/uid/step directories */
-	rc = cgroup_p_step_destroy(CG_MEMORY);
-	rc += cgroup_p_step_destroy(CG_CPUACCT);
-
-	return rc;
-}
-
-extern int cgroup_p_task_addto_accounting(pid_t pid, stepd_step_rec_t *job,
-					  uint32_t task_id)
-{
-	int rc = SLURM_SUCCESS;
-
 	if (task_id > g_max_task_id)
 		g_max_task_id = task_id;
 
 	debug("%ps taskid %u max_task_id %u", &job->step_id, task_id,
 	      g_max_task_id);
 
-	if (xcgroup_create_hierarchy(__func__,
-				     job,
-				     &g_cg_ns[CG_CPUACCT],
-				     &g_job_cg[CG_CPUACCT],
-				     &g_step_cg[CG_CPUACCT],
-				     &g_user_cg[CG_CPUACCT],
-				     g_job_cgpath[CG_CPUACCT],
-				     g_step_cgpath[CG_CPUACCT],
-				     g_user_cgpath[CG_CPUACCT])
-	    != SLURM_SUCCESS) {
-		return SLURM_ERROR;
-	}
-
-	if (xcgroup_create_hierarchy(__func__,
-				     job,
-				     &g_cg_ns[CG_MEMORY],
-				     &g_job_cg[CG_MEMORY],
-				     &g_step_cg[CG_MEMORY],
-				     &g_user_cg[CG_MEMORY],
-				     g_job_cgpath[CG_MEMORY],
-				     g_step_cgpath[CG_MEMORY],
-				     g_user_cgpath[CG_MEMORY])
-	    != SLURM_SUCCESS) {
-		cgroup_p_step_destroy(CG_CPUACCT);
-		return SLURM_ERROR;
-	}
-
-	_handle_task_cgroup(CG_CPUACCT, pid, job, task_id);
-	_handle_task_cgroup(CG_MEMORY, pid, job, task_id);
-
-	return rc;
+	return _handle_task_cgroup(sub, job, pid, task_id);
 }
 
 extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
@@ -1462,10 +1457,10 @@ extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t taskid)
 	xcgroup_t *task_memory_cg = NULL;
 
 	/* Find which task cgroup to use */
-	task_memory_cg = list_find_first(g_task_acct_list[CG_MEMORY],
+	task_memory_cg = list_find_first(g_task_list[CG_MEMORY],
 					 _find_task_cg_info,
 					 &taskid);
-	task_cpuacct_cg = list_find_first(g_task_acct_list[CG_CPUACCT],
+	task_cpuacct_cg = list_find_first(g_task_list[CG_CPUACCT],
 					  _find_task_cg_info,
 					  &taskid);
 

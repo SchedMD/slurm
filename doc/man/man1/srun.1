@@ -941,6 +941,11 @@ second \fI<tasks_per_gpu>\fR tasks are bound to the second GPU available, etc.
 This is basically a block distribution of tasks onto available GPUs, where the
 available GPUs are determined by the socket affinity of the task and the socket
 affinity of the GPUs as specified in gres.conf's \fICores\fR parameter.
+.TP
+\fBper_task:<gpus_per_task>\fR
+Each task will be bound to the number of gpus specified in
+\fI<gpus_per_task>\fR. Gpus are assigned in order to tasks. The first task will
+be assigned the first x number of gpus on the node etc.
 .RE
 
 .TP
@@ -1013,9 +1018,9 @@ requested in a comma separated list, for example:
 \fB\-\-gpus\-per\-socket\fR and \fB\-\-gpus\-per\-node\fR options.
 This option requires an explicit task count, e.g. -n, --ntasks or "--gpus=X
 --gpus-per-task=Y" rather than an ambiguous range of nodes with -N, --nodes.
+This option will implicitly set --gpu-bind=per_task:<gpus_per_task>, but that
+can be overridden with an explicit --gpu-bind specification.
 .br
-NOTE: This option will not have any impact on GPU binding, specifically
-it won't limit the number of devices set for CUDA_VISIBLE_DEVICES.
 
 .TP
 \fB\-\-gres\fR=<\fIlist\fR>
