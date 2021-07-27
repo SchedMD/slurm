@@ -39,7 +39,7 @@ proc cleanup { } {
 	global bin_rm script1 het_job_id scancel
 
 	if {$het_job_id > 0} {
-		exec $scancel $het_job_id
+		cancel_job $het_job_id
 	}
 	exec $bin_rm -rf $script1
 }
