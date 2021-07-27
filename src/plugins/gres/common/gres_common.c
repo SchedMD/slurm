@@ -234,10 +234,6 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 
 		/* Track physical devices if MultipleFiles is used */
 		if (device_index < gres_device->index) {
-			if ((gres_device->index - device_index) != 1)
-				error("There is a gap > 1 between gres_device->index (%d) and the prior device_index (%d)",
-				      gres_device->index, device_index);
-
 			device_index = gres_device->index;
 			device_considered = false;
 		} else if (device_index != gres_device->index)
