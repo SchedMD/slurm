@@ -534,7 +534,7 @@ test17.11  Test of oversubscribe and contiguous options, also uses --hold option
 test17.12  Verify node configuration specification (--constraint option)
 test17.13  Verify the appropriate job environment variables are set
 test17.14  Verify that user environment variables are propagated to the job
-test17.15  Verify that user user limits are propagated to the job
+test17.15  DEFUNCT
 test17.16  Verify that command line arguments get forwarded to job script
 test17.17  Confirm that oversubscribe flags are respected  (--nodelist and
 	   --oversubscribe options)
