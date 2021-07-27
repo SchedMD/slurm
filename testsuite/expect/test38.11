@@ -27,7 +27,9 @@
 ############################################################################
 source ./globals
 
-set script1   "test$test_id.in1"
+set script    "$test_dir/script.sh"
+set stdout    "$test_dir/out"
+set stderr    "$test_dir/err"
 set exit_code  0
 set job_id     0
 set hostlist   ""
@@ -36,12 +38,11 @@ set node2      ""
 set het_job_id 0
 
 proc cleanup { } {
-	global bin_rm script1 het_job_id scancel
+	global bin_rm het_job_id scancel
 
 	if {$het_job_id > 0} {
 		cancel_job $het_job_id
 	}
-	exec $bin_rm -rf $script1
 }
 
 set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
@@ -100,7 +101,7 @@ if {$het_job_id == 0} {
 	fail "salloc failure"
 }
 
-make_bash_script $script1 "
+make_bash_script $script "
 $srun --het-group=0 $bin_rm -f  /tmp/test_${test_id}/$node1/test$test_id\_file\_comp0
 $srun --het-group=1 $bin_rm -f  /tmp/test_${test_id}/$node2/test$test_id\_file\_comp1
 $srun --het-group=0 $bin_rm -f  /tmp/test_${test_id}/test$test_id\_file
@@ -146,9 +147,13 @@ $srun --het-group=1 $bin_rm -fr /tmp/test_${test_id}
 $srun --het-group=0 $bin_rm -fr /tmp/test_${test_id}
 "
 
+set het_job_id [submit_job -fail "-o $stdout -e $stderr -t2 -N1 -w $node1 : -w $node2 -N1 -t10 $script"]
+wait_for_job -fail $het_job_id "DONE" 1
+wait_for_file -timeout 2 -fail $stdout
+
 set timeout $max_job_delay
 set matches 0
-send "./$script1 \r"
+spawn $bin_cat $stdout
 expect {
 	-re "Permission denied" {
 		fail "Unable to delete/create file, check permissions"
