@@ -56,13 +56,6 @@ extern int common_node_config_load(List gres_conf_list,
 				   char *gres_name,
 				   List *gres_devices);
 
-/*
- * Test if GRES env variables should be set to global device ID or a device
- * ID that always starts at zero (based upon what the application can see).
- * RET true if TaskPlugin=task/cgroup AND ConstrainDevices=yes (in cgroup.conf).
- */
-extern bool common_use_local_device_index(void);
-
 /* set the environment for a job/step with the appropriate values */
 extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				bitstr_t *usable_gres, char *prefix,

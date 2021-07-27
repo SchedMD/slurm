@@ -163,31 +163,6 @@ extern int common_node_config_load(List gres_conf_list,
 	return rc;
 }
 
-extern bool common_use_local_device_index(void)
-{
-	bool use_cgroup = false;
-	static bool use_local_index = false;
-	static bool is_set = false;
-
-	if (is_set)
-		return use_local_index;
-	is_set = true;
-
-	if (!slurm_conf.task_plugin)
-		return use_local_index;
-
-	if (xstrstr(slurm_conf.task_plugin, "cgroup"))
-		use_cgroup = true;
-	if (!use_cgroup)
-		return use_local_index;
-
-	cgroup_conf_init();
-	if (slurm_cgroup_conf.constrain_devices)
-		use_local_index = true;
-
-	return use_local_index;
-}
-
 extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				bitstr_t *usable_gres, char *prefix,
 				int *local_inx, bitstr_t *bit_alloc,
@@ -196,7 +171,7 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				gres_internal_flags_t flags, bool use_dev_num)
 {
 	int first_inx = -1;
-	bool use_local_dev_index = common_use_local_device_index();
+	bool use_local_dev_index = gres_use_local_device_index();
 	bool set_global_id = false;
 	gres_device_t *gres_device, *first_device = NULL;
 	ListIterator itr;

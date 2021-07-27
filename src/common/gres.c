@@ -76,6 +76,7 @@ typedef cpuset_t cpu_set_t;
 #include "slurm/slurm_errno.h"
 #include "src/common/assoc_mgr.h"
 #include "src/common/bitstring.h"
+#include "src/common/cgroup.h"
 #include "src/common/gres.h"
 #include "src/common/job_resources.h"
 #include "src/common/list.h"
@@ -363,6 +364,32 @@ extern int gres_find_step_by_key(void *x, void *key)
 	    (gres_data_ptr->type_id == step_key->type_id))
 		return 1;
 	return 0;
+}
+
+
+extern bool gres_use_local_device_index(void)
+{
+	bool use_cgroup = false;
+	static bool use_local_index = false;
+	static bool is_set = false;
+
+	if (is_set)
+		return use_local_index;
+	is_set = true;
+
+	if (!slurm_conf.task_plugin)
+		return use_local_index;
+
+	if (xstrstr(slurm_conf.task_plugin, "cgroup"))
+		use_cgroup = true;
+	if (!use_cgroup)
+		return use_local_index;
+
+	cgroup_conf_init();
+	if (slurm_cgroup_conf.constrain_devices)
+		use_local_index = true;
+
+	return use_local_index;
 }
 
 static int _load_plugin(slurm_gres_context_t *plugin_context)
