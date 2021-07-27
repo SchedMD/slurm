@@ -81,7 +81,9 @@ extern void acct_policy_alter_job(job_record_t *job_ptr,
  * acct_policy_validate - validate that a job request can be satisfied without
  * exceeding any association or QOS limit.
  * job_desc IN - job descriptor being submitted
- * part_ptr IN - pointer to (one) partition to which the job is being submitted
+ * part_ptr IN - first partition to which the job is being submitted
+ * part_ptr_list IN - list of partitions to which the job is being submitted
+ *                    (can be NULL)
  * assoc_in IN - pointer to association to which the job is being submitted
  * qos_ptr IN - pointer to QOS to which the job is being submitted
  * state_reason OUT - if non-NULL, set to reason for rejecting the job
@@ -92,6 +94,7 @@ extern void acct_policy_alter_job(job_record_t *job_ptr,
  */
 extern bool acct_policy_validate(job_desc_msg_t *job_desc,
 				 part_record_t *part_ptr,
+				 List part_ptr_list,
 				 slurmdb_assoc_rec_t *assoc_in,
 				 slurmdb_qos_rec_t *qos_ptr,
 				 uint32_t *state_reason,
@@ -157,6 +160,7 @@ extern bool acct_policy_job_time_out(job_record_t *job_ptr);
  * acct_policy_handle_accrue_time - Set accrue time if we are under a limit.  If
  * we are a task array we will also split off things to handle them
  * individually.
+ * NOTE: Accrue limits are *not* checked for partition QOS.
  */
 extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 					  bool assoc_mgr_locked);
@@ -164,10 +168,12 @@ extern int acct_policy_handle_accrue_time(job_record_t *job_ptr,
 /*
  * acct_policy_add_accrue_time - Implicitly add job to the accrue_cnt of the
  * assoc and QOS of the job/part.
+ * NOTE: Accrue limits are *not* checked for partition QOS.
  */
 extern void acct_policy_add_accrue_time(job_record_t *job_ptr,
 					bool assoc_mgr_locked);
 
+/* NOTE: Accrue limits are *not* checked for partition QOS. */
 extern void acct_policy_remove_accrue_time(job_record_t *job_ptr,
 					   bool assoc_mgr_locked);
 
@@ -187,6 +193,16 @@ extern time_t acct_policy_get_preemptable_time(job_record_t *job_ptr);
  */
 extern bool acct_policy_is_job_preempt_exempt(job_record_t *job_ptr);
 
+/*
+ * acct_policy_set_qos_order - Set the pointers qos_ptr_1 and qos_ptr_2 to
+ * the job's QOS and the first partition's QOS. If the job has the flag
+ * OverPartQOS, then set qos_ptr_1 to the job's QOS, otherwise set qos_ptr_1 to
+ * the first partition's QOS. Set qos_ptr_2 to the other (lower priority) QOS
+ * only if it exists and is different from qos_ptr_1.
+ *
+ * WARNING: Since we only look at the first partition's QOS, this function
+ * must only be used in places where we loop over all partitions in the job.
+ */
 extern void acct_policy_set_qos_order(job_record_t *job_ptr,
 				      slurmdb_qos_rec_t **qos_ptr_1,
 				      slurmdb_qos_rec_t **qos_ptr_2);

@@ -724,6 +724,7 @@ Maximum number of jobs each user is allowed to run at one time.
 .TP
 \fIMaxJobsAccrue\fP
 Maximum number of pending jobs able to accrue age priority at any given time.
+This limit only applies to the job's QOS and not the partition's QOS.
 
 .TP
 \fIMaxSubmitJobs\fP
@@ -1293,6 +1294,7 @@ Maximum number of running jobs in aggregate for this QOS.
 \fIGrpJobsAccrue\fP
 Maximum number of pending jobs in aggregate able to accrue age priority for this
 QOS.
+This limit only applies to the job's QOS and not the partition's QOS.
 
 .TP
 \fIGrpSubmitJobs\fP
@@ -1314,11 +1316,13 @@ The id of the QOS.
 \fIMaxJobsAccruePerAccount\fP
 Maximum number of pending jobs an account (or subacct) can have accruing age
 priority at any given time.
+This limit only applies to the job's QOS and not the partition's QOS.
 
 .TP
 \fIMaxJobsAccruePerUser\fP
 Maximum number of pending jobs a user can have accruing age priority at any
 given time.
+This limit only applies to the job's QOS and not the partition's QOS.
 
 .TP
 \fIMaxJobsPerAccount\fP
@@ -1487,6 +1491,7 @@ To clear a previously set value use the modify command with a new value of \-1.
 \fIGrpJobsAccrue\fP
 Maximum number of pending jobs in aggregate able to accrue age priority for this
 QOS.
+This limit only applies to the job's QOS and not the partition's QOS.
 To clear a previously set value use the modify command with a new value of \-1.
 
 .TP
