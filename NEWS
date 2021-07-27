@@ -3,6 +3,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 22.05.0pre1
 ==============================
+ -- gres/gpu - Avoid stripping GRES type field during normalization if any
+    other GRES have a defined type field.
 
 * Changes in Slurm 21.08.1
 ==========================

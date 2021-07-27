@@ -228,6 +228,19 @@ static int _find_type_in_gres_list(void *x, void *key)
 		return 0;
 }
 
+static int _find_nonnull_type_in_gres_list(void *x, void *key)
+{
+	gres_slurmd_conf_t *conf_gres = (gres_slurmd_conf_t *) x;
+
+	if (!conf_gres)
+		return 0;
+
+	if (conf_gres->type_name && conf_gres->type_name[0])
+		return 1;
+
+	return 0;
+}
+
 /*
  * Sync the GRES type of each device detected on the system (gres_list_system)
  * to its corresponding GRES type specified in [gres|slurm].conf. In effect, the
@@ -241,10 +254,20 @@ static void _normalize_sys_gres_types(List gres_list_system,
 {
 	gres_slurmd_conf_t *sys_gres, *conf_gres;
 	ListIterator itr;
+	bool strip_type = true;
 
 	/* No need to sync anything if configured GRES list is empty */
 	if (!gres_list_conf_single || list_count(gres_list_conf_single) == 0)
 		return;
+
+	/*
+	 * Determine if any of the existing GRES have their types defined. If
+	 * have a type, then all GRES must have a type defined and stripping the
+	 * type is not helpful
+	 */
+	if (list_find_first(gres_list_conf_single,
+			    _find_nonnull_type_in_gres_list, NULL))
+		strip_type = false;
 
 	/*
 	 * Sort conf and sys gres lists by longest GRES type to shortest, so we
@@ -260,10 +283,12 @@ static void _normalize_sys_gres_types(List gres_list_system,
 					    _find_type_in_gres_list,
 					    sys_gres->type_name);
 		if (!conf_gres) {
-			info("Could not find an unused configuration record with a GRES type that is a substring of system device `%s`. Setting system GRES type to NULL",
-			     sys_gres->type_name);
-			xfree(sys_gres->type_name);
-			sys_gres->config_flags &= ~GRES_CONF_HAS_TYPE;
+			if (strip_type) {
+				info("Could not find an unused configuration record with a GRES type that is a substring of system device `%s`. Setting system GRES type to NULL",
+				     sys_gres->type_name);
+				xfree(sys_gres->type_name);
+				sys_gres->config_flags &= ~GRES_CONF_HAS_TYPE;
+			}
 			continue;
 		}
 
