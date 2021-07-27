@@ -222,8 +222,9 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 	} else if (opt_local->cpus_set) {
 		step_req->cpu_count =
 			opt_local->ntasks * opt_local->cpus_per_task;
+		if (!srun_opt->exact)
+			verbose("Implicitly setting --exact, because -c/--cpus-per-task given.");
 		srun_opt->exact = true;
-		verbose("Implicitly setting --exact, because -c/--cpus-per-task given.");
 	} else if (opt_local->gpus_per_task && opt_local->cpus_per_gpu) {
 		char *save_ptr = NULL, *tmp_str, *tok, *sep;
 		int gpus_per_task = 0;
@@ -343,8 +344,9 @@ static job_step_create_request_msg_t *_create_job_step_create_request(
 
 	if (opt_local->threads_per_core != NO_VAL) {
 		step_req->threads_per_core = opt.threads_per_core;
+		if (!srun_opt->exact)
+			verbose("Implicitly setting --exact, since --threads-per-core given");
 		srun_opt->exact = true;
-		verbose("Implicitly setting --exact, since --threads-per-core given");
 	} else
 		step_req->threads_per_core = NO_VAL16;
 
