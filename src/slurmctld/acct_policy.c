@@ -2917,9 +2917,9 @@ static bool _acct_policy_validate(job_desc_msg_t *job_desc,
 	if (!locked)
 		assoc_mgr_lock(&locks);
 
-	verify_assoc_lock(ASSOC_LOCK, READ_LOCK);
-	verify_assoc_lock(QOS_LOCK, READ_LOCK);
-	verify_assoc_lock(TRES_LOCK, READ_LOCK);
+	xassert(verify_assoc_lock(ASSOC_LOCK, READ_LOCK));
+	xassert(verify_assoc_lock(QOS_LOCK, READ_LOCK));
+	xassert(verify_assoc_lock(TRES_LOCK, READ_LOCK));
 
 	assoc_mgr_set_qos_tres_cnt(&qos_rec);
 
