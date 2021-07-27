@@ -6,6 +6,23 @@
 context for jobs as a technology preview. The implementation may change in
 future releases, and support for it is not enabled by default.</p>
 
+<h2><a id="ARCHITECTURE">Architecture</a></h2>
+
+<p>When enabled, the Slurm job submission commands &mdash; salloc, sbatch, and
+srun &mdash; will automatically set a field with the current operating context.
+This field can be overwritten by the <span class="commandline">--context</span>
+command line option.</p>
+
+<p>It is important to note that this value can be directly manipulated by the
+end-user, and it is up to site-specific scripts to validate and control access
+to these contexts. At this time MUNGE, which Slurm users to security identify
+users and hosts on the cluster, does not provide an SELinux context field, and
+as such there is no secure mechanism to send the current context to the Slurm
+controller. Thus the context, as provided at job submission time, <b>must</b>
+be validated by a job_submit plugin running within the slurmctld.</p>
+
+<p>Without such a script, no context is set or managed for a user's job.</p>
+
 <h2><a id="INSTALLATION">Installation</a></h2>
 
 <h3>Source:</h3>
