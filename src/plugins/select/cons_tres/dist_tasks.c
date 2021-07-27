@@ -102,6 +102,7 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	bool space_remaining;
 	bool test_tres_tasks;
 	int i, i_first, i_last, rem_cpus, rem_tasks;
+	uint16_t cpus_per_task;
 
 	if (!job_res)
 		err_msg = "job_res is NULL";
@@ -116,6 +117,11 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	}
 
 	vpus = xmalloc(job_res->nhosts * sizeof(uint16_t));
+
+	if (job_ptr->details->cpus_per_task == 0)
+		job_ptr->details->cpus_per_task = 1;
+	cpus_per_task = job_ptr->details->cpus_per_task;
+
 	i_first = bit_ffs(job_res->node_bitmap);
 	if (i_first >= 0)
 		i_last  = bit_fls(job_res->node_bitmap);
@@ -133,10 +139,9 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	job_res->tasks_per_node = xmalloc(job_res->nhosts * sizeof(uint16_t));
 
 	/* ncpus is already set the number of tasks if overcommit is used */
-	if (!job_ptr->details->overcommit &&
-	    (job_ptr->details->cpus_per_task > 1)) {
+	if (!job_ptr->details->overcommit && (cpus_per_task > 1)) {
 		if (job_ptr->details->ntasks_per_node == 0) {
-			maxtasks = maxtasks / job_ptr->details->cpus_per_task;
+			maxtasks = maxtasks / cpus_per_task;
 		} else {
 			maxtasks = job_ptr->details->ntasks_per_node *
 				   job_res->nhosts;
@@ -152,8 +157,6 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 		      job_ptr);
 		maxtasks = 1;
 	}
-	if (job_ptr->details->cpus_per_task == 0)
-		job_ptr->details->cpus_per_task = 1;
 	if (job_ptr->details->overcommit)
 		log_over_subscribe = false;
 	/* Start by allocating one task per node */
@@ -164,7 +167,7 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 			/* Ignore gres_task_limit for first task per node */
 			tid++;
 			job_res->tasks_per_node[n]++;
-			for (l = 0; l < job_ptr->details->cpus_per_task; l++) {
+			for (l = 0; l < cpus_per_task; l++) {
 				if (job_res->cpus[n] < avail_cpus[n])
 					job_res->cpus[n]++;
 			}
@@ -178,12 +181,12 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 	/* Next fill out the CPUs on the cores already allocated to this job */
 	for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
 		rem_cpus = job_res->cpus[n] % vpus[n];
-		rem_tasks = rem_cpus / job_ptr->details->cpus_per_task;
+		rem_tasks = rem_cpus / cpus_per_task;
 		if (rem_tasks == 0)
 			continue;
 		for (t = 0; ((t < rem_tasks) && (tid < maxtasks)); t++) {
 			if (((avail_cpus[n] - job_res->cpus[n]) <
-			     job_ptr->details->cpus_per_task))
+			     cpus_per_task))
 				break;
 			if (!dist_tasks_tres_tasks_avail(
 				    gres_task_limit, job_res, n))
@@ -193,7 +196,7 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 				break;
 			tid++;
 			job_res->tasks_per_node[n]++;
-			for (l = 0; l < job_ptr->details->cpus_per_task; l++) {
+			for (l = 0; l < cpus_per_task; l++) {
 				if (job_res->cpus[n] < avail_cpus[n])
 					job_res->cpus[n]++;
 			}
@@ -226,12 +229,12 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 			log_over_subscribe = false;	/* Log once per job */;
 		}
 		for (n = 0; ((n < job_res->nhosts) && (tid < maxtasks)); n++) {
-			rem_tasks = vpus[n] / job_ptr->details->cpus_per_task;
+			rem_tasks = vpus[n] / cpus_per_task;
 			rem_tasks = MAX(rem_tasks, 1);
 			for (t = 0; ((t < rem_tasks) && (tid < maxtasks)); t++){
 				if (!over_subscribe) {
 					if ((avail_cpus[n] - job_res->cpus[n]) <
-					    job_ptr->details->cpus_per_task)
+					    cpus_per_task)
 						break;
 					if (!dist_tasks_tres_tasks_avail(
 						    gres_task_limit,
@@ -247,13 +250,13 @@ extern int dist_tasks_compute_c_b(job_record_t *job_ptr,
 
 				tid++;
 				job_res->tasks_per_node[n]++;
-				for (l = 0; l < job_ptr->details->cpus_per_task;
+				for (l = 0; l < cpus_per_task;
 				     l++) {
 					if (job_res->cpus[n] < avail_cpus[n])
 						job_res->cpus[n]++;
 				}
 				if ((avail_cpus[n] - job_res->cpus[n]) >=
-				    job_ptr->details->cpus_per_task)
+				    cpus_per_task)
 					space_remaining = true;
 			}
 		}

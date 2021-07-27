@@ -73,10 +73,10 @@ extern bool gres_sched_test2(List job_gres_list, List sock_gres_list,
  * Update a job's total_gres counter as we add a node to potential allocation
  * IN job_gres_list - List of job's GRES requirements (job_gres_state_t)
  * IN sock_gres_list - Per socket GRES availability on this node (sock_gres_t)
- * IN avail_cpus - CPUs currently available on this node
+ * IN/OUT avail_cpus - CPUs currently available on this node
  */
 extern void gres_sched_add(List job_gres_list, List sock_gres_list,
-			   uint16_t avail_cpus);
+			   uint16_t *avail_cpus);
 
 /*
  * Create/update List GRES that can be made available on the specified node

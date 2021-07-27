@@ -7081,7 +7081,7 @@ static sock_gres_t *_build_sock_gres_by_topo(
 	uint32_t tot_cores;
 	sock_gres_t *sock_gres;
 	int64_t add_gres;
-	uint64_t avail_gres, min_gres = 1;
+	uint64_t avail_gres, min_gres = 0;
 	bool match = false;
 	bool use_busy_dev = false;
 
@@ -7144,11 +7144,19 @@ static sock_gres_t *_build_sock_gres_by_topo(
 		    (avail_gres > sock_gres->max_node_gres))
 			sock_gres->max_node_gres = avail_gres;
 
+		tot_cores = sockets * cores_per_sock;
+		if ((core_bitmap && (tot_cores != bit_size(core_bitmap))) ||
+		    (node_gres_ptr->topo_core_bitmap[i] &&
+		     (tot_cores != bit_size(node_gres_ptr->topo_core_bitmap[i])))) {
+			error("%s: Core bitmaps size mismatch on node %s",
+			      __func__, node_name);
+			match = false;
+			break;
+		}
 		/*
 		 * If some GRES is available on every socket,
 		 * treat like no topo_core_bitmap is specified
 		 */
-		tot_cores = sockets * cores_per_sock;
 		if (node_gres_ptr->topo_core_bitmap &&
 		    node_gres_ptr->topo_core_bitmap[i]) {
 			use_all_sockets = true;
@@ -7191,13 +7199,6 @@ static sock_gres_t *_build_sock_gres_by_topo(
 		}
 
 		/* Constrained by core */
-		if (core_bitmap)
-			tot_cores = MIN(tot_cores, bit_size(core_bitmap));
-		if (node_gres_ptr->topo_core_bitmap[i]) {
-			tot_cores = MIN(tot_cores,
-					bit_size(node_gres_ptr->
-						 topo_core_bitmap[i]));
-		}
 		for (s = 0; ((s < sockets) && avail_gres); s++) {
 			if (enforce_binding && core_bitmap) {
 				for (c = 0; c < cores_per_sock; c++) {
@@ -7212,8 +7213,6 @@ static sock_gres_t *_build_sock_gres_by_topo(
 			}
 			for (c = 0; c < cores_per_sock; c++) {
 				j = (s * cores_per_sock) + c;
-				if (j >= tot_cores)
-					break;	/* Off end of core bitmap */
 				if (node_gres_ptr->topo_core_bitmap[i] &&
 				    !bit_test(node_gres_ptr->topo_core_bitmap[i],
 					      j))
@@ -7325,14 +7324,12 @@ static sock_gres_t *_build_sock_gres_by_topo(
 
 
 	/*
-	 * If sockets-per-node (s_p_n) not specified then identify sockets
-	 * which are required to satisfy gres_per_node or task specification
-	 * so that allocated tasks can be distributed over multiple sockets
-	 * if necessary.
+	 * Identify sockets which are required to satisfy
+	 * gres_per_node or task specification so that allocated tasks
+	 * can be distributed over multiple sockets if necessary.
 	 */
 	add_gres = min_gres - sock_gres->cnt_any_sock;
-	if (match && core_bitmap && (s_p_n == NO_VAL) && (add_gres > 0) &&
-	    job_gres_ptr->gres_per_node) {
+	if (match && core_bitmap && (add_gres > 0)) {
 		int avail_sock = 0, best_sock_inx = -1;
 		bool *avail_sock_flag = xcalloc(sockets, sizeof(bool));
 		for (s = 0; s < sockets; s++) {

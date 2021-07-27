@@ -882,6 +882,8 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 	}
 
 	if (is_cons_tres) {
+		uint32_t ntasks_per_node = details_ptr->ntasks_per_node;
+		ntasks_per_node = MAX(ntasks_per_node, 1);
 		if (details_ptr->mc_ptr &&
 		    details_ptr->mc_ptr->sockets_per_node)
 			sockets_per_node =
@@ -890,6 +892,11 @@ static int _job_test(job_record_t *job_ptr, bitstr_t *node_bitmap,
 		details_ptr->min_gres_cpu = gres_select_util_job_min_cpu_node(
 			sockets_per_node,
 			details_ptr->ntasks_per_node,
+			job_ptr->gres_list_req);
+		details_ptr->min_job_gres_cpu = gres_select_util_job_min_cpus(
+			details_ptr->min_nodes,
+			sockets_per_node,
+			ntasks_per_node * details_ptr->min_nodes,
 			job_ptr->gres_list_req);
 	} else if (exc_cores && *exc_cores)
 		exc_core_bitmap = *exc_cores;
@@ -1641,8 +1648,7 @@ alloc_job:
 				needed_mem = save_mem;
 			} else {		/* Allocate all node memory */
 				needed_mem = avail_mem;
-				if (!test_only &&
-				    (node_usage[i].alloc_memory > 0)) {
+				if (node_usage[i].alloc_memory > 0) {
 					log_flag(SELECT_TYPE, "node %s has already alloc_memory=%"PRIu64". %pJ can't allocate all node memory",
 					         nodename,
 					         node_usage[i].alloc_memory,
@@ -1653,7 +1659,7 @@ alloc_job:
 				if ((j == 0) || (lowest_mem > avail_mem))
 					lowest_mem = avail_mem;
 			}
-			if (!test_only && save_mem) {
+			if (save_mem) {
 				if (node_usage[i].alloc_memory > avail_mem) {
 					error("node %s memory is already overallocated (%"PRIu64" > %"PRIu64"). %pJ can't allocate any node memory",
 					      nodename,
