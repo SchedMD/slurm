@@ -215,6 +215,13 @@ static buf_t *gres_context_buf = NULL;
 static buf_t *gres_conf_buf = NULL;
 
 /* Local functions */
+static void _accumulate_job_gres_alloc(gres_state_t *gres_ptr,
+				       int node_inx,
+				       bitstr_t **gres_bit_alloc,
+				       uint64_t *gres_cnt);
+static void _accumulate_step_gres_alloc(gres_state_t *gres_ptr,
+					bitstr_t **gres_bit_alloc,
+					uint64_t *gres_cnt);
 static void _add_gres_context(char *gres_name);
 static gres_node_state_t *_build_gres_node_state(void);
 static void	_build_node_gres_str(List *gres_list, char **gres_str,
@@ -7768,13 +7775,19 @@ extern List gres_job_test2(List job_gres_list, List node_gres_list,
 	return sock_gres_list;
 }
 
-static void _accumulate_job_set_env_info(gres_state_t *gres_ptr,
-					 int node_inx,
-					 bitstr_t **gres_bit_alloc,
-					 uint64_t *gres_cnt)
+static void _accumulate_job_gres_alloc(gres_state_t *gres_ptr,
+				       int node_inx,
+				       bitstr_t **gres_bit_alloc,
+				       uint64_t *gres_cnt)
 {
 	gres_job_state_t *gres_job_ptr =
 		(gres_job_state_t *) gres_ptr->gres_data;
+
+	if (gres_job_ptr->node_cnt <= node_inx) {
+		error("gres_job_state_t node count less than node_inx. This should never happen");
+		return;
+	}
+
 	if ((node_inx >= 0) && (node_inx < gres_job_ptr->node_cnt) &&
 	    gres_job_ptr->gres_bit_alloc &&
 	    gres_job_ptr->gres_bit_alloc[node_inx]) {
@@ -7784,7 +7797,8 @@ static void _accumulate_job_set_env_info(gres_state_t *gres_ptr,
 		}
 		bit_or(*gres_bit_alloc, gres_job_ptr->gres_bit_alloc[node_inx]);
 	}
-	*gres_cnt += gres_job_ptr->gres_cnt_node_alloc[node_inx];
+	if (gres_cnt && gres_job_ptr->gres_cnt_node_alloc)
+		*gres_cnt += gres_job_ptr->gres_cnt_node_alloc[node_inx];
 }
 
 /*
@@ -7814,9 +7828,9 @@ extern void gres_g_job_set_env(char ***job_env_ptr, List job_gres_list,
 				if (gres_ptr->plugin_id !=
 				    gres_context[i].plugin_id)
 					continue;
-				_accumulate_job_set_env_info(gres_ptr, node_inx,
-							     &gres_bit_alloc,
-							     &gres_cnt);
+				_accumulate_job_gres_alloc(gres_ptr, node_inx,
+							   &gres_bit_alloc,
+							   &gres_cnt);
 			}
 			list_iterator_destroy(gres_iter);
 		}
@@ -9451,15 +9465,20 @@ end:
 	return usable_gres;
 }
 
-static void _accumulate_step_set_env_info(gres_state_t *gres_ptr,
-					 bitstr_t **gres_bit_alloc,
-					 uint64_t *gres_cnt)
+static void _accumulate_step_gres_alloc(gres_state_t *gres_ptr,
+				        bitstr_t **gres_bit_alloc,
+				        uint64_t *gres_cnt)
 {
 	gres_step_state_t *gres_step_ptr =
 		(gres_step_state_t *)gres_ptr->gres_data;
 
-	if ((gres_step_ptr->node_cnt == 1) &&
-	    gres_step_ptr->gres_bit_alloc &&
+	/* Since this should only run on the node node_cnt should always be 1 */
+	if (gres_step_ptr->node_cnt != 1) {
+		error("gres_step_state_t node count not 1 while on node. This should never happen");
+		return;
+	}
+
+	if (gres_step_ptr->gres_bit_alloc &&
 	    gres_step_ptr->gres_bit_alloc[0]) {
 		if (!*gres_bit_alloc) {
 			*gres_bit_alloc = bit_alloc(bit_size(
@@ -9467,7 +9486,7 @@ static void _accumulate_step_set_env_info(gres_state_t *gres_ptr,
 		}
 		bit_or(*gres_bit_alloc, gres_step_ptr->gres_bit_alloc[0]);
 	}
-	if (gres_step_ptr->gres_cnt_node_alloc)
+	if (gres_cnt && gres_step_ptr->gres_cnt_node_alloc)
 		*gres_cnt += gres_step_ptr->gres_cnt_node_alloc[0];
 }
 
@@ -9635,7 +9654,7 @@ extern void gres_g_step_set_env(char ***job_env_ptr, List step_gres_list)
 		while ((gres_ptr = (gres_state_t *)list_next(gres_iter))) {
 			if (gres_ptr->plugin_id != gres_ctx.plugin_id)
 				continue;
-			_accumulate_step_set_env_info(
+			_accumulate_step_gres_alloc(
 				gres_ptr, &gres_bit_alloc, &gres_cnt);
 		}
 		list_iterator_destroy(gres_iter);
@@ -9687,7 +9706,7 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 		while ((gres_ptr = (gres_state_t *)list_next(gres_iter))) {
 			if (gres_ptr->plugin_id != gres_ctx.plugin_id)
 				continue;
-			_accumulate_step_set_env_info(
+			_accumulate_step_gres_alloc(
 				gres_ptr, &gres_bit_alloc, &gres_cnt);
 		}
 		if (_get_usable_gres(gres_ctx.gres_name, i, local_proc_id,
