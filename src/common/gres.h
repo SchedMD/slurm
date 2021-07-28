@@ -96,7 +96,7 @@ typedef struct gres_search_key {
 
 /* Gres state information gathered by slurmd daemon */
 typedef struct gres_slurmd_conf {
-	uint8_t config_flags;	/* See GRES_CONF_* values above */
+	uint32_t config_flags;	/* See GRES_CONF_* values above */
 
 	/* Count of gres available in this configuration record */
 	uint64_t count;
@@ -1026,7 +1026,7 @@ extern void destroy_gres_slurmd_conf(void *x);
  * Convert GRES config_flags to a string. The pointer returned references local
  * storage in this function, which is not re-entrant.
  */
-extern char *gres_flags2str(uint8_t config_flags);
+extern char *gres_flags2str(uint32_t config_flags);
 
 /*
  * Creates a gres_slurmd_conf_t record to add to a list of gres_slurmd_conf_t

@@ -149,7 +149,7 @@ typedef struct slurm_gres_ops {
  */
 typedef struct slurm_gres_context {
 	plugin_handle_t	cur_plugin;
-	uint8_t		config_flags;		/* See GRES_CONF_* in gres.h */
+	uint32_t	config_flags;		/* See GRES_CONF_* in gres.h */
 	char *		gres_name;		/* name (e.g. "gpu") */
 	char *		gres_name_colon;	/* name + colon (e.g. "gpu:") */
 	int		gres_name_colon_len;	/* size of gres_name_colon */
@@ -1824,7 +1824,7 @@ static void _merge_config(node_config_load_t *node_conf, List gres_conf_list,
 static void _pack_gres_context(slurm_gres_context_t *ctx, buf_t *buffer)
 {
 	/* ctx->cur_plugin: DON'T PACK will be filled in on the other side */
-	pack8(ctx->config_flags, buffer);
+	pack32(ctx->config_flags, buffer);
 	packstr(ctx->gres_name, buffer);
 	packstr(ctx->gres_name_colon, buffer);
 	pack32((uint32_t)ctx->gres_name_colon_len, buffer);
@@ -1840,7 +1840,7 @@ static int _unpack_gres_context(slurm_gres_context_t* ctx, buf_t *buffer)
 	uint32_t uint32_tmp;
 
 	/* ctx->cur_plugin: filled in later with _load_plugin() */
-	safe_unpack8(&ctx->config_flags, buffer);
+	safe_unpack32(&ctx->config_flags, buffer);
 	safe_unpackstr_xmalloc(&ctx->gres_name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&ctx->gres_name_colon, &uint32_tmp, buffer);
 	safe_unpack32(&uint32_tmp, buffer);
@@ -1870,7 +1870,7 @@ static void _pack_gres_slurmd_conf(void *in, uint16_t protocol_version,
 	 */
 
 	/* Pack gres_slurmd_conf_t */
-	pack8(gres_conf->config_flags, buffer);
+	pack32(gres_conf->config_flags, buffer);
 	pack64(gres_conf->count, buffer);
 	pack32(gres_conf->cpu_cnt, buffer);
 	packstr(gres_conf->cpus, buffer);
@@ -1897,7 +1897,7 @@ static int _unpack_gres_slurmd_conf(void **object, uint16_t protocol_version,
 	 */
 
 	/* Unpack gres_slurmd_conf_t */
-	safe_unpack8(&gres_conf->config_flags, buffer);
+	safe_unpack32(&gres_conf->config_flags, buffer);
 	safe_unpack64(&gres_conf->count, buffer);
 	safe_unpack32(&gres_conf->cpu_cnt, buffer);
 	safe_unpackstr_xmalloc(&gres_conf->cpus, &uint32_tmp, buffer);
@@ -2172,7 +2172,7 @@ extern int gres_node_config_pack(buf_t *buffer)
 			pack32(magic, buffer);
 			pack64(gres_slurmd_conf->count, buffer);
 			pack32(gres_slurmd_conf->cpu_cnt, buffer);
-			pack8(gres_slurmd_conf->config_flags, buffer);
+			pack32(gres_slurmd_conf->config_flags, buffer);
 			pack32(gres_slurmd_conf->plugin_id, buffer);
 			packstr(gres_slurmd_conf->cpus, buffer);
 			packstr(gres_slurmd_conf->links, buffer);
@@ -2198,7 +2198,7 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 	uint32_t cpu_cnt = 0, magic = 0, plugin_id = 0, utmp32 = 0;
 	uint64_t count64 = 0;
 	uint16_t rec_cnt = 0, protocol_version = 0;
-	uint8_t config_flags = 0;
+	uint32_t config_flags = 0;
 	char *tmp_cpus = NULL, *tmp_links = NULL, *tmp_name = NULL;
 	char *tmp_type = NULL;
 	char *tmp_unique_id = NULL;
@@ -2231,7 +2231,7 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 
 			safe_unpack64(&count64, buffer);
 			safe_unpack32(&cpu_cnt, buffer);
-			safe_unpack8(&config_flags, buffer);
+			safe_unpack32(&config_flags, buffer);
 			safe_unpack32(&plugin_id, buffer);
 			safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
 			safe_unpackstr_xmalloc(&tmp_links, &utmp32, buffer);
@@ -2239,13 +2239,15 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			safe_unpackstr_xmalloc(&tmp_type, &utmp32, buffer);
 			safe_unpackstr_xmalloc(&tmp_unique_id, &utmp32, buffer);
 		} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
+			uint8_t tmp_8;
 			safe_unpack32(&magic, buffer);
 			if (magic != GRES_MAGIC)
 				goto unpack_error;
 
 			safe_unpack64(&count64, buffer);
 			safe_unpack32(&cpu_cnt, buffer);
-			safe_unpack8(&config_flags, buffer);
+			safe_unpack8(&tmp_8, buffer);
+			config_flags = tmp_8;
 			safe_unpack32(&plugin_id, buffer);
 			safe_unpackstr_xmalloc(&tmp_cpus, &utmp32, buffer);
 			safe_unpackstr_xmalloc(&tmp_links, &utmp32, buffer);
@@ -10090,7 +10092,7 @@ extern void destroy_gres_slurmd_conf(void *x)
  * Convert GRES config_flags to a string. The pointer returned references local
  * storage in this function, which is not re-entrant.
  */
-extern char *gres_flags2str(uint8_t config_flags)
+extern char *gres_flags2str(uint32_t config_flags)
 {
 	static char flag_str[128];
 	char *sep = "";
