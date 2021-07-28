@@ -43,6 +43,11 @@ Run slurmd in the foreground. Error and debug messages will be copied to stderr.
 \fB\-f <file>\fR
 Read configuration from the specified file. See \fBNOTES\fR below.
 .TP
+\fB\-F[feature]\fR
+Start this node as a Dynamic Future node. It will try to match a node
+definition with a state of \fBFUTURE\fR, optionally using the specified
+feature to match the node definition.
+.TP
 \fB\-G\fR
 Print Generic RESource (GRES) configuration (based upon slurm.conf GRES merged
 with gres.conf contents for this node) and exit.
