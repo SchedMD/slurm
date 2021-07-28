@@ -382,6 +382,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Reservations can't have users and groups specified, only one or the other"},
 	{ ESLURM_PARTITION_ASSOC,
 	  "Multiple partition job request not supported when a partition is set in the association" },
+	{ ESLURM_IN_STANDBY_USE_BACKUP,
+	  "Controller is in standby mode, try a different controller"},
 
 	/* SPANK errors */
 	{ ESPANK_ERROR,
