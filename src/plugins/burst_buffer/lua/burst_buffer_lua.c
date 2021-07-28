@@ -568,29 +568,19 @@ static void _recover_bb_state(void)
 		}
 		bb_alloc->seen_time = time(NULL);
 		bb_alloc->size = size;
-		if (bb_alloc) {
-			log_flag(BURST_BUF, "Recovered burst buffer %s from user %u",
-				 bb_alloc->name, bb_alloc->user_id);
-			xfree(bb_alloc->account);
-			bb_alloc->account = account;
-			account = NULL;
-			bb_alloc->create_time = create_time;
-			xfree(bb_alloc->partition);
-			bb_alloc->partition = partition;
-			partition = NULL;
-			xfree(bb_alloc->pool);
-			bb_alloc->pool = pool;
-			pool = NULL;
-			xfree(bb_alloc->qos);
-			bb_alloc->qos = qos;
-			qos = NULL;
-		}
+		log_flag(BURST_BUF, "Recovered burst buffer %s from user %u",
+			 bb_alloc->name, bb_alloc->user_id);
+		bb_alloc->account = account;
+		account = NULL;
+		bb_alloc->create_time = create_time;
+		bb_alloc->partition = partition;
+		partition = NULL;
+		bb_alloc->pool = pool;
+		pool = NULL;
+		bb_alloc->qos = qos;
+		qos = NULL;
 		slurm_mutex_unlock(&bb_state.bb_mutex);
-		xfree(account);
 		xfree(name);
-		xfree(partition);
-		xfree(pool);
-		xfree(qos);
 	}
 
 	info("Recovered state of %d burst buffers", rec_count);
