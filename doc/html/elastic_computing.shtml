@@ -475,17 +475,6 @@ debug*      up    infinite     1    drng!  c1-compute-0-0
 debug*      up    infinite    99    idle~  c1-compute-0-[1-99]
 </pre>
 
-<h2>Remaining Work</h2>
-
-<ul>
-<li>We need scripts to provision resources from EC2.</li>
-<li>The SLURM_NODE_ALIASES environment variable needs to change if a job
-expands (adds resources).</li>
-<li>Some MPI implementations will not work due to the node naming.</li>
-<li>Some tests in Slurm's test suite fail.</li>
-</ul>
-
-
 <p style="text-align:center;">Last modified 27 July 2021</p>
 
 <!--#include virtual="footer.txt"-->
