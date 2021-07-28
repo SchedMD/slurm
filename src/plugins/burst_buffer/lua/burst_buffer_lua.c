@@ -2052,6 +2052,14 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 		xstrfmtcat(script_file, "%s/script", job_dir);
 		if (job_ptr->batch_flag == 0) {
 			rc = _build_bb_script(job_ptr, script_file);
+			if (rc != SLURM_SUCCESS) {
+				/*
+				 * There was an error writing to the script,
+				 * that error was logged by _build_bb_script().
+				 * Bail out now.
+				 */
+				goto fini;
+			}
 		}
 	}
 
@@ -2073,6 +2081,7 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 	}
 	xfree(resp_msg);
 
+fini:
 	/* Clean up */
 	xfree(hash_dir);
 	xfree(job_dir);
