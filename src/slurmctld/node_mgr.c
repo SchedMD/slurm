@@ -91,7 +91,7 @@
 #define NODE_STATE_VERSION        "PROTOCOL_VERSION"
 
 #define DEFAULT_NODE_REG_MEM_PERCENT 100.0
-#define DEFAULT_CLOUD_REG_MEM_PERCENT 95.0
+#define DEFAULT_CLOUD_REG_MEM_PERCENT 90.0
 
 typedef enum {
 	FEATURE_MODE_IND,  /* Print each node change indivually */
