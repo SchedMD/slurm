@@ -813,6 +813,12 @@ static void *_sched_agent(void *args)
 	int job_cnt;
 	bool full_queue;
 
+#if HAVE_SYS_PRCTL_H
+	if (prctl(PR_SET_NAME, "sched_agent", NULL, NULL, NULL) < 0) {
+		error("cannot set my name to _sched_agent %m");
+	}
+#endif
+
 	while (!slurmctld_config.shutdown_time) {
 
 		slurm_mutex_lock(&sched_mutex);
@@ -1011,23 +1017,10 @@ static int _schedule(bool full_queue)
 	bool fail_by_part, wait_on_resv;
 	uint32_t deadline_time_limit, save_time_limit = 0;
 	uint32_t prio_reserve;
-#if HAVE_SYS_PRCTL_H
-	char get_name[16];
-#endif
 	DEF_TIMERS;
 
 	if (slurmctld_config.shutdown_time)
 		return 0;
-
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_GET_NAME, get_name, NULL, NULL, NULL) < 0) {
-		error("%s: cannot get my name %m", __func__);
-		strlcpy(get_name, "slurmctld", sizeof(get_name));
-	}
-	if (prctl(PR_SET_NAME, "sched", NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m", __func__, "sched");
-	}
-#endif
 
 	if (sched_update != slurm_conf.last_update) {
 		char *tmp_ptr;
@@ -1944,12 +1937,6 @@ fail_this_part:	if (fail_by_part) {
 	_do_diag_stats(DELTA_TIMER);
 
 out:
-#if HAVE_SYS_PRCTL_H
-	if (prctl(PR_SET_NAME, get_name, NULL, NULL, NULL) < 0) {
-		error("%s: cannot set my name to %s %m",
-		      __func__, get_name);
-	}
-#endif
 	return job_cnt;
 }
 
