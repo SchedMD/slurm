@@ -70,12 +70,12 @@ typedef struct {
 	char *unique_id; /* Used for GPU binding with MIGs */
 } gres_device_t;
 
-#define GRES_CONF_HAS_MULT	0x01	/* MultipleFiles is configured */
-#define GRES_CONF_HAS_FILE	0x02	/* File/MultipleFiles is configured */
-#define GRES_CONF_HAS_TYPE	0x04	/* Type= is configured */
-#define GRES_CONF_COUNT_ONLY	0x08	/* GRES lacks plugin to load */
-#define GRES_CONF_LOADED        0x10    /* used to avoid loading a plugin
-					 * multiple times */
+#define GRES_CONF_HAS_MULT   SLURM_BIT(0) /* MultipleFiles is configured */
+#define GRES_CONF_HAS_FILE   SLURM_BIT(1) /* File/MultipleFiles is configured */
+#define GRES_CONF_HAS_TYPE   SLURM_BIT(2) /* Type= is configured */
+#define GRES_CONF_COUNT_ONLY SLURM_BIT(3) /* GRES lacks plugin to load */
+#define GRES_CONF_LOADED     SLURM_BIT(4) /* used to avoid loading a plugin
+					   * multiple times */
 
 #define GRES_NO_CONSUME		0x0001	/* Requesting no consume of resources */
 
