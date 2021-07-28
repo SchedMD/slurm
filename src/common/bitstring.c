@@ -622,9 +622,9 @@ bit_and(bitstr_t *b1, bitstr_t *b2)
 
 	_assert_bitstr_valid(b1);
 	_assert_bitstr_valid(b2);
-	xassert(_bitstr_bits(b1) == _bitstr_bits(b2));
+	xassert(_bitstr_bits(b1) >= _bitstr_bits(b2));
 
-	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8)
+	for (bit = 0; bit < _bitstr_bits(b2); bit += sizeof(bitstr_t)*8)
 		b1[_bit_word(bit)] &= b2[_bit_word(bit)];
 }
 
@@ -639,9 +639,9 @@ void bit_and_not(bitstr_t *b1, bitstr_t *b2)
 
 	_assert_bitstr_valid(b1);
 	_assert_bitstr_valid(b2);
-	xassert(_bitstr_bits(b1) == _bitstr_bits(b2));
+	xassert(_bitstr_bits(b1) >= _bitstr_bits(b2));
 
-	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8)
+	for (bit = 0; bit < _bitstr_bits(b2); bit += sizeof(bitstr_t)*8)
 		b1[_bit_word(bit)] &= ~b2[_bit_word(bit)];
 }
 
@@ -672,9 +672,9 @@ bit_or(bitstr_t *b1, bitstr_t *b2)
 
 	_assert_bitstr_valid(b1);
 	_assert_bitstr_valid(b2);
-	xassert(_bitstr_bits(b1) == _bitstr_bits(b2));
+	xassert(_bitstr_bits(b1) >= _bitstr_bits(b2));
 
-	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8)
+	for (bit = 0; bit < _bitstr_bits(b2); bit += sizeof(bitstr_t)*8)
 		b1[_bit_word(bit)] |= b2[_bit_word(bit)];
 }
 
@@ -689,9 +689,9 @@ void bit_or_not(bitstr_t *b1, bitstr_t *b2)
 
 	_assert_bitstr_valid(b1);
 	_assert_bitstr_valid(b2);
-	xassert(_bitstr_bits(b1) == _bitstr_bits(b2));
+	xassert(_bitstr_bits(b1) >= _bitstr_bits(b2));
 
-	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8)
+	for (bit = 0; bit < _bitstr_bits(b2); bit += sizeof(bitstr_t)*8)
 		b1[_bit_word(bit)] |= ~b2[_bit_word(bit)];
 }
 
