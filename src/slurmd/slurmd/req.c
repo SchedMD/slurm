@@ -1580,12 +1580,13 @@ done:
  * IN jobid - (optional) job id
  * IN uid - User ID to use for file access check
  * IN gid - Group ID to use for file access check
+ * IN make_dir - if true, create a directory instead of a file
  * OUT fd - File descriptor
  * RET error or SLURM_SUCCESS
  * */
-static int _open_as_other(char *path_name, int flags, int mode,
-			  uint32_t jobid, uid_t uid, gid_t gid,
-			  int ngids, gid_t *gids, int *fd)
+static int _open_as_other(char *path_name, int flags, int mode, uint32_t jobid,
+			  uid_t uid, gid_t gid, int ngids, gid_t *gids,
+			  bool make_dir, int *fd)
 {
 	pid_t child;
 	int pipe[2];
@@ -1615,7 +1616,7 @@ static int _open_as_other(char *path_name, int flags, int mode,
 		int exit_status = -1;
 		close(pipe[0]);
 		(void) waitpid(child, &rc, 0);
-		if (WIFEXITED(rc) && (WEXITSTATUS(rc) == 0))
+		if (WIFEXITED(rc) && (WEXITSTATUS(rc) == 0) && !make_dir)
 			*fd = receive_fd_over_pipe(pipe[1]);
 		exit_status = WEXITSTATUS(rc);
 		close(pipe[1]);
@@ -1664,6 +1665,15 @@ static int _open_as_other(char *path_name, int flags, int mode,
 		_exit(errno);
 	}
 
+	if (make_dir) {
+		if (mkdir(path_name, mode) < 0) {
+			error("%s: uid:%u can't create dir `%s` code %d: %m",
+			      __func__, uid, path_name, errno);
+			_exit(errno);
+		}
+		_exit(SLURM_SUCCESS);
+	}
+
 	*fd = open(path_name, flags, mode);
 	if (*fd == -1) {
 		error("%s: uid:%u can't open `%s` code %d: %m",
@@ -1695,7 +1705,7 @@ _prolog_error(batch_job_launch_msg_t *req, int rc)
 
 	path_name = fname_create2(req);
 	rc2 = _open_as_other(path_name, flags, 0644, jobid, req->uid, req->gid,
-			     req->ngids, req->gids, &fd);
+			     req->ngids, req->gids, false, &fd);
 	if (rc2 != SLURM_SUCCESS) {
 		error("Unable to open %s: %s", path_name, strerror(rc2));
 		xfree(path_name);
@@ -4096,7 +4106,8 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 		flags |= O_EXCL;
 
 	rc = _open_as_other(req->fname, flags, 0700, key->job_id, key->uid,
-			    key->gid, cred_arg->ngids, cred_arg->gids, &fd);
+			    key->gid, cred_arg->ngids, cred_arg->gids, false,
+			    &fd);
 	if (rc != SLURM_SUCCESS) {
 		error("Unable to open %s: %s", req->fname, strerror(rc));
 		return rc;
