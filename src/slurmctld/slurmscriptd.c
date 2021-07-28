@@ -444,6 +444,23 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _run_bb_script_child(int fd, char *script_func, uint32_t job_id,
+				 uint32_t argc, char **argv)
+{
+	int exit_code;
+	char *resp = NULL;
+
+	setpgid(0, 0);
+
+	exit_code = bb_g_run_script(script_func, job_id, argc, argv, &resp);
+	if (resp)
+		safe_write(fd, resp, strlen(resp));
+
+rwfail:
+	_exit(exit_code);
+}
+
+
 /*
  * Run the burst buffer script in a fork()'d process so that if the script
  * runs for longer than the timeout, or if the script is cancelled, we can
@@ -485,15 +502,8 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 		close(pfd[1]);
 		return 127;
 	} else if (cpid == 0) { /* child - run the script */
-		int exit_code;
 		close(pfd[0]); /* Close the read fd, we're only writing */
-		setpgid(0, 0);
-
-		exit_code = bb_g_run_script(script_func, job_id, argc, argv,
-					    &resp);
-		if (resp)
-			(void) write(pfd[1], resp, strlen(resp));
-		_exit(exit_code);
+		_run_bb_script_child(pfd[1], script_func, job_id, argc, argv);
 	} else { /* parent */
 		int new_wait, max_wait;
 		int resp_offset = 0, resp_size = 0;
