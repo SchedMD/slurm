@@ -576,7 +576,7 @@ int slurm_spank_task_post_fork(spank_t sp, int ac, char **av)
 
     if (setpriority(PRIO_PROCESS, (int) pid, (int) prio)) {
         slurm_error("setpriority: %m");
-        return -ESPANK_ERROR;
+        return ESPANK_ERROR;
     }
 
     return ESPANK_SUCCESS;
@@ -588,16 +588,16 @@ static int _str2prio(const char *str, int *p2int)
     char *p = NULL;
 
     if (!str || str[0] == '\\0')
-        return -ESPANK_BAD_ARG;
+        return ESPANK_BAD_ARG;
 
     l = strtol(str, &p, 10);
 
     if (!p || (*p != '\\0'))
-        return -ESPANK_BAD_ARG;
+        return ESPANK_BAD_ARG;
 
     if ((l < -20) || (l > 20)) {
         slurm_error("Specify value between -20 and 20");
-        return -ESPANK_BAD_ARG;
+        return ESPANK_BAD_ARG;
     }
 
     *p2int = (int) l;
@@ -611,7 +611,7 @@ static int _renice_opt_process(int val, const char *optarg, int remote)
 
     if (optarg == NULL) {
         slurm_error("renice: invalid NULL argument!");
-        return -ESPANK_BAD_ARG;
+        return ESPANK_BAD_ARG;
     }
 
     if ((rc = _str2prio(optarg, &prio))) {
