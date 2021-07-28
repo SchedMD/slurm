@@ -43,6 +43,7 @@
 #include "config.h"
 
 #define _GNU_SOURCE	/* For POLLRDHUP */
+#include <ctype.h>
 #include <fcntl.h>
 #include <poll.h>
 #include <stdlib.h>
@@ -60,6 +61,7 @@
 #include "slurm/slurmdb.h"
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
@@ -72,6 +74,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/reservation.h"
 #include "src/slurmctld/slurmctld.h"
 
 #include "burst_buffer_common.h"
@@ -134,6 +137,60 @@ static char *_print_users(uid_t *buf)
 		xfree(user_elem);
 	}
 	return user_str;
+}
+
+extern void bb_add_bb_to_script(char **script_body,
+				const char *burst_buffer_file)
+{
+	char *orig_script = *script_body;
+	char *new_script, *sep, save_char;
+	char *bb_opt = NULL;
+	int i;
+
+	if (!burst_buffer_file || (burst_buffer_file[0] == '\0'))
+		return;	/* No burst buffer file or empty file */
+
+	if (!orig_script) {
+		*script_body = xstrdup(burst_buffer_file);
+		return;
+	}
+
+	bb_opt = xstrdup(burst_buffer_file);
+	i = strlen(bb_opt) - 1;
+	if (bb_opt[i] != '\n')	/* Append new line as needed */
+		xstrcat(bb_opt, "\n");
+
+	if (orig_script[0] != '#') {
+		/* Prepend burst buffer file */
+		new_script = xstrdup(bb_opt);
+		xstrcat(new_script, orig_script);
+		xfree(*script_body);
+		*script_body = new_script;
+		xfree(bb_opt);
+		return;
+	}
+
+	sep = strchr(orig_script, '\n');
+	if (sep) {
+		save_char = sep[1];
+		sep[1] = '\0';
+		new_script = xstrdup(orig_script);
+		xstrcat(new_script, bb_opt);
+		sep[1] = save_char;
+		xstrcat(new_script, sep + 1);
+		xfree(*script_body);
+		*script_body = new_script;
+		xfree(bb_opt);
+		return;
+	} else {
+		new_script = xstrdup(orig_script);
+		xstrcat(new_script, "\n");
+		xstrcat(new_script, bb_opt);
+		xfree(*script_body);
+		*script_body = new_script;
+		xfree(bb_opt);
+		return;
+	}
 }
 
 /* Allocate burst buffer hash tables */
@@ -210,6 +267,8 @@ extern void bb_clear_config(bb_config_t *config_ptr, bool fini)
 	xfree(config_ptr->deny_users);
 	xfree(config_ptr->deny_users_str);
 	xfree(config_ptr->destroy_buffer);
+	xfree(config_ptr->directive_str);
+	config_ptr->flags = 0;
 	xfree(config_ptr->get_sys_state);
 	xfree(config_ptr->get_sys_status);
 	config_ptr->granularity = 1;
@@ -458,6 +517,28 @@ static uint64_t _atoi(char *tok)
 	return size_u;
 }
 
+extern void bb_set_job_bb_state(job_record_t *job_ptr, bb_job_t *bb_job,
+				int new_state)
+{
+	const char *new_state_str = NULL;
+
+	xassert(bb_job);
+
+	new_state_str = bb_state_string(new_state);
+	bb_job->state = new_state;
+	if (!job_ptr) {
+		/* This should never happen, but handle it just in case. */
+		error("%s: Could not find job_ptr for JobId=%u, unable to set new burst buffer state %s in job.",
+		      __func__, bb_job->job_id, new_state_str);
+		return;
+	}
+
+	log_flag(BURST_BUF, "Modify %pJ burst buffer state from %s to %s",
+		 job_ptr, job_ptr->burst_buffer_state, new_state_str);
+	xfree(job_ptr->burst_buffer_state);
+	job_ptr->burst_buffer_state = xstrdup(new_state_str);
+}
+
 /* Set the bb_state's tres_id and tres_pos for limit enforcement.
  * Value is set to -1 if not found. */
 extern void bb_set_tres_pos(bb_state_t *state_ptr)
@@ -493,6 +574,7 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		{"DefaultPool", S_P_STRING},
 		{"DenyUsers", S_P_STRING},
 		{"DestroyBuffer", S_P_STRING},
+		{"Directive", S_P_STRING},
 		{"Flags", S_P_STRING},
 		{"GetSysState", S_P_STRING},
 		{"GetSysStatus", S_P_STRING},
@@ -570,6 +652,8 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 					state_ptr->bb_config.deny_users_str);
 	}
 	s_p_get_string(&state_ptr->bb_config.destroy_buffer, "DestroyBuffer",
+		       bb_hashtbl);
+	s_p_get_string(&state_ptr->bb_config.directive_str, "Directive",
 		       bb_hashtbl);
 
 	if (s_p_get_string(&tmp, "Flags", bb_hashtbl)) {
@@ -656,6 +740,10 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		xfree(value);
 		info("%s: DestroyBuffer:%s",  __func__,
 		     state_ptr->bb_config.destroy_buffer);
+		info("%s: Directive:%s",
+		     __func__, state_ptr->bb_config.directive_str);
+		info("%s: Flags:%s",
+		     __func__, slurm_bb_flags2str(state_ptr->bb_config.flags));
 		info("%s: GetSysState:%s",  __func__,
 		     state_ptr->bb_config.get_sys_state);
 		info("%s: GetSysStatus:%s",  __func__,
@@ -684,6 +772,33 @@ extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type)
 		info("%s: ValidateTimeout:%u", __func__,
 		     state_ptr->bb_config.validate_timeout);
 	}
+}
+
+extern int bb_open_state_file(const char *file_name, char **state_file)
+{
+	int state_fd;
+	struct stat stat_buf;
+
+	*state_file = xstrdup(slurm_conf.state_save_location);
+	xstrfmtcat(*state_file, "/%s", file_name);
+	state_fd = open(*state_file, O_RDONLY);
+	if (state_fd < 0) {
+		error("Could not open burst buffer state file %s: %m",
+		      *state_file);
+	} else if (fstat(state_fd, &stat_buf) < 0) {
+		error("Could not stat burst buffer state file %s: %m",
+		      *state_file);
+		(void) close(state_fd);
+	} else if (stat_buf.st_size < 4) {
+		error("Burst buffer state file %s too small", *state_file);
+		(void) close(state_fd);
+	} else	/* Success */
+		return state_fd;
+
+	error("NOTE: Trying backup burst buffer state save file. Information may be lost!");
+	xstrcat(*state_file, ".old");
+	state_fd = open(*state_file, O_RDONLY);
+	return state_fd;
 }
 
 static void _pack_alloc(struct bb_alloc *bb_alloc, buf_t *buffer,
@@ -827,9 +942,17 @@ extern uint64_t bb_get_size_num(char *tok, uint64_t granularity)
 	uint64_t bb_size_i, mult;
 	uint64_t bb_size_u = 0;
 
+	errno = 0;
 	bb_size_i = (uint64_t) strtoull(tok, &tmp, 10);
-	if ((bb_size_i > 0) && tmp) {
-		bb_size_u = bb_size_i;
+	if ((errno == ERANGE) || !bb_size_i || (tok == tmp)) {
+		/*
+		 * Either the value in tok was too big, zero was specified, or
+		 * there were no numbers in tok.
+		 */
+		return 0;
+	}
+	bb_size_u = bb_size_i;
+	if (tmp && !isspace(tmp[0])) {
 		unit = xstrdup(tmp);
 		strtok(unit, " ");
 		if (!xstrcasecmp(unit, "n") ||
@@ -1546,6 +1669,358 @@ extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr)
 	return rc;
 }
 
+/* Reduced burst buffer space in advanced reservation for resources already
+ * allocated to jobs. What's left is space reserved for future jobs */
+static void _rm_active_job_bb(char *resv_name, char **pool_name,
+			      int64_t *resv_space, int ds_len,
+			      bb_state_t *bb_state)
+{
+	ListIterator job_iterator;
+	job_record_t *job_ptr;
+	bb_job_t *bb_job;
+	int i;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = list_next(job_iterator))) {
+		if ((job_ptr->burst_buffer == NULL) ||
+		    (job_ptr->burst_buffer[0] == '\0') ||
+		    (xstrcmp(job_ptr->resv_name, resv_name) == 0))
+			continue;
+		bb_job = bb_job_find(bb_state,job_ptr->job_id);
+		if (!bb_job || (bb_job->state <= BB_STATE_PENDING) ||
+		    (bb_job->state >= BB_STATE_COMPLETE))
+			continue;
+		for (i = 0; i < ds_len; i++) {
+			if (xstrcmp(bb_job->job_pool, pool_name[i]))
+				continue;
+			if (resv_space[i] >= bb_job->total_size)
+				resv_space[i] -= bb_job->total_size;
+			else
+				resv_space[i] = 0;
+			break;
+		}
+	}
+	list_iterator_destroy(job_iterator);
+}
+
+extern int bb_test_size_limit(job_record_t *job_ptr, bb_job_t *bb_job,
+			      bb_state_t *bb_state_ptr,
+			      void (*preempt_func) (uint32_t job_id,
+						    uint32_t user_id,
+						    bool hurry) )
+{
+	int64_t *add_space = NULL, *avail_space = NULL, *granularity = NULL;
+	int64_t *preempt_space = NULL, *resv_space = NULL, *total_space = NULL;
+	uint64_t unfree_space;
+	burst_buffer_info_msg_t *resv_bb = NULL;
+	struct preempt_bb_recs *preempt_ptr = NULL;
+	char **pool_name, *my_pool;
+	int ds_len;
+	burst_buffer_pool_t *pool_ptr;
+	bb_buf_t *buf_ptr;
+	bb_alloc_t *bb_ptr = NULL;
+	int i, j, k, rc = BB_CAN_START_NOW;
+	bool avail_ok, do_preempt, preempt_ok;
+	time_t now = time(NULL);
+	List preempt_list = NULL;
+	ListIterator preempt_iter;
+	bb_state_t bb_state = *bb_state_ptr;
+
+	xassert(bb_job);
+
+	/* Initialize data structure */
+	ds_len = bb_state.bb_config.pool_cnt + 1;
+	add_space = xcalloc(ds_len, sizeof(int64_t));
+	avail_space = xcalloc(ds_len, sizeof(int64_t));
+	granularity = xcalloc(ds_len, sizeof(int64_t));
+	pool_name = xcalloc(ds_len, sizeof(char *));
+	preempt_space = xcalloc(ds_len, sizeof(int64_t));
+	resv_space = xcalloc(ds_len, sizeof(int64_t));
+	total_space = xcalloc(ds_len, sizeof(int64_t));
+	for (i = 0, pool_ptr = bb_state.bb_config.pool_ptr;
+	     i < bb_state.bb_config.pool_cnt; i++, pool_ptr++) {
+		unfree_space = MAX(pool_ptr->used_space,
+				   pool_ptr->unfree_space);
+		if (pool_ptr->total_space >= unfree_space)
+			avail_space[i] = pool_ptr->total_space - unfree_space;
+		granularity[i] = pool_ptr->granularity;
+		pool_name[i] = pool_ptr->name;
+		total_space[i] = pool_ptr->total_space;
+	}
+	unfree_space = MAX(bb_state.used_space, bb_state.unfree_space);
+	if (bb_state.total_space - unfree_space)
+		avail_space[i] = bb_state.total_space - unfree_space;
+	granularity[i] = bb_state.bb_config.granularity;
+	pool_name[i] = bb_state.bb_config.default_pool;
+	total_space[i] = bb_state.total_space;
+
+	/* Determine job size requirements by pool */
+	if (bb_job->total_size) {
+		for (j = 0; j < ds_len; j++) {
+			if (!xstrcmp(bb_job->job_pool, pool_name[j])) {
+				add_space[j] += bb_granularity(
+							bb_job->total_size,
+							granularity[j]);
+				break;
+			}
+		}
+	}
+	for (i = 0, buf_ptr = bb_job->buf_ptr; i < bb_job->buf_cnt;
+	     i++, buf_ptr++) {
+		if (!buf_ptr->create || (buf_ptr->state >= BB_STATE_ALLOCATING))
+			continue;
+		for (j = 0; j < ds_len; j++) {
+			if (!xstrcmp(buf_ptr->pool, pool_name[j])) {
+				add_space[j] += bb_granularity(buf_ptr->size,
+							       granularity[j]);
+				break;
+			}
+		}
+	}
+
+	/* Account for reserved resources. Reduce reservation size for
+	 * resources already claimed from the reservation. Assume node reboot
+	 * required since we have not selected the compute nodes yet. */
+	resv_bb = job_test_bb_resv(job_ptr, now, true);
+	if (resv_bb) {
+		burst_buffer_info_t *resv_bb_ptr;
+		for (i = 0, resv_bb_ptr = resv_bb->burst_buffer_array;
+		     i < resv_bb->record_count; i++, resv_bb_ptr++) {
+			if (xstrcmp(resv_bb_ptr->name, bb_state.name))
+				continue;
+			for (j = 0, pool_ptr = resv_bb_ptr->pool_ptr;
+			     j < resv_bb_ptr->pool_cnt; j++, pool_ptr++) {
+				if (pool_ptr->name) {
+					my_pool = pool_ptr->name;
+				} else {
+					my_pool =
+						bb_state.bb_config.default_pool;
+				}
+				unfree_space = MAX(pool_ptr->used_space,
+						   pool_ptr->unfree_space);
+				for (k = 0; k < ds_len; k++) {
+					if (xstrcmp(my_pool, pool_name[k]))
+						continue;
+					resv_space[k] += bb_granularity(
+							unfree_space,
+							granularity[k]);
+					break;
+				}
+			}
+			if (resv_bb_ptr->used_space) {
+				/* Pool not specified, use default */
+				my_pool = bb_state.bb_config.default_pool;
+				for (k = 0; k < ds_len; k++) {
+					if (xstrcmp(my_pool, pool_name[k]))
+						continue;
+					resv_space[k] += bb_granularity(
+							resv_bb_ptr->used_space,
+							granularity[k]);
+					break;
+				}
+			}
+#if 1
+			/* Is any of this reserved space already taken? */
+			_rm_active_job_bb(job_ptr->resv_name,
+					  pool_name, resv_space, ds_len,
+					  bb_state_ptr);
+#endif
+		}
+	}
+
+#if _DEBUG
+	info("TEST_SIZE_LIMIT for %pJ", job_ptr);
+	for (j = 0; j < ds_len; j++) {
+		info("POOL:%s ADD:%"PRIu64" AVAIL:%"PRIu64
+		     " GRANULARITY:%"PRIu64" RESV:%"PRIu64" TOTAL:%"PRIu64,
+		     pool_name[j], add_space[j], avail_space[j], granularity[j],
+		     resv_space[j], total_space[j]);
+	}
+#endif
+
+	/* Determine if resources currently are available for the job */
+	avail_ok = true;
+	for (j = 0; j < ds_len; j++) {
+		if (add_space[j] > total_space[j]) {
+			rc = BB_EXCEEDS_LIMITS;
+			goto fini;
+		}
+		if ((add_space[j] + resv_space[j]) > avail_space[j])
+			avail_ok = false;
+	}
+	if (avail_ok) {
+		rc = BB_CAN_START_NOW;
+		goto fini;
+	}
+	rc = BB_NOT_ENOUGH_RESOURCES;
+
+	if (!preempt_func) {
+		/* Cannot preempt any burst buffers. */
+		goto fini;
+	}
+
+	/* Identify candidate burst buffers to revoke for higher priority job */
+	preempt_list = list_create(bb_job_queue_del);
+	for (i = 0; i < BB_HASH_SIZE; i++) {
+		bb_ptr = bb_state.bb_ahash[i];
+		while (bb_ptr) {
+			if ((bb_ptr->job_id != 0) &&
+			    ((bb_ptr->name == NULL) ||
+			     ((bb_ptr->name[0] >= '0') &&
+			      (bb_ptr->name[0] <= '9'))) &&
+			    (bb_ptr->use_time > now) &&
+			    (bb_ptr->use_time > job_ptr->start_time)) {
+				if (!bb_ptr->pool) {
+					bb_ptr->name = xstrdup(
+						bb_state.bb_config.default_pool);
+				}
+				preempt_ptr = xmalloc(sizeof(
+						struct preempt_bb_recs));
+				preempt_ptr->bb_ptr = bb_ptr;
+				preempt_ptr->job_id = bb_ptr->job_id;
+				preempt_ptr->pool = bb_ptr->name;
+				preempt_ptr->size = bb_ptr->size;
+				preempt_ptr->use_time = bb_ptr->use_time;
+				preempt_ptr->user_id = bb_ptr->user_id;
+				list_push(preempt_list, preempt_ptr);
+
+				for (j = 0; j < ds_len; j++) {
+					if (xstrcmp(bb_ptr->name, pool_name[j]))
+						continue;
+					preempt_ptr->size = bb_granularity(
+								bb_ptr->size,
+								granularity[j]);
+					preempt_space[j] += preempt_ptr->size;
+					break;
+				}
+			}
+			bb_ptr = bb_ptr->next;
+		}
+	}
+
+#if _DEBUG
+	for (j = 0; j < ds_len; j++) {
+		info("POOL:%s ADD:%"PRIu64" AVAIL:%"PRIu64
+		     " GRANULARITY:%"PRIu64" PREEMPT:%"PRIu64
+		     " RESV:%"PRIu64" TOTAL:%"PRIu64,
+		     pool_name[j], add_space[j], avail_space[j], granularity[j],
+		     preempt_space[j], resv_space[j], total_space[j]);
+	}
+#endif
+
+	/* Determine if sufficient resources available after preemption */
+	preempt_ok = true;
+	for (j = 0; j < ds_len; j++) {
+		if ((add_space[j] + resv_space[j]) >
+		    (avail_space[j] + preempt_space[j])) {
+			preempt_ok = false;
+			break;
+		}
+	}
+	if (!preempt_ok)
+		goto fini;
+
+	/* Now preempt/teardown the most appropriate buffers */
+	list_sort(preempt_list, bb_preempt_queue_sort);
+	preempt_iter = list_iterator_create(preempt_list);
+	while ((preempt_ptr = list_next(preempt_iter))) {
+		do_preempt = false;
+		for (j = 0; j < ds_len; j++) {
+			if (xstrcmp(preempt_ptr->pool, pool_name[j]))
+				continue;
+			if ((add_space[j] + resv_space[j]) > avail_space[j]) {
+				avail_space[j] += preempt_ptr->size;
+				preempt_space[j] -= preempt_ptr->size;
+				do_preempt = true;
+			}
+			break;
+		}
+		if (do_preempt) {
+			preempt_ptr->bb_ptr->cancelled = true;
+			preempt_ptr->bb_ptr->end_time = 0;
+			preempt_ptr->bb_ptr->state = BB_STATE_TEARDOWN;
+			preempt_ptr->bb_ptr->state_time = time(NULL);
+			preempt_func(preempt_ptr->job_id,
+				     preempt_ptr->user_id, true);
+			log_flag(BURST_BUF, "Preempting stage-in of JobId=%u for %pJ",
+				 preempt_ptr->job_id,
+				 job_ptr);
+		}
+
+	}
+	list_iterator_destroy(preempt_iter);
+
+fini:	xfree(add_space);
+	xfree(avail_space);
+	xfree(granularity);
+	xfree(pool_name);
+	xfree(preempt_space);
+	xfree(resv_space);
+	xfree(total_space);
+	if (resv_bb)
+		slurm_free_burst_buffer_info_msg(resv_bb);
+	FREE_NULL_LIST(preempt_list);
+	return rc;
+}
+
+extern void bb_update_system_comment(job_record_t *job_ptr, char *operation,
+				     char *resp_msg, bool update_database)
+{
+	char *sep = NULL;
+
+	if (job_ptr->system_comment &&
+	    (strlen(job_ptr->system_comment) >= 1024)) {
+		/* Avoid filling comment with repeated BB failures */
+		return;
+	}
+
+	if (job_ptr->system_comment)
+		xstrftimecat(sep, "\n%x %X");
+	else
+		xstrftimecat(sep, "%x %X");
+	xstrfmtcat(job_ptr->system_comment, "%s %s: %s: %s",
+		   sep, plugin_type, operation, resp_msg);
+	xfree(sep);
+
+	if (update_database) {
+		slurmdb_job_cond_t job_cond;
+		slurmdb_job_rec_t job_rec;
+		slurm_selected_step_t selected_step;
+		List ret_list;
+
+		memset(&job_cond, 0, sizeof(slurmdb_job_cond_t));
+		memset(&job_rec, 0, sizeof(slurmdb_job_rec_t));
+		memset(&selected_step, 0, sizeof(slurm_selected_step_t));
+
+		selected_step.array_task_id = NO_VAL;
+		selected_step.step_id.job_id = job_ptr->job_id;
+		selected_step.het_job_offset = NO_VAL;
+		selected_step.step_id.step_id = NO_VAL;
+		selected_step.step_id.step_het_comp = NO_VAL;
+		job_cond.step_list = list_create(NULL);
+		list_append(job_cond.step_list, &selected_step);
+
+		job_cond.flags = JOBCOND_FLAG_NO_WAIT |
+			JOBCOND_FLAG_NO_DEFAULT_USAGE;
+
+		job_cond.cluster_list = list_create(NULL);
+		list_append(job_cond.cluster_list, slurm_conf.cluster_name);
+
+		job_cond.usage_start = job_ptr->details->submit_time;
+
+		job_rec.system_comment = job_ptr->system_comment;
+
+		ret_list = acct_storage_g_modify_job(acct_db_conn,
+		                                     slurm_conf.slurm_user_id,
+		                                     &job_cond, &job_rec);
+
+		FREE_NULL_LIST(job_cond.cluster_list);
+		FREE_NULL_LIST(job_cond.step_list);
+		FREE_NULL_LIST(ret_list);
+	}
+}
+
+
 /* Determine if the specified pool name is valid on this system */
 extern bool bb_valid_pool_test(bb_state_t *state_ptr, char *pool_name)
 {
@@ -1565,4 +2040,162 @@ extern bool bb_valid_pool_test(bb_state_t *state_ptr, char *pool_name)
 	info("%s: Invalid pool requested (%s)", __func__, pool_name);
 
 	return false;
+}
+
+extern int bb_write_file(char *file_name, char *buf)
+{
+	int amount, fd, nwrite, pos;
+
+	(void) unlink(file_name);
+	fd = creat(file_name, 0600);
+	if (fd < 0) {
+		error("Error creating file %s, %m", file_name);
+		return errno;
+	}
+
+	if (!buf) {
+		error("buf is NULL");
+		return SLURM_ERROR;
+	}
+
+	nwrite = strlen(buf);
+	pos = 0;
+	while (nwrite > 0) {
+		amount = write(fd, &buf[pos], nwrite);
+		if ((amount < 0) && (errno != EINTR)) {
+			error("Error writing file %s, %m", file_name);
+			close(fd);
+			return ESLURM_WRITING_TO_FILE;
+		}
+		nwrite -= amount;
+		pos    += amount;
+	}
+
+	(void) close(fd);
+	return SLURM_SUCCESS;
+}
+
+extern int bb_write_nid_file(char *file_name, char *node_list,
+			     job_record_t *job_ptr)
+{
+#if defined(HAVE_NATIVE_CRAY)
+	char *tmp, *sep, *buf = NULL;
+	int i, j, rc;
+
+	xassert(file_name);
+	tmp = xstrdup(node_list);
+	/* Remove any trailing "]" */
+	sep = strrchr(tmp, ']');
+	if (sep)
+		sep[0] = '\0';
+	/* Skip over "nid[" or "nid" */
+	sep = strchr(tmp, '[');
+	if (sep) {
+		sep++;
+	} else {
+		sep = tmp;
+		for (i = 0; !isdigit(sep[0]) && sep[0]; i++)
+			sep++;
+	}
+	/* Copy numeric portion */
+	buf = xmalloc(strlen(sep) + 1);
+	for (i = 0, j = 0; sep[i]; i++) {
+		/* Skip leading zeros */
+		if ((sep[i] == '0') && isdigit(sep[i+1]))
+			continue;
+		/* Copy significant digits and separator */
+		while (sep[i]) {
+			if (sep[i] == ',') {
+				buf[j++] = '\n';
+				break;
+			}
+			buf[j++] = sep[i];
+			if (sep[i] == '-')
+				break;
+			i++;
+		}
+		if (!sep[i])
+			break;
+	}
+	xfree(tmp);
+
+	if (buf[0]) {
+		rc = bb_write_file(file_name, buf);
+	} else {
+		error("%pJ has node list without numeric component (%s)",
+		      job_ptr, node_list);
+		rc = EINVAL;
+	}
+	xfree(buf);
+	return rc;
+#else
+	char *tok, *buf = NULL;
+	int rc;
+
+	xassert(file_name);
+	if (node_list && node_list[0]) {
+		hostlist_t hl = hostlist_create(node_list);
+		while ((tok = hostlist_shift(hl))) {
+			xstrfmtcat(buf, "%s\n", tok);
+			free(tok);
+		}
+		hostlist_destroy(hl);
+		rc = bb_write_file(file_name, buf);
+		xfree(buf);
+	} else {
+		error("%pJ lacks a node list",
+		      job_ptr);
+		rc = EINVAL;
+	}
+	return rc;
+#endif
+}
+
+extern void bb_write_state_file(char* old_file, char *reg_file, char *new_file,
+				const char *plugin, buf_t *buffer,
+				int buffer_size, time_t save_time,
+				time_t *last_save_time)
+{
+	int state_fd, error_code = 0;
+
+	state_fd = creat(new_file, 0600);
+	if (state_fd < 0) {
+		error("Can't save state, error creating file %s, %m",
+		      new_file);
+		error_code = errno;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount, rc;
+		char *data = (char *)get_buf_data(buffer);
+		buffer_size = MAX(nwrite, buffer_size);
+		while (nwrite > 0) {
+			amount = write(state_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
+		}
+
+		rc = fsync_and_close(state_fd, plugin);
+		if (rc && !error_code)
+			error_code = rc;
+	}
+	if (error_code)
+		(void) unlink(new_file);
+	else {
+		/* file shuffle */
+		*last_save_time = save_time;
+		(void) unlink(old_file);
+		if (link(reg_file, old_file)) {
+			debug4("unable to create link for %s -> %s: %m",
+			       reg_file, old_file);
+		}
+		(void) unlink(reg_file);
+		if (link(new_file, reg_file)) {
+			debug4("unable to create link for %s -> %s: %m",
+			       new_file, reg_file);
+		}
+		(void) unlink(new_file);
+	}
 }

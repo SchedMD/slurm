@@ -3,5 +3,5 @@
 SUBDIRS = common generic
 
 if WITH_JSON_PARSER
-SUBDIRS += datawarp
+SUBDIRS += datawarp lua
 endif

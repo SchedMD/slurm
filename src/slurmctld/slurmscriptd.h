@@ -52,6 +52,24 @@ extern void slurmscriptd_flush(void);
 extern void slurmscriptd_flush_job(uint32_t job_id);
 
 /*
+ * slurmscriptd_run_bb_lua
+ * Tell slurmscriptd to run a specific function in the script in the
+ * burst_buffer/lua plugin
+ * IN job_id - the job for which we're running the script
+ * IN function - the function in the lua script we should run
+ * IN argc - number of arguments
+ * IN argv - arguments for the script
+ * IN timeout - timeout in seconds
+ * OUT resp - response message from the script
+ * OUT track_script_signalled - true if the script was killed by track_script,
+ *                              false otherwise.
+ * RET return code of the script or SLURM_ERROR if there was some other failure
+ */
+extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
+				   uint32_t argc, char **argv, uint32_t timeout,
+				   char **resp, bool *track_script_signalled);
+
+/*
  * slurmscriptd_run_prepilog
  * Tell slurmscriptd to run PrologSlurmctld or EpilogSlurmctld for the job
  * IN job_id - Job that wants to run the script

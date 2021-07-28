@@ -70,6 +70,7 @@ typedef struct bb_config {
 	uid_t   *deny_users;
 	char    *deny_users_str;
 	char    *destroy_buffer;
+	char *directive_str;
 	uint32_t flags;			/* See BB_FLAG_* in slurm.h */
 	char    *get_sys_state;
 	char    *get_sys_status;
@@ -219,6 +220,17 @@ typedef struct bb_state {
 					 * drained, units are bytes */
 } bb_state_t;
 
+/* Return codes for bb_test_size_limit */
+enum {
+	BB_CAN_START_NOW = 0,
+	BB_EXCEEDS_LIMITS,
+	BB_NOT_ENOUGH_RESOURCES,
+};
+
+/* Insert the contents of "burst_buffer_file" into "script_body" */
+extern void  bb_add_bb_to_script(char **script_body,
+				 const char *burst_buffer_file);
+
 /* Allocate burst buffer hash tables */
 extern void bb_alloc_cache(bb_state_t *state_ptr);
 
@@ -311,6 +323,14 @@ char *bb_handle_job_script(job_record_t *job_ptr, bb_job_t *bb_job);
 /* Load and process configuration parameters */
 extern void bb_load_config(bb_state_t *state_ptr, char *plugin_type);
 
+/*
+ * Open the state save file, or the backup if necessary.
+ * IN file_name - the name of the state save file to open
+ * OUT state_file - the name (including path) of the state save file
+ * RET the file description to read from or error code
+ */
+extern int bb_open_state_file(const char *file_name, char **state_file);
+
 /* Pack individual burst buffer records into a buffer */
 extern int bb_pack_bufs(uid_t uid, bb_state_t *state_ptr, buf_t *buffer,
 			uint16_t protocol_version);
@@ -325,6 +345,14 @@ extern int bb_pack_usage(uid_t uid, bb_state_t *state_ptr, buf_t *buffer,
 
 /* Sort preempt_bb_recs in order of DECREASING use_time */
 extern int bb_preempt_queue_sort(void *x, void *y);
+
+/*
+ * Set state (integer) in bb_job and set the state (string) in job_ptr.
+ * bb_job is used in burst buffer plugins. The string is used to display to the
+ * user and to save the job's burst buffer state in StateSaveLocation.
+ */
+extern void bb_set_job_bb_state(job_record_t *job_ptr, bb_job_t *bb_job,
+				int new_state);
 
 /* Set the bb_state's tres_pos for limit enforcement.
  * Value is set to -1 if not found. */
@@ -361,7 +389,54 @@ extern int bb_post_persist_create(job_record_t *job_ptr, bb_alloc_t *bb_alloc,
 /* Log deletion of a persistent burst buffer in the database */
 extern int bb_post_persist_delete(bb_alloc_t *bb_alloc, bb_state_t *state_ptr);
 
+/*
+ * Test if a job can be allocated a burst buffer.
+ * This may preempt currently active stage-in for higher priority jobs.
+ *
+ * RET BB_CAN_START_NOW: Job can be started now
+ *     BB_EXCEEDS_LIMITS: Job exceeds configured limits, continue testing with
+ *                        next job
+ *     BB_NOT_ENOUGH_RESOURCES: Job needs more resources than currently
+ *                              available can not start, skip all remaining jobs
+ */
+extern int bb_test_size_limit(job_record_t *job_ptr, bb_job_t *bb_job,
+			      bb_state_t *bb_state_ptr,
+			      void (*preempt_func) (uint32_t job_id,
+						    uint32_t user_id,
+						    bool hurry) );
+
+/* Update "system_comment" in a job record. */
+extern void bb_update_system_comment(job_record_t *job_ptr, char *operation,
+				     char *resp_msg, bool update_database);
+
 /* Determine if the specified pool name is valid on this system */
 extern bool bb_valid_pool_test(bb_state_t *state_ptr, char *pool_name);
+
+/* Write an arbitrary string to an arbitrary file name */
+extern int bb_write_file(char *file_name, char *buf);
+
+/*
+ * Write a string representing the node IDs of a job's nodes to an arbitrary
+ * file location.
+ * RET 0 or Slurm error code
+ */
+extern int bb_write_nid_file(char *file_name, char *node_list,
+			     job_record_t *job_ptr);
+/*
+ * Save buffer to state file
+ * IN old_file - state file name with ".old" appended
+ * IN reg_file - state file name
+ * IN new_file - state file name with ".new" appended
+ * IN plugin - name of plugin, just used for debugging
+ * IN buffer - write this data to the file
+ * IN buffer_size - size of buffer to create
+ * IN save_time - timestamp when state saving began
+ * OUT last_save_time - set to save_time if writing to the state save file
+ *                      succeeds
+ */
+extern void bb_write_state_file(char* old_file, char *reg_file, char *new_file,
+				const char *plugin, buf_t *buffer,
+				int buffer_size, time_t save_time,
+				time_t *last_save_time);
 
 #endif	/* __BURST_BUFFER_COMMON_H__ */
