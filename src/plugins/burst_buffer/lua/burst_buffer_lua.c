@@ -156,7 +156,6 @@ typedef struct {
 	uint32_t gid;
 	uint32_t job_id;
 	char *job_script;
-	char *nodes_file;
 	char *pool;
 	uint32_t uid;
 } stage_in_args_t;
@@ -164,7 +163,6 @@ typedef struct {
 typedef struct {
 	uint32_t job_id;
 	char *job_script;
-	char *node_file;
 	uint32_t timeout;
 	uint32_t uid;
 } pre_run_args_t;
@@ -2244,7 +2242,6 @@ static int _identify_bb_candidate(void *x, void *arg)
 static void _purge_bb_files(uint32_t job_id, job_record_t *job_ptr)
 {
 	char *hash_dir = NULL, *job_dir = NULL;
-	char *client_nids_file = NULL;
 	char *script_file = NULL, *path_file = NULL;
 	int hash_inx;
 
@@ -2254,10 +2251,6 @@ static void _purge_bb_files(uint32_t job_id, job_record_t *job_ptr)
 	(void) mkdir(hash_dir, 0700);
 	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_id);
 	(void) mkdir(job_dir, 0700);
-
-	xstrfmtcat(client_nids_file, "%s/client_nids", job_dir);
-	(void) unlink(client_nids_file);
-	xfree(client_nids_file);
 
 	xstrfmtcat(path_file, "%s/pathfile", job_dir);
 	(void) unlink(path_file);
@@ -2654,7 +2647,6 @@ static void *_start_stage_in(void *x)
 fini:
 	xfree(resp_msg);
 	xfree(stage_in_args->job_script);
-	xfree(stage_in_args->nodes_file);
 	xfree(stage_in_args->pool);
 	xfree(stage_in_args);
 	free_command_argv(argv);
@@ -2665,7 +2657,6 @@ fini:
 static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 {
 	char *hash_dir = NULL, *job_dir = NULL;
-	char *client_nodes_file_nid = NULL;
 	int hash_inx = job_ptr->job_id % 10;
 	stage_in_args_t *stage_in_args;
 	bb_alloc_t *bb_alloc = NULL;
@@ -2675,12 +2666,6 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 		   slurm_conf.state_save_location, hash_inx);
 	(void) mkdir(hash_dir, 0700);
 	xstrfmtcat(job_dir, "%s/job.%u", hash_dir, job_ptr->job_id);
-	if (job_ptr->sched_nodes) {
-		xstrfmtcat(client_nodes_file_nid, "%s/client_nids", job_dir);
-		if (bb_write_nid_file(client_nodes_file_nid,
-				      job_ptr->sched_nodes, job_ptr))
-			xfree(client_nodes_file_nid);
-	}
 
 	stage_in_args = xmalloc(sizeof *stage_in_args);
 	stage_in_args->job_id = job_ptr->job_id;
@@ -2692,10 +2677,6 @@ static int _queue_stage_in(job_record_t *job_ptr, bb_job_t *bb_job)
 		stage_in_args->pool = NULL;
 	stage_in_args->bb_size = bb_job->total_size;
 	stage_in_args->job_script = bb_handle_job_script(job_ptr, bb_job);
-	if (client_nodes_file_nid) {
-		stage_in_args->nodes_file = client_nodes_file_nid;
-		client_nodes_file_nid = NULL;
-	}
 
 	/*
 	 * Create bb allocation for the job now. Check if it has already been
@@ -2975,11 +2956,10 @@ static void *_start_pre_run(void *x)
 	DEF_STAGE_THROTTLE;
 	_stage_throttle_start(&stage_cnt_mutex, &stage_cnt_cond, &stage_cnt);
 
-	argc = 3;
+	argc = 2;
 	argv = xcalloc(argc + 1, sizeof (char *)); /* NULL-terminated */
 	argv[0] = xstrdup_printf("%u", pre_run_args->job_id);
 	argv[1] = xstrdup_printf("%s", pre_run_args->job_script);
-	argv[2] = xstrdup_printf("%s", pre_run_args->node_file);
 
 	/* Wait for node boot to complete. */
 	while (!nodes_ready) {
@@ -3060,7 +3040,6 @@ fini:
 	_stage_throttle_fini(&stage_cnt_mutex, &stage_cnt_cond, &stage_cnt);
 	xfree(resp_msg);
 	xfree(pre_run_args->job_script);
-	xfree(pre_run_args->node_file);
 	xfree(pre_run_args);
 	free_command_argv(argv);
 
@@ -3075,7 +3054,7 @@ fini:
  */
 extern int bb_p_job_begin(job_record_t *job_ptr)
 {
-	char *client_nodes_file_nid = NULL, *path_file = NULL;
+	char *path_file = NULL;
 	char *job_dir = NULL, *resp_msg = NULL, *job_script = NULL;
 	int hash_inx = job_ptr->job_id % 10;
 	int rc = SLURM_SUCCESS;
@@ -3118,18 +3097,11 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	}
 	xstrfmtcat(job_dir, "%s/hash.%d/job.%u",
 		   slurm_conf.state_save_location, hash_inx, job_ptr->job_id);
-	xstrfmtcat(client_nodes_file_nid, "%s/client_nids", job_dir);
 	bb_set_job_bb_state(job_ptr, bb_job, BB_STATE_PRE_RUN);
 
 	slurm_mutex_unlock(&bb_state.bb_mutex);
 
 	xstrfmtcat(job_script, "%s/script", job_dir);
-
-	if (job_ptr->job_resrcs && job_ptr->job_resrcs->nodes &&
-	    bb_write_nid_file(client_nodes_file_nid, job_ptr->job_resrcs->nodes,
-			      job_ptr)) {
-		xfree(client_nodes_file_nid);
-	}
 
 	/* Create an empty "path" file which can be used by lua. */
 	xstrfmtcat(path_file, "%s/path", job_dir);
@@ -3163,8 +3135,6 @@ extern int bb_p_job_begin(job_record_t *job_ptr)
 	pre_run_args->job_id = job_ptr->job_id;
 	pre_run_args->job_script = job_script; /* Point at malloc'd string */
 	job_script = NULL; /* Avoid two variables pointing at the same string */
-	pre_run_args->node_file = client_nodes_file_nid;
-	client_nodes_file_nid = NULL;
 	pre_run_args->timeout = bb_state.bb_config.other_timeout;
 	pre_run_args->uid = job_ptr->user_id;
 	if (job_ptr->details) { /* Defer launch until completion */
@@ -3178,7 +3148,6 @@ fini:
 	xfree(job_script);
 	xfree(path_file);
 	xfree(job_dir);
-	xfree(client_nodes_file_nid);
 
 	return rc;
 }

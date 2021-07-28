@@ -220,18 +220,12 @@ end
 --This function is called asynchronously and is not required to return quickly.
 --This function is called after the job is scheduled but before the
 --job starts running when the job is in a "running + configuring" state.
---
---The file specified by node_file contains the job's node list, one per line.
---A commented out example of reading the file is given.
 --]]
-function slurm_bb_pre_run(job_id, job_script, node_file)
-	slurm.log_info("%s: slurm_bb_pre_run(). job id:%s, job script:%s, node file:%s",
-		lua_script_name, job_id, job_script, node_file)
+function slurm_bb_pre_run(job_id, job_script)
+	slurm.log_info("%s: slurm_bb_pre_run(). job id:%s, job script:%s",
+		lua_script_name, job_id, job_script)
 	local rc, ret_str, contents
 	rc, ret_str = sleep_wrapper(1)
-	--io.input(node_file)
-	--contents = io.read("*all")
-	--return rc, contents
 	return rc, ret_str
 end
 
