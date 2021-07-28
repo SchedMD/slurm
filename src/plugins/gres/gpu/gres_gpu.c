@@ -1088,9 +1088,9 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 	if (*epilog_env_ptr) {
 		for (env_inx = 0; (*epilog_env_ptr)[env_inx]; env_inx++)
 			;
-		xrealloc(*epilog_env_ptr, sizeof(char *) * (env_inx + 3));
+		xrealloc(*epilog_env_ptr, sizeof(char *) * (env_inx + 4));
 	} else {
-		*epilog_env_ptr = xcalloc(3, sizeof(char *));
+		*epilog_env_ptr = xcalloc(4, sizeof(char *));
 	}
 
 	if (epilog_info->gres_bit_alloc &&
@@ -1122,6 +1122,9 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 		if (node_flags & GRES_CONF_ENV_NVML)
 			xstrfmtcat((*epilog_env_ptr)[env_inx++],
 				   "CUDA_VISIBLE_DEVICES=%s", dev_num_str);
+		if (node_flags & GRES_CONF_ENV_RSMI)
+			xstrfmtcat((*epilog_env_ptr)[env_inx++],
+				   "ROCR_VISIBLE_DEVICES=%s", dev_num_str);
 		if (node_flags & GRES_CONF_ENV_OPENCL)
 			xstrfmtcat((*epilog_env_ptr)[env_inx++],
 				   "GPU_DEVICE_ORDINAL=%s", dev_num_str);
