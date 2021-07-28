@@ -2556,6 +2556,7 @@ static void *_start_stage_in(void *x)
 
 	if (get_real_size) {
 		xfree(resp_msg);
+		free_command_argv(argv);
 		argc = 1;
 		argv = xcalloc(argc + 1, sizeof(char *)); /* NULL terminated */
 		argv[0] = xstrdup_printf("%u", stage_in_args->job_id);
