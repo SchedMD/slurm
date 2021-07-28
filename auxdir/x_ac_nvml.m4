@@ -9,8 +9,15 @@
 #    Determine if NVIDIA's NVML API library exists (CUDA provides stubs)
 ##*****************************************************************************
 
+
 AC_DEFUN([X_AC_NVML],
 [
+  func_check_path ()
+  {
+      AC_CHECK_HEADER([nvml.h], [ac_nvml_h=yes], [ac_nvml_h=no])
+      AC_CHECK_LIB([nvidia-ml], [nvmlInit], [ac_nvml=yes], [ac_nvml=no])
+  }
+
   _x_ac_nvml_dirs="/usr/local/cuda /usr/cuda"
   _x_ac_nvml_libs="lib/stubs lib64/stubs"
 
@@ -23,9 +30,9 @@ AC_DEFUN([X_AC_NVML],
   if [test "x$with_nvml" = xno]; then
      AC_MSG_WARN([support for nvml disabled])
   else
+
     # Check if libnvml is already in the system paths
-    AC_CHECK_HEADER([nvml.h], [ac_nvml_h=yes], [ac_nvml_h=no])
-    AC_CHECK_LIB([nvidia-ml], [nvmlInit], [ac_nvml=yes], [ac_nvml=no])
+    func_check_path
 
     if [ test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ]; then
           # found in system path
@@ -47,8 +54,9 @@ AC_DEFUN([X_AC_NVML],
           CPPFLAGS="-I$d/include $CPPFLAGS"
           $as_unset ac_cv_header_nvml_h
           $as_unset ac_cv_lib_nvidia_ml_nvmlInit
-          AC_CHECK_HEADER([nvml.h], [ac_nvml_h=yes], [ac_nvml_h=no])
-          AC_CHECK_LIB([nvidia-ml], [nvmlInit], [ac_nvml=yes], [ac_nvml=no])
+
+          func_check_path
+
           LDFLAGS="$_x_ac_nvml_ldflags_save"
           CPPFLAGS="$_x_ac_nvml_cppflags_save"
           if [ test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ]; then
