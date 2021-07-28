@@ -1135,7 +1135,7 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 
 		if ((step_spec->pn_min_memory && _is_mem_resv()) ||
 		    step_gres_list) {
-			int fail_mode = ESLURM_INVALID_TASK_MEMORY;
+			int fail_mode = ESLURM_NODES_BUSY;
 			uint64_t tmp_mem;
 			uint32_t tmp_cpus, avail_cpus, total_cpus;
 			uint32_t avail_tasks, total_tasks;

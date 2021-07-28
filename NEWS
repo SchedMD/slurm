@@ -8,6 +8,7 @@ documents those changes that are of interest to users and administrators.
  -- GRES - Fix loading state of jobs using --gpus to request gpus.
  -- Fix minor logic error in health check node state output
  -- Fix GCC 11.1 compiler warnings.
+ -- Delay steps when memory already used instead of rejecting step request.
 
 * Changes in Slurm 20.11.8
 ==========================
