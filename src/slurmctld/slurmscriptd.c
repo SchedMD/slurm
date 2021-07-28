@@ -492,7 +492,7 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 		exit_code = bb_g_run_script(script_func, job_id, argc, argv,
 					    &resp);
 		if (resp)
-			write(pfd[1], resp, strlen(resp));
+			(void) write(pfd[1], resp, strlen(resp));
 		_exit(exit_code);
 	} else { /* parent */
 		int new_wait, max_wait;
