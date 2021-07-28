@@ -21385,6 +21385,52 @@ else
   ac_nvml=no
 fi
 
+
+      # Check indirectly that CUDA 11.1+ was installed to see if we
+      # can build NVML MIG code. Do this by checking for the existence of
+      # nvmlVgpuTypeGetGpuInstanceProfileId in libnvidia-ml.so.
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for nvmlVgpuTypeGetGpuInstanceProfileId in -lnvidia-ml" >&5
+$as_echo_n "checking for nvmlVgpuTypeGetGpuInstanceProfileId in -lnvidia-ml... " >&6; }
+if ${ac_cv_lib_nvidia_ml_nvmlVgpuTypeGetGpuInstanceProfileId+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lnvidia-ml  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char nvmlVgpuTypeGetGpuInstanceProfileId ();
+int
+main ()
+{
+return nvmlVgpuTypeGetGpuInstanceProfileId ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_nvidia_ml_nvmlVgpuTypeGetGpuInstanceProfileId=yes
+else
+  ac_cv_lib_nvidia_ml_nvmlVgpuTypeGetGpuInstanceProfileId=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_nvidia_ml_nvmlVgpuTypeGetGpuInstanceProfileId" >&5
+$as_echo "$ac_cv_lib_nvidia_ml_nvmlVgpuTypeGetGpuInstanceProfileId" >&6; }
+if test "x$ac_cv_lib_nvidia_ml_nvmlVgpuTypeGetGpuInstanceProfileId" = xyes; then :
+  ac_mig_support=yes
+else
+  ac_mig_support=no
+fi
+
   }
 
   _x_ac_nvml_dirs="/usr/local/cuda /usr/cuda"
@@ -21442,6 +21488,12 @@ $as_echo "$as_me: WARNING: support for nvml disabled" >&2;}
           break
         fi
       done
+    fi
+
+    if  test "$ac_mig_support" = "yes" ; then
+
+$as_echo "#define HAVE_MIG_SUPPORT 1" >>confdefs.h
+
     fi
 
     if  test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ; then

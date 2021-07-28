@@ -16,6 +16,11 @@ AC_DEFUN([X_AC_NVML],
   {
       AC_CHECK_HEADER([nvml.h], [ac_nvml_h=yes], [ac_nvml_h=no])
       AC_CHECK_LIB([nvidia-ml], [nvmlInit], [ac_nvml=yes], [ac_nvml=no])
+
+      # Check indirectly that CUDA 11.1+ was installed to see if we
+      # can build NVML MIG code. Do this by checking for the existence of
+      # nvmlVgpuTypeGetGpuInstanceProfileId in libnvidia-ml.so.
+      AC_CHECK_LIB([nvidia-ml], [nvmlVgpuTypeGetGpuInstanceProfileId], [ac_mig_support=yes], [ac_mig_support=no])
   }
 
   _x_ac_nvml_dirs="/usr/local/cuda /usr/cuda"
@@ -69,6 +74,10 @@ AC_DEFUN([X_AC_NVML],
           break
         fi
       done
+    fi
+
+    if [ test "$ac_mig_support" = "yes" ]; then
+	    AC_DEFINE(HAVE_MIG_SUPPORT, 1, [Define to 1 if NVML library has MIG support])
     fi
 
     if [ test "$ac_nvml" = "yes" && test "$ac_nvml_h" = "yes" ]; then

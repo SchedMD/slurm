@@ -112,18 +112,6 @@ const char	*plugin_name		= "GPU NVML plugin";
 const char	plugin_type[]		= "gpu/nvml";
 const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
-
-static void _free_nvml_mig_members(nvml_mig_t *nvml_mig)
-{
-	if (!nvml_mig)
-		return;
-
-	xfree(nvml_mig->files);
-	xfree(nvml_mig->links);
-	xfree(nvml_mig->profile_name);
-	xfree(nvml_mig->unique_id);
-}
-
 /*
  * Converts a cpu_set returned from the NVML API into a Slurm bitstr_t
  *
@@ -1222,8 +1210,19 @@ static char *_nvml_get_nvlink_info(nvmlDevice_t *device, int index,
 	return links_str;
 }
 
-/* MIG requires CUDA 11 and NVIDIA driver 450.80.02 or later */
-#if NVML_API_VERSION >= 11
+/* MIG requires CUDA 11.1 and NVIDIA driver 450.80.02 or later */
+#if HAVE_MIG_SUPPORT
+
+static void _free_nvml_mig_members(nvml_mig_t *nvml_mig)
+{
+	if (!nvml_mig)
+		return;
+
+	xfree(nvml_mig->files);
+	xfree(nvml_mig->links);
+	xfree(nvml_mig->profile_name);
+	xfree(nvml_mig->unique_id);
+}
 
 /*
  * Get the handle to the MIG device for the passed GPU device and MIG index
@@ -1590,7 +1589,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 			continue;
 		}
 
-#if NVML_API_VERSION >= 11
+#if HAVE_MIG_SUPPORT
 		mig_mode = _nvml_is_device_mig(&device);
 #endif
 
@@ -1644,7 +1643,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 		debug2("    MIG mode: %s", mig_mode ? "enabled" : "disabled");
 
 		if (mig_mode) {
-#if NVML_API_VERSION >= 11
+#if HAVE_MIG_SUPPORT
 			unsigned int max_mig_count;
 			unsigned int mig_count = 0;
 			char *tmp_device_name = xstrdup(device_name);
