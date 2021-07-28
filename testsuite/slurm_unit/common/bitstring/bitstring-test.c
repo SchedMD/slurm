@@ -8,8 +8,6 @@
 /* Copied from src/common/bitstring.c */
 #define	_bitstr_words(nbits)	\
 	((((nbits) + BITSTR_MAXPOS) >> BITSTR_SHIFT) + BITSTR_OVERHEAD)
-#define	bit_decl(name, nbits) \
-	(name)[_bitstr_words(nbits)] = { BITSTR_MAGIC_STACK, (nbits) }
 
 /* Test for failure: 
 */
@@ -24,18 +22,6 @@
 int
 main(int argc, char *argv[])
 {
-	note("Testing static decl");
-	{
-		bitstr_t bit_decl(bs, 65);
-		/*bitstr_t *bsp = bs;*/
-
-		bit_set(bs,9);
-		bit_set(bs,14);
-		TEST(bit_test(bs,9), "bit 9 set"); 
-		TEST(!bit_test(bs,12), "bit 12 not set");
-		TEST(bit_test(bs,14), "bit 14 set" );
-		/*bit_free(bsp);*/	/* triggers TEST in bit_free - OK */
-	}
 	note("Testing basic vixie functions");
 	{
 		bitstr_t *bs = bit_alloc(16), *bs2;

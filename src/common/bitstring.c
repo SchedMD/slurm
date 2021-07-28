@@ -80,8 +80,7 @@
 /* check signature */
 #define _assert_bitstr_valid(name) do { \
 	xassert((name) != NULL); \
-	xassert(_bitstr_magic(name) == BITSTR_MAGIC \
-			    || _bitstr_magic(name) == BITSTR_MAGIC_STACK); \
+	xassert(_bitstr_magic(name) == BITSTR_MAGIC); \
 } while (0)
 
 /* check bit position */
