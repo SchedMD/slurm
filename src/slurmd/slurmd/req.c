@@ -3982,16 +3982,6 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 #endif
 #endif
 
-	/*
-	 * "srun --bcast" was called with a target directory instead of a
-	 * filename, and we have to append the default filename to req->fname.
-	 * This same file name has to be recreated by exec_task().
-	 */
-	if (req->fname[strlen(req->fname) - 1] == '/') {
-		xstrfmtcat(req->fname, "slurm_bcast_%"PRIu32".%"PRIu32"_%s",
-			   cred_arg->job_id, cred_arg->step_id,
-			   conf->node_name);
-	}
 	key.fname = req->fname;
 
 	if (req->block_no == 1) {
@@ -4094,6 +4084,17 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 		flags |= O_TRUNC;
 	else
 		flags |= O_EXCL;
+
+	/*
+	 * "srun --bcast" was called with a target directory instead of a
+	 * filename, and we have to append the default filename to req->fname.
+	 * This same file name has to be recreated by exec_task().
+	 */
+	if (key->fname[strlen(key->fname) - 1] == '/') {
+		xstrfmtcat(key->fname, "slurm_bcast_%u.%u_%s",
+			   cred_arg->job_id, cred_arg->step_id,
+			   conf->node_name);
+	}
 
 	rc = _open_as_other(req->fname, flags, 0700, key->job_id, key->uid,
 			    key->gid, cred_arg->ngids, cred_arg->gids, &fd);
