@@ -59,6 +59,7 @@ AC_DEFUN([X_AC_NVML],
           CPPFLAGS="-I$d/include $CPPFLAGS"
           $as_unset ac_cv_header_nvml_h
           $as_unset ac_cv_lib_nvidia_ml_nvmlInit
+          $as_unset ac_cv_lib_nvidia_ml_nvmlVgpuTypeGetGpuInstanceProfileId
 
           func_check_path
 
