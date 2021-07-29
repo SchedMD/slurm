@@ -143,7 +143,7 @@ if {$gpus_per_node > 1 && $sockets_per_node > 1} {
 #
 make_bash_script $file_in1 "echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
 if \[ \$SLURM_PROCID -eq 0 \]; then
-$scontrol -dd show job \$SLURM_JOB_ID | grep \"JOB_GRES=\"
+$scontrol -dd show job \$SLURM_JOB_ID | grep JOB_GRES=
 fi
 exit 0"
 
