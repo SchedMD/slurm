@@ -595,6 +595,7 @@ env_vars_t env_vars[] = {
   { "SLURM_REQ_SWITCH", LONG_OPT_SWITCH_REQ },
   { "SLURM_RESERVATION", LONG_OPT_RESERVATION },
   { "SLURM_RESV_PORTS", LONG_OPT_RESV_PORTS },
+  { "SLURM_SEND_LIBS", LONG_OPT_SEND_LIBS },
   { "SLURM_SIGNAL", LONG_OPT_SIGNAL },
   { "SLURM_SPREAD_JOB", LONG_OPT_SPREAD_JOB },
   { "SLURM_SRUN_MULTI", LONG_OPT_MULTI },
@@ -1462,7 +1463,7 @@ static void _usage(void)
 "            [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
 "            [--core-spec=cores] [--thread-spec=threads]\n"
 "            [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
-"            [--bcast=<dest_path>] [--compress[=library]]\n"
+"            [--bcast=<dest_path>] [--send-libs[=y|n]] [--compress[=library]]\n"
 "            [--acctg-freq=<datatype>=<interval>] [--delay-boot=mins]\n"
 "            [-w hosts...] [-x hosts...] [--use-min-nodes]\n"
 "            [--mpi-combine=yes|no] [--het-group=value]\n"
@@ -1558,6 +1559,7 @@ static void _help(void)
 "  -r, --relative=n            run job step relative to node n of allocation\n"
 "  -s, --oversubscribe         over-subscribe resources with other jobs\n"
 "  -S, --core-spec=cores       count of reserved cores\n"
+"      --send-libs[=yes|no]    autodetect and broadcast shared objects\n"
 "      --signal=[R:]num[@time] send signal when time limit within time seconds\n"
 "      --slurmd-debug=level    slurmd debug level\n"
 "      --spread-job            spread job across as many nodes as possible\n"

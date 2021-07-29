@@ -757,6 +757,8 @@ static int _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	} else {
 		xstrfmtcat(params->dst_fname, "%s/", opt_local->chdir);
 	}
+	if (srun_opt->send_libs)
+		params->flags |= BCAST_FLAG_SEND_LIBS;
 	params->fanout = 0;
 	params->selected_step = xmalloc(sizeof(*params->selected_step));
 	params->selected_step->array_task_id = NO_VAL;
