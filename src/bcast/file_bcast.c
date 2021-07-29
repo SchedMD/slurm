@@ -59,7 +59,9 @@
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/proc_args.h"
 #include "src/common/read_config.h"
+#include "src/common/run_command.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_interface.h"
@@ -71,6 +73,11 @@
 
 #include "file_bcast.h"
 
+/*
+ * This should likely be detected at build time, but I have not
+ * seen any common systems where this is not the correct path.
+ */
+#define LDD_PATH "/usr/bin/ldd"
 #define MAX_THREADS      8	/* These can be huge messages, so
 				 * only run MAX_THREADS at one time */
 
@@ -85,8 +92,11 @@ static int   _file_bcast(struct bcast_parameters *params,
 			 file_bcast_msg_t *bcast_msg,
 			 job_sbcast_cred_msg_t *sbcast_cred);
 static int   _file_state(struct bcast_parameters *params);
+static List _fill_in_excluded_paths(struct bcast_parameters *params);
+static int _find_subpath(void *x, void *key);
+static int _foreach_shared_object(void *x, void *y);
 static int   _get_job_info(struct bcast_parameters *params);
-
+static int _get_lib_paths(char *filename, List lib_paths);
 
 static int _file_state(struct bcast_parameters *params)
 {
@@ -315,6 +325,10 @@ static int _bcast_file(struct bcast_parameters *params)
 	bcast_msg.block_no	= 1;
 	if (params->flags & BCAST_FLAG_FORCE)
 		bcast_msg.flags |= FILE_BCAST_FORCE;
+	if (params->flags & BCAST_FLAG_SHARED_OBJECT)
+		bcast_msg.flags |= FILE_BCAST_SO;
+	else if (params->flags & BCAST_FLAG_SEND_LIBS)
+		bcast_msg.flags |= FILE_BCAST_EXE;
 	bcast_msg.modes		= f_stat.st_mode;
 	bcast_msg.uid		= f_stat.st_uid;
 	bcast_msg.user_name	= uid_to_string(f_stat.st_uid);
@@ -402,6 +416,210 @@ static int _decompress_data_lz4(file_bcast_msg_t *req)
 #endif
 }
 
+/*
+ * IN: char pointer with the filename.
+ * IN/OUT: List of shared object direct and indirect dependencies.
+ *
+ * RET:	SLURM_[SUCCESS|ERROR]
+ */
+static int _get_lib_paths(char *filename, List lib_paths)
+{
+	char **ldd_argv;
+	char *result = NULL;
+	char *lpath = NULL, *lpath_end = NULL;
+	char *tok = NULL, *save_ptr = NULL;
+	int status = SLURM_ERROR, rc = SLURM_SUCCESS;
+
+	if (!filename || !lib_paths) {
+		rc = SLURM_ERROR;
+		goto fini;
+	}
+
+	ldd_argv = xcalloc(3, sizeof(char *));
+	ldd_argv[0] = xstrdup("ldd");
+	ldd_argv[1] = xstrdup(filename);
+	/* Already zero'd out after xcalloc(), but make it NULL explicitly */
+	ldd_argv[2] = NULL;
+
+	/*
+	 * NOTE: If using ldd ends up causing problems it is possible to
+	 * leverage using other alternatives for ELF inspection like dlinfo(),
+	 * libelf/gelf libraries or others. This would require recursing in
+	 * search for non-direct dependencies and knowing where to find them by
+	 * doing something similar to the search order of the dynamic linker.
+	 */
+	result = run_command("ldd", LDD_PATH, ldd_argv, NULL, 5000, 0, &status);
+	free_command_argv(ldd_argv);
+
+	if (status) {
+		error("Cannot autodetect libraries for '%s' with ldd command",
+		      filename);
+		rc = SLURM_ERROR;
+		goto fini;
+	} else if (!result) {
+		verbose("ldd exited normally but returned no libraries");
+		rc = SLURM_SUCCESS;
+		goto fini;
+	}
+
+	/*
+	 * FIXME: does not handle spaces in library paths correctly.
+	 * (Although libtool itself doesn't love that either.)
+	 */
+	tok = strtok_r(result, "\n", &save_ptr);
+	while (tok) {
+		if ((lpath = xstrstr(tok, "/"))) {
+			if ((lpath_end = xstrstr(lpath, " "))) {
+				*lpath_end = '\0';
+				list_append(lib_paths, xstrdup(lpath));
+			}
+		}
+		tok = strtok_r(NULL, "\n", &save_ptr);
+	}
+
+fini:
+	xfree(result);
+	return rc;
+}
+
+/*
+ * ListFindF for excl_paths.
+ *
+ * IN:	x, list data with excluded path
+ * IN:	key, shared object path to check
+ *
+ * RET: return of subpath()
+ */
+static int _find_subpath(void *x, void *key)
+{
+	char *exclude_path = x;
+	char *so_path = key;
+
+	return subpath(so_path, exclude_path);
+}
+
+static int _bcast_library(struct bcast_parameters *params)
+{
+	int rc;
+
+	if ((rc = _file_state(params)) != SLURM_SUCCESS)
+		return rc;
+	if ((rc = _bcast_file(params)) != SLURM_SUCCESS)
+		return rc;
+
+	return rc;
+}
+
+/*
+ * ListForF to attempt to bcast a shared object.
+ *
+ * IN:	x, list data
+ * IN:	y, arguments
+ * RET:	-1 on error, 0 on success
+ */
+static int _foreach_shared_object(void *x, void *y)
+{
+	foreach_shared_object_t *args = (foreach_shared_object_t *) y;
+	char *library = (char *) x;
+
+	if (list_find_first(args->excluded_paths, _find_subpath, library)) {
+		verbose("Skipping broadcast of excluded '%s'", library);
+		return 0;
+	}
+
+	args->params->src_fname = library;
+	args->params->dst_fname = xbasename(library);
+
+	args->return_code = _bcast_library(args->params);
+
+	if (args->return_code != SLURM_SUCCESS) {
+		error("Broadcast of '%s' failed", args->params->src_fname);
+		return -1;
+	}
+
+	verbose("Broadcast shared object src:'%s' dst:'%s' succeeded (%d/%d)",
+		args->params->src_fname, args->params->dst_fname,
+		++args->bcast_sent_cnt, args->bcast_total_cnt);
+
+	return 0;
+}
+
+/*
+ * Validates params->exclude and fills in a List off it.
+ *
+ * IN: bcast_parameters
+ *
+ * RET: List of excluded paths.
+ * NOTE: Caller should free the returned list.
+ */
+static List _fill_in_excluded_paths(struct bcast_parameters *params)
+{
+	char *tmp_str = NULL, *tok = NULL, *saveptr = NULL;
+	List excl_paths = NULL;
+
+	excl_paths = list_create(xfree_ptr);
+	if (!xstrcasecmp(params->exclude, "none"))
+		return excl_paths;
+
+	tmp_str = xstrdup(params->exclude);
+	tok = strtok_r(tmp_str, ",", &saveptr);
+	while (tok) {
+		if (tok[0] != '/')
+			error("Ignorning non-absolute excluded path: '%s'",
+			      tok);
+		else
+			list_append(excl_paths, xstrdup(tok));
+		tok = strtok_r(NULL, ",", &saveptr);
+	}
+
+	xfree(tmp_str);
+	return excl_paths;
+}
+
+/*
+ * IN/OUT: bcast_parameters pointer
+ *
+ * RET: SLURM_[ERROR|SUCCESS]
+ */
+static int _bcast_shared_objects(struct bcast_parameters *params)
+{
+	foreach_shared_object_t args;
+	int rc;
+	List lib_paths = NULL, excl_paths = NULL;
+	char *save_dst = params->dst_fname;
+	char *save_src = params->src_fname;
+
+	xassert(params);
+
+	memset(&args, 0, sizeof(args));
+	lib_paths = list_create(xfree_ptr);
+	if ((rc = _get_lib_paths(params->src_fname, lib_paths)) !=
+	    SLURM_SUCCESS)
+		goto fini;
+
+	if (!(args.bcast_total_cnt = list_count(lib_paths))) {
+		verbose("No shared objects detected for '%s'",
+			params->src_fname);
+		goto fini;
+	}
+
+	params->flags |= BCAST_FLAG_SHARED_OBJECT;
+	excl_paths = _fill_in_excluded_paths(params);
+	args.params = params;
+	args.excluded_paths = excl_paths;
+
+	list_for_each(lib_paths, _foreach_shared_object, &args);
+	rc = args.return_code;
+	params->flags &= ~BCAST_FLAG_SHARED_OBJECT;
+	params->dst_fname = save_dst;
+	params->src_fname = save_src;
+
+fini:
+	FREE_NULL_LIST(excl_paths);
+	FREE_NULL_LIST(lib_paths);
+	return rc;
+}
+
 extern int bcast_file(struct bcast_parameters *params)
 {
 	int rc;
@@ -411,6 +629,9 @@ extern int bcast_file(struct bcast_parameters *params)
 	if ((rc = _get_job_info(params)) != SLURM_SUCCESS)
 		return rc;
 	if ((rc = _bcast_file(params)) != SLURM_SUCCESS)
+		return rc;
+	if ((params->flags & BCAST_FLAG_SEND_LIBS) &&
+	    ((rc = _bcast_shared_objects(params)) != SLURM_SUCCESS))
 		return rc;
 
 /*	slurm_free_sbcast_cred_msg(sbcast_cred); */
