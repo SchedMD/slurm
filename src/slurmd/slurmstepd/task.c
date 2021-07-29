@@ -527,12 +527,11 @@ extern void exec_task(stepd_step_rec_t *job, int local_proc_id)
 
 	/*
 	 * If argv[0] ends with '/' it indicates that srun was called with
-	 * --bcast with destination dir instead of file name in this case
-	 *  default file name was created by _rpc_file_bcast, we have to follow
-	 *  the convention here.
+	 * --bcast with destination dir instead of file name. So match the
+	 * convention used by _rpc_file_bcast().
 	 */
 	if (task->argv[0][strlen(task->argv[0]) - 1] == '/') {
-		xstrfmtcat(task->argv[0], "slurm_bcast_%"PRIu32".%"PRIu32"_%s",
+		xstrfmtcat(task->argv[0], "slurm_bcast_%u.%u_%s",
 			   job->step_id.job_id, job->step_id.step_id,
 			   job->node_name);
 	}
