@@ -1191,9 +1191,11 @@ enum compress_type {
 };
 
 typedef enum {
-	FILE_BCAST_NONE = 0, /* No flags set */
-	FILE_BCAST_FORCE = 1 << 0, /* replace existing file */
-	FILE_BCAST_LAST_BLOCK = 1 << 1, /* last file block */
+	FILE_BCAST_NONE = 0,		/* No flags set */
+	FILE_BCAST_FORCE = 1 << 0,	/* replace existing file */
+	FILE_BCAST_LAST_BLOCK = 1 << 1,	/* last file block */
+	FILE_BCAST_SO = 1 << 2, 	/* shared object */
+	FILE_BCAST_EXE = 1 << 3,	/* executable ahead of shared object */
 } file_bcast_flags_t;
 
 typedef struct file_bcast_msg {
