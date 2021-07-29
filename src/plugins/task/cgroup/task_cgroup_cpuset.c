@@ -943,11 +943,25 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 	memset(&limits, 0, sizeof(limits));
 	limits.allow_mems = root_limits->allow_mems;
 
-	/* User constrain */
+	/*
+	 * User constrain: job_alloc_cpus is normally a subset of
+	 * root_limits->allow_cores, set both of them here anyway, cgroup will
+	 * compact the string on its own.
+	 */
 	limits.allow_cores = xstrdup_printf(
 		"%s,%s", job_alloc_cpus, root_limits->allow_cores);
 	rc = cgroup_g_user_constrain_set(CG_CPUS, job, &limits);
 	xfree(limits.allow_cores);
+	if (rc != SLURM_SUCCESS)
+		goto endit;
+
+	/*
+	 * Step constrain: need to be constrained before the job otherwise if
+	 * this job_alloc_cpus subset is more restrictive than the current
+	 * constraint set for the step, the job cgroup could not be modified.
+	 */
+	limits.allow_cores = step_alloc_cpus;
+	rc = cgroup_g_step_constrain_set(CG_CPUS, job, &limits);
 	if (rc != SLURM_SUCCESS)
 		goto endit;
 
@@ -957,11 +971,6 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 	if (rc != SLURM_SUCCESS)
 		goto endit;
 
-	/* Step constrain */
-	limits.allow_cores = step_alloc_cpus;
-	rc = cgroup_g_step_constrain_set(CG_CPUS, job, &limits);
-	if (rc != SLURM_SUCCESS)
-		goto endit;
 
 	/* validate the requested cpu frequency and set it */
 	cpu_freq_cgroup_validate(job, step_alloc_cpus);
