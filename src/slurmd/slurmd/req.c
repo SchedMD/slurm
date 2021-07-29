@@ -118,6 +118,14 @@
 #define MAX_NUMA_CNT 128
 
 typedef struct {
+	uint32_t uid;
+	uint32_t job_id;
+	uint32_t step_id;
+	char *directory;
+	time_t last_update;
+} libdir_rec_t;
+
+typedef struct {
 	uint64_t job_mem;
 	slurm_step_id_t step_id;
 	uint64_t step_mem;
@@ -131,6 +139,8 @@ typedef struct {
 	pthread_mutex_t *timer_mutex;
 } timer_struct_t;
 
+static void _fb_rdlock(void);
+static void _fb_rdunlock(void);
 static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _free_job_env(job_env_t *env_ptr);
 static bool _is_batch_job_finished(uint32_t job_id);
@@ -248,6 +258,7 @@ static pthread_mutex_t file_bcast_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  file_bcast_cond  = PTHREAD_COND_INITIALIZER;
 static int fb_read_lock = 0, fb_write_wait_lock = 0, fb_write_lock = 0;
 static List file_bcast_list = NULL;
+static List bcast_libdir_list = NULL;
 
 static pthread_mutex_t waiter_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -1328,6 +1339,50 @@ static bitstr_t *_build_numa_bitmap(uint16_t mem_bind_type, char *mem_bind,
 	return numa_bitmap;
 }
 
+static int _find_libdir_record(void *x, void *arg)
+{
+	libdir_rec_t *l = (libdir_rec_t *) x;
+	libdir_rec_t *key = (libdir_rec_t *) arg;
+
+	if (l->uid != key->uid)
+		return 0;
+	if (l->job_id != key->job_id)
+		return 0;
+	if (l->step_id != key->step_id)
+		return 0;
+
+	return 1;
+}
+
+static void _handle_libdir_fixup(launch_tasks_request_msg_t *req)
+{
+	libdir_rec_t libdir_args = {
+		.uid = req->uid,
+		.job_id = req->step_id.job_id,
+		.step_id = req->step_id.step_id,
+	};
+	libdir_rec_t *libdir;
+	char *orig, *new;
+
+	_fb_rdlock();
+	if (!(libdir = list_find_first(bcast_libdir_list,
+				       _find_libdir_record,
+				       &libdir_args))) {
+		_fb_rdunlock();
+		return;
+	}
+
+	new = xstrdup(libdir->directory);
+	_fb_rdunlock();
+
+	if ((orig = getenvp(req->env, "LD_LIBRARY_PATH")))
+		xstrfmtcat(new, ":%s", orig);
+
+	env_array_overwrite(&req->env, "LD_LIBRARY_PATH", new);
+	req->envc = envcount(req->env);
+	xfree(new);
+}
+
 static void
 _rpc_launch_tasks(slurm_msg_t *msg)
 {
@@ -1389,6 +1444,12 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		     &req->step_id, req->uid, req->gid,
 		     host, port);
 	}
+
+	/*
+	 * Handle --send-libs support in srun by injecting the library cache
+	 * directory in LD_LIBRARY_PATH.
+	 */
+	_handle_libdir_fixup(req);
 
 	/* this could be set previously and needs to be overwritten by
 	 * this call for messages to work correctly for the new call */
@@ -3928,6 +3989,31 @@ static int _bcast_find_in_list_to_remove(void *x, void *y)
 	return false;
 }
 
+static void _free_libdir_rec_t(void *x)
+{
+	libdir_rec_t *l = (libdir_rec_t *) x;
+
+	if (!l)
+		return;
+
+	xfree(l->directory);
+	xfree(l);
+}
+
+static int _libdir_find_in_list_to_remove(void *x, void *y)
+{
+	libdir_rec_t *l = (libdir_rec_t *) x;
+	time_t *now = (time_t *) y;
+
+	if (l->last_update + FILE_BCAST_TIMEOUT < *now) {
+		debug("Removing stale library directory reference for uid %u for `%s`",
+		      l->uid, l->directory);
+		return true;
+	}
+
+	return false;
+}
+
 /* remove transfers that have stalled */
 static void _file_bcast_cleanup(void)
 {
@@ -3935,6 +4021,7 @@ static void _file_bcast_cleanup(void)
 
 	_fb_wrlock();
 	list_delete_all(file_bcast_list, _bcast_find_in_list_to_remove, &now);
+	list_delete_all(bcast_libdir_list, _libdir_find_in_list_to_remove, &now);
 	_fb_wrunlock();
 }
 
@@ -3942,12 +4029,15 @@ void file_bcast_init(void)
 {
 	/* skip locks during slurmd init */
 	file_bcast_list = list_create(_free_file_bcast_info_t);
+	bcast_libdir_list = list_create(_free_libdir_rec_t);
+
 }
 
 void file_bcast_purge(void)
 {
 	_fb_wrlock();
 	list_destroy(file_bcast_list);
+	list_destroy(bcast_libdir_list);
 	/* destroying list before exit, no need to unlock */
 }
 
@@ -3978,6 +4068,7 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 #else
 	key.job_id = cred_arg->job_id;
 #endif
+	key.step_id = cred_arg->step_id;
 
 #if 0
 	info("last_block=%u force=%u modes=%o",
@@ -3992,12 +4083,38 @@ static void _rpc_file_bcast(slurm_msg_t *msg)
 #endif
 #endif
 
-	/*
-	 * "srun --bcast" was called with a target directory instead of a
-	 * filename, and we have to append the default filename to req->fname.
-	 * This same file name has to be recreated by exec_task().
-	 */
-	if (req->fname[strlen(req->fname) - 1] == '/') {
+	if (req->flags & FILE_BCAST_SO) {
+		libdir_rec_t *libdir;
+		libdir_rec_t libdir_args = {
+			.uid = key.uid,
+			.job_id = key.job_id,
+			.step_id = key.step_id,
+		};
+		char *fname = NULL;
+
+		_fb_rdlock();
+		if (!(libdir = list_find_first(bcast_libdir_list,
+					       _find_libdir_record,
+					       &libdir_args))) {
+			error("Could not find library directory for transfer from uid %u",
+			      key.uid);
+			_fb_rdunlock();
+			rc = SLURM_ERROR;
+			goto done;
+		}
+
+		libdir->last_update = time(NULL);
+		xstrfmtcat(fname, "%s/%s", libdir->directory, req->fname);
+		xfree(req->fname);
+		req->fname = fname;
+		_fb_rdunlock();
+	} else if (req->fname[strlen(req->fname) - 1] == '/') {
+		/*
+		 * "srun --bcast" was called with a target directory instead of
+		 * a filename, and we have to append the default filename to
+		 * req->fname. This same file name has to be recreated by
+		 * exec_task().
+		 */
 		xstrfmtcat(req->fname, "slurm_bcast_%u.%u_%s",
 			   cred_arg->job_id, cred_arg->step_id,
 			   conf->node_name);
@@ -4094,6 +4211,7 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 	file_bcast_msg_t *req = msg->data;
 	int fd, flags, rc;
 	file_bcast_info_t *file_info;
+	libdir_rec_t *libdir = NULL;
 
 	/* may still be unset in credential */
 	if (!cred_arg->ngids || !cred_arg->gids)
@@ -4115,6 +4233,27 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 		return rc;
 	}
 
+	if (req->flags & FILE_BCAST_EXE) {
+		int fd_dir;
+		char *directory = xstrdup_printf("%s_libs", key->fname);
+		rc = _open_as_other(directory, 0, 0700, key->job_id, key->uid,
+				    key->gid, cred_arg->ngids, cred_arg->gids,
+				    true, &fd_dir);
+		if (rc != SLURM_SUCCESS) {
+			error("Unable to create directory %s: %s",
+			      directory, strerror(rc));
+			return rc;
+		}
+
+		libdir = xmalloc(sizeof(*libdir));
+		libdir->uid = key->uid;
+		libdir->job_id = key->job_id;
+		libdir->step_id = key->step_id;
+		libdir->directory = directory;
+		libdir->last_update = time(NULL);
+	}
+
+
 	file_info = xmalloc(sizeof(file_bcast_info_t));
 	file_info->fd = fd;
 	file_info->fname = xstrdup(req->fname);
@@ -4126,6 +4265,8 @@ static int _file_bcast_register_file(slurm_msg_t *msg,
 	//TODO: mmap the file here
 	_fb_wrlock();
 	list_append(file_bcast_list, file_info);
+	if (libdir)
+		list_append(bcast_libdir_list, libdir);
 	_fb_wrunlock();
 
 	return SLURM_SUCCESS;
