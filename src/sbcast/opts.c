@@ -55,9 +55,10 @@
 
 #include "src/sbcast/sbcast.h"
 
-#define OPT_LONG_HELP      0x100
-#define OPT_LONG_USAGE     0x101
-#define OPT_LONG_SEND_LIBS 0x102
+#define OPT_LONG_EXCLUDE   0x100
+#define OPT_LONG_HELP      0x101
+#define OPT_LONG_USAGE     0x102
+#define OPT_LONG_SEND_LIBS 0x103
 
 
 /* getopt_long options, integers but not characters */
@@ -78,6 +79,7 @@ extern void parse_command_line(int argc, char **argv)
 	int option_index;
 	static struct option long_options[] = {
 		{"compress",  optional_argument, 0, 'C'},
+		{"exclude",   required_argument, 0, OPT_LONG_EXCLUDE},
 		{"fanout",    required_argument, 0, 'F'},
 		{"force",     no_argument,       0, 'f'},
 		{"jobid",     required_argument, 0, 'j'},
@@ -102,8 +104,15 @@ extern void parse_command_line(int argc, char **argv)
 			sep[0] = ',';
 	}
 
+	if (slurm_conf.bcast_exclude)
+		params.exclude = xstrdup(slurm_conf.bcast_exclude);
+
 	if ((env_val = getenv("SBCAST_COMPRESS")))
 		params.compress = parse_compress_type(env_val);
+	if ((env_val = getenv("SBCAST_EXCLUDE"))) {
+		xfree(params.exclude);
+		params.exclude = xstrdup(env_val);
+	}
 	if ( ( env_val = getenv("SBCAST_FANOUT") ) )
 		params.fanout = atoi(env_val);
 	if (getenv("SBCAST_FORCE"))
@@ -144,6 +153,10 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case (int)'C':
 			params.compress = parse_compress_type(optarg);
+			break;
+		case (int) OPT_LONG_EXCLUDE:
+			xfree(params.exclude);
+			params.exclude = xstrdup(optarg);
 			break;
 		case (int)'f':
 			params.flags |= BCAST_FLAG_FORCE;
@@ -271,6 +284,7 @@ static void _print_options( void )
 	info("-----------------------------");
 	info("block_size = %u", params.block_size);
 	info("compress   = %u", params.compress);
+	info("exclude    = %s", params.exclude);
 	info("force      = %s",
 	     (params.flags & BCAST_FLAG_FORCE) ? "true" : "false");
 	info("fanout     = %d", params.fanout);
@@ -291,7 +305,7 @@ static void _print_options( void )
 
 static void _usage( void )
 {
-	printf("Usage: sbcast [-CfFjpvV] [--send-libs] SOURCE DEST\n");
+	printf("Usage: sbcast [--exclude] [-CfFjpvV] [--send-libs] SOURCE DEST\n");
 }
 
 static void _help( void )
@@ -299,6 +313,7 @@ static void _help( void )
 	printf ("\
 Usage: sbcast [OPTIONS] SOURCE DEST\n\
   -C, --compress[=lib]  compress the file being transmitted\n\
+  --exclude=<path_list> shared object paths to be excluded\n\
   -f, --force           replace destination file as required\n\
   -F, --fanout=num      specify message fanout\n\
   -j, --jobid=#[+#][.#] specify job ID with optional hetjob offset and/or step ID\n\
