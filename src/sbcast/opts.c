@@ -55,8 +55,10 @@
 
 #include "src/sbcast/sbcast.h"
 
-#define OPT_LONG_HELP   0x100
-#define OPT_LONG_USAGE  0x101
+#define OPT_LONG_HELP      0x100
+#define OPT_LONG_USAGE     0x101
+#define OPT_LONG_SEND_LIBS 0x102
+
 
 /* getopt_long options, integers but not characters */
 
@@ -72,13 +74,14 @@ static void     _usage( void );
 extern void parse_command_line(int argc, char **argv)
 {
 	char *env_val = NULL, *sep, *tmp;
-	int opt_char;
+	int opt_char, ret;
 	int option_index;
 	static struct option long_options[] = {
 		{"compress",  optional_argument, 0, 'C'},
 		{"fanout",    required_argument, 0, 'F'},
 		{"force",     no_argument,       0, 'f'},
 		{"jobid",     required_argument, 0, 'j'},
+		{"send-libs", optional_argument, 0, OPT_LONG_SEND_LIBS},
 		{"preserve",  no_argument,       0, 'p'},
 		{"size",      required_argument, 0, 's'},
 		{"timeout",   required_argument, 0, 't'},
@@ -108,6 +111,21 @@ extern void parse_command_line(int argc, char **argv)
 
 	if (getenv("SBCAST_PRESERVE"))
 		params.flags |= BCAST_FLAG_PRESERVE;
+
+	if (xstrcasestr(slurm_conf.bcast_parameters, "send_libs"))
+		params.flags |= BCAST_FLAG_SEND_LIBS;
+
+	if ((env_val = getenv("SBCAST_SEND_LIBS"))) {
+		ret = parse_send_libs(env_val);
+		if (ret == -1)
+			error("Ignoring unrecognized SBCAST_SEND_LIBS value '%s'",
+			      env_val);
+		else if (ret)
+			params.flags |= BCAST_FLAG_SEND_LIBS;
+		else
+			params.flags &= ~BCAST_FLAG_SEND_LIBS;
+	}
+
 	if ( ( env_val = getenv("SBCAST_SIZE") ) )
 		params.block_size = _map_size(env_val);
 	else
@@ -138,6 +156,16 @@ extern void parse_command_line(int argc, char **argv)
 			break;
 		case (int)'p':
 			params.flags |= BCAST_FLAG_PRESERVE;
+			break;
+		case (int) OPT_LONG_SEND_LIBS:
+			ret = parse_send_libs(optarg);
+			if (ret == -1)
+				error("Ignoring unrecognized --send-libs value '%s'",
+				      optarg);
+			else if (ret)
+				params.flags |= BCAST_FLAG_SEND_LIBS;
+			else if (params.flags & BCAST_FLAG_SEND_LIBS)
+				params.flags &= ~BCAST_FLAG_SEND_LIBS;
 			break;
 		case (int) 's':
 			params.block_size = _map_size(optarg);
@@ -251,6 +279,8 @@ static void _print_options( void )
 					params.selected_step));
 	info("preserve   = %s",
 	     (params.flags & BCAST_FLAG_PRESERVE) ? "true" : "false");
+	info("send_libs  = %s",
+	     (params.flags & BCAST_FLAG_SEND_LIBS) ? "true" : "false");
 	info("timeout    = %d", params.timeout);
 	info("verbose    = %d", params.verbose);
 	info("source     = %s", params.src_fname);
@@ -261,7 +291,7 @@ static void _print_options( void )
 
 static void _usage( void )
 {
-	printf("Usage: sbcast [-CfFjpvV] SOURCE DEST\n");
+	printf("Usage: sbcast [-CfFjpvV] [--send-libs] SOURCE DEST\n");
 }
 
 static void _help( void )
@@ -273,6 +303,7 @@ Usage: sbcast [OPTIONS] SOURCE DEST\n\
   -F, --fanout=num      specify message fanout\n\
   -j, --jobid=#[+#][.#] specify job ID with optional hetjob offset and/or step ID\n\
   -p, --preserve        preserve modes and times of source file\n\
+  --send-libs[=yes|no]  autodetect and broadcast executable's shared objects\n\
   -s, --size=num        block size in bytes (rounded off)\n\
   -t, --timeout=secs    specify message timeout (seconds)\n\
   -v, --verbose         provide detailed event logging\n\

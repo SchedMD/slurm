@@ -188,6 +188,8 @@ extern uint64_t parse_resv_flags(const char *flagstr, const char *msg,
 
 extern uint16_t parse_compress_type(const char *arg);
 
+extern int parse_send_libs(const char *arg);
+
 extern int validate_acctg_freq(char *acctg_freq);
 
 /*
