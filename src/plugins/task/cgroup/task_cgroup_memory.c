@@ -48,21 +48,21 @@ static bool constrain_ram_space;
 static bool constrain_kmem_space;
 static bool constrain_swap_space;
 
-static float allowed_ram_space;   /* Allowed RAM in percent       */
-static float allowed_swap_space;  /* Allowed Swap percent         */
-static float allowed_kmem_space;  /* Allowed Kmem number          */
+static float allowed_ram_space;   /* Allowed RAM in percent */
+static float allowed_swap_space;  /* Allowed Swap percent */
+static float allowed_kmem_space;  /* Allowed Kmem number */
 static float max_kmem_percent;	   /* Allowed Kernel memory percent*/
 
-static uint64_t max_kmem;       /* Upper bound for kmem.limit_in_bytes  */
-static uint64_t max_ram;        /* Upper bound for memory.limit_in_bytes  */
-static uint64_t max_swap;       /* Upper bound for swap                   */
-static uint64_t totalram;       /* Total real memory available on node    */
-static uint64_t min_ram_space;  /* Don't constrain RAM below this value   */
-static uint64_t min_kmem_space; /* Don't constrain Kernel mem below       */
+static uint64_t max_kmem;       /* Upper bound for kmem.limit_in_bytes */
+static uint64_t max_ram;        /* Upper bound for memory.limit_in_bytes */
+static uint64_t max_swap;       /* Upper bound for swap */
+static uint64_t totalram;       /* Total real memory available on node */
+static uint64_t min_ram_space;  /* Don't constrain RAM below this value */
+static uint64_t min_kmem_space; /* Don't constrain Kernel mem below */
 
 static bool oom_mgr_started = false;
 
-static uint64_t percent_in_bytes (uint64_t mb, float percent)
+static uint64_t percent_in_bytes(uint64_t mb, float percent)
 {
 	return ((mb * 1024 * 1024) * (percent / 100.0));
 }
@@ -92,7 +92,7 @@ extern int task_cgroup_memory_init(void)
 	 * It will help to construct the mem+swp value that will be
 	 * used for both mem and mem+swp limit during memcg creation.
 	 */
-	if ( constrain_ram_space )
+	if (constrain_ram_space)
 		allowed_ram_space = slurm_cgroup_conf.allowed_ram_space;
 	else
 		allowed_ram_space = 100.0;
@@ -157,10 +157,8 @@ extern int task_cgroup_memory_fini()
 	return cgroup_g_step_destroy(CG_MEMORY);
 }
 
-/*
- *  Return configured memory limit in bytes given a memory limit in MB.
- */
-static uint64_t mem_limit_in_bytes (uint64_t mem, bool with_allowed)
+/* Return configured memory limit in bytes given a memory limit in MB. */
+static uint64_t mem_limit_in_bytes(uint64_t mem, bool with_allowed)
 {
 	/*
 	 *  If mem == 0 then assume there was no Slurm limit imposed
@@ -171,58 +169,65 @@ static uint64_t mem_limit_in_bytes (uint64_t mem, bool with_allowed)
 		mem = totalram * 1024 * 1024;
 	else {
 		if (with_allowed)
-			mem = percent_in_bytes (mem, allowed_ram_space);
+			mem = percent_in_bytes(mem, allowed_ram_space);
 		else
 			mem = percent_in_bytes(mem, 100.0);
 	}
+
 	if (mem < min_ram_space)
-		return (min_ram_space);
+		return min_ram_space;
+
 	if (mem > max_ram)
-		return (max_ram);
-	return (mem);
+		return max_ram;
+
+	return mem;
 }
 
 /*
  *  Return configured swap limit in bytes given a memory limit in MB.
  *
- *   Swap limit is calculated as:
- *
- *     mem_limit_in_bytes + (configured_swap_percent * allocated_mem_in_bytes)
+ *  Swap limit is calculated as:
+ *  mem_limit_in_bytes + (configured_swap_percent * allocated_mem_in_bytes)
  */
-static uint64_t swap_limit_in_bytes (uint64_t mem)
+static uint64_t swap_limit_in_bytes(uint64_t mem)
 {
 	uint64_t swap;
-	/*
-	 *  If mem == 0 assume "unlimited" and use totalram.
-	 */
-	swap = percent_in_bytes (mem ? mem : totalram, allowed_swap_space);
-	mem = mem_limit_in_bytes (mem, true) + swap;
+
+	/* If mem == 0 assume "unlimited" and use totalram. */
+	swap = percent_in_bytes(mem ? mem : totalram, allowed_swap_space);
+	mem = mem_limit_in_bytes(mem, true) + swap;
+
 	if (mem < min_ram_space)
-		return (min_ram_space);
+		return min_ram_space;
+
 	if (mem > max_swap)
-		return (max_swap);
-	return (mem);
+		return max_swap;
+
+	return mem;
 }
 
 /*
  * Return kmem memory limit in bytes given a memory limit in bytes.
  * If Kmem space is disabled, it set to max percent of its RAM usage.
  */
-static uint64_t kmem_limit_in_bytes (uint64_t mlb)
+static uint64_t kmem_limit_in_bytes(uint64_t mlb)
 {
 	uint64_t totalKmem = mlb * (max_kmem_percent / 100.0);
 
-	if ( allowed_kmem_space < 0 ) {	/* Initial value */
-		if ( mlb > totalKmem )
+	if (allowed_kmem_space < 0) {	/* Initial value */
+		if (mlb > totalKmem)
 			return totalKmem;
-		if ( mlb < min_kmem_space )
+		if (mlb < min_kmem_space)
 			return min_kmem_space;
 		return mlb;
 	}
-	if ( allowed_kmem_space > totalKmem )
+
+	if (allowed_kmem_space > totalKmem)
 		return totalKmem;
-	if ( allowed_kmem_space < min_kmem_space )
+
+	if (allowed_kmem_space < min_kmem_space)
 		return min_kmem_space;
+
 	return allowed_kmem_space;
 }
 
@@ -240,17 +245,20 @@ static int _memcg_initialize(stepd_step_rec_t *job, uint64_t mem_limit,
 		 * the hard limit, otherwise the hard one will take precedence.
 		 */
 		debug2("Setting memory soft limit (%"PRIu64" bytes) to the same value as memory limit (%"PRIu64" bytes) for %s",
-		       mlb_soft, mlb, is_step ? "step" : "job" );
+		       mlb_soft, mlb, is_step ? "step" : "job");
 		mlb_soft = mlb;
 	}
 
 	memset(&limits, 0, sizeof(limits));
 
-	/* when RAM space has not to be constrained and we are here, it
-	 * means that only Swap space has to be constrained. Thus set
-	 * RAM space limit to the mem+swap limit too */
-	if ( ! constrain_ram_space )
+	/*
+	 * When RAM space has not to be constrained and we are here, it means
+	 * that only Swap space has to be constrained. Thus set RAM space limit
+	 * to the mem+swap limit too.
+	 */
+	if (!constrain_ram_space)
 		mlb = mls;
+
 	limits.limit_in_bytes = mlb;
 	limits.soft_limit_in_bytes = mlb_soft;
 	limits.kmem_limit_in_bytes = NO_VAL64;
@@ -259,8 +267,8 @@ static int _memcg_initialize(stepd_step_rec_t *job, uint64_t mem_limit,
 	if (constrain_kmem_space)
 		limits.kmem_limit_in_bytes = kmem_limit_in_bytes(mlb);
 
-	/* this limit has to be set only if ConstrainSwapSpace is set to yes */
-	if ( constrain_swap_space ) {
+	/* This limit has to be set only if ConstrainSwapSpace is set to yes. */
+	if (constrain_swap_space) {
 		limits.memsw_limit_in_bytes = mls;
 		info ("%s: alloc=%luMB mem.limit=%luMB "
 		      "memsw.limit=%luMB", is_step ? "step" : "job",
