@@ -102,6 +102,8 @@ HIGHLIGHTS
  -- Any return code from SPANK plugin or SPANK function that is not
     SLURM_SUCCESS (zero) will be considered to be an error. Previously, only
     negative return codes were considered an error.
+ -- Add support for automatically detecting and broadcasting executable shared
+    object dependencies for sbcast and srun --bcast.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
@@ -121,6 +123,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- systemd service files - add new '-s' option to each daemon which will
     change the working directory even with the -D option. (Ensures any core
     files are placed in an accessible location, rather than /.)
+ -- Added BcastParameters=send_libs and BcastExclude options.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
@@ -150,6 +153,7 @@ COMMAND CHANGES (see man pages for details)
  -- scrontab - add ability to update crontab from a file or standard input.
  -- scrontab - added ability to set and expand variables.
  -- Make srun sensitive to BcastParameters.
+ -- Added sbcast/srun --send-libs, sbcast --exclude and srun --bcast-exclude.
 
 API CHANGES
 ===========
