@@ -179,7 +179,6 @@ documents those changes that are of interest to users and administrators.
  -- Fix SLURM_NODE_ALIASES to work for ipv6 node addrs.
  -- Add support for automatically detecting and broadcasting executable shared
     object dependencies for sbcast and srun --bcast.
- -- First constrain step then job on task/cgroup cpuset plugin.
 
 * Changes in Slurm 20.11.9
 ==========================
