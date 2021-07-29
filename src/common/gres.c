@@ -293,7 +293,8 @@ static int	_valid_gres_type(char *gres_name, gres_node_state_t *gres_data,
 static void _parse_tres_bind(uint16_t accel_bind_type, char *tres_bind_str,
 			     tres_bind_t *tres_bind);
 static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
-			    tres_bind_t *tres_bind, bitstr_t **usable_gres_ptr,
+			    pid_t pid, tres_bind_t *tres_bind,
+			    bitstr_t **usable_gres_ptr,
 			    bitstr_t *gres_bit_alloc,  bool get_devices);
 
 extern uint32_t gres_build_id(char *name)
@@ -8091,7 +8092,7 @@ static int _accumulate_gres_device(void *x, void *arg)
 
 extern List gres_g_get_devices(List gres_list, bool is_job,
 			       uint16_t accel_bind_type, char *tres_bind_str,
-			       int local_proc_id)
+			       int local_proc_id, pid_t pid)
 {
 	int j;
 	ListIterator dev_itr;
@@ -8160,8 +8161,9 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 		}
 
 		if (_get_usable_gres(gres_context[j].gres_name, j,
-				     local_proc_id, &tres_bind, &usable_gres,
-				     gres_bit_alloc, true) == SLURM_ERROR)
+				     local_proc_id, pid, &tres_bind,
+				     &usable_gres, gres_bit_alloc,
+				     true) == SLURM_ERROR)
 			continue;
 
 		dev_itr = list_iterator_create(gres_devices);
@@ -9180,6 +9182,7 @@ static void _translate_local_to_global_device_index(bitstr_t **usable_gres,
  * if the job step has access to the entire node's resources.
  */
 static bitstr_t *_get_usable_gres_cpu_affinity(int context_inx,
+					       pid_t pid,
 					       bitstr_t *gres_bit_alloc,
 				     	       bool get_devices)
 {
@@ -9206,10 +9209,10 @@ static bitstr_t *_get_usable_gres_cpu_affinity(int context_inx,
 
 	CPU_ZERO(&mask);
 #ifdef __FreeBSD__
-	rc = cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, -1,
+	rc = cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_PID, pid ? pid : -1,
 				sizeof(mask), &mask);
 #else
-	rc = sched_getaffinity(0, sizeof(mask), &mask);
+	rc = sched_getaffinity(pid, sizeof(mask), &mask);
 #endif
 	if (rc) {
 		error("sched_getaffinity error: %m");
@@ -9577,7 +9580,8 @@ static void _parse_tres_bind(uint16_t accel_bind_type, char *tres_bind_str,
 }
 
 static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
-			    tres_bind_t *tres_bind, bitstr_t **usable_gres_ptr,
+			    pid_t pid, tres_bind_t *tres_bind,
+			    bitstr_t **usable_gres_ptr,
 			    bitstr_t *gres_bit_alloc,  bool get_devices)
 {
 	bitstr_t *usable_gres;
@@ -9602,7 +9606,7 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 				false, get_devices);
 		} else if (tres_bind->bind_gpu) {
 			usable_gres = _get_usable_gres_cpu_affinity(
-				context_inx, gres_bit_alloc, get_devices);
+				context_inx, pid, gres_bit_alloc, get_devices);
 			_filter_usable_gres(usable_gres,
 					    tres_bind->tasks_per_gres,
 					    proc_id);
@@ -9623,7 +9627,7 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 	} else if (!xstrcmp(gres_name, "nic")) {
 		if (tres_bind->bind_nic)
 			usable_gres = _get_usable_gres_cpu_affinity(
-				context_inx, gres_bit_alloc, get_devices);
+				context_inx, pid, gres_bit_alloc, get_devices);
 		else
 			return SLURM_ERROR;
 	} else {
@@ -9725,7 +9729,7 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 			_accumulate_step_gres_alloc(
 				gres_ptr, &gres_bit_alloc, &gres_cnt);
 		}
-		if (_get_usable_gres(gres_ctx.gres_name, i, local_proc_id,
+		if (_get_usable_gres(gres_ctx.gres_name, i, local_proc_id, 0,
 				     &tres_bind, &usable_gres, gres_bit_alloc,
 				     false) == SLURM_ERROR)
 			continue;
