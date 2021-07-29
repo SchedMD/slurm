@@ -1331,7 +1331,6 @@ static int _parse_gres_config_node(void **dest, slurm_parser_enum_t type,
 		{"Count", S_P_STRING},	/* Number of Gres available */
 		{"CPUs" , S_P_STRING},	/* CPUs to bind to Gres resource */
 		{"Cores", S_P_STRING},	/* Cores to bind to Gres resource */
-		{"EnvVars", S_P_STRING}, /* Restrict which env vars are set */
 		{"File",  S_P_STRING},	/* Path to Gres device */
 		{"Files",  S_P_STRING},	/* Path to Gres device */
 		{"Flags", S_P_STRING},	/* GRES Flags */
