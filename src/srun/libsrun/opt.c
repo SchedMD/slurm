@@ -534,6 +534,7 @@ env_vars_t env_vars[] = {
   { "SLURM_ACCOUNT", 'A' },
   { "SLURM_ACCTG_FREQ", LONG_OPT_ACCTG_FREQ },
   { "SLURM_BCAST", LONG_OPT_BCAST },
+  { "SLURM_BCAST_EXCLUDE", LONG_OPT_BCAST_EXCLUDE },
   { "SLURM_BURST_BUFFER", LONG_OPT_BURST_BUFFER_SPEC },
   { "SLURM_CLUSTERS", 'M' },
   { "SLURM_CLUSTER_CONSTRAINT", LONG_OPT_CLUSTER_CONSTRAINT },
@@ -1463,7 +1464,8 @@ static void _usage(void)
 "            [--switches=max-switches{@max-time-to-wait}] [--reboot]\n"
 "            [--core-spec=cores] [--thread-spec=threads]\n"
 "            [--bb=burst_buffer_spec] [--bbf=burst_buffer_file]\n"
-"            [--bcast=<dest_path>] [--send-libs[=y|n]] [--compress[=library]]\n"
+"            [--bcast=<dest_path>] [--bcast-exclude=<NONE|path1,...,pathN>]\n"
+"            [--send-libs[=y|n]] [--compress[=library]]\n"
 "            [--acctg-freq=<datatype>=<interval>] [--delay-boot=mins]\n"
 "            [-w hosts...] [-x hosts...] [--use-min-nodes]\n"
 "            [--mpi-combine=yes|no] [--het-group=value]\n"
@@ -1490,6 +1492,7 @@ static void _help(void)
 "      --bb=<spec>             burst buffer specifications\n"
 "      --bbf=<file_name>       burst buffer specification file\n"
 "      --bcast=<dest_path>     Copy executable file to compute nodes\n"
+"      --bcast-exclude=<paths> Shared object directory paths to exclude\n"
 "  -b, --begin=time            defer job until HH:MM MM/DD/YY\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "      --comment=name          arbitrary comment\n"

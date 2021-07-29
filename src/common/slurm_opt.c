@@ -698,6 +698,44 @@ static slurm_cli_opt_t slurm_opt_bcast = {
 	.reset_each_pass = true,
 };
 
+static int arg_set_bcast_exclude(slurm_opt_t *opt, const char *arg)
+{
+	if (!opt->srun_opt)
+		return SLURM_ERROR;
+
+	xfree(opt->srun_opt->bcast_exclude);
+	opt->srun_opt->bcast_exclude = xstrdup(arg);
+
+	return SLURM_SUCCESS;
+}
+static char *arg_get_bcast_exclude(slurm_opt_t *opt)
+{
+	if (!opt->srun_opt)
+		return xstrdup("invalid-context");
+
+	if (opt->srun_opt->bcast_exclude)
+		return xstrdup(opt->srun_opt->bcast_exclude);
+
+	return NULL;
+}
+static void arg_reset_bcast_exclude(slurm_opt_t *opt)
+{
+	if (opt->srun_opt) {
+		xfree(opt->srun_opt->bcast_exclude);
+		opt->srun_opt->bcast_exclude =
+			xstrdup(slurm_conf.bcast_exclude);
+	}
+}
+static slurm_cli_opt_t slurm_opt_bcast_exclude = {
+	.name = "bcast-exclude",
+	.has_arg = required_argument,
+	.val = LONG_OPT_BCAST_EXCLUDE,
+	.set_func_srun = arg_set_bcast_exclude,
+	.get_func = arg_get_bcast_exclude,
+	.reset_func = arg_reset_bcast_exclude,
+	.reset_each_pass = true,
+};
+
 static int arg_set_begin(slurm_opt_t *opt, const char *arg)
 {
 	if (!(opt->begin = parse_time(arg, 0))) {
@@ -5005,6 +5043,7 @@ static const slurm_cli_opt_t *common_options[] = {
 	&slurm_opt_argv,
 	&slurm_opt_batch,
 	&slurm_opt_bcast,
+	&slurm_opt_bcast_exclude,
 	&slurm_opt_begin,
 	&slurm_opt_bell,
 	&slurm_opt_bb,

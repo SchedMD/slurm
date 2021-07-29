@@ -742,6 +742,7 @@ static void _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 		if (sep)
 			sep[0] = ',';
 	}
+	params->exclude = xstrdup(srun_opt->bcast_exclude);
 	if (srun_opt->bcast_file && (srun_opt->bcast_file[0] == '/')) {
 		params->dst_fname = xstrdup(srun_opt->bcast_file);
 	} else if ((tmp = xstrcasestr(slurm_conf.bcast_parameters,
@@ -782,6 +783,7 @@ static void _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 
 	slurm_destroy_selected_step(params->selected_step);
 	xfree(params->dst_fname);
+	xfree(params->exclude);
 	xfree(params->src_fname);
 	xfree(params);
 }

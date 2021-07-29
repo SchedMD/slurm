@@ -76,6 +76,7 @@ enum {
 	LONG_OPT_ARGV,
 	LONG_OPT_BATCH,
 	LONG_OPT_BCAST,
+	LONG_OPT_BCAST_EXCLUDE,
 	LONG_OPT_BELL,
 	LONG_OPT_BLRTS_IMAGE,
 	LONG_OPT_BURST_BUFFER_FILE,
@@ -236,6 +237,7 @@ typedef struct {
 
 	uint16_t accel_bind_type;	/* --accel-bind			*/
 	char *alloc_nodelist;		/* grabbed from the environment	*/
+	char *bcast_exclude;		/* --bcast-exclude */
 	char *bcast_file;		/* --bcast, copy executable to compute nodes */
 	bool bcast_flag;		/* --bcast, copy executable to compute nodes */
 	char *cmd_name;			/* name of command to execute	*/
