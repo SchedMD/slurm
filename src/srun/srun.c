@@ -123,7 +123,7 @@ typedef struct _launch_app_data
 /*
  * forward declaration of static funcs
  */
-static int   _file_bcast(slurm_opt_t *opt_local, srun_job_t *job);
+static void  _file_bcast(slurm_opt_t *opt_local, srun_job_t *job);
 static void  _launch_app(srun_job_t *job, List srun_job_list, bool got_alloc);
 static void *_launch_one_app(void *data);
 static void  _pty_restore(void);
@@ -718,18 +718,16 @@ static void _setup_job_env(srun_job_t *job, List srun_job_list, bool got_alloc)
 	}
 }
 
-static int _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
+static void _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 {
 	srun_opt_t *srun_opt = opt_local->srun_opt;
 	struct bcast_parameters *params;
-	int rc;
 	char *sep = NULL, *tmp = NULL;
 	xassert(srun_opt);
 
-	if ((srun_opt->argc == 0) || (srun_opt->argv[0] == NULL)) {
-		error("No command name to broadcast");
-		return SLURM_ERROR;
-	}
+	if ((srun_opt->argc == 0) || (srun_opt->argv[0] == NULL))
+		fatal("No command name to broadcast");
+
 	params = xmalloc(sizeof(struct bcast_parameters));
 	params->block_size = 8 * 1024 * 1024;
 	if (srun_opt->compress) {
@@ -771,21 +769,21 @@ static int _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 	else
 		params->selected_step->het_job_offset = NO_VAL;
 	params->flags |= BCAST_FLAG_PRESERVE;
-	params->src_fname = srun_opt->argv[0];
+	params->src_fname = xstrdup(srun_opt->argv[0]);
 	params->timeout = 0;
 	params->verbose = 0;
 
-	rc = bcast_file(params);
-	if (rc == SLURM_SUCCESS) {
-		xfree(srun_opt->argv[0]);
-		srun_opt->argv[0] = params->dst_fname;
-	} else {
-		xfree(params->dst_fname);
-	}
-	slurm_destroy_selected_step(params->selected_step);
-	xfree(params);
+	if (bcast_file(params) != SLURM_SUCCESS)
+		fatal("Failed to broadcast '%s'. Step launch aborted.",
+		      params->src_fname);
 
-	return rc;
+//	xfree(srun_opt->argv[0]);
+//	srun_opt->argv[0] = xstrdup(params->dst_fname);
+
+	slurm_destroy_selected_step(params->selected_step);
+	xfree(params->dst_fname);
+	xfree(params->src_fname);
+	xfree(params);
 }
 
 static int _slurm_debug_env_val (void)
