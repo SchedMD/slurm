@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 21.08.0rc2
+=============================
+
 * Changes in Slurm 21.08.0rc1
 =============================
  -- slurmrestd - add v0.0.37 OpenAPI plugin.
