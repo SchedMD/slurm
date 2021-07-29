@@ -1,8 +1,8 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
-* Changes in Slurm 21.08.0pre1
-==============================
+* Changes in Slurm 21.08.0rc1
+=============================
  -- slurmrestd - add v0.0.37 OpenAPI plugin.
  -- slurmrestd/v0.0.37 - rename standard_in -> standard_input.
  -- slurmrestd/v0.0.37 - rename standard_out -> standard_output.
