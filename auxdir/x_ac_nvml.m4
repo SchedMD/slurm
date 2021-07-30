@@ -20,7 +20,16 @@ AC_DEFUN([X_AC_NVML],
       # Check indirectly that CUDA 11.1+ was installed to see if we
       # can build NVML MIG code. Do this by checking for the existence of
       # nvmlVgpuTypeGetGpuInstanceProfileId in libnvidia-ml.so.
+      # Afterwards we also check to make sure the nvml.h file is also correct
+      # just to avoid a mismatch (which has been seen in some ubuntu installs).
       AC_CHECK_LIB([nvidia-ml], [nvmlVgpuTypeGetGpuInstanceProfileId], [ac_mig_support=yes], [ac_mig_support=no])
+      if [ test "$ac_mig_support" = "yes" ]; then
+          $as_unset ac_cv_header_nvml_h
+	  AC_CHECK_HEADERS([nvml.h], [ac_mig_support=yes], [ac_mig_support=no], [NVML_DEVICE_UUID_V2_BUFFER_SIZE])
+	  if [ test "$ac_mig_support" = "no" ]; then
+	      AC_MSG_WARN([nvml.h is not 11.1+ but libnvidia-ml is (mismatch). You likely have multiple versions of CUDA installed and nvml.h is pointing at the older while the lib is the newer. Can not support MIG.])
+	  fi
+      fi
   }
 
   _x_ac_nvml_dirs="/usr/local/cuda /usr/cuda"
