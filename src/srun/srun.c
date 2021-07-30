@@ -778,8 +778,8 @@ static void _file_bcast(slurm_opt_t *opt_local, srun_job_t *job)
 		fatal("Failed to broadcast '%s'. Step launch aborted.",
 		      params->src_fname);
 
-//	xfree(srun_opt->argv[0]);
-//	srun_opt->argv[0] = xstrdup(params->dst_fname);
+	xfree(srun_opt->argv[0]);
+	srun_opt->argv[0] = xstrdup(params->dst_fname);
 
 	slurm_destroy_selected_step(params->selected_step);
 	xfree(params->dst_fname);

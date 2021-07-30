@@ -19,6 +19,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix miscounting of GPU envs in prolog/epilog if MultipleFiles was used.
  -- Support MIGs in prolog/epilog's CUDA_VISIBLE_DEVICES & co.
  -- Add SLURM_JOB_GPUS back into Prolog; add it to Epilog.
+ -- Fix issue where the original executable, not the bcast'd version, was
+    executed with 'srun --bcast'.
 
 * Changes in Slurm 21.08.0rc1
 =============================
