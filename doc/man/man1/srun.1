@@ -2198,9 +2198,11 @@ was not specified.
 \fB\-\-send\-libs\fR[=\fIyes|no\fR]
 If set to \fIyes\fR (or no argument), autodetect and broadcast the executable's
 shared object dependencies to allocated compute nodes. The files are placed in
-a directory alongside the executable. This overrides the default behavior
-configured in slurm.conf \fBSbcastParameters send_libs\fR. This option only
-works in conjunction with \fB\-\-bcast\fR. See also \fB\-\-bcast\-exclude\fR.
+a directory alongside the executable. The \fBLD_LIBRARY_PATH\fR is automatically
+updated to include this cache directory as well. This overrides the default
+behavior configured in slurm.conf \fBSbcastParameters send_libs\fR. This option
+only works in conjunction with \fB\-\-bcast\fR. See also
+\fB\-\-bcast\-exclude\fR.
 
 .TP
 \fB\-\-signal\fR=[R:]<\fIsig_num\fR>[@<\fIsig_time\fR>]
