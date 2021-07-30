@@ -111,19 +111,20 @@ end:
 
 extern int fini(void)
 {
-	int rc[3] = {0};
+	int rc = SLURM_SUCCESS;
 
-	if (use_cpuset)
-		rc[0] = task_cgroup_cpuset_fini();
+	if (use_cpuset && (task_cgroup_cpuset_fini() != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
 
-	if (use_memory)
-		rc[1] = task_cgroup_memory_fini();
+	if (use_memory && (task_cgroup_memory_fini() != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
 
-	if (use_devices)
-		rc[2] = task_cgroup_devices_fini();
+	if (use_devices && (task_cgroup_devices_fini() != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
 
 	debug("%s unloaded", plugin_name);
-	return MAX(rc[0], MAX(rc[1], rc[2]));
+
+	return rc;
 }
 
 extern int task_p_slurmd_batch_request(batch_job_launch_msg_t *req)
@@ -154,18 +155,18 @@ extern int task_p_slurmd_resume_job(uint32_t job_id)
  */
 extern int task_p_pre_setuid(stepd_step_rec_t *job)
 {
-	int rc[3] = {0};
+	int rc = SLURM_SUCCESS;
 
-	if (use_cpuset)
-		rc[0] = task_cgroup_cpuset_create(job);
+	if (use_cpuset && (task_cgroup_cpuset_create(job) != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
 
-	if (use_memory)
-		rc[1] = task_cgroup_memory_create(job);
+	if (use_memory && (task_cgroup_memory_create(job) != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
 
-	if (use_devices)
-		rc[2] = task_cgroup_devices_create(job);
+	if (use_devices && (task_cgroup_devices_create(job) != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
 
-	return MAX(rc[0], MAX(rc[1], rc[2]));
+	return rc;
 }
 
 /*
@@ -174,19 +175,23 @@ extern int task_p_pre_setuid(stepd_step_rec_t *job)
  */
 extern int task_p_pre_launch_priv(stepd_step_rec_t *job, uint32_t taskid)
 {
-	int rc[3] = {0};
+	int rc = SLURM_SUCCESS;
 
-	if (use_cpuset)
-		rc[0] = task_cgroup_cpuset_add_pid(job->task[taskid]->pid);
+	if (use_cpuset && (task_cgroup_cpuset_add_pid(job->task[taskid]->pid)
+			   != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
 
-	if (use_memory)
-		rc[1] = task_cgroup_memory_add_pid(job->task[taskid]->pid);
+	if (use_memory && (task_cgroup_memory_add_pid(job->task[taskid]->pid)
+			   != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
 
-	if (use_devices)
-		rc[2] = task_cgroup_devices_add_pid(job, job->task[taskid]->pid,
-						    taskid);
+	if (use_devices && (task_cgroup_devices_add_pid(job,
+							job->task[taskid]->pid,
+							taskid)
+			    != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
 
-	return MAX(rc[0], MAX(rc[1], rc[2]));
+	return rc;
 }
 
 /*
@@ -232,16 +237,17 @@ extern int task_p_post_step(stepd_step_rec_t *job)
 /* Add pid to specific cgroup. */
 extern int task_p_add_pid(pid_t pid)
 {
-	int rc[3] = {0};
+	int rc = SLURM_SUCCESS;
 
-	if (use_cpuset)
-		rc[0] = task_cgroup_cpuset_add_pid(pid);
+	if (use_cpuset && (task_cgroup_cpuset_add_pid(pid) != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
 
-	if (use_memory)
-		rc[1] = task_cgroup_memory_add_pid(pid);
+	if (use_memory && (task_cgroup_memory_add_pid(pid) != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
 
-	if (use_devices)
-		rc[2] = task_cgroup_devices_add_extern_pid(pid);
+	if (use_devices &&
+	    (task_cgroup_devices_add_extern_pid(pid) != SLURM_SUCCESS))
+		rc = SLURM_ERROR;
 
-	return MAX(rc[0], MAX(rc[1], rc[2]));
+	return rc;
 }
