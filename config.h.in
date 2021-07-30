@@ -172,9 +172,6 @@
 /* Define to 1 if NVML library found */
 #undef HAVE_NVML
 
-/* Define to 1 if you have the <nvml.h> header file. */
-#undef HAVE_NVML_H
-
 /* Define to 1 if ofed library found */
 #undef HAVE_OFED
 
