@@ -21389,6 +21389,8 @@ fi
       # Check indirectly that CUDA 11.1+ was installed to see if we
       # can build NVML MIG code. Do this by checking for the existence of
       # nvmlVgpuTypeGetGpuInstanceProfileId in libnvidia-ml.so.
+      # Afterwards we also check to make sure the nvml.h file is also correct
+      # just to avoid a mismatch (which has been seen in some ubuntu installs).
       { $as_echo "$as_me:${as_lineno-$LINENO}: checking for nvmlVgpuTypeGetGpuInstanceProfileId in -lnvidia-ml" >&5
 $as_echo_n "checking for nvmlVgpuTypeGetGpuInstanceProfileId in -lnvidia-ml... " >&6; }
 if ${ac_cv_lib_nvidia_ml_nvmlVgpuTypeGetGpuInstanceProfileId+:} false; then :
@@ -21431,6 +21433,28 @@ else
   ac_mig_support=no
 fi
 
+      if  test "$ac_mig_support" = "yes" ; then
+          $as_unset ac_cv_header_nvml_h
+	  for ac_header in nvml.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "nvml.h" "ac_cv_header_nvml_h" "NVML_DEVICE_UUID_V2_BUFFER_SIZE
+"
+if test "x$ac_cv_header_nvml_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_NVML_H 1
+_ACEOF
+ ac_mig_support=yes
+else
+  ac_mig_support=no
+fi
+
+done
+
+	  if  test "$ac_mig_support" = "no" ; then
+	      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: nvml.h is not 11.1+ but libnvidia-ml is (mismatch). You likely have multiple versions of CUDA installed and nvml.h is pointing at the older while the lib is the newer. Can not support MIG." >&5
+$as_echo "$as_me: WARNING: nvml.h is not 11.1+ but libnvidia-ml is (mismatch). You likely have multiple versions of CUDA installed and nvml.h is pointing at the older while the lib is the newer. Can not support MIG." >&2;}
+	  fi
+      fi
   }
 
   _x_ac_nvml_dirs="/usr/local/cuda /usr/cuda"
@@ -21473,6 +21497,7 @@ $as_echo "$as_me: WARNING: support for nvml disabled" >&2;}
           CPPFLAGS="-I$d/include $CPPFLAGS"
           $as_unset ac_cv_header_nvml_h
           $as_unset ac_cv_lib_nvidia_ml_nvmlInit
+          $as_unset ac_cv_lib_nvidia_ml_nvmlVgpuTypeGetGpuInstanceProfileId
 
           func_check_path
 
