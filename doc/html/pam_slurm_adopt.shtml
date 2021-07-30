@@ -14,13 +14,13 @@ originated the ssh connection. The user's connection is "adopted" into the
 <h3>Source:</h3>
 
 <p>In your Slurm build directory, navigate to slurm/contribs/pam_slurm_adopt/
-and run
+and run</p>
 
 <pre>make &amp;&amp; make install</pre>
 
-as root. This will place pam_slurm_adopt.a,
-pam_slurm_adopt.la, and pam_slurm_adopt.so in /lib/security/ (on Debian
-systems) or /lib64/security/ (on RedHat/SuSE systems).</p>
+<p>as root. This will place pam_slurm_adopt.a, pam_slurm_adopt.la,
+and pam_slurm_adopt.so in /lib/security/ (on Debian systems) or
+/lib64/security/ (on RedHat/SuSE systems).</p>
 
 <h3>RPM:</h3>
 
