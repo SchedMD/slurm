@@ -211,21 +211,24 @@ extern int acct_gather_reconfig(void)
 
 extern int acct_gather_conf_destroy(void)
 {
-	int rc, rc2;
+	int rc = SLURM_SUCCESS;
 
 	if (!inited)
 		return SLURM_SUCCESS;
 
 	inited = false;
 
-	rc = acct_gather_energy_fini();
+	if (acct_gather_energy_fini() != SLURM_SUCCESS)
+		rc = SLURM_ERROR;
 
-	rc2 = acct_gather_filesystem_fini();
-	rc = MAX(rc, rc2);
-	rc2 = acct_gather_interconnect_fini();
-	rc = MAX(rc, rc2);
-	rc2 = acct_gather_profile_fini();
-	rc = MAX(rc, rc2);
+	if (acct_gather_filesystem_fini() != SLURM_SUCCESS)
+		rc = SLURM_ERROR;
+
+	if (acct_gather_interconnect_fini() != SLURM_SUCCESS)
+		rc = SLURM_ERROR;
+
+	if (acct_gather_profile_fini() != SLURM_SUCCESS)
+		rc = SLURM_ERROR;
 
 	FREE_NULL_BUFFER(acct_gather_options_buf);
 
