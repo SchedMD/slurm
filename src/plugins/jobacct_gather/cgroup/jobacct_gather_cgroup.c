@@ -219,7 +219,7 @@ extern int jobacct_gather_p_endpoll(void)
 
 extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
-	int rc[2];
+	int rc = SLURM_SUCCESS;
 
 	if (is_first_task) {
 		/* Only do once in this plugin */
@@ -235,10 +235,13 @@ extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 		is_first_task = false;
 	}
 
-	rc[0] = cgroup_g_task_addto(CG_CPUACCT, jobacct_id->job, pid,
-				    jobacct_id->taskid);
-	rc[1] = cgroup_g_task_addto(CG_MEMORY, jobacct_id->job, pid,
-				    jobacct_id->taskid);
+	if (cgroup_g_task_addto(CG_CPUACCT, jobacct_id->job, pid,
+				jobacct_id->taskid) != SLURM_SUCCESS)
+		rc = SLURM_ERROR;
 
-	return MAX(rc[0], rc[1]);
+	if (cgroup_g_task_addto(CG_MEMORY, jobacct_id->job, pid,
+				jobacct_id->taskid) != SLURM_SUCCESS)
+		rc = SLURM_ERROR;
+
+	return rc;
 }
