@@ -589,8 +589,6 @@ static int _bcast_shared_objects(struct bcast_parameters *params)
 	char *save_dst = params->dst_fname;
 	char *save_src = params->src_fname;
 
-	xassert(params);
-
 	memset(&args, 0, sizeof(args));
 	lib_paths = list_create(xfree_ptr);
 	if ((rc = _get_lib_paths(params->src_fname, lib_paths)) !=
