@@ -239,23 +239,18 @@ DISPLAY variable.</dd>
 
 </dd>
 
-<dl>
 <dt><b>log_level</b></dt>
 <dd>See <a href="https://slurm.schedmd.com/slurm.conf.html#OPT_SlurmdDebug">
 SlurmdDebug</a> in slurm.conf for available options.
 The default log_level is <b>info</b>.
 </dd>
-</dl>
 
-<dl>
 <dt><b>nodename</b></dt>
 <dd>If the NodeName defined in <b>slurm.conf</b> is different than this node's
 hostname (as reported by <b>hostname -s</b>), then this must be set to the
 NodeName in <b>slurm.conf</b> that this host operates as.
 </dd>
-</dl>
 
-<dl>
 <dt><b>service</b></dt>
 <dd>The pam service name for which this module should run. By default
 it only runs for sshd for which it was designed for. A
@@ -266,7 +261,6 @@ issues. Therefore if the service name does not match then this
 module will not perform the adoption logic and returns
 PAM_IGNORE immediately.
 </dd>
-</dl>
 
 </dl>
 
