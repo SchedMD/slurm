@@ -303,14 +303,74 @@ on the source node, such as on a login node, it is better to have the RPC be
 rejected rather than silently dropped. This will allow better responsiveness to
 the RPC initiator.</p>
 
+<h3>SELinux</h3>
+
+<p>SELinux may conflict with pam_slurm_adopt, but it is generally possible for
+them to work side by side. This is an example type enforcement file that was
+used on a fairly stock Debian system. It is provided to give some direction
+and to show what is required to get this working but may require additional
+modification.</p>
+
+<pre>
+module pam_slurm_adopt 1.0;
+
+require {
+	type sshd_t;
+	type var_spool_t;
+	type unconfined_t;
+	type initrc_var_run_t;
+	class sock_file write;
+	class dir { read search };
+	class unix_stream_socket connectto;
+}
+
+#============= sshd_t ==============
+allow sshd_t initrc_var_run_t:dir search;
+allow sshd_t initrc_var_run_t:sock_file write;
+allow sshd_t unconfined_t:unix_stream_socket connectto;
+allow sshd_t var_spool_t:dir read;
+allow sshd_t var_spool_t:sock_file write;
+</pre>
+
+<p>It is possible for some plugins to require more permissions than this.
+Notably, job_container/tmpfs will require something more like this:</p>
+
+<pre>
+module pam_slurm_adopt 1.0;
+
+require {
+	type nsfs_t;
+	type var_spool_t;
+	type initrc_var_run_t;
+	type unconfined_t;
+	type sshd_t;
+	class sock_file write;
+	class dir { read search };
+	class unix_stream_socket connectto;
+	class fd use;
+	class file read;
+	class capability sys_admin;
+}
+
+#============= sshd_t ==============
+allow sshd_t initrc_var_run_t:dir search;
+allow sshd_t initrc_var_run_t:sock_file write;
+allow sshd_t nsfs_t:file read;
+allow sshd_t unconfined_t:fd use;
+allow sshd_t unconfined_t:unix_stream_socket connectto;
+allow sshd_t var_spool_t:dir read;
+allow sshd_t var_spool_t:sock_file write;
+allow sshd_t self:capability sys_admin;
+</pre>
+
 <h2><a name="LIMITATIONS">Limitations</a></h2>
 
 <p>Alternate authentication methods such as multi-factor authentication may
 break process adoption with pam_slurm_adopt.</p>
 
-<p>SELinux may conflict with pam_slurm_adopt, so it might need to be
-disabled.</p>
+<p>When using SELinux support in Slurm, the session started via pam_slurm_adopt
+won't necessarily be in the same context as the job it is associated with.</p>
 
-<p style="text-align:center;">Last modified 29 April 2019</p>
+<p style="text-align:center;">Last modified 9 August 2021</p>
 
 <!--#include virtual="footer.txt"-->
