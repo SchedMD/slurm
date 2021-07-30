@@ -192,6 +192,12 @@ typedef struct {
 	slurm_step_id_t *step_id;
 } foreach_gres_cnt_t;
 
+typedef struct {
+	bitstr_t **gres_bit_alloc;
+	bool is_job;
+	uint32_t plugin_id;
+} foreach_gres_accumulate_device_t;
+
 /* Pointers to functions in src/slurmd/common/xcpuinfo.h that we may use */
 typedef struct xcpuinfo_funcs {
 	int (*xcpuinfo_abs_to_mac) (char *abs, char **mac);
@@ -8063,15 +8069,32 @@ static int _find_device(void *x, void *key)
 	return 0;
 }
 
+static int _accumulate_gres_device(void *x, void *arg)
+{
+	gres_state_t *gres_ptr = x;
+	foreach_gres_accumulate_device_t *args = arg;
+
+	if (gres_ptr->plugin_id != args->plugin_id)
+		return 0;
+
+	if (args->is_job) {
+		_accumulate_job_gres_alloc(gres_ptr, 0, args->gres_bit_alloc,
+					   NULL);
+	} else {
+		_accumulate_step_gres_alloc(gres_ptr, args->gres_bit_alloc,
+					    NULL);
+	}
+
+	return 0;
+}
+
 extern List gres_g_get_devices(List gres_list, bool is_job,
 			       uint16_t accel_bind_type, char *tres_bind_str,
 			       int local_proc_id)
 {
 	int j;
-	ListIterator gres_itr, dev_itr;
-	gres_state_t *gres_ptr;
-	bitstr_t **local_bit_alloc = NULL;
-	uint32_t node_cnt;
+	ListIterator dev_itr;
+	bitstr_t *gres_bit_alloc = NULL;
 	gres_device_t *gres_device;
 	List gres_devices;
 	List device_list = NULL;
@@ -8115,36 +8138,17 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 		memset(&tres_bind, 0, sizeof(tres_bind));
 
 	slurm_mutex_lock(&gres_context_lock);
-	gres_itr = list_iterator_create(gres_list);
-	while ((gres_ptr = list_next(gres_itr))) {
-		for (j = 0; j < gres_context_cnt; j++) {
-			if (gres_ptr->plugin_id == gres_context[j].plugin_id)
-				break;
-		}
+	for (j = 0; j < gres_context_cnt; j++) {
+		/* We need to get a gres_bit_alloc with all the gres types
+		 * merged (accumulated) together */
+		foreach_gres_accumulate_device_t args = {
+			.gres_bit_alloc = &gres_bit_alloc,
+			.is_job = is_job,
+			.plugin_id = gres_context[j].plugin_id,
+			};
+		(void) list_for_each(gres_list, _accumulate_gres_device, &args);
 
-		if (j >= gres_context_cnt) {
-			error("We were unable to find the gres in the context!!!  This should never happen");
-			continue;
-		}
-
-		if (!gres_ptr->gres_data)
-			continue;
-
-		if (is_job) {
-			gres_job_state_t *gres_data_ptr =
-				(gres_job_state_t *)gres_ptr->gres_data;
-			local_bit_alloc = gres_data_ptr->gres_bit_alloc;
-			node_cnt = gres_data_ptr->node_cnt;
-		} else {
-			gres_step_state_t *gres_data_ptr =
-				(gres_step_state_t *)gres_ptr->gres_data;
-			local_bit_alloc = gres_data_ptr->gres_bit_alloc;
-			node_cnt = gres_data_ptr->node_cnt;
-		}
-
-		if ((node_cnt != 1) ||
-		    !local_bit_alloc ||
-		    !local_bit_alloc[0] ||
+		if (!gres_bit_alloc ||
 		    !gres_context[j].ops.get_devices)
 			continue;
 
@@ -8156,12 +8160,12 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 
 		if (_get_usable_gres(gres_context[j].gres_name, j,
 				     local_proc_id, &tres_bind, &usable_gres,
-				     *local_bit_alloc, true) == SLURM_ERROR)
+				     gres_bit_alloc, true) == SLURM_ERROR)
 			continue;
 
 		dev_itr = list_iterator_create(gres_devices);
 		while ((gres_device = list_next(dev_itr))) {
-			if (!bit_test(local_bit_alloc[0], gres_device->index))
+			if (!bit_test(gres_bit_alloc, gres_device->index))
 				continue;
 
 			if (!usable_gres ||
@@ -8186,9 +8190,9 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 			}
 		}
 		list_iterator_destroy(dev_itr);
+		FREE_NULL_BITMAP(gres_bit_alloc);
 		FREE_NULL_BITMAP(usable_gres);
 	}
-	list_iterator_destroy(gres_itr);
 	slurm_mutex_unlock(&gres_context_lock);
 
 	return device_list;
