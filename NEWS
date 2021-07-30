@@ -3,6 +3,7 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 21.08.0rc2
 =============================
+ -- Load bf_when_last_cycle from job state only if protocol version >= 21.08.
 
 * Changes in Slurm 21.08.0rc1
 =============================

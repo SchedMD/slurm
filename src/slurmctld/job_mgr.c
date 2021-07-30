@@ -1199,9 +1199,11 @@ extern int load_all_job_state(void)
 		job_id_sequence = MAX(saved_job_id, job_id_sequence);
 	debug3("Job id in job_state header is %u", saved_job_id);
 
-	safe_unpack_time(&buf_time, buffer); /* bf_when_last_cycle */
-	if (!slurmctld_diag_stats.bf_when_last_cycle)
-		slurmctld_diag_stats.bf_when_last_cycle = buf_time;
+	if (protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+		safe_unpack_time(&buf_time, buffer); /* bf_when_last_cycle */
+		if (!slurmctld_diag_stats.bf_when_last_cycle)
+			slurmctld_diag_stats.bf_when_last_cycle = buf_time;
+	}
 
 	/*
 	 * Previously we locked the tres read lock before this loop.  It turned
