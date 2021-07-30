@@ -294,7 +294,6 @@ static int _memcg_initialize(stepd_step_rec_t *job, uint64_t mem_limit,
 
 	return SLURM_SUCCESS;
 fail:
-	cgroup_g_step_destroy(CG_MEMORY);
 	return SLURM_ERROR;
 }
 

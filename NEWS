@@ -7,6 +7,8 @@ documents those changes that are of interest to users and administrators.
     --gpu-bind=closest does. This removal of this behavior only was in rc2.
  -- slurmd - Fix assert failure on initialization due to bad node name.
  -- Fix error codes in cgroup/v1.
+ -- Don't destroy the memory step outside fini, which leads to a double destroy
+    causing an error message.
 
 * Changes in Slurm 21.08.0rc2
 =============================
