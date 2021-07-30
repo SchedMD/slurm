@@ -4021,7 +4021,7 @@ proc node_list_to_range {nodes_list} {
 	global scontrol
 
 	set comalist [join $nodes_list ,]
-	set hostlist [run_command_output -fail "$scontrol show hostlist $comalist"]
+	set hostlist [run_command_output -nolog -fail "$scontrol show hostlist $comalist"]
 	set hostlist [string trimright $hostlist "\r\n"]
 }
 
@@ -4045,10 +4045,10 @@ proc node_list_to_range {nodes_list} {
 #
 ################################################################
 
-proc list_to_range {range_expression} {
-	set node_range_expression \[$range_expression\]
-	set range_list [node_list_to_range $node_range_expression]
-	return $range_list
+proc list_to_range {numeric_list} {
+	set node_range_expression [node_list_to_range $numeric_list]
+	set range_expression [regsub {^\[(.*)\]$} $node_range_expression {\1}]
+	return $range_expression
 }
 
 
@@ -4074,7 +4074,7 @@ proc node_range_to_list {node_range_expression} {
 	global scontrol
 
 	set node_list [list]
-	set output [run_command_output -fail "$scontrol show hostnames $node_range_expression"]
+	set output [run_command_output -nolog -fail "$scontrol show hostnames $node_range_expression"]
 	foreach line [split $output "\n"] {
 		if {$line eq ""} {
 			break
