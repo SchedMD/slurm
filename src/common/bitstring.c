@@ -610,37 +610,37 @@ bit_equal(bitstr_t *b1, bitstr_t *b2)
 
 
 /*
- * b1 &= b2
+ * b1 &= b2 as many bits as both bitstr_t have
  *   b1 (IN/OUT)	first string
  *   b2 (IN)		second bitstring
  */
 void
 bit_and(bitstr_t *b1, bitstr_t *b2)
 {
-	bitoff_t bit;
+	bitoff_t bit, bit_cnt;
 
 	_assert_bitstr_valid(b1);
 	_assert_bitstr_valid(b2);
-	xassert(_bitstr_bits(b1) >= _bitstr_bits(b2));
 
-	for (bit = 0; bit < _bitstr_bits(b2); bit += sizeof(bitstr_t)*8)
+	bit_cnt = MIN(_bitstr_bits(b1), _bitstr_bits(b2));
+	for (bit = 0; bit < bit_cnt; bit += sizeof(bitstr_t)*8)
 		b1[_bit_word(bit)] &= b2[_bit_word(bit)];
 }
 
 /*
- * b1 &= ~b2
+ * b1 &= ~b2 as many bits as both bitstr_t have
  * b1 (IN/OUT)
  * b2 (IN)
  */
 void bit_and_not(bitstr_t *b1, bitstr_t *b2)
 {
-	bitoff_t bit;
+	bitoff_t bit, bit_cnt;
 
 	_assert_bitstr_valid(b1);
 	_assert_bitstr_valid(b2);
-	xassert(_bitstr_bits(b1) >= _bitstr_bits(b2));
 
-	for (bit = 0; bit < _bitstr_bits(b2); bit += sizeof(bitstr_t)*8)
+	bit_cnt = MIN(_bitstr_bits(b1), _bitstr_bits(b2));
+	for (bit = 0; bit < bit_cnt; bit += sizeof(bitstr_t)*8)
 		b1[_bit_word(bit)] &= ~b2[_bit_word(bit)];
 }
 
@@ -660,37 +660,37 @@ bit_not(bitstr_t *b)
 }
 
 /*
- * b1 |= b2
+ * b1 |= b2 as many bits as both bitstr_t have
  *   b1 (IN/OUT)	first bitmap
  *   b2 (IN)		second bitmap
  */
 void
 bit_or(bitstr_t *b1, bitstr_t *b2)
 {
-	bitoff_t bit;
+	bitoff_t bit, bit_cnt;
 
 	_assert_bitstr_valid(b1);
 	_assert_bitstr_valid(b2);
-	xassert(_bitstr_bits(b1) >= _bitstr_bits(b2));
 
-	for (bit = 0; bit < _bitstr_bits(b2); bit += sizeof(bitstr_t)*8)
+	bit_cnt = MIN(_bitstr_bits(b1), _bitstr_bits(b2));
+	for (bit = 0; bit < bit_cnt; bit += sizeof(bitstr_t)*8)
 		b1[_bit_word(bit)] |= b2[_bit_word(bit)];
 }
 
 /*
- * b1 |= ~b2
+ * b1 |= ~b2 as many bits as both bitstr_t have
  * b1 (IN/OUT)
  * b2 (IN)
  */
 void bit_or_not(bitstr_t *b1, bitstr_t *b2)
 {
-	bitoff_t bit;
+	bitoff_t bit, bit_cnt;
 
 	_assert_bitstr_valid(b1);
 	_assert_bitstr_valid(b2);
-	xassert(_bitstr_bits(b1) >= _bitstr_bits(b2));
 
-	for (bit = 0; bit < _bitstr_bits(b2); bit += sizeof(bitstr_t)*8)
+	bit_cnt = MIN(_bitstr_bits(b1), _bitstr_bits(b2));
+	for (bit = 0; bit < bit_cnt; bit += sizeof(bitstr_t)*8)
 		b1[_bit_word(bit)] |= ~b2[_bit_word(bit)];
 }
 
