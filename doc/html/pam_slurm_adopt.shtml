@@ -9,7 +9,7 @@ the job is completed. This module does this by determining the job which
 originated the ssh connection. The user's connection is "adopted" into the
 "external" step of the job.</p>
 
-<h2><a name="INSTALLATION">Installation</a></h2>
+<h2><a id="INSTALLATION">Installation</a></h2>
 
 <h3>Source:</h3>
 
@@ -29,7 +29,7 @@ pam_slurm_adopt. Refer to the
 <a href="https://slurm.schedmd.com/quickstart_admin.html">Quick Start
 Administrator Guide</a> for instructions on managing an RPM-based install.</p>
 
-<h2><a name="PAM_CONFIG">PAM Configuration</a></h2>
+<h2><a id="PAM_CONFIG">PAM Configuration</a></h2>
 
 <p>Add the following line to the appropriate file in /etc/pam.d, such as
 system-auth or sshd (you may use either the "required" or "sufficient" PAM
@@ -106,7 +106,7 @@ account    required      pam_slurm_adopt.so
 
 <p>When access is denied, the user will receive a relevant error message.</p>
 
-<h2><a name="OPTIONS">pam_slurm_adopt Module Options</a></h2>
+<h2><a id="OPTIONS">pam_slurm_adopt Module Options</a></h2>
 
 <p>
 This module is configurable. Add these options to the end of the pam_slurm_adopt
@@ -270,7 +270,7 @@ PAM_IGNORE immediately.
 
 </dl>
 
-<h2><a name="SLURM_CONFIG">Slurm Configuration</a></h2>
+<h2><a id="SLURM_CONFIG">Slurm Configuration</a></h2>
 
 <p><b>PrologFlags=contain</b> must be set in the slurm.conf. This sets up the
 "extern" step into which ssh-launched processes will be adopted. You must also
@@ -289,7 +289,7 @@ attempts without <b>PrologFlags=contain.</b></p>
 <p>The <b>UsePAM</b> option in slurm.conf is not related to pam_slurm_adopt.</p>
 
 
-<h2><a name="OTHER_CONFIG">Other Configuration</a></h2>
+<h2><a id="OTHER_CONFIG">Other Configuration</a></h2>
 
 <p>Verify that <b>UsePAM</b> is set to <b>On</b> in /etc/ssh/sshd_config (it
 should be on by default).</p>
@@ -363,7 +363,7 @@ allow sshd_t var_spool_t:sock_file write;
 allow sshd_t self:capability sys_admin;
 </pre>
 
-<h2><a name="LIMITATIONS">Limitations</a></h2>
+<h2><a id="LIMITATIONS">Limitations</a></h2>
 
 <p>Alternate authentication methods such as multi-factor authentication may
 break process adoption with pam_slurm_adopt.</p>
