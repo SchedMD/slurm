@@ -125,6 +125,11 @@ expect {
 }
 
 send "exit\r"
+expect {
+	eof {
+		wait
+	}
+}
 
 if {$exec_cnt != $node_cnt} {
 	log_error "Executable count != node count ($exec_cnt != $node_cnt)"
