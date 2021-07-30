@@ -119,17 +119,17 @@ account sufficient pam_slurm_adopt.so optionname=optionvalue
 
 <p>This module has the following options:</p>
 
-<dl compact>
+<dl>
 
 <dt><b>action_no_jobs</b></dt>
 <dd>
 The action to perform if the user has no jobs on the node. Configurable
 values are:
 
-<dl compact>
+<dl>
 <dt></dt>
 <dd>
-<dl compact>
+<dl>
   <dt><b>ignore</b></dt>
 <dd>Do nothing. Fall through to the next pam module.</dd>
 <dt><b>deny</b> (default)</dt>
@@ -147,10 +147,10 @@ the RPC does not locate the source job. If the RPC mechanism works properly in
 your environment, this option will likely be relevant <b>only</b> when
 connecting from a login node. Configurable values are:
 
-<dl compact>
+<dl>
 <dt></dt>
 <dd>
-<dl compact>
+<dl>
 <dt><b>newest</b> (default)</dt>
 <dd>Pick the newest job on the node. The "newest" job is chosen based
 on the mtime of the job's step_extern cgroup; asking Slurm would
@@ -180,10 +180,10 @@ identified by the callerid RPC, it will fall through to the action_unknown
 code and try to adopt there. A failure at that point or if there is only
 one job will result in this action being taken. Configurable values are:
 
-<dl compact>
+<dl>
 <dt></dt>
 <dd>
-<dl compact>
+<dl>
 <dt><b>allow</b> (default)</dt>
 <dd>Let the connection through without adoption. <b>WARNING: This value is
 insecure and is recommended for testing purposes only. We recommend using
@@ -201,10 +201,10 @@ insecure and is recommended for testing purposes only. We recommend using
 inability to talk to the local <i>slurmd</i> or if the kernel doesn't offer
 the correct facilities. Configurable values are:
 
-<dl compact>
+<dl>
 <dt></dt>
 <dd>
-<dl compact>
+<dl>
 <dt><b>ignore</b> (default)</dt>
 <dd>Do nothing. Fall through to the next pam module. <b>WARNING: This value is
 insecure and is recommended for testing purposes only. We recommend using
@@ -222,10 +222,10 @@ insecure and is recommended for testing purposes only. We recommend using
 <dt><b>disable_x11</b></dt>
 <dd>Turn off Slurm built-in X11 forwarding support. Configurable values are:
 
-<dl compact>
+<dl>
 <dt></dt>
 <dd>
-<dl compact>
+<dl>
 <dt><b>0</b> (default)</dt>
 <dd>If the job the connection is adopted into has Slurm's X11 forwarding
 enabled, the DISPLAY variable will be overwritten with the X11 tunnel
@@ -239,7 +239,7 @@ DISPLAY variable.</dd>
 
 </dd>
 
-<dl compact>
+<dl>
 <dt><b>log_level</b></dt>
 <dd>See <a href="https://slurm.schedmd.com/slurm.conf.html#OPT_SlurmdDebug">
 SlurmdDebug</a> in slurm.conf for available options.
@@ -247,7 +247,7 @@ The default log_level is <b>info</b>.
 </dd>
 </dl>
 
-<dl compact>
+<dl>
 <dt><b>nodename</b></dt>
 <dd>If the NodeName defined in <b>slurm.conf</b> is different than this node's
 hostname (as reported by <b>hostname -s</b>), then this must be set to the
@@ -255,7 +255,7 @@ NodeName in <b>slurm.conf</b> that this host operates as.
 </dd>
 </dl>
 
-<dl compact>
+<dl>
 <dt><b>service</b></dt>
 <dd>The pam service name for which this module should run. By default
 it only runs for sshd for which it was designed for. A
