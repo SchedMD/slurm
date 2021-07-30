@@ -809,14 +809,18 @@ extern cgroup_limits_t *cgroup_p_root_constrain_get(cgroup_ctl_type_t sub)
 	case CG_TRACK:
 		break;
 	case CG_CPUS:
-		rc = common_cgroup_get_param(&g_root_cg[CG_CPUS], "cpuset.cpus",
-					     &limits->allow_cores,
-					     &limits->cores_size);
+		if (common_cgroup_get_param(&g_root_cg[CG_CPUS], "cpuset.cpus",
+					    &limits->allow_cores,
+					    &limits->cores_size)
+		    != SLURM_SUCCESS)
+			rc = SLURM_ERROR;
 
-		rc += common_cgroup_get_param(&g_root_cg[CG_CPUS],
-					      "cpuset.mems",
-					      &limits->allow_mems,
-					      &limits->mems_size);
+		if (common_cgroup_get_param(&g_root_cg[CG_CPUS],
+					    "cpuset.mems",
+					    &limits->allow_mems,
+					    &limits->mems_size)
+		    != SLURM_SUCCESS)
+			rc = SLURM_ERROR;
 
 		if (limits->cores_size > 0)
 			limits->allow_cores[(limits->cores_size)-1] = '\0';
@@ -933,11 +937,15 @@ extern int cgroup_p_user_constrain_set(cgroup_ctl_type_t sub,
 	case CG_TRACK:
 		break;
 	case CG_CPUS:
-		rc = common_cgroup_set_param(&g_user_cg[CG_CPUS], "cpuset.cpus",
-					     limits->allow_cores);
-		rc += common_cgroup_set_param(&g_user_cg[CG_CPUS],
-					      "cpuset.mems",
-					      limits->allow_mems);
+		if (common_cgroup_set_param(&g_user_cg[CG_CPUS], "cpuset.cpus",
+					    limits->allow_cores)
+		    != SLURM_SUCCESS)
+			rc = SLURM_ERROR;
+		if (common_cgroup_set_param(&g_user_cg[CG_CPUS],
+					    "cpuset.mems",
+					    limits->allow_mems)
+		    != SLURM_SUCCESS)
+			rc = SLURM_ERROR;
 		break;
 	case CG_MEMORY:
 		break;
@@ -965,41 +973,57 @@ extern int cgroup_p_job_constrain_set(cgroup_ctl_type_t sub,
 	case CG_TRACK:
 		break;
 	case CG_CPUS:
-		rc = common_cgroup_set_param(&g_job_cg[CG_CPUS], "cpuset.cpus",
-					     limits->allow_cores);
-		rc += common_cgroup_set_param(&g_job_cg[CG_CPUS], "cpuset.mems",
-					      limits->allow_mems);
+		if (common_cgroup_set_param(&g_job_cg[CG_CPUS], "cpuset.cpus",
+					    limits->allow_cores)
+		    != SLURM_SUCCESS)
+			rc = SLURM_ERROR;
+		if (common_cgroup_set_param(&g_job_cg[CG_CPUS], "cpuset.mems",
+					    limits->allow_mems)
+		    != SLURM_SUCCESS)
+			rc = SLURM_ERROR;
 		break;
 	case CG_MEMORY:
-		rc = common_cgroup_set_uint64_param(&g_job_cg[CG_MEMORY],
-						    "memory.limit_in_bytes",
-						    limits->limit_in_bytes);
-		rc += common_cgroup_set_uint64_param(
-			&g_job_cg[CG_MEMORY],
-			"memory.soft_limit_in_bytes",
-			limits->soft_limit_in_bytes);
+		if (common_cgroup_set_uint64_param(&g_job_cg[CG_MEMORY],
+						   "memory.limit_in_bytes",
+						   limits->limit_in_bytes)
+		    != SLURM_SUCCESS)
+			rc = SLURM_ERROR;
+		if (common_cgroup_set_uint64_param(
+			    &g_job_cg[CG_MEMORY],
+			    "memory.soft_limit_in_bytes",
+			    limits->soft_limit_in_bytes) != SLURM_SUCCESS)
+			rc = SLURM_ERROR;
 
 		if (limits->kmem_limit_in_bytes != NO_VAL64)
-			rc += common_cgroup_set_uint64_param(
-				&g_job_cg[CG_MEMORY],
-				"memory.kmem.limit_in_bytes",
-				limits->kmem_limit_in_bytes);
+			if (common_cgroup_set_uint64_param(
+				    &g_job_cg[CG_MEMORY],
+				    "memory.kmem.limit_in_bytes",
+				    limits->kmem_limit_in_bytes)
+			    != SLURM_SUCCESS)
+				rc = SLURM_ERROR;
 
 		if (limits->memsw_limit_in_bytes != NO_VAL64)
-			rc += common_cgroup_set_uint64_param(
-				&g_job_cg[CG_MEMORY],
-				"memory.memsw.limit_in_bytes",
-				limits->memsw_limit_in_bytes);
+			if (common_cgroup_set_uint64_param(
+				    &g_job_cg[CG_MEMORY],
+				    "memory.memsw.limit_in_bytes",
+				    limits->memsw_limit_in_bytes)
+			    != SLURM_SUCCESS)
+				rc = SLURM_ERROR;
 		break;
 	case CG_DEVICES:
-		if (limits->allow_device)
-			rc = common_cgroup_set_param(&g_job_cg[CG_DEVICES],
-						     "devices.allow",
-						     limits->device_major);
-		else
-			rc = common_cgroup_set_param(&g_job_cg[CG_DEVICES],
-						     "devices.deny",
-						     limits->device_major);
+		if (limits->allow_device) {
+			if (common_cgroup_set_param(&g_job_cg[CG_DEVICES],
+						    "devices.allow",
+						    limits->device_major)
+			    != SLURM_SUCCESS)
+				rc = SLURM_ERROR;
+		} else {
+			if (common_cgroup_set_param(&g_job_cg[CG_DEVICES],
+						    "devices.deny",
+						    limits->device_major)
+			    != SLURM_SUCCESS)
+				rc = SLURM_ERROR;
+		}
 		break;
 	default:
 		error("cgroup subsystem %u not supported", sub);
@@ -1026,11 +1050,16 @@ extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
 	case CG_TRACK:
 		break;
 	case CG_CPUS:
-		rc = common_cgroup_set_param(&g_step_cg[CG_CPUS], "cpuset.cpus",
-					     limits->allow_cores);
-		rc += common_cgroup_set_param(&g_step_cg[CG_CPUS],
-					      "cpuset.mems",
-					      limits->allow_mems);
+		if (common_cgroup_set_param(&g_step_cg[CG_CPUS], "cpuset.cpus",
+					    limits->allow_cores)
+		    != SLURM_SUCCESS)
+			rc = SLURM_ERROR;
+
+		if (common_cgroup_set_param(&g_step_cg[CG_CPUS],
+					    "cpuset.mems",
+					    limits->allow_mems)
+		    != SLURM_SUCCESS)
+			rc = SLURM_ERROR;
 #ifdef HAVE_NATIVE_CRAY
 		/*
 		 * on Cray systems, set the expected usage in bytes.
@@ -1039,41 +1068,56 @@ extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
 		snprintf(expected_usage, sizeof(expected_usage), "%"PRIu64,
 			 (uint64_t)job->step_mem * 1024 * 1024);
 
-		rc += common_cgroup_set_param(&g_step_cg[CG_CPUS],
-					      "cpuset.expected_usage_in_bytes",
-					      expected_usage);
+		if (common_cgroup_set_param(&g_step_cg[CG_CPUS],
+					    "cpuset.expected_usage_in_bytes",
+					    expected_usage) != SLURM_SUCCESS)
+			rc = SLURM_ERROR;
 #endif
 		break;
 	case CG_MEMORY:
-		rc = common_cgroup_set_uint64_param(&g_step_cg[CG_MEMORY],
-						    "memory.limit_in_bytes",
-						    limits->limit_in_bytes);
-		rc += common_cgroup_set_uint64_param(
-			&g_step_cg[CG_MEMORY],
-			"memory.soft_limit_in_bytes",
-			limits->soft_limit_in_bytes);
+		if (common_cgroup_set_uint64_param(&g_step_cg[CG_MEMORY],
+						   "memory.limit_in_bytes",
+						   limits->limit_in_bytes)
+		    != SLURM_SUCCESS)
+			rc = SLURM_ERROR;
+
+		if (common_cgroup_set_uint64_param(
+			    &g_step_cg[CG_MEMORY],
+			    "memory.soft_limit_in_bytes",
+			    limits->soft_limit_in_bytes)
+		    != SLURM_SUCCESS)
+			rc = SLURM_ERROR;
 
 		if (limits->kmem_limit_in_bytes != NO_VAL64)
-			rc += common_cgroup_set_uint64_param(
-				&g_step_cg[CG_MEMORY],
-				"memory.kmem.limit_in_bytes",
-				limits->kmem_limit_in_bytes);
+			if (common_cgroup_set_uint64_param(
+				    &g_step_cg[CG_MEMORY],
+				    "memory.kmem.limit_in_bytes",
+				    limits->kmem_limit_in_bytes)
+			    != SLURM_SUCCESS)
+				rc = SLURM_ERROR;
 
 		if (limits->memsw_limit_in_bytes != NO_VAL64)
-			rc += common_cgroup_set_uint64_param(
-				&g_step_cg[CG_MEMORY],
-				"memory.memsw.limit_in_bytes",
-				limits->memsw_limit_in_bytes);
+			if (common_cgroup_set_uint64_param(
+				    &g_step_cg[CG_MEMORY],
+				    "memory.memsw.limit_in_bytes",
+				    limits->memsw_limit_in_bytes)
+			    != SLURM_SUCCESS)
+				rc = SLURM_ERROR;
 		break;
 	case CG_DEVICES:
-		if (limits->allow_device)
-			rc = common_cgroup_set_param(&g_step_cg[CG_DEVICES],
-						     "devices.allow",
-						     limits->device_major);
-		else
-			rc = common_cgroup_set_param(&g_step_cg[CG_DEVICES],
-						     "devices.deny",
-						     limits->device_major);
+		if (limits->allow_device) {
+			if (common_cgroup_set_param(&g_step_cg[CG_DEVICES],
+						    "devices.allow",
+						    limits->device_major)
+			    != SLURM_SUCCESS)
+				rc = SLURM_ERROR;
+		} else {
+			if (common_cgroup_set_param(&g_step_cg[CG_DEVICES],
+						    "devices.deny",
+						    limits->device_major)
+			    != SLURM_SUCCESS)
+				rc = SLURM_ERROR;
+		}
 		break;
 	default:
 		error("cgroup subsystem %u not supported", sub);
