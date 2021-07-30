@@ -55,5 +55,10 @@ subtest {[regexp "Cores: \(\\d+\)" $out {} cores] || \
 
 regexp "Job Wall-clock time: 00:00:\(\\d+\)" $out {} wall_clock_time
 subtest {[tolerance 10 $wall_clock_time +7]} "Wall time should be close to 10s" "${wall_clock_time}s not in tolerance range of 10s"
-set cpu_time [expr $cores * $wall_clock_time]
-subtest {[regexp -line "CPU Efficiency: 0.00% of 00:00:$cpu_time core-walltime" $out]} "Job efficiency should be 0.00% of (Cores * Wall-clock time = $cpu_time) core-walltime"
+set cpu_s [expr $cores * $wall_clock_time]
+set cpu_d [expr int(floor($cpu_s / (24*60))) ]
+set cpu_s [expr $cpu_s - ($cpu_d*24*60) ]
+set cpu_h [expr int(floor($cpu_s / 60)) ]
+set cpu_s [expr $cpu_s - ($cpu_h*60) ]
+set cpu_time_str [format "%02d:%02d:%02d" $cpu_d $cpu_h $cpu_s]
+subtest {[regexp -line "CPU Efficiency: 0.00% of $cpu_time_str core-walltime" $out]} "Job efficiency should be 0.00% of $cpu_time_str core-walltime"
