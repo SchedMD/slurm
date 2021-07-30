@@ -170,7 +170,7 @@ static int _file_bcast(struct bcast_parameters *params,
 	List ret_list = NULL;
 	ListIterator itr;
 	ret_data_info_t *ret_data_info = NULL;
-	int rc = 0, msg_rc;
+	int rc = SLURM_SUCCESS, msg_rc;
 	slurm_msg_t msg;
 
 	slurm_msg_t_init(&msg);
@@ -196,7 +196,7 @@ static int _file_bcast(struct bcast_parameters *params,
 		error("REQUEST_FILE_BCAST(%s): %s",
 		      ret_data_info->node_name,
 		      slurm_strerror(msg_rc));
-		rc = MAX(rc, msg_rc);
+		rc = msg_rc;
 	}
 	list_iterator_destroy(itr);
 	FREE_NULL_LIST(ret_list);
