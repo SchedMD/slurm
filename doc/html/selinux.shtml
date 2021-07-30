@@ -118,6 +118,14 @@ end
 will set the admin comment to show what context we will try to set for the job.
 </p>
 
-<p style="text-align:center;">Last modified 27 July 2021</p>
+<h2><a id="NOTES">Notes</a></h2>
+
+<p>If you wish to use pam_slurm_adopt with SELinux, see the
+<a href=pam_slurm_adopt.html>pam_slurm_adopt</a> documentation for hints on how
+to get this working. Note that that when using this feature and
+pam_slurm_adopt at the same time that the ssh session may not land in the same
+context as the job.</p>
+
+<p style="text-align:center;">Last modified 9 August 2021</p>
 
 <!--#include virtual="footer.txt"-->
