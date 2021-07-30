@@ -537,9 +537,9 @@ static int _foreach_shared_object(void *x, void *y)
 		return -1;
 	}
 
-	verbose("Broadcast shared object src:'%s' dst:'%s' succeeded (%d/%d)",
-		args->params->src_fname, args->params->dst_fname,
-		++args->bcast_sent_cnt, args->bcast_total_cnt);
+	verbose("Broadcast of shared object '%s' to destination cache directory succeeded (%d/%d)",
+		args->params->src_fname, ++args->bcast_sent_cnt,
+		args->bcast_total_cnt);
 
 	return 0;
 }
