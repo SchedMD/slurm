@@ -1832,11 +1832,15 @@ static long _diff_tv_str(struct timeval *tv1, struct timeval *tv2)
 static void _handle_intr(srun_job_t *job)
 {
 	static struct timeval last_intr = { 0, 0 };
-	static struct timeval last_intr_sent = { 0, 0 };
 	struct timeval now;
 
 	gettimeofday(&now, NULL);
-	if (!sropt.quit_on_intr && (_diff_tv_str(&last_intr, &now) > 1000000)) {
+	if (sropt.quit_on_intr || _diff_tv_str(&last_intr, &now) < 1000000) {
+		info("sending Ctrl-C to %ps", &job->step_id);
+		launch_g_fwd_signal(SIGINT);
+		job_force_termination(job);
+		launch_g_fwd_signal(SIGKILL);
+	} else {
 		if (sropt.disable_status) {
 			info("sending Ctrl-C to %ps", &job->step_id);
 			launch_g_fwd_signal(SIGINT);
@@ -1848,23 +1852,6 @@ static void _handle_intr(srun_job_t *job)
 			launch_g_print_status();
 		}
 		last_intr = now;
-	} else  { /* second Ctrl-C in half as many seconds */
-		update_job_state(job, SRUN_JOB_CANCELLED);
-		/* terminate job */
-		if (job->state < SRUN_JOB_FORCETERM) {
-			if (_diff_tv_str(&last_intr_sent, &now) < 1000000) {
-				job_force_termination(job);
-				launch_g_fwd_signal(SIGKILL);
-				return;
-			}
-
-			info("sending Ctrl-C to %ps", &job->step_id);
-			last_intr_sent = now;
-			launch_g_fwd_signal(SIGINT);
-		} else
-			job_force_termination(job);
-
-		launch_g_fwd_signal(SIGKILL);
 	}
 }
 

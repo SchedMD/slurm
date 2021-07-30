@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
  -- SPANK plugins are now required to match the current Slurm version, and must
     be recompiled for each new Slurm release.
  -- node_features/helpers - add ExecTime configuration option.
+ -- srun - Fix force termination with -X.
 
 * Changes in Slurm 21.08.0rc2
 =============================
