@@ -1614,8 +1614,9 @@ job_force_termination(srun_job_t *job)
 
 	if (kill_sent == 0) {
 		info("forcing job termination");
-		/* Sends SIGKILL to tasks directly */
-		update_job_state(job, SRUN_JOB_FORCETERM);
+		/* Send SIGKILL to tasks directly */
+		update_job_state(job, SRUN_JOB_CANCELLED);
+		launch_g_fwd_signal(SIGKILL);
 	} else {
 		time_t now = time(NULL);
 		if (last_msg != now) {
@@ -1839,16 +1840,12 @@ static void _handle_intr(srun_job_t *job)
 		info("sending Ctrl-C to %ps", &job->step_id);
 		launch_g_fwd_signal(SIGINT);
 		job_force_termination(job);
-		launch_g_fwd_signal(SIGKILL);
 	} else {
 		if (sropt.disable_status) {
 			info("sending Ctrl-C to %ps", &job->step_id);
 			launch_g_fwd_signal(SIGINT);
-		} else if (job->state < SRUN_JOB_FORCETERM) {
+		} else if (job->state < SRUN_JOB_CANCELLED) {
 			info("interrupt (one more within 1 sec to abort)");
-			launch_g_print_status();
-		} else {
-			info("interrupt (abort already in progress)");
 			launch_g_print_status();
 		}
 		last_intr = now;

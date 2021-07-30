@@ -59,7 +59,6 @@ typedef enum {
 	SRUN_JOB_STARTING,         /* Launch thread is complete             */
 	SRUN_JOB_RUNNING,          /* Launch thread complete                */
 	SRUN_JOB_CANCELLED,        /* CTRL-C cancelled                      */
-	SRUN_JOB_FORCETERM         /* Forced termination of IO thread       */
 } srun_job_state_t;
 
 enum io_t {
