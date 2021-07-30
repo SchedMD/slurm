@@ -38,199 +38,182 @@ set limit_fsize      674515
 set limit_nofile     1016
 set limit_nproc      34500
 set limit_stack      5021
-set matches          0
 
 proc cleanup {} {
-	global bin_rm file_err file_in file_prog_get file_out
-
-	exec $bin_rm -f $file_err $file_in $file_prog_get $file_out
+	global file_err file_in file_prog_get file_out
+	file delete $file_err $file_in $file_prog_get $file_out
 }
 
 if {[get_config_param "FrontendName"] ne "MISSING" && ![is_super_user]} {
 	skip "This test is incompatible with front-end systems"
 }
+if {[get_config_param "PropagateResourceLimits"] ne "ALL" || [get_config_param "PropagateResourceLimitsExcept"] ne "(null)"} {
+	skip "This test need PropagateResourceLimits ALL"
+}
+
+proc test_limit_propagation {} {
+	global file_out bin_sort number
+	global limit_core limit_fsize limit_nofile limit_nproc limit_stack
+
+	set matches          0
+
+	#
+	# Inspect the job's output file
+	#
+	if {[wait_for_file $file_out] != 0} {
+		fail "Failed waiting for file ($file_out)"
+	}
+	spawn $bin_sort $file_out
+	expect {
+		-re "USER_CORE=($number)" {
+			set target [expr $limit_core * 1024]
+			if {$expect_out(1,string) == $target} {
+				incr matches
+			} else {
+				log_warn "CORE value bad ($expect_out(1,string) != $target)"
+			}
+			exp_continue
+		}
+		-re "USER_FSIZE=($number)" {
+			set target [expr $limit_fsize * 1024]
+			if {$expect_out(1,string) == $target} {
+				incr matches
+			} else {
+				log_warn "FSIZE value bad ($expect_out(1,string) != $target)"
+			}
+			exp_continue
+		}
+		-re "USER_NOFILE=($number)" {
+			if {$expect_out(1,string) == $limit_nofile} {
+				incr matches
+			} else {
+				log_warn "NOFILE value bad ($expect_out(1,string) != $limit_nofile)"
+			}
+			exp_continue
+		}
+		-re "USER_NPROC=($number)" {
+			if {$expect_out(1,string) == $limit_nproc} {
+				incr matches
+			} else {
+				log_warn "NPROC value bad ($expect_out(1,string) != $limit_nproc)"
+			}
+			exp_continue
+		}
+		-re "USER_NPROC unsupported" {
+			incr matches
+			exp_continue
+		}
+		-re "USER_STACK=($number)" {
+			set target [expr $limit_stack * 1024]
+			if {$expect_out(1,string) == [expr $limit_stack * 1024]} {
+				incr matches
+			} else {
+				log_warn "STACK value bad ($expect_out(1,string) != $target)"
+			}
+			exp_continue
+		}
+		-re "USER_STACK unsupported" {
+			incr matches
+			exp_continue
+		}
+		timeout {
+			fail "$bin_sort not responding"
+		}
+		eof {
+			wait
+		}
+	}
+
+	set target 5
+	subtest {$matches == $target} "Rlimits should be propagated" "$matches != $target. A long running slurmd could cause a file size limit error. slurmd could have been started with limits lower than user launching the task"
+}
 
 #
-# Delete left-over programs and rebuild them.
 # We use our own program to get ulimit values since the output
 # of the ulimit program is inconsistent across systems.
 #
-exec $bin_rm -f $file_prog_get $file_err $file_in $file_out
 exec $bin_cc -O ${file_prog_get}.c -o $file_prog_get
 exec $bin_chmod 700 $file_prog_get
 
-#
-# Get our current limits and adjust targets accordingly
-#
-set cur_core   -1
-set cur_fsize  -1
-set cur_nofile -1
-set cur_nproc  -1
-set cur_stack  -1
 
-spawn ./$file_prog_get
-expect {
-	-re "USER_CORE=($number)" {
-		set cur_core $expect_out(1,string)
-		exp_continue
-	}
-	-re "USER_FSIZE=($number)" {
-		set cur_fsize $expect_out(1,string)
-		exp_continue
-	}
-	-re "USER_NOFILE=($number)" {
-		set cur_nofile $expect_out(1,string)
-		exp_continue
-	}
-	-re "USER_NPROC=($number)" {
-		set cur_nproc $expect_out(1,string)
-		exp_continue
-	}
-	-re "USER_STACK=($number)" {
-		set cur_stack $expect_out(1,string)
-		exp_continue
-	}
-}
-
-if {$cur_core != -1} {
-	set limit_core [expr ($cur_core / 1024) - 2]
-	if {$limit_core < 1} {
-		set limit_core [expr $cur_core / 1024]
-	}
-}
-if {$cur_fsize != -1} {
-	set limit_fsize [expr ($cur_fsize / 1024) - 2]
-	if {$limit_fsize < 1} {
-		set limit_fsize [expr $cur_fsize / 1024]
-	}
-}
-if {$cur_nofile != -1} {
-	set limit_nofile [expr $cur_nofile - 2]
-	if {$limit_nofile < 1} {
-		set limit_nofile $cur_nofile
-	}
-}
-if {$cur_nproc != -1} {
-	set limit_nproc [expr $cur_nproc - 200]
-	if {$limit_nproc < 1} {
-		set limit_nofile $cur_nproc
-	}
-}
-if {$cur_stack != -1} {
-	set limit_stack [expr ($cur_stack / 1024) - 2]
-	if {$limit_stack < 1} {
-		set limit_stack [expr $cur_stack / 1024]
-	}
-}
-
-#
-# Spawn a job via srun to print environment variables and user limits
-#
+log_info "Testing limits propagation submiting with srun"
+file delete $file_in $file_out
 make_bash_script $file_in "
-  ulimit -c $limit_core
-  ulimit -f $limit_fsize
-  ulimit -n $limit_nofile
-  ulimit -u $limit_nproc
-  ulimit -s $limit_stack
-  $srun -N1 ./$file_prog_get
+  ulimit -c $limit_core || exit 1
+  ulimit -f $limit_fsize || exit 1
+  ulimit -n $limit_nofile || exit 1
+  ulimit -u $limit_nproc || exit 1
+  ulimit -s $limit_stack || exit 1
+  $srun -n1 --output=$file_out --error=$file_err -t1 ./$file_prog_get || exit 1
 "
-
-
-set timeout $max_job_delay
-set srun_pid [spawn $sbatch -n1 --output=$file_out --error=$file_err -t1 ./$file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $srun_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
+set result [run_command "./$file_in"]
+if {[dict get $result exit_code]} {
+	skip "Test should be able to set ulimits and submit a job: [dict get $result output]"
 }
+test_limit_propagation
 
-if {$job_id == 0} {
-	fail "Batch submit failure"
+
+log_info "Testing limits propagation with sbatch and srun step"
+file delete $file_in $file_out
+make_bash_script $file_in "
+  ulimit -c $limit_core || exit 1
+  ulimit -f $limit_fsize || exit 1
+  ulimit -n $limit_nofile || exit 1
+  ulimit -u $limit_nproc || exit 1
+  ulimit -s $limit_stack || exit 1
+  $sbatch -n1 --output=$file_out --error=$file_err -t1 --wrap '$srun ./$file_prog_get' || exit 1
+"
+set result [run_command "./$file_in"]
+set output [dict get $result output]
+if {[dict get $result exit_code]} {
+	skip "Test should be able to set ulimits and submit a job: $output"
 }
-
-#
-# Wait for job to complete
-#
+if {![regexp {Submitted \S+ job (\d+)} $output - job_id]} {
+	fail "Unable to submit batch script"
+}
 if {[wait_for_job $job_id "DONE"] != 0} {
 	fail "Waiting for job to complete"
 }
+test_limit_propagation
 
-#
-# Inspect the job's output file
-#
-if {[wait_for_file $file_out] != 0} {
-	fail "Failed waiting for file ($file_out)"
-}
-spawn $bin_sort $file_out
-expect {
-	-re "USER_CORE=($number)" {
-		set target [expr $limit_core * 1024]
-		if {$expect_out(1,string) == $target} {
-			incr matches
-		} else {
-			log_warn "CORE value bad ($expect_out(1,string) != $target)"
-		}
-		exp_continue
-	}
-	-re "USER_FSIZE=($number)" {
-		set target [expr $limit_fsize * 1024]
-		if {$expect_out(1,string) == $target} {
-			incr matches
-		} else {
-			log_warn "FSIZE value bad ($expect_out(1,string) != $target)"
-		}
-		exp_continue
-	}
-	-re "USER_NOFILE=($number)" {
-		if {$expect_out(1,string) == $limit_nofile} {
-			incr matches
-		} else {
-			log_warn "NOFILE value bad ($expect_out(1,string) != $limit_nofile)"
-		}
-		exp_continue
-	}
-	-re "USER_NPROC=($number)" {
-		if {$expect_out(1,string) == $limit_nproc} {
-			incr matches
-		} else {
-			log_warn "NPROC value bad ($expect_out(1,string) != $limit_nproc)"
-		}
-		exp_continue
-	}
-	-re "USER_NPROC unsupported" {
-		incr matches
-		exp_continue
-	}
-	-re "USER_STACK=($number)" {
-		set target [expr $limit_stack * 1024]
-		if {$expect_out(1,string) == [expr $limit_stack * 1024]} {
-			incr matches
-		} else {
-			log_warn "STACK value bad ($expect_out(1,string) != $target)"
-		}
-		exp_continue
-	}
-	-re "USER_STACK unsupported" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "sort not responding"
-	}
-	eof {
-		wait
-	}
-}
 
-set target 5
-if {$matches != $target} {
-	fail "User limits not propagated got $matches of $target matches. Check PropagateResourceLimits configuration parameter. Check $file_err for errors. A long running slurmd could cause a file size limit error. slurmd could have been started with limits lower than user launching the task"
+log_info "Testing limits propagation to batch step"
+file delete $file_in $file_out
+make_bash_script $file_in "
+  ulimit -c $limit_core || exit 1
+  ulimit -f $limit_fsize || exit 1
+  ulimit -n $limit_nofile || exit 1
+  ulimit -u $limit_nproc || exit 1
+  ulimit -s $limit_stack || exit 1
+  $sbatch -n1 --output=$file_out --error=$file_err -t1 --wrap './$file_prog_get' || exit 1
+"
+set result [run_command "./$file_in"]
+set output [dict get $result output]
+if {[dict get $result exit_code]} {
+	skip "Test should be able to set ulimits and submit a job: $output"
 }
+if {![regexp {Submitted \S+ job (\d+)} $output - job_id]} {
+	fail "Unable to submit batch script"
+}
+if {[wait_for_job $job_id "DONE"] != 0} {
+	fail "Waiting for job to complete"
+}
+test_limit_propagation
+
+
+log_info "Testing limits propagation from batch script to steps"
+file delete $file_in $file_out
+make_bash_script $file_in "
+  ulimit -c $limit_core || exit 1
+  ulimit -f $limit_fsize || exit 1
+  ulimit -n $limit_nofile || exit 1
+  ulimit -u $limit_nproc || exit 1
+  ulimit -s $limit_stack || exit 1
+  $srun ./$file_prog_get || exit 1
+"
+set job_id [submit_job -fail "-n1 --output=$file_out --error=$file_err -t1 ./$file_in"]
+
+if {[wait_for_job $job_id "DONE"] != 0} {
+	fail "Waiting for job to complete"
+}
+test_limit_propagation
