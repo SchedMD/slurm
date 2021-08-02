@@ -170,7 +170,6 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 				bool is_task, bool is_job, int *global_id,
 				gres_internal_flags_t flags, bool use_dev_num)
 {
-	int first_inx = -1;
 	bool use_local_dev_index = gres_use_local_device_index();
 	bool set_global_id = false;
 	gres_device_t *gres_device, *first_device = NULL;
@@ -235,7 +234,6 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 
 		if (is_task) {
 			if (!first_device) {
-				first_inx = index;
 				first_device = gres_device;
 			}
 
@@ -279,23 +277,6 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 	}
 	list_iterator_destroy(itr);
 
-	/*
-	 * Bind to the first allocated device as a fallback if the bind
-	 * request does not specify any devices within the allocation.
-	 */
-	if (is_task && !new_global_list && first_device) {
-		char *usable_gres_str = bit_fmt_full(usable_gres);
-		char *usable_gres_str_hex = bit_fmt_hexmask_trim(usable_gres);
-		error("Bind request %s (%s) does not specify any devices within the allocation. Binding to the first device in the allocation instead.",
-		      usable_gres_str, usable_gres_str_hex);
-		xfree(usable_gres_str);
-		xfree(usable_gres_str_hex);
-		xstrfmtcat(new_local_list, "%s%s%d", local_prefix, prefix,
-			   first_inx);
-		(*local_inx) = first_inx;
-		xstrfmtcat(new_global_list, "%s%s%d", global_prefix, prefix,
-			   first_device->dev_num);
-	}
 	if (new_global_list) {
 		xfree(*global_list);
 		*global_list = new_global_list;

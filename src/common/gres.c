@@ -175,6 +175,7 @@ typedef struct {
 	uint32_t gpus_per_task; /* How many gpus per task requested. */
 	char *map_gpu; /* GPU map requested. */
 	char *mask_gpu; /* GPU mask requested. */
+	char *request;
 	uint32_t tasks_per_gres; /* How many tasks per gres requested */
 } tres_bind_t;
 
@@ -9572,6 +9573,7 @@ static void _parse_tres_bind(uint16_t accel_bind_type, char *tres_bind_str,
 		else if (!xstrncasecmp(sep, "per_task:", 9))
 			tres_bind->gpus_per_task = slurm_atoul(sep + 9);
 	}
+	tres_bind->request = tres_bind_str;
 }
 
 static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
@@ -9626,6 +9628,16 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 			return SLURM_ERROR;
 	} else {
 		return SLURM_ERROR;
+	}
+
+	if(!bit_set_count(usable_gres)) {
+		error("Bind request %s does not specify any devices within the allocation for task %d. Binding to the first device in the allocation instead.",
+		      tres_bind->request, proc_id);
+		if (!get_devices && gres_use_local_device_index())
+			bit_set(usable_gres,0);
+		else
+			bit_set(usable_gres, bit_ffs(gres_bit_alloc));
+
 	}
 
 	*usable_gres_ptr = usable_gres;
