@@ -975,7 +975,8 @@ endit:
 
 /* affinity should be set using sched_setaffinity to not force */
 /* user to have to play with the cgroup hierarchy to modify it */
-extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
+extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job,
+						uint32_t taskid)
 {
 	int fstatus = SLURM_ERROR;
 
@@ -997,14 +998,13 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job)
 	hwloc_obj_type_t req_hwtype;
 	int bind_verbose = 0;
 	int rc = SLURM_SUCCESS;
-	pid_t    pid = job->envtp->task_pid;
+	pid_t    pid = job->task[taskid]->pid;
 	size_t tssize;
 	uint32_t nldoms;
 	uint32_t nsockets;
 	uint32_t ncores;
 	uint32_t npus;
 	uint32_t nobj;
-	uint32_t taskid = job->envtp->localid;
 	uint32_t jntasks = job->node_tasks;
 	uint32_t jnpus;
 	int spec_threads = 0;

@@ -206,23 +206,6 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 		      &job->step_id, job->envtp->procid, tmp_str);
 	}
 
-	/*** CPU binding support ***/
-	if (job->cpu_bind_type) {
-		cpu_set_t new_mask, cur_mask;
-		pid_t mypid  = job->envtp->task_pid;
-
-		slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
-		if (get_cpuset(&new_mask, job) &&
-		    (!(job->cpu_bind_type & CPU_BIND_NONE))) {
-			reset_cpuset(&new_mask, &cur_mask);
-			rc = slurm_setaffinity(mypid, sizeof(new_mask),
-					       &new_mask);
-			slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
-		}
-		task_slurm_chkaffinity(rc ? &cur_mask : &new_mask,
-				       job, rc);
-	}
-
 #ifdef HAVE_NUMA
 	if (job->mem_bind_type && (numa_available() >= 0)) {
 		nodemask_t new_mask, cur_mask;
@@ -261,7 +244,22 @@ extern int task_p_pre_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
  */
 extern int task_p_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
 {
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+	cpu_set_t new_mask, cur_mask;
+	pid_t mypid  = job->task[node_tid]->pid;
+
+	if (!job->cpu_bind_type)
+		return SLURM_SUCCESS;
+
+	slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
+	if (get_cpuset(&new_mask, job, node_tid) &&
+	    (!(job->cpu_bind_type & CPU_BIND_NONE))) {
+		reset_cpuset(&new_mask, &cur_mask);
+		rc = slurm_setaffinity(mypid, sizeof(new_mask), &new_mask);
+		slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
+	}
+	task_slurm_chkaffinity(rc ? &cur_mask : &new_mask, job, rc);
+	return rc;
 }
 
 /*

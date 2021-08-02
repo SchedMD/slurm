@@ -201,6 +201,9 @@ extern int task_p_pre_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
  */
 extern int task_p_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
 {
+	if (use_cpuset && do_task_affinity)
+		return task_cgroup_cpuset_set_task_affinity(job, node_tid);
+
 	return SLURM_SUCCESS;
 }
 
@@ -220,9 +223,6 @@ extern int task_p_post_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
  */
 extern int task_p_pre_launch(stepd_step_rec_t *job)
 {
-	if (use_cpuset && do_task_affinity)
-		return task_cgroup_cpuset_set_task_affinity(job);
-
 	return SLURM_SUCCESS;
 }
 

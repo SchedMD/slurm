@@ -47,7 +47,8 @@ extern int task_cgroup_cpuset_fini(void);
 extern int task_cgroup_cpuset_create(stepd_step_rec_t *job);
 
 /* set a task affinity based on its local id and job information */
-extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job);
+extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job,
+						uint32_t taskid);
 
 /* add a pid to the cgroup */
 extern int task_cgroup_cpuset_add_pid(pid_t pid);

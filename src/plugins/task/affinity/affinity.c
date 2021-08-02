@@ -89,12 +89,12 @@ static int _bind_ldom(uint32_t ldom, cpu_set_t *mask)
 #endif
 }
 
-int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job)
+int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job, uint32_t node_tid)
 {
 	int nummasks, maskid, i, threads;
 	char *curstr, *selstr;
 	char mstr[1 + CPU_SETSIZE / 4];
-	uint32_t local_id = job->envtp->localid;
+	uint32_t local_id = node_tid;
 	char buftype[1024];
 
 	slurm_sprint_cpu_bind_type(buftype, job->cpu_bind_type);
@@ -108,7 +108,7 @@ int get_cpuset(cpu_set_t *mask, stepd_step_rec_t *job)
 
 	if (job->cpu_bind_type & CPU_BIND_RANK) {
 		threads = MAX(conf->threads, 1);
-		CPU_SET(job->envtp->localid % (job->cpus*threads), mask);
+		CPU_SET(node_tid % (job->cpus*threads), mask);
 		return true;
 	}
 
