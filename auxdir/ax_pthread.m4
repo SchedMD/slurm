@@ -103,7 +103,8 @@ if test x"$PTHREAD_LIBS$PTHREAD_CFLAGS" != x; then
         save_LIBS="$LIBS"
         LIBS="$PTHREAD_LIBS $LIBS"
         AC_MSG_CHECKING([for pthread_join in LIBS=$PTHREAD_LIBS with CFLAGS=$PTHREAD_CFLAGS])
-        AC_TRY_LINK_FUNC(pthread_join, ax_pthread_ok=yes)
+        AC_LINK_IFELSE([AC_LANG_CALL([], [pthread_join])],
+          [ax_pthread_ok=yes], [])
         AC_MSG_RESULT($ax_pthread_ok)
         if test x"$ax_pthread_ok" = xno; then
                 PTHREAD_LIBS=""

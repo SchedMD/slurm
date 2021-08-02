@@ -5040,11 +5040,9 @@ $as_echo "$as_me: WARNING: *** mysql-$mysql_config_major_version.$mysql_config_m
 int
 main ()
 {
-
-						MYSQL mysql;
-						(void) mysql_init(&mysql);
-						(void) mysql_close(&mysql);
-
+MYSQL mysql;
+			       (void) mysql_init(&mysql);
+			       (void) mysql_close(&mysql);
   ;
   return 0;
 }
@@ -21397,8 +21395,7 @@ int
 main ()
 {
 nvmlDeviceAttributes_t attributes;
-		       attributes.gpuInstanceSliceCount = 0;
-
+	         attributes.gpuInstanceSliceCount = 0;
   ;
   return 0;
 }
@@ -21994,15 +21991,15 @@ else
             cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <freeipmi/freeipmi.h>
-	      #include <ipmi_monitoring.h>
-	      #include <ipmi_monitoring_bitmasks.h>
+                                 #include <ipmi_monitoring.h>
+                                 #include <ipmi_monitoring_bitmasks.h>
 int
 main ()
 {
 ipmi_ctx_t ipmi_ctx = ipmi_ctx_create();
-	      int err;
-              unsigned int flag = 0;
-              return ipmi_monitoring_init (flag, &err);
+                   int err;
+                   unsigned int flag = 0;
+                   return ipmi_monitoring_init (flag, &err);
   ;
   return 0;
 }
@@ -22096,7 +22093,9 @@ else
 int
 main ()
 {
-rrd_value_t *rrd_data; rrd_info_t *rrd_info;  rrd_test_error();
+rrd_value_t *rrd_data;
+                   rrd_info_t *rrd_info;
+                   rrd_test_error();
   ;
   return 0;
 }
@@ -24436,14 +24435,13 @@ $as_echo_n "checking for whether we can link to liblua... " >&6; }
 	  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <lua.h>
-                 #include <lauxlib.h>
-		 #include <lualib.h>
-
+			       #include <lauxlib.h>
+			       #include <lualib.h>
 int
 main ()
 {
-lua_State *L = luaL_newstate (); luaL_openlibs(L);
-
+lua_State *L = luaL_newstate ();
+		 luaL_openlibs(L);
   ;
   return 0;
 }
