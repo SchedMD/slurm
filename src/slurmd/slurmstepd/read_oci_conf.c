@@ -95,7 +95,8 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 	if (!oci->runtime_create && !oci->runtime_delete &&
 	    !oci->runtime_kill && !oci->runtime_query &&
 	    !oci->runtime_run && !oci->runtime_start) {
-		debug("OCI container disabled");
+		error("oci.conf present but missing required options. Rejecting invalid configuration.");
+		rc = EINVAL;
 	} else if (oci->runtime_create && oci->runtime_delete &&
 		   oci->runtime_kill && oci->runtime_query &&
 		   !oci->runtime_run && oci->runtime_start) {
