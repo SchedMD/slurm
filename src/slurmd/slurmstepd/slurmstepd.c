@@ -50,6 +50,7 @@
 #include "src/common/gres.h"
 #include "src/common/node_select.h"
 #include "src/common/plugstack.h"
+#include "src/common/run_command.h"
 #include "src/common/setproctitle.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobacct_gather.h"
@@ -117,6 +118,7 @@ main (int argc, char **argv)
 		fatal ("Error in slurmstepd command line");
 
 	slurm_conf_init(NULL);
+	run_command_init();
 
 	xsignal_block(slurmstepd_blocked_signals);
 	conf = xmalloc(sizeof(*conf));
@@ -202,6 +204,8 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 
 	if (conf->hwloc_xml)
 		(void)remove(conf->hwloc_xml);
+
+	run_command_shutdown();
 
 #ifdef MEMORY_LEAK_DEBUG
 	acct_gather_conf_destroy();
