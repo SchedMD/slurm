@@ -1898,8 +1898,20 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 			      i, job->task[i]->pid, job->pgid);
 		}
 
-		if (task_g_pre_launch_priv(job, i) < 0) {
-			error("task_g_pre_launch_priv: %m");
+		if (task_g_pre_set_affinity(job, i) < 0) {
+			error("task_g_pre_set_affinity: %m");
+			rc = SLURM_ERROR;
+			goto fail2;
+		}
+
+		if (task_g_set_affinity(job, i) < 0) {
+			error("task_g_set_affinity: %m");
+			rc = SLURM_ERROR;
+			goto fail2;
+		}
+
+		if (task_g_post_set_affinity(job, i) < 0) {
+			error("task_g_post_set_affinity: %m");
 			rc = SLURM_ERROR;
 			goto fail2;
 		}

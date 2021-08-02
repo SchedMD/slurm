@@ -151,12 +151,32 @@ extern int task_p_pre_launch (stepd_step_rec_t *job)
 }
 
 /*
- * task_p_pre_launch_priv() is called prior to exec of application task.
- * in privileged mode, just after slurm_spank_task_init_privileged
+ * task_p_pre_set_affinity() is called prior to exec of application task.
+ * Runs in privileged mode.
  */
-extern int task_p_pre_launch_priv(stepd_step_rec_t *job, uint32_t taskid)
+extern int task_p_pre_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
 {
-	debug("task_p_pre_launch_priv: %ps", &job->step_id);
+	debug("task_p_pre_set_affinity: %ps", &job->step_id);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * task_p_set_affinity() is called prior to exec of application task.
+ * Runs in privileged mode.
+ */
+extern int task_p_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
+{
+	debug("task_p_set_affinity: %ps", &job->step_id);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * task_p_post_set_affinity is called prior to exec of application task.
+ * Runs in privileged mode.
+ */
+extern int task_p_post_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
+{
+	debug("task_p_post_set_affinity: %ps", &job->step_id);
 	return SLURM_SUCCESS;
 }
 

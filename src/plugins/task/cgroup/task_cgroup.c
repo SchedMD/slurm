@@ -170,28 +170,47 @@ extern int task_p_pre_setuid(stepd_step_rec_t *job)
 }
 
 /*
- * task_p_pre_launch_priv() is called prior to exec of application task in
- * privileged mode, just after slurm_spank_task_init_privileged.
+ * task_p_pre_set_affinity() is called prior to exec of application task.
+ * Runs in privileged mode.
  */
-extern int task_p_pre_launch_priv(stepd_step_rec_t *job, uint32_t taskid)
+extern int task_p_pre_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
 {
 	int rc = SLURM_SUCCESS;
 
-	if (use_cpuset && (task_cgroup_cpuset_add_pid(job->task[taskid]->pid)
-			   != SLURM_SUCCESS))
+	if (use_cpuset &&
+	    (task_cgroup_cpuset_add_pid(
+		    job->task[node_tid]->pid) != SLURM_SUCCESS))
 		rc = SLURM_ERROR;
 
-	if (use_memory && (task_cgroup_memory_add_pid(job->task[taskid]->pid)
-			   != SLURM_SUCCESS))
+	if (use_memory &&
+	    (task_cgroup_memory_add_pid(
+		    job->task[node_tid]->pid) != SLURM_SUCCESS))
 		rc = SLURM_ERROR;
 
-	if (use_devices && (task_cgroup_devices_add_pid(job,
-							job->task[taskid]->pid,
-							taskid)
-			    != SLURM_SUCCESS))
+	if (use_devices &&
+	    (task_cgroup_devices_add_pid(
+		    job, job->task[node_tid]->pid, node_tid) != SLURM_SUCCESS))
 		rc = SLURM_ERROR;
 
 	return rc;
+}
+
+/*
+ * task_p_set_affinity() is called prior to exec of application task.
+ * Runs in privileged mode.
+ */
+extern int task_p_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
+{
+	return SLURM_SUCCESS;
+}
+
+/*
+ * task_p_post_set_affinity is called prior to exec of application task.
+ * Runs in privileged mode.
+ */
+extern int task_p_post_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
+{
+	return SLURM_SUCCESS;
 }
 
 /*
