@@ -63,14 +63,8 @@
 
 #include "task_cgroup.h"
 
-enum cgroup_types {
-	CGROUP_TYPE_JOB,
-	CGROUP_TYPE_STEP,
-	CGROUP_TYPE_TASK
-};
-
 typedef struct handle_dev_args {
-	uint32_t cgroup_type;
+	cgroup_level_t cgroup_type;
 	uint32_t taskid;
 	stepd_step_rec_t *job;
 } handle_dev_args_t;
@@ -86,11 +80,11 @@ static int _handle_device_access(void *x, void *arg)
 	char *t_str = NULL;
 
 	if ((slurm_conf.debug_flags & DEBUG_FLAG_GRES) &&
-	    (handle_args->cgroup_type == CGROUP_TYPE_TASK))
+	    (handle_args->cgroup_type == CG_LEVEL_TASK))
 		xstrfmtcat(t_str, "task_%d", handle_args->taskid);
 	log_flag(GRES, "%s %s: adding %s(%s)",
-		 handle_args->cgroup_type == CGROUP_TYPE_JOB ? "job" :
-		 handle_args->cgroup_type == CGROUP_TYPE_STEP ? "step" : t_str,
+		 handle_args->cgroup_type == CG_LEVEL_JOB ? "job" :
+		 handle_args->cgroup_type == CG_LEVEL_STEP ? "step" : t_str,
 		 gres_device->alloc ? "devices.allow" : "devices.deny",
 		 gres_device->major, gres_device->path);
 	xfree(t_str);
@@ -99,13 +93,13 @@ static int _handle_device_access(void *x, void *arg)
 	limits.allow_device = gres_device->alloc;
 	limits.device_major = gres_device->major;
 
-	if (handle_args->cgroup_type == CGROUP_TYPE_JOB)
+	if (handle_args->cgroup_type == CG_LEVEL_JOB)
 		cgroup_g_job_constrain_set(CG_DEVICES, handle_args->job,
 					   &limits);
-	else if (handle_args->cgroup_type == CGROUP_TYPE_STEP)
+	else if (handle_args->cgroup_type == CG_LEVEL_STEP)
 		cgroup_g_step_constrain_set(CG_DEVICES, handle_args->job,
 					    &limits);
-	else if (handle_args->cgroup_type == CGROUP_TYPE_TASK)
+	else if (handle_args->cgroup_type == CG_LEVEL_TASK)
 		cgroup_g_task_constrain_set(CG_DEVICES, &limits,
 					    handle_args->taskid);
 
@@ -260,7 +254,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 	device_list = gres_g_get_devices(job_gres_list, true, 0, NULL, 0, 0);
 
 	if (device_list) {
-		handle_args.cgroup_type = CGROUP_TYPE_JOB;
+		handle_args.cgroup_type = CG_LEVEL_JOB;
 		handle_args.job = job;
 		list_for_each(device_list, _handle_device_access,
 			      &handle_args);
@@ -286,7 +280,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 						 0, 0);
 
 		if (device_list) {
-			handle_args.cgroup_type = CGROUP_TYPE_STEP;
+			handle_args.cgroup_type = CG_LEVEL_STEP;
 			handle_args.job = job;
 			list_for_each(device_list, _handle_device_access,
 				      &handle_args);
@@ -334,7 +328,7 @@ extern int task_cgroup_devices_add_pid(stepd_step_rec_t *job, pid_t pid,
 					 job->accel_bind_type, job->tres_bind,
 					 taskid, pid);
 	if (device_list) {
-		handle_args.cgroup_type = CGROUP_TYPE_TASK;
+		handle_args.cgroup_type = CG_LEVEL_TASK;
 		handle_args.job = job;
 		handle_args.taskid = taskid;
 		list_for_each(device_list, _handle_device_access,

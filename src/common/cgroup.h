@@ -97,6 +97,16 @@ typedef enum {
 	CG_CTL_CNT
 } cgroup_ctl_type_t;
 
+typedef enum {
+	CG_LEVEL_ROOT,
+	CG_LEVEL_USER,
+	CG_LEVEL_JOB,
+	CG_LEVEL_STEP,
+	CG_LEVEL_TASK,
+	CG_LEVEL_SYSTEM,
+	CG_LEVEL_CNT
+} cgroup_level_t;
+
 /* This data type is used to get/set various parameters in cgroup hierarchy */
 typedef struct {
 	/* task cpuset */
