@@ -413,7 +413,6 @@ AC_CONFIG_FILES([Makefile
 		 doc/Makefile
 		 doc/man/Makefile
 		 doc/man/man1/Makefile
-		 doc/man/man3/Makefile
 		 doc/man/man5/Makefile
 		 doc/man/man8/Makefile
 		 doc/html/Makefile
