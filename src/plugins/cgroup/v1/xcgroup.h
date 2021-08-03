@@ -178,9 +178,7 @@ extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns);
  * IN calling_func - Name of the caller, for logging purposes.
  * IN job - Step record which contains required info for creating the paths.
  * IN ns - Namespace used to build paths.
- * OUT job_cg - Up to the job level directory cgroup.
- * OUT step_cg - Up to the step level directory cgroup. Typically the inner one.
- * OUT user_cg - Up to the user step level directory cgroup.
+ * OUT int_cg - Array with internal cgroups to be set.
  * OUT job_cgroup_path - Path to job level directory.
  * OUT step_cgroup_path - Path to step level directory.
  * OUT user_cgroup_path - Path to user level directory.
@@ -190,9 +188,7 @@ extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns);
 extern int xcgroup_create_hierarchy(const char *calling_func,
 				    stepd_step_rec_t *job,
 				    xcgroup_ns_t *ns,
-				    xcgroup_t *job_cg,
-				    xcgroup_t *step_cg,
-				    xcgroup_t *user_cg,
+				    xcgroup_t int_cg[],
 				    char job_cgroup_path[],
 				    char step_cgroup_path[],
 				    char user_cgroup_path[]);

@@ -484,14 +484,15 @@ extern char *xcgroup_create_slurm_cg(xcgroup_ns_t *ns)
 extern int xcgroup_create_hierarchy(const char *calling_func,
 				    stepd_step_rec_t *job,
 				    xcgroup_ns_t *ns,
-				    xcgroup_t *job_cg,
-				    xcgroup_t *step_cg,
-				    xcgroup_t *user_cg,
+				    xcgroup_t int_cg[],
 				    char job_cgroup_path[],
 				    char step_cgroup_path[],
 				    char user_cgroup_path[])
 {
 	xcgroup_t root_cg;
+	xcgroup_t *job_cg = &int_cg[CG_LEVEL_JOB];
+	xcgroup_t *step_cg = &int_cg[CG_LEVEL_STEP];
+	xcgroup_t *user_cg = &int_cg[CG_LEVEL_USER];
 	int rc = SLURM_SUCCESS;
 	char *slurm_cgpath = xcgroup_create_slurm_cg(ns);
 
