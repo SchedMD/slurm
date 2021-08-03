@@ -81,7 +81,7 @@ static void _calc_device_major(char *dev_path[PATH_MAX],
 			       char *dev_major[PATH_MAX],
 			       int lines);
 
-static int _read_allowed_devices_file(char *allowed_devices[PATH_MAX]);
+static int _read_allowed_devices_file(char **allowed_devices);
 
 extern int task_cgroup_devices_init(void)
 {
