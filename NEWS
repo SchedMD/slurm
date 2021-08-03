@@ -191,6 +191,7 @@ documents those changes that are of interest to users and administrators.
  -- sacct - fix truncation when printing jobidraw field.
  -- GRES - Fix loading state of jobs using --gpus to request gpus.
  -- Fix minor logic error in health check node state output
+ -- Fix GCC 11.1 compiler warnings.
 
 * Changes in Slurm 20.11.8
 ==========================
