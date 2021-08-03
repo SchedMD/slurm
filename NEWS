@@ -5,6 +5,7 @@ documents those changes that are of interest to users and administrators.
 =============================
  -- Load bf_when_last_cycle from job state only if protocol version >= 21.08.
  -- Docs - remove man3 section entirely.
+ -- Enable OCI container execution support as a technical preview.
 
 * Changes in Slurm 21.08.0rc1
 =============================
