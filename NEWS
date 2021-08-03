@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
  -- Set step memory when using MemPerGPU or DefMemPerGPU. Previously a step's
     memory was not set even when it requested --mem-per-gpu and at least one
     GPU.
+ -- Add cli_filter.lua support in configless mode.
 
 * Changes in Slurm 21.08.0rc1
 =============================

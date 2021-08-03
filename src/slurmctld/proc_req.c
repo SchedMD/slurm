@@ -113,14 +113,17 @@ static uint64_t rpc_type_time[RPC_TYPE_SIZE] = { 0 };
 static uint32_t rpc_user_id[RPC_USER_SIZE] = { 0 };
 static uint32_t rpc_user_cnt[RPC_USER_SIZE] = { 0 };
 static uint64_t rpc_user_time[RPC_USER_SIZE] = { 0 };
+
 static char *slurmd_config_files[] = {
 	"slurm.conf", "acct_gather.conf", "cgroup.conf",
-	"cgroup_allowed_devices_file.conf", "ext_sensors.conf", "gres.conf",
-	"helpers.conf", "job_container.conf", "knl_cray.conf", "oci.conf",
-	"plugstack.conf", "topology.conf", NULL};
+	"cgroup_allowed_devices_file.conf", "cli_filter.lua",
+	"ext_sensors.conf", "gres.conf", "helpers.conf", "job_container.conf",
+	"knl_cray.conf", "oci.conf", "plugstack.conf", "topology.conf", NULL
+};
 
-static char *client_config_files[] = {"slurm.conf",
-	    "plugstack.conf", "topology.conf", NULL};
+static char *client_config_files[] = {
+	"slurm.conf", "cli_filter.lua", "plugstack.conf", "topology.conf", NULL
+};
 
 
 static config_response_msg_t *config_for_slurmd = NULL;
