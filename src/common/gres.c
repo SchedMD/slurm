@@ -1793,7 +1793,8 @@ static void _merge_gres2(List gres_conf_list, List new_list, uint64_t count,
 			 char *type_name, slurm_gres_context_t *gres_context,
 			 uint32_t cpu_count)
 {
-	gres_slurmd_conf_t *gres_conf, *match;
+	gres_slurmd_conf_t *match;
+	uint32_t flags;
 
 	/* If slurm.conf count is initially 0, don't waste time on it */
 	if (count == 0)
@@ -1852,25 +1853,16 @@ static void _merge_gres2(List gres_conf_list, List new_list, uint64_t count,
 	 * There are leftover GRES specified in this slurm.conf record that are
 	 * not accounted for in gres.conf that still need to be added.
 	 */
-	gres_conf = xmalloc(sizeof(*gres_conf));
-	gres_conf->count = count;
-	gres_conf->cpu_cnt = cpu_count;
-	gres_conf->name = xstrdup(gres_context->gres_name);
-	gres_conf->plugin_id = gres_context->plugin_id;
-	if (type_name) {
-		gres_conf->config_flags = GRES_CONF_HAS_TYPE;
-		gres_conf->type_name = xstrdup(type_name);
-	}
-
-	if (gres_context->config_flags & GRES_CONF_COUNT_ONLY)
-		gres_conf->config_flags |= GRES_CONF_COUNT_ONLY;
 
 	/* Set default env flags, and allow AutoDetect to override */
-	if (!xstrcasecmp(gres_conf->name, "gpu"))
-		gres_conf->config_flags |=
-			(GRES_CONF_ENV_SET | GRES_CONF_ENV_DEF);
+	flags = 0;
+	if (!xstrcasecmp(gres_context->gres_name, "gpu"))
+		flags |= (GRES_CONF_ENV_SET | GRES_CONF_ENV_DEF);
+	if (gres_context->config_flags & GRES_CONF_COUNT_ONLY)
+		flags |= GRES_CONF_COUNT_ONLY;
 
-	list_append(new_list, gres_conf);
+	add_gres_to_list(new_list, gres_context->gres_name, count, cpu_count,
+			 NULL, NULL, NULL, type_name, NULL, NULL, flags);
 }
 
 /*
