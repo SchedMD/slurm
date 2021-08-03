@@ -56,9 +56,9 @@ int      slurm_bit_get_pos_num(bitstr_t *b, bitoff_t pos);
 #undef FREE_NULL_BITMAP
 #endif
 
-#define FREE_NULL_BITMAP(_X)	\
-do {				\
-	if (_X)			\
-		bit_free (_X);	\
-	_X = NULL;		\
+#define FREE_NULL_BITMAP(_X)		\
+do {					\
+	if (_X)				\
+		slurm_bit_free (_X);	\
+	_X = NULL;			\
 } while (0)
