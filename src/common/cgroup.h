@@ -198,10 +198,10 @@ extern int cgroup_g_step_suspend(void);
 extern int cgroup_g_step_resume(void);
 extern int cgroup_g_step_destroy(cgroup_ctl_type_t sub);
 extern bool cgroup_g_has_pid(pid_t pid);
-extern cgroup_limits_t *cgroup_g_root_constrain_get(cgroup_ctl_type_t sub);
+extern cgroup_limits_t *cgroup_g_constrain_get(cgroup_ctl_type_t sub,
+					       cgroup_level_t type);
 extern int cgroup_g_root_constrain_set(cgroup_ctl_type_t sub,
 				       cgroup_limits_t *limits);
-extern cgroup_limits_t *cgroup_g_system_constrain_get(cgroup_ctl_type_t sub);
 extern int cgroup_g_system_constrain_set(cgroup_ctl_type_t sub,
 					 cgroup_limits_t *limits);
 extern int cgroup_g_user_constrain_set(cgroup_ctl_type_t sub,

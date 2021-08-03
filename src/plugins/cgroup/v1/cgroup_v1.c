@@ -800,7 +800,8 @@ extern bool cgroup_p_has_pid(pid_t pid)
 	return rc;
 }
 
-extern cgroup_limits_t *cgroup_p_root_constrain_get(cgroup_ctl_type_t sub)
+extern cgroup_limits_t *cgroup_p_constrain_get(cgroup_ctl_type_t sub,
+					       cgroup_level_t level)
 {
 	int rc = SLURM_SUCCESS;
 	cgroup_limits_t *limits = xmalloc(sizeof(*limits));
@@ -809,14 +810,14 @@ extern cgroup_limits_t *cgroup_p_root_constrain_get(cgroup_ctl_type_t sub)
 	case CG_TRACK:
 		break;
 	case CG_CPUS:
-		if (common_cgroup_get_param(&int_cg[sub][CG_LEVEL_ROOT],
+		if (common_cgroup_get_param(&int_cg[sub][level],
 					    "cpuset.cpus",
 					    &limits->allow_cores,
 					    &limits->cores_size)
 		    != SLURM_SUCCESS)
 			rc = SLURM_ERROR;
 
-		if (common_cgroup_get_param(&int_cg[sub][CG_LEVEL_ROOT],
+		if (common_cgroup_get_param(&int_cg[sub][level],
 					    "cpuset.mems",
 					    &limits->allow_mems,
 					    &limits->mems_size)
@@ -874,24 +875,6 @@ extern int cgroup_p_root_constrain_set(cgroup_ctl_type_t sub,
 	}
 
 	return rc;
-}
-
-extern cgroup_limits_t *cgroup_p_system_constrain_get(cgroup_ctl_type_t sub)
-{
-	cgroup_limits_t *limits = NULL;
-
-	switch (sub) {
-	case CG_TRACK:
-	case CG_CPUS:
-	case CG_MEMORY:
-	case CG_DEVICES:
-		break;
-	default:
-		error("cgroup subsystem %u not supported", sub);
-		break;
-	}
-
-	return limits;
 }
 
 extern int cgroup_p_system_constrain_set(cgroup_ctl_type_t sub,

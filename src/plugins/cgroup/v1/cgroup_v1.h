@@ -190,12 +190,14 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub);
 extern bool cgroup_p_has_pid(pid_t pid);
 
 /*
- * Obtain the constrains set to the root cgroup of the specified controller.
+ * Obtain the constrains set to the cgroup of the specified controller.
  *
  * IN sub - From which controller we want the limits.
+ * IN level - Directory level to get the info from.
  * RET cgroup_limits_t object if limits could be obtained, NULL otherwise.
  */
-extern cgroup_limits_t *cgroup_p_root_constrain_get(cgroup_ctl_type_t sub);
+extern cgroup_limits_t *cgroup_p_constrain_get(cgroup_ctl_type_t sub,
+					       cgroup_level_t level);
 
 /*
  * Set constrains to the root cgroup of the specified controller.
@@ -206,14 +208,6 @@ extern cgroup_limits_t *cgroup_p_root_constrain_get(cgroup_ctl_type_t sub);
  */
 extern int cgroup_p_root_constrain_set(cgroup_ctl_type_t sub,
 				       cgroup_limits_t *limits);
-
-/*
- * Obtain the constrains set to the system cgroup of the specified controller.
- *
- * IN sub - From which controller we want the limits.
- * RET cgroup_limits_t object if limits could be obtained, NULL otherwise.
- */
-extern cgroup_limits_t *cgroup_p_system_constrain_get(cgroup_ctl_type_t sub);
 
 /*
  * Set constrains to the system cgroup of the specified controller.

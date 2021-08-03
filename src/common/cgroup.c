@@ -58,10 +58,10 @@ typedef struct {
 	int	(*step_resume)		(void);
 	int	(*step_destroy)		(cgroup_ctl_type_t sub);
 	bool	(*has_pid)		(pid_t pid);
-	cgroup_limits_t *(*root_constrain_get) (cgroup_ctl_type_t sub);
+	cgroup_limits_t *(*constrain_get) (cgroup_ctl_type_t sub,
+					   cgroup_level_t level);
 	int	(*root_constrain_set)	(cgroup_ctl_type_t sub,
 					 cgroup_limits_t *limits);
-	cgroup_limits_t *(*system_constrain_get) (cgroup_ctl_type_t sub);
 	int	(*system_constrain_set)	(cgroup_ctl_type_t sub,
 					 cgroup_limits_t *limits);
 	int	(*user_constrain_set)	(cgroup_ctl_type_t sub,
@@ -100,9 +100,8 @@ static const char *syms[] = {
 	"cgroup_p_step_resume",
 	"cgroup_p_step_destroy",
 	"cgroup_p_has_pid",
-	"cgroup_p_root_constrain_get",
+	"cgroup_p_constrain_get",
 	"cgroup_p_root_constrain_set",
-	"cgroup_p_system_constrain_get",
 	"cgroup_p_system_constrain_set",
 	"cgroup_p_user_constrain_set",
 	"cgroup_p_job_constrain_set",
@@ -885,12 +884,13 @@ extern bool cgroup_g_has_pid(pid_t pid)
 	return (*(ops.has_pid))(pid);
 }
 
-extern cgroup_limits_t *cgroup_g_root_constrain_get(cgroup_ctl_type_t sub)
+extern cgroup_limits_t *cgroup_g_constrain_get(cgroup_ctl_type_t sub,
+					       cgroup_level_t level)
 {
 	if (cgroup_g_init() < 0)
 		return NULL;
 
-	return (*(ops.root_constrain_get))(sub);
+	return (*(ops.constrain_get))(sub, level);
 }
 
 extern int cgroup_g_root_constrain_set(cgroup_ctl_type_t sub,
@@ -900,14 +900,6 @@ extern int cgroup_g_root_constrain_set(cgroup_ctl_type_t sub,
 		return false;
 
 	return (*(ops.root_constrain_set))(sub, limits);
-}
-
-extern cgroup_limits_t *cgroup_g_system_constrain_get(cgroup_ctl_type_t sub)
-{
-	if (cgroup_g_init() < 0)
-		return NULL;
-
-	return (*(ops.system_constrain_get))(sub);
 }
 
 extern int cgroup_g_system_constrain_set(cgroup_ctl_type_t sub,

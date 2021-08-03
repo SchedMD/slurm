@@ -948,7 +948,7 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 	/*
 	 * check that user's cpuset cgroup is consistent and add the job's CPUs
 	 */
-	root_limits = cgroup_g_root_constrain_get(CG_CPUS);
+	root_limits = cgroup_g_constrain_get(CG_CPUS, CG_LEVEL_ROOT);
 
 	if (!root_limits)
 		goto endit;
