@@ -36,6 +36,7 @@
 
 #include "config.h"
 
+#include <ctype.h>
 #include <unistd.h>
 
 #include "slurm/slurm.h"
@@ -48,23 +49,14 @@
 
 #include "src/slurmrestd/http_url.h"
 
-static bool _is_char_hex(char buffer)
-{
-	return (buffer >= '0' && buffer <= '9') ||
-	       (buffer >= 'a' && buffer <= 'f') ||
-	       (buffer >= 'A' && buffer <= 'F');
-}
-
 /*
  * chars that can pass without decoding.
  * rfc3986: unreserved characters.
  */
 static bool _is_valid_url_char(char buffer)
 {
-	return (buffer >= '0' && buffer <= '9') ||
-	       (buffer >= 'a' && buffer <= 'z') ||
-	       (buffer >= 'A' && buffer <= 'Z') || buffer == '~' ||
-	       buffer == '-' || buffer == '.' || buffer == '_';
+	return (isxdigit(buffer) || buffer == '~' || buffer == '-' ||
+		buffer == '.' || buffer == '_');
 }
 
 /*
@@ -74,7 +66,7 @@ static bool _is_valid_url_char(char buffer)
  */
 static unsigned char _decode_seq(const char *ptr)
 {
-	if (_is_char_hex(*(ptr + 1)) && _is_char_hex(*(ptr + 2))) {
+	if (isxdigit(*(ptr + 1)) && isxdigit(*(ptr + 2))) {
 		/* using unsigned char to avoid any rollover */
 		unsigned char high = *(ptr + 1);
 		unsigned char low = *(ptr + 2);
