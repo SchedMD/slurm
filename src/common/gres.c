@@ -1183,6 +1183,10 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 		p->name = xstrdup(value);
 	}
 
+	if (s_p_get_string(&p->type_name, "Type", tbl)) {
+		p->config_flags |= GRES_CONF_HAS_TYPE;
+	}
+
 	p->cpu_cnt = gres_cpu_cnt;
 	if (s_p_get_string(&p->cpus, "Cores", tbl)) {
 		cores_flag = true;
@@ -1271,10 +1275,6 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 			xfree(p->links);
 		}
 
-	}
-
-	if (s_p_get_string(&p->type_name, "Type", tbl)) {
-		p->config_flags |= GRES_CONF_HAS_TYPE;
 	}
 
 	if (s_p_get_string(&tmp_str, "Count", tbl)) {
