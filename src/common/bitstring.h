@@ -149,11 +149,12 @@ bitstr_t *bit_pick_cnt(bitstr_t *b, bitoff_t nbits);
 bitoff_t bit_get_bit_num(bitstr_t *b, int32_t pos);
 int32_t	bit_get_pos_num(bitstr_t *b, bitoff_t pos);
 
-#define FREE_NULL_BITMAP(_X)		\
-	do {				\
-		if (_X) bit_free (_X);	\
-		_X	= NULL; 	\
-	} while (0)
+#define FREE_NULL_BITMAP(_X)	\
+do {				\
+	if (_X)			\
+		bit_free (_X);	\
+	_X = NULL;		\
+} while (0)
 
 
 #endif /* !_BITSTRING_H_ */
