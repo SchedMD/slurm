@@ -25,6 +25,7 @@ html_DATA = \
 	job_container.conf.html \
 	knl.conf.html \
 	nonstop.conf.html \
+	oci.conf.html \
 	slurm.conf.html \
 	slurmdbd.conf.html \
 	topology.conf.html
