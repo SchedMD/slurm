@@ -159,9 +159,9 @@ static int _dump_association(data_t *resp, rest_auth_context_t *auth,
 	return rc;
 }
 
-static int
-	_delete_assoc(data_t *resp, rest_auth_context_t *auth, data_t *errors,
-		      char *account, char *cluster, char *user, char *partition)
+static int _delete_assoc(data_t *resp, rest_auth_context_t *auth,
+			 data_t *errors, char *account, char *cluster,
+			 char *user, char *partition)
 {
 	int rc = SLURM_SUCCESS;
 	List removed;
