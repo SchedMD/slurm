@@ -1651,8 +1651,10 @@ extern data_type_t data_convert_type(data_t *data, data_type_t match)
 	 * This currently only works on primitive types and doesn't
 	 * apply to dictionaries or lists.
 	 */
-	xassert(data_get_type(data) != DATA_TYPE_DICT);
-	xassert(data_get_type(data) != DATA_TYPE_LIST);
+	if (data_get_type(data) == DATA_TYPE_DICT)
+		return DATA_TYPE_NONE;
+	if (data_get_type(data) == DATA_TYPE_LIST)
+		return DATA_TYPE_NONE;
 
 	switch (match) {
 	case DATA_TYPE_STRING:
