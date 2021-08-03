@@ -959,20 +959,20 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 	/* User constrain */
 	limits.allow_cores = xstrdup_printf(
 		"%s,%s", job_alloc_cpus, root_limits->allow_cores);
-	rc = cgroup_g_user_constrain_set(CG_CPUS, job, &limits);
+	rc = cgroup_g_constrain_set(CG_CPUS, CG_LEVEL_USER, &limits);
 	xfree(limits.allow_cores);
 	if (rc != SLURM_SUCCESS)
 		goto endit;
 
 	/* Job constrain */
 	limits.allow_cores = job_alloc_cpus;
-	rc = cgroup_g_job_constrain_set(CG_CPUS, job, &limits);
+	rc = cgroup_g_constrain_set(CG_CPUS, CG_LEVEL_JOB, &limits);
 	if (rc != SLURM_SUCCESS)
 		goto endit;
 
 	/* Step constrain */
 	limits.allow_cores = step_alloc_cpus;
-	rc = cgroup_g_step_constrain_set(CG_CPUS, job, &limits);
+	rc = cgroup_g_constrain_set(CG_CPUS, CG_LEVEL_STEP, &limits);
 	if (rc != SLURM_SUCCESS)
 		goto endit;
 

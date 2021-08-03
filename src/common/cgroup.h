@@ -109,6 +109,9 @@ typedef enum {
 
 /* This data type is used to get/set various parameters in cgroup hierarchy */
 typedef struct {
+	/* extra info */
+	stepd_step_rec_t *step;
+	uint32_t taskid;
 	/* task cpuset */
 	char *allow_cores;
 	char *allow_mems;
@@ -200,22 +203,8 @@ extern int cgroup_g_step_destroy(cgroup_ctl_type_t sub);
 extern bool cgroup_g_has_pid(pid_t pid);
 extern cgroup_limits_t *cgroup_g_constrain_get(cgroup_ctl_type_t sub,
 					       cgroup_level_t type);
-extern int cgroup_g_root_constrain_set(cgroup_ctl_type_t sub,
-				       cgroup_limits_t *limits);
-extern int cgroup_g_system_constrain_set(cgroup_ctl_type_t sub,
-					 cgroup_limits_t *limits);
-extern int cgroup_g_user_constrain_set(cgroup_ctl_type_t sub,
-				       stepd_step_rec_t *job,
-				       cgroup_limits_t *limits);
-extern int cgroup_g_job_constrain_set(cgroup_ctl_type_t sub,
-				      stepd_step_rec_t *job,
-				      cgroup_limits_t *limits);
-extern int cgroup_g_step_constrain_set(cgroup_ctl_type_t sub,
-				       stepd_step_rec_t *job,
-				       cgroup_limits_t *limits);
-extern int cgroup_g_task_constrain_set(cgroup_ctl_type_t sub,
-				       cgroup_limits_t *limits,
-				       uint32_t taskid);
+extern int cgroup_g_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
+				  cgroup_limits_t *limits);
 extern int cgroup_g_step_start_oom_mgr(void);
 extern cgroup_oom_t *cgroup_g_step_stop_oom_mgr(stepd_step_rec_t *job);
 extern int cgroup_g_task_addto(cgroup_ctl_type_t sub, stepd_step_rec_t *job,

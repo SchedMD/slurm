@@ -92,16 +92,9 @@ static int _handle_device_access(void *x, void *arg)
 	memset(&limits, 0, sizeof(limits));
 	limits.allow_device = gres_device->alloc;
 	limits.device_major = gres_device->major;
+	limits.taskid = handle_args->taskid;
 
-	if (handle_args->cgroup_type == CG_LEVEL_JOB)
-		cgroup_g_job_constrain_set(CG_DEVICES, handle_args->job,
-					   &limits);
-	else if (handle_args->cgroup_type == CG_LEVEL_STEP)
-		cgroup_g_step_constrain_set(CG_DEVICES, handle_args->job,
-					    &limits);
-	else if (handle_args->cgroup_type == CG_LEVEL_TASK)
-		cgroup_g_task_constrain_set(CG_DEVICES, &limits,
-					    handle_args->taskid);
+	cgroup_g_constrain_set(CG_DEVICES, handle_args->cgroup_type, &limits);
 
 	return SLURM_SUCCESS;
 }
@@ -246,7 +239,7 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 		debug2("Default access allowed to device %s(%s) for job",
 		       allowed_dev_major[k], allowed_devices[k]);
 		limits.device_major = allowed_dev_major[k];
-		cgroup_g_job_constrain_set(CG_DEVICES, job, &limits);
+		cgroup_g_constrain_set(CG_DEVICES, CG_LEVEL_JOB, &limits);
 		limits.device_major = NULL;
 	}
 
@@ -268,7 +261,8 @@ extern int task_cgroup_devices_create(stepd_step_rec_t *job)
 			debug2("Default access allowed to device %s(%s) for step",
 			       allowed_dev_major[k], allowed_devices[k]);
 			limits.device_major = allowed_dev_major[k];
-			cgroup_g_step_constrain_set(CG_DEVICES, job, &limits);
+			cgroup_g_constrain_set(CG_DEVICES, CG_LEVEL_STEP,
+					       &limits);
 			limits.device_major = NULL;
 		}
 

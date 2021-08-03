@@ -203,73 +203,12 @@ extern cgroup_limits_t *cgroup_p_constrain_get(cgroup_ctl_type_t sub,
  * Set constrains to the root cgroup of the specified controller.
  *
  * IN sub - To which controller we want the limits be applied to.
+ * IN level - Directory level to apply the limits to.
  * IN limits - Struct containing the the limits to be applied.
  * RET SLURM_SUCCESS if limits were applied successfuly, SLURM_ERROR otherwise.
  */
-extern int cgroup_p_root_constrain_set(cgroup_ctl_type_t sub,
-				       cgroup_limits_t *limits);
-
-/*
- * Set constrains to the system cgroup of the specified controller.
- *
- * IN sub - To which controller we want the limits be applied to.
- * IN limits - Struct containing the the limits to be applied.
- * RET SLURM_SUCCESS if limits were applied successfuly, SLURM_ERROR otherwise.
- */
-extern int cgroup_p_system_constrain_set(cgroup_ctl_type_t sub,
-					 cgroup_limits_t *limits);
-
-/*
- * Set constrains to the user cgroup of the specified controller, for the
- * specified job.
- *
- * IN sub - To which controller we want the limits be applied to.
- * IN job - Step to which we want the limits be applied to.
- * IN limits - Struct containing the the limits to be applied.
- * RET SLURM_SUCCESS if limits were applied successfuly, SLURM_ERROR otherwise.
- */
-extern int cgroup_p_user_constrain_set(cgroup_ctl_type_t sub,
-				       stepd_step_rec_t *job,
-				       cgroup_limits_t *limits);
-
-/*
- * Set constrains to the job cgroup of the specified controller, for the
- * specified job.
- *
- * IN sub - To which controller we want the limits be applied to.
- * IN job - Step to which we want the limits be applied to.
- * IN limits - Struct containing the the limits to be applied.
- * RET SLURM_SUCCESS if limits were applied successfuly, SLURM_ERROR otherwise.
- */
-extern int cgroup_p_job_constrain_set(cgroup_ctl_type_t sub,
-				      stepd_step_rec_t *job,
-				      cgroup_limits_t *limits);
-
-/*
- * Set constrains to the step cgroup of the specified controller, for the
- * specified job.
- *
- * IN sub - To which controller we want the limits be applied to.
- * IN job - Step to which we want the limits be applied to.
- * IN limits - Struct containing the the limits to be applied.
- * RET SLURM_SUCCESS if limits were applied successfuly, SLURM_ERROR otherwise.
- */
-extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
-				       stepd_step_rec_t *job,
-				       cgroup_limits_t *limits);
-
-/*
- * Set constrains to the task cgroup of the specified controller, for the
- * specified job.
- *
- * IN sub - To which controller we want the limits be applied to.
- * IN limits - Struct containing the the limits to be applied.
- * IN taskid - task to which we want the limits be applied to.
- * RET SLURM_SUCCESS if limits were applied successfuly, SLURM_ERROR otherwise.
- */
-extern int cgroup_p_task_constrain_set(cgroup_ctl_type_t sub,
-				       cgroup_limits_t *limits,
-				       uint32_t taskid);
+extern int cgroup_p_constrain_set(cgroup_ctl_type_t sub, cgroup_level_t level,
+				  cgroup_limits_t *limits);
 
 /*
  * Cgroup v1 function to detect OOM conditions.

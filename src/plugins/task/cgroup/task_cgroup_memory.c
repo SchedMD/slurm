@@ -78,7 +78,7 @@ extern int task_cgroup_memory_init(void)
 	set_swappiness = (slurm_cgroup_conf.memory_swappiness != NO_VAL64);
 	if (set_swappiness) {
 		limits.swappiness = slurm_cgroup_conf.memory_swappiness;
-		cgroup_g_root_constrain_set(CG_MEMORY, &limits);
+		cgroup_g_constrain_set(CG_MEMORY, CG_LEVEL_ROOT, &limits);
 	}
 
 	constrain_kmem_space = slurm_cgroup_conf.constrain_kmem_space;
@@ -283,11 +283,11 @@ static int _memcg_initialize(stepd_step_rec_t *job, uint64_t mem_limit,
 	}
 
 	if (!is_step) {
-		if (cgroup_g_job_constrain_set(CG_MEMORY, job, &limits)
+		if (cgroup_g_constrain_set(CG_MEMORY, CG_LEVEL_JOB, &limits)
 		    != SLURM_SUCCESS)
 			return SLURM_ERROR;
 	} else {
-		if (cgroup_g_step_constrain_set(CG_MEMORY, job, &limits)
+		if (cgroup_g_constrain_set(CG_MEMORY, CG_LEVEL_STEP, &limits)
 		    != SLURM_SUCCESS)
 			return SLURM_ERROR;
 	}
