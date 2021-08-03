@@ -74,11 +74,8 @@ static uint16_t g_step_active_cnt[CG_CTL_CNT];
 
 static xcgroup_ns_t g_cg_ns[CG_CTL_CNT];
 
-static xcgroup_t g_root_cg[CG_CTL_CNT];
-static xcgroup_t g_user_cg[CG_CTL_CNT];
-static xcgroup_t g_job_cg[CG_CTL_CNT];
-static xcgroup_t g_step_cg[CG_CTL_CNT];
-static xcgroup_t g_sys_cg[CG_CTL_CNT];
+/* Internal cgroup structs */
+static xcgroup_t int_cg[CG_CTL_CNT][CG_LEVEL_CNT];
 
 const char *g_cg_name[CG_CTL_CNT] = {
 	"freezer",
@@ -126,8 +123,8 @@ static int _cgroup_init(cgroup_ctl_type_t sub)
 		return SLURM_ERROR;
 	}
 
-	if (common_cgroup_create(&g_cg_ns[sub], &g_root_cg[sub], "", 0, 0)
-	    != SLURM_SUCCESS) {
+	if (common_cgroup_create(&g_cg_ns[sub], &int_cg[sub][CG_LEVEL_ROOT],
+				 "", 0, 0) != SLURM_SUCCESS) {
 		error("unable to create root %s xcgroup", g_cg_name[sub]);
 		common_cgroup_ns_destroy(&g_cg_ns[sub]);
 		return SLURM_ERROR;
@@ -177,21 +174,24 @@ static int _cpuset_create(stepd_step_rec_t *job)
 		xstrfmtcat(sys_cgpath, "%s/system", slurm_cgpath);
 
 		/* create system cgroup in the cpuset ns */
-		if ((rc = common_cgroup_create(&g_cg_ns[CG_CPUS],
-					       &g_sys_cg[CG_CPUS],
-					       sys_cgpath, getuid(), getgid()))
+		if ((rc = common_cgroup_create(
+			     &g_cg_ns[CG_CPUS],
+			     &int_cg[CG_CPUS][CG_LEVEL_SYSTEM],
+			     sys_cgpath, getuid(), getgid()))
 		    != SLURM_SUCCESS) {
 			goto end;
 		}
-		if ((rc = common_cgroup_instantiate(&g_sys_cg[CG_CPUS]))
+		if ((rc = common_cgroup_instantiate(
+			     &int_cg[CG_CPUS][CG_LEVEL_SYSTEM]))
 		    != SLURM_SUCCESS)
 			goto end;
 
 		/* set notify on release flag */
-		common_cgroup_set_param(&g_sys_cg[CG_CPUS], "notify_on_release",
-					"0");
+		common_cgroup_set_param(&int_cg[CG_CPUS][CG_LEVEL_SYSTEM],
+					"notify_on_release", "0");
 
-		if ((rc = xcgroup_cpuset_init(&g_sys_cg[CG_CPUS]))
+		if ((rc = xcgroup_cpuset_init(
+			     &int_cg[CG_CPUS][CG_LEVEL_SYSTEM]))
 		    != SLURM_SUCCESS)
 			goto end;
 
@@ -201,9 +201,9 @@ static int _cpuset_create(stepd_step_rec_t *job)
 		rc = xcgroup_create_hierarchy(__func__,
 					      job,
 					      &g_cg_ns[CG_CPUS],
-					      &g_job_cg[CG_CPUS],
-					      &g_step_cg[CG_CPUS],
-					      &g_user_cg[CG_CPUS],
+					      &int_cg[CG_CPUS][CG_LEVEL_JOB],
+					      &int_cg[CG_CPUS][CG_LEVEL_STEP],
+					      &int_cg[CG_CPUS][CG_LEVEL_USER],
 					      g_job_cgpath[CG_CPUS],
 					      g_step_cgpath[CG_CPUS],
 					      g_user_cgpath[CG_CPUS]);
@@ -424,8 +424,8 @@ extern int cgroup_p_initialize(cgroup_ctl_type_t sub)
 	case CG_CPUS:
 		break;
 	case CG_MEMORY:
-		common_cgroup_set_param(&g_root_cg[sub], "memory.use_hierarchy",
-					"1");
+		common_cgroup_set_param(&int_cg[sub][CG_LEVEL_ROOT],
+					"memory.use_hierarchy", "1");
 		break;
 	case CG_DEVICES:
 	case CG_CPUACCT:
@@ -457,33 +457,35 @@ extern int cgroup_p_system_create(cgroup_ctl_type_t sub)
 		xstrfmtcat(sys_cgpath, "%s/system", slurm_cgpath);
 		xfree(slurm_cgpath);
 
-		if ((rc = common_cgroup_create(&g_cg_ns[sub], &g_sys_cg[sub],
+		if ((rc = common_cgroup_create(&g_cg_ns[sub],
+					       &int_cg[sub][CG_LEVEL_SYSTEM],
 					       sys_cgpath, getuid(), getgid()))
 		    != SLURM_SUCCESS)
 			goto end;
 
-		if ((rc = common_cgroup_instantiate(&g_sys_cg[sub]))
+		if ((rc = common_cgroup_instantiate(
+			     &int_cg[sub][CG_LEVEL_SYSTEM]))
 		    != SLURM_SUCCESS)
 			goto end;
 
 		/* set notify on release flag */
-		common_cgroup_set_param(&g_sys_cg[sub], "notify_on_release",
-					"0");
+		common_cgroup_set_param(&int_cg[sub][CG_LEVEL_SYSTEM],
+					"notify_on_release", "0");
 
-		if ((rc = common_cgroup_set_param(&g_sys_cg[sub],
-					    "memory.use_hierarchy", "1"))
+		if ((rc = common_cgroup_set_param(&int_cg[sub][CG_LEVEL_SYSTEM],
+						  "memory.use_hierarchy", "1"))
 		    != SLURM_SUCCESS) {
 			error("system cgroup: unable to ask for hierarchical accounting of system memcg '%s'",
-			      g_sys_cg[sub].path);
+			      int_cg[sub][CG_LEVEL_SYSTEM].path);
 			goto end;
 		}
 
-		if ((rc = common_cgroup_set_uint64_param(&g_sys_cg[sub],
-							 "memory.oom_control",
-							 1))
+		if ((rc = common_cgroup_set_uint64_param(
+			     &int_cg[sub][CG_LEVEL_SYSTEM],
+			     "memory.oom_control", 1))
 		    != SLURM_SUCCESS) {
-			error("Resource spec: unable to disable OOM Killer in "
-			      "system memory cgroup: %s", g_sys_cg[sub].path);
+			error("Resource spec: unable to disable OOM Killer in system memory cgroup: %s",
+			      int_cg[sub][CG_LEVEL_SYSTEM].path);
 			goto end;
 		}
 		break;
@@ -504,9 +506,11 @@ extern int cgroup_p_system_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
 	case CG_TRACK:
 		break;
 	case CG_CPUS:
-		return common_cgroup_add_pids(&g_sys_cg[sub], pids, npids);
+		return common_cgroup_add_pids(&int_cg[sub][CG_LEVEL_SYSTEM],
+					      pids, npids);
 	case CG_MEMORY:
-		return common_cgroup_add_pids(&g_sys_cg[sub], pids, npids);
+		return common_cgroup_add_pids(&int_cg[sub][CG_LEVEL_SYSTEM],
+					      pids, npids);
 	case CG_DEVICES:
 		break;
 	case CG_CPUACCT:
@@ -517,7 +521,7 @@ extern int cgroup_p_system_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
 		return SLURM_ERROR;
 	}
 
-	return common_cgroup_add_pids(&g_step_cg[sub], pids, npids);
+	return common_cgroup_add_pids(&int_cg[sub][CG_LEVEL_STEP], pids, npids);
 }
 
 extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub)
@@ -525,7 +529,7 @@ extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub)
 	int rc = SLURM_SUCCESS;
 
 	/* Another plugin may have already destroyed this subsystem. */
-	if (!g_sys_cg[sub].path)
+	if (!int_cg[sub][CG_LEVEL_SYSTEM].path)
 		return SLURM_SUCCESS;
 
 	/* Custom actions for every cgroup subsystem */
@@ -546,22 +550,23 @@ extern int cgroup_p_system_destroy(cgroup_ctl_type_t sub)
 		break;
 	}
 
-	rc = common_cgroup_move_process(&g_root_cg[sub], getpid());
+	rc = common_cgroup_move_process(&int_cg[sub][CG_LEVEL_ROOT], getpid());
 	if (rc != SLURM_SUCCESS) {
 		error("Unable to move pid %d to root cgroup", getpid());
 		goto end;
 	}
-	xcgroup_wait_pid_moved(&g_sys_cg[sub], g_cg_name[sub]);
+	xcgroup_wait_pid_moved(&int_cg[sub][CG_LEVEL_SYSTEM], g_cg_name[sub]);
 
-	if ((rc = common_cgroup_delete(&g_sys_cg[sub])) != SLURM_SUCCESS) {
+	if ((rc = common_cgroup_delete(&int_cg[sub][CG_LEVEL_SYSTEM]))
+	    != SLURM_SUCCESS) {
 		log_flag(CGROUP, "not removing system cg (%s), there may be attached stepds: %m",
 			 g_cg_name[sub]);
 		goto end;
 	}
-	common_cgroup_destroy(&g_sys_cg[sub]);
+	common_cgroup_destroy(&int_cg[sub][CG_LEVEL_SYSTEM]);
 end:
 	if (rc == SLURM_SUCCESS) {
-		common_cgroup_destroy(&g_root_cg[sub]);
+		common_cgroup_destroy(&int_cg[sub][CG_LEVEL_ROOT]);
 		common_cgroup_ns_destroy(&g_cg_ns[sub]);
 	}
 	return rc;
@@ -585,9 +590,9 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 		if ((rc = xcgroup_create_hierarchy(__func__,
 						   job,
 						   &g_cg_ns[sub],
-						   &g_job_cg[sub],
-						   &g_step_cg[sub],
-						   &g_user_cg[sub],
+						   &int_cg[sub][CG_LEVEL_JOB],
+						   &int_cg[sub][CG_LEVEL_STEP],
+						   &int_cg[sub][CG_LEVEL_USER],
 						   g_job_cgpath[sub],
 						   g_step_cgpath[sub],
 						   g_user_cgpath[sub]))
@@ -605,16 +610,16 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 		if ((rc = xcgroup_create_hierarchy(__func__,
 						   job,
 						   &g_cg_ns[sub],
-						   &g_job_cg[sub],
-						   &g_step_cg[sub],
-						   &g_user_cg[sub],
+						   &int_cg[sub][CG_LEVEL_JOB],
+						   &int_cg[sub][CG_LEVEL_STEP],
+						   &int_cg[sub][CG_LEVEL_USER],
 						   g_job_cgpath[sub],
 						   g_step_cgpath[sub],
 						   g_user_cgpath[sub]))
 		    != SLURM_SUCCESS) {
 			goto step_c_err;
 		}
-		if ((rc = common_cgroup_set_param(&g_user_cg[sub],
+		if ((rc = common_cgroup_set_param(&int_cg[sub][CG_LEVEL_USER],
 						  "memory.use_hierarchy",
 						  "1")) != SLURM_SUCCESS) {
 			error("unable to set hierarchical accounting for %s",
@@ -622,7 +627,7 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 			cgroup_p_step_destroy(sub);
 			break;
 		}
-		if ((rc = common_cgroup_set_param(&g_job_cg[sub],
+		if ((rc = common_cgroup_set_param(&int_cg[sub][CG_LEVEL_JOB],
 						  "memory.use_hierarchy",
 						  "1")) != SLURM_SUCCESS) {
 			error("unable to set hierarchical accounting for %s",
@@ -630,11 +635,11 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 			cgroup_p_step_destroy(sub);
 			break;
 		}
-		if ((rc = common_cgroup_set_param(&g_step_cg[sub],
+		if ((rc = common_cgroup_set_param(&int_cg[sub][CG_LEVEL_STEP],
 						  "memory.use_hierarchy",
 						  "1") != SLURM_SUCCESS)) {
 			error("unable to set hierarchical accounting for %s",
-			      g_step_cg[sub].path);
+			      int_cg[sub][CG_LEVEL_STEP].path);
 			cgroup_p_step_destroy(sub);
 			break;
 		}
@@ -644,9 +649,9 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 		if ((rc = xcgroup_create_hierarchy(__func__,
 						   job,
 						   &g_cg_ns[sub],
-						   &g_job_cg[sub],
-						   &g_step_cg[sub],
-						   &g_user_cg[sub],
+						   &int_cg[sub][CG_LEVEL_JOB],
+						   &int_cg[sub][CG_LEVEL_STEP],
+						   &int_cg[sub][CG_LEVEL_USER],
 						   g_job_cgpath[sub],
 						   g_step_cgpath[sub],
 						   g_user_cgpath[sub]))
@@ -657,9 +662,9 @@ extern int cgroup_p_step_create(cgroup_ctl_type_t sub, stepd_step_rec_t *job)
 		if ((rc = xcgroup_create_hierarchy(__func__,
 						   job,
 						   &g_cg_ns[sub],
-						   &g_job_cg[sub],
-						   &g_step_cg[sub],
-						   &g_user_cg[sub],
+						   &int_cg[sub][CG_LEVEL_JOB],
+						   &int_cg[sub][CG_LEVEL_STEP],
+						   &int_cg[sub][CG_LEVEL_USER],
 						   g_job_cgpath[sub],
 						   g_step_cgpath[sub],
 						   g_user_cgpath[sub]))
@@ -699,7 +704,7 @@ extern int cgroup_p_step_addto(cgroup_ctl_type_t sub, pid_t *pids, int npids)
 		return SLURM_ERROR;
 	}
 
-	return common_cgroup_add_pids(&g_step_cg[sub], pids, npids);
+	return common_cgroup_add_pids(&int_cg[sub][CG_LEVEL_STEP], pids, npids);
 }
 
 extern int cgroup_p_step_get_pids(pid_t **pids, int *npids)
@@ -707,7 +712,8 @@ extern int cgroup_p_step_get_pids(pid_t **pids, int *npids)
 	if (*g_step_cgpath[CG_TRACK] == '\0')
 		return SLURM_ERROR;
 
-	return common_cgroup_get_pids(&g_step_cg[CG_TRACK], pids, npids);
+	return common_cgroup_get_pids(&int_cg[CG_TRACK][CG_LEVEL_STEP], pids,
+				      npids);
 }
 
 extern int cgroup_p_step_suspend(void)
@@ -715,8 +721,8 @@ extern int cgroup_p_step_suspend(void)
 	if (*g_step_cgpath[CG_TRACK] == '\0')
 		return SLURM_ERROR;
 
-	return common_cgroup_set_param(&g_step_cg[CG_TRACK], "freezer.state",
-				       "FROZEN");
+	return common_cgroup_set_param(&int_cg[CG_TRACK][CG_LEVEL_STEP],
+				       "freezer.state", "FROZEN");
 }
 
 extern int cgroup_p_step_resume(void)
@@ -724,8 +730,8 @@ extern int cgroup_p_step_resume(void)
 	if (*g_step_cgpath[CG_TRACK] == '\0')
 		return SLURM_ERROR;
 
-	return common_cgroup_set_param(&g_step_cg[CG_TRACK], "freezer.state",
-				       "THAWED");
+	return common_cgroup_set_param(&int_cg[CG_TRACK][CG_LEVEL_STEP],
+				       "freezer.state", "THAWED");
 }
 
 extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
@@ -769,10 +775,10 @@ extern int cgroup_p_step_destroy(cgroup_ctl_type_t sub)
 		break;
 	}
 
-	rc = _remove_cg_subsystem(&g_root_cg[sub],
-				  &g_step_cg[sub],
-				  &g_job_cg[sub],
-				  &g_user_cg[sub],
+	rc = _remove_cg_subsystem(&int_cg[sub][CG_LEVEL_ROOT],
+				  &int_cg[sub][CG_LEVEL_STEP],
+				  &int_cg[sub][CG_LEVEL_JOB],
+				  &int_cg[sub][CG_LEVEL_USER],
 				  g_cg_name[sub]);
 
 	if (rc == SLURM_SUCCESS) {
@@ -797,7 +803,7 @@ extern bool cgroup_p_has_pid(pid_t pid)
 		return false;
 
 	rc = true;
-	if (xstrcmp(cg.path, g_step_cg[CG_TRACK].path))
+	if (xstrcmp(cg.path, int_cg[CG_TRACK][CG_LEVEL_STEP].path))
 		rc = false;
 
 	common_cgroup_destroy(&cg);
@@ -813,13 +819,14 @@ extern cgroup_limits_t *cgroup_p_root_constrain_get(cgroup_ctl_type_t sub)
 	case CG_TRACK:
 		break;
 	case CG_CPUS:
-		if (common_cgroup_get_param(&g_root_cg[CG_CPUS], "cpuset.cpus",
+		if (common_cgroup_get_param(&int_cg[sub][CG_LEVEL_ROOT],
+					    "cpuset.cpus",
 					    &limits->allow_cores,
 					    &limits->cores_size)
 		    != SLURM_SUCCESS)
 			rc = SLURM_ERROR;
 
-		if (common_cgroup_get_param(&g_root_cg[CG_CPUS],
+		if (common_cgroup_get_param(&int_cg[sub][CG_LEVEL_ROOT],
 					    "cpuset.mems",
 					    &limits->allow_mems,
 					    &limits->mems_size)
@@ -864,7 +871,7 @@ extern int cgroup_p_root_constrain_set(cgroup_ctl_type_t sub,
 	case CG_CPUS:
 		break;
 	case CG_MEMORY:
-		rc = common_cgroup_set_uint64_param(&g_root_cg[CG_MEMORY],
+		rc = common_cgroup_set_uint64_param(&int_cg[sub][CG_LEVEL_ROOT],
 						    "memory.swappiness",
 						    limits->swappiness);
 		break;
@@ -909,11 +916,12 @@ extern int cgroup_p_system_constrain_set(cgroup_ctl_type_t sub,
 	case CG_TRACK:
 		break;
 	case CG_CPUS:
-		rc = common_cgroup_set_param(&g_sys_cg[CG_CPUS], "cpuset.cpus",
+		rc = common_cgroup_set_param(&int_cg[CG_CPUS][CG_LEVEL_SYSTEM],
+					     "cpuset.cpus",
 					     limits->allow_cores);
 		break;
 	case CG_MEMORY:
-		common_cgroup_set_uint64_param(&g_sys_cg[CG_MEMORY],
+		common_cgroup_set_uint64_param(&int_cg[sub][CG_LEVEL_SYSTEM],
 					       "memory.limit_in_bytes",
 					       limits->limit_in_bytes);
 		break;
@@ -941,11 +949,12 @@ extern int cgroup_p_user_constrain_set(cgroup_ctl_type_t sub,
 	case CG_TRACK:
 		break;
 	case CG_CPUS:
-		if (common_cgroup_set_param(&g_user_cg[CG_CPUS], "cpuset.cpus",
+		if (common_cgroup_set_param(&int_cg[sub][CG_LEVEL_USER],
+					    "cpuset.cpus",
 					    limits->allow_cores)
 		    != SLURM_SUCCESS)
 			rc = SLURM_ERROR;
-		if (common_cgroup_set_param(&g_user_cg[CG_CPUS],
+		if (common_cgroup_set_param(&int_cg[sub][CG_LEVEL_USER],
 					    "cpuset.mems",
 					    limits->allow_mems)
 		    != SLURM_SUCCESS)
@@ -977,30 +986,32 @@ extern int cgroup_p_job_constrain_set(cgroup_ctl_type_t sub,
 	case CG_TRACK:
 		break;
 	case CG_CPUS:
-		if (common_cgroup_set_param(&g_job_cg[CG_CPUS], "cpuset.cpus",
+		if (common_cgroup_set_param(&int_cg[sub][CG_LEVEL_JOB],
+					    "cpuset.cpus",
 					    limits->allow_cores)
 		    != SLURM_SUCCESS)
 			rc = SLURM_ERROR;
-		if (common_cgroup_set_param(&g_job_cg[CG_CPUS], "cpuset.mems",
+		if (common_cgroup_set_param(&int_cg[sub][CG_LEVEL_JOB],
+					    "cpuset.mems",
 					    limits->allow_mems)
 		    != SLURM_SUCCESS)
 			rc = SLURM_ERROR;
 		break;
 	case CG_MEMORY:
-		if (common_cgroup_set_uint64_param(&g_job_cg[CG_MEMORY],
+		if (common_cgroup_set_uint64_param(&int_cg[sub][CG_LEVEL_JOB],
 						   "memory.limit_in_bytes",
 						   limits->limit_in_bytes)
 		    != SLURM_SUCCESS)
 			rc = SLURM_ERROR;
 		if (common_cgroup_set_uint64_param(
-			    &g_job_cg[CG_MEMORY],
+			    &int_cg[sub][CG_LEVEL_JOB],
 			    "memory.soft_limit_in_bytes",
 			    limits->soft_limit_in_bytes) != SLURM_SUCCESS)
 			rc = SLURM_ERROR;
 
 		if (limits->kmem_limit_in_bytes != NO_VAL64)
 			if (common_cgroup_set_uint64_param(
-				    &g_job_cg[CG_MEMORY],
+				    &int_cg[sub][CG_LEVEL_JOB],
 				    "memory.kmem.limit_in_bytes",
 				    limits->kmem_limit_in_bytes)
 			    != SLURM_SUCCESS)
@@ -1008,7 +1019,7 @@ extern int cgroup_p_job_constrain_set(cgroup_ctl_type_t sub,
 
 		if (limits->memsw_limit_in_bytes != NO_VAL64)
 			if (common_cgroup_set_uint64_param(
-				    &g_job_cg[CG_MEMORY],
+				    &int_cg[sub][CG_LEVEL_JOB],
 				    "memory.memsw.limit_in_bytes",
 				    limits->memsw_limit_in_bytes)
 			    != SLURM_SUCCESS)
@@ -1016,13 +1027,13 @@ extern int cgroup_p_job_constrain_set(cgroup_ctl_type_t sub,
 		break;
 	case CG_DEVICES:
 		if (limits->allow_device) {
-			if (common_cgroup_set_param(&g_job_cg[CG_DEVICES],
+			if (common_cgroup_set_param(&int_cg[sub][CG_LEVEL_JOB],
 						    "devices.allow",
 						    limits->device_major)
 			    != SLURM_SUCCESS)
 				rc = SLURM_ERROR;
 		} else {
-			if (common_cgroup_set_param(&g_job_cg[CG_DEVICES],
+			if (common_cgroup_set_param(&int_cg[sub][CG_LEVEL_JOB],
 						    "devices.deny",
 						    limits->device_major)
 			    != SLURM_SUCCESS)
@@ -1054,12 +1065,12 @@ extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
 	case CG_TRACK:
 		break;
 	case CG_CPUS:
-		if (common_cgroup_set_param(&g_step_cg[CG_CPUS], "cpuset.cpus",
-					    limits->allow_cores)
+		if (common_cgroup_set_param(&int_cg[sub][CG_LEVEL_STEP],
+					    "cpuset.cpus", limits->allow_cores)
 		    != SLURM_SUCCESS)
 			rc = SLURM_ERROR;
 
-		if (common_cgroup_set_param(&g_step_cg[CG_CPUS],
+		if (common_cgroup_set_param(&int_cg[sub][CG_LEVEL_STEP],
 					    "cpuset.mems",
 					    limits->allow_mems)
 		    != SLURM_SUCCESS)
@@ -1072,29 +1083,28 @@ extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
 		snprintf(expected_usage, sizeof(expected_usage), "%"PRIu64,
 			 (uint64_t)job->step_mem * 1024 * 1024);
 
-		if (common_cgroup_set_param(&g_step_cg[CG_CPUS],
+		if (common_cgroup_set_param(&int_cg[sub][CG_LEVEL_STEP],
 					    "cpuset.expected_usage_in_bytes",
 					    expected_usage) != SLURM_SUCCESS)
 			rc = SLURM_ERROR;
 #endif
 		break;
 	case CG_MEMORY:
-		if (common_cgroup_set_uint64_param(&g_step_cg[CG_MEMORY],
+		if (common_cgroup_set_uint64_param(&int_cg[sub][CG_LEVEL_STEP],
 						   "memory.limit_in_bytes",
 						   limits->limit_in_bytes)
 		    != SLURM_SUCCESS)
 			rc = SLURM_ERROR;
 
-		if (common_cgroup_set_uint64_param(
-			    &g_step_cg[CG_MEMORY],
-			    "memory.soft_limit_in_bytes",
-			    limits->soft_limit_in_bytes)
+		if (common_cgroup_set_uint64_param(&int_cg[sub][CG_LEVEL_STEP],
+						   "memory.soft_limit_in_bytes",
+						   limits->soft_limit_in_bytes)
 		    != SLURM_SUCCESS)
 			rc = SLURM_ERROR;
 
 		if (limits->kmem_limit_in_bytes != NO_VAL64)
 			if (common_cgroup_set_uint64_param(
-				    &g_step_cg[CG_MEMORY],
+				    &int_cg[sub][CG_LEVEL_STEP],
 				    "memory.kmem.limit_in_bytes",
 				    limits->kmem_limit_in_bytes)
 			    != SLURM_SUCCESS)
@@ -1102,7 +1112,7 @@ extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
 
 		if (limits->memsw_limit_in_bytes != NO_VAL64)
 			if (common_cgroup_set_uint64_param(
-				    &g_step_cg[CG_MEMORY],
+				    &int_cg[sub][CG_LEVEL_STEP],
 				    "memory.memsw.limit_in_bytes",
 				    limits->memsw_limit_in_bytes)
 			    != SLURM_SUCCESS)
@@ -1110,13 +1120,13 @@ extern int cgroup_p_step_constrain_set(cgroup_ctl_type_t sub,
 		break;
 	case CG_DEVICES:
 		if (limits->allow_device) {
-			if (common_cgroup_set_param(&g_step_cg[CG_DEVICES],
+			if (common_cgroup_set_param(&int_cg[sub][CG_LEVEL_STEP],
 						    "devices.allow",
 						    limits->device_major)
 			    != SLURM_SUCCESS)
 				rc = SLURM_ERROR;
 		} else {
-			if (common_cgroup_set_param(&g_step_cg[CG_DEVICES],
+			if (common_cgroup_set_param(&int_cg[sub][CG_LEVEL_STEP],
 						    "devices.deny",
 						    limits->device_major)
 			    != SLURM_SUCCESS)
@@ -1325,7 +1335,7 @@ extern int cgroup_p_step_start_oom_mgr(void)
 	int rc = SLURM_SUCCESS, event_fd = -1, cfd = -1, efd = -1;
 	oom_event_args_t *event_args;
 
-	xstrfmtcat(control_file, "%s/%s", g_step_cg[CG_MEMORY].path,
+	xstrfmtcat(control_file, "%s/%s", int_cg[CG_MEMORY][CG_LEVEL_STEP].path,
 		   "memory.oom_control");
 
 	if ((cfd = open(control_file, O_RDONLY | O_CLOEXEC)) == -1) {
@@ -1334,7 +1344,7 @@ extern int cgroup_p_step_start_oom_mgr(void)
 		goto fini;
 	}
 
-	xstrfmtcat(event_file, "%s/%s", g_step_cg[CG_MEMORY].path,
+	xstrfmtcat(event_file, "%s/%s", int_cg[CG_MEMORY][CG_LEVEL_STEP].path,
 		   "cgroup.event_control");
 
 	if ((efd = open(event_file, O_WRONLY | O_CLOEXEC)) == -1) {
@@ -1397,7 +1407,7 @@ fini:
 
 	if (rc != SLURM_SUCCESS)
 		error("Unable to register OOM notifications for %s",
-		      g_step_cg[CG_MEMORY].path);
+		      int_cg[CG_MEMORY][CG_LEVEL_STEP].path);
 	return rc;
 }
 
@@ -1426,23 +1436,24 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 		goto fail_oom_results;
 	}
 
-	if (xcgroup_lock(&g_step_cg[CG_MEMORY]) != SLURM_SUCCESS) {
+	if (xcgroup_lock(&int_cg[CG_MEMORY][CG_LEVEL_STEP]) != SLURM_SUCCESS) {
 		error("xcgroup_lock error: %m");
 		goto fail_oom_results;
 	}
 
 	results = xmalloc(sizeof(*results));
 
-	results->step_memsw_failcnt = _failcnt(&g_step_cg[CG_MEMORY],
-					       "memory.memsw.failcnt");
-	results->step_mem_failcnt = _failcnt(&g_step_cg[CG_MEMORY],
+	results->step_memsw_failcnt = _failcnt(
+		&int_cg[CG_MEMORY][CG_LEVEL_STEP],
+		"memory.memsw.failcnt");
+	results->step_mem_failcnt = _failcnt(&int_cg[CG_MEMORY][CG_LEVEL_STEP],
 					     "memory.failcnt");
-	results->job_memsw_failcnt = _failcnt(&g_job_cg[CG_MEMORY],
+	results->job_memsw_failcnt = _failcnt(&int_cg[CG_MEMORY][CG_LEVEL_JOB],
 					      "memory.memsw.failcnt");
-	results->job_mem_failcnt = _failcnt(&g_job_cg[CG_MEMORY],
+	results->job_mem_failcnt = _failcnt(&int_cg[CG_MEMORY][CG_LEVEL_JOB],
 					    "memory.failcnt");
 
-	xcgroup_unlock(&g_step_cg[CG_MEMORY]);
+	xcgroup_unlock(&int_cg[CG_MEMORY][CG_LEVEL_STEP]);
 
 	/*
 	 * oom_thread created, but could have finished before we attempt
