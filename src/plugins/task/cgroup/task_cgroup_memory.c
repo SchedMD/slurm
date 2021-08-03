@@ -77,7 +77,7 @@ extern int task_cgroup_memory_init(void)
 
 	set_swappiness = (slurm_cgroup_conf.memory_swappiness != NO_VAL64);
 	if (set_swappiness) {
-		limits.swappiness = true;
+		limits.swappiness = slurm_cgroup_conf.memory_swappiness;
 		cgroup_g_root_constrain_set(CG_MEMORY, &limits);
 	}
 

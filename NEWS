@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
     Environment flags are not set.
  -- Set missing job_uid and job_gid members when preparing a kill_job_msg_t in
     abort_job_on_node(), abort_job_on_nodes() and kill_job_on_node().
+ -- Fix swappiness not being set in cgroups.
 
 * Changes in Slurm 21.08.0rc2
 =============================
