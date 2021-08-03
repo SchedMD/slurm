@@ -720,9 +720,9 @@ extern void configless_update(void)
 
 	load_config_response_msg(new, CONFIG_REQUEST_SLURMD);
 
-	memcpy(old, config_for_slurmd, sizeof(config_response_msg_t));
+	memcpy(old, config_for_slurmd, sizeof(*old));
 	/* pseudo-atomic update of the pointers */
-	memcpy(config_for_slurmd, new, sizeof(config_response_msg_t));
+	memcpy(config_for_slurmd, new, sizeof(*config_for_slurmd));
 	/* only free "new", not the contents */
 	xfree(new);
 
