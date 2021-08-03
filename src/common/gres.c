@@ -279,8 +279,8 @@ static int	_valid_gres_type(char *gres_name, gres_node_state_t *gres_data,
 static void _parse_tres_bind(uint16_t accel_bind_type, char *tres_bind_str,
 			     tres_bind_t *tres_bind);
 static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
-			    tres_bind_t *tres_bind, bitstr_t **usable_gres_ptr);
-
+			    tres_bind_t *tres_bind, bitstr_t **usable_gres_ptr,
+			    bitstr_t *gres_bit_alloc,  bool get_devices);
 
 extern uint32_t gres_build_id(char *name)
 {
@@ -8141,8 +8141,8 @@ extern List gres_g_get_devices(List gres_list, bool is_job,
 		}
 
 		if (_get_usable_gres(gres_context[j].gres_name, j,
-				     local_proc_id, &tres_bind,
-				     &usable_gres) == SLURM_ERROR)
+				     local_proc_id, &tres_bind, &usable_gres,
+				     *local_bit_alloc, true) == SLURM_ERROR)
 			continue;
 
 		dev_itr = list_iterator_create(gres_devices);
@@ -9125,12 +9125,44 @@ extern uint64_t gres_step_count(List step_gres_list, char *gres_name)
 }
 
 /*
+ * Here we convert usable_gres from a mask just for the gres in the allocation
+ * to one for the gres on the node. Essentially putting in a '0' for gres not
+ * in the allocation
+ *
+ * IN/OUT - usable_gres
+ * IN - gres_bit_alloc
+ * IN - global_to_local   - translate a global list to a local list instead.
+ */
+static void _translate_local_to_global_device_index(bitstr_t **usable_gres,
+						    bitstr_t *gres_bit_alloc,
+						    bool global_to_local)
+{
+	bitstr_t *tmp = bit_alloc(bit_size(gres_bit_alloc));
+	int i_last, bit, bit2 = 0;
+
+	i_last = bit_fls(gres_bit_alloc);
+	for (bit = 0; bit <= i_last; bit++) {
+		if (bit_test(gres_bit_alloc, bit)) {
+			if (bit_test(*usable_gres,
+				     global_to_local ? bit : bit2)) {
+				bit_set(tmp, global_to_local ? bit2 : bit);
+			}
+			bit2++;
+		}
+	}
+	FREE_NULL_BITMAP(*usable_gres);
+	*usable_gres = tmp;
+}
+
+/*
  * Given a GRES context index, return a bitmap representing those GRES
  * which are available from the CPUs current allocated to this process.
  * This function only works with task/cgroup and constrained devices or
  * if the job step has access to the entire node's resources.
  */
-static bitstr_t * _get_usable_gres_internal(int context_inx)
+static bitstr_t *_get_usable_gres_cpu_affinity(int context_inx,
+					       bitstr_t *gres_bit_alloc,
+				     	       bool get_devices)
 {
 #if defined(__APPLE__)
 	return NULL;
@@ -9146,6 +9178,7 @@ static bitstr_t * _get_usable_gres_internal(int context_inx)
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	int gres_inx = 0;
+	int bitmap_size;
 
 	if (!gres_conf_list) {
 		error("gres_conf_list is null!");
@@ -9164,16 +9197,17 @@ static bitstr_t * _get_usable_gres_internal(int context_inx)
 		return usable_gres;
 	}
 
-	usable_gres = bit_alloc(MAX_GRES_BITMAP);
+	bitmap_size = bit_size(gres_bit_alloc);
+	usable_gres = bit_alloc(bitmap_size);
 	iter = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = (gres_slurmd_conf_t *) list_next(iter))) {
 		if (gres_slurmd_conf->plugin_id !=
 		    gres_context[context_inx].plugin_id)
 			continue;
-		if ((gres_inx + gres_slurmd_conf->count) >= MAX_GRES_BITMAP) {
-			error("GRES %s bitmap overflow ((%d + %"PRIu64") >= %d)",
+		if ((gres_inx + gres_slurmd_conf->count) > bitmap_size) {
+			error("GRES %s bitmap overflow ((%d + %"PRIu64") > %d)",
 			      gres_slurmd_conf->name, gres_inx,
-			      gres_slurmd_conf->count, MAX_GRES_BITMAP);
+			      gres_slurmd_conf->count, bitmap_size);
 			continue;
 		}
 		if (!gres_slurmd_conf->cpus_bitmap) {
@@ -9198,6 +9232,13 @@ static bitstr_t * _get_usable_gres_internal(int context_inx)
 #ifdef __NetBSD__
 	cpuset_destroy(mask);
 #endif
+
+	if (!get_devices && gres_use_local_device_index()) {
+		_translate_local_to_global_device_index(
+			&usable_gres, gres_bit_alloc, true);
+	} else {
+		bit_and(usable_gres, gres_bit_alloc);
+	}
 
 	return usable_gres;
 #endif
@@ -9335,24 +9376,29 @@ extern void gres_g_step_hardware_fini(void)
  *
  * IN map_or_mask
  * IN local_proc_id
+ * IN gres_bit_alloc
  * IN is_map
+ * IN get_devices
  *
  * RET usable_gres
  */
 static bitstr_t *_get_usable_gres_map_or_mask(char *map_or_mask,
 					      int local_proc_id,
-					      bool is_map)
+					      bitstr_t *gres_bit_alloc,
+					      bool is_map,
+					      bool get_devices)
 {
 	bitstr_t *usable_gres = NULL;
 	char *tmp, *tok, *save_ptr = NULL, *mult;
-	int i, task_offset = 0, task_mult;
+	int i, task_offset = 0, task_mult, bitmap_size;
 	int value, min, max;
 
 	if (!map_or_mask || !map_or_mask[0])
 		return NULL;
 
+	bitmap_size = bit_size(gres_bit_alloc);
 	min = (is_map ?  0 : 1);
-	max = (is_map ? MAX_GRES_BITMAP : 0xffffffff);
+	max = (is_map ? bitmap_size : ~(-1 << bitmap_size));
 	while (usable_gres == NULL) {
 		tmp = xstrdup(map_or_mask);
 		tok = strtok_r(tmp, ",", &save_ptr);
@@ -9368,16 +9414,16 @@ static bitstr_t *_get_usable_gres_map_or_mask(char *map_or_mask,
 			if ((local_proc_id >= task_offset) &&
 			    (local_proc_id <= (task_offset + task_mult - 1))) {
 				value = strtol(tok, NULL, 0);
+				usable_gres = bit_alloc(bitmap_size);
 				if ((value < min) || (value >= max)) {
 					error("Invalid --gpu-bind= value specified.");
 					xfree(tmp);
 					goto end;	/* Bad value */
 				}
-				usable_gres = bit_alloc(MAX_GRES_BITMAP);
 				if (is_map)
 					bit_set(usable_gres, value);
 				else
-					for (i = 0; i < 64; i++) {
+					for (i = 0; i < bitmap_size; i++) {
 						if ((value >> i) & 0x1)
 							bit_set(usable_gres, i);
 					}
@@ -9389,7 +9435,18 @@ static bitstr_t *_get_usable_gres_map_or_mask(char *map_or_mask,
 		}
 		xfree(tmp);
 	}
+
 end:
+	if (gres_use_local_device_index()) {
+		if (get_devices)
+			_translate_local_to_global_device_index(
+				&usable_gres, gres_bit_alloc,
+				false);
+		else
+			bit_realloc(usable_gres, bit_set_count(gres_bit_alloc));
+	} else {
+		bit_and(usable_gres, gres_bit_alloc);
+	}
 
 	return usable_gres;
 }
@@ -9495,10 +9552,10 @@ static void _parse_tres_bind(uint16_t accel_bind_type, char *tres_bind_str,
 }
 
 static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
-			    tres_bind_t *tres_bind, bitstr_t **usable_gres_ptr)
+			    tres_bind_t *tres_bind, bitstr_t **usable_gres_ptr,
+			    bitstr_t *gres_bit_alloc,  bool get_devices)
 {
 	bitstr_t *usable_gres;
-
 	*usable_gres_ptr = NULL;
 
 	if (!tres_bind->bind_gpu && !tres_bind->bind_nic &&
@@ -9506,20 +9563,33 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 	    !tres_bind->gpus_per_task)
 		return SLURM_SUCCESS;
 
+	if (!gres_bit_alloc)
+		return SLURM_SUCCESS;
+
 	if (!xstrcmp(gres_name, "gpu")) {
 		if (tres_bind->map_gpu) {
 			usable_gres = _get_usable_gres_map_or_mask(
-				tres_bind->map_gpu, proc_id, true);
+				tres_bind->map_gpu, proc_id, gres_bit_alloc,
+				true, get_devices);
 		} else if (tres_bind->mask_gpu) {
 			usable_gres = _get_usable_gres_map_or_mask(
-				tres_bind->mask_gpu, proc_id, false);
+				tres_bind->mask_gpu, proc_id, gres_bit_alloc,
+				false, get_devices);
 		} else if (tres_bind->bind_gpu) {
-			usable_gres = _get_usable_gres_internal(context_inx);
+			usable_gres = _get_usable_gres_cpu_affinity(
+				context_inx, gres_bit_alloc, get_devices);
 			_filter_usable_gres(usable_gres,
 					    tres_bind->tasks_per_gres,
 					    proc_id);
 		} else if (tres_bind->gpus_per_task) {
-			usable_gres = _get_usable_gres_internal(context_inx);
+			if(!get_devices && gres_use_local_device_index()){
+				usable_gres = bit_alloc(
+					bit_size(gres_bit_alloc) - 1);
+				bit_nset(usable_gres, 0,
+					 bit_set_count(gres_bit_alloc) - 1);
+			} else {
+				usable_gres = bit_copy(gres_bit_alloc);
+			}
 			_filter_gres_per_task(usable_gres,
 					      tres_bind->gpus_per_task,
 					      proc_id);
@@ -9527,7 +9597,8 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 			return SLURM_ERROR;
 	} else if (!xstrcmp(gres_name, "nic")) {
 		if (tres_bind->bind_nic)
-			usable_gres = _get_usable_gres_internal(context_inx);
+			usable_gres = _get_usable_gres_cpu_affinity(
+				context_inx, gres_bit_alloc, get_devices);
 		else
 			return SLURM_ERROR;
 	} else {
@@ -9611,9 +9682,6 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 		if (!step_gres_list)
 			continue;
 
-		if (_get_usable_gres(gres_ctx.gres_name, i, local_proc_id,
-				     &tres_bind, &usable_gres) == SLURM_ERROR)
-			continue;
 
 		gres_iter = list_iterator_create(step_gres_list);
 		while ((gres_ptr = (gres_state_t *)list_next(gres_iter))) {
@@ -9622,6 +9690,11 @@ extern void gres_g_task_set_env(char ***job_env_ptr, List step_gres_list,
 			_accumulate_step_set_env_info(
 				gres_ptr, &gres_bit_alloc, &gres_cnt);
 		}
+		if (_get_usable_gres(gres_ctx.gres_name, i, local_proc_id,
+				     &tres_bind, &usable_gres, gres_bit_alloc,
+				     false) == SLURM_ERROR)
+			continue;
+
 		list_iterator_destroy(gres_iter);
 		(*(gres_ctx.ops.task_set_env))(job_env_ptr, gres_bit_alloc,
 					       gres_cnt, usable_gres,
