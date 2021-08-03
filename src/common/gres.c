@@ -9330,72 +9330,31 @@ extern void gres_g_step_hardware_fini(void)
 }
 
 /*
- * Given a set GRES maps and the local process ID, return the bitmap of
- * GRES that should be available to this task.
+ * Given a set of GRES masks or maps and the local process ID, return the bitmap
+ * of GRES that should be available to this task.
+ *
+ * IN map_or_mask
+ * IN local_proc_id
+ * IN is_map
+ *
+ * RET usable_gres
  */
-static bitstr_t *_get_gres_map(char *map_gres, int local_proc_id)
-{
-	bitstr_t *usable_gres = NULL;
-	char *tmp, *tok, *save_ptr = NULL, *mult;
-	int task_offset = 0, task_mult;
-	int map_value;
-
-	if (!map_gres || !map_gres[0])
-		return NULL;
-
-	while (usable_gres == NULL) {
-		tmp = xstrdup(map_gres);
-		tok = strtok_r(tmp, ",", &save_ptr);
-		while (tok) {
-			if ((mult = strchr(tok, '*'))) {
-				mult[0] = '\0';
-				task_mult = atoi(mult + 1);
-			} else
-				task_mult = 1;
-			if (task_mult == 0) {
-				error("Repetition count of 0 not allowed in --gpu-bind=map_gpu, using 1 instead");
-				task_mult = 1;
-			}
-			if ((local_proc_id >= task_offset) &&
-			    (local_proc_id <= (task_offset + task_mult - 1))) {
-				map_value = strtol(tok, NULL, 0);
-				if ((map_value < 0) ||
-				    (map_value >= MAX_GRES_BITMAP)) {
-					error("Invalid --gpu-bind=map_gpu value specified.");
-					xfree(tmp);
-					goto end;	/* Bad value */
-				}
-				usable_gres = bit_alloc(MAX_GRES_BITMAP);
-				bit_set(usable_gres, map_value);
-				break;	/* All done */
-			} else {
-				task_offset += task_mult;
-			}
-			tok = strtok_r(NULL, ",", &save_ptr);
-		}
-		xfree(tmp);
-	}
-end:
-
-	return usable_gres;
-}
-
-/*
- * Given a set GRES masks and the local process ID, return the bitmap of
- * GRES that should be available to this task.
- */
-static bitstr_t * _get_gres_mask(char *mask_gres, int local_proc_id)
+static bitstr_t *_get_usable_gres_map_or_mask(char *map_or_mask,
+					      int local_proc_id,
+					      bool is_map)
 {
 	bitstr_t *usable_gres = NULL;
 	char *tmp, *tok, *save_ptr = NULL, *mult;
 	int i, task_offset = 0, task_mult;
-	uint64_t mask_value;
+	int value, min, max;
 
-	if (!mask_gres || !mask_gres[0])
+	if (!map_or_mask || !map_or_mask[0])
 		return NULL;
 
+	min = (is_map ?  0 : 1);
+	max = (is_map ? MAX_GRES_BITMAP : 0xffffffff);
 	while (usable_gres == NULL) {
-		tmp = xstrdup(mask_gres);
+		tmp = xstrdup(map_or_mask);
 		tok = strtok_r(tmp, ",", &save_ptr);
 		while (tok) {
 			if ((mult = strchr(tok, '*')))
@@ -9408,18 +9367,20 @@ static bitstr_t * _get_gres_mask(char *mask_gres, int local_proc_id)
 			}
 			if ((local_proc_id >= task_offset) &&
 			    (local_proc_id <= (task_offset + task_mult - 1))) {
-				mask_value = strtol(tok, NULL, 0);
-				if ((mask_value <= 0) ||
-				    (mask_value >= 0xffffffff)) {
-					error("Invalid --gpu-bind=mask_gpu value specified.");
+				value = strtol(tok, NULL, 0);
+				if ((value < min) || (value >= max)) {
+					error("Invalid --gpu-bind= value specified.");
 					xfree(tmp);
 					goto end;	/* Bad value */
 				}
 				usable_gres = bit_alloc(MAX_GRES_BITMAP);
-				for (i = 0; i < 64; i++) {
-					if ((mask_value >> i) & 0x1)
-						bit_set(usable_gres, i);
-				}
+				if (is_map)
+					bit_set(usable_gres, value);
+				else
+					for (i = 0; i < 64; i++) {
+						if ((value >> i) & 0x1)
+							bit_set(usable_gres, i);
+					}
 				break;	/* All done */
 			} else {
 				task_offset += task_mult;
@@ -9547,11 +9508,11 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 
 	if (!xstrcmp(gres_name, "gpu")) {
 		if (tres_bind->map_gpu) {
-			usable_gres = _get_gres_map(tres_bind->map_gpu,
-						    proc_id);
+			usable_gres = _get_usable_gres_map_or_mask(
+				tres_bind->map_gpu, proc_id, true);
 		} else if (tres_bind->mask_gpu) {
-			usable_gres = _get_gres_mask(tres_bind->mask_gpu,
-						     proc_id);
+			usable_gres = _get_usable_gres_map_or_mask(
+				tres_bind->mask_gpu, proc_id, false);
 		} else if (tres_bind->bind_gpu) {
 			usable_gres = _get_usable_gres_internal(context_inx);
 			_filter_usable_gres(usable_gres,
