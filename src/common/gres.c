@@ -205,6 +205,12 @@ typedef struct xcpuinfo_funcs {
 } xcpuinfo_funcs_t;
 xcpuinfo_funcs_t xcpuinfo_ops;
 
+typedef struct {
+	uint32_t flags;
+	uint32_t name_hash;
+	bool no_gpu_env;
+} prev_env_flags_t;
+
 /* Local variables */
 static int gres_context_cnt = -1;
 static uint32_t gres_cpu_cnt = 0;
@@ -1118,6 +1124,32 @@ static void _handle_global_autodetect(char *str)
 }
 
 /*
+ * Check to see if current GRES record matches the name of the previous GRES
+ * record that set env flags.
+ */
+static bool _same_gres_type_as_prev(prev_env_flags_t *prev_env,
+				    gres_slurmd_conf_t *p)
+{
+	if ((gres_build_id(p->name) == prev_env->name_hash))
+		return true;
+	else
+		return false;
+}
+
+/*
+ * Save off env flags, GRES name, and no_gpu_env (for the next gres.conf line to
+ * possibly inherit or to check against).
+ */
+static void _set_prev_env_flags(prev_env_flags_t *prev_env,
+				gres_slurmd_conf_t *p, uint32_t env_flags,
+				bool no_gpu_env)
+{
+	prev_env->flags = env_flags;
+	prev_env->name_hash = gres_build_id(p->name);
+	prev_env->no_gpu_env = no_gpu_env;
+}
+
+/*
  * Build gres_slurmd_conf_t record based upon a line from the gres.conf file
  */
 static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
@@ -1148,7 +1180,9 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	bool cores_flag = false, cpus_flag = false;
 	char *type_str = NULL;
 	char *autodetect_string = NULL;
-	bool autodetect = false, no_gpu_env = false;
+	bool autodetect = false, set_default_envs = true;
+	/* Remember the last-set Flags value */
+	static prev_env_flags_t prev_env;
 
 	tbl = s_p_hashtbl_create(_gres_options);
 	s_p_parse_line(tbl, *leftover, leftover);
@@ -1245,27 +1279,55 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	}
 
 	if (s_p_get_string(&tmp_str, "Flags", tbl)) {
+		uint32_t env_flags = 0;
+		bool no_gpu_env = false;
 		if (xstrcasestr(tmp_str, "CountOnly"))
 			p->config_flags |= GRES_CONF_COUNT_ONLY;
-
 		if (xstrcasestr(tmp_str, "nvidia_gpu_env"))
-			p->config_flags |= GRES_CONF_ENV_NVML;
+			env_flags |= GRES_CONF_ENV_NVML;
 		if (xstrcasestr(tmp_str, "amd_gpu_env"))
-			p->config_flags |= GRES_CONF_ENV_RSMI;
+			env_flags |= GRES_CONF_ENV_RSMI;
 		if (xstrcasestr(tmp_str, "opencl_env"))
-			p->config_flags |= GRES_CONF_ENV_OPENCL;
+			env_flags |= GRES_CONF_ENV_OPENCL;
+		/* String 'no_gpu_env' will clear all GPU env vars */
+		no_gpu_env = xstrcasestr(tmp_str, "no_gpu_env");
 
-		/* String 'no_gpu_env' will clear all gpu env vars */
-		if (xstrcasestr(tmp_str, "no_gpu_env"))
-			no_gpu_env = true;
+		if (env_flags && no_gpu_env)
+			fatal("Invalid GRES record name=%s type=%s: Flags (%s) contains \"no_gpu_env\", which must be mutually exclusive to all other GRES env flags of same node and name",
+			      p->name, p->type_name, tmp_str);
+
+		if (env_flags || no_gpu_env) {
+			set_default_envs = false;
+			/*
+			 * Make sure that Flags are consistent with each other
+			 * if set for multiple lines of the same GRES.
+			 */
+			if (prev_env.name_hash &&
+			    _same_gres_type_as_prev(&prev_env, p) &&
+			    ((prev_env.flags != env_flags) ||
+			     (prev_env.no_gpu_env != no_gpu_env)))
+				fatal("Invalid GRES record name=%s type=%s: Flags (%s) does not match env flags for previous GRES of same node and name",
+				      p->name, p->type_name, tmp_str);
+			p->config_flags |= env_flags;
+			_set_prev_env_flags(&prev_env, p, env_flags,
+					    no_gpu_env);
+		}
+
 		xfree(tmp_str);
+	} else if ((prev_env.flags || prev_env.no_gpu_env) &&
+		   _same_gres_type_as_prev(&prev_env, p)) {
+		/* Inherit env flags from previous GRES line with same name */
+		set_default_envs = false;
+		if (!prev_env.no_gpu_env)
+			p->config_flags |= prev_env.flags;
 	}
 
-	/* By default, all env vars are set */
-	if (!no_gpu_env &&
-	    !(p->config_flags & GRES_CONF_ENV_SET) &&
-	    !xstrcasecmp(p->name, "gpu"))
-		p->config_flags |= GRES_CONF_ENV_SET;
+	/* Flags not set. By default, all env vars are set for GPUs */
+	if (set_default_envs && !xstrcasecmp(p->name, "gpu")) {
+		uint32_t env_flags = GRES_CONF_ENV_SET | GRES_CONF_ENV_DEF;
+		p->config_flags |= env_flags;
+		_set_prev_env_flags(&prev_env, p, env_flags, false);
+	}
 
 	if (s_p_get_string(&p->links, "Link",  tbl) ||
 	    s_p_get_string(&p->links, "Links", tbl)) {
@@ -1802,6 +1864,11 @@ static void _merge_gres2(List gres_conf_list, List new_list, uint64_t count,
 
 	if (gres_context->config_flags & GRES_CONF_COUNT_ONLY)
 		gres_conf->config_flags |= GRES_CONF_COUNT_ONLY;
+
+	/* Set default env flags, and allow AutoDetect to override */
+	if (!xstrcasecmp(gres_conf->name, "gpu"))
+		gres_conf->config_flags |=
+			(GRES_CONF_ENV_SET | GRES_CONF_ENV_DEF);
 
 	list_append(new_list, gres_conf);
 }
@@ -10440,6 +10507,12 @@ extern char *gres_flags2str(uint32_t config_flags)
 		sep = ",";
 	}
 
+	if (config_flags & GRES_CONF_ENV_DEF) {
+		strcat(flag_str, sep);
+		strcat(flag_str, "ENV_DEFAULT");
+		sep = ",";
+	}
+
 	return flag_str;
 }
 
@@ -10472,8 +10545,9 @@ extern void add_gres_to_list(List gres_list, char *name, uint64_t device_cnt,
 		gpu_record->cpus_bitmap = bit_copy(cpu_aff_mac_bitstr);
 	gpu_record->config_flags = flags;
 
-	/* Set all by default */
-	if (!(flags & GRES_CONF_ENV_SET))
+	/* Set default env flags, if necessary */
+	if ((flags & GRES_CONF_ENV_DEF) &&
+	    ((flags & GRES_CONF_ENV_SET) != GRES_CONF_ENV_SET))
 		flags |= GRES_CONF_ENV_SET;
 
 	if (device_file) {

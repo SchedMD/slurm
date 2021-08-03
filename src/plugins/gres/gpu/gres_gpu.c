@@ -604,6 +604,20 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 			 */
 			debug("Including the following GPU matched between system and configuration:");
 			print_gres_conf(sys_record, LOG_LEVEL_DEBUG);
+
+			/*
+			 * If the conf record did not fall back to default env
+			 * flags (i.e. it explicitly set env flags), then use
+			 * the conf's env flags. Otherwise, use the AutoDetected
+			 * env flags.
+			 */
+			if (!(gres_record->config_flags & GRES_CONF_ENV_DEF)) {
+				sys_record->config_flags &= ~GRES_CONF_ENV_SET;
+				sys_record->config_flags |=
+					gres_record->config_flags &
+					GRES_CONF_ENV_SET;
+			}
+
 			list_remove(itr2);
 			list_append(gres_list_gpu, sys_record);
 			continue;

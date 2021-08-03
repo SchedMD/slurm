@@ -13,6 +13,9 @@ documents those changes that are of interest to users and administrators.
  -- Force cgroup.clone_children to 0 in slurm cgroup directories. This caused
     issues in task cpuset plugin in systems with it enabled by default.
  -- Clear GRES HAS_TYPE flag when removing type name.
+ -- Environment flags in gres.conf now override flags set by AutoDetect.
+ -- Environment flags in gres.conf now apply to subsequent gres.conf lines where
+    Environment flags are not set.
 
 * Changes in Slurm 21.08.0rc2
 =============================
