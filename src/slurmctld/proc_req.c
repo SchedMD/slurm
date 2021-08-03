@@ -750,6 +750,7 @@ extern void configless_clear(void)
 	 * config_for_clients uses a pointer into config_for_slurmd,
 	 * so DO NOT use slurm_free_config_response_msg()
 	 */
+	list_destroy(config_for_clients->config_files);
 	xfree(config_for_clients);
 }
 

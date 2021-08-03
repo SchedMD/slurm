@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
  -- Add SLURM_JOB_GPUS back into Prolog; add it to Epilog.
  -- Fix issue where the original executable, not the bcast'd version, was
     executed with 'srun --bcast'.
+ -- Fix memory leaks when cleaning up config_response_msg_t.
 
 * Changes in Slurm 21.08.0rc1
 =============================
