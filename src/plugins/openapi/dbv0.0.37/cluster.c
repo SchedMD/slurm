@@ -234,10 +234,10 @@ static int _update_clusters(data_t *query, data_t *resp, data_t *errors,
 	return rc;
 }
 
-extern int
-	op_handler_cluster(const char *context_id, http_request_method_t method,
-			   data_t *parameters, data_t *query, int tag,
-			   data_t *resp, rest_auth_context_t *auth)
+extern int op_handler_cluster(const char *context_id,
+			      http_request_method_t method, data_t *parameters,
+			      data_t *query, int tag, data_t *resp,
+			      rest_auth_context_t *auth)
 {
 	int rc = SLURM_SUCCESS;
 	data_t *errors = populate_response_format(resp);
