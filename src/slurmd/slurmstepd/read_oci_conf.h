@@ -39,14 +39,14 @@
 #define _READ_OCI_CONF_H
 
 typedef struct {
-	char *container_path; /* path pattern to use for holding OCI container config */
+	char *container_path; /* path pattern to use for holding OCI config */
 	bool create_env_file; /* create file with environment */
-	char *runtime_create; /* OCI runtime pattern to execute query for containers */
-	char *runtime_delete; /* OCI runtime pattern to execute query for containers */
-	char *runtime_kill; /* OCI runtime pattern to execute query for containers */
-	char *runtime_query; /* OCI runtime pattern to execute query for containers */
-	char *runtime_run; /* OCI runtime pattern to execute query for containers */
-	char *runtime_start; /* OCI runtime pattern to execute query for containers */
+	char *runtime_create; /* OCI runtime pattern to execute create */
+	char *runtime_delete; /* OCI runtime pattern to execute delete */
+	char *runtime_kill; /* OCI runtime pattern to execute kill */
+	char *runtime_query; /* OCI runtime pattern to execute query */
+	char *runtime_run; /* OCI runtime pattern to execute run */
+	char *runtime_start; /* OCI runtime pattern to execute start */
 } oci_conf_t;
 
 extern int get_oci_conf(oci_conf_t **oci);
