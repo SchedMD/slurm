@@ -853,7 +853,7 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 				    List job_gres_list, uint32_t job_id,
 				    uint32_t step_id,
 				    uint32_t *num_tasks,
-				    uint32_t *cpu_count);
+				    uint32_t *cpu_count, char **err_msg);
 
 /*
  * Create a copy of a step's gres state

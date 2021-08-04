@@ -2380,6 +2380,7 @@ static void  _slurm_rpc_dump_batch_script(slurm_msg_t *msg)
  *	with the step_mgr */
 static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 {
+	char *err_msg = NULL;
 	static int active_rpc_cnt = 0;
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
@@ -2434,7 +2435,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		lock_slurmctld(job_write_lock);
 	}
 	error_code = step_create(req_step_msg, &step_rec,
-				 msg->protocol_version);
+				 msg->protocol_version, &err_msg);
 
 	if (error_code == SLURM_SUCCESS) {
 		error_code = _make_step_cred(step_rec, &slurm_cred,

@@ -2407,7 +2407,7 @@ static void _copy_job_tres_to_step(job_step_create_request_msg_t *step_specs,
  */
 extern int step_create(job_step_create_request_msg_t *step_specs,
 		       step_record_t** new_step_record,
-		       uint16_t protocol_version)
+		       uint16_t protocol_version, char **err_msg)
 {
 	step_record_t *step_ptr;
 	job_record_t *job_ptr;
@@ -2567,7 +2567,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 				     &step_gres_list,
 				     job_ptr->gres_list_req, job_ptr->job_id,
 				     NO_VAL, &step_specs->num_tasks,
-				     &step_specs->cpu_count);
+				     &step_specs->cpu_count, err_msg);
 	if (i != SLURM_SUCCESS) {
 		FREE_NULL_LIST(step_gres_list);
 		return i;

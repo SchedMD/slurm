@@ -8332,7 +8332,8 @@ fini:	xfree(name);
 
 /* Test that the step does not request more GRES than the job contains */
 static void _validate_step_counts(List step_gres_list, List job_gres_list,
-				  uint32_t step_min_nodes, int *rc)
+				  uint32_t step_min_nodes, int *rc,
+				  char **err_msg)
 {
 	ListIterator iter;
 	gres_state_t *job_gres_ptr, *step_gres_ptr;
@@ -8498,7 +8499,7 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 				    List job_gres_list, uint32_t job_id,
 				    uint32_t step_id,
 				    uint32_t *num_tasks,
-				    uint32_t *cpu_count)
+				    uint32_t *cpu_count, char **err_msg)
 {
 	int rc;
 	gres_step_state_t *step_gres_data;
@@ -8597,7 +8598,7 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 	} else {
 		if (rc == SLURM_SUCCESS)
 			_validate_step_counts(new_step_list, job_gres_list,
-					      step_min_nodes, &rc);
+					      step_min_nodes, &rc, err_msg);
 		if (rc == SLURM_SUCCESS)
 			*step_gres_list = new_step_list;
 		else
