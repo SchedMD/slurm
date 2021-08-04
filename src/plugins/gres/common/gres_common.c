@@ -394,13 +394,14 @@ static void _print_gres_conf_parsable(gres_slurmd_conf_t *gres_slurmd_conf,
 				      log_level_t log_lvl)
 {
 	/* Only print out unique_id if set */
-	log_var(log_lvl, "GRES_PARSABLE[%s](%"PRIu64"):%s|%d|%s|%s|%s|%s%s",
+	log_var(log_lvl, "GRES_PARSABLE[%s](%"PRIu64"):%s|%d|%s|%s|%s|%s%s%s",
 		gres_slurmd_conf->name, gres_slurmd_conf->count,
 		gres_slurmd_conf->type_name, gres_slurmd_conf->cpu_cnt,
 		gres_slurmd_conf->cpus, gres_slurmd_conf->links,
 		gres_slurmd_conf->file,
 		gres_slurmd_conf->unique_id ? gres_slurmd_conf->unique_id : "",
-		gres_slurmd_conf->unique_id ? "|" : "");
+		gres_slurmd_conf->unique_id ? "|" : "",
+		gres_flags2str(gres_slurmd_conf->config_flags));
 }
 
 /*
