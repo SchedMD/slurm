@@ -856,7 +856,9 @@ static bool _opt_verify(void)
 			opt.ntasks *= opt.threads_per_core;
 			opt.ntasks_set = true;
 		}
-
+		if (opt.ntasks_set && opt.verbose)
+			info("Number of tasks implicitly set to %d.",
+			     opt.ntasks);
 	} else if (opt.nodes_set && opt.ntasks_set) {
 		/*
 		 * Make sure that the number of
