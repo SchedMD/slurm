@@ -1887,6 +1887,7 @@ static int _step_alloc(gres_step_state_t *step_gres_ptr,
 			*step_node_mem_alloc +=
 				step_req_gres_ptr->mem_per_gres * gres_alloc;
 	}
+	step_req_gres_ptr->total_gres += gres_alloc;
 	step_gres_ptr->total_gres += gres_alloc;
 
 	if (step_gres_ptr->node_in_use == NULL) {
@@ -2024,7 +2025,6 @@ static int _step_alloc_type(gres_state_t *job_gres_ptr,
 		return -1;
 	}
 
-	step_data_ptr->total_gres += step_alloc_data_ptr->total_gres;
 	if (step_data_ptr->node_cnt == 0)
 		step_data_ptr->node_cnt = job_data_ptr->node_cnt;
 
