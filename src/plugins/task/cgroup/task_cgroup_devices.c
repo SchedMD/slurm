@@ -206,10 +206,13 @@ error:
 
 extern int task_cgroup_devices_fini(void)
 {
-	cgroup_g_step_destroy(CG_DEVICES);
+	int rc;
+
+	rc = cgroup_g_step_destroy(CG_DEVICES);
 	cgroup_allowed_devices_file[0] = '\0';
 	xcpuinfo_fini();
-	return SLURM_SUCCESS;
+
+	return rc;
 }
 
 extern int task_cgroup_devices_create(stepd_step_rec_t *job)
