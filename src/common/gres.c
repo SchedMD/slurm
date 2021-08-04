@@ -8341,10 +8341,15 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list,
 	gres_step_state_t *step_gres_data;
 	gres_key_t job_search_key;
 	uint16_t cpus_per_gres;
+	char *msg = NULL;
 
 	if (!step_gres_list || (list_count(step_gres_list) == 0))
 		return;
 	if (!job_gres_list  || (list_count(job_gres_list)  == 0)) {
+		if (err_msg) {
+			xfree(*err_msg);
+			xstrfmtcat(*err_msg, "Step requested GRES but job doesn't have GRES");
+		}
 		*rc = ESLURM_INVALID_GRES;
 		return;
 	}
@@ -8361,6 +8366,9 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list,
 					       gres_find_job_by_key,
 					       &job_search_key);
 		if (!job_gres_ptr || !job_gres_ptr->gres_data) {
+			xstrfmtcat(msg, "Step requested GRES (%s:%s) not found in the job",
+				   step_gres_ptr->gres_name,
+				   step_gres_data->type_name);
 			*rc = ESLURM_INVALID_GRES;
 			break;
 		}
@@ -8371,6 +8379,9 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list,
 			cpus_per_gres = job_gres_data->def_cpus_per_gres;
 		if (cpus_per_gres && step_gres_data->cpus_per_gres &&
 		    (cpus_per_gres < step_gres_data->cpus_per_gres)) {
+			xstrfmtcat(msg, "Step requested cpus_per_gres=%u is more than the job's cpu_per_gres=%u",
+				   step_gres_data->cpus_per_gres,
+				   cpus_per_gres);
 			*rc = ESLURM_INVALID_GRES;
 			break;
 		}
@@ -8384,15 +8395,21 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list,
 			 */
 			if (step_min_nodes &&
 			    (step_gres_data->gres_per_step < step_min_nodes)) {
-				error("Step requested %lu gres which is less than the requested min nodes=%u",
-				      step_gres_data->gres_per_step,
-				      step_min_nodes);
+				xstrfmtcat(msg, "Step requested gres=%s:%lu is less than the requested min nodes=%u",
+					   step_gres_ptr->gres_name,
+					   step_gres_data->gres_per_step,
+					   step_min_nodes);
 				*rc = ESLURM_INVALID_GRES;
 				break;
 			}
 			if (job_gres_data->gres_per_job &&
 			    (job_gres_data->gres_per_job <
 			     step_gres_data->gres_per_step)) {
+				xstrfmtcat(msg, "Step requested gres=%s:%lu is more than the job's gres=%s:%lu",
+					   step_gres_ptr->gres_name,
+					   step_gres_data->gres_per_step,
+					   job_gres_ptr->gres_name,
+					   job_gres_data->gres_per_job);
 				*rc = ESLURM_INVALID_GRES;
 				break;
 			}
@@ -8401,6 +8418,11 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list,
 		    step_gres_data->gres_per_node &&
 		    (job_gres_data->gres_per_node <
 		     step_gres_data->gres_per_node)) {
+			xstrfmtcat(msg, "Step requested gres_per_node=%s:%lu is more than the job's gres_per_node=%s:%lu",
+				   step_gres_ptr->gres_name,
+				   step_gres_data->gres_per_node,
+				   job_gres_ptr->gres_name,
+				   job_gres_data->gres_per_node);
 			*rc = ESLURM_INVALID_GRES;
 			break;
 		}
@@ -8408,6 +8430,11 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list,
 		    step_gres_data->gres_per_socket &&
 		    (job_gres_data->gres_per_socket <
 		     step_gres_data->gres_per_socket)) {
+			xstrfmtcat(msg, "Step requested gres_per_socket=%s:%lu is more than the job's gres_per_socket=%s:%lu",
+				   step_gres_ptr->gres_name,
+				   step_gres_data->gres_per_socket,
+				   job_gres_ptr->gres_name,
+				   job_gres_data->gres_per_socket);
 			*rc = ESLURM_INVALID_GRES;
 			break;
 		}
@@ -8415,12 +8442,27 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list,
 		    step_gres_data->gres_per_task &&
 		    (job_gres_data->gres_per_task <
 		     step_gres_data->gres_per_task)) {
+			xstrfmtcat(msg, "Step requested gres_per_task=%s:%lu is more than the job's gres_per_task=%s:%lu",
+				   step_gres_ptr->gres_name,
+				   step_gres_data->gres_per_task,
+				   job_gres_ptr->gres_name,
+				   job_gres_data->gres_per_task);
 			*rc = ESLURM_INVALID_GRES;
 			break;
 		}
 
 	}
 	list_iterator_destroy(iter);
+
+	if (msg) {
+		if (err_msg) {
+			xfree(*err_msg);
+			*err_msg = msg;
+		} else {
+			error("%s", msg);
+			xfree(msg);
+		}
+	}
 }
 
 

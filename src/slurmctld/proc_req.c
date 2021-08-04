@@ -2462,7 +2462,10 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 			log_flag(STEPS, "%s for JobId=%u: %s",
 				 __func__, req_step_msg->step_id.job_id,
 				 slurm_strerror(error_code));
-		slurm_send_rc_msg(msg, error_code);
+		if (err_msg)
+			slurm_send_rc_err_msg(msg, error_code, err_msg);
+		else
+			slurm_send_rc_msg(msg, error_code);
 	} else {
 		slurm_step_layout_t *step_layout = NULL;
 		dynamic_plugin_data_t *select_jobinfo = NULL;
@@ -2516,6 +2519,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 
 		schedule_job_save();	/* Sets own locks */
 	}
+
+	xfree(err_msg);
 }
 
 /* _slurm_rpc_job_step_get_info - process request for job step info */
