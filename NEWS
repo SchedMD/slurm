@@ -10,6 +10,7 @@ documents those changes that are of interest to users and administrators.
     memory was not set even when it requested --mem-per-gpu and at least one
     GPU.
  -- Add cli_filter.lua support in configless mode.
+ -- Remove some of the MAX macro usages with return codes.
 
 * Changes in Slurm 21.08.0rc1
 =============================
