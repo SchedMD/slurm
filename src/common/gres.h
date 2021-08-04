@@ -1046,6 +1046,11 @@ extern void destroy_gres_slurmd_conf(void *x);
 extern char *gres_flags2str(uint32_t config_flags);
 
 /*
+ * Parse a gres.conf Flags string
+ */
+extern uint32_t gres_flags_parse(char *input, bool *no_gpu_env);
+
+/*
  * Creates a gres_slurmd_conf_t record to add to a list of gres_slurmd_conf_t
  * records
  */

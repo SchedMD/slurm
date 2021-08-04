@@ -1150,6 +1150,26 @@ static void _set_prev_env_flags(prev_env_flags_t *prev_env,
 }
 
 /*
+ * Parse a gres.conf Flags string
+ */
+extern uint32_t gres_flags_parse(char *input, bool *no_gpu_env)
+{
+	uint32_t flags = 0;
+	if (xstrcasestr(input, "CountOnly"))
+		flags |= GRES_CONF_COUNT_ONLY;
+	if (xstrcasestr(input, "nvidia_gpu_env"))
+		flags |= GRES_CONF_ENV_NVML;
+	if (xstrcasestr(input, "amd_gpu_env"))
+		flags |= GRES_CONF_ENV_RSMI;
+	if (xstrcasestr(input, "opencl_env"))
+		flags |= GRES_CONF_ENV_OPENCL;
+	/* String 'no_gpu_env' will clear all GPU env vars */
+	if (no_gpu_env)
+		*no_gpu_env = xstrcasestr(input, "no_gpu_env");
+	return flags;
+}
+
+/*
  * Build gres_slurmd_conf_t record based upon a line from the gres.conf file
  */
 static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
@@ -1281,16 +1301,10 @@ static int _parse_gres_config(void **dest, slurm_parser_enum_t type,
 	if (s_p_get_string(&tmp_str, "Flags", tbl)) {
 		uint32_t env_flags = 0;
 		bool no_gpu_env = false;
-		if (xstrcasestr(tmp_str, "CountOnly"))
-			p->config_flags |= GRES_CONF_COUNT_ONLY;
-		if (xstrcasestr(tmp_str, "nvidia_gpu_env"))
-			env_flags |= GRES_CONF_ENV_NVML;
-		if (xstrcasestr(tmp_str, "amd_gpu_env"))
-			env_flags |= GRES_CONF_ENV_RSMI;
-		if (xstrcasestr(tmp_str, "opencl_env"))
-			env_flags |= GRES_CONF_ENV_OPENCL;
-		/* String 'no_gpu_env' will clear all GPU env vars */
-		no_gpu_env = xstrcasestr(tmp_str, "no_gpu_env");
+		uint32_t flags = gres_flags_parse(tmp_str, &no_gpu_env);
+		/* Break out flags into env flags and non-env flags */
+		env_flags = flags & GRES_CONF_ENV_SET;
+		p->config_flags |= flags & ~GRES_CONF_ENV_SET;
 
 		if (env_flags && no_gpu_env)
 			fatal("Invalid GRES record name=%s type=%s: Flags (%s) contains \"no_gpu_env\", which must be mutually exclusive to all other GRES env flags of same node and name",
