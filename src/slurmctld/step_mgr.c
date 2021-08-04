@@ -2396,15 +2396,6 @@ static void _copy_job_tres_to_step(job_step_create_request_msg_t *step_specs,
 	}
 }
 
-/*
- * step_create - creates a step_record in step_specs->job_id, sets up the
- *	according to the step_specs.
- * IN step_specs - job step specifications
- * OUT new_step_record - pointer to the new step_record (NULL on error)
- * RET - 0 or error code
- * NOTE: don't free the returned step_record because that is managed through
- *	the job.
- */
 extern int step_create(job_step_create_request_msg_t *step_specs,
 		       step_record_t** new_step_record,
 		       uint16_t protocol_version, char **err_msg)
