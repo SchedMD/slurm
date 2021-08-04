@@ -716,6 +716,8 @@ static void _add_fake_gpus_from_file(List gres_list_system,
 		char *type = NULL;
 		char *links = NULL;
 		char *unique_id = NULL;
+		char *flags_str = NULL;
+		uint32_t flags = 0;
 		bitstr_t *cpu_aff_mac_bitstr = NULL;
 		line_number++;
 
@@ -764,6 +766,9 @@ static void _add_fake_gpus_from_file(List gres_list_system,
 			case 5:
 				unique_id = xstrdup(tok);
 				break;
+			case 6:
+				flags_str = xstrdup(tok);
+				break;
 			default:
 				error("Malformed line: too many data fields");
 				break;
@@ -772,11 +777,8 @@ static void _add_fake_gpus_from_file(List gres_list_system,
 			tok = strtok_r(NULL, "|", &save_ptr);
 		}
 
-		if ((i != 5) && (i != 6))
-			error("Line #%d in fake_gpus.conf failed to parse!"
-			      " Make sure that the line has no empty tokens and"
-			      " that the format is <type>|<sys_cpu_count>|"
-			      "<cpu_range>|<links>|<device_file>[|<unique_id>]",
+		if ((i < 5) || (i > 7))
+			error("Line #%d in fake_gpus.conf failed to parse! Make sure that the line has no empty tokens and that the format is <type>|<sys_cpu_count>|<cpu_range>|<links>|<device_file>[|<unique_id>[|<flags>]]",
 			      line_number);
 
 		cpu_aff_mac_bitstr = bit_alloc(cpu_count);
@@ -784,16 +786,19 @@ static void _add_fake_gpus_from_file(List gres_list_system,
 			fatal("bit_unfmt() failed for CPU range: %s",
 			      cpu_range);
 
+		flags = gres_flags_parse(flags_str, NULL);
+
 		// Add the GPU specified by the parsed line
 		add_gres_to_list(gres_list_system, "gpu", 1, cpu_count,
 				 cpu_range, cpu_aff_mac_bitstr, device_file,
-				 type, links, unique_id, 0);
+				 type, links, unique_id, flags);
 		FREE_NULL_BITMAP(cpu_aff_mac_bitstr);
 		xfree(cpu_range);
 		xfree(device_file);
 		xfree(type);
 		xfree(links);
 		xfree(unique_id);
+		xfree(flags_str);
 	}
 	fclose(f);
 }
