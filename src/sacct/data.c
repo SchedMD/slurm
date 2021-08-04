@@ -223,6 +223,16 @@ extern void dump_data(int argc, char **argv)
 		list_for_each(job_cond->wckey_list, _list_append, list);
 	}
 
+	if (get_log_level() >= LOG_LEVEL_DEBUG) {
+		char *sq = NULL;
+
+		data_g_serialize(&sq, query, MIME_TYPE_JSON,
+				 DATA_SER_FLAGS_COMPACT);
+		debug("%s: query: %s", __func__, sq);
+
+		xfree(sq);
+	}
+
 	dump_job(ctxt, HTTP_REQUEST_GET, NULL, query, 0, resp, MAGIC_AUTH);
 
 	data_g_serialize(&out, resp, params.mimetype, DATA_SER_FLAGS_PRETTY);
