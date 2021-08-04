@@ -1647,9 +1647,10 @@ static gres_slurmd_conf_t *_match_type(List gres_conf_list,
 		 * gres_conf that we find.  This means we also will remove the
 		 * type from the gres_conf to match 18.08 stylings.
 		 */
-		if (!type_name)
+		if (!type_name) {
 			xfree(gres_conf->type_name);
-		else if (xstrcasecmp(gres_conf->type_name, type_name))
+			gres_conf->config_flags &= ~GRES_CONF_HAS_TYPE;
+		} else if (xstrcasecmp(gres_conf->type_name, type_name))
 			continue;
 
 		/* We found a match, so remove from gres_conf_list and break */

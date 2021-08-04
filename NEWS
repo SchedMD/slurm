@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- Add support for lua 5.4.
  -- Force cgroup.clone_children to 0 in slurm cgroup directories. This caused
     issues in task cpuset plugin in systems with it enabled by default.
+ -- Clear GRES HAS_TYPE flag when removing type name.
 
 * Changes in Slurm 21.08.0rc2
 =============================

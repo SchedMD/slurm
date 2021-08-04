@@ -263,6 +263,7 @@ static void _normalize_sys_gres_types(List gres_list_system,
 			info("Could not find an unused configuration record with a GRES type that is a substring of system device `%s`. Setting system GRES type to NULL",
 			     sys_gres->type_name);
 			xfree(sys_gres->type_name);
+			sys_gres->config_flags &= ~GRES_CONF_HAS_TYPE;
 			continue;
 		}
 
