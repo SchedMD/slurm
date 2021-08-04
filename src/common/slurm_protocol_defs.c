@@ -6200,7 +6200,6 @@ extern uint64_t suffix_mult(char *suffix)
 		multiplier = ((uint64_t)1000 * 1000 * 1000 * 1000 * 1000);
 
 	} else {
-		debug("%s: Unrecognized numeric suffix '%s'", __func__, suffix);
 		multiplier = NO_VAL64;
 	}
 
