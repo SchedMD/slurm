@@ -8373,12 +8373,28 @@ static void _validate_step_counts(List step_gres_list, List job_gres_list,
 			*rc = ESLURM_INVALID_GRES;
 			break;
 		}
-		if (job_gres_data->gres_per_job &&
-		    step_gres_data->gres_per_step &&
-		    (job_gres_data->gres_per_job <
-		     step_gres_data->gres_per_step)) {
-			*rc = ESLURM_INVALID_GRES;
-			break;
+		if (step_gres_data->gres_per_step) {
+			/*
+			 * This isn't a perfect check because step_min_nodes
+			 * isn't always set by this point, but if it is set
+			 * then we can check that the number of gres requested
+			 * for the step is at least the number of nodes in
+			 * the step.
+			 */
+			if (step_min_nodes &&
+			    (step_gres_data->gres_per_step < step_min_nodes)) {
+				error("Step requested %lu gres which is less than the requested min nodes=%u",
+				      step_gres_data->gres_per_step,
+				      step_min_nodes);
+				*rc = ESLURM_INVALID_GRES;
+				break;
+			}
+			if (job_gres_data->gres_per_job &&
+			    (job_gres_data->gres_per_job <
+			     step_gres_data->gres_per_step)) {
+				*rc = ESLURM_INVALID_GRES;
+				break;
+			}
 		}
 		if (job_gres_data->gres_per_node &&
 		    step_gres_data->gres_per_node &&

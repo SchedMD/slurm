@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
     GPU.
  -- Add cli_filter.lua support in configless mode.
  -- Remove some of the MAX macro usages with return codes.
+ -- Check that the step requests at least as many gres as nodes.
 
 * Changes in Slurm 21.08.0rc1
 =============================
