@@ -111,6 +111,9 @@ HIGHLIGHTS
     negative return codes were considered an error.
  -- Add support for automatically detecting and broadcasting executable shared
     object dependencies for sbcast and srun --bcast.
+ -- All SPANK error codes now start at 3000. Where previously SPANK would give
+    a return code of 1, it will now return 3000. This change will break ABI
+    compatibility with SPANK plugins compiled against older version of Slurm.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
