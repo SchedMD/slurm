@@ -177,6 +177,19 @@ static const csv_list_t csv_lists[] = {
 	{ "wckey", offsetof(slurmdb_job_cond_t, wckey_list) },
 };
 
+data_for_each_cmd_t _foreach_step(data_t *data, void *arg)
+{
+	List list = arg;
+
+	if (data_convert_type(data, DATA_TYPE_STRING) != DATA_TYPE_STRING)
+		return DATA_FOR_EACH_FAIL;
+
+	if (slurm_addto_step_list(list, data_get_string(data)) < 1)
+		return DATA_FOR_EACH_FAIL;
+
+	return DATA_FOR_EACH_CONT;
+}
+
 data_for_each_cmd_t _foreach_query_search(const char *key, data_t *data,
 					  void *arg)
 {
@@ -276,16 +289,29 @@ data_for_each_cmd_t _foreach_query_search(const char *key, data_t *data,
 	}
 
 	if (!xstrcasecmp("step", key)) {
+		if (!args->job_cond->step_list)
+			args->job_cond->step_list = list_create(
+				slurm_destroy_selected_step);
+
+		if (data_get_type(data) == DATA_TYPE_LIST) {
+			if (data_list_for_each(data, _foreach_step,
+					       args->job_cond->step_list) < 0) {
+				(void) resp_error(
+					errors, ESLURM_REST_INVALID_QUERY,
+					"error parsing steps in form of list",
+					key);
+				return DATA_FOR_EACH_FAIL;
+			}
+
+			return DATA_FOR_EACH_CONT;
+		}
+
 		if (data_convert_type(data, DATA_TYPE_STRING) !=
 		    DATA_TYPE_STRING) {
 			resp_error(errors, ESLURM_REST_INVALID_QUERY,
 				   "format must be a string", key);
 			return DATA_FOR_EACH_FAIL;
 		}
-
-		if (!args->job_cond->step_list)
-			args->job_cond->step_list = list_create(
-				slurm_destroy_selected_step);
 
 		slurm_addto_step_list(args->job_cond->step_list,
 				      data_get_string(data));
