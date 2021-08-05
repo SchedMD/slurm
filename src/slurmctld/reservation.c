@@ -472,9 +472,16 @@ static void _del_resv_rec(void *x)
 		 * we don't need to remove anything from it.
 		 */
 		if (magnetic_resv_list &&
-		    (resv_ptr->flags & RESERVE_FLAG_MAGNETIC))
-			(void)list_remove_first(
-				magnetic_resv_list, _find_resv_ptr, resv_ptr);
+		    (resv_ptr->flags & RESERVE_FLAG_MAGNETIC)) {
+			int cnt;
+			cnt = list_delete_all(magnetic_resv_list,
+					      _find_resv_ptr,
+					      resv_ptr);
+			if (cnt > 1) {
+				error("%s: magnetic_resv_list contained %d references to %s",
+				      __func__, cnt, resv_ptr->name);
+			}
+		}
 
 		xassert(resv_ptr->magic == RESV_MAGIC);
 		resv_ptr->magic = 0;
