@@ -1065,7 +1065,8 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 	int dev_inx_first = -1, dev_inx_last, dev_inx;
 	int env_inx = 0;
 	gres_device_t *gres_device;
-	char *dev_num_str = NULL, *sep = "";
+	char *vendor_gpu_str = NULL;
+	char *sep = "";
 	ListIterator iter;
 
 	xassert(epilog_env_ptr);
@@ -1109,24 +1110,24 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 			if (gres_device->index != dev_inx)
 				continue;
 
-			xstrfmtcat(dev_num_str, "%s%d", sep,
+			xstrfmtcat(vendor_gpu_str, "%s%d", sep,
 				   gres_device->index);
 			sep = ",";
 			break;
 		}
 		list_iterator_destroy(iter);
 	}
-	if (dev_num_str) {
+	if (vendor_gpu_str) {
 		if (node_flags & GRES_CONF_ENV_NVML)
 			xstrfmtcat((*epilog_env_ptr)[env_inx++],
-				   "CUDA_VISIBLE_DEVICES=%s", dev_num_str);
+				   "CUDA_VISIBLE_DEVICES=%s", vendor_gpu_str);
 		if (node_flags & GRES_CONF_ENV_RSMI)
 			xstrfmtcat((*epilog_env_ptr)[env_inx++],
-				   "ROCR_VISIBLE_DEVICES=%s", dev_num_str);
+				   "ROCR_VISIBLE_DEVICES=%s", vendor_gpu_str);
 		if (node_flags & GRES_CONF_ENV_OPENCL)
 			xstrfmtcat((*epilog_env_ptr)[env_inx++],
-				   "GPU_DEVICE_ORDINAL=%s", dev_num_str);
-		xfree(dev_num_str);
+				   "GPU_DEVICE_ORDINAL=%s", vendor_gpu_str);
+		xfree(vendor_gpu_str);
 	}
 
 	return;
