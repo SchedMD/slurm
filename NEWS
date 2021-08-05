@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- Make job's SLURM_JOB_GPUS print global GPU IDs instead of MIG unique_ids.
  -- Fix miscounting of GPU envs in prolog/epilog if MultipleFiles was used.
  -- Support MIGs in prolog/epilog's CUDA_VISIBLE_DEVICES & co.
+ -- Add SLURM_JOB_GPUS back into Prolog; add it to Epilog.
 
 * Changes in Slurm 21.08.0rc1
 =============================

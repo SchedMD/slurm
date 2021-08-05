@@ -1066,6 +1066,7 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 	int env_inx = 0;
 	gres_device_t *gres_device;
 	char *vendor_gpu_str = NULL;
+	char *slurm_gpu_str = NULL;
 	char *sep = "";
 	ListIterator iter;
 
@@ -1089,9 +1090,9 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 	if (*epilog_env_ptr) {
 		for (env_inx = 0; (*epilog_env_ptr)[env_inx]; env_inx++)
 			;
-		xrealloc(*epilog_env_ptr, sizeof(char *) * (env_inx + 4));
+		xrealloc(*epilog_env_ptr, sizeof(char *) * (env_inx + 5));
 	} else {
-		*epilog_env_ptr = xcalloc(4, sizeof(char *));
+		*epilog_env_ptr = xcalloc(5, sizeof(char *));
 	}
 
 	if (epilog_info->gres_bit_alloc &&
@@ -1116,6 +1117,8 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 			else
 				xstrfmtcat(vendor_gpu_str, "%s%d", sep,
 					   gres_device->index);
+			xstrfmtcat(slurm_gpu_str, "%s%d", sep,
+				   gres_device->index);
 			sep = ",";
 			break;
 		}
@@ -1132,6 +1135,11 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 			xstrfmtcat((*epilog_env_ptr)[env_inx++],
 				   "GPU_DEVICE_ORDINAL=%s", vendor_gpu_str);
 		xfree(vendor_gpu_str);
+	}
+	if (slurm_gpu_str) {
+		xstrfmtcat((*epilog_env_ptr)[env_inx++], "SLURM_JOB_GPUS=%s",
+			   slurm_gpu_str);
+		xfree(slurm_gpu_str);
 	}
 
 	return;
