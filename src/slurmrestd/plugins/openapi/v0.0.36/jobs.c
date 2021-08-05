@@ -355,7 +355,11 @@ static int _fill_job_desc_from_sbatch_opts(slurm_opt_t *opt,
 		env_array_overwrite(&desc->environment, "SLURM_GET_USER_ENV",
 				    "1");
 
-	desc->contiguous = opt->contiguous ? 1 : 0;
+	if (slurm_option_isset(opt, "contiguous"))
+		desc->contiguous = opt->contiguous ? 1 : 0;
+	else
+		desc->contiguous = NO_VAL16;
+
 	if (opt->core_spec != NO_VAL16)
 		desc->core_spec = opt->core_spec;
 	desc->features = xstrdup(opt->constraint);
