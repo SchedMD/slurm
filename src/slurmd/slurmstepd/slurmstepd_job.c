@@ -481,7 +481,7 @@ extern stepd_step_rec_t *stepd_step_rec_create(launch_tasks_request_msg_t *msg,
 	 */
 	if (msg->threads_per_core && (msg->threads_per_core != NO_VAL16) &&
 	    (msg->threads_per_core < conf->threads))
-		cpus = msg->threads_per_core * conf->cores;
+		cpus = msg->threads_per_core * conf->cores * conf->sockets;
 
 	format_core_allocs(msg->cred, conf->node_name, cpus,
 			   &job->job_alloc_cores, &job->step_alloc_cores,
@@ -619,7 +619,7 @@ batch_stepd_step_rec_create(batch_job_launch_msg_t *msg)
 		uint32_t threads_per_core =
 			strtol(threads_per_core_str, NULL, 10);
 		if (threads_per_core && (threads_per_core < conf->threads))
-			cpus = threads_per_core * conf->cores;
+			cpus = threads_per_core * conf->cores * conf->sockets;
 	}
 
 	format_core_allocs(msg->cred, conf->node_name, cpus,
