@@ -844,7 +844,6 @@ extern void pack_all_node(char **buffer_ptr, int *buffer_size,
 	node_record_t *node_ptr = node_record_table_ptr;
 	bool hidden, privileged = validate_operator(uid);
 	pack_node_info_t pack_info = {0};
-	part_record_t **visible_parts_save;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
@@ -855,16 +854,19 @@ extern void pack_all_node(char **buffer_ptr, int *buffer_size,
 	buffer = init_buf (BUF_SIZE*16);
 	nodes_packed = 0;
 
-	pack_info.uid = uid;
-	/*
-	 * Save start pointer to start of the list so can point to start after
-	 * appending to the list.
-	 */
-	pack_info.visible_parts = xcalloc(list_count(part_list) + 1,
-					  sizeof(part_record_t *));
-	visible_parts_save = pack_info.visible_parts;
-	list_for_each(part_list, _build_visible_parts, &pack_info);
-	pack_info.visible_parts = visible_parts_save;
+	if (!privileged) {
+		part_record_t **visible_parts_save;
+		pack_info.uid = uid;
+		/*
+		 * Save start pointer to start of the list so can point to start
+		 * after appending to the list.
+		 */
+		pack_info.visible_parts = xcalloc(list_count(part_list) + 1,
+						  sizeof(part_record_t *));
+		visible_parts_save = pack_info.visible_parts;
+		list_for_each(part_list, _build_visible_parts, &pack_info);
+		pack_info.visible_parts = visible_parts_save;
+	}
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* write header: count and time */
@@ -946,7 +948,6 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 	node_record_t *node_ptr;
 	bool hidden, privileged = validate_operator(uid);
 	pack_node_info_t pack_info = {0};
-	part_record_t **visible_parts_save;
 
 	xassert(verify_lock(CONF_LOCK, READ_LOCK));
 	xassert(verify_lock(PART_LOCK, READ_LOCK));
@@ -957,16 +958,19 @@ extern void pack_one_node (char **buffer_ptr, int *buffer_size,
 	buffer = init_buf (BUF_SIZE);
 	nodes_packed = 0;
 
-	pack_info.uid = uid;
-	/*
-	 * Save start pointer to start of the list so can point to start after
-	 * appending to the list.
-	 */
-	pack_info.visible_parts = xcalloc(list_count(part_list) + 1,
-					  sizeof(part_record_t *));
-	visible_parts_save = pack_info.visible_parts;
-	list_for_each(part_list, _build_visible_parts, &pack_info);
-	pack_info.visible_parts = visible_parts_save;
+	if (!privileged) {
+		part_record_t **visible_parts_save;
+		pack_info.uid = uid;
+		/*
+		 * Save start pointer to start of the list so can point to start
+		 * after appending to the list.
+		 */
+		pack_info.visible_parts = xcalloc(list_count(part_list) + 1,
+						  sizeof(part_record_t *));
+		visible_parts_save = pack_info.visible_parts;
+		list_for_each(part_list, _build_visible_parts, &pack_info);
+		pack_info.visible_parts = visible_parts_save;
+	}
 
 	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		/* write header: count and time */
