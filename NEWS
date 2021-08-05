@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where extra bonus core was allocated in some situations.
  -- Avoid putting gres with count of 0 on a TRES req/alloc.
  -- Fix determining if a reservation is used or not.
+ -- Fix memory in requested TRES when --mem-per-gpu is used.
 
 * Changes in Slurm 21.08.0rc1
 =============================

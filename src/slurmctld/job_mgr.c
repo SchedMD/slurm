@@ -7219,15 +7219,6 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 	job_desc->tres_req_cnt = xcalloc(slurmctld_tres_cnt, sizeof(uint64_t));
 	job_desc->tres_req_cnt[TRES_ARRAY_NODE] = job_desc->min_nodes;
 	job_desc->tres_req_cnt[TRES_ARRAY_CPU]  = job_desc->min_cpus;
-	job_desc->tres_req_cnt[TRES_ARRAY_MEM]  =
-		job_get_tres_mem(NULL,
-				 job_desc->pn_min_memory,
-				 job_desc->tres_req_cnt[TRES_ARRAY_CPU],
-				 job_desc->min_nodes, part_ptr,
-				 gres_list,
-				 job_desc->bitflags & JOB_MEM_SET,
-				 job_desc->sockets_per_node,
-				 job_desc->num_tasks);
 
 	license_list = license_validate(job_desc->licenses,
 					validate_cfgd_licenses, true,
@@ -7275,6 +7266,17 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 				   job_desc->min_nodes,
 				   job_desc->tres_req_cnt,
 				   false);
+
+	/* Get GRES before mem so we can pass gres_list to job_get_tres_mem() */
+	job_desc->tres_req_cnt[TRES_ARRAY_MEM]  =
+		job_get_tres_mem(NULL,
+				 job_desc->pn_min_memory,
+				 job_desc->tres_req_cnt[TRES_ARRAY_CPU],
+				 job_desc->min_nodes, part_ptr,
+				 gres_list,
+				 job_desc->bitflags & JOB_MEM_SET,
+				 job_desc->sockets_per_node,
+				 job_desc->num_tasks);
 
 	/*
 	 * Do this last,after other TRES' have been set as it uses the other
@@ -15665,6 +15667,38 @@ static void _remove_defunct_batch_dirs(List batch_dirs)
 	list_iterator_destroy(batch_dir_inx);
 }
 
+/* Get requested gres but only if mem_per_gres was set for that gres */
+static int _get_req_gres(void *x, void *arg)
+{
+	gres_state_t *job_gres_ptr = x;
+	gres_job_state_t *gres_data_out = arg;
+	gres_job_state_t *gres_job_state = job_gres_ptr->gres_data;
+
+	/*
+	 * This assumes that only one gres name has mem_per_gres in the job.
+	 * This won't work if two different gres names (for example, "gpu" and
+	 * "license") both have mem_per_gres. Right now we only allow
+	 * mem_per_gres for GPU so this works.
+	 */
+	if (!gres_job_state->mem_per_gres)
+		return SLURM_SUCCESS;
+
+	/*
+	 * In theory MAX(mem_per_gres) shouldn't matter because we should only
+	 * allow one gres name to have mem_per_gres and it should be the same
+	 * for all types (e.g., gpu:k80 vs gpu:tesla) of that same gres (gpu).
+	 */
+	gres_data_out->mem_per_gres = MAX(gres_data_out->mem_per_gres,
+					  gres_job_state->mem_per_gres);
+
+	gres_data_out->gres_per_job += gres_job_state->gres_per_job;
+	gres_data_out->gres_per_node += gres_job_state->gres_per_node;
+	gres_data_out->gres_per_socket += gres_job_state->gres_per_socket;
+	gres_data_out->gres_per_task += gres_job_state->gres_per_task;
+
+	return SLURM_SUCCESS;
+}
+
 extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 				 uint64_t pn_min_memory, uint32_t cpu_cnt,
 				 uint32_t node_cnt, part_record_t *part_ptr,
@@ -15672,6 +15706,8 @@ extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 				 uint16_t min_sockets_per_node,
 				 uint32_t num_tasks)
 {
+	static bool is_cons_tres;
+	static bool set_is_cons_tres = false;
 	uint64_t mem_total = 0;
 	int i;
 
@@ -15682,8 +15718,76 @@ extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 		return mem_total;
 	}
 
+	/*
+	 * Plugins can't change on reconfig, so we can cache this here and
+	 * don't need to worry about reconfig.
+	 */
+	if (!set_is_cons_tres) {
+		uint32_t select_plugin_type = NO_VAL;
+
+		if (select_g_get_info_from_plugin(SELECT_CR_PLUGIN, NULL,
+						  &select_plugin_type)
+		    != SLURM_SUCCESS) {
+			/*
+			 * Problem getting select type from plugin, we can't
+			 * really recover from that so just assume it is
+			 * not cons_tres.
+			 */
+			is_cons_tres = false;
+		} else if (select_plugin_type == SELECT_TYPE_CONS_TRES)
+			is_cons_tres = true;
+		else
+			is_cons_tres = false;
+		set_is_cons_tres = true;
+	}
+
 	if (pn_min_memory == NO_VAL64)
 		return mem_total;
+
+	if (!user_set_mem && is_cons_tres && gres_list) {
+		/* mem_per_[cpu|node] not set, check if mem_per_gres was set */
+		gres_job_state_t gres_job_state;
+		memset(&gres_job_state, 0, sizeof(gres_job_state));
+		list_for_each(gres_list, _get_req_gres, &gres_job_state);
+		if (gres_job_state.mem_per_gres) {
+			/* Requested node_cnt == 1 if not given */
+			if (node_cnt == NO_VAL)
+				node_cnt = 1;
+
+			/* Estimate requested gres per job */
+			if (gres_job_state.gres_per_job)
+				return gres_job_state.mem_per_gres *
+					gres_job_state.gres_per_job;
+			if (gres_job_state.gres_per_node)
+				return gres_job_state.mem_per_gres *
+					gres_job_state.gres_per_node * node_cnt;
+			if (gres_job_state.gres_per_socket) {
+				if (min_sockets_per_node &&
+				    (min_sockets_per_node != NO_VAL16))
+					return gres_job_state.mem_per_gres *
+						gres_job_state.gres_per_socket *
+						node_cnt * min_sockets_per_node;
+				else
+					return gres_job_state.mem_per_gres *
+						gres_job_state.gres_per_socket *
+						node_cnt;
+			}
+			if (gres_job_state.gres_per_task) {
+				if (num_tasks && (num_tasks != NO_VAL))
+					return gres_job_state.mem_per_gres *
+						gres_job_state.gres_per_task *
+						num_tasks;
+				else
+					return gres_job_state.mem_per_gres *
+						gres_job_state.gres_per_task;
+			}
+			/*
+			 * mem_per_gres set but no gres requested.
+			 * We shouldn't get here.
+			 */
+			return 0;
+		}
+	}
 
 	if (pn_min_memory == 0)
 		pn_min_memory = _mem_per_node_part(part_ptr);
