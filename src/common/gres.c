@@ -164,7 +164,7 @@ typedef struct {
 	uint32_t plugin_id;
 	bool with_type;
 	bool without_type;
-	gres_job_state_t *without_type_job_state;
+	void *without_type_state; /* gres_[job|step]_state_t */
 } overlap_check_t;
 
 /* These are the options that are currently supported with --tres-bind */
@@ -5211,13 +5211,24 @@ fini:	xfree(name);
 /* Return true if job specification only includes cpus_per_gres or mem_per_gres
  * Return false if any other field set
  */
-static bool _generic_job_state(gres_job_state_t *job_state)
+static bool _generic_state(void *gres_data, bool is_job)
 {
-	if (job_state->gres_per_job ||
-	    job_state->gres_per_node ||
-	    job_state->gres_per_socket ||
-	    job_state->gres_per_task)
-		return false;
+	if (is_job) {
+		gres_job_state_t *job_gres_data = gres_data;
+		if (job_gres_data->gres_per_job ||
+		    job_gres_data->gres_per_node ||
+		    job_gres_data->gres_per_socket ||
+		    job_gres_data->gres_per_task)
+			return false;
+	} else {
+		gres_step_state_t *step_gres_data = gres_data;
+		if (step_gres_data->gres_per_step ||
+		    step_gres_data->gres_per_node ||
+		    step_gres_data->gres_per_socket ||
+		    step_gres_data->gres_per_task)
+			return false;
+	}
+
 	return true;
 }
 
@@ -5226,10 +5237,11 @@ static bool _generic_job_state(gres_job_state_t *job_state)
  */
 static bool _set_over_list(gres_state_t *gres_state,
 			   overlap_check_t *over_list,
-			   int *over_count)
+			   int *over_count, bool is_job)
 {
-	char *type_name =
-		((gres_job_state_t *) gres_state->gres_data)->type_name;
+	char *type_name = is_job ?
+		((gres_job_state_t *) gres_state->gres_data)->type_name:
+		((gres_step_state_t *) gres_state->gres_data)->type_name;
 	int i;
 	bool overlap_merge = false;
 
@@ -5247,8 +5259,7 @@ static bool _set_over_list(gres_state_t *gres_state,
 			over_list[i].with_type = true;
 		} else {
 			over_list[i].without_type = true;
-			over_list[i].without_type_job_state =
-				gres_state->gres_data;
+			over_list[i].without_type_state = gres_state->gres_data;
 		}
 	} else if (type_name) {
 		over_list[i].with_type = true;
@@ -5256,7 +5267,7 @@ static bool _set_over_list(gres_state_t *gres_state,
 			overlap_merge = true;
 	} else {
 		over_list[i].without_type = true;
-		over_list[i].without_type_job_state = gres_state->gres_data;
+		over_list[i].without_type_state = gres_state->gres_data;
 		if (over_list[i].with_type)
 			overlap_merge = true;
 	}
@@ -5268,47 +5279,66 @@ static bool _set_over_list(gres_state_t *gres_state,
  * Put generic data (*_per_gres) on other gres of the same kind.
  */
 static int _merge_generic_data(
-	List gres_list, overlap_check_t *over_list, int over_count)
+	List gres_list, overlap_check_t *over_list, int over_count, bool is_job)
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t cpus_per_gres;
 	uint64_t mem_per_gres;
 	gres_state_t *gres_state;
 	gres_job_state_t *job_gres_data;
+	gres_step_state_t *step_gres_data;
+	void *generic_gres_data;
 	ListIterator iter = list_iterator_create(gres_list);
 
 	for (int i = 0; i < over_count; i++) {
-		if (!over_list[i].with_type ||
-		    !over_list[i].without_type_job_state)
+		if (!over_list[i].with_type || !over_list[i].without_type_state)
 			continue;
-		if (!_generic_job_state(over_list[i].without_type_job_state)) {
+		if (!_generic_state(over_list[i].without_type_state, is_job)) {
 			rc = ESLURM_INVALID_GRES_TYPE;
 			break;
 		}
 
 		/* Propagate generic parameters */
-		job_gres_data =	over_list[i].without_type_job_state;
-		cpus_per_gres =	job_gres_data->cpus_per_gres;
-		mem_per_gres = job_gres_data->mem_per_gres;
+		if (is_job) {
+			generic_gres_data = job_gres_data =
+				over_list[i].without_type_state;
+			cpus_per_gres =	job_gres_data->cpus_per_gres;
+			mem_per_gres = job_gres_data->mem_per_gres;
+		} else {
+			generic_gres_data = step_gres_data =
+				over_list[i].without_type_state;
+			cpus_per_gres =	step_gres_data->cpus_per_gres;
+			mem_per_gres = step_gres_data->mem_per_gres;
+		}
 
 		while ((gres_state = list_next(iter))) {
-			job_gres_data = gres_state->gres_data;
 			if (over_list[i].plugin_id != gres_state->plugin_id)
 				continue;
-			if (job_gres_data ==
-			    over_list[i].without_type_job_state) {
+			if (generic_gres_data == gres_state->gres_data) {
 				list_remove(iter);
 				continue;
 			}
 
-			if (!job_gres_data->cpus_per_gres) {
-				job_gres_data->cpus_per_gres =
-					cpus_per_gres;
-			}
-
-			if (!job_gres_data->mem_per_gres) {
-				job_gres_data->mem_per_gres =
-					mem_per_gres;
+			if (is_job) {
+				job_gres_data = gres_state->gres_data;
+				if (!job_gres_data->cpus_per_gres) {
+					job_gres_data->cpus_per_gres =
+						cpus_per_gres;
+				}
+				if (!job_gres_data->mem_per_gres) {
+					job_gres_data->mem_per_gres =
+						mem_per_gres;
+				}
+			} else {
+				step_gres_data = gres_state->gres_data;
+				if (!step_gres_data->cpus_per_gres) {
+					step_gres_data->cpus_per_gres =
+						cpus_per_gres;
+				}
+				if (!step_gres_data->mem_per_gres) {
+					step_gres_data->mem_per_gres =
+						mem_per_gres;
+				}
 			}
 		}
 		list_iterator_reset(iter);
@@ -5606,7 +5636,7 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 			break;
 		}
 
-		if (_set_over_list(gres_state, over_list, &over_count))
+		if (_set_over_list(gres_state, over_list, &over_count, 1))
 			overlap_merge = true;
 	}
 	list_iterator_destroy(iter);
@@ -5617,7 +5647,7 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	}
 
 	if (overlap_merge) /* Merge generic data if possible */
-		rc = _merge_generic_data(*gres_list, over_list, over_count);
+		rc = _merge_generic_data(*gres_list, over_list, over_count, 1);
 
 	xfree(over_list);
 
