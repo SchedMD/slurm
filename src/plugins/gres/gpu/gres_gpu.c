@@ -1063,7 +1063,7 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 				  gres_epilog_info_t *epilog_info, int node_inx)
 {
 	int dev_inx_first = -1, dev_inx_last, dev_inx;
-	int env_inx = 0, i;
+	int env_inx = 0;
 	gres_device_t *gres_device;
 	char *dev_num_str = NULL, *sep = "";
 	ListIterator iter;
@@ -1104,12 +1104,9 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 	for (dev_inx = dev_inx_first; dev_inx <= dev_inx_last; dev_inx++) {
 		if (!bit_test(epilog_info->gres_bit_alloc[node_inx], dev_inx))
 			continue;
-		/* Translate bits to device number, may differ */
-		i = -1;
 		iter = list_iterator_create(gres_devices);
 		while ((gres_device = list_next(iter))) {
-			i++;
-			if (i != dev_inx)
+			if (gres_device->index != dev_inx)
 				continue;
 
 			xstrfmtcat(dev_num_str, "%s%d", sep,
