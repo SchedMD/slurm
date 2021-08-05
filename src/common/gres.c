@@ -8712,6 +8712,28 @@ extern int gres_step_state_validate(char *cpus_per_tres,
 		if (rc == SLURM_SUCCESS)
 			_validate_step_counts(new_step_list, job_gres_list,
 					      step_min_nodes, &rc, err_msg);
+		if (rc == SLURM_SUCCESS) {
+			bool overlap_merge = false;
+			int over_count = 0;
+			gres_state_t *gres_state;
+			overlap_check_t *over_list =
+				xcalloc(list_count(new_step_list),
+					sizeof(overlap_check_t));
+			ListIterator iter = list_iterator_create(new_step_list);
+			while ((gres_state = list_next(iter))) {
+				if (_set_over_list(gres_state, over_list,
+						   &over_count, 0))
+					overlap_merge = true;
+
+			}
+			list_iterator_destroy(iter);
+			if (overlap_merge)
+				rc = _merge_generic_data(new_step_list,
+							 over_list,
+							 over_count,
+							 0);
+			xfree(over_list);
+		}
 		if (rc == SLURM_SUCCESS)
 			*step_gres_list = new_step_list;
 		else
