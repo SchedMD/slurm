@@ -808,7 +808,17 @@ static int _build_visible_parts(void *elem, void *arg)
 	if (part_is_visible(part_ptr, pack_info->uid)) {
 		*(pack_info->visible_parts) = part_ptr;
 		pack_info->visible_parts++;
+		if (get_log_level() >= LOG_LEVEL_DEBUG3) {
+			char *tmp_str = NULL;
+			for (int i = 0; pack_info->visible_parts[i]; i++)
+				xstrfmtcat(tmp_str, "%s%s", tmp_str ? "," : "",
+					   pack_info->visible_parts[i]->name);
+			debug3("%s: uid:%d visible_parts:%s",
+			       __func__, pack_info->uid, tmp_str);
+			xfree(tmp_str);
+		}
 	}
+
 	return SLURM_SUCCESS;
 }
 
