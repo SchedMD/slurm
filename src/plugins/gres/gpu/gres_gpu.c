@@ -1109,12 +1109,13 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 		iter = list_iterator_create(gres_devices);
 		while ((gres_device = list_next(iter))) {
 			i++;
-			if (i == dev_inx) {
-				xstrfmtcat(dev_num_str, "%s%d",
-					   sep, gres_device->index);
-				sep = ",";
-				break;
-			}
+			if (i != dev_inx)
+				continue;
+
+			xstrfmtcat(dev_num_str, "%s%d", sep,
+				   gres_device->index);
+			sep = ",";
+			break;
 		}
 		list_iterator_destroy(iter);
 	}
