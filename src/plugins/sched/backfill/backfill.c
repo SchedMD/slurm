@@ -2712,6 +2712,7 @@ skip_start:
 		if (!assoc_limit_stop) {
 			uint32_t selected_node_cnt;
 			uint64_t tres_req_cnt[slurmctld_tres_cnt];
+			uint16_t sockets_per_node;
 			assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
 				READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK
 			};
@@ -2724,12 +2725,17 @@ skip_start:
 					   job_ptr->total_cpus :
 					   job_ptr->details->min_cpus);
 
+			sockets_per_node = job_get_sockets_per_node(job_ptr);
 			tres_req_cnt[TRES_ARRAY_MEM] = job_get_tres_mem(
 						job_ptr->job_resrcs,
 						job_ptr->details->pn_min_memory,
 						tres_req_cnt[TRES_ARRAY_CPU],
 						selected_node_cnt,
-						job_ptr->part_ptr);
+						job_ptr->part_ptr,
+						job_ptr->gres_list_req,
+						(job_ptr->bit_flags &
+						JOB_MEM_SET), sockets_per_node,
+						job_ptr->details->num_tasks);
 
 			tres_req_cnt[TRES_ARRAY_NODE] =
 				(uint64_t)selected_node_cnt;
@@ -3425,6 +3431,7 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 	slurmctld_tres_size = sizeof(uint64_t) * slurmctld_tres_cnt;
 	iter = list_iterator_create(map->het_job_rec_list);
 	while ((rec = (het_job_rec_t *) list_next(iter))) {
+		uint16_t sockets_per_node;
 		assoc_mgr_lock_t locks = { READ_LOCK, NO_LOCK,
 			READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 
@@ -3436,12 +3443,17 @@ static bool _het_job_limit_check(het_job_map_t *map, time_t now)
 		tres_req_cnt[TRES_ARRAY_CPU] = (uint64_t)(job_ptr->total_cpus ?
 					       job_ptr->total_cpus :
 					       job_ptr->details->min_cpus);
+		sockets_per_node = job_get_sockets_per_node(job_ptr);
 		tres_req_cnt[TRES_ARRAY_MEM] = job_get_tres_mem(
 					       job_ptr->job_resrcs,
 					       job_ptr->details->pn_min_memory,
 					       tres_req_cnt[TRES_ARRAY_CPU],
 					       selected_node_cnt,
-					       job_ptr->part_ptr);
+					       job_ptr->part_ptr,
+					       job_ptr->gres_list_req,
+					       (job_ptr->bit_flags &
+						JOB_MEM_SET), sockets_per_node,
+					       job_ptr->details->num_tasks);
 		tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)selected_node_cnt;
 
 		assoc_mgr_lock(&locks);

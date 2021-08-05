@@ -7223,7 +7223,11 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		job_get_tres_mem(NULL,
 				 job_desc->pn_min_memory,
 				 job_desc->tres_req_cnt[TRES_ARRAY_CPU],
-				 job_desc->min_nodes, part_ptr);
+				 job_desc->min_nodes, part_ptr,
+				 gres_list,
+				 job_desc->bitflags & JOB_MEM_SET,
+				 job_desc->sockets_per_node,
+				 job_desc->num_tasks);
 
 	license_list = license_validate(job_desc->licenses,
 					validate_cfgd_licenses, true,
@@ -9177,6 +9181,8 @@ extern void job_set_req_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
 {
 	uint32_t cpu_cnt = 0, node_cnt = 0;
 	uint64_t mem_cnt = 0;
+	uint16_t sockets_per_node;
+	uint32_t num_tasks;
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
@@ -9206,11 +9212,17 @@ extern void job_set_req_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
 
 	job_ptr->tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)node_cnt;
 	job_ptr->tres_req_cnt[TRES_ARRAY_CPU] = (uint64_t)cpu_cnt;
+	sockets_per_node = job_get_sockets_per_node(job_ptr);
+	num_tasks = job_ptr->details->num_tasks;
 	job_ptr->tres_req_cnt[TRES_ARRAY_MEM] =
 		job_get_tres_mem(job_ptr->job_resrcs,
 				 mem_cnt, cpu_cnt,
 				 node_cnt,
-				 job_ptr->part_ptr);
+				 job_ptr->part_ptr,
+				 job_ptr->gres_list_req,
+				 (job_ptr->bit_flags & JOB_MEM_SET),
+				 sockets_per_node,
+				 num_tasks);
 
 	license_set_job_tres_cnt(job_ptr->license_list,
 				 job_ptr->tres_req_cnt,
@@ -9278,7 +9290,11 @@ extern void job_set_alloc_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
 				 job_ptr->details->pn_min_memory,
 				 job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU],
 				 job_ptr->tres_alloc_cnt[TRES_ARRAY_NODE],
-				 job_ptr->part_ptr);
+				 job_ptr->part_ptr,
+				 job_ptr->gres_list_req,
+				 job_ptr->bit_flags & JOB_MEM_SET,
+				 job_get_sockets_per_node(job_ptr),
+				 job_ptr->details->num_tasks);
 
 	job_ptr->tres_alloc_cnt[TRES_ARRAY_ENERGY] = NO_VAL64;
 
@@ -12778,7 +12794,11 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 				 job_specs->min_nodes != NO_VAL ?
 				 job_specs->min_nodes :
 				 detail_ptr ? detail_ptr->min_nodes : 1,
-				 use_part_ptr);
+				 use_part_ptr,
+				 gres_list ? gres_list : job_ptr->gres_list_req,
+				 (job_specs->pn_min_memory != NO_VAL64),
+				 job_specs->sockets_per_node,
+				 job_specs->num_tasks);
 
 	if (job_specs->licenses && !xstrcmp(job_specs->licenses,
 					    job_ptr->licenses)) {
@@ -15645,15 +15665,12 @@ static void _remove_defunct_batch_dirs(List batch_dirs)
 	list_iterator_destroy(batch_dir_inx);
 }
 
-/*
- * Return total amount of memory allocated to a job. This can be based upon
- * a GRES specification with various GRES/memory allocations on each node.
- * If current allocation information is not available, estimate memory based
- * upon pn_min_memory and either CPU or node count.
- */
 extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 				 uint64_t pn_min_memory, uint32_t cpu_cnt,
-				 uint32_t node_cnt, part_record_t *part_ptr)
+				 uint32_t node_cnt, part_record_t *part_ptr,
+				 List gres_list, bool user_set_mem,
+				 uint16_t min_sockets_per_node,
+				 uint32_t num_tasks)
 {
 	uint64_t mem_total = 0;
 	int i;

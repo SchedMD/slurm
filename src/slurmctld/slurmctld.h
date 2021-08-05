@@ -1512,11 +1512,15 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue);
  * Return total amount of memory allocated to a job. This can be based upon
  * a GRES specification with various GRES/memory allocations on each node.
  * If current allocation information is not available, estimate memory based
- * upon pn_min_memory and either CPU or node count.
+ * upon pn_min_memory and either CPU or node count, or upon mem_per_gres
+ * and estimated gres count (both values gotten from gres list).
  */
 extern uint64_t job_get_tres_mem(struct job_resources *job_res,
 				 uint64_t pn_min_memory, uint32_t cpu_cnt,
-				 uint32_t node_cnt, part_record_t *part_ptr);
+				 uint32_t node_cnt, part_record_t *part_ptr,
+				 List gres_list, bool user_set_mem,
+				 uint16_t min_sockets_per_node,
+				 uint32_t num_tasks);
 
 /*
  * job_epilog_complete - Note the completion of the epilog script for a
