@@ -439,8 +439,14 @@ static int _fill_job_desc_from_sbatch_opts(slurm_opt_t *opt,
 	if (opt->qos)
 		desc->qos = xstrdup(opt->qos);
 
-	if (opt->hold)
-		desc->priority = 0;
+	if (slurm_option_isset(opt, "hold")) {
+		if (opt->hold)
+			desc->priority = 0;
+		else
+			desc->priority = INFINITE;
+	} else
+		desc->priority = NO_VAL;
+
 	if (opt->reboot)
 		desc->reboot = 1;
 
