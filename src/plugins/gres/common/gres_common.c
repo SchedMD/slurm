@@ -259,17 +259,14 @@ extern void common_gres_set_env(List gres_devices, char ***env_ptr,
 		 * If unique_id is set for the device, assume that we
 		 * want to use it for the env var
 		 */
-		if (gres_device->unique_id) {
+		if (gres_device->unique_id)
 			xstrfmtcat(new_local_list, "%s%s%s", local_prefix,
 				   prefix, gres_device->unique_id);
-			xstrfmtcat(new_global_list, "%s%s%s", global_prefix,
-				   prefix, gres_device->unique_id);
-		} else {
+		else
 			xstrfmtcat(new_local_list, "%s%s%d", local_prefix,
 				   prefix, index);
-			xstrfmtcat(new_global_list, "%s%s%d", global_prefix,
-				   prefix, global_env_index);
-		}
+		xstrfmtcat(new_global_list, "%s%s%d", global_prefix,
+			   prefix, global_env_index);
 
 		local_prefix = ",";
 		global_prefix = ",";
