@@ -338,7 +338,7 @@ requests those resources.
 Available in Prolog and Epilog only.</li>
 
 <li><b>CUDA_VISIBLE_DEVICES</b>
-Specifies the GPU devices that should be allocated to the job.
+Specifies the GPU devices for the job allocation.
 The value is set only if the gres/gpu or gres/mps plugin is configured and the
 job requests those resources.
 Note that the environment variable set for the job may differ from that set for
@@ -352,7 +352,22 @@ For example, if a job is allocated the device "/dev/nvidia1", then
 "1" in the Prolog and Epilog while the job's value of
 <span class="commandline">CUDA_VISIBLE_DEVICES</span> will be set to a
 value of "0" (i.e. the first GPU device visible to the job).
+<span class="commandline">CUDA_VISIBLE_DEVICES</span> will be set unless
+otherwise excluded via the <i>Flags</i> or <i>AutoDetect</i> options in
+<i>gres.conf</i>. See also <span class="commandline">SLURM_JOB_GPUS</span>.
 Available in Prolog and Epilog only.</li>
+
+<li><b>GPU_DEVICE_ORDINAL</b>
+Specifies the GPU devices for the job allocation. The considerations for
+<span class="commandline">CUDA_VISIBLE_DEVICES</span> also apply to
+<span class="commandline">GPU_DEVICE_ORDINAL</span>.
+</li>
+
+<li><b>ROCR_VISIBLE_DEVICES</b>
+Specifies the GPU devices for the job allocation. The considerations for
+<span class="commandline">CUDA_VISIBLE_DEVICES</span> also apply to
+<span class="commandline">ROCR_VISIBLE_DEVICES</span>.
+</li>
 
 <li><b>SLURM_ARRAY_JOB_ID</b>
 If this job is part of a job array, this will be set to the job ID.
@@ -675,6 +690,6 @@ the job to be requeued. Only batch jobs can be requeued. Interactive jobs
 
 <p>Based upon work by Jason Sollom, Cray Inc. and used by permission.</p>
 
-<p style="text-align:center;">Last modified 8 June 2021</p>
+<p style="text-align:center;">Last modified 5 August 2021</p>
 
 <!--#include virtual="footer.txt"-->
