@@ -39,9 +39,6 @@
 
 #include "src/common/gres.h"
 
-extern uint64_t gres_ctld_get_step_mem_on_node(List gres_list, int node_inx,
-					       char *gres_name);
-
 /*
  * Fill in job_gres_list with the total amount of GRES on a node.
  * OUT job_gres_list - This list will be destroyed and remade with all GRES on
