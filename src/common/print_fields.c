@@ -87,8 +87,10 @@ extern void print_fields_header(List print_fields_list)
 	}
 	list_iterator_reset(itr);
 	printf("\n");
-	if (print_fields_parsable_print)
+	if (print_fields_parsable_print) {
+		list_iterator_destroy(itr);
 		return;
+	}
 	while ((field = list_next(itr))) {
 		int abs_len = abs(field->len);
 		printf("%*.*s ", abs_len, abs_len,
