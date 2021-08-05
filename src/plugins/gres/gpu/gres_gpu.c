@@ -1110,8 +1110,12 @@ extern void gres_p_epilog_set_env(char ***epilog_env_ptr,
 			if (gres_device->index != dev_inx)
 				continue;
 
-			xstrfmtcat(vendor_gpu_str, "%s%d", sep,
-				   gres_device->index);
+			if (gres_device->unique_id)
+				xstrfmtcat(vendor_gpu_str, "%s%s", sep,
+					   gres_device->unique_id);
+			else
+				xstrfmtcat(vendor_gpu_str, "%s%d", sep,
+					   gres_device->index);
 			sep = ",";
 			break;
 		}
