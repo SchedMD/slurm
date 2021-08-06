@@ -1,4 +1,4 @@
-.TH salloc "1" "Slurm Commands" "September 2021" "Slurm Commands"
+.TH salloc "1" "Slurm Commands" "November 2021" "Slurm Commands"
 
 .SH "NAME"
 salloc \- Obtain a Slurm job allocation (a set of nodes), execute a command,
@@ -68,54 +68,44 @@ be changed after job submission using the \fBscontrol\fR
 command.
 
 .TP
-\fB\-\-acctg\-freq\fR
-Define the job accounting and profiling sampling intervals.
-This can be used to override the \fIJobAcctGatherFrequency\fR parameter in Slurm's
-configuration file, \fIslurm.conf\fR.
-The supported format is as follows:
+\fB\-\-acctg\-freq\fR=<\fIdatatype\fR>=<\fIinterval\fR>[,<\fIdatatype\fR>=<\fIinterval\fR>...]
+Define the job accounting and profiling sampling intervals in seconds.
+This can be used to override the \fIJobAcctGatherFrequency\fR parameter in
+the slurm.conf file. <\fIdatatype\fR>=<\fIinterval\fR> specifies the task
+sampling interval for the jobacct_gather plugin or a
+sampling interval for a profiling type by the
+acct_gather_profile plugin. Multiple
+comma\-separated <\fIdatatype\fR>=<\fIinterval\fR> pairs
+may be specified. Supported \fIdatatype\fR values are:
 .RS
 .TP 12
-\fB\-\-acctg\-freq=\fR\fI<datatype>\fR\fB=\fR\fI<interval>\fR
-where \fI<datatype>\fR=\fI<interval>\fR specifies the task sampling
-interval for the jobacct_gather plugin or a
-sampling interval for a profiling type by the
-acct_gather_profile plugin. Multiple,
-comma\-separated \fI<datatype>\fR=\fI<interval>\fR intervals
-may be specified. Supported datatypes are as follows:
-.RS
-.TP
-\fBtask=\fI<interval>\fR
-where \fI<interval>\fR is the task sampling interval in seconds
-for the jobacct_gather plugins and for task
+\fBtask\fR
+Sampling interval for the jobacct_gather plugins and for task
 profiling by the acct_gather_profile plugin.
-NOTE: This frequency is used to monitor memory usage. If memory limits
-are enforced the highest frequency a user can request is what is configured in
-the slurm.conf file.  They can not turn it off (=0) either.
-.TP
-\fBenergy=\fI<interval>\fR
-where \fI<interval>\fR is the sampling interval in seconds
-for energy profiling using the acct_gather_energy plugin
-.TP
-\fBnetwork=\fI<interval>\fR
-where \fI<interval>\fR is the sampling interval in seconds
-for infiniband profiling using the acct_gather_interconnect
-plugin.
-.TP
-\fBfilesystem=\fI<interval>\fR
-where \fI<interval>\fR is the sampling interval in seconds
-for filesystem profiling using the acct_gather_filesystem
-plugin.
-.TP
-.RE
-.RE
 .br
-The default value for the task sampling interval
-is 30. The default value for all other intervals is 0.
+\fBNOTE\fR: This frequency is used to monitor memory usage. If memory limits
+are enforced the highest frequency a user can request is what is configured in
+the slurm.conf file.  It can not be disabled.
+.TP
+\fBenergy\fR
+Sampling interval for energy profiling using the
+acct_gather_energy plugin.
+.TP
+\fBnetwork\fR
+Sampling interval for infiniband profiling using the
+acct_gather_interconnect plugin.
+.TP
+\fBfilesystem\fR
+Sampling interval for filesystem profiling using the
+acct_gather_filesystem plugin.
+
+.LP
+The default value for the task sampling interval is 30 seconds.
+The default value for all other intervals is 0.
 An interval of 0 disables sampling of the specified type.
 If the task sampling interval is 0, accounting
 information is collected only at job termination (reducing Slurm
 interference with the job).
-.br
 .br
 Smaller (non\-zero) values have a greater impact upon job performance,
 but a value of 30 seconds is not likely to be noticeable for
