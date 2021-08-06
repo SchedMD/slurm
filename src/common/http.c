@@ -163,7 +163,7 @@ static int _add_path(data_t *d, char **buffer, bool convert_types)
 		data_set_string(c, *buffer);
 
 		if (convert_types)
-			data_convert_type(c, DATA_TYPE_NONE);
+			(void) data_convert_type(c, DATA_TYPE_NONE);
 
 		xfree(*buffer);
 	}
