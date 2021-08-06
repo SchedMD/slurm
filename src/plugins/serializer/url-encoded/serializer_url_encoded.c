@@ -117,7 +117,7 @@ static int _handle_new_key_char(data_t *d, char **key, char **buffer,
 		data_set_string(c, *buffer);
 
 		if (convert_types)
-			data_convert_type(c, DATA_TYPE_NONE);
+			(void) data_convert_type(c, DATA_TYPE_NONE);
 
 		xfree(*key);
 		xfree(*buffer);
