@@ -162,6 +162,11 @@ COMMAND CHANGES (see man pages for details)
  -- scrontab - added ability to set and expand variables.
  -- Make srun sensitive to BcastParameters.
  -- Added sbcast/srun --send-libs, sbcast --exclude and srun --bcast-exclude.
+ -- Changed ReqMem field in sacct to match memory from ReqTRES. It now shows
+    the requested memory of the whole job with a letter appended indicating
+    units (M for megabytes, G for gigabytes, etc.). ReqMem is only displayed for
+    the job, since the step does not have requested TRES. Previously ReqMem
+    was also displayed for the step but was just displaying ReqMem for the job.
 
 API CHANGES
 ===========

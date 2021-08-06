@@ -1817,11 +1817,11 @@ extern void print_fields(type_t type, void *object)
 		case PRINT_REQ_MEM:
 			switch(type) {
 			case JOB:
-				tmp_uint64 = job->req_mem;
+				tmp_uint64 = slurmdb_find_tres_count_in_string(
+					job->tres_req_str, TRES_MEM);
 				break;
 			case JOBSTEP:
-				tmp_uint64 = step->job_ptr->req_mem;
-				break;
+				/* Step doesn't have requested TRES */
 			case JOBCOMP:
 			default:
 				tmp_uint64 = NO_VAL64;
@@ -1829,20 +1829,10 @@ extern void print_fields(type_t type, void *object)
 			}
 
 			if (tmp_uint64 != NO_VAL64) {
-				bool per_cpu = false;
-				if (tmp_uint64 & MEM_PER_CPU) {
-					tmp_uint64 &= (~MEM_PER_CPU);
-					per_cpu = true;
-				}
-
 				convert_num_unit((double)tmp_uint64,
 						 outbuf, sizeof(outbuf),
 						 UNIT_MEGA, params.units,
 						 params.convert_flags);
-				if (per_cpu)
-					sprintf(outbuf+strlen(outbuf), "c");
-				else
-					sprintf(outbuf+strlen(outbuf), "n");
 			}
 			field->print_routine(field,
 					     outbuf,
