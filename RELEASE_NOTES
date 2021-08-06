@@ -18,6 +18,13 @@ of Slurm will result in loss of state information.
 If using SPANK plugins that use the Slurm APIs, they should be recompiled when
 upgrading Slurm to a new major release.
 
+NOTE: If upgrading from < 20.11.
+      In the database the AllocGres and ReqGres columns have been removed as
+      they are duplicates for those using AccountingStorageTRES.  If you use
+      these columns please make sure to backup this information since it will
+      be lost and set up AccountingStorageTRES with your GRES to be able to
+      get equivalent information out of AllocTRES and ReqTRES after upgrade.
+
 HIGHLIGHTS
 ==========
  -- Removed gres/mic plugin used to support Xeon Phi coprocessors.
