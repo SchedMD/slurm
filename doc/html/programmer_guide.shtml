@@ -43,10 +43,7 @@ interconnect fabric, task scheduling, etc. A set of functions is defined for use
 by all of the different infrastructures of a particular variety. When a Slurm
 daemon is initiated, it reads the configuration file to determine which of the
 available plugins should be used. A <a href="plugins.html">plugin developer's
-guide</a> is available with general information about plugins. Most plugin
-types also have their own documentation available, such as
-<a href="authplugins.html">Slurm Authentication Plugin API</a> and
-<a href="jobcompplugins.html">Slurm Job Completion Logging API</a>.</p>
+guide</a> is available with general information about plugins.
 
 
 <a id="Directory-Structure"></a>
@@ -322,6 +319,6 @@ systemctl start/stop/restart slurmd@nodeXYZ
 
 </p>
 
-<p style="text-align:center;">Last modified 5 May 2020</p>
+<p style="text-align:center;">Last modified 6 August 2021</p>
 
 <!--#include virtual="footer.txt"-->

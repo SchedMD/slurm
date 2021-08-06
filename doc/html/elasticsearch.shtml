@@ -2,8 +2,8 @@
 
 <h1>Elasticsearch Guide</h1>
 
-<p>Slurm provides multiple <a href="jobcompplugins.html">Job Completion
-Plugins</a>. These plugins are an orthogonal way to provide historical job
+<p>Slurm provides multiple Job Completion Plugins.
+These plugins are an orthogonal way to provide historical job
 <a href="accounting.html">accounting</a> data for finished jobs.</p>
 
 <p>In most installations, Slurm is already configured with an
@@ -146,6 +146,6 @@ restored.</p>
 <p>The Elasticsearch plugin was created as part of Alejandro Sanchez's
 <a href="https://upcommons.upc.edu/handle/2117/79252">Master's Thesis</a>.</p>
 
-<p style="text-align:center;">Last modified 29 June 2021</p>
+<p style="text-align:center;">Last modified 6 August 2021</p>
 
 <!--#include virtual="footer.txt"-->

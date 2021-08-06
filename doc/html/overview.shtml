@@ -59,20 +59,19 @@ APIs are available for all functions.</p>
 infrastructures. This permits a wide variety of Slurm configurations using a
 building block approach. These plugins presently include:
 <ul>
-<li><a href="accounting_storageplugins.html">Accounting Storage</a>:
+<li>Accounting Storage:
   Primarily Used to store historical data about jobs.  When used with
   SlurmDBD (Slurm Database Daemon), it can also supply a
   limits based system along with historical system status.
 </li>
 
-<li><a href="acct_gather_energy_plugins.html">Account Gather Energy</a>:
+<li>Account Gather Energy:
   Gather energy consumption data per job or nodes in the system.
   This plugin is integrated with the
-  <a href="accounting_storageplugins.html">Accounting Storage</a> and
-  <a href="jobacct_gatherplugins.html"> Job Account Gather</a> plugins.
+  Accounting Storage and Job Account Gather plugins.
 </li>
 
-<li><a href="authplugins.html">Authentication of communications</a>:
+<li>Authentication of communications:
   Provides authentication mechanism between various components of Slurm.
 </li>
 
@@ -80,12 +79,11 @@ building block approach. These plugins presently include:
   HPC workload container support and implementations.
 </li>
 
-<li><a href="cred_plugins.html">Credential (Digital Signature
-  Generation)</a>:
+<li>Credential (Digital Signature Generation):
   Mechanism used to generate a digital signature, which is used to validate
   that job step is authorized to execute on specific nodes.
   This is distinct from the plugin used for
-  <a href="authplugins.html">Authentication</a> since the job step
+  Authentication since the job step
   request is sent from the user's srun command rather than directly from the
   slurmctld daemon, which generates the job step credential and its
   digital signature.
@@ -100,21 +98,21 @@ building block approach. These plugins presently include:
   submission and update.
 </li>
 
-<li><a href="jobacct_gatherplugins.html">Job Accounting Gather</a>:
+<li>Job Accounting Gather:
   Gather job step resource utilization data.
 </li>
 
-<li><a href="jobcompplugins.html">Job Completion Logging</a>:
+<li>Job Completion Logging:
   Log a job's termination data. This is typically a subset of data stored by
-  an <a href="accounting_storageplugins.html">Accounting Storage Plugin</a>.
+  an Accounting Storage Plugin.
 </li>
 
-<li><a href="launch_plugins.html">Launchers</a>:
+<li>Launchers:
   Controls the mechanism used by the <a href="srun.html">'srun'</a> command
   to launch the tasks.
 </li>
 
-<li><a href="mpiplugins.html">MPI</a>:
+<li>MPI:
   Provides different hooks for the various MPI implementations.
   For example, this can set MPI specific environment variables.
 </li>
@@ -124,21 +122,21 @@ building block approach. These plugins presently include:
   to be used.
 </li>
 
-<li><a href="priority_plugins.html">Priority</a>:
+<li>Priority:
   Assigns priorities to jobs upon submission and on an ongoing basis
   (e.g. as they age).
 </li>
 
-<li><a href="proctrack_plugins.html">Process tracking (for signaling)</a>:
+<li>Process tracking (for signaling):
   Provides a mechanism for identifying the processes associated with each job.
   Used for job accounting and signaling.
 </li>
 
-<li><a href="schedplugins.html">Scheduler</a>:
+<li>Scheduler:
   Plugin determines how and when Slurm schedules jobs.
 </li>
 
-<li><a href="selectplugins.html">Node selection</a>:
+<li>Node selection:
   Plugin used to determine the resources used for a job allocation.
 </li>
 
@@ -147,17 +145,17 @@ building block approach. These plugins presently include:
   jobs upon submission and on an ongoing basis (e.g. as they age).
 </li>
 
-<li><a href="switchplugins.html">Switch or interconnect</a>:
+<li>Switch or interconnect:
   Plugin to interface with a switch or interconnect.
   For most systems (Ethernet or InfiniBand) this is not needed.
 </li>
 
-<li><a href="taskplugins.html">Task Affinity</a>:
+<li>Task Affinity:
   Provides mechanism to bind a job and its individual tasks to specific
   processors.
 </li>
 
-<li><a href="topology_plugin.html">Network Topology</a>:
+<li>Network Topology:
   Optimizes resource selection based upon the network topology.
   Used for both job allocations and advanced reservation.
 </li>
@@ -237,6 +235,6 @@ PartitionName=DEFAULT MaxTime=UNLIMITED MaxNodes=4096
 PartitionName=batch Nodes=lx[0041-9999]
 </pre>
 
-<p style="text-align:center;">Last modified 29 June 2021</p>
+<p style="text-align:center;">Last modified 6 August 2021</p>
 
 <!--#include virtual="footer.txt"-->

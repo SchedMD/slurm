@@ -10,9 +10,7 @@ GRES use would be GPUs. GRES are identified by a specific name and use an
 optional plugin to provide device-specific support. This document is meant
 to provide details about Slurm's implementation of GRES support including the
 relevant data structures. For an overview of GRES configuration and use, see
-<a href="gres.html">Generic Resource (GRES) Scheduling</a>. For details about
-the APIs provided by GRES plugins, see <a href="gres_plugins.html">
-Slurm Generic Resource (GRES) Plugin API</a>.</p>
+<a href="gres.html">Generic Resource (GRES) Scheduling</a>.
 
 <h2>Data Structures</h2>
 
@@ -120,6 +118,6 @@ environment variables reserved for CUDA use).</p>
 be quite verbose, especially for larger clusters.</p>
 
 
-<p style="text-align:center;">Last modified 18 May 2011</p>
+<p style="text-align:center;">Last modified 6 August 2021</p>
 
 <!--#include virtual="footer.txt"-->

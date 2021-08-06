@@ -450,13 +450,8 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 generated_html = \
 	accounting.html \
-	accounting_storageplugins.html \
-	acct_gather_energy_plugins.html \
-	acct_gather_profile_plugins.html \
 	add.html \
 	api.html \
-	authplugins.html \
-	bb_plugins.html \
 	big_sys.html \
 	burst_buffer.html \
 	cgroups.html \
@@ -468,65 +463,50 @@ generated_html = \
 	containers.html \
 	contributor.html \
 	core_spec.html \
-	core_spec_plugins.html \
 	cpu_management.html \
 	cray.html \
-	cred_plugins.html \
 	disclaimer.html \
 	dist_plane.html \
 	documentation.html \
 	download.html \
 	elasticsearch.html \
 	elastic_computing.html \
-	ext_sensorsplugins.html \
 	faq.html \
 	federation.html \
 	gang_scheduling.html \
 	gres.html \
 	gres_design.html \
-	gres_plugins.html \
 	hdf5_profile_user_guide.html \
 	heterogeneous_jobs.html \
 	high_throughput.html \
 	intel_knl.html \
-	jobacct_gatherplugins.html \
 	job_array.html \
-	job_container_plugins.html \
 	job_exit_code.html \
 	job_launch.html \
 	job_submit_plugins.html \
-	jobcompplugins.html \
 	jwt.html \
-	launch_plugins.html \
 	licenses.html \
 	fair_tree.html \
 	mail.html \
 	man_index.html \
 	mc_support.html \
 	mcs.html \
-	mcs_plugins.html \
 	meetings.html \
 	mpi_guide.html \
-	mpiplugins.html \
 	multi_cluster.html \
 	network.html \
 	news.html \
 	nss_slurm.html \
-	node_features_plugins.html \
 	overview.html \
 	pam_slurm_adopt.html \
 	platforms.html \
 	plugins.html \
 	power_mgmt.html \
 	power_save.html \
-	power_plugins.html \
 	preempt.html \
 	prep_plugins.html \
-	preemption_plugins.html \
 	priority_multifactor.html \
 	priority_multifactor3.html \
-	priority_plugins.html \
-	proctrack_plugins.html \
 	programmer_guide.html \
 	prolog_epilog.html \
 	publications.html \
@@ -540,22 +520,15 @@ generated_html = \
 	rest_api.html \
 	rest_release_notes.html \
 	rosetta.html \
-	route_plugin.html \
 	sched_config.html \
-	schedplugins.html \
 	select_design.html \
-	selectplugins.html \
 	selinux.html \
 	site_factor.html \
 	slurm.html \
-	slurmctld_plugstack.html \
 	slurm_ug_agenda.html \
-	switchplugins.html \
-	taskplugins.html \
 	team.html \
 	testimonials.html \
 	topology.html \
-	topology_plugin.html \
 	tres.html \
 	troubleshoot.html \
 	tutorials.html \
