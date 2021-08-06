@@ -28,6 +28,12 @@ NOTE: The FastSchedule option has been removed. The FastSchedule=2 functionality
 NOTE: Slurmdbd is now set to fatal if slurmdbd.conf file isn't owned by
       SlurmUser or it's mode is not set to 0600.
 
+NOTE: In the database the AllocGres and ReqGres columns have been removed as
+      they are duplicates for those using AccountingStorageTRES.  If you use
+      these columns please make sure to backup this information since it will
+      be lost and set up AccountingStorageTRES with your GRES to be able to
+      get equivalent information out of AllocTRES and ReqTRES after upgrade.
+
 HIGHLIGHTS
 ==========
  -- The example systemd unit files have been changed to the "simple" type of
