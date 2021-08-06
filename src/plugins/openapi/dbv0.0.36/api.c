@@ -104,15 +104,14 @@ extern data_t *populate_response_format(data_t *resp)
 	slurmv = data_set_dict(data_key_set(slurm, "version"));
 
 	data_set_string(data_key_set(slurm, "release"), SLURM_VERSION_STRING);
-	data_convert_type(data_set_string(data_key_set(slurmv, "major"),
-					  SLURM_MAJOR),
-			  DATA_TYPE_INT_64);
-	data_convert_type(data_set_string(data_key_set(slurmv, "micro"),
-					  SLURM_MICRO),
-			  DATA_TYPE_INT_64);
-	data_convert_type(data_set_string(data_key_set(slurmv, "minor"),
-					  SLURM_MINOR),
-			  DATA_TYPE_INT_64);
+	(void) data_convert_type(data_set_string(data_key_set(slurmv, "major"),
+				 SLURM_MAJOR), DATA_TYPE_INT_64);
+	(void) data_convert_type(data_set_string(data_key_set(slurmv, "micro"),
+						 SLURM_MICRO),
+				 DATA_TYPE_INT_64);
+	(void) data_convert_type(data_set_string(data_key_set(slurmv, "minor"),
+						 SLURM_MINOR),
+				 DATA_TYPE_INT_64);
 
 	data_set_string(data_key_set(plugin, "type"), plugin_type);
 	data_set_string(data_key_set(plugin, "name"), plugin_name);
