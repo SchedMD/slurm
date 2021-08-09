@@ -22,6 +22,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue where the original executable, not the bcast'd version, was
     executed with 'srun --bcast'.
  -- Fix memory leaks when cleaning up config_response_msg_t.
+ -- sacct - print '-' header correctly for fields over 53-characters wide.
 
 * Changes in Slurm 21.08.0rc1
 =============================

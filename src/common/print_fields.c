@@ -93,8 +93,9 @@ extern void print_fields_header(List print_fields_list)
 	}
 	while ((field = list_next(itr))) {
 		int abs_len = abs(field->len);
-		printf("%*.*s ", abs_len, abs_len,
-		       "-----------------------------------------------------");
+		for (int i = 0; i < abs_len; i++)
+			putchar('-');
+		putchar(' ');
 	}
 	list_iterator_destroy(itr);
 	printf("\n");
