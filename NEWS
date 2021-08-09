@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- sacct - print '-' header correctly for fields over 53-characters wide.
  -- openapi/dbv0.0.37 - replace "REST" with "Slurm OpenAPI" for plugin_name.
  -- openapi/v0.0.37 - replace "REST" with "Slurm OpenAPI" for plugin_name.
+ -- configless - fix segfault on 'scontrol reconfigure'.
 
 * Changes in Slurm 21.08.0rc1
 =============================
