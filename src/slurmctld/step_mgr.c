@@ -452,6 +452,7 @@ extern void free_step_record(void *x)
 	xfree(step_ptr->resv_port_array);
 	xfree(step_ptr->resv_ports);
 	xfree(step_ptr->network);
+	FREE_NULL_LIST(step_ptr->gres_list_alloc);
 	FREE_NULL_LIST(step_ptr->gres_list_req);
 	select_g_select_jobinfo_free(step_ptr->select_jobinfo);
 	xfree(step_ptr->tres_alloc_str);

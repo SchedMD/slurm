@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
  -- configless - fix segfault on 'scontrol reconfigure'.
  -- Fix bad reference to step_ptr->job_ptr after step_ptr is freed.
  -- Fix bad reference to config_for_clients when shutting down slurmctld.
+ -- Fix memory leak on gres_list_alloc when freeing steps.
 
 * Changes in Slurm 21.08.0rc1
 =============================
