@@ -7988,6 +7988,17 @@ buf_t *get_job_script(const job_record_t *job_ptr)
 	return buf;
 }
 
+extern uint16_t job_get_sockets_per_node(job_record_t *job_ptr)
+{
+	xassert(job_ptr);
+
+	if (job_ptr->details && job_ptr->details->mc_ptr &&
+	    job_ptr->details->mc_ptr->sockets_per_node &&
+	    (job_ptr->details->mc_ptr->sockets_per_node != NO_VAL16))
+		return job_ptr->details->mc_ptr->sockets_per_node;
+	return 1;
+}
+
 /*
  * Read a collection of strings from a file
  * IN fd - file descriptor

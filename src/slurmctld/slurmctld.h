@@ -1327,6 +1327,13 @@ extern char **get_job_env(job_record_t *job_ptr, uint32_t *env_size);
 extern buf_t *get_job_script(const job_record_t *job_ptr);
 
 /*
+ * job_get_sockets_per_node
+ * IN job_ptr - pointer to the job
+ * RET number of requested sockets per node if set, otherwise 1
+ */
+extern uint16_t job_get_sockets_per_node(job_record_t *job_ptr);
+
+/*
  * Return the next available job_id to be used.
  * IN test_only - if true, doesn't advance the job_id sequence, just returns
  * 	what the next job id will be.
