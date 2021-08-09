@@ -220,6 +220,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix minor logic error in health check node state output
  -- Fix GCC 11.1 compiler warnings.
  -- Delay steps when memory already used instead of rejecting step request.
+ -- Fix memory leak in the slurmdbd when requesting wckeys from all clusters.
 
 * Changes in Slurm 20.11.8
 ==========================
