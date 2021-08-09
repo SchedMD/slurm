@@ -329,6 +329,14 @@ extern int xcpuinfo_hwloc_topo_get(
 		}
 	}
 
+	if (xstrcasestr(slurm_conf.slurmd_params, "l3cache_as_socket")) {
+#if HWLOC_API_VERSION >= 0x00020000
+		objtype[SOCKET] = HWLOC_OBJ_L3CACHE;
+#else
+		error("SlurmdParameters=l3cache_as_socket requires hwloc v2");
+#endif
+	}
+
 	/* Groups below root obj are interpreted as boards */
 	obj = hwloc_get_root_obj(topology);
 	obj = hwloc_get_next_child(topology, obj, NULL);

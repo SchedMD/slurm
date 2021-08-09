@@ -3874,6 +3874,12 @@ configured resources will \fBnot\fR be set DRAIN.
 This option is generally only useful for testing purposes.
 Equivalent to the now deprecated FastSchedule=2 option.
 .TP
+\fBl3cache_as_socket\fR
+Use the hwloc l3cache as the socket count. Can be useful on certain processors
+where the socket level is too coarse, and the l3cache may provide better
+task distribution. (E.g., along CCX boundaries instead of socket boundaries.)
+Requires hwloc v2.
+.TP
 \fBshutdown_on_reboot\fR
 If set, the Slurmd will shut itself down when a reboot request is received.
 .RE

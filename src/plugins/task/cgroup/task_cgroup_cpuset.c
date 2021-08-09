@@ -448,6 +448,11 @@ static int _task_cgroup_cpuset_dist_cyclic(
 	uint32_t obj_idxs[3], cps, tpc, i, j, sock_loop, ntskip, npdist;
 	bool core_cyclic, core_fcyclic, sock_fcyclic;
 	bool hwloc_success = true;
+	hwloc_obj_type_t socket_type = HWLOC_OBJ_SOCKET;
+#if HWLOC_API_VERSION >= 0x00020000
+	if (xstrcasestr(slurm_conf.slurmd_params, "l3cache_as_socket"))
+		socket_type = HWLOC_OBJ_L3CACHE;
+#endif
 
 	/*
 	 * We can't trust the slurmd_conf_t *conf here as we need actual
@@ -463,7 +468,7 @@ static int _task_cgroup_cpuset_dist_cyclic(
 		 * (e.g. 4 cores on socket 0 and 3 cores on socket 1)
 		 */
 		nsockets = (uint16_t) hwloc_get_nbobjs_by_type(topology,
-							HWLOC_OBJ_SOCKET);
+							       socket_type);
 		ncores = (uint16_t) hwloc_get_nbobjs_by_type(topology,
 							HWLOC_OBJ_CORE);
 		nthreads = (uint16_t) hwloc_get_nbobjs_by_type(topology,
@@ -552,7 +557,7 @@ static int _task_cgroup_cpuset_dist_cyclic(
 		 */
 		while ((s_ix < nsockets) && (j < npdist)) {
 			obj = hwloc_get_obj_below_by_type(
-				topology, HWLOC_OBJ_SOCKET, s_ix,
+				topology, socket_type, s_ix,
 				hwtype, c_ixc[s_ix]);
 #if HWLOC_API_VERSION >= 0x00020000
 			if (obj) {
@@ -574,7 +579,7 @@ static int _task_cgroup_cpuset_dist_cyclic(
 				if (hwloc_compare_types(hwtype, HWLOC_OBJ_PU)
 									>= 0) {
 					hwloc_obj_type_t obj_types[3] = {
-						HWLOC_OBJ_SOCKET,
+						socket_type,
 						HWLOC_OBJ_CORE,
 						HWLOC_OBJ_PU
 					};
@@ -699,8 +704,14 @@ static int _task_cgroup_cpuset_dist_block(
 	uint32_t core_idx;
 	bool core_fcyclic, core_block;
 
+	hwloc_obj_type_t socket_type = HWLOC_OBJ_SOCKET;
+#if HWLOC_API_VERSION >= 0x00020000
+	if (xstrcasestr(slurm_conf.slurmd_params, "l3cache_as_socket"))
+		socket_type = HWLOC_OBJ_L3CACHE;
+#endif
+
 	nsockets = (uint32_t) hwloc_get_nbobjs_by_type(topology,
-						       HWLOC_OBJ_SOCKET);
+						       socket_type);
 	ncores = (uint32_t) hwloc_get_nbobjs_by_type(topology,
 						     HWLOC_OBJ_CORE);
 	npus = (uint32_t) hwloc_get_nbobjs_by_type(topology,
@@ -1012,6 +1023,12 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job,
 	uint32_t jnpus;
 	int spec_threads = 0;
 
+	hwloc_obj_type_t socket_type = HWLOC_OBJ_SOCKET;
+#if HWLOC_API_VERSION >= 0x00020000
+	if (xstrcasestr(slurm_conf.slurmd_params, "l3cache_as_socket"))
+		socket_type = HWLOC_OBJ_L3CACHE;
+#endif
+
 	/* Allocate and initialize hwloc objects */
 	hwloc_topology_init(&topology);
 
@@ -1043,7 +1060,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job,
 		 * In such case, use NUMA-node instead of socket. */
 		socket_or_node = HWLOC_OBJ_NODE;
 	} else {
-		socket_or_node = HWLOC_OBJ_SOCKET;
+		socket_or_node = socket_type;
 	}
 
 	if (bind_type & CPU_BIND_NONE) {
