@@ -34,6 +34,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix memory leak in the slurmdbd when requesting wckeys from all clusters.
  -- Use FREE_NULL_LIST instead of list_destroy.
  -- Fix bad pointer reference after bad unpack of jobacctinfo_t.
+ -- If we made are running an interactive session we need to force track_steps.
 
 * Changes in Slurm 21.08.0rc1
 =============================

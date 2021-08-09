@@ -439,9 +439,11 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 
 no_rollup_change:
 
-	if (job_ptr->name && job_ptr->name[0])
+	if (job_ptr->name && job_ptr->name[0]) {
 		jname = job_ptr->name;
-	else {
+		if (!xstrcmp(jname, "interactive"))
+			track_steps = 1;
+	} else {
 		jname = "allocation";
 		track_steps = 1;
 	}
