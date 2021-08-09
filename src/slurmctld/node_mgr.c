@@ -3843,30 +3843,47 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
  * For configless, this would mean nothing gets sent to anyone, and those
  * older slurmds get REQUEST_RECONFIGURE_WITH_CONFIG and ignore it.
  *
- * So explicitly split the pool into two groups.
- * (Note: may need to split this into three groups for future changes.)
+ * So explicitly split the pool into three groups.
  * Note: DOES NOT SUPPORT FRONTEND.
  */
-void push_reconfig_to_slurmd(void)
+void push_reconfig_to_slurmd(char **slurmd_config_files)
 {
 #ifndef HAVE_FRONT_END
-	agent_arg_t *new_args, *old_args;
+	agent_arg_t *curr_args, *prev_args, *old_args;
 	node_record_t *node_ptr;
-	config_response_msg_t *config = xmalloc(sizeof(*config));
+	config_response_msg_t *curr_config, *prev_config, *old_config;
 
-	new_args = xmalloc(sizeof(*new_args));
-	new_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
-	new_args->retry = 0;
-	new_args->hostlist = hostlist_create(NULL);
-	new_args->protocol_version = SLURM_PROTOCOL_VERSION;
-	new_args->msg_args = config;
-	load_config_response_msg(config, CONFIG_REQUEST_SLURMD);
+	/*
+	 * The 'curr_args' is when we pivoted to a List holding configs.
+	 * As long as that same pack code is maintained, this is fine
+	 * going forward.
+	 */
+	curr_args = xmalloc(sizeof(*curr_args));
+	curr_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
+	curr_args->retry = 0;
+	curr_args->hostlist = hostlist_create(NULL);
+	curr_args->protocol_version = SLURM_21_08_PROTOCOL_VERSION;
+	curr_config = xmalloc(sizeof(*curr_config));
+	load_config_response_list(curr_config, slurmd_config_files);
+	curr_args->msg_args = curr_config;
+
+	prev_args = xmalloc(sizeof(*prev_args));
+	prev_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
+	prev_args->retry = 0;
+	prev_args->hostlist = hostlist_create(NULL);
+	prev_args->protocol_version = SLURM_20_11_PROTOCOL_VERSION;
+	prev_config = xmalloc(sizeof(*prev_config));
+	load_config_response_msg(prev_config, CONFIG_REQUEST_SLURMD);
+	prev_args->msg_args = prev_config;
 
 	old_args = xmalloc(sizeof(*old_args));
-	old_args->msg_type = REQUEST_RECONFIGURE;
+	old_args->msg_type = REQUEST_RECONFIGURE_WITH_CONFIG;
 	old_args->retry = 0;
 	old_args->hostlist = hostlist_create(NULL);
-	old_args->protocol_version = SLURM_MIN_PROTOCOL_VERSION;
+	old_args->protocol_version = SLURM_20_02_PROTOCOL_VERSION;
+	old_config = xmalloc(sizeof(*old_config));
+	load_config_response_msg(old_config, CONFIG_REQUEST_SLURMD);
+	old_args->msg_args = old_config;
 
 	node_ptr = node_record_table_ptr;
 	for (int i = 0; i < node_record_count; i++, node_ptr++) {
@@ -3877,26 +3894,41 @@ void push_reconfig_to_slurmd(void)
 		     IS_NODE_POWERING_DOWN(node_ptr)))
 			continue;
 
-		if (node_ptr->protocol_version == SLURM_PROTOCOL_VERSION) {
-			hostlist_push_host(new_args->hostlist, node_ptr->name);
-			new_args->node_count++;
-		} else {
+		if (node_ptr->protocol_version >= SLURM_21_08_PROTOCOL_VERSION) {
+			hostlist_push_host(curr_args->hostlist, node_ptr->name);
+			curr_args->node_count++;
+		} else if (node_ptr->protocol_version ==
+			   SLURM_20_11_PROTOCOL_VERSION) {
+			hostlist_push_host(prev_args->hostlist, node_ptr->name);
+			prev_args->node_count++;
+		} else if (node_ptr->protocol_version ==
+			   SLURM_20_02_PROTOCOL_VERSION) {
 			hostlist_push_host(old_args->hostlist, node_ptr->name);
 			old_args->node_count++;
 		}
 	}
 
-	if (new_args->node_count == 0) {
-		hostlist_destroy(new_args->hostlist);
-		slurm_free_config_response_msg(config);
-		xfree(new_args);
+	if (curr_args->node_count == 0) {
+		hostlist_destroy(curr_args->hostlist);
+		slurm_free_config_response_msg(curr_config);
+		xfree(curr_args);
 	} else {
-		debug("Spawning agent msg_type=%d", new_args->msg_type);
-		agent_queue_request(new_args);
+		debug("Spawning agent msg_type=%d", curr_args->msg_type);
+		agent_queue_request(curr_args);
+	}
+
+	if (prev_args->node_count == 0) {
+		hostlist_destroy(prev_args->hostlist);
+		slurm_free_config_response_msg(prev_config);
+		xfree(prev_args);
+	} else {
+		debug("Spawning agent msg_type=%d", prev_args->msg_type);
+		agent_queue_request(prev_args);
 	}
 
 	if (old_args->node_count == 0) {
 		hostlist_destroy(old_args->hostlist);
+		slurm_free_config_response_msg(old_config);
 		xfree(old_args);
 	} else {
 		debug("Spawning agent msg_type=%d", old_args->msg_type);

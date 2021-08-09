@@ -1901,7 +1901,7 @@ extern bool misc_policy_job_runnable_state(job_record_t *job_ptr);
 extern void msg_to_slurmd (slurm_msg_type_t msg_type);
 
 /* request a "configless" RPC be send to all slurmd nodes */
-void push_reconfig_to_slurmd(void);
+void push_reconfig_to_slurmd(char **slurmd_config_files);
 
 /* node_fini - free all memory associated with node records */
 extern void node_fini (void);

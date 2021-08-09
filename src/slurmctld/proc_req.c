@@ -717,6 +717,7 @@ extern void configless_update(void)
 	config_response_msg_t *old = xmalloc(sizeof(*old));
 
 	load_config_response_msg(new, CONFIG_REQUEST_SLURMD);
+	load_config_response_list(new, slurmd_config_files);
 
 	memcpy(old, config_for_slurmd, sizeof(*old));
 	/* pseudo-atomic update of the pointers */
@@ -3275,7 +3276,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 			set_slurmctld_state_loc();
 			if (config_for_slurmd) {
 				configless_update();
-				push_reconfig_to_slurmd();
+				push_reconfig_to_slurmd(slurmd_config_files);
 			} else
 				msg_to_slurmd(REQUEST_RECONFIGURE);
 			node_features_updated = true;
