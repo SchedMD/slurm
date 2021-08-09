@@ -9152,11 +9152,9 @@ extern uint64_t gres_step_count(List step_gres_list, char *gres_name)
  *
  * IN/OUT - usable_gres
  * IN - gres_bit_alloc
- * IN - global_to_local   - translate a global list to a local list instead.
  */
-static void _translate_local_to_global_device_index(bitstr_t **usable_gres,
-						    bitstr_t *gres_bit_alloc,
-						    bool global_to_local)
+static void _translate_step_to_global_device_index(bitstr_t **usable_gres,
+						    bitstr_t *gres_bit_alloc)
 {
 	bitstr_t *tmp = bit_alloc(bit_size(gres_bit_alloc));
 	int i_last, bit, bit2 = 0;
@@ -9164,9 +9162,8 @@ static void _translate_local_to_global_device_index(bitstr_t **usable_gres,
 	i_last = bit_fls(gres_bit_alloc);
 	for (bit = 0; bit <= i_last; bit++) {
 		if (bit_test(gres_bit_alloc, bit)) {
-			if (bit_test(*usable_gres,
-				     global_to_local ? bit : bit2)) {
-				bit_set(tmp, global_to_local ? bit2 : bit);
+			if (bit_test(*usable_gres, bit2)) {
+				bit_set(tmp, bit);
 			}
 			bit2++;
 		}
@@ -9200,7 +9197,7 @@ static bitstr_t *_get_usable_gres_cpu_affinity(int context_inx,
 	ListIterator iter;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	int gres_inx = 0;
-	int bitmap_size;
+	int bitmap_size, set_count;
 
 	if (!gres_conf_list) {
 		error("gres_conf_list is null!");
@@ -9256,8 +9253,11 @@ static bitstr_t *_get_usable_gres_cpu_affinity(int context_inx,
 #endif
 
 	if (!get_devices && gres_use_local_device_index()) {
-		_translate_local_to_global_device_index(
-			&usable_gres, gres_bit_alloc, true);
+		bit_and(usable_gres, gres_bit_alloc);
+		set_count = bit_set_count(usable_gres);
+		bit_clear_all(usable_gres);
+		if (set_count)
+			bit_nset(usable_gres, 0, set_count - 1);
 	} else {
 		bit_and(usable_gres, gres_bit_alloc);
 	}
@@ -9412,7 +9412,7 @@ static bitstr_t *_get_usable_gres_map_or_mask(char *map_or_mask,
 {
 	bitstr_t *usable_gres = NULL;
 	char *tmp, *tok, *save_ptr = NULL, *mult;
-	int i, task_offset = 0, task_mult, bitmap_size;
+	int i, task_offset = 0, task_mult, bitmap_size, set_count;
 	int value, min, max;
 
 	if (!map_or_mask || !map_or_mask[0])
@@ -9461,11 +9461,15 @@ static bitstr_t *_get_usable_gres_map_or_mask(char *map_or_mask,
 end:
 	if (gres_use_local_device_index()) {
 		if (get_devices)
-			_translate_local_to_global_device_index(
-				&usable_gres, gres_bit_alloc,
-				false);
-		else
-			bit_realloc(usable_gres, bit_set_count(gres_bit_alloc));
+			_translate_step_to_global_device_index(
+				&usable_gres, gres_bit_alloc);
+		else{
+			bit_and(usable_gres, gres_bit_alloc);
+			set_count = bit_set_count(usable_gres);
+			bit_clear_all(usable_gres);
+			if (set_count)
+				bit_nset(usable_gres, 0, set_count - 1);
+		}
 	} else {
 		bit_and(usable_gres, gres_bit_alloc);
 	}
@@ -9613,15 +9617,15 @@ static int _get_usable_gres(char *gres_name, int context_inx, int proc_id,
 		} else if (tres_bind->gpus_per_task) {
 			if(!get_devices && gres_use_local_device_index()){
 				usable_gres = bit_alloc(
-					bit_size(gres_bit_alloc) - 1);
+					bit_size(gres_bit_alloc));
 				bit_nset(usable_gres, 0,
-					 bit_set_count(gres_bit_alloc) - 1);
+					 tres_bind->gpus_per_task - 1);
 			} else {
 				usable_gres = bit_copy(gres_bit_alloc);
+				_filter_gres_per_task(usable_gres,
+						      tres_bind->gpus_per_task,
+						      proc_id);
 			}
-			_filter_gres_per_task(usable_gres,
-					      tres_bind->gpus_per_task,
-					      proc_id);
 		} else
 			return SLURM_ERROR;
 	} else if (!xstrcmp(gres_name, "nic")) {
