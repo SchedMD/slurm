@@ -2005,7 +2005,8 @@ static int _step_alloc_type(gres_state_t *job_gres_ptr,
 	gres_step_state_t *step_alloc_data_ptr;
 
 	/* This isn't the gres we are looking for */
-	if (!gres_find_job_by_key_with_cnt(job_gres_ptr, args->job_search_key))
+	if (!args->gres_needed ||
+	    !gres_find_job_by_key_with_cnt(job_gres_ptr, args->job_search_key))
 		return 0;
 
 	step_alloc_data_ptr = _step_get_alloc_gres_ptr(
