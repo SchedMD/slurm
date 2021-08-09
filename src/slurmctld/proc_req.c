@@ -724,10 +724,21 @@ extern void configless_update(void)
 	/* only free "new", not the contents */
 	xfree(new);
 
-	/* just reuse what we already have */
+	/* we can't reuse the config_response_list, so generate it again */
+	config_response_msg_t *new_client = xmalloc(sizeof(*new_client));
+	load_config_response_list(new_client, client_config_files);
+	/* save old config_files list */
+	List config_files = config_for_clients->config_files;
+
+	/* Now reuse what we already have */
+	config_for_clients->config_files = new_client->config_files;
 	config_for_clients->config = config_for_slurmd->config;
 	config_for_clients->plugstack_config =
 		config_for_slurmd->plugstack_config;
+
+	/* free new_client and the old list */
+	list_destroy(config_files);
+	xfree(new_client);
 
 	/*
 	 * route/topology will cause srun to load topology.conf, so we'll
