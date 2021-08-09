@@ -4262,7 +4262,7 @@ extern void re_kill_job(job_record_t *job_ptr)
 	kill_job->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 					    job_ptr->spank_job_env);
 	kill_job->spank_job_env_size = job_ptr->spank_job_env_size;
-	kill_job->work_dir = job_ptr->details->work_dir;
+	kill_job->work_dir = xstrdup(job_ptr->details->work_dir);
 
 	/* On a Cray system this will start the NHC early so it is
 	 * able to gather any information it can from the apparent
