@@ -346,6 +346,24 @@ static void _salloc_default_command(int *argcp, char **argvp[])
 		else
 			*command = '\0';
 		xstrcat(command, "srun ");
+
+		/* Explicitly pass container if requested */
+		if (opt.container) {
+			int len = strlen(opt.container);
+
+			xstrcat(command, " --container '");
+			/* escape any single quotes if they exist */
+
+			for (int i = 0; i < len; i++) {
+				if (opt.container[i] == '\'')
+					xstrcat(command, "'\"'\"'");
+				else
+					xstrcatchar(command, opt.container[i]);
+			}
+
+			xstrcat(command, "' ");
+		}
+
 		xstrcat(command, slurm_conf.interactive_step_opts);
 
 		*argcp = 3;
