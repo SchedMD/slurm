@@ -607,8 +607,11 @@ static void _kill_container()
 		debug("container already dead");
 	} else if (!xstrcasecmp(status, "running")) {
 		for (int t = 0; t < 10; t++) {
-			char *status = _get_container_status(), *out;
+			char *out;
 			int kill_status = SLURM_ERROR;
+
+			xfree(status);
+			status = _get_container_status();
 
 			if (!status || !xstrcasecmp(status, "stopped"))
 				break;
@@ -647,6 +650,7 @@ static void _kill_container()
 		debug("%s: RunTimeDelete rc:%u output:%s",
 		      __func__, delete_status, out);
 		xfree(out);
+		xfree(status);
 	}
 }
 
