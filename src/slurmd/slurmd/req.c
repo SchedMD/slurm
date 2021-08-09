@@ -948,7 +948,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	uint32_t	stepid = req->step_id.step_id;
 	int		tasks_to_launch = req->tasks_to_launch[node_id];
 	uint32_t	job_cpus = 0, step_cpus = 0;
-	uint32_t	job_cpus_for_mem = 0, step_cpus_for_mem = 0;
+	uint32_t	job_cpus_for_mem = 1, step_cpus_for_mem = 1;
 
 	if (req->flags & LAUNCH_NO_ALLOC) {
 		if (user_ok) {
@@ -1157,10 +1157,10 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 					     "%d (%u/(%u-%u))",
 					     i, conf->cpus,
 					     i_last_bit, i_first_bit);
+				step_cpus_for_mem = step_cpus * scale_for_mem;
 				step_cpus *= i;
-				step_cpus_for_mem *= scale_for_mem;
+				job_cpus_for_mem = job_cpus * scale_for_mem;
 				job_cpus *= i;
-				job_cpus_for_mem *= scale_for_mem;
 			}
 		}
 		if (tasks_to_launch > step_cpus) {
