@@ -882,8 +882,10 @@ empty:
 	}
 	list_iterator_destroy(itr);
 
-	if (locked)
+	if (locked) {
+		FREE_NULL_LIST(use_cluster_list);
 		slurm_rwlock_unlock(&as_mysql_cluster_list_lock);
+	}
 
 	xfree(tmp);
 	xfree(extra);
