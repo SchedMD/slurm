@@ -458,7 +458,7 @@ extern void deallocate_nodes(job_record_t *job_ptr, bool timeout,
 	kill_job->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 					    job_ptr->spank_job_env);
 	kill_job->spank_job_env_size = job_ptr->spank_job_env_size;
-	kill_job->work_dir = job_ptr->details->work_dir;
+	kill_job->work_dir = xstrdup(job_ptr->details->work_dir);
 
 	agent_args->msg_args = kill_job;
 	agent_queue_request(agent_args);
