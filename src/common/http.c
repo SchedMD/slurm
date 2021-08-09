@@ -111,8 +111,8 @@ static const http_status_code_txt_t http_status_codes[] = {
  */
 static bool _is_valid_url_char(char buffer)
 {
-	return (isxdigit(buffer) || buffer == '~' || buffer == '-' ||
-		buffer == '.' || buffer == '_');
+	return (isxdigit(buffer) || isalpha(buffer) || buffer == '~' ||
+		buffer == '-' || buffer == '.' || buffer == '_');
 }
 
 /*
