@@ -1261,14 +1261,14 @@ static void _log_msg(log_level_t level, bool sched, bool spank, const char *fmt,
 
 		fflush(stdout);
 		if (spank) {
-			_log_printf(log, log->buf, stderr, "%s\n", buf);
+			_log_printf(log, log->buf, stderr, "%s\r\n", buf);
 		} else if (log->fmt == LOG_FMT_THREAD_ID) {
 			char tmp[64];
 			_set_idbuf(tmp, sizeof(tmp));
-			_log_printf(log, log->buf, stderr, "%s: %s%s\n",
+			_log_printf(log, log->buf, stderr, "%s: %s%s\r\n",
 			            tmp, pfx, buf);
 		} else {
-			_log_printf(log, log->buf, stderr, "%s: %s%s\n",
+			_log_printf(log, log->buf, stderr, "%s: %s%s\r\n",
 			            log->argv0, pfx, buf);
 		}
 		fflush(stderr);
