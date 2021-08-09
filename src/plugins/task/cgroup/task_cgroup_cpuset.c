@@ -115,9 +115,6 @@ static inline int hwloc_bitmap_isequal(
 static hwloc_bitmap_t global_allowed_cpuset;
 #endif
 
-hwloc_obj_type_t obj_types[3] = {HWLOC_OBJ_SOCKET, HWLOC_OBJ_CORE,
-			         HWLOC_OBJ_PU};
-
 static uint16_t bind_mode = CPU_BIND_NONE   | CPU_BIND_MASK   |
 			    CPU_BIND_RANK   | CPU_BIND_MAP    |
 			    CPU_BIND_LDMASK | CPU_BIND_LDRANK |
@@ -576,6 +573,12 @@ static int _task_cgroup_cpuset_dist_cyclic(
 #endif
 				if (hwloc_compare_types(hwtype, HWLOC_OBJ_PU)
 									>= 0) {
+					hwloc_obj_type_t obj_types[3] = {
+						HWLOC_OBJ_SOCKET,
+						HWLOC_OBJ_CORE,
+						HWLOC_OBJ_PU
+					};
+
 					/* granularity is thread */
 					obj_idxs[0]=s_ix;
 					obj_idxs[1]=c_ixc[s_ix];
