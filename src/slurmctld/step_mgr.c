@@ -3752,6 +3752,7 @@ no_aggregate:
 	if (!*rem && finish) {
 		uint16_t cleaning = 0;
 		int remaining;
+		job_record_t *job_ptr = step_ptr->job_ptr;
 
 		if (step_ptr->step_id.step_id == SLURM_PENDING_STEP)
 			return SLURM_SUCCESS;
@@ -3767,10 +3768,10 @@ no_aggregate:
 			return SLURM_SUCCESS;
 		}
 
-		remaining = list_count(step_ptr->job_ptr->step_list);
+		remaining = list_count(job_ptr->step_list);
 		_internal_step_complete(step_ptr, remaining);
-		delete_step_record(step_ptr->job_ptr, step_ptr);
-		_wake_pending_steps(step_ptr->job_ptr);
+		delete_step_record(job_ptr, step_ptr);
+		_wake_pending_steps(job_ptr);
 
 		last_job_update = time(NULL);
 	}

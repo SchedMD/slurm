@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.37 - replace "REST" with "Slurm OpenAPI" for plugin_name.
  -- openapi/v0.0.37 - replace "REST" with "Slurm OpenAPI" for plugin_name.
  -- configless - fix segfault on 'scontrol reconfigure'.
+ -- Fix bad reference to step_ptr->job_ptr after step_ptr is freed.
 
 * Changes in Slurm 21.08.0rc1
 =============================
