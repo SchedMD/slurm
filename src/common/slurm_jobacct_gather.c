@@ -1253,8 +1253,10 @@ extern int jobacctinfo_unpack(jobacctinfo_t **jobacct, uint16_t rpc_version,
 unpack_error:
 	debug2("jobacctinfo_unpack: unpack_error: size_buf(buffer) %u",
 	       size_buf(buffer));
-	if (alloc)
+	if (alloc) {
 		jobacctinfo_destroy(*jobacct);
+		*jobacct = NULL;
+	}
 
        	return SLURM_ERROR;
 }
