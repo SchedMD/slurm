@@ -30,6 +30,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix bad reference to config_for_clients when shutting down slurmctld.
  -- Fix memory leak on gres_list_alloc when freeing steps.
  -- Fix memory leak on kill_job_msg_t->work_dir when freeing struct.
+ -- Fix memory leak on slurmdb_step_rec_t->submit_line when freeing struct.
 
 * Changes in Slurm 21.08.0rc1
 =============================

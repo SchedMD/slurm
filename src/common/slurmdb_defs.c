@@ -1021,6 +1021,7 @@ extern void slurmdb_destroy_step_rec(void *object)
 		xfree(step->pid_str);
 		slurmdb_free_slurmdb_stats_members(&step->stats);
 		xfree(step->stepname);
+		xfree(step->submit_line);
 		xfree(step->tres_alloc_str);
 		xfree(step);
 	}
