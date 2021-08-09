@@ -29,8 +29,6 @@ buffer infrastructures may be easily configured.
 <!--Two plugins are-->One plugin is provided currently:</p>
 <ol>
 <li><b>datawarp</b> - Uses Cray APIs to perform underlying management functions</li>
-<!--<li><b>generic</b> - Uses system administrator defined scripts to perform
-underlying management functions, currently under development</li>-->
 </ol>
 <p>Additional plugins may be provided in future releases of Slurm.</p>
 
@@ -67,13 +65,6 @@ BurstBufferType=burst_buffer/datawarp
 
 <p>Burst buffer specific options should be defined in a <i>burst_buffer.conf</i>
 file.
-<!--
-If multiple burst buffer plugins are configured, an independent configuration
-file can be specified for each plugin with a file name including the plugin name.
-For example files named "burst_buffer_datawarp.conf" and
-"burst_buffer_generic.conf" can be used independently by the datawarp and
-generic burst buffer plugins respectively.
--->
 This file can contain information about who can or can not use burst buffers,
 timeouts, and paths of scripts used to perform various functions, etc.
 <a href="resource_limits.html">TRES limits</a> can be configured to establish
@@ -81,37 +72,6 @@ limits by association, QOS, etc.
 The size of a job's burst buffer requirements can be used as a factor in
 setting the job priority as described in the
 <a href="priority_multifactor.html">multifactor priority</a> document.</p>
-
-<!--
-<p>Note that sample scripts for performing burst buffer operations for the
-burst_buffer/generic plugin are included with the Slurm distribution.
-These scripts were intended for Slurm development and testing purposes and
-are <b>not</b> currently intended for customer use.
-Contributions of usable scripts/programs are invited.
-For more information about the functionality that might be included in the
-scripts, please see
-<a href="http://www.k9mach3.org/wickberg-thesis.pdf">
-The Ramdisk Storage Accelerator</a> by Timothy B. Wickberg.
-Note that these scripts/programs are executed as SlurmUser rather than user
-root.
-Please see the <i>burst_buffer.conf</i> man page for more configuration
-information.</p>
-
-<pre>
-# Excerpt of burst_buffer.conf file for generic plugin
-AllowUsers=alan,brenda
-Flags=EnablePersistent,PrivateData
-Granularity=1GB
-StageInTimeout=30
-StageOutTimeout=30
-#
-GetSysState=/usr/local/slurm/15.08/sbin/GSS
-StartStageIn=/usr/local/slurm/15.08/sbin/SSI
-StartStageOut=/usr/local/slurm/15.08/sbin/SSO
-StopStageIn=/usr/local/slurm/15.08/sbin/PSI
-StopStageOut=/usr/local/slurm/15.08/sbin/PSO
-</pre>
--->
 
 <p><b>Note for Cray systems:</b> The JSON-C library must be installed in order
 to build Slurm's burst_buffer/datawarp plugin, which must parse JSON format data.
@@ -124,7 +84,6 @@ for details.</p>
 requirements within the batch script.
 Batch script lines containing a prefix of "#BB" identify the job's burst buffer
 space requirements, files to be staged in, files to be staged out, etc.
-when using the <u>burst_buffer/generic</u> plugin.
 The prefix of "#DW" (for "DataWarp") is used for burst buffer directives when
 using the <u>burst_buffer/datawarp</u> plugin.
 Please reference Cray documentation for details about the DataWarp options.
@@ -169,9 +128,9 @@ SLURM Job_id=12 Name=my_app Staged Out, StageOut time 00:05:07
 
 <h2><a name="persist">Persistent Burst Buffer Creation and Deletion Directives</a></h2>
 
-<p>These options are used for both the <u>burst_buffer/datawarp</u> and
-<u>burst_buffer/generic</u> plugins to create and delete persistent burst
-buffers, which have a lifetime independent of the job.</p>
+<p>These options are used for the <u>burst_buffer/datawarp</u> pluing to create
+and delete persistent burst buffers, which have a lifetime independent of the
+job.</p>
 <ul>
 <li>#BB create_persistent name=&lt;name&gt; capacity=&lt;number&gt;
 [access=&lt;access&gt;] [pool=&lt;pool&gt; [type=&lt;type&gt;]</li>
@@ -341,8 +300,7 @@ $ scontrol show dwstat configurations
 <i>BurstBuffer</i> option.
 The argument consists of four elements:<br>
 [plugin:][pool:]#[units]<br><br>
-<i>plugin</i> is the burst buffer plugin name, currently either "datawarp" or
-"generic".
+<i>plugin</i> is the burst buffer plugin name, currently "datawarp".
 If no plugin is specified, the reservation applies to all configured burst
 buffer plugins.<br><br>
 <i>pool</i> specifies a Cray generic burst buffer resource pool.
@@ -384,6 +342,6 @@ The second job can be made to wait for the first job's stage out operation to
 complete using the "afterburstbuffer" dependency option (e.g.
 "sbatch --dependency=afterburstbuffer:123 ...").</p>
 
-<p style="text-align:center;">Last modified 15 October 2020</p>
+<p style="text-align:center;">Last modified 9 August 2021</p>
 
 <!--#include virtual="footer.txt"-->

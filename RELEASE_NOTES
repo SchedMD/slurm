@@ -131,6 +131,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     change the working directory even with the -D option. (Ensures any core
     files are placed in an accessible location, rather than /.)
  -- Added BcastParameters=send_libs and BcastExclude options.
+ -- Remove the (incomplete) burst_buffer/generic plugin.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

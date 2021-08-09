@@ -199,7 +199,7 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = common generic datawarp lua
+DIST_SUBDIRS = common datawarp lua
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -455,7 +455,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = common generic $(am__append_1)
+SUBDIRS = common $(am__append_1)
 all: all-recursive
 
 .SUFFIXES:
