@@ -756,12 +756,14 @@ extern void configless_update(void)
 extern void configless_clear(void)
 {
 	slurm_free_config_response_msg(config_for_slurmd);
-	/*
-	 * config_for_clients uses a pointer into config_for_slurmd,
-	 * so DO NOT use slurm_free_config_response_msg()
-	 */
-	list_destroy(config_for_clients->config_files);
-	xfree(config_for_clients);
+	if (config_for_clients) {
+		/*
+		 * config_for_clients uses a pointer into config_for_slurmd,
+		 * so DO NOT use slurm_free_config_response_msg()
+		 */
+		list_destroy(config_for_clients->config_files);
+		xfree(config_for_clients);
+	}
 }
 
 /* _kill_job_on_msg_fail - The request to create a job record successed,
