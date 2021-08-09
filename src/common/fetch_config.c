@@ -468,6 +468,8 @@ static void _load_conf2list(config_response_msg_t *msg, char *file_name)
 extern void load_config_response_list(config_response_msg_t *msg, char *files[])
 {
 	xassert(msg);
+	if (!msg->config_files)
+		msg->config_files = list_create(destroy_config_file);
 
 	for (int i = 0; files[i]; i++)
 		_load_conf2list(msg, files[i]);

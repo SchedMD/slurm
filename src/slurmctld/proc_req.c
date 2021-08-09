@@ -680,9 +680,7 @@ extern void configless_setup(void)
 		return;
 
 	config_for_slurmd = xmalloc(sizeof(*config_for_slurmd));
-	config_for_slurmd->config_files = list_create(destroy_config_file);
 	config_for_clients = xmalloc(sizeof(*config_for_clients));
-	config_for_clients->config_files = list_create(destroy_config_file);
 
 	load_config_response_msg(config_for_slurmd, CONFIG_REQUEST_SLURMD);
 
