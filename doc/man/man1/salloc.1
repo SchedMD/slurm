@@ -285,8 +285,8 @@ grouped with AND (e.g. "&") operands.
 .RE
 
 .TP
-\fB\-\-container\fR=<\fIabsolute_path_to_container\fR>
-Path to OCI container bundle.
+\fB\-\-container\fR=<\fIpath_to_container\fR>
+Absolute path to OCI container bundle.
 
 .TP
 \fB\-\-contiguous\fR
@@ -317,7 +317,7 @@ above when task/affinity plugin is enabled.
 was not specified) as one task per requested thread.
 
 .TP
-\fB\-\-cpu\-freq\fR=<\fIp1\fR[\-\fIp2\fR[:\fIp3\fR]]>
+\fB\-\-cpu\-freq\fR=<\fIp1\fR>[\-\fIp2\fR[:\fIp3\fR]]
 
 Request that job steps initiated by srun commands inside this allocation
 be run at some requested frequency if possible, on the CPUs selected
@@ -519,7 +519,7 @@ unless DependencyParameters=disable_remote_singleton is used in slurm.conf.
 .RE
 
 .TP
-\fB\-m\fR, \fB\-\-distribution\fR=*|block|cyclic|arbitrary|plane=<\fIsize\fR>[:*|block|cyclic|fcyclic[:*|block|cyclic|fcyclic]][,{Pack|NoPack}]
+\fB\-m\fR, \fB\-\-distribution\fR={*|block|cyclic|arbitrary|plane=<\fIsize\fR>}[:{*|block|cyclic|fcyclic}[:{*|block|cyclic|fcyclic}]][,{Pack|NoPack}]
 
 Specify alternate distribution methods for remote processes.
 For job allocation, this sets environment variables that will be used by
@@ -688,7 +688,7 @@ The default shared/exclusive behavior depends on system configuration and the
 partition's \fBOverSubscribe\fR option takes precedence over the job's option.
 
 .TP
-\fB\-B\fR, \fB\-\-extra\-node\-info\fR=<\fIsockets\fR[:\fIcores\fR[:\fIthreads\fR]]>
+\fB\-B\fR, \fB\-\-extra\-node\-info\fR=<\fIsockets\fR>[:\fIcores\fR[:\fIthreads\fR]]
 Restrict node selection to nodes with at least the specified number of
 sockets, cores per socket and/or threads per core.
 .br
@@ -849,7 +849,7 @@ the highest available frequency.
 .RE
 
 .TP
-\fB\-G\fR, \fB\-\-gpus\fR=[<\fItype\fR>:]<\fInumber\fR>
+\fB\-G\fR, \fB\-\-gpus\fR=[\fItype\fR:]<\fInumber\fR>
 Specify the total number of GPUs required for the job.
 An optional GPU type specification can be supplied.
 For example "\-\-gpus=volta:3".
@@ -859,7 +859,7 @@ See also the \fB\-\-gpus\-per\-node\fR, \fB\-\-gpus\-per\-socket\fR and
 \fB\-\-gpus\-per\-task\fR options.
 
 .TP
-\fB\-\-gpus\-per\-node\fR=[<\fItype\fR>:]<\fInumber\fR>
+\fB\-\-gpus\-per\-node\fR=[\fItype\fR:]<\fInumber\fR>
 Specify the number of GPUs required for the job on each node included in
 the job's resource allocation.
 An optional GPU type specification can be supplied.
@@ -870,7 +870,7 @@ See also the \fB\-\-gpus\fR, \fB\-\-gpus\-per\-socket\fR and
 \fB\-\-gpus\-per\-task\fR options.
 
 .TP
-\fB\-\-gpus\-per\-socket\fR=[<\fItype\fR>:]<\fInumber\fR>
+\fB\-\-gpus\-per\-socket\fR=[\fItype\fR:]<\fInumber\fR>
 Specify the number of GPUs required for the job on each socket included in
 the job's resource allocation.
 An optional GPU type specification can be supplied.
@@ -882,7 +882,7 @@ See also the \fB\-\-gpus\fR, \fB\-\-gpus\-per\-node\fR and
 \fB\-\-gpus\-per\-task\fR options.
 
 .TP
-\fB\-\-gpus\-per\-task\fR=[<\fItype\fR>:]<\fInumber\fR>
+\fB\-\-gpus\-per\-task\fR=[\fItype\fR:]<\fInumber\fR>
 Specify the number of GPUs required for the job on each task to be spawned
 in the job's resource allocation.
 An optional GPU type specification can be supplied.
@@ -1019,7 +1019,7 @@ immediately with the value and not include a space between them. For
 example "\-K1" and not "\-K 1".
 
 .TP
-\fB\-L\fR, \fB\-\-licenses\fR=<\fIlicense\fR>
+\fB\-L\fR, \fB\-\-licenses\fR=<\fIlicense\fR>[@\fIdb\fR][:\fIcount\fR][,\fIlicense\fR[@\fIdb\fR][:\fIcount\fR]...]
 Specification of licenses (or other resources available on all
 nodes of the cluster) which must be allocated to this job.
 License names can be followed by a colon and count
@@ -1052,7 +1052,7 @@ This parameter is a group among the groups of the user.
 Default value is calculated by the Plugin mcs if it's enabled.
 
 .TP
-\fB\-\-mem\fR=<\fIsize\fR[\fIunits\fR]>
+\fB\-\-mem\fR=<\fIsize\fR>[\fIunits\fR]
 Specify the real memory required per node.
 Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
@@ -1176,7 +1176,7 @@ verbosely report binding before task runs
 .RE
 
 .TP
-\fB\-\-mem\-per\-cpu\fR=<\fIsize\fR[\fIunits\fR]>
+\fB\-\-mem\-per\-cpu\fR=<\fIsize\fR>[\fIunits\fR]
 Minimum memory required per allocated CPU.
 Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
@@ -1208,7 +1208,7 @@ times the number of CPUs on a node is greater than the total memory of that
 node.
 
 .TP
-\fB\-\-mem\-per\-gpu\fR=<\fIsize\fR[\fIunits\fR]>
+\fB\-\-mem\-per\-gpu\fR=<\fIsize\fR>[\fIunits\fR]
 Minimum memory required per allocated GPU.
 Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
@@ -1431,7 +1431,7 @@ The order of the node names in the list is not important; the node names
 will be sorted by Slurm.
 
 .TP
-\fB\-N\fR, \fB\-\-nodes\fR=<\fIminnodes\fR[\-\fImaxnodes\fR]>
+\fB\-N\fR, \fB\-\-nodes\fR=<\fIminnodes\fR>[\-\fImaxnodes\fR]
 Request that a minimum of \fIminnodes\fR nodes be allocated to this job.
 A maximum node count may also be specified with \fImaxnodes\fR.
 If only one number is specified, this is used as both the minimum and
@@ -1578,7 +1578,7 @@ May be subject to configuration specific constraints.
 Only Slurm operators and administrators can set the priority of a job.
 
 .TP
-\fB\-\-profile\fR=<all|none|[energy[,|task[,|lustre[,|network]]]]>
+\fB\-\-profile\fR={all|none|<\fItype\fR>[,<\fItype\fR>...]}
 Enables detailed data collection by the acct_gather_profile plugin.
 Detailed data are typically time\-series that are stored in an HDF5 file for
 the job or an InfluxDB database depending on the configured plugin.
@@ -1594,6 +1594,10 @@ No data types are collected. This is the default.
  (Cannot be combined with other values.)
 
 .TP
+Valid \fItype\fR values are:
+
+.RS 4
+.TP
 \fBEnergy\fR
 Energy data is collected.
 
@@ -1608,6 +1612,7 @@ Lustre data is collected.
 .TP
 \fBNetwork\fR
 Network (InfiniBand) data is collected.
+.RE
 .RE
 
 .TP
@@ -1639,7 +1644,7 @@ In accounting the first reservation will be seen and after the job starts the
 reservation used will replace it.
 
 .TP
-\fB\-\-signal\fR=[R:]<\fIsig_num\fR>[@<\fIsig_time\fR>]
+\fB\-\-signal\fR=[R:]<\fIsig_num\fR>[@\fIsig_time\fR]
 When a job is within \fIsig_time\fR seconds of its end time,
 send it the signal \fIsig_num\fR.
 Due to the resolution of event handling by Slurm, the signal may
@@ -1670,7 +1675,7 @@ evenly distribute tasks across the allocated nodes.
 This option disables the topology/tree plugin.
 
 .TP
-\fB\-\-switches\fR=<\fIcount\fR>[@<\fImax\-time\fR>]
+\fB\-\-switches\fR=<\fIcount\fR>[@\fImax\-time\fR]
 When a tree topology is used, this defines the maximum count of leaf switches
 desired for the job allocation and optionally the maximum time to wait
 for that number of switches. If Slurm finds an allocation containing more
@@ -1737,7 +1742,7 @@ Acceptable time formats include "minutes", "minutes:seconds",
 "days\-hours:minutes:seconds".
 
 .TP
-\fB\-\-tmp\fR=<\fIsize\fR[\fIunits\fR]>
+\fB\-\-tmp\fR=<\fIsize\fR>[\fIunits\fR]
 Specify a minimum amount of temporary disk space per node.
 Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
@@ -1794,7 +1799,7 @@ Specify wckey to be used with job.  If TrackWCKey=no (default) in the
 slurm.conf this value is ignored.
 
 .TP
-\fB\-\-x11\fR[=<all|first|last>]
+\fB\-\-x11\fR[={all|first|last}]
 Sets up X11 forwarding on "all", "first" or "last" node(s) of the allocation.
 This option is only enabled if Slurm was compiled with X11 support and
 PrologFlags=x11 is defined in the slurm.conf. Default is "all".
