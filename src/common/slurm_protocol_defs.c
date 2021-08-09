@@ -1540,6 +1540,7 @@ extern void slurm_free_kill_job_msg(kill_job_msg_t * msg)
 				xfree(msg->spank_job_env[i]);
 			xfree(msg->spank_job_env);
 		}
+		xfree(msg->work_dir);
 		xfree(msg);
 	}
 }

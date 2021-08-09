@@ -29,6 +29,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix bad reference to step_ptr->job_ptr after step_ptr is freed.
  -- Fix bad reference to config_for_clients when shutting down slurmctld.
  -- Fix memory leak on gres_list_alloc when freeing steps.
+ -- Fix memory leak on kill_job_msg_t->work_dir when freeing struct.
 
 * Changes in Slurm 21.08.0rc1
 =============================
