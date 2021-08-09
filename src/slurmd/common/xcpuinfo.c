@@ -224,8 +224,7 @@ handle_write:
 					       HWLOC_TYPE_FILTER_KEEP_NONE);
 		hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L2CACHE,
 					       HWLOC_TYPE_FILTER_KEEP_NONE);
-		hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L3CACHE,
-					       HWLOC_TYPE_FILTER_KEEP_NONE);
+		/* need to preserve HWLOC_OBJ_L3CACHE for l3cache_as_socket */
 		hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L4CACHE,
 					       HWLOC_TYPE_FILTER_KEEP_NONE);
 		hwloc_topology_set_type_filter(*topology, HWLOC_OBJ_L5CACHE,
