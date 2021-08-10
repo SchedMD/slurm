@@ -2401,8 +2401,8 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 			 count64, tmp_links);
 
 		for (j = 0; j < gres_context_cnt; j++) {
-			bool new_has_file,  new_has_type;
-			bool orig_has_file, orig_has_type;
+			bool new_has_file;
+			bool orig_has_file;
 			if (gres_context[j].plugin_id != plugin_id)
 				continue;
 			if (xstrcmp(gres_context[j].gres_name, tmp_name)) {
@@ -2434,14 +2434,6 @@ extern int gres_node_config_unpack(buf_t *buffer, char *node_name)
 				      __func__, tmp_name, count64,
 				      node_name, MAX_GRES_BITMAP);
 				count64 = MAX_GRES_BITMAP;
-			}
-			new_has_type  = config_flags & GRES_CONF_HAS_TYPE;
-			orig_has_type = gres_context[j].config_flags &
-				GRES_CONF_HAS_TYPE;
-			if (orig_has_type && !new_has_type && count64) {
-				error("%s: gres/%s lacks \"Type\" parameter for node %s",
-				      __func__, tmp_name, node_name);
-				config_flags |= GRES_CONF_HAS_TYPE;
 			}
 			gres_context[j].config_flags |= config_flags;
 
