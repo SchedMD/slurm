@@ -2500,9 +2500,6 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 		for (i = i_first; ((i <= i_last) && (max_nodes > 0)); i++) {
 			if (!bit_test(req2_nodes_bitmap, i))
 				continue;
-			rem_nodes--;
-			min_rem_nodes--;
-			max_nodes--;
 			avail_cpus = avail_cpu_per_node[i];
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
@@ -2513,6 +2510,9 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 					avail_res_array[i]->sock_gres_list,
 					&avail_cpus);
 			}
+			rem_nodes--;
+			min_rem_nodes--;
+			max_nodes--;
 			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
 			rem_max_cpus -= avail_cpus;
@@ -2671,9 +2671,6 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 			    bit_test(node_map, i) ||
 			    !avail_cpu_per_node[i])
 				continue;
-			rem_nodes--;
-			min_rem_nodes--;
-			max_nodes--;
 			avail_cpus = avail_cpu_per_node[i];
 			_cpus_to_use(&avail_cpus, rem_max_cpus, min_rem_nodes,
 				     details_ptr, avail_res_array[i], i,
@@ -2684,6 +2681,9 @@ static int _eval_nodes_topo(job_record_t *job_ptr,
 					avail_res_array[i]->sock_gres_list,
 					&avail_cpus);
 			}
+			rem_nodes--;
+			min_rem_nodes--;
+			max_nodes--;
 			total_cpus += avail_cpus;
 			rem_cpus   -= avail_cpus;
 			rem_max_cpus -= avail_cpus;
