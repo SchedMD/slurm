@@ -74,7 +74,6 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static slurm_jc_conf_t *jc_conf = NULL;
 static int step_ns_fd = -1;
 static bool force_rm = true;
-static List running_job_ids = NULL;
 
 static int _create_paths(uint32_t job_id,
 			 char *job_mount,
@@ -122,33 +121,6 @@ static int _create_paths(uint32_t job_id,
 static int _find_step_in_list(step_loc_t *stepd, uint32_t *job_id)
 {
 	return (stepd->step_id.job_id == *job_id);
-}
-
-static int _find_job_id_in_list(uint32_t *list_job_id, uint32_t *job_id)
-{
-	return (*list_job_id == *job_id);
-}
-
-static int _append_job_in_list(void *element, void *arg)
-{
-	step_loc_t *stepd = (step_loc_t *) element;
-	List job_id_list = (List) arg;
-
-	xassert(job_id_list);
-
-	if (!list_find_first(job_id_list, (ListFindF)_find_job_id_in_list,
-			     &stepd->step_id.job_id)) {
-		int fd = stepd_connect(stepd->directory,
-				       stepd->nodename,
-				       &stepd->step_id,
-				       &stepd->protocol_version);
-		if (fd != -1) {
-			list_append(job_id_list, &stepd->step_id.job_id);
-			close(fd);
-		}
-	}
-
-	return SLURM_SUCCESS;
 }
 
 static int _restore_ns(List steps, const char *d_name)
@@ -290,10 +262,6 @@ extern int container_p_restore(char *dir_name, bool recover)
 	}
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
-	running_job_ids = list_create(NULL);
-
-	/* Iterate over steps, and check once per job if it's still running. */
-	(void)list_for_each(steps, _append_job_in_list, running_job_ids);
 
 	/*
 	 * Iterate over basepath, restore only the folders that seem bounded to
@@ -311,7 +279,6 @@ extern int container_p_restore(char *dir_name, bool recover)
 			rc = SLURM_ERROR;
 	}
 	closedir(dp);
-	FREE_NULL_LIST(running_job_ids);
 	FREE_NULL_LIST(steps);
 
 	if (rc)
