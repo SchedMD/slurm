@@ -659,7 +659,7 @@ exit2:
 
 extern int container_p_create(uint32_t job_id, uid_t uid)
 {
-	return _create_ns(job_id, uid, false);
+	return SLURM_SUCCESS;
 }
 
 /* Add a process to a job container, create the proctrack container to add */
@@ -780,15 +780,15 @@ static int _delete_ns(uint32_t job_id)
 
 extern int container_p_delete(uint32_t job_id)
 {
-	return _delete_ns(job_id);
+	return SLURM_SUCCESS;
 }
 
 extern int container_p_stepd_create(uint32_t job_id, uid_t uid)
 {
-	return SLURM_SUCCESS;
+	return _create_ns(job_id, uid, false);
 }
 
 extern int container_p_stepd_delete(uint32_t job_id)
 {
-	return SLURM_SUCCESS;
+	return _delete_ns(job_id);
 }
