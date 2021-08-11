@@ -30,7 +30,7 @@ ids = {}
 title = ''
 dirname = ''
 
-# Instert tags for options
+# Insert tags for options
 #   Two styles are processed.
 #       <DT><B>pppppp</B><DD>
 #           has tag <a id="OPT_pppppp"></a>
