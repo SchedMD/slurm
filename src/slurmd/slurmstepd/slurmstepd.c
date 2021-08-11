@@ -66,6 +66,7 @@
 #include "src/common/cgroup.h"
 
 #include "src/slurmd/common/core_spec_plugin.h"
+#include "src/slurmd/common/job_container_plugin.h"
 #include "src/slurmd/common/slurmstepd_init.h"
 #include "src/common/slurm_acct_gather_energy.h"
 #include "src/slurmd/common/proctrack.h"
@@ -209,6 +210,20 @@ extern int stepd_cleanup(slurm_msg_t *msg, stepd_step_rec_t *job,
 		cleanup_container(job);
 
 	run_command_shutdown();
+
+	if (job->step_id.step_id == SLURM_EXTERN_CONT) {
+		uint32_t jobid;
+#ifdef HAVE_NATIVE_CRAY
+		if (job->het_job_id && (job->het_job_id != NO_VAL))
+			jobid = job->het_job_id;
+		else
+			jobid = job->step_id.job_id;
+#else
+		jobid = job->step_id.job_id;
+#endif
+		if (container_g_stepd_delete(jobid))
+			error("container_g_stepd_delete(%u): %m", jobid);
+	}
 
 #ifdef MEMORY_LEAK_DEBUG
 	acct_gather_conf_destroy();

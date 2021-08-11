@@ -782,3 +782,13 @@ extern int container_p_delete(uint32_t job_id)
 {
 	return _delete_ns(job_id);
 }
+
+extern int container_p_stepd_create(uint32_t job_id, uid_t uid)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int container_p_stepd_delete(uint32_t job_id)
+{
+	return SLURM_SUCCESS;
+}

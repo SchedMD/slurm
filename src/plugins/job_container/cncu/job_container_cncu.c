@@ -462,3 +462,13 @@ extern int container_p_delete(uint32_t job_id)
 #endif
 
 }
+
+extern int container_p_stepd_create(uint32_t job_id, uid_t uid)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int container_p_stepd_delete(uint32_t job_id)
+{
+	return SLURM_SUCCESS;
+}
