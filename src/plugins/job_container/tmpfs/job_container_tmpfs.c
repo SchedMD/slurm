@@ -205,21 +205,10 @@ extern int fini(void)
 	return SLURM_SUCCESS;
 #endif
 
-	jc_conf = get_slurm_jc_conf();
-	if (!jc_conf) {
-		error("%s: Configuration not loaded", __func__);
-		return SLURM_ERROR;
-	}
 	if (step_ns_fd != -1) {
 		close(step_ns_fd);
 		step_ns_fd = -1;
 	}
-	if (umount2(jc_conf->basepath, MNT_DETACH)) {
-		error("%s: umount2: %s failed: %s",
-		      __func__, jc_conf->basepath, strerror(errno));
-		rc = SLURM_ERROR;
-	}
-	free_jc_conf();
 
 	return rc;
 }
@@ -285,6 +274,8 @@ extern int container_p_restore(char *dir_name, bool recover)
 		umask(omask);
 
 	}
+
+	return SLURM_SUCCESS;
 
 	/* It could fail if no leaks, it can clean as much leaks as possible. */
 	if (umount2(jc_conf->basepath, MNT_DETACH))
@@ -450,6 +441,26 @@ static int _create_ns(uint32_t job_id, uid_t uid, bool remount)
 		goto exit2;
 	}
 
+#if !defined(__APPLE__) && !defined(__FreeBSD__)
+	/*
+	 * MS_BIND mountflag would make mount() ignore all other mountflags
+	 * except MS_REC. We need MS_PRIVATE mountflag as well to make the
+	 * mount (as well as all mounts inside it) private, which needs to be
+	 * done by calling mount() a second time with MS_PRIVATE and MS_REC
+	 * flags.
+	 */
+	if (mount(job_mount, job_mount, "xfs", MS_BIND, NULL)) {
+		error("%s: Initial base mount failed, %s",
+		      __func__, strerror(errno));
+		return SLURM_ERROR;
+	}
+	if (mount(job_mount, job_mount, "xfs", MS_PRIVATE | MS_REC, NULL)) {
+		error("%s: Initial base mount failed, %s",
+		      __func__, strerror(errno));
+		return SLURM_ERROR;
+	}
+#endif
+
 	fd = open(ns_holder, O_CREAT|O_RDWR, S_IRWXU);
 	if (fd == -1) {
 		if (!remount) {
@@ -568,7 +579,7 @@ static int _create_ns(uint32_t job_id, uid_t uid, bool remount)
 		 * mounts inside the job, they will only see their job mount
 		 * but not the basepath mount.
 		 */
-		rc = umount2(jc_conf->basepath, MNT_DETACH);
+		rc = umount2(job_mount, MNT_DETACH);
 		if (rc) {
 			error("%s: umount2 failed: %s",
 			      __func__, strerror(errno));
@@ -651,7 +662,7 @@ exit2:
 			      __func__, job_mount, strerror(errno));
 			return SLURM_ERROR;
 		}
-
+		umount2(job_mount, MNT_DETACH);
 	}
 
 	return rc;
@@ -774,6 +785,10 @@ static int _delete_ns(uint32_t job_id)
 		      __func__, job_mount, strerror(errno));
 		return SLURM_ERROR;
 	}
+
+	if (umount2(job_mount, MNT_DETACH))
+		debug2("umount2: %s failed: %s", job_mount, strerror(errno));
+	rmdir(job_mount);
 
 	return SLURM_SUCCESS;
 }
