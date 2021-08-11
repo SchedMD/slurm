@@ -59,7 +59,7 @@
 #include "read_jcconf.h"
 
 static int _create_ns(uint32_t job_id, uid_t uid, bool remount);
-static int _delete_ns(uint32_t job_id);
+static int _delete_ns(uint32_t job_id, bool is_slurmd);
 
 #if defined (__APPLE__)
 extern slurmd_conf_t *conf __attribute__((weak_import));
@@ -74,6 +74,12 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static slurm_jc_conf_t *jc_conf = NULL;
 static int step_ns_fd = -1;
 static bool force_rm = true;
+List legacy_jobs;
+
+typedef struct {
+	uint32_t job_id;
+	uint16_t protocol_version;
+} legacy_job_info_t;
 
 static int _create_paths(uint32_t job_id,
 			 char *job_mount,
@@ -123,6 +129,11 @@ static int _find_step_in_list(step_loc_t *stepd, uint32_t *job_id)
 	return (stepd->step_id.job_id == *job_id);
 }
 
+static int _find_legacy_job_in_list(legacy_job_info_t *job, uint32_t *job_id)
+{
+	return (job->job_id == *job_id);
+}
+
 static int _restore_ns(List steps, const char *d_name)
 {
 	int fd;
@@ -140,7 +151,7 @@ static int _restore_ns(List steps, const char *d_name)
 	if (!stepd) {
 		debug("%s: Job %u not found, deleting the namespace",
 		      __func__, job_id);
-		return _delete_ns(job_id);
+		return _delete_ns(job_id, false);
 	}
 
 	fd = stepd_connect(stepd->directory, stepd->nodename,
@@ -148,10 +159,20 @@ static int _restore_ns(List steps, const char *d_name)
 	if (fd == -1) {
 		error("%s: failed to connect to stepd for %u.",
 		      __func__, job_id);
-		return _delete_ns(job_id);
+		return _delete_ns(job_id, false);
 	}
 
 	close(fd);
+
+	if (stepd->protocol_version == SLURM_20_11_PROTOCOL_VERSION) {
+		legacy_job_info_t *job = xmalloc(sizeof(*job));
+		if (!legacy_jobs)
+			legacy_jobs = list_create(NULL);
+		job->job_id = job_id;
+		job->protocol_version = stepd->protocol_version;
+		list_append(legacy_jobs, job);
+		return _create_ns(job_id, 0, true);
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -177,6 +198,20 @@ extern int init(void)
 	return SLURM_SUCCESS;
 }
 
+static int _legacy_fini(void *x, void *arg) {
+	char job_mount[PATH_MAX];
+	legacy_job_info_t *job = (legacy_job_info_t *)x;
+
+	if (_create_paths(job->job_id, job_mount, NULL, NULL)
+	    != SLURM_SUCCESS)
+		return SLURM_ERROR;
+
+	if (umount2(job_mount, MNT_DETACH))
+		debug2("umount2: %s failed: %s", job_mount, strerror(errno));
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * fini() is called when the plugin is removed. Clear any allocated
  *	storage here.
@@ -184,7 +219,6 @@ extern int init(void)
 extern int fini(void)
 {
 	int rc = SLURM_SUCCESS;
-
 	debug("%s unloaded", plugin_name);
 
 #ifdef HAVE_NATIVE_CRAY
@@ -195,6 +229,13 @@ extern int fini(void)
 		close(step_ns_fd);
 		step_ns_fd = -1;
 	}
+
+	if (!legacy_jobs)
+		return SLURM_SUCCESS;
+
+	rc = list_for_each(legacy_jobs, _legacy_fini, NULL);
+
+	FREE_NULL_LIST(legacy_jobs);
 
 	return rc;
 }
@@ -699,7 +740,7 @@ extern int container_p_join(uint32_t job_id, uid_t uid)
 	return SLURM_SUCCESS;
 }
 
-static int _delete_ns(uint32_t job_id)
+static int _delete_ns(uint32_t job_id, bool is_slurmd)
 {
 	char job_mount[PATH_MAX];
 	char ns_holder[PATH_MAX];
@@ -715,6 +756,29 @@ static int _delete_ns(uint32_t job_id)
 	}
 
 	errno = 0;
+
+	/*
+	 * FIXME: only used for SLURM_20_11_PROTOCOL_VERSION
+	 * This is only here to handle upgrades from 20.11, and should be
+	 * removed once upgrading from 20.11 is no longer supported.
+	 */
+	if (is_slurmd && legacy_jobs) {
+		legacy_job_info_t *job;
+		job = list_find_first(legacy_jobs,
+				      (ListFindF)_find_legacy_job_in_list,
+				      &job_id);
+		/* if we didn't find the job, it doesn't need legacy handling */
+		if (!job)
+			return SLURM_SUCCESS;
+		/* cleanup the list */
+		list_delete_first(legacy_jobs,
+				  (ListFindF)_find_legacy_job_in_list,
+				  &job_id);
+		xfree(job);
+		if (list_count(legacy_jobs) == 0)
+			FREE_NULL_LIST(legacy_jobs);
+	}
+
 	rc = umount2(ns_holder, MNT_DETACH);
 	if (rc) {
 		error("%s: umount2 %s failed: %s",
@@ -748,7 +812,8 @@ static int _delete_ns(uint32_t job_id)
 
 extern int container_p_delete(uint32_t job_id)
 {
-	return SLURM_SUCCESS;
+	/* change to return SLURM_SUCCESS when 20.11 is not supported) */
+	return _delete_ns(job_id, true);
 }
 
 extern int container_p_stepd_create(uint32_t job_id, uid_t uid)
@@ -758,5 +823,5 @@ extern int container_p_stepd_create(uint32_t job_id, uid_t uid)
 
 extern int container_p_stepd_delete(uint32_t job_id)
 {
-	return _delete_ns(job_id);
+	return _delete_ns(job_id, false);
 }
