@@ -119,6 +119,11 @@ static int _create_paths(uint32_t job_id,
 	return SLURM_SUCCESS;
 }
 
+static int _find_step_in_list(step_loc_t *stepd, uint32_t *job_id)
+{
+	return (stepd->step_id.job_id == *job_id);
+}
+
 static int _find_job_id_in_list(uint32_t *list_job_id, uint32_t *job_id)
 {
 	return (*list_job_id == *job_id);
@@ -146,10 +151,11 @@ static int _append_job_in_list(void *element, void *arg)
 	return SLURM_SUCCESS;
 }
 
-static int _restore_ns(const char *d_name)
+static int _restore_ns(List steps, const char *d_name)
 {
-	int rc = SLURM_SUCCESS;
+	int fd;
 	uint32_t job_id;
+	step_loc_t *stepd;
 
 	if (!(job_id = slurm_atoul(d_name))) {
 		debug3("ignoring %s, could not convert to jobid.", d_name);
@@ -158,12 +164,24 @@ static int _restore_ns(const char *d_name)
 
 	/* here we think this is a job container */
 	debug3("determine if job %u is still running", job_id);
-	if (!list_find_first(running_job_ids,
-			    (ListFindF)_find_job_id_in_list,
-			    &job_id))
-		rc = _delete_ns(job_id);
+	stepd = list_find_first(steps, (ListFindF)_find_step_in_list, &job_id);
+	if (!stepd) {
+		debug("%s: Job %u not found, deleting the namespace",
+		      __func__, job_id);
+		return _delete_ns(job_id);
+	}
 
-	return rc;
+	fd = stepd_connect(stepd->directory, stepd->nodename,
+			   &stepd->step_id, &stepd->protocol_version);
+	if (fd == -1) {
+		error("%s: failed to connect to stepd for %u.",
+		      __func__, job_id);
+		return _delete_ns(job_id);
+	}
+
+	close(fd);
+
+	return SLURM_SUCCESS;
 }
 
 extern void container_p_reconfig(void)
@@ -276,7 +294,6 @@ extern int container_p_restore(char *dir_name, bool recover)
 
 	/* Iterate over steps, and check once per job if it's still running. */
 	(void)list_for_each(steps, _append_job_in_list, running_job_ids);
-	FREE_NULL_LIST(steps);
 
 	/*
 	 * Iterate over basepath, restore only the folders that seem bounded to
@@ -290,11 +307,12 @@ extern int container_p_restore(char *dir_name, bool recover)
 	}
 
 	while ((ep = readdir(dp))) {
-		if (_restore_ns(ep->d_name))
+		if (_restore_ns(steps, ep->d_name))
 			rc = SLURM_ERROR;
 	}
 	closedir(dp);
 	FREE_NULL_LIST(running_job_ids);
+	FREE_NULL_LIST(steps);
 
 	if (rc)
 		error("Encountered an error while restoring job containers.");
