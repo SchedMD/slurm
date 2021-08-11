@@ -9184,7 +9184,7 @@ extern void job_set_req_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
 	uint32_t cpu_cnt = 0, node_cnt = 0;
 	uint64_t mem_cnt = 0;
 	uint16_t sockets_per_node;
-	uint32_t num_tasks;
+	uint32_t num_tasks = 1; /* Default to 1 if it's not set */
 	assoc_mgr_lock_t locks = { .tres = READ_LOCK };
 
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
@@ -9203,6 +9203,7 @@ extern void job_set_req_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
 		cpu_cnt = job_ptr->details->min_cpus;
 		if (job_ptr->details->pn_min_memory)
 			mem_cnt = job_ptr->details->pn_min_memory;
+		num_tasks = job_ptr->details->num_tasks;
 	}
 
 	/* if this is set just override */
@@ -9215,7 +9216,6 @@ extern void job_set_req_tres(job_record_t *job_ptr, bool assoc_mgr_locked)
 	job_ptr->tres_req_cnt[TRES_ARRAY_NODE] = (uint64_t)node_cnt;
 	job_ptr->tres_req_cnt[TRES_ARRAY_CPU] = (uint64_t)cpu_cnt;
 	sockets_per_node = job_get_sockets_per_node(job_ptr);
-	num_tasks = job_ptr->details->num_tasks;
 	job_ptr->tres_req_cnt[TRES_ARRAY_MEM] =
 		job_get_tres_mem(job_ptr->job_resrcs,
 				 mem_cnt, cpu_cnt,
