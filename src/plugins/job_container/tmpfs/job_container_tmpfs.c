@@ -157,14 +157,10 @@ static int _restore_ns(const char *d_name)
 	}
 
 	/* here we think this is a job container */
-	debug3("attempting to restore namespace for job %u", job_id);
-	if (_create_ns(job_id, 0, true)) {
-		error("%s: failed to restore namespace for %u",
-		      __func__, job_id);
-		rc = SLURM_ERROR;
-	} else if (!list_find_first(running_job_ids,
-				    (ListFindF)_find_job_id_in_list,
-				    &job_id))
+	debug3("determine if job %u is still running", job_id);
+	if (!list_find_first(running_job_ids,
+			    (ListFindF)_find_job_id_in_list,
+			    &job_id))
 		rc = _delete_ns(job_id);
 
 	return rc;
@@ -274,34 +270,6 @@ extern int container_p_restore(char *dir_name, bool recover)
 		umask(omask);
 
 	}
-
-	return SLURM_SUCCESS;
-
-	/* It could fail if no leaks, it can clean as much leaks as possible. */
-	if (umount2(jc_conf->basepath, MNT_DETACH))
-		debug2("umount2: %s failed: %s", jc_conf->basepath, strerror(errno));
-
-#if !defined(__APPLE__) && !defined(__FreeBSD__)
-	/*
-	 * MS_BIND mountflag would make mount() ignore all other mountflags
-	 * except MS_REC. We need MS_PRIVATE mountflag as well to make the
-	 * mount (as well as all mounts inside it) private, which needs to be
-	 * done by calling mount() a second time with MS_PRIVATE and MS_REC
-	 * flags.
-	 */
-	if (mount(jc_conf->basepath, jc_conf->basepath, "xfs", MS_BIND, NULL)) {
-		error("%s: Initial base mount failed, %s",
-		      __func__, strerror(errno));
-		return SLURM_ERROR;
-	}
-	if (mount(jc_conf->basepath, jc_conf->basepath, "xfs",
-		  MS_PRIVATE | MS_REC, NULL)) {
-		error("%s: Initial base mount failed, %s",
-		      __func__, strerror(errno));
-		return SLURM_ERROR;
-	}
-#endif
-	debug3("tmpfs: Base namespace created");
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	running_job_ids = list_create(NULL);
