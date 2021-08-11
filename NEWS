@@ -41,7 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix determining if a reservation is used or not.
  -- Fix memory in requested TRES when --mem-per-gpu is used.
  -- Changed ReqMem field in sacct to match memory from ReqTRES.
- -- Make --gpu-bind=single:<ntasks> not check cpu affinity like closest.
+ -- Changed --gpu-bind=single:<ntasks> to no longer check core affinity like
+    --gpu-bind=closest does. This consequently affects --ntasks-per-gpu.
 
 * Changes in Slurm 21.08.0rc1
 =============================
