@@ -32,26 +32,26 @@ proc inc21_30_5 { wait_reason } {
 	global salloc acct number srun bin_sleep maxcpu_num
 	global test_node exit_code
 
-	log_info "Starting MaxCPUs limit test (Within: inc21.30.5)"
+	log_info "Starting MaxCPUs limit test"
 	set job_id1 0
 
 	spawn $salloc --account=$acct -t1 -w$test_node -n$maxcpu_num $srun $bin_sleep 2
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			log_debug "Job $job_id1 has been submitted. (Within: inc21.30.5)"
+			log_debug "Job $job_id1 has been submitted"
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			log_error "This should have run but did not. (Within: inc21.30.5)"
+			log_error "This should have run but did not"
 			set exit_code 1
 		}
 		-re "error" {
-			log_error "Job allocation should not have failed. (Within: inc21.30.5)"
+			log_error "Job allocation should not have failed"
 			set exit_code 1
 		}
 		timeout {
-			log_error "salloc not responding (Within: inc21.30.5)"
+			log_error "salloc not responding"
 			set exit_code 1
 		}
 		eof {
@@ -66,14 +66,14 @@ proc inc21_30_5 { wait_reason } {
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			log_debug "Job $job_id1 is waiting for resources. This is expected. (Within: inc21.30.5)"
+			log_debug "Job $job_id1 is waiting for resources. This is expected"
 		}
 		-re "Granted job allocation ($number)" {
-			log_error "This should have pended but did not (Within: inc21.30.5)"
+			log_error "This should have pended but did not"
 			set exit_code 1
 		}
 		timeout {
-			log_error "salloc not responding. (Within: inc21.30.5)"
+			log_error "salloc not responding"
 			set exit_code 1
 		}
 		eof {
@@ -82,7 +82,7 @@ proc inc21_30_5 { wait_reason } {
 	}
 
 	if {![check_reason $job_id1 $wait_reason]} {
-		log_error "Bad job wait reason. (Within: inc21.30.5)"
+		log_error "Bad job wait reason"
 		set exit_code 1
 	}
 

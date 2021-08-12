@@ -32,26 +32,26 @@ proc inc21_30_1 { wait_reason } {
 	global srun salloc acct bin_sleep number grn_num check_reason
 	global exit_code
 
-	log_info "Starting GrpNode limit test (Within: inc21.30.1)"
+	log_info "Starting GrpNode limit test"
 	set job_id1  0
 	set job_id2  0
 	spawn $salloc -N$grn_num --account=$acct --exclusive -t1 $srun $bin_sleep 10
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			log_debug "Job $job_id1 has been submitted. (Within: inc21.30.1)"
+			log_debug "Job $job_id1 has been submitted"
 		}
 		-re "Pending job allocation ($number)" {
-			log_error "Job should be running, but is not. (Within: inc21.30.1)"
+			log_error "Job should be running, but is not"
 			set job_id1 $expect_out(1,string)
 			set exit_code 1
 		}
 		-re "error" {
-			log_error "Job allocation should not have failed. (Within: inc21.30.1)"
+			log_error "Job allocation should not have failed"
 			set exit_code 1
 		}
 		timeout {
-			log_error "salloc is not reponding. (Within: inc21.30.1)"
+			log_error "salloc is not reponding"
 			set exit_code 1
 		}
 		eof {
@@ -59,7 +59,7 @@ proc inc21_30_1 { wait_reason } {
 		}
 	}
 	if {$job_id1 == 0} {
-		log_error "Jobs were not submitted. (Within: inc21.30.1)"
+		log_error "Jobs were not submitted"
 		set exit_code 1
 		return
 	}
@@ -68,14 +68,14 @@ proc inc21_30_1 { wait_reason } {
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			log_debug "Job $job_id2 is waiting for resources. This is expected. (Within: inc21.30.1)"
+			log_debug "Job $job_id2 is waiting for resources. This is expected"
 		}
 		-re "Granted job allocation ($number)" {
-			log_error "This should be pended but is not. (Within: inc21.30.1)"
+			log_error "This should be pended but is not"
 			set exit_code 1
 		}
 		timeout {
-			log_error "salloc is not reponding. (Within: inc21.30.1)"
+			log_error "salloc is not reponding"
 			set exit_code 1
 		}
 		eof {
@@ -83,18 +83,18 @@ proc inc21_30_1 { wait_reason } {
 		}
 	}
 	if {$job_id2 == 0} {
-		log_error "Jobs were not submitted. (Within: inc21.30.1)"
+		log_error "Jobs were not submitted"
 		set exit_code 1
 	} else {
 		# checks the state of the job
 		if {![check_job_state $job_id2 PENDING]} {
-			log_error "Job was not on the desired state (Within: inc21.30.1)"
+			log_error "Job was not on the desired state"
 			set exit_code 1
 		}
 	}
 
 	if {![check_reason $job_id2 $wait_reason]} {
-		log_error "Bad job wait reason. (Within: inc21.30.1)"
+		log_error "Bad job wait reason"
 		set exit_code 1
 	}
 

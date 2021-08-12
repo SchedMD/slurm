@@ -29,7 +29,7 @@
 proc inc21_30_13 { wait_reason } {
 	global salloc srun acct bin_sleep maxcpumin_num number exit_code
 
-	log_info "Starting MaxCpuMins test (Within: inc21.30.13)"
+	log_info "Starting MaxCpuMins test"
 	set job_id1 0
 	set job_id2 0
 
@@ -37,19 +37,19 @@ proc inc21_30_13 { wait_reason } {
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			log_debug "Job $job_id1 has been submitted (Within: inc21.30.13)"
+			log_debug "Job $job_id1 has been submitted"
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			log_error "This job should not be pending (Within: inc21.30.13)"
+			log_error "This job should not be pending"
 			set exit_code 1
 		}
 		-re "error" {
-			log_error "Job allocation should not have failed. (Within: inc21.30.13)"
+			log_error "Job allocation should not have failed"
 			set exit_code 1
 		}
 		timeout {
-			log_error "salloc not responding (Within: inc21.30.13)"
+			log_error "salloc not responding"
 			set exit_code 1
 		}
 		eof {
@@ -61,16 +61,16 @@ proc inc21_30_13 { wait_reason } {
 	expect {
 		-re " Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			log_debug "Job $job_id2 is waiting for resources. This is expected. (Within: inc21.30.13)"
+			log_debug "Job $job_id2 is waiting for resources. This is expected"
 
 		}
 		-re "Granted job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			log_error "Job $job_id2 should be pending but is not. (Within: inc21.30.13)"
+			log_error "Job $job_id2 should be pending but is not"
 			set exit_code 1
 		}
 		timeout {
-			log_error "salloc is not responing (Within: inc21.30.13)"
+			log_error "salloc is not responing"
 			set exit_code 1
 		}
 		eof {
@@ -79,7 +79,7 @@ proc inc21_30_13 { wait_reason } {
 	}
 
 	if {![check_reason $job_id2 $wait_reason]} {
-		log_error "Bad job wait reason. (Within: inc21.30.13)"
+		log_error "Bad job wait reason"
 		set exit_code 1
 	}
 

@@ -29,7 +29,7 @@
 proc inc21_34_2 { qostest } {
 	global salloc srun acct bin_sleep grpwall_num number exit_code
 
-	log_info "Starting Grpwall test (Within: inc21.34.2)"
+	log_info "Starting Grpwall test"
 	set job_id1 0
 	set job_id2 0
 	set timeout 120
@@ -42,18 +42,18 @@ proc inc21_34_2 { qostest } {
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			log_debug "Job $job_id1 has been submitted. (Within: inc21.34.2)"
+			log_debug "Job $job_id1 has been submitted"
 		}
 		-re "Job violates accounting/QOS policy" {
-			log_error "This job should not be pending, but is. (Within: inc21.34.2)"
+			log_error "This job should not be pending, but is"
 			set exit_code 1
 		}
 		-re "error" {
-			log_error "Job allocation should not have failed. (Within: inc21.34.2)"
+			log_error "Job allocation should not have failed"
 			set exit_code 1
 		}
 		timeout {
-			log_error "salloc not responding. (Within: inc21.30.2)"
+			log_error "salloc not responding"
 			set exit_code 1
 		}
 		eof {
@@ -73,16 +73,16 @@ proc inc21_34_2 { qostest } {
 	spawn $salloc -I --account=$acct -N2 -t1 $srun $bin_sleep 10
 	expect {
 		-re "Job violates accounting/QOS policy" {
-			log_debug "Job is waiting for resources. This is exected. (Within: inc21.34.2)"
+			log_debug "Job is waiting for resources. This is exected"
 			set match 1
 		}
 		-re "Granted job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			log_error "Job $job_id2 should be waiting for resources, but is not. (Within: inc21.34.2)"
+			log_error "Job $job_id2 should be waiting for resources, but is not"
 			set exit_code 1
 		}
 		timeout {
-			log_error "salloc is not responding (Within: inc21.34.2)"
+			log_error "salloc is not responding"
 			set exit_code 1
 		}
 		eof {

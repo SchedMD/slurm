@@ -30,7 +30,7 @@ proc inc21_30_16 { wait_reason } {
 
 	global salloc srun acct number bin_sleep maxnodespu_num exit_code
 
-	log_info "Starting MaxNodesPerUser test (Within: inc21.30.16)"
+	log_info "Starting MaxNodesPerUser test"
 
 	set job_id 0
 
@@ -38,14 +38,14 @@ proc inc21_30_16 { wait_reason } {
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)
-			log_debug "Job $job_id was submitted (Within: inc21.30.16)"
+			log_debug "Job $job_id was submitted"
 		}
 		-re "error" {
-			log_error "Job allocation should not have failed. (Within: inc21.30.16)"
+			log_error "Job allocation should not have failed"
 			set exit_code 1
 		}
 		timeout {
-			log_error "salloc is not responding (Within: inc21.30.16)"
+			log_error "salloc is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -54,7 +54,7 @@ proc inc21_30_16 { wait_reason } {
 	}
 
 	if { $job_id == 0 } {
-		log_error "Job was not submitted (Within: inc21.30.16)"
+		log_error "Job was not submitted"
 		set exit_code 1
 	} else {
 		# Cancel job
@@ -65,14 +65,14 @@ proc inc21_30_16 { wait_reason } {
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id $expect_out(1,string)
-			log_debug "This error is expected. Do not worry (Within: inc21.30.16)"
+			log_debug "This error is expected. Do not worry"
 		}
 		-re "Granted job allocation" {
-			log_error "salloc should not have granted an allocation (Within: inc21.30.16)"
+			log_error "salloc should not have granted an allocation"
 			set exit_code 1
 		}
 		timeout {
-			log_error "salloc is not responding (Within: inc21.30.16)"
+			log_error "salloc is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -81,12 +81,12 @@ proc inc21_30_16 { wait_reason } {
 	}
 
 	if { $job_id == 0 } {
-		log_error "Job was not submitted (Within: inc21.30.16)"
+		log_error "Job was not submitted"
 		set exit_code 1
 	} else {
 
 		if {![check_reason $job_id $wait_reason]} {
-		log_error "Bad job wait reason. (Within: inc21.30.16)"
+		log_error "Bad job wait reason"
 			set exit_code 1
 		}
 

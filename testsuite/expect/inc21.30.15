@@ -29,7 +29,7 @@
 proc inc21_30_15 { wait_reason } {
 	global salloc srun exit_code bin_sleep number maxcpuspu_num acct
 
-	log_info "Starting MaxCPUsPerUser test (Within: inc21.30.15)"
+	log_info "Starting MaxCPUsPerUser test"
 
 	set job_id1 0
 	set job_id2 0
@@ -38,19 +38,19 @@ proc inc21_30_15 { wait_reason } {
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			log_debug "Job $job_id1 has been submitted (Within: inc21.30.15)"
+			log_debug "Job $job_id1 has been submitted"
 		}
 		-re "job ($number) queued and waiting for resources" {
 			set job_id1 $expect_out(1,string)
-			log_error "Job $job_id1 should not be waiting for resources, but is (Within: inc21.30.15)"
+			log_error "Job $job_id1 should not be waiting for resources, but is"
 			set exit_code 1
 		}
 		-re "error" {
-			log_error "Job allocation should not have failed. (Within: inc21.30.15)"
+			log_error "Job allocation should not have failed"
 			set exit_code 1
 		}
 		timeout {
-			log_error "salloc is not responding (Within: 21.30.15)"
+			log_error "salloc is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -59,7 +59,7 @@ proc inc21_30_15 { wait_reason } {
 	}
 
 	if { $job_id1 == 0 } {
-		log_error "Job was not submitted (Within: inc21.30.15)"
+		log_error "Job was not submitted"
 		set exit_code 1
 	}
 
@@ -67,15 +67,15 @@ proc inc21_30_15 { wait_reason } {
 	expect {
 		-re "job ($number) queued and waiting for resources" {
 			set job_id2 $expect_out(1,string)
-			log_debug "Job $job_id2 is waiting for resource. This is expected do not worry (Within: inc21.30.15)"
+			log_debug "Job $job_id2 is waiting for resource. This is expected do not worry"
 		}
 		-re "Granted job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			log_error "Job $job_id2 should be pending for resources, but is not (Within: 21.30.15)"
+			log_error "Job $job_id2 should be pending for resources, but is not"
 			set exit_code 1
 		}
 		timeout {
-			log_error "salloc is not responding (Within: inc21.30.15)"
+			log_error "salloc is not responding"
 			set exit_code 1
 		}
 		eof {
@@ -84,12 +84,12 @@ proc inc21_30_15 { wait_reason } {
 	}
 
 	if { $job_id2 == 0 } {
-		log_error "Job was not submitted (Within: inc21.30.15)"
+		log_error "Job was not submitted"
 		set exit_code 1
 	}
 
 	if {![check_reason $job_id2 $wait_reason]} {
-		log_error "Bad job wait reason. (Within: inc21.30.15)"
+		log_error "Bad job wait reason"
 		set exit_code 1
 	}
 

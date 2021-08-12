@@ -29,7 +29,7 @@
 proc inc21_30_12 { } {
 	global salloc srun acct bin_sleep grpwall_num number exit_code qostest
 
-	log_info "Starting Grpwall test (Within: inc21.30.12)"
+	log_info "Starting Grpwall test"
 	set job_id_list     [list]
 	set jobs            5.0
 	set grpwall_per_job [expr $grpwall_num * 1.1 / $jobs]
@@ -41,7 +41,7 @@ proc inc21_30_12 { } {
 	# gets exactly what we would expect.
 	incr exit_code [reset_qos_usage "" $qostest]
 
-	log_debug "Running $jobs jobs of $sleep_time seconds of duration to ensure that we reach the Grpwall limit of $grpwall_num minutes (Within: inc21.30.12)"
+	log_debug "Running $jobs jobs of $sleep_time seconds of duration to ensure that we reach the Grpwall limit of $grpwall_num minutes"
 	for {set i 0} {$i < $jobs} {incr i} {
 		lappend job_id_list [submit_job -fail "--account=$acct --qos=$qostest -N1 -t$job_time --wrap '$bin_sleep $sleep_time' -o /dev/null -e /dev/null"]
 	}
@@ -49,7 +49,7 @@ proc inc21_30_12 { } {
 		wait_job_reason $job_id COMPLETED
 	}
 
-	log_debug "Submitting the final job and check that it is set Pending with Reason QOSGrpWallLimit (Within: inc21.30.12)"
+	log_debug "Submitting the final job and check that it is set Pending with Reason QOSGrpWallLimit"
 	set job_id [submit_job -fail "--account=$acct --qos=$qostest -N1 -t$job_time --wrap '$bin_sleep $sleep_time' -o /dev/null -e /dev/null"]
 	lappend job_id_list $job_id
 	# Subtest of the limit
