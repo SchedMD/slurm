@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code          0
 set file_in            "test$test_id.input"
 set file_out           "test$test_id.output"
 set file_err           "test$test_id.error"
@@ -49,10 +48,19 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
 }
 
+proc cleanup {} {
+	global job_id
+	global file_in file_out file_err test_prog
+
+	cancel_job $job_id
+	file delete $file_in $file_out $file_err $test_prog ${test_prog}.o
+}
+
 #
-# Delete left-over program and rebuild it
+# Delete left-over files and rebuild the program
 #
-exec $bin_rm -f $test_prog ${test_prog}.o
+file delete $file_out $file_err $test_prog ${test_prog}.o
+
 if {$use_pmi} {
 	spawn $mpicc -Xlinker -rpath $slurm_dir/lib -L $slurm_dir/lib -lpmi -o $test_prog ${test_prog}.c
 	expect {
@@ -71,9 +79,6 @@ if {$use_pmi} {
 if {![file exists $test_prog]} {
 	skip "Unable to build test program"
 }
-
-# Delete left-over stdout/err files
-file delete $file_out $file_err
 
 #
 # Build input script file
@@ -118,7 +123,6 @@ expect {
 	}
 }
 if {$no_start != 0} {
-	cancel_job $job_id
 	skip "Partition too small for test"
 }
 if {$job_id == 0} {
@@ -128,56 +132,44 @@ if {$job_id == 0} {
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job $job_id to complete"
-	cancel_job $job_id
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 #
 # Check for desired output in stdout
 #
 set expected_sum [expr 6 * 6]
-if {[wait_for_file $file_out] == 0} {
-	set complete 0
-	set matches  0
-	set global_sum 0
-	spawn $bin_cat $file_out
-	expect {
-		-re "Rank.($number). GlobalSum=($number)" {
-			if {$expect_out(1,string) != 0} {
-				log_error "GlobalSum from wrong rank ($expect_out(1,string) != 0)"
-				set exit_code 1
-			}
-			incr global_sum $expect_out(2,string)
-			incr matches
-			exp_continue
+wait_for_file -fail $file_out
+set complete 0
+set matches  0
+set global_sum 0
+spawn $bin_cat $file_out
+expect {
+	-re "Rank.($number). GlobalSum=($number)" {
+		if {$expect_out(1,string) != 0} {
+			fail "GlobalSum from wrong rank ($expect_out(1,string) != 0)"
 		}
-		-re "TEST_COMPLETE" {
-			incr complete
-			exp_continue
-		}
-		eof {
-			wait
-		}
+		incr global_sum $expect_out(2,string)
+		incr matches
+		exp_continue
 	}
-	if {$matches == 0} {
-		log_error "No MPI communications occurred. The version of MPI you are using may be incompatible with the configured switch. Core files may be present from failed MPI tasks"
-		set exit_code 1
-	} elseif {$complete == 0} {
-		log_error "Test failed to complete"
-		set exit_code 1
-	} elseif {$global_sum != $expected_sum} {
-		log_error "Invalid global sum computed ($global_sum != $expected_sum)"
-		set exit_code 1
+	-re "TEST_COMPLETE" {
+		incr complete
+		exp_continue
 	}
-} else {
-	set exit_code 1
+	eof {
+		wait
+	}
+}
+set failure_message ""
+if {$matches == 0} {
+	set failure_message "No MPI communications occurred. The version of MPI you are using may be incompatible with the configured switch. Core files may be present from failed MPI tasks"
+} elseif {$complete == 0} {
+	set failure_message "Test failed to complete"
+} elseif {$global_sum != $expected_sum} {
+	set failure_message "Invalid global sum computed ($global_sum != $expected_sum)"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
-} else {
+if {$failure_message ne ""} {
 	set matches 0
 	spawn head $file_err
 	expect {
@@ -190,8 +182,8 @@ if {$exit_code == 0} {
 		}
 	}
 	if {$matches != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code). If using MVAPICH then configure \"PropagateResourceLimitsExcept=MEMLOCK. Also start slurmd with \"ulimit -l unlimited\""
+		fail "$failure_message. If using MVAPICH then configure \"PropagateResourceLimitsExcept=MEMLOCK. Also start slurmd with \"ulimit -l unlimited\""
 	} else {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code). Check contents of $file_err"
+		fail "$failure_message. Check contents of $file_err"
 	}
 }

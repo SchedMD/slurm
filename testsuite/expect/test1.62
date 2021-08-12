@@ -28,8 +28,7 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
-set file_in          "test$test_id.bash"
+set file_in "$test_name.bash"
 
 proc run_gpu_test { gres_cnt } {
 	global max_job_delay srun number file_in
@@ -82,17 +81,15 @@ proc run_gpu_test { gres_cnt } {
 		log_warn "Insufficient resources to test $gres_cnt GPUs"
 		return 0
 	} elseif {$bad_format != 0} {
-		log_error "Duplicated device number in GRES allocation"
-		return 1
+		fail "Duplicated device number in GRES allocation"
 	} elseif {$devices != $gres_cnt} {
-		log_error "Expected $gres_cnt GPUs, but was allocated $devices"
-		return 1
+		fail "Expected $gres_cnt GPUs, but was allocated $devices"
 	}
 	return 0
 }
 
 proc run_gpu_fail { gres_spec } {
-	global max_job_delay srun number exit_code file_in
+	global max_job_delay srun number file_in
 
 	set timeout $max_job_delay
 	set bad_format 0
@@ -113,8 +110,7 @@ proc run_gpu_fail { gres_spec } {
 		}
 	}
 	if {$invalid == 0} {
-		log_error "Failure to reject job with invalid GRES specification"
-		set exit_code 1
+		fail "Failure to reject job with invalid GRES specification"
 	} else {
 		log_debug "Error is expected, no worries"
 	}
@@ -129,15 +125,13 @@ if {$gpu_cnt < 1} {
 	skip "This test can not be run without gres/gpu configured"
 }
 log_debug "GPUs:$gpu_cnt"
+
 #
 # Spawn a job via srun to print environment variables and
 # check count GPU devices allocated
 #
 for {set inx 1} {$inx <= $gpu_cnt && $inx <= 3} {incr inx} {
-	if {[run_gpu_test $inx ] != 0} {
-		incr exit_code
-		break
-	}
+	run_gpu_test $inx
 }
 
 #
@@ -150,7 +144,3 @@ run_gpu_fail "gpu:tesla:"
 run_gpu_fail "gpu:tesla:INVALID_COUNT"
 run_gpu_fail "gpu:INVALID_TYPE:"
 run_gpu_fail "gpu:INVALID_TYPE:INVALID_COUNT"
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

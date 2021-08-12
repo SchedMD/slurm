@@ -30,8 +30,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 #
 # Submit a 3+ node job
 #
@@ -83,26 +81,13 @@ expect {
 #
 # Verify node count
 #
-if {[string compare $host_0 ""] == 0} {
-	log_error "Did not get hostname of task 0"
-	set exit_code   1
-}
-if {[string compare $host_1 ""] == 0} {
-	log_error "Did not get hostname of task 1"
-	set exit_code   1
-}
-if {[string compare $host_2 ""] == 0} {
-	log_error "Did not get hostname of task 2"
-	set exit_code   1
-}
+subtest {[string compare $host_0 ""] != 0} "Should get hostname of task 0"
+subtest {[string compare $host_1 ""] != 0} "Should get hostname of task 1"
+subtest {[string compare $host_2 ""] != 0} "Should get hostname of task 2"
 if {[get_config_param "FrontendName"] ne "MISSING"} {
-	log_warn "Additional testing is incompatible with front-end systems"
-	pass
+	skip "Additional testing is incompatible with front-end systems"
 }
-if {[string compare $host_3 ""] != 0} {
-	log_error "Started more than three tasks"
-	set exit_code   1
-}
+subtest {[string compare $host_3 ""] == 0} "Should start no more than three tasks"
 
 set dup_hostname 0
 if {[string compare $host_0 $host_1] == 0} {
@@ -111,10 +96,7 @@ if {[string compare $host_0 $host_1] == 0} {
 if {[string compare $host_0 $host_2] == 0} {
 	incr dup_hostname 1
 }
-if {$dup_hostname == 1} {
-	log_error "Re-used a node in the allocation"
-	set exit_code   1
-}
+subtest {$dup_hostname != 1} "Should not reuse a node in the allocation"
 set exclude_node $host_0
 set include_node $host_2
 
@@ -155,18 +137,9 @@ expect {
 #
 # Verify node count and names
 #
-if {[string compare $host_0 ""] == 0} {
-	log_error "Did not get hostname of task 0"
-	set exit_code   1
-}
-if {[string compare $host_1 ""] == 0} {
-	log_error "Did not get hostname of task 1"
-	set exit_code   1
-}
-if {[string compare $host_2 ""] != 0} {
-	log_error "Started more than two tasks"
-	set exit_code   1
-}
+subtest {[string compare $host_0 ""] != 0} "Should get hostname of task 0"
+subtest {[string compare $host_1 ""] != 0} "Should get hostname of task 1"
+subtest {[string compare $host_2 ""] == 0} "Should start no more than two tasks"
 set dup_hostname 0
 if {[string compare $host_0 $exclude_node] == 0} {
 	set dup_hostname 1
@@ -174,10 +147,7 @@ if {[string compare $host_0 $exclude_node] == 0} {
 if {[string compare $host_1 $exclude_node] == 0} {
 	set dup_hostname 1
 }
-if {$dup_hostname == 1} {
-	log_error "Allocated an excluded node"
-	set exit_code   1
-}
+subtest {$dup_hostname != 1} "Should not allocate an excluded node"
 
 #
 # Submit a job explicitly including a node
@@ -208,23 +178,10 @@ expect {
 #
 # Verify node count and names
 #
-if {[string compare $host_0 ""] == 0} {
-	log_error "Did not get hostname of task 0"
-	set exit_code   1
-}
-if {[string compare $host_1 ""] != 0} {
-	log_error "Started more than one task"
-	set exit_code   1
-}
+subtest {[string compare $host_0 ""] != 0} "Should get hostname of task 0"
+subtest {[string compare $host_1 ""] == 0} "Should start no more than one task"
 set dup_hostname 0
 if {[string compare $host_0 $include_node] == 0} {
 	set dup_hostname 1
 }
-if {$dup_hostname == 0} {
-	log_error "Allocation lacked an included node"
-	set exit_code   1
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$dup_hostname != 0} "Allocation should not lack an included node"

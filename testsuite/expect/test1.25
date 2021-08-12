@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set sleep_time  30
 
 #
@@ -42,9 +41,7 @@ set timeout [expr $max_job_delay + $sleep_time]
 set srun_pid [spawn $srun -N$node_cnt --no-kill -t1 $bin_sleep $sleep_time]
 expect {
 	-re "error" {
-		log_error "Some error occurred"
-		set exit_code 1
-		exp_continue
+		fail "Some error occurred"
 	}
 	timeout {
 		slow_kill $srun_pid
@@ -53,8 +50,4 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

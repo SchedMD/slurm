@@ -30,8 +30,7 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id.input"
+set file_in     "$test_dir/input"
 set step_id	0
 
 #
@@ -60,7 +59,7 @@ set match_int  0
 set match_term 0
 set match_wait 0
 set job_id  0
-set srun_pid [spawn $srun -v -N1 -t1 --unbuffered ./$file_in]
+set srun_pid [spawn $srun -v -N1 -t1 --unbuffered $file_in]
 expect {
 	-re "launching StepId=($number)\\.$step_id" {
 		set job_id $expect_out(1,string)
@@ -90,15 +89,8 @@ expect {
 		wait
 	}
 }
-if {[expr $match_wait + $match_int + $match_term] != 3} {
-	log_error "srun failed to properly process SIGINT, ($match_wait + $match_int + $match_term != 3)"
-	set exit_code 1
-}
-if {$exit_code == 0} {
-	log_debug "So far, so good"
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {[expr $match_wait + $match_int + $match_term] == 3} "srun should properly process SIGINT" "$match_wait + $match_int + $match_term != 3"
+log_debug "So far, so good"
 
 #
 # Spawn initial program via srun and use SIGINT to kill
@@ -109,7 +101,7 @@ set match_int  0
 set match_term 0
 set match_wait 0
 set job_id  0
-set srun_pid [spawn $srun -v -N1 -t1 --unbuffered --quit-on-interrupt ./$file_in]
+set srun_pid [spawn $srun -v -N1 -t1 --unbuffered --quit-on-interrupt $file_in]
 expect {
 	-re "launching StepId=($number)\\.$step_id" {
 		set job_id $expect_out(1,string)
@@ -141,19 +133,6 @@ expect {
 	}
 }
 cancel_job $job_id
-if {[expr $match_wait + $match_int + $match_term] != 2} {
-	log_error "srun failed to properly process SIGINT, ($match_wait + $match_int + $match_term != 2)"
-	set exit_code 1
-} elseif {$match_int != 0} {
-	log_error "srun failed to properly process SIGINT, ($match_int != 0)"
-	set exit_code 1
-}
 
-#
-# Post-processing
-#
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {[expr $match_wait + $match_int + $match_term] == 2} "srun should process SIGINT properly" "$match_wait + $match_int + $match_term != 2"
+subtest {$match_int == 0} "srun should process SIGINT properly" "$match_int != 0"

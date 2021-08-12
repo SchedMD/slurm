@@ -26,8 +26,13 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set job_id      0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 #
 # Spawn a job with a deadline and no time
@@ -42,7 +47,6 @@ expect {
 	}
 	-re "launching StepId=($number)\\.($re_word_str) on host" {
 		set job_id $expect_out(1,string)
-		set exit_code 1
 		exp_continue
 	}
 	timeout {
@@ -52,17 +56,5 @@ expect {
 		wait
 	}
 }
-if {$job_id != 0} {
-	cancel_job $job_id
-	fail "Job submitted despite the deadline"
-}
-if {$time_error == 0} {
-	log_error "No time-min limit error"
-	set exit_code 1
-} else {
-	log_debug "Time limit error expected, no worries"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$job_id == 0} "Job should not be submitted"
+subtest {$time_error != 0} "Time-min limit error should be seen"

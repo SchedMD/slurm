@@ -27,7 +27,6 @@
 source ./globals
 
 set job_id	0
-set exit_code   0
 
 #
 # We must be SlurmUser or root in order to change the partition MaxTime limit,
@@ -63,12 +62,10 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun -v -N1 --deadline now+1hour -t120 --time-min=1 $bin_sleep 1]
 expect {
 	-re "Requested time limit is invalid" {
-		set exit_code 1
-		exp_continue
+		fail "Requested time limit is invalid"
 	}
 	-re "launching StepId=($number)\\.($re_word_str) on host" {
 		set job_id $expect_out(1,string)
-		set exit_code 0
 		exp_continue
 	}
 	timeout {
@@ -90,8 +87,7 @@ if {$job_id == 0} {
 			log_debug "Timelimit OK"
 		}
 		-re "TimeLimit=" {
-			log_error "Timelimit not OK with deadline"
-			set exit_code 1
+			fail "Timelimit not OK with deadline"
 		}
 		timeout {
 			fail "scontrol not responding"
@@ -100,8 +96,4 @@ if {$job_id == 0} {
 			wait
 		}
 	}
-}
-
-if {$exit_code != 0} {
-        fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

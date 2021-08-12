@@ -28,13 +28,11 @@
 ############################################################################
 source ./globals
 
-set exit_code            0
-set cwd                  "[$bin_pwd]"
-set file_in		 "$cwd/test$test_id.in"
-set task_prolog          "$cwd/test$test_id.prolog"
-set task_epilog          "$cwd/test$test_id.epilog"
-set file_out_pre         "$cwd/test$test_id.output_pre"
-set file_out_post        "$cwd/test$test_id.output_post"
+set file_in		 "$test_dir/in"
+set task_prolog          "$test_dir/prolog"
+set task_epilog          "$test_dir/epilog"
+set file_out_pre         "$test_dir/output_pre"
+set file_out_post        "$test_dir/output_post"
 
 #
 # Delete left-over scripts and rebuild,
@@ -81,9 +79,7 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		log_error "Error running srun"
-		set exit_code 1
-		exp_continue
+		fail "Unexpected error running srun"
 	}
 	timeout {
 		slow_kill $srun_pid
@@ -93,16 +89,9 @@ expect {
 		wait
 	}
 }
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+
 set exp_matches [expr $tasks * 3]
-if {$matches != $exp_matches} {
-	log_error "Prolog exported env var failure ($matches != $exp_matches)"
-	set exit_code 1
-} else {
-	log_debug "So far, so good"
-}
+subtest {$matches == $exp_matches} "Prolog should export env vars" "$matches != $exp_matches"
 
 #
 # Get my id to compare with output
@@ -128,11 +117,8 @@ if {[wait_for_file $file_out_pre] == 0} {
 		}
 	}
 }
-if {$matches != $tasks} {
-	log_error "Task prolog output is missing or uid mismatch ($matches:$tasks)"
-	set exit_code 1
-}
 
+subtest {$matches == $tasks} "Task prolog output should be present and match our uid" "$matches:$tasks"
 
 set matches 0
 spawn $bin_cat $file_out_post
@@ -145,14 +131,5 @@ expect {
 		wait
 	}
 }
-if {$matches != $tasks} {
-	fail "Task epilog output is missing or uid mismatch ($matches:$tasks)"
-}
 
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $task_prolog $task_epilog $file_in
-	exec $bin_rm -f $file_out_pre $file_out_post
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == $tasks} "Task epilog should be present and match our uid" "$matches:$tasks"

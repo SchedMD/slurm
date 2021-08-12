@@ -34,7 +34,7 @@ set env_flag_debug   0
 set env_name_debug   "SLURM_DEBUG"
 set env_valu_debug   1
 set env_name_nnodes  "SLURM_NNODES"
-set file_in          "test$test_id.input"
+set file_in          "$test_dir/input"
 
 set min_nodes        1
 set max_nodes        2
@@ -42,7 +42,7 @@ set env_valu_nprocs  5
 set env_valu_nnodes  "$min_nodes-$max_nodes"
 set env_name_nprocs  "SLURM_NPROCS"
 set env_name_stdout  "SLURM_STDOUTMODE"
-set env_valu_stdout  "test$test_id.output"
+set env_valu_stdout  "$test_dir/output"
 set env_name_overcom "SLURM_OVERCOMMIT"
 set env_valu_overcom 1
 set exit_code        0
@@ -66,7 +66,7 @@ make_bash_script $file_in "env | $bin_grep MP_; env | $bin_grep SLURM_"
 #
 # Spawn a job via srun using these environment variables
 #
-set srun_pid [spawn $srun -t1 ./$file_in]
+set srun_pid [spawn $srun -t1 $file_in]
 expect {
 	-re "jobid ($number)" {
 		set job_id $expect_out(1,string)
@@ -89,9 +89,7 @@ if {$job_id == 0} {
 #
 # Look at output file to confirm processing of environment variables
 #
-if {[wait_for_file $env_valu_stdout] != 0} {
-	fail "Did not process $env_name_stdout environment variable"
-}
+subtest {[wait_for_file $env_valu_stdout] == 0} "Job should process $env_name_stdout environment variable"
 
 set stale_cnt     0
 set task_cnt      0
@@ -140,27 +138,9 @@ if {$stale_cnt != 0} {
 	log_warn "Stale file handles $task_cnt for $stale_cnt tasks"
 	incr task_cnt $stale_cnt
 }
-if {$task_cnt != $env_valu_nprocs} {
-	log_error "Did not process $env_name_nprocs environment variable ($task_cnt != $env_valu_nprocs)"
-	set exit_code 1
-}
+subtest {$task_cnt == $env_valu_nprocs} "Job should process $env_name_nprocs environment variable" "$task_cnt != $env_valu_nprocs"
 
 # Note zero origin conversion
 incr max_node_val
-if {$max_node_val < $min_nodes} {
-	log_error "Did not process $env_name_nnodes environment variable ($max_node_val < $min_nodes)"
-	set exit_code 1
-}
-if {$max_node_val > $max_nodes} {
-	log_error "Did not process $env_name_nnodes environment variable ($max_node_val > $max_nodes)"
-	set exit_code 1
-}
-
-#
-# Post processing
-#
-if {$exit_code == 0} {
-	exec $bin_rm -f $env_valu_stdout $file_in
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$max_node_val >= $min_nodes} "Job should process $env_name_nnodes environment variable" "$max_node_val < $min_nodes"
+subtest {$max_node_val <= $max_nodes} "Job should process $env_name_nnodes environment variable" "$max_node_val > $max_nodes"

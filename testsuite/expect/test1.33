@@ -28,9 +28,8 @@
 ############################################################################
 source ./globals
 
-set exit_code      0
-set exit_script    "./test$test_id.exit.bash"
-set test_script    "./test$test_id.bash"
+set exit_script    "$test_dir/script.exit.bash"
+set test_script    "$test_dir/script.bash"
 set task_cnt       2
 
 #
@@ -76,8 +75,7 @@ expect {
 }
 
 if {$sum != 21} {
-	log_error "srun failed to report exit code ($sum != 21) $myexit"
-	set exit_code 1
+	fail "srun failed to report exit code ($sum != 21) $myexit"
 }
 
 #
@@ -95,16 +93,5 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "srun's exit code is bad"
-	set exit_code 1
-}
 
-#
-# Post-processing
-#
-if {$exit_code == 0} {
-	exec $bin_rm -f $exit_script $test_script
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 1} "Verify correct exit code from srun"

@@ -27,7 +27,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set script      "test$test_id.bash"
 set file_out    "test$test_id.out"
 set job_id      0
@@ -44,6 +43,13 @@ make_bash_script $script "
   echo SUBMIT_NODE=\$TEST_NODE
   $srun -w \$TEST_NODE -N1 env | grep SLURM_STEP
 "
+
+proc cleanup {} {
+	global job_id script file_out
+
+	cancel_job $job_id
+	file delete $script $file_out
+}
 
 spawn $sbatch -N2 --output=$file_out $script
 expect {
@@ -63,9 +69,7 @@ if {$job_id == 0} {
 }
 
 if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	cancel_job $job_id
-	set exit_code 1
+	fail "Timed out waiting for job to complete"
 }
 
 if {[wait_for_file $file_out] == 0} {
@@ -92,10 +96,4 @@ if {[wait_for_file $file_out] == 0} {
 	}
 } else {
 	fail "Output file missing"
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $script $file_out
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

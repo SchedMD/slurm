@@ -27,7 +27,6 @@
 source ./globals
 
 set freq_val  0
-set exit_code 0
 set timeout   60
 
 if {[get_job_acct_freq] == 0} {
@@ -56,10 +55,8 @@ expect {
 		wait
 	}
 }
-if {$sub_match != 1} {
-	log_error "srun did not submit job"
-	set exit_code 1
-}
+
+subtest {$sub_match == 1} "srun should submit job"
 
 set sub_match 0
 spawn $srun -v --mem=200 --acctg-freq=[expr $freq_val + 10] sleep 5
@@ -76,10 +73,5 @@ expect {
 		wait
 	}
 }
-if {$sub_match != 1} {
-	fail "srun did not fail when it should have"
-}
 
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$sub_match == 1} "srun should fail"

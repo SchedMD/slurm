@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set job_id      0
 
 #
@@ -37,12 +36,10 @@ set srun_pid 0
 set srun_pid [spawn $srun -v --deadline 2015-03-27T04:30:00 -t1 $bin_sleep 1]
 expect {
 	-re "Requested time limit is invalid (missing or exceeds some limit)" {
-		set exit_code 0
 		exp_continue
 	}
 	-re "unrecognized option '--deadline'" {
-		set exit_code 1
-		exp_continue
+		fail "Unrecognized option --deadline'
 	}
 	-re "Completed" {
 		fail "srun is OK with a deadline too old"
@@ -53,8 +50,4 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

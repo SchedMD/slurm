@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set job_id      0
 
 #
@@ -63,9 +62,7 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun -v  -N1 --deadline now+1hour --time-min 20 -t120 $bin_sleep 1]
 expect {
 	-re "Requested time limit is invalid" {
-		log_error "Time limit error"
-		set exit_code 1
-		exp_continue
+		fail "Time limit error"
 	}
 	-re "launching StepId=($number)\\.0 on host" {
 		set job_id $expect_out(1,string)
@@ -94,9 +91,7 @@ expect {
 		exp_continue
 	}
 	-re "TimeLimit=" {
-		log_error "Time limit is different from deadline"
-		set exit_code 1
-		exp_continue
+		fail "Time limit is different from deadline"
 	}
 	timeout {
 		fail "scontrol not responding"
@@ -104,8 +99,4 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$exit_code != 0} {
-        fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

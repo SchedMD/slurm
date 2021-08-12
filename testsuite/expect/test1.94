@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code          0
 set file_in            "test$test_id.input"
 set file_out           "test$test_id.output"
 set file_err           "test$test_id.error"
@@ -133,47 +132,39 @@ if {$job_id == 0} {
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 #
 # Check for desired output in stdout
 #
 set expected_msg 4
 set expected_sum 12
-if {[wait_for_file $file_out] == 0} {
-	set complete 0
-	set matches  0
-	set rank_sum 0
-	spawn $bin_cat $file_out
-	expect {
-		-re "Rank.($number). on $re_word_str just received msg from Rank ($number)" {
-			incr rank_sum $expect_out(1,string)
-			incr rank_sum $expect_out(2,string)
-			incr matches
-			exp_continue
-		}
-		eof {
-			wait
-		}
+wait_for_file -fail $file_out
+set complete 0
+set matches  0
+set rank_sum 0
+spawn $bin_cat $file_out
+expect {
+	-re "Rank.($number). on $re_word_str just received msg from Rank ($number)" {
+		incr rank_sum $expect_out(1,string)
+		incr rank_sum $expect_out(2,string)
+		incr matches
+		exp_continue
 	}
-	if {$matches == 0} {
-		log_error "No MPI communications occurred. The version of MPI you are using may be incompatible with the configured switch. Core files may be present from failed MPI tasks"
-		set exit_code 1
-	} elseif {$matches != $expected_msg} {
-		log_error "Unexpected output ($matches of $expected_msg)"
-		set exit_code 1
-	} elseif {$rank_sum != $expected_sum} {
-		log_error "Invalid rank values ($rank_sum != $expected_sum)"
-		set exit_code 1
+	eof {
+		wait
 	}
-} else {
-	set exit_code 1
+}
+set failure_message ""
+if {$matches == 0} {
+	set failure_message "No MPI communications occurred. The version of MPI you are using may be incompatible with the configured switch. Core files may be present from failed MPI tasks"
+} elseif {$matches != $expected_msg} {
+	set failure_message "Unexpected output ($matches of $expected_msg)"
+} elseif {$rank_sum != $expected_sum} {
+	set failure_message "Invalid rank values ($rank_sum != $expected_sum)"
 }
 
-if {$exit_code != 0} {
+if {$failure_message != ""} {
 	set matches 0
 	spawn head $file_err
 	expect {
@@ -191,5 +182,5 @@ if {$exit_code != 0} {
 		log_debug "Check contents of $file_err"
 	}
 
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	fail $failure_message
 }
