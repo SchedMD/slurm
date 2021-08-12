@@ -827,7 +827,8 @@ Cyclic distribution is the default behavior if the number
 of tasks is no larger than the number of allocated nodes.
 .TP
 .B plane
-The tasks are distributed in blocks of a specified size. The number of tasks
+The tasks are distributed in blocks of a specified size. The size must be given
+or SLURM_DIST_PLANESIZE must be set. The number of tasks
 distributed to each node is the same as for cyclic distribution, but the
 taskids assigned to each node depend on the plane size. Additional distribution
 specifications cannot be combined with this option.
