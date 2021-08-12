@@ -3,14 +3,16 @@
 <h1>Classic Fairshare Algorithm</h1>
 
 <!-------------------------------------------------------------------------->
-<h2>Overview</h2>
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 <p>
 As of the 19.05 release, the Fair Tree algorithm is now the default, and the
 classic fair share algorithm is only available if
 <i>PriorityFlags=NO_FAIR_TREE</i> has been explicitly configured.
 </p>
 
-<h3> Normalized Shares</h3>
+<h2 id="norm_shares">Normalized Shares
+<a class="slurm_link" href="#norm_shares"></a>
+</h2>
 
 <p>The fair-share hierarchy represents the portion of the computing resources
 that have been allocated to different projects. These allocations are assigned
@@ -55,7 +57,9 @@ Where:
 <DD> are the total number of shares allocated to all sub-accounts of the grandparent account
 </DL>
 
-<h3> Normalized Usage</h3>
+<h2 id="norm_usage">Normalized Usage
+<a class="slurm_link" href="#norm_usage"></a>
+</h2>
 
 <P> The processor*seconds allocated to every job are tracked in real-time.  If one only considered usage over a fixed time period, then calculating a user's normalized usage would be a simple quotient:</P>
 
@@ -138,7 +142,9 @@ Where:
 </PRE>
 
 
-<h3>Simplified Fair-Share Formula</h3>
+<h2 id="simple_formula">Simplified Fair-Share Formula
+<a class="slurm_link" href="#simple_formula"></a>
+</h2>
 
 <P> The simplified formula for calculating the fair-share factor for usage that spans multiple time periods and subject to a half-life decay is:</P>
 
@@ -161,7 +167,9 @@ Where:
 
 <P> The fair-share factor will therefore range from zero to one, where one represents the highest priority for a job.  A fair-share factor of 0.5 indicates that the user's jobs have used exactly the portion of the machine that they have been allocated.  A fair-share factor of above 0.5 indicates that the user's jobs have consumed less than their allocated share while a fair-share factor below 0.5 indicates that the user's jobs have consumed more than their allocated share of the computing resources.</P>
 
-<h3>The Fair-share Factor Under An Account Hierarchy</h3>
+<h2 id="hierarchy">The Fair-share Factor Under An Account Hierarchy
+<a class="slurm_link" href="#hierarchy"></a>
+</h2>
 
 <P> The method described above presents a system whereby the priority of a user's job is calculated based on the portion of the machine allocated to the user and the historical usage of all the jobs run by that user under a specific account.</P>
 
@@ -176,7 +184,9 @@ Where:
   Figure 2. Usage Example
 </div>
 
-<h3>The Slurm Fair-Share Formula</h3>
+<h2 id="formula">The Slurm Fair-Share Formula
+<a class="slurm_link" href="#formula"></a>
+</h2>
 
 <P> The Slurm fair-share formula has been designed to provide fair scheduling to users based on the allocation and usage of every account.</P>
 
@@ -214,7 +224,7 @@ Where:
 
 <P> Plugging in the effective usage into the fair-share formula above yields a fair-share factor that reflects the aggregated usage charged to each of the accounts in the fair-share hierarchy.</P>
 
-<h3>FairShare=parent</h3>
+<h2 id="parent">FairShare=parent<a class="slurm_link" href="#parent"></a></h2>
 
 <P>It is possible to disable the fairshare at certain levels of the fair share
 hierarchy by using the <code>FairShare=parent</code> option of sacctmgr.
@@ -227,7 +237,7 @@ the result is that all the jobs drawing from that account will get the same
 fairshare priority, based on the accounts total usage. No additional fairness
 is added based on a user's individual usage.</p>
 
-<h3>Example</h3>
+<h2 id="example">Example<a class="slurm_link" href="#example"></a></h2>
 
 <P> The following example demonstrates the effective usage calculations and resultant fair-share factors. (See Figure 3 below.)</P>
 

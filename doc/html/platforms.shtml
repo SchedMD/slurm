@@ -1,7 +1,7 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Platforms</h1>
-<h2>Operating Systems</h2>
+<h2 id="os">Operating Systems<a class="slurm_link" href="#os"></a></h2>
 <p>
 <ul>
 <li><b>FreeBSD</b> &mdash; Limited support, not actively tested.</li>
@@ -27,7 +27,7 @@ and compiler flags, and any patches would be appreciated.
 </ul>
 </p>
 
-<h2>Accelerators</h2>
+<h2 id="accel">Accelerators<a class="slurm_link" href="#accel"></a></h2>
 
 <p>Slurm has optional support for managing a variety of accelerator cards.
 Specific plugins have been developed for:

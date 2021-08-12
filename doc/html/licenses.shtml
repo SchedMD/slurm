@@ -2,7 +2,9 @@
 
 <h1>Licenses Guide</h1>
 
-<h2>Licenses Overview</h2>
+<h2 id="overview">Licenses Overview
+<a class="slurm_link" href="#overview"></a>
+</h2>
 <p>Slurm can help with software license management by assigning available
 licenses to jobs at scheduling time. If the licenses are not available,
 jobs are kept pending until licenses become available.
@@ -24,7 +26,9 @@ licenses are assigned to.
 </ul>
 
 
-<h2>Local Licenses</h2>
+<h2 id="local_licenses">Local Licenses
+<a class="slurm_link" href="#local_licenses"></a>
+</h2>
 <p>Local licenses are defined in the slurm.conf using the <i>Licenses</i>
 option.
 
@@ -55,9 +59,11 @@ LicenseName=fluent
     Total=30 Used=0 Free=30 Remote=no
 </pre>
 
-<h2>Remote Licenses</h2>
+<h2 id="remote_licenses">Remote Licenses
+<a class="slurm_link" href="#remote_licenses"></a>
+</h2>
 
-<h3>Use Case</h3>
+<h3 id="use_case">Use Case<a class="slurm_link" href="#use_case"></a></h3>
 <p>A site has two license servers, one serves 100 Nastran licenses provided by
 FlexNet and the other serves 50 Matlab licenses from Reprise License
 Management. The site has two clusters named "fluid" and "pdf" dedicated to run
@@ -65,7 +71,9 @@ simulation jobs using both products. The managers want to split the number
 of Nastran licenses equally between clusters, but assign 70% of the Matlab
 licenses to cluster "pdf" and the remaining 30% to cluster "fluid".</p>
 
-<h3>Configuring Slurm for the use case</h3>
+<h3 id="configuring">Configuring Slurm for the use case
+<a class="slurm_link" href="#configuring"></a>
+</h3>
 <p>Here we assume that both clusters have been configured correctly in the
 <i>slurmdbd</i> using the <i>sacctmgr</i> command.</p>
 <pre>
@@ -219,7 +227,9 @@ $ sacctmgr show resource withclusters
 
 
 
-<h2>Dynamic licenses</h2>
+<h2 id="dynamic_licenses">Dynamic licenses
+<a class="slurm_link" href="#dynamic_licenses"></a>
+</h2>
 <p>When the license counter and percentage is updated using the <i>sacctmgr</i>
 command, the values are updated in the database and the updated values are sent
 to the slurmctld daemon.

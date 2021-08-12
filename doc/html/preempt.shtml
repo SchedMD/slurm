@@ -23,7 +23,7 @@ partition or per QOS basis.
 For example, jobs in a low priority queue may get requeued,
 while jobs in a medium priority queue may get suspended.
 </P>
-<H2>Configuration</H2>
+<h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 <P>
 There are several important configuration parameters relating to preemption:
 </P>
@@ -238,7 +238,9 @@ used to set the PreemptMode for all components. The <I>GraceTime</I> and user
 warning signal for each component of the heterogeneous job remain unique.
 </P>
 
-<H2>Preemption Design and Operation</H2>
+<h2 id="operation">Preemption Design and Operation
+<a class="slurm_link" href="#operation"></a>
+</h2>
 
 <P>
 The <I>SelectType</I> plugin will identify resources where a pending job can
@@ -328,7 +330,9 @@ A good way to observe the operation of the gang scheduler is by running
 <I>squeue -i&lt;time&gt;</I> in a terminal window.
 </P>
 
-<H2>Limitations of Preemption During Backfill Scheduling</H2>
+<h2 id="limitations">Limitations of Preemption During Backfill Scheduling
+<a class="slurm_link" href="#limitations"></a>
+</h2>
 
 <P>
 For performance reasons, the backfill scheduler reserves whole nodes for jobs,
@@ -340,7 +344,9 @@ cycle, even if the other jobs could fit on the nodes. Therefore, jobs may
 preempt more resources during a single backfill iteration than they requested.
 </P>
 
-<H2>A Simple Example</H2>
+<h2 id="example1">A Simple Example
+<a class="slurm_link" href="#example1"></a>
+</h2>
 
 <P>
 The following example is configured with <I>select/linear</I> and
@@ -420,7 +426,9 @@ JOBID PARTITION     NAME   USER  ST   TIME  NODES NODELIST
   489    active runit.pl   user   R   0:58      1 n16
 </PRE>
 
-<H2>Another Example</H2>
+<h2 id="example2">Another Example
+<a class="slurm_link" href="#example2"></a>
+</h2>
 <P>
 In this example we have three different partitions using three different
 job preemption mechanisms.
@@ -450,7 +458,9 @@ $ squeue
      95       med      tmp      moe   R       0:24      1 linux
 </PRE>
 
-<H2>Another Example</H2>
+<h2 id="example3">Another Example
+<a class="slurm_link" href="#example3"></a>
+</h2>
 <P>
 In this example we have one partition on which we want to execute only one
 job per resource (e.g. core) at a time except when a job submitted to the
@@ -465,7 +475,9 @@ PreemptType=preempt/qos
 PartitionName=normal Nodes=linux Default=NO  OverSubscribe=FORCE:1
 </PRE>
 
-<H2><A NAME="future_work">Future Ideas</A></H2>
+<h2 id="future_work">Future Ideas
+<a class="slurm_link" href="#future_work"></a>
+</h2>
 
 <P>
 <B>More intelligence in the select plugins</B>: This implementation of

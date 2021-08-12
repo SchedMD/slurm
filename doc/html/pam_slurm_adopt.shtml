@@ -9,9 +9,11 @@ the job is completed. This module does this by determining the job which
 originated the ssh connection. The user's connection is "adopted" into the
 "external" step of the job.</p>
 
-<h2><a id="INSTALLATION">Installation</a></h2>
+<h2 id="INSTALLATION">Installation
+<a class="slurm_link" href="#INSTALLATION"></a>
+</h2>
 
-<h3>Source:</h3>
+<h3 id="source">Source:<a class="slurm_link" href="#source"></a></h3>
 
 <p>In your Slurm build directory, navigate to slurm/contribs/pam_slurm_adopt/
 and run</p>
@@ -22,14 +24,16 @@ and run</p>
 and pam_slurm_adopt.so in /lib/security/ (on Debian systems) or
 /lib64/security/ (on RedHat/SuSE systems).</p>
 
-<h3>RPM:</h3>
+<h3 id="rpm">RPM:<a class="slurm_link" href="#rpm"></a></h3>
 
 <p>The included slurm.spec will build a slurm-pam_slurm RPM which will install
 pam_slurm_adopt. Refer to the
 <a href="https://slurm.schedmd.com/quickstart_admin.html">Quick Start
 Administrator Guide</a> for instructions on managing an RPM-based install.</p>
 
-<h2><a id="PAM_CONFIG">PAM Configuration</a></h2>
+<h2 id="PAM_CONFIG">PAM Configuration
+<a class="slurm_link" href="#PAM_CONFIG"></a>
+</h2>
 
 <p>Add the following line to the appropriate file in /etc/pam.d, such as
 system-auth or sshd (you may use either the "required" or "sufficient" PAM
@@ -106,7 +110,9 @@ account    required      pam_slurm_adopt.so
 
 <p>When access is denied, the user will receive a relevant error message.</p>
 
-<h2><a id="OPTIONS">pam_slurm_adopt Module Options</a></h2>
+<h2 id="OPTIONS">pam_slurm_adopt Module Options
+<a class="slurm_link" href="#OPTIONS"></a>
+</h2>
 
 <p>
 This module is configurable. Add these options to the end of the pam_slurm_adopt
@@ -121,7 +127,10 @@ account sufficient pam_slurm_adopt.so optionname=optionvalue
 
 <dl>
 
-<dt><b>action_no_jobs</b></dt>
+<dt>
+  <b id="action_no_jobs">action_no_jobs</b>
+  <a class="slurm_link" href="#action_no_jobs"></a>
+</dt>
 <dd>
 The action to perform if the user has no jobs on the node. Configurable
 values are:
@@ -130,9 +139,15 @@ values are:
 <dt></dt>
 <dd>
 <dl>
-  <dt><b>ignore</b></dt>
+  <dt>
+    <b id="action_no_jobs_ignore">ignore</b>
+    <a class="slurm_link" href="#action_no_jobs_ignore"></a>
+  </dt>
 <dd>Do nothing. Fall through to the next pam module.</dd>
-<dt><b>deny</b> (default)</dt>
+<dt>
+  <b id="action_no_jobs_deny">deny</b> (default)
+  <a class="slurm_link" href="#action_no_jobs_deny"></a>
+</dt>
 <dd>Deny the connection.</dd>
 </dl>
 </dd>
@@ -140,7 +155,10 @@ values are:
 
 </dd>
 
-<dt><b>action_unknown</b></dt>
+<dt>
+  <b id="action_unknown">action_unknown</b>
+  <a class="slurm_link" href="#action_unknown"></a>
+</dt>
 <dd>
 The action to perform when the user has multiple jobs on the node <b>and</b>
 the RPC does not locate the source job. If the RPC mechanism works properly in
@@ -151,7 +169,10 @@ connecting from a login node. Configurable values are:
 <dt></dt>
 <dd>
 <dl>
-<dt><b>newest</b> (default)</dt>
+<dt>
+  <b id="action_unknown_newest">newest</b> (default)
+  <a class="slurm_link" href="#action_unknown_newest"></a>
+</dt>
 <dd>Pick the newest job on the node. The "newest" job is chosen based
 on the mtime of the job's step_extern cgroup; asking Slurm would
 require an RPC to the controller. Thus, the memory cgroup must be in
@@ -163,9 +184,15 @@ ways to accomplish their objectives if this becomes a problem.
 NOTE: If the module fails to retrieve the cgroup mtime, then the picked
 job may not be the newest one.
 </dd>
-<dt><b>allow</b></dt>
+<dt>
+  <b id="action_unknown_allow">allow</b>
+  <a class="slurm_link" href="#action_unknown_allow"></a>
+</dt>
 <dd>Let the connection through without adoption.</dd>
-<dt><b>deny</b></dt>
+<dt>
+  <b id="action_unknown_deny">deny</b>
+  <a class="slurm_link" href="#action_unknown_deny"></a>
+</dt>
 <dd>Deny the connection.</dd>
 </dl>
 </dd>
@@ -173,7 +200,10 @@ job may not be the newest one.
 
 </dd>
 
-<dt><b>action_adopt_failure</b></dt>
+<dt>
+  <b id="action_adopt_failure">action_adopt_failure</b>
+  <a class="slurm_link" href="#action_adopt_failure"></a>
+</dt>
 <dd>The action to perform if the process is unable to be adopted into any
 job for whatever reason. If the process cannot be adopted into the job
 identified by the callerid RPC, it will fall through to the action_unknown
@@ -184,11 +214,17 @@ one job will result in this action being taken. Configurable values are:
 <dt></dt>
 <dd>
 <dl>
-<dt><b>allow</b> (default)</dt>
+<dt>
+  <b id="action_adopt_failure_allow">allow</b> (default)
+  <a class="slurm_link" href="#action_adopt_failure_allow"></a>
+</dt>
 <dd>Let the connection through without adoption. <b>WARNING: This value is
 insecure and is recommended for testing purposes only. We recommend using
 "deny."</b></dd>
-<dt><b>deny</b></dt>
+<dt>
+  <b id="action_adopt_failure_deny">deny</b>
+  <a class="slurm_link" href="#action_adopt_failure_deny"></a>
+</dt>
 <dd>Deny the connection.</dd>
 </dl>
 </dd>
@@ -196,7 +232,10 @@ insecure and is recommended for testing purposes only. We recommend using
 
 </dd>
 
-<dt><b>action_generic_failure</b></dt>
+<dt>
+  <b id="action_generic_failure">action_generic_failure</b>
+  <a class="slurm_link" href="#action_generic_failure"></a>
+</dt>
 <dd>The action to perform if there are certain failures such as the
 inability to talk to the local <i>slurmd</i> or if the kernel doesn't offer
 the correct facilities. Configurable values are:
@@ -205,13 +244,22 @@ the correct facilities. Configurable values are:
 <dt></dt>
 <dd>
 <dl>
-<dt><b>ignore</b> (default)</dt>
+<dt>
+  <b id="action_generic_failure_ignore">ignore</b> (default)
+  <a class="slurm_link" href="#action_generic_failure_ignore"></a>
+</dt>
 <dd>Do nothing. Fall through to the next pam module. <b>WARNING: This value is
 insecure and is recommended for testing purposes only. We recommend using
 "deny."</b></dd>
-<dt><b>allow</b></dt>
+<dt>
+  <b id="action_generic_failure_allow">allow</b>
+  <a class="slurm_link" href="#action_generic_failure_allow"></a>
+</dt>
 <dd>Let the connection through without adoption.</dd>
-<dt><b>deny</b></dt>
+<dt>
+  <b id="action_generic_failure_deny">deny</b>
+  <a class="slurm_link" href="#action_generic_failure_deny"></a>
+</dt>
 <dd>Deny the connection.</dd>
 </dl>
 </dd>
@@ -219,18 +267,27 @@ insecure and is recommended for testing purposes only. We recommend using
 
 </dd>
 
-<dt><b>disable_x11</b></dt>
+<dt>
+  <b id="disable_x11">disable_x11</b>
+  <a class="slurm_link" href="#disable_x11"></a>
+</dt>
 <dd>Turn off Slurm built-in X11 forwarding support. Configurable values are:
 
 <dl>
 <dt></dt>
 <dd>
 <dl>
-<dt><b>0</b> (default)</dt>
+<dt>
+  <b id="disable_x11_0">0</b> (default)
+  <a class="slurm_link" href="#disable_x11_0"></a>
+</dt>
 <dd>If the job the connection is adopted into has Slurm's X11 forwarding
 enabled, the DISPLAY variable will be overwritten with the X11 tunnel
 endpoint details.</dd>
-<dt><b>1</b></dt>
+<dt>
+  <b id="disable_x11_1">1</b>
+  <a class="slurm_link" href="#disable_x11_1"></a>
+</dt>
 <dd>Do not check for Slurm's X11 forwarding support, and do not alter the
 DISPLAY variable.</dd>
 </dl>
@@ -239,19 +296,31 @@ DISPLAY variable.</dd>
 
 </dd>
 
-<dt><b>log_level</b></dt>
+<dl>
+<dt>
+  <b id="log_level">log_level</b>
+  <a class="slurm_link" href="#log_level"></a>
+</dt>
 <dd>See <a href="https://slurm.schedmd.com/slurm.conf.html#OPT_SlurmdDebug">
 SlurmdDebug</a> in slurm.conf for available options.
 The default log_level is <b>info</b>.
 </dd>
 
-<dt><b>nodename</b></dt>
+<dl>
+<dt>
+  <b id="nodename">nodename</b>
+  <a class="slurm_link" href="#nodename"></a>
+</dt>
 <dd>If the NodeName defined in <b>slurm.conf</b> is different than this node's
 hostname (as reported by <b>hostname -s</b>), then this must be set to the
 NodeName in <b>slurm.conf</b> that this host operates as.
 </dd>
 
-<dt><b>service</b></dt>
+<dl>
+<dt>
+  <b id="service">service</b>
+  <a class="slurm_link" href="#service"></a>
+</dt>
 <dd>The pam service name for which this module should run. By default
 it only runs for sshd for which it was designed for. A
 different service name can be specified like "login" or "*" to
@@ -264,14 +333,18 @@ PAM_IGNORE immediately.
 
 </dl>
 
-<h2><a id="SLURM_CONFIG">Slurm Configuration</a></h2>
+<h2 id="SLURM_CONFIG">Slurm Configuration
+<a class="slurm_link" href="#SLURM_CONFIG"></a>
+</h2>
 
 <p><b>PrologFlags=contain</b> must be set in the slurm.conf. This sets up the
 "extern" step into which ssh-launched processes will be adopted. You must also
 enable the task/cgroup plugin in slurm.conf. See the <a
 href="https://slurm.schedmd.com/cgroups.html">Slurm cgroups guide.</a></p>
 
-<h3><b>Important</b></h3>
+<h3 id="important"><b>Important</b>
+<a class="slurm_link" href="#important"></a>
+</h3>
 
 <p><b>PrologFlags=contain</b> must be in place <i>before</i> using this module.
 The module bases its checks on local steps that have already been launched. If
@@ -283,12 +356,16 @@ attempts without <b>PrologFlags=contain.</b></p>
 <p>The <b>UsePAM</b> option in slurm.conf is not related to pam_slurm_adopt.</p>
 
 
-<h2><a id="OTHER_CONFIG">Other Configuration</a></h2>
+<h2 id="OTHER_CONFIG">Other Configuration
+<a class="slurm_link" href="#OTHER_CONFIG"></a>
+</h2>
 
 <p>Verify that <b>UsePAM</b> is set to <b>On</b> in /etc/ssh/sshd_config (it
 should be on by default).</p>
 
-<h3>Firewalls, IP Addresses, etc.</h3>
+<h3 id="firewall">Firewalls, IP Addresses, etc.
+<a class="slurm_link" href="#firewall"></a>
+</h3>
 
 <p><i>slurmd</i> should be accessible on any IP address from which a user might
 launch ssh. The RPC to determine the source job must be able to reach the
@@ -297,7 +374,7 @@ on the source node, such as on a login node, it is better to have the RPC be
 rejected rather than silently dropped. This will allow better responsiveness to
 the RPC initiator.</p>
 
-<h3>SELinux</h3>
+<h3 id="selinux">SELinux<a class="slurm_link" href="#selinux"></a></h3>
 
 <p>SELinux may conflict with pam_slurm_adopt, but it is generally possible for
 them to work side by side. This is an example type enforcement file that was
@@ -357,7 +434,9 @@ allow sshd_t var_spool_t:sock_file write;
 allow sshd_t self:capability sys_admin;
 </pre>
 
-<h2><a id="LIMITATIONS">Limitations</a></h2>
+<h2 id="LIMITATIONS">Limitations
+<a class="slurm_link" href="#LIMITATIONS"></a>
+</h2>
 
 <p>Alternate authentication methods such as multi-factor authentication may
 break process adoption with pam_slurm_adopt.</p>

@@ -12,7 +12,7 @@
 <a href="#multi">Communication with multiple clusters</a><br>
 <a href="#federation">Communication in a federation</a><br>
 
-<h2><a name="overview">Overview</a></h2>
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 
 <p>There are a lot of components in a Slurm cluster that need to be able
 to communicate with each other. Some sites have security requirements that
@@ -33,7 +33,9 @@ of your choosing.</p>
   Typical configuration
 </div>
 
-<h2><a name="slurmctld">Communication for slurmctld</a></h2>
+<h2 id="slurmctld">Communication for slurmctld
+<a class="slurm_link" href="#slurmctld"></a>
+</h2>
 
 <p>The default port used by <b>slurmctld</b> to listen for incoming requests
 is <u>6817</u>. This port can be changed with the
@@ -58,7 +60,9 @@ disable IPv4 by adding <u>DisableIPv4</u> to the
 CommunicationParameters</a>. These settings must match in both slurmdbd.conf
 and slurm.conf (see the <a href="#slurmdbd">slurmdbd</a> section).</p>
 
-<h2><a name="slurmdbd">Communication for slurmdbd</a></h2>
+<h2 id="slurmdbd">Communication for slurmdbd
+<a class="slurm_link" href="#slurmdbd"></a>
+</h2>
 
 <p>The default port used by <b>slurmdbd</b> to listen for incoming requests
 is <u>6819</u>. This port can be changed with the
@@ -85,7 +89,9 @@ disable IPv4 by adding <u>DisableIPv4</u> to the
 CommunicationParameters</a>. These settings must match in both slurmdbd.conf
 and slurm.conf (see the <a href="#slurmctld">slurmctld</a> section).</p>
 
-<h2><a name="slurmd">Communication for slurmd</a></h2>
+<h2 id="slurmd">Communication for slurmd
+<a class="slurm_link" href="#slurmd"></a>
+</h2>
 
 <p>The default port used by <b>slurmd</b> to listen for incoming requests
 from <b>slurmctld</b> is <u>6818</u>. This port can be changed with the
@@ -108,7 +114,9 @@ change this).</p>
 <a href="#slurmctld">slurmctld</a> section for details on how to change this
 as the slurm.conf parameter affects <b>slurmd</b> daemons as well.</p>
 
-<h2><a name="client">Communication for client commands</a></h2>
+<h2 id="client">Communication for client commands
+<a class="slurm_link" href="#client"></a>
+</h2>
 
 <p>The majority of the client commands will communicate with <b>slurmctld</b>
 on port <u>6817</u> by default (see the <a href="#slurmctld">slurmctld</a>
@@ -166,7 +174,9 @@ allocated. Communication follows the sequence outlined below:</p>
   srun communication
 </div>
 
-<h2><a name="failover">Communication with multiple controllers</a></h2>
+<h2 id="failover">Communication with multiple controllers
+<a class="slurm_link" href="#failover"></a>
+</h2>
 
 <p>You can configure a secondary <b>slurmctld</b> and/or <b>slurmdbd</b> to
 serve as a fallback if the primary should go down. The ports involved don't
@@ -182,7 +192,9 @@ to be able to reach the MySQL server.</p>
   Fallback slurmctld and slurmdbd
 </div>
 
-<h2><a name="multi">Communication with multiple clusters</a></h2>
+<h2 id="multi">Communication with multiple clusters
+<a class="slurm_link" href="#multi"></a>
+</h2>
 
 <p>In environments where multiple <b>slurmctld</b> instances share the same
 <b>slurmdbd</b> you can configure each cluster to stand on their own and allow
@@ -198,7 +210,9 @@ documentation.</p>
   Multi-Cluster configuration
 </div>
 
-<h2><a name="federation">Communication in a federation</a></h2>
+<h2 id="federation">Communication in a federation
+<a class="slurm_link" href="#federation"></a>
+</h2>
 
 <p>Slurm also provides the ability to schedule jobs in a peer-to-peer fashion
 between multiple clusters, allowing jobs to run on the cluster that has
@@ -214,7 +228,9 @@ documentation.</p>
   Federation configuration
 </div>
 
-<h2><a id="ipv6">Communication with IPv6</a></h2>
+<h2 id="ipv6">Communication with IPv6
+<a class="slurm_link" href="#ipv6"></a>
+</h2>
 
 <p>The <b>slurmctld</b>, <b>slurmdbd</b>, and <b>slurmd</b> daemons will,
 by default, communicate using IPv4, but they can be configured to use IPv6.

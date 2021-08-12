@@ -16,7 +16,7 @@ this document should help get you off to a good start.
 A working knowledge of Slurm should be considered a prerequisite
 for this material.</p>
 
-<h2>Performance</h2>
+<h2 id="perf">Performance<a class="slurm_link" href="#perf"></a></h2>
 
 <p>Times below are for execution of an MPI program printing "Hello world" and
 exiting and includes the time for processing output. Your performance may
@@ -26,7 +26,9 @@ vary due to differences in hardware, software, and configuration.</p>
 <li>30,000 tasks on 15,000 compute nodes of a Linux cluster: 30 seconds</li>
 </ul>
 
-<h2>System Configuration</h2>
+<h2 id="sys_config">System Configuration
+<a class="slurm_link" href="#sys_config"></a>
+</h2>
 
 <p>Three system configuration parameters must be set to support a large number
 of open files and TCP connections with large bursts of messages. Changes can
@@ -55,7 +57,9 @@ using the ifconfig command. A value of 4096 has been found to work well for one
 site with a very large cluster
 (e.g. <i>"ifconfig <interface> txqueuelen 4096"</i>).</p>
 
-<h3>Thread/Process Limit</h3>
+<h3 id="process_limit">Thread/Process Limit
+<a class="slurm_link" href="#process_limit"></a>
+</h3>
 
 <p>There is a newly introduced limit in SLES 12 SP2 (used on Cray systems
 with CLE 6.0UP04, to be released mid-2017).
@@ -81,12 +85,14 @@ with these contents:
 <p>Note: Earlier versions of systemd that don't support the PIDs cgroup
 controller simply ignore the TasksMax setting.</p>
 
-<h2>User Limits</h2>
+<h2 id="limits">User Limits<a class="slurm_link" href="#limits"></a></h2>
 
 <p>The <b>ulimit</b> values in effect for the <b>slurmctld</b> daemon should
 be set quite high for memory size, open file count and stack size.</p>
 
-<h2>Node Selection Plugin (SelectType)</h2>
+<h2 id="select_type">Node Selection Plugin (SelectType)
+<a class="slurm_link" href="#select_type"></a>
+</h2>
 
 <p>While allocating individual processors within a node is great
 for smaller clusters, the overhead of keeping track of the individual
@@ -94,7 +100,9 @@ processors and memory within each node adds significant overhead.
 For best scalability, allocate whole nodes using <i>select/linear</i>
 and avoid <i>select/cons_res</i>.</p>
 
-<h2>Job Accounting Gather Plugin (JobAcctGatherType)</h2>
+<h2 id="acct_gather">Job Accounting Gather Plugin (JobAcctGatherType)
+<a class="slurm_link" href="#acct_gather"></a>
+</h2>
 
 <p>Job accounting relies upon the <i>slurmstepd</i> daemon on each compute
 node periodically sampling data.
@@ -111,7 +119,9 @@ to a relatively large size (e.g. <i>JobAcctGatherFrequency=300</i>).
 Some experimentation may be required to deal with collisions
 on data transmission.</p>
 
-<h2>Node Configuration</h2>
+<h2 id="node_config">Node Configuration
+<a class="slurm_link" href="#node_config"></a>
+</h2>
 
 <p>While Slurm can track the amount of memory and disk space actually found
 on each compute node and use it for scheduling purposes, this entails
@@ -125,7 +135,7 @@ While Slurm can easily handle a heterogeneous cluster, configuring
 the nodes using the minimal number of lines in <i>slurm.conf</i>
 will both make for easier administration and better performance.</p>
 
-<h2>Timers</h2>
+<h2 id="timers">Timers<a class="slurm_link" href="#timers"></a></h2>
 
 <p>The <i>EioTimeout</i> configuration parameter controls how long the srun
 command will wait for the slurmstepd to close the TCP/IP connection used to
@@ -171,7 +181,7 @@ and avoid message loss, The <i>EpilogMsgTime</i> parameter may be
 used. Note that even if messages are lost, they will be retransmitted,
 but this will result in a delay for reallocating resources to new jobs.</p>
 
-<h2>Other</h2>
+<h2 id="other">Other<a class="slurm_link" href="#other"></a></h2>
 
 <p>Slurm uses hierarchical communications between the slurmd daemons
 in order to increase parallelism and improve performance. The

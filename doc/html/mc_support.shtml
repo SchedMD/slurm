@@ -11,8 +11,7 @@
 <LI> <a href=#config>Configuration settings in slurm.conf</a>
 </UL>
 
-<a name=defs>
-<h2>Definitions</h2></a>
+<h2 id="defs">Definitions<a class="slurm_link" href="#defs"></a></h2>
 
 <dl>
 <dt><b>BaseBoard</b>
@@ -48,8 +47,9 @@ on the associated logical processor.
 allowing a process to run on more than one logical processor.
 </dl>
 
-<a name=flags>
-<h2>Overview of srun flags</h2></a>
+<h2 id="flags">Overview of srun flags
+<a class="slurm_link" href="#flags"></a>
+</h2>
 
 <p>Many flags have been defined to allow users to
 better take advantage of this architecture by
@@ -163,8 +163,9 @@ and available software, any of them except "task/none" will bind tasks to CPUs.
 See the "Task Launch" section if generating slurm.conf via
 <a href="configurator.html">configurator.html</a>.</p>
 
-<a name="srun_lowlevelmc">
-<h3>Low-level --cpu-bind=... - Explicit binding interface</h3></a>
+<h3 id="srun_lowlevelmc">Low-level --cpu-bind=... - Explicit binding interface
+<a class="slurm_link" href="#srun_lowlevelmc"></a>
+</h3>
 
 <p>The following srun flag provides a low-level core binding interface:</p>
 
@@ -218,8 +219,10 @@ within a specific socket or core.
 
 <p>See also 'srun --cpu-bind=help' and 'man srun'</p>
 
-<a name="srun_highlevelmc">
-<h3>High-level -B <i>S[:C[:T]]</i> - Automatic mask generation interface</h3></a>
+<h3 id="srun_highlevelmc">
+High-level -B <i>S[:C[:T]]</i> - Automatic mask generation interface
+<a class="slurm_link" href="#srun_highlevelmc"></a>
+</h3>
 
 <p>We have updated the node
 selection infrastructure with a mechanism that allows selection of logical
@@ -270,8 +273,9 @@ note: compare the above with the previous corresponding --cpu-bind=... examples
 
 <p>See also 'srun --help' and 'man srun'</p>
 
-<a name="srun_dist">
-<h3>Task distribution options: Extensions to -m / --distribution</h3></a>
+<h3 id="srun_dist">Task distribution options: Extensions to -m / --distribution
+<a class="slurm_link" href="#srun_dist"></a>
+</h3>
 
 <p>The -m / --distribution option for distributing processes across nodes
 has been extended to also describe the distribution within the lowest level
@@ -318,8 +322,9 @@ to -m block:cyclic with --cpu-bind=thread.</p>
 
 <p>See also 'srun --help'</p>
 
-<a name="srun_consres">
-<h3>Memory as a Consumable Resource</h3></a>
+<h3 id="srun_consres">Memory as a Consumable Resource
+<a class="slurm_link" href="#srun_consres"></a>
+</h3>
 
 <p>The --mem flag specifies the maximum amount of memory in MB
 needed by the job per node.  This flag is used to support the memory
@@ -351,8 +356,9 @@ via <a href="configurator.html">configurator.html</a>.
 
 <p>See also 'srun --help' and 'man srun'</p>
 
-<a name="srun_ntasks">
-<h3>Task invocation as a function of logical processors</h3></a>
+<h3 id="srun_ntasks">Task invocation as a function of logical processors
+<a class="slurm_link" href="#srun_ntasks"></a>
+</h3>
 
 <p>The <tt>--ntasks-per-{node,socket,core}=<i>ntasks</i></tt> flags
 allow the user to request that no more than <tt><i>ntasks</i></tt>
@@ -408,8 +414,9 @@ hydra12
 
 <p>See also 'srun --help' and 'man srun'</p>
 
-<a name="srun_hints">
-<h3>Application hints</h3></a>
+<h3 id="srun_hints">Application hints
+<a class="slurm_link" href="#srun_hints"></a>
+</h3>
 
 <p>Different applications will have various levels of resource
 requirements. Some applications tend to be computationally intensive
@@ -458,8 +465,9 @@ cpu-bind=MASK - <u><b>hydra13</b></u>, task  3  <u><b>1</b></u> [14975]: mask 0x
 
 <p>See also 'srun --hint=help' and 'man srun'</p>
 <!-------------------------------------------------------------------------->
-<a name=motivation>
-<h2>Motivation behind high-level srun flags</h2></a>
+<h2 id="motivation">Motivation behind high-level srun flags
+<a class="slurm_link" href="#motivation"></a>
+</h2>
 
 <p >The motivation behind allowing users to use higher level <i>srun</i>
 flags instead of --cpu-bind is that the later can be difficult to use. The
@@ -483,7 +491,9 @@ cyclic distribution within the node across the physical processors. Below we
 show how to obtain the wanted layout using 1) high-level flags and
 2) --cpubind</p>
 
-<h3>High-Level flags</h3>
+<h3 id="high_level">High-Level flags
+<a class="slurm_link" href="#high_level"></a>
+</h3>
 
 <p>Using Slurm's high-level flag, users can obtain the above layout with
 either of the following submissions since --distribution=block:cyclic
@@ -528,7 +538,9 @@ to the user. Users don't have to worry about the core numbering (Section
 Pinning processes to cores) or any setting any CPU affinities. By default CPU affinity
 will be set when using multi-core supporting flags. </p>
 
-<h3>Low-level flag --cpu-bind</h3>
+<h3 id="low_level">Low-level flag --cpu-bind
+<a class="slurm_link" href="#low_level"></a>
+</h3>
 
 <p>Using Slurm's --cpu-bind flag, users must compute the CPU IDs or
 masks as well as make sure they understand the core numbering on their
@@ -537,7 +549,10 @@ nodes. The --cpu-bind option only allows users to specify a single
 mask for all the nodes. Using Slurm high-level flags remove this limitation
 since Slurm will correctly generate the appropriate masks for each requested nodes.</p>
 
-<h3>On a four dual-socket dual-core node cluster with core block numbering </h3>
+<h3 id="core_block">
+On a four dual-socket dual-core node cluster with core block numbering
+<a class="slurm_link" href="#core_block"></a>
+</h3>
 
 <p>The cores are shown as c0 and c1 and the processors are shown
 as p0 through p3. The CPU IDs within a node in the block numbering are:
@@ -633,7 +648,10 @@ $ srun -n 32 -N 4 --cpu-bind=mask_cpu:1,4,10,40,2,8,20,80 a.out
 $ srun -n 32 -N 4 --cpu-bind=map_cpu:0,2,4,6,1,3,5,7 a.out
 </pre>
 
-<h3>Same cluster but with its core numbered cyclic instead of block</h3>
+<h3 id="core_cyclic">
+Same cluster but with its core numbered cyclic instead of block
+<a class="slurm_link" href="#core_cyclic"></a>
+</h3>
 
 <p>On a system with cyclically numbered cores, the correct mask
 argument to the <i>srun</i> command looks like: (this will
@@ -644,7 +662,9 @@ numbering.)</p>
 $ srun -n 32 -N 4 --cpu-bind=map_cpu:0,1,2,3,4,5,6,7 a.out
 </pre>
 
-<h3>Block map_cpu on a system with cyclic core numbering</h3>
+<h3 id="map_cpu">Block map_cpu on a system with cyclic core numbering
+<a class="slurm_link" href="#map_cpu"></a>
+</h3>
 
 <p>If users do not check their system's core numbering before specifying
 the map_cpu list and thereby do not realize that the system has cyclic core
@@ -709,14 +729,15 @@ $ srun -n 32 -N 4 --cpu-bind=map_cpu:0,2,4,6,1,3,5,7 a.out
 trivial and that it assumes that users are experts.</p>
 
 <!-------------------------------------------------------------------------->
-<a name=utilities>
-<h2>Extensions to sinfo/squeue/scontrol</h2></a>
+<h2 id="utilities">Extensions to sinfo/squeue/scontrol
+<a class="slurm_link" href="#utilities"></a>
+</h2>
 
 <p>Several extensions have also been made to the other Slurm utilities to
 make working with multi-core/multi-threaded systems easier.</p>
 
 <!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-<h3>sinfo</h3>
+<h3 id="sinfo">sinfo<a class="slurm_link" href="#sinfo"></a></h3>
 
 <p>The long version (-l) of the sinfo node listing (-N) has been
 extended to display the sockets, cores, and threads present for each
@@ -762,7 +783,7 @@ parts*    4    2:2:1    2        2        1
 <p>See also 'sinfo --help' and 'man sinfo'</p>
 
 <!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-<h3>squeue</h3>
+<h3 id="squeue">squeue<a class="slurm_link" href="#squeue"></a></h3>
 
 <p>For user specified output formats (-o/--format) and sorting (-S/--sort),
 the following identifiers are available:</p>
@@ -810,7 +831,7 @@ JOBID ST TIME NODES MIN_MEMORY
 <p>See also 'squeue --help' and 'man squeue'</p>
 
 <!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-<h3>scontrol</h3>
+<h3 id="scontrol">scontrol<a class="slurm_link" href="#scontrol"></a></h3>
 
 <p>The following job settings can be adjusted using scontrol:
 
@@ -865,8 +886,9 @@ JobId=20 UserId=(30352) GroupId=users(1051)
 <p>See also 'scontrol --help' and 'man scontrol'</p>
 
 <!-------------------------------------------------------------------------->
-<a name=config>
-<h2>Configuration settings in slurm.conf</h2></a>
+<h2 id="config">Configuration settings in slurm.conf
+<a class="slurm_link" href="#config"></a>
+</h2>
 
 <p>Several slurm.conf settings are available to control the multi-core
 features described above.

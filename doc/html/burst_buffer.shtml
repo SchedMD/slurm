@@ -17,8 +17,7 @@ administrators)</a></li>
 <li><a href="#states">Burst Buffer States and Job States</a></li>
 </ul>
 
-
-<h2>Overview<a id="overview"></a></h2>
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 
 <p>This guide explains how to use Slurm burst buffer plugins. Where appropriate,
 it explains how these plugins work in order to give guidance about how to best
@@ -44,7 +43,9 @@ the job. This is called “teardown.”</li>
 <li>lua</li>
 </ul>
 
-<h3>Datawarp</h3>
+<h3 id="overview-dw">Datawarp
+<a class="slurm_link" href="#overview-dw"></a>
+</h3>
 
 <p>This plugin provides hooks to Cray’s Datawarp APIs. Datawarp implements burst
 buffers, which are a shared high-speed storage resource. Slurm provides support
@@ -54,7 +55,9 @@ used as temporary storage during a job's lifetime, without file staging.
 Another typical use case is for persistent storage, not associated with any
 specific job.</p>
 
-<h3>Lua</h3>
+<h3 id="overview-lua">Lua
+<a class="slurm_link" href="#overview-lua"></a>
+</h3>
 
 <p>This plugin provides hooks to an API that is defined by a Lua script. This
 plugin was developed to provide system administrators with a way to do any task
@@ -67,9 +70,13 @@ requests using them. The <a href="#submit">Job Submission Commands</a> section
 explains how a job can request using the burst buffer APIs.</p>
 
 
-<h2>Configuration (for system administrators)<a id="configuration"></a></h2>
+<h2 id="configuration">Configuration (for system administrators)
+<a class="slurm_link" href="#configuration"></a>
+</h2>
 
-<h3>Common Configuration</h3>
+<h3 id="common_config">Common Configuration
+<a class="slurm_link" href="#common_config"></a>
+</h3>
 
 <ul>
 <li>To enable a burst buffer plugin, set <code>BurstBufferType</code> in
@@ -101,7 +108,9 @@ which must parse JSON format data. See Slurm's
 <a href="download.html#json">JSON installation information</a> for details.</li>
 </ul>
 
-<h3>Datawarp</h3>
+<h3 id="datawarp_config">Datawarp
+<a class="slurm_link" href="#datawarp_config"></a>
+</h3>
 
 <p>slurm.conf:</p>
 <pre>
@@ -122,7 +131,7 @@ script is provided with Slurm:</li>
 <code>src/plugins/burst_buffer/datawarp/dwstat</code>
 </ul>
 
-<h3>Lua</h3>
+<h3 id="lua_config">Lua<a class="slurm_link" href="#lua_config"></a></h3>
 
 <p>slurm.conf:</p>
 <pre>
@@ -154,7 +163,9 @@ success:</p>
 required parameters, when each function is called, return values for each
 function, and some simple examples.</p>
 
-<h2>Lua Implementation<a id="lua-implementation"></a></h2>
+<h2 id="lua-implementation">Lua Implementation
+<a class="slurm_link" href="#lua-implementation"></a>
+</h2>
 
 <p>This purpose of this section is to provide additional information about the
 Lua plugin to help system administrators who desire to implement the Lua API.
@@ -167,7 +178,9 @@ killed.</li>
 in order to avoid exceeding system limits.</li>
 </ul>
 
-<h3>How does burst_buffer.lua run?</h3>
+<h3 id="burst_buffer_lua">How does burst_buffer.lua run?
+<a class="slurm_link" href="#burst_buffer_lua"></a>
+</h3>
 
 <p>Lua scripts may either be run by themselves in a separate process via the
 <code>fork()</code> and <code>exec()</code> system calls, or they may be called
@@ -214,7 +227,9 @@ in burst_buffer.conf</i>.</li>
 <p>The way in which each function is called is also documented in the
 burst_buffer.lua.example file.</p>
 
-<h3>Limitations</h3>
+<h3 id="lua_limitations">Limitations
+<a class="slurm_link" href="#lua_limitations"></a>
+</h3>
 
 <p>Each copy of the script that runs via slurmscriptd runs in a new process and
 a pipe (which is a file) is opened to read responses from the script. To avoid
@@ -233,7 +248,9 @@ could attempt to run the signal handler from burst_buffer.lua, even after a call
 to burst_buffer.lua is completed, which results in a crash.</p>
 
 
-<h2>Burst Buffer Resources<a id="resources"></a></h2>
+<h2 id="resources">Burst Buffer Resources
+<a class="slurm_link" href="#resources"></a>
+</h2>
 
 <p>The burst buffer API may define burst buffer resource “pools” from which a
 job may request a certain amount of pool space. If a pool does not have
@@ -245,7 +262,9 @@ job’s requested space back into the pool’s available space. The
 <a href="#submit">Job Submission Commands</a> section explains how a job may
 request space from a pool. Pool space is a scalar quantity.</p>
 
-<h3>Datawarp</h3>
+<h3 id="datawarp_resources">Datawarp
+<a class="slurm_link" href="#datawarp_resources"></a>
+</h3>
 
 <ul>
 <li>Pools are defined by <code>dw_wlm_cli</code>, and represent bytes. This
@@ -256,7 +275,9 @@ not request a pool and <code>DefaultPool</code>
 is not defined, then the job will be rejected.</li>
 </ul>
 
-<h3>Lua</h3>
+<h3 id="lua_resources">Lua
+<a class="slurm_link" href="#lua_resources"></a>
+</h3>
 
 <ul>
 <li>Pools are optional in this plugin, and can represent anything.</li>
@@ -284,7 +305,9 @@ burst_buffer.lua.example. The current valid fields in the JSON string are:</li>
 </ul>
 
 
-<h2>Job Submission Commands<a id="submit"></a></h2>
+<h2 id="submit">Job Submission Commands
+<a class="slurm_link" href="#submit"></a>
+</h2>
 
 <p>The normal mode of operation is for batch jobs to specify burst buffer
 requirements within the batch script. Commented batch script lines containing a
@@ -349,7 +372,9 @@ specific to each plugin and provide example job scripts. Command-line examples
 are given in the
 <a href="#command-line">Command-line Job Options</a> section.</p>
 
-<h3>Datawarp</h3>
+<h3 id="submit_dw">Datawarp
+<a class="slurm_link" href="#submit_dw"></a>
+</h3>
 
 <p>The directive of <code>#DW</code> (for "DataWarp") is used for burst buffer
 directives when using the <code>burst_buffer/datawarp</code> plugin. Please
@@ -379,7 +404,9 @@ pool and requests files to be staged in and staged out:</p>
 srun application.sh
 </pre>
 
-<h3>Lua</h3>
+<h3 id="submit_lua">Lua
+<a class="slurm_link" href="#submit_lua"></a>
+</h3>
 
 <p>The default directive for this plugin is <code>#BB_LUA</code>. The directive
 used by this plugin may be changed by setting the <b>Directive</b> option in
@@ -431,8 +458,9 @@ include requiring a job to specify a pool or validating any additional options
 that the system administrator decides to implement.</p>
 
 
-<h2>Persistent Burst Buffer Creation and Deletion Directives
-<a id="persist"></a></h2>
+<h2 id="persist">Persistent Burst Buffer Creation and Deletion Directives
+<a class="slurm_link" href="#persist"></a>
+</h2>
 
 <p>This section only applies to the datawarp plugin, since persistent burst
 buffers are not used in any other burst buffer plugin.</p>
@@ -505,7 +533,9 @@ By default only <a href="user_permissions.html">privileged users</a>
 can create or destroy persistent burst buffers.</p>
 
 
-<h2>Command-line Job Options<a id="command-line"></a></h2>
+<h2 id="command-line">Command-line Job Options
+<a class="slurm_link" href="#command-line"></a>
+</h2>
 
 <p>In addition to putting burst buffer directives in the batch script, the
 command-line options <code>--bb</code> and <code>--bbf</code> may also include
@@ -523,7 +553,9 @@ on which burst buffer plugin is used. When the <code>--bb</code> option is
 used, Slurm parses this option and creates a temporary burst buffer script file
 that is used internally by the burst buffer plugins.</p>
 
-<h3>Datawarp</h3>
+<h3 id="command-line-dw">Datawarp
+<a class="slurm_link" href="#command-line-dw"></a>
+</h3>
 
 <p>When using the <code>--bb</code> option, the format of the directives can
 either be identical to those used in a batch script OR a very limited set of
@@ -550,7 +582,9 @@ srun --bb="capacity=1G access=striped type=scratch" a.out
 #DW jobdw capacity=1GiB access_mode=striped type=scratch
 </pre>
 
-<h3>Lua</h3>
+<h3 id="command-line-lua">Lua
+<a class="slurm_link" href="#command-line-lua"></a>
+</h3>
 
 <p>This plugin does not do any special parsing or translating of burst buffer
 directives given by the <code>--bb</code> option. When using the
@@ -570,7 +604,9 @@ srun --bb="#BB_LUA pool=pool1 capacity=1K"
 </pre>
 
 
-<h2>Symbol Replacement<a id="symbols"></a></h2>
+<h2 id="symbols">Symbol Replacement
+<a class="slurm_link" href="#symbols"></a>
+</h2>
 
 <p>Slurm supports a number of symbols that can be used to automatically
 fill in certain job details, e.g. to make stage-in or stage-out directory
@@ -590,8 +626,7 @@ paths vary with each job submission.</p>
 </table>
 </p>
 
-
-<h2>Status Commands<a id="status"></a></h2>
+<h2 id="status">Status Commands<a class="slurm_link" href="#status"></a></h2>
 
 <p>Burst buffer information that Slurm tracks is available by using the
 <code>scontrol show burst</code> command or by using the sview command's
@@ -696,7 +731,9 @@ arg2
 </pre>
 
 
-<h2>Advanced Reservations<a id="reservation"></a></h2>
+<h2 id="reservation">Advanced Reservations
+<a class="slurm_link" href="#reservation"></a>
+</h2>
 
 <p>Burst buffer resources can be placed in an advanced reservation using the
 <i>BurstBuffer</i> option.
@@ -730,8 +767,9 @@ $ scontrol create reservation StartTime=16:00 duration=60 \
   BurstBuffer=datawarp:pool_test:4G
 </pre>
 
-
-<h2>Job Dependencies<a id="dependencies"></a></h2>
+<h2 id="dependencies">Job Dependencies
+<a class="slurm_link" href="#dependencies"></a>
+</h2>
 
 <p>If two jobs use burst buffers and one is dependent on the other (e.g.
 <code>sbatch --dependency=afterok:123 ...</code>) then the second job will not
@@ -744,7 +782,9 @@ complete using the "afterburstbuffer" dependency option (e.g.
 <code>sbatch --dependency=afterburstbuffer:123 ...</code>).</p>
 
 
-<h2>Burst Buffer States and Job States<a id="states"></a></h2>
+<h2 id="states">Burst Buffer States and Job States
+<a class="slurm_link" href="#states"></a>
+</h2>
 
 <p>These are the different possible burst buffer states:</p>
 

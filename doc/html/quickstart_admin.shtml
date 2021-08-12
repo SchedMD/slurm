@@ -1,7 +1,7 @@
 <!--#include virtual="header.txt"-->
 
 <h1>Quick Start Administrator Guide</h1>
-<h2>Overview</h2>
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 <p>Please see the <a href="quickstart.html">Quick Start User Guide</a> for a
 general overview.</p>
 
@@ -11,7 +11,9 @@ computer platforms.</p>
 <p>This document also includes a section specifically describing how to
 perform <a href="#upgrade">upgrades</a>.</p>
 
-<h2>Super Quick Start</h2>
+<h2 id="quick_start">Super Quick Start
+<a class="slurm_link" href="#quick_start"></a>
+</h2>
 <ol>
 <li>Make sure the clocks, users and groups (UIDs and GIDs) are synchronized
 across the cluster.</li>
@@ -62,7 +64,9 @@ NOTE: You will need to install this configuration file on all nodes of the clust
 
 <p>FreeBSD administrators should see the <a href="#FreeBSD">FreeBSD</a> section below.</p>
 
-<h2>Building and Installing Slurm</h2>
+<h2 id="build_install">Building and Installing Slurm
+<a class="slurm_link" href="#build_install"></a>
+</h2>
 
 <p>Instructions to build and install Slurm manually are shown below.
 See the README and INSTALL files in the source distribution for more details.
@@ -173,7 +177,7 @@ Some macro definitions that may be used in building Slurm include:
 %with_munge        "--with-munge=/opt/munge"
 </pre></p>
 
-<h3>RPMs Installed</h3>
+<h3 id="rpms">RPMs Installed<a class="slurm_link" href="#rpms"></a></h3>
 
 <p>The RPMs needed on the head node, compute nodes, and slurmdbd node can vary
 by configuration, but here is a suggested starting point:
@@ -193,7 +197,7 @@ by configuration, but here is a suggested starting point:
 	</ul>
 </ul>
 
-<h2>Daemons</h2>
+<h2 id="daemons">Daemons<a class="slurm_link" href="#daemons"></a></h2>
 
 <p><b>slurmctld</b> is sometimes called the &quot;controller&quot;.
 It orchestrates Slurm activities, including queuing of jobs,
@@ -231,7 +235,7 @@ page contains more information.</p>
 <p><b>slurmctld</b> and/or <b>slurmd</b> should be initiated at node startup
 time per the Slurm configuration.
 
-<h3><a name="HA"></a>High Availability</h3>
+<h3 id="HA">High Availability<a class="slurm_link" href="#HA"></a></h3>
 
 <p>Multiple SlurmctldHost entries can be configured, with any entry beyond the
 first being treated as a backup host. Any backup hosts configured should be on
@@ -269,15 +273,21 @@ information is cached in memory rather than written to disk when the node fails.
 The interval between state saves being written to disk can be configured at
 build time by defining SAVE_MAX_WAIT to a different value than five.</p>
 
-<h2>Infrastructure</h2>
-<h3>User and Group Identification</h3>
+<h2 id="infrastructure">Infrastructure
+<a class="slurm_link" href="#infrastructure"></a>
+</h2>
+<h3 id="user_group">User and Group Identification
+<a class="slurm_link" href="#user_group"></a>
+</h3>
 <p>There must be a uniform user and group name space (including
 UIDs and GIDs) across the cluster.
 It is not necessary to permit user logins to the control hosts
 (<b>SlurmctldHost</b>), but the
 users and groups must be resolvable on those hosts.</p>
 
-<h3>Authentication of Slurm communications</h3>
+<h3 id="communication">Authentication of Slurm communications
+<a class="slurm_link" href="#communication"></a>
+</h3>
 <p>All communications between Slurm components are authenticated. The
 authentication infrastructure is provided by a dynamically loaded
 plugin chosen at runtime via the <b>AuthType</b> keyword in the Slurm
@@ -289,11 +299,13 @@ same <i>munge.key</i> file. The MUNGE daemon, <i>munged</i>, must also be
 started before Slurm daemons. Note that MUNGE does require clocks to be
 synchronized throughout the cluster, usually done by NTP.</p>
 
-<h3>MPI support</h3>
+<h3 id="mpi">MPI support<a class="slurm_link" href="#mpi"></a></h3>
 <p>Slurm supports many different MPI implementations.
 For more information, see <a href="quickstart.html#mpi">MPI</a>.
 
-<h3>Scheduler support</h3>
+<h3 id="scheduler">Scheduler support
+<a class="slurm_link" href="#scheduler"></a>
+</h3>
 <p>Slurm can be configured with rather simple or quite sophisticated
 scheduling algorithms depending upon your needs and willingness to
 manage the configuration (much of which requires a database).
@@ -327,7 +339,9 @@ jobs in higher priority queues.</li>
 <a href="resource_limits.html">Resource Limits</a> and
 <a href="cons_res_share.html">Sharing Consumable Resources</a>.</p>
 
-<h3>Resource selection</h3>
+<h3 id="resource">Resource selection
+<a class="slurm_link" href="#resource"></a>
+</h3>
 <p>The resource selection mechanism used by Slurm is controlled by the
 <b>SelectType</b> configuration parameter.
 If you want to execute multiple jobs per node, but track and manage allocation
@@ -337,17 +351,19 @@ recommended.
 For more information, please see
 <a href="cons_res.html">Consumable Resources in Slurm</a>.</p>
 
-<h3>Logging</h3>
+<h3 id="logging">Logging<a class="slurm_link" href="#logging"></a></h3>
 <p>Slurm uses syslog to record events if the <code>SlurmctldLogFile</code> and
 <code>SlurmdLogFile</code> locations are not set.</p>
 
-<h3>Accounting</h3>
+<h3 id="accounting">Accounting<a class="slurm_link" href="#accounting"></a></h3>
 <p>Slurm supports accounting records being written to a simple text file,
 directly to a database (MySQL or MariaDB), or to a daemon securely
 managing accounting data for multiple clusters. For more information
 see <a href="accounting.html">Accounting</a>. </p>
 
-<h3>Compute node access</h3>
+<h3 id="node_access">Compute node access
+<a class="slurm_link" href="#node_access"></a>
+</h3>
 <p>Slurm does not by itself limit access to allocated compute nodes,
 but it does provide mechanisms to accomplish this.
 There is a Pluggable Authentication Module (PAM) for restricting access
@@ -358,7 +374,7 @@ On job termination, any processes initiated by the user outside of
 Slurm's control may be killed using an <i>Epilog</i> script configured
 in <i>slurm.conf</i>.</p>
 
-<h2><a name="Config"></a>Configuration</h2>
+<h2 id="Config">Configuration<a class="slurm_link" href="#Config"></a></h2>
 <p>The Slurm configuration file includes a wide variety of parameters.
 This configuration file must be available on each node of the cluster and
 must have consistent contents. A full
@@ -459,7 +475,7 @@ PartitionName=pdebug Nodes=mcr[0-191] MaxTime=30 MaxNodes=32 Default=YES
 PartitionName=pbatch Nodes=mcr[192-1151]
 </pre>
 
-<h2>Security</h2>
+<h2 id="security">Security<a class="slurm_link" href="#security"></a></h2>
 <p>Besides authentication of Slurm communications based upon the value
 of the <b>AuthType</b>, digital signatures are used in job step
 credentials.
@@ -471,7 +487,7 @@ job step initiation overhead from the <i> slurmctld </i> daemon.
 The digital signature mechanism is specified by the <b>CredType</b>
 configuration parameter and the default mechanism is MUNGE. </p>
 
-<h3>Authentication</h3>
+<h3 id="auth">Authentication<a class="slurm_link" href="#auth"></a></h3>
 <p>Authentication of communications (identifying who generated a particular
 message) between Slurm components can use a different security mechanism
 that is configurable.
@@ -486,12 +502,16 @@ determine which authentication plugins may be built.
 The configuration file specifies which of the available plugins will be
 utilized.</p>
 
-<h3>Pluggable Authentication Module (PAM) support</h3>
+<h3 id="PAM">Pluggable Authentication Module (PAM) support
+<a class="slurm_link" href="#PAM"></a>
+</h3>
 <p>A PAM module (Pluggable Authentication Module) is available for Slurm that
 can prevent a user from accessing a node which he has not been allocated,
 if that mode of operation is desired.</p>
 
-<h2>Starting the Daemons</h2>
+<h2 id="starting_daemons">Starting the Daemons
+<a class="slurm_link" href="#starting_daemons"></a>
+</h2>
 <p>For testing purposes you may want to start by just running slurmctld and slurmd
 on one node. By default, they execute in the background. Use the <span class="commandline">-D</span>
 option for each daemon to execute them in the foreground and logging will be done
@@ -516,7 +536,9 @@ down manually using the <span class="commandline">scontrol</span> command will
 be returned to service unless noted as being down in the configuration file.
 In practice, Slurm consistently restarts with preservation.</p>
 
-<h2>Administration Examples</h2>
+<h2 id="admin_examples">Administration Examples
+<a class="slurm_link" href="#admin_examples"></a>
+</h2>
 <p><span class="commandline">scontrol</span> can be used to print all system information
 and modify most of it. Only a few examples are shown below. Please see the scontrol
 man page for full details. The commands and options are all case insensitive.</p>
@@ -598,7 +620,7 @@ Slurmctld(backup) at adevj is UP
 adev0: scontrol shutdown
 </pre>
 
-<h2><a name="upgrade"></a>Upgrades</h2>
+<h2 id="upgrade">Upgrades<a class="slurm_link" href="#upgrade"></a></h2>
 
 <p>Background: The Slurm version number contains three period-separated numbers
 that represent both the major Slurm release and maintenance release level.
@@ -740,7 +762,7 @@ need modification to support a new version of Slurm. It is common for plugins
 to add new functions and function arguments during major updates.
 See the RELEASE_NOTES file for details.</p>
 
-<h2><a name="FreeBSD"></a>FreeBSD</h2>
+<h2 id="FreeBSD">FreeBSD<a class="slurm_link" href="#FreeBSD"></a></h2>
 
 <p>FreeBSD administrators can install the latest stable Slurm as a binary
 package using:</p>

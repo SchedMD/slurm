@@ -16,7 +16,7 @@ power cap to a higher level.
 Note this functionality is distinct from Slurm's ability to
 <a href="power_save.html">power down idle nodes</a>.</p>
 
-<h2>Configuration</h2>
+<h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 
 <p>The following configuration parameters are available:
 <ul>
@@ -129,7 +129,9 @@ or loading the capmc module:</p>
 $ module load capmc
 </pre>
 
-<h2>User and System Administrator Commands</h2>
+<h2 id="commands">User and System Administrator Commands
+<a class="slurm_link" href="#commands"></a>
+</h2>
 
 <p>Equal power caps for all nodes allocated to a job can be requested at job
 submission time by using the "--power=level" option with the salloc, sbatch
@@ -154,9 +156,9 @@ $ srun --cpu-freq=highm1 ...
 using either the "scontrol show node" or sview commands.
 Information available includes "CurrentWatts" and "CapWatts".</p>
 
-<h2>Example</h2>
+<h2 id="example">Example<a class="slurm_link" href="#example"></a></h2>
 
-<h3>Initial State</h3>
+<h3 id="initial">Initial State<a class="slurm_link" href="#initial"></a></h3>
 <p>In our example, assume the following configuration:
 10 compute node cluster, where each node has a minimum power consumption of 100 watts
 and maximum power consumption of 200 watts.
@@ -168,7 +170,7 @@ lower_threshold=90, upper_threshold=98.
 The initial state is simply based upon the cap_watts divided by the number of
 compute nodes: 1800 watts / 10 nodes = 180 watts per node.</p>
 
-<h3>State in 60 Seconds</h3>
+<h3 id="60">State in 60 Seconds<a class="slurm_link" href="#60"></a></h3>
 <p>The power consumption is then examined balance_interval (60) seconds later.
 Assume that one of those nodes is consuming 110 watts and the others are
 using 180 watts.
@@ -184,7 +186,7 @@ Ignoring the upper_threshold parameter for now, we now have 1650 watts available
 to distribute to the remaining 9 compute nodes, or 183 watts per node
 (1650 watts / 9 nodes = 183 watts per node).</p>
 
-<h3>State in 120 Seconds</h3>
+<h3 id="120">State in 120 Seconds<a class="slurm_link" href="#120"></a></h3>
 <p>The power consumption is then examined balance_interval (60) seconds later.
 Assume that one of those nodes is still consuming 110 watts, a second node is
 consuming 115 watts and the other eight are using 183 watts.
@@ -198,7 +200,7 @@ decrease_rate; so that node's power cap is reduce from 183 watts to 153 watts.
 That leaves 1517 watts (1800 watts - 130 watts - 153 watts = 1517 watts) to
 be distributed over 8 nodes or 189 watts per node.</p>
 
-<h3>State in 180 Seconds</h3>
+<h3 id="180">State in 180 Seconds<a class="slurm_link" href="#180"></a></h3>
 <p>The power consumption is then examined balance_interval (60) seconds later.
 Assume the node previously consuming 110 watts is now consuming 128 watts.
 Since that is over upper_threshold of its power cap
@@ -211,7 +213,7 @@ running at their power cap.
 Therefore we have 1660 watts available (1800 watts - 140 watts = 1660 watts)
 to be distributed over 9 nodes or 184 watts per node.</p>
 
-<h2>Notes</h2>
+<h2 id="notes">Notes<a class="slurm_link" href="#notes"></a></h2>
 <ul>
 <li>Slurm's power management plugin can be used in conjunction with the
   <a href="power_save.html">power save mode</a>, where idle nodes are powered

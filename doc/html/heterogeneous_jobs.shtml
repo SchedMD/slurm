@@ -6,7 +6,10 @@
 <li><a href="#overview">Overview</a></li>
 <li><a href="#submitting">Submitting Jobs</a></li>
 <li><a href="#burst_buffer">Burst Buffers</a></li>
-<li><a href="#managing">Managing Jobs</a></li>
+<li>
+  <a href="#managing">Managing Jobs</a>
+  <ul><li><a href="#accounting">Accounting</a></li></ul>
+</li>
 <li><a href="#job_steps">Launching Applications (Job Steps)</a></li>
 <li><a href="#env_var">Environment Variables</a></li>
 <li><a href="#examples">Examples</a></li>
@@ -15,7 +18,7 @@
 <li><a href="#sys_admin">System Administrator Information</a></li>
 </ul>
 
-<h2><a name="overview">Overview</a></h2>
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 
 <p>Slurm version 17.11 and later supports the ability to submit and manage
 heterogeneous jobs, in which each component has virtually all job options
@@ -23,7 +26,9 @@ available including partition, account and QOS (Quality Of Service).
 For example, part of a job might require four cores and 4 GB for each of 128
 tasks while another part of the job would require 16 GB of memory and one CPU.</p>
 
-<h2><a name="submitting">Submitting Jobs</a></h2>
+<h2 id="submitting">Submitting Jobs
+<a class="slurm_link" href="#submitting"></a>
+</h2>
 
 <p>The <i>salloc</i>, <i>sbatch</i> and <i>srun</i> commands can all be used
 to submit heterogeneous jobs.
@@ -174,7 +179,9 @@ fashion with respect to quality of service (QOS) limits.
 Each component of a heterogeneous job counts as a "job" with respect to
 resource limits.</p>
 
-<h2><a name="burst_buffer">Burst Buffers</a></h2>
+<h2 id="burst_buffer">Burst Buffers
+<a class="slurm_link" href="#burst_buffer"></a>
+</h2>
 
 <p>A burst buffer can either be persistent or linked to a specific job ID
 (at least the Cray implementation).
@@ -228,7 +235,7 @@ above. An example is shown below:</p>
 exit 0
 </pre>
 
-<h2><a name="managing">Managing Jobs</a></h2>
+<h2 id="managing">Managing Jobs<a class="slurm_link" href="#managing"></a></h2>
 
 <p>Information maintained in Slurm for a heterogeneous job includes:</p>
 <ul>
@@ -367,7 +374,7 @@ $ scancel 94 (where job ID 94 is equivalent to 93+1)
 # Cancel only 93+1 if SchedulerParameters does not include "whole_hetjob"
 </pre>
 
-<h3>Accounting</h3>
+<h3 id="accounting">Accounting<a class="slurm_link" href="#accounting"></a></h3>
 
 <p>Slurm's accounting database records the het_job_id and het_job_offset
 fields.
@@ -406,7 +413,9 @@ $ sacct -j 67767+1 --whole-hetjob=yes
 67767+1     foo     debug    test         4 COMPLETED      0:0
 </pre>
 
-<h2><a name="job_steps">Launching Applications (Job Steps)</a></h2>
+<h2 id="job_steps">Launching Applications (Job Steps)
+<a class="slurm_link" href="#job_steps"></a>
+</h2>
 
 <p>The srun command is used to launch applications.
 By default, the application is launched only on the first component of a
@@ -495,7 +504,9 @@ error: Attempt to run a job step with het-group value of 2,
        but the job allocation has maximum value of 1
 </pre>
 
-<h2><a name="env_var">Environment Variables</a></h2>
+<h2 id="env_var">Environment Variables
+<a class="slurm_link" href="#env_var"></a>
+</h2>
 
 <p>Slurm environment variables will be set independently for each component of
 the job by appending "_HET_GROUP_" and a sequence number to the usual name.
@@ -557,7 +568,7 @@ SLURM_JOB_NODELIST=nid[00001,00011-00012]
 ...
 </pre>
 
-<h2><a name="examples">Examples</a></h2>
+<h2 id="examples">Examples<a class="slurm_link" href="#examples"></a></h2>
 
 <p>Create a heterogeneous resource allocation containing one node with 256GB
 of memory and a feature of "haswell" plus 2176 cores on 32 nodes with a
@@ -590,7 +601,9 @@ SLURM_NTASKS will be set to the total count of tasks in all components.
 Note that the task rank and count values are needed by MPI and typically
 determined by examining Slurm environment variables.</p>
 
-<h2><a name="limitations">Limitations</a></h2>
+<h2 id="limitations">Limitations
+<a class="slurm_link" href="#limitations"></a>
+</h2>
 
 <p>The backfill scheduler has limitations in how it tracks usage of CPUs and
 memory in the future.
@@ -656,7 +669,9 @@ communication ports (no change in Slurm behavior).</p>
 to all components of the heterogeneous job (not possible today) plus changes to
 srun in order to better synchronize the step startup and error handling. -->
 
-<h2><a name="het_steps">Heterogeneous Steps</a></h2>
+<h2 id="het_steps">Heterogeneous Steps
+<a class="slurm_link" href="#het_steps"></a>
+</h2>
 
 <p>Slurm version 20.11 introduces the ability to request heterogeneous job
 steps from within a non-homogeneous job allocation. This allows you the
@@ -683,7 +698,9 @@ node01
 node01
 </pre>
 
-<h2><a name="sys_admin">System Administrator Information</a></h2>
+<h2 id="sys_admin">System Administrator Information
+<a class="slurm_link" href="#sys_admin"></a>
+</h2>
 
 <p>The job submit plugin is invoked independently for each component of a
 heterogeneous job.</p>

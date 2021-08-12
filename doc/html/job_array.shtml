@@ -2,7 +2,7 @@
 
 <h1>Job Array Support</h1>
 
-<h2>Overview</h2>
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 
 <p>Job arrays offer a mechanism for submitting and managing collections of
 similar jobs quickly and easily; job arrays with millions of tasks can be
@@ -43,7 +43,9 @@ specified using a "%" separator.
 For example "--array=0-15%4" will limit the number of simultaneously
 running tasks from this job array to 4.</p>
 
-<h2>Job ID and Environment Variables</h2>
+<h2 id="env_vars">Job ID and Environment Variables
+<a class="slurm_link" href="#env_vars"></a>
+</h2>
 
 <p>Job arrays will have two additional environment variable set.
 <b>SLURM_ARRAY_JOB_ID</b> will be set to the first job ID of the array.
@@ -93,7 +95,7 @@ For example the <i>job_resume2()</i> function might return an array of error
 codes indicating that tasks 1 and 2 have already completed; tasks 3 through 5
 are resumed successfully, and tasks 6 through 99 have not yet started.</p>
 
-<h2>File Names</h2>
+<h2 id="file_names">File Names<a class="slurm_link" href="#file_names"></a></h2>
 
 <p>Two additional options are available to specify a job's stdin, stdout, and
 stderr file names:
@@ -109,7 +111,9 @@ If these file name options are used without being part of a job array then
 "%A" will be replaced by the current job ID and "%a" will be replaced by
 4,294,967,294 (equivalent to 0xfffffffe or NO_VAL).</p>
 
-<h2>Scancel Command Use</h2>
+<h2 id="scancel">Scancel Command Use
+<a class="slurm_link" href="#scancel"></a>
+</h2>
 
 <p>If the job ID of a job array is specified as input to the scancel command
 then all elements of that job array will be cancelled.
@@ -134,7 +138,7 @@ else
 fi
 </pre>
 
-<h2>Squeue Command Use</h2>
+<h2 id="squeue">Squeue Command Use<a class="slurm_link" href="#squeue"></a></h2>
 
 <p>When a job array is submitted to Slurm, only one job record is created.
 Additional job records will only be created when the state of a task in the
@@ -185,7 +189,9 @@ $ squeue -s 1234_2.0,1234_3.0
 <b>%K</b> prints the array_task_id value<br>
 (all of the obvious letters to use were already assigned to other job fields).</p>
 
-<h2>Scontrol Command Use</h2>
+<h2 id="scontrol">Scontrol Command Use
+<a class="slurm_link" href="#scontrol"></a>
+</h2>
 
 <p>Use of the <i>scontrol show job</i> option shows two new fields related to
 job array support.
@@ -265,7 +271,9 @@ $ squeue
 
 </pre>
 
-<h2>Job Dependencies</h2>
+<h2 id="dependencies">Job Dependencies
+<a class="slurm_link" href="#dependencies"></a>
+</h2>
 
 <p>A job which is to be dependent upon an entire job array should specify
 itself dependent upon the ArrayJobID.
@@ -304,7 +312,9 @@ sbatch --depend=afterok:123 my.job
 sbatch --depend=afternotok:123 my.job
 </pre>
 
-<h2>Other Command Use</h2>
+<h2 id="other_commands">Other Command Use
+<a class="slurm_link" href="#other_commands"></a>
+</h2>
 
 <p>The following Slurm commands do not currently recognize job arrays and their
 use requires the use of Slurm job IDs, which are unique for each array element:
@@ -315,7 +325,9 @@ The sview command has been modified to permit display of a job's ArrayJobId
 and ArrayTaskId fields. Both fields are displayed with a value of "N/A" if
 the job is not part of a job array.</p>
 
-<h2>System Administration</h2>
+<h2 id="administration">System Administration
+<a class="slurm_link" href="#administration"></a>
+</h2>
 
 <p>A new configuration parameter has been added to control the maximum
 job array size: <b>MaxArraySize</b>. The smallest index that can be specified

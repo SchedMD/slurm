@@ -21,7 +21,7 @@ Authors: Ryan Cox and Levi Morrison
 <li><a href="#notes">Important notes</a></li>
 </ul>
 
-<h2><a name="intro">Introduction</a></h2>
+<h2 id="intro">Introduction<a class="slurm_link" href="#intro"></a></h2>
 
 <p>
 Fair Tree prioritizes users such that if accounts A and B are siblings and A has
@@ -51,7 +51,9 @@ factors than all children of B.</p>
 	</li>
 </ul>
 
-<h2><a name="enduser">Overview for End Users</a></h2>
+<h2 id="enduser">Overview for End Users
+<a class="slurm_link" href="#enduser"></a>
+</h2>
 
 <p>This section is intended for non-admin users who just want to know how their
 fairshare factor is determined.  Run <code>sshare -l</code> (lowercase "L") to
@@ -91,7 +93,7 @@ Acct16 has a higher Level FS value than Acct12.</p>
 <p>The sections below contain more information about the algorithm, including
 how the final fairshare factor and the Level FS values are calculated.</p>
 
-<h2><a name="algorithm">Algorithm</a></h2>
+<h2 id="algorithm">Algorithm<a class="slurm_link" href="#algorithm"></a></h2>
 
 <p>An equation is used to calculate a Level Fairshare value for each
 association, only considering the shares and usage of itself and its siblings.
@@ -115,7 +117,9 @@ associations then start at root:</p>
 </ul></ul>
 
 
-<h2><a name="fairshare">Level Fairshare Calculation</a></h2>
+<h2 id="fairshare">Level Fairshare Calculation
+<a class="slurm_link" href="#fairshare"></a>
+</h2>
 
 <p>The Level Fairshare equation is described below. Under-served associations
 will have a value greater than 1.0. Over-served associations will have a value
@@ -144,7 +148,7 @@ the account's usage:
 <p>U and S are in the range <nobr><code>0.0 .. 1.0</code></nobr>. LF is in the
 range <nobr><code>0.0 .. infinity</code>.</nobr></p>
 
-<h2><a name="ties">Ties</a></h2>
+<h2 id="ties">Ties<a class="slurm_link" href="#ties"></a></h2>
 
 <p>Ties are handled as follows:
 <ul>
@@ -156,7 +160,7 @@ merged before descending</li>
 </ul>
 </p>
 
-<h2><a name="sshare">sshare</a></h2>
+<h2 id="sshare">sshare<a class="slurm_link" href="#sshare"></a></h2>
 
 <p>sshare was modified to show the Level Fairshare value as <code>Level FS</code> when
 the <code>-l</code> (long) parameter is specified.  The field shows the value for each
@@ -165,7 +169,7 @@ calculation at each level.</p>
 
 <p>Note: Norm Usage is not used by Fair Tree but is still displayed.</p>
 
-<h2><a name="config">Configuration</a></h2>
+<h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 
 <p> The following slurm.conf (SLURM_CONFIG_FILE) parameters are used to
 configure the Fair Tree algorithm.  See slurm.conf(5) man page for more
@@ -181,7 +185,7 @@ which enables simple FIFO scheduling.</dd>
 and Fair Tree calculations are performed.</dd>
 </dl>
 
-<h2><a name="notes">Important Notes</a></h2>
+<h2 id="notes">Important Notes<a class="slurm_link" href="#notes"></a></h2>
 <ul>
 <li>As the Fair Tree algorithm ranks all users, active or not, the
 administrator must carefully consider how to apply other priority weights

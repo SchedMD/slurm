@@ -2,7 +2,7 @@
 
 <h1><a name="top">Generic Resource (GRES) Design Guide</a></h1>
 
-<h2>Overview</h2>
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 
 <p>Generic Resources (GRES) are resources associated with a specific node
 that can be allocated to jobs and steps. The most obvious example of
@@ -12,7 +12,7 @@ to provide details about Slurm's implementation of GRES support including the
 relevant data structures. For an overview of GRES configuration and use, see
 <a href="gres.html">Generic Resource (GRES) Scheduling</a>.
 
-<h2>Data Structures</h2>
+<h2 id="data">Data Structures<a class="slurm_link" href="#data"></a></h2>
 
 <p>GRES are associated with Slurm nodes, jobs and job steps. You will find
 a string variable named <b>gres</b> in those data structures which
@@ -70,7 +70,7 @@ node, job or step, then both <b>gres</b> and <b>gres_list</b> will be NULL.</p>
 ------------------------------------------------
 </pre>
 
-<h2>Mode of Operation</h2>
+<h2 id="op">Mode of Operation<a class="slurm_link" href="#op"></a></h2>
 
 <p>After the slurmd daemon reads the configuration files, it calls the function
 <b>node_config_load()</b> for each configured plugin. This can be used to

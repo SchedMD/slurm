@@ -2,7 +2,7 @@
 
 <h1>Quick Start User Guide</h1>
 
-<h2>Overview</h2>
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 <p>Slurm is an open source,
 fault-tolerant, and highly scalable cluster management and job scheduling system
 for large and small Linux clusters. Slurm requires no kernel modifications for
@@ -13,7 +13,7 @@ can perform work. Second, it provides a framework for starting, executing, and
 monitoring work (normally a parallel job) on the set of allocated nodes. Finally,
 it arbitrates contention for resources by managing a queue of pending work.</p>
 
-<h2>Architecture</h2>
+<h2 id="arch">Architecture<a class="slurm_link" href="#arch"></a></h2>
 <p>As depicted in Figure 1, Slurm consists of a <b>slurmd</b> daemon running on
 each compute node and a central <b>slurmctld</b> daemon running on a management node
 (with optional fail-over twin).
@@ -51,7 +51,7 @@ or several job steps may independently use a portion of the allocation.</p>
 </div>
 
 
-<h2>Commands</h2>
+<h2 id="commands">Commands<a class="slurm_link" href="#commands"></a></h2>
 <p>Man pages exist for all Slurm daemons, commands, and API functions. The command
 option <span class="commandline">--help</span> also provides a brief summary of
 options. Note that the command options are all case sensitive.</p>
@@ -121,7 +121,7 @@ or jobs approaching their time limit.</p>
 get and update state information for jobs, partitions, and nodes managed by Slurm.</p>
 
 
-<h2>Examples</h2>
+<h2 id="examples">Examples<a class="slurm_link" href="#examples"></a></h2>
 <p>First we determine what partitions exist on the system, what nodes
 they include, and general system state. This information is provided
 by the <span class="commandline">sinfo</span> command.
@@ -349,7 +349,9 @@ JOBID PARTITION NAME USER ST TIME  NODES NODELIST(REASON)
 </pre>
 
 
-<h2>Best Practices, Large Job Counts</h2>
+<h2 id="best">Best Practices, Large Job Counts
+<a class="slurm_link" href="#best"></a>
+</h2>
 
 <p>Consider putting related work into a single Slurm job with multiple job
 steps both for performance reasons and ease of management.
@@ -362,7 +364,7 @@ Most Slurm commands can manage job arrays either as individual elements (tasks)
 or as a single entity (e.g. delete an entire job array in a single command).</p>
 
 
-<h2><a name="mpi">MPI</a></h2>
+<h2 id="mpi">MPI<a class="slurm_link" href="#mpi"></a></h2>
 
 <p>MPI use depends upon the type of MPI being used.
 There are three fundamentally different modes of operation used

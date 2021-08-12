@@ -16,8 +16,7 @@
 <a href="#Adding-Files-and-Directories">Adding Files and Directories</a><br>
 <a href="#Tricks-of-the-Trade">Tricks of the Trade</a><br>
 
-<a id="Overview"></a>
-<h2>Overview</h2>
+<h2 id="Overview">Overview<a class="slurm_link" href="#Overview"></a></h2>
 
 <p>Slurm is an open source, fault-tolerant,
 and highly scalable cluster management and job scheduling system for large and
@@ -32,8 +31,7 @@ Linux kernel coding style</a>. <i>(Some components of Slurm have been taken from
 various sources. Some of these components do not conform to the Linux kernel
 coding style. However, new code written for Slurm should follow these standards.)</i>
 
-<a id="Plugins"></a>
-<h2>Plugins</h2>
+<h2 id="Plugins">Plugins<a class="slurm_link" href="#Plugins"></a></h2>
 
 <p>To make the use of different infrastructures possible, Slurm uses a general
 purpose plugin mechanism. A Slurm plugin is a dynamically linked code object that
@@ -46,8 +44,9 @@ available plugins should be used. A <a href="plugins.html">plugin developer's
 guide</a> is available with general information about plugins.
 
 
-<a id="Directory-Structure"></a>
-<h2>Directory Structure</h2>
+<h2 id="Directory-Structure">Directory Structure
+<a class="slurm_link" href="#Directory-Structure"></a>
+</h2>
 
 <p>The contents of the Slurm directory structure will be described below in increasing
 detail as the structure is descended. The top level directory contains the scripts
@@ -77,8 +76,9 @@ described above.<br>
 are here.</p>
 
 
-<a id="Documentation"></a>
-<h2>Documentation</h2>
+<h2 id="Documentation">Documentation
+<a class="slurm_link" href="#Documentation"></a>
+</h2>
 <p>All of the documentation is in the subdirectory <b>doc</b>.
 Two directories are of particular interest:</p>
 
@@ -87,8 +87,9 @@ Two directories are of particular interest:</p>
 configuration file, commands, and daemons.<br>
 <b>doc/html</b> &mdash; contains the web pages.</p>
 
-<a id="Source-Code"></a>
-<h2>Source Code</h2>
+<h2 id="Source-Code">Source Code
+<a class="slurm_link" href="#Source-Code"></a>
+</h2>
 
 <p>Functions are divided into several categories, each in its own subdirectory.
 The details of each directory's contents are provided below. The directories are
@@ -154,15 +155,17 @@ jobs when a Job Accounting Gather plugin is installed.<br>
 job state information.<br>
 
 
-<a id="Source-Code-Management"></a>
-<h2>Source Code Management</h2>
+<h2 id="Source-Code-Management">Source Code Management
+<a class="slurm_link" href="#Source-Code-Management"></a>
+</h2>
 <p>The latest code is in github:
 <a href="https://github.com/SchedMD/slurm">https://github.com/SchedMD/slurm</a>.
 Creating your own branch will make it easier to keep it synchronized
 with our work.</p>
 
-<a id="Adding-New-Modules"></a>
-<h2>Adding New Modules</h2>
+<h2 id="Adding-New-Modules">Adding New Modules
+<a class="slurm_link" href="#Adding-New-Modules"></a>
+</h2>
 <p>Add the new file name to the Makefile.am file in the appropriate directory.
 Then execute autoreconf (at the top level of the Slurm source directory).
 Note that a relatively current version of auotmake is required.
@@ -175,14 +178,14 @@ to the Makefile to be built in the new directory. In summary:<br>
 <u>autoreconf</u> translates <u>.am</u> files into <u>.in</u> files<br>
 <u>configure</u> tranlates <u>.in</u> files, adding paths and version numbers.</p>
 
-<a id="Compiling"></a>
-<h2>Compiling</h2>
+<h2 id="Compiling">Compiling<a class="slurm_link" href="#Compiling"></a></h2>
 <p>Sending the standard output of "make" to a file makes it easier to see any
 warning or error messages:<br>
 <i>"make -j install &gt;make.out"</i></p>
 
-<a id="Configuration"></a>
-<h2>Configuration</h2>
+<h2 id="Configuration">Configuration
+<a class="slurm_link" href="#Configuration"></a>
+</h2>
 <p>Sample configuration files are included in the <b>etc</b> subdirectory.
 The <b>slurm.conf</b> can be built using a <a href="configurator.html">configuration tool</a>.
 See <b>doc/man/man5/slurm.conf.5</b> and the man pages for other configuration files
@@ -191,8 +194,7 @@ for more details.
 Slurm daemon(s) should execute on any node based upon the configuration file contents.
 It will also manage these daemons: starting, signaling, restarting, and stopping them.</p>
 
-<a id="Test-Suite"></a>
-<h2>Test Suite</h2>
+<h2 id="Test-Suite">Test Suite<a class="slurm_link" href="#Test-Suite"></a></h2>
 <p>The <b>testsuite</b> files use a DejaGnu framework for testing. These tests
 are very limited in scope.</p>
 
@@ -212,16 +214,20 @@ or the full test suite may be executed with the single command
 <i>regression.py</i>.
 See <b>testsuite/expect/README</b> for more information.</p>
 
-<a id="Adding-Files-and-Directories"></a>
-<h2>Adding Files and Directories</h2>
+<h2 id="Adding-Files-and-Directories">Adding Files and Directories
+<a class="slurm_link" href="#Adding-Files-and-Directories"></a>
+</h2>
 <p>If you are adding files and directories to Slurm, it will be necessary to
 re-build configuration files before executing the <b>configure</b> command.
 Update <b>Makefile.am</b> files as needed then execute
 <b>autoreconf</b> before executing <b>configure</b>.
 
-<a id="Tricks-of-the-Trade"></a>
-<h2>Tricks of the Trade</h2>
-<h3>HAVE_FRONT_END</h3>
+<h2 id="Tricks-of-the-Trade">Tricks of the Trade
+<a class="slurm_link" href="#Tricks-of-the-Trade"></a>
+</h2>
+<h3 id="front_end">HAVE_FRONT_END
+<a class="slurm_link" href="#front_end"></a>
+</h3>
 <p>You can make a single node appear to Slurm as a Linux cluster by running
 <i>configure</i> with the <i>--enable-front-end</i> option. This
 defines <b>HAVE_FRONT_END</b> with a non-zero value in the file <b>config.h</b>.
@@ -233,7 +239,9 @@ executes.  Initiate one <span class="commandline">slurmd</span> and one
 simultaneous job steps to avoid overloading the
 <span class="commandline">slurmd</span> daemon executing them all.</p>
 
-<h3><a name="multiple_slurmd_support">Multiple slurmd support</a></h3>
+<h3 id="multiple_slurmd_support">Multiple slurmd support
+<a class="slurm_link" href="#multiple_slurmd_support"></a>
+</h3>
 <p>It is possible to run multiple slurmd daemons on a single node, each using
 a different port number and NodeName alias.  This is very useful for testing
 networking and protocol changes, or anytime you want to simulate a larger

@@ -2,7 +2,9 @@
 
 <h1><a name="top">Sharing Consumable Resources</a></h1>
 
-<H3>CPU Management</H3>
+<h2 id="cpu_management">CPU Management
+<a class="slurm_link" href="#cpu_management"></a>
+</h2>
 <P>
 (Disclaimer: In this "CPU Management" section, the term "consumable resource"
 does not include memory. The management of memory as a consumable resource is
@@ -128,7 +130,9 @@ run up to 3 jobs on each <U>core</U> of each node in the partition. If
 plugin will run up to 3 jobs on each <U>socket</U>
 of each node in the partition.
 </P>
-<H3>Nodes in Multiple Partitions</H3>
+<h2 id="multiple_partitions">Nodes in Multiple Partitions
+<a class="slurm_link" href="#multiple_partitions"></a>
+</h2>
 <P>
 Slurm has supported configuring nodes in more than one partition since version
 0.7.0. The following table describes how nodes configured in two partitions with
@@ -198,7 +202,9 @@ to begin running "on top of" the existing jobs. This happens with the
 <CODE>select/cons_res</CODE> or <CODE>select/cons_tres</CODE> plugins.
 </P>
 
-<H3>Memory Management</H3>
+<h2 id="memory_management">Memory Management
+<a class="slurm_link" href="#memory_management"></a>
+</h2>
 <P>
 The management of memory as a consumable resource remains unchanged and
 can be used to prevent oversubscription of memory, which would result in

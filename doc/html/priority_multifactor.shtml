@@ -21,8 +21,7 @@
 <LI> <a href=#configexample>Configuration Example</a>
 </UL>
 
-<a name=intro>
-<h2>Introduction</h2></a>
+<h2 id="intro">Introduction<a class="slurm_link" href="#intro"></a></h2>
 
 <p>By default, Slurm assigns job priority on a First In, First Out (FIFO) basis.
 FIFO scheduling should be configured when Slurm is controlled by an external
@@ -55,8 +54,9 @@ may not be the first to be evaluated by the scheduler. The job priority is
 considered when there are multiple jobs that can be evaluated at once, such
 as jobs requesting partitions with the same PriorityTier.</p>
 
-<a name=mfjppintro>
-<h2>Multifactor 'Factors'</h2></a>
+<h2 id="mfjppintro">Multifactor 'Factors'
+<a class="slurm_link" href="#mfjppintro"></a>
+</h2>
 
 <P> There are nine factors in the Multifactor Job Priority plugin that
 influence job priority:</P>
@@ -90,8 +90,9 @@ requested/allocated TRES Type in a given partition
   (say 70%), set the job size and the age factors to each contribute
   15%, and set the partition and QOS influences to zero.</P>
 
-<a name=general>
-<h2>Job Priority Factors In General</h2></a>
+<h2 id="general">Job Priority Factors In General
+<a class="slurm_link" href="#general"></a>
+</h2>
 
 <P> The job's priority at any given time will be a weighted sum of all the factors that have been enabled in the slurm.conf file.  Job priority can be expressed as:</P>
 <PRE>
@@ -127,8 +128,7 @@ Job_priority =
   weights high enough to avoid this scenario, starting around 1000 or
   so for those factors you want to make predominant.</P>
 
-<a name=age>
-<h2>Age Factor</h2></a>
+<h2 id="age">Age Factor<a class="slurm_link" href="#age"></a></h2>
 
 <P><b>Note:</b> Computing the age factor requires the installation
 and operation of the <a href="accounting.html">Slurm Accounting
@@ -138,16 +138,14 @@ Database</a>.</P>
 
 <P> At some configurable length of time (<i>PriorityMaxAge</i>), the age factor will max out to 1.0.</P>
 
-<a name=assoc>
-<h2>Association Factor</h2></a>
+<h2 id="assoc">Association Factor<a class="slurm_link" href="#assoc"></a></h2>
 
 <P> Each association can be assigned an integer priority. The larger the
 number, the greater the job priority will be for jobs that request
 this association. This priority value is normalized to the highest
 priority of all the association to become the association factor.</P>
 
-<a name=jobsize>
-<h2>Job Size Factor</h2></a>
+<h2 id="jobsize">Job Size Factor<a class="slurm_link" href="#jobsize"></a></h2>
 
 <P>The job size factor correlates to the number of nodes or CPUs the job has
 requested.  This factor can be configured to favor larger jobs or smaller jobs
@@ -165,16 +163,16 @@ of 1.0, while a tiny job with a large time limit will receive a job size factor
 close to 0.0.</p>
 
 
-<a name=nice>
-<h2>Nice Factor</h2></a>
+<h2 id="nice">Nice Factor<a class="slurm_link" href="#nice"></a></h2>
 <P> Users can adjust the priority of their own jobs by setting the nice value
 on their jobs. Like the system nice, positive values negatively impact a job's
 priority and negative values increase a job's priority. Only privileged users
 can specify a negative value. The adjustment range is +/-2147483645.
 </P>
 
-<a name=partition>
-<h2>Partition Factor</h2></a>
+<h2 id="partition">Partition Factor
+<a class="slurm_link" href="#partition"></a>
+</h2>
 
 <P> Each node partition can be assigned an integer priority.  The
 larger the number, the greater the job priority will be for jobs that
@@ -182,24 +180,23 @@ request to run in this partition.  This priority value is then
 normalized to the highest priority of all the partitions to become the
 partition factor.</P>
 
-<a name=qos>
-<h2>Quality of Service (QOS) Factor</h2></a>
+<h2 id="qos">Quality of Service (QOS) Factor
+<a class="slurm_link" href="#qos"></a>
+</h2>
 
 <P> Each QOS can be assigned an integer priority.  The larger the
 number, the greater the job priority will be for jobs that request
 this QOS.  This priority value is then normalized to the highest
 priority of all the QOS's to become the QOS factor.</P>
 
-<a name=site>
-<h2>Site Factor</h2></a>
+<h2 id="site">Site Factor<a class="slurm_link" href="#site"></a></h2>
 
 <P> The site factor is a factor that can be set either using scontrol,
 through a job_submit or site_factor plugin. An example use case, might be a
 job_submit plugin
 that sets a specific priority based on how many resources are requested.</P>
 
-<a name=tres>
-<h2>TRES Factors</h2></a>
+<h2 id="tres">TRES Factors<a class="slurm_link" href="#tres"></a></h2>
 
 <P>
 Each TRES Type has its own priority factor for a job which represents the amount
@@ -209,8 +206,9 @@ TRES Type requested/allocated in the whole system. The more a given TRES Type is
 requested/allocated on a job, the greater the job priority will be for that job.
 </P>
 
-<a name=fairshare>
-<h2>Fair-share Factor</h2></a>
+<h2 id="fairshare">Fair-share Factor
+<a class="slurm_link" href="#fairshare"></a>
+</h2>
 
 <P><b>Note:</b> Computing the fair-share factor requires the installation
 and operation of the <a href="accounting.html">Slurm Accounting
@@ -264,7 +262,7 @@ This method is turned on by defining the MAX_TRES priority flags in the
 slurm.conf.
 </P>
 
-<h3>"Fair Tree" Fairshare</h3>
+<h3 id="tree">"Fair Tree" Fairshare<a class="slurm_link" href="#tree"></a></h3>
 
 <p>
 As of the 19.05 release, the "Fair Tree" fairshare algorithm has been made the
@@ -272,7 +270,9 @@ default. Please see the <a href="fair_tree.html">Fair Tree Fairshare</a>
 documentation for further details.
 </p>
 
-<h3>"Classic" Fairshare</h3>
+<h3 id="classic">"Classic" Fairshare
+<a class="slurm_link" href="#classic"></a>
+</h3>
 
 <p>
 As of the 19.05 release, the "classic" fairshare algorithm is no longer the
@@ -282,8 +282,9 @@ to a separate <a href="classic_fair_share.html">Classic Fairshare</a>
 documentation page.
 </p>
 
-<a name=sprio>
-<h2>The <i>sprio</i> utility</h2></a>
+<h2 id="sprio">The <i>sprio</i> utility
+<a class="slurm_link" href="#sprio"></a>
+</h2>
 
 <P> The <i>sprio</i> command provides a summary of the six factors
 that comprise each job's scheduling priority.  While <i>squeue</i> has
@@ -293,8 +294,7 @@ for each job.  In addition, the <i>sprio -w</i> option displays the
 weights (PriorityWeightAge, PriorityWeightFairshare, etc.) for each
 factor as it is currently configured.</P>
 
-<a name=config>
-<h2>Configuration</h2></a>
+<h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 
 <P> The following slurm.conf (SLURM_CONFIG_FILE) parameters are used to configure the Multifactor Job Priority Plugin.  See slurm.conf(5) man page for more details.</P>
 
@@ -393,8 +393,9 @@ PriorityType=priority/multifactor.
 
 <P> Note:  As stated above, the six priority factors range from 0.0 to 1.0.  As such, the PriorityWeight terms may need to be set to a high enough value (say, 1000) to resolve very tiny differences in priority factors.  This is especially true with the fair-share factor, where two jobs may differ in priority by as little as .001. (or even less!)</P>
 
-<a name=configexample>
-<h2>Configuration Example</h2></a>
+<h2 id="configexample">Configuration Example
+<a class="slurm_link" href="#configexample"></a>
+</h2>
 
 <P> The following are sample slurm.conf file settings for the
   Multifactor Job Priority Plugin.</P>

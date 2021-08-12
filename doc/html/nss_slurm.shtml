@@ -21,7 +21,9 @@ process, the response will include only those groups that the user belongs to,
 but with only the user themselves listed as a member. The full list of group
 members is not provided.</p>
 
-<h2><a id="INSTALLATION">Installation</a></h2>
+<h2 id="INSTALLATION">Installation
+<a class="slurm_link" href="#INSTALLATION"></a>
+</h2>
 
 <h3>Source:</h3>
 
@@ -50,7 +52,7 @@ pam_slurm_adopt. Refer to the
 Administrator Guide</a> for instructions on managing an RPM-based install.</p>
 -->
 
-<h2><a id="SETUP">Setup</a></h2>
+<h2 id="SETUP">Setup<a class="slurm_link" href="#SETUP"></a></h2>
 
 <p>The slurmctld must be configured to look up and send the appropriate passwd
 and group details as part of the launch credential. This is handled by setting
@@ -78,7 +80,9 @@ tim:x:1000:tim
 projecta:x:1001:tim
 </pre>
 
-<h2><a id="NSS_SLURM_CONFIG">NSS Slurm Configuration</a></h2>
+<h2 id="NSS_SLURM_CONFIG">NSS Slurm Configuration
+<a class="slurm_link" href="#NSS_SLURM_CONFIG"></a>
+</h2>
 
 <p>nss_slurm has an optional configuration file &mdash;
 <b>/etc/nss_slurm.conf</b>. This configuration file is only needed if:
@@ -92,7 +96,9 @@ explicitly set the NodeName option.</li>
 <p>NodeName and SlurmdSpoolDir are the only configuration options supported
 at this time.</p>
 
-<h2><a id="INITIAL_TESTING">Initial Testing</a></h2>
+<h2 id="INITIAL_TESTING">Initial Testing
+<a class="slurm_link" href="#INITIAL_TESTING"></a>
+</h2>
 
 <p>Before enabling NSS Slurm directly on the node, you should use the
 <b>-s slurm</b> option to <b>getent</b> within a newly launched job step
@@ -113,7 +119,9 @@ tim:x:1000:tim
 projecta:x:1001:tim
 </pre>
 
-<h2><a id="NSS_CONFIG">NSS Configuration</a></h2>
+<h2 id="NSS_CONFIG">NSS Configuration
+<a class="slurm_link" href="#NSS_CONFIG"></a>
+</h2>
 
 <p>Enabling nss_slurm is as simple as adding <b>slurm</b> to the passwd and
 group database in <b>/etc/nsswitch.conf</b>. It is recommended that
@@ -130,7 +138,9 @@ tim@blackhole:~$ srun getent group projecta
 projecta:x:1001:tim
 </pre>
 
-<h2><a id="LIMITATIONS">Limitations</a></h2>
+<h2 id="LIMITATIONS">Limitations
+<a class="slurm_link" href="#LIMITATIONS"></a>
+</h2>
 
 <p>nss_slurm will only return results for processes within a given job step.
 It will not return any results for processes outside of these steps, such as

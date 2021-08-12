@@ -2,7 +2,7 @@
 
 <h1>Adding Files or Plugins to Slurm</h1>
 
-<h2>Adding a File to Slurm</h2>
+<h2 id="file">Adding a File to Slurm<a class="slurm_link" href="#file"></a></h2>
 
 <p>This is the procedure to follow in order to add a new C file to the Slurm
 code base.  We recommend using a git branch for this purpose.</p>
@@ -19,7 +19,9 @@ directory. If you have different versions of the files than were originally
 used by the Slurm team, this may rebuild all of the Makefile.in files in Slurm.</li>
 </ol>
 
-<h2>Adding a Plugin to Slurm</h2>
+<h2 id="plugin">Adding a Plugin to Slurm
+<a class="slurm_link" href="#plugin"></a>
+</h2>
 
 <p>This is the procedure to follow in order to add a new plugin to the Slurm
 code base.  We recommend using a git branch for this purpose. In this example,

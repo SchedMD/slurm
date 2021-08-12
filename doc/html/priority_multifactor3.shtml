@@ -11,8 +11,7 @@
 </ul>
 
 <!-------------------------------------------------------------------------->
-<a name=intro>
-<h2>Introduction</h2></a>
+<h2 id="intro">Introduction<a class="slurm_link" href="#intro"></a></h2>
 
 <p>The depth-oblivious fair-share factor is a variant of the default
 fair-share factor which increases usable priority ranges and improves
@@ -22,9 +21,9 @@ and only the specifics of the depth-oblivious factor are documented
 here</p>
 
 <!-------------------------------------------------------------------------->
-<a name=fairshare>
-<h2>Depth-Oblivous Fair-Share Formula</h2></a>
-
+<h2 id="fairshare">Depth-Oblivous Fair-Share Formula
+<a class="slurm_link" href="#fairshare"></a>
+</h2>
 
 <P> The main formula for calculating the fair-share factor of an account is:</P>
 
@@ -61,8 +60,9 @@ ratio R is equal to the usage ratio r defined as: </P>
 
 <P> which is the same as the orginal formula. </P>
 
-<a name=ratio>
-<h2>The Effective Usage Ratio Under an Account Hierarchy</h2></a>
+<h2 id="ratio">The Effective Usage Ratio Under an Account Hierarchy
+<a class="slurm_link" href="#ratio"></a>
+</h2>
 
 <P> The generalized formula for R is a bit more complex. It involves a
 local usage ratio r<sub>l</sub>:</P>
@@ -133,8 +133,7 @@ helpful. As a result, k is kept to 1 in that case.</P>
 </div>
 
 <!-------------------------------------------------------------------------->
-<a name=config>
-<h2>Configuration</h2></a>
+<h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 
 <p> The following slurm.conf (SLURM_CONFIG_FILE) parameters are used
 to enable the depth-oblivious flavor of the fair-share factor.  See

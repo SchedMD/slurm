@@ -1,12 +1,13 @@
 <!--#include virtual="header.txt"-->
 
 <h1><a name="top">Slurm Plugin API</a></h1>
-<h2>Overview</h2>
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 <p>A Slurm plugin is a dynamically linked code object which is loaded explicitly
 at run time by the Slurm libraries. A plugin provides a customized implementation
 of a well-defined API connected to tasks such as authentication, interconnect
 fabric, and task scheduling.</p>
-<h2>Identification</h2>
+<h2 id="identification">Identification
+<a class="slurm_link" href="#identification"></a></h2>
 <p>A Slurm plugin identifies itself by a short character string formatted similarly
 to a MIME type: <i>&lt;major&gt;/&lt;minor&gt;</i>. The major type identifies
 which API the plugin implements. The minor type uniquely distinguishes a plugin
@@ -15,7 +16,9 @@ platform or the internal algorithm. For example, a plugin to interface to the
 Maui scheduler would give its type as &quot;sched/maui.&quot; It would implement
 the Slurm Scheduler API.</p>
 
-<h2>Versioning</h2>
+<h2 id="versioning">Versioning
+<a class="slurm_link" href="#versioning"></a>
+</h2>
 <p>Slurm plugin version numbers comprise a major, minor and micro revision number.
 If the major and/or minor revision number changes, this indicates major changes
 to the Slurm functionality including changes to APIs, command options, and
@@ -30,7 +33,8 @@ all Slurm APIs, commands, plugins, etc. on a compute node should represent
 the same version of Slurm.</p>
 
 
-<h2>Data Objects</h2>
+<h2 id="data_objects">Data Objects
+<a class="slurm_link" href="#data_objects"></a></h2>
 
 <p>A plugin must define and export the following symbols:</p>
 <ul>
@@ -55,7 +59,9 @@ failures due to changes in the arguments to plugin functions or changes
 in other Slurm functions used by the plugin.</p>
 </ul>
 
-<h2>API Functions in All Plugins</h2>
+<h2 id="api">API Functions in All Plugins
+<a class="slurm_link" href="#api"></a>
+</h2>
 <p class="commandline">int init (void);</p>
 <p style="margin-left:.2in"><b>Description</b>: If present, this function is called
 just after the plugin is loaded. This allows the plugin to perform any global
@@ -79,13 +85,17 @@ The system <span class="commandline">_init()</span> is called before the Slurm
 <span class="commandline">_fini()</span>.</p>
 <p>The functions need not appear. The plugin may provide either
 <span class="commandline">init()</span> or <span class="commandline">fini()</span> or both.</p>
-<h2>Thread Safety</h2>
+<h2 id="thread_safety">Thread Safety
+<a class="slurm_link" href="#thread_safety"></a>
+</h2>
 
 <p>Slurm is a multithreaded application. The Slurm plugin library may exercise
 the plugin functions in a re-entrant fashion. It is the responsibility of the
 plugin author to provide the necessarily mutual exclusion and synchronization
 in order to avoid the pitfalls of re-entrant code.</p>
-<h2>Run-time Support</h2>
+<h2 id="run_time">Run-time Support
+<a class="slurm_link" href="#run_time"></a>
+</h2>
 <p>The standard system libraries are available to the plugin. The Slurm libraries
 are also available and plugin authors are encouraged to make use of them rather
 than develop their own substitutes. Plugins should use the Slurm log to print
@@ -94,7 +104,9 @@ error messages.</p>
 needed for correct operation. Plugins will not load if their dependent libraries
 are not available, so it is the installer's job to make sure the specified libraries
 are available.</p>
-<h2>Performance</h2>
+<h2 id="performance">Performance
+<a class="slurm_link" href="#performance"></a>
+</h2>
 <p>All plugin functions are expected to execute very quickly. If any function
 entails delays (e.g. transactions with other systems), it should be written to
 utilize a thread for that functionality. This thread may be created by the
@@ -102,7 +114,9 @@ utilize a thread for that functionality. This thread may be created by the
 <span class="commandline">fini()</span> functions. See <b>plugins/sched/backfill</b>
 for an example of how to do this.</p>
 
-<h2>Data Structure Consistency</h2>
+<h2 id="structure">Data Structure Consistency
+<a class="slurm_link" href="#structure"></a>
+</h2>
 
 <p>
   In certain situations Slurm iterates over different data structures elements
@@ -122,7 +136,9 @@ for an example of how to do this.</p>
   file.
 </p>
 
-<h3>slurm_job_info_t (job_info_t) Data Structure</h3>
+<h3 id="slurm_job_info_t">slurm_job_info_t (job_info_t) Data Structure
+<a class="slurm_link" href="#slurm_job_info_t"></a>
+</h3>
 <pre>
   uint32_t env_size;
   char **environment;
@@ -159,7 +175,9 @@ for an example of how to do this.</p>
   <i>het_job_id_set</i> array.
 </p>
 
-<h3>job_step_info_t Data Structure</h3>
+<h3 id="job_step_info_t">job_step_info_t Data Structure
+<a class="slurm_link" href="#job_step_info_t"></a>
+</h3>
 <pre>
   char *nodes;
   int32_t *node_inx;
@@ -169,7 +187,9 @@ for an example of how to do this.</p>
   <i>nodes</i>. Both variables must match the node count.
 </p>
 
-<h3>priority_factors_object_t Data Structure</h3>
+<h3 id="priority_factors_object_t">priority_factors_object_t Data Structure
+<a class="slurm_link" href="#priority_factors_object_t"></a>
+</h3>
 <pre>
   uint32_t tres_cnt;
   char **tres_names;
@@ -181,7 +201,9 @@ for an example of how to do this.</p>
   buffer overflows.
 </p>
 
-<h3>job_step_pids_t Data Structure</h3>
+<h3 id="job_step_pids_t">job_step_pids_t Data Structure
+<a class="slurm_link" href="#job_step_pids_t"></a>
+</h3>
 <pre>
   uint32_t pid_cnt;
   uint32_t *pid;
@@ -191,7 +213,9 @@ for an example of how to do this.</p>
   <i>pid_cnt</i> is the counter that must match the size of the array.
 </p>
 
-<h3>slurm_step_layout_t Data Structure</h3>
+<h3 id="slurm_step_layout_t">slurm_step_layout_t Data Structure
+<a class="slurm_link" href="#slurm_step_layout_t"></a>
+</h3>
 <pre>
   uint32_t node_cnt;
   char *node_list;
@@ -219,7 +243,9 @@ for an example of how to do this.</p>
   layout.
 </p>
 
-<h3>slurm_step_launch_params_t Data Structure</h3>
+<h3 id="slurm_step_launch_params_t">slurm_step_launch_params_t Data Structure
+<a class="slurm_link" href="#slurm_step_launch_params_t"></a>
+</h3>
 <pre>
   uint32_t envc;
   char **env;
@@ -257,7 +283,9 @@ for an example of how to do this.</p>
   in subsequent loops over that array.
 </p>
 
-<h3>node_info_t Data Structure</h3>
+<h3 id="node_info_t">node_info_t Data Structure
+<a class="slurm_link" href="#node_info_t"></a>
+</h3>
 <pre>
   char *features;
   char *features_act;
@@ -279,7 +307,9 @@ uint32_t reason_uid;
   should be updated.
 </p>
 
-<h3>reserve_info_t Data Structure</h3>
+<h3 id="reserve_info_t">reserve_info_t Data Structure
+<a class="slurm_link" href="#reserve_info_t"></a>
+</h3>
 <pre>
   int32_t *node_inx;
   uint32_t node_cnt;
@@ -289,17 +319,23 @@ uint32_t reason_uid;
   with the reservation and its count must equal <i>node_cnt</i>.
 </p>
 
-<h3>partition_info_t Data Structure</h3>
+<h3 id="partition_info_t">partition_info_t Data Structure
+<a class="slurm_link" href="#partition_info_t"></a>
+</h3>
 <p>
   No special advice.
 </p>
 
-<h3>slurm_step_layout_req_t Data Structure</h3>
+<h3 id="slurm_step_layout_req_t">slurm_step_layout_req_t Data Structure
+<a class="slurm_link" href="#slurm_step_layout_req_t"></a>
+</h3>
 <p>
   No special advice.
 </p>
 
-<h3>slurm_step_ctx_params_t</h3>
+<h3 id="slurm_step_ctx_params_t">slurm_step_ctx_params_t
+<a class="slurm_link" href="#slurm_step_ctx_params_t"></a>
+</h3>
 <p>
   No special advice.
 </p>

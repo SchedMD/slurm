@@ -18,7 +18,7 @@
 <li><a href="#limitations">Limitations</a></li>
 </ul>
 
-<h2><a name="overview">Overview</a></h2>
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 <p>Slurm includes support for creating a federation of clusters
 and scheduling jobs in a peer-to-peer fashion between them. Jobs submitted to a
 federation receive a unique job ID that is unique among all clusters in the
@@ -37,7 +37,9 @@ could be used to do this).
 </p>
 
 
-<h2><a name="configuration">Configuration</a></h2>
+<h2 id="configuration">Configuration
+<a class="slurm_link" href="#configuration"></a>
+</h2>
 <p>
 A federation is created using the sacctmgr command to create a federation in the
 database and by adding clusters to a federation.
@@ -121,7 +123,7 @@ FederationParameters=fed_display
 </pre>
 
 
-<h2><a name="jobids">Federated Job IDs</a></h2>
+<h2 id="jobids">Federated Job IDs<a class="slurm_link" href="#jobids"></a></h2>
 When a job is submitted to a federation it gets a federated job id. Job ids in
 the federation are unique across all clusters in the federation. A federated
 job ID is made by utilizing an unsigned 32 bit integer to assign the cluster's
@@ -136,7 +138,9 @@ Federated job IDs allow the controllers to know which cluster the job was
 submitted to by looking at the cluster origin id of the job.
 
 
-<h2><a name="jobsubmission">Job Submission</a></h2>
+<h2 id="jobsubmission">Job Submission
+<a class="slurm_link" href="#jobsubmission"></a>
+</h2>
 <p>
 When a federated cluster receives a job submission, it will submit copies of the
 job (<b>sibling jobs</b>) to each eligible cluster. Each cluster will then
@@ -190,7 +194,9 @@ clusters in the federation. If a job becomes held or dependent
 after being submitted, the job is removed from every cluster but the origin.
 </p>
 
-<h2><a name="jobscheduling">Job Scheduling</a></h2>
+<h2 id="jobscheduling">Job Scheduling
+<a class="slurm_link" href="#jobscheduling"></a>
+</h2>
 <p>
 Each cluster in the federation independently attempts to schedule each job with
 the exception of coordinating with the <b>origin cluster</b> (cluster where the
@@ -215,7 +221,9 @@ job's viable siblings to schedule the job. When the origin cluster comes back
 up, it will sync with the other siblings.
 </p>
 
-<h2><a name="jobrequeue">Job Requeue</a></h2>
+<h2 id="jobrequeue">Job Requeue
+<a class="slurm_link" href="#jobrequeue"></a>
+</h2>
 <p>
 When a federated job is requeued the origin cluster is notified and the origin
 cluster will then submit new sibling jobs to viable clusters and the federated
@@ -228,7 +236,9 @@ by the origin cluster.
 </p>
 
 
-<h2><a name="interactivejobs">Interactive Jobs</a></h2>
+<h2 id="interactivejobs">Interactive Jobs
+<a class="slurm_link" href="#interactivejobs"></a>
+</h2>
 <p>
 Interactive jobs -- jobs submitted with srun and salloc -- can be submitted to
 the local cluster and get an allocation from a different cluster. When an salloc
@@ -252,7 +262,9 @@ slurm.conf will put the user on an actual compute node when using salloc.
 </p>
 
 
-<h2><a name="jobcancel">Canceling Jobs</a></h2>
+<h2 id="jobcancel">Canceling Jobs
+<a class="slurm_link" href="#jobcancel"></a>
+</h2>
 <p>
 Cancel requests in the federation will cancel the running sibling job or all
 pending sibling jobs. Specific pending sibling jobs can be removed by using
@@ -261,16 +273,20 @@ sibling job from the job's active sibling list.
 </p>
 
 
-<h2><a name="jobmodify">Job Modification</a></h2>
+<h2 id="jobmodify">Job Modification
+<a class="slurm_link" href="#jobmodify"></a>
+</h2>
 Job modifications are routed to the origin cluster where the origin cluster will
 push out the changes to each sibling job.
 
 
-<h2><a name="jobarrays">Job Arrays</a></h2>
+<h2 id="jobarrays">Job Arrays<a class="slurm_link" href="#jobarrays"></a></h2>
 Currently, job arrays only run on the origin cluster.
 
 
-<h2><a name="statuscmds">Status Commands</a></h2>
+<h2 id="statuscmds">Status Commands
+<a class="slurm_link" href="#statuscmds"></a>
+</h2>
 <p>
 By default, status commands, such as: squeue, sinfo, sprio, sacct, sreport, will
 show a view local to the local cluster. A unified view of the jobs in the
@@ -296,7 +312,7 @@ the information in the same format that exists today where each cluster’s
 information is listed separately.
 </p>
 
-<h3>squeue</h3>
+<h3 id="squeue">squeue<a class="slurm_link" href="#squeue"></a></h3>
 <p>
 squeue also has a new <b>--sibling</b> option that will show each sibling job
 rather than merge them into one.
@@ -334,7 +350,7 @@ squeue output can be sorted using the <b>-S cluster</b> option.
 </p>
 
 
-<h3>sinfo</h3>
+<h3 id="sinfo">sinfo<a class="slurm_link" href="#sinfo"></a></h3>
 <p>
 sinfo will show the partitions from each cluster in one view. In a federated
 view, the cluster name is displayed with each partition. The cluster name can be
@@ -343,7 +359,7 @@ format <b>cluster</b> options. The output can be sorted by cluster names using
 the <b>-S %[+-]V</b> option.
 </p>
 
-<h3>sprio</h3>
+<h3 id="sprio">sprio<a class="slurm_link" href="#sprio"></a></h3>
 <p>
 In a federated view, sprio displays the job information from the local cluster
 or from the first cluster to report the job. Since each sibling job could have a
@@ -354,19 +370,19 @@ The name of the cluster reporting the job record can be displayed using the
 <b>--sibling</b> option.
 </p>
 
-<h3>sacct</h3>
+<h3 id="sacct">sacct<a class="slurm_link" href="#sacct"></a></h3>
 <p>
 By default, sacct will not display "revoked" jobs and will show the job from the
 cluster that ran the job. However, "revoked" jobs can be viewed using the
 <b>--duplicate/-D</b> option.
 </p>
 
-<h3>sreport</h3>
+<h3 id="sreport">sreport<a class="slurm_link" href="#sreport"></a></h3>
 <p>
 sreport will combine the reports from each cluster and display them as one.
 </p>
 
-<h3>scontrol</h3>
+<h3 id="scontrol">scontrol<a class="slurm_link" href="#scontrol"></a></h3>
 <p>
 The following scontrol options will display a federated view:
 <ul>
@@ -399,7 +415,7 @@ issuing the command on the cluster or using the <b>--cluster/-M</b>  option.
 
 
 
-<h2><a name="glossary">Glossary</a></h2>
+<h2 id="glossary">Glossary<a class="slurm_link" href="#glossary"></a></h2>
 <ul>
 	<li>
 		<b>Federated Job:</b> A job that is submitted to the federated
@@ -447,7 +463,9 @@ issuing the command on the cluster or using the <b>--cluster/-M</b>  option.
 	</li>
 </ul>
 
-<h2><a name="limitations">Limitations</a></h2>
+<h2 id="limitations">Limitations
+<a class="slurm_link" href="#limitations"></a>
+</h2>
 <ul>
 	<li>A federated job that fails due to resources (partition, node counts,
 		etc.) on the local cluster will be rejected and won't be

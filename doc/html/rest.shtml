@@ -12,7 +12,7 @@
 <p>Please see <a href="rest_release_notes.html">REST API Release Notes</a> for
 changes between release versions.</p>
 
-<h2>Prerequisites</h2>
+<h2 id="prereq">Prerequisites<a class="slurm_link" href="#prereq"></a></h2>
 <p>slurmrestd requires additional libraries for compilation:</p>
 <ul>
 	<li><a href="download.html#httpparser">HTTP Parser</a> (>= v2.6.0)</li>
@@ -32,7 +32,7 @@ unnecessary security issues involved with hosting a listening daemon on a shared
 system.</p>
 -->
 
-<h2>Stateless</h2>
+<h2 id="stateless">Stateless<a class="slurm_link" href="#stateless"></a></h2>
 <p>Slurmrestd is stateless as it does not cache or save any state between
 requests. Each request is handled in a thread and then all of that state is
 discarded. Any request to slurmrestd is completely synchronous with the
@@ -45,11 +45,11 @@ request.</p>
 and clients to avoid having clients repeatedly call queries, causing usage to
 be higher than needed (and causing lock contention) on the controller.</p>
 
-<h2>Run modes</h2>
+<h2 id="run_modes">Run modes<a class="slurm_link" href="#run_modes"></a></h2>
 Slurmrestd currently supports two run modes: inet service mode and listening
 mode.
 
-<h3>Inet Service Mode</h3>
+<h3 id="inet">Inet Service Mode<a class="slurm_link" href="#inet"></a></h3>
 <p>The Slurmrestd daemon acts as an
 <a href="https://en.wikipedia.org/wiki/Inetd">
 	Inet Service
@@ -58,15 +58,15 @@ inetd, xinetd, or systemd socket activated services and avoid the need to run a
 daemon on the host at all times. This mode creates an instance for each client
 and does not support reusing the same instance for different clients.</p>
 
-<h3>Listening Mode</h3>
+<h3 id="listen">Listening Mode<a class="slurm_link" href="#listen"></a></h3>
 <p>The Slurmrestd daemon acts as a full UNIX service and continuously listens
 for new TCP connections. Each connection is independently authenticated.</p>
 
-<h2>Configuration</h2>
+<h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 slurmrestd can be configured either by environment variables or command line
 arguments. Please see the <b>doc/man/man1/slurmrestd.1</b> man page for details.
 
-<h2>IPv6 Support</h2>
+<h2 id="ipv6">IPv6 Support<a class="slurm_link" href="#ipv6"></a></h2>
 <p>Slurmrestd supports IPv6 clients. On dual stack systems,
 it will likely provide the source IP as an
 <a href="https://en.wikipedia.org/wiki/IPv6#IPv4-mapped_IPv6_addresses">
@@ -74,7 +74,9 @@ it will likely provide the source IP as an
 </a>. Slurmrestd must still be able to talk to slurmctld and slurmdbd via
 IPv4.</p>
 
-<h2>OpenAPI Specification (OAS)</h2>
+<h2 id="openapi">OpenAPI Specification (OAS)
+<a class="slurm_link" href="#openapi"></a>
+</h2>
 <p>Slurmrestd is compliant with
 	<a href="https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md">
 		OpenAPI 3.0.2
@@ -95,13 +97,15 @@ against the OAS output listed by
 	<a href="rest_api.html">Slurm REST API Reference</a>
 </p>
 
-<h2>Plugins</h2>
+<h2 id="plugins">Plugins<a class="slurm_link" href="#plugins"></a></h2>
 <p>As of Slurm 20.11, the REST API uses plugins for authentication and
 generating content. These plugins can be optionality listed or selected via
 command line arguments as described in the <a href="slurmrestd.html">
 slurmrestd</a> documentation.</p>
 
-<h3>Plugin life cycle</h3>
+<h3 id="lifecycle">Plugin life cycle
+<a class="slurm_link" href="#lifecycle"></a>
+</h3>
 <p>Plugins provided with Slurm in any release are considered supported by that
 release. Due to the nature of the plugins, one plugin can be supported accross
 multiple Slurm releases to ensure (limited) forward client compatibility. As
@@ -134,7 +138,7 @@ their own plugins and are suggested to submit them as code contributions via
 The plugin API provided may change between releases which could cause site
 specific plugins to break.</p>
 
-<h2>Security</h2>
+<h2 id="security">Security<a class="slurm_link" href="#security"></a></h2>
 <p>The Slurm REST API is written to provide the necessary functionality for
 clients to control Slurm using REST commands. It is <b>not</b> designed to be
 directly internet facing.  Only unencrypted and uncompressed HTTP
@@ -142,7 +146,9 @@ communications are supported. Slurmrestd also has no protection against man in
 the middle or replay attacks. Slurmrestd should only be placed in a trusted
 network that will communicate with a trusted client.</p>
 
-<h2>JSON Web Token (JWT) Authentication</h2>
+<h2 id="jwt">JSON Web Token (JWT) Authentication
+<a class="slurm_link" href="#jwt"></a>
+</h2>
 <p>slurmrestd supports using <a href=jwt.html>JWT to authenticate users</a>.
 JWT can be used to authenticate user over REST protocol.
 <ul>
@@ -158,7 +164,9 @@ the proxy.</p>
 <p>When using JWT, it is important that <u>AuthAltTypes=auth/jwt</u> be
 configured in your slurm.conf for slurmrestd.</p>
 
-<h2>Local Authentication</h2>
+<h2 id="local_auth">Local Authentication
+<a class="slurm_link" href="#local_auth"></a>
+</h2>
 <p>slurmrestd supports using UNIX domain sockets to have the kernel
 authenticate local users. slurmrestd must be run as SlurmUser or root to allow
 multiple different users at the same time but it is not required if users wish to run

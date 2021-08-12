@@ -18,7 +18,7 @@ in an instantaneous surge in power demand of multiple megawatts without
 Slurm's support to increase power demands in a gradual fashion.</p>
 
 
-<h2>Configuration</h2>
+<h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 
 <p>A great deal of flexibility is offered in terms of when and
 how idle nodes are put into or removed from power save mode.
@@ -187,7 +187,9 @@ You can also configure Slurm with programs that perform no action as
 <b>SuspendProgram</b> and <b>ResumeProgram</b> to assess the potential
 impact of power saving mode before enabling it.</p>
 
-<h2>Use of Allocations</h2>
+<h2 id="allocations">Use of Allocations
+<a class="slurm_link" href="#allocations"></a>
+</h2>
 
 <p>A resource allocation request will be granted as soon as resources
 are selected for use, possibly before the nodes are all available
@@ -212,7 +214,9 @@ behavior on a per-job basis and a system-wide default can be set with the
 <i>SchedulerParameters=salloc_wait_nodes</i> option.
 </p>
 
-<h2>Fault Tolerance</h2>
+<h2 id="tolerance">Fault Tolerance
+<a class="slurm_link" href="#tolerance"></a>
+</h2>
 
 <p>If the <i>slurmctld</i> daemon is terminated gracefully, it will
 wait up to <b>SuspendTimeout</b> or <b>ResumeTimeout</b> (whichever
@@ -237,7 +241,9 @@ In order to minimize this risk, when the <i>slurmctld</i> daemon is
 started and node which should be allocated to a job fails to respond,
 the <b>ResumeProgram</b> will be executed (possibly for a second time).</p>
 
-<h2>Booting Different Images</h2>
+<h2 id="images">Booting Different Images
+<a class="slurm_link" href="#images"></a>
+</h2>
 
 <p>Slurm's <b>PrologSlurmctld</b> configuration parameter can identify a
 program to boot different operating system images for each job based upon its

@@ -10,7 +10,7 @@
 <li><a href="#TaskPluginParam">TaskPluginParam Configuration</a></li>
 </ul>
 
-<h2><a name="overview">Overview</a></h2>
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 
 <p>Slurm has a rich set of options to control the default
 binding of tasks to resources.
@@ -37,7 +37,7 @@ configuration parameter.</p>
 <li>TaskPluginParam configuration parameter</li>
 </ol>
 
-<h2><a name="srun">Srun --cpu-bind option</a></h2>
+<h2 id="srun">Srun --cpu-bind option<a class="slurm_link" href="#srun"></a></h2>
 
 <p>The srun --cpu-bind option will always be used to control task binding.
 If the --cpu-bind option only includes "verbose" rather than identifying
@@ -45,7 +45,9 @@ the entities to be bound to, then the verbose option will be used together
 with the default entity based upon Slurm configuration parameters as described
 below.</p>
 
-<h2><a name="node">Node CpuBind Configuration</a></h2>
+<h2 id="node">Node CpuBind Configuration
+<a class="slurm_link" href="#node"></a>
+</h2>
 
 <p>The next possible source of the resource binding information is the node's
 configured CpuBind value, but only if every node has the same CpuBind value
@@ -73,14 +75,18 @@ NUMA mode and to "thread" when booted into "snc2 NUMA mode.
 Any NUMA mode not specified in the NumaCpuBind configuration file will result
 in no change to the node's CpuBind field.</p>
 
-<h2><a name="partition">Partition CpuBind Configuration</a></h2>
+<h2 id="partition">Partition CpuBind Configuration
+<a class="slurm_link" href="#partition"></a>
+</h2>
 
 <p>The next possible source of the resource binding information is the
 partition's configured CpuBind value.
 The partition's CpuBind value is configured in the slurm.conf file.
 Its value may be viewed or modified using the scontrol command.</p>
 
-<h2><a name="TaskPluginParam">TaskPluginParam Configuration</a></h2>
+<h2 id="TaskPluginParam">TaskPluginParam Configuration
+<a class="slurm_link" href="#TaskPluginParam"></a>
+</h2>
 
 <p>The last possible source of the resource binding information is the
 TaskPluginParam configuration parameter from the slurm.conf file.</p>

@@ -20,8 +20,7 @@
 <a href="#modifying-entities">Modifying Entities</a><br>
 <a href="#removing-entities">Removing Entities</a><br>
 
-<a id="Overview"></a>
-<h2>Overview</h2>
+<h2 id="Overview">Overview<a class="slurm_link" href="#Overview"></a></h2>
 
 <p>Slurm can be configured to collect accounting information for every
 job and job step executed.
@@ -127,8 +126,9 @@ service. Note that if SlurmDBD is down long enough for the number of queued
 records to exceed the maximum queue size then messages will begin to be
 dropped.</p>
 
-<a id="infrastructure"></a>
-<h2>Infrastructure</h2>
+<h2 id="infrastructure">Infrastructure
+<a class="slurm_link" href="#infrastructure"></a>
+</h2>
 
 <p>With the SlurmDBD, we are able to collect data from multiple
 clusters in a single location.
@@ -183,8 +183,9 @@ If they plan on running sacctmgr or any of the accounting tools they
 should have the same UID, or they will not authenticate correctly.  An
 LDAP server could also serve as a way to gather this information.</p>
 
-<a id="slurm-jobcomp-configuration"></a>
-<h2>Slurm JobComp Configuration</h2>
+<h2 id="slurm-jobcomp-configuration">Slurm JobComp Configuration
+<a class="slurm_link" href="#slurm-jobcomp-configuration"></a>
+</h2>
 
 <p>Presently job completion is not supported with the SlurmDBD, but can be
 written directly to a database, script or flat file. If you are
@@ -221,8 +222,10 @@ the database with.</li>
 Pass arbitrary text string to job completion plugin.</li>
 </ul>
 
-<a id="slurm-accounting-configuration-before-build"></a>
-<h2>Slurm Accounting Configuration Before Build</h2>
+<h2 id="slurm-accounting-configuration-before-build">
+Slurm Accounting Configuration Before Build
+<a class="slurm_link" href="#slurm-accounting-configuration-before-build"></a>
+</h2>
 
 <p>While the SlurmDBD will work with a flat text file for recording
 job completions and similar data, this configuration will not allow for
@@ -314,8 +317,10 @@ mysql> SHOW TABLE STATUS IN db_name;
 </pre>
 </p>
 
-<a id="slurm-accounting-configuration-after-build"></a>
-<h2>Slurm Accounting Configuration After Build</h2>
+<h2 id="slurm-accounting-configuration-after-build">
+Slurm Accounting Configuration After Build
+<a class="slurm_link" href="#slurm-accounting-configuration-after-build"></a>
+</h2>
 
 <p>For simplicity's sake, we are going to proceed under the assumption that you
 are running with the SlurmDBD. You can communicate with a storage plugin
@@ -418,8 +423,9 @@ Boolean.  If you want to track wckeys (Workload Characterization Key)
 </li>
 </ul>
 
-<a id="slurmdbd-configuration"></a>
-<h2>SlurmDBD Configuration</h2>
+<h2 id="slurmdbd-configuration">SlurmDBD Configuration
+<a class="slurm_link" href="#slurmdbd-configuration"></a>
+</h2>
 
 <p>SlurmDBD requires its own configuration file called "slurmdbd.conf".
 This file should be only on the computer where SlurmDBD executes and
@@ -508,8 +514,9 @@ Define the name of the user we are going to connect to the database
 with to store the job accounting data.</li>
 </ul>
 
-<a id="mysql-configuration"></a>
-<h2>MySQL Configuration</h2>
+<h2 id="mysql-configuration">MySQL Configuration
+<a class="slurm_link" href="#mysql-configuration"></a>
+</h2>
 
 <p>While Slurm will create the database tables automatically you will need to
 make sure the StorageUser is given permissions in the MySQL or MariaDB database
@@ -598,8 +605,7 @@ information.  Starting the SlurmDBD in daemon mode with the '-D' option can
 also help in debugging so you don't have to go to the log to find the
 problem.</p>
 
-<a id="tools"></a>
-<h2>Tools</h2>
+<h2 id="tools">Tools<a class="slurm_link" href="#tools"></a></h2>
 
 <p>There are a few tools available to work with accounting data,
 <b>sacct</b>, <b>sacctmgr</b>, and <b>sreport</b>.
@@ -614,8 +620,9 @@ given time period.</li>
 </ul>
 <p>See the man pages for each command for more information.</p>
 
-<a id="database-configuration"></a>
-<h2>Database Configuration</h2>
+<h2 id="database-configuration">Database Configuration
+<a class="slurm_link" href="#database-configuration"></a>
+</h2>
 
 <p>Accounting records are maintained based upon what we refer
 to as an <i>Association</i>,
@@ -688,8 +695,9 @@ When using the "add user" command of <b>sacctmgr</b> you can include the
 <i>Partition=&lt;PartitionName&gt;</i> option to create an association that
 is unique to other associations with the same Account and User.</p>
 
-<a id="cluster-options"></a>
-<h2>Cluster Options</h2>
+<h2 id="cluster-options">Cluster Options
+<a class="slurm_link" href="#cluster-options"></a>
+</h2>
 
 <p>When either adding or modifying a cluster, these are the options
 available with sacctmgr:
@@ -698,8 +706,9 @@ available with sacctmgr:
 
 </ul>
 
-<a id="account-options"></a>
-<h2>Account Options</h2>
+<h2 id="account-options">Account Options
+<a class="slurm_link" href="#account-options"></a>
+</h2>
 
 <p>When either adding or modifying an account, the following sacctmgr
 options are available:
@@ -723,8 +732,9 @@ hierarchy</li>
 
 </ul>
 
-<a id="user-options"></a>
-<h2>User Options</h2>
+<h2 id="user-options">User Options
+<a class="slurm_link" href="#user-options"></a>
+</h2>
 
 <p>When either adding or modifying a user, the following sacctmgr
 options are available:
@@ -766,8 +776,9 @@ is specified when a job is submitted. (Only used when tracking wckeys.)</li>
 
 </ul>
 
-<a id="limit-enforcement"></a>
-<h2>Limit Enforcement</h2>
+<h2 id="limit-enforcement">Limit Enforcement
+<a class="slurm_link" href="#limit-enforcement"></a>
+</h2>
 
 <p>Various limits and limit enforcement are described in
   the <a href="resource_limits.html">Resource Limits</a> web page.</p>
@@ -779,8 +790,9 @@ Other options for AccountingStorageEnforce and the explanation for
 each are found on the <a href="resource_limits.html">Resource
 Limits</a> document.</p>
 
-<a id="modifying-entities"></a>
-<h2>Modifying Entities</h2>
+<h2 id="modifying-entities">Modifying Entities
+<a class="slurm_link" href="#modifying-entities"></a>
+</h2>
 
 <p>When modifying entities, you can specify many different options in
 SQL-like fashion, using key words like <i>where</i> and <i>set</i>.
@@ -798,8 +810,9 @@ Once an entity has been added, modified or removed, the change is
 sent to the appropriate Slurm daemons and will be available for use
 instantly.</p>
 
-<a id="removing-entities"></a>
-<h2>Removing Entities</h2>
+<h2 id="removing-entities">Removing Entities
+<a class="slurm_link" href="#removing-entities"></a>
+</h2>
 
 <p>Removing entities using an execute line similar to the modify example above,
 but without the set options.
