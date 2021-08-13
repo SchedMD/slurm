@@ -504,6 +504,11 @@ The plugin used to manage burst buffers. Acceptable values at present are:
 \fBburst_buffer/datawarp\fR
 Use Cray DataWarp API to provide burst buffer functionality.
 .TP
+\fBburst_buffer/lua\fR
+This plugin provides hooks to an API that is defined by a Lua script. This
+plugin was developed to provide system administrators with a way to do any task
+(not only file staging) at different points in a job’s life cycle.
+.TP
 \fBburst_buffer/none\fR
 .RE
 

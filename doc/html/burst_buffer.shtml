@@ -5,211 +5,543 @@
 <ul>
 <li><a href="#overview">Overview</a></li>
 <li><a href="#configuration">Configuration (for system administrators)</a></li>
+<li><a href="#lua-implementation">Lua Implementation (for system
+administrators)</a></li>
+<li><a href="#resources">Burst Buffer Resources</a></li>
 <li><a href="#submit">Job Submission Commands</a></li>
 <li><a href="#persist">Persistent Burst Buffer Creation and Deletion Directives</a></li>
-<li><a href="#interactive">Interactive Job Options</a></li>
+<li><a href="#command-line">Command-line Job Options</a></li>
 <li><a href="#status">Status Commands</a></li>
 <li><a href="#reservation">Advanced Reservations</a></li>
 <li><a href="#dependencies">Job Dependencies</a></li>
+<li><a href="#states">Burst Buffer States and Job States</a></li>
 </ul>
 
-<h2><a name="overview">Overview</a></h2>
 
-<p>Slurm includes support for
-<a href="http://www.mcs.anl.gov/papers/P2070-0312.pdf">burst buffers</a>,
-a shared high-speed storage resource.
-Slurm provides support for allocating these resources, staging files in,
-scheduling compute nodes for jobs using these resources, then staging files out.
-Burst buffers can also be used as temporary storage during a job's lifetime,
-without file staging.
-Another typical use case is for persistent storage, not associated with any
-specific job.
-This support is provided using a plugin mechanism so that a various burst
-buffer infrastructures may be easily configured.
-<!--Two plugins are-->One plugin is provided currently:</p>
+<h2>Overview<a id="overview"></a></h2>
+
+<p>This guide explains how to use Slurm burst buffer plugins. Where appropriate,
+it explains how these plugins work in order to give guidance about how to best
+use these plugins.</p>
+
+<p>The Slurm burst buffer plugins call a script at different points during the
+lifetime of a job:</p>
 <ol>
-<li><b>datawarp</b> - Uses Cray APIs to perform underlying management functions</li>
-</ol>
-<p>Additional plugins may be provided in future releases of Slurm.</p>
-
-<p>Slurm's mode of operation follows this general pattern:</p>
-<ol start="0">
-<li>Read configuration information and initial state information</li>
-<li>After expected start times for pending jobs are established, allocate
-    burst buffers to those jobs expected to start earliest and start stage-in
-    of required files</li>
-<li>After stage-in has completed, jobs can be allocated compute nodes and begin
-    execution</li>
-<li>After job has completed execution, begin file stage-out from burst buffer</li>
-<li>After file stage-out has completed, burst buffer can be released and the
-    job record purged
+<li>At job submission</li>
+<li>While the job is pending after an estimated start time is
+established. This is called “stage-in.”</li>
+<li>Once the job has been scheduled but has not started running yet.
+This is called “pre-run.”</li>
+<li>Once the job has completed or been cancelled, but Slurm has not
+released resources for the job yet. This is called “stage-out.”</li>
+<li>Once the job has completed, and Slurm has released resources for
+the job. This is called “teardown.”</li>
 </ol>
 
-<h2><a name="configuration">Configuration  (for system administrators)</a></h2>
+<p>This script runs on the slurmctld node. These are the supported plugins:</p>
+<ul>
+<li>datawarp</li>
+<li>lua</li>
+</ul>
 
-<p>Burst buffer support in Slurm is enabled by specifying the plugin(s) to
-load for managing these resources using the <i>BurstBufferType</i>
-configuration parameter in the <i>slurm.conf</i> file.
-Multiple plugin names may be specified in a comma separated list.
-Detailed logging of burst buffer specific actions may be generated for debugging
-purposes by using the <i>DebugFlags=BurstBuffer</i> configuration parameter.
-The BurstBuffer DebugFlags (like many other DebugFlags) can result in very
-verbose logging and is only intended for diagnostic purposes rather than for
-use in a production system.</p>
+<h3>Datawarp</h3>
 
+<p>This plugin provides hooks to Cray’s Datawarp APIs. Datawarp implements burst
+buffers, which are a shared high-speed storage resource. Slurm provides support
+for allocating these resources, staging files in, scheduling compute nodes for
+jobs using these resources, and staging files out. Burst buffers can also be
+used as temporary storage during a job's lifetime, without file staging.
+Another typical use case is for persistent storage, not associated with any
+specific job.</p>
+
+<h3>Lua</h3>
+
+<p>This plugin provides hooks to an API that is defined by a Lua script. This
+plugin was developed to provide system administrators with a way to do any task
+(not only file staging) at different points in a job’s life cycle. These tasks
+might include file staging, node maintenance, or any other task that is desired
+to run during one or more of the five job states listed above.</p>
+
+<p>The burst buffer APIs will only be called for a job that specifically
+requests using them. The <a href="#submit">Job Submission Commands</a> section
+explains how a job can request using the burst buffer APIs.</p>
+
+
+<h2>Configuration (for system administrators)<a id="configuration"></a></h2>
+
+<h3>Common Configuration</h3>
+
+<ul>
+<li>To enable a burst buffer plugin, set <code>BurstBufferType</code> in
+slurm.conf. If it is not set, then no burst buffer plugin will be loaded.
+Only one burst buffer plugin may be specified.</li>
+<li>In slurm.conf, you may set <code>DebugFlags=BurstBuffer</code> for detailed
+logging from the burst buffer plugin. This will result in very verbose logging
+and is not intended for prolonged use in a production system, but this may be
+useful for debugging.</li>
+<li><a href="resource_limits.html">TRES limits</a> for burst buffers can be
+configured by association or QOS in the same way that TRES limits can be
+configured for nodes, CPUs, or any GRES. To make Slurm track burst buffer
+resources, add <code>bb/datawarp</code> (for the datawarp plugin) or
+<code>bb/lua</code> (for the lua plugin) to <code>AccountingStorageTres</code>
+in slurm.conf.</li>
+<li>The size of a job's burst buffer requirements can be used as a factor in
+setting the job priority as described in the
+<a href="priority_multifactor.html">multifactor priority document</a>.
+The <a href="#resources">Burst Buffer Resources</a> section explains how
+these resources are defined.</li>
+<li>Burst-buffer-specific configurations can be set in burst_buffer.conf.
+Configuration settings include things like which users may use burst buffers,
+timeouts, paths to burst buffer scripts, etc. See the
+<a href="burst_buffer.conf.html">burst_buffer.conf</a> manual
+for more information.</li>
+<li>The JSON-C library must be installed in order to build Slurm’s
+<code>burst_buffer/datawarp</code> and <code>burst_buffer/lua</code> plugins,
+which must parse JSON format data. See Slurm's
+<a href="download.html#json">JSON installation information</a> for details.</li>
+</ul>
+
+<h3>Datawarp</h3>
+
+<p>slurm.conf:</p>
 <pre>
-# Excerpt of example slurm.conf file
 BurstBufferType=burst_buffer/datawarp
-# DebugFlags=BurstBuffer # Commented out
 </pre>
 
-<p>Burst buffer specific options should be defined in a <i>burst_buffer.conf</i>
-file.
-This file can contain information about who can or can not use burst buffers,
-timeouts, and paths of scripts used to perform various functions, etc.
-<a href="resource_limits.html">TRES limits</a> can be configured to establish
-limits by association, QOS, etc.
-The size of a job's burst buffer requirements can be used as a factor in
-setting the job priority as described in the
-<a href="priority_multifactor.html">multifactor priority</a> document.</p>
+<p>The datawarp plugin calls two scripts:</p>
+<ul>
+<li><b>dw_wlm_cli</b> - the Slurm burst_buffer/datawarp plugin calls this
+script to perform burst buffer functions. It should have been provided by Cray.
+The location of this script is defined by GetSysState in burst_buffer.conf. A
+template of this script is provided with Slurm:</li>
+<code>src/plugins/burst_buffer/datawarp/dw_wlm_cli</code>
+<li><b>dwstat</b> - the Slurm burst_buffer/datawarp plugin calls this script to
+get status information. It should have been provided by Cray. The location of
+this script is defined by GetSysStatus in burst_buffer.conf. A template of this
+script is provided with Slurm:</li>
+<code>src/plugins/burst_buffer/datawarp/dwstat</code>
+</ul>
 
-<p><b>Note for Cray systems:</b> The JSON-C library must be installed in order
-to build Slurm's burst_buffer/datawarp plugin, which must parse JSON format data.
-See Slurm's <a href="download.html#json">JSON installation information</a>
-for details.</p>
+<h3>Lua</h3>
 
-<h2><a name="submit">Job Submission Commands</a></h2>
+<p>slurm.conf:</p>
+<pre>
+BurstBufferType=burst_buffer/lua
+</pre>
+
+<p>The lua plugin calls a single script which must be named burst_buffer.lua.
+This script needs to exist in the same directory as slurm.conf. The following
+functions are required to exist, although they may do nothing but return
+success:</p>
+<ul>
+<li><code>slurm_bb_job_process</code></li>
+<li><code>slurm_bb_pools</code></li>
+<li><code>slurm_bb_job_teardown</code></li>
+<li><code>slurm_bb_setup</code></li>
+<li><code>slurm_bb_data_in</code></li>
+<li><code>slurm_bb_real_size</code></li>
+<li><code>slurm_bb_paths</code></li>
+<li><code>slurm_bb_pre_run</code></li>
+<li><code>slurm_bb_post_run</code></li>
+<li><code>slurm_bb_data_out</code></li>
+<li><code>slurm_bb_get_status</code></li>
+</ul>
+
+<p>A template of burst_buffer.lua is provided with Slurm:
+<code>etc/burst_buffer.lua.example</code></p>
+
+<p>This template documents many more details about the functions such as
+required parameters, when each function is called, return values for each
+function, and some simple examples.</p>
+
+<h2>Lua Implementation<a id="lua-implementation"></a></h2>
+
+<p>This purpose of this section is to provide additional information about the
+Lua plugin to help system administrators who desire to implement the Lua API.
+The most important points in this section are:</p>
+<ul>
+<li>Some functions in burst_buffer.lua must run quickly and cannot be killed;
+the remaining functions are allowed to run for as long as needed and can be
+killed.</li>
+<li>A maximum of 512 copies of burst_buffer.lua are allowed to run concurrently
+in order to avoid exceeding system limits.</li>
+</ul>
+
+<h3>How does burst_buffer.lua run?</h3>
+
+<p>Lua scripts may either be run by themselves in a separate process via the
+<code>fork()</code> and <code>exec()</code> system calls, or they may be called
+via Lua's C API from within an existing process. One of the goals of the lua
+plugin was to avoid calling <code>fork()</code> from within slurmctld because
+it can severely harm performance of the slurmctld. The datawarp plugin calls
+<code>fork()</code> and <code>exec()</code> from slurmctld for every burst
+buffer API call, and this has been shown to severely harm slurmctld
+performance. Therefore, slurmctld calls burst_buffer.lua using Lua's C API
+instead of using <code>fork()</code>.</p>
+
+<p>Some functions in burst_buffer.lua are allowed to run for a long time, but
+they may need to be killed if the job is cancelled, if slurmctld is restarted,
+or if they run for longer than the configured timeout in burst_buffer.conf.
+However, a call to a Lua script via Lua's C API cannot be killed from within
+the same process; only killing the entire process that called the Lua
+script can kill the Lua script.</p>
+
+<p>To address this situation, burst_buffer.lua is called in two different
+ways:</p>
+
+<ul>
+<li>The <code>slurm_bb_job_process</code>, <code>slurm_bb_pools</code> and
+<code>slurm_bb_paths</code> functions are called from slurmctld.
+Because of the explanation above,
+a script running one of these functions cannot be killed. Since these functions
+are called while slurmctld holds some mutexes, it will be extremely harmful to
+slurmctld performance and responsiveness if they are slow. Because it is faster
+to call these functions directly than to call <code>fork()</code> to create a
+new process, this was deemed an acceptable tradeoff. As a result, <i>these
+functions cannot be killed</i>.</li>
+<li>The remaining functions in burst_buffer.lua are able to run longer without
+adverse effects. These need to be able to be killed. These functions are called
+from a lightweight Slurm daemon called slurmscriptd. Whenever one of these
+functions needs to run, slurmctld tells slurmscriptd to run that function;
+slurmscriptd then calls <code>fork()</code> to create a new process, then calls
+the appropriate function. This avoids calling <code>fork()</code> from
+slurmctld while still providing a way to kill running copies of burst_buffer.lua
+when needed. As a result, <i>these functions can be killed, and they will be
+killed if they run for longer than the appropriate timeout value as configured
+in burst_buffer.conf</i>.</li>
+</ul>
+
+<p>The way in which each function is called is also documented in the
+burst_buffer.lua.example file.</p>
+
+<h3>Limitations</h3>
+
+<p>Each copy of the script that runs via slurmscriptd runs in a new process and
+a pipe (which is a file) is opened to read responses from the script. To avoid
+exceeding the open process or open file limits, running out of memory, or
+exceeding other system limitations, a maximum of 128 copies of the script are
+allowed to run concurrently per "stage", where the stages are stage-in,
+pre-run, stage-out, and teardown (see the <a href="#states">Burst Buffer
+States</a> section for more information on the burst buffer stages). This means
+that a maximum of 512 copies of burst_buffer.lua may run at one time.
+Without this limit, job throughput was lower and testing confirmed that the
+process open file limit could be exceeded.</p>
+
+<p><b>WARNING</b>: Do not install a signal handler in burst_buffer.lua because
+it is called directly from slurmctld. If slurmctld receives a signal, it
+could attempt to run the signal handler from burst_buffer.lua, even after a call
+to burst_buffer.lua is completed, which results in a crash.</p>
+
+
+<h2>Burst Buffer Resources<a id="resources"></a></h2>
+
+<p>The burst buffer API may define burst buffer resource “pools” from which a
+job may request a certain amount of pool space. If a pool does not have
+sufficient space to fulfill a job’s request, that job will remain pending until
+the pool does have enough space. Once the pool has enough space, Slurm may begin
+stage-in for the job. When stage-in begins, Slurm subtracts the job’s requested
+space from the pool’s available space. When teardown completes, Slurm adds the
+job’s requested space back into the pool’s available space. The
+<a href="#submit">Job Submission Commands</a> section explains how a job may
+request space from a pool. Pool space is a scalar quantity.</p>
+
+<h3>Datawarp</h3>
+
+<ul>
+<li>Pools are defined by <code>dw_wlm_cli</code>, and represent bytes. This
+script prints a JSON-formatted string defining the pools to stdout.</li>
+<li>If a job does not request a pool, then the pool defined by
+<code>DefaultPool</code> in burst_buffer.conf will be used. If a job does
+not request a pool and <code>DefaultPool</code>
+is not defined, then the job will be rejected.</li>
+</ul>
+
+<h3>Lua</h3>
+
+<ul>
+<li>Pools are optional in this plugin, and can represent anything.</li>
+<li><code>DefaultPool</code> in burst_buffer.conf is not used in this
+plugin.</li>
+<li>Pools are defined by burst_buffer.lua in the function
+<code>slurm_bb_pools</code>. If pools are not desired, then this function should
+just return <code>slurm.SUCCESS</code>. If pools are desired, then this function
+should return two values: (1) <code>slurm.SUCCESS</code>, and (2) a
+JSON-formatted string defining the pools. An example is provided in
+burst_buffer.lua.example. The current valid fields in the JSON string are:</li>
+	<ul>
+	<li><b>id</b> - a string defining the name of the pool</li>
+	<li><b>quantity</b> - a number defining the amount of space in the
+	pool</li>
+	<li><b>granularity</b> - a number defining the lowest resolution of
+	space that may be allocated from this pool. If a job does not request a
+	number that is a multiple of granularity, then the job's request will
+	be rounded up to the nearest multiple of granularity. For example,
+	if granularity equals 1000, then the smallest amount of space that may
+	be allocated from this pool for a single job is 1000. If a job requests
+	less than 1000 units from this pool, then the job's request will be
+	rounded up to 1000.</li>
+	</ul>
+</ul>
+
+
+<h2>Job Submission Commands<a id="submit"></a></h2>
 
 <p>The normal mode of operation is for batch jobs to specify burst buffer
-requirements within the batch script.
-Batch script lines containing a prefix of "#BB" identify the job's burst buffer
-space requirements, files to be staged in, files to be staged out, etc.
-The prefix of "#DW" (for "DataWarp") is used for burst buffer directives when
-using the <u>burst_buffer/datawarp</u> plugin.
-Please reference Cray documentation for details about the DataWarp options.
-For DataWarp systems, the prefix of "#BB" can be used to create or delete
-persistent burst buffer storage (NOTE: The "#BB" prefix is used since the
-command is interpreted by Slurm and not by the Cray Datawarp software).
-Interactive jobs (those submitted using the <i>salloc</i> and <i>srun</i>
-commands) can specify their burst buffer space requirements using the "--bb"
-or "--bbf" command line options, as described later in this document.
-All of the "#SBATCH", "#DW" and "#BB" directives should be placed at the top
-of the script (before any non-comment lines).
-All of the persistent burst buffer creations and deletions happen before the
-job's compute portion happens.
-In a similar fashion, you can't stage files in/out at various points in the
-script execution. All file stage-in happens prior to the job's compute portion
-and all file stage-out happens after computation.</p>
+requirements within the batch script. Commented batch script lines containing a
+specific directive (depending on which plugin is being used) will inform Slurm
+that it should run the burst buffer stages for that job. These lines will also
+describe the burst buffer requirements for the job.</p>
 
-<p>The salloc and srun commands can create and use job-specific burst buffers.
-For both commands, the "--bb" or "--bbf" option is used to specify the job's
-burst buffer requirements. 
-Note the burst buffer may not be accessible from a login node, but require
-that salloc spawn a shell on one of its allocated compute nodes.</p>
+<p>The salloc and srun commands can specify burst buffer requirements with the
+<code>--bb</code> and <code>--bbf</code> options. This is described in the
+<a href="#command-line">Command-line Job Options</a> section.</p>
 
-<p>A basic validation is performed on the job's burst buffer options at job
-submit time.
-If the options are invalid, the job will be rejected and an error message will
-be returned directly to the user.
-Note that unrecognized options may be ignored in order to support backward
+<p>All burst buffer directives should be specified in comments at the top of
+the batch script. They may be placed before, after, or interspersed with any
+<code>#SBATCH</code> directives. All burst buffer stages happen at specific
+points in the job's life cycle, as described in the
+<a href="#overview">Overview</a> section; they do not happen during the job's
+execution. For example, all of the persistent burst buffer (used only by the
+datawarp plugin) creations and deletions happen before the job's compute
+portion happens. In a similar fashion, you can't run stage-in at various points
+in the script execution; burst buffer stage-in is performed before the job
+begins and stage-out is performed after the job completes.</p>
+
+<p>For both plugins, a job may request a certain amount of space (size or
+<b>capacity</b>) from a burst buffer resource <b>pool</b>.</p>
+
+<ul>
+<li>A <b>pool</b> specification is simply a string that matches the name of the
+pool. For example: <code>pool=pool1</code></li>
+<li>A <b>capacity</b> specification is a number indicating the amount of space
+required from the pool. A <b>capacity</b> specification can include a suffix of
+"N" (nodes), "K|KiB", "M|MiB", "G|GiB", "T|TiB", "P|PiB" (for powers of 1024)
+and "KB", "MB", "GB", "TB", "PB" (for powers of 1000). <b>NOTE:</b> Usually
+Slurm interprets KB, MB, GB, TB, PB, TB units as powers of 1024, but for Burst
+Buffers size specifications Slurm supports both IEC/SI formats. This is because
+the CRAY API supports both formats.</li>
+</ul>
+
+<p>At job submission, Slurm performs basic directive validation and also runs a
+function in the burst buffer script. This function can perform validation of
+the directives used in the job script. If Slurm determines options are invalid,
+or if the burst buffer script returns an error, the job will be rejected and an
+error message will be returned directly to the user.</p>
+
+<p>Note that unrecognized options may be ignored in order to support backward
 compatibility (i.e. a job submission would not fail in the case of an option
-being specified that is recognized by some versions of Slurm, but not recognized
-by other versions).
-If the job is accepted, but later fails (e.g. some problem staging files), the
-job will be held and its "Reason" field will be set to error message provided
-by the underlying infrastructure.</p>
+recognized by some versions of Slurm, but not recognized by other versions). If
+the job is accepted, but later fails (e.g. some problem staging files), the job
+will be held and its "Reason" field will be set to an error message provided by
+the underlying infrastructure.</p>
 
 <p>Users may also request to be notified by email upon completion of burst
-buffer stage out using the "--mail-type=stage_out" or "--mail-type=all" option.
-The subject line of the email will be of this form:</p>
+buffer stage out using the <code>--mail-type=stage_out</code> or
+<code>--mail-type=all</code> option. The subject line of the email will be of
+this form:</p>
+
 <pre>
 SLURM Job_id=12 Name=my_app Staged Out, StageOut time 00:05:07
 </pre>
 
-<h2><a name="persist">Persistent Burst Buffer Creation and Deletion Directives</a></h2>
+<p>The following plugin subsections give additional information that is
+specific to each plugin and provide example job scripts. Command-line examples
+are given in the
+<a href="#command-line">Command-line Job Options</a> section.</p>
 
-<p>These options are used for the <u>burst_buffer/datawarp</u> pluing to create
-and delete persistent burst buffers, which have a lifetime independent of the
-job.</p>
+<h3>Datawarp</h3>
+
+<p>The directive of <code>#DW</code> (for "DataWarp") is used for burst buffer
+directives when using the <code>burst_buffer/datawarp</code> plugin. Please
+reference Cray documentation for details about the DataWarp options. For
+DataWarp systems, the directive of <code>#BB</code> can be used to create or
+delete persistent burst buffer storage.
+<br>
+<b>NOTE</b>: The <code>#BB</code> directive is used since the
+command is interpreted by Slurm and not by the Cray Datawarp software. This is
+discussed more in the <a href="#persist">Persistent Burst Buffer</a>
+section.</p>
+
+<p>For job-specific burst buffers, it is required to specify a burst buffer
+<b>capacity</b>. If the job does not specify <b>capacity</b> then the job will
+be rejected. A job may also specify the pool from which it wants resources; if
+the job does not specify a pool, then the pool specified by DefaultPool in
+burst_buffer.conf will be used (if configured).</p>
+
+<p>The following job script requests burst buffer resources from the default
+pool and requests files to be staged in and staged out:</p>
+
+<pre>
+#!/bin/bash
+#DW jobdw type=scratch capacity=1GB access_mode=striped,private pfs=/scratch
+#DW stage_in type=file source=/tmp/a destination=/ss/file1
+#DW stage_out type=file destination=/tmp/b source=/ss/file1
+srun application.sh
+</pre>
+
+<h3>Lua</h3>
+
+<p>The default directive for this plugin is <code>#BB_LUA</code>. The directive
+used by this plugin may be changed by setting the <b>Directive</b> option in
+burst_buffer.conf. Since the directive must always begin with a <code>#</code>
+sign (which starts a comment in a shell script) this option should specify only
+the string following the <code>#</code> sign. For example, if burst_buffer.conf
+contains the following:</p>
+
+<pre>Directive=BB_EXAMPLE</pre>
+
+<p>then the burst buffer directive will be <code>#BB_EXAMPLE</code>.</p>
+
+<p>If the <b>Directive</b> option is not specified in burst_buffer.conf, then
+the default directive for this plugin (<code>#BB_LUA</code>) will be used.</p>
+
+<p>Since this plugin was designed to be generic and flexible, this plugin only
+requires the directive to be given. If the directive is given, Slurm will run
+all burst buffer stages for the job.</p>
+
+<p>Example of the minimum information required for all burst buffer stages to
+run for the job:</p>
+
+<pre>
+#!/bin/bash
+#BB_LUA
+srun application.sh
+</pre>
+
+<p>Because burst buffer pools are optional for this plugin (see the <a
+href="#resources">Burst Buffer Resources</a> section), a job is not required to
+specify a pool or capacity. If pools are provided by the burst buffer API,
+then a job may request a pool and capacity:</p>
+
+<pre>
+#!/bin/bash
+#BB_LUA pool=pool1 capacity=1K
+srun application.sh
+</pre>
+
+<p>A job may choose whether or not to specify a pool. If a job does not specify
+a pool, then the job is still allowed to run and the burst buffer stages will
+still run for this job (as long as the burst buffer directive was given). If
+the job specifies a pool but that pool is not found, then the job is
+rejected.</p>
+
+<p>The system administrator may validate burst buffer options in the
+<code>slurm_bb_job_process</code> function in burst_buffer.lua. This might
+include requiring a job to specify a pool or validating any additional options
+that the system administrator decides to implement.</p>
+
+
+<h2>Persistent Burst Buffer Creation and Deletion Directives
+<a id="persist"></a></h2>
+
+<p>This section only applies to the datawarp plugin, since persistent burst
+buffers are not used in any other burst buffer plugin.</p>
+
+<p>These options are used to create and delete persistent burst buffers:</p>
 <ul>
-<li>#BB create_persistent name=&lt;name&gt; capacity=&lt;number&gt;
-[access=&lt;access&gt;] [pool=&lt;pool&gt; [type=&lt;type&gt;]</li>
-<li>#BB destroy_persistent name=&lt;name&gt; [hurry]</li>
+<li><code>#BB create_persistent name=&lt;name&gt; capacity=&lt;number&gt;
+[access=&lt;access&gt;] [pool=&lt;pool&gt; [type=&lt;type&gt;]</code></li>
+<li><code>#BB destroy_persistent name=&lt;name&gt; [hurry]</code></li>
 </ul>
-<p>The persistent burst buffer name may not start with a numeric value (numeric
-names are reserved for job-specific burst buffers).
-The <b>capacity</b> (size) specification can include a suffix of "N" (nodes),
-"K|KiB", "M|MiB", "G|GiB", "T|TiB", "P|PiB" (for powers of 1024) and "KB",
-"MB", "GB", "TB", "PB" (for powers of 1000). NOTE: Usually Slurm interprets
-KB, MB, GB, TB, PB, TB units as powers of 1024, but for Burst Buffers size
-specifications Slurm supports both IEC/SI formats. This is because the CRAY API
-supports both formats.
-The <b>access</b> parameter identifies the buffer access mode. Supported access
-modes for the burst_buffer/datawarp plugin include: striped, private, and ldbalance.
-The <b>pool</b> parameter identifies the resource pool from which the burst buffer
-should be created. The default and available pools are configuration dependent.
-The <b>type</b> parameter identifies the buffer type. Supported type
-modes for the burst_buffer/datawarp plugin include: cache and scratch.
-Multiple persistent burst buffers may be created or deleted within a single
-job.
-A sample batch script follows:</p>
+
+<p>Options for creating and deleting persistent burst buffers:</p>
+<ul>
+<li><b>name</b> - The persistent burst buffer name may not start with a numeric
+value (numeric names are reserved for job-specific burst buffers).</li>
+<li><b>capacity</b> - Described in the
+<a href="#submit">Job Submission Commands</a> section.</li>
+<li><b>pool</b> - Described in the
+<a href="#submit">Job Submission Commands</a> section.</li>
+<li><b>access</b> - The access parameter identifies the buffer access mode.
+Supported access modes for the datawarp plugin include:</li>
+	<ul>
+	<li>striped</li>
+	<li>private</li>
+	<li>ldbalance</li>
+	</ul>
+<li><b>type</b> - The type parameter identifies the buffer type. Supported type
+modes for the datawarp plugin include:</li>
+	<ul>
+	<li>cache</li>
+	<li>scratch</li>
+	</ul>
+</ul>
+
+<p>Multiple persistent burst buffers may be created or deleted within a single
+job.</p>
+
+<p>Example - Creating two persistent burst buffers:</p>
+
 <pre>
 #!/bin/bash
 #BB create_persistent name=alpha capacity=32GB access=striped type=scratch
-#DW jobdw type=scratch capacity=1GB access_mode=striped
-#DW stage_in  type=file source=/home/alan/data.in  destination=$DW_JOB_STRIPED/data
-#DW stage_out type=file destination=/home/alan/data.out source=$DW_JOB_STRIPED/data
-/home/alan/a.out
+#BB create_persistent name=beta capacity=16GB access=striped type=scratch
+srun application.sh
+</pre>
+
+<p>Example - Destroying two persistent burst buffers:</p>
+
+<pre>
+#!/bin/bash
+#BB destroy_persistent name=alpha
+#BB destroy_persistent name=beta
+srun application.sh
 </pre>
 
 <p>Persistent burst buffers can be created and deleted by a job requiring no
 compute resources. Submit a job with the desired burst buffer directives and
-specify a node count of zero (e.g. "sbatch -N0 setup_buffers.bash").
+specify a node count of zero (e.g. <code>sbatch -N0 setup_buffers.bash</code>).
 Attempts to submit a zero size job without burst buffer directives or with
-job-specific burst buffer directives will generate an error.
-Note that zero size jobs are not supported for job arrays or heterogeneous
-job allocations.</p>
+job-specific burst buffer directives will generate an error. Note that zero
+size jobs are not supported for job arrays or heterogeneous job
+allocations.</p>
 
-<p><b>NOTE:</b> The ability to create and destroy persistent burst buffers may be
-limited by the "Flags" option in the burst_buffer.conf file.
-See the burst_buffer.conf man page for more information.
+<p><b>NOTE:</b> The ability to create and destroy persistent burst buffers may
+be limited by the <code>Flags</code> option in the burst_buffer.conf file.
+See the <a href="burst_buffer.conf.html">burst_buffer.conf</a> man page for
+more information.
 By default only <a href="user_permissions.html">privileged users</a>
 (i.e. Slurm operators and administrators)
 can create or destroy persistent burst buffers.</p>
 
-<h2><a name="interactive">Interactive Job Options</a></h2>
 
-<p>Interactive jobs may include directives for creating job-specific burst
-buffers as well as file staging.
-These options may be specified using either the "--bb" or "--bbf" option of
-the salloc or srun command.
-Note that support for creation and destruction of persistent burst buffers using
-the "--bb" option is <u>not</u> provided.
-The "--bbf" option take as an argument a filename and that file should contain
-a collection of burst buffer operations identical to that used for batch jobs.
-This file may contain file staging directives.
-Alternately the "--bb" option may be used to specify burst buffer directives
-as the option argument. The format of those directives can either be identical
-to those used in a batch script OR a very limited set of directives can be used,
-which are translated to the equivalent script for later processing.
-Multiple directives should be space separated.</p>
+<h2>Command-line Job Options<a id="command-line"></a></h2>
+
+<p>In addition to putting burst buffer directives in the batch script, the
+command-line options <code>--bb</code> and <code>--bbf</code> may also include
+burst buffer directives. These command-line options are available for salloc,
+sbatch, and srun. Note that the <code>--bb</code> option cannot create or
+destroy persistent burst buffers.</p>
+
+<p>The <code>--bbf</code> option takes as an argument a filename and that file
+should contain a collection of burst buffer operations identical to those used
+for batch jobs.</p>
+
+<p>Alternatively, the <code>--bb</code> option may be used to specify burst
+buffer directives as the option argument. The behavior of this option depends
+on which burst buffer plugin is used. When the <code>--bb</code> option is
+used, Slurm parses this option and creates a temporary burst buffer script file
+that is used internally by the burst buffer plugins.</p>
+
+<h3>Datawarp</h3>
+
+<p>When using the <code>--bb</code> option, the format of the directives can
+either be identical to those used in a batch script OR a very limited set of
+options can be used, which are translated to the equivalent script for later
+processing. The following options are allowed:</p>
 <ul>
-<li>access=&lt;access&gt;</li>
-<li>capacity=&lt;number&gt;</li>
-<li>swap=&lt;number&gt;</li>
-<li>type=&lt;type&gt;</li>
-<li>pool=&lt;name&gt;</li>
+<li><code>access=&ltaccess&gt</code></li>
+<li><code>capacity=&ltnumber&gt</code></li>
+<li><code>swap=&ltnumber&gt</code></li>
+<li><code>type=&lttype&gt</code></li>
+<li><code>pool=&ltname&gt</code></li>
 </ul>
-<p>If a swap option is specified, the job must also specify the required
-node count.
-The capacity (size) specification can include a suffix of "N" (nodes),
-"K|KiB", "M|MiB", "G|GiB", "T|TiB", "P|PiB" (for powers of 1024) and "KB",
-"MB", "GB", "TB", "PB" (for powers of 1000). NOTE: Usually Slurm interprets
-KB, MB, GB, TB, PB, TB units as powers of 1024, but for Burst Buffers size
-specifications Slurm supports both IEC/SI formats. This is because the CRAY API
-supports both formats.
-A sample command line follows and we also show the equivalent burst buffer
-script generated by the options:</p>
+
+<p>Multiple options should be space separated. If a swap option is specified,
+the job must also specify the required node count.</p>
+
+<p>Example:</p>
+
 <pre>
 # Sample execute line:
 srun --bb="capacity=1G access=striped type=scratch" a.out
@@ -218,10 +550,30 @@ srun --bb="capacity=1G access=striped type=scratch" a.out
 #DW jobdw capacity=1GiB access_mode=striped type=scratch
 </pre>
 
-<h2><a name="symbols">Symbol Replacement</a></h2>
+<h3>Lua</h3>
+
+<p>This plugin does not do any special parsing or translating of burst buffer
+directives given by the <code>--bb</code> option. When using the
+<code>--bb</code> option, the format is identical to the batch script: Slurm
+only enforces that the burst buffer directive must be specified. See additional
+information in the Lua subsection of <a href="#submit">Job Submission
+Commands</a>.</p>
+
+<p>Example:</p>
+
+<pre>
+# Sample execute line:
+srun --bb="#BB_LUA pool=pool1 capacity=1K"
+
+# Equivalent script as generated by Slurm's burst_buffer/datawarp plugin
+#BB_LUA pool=pool1 capacity=1K
+</pre>
+
+
+<h2>Symbol Replacement<a id="symbols"></a></h2>
 
 <p>Slurm supports a number of symbols that can be used to automatically
-fill in certain job details, e.g., to make stage_in or stage_out directory
+fill in certain job details, e.g. to make stage-in or stage-out directory
 paths vary with each job submission.</p>
 
 <p>Supported symbols include:
@@ -238,41 +590,59 @@ paths vary with each job submission.</p>
 </table>
 </p>
 
-<h2><a name="status">Status Commands</a></h2>
 
-<p>Slurm's current burst buffer state information is available using the 
-<i>scontrol show burst</i> command or by using the <i>sview</i> command's
-<i>Burst Buffer</i> tab. A sample scontrol output is shown below. The scontrol
-"-v" option may be used for a more verbose output format.</p>
+<h2>Status Commands<a id="status"></a></h2>
+
+<p>Burst buffer information that Slurm tracks is available by using the
+<code>scontrol show burst</code> command or by using the sview command's
+Burst Buffer tab. Examples follow.</p>
+
+<p>Datawarp plugin example:</p>
 
 <pre>
 $ scontrol show burst
-Name=generic DefaultPool=ssd Granularity=100G TotalSpace=50T UsedSpace=42T
-  StageInTimeout=30 StageOutTimeout=30 Flags=EnablePersistent,PrivateData
-  AllowUsers=alan,brenda
-  CreateBuffer=/usr/local/slurm/17.11/sbin/CB
-  DestroyBuffer=/usr/local/slurm/17.11/sbin/DB
-  GetSysState=/usr/local/slurm/17.11/sbin/GSS
-  StartStageIn=/usr/local/slurm/17.11/sbin/SSI
-  StartStageIn=/usr/local/slurm/17.11/sbin/SSO
-  StopStageIn=/usr/local/slurm/17.11/sbin/PSI
-  StopStageIn=/usr/local/slurm/17.11/sbin/PSO
+Name=datawarp DefaultPool=wlm_pool Granularity=200GiB TotalSpace=5800GiB FreeSpace=4600GiB UsedSpace=1600GiB
+  Flags=EmulateCray
+  StageInTimeout=86400 StageOutTimeout=86400 ValidateTimeout=5 OtherTimeout=300
+  GetSysState=/home/marshall/slurm/master/install/c1/sbin/dw_wlm_cli
+  GetSysStatus=/home/marshall/slurm/master/install/c1/sbin/dwstat
   Allocated Buffers:
-    JobID=18 CreateTime=2017-08-19T16:46:05 Pool=dwcache Size=10T State=allocated UserID=alan(1000)
-    JobID=20 CreateTime=2017-08-19T16:46:45 Pool=dwcache Size=10T State=allocated UserID=alan(1000)
-    Name=DB1 CreateTime=2017-08-19T16:46:45 Pool=dwcache Size=22T State=allocated UserID=brenda(1001)
+    JobID=169509 CreateTime=2021-08-11T10:19:06 Pool=wlm_pool Size=1200GiB State=allocated UserID=marshall(1017)
+    JobID=169508 CreateTime=2021-08-11T10:18:46 Pool=wlm_pool Size=400GiB State=staged-in UserID=marshall(1017)
   Per User Buffer Use:
-    UserID=alan(1000) Used=20T
-    UserID=brenda(1001) Used=22T
+    UserID=marshall(1017) Used=1600GiB
 </pre>
 
-<p>Access to the Cray burst buffer status tool, <i>dwstat</i>, is available from
-the scontrol command using the "scontrol show bbstat ..." or
-"scontrol show dwstat ..." command. Options following "bbstat" or "dwstat" on
-the scontrol execute line are passed directly to the dwstat command as shown
-below. See
-<a href="http://docs.cray.com/books/S-2558-5204/S-2558-5204.pdf">Cray DataWarp documentation</a>
-for details about dwstat options and output.</p>
+<p>Lua plugin example:</p>
+
+<pre>
+$ scontrol show burst
+Name=lua DefaultPool=(null) Granularity=1 TotalSpace=0 FreeSpace=0 UsedSpace=0
+  PoolName[0]=pool1 Granularity=1KiB TotalSpace=10000KiB FreeSpace=9750KiB UsedSpace=250KiB
+  PoolName[1]=pool2 Granularity=2 TotalSpace=10 FreeSpace=10 UsedSpace=0
+  PoolName[2]=pool3 Granularity=1 TotalSpace=4 FreeSpace=4 UsedSpace=0
+  PoolName[3]=pool4 Granularity=1 TotalSpace=5GB FreeSpace=4GB UsedSpace=1GB
+  Flags=DisablePersistent
+  StageInTimeout=86400 StageOutTimeout=86400 ValidateTimeout=5 OtherTimeout=300
+  GetSysState=(null)
+  GetSysStatus=(null)
+  Allocated Buffers:
+    JobID=169504 CreateTime=2021-08-11T10:13:38 Pool=pool1 Size=250KiB State=allocated UserID=marshall(1017)
+    JobID=169502 CreateTime=2021-08-11T10:12:06 Pool=pool4 Size=1GB State=allocated UserID=marshall(1017)
+  Per User Buffer Use:
+    UserID=marshall(1017) Used=1000256KB
+</pre>
+
+<p>Access to a burst buffer status API is available from scontrol using the
+<code>scontrol show bbstat ...</code> or <code>scontrol show dwstat ...</code>
+commands. Options following <code>bbstat</code> or <code>dwstat</code> on the
+scontrol execute line are passed directly to the bbstat or dwstat commands, as
+shown below. In the datawarp plugin, this command calls Cray's dwstat script.
+See Cray Datawarp documentation for details about dwstat options and output. In
+the lua plugin, this command calls the <code>slurm_bb_get_status</code>
+function in burst_buffer.lua. Examples follow.</p>
+
+<p>Datawarp plugin example:</p>
 
 <pre>
 /opt/cray/dws/default/bin/dwstat
@@ -294,32 +664,62 @@ $ scontrol show dwstat configurations
   760 CA---  808 scratch      stripe      1
 </pre>
 
-<h2><a name="reservation">Advanced Reservations</a></h2>
+<p>Lua plugin example:</p>
+<p>This example doesn't do anything useful; it just shows how this call is
+used.</p>
+
+<pre>
+-- Implement this function in burst_buffer.lua
+function slurm_bb_get_status(...)
+    local i, v, args, outstr, arr
+
+    arr = { }
+    -- Create a table from variable arg list
+    args = {...}
+    args.n = select("#", ...)
+
+    for i,v in ipairs(args) do
+        arr[#arr+1] = tostring(v)
+    end
+    outstr = table.concat(arr, "\n")
+
+    return slurm.SUCCESS, "Status return message.\nArgs:\n" .. outstr .. "\n"
+end
+</pre>
+
+<pre>
+$ scontrol show bbstat arg1 arg2
+Status return message.
+Args:
+arg1
+arg2
+</pre>
+
+
+<h2>Advanced Reservations<a id="reservation"></a></h2>
 
 <p>Burst buffer resources can be placed in an advanced reservation using the
 <i>BurstBuffer</i> option.
 The argument consists of four elements:<br>
-[plugin:][pool:]#[units]<br><br>
-<i>plugin</i> is the burst buffer plugin name, currently "datawarp".
-If no plugin is specified, the reservation applies to all configured burst
-buffer plugins.<br><br>
-<i>pool</i> specifies a Cray generic burst buffer resource pool.
-If "type" is not specified, the number is a measure of storage space.<br><br>
-<i>units</i> may be "N" (nodes), "K|KiB", "M|MiB", "G|GiB", "T|TiB", "P|PiB"
-(for powers of 1024) and "KB", "MB", "GB", "TB", "PB" (for powers of 1000). The
-default units are bytes for reservations of storage space.
-NOTE: Usually Slurm interprets KB, MB, GB, TB, PB, TB units as powers of 1024,
-but for Burst Buffers size specifications Slurm supports both IEC/SI formats.
-This is because the Cray DataWarp API supports both formats.<br><br>
+<code>[plugin:][pool:]#[units]</code>
 
-Jobs using this reservation are not restricted to these burst buffer resources,
-but may use these reserved resources plus any which are generally available.
-Some examples follow.</p>
+<ul>
+<li><b>plugin</b> is the burst buffer plugin name, currently either "datawarp"
+or "lua".</li>
+<li><b>pool</b> specifies a burst buffer resource pool.
+If "type" is not specified, the number is a measure of storage space.</li>
+<li><b>#</b> (meaning number) should be replaced with a positive integer.</li>
+<li><b>units</b> has the same format as the suffix of capacity in the
+<a href="#submit">Job Submission Commands</a> section.</li>
+
+<p>Jobs using this reservation are not restricted to these burst buffer
+resources, but may use these reserved resources plus any which are generally
+available. Some examples follow.</p>
 
 <pre>
 $ scontrol create reservation starttime=now duration=60 \
   users=alan flags=any_nodes \
-  burstbuffer=datawarp:100G,generic:20G
+  burstbuffer=datawarp:100G
 
 $ scontrol create reservation StartTime=noon duration=60 \
   users=brenda NodeCnt=8 \
@@ -330,18 +730,112 @@ $ scontrol create reservation StartTime=16:00 duration=60 \
   BurstBuffer=datawarp:pool_test:4G
 </pre>
 
-<h2><a name="dependencies">Job Dependencies</a></h2>
+
+<h2>Job Dependencies<a id="dependencies"></a></h2>
 
 <p>If two jobs use burst buffers and one is dependent on the other (e.g.
-"sbatch --dependency=afterok:123 ...") then the second job will not begin until
-the first job completes and its burst buffer stage out completes.
+<code>sbatch --dependency=afterok:123 ...</code>) then the second job will not
+begin until the first job completes and its burst buffer stage-out completes.
 If the second job does not use a burst buffer, but is dependent upon the first
-job's completion, then it will not wait for the stage out operation of the first
+job's completion, then it will not wait for the stage-out operation of the first
 job to complete.
-The second job can be made to wait for the first job's stage out operation to
+The second job can be made to wait for the first job's stage-out operation to
 complete using the "afterburstbuffer" dependency option (e.g.
-"sbatch --dependency=afterburstbuffer:123 ...").</p>
+<code>sbatch --dependency=afterburstbuffer:123 ...</code>).</p>
 
-<p style="text-align:center;">Last modified 9 August 2021</p>
+
+<h2>Burst Buffer States and Job States<a id="states"></a></h2>
+
+<p>These are the different possible burst buffer states:</p>
+
+<ul>
+<li><code>pending</code></li>
+<li><code>allocating</code></li>
+<li><code>allocated</code></li>
+<li><code>deleting</code></li>
+<li><code>deleted</code></li>
+<li><code>staging-in</code></li>
+<li><code>staged-in</code></li>
+<li><code>pre-run</code></li>
+<li><code>running</code></li>
+<li><code>suspended</code></li>
+<li><code>post-run</code></li>
+<li><code>staging-out</code></li>
+<li><code>teardown</code></li>
+<li><code>teardown-fail</code></li>
+<li><code>complete</code></li>
+</ul>
+
+<p>These states appear in the "BurstBufferState" field in the output of
+<code>scontrol show job</code>. This field only appears for jobs that requested
+a burst buffer. The states <code>allocating</code>, <code>allocated</code>,
+<code>deleting</code> and <code>deleted</code> are used
+for persistent burst buffers only (not for job-specific burst buffers). When a
+job requests a burst buffer, this is what the job and burst buffer state
+transitions look like:</p>
+
+<ol>
+<li>Job is submitted. Job state and burst buffer state are both
+<code>pending</code>.</li>
+<li>Burst buffer stage-in starts. Job state: <code>pending</code> with reason:
+<code>BurstBufferStageIn</code>. Burst buffer state: <code>staging-in</code>.
+</li>
+<li>When stage-in completes, the job is eligible to be scheduled (barring any
+other limits). Job state: <code>pending</code>. Burst buffer state:
+<code>staged-in</code>.</li>
+<li>When the job is scheduled and allocated resources, the burst buffer pre-run
+stage begins. Job state: <code>running+configuring</code>. Burst buffer state:
+<code>pre-run</code>.</li>
+<li>When pre-run finishes, the <code>configuring</code> flag is cleared from
+the job and the job can actually start running. Job state and burst buffer
+state are both <code>running</code>.</li>
+<li>When the job completes (even if it fails), burst buffer stage-out starts.
+Job state: <code>stage-out</code>. Burst buffer state:
+<code>staging-out</code>.</li>
+<li>When stage-out completes, teardown starts. Job state: <code>complete</code>.
+Burst buffer state: <code>teardown</code>.</li>
+</ol>
+
+<p>There are some situations which will change the state transitions. Examples
+include:</p>
+
+<ul>
+<li>Burst buffer operation failures:</li>
+	<ul>
+	<li>If teardown fails, then the burst buffer state changes to
+	teardown-fail.  Teardown will be retried. For the burst_buffer/lua
+	plugin, teardown will run a maximum of 3 times before giving up and
+	destroying the burst buffer.</li>
+	<li>If either stage-in or stage-out fail and Flags=teardownFailure is
+	configured in burst_buffer.conf, then teardown runs. Otherwise, the job
+	is held and the burst buffer remains in the same state so it may be
+	inspected and manually destroyed with <code>scancel --hurry</code>.</li>
+	<li>If pre-run fails, then the job is held and teardown runs.</li>
+	</ul>
+<li>When a job is cancelled, the current burst buffer script for that job
+(if running) is killed. If <code>scancel --hurry</code> was used, or if the job
+never ran, stage-out is skipped and it goes straight to teardown. Otherwise,
+stage-out begins.</li>
+<li>If slurmctld is stopped, Slurm kills all running burst buffer scripts for
+all jobs and burst buffer state is saved for each job. When slurmctld restarts,
+for each job it reads the burst buffer state and does one of the following:</li>
+	<ul>
+	<li><b>Pending</b> - Do nothing, since no burst buffer scripts were
+	killed.</li>
+	<li><b>Staging-in, staged-in</b> - run teardown, wait for a short time,
+	then restart stage-in.</li>
+	<li><b>Pre-run</b> - Restart pre-run.</li>
+	<li><b>Running</b> - Do nothing, since no burst buffer scripts were
+	killed.</li>
+	<li><b>Post-run, staging-out</b> - Restart post-run.</li>
+	<li><b>Teardown, teardown-fail</b> - Restart teardown.</li>
+	</ul>
+</ul>
+
+<p><b>NOTE</b>: There are many other things not listed here that affect the job
+state. This document focuses on burst buffers and does not attempt to address
+all possible job state transitions.</p>
+
+<p style="text-align:center;">Last modified 13 August 2021</p>
 
 <!--#include virtual="footer.txt"-->

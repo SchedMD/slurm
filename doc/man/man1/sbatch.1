@@ -196,14 +196,21 @@ the batch script will execute on the first node of the job allocation.
 .TP
 \fB\-\-bb\fR=<\fIspec\fR>
 Burst buffer specification. The form of the specification is system dependent.
-Note the burst buffer may not be accessible from a login node, but require
-that salloc spawn a shell on one of its allocated compute nodes.
+Also see \fB\-\-bbf\fR.
+When the \fB\-\-bb\fR option is used, Slurm parses this option and creates a
+temporary burst buffer script file that is used internally by the burst buffer
+plugins. See Slurm's burst buffer guide for more information and examples:
+.br
+https://slurm.schedmd.com/burst_buffer.html
 
 .TP
 \fB\-\-bbf\fR=<\fIfile_name\fR>
 Path of file containing burst buffer specification.
 The form of the specification is system dependent.
 These burst buffer directives will be inserted into the submitted batch script.
+See Slurm's burst buffer guide for more information and examples:
+.br
+https://slurm.schedmd.com/burst_buffer.html
 
 .TP
 \fB\-b\fR, \fB\-\-begin\fR=<\fItime\fR>

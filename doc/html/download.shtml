@@ -334,6 +334,7 @@ easy and elegantly manner.
 <li><a name="json" href="https://github.com/json-c/json-c/wiki"><b>JSON</b></a>
 	<p>Some Slurm plugins (<a href="rest.html">slurmrestd</a>,
 	<a href="burst_buffer.html">burst_buffer/datawarp</a>,
+	<a href="burst_buffer.html">burst_buffer/lua</a>,
 	<a href="elasticsearch.html">jobcomp/elasticsearch</a>
 	and <a href="power_mgmt.html">power/cray_aries</a>) parse and/or
 	serialize JSON format data. These plugins and slurmrestd are designed to
@@ -408,6 +409,6 @@ Slurm-based HPC supercomputers. The website of Slurm-web, with screenshots:<br>
 
 </ul>
 
-<p style="text-align:center;">Last modified 29 June 2021</p>
+<p style="text-align:center;">Last modified 13 August 2021</p>
 
 <!--#include virtual="footer.txt"-->
