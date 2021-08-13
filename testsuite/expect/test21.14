@@ -29,12 +29,11 @@
 ############################################################################
 source ./globals_accounting
 
-set exit_code   0
-set tc1		"test$test_id-cluster-1"
-set tc2		"test$test_id-cluster-2"
-set ta1		"test$test_id-account.1"
-set ta2		"test$test_id-account.2"
-set ta3		"test$test_id-account.3"
+set tc1 "${test_name}-cluster-1"
+set tc2 "${test_name}-cluster-2"
+set ta1 "${test_name}-account.1"
+set ta2 "${test_name}-account.2"
+set ta3 "${test_name}-account.3"
 set access_err  0
 
 ########## Account ##########
@@ -115,29 +114,27 @@ remove_cluster "$tc1,$tc2"
 if {$access_err != 0} {
 	skip "Not authorized to perform this test"
 }
-remove_acct "" "$ta1,$ta2,$ta3"
 
-#add cluster
-incr exit_code [add_cluster "$tc1,$tc2" ""]
-if { $exit_code } {
+proc cleanup {} {
+	global ta1 ta2 ta3 tc1 tc2
+
+	remove_acct "$tc1,$tc2" "$ta1,$ta2,$ta3"
 	remove_acct "" "$ta1,$ta2,$ta3"
 	remove_cluster "$tc1,$tc2"
+}
+
+# Add cluster
+if [add_cluster "$tc1,$tc2" ""] {
 	fail "Unable to add cluster ($tc1,$tc2)"
 }
 
-#add accounts
-incr exit_code [add_acct "$ta1,$ta2,$ta3" [array get acct_req]]
-if { $exit_code } {
-	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_cluster "$tc1,$tc2"
+# Add accounts
+if [add_acct "$ta1,$ta2,$ta3" [array get acct_req]] {
 	fail "Unable to add account ($ta1,$ta2,$ta3)"
 }
 
-# OK This is the real test, first test change the desc and org of the accounts
-incr exit_code [mod_acct "$ta1,$ta2,$ta3" [array get acct_mod_desc1] [array get acct_mod_acct_vals1] [array get acct_mod_assoc_vals1]]
-if { $exit_code } {
-	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_cluster "$tc1,$tc2"
+# OK This is the real test. First test change the desc and org of the accounts
+if [mod_acct "$ta1,$ta2,$ta3" [array get acct_mod_desc1] [array get acct_mod_acct_vals1] [array get acct_mod_assoc_vals1]] {
 	fail "Unable to modify account ($ta1,$ta2,$ta3)"
 }
 
@@ -148,32 +145,25 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list account account=$ta1,$ta2,$ta3 format="Account,Desc,Org"]
 expect {
 	-re "There was a problem" {
-	        log_error "There was a problem with the sacctmgr command"
-	    	incr exit_code 1
+	        fail "There was a problem with the sacctmgr command"
 	}
 	-re "($ta1|$ta2|$ta3).$acct_mod_acct_vals1(description).$acct_mod_acct_vals1(organization)." {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
-		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 3} {
-	log_error "Account modification 1 incorrect with only $matches"
-	incr exit_code 1
+	fail "Account modification 1 incorrect with only $matches"
 }
 
 # Next, test change the limits of the accounts
-incr exit_code [mod_acct "$ta1,$ta2,$ta3" [array get acct_mod_desc2] [array get acct_mod_assoc_vals2] [array get acct_mod_acct_vals2]]
-if { $exit_code } {
-	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_cluster "$tc1,$tc2"
+if [mod_acct "$ta1,$ta2,$ta3" [array get acct_mod_desc2] [array get acct_mod_assoc_vals2] [array get acct_mod_acct_vals2]] {
 	fail "Unable to modify account ($ta1,$ta2,$ta3)"
 }
 
@@ -184,32 +174,25 @@ set matches 0
 set my_pid [spawn $sacctmgr -n -p list assoc account=$ta1,$ta2,$ta3 format="Account,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
-	        log_error "There was a problem with the sacctmgr command"
-	    	incr exit_code 1
+	        fail "There was a problem with the sacctmgr command"
 	}
 	-re "($ta1|$ta2|$ta3).($tc1|$tc2).$acct_mod_assoc_vals2(fairshare).$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall)." {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
-		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 6} {
-	log_error "Account modification 2 incorrect with only $matches"
-	incr exit_code 1
+	fail "Account modification 2 incorrect with only $matches"
 }
 
 # Next, test change the desc and limits of the accounts
-incr exit_code [mod_acct "$ta1,$ta3" [array get acct_mod_desc3] [array get acct_mod_acct_vals3] [array get acct_mod_assoc_vals3]]
-if { $exit_code } {
-	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_cluster "$tc1,$tc2"
+if [mod_acct "$ta1,$ta3" [array get acct_mod_desc3] [array get acct_mod_acct_vals3] [array get acct_mod_assoc_vals3]] {
 	fail "Unable to modify account ($ta1,$ta2,$ta3)"
 }
 
@@ -220,8 +203,7 @@ set matches 0
 set my_pid [eval spawn $sacctmgr -n -p list account withassoc account=$ta1,$ta2,$ta3 format="Account,Desc,Org,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
-	    log_error "There was a problem with the sacctmgr command"
-	 	incr exit_code 1
+		fail "There was a problem with the sacctmgr command"
 	}
 	# Any time you use () around something you need to combine all
 	# those things together since you can miss some and they be thrown away
@@ -230,9 +212,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
-		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
@@ -240,15 +220,11 @@ expect {
 }
 
 if {$matches != 6} {
-	log_error "Account modification 6 incorrect with $matches"
-	incr exit_code 1
+	fail "Account modification 6 incorrect with $matches"
 }
 
 # Next, test change the parent of ta3 to be $ta2 on $tc1 sibling to be a child
-incr exit_code [mod_acct $ta3 [array get acct_mod_desc4] [array get acct_mod_assoc_vals4] [array get acct_mod_acct_vals4]]
-if { $exit_code } {
-	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_cluster "$tc1,$tc2"
+if [mod_acct $ta3 [array get acct_mod_desc4] [array get acct_mod_assoc_vals4] [array get acct_mod_acct_vals4]] {
 	fail "Unable to modify account ($ta3)"
 }
 
@@ -259,8 +235,7 @@ set matches 0
 set my_pid [eval spawn $sacctmgr -n -p list assoc account=$ta3 format="Account,ParentN,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
-	    log_error "There was a problem with the sacctmgr command"
-	    incr exit_code 1
+		fail "There was a problem with the sacctmgr command"
 	}
 	-re "$ta3.$ta2.$tc1.1.$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall)." {
 		incr matches
@@ -271,25 +246,19 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
-		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 2} {
-	log_error "Account modification 2 incorrect with $matches"
-	incr exit_code 1
+	fail "Account modification 2 incorrect with $matches"
 }
 
 # Next, test change the parent of $ta2 to be $ta3 on $tc1
 # making the child the parent
-incr exit_code [mod_acct $ta2 [array get acct_mod_desc5] [array get acct_mod_assoc_vals5] [array get acct_mod_acct_vals5]]
-if { $exit_code } {
-	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_cluster "$tc1,$tc2"
+if [mod_acct $ta2 [array get acct_mod_desc5] [array get acct_mod_assoc_vals5] [array get acct_mod_acct_vals5]] {
 	fail "Unable to modify account ($ta2)"
 }
 
@@ -300,33 +269,26 @@ set matches 0
 set my_pid [eval spawn $sacctmgr -n -p list assoc account=$ta3,$ta2 format="Account,ParentN,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
-	    log_error "There was a problem with the sacctmgr command"
-	   	incr exit_code 1
+		fail "There was a problem with the sacctmgr command"
 	}
 	-re "($ta2.root.$tc2.$acct_mod_assoc_vals2(fairshare).$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall).|$ta2.$ta3.$tc1.$acct_mod_assoc_vals2(fairshare).$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall).|$ta3.root.($tc1|$tc2).1.....)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
-		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 4} {
-	log_error "Account modification 4 incorrect with $matches"
-	incr exit_code 1
+	fail "Account modification 4 incorrect with $matches"
 }
 
 # Next, test change the parent of $ta3 to be $ta2 on $tc1 again
 # only this time the parent will become the child instead of it being a sibling.
-incr exit_code [mod_acct $ta3 [array get acct_mod_desc6] [array get acct_mod_assoc_vals6] [array get acct_mod_acct_vals6]]
-if { $exit_code } {
-	remove_acct "" "$ta1,$ta2,$ta3"
-	remove_cluster "$tc1,$tc2"
+if [mod_acct $ta3 [array get acct_mod_desc6] [array get acct_mod_assoc_vals6] [array get acct_mod_acct_vals6]] {
 	fail "Unable to modify account ($ta3)"
 }
 
@@ -337,33 +299,19 @@ set matches 0
 set my_pid [eval spawn $sacctmgr -n -p list assoc account=$ta3,$ta2 format="Account,ParentN,Cluster,Fairshare,MaxCPUM,MaxJ,MaxN,MaxW"]
 expect {
 	-re "There was a problem" {
-	    log_error "There was a problem with the sacctmgr command"
-	    incr exit_code 1
+		fail "There was a problem with the sacctmgr command"
 	}
 	-re "($ta2.root.($tc1|$tc2).$acct_mod_assoc_vals2(fairshare).$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall).|$ta3.$ta2.$tc1.1.$acct_mod_assoc_vals2(maxcpumins).$acct_mod_assoc_vals2(maxjobs).$acct_mod_assoc_vals2(maxnodes).$acct_mod_assoc_vals2(maxwall).|$ta3.root.$tc2.1.....)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
-		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
 	}
 }
 if {$matches != 4} {
-	log_error "Account modification 4 incorrect with $matches"
-	incr exit_code 1
-}
-
-# This is the end below here
-
-incr exit_code [remove_acct "$tc1,$tc2" "$ta1,$ta2,$ta3"]
-incr exit_code [remove_acct "" "$ta1,$ta2,$ta3"]
-incr exit_code [remove_cluster "$tc1,$tc2"]
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	fail "Account modification 4 incorrect with $matches"
 }

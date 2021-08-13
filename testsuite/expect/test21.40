@@ -27,109 +27,36 @@
 source ./globals
 source ./globals_accounting
 
-set exit_code        0
-set file_in          "test$test_id.bash"
-set test_acct        "test$test_id\_acct"
-set test_part        "test$test_id\_part"
-set job_qos          "test$test_id\_job_qos"
-set part_qos         "test$test_id\_part_qos"
+set file_in          "$test_dir/input"
+set test_acct        "${test_name}_acct"
+set test_part        "${test_name}_part"
+set job_qos          "${test_name}_job_qos"
+set part_qos         "${test_name}_part_qos"
+set job_id1          0
+set job_id2          0
+set job_id3          0
+set job_id4          0
 
 proc cleanup { } {
 	global test_acct job_qos part_qos scontrol sacctmgr test_part
-	global bin_rm file_in
+
+	# Cancel all jobs
+	wait_for_part_done $test_part
 
 	# Delete the test QOS
-	spawn $sacctmgr -i delete qos $job_qos,$part_qos
-	expect {
-		timeout {
-			log_error "sacctmgr is not responding"
-		}
-		eof {
-			wait
-		}
-	}
+	run_command -none "$sacctmgr -i delete qos $job_qos,$part_qos"
 
 	# Delete account
-	spawn $sacctmgr -i delete account $test_acct
-	expect {
-		timeout {
-		log_error "sacctmgr is not responding"
-		}
-		eof {
-			wait
-		}
-	}
+	run_command -none "$sacctmgr -i delete account $test_acct"
 
 	# Delete partition
-	spawn $scontrol delete partitionname=$test_part
-	expect {
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	exec $bin_rm -f $file_in
-}
-
-proc set_assoc {count} {
-	global sacctmgr test_acct
-
-	spawn $sacctmgr -i modify account $test_acct set grpnodes=$count
-	expect {
-		timeout {
-			fail "sacctmgr is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-}
-
-proc set_qos {qos_name count} {
-	global sacctmgr
-
-	spawn $sacctmgr -i modify qos $qos_name set grpnodes=$count
-	expect {
-		timeout {
-			fail "sacctmgr is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-}
-
-proc reason_node_limit {job_id} {
-	global scontrol
-
-	set node_limit 0
-	spawn $scontrol show job $job_id
-	expect {
-		-re "Reason=AssocGrpNodeLimit" {
-			set node_limit 1
-			exp_continue
-		}
-		-re "Reason=QOSGrpNodeLimit" {
-			set node_limit 1
-			exp_continue
-		}
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	return $node_limit
+	run_command -none "$scontrol delete partitionname=$test_part"
 }
 
 proc run_job_test { } {
 	global file_in sbatch scontrol test_acct
 	global test_part job_qos number re_word_str
-	global nb_nodes exit_code reason_node_limit
+	global nb_nodes
 
 	# Time to wait for scheduling logic to set job's Reason to GrpNodeLimit.
 	# For some configurations this might need to be set higher.
@@ -137,139 +64,47 @@ proc run_job_test { } {
 	set sleep_for_reason_set 10
 
 	# Submit 1 node job
-	set job_id1 0
-	spawn $sbatch -p $test_part --account=$test_acct --qos=$job_qos -t1 --mem=10 -o /dev/null -N1 $file_in
-	expect {
-        -re "Submitted batch job ($number)" {
-            set job_id1 $expect_out(1,string)
-            exp_continue
-        }
-		timeout {
-			fail "sbatch is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$job_id1 == 0} {
-		log_error "Job submit failed"
-		set exit_code 1
-		return
-	}
+	set job_id1 [submit_job -fail "-p $test_part --account=$test_acct --qos=$job_qos -t1 --mem=10 -o /dev/null -N1 $file_in"]
 
 	# Wait for job to start and get its info
 	if {[wait_for_job $job_id1 "RUNNING"] != 0} {
-		log_error "Error waiting for job $job_id1 to run"
-		cancel_job $job_id1
-		set exit_code 1
-		return
+		fail "Error waiting for job $job_id1 to run"
 	}
-	set hostname 0
-	spawn $scontrol show job $job_id1
-	expect {
-                -re "NodeList=($re_word_str)" {
-                        set hostname $expect_out(1,string)
-                        exp_continue
-                }
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$hostname == 0} {
-		log_error "BatchHost for job $job_id1 not found"
-		cancel_job $job_id1
-		set exit_code 1
-		return
-	}
+
+	set hostname [get_job_param $job_id1 "NodeList"]
 
 	# Submit 1 node job EXCLUDING first job's node
-	set job_id2 0
-	spawn $sbatch -p $test_part --account=$test_acct --qos=$job_qos -t1 --exclude=$hostname --mem=10 -o /dev/null -N1 $file_in
-	expect {
-                -re "Submitted batch job ($number)" {
-                        set job_id2 $expect_out(1,string)
-                        exp_continue
-                }
-		timeout {
-			fail "sbatch is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$job_id2 == 0} {
-		log_error "Job submit failed"
-		cancel_job $job_id1
-		set exit_code 1
-		return
-	}
+	set job_id2 [submit_job -fail "-p $test_part --account=$test_acct --qos=$job_qos -t1 --exclude=$hostname --mem=10 -o /dev/null -N1 $file_in"]
 
 	# Submit 1 node job INCLUDING first job's node
-	set job_id3 0
-	spawn $sbatch -p $test_part --account=$test_acct --qos=$job_qos -t1 --nodelist=$hostname --mem=10 -o /dev/null -N1 $file_in
-	expect {
-        -re "Submitted batch job ($number)" {
-            set job_id3 $expect_out(1,string)
-            exp_continue
-        }
-		timeout {
-			fail "sbatch is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$job_id3 == 0} {
-		log_error "Job submit failed"
-		cancel_job $job_id1
-		cancel_job $job_id2
-		set exit_code 1
-		return
-	}
+	set job_id3 [submit_job -fail "-p $test_part --account=$test_acct --qos=$job_qos -t1 --nodelist=$hostname --mem=10 -o /dev/null -N1 $file_in"]
 
 	# Check if job's are waiting on GrpNodeLimit
 	sleep $sleep_for_reason_set
-	if {[reason_node_limit $job_id2] != 1} {
-		log_error "Job $job_id2 should be waiting on GrpNodeLimit, but is not"
-		set exit_code 1
-	}
-	if {[reason_node_limit $job_id3] != 0} {
-		log_error "Job $job_id3 should not be waiting on GrpNodeLimit, but is"
-		set exit_code 1
-	}
+
+	set reason [get_job_param $job_id2 "Reason"]
+	subtest {$reason eq "AssocGrpNodeLimit" ||
+		 $reason eq "QOSGrpNodeLimit"} "Job $job_id2 should be waiting on GrpNodeLimit"
+
+	set reason [get_job_param $job_id3 "Reason"]
+	subtest {$reason ne "AssocGrpNodeLimit" &&
+		 $reason ne "QOSGrpNodeLimit"} "Job $job_id3 should NOT be waiting on GrpNodeLimit"
+
 	cancel_job $job_id1
 	cancel_job $job_id2
 	cancel_job $job_id3
 
 	# Try to submit 2-node job while there is 1-node limit
 	if {$nb_nodes < 2} {
+		subskip "We need 2 or more nodes for some subtests"
 		return
 	}
-	set job_id4 0
-	spawn $sbatch -p $test_part --account=$test_acct --qos=$job_qos -t1 --mem=10 -o /dev/null -N2 $file_in
-	expect {
-                -re "Submitted batch job ($number)" {
-                        set job_id4 $expect_out(1,string)
-                        exp_continue
-                }
-		timeout {
-			fail "sbatch is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$job_id4 != 0} {
-		sleep $sleep_for_reason_set
-		if {[reason_node_limit $job_id4] != 1} {
-			log_error "Job $job_id4 should be waiting on GrpNodeLimit, but is not"
-			set exit_code 1
-		}
-		cancel_job $job_id4
-	}
+	set job_id4 [submit_job -fail "-p $test_part --account=$test_acct --qos=$job_qos -t1 --mem=10 -o /dev/null -N2 $file_in"]
+	sleep $sleep_for_reason_set
+	set reason [get_job_param $job_id4 "Reason"]
+	subtest {$reason eq "AssocGrpNodeLimit" ||
+		 $reason eq "QOSGrpNodeLimit"} "Job $job_id4 should be waiting on GrpNodeLimit"
+	cancel_job $job_id4
 }
 
 if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"} {
@@ -294,70 +129,33 @@ if {[add_qos $part_qos ""] != 0} {
 }
 
 # Add account with QOS
-set match 0
-spawn $sacctmgr -i add account $test_acct qos=$job_qos
-expect {
-	-re "Adding Account" {
-		incr match
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr is not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$match != 1} {
-	fail "sacctmgr had a problem adding the account"
-}
+run_command -fail "$sacctmgr -i add account $test_acct qos=$job_qos"
 
 # Get user name
 set user_name [get_my_user_name]
 
 # Add user to account
-spawn $sacctmgr -i create user name=$user_name account=$test_acct
-expect {
-	timeout {
-		fail "sacctmgr not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$sacctmgr -i create user name=$user_name account=$test_acct"
 
 # Get the number of nodes in the default partition
 set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
 
 # Create a partition to use for testing
-spawn $scontrol create partitionname=$test_part qos=$part_qos nodes=[node_list_to_range [get_nodes_by_state]]
-expect {
-	timeout {
-		fail "scontrol is not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$scontrol create partitionname=$test_part qos=$part_qos nodes=[node_list_to_range [get_nodes_by_state]]"
 
 make_bash_script $file_in "$bin_sleep 60"
 
 log_info "TEST 1: Association GrpNodes limit"
-set_assoc 1
+run_command -fail "$sacctmgr -i modify account $test_acct set grpnodes=1"
 run_job_test
-set_assoc -1
+run_command -fail "$sacctmgr -i modify account $test_acct set grpnodes=-1"
 
 log_info "TEST 2: Job QOS GrpNodes limit"
-set_qos $job_qos 1
+run_command -fail "$sacctmgr -i modify qos $job_qos set grpnodes=1"
 run_job_test
-set_qos $job_qos -1
+run_command -fail "$sacctmgr -i modify qos $job_qos set grpnodes=-1"
 
 log_info "TEST 3: Partition QOS GrpNodes limit"
-set_qos $part_qos 1
+run_command -fail "$sacctmgr -i modify qos $part_qos set grpnodes=1"
 run_job_test
-set_qos $part_qos -1
-
-# Clean up and exit
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+run_command -fail "$sacctmgr -i modify qos $part_qos set grpnodes=-1"

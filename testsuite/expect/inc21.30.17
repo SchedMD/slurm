@@ -30,7 +30,7 @@
 # Checks the timelimit of the job
 proc check_timelimit { job } {
 
-	global scontrol job_id exit_code maxwall_num
+	global scontrol job_id maxwall_num
 
 	set timelimit_match 0
 	spawn $scontrol show job $job
@@ -39,22 +39,18 @@ proc check_timelimit { job } {
 			incr timelimit_match
 		}
 		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
+			error "scontrol not responding"
 		}
 		eof {
 			wait
 		}
 	}
 
-	if {$timelimit_match != 1} {
-		log_error "Job should have as TimeLimit the QOS MaxWall"
-		set exit_code 1
-	}
+	subtest {$timelimit_match == 1} "Job should have as TimeLimit the QOS MaxWall"
 }
 
 proc inc21_30_17 { } {
-	global salloc srun acct bin_sleep number maxwall_num exit_code skips
+	global salloc srun acct bin_sleep number maxwall_num skips
 
 	# If the partition has DefaultTime set it will mess up this test.
 	# Since there is currently no way to use scontrol to change default
@@ -68,31 +64,38 @@ proc inc21_30_17 { } {
 	log_info "Starting Qos/Parent MaxWall applied to job without -t test"
 	set job_id 0
 
-	spawn $salloc --account=$acct -N1 $srun $bin_sleep 10
-	expect {
-		-re "Granted job allocation ($number)" {
-			set job_id $expect_out(1,string)
-			log_debug "Job $job_id has been submitted"
-			check_timelimit $job_id
+	# Raise an error to abort the catch block
+	set exception_code [catch {
+
+		spawn $salloc --account=$acct -N1 $srun $bin_sleep 10
+		expect {
+			-re "Granted job allocation ($number)" {
+				set job_id $expect_out(1,string)
+				log_debug "Job $job_id has been submitted"
+				check_timelimit $job_id
+			}
+			-re "Pending job allocation ($number)" {
+				set job_id $expect_out(1,string)
+				error "job $job_id should not be waiting for resources"
+			}
+			-re "error" {
+				error "Job allocation should not have failed"
+			}
+			timeout {
+				error "salloc is not responding"
+			}
+			eof {
+				wait
+			}
 		}
-		-re "Pending job allocation ($number)" {
-			set job_id $expect_out(1,string)
-			log_error "job $job_id should not be waiting for resources"
-			set exit_code 1
-		}
-		-re "error" {
-			log_error "Job allocation should not have failed"
-			set exit_code 1
-		}
-		timeout {
-			log_error "salloc is not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
+
+	} message] ; # Store the error message in $message
 
 	# Cancel job
-        cancel_job $job_id
+	cancel_job $job_id
+
+	# Convert any errors into failures (after cleaning up)
+	if {$exception_code == 1} { ; # errors only
+		fail "Failure testing MaxWall: $message"
+	}
 }

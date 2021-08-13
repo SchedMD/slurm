@@ -28,68 +28,67 @@
 ############################################################################
 source ./globals_accounting
 
-set file_in     "test$test_id.input"
-set file_in2    "test$test_id.input2"
-set file_in3    "test$test_id.input3"
-set file_out    "test$test_id.output"
-set file_out2   "test$test_id.output2"
-set file_out3   "test$test_id.output3"
-set file_out4   "test$test_id.output4"
-set exit_code   0
-set lis		list
-set as		assoc
-set fmt		format
-set cln		clean
-set tre		tree
-set was		withassoc
-set wco		withcoordinator
-set par		Parent
-set roo		root
-set clu		Cluster
-set tc1		"test$test_id-cluster-1"
-set tc2		"test$test_id-cluster-2"
-set tc3		"test$test_id-cluster-3"
-set acc		Account
-set nams	names
-set ta1		"test$test_id-account.1"
-set ta2		"test$test_id-account.2"
-set ta3		"test$test_id-account.3"
-set ta4		"test$test_id-account.4"
-set dsc		Description
-set org		Organization
-set usr		User
-set tu1         "test$test_id-user.1"
-set tu2         "test$test_id-user.2"
-set tu3         "test$test_id-user.3"
-set tu4         "test$test_id-user.4"
+set file_in     "$test_dir/input"
+set file_in2    "$test_dir/input2"
+set file_in3    "$test_dir/input3"
+set file_out    "$test_dir/output"
+set file_out2   "$test_dir/output2"
+set file_out3   "$test_dir/output3"
+set file_out4   "$test_dir/output4"
+set lis         list
+set as          assoc
+set fmt         format
+set cln         clean
+set tre         tree
+set was         withassoc
+set wco         withcoordinator
+set par         Parent
+set roo         root
+set clu         Cluster
+set tc1         "${test_name}-cluster-1"
+set tc2         "${test_name}-cluster-2"
+set tc3         "${test_name}-cluster-3"
+set acc         Account
+set nams        names
+set ta1         "${test_name}-account.1"
+set ta2         "${test_name}-account.2"
+set ta3         "${test_name}-account.3"
+set ta4         "${test_name}-account.4"
+set dsc         Description
+set org         Organization
+set usr         User
+set tu1         "${test_name}-user.1"
+set tu2         "${test_name}-user.2"
+set tu3         "${test_name}-user.3"
+set tu4         "${test_name}-user.4"
 set qs          QOS
 set qs2         runfirst
-set al		AdminLevel
-set aln		None
-set ala		Administrator
-set alo		Operator
+set al          AdminLevel
+set aln         None
+set ala         Administrator
+set alo         Operator
 set coo         Coordinator
 set col         CoordinatorList
-set dac		DefaultAccount
-set pts		Partitions
-set pde		pdebug
-set pba		pbatch
-set dw		DefaultWCKey
-set wk		WCKeys
-set fs		Fairshare
-set gm		GrpTRESMins
-set gc		GrpTRES
-set gj		GrpJobs
-set gs		GrpSubmitJobs
-set gw		GrpWall
-set mm		MaxTRESMins
-set mp		MaxTRESMinsPerJob
-set mc		MaxTRES
-set mu		MaxTRESPerJob
-set mj		MaxJobs
-set ms		MaxSubmitJobs
-set mw		MaxWall
-set md		MaxWallDurationPerJob
+set dac         DefaultAccount
+set pts         Partitions
+set pde         pdebug
+set pba         pbatch
+set dw          DefaultWCKey
+set wk          WCKeys
+set fs          Fairshare
+set gm          GrpTRESMins
+set gc          GrpTRES
+set gj          GrpJobs
+set gs          GrpSubmitJobs
+set gw          GrpWall
+set mm          MaxTRESMins
+set mp          MaxTRESMinsPerJob
+set mc          MaxTRES
+set mu          MaxTRESPerJob
+set mj          MaxJobs
+set ms          MaxSubmitJobs
+set mw          MaxWall
+set md          MaxWallDurationPerJob
 
 set wckey_check hole,latch,stone,turn
 
@@ -250,125 +249,82 @@ if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
-#make sure we have a clean system and permission to do this work
-remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
-remove_acct "" "$ta2,$ta3,$ta4"
-remove_qos "$qs2"
+# Make sure we have a clean system and permission to do this work
 remove_cluster "$tc1,$tc2,$tc3"
 if {$access_err != 0} {
 	skip "Not authorized to perform this test"
 }
 
-#add qos
-incr exit_code [add_qos "$qs2" ""]
-if { $exit_code } {
+proc cleanup {} {
+	global qs2 ta2 ta3 ta4 tc1 tc2 tc3 tu1 tu2 tu3 tu4
+
 	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
 	remove_acct "" "$ta2,$ta3,$ta4"
 	remove_qos "$qs2"
 	remove_cluster "$tc1,$tc2,$tc3"
+}
+
+# Add qos
+if [add_qos "$qs2" ""] {
 	fail "Unable to add qos ($qs2)"
 }
 
 #
-#add cluster
-incr exit_code [add_cluster $tc3 [array get clus_req]]
-if { $exit_code } {
-	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
-	remove_acct "" "$ta2,$ta3,$ta4"
-	remove_qos "$qs2"
-	remove_cluster "$tc1,$tc2,$tc3"
+# Add cluster
+if [add_cluster $tc3 [array get clus_req]] {
 	fail "Unable to add cluster ($tc3)"
 }
 
-#add accounts
-incr exit_code [add_acct $ta4 [array get acct_req]]
-if { $exit_code } {
-	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
-	remove_acct "" "$ta2,$ta3,$ta4"
-	remove_qos "$qs2"
-	remove_cluster "$tc1,$tc2,$tc3"
+# Add accounts
+if [add_acct $ta4 [array get acct_req]] {
 	fail "Unable to add account ($ta4)"
 }
 
-incr exit_code [add_acct $ta3 [array get acct_req2]]
-if { $exit_code } {
-	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
-	remove_acct "" "$ta2,$ta3,$ta4"
-	remove_qos "$qs2"
-	remove_cluster "$tc1,$tc2,$tc3"
+if [add_acct $ta3 [array get acct_req2]] {
 	fail "Unable to add account ($ta3)"
 }
 
-incr exit_code [add_acct $ta2 [array get acct_req3]]
-if { $exit_code } {
-	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
-	remove_acct "" "$ta2,$ta3,$ta4"
-	remove_qos "$qs2"
-	remove_cluster "$tc1,$tc2,$tc3"
+if [add_acct $ta2 [array get acct_req3]] {
 	fail "Unable to add account ($ta2)"
 }
 
-#add users
-incr exit_code [add_user $tu3 [array get user_req]]
-if { $exit_code } {
-	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
-	remove_acct "" "$ta2,$ta3,$ta4"
-	remove_qos "$qs2"
-	remove_cluster "$tc1,$tc2,$tc3"
+# Add users
+if [add_user $tu3 [array get user_req]] {
 	fail "Unable to add user ($tu3)"
 }
 
-incr exit_code [add_user $tu2 [array get user_req2]]
-if { $exit_code } {
-	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
-	remove_acct "" "$ta2,$ta3,$ta4"
-	remove_qos "$qs2"
-	remove_cluster "$tc1,$tc2,$tc3"
+if [add_user $tu2 [array get user_req2]] {
 	fail "Unable to add user ($tu2)"
 }
 
-incr exit_code [add_user $tu1 [array get user_req3]]
-if { $exit_code } {
-	remove_user "" "" "$tu1,$tu2,$tu3,$tu4"
-	remove_acct "" "$ta1,$ta2,$ta3,$ta4"
-	remove_qos "$qs2"
-	remove_cluster "$tc1,$tc2,$tc3"
+if [add_user $tu1 [array get user_req3]] {
 	fail "Unable to add user ($tu1)"
 }
-
-exec $bin_rm -f $file_out4
 
 set matches 0
 set my_pid [spawn $sacctmgr -i dump $clu=$tc3 file=$file_out4]
 expect {
 	-re "(Cluster .* returned nothing)" {
-		log_error "There was a problem with the dump"
-	    incr exit_code 1
+		fail "There was a problem with the dump"
 	}
 	-re "(No filename given)" {
-		log_error "There was a problem with the file name"
-	    incr exit_code 1
+		fail "There was a problem with the file name"
 	}
 	-re "(Can only do one cluster at a time)" {
-		log_error "There was a problem with the dump"
-	    incr exit_code 1
+		fail "There was a problem with the dump"
 	}
 	-re "too few arguments for keyword" {
-		log_error "There was a problem with the dump request"
-	    incr exit_code 1
+		fail "There was a problem with the dump request"
 	}
 	-re "Unknown option" {
-		log_error "There was a problem with the request"
-	    incr exit_code 1
+		fail "There was a problem with the request"
 	}
 	-re "(sacctmgr: Cluster)" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		log_error "sacctmgr list associations not responding"
-		slow_kill $my_pid
-		incr exit_code 1
+		fail "sacctmgr list associations not responding"
 	}
 	eof {
 		wait
@@ -376,8 +332,7 @@ expect {
 }
 
 if {$matches != 1} {
-	log_error "File load 1 incorrect with only $matches"
-	incr exit_code 1
+	fail "File load 1 incorrect with only $matches"
 }
 
 set matches 0
@@ -385,8 +340,7 @@ set tfile [open "$file_out4" r]
 while {[gets $tfile line] != -1} {
 
 	if {![string compare $line "No such file or directory"]} {
-		log_error "There was a problem with the sacctmgr command"
-		incr exit_code 1
+		fail "There was a problem with the sacctmgr command"
 	} elseif {![string compare $line "$clu - '$tc3':$fs=$clus_req(fairshare):$gc=$clus_req(grptres):$gj=$clus_req(grpjob):$gs=$clus_req(grpsubmit):$mp=$clus_req(maxtresmin):$mu=$clus_req(maxtres):$mj=$clus_req(maxjobs):$ms=$clus_req(maxsubmit):$md=$clus_req(maxwall):$qs='$clus_req(qos)'"]} {
 		log_debug "Match 1"
 		incr matches
@@ -430,20 +384,5 @@ while {[gets $tfile line] != -1} {
 
 
 if {$matches != 14} {
-	log_error "Parse of file for 14 entries incorrect with only $matches"
-	incr exit_code 1
-}
-
-#
-# This is the end below here
-
-incr exit_code [remove_user "" "" "$tu1,$tu2,$tu3,$tu4"]
-incr exit_code [remove_acct "" "$ta2,$ta3,$ta4"]
-incr exit_code [remove_qos "$qs2"]
-incr exit_code [remove_cluster "$tc1,$tc2,$tc3"]
-
-if {$exit_code == 0} {
-   	exec $bin_rm -f $file_out4
-} else {
-	fail "Test failed due to previous errors"
+	fail "Parse of file for 14 entries incorrect with only $matches"
 }

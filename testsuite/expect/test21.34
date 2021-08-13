@@ -29,7 +29,6 @@ source ./globals
 source ./globals_accounting
 source  ./inc21.34_tests
 
-set exit_code        0
 set test_node        ""
 # Total cpus in test node
 set totcpus          0
@@ -147,62 +146,16 @@ if {$overtimelim != 0} {
 
 proc cleanup { } {
 	global acct job_qos part_qos scontrol sacctmgr test_part def_part
-	global exit_code
 
 	# Delete the test qos
-	set match 0
-	spawn $sacctmgr -i delete qos $job_qos,$part_qos
-	expect {
-		-re "Deleting" {
-			set match 1
-			exp_continue
-		}
-		timeout {
-			fail "sacctmgr is not responding"
-		}
-		eof {
-			wait
-		}
-	}
+	run_command -none "$sacctmgr -i delete qos $job_qos,$part_qos"
 
-	#delete account
-	spawn $sacctmgr -i delete account $acct
-	expect {
-		-re "Deleting accounts" {
-			exp_continue
-		}
-		-re "Error" {
-			log_error "Account was not deleted"
-			set exit_code 1
-		}
-		timeout {
-			fail "sacctmgr is not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	spawn $scontrol delete partitionname=$test_part
-	expect {
-		timeout {
-			fail "scontrol is not responding"
-		}
-		eof {
-			wait
-		}
-	}
+	# Delete account
+	run_command -none "$sacctmgr -i delete account $acct"
+	run_command -none "$scontrol delete partitionname=$test_part"
 
 	if {[string length $def_part]} {
-		spawn $scontrol update partitionname=$def_part default=yes
-		expect {
-			timeout {
-				fail "scontrol is not responding"
-			}
-			eof {
-				wait
-			}
-		}
+		run_command -none "$scontrol update partitionname=$def_part default=yes"
 	}
 }
 
@@ -351,7 +304,7 @@ if {$acctmatch != 1} {
 spawn $sacctmgr -i create user name=$user_name account=$acct
 expect {
 	timeout {
-		log_error "sacctmgr not responding"
+		fail "sacctmgr not responding"
 	}
 	eof {
 		wait
@@ -383,7 +336,3 @@ expect {
 
 log_info "========== Run limit test on job's qos limits =========="
 qos_test
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
-}

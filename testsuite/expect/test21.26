@@ -27,12 +27,11 @@
 ############################################################################
 source ./globals_accounting
 
-set exit_code   0
-set tc1		"test$test_id\_cluster"
-set ta1		"test$test_id-account.1"
-set ta2		"test$test_id-account.2"
-set qos1	qqostest
-set tu1         "test$test_id-user.1"
+set tc1         "${test_name}_cluster"
+set ta1         "${test_name}-account.1"
+set ta2         "${test_name}-account.2"
+set qos1        qqostest
+set tu1         "${test_name}-user.1"
 set access_err  0
 
 # Cluster
@@ -83,459 +82,141 @@ if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
 }
 
-proc end_test { } {
-	global tu1 ta1 ta2 tc1 qos1 mod_acct_desc1 mod_acct_vals1 mod_assoc_vals1
-	set exit_code 0
-	incr exit_code [remove_cluster $tc1]
-	incr exit_code [remove_user "" "" "$tu1"]
-	incr exit_code [remove_acct "" "$ta1,$ta2"]
-	incr exit_code [remove_qos "$qos1"]
-	return $exit_code
+proc cleanup {} {
+	global qos1 ta1 ta2 tc1 tu1
+
+	remove_cluster $tc1
+	remove_user "" "" "$tu1"
+	remove_acct "" "$ta1,$ta2"
+	remove_qos "$qos1"
 }
 
 #
-# Remove any residual clusters and
 # Add a test cluster for testing
 #
-remove_cluster $tc1
 add_cluster $tc1 ""
 
-#
-# remove test associations to make sure we have a clean system
-#
-remove_user "" "" "$tu1"
-remove_acct "" "$ta1,$ta2"
-remove_qos "$qos1"
-
-# get the qos of root on the cluster since we are going to set it to
-# nothing here.  And put it back at the end of the test.
-set match 0
-set my_pid [eval spawn $sacctmgr list cluster $tc1 format=cluster,qos -np]
-expect {
-	-re "There was a problem" {
-		fail "There was a problem with the sacctmgr command"
-	}
-	-re "$tc1.(\[a-z,\]*)." {
-		set mod_assoc_vals1(qoslevel) $expect_out(1,string)
-		set match 1
-		exp_continue
-	}
-
-	timeout {
-		slow_kill $my_pid
-		fail "sacctmgr list associations not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if { !$match } {
-	fail "Couldn't query qos"
-}
-
-#now set default for cluster to ""
-incr exit_code [mod_cluster $tc1 [array get clus_req]]
-if { $exit_code } {
-	remove_qos "$qos1"
+# Now set default for cluster to ""
+if [mod_cluster $tc1 [array get clus_req]] {
 	fail "Unable to modify cluster ($tc1)"
 }
 
-#add qos
-incr exit_code [add_qos "$qos1" ""]
-if { $exit_code } {
-	remove_qos "$qos1"
+# Add qos
+if [add_qos "$qos1" ""] {
 	fail "Unable to add qos ($qos1)"
 }
-#====Done Add QoS===========Begin Add First Account========
-#add default account
-incr exit_code [add_acct $ta1 [array get acct_req1]]
-if { $exit_code } {
-	end_test
+
+# Add default account
+if [add_acct $ta1 [array get acct_req1]] {
 	fail "Unable to add account ($ta1)"
 }
-#====Done Add First Account====Begin Add Second Account====
-#add account
-incr exit_code [add_acct $ta2 [array get acct_req2]]
-if { $exit_code } {
-	end_test
+
+# Add second account
+if [add_acct $ta2 [array get acct_req2]] {
 	fail "Unable to add account ($ta2)"
 }
-#=====Done Add Second Account========Begin Add User=========
-#add user
-incr exit_code [add_user $tu1 [array get user_req]]
-if { $exit_code } {
-	end_test
+
+# Add user
+if [add_user $tu1 [array get user_req]] {
 	fail "Unable to add user ($tu1)"
 }
 
-#====Done add user====Done building test associations===Begin test section=======
-
 # Verify initial associations
-# NOTE: We do not use regular expressions below due to it's inability to test
-# for a literal "|"
-set matches 0
-set my_pid [eval spawn $sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p]
-expect {
-	-re "There was a problem" {
-		fail "There was a problem with the sacctmgr command"
-	}
-	"\n|root||" {
-		incr matches
-		exp_continue
-	}
-	"\n|root|root|" {
-		incr matches
-		exp_continue
-	}
-	"\n|$ta1||" {
-		incr matches
-		exp_continue
-	}
-	"\n|$ta1|$tu1|" {
-		incr matches
-		exp_continue
-	}
-	"\n|$ta2||" {
-		incr matches
-		exp_continue
-	}
-	"\n|$ta2|$tu1|" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		slow_kill $my_pid
-		fail "sacctmgr list associations not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 6} {
-	end_test
-	fail "Initial sacctmgr add failed ($matches != 6)"
-}
+set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p"]
+subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
+subtest {[regexp "\n\\|root\\|\\|" $output]} "Verify root account line"
+subtest {[regexp "\n\\|root\\|root\\|" $output]} "Verify root user line"
+subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify $ta1 account line"
+subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify $tu1 user in $ta1 account line"
+subtest {[regexp "\n\\|$ta2\\|\\|" $output]} "Verify $ta2 account line"
+subtest {[regexp "\n\\|$ta2\\|$tu1\\|" $output]} "Verify $tu1 user in $ta2 account line"
 
-#======Begin Modification to Add $qos1 to $ta1=======
-#modify test1 account to add test QoS
-incr exit_code [mod_acct $ta1 [array get mod_acct_desc3] [array get mod_acct_vals3] [array get mod_assoc_vals3]]
-if { $exit_code } {
-	end_test
+# Modify accounts to add test QoS
+if [mod_acct $ta1 [array get mod_acct_desc3] [array get mod_acct_vals3] [array get mod_assoc_vals3]] {
 	fail "Unable to modify account ($ta1)"
 }
 
-#=======Done Modifying Account=======Next is Verify=======
-set matches 0
-set my_pid [eval spawn $sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p]
-expect {
-	-re "There was a problem" {
-		fail "There was a problem with the sacctmgr command"
-	}
-	"\n|root||" {
-		incr matches
-		exp_continue
-	}
-	"\n|root|root|" {
-		incr matches
-		exp_continue
-	}
-	"\n$qos1|$ta1||" {
-		incr matches
-		exp_continue
-	}
-	"\n$qos1|$ta1|$tu1|" {
-		incr matches
-		exp_continue
-	}
-	"\n$qos1|$ta2||" {
-		incr matches
-		exp_continue
-	}
-	"\n$qos1|$ta2|$tu1|" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		slow_kill $my_pid
-		fail "sacctmgr list associations not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 6} {
-	end_test
-	fail "Failed on verify of +$qos1 to account $ta1 ($matches != 6)"
-}
+# Verify
+set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p"]
+subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
+subtest {[regexp "\n\\|root\\|\\|" $output]} "Verify root account line"
+subtest {[regexp "\n\\|root\\|root\\|" $output]} "Verify root user line"
+subtest {[regexp "\n$qos1\\|$ta1\\|\\|" $output]} "Verify $ta1 account line"
+subtest {[regexp "\n$qos1\\|$ta1\\|$tu1\\|" $output]} "Verify $tu1 user in $ta1 account line"
+subtest {[regexp "\n$qos1\\|$ta2\\|\\|" $output]} "Verify $ta2 account line"
+subtest {[regexp "\n$qos1\\|$ta2\\|$tu1\\|" $output]} "Verify $tu1 user in $ta2 account line"
 
-#======Begin Modification to Subtract $qos1 from $account2=======
-#modify test2 account to remove test QoS
-incr exit_code [mod_acct $ta2 [array get mod_acct_desc4] [array get mod_acct_vals4] [array get mod_assoc_vals4]]
-if { $exit_code } {
-	end_test
+# Modify test2 account to remove test QoS
+if [mod_acct $ta2 [array get mod_acct_desc4] [array get mod_acct_vals4] [array get mod_assoc_vals4]] {
 	fail "Unable to modify account ($ta2)"
 }
 
-#=======Done Modifying Account=======Next is Verify=======
-set matches 0
-set my_pid [eval spawn $sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p]
-expect {
-	-re "There was a problem" {
-		fail "There was a problem with the sacctmgr command"
-	}
-	"\n|root||" {
-		incr matches
-		exp_continue
-	}
-	"\n|root|root|" {
-		incr matches
-		exp_continue
-	}
-	"\n$qos1|$ta1||" {
-		incr matches
-		exp_continue
-	}
-	"\n$qos1|$ta1|$tu1|" {
-		incr matches
-		exp_continue
-	}
-	"\n|$ta2||" {
-		incr matches
-		exp_continue
-	}
-	"\n|$ta2|$tu1|" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		slow_kill $my_pid
-		fail "Sacctmgr list associations not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 6} {
-	end_test
-	fail "Verify of -$qos1 from account $ta2 ($matches != 6)"
-}
+# Verify
+set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p"]
+subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
+subtest {[regexp "\n\\|root\\|\\|" $output]} "Verify root account line"
+subtest {[regexp "\n\\|root\\|root\\|" $output]} "Verify root user line"
+subtest {[regexp "\n$qos1\\|$ta1\\|\\|" $output]} "Verify $ta1 account line"
+subtest {[regexp "\n$qos1\\|$ta1\\|$tu1\\|" $output]} "Verify $tu1 user in $ta1 account line"
+subtest {[regexp "\n\\|$ta2\\|\\|" $output]} "Verify $ta2 account line"
+subtest {[regexp "\n\\|$ta2\\|$tu1\\|" $output]} "Verify $tu1 user in $ta2 account line"
 
-
-#======Begin Modification to Subtract $qos1 from $ta1=======
-#modify test1 account to remove test QoS
-incr exit_code [mod_acct $ta1 [array get mod_acct_desc4] [array get mod_acct_vals4] [array get mod_assoc_vals4]]
-if { $exit_code } {
-	end_test
+# Modify test1 account to remove test QoS
+if [mod_acct $ta1 [array get mod_acct_desc4] [array get mod_acct_vals4] [array get mod_assoc_vals4]] {
 	fail "Unable to modify account ($ta1)"
 }
 
-#=======Done Modifying Account=======Next is Verify=======
-set matches 0
-set my_pid [eval spawn $sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p]
-expect {
-	-re "There was a problem" {
-		fail "There was a problem with the sacctmgr command"
-	}
-	"\n|root||" {
-		incr matches
-		exp_continue
-	}
-	"\n|root|root|" {
-		incr matches
-		exp_continue
-	}
-	"\n|$ta1||" {
-		incr matches
-		exp_continue
-	}
-	"\n|$ta1|$tu1|" {
-		incr matches
-		exp_continue
-	}
-	"\n|$ta2||" {
-		incr matches
-		exp_continue
-	}
-	"\n|$ta2|$tu1|" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		slow_kill $my_pid
-		fail "sacctmgr list associations not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 6} {
-	end_test
-	fail "Verify of -$qos1 from account $ta1 ($matches != 6)"
-}
+# Verify
+set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p"]
+subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
+subtest {[regexp "\n\\|root\\|\\|" $output]} "Verify root account line"
+subtest {[regexp "\n\\|root\\|root\\|" $output]} "Verify root user line"
+subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify $ta1 account line"
+subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify $tu1 user in $ta1 account line"
+subtest {[regexp "\n\\|$ta2\\|\\|" $output]} "Verify $ta2 account line"
+subtest {[regexp "\n\\|$ta2\\|$tu1\\|" $output]} "Verify $tu1 user in $ta2 account line"
 
-#=====Begin Modification to Add $qos1 from $ta2=======
-#modify test2 account to add test QoS
-incr exit_code [mod_acct $ta2 [array get mod_acct_desc3] [array get mod_acct_vals3] [array get mod_assoc_vals3]]
-if { $exit_code } {
-	end_test
+# Modify test2 account to add test QoS
+if [mod_acct $ta2 [array get mod_acct_desc3] [array get mod_acct_vals3] [array get mod_assoc_vals3]] {
 	fail "Unable to modify account ($ta2)"
 }
 
-#=======Done Modifying Account=======Next is Verify=======
-set matches 0
-set my_pid [eval spawn $sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p]
+# Verify
+set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p"]
+subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
+subtest {[regexp "\n\\|root\\|\\|" $output]} "Verify root account line"
+subtest {[regexp "\n\\|root\\|root\\|" $output]} "Verify root user line"
+subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify $ta1 account line"
+subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify $tu1 user in $ta1 account line"
+subtest {[regexp "\n$qos1\\|$ta2\\|\\|" $output]} "Verify $ta2 account line"
+subtest {[regexp "\n$qos1\\|$ta2\\|$tu1\\|" $output]} "Verify $tu1 user in $ta2 account line"
 
-expect {
-	-re "There was a problem" {
-		fail "There was a problem with the sacctmgr command"
-	}
-	"\n|root||" {
-		incr matches
-		exp_continue
-	}
-	"\n|root|root|" {
-		incr matches
-		exp_continue
-	}
-	"\n|$ta1||" {
-		incr matches
-		exp_continue
-	}
-	"\n|$ta1|$tu1|" {
-		incr matches
-		exp_continue
-	}
-	"\n$qos1|$ta2||" {
-		incr matches
-		exp_continue
-	}
-	"\n$qos1|$ta2|$tu1|" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		slow_kill $my_pid
-		fail "sacctmgr list associations not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 6} {
-	end_test
-	fail "Failed on verify of +$qos1 to account $ta2 ($matches != 6)"
-}
-
-#=======Begin Modification to Add $qos1 from $account2=======
-#modify root account to add test QoS
-incr exit_code [mod_acct "root" [array get mod_acct_desc3] [array get mod_acct_vals3] [array get mod_assoc_vals3]]
-if { $exit_code } {
-	end_test
+# Modify root account to add test QoS
+if [mod_acct "root" [array get mod_acct_desc3] [array get mod_acct_vals3] [array get mod_assoc_vals3]] {
 	fail "Unable to modify account (root)"
 }
 
-#=======Done Modifying Account=======Next Is Verify=======
-set matches 0
-set my_pid [eval spawn $sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p]
+# Verify
+set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p"]
+subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
+subtest {[regexp "\n$qos1\\|root\\|\\|" $output]} "Verify root account line"
+subtest {[regexp "\n$qos1\\|root\\|root\\|" $output]} "Verify root user line"
+subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify $ta1 account line"
+subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify $tu1 user in $ta1 account line"
+subtest {[regexp "\n$qos1\\|$ta2\\|\\|" $output]} "Verify $ta2 account line"
+subtest {[regexp "\n$qos1\\|$ta2\\|$tu1\\|" $output]} "Verify $tu1 user in $ta2 account line"
 
-expect {
-	-re "There was a problem" {
-		fail "There was a problem with the sacctmgr command"
-	}
-	"\n$qos1|root||" {
-		incr matches
-		exp_continue
-	}
-	"\n$qos1|root|root|" {
-		incr matches
-		exp_continue
-	}
-	"\n|$ta1||" {
-		incr matches
-		exp_continue
-	}
-	"\n|$ta1|$tu1|" {
-		incr matches
-		exp_continue
-	}
-	"\n$qos1|$ta2||" {
-		incr matches
-		exp_continue
-	}
-	"\n$qos1|$ta2|$tu1|" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		slow_kill $my_pid
-		fail "sacctmgr list associations not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 6} {
-	end_test
-	fail "Failed on verify of +$qos1 to account root ($matches != 6)"
-}
-
-#======Begin Modification to Add $qos1 from $account2=======
-incr exit_code [mod_acct $ta2 [array get mod_acct_desc4] [array get mod_acct_vals4] [array get mod_assoc_vals4]]
-if { $exit_code } {
-	end_test
+# Delete $qos1 from $account2
+if [mod_acct $ta2 [array get mod_acct_desc4] [array get mod_acct_vals4] [array get mod_assoc_vals4]] {
 	fail "Unable to modify account ($ta2)"
 }
 
-#=======Done Modifying Account=======Next is Verify=======
-set matches 0
-set my_pid [eval spawn $sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p]
-
-expect {
-	-re "There was a problem" {
-		fail "There was a problem with the sacctmgr command"
-	}
-	"\n$qos1|root||" {
-		incr matches
-		exp_continue
-	}
-	"\n$qos1|root|root|" {
-		incr matches
-		exp_continue
-	}
-	"\n|$ta1||" {
-		incr matches
-		exp_continue
-	}
-	"\n|$ta1|$tu1|" {
-		incr matches
-		exp_continue
-	}
-	"\n|$ta2||" {
-		incr matches
-		exp_continue
-	}
-	"\n|$ta2|$tu1|" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		slow_kill $my_pid
-		fail "sacctmgr list associations not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 6} {
-	end_test
-	fail "Failed on verify of -$qos1 to account $ta2 ($matches != 6)"
-}
-
-#======Done With List====== Ending=======
-# This is the end below here
-#
-incr exit_code [end_test]
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
-}
+# Verify
+set output [run_command_output -fail "$sacctmgr list assoc cluster=$tc1 format=qos,acct,user -p"]
+subtest {![regexp "There was a problem" $output]} "Verify that no problem happened"
+subtest {[regexp "\n$qos1\\|root\\|\\|" $output]} "Verify root account line"
+subtest {[regexp "\n$qos1\\|root\\|root\\|" $output]} "Verify root user line"
+subtest {[regexp "\n\\|$ta1\\|\\|" $output]} "Verify $ta1 account line"
+subtest {[regexp "\n\\|$ta1\\|$tu1\\|" $output]} "Verify $tu1 user in $ta1 account line"
+subtest {[regexp "\n\\|$ta2\\|\\|" $output]} "Verify $ta2 account line"
+subtest {[regexp "\n\\|$ta2\\|$tu1\\|" $output]} "Verify $tu1 user in $ta2 account line"

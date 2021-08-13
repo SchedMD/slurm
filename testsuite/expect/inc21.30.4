@@ -30,103 +30,114 @@
 proc inc21_30_4 {} {
 
 	global salloc sbatch srun acct bin_rm bin_sleep jobmatch
-	global job_id1 job_id2 job_id3 number exit_code grsub_num
+	global number grsub_num
 
 	log_info "Starting GrpSubmit limit test"
 	set check_num $grsub_num
 	set file_in "in21.30.4_script"
 	set tmp_job_id 0
+	array set job_id {}
 
 	make_bash_script $file_in "sleep 5"
 
-	set jobmatch 0
-	for {set inx 0} {$inx <= $check_num} {incr inx} {
-		spawn $salloc --account=$acct -t1 -n1 $srun $bin_sleep 60
-		expect {
-			-re "Granted job allocation ($number)" {
-				set job_id($inx) $expect_out(1,string)
-				if {$inx < $check_num} {
-					log_debug "Job $inx $job_id($inx) was submitted"
-					incr jobmatch
-				} else {
-					log_error "Job $inx $job_id($inx) wasn't suppose to work but it did, limit was $check_num?"
-					set exit_code 1
+	# Raise an error to abort the catch block
+	set exception_code [catch {
+
+		set jobmatch 0
+		for {set inx 0} {$inx <= $check_num} {incr inx} {
+			spawn $salloc --account=$acct -t1 -n1 $srun $bin_sleep 60
+			expect {
+				-re "Granted job allocation ($number)" {
+					set job_id($inx) $expect_out(1,string)
+					if {$inx < $check_num} {
+						log_debug "Job $inx $job_id($inx) was submitted"
+						incr jobmatch
+					} else {
+						error "Job $inx $job_id($inx) wasn't suppose to work but it did, limit was $check_num?"
+					}
+				}
+				-re "error" {
+					if {$inx >= $check_num} {
+						log_debug "Job $inx didn't get submitted. This is expected"
+						incr jobmatch
+					} else {
+						error "Job $inx $job_id($inx) was suppose to work but it didn't, limit was $check_num?"
+					}
+				}
+				timeout {
+					error "salloc is not responding"
+				}
+				eof {
+					wait
 				}
 			}
-			-re "error" {
-				if {$inx >= $check_num} {
-					log_debug "Job $inx didn't get submitted. This is expected"
-					incr jobmatch
-				} else {
-					log_error "Job $inx $job_id($inx) was suppose to work but it didn't, limit was $check_num?"
-					set exit_code 1
-				}
+		}
+
+		set target_jobs [expr $check_num + 1]
+		if {$jobmatch != $target_jobs} {
+			error "Not all jobs were not submitted ($jobmatch != $target_jobs)"
+		}
+
+		for {set inx 0} {$inx <= $check_num} {incr inx} {
+			if [info exists job_id($inx)] {
+				# Cancels the jobs
+				cancel_job $job_id($inx)
+			}
+		}
+
+		# Test limit with job array
+		set upper_lim [expr $check_num - 1]
+		spawn $sbatch --account=$acct -t1 -a0-$upper_lim -o/dev/null $file_in
+		expect {
+			-re "Submitted batch job ($number)" {
+				set tmp_job_id $expect_out(1,string)
+					exp_continue
 			}
 			timeout {
-				log_error "salloc is not responding"
-				set exit_code 1
+				error "sbatch is not responding"
 			}
 			eof {
 				wait
 			}
 		}
-	}
+		if {$tmp_job_id == 0} {
+			error "Job was not submitted when it should have"
+		}
 
-	set target_jobs [expr $check_num + 1]
-	if {$jobmatch != $target_jobs} {
-		log_error "Not all jobs were not submitted ($jobmatch != $target_jobs)"
-		set exit_code 1
-	}
+		# Add one more job, and check for error message
+		set match 0
+		spawn $sbatch --account=$acct -t1 -a0-$upper_lim -o/dev/null $file_in
+		expect {
+			-re "Job violates accounting/QOS policy" {
+				set match 1
+				exp_continue
+			}
+			timeout {
+				error "sbatch is not responding"
+			}
+			eof {
+				wait
+			}
+		}
+		if {$match == 0} {
+			error "Job should not have been submitted"
+		}
 
+	} message] ; # Store the error message in $message
+
+	# Perform local cleanup
 	for {set inx 0} {$inx <= $check_num} {incr inx} {
 		if [info exists job_id($inx)] {
 			# Cancels the jobs
 			cancel_job $job_id($inx)
 		}
 	}
-
-	set upper_lim [expr $check_num - 1]
-	# Test limit with job array
-	spawn $sbatch --account=$acct -t1 -a0-$upper_lim -o/dev/null $file_in
-	expect {
-		-re "Submitted batch job ($number)" {
-			set tmp_job_id $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			log_error "sbatch is not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if {$tmp_job_id == 0} {
-		log_error "Job was not submitted when it should have"
-		set exit_code 1
-	}
-
-	# Add one more job, and check for error message
-	set match 0
-	spawn $sbatch --account=$acct -t1 -a0-$upper_lim -o/dev/null $file_in
-	expect {
-		-re "Job violates accounting/QOS policy" {
-			set match 1
-			exp_continue
-		}
-		timeout {
-			log_error "sbatch is not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if {$match == 0} {
-		log_error "Job should not have been submitted"
-		set exit_code 1
-	}
-
-	exec $bin_rm -f $file_in
 	cancel_job $tmp_job_id
+	exec $bin_rm -f $file_in
+
+	# Convert any errors into failures (after cleaning up)
+	if {$exception_code == 1} { ; # errors only
+		fail "Failure testing GrpSubmit: $message"
+	}
+
 }
