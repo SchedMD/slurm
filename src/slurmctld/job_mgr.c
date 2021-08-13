@@ -15409,6 +15409,8 @@ extern void kill_job_on_node(job_record_t *job_ptr,
 	kill_req->select_jobinfo =
 		select_g_select_jobinfo_copy(job_ptr->select_jobinfo);
 	kill_req->job_state	= job_ptr->job_state;
+	kill_req->job_uid = job_ptr->user_id;
+	kill_req->job_gid = job_ptr->group_id;
 	kill_req->spank_job_env = xduparray(job_ptr->spank_job_env_size,
 					    job_ptr->spank_job_env);
 	kill_req->spank_job_env_size = job_ptr->spank_job_env_size;
