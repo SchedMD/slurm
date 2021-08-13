@@ -15267,6 +15267,8 @@ extern void abort_job_on_node(uint32_t job_id, job_record_t *job_ptr,
 	kill_req->time          = time(NULL);
 	kill_req->nodes		= xstrdup(node_name);
 	if (job_ptr) {  /* NULL if unknown */
+		kill_req->job_uid = job_ptr->user_id;
+		kill_req->job_gid = job_ptr->group_id;
 		kill_req->job_gres_info	=
 			gres_g_epilog_build_env(job_ptr->gres_list_req,
 						job_ptr->nodes);
@@ -15355,6 +15357,8 @@ extern void abort_job_on_nodes(job_record_t *job_ptr,
 		kill_req->job_gres_info	=
 			gres_g_epilog_build_env(job_ptr->gres_list_req,
 						job_ptr->nodes);
+		kill_req->job_uid = job_ptr->user_id;
+		kill_req->job_gid = job_ptr->group_id;
 		kill_req->step_id.job_id = job_ptr->job_id;
 		kill_req->step_id.step_id = NO_VAL;
 		kill_req->step_id.step_het_comp = NO_VAL;
