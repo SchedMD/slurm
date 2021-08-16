@@ -511,7 +511,9 @@ static int _fill_job_desc_from_sbatch_opts(slurm_opt_t *opt,
 	desc->std_err = xstrdup(opt->efname);
 	desc->std_in = xstrdup(opt->ifname);
 	desc->std_out = xstrdup(opt->ofname);
-	desc->work_dir = xstrdup(opt->chdir);
+
+	if (slurm_option_isset(opt, "chdir"))
+		desc->work_dir = xstrdup(opt->chdir);
 	if (sbopt->requeue != NO_VAL)
 		desc->requeue = sbopt->requeue;
 	if (opt->open_mode)
