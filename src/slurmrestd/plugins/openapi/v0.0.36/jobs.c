@@ -467,7 +467,7 @@ static int _fill_job_desc_from_sbatch_opts(slurm_opt_t *opt,
 		desc->min_cpus = opt->ntasks * opt->cpus_per_task;
 	else if (opt->nodes_set && (opt->min_nodes == 0))
 		desc->min_cpus = 0;
-	else
+	else if (!update_only)
 		desc->min_cpus = opt->ntasks;
 
 	if (opt->ntasks_set)
