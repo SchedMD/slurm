@@ -156,24 +156,9 @@ reconfigure -fail
 log_info "Testing sbatch.........."
 
 make_bash_script $file_in "$srun $bin_echo IT_RAN"
-set job_id 0
 set matches 0
-spawn $sbatch -W -N1 -t1 -o $file_out $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	-re timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 1} {
-	fail "sbatch did not return a job id"
-}
+set job_id [submit_job -fail "-W -N1 -t1 -o $file_out $file_in"]
+
 # Check echo worked
 spawn $bin_cat $file_out
 expect {
@@ -225,25 +210,9 @@ spawn $bin_rm $spank_out
 log_info "Testing sbatch array.........."
 
 make_bash_script $file_in "$srun $bin_echo IT_RAN"
-set job_id 0
-set array_job_id 0
 set matches 0
-spawn $sbatch --array=1-2 -W -N1 -t1 -o $file_out $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set array_job_id $expect_out(1,string)
-		exp_continue
-	}
-	-re timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 1} {
-	fail "sbatch did not return a job id"
-}
+set array_job_id [submit_job -fail "--array=1-2 -W -N1 -t1 -o $file_out $file_in"]
+
 # Check echo worked
 spawn $bin_cat $file_out
 expect {
