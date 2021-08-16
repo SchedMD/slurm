@@ -366,7 +366,7 @@ static int _fill_job_desc_from_sbatch_opts(slurm_opt_t *opt,
 	desc->cluster_features = xstrdup(opt->c_constraint);
 	if (opt->job_name)
 		desc->name = xstrdup(opt->job_name);
-	else
+	else if (!update_only)
 		desc->name = xstrdup("sbatch");
 	desc->reservation = xstrdup(opt->reservation);
 	desc->wckey = xstrdup(opt->wckey);
