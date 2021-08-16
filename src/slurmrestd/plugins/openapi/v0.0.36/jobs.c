@@ -421,7 +421,8 @@ static int _fill_job_desc_from_sbatch_opts(slurm_opt_t *opt,
 	if (opt->priority)
 		desc->priority = opt->priority;
 
-	desc->mail_type = opt->mail_type;
+	if (slurm_option_isset(opt, "mail_type"))
+		desc->mail_type = opt->mail_type;
 	if (opt->mail_user)
 		desc->mail_user = xstrdup(opt->mail_user);
 	if (opt->begin)
