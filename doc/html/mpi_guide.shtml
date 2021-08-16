@@ -282,7 +282,7 @@ OK
 user@testbox:~/t$
 </pre>
 
-<h2 id="open_mpi"><a href="http://www.open-mpi.org/"><b>OpenMPI</b></a>
+<h2 id="open_mpi"><a href="https://open-mpi.org"><b>OpenMPI</b></a>
 <a class="slurm_link" href="#open_mpi"></a>
 </h2>
 
@@ -480,7 +480,7 @@ MPICH, but it is not guaranteed to run in all cases.
 </pre>
 </ul>
 
-<p>Above information used by permission from <a href="http://www.intel.com">Intel</a>.
+<p>Above information used by permission from <a href="https://intel.com">Intel</a>.
 For more information see
 <a href="https://software.intel.com/en-us/intel-mpi-library">Intel MPI Library</a>.
 
@@ -561,7 +561,7 @@ network performance: <b>PMI_FANOUT</b>, <b>PMI_FANOUT_OFF_HOST</b>, and
 See the srun man pages in the INPUT ENVIRONMENT VARIABLES section for a more
 information.</li>
 <li>Information about building MPICH2 for use with Slurm is described on the
-<a href="http://wiki.mcs.anl.gov/mpich2/index.php/Frequently_Asked_Questions#Q:_How_do_I_use_MPICH2_with_slurm.3F">
+<a href="https://wiki.mcs.anl.gov/mpich2/index.php/Frequently_Asked_Questions#Q:_How_do_I_use_MPICH2_with_slurm.3F">
 MPICH2 FAQ</a> web page and below.</li>
 </ul></p>
 
@@ -582,7 +582,7 @@ to launch the tasks. A simple example is shown below.</p>
 <hr size=4 width="100%">
 
 <h2 id="mvapich2">
-<a href="http://mvapich.cse.ohio-state.edu/">
+<a href="https://mvapich.cse.ohio-state.edu">
 <b>MVAPICH (a.k.a. MVAPICH2)</b>
 </a>
 <a class="slurm_link" href="#mvapich2"></a>
@@ -612,11 +612,11 @@ $ srun -n16 --mpi=pmi2 a.out
 --enable-slurm=yes</p>
 
 <p>For more information, please see the
-<a href="http://mvapich.cse.ohio-state.edu/static/media/mvapich/mvapich2-2.0-userguide.html">MVAPICH2 User Guide</a></p>
+<a href="https://mvapich.cse.ohio-state.edu/static/media/mvapich/mvapich2-2.0-userguide.html">MVAPICH2 User Guide</a></p>
 
 <hr size=4 width="100%">
 
-<h2 id="UPC"><a href="http://upc.lbl.gov/"><b>UPC (Unified Parallel C)</b></a>
+<h2 id="UPC"><a href="https://upc.lbl.gov"><b>UPC (Unified Parallel C)</b></a>
 <a class="slurm_link" href="#UPC"></a>
 </h2>
 
