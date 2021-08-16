@@ -285,16 +285,14 @@ static int _memcg_initialize(stepd_step_rec_t *job, uint64_t mem_limit,
 	if (!is_step) {
 		if (cgroup_g_job_constrain_set(CG_MEMORY, job, &limits)
 		    != SLURM_SUCCESS)
-			goto fail;
+			return SLURM_ERROR;
 	} else {
 		if (cgroup_g_step_constrain_set(CG_MEMORY, job, &limits)
 		    != SLURM_SUCCESS)
-			goto fail;
+			return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
-fail:
-	return SLURM_ERROR;
 }
 
 extern int task_cgroup_memory_create(stepd_step_rec_t *job)
