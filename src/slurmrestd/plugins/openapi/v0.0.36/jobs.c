@@ -334,7 +334,8 @@ static data_for_each_cmd_t _per_job_param(const char *key, const data_t *data,
  * Returns 0 on success, -1 on failure
  */
 static int _fill_job_desc_from_sbatch_opts(slurm_opt_t *opt,
-					   job_desc_msg_t *desc)
+					   job_desc_msg_t *desc,
+					   bool update_only)
 {
 	const sbatch_opt_t *sbopt = opt->sbatch_opt;
 	int i;
@@ -597,7 +598,7 @@ static job_desc_msg_t *_parse_job_desc(const data_t *job, data_t *errors,
 	if (!update_only)
 		req->task_dist = SLURM_DIST_UNKNOWN;
 
-	if (_fill_job_desc_from_sbatch_opts(&opt, req)) {
+	if (_fill_job_desc_from_sbatch_opts(&opt, req, update_only)) {
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
