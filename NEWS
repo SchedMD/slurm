@@ -10,6 +10,8 @@ documents those changes that are of interest to users and administrators.
  -- Don't destroy the memory step outside fini, which leads to a double destroy
     causing an error message.
  -- Add support for lua 5.4.
+ -- Force cgroup.clone_children to 0 in slurm cgroup directories. This caused
+    issues in task cpuset plugin in systems with it enabled by default.
 
 * Changes in Slurm 21.08.0rc2
 =============================

@@ -168,6 +168,10 @@ static int _cpuset_create(stepd_step_rec_t *job)
 			return SLURM_ERROR;
 		}
 	}
+
+	/* Do not inherit this setting in children, let plugins set it. */
+	common_cgroup_set_param(&slurm_cg, "cgroup.clone_children", "0");
+
 	if (job == NULL) {
 		/* This is a request to create a cpuset for slurmd daemon */
 		xstrfmtcat(sys_cgpath, "%s/system", slurm_cgpath);
