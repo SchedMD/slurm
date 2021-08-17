@@ -788,7 +788,12 @@ extern int slurm_lua_init(void)
 
 	char *const lua_libs[] = {
 		"liblua.so",
-#if LUA_VERSION_NUM == 503
+#if LUA_VERSION_NUM == 504
+		"liblua-5.4.so",
+		"liblua5.4.so",
+		"liblua5.4.so.0",
+		"liblua.so.5.4",
+#elif LUA_VERSION_NUM == 503
 		"liblua-5.3.so",
 		"liblua5.3.so",
 		"liblua5.3.so.0",

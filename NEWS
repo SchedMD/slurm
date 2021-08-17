@@ -9,6 +9,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix error codes in cgroup/v1.
  -- Don't destroy the memory step outside fini, which leads to a double destroy
     causing an error message.
+ -- Add support for lua 5.4.
 
 * Changes in Slurm 21.08.0rc2
 =============================
