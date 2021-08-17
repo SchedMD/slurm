@@ -27,8 +27,9 @@
 ############################################################################
 source ./globals
 
-set script1   "test$test_id.in1"
-set exit_code  0
+set script    "$test_dir/script.sh"
+set stdout    "$test_dir/out"
+set stderr    "$test_dir/err"
 set job_id     0
 set hostlist   ""
 set node1      ""
@@ -36,12 +37,11 @@ set node2      ""
 set het_job_id 0
 
 proc cleanup { } {
-	global bin_rm script1 het_job_id scancel
+	global bin_rm het_job_id scancel
 
 	if {$het_job_id > 0} {
-		exec $scancel $het_job_id
+		cancel_job $het_job_id
 	}
-	exec $bin_rm -rf $script1
 }
 
 set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
@@ -60,20 +60,14 @@ if {[get_config_param "SchedulerType"] ne "sched/backfill"} {
 }
 
 set def_part [default_partition]
-spawn $bin_bash -c "exec $scontrol show hostnames \$($sinfo -tidle --partition=$def_part -h -o%N) | head -n2 |tr \'\n\' ' ' "
-expect {
-	-re "($re_word_str) ($re_word_str)" {
-		set node1 $expect_out(1,string)
-		set node2 $expect_out(2,string)
-		exp_continue
-	}
-	timeout {
-		fail "sinfo is not responding"
-	}
-	eof {
-		wait
-	}
+set nodes [get_nodes_by_request "-N2 -p $def_part"]
+
+if { [llength $nodes] != 2 } {
+	skip "Did not find at least 2 idle nodes"
 }
+
+set node1 [lindex $nodes 0]
+set node2 [lindex $nodes 1]
 if {![string compare $node1 ""] || ![string compare $node2 ""]} {
 	skip "Did not find at least 2 idle nodes"
 }
@@ -106,7 +100,7 @@ if {$het_job_id == 0} {
 	fail "salloc failure"
 }
 
-make_bash_script $script1 "
+make_bash_script $script "
 $srun --het-group=0 $bin_rm -f  /tmp/test_${test_id}/$node1/test$test_id\_file\_comp0
 $srun --het-group=1 $bin_rm -f  /tmp/test_${test_id}/$node2/test$test_id\_file\_comp1
 $srun --het-group=0 $bin_rm -f  /tmp/test_${test_id}/test$test_id\_file
@@ -152,9 +146,13 @@ $srun --het-group=1 $bin_rm -fr /tmp/test_${test_id}
 $srun --het-group=0 $bin_rm -fr /tmp/test_${test_id}
 "
 
+set het_job_id [submit_job -fail "-o $stdout -e $stderr -t2 -N1 -w $node1 : -w $node2 -N1 -t10 $script"]
+wait_for_job -fail $het_job_id "DONE" 1
+wait_for_file -timeout 2 -fail $stdout
+
 set timeout $max_job_delay
 set matches 0
-send "./$script1 \r"
+spawn $bin_cat $stdout
 expect {
 	-re "Permission denied" {
 		fail "Unable to delete/create file, check permissions"
@@ -180,14 +178,10 @@ expect {
 		exp_continue
 	}
 	-re "Checking node 1 for lack: */tmp/test_${test_id}/$node1/test$test_id\_file\_comp0" {
-		log_error "sbcast copied file to wrong node"
-		set exit_code 1
-		exp_continue
+		fail "sbcast copied file to wrong node"
 	}
 	-re "Checking node 0 for lack: */tmp/test_${test_id}/$node2/test$test_id\_file\_comp1" {
-		log_error "sbcast copied file to wrong node"
-		set exit_code 1
-		exp_continue
+		fail "sbcast copied file to wrong node"
 	}
 	-re "$test_prompt" {
 		#log_debug "Job initiated"
@@ -201,8 +195,4 @@ expect {
 }
 if {$matches != 4} {
 	fail "sbcast did not copy the file(s) to the correct nodes ($matches != 4)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
