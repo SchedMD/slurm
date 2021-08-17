@@ -949,22 +949,22 @@ int
 xcpuinfo_init(void)
 {
 	if ( initialized )
-		return XCPUINFO_SUCCESS;
+		return SLURM_SUCCESS;
 
 	if (xcpuinfo_hwloc_topo_get(&procs,&boards,&sockets,&cores,&threads,
 				    &block_map_size,&block_map,&block_map_inv))
-		return XCPUINFO_ERROR;
+		return SLURM_ERROR;
 
 	initialized = true ;
 
-	return XCPUINFO_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 int
 xcpuinfo_fini(void)
 {
 	if ( ! initialized )
-		return XCPUINFO_SUCCESS;
+		return SLURM_SUCCESS;
 
 	initialized = false ;
 	procs = sockets = cores = threads = 0;
@@ -984,7 +984,7 @@ xcpuinfo_fini(void)
 		xfree(hwloc_xml_whole);
 	}
 #endif
-	return XCPUINFO_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1182,7 +1182,7 @@ xcpuinfo_absmap_to_macmap(uint16_t *amap,uint16_t amap_size,
 	map_out = (uint16_t*) xmalloc(amap_size*sizeof(uint16_t));
 	*bmap = map_out;
 
-	return XCPUINFO_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 int
@@ -1202,7 +1202,7 @@ xcpuinfo_macmap_to_absmap(uint16_t *amap,uint16_t amap_size,
 		else
 			(*bmap)[cmap[i]]=0;
 	}
-	return XCPUINFO_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1279,10 +1279,10 @@ _range_to_map(char* range,uint16_t *map,uint16_t map_size,int add_threads)
 
 	if ( bad_nb > 0 ) {
 		/* bad format for input range */
-		return XCPUINFO_ERROR;
+		return SLURM_ERROR;
 	}
 
-	return XCPUINFO_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 
@@ -1337,7 +1337,7 @@ _map_to_range(uint16_t *map,uint16_t map_size,char** prange)
 	}
 	else {
 		xfree(str);
-		return XCPUINFO_ERROR;
+		return SLURM_ERROR;
 	}
 
 	if ( prange != NULL )
@@ -1345,5 +1345,5 @@ _map_to_range(uint16_t *map,uint16_t map_size,char** prange)
 	else
 		xfree(str);
 
-	return XCPUINFO_SUCCESS;
+	return SLURM_SUCCESS;
 }

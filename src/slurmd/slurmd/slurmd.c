@@ -1749,7 +1749,7 @@ _slurmd_init(void)
 	}
 
 	/* Set up the hwloc whole system xml file */
-	if (xcpuinfo_init() != XCPUINFO_SUCCESS)
+	if (xcpuinfo_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	fini_job_cnt = cpu_cnt = MAX(conf->conf_cpus, conf->block_map_size);
@@ -2568,7 +2568,7 @@ static int _validate_and_convert_cpu_list(void)
 	bit_fmt(res_abs_cpus, sizeof(res_abs_cpus), res_cpu_bitmap);
 	/* create output machine CPU list from core list */
 	if (xcpuinfo_abs_to_mac(res_abs_cores, &res_mac_cpus)
-		   != XCPUINFO_SUCCESS)
+		   != SLURM_SUCCESS)
 		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }

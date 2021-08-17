@@ -140,7 +140,7 @@ extern int init (void)
 	if (running_in_slurmstepd()) {
 		jag_common_init(0);
 
-		if (xcpuinfo_init() != XCPUINFO_SUCCESS) {
+		if (xcpuinfo_init() != SLURM_SUCCESS) {
 			return SLURM_ERROR;
 		}
 

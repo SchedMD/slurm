@@ -167,7 +167,7 @@ extern int task_cgroup_devices_init(void)
 	FILE *file = NULL;
 
 	/* initialize cpuinfo internal data */
-	if (xcpuinfo_init() != XCPUINFO_SUCCESS)
+	if (xcpuinfo_init() != SLURM_SUCCESS)
 		return SLURM_ERROR;
 
 	/* initialize allowed_devices_filename */
