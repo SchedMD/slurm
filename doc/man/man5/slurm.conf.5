@@ -5352,6 +5352,10 @@ Allocates entire nodes to jobs even with \fBSelectType=select/cons_res\fR or
 \fBSelectType=select/cons_tres\fR configured.
 Jobs that run in partitions with \fBOverSubscribe=EXCLUSIVE\fR will have
 exclusive access to all allocated nodes.
+These jobs are allocated all CPUs and GRES on the nodes, but they are only
+allocated as much memory as they ask for. This is by design to support gang
+scheduling, because suspended jobs still reside in memory. To request all the
+memory on a node, use \fB\-\-mem=0\fR at submit time.
 .TP
 \fBFORCE\fR
 Makes all resources (except GRES) in the partition available for
