@@ -4,13 +4,39 @@
 
 <ul>
 <li><a href="#overview">Overview</a></li>
-<li><a href="#configuration">Configuration (for system administrators)</a></li>
+<li><a href="#configuration">Configuration (for system administrators)</a>
+<ul>
+	<li><a href="#common_config">Common Configuration</a></li>
+	<li><a href="#datawarp_config">Datawarp</a></li>
+	<li><a href="#lua_config">Lua</a></li>
+</ul>
+</li>
 <li><a href="#lua-implementation">Lua Implementation (for system
-administrators)</a></li>
-<li><a href="#resources">Burst Buffer Resources</a></li>
-<li><a href="#submit">Job Submission Commands</a></li>
+administrators)</a>
+<ul>
+	<li><a href="#burst_buffer_lua">How does burst_buffer.lua run?</a></li>
+	<li><a href="#lua_limitations">Limitations</a></li>
+</ul>
+</li>
+<li><a href="#resources">Burst Buffer Resources</a>
+<ul>
+	<li><a href="#datawarp_resources">Datawarp</a></li>
+	<li><a href="#lua_resources">Lua</a></li>
+</ul>
+</li>
+<li><a href="#submit">Job Submission Commands</a>
+<ul>
+	<li><a href="#submit_dw">Datawarp</a></li>
+	<li><a href="#submit_lua">Lua</a></li>
+</ul>
+</li>
 <li><a href="#persist">Persistent Burst Buffer Creation and Deletion Directives</a></li>
-<li><a href="#command-line">Command-line Job Options</a></li>
+<li><a href="#command-line">Command-line Job Options</a>
+<ul>
+	<li><a href="#command-line-dw">Datawarp</a></li>
+	<li><a href="#command-line-lua">Lua</a></li>
+</ul>
+</li>
 <li><a href="#status">Status Commands</a></li>
 <li><a href="#reservation">Advanced Reservations</a></li>
 <li><a href="#dependencies">Job Dependencies</a></li>
