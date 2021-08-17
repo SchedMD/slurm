@@ -1229,7 +1229,7 @@ extern List setup_cluster_list_with_inx(mysql_conn_t *mysql_conn,
 		if (bit_ffs(local_cluster->asked_bitmap) != -1) {
 			list_append(local_cluster_list, local_cluster);
 			if (local_cluster->end == 0) {
-				local_cluster->end = now;
+				local_cluster->end = now + 1;
 				(*curr_cluster) = local_cluster;
 			} else if (!(*curr_cluster)
 				   || (((local_cluster_t *)(*curr_cluster))->end
