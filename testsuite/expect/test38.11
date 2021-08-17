@@ -30,7 +30,6 @@ source ./globals
 set script    "$test_dir/script.sh"
 set stdout    "$test_dir/out"
 set stderr    "$test_dir/err"
-set exit_code  0
 set job_id     0
 set hostlist   ""
 set node1      ""
@@ -179,14 +178,10 @@ expect {
 		exp_continue
 	}
 	-re "Checking node 1 for lack: */tmp/test_${test_id}/$node1/test$test_id\_file\_comp0" {
-		log_error "sbcast copied file to wrong node"
-		set exit_code 1
-		exp_continue
+		fail "sbcast copied file to wrong node"
 	}
 	-re "Checking node 0 for lack: */tmp/test_${test_id}/$node2/test$test_id\_file\_comp1" {
-		log_error "sbcast copied file to wrong node"
-		set exit_code 1
-		exp_continue
+		fail "sbcast copied file to wrong node"
 	}
 	-re "$test_prompt" {
 		#log_debug "Job initiated"
@@ -200,8 +195,4 @@ expect {
 }
 if {$matches != 4} {
 	fail "sbcast did not copy the file(s) to the correct nodes ($matches != 4)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
