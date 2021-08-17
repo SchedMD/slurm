@@ -1745,6 +1745,17 @@ skip_start:
 			if (job_ptr->start_time == 0) {
 				job_ptr->start_time = last_job_sched_start;
 				bb_wait_cnt++;
+				/*
+				 * Since start time wasn't set yet until this
+				 * point, this means that the job hasn't had a
+				 * chance to start stage-in yet. Clear
+				 * reject_array_job so that other jobs in this
+				 * array (if it was an array) may also have
+				 * a chance to have a start time set and
+				 * therefore have a chance to start stage-in.
+				 */
+				reject_array_job = NULL;
+				reject_array_part = NULL;
 			}
 			sched_debug3("%pJ. State=%s. Reason=%s. Priority=%u.",
 				     job_ptr,

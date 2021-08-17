@@ -2445,8 +2445,6 @@ next_task:
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason =
 					WAIT_BURST_BUFFER_RESOURCE;
-				job_ptr->start_time =
-					bb_g_job_get_est_start(job_ptr);
 			} else {	/* bb == 0 */
 				xfree(job_ptr->state_desc);
 				job_ptr->state_reason=WAIT_BURST_BUFFER_STAGING;
@@ -2460,8 +2458,25 @@ next_task:
 			last_job_update = now;
 			_set_job_time_limit(job_ptr, orig_time_limit);
 			later_start = 0;
-			if (bb == -1)
+			if (bb == -1) {
+				/*
+				 * bb == -1 means that burst buffer stage-in
+				 * hasn't started yet. Set an estimated start
+				 * time so stage-in can start.
+				 *
+				 * Clear reject_array_job; otherwise we'll skip
+				 * looking at other jobs in this array (if this
+				 * is a job array), therefore we won't set
+				 * estimated start times, therefore we won't be
+				 * able to start stage-in for any other jobs in
+				 * this array.
+				 */
+				job_ptr->start_time =
+					bb_g_job_get_est_start(job_ptr);
+				reject_array_job = NULL;
+				reject_array_part = NULL;
 				continue;
+			}
 		} else if ((job_ptr->het_job_id == 0) &&
 			   (job_ptr->start_time <= now)) { /* Can start now */
 			uint32_t save_time_limit = job_ptr->time_limit;
