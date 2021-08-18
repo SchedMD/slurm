@@ -27,11 +27,11 @@
 source ./globals
 source ./globals_accounting
 
-set sql_query        "test$test_id\-query.sql"
-set sql_query_rem    "test$test_id\-query-rem.sql"
+set sql_query        "$test_dir/query.sql"
+set sql_query_rem    "$test_dir/query-rem.sql"
 set cluster          [get_config_param "ClusterName"]
-set account          "test$test_id\_acct"
-set user             "test$test_id\_user"
+set account          "$test_name\_acct"
+set user             "$test_name\_user"
 set config_dir       ""
 set access_err       0
 
@@ -52,24 +52,23 @@ if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator"
 }
 
-# Remove pre-existing items
-exec $bin_rm -f $sql_query $sql_query_rem
+proc cleanup { } {
+	global cluster account user sql_query sql_query_rem
+
+	if {[file exists $sql_query_rem]} {
+		archive_load $sql_query_rem
+	}
+	remove_user "" "" $user
+	remove_acct "" $account
+}
+
+cleanup
 
 # Make SQL file to remove the inserted job
 set file [open $sql_query_rem "w"]
 # This SQL statement is correct for our purposes (missing && infront of cluster)
 puts $file "delete from job_table where alloc_nodes=\'test21.36_node\' cluster=\'$cluster\';"
 close $file
-
-proc cleanup { } {
-	global cluster account user bin_rm sql_query sql_query_rem
-
-	archive_load $sql_query_rem
-	remove_user "" "" $user
-	remove_acct "" $account
-
-	exec $bin_rm -f $sql_query $sql_query_rem
-}
 
 # Add Test Account
 if {[add_acct $account [array get acct_req]]} {
