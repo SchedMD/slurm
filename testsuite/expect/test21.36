@@ -84,7 +84,7 @@ if {[add_user $user [array get user_req]]} {
 set assoc_id [get_assoc_id $user $account $cluster]
 
 if {$assoc_id == -1} {
-	endit
+	skip "Unable to find $user association"
 }
 
 # DON'T MESS WITH THIS UNLESS YOU REALLY UNDERSTAND WHAT YOU ARE DOING!!!!!
