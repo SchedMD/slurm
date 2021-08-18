@@ -180,7 +180,6 @@ typedef struct bb_job {
 
 /* Used for building queue of jobs records for various purposes */
 typedef struct bb_job_queue_rec {
-	uint64_t bb_size;	/* Used by generic plugin only */
 	bb_job_t *bb_job;	/* Used by cray plugin only */
 	job_record_t *job_ptr;
 } bb_job_queue_rec_t;
