@@ -16,6 +16,8 @@ documents those changes that are of interest to users and administrators.
  -- Environment flags in gres.conf now override flags set by AutoDetect.
  -- Environment flags in gres.conf now apply to subsequent gres.conf lines where
     Environment flags are not set.
+ -- Set missing job_uid and job_gid members when preparing a kill_job_msg_t in
+    abort_job_on_node(), abort_job_on_nodes() and kill_job_on_node().
 
 * Changes in Slurm 21.08.0rc2
 =============================
