@@ -28,6 +28,7 @@ documents those changes that are of interest to users and administrators.
     be recompiled for each new Slurm release.
  -- node_features/helpers - add ExecTime configuration option.
  -- srun - Fix force termination with -X.
+ -- On slurmctld restart set node typed GRES counts correctly.
 
 * Changes in Slurm 21.08.0rc2
 =============================

@@ -826,6 +826,41 @@ extern int gres_ctld_job_select_whole_node(
 }
 
 /*
+ * On a slurmctld restart the type counts are not set on a node, this function
+ * fixes this.  At this point it is really just cosmetic though as the parent
+ * GRES is already correct on the gres_node_state_t only the types are wrong if
+ * only generic GRES was requested by the job.
+ */
+static int _set_node_type_cnt(gres_state_t *job_gres_ptr, List node_gres_list)
+{
+	gres_job_state_t *job_state_ptr = job_gres_ptr->gres_data;
+	gres_state_t *node_gres_ptr;
+	gres_node_state_t *node_state_ptr;
+
+	if (!job_state_ptr->total_gres || !job_state_ptr->type_id)
+		return 0;
+
+	if (!(node_gres_ptr = list_find_first(node_gres_list, gres_find_id,
+					      &job_gres_ptr->plugin_id)))
+		return 0;
+
+	node_state_ptr = node_gres_ptr->gres_data;
+
+	for (int j = 0; j < node_state_ptr->type_cnt; j++) {
+		/*
+		 * Already set (typed GRES was requested) ||
+		 * Not the right type
+		 */
+		if (node_state_ptr->type_cnt_alloc[j] ||
+		    (node_state_ptr->type_id[j] != job_state_ptr->type_id))
+			continue;
+		node_state_ptr->type_cnt_alloc[j] = job_state_ptr->total_gres;
+		break;
+	}
+	return 0;
+}
+
+/*
  * Select and allocate GRES to a job and update node and job GRES information
  * IN job_gres_list - job's gres_list built by gres_job_state_validate()
  * OUT job_gres_list_alloc - job's list of allocated gres
@@ -888,6 +923,17 @@ extern int gres_ctld_job_alloc(List job_gres_list, List *job_gres_list_alloc,
 			rc = rc2;
 	}
 	list_iterator_destroy(job_gres_iter);
+
+	/*
+	 * On a slurmctld restart the node doesn't know anything about types so
+	 * they are not setup, in this situation we can go set them here.  We
+	 * can't do it in the req loop above since if the request has typed GRES
+	 * in there we could potentially get duplicate counts.
+	 */
+	if (!new_alloc)
+		(void) list_for_each(*job_gres_list_alloc,
+				     (ListForF) _set_node_type_cnt,
+				     node_gres_list);
 
 	return rc;
 }
