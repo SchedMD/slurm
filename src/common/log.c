@@ -1174,6 +1174,7 @@ static void _log_msg(log_level_t level, bool sched, bool spank, const char *fmt,
 	char *pfx = "";
 	char *buf = NULL;
 	char *msgbuf = NULL;
+	char *eol = "\n";
 	int priority = LOG_INFO;
 
 	slurm_mutex_lock(&log_lock);
@@ -1182,6 +1183,9 @@ static void _log_msg(log_level_t level, bool sched, bool spank, const char *fmt,
 		log_options_t opts = LOG_OPTS_STDERR_ONLY;
 		_log_init(NULL, opts, 0, NULL);
 	}
+
+	if (log->opt.raw)
+		eol = "\r\n";
 
 	if (SCHED_LOG_INITIALIZED && sched &&
 	    (highest_sched_log_level > LOG_LEVEL_QUIET)) {
@@ -1261,15 +1265,15 @@ static void _log_msg(log_level_t level, bool sched, bool spank, const char *fmt,
 
 		fflush(stdout);
 		if (spank) {
-			_log_printf(log, log->buf, stderr, "%s\r\n", buf);
+			_log_printf(log, log->buf, stderr, "%s%s", buf, eol);
 		} else if (log->fmt == LOG_FMT_THREAD_ID) {
 			char tmp[64];
 			_set_idbuf(tmp, sizeof(tmp));
-			_log_printf(log, log->buf, stderr, "%s: %s%s\r\n",
-			            tmp, pfx, buf);
+			_log_printf(log, log->buf, stderr, "%s: %s%s%s",
+			            tmp, pfx, buf, eol);
 		} else {
-			_log_printf(log, log->buf, stderr, "%s: %s%s\r\n",
-			            log->argv0, pfx, buf);
+			_log_printf(log, log->buf, stderr, "%s: %s%s%s",
+			            log->argv0, pfx, buf, eol);
 		}
 		fflush(stderr);
 	}

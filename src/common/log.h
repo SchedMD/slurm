@@ -100,6 +100,7 @@ typedef struct {
 	log_level_t logfile_level;  /* max level to log to logfile           */
 	bool prefix_level;          /* prefix level (e.g. "debug: ") if true */
 	bool buffered;              /* use internal buffer to never block    */
+	bool raw;                   /* output is to a raw terminal           */
 } 	log_options_t;
 
 extern char *slurm_prog_name;
@@ -107,16 +108,16 @@ extern char *slurm_prog_name;
 /* some useful initializers for log_options_t
  */
 #define LOG_OPTS_INITIALIZER	\
-	{ LOG_LEVEL_INFO, LOG_LEVEL_INFO, LOG_LEVEL_INFO, 1, 0 }
+	{ LOG_LEVEL_INFO, LOG_LEVEL_INFO, LOG_LEVEL_INFO, 1, 0 , 0}
 
 #define LOG_OPTS_SYSLOG_DEFAULT	\
-	{ LOG_LEVEL_QUIET, LOG_LEVEL_INFO, LOG_LEVEL_QUIET, 1, 0 }
+	{ LOG_LEVEL_QUIET, LOG_LEVEL_INFO, LOG_LEVEL_QUIET, 1, 0, 0}
 
 #define LOG_OPTS_STDERR_ONLY	\
-	{ LOG_LEVEL_INFO,  LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, 1, 0 }
+	{ LOG_LEVEL_INFO,  LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, 1, 0, 0}
 
 #define SCHEDLOG_OPTS_INITIALIZER	\
-	{ LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, 0, 1 }
+	{ LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, 0, 1, 0}
 
 
 /* Functions for filling in a char buffer with a timestamp. */
