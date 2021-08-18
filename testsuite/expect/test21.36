@@ -32,11 +32,6 @@ set sql_query_rem    "$test_dir/query-rem.sql"
 set cluster          [get_config_param "ClusterName"]
 set account          "$test_name\_acct"
 set user             "$test_name\_user"
-set config_dir       ""
-set access_err       0
-
-# Cluster requirments
-array set clus_req {}
 
 # Account requirments
 set acct_req(cluster) $cluster
@@ -99,11 +94,6 @@ puts $file "insert into job_table (jobid, associd, cluster, uid, gid, `partition
 puts $file "('65536', '$assoc_id', '$cluster', '1002', '1002', 'debug', '$account', 1199170800, 1199170800, 1199170800, 0, 'test21.32_job1', '1', '2', '1=2,2=200,4=1', '1=2,2=200,4=1', 'test21.36_node', 'test21.36_node', '0', '0')"
 puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd), tres_alloc=VALUES(tres_alloc);"
 close $file
-
-log_user 1
-
-# Get the current working directory
-set cwd "[$bin_pwd]"
 
 # Load a job to the database that has no end time.
 if {[archive_load $sql_query]} {
