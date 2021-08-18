@@ -536,9 +536,9 @@ static void _recover_bb_state(void)
 	safe_unpack16(&protocol_version, buffer);
 	if (protocol_version == NO_VAL16) {
 		if (!ignore_state_errors)
-			fatal("Can not recover burst_buffer/datawarp state, data version incompatible, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
+			fatal("Can not recover burst_buffer/lua state, data version incompatible, start with '-i' to ignore this. Warning: using -i will lose the data that can't be recovered.");
 		error("**********************************************************************");
-		error("Can not recover burst_buffer/datawarp state, data version incompatible");
+		error("Can not recover burst_buffer/lua state, data version incompatible");
 		error("**********************************************************************");
 		return;
 	}
