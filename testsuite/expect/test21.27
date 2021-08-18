@@ -27,6 +27,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 source ./globals
+source ./globals_accounting
 
 set tc1		"test$test_id-cluster-1"
 set tc2		"test$test_id-cluster-2"
@@ -55,39 +56,17 @@ if {![check_user_id $tu3]} {
 	skip "testsuite_user must be defined in globals.local (now is \"$testsuite_user\") and should be an existing user in the system"
 }
 
-#
-# Delete
-#
-spawn $sacctmgr -i delete user $tu1,$tu2,$tu3
-expect {
-	timeout {
-		fail "sacctmgr delete user not responding"
-	}
-	eof {
-		wait
-	}
+proc cleanup {} {
+	global tu1 tu2 tu3 ta1 ta2 ta3 tc1 tc2
+	remove_user "" "" $tu1
+	remove_user "" "" $tu2
+	remove_user "" "" $tu3
+	remove_acct "" $ta1
+	remove_acct "" $ta2
+	remove_acct "" $ta3
+	remove_cluster $tc1
+	remove_cluster $tc2
 }
-
-spawn $sacctmgr -i delete account $ta1,$ta2,$ta3
-expect {
-	 timeout {
-		fail "sacctmgr delete account not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-spawn $sacctmgr -i delete cluster $tc1,$tc2
-expect {
-	 timeout {
-		fail "sacctmgr delete cluster not responding"
-	}
-	eof {
-		wait
-	}
-}
-
 
 #
 # Build test associations
@@ -240,38 +219,6 @@ expect {
 		log_error "sacctmgr found $matches of 6 problems"
 		incr exit_code 1
 	}
-
-
-#
-# Delete
-#
-spawn $sacctmgr -i delete user $tu1,$tu2,$tu3
-expect {
-	 timeout {
-		fail "sacctmgr delete users not responding"
-	}
-	eof {
-		wait
-	}
-}
-spawn $sacctmgr -i delete account $ta1,$ta2,$ta3
-expect {
-	 timeout {
-		fail "sacctmgr delete accounts not responding"
-	}
-	eof {
-		wait
-	}
-}
-spawn $sacctmgr -i delete cluster $tc1,$tc2
-expect {
-	 timeout {
-		fail "sacctmgr delete clusters not responding"
-	}
-	eof {
-		wait
-	}
-}
 
 if {$exit_code != 0} {
 	fail "Test failed due to previous errors"
