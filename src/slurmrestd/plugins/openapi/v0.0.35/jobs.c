@@ -147,6 +147,7 @@ const params_t job_params[] = {
 	{ "job_name", 'J' },
 	{ "kill_command", 'K', true },
 	{ "kill_on_bad_exit", 'K', true },
+	{ "kill_on_invalid_dependency", LONG_OPT_KILL_INV_DEP },
 	{ "kill_on_invalid dependency", LONG_OPT_KILL_INV_DEP },
 	{ "label", 'l', true },
 	{ "license", 'L' },

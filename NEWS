@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Delay steps when memory already used instead of rejecting step request.
  -- Fix memory leak in the slurmdbd when requesting wckeys from all clusters.
  -- Fix determining if a reservation is used or not.
+ -- openapi/v0.0.35 - Honor kill_on_invalid_dependency as job parameter.
 
 * Changes in Slurm 20.11.8
 ==========================
