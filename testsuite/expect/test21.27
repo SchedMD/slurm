@@ -71,95 +71,15 @@ proc cleanup {} {
 #
 # Build test associations
 #
-spawn $sacctmgr -i add cluster $tc1
-expect {
-	 timeout {
-		fail "sacctmgr add cluster not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-spawn $sacctmgr -i add account $ta1 cluster=$tc1
-expect {
-	 timeout {
-		fail "sacctmgr add account $ta1 not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-spawn $sacctmgr -i add account $ta2 parent=$ta1 cluster=$tc1
-expect {
-	 timeout {
-		fail "sacctmgr add account $ta2 not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-spawn $sacctmgr -i add user $tu1 account=$ta1 cluster=$tc1
-expect {
-	 timeout {
-		fail "sacctmgr add user $tu1 not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-spawn $sacctmgr -i add user $tu2 account=$ta1 cluster=$tc1
-expect {
-	 timeout {
-		fail "sacctmgr add user $tu2 not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-spawn $sacctmgr -i add user $tu3 account=$ta2 cluster=$tc1
-expect {
-	 timeout {
-		fail "sacctmgr add user $tu3 not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-spawn $sacctmgr -i delete cluster $tc1
-expect {
-	 timeout {
-		fail "sacctmgr delete cluster $tc1  not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-spawn $sacctmgr -i add cluster $tc2
-expect {
-	 timeout {
-		fail "sacctmgr add cluster $tc2  not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-spawn $sacctmgr -i add account $ta3 cluster=$tc2
-expect {
-	 timeout {
-		fail "sacctmgr add account $ta3  not responding"
-	}
-	eof {
-		wait
-	}
-}
+add_cluster $tc1 [list]
+add_acct $ta1 [list "cluster" $tc1]
+add_acct $ta2 [list "parent" $ta1 "cluster" $tc1]
+add_user $tu1 [list "account" $ta1 cluster $tc1]
+add_user $tu2 [list "account" $ta2 cluster $tc1]
+add_user $tu3 [list "account" $ta2 cluster $tc1]
+remove_cluster $tc1
+add_cluster $tc2 [list]
+add_acct $ta3 [list "cluster" $tc2]
 
 spawn $sacctmgr show problem
 expect {
