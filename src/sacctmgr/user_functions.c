@@ -666,6 +666,21 @@ static bool _check_user_has_default_assoc(char *user_name, List assoc_list)
 	return any_def_found;
 }
 
+/*
+ * TODO: This is a duplicated function from slurmctld/proc_req.c.
+ *       We can not use the original due the drop_priv feature.
+ *       This feature is not necessary anymore, we should remove it and remove
+ *       the duplication.
+ */
+static bool _validate_operator_user_rec(slurmdb_user_rec_t *user)
+{
+	if ((user->uid == 0) ||
+	    (user->uid == slurm_conf.slurm_user_id) ||
+	    (user->admin_level >= SLURMDB_ADMIN_OPERATOR))
+		return true;
+	else
+		return false;
+}
 
 extern int sacctmgr_add_user(int argc, char **argv)
 {
@@ -746,6 +761,24 @@ extern int sacctmgr_add_user(int argc, char **argv)
 			admin_level = str_2_slurmdb_admin_level(argv[i]+end);
 		} else if (!xstrncasecmp(argv[i], "DefaultAccount",
 					 MAX(command_len, 8))) {
+			/*
+			 * Check operator permissions in client to avoid cases
+			 * where DefaultAccount is not changed by slurmdbd but
+			 * no error is returned.
+			 */
+			char *user_name = uid_to_string_cached(my_uid);
+			slurmdb_user_rec_t *db_user =
+				sacctmgr_find_user(user_name);
+			/* uid needs to be set in the client */
+			db_user->uid = my_uid;
+
+			if (!_validate_operator_user_rec(db_user)) {
+				fprintf(stderr,
+					" Your user/uid (%s/%u) is not AdminLevel >= Operator, you cannot set DefaultAccount.\n",
+					user_name, my_uid);
+				exit_code = 1;
+				continue;
+			}
 			if (default_acct) {
 				fprintf(stderr,
 					" Already listed DefaultAccount %s\n",
