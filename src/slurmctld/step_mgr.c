@@ -1853,15 +1853,20 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	return SLURM_SUCCESS;
 }
 
-static bool _use_one_thread_per_core(job_record_t *job_ptr)
+static bool _use_one_thread_per_core(step_record_t *step_ptr)
 {
+	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 
-	if ((job_resrcs_ptr->whole_node != 1) &&
-	    (slurm_conf.select_type_param & (CR_CORE | CR_SOCKET)) &&
-	    (job_ptr->details &&
-	     (job_ptr->details->cpu_bind_type != NO_VAL16) &&
-	     (job_ptr->details->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)))
+	if ((step_ptr->threads_per_core == 1) ||
+	    ((step_ptr->threads_per_core == NO_VAL16) &&
+	     (job_ptr->details->mc_ptr->threads_per_core == 1)) ||
+	    ((job_resrcs_ptr->whole_node != 1) &&
+	     (slurm_conf.select_type_param & (CR_CORE | CR_SOCKET)) &&
+	     (job_ptr->details &&
+	      (job_ptr->details->cpu_bind_type != NO_VAL16) &&
+	      (job_ptr->details->cpu_bind_type &
+	       CPU_BIND_ONE_THREAD_PER_CORE))))
 		return true;
 	return false;
 }
@@ -1989,7 +1994,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			 *
 			 * TODO: move cpus_per_core to slurm_step_layout_t
 			 */
-			if (!_use_one_thread_per_core(job_ptr) &&
+			if (!_use_one_thread_per_core(step_ptr) &&
 			    (!(node_record_table_ptr[i_node].cpus ==
 			      (node_record_table_ptr[i_node].tot_sockets *
 			       node_record_table_ptr[i_node].cores)))) {
@@ -3036,7 +3041,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 			 * of cpus available if we only want to run 1
 			 * thread per core.
 			 */
-			if (_use_one_thread_per_core(job_ptr)) {
+			if (_use_one_thread_per_core(step_ptr)) {
 				uint16_t threads;
 				threads = node_ptr->config_ptr->threads;
 
