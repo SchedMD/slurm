@@ -2752,6 +2752,9 @@ static int _shutdown_backup_controller(void)
 
 	debug2("shutting down backup controllers (my index: %d)", backup_inx);
 	for (i = 1; i < slurm_conf.control_cnt; i++) {
+		if (i == backup_inx)
+			continue;	/* No message to self */
+
 		if ((slurm_conf.control_addr[i] == NULL) ||
 		    (slurm_conf.control_addr[i][0] == '\0'))
 			continue;
