@@ -767,17 +767,18 @@ extern int sacctmgr_add_user(int argc, char **argv)
 			 * no error is returned.
 			 */
 			char *user_name = uid_to_string_cached(my_uid);
-			slurmdb_user_rec_t *db_user =
-				sacctmgr_find_user(user_name);
-			/* uid needs to be set in the client */
-			db_user->uid = my_uid;
+			slurmdb_user_rec_t *db_user;
+			if ((db_user = sacctmgr_find_user(user_name))) {
+				/* uid needs to be set in the client */
+				db_user->uid = my_uid;
 
-			if (!_validate_operator_user_rec(db_user)) {
-				fprintf(stderr,
-					" Your user/uid (%s/%u) is not AdminLevel >= Operator, you cannot set DefaultAccount.\n",
-					user_name, my_uid);
-				exit_code = 1;
-				continue;
+				if (!_validate_operator_user_rec(db_user)) {
+					fprintf(stderr,
+						" Your user/uid (%s/%u) is not AdminLevel >= Operator, you cannot set DefaultAccount.\n",
+						user_name, my_uid);
+					exit_code = 1;
+					continue;
+				}
 			}
 			if (default_acct) {
 				fprintf(stderr,
