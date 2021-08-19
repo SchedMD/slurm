@@ -1,4 +1,4 @@
-.TH SPANK "8" "Slurm Component" "June 2021" "Slurm Component"
+.TH SPANK "8" "Slurm Component" "August 2021" "Slurm Component"
 
 .SH "NAME"
 \fBSPANK\fR \- Slurm Plug\-in Architecture for Node and job (K)control
@@ -18,8 +18,11 @@ the \fBSPANK\fR infrastructure provides administrators and other developers
 a low cost, low effort ability to dynamically modify the runtime
 behavior of Slurm job launch.
 .LP
-\fBNote\fR: \fBSPANK\fR plugins using the Slurm APIs need to be recompiled when
-upgrading Slurm to a new major release.
+\fBNOTE\fR: All \fBSPANK\fR plugins should be recompiled when upgrading Slurm
+to a new major release. The \fBSPANK\fR API is not guaranteed to be ABI
+compatible between major releases. Any \fBSPANK\fR plugin linking to any of the
+Slurm libraries should be carefully checked as the Slurm APIs and headers
+can change between major releases.
 .LP
 
 .SH "SPANK PLUGINS"
