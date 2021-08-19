@@ -1880,6 +1880,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
 	bool first_step_node = true, pick_step_cores = true;
+	bool one_thread_per_core;
 	uint32_t rem_nodes;
 	int rc = SLURM_SUCCESS;
 
@@ -1894,6 +1895,8 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
 	if (i_first == -1)	/* empty bitmap */
 		return rc;
+
+	one_thread_per_core = _use_one_thread_per_core(step_ptr);
 
 	xassert(job_resrcs_ptr->core_bitmap);
 	xassert(job_resrcs_ptr->core_bitmap_used);
@@ -1941,15 +1944,25 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		 * If whole allocate all cpus here instead of just the ones
 		 * requested
 		 */
+		if (first_step_node)
+			step_ptr->cpu_count = 0;
+
 		if (step_ptr->flags & SSF_WHOLE) {
 			cpus_alloc = job_resrcs_ptr->cpus[job_node_inx];
-			if (first_step_node)
-				step_ptr->cpu_count = 0;
-			step_ptr->cpu_count += cpus_alloc;
-		} else
+		} else {
 			cpus_alloc =
 				step_ptr->step_layout->tasks[step_node_inx] *
 				step_ptr->cpus_per_task;
+			/*
+			 * If we are doing one thread per core we need the whole
+			 * core allocated even though we are only using what was
+			 * requested.
+			 */
+			if (one_thread_per_core)
+				cpus_alloc *=
+					node_record_table_ptr[i_node].vpus;
+		}
+		step_ptr->cpu_count += cpus_alloc;
 
 		job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
 		gres_ctld_step_alloc(step_ptr->gres_list_req,
@@ -1972,9 +1985,18 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		if (step_ptr->pn_min_memory && _is_mem_resv()) {
 			uint64_t mem_use;
 			if (step_ptr->pn_min_memory & MEM_PER_CPU) {
+				/*
+				 * If we are only doing one thread per core we
+				 * need to take away the extra cpus.
+				 */
+				int cpus_alloc_mem = cpus_alloc;
+				if (one_thread_per_core)
+					cpus_alloc_mem /=
+						node_record_table_ptr[i_node].
+						vpus;
 				mem_use = step_ptr->pn_min_memory;
 				mem_use &= (~MEM_PER_CPU);
-				mem_use *= cpus_alloc;
+				mem_use *= cpus_alloc_mem;
 			} else {
 				mem_use = step_ptr->pn_min_memory;
 			}
@@ -2090,6 +2112,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	int cpus_alloc;
 	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
+	bool one_thread_per_core;
 
 	xassert(job_resrcs_ptr);
 	if (!job_resrcs_ptr) {
@@ -2116,6 +2139,8 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		      __func__, job_ptr);
 	}
 
+	one_thread_per_core = _use_one_thread_per_core(step_ptr);
+
 	for (i_node = i_first; i_node <= i_last; i_node++) {
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i_node))
 			continue;
@@ -2127,9 +2152,18 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			fatal("_step_dealloc_lps: node index bad");
 		if (step_ptr->flags & SSF_WHOLE)
 			cpus_alloc = job_resrcs_ptr->cpus[job_node_inx];
-		else
+		else {
 			cpus_alloc = step_ptr->step_layout->tasks[step_node_inx] *
 				step_ptr->cpus_per_task;
+			/*
+			 * If we are doing one thread per core we need the whole
+			 * core allocated even though we are only using what was
+			 * requested.
+			 */
+			if (one_thread_per_core)
+				cpus_alloc *=
+					node_record_table_ptr[i_node].vpus;
+		}
 		if (job_resrcs_ptr->cpus_used[job_node_inx] >= cpus_alloc) {
 			job_resrcs_ptr->cpus_used[job_node_inx] -= cpus_alloc;
 		} else {
