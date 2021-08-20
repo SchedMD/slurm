@@ -25,7 +25,6 @@ autom4te.cache
 /etc/slurmd.service
 /etc/slurmdbd.service
 /libtool
-/slurm/slurm.h
 /slurm/stamp-h2
 /src/api/pmi_version.map
 /src/api/version.map

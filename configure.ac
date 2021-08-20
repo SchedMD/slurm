@@ -25,7 +25,7 @@ dnl
 AM_INIT_AUTOMAKE(no-define no-dist)
 AM_MAINTAINER_MODE
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_HEADERS([slurm/slurm.h])
+AC_CONFIG_HEADERS([slurm/slurm_version.h])
 
 X_AC_RPATH
 

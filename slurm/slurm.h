@@ -52,6 +52,7 @@ extern "C" {
 #endif
 
 #include <slurm/slurm_errno.h>
+#include <slurm/slurm_version.h>
 
 #include <inttypes.h>		/* for uint16_t, uint32_t definitions */
 #include <netinet/in.h>		/* struct sockaddr_in */
@@ -112,23 +113,6 @@ typedef struct allocation_msg_thread allocation_msg_thread_t;
 #  define  __sbcast_cred_t_defined
 typedef struct sbcast_cred sbcast_cred_t;		/* opaque data type */
 #endif
-
-/*****************************************************************************\
- *      DEFINITIONS FOR VERSION MANAGEMENT
-\*****************************************************************************/
-/* Define Slurm version number.
- * High-order byte is major version.
- * Middle byte     is minor version.
- * Low-order byte  is micro version (NOTE: excludes "-pre#" component
- #                 of micro version used in pre-releases).
- * Use SLURM_VERSION_NUM macro to compare versions, for example
- * #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(2,1,0)
- */
-#undef  SLURM_VERSION_NUMBER
-#define SLURM_VERSION_NUM(a,b,c) (((a) << 16) + ((b) << 8) + (c))
-#define SLURM_VERSION_MAJOR(a)   (((a) >> 16) & 0xff)
-#define SLURM_VERSION_MINOR(a)   (((a) >>  8) & 0xff)
-#define SLURM_VERSION_MICRO(a)    ((a)        & 0xff)
 
 /*****************************************************************************\
  *	DEFINITIONS FOR POSIX VALUES

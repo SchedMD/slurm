@@ -145,7 +145,7 @@ DIST_COMMON = $(srcdir)/Makefile.am $(top_srcdir)/configure \
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
-CONFIG_HEADER = config.h $(top_builddir)/slurm/slurm.h
+CONFIG_HEADER = config.h $(top_builddir)/slurm/slurm_version.h
 CONFIG_CLEAN_FILES = contribs/perlapi/libslurm/perl/Makefile.PL \
 	contribs/perlapi/libslurmdb/perl/Makefile.PL
 CONFIG_CLEAN_VPATH_FILES =
@@ -497,6 +497,7 @@ pkginclude_HEADERS = \
 	slurm/slurm.h 		\
 	slurm/slurmdb.h 	\
 	slurm/slurm_errno.h	\
+	slurm/slurm_version.h	\
 	slurm/smd_ns.h		\
 	slurm/spank.h
 
@@ -504,7 +505,7 @@ MAINTAINERCLEANFILES = \
 	aclocal.m4 config.guess				\
 	config.h.in config.sub configure install-sh 	\
 	ltconfig ltmain.sh missing mkinstalldirs 	\
-	slurm/slurm.h					\
+	slurm/slurm_version.h				\
 	stamp-h.in
 
 all: config.h
@@ -557,16 +558,16 @@ $(srcdir)/config.h.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 	rm -f stamp-h1
 	touch $@
 
-slurm/slurm.h: slurm/stamp-h2
+slurm/slurm_version.h: slurm/stamp-h2
 	@test -f $@ || rm -f slurm/stamp-h2
 	@test -f $@ || $(MAKE) $(AM_MAKEFLAGS) slurm/stamp-h2
 
-slurm/stamp-h2: $(top_srcdir)/slurm/slurm.h.in $(top_builddir)/config.status
+slurm/stamp-h2: $(top_srcdir)/slurm/slurm_version.h.in $(top_builddir)/config.status
 	@rm -f slurm/stamp-h2
-	cd $(top_builddir) && $(SHELL) ./config.status slurm/slurm.h
+	cd $(top_builddir) && $(SHELL) ./config.status slurm/slurm_version.h
 
 distclean-hdr:
-	-rm -f config.h stamp-h1 slurm/slurm.h slurm/stamp-h2
+	-rm -f config.h stamp-h1 slurm/slurm_version.h slurm/stamp-h2
 contribs/perlapi/libslurm/perl/Makefile.PL: $(top_builddir)/config.status $(top_srcdir)/contribs/perlapi/libslurm/perl/Makefile.PL.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 contribs/perlapi/libslurmdb/perl/Makefile.PL: $(top_builddir)/config.status $(top_srcdir)/contribs/perlapi/libslurmdb/perl/Makefile.PL.in
@@ -845,7 +846,7 @@ mrproper: distclean-local clean
 	-(cd $(top_srcdir) && rm -rf autom4te.cache config.h config.log)
 	-(cd $(top_srcdir) && rm -rf config.status libtool stamp-h1)
 	-(cd $(top_srcdir)/auxdir && rm -rf mkinstalldirs)
-	-(cd $(top_srcdir)/slurm  && rm -rf stamp-h2 slurm.h)
+	-(cd $(top_srcdir)/slurm  && rm -rf stamp-h2 slurm_version.h)
 	-find $(top_srcdir)/src -name "Makefile" -exec rm {} \;
 	-find $(top_srcdir) -depth -name ".deps" -exec rm -rf {} \;
 

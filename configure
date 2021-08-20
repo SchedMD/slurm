@@ -3831,7 +3831,7 @@ fi
 
 ac_config_headers="$ac_config_headers config.h"
 
-ac_config_headers="$ac_config_headers slurm/slurm.h"
+ac_config_headers="$ac_config_headers slurm/slurm_version.h"
 
 
 
@@ -26616,7 +26616,7 @@ for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
     "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
-    "slurm/slurm.h") CONFIG_HEADERS="$CONFIG_HEADERS slurm/slurm.h" ;;
+    "slurm/slurm_version.h") CONFIG_HEADERS="$CONFIG_HEADERS slurm/slurm_version.h" ;;
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;

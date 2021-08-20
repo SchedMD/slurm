@@ -8,6 +8,7 @@ pkginclude_HEADERS =		\
 	slurm/slurm.h 		\
 	slurm/slurmdb.h 	\
 	slurm/slurm_errno.h	\
+	slurm/slurm_version.h	\
 	slurm/smd_ns.h		\
 	slurm/spank.h
 
@@ -15,7 +16,7 @@ MAINTAINERCLEANFILES = 					\
 	aclocal.m4 config.guess				\
 	config.h.in config.sub configure install-sh 	\
 	ltconfig ltmain.sh missing mkinstalldirs 	\
-	slurm/slurm.h					\
+	slurm/slurm_version.h				\
 	stamp-h.in
 
 distclean-local:
@@ -26,7 +27,7 @@ mrproper: distclean-local clean
 	-(cd $(top_srcdir) && rm -rf autom4te.cache config.h config.log)
 	-(cd $(top_srcdir) && rm -rf config.status libtool stamp-h1)
 	-(cd $(top_srcdir)/auxdir && rm -rf mkinstalldirs)
-	-(cd $(top_srcdir)/slurm  && rm -rf stamp-h2 slurm.h)
+	-(cd $(top_srcdir)/slurm  && rm -rf stamp-h2 slurm_version.h)
 	-find $(top_srcdir)/src -name "Makefile" -exec rm {} \;
 	-find $(top_srcdir) -depth -name ".deps" -exec rm -rf {} \;
 
