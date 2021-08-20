@@ -5159,6 +5159,12 @@ Possible values are "YES" and "NO".
 The default value is "NO".
 
 .TP
+\fBDefaultTime\fR
+Run time limit used for jobs that don't specify a value. If not set
+then MaxTime will be used.
+Format is the same as for MaxTime.
+
+.TP
 \fBDefCpuPerGPU\fR
 Default count of CPUs allocated per allocated GPU. This value is used only if
 the job didn't specify --cpus-per-task and --cpus-per-gpu.
@@ -5208,12 +5214,6 @@ Comma-separated list of Qos which may not execute jobs in the partition.
 By default, no QOS are denied access
 \fBNOTE:\fR If AllowQos is used then DenyQos will not be enforced.
 Also refer AllowQos.
-
-.TP
-\fBDefaultTime\fR
-Run time limit used for jobs that don't specify a value. If not set
-then MaxTime will be used.
-Format is the same as for MaxTime.
 
 .TP
 \fBDisableRootJobs\fR
