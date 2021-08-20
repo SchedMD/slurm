@@ -34,7 +34,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "slurm.h"
+#include "slurm/slurm.h"
 
 #include "src/scontrol/scontrol.h"
 

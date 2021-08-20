@@ -39,7 +39,7 @@
 #include "sstat.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/parse_time.h"
-#include "slurm.h"
+#include "slurm/slurm.h"
 #define FORMAT_STRING_SIZE 34
 
 print_field_t *field = NULL;

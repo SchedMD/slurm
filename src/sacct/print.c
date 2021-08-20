@@ -39,7 +39,7 @@
 #include "sacct.h"
 #include "src/common/cpu_frequency.h"
 #include "src/common/parse_time.h"
-#include "slurm.h"
+#include "slurm/slurm.h"
 
 print_field_t *field = NULL;
 int curr_inx = 1;

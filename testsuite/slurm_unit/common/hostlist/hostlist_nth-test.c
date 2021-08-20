@@ -37,7 +37,7 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#include "slurm.h"
+#include "slurm/slurm.h"
 #include "src/common/hostlist.h"
 
 /* these are not in slurm.h */
