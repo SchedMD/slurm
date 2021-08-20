@@ -121,7 +121,7 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 <li><a href="plugins.html">Plugin Programmer Guide</a></li>
 <li>Plugin Interface Details
 <ul>
-<li><a href="cli_filter_plugins.html">Command Line Program Policy Plugin Programmer Guide</a></li>
+<li><a href="cli_filter_plugins.html">Command Line Filter Plugin Programmer Guide</a></li>
 <li><a href="job_submit_plugins.html">Job Submission Plugin Programmer Guide</a></li>
 <li><a href="prep_plugins.html">PrEp Plugin Programmer Guide</a></li>
 <li><a href="site_factor.html">Site Factor (Priority) Plugin Programmer Guide</a></li>
@@ -129,6 +129,6 @@ may be found in the <a href="https://slurm.schedmd.com/archive/">archive</a>.
 </li>
 </ul>
 
-<p style="text-align:center;">Last modified 6 August 2021</p>
+<p style="text-align:center;">Last modified 20 August 2021</p>
 
 <!--#include virtual="footer.txt"-->
