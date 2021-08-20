@@ -24,6 +24,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - do not attempt to relinquish control to self.
  -- openapi/v0.0.37 - Honor kill_on_invalid_dependency as job parameter.
  -- Check max_gres when doing step allocation, fix for regression in rc2.
+ -- SPANK plugins are now required to match the current Slurm version, and must
+    be recompiled for each new Slurm release.
 
 * Changes in Slurm 21.08.0rc2
 =============================

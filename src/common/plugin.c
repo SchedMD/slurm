@@ -126,7 +126,7 @@ plugin_peek( const char *fq_path,
 	version = (uint32_t *) dlsym(plug, PLUGIN_VERSION);
 	if (!version) {
 		verbose("%s: plugin_version symbol not defined", fq_path);
-	} else if ((*version != SLURM_VERSION_NUMBER) && xstrcmp(type,"spank")){
+	} else if (*version != SLURM_VERSION_NUMBER) {
 		int plugin_major, plugin_minor, plugin_micro;
 		plugin_major = SLURM_VERSION_MAJOR(*version);
 		plugin_minor = SLURM_VERSION_MINOR(*version);

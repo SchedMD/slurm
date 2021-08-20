@@ -35,10 +35,11 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#include <slurm/slurm_errno.h>
-
 #ifndef SPANK_H
 #define SPANK_H
+
+#include <slurm/slurm_errno.h>
+#include <slurm/slurm_version.h>
 
 /*  SPANK handle. Plug-in's context for running Slurm job
  */
@@ -430,6 +431,7 @@ extern void slurm_spank_log(const char *, ...)
 #define SPANK_PLUGIN(__name, __ver) \
     const char plugin_name [] = #__name; \
     const char plugin_type [] = "spank"; \
-    const unsigned int plugin_version = __ver;
+    const unsigned int plugin_version = SLURM_VERSION_NUMBER; \
+    const unsigned int spank_plugin_version = __ver;
 
 #endif /* !SPANK_H */

@@ -114,6 +114,8 @@ HIGHLIGHTS
  -- All SPANK error codes now start at 3000. Where previously SPANK would give
     a return code of 1, it will now return 3000. This change will break ABI
     compatibility with SPANK plugins compiled against older version of Slurm.
+ -- SPANK plugins are now required to match the current Slurm version, and must
+    be recompiled for each new Slurm release.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
