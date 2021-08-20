@@ -235,6 +235,7 @@ cset bin_true	"true"
 cset bin_uname	"uname"
 cset bin_uniq	"uniq"
 cset bin_unshare "unshare"
+cset bin_virtualenv "virtualenv"
 cset bin_wc	"wc"
 
 #
