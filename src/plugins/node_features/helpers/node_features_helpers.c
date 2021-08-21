@@ -59,6 +59,7 @@ static int allowed_uid_cnt = 0;
 static List helper_features = NULL;
 static List helper_exclusives = NULL;
 static uint32_t boot_time = (5 * 60);
+static uint32_t exec_time = 10;
 static uint32_t node_reboot_weight = (INFINITE - 1);
 
 typedef struct {
@@ -162,7 +163,7 @@ static int _feature_set_state(const plugin_feature_t *feature)
 	argv[0] = xstrdup(feature->helper);
 	argv[1] = xstrdup(feature->name);
 	output = run_command("set_state", feature->helper,
-			     argv, NULL, 10000, 0, &rc);
+			     argv, NULL, (exec_time * 1000), 0, &rc);
 
 	if (rc != SLURM_SUCCESS) {
 		error("failed to set new value for feature: %s", feature->name);
@@ -181,7 +182,7 @@ static List _feature_get_state(const plugin_feature_t *feature)
 	List result = list_create(xfree_ptr);
 
 	output = run_command("get_state", feature->helper,
-			     NULL, NULL, 10000, 0, &rc);
+			     NULL, NULL, (exec_time * 1000), 0, &rc);
 
 	if (rc != SLURM_SUCCESS) {
 		goto cleanup;
@@ -291,6 +292,7 @@ static int _parse_exclusives(void **data, slurm_parser_enum_t type,
 static s_p_options_t conf_options[] = {
 	{"Feature", S_P_ARRAY, parse_feature, (ListDelF) _feature_destroy},
 	{"BootTime", S_P_UINT32},
+	{"ExecTime", S_P_UINT32},
 	{"MutuallyExclusive", S_P_ARRAY, _parse_exclusives, xfree_ptr},
 	{"NodeRebootWeight", S_P_UINT32},
 	{"AllowUserBoot", S_P_STRING},
@@ -352,6 +354,10 @@ static int _read_config_file(void)
 	if (!s_p_get_uint32(&boot_time, "BootTime", tbl))
 		info("BootTime not specified, using default value: %u",
 		     boot_time);
+
+	if (!s_p_get_uint32(&exec_time, "ExecTime", tbl))
+		info("ExecTime not specified, using default value: %u",
+		     exec_time);
 
 	if (!s_p_get_uint32(&node_reboot_weight, "NodeRebootWeight", tbl))
 		info("NodeRebootWeight not specified, using default value: %u",
@@ -755,6 +761,11 @@ extern void node_features_p_get_config(config_plugin_params_t *p)
 	key_pair = xmalloc(sizeof(*key_pair));
 	key_pair->name = xstrdup("BootTime");
 	key_pair->value = xstrdup_printf("%u", boot_time);
+	list_append(data, key_pair);
+
+	key_pair = xmalloc(sizeof(*key_pair));
+	key_pair->name = xstrdup("ExecTime");
+	key_pair->value = xstrdup_printf("%u", exec_time);
 	list_append(data, key_pair);
 }
 

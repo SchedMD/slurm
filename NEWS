@@ -26,6 +26,7 @@ documents those changes that are of interest to users and administrators.
  -- Check max_gres when doing step allocation, fix for regression in rc2.
  -- SPANK plugins are now required to match the current Slurm version, and must
     be recompiled for each new Slurm release.
+-- node_features/helpers - add ExecTime configuration option.
 
 * Changes in Slurm 21.08.0rc2
 =============================
