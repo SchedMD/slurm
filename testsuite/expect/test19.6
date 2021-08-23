@@ -224,7 +224,7 @@ if {$matches == 0} {
 set job_matches 0
 set strigger_pid [spawn $strigger --get -v --user=$uid]
 expect {
-	-re "$job_id" {
+	-re "(?n)^ +\\d+ job +$job_id \\w+" {
 		incr job_matches
 		exp_continue
 	}
