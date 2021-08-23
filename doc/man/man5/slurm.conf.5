@@ -3840,6 +3840,10 @@ separate socket by default. Use the Ignore_NUMA option to report the correct
 socket count, but \fBnot\fR optimize resource allocations on the NUMA nodes.
 .IP
 
+\fBNOTE\fR: Since hwloc 2.0 NUMA Nodes are are not part of the main/CPU topology tree,
+because of that if Slurm is build with hwloc 2.0 or above Slurm will treat
+HWLOC_OBJ_PACKAGE as Socket, you can change this behavior using
+\fBSlurmdParameters\fR=l3cache_as_socket.
 .TP
 \fBmax_array_tasks\fR
 Specify the maximum number of tasks that can be included in a job array.

@@ -318,6 +318,11 @@ extern int xcpuinfo_hwloc_topo_get(
 	objtype[SOCKET] = HWLOC_OBJ_SOCKET;
 	objtype[CORE]   = HWLOC_OBJ_CORE;
 	objtype[PU]     = HWLOC_OBJ_PU;
+#if HWLOC_API_VERSION >= 0x00020000
+	if (xstrcasestr(slurm_conf.sched_params, "Ignore_NUMA")) {
+		info("SchedulerParamaters=Ignore_NUMA not supported by hwloc v2");
+	}
+#else
 	if (hwloc_get_type_depth(topology, HWLOC_OBJ_NODE) >
 	    hwloc_get_type_depth(topology, HWLOC_OBJ_SOCKET)) {
 		if (xstrcasestr(slurm_conf.sched_params, "Ignore_NUMA")) {
@@ -327,6 +332,7 @@ extern int xcpuinfo_hwloc_topo_get(
 			objtype[SOCKET] = HWLOC_OBJ_NODE;
 		}
 	}
+#endif
 
 	if (xstrcasestr(slurm_conf.slurmd_params, "l3cache_as_socket")) {
 #if HWLOC_API_VERSION >= 0x00020000
