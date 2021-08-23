@@ -459,9 +459,6 @@ static void _restore_resv(slurmctld_resv_t *dest_resv,
 	xfree(dest_resv->user_list);
 	dest_resv->user_list = src_resv->user_list;
 	src_resv->user_list = NULL;
-
-	if (dest_resv->flags & RESERVE_FLAG_MAGNETIC)
-		list_append(magnetic_resv_list, dest_resv);
 }
 
 static void _del_resv_rec(void *x)
@@ -3002,6 +2999,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_desc_msg_t resv_desc;
 	int error_code = SLURM_SUCCESS, i, rc;
 	bool skip_it = false;
+	bool remove_magnetic_resv = false;
 
 	_create_resv_lists(false);
 	_dump_resv_req(resv_desc_ptr, "update_resv");
@@ -3134,8 +3132,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		if ((resv_desc_ptr->flags & RESERVE_FLAG_NO_MAGNETIC) &&
 		    (resv_ptr->flags & RESERVE_FLAG_MAGNETIC)) {
 			resv_ptr->flags &= (~RESERVE_FLAG_MAGNETIC);
-			(void)list_remove_first(
-				magnetic_resv_list, _find_resv_ptr, resv_ptr);
+			remove_magnetic_resv = true;
 		}
 
 		/* handle skipping later */
@@ -3492,6 +3489,10 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto update_failure;
 		}
 	}
+
+	if (remove_magnetic_resv)
+		(void) list_remove_first(magnetic_resv_list, _find_resv_ptr,
+					 resv_ptr);
 
 	_del_resv_rec(resv_backup);
 	(void) set_node_maint_mode(true);
