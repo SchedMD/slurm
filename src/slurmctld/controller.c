@@ -3249,7 +3249,7 @@ static int _controller_index(void)
 	 * External HA mode. Here a single control_addr has been defined,
 	 * but multiple hostnames are in control_machine[0] with comma
 	 * separation. If our hostname matches any of those, we are considered
-	 * to be a valid controller, and which is active much be managed by
+	 * to be a valid controller, and which is active must be managed by
 	 * an external HA solution.
 	 */
 	if (xstrchr(slurm_conf.control_machine[0], ',')) {
