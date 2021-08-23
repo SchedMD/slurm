@@ -139,6 +139,15 @@ log_info "Testing AllowQos"
 #
 test_part $acct1 $qos_good $part_name 0
 
+# TODO Temporary debug to troubleshoot bug 11979 (remove once fixed)
+if {$exit_code != 0} {
+	wait_for -timeout 30 {!$exit_code} {
+		set exit_code 0
+		test_part $acct1 $qos_good $part_name 0
+	}
+	fail "Unexpected failure for good QOS. This may be a recurrence of bug 11979. Check the prior wait_for output to see if it was a timing problem resolved by polling."
+}
+
 #
 # Test partition with bad Qos
 # 0 = good test / 1 = bad test
@@ -163,9 +172,9 @@ test_part $acct1 $qos_good $part_name 0
 
 # TODO Temporary debug to troubleshoot bug 11979 (remove once fixed)
 if {$exit_code != 0} {
-	wait_for -timeout 10 {!$exit_code} {
+	wait_for -timeout 30 {!$exit_code} {
 		set exit_code 0
-		test_part $acct2 $qos_bad $part_name 0
+		test_part $acct1 $qos_good $part_name 0
 	}
 	fail "Unexpected failure for good QOS. This may be a recurrence of bug 11979. Check the prior wait_for output to see if it was a timing problem resolved by polling."
 }
