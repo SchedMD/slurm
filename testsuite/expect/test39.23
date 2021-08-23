@@ -61,9 +61,7 @@ log_debug "GPU count is $gpu_cnt"
 # Build input script files
 #
 make_bash_script $file_in1 "
-if \[ \$SLURM_LOCALID -eq 0 \]; then
 echo HOST:\$SLURMD_NODENAME NODE_CNT:\$SLURM_NNODES CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
-fi
 if \[ \$SLURM_PROCID -eq 0 \]; then
 $scontrol -dd show job \$SLURM_JOB_ID | grep \"GRES=\"
 fi
@@ -188,7 +186,7 @@ if {$gpu_cnt > 1} {
 			wait
 		}
 	}
-	set exp_gpu_cnt [expr $task_cnt * $task_cnt]
+	set exp_gpu_cnt [expr $task_cnt]
 	if {$task_cnt == 0} {
 		log_error "srun --gpus-per-task test failed to run"
 		set exit_code 1
@@ -231,7 +229,7 @@ if {$gpu_cnt > 1} {
 			wait
 		}
 	}
-	set exp_gpu_cnt [expr $task_cnt * $task_cnt * 2]
+	set exp_gpu_cnt [expr $task_cnt * 2]
 	if {$task_cnt == 0} {
 		log_error "srun --gpus-per-task test failed to run"
 		set exit_code 1

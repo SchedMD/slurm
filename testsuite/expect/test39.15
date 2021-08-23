@@ -76,9 +76,8 @@ if {$gpu_cnt > $cpus_per_node} {
 #
 # Build input script files
 #
-make_bash_script $file_in "if \[ \$SLURM_LOCALID -eq 0 \]; then
+make_bash_script $file_in "
 echo HOST:\$SLURMD_NODENAME CUDA_VISIBLE_DEVICES:\$CUDA_VISIBLE_DEVICES
-fi
 if \[ \$SLURM_PROCID -eq 0 \]; then
 $scontrol -dd show job \$SLURM_JOB_ID | grep \"GRES=\"
 fi

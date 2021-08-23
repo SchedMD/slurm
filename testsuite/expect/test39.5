@@ -236,7 +236,7 @@ if {$one_task_pc && $cpus_per_node > $total_cores} {
 } else {
 	set extra_opt "-t1"
 }
-test_gpus_cnt "--cpus-per-gpu=1 --gpus-per-task=1 -N1 --ntasks=$use_gpus_per_node $extra_opt" [expr $use_gpus_per_node * $use_gpus_per_node] $use_gpus_per_node
+test_gpus_cnt "--cpus-per-gpu=1 --gpus-per-task=1 -N1 --ntasks=$use_gpus_per_node $extra_opt" $use_gpus_per_node $use_gpus_per_node
 
 #
 # Test --gpus-per-task option without task count
@@ -256,7 +256,7 @@ if {$use_gpus_per_node == 0} {
 	set use_tasks_per_node 1
 	set use_gpus_per_node $gpu_cnt
 }
-test_gpus_cnt "--gpus-per-task=1 --tasks-per-node=$use_tasks_per_node -N $nb_nodes" [expr $nb_nodes * $use_tasks_per_node * $use_tasks_per_node] [expr $use_tasks_per_node * $nb_nodes]
+test_gpus_cnt "--gpus-per-task=1 --tasks-per-node=$use_tasks_per_node -N $nb_nodes" [expr $use_tasks_per_node * $nb_nodes] [expr $use_tasks_per_node * $nb_nodes]
 
 #
 # Test --gpus-per-task option without task count
