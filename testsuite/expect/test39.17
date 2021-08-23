@@ -101,7 +101,7 @@ make_bash_script $file_in2 "
 	fi
 	exit 0"
 
-exec $bin_rm -f $file_out
+file delete $file_out
 set timeout $max_job_delay
 spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=2 -N1 -n3 -t1 -o $file_out -J $test_name $file_in1
 expect {
@@ -176,7 +176,7 @@ make_bash_script $file_in2 "
 	fi
 	exit 0"
 
-exec $bin_rm -f $file_out
+file delete $file_out
 set job_id 0
 set timeout $max_job_delay
 spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=2 -N1 -n2 -t1 -o $file_out -J $test_name $file_in1
@@ -255,7 +255,7 @@ make_bash_script $file_in2 "
 	fi
 	exit 0"
 
-exec $bin_rm -f $file_out
+file delete $file_out
 set job_id 0
 set timeout $max_job_delay
 spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=2 -N1 -n2 -t1 -o $file_out -J $test_name $file_in1
@@ -335,7 +335,7 @@ if {$gpu_cnt > 2} {
 		fi
 		exit 0"
 
-	exec $bin_rm -f $file_out
+	file delete $file_out
 	set job_id 0
 	set timeout $max_job_delay
 	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=3 -N1 -n3 -t1 -o $file_out -J $test_name $file_in1
@@ -434,7 +434,7 @@ if {$gpu_cnt > 2} {
 		fi
 		exit 0"
 
-	exec $bin_rm -f $file_out
+	file delete $file_out
 	set job_id 0
 	set timeout $max_job_delay
 	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N1 -n3 -t1 -o $file_out -J $test_name $file_in1
@@ -538,7 +538,7 @@ if {$gpu_cnt >= 2 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 		fi
 		exit 0"
 
-	exec $bin_rm -f $file_out
+	file delete $file_out
 	set job_id 0
 	set timeout $max_job_delay
 	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n6 -t1 -o $file_out -J $test_name $file_in1
@@ -643,7 +643,7 @@ if {$gpu_cnt >= 4 && $nb_nodes >= 2 && $cpus_per_node >= 3} {
 		fi
 		exit 0"
 
-	exec $bin_rm -f $file_out
+	file delete $file_out
 	set job_id 0
 	set timeout $max_job_delay
 	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n6 -t1 -o $file_out -J $test_name $file_in1
@@ -725,7 +725,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 		fi
 		exit 0"
 
-	exec $bin_rm -f $file_out
+	file delete $file_out
 	set job_id 0
 	set timeout $max_job_delay
 	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n4 -t1 -o $file_out -J $test_name $file_in1
@@ -838,7 +838,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 		fi
 		exit 0"
 
-	exec $bin_rm -f $file_out
+	file delete $file_out
 	set job_id 0
 	set timeout $max_job_delay
 	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n5 -t1 -o $file_out -J $test_name $file_in1
@@ -929,7 +929,7 @@ if {$gpu_cnt > 3 && $nb_nodes >= 2} {
 		fi
 		exit 0"
 
-	exec $bin_rm -f $file_out
+	file delete $file_out
 	set job_id 0
 	set timeout $max_job_delay
 	spawn $sbatch --gres=craynetwork:0 --cpus-per-gpu=1 --gpus-per-node=$job_gpus -N2 -n5 -t1 -o $file_out -J $test_name $file_in1
