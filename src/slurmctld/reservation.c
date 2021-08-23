@@ -2999,7 +2999,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 	resv_desc_msg_t resv_desc;
 	int error_code = SLURM_SUCCESS, i, rc;
 	bool skip_it = false;
-	bool remove_magnetic_resv = false;
+	bool append_magnetic_resv = false, remove_magnetic_resv = false;
 
 	_create_resv_lists(false);
 	_dump_resv_req(resv_desc_ptr, "update_resv");
@@ -3127,7 +3127,7 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 		if ((resv_desc_ptr->flags & RESERVE_FLAG_MAGNETIC) &&
 		    !(resv_ptr->flags & RESERVE_FLAG_MAGNETIC)) {
 			resv_ptr->flags |= RESERVE_FLAG_MAGNETIC;
-			list_append(magnetic_resv_list, resv_ptr);
+			append_magnetic_resv = true;
 		}
 		if ((resv_desc_ptr->flags & RESERVE_FLAG_NO_MAGNETIC) &&
 		    (resv_ptr->flags & RESERVE_FLAG_MAGNETIC)) {
@@ -3489,6 +3489,13 @@ extern int update_resv(resv_desc_msg_t *resv_desc_ptr)
 			goto update_failure;
 		}
 	}
+
+	/*
+	 * The following two checks need to happen once it is guaranteed the
+	 * whole update succeeds, avoiding any path leading to update failure.
+	 */
+	if (append_magnetic_resv)
+		list_append(magnetic_resv_list, resv_ptr);
 
 	if (remove_magnetic_resv)
 		(void) list_remove_first(magnetic_resv_list, _find_resv_ptr,
