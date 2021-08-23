@@ -33,8 +33,8 @@ set number_commas  "\[0-9_,\]+"
 if {![check_config_select "cons_tres"]} {
 	skip "This test is only compatible with select/cons_tres"
 }
-if {[get_config_param "ConstrainDevices"] ne "yes"} {
-	skip "This test is only compatible with ConstrainDevices=Yes in cgroup.conf"
+if {![param_contains [get_config_param "TaskPlugin"] "*cgroup"] || [get_config_param "ConstrainDevices"] ne "yes"} {
+	skip "This test is only compatible with TaskPlugin=cgroup,... in slurm.conf and ConstrainDevices=Yes in cgroup.conf"
 }
 
 set gpu_cnt [get_highest_gres_count 1 "gpu"]
@@ -133,13 +133,13 @@ if {$gpu_cnt > $cpus_per_node} {
 }
 expect {
 	-re "($number): HOST:($re_word_str) CUDA_VISIBLE_DEVICES:($number)" {
-		if       {$expect_out(1,string) == 0 && $expect_out(3,string) == 1} {
+		if       {$expect_out(1,string) == 0 && $expect_out(3,string) == 0} {
 			incr matches
 		} elseif {$expect_out(1,string) == 1 && $expect_out(3,string) == 0} {
 			incr matches
-		} elseif {$expect_out(1,string) == 2 && $expect_out(3,string) == 3} {
+		} elseif {$expect_out(1,string) == 2 && $expect_out(3,string) == 0} {
 			incr matches
-		} elseif {$expect_out(1,string) == 3 && $expect_out(3,string) == 2} {
+		} elseif {$expect_out(1,string) == 3 && $expect_out(3,string) == 0} {
 			incr matches
 		}
 		exp_continue
@@ -163,9 +163,9 @@ if {$matches != $match_goal} {
 #
 log_info "TEST ${test_id}.3"
 if {$gpu_cnt < 4} {
-	set mask_gpu "mask_gpu:0x3,0x1"
+	set mask_gpu "mask_gpu:0x3,0x2"
 } else {
-	set mask_gpu "mask_gpu:0x3,0x1,0x5,9"
+	set mask_gpu "mask_gpu:0x3,0x2,0x5,0xF"
 }
 
 set matches 0
@@ -183,9 +183,9 @@ expect {
 			incr matches
 		} elseif {$expect_out(1,string) == 1 && $expect_out(3,string) eq "0"} {
 			incr matches
-		} elseif {$expect_out(1,string) == 2 && $expect_out(3,string) eq "0,2"} {
+		} elseif {$expect_out(1,string) == 2 && $expect_out(3,string) eq "0,1"} {
 			incr matches
-		} elseif {$expect_out(1,string) == 3 && $expect_out(3,string) eq "0,3"} {
+		} elseif {$expect_out(1,string) == 3 && $expect_out(3,string) eq "0,1,2,3"} {
 			incr matches
 		}
 		exp_continue
