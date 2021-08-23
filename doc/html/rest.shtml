@@ -46,8 +46,8 @@ and clients to avoid having clients repeatedly call queries, causing usage to
 be higher than needed (and causing lock contention) on the controller.</p>
 
 <h2 id="run_modes">Run modes<a class="slurm_link" href="#run_modes"></a></h2>
-Slurmrestd currently supports two run modes: inet service mode and listening
-mode.
+<p>Slurmrestd currently supports two run modes: inet service mode and listening
+mode.</p>
 
 <h3 id="inet">Inet Service Mode<a class="slurm_link" href="#inet"></a></h3>
 <p>The Slurmrestd daemon acts as an
