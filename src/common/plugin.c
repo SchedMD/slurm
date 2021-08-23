@@ -106,6 +106,7 @@ plugin_peek( const char *fq_path,
 	plugin_handle_t plug;
 	char *type;
 	uint32_t *version;
+	uint32_t mask = 0xffffff;
 
 	plug = dlopen( fq_path, RTLD_LAZY );
 	if ( plug == NULL ) {
@@ -123,10 +124,14 @@ plugin_peek( const char *fq_path,
 		return SLURM_ERROR;
 	}
 
+	/* SPANK plugins need to only match major and minor */
+	if (xstrcmp(type, "spank"))
+		mask = 0xffff00;
+
 	version = (uint32_t *) dlsym(plug, PLUGIN_VERSION);
 	if (!version) {
 		verbose("%s: plugin_version symbol not defined", fq_path);
-	} else if (*version != SLURM_VERSION_NUMBER) {
+	} else if ((*version & mask) != (SLURM_VERSION_NUMBER & mask)) {
 		int plugin_major, plugin_minor, plugin_micro;
 		plugin_major = SLURM_VERSION_MAJOR(*version);
 		plugin_minor = SLURM_VERSION_MINOR(*version);

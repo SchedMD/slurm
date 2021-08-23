@@ -40,6 +40,8 @@ documents those changes that are of interest to users and administrators.
     would hang forever. This bug was only introduced in 21.08.0rc2.
  -- Only print \r\n for logging messages on stderr when --pty has been
     explicitly requested.
+ -- Relax check on SPANK plugins to only require Slurm major + minor versions
+    to match.
 
 * Changes in Slurm 21.08.0rc2
 =============================
