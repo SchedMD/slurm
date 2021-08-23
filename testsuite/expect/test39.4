@@ -64,12 +64,9 @@ if {[regexp "Submitted batch job ($number)" $output - job_id]} {
 #
 # Specify 1 node and more GPUs than exist on a single node
 #
-set output [run_command_output -xfail -subtest "$sbatch --gpus-per-node=$gpu_cnt --gres=[expr $gpu_cnt + 1] -N1 --output=/dev/null -t1 --wrap $bin_hostname"]
-if {$major < 21} {
-	subtest {[regexp "sbatch: error: Batch job submission failed: Invalid generic resource \\(gres\\) specification" $output]} "Job should be rejected at submit time"
-} else {
-	subtest {[regexp "sbatch: _get_next_gres: Invalid GRES job specification" $output]} "Job should be rejected at submit time"
-}
+set output [run_command_output -xfail -subtest "$sbatch --gpus-per-node=$gpu_cnt --gres=gpu:[expr $gpu_cnt + 1] -N1 --output=/dev/null -t1 --wrap $bin_hostname"]
+subtest {[regexp "sbatch: error: Batch job submission failed: Requested node configuration is not available" $output]} "Job should be rejected at submit time"
+
 if {[regexp "Submitted batch job ($number)" $output - job_id]} {
 	lappend job_id_list $job_id
 }
