@@ -2801,11 +2801,13 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 					      step_specs->step_het_grps)) {
 				error("%s: bad het group given", __func__);
 				FREE_NULL_BITMAP(het_grp_bits);
+				delete_step_record(job_ptr, step_ptr);
 				return ESLURM_INTERCONNECT_FAILURE;
 			}
 			if ((first_bit = bit_ffs(het_grp_bits)) == -1) {
 				error("%s: no components given from srun for hetstep %pS",
 				      __func__, step_ptr);
+				delete_step_record(job_ptr, step_ptr);
 				return ESLURM_INTERCONNECT_FAILURE;
 			}
 			/* The het step might not start on the 0 component. */
@@ -2847,8 +2849,10 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 			tmp_step_layout_used = true;
 		} else {
 
-			if (!het_step_ptr->switch_job)
+			if (!het_step_ptr->switch_job) {
+				delete_step_record(job_ptr, step_ptr);
 				return ESLURM_INTERCONNECT_FAILURE;
+			}
 
 			switch_g_duplicate_jobinfo(het_step_ptr->switch_job,
 						   &step_ptr->switch_job);
@@ -2876,8 +2880,10 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
                        step_layout->node_cnt = job_ptr->node_cnt;
                        tmp_step_layout_used = true;
                } else {
-                       if (!het_step_ptr->switch_job)
+                       if (!het_step_ptr->switch_job) {
+			       delete_step_record(job_ptr, step_ptr);
                                return ESLURM_INTERCONNECT_FAILURE;
+		       }
 
                        switch_g_duplicate_jobinfo(het_step_ptr->switch_job,
                                                   &step_ptr->switch_job);
@@ -2916,8 +2922,10 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 	if (tmp_step_layout_used)
 		xfree(step_layout->node_list);
 
-	if ((ret_code = _step_alloc_lps(step_ptr)))
+	if ((ret_code = _step_alloc_lps(step_ptr))) {
+		delete_step_record(job_ptr, step_ptr);
 		return ret_code;
+	}
 
 	*new_step_record = step_ptr;
 
