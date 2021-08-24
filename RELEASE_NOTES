@@ -116,6 +116,8 @@ HIGHLIGHTS
     compatibility with SPANK plugins compiled against older version of Slurm.
  -- SPANK plugins are now required to match the current Slurm version, and must
     be recompiled for each new Slurm release.
+ -- SLURM_NODE_ALIASES now has brackets around the node's address to be able to
+    distinguish IPv6 addresses. e.g. <node_name>:[<node_addr>]:<node_hostname>
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
