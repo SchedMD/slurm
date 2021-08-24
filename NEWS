@@ -42,6 +42,9 @@ documents those changes that are of interest to users and administrators.
     explicitly requested.
  -- Relax check on SPANK plugins to only require Slurm major + minor versions
     to match.
+ -- job_container/tmpfs - delegate handling of /dev/shm to the extern step
+    so new step launches will be attached correctly even after the slurmd
+    process has been restarted.
 
 * Changes in Slurm 21.08.0rc2
 =============================
