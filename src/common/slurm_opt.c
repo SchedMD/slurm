@@ -6001,7 +6001,8 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 		xstrfmtcat(job_desc->mem_per_tres, "gres:gpu:%"PRIu64,
 			   opt_local->mem_per_gpu);
 
-	job_desc->name = xstrdup(opt_local->job_name);
+	if (set_defaults || slurm_option_isset(opt_local, "name"))
+		job_desc->name = xstrdup(opt_local->job_name);
 
 	job_desc->network = xstrdup(opt_local->network);
 
