@@ -6129,7 +6129,8 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	job_desc->warn_signal = opt_local->warn_signal;
 	job_desc->warn_time = opt_local->warn_time;
 
-	job_desc->work_dir = xstrdup(opt_local->chdir);
+	if (set_defaults || slurm_option_isset(opt_local, "chdir"))
+		job_desc->work_dir = xstrdup(opt_local->chdir);
 
 	if (opt_local->cpus_set) {
 		job_desc->bitflags |= JOB_CPUS_SET;
