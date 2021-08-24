@@ -5987,7 +5987,8 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 
 	job_desc->licenses = xstrdup(opt_local->licenses);
 
-	job_desc->mail_type = opt_local->mail_type;
+	if (set_defaults || slurm_option_isset(opt_local, "mail_type"))
+		job_desc->mail_type = opt_local->mail_type;
 
 	job_desc->mail_user = xstrdup(opt_local->mail_user);
 
