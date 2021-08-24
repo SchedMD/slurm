@@ -1474,7 +1474,16 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 			  NO_VAL16))
 			req_tpc = job_ptr->details->mc_ptr->threads_per_core;
 
-		if (req_tpc != NO_VAL16) {
+		/*
+		 * Only process this differently if the allocation requested
+		 * more threads per core than the step is requesting as
+		 * job_resrcs->cpu_array_value is already processed with the
+		 * threads per core the allocation requested so you don't need
+		 * to do this again. See src/common/job_resources.c
+		 * build_job_resources_cpu_array().
+		 */
+		if ((req_tpc != NO_VAL16) &&
+		    (req_tpc < job_ptr->job_resrcs->threads_per_core)) {
 			int first_inx = bit_ffs(job_resrcs_ptr->node_bitmap);
 			if (first_inx == -1) {
 				error("%s: Job %pJ doesn't have any nodes in it! This should never happen",
@@ -2654,7 +2663,7 @@ extern int step_create(job_step_create_request_msg_t *step_specs,
 				     step_specs->ntasks_per_tres,
 				     step_specs->min_nodes,
 				     &step_gres_list,
-				     job_ptr->gres_list_alloc, job_ptr->job_id,
+				     job_ptr->gres_list_req, job_ptr->job_id,
 				     NO_VAL, &step_specs->num_tasks,
 				     &step_specs->cpu_count, err_msg);
 	if (i != SLURM_SUCCESS) {
