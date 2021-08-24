@@ -2710,44 +2710,6 @@ static void _restore_job_accounting(void)
 	list_iterator_destroy(job_iterator);
 }
 
-/*
- * NOTE: Can be removed in/after 21.08 because the controller won't need to
- * build details->depend_list from the dependency string anymore because in
- * 20.02 the depend_list is state saved and doesn't rely on the dependency
- * string anymore.
- */
-extern int restore_job_dependencies(void)
-{
-	job_record_t *job_ptr;
-	ListIterator job_iterator;
-	int error_code = SLURM_SUCCESS, rc;
-	char *new_depend;
-	slurmctld_lock_t job_fed_lock = {.job = WRITE_LOCK, .fed = READ_LOCK};
-
-	lock_slurmctld(job_fed_lock);
-
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		if ((job_ptr->details == NULL) ||
-		    (job_ptr->details->dependency == NULL) ||
-		    job_ptr->details->depend_list)
-			continue;
-		new_depend = job_ptr->details->dependency;
-		job_ptr->details->dependency = NULL;
-		rc = update_job_dependency(job_ptr, new_depend);
-		if (rc != SLURM_SUCCESS) {
-			error("Invalid dependencies discarded for %pJ: %s",
-				job_ptr, new_depend);
-			error_code = rc;
-		}
-		xfree(new_depend);
-	}
-	list_iterator_destroy(job_iterator);
-	unlock_slurmctld(job_fed_lock);
-
-	return error_code;
-}
-
 /* Flush accounting information on this cluster, then for each running or
  * suspended job, restore its state in the accounting system */
 static void _acct_restore_active_jobs(void)

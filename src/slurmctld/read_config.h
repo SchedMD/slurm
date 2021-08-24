@@ -69,12 +69,6 @@ extern void cluster_rec_free(void);
  */
 extern int read_slurm_conf(int recover, bool reconfig);
 
-/*
- * Build depend_list for every job and submit remote dependencies to siblings.
- * This function must be called after fed_mgr_init().
- */
-extern int restore_job_dependencies(void);
-
 extern int dump_config_state_lite(void);
 extern int load_config_state_lite(void);
 

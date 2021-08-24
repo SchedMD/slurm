@@ -1740,61 +1740,6 @@ int slurm_get_peer_addr(int fd, slurm_addr_t * slurm_address)
  * slurm_addr_t pack routines
 \**********************************************************************/
 
-/* slurm_pack_slurm_addr_array
- * packs an array of slurm_addrs into a buffer (pre-20.11 protocol)
- * OUT slurm_address	- slurm_addr_t to pack
- * IN size_val  	- how many to pack
- * IN/OUT buffer	- buffer to pack the slurm_addr_t from
- * returns		- Slurm error code
- */
-void slurm_pack_slurm_addr_array(slurm_addr_t *slurm_address,
-				 uint32_t size_val, buf_t *buffer)
-{
-	int i = 0;
-	uint32_t nl = htonl(size_val);
-	pack32(nl, buffer);
-
-	for (i = 0; i < size_val; i++) {
-		slurm_pack_slurm_addr(slurm_address + i, buffer);
-	}
-
-}
-
-/* slurm_unpack_slurm_addr_array
- * unpacks an array of slurm_addrs from a buffer (pre-20.11 protocol)
- * OUT slurm_address	- slurm_addr_t to unpack to
- * IN size_val  	- how many to unpack
- * IN/OUT buffer	- buffer to upack the slurm_addr_t from
- * returns		- Slurm error code
- */
-int slurm_unpack_slurm_addr_array(slurm_addr_t **slurm_address,
-				  uint32_t *size_val, buf_t *buffer)
-{
-	int i = 0;
-	uint32_t nl;
-
-	*slurm_address = NULL;
-	safe_unpack32(&nl, buffer);
-	if (nl > NO_VAL)
-		goto unpack_error;
-	*size_val = ntohl(nl);
-	*slurm_address = xcalloc(*size_val, sizeof(slurm_addr_t));
-
-	for (i = 0; i < *size_val; i++) {
-		if (slurm_unpack_slurm_addr_no_alloc((*slurm_address) + i,
-						     buffer))
-			goto unpack_error;
-
-	}
-	return SLURM_SUCCESS;
-
-unpack_error:
-	xfree(*slurm_address);
-	*slurm_address = NULL;
-	return SLURM_ERROR;
-}
-
-
 /* slurm_pack_addr_array
  * packs an array of slurm_addrs into a buffer
  * OUT addr_array	- slurm_addr_t[] to pack

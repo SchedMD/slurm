@@ -147,9 +147,7 @@ _step_connect(const char *directory, const char *nodename,
 	struct sockaddr_un addr;
 	char *name = NULL, *pos = NULL;
 	uint32_t stepid = step_id->step_id;
-	bool old_id_tied = false;
 
-try_old_id:
 	xstrfmtcatat(name, &pos, "%s/%s_%u.%u",
 		     directory, nodename, step_id->job_id, stepid);
 	if (step_id->step_het_comp != NO_VAL)
@@ -184,28 +182,10 @@ try_old_id:
 		      __func__, name);
 		if (errno == ECONNREFUSED && running_in_slurmd()) {
 			_handle_stray_socket(name);
-			/*
-			 * NOTE: Checking against NO_VAL can be removed after 21.08
-			 */
-			if ((step_id->step_id == SLURM_BATCH_SCRIPT) ||
-			    (step_id->step_id == NO_VAL))
+
+			if (step_id->step_id == SLURM_BATCH_SCRIPT)
 				_handle_stray_script(directory,
 						     step_id->job_id);
-		}
-
-		/* NOTE: This code can be removed after 21.08 */
-		if (errno == ENOENT && !old_id_tied &&
-		    ((step_id->step_id == SLURM_BATCH_SCRIPT) ||
-		     (step_id->step_id == SLURM_EXTERN_CONT))) {
-			debug("%s: Try to use old step_id", __func__);
-			close(fd);
-			if (stepid == SLURM_BATCH_SCRIPT)
-				stepid = NO_VAL;
-			else
-				stepid = INFINITE;
-			pos = name;
-			old_id_tied = true;
-			goto try_old_id;
 		}
 
 		xfree(name);

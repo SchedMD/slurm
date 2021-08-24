@@ -226,37 +226,9 @@ static int _unpack_job_state(job_failures_t **job_pptr, buf_t *buffer,
 
 	job_fail_ptr = xmalloc(sizeof(job_failures_t));
 
-	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		if (slurm_unpack_addr_no_alloc(&job_fail_ptr->callback_addr,
 					       buffer))
-			goto unpack_error;
-		safe_unpack32(&job_fail_ptr->callback_flags, buffer);
-		safe_unpack16(&job_fail_ptr->callback_port, buffer);
-		safe_unpack32(&job_fail_ptr->job_id, buffer);
-		safe_unpack32(&job_fail_ptr->fail_node_cnt, buffer);
-		safe_xcalloc(job_fail_ptr->fail_node_cpus,
-			     job_fail_ptr->fail_node_cnt, sizeof(uint32_t));
-		safe_xcalloc(job_fail_ptr->fail_node_names,
-		             job_fail_ptr->fail_node_cnt, sizeof(char *));
-		for (i = 0; i < job_fail_ptr->fail_node_cnt; i++) {
-			safe_unpack32(&job_fail_ptr->fail_node_cpus[i], buffer);
-			safe_unpackstr_xmalloc(
-				&job_fail_ptr->fail_node_names[i], &dummy32,
-				buffer);
-		}
-		job_fail_ptr->magic = FAILURE_MAGIC;
-		safe_unpack16(&job_fail_ptr->pending_job_delay, buffer);
-		safe_unpack32(&job_fail_ptr->pending_job_id, buffer);
-		safe_unpackstr_xmalloc(&job_fail_ptr->pending_node_name,
-				       &dummy32, buffer);
-		safe_unpack32(&job_fail_ptr->replace_node_cnt, buffer);
-		safe_unpack32(&job_fail_ptr->time_extend_avail, buffer);
-		safe_unpack32(&job_fail_ptr->user_id, buffer);
-		_job_fail_log(job_fail_ptr);
-		*job_pptr = job_fail_ptr;
-	} else if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
-		if (slurm_unpack_slurm_addr_no_alloc(
-			&job_fail_ptr->callback_addr, buffer))
 			goto unpack_error;
 		safe_unpack32(&job_fail_ptr->callback_flags, buffer);
 		safe_unpack16(&job_fail_ptr->callback_port, buffer);

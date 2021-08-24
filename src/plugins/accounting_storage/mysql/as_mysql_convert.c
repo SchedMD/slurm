@@ -41,7 +41,6 @@
 
 /*
  * Any time you have to add to an existing convert update this number.
- * NOTE: 8 was the first version of 20.02.
  * NOTE: 9 was the first version of 20.11.
  * NOTE: 10 was the first version of 21.08.
  */
@@ -140,18 +139,6 @@ static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 {
 	int rc = SLURM_SUCCESS;
 	char *query = NULL;
-
-	if (db_curr_ver < 8) {
-		/*
-		 * Change the names pack_job_id and pack_job_offset to be het_*
-		 */
-		query = xstrdup_printf(
-			"alter table \"%s_%s\" "
-			"change pack_job_id het_job_id int unsigned not null, "
-			"change pack_job_offset het_job_offset "
-			"int unsigned not null;",
-			cluster_name, job_table);
-	}
 
 	if (query) {
 		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);

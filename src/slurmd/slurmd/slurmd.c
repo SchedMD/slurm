@@ -809,8 +809,6 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 		memcpy(&msg->step_id[n], &stepd->step_id,
 		       sizeof(msg->step_id[n]));
 
-		/* NOTE: This conversion can be removed after 21.08 */
-		convert_old_step_id(&stepd->step_id.step_id);
 		if (stepd->step_id.step_id == SLURM_BATCH_SCRIPT) {
 			debug("%s: found apparently running job %u",
 			      __func__, stepd->step_id.job_id);

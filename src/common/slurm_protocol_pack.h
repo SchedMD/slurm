@@ -123,14 +123,6 @@ extern int unpack_step_id_members(slurm_step_id_t *msg, buf_t *buffer,
 extern int unpack_step_id(slurm_step_id_t **msg_ptr, buf_t *buffer,
 			  uint16_t protocol_version);
 
-/*
- * Remove these 2 functions pack_old_step_id and convert_old_step_id 2 versions
- * after 20.11.  They are only here for convenience and will no longer be needed
- * after 2 versions after 20.11.
- */
-extern void pack_old_step_id(uint32_t step_id, buf_t *buffer);
-extern void convert_old_step_id(uint32_t *step_id);
-
 extern void slurm_pack_selected_step(void *in, uint16_t protocol_version,
 				     buf_t *buffer);
 extern int slurm_unpack_selected_step(slurm_selected_step_t **step,

@@ -409,7 +409,7 @@ extern void pack_cron_entry(void *in, uint16_t protocol_version,
 	if (!set)
 		return;
 
-	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		pack32(entry->flags, buffer);
 		pack_bit_str_hex(entry->minute, buffer);
 		pack_bit_str_hex(entry->hour, buffer);
@@ -440,7 +440,7 @@ extern int unpack_cron_entry(void **entry_ptr, uint16_t protocol_version,
 	entry = xmalloc(sizeof(*entry));
 	*entry_ptr = entry;
 
-	if (protocol_version >= SLURM_20_11_PROTOCOL_VERSION) {
+	if (protocol_version >= SLURM_MIN_PROTOCOL_VERSION) {
 		safe_unpack32(&entry->flags, buffer);
 		unpack_bit_str_hex(&entry->minute, buffer);
 		unpack_bit_str_hex(&entry->hour, buffer);

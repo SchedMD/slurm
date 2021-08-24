@@ -1,4 +1,4 @@
-RELEASE NOTES FOR SLURM VERSION 21.08
+RELEASE NOTES FOR SLURM VERSION 22.05
 
 IMPORTANT NOTES:
 If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
@@ -6,179 +6,26 @@ If using the slurmdbd (Slurm DataBase Daemon) you must update this first.
 NOTE: If using a backup DBD you must start the primary first to do any
 database conversion, the backup will not start until this has happened.
 
-The 21.08 slurmdbd will work with Slurm daemons of version 20.02 and above.
+The 22.05 slurmdbd will work with Slurm daemons of version 20.11 and above.
 You will not need to update all clusters at the same time, but it is very
 important to update slurmdbd first and having it running before updating
 any other clusters making use of it.
 
-Slurm can be upgraded from version 20.02 or 20.11 to version 21.08 without loss
+Slurm can be upgraded from version 20.11 or 21.08 to version 22.05 without loss
 of jobs or other state information. Upgrading directly from an earlier version
 of Slurm will result in loss of state information.
 
 If using SPANK plugins that use the Slurm APIs, they should be recompiled when
 upgrading Slurm to a new major release.
 
-NOTE: If upgrading from < 20.11.
-      In the database the AllocGres and ReqGres columns have been removed as
-      they are duplicates for those using AccountingStorageTRES.  If you use
-      these columns please make sure to backup this information since it will
-      be lost and set up AccountingStorageTRES with your GRES to be able to
-      get equivalent information out of AllocTRES and ReqTRES after upgrade.
-
 HIGHLIGHTS
 ==========
- -- Removed gres/mic plugin used to support Xeon Phi coprocessors.
- -- Add LimitFactor to the QOS. A float that is factored into an associations
-    GrpTRES limits.  For example, if the LimitFactor is 2, then an association
-    with a GrpTRES of 30 CPUs, would be allowed to allocate 60 CPUs when
-    running under this QOS.
- -- A job's next_step_id counter now resets to 0 after being requeued.
-    Previously, the step id's would continue from the job's last run.
- -- API change: Removed slurm_kill_job_msg and modified the function signature
-    for slurm_kill_job2. slurm_kill_job2 should be used instead of
-    slurm_kill_job_msg.
- -- AccountingStoreFlags=job_script allows you to store the job's batch script.
- -- AccountingStoreFlags=job_env allows you to store the job's env vars.
- -- configure: the --with option handling has been made consistent across the
-    various optional libraries. Specifying --with-foo=/path/to/foo will only
-    check that directory for the applicable library (rather than, in some cases,
-    falling back to the default directories), and will always error the build
-    if the library is not found (instead of a mix of error messages and non-
-    fatal warning messages).
- -- configure: replace --with-rmsi_dir option with proper handling for
-    --with-rsmi=dir.
- -- Removed sched/hold plugin.
- -- cli_filter/lua, jobcomp/lua, job_submit/lua now load their scripts from the
-    same directory as the slurm.conf file (and thus now will respect changes
-    to the SLURM_CONF environment variable).
- -- SPANK - call slurm_spank_init if defined without slurm_spank_slurmd_exit in
-    slurmd context.
- -- Add new 'PLANNED' state to a node to represent when the backfill scheduler
-    has it planned to be used in the future instead of showing as 'IDLE'.
-    sreport also has changed it's cluster utilization report column name from
-    'Reserved' to 'Planned' to match this nomenclature.
- -- Put node into "INVAL" state upon registering with an invalid node
-    configuration. Node must register with a valid configuration to continue.
- -- Remove SLURM_DIST_LLLP environment variable in favor of just
-    SLURM_DISTRIBUTION.
- -- Make --cpu-bind=threads default for --threads-per-core -- cli and env can
-    override.
- -- slurmd - allow multiple comma-separated controllers to be specified in
-    configless mode with --conf-server
- -- configure - add --with-systemdsystemunitdir option to automatically install
-    the Slurm unit files.
- -- Manually powering down of nodes with scontrol now ignores
-    SuspendExc<Nodes|Parts>.
- -- Distinguish queued reboot requests (REBOOT@) from issued reboots (REBOOT^).
- -- auth/jwt - add support for RS256 tokens. Also permit the username in the
-    'username' field in addition to the 'sun' (Slurm UserName) field.
- -- service files - change dependency to network-online rather than just
-    network to ensure DNS and other services are available.
- -- Add "Extra" field to node to store extra information other than a comment.
- -- Add ResumeTimeout, SuspendTimeout and SuspendTime to Partitions.
- -- The memory.force_empty parameters is no longer set by jobacct_gather/cgroup
-    when deleting the cgroup. This previously caused a significant delay (~2s)
-    when terminating a job, and is not believed to have provided any perceivable
-    benefit. However, this may lead to slightly higher reported kernel mem page
-    cache usage since the kernel cgroup memory is no longer freed immediately.
- -- TaskPluginParam=verbose is now treated as a default. Previously it would be
-    applied regardless of the job specifying a --cpu-bind.
- -- Add "node_reg_mem_percent" SlurmctldParameter to define percentage of
-    memory nodes are allowed to register with.
- -- Define and separate node power state transitions. Previously a powering
-    down node was in both states, POWERING_OFF and POWERED_OFF. These are now
-    separated.
-    e.g.
-       IDLE+POWERED_OFF (IDLE~)
-    -> IDLE+POWERING_UP (IDLE#)   - Manual power up or allocation
-    -> IDLE
-    -> IDLE+POWER_DOWN (IDLE!)    - Node waiting for power down
-    -> IDLE+POWERING_DOWN (IDLE%) - Node powering down
-    -> IDLE+POWERED_OFF (IDLE~)   - Powered off
- -- Some node state flag names have changed. These would be noticeable for
-    example if using a state flag to filter nodes with sinfo.
-    e.g.
-    POWER_UP -> POWERING_UP
-    POWER_DOWN -> POWERED_DOWN
-    POWER_DOWN now represents a node pending power down
- -- Create a new process called slurmscriptd which runs PrologSlurmctld and
-    EpilogSlurmctld. This avoids fork() calls from slurmctld, and can avoid
-    performance issues if the slurmctld has a large memory footprint.
- -- Pass JSON of job to node mappings to ResumeProgram.
- -- QOS accrue limits only apply to the job QOS, not partition QOS.
- -- Any return code from SPANK plugin or SPANK function that is not
-    SLURM_SUCCESS (zero) will be considered to be an error. Previously, only
-    negative return codes were considered an error.
- -- Add support for automatically detecting and broadcasting executable shared
-    object dependencies for sbcast and srun --bcast.
- -- All SPANK error codes now start at 3000. Where previously SPANK would give
-    a return code of 1, it will now return 3000. This change will break ABI
-    compatibility with SPANK plugins compiled against older version of Slurm.
- -- SPANK plugins are now required to match the current Slurm version, and must
-    be recompiled for each new Slurm release.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
- -- Errors detected in the parser handlers due to invalid configurations are now
-    propagated and can lead to fatal (and thus exit) the calling process.
- -- Enforce a valid configuration for AccountingStorageEnforce in slurm.conf.
-    If the configuration is invalid, then an error message will be printed and
-    the command or daemon (including slurmctld) will not run.
- -- Removed AccountingStoreJobComment option.  Please update your config to use
-    AccountingStoreFlags=job_comment instead.
- -- Removed DefaultStorage{Host,Loc,Pass,Port,Type,User} options.
- -- Removed CacheGroups, CheckpointType, JobCheckpointDir, MemLimitEnforce,
-    SchedulerPort, SchedulerRootFilter options.
- -- Added Script DebugFlags for debugging slurmscriptd (the process that runs
-    slurmctld scripts such as PrologSlurmctld and EpilogSlurmctld).
- -- Rename SbcastParameters to BcastParameters.
- -- systemd service files - add new '-s' option to each daemon which will
-    change the working directory even with the -D option. (Ensures any core
-    files are placed in an accessible location, rather than /.)
- -- Added BcastParameters=send_libs and BcastExclude options.
- -- Remove the (incomplete) burst_buffer/generic plugin.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
- -- Changed the --format handling for negative field widths (left justified)
-    to apply to the column headers as well as the printed fields.
- -- Invalidate multiple partition requests when using partition based
-    associations.
- -- --cpus-per-task and --threads-per-core now imply --exact.
-    This fixes issues where steps would be allocated the wrong number of CPUs.
- -- scrontab - create the temporary file under the TMPDIR environment variable
-    (if set), otherwise continue to use TmpFS as configured in slurm.conf.
- -- sbcast / srun --bcast - removed support for zlib compression. lz4 is vastly
-    superior in performance, and (counter-intuitively) zlib could provide worse
-    performance than no compression at all on many systems.
- -- sacctmgr - changed column headings to "ParentID" and "ParentName" instead
-    of "Par ID" and "Par Name" respectively.
- -- SALLOC_THREADS_PER_CORE and SBATCH_THREADS_PER_CORE have been added as
-    input environment variables for salloc and sbatch, respectively. They do
-    the same thing as --threads-per-core.
- -- Don't display node's comment with "scontrol show nodes" unless set.
- -- Added SLURM_GPUS_ON_NODE environment variable within each job/step.
- -- sreport - change to sorting TopUsage by the --tres option.
- -- slurmrestd - do not run allow operation as SlurmUser/root by default.
- -- "scontrol show node" now shows State as base_state+flags instead of
-    shortened state with flags appended. eg. IDLE# -> IDLE+POWERING_UP.
-    Also "POWER" state flag string is "POWERED_DOWN".
- -- scrontab - add ability to update crontab from a file or standard input.
- -- scrontab - added ability to set and expand variables.
- -- Make srun sensitive to BcastParameters.
- -- Added sbcast/srun --send-libs, sbcast --exclude and srun --bcast-exclude.
- -- Changed ReqMem field in sacct to match memory from ReqTRES. It now shows
-    the requested memory of the whole job with a letter appended indicating
-    units (M for megabytes, G for gigabytes, etc.). ReqMem is only displayed for
-    the job, since the step does not have requested TRES. Previously ReqMem
-    was also displayed for the step but was just displaying ReqMem for the job.
 
 API CHANGES
 ===========
- -- jobcomp plugin: change plugin API to jobcomp_p_*().
- -- sched plugin: change plugin API to sched_p_*() and remove
-    slurm_sched_p_initial_priority() call.
- -- step_ctx code has been removed from the api.
- -- slurm_stepd_get_info()/stepd_get_info() has been removed from the api.
- -- The v0.0.35 OpenAPI plugin has now been marked as deprecated.
-    Please convert your requests to the v0.0.37 OpenAPI plugin.
