@@ -41,6 +41,13 @@ documents those changes that are of interest to users and administrators.
     and it is less than what the core on the node has in the allocation.
  -- Fix issue where a step could request more gres than the job had and the step
     would hang forever. This bug was only introduced in 21.08.0rc2.
+ -- Only print \r\n for logging messages on stderr when --pty has been
+    explicitly requested.
+ -- Relax check on SPANK plugins to only require Slurm major + minor versions
+    to match.
+ -- job_container/tmpfs - delegate handling of /dev/shm to the extern step
+    so new step launches will be attached correctly even after the slurmd
+    process has been restarted.
 
 * Changes in Slurm 21.08.0rc2
 =============================

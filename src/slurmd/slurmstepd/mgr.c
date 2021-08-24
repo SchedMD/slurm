@@ -961,6 +961,19 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	int rc = SLURM_SUCCESS;
 	uint32_t jobid;
 
+#ifdef HAVE_NATIVE_CRAY
+	if (job->het_job_id && (job->het_job_id != NO_VAL))
+		jobid = job->het_job_id;
+	else
+		jobid = job->step_id.job_id;
+#else
+	jobid = job->step_id.job_id;
+#endif
+	if (container_g_stepd_create(jobid, job->uid)) {
+		error("%s: container_g_stepd_create(%u): %m", __func__, jobid);
+		return SLURM_ERROR;
+	}
+
 	debug2("%s: Before call to spank_init()", __func__);
 	if (spank_init(job) < 0) {
 		error("%s: Plugin stack initialization failed.", __func__);
@@ -1045,14 +1058,6 @@ static int _spawn_job_container(stepd_step_rec_t *job)
 	jobacct_id.job    = job;
 	jobacct_gather_set_proctrack_container_id(job->cont_id);
 	jobacct_gather_add_task(pid, &jobacct_id, 1);
-#ifdef HAVE_NATIVE_CRAY
-	if (job->het_job_id && (job->het_job_id != NO_VAL))
-		jobid = job->het_job_id;
-	else
-		jobid = job->step_id.job_id;
-#else
-	jobid = job->step_id.job_id;
-#endif
 	container_g_add_cont(jobid, job->cont_id);
 
 	_set_job_state(job, SLURMSTEPD_STEP_RUNNING);

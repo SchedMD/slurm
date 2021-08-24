@@ -86,4 +86,9 @@ extern int container_g_restore(char * dir_name, bool recover);
 /* Note change in configuration (e.g. "DebugFlag=JobContainer" set) */
 extern void container_g_reconfig(void);
 
+/* Create a container for the specified job, actions run in slurmstepd */
+extern int container_g_stepd_create(uint32_t job_id, uid_t uid);
+
+/* Delete the container for the specified job, actions run in slurmstepd */
+extern int container_g_stepd_delete(uint32_t job_id);
 #endif /* _JOB_CONTAINER_PLUGIN_H_ */
