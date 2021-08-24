@@ -34,6 +34,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix step allocation memory when using --threads-per-core.
  -- Fix step allocations to consume all threads on a core when using
     threads-per-core.
+ -- Add check to validate cpu request on a step if --threads-per-core is given
+    and it is less than what the core on the node has in the allocation.
 
 * Changes in Slurm 21.08.0rc2
 =============================

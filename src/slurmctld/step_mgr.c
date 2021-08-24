@@ -1458,7 +1458,39 @@ static bitstr_t *_pick_step_nodes(job_record_t *job_ptr,
 	if (step_spec->cpu_count && job_ptr->job_resrcs &&
 	    (job_ptr->job_resrcs->cpu_array_cnt == 1) &&
 	    (job_ptr->job_resrcs->cpu_array_value)) {
-		i = (step_spec->cpu_count +
+		uint32_t cpu_count = step_spec->cpu_count;
+		uint16_t req_tpc = NO_VAL16;
+
+		/*
+		 * Expand cpu account to account for blocked/used threads when
+		 * using threads-per-core. See _step_[de]alloc_lps() for similar
+		 * code.
+		 */
+		if (step_spec->threads_per_core &&
+		    (step_spec->threads_per_core != NO_VAL16))
+			req_tpc = step_spec->threads_per_core;
+		else if (job_ptr->details->mc_ptr->threads_per_core &&
+			 (job_ptr->details->mc_ptr->threads_per_core !=
+			  NO_VAL16))
+			req_tpc = job_ptr->details->mc_ptr->threads_per_core;
+
+		if (req_tpc != NO_VAL16) {
+			int first_inx = bit_ffs(job_resrcs_ptr->node_bitmap);
+			if (first_inx == -1) {
+				error("%s: Job %pJ doesn't have any nodes in it! This should never happen",
+				      __func__, job_ptr);
+				*return_code = ESLURM_INVALID_NODE_COUNT;
+				goto cleanup;
+			}
+			if (req_tpc < node_record_table_ptr[first_inx].vpus) {
+				cpu_count += req_tpc - 1;
+				cpu_count /= req_tpc;
+				cpu_count *=
+					node_record_table_ptr[first_inx].vpus;
+			}
+		}
+
+		i = (cpu_count +
 		     (job_ptr->job_resrcs->cpu_array_value[0] - 1)) /
 		    job_ptr->job_resrcs->cpu_array_value[0];
 		step_spec->min_nodes = (i > step_spec->min_nodes) ?
