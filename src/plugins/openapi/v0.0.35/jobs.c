@@ -412,7 +412,7 @@ static job_desc_msg_t *_parse_job_desc(const data_t *job, data_t *errors,
 		goto cleanup;
 	}
 
-	req = slurm_opt_create_job_desc(&opt);
+	req = slurm_opt_create_job_desc(&opt, !update_only);
 	if (!update_only)
 		req->task_dist = SLURM_DIST_UNKNOWN;
 

@@ -559,7 +559,10 @@ extern char *slurm_option_get_argv_str(const int argc, char **argv);
 
 /*
  * Return a job_desc_msg_t based on slurm_opt_t.
+ * IN set_defaults - If true, sets default values for struct members. If false,
+ *   all values will be their no value state (either NULL or NO_VAL equiv).
  */
-extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local);
+extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
+						 bool set_defaults);
 
 #endif	/* _SLURM_OPT_H_ */

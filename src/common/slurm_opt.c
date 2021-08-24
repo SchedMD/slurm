@@ -5904,7 +5904,8 @@ extern char *slurm_option_get_argv_str(const int argc, char **argv)
 	return submit_line;
 }
 
-extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local)
+extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
+						 bool set_defaults)
 {
 	job_desc_msg_t *job_desc = xmalloc_nz(sizeof(*job_desc));
 	List tmp_gres_list = NULL;

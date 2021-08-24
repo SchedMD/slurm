@@ -726,7 +726,7 @@ int slurmctld_msg_init(void)
 static job_desc_msg_t *_job_desc_msg_create_from_opts(slurm_opt_t *opt_local)
 {
 	srun_opt_t *srun_opt = opt_local->srun_opt;
-	job_desc_msg_t *j = slurm_opt_create_job_desc(opt_local);
+	job_desc_msg_t *j = slurm_opt_create_job_desc(opt_local, true);
 
 	if (!j) {
 		return NULL;

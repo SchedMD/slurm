@@ -205,7 +205,7 @@ int main(int argc, char **argv)
 		local_env = xmalloc(sizeof(sbatch_env_t));
 		memcpy(local_env, &het_job_env, sizeof(sbatch_env_t));
 
-		desc = slurm_opt_create_job_desc(&opt);
+		desc = slurm_opt_create_job_desc(&opt, true);
 		if (_fill_job_desc_from_opts(desc) == -1)
 			exit(error_exit);
 		if (!first_desc)
