@@ -6036,9 +6036,12 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 
 	job_desc->power_flags = opt_local->power;
 
-	if (opt_local->hold)
-		job_desc->priority = 0;
-	else if (opt_local->priority)
+	if (slurm_option_isset(opt_local, "hold")) {
+		if (opt_local->hold)
+			job_desc->priority = 0;
+		else
+			job_desc->priority = INFINITE;
+	} else if (opt_local->priority)
 		job_desc->priority = opt_local->priority;
 
 	job_desc->profile = opt_local->profile;
