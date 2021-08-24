@@ -31,6 +31,9 @@ documents those changes that are of interest to users and administrators.
  -- On slurmctld restart set node typed GRES counts correctly.
  -- Fix places where a step wasn't allocated in the slurmctld but wasn't ever
     removed from the job.
+ -- Fix step allocation memory when using --threads-per-core.
+ -- Fix step allocations to consume all threads on a core when using
+    threads-per-core.
 
 * Changes in Slurm 21.08.0rc2
 =============================

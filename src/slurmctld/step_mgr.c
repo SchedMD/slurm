@@ -1853,15 +1853,20 @@ static int _pick_step_cores(step_record_t *step_ptr,
 	return SLURM_SUCCESS;
 }
 
-static bool _use_one_thread_per_core(job_record_t *job_ptr)
+static bool _use_one_thread_per_core(step_record_t *step_ptr)
 {
+	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
 
-	if ((job_resrcs_ptr->whole_node != 1) &&
-	    (slurm_conf.select_type_param & (CR_CORE | CR_SOCKET)) &&
-	    (job_ptr->details &&
-	     (job_ptr->details->cpu_bind_type != NO_VAL16) &&
-	     (job_ptr->details->cpu_bind_type & CPU_BIND_ONE_THREAD_PER_CORE)))
+	if ((step_ptr->threads_per_core == 1) ||
+	    ((step_ptr->threads_per_core == NO_VAL16) &&
+	     (job_ptr->details->mc_ptr->threads_per_core == 1)) ||
+	    ((job_resrcs_ptr->whole_node != 1) &&
+	     (slurm_conf.select_type_param & (CR_CORE | CR_SOCKET)) &&
+	     (job_ptr->details &&
+	      (job_ptr->details->cpu_bind_type != NO_VAL16) &&
+	      (job_ptr->details->cpu_bind_type &
+	       CPU_BIND_ONE_THREAD_PER_CORE))))
 		return true;
 	return false;
 }
@@ -1871,12 +1876,13 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 {
 	job_record_t *job_ptr = step_ptr->job_ptr;
 	job_resources_t *job_resrcs_ptr = job_ptr->job_resrcs;
-	int cpus_alloc;
+	int cpus_alloc, cpus_alloc_mem;
 	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
 	bool first_step_node = true, pick_step_cores = true;
 	uint32_t rem_nodes;
 	int rc = SLURM_SUCCESS;
+	uint16_t req_tpc = NO_VAL16;
 
 	xassert(job_resrcs_ptr);
 	xassert(job_resrcs_ptr->cpus);
@@ -1889,6 +1895,13 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	i_last  = bit_fls(job_resrcs_ptr->node_bitmap);
 	if (i_first == -1)	/* empty bitmap */
 		return rc;
+
+	if (step_ptr->threads_per_core &&
+	    (step_ptr->threads_per_core != NO_VAL16))
+		req_tpc = step_ptr->threads_per_core;
+	else if (job_ptr->details->mc_ptr->threads_per_core &&
+		 (job_ptr->details->mc_ptr->threads_per_core != NO_VAL16))
+		req_tpc = job_ptr->details->mc_ptr->threads_per_core;
 
 	xassert(job_resrcs_ptr->core_bitmap);
 	xassert(job_resrcs_ptr->core_bitmap_used);
@@ -1936,15 +1949,38 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		 * If whole allocate all cpus here instead of just the ones
 		 * requested
 		 */
+		if (first_step_node)
+			step_ptr->cpu_count = 0;
+
 		if (step_ptr->flags & SSF_WHOLE) {
-			cpus_alloc = job_resrcs_ptr->cpus[job_node_inx];
-			if (first_step_node)
-				step_ptr->cpu_count = 0;
-			step_ptr->cpu_count += cpus_alloc;
-		} else
-			cpus_alloc =
+			cpus_alloc_mem = cpus_alloc =
+				job_resrcs_ptr->cpus[job_node_inx];
+		} else {
+			uint16_t cpus_per_task = step_ptr->cpus_per_task;
+			uint16_t vpus = node_record_table_ptr[i_node].vpus;
+
+			cpus_alloc_mem = cpus_alloc =
 				step_ptr->step_layout->tasks[step_node_inx] *
-				step_ptr->cpus_per_task;
+				cpus_per_task;
+
+			/*
+			 * If we are doing threads per core we need the whole
+			 * core allocated even though we are only using what was
+			 * requested. Don't worry about cpus_alloc_mem, it's
+			 * already correct.
+			 */
+			if ((req_tpc != NO_VAL16) && (req_tpc < vpus)) {
+				cpus_alloc += req_tpc - 1;
+				cpus_alloc /= req_tpc;
+				cpus_alloc *= vpus;
+			}
+
+			/*
+			 * TODO: We need ntasks-per-* sent to the ctld to make
+			 * more decisions on allocation cores.
+			 */
+		}
+		step_ptr->cpu_count += cpus_alloc;
 
 		job_resrcs_ptr->cpus_used[job_node_inx] += cpus_alloc;
 		gres_ctld_step_alloc(step_ptr->gres_list_req,
@@ -1969,7 +2005,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			if (step_ptr->pn_min_memory & MEM_PER_CPU) {
 				mem_use = step_ptr->pn_min_memory;
 				mem_use &= (~MEM_PER_CPU);
-				mem_use *= cpus_alloc;
+				mem_use *= cpus_alloc_mem;
 			} else {
 				mem_use = step_ptr->pn_min_memory;
 			}
@@ -1989,7 +2025,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			 *
 			 * TODO: move cpus_per_core to slurm_step_layout_t
 			 */
-			if (!_use_one_thread_per_core(job_ptr) &&
+			if (!_use_one_thread_per_core(step_ptr) &&
 			    (!(node_record_table_ptr[i_node].cpus ==
 			      (node_record_table_ptr[i_node].tot_sockets *
 			       node_record_table_ptr[i_node].cores)))) {
@@ -2085,6 +2121,7 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 	int cpus_alloc;
 	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
+	uint16_t req_tpc = NO_VAL16;
 
 	xassert(job_resrcs_ptr);
 	if (!job_resrcs_ptr) {
@@ -2111,6 +2148,13 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		      __func__, job_ptr);
 	}
 
+	if (step_ptr->threads_per_core &&
+	    (step_ptr->threads_per_core != NO_VAL16))
+		req_tpc = step_ptr->threads_per_core;
+	else if (job_ptr->details->mc_ptr->threads_per_core &&
+		 (job_ptr->details->mc_ptr->threads_per_core != NO_VAL16))
+		req_tpc = job_ptr->details->mc_ptr->threads_per_core;
+
 	for (i_node = i_first; i_node <= i_last; i_node++) {
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i_node))
 			continue;
@@ -2122,9 +2166,30 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 			fatal("_step_dealloc_lps: node index bad");
 		if (step_ptr->flags & SSF_WHOLE)
 			cpus_alloc = job_resrcs_ptr->cpus[job_node_inx];
-		else
-			cpus_alloc = step_ptr->step_layout->tasks[step_node_inx] *
-				step_ptr->cpus_per_task;
+		else {
+			uint16_t cpus_per_task = step_ptr->cpus_per_task;
+			uint16_t vpus = node_record_table_ptr[i_node].vpus;
+
+			cpus_alloc =
+				step_ptr->step_layout->tasks[step_node_inx] *
+				cpus_per_task;
+
+			/*
+			 * If we are doing threads per core we need the whole
+			 * core allocated even though we are only using what was
+			 * requested.
+			 */
+			if ((req_tpc != NO_VAL16) && (req_tpc < vpus)) {
+				cpus_alloc += req_tpc - 1;
+				cpus_alloc /= req_tpc;
+				cpus_alloc *= vpus;
+			}
+
+			/*
+			 * TODO: We need ntasks-per-* sent to the ctld to make
+			 * more decisions on allocation cores.
+			 */
+		}
 		if (job_resrcs_ptr->cpus_used[job_node_inx] >= cpus_alloc) {
 			job_resrcs_ptr->cpus_used[job_node_inx] -= cpus_alloc;
 		} else {
@@ -3036,7 +3101,7 @@ extern slurm_step_layout_t *step_layout_create(step_record_t *step_ptr,
 			 * of cpus available if we only want to run 1
 			 * thread per core.
 			 */
-			if (_use_one_thread_per_core(job_ptr)) {
+			if (_use_one_thread_per_core(step_ptr)) {
 				uint16_t threads;
 				threads = node_ptr->config_ptr->threads;
 

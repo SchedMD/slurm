@@ -161,6 +161,10 @@ extern int build_job_resources_cpu_array(job_resources_t *job_resrcs_ptr)
 		if (!bit_test(job_resrcs_ptr->node_bitmap, i))
 			continue;
 
+		/*
+		 * This needs to be the threads per core count to handle
+		 * allocations correctly.
+		 */
 		node_cpu_count = job_resources_get_node_cpu_cnt(
 			job_resrcs_ptr, j, i);
 
@@ -176,7 +180,8 @@ extern int build_job_resources_cpu_array(job_resources_t *job_resrcs_ptr)
 			job_resrcs_ptr->cpu_array_reps[
 				job_resrcs_ptr->cpu_array_cnt-1]++;
 		}
-		cpu_count += last_cpu_cnt;
+		/* This needs to be the full amount for accounting */
+		cpu_count += job_resrcs_ptr->cpus[j];
 		j++;
 	}
 	return cpu_count;
