@@ -17899,30 +17899,16 @@ extern void init_depend_policy(void)
 		             "disable_remote_singleton")) ?
 		true : false;
 
-	/*
-	 * kill_invalid_depend and max_depend_depth are moving from
-	 * SchedulerParameters to DependencyParameters. Support both for 20.02,
-	 * then remove them from SchedulerParameters in a future release.
-	 */
-	if (xstrcasestr(slurm_conf.sched_params, "kill_invalid_depend")) {
-		info("kill_invalid_depend is deprecated in SchedulerParameters and moved to DependencyParameters");
-		kill_invalid_dep = true;
-	} else
-		kill_invalid_dep =
-			(xstrcasestr(slurm_conf.dependency_params,
-			             "kill_invalid_depend")) ?
-			true : false;
+	kill_invalid_dep =
+		(xstrcasestr(slurm_conf.dependency_params,
+			     "kill_invalid_depend")) ?
+		true : false;
 
 	/* 			    01234567890123456 */
 	if ((tmp_ptr = xstrcasestr(slurm_conf.dependency_params,
 	                           "max_depend_depth=")))
 		_parse_max_depend_depth(tmp_ptr + 17);
-	/* 			         01234567890123456 */
-	else if ((tmp_ptr = xstrcasestr(slurm_conf.sched_params,
-	                                "max_depend_depth="))) {
-		info("max_depend_depth is deprecated in SchedulerParameters and moved to DependencyParameters");
-		_parse_max_depend_depth(tmp_ptr + 17);
-	} else
+	else
 		max_depend_depth = 10;
 
 	log_flag(DEPENDENCY, "%s: kill_invalid_depend is set to %d; disable_remote_singleton is set to %d; max_depend_depth is set to %d",
