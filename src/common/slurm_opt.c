@@ -6021,14 +6021,15 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	/* other_port not filled in here */
 
 	if (opt_local->overcommit) {
-		job_desc->min_cpus = MAX(opt_local->min_nodes, 1);
+		if (set_defaults || (opt_local->min_nodes > 0))
+			job_desc->min_cpus = MAX(opt_local->min_nodes, 1);
 		job_desc->overcommit = opt_local->overcommit;
 	} else if (opt_local->cpus_set)
 		job_desc->min_cpus =
 			opt_local->ntasks * opt_local->cpus_per_task;
 	else if (opt_local->nodes_set && (opt_local->min_nodes == 0))
 		job_desc->min_cpus = 0;
-	else
+	else if (set_defaults)
 		job_desc->min_cpus = opt_local->ntasks;
 
 	job_desc->partition = xstrdup(opt_local->partition);
