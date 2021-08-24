@@ -102,41 +102,9 @@ if {[archive_load $sql_query]} {
 }
 
 # Test sacctmgr show runawayjobs
-set list_job 0
-spawn $sacctmgr show -i runawayjobs $cluster
-expect {
-	-re "NOTE: Runaway jobs" {
-		set list_job 1
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$list_job != 1} {
-	fail "sacctmgr did not find any runaway jobs when it should have"
-}
+set output [run_command_output -fail "$sacctmgr show -i runawayjobs $cluster"]
+subtest {[regexp "NOTE: Runaway jobs" $output]} "sacctmgr should detect runaway jobs"
 
 # Check that jobs were fixed
-set list_job 0
-spawn $sacctmgr show -i runawayjobs $cluster
-expect {
-	-re "No runaway jobs found" {
-		set list_job 1
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$list_job != 1} {
-	fail "sacctmgr found runaway jobs when it should not have"
-}
+set output [run_command_output -fail "$sacctmgr show -i runawayjobs $cluster"]
+subtest {[regexp "No runaway jobs found" $output]} "sacctmgr should NOT detect runaway jobs"
