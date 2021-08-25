@@ -1123,6 +1123,10 @@ When LaunchParameters=use_interactive_step is enabled, launching salloc will
 automatically start an srun process with InteractiveStepOptions to launch
 a terminal on a node in the job allocation.
 The default value is "\-\-interactive \-\-preserve\-env \-\-pty $SHELL".
+The "\-\-interactive" option is intentionally not documented in the srun man
+page. It is meant only to be used in \fBInteractiveStepOptions\fR in order to
+create an "interactive step" that will not consume resources so that other
+steps may run in parallel with the interactive step.
 
 .TP
 \fBJobAcctGatherType\fR
