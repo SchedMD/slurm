@@ -55,12 +55,11 @@ NOTE: You will need to install this configuration file on all nodes of the clust
 </ul></li>
 <li>Start the <i>slurmctld</i> and <i>slurmd</i> daemons.</li>
 </ol>
-<p>NOTE: Items 3 through 8 can be replaced with
+<p>NOTE: Items 3 through 8 can be replaced with</p>
 <ol>
 <li><code>rpmbuild -ta slurm*.tar.bz2</code></li>
 <li><code>rpm --install &lt;the rpm files&gt;</code></li>
 </ol>
-</p>
 
 <p>FreeBSD administrators should see the <a href="#FreeBSD">FreeBSD</a> section below.</p>
 
@@ -139,7 +138,7 @@ present. Build dependencies for various plugins and commands are denoted below:
 <li> <b>sview</b> The sview command will be built only if <i>gtk+-2.0</i>
 		is installed.</li>
 </ul>
-Please see the <a href="download.html">Download</a> page for references to
+<p>Please see the <a href="download.html">Download</a> page for references to
 required software to build these plugins.</p>
 
 <p>To build RPMs directly, copy the distributed tarball into a directory
@@ -164,7 +163,7 @@ Some macro definitions that may be used in building Slurm include:
 <dt>with_ssl
 <dd>Specifies SSL library installation location
 </dl>
-<p>An example .rpmmacros file:
+<p>An example .rpmmacros file:</p>
 <pre>
 # .rpmmacros
 # Override some RPM macros from /usr/lib/rpm/macros
@@ -175,7 +174,7 @@ Some macro definitions that may be used in building Slurm include:
 %_sysconfdir       %{_prefix}/etc/slurm
 %_defaultdocdir    %{_prefix}/doc
 %with_munge        "--with-munge=/opt/munge"
-</pre></p>
+</pre>
 
 <h3 id="rpms">RPMs Installed<a class="slurm_link" href="#rpms"></a></h3>
 
