@@ -1674,6 +1674,8 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 					break;
 			}
 			debug2("    MIG count: %u", mig_count);
+			if (mig_count == 0)
+				fatal("MIG mode is enabled, but no MIG devices were found. Please either create MIG instances, disable MIG mode, remove AutoDetect=nvml, or remove GPUs from the configuration completely.");
 
 			for (unsigned int j = 0; j < mig_count; j++) {
 				nvml_mig_t nvml_mig = { 0 };
