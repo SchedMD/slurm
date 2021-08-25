@@ -1994,7 +1994,9 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			step_ptr->cpu_count = 0;
 
 		if (step_ptr->flags & SSF_WHOLE) {
-			cpus_alloc_mem = cpus_alloc =
+			cpus_alloc_mem =
+				job_resrcs_ptr->cpu_array_value[job_node_inx];
+			cpus_alloc =
 				job_resrcs_ptr->cpus[job_node_inx];
 		} else {
 			uint16_t cpus_per_task = step_ptr->cpus_per_task;
