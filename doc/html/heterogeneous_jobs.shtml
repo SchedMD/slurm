@@ -688,7 +688,7 @@ per processor while another task needs all the available GPUs on a node with
 only one processor. This can be accomplished like this:
 
 <pre>
-$ salloc -N2 --exclusive
+$ salloc -N2 --exclusive --gpus=10
 salloc: Granted job allocation 61034
 $ srun -N1 -n4 --gpus=4 printenv SLURMD_NODENAME : -N1 -n1 --gpus=6 printenv SLURMD_NODENAME
 node02
@@ -776,6 +776,6 @@ Such a situation will have an adverse effect upon scheduling other jobs,
 especially other heterogeneous jobs.</p>
 
 
-<p style="text-align:center;">Last modified 26 May 2021</p>
+<p style="text-align:center;">Last modified 29 September 2021</p>
 
 <!--#include virtual="footer.txt"-->
