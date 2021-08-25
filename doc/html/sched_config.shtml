@@ -78,7 +78,24 @@ expected execution time.
 The backfill plugin will set the expected start time for pending jobs setting
 these reserved nodes into a <B>'Planned'</B> state. A job's
 expected start time can be seen using the <b>squeue --start</b> command.
+For performance reasons, the backfill scheduler reserves whole nodes for jobs,
+even if jobs don't require whole nodes.
 </P>
+
+<P>The scheduling logic builds a sorted list of job-partition pairs. Jobs
+submitted to multiple partitions will have as many entries in the list as
+requested partitions. By default, the backfill scheduler may evaluate all the
+job-partition pairs for a single job, potentially reserving resources for each
+pair, but only starting the job in the reservation offering the earliest start
+time.</P>
+
+<P>Having a single job reserving resources for multiple partitions could impede
+other jobs (or hetjob components) from reserving resources already reserved for
+the partitions that don't offer the earliest start time.
+A single job that requests multiple partitions can also prevent itself
+from starting earlier in a lower priority partition if the partitions overlap
+nodes and a backfill reservation in the higher priority partition blocks nodes
+that are also in the lower priority partition.</P>
 
 <P>Backfill scheduling is difficult without reasonable time limit estimates
 for jobs, but some configuration parameters that can help.</P>
@@ -115,6 +132,14 @@ in each backfill cycle. Default value is 0 (no limit).</LI>
 scheduling in each backfill cycle. Default value is 100 jobs.</LI>
 <LI><B>bf_max_job_user=#</B> - Maximum number of jobs to initiate per user
 in each backfill cycle. Default value is 0 (no limit).</LI>
+<LI><B>bf_one_resv_per_job</B> - Disallow adding more than one backfill
+reservation per job. This option makes it so that a job submitted to multiple
+partitions will stop reserving resources once the first job-partition pair
+has booked a backfill reservation. Subsequent pairs from the same job will
+only be tested to start now. This allows for other jobs to be able to book the
+other pairs resources at the cost of not guaranteeing that the multi-partition
+job will start in the partition offering the earliest start time (unless it
+can start immediately). This option is disabled by default.</LI>
 <LI><B>bf_resolution=#</B> - Time resolution of backfill scheduling.
 Default value is 60 seconds.
 Larger values are appropriate if job time limits are imprecise and/or
@@ -142,6 +167,6 @@ the locks are relinquished in microseconds. The default value is 500,000
 microseconds (0.5 seconds).  </LI>
 </UL>
 
-<p style="text-align:center;">Last modified 10 November 2020</p>
+<p style="text-align:center;">Last modified 20 October 2021</p>
 
 <!--#include virtual="footer.txt"-->

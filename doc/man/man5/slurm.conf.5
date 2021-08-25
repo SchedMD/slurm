@@ -2986,22 +2986,25 @@ Default: bf_max_job_test, Min: 2, Max: 2,000,000.
 .TP
 \fBbf_one_resv_per_job\fR
 Disallow adding more than one backfill reservation per job.
-The scheduling logic builds a sorted list of (job, partition) pairs. Jobs
+The scheduling logic builds a sorted list of job-partition pairs. Jobs
 submitted to multiple partitions have as many entries in the list as requested
 partitions. By default, the backfill scheduler may evaluate all the
-(job, partition) entries for a single job, potentially reserving resources for
+job-partition entries for a single job, potentially reserving resources for
 each pair, but only starting the job in the reservation offering the earliest
 start time.
 Having a single job reserving resources for multiple partitions could impede
 other jobs (or hetjob components) from reserving resources already reserved for
-the reservations related to the partitions that don't offer the earliest start
-time.
+the partitions that don't offer the earliest start time.
+A single job that requests multiple partitions can also prevent itself from
+starting earlier in a lower priority partition if the partitions overlap
+nodes and a backfill reservation in the higher priority partition blocks nodes
+that are also in the lower priority partition.
 This option makes it so that a job submitted to multiple partitions will stop
-reserving resources once the first (job, partition) pair has booked a backfill
+reserving resources once the first job-partition pair has booked a backfill
 reservation. Subsequent pairs from the same job will only be tested to start
 now. This allows for other jobs to be able to book the other pairs resources at
 the cost of not guaranteeing that the multi partition job will start in the
-partition offering the earliest start time (except if it can start now).
+partition offering the earliest start time (unless it can start immediately).
 This option is disabled by default.
 
 .TP
