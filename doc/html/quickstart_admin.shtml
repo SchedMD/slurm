@@ -71,7 +71,7 @@ NOTE: You will need to install this configuration file on all nodes of the clust
 See the README and INSTALL files in the source distribution for more details.
 </p>
 <ol>
-<li>Unpack the distributed tarball:</br>
+<li>Unpack the distributed tarball:<br>
 <code>tar -xaf slurm*tar.bz2</code>
 <li><code>cd</code> to the directory containing the Slurm source and type
 <code>./configure</code> with appropriate options (see below).</li>
