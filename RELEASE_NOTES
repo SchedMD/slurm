@@ -15,8 +15,8 @@ Slurm can be upgraded from version 20.02 or 20.11 to version 21.08 without loss
 of jobs or other state information. Upgrading directly from an earlier version
 of Slurm will result in loss of state information.
 
-If using SPANK plugins that use the Slurm APIs, they should be recompiled when
-upgrading Slurm to a new major release.
+All SPANK plugins must be recompiled when upgrading from any Slurm version
+prior to 21.08.
 
 NOTE: If upgrading from < 20.11.
       In the database the AllocGres and ReqGres columns have been removed as
@@ -114,8 +114,9 @@ HIGHLIGHTS
  -- All SPANK error codes now start at 3000. Where previously SPANK would give
     a return code of 1, it will now return 3000. This change will break ABI
     compatibility with SPANK plugins compiled against older version of Slurm.
- -- SPANK plugins are now required to match the current Slurm version, and must
-    be recompiled for each new Slurm release.
+ -- SPANK plugins are now required to match the current Slurm release, and
+    must be recompiled for each new Slurm major release. (They do not need
+    to be recompiled when upgrading between maintenance releases.)
  -- SLURM_NODE_ALIASES now has brackets around the node's address to be able to
     distinguish IPv6 addresses. e.g. <node_name>:[<node_addr>]:<node_hostname>
 
