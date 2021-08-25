@@ -61,6 +61,7 @@
 #include "slurm/slurm.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 /*
@@ -165,6 +166,7 @@ proctrack_p_wait(uint64_t cont_id)
 {
 	pid_t pgid = (pid_t)cont_id;
 	int delay = 1;
+	time_t start = time(NULL);
 
 	if (cont_id == 0 || cont_id == 1) {
 		slurm_seterrno(EINVAL);
@@ -173,16 +175,17 @@ proctrack_p_wait(uint64_t cont_id)
 
 	/* Spin until the process group is gone. */
 	while (killpg(pgid, 0) == 0) {
-		proctrack_p_signal(cont_id, SIGKILL);
-		sleep(delay);
-		if (delay < 120) {
-			delay *= 2;
-		} else {
-			error("%s: Unable to destroy container %"PRIu64" "
-			      "in pgid plugin, giving up after %d sec",
-			      __func__, cont_id, delay);
+		time_t now = time(NULL);
+
+		if (now > (start + slurm_conf.unkillable_timeout)) {
+			error("Unable to destroy container %"PRIu64" in pgid plugin, giving up after %lu sec",
+			      cont_id, (now - start));
 			break;
 		}
+		proctrack_p_signal(cont_id, SIGKILL);
+		sleep(delay);
+		if (delay < 32)
+			delay *= 2;
 	}
 
 	return SLURM_SUCCESS;

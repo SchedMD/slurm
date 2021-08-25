@@ -49,6 +49,7 @@
 #include "src/common/log.h"
 #include "src/common/xstring.h"
 #include "src/common/cgroup.h"
+#include "src/common/read_config.h"
 #include "src/slurmd/common/xcpuinfo.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
@@ -237,6 +238,7 @@ extern bool proctrack_p_has_pid(uint64_t cont_id, pid_t pid)
 extern int proctrack_p_wait(uint64_t cont_id)
 {
 	int delay = 1;
+	time_t start = time(NULL);
 
 	if (cont_id == 0 || cont_id == 1) {
 		errno = EINVAL;
@@ -246,15 +248,17 @@ extern int proctrack_p_wait(uint64_t cont_id)
 	/* Spin until the container is successfully destroyed */
 	/* This indicates that all tasks have exited the container */
 	while (proctrack_p_destroy(cont_id) != SLURM_SUCCESS) {
-		proctrack_p_signal(cont_id, SIGKILL);
-		sleep(delay);
-		if (delay < 120) {
-			delay *= 2;
-		} else {
-			error("Unable to destroy container %"PRIu64" in cgroup plugin, giving up after %d sec",
-			      cont_id, delay);
+		time_t now = time(NULL);
+
+		if (now > (start + slurm_conf.unkillable_timeout)) {
+			error("Unable to destroy container %"PRIu64" in cgroup plugin, giving up after %lu sec",
+			      cont_id, (now - start));
 			break;
 		}
+		proctrack_p_signal(cont_id, SIGKILL);
+		sleep(delay);
+		if (delay < 32)
+			delay *= 2;
 	}
 
 	return SLURM_SUCCESS;

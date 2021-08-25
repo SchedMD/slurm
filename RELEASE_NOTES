@@ -15,8 +15,8 @@ Slurm can be upgraded from version 20.11 or 21.08 to version 22.05 without loss
 of jobs or other state information. Upgrading directly from an earlier version
 of Slurm will result in loss of state information.
 
-If using SPANK plugins that use the Slurm APIs, they should be recompiled when
-upgrading Slurm to a new major release.
+All SPANK plugins must be recompiled when upgrading from any Slurm version
+prior to 22.05.
 
 HIGHLIGHTS
 ==========

@@ -48,6 +48,9 @@ documents those changes that are of interest to users and administrators.
  -- job_container/tmpfs - delegate handling of /dev/shm to the extern step
     so new step launches will be attached correctly even after the slurmd
     process has been restarted.
+ -- Limit the wait time in proctrack_g_wait() to UnkillableStepTimeout instead
+    of a hardcoded value of 256 seconds, and limit the delay between tests to a
+    maximum of 32 seconds.
 
 * Changes in Slurm 21.08.0rc2
 =============================
