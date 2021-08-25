@@ -182,18 +182,20 @@ Some macro definitions that may be used in building Slurm include:
 by configuration, but here is a suggested starting point:
 <ul>
 <li>Head Node (where the slurmctld daemon runs),<br>
-    Compute and Login Nodes</li>
+    Compute and Login Nodes
 	<ul>
 	<li>slurm</li>
 	<li>slurm-perlapi</li>
 	<li>slurm-slurmctld (only on the head node)</li>
 	<li>slurm-slurmd (only on the compute nodes)</li>
 	</ul>
-<li>SlurmDBD Node</li>
+</li>
+<li>SlurmDBD Node
 	<ul>
 	<li>slurm</li>
 	<li>slurm-slurmdbd</li>
 	</ul>
+</li>
 </ul>
 
 <h2 id="daemons">Daemons<a class="slurm_link" href="#daemons"></a></h2>
