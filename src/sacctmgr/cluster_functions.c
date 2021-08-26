@@ -198,8 +198,9 @@ static int _set_rec(int *start, int argc, char **argv,
 					MAX(command_len, 2))) {
 			if (*(argv[i]+end) == '\0' &&
 			    (option == '+' || option == '-')) {
-				printf(" You didn't specify any features to %s\n",
-				       (option == '-') ? "remove" : "add");
+				fprintf(stderr,
+					" You didn't specify any features to %s\n",
+					(option == '-') ? "remove" : "add");
 				exit_code = 1;
 				break;
 			}
