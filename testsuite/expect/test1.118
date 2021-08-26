@@ -77,6 +77,7 @@ proc mutual_error_tests {} {
 	}
 
 	# Test srun --hint only with works with --cpu-bind=verbose
+	set client $srun
 	set options [list "--cpu-bind=threads" "--cpu-bind=threads,verbose"]
 	set error "--hint and --cpu-bind (other than --cpu-bind=verbose) are mutually exclusive."
 	foreach option $options {
