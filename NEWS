@@ -4,6 +4,9 @@ documents those changes that are of interest to users and administrators.
 * Changes in Slurm 22.05.0pre1
 ==============================
 
+* Changes in Slurm 21.08.1
+==========================
+
 * Changes in Slurm 21.08.0
 ==========================
  -- Restored --gpu-bind=single:<ntasks> to check core affinity like
