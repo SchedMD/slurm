@@ -33,14 +33,19 @@ proc cleanup {} {
 }
 
 proc check_error {client option prog error} {
-	global sbatch salloc srun test_id
+	global sbatch salloc srun test_id number job_id
 	set cmd "$client -v -H -Jtest$test_id -t1 --hint=nomultithread $option $prog"
 
+	set job_id 0
 	set matches 0
 	set pid [spawn {*}$cmd]
 	expect {
 		-ex "$error" {
 			incr matches
+			exp_continue
+		}
+		-re "job ($number)" {
+			set job_id $expect_out(1,string)
 		}
 		timeout {
 			fail "$client not responding"
@@ -50,6 +55,7 @@ proc check_error {client option prog error} {
 		}
 	}
 	subtest {$matches == 1} "Submission should return '$error'"
+	cancel_job $job_id
 }
 
 
