@@ -21,7 +21,7 @@ AC_DEFUN([X_AC_HTTP_PARSER], [
 	AC_ARG_WITH(
 		[http_parser],
 		AS_HELP_STRING(--with-http-parser=PATH,Specify path to HTTP Parser installation),
-		[AS_IF([test "x$with_http_parser" != xno && "x$with_http_parser" != xyes],
+		[AS_IF([test "x$with_http_parser" != xno && test "x$with_http_parser" != xyes],
 		       [_x_ac_http_parser_dirs="$with_http_parser"])])
 
 	if [test "x$with_http_parser" = xno]; then
