@@ -13,6 +13,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix statement condition in http_parser autoconf macro.
  -- Fix statement condition in netloc autoconf macro.
  -- Add --gpu-bind=none to disable gpu binding when using --gpus-per-task.
+ -- Handle the burst buffer state "alloc-revoke" which previously would not
+    display in the job correctly.
 
 * Changes in Slurm 21.08.0
 ==========================
