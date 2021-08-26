@@ -4596,6 +4596,10 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 		conf->prolog_flags = 0;
 	}
 
+	if (xstrstr(conf->job_container_plugin, "tmpfs") &&
+	    !(conf->prolog_flags & PROLOG_FLAG_CONTAIN))
+		fatal("PrologFlags=Contain is required for use with job_container/tmpfs");
+
 	if (!s_p_get_uint16(&conf->propagate_prio_process,
 			"PropagatePrioProcess", hashtbl)) {
 		conf->propagate_prio_process = PROP_PRIO_OFF;
