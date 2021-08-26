@@ -7952,7 +7952,8 @@ _copy_job_desc_to_file(job_desc_msg_t * job_desc, uint32_t job_id)
 
 	START_TIMER;
 
-	if (!job_desc->environment || job_desc->env_size == 0) {
+	if (!job_desc->container &&
+	    (!job_desc->environment || job_desc->env_size == 0)) {
 		error("%s: batch job cannot run without an environment",
 		      __func__);
 		return ESLURM_ENVIRONMENT_MISSING;

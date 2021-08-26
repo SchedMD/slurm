@@ -2247,7 +2247,7 @@ static batch_job_launch_msg_t *_build_launch_job_msg(job_record_t *job_ptr,
 						  job_ptr->spank_job_env);
 	launch_msg_ptr->environment = get_job_env(job_ptr,
 						  &launch_msg_ptr->envc);
-	if (launch_msg_ptr->environment == NULL) {
+	if (!launch_msg_ptr->container && !launch_msg_ptr->environment) {
 		fail_why = "Unable to load job environment";
 		goto job_failed;
 	}
