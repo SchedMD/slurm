@@ -4708,6 +4708,10 @@ got_sql:
 	if (error_code != SLURM_SUCCESS) {
 unpack_error:
 		error("Couldn't load old data");
+		if (error_code == SLURM_SUCCESS) {
+			/* This happens on unpack_error */
+			error_code = SLURM_ERROR;
+		}
 		goto cleanup;
 	}
 
