@@ -64,7 +64,7 @@ proc mutual_error_tests {} {
 
 	set clients [list "$sbatch" "$salloc" "$srun"]
 	set options [list "--threads-per-core=1" "--ntasks-per-core=1" "-B1"]
-	set error "Following options are mutually exclusive: --hint, --ntasks-per-core, --threads-per-core, -B."
+	set error "Following options are mutually exclusive with --hint: --ntasks-per-core, --threads-per-core, -B and --cpu-bind (other then --cpu-bind=verbose). Ignoring --hint."
 
 	foreach client $clients {
 		set prog "hostname"
@@ -79,7 +79,6 @@ proc mutual_error_tests {} {
 	# Test srun --hint only with works with --cpu-bind=verbose
 	set client $srun
 	set options [list "--cpu-bind=threads" "--cpu-bind=threads,verbose"]
-	set error "--hint and --cpu-bind (other than --cpu-bind=verbose) are mutually exclusive."
 	foreach option $options {
 		check_error $client $option "hostname" $error
 	}
