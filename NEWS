@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Print federation and cluster sacctmgr error messages to stderr.
  -- Fix off by one error in --gpu-bind=mask_gpu.
  -- Fix statement condition in http_parser autoconf macro.
+ -- Fix statement condition in netloc autoconf macro.
 
 * Changes in Slurm 21.08.0
 ==========================
