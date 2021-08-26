@@ -4534,16 +4534,147 @@ extern int as_mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 	return rc;
 }
 
-extern int as_mysql_jobacct_process_archive_load(
-	mysql_conn_t *mysql_conn, slurmdb_archive_rec_t *arch_rec)
+static int _load_data(char **data, mysql_conn_t *mysql_conn)
 {
-	char *data = NULL, *cluster_name = NULL;
+	int rc;
+
+	xassert(data);
+
+	if (!*data) {
+		error("No data to load");
+		return SLURM_ERROR;
+	}
+
+	if (slurm_conf.debug_flags & DEBUG_FLAG_DB_ARCHIVE)
+		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", *data);
+
+	rc = mysql_db_query_check_after(mysql_conn, *data);
+	xfree(*data);
+
+	if (rc != SLURM_SUCCESS)
+		error("Couldn't load old data");
+
+	return rc;
+}
+
+static int _process_archive_data(char **data_in, uint32_t data_size,
+				 mysql_conn_t *mysql_conn)
+{
 	int error_code = SLURM_SUCCESS;
 	buf_t *buffer = NULL;
 	time_t buf_time;
 	uint16_t type = 0, ver = 0, period = 0;
-	uint32_t data_size = 0, rec_cnt = 0, tmp32 = 0;
+	uint32_t rec_cnt = 0, tmp32 = 0;
 	uint32_t rec_cnt_total = 0, rec_cnt_left = 0, pass_cnt = 0;
+	char *cluster_name = NULL;
+
+	xassert(data_in);
+
+	buffer = create_buf(*data_in, data_size);
+
+	safe_unpack16(&ver, buffer);
+	DB_DEBUG(DB_ARCHIVE, mysql_conn->conn,
+	         "Version in archive header is %u", ver);
+	/*
+	 * Don't verify the lower limit as we should be keeping all
+	 * older versions around here just to support super old
+	 * archive files since they don't get regenerated all the time.
+	 */
+	if (ver > SLURM_PROTOCOL_VERSION) {
+		error("***********************************************");
+		error("Can not recover archive file, incompatible version, got %u need <= %u",
+		      ver, SLURM_PROTOCOL_VERSION);
+		error("***********************************************");
+		FREE_NULL_BUFFER(buffer);
+		return EFAULT;
+	}
+	safe_unpack_time(&buf_time, buffer);
+	safe_unpack16(&type, buffer);
+	safe_unpackstr_xmalloc(&cluster_name, &tmp32, buffer);
+	safe_unpack32(&rec_cnt, buffer);
+
+	if (!rec_cnt) {
+		error("we didn't get any records from this file of type '%s'",
+		      slurmdbd_msg_type_2_str(type, 0));
+		error_code = SLURM_ERROR;
+		goto cleanup;
+	}
+
+	rec_cnt_left = rec_cnt;
+	rec_cnt_total = rec_cnt;
+	while (rec_cnt_left) {
+		char *data = NULL;
+
+		rec_cnt = MIN(rec_cnt_left, RECORDS_PER_PASS);
+
+		DB_DEBUG(DB_ARCHIVE, mysql_conn->conn,
+			 "%s: Pass %u: loaded %u/%u records. Attempting partial load %u.",
+			 __func__, pass_cnt, rec_cnt_total - rec_cnt_left,
+			 rec_cnt_total, rec_cnt);
+
+		rec_cnt_left -= rec_cnt;
+
+		switch (type) {
+		case DBD_GOT_EVENTS:
+			data = _load_events(ver, buffer, cluster_name, rec_cnt);
+			break;
+		case DBD_GOT_JOBS:
+			data = _load_jobs(ver, buffer, cluster_name, rec_cnt);
+			break;
+		case DBD_GOT_RESVS:
+			data = _load_resvs(ver, buffer, cluster_name, rec_cnt);
+			break;
+		case DBD_STEP_START:
+			data = _load_steps(ver, buffer, cluster_name, rec_cnt);
+			break;
+		case DBD_JOB_SUSPEND:
+			data = _load_suspend(ver, buffer, cluster_name,
+					     rec_cnt);
+			break;
+		case DBD_GOT_TXN:
+			data = _load_txn(ver, buffer, cluster_name, rec_cnt);
+			break;
+		case DBD_GOT_ASSOC_USAGE:
+		case DBD_GOT_WCKEY_USAGE:
+			if (pass_cnt == 0)
+				safe_unpack16(&period, buffer);
+			data = _load_usage(ver, buffer, cluster_name, type,
+					   period, rec_cnt);
+			break;
+		case DBD_GOT_CLUSTER_USAGE:
+			if (pass_cnt == 0)
+				safe_unpack16(&period, buffer);
+			data = _load_cluster_usage(ver, buffer, cluster_name,
+						   period, rec_cnt);
+			break;
+		default:
+			error("Unknown type '%u' to load from archive", type);
+			break;
+		}
+
+		if ((error_code = _load_data(&data, mysql_conn)))
+			break;
+
+		pass_cnt++;
+	}
+
+cleanup:
+	FREE_NULL_BUFFER(buffer);
+	xfree(cluster_name);
+	return error_code;
+
+unpack_error:
+	error("Error unpacking data");
+	error_code = SLURM_ERROR;
+	goto cleanup;
+}
+
+extern int as_mysql_jobacct_process_archive_load(
+	mysql_conn_t *mysql_conn, slurmdb_archive_rec_t *arch_rec)
+{
+	char *data = NULL;
+	int error_code = SLURM_SUCCESS;
+	uint32_t data_size = 0;
 
 	/* Ensure that the connection is not set in autocommit mode. */
 	xassert(mysql_conn->rollback);
@@ -4613,117 +4744,12 @@ extern int as_mysql_jobacct_process_archive_load(
 		|| !xstrncmp("drop table ", data, 11)
 		|| !xstrncmp("truncate table ", data, 15))) {
 		_process_old_sql(&data);
-		goto got_sql;
+		error_code = _load_data(&data, mysql_conn);
+	} else {
+		error_code = _process_archive_data(&data, data_size,
+						   mysql_conn);
 	}
-
-	buffer = create_buf(data, data_size);
-	data = NULL;	/* Moved to "buffer" */
-
-	safe_unpack16(&ver, buffer);
-	DB_DEBUG(DB_ARCHIVE, mysql_conn->conn,
-	         "Version in archive header is %u", ver);
-	/*
-	 * Don't verify the lower limit as we should be keeping all
-	 * older versions around here just to support super old
-	 * archive files since they don't get regenerated all the time.
-	 */
-	if (ver > SLURM_PROTOCOL_VERSION) {
-		error("***********************************************");
-		error("Can not recover archive file, incompatible version, "
-		      "got %u need <= %u", ver,
-		      SLURM_PROTOCOL_VERSION);
-		error("***********************************************");
-		FREE_NULL_BUFFER(buffer);
-		return EFAULT;
-	}
-	safe_unpack_time(&buf_time, buffer);
-	safe_unpack16(&type, buffer);
-	safe_unpackstr_xmalloc(&cluster_name, &tmp32, buffer);
-	safe_unpack32(&rec_cnt, buffer);
-
-	if (!rec_cnt) {
-		error("we didn't get any records from this file of type '%s'",
-		      slurmdbd_msg_type_2_str(type, 0));
-		goto got_sql;
-	}
-
-	rec_cnt_left = rec_cnt;
-	rec_cnt_total = rec_cnt;
-pass:
-	rec_cnt = MIN(rec_cnt_left, RECORDS_PER_PASS);
-
-	DB_DEBUG(DB_ARCHIVE, mysql_conn->conn,
-	         "%s: Pass %u: loaded %u/%u records. Attempting partial load %u.",
-	         __func__, pass_cnt, rec_cnt_total - rec_cnt_left,
-	         rec_cnt_total, rec_cnt);
-
-	rec_cnt_left -= rec_cnt;
-
-	switch (type) {
-	case DBD_GOT_EVENTS:
-		data = _load_events(ver, buffer, cluster_name, rec_cnt);
-		break;
-	case DBD_GOT_JOBS:
-		data = _load_jobs(ver, buffer, cluster_name, rec_cnt);
-		break;
-	case DBD_GOT_RESVS:
-		data = _load_resvs(ver, buffer, cluster_name, rec_cnt);
-		break;
-	case DBD_STEP_START:
-		data = _load_steps(ver, buffer, cluster_name, rec_cnt);
-		break;
-	case DBD_JOB_SUSPEND:
-		data = _load_suspend(ver, buffer, cluster_name, rec_cnt);
-		break;
-	case DBD_GOT_TXN:
-		data = _load_txn(ver, buffer, cluster_name, rec_cnt);
-		break;
-	case DBD_GOT_ASSOC_USAGE:
-	case DBD_GOT_WCKEY_USAGE:
-		if (pass_cnt == 0)
-			safe_unpack16(&period, buffer);
-		data = _load_usage(ver, buffer, cluster_name, type, period,
-				   rec_cnt);
-		break;
-	case DBD_GOT_CLUSTER_USAGE:
-		if (pass_cnt == 0)
-			safe_unpack16(&period, buffer);
-		data = _load_cluster_usage(ver, buffer, cluster_name, period,
-					   rec_cnt);
-		break;
-	default:
-		error("Unknown type '%u' to load from archive", type);
-		break;
-	}
-
-got_sql:
-	if (!data) {
-		error("No data to load");
-		error_code = SLURM_ERROR;
-		goto cleanup;
-	}
-	if (slurm_conf.debug_flags & DEBUG_FLAG_DB_ARCHIVE)
-		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", data);
-	error_code = mysql_db_query_check_after(mysql_conn, data);
-	xfree(data);
-	if (error_code != SLURM_SUCCESS) {
-unpack_error:
-		error("Couldn't load old data");
-		if (error_code == SLURM_SUCCESS) {
-			/* This happens on unpack_error */
-			error_code = SLURM_ERROR;
-		}
-		goto cleanup;
-	}
-
-	if (rec_cnt_left) {
-		pass_cnt++;
-		goto pass;
-	}
-
-cleanup:
-	xfree(cluster_name);
-	FREE_NULL_BUFFER(buffer);
+	data = NULL; /* Free'd by above functions. */
 
 	if (error_code)
 		error("%s: failure loading archive: %s", __func__,
