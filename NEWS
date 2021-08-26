@@ -51,6 +51,7 @@ documents those changes that are of interest to users and administrators.
  -- Limit the wait time in proctrack_g_wait() to UnkillableStepTimeout instead
     of a hardcoded value of 256 seconds, and limit the delay between tests to a
     maximum of 32 seconds.
+ -- fatal() on start if using job_container/tmpfs without PrologFlags=Contian.
 
 * Changes in Slurm 21.08.0rc2
 =============================

@@ -11,7 +11,8 @@ job_container.conf file to find out the configuration settings. Based on them it
 constructs a private mount namespace for the job and mounts /tmp and
 /dev/shm inside it. This gives the job a private view of /tmp and
 /dev/shm. /tmp is mounted inside a location that is specified as 'BasePath' in
-job_container.conf file.
+job_container.conf file. To make use of this plugin, 'PrologFlags=Contain' must
+be present in your \fBslurm.conf\fP file.
 
 The file location can be modified at system build time using the
 DEFAULT_SLURM_CONF parameter or at execution time by setting the SLURM_CONF
