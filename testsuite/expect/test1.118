@@ -152,3 +152,12 @@ foreach option $options {
 	cancel_job $job_id
 }
 
+# Test using --cpu-bind=verbose and --hint for salloc/srun sequence
+set output [run_command_output -subtest "$salloc --hint=nomultithread $srun --cpu-bind=verbose /bin/true"]
+subtest {[regexp  "cpu-bind=" $output]} "The output should contain line starting with cpu-bind=, indicating that --cpu-bind=verbose is in effect"
+
+set output [run_command_output -subtest "$salloc --hint=nomultithread /bin/bash -c 'SLURM_CPU_BIND=verbose $srun /bin/true'"]
+subtest {[regexp  "cpu-bind=" $output]} "The output should contain line starting with cpu-bind=, indicating that SLURM_CPU_BIND=verbose srun .. is in effect"
+
+set output [run_command_output -subtest "SLURM_CPU_BIND=verbose $salloc --hint=nomultithread $srun /bin/true"]
+subtest {[regexp  "cpu-bind=" $output]} "The output should contain line starting with cpu-bind=, indicating that SLURM_CPU_BIND=verbose srun .. is in effect"
