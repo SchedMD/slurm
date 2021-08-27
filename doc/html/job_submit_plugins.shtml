@@ -223,7 +223,6 @@ far more complex.
 It also requires access to a multitude of Slurm header files as shown in the
 procedure below.</p>
 
-<a name="job_modify_manualbuild">
 <ol>
 <li>You will need to at least partly build Slurm first. The "configure" command
 must be executed in order to build the "config.h" file in the build directory.</li>
