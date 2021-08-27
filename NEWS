@@ -6,6 +6,11 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 21.08.1
 ==========================
+ -- Fix potential memory leak if a problem happens while allocating GRES for
+    a job.
+ -- If an overallocation of GRES happens terminate the creation of a job.
+ -- AutoDetect=nvml: Fatal if no devices found in MIG mode.
+ -- slurm.spec - fix querying for PMIx and UCX version.
 
 * Changes in Slurm 21.08.0
 ==========================

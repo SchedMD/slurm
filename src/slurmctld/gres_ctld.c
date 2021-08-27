@@ -235,15 +235,6 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 	}
 
 	/*
-	 * Grab these here since node_gres_ptr->[gres|type]_cnt_alloc can change
-	 * later.
-	 */
-	pre_alloc_gres_cnt = node_gres_ptr->gres_cnt_alloc;
-	pre_alloc_type_cnt = xcalloc(node_gres_ptr->type_cnt,
-				     sizeof(*pre_alloc_type_cnt));
-	memcpy(pre_alloc_type_cnt, node_gres_ptr->type_cnt_alloc,
-	       sizeof(*pre_alloc_type_cnt) * node_gres_ptr->type_cnt);
-	/*
 	 * select/cons_tres pre-selects the resources and we just need to update
 	 * the data structures to reflect the selected GRES.
 	 */
@@ -286,8 +277,18 @@ static int _job_alloc(void *job_gres_data, List job_gres_list_alloc,
 		      gres_name, job_id, node_name,
 		      i - node_gres_ptr->gres_cnt_avail,
 		      i, node_gres_ptr->gres_cnt_avail);
-		/* proceed with request, give job what is available */
+		return SLURM_ERROR;
 	}
+
+	/*
+	 * Grab these here since node_gres_ptr->[gres|type]_cnt_alloc can change
+	 * later.
+	 */
+	pre_alloc_gres_cnt = node_gres_ptr->gres_cnt_alloc;
+	pre_alloc_type_cnt = xcalloc(node_gres_ptr->type_cnt,
+				     sizeof(*pre_alloc_type_cnt));
+	memcpy(pre_alloc_type_cnt, node_gres_ptr->type_cnt_alloc,
+	       sizeof(*pre_alloc_type_cnt) * node_gres_ptr->type_cnt);
 
 	if (!node_offset && job_gres_ptr->gres_cnt_step_alloc) {
 		uint64_t *tmp = xcalloc(job_gres_ptr->node_cnt,
