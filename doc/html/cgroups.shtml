@@ -74,7 +74,6 @@ specific plugins.</li>
 <li>System-level resource specialization is enabled using node configuration 
 parameters.</li>
 </ul>
-<a name="available"></a>
 
 <h2 id="Plugins">Currently Available Cgroup Plugins
 <a class="slurm_link" href="#Plugins"></a>
