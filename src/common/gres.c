@@ -9484,7 +9484,7 @@ static bitstr_t *_get_usable_gres_map_or_mask(char *map_or_mask,
 
 	bitmap_size = bit_size(gres_bit_alloc);
 	min = (is_map ?  0 : 1);
-	max = (is_map ? bitmap_size : ~(-1 << bitmap_size));
+	max = (is_map ? bitmap_size - 1 : ~(-1 << bitmap_size));
 	while (usable_gres == NULL) {
 		tmp = xstrdup(map_or_mask);
 		tok = strtok_r(tmp, ",", &save_ptr);
@@ -9501,7 +9501,7 @@ static bitstr_t *_get_usable_gres_map_or_mask(char *map_or_mask,
 			    (local_proc_id <= (task_offset + task_mult - 1))) {
 				value = strtol(tok, NULL, 0);
 				usable_gres = bit_alloc(bitmap_size);
-				if ((value < min) || (value >= max)) {
+				if ((value < min) || (value > max)) {
 					error("Invalid --gpu-bind= value specified.");
 					xfree(tmp);
 					goto end;	/* Bad value */
