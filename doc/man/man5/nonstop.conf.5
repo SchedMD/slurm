@@ -1,11 +1,11 @@
 .TH "nonstop.conf" "5" "Slurm Configuration File" "June 2021" "Slurm Configuration File"
 
 .SH "NAME"
-nonstop.conf \- Slurm configuration file for fault-tolerant computing.
+nonstop.conf \- Slurm configuration file for fault\-tolerant computing.
 
 .SH "DESCRIPTION"
 \fBnonstop.conf\fP is an ASCII file which describes the configuration
-used for fault-tolerant computing with Slurm using the optional
+used for fault\-tolerant computing with Slurm using the optional
 slurmctld/nonstop plugin.
 This plugin provides a means for users to notify Slurm of nodes it believes
 are suspect, replace the job's failing or failed nodes, and extend a job's
@@ -48,7 +48,7 @@ This identifies how many nodes in each partition should be maintained as
 spare resources.
 When a job fails, this pool of resources will be depleted and then replenished
 when possible using idle resources.
-The value should be a comma-delimited list of
+The value should be a comma\-delimited list of
 partition and node count pairs separated by a colon.
 
 .TP
@@ -93,14 +93,14 @@ The value may not exceed 65533 seconds.
 
 .TP
 \fBUserDrainAllow\fR
-This identifies a comma-delimited list of user names or user IDs of users who
+This identifies a comma\-delimited list of user names or user IDs of users who
 are authorized to drain nodes they believe are failing.
 Specify a value of "ALL" to permit any user to drain nodes.
 By default, no users may drain nodes using this interface.
 
 .TP
 \fBUserDrainDeny\fR
-This identifies a comma-delimited list of user names or user IDs of users who
+This identifies a comma\-delimited list of user names or user IDs of users who
 are NOT authorized to drain nodes they believe are failing.
 Specifying a value for \fBUserDrainDeny\fR implicitly allows all other users
 to drain nodes (sets the value of UserDrainAllow to "ALL").

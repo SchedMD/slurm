@@ -70,7 +70,7 @@ The percentage supplied may be expressed as floating point number, e.g. 101.5.
 Sets the cgroup soft memory limit at the allocated memory size and then sets the
 job/step hard memory limit at the (AllowedRAMSpace/100) * allocated memory. If
 the job/step exceeds the hard limit, then it might trigger Out Of Memory (OOM)
-events (including oom-kill) which will be logged to kernel log ring buffer
+events (including oom\-kill) which will be logged to kernel log ring buffer
 (dmesg in Linux). Setting AllowedRAMSpace above 100 may cause system Out of
 Memory (OOM) events as it allows job/step to allocate more memory than
 configured to the nodes.  Reducing configured node available memory to avoid
@@ -131,8 +131,8 @@ killed. This differs from the behavior when using \fBOverMemoryKill\fR,
 where just the offending process will be killed.
 
 \fBNOTE\fR: When enabled, ConstrainRAMSpace can lead to a noticeable decline in
-per-node job throughout. Sites with high-throughput requirements should
-carefully weigh the tradeoff between per-node throughput, versus potential
+per\-node job throughout. Sites with high\-throughput requirements should
+carefully weigh the tradeoff between per\-node throughput, versus potential
 problems that can arise from unconstrained memory usage on the node. See
 <https://slurm.schedmd.com/high_throughput.html> for further discussion.
 
@@ -244,9 +244,9 @@ TaskAffinity=no              #use task/affinity plugin instead
 \fB/etc/slurm/slurm.conf\fR:
 These are the entries required in \fBslurm.conf\fR to activate the cgroup
 enforcement mechanisms. Make sure that the node definitions in your
-\fBslurm.conf\fR closely match the configuration as shown by "\fBslurmd -C\fR".
+\fBslurm.conf\fR closely match the configuration as shown by "\fBslurmd \-C\fR".
 Either MemSpecLimit should be set or RealMemory should be defined with less
-than the actual amount of memory for a node to ensure that all system/non-job
+than the actual amount of memory for a node to ensure that all system/non\-job
 processes will have sufficient memory at all times. Sites should also configure
 \fBpam_slurm_adopt\fR to ensure users can not escape the cgroups via \fBssh\fR.
 

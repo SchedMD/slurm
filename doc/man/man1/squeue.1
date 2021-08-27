@@ -32,7 +32,7 @@ Without this option, the display will be optimized for use with job arrays
 array index values printed using a regular expression).
 
 .TP
-\fB\-\-array-unique\fR
+\fB\-\-array\-unique\fR
 Display one unique pending job array element per line. Without this option,
 the pending job array elements will be grouped into the master array job to
 optimize the display.  This can also be set with the environment variable
@@ -664,7 +664,7 @@ Prints the max number of nodes allocated to the job.
 Prints the MCS_label of the job.
 (Valid for jobs only)
 .TP
-\fBmem\-per-tres\fR
+\fBmem\-per\-tres\fR
 Print the memory (in MB) required per trackable resources allocated to the job
 or job step.
 .TP
@@ -1383,7 +1383,7 @@ A valid strftime() format can also be specified. For example, a value of
 \fB\-O <output_format>, \-\-Format=<output_format>\fR
 .TP
 \fBSQUEUE_LICENSES\fR
-\fB\-p-l <license_list>, \-\-license=<license_list>\fR
+\fB\-p\-l <license_list>, \-\-license=<license_list>\fR
 .TP
 \fBSQUEUE_LOCAL\fR
 \fB\-\-local\fR
@@ -1416,7 +1416,7 @@ COMPLETED state in the format with six right justified digits for \
 the job id followed by the priority with an arbitrary fields size:
 
 .nf
-$ squeue -p debug -t COMPLETED -o "%.6i %p"
+$ squeue \-p debug \-t COMPLETED \-o "%.6i %p"
  JOBID PRIORITY
  65543 99993
  65544 99992
@@ -1427,20 +1427,20 @@ $ squeue -p debug -t COMPLETED -o "%.6i %p"
 Print the job steps in the debug partition sorted by user:
 
 .nf
-$ squeue -s -p debug -S u
+$ squeue \-s \-p debug \-S u
   STEPID        NAME PARTITION     USER      TIME NODELIST
- 65552.1       test1     debug    alice      0:23 dev[1-4]
+ 65552.1       test1     debug    alice      0:23 dev[1\-4]
  65562.2     big_run     debug      bob      0:18 dev22
- 65550.1      param1     debug  candice   1:43:21 dev[6-12]
+ 65550.1      param1     debug  candice   1:43:21 dev[6\-12]
 .fi
 
 .TP
 Print information only about jobs 12345, 12346 and 12348:
 
 .nf
-$ squeue --jobs 12345,12346,12348
+$ squeue \-\-jobs 12345,12346,12348
  JOBID PARTITION NAME USER ST  TIME  NODES NODELIST(REASON)
- 12345     debug job1 dave  R   0:21     4 dev[9-12]
+ 12345     debug job1 dave  R   0:21     4 dev[9\-12]
  12346     debug job2 dave PD   0:00     8 (Resources)
  12348     debug job3 ed   PD   0:00     4 (Priority)
 .fi
@@ -1449,9 +1449,9 @@ $ squeue --jobs 12345,12346,12348
 Print information only about job step 65552.1:
 
 .nf
-$ squeue --steps 65552.1
+$ squeue \-\-steps 65552.1
   STEPID     NAME PARTITION    USER    TIME  NODELIST
- 65552.1    test2     debug   alice   12:49  dev[1-4]
+ 65552.1    test2     debug   alice   12:49  dev[1\-4]
 .fi
 
 .SH "COPYING"

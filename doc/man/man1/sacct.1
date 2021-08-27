@@ -30,7 +30,7 @@ identifier (UID) by default.  Data for other users can be displayed
 with the \f3\-\-allusers\fP, \f3\-\-user\fP, or \f3\-\-uid\fP options.
 .PP
 Elapsed time fields are presented as
-[days-]hours:minutes:seconds[.microseconds]. Only 'CPU' fields will
+[days\-]hours:minutes:seconds[.microseconds]. Only 'CPU' fields will
 ever have microseconds.
 .PP
 The default input file is the file named in the
@@ -74,7 +74,7 @@ Displays a brief listing consisting of JobID, State, and ExitCode.
 .IP
 
 .TP
-\f3\-B\fP\f3,\fP \f3\-\-batch-script\fP
+\f3\-B\fP\f3,\fP \f3\-\-batch\-script\fP
 This option will print the batch script of job if the job used one. If the job
 didn't have a script 'NONE' is output.
 NOTE: AccountingStoreFlags=job_script is required for this.
@@ -247,9 +247,9 @@ NOTE: A step id of 'batch' will display the information about the
 batch step.
 .IP
 By default sacct shows only jobs with Eligible time, but with this
-option the non-eligible will be also shown.
-NOTE: If --state is also specified, as non-eligible are not PD,
-then non-eligible jobs will not be displayed.
+option the non\-eligible will be also shown.
+NOTE: If \-\-state is also specified, as non\-eligible are not PD,
+then non\-eligible jobs will not be displayed.
 See the \fBDEFAULT TIME WINDOW\fR for details about how this option
 changes the default \-S and \-E options.
 
@@ -258,13 +258,13 @@ changes the default \-S and \-E options.
 Dump job information as JSON. All other formating arugments will be ignored.
 
 .TP
-\f3\-k\fP\f3,\fP \f3\-\-timelimit-min\fP
+\f3\-k\fP\f3,\fP \f3\-\-timelimit\-min\fP
 Only send data about jobs with this timelimit.  If used with
 timelimit_max this will be the minimum timelimit of the range.
 Default is no restriction.
 
 .TP
-\f3\-K\fP\f3,\fP \f3\-\-timelimit-max\fP
+\f3\-K\fP\f3,\fP \f3\-\-timelimit\-max\fP
 Ignored by itself, but if timelimit_min is set this will be the
 maximum timelimit of the range.  Default is no restriction.
 
@@ -474,7 +474,7 @@ list of wckey names.  Space characters are not allowed in the
 \f2wckey_list\fP. Default is all wckeys\&.
 
 .TP
-\f3\-x \fP\f2associd_list\fP\f3, -\-associations=\fP\f2assoc_list\fP
+\f3\-x \fP\f2associd_list\fP\f3, \-\-associations=\fP\f2assoc_list\fP
 Displays the statistics only for the jobs running under the
 association ids specified by the \f2assoc_list\fP operand, which is a
 comma\-separated list of association ids.  Space characters are not
@@ -579,7 +579,7 @@ Time used (Elapsed time * CPU count) by a job or step in HH:MM:SS format.
 
 .TP
 \f3CPUTimeRAW\fP
-Time used (Elapsed time * CPU count) by a job or step in cpu-seconds.
+Time used (Elapsed time * CPU count) by a job or step in cpu\-seconds.
 
 .TP
 \f3DerivedExitCode\fP
@@ -919,13 +919,13 @@ does not include CPU time of child processes.
 .TP
 \f3TresUsageInAve\fP
 Tres average usage in by all tasks in job.
-NOTE: If corresponding TresUsageInMaxTask is -1 the metric is node centric
+NOTE: If corresponding TresUsageInMaxTask is \-1 the metric is node centric
 instead of task.
 
 .TP
 \f3TresUsageInMax\fP
 Tres maximum usage in by all tasks in job.
-NOTE: If corresponding TresUsageInMaxTask is -1 the metric is node centric
+NOTE: If corresponding TresUsageInMaxTask is \-1 the metric is node centric
 instead of task.
 
 .TP
@@ -939,7 +939,7 @@ Task for which each maximum TRES usage out occurred.
 .TP
 \f3TresUsageInMin\fP
 Tres minimum usage in by all tasks in job.
-NOTE: If corresponding TresUsageInMinTask is -1 the metric is node centric
+NOTE: If corresponding TresUsageInMinTask is \-1 the metric is node centric
 instead of task.
 
 .TP
@@ -957,13 +957,13 @@ Tres total usage in by all tasks in job.
 .TP
 \f3TresUsageOutAve\fP
 Tres average usage out by all tasks in job.
-NOTE: If corresponding TresUsageOutMaxTask is -1 the metric is node centric
+NOTE: If corresponding TresUsageOutMaxTask is \-1 the metric is node centric
 instead of task.
 
 .TP
 \f3TresUsageOutMax\fP
 Tres maximum usage out by all tasks in job.
-NOTE: If corresponding TresUsageOutMaxTask is -1 the metric is node centric
+NOTE: If corresponding TresUsageOutMaxTask is \-1 the metric is node centric
 instead of task.
 
 .TP
@@ -1282,9 +1282,9 @@ the \fB\-\-state\fR flag for the same time period. Without the
 .PP
 .nf
 .ft 3
-# sacct -S11:20:00 -E11:25:00 -X -ojobid,start,end,state
+# sacct \-S11:20:00 \-E11:25:00 \-X \-ojobid,start,end,state
        JobID               Start                 End      State
------------- ------------------- ------------------- ----------
+-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-
 2955                    11:15:12            11:20:12  COMPLETED
 2956                    11:20:13            11:25:13  COMPLETED
 .ft 1
@@ -1299,9 +1299,9 @@ State shows as COMPLETED because that is the current State of the job.
 .PP
 .nf
 .ft 3
-# sacct --state=pending -S11:20:00 -E11:25:00 -X -ojobid,start,end,state
+# sacct \-\-state=pending \-S11:20:00 \-E11:25:00 \-X \-ojobid,start,end,state
        JobID               Start                 End      State
------------- ------------------- ------------------- ----------
+-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-
 2956                    11:20:13            11:25:13  COMPLETED
 .ft 1
 .fi

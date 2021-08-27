@@ -6,7 +6,7 @@ srun \- Run parallel jobs
 .SH "SYNOPSIS"
 \fBsrun\fR [\fIOPTIONS(0)\fR... [\fIexecutable(0)\fR [\fIargs(0)\fR...]]] [ : [\fIOPTIONS(N)\fR...]] \fIexecutable(N)\fR [\fIargs(N)\fR...]
 
-Option(s) define multiple jobs in a co-scheduled heterogeneous job.
+Option(s) define multiple jobs in a co\-scheduled heterogeneous job.
 For more details about heterogeneous jobs see the document
 .br
 https://slurm.schedmd.com/heterogeneous_jobs.html
@@ -22,10 +22,10 @@ https://slurm.schedmd.com/cpu_management.html
 
 .SH "RETURN VALUE"
 srun will return the highest exit code of all tasks run or the highest signal
-(with the high-order bit set in an 8-bit integer -- e.g. 128 + signal) of any
+(with the high\-order bit set in an 8\-bit integer \-\- e.g. 128 + signal) of any
 task that exited with a signal.
 .br
-The value 253 is reserved for out-of-memory errors.
+The value 253 is reserved for out\-of\-memory errors.
 
 .SH "EXECUTABLE PATH RESOLUTION"
 
@@ -87,7 +87,7 @@ where \fI<datatype>\fR=\fI<interval>\fR specifies the task sampling
 interval for the jobacct_gather plugin or a
 sampling interval for a profiling type by the
 acct_gather_profile plugin. Multiple,
-comma-separated \fI<datatype>\fR=\fI<interval>\fR intervals
+comma\-separated \fI<datatype>\fR=\fI<interval>\fR intervals
 may be specified. Supported datatypes are as follows:
 .RS
 .TP
@@ -138,7 +138,7 @@ sockets, cores per socket and/or threads per core.
 Each value specified is considered a minimum.
 An asterisk (*) can be used as a placeholder indicating that all available
 resources of that type are to be utilized. Values can also be specified as
-min-max. The individual levels can also be specified in separate options if
+min\-max. The individual levels can also be specified in separate options if
 desired:
 .nf
     \fB\-\-sockets\-per\-node\fR=<\fIsockets\fR>
@@ -200,7 +200,7 @@ allocations.
 
 .TP
 \fB\-\-bcast\-exclude\fR=<\fINONE\fR|\fIpath1\fR,\fI...\fR,\fIpathN\fR>
-Comma-separated list of absolute directory paths to be excluded when
+Comma\-separated list of absolute directory paths to be excluded when
 autodetecting and broadcasting executable shared object dependencies through
 \fB\-\-bcast\fR. If the keyword "\fINONE\fR" is configured, no directory paths
 will be excluded. The default value is that of slurm.conf \fBBcastExclude\fR and
@@ -329,7 +329,7 @@ Specification of multiple KNL modes requires the use of a heterogeneous job.
 \fBBrackets\fR
 Brackets can be used to indicate that you are looking for a set of nodes with
 the different requirements contained within the brackets. For example,
-\fB--constraint="[(rack1|rack2)*1&(rack3)*2]"\fR will get you one node with
+\fB\-\-constraint="[(rack1|rack2)*1&(rack3)*2]"\fR will get you one node with
 either the "rack1" or "rack2" features and two nodes with the "rack3" feature.
 The same request without the brackets will try to find a single node that
 meets those requirements.
@@ -351,7 +351,7 @@ This option applies to job and step allocations.
 .RE
 
 .TP
-\fB--container=<absolute path to container>\fR
+\fB\-\-container=<absolute path to container>\fR
 Path to OCI container bundle.
 
 .TP
@@ -409,7 +409,7 @@ CPUs that belong to the NUMA locality domain or "NUMA node".
 If NUMA locality domain options are used on systems with no NUMA support, then
 each socket is considered a locality domain.
 
-If the -\-cpu\-bind option is not used, the default binding mode will depend
+If the \-\-cpu\-bind option is not used, the default binding mode will depend
 upon Slurm's configuration and the step's resource allocation.
 If all allocated nodes have the same configured CpuBind mode, that will be used.
 Otherwise if the job's Partition has a configured CpuBind mode, that will be used.
@@ -425,7 +425,7 @@ allocation with a number of
 sockets, cores, or threads equal to the number of tasks times cpus\-per\-task,
 then the tasks will by default be bound to the appropriate resources (auto
 binding). Disable this mode of operation by explicitly setting
-"-\-cpu\-bind=none". Use TaskPluginParam=autobind=[threads|cores|sockets] to set
+"\-\-cpu\-bind=none". Use TaskPluginParam=autobind=[threads|cores|sockets] to set
 a default cpu binding in case "auto binding" doesn't find a match.
 .RE
 .RS
@@ -737,7 +737,7 @@ exit code of zero).
 .TP
 \fBafternotok:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have terminated
-in some failed state (non-zero exit code, node failure, timed out, etc).
+in some failed state (non\-zero exit code, node failure, timed out, etc).
 .TP
 \fBafterok:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have successfully
@@ -779,7 +779,7 @@ If the specified file already exists, it will be overwritten. This option
 applies to job and step allocations.
 
 .TP
-\fB\-E\fR, \fB\-\-preserve-env\fR
+\fB\-E\fR, \fB\-\-preserve\-env\fR
 Pass the current values of environment variables SLURM_JOB_NUM_NODES and
 SLURM_NTASKS through to the \fIexecutable\fR, rather than computing them
 from command line parameters. This option applies to job allocations.
@@ -787,7 +787,7 @@ from command line parameters. This option applies to job allocations.
 .TP
 \fB\-\-exact\fR
 Allow a step access to only the resources requested for the step.
-By default, all non-GRES resources on each node in the step allocation will be
+By default, all non\-GRES resources on each node in the step allocation will be
 used. This option only applies to step allocations.
 .br
 \fBNOTE\fR: Parallel steps will either be blocked or rejected until requested
@@ -873,7 +873,7 @@ There are two possible outcomes for this example. If the caller has the
 \fIEDITOR\fR environment variable defined, then the job's environment will
 inherit the variable from the caller's environment.  If the caller doesn't
 have an environment variable defined for \fIEDITOR\fR, then the job's
-environment will use the value given by \fB--export\fR.
+environment will use the value given by \fB\-\-export\fR.
 .RE
 .RE
 
@@ -928,7 +928,7 @@ from the beginning of the list. To simplify support for large task counts,
 the lists may follow a map with an asterisk and repetition count.
 For example "map_gpu:0*4,1*4".
 If the task/cgroup plugin is used and ConstrainDevices is set in cgroup.conf,
-then the GPU IDs are zero-based indexes relative to the GPUs allocated to the
+then the GPU IDs are zero\-based indexes relative to the GPUs allocated to the
 job (e.g. the first GPU is 0, even if the global ID is 3). Otherwise, the GPU
 IDs are global IDs, and all GPUs on each node in the job should be allocated for
 predictable binding results.
@@ -943,13 +943,13 @@ preceded with an optional '0x'. To simplify support for large task counts, the
 lists may follow a map with an asterisk and repetition count.
 For example "mask_gpu:0x0f*4,0xf0*4".
 If the task/cgroup plugin is used and ConstrainDevices is set in cgroup.conf,
-then the GPU IDs are zero-based indexes relative to the GPUs allocated to the
+then the GPU IDs are zero\-based indexes relative to the GPUs allocated to the
 job (e.g. the first GPU is 0, even if the global ID is 3). Otherwise, the GPU
 IDs are global IDs, and all GPUs on each node in the job should be allocated for
 predictable binding results.
 .TP
 \fBsingle:<tasks_per_gpu>\fR
-Like \fI--gpu-bind=closest\fR, except that each task can only be bound to a
+Like \fI\-\-gpu\-bind=closest\fR, except that each task can only be bound to a
 single GPU, even when it can be bound to multiple GPUs that are equally close.
 The GPU to bind to is determined by \fI<tasks_per_gpu>\fR, where the
 first \fI<tasks_per_gpu>\fR tasks are bound to the first GPU available, the
@@ -1032,15 +1032,15 @@ For example "\-\-gpus\-per\-task=volta:1". Multiple options can be
 requested in a comma separated list, for example:
 "\-\-gpus\-per\-task=volta:3,kepler:1". See also the \fB\-\-gpus\fR,
 \fB\-\-gpus\-per\-socket\fR and \fB\-\-gpus\-per\-node\fR options.
-This option requires an explicit task count, e.g. -n, --ntasks or "--gpus=X
---gpus-per-task=Y" rather than an ambiguous range of nodes with -N, --nodes.
-This option will implicitly set --gpu-bind=per_task:<gpus_per_task>, but that
-can be overridden with an explicit --gpu-bind specification.
+This option requires an explicit task count, e.g. \-n, \-\-ntasks or "\-\-gpus=X
+\-\-gpus\-per\-task=Y" rather than an ambiguous range of nodes with \-N, \-\-nodes.
+This option will implicitly set \-\-gpu\-bind=per_task:<gpus_per_task>, but that
+can be overridden with an explicit \-\-gpu\-bind specification.
 .br
 
 .TP
 \fB\-\-gres\fR=<\fIlist\fR>
-Specifies a comma-delimited list of generic consumable resources.
+Specifies a comma\-delimited list of generic consumable resources.
 The format of each entry on the list is "name[[:type]:count]".
 The name is that of the consumable resource.
 The count is the number of those resources with a default value of 1.
@@ -1125,7 +1125,7 @@ Select settings for memory bound applications:
 use only one core in each socket, one thread per core.
 .TP
 .B [no]multithread
-[don't] use extra threads with in-core multi-threading
+[don't] use extra threads with in\-core multi\-threading
 which can benefit communication intensive applications.
 Only supported with the task/affinity plugin.
 .TP
@@ -1575,7 +1575,7 @@ tasks on every node (i.e. the lowest task ID on each node is mapped to the
 first mask specified in the list, etc.).
 NUMA masks are \fBalways\fR interpreted as hexadecimal values.
 Note that masks must be preceded with a '0x' if they don't begin
-with [0-9] so they are seen as numerical values.
+with [0\-9] so they are seen as numerical values.
 If the number of tasks (or ranks) exceeds the number of elements in this list,
 elements in the list will be reused as needed starting from the beginning of
 the list.
@@ -1643,7 +1643,7 @@ the client side must implement PMI2_Init() and the other interface calls.
 To enable PMIx support (https://pmix.github.io). The PMIx support
 in Slurm can be used to launch parallel applications (e.g. MPI) if it
 supports PMIx, PMI2 or PMI1. Slurm must be configured with pmix support
-by passing "--with-pmix=<PMIx installation path>" option to its 
+by passing "\-\-with\-pmix=<PMIx installation path>" option to its 
 "./configure" script.
 
 At the time of writing PMIx is supported in Open MPI starting from version 2.0.
@@ -1759,7 +1759,7 @@ Supported values include:
 .RS
 .TP 12
 \fBBULK_XFER\fR[=<\fIresources\fR>]
-Enable bulk transfer of data using Remote Direct-Memory Access (RDMA).
+Enable bulk transfer of data using Remote Direct\-Memory Access (RDMA).
 The optional \fIresources\fR specification is a numeric value which can have
 a suffix of "k", "K", "m", "M", "g" or "G" for kilobytes, megabytes or
 gigabytes.
@@ -1773,7 +1773,7 @@ HFI, IB, HPCE, and KMUX.
 .TP
 \fBCAU\fR=<\fIcount\fR>
 Number of Collective Acceleration Units (CAU) required.
-Applies only to IBM Power7-IH processors.
+Applies only to IBM Power7\-IH processors.
 Default value is zero.
 Independent CAU will be allocated for each programming interface (MPI, LAPI, etc.)
 .TP
@@ -1784,7 +1784,7 @@ Specify the device name to use for communications (e.g. "eth0" or "mlx4_0").
 Specify the device type to use for communications.
 The supported values of \fItype\fR are:
 "IB" (InfiniBand), "HFI" (P7 Host Fabric Interface),
-"IPONLY" (IP-Only interfaces), "HPCE" (HPC Ethernet), and
+"IPONLY" (IP\-Only interfaces), "HPCE" (HPC Ethernet), and
 "KMUX" (Kernel Emulation of HPCE).
 The devices allocated to a job must all be of the same type.
 The default value depends upon depends upon what hardware is available and in
@@ -1793,7 +1793,7 @@ HFI, IB, HPCE, and KMUX.
 .TP
 \fBIMMED\fR =<\fIcount\fR>
 Number of immediate send slots per window required.
-Applies only to IBM Power7-IH processors.
+Applies only to IBM Power7\-IH processors.
 Default value is zero.
 .TP
 \fBINSTANCES\fR =<\fIcount\fR>
@@ -1881,18 +1881,18 @@ is specified.
 \fB\-\-ntasks\-per\-gpu\fR=<\fIntasks\fR>
 Request that there are \fIntasks\fR tasks invoked for every GPU.
 This option can work in two ways: 1) either specify \fB\-\-ntasks\fR in
-addition, in which case a type-less GPU specification will be automatically
+addition, in which case a type\-less GPU specification will be automatically
 determined to satisfy \fB\-\-ntasks\-per\-gpu\fR, or 2) specify the GPUs wanted
 (e.g. via \fB\-\-gpus\fR or \fB\-\-gres\fR) without specifying \fB\-\-ntasks\fR,
 and the total task count will be automatically determined.
 The number of CPUs needed will be automatically increased if necessary to allow
 for any calculated task count.
-This option will implicitly set \fB\-\-gpu-bind=single:<ntasks>\fR, but that
-can be overridden with an explicit \fB\-\-gpu-bind\fR specification.
+This option will implicitly set \fB\-\-gpu\-bind=single:<ntasks>\fR, but that
+can be overridden with an explicit \fB\-\-gpu\-bind\fR specification.
 This option is not compatible with a node range
 (i.e. \-N<\fIminnodes\fR\-\fImaxnodes\fR>).
-This option is not compatible with \fB\-\-gpus-per-task\fR,
-\fB\-\-gpus-per-socket\fR, or \fB\-\-ntasks-per-node\fR.
+This option is not compatible with \fB\-\-gpus\-per\-task\fR,
+\fB\-\-gpus\-per\-socket\fR, or \fB\-\-ntasks\-per\-node\fR.
 This option is not supported unless \fISelectType=cons_tres\fR is
 configured (either directly or indirectly on Cray systems).
 
@@ -2011,7 +2011,7 @@ This option applies to job allocations only.
 .TP
 \fB\-\-profile\fR=<all|none|[energy[,|task[,|filesystem[,|network]]]]>
 enables detailed data collection by the acct_gather_profile plugin.
-Detailed data are typically time-series that are stored in an HDF5 file for
+Detailed data are typically time\-series that are stored in an HDF5 file for
 the job or an InfluxDB database depending on the configured plugin.
 
 .RS
@@ -2158,7 +2158,7 @@ option applies to job allocations.
 .TP
 \fB\-\-resv\-ports\fR[=\fIcount\fR]
 Reserve communication ports for this job. Users can specify the number
-of port they want to reserve. The parameter MpiParams=ports=12000-12999
+of port they want to reserve. The parameter MpiParams=ports=12000\-12999
 must be specified in \fIslurm.conf\fR. If not specified and Slurm's OpenMPI
 plugin is used, then by default the number of reserved equal to the highest
 number of tasks on any node in the job step allocation.
@@ -2199,7 +2199,7 @@ CoreSpecCount and use the specialized resources on nodes it is allocated.
 This option can not be used with the \fB\-\-thread\-spec\fR option. This option
 applies to job allocations.
 .br
-\fBNOTE\fR: This option may implicitly impact the number of tasks if \fB-n\fR
+\fBNOTE\fR: This option may implicitly impact the number of tasks if \fB\-n\fR
 was not specified.
 
 .TP
@@ -2262,7 +2262,7 @@ Restrict node selection to nodes with at least the specified number of
 sockets.  See additional information under \fB\-B\fR option above when
 task/affinity plugin is enabled. This option applies to job allocations.
 .br
-\fBNOTE\fR: This option may implicitly impact the number of tasks if \fB-n\fR
+\fBNOTE\fR: This option may implicitly impact the number of tasks if \fB\-n\fR
 was not specified.
 
 .TP
@@ -2369,7 +2369,7 @@ tasks to be launched per core. See additional information under \fB\-B\fR
 option above when task/affinity plugin is enabled. This option applies to job
 and step allocations.
 .br
-\fBNOTE\fR: This option may implicitly impact the number of tasks if \fB-n\fR
+\fBNOTE\fR: This option may implicitly impact the number of tasks if \fB\-n\fR
 was not specified.
 
 .TP
@@ -2394,7 +2394,7 @@ This option applies to job allocations.
 
 .TP
 \fB\-u\fR, \fB\-\-unbuffered\fR
-By default, the connection between slurmstepd and the user-launched application
+By default, the connection between slurmstepd and the user\-launched application
 is over a pipe. The stdio output written by the application is buffered
 by the glibc until it is flushed or the output is set as unbuffered.
 See setbuf(3). If this option is specified the tasks are executed with
@@ -2416,7 +2416,7 @@ successful. \fIuser\fR may be the user name or numerical user ID. This option
 applies to job and step allocations.
 
 .TP
-\fB\-\-use-min-nodes\fR
+\fB\-\-use\-min\-nodes\fR
 If a range of node counts is given, prefer the smaller count.
 
 .TP
@@ -2723,7 +2723,7 @@ Same as \fB\-\-bcast\-exclude\fR
 Same as \fB\-\-bb\fR
 .TP
 \fBSLURM_CLUSTERS\fR
-Same as \fB-M\fR, \fB\-\-clusters\fR
+Same as \fB\-M\fR, \fB\-\-clusters\fR
 .TP
 \fBSLURM_COMPRESS\fR
 Same as \fB\-\-compress\fR
@@ -2935,7 +2935,7 @@ Same as \fB\-\-reservation\fR
 Same as \fB\-\-resv\-ports\fR
 .TP
 \fBSLURM_SEND_LIBS\fR
-Same as \fB\--send\-libs\fR
+Same as \fB\-\-send\-libs\fR
 .TP
 \fBSLURM_SIGNAL\fR
 Same as \fB\-\-signal\fR
@@ -2944,7 +2944,7 @@ Same as \fB\-\-signal\fR
 Same as \fB\-\-spread\-job\fR
 .TP
 \fBSLURM_SRUN_REDUCE_TASK_EXIT_MSG\fR
-if set and non-zero, successive task exit messages with the same exit code will
+if set and non\-zero, successive task exit messages with the same exit code will
 be printed only once.
 .TP
 \fBSLURM_STDERRMODE\fR
@@ -3072,7 +3072,7 @@ Zero origin and comma separated.
 It is read internally by pmi if Slurm was built with pmi support. Leaving
 the variable set may cause problems when using external packages from
 within the job (Abaqus and Ansys have been known to have problems when
-it is set - consult the appropriate documentation for 3rd party software).
+it is set \- consult the appropriate documentation for 3rd party software).
 .TP
 \fBSLURM_HET_SIZE\fR
 Set to count of components in heterogeneous job.

@@ -33,7 +33,7 @@ The cluster(s) to generate reports for. Default is local cluster, unless the
 local cluster is currently part of a federation and in that case generate a
 report for all clusters in the current federation. If the clusters included
 in a federation vary through time, use this option to identify the clusters
-to be included in report. Implies --local.
+to be included in report. Implies \-\-local.
 .TP
 \fB\-n\fR, \fB\-\-noheader\fR
 Don't display header when listing results.
@@ -405,7 +405,7 @@ List of group ids to include in report.  Default is all.
 .TP
 .B Grouping=<OPT>
 Comma separated list of size groupings.   (e.g. 50,100,150 would group
-job cpu count 1-49, 50-99, 100-149, > 150).  grouping=individual will
+job cpu count 1\-49, 50\-99, 100\-149, > 150).  grouping=individual will
 result in a single column for each job size found.
 .TP
 .B Jobs=<OPT>
@@ -507,7 +507,7 @@ TopUsage:
 Account, Cluster, Login, Proper, Used
 
 .TP
-All commands and options are case-insensitive.
+All commands and options are case\-insensitive.
 
 .SH "PERFORMANCE"
 .PP

@@ -27,7 +27,7 @@ Print actual hardware configuration and exit. The format of output is the same
 as used in \fBslurm.conf\fR to describe a node's configuration plus its uptime.
 
 .TP
-\fB\--conf-server <host>[:<port>]\fR
+\fB\-\-conf\-server <host>[:<port>]\fR
 Comma\-separated list of controllers, the first being the primary slurmctld. A
 port can (optionally) be specified for each controller. These hosts are where
 the slurmd will fetch the configuration from when running in "configless" mode.
@@ -97,7 +97,7 @@ explicitly naming a configuration file on the command line.
 .SH "SIGNALS"
 .TP
 \fBSIGTERM SIGINT\fR
-\fBslurmd\fR will shutdown cleanly, waiting for in-progress rollups to finish.
+\fBslurmd\fR will shutdown cleanly, waiting for in\-progress rollups to finish.
 .TP
 \fBSIGHUP\fR
 Reloads the slurm configuration files, similar to 'scontrol reconfigure'.

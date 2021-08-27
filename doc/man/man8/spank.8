@@ -85,7 +85,7 @@ non\-zero value and the \fBSPANK\fR plugin that contains it is required in the
 Called at the same point as \fBslurm_spank_init\fR, but after all
 user options to the plugin have been processed. The reason that the
 \fBinit\fR and \fBinit_post_opt\fR callbacks are separated is so that
-plugins can process system-wide options specified in plugstack.conf in
+plugins can process system\-wide options specified in plugstack.conf in
 the \fBinit\fR callback, then process user options, and finally take some
 action in \fBslurm_spank_init_post_opt\fR if necessary.
 In the case of a heterogeneous job, \fBslurm_spank_init\fR is invoked once
@@ -218,7 +218,7 @@ and \fBunsetenv\fR (3) may be used in local context.
 Functions are also available from within the \fBSPANK\fR plugins to
 establish environment variables to be exported to the Slurm
 \fBPrologSlurmctld\fR, \fBProlog\fR, \fBEpilog\fR and \fBEpilogSlurmctld\fR
-programs (the so-called \fBjob control\fR environment).
+programs (the so\-called \fBjob control\fR environment).
 The name of environment variables established by these calls will be prepended
 with the string \fISPANK_\fR in order to avoid any security implications
 of arbitrary environment variable control. (After all, the job control
@@ -380,7 +380,7 @@ supplied options after option processing. This function has the prototype:
 .nf
 This function returns \fBESPANK_SUCCESS\fR if the option defined in the
 struct spank_option \fIopt\fR has been used by the user. If \fIoptargp\fR
-is non-NULL then it is set to any option argument passed (if the option
+is non\-NULL then it is set to any option argument passed (if the option
 takes an argument). The use of this method is \fIrequired\fR to process
 options in \fBjob_script\fR context (\fBslurm_spank_job_prolog\fR and
 \fBslurm_spank_job_epilog\fR). This function is valid in the following contexts:
@@ -458,7 +458,7 @@ renice.so \fBSPANK\fR plugin.
 #
 # required?       plugin                     parameters
 #
-optional          /usr/lib/SPANK_renice.so   min_prio=-10
+optional          /usr/lib/SPANK_renice.so   min_prio=\-10
 .fi
 .TP
 \fB/usr/local/src/renice.c\fR:
@@ -484,13 +484,13 @@ parameter in \fBplugstack.conf\fR.
 SPANK_PLUGIN(renice, 1);
 
 #define PRIO_ENV_VAR "SLURM_RENICE"
-#define PRIO_NOT_SET -1
+#define PRIO_NOT_SET \-1
 
 /*
  * Minimum allowable value for priority. May be
  * set globally via plugin option min_prio=<prio>
  */
-static int min_prio = -20;
+static int min_prio = \-20;
 
 static int prio = PRIO_NOT_SET;
 
@@ -498,14 +498,14 @@ static int _renice_opt_process(int val, const char *optarg, int remote);
 static int _str2prio(const char *str, int *p2int);
 
 /*
- *  Provide a --renice=[prio] option to srun:
+ *  Provide a \-\-renice=[prio] option to srun:
  */
 struct spank_option spank_options[] =
 {
     {
         "renice",
         "[prio]",
-        "Re-nice job tasks to priority [prio].",
+        "Re\-nice job tasks to priority [prio].",
         2,
         0,
         _renice_opt_process
@@ -575,7 +575,7 @@ int slurm_spank_task_post_fork(spank_t sp, int ac, char **av)
     spank_get_item(sp, S_TASK_GLOBAL_ID, &taskid);
     spank_get_item(sp, S_TASK_PID, &pid);
 
-    slurm_info("re-nicing task%d pid %d to %d", taskid, (int) pid, prio);
+    slurm_info("re\-nicing task%d pid %d to %d", taskid, (int) pid, prio);
 
     if (setpriority(PRIO_PROCESS, (int) pid, (int) prio)) {
         slurm_error("setpriority: %m");
@@ -598,8 +598,8 @@ static int _str2prio(const char *str, int *p2int)
     if (!p || (*p != '\\0'))
         return ESPANK_BAD_ARG;
 
-    if ((l < -20) || (l > 20)) {
-        slurm_error("Specify value between -20 and 20");
+    if ((l < \-20) || (l > 20)) {
+        slurm_error("Specify value between \-20 and 20");
         return ESPANK_BAD_ARG;
     }
 
@@ -618,12 +618,12 @@ static int _renice_opt_process(int val, const char *optarg, int remote)
     }
 
     if ((rc = _str2prio(optarg, &prio))) {
-        slurm_error("Bad value for --renice: %s", optarg);
+        slurm_error("Bad value for \-\-renice: %s", optarg);
         return rc;
     }
 
     if (prio < min_prio) {
-        slurm_error("--renice=%d not allowed, will use min=%d",
+        slurm_error("\-\-renice=%d not allowed, will use min=%d",
                     prio, min_prio);
     }
 
@@ -633,7 +633,7 @@ static int _renice_opt_process(int val, const char *optarg, int remote)
 .TP
 \fBCompile command\fR:
 .nf
-# gcc -ggdb3 -I${SLURM_PATH}/include/ -fPIC -shared -o /usr/lib/SPANK_renice.so /usr/local/src/renice.c
+# gcc \-ggdb3 \-I${SLURM_PATH}/include/ \-fPIC \-shared \-o /usr/lib/SPANK_renice.so /usr/local/src/renice.c
 .fi
 
 .SH "COPYING"
