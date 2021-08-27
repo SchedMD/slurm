@@ -27,16 +27,11 @@
 source ./globals
 source ./globals_accounting
 
-set sql_query        "test$test_id\-query.sql"
-set sql_query_rem    "test$test_id\-query-rem.sql"
+set sql_query        "$test_dir/query.sql"
+set sql_query_rem    "$test_dir/query-rem.sql"
 set cluster          [get_config_param "ClusterName"]
-set account          "test$test_id\_acct"
-set user             "test$test_id\_user"
-set config_dir       ""
-set access_err       0
-
-# Cluster requirments
-array set clus_req {}
+set account          "$test_name\_acct"
+set user             "$test_name\_user"
 
 # Account requirments
 set acct_req(cluster) $cluster
@@ -52,24 +47,23 @@ if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator"
 }
 
-# Remove pre-existing items
-exec $bin_rm -f $sql_query $sql_query_rem
+proc cleanup { } {
+	global cluster account user sql_query sql_query_rem
+
+	if {[file exists $sql_query_rem]} {
+		archive_load $sql_query_rem
+	}
+	remove_user "" "" $user
+	remove_acct "" $account
+}
+
+cleanup
 
 # Make SQL file to remove the inserted job
 set file [open $sql_query_rem "w"]
 # This SQL statement is correct for our purposes (missing && infront of cluster)
 puts $file "delete from job_table where alloc_nodes=\'test21.36_node\' cluster=\'$cluster\';"
 close $file
-
-proc cleanup { } {
-	global cluster account user bin_rm sql_query sql_query_rem
-
-	archive_load $sql_query_rem
-	remove_user "" "" $user
-	remove_acct "" $account
-
-	exec $bin_rm -f $sql_query $sql_query_rem
-}
 
 # Add Test Account
 if {[add_acct $account [array get acct_req]]} {
@@ -84,7 +78,7 @@ if {[add_user $user [array get user_req]]} {
 set assoc_id [get_assoc_id $user $account $cluster]
 
 if {$assoc_id == -1} {
-	endit
+	skip "Unable to find $user association"
 }
 
 # DON'T MESS WITH THIS UNLESS YOU REALLY UNDERSTAND WHAT YOU ARE DOING!!!!!
@@ -101,11 +95,6 @@ puts $file "('65536', '$assoc_id', '$cluster', '1002', '1002', 'debug', '$accoun
 puts $file "on duplicate key update id=LAST_INSERT_ID(id), eligible=VALUES(eligible), submit=VALUES(submit), start=VALUES(start), end=VALUES(end), associd=VALUES(associd), tres_alloc=VALUES(tres_alloc);"
 close $file
 
-log_user 1
-
-# Get the current working directory
-set cwd "[$bin_pwd]"
-
 # Load a job to the database that has no end time.
 if {[archive_load $sql_query]} {
 	archive_load $sql_query_rem
@@ -113,41 +102,9 @@ if {[archive_load $sql_query]} {
 }
 
 # Test sacctmgr show runawayjobs
-set list_job 0
-spawn $sacctmgr show -i runawayjobs $cluster
-expect {
-	-re "NOTE: Runaway jobs" {
-		set list_job 1
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$list_job != 1} {
-	fail "sacctmgr did not find any runaway jobs when it should have"
-}
+set output [run_command_output -fail "$sacctmgr show -i runawayjobs $cluster"]
+subtest {[regexp "NOTE: Runaway jobs" $output]} "sacctmgr should detect runaway jobs"
 
 # Check that jobs were fixed
-set list_job 0
-spawn $sacctmgr show -i runawayjobs $cluster
-expect {
-	-re "No runaway jobs found" {
-		set list_job 1
-		exp_continue
-	}
-	timeout {
-		fail "sacctmgr is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$list_job != 1} {
-	fail "sacctmgr found runaway jobs when it should not have"
-}
+set output [run_command_output -fail "$sacctmgr show -i runawayjobs $cluster"]
+subtest {[regexp "No runaway jobs found" $output]} "sacctmgr should NOT detect runaway jobs"
