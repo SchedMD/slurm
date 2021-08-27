@@ -743,6 +743,10 @@ job (e.g. the first GPU is 0, even if the global ID is 3). Otherwise, the GPU
 IDs are global IDs, and all GPUs on each node in the job should be allocated for
 predictable binding results.
 .TP
+\fBnone\fR
+Do not bind tasks to GPUs (turns off binding if \-\-gpus\-per\-task is
+requested).
+.TP
 \fBper_task:<gpus_per_task>\fR
 Each task will be bound to the number of gpus specified in
 \fI<gpus_per_task>\fR. Gpus are assigned in order to tasks. The first task will

@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix off by one error in --gpu-bind=mask_gpu.
  -- Fix statement condition in http_parser autoconf macro.
  -- Fix statement condition in netloc autoconf macro.
+ -- Add --gpu-bind=none to disable gpu binding when using --gpus-per-task.
 
 * Changes in Slurm 21.08.0
 ==========================
