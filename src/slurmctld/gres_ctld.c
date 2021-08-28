@@ -1049,6 +1049,8 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 		gres_per_bit = job_gres_ptr->gres_per_node;
 
 	xfree(node_gres_ptr->gres_used);	/* Clear cache */
+
+	/* Clear the node's regular GRES bitmaps based on what the job has */
 	if (node_gres_ptr->gres_bit_alloc && job_gres_ptr->gres_bit_alloc &&
 	    job_gres_ptr->gres_bit_alloc[node_offset]) {
 		len = bit_size(job_gres_ptr->gres_bit_alloc[node_offset]);
@@ -1067,11 +1069,6 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 			}
 			bit_clear(node_gres_ptr->gres_bit_alloc, i);
 
-			/*
-			 * NOTE: Do not clear bit from
-			 * job_gres_ptr->gres_bit_alloc[node_offset]
-			 * since this may only be an emulated deallocate
-			 */
 			if (node_gres_ptr->gres_cnt_alloc >= gres_per_bit) {
 				node_gres_ptr->gres_cnt_alloc -= gres_per_bit;
 			} else {
@@ -1096,6 +1093,7 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 		node_gres_ptr->gres_cnt_alloc = 0;
 	}
 
+	/* Clear the node's topo GRES bitmaps based on what the job has */
 	if (job_gres_ptr->gres_bit_alloc &&
 	    job_gres_ptr->gres_bit_alloc[node_offset] &&
 	    node_gres_ptr->topo_gres_bitmap &&
