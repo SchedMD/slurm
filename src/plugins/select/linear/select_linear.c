@@ -2265,7 +2265,6 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr, job_record_t *job_ptr,
 	bool exclusive, is_job_running;
 	uint16_t cpu_cnt;
 	node_record_t *node_ptr;
-	List gres_list;
 	bool old_job = false;
 
 	if (cr_ptr == NULL) {
@@ -2329,10 +2328,12 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr, job_record_t *job_ptr,
 
 		if (remove_all) {
 			List job_gres_list;
+			List node_gres_list;
+
 			if (cr_ptr->nodes[i].gres_list)
-				gres_list = cr_ptr->nodes[i].gres_list;
+				node_gres_list = cr_ptr->nodes[i].gres_list;
 			else
-				gres_list = node_ptr->gres_list;
+				node_gres_list = node_ptr->gres_list;
 
 			/* Dealloc from allocated GRES if not testing */
 			if (job_fini)
@@ -2340,10 +2341,10 @@ static int _rm_job_from_nodes(struct cr_record *cr_ptr, job_record_t *job_ptr,
 			else
 				job_gres_list = job_ptr->gres_list_req;
 
-			gres_ctld_job_dealloc(job_gres_list, gres_list,
+			gres_ctld_job_dealloc(job_gres_list, node_gres_list,
 					      node_offset, job_ptr->job_id,
 					      node_ptr->name, old_job, false);
-			gres_node_state_log(gres_list, node_ptr->name);
+			gres_node_state_log(node_gres_list, node_ptr->name);
 		}
 
 		if (exclusive) {
@@ -2675,7 +2676,7 @@ static int _rm_job_from_one_node(job_record_t *job_ptr, node_record_t *node_ptr,
 	uint64_t job_memory = 0, job_memory_cpu = 0, job_memory_node = 0;
 	int first_bit;
 	uint16_t cpu_cnt;
-	List gres_list;
+	List node_gres_list;
 	bool old_job = false;
 
 	if (cr_ptr == NULL) {
@@ -2743,12 +2744,13 @@ static int _rm_job_from_one_node(job_record_t *job_ptr, node_record_t *node_ptr,
 	}
 
 	if (cr_ptr->nodes[node_inx].gres_list)
-		gres_list = cr_ptr->nodes[node_inx].gres_list;
+		node_gres_list = cr_ptr->nodes[node_inx].gres_list;
 	else
-		gres_list = node_ptr->gres_list;
-	gres_ctld_job_dealloc(job_ptr->gres_list_alloc, gres_list, node_offset,
+		node_gres_list = node_ptr->gres_list;
+	gres_ctld_job_dealloc(job_ptr->gres_list_alloc,
+			      node_gres_list, node_offset,
 			      job_ptr->job_id, node_ptr->name, old_job, true);
-	gres_node_state_log(gres_list, node_ptr->name);
+	gres_node_state_log(node_gres_list, node_ptr->name);
 
 	return _decr_node_job_cnt(node_inx, job_ptr, pre_err);
 }
