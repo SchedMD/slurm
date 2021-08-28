@@ -12052,18 +12052,20 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			      __func__, job_ptr);
 			error_code = ESLURM_NOT_SUPPORTED;
 			goto fini;
-		} else if ((job_specs->req_nodes[0] == '\0') ||
-			   node_name2bitmap(job_specs->req_nodes,
-					    false, &new_req_bitmap) ||
-			   !bit_super_set(new_req_bitmap,
-					  job_ptr->node_bitmap) ||
-			   (job_ptr->details &&
-			    job_ptr->details->expanding_jobid)) {
+		}
+
+		if ((job_specs->req_nodes[0] == '\0') ||
+		    node_name2bitmap(job_specs->req_nodes, false,
+				     &new_req_bitmap) ||
+		    !bit_super_set(new_req_bitmap, job_ptr->node_bitmap) ||
+		    (job_ptr->details && job_ptr->details->expanding_jobid)) {
 			sched_info("%s: Invalid node list (%s) for %pJ update",
 				   __func__, job_specs->req_nodes, job_ptr);
 			error_code = ESLURM_INVALID_NODE_NAME;
 			goto fini;
-		} else if (new_req_bitmap) {
+		}
+
+		if (new_req_bitmap) {
 			int i, i_first, i_last;
 			node_record_t *node_ptr;
 			bitstr_t *rem_nodes;
