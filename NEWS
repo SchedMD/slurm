@@ -12,6 +12,7 @@ documents those changes that are of interest to users and administrators.
  -- AutoDetect=nvml: Fatal if no devices found in MIG mode.
  -- slurm.spec - fix querying for PMIx and UCX version.
  -- Print federation and cluster sacctmgr error messages to stderr.
+ -- Fix off by one error in --gpu-bind=mask_gpu.
 
 * Changes in Slurm 21.08.0
 ==========================
