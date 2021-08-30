@@ -153,7 +153,7 @@ static int _get_ldom_sched_cpuset(
 static int _get_sched_cpuset(
 		hwloc_topology_t topology,
 		hwloc_obj_type_t hwtype, hwloc_obj_type_t req_hwtype,
-		cpu_set_t *mask, stepd_step_rec_t *job);
+		cpu_set_t *mask, stepd_step_rec_t *job, uint32_t local_id);
 
 /*
  * Add hwloc cpuset for a hwloc object to the total cpuset for a task, using
@@ -180,7 +180,7 @@ static void _add_hwloc_cpuset(
 static int _task_cgroup_cpuset_dist_cyclic(
 	hwloc_topology_t topology, hwloc_obj_type_t hwtype,
 	hwloc_obj_type_t req_hwtype, stepd_step_rec_t *job, int bind_verbose,
-	hwloc_bitmap_t cpuset);
+	hwloc_bitmap_t cpuset, uint32_t taskid);
 
 /*
  * Distribute cpus to task using block distribution
@@ -195,7 +195,8 @@ static int _task_cgroup_cpuset_dist_cyclic(
 static int _task_cgroup_cpuset_dist_block(
 	hwloc_topology_t topology, hwloc_obj_type_t hwtype,
 	hwloc_obj_type_t req_hwtype, uint32_t nobj,
-	stepd_step_rec_t *job, int bind_verbose, hwloc_bitmap_t cpuset);
+	stepd_step_rec_t *job, int bind_verbose, hwloc_bitmap_t cpuset,
+	uint32_t taskid);
 
 static int _get_ldom_sched_cpuset(hwloc_topology_t topology,
 		hwloc_obj_type_t hwtype, hwloc_obj_type_t req_hwtype,
@@ -217,12 +218,11 @@ static int _get_ldom_sched_cpuset(hwloc_topology_t topology,
 
 static int _get_sched_cpuset(hwloc_topology_t topology,
 		hwloc_obj_type_t hwtype, hwloc_obj_type_t req_hwtype,
-		cpu_set_t *mask, stepd_step_rec_t *job)
+		cpu_set_t *mask, stepd_step_rec_t *job, uint32_t local_id)
 {
 	int nummasks, maskid, i, threads;
 	char *curstr, *selstr;
 	char mstr[1 + CPU_SETSIZE / 4];
-	uint32_t local_id = job->envtp->localid;
 	char buftype[1024];
 
 	/* For CPU_BIND_RANK, CPU_BIND_MASK and CPU_BIND_MAP, generate sched
@@ -241,7 +241,7 @@ static int _get_sched_cpuset(hwloc_topology_t topology,
 
 	if (job->cpu_bind_type & CPU_BIND_RANK) {
 		threads = MAX(conf->threads, 1);
-		CPU_SET(job->envtp->localid % (job->cpus*threads), mask);
+		CPU_SET(local_id % (job->cpus*threads), mask);
 		return true;
 	}
 
@@ -430,7 +430,7 @@ static void _add_hwloc_cpuset(
 static int _task_cgroup_cpuset_dist_cyclic(
 	hwloc_topology_t topology, hwloc_obj_type_t hwtype,
 	hwloc_obj_type_t req_hwtype, stepd_step_rec_t *job, int bind_verbose,
-	hwloc_bitmap_t cpuset)
+	hwloc_bitmap_t cpuset, uint32_t taskid)
 {
 #if HWLOC_API_VERSION >= 0x00020000
 	hwloc_bitmap_t allowed_cpuset;
@@ -442,7 +442,6 @@ static int _task_cgroup_cpuset_dist_cyclic(
 	uint32_t *c_ixn;	/* core index by socket (next taskid) */
 	uint32_t *t_ix;		/* thread index by core by socket */
 	uint16_t npus = 0, nboards = 0, nthreads = 0, ncores = 0, nsockets = 0;
-	uint32_t taskid = job->envtp->localid;
 	int spec_thread_cnt = 0;
 	bitstr_t *spec_threads = NULL;
 	uint32_t obj_idxs[3], cps, tpc, i, j, sock_loop, ntskip, npdist;
@@ -689,12 +688,12 @@ static int _task_cgroup_cpuset_dist_cyclic(
 static int _task_cgroup_cpuset_dist_block(
 	hwloc_topology_t topology, hwloc_obj_type_t hwtype,
 	hwloc_obj_type_t req_hwtype, uint32_t nobj,
-	stepd_step_rec_t *job, int bind_verbose, hwloc_bitmap_t cpuset)
+	stepd_step_rec_t *job, int bind_verbose, hwloc_bitmap_t cpuset,
+	uint32_t taskid)
 {
 	hwloc_obj_t obj;
 	uint32_t core_loop, ntskip, npdist;
 	uint32_t i, j, pfirst, plast;
-	uint32_t taskid = job->envtp->localid;
 	int hwdepth;
 	uint32_t npus, ncores, nsockets;
 	int spec_thread_cnt = 0;
@@ -1202,7 +1201,8 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job,
 			info("task[%u] is requesting "
 			     "explicit binding mode", taskid);
 		}
-		_get_sched_cpuset(topology, hwtype, req_hwtype, &ts, job);
+		_get_sched_cpuset(topology, hwtype, req_hwtype, &ts, job,
+				  taskid);
 		tssize = sizeof(cpu_set_t);
 		fstatus = SLURM_SUCCESS;
 		_validate_mask(taskid, obj, &ts);
@@ -1246,7 +1246,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job,
 			/* tasks are distributed in blocks within a plane */
 			_task_cgroup_cpuset_dist_block(topology,
 				hwtype, req_hwtype,
-				nobj, job, bind_verbose, cpuset);
+				nobj, job, bind_verbose, cpuset, taskid);
 			break;
 		case SLURM_DIST_ARBITRARY:
 		case SLURM_DIST_BLOCK:
@@ -1256,7 +1256,8 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job,
 			    & CR_CORE_DEFAULT_DIST_BLOCK) {
 				_task_cgroup_cpuset_dist_block(topology,
 					hwtype, req_hwtype,
-					nobj, job, bind_verbose, cpuset);
+					nobj, job, bind_verbose, cpuset,
+					taskid);
 				break;
 			}
 			/*
@@ -1266,7 +1267,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job,
 		default:
 			_task_cgroup_cpuset_dist_cyclic(topology,
 				hwtype, req_hwtype,
-				job, bind_verbose, cpuset);
+				job, bind_verbose, cpuset, taskid);
 			break;
 		}
 
