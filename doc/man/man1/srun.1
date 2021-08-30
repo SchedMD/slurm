@@ -1,4 +1,4 @@
-.TH srun "1" "Slurm Commands" "July 2021" "Slurm Commands"
+.TH srun "1" "Slurm Commands" "August 2021" "Slurm Commands"
 
 .SH "NAME"
 srun \- Run parallel jobs
@@ -948,6 +948,11 @@ job (e.g. the first GPU is 0, even if the global ID is 3). Otherwise, the GPU
 IDs are global IDs, and all GPUs on each node in the job should be allocated for
 predictable binding results.
 .TP
+\fBper_task:<gpus_per_task>\fR
+Each task will be bound to the number of gpus specified in
+\fI<gpus_per_task>\fR. Gpus are assigned in order to tasks. The first task will
+be assigned the first x number of gpus on the node etc.
+.TP
 \fBsingle:<tasks_per_gpu>\fR
 Like \fI\-\-gpu\-bind=closest\fR, except that each task can only be bound to a
 single GPU, even when it can be bound to multiple GPUs that are equally close.
@@ -957,11 +962,6 @@ second \fI<tasks_per_gpu>\fR tasks are bound to the second GPU available, etc.
 This is basically a block distribution of tasks onto available GPUs, where the
 available GPUs are determined by the socket affinity of the task and the socket
 affinity of the GPUs as specified in gres.conf's \fICores\fR parameter.
-.TP
-\fBper_task:<gpus_per_task>\fR
-Each task will be bound to the number of gpus specified in
-\fI<gpus_per_task>\fR. Gpus are assigned in order to tasks. The first task will
-be assigned the first x number of gpus on the node etc.
 .RE
 
 .TP
