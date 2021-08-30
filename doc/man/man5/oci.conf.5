@@ -15,7 +15,7 @@ Changes to the configuration file take effect upon restart of Slurm daemons.
 
 .LP
 The following oci.conf parameters are defined to control the behavior
-of the \fB--container\fR argument of \fBsalloc\fR, \fBsrun\fR, and \fBsbatch\fR
+of the \fB\-\-container\fR argument of \fBsalloc\fR, \fBsrun\fR, and \fBsbatch\fR
 
 .TP
 \fBContainerPath\fR
@@ -81,7 +81,7 @@ Default: (disabled)
 .SH "NOTES"
 .LP
 OCI container support is disabled if oci.conf does not exist. If disabled, any
-user passing \fB--container\fR will be doing so in a purely advisor manner.
+user passing \fB\-\-container\fR will be doing so in a purely advisor manner.
 
 .SH "OCI Pattern"
 
@@ -89,26 +89,26 @@ All of the OCI patterns will replace the following characters:
 .sp
 replacements:
 .IP \(bu 10
-%% - replace as "%"
+%% \- replace as "%"
 .IP \(bu
-%@ - replace as the command and arguments. Each argument will be
+%@ \- replace as the command and arguments. Each argument will be
      enclosed with single quotes and escaped.
 .IP \(bu
-%b - replace as OCI Bundle Path
+%b \- replace as OCI Bundle Path
 .IP \(bu
-%e - replace as path to file containing environment if \fBCreateEnvFile=true\fR.
+%e \- replace as path to file containing environment if \fBCreateEnvFile=true\fR.
 .IP \(bu
-%j - replace as numeric job id
+%j \- replace as numeric job id
 .IP \(bu
-%n - replace as nodename
+%n \- replace as nodename
 .IP \(bu
-%r - replace as original path to rootfs
+%r \- replace as original path to rootfs
 .IP \(bu
-%s - replace as numeric step id
+%s \- replace as numeric step id
 .IP \(bu
-%t - replace as numeric step task id
+%t \- replace as numeric step task id
 .IP \(bu
-%u - replace as user name
+%u \- replace as user name
 
 .SH "COPYING"
 Copyright (C) 2021 SchedMD LLC.

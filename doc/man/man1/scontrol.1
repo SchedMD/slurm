@@ -197,7 +197,7 @@ as "DOWN", then the node will remain in a down state after rebooting. If
 and the node's reason and "DRAIN" state will be cleared.
 Resuming nodes will be considered as available in
 backfill future scheduling and won't be replaced by idle nodes in a reservation.
-The "reason" option sets each node's reason to a user-defined message.
+The "reason" option sets each node's reason to a user\-defined message.
 A default reason of "reboot requested" is set if no other reason is set on the
 node.
 The reason will be appended with "reboot issued" when the reboot is issued and
@@ -392,8 +392,8 @@ element. The job step ID is of the form "job_id.step_id", (e.g. "1234.1").
 on the same node from which the scontrol command is executed (the
 local host). It can be useful to diagnose problems.
 By default \fBhostlist\fR does not sort the node list or make it
-unique (e.g. tux2,tux1,tux2 = tux[2,1-2]).  If you wanted a sorted
-list use \fBhostlistsorted\fR (e.g. tux2,tux1,tux2 = tux[1-2,2]).
+unique (e.g. tux2,tux1,tux2 = tux[2,1\-2]).  If you wanted a sorted
+list use \fBhostlistsorted\fR (e.g. tux2,tux1,tux2 = tux[1\-2,2]).
 By default, all elements of the entity type specified are printed.
 .TP
 \fBhostlistsorted\fR
@@ -410,8 +410,8 @@ is mapped to "tux1","tux2" and "tux3" (one hostname per line).
 \fBjob\fR
 Displays statistics about all jobs by default. If an optional jobid is
 specified, details for just that job will be displayed.
-If the job does not specify socket-per-node, cores-per-socket or
-threads-per-core then it will display '*' in the ReqS:C:T=*:*:* field.
+If the job does not specify socket\-per\-node, cores\-per\-socket or
+threads\-per\-core then it will display '*' in the ReqS:C:T=*:*:* field.
 .TP
 \fBnode\fR
 Displays statistics about all nodes by default. If an optional nodename is
@@ -485,8 +485,8 @@ Any job not matching \fBall\fP of those fields will not be effected.
 Only jobs submitted to a single partition will be effected.
 This operation changes the order of jobs by adjusting job nice values.
 The net effect on that user's throughput will be negligible to slightly negative.
-This operation is disabled by default for non-privileged (non-operator, admin,
-SlurmUser, or root) users. This operation may be enabled for non-privileged
+This operation is disabled by default for non\-privileged (non\-operator, admin,
+SlurmUser, or root) users. This operation may be enabled for non\-privileged
 users by the system administrator by including the option "enable_user_top" in
 the SchedulerParameters configuration parameter.
 
@@ -538,8 +538,8 @@ PrologFlags=Alloc as this will result in a deadlock.
 .TP
 \fBwrite batch_script\fP \fIjob_id optional_filename\fP
 Write the batch script for a given job_id to a file or to stdout. The file will
-default to \fIslurm-\<job_id\>.sh\fP if the optional filename argument is not
-given. The script will be written to stdout if - is given instead of a filename.
+default to \fIslurm\-\<job_id\>.sh\fP if the optional filename argument is not
+given. The script will be written to stdout if \- is given instead of a filename.
 The batch script can only be retrieved by an admin or operator, or by the
 owner of the job.
 
@@ -700,7 +700,7 @@ This job can begin execution after the specified jobs have terminated.
 .TP
 \fBafternotok:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have terminated
-in some failed state (non-zero exit code, node failure, timed out, etc).
+in some failed state (non\-zero exit code, node failure, timed out, etc).
 .TP
 \fBafterok:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have successfully
@@ -754,7 +754,7 @@ Value may be cleared with blank data value, for example "Features=".
 
 .TP
 \fIGres\fP=<list>
-Specifies a comma-delimited list of generic consumable resources.
+Specifies a comma\-delimited list of generic consumable resources.
 The format of each entry on the list is "name[:count[*cpu]]".
 The name is that of the consumable resource.
 The count is the number of those resources with a default value of 1.
@@ -1191,7 +1191,7 @@ In order to change the GRES count to another value, modify your slurm.conf and
 gres.conf files and restart daemons.
 If GRES are associated with specific sockets, that information will be reported
 For example if all 4 GPUs on a node are all associated with socket zero, then
-"Gres=gpu:4(S:0)". If associated with sockets 0 and 1 then "Gres=gpu:4(S:0-1)".
+"Gres=gpu:4(S:0)". If associated with sockets 0 and 1 then "Gres=gpu:4(S:0\-1)".
 The information of which specific GPUs are associated with specific GPUs is not
 reported, but only available by parsing the gres.conf file.
 Generic resources assigned via \fBscontrol\fR will only persist across the
@@ -1337,7 +1337,7 @@ The total memory, in MB, currently free on the node as reported by the OS.
 .TP
 \fILastBusyTime\fP
 The last time the node was busy (i.e. last time the node had jobs on it). This
-time is used in PowerSave to determine when to suspend nodes (e.g. now -
+time is used in PowerSave to determine when to suspend nodes (e.g. now \-
 LastBusy > SuspendTime).
 
 .TP
@@ -1402,7 +1402,7 @@ complete.
 .TP
 \fBDYNAMIC\fR
 Slurm allows you to define multiple types of nodes in a FUTURE state.
-When starting \fBslurmd\fR on a node you can specify the \fB-F\fR flag to have
+When starting \fBslurmd\fR on a node you can specify the \fB\-F\fR flag to have
 the node match and use an existing definition in your slurm.conf file. The
 DYNAMIC state indicates that the node was started as a Dynamic Future node.
 .TP
@@ -1589,7 +1589,7 @@ Possible values are "YES" and "NO".
 
 .TP
 \fIJobDefaults\fP=<specs>
-Specify job default values using a comma-delimited list of "key=value" pairs.
+Specify job default values using a comma\-delimited list of "key=value" pairs.
 Supported keys include
 .RS
 .TP 14
@@ -1634,7 +1634,7 @@ Set the minimum number of nodes which will be allocated to any single job
 in the partition.
 Changing the \fIMinNodes\fP of a partition has no effect upon jobs that
 have already begun execution. Increasing this value may prevent pending jobs
-from starting, even if they were submitted without -N/--nodes specification.
+from starting, even if they were submitted without \-N/\-\-nodes specification.
 If you do get in that situation, updating the \fIMinNodes\fP value of a
 pending job using the scontrol command will allow that job to be scheduled.
 
@@ -1783,7 +1783,7 @@ If both Users/Groups and Accounts are specified, a job must match both in order
 to use the reservation.
 Accounts can also be denied access to reservations by preceding all of the
 account names with '\-'. Alternately precede the equal sign with '\-'.
-For example, "Accounts=-physcode1,-physcode2" or "Accounts-=physcode1,physcode2"
+For example, "Accounts=\-physcode1,\-physcode2" or "Accounts\-=physcode1,physcode2"
 will permit any account except physcode1 and physcode2 to use the reservation.
 You can add or remove individual accounts from an existing reservation by
 using the update command and adding a '+' or '\-' sign before the '=' sign.
@@ -1941,7 +1941,7 @@ nodes with a specific feature reserved for a specific account so users in this
 account may use this nodes plus possibly other nodes without this feature.
 .TP
 \fIFIRST_CORES\fR
-Use the lowest numbered cores on a node only. Flag removal with '-=' is not
+Use the lowest numbered cores on a node only. Flag removal with '\-=' is not
 supported.
 .TP
 \fIIGNORE_JOBS\fR
@@ -1965,11 +1965,11 @@ request it.
 By default, when a reservation ends the reservation request will be removed from
 any pending jobs submitted to the reservation and will be put into a held state.
 Use this flag to let jobs run outside of the reservation after the reservation
-is gone. Flag removal with '-=' is not supported.
+is gone. Flag removal with '\-=' is not supported.
 .TP
 \fIOVERLAP\fR
 This reservation can be allocated resources that are already in another
-reservation. Flag removal with '-=' is not supported.
+reservation. Flag removal with '\-=' is not supported.
 .TP
 \fIPART_NODES\fR
 This flag can be used to reserve all nodes within the specified
@@ -1990,7 +1990,7 @@ replenished using idle resources.
 This option can be used to maintain a constant number of idle resources
 available for pending jobs (subject to availability of idle resources).
 This should be used with the \fINodeCnt\fP reservation option; do not identify
-specific nodes to be included in the reservation. Flag removal with '-=' is
+specific nodes to be included in the reservation. Flag removal with '\-=' is
 not supported.
 
 \fBNOTE\fR: Removing a node from the cluster while in a reservation with the
@@ -2001,7 +2001,7 @@ Nodes which are DOWN or DRAINED are automatically replenished using idle resourc
 This option can be used to maintain a constant sized pool of resources
 available for pending jobs (subject to availability of idle resources).
 This should be used with the \fINodeCnt\fP reservation option; do not identify
-specific nodes to be included in the reservation. Flag removal with '-=' is
+specific nodes to be included in the reservation. Flag removal with '\-=' is
 not supported.
 
 \fBNOTE\fR: Removing a node from the cluster while in a reservation with the
@@ -2074,7 +2074,7 @@ If both Users/Groups and Accounts are specified, a job must match both in order
 to use the reservation.
 Users can also be denied access to reservations by preceding all of the
 user names with '\-'. Alternately precede the equal sign with '\-'.
-For example, "User=-jones1,-smith2" or "User-=jones1,smith2"
+For example, "User=\-jones1,\-smith2" or "User\-=jones1,smith2"
 will permit any user except jones1 and smith2 to use the reservation.
 You can add or remove individual users from an existing reservation by
 using the update command and adding a '+' or '\-' sign before the '=' sign.
@@ -2246,7 +2246,7 @@ PartitionName=debug
    AllocNodes=ALL AllowGroups=ALL Default=YES
    DefaultTime=NONE DisableRootJobs=NO Hidden=NO
    MaxNodes=UNLIMITED MaxTime=UNLIMITED MinNodes=1
-   Nodes=snowflake[0-48]
+   Nodes=snowflake[0\-48]
    Priority=1 RootOnly=NO OverSubscribe=YES:4
    State=UP TotalCPUs=694 TotalNodes=49
 scontrol: update PartitionName=debug MaxTime=60:00 MaxNodes=4
@@ -2256,8 +2256,8 @@ JobId=71701 Name=hostname
    Priority=66264 Account=none QOS=normal WCKey=*123
    JobState=COMPLETED Reason=None Dependency=(null)
    TimeLimit=UNLIMITED Requeue=1 Restarts=0 BatchFlag=0 ExitCode=0:0
-   SubmitTime=2010-01-05T10:58:40 EligibleTime=2010-01-05T10:58:40
-   StartTime=2010-01-05T10:58:40 EndTime=2010-01-05T10:58:40
+   SubmitTime=2010\-01\-05T10:58:40 EligibleTime=2010\-01\-05T10:58:40
+   StartTime=2010\-01\-05T10:58:40 EndTime=2010\-01\-05T10:58:40
    SuspendTime=None SecsPreSuspend=0
    Partition=debug AllocNode:Sid=snowflake:4702
    ReqNodeList=(null) ExcNodeList=(null)
@@ -2267,11 +2267,11 @@ JobId=71701 Name=hostname
    Features=(null) Reservation=(null)
    OverSubscribe=OK Contiguous=0 Licenses=(null) Network=(null)
 scontrol: update JobId=71701 TimeLimit=30:00 Priority=500
-scontrol: show hostnames tux[1-3]
+scontrol: show hostnames tux[1\-3]
 tux1
 tux2
 tux3
-scontrol: create res StartTime=2009-04-01T08:00:00 Duration=5:00:00 Users=dbremer NodeCnt=10
+scontrol: create res StartTime=2009\-04\-01T08:00:00 Duration=5:00:00 Users=dbremer NodeCnt=10
 Reservation created: dbremer_1
 scontrol: update Reservation=dbremer_1 Flags=Maint NodeCnt=20
 scontrol: delete Reservation=dbremer_1
@@ -2284,7 +2284,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 .br
-Copyright (C) 2010-2021 SchedMD LLC.
+Copyright (C) 2010\-2021 SchedMD LLC.
 .LP
 This file is part of Slurm, a resource management program.
 For details, see <https://slurm.schedmd.com/>.

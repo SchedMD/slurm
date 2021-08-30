@@ -4,12 +4,12 @@
 scrontab \- manage Slurm crontab files
 
 .SH "SYNOPSIS"
-scrontab [-u user] file
+scrontab [\-u user] file
 .br
-scrontab [-u user] [ -e | -l | -r ]
+scrontab [\-u user] [ \-e | \-l | \-r ]
 
 .SH "DESCRIPTION"
-\fBscrontab\fR is used to set, edit, and remove a user's Slurm-managed crontab.
+\fBscrontab\fR is used to set, edit, and remove a user's Slurm\-managed crontab.
 This file can define a number of recurring batch jobs to run on a scheduled
 interval.
 .LP
@@ -37,17 +37,17 @@ Each line has five fields that have the following meanings:
 .RS
 field           allowed values
 .br
------           --------------
+-\-\-\-\-           \-\-\-\-\-\-\-\-\-\-\-\-\-\-
 .br
-minute          0-59
+minute          0\-59
 .br
-hour            0-23
+hour            0\-23
 .br
-day of month    1-31
+day of month    1\-31
 .br
-month           1-12 (or name)
+month           1\-12 (or name)
 .br
-day of week     0-7 (0 and 7 are Sunday, or use name)
+day of week     0\-7 (0 and 7 are Sunday, or use name)
 .RE
 
 .LP
@@ -62,7 +62,7 @@ interval appropriate for that field.
 .LP
 Custom variables can be defined as within a regular shell script.  The `$'
 character introduces variable expansion. Simple parameter expansion is the only
-currently accepted expansion variant (i.e. ${parameter} or ${parameter:-word}
+currently accepted expansion variant (i.e. ${parameter} or ${parameter:\-word}
 are not supported). The variable expansion will only occur within \fBscrontab\fR
 job commands. It is not possible to expand variables in other type of lines
 (other variable definitions, comments or crontab entries). The expansion will
@@ -72,7 +72,7 @@ ignored.
 
 .SH "OPTIONS"
 The first form of this command is used to install a new crontab from some named
-file or standard input if the pseudo-filename ``-'' is given.
+file or standard input if the pseudo\-filename ``\-'' is given.
 .TP
 \fB\-e\fR
 Edit the crontab. If a crontab does not exist already, a default example
@@ -144,9 +144,9 @@ following to \fBscrontab\fR:
 .RS
 .nf
 DIR=/home/user1
-#SCRON -p high
-#SCRON -A sub1
-#SCRON -t 1:00
+#SCRON \-p high
+#SCRON \-A sub1
+#SCRON \-t 1:00
 @hourly $DIR/date.printer.job
 .fi
 .RE
@@ -158,7 +158,7 @@ you would add the following to \fBscrontab\fR.
 
 .RS
 .nf
-1-5,30 8-17/2 * * wed $DIR/example.job
+1\-5,30 8\-17/2 * * wed $DIR/example.job
 .fi
 .RE
 

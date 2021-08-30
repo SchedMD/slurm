@@ -386,7 +386,7 @@ including the microseconds, the daemon's process ID and the current thread ID.
 .TP
 \fBMaxQueryTimeRange\fR
 Return an error if a query is against too large of a time span, to prevent
-ill-formed queries from causing performance problems within SlurmDBD.
+ill\-formed queries from causing performance problems within SlurmDBD.
 Default value is INFINITE which allows any queries to proceed.
 Accepted time formats are the same as the MaxTime option in slurm.conf.
 User \fBSlurmUser\fR and \fBroot\fR are exempt from this restriction.
@@ -585,7 +585,7 @@ records are written. Defaults to "slurm_acct_db".
 
 .TP
 \fBStorageParameters\fR
-Comma separated list of key-value pair parameters. Currently
+Comma separated list of key\-value pair parameters. Currently
 supported values include options to establish a secure connection to the
 database:
 .RS
@@ -707,7 +707,7 @@ StorageType=accounting_storage/mysql
 StorageUser=database_mgr
 
 .SH "COPYING"
-Copyright (C) 2008-2010 Lawrence Livermore National Security.
+Copyright (C) 2008\-2010 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 .br
 Copyright (C) 2010\-2021 SchedMD LLC.

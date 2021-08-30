@@ -7,7 +7,7 @@ and then release the allocation when the command is finished.
 .SH "SYNOPSIS"
 \fBsalloc\fR [\fIOPTIONS(0)\fR...] [ : [\fIOPTIONS(N)\fR...]] [\fIcommand(0)\fR [\fIargs(0)\fR...]]
 
-Option(s) define multiple jobs in a co-scheduled heterogeneous job.
+Option(s) define multiple jobs in a co\-scheduled heterogeneous job.
 For more details about heterogeneous jobs see the document
 .br
 https://slurm.schedmd.com/heterogeneous_jobs.html
@@ -80,7 +80,7 @@ where \fI<datatype>\fR=\fI<interval>\fR specifies the task sampling
 interval for the jobacct_gather plugin or a
 sampling interval for a profiling type by the
 acct_gather_profile plugin. Multiple,
-comma-separated \fI<datatype>\fR=\fI<interval>\fR intervals
+comma\-separated \fI<datatype>\fR=\fI<interval>\fR intervals
 may be specified. Supported datatypes are as follows:
 .RS
 .TP
@@ -131,7 +131,7 @@ sockets, cores per socket and/or threads per core.
 Each value specified is considered a minimum.
 An asterisk (*) can be used as a placeholder indicating that all available
 resources of that type are to be utilized. Values can also be specified as
-min-max. The individual levels can also be specified in separate options if
+min\-max. The individual levels can also be specified in separate options if
 desired:
 .nf
     \fB\-\-sockets\-per\-node\fR=<\fIsockets\fR>
@@ -151,7 +151,7 @@ option applies to job allocations.
 \fBNOTE\fR: This option is mutually exclusive with \fB\-\-hint\fR,
 \fB\-\-threads\-per\-core\fR and \fB\-\-ntasks\-per\-core\fR.
 .br
-\fBNOTE\fR: This option may implicitly set the number of tasks (if \fB-n\fR
+\fBNOTE\fR: This option may implicitly set the number of tasks (if \fB\-n\fR
 was not specified) as one task per requested thread.
 
 .TP
@@ -295,7 +295,7 @@ Specification of multiple KNL modes requires the use of a heterogeneous job.
 Brackets can be used to indicate that you are looking for a set of nodes with
 the different requirements contained within the brackets. For example,
 .TP
-\fB--constraint="[(rack1|rack2)*1&(rack3)*2]"\fR will get you one node with
+\fB\-\-constraint="[(rack1|rack2)*1&(rack3)*2]"\fR will get you one node with
 either the "rack1" or "rack2" features and two nodes with the "rack3" feature.
 The same request without the brackets will try to find a single node that
 meets those requirements.
@@ -309,7 +309,7 @@ grouped with AND (e.g. "&") operands.
 .RE
 
 .TP
-\fB--container=<absolute path to container>\fR
+\fB\-\-container=<absolute path to container>\fR
 Path to OCI container bundle.
 
 .TP
@@ -326,7 +326,7 @@ Restrict node selection to nodes with at least the specified number of
 cores per socket.  See additional information under \fB\-B\fR option
 above when task/affinity plugin is enabled.
 .br
-\fBNOTE\fR: This option may implicitly set the number of tasks (if \fB-n\fR
+\fBNOTE\fR: This option may implicitly set the number of tasks (if \fB\-n\fR
 was not specified) as one task per requested thread.
 
 .TP
@@ -516,7 +516,7 @@ exit code of zero).
 .TP
 \fBafternotok:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have terminated
-in some failed state (non-zero exit code, node failure, timed out, etc).
+in some failed state (non\-zero exit code, node failure, timed out, etc).
 .TP
 \fBafterok:job_id[:jobid...]\fR
 This job can begin execution after the specified jobs have successfully
@@ -623,7 +623,7 @@ from the beginning of the list. To simplify support for large task counts,
 the lists may follow a map with an asterisk and repetition count.
 For example "map_gpu:0*4,1*4".
 If the task/cgroup plugin is used and ConstrainDevices is set in cgroup.conf,
-then the GPU IDs are zero-based indexes relative to the GPUs allocated to the
+then the GPU IDs are zero\-based indexes relative to the GPUs allocated to the
 job (e.g. the first GPU is 0, even if the global ID is 3). Otherwise, the GPU
 IDs are global IDs, and all GPUs on each node in the job should be allocated for
 predictable binding results.
@@ -638,13 +638,13 @@ preceded with an optional '0x'. To simplify support for large task counts, the
 lists may follow a map with an asterisk and repetition count.
 For example "mask_gpu:0x0f*4,0xf0*4".
 If the task/cgroup plugin is used and ConstrainDevices is set in cgroup.conf,
-then the GPU IDs are zero-based indexes relative to the GPUs allocated to the
+then the GPU IDs are zero\-based indexes relative to the GPUs allocated to the
 job (e.g. the first GPU is 0, even if the global ID is 3). Otherwise, the GPU
 IDs are global IDs, and all GPUs on each node in the job should be allocated for
 predictable binding results.
 .TP
 \fBsingle:<tasks_per_gpu>\fR
-Like \fI--gpu-bind=closest\fR, except that each task can only be bound to a
+Like \fI\-\-gpu\-bind=closest\fR, except that each task can only be bound to a
 single GPU, even when it can be bound to multiple GPUs that are equally close.
 The GPU to bind to is determined by \fI<tasks_per_gpu>\fR, where the
 first \fI<tasks_per_gpu>\fR tasks are bound to the first GPU available, the
@@ -726,15 +726,15 @@ For example "\-\-gpus\-per\-task=volta:1". Multiple options can be
 requested in a comma separated list, for example:
 "\-\-gpus\-per\-task=volta:3,kepler:1". See also the \fB\-\-gpus\fR,
 \fB\-\-gpus\-per\-socket\fR and \fB\-\-gpus\-per\-node\fR options.
-This option requires an explicit task count, e.g. -n, --ntasks or "--gpus=X
---gpus-per-task=Y" rather than an ambiguous range of nodes with -N, --nodes.
-This option will implicitly set --gpu-bind=per_task:<gpus_per_task>, but that
-can be overridden with an explicit --gpu-bind specification.
+This option requires an explicit task count, e.g. \-n, \-\-ntasks or "\-\-gpus=X
+\-\-gpus\-per\-task=Y" rather than an ambiguous range of nodes with \-N, \-\-nodes.
+This option will implicitly set \-\-gpu\-bind=per_task:<gpus_per_task>, but that
+can be overridden with an explicit \-\-gpu\-bind specification.
 .br
 
 .TP
 \fB\-\-gres\fR=<\fIlist\fR>
-Specifies a comma-delimited list of generic consumable resources.
+Specifies a comma\-delimited list of generic consumable resources.
 The format of each entry on the list is "name[[:type]:count]".
 The name is that of the consumable resource.
 The count is the number of those resources with a default value of 1.
@@ -810,7 +810,7 @@ Select settings for memory bound applications:
 use only one core in each socket, one thread per core.
 .TP
 .B [no]multithread
-[don't] use extra threads with in-core multi-threading
+[don't] use extra threads with in\-core multi\-threading
 which can benefit communication intensive applications.
 Only supported with the task/affinity plugin.
 .TP
@@ -1208,7 +1208,7 @@ tasks on every node (i.e. the lowest task ID on each node is mapped to the
 first mask specified in the list, etc.).
 NUMA masks are \fBalways\fR interpreted as hexadecimal values.
 Note that masks must be preceded with a '0x' if they don't begin
-with [0-9] so they are seen as numerical values.
+with [0\-9] so they are seen as numerical values.
 If the number of tasks (or ranks) exceeds the number of elements in this list,
 elements in the list will be reused as needed starting from the beginning of
 the list.
@@ -1325,7 +1325,7 @@ Supported values include:
 .RS
 .TP 12
 \fBBULK_XFER\fR[=<\fIresources\fR>]
-Enable bulk transfer of data using Remote Direct-Memory Access (RDMA).
+Enable bulk transfer of data using Remote Direct\-Memory Access (RDMA).
 The optional \fIresources\fR specification is a numeric value which can have
 a suffix of "k", "K", "m", "M", "g" or "G" for kilobytes, megabytes or
 gigabytes.
@@ -1335,7 +1335,7 @@ be specified at this time.
 .TP
 \fBCAU\fR=<\fIcount\fR>
 Number of Collectve Acceleration Units (CAU) required.
-Applies only to IBM Power7-IH processors.
+Applies only to IBM Power7\-IH processors.
 Default value is zero.
 Independent CAU will be allocated for each programming interface (MPI, LAPI, etc.)
 .TP
@@ -1346,7 +1346,7 @@ Specify the device name to use for communications (e.g. "eth0" or "mlx4_0").
 Specify the device type to use for communications.
 The supported values of \fItype\fR are:
 "IB" (InfiniBand), "HFI" (P7 Host Fabric Interface),
-"IPONLY" (IP-Only interfaces), "HPCE" (HPC Ethernet), and
+"IPONLY" (IP\-Only interfaces), "HPCE" (HPC Ethernet), and
 "KMUX" (Kernel Emulation of HPCE).
 The devices allocated to a job must all be of the same type.
 The default value depends upon depends upon what hardware is available and in
@@ -1355,7 +1355,7 @@ HFI, IB, HPCE, and KMUX.
 .TP
 \fBIMMED\fR =<\fIcount\fR>
 Number of immediate send slots per window required.
-Applies only to IBM Power7-IH processors.
+Applies only to IBM Power7\-IH processors.
 Default value is zero.
 .TP
 \fBINSTANCES\fR =<\fIcount\fR>
@@ -1438,18 +1438,18 @@ instead of the node level.
 \fB\-\-ntasks\-per\-gpu\fR=<\fIntasks\fR>
 Request that there are \fIntasks\fR tasks invoked for every GPU.
 This option can work in two ways: 1) either specify \fB\-\-ntasks\fR in
-addition, in which case a type-less GPU specification will be automatically
+addition, in which case a type\-less GPU specification will be automatically
 determined to satisfy \fB\-\-ntasks\-per\-gpu\fR, or 2) specify the GPUs wanted
 (e.g. via \fB\-\-gpus\fR or \fB\-\-gres\fR) without specifying \fB\-\-ntasks\fR,
 and the total task count will be automatically determined.
 The number of CPUs needed will be automatically increased if necessary to allow
 for any calculated task count.
-This option will implicitly set \fB\-\-gpu-bind=single:<ntasks>\fR, but that
-can be overridden with an explicit \fB\-\-gpu-bind\fR specification.
+This option will implicitly set \fB\-\-gpu\-bind=single:<ntasks>\fR, but that
+can be overridden with an explicit \fB\-\-gpu\-bind\fR specification.
 This option is not compatible with a node range
 (i.e. \-N<\fIminnodes\fR\-\fImaxnodes\fR>).
-This option is not compatible with \fB\-\-gpus-per-task\fR,
-\fB\-\-gpus-per-socket\fR, or \fB\-\-ntasks-per-node\fR.
+This option is not compatible with \fB\-\-gpus\-per\-task\fR,
+\fB\-\-gpus\-per\-socket\fR, or \fB\-\-ntasks\-per\-node\fR.
 This option is not supported unless \fISelectType=cons_tres\fR is
 configured (either directly or indirectly on Cray systems).
 
@@ -1543,7 +1543,7 @@ Only Slurm operators and administrators can set the priority of a job.
 .TP
 \fB\-\-profile\fR=<all|none|[energy[,|task[,|lustre[,|network]]]]>
 enables detailed data collection by the acct_gather_profile plugin.
-Detailed data are typically time-series that are stored in an HDF5 file for
+Detailed data are typically time\-series that are stored in an HDF5 file for
 the job or an InfluxDB database depending on the configured plugin.
 
 .RS
@@ -1646,7 +1646,7 @@ Restrict node selection to nodes with at least the specified number of
 sockets.  See additional information under \fB\-B\fR option above when
 task/affinity plugin is enabled.
 .br
-\fBNOTE\fR: This option may implicitly set the number of tasks (if \fB-n\fR
+\fBNOTE\fR: This option may implicitly set the number of tasks (if \fB\-n\fR
 was not specified) as one task per requested thread.
 
 .TP
@@ -1706,7 +1706,7 @@ each core rather than the number of application tasks to be launched per core.
 See additional information under \fB\-B\fR option above when task/affinity
 plugin is enabled.
 .br
-\fBNOTE\fR: This option may implicitly set the number of tasks (if \fB-n\fR
+\fBNOTE\fR: This option may implicitly set the number of tasks (if \fB\-n\fR
 was not specified) as one task per requested thread.
 
 .TP
@@ -1744,7 +1744,7 @@ its permissions to the uid specified after node allocation is
 successful. \fIuser\fR may be the user name or numerical user ID.
 
 .TP
-\fB\-\-use-min-nodes\fR
+\fB\-\-use\-min\-nodes\fR
 If a range of node counts is given, prefer the smaller count.
 
 .TP
@@ -2198,7 +2198,7 @@ To create a heterogeneous job with 3 components, each allocating a unique set \
 of nodes:
 
 .nf
-$ salloc -w node[2-3] : -w node4 : -w node[5-7] bash
+$ salloc \-w node[2\-3] : \-w node4 : \-w node[5\-7] bash
 salloc: job 32294 queued and waiting for resources
 salloc: job 32294 has been allocated resources
 salloc: Granted job allocation 32294

@@ -38,10 +38,10 @@ of the job_container/tmpfs plugin.
 .TP
 \fBAutoBasePath\fR
 This determines if plugin should create the BasePath directory or not. Set it to
-'true' if directory is not pre-created before slurm startup. If set to true,
+'true' if directory is not pre\-created before slurm startup. If set to true,
 the directory is created with permission 0755. Directory is not deleted during
 slurm shutdown. If set to 'false' or not specified, plugin would expect
-directory to exist. This option can be used on a global or per-line basis.
+directory to exist. This option can be used on a global or per\-line basis.
 This parameter is optional.
 
 .TP
@@ -61,7 +61,7 @@ to mount and unmount the private directories for the job.
 Specify fully qualified pathname of an optional initialization script. This
 script is run before the namespace construction of a job. It can be used to
 make the job join additional namespaces prior to the construction of /tmp
-namespace or it can be used for any site-specific setup. This parameter is
+namespace or it can be used for any site\-specific setup. This parameter is
 optional.
 
 .TP
@@ -80,12 +80,12 @@ the example below. This parameter is optional.
 ###
 # Sample job_container.conf file 1
 # Define 2 basepaths
-# The first will only be on largemem[1-2] and it will automatically created.
-# The second will only be on gpu[1-10], will be expected to exist and will run
+# The first will only be on largemem[1\-2] and it will automatically created.
+# The second will only be on gpu[1\-10], will be expected to exist and will run
 #     an initscript before each job.
 ###
-NodeName=largemem[1-2] AutoBasePath=true BasePath=/var/nvme/storage
-NodeName=gpu[1-10] BasePath=/var/nvme/storage InitScript=/etc/slurm/init.sh
+NodeName=largemem[1\-2] AutoBasePath=true BasePath=/var/nvme/storage
+NodeName=gpu[1\-10] BasePath=/var/nvme/storage InitScript=/etc/slurm/init.sh
 .fi
 
 .nf
@@ -117,7 +117,7 @@ restarted for changes to take effect. Additionally this can be disruptive to
 jobs already running on the node. So care must be taken to make sure no jobs
 are running if any changes to job_container.conf are deployed.
 
-Restarting slurmd is safe and non-disruptive to running jobs, as long as
+Restarting slurmd is safe and non\-disruptive to running jobs, as long as
 job_container.conf is not changed between restarts in which case above point
 applies.
 

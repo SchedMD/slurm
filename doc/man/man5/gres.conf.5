@@ -66,12 +66,12 @@ Automatically detect AMD GPUs
 
 \fIAutoDetect\fR can be on a line by itself, in which case it will globally
 apply to all lines in gres.conf by default. In addition, \fIAutoDetect\fR can be
-combined with \fBNodeName\fR to only apply to certain nodes. Node-specific
-\fIAutoDetect\fRs will trump the global \fIAutoDetect\fR. A node-specific
+combined with \fBNodeName\fR to only apply to certain nodes. Node\-specific
+\fIAutoDetect\fRs will trump the global \fIAutoDetect\fR. A node\-specific
 \fIAutoDetect\fR only needs to be specified once per node. If specified multiple
 times for the same nodes, they must all be the same value. To unset
 \fIAutoDetect\fR for a node when a global \fIAutoDetect\fR is set, simply set it
-to "off" in a node-specific GRES line.
+to "off" in a node\-specific GRES line.
 E.g.: \fINodeName=tux3 AutoDetect=off Name=gpu File=/dev/nvidia[0\-3]\fR.
 
 .TP
@@ -96,7 +96,7 @@ specific CPUs on the same NUMA or socket and this option should be used to
 identify all cores on some socket.
 
 
-Multiple cores may be specified using a comma-delimited list or a range may be
+Multiple cores may be specified using a comma\-delimited list or a range may be
 specified using a "\-" separator (e.g. "0,1,2,3" or "0\-3").
 If a job specifies \fB\-\-gres\-flags=enforce\-binding\fR, then only the
 identified cores can be allocated with each generic resource. This will tend to
@@ -168,8 +168,8 @@ Allowed values at present are:
 .TP 20
 \fBCountOnly\fR
 Do not attempt to load plugin as this GRES will only be used to track counts of
-GRES used. This avoids attempting to load non-existent plugin which can
-affect filesystems with high latency metadata operations for non-existent files.
+GRES used. This avoids attempting to load non\-existent plugin which can
+affect filesystems with high latency metadata operations for non\-existent files.
 .TP
 \fBnvidia_gpu_env\fR
 Set environment variable \fICUDA_VISIBLE_DEVICES\fR for all GPUs on the
@@ -184,20 +184,20 @@ Set environment variable \fIGPU_DEVICE_ORDINAL\fR for all GPUs on the
 specified node(s).
 .TP
 \fBno_gpu_env\fR
-Set no GPU-specific environment variables. This is mutually exclusive to all
-other environment-related flags.
+Set no GPU\-specific environment variables. This is mutually exclusive to all
+other environment\-related flags.
 .RE
 
-If no environment-related flags are specified, then \fInvidia_gpu_env\fR,
+If no environment\-related flags are specified, then \fInvidia_gpu_env\fR,
 \fIamd_gpu_env\fR, and \fIopencl_env\fR will be implicitly set by default. If
-\fBAutoDetect\fR is used and environment-related flags are not specified, then
+\fBAutoDetect\fR is used and environment\-related flags are not specified, then
 \fIAutoDetect=nvml\fR will set \fInvidia_gpu_env\fR and \fIAutoDetect=rsmi\fR
-will set \fIamd_gpu_env\fR. Conversely, specified environment-related flags will
+will set \fIamd_gpu_env\fR. Conversely, specified environment\-related flags will
 always override \fBAutoDetect\fR.
 
-Environment-related flags set on one GRES line will be inherited by the GRES
-line directly below it if no environment-related flags are specified on that
-line and if it is of the same node, name, and type. Environment-related flags
+Environment\-related flags set on one GRES line will be inherited by the GRES
+line directly below it if no environment\-related flags are specified on that
+line and if it is of the same node, name, and type. Environment\-related flags
 must be the same for GRES of the same node, name, and type.
 
 Note that there is a known issue with the AMD ROCm runtime where

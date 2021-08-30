@@ -8,9 +8,9 @@ sprio \- view the factors that comprise a job's scheduling priority
 
 .SH "DESCRIPTION"
 \fBsprio\fR is used to view the components of a job's scheduling
-priority when the multi-factor priority plugin is installed.
-\fBsprio\fR is a read-only utility that extracts information from the
-multi-factor priority plugin.  By default, \fBsprio\fR returns
+priority when the multi\-factor priority plugin is installed.
+\fBsprio\fR is a read\-only utility that extracts information from the
+multi\-factor priority plugin.  By default, \fBsprio\fR returns
 information for all pending jobs.  Options exist to display specific
 jobs by job ID and user name.
 
@@ -59,7 +59,7 @@ Display the normalized priority factors for the selected jobs.
 \fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
 Specify the information to be displayed, its size and position (right
 or left justified).  The default formats when all factors have been
-assigned non-zero weights are
+assigned non\-zero weights are
 
 .RS
 .TP 15
@@ -104,10 +104,10 @@ Weighted association priority
 Cluster name. Only applicable for federated clusters
 .TP
 \fB%f\fR
-Normalized fair-share priority
+Normalized fair\-share priority
 .TP
 \fB%F\fR
-Weighted fair-share priority
+Weighted fair\-share priority
 .TP
 \fB%i\fR
 Job ID
@@ -156,7 +156,7 @@ Normalized job priority
 .RE
 
 .TP
-\fB-S <sort_list>\fR, \fB--sort=<sort_list>\fR
+\fB\-S <sort_list>\fR, \fB\-\-sort=<sort_list>\fR
 Specification of the order in which jobs should be reported. This uses the same
 field specification as <output_format>. Multiple sorts may be performed by
 listing multiple sort fields separated by commas. The field specifications may
@@ -258,7 +258,7 @@ $ sprio
 Print the list of all pending jobs with their normalized priorities
 
 .nf
-$ sprio -n
+$ sprio \-n
   JOBID PRIORITY   AGE        FAIRSHARE  JOBSIZE    PARTITION  QOS
   65539 0.00001459 0.0007180  0.5166470  1.0000000  1.0000000  0.0000000
   65540 0.00001459 0.0007180  0.5166370  1.0000000  1.0000000  0.0000000
@@ -269,7 +269,7 @@ $ sprio -n
 Print the job priorities for specific jobs
 
 .nf
-$ sprio --jobs=65548,65547
+$ sprio \-\-jobs=65548,65547
   JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS
   65547      62078          0      51078       1000      10000          0
   65548      62077          0      51077       1000      10000          0
@@ -279,7 +279,7 @@ $ sprio --jobs=65548,65547
 Print the job priorities for jobs of specific users
 
 .nf
-$ sprio --users=fred,sally
+$ sprio \-\-users=fred,sally
   JOBID     USER  PRIORITY       AGE  FAIRSHARE   JOBSIZE  PARTITION     QOS
   65548     fred     62079         1      51077      1000      10000       0
   65549    sally     62080         1      51078      1000      10000       0
@@ -289,7 +289,7 @@ $ sprio --users=fred,sally
 Print the configured weights for each priority component
 
 .nf
-$ sprio -w
+$ sprio \-w
   JOBID   PRIORITY        AGE  FAIRSHARE    JOBSIZE  PARTITION        QOS
   Weights                1000     100000       1000      10000          1
 .fi

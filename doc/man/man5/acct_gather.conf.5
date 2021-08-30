@@ -78,7 +78,7 @@ These keys are useful only when profile is activated for energy to store power
 <values> are integers, multiple values can be set with "," separators.
 The sum of the listed sensors is used for each key.
 EnergyIPMIPowerSensors is optional, default value is "Node=number" where
-"number" is the id of the first power sensor returned by ipmi-sensors.
+"number" is the id of the first power sensor returned by ipmi\-sensors.
 .br
 i.e.
 .br
@@ -111,7 +111,7 @@ AcctGatherEnergyType=acct_gather_energy/xcc
 .fi
 .RE
 
-Options used for acct_gather_energy/xcc include only in-band communications
+Options used for acct_gather_energy/xcc include only in\-band communications
 with XClarity Controller, thus a reduced set of configurations is supported:
 
 .RS
@@ -146,7 +146,7 @@ all compute nodes. This is a required parameter.
 
 .TP
 \fBProfileHDF5Default\fR
-A comma-delimited list of data types to be collected for each job submission.
+A comma\-delimited list of data types to be collected for each job submission.
 Allowed values are:
 
 .RS
@@ -199,7 +199,7 @@ InfluxDB v2.x bucket name where profiling information is to be written.
 
 .TP
 \fBProfileInfluxDBDefault\fR
-A comma-delimited list of data types to be collected for each job submission.
+A comma\-delimited list of data types to be collected for each job submission.
 Allowed values are:
 
 .RS
@@ -233,7 +233,7 @@ Task (I/O, Memory, ...) data is collected.
 \fBProfileInfluxDBHost\fR=<hostname>:<port>
 The hostname of the machine where the \fIInfluxDB\fR instance is executed and
 the port used by the HTTP API. The port used by the HTTP API is the one
-configured through the bind-address influxdb.conf option in the [http] section.
+configured through the bind\-address influxdb.conf option in the [http] section.
 .BR
 Example:
 .nf
@@ -323,7 +323,7 @@ InfinibandOFEDPort=1
 .fi
 
 .SH "COPYING"
-Copyright (C) 2012-2013 Bull.
+Copyright (C) 2012\-2013 Bull.
 Copyright (C) 2012\-2021 SchedMD LLC.
 Produced at Bull (cf, DISCLAIMER).
 .LP

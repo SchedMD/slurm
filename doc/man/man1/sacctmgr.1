@@ -215,7 +215,7 @@ system configuration.
 .TP
 \fBcoordinator\fR
 A special privileged user, usually an account manager, that can
-add users or sub-accounts to the account they are coordinator over.
+add users or sub\-accounts to the account they are coordinator over.
 This should be a trusted person since they can change limits on
 account and user associations, as well as cancel, requeue or reassign
 accounts of jobs inside their realm.
@@ -516,7 +516,7 @@ level account.
 \fIRawUsage\fP=<value>
 This allows an administrator to reset the raw usage accrued to an
 account.  The only value currently supported is 0 (zero).  This is a
-settable specification only - it cannot be used as a filter to list
+settable specification only \- it cannot be used as a filter to list
 accounts.
 
 .TP
@@ -769,12 +769,12 @@ What priority will be added to a job's priority when using this association.
 .TP
 \fIWithRawQOSLevel\fP
 Display QosLevel in an unevaluated raw format, consisting of a comma
-separated list of QOS names prepended with '' (nothing), '+' or '-' for
-the association. QOS names without +/- prepended were assigned (ie,
+separated list of QOS names prepended with '' (nothing), '+' or '\-' for
+the association. QOS names without +/\- prepended were assigned (ie,
 sacctmgr modify ... set QosLevel=qos_name) for the entity listed or
-on one of its parents in the hierarchy. QOS names with +/- prepended
+on one of its parents in the hierarchy. QOS names with +/\- prepended
 indicate the QOS was added/filtered (ie, sacctmgr modify ... set
-QosLevel=[+-]qos_name) for the entity listed or on one of its parents
+QosLevel=[+\-]qos_name) for the entity listed or on one of its parents
 in the hierarchy. Including WOPLimits will show exactly where each QOS
 was assigned, added or filtered in the hierarchy.
 
@@ -1219,7 +1219,7 @@ If set, this QOS will not have its GrpTRESMins,
 GrpWall and UsageRaw decayed by the slurm.conf PriorityDecayHalfLife or
 PriorityUsageResetPeriod settings.  This allows a QOS to provide aggregate
 limits that, once consumed, will not be replenished automatically.  Such a
-QOS will act as a time-limited quota of resources for an association
+QOS will act as a time\-limited quota of resources for an association
 that has access to it.  Account/user usage will still be decayed for
 associations using the QOS.  The QOS GrpTRESMins and
 GrpWall limits can be increased or the QOS RawUsage value reset to 0
@@ -1396,7 +1396,7 @@ Other QOS' this QOS can preempt.
 \fIPreemptExemptTime\fP
 Specifies a minimum run time for jobs of this QOS before they are considered for
 preemption. This QOS option takes precedence over the global
-\fIPreemptExemptTime\fP. Setting to -1 disables the option, allowing another
+\fIPreemptExemptTime\fP. Setting to \-1 disables the option, allowing another
 QOS or the global option to take effect. Setting to 0 indicates no minimum run
 time and supersedes the lower priority QOS (see \fIOverPartQOS\fP) and/or the
 global option in slurm.conf.
@@ -1424,7 +1424,7 @@ What priority will be added to a job's priority when using this QOS.
 \fIRawUsage\fP=<value>
 This allows an administrator to reset the raw usage accrued to a
 QOS.  The only value currently supported is 0 (zero).  This is a
-settable specification only - it cannot be used as a filter to list
+settable specification only \- it cannot be used as a filter to list
 accounts.
 
 .TP
@@ -1644,7 +1644,7 @@ due to limits.
 See \fIAccountingStorageEnforce\fR in slurm.conf man page.
 
 Default is 1. To clear a previously set value use the modify command with a new
-value of -1.
+value of \-1.
 
 .TP
 \fILimitFactor\fP
@@ -1988,7 +1988,7 @@ Partition name.
 \fIRawUsage\fP=<value>
 This allows an administrator to reset the raw usage accrued to a user.
 The only value currently supported is 0 (zero).  This is a settable
-specification only - it cannot be used as a filter to list users.
+specification only \- it cannot be used as a filter to list users.
 
 .TP
 \fIWCKeys\fP=<wckeys>
@@ -2088,7 +2088,7 @@ When setting the limits they are comma separated list.  Each TRES has
 a different limit, i.e. GrpTRESMins=cpu=10,mem=20 would make 2
 different limits 1 for 10 cpu minutes and 1 for 20 MB memory minutes.
 This is the case for each limit that deals with TRES.  To remove the
-limit \-1 is used i.e. GrpTRESMins=cpu=-1 would remove only the cpu
+limit \-1 is used i.e. GrpTRESMins=cpu=\-1 would remove only the cpu
 TRES limit.
 
 NOTE: When dealing with Memory as a TRES all limits are in MB.
@@ -2400,7 +2400,7 @@ all suspend data removed will be lost permanently.
 
 .SS archive load
 Load in to the database previously archived data. The archive file will not be
-loaded if the records already exist in the database - therefore, trying to load
+loaded if the records already exist in the database \- therefore, trying to load
 an archive file more than once will result in an error. When this data is again
 archived and purged from the database, if the old archive file is still in the
 directory ArchiveDir, a new archive file will be created (see ArchiveDir in the
@@ -2454,7 +2454,7 @@ $ sacctmgr delete account name=physics cluster=tux
 $ sacctmgr modify user where name=adam cluster=tux account=physics set maxjobs=2 maxwall=30:00
 $ sacctmgr add user brian account=chemistry
 $ sacctmgr list associations cluster=tux format=Account,Cluster,User,Fairshare tree withd
-$ sacctmgr list transactions Action="Add Users" Start=11/03-10:30:00 format=Where,Time
+$ sacctmgr list transactions Action="Add Users" Start=11/03\-10:30:00 format=Where,Time
 $ sacctmgr dump cluster=tux file=tux_data_file
 $ sacctmgr load tux_data_file
 .fi
@@ -2511,7 +2511,7 @@ List all available QOSs in the cluster.
 .nf
 $ sacctmgr show qos format=name
       Name
-  ---------
+  \-\-\-\-\-\-\-\-\-
     normal
   expedite
 .fi
@@ -2521,7 +2521,7 @@ List all the associations in the cluster.
 .nf
 $ sacctmgr show assoc format=cluster,account,qos
    Cluster    Account    QOS
-  --------  ---------- -----
+  \-\-\-\-\-\-\-\-  \-\-\-\-\-\-\-\-\-\- \-\-\-\-\-
   zebra       root         normal
   zebra       root         normal
   zebra          g         normal
@@ -2536,7 +2536,7 @@ with the  existing QOS to this account.
 $ sacctmgr modify account name=g1 set qos+=expedite
 $ sacctmgr show assoc format=cluster,account,qos
    Cluster    Account   QOS
-   --------  --------  -------
+   \-\-\-\-\-\-\-\-  \-\-\-\-\-\-\-\-  \-\-\-\-\-\-\-
    zebra       root         normal
    zebra       root         normal
    zebra          g         normal
@@ -2551,7 +2551,7 @@ QOS by account G
 $ sacctmgr modify account name=G set qos=expedite
 $ sacctmgr show assoc format=cluster,account,user,qos
    Cluster    Account  QOS
-  ---------   -------- -----
+  \-\-\-\-\-\-\-\-\-   \-\-\-\-\-\-\-\- \-\-\-\-\-
   zebra       root      normal
   zebra       root      normal
   zebra          g      expedite
@@ -2565,7 +2565,7 @@ QOS expedite and it will not have access to QOS normal.
 $ sacctmgr add account banana parent=G
 $ sacctmgr show assoc format=cluster,account,qos
    Cluster    Account   QOS
-  ---------  --------  -----
+  \-\-\-\-\-\-\-\-\-  \-\-\-\-\-\-\-\-  \-\-\-\-\-
   zebra       root       normal
   zebra       root       normal
   zebra          g       expedite
@@ -2578,7 +2578,7 @@ An example of listing trackable resources:
 .nf
 $ sacctmgr show tres
       Type              Name      ID
----------- ----------------- --------
+\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\- \-\-\-\-\-\-\-\-
        cpu                          1
        mem                          2
     energy                          3

@@ -20,7 +20,7 @@ data for specific nodes, steps, and data series in
 "comma separated value" form to a file which can be imported into other
 analysis tools such as spreadsheets.
 .LP
-The second, (Item-Extract) extracts one data time from one time series for all
+The second, (Item\-Extract) extracts one data time from one time series for all
 the samples on all the nodes from a jobs HDF5 profile.
 .LP
 \- Finds sample with maximum value of the item.
@@ -82,7 +82,7 @@ Extract one data item from all samples of one data series from all nodes in a me
 
 .RS
 .TP 10
-Item-Extract mode options
+Item\-Extract mode options
 
 .TP
 \fB\-s\fR, \fB\-\-series\fR=[Energy | Filesystem | Network | Task]\fR
@@ -96,7 +96,7 @@ Name of data item in series (See note below).
 .TP
 \fB\-j\fR, \fB\-\-jobs\fR=\fI<job(.step)>\fR
 Format is <job(.step)>. Merge this job/step
-(or a comma-separated list of job steps). This option is required.
+(or a comma\-separated list of job steps). This option is required.
 Not specifying a step will result in all steps found to be processed.
 
 .TP
@@ -113,12 +113,12 @@ Default for extract is ./extract_$jobid.csv
 
 .TP
 \fB\-p\fR, \fB\-\-profiledir\fR=\fIdir\fR
-Directory location where node-step files exist default is set in
+Directory location where node\-step files exist default is set in
 acct_gather.conf.
 
 .TP
 \fB\-S\fR, \fB\-\-savefiles\fR
-Instead of removing node-step files after merging them into the job file,
+Instead of removing node\-step files after merging them into the job file,
 keep them around.
 
 .TP
@@ -186,7 +186,7 @@ necessary for the information you are trying to gather.
 .SH "EXAMPLES"
 
 .TP
-Merge node-step files (as part of a sbatch script):
+Merge node\-step files (as part of a sbatch script):
 
 .nf
 $ sbatch \-n1 \-d$SLURM_JOB_ID \-\-wrap="sh5util \-\-savefiles \-j $SLURM_JOB_ID"
