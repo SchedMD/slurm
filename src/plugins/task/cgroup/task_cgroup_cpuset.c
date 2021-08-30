@@ -1216,7 +1216,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job,
 			info("task[%u] mask 0x%s",
 			     taskid, task_cpuset_to_str(&ts, mstr));
 		}
-		task_slurm_chkaffinity(&ts, job, rc);
+		task_slurm_chkaffinity(&ts, job, rc, taskid);
 	} else {
 		/*
 		 * Bind the detected object to the taskid, respecting the
@@ -1284,7 +1284,7 @@ extern int task_cgroup_cpuset_set_task_affinity(stepd_step_rec_t *job,
 				info("task[%u] set taskset '%s'",
 				     taskid, str);
 			}
-			task_slurm_chkaffinity(&ts, job, rc);
+			task_slurm_chkaffinity(&ts, job, rc, taskid);
 		} else {
 			error("task[%u] unable to build "
 			      "taskset '%s'",taskid,str);

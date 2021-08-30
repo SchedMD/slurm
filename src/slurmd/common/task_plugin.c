@@ -509,16 +509,13 @@ extern int task_g_add_pid(pid_t pid)
 }
 
 extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job,
-				   int statval)
+				   int statval, uint32_t node_tid)
 {
 #if defined(__APPLE__)
 	fatal("%s: not supported on macOS", __func__);
 #else
 	char *bind_type, *action, *status, *units;
 	char mstr[1 + CPU_SETSIZE / 4];
-	int task_gid = job->envtp->procid;
-	int task_lid = job->envtp->localid;
-	pid_t mypid = job->envtp->task_pid;
 
 	if (!(job->cpu_bind_type & CPU_BIND_VERBOSE))
 		return;
@@ -568,9 +565,9 @@ extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job,
 			"%s, task %2u %2u [%u]: mask 0x%s%s%s\n",
 			units, bind_type,
 			job->node_name,
-			task_gid,
-			task_lid,
-			mypid,
+			job->task[node_tid]->gtid,
+			node_tid,
+			job->task[node_tid]->pid,
 			task_cpuset_to_str(mask, mstr),
 			action,
 			status);
