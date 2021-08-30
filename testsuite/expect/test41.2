@@ -119,7 +119,7 @@ foreach content_path [glob -type d $scripts/*] {
 		"$bin_oasgen generate -i '$spec' -g python --strict-spec=true -o '$pyapi'"
 
 	run_command -nolog -fail \
-		"$bin_virtualenv $pyenv"
+		"$bin_virtualenv --clear --no-download --system-site-packages $pyenv"
 
 	run_command -nolog -fail \
 		"source $pyenv/bin/activate; pip3 install '$pyapi'"
