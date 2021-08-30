@@ -21,7 +21,7 @@ AC_DEFUN([X_AC_NETLOC],
     [AS_IF([test "x$with_netloc" != xno && test "x$with_netloc" != xyes],
            [_x_ac_netloc_dirs="$with_netloc"])])
 
-  if [test "$with_netloc" = xno]; then
+  if [test "x$with_netloc" = xno]; then
     AC_MSG_WARN([support for netloc disabled])
   else
     AC_CACHE_CHECK(

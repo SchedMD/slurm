@@ -19638,7 +19638,7 @@ fi
 
 # Check whether --with-http_parser was given.
 if test "${with_http_parser+set}" = set; then :
-  withval=$with_http_parser; if test "x$with_http_parser" != xno && "x$with_http_parser" != xyes; then :
+  withval=$with_http_parser; if test "x$with_http_parser" != xno && test "x$with_http_parser" != xyes; then :
   _x_ac_http_parser_dirs="$with_http_parser"
 fi
 fi
@@ -24167,7 +24167,7 @@ fi
 fi
 
 
-  if test "$with_netloc" = xno; then
+  if test "x$with_netloc" = xno; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: support for netloc disabled" >&5
 $as_echo "$as_me: WARNING: support for netloc disabled" >&2;}
   else
