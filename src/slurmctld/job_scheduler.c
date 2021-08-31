@@ -4816,7 +4816,7 @@ static int _valid_feature_list(job_record_t *job_ptr, bool can_reboot)
 		    (feat_ptr->op_code == FEATURE_OP_XAND)) {
 			if (bracket == 0)
 				xstrcat(buf, "[");
-			bracket = 1;
+			bracket = feat_ptr->paren + 1;
 		}
 		if (feat_ptr->paren > paren) {
 			xstrcat(buf, "(");
@@ -4831,7 +4831,7 @@ static int _valid_feature_list(job_record_t *job_ptr, bool can_reboot)
 			rc = _valid_node_feature(feat_ptr->name, can_reboot);
 		if (feat_ptr->count)
 			xstrfmtcat(buf, "*%u", feat_ptr->count);
-		if (bracket &&
+		if ((bracket > paren) &&
 		    ((feat_ptr->op_code != FEATURE_OP_XOR) &&
 		     (feat_ptr->op_code != FEATURE_OP_XAND))) {
 			xstrcat(buf, "]");
