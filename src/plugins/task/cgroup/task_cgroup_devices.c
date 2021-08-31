@@ -81,7 +81,7 @@ static int _handle_device_access(void *x, void *arg)
 		 gres_device->major, gres_device->path);
 	xfree(t_str);
 
-	memset(&limits, 0, sizeof(limits));
+	cgroup_init_limits(&limits);
 	limits.allow_device = gres_device->alloc;
 	limits.device_major = gres_device->major;
 	limits.taskid = handle_args->taskid;

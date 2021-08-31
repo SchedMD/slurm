@@ -111,7 +111,7 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 	if (!slurm_limits)
 		goto endit;
 
-	memset(&limits, 0, sizeof(limits));
+	cgroup_init_limits(&limits);
 	limits.allow_mems = slurm_limits->allow_mems;
 
 	/* User constrain */

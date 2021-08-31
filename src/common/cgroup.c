@@ -506,6 +506,21 @@ extern void cgroup_free_limits(cgroup_limits_t *limits)
 	xfree(limits);
 }
 
+extern void cgroup_init_limits(cgroup_limits_t *limits)
+{
+	if (!limits)
+		return;
+
+	memset(limits, 0, sizeof(*limits));
+
+	limits->taskid = NO_VAL;
+	limits->limit_in_bytes = NO_VAL64;
+	limits->soft_limit_in_bytes = NO_VAL64;
+	limits->kmem_limit_in_bytes = NO_VAL64;
+	limits->memsw_limit_in_bytes = NO_VAL64;
+	limits->swappiness = NO_VAL64;
+}
+
 /*
  * get_slurm_cgroup_conf - load the Slurm cgroup configuration from the
  *      cgroup.conf  file and return a key pair <name,value> ordered list.

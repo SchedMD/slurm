@@ -172,7 +172,7 @@ extern int set_system_cgroup_cpus(char *phys_cpu_str)
 	cgroup_limits_t limits;
 	int rc;
 
-	memset(&limits, 0, sizeof(limits));
+	cgroup_init_limits(&limits);
 	limits.allow_cores = phys_cpu_str;
 	rc = cgroup_g_constrain_set(CG_CPUS, CG_LEVEL_SYSTEM, &limits);
 
@@ -184,7 +184,7 @@ extern int set_system_cgroup_mem_limit(uint64_t mem_spec_limit)
 	cgroup_limits_t limits;
 	int rc;
 
-	memset(&limits, 0, sizeof(limits));
+	cgroup_init_limits(&limits);
 	limits.limit_in_bytes = mem_spec_limit * 1024 * 1024;
 	rc = cgroup_g_constrain_set(CG_MEMORY, CG_LEVEL_SYSTEM, &limits);
 
