@@ -676,14 +676,31 @@ extern int cgroup_p_step_get_pids(pid_t **pids, int *npids)
 	return SLURM_SUCCESS;
 }
 
+/* Freeze the user processes of this step */
 extern int cgroup_p_step_suspend()
 {
-	return SLURM_SUCCESS;
+	/* This plugin is unloaded. */
+	if (!int_cg[CG_LEVEL_STEP_USER].path)
+		return SLURM_SUCCESS;
+
+	/*
+	 * Freezing of the cgroup may take some time; when this action is
+	 * completed, the "frozen" value in the cgroup.events control file will
+	 * be updated to "1" and the corresponding notification will be issued.
+	 */
+	return common_cgroup_set_param(&int_cg[CG_LEVEL_STEP_USER],
+				       "cgroup.freeze", "1");
 }
 
+/* Resume the user processes of this step */
 extern int cgroup_p_step_resume()
 {
-	return SLURM_SUCCESS;
+	/* This plugin is unloaded. */
+	if (!int_cg[CG_LEVEL_STEP_USER].path)
+		return SLURM_SUCCESS;
+
+	return common_cgroup_set_param(&int_cg[CG_LEVEL_STEP_USER],
+				       "cgroup.freeze", "0");
 }
 
 /*
