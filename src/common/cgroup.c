@@ -734,9 +734,9 @@ extern int cgroup_g_init(void)
 	cgroup_conf_init();
 	type = slurm_cgroup_conf.cgroup_plugin;
 
-	/* Default is cgroup/v1 */
+	/* Default is autodetect */
 	if (!type)
-		type = "cgroup/v1";
+		type = "autodetect";
 
 	if (!xstrcmp(type, "autodetect")) {
 		if (!(type = _autodetect_cgroup_version())) {
