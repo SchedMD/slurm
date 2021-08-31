@@ -65,6 +65,11 @@ typedef struct {
 	uint32_t taskid;
 } task_cg_info_t;
 
+typedef struct {
+	int npids;
+	pid_t *pids;
+} foreach_pid_array_t;
+
 /* Hierarchy will take this form:
  *        [int_cg_ns]             [int_cg_ns]
  *      "slurmd service"       "slurmtepds scope"
@@ -250,6 +255,32 @@ static void _all_tasks_destroy()
 {
 	/* Empty the lists of accounted tasks, do a best effort in rmdir */
 	(void) list_delete_all(task_list, _rmdir_task, NULL);
+}
+
+static int _get_task_pids(void *x, void *key)
+{
+	task_cg_info_t *task_cg_info = (task_cg_info_t *)x;
+	foreach_pid_array_t *pid_array = key;
+	pid_t *pids = NULL;
+	int npids = 0;
+
+	xassert(pid_array);
+	common_cgroup_get_pids(&task_cg_info->task_cg, &pids, &npids);
+
+	if (pid_array->pids) {
+		xrecalloc(pid_array->pids, (pid_array->npids + npids),
+			  sizeof(*pid_array->pids));
+		memcpy((pid_array->pids + pid_array->npids), pids,
+		       sizeof(*pid_array->pids) * npids);
+		pid_array->npids += npids;
+	} else {
+		pid_array->pids = pids;
+		pids = NULL;
+		pid_array->npids = npids;
+	}
+	xfree(pids);
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -621,10 +652,26 @@ extern int cgroup_p_step_addto(cgroup_ctl_type_t ctl, pid_t *pids, int npids)
 }
 
 /*
- * Read the cgroup.procs of this step.
+ * Read the cgroup.procs of the leafs of this step.
+ *
+ * - count the pids of slurm/ directory
+ * - for all task_x dir:
+ *        read task_x/cgroup.procs and add them into **pids
  */
 extern int cgroup_p_step_get_pids(pid_t **pids, int *npids)
 {
+	foreach_pid_array_t pid_array;
+
+	memset(&pid_array, 0, sizeof(pid_array));
+
+	/* Include the slurm processes (stepd) pids too. */
+	common_cgroup_get_pids(&int_cg[CG_LEVEL_STEP_SLURM],
+			       &pid_array.pids, &pid_array.npids);
+
+	list_for_each(task_list, _get_task_pids, &pid_array);
+	*npids = pid_array.npids;
+	*pids = pid_array.pids;
+
 	return SLURM_SUCCESS;
 }
 

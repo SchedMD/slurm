@@ -200,8 +200,11 @@ extern int proctrack_p_signal (uint64_t id, int signal)
 	}
 
 	for (i = 0 ; i<npids ; i++) {
-		/* do not kill slurmstepd (it should not be part
-		 * of the list, but just to not forget about that ;))
+		/*
+		 * Be on the safe side and do not kill slurmstepd (ourselves),
+		 * since a call to proctrack_g_get_pids can return all the pids
+		 * in the container which can include us, depending on the
+		 * plugin used (e.g. cgroup/v2).
 		 */
 		if (pids[i] == (pid_t)id)
 			continue;
