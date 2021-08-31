@@ -2028,7 +2028,7 @@ char **env_array_user_default(const char *username, int timeout, int mode,
 	else if (stat("/usr/bin/env", &buf) == 0)
 		env_loc = "/usr/bin/env";
 	else
-		fatal("Could not location command: env");
+		fatal("Could not locate command: env");
 	snprintf(cmdstr, sizeof(cmdstr),
 		 "/bin/echo; /bin/echo; /bin/echo; "
 		 "/bin/echo %s; %s; /bin/echo %s",
