@@ -4801,6 +4801,7 @@ static int _valid_feature_list(job_record_t *job_ptr, bool can_reboot)
 	char *buf = NULL;
 	int bracket = 0, paren = 0;
 	int rc = SLURM_SUCCESS;
+	bool has_xand = false;
 
 	if (feature_list == NULL) {
 		if (job_ptr->job_id)
@@ -4831,11 +4832,16 @@ static int _valid_feature_list(job_record_t *job_ptr, bool can_reboot)
 			rc = _valid_node_feature(feat_ptr->name, can_reboot);
 		if (feat_ptr->count)
 			xstrfmtcat(buf, "*%u", feat_ptr->count);
+		if (feat_ptr->op_code == FEATURE_OP_XAND && !feat_ptr->count)
+			rc = ESLURM_INVALID_FEATURE;
 		if ((bracket > paren) &&
 		    ((feat_ptr->op_code != FEATURE_OP_XOR) &&
 		     (feat_ptr->op_code != FEATURE_OP_XAND))) {
+			if (has_xand && !feat_ptr->count)
+				rc = ESLURM_INVALID_FEATURE;
 			xstrcat(buf, "]");
 			bracket = 0;
+			has_xand = false;
 		}
 		if ((feat_ptr->op_code == FEATURE_OP_AND) ||
 		    (feat_ptr->op_code == FEATURE_OP_XAND))
@@ -4843,6 +4849,8 @@ static int _valid_feature_list(job_record_t *job_ptr, bool can_reboot)
 		else if ((feat_ptr->op_code == FEATURE_OP_OR) ||
 			 (feat_ptr->op_code == FEATURE_OP_XOR))
 			xstrcat(buf, "|");
+		if (feat_ptr->op_code == FEATURE_OP_XAND)
+			has_xand = true;
 	}
 	list_iterator_destroy(feat_iter);
 
