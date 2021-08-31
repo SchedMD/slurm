@@ -4837,7 +4837,8 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	(void) s_p_get_string(&conf->slurmd_logfile, "SlurmdLogFile", hashtbl);
 
 	(void) s_p_get_string(&conf->slurmd_params, "SlurmdParameters", hashtbl);
-	if (xstrcasestr(conf->slurmd_params, "config_overrides"))
+	/* This also matches documented "config_overrides" */
+	if (xstrcasestr(conf->slurmd_params, "config_override"))
 		conf->conf_flags |= CTL_CONF_OR;
 
 	if (!s_p_get_string(&conf->slurmd_pidfile, "SlurmdPidFile", hashtbl))
