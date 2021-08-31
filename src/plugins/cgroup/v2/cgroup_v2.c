@@ -784,12 +784,198 @@ extern bool cgroup_p_has_pid(pid_t pid)
 extern int cgroup_p_constrain_set(cgroup_ctl_type_t ctl, cgroup_level_t level,
 				  cgroup_limits_t *limits)
 {
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+
+	/*
+	 * cgroup/v1 compatibility: We have no such level in cgroup/v2 hierarchy
+	 * but we may still get calls for this cgroup level. Ignore it.
+	 */
+	if (level == CG_LEVEL_USER)
+		return SLURM_SUCCESS;
+
+	/*
+	 * Our real step level is the level for user processes. This will make
+	 * that the slurmstepd is never constrained in its own cgroup, which is
+	 * something we want. Instead, slurmstepd will be part of the job limit.
+	 * Note that a step which initializes pmi, could cause slurmstepd to
+	 * grow, and we don't want this to be part of the step, but be part of
+	 * the job.
+	 */
+	if (level == CG_LEVEL_STEP)
+		level = CG_LEVEL_STEP_USER;
+
+	if (!limits)
+		return SLURM_ERROR;
+
+	switch (ctl) {
+	case CG_TRACK:
+		/* Not implemented. */
+		break;
+	case CG_CPUS:
+		if (limits->allow_cores &&
+		    common_cgroup_set_param(
+			    &int_cg[level],
+			    "cpuset.cpus",
+			    limits->allow_cores) != SLURM_SUCCESS) {
+			rc = SLURM_ERROR;
+		}
+		if (limits->allow_mems &&
+		    common_cgroup_set_param(
+			    &int_cg[level],
+			    "cpuset.mems",
+			    limits->allow_mems) != SLURM_SUCCESS) {
+			rc = SLURM_ERROR;
+		}
+		break;
+	case CG_MEMORY:
+		if ((limits->limit_in_bytes != NO_VAL64) &&
+		    common_cgroup_set_uint64_param(
+			    &int_cg[level],
+			    "memory.max",
+			    limits->limit_in_bytes) != SLURM_SUCCESS) {
+			rc = SLURM_ERROR;
+		}
+		if ((limits->soft_limit_in_bytes != NO_VAL64) &&
+		    common_cgroup_set_uint64_param(
+			    &int_cg[level],
+			    "memory.high",
+			    limits->soft_limit_in_bytes) != SLURM_SUCCESS) {
+			rc = SLURM_ERROR;
+		}
+		if ((limits->memsw_limit_in_bytes != NO_VAL64) &&
+		    common_cgroup_set_uint64_param(
+			    &int_cg[level],
+			    "memory.swap.max",
+			    limits->memsw_limit_in_bytes) != SLURM_SUCCESS) {
+			rc = SLURM_ERROR;
+		}
+		break;
+	case CG_DEVICES:
+		/* Not implemented. */
+		break;
+	default:
+		error("cgroup controller %u not supported", ctl);
+		rc = SLURM_ERROR;
+		break;
+	}
+
+	return rc;
 }
 
 extern cgroup_limits_t *cgroup_p_constrain_get(cgroup_ctl_type_t ctl,
 					       cgroup_level_t level)
 {
+	cgroup_limits_t *limits;
+
+	/* Legacy: We have no such level in cgroup/v2 hierarchy. */
+	if (level == CG_LEVEL_USER) {
+		log_flag(CGROUP, "Incorrect cgroup level: %d", level);
+		return NULL;
+	}
+
+	limits = xmalloc(sizeof(*limits));
+	cgroup_init_limits(limits);
+
+	switch (ctl) {
+	case CG_TRACK:
+		/* Not implemented. */
+		goto fail;
+	case CG_CPUS:
+		/*
+		 * cpuset.cpus:
+		 * ------------
+		 * It lists the *requested* CPUs to be used by tasks within this
+		 * cgroup. The actual list of CPUs to be granted, however, is
+		 * subjected to constraints imposed by its parent and can differ
+		 * from the requested CPUs.
+		 *
+		 * An empty value in cpuset.cpus indicates that the cgroup is
+		 * using the same setting as the nearest cgroup ancestor with a
+		 * non-empty cpuset.cpus, or all the available CPUs if none is
+		 * found.
+		 *
+		 * cpuset.cpus.effective:
+		 * ----------------------
+		 * It lists the onlined CPUs that are actually granted to this
+		 * cgroup by its parent. These CPUs are allowed to be used by
+		 * tasks within the current cgroup.
+		 *
+		 * If cpuset.cpus is empty, the cpuset.cpus.effective file shows
+		 * all the CPUs from the parent cgroup that can be available to
+		 * be used by this cgroup.
+		 *
+		 * If cpuset.cpus is not empty, the cpuset.cpus.effective file
+		 * should be a subset of cpuset.cpus unless none of the CPUs
+		 * listed in cpuset.cpus can be granted. In this case, it will
+		 * be treated just like an empty cpuset.cpus.
+		 */
+		if (common_cgroup_get_param(
+			    &int_cg[level],
+			    "cpuset.cpus",
+			    &limits->allow_cores,
+			    &limits->cores_size) != SLURM_SUCCESS)
+			goto fail;
+
+		if ((limits->cores_size == 1) &&
+		    !xstrcmp(limits->allow_cores, "\n")) {
+			xfree(limits->allow_cores);
+			if (common_cgroup_get_param(
+				    &int_cg[level],
+				    "cpuset.cpus.effective",
+				    &limits->allow_cores,
+				    &limits->cores_size) != SLURM_SUCCESS)
+				goto fail;
+		}
+
+		/*
+		 * The same concepts from cpuset.cpus and cpuset.cpus.effective
+		 * applies for cpuset.mems and cpuset.mems.effective, so follow
+		 * the same logic here.
+		 */
+		if (common_cgroup_get_param(
+			    &int_cg[level],
+			    "cpuset.mems",
+			    &limits->allow_mems,
+			    &limits->mems_size) != SLURM_SUCCESS)
+			goto fail;
+
+		if ((limits->mems_size == 1) &&
+		    !xstrcmp(limits->allow_mems, "\n")) {
+			xfree(limits->allow_mems);
+			if (common_cgroup_get_param(
+				    &int_cg[level],
+				    "cpuset.mems.effective",
+				    &limits->allow_mems,
+				    &limits->mems_size) != SLURM_SUCCESS)
+				goto fail;
+		}
+
+		/*
+		 * Replace the last \n by \0. We lose one byte but we don't care
+		 * since tipically this object will be freed soon and we still
+		 * keep the correct array size.
+		 */
+		if (limits->cores_size > 0)
+			limits->allow_cores[(limits->cores_size)-1] = '\0';
+
+		if (limits->mems_size > 0)
+			limits->allow_mems[(limits->mems_size)-1] = '\0';
+		break;
+	case CG_MEMORY:
+		/* Not implemented. */
+		goto fail;
+	case CG_DEVICES:
+		/* Not implemented. */
+		goto fail;
+	default:
+		error("cgroup controller %u not supported", ctl);
+		goto fail;
+	}
+
+	return limits;
+fail:
+	log_flag(CGROUP, "Returning empty limits, this should not happen.");
+	cgroup_free_limits(limits);
 	return NULL;
 }
 
