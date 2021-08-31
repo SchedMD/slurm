@@ -1,3 +1,3 @@
 # Makefile for cgroup plugins
 
-SUBDIRS = common v1
+SUBDIRS = common v1 v2
