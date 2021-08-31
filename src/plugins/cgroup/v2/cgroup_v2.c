@@ -283,6 +283,28 @@ static int _get_task_pids(void *x, void *key)
 	return SLURM_SUCCESS;
 }
 
+static int _find_pid_task(void *x, void *key)
+{
+	task_cg_info_t *task_cg_info = (task_cg_info_t *)x;
+	pid_t pid = *(pid_t *) key;
+	pid_t *pids = NULL;
+	int npids = 0;
+	bool found = false;
+
+	if (common_cgroup_get_pids(&task_cg_info->task_cg, &pids, &npids) !=
+	    SLURM_SUCCESS)
+		return false;
+
+	for (int i = 0; i < npids; i++) {
+		if (pids[i] == pid) {
+			found = true;
+			break;
+		}
+	}
+
+	return found;
+}
+
 /*
  * Talk with systemd through dbus to create a new scope where we will put all
  * the slurmstepds and user processes. This way we can safely restart slurmd
@@ -793,9 +815,34 @@ end:
 	return rc;
 }
 
-/* Return true if the user pid is in this step/task cgroup */
+/*
+ * Return true if the user pid is in this step/task cgroup.
+ *
+ * We just need to get the pids from the task_X directories and from the slurm
+ * processes cgroup, since these will be the only leafs we'll have.
+ */
 extern bool cgroup_p_has_pid(pid_t pid)
 {
+	task_cg_info_t *task_cg_info;
+	pid_t *pids_slurm = NULL;
+	int npids_slurm = 0, i;
+
+	task_cg_info = list_find_first(task_list, _find_pid_task, &pid);
+
+	if (task_cg_info)
+		return true;
+
+	/* Look for in the slurm processes cgroup too. */
+	if (common_cgroup_get_pids(&int_cg[CG_LEVEL_STEP_SLURM],
+				   &pids_slurm, &npids_slurm) !=
+	    SLURM_SUCCESS)
+		return false;
+
+	for (i = 0; i < npids_slurm; i++) {
+		if (pids_slurm[i] == pid)
+			return true;
+	}
+
 	return false;
 }
 
