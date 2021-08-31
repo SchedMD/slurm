@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- sacctmgr - Fix deleting WCKeys when not specifying a cluster.
  -- Fix getting memory for the batch step when the batch node isn't the first
     node in the allocation.
+ -- Make SelectTypeParameters=CR_Core_Memory default for cons_tres and cons_res.
 
 * Changes in Slurm 21.08.0
 ==========================

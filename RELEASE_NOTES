@@ -142,6 +142,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
     files are placed in an accessible location, rather than /.)
  -- Added BcastParameters=send_libs and BcastExclude options.
  -- Remove the (incomplete) burst_buffer/generic plugin.
+ -- Make SelectTypeParameters=CR_Core_Memory default for cons_tres and cons_res.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
