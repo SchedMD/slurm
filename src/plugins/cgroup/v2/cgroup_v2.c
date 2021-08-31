@@ -473,9 +473,10 @@ extern int cgroup_p_system_create(cgroup_ctl_type_t ctl)
 }
 
 /*
- * Note that as part of the initialization, the slurmd pid is already put
- * inside this cgroup but we still need to implement this for if somebody
- * needs to add a different pid in this cgroup.
+ * Slurmd will live in its own cgroup, not sharing anything with slurmstepd.
+ * This means there's no reason to implement this function in v2.
+ * Also slurmstepd is put into the user's hierarchy (see graph) and is not
+ * affected by CoreSpec or MemSpec.
  */
 extern int cgroup_p_system_addto(cgroup_ctl_type_t ctl, pid_t *pids, int npids)
 {
@@ -793,6 +794,10 @@ extern int cgroup_p_constrain_set(cgroup_ctl_type_t ctl, cgroup_level_t level,
 	if (level == CG_LEVEL_USER)
 		return SLURM_SUCCESS;
 
+	/* This is for CoreSpec* and MemSpec* for slurmd */
+	if (level == CG_LEVEL_SYSTEM)
+		level = CG_LEVEL_ROOT;
+
 	/*
 	 * Our real step level is the level for user processes. This will make
 	 * that the slurmstepd is never constrained in its own cgroup, which is
@@ -872,6 +877,10 @@ extern cgroup_limits_t *cgroup_p_constrain_get(cgroup_ctl_type_t ctl,
 		log_flag(CGROUP, "Incorrect cgroup level: %d", level);
 		return NULL;
 	}
+
+	/* This is for CoreSpec* and MemSpec* for slurmd */
+	if (level == CG_LEVEL_SYSTEM)
+		level = CG_LEVEL_ROOT;
 
 	limits = xmalloc(sizeof(*limits));
 	cgroup_init_limits(limits);
