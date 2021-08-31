@@ -1,0 +1,261 @@
+INTERFACE DIFFERENCES BETWEEN V1 and V2
+--------------------------------------------------------
+
+Old Interface			Need to work with
+'''''''''''''			''''''''''''''''''''''
+memory.kmem*			none
+memory.limit_in_bytes		memory.max
+memory.soft_limit_in_bytes	memory.high
+memory.memsw_limit_in_bytes 	memory.swap.max
+memory.swappiness		none
+freezer.state			cgroup.freeze
+cpuset.expected_usage_in_bytes	none (HAVE_NATIVE_CRAY only)
+cpuset.cpus			cpuset.cpus.effective and cpuset.cpus
+cpuset.mems			cpuset.mems.effective and cpuset.mem
+cpuacct.stat			cpu.stat
+
+OTHER CHANGES
+-------------
+- Freezer controller is always implicit in cgroup.freeze interface.
+- Devices controller is now an eBPF program.
+- Work now always at task level, even if no jobacctgather/cgroup plugin is set.
+  Adding a pid to a step adds it to a special task directory, "task_special".
+- The memory.stat file has changed and now we do the sum of
+  anon+swapcached+anon_thp which should be equivalent to rss concept in v1.
+  There are many possibilities besides that one that can be object of future
+  study, like the use of memory.current or PSI metrics.
+- The cpu.stat interface provides metrics in ms while cpuacct.stat provided
+  metrics in USER_HZ. New logic in commit:
+  "Recognize different cpu accounting units"
+- The slurmstepd daemons are put into its own cgroup, but they are not
+  constrained by the step limits. The memory used by the step is accounted
+  globally as part of the job. A slurmstepd can sometimes grow in memory, for
+  example with the pmi initialization when the user initializes many ranks in a
+  mpi job and the mpi stack consumes memory. There are pros and cons to account
+  the slurmstepd consumption as part of the step vs part of the job.
+  On one hand it seems reasonable to compute it as part of the job because the
+  profiling will be more consistent regardless of changes in slurmstepd.
+  On the other hand an uncontrolled slurmstepd can terminate the job completely
+  instead of only the step. In both cases, if user processes consume too much
+  memory and causes OOM to act in this cgroup, it can also kill slurmstepd which
+  would impede it to do the proper cleanup of the job. This is worked around as
+  in v1 with setting oom_score_adj to -1000 to make slurmstepd unkillable. It
+  can be discused to use a -999 instead to make it killable but more unlikely.
+
+HOW TO START SLURM
+------------------
+
+You can start slurmctld and dbd as usual.
+
+slurmd needs to be started through systemd because cgroup v2 API has changed and
+the kernel delegates the control to a single writer, which is PID 1, the systemd
+pid. In order to be able to work with parts of the tree to other pids, these
+must be started by systemd itself and set to Delegate=yes. Then systemd won't
+touch these subtree.
+
+But a more important reason is because if we e.g. start slurmd from our terminal
+the slurmd itself will reside in the same cgroup than this terminal, for example
+on Gnome:
+
+/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/app-org.gnome.Terminal.slice/vte-spawn-fbd45fd9-2c1f-4dce-b177-da71ad46be3b.scope
+
+then, if slurmd tries to modify the cgroup hierarchy under this tree, he will
+find pids other than himself in cgroup.procs, and all changes will affect these
+other pids and viceversa. So for example, creating a subdirectory and attaching
+himself to this new directory and then changing the subtree_control for the
+parent will fail. subtree_control cannot be set if there are processes at this
+level. In that case slurmd should decide what to do with these unrelated pids,
+(gnome-terminal or whatever) which is not its responsibility.
+
+Another problem can happen if we have CoreSpec* or MemSpec* set. slurmd will
+then constrain these values in its cgroup, affecting also the unrelated pids.
+
+One way to workaround this is that slurmd's cgroupv2 plugin creates a new cgroup
+and then attaches himself there, but for this it needs to talk with systemd
+unregistering its pid from the current unit, or then systemd accounting will be
+unmatched with the reality, with any unforeseeable consequences, like reclaiming
+back this pid.
+
+It is also important to set the proper limits for slurmd, specially for cgroups
+v2 the MEMLOCK limit can cause the eBPF program for devices to not be able to
+load it into the kernel.
+
+Here is an example unit file for one node called "gamba1".
+
+ ]$ systemctl cat slurmd-master-gamba1.service
+ # /usr/lib/systemd/system/slurmd-master-gamba1.service
+ [Unit]
+ Description=Slurm node daemon
+ After=munge.service network.target remote-fs.target
+
+ [Service]
+ Type=simple
+ EnvironmentFile=-/etc/sysconfig/slurmd
+ ExecStart=/home/lipi/slurm/master/inst/sbin/slurmd -D -s -N gamba1 $SLURMD_OPTIONS
+ ExecReload=/bin/kill -HUP $MAINPID
+ KillMode=process
+ LimitNOFILE=131072
+ LimitMEMLOCK=infinity
+ LimitSTACK=infinity
+ Delegate=yes
+ TasksMax=infinity
+
+ [Install]
+ WantedBy=multi-user.target
+
+.-.-.-.-
+For testing one can create a template unit file:
+
+]$ cat ../slurmd-master@.service
+[Unit]
+Description=Slurm node daemon %i
+After=munge.service network.target remote-fs.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/sysconfig/slurmd
+ExecStart=/home/lipi/slurm/master/inst/sbin/slurmd -D -s -N %i $SLURMD_OPTIONS
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+LimitNOFILE=131072
+LimitMEMLOCK=infinity
+LimitSTACK=infinity
+Delegate=yes
+TasksMax=infinity
+
+[Install]
+WantedBy=multi-user.target
+
+.-.-.-
+And can start this by doing systemctl start slurmd-master@sgamba1.
+
+But more conveniently there is another method. It is interesting to start slurmd
+just with systemd-run. The interaction can be like this example:
+
+]# systemd-run -G -p Delegate=yes -p LimitMEMLOCK=infinity .... -u sgamba1 slurmd -D -s -N gamba1
+]# systemctl status sgamba1
+]# systemctl stop sgamba1
+
+DEVELOPER NOTES
+---------------
+- Systemd has three kinds of cgroup hierarchies, namely legacy, hybrid and
+  unified cgroup hierarchies.
+
+- All controllers which support v2 and are not bound to a v1 hierarchy are
+  automatically bound to the v2 hierarchy and show up at the root. Controllers
+  which are not in active use in the v2 hierarchy can be bound to other
+  hierarchies. This allows mixing v2 hierarchy with the legacy v1 multiple
+  hierarchies in a fully backward compatible way. In any case we are not going
+  to support hybrid (mixed) hierarchies because they have no future, are not
+  supported by many softwares, and simply they are not convenient.
+
+- cgroup.procs contains the list of pids for this cgroup, but is not 100%
+  reliable for a pid count:
+
+  The same PID may show up more than once if the process got moved to another
+  cgroup and then back or the PID got recycled while reading.
+
+- "/proc/$PID/cgroup" lists a process's cgroup membership. On v1 this contain
+  multiple lines, one for each hierarchy. In v2 the entry takes always the
+  format "0::$PATH".
+
+- In v2, Controllers which support thread mode are called threaded controllers.
+  The ones which don't are called domain controllers. Threaded controllers allow
+  thread granularity. see "cgroup.type" file.
+
+- Each non-root cgroup has a "cgroup.events" file which contains a "populated"
+  field indicating whether the cgroup's sub-hierarchy has alive processes in it.
+  poll and [id]notify events are triggered when the value changes.
+  This can be used, for example, to start a clean-up operation after all
+  processes of a given sub-hierarchy have exited.
+
+- There are no mount options for a cgroup2 mountpoint.
+
+- No controller is enabled by default. Controllers can be enabled and disabled
+  by writing to the "cgroup.subtree_control" file:
+
+   echo "+cpu +memory -io" > cgroup.subtree_control
+
+- Only controllers which are listed in "cgroup.controllers" can be enabled.
+
+- Non-root cgroups can distribute domain resources to their children only when
+  they don't have any processes of their own. So, step_0->task_0 couldn't have
+  processes in step_0, only in the leaf task_0
+
+  Note that the restriction doesn't get in the way if there is no enabled
+  controller in the cgroup's "cgroup.subtree_control". This is important as
+  otherwise it wouldn't be possible to create children of a populated cgroup.
+  To control resource distribution of a cgroup, the cgroup must create children
+  and transfer all its processes to the children before enabling controllers in
+  its "cgroup.subtree_control" file.
+
+  This means also that a cgroup which has "cgroup.subtree_control" enabled is
+  not intended to be a *leaf*, so it cannot host processes. If one tries to
+  attach a pid to cgroup.procs will get an EBUSY.
+
+- A cgroup can be delegated in two ways.
+
+  First, to a less privileged user by granting write access of the directory and
+  its "cgroup.procs", "cgroup.threads" and "cgroup.subtree_control" files.
+
+  Second, when the "nsdelegate" mount option is set automatically to a cgroup
+  namespace on namespace creation.
+
+  A delegated sub-hierarchy is contained in the sense that processes can't be
+  moved into or out of the sub-hierarchy by the delegatee.
+
+- cgroup v2 doesn't have the device controller, it uses eBPF-based device
+  controller. Needs privileged containers (root). Since kernel 4.15.
+
+  eBFP stands for extended Berkeley Packet Filter.
+
+  https://speakerdeck.com/kentatada/cgroup-v2-internals?slide=5
+  https://medium.com/nttlabs/cgroup-v2-596d035be4d7
+
+- https://systemd.io/CGROUP_DELEGATION/
+
+- If we want to kill by OOM an entire step set memory.oom.group = 1 to step
+  cgroup, this is an option for the future if we want to implement this
+  possibility.
+
+- echo "+cpu" > cgroup.subtree_control
+  bash: cgroup.subtree_control: Access Denied.
+
+   https://www.kernel.org/doc/Documentation/cgroup-v2.txt).
+
+    WARNING: cgroup2 doesn't yet support control of realtime processes and
+    the cpu controller can only be enabled when all RT processes are in
+    the root cgroup. Be aware that system management software may already
+    have placed RT processes into nonroot cgroups during the system boot
+    process, and these processes may need to be moved to the root cgroup
+    before the cpu controller can be enabled.
+
+    Use this to see the running RT apps:
+    ps ax -L -o 'pid tid cls rtprio comm' | grep RR
+
+
+MANUAL EXAMPLES
+----------------
+
+1. Check available controllers in the root and enable subtree_control for the
+   required ones:
+
+ cat /sys/fs/cgroup/cgroup.controllers
+ cpuset cpu io memory hugetlb pids
+
+2. Check/enable subtree_control for required ones
+
+ cat /sys/fs/cgroup/cgroup.subtree_control
+ memory pids
+ echo "+cpuset +cpu +memory +pids" > /sys/fs/cgroup/cgroup.subtree_control
+ cat /sys/fs/cgroup/cgroup.subtree_control
+ cpuset cpu memory pids
+
+3. Create slurm dir and enable subtree_control too:
+
+ mkdir /sys/fs/cgroup/slurm
+ cat /sys/fs/cgroup/slurm/cgroup.subtree_control
+ <empty>
+ echo "+cpuset +cpu +memory +pids" > /sys/fs/cgroup/slurm/cgroup.subtree_control
+ cat /sys/fs/cgroup/slurm/cgroup.subtree_control
+ cpuset cpu memory pids
