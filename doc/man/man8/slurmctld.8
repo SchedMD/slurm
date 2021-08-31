@@ -63,6 +63,12 @@ with node \fIState\fR of DOWN, DRAINED and DRAINING nodes and the associated
 be preserved.
 
 .TP
+\fB\-s\fR
+Change working directory of slurmctld to SlurmctldLogFile path if possible, or
+to SlurmStateSaveLocation otherwise. If both of them fail it will fallback to
+/var/tmp.
+
+.TP
 \fB\-v\fR
 Verbose operation. Multiple \fB\-v\fR's increase verbosity.
 .TP
