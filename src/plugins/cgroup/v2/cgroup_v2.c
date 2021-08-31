@@ -879,5 +879,107 @@ extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *job,
 
 extern cgroup_acct_t *cgroup_p_task_get_acct_data(uint32_t task_id)
 {
-	return NULL;
+	char *cpu_stat = NULL, *memory_stat = NULL, *ptr;
+	size_t cpu_stat_sz = 0, memory_stat_sz = 0;
+	cgroup_acct_t *stats = NULL;
+	task_cg_info_t *task_cg_info;
+	uint64_t tmp;
+
+	if (!(task_cg_info = list_find_first(task_list, _find_task_cg_info,
+					     &task_id))) {
+		if (task_id == NO_VAL)
+			error("No task found with id %u (task_special), this should never happen",
+			      task_id);
+		else
+			error("No task found with id %u, this should never happen",
+			      task_id);
+		return NULL;
+	}
+
+	if (common_cgroup_get_param(&task_cg_info->task_cg,
+				    "cpu.stat",
+				    &cpu_stat,
+				    &cpu_stat_sz) != SLURM_SUCCESS) {
+		if (task_id == NO_VAL)
+			log_flag(CGROUP, "Cannot read task_special cpu.stat file");
+		else
+			log_flag(CGROUP, "Cannot read task %d cpu.stat file",
+				 task_id);
+	}
+
+	if (common_cgroup_get_param(&task_cg_info->task_cg,
+				    "memory.stat",
+				    &memory_stat,
+				    &memory_stat_sz) != SLURM_SUCCESS) {
+		if (task_id == NO_VAL)
+			log_flag(CGROUP, "Cannot read task_special memory.stat file");
+		else
+			log_flag(CGROUP, "Cannot read task %d memory.stat file",
+				 task_id);
+	}
+
+	/*
+	 * Initialize values. A NO_VAL64 will indicate the caller that something
+	 * happened here.
+	 */
+	stats = xmalloc(sizeof(*stats));
+	stats->usec = NO_VAL64;
+	stats->ssec = NO_VAL64;
+	stats->total_rss = NO_VAL64;
+	stats->total_pgmajfault = NO_VAL64;
+
+	if (cpu_stat) {
+		ptr = xstrstr(cpu_stat, "user_usec");
+		if (ptr && (sscanf(ptr, "user_usec %lu", &stats->usec) != 1))
+			error("Cannot parse user_sec field in cpu.stat file");
+
+		ptr = xstrstr(cpu_stat, "system_usec");
+		if (ptr && (sscanf(ptr, "system_usec %lu", &stats->ssec) != 1))
+			error("Cannot parse system_usec field in cpu.stat file");
+		xfree(cpu_stat);
+	}
+
+	/*
+	 * In cgroup/v1, total_rss was the hierarchical sum of # of bytes of
+	 * anonymous and swap cache memory (including transparent huge pages),
+	 * so let's make the sum here to make the same thing.
+	 *
+	 * In cgroup/v2 we could use memory.current, but that includes all the
+	 * memory the app has touched. We opt here to do a more fine-grain
+	 * calculation reading different fields.
+	 *
+	 * It is possible that some of the fields do not exist, for example if
+	 * swap is not enabled the swapcached value won't exist, in that case
+	 * we won't take it into account.
+	 */
+	if (memory_stat) {
+		ptr = xstrstr(memory_stat, "anon");
+		if (ptr && (sscanf(ptr, "anon %lu", &stats->total_rss) != 1))
+			error("Cannot parse anon field in memory.stat file");
+
+		ptr = xstrstr(memory_stat, "swapcached");
+		if (ptr && (sscanf(ptr, "swapcached %lu", &tmp) != 1))
+			log_flag(CGROUP, "Cannot parse swapcached field in memory.stat file");
+		else
+			stats->total_rss += tmp;
+
+		ptr = xstrstr(memory_stat, "anon_thp");
+		if (ptr && (sscanf(ptr, "anon_thp %lu", &tmp) != 1))
+			log_flag(CGROUP, "Cannot parse anon_thp field in memory.stat file");
+		else
+			stats->total_rss += tmp;
+
+		/*
+		 * Future: we can add more here or do a more fine-grain control
+		 * with shmem or others depending on NoShare or UsePSS.
+		 */
+
+		ptr = xstrstr(memory_stat, "pgmajfault");
+		if (ptr && (sscanf(ptr, "pgmajfault %lu",
+				   &stats->total_pgmajfault) != 1))
+			log_flag(CGROUP, "Cannot parse pgmajfault field in memory.stat file");
+		xfree(memory_stat);
+	}
+
+	return stats;
 }
