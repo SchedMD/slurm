@@ -1637,47 +1637,58 @@ _sbatch()
     _get_comp_words_by_ref cur prev words cword
     _split_long_opt
 
-    local shortoptions="-a -A -B -C -c -d -D -e -F -g -h -H -i -I -J -k -K -L\
-			-m -M -n -N -o -O -p -Q -s -S -t -u -v -V -w -x -q -R"
-    local longoptions="--array<indexes> --account<account>\
-		       --acctg-freq<seconds>\
-		       --extra-node-info<sockets[:cores[:threads]]>\
-		       --bb<spec> --begin=<time> --comment<string>\
-		       --constraint<list> --contiguous\
-		       --cores-per-sopcket<number> --cpus-per-task<number>\
-		       --dependency<deplist> --workdir<directory>\
-		       --error<filename pattern> --exclusive<user>\
-		       --export<environment variables|ALL|NONE>\
-		       --export-file<filename|fd> --nodefile<nodefile>\
-		       --get-user-env --gid<group>\
-		       --gres<list> --hold --help --hint<type> --immediate\
-		       --ignore-pbs --input<filename>\
-		       --job-name<jobname> --jobid<jobid> --no-kill\
-		       --licenses<license> --clusters<string>\
-		       --distribution<dist>\
-		       --mail-type<type> --mail-user<user> --mem<MB>\
-		       --mem-per-cpu<MB> --mem-bind<type> --mincpus<n>\
-		       --nodes<minnodes[-maxnodes]> --ntasks<number>\
-		       --network<type> --nice[adjustment] --no-requeue\
-		       --ntasks-per-core<ntasks>  --ntasks-per-socket<ntasks>\
-		       --ntasks-per-node<ntasks> --overcommit\
-		       --output<filename> --open-mode\
-		       --parsable --partition<partition_names> --power<flags>\
-		       --priority<value>\
-		       --profile<type>\
-		       --propagate<limit> --quiet --qos<qos> --reboot\
-		       --requeue --reservation<name> --share --core-spec<num>\
-		       --sicp --signal<signal> --sockets-per-node<sockets>\
-		       --switches<type> --time<time> --test-only\
-		       --threads-per-core<threads> --time-min<time>\
-		       --tmp<MB> --usage --uid=<user> --version --verbose\
-		       --nodelist<node name list> --wait-all-nodes<value>\
-		       --wckey<wckey> --wrap<command string>\
-		       --exclude<node name list> --blrts-image<path>\
-		       --cnload-image<path> --conn-type<type>\
-		       --geometry<XxYxZ> --ioload-image<path>\
-		       --linux-image<path> --mloader-image<path> --no-rotate\
-		       --ramdisk-image<path>"
+    local shortoptions="-a -A -b -B -c -C -d -D -e -F -G -h -H -i -J -k -L\
+			-m -M -n -N -o -O -p -q -Q -s -S -t -v -V -w -W -x"
+    local longoptions="--account=<account> --acctg-freq=<datatype><interval>\
+		       --array=<indexes>\
+		       --batch=<list> --bb=<spec> --bbf=<file_name>\
+		       --begin=<time>\
+		       --chdir=<path> --cluster-constraint=<list>\
+		       --clusters=<string> --comment=<string>\
+		       --constraint=<list> --container=<path> --contiguous\
+		       --core-spec=<num> --cores-per-socket=<number>\
+		       --cpu-freq=<p1[-p2[:p3]]> --cpus-per-gpu=<ncpus>\
+		       --cpus-per-task=<number>\
+		       --deadline=<OPT> --delay-boot=<minutes>\
+		       --dependency=<deplist> --distribution=<dist>\
+		       --error=<filename pattern> --exclude=<node name list>\
+		       --exclusive --export=<environment variables|ALL|NONE>\
+		       --export-file=<filename|fd>\
+		       --extra-node-info=<sockets[:cores[:threads]]>\
+		       --get-user-env --gid=<group>\
+		       --gpu-bind=<list> --gpu-freq=<list> --gpus=<list> \
+		       --gpus-per-node=<list> --gpus-per-socket=<list>\
+		       --gpus-per-task=<list> --gres=<list> --gres-flags=<list>\
+		       --help --hint=<type> --hold\
+		       --ignore-pbs --input=<filename>\
+		       --job-name=<jobname>\
+		       --kill-on-invalid-dep=<yes|no>\
+		       --licenses=<license>\
+		       --mail-type=<type> --mail-user=<user> --mcs-label=<mcs>\
+		       --mem=<MB> --mem-bind=<type> --mem-per-cpu=<MB>\
+		       --mem-per-gpu=<MB> --mincpus=<n>\
+		       --network=<type> --nice --no-kill\
+		       --no-requeue --nodefile=<nodefile>\
+		       --nodelist=<node name list>\
+		       --nodes=<minnodes[-maxnodes]> --ntasks=<number>\
+		       --ntasks-per-core=<ntasks> --ntasks-per-gpu=<ntasks>\
+		       --ntasks-per-node=<ntasks>\
+		       --ntasks-per-socket=<ntasks>\
+		       --open-mode --output=<filename> --overcommit\
+		       --oversubscribe --parsable --partition=<partition_names>\
+		       --power=<flags> --priority=<value> --profile=<type>\
+		       --propagate=<limit>\
+		       --qos=<qos> --quiet\
+		       --reboot --requeue --reservation=<name>\
+		       --signal=<spec> --sockets-per-node=<sockets>\
+		       --spread-job --switches=<type>\
+		       --test-only --thread-spec=<num>\
+		       --threads-per-core=<threads> --time=<time>\
+		       --time-min=<time> --tmp=<MB>\
+		       --uid=<user> --usage --use-min-nodes\
+		       --verbose --version\
+		       --wait --wait-all-nodes=<value> --wckey=<wckey>\
+		       --wrap=<command string>"
 
     [[ $cur == - ]] && { offer "$shortoptions" ; return ; }
     [[ $cur == -- ]] && { offer "$longoptions" ; return ; }
@@ -1685,40 +1696,49 @@ _sbatch()
 
     case $prev in
     --account|-A) offer_list "$(_accounts)" ;;
-    --constraint|-C) offer_list "$(_features)" ;;
-    --cpu-bind) offer "none rank map_cpu: mask_cpu: sockets \
-			    cores threads ldoms" ;;
-    --dependency|-d) offer "after: afterany: afternotok: \
-			    afterok: expand: singleton" ;;
-    --gid) _gids ;;
-    --partition|-p) offer_list "$(_partitions)" ;;
-    --gres) offer_list "$(_gres)" ;;
-    --hint) offer "compute_bound memory_bound multithread \
-			nomultithread" ;;
-    --jobid) offer_list "$(_jobs)" ;;
-    --licenses|-L) offer_list "$(_licenses)" ;;
-    --distribution|-m) offer_list "block cyclic plane arbitrary" ;;
-    --mail-type) offer_list "BEGIN END FAIL REQUEUE ALL STAGE_OUT TIME_LIMIT\
-			     TIME_LIMIT_90 TIME_LIMIT_80 TIME_LIMIT_50" ;;
-    --mem-bind) offer "quiet verbose none rank local map_mem: mask_mem:" ;;
-    --mpi) offer "openmpi pmi2 pmix none" ;;
-    --propagate) offer_list "all as core cpu data fsize memlock \
-			      nofile nproc rss stack" ;;
-    # TODO --network) _configured_interfaces ;;
-    --reservation) offer_list "$(_reservations)" ;;
+    --acctg-freq) offer "task= energy= network= filesystem=" ;;
+    --bbf) _filedir ;;
+    --chdir|-D) _filedir ;;
     --clusters|-M) offer_list "$(_clusters)" ;;
-    --nodelist|-w) offer_list "$(_nodes)" ;;
+    --constraint|-C) offer_list "$(_features)" ;;
+    --container) _filedir ;;
+    --dependency|-d) offer "after: afterany: afterburstbuffer: aftercorr:\
+			    afternotok: afterok: expand: singleton" ;;
+    --distribution|-m) offer_list "block cyclic plane arbitrary" ;;
     --exclude|-x) offer_list "$(_nodes)" ;;
-    --qos) offer_list "$(_qos)" ;;
-    :|afterany|after|afternotok|afterok) offer_list "$(_jobs)" ;;
+    --gid) _gids ;;
+    --gpu-bind)
+        if [[ "$cur" =~ ^verbose,.* ]]; then
+            offer "verbose,none verbose,closest verbose,single: verbose,per_task: verbose,map_gpu: verbose,mask_gpu:"
+        else
+            offer "verbose, none closest single: per_task: map_gpu: mask_gpu:"
+        fi
+        ;;
+    --gres) offer_list "$(_gres)" ;;
+    --gres-flags) offer_list "disable-binding enforce-binding" ;;
+    --hint) offer "compute_bound memory_bound multithread nomultithread help" ;;
+    --licenses|-L) offer_list "$(_licenses)" ;;
+    --mail-type) offer_list "NONE BEGIN END FAIL REQUEUE ALL INVALID_DEPEND\
+			     STAGE_OUT TIME_LIMIT TIME_LIMIT_90\
+			     TIME_LIMIT_80 TIME_LIMIT_50" ;;
+    --mem-bind) offer "help local quiet verbose none prefer rank sort local\
+		       map_mem: mask_mem:" ;;
+    # TODO --network) _configured_interfaces ;;
+    --nodefile|-F) _filedir ;;
+    --nodelist|-w) offer_list "$(_nodes)" ;;
+    --partition|-p) offer_list "$(_partitions)" ;;
     --profile) offer_list "all none energy task lustre network" ;;
-    --propagate) offer_list "ALL AS CORE CPU DATA FSIZE MEMLOCK NOFILE NPROC\
-			     RSS STACK" ;;
+    --propagate) offer_list "ALL NONE AS CORE CPU DATA FSIZE MEMLOCK NOFILE \
+			     NPROC RSS STACK" ;;
+    --qos|-q) offer_list "$(_qos)" ;;
+    --reservation) offer_list "$(_reservations)" ;;
+    --uid) offer_list "$(_users)" ;;
     --wait-all-nodes) offer_list "1 0" ;;
-    *)  _filedir
+    --wckey) offer_list "$(_wckeys)" ;;
+    :|afterany|after|afternotok|afterok) offer_list "$(_jobs)" ;;
     esac
 }
-complete -o filenames -F _sbatch sbatch
+complete -F _sbatch sbatch
 
 _srun()
 {
