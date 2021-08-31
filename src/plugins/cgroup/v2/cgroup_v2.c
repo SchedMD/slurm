@@ -225,6 +225,17 @@ static int _rmdir_task(void *x, void *arg)
 	return SLURM_SUCCESS;
 }
 
+static int _find_task_cg_info(void *x, void *key)
+{
+	task_cg_info_t *task_cg = (task_cg_info_t *)x;
+	uint32_t taskid = *(uint32_t*)key;
+
+	if (task_cg->taskid == taskid)
+		return 1;
+
+	return 0;
+}
+
 static void _free_task_cg_info(void *x)
 {
 	task_cg_info_t *task_cg = (task_cg_info_t *)x;
@@ -579,6 +590,10 @@ endit:
  * a pid to an intermediate directory in the cgroup hierarchy. Since we always
  * work at task level, we will add this pid to the special task task_4294967293.
  *
+ * Future: If in cgroup v2 we want to be able to enable/disable controllers for
+ * the slurmstepd pid, we need to add here the logic when stepd pid is detected.
+ * By default, all controllers are enabled for slurmstepd cgroup.
+ *
  * - Top-down Constraint
  * - No Internal Process Constraint
  *
@@ -586,7 +601,23 @@ endit:
  */
 extern int cgroup_p_step_addto(cgroup_ctl_type_t ctl, pid_t *pids, int npids)
 {
-	return SLURM_SUCCESS;
+	stepd_step_rec_t fake_job;
+	int rc = SLURM_SUCCESS;
+	pid_t stepd_pid = getpid();
+
+	/* cgroups in v2 are always owned by root. */
+	fake_job.uid = 0;
+	fake_job.gid = 0;
+
+	for (int i = 0; i < npids; i++) {
+		/* Ignore any possible movement of slurmstepd */
+		if (pids[i] == stepd_pid)
+			continue;
+		if (cgroup_p_task_addto(ctl, &fake_job, pids[i], NO_VAL)
+		    != SLURM_SUCCESS)
+			rc = SLURM_ERROR;
+	}
+	return rc;
 }
 
 /*
@@ -728,6 +759,74 @@ extern cgroup_oom_t *cgroup_p_step_stop_oom_mgr(stepd_step_rec_t *job)
 extern int cgroup_p_task_addto(cgroup_ctl_type_t ctl, stepd_step_rec_t *job,
 			       pid_t pid, uint32_t task_id)
 {
+	task_cg_info_t *task_cg_info;
+	char *task_cg_path = NULL;
+	uid_t uid = job->uid;
+	gid_t gid = job->gid;
+	bool need_to_add = false;
+
+	/* Ignore any possible movement of slurmstepd */
+	if (pid == getpid())
+		return SLURM_SUCCESS;
+
+	if (task_id == NO_VAL)
+		log_flag(CGROUP, "Starting task_special cgroup accounting");
+	else
+		log_flag(CGROUP, "Starting task %u cgroup accounting", task_id);
+
+	/* Let's be sure this task is not already created. */
+	if (!(task_cg_info = list_find_first(task_list, _find_task_cg_info,
+					     &task_id))) {
+		task_cg_info = xmalloc(sizeof(*task_cg_info));
+		task_cg_info->taskid = task_id;
+		need_to_add = true;
+	}
+
+	if (need_to_add) {
+		/* Create task hierarchy in this step. */
+		if (task_id == NO_VAL)
+			xstrfmtcat(task_cg_path, "%s/task_special",
+				   int_cg[CG_LEVEL_STEP_USER].name);
+		else
+			xstrfmtcat(task_cg_path, "%s/task_%u",
+				   int_cg[CG_LEVEL_STEP_USER].name, task_id);
+
+		if (common_cgroup_create(&int_cg_ns, &task_cg_info->task_cg,
+					 task_cg_path, uid, gid) !=
+		    SLURM_SUCCESS) {
+			if (task_id == NO_VAL)
+				error("unable to create task_special cgroup");
+			else
+				error("unable to create task %u cgroup",
+				      task_id);
+			xfree(task_cg_info);
+			xfree(task_cg_path);
+			return SLURM_ERROR;
+		}
+		xfree(task_cg_path);
+
+		if (common_cgroup_instantiate(&task_cg_info->task_cg) !=
+		    SLURM_SUCCESS) {
+			if (task_id == NO_VAL)
+				error("unable to instantiate task_special cgroup");
+			else
+				error("unable to instantiate task %u cgroup",
+				      task_id);
+			common_cgroup_destroy(&task_cg_info->task_cg);
+			xfree(task_cg_info);
+			return SLURM_ERROR;
+		}
+
+		/* Add the cgroup to the list now that it is initialized. */
+		list_append(task_list, task_cg_info);
+	}
+
+	/* Attach the pid to the corresponding step_x/task_y cgroup */
+	if (common_cgroup_move_process(&task_cg_info->task_cg, pid) !=
+	    SLURM_SUCCESS)
+		error("Unable to move pid %d to %s cg",
+		      pid, (task_cg_info->task_cg).path);
+
 	return SLURM_SUCCESS;
 }
 
