@@ -215,6 +215,16 @@ static int _check_avail_controllers()
 	return SLURM_SUCCESS;
 }
 
+static int _rmdir_task(void *x, void *arg)
+{
+	task_cg_info_t *t = (task_cg_info_t *) x;
+
+	if (common_cgroup_delete(&t->task_cg) != SLURM_SUCCESS)
+		log_flag(CGROUP, "Failed to delete %s: %m", t->task_cg.path);
+
+	return SLURM_SUCCESS;
+}
+
 static void _free_task_cg_info(void *x)
 {
 	task_cg_info_t *task_cg = (task_cg_info_t *)x;
@@ -223,6 +233,12 @@ static void _free_task_cg_info(void *x)
 		common_cgroup_destroy(&task_cg->task_cg);
 		xfree(task_cg);
 	}
+}
+
+static void _all_tasks_destroy()
+{
+	/* Empty the lists of accounted tasks, do a best effort in rmdir */
+	(void) list_delete_all(task_list, _rmdir_task, NULL);
 }
 
 /*
@@ -436,11 +452,126 @@ extern int cgroup_p_system_destroy(cgroup_ctl_type_t ctl)
 /*
  * Create the step hierarchy and move the stepd process into it. Further forked
  * processes will be created in the step directory as child. We need to respect
- * the Top-Down constraint not adding pids to non-leaf cgroups.
+ * the cgroup v2 Top-Down constraint to not add pids to non-leaf cgroups.
+ *
+ * We create two directories per step because we need to put the stepd into its
+ * specific slurm/ dir, otherwise suspending/constraining the user cgroup would
+ * also suspend or constrain the stepd.
+ *
+ *  step_x/slurm (for slurm processes, slurmstepd)
+ *  step_x/user (for users processes, tasks)
+ *
+ * No need to cleanup the directories on error because when a job ends
+ * systemd does the cleanup automatically.
+ *
+ * Note that CoreSpec and/or MemSpec does not affect slurmstepd.
  */
 extern int cgroup_p_step_create(cgroup_ctl_type_t ctl, stepd_step_rec_t *job)
 {
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+	char *new_path = NULL;
+	char tmp_char[64];
+
+	/* Don't let other plugins destroy our structs. */
+	step_active_cnt++;
+
+	/* Job cgroup */
+	xstrfmtcat(new_path, "/job_%u", job->step_id.job_id);
+	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_JOB],
+				 new_path, 0, 0) != SLURM_SUCCESS) {
+		error("unable to create job %u cgroup", job->step_id.job_id);
+		rc = SLURM_ERROR;
+		goto endit;
+	}
+	if (common_cgroup_instantiate(&int_cg[CG_LEVEL_JOB]) != SLURM_SUCCESS) {
+		common_cgroup_destroy(&int_cg[CG_LEVEL_JOB]);
+		error("unable to instantiate job %u cgroup",
+		      job->step_id.job_id);
+		rc = SLURM_ERROR;
+		goto endit;
+	}
+	xfree(new_path);
+	_enable_subtree_control(&int_cg[CG_LEVEL_JOB]);
+
+	/* Step cgroup */
+	xstrfmtcat(new_path, "%s/step_%s", int_cg[CG_LEVEL_JOB].name,
+		   log_build_step_id_str(&job->step_id, tmp_char,
+					 sizeof(tmp_char),
+					 STEP_ID_FLAG_NO_PREFIX |
+					 STEP_ID_FLAG_NO_JOB));
+
+	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_STEP],
+				 new_path, 0, 0) != SLURM_SUCCESS) {
+		error("unable to create step %ps cgroup", &job->step_id);
+		rc = SLURM_ERROR;
+		goto endit;
+	}
+	if (common_cgroup_instantiate(&int_cg[CG_LEVEL_STEP]) !=
+	    SLURM_SUCCESS) {
+		common_cgroup_destroy(&int_cg[CG_LEVEL_STEP]);
+		error("unable to instantiate step %ps cgroup", &job->step_id);
+		rc = SLURM_ERROR;
+		goto endit;
+	}
+	xfree(new_path);
+	_enable_subtree_control(&int_cg[CG_LEVEL_STEP]);
+
+	/* Step User processes cgroup */
+	xstrfmtcat(new_path, "%s/user", int_cg[CG_LEVEL_STEP].name);
+	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_STEP_USER],
+				 new_path, 0, 0) != SLURM_SUCCESS) {
+		error("unable to create step %ps user procs cgroup",
+		      &job->step_id);
+		rc = SLURM_ERROR;
+		goto endit;
+	}
+	if (common_cgroup_instantiate(&int_cg[CG_LEVEL_STEP_USER])
+	    != SLURM_SUCCESS) {
+		common_cgroup_destroy(&int_cg[CG_LEVEL_STEP_USER]);
+		error("unable to instantiate step %ps user procs cgroup",
+		      &job->step_id);
+		rc = SLURM_ERROR;
+		goto endit;
+	}
+	xfree(new_path);
+	_enable_subtree_control(&int_cg[CG_LEVEL_STEP_USER]);
+
+	/*
+	 * Step Slurm processes cgroup
+	 * Do not enable subtree control at this level since this is a leaf.
+	 */
+	xstrfmtcat(new_path, "%s/slurm", int_cg[CG_LEVEL_STEP].name);
+	if (common_cgroup_create(&int_cg_ns, &int_cg[CG_LEVEL_STEP_SLURM],
+				 new_path, 0, 0) != SLURM_SUCCESS) {
+		error("unable to create step %ps slurm procs cgroup",
+		      &job->step_id);
+		rc = SLURM_ERROR;
+		goto endit;
+	}
+	if (common_cgroup_instantiate(&int_cg[CG_LEVEL_STEP_SLURM])
+	    != SLURM_SUCCESS) {
+		common_cgroup_destroy(&int_cg[CG_LEVEL_STEP_SLURM]);
+		error("unable to instantiate step %ps slurm procs cgroup",
+		      &job->step_id);
+		rc = SLURM_ERROR;
+		goto endit;
+	}
+	xfree(new_path);
+
+	/* Place this stepd is in the correct cgroup. */
+	if (common_cgroup_move_process(&int_cg[CG_LEVEL_STEP_SLURM],
+				       job->jmgr_pid) != SLURM_SUCCESS) {
+		error("unable to move stepd pid to its dedicated cgroup");
+		rc = SLURM_ERROR;
+	}
+
+	/* Use slurmstepd pid as the identifier of the container. */
+	job->cont_id = (uint64_t)job->jmgr_pid;
+endit:
+	xfree(new_path);
+	if (rc != SLURM_SUCCESS)
+		step_active_cnt--;
+	return rc;
 }
 
 /*
@@ -476,9 +607,94 @@ extern int cgroup_p_step_resume()
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Destroy the step cgroup. We need to move out ourselves to the root of
+ * the cgroup filesystem first.
+ */
 extern int cgroup_p_step_destroy(cgroup_ctl_type_t ctl)
 {
-	return SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
+	xcgroup_t init_root;
+
+	/*
+	 * Only destroy the step if we're the only ones using it. Log it unless
+	 * loaded from slurmd, where we will not create any step but call fini.
+	 */
+	if (step_active_cnt == 0) {
+		error("called without a previous step create. This shouldn't happen!");
+		return SLURM_SUCCESS;
+	}
+
+	if (step_active_cnt > 1) {
+		step_active_cnt--;
+		log_flag(CGROUP, "Not destroying %s step dir, resource busy by %d other plugin",
+			 ctl_names[ctl], step_active_cnt);
+		return SLURM_SUCCESS;
+	}
+
+	/*
+	 * FUTURE:
+	 * Here we can implement a recursive kill of all pids in the step.
+	 */
+
+	/*
+	 * Move ourselves to the init root. This is the only cgroup level where
+	 * pids can be put and which is not a leaf.
+	 */
+	memset(&init_root, 0, sizeof(init_root));
+	init_root.path = xstrdup(slurm_cgroup_conf.cgroup_mountpoint);
+	rc = common_cgroup_move_process(&init_root, getpid());
+	if (rc != SLURM_SUCCESS) {
+		error("Unable to move pid %d to init root cgroup %s", getpid(),
+		      init_root.path);
+		goto end;
+	}
+
+	/* Remove any possible task directories first */
+	_all_tasks_destroy();
+
+	/* Rmdir this job's stepd cgroup */
+	if ((rc = common_cgroup_delete(&int_cg[CG_LEVEL_STEP_SLURM])) !=
+	    SLURM_SUCCESS) {
+		debug2("unable to remove slurm's step cgroup (%s): %m",
+		       int_cg[CG_LEVEL_STEP_SLURM].path);
+		goto end;
+	}
+	common_cgroup_destroy(&int_cg[CG_LEVEL_STEP_SLURM]);
+
+	/* Rmdir this job's user processes cgroup */
+	if ((rc = common_cgroup_delete(&int_cg[CG_LEVEL_STEP_USER])) !=
+	    SLURM_SUCCESS) {
+		debug2("unable to remove user's step cgroup (%s): %m",
+		       int_cg[CG_LEVEL_STEP_USER].path);
+		goto end;
+	}
+	common_cgroup_destroy(&int_cg[CG_LEVEL_STEP_USER]);
+
+	/* Rmdir this step's processes cgroup */
+	if ((rc = common_cgroup_delete(&int_cg[CG_LEVEL_STEP])) !=
+	    SLURM_SUCCESS) {
+		debug2("unable to remove step cgroup (%s): %m",
+		       int_cg[CG_LEVEL_STEP].path);
+		goto end;
+	}
+	common_cgroup_destroy(&int_cg[CG_LEVEL_STEP]);
+
+	/*
+	 * That's a best try to rmdir if no more steps are in this job,
+	 * it must not fail on error because other steps can still be alive.
+	 */
+	if (common_cgroup_delete(&int_cg[CG_LEVEL_JOB]) != SLURM_SUCCESS) {
+		debug2("still unable to remove job's step cgroup (%s): %m",
+		       int_cg[CG_LEVEL_JOB].path);
+		goto end;
+	}
+	common_cgroup_destroy(&int_cg[CG_LEVEL_JOB]);
+
+	step_active_cnt = 0;
+end:
+	common_cgroup_destroy(&init_root);
+	return rc;
 }
 
 /* Return true if the user pid is in this step/task cgroup */
