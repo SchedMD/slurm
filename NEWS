@@ -17,6 +17,7 @@ documents those changes that are of interest to users and administrators.
     display in the job correctly.
  -- Fix issue in the slurmstepd SPANK prolog/epilog handler where configuration
     values were used before being initialized.
+ -- Restore a step's ability to utilize all of an allocations memory if --mem=0.
 
 * Changes in Slurm 21.08.0
 ==========================

@@ -1921,6 +1921,7 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
 	bool first_step_node = true, pick_step_cores = true;
+	bool all_job_mem = false;
 	uint32_t rem_nodes;
 	int rc = SLURM_SUCCESS;
 	uint16_t req_tpc = NO_VAL16;
@@ -1968,6 +1969,9 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		step_ptr->pn_min_memory = 0;
 	}
 
+	if (!step_ptr->pn_min_memory)
+		all_job_mem = true;
+
 	rem_nodes = bit_set_count(step_ptr->step_node_bitmap);
 	step_ptr->memory_allocated = xcalloc(rem_nodes, sizeof(uint64_t));
 	for (i_node = i_first; i_node <= i_last; i_node++) {
@@ -2002,9 +2006,21 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 			uint16_t cpus_per_task = step_ptr->cpus_per_task;
 			uint16_t vpus = node_record_table_ptr[i_node].vpus;
 
-			cpus_alloc_mem = cpus_alloc =
+			cpus_alloc =
 				step_ptr->step_layout->tasks[step_node_inx] *
 				cpus_per_task;
+
+			/*
+			 * If we are requesting all the memory in the job
+			 * (--mem=0) we get it all, otherwise we use what was
+			 * requested specifically for the step.
+			 */
+			if (all_job_mem)
+				cpus_alloc_mem =
+					job_resrcs_ptr->
+					cpu_array_value[job_node_inx];
+			else
+				cpus_alloc_mem = cpus_alloc;
 
 			/*
 			 * If we are doing threads per core we need the whole
