@@ -1018,8 +1018,7 @@ extern int gres_ctld_job_alloc_whole_node(
 
 static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 			int node_offset, char *gres_name, uint32_t job_id,
-			char *node_name, bool old_job, uint32_t plugin_id,
-			bool job_fini)
+			char *node_name, bool old_job, uint32_t plugin_id)
 {
 	int i, j, len, sz1, sz2;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
@@ -1229,13 +1228,11 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
  *		    registration, the GRES type and topology. This results in
  *		    some incorrect internal bookkeeping, but does not cause
  *		    failures in terms of allocating GRES to jobs.
- * IN: job_fini   - job fully terminating on this node (not just a test)
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
 				 int node_offset, uint32_t job_id,
-				 char *node_name, bool old_job,
-				 bool job_fini)
+				 char *node_name, bool old_job)
 {
 	int rc = SLURM_SUCCESS, rc2;
 	ListIterator job_gres_iter;
@@ -1264,7 +1261,7 @@ extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
 				   node_gres_ptr->gres_data, node_offset,
 				   job_gres_ptr->gres_name, job_id,
 				   node_name, old_job,
-				   job_gres_ptr->plugin_id, job_fini);
+				   job_gres_ptr->plugin_id);
 		if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
 	}
