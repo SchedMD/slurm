@@ -91,16 +91,18 @@ static int _valid_gpu_bind(char *arg)
 {
 	if (!strncasecmp(arg, "verbose,", 8))
 		arg += 8;
-	if (!strcmp(arg, "closest"))
+	if (!xstrncasecmp(arg, "closest", 1))
 		return 0;
-	if (!strncmp(arg, "single:", 7))
-		return _valid_num(arg + 7);
-	if (!strncmp(arg, "map_gpu:", 8))
+	if (!xstrncasecmp(arg, "map_gpu:", 8))
 		return _valid_num_list(arg + 8);
-	if (!strncmp(arg, "mask_gpu:", 9))
+	if (!xstrncasecmp(arg, "mask_gpu:", 9))
 		return _valid_num_list(arg + 9);
-	if (!xstrncmp(arg, "per_task:", 9))
+	if (!xstrncasecmp(arg, "none", 1))
+		return 0;
+	if (!xstrncasecmp(arg, "per_task:", 9))
 		return _valid_num(arg + 9);
+	if (!xstrncasecmp(arg, "single:", 7))
+		return _valid_num(arg + 7);
 	return -1;
 }
 

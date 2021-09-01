@@ -690,6 +690,14 @@ versions (e.g. 20.02.0-pre1 to 20.02.0-pre2).
 Developers will try to note these cases in the NEWS file.
 Contents of major releases are also described in the RELEASE_NOTES file.</p>
 
+<p>A common approach when performing upgrades is to install the new version
+of Slurm to a unique directory and use a symbolic link to point the
+directory in your PATH to the version of Slurm you would like to use.
+This allows you to install the new version before you are in a maintenance
+period as well as easily switch between versions should you need to roll
+back for any reason. It also avoids potential problems with library conflicts
+that might arise from installing different versions to the same directory.</p>
+
 <p>The libslurm.so version is increased every major release.
 So things like MPI libraries with Slurm integration should be recompiled.
 Sometimes it works to just symlink the old .so name(s) to the new one, but this
@@ -749,6 +757,6 @@ cd /usr/ports/sysutils/slurm-wlm && make install
 typical compute nodes.  Installing from source allows the user to enable
 options such as mysql and gui tools via a configuration menu.</p>
 
-<p style="text-align:center;">Last modified 21 May 2021</p>
+<p style="text-align:center;">Last modified 20 August 2021</p>
 
 <!--#include virtual="footer.txt"-->

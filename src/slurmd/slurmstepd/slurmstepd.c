@@ -406,6 +406,7 @@ static int _handle_spank_mode (int argc, char **argv)
 	log_init(prefix, lopts, LOG_DAEMON, NULL);
 	xfree(prefix);
 
+	slurm_conf_init(NULL);
 	/*
 	 *  When we are started from slurmd, a lightweight config is
 	 *   sent over the stdin fd. If we are able to read this conf
@@ -416,8 +417,6 @@ static int _handle_spank_mode (int argc, char **argv)
 	 */
 	conf = read_slurmd_conf_lite (STDIN_FILENO);
 	close (STDIN_FILENO);
-
-	slurm_conf_init(NULL);
 
 	if (_get_jobid_uid_gid_from_env(&jobid, &uid, &gid))
 		return error("spank environment invalid");

@@ -757,6 +757,7 @@ complete using the "afterburstbuffer" dependency option (e.g.
 <li><code>staging-in</code></li>
 <li><code>staged-in</code></li>
 <li><code>pre-run</code></li>
+<li><code>alloc-revoke</code></li>
 <li><code>running</code></li>
 <li><code>suspended</code></li>
 <li><code>post-run</code></li>
@@ -770,9 +771,12 @@ complete using the "afterburstbuffer" dependency option (e.g.
 <code>scontrol show job</code>. This field only appears for jobs that requested
 a burst buffer. The states <code>allocating</code>, <code>allocated</code>,
 <code>deleting</code> and <code>deleted</code> are used
-for persistent burst buffers only (not for job-specific burst buffers). When a
-job requests a burst buffer, this is what the job and burst buffer state
-transitions look like:</p>
+for persistent burst buffers only (not for job-specific burst buffers). The
+state <code>alloc-revoke</code> happens if a failure in Slurm's select plugin
+occurs in between Slurm allocating resources for a job and actually starting
+the job. This should never happen.</p>
+<p>When a job requests a burst buffer, this is what the job and burst buffer
+state transitions look like:</p>
 
 <ol>
 <li>Job is submitted. Job state and burst buffer state are both
