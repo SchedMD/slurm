@@ -5500,6 +5500,7 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	overlap_check_t *over_list;
 	int over_count = 0, rc = SLURM_SUCCESS, size;
 	bool have_gres_gpu = false, have_gres_mps = false;
+	bool requested_gpu = false;
 	bool overlap_merge = false;
 	gres_state_t *gres_state;
 	gres_job_state_t *job_gres_data;
@@ -5582,6 +5583,9 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 		while ((job_gres_data = _get_next_job_gres(in_val, &cnt,
 							   *gres_list,
 							   &save_ptr, &rc))) {
+			if (!requested_gpu &&
+			    (!xstrcmp(job_gres_data->gres_name, "gpu")))
+				requested_gpu = true;
 			job_gres_data->gres_per_job = cnt;
 			in_val = NULL;
 			job_gres_data->total_gres =
@@ -5594,6 +5598,9 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 		while ((job_gres_data = _get_next_job_gres(in_val, &cnt,
 							   *gres_list,
 							   &save_ptr, &rc))) {
+			if (!requested_gpu &&
+			    (!xstrcmp(job_gres_data->gres_name, "gpu")))
+				requested_gpu = true;
 			job_gres_data->gres_per_node = cnt;
 			in_val = NULL;
 			if (*min_nodes != NO_VAL)
@@ -5608,6 +5615,9 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 		while ((job_gres_data = _get_next_job_gres(in_val, &cnt,
 							   *gres_list,
 							   &save_ptr, &rc))) {
+			if (!requested_gpu &&
+			    (!xstrcmp(job_gres_data->gres_name, "gpu")))
+				requested_gpu = true;
 			job_gres_data->gres_per_socket = cnt;
 			in_val = NULL;
 			if ((*min_nodes != NO_VAL) &&
@@ -5628,6 +5638,9 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 		while ((job_gres_data = _get_next_job_gres(in_val, &cnt,
 							   *gres_list,
 							   &save_ptr, &rc))) {
+			if (!requested_gpu &&
+			    (!xstrcmp(job_gres_data->gres_name, "gpu")))
+				requested_gpu = true;
 			job_gres_data->gres_per_task = cnt;
 			in_val = NULL;
 			if (*num_tasks != NO_VAL)
@@ -5652,7 +5665,7 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	if (!ntasks_per_tres || !*ntasks_per_tres ||
 	    (*ntasks_per_tres == NO_VAL16)) {
 		/* do nothing */
-	} else if (list_count(*gres_list) != 0) {
+	} else if (requested_gpu && (list_count(*gres_list) != 0)) {
 		/* Set num_tasks = gpus * ntasks/gpu */
 		uint64_t gpus = _get_job_gres_list_cnt(*gres_list, "gpu", NULL);
 		if (gpus != NO_VAL64)
@@ -5684,6 +5697,8 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 		if (list_count(*gres_list) == 0)
 			error("%s: Failed to add generated GRES %s (via ntasks_per_tres) to gres_list",
 			      __func__, gres);
+		else
+			requested_gpu = true;
 		xfree(gres);
 	} else {
 		error("%s: --ntasks-per-tres needs either a GRES GPU specification or a node/ntask specification",
@@ -5698,6 +5713,21 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	if (size == 0) {
 		FREE_NULL_LIST(*gres_list);
 		return rc;
+	}
+
+	if (mem_per_tres && (!requested_gpu)) {
+		/*
+		 * If someone requested mem_per_tres but didn't request any
+		 * GPUs (even if --exclusive was used), then error.
+		 * For now we only test for GPUs since --mem-per-gpu is the
+		 * only allowed mem_per_gres option.
+		 * Even though --exclusive means that you will be allocated all
+		 * of the GRES on the node, we still require that GPUs are
+		 * explicitly requested when --mem-per-gpu is used.
+		 */
+		error("Requested mem_per_tres=%s but did not request any GPU.",
+		      mem_per_tres);
+		return ESLURM_INVALID_GRES;
 	}
 
 	/*

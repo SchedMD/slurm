@@ -1138,6 +1138,8 @@ node.
 Minimum memory required per allocated GPU.
 Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
+When using this option, at least one GPU must also be requested, or else the
+job sumission is denied.
 Default value is \fBDefMemPerGPU\fR and is available on both a global and
 per partition basis.
 If configured, the parameters can be seen using the \fBscontrol show config\fR
