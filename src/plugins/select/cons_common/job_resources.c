@@ -538,7 +538,7 @@ extern int job_res_rm_job(part_res_record_t *part_record_ptr,
 
 			gres_ctld_job_dealloc(job_gres_list, gres_list,
 					      n, job_ptr->job_id,
-					      node_ptr->name, old_job);
+					      node_ptr->name, old_job, false);
 			gres_node_state_log(gres_list, node_ptr->name);
 
 			if (node_usage[i].alloc_memory <
