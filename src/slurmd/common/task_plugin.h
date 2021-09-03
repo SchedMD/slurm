@@ -157,7 +157,7 @@ extern int task_g_add_pid(pid_t pid);
 
 
 extern void task_slurm_chkaffinity(cpu_set_t *mask, stepd_step_rec_t *job,
-				   int statval);
+				   int statval, uint32_t taskid);
 extern char *task_cpuset_to_str(const cpu_set_t *mask, char *str);
 
 extern int task_str_to_cpuset(cpu_set_t *mask, const char* str);

@@ -23,6 +23,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue in the slurmstepd SPANK prolog/epilog handler where configuration
     values were used before being initialized.
  -- Restore a step's ability to utilize all of an allocations memory if --mem=0.
+ -- Fix --cpu-bind=verbose garbage taskid.
+ -- Fix cgroup task affinity issues from garbage taskid info.
 
 * Changes in Slurm 21.08.0
 ==========================
