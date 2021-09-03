@@ -38,9 +38,17 @@ if {![file exists $slurmrestd]} {
 	skip "slurmrestd not installed"
 }
 
-if {[run_command_status -nolog "$bin_oasgen version"]} {
+# TODO: Currently only OpenAPI-Generator version 4.x is supported by the test.
+#       See Bug 11963.
+set oasver [run_command_output -nolog "$bin_oasgen version"]
+if {$oasver == ""} {
 	skip "$bin_oasgen not found"
 }
+regexp {^([0-9]+)[.]\S+} "$oasver" fullmatch oas_gen_maj
+if {$oas_gen_maj != "4"} {
+	skip "unsupported openapi-generator-cli version: $fullmatch != 4.x"
+}
+
 
 if {[run_command_status -nolog "$bin_py3 --version"]} {
 	skip "$bin_py3 not found"
