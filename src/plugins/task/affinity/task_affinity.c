@@ -258,7 +258,7 @@ extern int task_p_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
 		rc = slurm_setaffinity(mypid, sizeof(new_mask), &new_mask);
 		slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
 	}
-	task_slurm_chkaffinity(rc ? &cur_mask : &new_mask, job, rc);
+	task_slurm_chkaffinity(rc ? &cur_mask : &new_mask, job, rc, node_tid);
 	return rc;
 }
 
