@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
     task count.
  -- Properly clear out pending step if unavailable to run with available
     resources.
+ -- Kill all processes spawned by burst_buffer.lua including decendents.
 
 * Changes in Slurm 21.08.0
 ==========================
