@@ -1,21 +1,21 @@
 <!--#include virtual="header.txt"-->
 
-<h1>Slurm User Group Meeting 2020</h1>
+<h1>Slurm User Group Meeting 2021</h1>
 
-<p>The Slurm User Group Meeting (SLUG'20) this fall will be moving online, and will not be hosted in-person at Harvard as scheduled, due to uncertainty around scheduling events caused by COVID-19.</p>
+<p>The Slurm User Group Meeting (SLUG'21) this fall will be held online once again.</p>
 
-<p>In lieu of an in-person meeting, SchedMD will broadcast a select set of presentations on Tuesday, September 15th, 2020 through YouTube Live from the <a href="https://www.youtube.com/c/schedmdslurm/">SchedMD Slurm</a> channel. No registration is required.</p>
+<p>In lieu of an in-person meeting, SchedMD will broadcast a set of presentations on Tuesday, September 21st, 2021 through YouTube Live from the <a href="https://www.youtube.com/c/schedmdslurm/">SchedMD Slurm</a> channel. No registration is required.</p>
 
 <p>Viewers are encouraged to ask questions through the live chat feature. SchedMD staff will be moderating the chat, and will forward relevant and timely questions to the presenter. The last 5-10 minutes of each presentation will be reserved for further Q+A, as well as provide a brief break between each session. (Unfortunately, we cannot provide snacks in the hallway for virtual SLUG; you will need to raid your own pantry instead.)</p>
 
 <p>Please note that each presentation is contained in a separate broadcast, and you will need to switch between them at the breaks.</p>
 
-<p>These presentations will remain online for one week after the live broadcast.</p>
+<p>These presentations will remain online for at least one week after the live broadcast.</p>
 
 <a name="schedule"><h2>Schedule</h2></a>
 
 <h3>All times are US Mountain Daylight Time (UTC-6)</h3>
-<h2>Tuesday, 15 September 2020</h2>
+<h2>Tuesday, 21 September 2021</h2>
 <table width="100%" border=1 cellspacing=0 cellpadding=4>
 
 <tr>
@@ -24,12 +24,13 @@
   <th width="45%">Title</th>
  </tr>
 
-<tr><td nowrap>9:00 - 9:50</td><td>Booth (SchedMD)</td><td><a href="https://www.youtube.com/watch?v=F8CZaqOQ4Sk">Field Notes 4: From The Frontlines of Slurm Support</a></td></tr>
-<tr><td nowrap>10:00 - 10:25</td><td>Christiansen (SchedMD)</td><td><a href="https://www.youtube.com/watch?v=Ww-xBZMV0lA">Cloud and Stuff</a></td></tr>
-<tr><td nowrap>10:30 - 10:50</td><td>Rini (SchedMD)</td><td><a href="https://www.youtube.com/watch?v=RtdJlstFB28">REST API<a/></td></tr>
-<tr><td nowrap>11:00 - 11:50</td><td>Wickberg (SchedMD)</td><td><a href="https://www.youtube.com/watch?v=vHPtttXIiWs">Slurm 20.11 and Beyond, Open Q+A</a></td></tr>
+<tr><td nowrap>9:00 - 9:50</td><td>Booth (SchedMD)</td><td>Field Notes 5: From The Frontlines of Slurm Support</td></tr>
+<tr><td nowrap>10:00 - 10:25</td><td>Rini (SchedMD)</td><td>REST API &amp; Containers<a/></td></tr>
+<tr><td nowrap>10:30 - 10:55</td><td>Garey (SchedMD)</td><td>burst_buffer/lua and slurmscriptd</td></tr>
+<tr><td nowrap>11:00 - 11:25</td><td>Ihli (SchedMD)</td><td>Slurm in the Clouds</td></tr>
+<tr><td nowrap>11:30 - 11:55</td><td>Wickberg (SchedMD)</td><td>Slurm 21.08 and Beyond</td></tr>
 </table>
 
-<p style="text-align:center;">Last modified 10 September 2020</p>
+<p style="text-align:center;">Last modified 8 September 2021</p>
 
 <!--#include virtual="footer.txt"-->
