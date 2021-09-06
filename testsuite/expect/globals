@@ -852,6 +852,43 @@ proc check_run_as_user user {
 ################################################################
 #
 # NAME
+#	check_user_id - check if user exists in the system
+#
+# SYNOPSIS
+#	check_user_id user
+#
+# DESCRIPTION
+#	This proc also log_warn a message if user already exists in the DB
+#	because most probably this user is testsuite_user and that user is
+#	expected NOT to be in the DB and could potentially be removed from
+#	it by the test.
+#
+# RETURN VALUE
+#	Returns true if the user passed exists in the system, false otherwise.
+#
+################################################################
+
+proc check_user_id user {
+	global bin_id
+
+	if {$user eq ""} {
+		return false
+	}
+	if {[run_command_status -none "$bin_id -un $user"]} {
+		return false
+	}
+
+	if {[get_admin_level $user] != ""} {
+		log_warn "User $user already exists in DB, but it's probable that it's going to be removed by the test cleanup"
+	}
+
+	return true
+}
+
+
+################################################################
+#
+# NAME
 #	run_command - executes a command and returns a dictionary result
 #
 # SYNOPSIS
