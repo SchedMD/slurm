@@ -1641,9 +1641,14 @@ See the \fBfilename pattern\fR section below for filename specification options.
 .TP
 \fB\-O\fR, \fB\-\-overcommit\fR
 Overcommit resources.
-When applied to job allocation, only one CPU is allocated to the job per node
-and options used to specify the number of tasks per node, socket, core, etc.
-are ignored.
+
+When applied to a job allocation (not including jobs requesting exclusive
+access to the nodes) the resources are allocated as if only one task per
+node is requested. This means that the requested number of cpus per task
+(\fB\-c\fR, \fB\-\-cpus\-per\-task\fR) are allocated per node rather than
+being multiplied by the number of tasks. Options used to specify the number
+of tasks per node, socket, core, etc. are ignored.
+
 When applied to job step allocations (the \fBsrun\fR command when executed
 within an existing job allocation), this option can be used to launch more than
 one task per CPU.
