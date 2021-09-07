@@ -1834,7 +1834,7 @@ proc wait_for_file args {
 		fail $message
 	}
 
-	log_error $message
+	log_warn $message
 	return $::RETURN_TIMEOUT
 }
 
