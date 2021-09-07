@@ -5670,9 +5670,11 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 		uint64_t gpus = _get_job_gres_list_cnt(*gres_list, "gpu", NULL);
 		if (gpus != NO_VAL64)
 			*num_tasks = gpus * *ntasks_per_tres;
-		else
+		else {
 			error("%s: Can't set num_tasks = gpus * *ntasks_per_tres because there are no allocated GPUs",
 			      __func__);
+			rc = ESLURM_INVALID_GRES;
+		}
 	} else if (*num_tasks && (*num_tasks != NO_VAL)) {
 		/*
 		 * If job_gres_list empty, and ntasks_per_tres is specified,
@@ -5703,6 +5705,7 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	} else {
 		error("%s: --ntasks-per-tres needs either a GRES GPU specification or a node/ntask specification",
 		      __func__);
+		rc = ESLURM_INVALID_GRES;
 	}
 
 	slurm_mutex_unlock(&gres_context_lock);
