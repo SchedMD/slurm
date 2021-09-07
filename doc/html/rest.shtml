@@ -25,17 +25,6 @@ changes between release versions.</p>
 	<li><a href="download.html#jwt">JWT Authentication</a> (optional)</li>
 </ul>
 
-<!-- <h2>Usage Models</h2>
-<p>Slurmrestd can be run by the system as the new unprivileged user and use JWT tokens from users for all authentication.
-<p>Slurmrestd can be run by the system as the SlurmUser, in which case, it can
-assume the identity of any user on the system. Slurmrestd can also be run
-by normal users to allow them to communicate with Slurm via REST commands directly
-as their own user. It is <b>not</b> suggested normal users run a daemon but instead
-use the inet service mode and pipe their input directly into Slurmrestd to avoid any
-unnecessary security issues involved with hosting a listening daemon on a shared
-system.</p>
--->
-
 <h2 id="stateless">Stateless<a class="slurm_link" href="#stateless"></a></h2>
 <p>Slurmrestd is stateless as it does not cache or save any state between
 requests. Each request is handled in a thread and then all of that state is
