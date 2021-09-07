@@ -197,10 +197,30 @@ specific plugins to break.</p>
 <h2 id="security">Security<a class="slurm_link" href="#security"></a></h2>
 <p>The Slurm REST API is written to provide the necessary functionality for
 clients to control Slurm using REST commands. It is <b>not</b> designed to be
-directly internet facing.  Only unencrypted and uncompressed HTTP
-communications are supported. Slurmrestd also has no protection against man in
-the middle or replay attacks. Slurmrestd should only be placed in a trusted
-network that will communicate with a trusted client.</p>
+directly internet facing. Only unencrypted and uncompressed HTTP communications
+are supported. Slurmrestd also has no protection against man in the middle or
+replay attacks. Slurmrestd should only be placed in a trusted network that will
+communicate with a trusted client.</p>
+
+<p>Any site wishing to expose Slurm REST API to the internet or outside of the
+cluster should at the very least use a proxy to wrap all communications with
+TLS v1.3 (or later). You should also add monitoring to reject any client who
+repeatedly attempts invalid logins at either the network perimeter firewall or
+at the TLS proxy. Any client filtering that can be done via a proxy is
+suggested to avoid common internet crawlers from talking to slurmrestd and
+wasting system resource or even causing higher latency for valid clients.
+Sites are recommended to use shorter lived JWT tokens for clients and renew
+often, possibly via non-Slurm JWT generator to avoid having to enforce JWT
+lifespan limits. It is also suggested that sites use an authenticating proxy
+to handle all client authentication against the sites preferred Single Sign
+On (SSO) provider instead of Slurm <b>scontrol</b> generated tokens. This will
+prevent any unauthenticated client from connecting to slurmrestd.</p>
+
+<p>The Slurm REST API is an HTTP server and all general possible precautions
+for security of any web server should be applied. As these precautions are site
+specific, it is highly recommended that you work with your site's security
+group to ensure all policies are enforced at the proxy before connecting to
+slurmrestd.</p>
 
 <h2 id="jwt">JSON Web Token (JWT) Authentication
 <a class="slurm_link" href="#jwt"></a>
