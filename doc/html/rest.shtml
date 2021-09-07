@@ -159,7 +159,10 @@ Tested compatibility by OpenAPI plugins:
 
 <h2 id="plugins">Plugins<a class="slurm_link" href="#plugins"></a></h2>
 <p>As of Slurm 20.11, the REST API uses plugins for authentication and
-generating content. These plugins can be optionality listed or selected via
+generating content. As of Slurm-21.08, the OpenAPI plugins are available
+outside of slurmrestd daemon and other slurm commands may provide or accept the
+latest version of the OpenAPI formatted output. This functionality is provided
+on a per command basis. These plugins can be optionally listed or selected via
 command line arguments as described in the <a href="slurmrestd.html">
 slurmrestd</a> documentation.</p>
 
@@ -167,14 +170,15 @@ slurmrestd</a> documentation.</p>
 <a class="slurm_link" href="#lifecycle"></a>
 </h3>
 <p>Plugins provided with Slurm in any release are considered supported by that
-release. Due to the nature of the plugins, one plugin can be supported accross
-multiple Slurm releases to ensure (limited) forward client compatibility. As
-the slurmrestd plugins are relatively new, we are currently only explicitly
-deprecating plugins and expect any plugin not marked for deprecation to
-continue to exist in the next Slurm release. When a plugin is marked for
-removal in the next major Slurm release, the OpenAPI specification dictates
-that the given plugin will have all of the paths tagged with
-<pre>"deprecated": "true"</pre></p>
+release. In general, only the latest versioned plugins will receive minor bug
+fixes but all will receive security fixes. Due to the nature of the plugins,
+one plugin can be supported across multiple Slurm releases to ensure (limited)
+forward client compatibility. SchedMD is currently only explicitly deprecating
+plugins and expect that any plugin not marked for deprecation will continue to
+exist in the next Slurm Major release. When a plugin is marked for removal in
+the next major Slurm release, the OpenAPI specification dictates that the given
+plugin will have all of the paths tagged with
+<code>"deprecated":"true"</code></p>
 
 <p>Sites are <b>always</b> encouraged to use the latest stable plugin version
 available for code development. There is <b>no</b> guarantee of compatibility
