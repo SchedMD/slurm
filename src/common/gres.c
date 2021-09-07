@@ -5665,7 +5665,7 @@ extern int gres_job_state_validate(char *cpus_per_tres,
 	if (!ntasks_per_tres || !*ntasks_per_tres ||
 	    (*ntasks_per_tres == NO_VAL16)) {
 		/* do nothing */
-	} else if (requested_gpu && (list_count(*gres_list) != 0)) {
+	} else if (requested_gpu && list_count(*gres_list)) {
 		/* Set num_tasks = gpus * ntasks/gpu */
 		uint64_t gpus = _get_job_gres_list_cnt(*gres_list, "gpu", NULL);
 		if (gpus != NO_VAL64)
