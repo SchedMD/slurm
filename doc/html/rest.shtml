@@ -53,7 +53,8 @@ and does not support reusing the same instance for different clients.</p>
 
 <h3 id="listen">Listening Mode<a class="slurm_link" href="#listen"></a></h3>
 <p>The Slurmrestd daemon acts as a full UNIX service and continuously listens
-for new TCP connections. Each connection is independently authenticated.</p>
+for new TCP connections. Each connection and request are independently
+authenticated.</p>
 
 <h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 slurmrestd can be configured either by environment variables or command line
