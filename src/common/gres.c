@@ -5215,7 +5215,7 @@ next:	if (*save_ptr[0] == '\0') {	/* Empty input token */
 
 fini:	if (rc != SLURM_SUCCESS) {
 		*save_ptr = NULL;
-		if (rc == ESLURM_INVALID_GRES) {
+		if ((rc == ESLURM_INVALID_GRES) && running_in_daemon()) {
 			info("%s: Invalid GRES job specification %s", __func__,
 			     in_val);
 		}
@@ -5305,7 +5305,7 @@ fini:	xfree(name);
 	xfree(type);
 	if (my_rc != SLURM_SUCCESS) {
 		prev_save_ptr = NULL;
-		if (my_rc == ESLURM_INVALID_GRES) {
+		if ((my_rc == ESLURM_INVALID_GRES) && running_in_daemon()) {
 			info("%s: Invalid GRES job specification %s", __func__,
 			     in_val);
 		}

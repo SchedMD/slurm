@@ -25,6 +25,7 @@ documents those changes that are of interest to users and administrators.
  -- Restore a step's ability to utilize all of an allocations memory if --mem=0.
  -- Fix --cpu-bind=verbose garbage taskid.
  -- Fix cgroup task affinity issues from garbage taskid info.
+ -- Make gres_job_state_validate() client logging behavior as before 44466a4641.
 
 * Changes in Slurm 21.08.0
 ==========================
