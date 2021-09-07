@@ -11,6 +11,10 @@
 </p>
 <p>Please see <a href="rest_release_notes.html">REST API Release Notes</a> for
 changes between release versions.</p>
+<p>
+	To view the currently generated API reference:
+	<a href="rest_api.html">Slurm REST API Reference</a>
+</p>
 
 <h2 id="prereq">Prerequisites<a class="slurm_link" href="#prereq"></a></h2>
 <p>slurmrestd requires additional libraries for compilation:</p>
@@ -162,11 +166,6 @@ Tested compatibility by OpenAPI plugins:
 		</ul>
 	</li>
 </ul>
-
-<p>
-	To view the currently generated API reference:
-	<a href="rest_api.html">Slurm REST API Reference</a>
-</p>
 
 <h2 id="plugins">Plugins<a class="slurm_link" href="#plugins"></a></h2>
 <p>As of Slurm 20.11, the REST API uses plugins for authentication and
