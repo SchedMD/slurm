@@ -151,6 +151,11 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 		}
 	}
 	if {$matches != 4} {
+		# TODO: Temporary debug to troubleshoot bug 12281 (remove once fixed)
+		log_info "We saw a failure for bug 12281. Run it a few more times over the subsequent minute to see whether the accounting info rectifies itself"
+		wait_for -timeout 60 -pollinterval 5 {false} {
+			run_command "$sacct -n -P -j $job_id -o JobID,ExitCode,DerivedExitCode,Comment"
+		}
 		fail "sacct of $job_id failed ($matches != 4)"
 	}
 }
