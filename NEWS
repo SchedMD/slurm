@@ -27,6 +27,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix cgroup task affinity issues from garbage taskid info.
  -- Make gres_job_state_validate() client logging behavior as before 44466a4641.
  -- Fix steps with --hint overriding an allocation with --threads-per-core.
+ -- Require requesting a GPU if --mem-per-gpu is requested.
+ -- Return error early if a job is requesting --ntasks-per-gpu and no gpus or
+    task count.
 
 * Changes in Slurm 21.08.0
 ==========================
