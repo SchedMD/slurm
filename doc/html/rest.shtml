@@ -217,9 +217,9 @@ JWT can be used to authenticate user over REST protocol.
 SlurmUser or root can provide alternative user names to act as a proxy for the
 given user. While using JWT authentication, slurmrestd should be run as a
 unique, <b>unprivileged</b> user and group. Slurmrestd should be provided an
-empty SLURM_JWT environment variable at startup to activate JWT authentication.
+invalid SLURM_JWT environment variable at startup to activate JWT authentication.
 This will allow users to provide their own JWT tokens while authenticating to
-the proxy.</p>
+the proxy and ensuring against any possible accidental authorizations.</p>
 <p>When using JWT, it is important that <u>AuthAltTypes=auth/jwt</u> be
 configured in your slurm.conf for slurmrestd.</p>
 
