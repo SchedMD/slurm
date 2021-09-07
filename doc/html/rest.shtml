@@ -251,136 +251,35 @@ Slurmrestd must be located in the Munge security domain in order to function
 and communicate with Slurm in local authentication mode.
 </p>
 
-<!--
-<h2>Authenticating Proxy</h2>
-<p>If (relatively) untrusted users are going to be allowed to talk to the REST
-API, then they must be authenticated. There are a whole world of
-authentications that a site could choose from at any one time. This
-functionality is explicitly not provided in Slurmrestd itself but instead is
-expected to be provided by an authenticating proxy and relay.</p>
+<h2 id="auth_proxy">Authenticating Proxy
+<a class="slurm_link" href="#auth_proxy"></a>
+</h2>
+<p>There is a wide array of authentication systems that a site could choose
+from, if using <a href="#jwt">JWT authentication</a> doesn't meet your
+requirements. An authenticating proxy is setup with a JWT token assigned to
+the SlurmUser that can then be used to proxy for any user on the cluster.
+This ability is only allowed for SlurmUser and the root users, all other
+tokens will only work with their locally assigned users.</p>
 
-<h2>Authenticating Relay</h2>
-<p>An authenticating relay will act as the intermediary between Slurmrestd and
-any clients. The proxy will accept REST API requests, process them and then
-replicate them to the Slurm REST daemon directly as a trusted request.
-The relay will have the ability to modify or apply site rules to user requests as
-it processes each one before passing it along. This allows the most flexibility
-for sites but will require coding a system to relay and adds latency. Some example
-third party frameworks already exist and can be modified for this purpose:</p>
-<ul>
-	<li><a href="https://github.com/relayphp/Relay.Relay">PHP Relay</a></li>
-	<li><a href="https://www.npmjs.com/package/node-relay">NodeJS Relay</a></li>
-	<li><a href="https://github.com/shingetsu-gou/http-relay">Go http-relay</a></li>
-</ul>
+<p>If using a third-party authenticating proxy, it is expected that it will
+provide the correct HTTP headers (<b>X-SLURM-USER-NAME</b> and
+<b>X-SLURM-USER-TOKEN</b>) to slurmrestd along with the user's request.</p>
 
-<h4>Authentication</h4>
-<p>An authenticating proxy will act as the authentication authority but proxy all
-user requests to Slurmrestd without inspection or modification. This allows a site
-to implement authentication but avoids the latency hit of processing every request. It
-is also the (lightly) preferred route as a relatively popular architecture and is
-already supported by <a href="https://www.nginx.com/">NGiNX</a>.
+<p>Slurm places no requirements on the authenticating proxy beyond its being
+HTTP 1.1 compliant and that it provides the correct HTTP headers to allow
+client authentication. Slurm will explicitly trust the HTTP headers provided
+and has no way to verify them (beyond the proxy's trusted token
+<b>X-SLURM-USER-TOKEN</b>). Any authentiticating proxy will need to follow
+your site's security policies and ensure that the proxied requests come from
+the correct user. These requirements are standard to any authenticated
+proxy and are not Slurm specific.</p>
 
-<h5>Example Simple Authenticating Proxy</h5>
-<p>An example is provided of how to potentially setup a <b>very</b> simple
-authenticating proxy. This example provides a single test user that is harded
-coded to the Unix ID 1000. This example is provided to show the general setup of
-getting NGINX as an authenticating proxy but not to implment site specific
-authentication. The example uses PHP sessions to created a trusted cookie on the
-client connection but does not expose the API key or user id to the user or allow
-them to directly modify it. NGINX enforces the requirement that the client be
-authenticated and will not pass along any requests until authenticated.</p>
-
-<h6>Setup:</h6>
-<p>The example assumes that Slurmrestd is running on the localhost on port 9999.
-The example also assumes that user 1000 exists and that the Slurm API key is "test".
-The example is a dockerfile along with the required files to run. The docker image
-is based on Alpine Linux and should run on any x86 machine unmodified. The running
-user must be able to run docker commands.</p>
-<p>The sample has the following files:</p>
-<ul>
-	<li>auth.php: PHP code to request user name and password. It will then start a
-	PHP session and set the user id.</li>
-	<li>Dockerfile: Alpine linux image based build procedure. It will install NGiNX
-	and PHP and configure them to run as the default docker command.</li>
-	<li>Makefile: Builds the docker image and runs the instance.</li>
-	<li>nginx.conf: Uses the ngx_http_auth_request_module module to enforce authentication
-	of /slurm/* and /openapi/*.</li>
-	<li>validate.php: Validates that the PHP session exists and has a user id. It then
-	sets the SLURM user id header.</li>
-	<li>www.conf: Basic untuned PHP FPM configuration.</li>
-</ul>
-
-<h6>Security:</h6>
-<p>The docker instance will run on the host network. Please make sure to avoid running
-it on a non-trusted or shared environment as the user and password are well documented.
-The example is <b>not</b> provided to be run in production.</p>
-
-<h6>Procedure:</h6>
-<ol>
-	<li>
-		Goto the example directory:
-		<pre>cd contribs/auth_proxy_example/simple</pre>
-	</li>
-	<li>
-		Start docker daemon:
-		<pre>make</pre>
-	</li>
-	<li>
-		Navigate to the ping diagnostic test to verify unknown users are rejected:
-		<a href="http://127.0.0.1:8080/slurm/v1/ping/">Ping Test</a>.
-	</li>
-	<li>
-		From a browser on the machine or a tunnel, navigate to this url:
-		<a href="http://127.0.0.1:8080/auth/">Auth</a>.
-		Enter in the user "test" and password "test".
-	</li>
-	<li>
-		Now nagivate the browser to the ping diagnostic test to verify the
-		login works: <a href="http://127.0.0.1:8080/slurm/v1/ping/">Ping Test</a>.
-	</li>
-</ol>
-
-<h6>See also:</h6>
-<ul>
-	<li>
-		<a href="https://developer.okta.com/blog/2018/08/28/nginx-auth-request">
-			Okta NGiNX Blog post
-		</a>
-	</li>
-</ul>
-
-<h4>Example oauth2 authentication proxy</h4>
-<p>TODO</p>
-
-<h6>See also:</h6>
-<ul>
-	<li>
-		<a href="https://github.com/bitly/oauth2_proxy">
-			Oauth2 Proxy
-		</a>
-	</li>
-	<li>
-		<a href="https://www.ory.sh/run-oauth2-server-open-source-api-security">
-			Ory OAuth2 Server
-		</a>
-	</li>
-	<li>
-		<a href="https://github.com/authlib/example-oauth2-server">
-			Authlib Example Oauth2 Server
-		</a>
-	</li>
-	<li>
-		<a href="https://docs.authlib.org/en/latest/flask/2/authorization-server.html">
-			Flask Authlib Oauth2 Server
-		</a>
-	</li>
-	<li>
-		<a href="https://hackernoon.com/build-your-own-oauth2-server-in-go-7d0f660732c3?gi=330e651f8b4b">
-			GO based Oauth2 Server
-		</a>
-	</li>
-</ul>
--->
+<p>A working trival example can be found in an <a
+href="https://gitlab.com/SchedMD/training/docker-scale-out/-/tree/master/proxy">
+internal tool</a> used for testing and training. It uses
+<a href="https://www.php.net/">PHP</a> and
+<a href="https://www.nginx.com/">NGINX</a> to provide the authentication logic.
+</p>
 
 <hr size=4 width="100%">
 
