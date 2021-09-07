@@ -265,7 +265,7 @@ void slurm_print_cpu_bind_help(void)
 }
 
 /*
- * verify cpu_bind arguments, set default values as needed
+ * verify cpu_bind arguments
  *
  * we support different launch policy names
  * we also allow a verbose setting to be specified
@@ -280,7 +280,6 @@ void slurm_print_cpu_bind_help(void)
  * arg IN - user task binding option
  * cpu_bind OUT - task binding string
  * flags OUT OUT - task binding flags
- * default_cpu_bind IN - default task binding (based upon Slurm configuration)
  * RET SLURM_SUCCESS, SLURM_ERROR (-1) on failure, 1 for return for "help" arg
  */
 extern int slurm_verify_cpu_bind(const char *arg, char **cpu_bind,
