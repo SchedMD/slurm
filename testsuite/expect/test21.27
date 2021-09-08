@@ -35,7 +35,7 @@ set ta2		"test$test_id-account.2"
 set ta3		"test$test_id-account.3"
 set tu1         "test$test_id-user.1"
 set tu2         "test$test_id-user.2"
-set tu3		mysql
+set tu3		$testsuite_user
 
 set access_err  0
 set timeout     120
@@ -49,6 +49,10 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 
 if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
+}
+
+if {![check_user_id $tu3]} {
+	skip "testsuite_user must be defined in globals.local (now is \"$testsuite_user\") and should be an existing user in the system"
 }
 
 #
