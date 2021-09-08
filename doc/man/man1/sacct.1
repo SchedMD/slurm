@@ -56,6 +56,25 @@ actually available on your system.
 .SH "OPTIONS"
 
 .TP "10"
+\f3\-A \fP\f2account_list\fP \fP\f3,\fP \f3\-\-accounts\fP\f3=\fP\f2account_list\fP
+Displays jobs when a comma separated list of accounts are given as the
+argument.
+.IP
+
+.TP
+\f3\-L\fP\f3,\fP \f3\-\-allclusters\fP
+Display jobs ran on all clusters. By default, only jobs ran on the
+cluster from where \f3sacct\fP is called are displayed.
+
+.TP
+\f3\-X\fP\f3,\fP \f3\-\-allocations\fP
+Only show statistics relevant to the job allocation itself, not taking steps
+into consideration.
+
+\fBNOTE\fR: Without including steps, utilization statistics for job
+allocation(s) will be reported as zero.
+
+.TP
 \f3\-a\fP\f3,\fP \f3\-\-allusers\fP
 Displays all users' jobs when run by user root or if \fBPrivateData\fP is not
 configured to \fBjobs\fP.
@@ -63,15 +82,11 @@ Otherwise display the current user's jobs
 .IP
 
 .TP
-\f3\-A \fP\f2account_list\fP \fP\f3,\fP \f3\-\-accounts\fP\f3=\fP\f2account_list\fP
-Displays jobs when a comma separated list of accounts are given as the
-argument.
-.IP
-
-.TP
-\f3\-b\fP\f3,\fP \f3\-\-brief\fP
-Displays a brief listing consisting of JobID, State, and ExitCode.
-.IP
+\f3\-x \fP\f2associd_list\fP\f3, \-\-associations=\fP\f2assoc_list\fP
+Displays the statistics only for the jobs running under the
+association ids specified by the \f2assoc_list\fP operand, which is a
+comma\-separated list of association ids.  Space characters are not
+allowed in the \f2assoc_list\fP. Default is all associations\&.
 
 .TP
 \f3\-B\fP\f3,\fP \f3\-\-batch\-script\fP
@@ -80,6 +95,22 @@ didn't have a script 'NONE' is output.
 NOTE: AccountingStoreFlags=job_script is required for this.
 NOTE: Requesting specific job(s) with '\-j' is required for this.
 .IP
+
+.TP
+\f3\-b\fP\f3,\fP \f3\-\-brief\fP
+Displays a brief listing consisting of JobID, State, and ExitCode.
+.IP
+
+.TP
+\f3\-M \fP\f2cluster_list\fP\f3, \-\-clusters=\fP\f2cluster_list\fP
+Displays the statistics only for the jobs started on the clusters
+specified by the \f2cluster_list\fP operand, which is a
+comma\-separated list of clusters.  Space characters are not allowed
+in the \f2cluster_list\fP.
+A value of \(aq\fIall\fR' will query to run on all clusters.
+The default is current cluster you are executing the \f3sacct\fP command on or
+all clusters in the federation when executed on a federated cluster.
+This option implicitly sets the \fB\-\-local\fR option.
 
 .TP
 \f3\-c\fP\f3,\fP \f3\-\-completion\fP
@@ -119,12 +150,79 @@ NOTE: Revoked federated sibling jobs are hidden unless the \-\-duplicates option
 is specified.
 
 .TP
+\f3\-E \fP\f2end_time\fP\fP\f3,\fP \f3\-\-endtime\fP\f3=\fP\f2end_time\fP
+.IP
+Select jobs in any state before the specified time.  If states are
+given with the \-s option return jobs in this state before this period.
+See the \fBDEFAULT TIME WINDOW\fR for more details.
+
+Valid time formats are:
+.br
+HH:MM[:SS][AM|PM]
+.br
+MMDD[YY][\-HH:MM[:SS]]
+.br
+MM.DD[.YY][\-HH:MM[:SS]]
+.br
+MM/DD[/YY][\-HH:MM[:SS]]
+.br
+YYYY\-MM\-DD[THH:MM[:SS]]
+.br
+today, midnight, noon, fika (3 PM), teatime (4 PM)
+.br
+now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
+.IP
+
+.TP
 \f3\-\-env\-vars\fP
 This option will print the running environment of a batch job, otherwise 'NONE'
 is output.
 NOTE: AccountingStoreFlags=job_env is required for this.
 NOTE: Requesting specific job(s) with '\-j' is required for this.
 .IP
+
+.TP
+\fB\-\-federation\fR
+Show jobs from the federation if a member of one.
+
+.TP
+\f3\-f \fP\f2file\fP\f3,\fP  \f3\-\-file\fP\f3=\fP\f2file\fP
+Causes the \f3sacct\fP command to read job accounting data from the
+named \f2file\fP instead of the current Slurm job accounting log
+file. Only applicable when running the jobcomp/filetxt plugin.
+
+.TP
+\f3\-F \fP\f2flag_list\fP\f3,\fP  \f3\-\-flags\fP\f3=\fP\f2flag_list\fP
+Comma separated list to filter jobs based on what various ways the jobs were
+handled.  Current flags are SchedSubmit, SchedMain, SchedBackfill.  These
+particular options describe the scheduler that started the job.
+
+.TP
+\f3\-o\fP\f3,\fP \f3\-\-format\fP
+Comma separated list of fields. (use "\-\-helpformat" for a list of
+available fields).
+
+NOTE: When using the format option for listing various fields you can put a
+%NUMBER afterwards to specify how many characters should be printed.
+
+e.g. format=name%30 will print 30 characters of field name right
+justified.  A %\-30 will print 30 characters left justified.
+
+When set, the SACCT_FORMAT environment variable will override the
+default format.  For example:
+
+SACCT_FORMAT="jobid,user,account,cluster"
+
+.TP
+\f3\-g \fP\f2gid_list\fP\f3, \-\-gid=\fP\f2gid_list\fP \f3\-\-group=\fP\f2group_list\fP
+Displays the statistics only for the jobs started with the GID
+or the GROUP specified by the \f2gid_list\fP or the \f2group_list\fP operand, which is a comma\-separated
+list.  Space characters are not allowed.
+Default is no restrictions.
+
+.TP
+\f3\-h\fP\f3,\fP \f3\-\-help\fP
+Displays a general help message.
 
 .TP
 \f3\-e\fP\f3,\fP \f3\-\-helpformat\fP
@@ -181,61 +279,6 @@ NOTE: TRESUsage*Min* values represent the lowest highwater mark in the step.
 The section titled "Job Accounting Fields" describes these fields.
 
 .TP
-\f3\-E \fP\f2end_time\fP\fP\f3,\fP \f3\-\-endtime\fP\f3=\fP\f2end_time\fP
-.IP
-Select jobs in any state before the specified time.  If states are
-given with the \-s option return jobs in this state before this period.
-See the \fBDEFAULT TIME WINDOW\fR for more details.
-
-Valid time formats are:
-.br
-HH:MM[:SS][AM|PM]
-.br
-MMDD[YY][\-HH:MM[:SS]]
-.br
-MM.DD[.YY][\-HH:MM[:SS]]
-.br
-MM/DD[/YY][\-HH:MM[:SS]]
-.br
-YYYY\-MM\-DD[THH:MM[:SS]]
-.br
-today, midnight, noon, fika (3 PM), teatime (4 PM)
-.br
-now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
-.IP
-
-.TP
-\fB\-\-federation\fR
-Show jobs from the federation if a member of one.
-
-.TP
-\f3\-f \fP\f2file\fP\f3,\fP  \f3\-\-file\fP\f3=\fP\f2file\fP
-Causes the \f3sacct\fP command to read job accounting data from the
-named \f2file\fP instead of the current Slurm job accounting log
-file. Only applicable when running the jobcomp/filetxt plugin.
-
-.TP
-\f3\-F \fP\f2flag_list\fP\f3,\fP  \f3\-\-flags\fP\f3=\fP\f2flag_list\fP
-Comma separated list to filter jobs based on what various ways the jobs were
-handled.  Current flags are SchedSubmit, SchedMain, SchedBackfill.  These
-particular options describe the scheduler that started the job.
-
-.TP
-\f3\-g \fP\f2gid_list\fP\f3, \-\-gid=\fP\f2gid_list\fP \f3\-\-group=\fP\f2group_list\fP
-Displays the statistics only for the jobs started with the GID
-or the GROUP specified by the \f2gid_list\fP or the \f2group_list\fP operand, which is a comma\-separated
-list.  Space characters are not allowed.
-Default is no restrictions.
-
-.TP
-\f3\-h\fP\f3,\fP \f3\-\-help\fP
-Displays a general help message.
-
-.TP
-\f3\-i\fP\f3,\fP \f3\-\-nnodes\fP\f3=\fP\f2N\fP
-Return jobs which ran on this many nodes (N = min[\-max])
-
-.TP
 \f3\-j \fP\f2job(.step)\fP \f3,\fP  \f3\-\-jobs\fP\f3=\fP\f2job(.step)\fP
 Displays information about the specified job(.step) or list of job(.step)s.
 .IP
@@ -256,17 +299,6 @@ changes the default \-S and \-E options.
 .TP
 \f3\-\-json\fP
 Dump job information as JSON. All other formating arugments will be ignored.
-
-.TP
-\f3\-k\fP\f3,\fP \f3\-\-timelimit\-min\fP
-Only send data about jobs with this timelimit.  If used with
-timelimit_max this will be the minimum timelimit of the range.
-Default is no restriction.
-
-.TP
-\f3\-K\fP\f3,\fP \f3\-\-timelimit\-max\fP
-Ignored by itself, but if timelimit_min is set this will be the
-maximum timelimit of the range.  Default is no restriction.
 
 .TP
 \f3\-\-local\fP
@@ -291,26 +323,13 @@ tresusageoutmaxt,tresusageoutave,tresusageouttot
 .ad
 
 .TP
-\f3\-L\fP\f3,\fP \f3\-\-allclusters\fP
-Display jobs ran on all clusters. By default, only jobs ran on the
-cluster from where \f3sacct\fP is called are displayed.
-
-.TP
-\f3\-M \fP\f2cluster_list\fP\f3, \-\-clusters=\fP\f2cluster_list\fP
-Displays the statistics only for the jobs started on the clusters
-specified by the \f2cluster_list\fP operand, which is a
-comma\-separated list of clusters.  Space characters are not allowed
-in the \f2cluster_list\fP.
-A value of \(aq\fIall\fR' will query to run on all clusters.
-The default is current cluster you are executing the \f3sacct\fP command on or
-all clusters in the federation when executed on a federated cluster.
-This option implicitly sets the \fB\-\-local\fR option.
-
-.TP
-\f3\-n\fP\f3,\fP \f3\-\-noheader\fP
-No heading will be added to the output. The default action is to
-display a header.
+\f3\-\-name=\fP\f2jobname_list\fP
+Display jobs that have any of these name(s).
 .IP
+
+.TP
+\f3\-i\fP\f3,\fP \f3\-\-nnodes\fP\f3=\fP\f2N\fP
+Return jobs which ran on this many nodes (N = min[\-max])
 
 .TP
 \f3\-\-noconvert\fP
@@ -325,25 +344,10 @@ a ranged string.
 .IP
 
 .TP
-\f3\-\-name=\fP\f2jobname_list\fP
-Display jobs that have any of these name(s).
+\f3\-n\fP\f3,\fP \f3\-\-noheader\fP
+No heading will be added to the output. The default action is to
+display a header.
 .IP
-
-.TP
-\f3\-o\fP\f3,\fP \f3\-\-format\fP
-Comma separated list of fields. (use "\-\-helpformat" for a list of
-available fields).
-
-NOTE: When using the format option for listing various fields you can put a
-%NUMBER afterwards to specify how many characters should be printed.
-
-e.g. format=name%30 will print 30 characters of field name right
-justified.  A %\-30 will print 30 characters left justified.
-
-When set, the SACCT_FORMAT environment variable will override the
-default format.  For example:
-
-SACCT_FORMAT="jobid,user,account,cluster"
 
 .TP
 \f3\-p\fP\f3,\fP \f3\-\-parsable\fP
@@ -356,43 +360,19 @@ Output will be '|' delimited without a '|' at the end. See also the
 \fB\-\-delimiter\fR option.
 
 .TP
-\f3\-q\fP\f3,\fP \f3\-\-qos\fP
-Only send data about jobs using these qos.  Default is all.
-
-.TP
 \f3\-r\fP\f3,\fP \f3\-\-partition\fP
 
 Comma separated list of partitions to select jobs and job steps
 from. The default is all partitions.
 
 .TP
+\f3\-q\fP\f3,\fP \f3\-\-qos\fP
+Only send data about jobs using these qos.  Default is all.
+
+.TP
 \f3\-R \fP\f2reason_list\fP\f3,\fP  \f3\-\-reason\fP\f3=\fP\f2reason_list\fP
 Comma separated list to filter jobs based on what reason the job wasn't
 scheduled outside resources/priority.
-
-.TP
-\f3\-s \fP\f2state_list\fP\f3,\fP \f3\-\-state\fP\f3=\fP\f2state_list\fP
-Selects jobs based on their state during the time period given.
-Unless otherwise specified, the start and end time will be the
-current time when the \f3\-\-state\fP option is specified and
-only currently running jobs can be displayed.
-A start and/or end time must be specified to view information about
-jobs not currently running.
-See the \fBJOB STATE CODES\fR section below for a list of state designators.
-Multiple state names may be specified using comma separators. Either the short
-or long form of the state name may be used (e.g. \f3CA\fP or \f3CANCELLED\fP)
-and the name is case insensitive (i.e. \f3ca\fP and \f3CA\fP both work).
-
-NOTE: Note for a job to be selected in the PENDING state it must have
-"EligibleTime" in the requested time interval or different from "Unknown". The
-"EligibleTime" is displayed by the "scontrol show job" command.  For example
-jobs submitted with the "\-\-hold" option will have "EligibleTime=Unknown" as
-they are pending indefinitely.
-
-NOTE: When specifying states and no start time is given the default
-start time is 'now'.  This is only when \-j is not used.  If \-j is used the
-start time will default to 'Epoch'.  In both cases if no end time is given it
-will default to 'now'. See the \fBDEFAULT TIME WINDOW\fR for more details.
 
 .TP
 \f3\-S\fP\f3,\fP \f3\-\-starttime\fP
@@ -421,6 +401,41 @@ today, midnight, noon, fika (3 PM), teatime (4 PM)
 now[{+|\-}\fIcount\fR[seconds(default)|minutes|hours|days|weeks]]
 
 .TP
+\f3\-s \fP\f2state_list\fP\f3,\fP \f3\-\-state\fP\f3=\fP\f2state_list\fP
+Selects jobs based on their state during the time period given.
+Unless otherwise specified, the start and end time will be the
+current time when the \f3\-\-state\fP option is specified and
+only currently running jobs can be displayed.
+A start and/or end time must be specified to view information about
+jobs not currently running.
+See the \fBJOB STATE CODES\fR section below for a list of state designators.
+Multiple state names may be specified using comma separators. Either the short
+or long form of the state name may be used (e.g. \f3CA\fP or \f3CANCELLED\fP)
+and the name is case insensitive (i.e. \f3ca\fP and \f3CA\fP both work).
+
+NOTE: Note for a job to be selected in the PENDING state it must have
+"EligibleTime" in the requested time interval or different from "Unknown". The
+"EligibleTime" is displayed by the "scontrol show job" command.  For example
+jobs submitted with the "\-\-hold" option will have "EligibleTime=Unknown" as
+they are pending indefinitely.
+
+NOTE: When specifying states and no start time is given the default
+start time is 'now'.  This is only when \-j is not used.  If \-j is used the
+start time will default to 'Epoch'.  In both cases if no end time is given it
+will default to 'now'. See the \fBDEFAULT TIME WINDOW\fR for more details.
+
+.TP
+\f3\-K\fP\f3,\fP \f3\-\-timelimit\-max\fP
+Ignored by itself, but if timelimit_min is set this will be the
+maximum timelimit of the range.  Default is no restriction.
+
+.TP
+\f3\-k\fP\f3,\fP \f3\-\-timelimit\-min\fP
+Only send data about jobs with this timelimit.  If used with
+timelimit_max this will be the minimum timelimit of the range.
+Default is no restriction.
+
+.TP
 \f3\-T\fP\f3,\fP \f3\-\-truncate\fP
 Truncate time.  So if a job started before \-\-starttime the start time
 would be truncated to \-\-starttime.  The same for end time and \-\-endtime.
@@ -429,13 +444,6 @@ would be truncated to \-\-starttime.  The same for end time and \-\-endtime.
 \f3\-u \fP\f2uid_list\fP\f3, \-\-uid=\fP\f2uid_list\fP\f3, \-\-user=\fP\f2user_list\fP
 Use this comma separated list of uids or user names to select jobs to
 display.  By default, the running user's uid is used.
-
-.TP
-\f3\-\-use\-local\-uid\fP
-When displaying UID, sacct uses the UID stored in Slurm's accounting database
-by default. Use this command to make Slurm use a system call to get the UID
-from the username. This option may be useful in an environment with multiple
-clusters and one database where the UID's aren't the same on all clusters.
 
 .TP
 \f3\-\-units=[KMGTP]\fP
@@ -447,6 +455,13 @@ option.
 Display a command usage summary.
 
 .TP
+\f3\-\-use\-local\-uid\fP
+When displaying UID, sacct uses the UID stored in Slurm's accounting database
+by default. Use this command to make Slurm use a system call to get the UID
+from the username. This option may be useful in an environment with multiple
+clusters and one database where the UID's aren't the same on all clusters.
+
+.TP
 \f3\-v\fP\f3,\fP \f3\-\-verbose\fP
 Primarily for debugging purposes, report the state of various
 variables during processing.
@@ -454,6 +469,13 @@ variables during processing.
 .TP
 \f3\-V\fP\f3,\fP \f3\-\-version\fP
 Print version.
+
+.TP
+\f3\-W \fP\f2wckey_list\fP\f3, \-\-wckeys=\fP\f2wckey_list\fP
+Displays the statistics only for the jobs started on the wckeys
+specified by the \f2wckey_list\fP operand, which is a comma\-separated
+list of wckey names.  Space characters are not allowed in the
+\f2wckey_list\fP. Default is all wckeys\&.
 
 .TP
 \f3\-\-whole\-hetjob=[yes|no]\fP
@@ -465,28 +487,6 @@ set to 'yes' or no value is set, then information about all the components
 will be retrieved no matter which component is selected in the job filter.
 Otherwise, if set to 'no' then only the selected heterogeneous job components
 will be retrieved, even when selecting the leader.
-
-.TP
-\f3\-W \fP\f2wckey_list\fP\f3, \-\-wckeys=\fP\f2wckey_list\fP
-Displays the statistics only for the jobs started on the wckeys
-specified by the \f2wckey_list\fP operand, which is a comma\-separated
-list of wckey names.  Space characters are not allowed in the
-\f2wckey_list\fP. Default is all wckeys\&.
-
-.TP
-\f3\-x \fP\f2associd_list\fP\f3, \-\-associations=\fP\f2assoc_list\fP
-Displays the statistics only for the jobs running under the
-association ids specified by the \f2assoc_list\fP operand, which is a
-comma\-separated list of association ids.  Space characters are not
-allowed in the \f2assoc_list\fP. Default is all associations\&.
-
-.TP
-\f3\-X\fP\f3,\fP \f3\-\-allocations\fP
-Only show statistics relevant to the job allocation itself, not taking steps
-into consideration.
-
-\fBNOTE\fR: Without including steps, utilization statistics for job
-allocation(s) will be reported as zero.
 
 .TP
 \f3\-\-yaml\fP
