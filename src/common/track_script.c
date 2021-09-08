@@ -84,7 +84,8 @@ static void _kill_script(track_script_rec_t *r)
 
 	pid_to_kill = r->cpid;
 	r->cpid = -1;
-	kill(pid_to_kill, SIGKILL);
+	/* The script could have spawned processes. Kill the process group. */
+	killpg(pid_to_kill, SIGKILL);
 }
 
 /*

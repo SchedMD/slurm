@@ -322,9 +322,6 @@ static int _fill_job_desc_from_opts(slurm_opt_t *opt, job_desc_msg_t *desc)
 	if (!desc)
 		return -1;
 
-	if (!opt->job_name)
-		desc->name = xstrdup("openapi");
-
 	desc->array_inx = xstrdup(sbopt->array_inx);
 	desc->batch_features = sbopt->batch_features;
 	desc->container = xstrdup(opt->container);
@@ -400,7 +397,7 @@ static job_desc_msg_t *_parse_job_desc(const data_t *job, data_t *errors,
 		goto cleanup;
 	}
 
-	req = slurm_opt_create_job_desc(&opt);
+	req = slurm_opt_create_job_desc(&opt, !update_only);
 	if (_fill_job_desc_from_opts(&opt, req) == -1) {
 		rc = SLURM_ERROR;
 		goto cleanup;

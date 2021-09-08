@@ -266,7 +266,7 @@ int main(int argc, char **argv)
 			list_append(job_req_list, desc);
 		}
 
-		desc = slurm_opt_create_job_desc(&opt);
+		desc = slurm_opt_create_job_desc(&opt, true);
 		if (_fill_job_desc_from_opts(desc) == -1)
 			exit(error_exit);
 
