@@ -2127,6 +2127,10 @@ static int _step_alloc_lps(step_record_t *step_ptr)
 		info("Step Alloc GRES:");
 	gres_step_state_log(step_ptr->gres_list_alloc, job_ptr->job_id,
 			    step_ptr->step_id.step_id);
+
+	if (rc != SLURM_SUCCESS)
+		_step_dealloc_lps(step_ptr);
+
 	return rc;
 }
 
