@@ -314,9 +314,6 @@ static void _internal_step_complete(step_record_t *step_ptr, int remaining)
 	select_g_step_finish(step_ptr, false);
 
 	_step_dealloc_lps(step_ptr);
-	gres_ctld_step_dealloc(step_ptr->gres_list_alloc,
-			       job_ptr->gres_list_alloc, job_ptr->job_id,
-			       step_ptr->step_id.step_id);
 
 	/* Don't need to set state. Will be destroyed in next steps. */
 	/* step_ptr->state = JOB_COMPLETE; */
@@ -2312,6 +2309,10 @@ static void _step_dealloc_lps(step_record_t *step_ptr)
 		}
 		FREE_NULL_BITMAP(step_ptr->core_bitmap_job);
 	}
+
+	gres_ctld_step_dealloc(step_ptr->gres_list_alloc,
+			       job_ptr->gres_list_alloc, job_ptr->job_id,
+			       step_ptr->step_id.step_id);
 }
 
 static int _test_strlen(char *test_str, char *str_name, int max_str_len)
