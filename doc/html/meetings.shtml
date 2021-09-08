@@ -2,20 +2,26 @@
 
 <h1>Meetings</h1>
 
-<p><b>Slurm User Group Meeting 2020</b><br>
-15 September 2020<br>
+<p><b>Slurm User Group Meeting 2021</b><br>
+21 September 2020<br>
 Online<br>
 Host: <a href="https://www.schedmd.com/">SchedMD</a></p>
-<p>The Slurm User Group Meeting (SLUG'20) this fall will be moving online, and will not be hosted in-person at Harvard as scheduled, due to uncertainty around scheduling events caused by COVID-19.</p>
+<p>The Slurm User Group Meeting (SLUG'21) this fall will be online again.</p>
 
-<p>In lieu of an in-person meeting, SchedMD will broadcast a select set of presentations on Tuesday, September 15th, 2020.</p>
+<p>In lieu of an in-person meeting, SchedMD will broadcast a set of five presentations on Tuesday, September 21st, 2021 on our <a href="https://www.youtube.com/c/schedmd-slurm">YouTube channel</a>.</p>
 
-<p><a href="slurm_ug_agenda.html">SLUG'20 Meeting Agenda and Broadcast Links.</a></p>
+<p>There is no cost to attend, and there is no registration required.</p>
+
+<p><a href="slurm_ug_agenda.html">SLUG'21 Meeting Agenda and Broadcast Links.</a></p>
 
 <!--<p><a href="slurm_ug_agenda.html#hotels">Meeting hotels</a></p>-->
 
 <br>
 <h2>Previous Meetings</h2>
+
+<p><b>Slurm User Group Meeting 2020</b><br>
+15 September 2020<br>
+Online</p>
 
 <p><b>Slurm User Group Meeting 2019</b><br>
 17-18 September 2019<br>
@@ -67,6 +73,6 @@ Host: Bull</p>
 Paris, France<br>
 Host: CEA</p>
 
-<p style="text-align:center;">Last modified 28 August 2020</p>
+<p style="text-align:center;">Last modified 8 September 2021</p>
 
 <!--#include virtual="footer.txt"-->
