@@ -1768,19 +1768,19 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		struct exec_wait_info *ei;
 
 		acct_gather_profile_g_task_start(i);
-		if ((ei = _fork_child_with_wait_info (i)) == NULL) {
+		if ((ei = _fork_child_with_wait_info(i)) == NULL) {
 			error("child fork: %m");
-			exec_wait_kill_children (exec_wait_list);
+			exec_wait_kill_children(exec_wait_list);
 			rc = SLURM_ERROR;
 			goto fail4;
-		} else if ((pid = _exec_wait_get_pid (ei)) == 0)  { /* child */
+		} else if ((pid = _exec_wait_get_pid(ei)) == 0) { /* child */
 			/*
 			 *  Destroy exec_wait_list in the child.
 			 *   Only exec_wait_info for previous tasks have been
 			 *   added to the list so far, so everything else
 			 *   can be discarded.
 			 */
-			FREE_NULL_LIST (exec_wait_list);
+			FREE_NULL_LIST(exec_wait_list);
 
 			/* jobacctinfo_endpoll();
 			 * closing jobacct files here causes deadlock */
@@ -1816,7 +1816,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 			 *   must be called before setpgid() or it is
 			 *   effectively disabled).
 			 */
-			prepare_stdio (job, job->task[i]);
+			prepare_stdio(job, job->task[i]);
 
 			/* Close profiling file descriptors */
 			acct_gather_profile_g_child_forked();
@@ -1827,7 +1827,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 			 *   children in any process groups or containers
 			 *   before they make a call to exec(2).
 			 */
-			if (_exec_wait_child_wait_for_parent (ei) < 0)
+			if (_exec_wait_child_wait_for_parent(ei) < 0)
 				_exit(1);
 
 			exec_task(job, i);
@@ -1837,7 +1837,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		 * Parent continues:
 		 */
 
-		list_append (exec_wait_list, ei);
+		list_append(exec_wait_list, ei);
 
 		log_timestamp(time_stamp, sizeof(time_stamp));
 		verbose("task %lu (%lu) started %s",
@@ -1857,7 +1857,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 	/*
 	 * Reclaim privileges
 	 */
-	if (_reclaim_privileges (&sprivs) < 0) {
+	if (_reclaim_privileges(&sprivs) < 0) {
 		error ("Unable to reclaim privileges");
 		/* Don't bother erroring out here */
 	}
@@ -1868,7 +1868,7 @@ _fork_all_tasks(stepd_step_rec_t *job, bool *io_initialized)
 		set_oom_adj(i);
 	}
 
-	if (chdir (sprivs.saved_cwd) < 0) {
+	if (chdir(sprivs.saved_cwd) < 0) {
 		error ("Unable to return to working directory");
 	}
 
