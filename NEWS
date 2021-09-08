@@ -30,6 +30,8 @@ documents those changes that are of interest to users and administrators.
  -- Require requesting a GPU if --mem-per-gpu is requested.
  -- Return error early if a job is requesting --ntasks-per-gpu and no gpus or
     task count.
+ -- Properly clear out pending step if unavailable to run with available
+    resources.
 
 * Changes in Slurm 21.08.0
 ==========================
