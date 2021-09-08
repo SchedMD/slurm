@@ -5293,7 +5293,6 @@ Also see \fBDefMemPerNode\fR and \fBMaxMemPerCPU\fR.
 \fBMaxNodes\fR
 Maximum count of nodes which may be allocated to any single job.
 The default value is "UNLIMITED", which is represented internally as \-1.
-This limit does not apply to jobs executed by SlurmUser or user root.
 
 .TP
 \fBMaxTime\fR
@@ -5310,7 +5309,6 @@ value higher than the configured MaxTime after job submission.
 \fBMinNodes\fR
 Minimum count of nodes which may be allocated to any single job.
 The default value is 0.
-This limit does not apply to jobs executed by SlurmUser or user root.
 
 .TP
 \fBNodes\fR
