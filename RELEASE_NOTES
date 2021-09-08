@@ -20,6 +20,8 @@ prior to 22.05.
 
 HIGHLIGHTS
 ==========
+-- The template slurmrestd.service unit file now defaults to listen on both the
+   Unix socket and the slurmrestd port.
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
