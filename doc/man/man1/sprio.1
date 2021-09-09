@@ -27,7 +27,7 @@ This option implicitly sets the \fB\-\-local\fR option.
 Show jobs in federation if a member of one.
 
 .TP
-\fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
+\fB\-o\fR, \fB\-\-format\fR=<\fIoutput_format\fR>
 Specify the information to be displayed, its size and position (right
 or left justified).  The default formats when all factors have been
 assigned non\-zero weights are
@@ -131,7 +131,7 @@ Normalized job priority
 Print a help message describing all options \fBsprio\fR.
 
 .TP
-\fB\-j <job_id_list>\fR, \fB\-\-jobs=<job_id_list>\fR
+\fB\-j\fR, \fB\-\-jobs\fR=<\fIjob_id_list\fR>
 Requests a comma separated list of job ids to display.  Defaults to
 all jobs. Since this option's argument is optional, for proper parsing
 the single letter option must be followed immediately with the value
@@ -156,7 +156,7 @@ Do not print a header on the output.
 Display the normalized priority factors for the selected jobs.
 
 .TP
-\fB\-p <partition_list>\fR, \fB\-\-partition=<partition_list>\fR
+\fB\-p\fR, \fB\-\-partition\fR=<\fIpartition_list\fR>
 Requests a comma separated list of partitions to display.  Defaults to
 all partitions.
 
@@ -170,7 +170,7 @@ reported without using this option. Implicitly adds "%c" (cluster name) to the
 output format.
 
 .TP
-\fB\-S <sort_list>\fR, \fB\-\-sort=<sort_list>\fR
+\fB\-S\fR, \fB\-\-sort\fR=<\fIsort_list\fR>
 Specification of the order in which jobs should be reported. This uses the same
 field specification as <output_format>. Multiple sorts may be performed by
 listing multiple sort fields separated by commas. The field specifications may
@@ -184,7 +184,7 @@ default <sort_list> is "i" (ascending job id).
 Print a brief help message listing the \fBsprio\fR options.
 
 .TP
-\fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR
+\fB\-u\fR, \fB\-\-user\fR=<\fIuser_list\fR>
 Request jobs from a comma separated list of users.  The list can
 consist of user names or user id numbers.
 
@@ -193,11 +193,11 @@ consist of user names or user id numbers.
 Report details of sprios actions.
 
 .TP
-\fB\-V\fR , \fB\-\-version\fR
+\fB\-V\fR, \fB\-\-version\fR
 Print version information and exit.
 
 .TP
-\fB\-w\fR , \fB\-\-weights\fR
+\fB\-w\fR, \fB\-\-weights\fR
 Display the configured weights for each factor.  This is for information
 purposes only.  Actual job data is suppressed.
 
