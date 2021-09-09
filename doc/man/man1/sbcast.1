@@ -41,12 +41,12 @@ keyword "\fINONE\fR" is configured, no directory paths will be excluded. The
 default value is that of slurm.conf \fBBcastExclude\fR and this option overrides
 it. See also \fB\-\-send\-libs\fR.
 .TP
-\fB\-f\fR, \fB\-\-force\fR
-If the destination file already exists, replace it.
-.TP
 \fB\-F\fR \fInumber\fR, \fB\-\-fanout\fR=\fInumber\fR
 Specify the fanout of messages used for file transfer.
 Maximum value is currently eight.
+.TP
+\fB\-f\fR, \fB\-\-force\fR
+If the destination file already exists, replace it.
 .TP
 \fB\-j\fR \fIjobID[.stepID]\fR, \fB\-\-jobid\fR=\fIjobID[.stepID]\fR
 Specify the job ID to use with optional step ID.  If run inside an allocation
