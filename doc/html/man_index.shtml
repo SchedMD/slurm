@@ -26,7 +26,7 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="srun.html">srun</a></td><td>Run parallel jobs.</td></tr>
 <tr><td><a href="sshare.html">sshare</a></td><td>Tool for listing the shares of associations to a cluster.</td></tr>
 <tr><td><a href="sstat.html">sstat</a></td><td>Display various status information of a running job/step.</td></tr>
-<tr><td><a href="strigger.html">strigger</a></td><td>Used set, get or clear Slurm trigger information.</td></tr>
+<tr><td><a href="strigger.html">strigger</a></td><td>Used to set, get or clear Slurm trigger information.</td></tr>
 <tr><td><a href="sview.html">sview</a></td><td>Graphical user interface to view and modify Slurm state.</td></tr>
 </table>
 
