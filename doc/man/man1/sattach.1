@@ -16,17 +16,18 @@ suitable for use with a parallel debugger like TotalView.
 .LP
 
 .TP
+\fB\-\-error\-filter\fR[=]<\fItask number\fR>
+.PD
+Only transmit standard input to a single task, or print the standard output
+or standard error from a single task.  The filtering is performed locally in
+sattach.
+
+.TP
 \fB\-h\fR, \fB\-\-help\fR
 Display help information and exit.
 
 .TP
 \fB\-\-input\-filter\fR[=]<\fItask number\fR>
-.PD 0
-.TP
-\fB\-\-output\-filter\fR[=]<\fItask number\fR>
-.PD 0
-.TP
-\fB\-\-error\-filter\fR[=]<\fItask number\fR>
 .PD
 Only transmit standard input to a single task, or print the standard output
 or standard error from a single task.  The filtering is performed locally in
@@ -42,6 +43,13 @@ number of its origin.
 Contacts the slurmctld to obtain the task layout information for the job step,
 prints the task layout information, and then exits without attaching to the
 job step.
+
+.TP
+\fB\-\-output\-filter\fR[=]<\fItask number\fR>
+.PD
+Only transmit standard input to a single task, or print the standard output
+or standard error from a single task.  The filtering is performed locally in
+sattach.
 
 .TP
 \fB\-\-pty\fR
