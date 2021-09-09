@@ -32,6 +32,7 @@ documents those changes that are of interest to users and administrators.
     job name, cwd, mail_type, and contiguous on job update.
  -- openapi/v0.0.{35,36,37} - Clear user hold on job update if hold=false.
  -- Prevent CRON_JOB flag from being cleared when loading job state.
+ -- sacctmgr - Fix deleting WCKeys when not specifying a cluster.
 
 * Changes in Slurm 21.08.0
 ==========================
