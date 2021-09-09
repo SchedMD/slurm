@@ -41,7 +41,7 @@ same partition and state (e.g. "250+").
 Show all partitions from the federation if a member of one.
 
 .TP
-\fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
+\fB\-o\fR, \fB\-\-format\fR=<\fIoutput_format\fR>
 Specify the information to be displayed using an \fBsinfo\fR
 format string.
 If the command is executed in a federated cluster environment and information
@@ -243,7 +243,7 @@ Extended processor information: number of sockets, cores, threads (S:C:T) per no
 .RE
 
 .TP
-\fB\-O <output_format>\fR, \fB\-\-Format=<output_format>\fR
+\fB\-O\fR, \fB\-\-Format\fR=<\fIoutput_format\fR>
 Specify the information to be displayed.
 Also see the \fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
 option (which supports greater flexibility in formatting, but
@@ -438,7 +438,7 @@ that are configured as hidden or are not available to the user's group
 will not be displayed. This is the default behavior.
 
 .TP
-\fB\-i <seconds>\fR, \fB\-\-iterate=<seconds>\fR
+\fB\-i\fR, \fB\-\-iterate\fR=<\fIseconds\fR>
 Print the state on a periodic basis.
 Sleep for the indicated number of seconds between reports.
 By default prints a time stamp with the header.
@@ -490,7 +490,7 @@ The default is to print information in a partition\-oriented format.
 This is ignored if the \fB\-\-format\fR option is specified.
 
 .TP
-\fB\-n <nodes>\fR, \fB\-\-nodes=<nodes>\fR
+\fB\-n\fR, \fB\-\-nodes\fR=<\fInodes\fR>
 Print information about the specified node(s).
 Multiple nodes may be comma separated or expressed using a
 node range expression (e.g. "linux[00\-17]")
@@ -502,7 +502,7 @@ performance of the command for large clusters.
 Do not print a header on the output.
 
 .TP
-\fB\-p <partition>\fR, \fB\-\-partition=<partition>\fR
+\fB\-p\fR, \fB\-\-partition\fR=<\fIpartition\fR>
 Print information only about the specified partition(s). Multiple partitions
 are separated by commas.
 
@@ -518,7 +518,7 @@ which are focused on partition and node information.
 If set only report state information for responding nodes.
 
 .TP
-\fB\-S <sort_list>\fR, \fB\-\-sort=<sort_list>\fR
+\fB\-S\fR, \fB\-\-sort\fR=<\fIsort_list\fR>
 Specification of the order in which records should be reported.
 This uses the same field specification as the <output_format>.
 Multiple sorts may be performed by listing multiple sort fields
@@ -535,7 +535,7 @@ node state).  If the \fB\-\-Node\fR option is selected, the
 default sort value is "N" (increasing node name).
 
 .TP
-\fB\-t <states>\fR , \fB\-\-states=<states>\fR
+\fB\-t\fR, \fB\-\-states\fR=<\fIstates\fR>
 List nodes only having the given state(s).  Multiple states
 may be comma separated and the comparison is case insensitive.
 If the states are separated by '&', then the nodes must be in all states.
