@@ -18,6 +18,13 @@ utilization for Slurm jobs saved to the Slurm Database,
 Use all clusters instead of only the cluster from which the command was
 executed.
 .TP
+\fB\-M\fR, \fB\-\-cluster\fR
+The cluster(s) to generate reports for. Default is local cluster, unless the
+local cluster is currently part of a federation and in that case generate a
+report for all clusters in the current federation. If the clusters included
+in a federation vary through time, use this option to identify the clusters
+to be included in report. Implies \-\-local.
+.TP
 \fB\-\-federation\fR
 Generate a report for the federation if a member of one.
 .TP
@@ -27,13 +34,6 @@ Print a help message describing the usage of \fBsreport\fR.
 \fB\-\-local\fR
 Generate a report for the local cluster, even if part of a federation.
 Overrides \-\-federation
-.TP
-\fB\-M\fR, \fB\-\-cluster\fR
-The cluster(s) to generate reports for. Default is local cluster, unless the
-local cluster is currently part of a federation and in that case generate a
-report for all clusters in the current federation. If the clusters included
-in a federation vary through time, use this option to identify the clusters
-to be included in report. Implies \-\-local.
 .TP
 \fB\-n\fR, \fB\-\-noheader\fR
 Don't display header when listing results.

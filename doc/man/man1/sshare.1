@@ -29,27 +29,26 @@ Display information for specific accounts (comma separated list).
 Display information for all users.
 
 .TP
-\fB\-l\fR, \fB\-\-long\fR
-Long listing \- includes the normalized usage information.
-
-.TP
 \fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
 Clusters to issue commands to.
 Note that the SlurmDBD must be up for this option to work properly.
 
 .TP
-\fB\-m\fR, \fB\-\-partition\fR
-If there are association based partitions in the system
-print their names.
+\fB\-o\fR, \fB\-\-format=\fR
+Comma separated list of fields (use
+"\-\-helpformat" for a list of available fields).
+
+.TP
+\fB\-\-help\fR
+Display a description of sshare options and commands.
+
+.TP
+\fB\-l\fR, \fB\-\-long\fR
+Long listing \- includes the normalized usage information.
 
 .TP
 \fB\-n\fR, \fB\-\-noheader\fR
 No header will be added to the beginning of the output.
-
-.TP
-\fB\-o\fR, \fB\-\-format=\fR
-Comma separated list of fields (use
-"\-\-helpformat" for a list of available fields).
 
 .TP
 \fB\-p\fR, \fB\-\-parsable\fR
@@ -58,6 +57,15 @@ Output will be '|' delimited with a '|' at the end.
 .TP
 \fB\-P\fR, \fB\-\-parsable2\fR
 Output will be '|' delimited without a '|' at the end.
+
+.TP
+\fB\-m\fR, \fB\-\-partition\fR
+If there are association based partitions in the system
+print their names.
+
+.TP
+\fB\-\-usage\fR
+Display a description of sshare options and commands.
 
 .TP
 \fB\-u\fR, \fB\-\-users=\fR
@@ -75,11 +83,6 @@ Display more information about the specified options.
 .TP
 \fB\-V\fR, \fB\-\-version\fR
 Display the version number of sshare.
-
-.TP
-\fB\-\-help\fR
-\fB\-\-usage\fR
-Display a description of sshare options and commands.
 
 .SH "SSHARE OUTPUT FIELDS"
 

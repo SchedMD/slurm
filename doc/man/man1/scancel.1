@@ -49,6 +49,11 @@ script (e.g. "trap <arg> <signals>"). See the shell documentation
 for details.
 
 .TP
+\fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
+Cluster to issue commands to. Implies \fB\-\-ctld\fR.
+Note that the SlurmDBD must be up for this option to work properly.
+
+.TP
 \fB\-\-ctld\fR
 Send the job signal request to the slurmctld daemon rather than directly to the
 slurmd daemons. This increases overhead, but offers better fault tolerance.
@@ -80,13 +85,15 @@ Do not stage out any burst buffer data.
 Interactive mode. Confirm each job_id.step_id before performing the cancel operation.
 
 .TP
-\fB\-M\fR, \fB\-\-clusters\fR=<\fIstring\fR>
-Cluster to issue commands to. Implies \fB\-\-ctld\fR.
-Note that the SlurmDBD must be up for this option to work properly.
-
-.TP
 \fB\-n\fR, \fB\-\-jobname\fR=\fIjob_name\fR, \fB\-\-name\fR=\fIjob_name\fR
 Restrict the scancel operation to jobs with this job name.
+
+.TP
+\fB\-w\fR, \fB\-\-nodelist=\fIhost1,host2,...\fR
+Cancel any jobs using any of the given hosts.  The list may be specified as
+a comma\-separated list of hosts, a range of hosts (host[1\-5,7,...] for
+example), or a filename. The host list will be assumed to be a filename only
+if it contains a "/" character.
 
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=\fIpartition_name\fR
@@ -126,12 +133,12 @@ state. \fIjob_state_name\fR may have a value of either "PENDING",
 "RUNNING" or "SUSPENDED".
 
 .TP
-\fB\-u\fR, \fB\-\-user\fR=\fIuser_name\fR
-Restrict the scancel operation to jobs owned by this user.
-
-.TP
 \fB\-\-usage\fR
 Print a brief help message listing the \fBscancel\fR options.
+
+.TP
+\fB\-u\fR, \fB\-\-user\fR=\fIuser_name\fR
+Restrict the scancel operation to jobs owned by this user.
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
@@ -141,13 +148,6 @@ This option is incompatible with the \fB\-\-quiet\fR option.
 .TP
 \fB\-V\fR, \fB\-\-version\fR
 Print the version number of the scancel command.
-
-.TP
-\fB\-w\fR, \fB\-\-nodelist=\fIhost1,host2,...\fR
-Cancel any jobs using any of the given hosts.  The list may be specified as
-a comma\-separated list of hosts, a range of hosts (host[1\-5,7,...] for
-example), or a filename. The host list will be assumed to be a filename only
-if it contains a "/" character.
 
 .TP
 \fB\-\-wckey\fR=\fIwckey\fR
