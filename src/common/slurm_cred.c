@@ -1373,7 +1373,10 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name, uint16_t cpus,
 #else
 	host_index = hostset_find(hset, node_name);
 #endif
-	node_id = host_index;
+	if (cred->step_id.step_id == SLURM_BATCH_SCRIPT)
+		node_id = 0;
+	else
+		node_id = host_index;
 	if ((host_index < 0) || (host_index >= cred->job_nhosts)) {
 		error("Invalid host_index %d for job %u",
 		      host_index, cred->step_id.job_id);
