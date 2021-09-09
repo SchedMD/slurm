@@ -17,10 +17,10 @@ Documentation for other versions of Slurm is distributed with the code</b></p>
 <tr><td><a href="scontrol.html">scontrol</a></td><td>View or modify Slurm configuration and state.</td></tr>
 <tr><td><a href="scrontab.html">scrontab</a></td><td>Manage Slurm crontab files.</td></tr>
 <tr><td><a href="sdiag.html">sdiag</a></td><td>Scheduling diagnostic tool.</td></tr>
+<tr><td><a href="sh5util.html">sh5util</a></td><td>Merge utility for acct_gather_profile plugin.</td></tr>
 <tr><td><a href="sinfo.html">sinfo</a></td><td>View information about Slurm nodes and partitions.</td></tr>
 <tr><td><a href="slurm.html">slurm</a></td><td>Slurm system overview.</td></tr>
 <tr><td><a href="sprio.html">sprio</a></td><td>View the factors that comprise a job's scheduling priority.</td></tr>
-<tr><td><a href="sh5util.html">sh5util</a></td><td>Merge utility for acct_gather_profile plugin.</td></tr>
 <tr><td><a href="squeue.html">squeue</a></td><td>View information about jobs located in the Slurm scheduling queue.</td></tr>
 <tr><td><a href="sreport.html">sreport</a></td><td>Generate reports from the slurm accounting data.</td></tr>
 <tr><td><a href="srun.html">srun</a></td><td>Run parallel jobs.</td></tr>
