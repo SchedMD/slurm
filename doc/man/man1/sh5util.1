@@ -33,22 +33,6 @@ sample
 .LP
 
 .TP
-\fB\-L\fR, \fB\-\-list\fR
-
-Print the items of a series contained in a job file.
-.RS
-.TP 10
-List mode options
-
-.TP
-\fB\-i\fR, \fB\-\-input\fR=\fIpath\fR
-Merged file to extract from (default ./job_$jobid.h5)
-
-.TP
-\fB\-s\fR, \fB\-\-series\fR=[Energy | Filesystem | Network | Task]
-.RE
-
-.TP
 \fB\-E\fR, \fB\-\-extract\fR
 
 Extract data series from a merged job file.
@@ -72,8 +56,11 @@ Level to which series is attached. (default Node:Totals)
 .TP
 \fB\-s\fR, \fB\-\-series\fR=[Energy | Filesystem | Network | Task | Task_#]
 \fBTask\fR is all tasks, \fBTask_#\fR (# is a task id) (default is everything)
-
 .RE
+
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print this description of use.
 
 .TP
 \fB\-I\fR, \fB\-\-item\-extract\fR
@@ -100,8 +87,20 @@ Format is <job(.step)>. Merge this job/step
 Not specifying a step will result in all steps found to be processed.
 
 .TP
-\fB\-h\fR, \fB\-\-help\fR
-Print this description of use.
+\fB\-L\fR, \fB\-\-list\fR
+
+Print the items of a series contained in a job file.
+.RS
+.TP 10
+List mode options
+
+.TP
+\fB\-i\fR, \fB\-\-input\fR=\fIpath\fR
+Merged file to extract from (default ./job_$jobid.h5)
+
+.TP
+\fB\-s\fR, \fB\-\-series\fR=[Energy | Filesystem | Network | Task]
+.RE
 
 .TP
 \fB\-o\fR, \fB\-\-output\fR=\fIpath\fR
@@ -122,13 +121,13 @@ Instead of removing node\-step files after merging them into the job file,
 keep them around.
 
 .TP
+\fB\-\-usage\fR
+Display brief usage message.
+
+.TP
 \fB\-\-user\fR=\fIuser\fR
 User who profiled job.
 (Handy for root user, defaults to user running this command.)
-
-.TP
-\fB\-\-usage\fR
-Display brief usage message.
 
 .SH "Data Items per Series"
 
