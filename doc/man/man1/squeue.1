@@ -39,84 +39,14 @@ optimize the display.  This can also be set with the environment variable
 SQUEUE_ARRAY_UNIQUE.
 
 .TP
-\fB\-\-federation\fR
-Show jobs from the federation if a member of one.
-
-.TP
-\fB\-h\fR, \fB\-\-noheader\fR
-Do not print a header on the output.
-
-.TP
-\fB\-\-help\fR
-Print a help message describing all options \fBsqueue\fR.
-
-.TP
-\fB\-\-hide\fR
-Do not display information about jobs and job steps in all partitions. By default,
-information about partitions that are configured as hidden or are not available
-to the user's group will not be displayed (i.e. this is the default behavior).
-
-.TP
-\fB\-i <seconds>\fR, \fB\-\-iterate=<seconds>\fR
-Repeatedly gather and report the requested information at the interval
-specified (in seconds).
-By default, prints a time stamp with the header.
-
-.TP
-\fB\-j <job_id_list>\fR, \fB\-\-jobs=<job_id_list>\fR
-Requests a comma separated list of job IDs to display.  Defaults to all jobs.
-The \fB\-\-jobs=<job_id_list>\fR option may be used in conjunction with the
-\fB\-\-steps\fR option to print step information about specific jobs.
-Note: If a list of job IDs is provided, the jobs are displayed even if
-they are on hidden partitions. Since this option's argument is optional,
-for proper parsing the single letter option must be followed immediately
-with the value and not include a space between them. For example "\-j1008"
-and not "\-j 1008".
-The job ID format is "job_id[_array_id]".
-Performance of the command can be measurably improved for systems with large
-numbers of jobs when a single job ID is specified.
-By default, this field size will be limited to 64 bytes.
-Use the environment variable SLURM_BITSTR_LEN to specify larger field sizes.
-
-.TP
-\f3\-\-json\fP
-Dump job information as JSON. All other formating and filtering arugments will
-be ignored.
-
-.TP
-\fB\-\-local\fR
-Show only jobs local to this cluster. Ignore other clusters in this federation
-(if any). Overrides \-\-federation.
-
-.TP
-\fB\-l\fR, \fB\-\-long\fR
-Report more of the available information for the selected jobs or job steps,
-subject to any constraints specified.
-
-.TP
-\fB\-L\fR, \fB\-\-licenses=<license_list>\fR
-Request jobs requesting or using one or more of the named licenses.
-The license list consists of a comma separated list of license names.
-
-.TP
-\fB\-\-me\fR
-Equivalent to \fB\-\-user=<my username>\fR.
-
-.TP
 \fB\-M\fR, \fB\-\-clusters=<cluster_name>\fR
 Clusters to issue commands to.  Multiple cluster names may be comma separated.
 A value of '\fIall\fR' will query to run on all clusters.
 This option implicitly sets the \fB\-\-local\fR option.
 
 .TP
-\fB\-n\fR, \fB\-\-name=<name_list>\fR
-Request jobs or job steps having one of the specified names.  The
-list consists of a comma separated list of job names.
-
-.TP
-\fB\-\-noconvert\fR
-Don't convert units from their original type (e.g. 2048M won't be converted to
-2G).
+\fB\-\-federation\fR
+Show jobs from the federation if a member of one.
 
 .TP
 \fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
@@ -1010,6 +940,83 @@ The job's working directory.
 .RE
 
 .TP
+\fB\-\-help\fR
+Print a help message describing all options \fBsqueue\fR.
+
+.TP
+\fB\-\-hide\fR
+Do not display information about jobs and job steps in all partitions. By default,
+information about partitions that are configured as hidden or are not available
+to the user's group will not be displayed (i.e. this is the default behavior).
+
+.TP
+\fB\-i <seconds>\fR, \fB\-\-iterate=<seconds>\fR
+Repeatedly gather and report the requested information at the interval
+specified (in seconds).
+By default, prints a time stamp with the header.
+
+.TP
+\fB\-j <job_id_list>\fR, \fB\-\-jobs=<job_id_list>\fR
+Requests a comma separated list of job IDs to display.  Defaults to all jobs.
+The \fB\-\-jobs=<job_id_list>\fR option may be used in conjunction with the
+\fB\-\-steps\fR option to print step information about specific jobs.
+Note: If a list of job IDs is provided, the jobs are displayed even if
+they are on hidden partitions. Since this option's argument is optional,
+for proper parsing the single letter option must be followed immediately
+with the value and not include a space between them. For example "\-j1008"
+and not "\-j 1008".
+The job ID format is "job_id[_array_id]".
+Performance of the command can be measurably improved for systems with large
+numbers of jobs when a single job ID is specified.
+By default, this field size will be limited to 64 bytes.
+Use the environment variable SLURM_BITSTR_LEN to specify larger field sizes.
+
+.TP
+\f3\-\-json\fP
+Dump job information as JSON. All other formating and filtering arugments will
+be ignored.
+
+.TP
+\fB\-L\fR, \fB\-\-licenses=<license_list>\fR
+Request jobs requesting or using one or more of the named licenses.
+The license list consists of a comma separated list of license names.
+
+.TP
+\fB\-\-local\fR
+Show only jobs local to this cluster. Ignore other clusters in this federation
+(if any). Overrides \-\-federation.
+
+.TP
+\fB\-l\fR, \fB\-\-long\fR
+Report more of the available information for the selected jobs or job steps,
+subject to any constraints specified.
+
+.TP
+\fB\-\-me\fR
+Equivalent to \fB\-\-user=<my username>\fR.
+
+.TP
+\fB\-n\fR, \fB\-\-name=<name_list>\fR
+Request jobs or job steps having one of the specified names.  The
+list consists of a comma separated list of job names.
+
+.TP
+\fB\-\-noconvert\fR
+Don't convert units from their original type (e.g. 2048M won't be converted to
+2G).
+
+.TP
+\fB\-w <hostlist>\fR, \fB\-\-nodelist=<hostlist>\fR
+Report only on jobs allocated to the specified node or list of nodes.
+This may either be the \fBNodeName\fR or \fBNodeHostname\fR
+as defined in \fBslurm.conf(5)\fR in the event that they differ.
+A node_name of \fBlocalhost\fR is mapped to the current host name.
+
+.TP
+\fB\-h\fR, \fB\-\-noheader\fR
+Do not print a header on the output.
+
+.TP
 \fB\-p <part_list>\fR, \fB\-\-partition=<part_list>\fR
 Specify the partitions of the jobs or steps to view. Accepts a comma separated
 list of partition names.
@@ -1030,16 +1037,6 @@ separated list of qos's.
 .TP
 \fB\-R\fR, \fB\-\-reservation=<reservation_name>\fR
 Specify the reservation of the jobs to view.
-
-.TP
-\fB\-s\fR, \fB\-\-steps\fR
-Specify the job steps to view.  This flag indicates that a comma separated list
-of job steps to view follows without an equal sign (see examples).
-The job step format is "job_id[_array_id].step_id". Defaults to all job
-steps. Since this option's argument is optional, for proper parsing
-the single letter option must be followed immediately with the value
-and not include a space between them. For example "\-s1008.0" and not
-"\-s 1008.0".
 
 .TP
 \fB\-\-sibling\fR
@@ -1087,15 +1084,25 @@ Note the \fB<state_list>\fR supplied is case insensitive ("pd" and "PD" are
 equivalent).
 
 .TP
+\fB\-s\fR, \fB\-\-steps\fR
+Specify the job steps to view.  This flag indicates that a comma separated list
+of job steps to view follows without an equal sign (see examples).
+The job step format is "job_id[_array_id].step_id". Defaults to all job
+steps. Since this option's argument is optional, for proper parsing
+the single letter option must be followed immediately with the value
+and not include a space between them. For example "\-s1008.0" and not
+"\-s 1008.0".
+
+.TP
+\fB\-\-usage\fR
+Print a brief help message listing the \fBsqueue\fR options.
+
+.TP
 \fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR
 Request jobs or job steps from a comma separated list of users.
 The list can consist of user names or user id numbers.
 Performance of the command can be measurably improved for systems with large
 numbers of jobs when a single user is specified.
-
-.TP
-\fB\-\-usage\fR
-Print a brief help message listing the \fBsqueue\fR options.
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
@@ -1104,13 +1111,6 @@ Report details of squeues actions.
 .TP
 \fB\-V\fR , \fB\-\-version\fR
 Print version information and exit.
-
-.TP
-\fB\-w <hostlist>\fR, \fB\-\-nodelist=<hostlist>\fR
-Report only on jobs allocated to the specified node or list of nodes.
-This may either be the \fBNodeName\fR or \fBNodeHostname\fR
-as defined in \fBslurm.conf(5)\fR in the event that they differ.
-A node_name of \fBlocalhost\fR is mapped to the current host name.
 
 .TP
 \f3\-\-yaml\fP
