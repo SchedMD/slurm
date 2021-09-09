@@ -75,20 +75,7 @@ make_bash_script $file_in "
   $bin_echo 'fini'
 "
 
-set job_id 0
-spawn $sbatch --output=$file_out -t1 ./$file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "Batch submit failure"
-}
+set job_id [submit_job -fail "--output=$file_out -t1 ./$file_in"]
 
 #
 # Wait for job to complete
