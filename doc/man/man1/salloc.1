@@ -291,7 +291,7 @@ grouped with AND (e.g. "&") operands.
 .RE
 
 .TP
-\fB\-\-container=<absolute path to container>\fR
+\fB\-\-container\fR=<\fIabsolute_path_to_container\fR>
 Path to OCI container bundle.
 
 .TP
@@ -532,10 +532,7 @@ unless DependencyParameters=disable_remote_singleton is used in slurm.conf.
 .RE
 
 .TP
-\fB\-m\fR, \fB\-\-distribution\fR=
-\fI*\fR|\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>
-\fR[:\fI*\fR|\fIblock\fR|\fIcyclic\fR|\fIfcyclic\fR[:\fI*\fR|\fIblock\fR|
-\fIcyclic\fR|\fIfcyclic\fR]][,\fIPack\fR|\fINoPack\fR]
+\fB\-m\fR, \fB\-\-distribution\fR=*|block|cyclic|arbitrary|plane=<\fIsize\fR>[:*|block|cyclic|fcyclic[:*|block|cyclic|fcyclic]][,{Pack|NoPack}]
 
 Specify alternate distribution methods for remote processes.
 For job allocation, this sets environment variables that will be used by
@@ -590,17 +587,13 @@ Cyclic distribution is the default behavior if the number
 of tasks is no larger than the number of allocated nodes.
 .TP
 .B plane
-The tasks are distributed in blocks of a specified size. The size must be given
+The tasks are distributed in blocks of size <\fIsize\fR>. The size must be given
 or SLURM_DIST_PLANESIZE must be set. The number of tasks
 distributed to each node is the same as for cyclic distribution, but the
 taskids assigned to each node depend on the plane size. Additional distribution
 specifications cannot be combined with this option.
 For more details (including examples and diagrams), please see
-.br
-https://slurm.schedmd.com/mc_support.html
-.br
-and
-.br
+https://slurm.schedmd.com/mc_support.html and
 https://slurm.schedmd.com/dist_plane.html
 .TP
 .B arbitrary
@@ -692,11 +685,11 @@ configuration parameter.
 .RE
 
 .TP
-\fB\-x\fR, \fB\-\-exclude\fR=<\fInode name list\fR>
+\fB\-x\fR, \fB\-\-exclude\fR=<\fInode_name_list\fR>
 Explicitly exclude certain nodes from the resources granted to the job.
 
 .TP
-\fB\-\-exclusive[=user|mcs]\fR
+\fB\-\-exclusive\fR[={user|mcs}]
 The job allocation can not share nodes with other running jobs (or just other
 users with the "=user" option or with the "=mcs" option).
 The default shared/exclusive behavior depends on system configuration and the
@@ -864,7 +857,7 @@ the highest available frequency.
 .RE
 
 .TP
-\fB\-G\fR, \fB\-\-gpus\fR=[<\fitype\fR>:]<\fInumber\fR>
+\fB\-G\fR, \fB\-\-gpus\fR=[<\fItype\fR>:]<\fInumber\fR>
 Specify the total number of GPUs required for the job.
 An optional GPU type specification can be supplied.
 For example "\-\-gpus=volta:3".
@@ -874,7 +867,7 @@ See also the \fB\-\-gpus\-per\-node\fR, \fB\-\-gpus\-per\-socket\fR and
 \fB\-\-gpus\-per\-task\fR options.
 
 .TP
-\fB\-\-gpus\-per\-node\fR=[<\fitype\fR>:]<\fInumber\fR>
+\fB\-\-gpus\-per\-node\fR=[<\fItype\fR>:]<\fInumber\fR>
 Specify the number of GPUs required for the job on each node included in
 the job's resource allocation.
 An optional GPU type specification can be supplied.
@@ -885,7 +878,7 @@ See also the \fB\-\-gpus\fR, \fB\-\-gpus\-per\-socket\fR and
 \fB\-\-gpus\-per\-task\fR options.
 
 .TP
-\fB\-\-gpus\-per\-socket\fR=[<\fitype\fR>:]<\fInumber\fR>
+\fB\-\-gpus\-per\-socket\fR=[<\fItype\fR>:]<\fInumber\fR>
 Specify the number of GPUs required for the job on each socket included in
 the job's resource allocation.
 An optional GPU type specification can be supplied.
@@ -897,7 +890,7 @@ See also the \fB\-\-gpus\fR, \fB\-\-gpus\-per\-node\fR and
 \fB\-\-gpus\-per\-task\fR options.
 
 .TP
-\fB\-\-gpus\-per\-task\fR=[<\fitype\fR>:]<\fInumber\fR>
+\fB\-\-gpus\-per\-task\fR=[<\fItype\fR>:]<\fInumber\fR>
 Specify the number of GPUs required for the job on each task to be spawned
 in the job's resource allocation.
 An optional GPU type specification can be supplied.
@@ -1021,7 +1014,7 @@ name is the name of the "command" specified on the command line.
 \fB\-K\fR, \fB\-\-kill\-command\fR[=\fIsignal\fR]
 salloc always runs a user\-specified command once the allocation is
 granted.  salloc will wait indefinitely for that command to exit.
-If you specify the \-\-kill\-command option salloc will send a signal to
+If you specify the \fB\-\-kill\-command\fR option salloc will send a signal to
 your command any time that the Slurm controller tells salloc that its job
 allocation has been revoked. The job allocation can be revoked for a
 couple of reasons: someone used \fBscancel\fR to revoke the allocation,
@@ -1034,7 +1027,7 @@ immediately with the value and not include a space between them. For
 example "\-K1" and not "\-K 1".
 
 .TP
-\fB\-L\fR, \fB\-\-licenses\fR=<\fBlicense\fR>
+\fB\-L\fR, \fB\-\-licenses\fR=<\fIlicense\fR>
 Specification of licenses (or other resources available on all
 nodes of the cluster) which must be allocated to this job.
 License names can be followed by a colon and count
@@ -1067,7 +1060,7 @@ This parameter is a group among the groups of the user.
 Default value is calculated by the Plugin mcs if it's enabled.
 
 .TP
-\fB\-\-mem\fR=<\fIsize[units]\fR>
+\fB\-\-mem\fR=<\fIsize\fR[\fIunits\fR]>
 Specify the real memory required per node.
 Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
@@ -1095,7 +1088,7 @@ the job's Resident Set Size (RSS). A task may exceed the memory limit until
 the next periodic accounting sample.
 
 .TP
-\fB\-\-mem\-bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
+\fB\-\-mem\-bind\fR=[{quiet|verbose},]<\fItype\fR>
 Bind tasks to memory. Used only when the task/affinity plugin is enabled
 and the NUMA memory functions are available.
 \fBNote that the resolution of CPU and memory binding
@@ -1191,7 +1184,7 @@ verbosely report binding before task runs
 .RE
 
 .TP
-\fB\-\-mem\-per\-cpu\fR=<\fIsize[units]\fR>
+\fB\-\-mem\-per\-cpu\fR=<\fIsize\fR[\fIunits\fR]>
 Minimum memory required per allocated CPU.
 Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
@@ -1223,7 +1216,7 @@ times the number of CPUs on a node is greater than the total memory of that
 node.
 
 .TP
-\fB\-\-mem\-per\-gpu\fR=<\fIsize[units]\fR>
+\fB\-\-mem\-per\-gpu\fR=<\fIsize\fR[\fIunits\fR]>
 Minimum memory required per allocated GPU.
 Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
@@ -1393,13 +1386,13 @@ value increases the priority, otherwise decreases it. The adjustment range is
 Silence salloc's use of the terminal bell. Also see the option \fB\-\-bell\fR.
 
 .TP
-\fB\-k\fR, \fB\-\-no\-kill\fR [=off]
+\fB\-k\fR, \fB\-\-no\-kill\fR[=off]
 Do not automatically terminate a job if one of the nodes it has been
 allocated fails.  The user will assume the responsibilities for fault\-tolerance
 should a node fail.  When there is a node failure, any active job steps (usually
 MPI jobs) on that node will almost certainly suffer a fatal error, but with
-\-\-no\-kill, the job allocation will not be revoked so the user may launch
-new job steps on the remaining nodes in their allocation.
+\fB\-\-no\-kill\fR, the job allocation will not be revoked so the user may
+launch new job steps on the remaining nodes in their allocation.
 
 Specify an optional argument of "off" disable the effect of the
 \fBSALLOC_NO_KILL\fR environment variable.
@@ -1423,15 +1416,15 @@ will be freed, or you can terminate the job manually using the
 \fBscancel\fR command.)
 
 .TP
-\fB\-F\fR, \fB\-\-nodefile\fR=<\fInode file\fR>
-Much like \-\-nodelist, but the list is contained in a file of name
+\fB\-F\fR, \fB\-\-nodefile\fR=<\fInode_file\fR>
+Much like \fB\-\-nodelist\fR, but the list is contained in a file of name
 \fInode file\fR.  The node names of the list may also span multiple lines
 in the file.    Duplicate node names in the file will be ignored.
 The order of the node names in the list is not important; the node names
 will be sorted by Slurm.
 
 .TP
-\fB\-w\fR, \fB\-\-nodelist\fR=<\fInode name list\fR>
+\fB\-w\fR, \fB\-\-nodelist\fR=<\fInode_name_list\fR>
 Request a specific list of hosts.
 The job will contain \fIall\fR of these hosts and possibly additional hosts
 as needed to satisfy resource requirements.
@@ -1558,9 +1551,9 @@ hyperthreads depending upon configuration.
 The default over\-subscribe behavior depends on system configuration and the
 partition's \fBOverSubscribe\fR option takes precedence over the job's option.
 This option may result in the allocation being granted sooner than if the
-\-\-oversubscribe option was not set and allow higher system utilization, but
-application performance will likely suffer due to competition for resources.
-Also see the \-\-exclusive option.
+\fB\-\-oversubscribe\fR option was not set and allow higher system utilization,
+but application performance will likely suffer due to competition for resources.
+Also see the \fB\-\-exclusive\fR option.
 
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=<\fIpartition_names\fR>
@@ -1589,7 +1582,7 @@ Only Slurm operators and administrators can set the priority of a job.
 
 .TP
 \fB\-\-profile\fR=<all|none|[energy[,|task[,|lustre[,|network]]]]>
-enables detailed data collection by the acct_gather_profile plugin.
+Enables detailed data collection by the acct_gather_profile plugin.
 Detailed data are typically time\-series that are stored in an HDF5 file for
 the job or an InfluxDB database depending on the configured plugin.
 
@@ -1747,7 +1740,7 @@ Acceptable time formats include "minutes", "minutes:seconds",
 "days\-hours:minutes:seconds".
 
 .TP
-\fB\-\-tmp\fR=<\fIsize[units]\fR>
+\fB\-\-tmp\fR=<\fIsize\fR[\fIunits\fR]>
 Specify a minimum amount of temporary disk space per node.
 Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
@@ -1804,10 +1797,10 @@ Specify wckey to be used with job.  If TrackWCKey=no (default) in the
 slurm.conf this value is ignored.
 
 .TP
-\fB\-\-x11\fR[=<\fIall\fR|\fIfirst\fR|\fIlast\fR>]
-Sets up X11 forwarding on all, first or last node(s) of the allocation. This
-option is only enabled if Slurm was compiled with X11 support and
-PrologFlags=x11 is defined in the slurm.conf. Default is \fIall\fR.
+\fB\-\-x11\fR[=<all|first|last>]
+Sets up X11 forwarding on "all", "first" or "last" node(s) of the allocation.
+This option is only enabled if Slurm was compiled with X11 support and
+PrologFlags=x11 is defined in the slurm.conf. Default is "all".
 
 .SH "PERFORMANCE"
 .PP
@@ -1997,7 +1990,7 @@ Name of the cluster on which the job is executing.
 .TP
 \fBSLURM_CONTAINER\fR
 OCI Bundle for job.
-Only set if \-\-container\fR is specified.
+Only set if \fB\-\-container\fR is specified.
 .TP
 \fBSLURM_CPUS_PER_GPU\fR
 Number of CPUs requested per allocated GPU.
@@ -2079,23 +2072,23 @@ The ID of the job allocation. See \fBSLURM_JOB_ID\fR. Included for backwards
 compatibility.
 .TP
 \fBSLURM_MEM_BIND\fR
-Set to value of the \-\-mem\-bind\fR option.
+Set to value of the \fB\-\-mem\-bind\fR option.
 .TP
 \fBSLURM_MEM_BIND_LIST\fR
 Set to bit mask used for memory binding.
 .TP
 \fBSLURM_MEM_BIND_PREFER\fR
-Set to "prefer" if the \-\-mem\-bind\fR option includes the prefer option.
+Set to "prefer" if the \fB\-\-mem\-bind\fR option includes the prefer option.
 .TP
 \fBSLURM_MEM_BIND_SORT\fR
 Sort free cache pages (run zonesort on Intel KNL nodes)
 .TP
 \fBSLURM_MEM_BIND_TYPE\fR
-Set to the memory binding type specified with the \-\-mem\-bind\fR option.
+Set to the memory binding type specified with the \fB\-\-mem\-bind\fR option.
 Possible values are "none", "rank", "map_map", "mask_mem" and "local".
 .TP
 \fBSLURM_MEM_BIND_VERBOSE\fR
-Set to "verbose" if the \-\-mem\-bind\fR option includes the verbose option.
+Set to "verbose" if the \fB\-\-mem\-bind\fR option includes the verbose option.
 Set to "quiet" otherwise.
 .TP
 \fBSLURM_MEM_PER_CPU\fR
@@ -2123,19 +2116,19 @@ set is comma separated. For example:
 SLURM_NODE_ALIASES=ec0:1.2.3.4:foo,ec1:1.2.3.5:bar
 .TP
 \fBSLURM_NTASKS\fR
-Same as \fB\-n, \-\-ntasks\fR
+Same as \fB\-n\fR, \fB\-\-ntasks\fR
 .TP
 \fBSLURM_NTASKS_PER_CORE\fR
-Set to value of the \-\-ntasks\-per\-core\fR option, if specified.
+Set to value of the \fB\-\-ntasks\-per\-core\fR option, if specified.
 .TP
 \fBSLURM_NTASKS_PER_GPU\fR
-Set to value of the \-\-ntasks\-per\-gpu\fR option, if specified.
+Set to value of the \fB\-\-ntasks\-per\-gpu\fR option, if specified.
 .TP
 \fBSLURM_NTASKS_PER_NODE\fR
-Set to value of the \-\-ntasks\-per\-node\fR option, if specified.
+Set to value of the \fB\-\-ntasks\-per\-node\fR option, if specified.
 .TP
 \fBSLURM_NTASKS_PER_SOCKET\fR
-Set to value of the \-\-ntasks\-per\-socket\fR option, if specified.
+Set to value of the \fB\-\-ntasks\-per\-socket\fR option, if specified.
 .TP
 \fBSLURM_OVERCOMMIT\fR
 Set to \fB1\fR if \fB\-\-overcommit\fR was specified.
