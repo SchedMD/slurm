@@ -74,7 +74,7 @@ extern int task_cgroup_cpuset_fini(void)
 
 extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 {
-	cgroup_limits_t limits, *root_limits = NULL;
+	cgroup_limits_t limits, *slurm_limits = NULL;
 	char *job_alloc_cpus = NULL;
 	char *step_alloc_cpus = NULL;
 	int rc = SLURM_SUCCESS;
@@ -105,17 +105,17 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 	/*
 	 * check that user's cpuset cgroup is consistent and add the job's CPUs
 	 */
-	root_limits = cgroup_g_constrain_get(CG_CPUS, CG_LEVEL_ROOT);
+	slurm_limits = cgroup_g_constrain_get(CG_CPUS, CG_LEVEL_SLURM);
 
-	if (!root_limits)
+	if (!slurm_limits)
 		goto endit;
 
 	memset(&limits, 0, sizeof(limits));
-	limits.allow_mems = root_limits->allow_mems;
+	limits.allow_mems = slurm_limits->allow_mems;
 
 	/* User constrain */
 	limits.allow_cores = xstrdup_printf(
-		"%s,%s", job_alloc_cpus, root_limits->allow_cores);
+		"%s,%s", job_alloc_cpus, slurm_limits->allow_cores);
 	rc = cgroup_g_constrain_set(CG_CPUS, CG_LEVEL_USER, &limits);
 	xfree(limits.allow_cores);
 	if (rc != SLURM_SUCCESS)
@@ -139,7 +139,7 @@ extern int task_cgroup_cpuset_create(stepd_step_rec_t *job)
 endit:
 	xfree(job_alloc_cpus);
 	xfree(step_alloc_cpus);
-	cgroup_free_limits(root_limits);
+	cgroup_free_limits(slurm_limits);
 	return rc;
 }
 
