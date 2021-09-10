@@ -35,6 +35,7 @@ set hostlist   ""
 set node1      ""
 set node2      ""
 set het_job_id 0
+set tmp_dir    "/tmp/${test_name}_[pid]"
 
 proc cleanup { } {
 	global bin_rm het_job_id scancel
@@ -101,49 +102,33 @@ if {$het_job_id == 0} {
 }
 
 make_bash_script $script "
-$srun --het-group=0 $bin_rm -f  /tmp/test_${test_id}/$node1/test$test_id\_file\_comp0
-$srun --het-group=1 $bin_rm -f  /tmp/test_${test_id}/$node2/test$test_id\_file\_comp1
-$srun --het-group=0 $bin_rm -f  /tmp/test_${test_id}/test$test_id\_file
-$srun --het-group=0 $bin_rm -fr /tmp/test_${test_id}/$node1
-$srun --het-group=1 $bin_rm -f  /tmp/test_${test_id}/test$test_id\_file
-$srun --het-group=1 $bin_rm -fr /tmp/test_${test_id}/$node2
-$srun --het-group=1 $bin_rm -fr /tmp/test_${test_id}
+$srun -N1 -n1 --het-group=0 mkdir -p $tmp_dir/$node1
+$srun -N1 -n1 --het-group=1 mkdir -p $tmp_dir/$node2
 
-$srun -N1 -n1 --het-group=0 mkdir /tmp/test_${test_id}
-$srun -N1 -n1 --het-group=1 mkdir /tmp/test_${test_id}
-$srun -N1 -n1 --het-group=0 mkdir /tmp/test_${test_id}/$node1
-$srun -N1 -n1 --het-group=1 mkdir /tmp/test_${test_id}/$node2
-
-$sbcast -f -j$het_job_id $srun /tmp/test_${test_id}/test$test_id\_file
-$sbcast -f -j${het_job_id}+0 $srun /tmp/test_${test_id}/$node1/test$test_id\_file\_comp0
-$sbcast -f -j${het_job_id}+1 $srun /tmp/test_${test_id}/$node2/test$test_id\_file\_comp1
+$sbcast -f -j$het_job_id $srun $tmp_dir/file
+$sbcast -f -j${het_job_id}+0 $srun $tmp_dir/$node1/file_comp0
+$sbcast -f -j${het_job_id}+1 $srun $tmp_dir/$node2/file_comp1
 
 echo -n \"\nChecking node 1: \"
-$srun -Q -N1 -n1 --het-group=1 ls /tmp/test_${test_id}/test$test_id\_file
+$srun -Q -N1 -n1 --het-group=1 ls $tmp_dir/file
 
 echo -n \"\nChecking node 0: \"
-$srun -Q -N1 -n1 --het-group=0 ls /tmp/test_${test_id}/test$test_id\_file
+$srun -Q -N1 -n1 --het-group=0 ls $tmp_dir/file
 
 echo -n \"\nChecking node 1 again: \"
-$srun -Q -N1 -n1 --het-group=1 ls /tmp/test_${test_id}/$node2/test$test_id\_file\_comp1
+$srun -Q -N1 -n1 --het-group=1 ls $tmp_dir/$node2/file_comp1
 
 echo -n \"\nChecking node 0 again: \"
-$srun -Q -N1 -n1 --het-group=0 ls /tmp/test_${test_id}/$node1/test$test_id\_file\_comp0
+$srun -Q -N1 -n1 --het-group=0 ls $tmp_dir/$node1/file_comp0
 
 echo -n \"\nChecking node 1 for lack: \"
-$srun -Q -N1 -n1 --het-group=1 ls /tmp/test_${test_id}/$node2/test$test_id\_file\_comp0
+$srun -Q -N1 -n1 --het-group=1 ls $tmp_dir/$node2/file_comp0
 
 echo -n \"\nChecking node 0 for lack: \"
-$srun -Q -N1 -n1 --het-group=0 ls /tmp/test_${test_id}/$node1/test$test_id\_file\_comp1
+$srun -Q -N1 -n1 --het-group=0 ls $tmp_dir/$node1/file_comp1
 
-$srun --het-group=0 $bin_rm -f  /tmp/test_${test_id}/$node1/test$test_id\_file\_comp0
-$srun --het-group=1 $bin_rm -f  /tmp/test_${test_id}/$node2/test$test_id\_file\_comp1
-$srun --het-group=0 $bin_rm -f  /tmp/test_${test_id}/test$test_id\_file
-$srun --het-group=0 $bin_rm -fr /tmp/test_${test_id}/$node1
-$srun --het-group=1 $bin_rm -f  /tmp/test_${test_id}/test$test_id\_file
-$srun --het-group=1 $bin_rm -fr /tmp/test_${test_id}/$node2
-$srun --het-group=1 $bin_rm -fr /tmp/test_${test_id}
-$srun --het-group=0 $bin_rm -fr /tmp/test_${test_id}
+$srun --het-group=1 $bin_rm -rf $tmp_dir
+$srun --het-group=0 $bin_rm -rf $tmp_dir
 "
 
 set het_job_id [submit_job -fail "-o $stdout -e $stderr -t2 -N1 -w $node1 : -w $node2 -N1 -t10 $script"]
@@ -161,26 +146,26 @@ expect {
 		log_debug "This error is expected when nodes share the same tmp directory"
 		exp_continue
 	}
-	-re "Checking node 1: */tmp/test_${test_id}/test$test_id\_file" {
+	-re "Checking node 1: *$tmp_dir/file" {
 		incr matches
 		exp_continue
 	}
-	-re "Checking node 0: */tmp/test_${test_id}/test$test_id\_file" {
+	-re "Checking node 0: *$tmp_dir/file" {
 		incr matches
 		exp_continue
 	}
-	-re "Checking node 1 again: */tmp/test_${test_id}/$node2/test$test_id\_file\_comp1" {
+	-re "Checking node 1 again: *$tmp_dir/$node2/file_comp1" {
 		incr matches
 		exp_continue
 	}
-	-re "Checking node 0 again: */tmp/test_${test_id}/$node1/test$test_id\_file\_comp0" {
+	-re "Checking node 0 again: *$tmp_dir/$node1/file_comp0" {
 		incr matches
 		exp_continue
 	}
-	-re "Checking node 1 for lack: */tmp/test_${test_id}/$node1/test$test_id\_file\_comp0" {
+	-re "Checking node 1 for lack: *$tmp_dir/$node1/file_comp0" {
 		fail "sbcast copied file to wrong node"
 	}
-	-re "Checking node 0 for lack: */tmp/test_${test_id}/$node2/test$test_id\_file\_comp1" {
+	-re "Checking node 0 for lack: *$tmp_dir/$node2/file_comp1" {
 		fail "sbcast copied file to wrong node"
 	}
 	-re "$test_prompt" {
