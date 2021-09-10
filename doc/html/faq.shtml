@@ -413,16 +413,26 @@ srun and sbatch. See man pages for details.</p>
 
 <p><a id="prompt"><b>How can I get shell prompts in interactive
 mode?</b></a><br>
-<i>srun --pty bash -i</i><br/>
-Srun's <i>--pty</i> option runs task zero in pseudo terminal mode.
-Bash's <i>-i</i> option tells it to run in interactive mode (with prompts).
-<br/>You can also configure <i>use_interactive_step</i> in <i>slurm.conf</i>
-to automatically launch a shell, e.g.:
+<p>Starting in 20.11, the recommended way to get an interactive shell prompt is
+to configure <b>use_interactive_step</b> in <i>slurm.conf</i>:</p>
 <pre>
 LaunchParameters=use_interactive_step
 </pre>
-<p>And then run <i>salloc</i> directly which will provide you an allocation with
-an interactive shell console.</p>
+<p>This configures <code>salloc</code> to automatically launch an interactive
+shell via <code>srun</code> on a node in the allocation whenever
+<code>salloc</code> is called without a program to execute.</p>
+
+<p>By default, <b>use_interactive_step</b> creates an <i>interactive step</i> on
+a node in the allocation and runs the shell in that step. An interactive step
+is to an interactive shell what a batch step is to a batch script - both have
+access to all resources in the allocation on the node they are running on, but
+do not "consume" them.</p>
+
+<p>Note that beginning in 20.11, steps created by srun are now exclusive. This
+means that the previously-recommended way to get an interactive shell,
+<span class="commandline">srun --pty $SHELL</span>, will no longer work, as the
+shell's step will now consume all resources on the node and cause subsequent
+<span class="commandline">srun</span> calls to pend.</p>
 
 <p><a id="batch_out"><b>How can I get the task ID in the output
 or error file name for a batch job?</b></a><br>

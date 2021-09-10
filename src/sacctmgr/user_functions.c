@@ -1962,15 +1962,20 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 	/* Since the association flag isn't set we need to change
 	   things to handle things correctly.
 	*/
-	if (user_cond->assoc_cond && user_cond->assoc_cond->cluster_list
-	    && list_count(user_cond->assoc_cond->cluster_list)) {
+	if (user_cond->assoc_cond) {
 		if (cond_set & SA_SET_WCKEY) {
-			wckey_cond->cluster_list =
-				user_cond->assoc_cond->cluster_list;
-			user_cond->assoc_cond->cluster_list = NULL;
-			wckey_cond->user_list =
-				user_cond->assoc_cond->user_list;
-			user_cond->assoc_cond->user_list = NULL;
+			if (user_cond->assoc_cond->cluster_list &&
+			    list_count(user_cond->assoc_cond->cluster_list)) {
+				wckey_cond->cluster_list =
+					user_cond->assoc_cond->cluster_list;
+				user_cond->assoc_cond->cluster_list = NULL;
+			}
+			if (user_cond->assoc_cond->user_list &&
+			    list_count(user_cond->assoc_cond->user_list)) {
+				wckey_cond->user_list =
+					user_cond->assoc_cond->user_list;
+				user_cond->assoc_cond->user_list = NULL;
+			}
 		} else
 			cond_set |= SA_SET_ASSOC;
 	}
