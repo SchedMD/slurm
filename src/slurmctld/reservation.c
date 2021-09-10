@@ -7123,7 +7123,8 @@ extern bool is_node_in_maint_reservation(int nodenum)
 		if (! (t >= resv_ptr->start_time
 		       && t <= resv_ptr->end_time))
 			continue;
-		if (bit_test(resv_ptr->node_bitmap, nodenum)) {
+		if (resv_ptr->node_bitmap &&
+		    bit_test(resv_ptr->node_bitmap, nodenum)) {
 			res = true;
 			break;
 		}
