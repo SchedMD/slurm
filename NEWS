@@ -41,6 +41,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix getting memory for the batch step when the batch node isn't the first
     node in the allocation.
  -- Make SelectTypeParameters=CR_Core_Memory default for cons_tres and cons_res.
+ -- Correctly handle mutex unlocks in the gres code if failures happen.
 
 * Changes in Slurm 21.08.0
 ==========================
