@@ -3,6 +3,7 @@
 # Purpose: Test of Slurm functionality
 #          Test exclusive resource allocation for a step (--exclusive option).
 ############################################################################
+# Copyright (C) 2021 SchedMD LLC
 # Copyright (C) 2007 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
@@ -28,250 +29,175 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
-set file_in         "test$test_id.input"
-set file_in2        "test$test_id.input2"
-set file_out        "test$test_id.output"
-set file_out2       "test$test_id.output2"
+set file_in         "$test_dir/test.input"
+set file_out        "$test_dir/test.output"
 set job_id           0
-set gpu_tot          0
-set job_tres_cnt     0
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
-    skip "This test is incompatible with front-end systems"
+	skip "This test is incompatible with front-end systems"
 }
 
-set node_name [get_nodes_by_request "--gres=gpu:2 -n1 -t1"]
-if { [llength $node_name] != 1 } {
-	skip "This test need to be able to submit jobs with at least --gres=gpu:2"
-}
-if {![param_contains [get_config_param "AccountingStorageTRES"] "gres/gpu"]} {
-	skip "This test requires AccountingStorageTRES=gres/gpu"
-}
+proc cleanup {} {
+	global job_id file_in file_out test_dir
 
-# Get the total number of GPUs in the test node
-set gres_node [get_node_param $node_name "Gres"]
-set gpu_tot   [dict get [count_gres $gres_node] "gpu"]
+	cancel_job $job_id
+	file delete $file_in $file_out
+	file delete $test_dir/step1 $test_dir/step2 $test_dir/step3 $test_dir/next
+}
 
 #
 # Delete left-over input script
 # Build input script file
 # Run one more step than allocated CPUs and make sure it waits
-# The "sleep 4" is meant to ensure the earlier job steps start first
 #
-exec $bin_rm -f $file_in $file_in2 $file_out $file_out2
-make_bash_script $file_in "
-  echo tasks_per_node=\$SLURM_TASKS_PER_NODE
-  if \[ \$SLURM_TASKS_PER_NODE -gt 32 \]; then
-    sleep_secs=45
-  else
-    sleep_secs=10
-  fi
-  inx=0
-  while \[ \$inx -lt \$SLURM_TASKS_PER_NODE \]
-  do
-    $srun --exclusive -n1 $bin_sleep \$sleep_secs &
-    inx=\$((inx+1))
-  done
-  $bin_sleep 4
-  $srun -v --exclusive -n1 ./$file_in2 &
-  wait
-"
-make_bash_script $file_in2 "
-  $scontrol show steps
-"
+proc test_cpus {} {
+	global bin_rm file_in file_out test_dir
+	global bin_touch srun bin_sleep job_id
 
-#
-# Spawn a job via sbatch
-#
-spawn $sbatch -N1 -t2 --gres=craynetwork:0 --output=$file_out ./$file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
+	cleanup
+	make_bash_script $file_in "
+		echo starting step1 and step 2
+		$srun --cpus-per-task=2 --mem=1 --exclusive -n1 bash -c '
+			$bin_touch $test_dir/step1;
+			while \[ \! -f $test_dir/step3 \]
+			do $bin_sleep 0.25;
+			done
+		' &
+
+		$srun --cpus-per-task=2 --mem=1 --exclusive -n1 bash -xvc '
+			$bin_touch $test_dir/step2;
+			while \[ \! -f $test_dir/next \]
+			do $bin_sleep 0.25;
+			done
+		' &
+		s2=\$\!
+
+		echo waiting to verify step1 and step2 are running
+		while \[ \! -f $test_dir/step1 -a \! -f $test_dir/step2 \]
+		do
+			$bin_sleep 0.25;
+		done
+
+		echo \'starting step3 (should not be started until step2 ends)\'
+		$srun --cpus-per-task=2 --mem=1 -v --exclusive -n1 bash -c '
+			$bin_touch $test_dir/step3
+		' &
 		wait
-	}
-}
-if { $job_id == 0 } {
-	fail "Failed to submit job"
-}
-
-#
-# Wait for job to complete
-#
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	cancel_job $job_id
-	set exit_code 1
-}
-
-#
-# Check for desired output
-#
-if {[wait_for_file $file_out] != 0} {
-	fail "Output file $file_out is missing"
-}
-set matches 0
-set tasks_per_node 0
-spawn $bin_cat $file_out
-expect {
-	-re "tasks_per_node=($number)" {
-		set tasks_per_node $expect_out(1,string)
-	}
-	-re "StepId=$job_id" {
-		incr matches
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-
-if { $matches > $tasks_per_node } {
-	log_error "Problem with exclusive resource allocation for step ($matches > $tasks_per_node)"
-	set exit_code 1
-}
-
-if {$exit_code == 0} {
-	log_info "So far, so good. Trying with --immediate option"
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	"
+	set job_id [submit_job -fail "--cpus-per-task=2 -N1 -n2 -t2 --gres=craynetwork:0 --mem=10 --output=$file_out $file_in"]
+	subtest {![wait_for_job -timeout 30 $job_id RUNNING]} "Job $job_id should start"
+	subtest {![wait_for_file $test_dir/step1]} "File $test_dir/step1 should be created by step1"
+	subtest {![wait_for_file $test_dir/step2]} "File $test_dir/step2 should be created by step2"
+	subtest { [wait_for_file -timeout 5 $test_dir/step3]} "File $test_dir/step3 shouldn't exists yet"
+	run_command -fail "$bin_touch $test_dir/next"
+	subtest {![wait_for_file -timeout 5 $test_dir/step3]} "File $test_dir/step3 should be created by step3"
+	subtest {![wait_for_job -timeout 30 $job_id DONE]} "Job $job_id should finish"
 }
 
 #
 # Delete left-over input script
 # Build another input script file
 # Run one more step than allocated CPUs with immediate option and make aborts
-# The "sleep" is meant to ensure the earlier job steps start first
 #
-exec $bin_rm -f $file_in $file_out
-make_bash_script $file_in "
-  inx=0
-  if \[ \$SLURM_TASKS_PER_NODE -gt 32 \]; then
-    sleep_secs=45
-  else
-    sleep_secs=10
-  fi
-  while \[ \$inx -lt \$SLURM_TASKS_PER_NODE \]
-  do
-    $srun --exclusive -n1 --mem=0 $bin_sleep \$sleep_secs &
-    inx=\$((inx+1))
-  done
-  $bin_sleep 4
-  $srun -v --exclusive -n1 --mem=0 --immediate ./$file_in2 &
-  wait
-"
+proc test_cpus_immediate {} {
+	global bin_rm file_in file_out  test_dir
+	global bin_sleep scontrol sbatch number
+	global job_id srun bin_cat bin_touch
 
-#
-# Spawn a job via sbatch
-#
-spawn $sbatch -N1 -t2 --gres=craynetwork:0 --output=$file_out2 ./$file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		log_error "sbatch not responding"
-		set exit_code 1
-		exp_continue
-	}
-	eof {
+	cleanup
+	make_bash_script $file_in "
+		echo starting step1 and step2
+		$srun --cpus-per-task=2 --mem=1 --exclusive --immediate=1 -n1 bash -c '
+			$bin_touch $test_dir/step1;
+			while \[ \! -f $test_dir/next \]
+			do $bin_sleep 0.25;
+			done
+		' &
+
+		$srun --cpus-per-task=2 --mem=1 --exclusive --immediate=1 -n1 bash -xvc '
+			$bin_touch $test_dir/step2;
+			while \[ \! -f $test_dir/next \]
+			do $bin_sleep 0.25;
+			done
+		' &
+		s2=\$\!
+
+		echo waiting to verify step1 and step2 are running
+		while \[ \! -f $test_dir/step1 -a \! -f $test_dir/step2 \]
+		do
+			$bin_sleep 0.25;
+		done
+
+		echo submitting step3 with --immediate
+		$srun --cpus-per-task=2 --mem=1 -v --immediate=1 --exclusive -n1 bash -c '
+			$bin_touch $test_dir/step3
+		' &
+		s3=\$\!
+		echo waiting for step3 to fail
+		wait \$s3
+		echo step3: \$?
+
+		touch $test_dir/next
+
 		wait
-	}
-}
-if { $job_id == 0 } {
-	fail "Failed to submit job"
-}
+	"
 
-#
-# Wait for job to complete
-#
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	cancel_job $job_id
-	set exit_code 1
-}
-
-#
-# Check for desired output
-#
-if {[wait_for_file $file_out2] != 0} {
-	fail "Output file $file_out2 is missing"
-}
-set matches 0
-spawn $bin_cat $file_out2
-expect {
-	-re "StepId=$job_id" {
-		log_error "Problem --exclusive and --immediate option for step"
-		set exit_code 1
-		exp_continue
-	}
-	-re "Unable to create " {
-		log_debug "This error was expected, no worries"
-		incr matches
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-
-if { $matches != 1 } {
-	log_error "Problem --exclusive and --immediate option for step ($matches != 1)"
-	set exit_code 1
+	set job_id [submit_job -fail "--cpus-per-task=2 -N1 -n2 -t2 --gres=craynetwork:0 --mem=10 --output=$file_out $file_in"]
+	subtest {![wait_for_job -timeout 30 $job_id DONE]} "Job $job_id should finish"
+	subtest {![wait_for_file $test_dir/step1]} "File $test_dir/step1 should be created by step1"
+	subtest {![wait_for_file $test_dir/step2]} "File $test_dir/step2 should be created by step2"
+	subtest {![wait_for_file $test_dir/next]} "File $test_dir/next should be created after step3"
+	subtest { [wait_for_file -timeout 5 $test_dir/step3]} "File $test_dir/step3 should NOT be created, because step3 should fail"
 }
 
 #
 # Verify that all GPUs and other GRES are allocated with the --exclusive flag
 #
-set job_id 0
+proc test_gpus {node_name} {
+	global bin_sleep
 
-spawn $srun -N1 -w $node_name --gres=gpu --exclusive $bin_printenv SLURM_JOBID
-expect {
-	-re "($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		log_error "srun not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
+	cleanup
 
-# Check all GRES of the node were allocated on the job
-set gres_dict_job  [count_gres [get_job_param  $job_id "JOB_GRES"]]
-set gres_dict_node [count_gres [get_node_param $node_name "Gres"]]
+	# Get the total number of GPUs in the test node
+	set gres_node [get_node_param $node_name "Gres"]
+	set gpu_tot   [dict get [count_gres $gres_node] "gpu"]
 
-dict for {gres_name gres_count} $gres_dict_node {
-	if {![dict exists $gres_dict_job $gres_name]} {
-		log_error "Gres $gres_name on node $node_name not allocated on job $job_id with --exclusive"
-		set exit_code 1
-	} else {
-		set gres_count_job [dict get $gres_dict_job $gres_name]
-		if { $gres_count_job != $gres_count } {
-			log_error "Gres $gres_name on node $node_name not fully allocated on job $job_id with --exclusive ($gres_count_job != $gres_count)"
-			set exit_code 1
+	#
+	# Verify that all GPUs and other GRES are allocated with the --exclusive flag
+	#
+	set job_id [submit_job -fail "-n1 -N1 -w $node_name --gres=gpu --exclusive -e none -o none --wrap '$bin_sleep 10'"]
+	subtest {![wait_for_job $job_id RUNNING]} "Job $job_id should start"
+
+	# Check all GRES of the node were allocated on the job
+	set gres_dict_job  [count_gres [get_job_param  $job_id "JOB_GRES"]]
+	set gres_dict_node [count_gres [get_node_param $node_name "Gres"]]
+
+	dict for {gres_name gres_count} $gres_dict_node {
+		if {![dict exists $gres_dict_job $gres_name]} {
+			subfail "Gres $gres_name on node $node_name not allocated on job $job_id with --exclusive"
+		} else {
+			subpass "Gres $gres_name on node $node_name was allocated on job $job_id with --exclusive"
+
+			set gres_count_job [dict get $gres_dict_job $gres_name]
+			subtest { $gres_count_job == $gres_count } "Gres $gres_name on node $node_name fully allocated on job $job_id with --exclusive ($gres_count_job != $gres_count)"
 		}
 	}
 }
 
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "job wasn't able to complete\n"
-	cancel_job $job_id
-	set exit_code 1
+testproc test_cpus
+
+if {[param_contains [get_config_param "SchedulerParameters"] "defer"]} {
+	skip_following_testprocs "Skipping immediate test since SchedulerParameters=defer is set"
+}
+testproc test_cpus_immediate
+run_following_testprocs
+
+set node_name [get_nodes_by_request "--gres=gpu:2 -n1 -t1"]
+if { [llength $node_name] != 1 } {
+	skip_following_testprocs "This test need to be able to submit jobs with at least --gres=gpu:2"
+}
+if {![param_contains [get_config_param "AccountingStorageTRES"] "gres/gpu"]} {
+	skip_following_testprocs "This test requires AccountingStorageTRES=gres/gpu"
 }
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_in2 $file_out $file_out2
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+testproc test_gpus $node_name
