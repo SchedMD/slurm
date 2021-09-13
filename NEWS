@@ -43,6 +43,7 @@ documents those changes that are of interest to users and administrators.
  -- Make SelectTypeParameters=CR_Core_Memory default for cons_tres and cons_res.
  -- Correctly handle mutex unlocks in the gres code if failures happen.
  -- Give better error message if -m plane is given with no size.
+ -- Fix --distribution=arbitrary for salloc.
 
 * Changes in Slurm 21.08.0
 ==========================

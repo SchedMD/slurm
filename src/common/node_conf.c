@@ -359,7 +359,7 @@ static void _check_callback(char *alias, char *hostname,
  * build_all_nodeline_info - get a array of slurm_conf_node_t structures
  *	from the slurm.conf reader, build table, and set values
  * IN set_bitmap - if true then set node_bitmap in config record (used by
- *		    slurmd), false is used by slurmctld and testsuite
+ *		    slurmd), false is used by slurmctld, clients, and testsuite
  * IN tres_cnt - number of TRES configured on system (used on controller side)
  */
 extern void build_all_nodeline_info(bool set_bitmap, int tres_cnt)
