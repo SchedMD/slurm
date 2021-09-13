@@ -330,6 +330,10 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.36 - Avoid setting default values of min_cpus, job name, cwd,
     mail_type, and contiguous on job update.
  -- openapi/v0.0.36 - Clear user hold on job update if hold=false.
+ -- Fix slurmctld segfault due to a bit_test() call with a MAINT+ANY_NODES
+    reservation NULL node_bitmap.
+ -- Fix slurmctld segfault due to a bit_copy() call with a REPLACE+ANY_NODES
+    reservation NULL node_bitmap.
 
 * Changes in Slurm 20.11.8
 ==========================
