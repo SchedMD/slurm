@@ -447,6 +447,56 @@ the config file will not affect running jobs. However care should
 be taken so that a partially edited config file is not read by a
 launching job.
 
+.SH "Errors"
+When SPANK plugin results in a non-zero result, the following changes will result:
+
+.TS
+expand, allbox, tab (@);
+l l c c c c
+l l c c c c.
+Command@Function                         @Context   @Exitcode @Drains Node @Fails job
+.SP
+srun   @slurm_spank_init                 @local     @1        @no          @yes
+srun   @slurm_spank_init_post_opt        @local     @1        @no          @yes
+srun   @slurm_spank_local_user_init      @local     @1        @no          @no
+srun   @slurm_spank_user_init            @remote    @0        @no          @no
+srun   @slurm_spank_task_init_privileged @remote    @1        @no          @yes
+srun   @slurm_spank_task_post_fork       @remote    @0        @no          @no
+srun   @slurm_spank_task_init            @remote    @1        @no          @yes
+srun   @slurm_spank_task_exit            @remote    @0        @no          @no
+srun   @slurm_spank_exit                 @local     @0        @no          @yes
+=
+salloc @slurm_spank_init                 @allocator @1        @no          @yes
+salloc @slurm_spank_init_post_opt        @allocator @1        @no          @yes
+salloc @slurm_spank_init                 @local     @1        @no          @yes
+salloc @slurm_spank_init_post_opt        @local     @1        @no          @yes
+salloc @slurm_spank_local_user_init      @local     @1        @no          @yes
+salloc @slurm_spank_user_init            @remote    @0        @no          @no
+salloc @slurm_spank_task_init_privileged @remote    @1        @no          @yes
+salloc @slurm_spank_task_post_fork       @remote    @0        @no          @no
+salloc @slurm_spank_task_init            @remote    @1        @no          @yes
+salloc @slurm_spank_task_exit            @remote    @0        @no          @no
+salloc @slurm_spank_exit                 @local     @0        @no          @yes
+salloc @slurm_spank_exit                 @allocator @0        @no          @yes
+=
+sbatch @slurm_spank_init                 @allocator @1        @no          @yes
+sbatch @slurm_spank_init_post_opt        @allocator @1        @no          @yes
+sbatch @slurm_spank_init                 @local     @1        @no          @yes
+sbatch @slurm_spank_init_post_opt        @local     @1        @no          @yes
+sbatch @slurm_spank_local_user_init      @local     @1        @no          @yes
+sbatch @slurm_spank_user_init            @remote    @0        @yes         @no
+sbatch @slurm_spank_task_init_privileged @remote    @1        @no          @yes
+sbatch @slurm_spank_task_post_fork       @remote    @0        @yes         @no
+sbatch @slurm_spank_task_init            @remote    @1        @no          @yes
+sbatch @slurm_spank_task_exit            @remote    @0        @no          @no
+sbatch @slurm_spank_exit                 @local     @0        @no          @no
+sbatch @slurm_spank_exit                 @allocator @0        @no          @no
+.TE
+
+\fBNOTE\fR: The behavior for \fBProctrackType=proctrack/pgid\fR may result in
+timeouts for \fBslurm_spank_task_post_fork\fR with \fBremote\fR context on
+failure.
+
 .SH "EXAMPLE: renice.so"
 .TP
 \fB/etc/slurm/plugstack.conf\fR:
