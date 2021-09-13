@@ -29,10 +29,11 @@ source ./globals
 
 set chk_ports    [get_config_param "SrunPortRange"]
 set cwd          "[$bin_pwd]"
-set port_dir     "test$test_id\_port_conf"
+set port_dir     "${test_name}\_port_conf"
 set config_path  ""
-set file_in      "test$test_id\_sc"
-set tmp_job      "test$test_id\_tmp_job"
+set file_in      "${test_dir}/job_input"
+set file_out	 "${test_dir}/job_output"
+set tmp_job      "${test_dir}/job_script"
 set job_id       0
 array set ports {}
 
@@ -63,9 +64,8 @@ set config_file $config_path/slurm.conf
 save_conf $config_file
 
 proc cleanup {} {
-	global bin_rm file_in tmp_job job_id config_file
+	global job_id config_file
 
-	exec $bin_rm -f $file_in $tmp_job
 	cancel_job $job_id
 
 	# Clean up vestigial files and restore original slurm.conf file
@@ -117,44 +117,37 @@ foreach p $range {
 	incr i 1
 }
 
-# Check to see that srun is using the correct ports specified in slurm.conf #
+### Check to see that srun is using the correct ports specified in slurm.conf ###
 log_info "---Checking that srun uses correct ports---"
 
-make_bash_script $file_in "pid=\$(ps -ef|grep srun| egrep -v 'grep| gdb' | awk '{if (NR==1)print \$2}')
-echo \$pid
-lsof -p \$pid |grep TCP|grep LISTEN|
-awk '{split(\$9, a, \":\"); n=strtonum(a\[2\]);
-if (n < $ports(0) || n > $ports(1) ){print n, \"out of range\"}}'"
+make_bash_script $file_in "
+$srun $bin_bash -c \"
+task_id=\\\$($scontrol show step \$SLURM_JOBID\.\$SLURM_STEPID | $bin_grep SrunHost | $bin_awk -F: '{print \\\$3}')
+lsof -P -p \\\$task_id 2>/dev/null | $bin_grep LISTEN | $bin_awk '{print \\\$9}' | $bin_awk -F: '{print \\\$2}'
+\""
 
+set job_id [submit_job -fail "-o $file_out $file_in"]
+wait_for_job -fail $job_id "DONE"
+
+set output [run_command_output "cat $file_out"]
 set out_of_range 0
-spawn $srun -t1 $file_in
-expect {
-	-re "out of range" {
+set i 0
+foreach p $output {
+	if {$p < $ports(0) || $p > $ports(1)} {
+		log_debug "port $p is out of range $ports(0) - $ports(1)"
 		set out_of_range 1
-		exp_continue
-	}
-	-re "error" {
-		set out_of_range 1
-		exp_continue
-	}
-	timeout {
-		fail "srun is not responding"
-	}
-	eof {
-		wait
+		incr i 1
 	}
 }
 
-if {$out_of_range != 0} {
-	fail "srun has exceeded the allowed port range"
-}
+subtest {$out_of_range != 1} "Check that ports are within range specified in conf"
 
 #
 # Change the slurm.conf port range to a smaller number so we can exhaust ports
 #
 exec $bin_sed -i "s/SrunPortRange=$slurm_conf_range/#SrunPortRange=$slurm_conf_range/Ig" $config_file
-exec $bin_echo SrunPortRange=$ports(0)-[expr $ports(0) + 5] > $config_path/$port_dir
-exec $bin_echo include $config_path/$port_dir >> $config_file
+exec $bin_echo SrunPortRange=$ports(0)-[expr $ports(0) + 5] > $test_dir/$port_dir
+exec $bin_echo include $test_dir/$port_dir >> $config_file
 reconfigure -fail
 
 ###### Check that srun produces an error when all ports are exhausted ######
