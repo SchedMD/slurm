@@ -114,6 +114,7 @@ void set_distribution(task_dist_states_t distribution, char **dist)
 static task_dist_states_t _parse_plane_dist(const char *tok,
 					    uint32_t *plane_size)
 {
+	task_dist_states_t rc = SLURM_ERROR;
 	long tmp_long;
 	char *endptr, *plane_size_str;
 
@@ -124,19 +125,25 @@ static task_dist_states_t _parse_plane_dist(const char *tok,
 	if ((plane_size_str = strchr(tok, '=')))
 		plane_size_str++;
 	else if (!(plane_size_str = getenv("SLURM_DIST_PLANESIZE")))
-		return SLURM_ERROR; /* No plane size given */
+		goto fini; /* No plane size given */
 	else if (*plane_size_str == '\0')
-		return SLURM_ERROR; /* No plane size given */
+		goto fini; /* No plane size given */
 
 	tmp_long = strtol(plane_size_str, &endptr, 10);
 	if ((plane_size_str == endptr) || (*endptr != '\0')) {
 		/* No valid digits or there are characters after plane_size */
-		return SLURM_ERROR;
+		goto fini;
 	} else if ((tmp_long > INT_MAX) || (tmp_long <= 0) ||
 		   ((errno == ERANGE) && (tmp_long == LONG_MAX)))
-		return SLURM_ERROR; /* Number is too high/low */
+		goto fini; /* Number is too high/low */
 	*plane_size = (uint32_t)tmp_long;
-	return SLURM_DIST_PLANE;
+	rc = SLURM_DIST_PLANE;
+
+fini:
+	if (rc == SLURM_ERROR)
+		error("Invalid plane size or size not specified");
+
+	return rc;
 }
 
 static void _parse_dist_flag(char *flag_str, task_dist_states_t *result)
