@@ -663,7 +663,7 @@ extern int fini ( void )
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobcomp_g_get_jobs(slurmdb_job_cond_t *job_cond)
+extern List jobcomp_p_get_jobs(slurmdb_job_cond_t *job_cond)
 {
 
 	info("This function is not implemented.");
@@ -673,7 +673,7 @@ extern List jobcomp_g_get_jobs(slurmdb_job_cond_t *job_cond)
 /*
  * expire old info from the storage
  */
-extern int jobcomp_g_archive(slurmdb_archive_cond_t *archive_cond)
+extern int jobcomp_p_archive(slurmdb_archive_cond_t *archive_cond)
 {
 	info("This function is not implemented.");
 	return SLURM_SUCCESS;
