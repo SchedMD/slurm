@@ -560,6 +560,14 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 	step_hosts_ptrs = xcalloc(step_hosts_cnt,
 				  sizeof(node_record_t *));
 
+	if (!running_in_daemon()) {
+		/* running in salloc - init node records */
+		slurm_conf_init(NULL);
+		init_node_conf();
+		build_all_nodeline_info(false, 0);
+		rehash_node();
+	}
+
 	step_inx = 0;
 	while((host = hostlist_next(itr_task))) {
 		step_hosts_ptrs[step_inx++] = find_node_record_no_alias(host);
