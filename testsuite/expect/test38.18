@@ -455,10 +455,10 @@ proc test_mem_per_gpu {} {
 	log_info "Testing --mem-per-gpu"
 
 	set tests [list \
-		"-n1 --mem-per-gpu=1 : -n1 --mem-per-gpu=2" \
-		"-n1 --mem-per-gpu=2 : -n1 --mem-per-gpu=1" \
-		"-n1 --mem-per-gpu=2 : -n1" \
-		"-n1 : -n1 --mem-per-gpu=2" \
+		"-n1 --gpus=1 --mem-per-gpu=1 : -n1 --gpus=1 --mem-per-gpu=2" \
+		"-n1 --gpus=1 --mem-per-gpu=2 : -n1 --gpus=1 --mem-per-gpu=1" \
+		"-n1 --gpus=1 --mem-per-gpu=2 : -n1" \
+		"-n1 : -n1 --gpus=1 --mem-per-gpu=2" \
 	]
 
 	set regexes [list \
