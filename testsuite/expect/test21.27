@@ -29,17 +29,16 @@
 source ./globals
 source ./globals_accounting
 
-set tc1		"test$test_id-cluster-1"
-set tc2		"test$test_id-cluster-2"
-set ta1		"test$test_id-account.1"
-set ta2		"test$test_id-account.2"
-set ta3		"test$test_id-account.3"
-set tu1         "test$test_id-user.1"
-set tu2         "test$test_id-user.2"
+set tc1		"$test_name-cluster-1"
+set tc2		"$test_name-cluster-2"
+set ta1		"$test_name-account.1"
+set ta2		"$test_name-account.2"
+set ta3		"$test_name-account.3"
+set tu1		"$test_name-user.1"
+set tu2		"$test_name-user.2"
 set tu3		$testsuite_user
 
 set access_err  0
-set timeout     120
 
 #
 # Check accounting config and bail if not found.
@@ -80,17 +79,6 @@ add_user $tu3 [list "account" $ta2 cluster $tc1]
 remove_cluster $tc1
 add_cluster $tc2 [list]
 add_acct $ta3 [list "cluster" $tc2]
-
-spawn $sacctmgr show problem
-expect {
-	 timeout {
-		fail "sacctmgr show problem  not responding"
-	}
-	eof {
-		wait
-	}
-}
-
 
 #
 # Test for problems
