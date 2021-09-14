@@ -179,7 +179,8 @@ void batch_bind(batch_job_launch_msg_t *req)
 	}
 	job_node_id = nodelist_find(arg.job_hostlist, conf->node_name);
 	if ((job_node_id < 0) || (job_node_id > arg.job_nhosts)) {
-		error("missing node 0 in job credential");
+		error("%s: missing node %s in job credential (%s)",
+		      __func__, conf->node_name, arg.job_hostlist);
 		slurm_cred_free_args(&arg);
 		return;
 	}
@@ -190,7 +191,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 	 */
 	(void) _get_local_node_info(&arg, job_node_id, &sockets, &cores);
 	if ((sockets * cores) == 0) {
-		error("socket and core count both zero");
+		error("%s: socket and core count both zero", __func__);
 		slurm_cred_free_args(&arg);
 		return;
 	}
@@ -757,8 +758,8 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	 * job allocation, not just this jobstep */
 	job_node_id = nodelist_find(arg.job_hostlist, conf->node_name);
 	if ((job_node_id < 0) || (job_node_id > arg.job_nhosts)) {
-		error("missing node %d in job credential",
-		      job_node_id);
+		error("%s: missing node %s in job credential (%s)",
+		      __func__, conf->node_name, arg.job_hostlist);
 		slurm_cred_free_args(&arg);
 		return NULL;
 	}
