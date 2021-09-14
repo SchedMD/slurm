@@ -1164,7 +1164,7 @@ static int _check_job_credential(launch_tasks_request_msg_t *req,
 	 * Overwrite any memory limits in the RPC with contents of the
 	 * memory limit within the credential.
 	 */
-	slurm_cred_get_mem(cred, node_id, __func__, &req->job_mem_lim,
+	slurm_cred_get_mem(cred, conf->node_name, __func__, &req->job_mem_lim,
 			   &req->step_mem_lim);
 
 	/* Reset the CPU count on this node to correct value. */
@@ -1839,8 +1839,8 @@ _set_batch_job_limits(slurm_msg_t *msg)
 		return;
 	req->job_core_spec = arg.job_core_spec;	/* Prevent user reset */
 
-	/* We only should ever have 1 in here so just get the first */
-	slurm_cred_get_mem(req->cred, 0, __func__, &req->job_mem, NULL);
+	slurm_cred_get_mem(req->cred, conf->node_name, __func__, &req->job_mem,
+			   NULL);
 
 	/*
 	 * handle x11 settings here since this is the only access to the cred
@@ -1916,8 +1916,7 @@ static int _convert_job_mem(slurm_msg_t *msg)
 {
 	prolog_launch_msg_t *req = (prolog_launch_msg_t *)msg->data;
 	slurm_cred_arg_t arg;
-	hostset_t j_hset = NULL;
-	int rc, host_index;
+	int rc;
 
 	rc = slurm_cred_verify(conf->vctx, req->cred, &arg,
 			       msg->protocol_version);
@@ -1934,18 +1933,10 @@ static int _convert_job_mem(slurm_msg_t *msg)
 
 	req->nnodes = arg.job_nhosts;
 
-	if (!(j_hset = hostset_create(arg.job_hostlist))) {
-		error("%s: Unable to parse credential hostlist: `%s'",
-		      __func__, arg.job_hostlist);
-		goto fini;
-	}
-	host_index = hostset_find(j_hset, conf->node_name);
-	hostset_destroy(j_hset);
+	slurm_cred_get_mem(req->cred, conf->node_name, __func__,
+			   &req->job_mem_limit, NULL);
 
-	slurm_cred_get_mem(req->cred, host_index, __func__, &req->job_mem_limit,
-			   NULL);
-
-fini:	slurm_cred_free_args(&arg);
+	slurm_cred_free_args(&arg);
 	return SLURM_SUCCESS;
 }
 
