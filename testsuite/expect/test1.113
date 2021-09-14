@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set needed_nodes 2
 set matches 0
 set ncpus ""
@@ -73,8 +72,7 @@ expect {
 	-re "($number)" {
 		set nodes $expect_out(1,string)
 		if {$nodes != 1} {
-			log_error "Expected 1 allocated node"
-			set exit_code 1
+			fail "Expected 1 allocated node"
 		}
 		exp_continue
 	}
@@ -85,8 +83,4 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

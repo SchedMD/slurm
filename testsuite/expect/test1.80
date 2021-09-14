@@ -30,8 +30,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front end systems"
 }
@@ -96,8 +94,7 @@ log_debug "Actual task layout was : $tested_layout"
 if {[string compare $tested_layout $expected_layout1] &&
     [string compare $tested_layout $expected_layout2] &&
     [string compare $tested_layout $expected_layout3]} {
-	log_error "Failed to distribute tasks in block fashion"
-	set exit_code 1
+	fail "Failed to distribute tasks in block fashion"
 }
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
@@ -159,10 +156,5 @@ log_debug "Actual task layout was : $tested_layout"
 if {[string compare $tested_layout $expected_layout1] &&
     [string compare $tested_layout $expected_layout2] &&
     [string compare $tested_layout $expected_layout3]} {
-	log_error "Failed to distribute tasks in cyclic fashion"
-	set exit_code 1
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	fail "Failed to distribute tasks in cyclic fashion"
 }

@@ -31,7 +31,6 @@ set file_in     "test$test_id.bash"
 set test_timer  "test$test_id.test_timer"
 set test_srun   "test$test_id.test_srun"
 set run_timer   2
-set exit_code   0
 
 proc cleanup {} {
 	global bin_rm test_timer test_srun file_in
@@ -105,7 +104,7 @@ expect {
 		if {$t_num == $time_num} {
 			incr time_match
 		} else {
-			set exit_code 1
+			log_error "Timer value $t_num did not match expected value $time_num"
 		}
 		if {$tmp_time == $run_timer} {
 			incr time_num
@@ -134,16 +133,6 @@ expect {
 }
 
 
-if {$timer_match != [expr $run_timer*10]} {
-	fail "srun did not execute all timers ($timer_match != [expr $run_timer*10])"
-}
-if {$time_match != [expr $run_timer*10]} {
-	fail "srun is not generating output ($time_match != [expr $run_timer*10])"
-}
-if {$fini_match != $run_timer} {
-	fail "srun did not finish the program submitted ($fini_match != $run_timer)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$timer_match == [expr $run_timer*10]} "srun should execute all timers" "$timer_match != [expr $run_timer*10]"
+subtest {$time_match == [expr $run_timer*10]} "srun should generate the right output" "$time_match != [expr $run_timer*10]"
+subtest {$fini_match == $run_timer} "srun should finish the submitted program" "$fini_match != $run_timer"

@@ -29,8 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 #
 # Submit a job with one thread fanout
 #
@@ -57,10 +55,7 @@ expect {
 #
 # Verify node registration
 #
-if {[string compare $host_0 ""] == 0} {
-	log_error "Did not get hostname of task 0"
-	set exit_code   1
-}
+subtest {[string compare $host_0 ""] != 0} "Verify node registration" "Did not get hostname of task 0"
 
 #
 # Submit a job with up to 32 thread fanout (Slurm limit is 60)
@@ -93,10 +88,4 @@ expect {
 #
 # Verify node registration
 #
-if {[string compare $host_0 ""] == 0} {
-	fail "Did not get hostname of task 0"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {[string compare $host_0 ""] != 0} "Verify node registration" "Did not get hostname of task 0"

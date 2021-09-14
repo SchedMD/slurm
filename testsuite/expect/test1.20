@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
 
 #
 # Spawn a program via srun with stdout forwarding disabled
@@ -38,14 +37,10 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun --output=none -t1 $bin_id]
 expect {
 	-re "uid=" {
-		log_error "srun improperly forwarded stdout"
-		set exit_code 1
-		exp_continue
+		fail "srun improperly forwarded stdout"
 	}
 	-re "groups=" {
-		log_error "srun improperly forwarded stdout"
-		set exit_code 1
-		exp_continue
+		fail "srun improperly forwarded stdout"
 	}
 	timeout {
 		slow_kill $srun_pid
@@ -63,9 +58,7 @@ set matches 0
 set srun_pid [spawn $srun --error=none -t1 $bin_sleep aaa]
 expect {
 	-re "invalid" {
-		log_error "srun improperly forwarded stderr"
-		set exit_code 1
-		exp_continue
+		fail "srun improperly forwarded stderr"
 	}
 	-re "exit code $number" {
 		log_debug "This error is expected, no worries"
@@ -81,11 +74,4 @@ expect {
 	}
 }
 
-if {$matches != 1} {
-	log_error "srun exit code does not indicate error"
-	set exit_code 1
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 1} "Srun exit code should indicate error"

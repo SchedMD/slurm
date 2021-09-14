@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set matches     0
 
 #
@@ -51,11 +50,8 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "Failed to hold job as requested"
-	set exit_code 1
-}
 
+subtest {$matches == 1} "Job should be held as requested"
 
 #
 # Spawn a srun immediate execution job, it should run or fail immediately
@@ -83,9 +79,4 @@ expect {
 	}
 }
 
-if {$matches != 1} {
-	fail "Immediate initiation option failure"
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 1} "Job should be initiated immediately"

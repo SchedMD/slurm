@@ -29,13 +29,12 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set num_nodes   2
 set num_tasks   2
 set idle_nodes  0
 set max_nodes   0
 set task_count  0
-set hostfile    "test$test_id.hostfile"
+set hostfile    "$test_dir/hostfile"
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test incompatible with front-end systems"
@@ -139,31 +138,19 @@ for {set i 0} {$i<3} {incr i} {
 		log_warn "No worries, test just can not run here"
 	} elseif { $i == 1 } {
 		if { [string compare $node0 $1node0] } {
-			log_error "Task 0 not distributed by hostfile ($node0 != $1node0)"
-			set exit_code 1
+			fail "Task 0 not distributed by hostfile ($node0 != $1node0)"
 		} elseif { [string compare $node1 $1node1] } {
-			log_error "Task 1 not distributed by hostfile ($node1 != $1node1)"
-			set exit_code 1
+			fail "Task 1 not distributed by hostfile ($node1 != $1node1)"
 		} elseif { [string compare $node2 $1node2] } {
-			log_error "Task 2 not distributed by hostfile ($node2 != $1node2)"
-			set exit_code 1
+			fail "Task 2 not distributed by hostfile ($node2 != $1node2)"
 		}
 	} elseif { $i == 2 } {
 		if { [string compare $node0 $2node0] } {
-			log_error "Task 0 not distributed by hostfile ($node0 != $2node0)"
-			set exit_code 1
+			fail "Task 0 not distributed by hostfile ($node0 != $2node0)"
 		} elseif { [string compare $node1 $2node1] } {
-			log_error "Task 1 not distributed by hostfile ($node1 != $2node1)"
-			set exit_code 1
+			fail "Task 1 not distributed by hostfile ($node1 != $2node1)"
 		} elseif { [string compare $node2 $2node2] } {
-			log_error "Task 2 not distributed by hostfile ($node2 != $2node2)"
-			set exit_code 1
+			fail "Task 2 not distributed by hostfile ($node2 != $2node2)"
 		}
 	}
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $hostfile
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

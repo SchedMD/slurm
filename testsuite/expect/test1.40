@@ -28,8 +28,7 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-set exit_code   0
+set file_in     "$test_dir/input"
 set job_id1     0
 set job_id2     0
 
@@ -52,7 +51,7 @@ make_bash_script $file_in "$bin_sleep 5"
 # Spawn an sbatch job that just sleeps for a while
 #
 set timeout $max_job_delay
-set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --account=MY_ACCT -t1 ./$file_in]
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --account=MY_ACCT -t1 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
@@ -87,16 +86,15 @@ expect {
 		wait
 	}
 }
-if {$match_acct == 0} {
-	log_error "Account information not processed"
-	set exit_code 1
-}
+
+subtest {$match_acct != 0} "Account information processed"
+
 #
 # Spawn an srun job that should get account from SLURM_ACCOUNT env var
 #
 make_bash_script $file_in "$bin_env | $bin_grep SLURM_ACCOUNT"
 set match_acct  0
-set srun_pid [spawn $srun -v -t1 ./$file_in]
+set srun_pid [spawn $srun -v -t1 $file_in]
 expect {
 	# needed for cray systems
 	-re "Granted job allocation ($number)" {
@@ -119,10 +117,8 @@ expect {
 		wait
 	}
 }
-if {$match_acct == 0} {
-	log_error "Account information not processed"
-	set exit_code 1
-}
+
+subtest {$match_acct != 0} "Account information processed"
 
 #
 # Confirm account info within second job based SLURM_ACCOUNT
@@ -141,12 +137,5 @@ expect {
 		wait
 	}
 }
-if {$match_acct == 0} {
-	fail "Account information not processed"
-}
 
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$match_acct != 0} "Account information processed"

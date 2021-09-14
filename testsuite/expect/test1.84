@@ -33,7 +33,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_in     "test$test_id.bash"
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
@@ -160,8 +159,7 @@ if {$cpu_cnt != $task_cnt} {
 	}
 }
 if {$cpu_cnt != $task_cnt} {
-	log_error "Should have run $cpu_cnt tasks (one per core) instead of $task_cnt tasks. This could be due to memory limit per allocated CPU, MaxCPUsPerNode, CR_ONE_TASK_PER_CORE, or OverSubscribe=FORCE"
-	set exit_code 1
+	fail "Should have run $cpu_cnt tasks (one per core) instead of $task_cnt tasks. This could be due to memory limit per allocated CPU, MaxCPUsPerNode, CR_ONE_TASK_PER_CORE, or OverSubscribe=FORCE"
 }
 if {$cpu_cnt < 2} {
 	skip "The node only has one core"
@@ -193,10 +191,5 @@ expect {
 # Verify that half the number of tasks were spawned
 #
 if {$task_cnt != [expr $cpu_cnt / 2]} {
-	log_error "Improper task count for given cpus-per-task. This could be due to memory limit per allocated CPU or OverSubscribe=FORCE"
-	set exit_code   1
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	fail "Improper task count for given cpus-per-task. This could be due to memory limit per allocated CPU or OverSubscribe=FORCE"
 }

@@ -32,23 +32,24 @@ set file_out     "test$test_id\.out"
 set node         ""
 set threads      0
 set job_id       0
-set exit_code    0
+
 array set freq_lvl_1 {
-	high          0
-	highm1        0
-	medium        0
-	low           0
+	high         0
+	highm1       0
+	medium       0
+	low          0
 }
 array set freq_lvl_2 {
-	conservative  0
-	ondemand      0
-	performance   0
-	powersave     0
+	conservative 0
+	ondemand     0
+	performance  0
+	powersave    0
 }
 
 proc cleanup {} {
-	global bin_rm file_id file_in file_out
+	global job_id bin_rm file_id file_in file_out
 
+	cancel_job $job_id
 	exec $bin_rm -f $file_id $file_in $file_out
 }
 
@@ -77,8 +78,7 @@ if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $a
 }
 
 proc sub_job { freq } {
-
-	global srun sacct node threads job_id number wait_for_job float timeout exit_code
+	global srun sacct node threads job_id number wait_for_job float timeout
 	global re_word_str file_id avail_governors
 
 	set timeout 120
@@ -95,8 +95,7 @@ proc sub_job { freq } {
 					log_debug "This error is expected, no worries"
 					set skip true
 				} else {
-					log_error "This CPU frequency should be valid"
-					set exit_code 1
+					fail "This CPU frequency should be valid"
 				}
 				exp_continue
 			}
@@ -120,9 +119,7 @@ proc sub_job { freq } {
 		}
 
 		if {[wait_for_job $job_id "DONE"] != 0} {
-			log_error "Error waiting for job $job_id to complete"
-			cancel_job $job_id
-			set exit_code 1
+			fail "Error waiting for job $job_id to complete"
 		}
 
 		spawn $sacct -j$job_id -oavecpufreq --noheader
@@ -144,8 +141,7 @@ proc sub_job { freq } {
 		}
 
 		if {$this_freq($option) == 0} {
-			log_error "Did not get cpu frequency for $option"
-			set exit_code 1
+			fail "Did not get cpu frequency for $option"
 		}
 	}
 	return [array get this_freq]
@@ -229,8 +225,7 @@ array set freq_lvl_2 [sub_job [array get freq_lvl_2]]
 
 if {($freq_lvl_2(conservative) == 0) || ($freq_lvl_2(ondemand) == 0) ||
     ($freq_lvl_2(performance) == 0)  || ($freq_lvl_2(powersave) == 0)} {
-	log_error "CPU frequency values are invalid"
-	set exit_code 1
+	fail "CPU frequency values are invalid"
 }
 
 #
@@ -247,8 +242,4 @@ if { (($freq_lvl_1(low) > $freq_lvl_1(medium)) ||
       ($freq_lvl_1(medium) > $freq_lvl_1(high)) ||
       ($freq_lvl_1(highm1) > $freq_lvl_1(high)))} {
 	fail "CPU frequency values are not valid. Test with smaller JobAcctGatherFrequency configuration or longer running jobs"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

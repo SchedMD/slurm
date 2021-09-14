@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
 set job_id           0
 set matches          0
 set task_id          3
@@ -52,7 +51,6 @@ expect {
 			incr matches
 		} else {
 			log_error "Wrong task_id responded"
-			set exit_code 1
 		}
 		send "exit\r"
 		exp_continue
@@ -69,18 +67,14 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "Stdin to specific task_id failed"
-	set exit_code 1
-}
+
+subtest {$matches == 1} "Verify stdin to specific task id"
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
     skip "Additional portions of this test are incompatible with front-end systems"
 }
 
-if {$exit_code == 0} {
-	log_info "So far... stdin to specific task worked fine"
-}
+log_debug "So far... stdin to specific task worked fine"
 
 #
 # Spawn program to print task number, we only expect to see output from task 2
@@ -99,7 +93,6 @@ expect {
 			incr matches
 		} else {
 			log_error "Wrong task_id responded"
-			set exit_code 1
 		}
 		exp_continue
 	}
@@ -111,11 +104,5 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "Stdout from specific task_id failed"
-	set exit_code 1
-}
 
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 1} "Verify stdout from specific task id"

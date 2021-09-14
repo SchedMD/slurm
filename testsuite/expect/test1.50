@@ -28,8 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code            0
-
 if {[get_config_param "FrontendName"] ne "MISSING" && ![is_super_user]} {
 	skip "This test is incompatible with front-end systems"
 }
@@ -55,14 +53,10 @@ expect {
 		 exp_continue
 	}
 	-re "time limit exceeded" {
-		log_error "srun time limit exceeded"
-		set exit_code 1
-		exp_continue
+		fail "srun time limit exceeded"
 	}
 	-re "Terminated" {
-		log_error "srun didn't terminate properly"
-		set exit_code 1
-		exp_continue
+		fail "srun didn't terminate properly"
 	}
 	timeout {
 		slow_kill $srun_pid
@@ -72,10 +66,5 @@ expect {
 		wait
 	}
 }
-if {$matches == 0} {
-	fail "Unexpected output from bad job name"
-}
 
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches != 0} "Error expected from bad job name"

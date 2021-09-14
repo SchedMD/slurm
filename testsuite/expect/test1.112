@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set job_id      0
 
 #
@@ -36,21 +35,17 @@ set timeout $max_job_delay
 set srun_pid [spawn $srun -v --begin now+10 --deadline now+1hour -t 10 $bin_sleep 1 ]
 expect {
 	-re "Requested time limit is invalid" {
-		set exit_code 1
-		exp_continue
+		fail "Requested time limit is invalid"
 	}
 	-re "Incompatible begin and deadline time specification" {
-		set exit_code 1
-		exp_continue
+		fail "Incompatible begin and deadline time specification"
 	}
 	-re "job ($number) queued and waiting for resources" {
 		set job_id $expect_out(1,string)
-		set exit_code 0
 		exp_continue
 	}
 	-re "job ($number) has been allocated resources" {
 		set job_id $expect_out(1,string)
-		set exit_code 0
 		exp_continue
 	}
 	timeout {
@@ -73,8 +68,7 @@ expect {
 		exp_continue
 	}
 	-re "TimeLimit=" {
-		log_error "Job submitted with a time limit different than calculated (00:10:00)"
-		set exit_code 1
+		fail "Job submitted with a time limit different than calculated (00:10:00)"
 	}
 	timeout {
 		fail "scontrol not responding"
@@ -82,8 +76,4 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

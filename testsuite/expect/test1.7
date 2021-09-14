@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set job_id      0
 
 # NOTE: If you increase sleep_time, change job time limits as well
@@ -136,12 +135,8 @@ expect {
 		wait
 	}
 }
-if {$timed_out == 1} {
-	log_debug "Early termination is expected, no worries"
-} else {
-	log_error "Time limit not enforced"
-	set exit_code 1
-}
+
+subtest {$timed_out == 1} "Time limit should be enforced"
 
 set completions 0
 set srun_pid [spawn $srun -t4 $bin_sleep $sleep_time]
@@ -174,10 +169,5 @@ expect {
 		incr completions
 	}
 }
-if {$completions != 1} {
-	fail "Job failed to complete properly"
-}
 
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$completions == 1} "Job should complete properly"

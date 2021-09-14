@@ -31,8 +31,6 @@
 
 source ./globals
 
-set exit_code   0
-
 # spawn an allocation to run on 2
 # hosts with 4 tasks.
 #
@@ -76,8 +74,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
-		set exit_code 1
+		fail "srun not responding"
 	}
 	-re $test_prompt {
 	}
@@ -102,8 +99,7 @@ expect {
 		}
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	-re $test_prompt {
 	}
@@ -122,8 +118,7 @@ expect {
 	-re $test_prompt {
 	}
 	timeout {
-		log_error "srun not responding"
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -144,8 +139,7 @@ expect {
 		send "exit\r"
 	}
 	timeout {
-		log_error "srun not responding"
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -154,8 +148,4 @@ expect {
 
 if {[ string compare $host2 $hostname] != 0} {
 	fail "The execution hostname $hostname != $host2 requested hostname."
-}
-
-if {$exit_code != 0} {
-        fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

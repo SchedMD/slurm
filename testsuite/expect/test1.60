@@ -29,9 +29,8 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
-set file_out_n       "test$test_id.n.%n.output"
-set file_out_t       "test$test_id.t.%t.output"
+set file_out_n       "$test_dir/n.%n.output"
+set file_out_t       "$test_dir/t.%t.output"
 set job_id           0
 set node_count       0
 set task_count       0
@@ -45,14 +44,16 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
     skip "This test is incompatible with front-end systems"
 }
 
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
 #
 # Spawn a program that generates "task_id" (%t) in stdout file names
 # and confirm they are created
 #
-for {set task_id 0} {$task_id < $node_count} {incr task_id} {
-	set file_out_t_glob  "test$test_id.t.$task_id.output"
-	exec $bin_rm -f $file_out_t_glob
-}
 set timeout $max_job_delay
 set srun_pid [spawn $srun -l --output=$file_out_t -N 1-10 -v -t1 $bin_echo hello]
 expect {
@@ -84,16 +85,14 @@ expect {
 	}
 }
 if {$node_count == 0} {
-	cancel_job $job_id
 	fail "Did not get node_count"
 }
 
 set file_cnt 0
 for {set task_id 0} {$task_id < $node_count} {incr task_id} {
-	set file_out_t_glob  "test$test_id.t.$task_id.output"
+	set file_out_t_glob  "$test_dir/t.$task_id.output"
 	if {[wait_for_file $file_out_t_glob] != 0} {
-		set exit_code 1
-		break
+		fail "Output file $file_out_t_glob did not get created"
 	} else {
 		set test_task_id -1
 		spawn $bin_cat $file_out_t_glob
@@ -107,25 +106,17 @@ for {set task_id 0} {$task_id < $node_count} {incr task_id} {
 			}
 		}
 		if {$task_id != $test_task_id} {
-			log_error "File $file_out_t_glob was not labelled.  $task_id != $test_task_id"
-			set exit_code 1
+			fail "File $file_out_t_glob was not labelled ($task_id != $test_task_id)"
 		} else {
 			exec $bin_rm -f $file_out_t_glob
 		}
 		incr file_cnt
 	}
 }
-if {$file_cnt != $node_count} {
-	log_error "File format of %t in stdout failed"
-	set exit_code 1
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
-}
-for {set node_id 0} {$node_id < $node_count} {incr node_id} {
-	set file_out_n_glob  "test$test_id.n.$node_id.output"
-	exec $bin_rm -f $file_out_n_glob
-}
+
+subtest {$file_cnt == $node_count} "Stdout file names should be generated with task id (%t) in them"
+
+cleanup
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "Additional tests are incompatible with front-end systems"
@@ -159,13 +150,12 @@ if {$job_id == 0} {
 # since task distribution is dependent upon resource allocation which may
 # not be homogeneous across the nodes.
 for {set node_id 0} {$node_id < $node_count} {incr node_id} {
-	set file_out_n_glob  "test$test_id.n.$node_id.output"
+	set file_out_n_glob  "$test_dir/n.$node_id.output"
 	if {[wait_for_file $file_out_n_glob] != 0} {
 		if {$node_id == 1} {
 			log_debug "This failure is expected on front-end configurations"
 		}
-		set exit_code 1
-		break
+		fail "Output file $file_out_n_glob did not get created"
 	} else {
 		set task_found false
 
@@ -180,15 +170,10 @@ for {set node_id 0} {$node_id < $node_count} {incr node_id} {
 			}
 		}
 		if {!$task_found} {
-			log_error "File $file_out_n_glob was not labelled correctly"
-			set exit_code 1
+			fail "File $file_out_n_glob was not labelled correctly"
 		} else {
 			exec $bin_rm -f $file_out_n_glob
 		}
 		incr file_cnt
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

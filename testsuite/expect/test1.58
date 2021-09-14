@@ -28,8 +28,13 @@
 ############################################################################
 source ./globals
 
-set exit_code            0
-set jobid                0
+set job_id 0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 #
 # Run an srun to grab a single node allocation, but not start any
@@ -40,14 +45,14 @@ set srun_alloc_pid [spawn $salloc -v -N1 -n1 -t2 $bin_sleep 600]
 set srun_alloc_sid $spawn_id
 expect {
 	-re "salloc: Granted job allocation ($number)" {
-		set jobid $expect_out(1,string)
+		set job_id $expect_out(1,string)
 	}
 	timeout {
 		slow_kill $srun_alloc_pid
 		fail "srun failed to grab an allocation in a timely manner"
 	}
 }
-if {$jobid == 0} {
+if {$job_id == 0} {
 	fail "srun failed to create an allocation"
 }
 
@@ -57,11 +62,10 @@ if {$jobid == 0} {
 #
 set pattern "sdiouetj49udfj"
 set got_pattern 0
-set srun_launch_pid [spawn $srun --jobid $jobid echo $pattern]
+set srun_launch_pid [spawn $srun --jobid $job_id echo $pattern]
 expect {
 	-re "error" {
-		log_error "Unexpected error occurred"
-		set exit_code 1
+		fail "Unexpected error occurred"
 	}
  	-re $pattern {
 		set got_pattern 1
@@ -69,22 +73,20 @@ expect {
 	}
 	timeout {
 		slow_kill $srun_launch_pid
+		fail "srun timed out"
 	}
 	eof {
 		wait
 	}
 }
 
-if {$got_pattern == 0} {
-	log_error "Unable to srun step under existing job allocation"
-	set exit_code 1
-}
+subtest {$got_pattern != 0} "srun should run under existing job allocation"
 
 #
 # Release the allocation by killing salloc (really it kills the "sleep")
 #
-if {[cancel_job $jobid] != 0} {
-	set exit_code 1
+if {[cancel_job $job_id] != 0} {
+	fail "Unable to cancel job"
 }
 
 set spawn_id $srun_alloc_sid
@@ -96,8 +98,4 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

@@ -31,8 +31,7 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_prog   "test$test_id.prog"
+set file_prog   "$test_dir/prog"
 set matches     0
 set fini_cnt    0
 set usr1cnt     0
@@ -44,7 +43,7 @@ set usr2target	1
 # Delete left-over program and rebuild it
 #
 exec $bin_rm -f $file_prog
-exec $bin_cc -O ${file_prog}.c -o $file_prog
+exec $bin_cc -O ${test_name}.prog.c -o $file_prog
 exec $bin_chmod 700 $file_prog
 
 #
@@ -62,7 +61,7 @@ set uid [get_my_uid]
 #	Expect have difficulties handling unbuffered srun output
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -t1 --unbuffered ./$file_prog]
+set srun_pid [spawn $srun -N1 -t1 --unbuffered $file_prog]
 expect {
 	-re "WAITING" {
 		incr matches
@@ -104,28 +103,8 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "srun failed to initialize properly"
-	set exit_code 1
-}
-if {$usr1cnt != $usr1target} {
-	log_error "$file_prog received $usr1cnt SIGUSR1 (not $usr1target)"
-	set exit_code 1
-}
-if {$usr2cnt != $usr2target} {
-	log_error "$file_prog received $usr2cnt SIGUSR2 (not $usr2target)"
-	set exit_code 1
-}
-if {$fini_cnt != 1} {
-	log_error "srun failed to terminate properly"
-	set exit_code 1
-}
 
-#
-# Post-processing
-#
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_prog
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 1} "srun initialized properly"
+subtest {$usr1cnt == $usr1target} "$file_prog should receive $usr1target SIGUSR1" "but received $usr1cnt SIGUSR1"
+subtest {$usr2cnt == $usr2target} "$file_prog should receive $usr2target SIGUSR2" "but received $usr2cnt SIGUSR2"
+subtest {$fini_cnt == 1} "srun terminated properly"

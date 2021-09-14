@@ -25,7 +25,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_prog   "test$test_id.prog"
 
 proc get_cpu_bind { type name } {
@@ -68,7 +67,7 @@ proc set_cpu_bind { type name cpu_bind } {
 }
 
 proc run_prog { node_name cpu_bind } {
-	global exit_code srun partition bin_printenv number re_word_str
+	global srun partition bin_printenv number re_word_str
 
 	set matches 0
 	set found_cpu_bind ""
@@ -89,24 +88,7 @@ proc run_prog { node_name cpu_bind } {
 			wait
 		}
 	}
-	if {$matches != 1} {
-		log_error "Node $node_name should have CpuBind of $cpu_bind rather than $found_cpu_bind"
-		set exit_code 1
-	}
-}
-
-proc end_test { } {
-	global exit_code scontrol
-	global node_0 node_cpu_bind_0 node_1 node_cpu_bind_1
-	global partition_cpu_bind partition
-
-	set_cpu_bind "node" $node_0 $node_cpu_bind_0
-	set_cpu_bind "node" $node_1 $node_cpu_bind_1
-	set_cpu_bind "partition" $partition $partition_cpu_bind
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
+	subtest {$matches == 1} "Node has the $cpu_bind cpu binding" "Node $node_name should have CpuBind of $cpu_bind rather than $found_cpu_bind"
 }
 
 if {![is_super_user]} {
@@ -163,15 +145,21 @@ log_debug "Determine the node and partition current CpuBind configuration"
 set partition_cpu_bind [get_cpu_bind "partition" $partition]
 set node_cpu_bind_0 [get_cpu_bind "node" $node_0]
 set node_cpu_bind_1 [get_cpu_bind "node" $node_1]
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+
+proc cleanup { } {
+	global node_0 node_cpu_bind_0 node_1 node_cpu_bind_1
+	global partition_cpu_bind partition
+
+	set_cpu_bind "node" $node_0 $node_cpu_bind_0
+	set_cpu_bind "node" $node_1 $node_cpu_bind_1
+	set_cpu_bind "partition" $partition $partition_cpu_bind
 }
 
 set_cpu_bind "node" $node_0 "core"
 set_cpu_bind "node" $node_1 "thread"
 set_cpu_bind "partition" $partition "socket"
-if {$exit_code != 0} {
-	end_test
+if {$_subtest_fail_count > 0} {
+	pass
 }
 
 run_prog $node_0 "core"
@@ -180,5 +168,3 @@ run_prog $node_1 "thread"
 set nodes_both ""
 append nodes_both $node_0 "," $node_1
 run_prog $nodes_both "socket"
-
-end_test

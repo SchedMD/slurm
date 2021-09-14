@@ -29,8 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 #
 # Submit a job with invalid mincpus requirement
 #
@@ -57,14 +55,8 @@ expect {
 	}
 }
 
-if {[string compare $this_date ""] != 0} {
-	log_error "Job ran with invalid mincpus option"
-	set exit_code   1
-}
-if {$err_msg != 1} {
-	log_error "Job failed to report required error"
-	set exit_code   1
-}
+subtest {[string compare $this_date ""] == 0} "Job should not run with invalid mincpus option"
+subtest {$err_msg == 1} "Job should report required error"
 
 #
 # Submit a job with valid mincpus requirement
@@ -91,10 +83,7 @@ expect {
 	}
 }
 
-if {[string compare $this_date ""] == 0} {
-	log_error "Job failed with valid mincpus option"
-	set exit_code   1
-}
+subtest {[string compare $this_date ""] != 0} "Job should run with valid mincpus option"
 
 #
 # Submit a job with invalid mem requirement
@@ -122,14 +111,8 @@ expect {
 	}
 }
 
-if {[string compare $this_date ""] != 0} {
-	log_error "Job ran with invalid mem option"
-	set exit_code   1
-}
-if {$err_msg != 1} {
-	log_error "Job failed to report required error"
-	set exit_code   1
-}
+subtest {[string compare $this_date ""] == 0} "Job should not run with invalid mem option"
+subtest {$err_msg == 1} "Job should report required error"
 
 #
 # Submit a job with what should be valid mem requirement.
@@ -166,10 +149,7 @@ expect {
 	}
 }
 
-if {$err_msg == 0 && [string compare $this_date ""] == 0} {
-	log_error "Job failed with valid mem option"
-	set exit_code   1
-}
+subtest {$err_msg != 0 || [string compare $this_date ""] != 0} "Job should run with valid mem option"
 
 #
 # Submit a job with invalid tmp requirement
@@ -197,14 +177,8 @@ expect {
 	}
 }
 
-if {[string compare $this_date ""] != 0} {
-	log_error "Job ran with invalid tmp option"
-	set exit_code   1
-}
-if {$err_msg != 1} {
-	log_error "Job failed to report required error"
-	set exit_code   1
-}
+subtest {[string compare $this_date ""] == 0} "Job should not run with invalid tmp option"
+subtest {$err_msg == 1} "Job should report required error"
 
 #
 # Submit a job with valid tmp requirement
@@ -231,10 +205,4 @@ expect {
 	}
 }
 
-if {[string compare $this_date ""] == 0} {
-	fail "Job failed with valid tmp option"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {[string compare $this_date ""] != 0} "Job should run with valid tmp option"

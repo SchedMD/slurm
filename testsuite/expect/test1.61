@@ -28,11 +28,10 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set job_id 0
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
-set file_err    "test$test_id.error"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set file_err    "$test_dir/error"
 set timeout 60
 
 exec $bin_rm -f $file_in file_out file_err
@@ -44,7 +43,6 @@ make_bash_script $file_in "
   $bin_date
 "
 
-set job_id 0
 spawn $sbatch -t5 --output=$file_out --error=$file_err $file_in
 expect {
 	-re "Submitted batch job ($number)" {
@@ -67,8 +65,7 @@ if {$job_id == 0} {
 #
 sleep 60
 if {[wait_for_job $job_id DONE] != 0} {
-	log_error "Waiting for job to complete"
-	set exit_code 1
+	fail "Job timed out waiting for completion"
 }
 
 if {[wait_for_file $file_out] == 0} {
@@ -84,12 +81,10 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 	if {$timed_out == 0} {
-		log_error "srun time limit not found"
-		set exit_code 1
+		fail "srun time limit not found"
 	}
 } else {
-	log_error "Job output file missing"
-	set exit_code 1
+	fail "Job output file missing"
 }
 
 if {[wait_for_file $file_err] == 0} {
@@ -109,10 +104,4 @@ if {[wait_for_file $file_err] == 0} {
 	}
 } else {
 	fail "Job error file missing"
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $file_err
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

@@ -30,12 +30,20 @@ set file_in        "test$test_id.bash"
 set test_srun      "test$test_id.test_srun"
 set job_id         0
 set authorized     1
-set exit_code      0
 set part_name      "QA_TEST"
 set test_script    "./test$test_id.bash"
 
 if {![is_super_user]} {
 	skip "Can not test more unless SlurmUser or root"
+}
+
+proc cleanup {} {
+	global scontrol part_name job_id
+	global test_srun file_in
+
+	cancel_job $job_id
+	run_command "$scontrol delete PartitionName=$part_name"
+	file delete $test_srun $file_in
 }
 
 #
@@ -81,9 +89,7 @@ if {[string compare $def_node ""] == 0} {
 spawn $scontrol create PartitionName=$part_name Nodes=$def_node MaxTime=30
 expect {
 	-re "error" {
-		log_error "Something bad happened on partition create"
-		set exit_code 1
-		exp_continue
+		fail "Something bad happened on partition create"
 	}
 	timeout {
 		fail "scontrol not responding"
@@ -148,7 +154,6 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 	expect {
 		-re "job ($number) queued and waiting for resources" {
 			set job_id $expect_out(1,string)
-			set exit_code 0
 		}
 		timeout {
 			fail "srun not responding"
@@ -161,37 +166,12 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 	# verify time limit. Add a temporization to wait for update reason
 	#
 	if {$job_id == 0} {
-		log_error "Job_id = 0 : salloc not OK"
-		set exit_code 1
-	} else {
-		set cycle_count 8
-		for {set inx 0} {$inx < $cycle_count} {incr inx} {
-			spawn $scontrol show job $job_id
-			expect {
-				-re "Reason=PartitionTimeLimit" {
-					set exit_code 0
-					break
-				}
-				-re "Reason=" {
-					sleep 5
-					set exit_code 1
-					exp_continue
-				}
-				timeout {
-					fail "scontrol not responding"
-				}
-				eof {
-					wait
-				}
-			}
-		}
-		if {$exit_code == 1} {
-			if {$cycle_count == 8}  {
-				log_error "Partition time limit not used "
-			}
-		}
-		cancel_job $job_id
+		fail "Job_id = 0 : salloc not OK"
 	}
+	if {[wait_job_reason $job_id "PENDING" "PartitionTimeLimit"]} {
+		fail "Reason should be PartitionTimeLimit"
+	}
+	cancel_job $job_id
 
 } else {
 	#
@@ -199,12 +179,10 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 	#
 	expect {
 	        -re "Requested time limit is invalid (missing or exceeds some limit)" {
-	                set exit_code 0
 	                exp_continue
 	        }
 	        -re "unrecognized option '--deadline'" {
-	                set exit_code 1
-	                exp_continue
+	                fail "Unrecognized option --deadline"
 	        }
 	        timeout {
 	                fail "srun not responding"
@@ -253,11 +231,4 @@ expect {
 }
 if {$found != 0} {
 	fail "Partition not deleted"
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm $test_srun $file_in
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

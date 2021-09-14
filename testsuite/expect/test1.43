@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set jobs_run    0
 
 #
@@ -49,9 +48,7 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 			exp_continue
 		}
 		-re "error" {
-			set node_cnt 0
-			set exit_code 1
-			exp_continue
+			fail "Unexpected error occurred"
 		}
 		timeout {
 			slow_kill $srun_pid
@@ -67,8 +64,4 @@ if {$jobs_run == 0} {
 	fail "No jobs run"
 } elseif {$alloc_fail == 1} {
 	log_debug "Error expected. No worries"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

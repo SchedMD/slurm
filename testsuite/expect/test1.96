@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code          0
 set file_in            "test$test_id.input"
 set file_out           "test$test_id.output"
 set file_err           "test$test_id.error"
@@ -108,37 +107,23 @@ if {$job_id == 0} {
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 #
 # Check for desired output in stdout
 #
-if {[wait_for_file $file_out] == 0} {
-	set matches 0
+wait_for_file -fail $file_out
+set matches 0
 
-	spawn $bin_cat $file_out
-	expect {
-		-re "PE ($number): 1,2,3,4,5,6,7,8" {
-			incr matches
-			exp_continue
-		}
-		eof {
-			wait
-		}
+spawn $bin_cat $file_out
+expect {
+	-re "PE ($number): 1,2,3,4,5,6,7,8" {
+		incr matches
+		exp_continue
 	}
-	incr task_cnt -1
-	if {$matches != $task_cnt} {
-		log_error "Unexpected output ($matches of $task_cnt)"
-		set exit_code 1
+	eof {
+		wait
 	}
-} else {
-	set exit_code 1
 }
-
-if {$exit_code != 0} {
-	log_debug "Check contents of $file_err"
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+incr task_cnt -1
+subtest {$matches == $task_cnt} "Desired output found in stdout" "Unexpected output. $matches != $task_cnt; Check contents of $file_err"

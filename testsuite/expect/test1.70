@@ -27,13 +27,10 @@
 ############################################################################
 source ./globals
 
-set file_out    "test$test_id.out"
+set file_out    "$test_dir/out"
 set file_in     "$srun"
-set exit_code   0
 
-# Remove any remaining files
-exec $bin_rm -f $file_out
-
+file delete $file_out
 set sub_match 0
 spawn $srun -n1 -v -i $file_in -o $file_out -t1 cat
 expect {
@@ -49,14 +46,13 @@ expect {
 	}
 }
 if {$sub_match != 1} {
-	log_error "srun did not submitt job"
+	fail "srun did not submit job"
 }
 
 spawn diff $file_in $file_out
 expect {
 	-re "differ" {
-		log_error "Binary file and the output file do not match"
-		set exit_code 1
+		fail "Binary file and the output file do not match"
 	}
 	timeout {
 		fail "diff is not responding"
@@ -64,10 +60,4 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_out
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

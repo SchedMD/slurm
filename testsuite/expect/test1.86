@@ -30,7 +30,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_in     "test$test_id.input"
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
@@ -127,17 +126,8 @@ expect {
 #
 # Verify node count
 #
-if {[string compare $host_0 ""] == 0} {
-	log_error "Did not get hostname of task 0"
-	set exit_code 1
-}
-if {[string compare $host_1 ""] == 0} {
-    log_error "Did not get hostname of task 1"
-	set exit_code   1
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {[string compare $host_0 ""] != 0} "Should get hostname of task 0"
+subtest {[string compare $host_1 ""] != 0} "Should get hostname of task 1"
 
 #
 # Exclude specific node
@@ -149,8 +139,7 @@ expect {
 		if {[string compare $expect_out(1,string) $host_1] == 0} {
 			incr matches
 		} else {
-			log_error "Wrong node responded"
-			set exit_code   1
+			fail "Wrong node responded"
 		}
 		exp_continue
 	}
@@ -168,10 +157,8 @@ expect {
 		fail "srun EOF"
 	}
 }
-if {$matches == 0} {
-	log_error "Required node failed to respond"
-	set exit_code   1
-}
+
+subtest {$matches != 0} "Required node should respond"
 
 #
 # Exclude specific node
@@ -183,8 +170,7 @@ expect {
 		if {[string compare $expect_out(1,string) $host_0] == 0} {
 			incr matches
 		} else {
-			log_error "Wrong node responded"
-			set exit_code   1
+			fail "Wrong node responded"
 		}
 		exp_continue
 	}
@@ -202,10 +188,8 @@ expect {
 		fail "srun EOF"
 	}
 }
-if {$matches == 0} {
-	log_error "Required node failed to respond"
-	set exit_code   1
-}
+
+subtest {$matches != 0} "Required node should respond"
 
 #
 # Include specific node
@@ -221,8 +205,7 @@ expect {
 		if {[string compare $expect_out(1,string) $host_0] == 0} {
 			incr matches
 		} else {
-			log_error "Wrong node responded"
-			set exit_code   1
+			fail "Wrong node responded"
 		}
 		exp_continue
 	}
@@ -240,10 +223,8 @@ expect {
 		fail "srun EOF"
 	}
 }
-if {$matches == 0} {
-	log_error "Required node failed to respond"
-	set exit_code   1
-}
+
+subtest {$matches != 0} "Required node should respond"
 
 #
 # Include specific node
@@ -255,8 +236,7 @@ expect {
 		if {[string compare $expect_out(1,string) $host_1] == 0} {
 			incr matches
 		} else {
-			log_error "Wrong node responded"
-			set exit_code   1
+			fail "Wrong node responded"
 		}
 		exp_continue
 	}
@@ -274,10 +254,8 @@ expect {
 		fail "srun EOF"
 	}
 }
-if {$matches == 0} {
-	log_error "Required node failed to respond"
-	set exit_code   1
-}
+
+subtest {$matches != 0} "Required node should respond"
 
 #
 # Error test: Overlapping include/exclude node list
@@ -289,9 +267,7 @@ send "$srun -l -N1 -n1 --nodelist=$host_0 "
 send " --exclude=$host_0 $bin_printenv SLURMD_NODENAME\r"
 expect {
 	-re "0: *($re_word_str)" {
-		log_error "Wrong node responded"
-		set exit_code   1
-		exp_continue
+		fail "Wrong node responded"
 	}
 	"error:" {
 		log_debug "This error is expected, no worries"
@@ -309,10 +285,8 @@ expect {
 		fail "srun EOF"
 	}
 }
-if {$matches == 0} {
-	log_error "No error for overlapping include/exclude node list"
-	set exit_code   1
-}
+
+subtest {$matches != 0} "Expected error for overlapping include/exclude node list"
 
 #
 # Error test: Exceed node count
@@ -321,9 +295,7 @@ set matches 0
 send "$srun -l -N3 -n3 -O $bin_printenv SLURMD_NODENAME\r"
 expect {
 	-re "0: *($re_word_str)" {
-		log_error "Wrong node responded"
-		set exit_code   1
-		exp_continue
+		fail "Wrong node responded"
 	}
 	"error:" {
 		log_debug "This error is expected, no worries"
@@ -341,10 +313,8 @@ expect {
 		fail "srun EOF"
 	}
 }
-if {$matches == 0} {
-	log_error "No error for exceeding node count"
-	set exit_code   1
-}
+
+subtest {$matches != 0} "Expected error for exceeding node count"
 
 #
 # Run with fewer nodes
@@ -382,10 +352,8 @@ expect {
 		fail "srun EOF"
 	}
 }
-if {[string compare $test_0 $test_1] != 0} {
-	log_error "Multiple nodes responded, should be only one"
-	set exit_code   1
-}
+
+subtest {[string compare $test_0 $test_1] == 0} "Expecting only a single node to respond"
 
 #
 # Error test: Exceed task count, first get the processor count then exceed it
@@ -427,9 +395,7 @@ expect {
 		exp_continue
 	}
 	-re "($number): *($re_word_str)" {
-		log_error "wrong node responded"
-		set exit_code   1
-		exp_continue
+		fail "wrong node responded"
 	}
 	"$test_prompt" {
 		log_debug "srun completed"
@@ -442,12 +408,8 @@ expect {
 		fail "srun EOF"
 	}
 }
-if {$matches == 0} {
-	log_error "No error for exceeding processor count"
-	set exit_code   1
-} else {
-	log_info "This error is expected, no worries"
-}
+
+subtest {$matches != 0} "Expecting error for exceeding processor count"
 
 #
 # Post-processing
@@ -465,8 +427,4 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

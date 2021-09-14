@@ -27,7 +27,6 @@
 source ./globals
 
 set node_cnt    0
-set exit_code   0
 set jobid_excl  0
 
 proc cleanup {} {
@@ -37,7 +36,7 @@ proc cleanup {} {
 }
 
 proc run_spread_job { task_cnt } {
-	global max_job_delay srun scontrol bin_printenv number exit_code
+	global max_job_delay srun scontrol bin_printenv number
 
 	set timeout $max_job_delay
 	set job_id 0
@@ -60,9 +59,8 @@ proc run_spread_job { task_cnt } {
 	}
 
 	if {[wait_for_job $job_id "DONE"] != 0} {
-		log_error "Error waiting for job $job_id to complete"
 		cancel_job $job_id
-		set exit_code 1
+		fail "Error waiting for job $job_id to complete"
 	}
 
 	set timeout 10
@@ -81,8 +79,7 @@ proc run_spread_job { task_cnt } {
 		}
 	}
 	if {$num_nodes != $task_cnt} {
-		log_error "Invalid node count for job $job_id ($num_nodes != $task_cnt)"
-		set exit_code 1
+		fail "Invalid node count for job $job_id ($num_nodes != $task_cnt)"
 	}
 }
 
@@ -115,12 +112,5 @@ if {$node_cnt > 8} {
 
 for {set inx 2} {$inx < $max_task_cnt} {incr inx 2} {
 	run_spread_job $inx
-	if {$exit_code != 0} {
-		break
-	}
 	sleep 1
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
