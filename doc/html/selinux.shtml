@@ -6,7 +6,9 @@
 context for jobs as a technology preview. The implementation may change in
 future releases, and support for it is not enabled by default.</p>
 
-<h2><a id="ARCHITECTURE">Architecture</a></h2>
+<h2 id="ARCHITECTURE">Architecture
+<a class="slurm_link" href="#ARCHITECTURE"></a>
+</h2>
 
 <p>When enabled, the Slurm job submission commands &mdash; salloc, sbatch, and
 srun &mdash; will automatically set a field with the current operating context.
@@ -23,16 +25,18 @@ be validated by a job_submit plugin running within the slurmctld.</p>
 
 <p>Without such a script, no context is set or managed for a user's job.</p>
 
-<h2><a id="INSTALLATION">Installation</a></h2>
+<h2 id="INSTALLATION">Installation
+<a class="slurm_link" href="#INSTALLATION"></a>
+</h2>
 
-<h3>Source:</h3>
+<h3 id="pmix">Source:<a class="slurm_link" href="#pmix"></a></h3>
 
 <p>SELinux support is disabled by default and must be enabled at configure time.
 It requires the libselinux1 library and development headers to build.</p>
 
 <pre>configure --enable-selinux</pre>
 
-<h2><a id="SETUP">Setup</a></h2>
+<h2 id="SETUP">Setup<a class="slurm_link" href="#SETUP"></a></h2>
 
 <p>Once a version of Slurm that supports SELinux is installed, you will need to
 enable and create a job_submit plugin that will perform verification of the
@@ -68,7 +72,9 @@ end
 <b>job_desc.req_context</b> if they are considered valid.
 <b>job_desc.selinux_context</b> is what set the context that will be used.</p>
 
-<h2><a id="INITIAL_TESTING">Initial Testing</a></h2>
+<h2 id="INITIAL_TESTING">Initial Testing
+<a class="slurm_link" href="#INITIAL_TESTING"></a>
+</h2>
 
 <p>id is very useful for showing what context a user is currently in. As a test
 to make sure that we are switching contexts, you can run a quick test with srun.
@@ -81,7 +87,7 @@ mcmult@master:~$ srun --context=unconfined_u:unconfined_r:unconfined_t:s0 id
 uid=1000(mcmult) gid=1000(mcmult) groups=1000(mcmult),27(sudo) context=unconfined_u:unconfined_r:unconfined_t:s0
 </pre>
 
-<h2><a id="ACCOUNTING">Accounting</a></h2>
+<h2 id="ACCOUNTING">Accounting<a class="slurm_link" href="#ACCOUNTING"></a></h2>
 
 <p>There is currently no support for tracking the SELinux context in Slurm's
 accounting. This may change as support evolves in future releases.
@@ -118,7 +124,7 @@ end
 will set the admin comment to show what context we will try to set for the job.
 </p>
 
-<h2><a id="NOTES">Notes</a></h2>
+<h2 id="NOTES">Notes<a class="slurm_link" href="#NOTES"></a></h2>
 
 <p>If you wish to use pam_slurm_adopt with SELinux, see the
 <a href=pam_slurm_adopt.html>pam_slurm_adopt</a> documentation for hints on how

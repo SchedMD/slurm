@@ -11,16 +11,16 @@
 <a href="#MIG_Management">MIG Management</a><br>
 
 <!-------------------------------------------------------------------------->
-<a id="Overview"></a>
-<h2>Overview</h2>
+<h2 id="Overview">Overview<a class="slurm_link" href="#Overview"></a></h2>
 <p>Slurm supports the ability to define and schedule arbitrary Generic RESources
 (GRES). Additional built-in features are enabled for specific GRES types,
 including Graphics Processing Units (GPUs) and CUDA Multi-Process Service (MPS)
 devices, through an extensible plugin mechanism.</p>
 
 <!-------------------------------------------------------------------------->
-<a id="Configuration"></a>
-<h2>Configuration</h2>
+<h2 id="Configuration">Configuration
+<a class="slurm_link" href="#Configuration"></a>
+</h2>
 
 <P>By default, no GRES are enabled in the cluster's configuration.
 You must explicitly specify which GRES are to be managed in the
@@ -134,8 +134,9 @@ substring, and <b>slurmd</b> should be able to match it to the system-detected
 device <code class="commandline">geforce_rtx_2060</code>.
 
 <!-------------------------------------------------------------------------->
-<a id="Running_Jobs"></a>
-<h2>Running Jobs</h2>
+<h2 id="Running_Jobs">Running Jobs
+<a class="slurm_link" href="#Running_Jobs"></a>
+</h2>
 
 <P>Jobs will not be allocated any generic resources unless specifically
 requested at job submit time using the options:</P>
@@ -217,8 +218,9 @@ wait
 </PRE>
 
 <!-------------------------------------------------------------------------->
-<a id="GPU_Management"></a>
-<h2>GPU Management</h2>
+<h2 id="GPU_Management">GPU Management
+<a class="slurm_link" href="#GPU_Management"></a>
+</h2>
 
 <P>In the case of Slurm's GRES plugin for GPUs, the environment variable
 <code class="commandline">CUDA_VISIBLE_DEVICES</code>
@@ -283,8 +285,9 @@ NVIDIA CUDA documentation</a> for more information about the
 <code class="commandline">CUDA_DEVICE_ORDER</code> environmental variables.</p>
 
 <!-------------------------------------------------------------------------->
-<a id="MPS_Management"></a>
-<h2>MPS Management</h2>
+<h2 id="MPS_Management">MPS Management
+<a class="slurm_link" href="#MPS_Management"></a>
+</h2>
 
 <p><a href="https://docs.nvidia.com/deploy/pdf/CUDA_Multi_Process_Service_Overview.pdf">
 CUDA Multi-Process Service (MPS)</a> provides a mechanism where GPUs can be
@@ -435,8 +438,9 @@ CVE-2018-6260</a> and in the
 <a href="https://nvidia.custhelp.com/app/answers/detail/a_id/4772">
 Security Bulletin: NVIDIA GPU Display Driver - February 2019</a>.</p>
 
-<a id="MIG_Management"></a>
-<h2>MIG Management</h2>
+<h2 id="MIG_Management">MIG Management
+<a class="slurm_link" href="#MIG_Management"></a>
+</h2>
 
 <p>Beginning in version 21.08, Slurm now supports NVIDIA
 <i>Multi-Instance GPU</i> (MIG) devices. This feature allows some newer NVIDIA

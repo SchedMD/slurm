@@ -7,7 +7,7 @@ This can reduce context switching in applications to improve completion time.
 The job will be charged for all allocated cores, but will not be able to
 directly use the specialized cores.</p>
 
-<h2>Command Options</h2>
+<h2 id="command">Command Options<a class="slurm_link" href="#command"></a></h2>
 <p>All job allocation commands (<i>salloc</i>, <i>sbatch</i> and <i>srun</i>)
 accept the <i>-S</i> or <i>--core-spec</i> option with a core count value
 argument (e.g. "-S 1" or "--core-spec=2").
@@ -35,7 +35,7 @@ NumCPUs value reported by the <i>scontrol</i>, <i>sview</i> and <i>squeue</i>
 commands will reflect all CPUS on all allocated nodes as will the job's
 accounting.</p>
 
-<h2>Core Selection</h2>
+<h2 id="core">Core Selection<a class="slurm_link" href="#core"></a></h2>
 <p>The specific resources to be used for specialization may be identified using
 the <i>CPUSpecList</i> configuration parameter associated with each node in
 the <i>slurm.conf</i> file.
@@ -76,7 +76,9 @@ cores on each socket.</p>
 <p>Note that core specialization reservation may impact the use of some
 job allocation request options, especially --cores-per-socket.</p>
 
-<h2>System Configuration</h2>
+<h2 id="system">System Configuration
+<a class="slurm_link" href="#system"></a>
+</h2>
 
 <p>There are two fundamentally different mechanisms for core specialization;
 one for Cray systems and a different model for other systems.</p>

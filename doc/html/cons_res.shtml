@@ -12,7 +12,10 @@ resources.
 Slurm's <i>cons_res</i> and <i>cons_tres</i> plugins are available to
 manage resources on a much more fine-grained basis as described below.</p>
 
-<h2>Using the Consumable Resource Allocation Plugin: <b>select/cons_res</b></h2>
+<h2 id="using_cons_res">
+Using the Consumable Resource Allocation Plugin: <b>select/cons_res</b>
+<a class="slurm_link" href="#using_cons_res"></a>
+</h2>
 
 <ul>
 <li>Consumable resources has been enhanced with several new resources
@@ -76,7 +79,10 @@ configuration parameter, the extra processes will time share the allocated
 resources.</li>
 </ul>
 
-<h2>Using the Consumable Trackable Resource Plugin: <b>select/cons_tres</b></h2>
+<h2 id="using_cons_tres">
+Using the Consumable Trackable Resource Plugin: <b>select/cons_tres</b>
+<a class="slurm_link" href="#using_cons_tres"></a>
+</h2>
 <ul>
 <li>The Consumable Trackable Resources (<b>cons_tres</b>) plugin provides all
 the same functionality provided by the Consumable Resources (<b>cons_res</b>)
@@ -106,7 +112,7 @@ SelectType=select/cons_tres
 </pre>
 </ul>
 
-<h2>General Comments</h2>
+<h2 id="general">General Comments<a class="slurm_link" href="#general"></a></h2>
 
 <ul>
 <li>Slurm's default <b>select/linear</b> plugin is using a best fit algorithm
@@ -135,7 +141,10 @@ obtain dedicated nodes.</li>
 </ul>
 
 
-<h2>Examples of CR_Memory, CR_Socket_Memory, and CR_CPU_Memory type consumable resources</h2>
+<h2 id="example_mem">Examples of CR_Memory, CR_Socket_Memory, and CR_CPU_Memory
+type consumable resources
+<a class="slurm_link" href="#example_mem"></a>
+</h2>
 
 <pre>
 # sinfo -lNe
@@ -202,7 +211,10 @@ JOBID PARTITION   NAME   USER ST  TIME  NODES NODELIST(REASON)
 </pre>
 
 
-<h2>Example of Node Allocations Using Consumable Resource Plugin</h2>
+<h2 id="example_node">
+Example of Node Allocations Using Consumable Resource Plugin
+<a class="slurm_link" href="#example_node"></a>
+</h2>
 
 <p>The following example illustrates the different ways four jobs
 are allocated across a cluster using (1) Slurm's default allocation method
@@ -244,7 +256,9 @@ there are processors to minimize interference by the kernel and daemons.</p>
 <p>The user launches them in the same order as listed above.</p>
 
 
-<h2>Using Slurm's Default Node Allocation (Non-shared Mode)</h2>
+<h2 id="using_default">Using Slurm's Default Node Allocation (Non-shared Mode)
+<a class="slurm_link" href="#using_default"></a>
+</h2>
 
 <p>The four jobs have been launched and 3 of the jobs are now
 pending, waiting to get resources allocated to them. Only Job 2 is running
@@ -284,7 +298,9 @@ that jobs can tie up large amount of resources that it does not use and which
 cannot be shared with other jobs.</p>
 
 
-<h2>Using a Processor Consumable Resource Approach</h2>
+<h2 id="using_proc">Using a Processor Consumable Resource Approach
+<a class="slurm_link" href="#using_proc"></a>
+</h2>
 
 <p>The output of squeue shows that we
 have 3 out of the 4 jobs allocated and running. This is a 2 running job

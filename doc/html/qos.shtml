@@ -12,6 +12,8 @@ the job in three ways:</p>
 <li> <a href=#limits>Job Limits</a>
 <li> <a href=#partition>Partition QOS</a>
 <li> <a href=#qos_other>Other QOS Options</a>
+<li> <a href=#config>Configuration</a>
+<li> <a href=#examples>Examples</a>
 </ul>
 
 <p>The QOS's are defined in the Slurm database using the <i>sacctmgr</i>
@@ -21,8 +23,9 @@ utility.</p>
 <i>sbatch</i>, <i>salloc</i>, and <i>srun</i> commands.</P>
 
 <!-------------------------------------------------------------------------->
-<a id=priority>
-<h2>Job Scheduling Priority</h2></a>
+<h2 id="priority">Job Scheduling Priority
+<a class="slurm_link" href="#priority"></a>
+</h2>
 
 <p>Job scheduling priority is made up of a number of factors as
 described in the <a
@@ -43,8 +46,9 @@ than zero.</p>
 multi-factor plugin is loaded.</P>
 
 <!-------------------------------------------------------------------------->
-<a id=preemption>
-<h2>Job Preemption</h2></a>
+<h2 id="preemption">Job Preemption
+<a class="slurm_link" href="#preemption"></a>
+</h2>
 
 <p>Slurm offers two ways for a queued job to preempt a running job,
 free-up the running job's resources and allocate them to the queued
@@ -66,8 +70,7 @@ job is considered for preemption. The QOS option takes precedence over the
 global option of the same name.</P>
 
 <!-------------------------------------------------------------------------->
-<a id=limits>
-<h2>Job Limits</h2></a>
+<h2 id="limits">Job Limits<a class="slurm_link" href="#limits"></a></h2>
 
 <p>Each QOS is assigned a set of limits which will be applied to the
 job.  The limits mirror the limits imposed by the
@@ -77,8 +80,9 @@ Limits section</a>.  When limits for a QOS have been defined, they
 will take precedence over the association's limits.</p>
 
 <!-------------------------------------------------------------------------->
-<a id=partition>
-<h2>Partition QOS</h2></a>
+<h2 id="partition">Partition QOS
+<a class="slurm_link" href="#partition"></a>
+</h2>
 <p>A QOS can be attached to a partition.  This means a partition will have all
 the same limits as a QOS.  This also gives the ability of a true 'floating'
 partition, meaning if you assign all the nodes to a partition and then in the
@@ -92,8 +96,9 @@ which will reverse the order of precedence.</p>
 
 
 <!-------------------------------------------------------------------------->
-<a id=qos_other>
-<h2>Other QOS Options</h2></a>
+<h2 id="qos_other">Other QOS Options
+<a class="slurm_link" href="#qos_other"></a>
+</h2>
 <ul>
 <li><b>Flags</b> Used by the slurmctld to override or enforce certain
 characteristics. Valid options are:
@@ -206,7 +211,7 @@ usage goes back above the threshold.  Use <i>sshare</i> to see current
 shares on the system.
 </ul>
 
-<h2>Configuration</h2>
+<h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 
 <P> To summarize the above, the QOS's and their associated limits are
 defined in the Slurm database using the <i>sacctmgr</i> utility.  The
@@ -218,7 +223,7 @@ slurm.conf file.  Limits defined for a QOS (and described above) will
 override the limits of the user/account/cluster/partition
 association.</P>
 
-<h2>QOS examples</h2>
+<h2 id="examples">QOS examples<a class="slurm_link" href="#examples"></a></h2>
 
 <p>QOS manipulation examples. All QOS operations are done using
 the sacctmgr command. The default output of 'sacctmgr show qos' is

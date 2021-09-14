@@ -57,9 +57,13 @@ with Slurm are provided below.
 </ul></p>
 <hr size=4 width="100%">
 
-<h2><a name="pmix" href="https://openpmix.github.io/"><b>PMIx</b></a></h2>
+<h2 id="pmix"><a href="https://openpmix.github.io/"><b>PMIx</b></a>
+<a class="slurm_link" href="#pmix"></a>
+</h2>
 
-<h3>Building PMIx</h3>
+<h3 id="pmix_build">Building PMIx
+<a class="slurm_link" href="#pmix_build"></a>
+</h3>
 
 <p>Before building PMIx, it is advisable to read these
 <a href="https://openpmix.github.io/support/how-to/">How-To Guides</a>. They
@@ -126,7 +130,9 @@ user@testbox:/home/user/git/pmix/install/2.1
 <p>Additional PMIx notes can be found in the SchedMD
 <a href="publications.html">Publications and Presentations</a> page.</p>
 
-<h3>Building Slurm with PMIx support</h3>
+<h3 id="slurm_pmix">Building Slurm with PMIx support
+<a class="slurm_link" href="#slurm_pmix"></a>
+</h3>
 
 <p>At configure time, Slurm looks by default for a PMIx installation under:</p>
 
@@ -250,7 +256,9 @@ user@testbox:~/slurm/17.11/testbox$ mkdir spool/slurmd-tmpfs-compute1
 user@testbox:~/slurm/17.11/testbox$ mkdir spool/slurmd-tmpfs-compute2
 </pre>
 
-<h3>Testing Slurm and PMIx</h3>
+<h3 id="pmix_testing">Testing Slurm and PMIx
+<a class="slurm_link" href="#pmix_testing"></a>
+</h3>
 
 <p>It is possible to directly test Slurm and PMIx without the need of a MPI
 implementation software being installed. Here's an example indicating that
@@ -274,7 +282,9 @@ OK
 user@testbox:~/t$
 </pre>
 
-<h2><a name="open_mpi" href="http://www.open-mpi.org/"><b>OpenMPI</b></a></h2>
+<h2 id="open_mpi"><a href="https://open-mpi.org"><b>OpenMPI</b></a>
+<a class="slurm_link" href="#open_mpi"></a>
+</h2>
 
 <p>The current versions of Slurm and Open MPI support task launch using the
 <span class="commandline">srun</span> command.
@@ -383,7 +393,9 @@ to your slurmd.service file.</p>
 
 <hr size=4 width="100%">
 
-<h2><a name="intel_mpi"><b>Intel MPI</b></a></h2>
+<h2 id="intel_mpi"><b>Intel MPI</b>
+<a class="slurm_link" href="#intel_mpi"></a>
+</h2>
 
 <p>Intel&reg; MPI Library for Linux OS supports the following methods of
 launching the MPI jobs under the control of the Slurm job manager:</p>
@@ -395,7 +407,9 @@ launching the MPI jobs under the control of the Slurm job manager:</p>
 </ul>
 <p>This description provides detailed information on all of these methods.</p>
 
-<h3><a name="intel_mpirun_mpd">The mpirun Command over the MPD Process Manager</a></h3>
+<h3 id="intel_mpirun_mpd">The mpirun Command over the MPD Process Manager
+<a class="slurm_link" href="#intel_mpirun_mpd"></a>
+</h3>
 <p>Slurm is supported by the <i>mpirun</i> command of the Intel&reg; MPI Library 3.1
 Build 029 for Linux OS and later releases.</p>
 <p>When launched within a session allocated using the Slurm commands <i>sbatch</i> or
@@ -408,7 +422,9 @@ session over the MPD PM:</p>
 mpirun -n &lt;num_procs&gt; a.out</i>
 </pre>
 
-<h3><a name="intel_mpirun_hydra">The mpirun Command over the Hydra Process Manager</a></h3>
+<h3 id="intel_mpirun_hydra">The mpirun Command over the Hydra Process Manager
+<a class="slurm_link" href="#intel_mpirun_hydra"></a>
+</h3>
 <p>Slurm is supported by the <i>mpirun</i> command of the Intel&reg; MPI Library 4.0
 Update 3 through the Hydra PM by default. The behavior of this command is
 analogous to the MPD case described above.</p>
@@ -425,7 +441,9 @@ Slurm session over the Hydra PM:</p>
 rather than the default <i>ssh</i> based method to launch the remote Hydra PM
 service processes.<p>
 
-<h3><a name="intel_mpiexec_hydra">The mpiexec.hydra Command (Hydra Process Manager)</a></h3>
+<h3 id="intel_mpiexec_hydra">The mpiexec.hydra Command (Hydra Process Manager)
+<a class="slurm_link" href="#intel_mpiexec_hydra"></a>
+</h3>
 <p>Slurm is supported by the Intel&reg; MPI Library 4.0 Update 3 directly
 through the Hydra PM.</p>
 <p>Use the following command to start an MPI job within an existing Slurm session:</p>
@@ -433,7 +451,9 @@ through the Hydra PM.</p>
 <i>mpiexec.hydra -bootstrap slurm -n &lt;num_procs&gt; a.out</i>
 </pre>
 
-<h3><a name="intel_srun">The srun Command (Slurm, recommended)</a></h3>
+<h3 id="intel_srun">The srun Command (Slurm, recommended)
+<a class="slurm_link" href="#intel_srun"></a>
+</h3>
 <p>This advanced method is supported by the Intel&reg; MPI Library 4.0 Update 3.
 This method is the best integrated with Slurm and supports process tracking,
 accounting, task affinity, suspend/resume and other features.
@@ -460,17 +480,22 @@ MPICH, but it is not guaranteed to run in all cases.
 </pre>
 </ul>
 
-<p>Above information used by permission from <a href="http://www.intel.com">Intel</a>.
+<p>Above information used by permission from <a href="https://intel.com">Intel</a>.
 For more information see
 <a href="https://software.intel.com/en-us/intel-mpi-library">Intel MPI Library</a>.
 
-<h2><a name="mpich2" href="https://www.mpich.org/"><b>MPICH (a.k.a. MPICH2)</b></a></h2>
+<h2 id="mpich2">
+<a href="https://www.mpich.org/"><b>MPICH (a.k.a. MPICH2)</b></a>
+<a class="slurm_link" href="#mpich2"></a>
+</h2>
 
 <p>MPICH2 jobs can be launched using the <b>srun</b> command using
   pmi 1 or 2, or <b>mpiexec</b>.
 All modes of operation are described below.</p>
 
-<h3>MPICH2 with srun and PMI version 2</h3>
+<h3 id="mpich2_pmi2">MPICH2 with srun and PMI version 2
+<a class="slurm_link" href="#mpich2_pmi2"></a>
+</h3>
 
 <p>MPICH2 must be built specifically for use with Slurm and PMI2 using a configure
 line similar to that shown below.</p>
@@ -508,7 +533,9 @@ $ mpicc -L&lt;path_to_pmi2_lib&gt; -lpmi2 ...
 $ srun -n20 a.out
 </pre>
 
-<h3>MPICH2 with srun and PMI version 1</h3>
+<h3 id="mpich2_pmi1">MPICH2 with srun and PMI version 1
+<a class="slurm_link" href="#mpich2_pmi1"></a>
+</h3>
 
 <p>Link your program with
 Slurm's implementation of the PMI library so that tasks can communicate
@@ -534,11 +561,13 @@ network performance: <b>PMI_FANOUT</b>, <b>PMI_FANOUT_OFF_HOST</b>, and
 See the srun man pages in the INPUT ENVIRONMENT VARIABLES section for a more
 information.</li>
 <li>Information about building MPICH2 for use with Slurm is described on the
-<a href="http://wiki.mcs.anl.gov/mpich2/index.php/Frequently_Asked_Questions#Q:_How_do_I_use_MPICH2_with_slurm.3F">
+<a href="https://wiki.mcs.anl.gov/mpich2/index.php/Frequently_Asked_Questions#Q:_How_do_I_use_MPICH2_with_slurm.3F">
 MPICH2 FAQ</a> web page and below.</li>
 </ul></p>
 
-<h3>MPICH2 with mpiexec</h3>
+<h3 id="mpich2_mpiexec">MPICH2 with mpiexec
+<a class="slurm_link" href="#mpich2_mpiexec"></a>
+</h3>
 
 <p>Do not add any flags to mpich and build the default
 (e.g. "<i>./configure -prefix ... </i>".
@@ -552,7 +581,12 @@ to launch the tasks. A simple example is shown below.</p>
 
 <hr size=4 width="100%">
 
-<h2><a name="mvapich2" href="http://mvapich.cse.ohio-state.edu/"><b>MVAPICH (a.k.a. MVAPICH2)</b></a></h2>
+<h2 id="mvapich2">
+<a href="https://mvapich.cse.ohio-state.edu">
+<b>MVAPICH (a.k.a. MVAPICH2)</b>
+</a>
+<a class="slurm_link" href="#mvapich2"></a>
+</h2>
 
 <p>MVAPICH2 supports launching multithreaded programs by Slurm as well as
 mpirun_rsh.
@@ -578,11 +612,13 @@ $ srun -n16 --mpi=pmi2 a.out
 --enable-slurm=yes</p>
 
 <p>For more information, please see the
-<a href="http://mvapich.cse.ohio-state.edu/static/media/mvapich/mvapich2-2.0-userguide.html">MVAPICH2 User Guide</a></p>
+<a href="https://mvapich.cse.ohio-state.edu/static/media/mvapich/mvapich2-2.0-userguide.html">MVAPICH2 User Guide</a></p>
 
 <hr size=4 width="100%">
 
-<h2><a name="UPC" href="http://upc.lbl.gov/"><b>UPC (Unified Parallel C)</b></a></h2>
+<h2 id="UPC"><a href="https://upc.lbl.gov"><b>UPC (Unified Parallel C)</b></a>
+<a class="slurm_link" href="#UPC"></a>
+</h2>
 
 <p>Berkeley UPC (and likely other UPC implementations) rely upon Slurm to
 allocate resources and launch the application's tasks. The UPC library then

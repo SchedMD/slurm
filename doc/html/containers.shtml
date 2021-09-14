@@ -10,7 +10,9 @@ Workloads, these are usually restricted to the
 Slurm natively supports the requesting of unprivileged OCI Containers for jobs
 and steps.
 
-<h2>Known limitations</h2>
+<h2 id="limitations">Known limitations
+<a class="slurm_link" href="#limitations"></a>
+</h2>
 <p>The following is a list of known limitations of the Slurm OCI container
 implementation.</p>
 
@@ -36,7 +38,7 @@ requested container will be ignored by Slurm (but can be used by the
 job or any given plugin).</li>
 </ul>
 
-<h2>Prerequisites</h2>
+<h2 id="prereq">Prerequisites<a class="slurm_link" href="#prereq"></a></h2>
 <p>The host kernel must be configured to allow user land containers:</p>
 <pre>$ sudo sysctl -w kernel.unprivileged_userns_clone=1</pre>
 
@@ -45,7 +47,9 @@ job or any given plugin).</li>
 [INFO] Requirements are satisfied</pre>
 </p>
 
-<h2>Required software:</h2>
+<h2 id="software">Required software:
+<a class="slurm_link" href="#software"></a>
+</h2>
 <ul>
 <li>Fully functional
 <a href="https://github.com/opencontainers/runtime-spec/blob/master/runtime.md">
@@ -55,7 +59,9 @@ OCI runtime</a>. It needs to be able to run outside of Slurm first.</li>
 Container compliant bundles for jobs.</li>
 </ul>
 
-<h2>Example configurations for various OCI Runtimes</h2>
+<h2 id="example">Example configurations for various OCI Runtimes
+<a class="slurm_link" href="#example"></a>
+</h2>
 <p>
 The <a href="https://github.com/opencontainers/runtime-spec">OCI Runtime
 Specification</a> provides requirements for all compliant runtimes but
@@ -151,7 +157,9 @@ This example is only provided for testing purposes.
 </li>
 </ul>
 
-<h2>Testing OCI runtime outside of Slurm</h2>
+<h2 id="testing">Testing OCI runtime outside of Slurm
+<a class="slurm_link" href="#testing"></a>
+</h2>
 <p>Slurm calls the OCI runtime directly in the job step. If it fails,
 then the job will also fail.</p>
 <ul>
@@ -168,7 +176,9 @@ configured and can be tested in Slurm.
 </li>
 </ul>
 
-<h2>Requesting container jobs or steps</h2>
+<h2 id="request">Requesting container jobs or steps
+<a class="slurm_link" href="#request"></a>
+</h2>
 <p>
 <i>salloc</i>, <i>srun</i> and <i>sbatch</i> (in Slurm 21.08+) have the
 '--container' argument, which can be used to request container runtime
@@ -201,7 +211,9 @@ sbatch --wrap 'srun bash -c "--container $ABS_PATH_TO_BUNDLE cat /etc/*rel*"'
 </pre></li>
 </ul>
 
-<h2>OCI Container bundle</h2>
+<h2 id="bundle">OCI Container bundle
+<a class="slurm_link" href="#bundle"></a>
+</h2>
 <p>There are multiple ways to generate an OCI Container bundle. The
 instructions below are the method we found the easiest. The OCI standard
 provides the requirements for any given bundle:
@@ -318,7 +330,9 @@ sudo singularity oci mount /tmp/alpine.sif /tmp/image/</pre>
 	</ul>
 </ul>
 
-<h2>Container support via Plugin</h2>
+<h2 id="plugin">Container support via Plugin
+<a class="slurm_link" href="#plugin"></a>
+</h2>
 
 Slurm also allows container developers to create <a href="plugins.html">SPANK
 Plugins</a> that can be called at various points of job execution to
@@ -350,8 +364,10 @@ created all the time.
 </p>
 
 <hr size=4 width="100%">
-<h2>Container Types</h2>
-<h3 id="charliecloud">Charliecloud</h3>
+<h2 id="types">Container Types<a class="slurm_link" href="#types"></a></h2>
+<h3 id="charliecloud">Charliecloud
+<a class="slurm_link" href="#charliecloud"></a>
+</h3>
 
 <p><a href="https://github.com/hpc/charliecloud">Charliecloud</a> is user
 namespace container system sponsored by
@@ -372,7 +388,9 @@ Charliecloud supports the following:
 </ul>
 </p>
 
-<h3 id="docker">Docker (running as root)</h3>
+<h3 id="docker">Docker (running as root)
+<a class="slurm_link" href="#docker"></a>
+</h3>
 
 <p><a href="https://www.docker.com/">Docker</a> currently has multiple design
 points that make it unfriendly to HPC systems.
@@ -389,13 +407,15 @@ support for starting or stopping docker containers in Slurm.</p>
 <p>Sites are recommended to extract the container image from docker (procedure
 above) and then run the containers using Slurm.</p>
 
-<h3 id="udocker">UDOCKER</h3>
+<h3 id="udocker">UDOCKER<a class="slurm_link" href="#udocker"></a></h3>
 
 <p><a href="https://github.com/indigo-dc/udocker">UDOCKER</a> is Docker feature
 subset clone that is designed to allow execution of
 docker commands without increased user privileges.</p>
 
-<h3 id="docker-rootless">Rootless Docker</h3>
+<h3 id="docker-rootless">Rootless Docker
+<a class="slurm_link" href="#docker-rootless"></a>
+</h3>
 
 <p><a href="https://docs.docker.com/engine/security/rootless/">
 Rootless Docker</a> (>=v20.10) requires no extra permissions for users and
@@ -408,7 +428,7 @@ daemons.</p>
 <p>Sites are recommended to extract the container image from docker (procedure
 above) and then run the containers using Slurm.</p>
 
-<h3 id="k8s">Kubernetes Pods (k8s)</h3>
+<h3 id="k8s">Kubernetes Pods (k8s)<a class="slurm_link" href="#k8s"></a></h3>
 
 <p><a href="https://kubernetes.io/docs/concepts/workloads/pods/pod/">
 Kubernetes</a> is a container orchestration system that uses PODs, which are
@@ -421,7 +441,7 @@ the "--dependency=" agument in <i>sbatch</i> to mirror the functionality of
 Pods. Users can also use a larger allocation and then start each pod as a
 parallel step using <i>srun</i>.</p>
 
-<h3 id="shifter">Shifter</h3>
+<h3 id="shifter">Shifter<a class="slurm_link" href="#shifter"></a></h3>
 
 <p><a href="https://github.com/NERSC/shifter">Shifter</a> is a container
 project out of <a href="http://www.nersc.gov/">NERSC</a>
@@ -445,7 +465,9 @@ to provide HPC containers with full scheduler integration.
 </ul>
 </p>
 
-<h3 id="singularity">Singularity</h3>
+<h3 id="singularity">Singularity
+<a class="slurm_link" href="#singularity"></a>
+</h3>
 
 <p><a href="https://www.sylabs.io/singularity/">Singularity</a> is hybrid
 container system that supports:
@@ -463,7 +485,7 @@ container system that supports:
 </ul>
 </p>
 
-<h3 id="enroot">ENROOT</h3>
+<h3 id="enroot">ENROOT<a class="slurm_link" href="#enroot"></a></h3>
 
 <p><a href="https://github.com/NVIDIA/enroot">Enroot</a> is a user namespace
 container system sponsored by <a href="https://www.nvidia.com">NVIDIA</a>
@@ -477,7 +499,7 @@ that supports:
 </ul>
 </p>
 
-<h3 id="podman">Podman</h3>
+<h3 id="podman">Podman<a class="slurm_link" href="#podman"></a></h3>
 
 <p><a href="https://podman.io/">Podman</a> is a user namespace container system
 sponsored by
@@ -493,7 +515,7 @@ Redhat/IBM</a> that supports:
 </ul>
 </p>
 
-<h3 id="sarus">Sarus</h3>
+<h3 id="sarus">Sarus<a class="slurm_link" href="#sarus"></a></h3>
 
 <p><a href="https://github.com/eth-cscs/sarus">Sarus</a> is a privileged
 container system sponsored by ETH Zurich

@@ -22,7 +22,9 @@ parallel jobs), backfill scheduling,
 and sophisticated <a href="priority_multifactor.html"> multifactor job
 prioritization</a> algorithms.
 
-<h2>Architecture</h2>
+<h2 id="architecture">Architecture
+<a class="slurm_link" href="#architecture"></a>
+</h2>
 <p>Slurm has a centralized manager, <b>slurmctld</b>, to monitor resources and
 work. There may also be a backup manager to assume those responsibilities in the
 event of failure. Each compute server (node) has a <b>slurmd</b> daemon, which
@@ -185,7 +187,9 @@ there are available resources within the job's allocation.</p>
 </div>
 
 
-<h2>Configurability</h2>
+<h2 id="configurability">Configurability
+<a class="slurm_link" href="#configurability"></a>
+</h2>
 <p>Node state monitored include: count of processors, size of real memory, size
 of temporary disk space, and state (UP, DOWN, etc.). Additional node information
 includes weight (preference in being allocated work) and features (arbitrary information

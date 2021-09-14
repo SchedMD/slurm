@@ -9,7 +9,9 @@
 <i>--distribution=plane=plane_size</i> or <i>-m plane=plane_size</i>
 where <i>plane_size</i> is the requested plane/block size.
 
-<h2>Examples of plane distributions</h2>
+<h2 id="Examples">Examples of plane distributions
+<a class="slurm_link" href="#Examples"></a>
+</h2>
 
 <p>In the examples below we assume we have 21 tasks and that the
 task list is: 0, 1, 2, 3, 4, ..., 19, 20.
@@ -50,7 +52,9 @@ following allocation of the task ids:
 </center>
 
 
-<h2>Plane distribution and task affinity</h2>
+<h2 id="Distribution">Plane distribution and task affinity
+<a class="slurm_link" href="#Distribution"></a>
+</h2>
 
 <p>The concept behind this distribution is to divide the clusters into
 planes. Each plane includes a number of the lowest level of logical
@@ -87,8 +91,9 @@ resources.
 minimize contention for cache and memory.
 
 
-<h3>Examples of plane distributions with process
-affinity enabled</h3>
+<h2 id="Affinity">Examples of plane distributions with process affinity enabled
+<a class="slurm_link" href="#Affinity"></a>
+</h2>
 
 <p>In the examples below we assume we have 21 tasks and that the
 task list is: 0, 1, 2, 3, 4, ..., 19, 20.

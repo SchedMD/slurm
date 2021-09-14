@@ -793,3 +793,43 @@ input[type="checkbox"] {
 	}
 }
 
+/*******************************************************************************
+ * Style Slurm page links
+ ******************************************************************************/
+
+/* Add padding between item and link */
+.slurm_link {
+	padding: 0 0 0 10px;
+}
+
+.slurm_link,
+.slurm_link:visited {
+	outline: none;
+	color: #e2e6e9;
+	text-decoration: none;
+}
+
+.slurm_link:hover {
+	color: #46545C;
+}
+
+.slurm_link:active,
+.slurm_link:focus {
+	color: #8b9da7;
+}
+
+/*
+ * When hovering over these tags, target direct descendants with .slurm_link
+ * and add in a visible link icon
+ */
+h1 > .slurm_link::after,
+h2 > .slurm_link::after,
+h3 > .slurm_link::after,
+h4 > .slurm_link::after,
+h5 > .slurm_link::after {
+	content: "§";
+}
+
+dt:hover > .slurm_link::after {
+	content: "§";
+}

@@ -42,7 +42,9 @@ scheduled end times.</p>
 --clusters" option in a multi-cluster environment, the compute nodes must be
 accessible to and from the submission host.</p>
 
-<h2>Multi-Cluster Configuration</h2>
+<h2 id="multi_cluster">Multi-Cluster Configuration
+<a class="slurm_link" href="#multi_cluster"></a>
+</h2>
 <p>The multi-cluster functionality requires the use of the SlurmDBD.
 The AccountingStorageType in the slurm.conf file must be set to the
 accounting_storage/slurmdbd plugin and the MUNGE or authentication

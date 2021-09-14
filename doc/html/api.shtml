@@ -2,7 +2,7 @@
 
 <h1><a name="top">Slurm APIs</a></h1>
 
-<h3>Overview</h3>
+<h3 id="overview">Overview<a class="slurm_link" href="#overview"></a></h3>
 <p>All of the Slurm commands utilize a collection of Application Programming
 Interfaces (APIs).
 User and system applications can directly use these APIs as desired to
@@ -12,7 +12,9 @@ examined rather than executing Slurm commands and parsing their output.
 This document describes Slurm APIs.
 You should see the man pages for individual APIs to get more details.</p>
 
-<h3>Get Overall Slurm Information</h3>
+<h3 id="overall">Get Overall Slurm Information
+<a class="slurm_link" href="#overall"></a>
+</h3>
 <ul>
 
 <li><b>slurm_api_version</b> &mdash; Get Slurm API version number.</li>
@@ -30,7 +32,7 @@ specifications.</li>
 </ul>
 
 
-<h3>Get Job Information</h3>
+<h3 id="job">Get Job Information<a class="slurm_link" href="#job"></a></h3>
 <ul>
 
 <li><b>slurm_pid2jobid</b> &mdash; For a given process ID on a node
@@ -54,7 +56,9 @@ a specific job.</li>
 </ul>
 
 
-<h3>Get Job Step Information</h3>
+<h3 id="step">Get Job Step Information
+<a class="slurm_link" href="#step"></a>
+</h3>
 <ul>
 
 <li><b>slurm_get_job_steps</b> &mdash; Load job step information.
@@ -73,7 +77,7 @@ allocated by <i>slurm_get_job_steps</i>.</li>
 </ul>
 
 
-<h3>Get Node Information</h3>
+<h3 id="node">Get Node Information<a class="slurm_link" href="#node"></a></h3>
 <ul>
 
 <li><b>slurm_load_node</b> &mdash; Load node information.
@@ -91,7 +95,9 @@ allocated by <i>slurm_load_node</i>.</li>
 </ul>
 
 
-<h3>Get Partition Information</h3>
+<h3 id="partition">Get Partition Information
+<a class="slurm_link" href="#partition"></a>
+</h3>
 <ul>
 
 <li><b>slurm_load_partitions</b> &mdash; Load partition (queue) information.
@@ -109,7 +115,7 @@ allocated by <i>slurm_load_partitions</i>.</li>
 </ul>
 
 
-<h3>Error Handling</h3>
+<h3 id="error">Error Handling<a class="slurm_link" href="#error"></a></h3>
 <ul>
 
 <li><b>slurm_get_errno</b> &mdash; Return the error code set by the
@@ -124,7 +130,9 @@ Slurm error code.</li>
 </ul>
 
 
-<h3>Resource Allocation</h3>
+<h3 id="resource_alloc">Resource Allocation
+<a class="slurm_link" href="#resource_alloc"></a>
+</h3>
 <ul>
 
 <li><b>slurm_init_job_desc_msg</b> &mdash; Initialize the data structure
@@ -167,7 +175,9 @@ allocation is still active or for error recovery.</li>
 </ul>
 
 
-<h3>Job Step Creation</h3>
+<h3 id="step_creation">Job Step Creation
+<a class="slurm_link" href="#step_creation"></a>
+</h3>
 <p>Slurm job steps involve numerous interactions with the
 <i>slurmd</i> daemon. The job step creation is only the
 first step in the process. We don't advise direct user
@@ -203,7 +213,9 @@ field as returned by <i>slurm_step_ctx_get</i>.</li>
 </ul>
 
 
-<h3>Job and Job Step Signaling and Cancelling</h3>
+<h3 id="signal">Job and Job Step Signaling and Cancelling
+<a class="slurm_link" href="#signal"></a>
+</h3>
 <ul>
 
 <li><b>slurm_kill_job</b> &mdash; Signal or cancel a job.</li>
@@ -213,7 +225,9 @@ field as returned by <i>slurm_step_ctx_get</i>.</li>
 </ul>
 
 
-<h3>Job Completion</h3>
+<h3 id="completion">Job Completion
+<a class="slurm_link" href="#completion"></a>
+</h3>
 <ul>
 
 <li><b>slurm_complete_job</b> &mdash; Note completion of a job.
@@ -225,7 +239,9 @@ job step.</li>
 </ul>
 
 
-<h3>Administrative Functions</h3>
+<h3 id="admin">Administrative Functions
+<a class="slurm_link" href="#admin"></a>
+</h3>
 <p>Most of these functions can only be executed by user <i>root</i>.</p>
 <ul>
 
@@ -255,7 +271,9 @@ information associated with a given partition.</li>
 </ul>
 
 
-<h3>Slurm Host List Support</h3>
+<h3 id="host_list">Slurm Host List Support
+<a class="slurm_link" href="#host_list"></a>
+</h3>
 <p>Slurm uses a condensed format to express node names.
 For example <i>linux[1-3,6]</i> represents <i>linux1</i>,
 <i>linux2</i>, <i>linux3</i>, and <i>linux6</i>. These

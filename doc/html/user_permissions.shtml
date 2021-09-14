@@ -4,7 +4,7 @@
 
 <p>Slurm supports several special user permissions as described below.</p>
 
-<h2>Operator</h2>
+<h2 id="operator">Operator<a class="slurm_link" href="#operator"></a></h2>
 
 <p>These users can add, modify, and remove any database object
 (user, account, etc), and add other operators.
@@ -18,7 +18,7 @@ On a SlurmDBD served cluster, these users can
 For configuration information, see
 <a href="accounting.html">Accounting and Resource Limits</a>.</p>
 
-<h2>Admin</h2>
+<h2 id="admin">Admin<a class="slurm_link" href="#admin"></a></h2>
 
 <p>These users have the same level of privileges as an operator in the database.
 They can also alter anything on a served slurmctld as if they were the SlurmUser
@@ -28,7 +28,7 @@ or root.</p>
 For configuration information, see
 <a href="accounting.html">Accounting and Resource Limits</a>.</p>
 
-<h2>Coordinator</h2>
+<h2 id="coord">Coordinator<a class="slurm_link" href="#coord"></a></h2>
 
 <p>A special privileged user, usually an account manager, that can add
 users or sub-accounts to the account they are coordinator over.

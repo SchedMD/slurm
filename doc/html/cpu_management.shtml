@@ -1,8 +1,7 @@
 <!--#include virtual="header.txt"-->
 
 <h1> CPU Management User and Administrator Guide</h1>
-<a name="Overview"></a>
-<h2>Overview</h2>
+<h2 id="Overview">Overview<a class="slurm_link" href="#Overview"></a></h2>
 <p>The purpose of this guide is to assist Slurm users and administrators in selecting configuration options
 and composing command lines to manage the use of CPU resources by jobs, steps and tasks. The document
 is divided into the following sections:</p>
@@ -32,8 +31,9 @@ Architectures</a><br>
 
 <p>This document describes Slurm CPU management for conventional Linux clusters only.  For
 information on Cray ALPS systems, please refer to the appropriate documents.</p><br>
-<a name="Section1"></a>
-<h2>CPU Management Steps performed by Slurm</h2>
+<h2 id="Section1">CPU Management Steps performed by Slurm
+<a class="slurm_link" href="#Section1"></a>
+</h2>
 <p>Slurm uses four basic steps to manage CPU resources for a job/step:</p>
 <ul>
 <li><a href="#Step1">Step 1: Selection of Nodes</a>
@@ -42,8 +42,9 @@ information on Cray ALPS systems, please refer to the appropriate documents.</p>
 </li><li><a href="#Step4">Step 4: Optional Distribution and Binding of Tasks to CPUs within a Node
 </a>
 </li></ul>
-<a name="Step1"></a>
-<h3>Step 1: Selection of Nodes</h3>
+<h3 id="Step1">Step 1: Selection of Nodes
+<a class="slurm_link" href="#Step1"></a>
+</h3>
 <p>In Step 1, Slurm selects the set of nodes from which CPU resources are to be allocated to a job or
 job step.  Node selection is therefore influenced by many of the configuration and command line options
 that control the allocation of CPUs (Step 2 below).
@@ -474,8 +475,9 @@ CR_Core_Memory | CR_Socket | CR_Socket_Memory</font><br><br>Plus additional opti
 	</tbody></table>
 </center>
 <br>
-<a name="Step2"></a>
-<h3>Step 2: Allocation of CPUs from the selected Nodes</h3>
+<h3 id="Step2">Step 2: Allocation of CPUs from the selected Nodes
+<a class="slurm_link" href="#Step2"></a>
+</h3>
 <p>In Step 2, Slurm allocates CPU resources to a job/step from the set of nodes selected
 in Step 1. CPU allocation is therefore influenced by the configuration and command line options
 that relate to node selection.
@@ -929,8 +931,9 @@ CR_Core_Memory | CR_Socket | CR_Socket_Memory</font><br><br>Plus additional opti
 	</tbody></table>
 </center>
 <br>
-<a name="Step3"></a>
-<h3>Step 3: Distribution of Tasks to the selected Nodes</h3>
+<h3 id="Step3">Step 3: Distribution of Tasks to the selected Nodes
+<a class="slurm_link" href="#Step3"></a>
+</h3>
 <p>In Step 3, Slurm distributes tasks to the nodes that were selected for
 the job/step in Step 1. Each task is distributed to only one node, but more than one
 task may be distributed to each node.  Unless overcommitment of CPUs to tasks is
@@ -1068,8 +1071,10 @@ Step 3 is performed by slurmctld.
 	</tbody></table>
 </center>
 <br>
-<a name="Step4"></a>
-<h3>Step 4: Optional Distribution and Binding of Tasks to CPUs within a Node</h3>
+<h3 id="Step4">
+Step 4: Optional Distribution and Binding of Tasks to CPUs within a Node
+<a class="slurm_link" href="#Step4"></a>
+</h3>
 <p>In optional Step 4, Slurm distributes and binds each task to a specified subset of
 the allocated CPUs on the node to which the task was distributed in Step 3. Different
 tasks distributed to the same node may be bound to the same subset of CPUs or to
@@ -1229,7 +1234,9 @@ Step 4 is performed by slurmd and the task plugin.
 	</tbody></table>
 </center>
 <br><br>
-<h2>Additional Notes on CPU Management Steps</h2>
+<h2 id="notes">Additional Notes on CPU Management Steps
+<a class="slurm_link" href="#notes"></a>
+</h2>
 <p>For consumable resources, it is important for users to understand the difference between
 cpu allocation (Step 2) and task affinity/binding (Step 4).  Exclusive (unshared) allocation
 of CPUs as consumable resources limits the number of jobs/steps/tasks that
@@ -1244,8 +1251,9 @@ can also be useful when select/linear (whole node allocation) is configured, to 
 performance by restricting each task to a particular socket or other subset of CPU
 resources on a node.</p>
 <br><br>
-<a name="Section2"></a>
-<h2>Getting Information about CPU usage by Jobs/Steps/Tasks</h2>
+<h2 id="Section2">Getting Information about CPU usage by Jobs/Steps/Tasks
+<a class="slurm_link" href="#Section2"></a>
+</h2>
 <p>There is no easy way to generate a comprehensive set of CPU management information
 for a job/step (allocation, distribution and binding). However, several
 commands/options provide limited information about CPU usage.
@@ -1348,18 +1356,23 @@ provided by <font face="Courier New, monospace">--cpu-bind=verbose</font>, but i
 		</tr>
 	</tbody></table>
 </center>
-<h3>A Note on CPU Numbering</h3>
+<br>
+<h3 id="numbering">A Note on CPU Numbering
+<a class="slurm_link" href="#numbering"></a>
+</h3>
 <p>The number and layout of logical CPUs known to Slurm is described in the node definitions in slurm.conf. This may
 differ from the physical CPU layout on the actual hardware.  For this reason, Slurm generates its own internal, or
 "abstract", CPU numbers.  These numbers may not match the physical, or "machine", CPU numbers known to Linux.</p>
 <br>
-<a name="Section3"></a>
-<h2>CPU Management and Slurm Accounting</h2>
+<h2 id="Section3">CPU Management and Slurm Accounting
+<a class="slurm_link" href="#Section3"></a>
+</h2>
 <p>CPU management by Slurm users is subject to limits imposed by Slurm Accounting. Accounting limits may be applied on CPU
 usage at the level of users, groups and clusters. For details, see the sacctmgr man page.</p>
 <br>
-<a name="Section4"></a>
-<h2>CPU Management Examples</h2>
+<h2 id="Section4">CPU Management Examples
+<a class="slurm_link" href="#Section4"></a>
+</h2>
 <p>The following examples illustrate some scenarios for managing CPU
 resources using Slurm. Many additional scenarios are possible. In
 each example, it is assumed that all CPUs on each node are available
@@ -1384,8 +1397,9 @@ for allocation.</p>
 multi-thread job</a>
 </li><li><a href="#Example16">Example 16: Consumable resources with task cgroup and core binding</a>
 </li></ul><br>
-<a name="Example"></a>
-<h3>Example Node and Partition Configuration</h3>
+<h3 id="Example">Example Node and Partition Configuration
+<a class="slurm_link" href="#Example"></a>
+</h3>
 <p>For these examples, the Slurm cluster contains the following nodes:</p>
 <center>
 	<table style="page-break-inside: avoid; font-family: Arial,Helvetica,sans-serif;" border="1" bordercolor="#000000" cellpadding="6" cellspacing="0" width="402">
@@ -1557,8 +1571,9 @@ PartitionName=hypernode Nodes=n3 State=UP
 select type plugin, but they could use the
 <font face="Courier New, monospace">cons_tres</font> plugin with the same effect.</p>
 <br>
-<a name="Example1"></a>
-<h3>Example 1: Allocation of whole nodes</h3>
+<h3 id="Example1">Example 1: Allocation of whole nodes
+<a class="slurm_link" href="#Example1"></a>
+</h3>
 <p>Allocate a minimum of two whole nodes to a job.</p>
 <p>slurm.conf options:</p>
 <pre>SelectType=select/linear
@@ -1572,8 +1587,9 @@ configuration option specifies allocation in units of whole nodes.
 The<font face="Courier New, monospace"> --nodes=2</font> srun option causes
 Slurm to allocate at least 2 nodes to the job.<p></p>
 <br>
-<a name="Example2"></a>
-<h3>Example 2: Simple allocation of cores as consumable resources</h3>
+<h3 id="Example2">Example 2: Simple allocation of cores as consumable resources
+<a class="slurm_link" href="#Example2"></a>
+</h3>
 <p>A job requires 6 CPUs (2 tasks and 3 CPUs per task with no overcommitment). Allocate the 6 CPUs as consumable resources
 from a single node in the default partition.</p>
 <p>slurm.conf options:</p>
@@ -1642,8 +1658,10 @@ The <font face="Courier New, monospace">--nodes=1-1</font> srun option
 	</tbody></table>
 </center>
 <br>
-<a name="Example3"></a>
-<h3>Example 3: Consumable resources with balanced allocation across nodes</h3>
+<h3 id="Example3">
+Example 3: Consumable resources with balanced allocation across nodes
+<a class="slurm_link" href="#Example3"></a>
+</h3>
 <p>A job requires 9 CPUs (3 tasks and 3 CPUs per task with no overcommitment).
 Allocate 3 CPUs from each of the 3 nodes in the default partition.
 </p>
@@ -1713,8 +1731,10 @@ SelectTypeParameters=CR_Core
 	</tbody></table>
 </center>
 <br>
-<a name="Example4"></a>
-<h3>Example 4: Consumable resources with minimization of resource fragmentation</h3>
+<h3 id="Example4">
+Example 4: Consumable resources with minimization of resource fragmentation
+<a class="slurm_link" href="#Example4"></a>
+</h3>
 <p>A job requires 12 CPUs (12 tasks and 1 CPU per task with no overcommitment). Allocate
 CPUs using the minimum number of nodes and the minimum number of sockets required for
 the job in order to minimize fragmentation of allocated/unallocated CPUs in the cluster.
@@ -1823,8 +1843,10 @@ SelectTypeParameters=CR_Core,CR_CORE_DEFAULT_DIST_BLOCK
 	</tbody></table>
 </center>
 <br>
-<a name="Example5"></a>
-<h3>Example 5: Consumable resources with cyclic distribution of tasks to nodes</h3>
+<h3 id="Example5">
+Example 5: Consumable resources with cyclic distribution of tasks to nodes
+<a class="slurm_link" href="#Example5"></a>
+</h3>
 <p>A job requires 12 CPUs (6 tasks and 2 CPUs per task with no overcommitment). Allocate
 6 CPUs each from 2 nodes in the default partition. Distribute tasks to nodes cyclically.
 </p>
@@ -1912,8 +1934,10 @@ distribution for this job.
 	</tbody></table>
 </center>
 <br>
-<a name="Example6"></a>
-<h3>Example 6: Consumable resources with default allocation and plane distribution of tasks to nodes</h3>
+<h3 id="Example6">Example 6: Consumable resources with default allocation and
+plane distribution of tasks to nodes
+<a class="slurm_link" href="#Example6"></a>
+</h3>
 <p>A job requires 16 CPUs (8 tasks and 2 CPUs per task with no overcommitment).
 Use all 3 nodes in the default partition. Distribute tasks to each node in blocks of two in a round-robin fashion.
 </p>
@@ -2007,8 +2031,10 @@ and distribution for this job.
 	</tbody></table>
 </center>
 <br>
-<a name="Example7"></a>
-<h3>Example 7: Consumable resources with overcommitment of CPUs to tasks</h3>
+<h3 id="Example7">
+Example 7: Consumable resources with overcommitment of CPUs to tasks
+<a class="slurm_link" href="#Example7"></a>
+</h3>
 <p>A job has 20 tasks. Run the job in a single node.
 </p>
 <p>slurm.conf options:</p>
@@ -2094,8 +2120,10 @@ run in only one node by overcommitting CPUs to tasks.The following table shows
 	</tbody></table>
 </center>
 <br>
-<a name="Example8"></a>
-<h3>Example 8: Consumable resources with resource sharing between jobs</h3>
+<h3 id="Example8">
+Example 8: Consumable resources with resource sharing between jobs
+<a class="slurm_link" href="#Example8"></a>
+</h3>
 <p>2 jobs each require 6 CPUs (6 tasks per job with no overcommitment).
 Run both jobs simultaneously in a single node.
 </p>
@@ -2114,8 +2142,10 @@ srun options together restrict both jobs to node n0. The
 the <font face="Courier New, monospace">--oversubscribe</font> srun option allows the two
 jobs to oversubscribe CPUs on the node.
 </p><br>
-<a name="Example9"></a>
-<h3>Example 9: Consumable resources on multithreaded node, allocating only one thread per core</h3>
+<h3 id="Example9">Example 9: Consumable resources on multithreaded node,
+allocating only one thread per core
+<a class="slurm_link" href="#Example9"></a>
+</h3>
 <p>A job requires 8 CPUs (8 tasks with no overcommitment). Run the job on node n3,
 allocating only one thread per core.
 </p>
@@ -2283,8 +2313,10 @@ for this job.
 	</tbody></table>
 </center>
 <br>
-<a name="Example10"></a>
-<h3>Example 10: Consumable resources with task affinity and core binding</h3>
+<h3 id="Example10">
+Example 10: Consumable resources with task affinity and core binding
+<a class="slurm_link" href="#Example10"></a>
+</h3>
 <p>A job requires 6 CPUs (6 tasks with no overcommitment). Run the job in a
 single node in the default partition. Apply core binding to each task.
 </p>
@@ -2424,8 +2456,10 @@ For example, task id 2 is bound to CPU id 1.
 	</tbody></table>
 </center>
 <br>
-</a><a name="Example11"></a>
-<h3>Example 11: Consumable resources with task affinity and socket binding, Case 1</h3>
+<h3 id="Example11">
+Example 11: Consumable resources with task affinity and socket binding, Case 1
+<a class="slurm_link" href="#Example11"></a>
+</h3>
 <p>A job requires 6 CPUs (6 tasks with no overcommitment). Run the job in
 a single node in the default partition. Apply socket binding to each task.
 </p>
@@ -2555,8 +2589,10 @@ example, task ids 1, 3 and 5 are all bound to CPU ids 4, 5 and 6.
 	</tbody></table>
 </center>
 <br>
-<a name="Example12"></a>
-<h3>Example 12: Consumable resources with task affinity and socket binding, Case 2</h3>
+<h3 id="Example12">
+Example 12: Consumable resources with task affinity and socket binding, Case 2
+<a class="slurm_link" href="#Example12"></a>
+</h3>
 <p>A job requires 6 CPUs (2 tasks with 3 cpus per task and no overcommitment). Run the job in
 a single node in the default partition. Allocate cores using the block allocation method.
 Distribute cores using the block distribution method. Apply socket binding to each task.
@@ -2686,8 +2722,10 @@ CPUs on socket 0, and task id 1 is bound to the allocated CPUs on both sockets.
 	</tbody></table>
 </center>
 <br>
-<a name="Example13"></a>
-<h3>Example 13: Consumable resources with task affinity and socket binding, Case 3</h3>
+<h3 id="Example13">
+Example 13: Consumable resources with task affinity and socket binding, Case 3
+<a class="slurm_link" href="#Example13"></a>
+</h3>
 <p>A job requires 6 CPUs (2 tasks with 3 cpus per task and no overcommitment). Run the job in
 a single node in the default partition. Allocate cores using the block allocation method.
 Distribute cores using the cyclic distribution method. Apply socket binding to each task.
@@ -2817,8 +2855,10 @@ allocated CPUs on both sockets.
 	</tbody></table>
 </center>
 <br>
-<a name="Example14"></a>
-<h3>Example 14: Consumable resources with task affinity and customized allocation and distribution</h3>
+<h3 id="Example14">Example 14: Consumable resources with task affinity and
+customized allocation and distribution
+<a class="slurm_link" href="#Example14"></a>
+</h3>
 <p>A job requires 18 CPUs (18 tasks with no overcommitment). Run the job in the
 default partition. Allocate 6 CPUs on each node using block allocation within
 nodes. Use cyclic distribution of tasks to nodes and block distribution of
@@ -3134,9 +3174,10 @@ for this job. For example, task id 10 is bound to CPU id 3 on node n1.
 	</tbody></table>
 </center>
 <br>
-<a name="Example15"></a>
-<h3>Example 15: Consumable resources with task affinity to optimize the performance of a multi-task,
-multi-thread job</h3>
+<h3 id="Example15">Example 15: Consumable resources with task affinity to
+optimize the performance of a multi-task, multi-thread job
+<a class="slurm_link" href="#Example15"></a>
+</h3>
 <p>A job requires 9 CPUs (3 tasks and 3 CPUs per task with no overcommitment). Run
 the job in the default partition, managing the CPUs to optimize the performance
 of the job.</p>
@@ -3378,8 +3419,10 @@ for this job. For example, task id 2 is bound to CPU ids 0, 1 and 2 on socket id
 	</tbody></table>
 </center>
 <br>
-<a name="Example16"></a>
-<h3>Example 16: Consumable resources with task cgroup and core binding</h3>
+<h3 id="Example16">
+Example 16: Consumable resources with task cgroup and core binding
+<a class="slurm_link" href="#Example16"></a>
+</h3>
 <p>A job requires 6 CPUs (6 tasks with no overcommitment). Run the job in a
 single node in the default partition. Apply core binding to each task using the task/cgroup plugin.
 </p>

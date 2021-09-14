@@ -2,7 +2,7 @@
 
 <h1>Intel Knights Landing (KNL) User and Administrator Guide</h1>
 
-<h2>Overview</h2>
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 
 <p>This document describes the unique features of Slurm on the computers with
 the Intel Knights Landing processor.
@@ -10,7 +10,9 @@ You should be familiar with the Slurm's mode of operation on Linux clusters
 before studying the relatively few differences in Intel KNL system operation
 described in this document.</p>
 
-<h2>User Tools</h2>
+<h2 id="user_tools">User Tools
+<a class="slurm_link" href="#user_tools"></a>
+</h2>
 
 <p>The desired NUMA and MCDRAM modes for a KNL processor should be specified
 using the -C or --constraints option of Slurm's job submission commands: salloc,
@@ -47,7 +49,7 @@ value for that configuration will be used.</p>
 <tr><td>NUMA</td><td>hemi</td><td>Hemisphere</td></tr>
 <tr><td>NUMA</td><td>snc2</td><td>Sub-NUMA cluster 2</td></tr>
 <tr><td>NUMA</td><td>snc4</td><td>Sub-NUMA cluster 4 (<a href="#note">NOTE</a>)</td></tr>
-<tr><td>NUMA</td><td>quad</td><td>Quadrant (<a href="#note">NOTE</a>)</td></tr>
+<tr><td>NUMA</td><td>quad</td><td>Quadrant (<a href="#note2">NOTE</a>)</td></tr>
 </table>
 
 <p>Jobs requiring some or all of the KNL high bandwidth memory (HBM) should
@@ -62,7 +64,7 @@ Individual job steps can enable or disable sorting using the "--mem-bind=sort"
 or "--mem-bind=nosort" command line options for srun.
 Sorting will be performed only for the NUMA nodes allocated to the job step.</p>
 
-<p><a name="note"><b>NOTE</b></a>: Slurm provides limited support
+<p><a id="note"><b>NOTE</b></a>: Slurm provides limited support
 for restricting use of HBM. At some point in the future, the amount of HBM
 requested by the job will be compared with the total amount of HBM and number of
 memory-containing NUMA nodes available on the KNL processor. The job will then
@@ -70,7 +72,7 @@ be bound to specific NUMA nodes in order to limit the total amount of HBM
 available to the job, and thus reserve the remaining HBM for other jobs running
 on that KNL processor.</p>
 
-<p><a name="note"><b>NOTE</b></a>: Slurm can only
+<p><a id="note2"><b>NOTE</b></a>: Slurm can only
 support homogeneous nodes (e.g. the same number of cores per NUMA node).
 KNL processors with <u>68 cores</u> (a subset of KNL models) will not have
 homogeneous NUMA nodes in snc4 mode, but each NUMA node will have
@@ -78,7 +80,7 @@ either 16 or 18 cores. This will result in Slurm using the lower core count,
 finding a total of 256 threads rather than 272 threads and setting the node
 to a DOWN state.</p>
 
-<h3>Accounting</h3>
+<h3 id="accounting">Accounting<a class="slurm_link" href="#accounting"></a></h3>
 
 <p>If a node requires rebooting for a job's required configuration, the job
 will be charged for the resource allocation from the time of allocation through
@@ -95,7 +97,9 @@ The job must complete no later than 10:30:00 in order to satisfy its time limit
 However, the job will be charged for 30 minutes of resource use, which includes
 the boot time.</p>
 
-<h3>Sample Use Cases</h3>
+<h3 id="use_case">Sample Use Cases
+<a class="slurm_link" href="#use_case"></a>
+</h3>
 
 <pre>
 $ sbatch -C flat,a2a -N2 --gres=hbm:8g --exclusive my.script
@@ -109,7 +113,9 @@ nid000[12-35]  flat,a2a         flat,a2a,snc2,hemi
 nid000[36-43]  cache,a2a        flat,equal,cache,a2a,hemi
 </pre>
 
-<h3>Network Topology</h3>
+<h3 id="topology">Network Topology
+<a class="slurm_link" href="#topology"></a>
+</h3>
 
 <p>Slurm will optimize performance using those resources available without
 rebooting. If node rebooting is required, then it will optimize layout with
@@ -133,14 +139,18 @@ srun --switches=1@10:00 N16 a.out
 option or limit the amount of time the job can be deferred using the
 <b>SchedulerParameters</b> <b>max-switch-wait</b> option.</p>
 
-<h3>Booting Problems</h3>
+<h3 id="boot_problems">Booting Problems
+<a class="slurm_link" href="#boot_problems"></a>
+</h3>
 
 <p>If node boots fail, those nodes are drained and the job is requeued so that
 it can be allocated a different set of nodes. The nodes originally allocated
 to the job will remain available to the job, so likely a small number of
 additional nodes will be required.</p>
 
-<h2>System Administration</h2>
+<h2 id="administration">System Administration
+<a class="slurm_link" href="#administration"></a>
+</h2>
 
 <p>Four important components are required to use Slurm on an Intel KNL system.</p>
 <ol>
@@ -201,7 +211,9 @@ Note that Slurm currently does not support the concept of
 differing numbers of cores in each socket (or NUMA node). We are currently
 working to address these issues.</p>
 
-<h3>Mode of Operation</h3>
+<h3 id="operation">Mode of Operation
+<a class="slurm_link" href="#operation"></a>
+</h3>
 
 <ol>
 <li>The node's configured "Features" are copied to the available and active
@@ -219,7 +231,7 @@ its configuration can not be changed. Note that node reboot time is roughly
 on the order of 20 minutes.</li>
 </ol>
 
-<h3>Cray Configuration</h3>
+<h3 id="cray">Cray Configuration<a class="slurm_link" href="#cray"></a></h3>
 
 <p>On Cray systems, NodeFeaturesPlugins should be configured as "knl_cray".</p>
 
@@ -279,7 +291,9 @@ NodeName=nid[00000-00127] State=UNKNOWN
 </pre>
 
 
-<h3>Generic Cluster Configuration</h3>
+<h3 id="config">Generic Cluster Configuration
+<a class="slurm_link" href="#config"></a>
+</h3>
 
 <p>All other clusters should have NodeFeaturesPlugins configured to "knl_generic".
 This plugin performs all operations directly on the compute nodes using Intel's

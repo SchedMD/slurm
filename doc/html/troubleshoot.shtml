@@ -16,7 +16,9 @@ may also prove useful.</p>
 </ul>
 
 
-<h2><a name="resp">Slurm is not responding</a></h2>
+<h2 id="resp">Slurm is not responding
+<a class="slurm_link" href="#resp"></a>
+</h2>
 
 <ol>
 <li>Execute "<i>scontrol ping</i>" to determine if the primary
@@ -54,7 +56,9 @@ Note: All running jobs and other state information will be lost.</li>
 </ol>
 
 
-<h2><a name="sched">Jobs are not getting scheduled</a></h2>
+<h2 id="sched">Jobs are not getting scheduled
+<a class="slurm_link" href="#sched"></a>
+</h2>
 
 <p>This is dependent upon the scheduler used by Slurm.
 Executing the command "<i>scontrol show config | grep SchedulerType</i>"
@@ -86,7 +90,9 @@ for more details.</li>
 
 
 
-<h2><a name="completing">Jobs and nodes are stuck in COMPLETING state</a></h2>
+<h2 id="completing">Jobs and nodes are stuck in COMPLETING state
+<a class="slurm_link" href="#completing"></a>
+</h2>
 
 <p>This is typically due to non-killable processes associated with the job.
 Slurm will continue to attempt terminating the processes with SIGKILL, but
@@ -125,7 +131,9 @@ Node node00 now responding
 </p>
 
 
-<h2><a name="nodes">Nodes are getting set to a DOWN state</a></h2>
+<h2 id="nodes">Nodes are getting set to a DOWN state
+<a class="slurm_link" href="#nodes"></a>
+</h2>
 
 <ol>
 <li>Check the reason why the node is down using the command
@@ -174,7 +182,9 @@ and then "<i>/etc/init.d/slurm startclean</i>").
 Note: All jobs and other state information on that node will be lost.</li>
 </ol>
 
-<h2><a name="network">Networking and configuration problems</a></h2>
+<h2 id="network">Networking and configuration problems
+<a class="slurm_link" href="#network"></a>
+</h2>
 
 <ol>
 <li>Check the controller and/or slurmd log files (<i>SlurmctldLog</i>

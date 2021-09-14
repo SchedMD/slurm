@@ -22,12 +22,14 @@ can generate a lot of requests for the configuration files. In cases like
 this, you may want to consider running slurmd on the machine so it can
 manage the configuration files, but not allowing it to run jobs.</p>
 
-<h2><a name="INSTALLATION">Installation</a></h2>
+<h2 id="INSTALLATION">Installation
+<a class="slurm_link" href="#INSTALLATION"></a>
+</h2>
 
 <p>There are no extra steps required to install this feature. It is built in
 by default starting with Slurm 20.02.</p>
 
-<h2><a name="SETUP">Setup</a></h2>
+<h2 id="SETUP">Setup<a class="slurm_link" href="#SETUP"></a></h2>
 
 <p>The slurmctld must first be configured to run in the configless mode.
 This is handled by setting <b>SlurmctldParameters=enable_configless</b> in
@@ -63,7 +65,9 @@ setup. The DNS SRV entry with the lowest priority should be your primary
 slurmctld, with higher priority values for backup slurmctlds.
 </p>
 
-<h2><a name="INITIAL_TESTING">Initial Testing</a></h2>
+<h2 id="INITIAL_TESTING">Initial Testing
+<a class="slurm_link" href="#INITIAL_TESTING"></a>
+</h2>
 
 <p>With the slurmctld configured and slurmd started, you can check in a couple
 places to make sure the configs are present on the node. Config files will be
@@ -74,7 +78,9 @@ slurmctld node and running
 <span class="commandline">scontrol reconfig</span> and checking that the config
 was updated.</p>
 
-<h2><a name="LIMITATIONS">Limitations</a></h2>
+<h2 id="LIMITATIONS">Limitations
+<a class="slurm_link" href="#LIMITATIONS"></a>
+</h2>
 
 <p>Using "%n" in "SlurmdSpoolDir" or "SlurmdPidFile" will not be properly
 substituted for the NodeName unless slurmd is also launched with the "-N"
@@ -90,7 +96,7 @@ the Included configs will <b>NOT</b> be shipped to the slurmds. Any additional
 config files will need to be shared a different way or added to the parent
 config.</p>
 
-<h2><a name="NOTES">Notes</a></h2>
+<h2 id="NOTES">Notes<a class="slurm_link" href="#NOTES"></a></h2>
 
 <p>The order of precedence for determining what configuration source to use
 is as follows:

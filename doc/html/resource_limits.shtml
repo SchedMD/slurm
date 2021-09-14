@@ -5,7 +5,7 @@
 <p>Familiarity with Slurm's <a href="accounting.html">Accounting</a> web page
 is strongly recommended before use of this document.</p>
 
-<h2>Hierarchy</h2>
+<h2 id="hierarchy">Hierarchy<a class="slurm_link" href="#hierarchy"></a></h2>
 
 <p>Slurm's hierarchical limits are enforced in the following order
   with Job QOS and Partition QOS order being reversible by using the QOS
@@ -41,7 +41,7 @@ are set, then the job would be enforced the limits imposed at QOS
 and/or association level respecting the order above.
 </p>
 
-<h2>Configuration</h2>
+<h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 
 <p>Scheduling policy information must be stored in a database
 as specified by the <b>AccountingStorageType</b> configuration parameter
@@ -106,7 +106,7 @@ jobs will be executed based upon policies configured in Slurm on each
 cluster.
 </p>
 
-<h2>Tools</h2>
+<h2 id="tools">Tools<a class="slurm_link" href="#tools"></a></h2>
 
 <p>The tool used to manage accounting policy is <i>sacctmgr</i>.
 It can be used to create and delete cluster, user, bank account,
@@ -121,7 +121,9 @@ jobs which belong to that association are immediately canceled.
 When limits are lowered, running jobs will not be canceled to
 satisfy the new limits, but the new lower limits will be enforced.</p>
 
-<h2>Limits in both Associations and QOS</h2>
+<h2 id="limits">Limits in both Associations and QOS
+<a class="slurm_link" href="#limits"></a>
+</h2>
 <p>When dealing with Associations, most of these limits are available
 not only for a user association, but also for each cluster and account.
 If a new association is created for some user and a scheduling
@@ -241,7 +243,9 @@ list) as in the following examples: </p>
 
 </ul>
 
-<h2>Association specific scheduling policies supported</h2>
+<h2 id="assoc">Association specific scheduling policies supported
+<a class="slurm_link" href="#assoc"></a>
+</h2>
 
 <p> These represent the scheduling policies unique to associations.
   Shared policies and limits a QOS has in common are listed above.</p>
@@ -284,7 +288,9 @@ list) as in the following examples: </p>
 
 </ul>
 
-<h2>QOS specific limits supported</h2>
+<h2 id="qos">QOS specific limits supported
+<a class="slurm_link" href="#qos"></a>
+</h2>
 
 <ul>
 <li><b>MaxJobsAccruePerAccount=</b> The maximum number of pending jobs an
@@ -349,7 +355,9 @@ data maintained in the Slurm database.  More information can be found
 in the <a href="priority_multifactor.html">priority/multifactor</a>
 plugin description.</p>
 
-<h3>Specific limits over GRES</h3>
+<h3 id="gres_limits">Specific limits over GRES
+<a class="slurm_link" href="#gres_limits"></a>
+</h3>
 <p> When a GRES has a type associated with it and a limit is applied
   over this specific type (e.g. <i>MaxTRESPerUser=gres/gpu:tesla=1</i>) if a
   user requests a generic gres, the type's limit will not be enforced. In this

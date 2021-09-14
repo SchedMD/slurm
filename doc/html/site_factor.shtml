@@ -2,7 +2,7 @@
 
 <h1><a name="top">Slurm Priority Site Factor Plugin API</a></h1>
 
-<h2>Overview</h2>
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 <p> This document describes Slurm site_factor plugins and the API that defines
 them. It is intended as a resource to programmers wishing to write their own
 Slurm site_factor plugins.</p>
@@ -44,7 +44,7 @@ daemons from any version, however this may result in difficult to diagnose
 failures due to changes in the arguments to plugin functions or changes
 in other Slurm functions used by the plugin.</p>
 
-<h2>API Functions</h2>
+<h2 id="api">API Functions<a class="slurm_link" href="#api"></a></h2>
 <p>The following functions must appear. Functions which are not implemented
 must be stubbed, or the plugin will fail to load.</p>
 
@@ -85,7 +85,7 @@ configuration. Called whenever slurmctld is reconfigured.</p>
 all site_priority values in the job_list. Called every </p>
 <p style="margin-left:.2in"><b>Returns</b>: void</p>
 
-<h2>Parameters</h2>
+<h2 id="parameters">Parameters<a class="slurm_link" href="#parameters"></a></h2>
 <p>These parameters can be used in the slurm.conf to configure the
 plugin and the frequency at which to gather information about running jobs.</p>
 <dl>

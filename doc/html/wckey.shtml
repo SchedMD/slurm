@@ -7,7 +7,9 @@
   accounts are all working on the same project.
 </p>
 
-<h2>slurm(dbd).conf settings</h2>
+<h2 id="conf">slurm(dbd).conf settings
+<a class="slurm_link" href="#conf"></a>
+</h2>
 <p>Including "WCKey" in your <b>AccountingStorageEnforce</b> option in
   your slurm.conf file will enforce WCKeys per job.  This means only
   jobs with valid WCKeys (WCKeys previously added through sacctmgr)
@@ -21,7 +23,7 @@
   added to your slurmdbd.conf file though.
 </p>
 
-<h2>sbatch/salloc/srun</h2>
+<h2 id="submit">sbatch/salloc/srun<a class="slurm_link" href="#submit"></a></h2>
 <p> Each submitting tool has the --wckey= option that can set the WCKey for a
  job.  [SBATCH|SALLOC|SLURM]_WCKEY can also be set in the environment
  to set the WCKey.  If no WCKey is given the WCKey for the job will be
@@ -32,14 +34,14 @@
  WCKey or not.
 </p>
 
-<h2>sacct</h2>
+<h2 id="sacct">sacct<a class="slurm_link" href="#sacct"></a></h2>
 <p>Sacct can be used to view the WCKey by adding "wckey" to the
   --format option.  You can also single out jobs by using the
   --wckeys= option which would only send information about jobs that
   ran with specific WCKeys.
 </p>
 
-<h2>sacctmgr</h2>
+<h2 id="sacctmgr">sacctmgr<a class="slurm_link" href="#sacctmgr"></a></h2>
 <p>Sacctmgr is used to manage WCKeys.  You can add and remove WCKeys
   from users or list them.
 </p>
@@ -69,7 +71,7 @@ Which will change the default WCKey for user "da" on cluster
 just remove the cluster= option.
 </p>
 
-<h2>sreport</h2>
+<h2 id="sreport">sreport<a class="slurm_link" href="#sreport"></a></h2>
 <p>Information about reports available for WCKeys can be
   found on the <a href="sreport.html">sreport manpage</a>.
 </p>

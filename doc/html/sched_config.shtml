@@ -2,7 +2,7 @@
 
 <H1>Scheduling Configuration Guide</H1>
 
-<H2>Overview</H2>
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 
 <P>Slurm is designed to perform a quick and simple scheduling attempt at
 events such as job submission or completion and configuration changes.
@@ -18,7 +18,9 @@ pending, no other jobs in that partition will be scheduled.</P>
 <P>A more comprehensive scheduling attempt is typically done by the backfill
 scheduling plugin.</P>
 
-<H2>Scheduling Configuration</H2>
+<h2 id="config">Scheduling Configuration
+<a class="slurm_link" href="#config"></a>
+</h2>
 
 <P>The <B>SchedulerType</B> configuration parameter specifies the scheduler
 plugin to use.
@@ -48,7 +50,9 @@ scheduling loop will execute and test all pending jobs. The default value is
 60 seconds.</LI>
 </UL>
 
-<H2>Backfill Scheduling</H2>
+<h2 id="backfill">Backfill Scheduling
+<a class="slurm_link" href="#backfill"></a>
+</h2>
 
 <P>The backfill scheduling plugin is loaded by default.
 Without backfill scheduling, each partition is scheduled strictly in priority

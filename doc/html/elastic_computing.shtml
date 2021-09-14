@@ -2,7 +2,7 @@
 
 <h1><a name="top">Cloud Scheduling Guide</a></h1>
 
-<h2>Overview</h2>
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 
 <p>Slurm has the ability to support a cluster that grows and
 shrinks on demand, typically relying upon a service such as
@@ -31,7 +31,9 @@ later relinquish the nodes back to the cloud.
 Most of the Slurm changes to support cloud scheduling were changes to
 support node addressing that can change.</p>
 
-<h2>Slurm Configuration</h2>
+<h2 id="config">Slurm Configuration
+<a class="slurm_link" href="#config"></a>
+</h2>
 
 <p>There are many ways to configure Slurm's use of resources.
 See the slurm.conf man page for more details about these options.
@@ -192,8 +194,9 @@ cloud specific partitions, you can avoid having to exclude nodes.
 specific partition, by setting <b>SuspendTime</b> to <b>INFINITE</b>.
 </p>
 
-
-<h2>Operational Details</h2>
+<h2 id="details">Operational Details
+<a class="slurm_link" href="#details"></a>
+</h2>
 
 <p>When the slurmctld daemon starts, all nodes with a state of CLOUD will be
 included in its internal tables, but these node records will not be seen with
@@ -231,7 +234,9 @@ Each set of names and addresses is comma separated and
 the elements within the set are separated by colons. For example:<br>
 SLURM_NODE_ALIASES=ec0:123.45.67.8:foo,ec2:123.45.67.9:bar</p>
 
-<h2>Cloud Node Lifecycle</h2
+<h2 id="cloud">Cloud Node Lifecycle
+<a class="slurm_link" href="#cloud"></a>
+</h2>
 
 <p>A cloud node moves through different states when enabled with Power Saving
 mode. A node can have multiple states associated with it at one time. States
@@ -411,7 +416,9 @@ debug*      up    infinite     1    idle%  c1-compute-0-0
 debug*      up    infinite    99    idle~  c1-compute-0-[1-99]
 </pre>
 </p>
-<h3><p><strong>POWER UP and POWER DOWN Failures</strong></p></h3>
+<h3 id="power_failures"><strong>POWER UP and POWER DOWN Failures</strong>
+<a class="slurm_link" href="#power_failures"></a>
+</h3>
 <p>A node may move into <i>DOWN</i> state if there is a failure during the
 <i>POWERING_UP</i> or <i>POWERING_DOWN</i> phase. The <b>ResumeTimeout</b>
 controls how long Slurm waits until nodes are expected to register. The node is
@@ -436,7 +443,9 @@ relinquished to the cloud. The node is marked <i>IDLE</i> and
 
 
 
-<h3><p><strong>Manual Power Saving</strong></p></h3>
+<h3 id="manual"><strong>Manual Power Saving</strong>
+<a class="slurm_link" href="#manual"></a>
+</h3>
 <p>A node can be manually powered on and off by setting the state of the node
 to the following states using "scontrol update":</p>
 <p><i>POWER_DOWN</i>, <i>POWER_UP</i>, <i>POWER_DOWN_ASAP</i>, or

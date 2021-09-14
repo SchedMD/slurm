@@ -9,14 +9,18 @@ some tuning and this document should help you off to a good start.
 A working knowledge of Slurm should be considered a prerequisite
 for this material.</p>
 
-<h2>Performance Results</h2>
+<h2 id="performance">Performance Results
+<a class="slurm_link" href="#performance"></a>
+</h2>
 
 <p>Slurm has also been validated to execute 500 simple batch jobs per second
 on a sustained basis with short bursts of activity at a much higher level.
 Actual performance depends upon the jobs to be executed plus the hardware and
 configuration used.</p>
 
-<h2>System configuration</h2>
+<h2 id="sys_config">System configuration
+<a class="slurm_link" href="#sys_config"></a>
+</h2>
 
 <p>Several system configuration parameters may require modification to support a large number
 of open files and TCP connections with large bursts of messages. Changes can
@@ -65,18 +69,24 @@ using the ifconfig command. A value of 4096 has been found to work well for one
 site with a very large cluster
 (e.g. <i>"ifconfig <interface> txqueuelen 4096"</i>).</p>
 
-<h2>Munge configuration</h2>
+<h2 id="munge_config">Munge configuration
+<a class="slurm_link" href="#munge_config"></a>
+</h2>
 
 <p>By default the Munge daemon runs with two threads, but a higher thread count
 can improve its throughput. We suggest starting the Munge daemon with ten
 threads for high throughput support (e.g. <i>"munged --num-threads 10"</i>).</p>
 
-<h2>User limits</h2>
+<h2 id="user_limits">User limits
+<a class="slurm_link" href="#user_limits"></a>
+</h2>
 
 <p>The <b>ulimit</b> values in effect for the <b>slurmctld</b> daemon should
 be set quite high for memory size, open file count and stack size.</p>
 
-<h2>Slurm Configuration</h2>
+<h2 id="slurm_config">Slurm Configuration
+<a class="slurm_link" href="#slurm_config"></a>
+</h2>
 
 <p>Several Slurm configuration parameters should be adjusted to
 reflect the needs of high throughput computing. The changes described below
@@ -199,7 +209,9 @@ affinity is advised in any case.</li>
 appropriate for your environment.</li>
 </ul>
 
-<h2>SlurmDBD Configuration</h2>
+<h2 id="slurmdbd_config">SlurmDBD Configuration
+<a class="slurm_link" href="#slurmdbd_config"></a>
+</h2>
 
 <p>Turning accounting off provides a minimal improvement in performance.
   If using SlurmDBD increased speedup can be achieved by setting the CommitDelay

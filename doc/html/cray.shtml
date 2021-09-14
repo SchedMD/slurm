@@ -13,7 +13,7 @@
 
 <HR SIZE=4>
 
-<h2><a name="user_guide">User Guide</a></h2>
+<h2 id="user_guide">User Guide<a class="slurm_link" href="#user_guide"></a></h2>
 
 <p>This document describes the unique features of Slurm on Cray XC
   computers natively, or without the use of Cray's Application Level
@@ -37,7 +37,9 @@
 </ul>
 </p>
 
-<h2><a name="features">Cray Specific Features</a></h2>
+<h2 id="features">Cray Specific Features
+<a class="slurm_link" href="#features"></a>
+</h2>
 <ul>
 <li>Network Performance Counters</li>
 <p>
@@ -69,7 +71,9 @@
 </p>
 </ul>
 
-<h2><a name="admin_guide">Admin Guide</a></h2>
+<h2 id="admin_guide">Admin Guide
+<a class="slurm_link" href="#admin_guide"></a>
+</h2>
 <p>
   Many new plugins were added to utilize the Cray system without
   ALPS.  These should be set up in your slurm.conf outside of your
@@ -166,7 +170,7 @@
 </p>
 </ul>
 
-<h2><a name="setup">Cray system setup</a></h2>
+<h2 id="setup">Cray system setup<a class="slurm_link" href="#setup"></a></h2>
 <p>Some Slurm plugins (burst_buffer/datawarp and power/cray_aries) plugins
 parse JSON format data.
 These plugins are designed to make use of the JSON-C library for this purpose.
@@ -203,7 +207,7 @@ details.</p>
   the default (180 seconds) to prevent PMI from falsely detecting job
   launch failures.
 </p>
-<h2><a name="ha">High Availability</a></h2>
+<h2 id="ha">High Availability<a class="slurm_link" href="#ha"></a></h2>
 <p>
 A backup controller can be setup in or outside the Cray. However, when the
 backup is within the Cray, both the primary and the backup controllers will go

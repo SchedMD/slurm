@@ -2,12 +2,16 @@
 
 <h1>Slurm Tutorials</h1>
 
-<h2>Slurm Workload Manager: Architecture, Configuration and Use</h2>
+<h2 id="start">Slurm Workload Manager: Architecture, Configuration and Use
+<a class="slurm_link" href="#start"></a>
+</h2>
 <p>Introduction to the Slurm Workload Manager for users and system
 administrators, plus some material for Slurm programmers:
 <a href="http://www.open-mpi.org/video/?category=slurm">Slurm Workload Manager</a></p>
 
-<h2>Introduction to Slurm Tutorial</h2>
+<h2 id="tutorials">Introduction to Slurm Tutorial
+<a class="slurm_link" href="#tutorials"></a>
+</h2>
 <p>Introduction to the Slurm Resource Manager for users and system
 administrators. Tutorial covers Slurm architecture, daemons and commands.
 Learn how to use a basic set of commands.
@@ -30,7 +34,9 @@ Learn how to build, configure, and install Slurm.</p>
 <li><a href="tutorial_intro_files.tar">Tar-ball</a> with sample configuration files</li>
 </ul>
 
-<h2>Introduction to Slurm Tools</h2>
+<h2 id="tools">Introduction to Slurm Tools
+<a class="slurm_link" href="#tools"></a>
+</h2>
 
 <p>This video gives a basic introduction to using sbatch, squeue, scancel and
 scontrol show job on the computers at
@@ -38,7 +44,9 @@ scontrol show job on the computers at
 <a href="https://marylou.byu.edu/">Fulton Supercomputing Lab</a>.<br><br>
 <a href="https://www.youtube.com/watch?v=U42qlYkzP9k&feature=player_embedded">Introduction to Slurm Tools</a>
 
-<h2>Slurm Database Usage</h2>
+<h2 id="db_usage">Slurm Database Usage
+<a class="slurm_link" href="#db_usage"></a>
+</h2>
 <p>Slurm Resource Manager database for users and system administrators.
 Tutorial covers Slurm architecture for database use, accounting commands,
 resource limits, fair share scheduling, and accounting configuration.</p>

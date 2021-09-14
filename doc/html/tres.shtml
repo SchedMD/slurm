@@ -40,7 +40,7 @@ Current TRES Types are:
   limiting access.
 </p>
 
-<h2>slurm.conf settings</h2>
+<h2 id="conf">slurm.conf settings<a class="slurm_link" href="#conf"></a></h2>
 <ul>
 <li><b>AccountingStorageTRES</b>
 <p>Used to define which TRES are
@@ -152,17 +152,17 @@ more information.
 
 </ul>
 
-<h2>sacct</h2>
+<h2 id="sacct">sacct<a class="slurm_link" href="#sacct"></a></h2>
 <p>sacct can be used to view the TRES of each job by adding "tres" to the
   --format option.
 </p>
 
-<h2>sacctmgr</h2>
+<h2 id="sacctmgr">sacctmgr<a class="slurm_link" href="#sacctmgr"></a></h2>
 <p>sacctmgr is used to view the various TRES available globally in the
   system. <i>sacctmgr show tres</i> will do this.
 </p>
 
-<h2>sreport</h2>
+<h2 id="sreport">sreport<a class="slurm_link" href="#sreport"></a></h2>
 <p>sreport reports on different TRES. Simply using the comma separated input
   option <i>--tres=</i> will have sreport generate reports available
   for the requested TRES types.  More information about these reports

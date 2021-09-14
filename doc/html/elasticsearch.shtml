@@ -19,14 +19,14 @@ visualization tools also let you easily create different types of dashboards,
 diagrams, tables, histograms and/or apply customized filters when searching.
 </p>
 
-<h2>Prerequisites</h2>
+<h2 id="prereq">Prerequisites<a class="slurm_link" href="#prereq"></a></h2>
 <p>The plugin requires additional libraries for compilation:</p>
 <ul>
 	<li><a href="https://curl.se/libcurl">libcurl</a> development files</li>
 	<li><a href="download.html#json">JSON-C</a></li>
 </ul>
 
-<h2>Configuration</h2>
+<h2 id="config">Configuration<a class="slurm_link" href="#config"></a></h2>
 
 <p>The Elasticsearch instance should be running and reachable from the multiple
 <a href="slurm.conf.html#OPT_SlurmctldAddr">SlurmctldHost</a> configured.
@@ -90,7 +90,9 @@ do so when trying to index the first job document.
 </li>
 </ul>
 
-<h2>Visualization</h2>
+<h2 id="visualization">Visualization
+<a class="slurm_link" href="#visualization"></a>
+</h2>
 
 <p>Once jobs are being indexed, it is a good idea to use a web visualization
 layer to analyze the data.
@@ -102,7 +104,9 @@ possible to create tables where each row is a finished job, ordered by
 any column you choose &mdash; the @end_time timestamp is suggested &mdash; and
 any dashboards, graphs, or other analysis of interest.
 
-<h2>Testing and Debugging</h2>
+<h2 id="testing">Testing and Debugging
+<a class="slurm_link" href="#testing"></a>
+</h2>
 
 <p>For debugging purposes, you can use the <b>curl</b> command or any similar
 tool to perform REST requests against Elasticsearch directly. Some of the
@@ -133,7 +137,9 @@ official documentation.</p>
 $ curl -XGET http://localhost:9200/_cat
 </pre>
 
-<h2>Failure management</h2>
+<h2 id="failure_management">Failure management
+<a class="slurm_link" href="#failure_management"></a>
+</h2>
 When the primary slurmctld is shut down, information about all completed but
 not yet indexed jobs held within the Elasticsearch plugin saved to a
 file named <b>elasticsearch_state</b>, which is located in the
@@ -142,7 +148,7 @@ permits the plugin to restore the information when the slurmctld is restarted,
 and will be sent to the Elasticsearch database when the connection is
 restored.</p>
 
-<h2>Acknowledgments</h2>
+<h2 id="ack">Acknowledgments<a class="slurm_link" href="#ack"></a></h2>
 <p>The Elasticsearch plugin was created as part of Alejandro Sanchez's
 <a href="https://upcommons.upc.edu/handle/2117/79252">Master's Thesis</a>.</p>
 

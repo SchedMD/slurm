@@ -2,7 +2,9 @@
 
 <h1>Cgroups Guide</h1>
 
-<h2>Cgroups Overview</h2>
+<h2 id="overview">Cgroups Overview
+<a class="slurm_link" href="#overview"></a>
+</h2>
 <p>For a comprehensive description of Linux Control Groups (cgroups) see the
 <a href="https://www.kernel.org/doc/Documentation/cgroup-v1/cgroups.txt"> 
 cgroups documentation</A> at kernel.org. Detailed knowledge of cgroups is not
@@ -25,7 +27,9 @@ apply controls to a cgroup:
 </ul>
 </ul>
 
-<h2>General Usage Notes</h2>
+<h2 id="Usage">General Usage Notes
+<a class="slurm_link" href="#Usage"></a>
+</h2>
 <ul>
 <li>There can be a serious performance problem with memory cgroups
 on conventional multi-socket, multi-core nodes in kernels prior to 2.6.38 due
@@ -43,7 +47,9 @@ correctly with this configuration. Please make sure your system.conf does
 not use JoinControllers.</li>
 </ul>
 
-<h2>Use of Cgroups in Slurm</h2>
+<h2 id="cgroups">Use of Cgroups in Slurm
+<a class="slurm_link" href="#cgroups"></a>
+</h2>
 <p>Slurm provides cgroup versions of a number of plugins.</p>
 <ul>
 <li>proctrack (process tracking)</li>
@@ -54,7 +60,9 @@ other more standard plugins, as described below.
 </ul>
 <p>Slurm also uses cgroups for resource specialization.</p>
 
-<h2>Slurm Cgroups Configuration Overview</h2>
+<h2 id="Configuration">Slurm Cgroups Configuration Overview
+<a class="slurm_link" href="#Configuration"></a>
+</h2>
 <p>There are several sets of configuration options for Slurm cgroups:</p>
 <ul>
 <li><a href="slurm.conf.html">slurm.conf</a> provides options to enable the
@@ -66,11 +74,14 @@ specific plugins.</li>
 <li>System-level resource specialization is enabled using node configuration 
 parameters.</li>
 </ul>
-<a name="available"></a>
 
-<h2>Currently Available Cgroup Plugins</h2>
+<h2 id="Plugins">Currently Available Cgroup Plugins
+<a class="slurm_link" href="#Plugins"></a>
+</h2>
 
-<h3>proctrack/cgroup plugin</h3>
+<h3 id="proctrack">proctrack/cgroup plugin
+<a class="slurm_link" href="#proctrack"></a>
+</h3>
 <p>The proctrack/cgroup plugin is an alternative to other proctrack
 plugins such as proctrack/linux for process tracking and
 suspend/resume capability. proctrack/cgroup uses the freezer subsystem
@@ -82,7 +93,7 @@ which is more reliable for tracking and control than proctrack/linux.</p>
 options apply. See the <a href="cgroup.conf.html">cgroup.conf</a> man page for
 details.</p>
 
-<h3>task/cgroup plugin</h3>
+<h3 id="task">task/cgroup plugin<a class="slurm_link" href="#task"></a></h3>
 <p>The task/cgroup plugin is an alternative to other task plugins such as
 the task/affinity plugin for task management. task/cgroup provides the
 following features:</p>
@@ -105,7 +116,9 @@ binding.</li>
 options also apply. See the <a href="cgroup.conf.html">cgroup.conf</a> man page
 for details.</p>
 
-<h3>jobacct_gather/cgroup plugin</h3>
+<h3 id="jobacct_gather">jobacct_gather/cgroup plugin
+<a class="slurm_link" href="#jobacct_gather"></a>
+</h3>
 <p>
 The jobacct_gather/cgroup plugin is an alternative to the jobacct_gather/linux
 plugin for the collection of accounting statistics for jobs, steps and tasks.
@@ -122,7 +135,9 @@ jobacct_gather/linux plugin.
 options apply. See the <a href="cgroup.conf.html">cgroup.conf</a> man page for
 details.</p>
 
-<h2>Use of Cgroups for Resource Specialization</h2>
+<h2 id="Specialization">Use of Cgroups for Resource Specialization
+<a class="slurm_link" href="#Specialization"></a>
+</h2>
 <p>Resource Specialization may be used to reserve a subset of cores on each compute 
 node for exclusive use by the Slurm compute node daemons (slurmd, slurmstepd).
 It may also be used to apply a real memory limit to the daemons. The daemons are
@@ -132,7 +147,9 @@ in the memory hierarchy. System-level resource specialization is enabled with
 special node configuration parameters in 
 <a href="slurm.conf.html">slurm.conf</a> and core specialization in
 <a href="core_spec.html">core_spec.html</a>.
-<h2>Organization of Slurm Cgroups</h2>
+<h2 id="Organization">Organization of Slurm Cgroups
+<a class="slurm_link" href="#Organization"></a>
+</h2>
 <p>Slurm cgroups are organized as follows.  A base directory (mount point) is
 created at /sys/fs/cgroup, or as configured by the <i>CgroupMountpoint</I> option in
 <a href="cgroup.conf.html">cgroup.conf</a>. All cgroup

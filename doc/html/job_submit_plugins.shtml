@@ -2,7 +2,7 @@
 
 <h1><a name="top">Job Submit Plugin API</a></h1>
 
-<h2> Overview</h2>
+<h2 id="overview">Overview<a class="slurm_link" href="#overview"></a></h2>
 <p> This document describes Slurm job submit plugins and the API that
 defines them. It is intended as a resource to programmers wishing to write
 their own Slurm job submit plugins. This is version 100 of the API.</p>
@@ -52,7 +52,7 @@ located in the default script directory (typically the subdirectory "etc" of
 the installation directory).</p>
 
 
-<h2>API Functions</h2>
+<h2 id="api">API Functions<a class="slurm_link" href="#api"></a></h2>
 <p>All of the following functions are required. Functions which are not
 implemented must be stubbed.
 
@@ -119,7 +119,7 @@ be modified.<br>
 <span class="commandline">SLURM_SUCCESS</span> on success, or<br>
 <span class="commandline">SLURM_ERROR</span> on failure.
 
-<h2>Lua Functions</h2>
+<h2 id="lua">Lua Functions<a class="slurm_link" href="#lua"></a></h2>
 <p>The Lua functions differ slightly from those implemented in C for
 better ease of use. Sample Lua scripts can be found with the Slurm distribution
 in the directory <i>contribs/lua</i>. The default installation location of
@@ -195,7 +195,7 @@ be modified.<br>
 <p style="margin-left:.2in"><b>Returns</b>: <br>
 <a href="#job_modify_returns">Returns from job_modify() are the same as the returns from job_submit().</a>
 
-<h2>Lua Job Attributes</h2>
+<h2 id="attr">Lua Job Attributes<a class="slurm_link" href="#attr"></a></h2>
 <p>The available job attributes change occasionally with different versions of
 Slurm. To find the job attributes that are available for the version of Slurm
 you're using, go to the <a href="https://github.com/SchedMD/slurm"> SchedMD
@@ -207,7 +207,7 @@ the list of attributes available for the job_descriptor (e.g. submission or
 modification request).
 </p>
 
-<h2>Building</h2>
+<h2 id="building">Building<a class="slurm_link" href="#building"></a></h2>
 <p>Generally using a LUA interface for a job submit plugin is best:
 It is simple to write and maintain with minimal dependencies upon the Slurm
 data structures.
@@ -223,7 +223,6 @@ far more complex.
 It also requires access to a multitude of Slurm header files as shown in the
 procedure below.</p>
 
-<a name="job_modify_manualbuild">
 <ol>
 <li>You will need to at least partly build Slurm first. The "configure" command
 must be executed in order to build the "config.h" file in the build directory.</li>

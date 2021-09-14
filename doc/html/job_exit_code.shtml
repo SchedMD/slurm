@@ -17,19 +17,23 @@ result in a Job State of FAILED with a Reason of
 255.  While it is possible for a job to return a negative exit code,
 Slurm will display it as an unsigned value in the 0 - 255 range.</p>
 
-<h2>Job Step Exit Codes</h2>
+<h2 id="exitcodes">Job Step Exit Codes
+<a class="slurm_link" href="#exitcodes"></a>
+</h2>
 
 <p>When a job contains multiple job steps, the exit code of each
 executable invoked by srun is saved individually to the job step
 record.</p>
 
-<h2>Signaled Jobs</h2>
+<h2 id="signaled">Signaled Jobs<a class="slurm_link" href="#signaled"></a></h2>
 
 <p>When a job or step is sent a signal that causes its termination,
 Slurm also captures the signal number and saves it to the job or step
 record.</p>
 
-<h2>Displaying Exit Codes and Signals</h2>
+<h2 id="displayed">Displaying Exit Codes and Signals
+<a class="slurm_link" href="#displayed"></a>
+</h2>
 
 <p>Slurm displays a job's exit code in the output of the <b>scontrol
 show job</b> and the <b>sview</b> utility.  Slurm displays job step
@@ -40,7 +44,7 @@ exit codes in the output of the <b>scontrol show step</b> and the
 signal number will be displayed after the exit code, delineated by a
 colon(:).</p>
 
-<h2>Database Job/Step Records</h2>
+<h2 id="db">Database Job/Step Records<a class="slurm_link" href="#db"></a></h2>
 <p>The Slurm control daemon sends job and step records to the Slurm
 database when the Slurm accounting_storage plugin is installed.  Job
 and step records sent to the Slurm db can be viewed using the
@@ -49,7 +53,9 @@ ExitCode field whose format mirrors the output of <b>scontrol</b> and
 <b>sview</b> described above.</p>
 
 
-<h1>Derived Exit Code and Comment String</h1>
+<h1 id="derived">Derived Exit Code and Comment String
+<a class="slurm_link" href="#derived"></a>
+</h1>
 
 <p>After reading the above description of a job's exit code, one can
 imagine a scenario where a central task of a batch job fails but the
@@ -81,7 +87,9 @@ completes and provide a description of what failed.  This includes the
 ability to annotate a successful completion to jobs that appear to
 have failed but actually succeeded.</p>
 
-<h2>The sjobexitmod command</h2>
+<h2 id="sjobexitmod">The sjobexitmod command
+<a class="slurm_link" href="#sjobexitmod"></a>
+</h2>
 
 <p>The sjobexitmod command is available to display and update the
 two derived exit fields of the Slurm db's job record.

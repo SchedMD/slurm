@@ -674,7 +674,9 @@ points.</p>
 <p><a href="spank.html">SPANK</a> is another mechanism that may be useful
 to invoke logic in the user commands, slurmd daemon, and slurmstepd daemon.</p>
 
-<h3>Failure Handling</h3>
+<h2 id="failure_handling">Failure Handling
+<a class="slurm_link" href="#failure_handling"></a>
+</h2>
 <p>If the Epilog fails (returns a non-zero exit code), this will result in the
 node being set to a DRAIN state.
 If the EpilogSlurmctld fails (returns a non-zero exit code), this will only
