@@ -30,8 +30,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 #
 # Report the slurm configuration
 #
@@ -58,13 +56,9 @@ expect {
 	}
 }
 
-if {$matches != 3} {
-	if {$matches == 2} {
-		log_warn "It appears you are running with multiple slurmds"
-	} else {
-		log_error "scontrol show config command failed"
-		set exit_code 1
-	}
+subtest {$matches >= 2} "Verify output for scontrol show config"
+if {$matches == 2} {
+	log_warn "It appears you are running with multiple slurmds"
 }
 
 #
@@ -86,10 +80,7 @@ expect {
 		wait
 	}
 }
-if {$matches < 1} {
-	log_error "scontrol show partition command failed"
-	set exit_code 1
-}
+subtest {$matches >= 1} "Verify scontrol show partition"
 
 #
 # Report one slurm partition
@@ -110,10 +101,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "scontrol show partition command with name failed"
-	set exit_code 1
-}
+subtest {$matches == 1} "Verify scontrol show partition by name"
 
 #
 # Report all slurm front end nodes
@@ -135,7 +123,7 @@ expect {
 	}
 }
 if {$matches < 1} {
-	log_warn "No front end nodes found"
+	subskip "Subtest requires front end nodes"
 } else {
 #
 #	Report one slurm front end node
@@ -156,10 +144,7 @@ if {$matches < 1} {
 			wait
 		}
 	}
-	if {$matches != 1} {
-		log_error "scontrol show frontend command with name failed"
-		set exit_code 1
-	}
+	subtest {$matches == 1} "Verify scontrol show frontend by name"
 }
 
 #
@@ -181,10 +166,7 @@ expect {
 		wait
 	}
 }
-if {$matches < 1} {
-	log_error "scontrol show node command failed"
-	set exit_code 1
-}
+subtest {$matches >= 1} "Verify scontrol show node"
 
 #
 # Report one slurm node
@@ -205,22 +187,15 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "scontrol show node command with name failed"
-	set exit_code 1
-}
+subtest {$matches == 1} "Verify scontrol show node by name"
 
 #
-# Report slurm daemons on this node
+# Report slurm daemons on this node (assuming we are on SlurmctldHost)
 #
 set matches     0
 spawn $scontrol show daemons
 expect {
 	-re "slurmctld" {
-		incr matches
-		exp_continue
-	}
-	-re "slurmd" {
 		incr matches
 		exp_continue
 	}
@@ -231,7 +206,4 @@ expect {
 		wait
 	}
 }
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 1} "Verify scontrol show daemons"

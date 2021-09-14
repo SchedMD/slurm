@@ -29,11 +29,11 @@ source ./globals
 set complete_script    "test$test_id\.bash"
 set fail_script        "test$test_id\.fail"
 set job_id             0
-set exit_code          0
 
 proc cleanup {} {
-	global bin_rm complete_script fail_script
+	global bin_rm complete_script fail_script job_id
 
+	cancel_job $job_id
 	exec $bin_rm -f $complete_script $fail_script
 }
 
@@ -50,7 +50,7 @@ make_bash_script $complete_script "$bin_sleep 20"
 make_bash_script $fail_script "BadCommand"
 
 proc requeue_job { id } {
-	global scontrol exit_code
+	global scontrol
 
 	spawn $scontrol requeue $id
 	expect {
@@ -85,20 +85,13 @@ if { $job_id == 0 } {
 }
 
 # Wait for the job to be in the complete state
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Error waiting for job $job_id to complete"
-	cancel_job $job_id
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 # Requeue the job when it is complete
 requeue_job $job_id
 
 # Check to see if the job state is PENDING after the requeue
-if {![check_job_state $job_id PENDING|RUNNING]} {
-	log_error "Job was not on the desired state"
-	set exit_code 1
-}
+subtest [check_job_state $job_id PENDING|RUNNING] "Job state should be PENDING after the requeue"
 
 cancel_job $job_id
 
@@ -125,23 +118,12 @@ if { $job_id == 0 } {
 }
 
 # Wait for the job to be in the complete state
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Error waiting for job $job_id to complete"
-	cancel_job $job_id
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 # Requeue the job when it is complete
 requeue_job $job_id
 
 # Check to see if the job state is PENDING after the requeue
-if {![check_job_state $job_id PENDING|RUNNING]} {
-	log_error "Job was not on the desired state"
-	set exit_code 1
-}
+subtest [check_job_state $job_id PENDING|RUNNING] "Job state should be PENDING after the requeue"
 
 cancel_job $job_id
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

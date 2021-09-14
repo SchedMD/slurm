@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
 set file_in          "test$test_id.input"
 set file_out         "test$test_id.output"
 set file_out2        "test$test_id.output2"
@@ -96,12 +95,10 @@ set node_count 0
 spawn $bin_cat $file_out
 expect {
 	-re "slurm_allocation_lookup" {
-		log_error "Couldn't look up the job correctly"
-		set exit_code 1
+		fail "Couldn't look up the job correctly"
 	}
 	-re "No such file or directory" {
-		log_error "For some reason the resize script wasn't found"
-		set exit_code 1
+		fail "For some reason the resize script wasn't found"
 	}
 	-re "($number): *uid=" {
 		incr task_count
@@ -116,17 +113,8 @@ expect {
 	}
 }
 set task_target [expr $node_cnt + 1]
-if {$task_count != $task_target} {
-	log_error "Invalid task count ($task_count != $task_target)"
-	set exit_code 1
-}
-if {$node_count != 1} {
-	log_error "Invalid node count ($node_count != 1)"
-	set exit_code 1
-}
-if {$exit_code == 0} {
-	log_debug "So far, so good.."
-}
+subtest {$task_count == $task_target} "Verify original task count" "$task_count != $task_target"
+subtest {$node_count == 1} "Verify node count" "$node_count != 1"
 
 if {[wait_for_file $file_out2] != 0} {
 	fail "No output file2"
@@ -142,10 +130,4 @@ expect {
 		wait
 	}
 }
-if {$node_count != 3} {
-	fail "Invalid node count ($node_count != 3)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$node_count == 3} "Verify updated node count" "$node_count != 3"

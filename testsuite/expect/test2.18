@@ -32,7 +32,6 @@ set cluster_name   ""
 set acct_good      "test${test_id}_acct_good"
 set acct_bad       "test${test_id}_acct_bad"
 set part_name      "test${test_id}_part"
-set exit_code      0
 
 #
 # Check accounting config and bail if not found.
@@ -45,13 +44,12 @@ if {[string compare [get_admin_level] "Administrator"]} {
 }
 
 proc set_part_val {part_type part_val} {
-	global scontrol part_name exit_code
+	global scontrol part_name
 
 	spawn $scontrol update partitionname=$part_name $part_type=$part_val
 	expect {
 		-re "Error" {
-			log_error "$part_type was not set"
-			set exit_code 1
+			fail "$part_type was not set"
 		}
 		timeout {
 			fail "scontrol is not responding"
@@ -63,60 +61,18 @@ proc set_part_val {part_type part_val} {
 }
 
 proc cleanup { } {
-	global scancel scontrol sacctmgr part_name acct_good acct_bad exit_code
+	global scancel scontrol sacctmgr part_name acct_good acct_bad
 
-	set del_part 0
-
-	spawn $scancel -p $part_name
-	expect {
-		timeout {
-			log_error "scancel is not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
+	run_command "$scancel -p $part_name"
 
 	log_debug "Any error, except for unresponsiveness, from the previous scancel is expected and should be ignored"
 
-	spawn $scontrol delete partition=$part_name
-	expect {
-		-re "error" {
-			log_error "scontrol did not remove partition $part_name"
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol is not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	spawn $sacctmgr -i delete account $acct_good $acct_bad
-	expect {
-		-re "Deleting accounts" {
-			set del_part 1
-			exp_continue
-		}
-		timeout {
-			log_error "sacctmgr is not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-
-	return $del_part
+	run_command "$scontrol delete partition=$part_name"
+	run_command "$sacctmgr -i delete account $acct_good $acct_bad"
 }
 
 proc create_acct { acct } {
-
-	global sacctmgr exit_code user_name cluster_name
+	global sacctmgr user_name cluster_name
 
 	set create_acct 0
 	spawn $sacctmgr -i create account $acct cluster=$cluster_name
@@ -144,17 +100,12 @@ proc create_acct { acct } {
 	}
 
 	if {$create_acct !=1 } {
-		log_error "Account was not added"
-		set exit_code 1
+		fail "Account was not added"
 	}
-
-
 }
 
 proc test_part { acct part acct_con } {
-
-	global srun exit_code
-
+	global srun
 
 	set sub_job 0
 
@@ -164,8 +115,7 @@ proc test_part { acct part acct_con } {
 			if { $acct_con == 1 } {
 				log_debug "This error is expected"
 			} else {
-				log_error "This error should not have occured"
-				set exit_code 1
+				fail "This error should not have occured"
 			}
 			exp_continue
 		}
@@ -204,8 +154,7 @@ create_acct $acct_bad
 spawn $scontrol create partition=$part_name nodes=$node_name
 expect {
 	-re "error" {
-		log_error "Partition was not created"
-		set exit_code 1
+		fail "Partition was not created"
 	}
 	timeout {
 		fail "scontrol is not reponding"
@@ -258,10 +207,5 @@ test_part $acct_good $part_name 0
 #
 test_part $acct_bad $part_name 1
 
-
 # Sleep before automatically calling cleanup
 sleep 5
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

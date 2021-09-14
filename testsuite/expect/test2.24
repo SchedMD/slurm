@@ -32,7 +32,6 @@ set value         ""
 array set conf_val {}
 set new_conf      ""
 set opt_cnt       0
-set exit_code     0
 
 if {![is_super_user]} {
 	skip "This test requires that the user be root or the SlurmUser"
@@ -127,16 +126,9 @@ foreach opt [array names conf_val] {
 	log_user 1
 
 	if {$match != 1} {
-		log_error "$opt = $conf_val($opt) was not found in new config file"
-		set exit_code 1
+		fail "$opt = $conf_val($opt) was not found in new config file"
 	} else {
 		incr tot_match
 	}
 }
-if {$tot_match != $opt_cnt} {
-	fail "Not all the values in the new config file were found ($tot_match != $opt_cnt)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$tot_match == $opt_cnt} "Verify all values found in the new config file" "$tot_match != $opt_cnt"

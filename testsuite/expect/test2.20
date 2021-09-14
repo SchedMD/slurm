@@ -26,8 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 #
 # test single bracket hostnames
 #
@@ -57,10 +55,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 4} {
-	log_error "Show hostnames failure ($matches != 4)"
-	set exit_code 1
-}
+subtest {$matches == 4} "Test single bracket hostnames" "$matches != 4"
 
 #
 # test double bracket hostnames
@@ -91,10 +86,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 4} {
-	log_error "Show hostnames failure ($matches != 4)"
-	set exit_code 1
-}
+subtest {$matches == 4} "Test double bracket hostnames" "$matches != 4"
 
 #
 # test triple bracket hostnames
@@ -141,10 +133,4 @@ expect {
 		wait
 	}
 }
-if {$matches != 8} {
-	fail "Show hostnames failure ($matches != 8)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 8} "Test triple bracket hostnames" "$matches != 8"
