@@ -170,7 +170,7 @@ void batch_bind(batch_job_launch_msg_t *req)
 	bitstr_t *req_map, *hw_map;
 	slurm_cred_arg_t arg;
 	uint16_t sockets=0, cores=0, num_cpus;
-	int start, task_cnt=0;
+	int task_cnt=0;
 	int job_node_id;
 
 	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS) {
@@ -178,12 +178,17 @@ void batch_bind(batch_job_launch_msg_t *req)
 		return;
 	}
 	job_node_id = nodelist_find(arg.job_hostlist, conf->node_name);
-	start = _get_local_node_info(&arg, job_node_id, &sockets, &cores);
-	if (start < 0) {
+	if ((job_node_id < 0) || (job_node_id > arg.job_nhosts)) {
 		error("missing node 0 in job credential");
 		slurm_cred_free_args(&arg);
 		return;
 	}
+
+	/*
+	 * We have already checked the job_node_id above, no need to check the
+	 * return code here.
+	 */
+	(void) _get_local_node_info(&arg, job_node_id, &sockets, &cores);
 	if ((sockets * cores) == 0) {
 		error("socket and core count both zero");
 		slurm_cred_free_args(&arg);
@@ -751,13 +756,13 @@ static bitstr_t *_get_avail_map(launch_tasks_request_msg_t *req,
 	/* we need this node's ID in relation to the whole
 	 * job allocation, not just this jobstep */
 	job_node_id = nodelist_find(arg.job_hostlist, conf->node_name);
-	start = _get_local_node_info(&arg, job_node_id, &sockets, &cores);
-	if (start < 0) {
+	if ((job_node_id < 0) || (job_node_id > arg.job_nhosts)) {
 		error("missing node %d in job credential",
 		      job_node_id);
 		slurm_cred_free_args(&arg);
 		return NULL;
 	}
+	start = _get_local_node_info(&arg, job_node_id, &sockets, &cores);
 	debug3("slurmctld s %u c %u; hw s %u c %u t %u",
 	       sockets, cores, *hw_sockets, *hw_cores, *hw_threads);
 
