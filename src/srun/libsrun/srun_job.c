@@ -748,11 +748,6 @@ extern void init_srun(int argc, char **argv, log_options_t *logopt,
 	_set_submit_dir_env();
 
 	/*
-	 * Set up slurmctld message handler
-	 */
-	slurmctld_msg_init();
-
-	/*
 	 * save process startup time to be used with -I<timeout>
 	 */
 	srun_begin_time = time(NULL);
