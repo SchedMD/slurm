@@ -171,13 +171,15 @@ void batch_bind(batch_job_launch_msg_t *req)
 	slurm_cred_arg_t arg;
 	uint16_t sockets=0, cores=0, num_cpus;
 	int start, task_cnt=0;
+	int job_node_id;
 
 	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS) {
 		error("job lacks a credential");
 		return;
 	}
-	start = _get_local_node_info(&arg, 0, &sockets, &cores);
-	if (start != 0) {
+	job_node_id = nodelist_find(arg.job_hostlist, conf->node_name);
+	start = _get_local_node_info(&arg, job_node_id, &sockets, &cores);
+	if (start < 0) {
 		error("missing node 0 in job credential");
 		slurm_cred_free_args(&arg);
 		return;

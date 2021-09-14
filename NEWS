@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix --distribution=arbitrary for salloc.
  -- Fix jobcomp/script regression introduced in 21.08.0rc1 0c75b9ac9d.
  -- Only send the batch node in the step_hostlist in the job credential.
+ -- When setting affinity for the batch step don't assume the batch host is node
+    0.
 
 * Changes in Slurm 21.08.0
 ==========================
