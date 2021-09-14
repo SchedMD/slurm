@@ -40,6 +40,7 @@ documents those changes that are of interest to users and administrators.
  -- Give better error message if -m plane is given with no size.
  -- Fix --distribution=arbitrary for salloc.
  -- Fix jobcomp/script regression introduced in 21.08.0rc1 0c75b9ac9d.
+ -- Only send the batch node in the step_hostlist in the job credential.
 
 * Changes in Slurm 21.08.0
 ==========================

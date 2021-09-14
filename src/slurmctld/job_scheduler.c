@@ -2615,12 +2615,8 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr,
 	cred_arg.job_gres_list       = job_ptr->gres_list_alloc;
 /*	cred_arg.step_gres_list      = NULL; */
 
-#ifdef HAVE_FRONT_END
 	xassert(job_ptr->batch_host);
 	cred_arg.step_hostlist       = job_ptr->batch_host;
-#else
-	cred_arg.step_hostlist       = launch_msg_ptr->nodes;
-#endif
 	cred_arg.step_core_bitmap    = job_resrcs_ptr->core_bitmap;
 	cred_arg.step_mem_limit      = job_ptr->details->pn_min_memory;
 
