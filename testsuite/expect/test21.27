@@ -95,51 +95,10 @@ expect {
 #
 # Test for problems
 #
-	set exit_code 0
-	set matches 0
-	set nothing 0
-
-	set my_pid [spawn $sacctmgr -p show problem]
-	expect {
-		-re "$ta1..Account has no Associations" {
-			incr matches
-			exp_continue
-		}
-		-re "$ta2..Account has no Associations" {
-			incr matches
-			exp_continue
-		}
-		-re "$tc2.$ta3..Account has no users" {
-			incr matches
-			exp_continue
-		}
-		-re "$tu3.User has no Associations" {
-			incr matches
-			exp_continue
-		}
-		-re "$tu1.User does not have a uid" {
-			incr matches
-			exp_continue
-		}
-		-re "$tu2.User does not have a uid" {
-			incr matches
-			exp_continue
-		}
-
-		timeout {
-			slow_kill $my_pid
-			fail "sacctmgr show not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if {$matches != 6} {
-		log_error "sacctmgr found $matches of 6 problems"
-		incr exit_code 1
-	}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
-}
+set output [run_command -fail "$sacctmgr -p show problem"]
+subtest {[regexp -all "$ta1..Account has no Associations" $output] ==1} "Problem expected: $ta1..Account has no Associations"
+subtest {[regexp -all "$ta2..Account has no Associations" $output] ==1} "Problem expected: $ta2..Account has no Associations"
+subtest {[regexp -all "$tc2.$ta3..Account has no users" $output] ==1} "Problem expected: $tc2.$ta3..Account has no users"
+subtest {[regexp -all "$tu3.User has no Associations" $output] ==1} "Problem expected: $tu3.User has no Associations"
+subtest {[regexp -all "$tu1.User does not have a uid" $output] ==1} "Problem expected: $tu1.User does not have a uid"
+subtest {[regexp -all "$tu2.User does not have a uid" $output] ==1} "Problem expected: $tu2.User does not have a uid"
