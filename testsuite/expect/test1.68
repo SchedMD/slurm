@@ -32,7 +32,6 @@ set test_timer  "test$test_id.test_timer"
 set test_srun   "test$test_id.test_srun"
 set stop_srun   "test$test_id.stop_srun"
 set job_id      0
-set exit_code   0
 
 proc cleanup {} {
 	global bin_rm test_timer test_srun file_in stop_srun
@@ -91,8 +90,7 @@ spawn bash -i $file_in
 expect {
 	-re "sending job to the background" {
 		if {$time_num == 0} {
-			log_error "srun is not generating output"
-			set exit_code 1
+			fail "srun is not generating output"
 		}
 		set bg_time_num $time_num
 		set bg_match 1
@@ -100,8 +98,7 @@ expect {
 	}
 	-re "sending job to foreground" {
 		if {$time_num == $bg_time_num} {
-			log_error "srun is not progressing ($time_num == $bg_time_num)"
-			set exit_code 1
+			fail "srun is not progressing ($time_num == $bg_time_num)"
 		}
 		set fg_match 1
 		exp_continue
@@ -115,14 +112,10 @@ expect {
 		exp_continue
 	}
 	-re "BG Failed" {
-		log_error "Failed to find suspended srun job in background"
-		set exit_code 1
-		exp_continue
+		fail "Failed to find suspended srun job in background"
 	}
 	-re "FG Failed" {
-		log_error "Failed to find background srun job to put in foreground"
-		set exit_code 1
-		exp_continue
+		fail "Failed to find background srun job to put in foreground"
 	}
 	timeout {
 		fail "srun is not responding"
@@ -132,19 +125,7 @@ expect {
 	}
 }
 
-if {$fg_match != 1} {
-	fail "srun was not sent to the foreground"
-}
-if {$bg_match != 1} {
-	fail "srun was not sent to the background"
-}
-if {$time_num != 10} {
-	fail "srun is not generating output ($time_num != 10)"
-}
-if {$fini_match != 1} {
-	fail "srun did not finish the program submitted"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$fg_match == 1} "srun should be sent to the foreground"
+subtest {$bg_match == 1} "srun should be sent to the background"
+subtest {$time_num == 10} "srun should generate the right output"
+subtest {$fini_match == 1} "srun should finish the submitted program"

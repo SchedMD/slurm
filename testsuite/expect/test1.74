@@ -38,7 +38,6 @@ set acct_c1     "test$test_id\_acct_c_1"
 set acct_c2     "test$test_id\_acct_c_2"
 set qos         "test$test_id\_qos"
 set access_err  0
-set exit_code   0
 array set mod_qos_vals {}
 array set mod_acct_desc_vals {}
 array set mod_acct_vals {}
@@ -59,17 +58,15 @@ if {[string compare [get_admin_level] "Administrator"]} {
 set user [get_my_user_name]
 
 proc cleanup { } {
-	global acct acct_c1 acct_c2 exit_code qos
+	global acct acct_c1 acct_c2 qos
 	remove_acct "" "$acct,$acct_c1,$acct_c2"
 	if {[remove_qos "$qos"] != 0} {
-		log_warn "Not authorized to perform this test"
-		set $exit_code 1
+		log_warn "Unable to remove QOS (are you authorized)?"
 	}
 }
 
 proc srun_test {exp_cnt account} {
-
-	global srun acct exit_code node_cnt number bin_printenv
+	global srun acct node_cnt number bin_printenv
 
 	set job_id 0
 	set count 0
@@ -102,25 +99,19 @@ proc srun_test {exp_cnt account} {
 	}
 	if {$job_id == 0} {
 		if {$exp_cnt != 0} {
-			log_error "Did not get job id"
-			set exit_code 1
+			fail "Did not get job id"
 		}
 	} else {
 		if {[wait_for_job $job_id DONE] != 0} {
-			log_error "Waiting for job $job_id to complete"
-			set exit_code 1
+			fail "Timed out waiting for job $job_id to complete"
 		}
 	}
 
-	if {$count != $exp_cnt} {
-		log_error "Incorrect number of tasks were run ($count != $exp_cnt)"
-		set exit_code 1
-	}
+	subtest {$count == $exp_cnt} "Correct number of tasks should be run" "$count != $exp_cnt"
 }
 
 proc add_child {parent child maxnode grpnode} {
-
-	global user exit_code cluster
+	global user cluster
 
 	set acct_req(cluster) $cluster
 	set acct_req(parent) $parent
@@ -131,15 +122,11 @@ proc add_child {parent child maxnode grpnode} {
 	set user_req(account) $child
 
 	if { [add_acct $child [array get acct_req]] } {
-		log_error "Child account was not added"
-		incr exit_code
-		return 1
+		fail "Child account was not added"
 	}
 
 	if { [add_user $user [array get user_req]] } {
-		log_error "User was not added to child account"
-		incr exit_code
-		return 1
+		fail "User was not added to child account"
 	}
 	return 0
 }
@@ -251,9 +238,7 @@ if {[mod_acct $acct  [array get mod_acct_desc_vals] [array get mod_acct_vals] [a
 
 # Run srun test on parent and child accounts
 srun_test $node_cnt $acct
-
 srun_test [expr $node_cnt - 1] $acct_c1
-
 srun_test [expr $node_cnt - 2] $acct_c2
 
 #
@@ -273,11 +258,5 @@ mod_acct $acct_c2 [array get mod_acct_desc] [array get mod_acct_vals] [array get
 
 # Run srun test on parent and child accounts
 srun_test $node_cnt $acct
-
 srun_test [expr $node_cnt - 1] $acct_c1
-
 srun_test [expr $node_cnt - 2] $acct_c2
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
-}

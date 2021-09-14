@@ -29,8 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front end systems"
 }
@@ -108,10 +106,7 @@ expect {
 #
 log_debug "Optimal task layout was: $expected_layout"
 log_debug "Actual task layout was : $tested_layout"
-if {[string compare $tested_layout $expected_layout]} {
-	log_error "Failed to distribute tasks in nopack fashion"
-	set exit_code 1
-}
+subtest {$tested_layout eq $expected_layout} "Tasks distributed in pack fashion" "$tested_layout != $expected_layout"
 
 #
 # Submit a two node job with "nopack" distribution
@@ -159,10 +154,4 @@ expect {
 #
 log_debug "Optimal task layout was: $expected_layout"
 log_debug "Actual task layout was : $tested_layout"
-if {[string compare $tested_layout $expected_layout]} {
-	fail "Failed to distribute tasks in nopack fashion"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$tested_layout eq $expected_layout} "Tasks distributed in nopack fashion" "$tested_layout != $expected_layout"

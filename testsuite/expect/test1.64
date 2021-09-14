@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set matches     0
 
 # TODO: Remove this precondition check once 20.11 is no longer supported
@@ -55,10 +54,8 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
-		set matches -999
 		slow_kill $srun_pid
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		log_debug "EOF"
@@ -67,11 +64,4 @@ expect {
 }
 if {$matches != 2} {
 	fail "srun failed to process SIGINT while waiting for allocation"
-}
-
-#
-# Post-processing
-#
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

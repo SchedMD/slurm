@@ -31,11 +31,11 @@ set nodelist     ""
 set cputot       0
 set ntasks       0
 set ntaskpn      0
-set exit_code    0
 set sys_homo     0
 set file_in      "test$test_id\_sc"
-array set nodes {}
-array set tasks {}
+set job_id       0
+array set nodes  {}
+array set tasks  {}
 
 proc cleanup {} {
 	global bin_rm file_in
@@ -52,6 +52,12 @@ if {![param_contains [get_config_param "SelectTypeParameters"] "CR_PACK_NODES"]}
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is not compatible with front-end configurations"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
 }
 
 proc check_node_config { } {
@@ -99,7 +105,7 @@ proc check_node_config { } {
 }
 
 proc check_tasks_all {ntaskspn tasks} {
-	global scontrol exit_code
+	global scontrol
 
 	array set ntasks $tasks
 	set match 0
@@ -109,14 +115,11 @@ proc check_tasks_all {ntaskspn tasks} {
 		}
 	}
 
-	if {$match != 3} {
-		log_error "Incorrect number of tasks were set"
-		set exit_code 1
-	}
+	subtest {$match == 3} "Correct number of tasks were set for job with ntasks-per-node with the lost cpu count" "$match != 3"
 }
 
 proc check_tasks_off {ntaskspn tasks offset} {
-	global scontrol exit_code
+	global scontrol
 
 	array set ntasks $tasks
 	set match 0
@@ -130,14 +133,11 @@ proc check_tasks_off {ntaskspn tasks offset} {
 		incr match 1
 	}
 
-	if {$match != 3} {
-		log_error "Incorrect number of tasks were set $match != 3"
-		set exit_code 1
-	}
+	subtest {$match == 3} "Correct number of tasks were set for job with $offset less number of ntasks" "$match != 3"
 }
 
 proc check_cpu_all {nodes job_cpus ncpus} {
-	global scontrol exit_code
+	global scontrol
 
 	array set nnodes $nodes
 	array set jcpus $job_cpus
@@ -158,14 +158,11 @@ proc check_cpu_all {nodes job_cpus ncpus} {
 		}
 	}
 
-	if {$match != 3} {
-		log_error "Incorrect number of cpus were set"
-		set exit_code 1
-	}
+	subtest {$match == 3} "Correct number of cpus were set for job with $ncpus cpus per task" "$match != 3"
 }
 
 proc check_cpu_off {nodes job_cpus ncpus} {
-	global scontrol exit_code
+	global scontrol
 
 	array set nnodes $nodes
 	array set jcpus $job_cpus
@@ -200,10 +197,7 @@ proc check_cpu_off {nodes job_cpus ncpus} {
 		}
 	}
 
-	if {$match != 3} {
-		log_error "Incorrect number of cpus were set $match != 3"
-		set exit_code 1
-	}
+	subtest {$match == 3} "Correct number of cpus were set for job with lowest cpu count of the 3 nodes and tasks set to 1" "$match != 3"
 }
 
 proc submit_cpu {ntasks ncpus} {
@@ -281,11 +275,10 @@ if {$nb_nodes < 3} {
 make_bash_script $file_in "true"
 
 # Submit an exclusive job to get a nodelist
-set tmp_id 0
 spawn $sbatch -N3 -o/dev/null --exclusive $file_in
 expect {
 	-re "Submitted batch job ($number)" {
-		set tmp_id $expect_out(1,string)
+		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -296,13 +289,9 @@ expect {
 	}
 }
 
-if {[wait_for_job $tmp_id "DONE"] != 0} {
-	log_error "Error waiting for job $tmp_id to complete"
-	cancel_job $tmp_id
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
-spawn $scontrol show job $tmp_id
+spawn $scontrol show job $job_id
 expect {
 	-re "NodeList=($re_word_str)" {
 		set nodelist $expect_out(1,string)
@@ -357,7 +346,3 @@ check_tasks_off $ntaskpn [array get tasks] 1
 # across all nodes
 submit_tasks [expr $ntask -2] $ntaskpn
 check_tasks_off $ntaskpn [array get tasks] 2
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

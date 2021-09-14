@@ -29,17 +29,16 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
-set file_err_j       "test$test_id.j.%j.error"
-set file_in          "test$test_id.input"
-set file_out_perc    "test$test_id.%%.output"
-set file_out_perc_result "test$test_id.%.output"
-set file_out_J       "test$test_id.J.%J.output"
-set file_out_n       "test$test_id.n.%n.output"
-set file_out_s       "test$test_id.s.%s.output"
-set file_out_t       "test$test_id.t.%t.output"
-set file_out_u       "test$test_id.u.%u.output"
-set file_err_u       "test$test_id.u.%u.error"
+set file_err_j       "$test_dir/j.%j.error"
+set file_in          "$test_dir/input"
+set file_out_perc    "$test_dir/%%.output"
+set file_out_perc_result "$test_dir/%.output"
+set file_out_J       "$test_dir/J.%J.output"
+set file_out_n       "$test_dir/n.%n.output"
+set file_out_s       "$test_dir/s.%s.output"
+set file_out_t       "$test_dir/t.%t.output"
+set file_out_u       "$test_dir/u.%u.output"
+set file_err_u       "$test_dir/u.%u.error"
 set user_name        ""
 set job_id           0
 set task_cnt         5
@@ -54,10 +53,6 @@ set user_name [get_my_user_name]
 # Spawn a program that generates "task_id" (%t) in stdout file names
 # and confirm they are created
 #
-for {set task_id 0} {$task_id < $task_cnt} {incr task_id} {
-	set file_out_t_glob  "test$test_id.t.$task_id.output"
-	exec $bin_rm -f $file_out_t_glob
-}
 set timeout $max_job_delay
 set srun_pid [spawn $srun --output=$file_out_t -N1 -n$task_cnt -O -v -t1 $bin_id]
 expect {
@@ -78,18 +73,15 @@ if {$job_id == 0} {
 }
 set file_cnt 0
 for {set task_id 0} {$task_id < $task_cnt} {incr task_id} {
-	set file_out_t_glob  "test$test_id.t.$task_id.output"
-	if {[wait_for_file $file_out_t_glob] != 0} {
-		set exit_code 1
-	} else {
-		exec $bin_rm -f $file_out_t_glob
+	set file_out_t_glob  "$test_dir/t.$task_id.output"
+	if {[wait_for_file $file_out_t_glob] == 0} {
 		incr file_cnt
+	} else {
+		log_error "File $file_out_t_glob was not created"
 	}
+	file delete $file_out_t_glob
 }
-if {$file_cnt != $task_cnt} {
-	log_error "File format of %t in stdout failed"
-	set exit_code 1
-}
+subtest {$file_cnt == $task_cnt} "Spawn a program that generates task id (%t) in stdout file names and confirm they are created" "$task_cnt task output files were expected but $file_cnt were created"
 
 #
 # Spawn a shell via srun that includes "jobid" (%j) in stderr
@@ -120,17 +112,12 @@ if {$job_id == 0} {
 	fail "Job initiation failed"
 }
 if {$srun_exit == 0} {
-	log_error "Exit code failed to indicate an error"
-	set exit_code 1
+	fail "Exit code failed to indicate an error"
 }
 
-set file_err_j_glob  "test$test_id.j.$job_id.error"
-if {[wait_for_file $file_err_j_glob] == 0} {
-	exec $bin_rm -f $file_err_j_glob
-} else {
-	log_error "File format of %j in stderr failed"
-	set exit_code 1
-}
+set file_err_j_glob  "$test_dir/j.$job_id.error"
+subtest {[wait_for_file $file_err_j_glob] == 0} "Spawn a shell via srun that includes job name (%j) in stderr file name and confirm it is created"
+file delete $file_err_j_glob
 
 #
 # Spawn a shell via srun that includes literal percent sign (%) in stdout
@@ -154,12 +141,9 @@ expect {
 if {$job_id == 0} {
 	fail "Job initiation failed"
 }
-if {[wait_for_file $file_out_perc_result] != 0} {
-	log_error "File format of %% in stdout failed"
-	set exit_code 1
-} else {
-	exec $bin_rm -f $file_out_perc_result
-}
+
+subtest {[wait_for_file $file_out_perc_result] == 0} "Spawn a shell via srun that includes literal percent sign (%%) in stdout file name and confirm it is created"
+file delete $file_out_perc_result
 
 #
 # Spawn a shell via srun that includes "job_id.step_id" (%J) in stdout
@@ -183,14 +167,11 @@ expect {
 if {$job_id == 0} {
 	fail "Job initiation failed"
 }
+
 set task_id  0
-set file_out_J_glob  "test$test_id.J.$job_id.$task_id.output"
-if {[wait_for_file $file_out_J_glob] != 0} {
-	log_error "File format of %J in stdout failed"
-	set exit_code 1
-} else {
-	exec $bin_rm -f $file_out_J_glob
-}
+set file_out_J_glob  "$test_dir/J.$job_id.$task_id.output"
+subtest {[wait_for_file $file_out_J_glob] == 0} "Spawn a shell via srun that includes job step id (%J) in stdout file name and confirm it is created"
+file delete $file_out_J_glob
 
 #
 # Spawn a shell via srun with the %u in stdout file name and confirm
@@ -219,14 +200,9 @@ if {$job_id == 0} {
 #
 # Check that the correct files were created
 #
-set file_out_u_glob  "test$test_id.u.$user_name.output"
-
-if {[wait_for_file $file_out_u_glob]==0} {
-	exec $bin_rm -f $file_out_u_glob
-} else {
-	log_error "File format is not created correctly"
-	set exit_code 1
-}
+set file_out_u_glob  "$test_dir/u.$user_name.output"
+subtest {[wait_for_file $file_out_u_glob] == 0} "Spawn a shell via srun with %u in stdout file name and confirm it is created"
+file delete $file_out_u_glob
 
 #
 # Spawn shell via srun with %u in the stderr file name and confirm
@@ -260,22 +236,17 @@ if {$job_id == 0} {
 #
 # Check that the correct files where created
 #
-set file_err_u_glob  "test$test_id.u.$user_name.error"
-
-if {[wait_for_file $file_err_u_glob]==0} {
-	exec $bin_rm -f $file_err_u_glob
-} else {
-	log_error "File format is not created correctly"
-	set exit_code 1
-}
+set file_err_u_glob  "$test_dir/u.$user_name.error"
+subtest {[wait_for_file $file_err_u_glob] == 0} "Spawn shell via srun with %u in the stderr file name and confirm it is created"
+file delete $file_err_u_glob
 
 #
 # Spawn a shell via srun that includes "node_id" (%n) in stdout
 #  file name and confirm it is created
 #
 set node_id 0
-set file_out_n_glob  "test$test_id.n.$node_id.output"
-exec $bin_rm -f $file_out_n_glob
+set file_out_n_glob  "$test_dir/n.$node_id.output"
+file delete $file_out_n_glob
 
 set job_id   0
 set srun_pid [spawn $srun --output=$file_out_n -N1 -n$task_cnt -O -v -t1 $bin_printenv SLURMD_NODENAME]
@@ -297,38 +268,34 @@ if {$job_id == 0} {
 }
 set file_cnt 0
 for {set node_id 0} {$node_id < 2} {incr node_id} {
-	set file_out_n_glob  "test$test_id.n.$node_id.output"
+	set file_out_n_glob  "$test_dir/n.$node_id.output"
 
 	if {($node_id == 0) && ([wait_for_file $file_out_n_glob] != 0)} {
-		log_error "Missing file $file_out_n_glob"
-		set exit_code 1
+		fail "Missing file $file_out_n_glob"
 	} else {
 		exec $bin_sleep 1
 	}
 	if [file exists $file_out_n_glob] {
-		exec $bin_rm -f $file_out_n_glob
+		file delete $file_out_n_glob
 		incr file_cnt
 	}
 }
 
-if {$file_cnt != 1} {
-	log_error "File format of %n in stdout failed"
-	set exit_code 1
-}
+subtest {$file_cnt == 1} "Confirm file format of %n in stdout file"
 
 #
 # Spawn a shell via srun that includes "step_id" (%s) in stdout
 #  file name and confirm it is created. Use two step batch job.
 #
-exec $bin_rm -f $file_in
+file delete $file_in
 make_bash_script $file_in "
   $srun -n4 -O --output=$file_out_s -t1 $bin_printenv SLURMD_NODENAME
   $srun -n4 -O --output=$file_out_s -t1 $bin_printenv SLURMD_NODENAME
 "
 
 for {set step_id 0} {$step_id < 4} {incr step_id} {
-	set file_out_s_glob  "test$test_id.s.$step_id.output"
-	exec $bin_rm -f $file_out_s_glob
+	set file_out_s_glob  "$test_dir/s.$step_id.output"
+	file delete $file_out_s_glob
 }
 
 set node_cnt 1-4
@@ -353,39 +320,27 @@ expect {
 }
 if {$job_id == 0} {
 	fail "Job initiation failed"
-} else {
-	if {[wait_for_job $job_id DONE] != 0} {
-		log_error "Error completing job $job_id"
-		cancel_job $job_id
-		set exit_code 1
-	}
 }
-exec $bin_rm -f $file_in
+
+if {[wait_for_job $job_id DONE] != 0} {
+	cancel_job $job_id
+	fail "Error completing job $job_id"
+}
+file delete $file_in
 
 set file_cnt 0
 for {set step_id 0} {$step_id < 3} {incr step_id} {
-	set file_out_s_glob  "test$test_id.s.$step_id.output"
+	set file_out_s_glob  "$test_dir/s.$step_id.output"
 
 	if {($step_id < 2) && ([wait_for_file $file_out_s_glob] != 0)} {
-		log_error "Missing file $file_out_s_glob"
-		set exit_code 1
+		fail "Missing file $file_out_s_glob"
 	} else {
 		exec $bin_sleep 1
 	}
 	if [file exists $file_out_s_glob] {
-		exec $bin_rm -f $file_out_s_glob
+		file delete $file_out_s_glob
 		incr file_cnt
 	}
 }
 
-if {$file_cnt != 2} {
-	log_error "File format of %s in stdout failed($file_cnt)"
-	set exit_code 1
-}
-
-#
-# Post-processing
-#
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$file_cnt == 2} "Confirm format of %s in stdout file name ($file_cnt)"

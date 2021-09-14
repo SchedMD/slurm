@@ -30,8 +30,7 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id.input"
+set file_in     "$test_dir/input"
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
@@ -55,23 +54,19 @@ make_bash_script $file_in "
 # Submit a 4 node job
 #
 set timeout $max_job_delay
-set srun_pid [spawn $salloc -N4 ./$file_in]
+set srun_pid [spawn $salloc -N4 $file_in]
 expect {
 	-re "More processors requested than permitted" {
-		exec $bin_rm -f $file_in
 		skip "Can't test srun task distribution"
 	}
 	-re "Node count specification invalid" {
-		exec $bin_rm -f $file_in
 		skip "Can't test srun task distribution"
 	}
 	-re "configuration is not available" {
 		slow_kill $srun_pid
-		exec $bin_rm -f $file_in
 		skip "Partition too small for test"
 	}
 	-re "Required node not available" {
-		exec $bin_rm -f $file_in
 		skip "Can't test srun task distribution"
 	}
 	-re "Unable to contact" {
@@ -89,7 +84,6 @@ expect {
 		fail "srun terminated"
 	}
 }
-exec $bin_rm -f $file_in
 
 #
 # Get node names
@@ -135,25 +129,10 @@ expect {
 #
 # Verify node count
 #
-if {[string compare $host_0 ""] == 0} {
-	log_error "Did not get hostname of task 0"
-	set exit_code   1
-}
-if {[string compare $host_1 ""] == 0} {
-    log_error "Did not get hostname of task 1"
-	set exit_code   1
-}
-if {[string compare $host_2 ""] == 0} {
-    log_error "Did not get hostname of task 2"
-	set exit_code   1
-}
-if {[string compare $host_3 ""] == 0} {
-    log_error "Did not get hostname of task 3"
-	set exit_code   1
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$host_0 ne ""} "Should get hostname of task 0"
+subtest {$host_1 ne ""} "Should get hostname of task 1"
+subtest {$host_2 ne ""} "Should get hostname of task 2"
+subtest {$host_3 ne ""} "Should get hostname of task 3"
 
 #log_debug "Host_0:$host_0:host_1:$host_1:host_2:$host_2:host_3:$host_3:"
 #
@@ -166,24 +145,21 @@ expect {
 	-re "($number): *($re_word_str)" {
 		set host_num $expect_out(1,string)
 		if { $host_num == 0 } {
-			if {[string compare $expect_out(2,string) $host_0] == 0} {
+			if {$expect_out(2,string) eq $host_0} {
 				incr matches
 			} else {
-				log_error "Wrong node responded"
-				set exit_code   1
+				fail "Wrong node responded"
 			}
 		}
 		if { $host_num == 1 } {
-			if {[string compare $expect_out(2,string) $host_1] == 0} {
+			if {$expect_out(2,string) eq $host_1} {
 				incr matches
 			} else {
-				log_error "Wrong node responded"
-				set exit_code   1
+				fail "Wrong node responded"
 			}
 		}
 		if { $host_num > 1 } {
-			log_error "Too many tasks responded"
-			set exit_code   1
+			fail "Too many tasks responded"
 		}
 		exp_continue
 	}
@@ -202,10 +178,7 @@ expect {
 		wait
 	}
 }
-if {$matches < 2} {
-	log_error "Required nodes failed to respond"
-	set exit_code   1
-}
+subtest {$matches >= 2} "Required node should respond"
 
 #
 # Get two nodes relative (starting at) node 2
@@ -216,24 +189,21 @@ expect {
 	-re "($number): *($re_word_str)" {
 		set host_num $expect_out(1,string)
 		if { $host_num == 0 } {
-			if {[string compare $expect_out(2,string) $host_2] == 0} {
+			if {$expect_out(2,string) eq $host_2} {
 				incr matches
 			} else {
-				log_error "Wrong node responded"
-				set exit_code   1
+				fail "Wrong node responded"
 			}
 		}
 		if { $host_num == 1 } {
-			if {[string compare $expect_out(2,string) $host_3] == 0} {
+			if {$expect_out(2,string) eq $host_3} {
 				incr matches
 			} else {
-				log_error "Wrong node responded"
-				set exit_code   1
+				fail "Wrong node responded"
 			}
 		}
 		if { $host_num > 1 } {
-			log_error "Too many tasks responded"
-			set exit_code   1
+			fail "Too many tasks responded"
 		}
 		exp_continue
 	}
@@ -252,10 +222,7 @@ expect {
 		wait
 	}
 }
-if {$matches < 2} {
-	log_error "Required nodes failed to respond"
-	set exit_code   1
-}
+subtest {$matches >= 2} "Required node should respond"
 
 #
 # Get two nodes relative (starting at) node 3
@@ -270,9 +237,7 @@ expect {
 		exp_continue
 	}
 	-re "($number): *($re_word_str)" {
-		log_error "Running where we shouldn't be able to run"
-		set exit_code   1
-		exp_continue
+		fail "Running where we shouldn't be able to run"
 	}
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
@@ -289,10 +254,7 @@ expect {
 		wait
 	}
 }
-if {$error == 0} {
-	log_error "No error for inconsistent node count"
-	set exit_code   1
-}
+subtest {$error != 0} "Error expected for inconsistent node count"
 
 #
 # Post-processing
@@ -306,8 +268,4 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

@@ -28,7 +28,8 @@
 ############################################################################
 source ./globals
 
-set test_script          "test$test_id.sh"
+set test_script "$test_name.sh"
+set job_id      0
 
 #
 # Create a test script to be launch by srun
@@ -44,18 +45,24 @@ make_bash_script $test_script {
 	done
 }
 
+proc cleanup {} {
+	global test_script job_id
+
+	cancel_job $job_id
+	file delete $test_script
+}
+
 #
 # Launch the test script
 #
 set timeout $max_job_delay
-set jobid  0
-set stepid 0
+set step_id 0
 set job_running 0
 set srun_pid [spawn $srun --unbuffered -v -n1 -t1 ./$test_script]
 expect {
 	-re "launching StepId=(($number)\\.$re_word_str)" {
-		set stepid $expect_out(1,string)
-		set jobid $expect_out(2,string)
+		set step_id $expect_out(1,string)
+		set job_id $expect_out(2,string)
 		exp_continue
 	}
 	"Running" {
@@ -69,14 +76,14 @@ expect {
 		wait
 	}
 }
-if {$jobid == 0 || $job_running == 0} {
+if {$job_id == 0 || $job_running == 0} {
 	fail "Failed to launch test program through srun"
 }
 
 #
 # Kill srun's stdio streams
 #
-log_debug "Test saw stepid $stepid"
+log_debug "Test saw step id $step_id"
 set file [exp_open]
 close $file
 
@@ -86,10 +93,10 @@ close $file
 set running "seed"
 set i 0
 while {[string compare $running ""]} {
-	set running [exec $squeue --noheader --states=running --steps=$stepid]
+	set running [exec $squeue --noheader --states=running --steps=$step_id]
 	sleep 1
 	if {$i == 30} {
-		cancel_job $jobid
+		cancel_job $job_id
 		sleep 5
 		exec kill -9 $srun_pid
 		fail "Job step is not completing"
@@ -104,17 +111,13 @@ log_debug "Test sees step is gone, srun should have exited as well"
 #
 if [catch {exec kill -0 $srun_pid}] {
 	log_debug "Srun command is terminated, as desired"
-	set exit_code 0
 } else {
-	log_error "srun is still running after job exits!"
-	set exit_code 1
+	fail "srun is still running after job exits!"
 }
-spawn $squeue --noheader --jobs=$jobid
+spawn $squeue --noheader --jobs=$job_id
 expect {
 	-re "R" {
-		log_error "Job not completed!"
-		set exit_code 1
-		exp_continue
+		fail "Job not completed!"
 	}
 	timeout {
 		fail "squeue not responding"
@@ -122,11 +125,4 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $test_script
-} else {
-	cancel_job $jobid
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

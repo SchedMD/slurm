@@ -25,16 +25,9 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id.input"
+set file_in     "$test_dir/input"
 set job_id      0
 set timeout $max_job_delay
-
-proc cleanup {} {
-	global file_in
-
-	exec rm -f $file_in
-}
 
 if {[get_config_param "SlurmdUser"] ne "root(0)"} {
 	skip "This test is incompatible with SlurmdUser != root"
@@ -71,8 +64,7 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding"
-		set exit_code 1
+		fail "srun not responding"
 	}
 }
 
@@ -89,13 +81,12 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding"
-		set exit_code 1
+		fail "srun not responding"
 	}
 }
 
 set exec_cnt 0
-send "$srun -l --bcast=/tmp/test$test_id ./$file_in\r"
+send "$srun -l --bcast=/tmp/test$test_id $file_in\r"
 expect {
 	-re "not supported" {
 		skip "srun --bcast option not supported on this system type (e.g. front-end)"
@@ -108,8 +99,7 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding"
-		set exit_code 1
+		fail "srun not responding"
 	}
 }
 
@@ -119,8 +109,7 @@ expect {
 		#break
 	}
 	timeout {
-		log_error "srun not responding"
-		set exit_code 1
+		fail "srun not responding"
 	}
 }
 
@@ -131,11 +120,4 @@ expect {
 	}
 }
 
-if {$exec_cnt != $node_cnt} {
-	log_error "Executable count != node count ($exec_cnt != $node_cnt)"
-	set exit_code 1
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$exec_cnt == $node_cnt} "Executable count equals node count" "$exec_cnt != $node_cnt"

@@ -26,15 +26,14 @@
 ############################################################################
 source ./globals
 
-set file_out     "test$test_id.testfile"
+set file_out     "$test_dir/testfile"
+set script       "$test_dir/script"
 set file_c       "segv.c"
-set script       "test$test_id.script"
 set err_num_c    0
 set err_num_srun 0
-set exit_code    0
 
 # Remove any remaining files
-exec $bin_rm -f $file_out $script $file_c
+file delete $file_out $script $file_c
 
 exec $bin_echo "
 int main(char **argv, int argc)
@@ -49,13 +48,13 @@ exec $bin_chmod 700 $file_out
 # Set core size ulimit to zero
 make_bash_script $script "
 ulimit -c 0
-./$file_out
+$file_out
 echo exit_code = $?
 "
 
 # Run script alone
 set error_match 0
-spawn ./$script
+spawn $script
 expect {
 
 	-re "Segmentation fault" {
@@ -75,17 +74,14 @@ expect {
 	}
 }
 
-if {$error_match != 2} {
-	log_error "Program did not return a segmentation fault ($error_match != 2)"
-	set exit_code 1
-}
+subtest {$error_match == 2} "Program should return a segmentation fault" "$error_match != 2"
 
 # Run script with srun
 # Note the "Segmentation fault" and "exit_code" messages can come in any order
 # Expect seems to have some trouble exiting if the "exit_code" comes first
 set error_match 0
 set timeout $max_job_delay
-spawn $srun -n1 -t1 ./$script
+spawn $srun -n1 -t1 $script
 expect {
 	-re "(Segmentation|exit_code = $err_num_c)" {
 		incr error_match
@@ -94,22 +90,11 @@ expect {
 		}
 	}
 	timeout {
-		log_error "srun is not responding"
-		set exit_code 1
+		fail "srun is not responding"
 	}
 	eof {
 		wait
 	}
 }
 
-if {$error_match != 2} {
-	fail "srun did not have a segmentation error when running the program ($error_match != 2)"
-} else {
-	log_debug "This error is expected"
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_out $script $file_c
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$error_match == 2} "srun should have a segmentation error when running the program" "$error_match != "
