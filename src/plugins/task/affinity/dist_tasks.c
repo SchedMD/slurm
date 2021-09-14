@@ -169,8 +169,8 @@ void batch_bind(batch_job_launch_msg_t *req)
 {
 	bitstr_t *req_map, *hw_map;
 	slurm_cred_arg_t arg;
-	uint16_t sockets=0, cores=0, num_cpus;
-	int task_cnt=0;
+	uint16_t sockets = 0, cores = 0, num_cpus;
+	int task_cnt = 0;
 	int job_node_id;
 
 	if (slurm_cred_get_args(req->cred, &arg) != SLURM_SUCCESS) {
