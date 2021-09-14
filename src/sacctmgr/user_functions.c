@@ -1964,6 +1964,12 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 	*/
 	if (user_cond->assoc_cond) {
 		if (cond_set & SA_SET_WCKEY) {
+			/*
+			 * You can no delete associations and wckeys at the same
+			 * time, so if SA_SET_WCKEY is set we need to grab some
+			 * lists that are only set up in the assoc_cond and use
+			 * them in the wckey_cond.
+			 */
 			if (user_cond->assoc_cond->cluster_list &&
 			    list_count(user_cond->assoc_cond->cluster_list)) {
 				wckey_cond->cluster_list =
@@ -1976,8 +1982,18 @@ extern int sacctmgr_delete_user(int argc, char **argv)
 					user_cond->assoc_cond->user_list;
 				user_cond->assoc_cond->user_list = NULL;
 			}
-		} else
+		} else if (user_cond->assoc_cond->cluster_list &&
+			   list_count(user_cond->assoc_cond->cluster_list)) {
+			/*
+			 * If not deleting wckeys specifically we need to check
+			 * if we have a cluster list.  If we do we are only
+			 * deleting a user from a set of clusters and not really
+			 * from the whole system. If this is the case then we
+			 * need to set SA_SET_ASSOC so we don't remove the user
+			 * from the whole system.
+			 */
 			cond_set |= SA_SET_ASSOC;
+		}
 	}
 
 	if (!cond_set) {
