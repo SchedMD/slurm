@@ -14,6 +14,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with updating job started with node range.
  -- Fix issue with nodes not clearing state in the database when the slurmctld
     is started with clean-start.
+ -- Fix hetjob components > 1 timing out due to InactiveLimit.
 
 * Changes in Slurm 21.08.1
 ==========================

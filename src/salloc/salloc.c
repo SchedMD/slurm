@@ -155,6 +155,14 @@ static int _set_cluster_name(void *x, void *arg)
 	return 0;
 }
 
+static int _copy_other_port(void *x, void *arg)
+{
+	job_desc_msg_t *desc = x;
+	desc->other_port = *(uint16_t *)arg;
+
+	return SLURM_SUCCESS;
+}
+
 int main(int argc, char **argv)
 {
 	static bool env_cache_set = false;
@@ -371,9 +379,13 @@ int main(int argc, char **argv)
 	 * Not creating this thread will leave other_port == 0, and will
 	 * prevent slurmctld from killing the salloc --no-shell job.
 	 */
-	if (!saopt.no_shell)
+	if (!saopt.no_shell) {
 		msg_thr = slurm_allocation_msg_thr_create(&first_job->other_port,
 							  &callbacks);
+		if (job_req_list)
+			list_for_each(job_req_list, _copy_other_port,
+				      &first_job->other_port);
+	}
 
 	/* NOTE: Do not process signals in separate pthread. The signal will
 	 * cause slurm_allocate_resources_blocking() to exit immediately. */

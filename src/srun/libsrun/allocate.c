@@ -469,6 +469,14 @@ relinquish:
 	return NULL;
 }
 
+static int _copy_other_port(void *x, void *arg)
+{
+	job_desc_msg_t *desc = x;
+	desc->other_port = *(uint16_t *)arg;
+
+	return SLURM_SUCCESS;
+}
+
 /*
  * Allocate nodes for heterogeneous job from the slurm controller --
  * retrying the attempt if the controller appears to be down, and optionally
@@ -536,6 +544,7 @@ List allocate_het_job_nodes(bool handle_signals)
 	/* create message thread to handle pings and such from slurmctld */
 	msg_thr = slurm_allocation_msg_thr_create(&first_job->other_port,
 						  &callbacks);
+	list_for_each(job_req_list, _copy_other_port, &first_job->other_port);
 
 	/* NOTE: Do not process signals in separate pthread. The signal will
 	 * cause slurm_allocate_resources_blocking() to exit immediately. */
