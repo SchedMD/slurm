@@ -33,8 +33,8 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.{35,36,37} - Clear user hold on job update if hold=false.
  -- Prevent CRON_JOB flag from being cleared when loading job state.
  -- sacctmgr - Fix deleting WCKeys when not specifying a cluster.
- -- Fix getting memory for the batch step when the batch node isn't the first
-    node in the allocation.
+ -- Fix getting memory for a step when the first node in the step isn't the
+    first node in the allocation.
  -- Make SelectTypeParameters=CR_Core_Memory default for cons_tres and cons_res.
  -- Correctly handle mutex unlocks in the gres code if failures happen.
  -- Give better error message if -m plane is given with no size.

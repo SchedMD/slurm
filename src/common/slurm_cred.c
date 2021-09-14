@@ -1284,14 +1284,29 @@ slurm_cred_get_signature(slurm_cred_t *cred, char **datap, uint32_t *datalen)
 	return SLURM_SUCCESS;
 }
 
-extern void slurm_cred_get_mem(slurm_cred_t *cred, int node_id,
+extern void slurm_cred_get_mem(slurm_cred_t *cred, char *node_name,
 			       const char *func_name,
 			       uint64_t *job_mem_limit,
 			       uint64_t *step_mem_limit)
 {
-	int rep_idx = slurm_get_rep_count_inx(cred->job_mem_alloc_rep_count,
-					      cred->job_mem_alloc_size,
-					      node_id);
+	int rep_idx = -1;
+	int node_id = -1;
+
+	/*
+	 * Batch steps only have the job_hostlist set and will always be 0 here.
+	 */
+	if (cred->step_id.step_id == SLURM_BATCH_SCRIPT) {
+		rep_idx = 0;
+	} else if ((node_id =
+		    nodelist_find(cred->job_hostlist, node_name)) >= 0) {
+		rep_idx = slurm_get_rep_count_inx(cred->job_mem_alloc_rep_count,
+					          cred->job_mem_alloc_size,
+						  node_id);
+
+	} else {
+		error("Unable to find %s in job hostlist: `%s'",
+		      node_name, cred->job_hostlist);
+	}
 
 	if (rep_idx < 0)
 		error("%s: node_id=%d, not found in job_mem_alloc_rep_count requested job memory not reset.",
@@ -1306,10 +1321,17 @@ extern void slurm_cred_get_mem(slurm_cred_t *cred, int node_id,
 	}
 
 	if (cred->step_mem_alloc) {
-		rep_idx = slurm_get_rep_count_inx(
-			cred->step_mem_alloc_rep_count,
-			cred->step_mem_alloc_size,
-			node_id);
+		rep_idx = -1;
+		if ((node_id =
+		     nodelist_find(cred->step_hostlist, node_name)) >= 0) {
+			rep_idx = slurm_get_rep_count_inx(
+						cred->step_mem_alloc_rep_count,
+						cred->step_mem_alloc_size,
+						node_id);
+		} else {
+			error("Unable to find %s in step hostlist: `%s'",
+			      node_name, cred->step_hostlist);
+		}
 		if (rep_idx < 0)
 			error("%s: node_id=%d, not found in step_mem_alloc_rep_count",
 			      func_name, node_id);
@@ -1356,7 +1378,7 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name, uint16_t cpus,
 {
 	bitstr_t	*job_core_bitmap, *step_core_bitmap;
 	hostset_t	hset = NULL;
-	int		node_id, host_index = -1;
+	int		host_index = -1;
 	uint32_t	i, j, i_first_bit=0, i_last_bit=0;
 	uint32_t	job_cpu_cnt = 0, step_cpu_cnt = 0;
 
@@ -1373,10 +1395,6 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name, uint16_t cpus,
 #else
 	host_index = hostset_find(hset, node_name);
 #endif
-	if (cred->step_id.step_id == SLURM_BATCH_SCRIPT)
-		node_id = 0;
-	else
-		node_id = host_index;
 	if ((host_index < 0) || (host_index >= cred->job_nhosts)) {
 		error("Invalid host_index %d for job %u",
 		      host_index, cred->step_id.job_id);
@@ -1429,7 +1447,7 @@ void format_core_allocs(slurm_cred_t *cred, char *node_name, uint16_t cpus,
 		}
 	}
 
-	slurm_cred_get_mem(cred, node_id, __func__, job_mem_limit,
+	slurm_cred_get_mem(cred, node_name, __func__, job_mem_limit,
 			   step_mem_limit);
 
 	*job_alloc_cores  = _core_format(job_core_bitmap);
