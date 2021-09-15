@@ -938,7 +938,8 @@ extern int gres_p_node_config_load(List gres_conf_list,
 		}
 	}
 
-	rc = common_node_config_load(gres_conf_list, gres_name, &gres_devices);
+	rc = common_node_config_load(gres_conf_list, gres_name, node_config,
+				     &gres_devices);
 
 	/*
 	 * See what envs the gres_slurmd_conf records want to set (if one

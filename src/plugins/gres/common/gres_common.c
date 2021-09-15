@@ -83,10 +83,11 @@ static gres_device_t *_init_gres_device(int index, char *one_name,
  * Common validation for what was read in from the gres.conf.
  * IN gres_conf_list
  * IN gres_name
+ * IN config
  * OUT gres_devices
  */
-extern int common_node_config_load(List gres_conf_list,
-				   char *gres_name,
+extern int common_node_config_load(List gres_conf_list, char *gres_name,
+				   node_config_load_t *config,
 				   List *gres_devices)
 {
 	int rc = SLURM_SUCCESS;
@@ -116,19 +117,23 @@ extern int common_node_config_load(List gres_conf_list,
 		}
 
 		while ((one_name = hostlist_shift(hl))) {
-			gres_device_t *gres_device;
-			if (!*gres_devices) {
-				*gres_devices =
-					list_create(destroy_gres_device);
+			/* We don't care about gres_devices in slurmctld */
+			if (config->in_slurmd) {
+				gres_device_t *gres_device;
+				if (!*gres_devices) {
+					*gres_devices = list_create(
+						destroy_gres_device);
+				}
+
+				gres_device = _init_gres_device(
+					index, one_name,
+					gres_slurmd_conf->unique_id);
+
+				if (gres_device->dev_num > max_dev_num)
+					max_dev_num = gres_device->dev_num;
+
+				list_append(*gres_devices, gres_device);
 			}
-
-			gres_device = _init_gres_device(
-				index, one_name, gres_slurmd_conf->unique_id);
-
-			if (gres_device->dev_num > max_dev_num)
-				max_dev_num = gres_device->dev_num;
-
-			list_append(*gres_devices, gres_device);
 
 			/*
 			 * Don't check for file duplicates or increment the

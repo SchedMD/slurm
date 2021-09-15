@@ -538,7 +538,8 @@ extern int gres_p_node_config_load(List gres_conf_list,
 	if (rc != SLURM_SUCCESS)
 		fatal("%s: failed to merge MPS and GPU configuration", plugin_name);
 
-	rc = common_node_config_load(gres_conf_list, gres_name, &gres_devices);
+	rc = common_node_config_load(gres_conf_list, gres_name, config,
+				     &gres_devices);
 	if (rc != SLURM_SUCCESS)
 		fatal("%s: failed to load configuration", plugin_name);
 	if (_build_mps_dev_info(gres_conf_list) == 0)
