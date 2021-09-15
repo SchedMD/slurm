@@ -2044,7 +2044,7 @@ extern bool bb_valid_pool_test(bb_state_t *state_ptr, char *pool_name)
 
 extern int bb_write_file(char *file_name, char *buf)
 {
-	int amount, fd, nwrite, pos;
+	int fd, nwrite;
 
 	(void) unlink(file_name);
 	fd = creat(file_name, 0600);
@@ -2059,20 +2059,15 @@ extern int bb_write_file(char *file_name, char *buf)
 	}
 
 	nwrite = strlen(buf);
-	pos = 0;
-	while (nwrite > 0) {
-		amount = write(fd, &buf[pos], nwrite);
-		if ((amount < 0) && (errno != EINTR)) {
-			error("Error writing file %s, %m", file_name);
-			close(fd);
-			return ESLURM_WRITING_TO_FILE;
-		}
-		nwrite -= amount;
-		pos    += amount;
-	}
+	safe_write(fd, buf, nwrite);
 
 	(void) close(fd);
 	return SLURM_SUCCESS;
+
+rwfail:
+	error("Error writing file %s: %m", file_name);
+	(void) close(fd);
+	return SLURM_ERROR;
 }
 
 extern int bb_write_nid_file(char *file_name, char *node_list,
