@@ -40,6 +40,7 @@
 
 #include "src/common/slurm_xlator.h"
 #include "src/common/cgroup.h"
+#include "src/common/gpu.h"
 #include "src/common/gres.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
@@ -1178,4 +1179,31 @@ extern void gpu_p_step_hardware_fini(void)
 extern char *gpu_p_test_cpu_conv(char *cpu_range)
 {
 	return NULL;
+}
+
+/*
+ * gpu_p_energy_read read current average watts and update last_update_watt
+ *
+ * dv_ind         (IN) The device index
+ * energy         (IN) A pointer to gpu_status_t structure
+ */
+extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
+{
+	const char *status_string;
+	uint64_t curr_milli_watts;
+	rsmi_status_t rsmi_rc = rsmi_dev_power_ave_get(
+		dv_ind, 0, &curr_milli_watts);
+
+	if (rsmi_rc != RSMI_STATUS_SUCCESS) {
+		rsmi_rc = rsmi_status_string(rsmi_rc, &status_string);
+		error("RSMI: Failed to get power: %s", status_string);
+		gpu->energy.current_watts = NO_VAL;
+		return SLURM_ERROR;
+	}
+
+	gpu->last_update_watt = curr_milli_watts/1000000;
+	gpu->previous_update_time = gpu->last_update_time;
+	gpu->last_update_time = time(NULL);
+
+	return SLURM_SUCCESS;
 }

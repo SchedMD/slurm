@@ -52,6 +52,7 @@
 #include "src/common/cgroup.h"
 #include "src/common/slurm_acct_gather_energy.h"
 #include "src/common/slurm_acct_gather_profile.h"
+#include "src/common/gpu.h"
 #include "src/common/gres.h"
 
 #define DEFAULT_RSMI_TIMEOUT 10
@@ -85,14 +86,6 @@
 const char plugin_name[] = "AcctGatherEnergy rsmi plugin";
 const char plugin_type[] = "acct_gather_energy/rsmi";
 const uint32_t plugin_version = SLURM_VERSION_NUMBER;
-
-// array of struct to track the status of a GPU
-typedef struct {
-	uint32_t last_update_watt;
-	time_t last_update_time;
-	time_t previous_update_time;
-	acct_gather_energy_t energy;
-} gpu_status_t;
 
 /*
  * internal variables
@@ -188,33 +181,6 @@ static int _send_profile(void)
 }
 
 /*
- * _read_rsmi_value read current average watts and update last_update_watt
- *
- * dv_ind         (IN) The device index
- * energy         (IN) A pointer to gpu_status_t structure
- */
-static int _read_rsmi_value(uint32_t dv_ind, gpu_status_t *gpu)
-{
-	const char *status_string;
-	uint64_t curr_milli_watts;
-	rsmi_status_t rsmi_rc = rsmi_dev_power_ave_get(
-		dv_ind, 0, &curr_milli_watts);
-
-	if (rsmi_rc != RSMI_STATUS_SUCCESS) {
-		rsmi_rc = rsmi_status_string(rsmi_rc, &status_string);
-		error("RSMI: Failed to get power: %s", status_string);
-		gpu->energy.current_watts = NO_VAL;
-		return SLURM_ERROR;
-	}
-
-	gpu->last_update_watt = curr_milli_watts/1000000;
-	gpu->previous_update_time = gpu->last_update_time;
-	gpu->last_update_time = time(NULL);
-
-	return SLURM_SUCCESS;
-}
-
-/*
  * _get_additional_consumption computes consumption between 2 times
  * time0	(IN) Previous time
  * time1	(IN) Current time
@@ -271,7 +237,7 @@ static int _thread_update_node_energy(void)
 	static uint32_t readings = 0;
 
 	for (i = 0; i < gpus_len; i++) {
-		rc = _read_rsmi_value(i, &gpus[i]);
+		rc = gpu_g_energy_read(i, &gpus[i]);
 		if (rc == SLURM_SUCCESS) {
 			_update_energy(&gpus[i], readings);
 		}

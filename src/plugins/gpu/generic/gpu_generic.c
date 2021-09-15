@@ -37,6 +37,7 @@
 #define _GNU_SOURCE
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/gpu.h"
 #include "src/common/gres.h"
 #include "src/common/log.h"
 
@@ -118,4 +119,9 @@ extern void gpu_p_step_hardware_fini(void)
 extern char *gpu_p_test_cpu_conv(char *cpu_range)
 {
 	return NULL;
+}
+
+extern int gpu_p_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
+{
+	return SLURM_SUCCESS;
 }

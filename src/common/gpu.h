@@ -40,6 +40,14 @@
 #include "slurm/slurm.h"
 #include "src/common/gres.h"
 
+// array of struct to track the status of a GPU
+typedef struct {
+	uint32_t last_update_watt;
+	time_t last_update_time;
+	time_t previous_update_time;
+	acct_gather_energy_t energy;
+} gpu_status_t;
+
 extern int gpu_plugin_init(void);
 extern int gpu_plugin_fini(void);
 extern void gpu_g_reconfig(void);
@@ -47,5 +55,6 @@ extern List gpu_g_get_system_gpu_list(node_config_load_t *node_conf);
 extern void gpu_g_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq);
 extern void gpu_g_step_hardware_fini(void);
 extern char *gpu_g_test_cpu_conv(char *cpu_range);
+extern int gpu_g_energy_read(uint32_t dv_ind, gpu_status_t *gpu);
 
 #endif /* !_GPU_PLUGIN_H */
