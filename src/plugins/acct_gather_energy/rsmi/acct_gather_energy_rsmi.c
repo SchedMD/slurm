@@ -45,7 +45,6 @@
  * consumption for a job.
  */
 
-#include <rocm_smi/rocm_smi.h>
 #include <dlfcn.h>
 
 #include "src/common/slurm_xlator.h"
@@ -537,14 +536,9 @@ static int _get_joules_task(uint16_t delta)
  */
 extern int init(void)
 {
-	if (!dlopen("librocm_smi64.so", RTLD_NOW | RTLD_GLOBAL))
-		fatal("RSMI configured, but wasn't found.");
-
 	/* put anything that requires the .conf being read in
 	   acct_gather_energy_p_conf_parse
 	*/
-
-	rsmi_init(0);
 
 	return SLURM_SUCCESS;
 }
@@ -579,7 +573,6 @@ extern int fini(void)
 	xfree(start_current_energies);
 	FREE_NULL_BITMAP(saved_usable_gpus);
 
-	rsmi_shut_down();
 	return SLURM_SUCCESS;
 }
 

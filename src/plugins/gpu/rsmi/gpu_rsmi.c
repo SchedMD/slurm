@@ -38,6 +38,8 @@
 
 #define _GNU_SOURCE
 
+#include <dlfcn.h>
+
 #include "src/common/slurm_xlator.h"
 #include "src/common/cgroup.h"
 #include "src/common/gpu.h"
@@ -118,6 +120,11 @@ const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 
 extern int init(void)
 {
+	if (!dlopen("librocm_smi64.so", RTLD_NOW | RTLD_GLOBAL))
+		fatal("RSMI configured, but wasn't found.");
+
+	rsmi_init(0);
+
 	debug("%s: %s loaded", __func__, plugin_name);
 
 	return SLURM_SUCCESS;
@@ -126,6 +133,8 @@ extern int init(void)
 extern int fini(void)
 {
 	debug("%s: unloading %s", __func__, plugin_name);
+
+	rsmi_shut_down();
 
 	return SLURM_SUCCESS;
 }
@@ -1053,8 +1062,6 @@ static List _get_system_gpu_list_rsmi(node_config_load_t *node_config)
 	char driver[RSMI_STRING_BUFFER_SIZE];
 	char version[RSMI_STRING_BUFFER_SIZE];
 
-	rsmi_init(0);
-
 	_rsmi_get_driver(driver, RSMI_STRING_BUFFER_SIZE);
 	_rsmi_get_version(version, RSMI_STRING_BUFFER_SIZE);
 	debug("AMD Graphics Driver Version: %s", driver);
@@ -1110,8 +1117,6 @@ static List _get_system_gpu_list_rsmi(node_config_load_t *node_config)
 		xfree(links);
 	}
 
-	rsmi_shut_down();
-
 	info("%u GPU system device(s) detected", device_count);
 	return gres_list_system;
 }
@@ -1156,8 +1161,6 @@ extern void gpu_p_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq)
 	// Save a copy of the GPUs affected, so we can reset things afterwards
 	FREE_NULL_BITMAP(saved_gpus);
 	saved_gpus = bit_copy(usable_gpus);
-
-	rsmi_init(0);
 
 	// Set the frequency of each GPU index specified in the bitstr
 	_set_freq(usable_gpus, freq);
