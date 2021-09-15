@@ -1996,45 +1996,6 @@ fini:
 }
 
 /*
- * For interactive jobs, build a script containing the relevant burst buffer
- * commands, as needed by the Lua API.
- */
-static int _build_bb_script(job_record_t *job_ptr, char *script_file)
-{
-	char *out_buf = NULL;
-	int rc, fd;
-
-	xassert(job_ptr);
-	xassert(job_ptr->burst_buffer);
-
-	/* Open file */
-	(void) unlink(script_file);
-	fd = creat(script_file, 0600);
-	if (fd < 0) {
-		rc = errno;
-		error("Error creating file %s, %m", script_file);
-		return rc;
-	}
-
-	/* Write burst buffer specification to the file. */
-	xstrcat(out_buf, "#!/bin/bash\n");
-	xstrcat(out_buf, job_ptr->burst_buffer);
-	safe_write(fd, out_buf, strlen(out_buf));
-
-	xfree(out_buf);
-	(void) close(fd);
-
-	return SLURM_SUCCESS;
-
-rwfail:
-	error("Failed to write %s to %s", out_buf, script_file);
-	xfree(out_buf);
-	(void) close(fd);
-
-	return SLURM_ERROR;
-}
-
-/*
  * Secondary validation of a job submit request with respect to burst buffer
  * options. Performed after establishing job ID and creating script file.
  *
@@ -2105,12 +2066,12 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 		(void) mkdir(job_dir, 0700);
 		xstrfmtcat(script_file, "%s/script", job_dir);
 		if (job_ptr->batch_flag == 0) {
-			rc = _build_bb_script(job_ptr, script_file);
+			rc = bb_build_bb_script(job_ptr, script_file);
 			if (rc != SLURM_SUCCESS) {
 				/*
 				 * There was an error writing to the script,
-				 * that error was logged by _build_bb_script().
-				 * Bail out now.
+				 * and that error was logged by
+				 * bb_build_bb_script(). Bail out now.
 				 */
 				goto fini;
 			}
