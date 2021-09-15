@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set matches     0
 
 #
@@ -52,10 +51,7 @@ expect {
 	}
 }
 
-if {$matches != 0} {
-	log_error "sinfo printer header"
-	set exit_code 1
-}
+subtest {$matches == 0} "Look for header or underline with --noheader"
 
 #
 # Look for header or underline
@@ -78,10 +74,7 @@ expect {
 	}
 }
 
-if {$matches != 0} {
-	log_error "sinfo printer header"
-	set exit_code 1
-}
+subtest {$matches == 0} "Look for header or underline with --noheader --Node"
 
 #
 # Look for header or underline
@@ -104,10 +97,4 @@ expect {
 	}
 }
 
-if {$matches != 0} {
-	fail "sinfo printer header"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 0} "Look for header or underline with --noheader --summarize"
