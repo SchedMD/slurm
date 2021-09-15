@@ -51,6 +51,34 @@ static int _match_name_list(void *x, void *key)
 	return 0;
 }
 
+static gres_device_t *_init_gres_device(int index, char *one_name,
+					char *unique_id)
+{
+	int tmp, digit = -1;
+
+	gres_device_t *gres_device = xmalloc(sizeof(gres_device_t));
+	gres_device->dev_num = -1;
+	gres_device->index = index;
+	gres_device->path = xstrdup(one_name);
+
+	gres_device->major = gres_device_major(gres_device->path);
+	gres_device->unique_id = xstrdup(unique_id);
+	tmp = strlen(one_name);
+	for (int i = 1;  i <= tmp; i++) {
+		if (isdigit(one_name[tmp - i])) {
+			digit = tmp - i;
+			continue;
+		}
+		break;
+	}
+	if (digit >= 0)
+		gres_device->dev_num = atoi(one_name + digit);
+	else
+		gres_device->dev_num = -1;
+
+	return gres_device;
+}
+
 /*
  * Common validation for what was read in from the gres.conf.
  * IN gres_conf_list
@@ -61,12 +89,11 @@ extern int common_node_config_load(List gres_conf_list,
 				   char *gres_name,
 				   List *gres_devices)
 {
-	int i, tmp, rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 	ListIterator itr;
 	gres_slurmd_conf_t *gres_slurmd_conf;
 	hostlist_t hl;
 	char *one_name;
-	gres_device_t *gres_device;
 	List names_list;
 	int max_dev_num = -1;
 	int index = 0;
@@ -89,37 +116,19 @@ extern int common_node_config_load(List gres_conf_list,
 		}
 
 		while ((one_name = hostlist_shift(hl))) {
-			int digit = -1;
+			gres_device_t *gres_device;
 			if (!*gres_devices) {
 				*gres_devices =
 					list_create(destroy_gres_device);
 			}
-			gres_device = xmalloc(sizeof(gres_device_t));
-			list_append(*gres_devices, gres_device);
 
-			gres_device->dev_num = -1;
-			gres_device->index = index;
-			gres_device->path = xstrdup(one_name);
-
-			gres_device->major = gres_device_major(
-				gres_device->path);
-			gres_device->unique_id =
-				xstrdup(gres_slurmd_conf->unique_id);
-			tmp = strlen(one_name);
-			for (i = 1;  i <= tmp; i++) {
-				if (isdigit(one_name[tmp - i])) {
-					digit = tmp - i;
-					continue;
-				}
-				break;
-			}
-			if (digit >= 0)
-				gres_device->dev_num = atoi(one_name + digit);
-			else
-				gres_device->dev_num = -1;
+			gres_device = _init_gres_device(
+				index, one_name, gres_slurmd_conf->unique_id);
 
 			if (gres_device->dev_num > max_dev_num)
 				max_dev_num = gres_device->dev_num;
+
+			list_append(*gres_devices, gres_device);
 
 			/*
 			 * Don't check for file duplicates or increment the
@@ -149,6 +158,7 @@ extern int common_node_config_load(List gres_conf_list,
 	list_destroy(names_list);
 
 	if (*gres_devices) {
+		gres_device_t *gres_device;
 		itr = list_iterator_create(*gres_devices);
 		while ((gres_device = list_next(itr))) {
 			if (gres_device->dev_num == -1)
