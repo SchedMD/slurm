@@ -34,7 +34,7 @@
 
 proc inc3_11_1 {} {
 	global cons_res_actived def_node def_node_name
-	global def_partition exit_code
+	global def_partition
 	global part_cores part_node part_node_cnt part_node_cores
 	global user_name
 	global heterogeneous
@@ -45,7 +45,7 @@ proc inc3_11_1 {} {
 	# Make a list of lists with a series of parameters to test.  All the tests
 	# in goodtests should pass, all those in badtests should fail.
 	#
-	log_info "+++++ STARTING TEST 1 (Within: inc3.11.1) +++++"
+	log_info "+++++ STARTING TEST 1 +++++"
 	set badtests "
 	{}
 	{Duration=5   Nodes=$def_node   User=$user_name Flags=ignore_jobs}
@@ -72,16 +72,15 @@ proc inc3_11_1 {} {
 
 	foreach test $badtests {
 		set ret_code [create_res $res_name $test]
-		if {$ret_code == 0} {
+		if {! [
+			subtest {$ret_code != 0} "Reservation {$test} should fail to be created"
+		]} {
 			delete_res $res_name
-			fail "Reservation $test did not fail but should have (Within: inc3.11.1)"
-		} else {
-			log_info "Expected error. You can turn that frown upside-down. (Within: inc3.11.1)"
 		}
 	}
 
 	if {![is_super_user]} {
-		skip "Can not test more unless SlurmUser or root (Within: inc3.11.1)"
+		skip "Can not test more unless SlurmUser or root"
 	}
 
 	set corecnt [ expr $part_cores / 2 ]
@@ -102,16 +101,15 @@ proc inc3_11_1 {} {
 
 	foreach test $goodtests {
 		set ret_code [create_res $res_name $test]
-		if {$ret_code != 0} {
-			fail "Unable to create a valid reservation (Within: inc3.11.1)"
-		} else {
-			log_debug "Reservation created as expected. (Within: inc3.11.1)"
-		}
-		set ret_code [delete_res $res_name]
-		if {$ret_code != 0} {
-			fail "Unable to delete a reservation (Within: inc3.11.1)"
-		} else {
-			log_debug "Reservation deleted as expected. (Within: inc3.11.1)"
+		if [
+			subtest {$ret_code == 0} "Reservation {$test} should get succeed in getting created"
+		] {
+			set ret_code [delete_res $res_name]
+			if {$ret_code != 0} {
+				fail "Unable to delete a reservation"
+			} else {
+				log_debug "Reservation deleted as expected"
+			}
 		}
 	}
 }

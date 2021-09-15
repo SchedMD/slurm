@@ -48,7 +48,7 @@ proc inc3_11_11_resv_create { res_name args } {
 	set cmd "StartTime=now+60minutes Duration=1 User=$user_name $args"
 	set ret_code [create_res $res_name $cmd]
 	if {$ret_code != 0} {
-		inc3_11_11_fini $res_name "Unable to create a valid reservation (Within: inc3.11.11)" 1
+		inc3_11_11_fini $res_name "Unable to create a valid reservation" 1
 	}
 }
 
@@ -59,9 +59,9 @@ proc inc3_11_11_resv_fail { res_name args } {
 	set cmd "StartTime=now+60minutes Duration=1 User=$user_name $args"
 	set ret_code [create_res $res_name $cmd]
 	if {$ret_code == 0} {
-		inc3_11_11_fini "Reservation should have failed to create (Within: inc3.11.11)" 1
+		inc3_11_11_fini "Reservation should have failed to create" 1
 	} else {
-		log_info "Expected error. You can turn that frown upside-down.(Within: inc3.11.11)"
+		log_info "Expected error. You can turn that frown upside-down"
 	}
 }
 
@@ -70,7 +70,7 @@ proc inc3_11_11_resv_update_s { res_name args } {
 
 	set ret_code [update_res $res_name $args]
 	if {$ret_code != 0} {
-		inc3_11_11_fini $res_name "Reservation should have succeeded update with $args (Within: inc3.11.11)" 1
+		inc3_11_11_fini $res_name "Reservation should have succeeded update with $args" 1
 	}
 }
 
@@ -79,9 +79,9 @@ proc inc3_11_11_resv_update_f { res_name args } {
 
 	set ret_code [update_res $res_name $args]
 	if {$ret_code == 0} {
-		inc3_11_11_fini $res_name "Reservation should have failed update with $args (Within: inc3.11.11)" 1
+		inc3_11_11_fini $res_name "Reservation should have failed update with $args" 1
 	} else {
-		log_info "Expected error. You can turn that frown upside-down.(Within: inc3.11.11)"
+		log_info "Expected error. You can turn that frown upside-down"
 	}
 }
 
@@ -89,20 +89,20 @@ proc inc3_11_11_resv_test { res_name part flags nodes } {
 	set res_info [get_reservations $res_name]
 	if { ![dict exists $res_info $res_name] } {
 		delete_res $res_name
-		fail "Unable to get info about reservation $res_name (Within: inc3.11.11)"
+		fail "Unable to get info about reservation $res_name"
 	}
 	set res_flags     [dict get $res_info $res_name "Flags"]
 	set res_partition [dict get $res_info $res_name "PartitionName"]
 	set res_nodes     [dict get $res_info $res_name "Nodes"]
 
 	if {[string compare $flags $res_flags] == -1} {
-		inc3_11_11_fini $res_name "failed to get reservation flags $flags!=$res_flags (Within: inc3.11.11)" 1
+		inc3_11_11_fini $res_name "failed to get reservation flags $flags!=$res_flags" 1
 	}
 	if {[string compare $part $res_partition]} {
-		inc3_11_11_fini $res_name "failed to get partition $part!=$res_partition (Within: inc3.11.11)" 1
+		inc3_11_11_fini $res_name "failed to get partition $part!=$res_partition" 1
 	}
 	if {[string compare $nodes $res_nodes]} {
-		inc3_11_11_fini $res_name "failed to get partition nodes $nodes!=$res_nodes (Within: inc3.11.11)" 1
+		inc3_11_11_fini $res_name "failed to get partition nodes $nodes!=$res_nodes" 1
 	}
 }
 
@@ -110,7 +110,7 @@ proc inc3_11_11 {} {
 	global def_partition
 	set res_name "resv3.11.11"
 
-	log_info "+++++ STARTING TEST 11 (Within: inc3.11.11) +++++"
+	log_info "+++++ STARTING TEST 11 +++++"
 
 
 	set part_nodes [get_partition_param $def_partition "Nodes"]

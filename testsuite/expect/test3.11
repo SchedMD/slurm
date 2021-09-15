@@ -41,7 +41,6 @@ source ./inc3.11.10
 source ./inc3.11.11
 
 set file_in		"test$test_id.input"
-set exit_code		0
 set res_name		""
 set res_name_save	""
 set res_nodes		""
@@ -241,7 +240,3 @@ if {$cons_res_actived == 1 && $part_node_cores > 1 && $core_spec == 0 && $exclus
 }
 inc3_11_10
 inc3_11_11
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

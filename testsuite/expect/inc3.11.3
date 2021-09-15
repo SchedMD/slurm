@@ -32,7 +32,7 @@
 ############################################################################
 
 proc inc3_11_3 {} {
-	global user_name exit_code
+	global user_name
 	global bin_rm file_in bin_sleep sbatch number scontrol
 	global re_word_str scancel
 
@@ -40,11 +40,11 @@ proc inc3_11_3 {} {
 
 	# TEST 3
 
-	log_info "+++++ STARTING TEST 3 (Within: inc3.11.3) +++++"
+	log_info "+++++ STARTING TEST 3 +++++"
 	# Make the reservation
 	set ret_code [create_res $res_name "StartTime=now+60minutes Duration=60 NodeCnt=1 User=$user_name"]
 	if {$ret_code != 0} {
-		fail "Unable to create a valid reservation (Within: inc3.11.3)"
+		fail "Unable to create a valid reservation"
 	}
 
 	# Make the job script
@@ -52,6 +52,7 @@ proc inc3_11_3 {} {
 	make_bash_script $file_in "$bin_sleep 10"
 
 	# Submit the batch job
+	set job_id 0
 	set sbatch_pid [spawn $sbatch -N1 --reservation=$res_name $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
@@ -59,9 +60,10 @@ proc inc3_11_3 {} {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch not responding. (Within: inc3.11.3)"
 			slow_kill $sbatch_pid
-			set exit_code 1
+			delete_res $res_name
+			cancel_job $job_id
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
@@ -69,7 +71,7 @@ proc inc3_11_3 {} {
 	}
 	if {$job_id == 0} {
 		delete_res $res_name
-		fail "Batch submit failure (Within: inc3.11.3)"
+		fail "Batch submit failure"
 	}
 
 	# Show the job, make sure reservation tag is right
@@ -77,39 +79,34 @@ proc inc3_11_3 {} {
 	expect {
 		-re "Reservation=($re_word_str)" {
 			set tmp_res_name $expect_out(1,string)
-			if {$tmp_res_name != $res_name} {
-				log_error "problem submitting a job to a reservation.  Job $job_id is running on reservation $tmp_res_name, not $res_name (Within: inc3.11.3)"
-				set exit_code 1
-				exp_continue
-			}
+			subtest {$tmp_res_name == $res_name} "Job should be running in created reservation" "Job $job_id is running on reservation $tmp_res_name, not $res_name"
 		}
 		-re "Invalid job id specified" {
-			log_error "Job $job_id not found (Within: inc3.11.3)"
-			set exit_code 1
-			exp_continue
+			delete_res $res_name
+			fail "Job $job_id not found"
 		}
 		timeout {
-			log_error "scontrol not responding (Within: inc3.11.3)"
-			set exit_code 1
+			delete_res $res_name
+			cancel_job $job_id
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
 		}
 	}
 
-	log_debug "JOB is running as expected (Within: inc3.11.3)"
+	log_debug "JOB is running as expected"
 
 	# Cancel the job
 	spawn $scancel -v $job_id
 	expect {
 		-re "Invalid job_id" {
-			log_error "Error cancelling the job submitted to the reservation.  Job $job_id not found (Within: inc3.11.3)"
-			set exit_code 1
-			exp_continue
+			delete_res $res_name
+			fail "Error cancelling the job submitted to the reservation.  Job $job_id not found"
 		}
 		timeout {
-			log_error "scancel not responding Within: inc3.11.3)"
-			set exit_code 1
+			delete_res $res_name
+			fail "scancel not responding"
 		}
 		eof {
 			wait

@@ -29,7 +29,6 @@
 source ./globals
 
 set authorized     1
-set exit_code      0
 set part_name      "QA_TEST"
 
 if {![is_super_user]} {
@@ -43,6 +42,13 @@ regexp "($number)" [get_config_param "OverTimeLimit"] {} overtimelim
 if {$overtimelim != 0} {
 	skip "Cannot run this test when OverTimeLimit is set. Exiting now"
 }
+
+proc cleanup {} {
+	global scontrol part_name
+
+	run_command "$scontrol delete PartitionName=$part_name"
+}
+cleanup
 
 #
 # Confirm the partition name does not already exist
@@ -108,20 +114,7 @@ if {[string compare $def_node ""] == 0} {
 #
 # Create a new partition
 #
-spawn $scontrol create PartitionName=$part_name Nodes=$def_node
-expect {
-	-re "error" {
-		log_error "Something bad happened on partition create"
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$scontrol create PartitionName=$part_name Nodes=$def_node"
 
 #
 # Confirm the partition now exists
@@ -152,10 +145,7 @@ expect {
 if {$found != 1} {
 	fail "Partition not created"
 }
-if {$allow != 1} {
-	log_error "Partition groups value incorrect"
-	set exit_code 1
-}
+subtest {$allow == 1} "Verify correct partition groups value"
 
 #
 # Now set AllowGroups to mine and TimeLimit=1
@@ -173,15 +163,8 @@ expect {
 		wait
 	}
 }
-spawn $scontrol update PartitionName=$part_name AllowGroups=$my_group MaxTime=1
-expect {
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$scontrol update PartitionName=$part_name AllowGroups=$my_group MaxTime=1"
+
 set found 0
 spawn $scontrol show part $part_name
 expect {
@@ -196,10 +179,7 @@ expect {
 		wait
 	}
 }
-if {$found != 1} {
-        log_error "Partition group not reset"
-	set exit_code 1
-}
+subtest {$found == 1} "Partition group should be reset"
 
 #
 # Run a job in this new partition and validate the time limit
@@ -221,25 +201,13 @@ expect {
 		wait
 	}
 }
-if {$timed_out == 1} {
-	log_debug "Early termination is expected, no worries"
-} else {
-	log_error "Partition time limit not enforced"
-	set exit_code 1
-}
+subtest {$timed_out == 1} "Partition time limit should be enforced"
 
 #
 # Now reset AllowGroups to ALL
 #
-spawn $scontrol update PartitionName=$part_name AllowGroups=ALL
-expect {
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$scontrol update PartitionName=$part_name AllowGroups=ALL"
+
 set found 0
 spawn $scontrol show part $part_name
 expect {
@@ -254,29 +222,14 @@ expect {
 		wait
 	}
 }
-if {$found != 1} {
-	log_error "Partition group not reset"
-	set exit_code 1
-}
+subtest {$found == 1} "Partition group should be reset"
 
 
 #
 # Test modification of TRESBillingWeights
 #
 set tres_line "cPu=1,mem=-0.5G,node=.3,energy=-10"
-spawn $scontrol update partitionname=$part_name TRESBillingWeights=$tres_line
-expect {
-	-re "error" {
-		log_error "Failed to reset TRESBillingWeights"
-		set exit_code 1
-	}
-	timeout {
-		fail "scontrol is not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$scontrol update partitionname=$part_name TRESBillingWeights=$tres_line"
 
 set found 0
 spawn $scontrol show part $part_name
@@ -292,10 +245,7 @@ expect {
 		wait
 	}
 }
-if {$found != 1} {
-	log_error "TRESBillingWeights not set"
-	set exit_code 1
-}
+subtest {$found == 1} "TRESBillingWeights should be set"
 
 
 # Attempt invalid weights
@@ -312,10 +262,7 @@ expect {
 		wait
 	}
 }
-if {$found != 1} {
-	log_error "Didn't fail to set TRESBillingWeights"
-	set exit_code 1
-}
+subtest {$found == 1} "TRESBillingWeights should not be set"
 
 
 # The original weights should be intact after the previous invalid attempt.
@@ -333,26 +280,11 @@ expect {
 		wait
 	}
 }
-if {$found != 1} {
-	log_error "TRESBillingWeights not set"
-	set exit_code 1
-}
+subtest {$found == 1} "TRESBillingWeights should be set"
 
 # Clear
 set found 0
-spawn $scontrol update partitionname=$part_name TRESBillingWeights=
-expect {
-	-re "error" {
-		log_error "Failed to reset TRESBillingWeights"
-		set exit_code 1
-	}
-	timeout {
-		fail "scontrol is not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$scontrol update partitionname=$part_name TRESBillingWeights="
 
 set found 0
 spawn $scontrol show part $part_name
@@ -368,24 +300,13 @@ expect {
 		wait
 	}
 }
-if {$found} {
-	log_error "Found TRESBillingWeights when they should have been removed"
-	set exit_code 1
-}
+subtest {! $found} "TRESBillingWeights should be removed"
 
 
 #
 # Now delete the partition
 #
-spawn $scontrol delete PartitionName=$part_name
-expect {
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$scontrol delete PartitionName=$part_name"
 
 #
 # Confirm the partition is now gone
@@ -409,10 +330,4 @@ expect {
 		wait
 	}
 }
-if {$found != 0} {
-	fail "Partition not deleted"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$found == 0} "Partition should be deleted"
