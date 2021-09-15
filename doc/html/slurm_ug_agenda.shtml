@@ -24,7 +24,7 @@
   <th width="45%">Title</th>
  </tr>
 
-<tr><td nowrap>9:00 - 9:50</td><td>Booth (SchedMD)</td><td><a href="https://youtu.be/0XiZ3luCEaU">Field Notes 5: From The Frontlines of Slurm Support</a></td></tr>
+<tr><td nowrap>9:00 - 9:50</td><td>Booth (SchedMD)</td><td><a href="https://youtu.be/-YAW-PBvLJc">Field Notes 5: From The Frontlines of Slurm Support</a></td></tr>
 <tr><td nowrap>10:00 - 10:25</td><td>Rini (SchedMD)</td><td><a href="https://youtu.be/bqDdW5XfUIw">REST API <i>and also</i> Containers</a></td></tr>
 <tr><td nowrap>10:30 - 10:55</td><td>Garey (SchedMD)</td><td><a href="https://youtu.be/q5j5meDDPpA">burst_buffer/lua and slurmscriptd</a></td></tr>
 <tr><td nowrap>11:00 - 11:25</td><td>Ihli (SchedMD)</td><td><a href="https://youtu.be/WV4d49pIp24">Slurm in the Clouds</a></td></tr>
