@@ -237,8 +237,3 @@ extern List jobcomp_p_get_jobs(void *job_cond)
 {
 	return NULL;
 }
-
-extern int jobcomp_p_archive(void *arch_cond)
-{
-	return SLURM_SUCCESS;
-}

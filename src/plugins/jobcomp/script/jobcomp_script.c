@@ -669,12 +669,3 @@ extern List jobcomp_p_get_jobs(slurmdb_job_cond_t *job_cond)
 	info("This function is not implemented.");
 	return NULL;
 }
-
-/*
- * expire old info from the storage
- */
-extern int jobcomp_p_archive(slurmdb_archive_cond_t *archive_cond)
-{
-	info("This function is not implemented.");
-	return SLURM_SUCCESS;
-}

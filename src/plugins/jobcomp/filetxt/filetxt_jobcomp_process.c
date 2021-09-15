@@ -279,9 +279,3 @@ extern List filetxt_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 
 	return job_list;
 }
-
-extern int filetxt_jobcomp_process_archive(slurmdb_archive_cond_t *arch_cond)
-{
-	info("No code to archive jobcomp.");
-	return SLURM_SUCCESS;
-}

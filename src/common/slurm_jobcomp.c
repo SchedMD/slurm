@@ -56,7 +56,6 @@ typedef struct slurm_jobcomp_ops {
 	int          (*set_loc)   ( char *loc );
 	int          (*job_write) ( job_record_t *job_ptr);
 	List         (*get_jobs)  ( slurmdb_job_cond_t *params );
-	int          (*archive)   ( slurmdb_archive_cond_t *params );
 } slurm_jobcomp_ops_t;
 
 /*
@@ -67,7 +66,6 @@ static const char *syms[] = {
 	"jobcomp_p_set_location",
 	"jobcomp_p_log_record",
 	"jobcomp_p_get_jobs",
-	"jobcomp_p_archive"
 };
 
 static slurm_jobcomp_ops_t ops;
@@ -185,17 +183,4 @@ extern List jobcomp_g_get_jobs(slurmdb_job_cond_t *job_cond)
 		error ("slurm_jobcomp plugin context not initialized");
 	slurm_mutex_unlock( &context_lock );
 	return job_list;
-}
-
-extern int jobcomp_g_archive(slurmdb_archive_cond_t *arch_cond)
-{
-	int rc = SLURM_ERROR;
-
-	slurm_mutex_lock( &context_lock );
-	if ( g_context )
-		rc = (*(ops.archive))(arch_cond);
-	else
-		error ("slurm_jobcomp plugin context not initialized");
-	slurm_mutex_unlock( &context_lock );
-	return rc;
 }

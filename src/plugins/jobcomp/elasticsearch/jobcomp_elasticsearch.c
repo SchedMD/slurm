@@ -930,12 +930,3 @@ extern List jobcomp_p_get_jobs(slurmdb_job_cond_t *job_cond)
 	debug("%s function is not implemented", __func__);
 	return NULL;
 }
-
-/*
- * expire old info from the database
- */
-extern int jobcomp_p_archive(slurmdb_archive_cond_t *arch_cond)
-{
-	debug("%s function is not implemented", __func__);
-	return SLURM_SUCCESS;
-}

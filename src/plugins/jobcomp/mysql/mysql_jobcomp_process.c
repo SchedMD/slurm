@@ -180,8 +180,3 @@ extern List mysql_jobcomp_process_get_jobs(slurmdb_job_cond_t *job_cond)
 
 	return job_list;
 }
-
-extern int mysql_jobcomp_process_archive(slurmdb_archive_cond_t *arch_cond)
-{
-	return SLURM_SUCCESS;
-}

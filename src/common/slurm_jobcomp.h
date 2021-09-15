@@ -102,9 +102,4 @@ extern int jobcomp_g_write(job_record_t *job_ptr);
  */
 extern List jobcomp_g_get_jobs(slurmdb_job_cond_t *job_cond);
 
-/*
- * expire old info from the storage
- */
-extern int jobcomp_g_archive(slurmdb_archive_cond_t *arch_cond);
-
 #endif /*__SLURM_JOBCOMP_H__*/
