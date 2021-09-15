@@ -926,6 +926,7 @@ _read_config(void)
 		conf->port = cf->slurmd_port;
 	else
 		conf->port = slurm_conf_get_port(conf->node_name);
+	slurm_conf.slurmd_port = conf->port;
 	slurm_conf_get_cpus_bsct(conf->node_name,
 				 &conf->conf_cpus, &conf->conf_boards,
 				 &conf->conf_sockets, &conf->conf_cores,

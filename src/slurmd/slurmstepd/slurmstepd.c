@@ -559,6 +559,7 @@ _init_from_slurmd(int sock, char **argv,
 	if (cgroup_read_conf(sock) != SLURM_SUCCESS)
 		fatal("Failed to read cgroup conf from slurmd");
 
+	slurm_conf.slurmd_port = conf->port;
 	/* receive acct_gather conf from slurmd */
 	if (acct_gather_read_conf(sock) != SLURM_SUCCESS)
 		fatal("Failed to read acct_gather conf from slurmd");
