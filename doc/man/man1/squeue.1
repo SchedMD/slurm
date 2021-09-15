@@ -13,7 +13,7 @@ Slurm.
 .SH "OPTIONS"
 
 .TP
-\fB\-A <account_list>\fR, \fB\-\-account=<account_list>\fR
+\fB\-A\fR, \fB\-\-account\fR=<\fIaccount_list\fR>
 Specify the accounts of the jobs to view. Accepts a comma separated
 list of account names. This has no effect when listing job steps.
 
@@ -39,7 +39,7 @@ optimize the display.  This can also be set with the environment variable
 SQUEUE_ARRAY_UNIQUE.
 
 .TP
-\fB\-M\fR, \fB\-\-clusters=<cluster_name>\fR
+\fB\-M\fR, \fB\-\-clusters\fR=<\fIcluster_name\fR>
 Clusters to issue commands to.  Multiple cluster names may be comma separated.
 A value of '\fIall\fR' will query to run on all clusters.
 This option implicitly sets the \fB\-\-local\fR option.
@@ -49,10 +49,10 @@ This option implicitly sets the \fB\-\-local\fR option.
 Show jobs from the federation if a member of one.
 
 .TP
-\fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
+\fB\-o\fR, \fB\-\-format\fR=<\fIoutput_format\fR>
 Specify the information to be displayed, its size and position
 (right or left justified).
-Also see the \fB\-O <output_format>\fR, \fB\-\-Format=<output_format>\fR
+Also see the \fB\-O\fR, \fB\-\-Format\fR=<\fIoutput_format\fR>
 option described below (which supports less flexibility in formatting, but
 supports access to all fields).
 If the command is executed in a federated cluster environment and information
@@ -379,9 +379,9 @@ The job's working directory.
 
 
 .TP
-\fB\-O <output_format>\fR, \fB\-\-Format=<output_format>\fR
+\fB\-O\fR, \fB\-\-Format\fR=<\fIoutput_format\fR>
 Specify the information to be displayed.
-Also see the \fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
+Also see the \fB\-o\fR, \fB\-\-format\fR=<\fIoutput_format\fR>
 option described below (which supports greater flexibility in formatting, but
 does not support access to all fields because we ran out of letters).
 Requests a comma separated list of job information to be displayed.
@@ -950,16 +950,16 @@ information about partitions that are configured as hidden or are not available
 to the user's group will not be displayed (i.e. this is the default behavior).
 
 .TP
-\fB\-i <seconds>\fR, \fB\-\-iterate=<seconds>\fR
+\fB\-i\fR, \fB\-\-iterate\fR=<\fIseconds\fR>
 Repeatedly gather and report the requested information at the interval
 specified (in seconds).
 By default, prints a time stamp with the header.
 
 .TP
-\fB\-j <job_id_list>\fR, \fB\-\-jobs=<job_id_list>\fR
+\fB\-j\fR, \fB\-\-jobs\fR=<\fIjob_id_list\fR>
 Requests a comma separated list of job IDs to display.  Defaults to all jobs.
-The \fB\-\-jobs=<job_id_list>\fR option may be used in conjunction with the
-\fB\-\-steps\fR option to print step information about specific jobs.
+The \fB\-\-jobs\fR=<\fIjob_id_list\fR> option may be used in conjunction with
+the \fB\-\-steps\fR option to print step information about specific jobs.
 Note: If a list of job IDs is provided, the jobs are displayed even if
 they are on hidden partitions. Since this option's argument is optional,
 for proper parsing the single letter option must be followed immediately
@@ -977,7 +977,7 @@ Dump job information as JSON. All other formating and filtering arugments will
 be ignored.
 
 .TP
-\fB\-L\fR, \fB\-\-licenses=<license_list>\fR
+\fB\-L\fR, \fB\-\-licenses\fR=<\fIlicense_list\fR>
 Request jobs requesting or using one or more of the named licenses.
 The license list consists of a comma separated list of license names.
 
@@ -996,7 +996,7 @@ subject to any constraints specified.
 Equivalent to \fB\-\-user=<my username>\fR.
 
 .TP
-\fB\-n\fR, \fB\-\-name=<name_list>\fR
+\fB\-n\fR, \fB\-\-name\fR=<\fIname_list\fR>
 Request jobs or job steps having one of the specified names.  The
 list consists of a comma separated list of job names.
 
@@ -1006,7 +1006,7 @@ Don't convert units from their original type (e.g. 2048M won't be converted to
 2G).
 
 .TP
-\fB\-w <hostlist>\fR, \fB\-\-nodelist=<hostlist>\fR
+\fB\-w\fR, \fB\-\-nodelist\fR=<\fIhostlist\fR>
 Report only on jobs allocated to the specified node or list of nodes.
 This may either be the \fBNodeName\fR or \fBNodeHostname\fR
 as defined in \fBslurm.conf(5)\fR in the event that they differ.
@@ -1017,7 +1017,7 @@ A node_name of \fBlocalhost\fR is mapped to the current host name.
 Do not print a header on the output.
 
 .TP
-\fB\-p <part_list>\fR, \fB\-\-partition=<part_list>\fR
+\fB\-p\fR, \fB\-\-partition\fR=<\fIpart_list\fR>
 Specify the partitions of the jobs or steps to view. Accepts a comma separated
 list of partition names.
 
@@ -1030,12 +1030,12 @@ pending jobs in the same order considered for scheduling by Slurm with
 appropriate additional options (e.g. "\-\-sort=\-p,i \-\-states=PD").
 
 .TP
-\fB\-q <qos_list>\fR, \fB\-\-qos=<qos_list>\fR
+\fB\-q\fR, \fB\-\-qos\fR=<\fIqos_list\fR>
 Specify the qos(s) of the jobs or steps to view. Accepts a comma
 separated list of qos's.
 
 .TP
-\fB\-R\fR, \fB\-\-reservation=<reservation_name>\fR
+\fB\-R\fR, \fB\-\-reservation\fR=<\fIreservation_name\fR>
 Specify the reservation of the jobs to view.
 
 .TP
@@ -1043,7 +1043,7 @@ Specify the reservation of the jobs to view.
 Show all sibling jobs on a federated cluster. Implies \-\-federation.
 
 .TP
-\fB\-S <sort_list>\fR, \fB\-\-sort=<sort_list>\fR
+\fB\-S\fR, \fB\-\-sort\fR=<\fIsort_list\fR>
 Specification of the order in which records should be reported.
 This uses the same field specification as the <output_format>.
 The long format option "cluster" can also be used to sort jobs or job steps by
@@ -1074,7 +1074,7 @@ The expected start time of pending jobs is only available if the
 Slurm is configured to use the backfill scheduling plugin.
 
 .TP
-\fB\-t <state_list>\fR, \fB\-\-states=<state_list>\fR
+\fB\-t\fR, \fB\-\-states\fR=<\fIstate_list\fR>
 Specify the states of jobs to view.  Accepts a comma separated list of
 state names or "all". If "all" is specified then jobs of all states will be
 reported. If no state is specified then pending, running, and completing
@@ -1098,7 +1098,7 @@ and not include a space between them. For example "\-s1008.0" and not
 Print a brief help message listing the \fBsqueue\fR options.
 
 .TP
-\fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR
+\fB\-u\fR, \fB\-\-user\fR=<\fIuser_list\fR>
 Request jobs or job steps from a comma separated list of users.
 The list can consist of user names or user id numbers.
 Performance of the command can be measurably improved for systems with large

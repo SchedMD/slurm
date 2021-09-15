@@ -26,7 +26,7 @@ by file size, degree of parallelism, and network type.
 
 .SH "OPTIONS"
 .TP
-\fB\-C\fR [\fIlibrary\fR], \fB\-\-compress\fR[=\fIlibrary\fR]
+\fB\-C\fR, \fB\-\-compress\fR[=\fIlibrary\fR]
 Compress the file being transmitted.
 The optional argument specifies the data compression library to be used.
 Supported values are "lz4" (default) and "none".
@@ -41,14 +41,14 @@ keyword "\fINONE\fR" is configured, no directory paths will be excluded. The
 default value is that of slurm.conf \fBBcastExclude\fR and this option overrides
 it. See also \fB\-\-send\-libs\fR.
 .TP
-\fB\-F\fR \fInumber\fR, \fB\-\-fanout\fR=\fInumber\fR
+\fB\-F\fR, \fB\-\-fanout\fR=<\fInumber\fR>
 Specify the fanout of messages used for file transfer.
 Maximum value is currently eight.
 .TP
 \fB\-f\fR, \fB\-\-force\fR
 If the destination file already exists, replace it.
 .TP
-\fB\-j\fR \fIjobID[.stepID]\fR, \fB\-\-jobid\fR=\fIjobID[.stepID]\fR
+\fB\-j\fR, \fB\-\-jobid\fR=<\fIjobID\fR[.\fIstepID\fR]>
 Specify the job ID to use with optional step ID.  If run inside an allocation
 this is unneeded as the job ID will read from the environment.
 .TP
@@ -56,14 +56,14 @@ this is unneeded as the job ID will read from the environment.
 Preserves modification times, access times, and modes from the
 original file.
 .TP
-\fB\-\-send\-libs\fR[=\fIyes|no\fR]
+\fB\-\-send\-libs\fR[=\fIyes\fR|\fIno\fR]
 If set to \fIyes\fR (or no argument), autodetect and broadcast the executable's
 shared object dependencies to allocated compute nodes. The files are placed in
 a directory alongside the executable. This overrides the default behavior
 configured in slurm.conf \fBSbcastParameters send_libs\fR. See also
 \fB\-\-exclude\fR.
 .TP
-\fB\-s\fR \fIsize\fR, \fB\-\-size\fR=\fIsize\fR
+\fB\-s\fR, \fB\-\-size\fR=<\fIsize\fR>
 Specify the block size used for file broadcast.
 The size can have a suffix of \fIk\fR or \fIm\fR for kilobytes
 or megabytes respectively (defaults to bytes).
@@ -72,7 +72,7 @@ good performance.
 The default value is the file size or 8MB, whichever is smaller.
 This value may need to be set on systems with very limited memory.
 .TP
-\fB\-t\fB \fIseconds\fR, \fB\-\-timeout\fR=\fIseconds\fR
+\fB\-t\fR, \fB\-\-timeout\fR=<\fIseconds\fR>
 Specify the message timeout in seconds.
 The default value is \fIMessageTimeout\fR as reported by
 "scontrol show config".

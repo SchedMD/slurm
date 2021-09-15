@@ -325,7 +325,7 @@ grouped with AND (e.g. "&") operands.
 .RE
 
 .TP
-\fB\-\-container=<absolute path to container>\fR
+\fB\-\-container\fR=<\fIabsolute_path_to_container\fR>
 Path to OCI container bundle.
 
 .TP
@@ -357,7 +357,7 @@ above when task/affinity plugin is enabled.
 was not specified) as one task per requested thread.
 
 .TP
-\fB\-\-cpu\-freq\fR =<\fIp1\fR[\-\fIp2\fR[:\fIp3\fR]]>
+\fB\-\-cpu\-freq\fR=<\fIp1\fR[\-\fIp2\fR[:\fIp3\fR]]>
 
 Request that job steps initiated by srun commands inside this sbatch script
 be run at some requested frequency if possible, on the CPUs selected
@@ -567,10 +567,7 @@ unless DependencyParameters=disable_remote_singleton is used in slurm.conf.
 .RE
 
 .TP
-\fB\-m\fR, \fB\-\-distribution\fR=
-\fI*\fR|\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>
-\fR[:\fI*\fR|\fIblock\fR|\fIcyclic\fR|\fIfcyclic\fR[:\fI*\fR|\fIblock\fR|
-\fIcyclic\fR|\fIfcyclic\fR]][,\fIPack\fR|\fINoPack\fR]
+\fB\-m\fR, \fB\-\-distribution\fR=*|block|cyclic|arbitrary|plane=<\fIsize\fR>[:*|block|cyclic|fcyclic[:*|block|cyclic|fcyclic]][,{Pack|NoPack}]
 
 Specify alternate distribution methods for remote processes.
 For job allocation, this sets environment variables that will be used by
@@ -625,17 +622,13 @@ Cyclic distribution is the default behavior if the number
 of tasks is no larger than the number of allocated nodes.
 .TP
 .B plane
-The tasks are distributed in blocks of a specified size. The size must be given
+The tasks are distributed in blocks of size <\fIsize\fR>. The size must be given
 or SLURM_DIST_PLANESIZE must be set. The number of tasks
 distributed to each node is the same as for cyclic distribution, but the
 taskids assigned to each node depend on the plane size. Additional distribution
 specifications cannot be combined with this option.
 For more details (including examples and diagrams), please see
-.br
-https://slurm.schedmd.com/mc_support.html
-.br
-and
-.br
+https://slurm.schedmd.com/mc_support.html and
 https://slurm.schedmd.com/dist_plane.html
 .TP
 .B arbitrary
@@ -727,7 +720,7 @@ configuration parameter.
 .RE
 
 .TP
-\fB\-e\fR, \fB\-\-error\fR=<\fIfilename pattern\fR>
+\fB\-e\fR, \fB\-\-error\fR=<\fIfilename_pattern\fR>
 Instruct Slurm to connect the batch script's standard error directly to the
 file name specified in the "\fIfilename pattern\fR".
 By default both standard output and standard error are directed to the same file.
@@ -738,45 +731,47 @@ replaced by the job ID.
 See the \fBfilename pattern\fR section below for filename specification options.
 
 .TP
-\fB\-x\fR, \fB\-\-exclude\fR=<\fInode name list\fR>
+\fB\-x\fR, \fB\-\-exclude\fR=<\fInode_name_list\fR>
 Explicitly exclude certain nodes from the resources granted to the job.
 
 .TP
-\fB\-\-exclusive[=user|mcs]\fR
+\fB\-\-exclusive\fR[={user|mcs}]
 The job allocation can not share nodes with other running jobs (or just other
 users with the "=user" option or with the "=mcs" option).
 The default shared/exclusive behavior depends on system configuration and the
 partition's \fBOverSubscribe\fR option takes precedence over the job's option.
 
 .TP
-\fB\-\-export\fR=<\fI[ALL,]environment variables\fR|\fIALL\fR|\fINONE\fR>
+\fB\-\-export\fR=<[ALL,]<\fIenvironment_variables\fR>|ALL|NONE>
 Identify which environment variables from the submission environment are
 propagated to the launched application. Note that SLURM_* variables are
 always propagated.
 .RS
 .TP 10
-\fB\-\-export\fR=\fIALL\fR
+\fB\-\-export\fR=ALL
 Default mode if \fB\-\-export\fR is not specified. All of the user's environment
 will be loaded (either from the caller's environment or from a clean environment
 if \fI\-\-get\-user\-env\fR is specified).
 .TP
-\fB\-\-export\fR=\fINONE\fR
+\fB\-\-export\fR=NONE
 Only SLURM_* variables from the user environment will be defined. User must use
 absolute path to the binary to be executed that will define the environment.
-User can not specify explicit environment variables with \fINONE\fR.
+User can not specify explicit environment variables with "NONE".
 \fI\-\-get\-user\-env\fR will be ignored.
+
 This option is particularly important for jobs that are submitted on one cluster
 and execute on a different cluster (e.g. with different paths).
-To avoid steps inheriting environment export settings (e.g. \fINONE\fR) from
+To avoid steps inheriting environment export settings (e.g. "NONE") from
 sbatch command, the environment variable SLURM_EXPORT_ENV should be set to
-\fIALL\fR in the job script.
+"ALL" in the job script.
+.IP
 .TP
-\fB\-\-export\fR=<\fI[ALL,]environment variables>\fR
+\fB\-\-export\fR=[\fIALL\fR,]<\fIenvironment_variables\fR>
 Exports all SLURM_* environment variables along with explicitly defined
 variables. Multiple environment variable names should be comma separated.
 Environment variable names may be specified to propagate the current
 value (e.g. "\-\-export=EDITOR") or specific values may be exported
-(e.g. "\-\-export=EDITOR=/bin/emacs"). If \fIALL\fR is specified, then all user
+(e.g. "\-\-export=EDITOR=/bin/emacs"). If "ALL" is specified, then all user
 environment variables will be loaded and will take precedence over any
 explicitly given environment variables.
 .RS 5
@@ -796,7 +791,7 @@ environment will use the value given by \fB\-\-export\fR.
 .RE
 
 .TP
-\fB\-\-export\-file\fR=<\fIfilename\fR | \fIfd\fR>
+\fB\-\-export\-file\fR=<\fIfilename\fR|\fIfd\fR>
 If a number between 3 and OPEN_MAX is specified as the argument to
 this option, a readable file descriptor will be assumed (STDIN and
 STDOUT are not supported as valid arguments).  Otherwise a filename is
@@ -807,7 +802,7 @@ NAME=value, each separated by a null character.  This allows the use
 of special characters in environment definitions.
 
 .TP
-\fB\-B\fR \fB\-\-extra\-node\-info\fR=<\fIsockets\fR[:\fIcores\fR[:\fIthreads\fR]]>
+\fB\-B\fR, \fB\-\-extra\-node\-info\fR=<\fIsockets\fR[:\fIcores\fR[:\fIthreads\fR]]>
 Restrict node selection to nodes with at least the specified number of
 sockets, cores per socket and/or threads per core.
 .br
@@ -966,7 +961,7 @@ the highest available frequency.
 .RE
 
 .TP
-\fB\-G\fR, \fB\-\-gpus\fR=[<\fitype\fR>:]<\fInumber\fR>
+\fB\-G\fR, \fB\-\-gpus\fR=[<\fItype\fR>:]<\fInumber\fR>
 Specify the total number of GPUs required for the job.
 An optional GPU type specification can be supplied.
 For example "\-\-gpus=volta:3".
@@ -976,7 +971,7 @@ See also the \fB\-\-gpus\-per\-node\fR, \fB\-\-gpus\-per\-socket\fR and
 \fB\-\-gpus\-per\-task\fR options.
 
 .TP
-\fB\-\-gpus\-per\-node\fR=[<\fitype\fR>:]<\fInumber\fR>
+\fB\-\-gpus\-per\-node\fR=[<\fItype\fR>:]<\fInumber\fR>
 Specify the number of GPUs required for the job on each node included in
 the job's resource allocation.
 An optional GPU type specification can be supplied.
@@ -987,7 +982,7 @@ See also the \fB\-\-gpus\fR, \fB\-\-gpus\-per\-socket\fR and
 \fB\-\-gpus\-per\-task\fR options.
 
 .TP
-\fB\-\-gpus\-per\-socket\fR=[<\fitype\fR>:]<\fInumber\fR>
+\fB\-\-gpus\-per\-socket\fR=[<\fItype\fR>:]<\fInumber\fR>
 Specify the number of GPUs required for the job on each socket included in
 the job's resource allocation.
 An optional GPU type specification can be supplied.
@@ -999,7 +994,7 @@ See also the \fB\-\-gpus\fR, \fB\-\-gpus\-per\-node\fR and
 \fB\-\-gpus\-per\-task\fR options.
 
 .TP
-\fB\-\-gpus\-per\-task\fR=[<\fitype\fR>:]<\fInumber\fR>
+\fB\-\-gpus\-per\-task\fR=[<\fItype\fR>:]<\fInumber\fR>
 Specify the number of GPUs required for the job on each task to be spawned
 in the job's resource allocation.
 An optional GPU type specification can be supplied.
@@ -1104,7 +1099,7 @@ A held job can now be released using scontrol to reset its priority
 Ignore all "#PBS" and "#BSUB" options specified in the batch script.
 
 .TP
-\fB\-i\fR, \fB\-\-input\fR=<\fIfilename pattern\fR>
+\fB\-i\fR, \fB\-\-input\fR=<\fIfilename_pattern\fR>
 Instruct Slurm to connect the batch script's standard input
 directly to the file name specified in the "\fIfilename pattern\fR".
 
@@ -1121,7 +1116,7 @@ is the name of the batch script, or just "sbatch" if the script is
 read on sbatch's standard input.
 
 .TP
-\fB\-\-kill\-on\-invalid\-dep\fR=<\fIyes|no\fR>
+\fB\-\-kill\-on\-invalid\-dep\fR=<yes|no>
 If a job has an invalid dependency and it can never run this parameter tells
 Slurm to terminate it or not. A terminated job state will be JOB_CANCELLED.
 If this option is not specified the system wide behavior applies.
@@ -1129,7 +1124,7 @@ By default the job stays pending with reason DependencyNeverSatisfied or if the
 kill_invalid_depend is specified in slurm.conf the job is terminated.
 
 .TP
-\fB\-L\fR, \fB\-\-licenses\fR=<\fBlicense\fR>
+\fB\-L\fR, \fB\-\-licenses\fR=<\fIlicense\fR>
 Specification of licenses (or other resources available on all
 nodes of the cluster) which must be allocated to this job.
 License names can be followed by a colon and count
@@ -1168,7 +1163,7 @@ This parameter is a group among the groups of the user.
 Default value is calculated by the Plugin mcs if it's enabled.
 
 .TP
-\fB\-\-mem\fR=<\fIsize[units]\fR>
+\fB\-\-mem\fR=<\fIsize\fR[\fIunits\fR]>
 Specify the real memory required per node.
 Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
@@ -1196,7 +1191,7 @@ the job's Resident Set Size (RSS). A task may exceed the memory limit until
 the next periodic accounting sample.
 
 .TP
-\fB\-\-mem\-bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
+\fB\-\-mem\-bind\fR=[{quiet|verbose},]<\fItype\fR>
 Bind tasks to memory. Used only when the task/affinity plugin is enabled
 and the NUMA memory functions are available.
 \fBNote that the resolution of CPU and memory binding
@@ -1292,7 +1287,7 @@ verbosely report binding before task runs
 .RE
 
 .TP
-\fB\-\-mem\-per\-cpu\fR=<\fIsize[units]\fR>
+\fB\-\-mem\-per\-cpu\fR=<\fIsize\fR[\fIunits\fR]>
 Minimum memory required per allocated CPU.
 Default units are megabytes.
 The default value is \fBDefMemPerCPU\fR and the maximum value is
@@ -1323,7 +1318,7 @@ times the number of CPUs on a node is greater than the total memory of that
 node.
 
 .TP
-\fB\-\-mem\-per\-gpu\fR=<\fIsize[units]\fR>
+\fB\-\-mem\-per\-gpu\fR=<\fIsize\fR[\fIunits\fR]>
 Minimum memory required per allocated GPU.
 Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
@@ -1489,13 +1484,13 @@ value increases the priority, otherwise decreases it. The adjustment range is
 +/\- 2147483645. Only privileged users can specify a negative adjustment.
 
 .TP
-\fB\-k\fR, \fB\-\-no\-kill\fR [=off]
+\fB\-k\fR, \fB\-\-no\-kill\fR[=off]
 Do not automatically terminate a job if one of the nodes it has been
 allocated fails.  The user will assume the responsibilities for fault\-tolerance
 should a node fail.  When there is a node failure, any active job steps (usually
 MPI jobs) on that node will almost certainly suffer a fatal error, but with
-\-\-no\-kill, the job allocation will not be revoked so the user may launch
-new job steps on the remaining nodes in their allocation.
+\fB\-\-no\-kill\fR, the job allocation will not be revoked so the user may
+launch new job steps on the remaining nodes in their allocation.
 
 Specify an optional argument of "off" disable the effect of the
 \fBSBATCH_NO_KILL\fR environment variable.
@@ -1515,15 +1510,15 @@ The \fIJobRequeue\fR configuration parameter controls the default
 behavior on the cluster.
 
 .TP
-\fB\-F\fR, \fB\-\-nodefile\fR=<\fInode file\fR>
-Much like \-\-nodelist, but the list is contained in a file of name
+\fB\-F\fR, \fB\-\-nodefile\fR=<\fInode_file\fR>
+Much like \fB\-\-nodelist\fR, but the list is contained in a file of name
 \fInode file\fR.  The node names of the list may also span multiple lines
 in the file.    Duplicate node names in the file will be ignored.
 The order of the node names in the list is not important; the node names
 will be sorted by Slurm.
 
 .TP
-\fB\-w\fR, \fB\-\-nodelist\fR=<\fInode name list\fR>
+\fB\-w\fR, \fB\-\-nodelist\fR=<\fInode_name_list\fR>
 Request a specific list of hosts.
 The job will contain \fIall\fR of these hosts and possibly additional hosts
 as needed to satisfy resource requirements.
@@ -1627,13 +1622,13 @@ instead of the node level.
 \fISelectType=select/linear\fR.
 
 .TP
-\fB\-\-open\-mode\fR=append|truncate
+\fB\-\-open\-mode\fR=<append|truncate>
 Open the output and error files using append or truncate mode as specified.
 The default value is specified by the system configuration parameter
 \fIJobFileAppend\fR.
 
 .TP
-\fB\-o\fR, \fB\-\-output\fR=<\fIfilename pattern\fR>
+\fB\-o\fR, \fB\-\-output\fR=<\fIfilename_pattern\fR>
 Instruct Slurm to connect the batch script's standard output directly to the
 file name specified in the "\fIfilename pattern\fR".
 By default both standard output and standard error are directed to the same file.
@@ -1703,7 +1698,7 @@ Only Slurm operators and administrators can set the priority of a job.
 
 .TP
 \fB\-\-profile\fR=<all|none|[energy[,|task[,|lustre[,|network]]]]>
-enables detailed data collection by the acct_gather_profile plugin.
+Enables detailed data collection by the acct_gather_profile plugin.
 Detailed data are typically time\-series that are stored in an HDF5 file for
 the job or an InfluxDB database depending on the configured plugin.
 
@@ -1735,7 +1730,7 @@ Network (InfiniBand) data is collected.
 .RE
 
 .TP
-\fB\-\-propagate\fR[=\fIrlimit[,rlimit...]\fR]
+\fB\-\-propagate\fR[=\fIrlimit\fR[,\fIrlimit\fR...]]
 Allows users to specify which of the modifiable (soft) resource limits
 to propagate to the compute nodes and apply to their jobs. If no
 \fIrlimit\fR is specified, then all resource limits will be propagated.
@@ -1929,7 +1924,7 @@ Acceptable time formats include "minutes", "minutes:seconds",
 "days\-hours:minutes:seconds".
 
 .TP
-\fB\-\-tmp\fR=<\fIsize[units]\fR>
+\fB\-\-tmp\fR=<\fIsize\fR[\fIunits\fR]>
 Specify a minimum amount of temporary disk space per node.
 Default units are megabytes.
 Different units can be specified using the suffix [K|M|G|T].
@@ -1991,7 +1986,7 @@ Specify wckey to be used with job.  If TrackWCKey=no (default) in the
 slurm.conf this value is ignored.
 
 .TP
-\fB\-\-wrap\fR=<\fIcommand string\fR>
+\fB\-\-wrap\fR=<\fIcommand_string\fR>
 Sbatch will wrap the specified command string in a simple "sh" shell script,
 and submit that script to the slurm controller.  When \-\-wrap is used,
 a script name and arguments may not be specified on the command line; instead
@@ -2099,7 +2094,7 @@ Same as \fB\-\-clusters\fR
 Same as \fB\-C\fR, \fB\-\-constraint\fR
 .TP
 \fBSBATCH_CONTAINER\fR
-Same as \-\-container\fR.
+Same as \fB\-\-container\fR.
 .TP
 \fBSBATCH_CORE_SPEC\fR
 Same as \fB\-\-core\-spec\fR
@@ -2254,20 +2249,20 @@ The Slurm controller will set the following variables in the environment of
 the batch script.
 .TP
 \fBSBATCH_MEM_BIND\fR
-Set to value of the \-\-mem\-bind\fR option.
+Set to value of the \fB\-\-mem\-bind\fR option.
 .TP
 \fBSBATCH_MEM_BIND_LIST\fR
 Set to bit mask used for memory binding.
 .TP
 \fBSBATCH_MEM_BIND_PREFER\fR
-Set to "prefer" if the \-\-mem\-bind\fR option includes the prefer option.
+Set to "prefer" if the \fB\-\-mem\-bind\fR option includes the prefer option.
 .TP
 \fBSBATCH_MEM_BIND_TYPE\fR
-Set to the memory binding type specified with the \-\-mem\-bind\fR option.
+Set to the memory binding type specified with the \fB\-\-mem\-bind\fR option.
 Possible values are "none", "rank", "map_map", "mask_mem" and "local".
 .TP
 \fBSBATCH_MEM_BIND_VERBOSE\fR
-Set to "verbose" if the \-\-mem\-bind\fR option includes the verbose option.
+Set to "verbose" if the \fB\-\-mem\-bind\fR option includes the verbose option.
 Set to "quiet" otherwise.
 .TP
 \fBSLURM_*_HET_GROUP_#\fR
@@ -2380,7 +2375,7 @@ the value indicates the total count of CPUs on allocated nodes. The
 CPUs to jobs, so this number indicates the number of CPUs allocated to the job.
 .TP
 \fBSLURM_JOB_DEPENDENCY\fR
-Set to value of the \-\-dependency option.
+Set to value of the \fB\-\-dependency\fR option.
 .TP
 \fBSLURM_JOB_NAME\fR
 Name of the job.

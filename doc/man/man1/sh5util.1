@@ -81,8 +81,8 @@ Name of data item in series (See note below).
 .RE
 
 .TP
-\fB\-j\fR, \fB\-\-jobs\fR=\fI<job(.step)>\fR
-Format is <job(.step)>. Merge this job/step
+\fB\-j\fR, \fB\-\-jobs\fR=<\fIjob\fR[.\fIstep\fR]>
+Format is <\fIjob\fR[.\fIstep\fR]>. Merge this job/step
 (or a comma\-separated list of job steps). This option is required.
 Not specifying a step will result in all steps found to be processed.
 
@@ -103,7 +103,7 @@ Merged file to extract from (default ./job_$jobid.h5)
 .RE
 
 .TP
-\fB\-o\fR, \fB\-\-output\fR=\fIpath\fR
+\fB\-o\fR, \fB\-\-output\fR=<\fIpath\fR>
 .nf
 Path to a file into which to write.
 Default for merge is ./job_$jobid.h5
@@ -111,7 +111,7 @@ Default for extract is ./extract_$jobid.csv
 .fi
 
 .TP
-\fB\-p\fR, \fB\-\-profiledir\fR=\fIdir\fR
+\fB\-p\fR, \fB\-\-profiledir\fR=<\fIdir\fR>
 Directory location where node\-step files exist default is set in
 acct_gather.conf.
 
@@ -125,7 +125,7 @@ keep them around.
 Display brief usage message.
 
 .TP
-\fB\-\-user\fR=\fIuser\fR
+\fB\-\-user\fR=<\fIuser\fR>
 User who profiled job.
 (Handy for root user, defaults to user running this command.)
 

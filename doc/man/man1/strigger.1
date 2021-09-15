@@ -91,12 +91,12 @@ Trigger an event if the specified node goes into a FAILING state.
 Trigger an event when the specified job completes execution.
 
 .TP
-\fB\-\-flags\fR=\fItype\fR
+\fB\-\-flags\fR=<\fIflag\fR>
 Associate flags with the reservation. Multiple flags should be comma separated.
 Valid flags include:
 .RS
 .TP
-PERM
+\fBPERM\fR
 Make the trigger permanent. Do not purge it after the event occurs.
 .RE
 
@@ -113,7 +113,7 @@ Show registered event triggers.
 Options can be used for filtering purposes.
 
 .TP
-\fB\-i\fR, \fB\-\-id\fR=\fIid\fR
+\fB\-i\fR, \fB\-\-id\fR=<\fIid\fR>
 Trigger ID number.
 
 .TP
@@ -124,7 +124,7 @@ option. This can be useful to hibernate a node that remains idle,
 thus reducing power consumption.
 
 .TP
-\fB\-j\fR, \fB\-\-jobid\fR=\fIid\fR
+\fB\-j\fR, \fB\-\-jobid\fR=<\fIid\fR>
 Job ID of interest.
 \fBNOTE:\fR The \fB\-\-jobid\fR option can not be used in conjunction
 with the \fB\-\-node\fR option. When the \fB\-\-jobid\fR option is
@@ -152,7 +152,7 @@ and not "\-n tux".
 Do not print the header when displaying a list of triggers.
 
 .TP
-\fB\-o\fR, \fB\-\-offset\fR=\fIseconds\fR
+\fB\-o\fR, \fB\-\-offset\fR=<\fIseconds\fR>
 The specified action should follow the event by this time interval.
 Specify a negative value if action should preceded the event.
 The default value is zero if no \fB\-\-offset\fR option is specified.
@@ -202,7 +202,7 @@ Trigger an event when primary slurmctld resumes control.
 Trigger an event when the primary slurmctld resuming operation after failure.
 
 .TP
-\fB\-p\fR, \fB\-\-program\fR=\fIpath\fR
+\fB\-p\fR, \fB\-\-program\fR=<\fIpath\fR>
 Execute the program at the specified fully qualified pathname
 when the event occurs.
 You may quote the path and include extra program arguments if desired.
@@ -241,7 +241,7 @@ Trigger an event if the specified node is returned to service
 from a DOWN state.
 
 .TP
-\fB\-\-user\fR=\fIuser_name_or_id\fR
+\fB\-\-user\fR=<\fIuser_name_or_id\fR>
 Clear or get triggers created by the specified user.
 For example, a trigger created by user \fIroot\fR for a job created by user
 \fIadam\fR could be cleared with an option \fI\-\-user=root\fR.
