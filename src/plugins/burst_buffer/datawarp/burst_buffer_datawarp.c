@@ -1988,9 +1988,11 @@ static void *_start_teardown(void *x)
 					     bb_alloc->pool, &bb_state);
 				(void) bb_free_alloc_rec(&bb_state, bb_alloc);
 			}
-			if ((bb_job = _get_bb_job(job_ptr)))
+			if ((bb_job = _get_bb_job(job_ptr))) {
 				bb_set_job_bb_state(job_ptr, bb_job,
 						    BB_STATE_COMPLETE);
+				bb_job_del(&bb_state, bb_job->job_id);
+			}
 			job_ptr->job_state &= (~JOB_STAGE_OUT);
 			if (!IS_JOB_PENDING(job_ptr) &&	/* No email if requeue */
 			    (job_ptr->mail_type & MAIL_JOB_STAGE_OUT)) {
@@ -3899,6 +3901,8 @@ extern int bb_p_job_test_stage_out(job_record_t *job_ptr)
 			rc = -1;
 		} else if (bb_job->state > BB_STATE_STAGING_OUT) {
 			rc =  1;
+			if (bb_job->state == BB_STATE_COMPLETE)
+				bb_job_del(&bb_state, bb_job->job_id);
 		} else {
 			rc =  0;
 		}
