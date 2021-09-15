@@ -93,8 +93,6 @@ extern int common_node_config_load(List gres_conf_list, char *gres_name,
 	int rc = SLURM_SUCCESS;
 	ListIterator itr;
 	gres_slurmd_conf_t *gres_slurmd_conf;
-	hostlist_t hl;
-	char *one_name;
 	List names_list;
 	int max_dev_num = -1;
 	int index = 0;
@@ -105,6 +103,9 @@ extern int common_node_config_load(List gres_conf_list, char *gres_name,
 	names_list = list_create(_free_name_list);
 	itr = list_iterator_create(gres_conf_list);
 	while ((gres_slurmd_conf = list_next(itr))) {
+		hostlist_t hl;
+		char *one_name;
+
 		if (!(gres_slurmd_conf->config_flags & GRES_CONF_HAS_FILE) ||
 		    !gres_slurmd_conf->file ||
 		    xstrcmp(gres_slurmd_conf->name, gres_name))
