@@ -1,4 +1,4 @@
-.TH "gres.conf" "5" "Slurm Configuration File" "August 2021" "Slurm Configuration File"
+.TH "gres.conf" "5" "Slurm Configuration File" "September 2021" "Slurm Configuration File"
 
 .SH "NAME"
 gres.conf \- Slurm configuration file for Generic RESource (GRES) management.
@@ -73,6 +73,7 @@ times for the same nodes, they must all be the same value. To unset
 \fIAutoDetect\fR for a node when a global \fIAutoDetect\fR is set, simply set it
 to "off" in a node\-specific GRES line.
 E.g.: \fINodeName=tux3 AutoDetect=off Name=gpu File=/dev/nvidia[0\-3]\fR.
+\fIAutoDetect\fR cannot be used with cloud nodes.
 
 .TP
 \fBCount\fR

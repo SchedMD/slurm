@@ -2183,9 +2183,11 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 	gres_slurmd_conf_t **gres_array;
 	char *gres_conf_file;
 	char *autodetect_string = NULL;
+	bool in_slurmd = running_in_slurmd();
 
 	node_config_load_t node_conf = {
 		.cpu_cnt = cpu_cnt,
+		.in_slurmd = in_slurmd,
 		.xcpuinfo_mac_to_abs = xcpuinfo_mac_to_abs
 	};
 
@@ -2230,6 +2232,14 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 			_handle_global_autodetect(autodetect_string);
 			xfree(autodetect_string);
 		}
+
+		/* AutoDetect cannot run on the slurmctld node */
+		if (running_in_slurmctld() &&
+		    autodetect_flags &&
+		    !((autodetect_flags & GRES_AUTODETECT_GPU_FLAGS) &
+		      GRES_AUTODETECT_GPU_OFF))
+			fatal("Cannot use AutoDetect on cloud node \"%s\"",
+			      gres_node_name);
 
 		if (s_p_get_array((void ***) &gres_array,
 				  &count, "Name", tbl)) {

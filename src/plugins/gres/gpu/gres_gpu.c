@@ -907,8 +907,11 @@ extern int gres_p_node_config_load(List gres_conf_list,
 	}
 
 	gres_list_system = _get_system_gpu_list_fake();
-	// Only query real system devices if there is no fake override
-	if (!gres_list_system)
+	/*
+	 * Only query real system devices if there is no fake override and we
+	 * are running in the slurmd.
+	 */
+	if (!gres_list_system && node_config->in_slurmd)
 		gres_list_system = gpu_g_get_system_gpu_list(node_config);
 
 	if (slurm_conf.debug_flags & DEBUG_FLAG_GRES)
