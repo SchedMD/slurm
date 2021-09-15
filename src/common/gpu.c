@@ -48,6 +48,8 @@ typedef struct slurm_ops {
 	void	(*step_hardware_fini)	(void);
 	char   *(*test_cpu_conv)	(char *cpu_range);
 	int     (*energy_read)          (uint32_t dv_ind, gpu_status_t *gpu);
+	void    (*get_device_count)     (unsigned int *device_count);
+
 } slurm_ops_t;
 
 /*
@@ -61,6 +63,7 @@ static const char *syms[] = {
 	"gpu_p_step_hardware_fini",
 	"gpu_p_test_cpu_conv",
 	"gpu_p_energy_read",
+	"gpu_p_get_device_count",
 };
 
 /* Local variables */
@@ -198,4 +201,11 @@ extern int gpu_g_energy_read(uint32_t dv_ind, gpu_status_t *gpu)
 	if (gpu_plugin_init() < 0)
 		return SLURM_ERROR;
 	return (*(ops.energy_read))(dv_ind, gpu);
+}
+
+extern void gpu_g_get_device_count(unsigned int *device_count)
+{
+	if (gpu_plugin_init() < 0)
+		return;
+	(*(ops.get_device_count))(device_count);
 }

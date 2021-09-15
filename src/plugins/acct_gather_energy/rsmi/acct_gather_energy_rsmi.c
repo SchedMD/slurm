@@ -257,22 +257,6 @@ static int _thread_update_node_energy(void)
 	return rc;
 }
 
-/* Get the total # of GPUs in the system
- *
- * device_count	(OUT) Number of available GPU devices
- */
-static void _rsmi_get_device_count(unsigned int *device_count)
-{
-	const char *status_string;
-	rsmi_status_t rsmi_rc = rsmi_num_monitor_devices(device_count);
-
-	if (rsmi_rc != RSMI_STATUS_SUCCESS) {
-		rsmi_rc = rsmi_status_string(rsmi_rc, &status_string);
-		error("RSMI: Failed to get device count: %s", status_string);
-		*device_count = 0;
-	}
-}
-
 /*
  * _thread_init initializes values and conf for the rsmi thread
  */
@@ -745,7 +729,7 @@ extern void acct_gather_energy_p_conf_set(int context_id_in,
 	if (!flag_init) {
 		flag_init = true;
 		if (running_in_slurmd()) {
-			_rsmi_get_device_count((unsigned int *)&gpus_len);
+			gpu_g_get_device_count((unsigned int *)&gpus_len);
 			if (gpus_len) {
 				gpus = xcalloc(sizeof(gpu_status_t), gpus_len);
 				slurm_thread_create(&thread_rsmi_id_launcher,

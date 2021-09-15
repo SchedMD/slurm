@@ -928,7 +928,7 @@ static void _rsmi_get_version(char *version, unsigned int len)
  *
  * device_count	(OUT) Number of available GPU devices
  */
-static void _rsmi_get_device_count(unsigned int *device_count)
+extern void gpu_p_get_device_count(unsigned int *device_count)
 {
 	const char *status_string;
 	rsmi_status_t rsmi_rc = rsmi_num_monitor_devices(device_count);
@@ -1060,7 +1060,7 @@ static List _get_system_gpu_list_rsmi(node_config_load_t *node_config)
 	debug("AMD Graphics Driver Version: %s", driver);
 	debug("RSMI Library Version: %s", version);
 
-	_rsmi_get_device_count(&device_count);
+	gpu_p_get_device_count(&device_count);
 	debug2("Device count: %d", device_count);
 
 	// Loop through all the GPUs on the system and add to gres_list_system

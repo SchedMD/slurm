@@ -56,5 +56,6 @@ extern void gpu_g_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq);
 extern void gpu_g_step_hardware_fini(void);
 extern char *gpu_g_test_cpu_conv(char *cpu_range);
 extern int gpu_g_energy_read(uint32_t dv_ind, gpu_status_t *gpu);
+extern void gpu_g_get_device_count(unsigned int *device_count);
 
 #endif /* !_GPU_PLUGIN_H */

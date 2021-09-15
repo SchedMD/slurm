@@ -993,7 +993,7 @@ static void _nvml_get_version(char *version, unsigned int len)
 /*
  * Get the total # of GPUs in the system
  */
-static void _nvml_get_device_count(unsigned int *device_count)
+extern void gpu_p_get_device_count(unsigned int *device_count)
 {
 	nvmlReturn_t nvml_rc = nvmlDeviceGetCount(device_count);
 	if (nvml_rc != NVML_SUCCESS) {
@@ -1544,7 +1544,7 @@ static List _get_system_gpu_list_nvml(node_config_load_t *node_config)
 	debug2("NVML_NO_UNVERSIONED_FUNC_DEFS is set, for backwards compatibility");
 #endif
 
-	_nvml_get_device_count(&device_count);
+	gpu_p_get_device_count(&device_count);
 
 	debug2("Total CPU count: %d", node_config->cpu_cnt);
 	debug2("Device count: %d", device_count);
