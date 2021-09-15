@@ -253,6 +253,13 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr, job_record_t *job_ptr,
 extern bb_alloc_t *bb_alloc_name_rec(bb_state_t *state_ptr, char *name,
 				     uint32_t user_id);
 
+/*
+ * For interactive jobs, build a script containing the burst buffer commands.
+ *
+ * Return SLURM_SUCCESS if it succeeded or SLURM_ERROR if it failed.
+ */
+extern int bb_build_bb_script(job_record_t *job_ptr, char *script_file);
+
 /* Clear all cached burst buffer records, freeing all memory. */
 extern void bb_clear_cache(bb_state_t *state_ptr);
 

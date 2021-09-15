@@ -1223,6 +1223,19 @@ extern bb_alloc_t *bb_alloc_job(bb_state_t *state_ptr, job_record_t *job_ptr,
 	return bb_alloc;
 }
 
+extern int bb_build_bb_script(job_record_t *job_ptr, char *script_file)
+{
+	char *out_buf = NULL;
+	int rc;
+
+	xstrcat(out_buf, "#!/bin/bash\n");
+	xstrcat(out_buf, job_ptr->burst_buffer);
+	rc = bb_write_file(script_file, out_buf);
+	xfree(out_buf);
+
+	return rc;
+}
+
 /* Free memory associated with allocated bb record, caller is responsible for
  * maintaining linked list */
 extern void bb_free_alloc_buf(bb_alloc_t *bb_alloc)

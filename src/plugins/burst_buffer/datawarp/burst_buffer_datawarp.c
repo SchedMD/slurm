@@ -218,7 +218,6 @@ static bb_pools_t *_bb_get_pools(int *num_ent, bb_state_t *state_ptr,
 				 uint32_t timeout);
 static bb_sessions_t *_bb_get_sessions(int *num_ent, bb_state_t *state_ptr,
 				       uint32_t timeout);
-static int	_build_bb_script(job_record_t *job_ptr, char *script_file);
 static int	_create_bufs(job_record_t *job_ptr, bb_job_t *bb_job,
 			     bool job_ready);
 static void *	_create_persistent(void *x);
@@ -2510,21 +2509,6 @@ fini:	xfree(access);
 	return rc;
 }
 
-/* For interactive jobs, build a script containing the relevant DataWarp
- * commands, as needed by the Cray API */
-static int _build_bb_script(job_record_t *job_ptr, char *script_file)
-{
-	char *out_buf = NULL;
-	int rc;
-
-	xstrcat(out_buf, "#!/bin/bash\n");
-	xstrcat(out_buf, job_ptr->burst_buffer);
-	rc = bb_write_file(script_file, out_buf);
-	xfree(out_buf);
-
-	return rc;
-}
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Read and validate configuration file here. Spawn thread to
@@ -3128,7 +3112,7 @@ extern int bb_p_job_validate2(job_record_t *job_ptr, char **err_msg)
 		(void) mkdir(job_dir, 0700);
 		xstrfmtcat(script_file, "%s/script", job_dir);
 		if (job_ptr->batch_flag == 0)
-			rc = _build_bb_script(job_ptr, script_file);
+			rc = bb_build_bb_script(job_ptr, script_file);
 	}
 
 	/* Run "job_process" function, validates user script */
