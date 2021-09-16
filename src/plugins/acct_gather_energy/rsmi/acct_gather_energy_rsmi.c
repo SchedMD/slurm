@@ -616,7 +616,10 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 		break;
 	case ENERGY_DATA_LAST_POLL:
 		slurm_mutex_lock(&rsmi_mutex);
-		*last_poll = gpus[gpus_len-1].last_update_time;
+		if (gpus)
+			*last_poll = gpus[gpus_len-1].last_update_time;
+		else
+			*last_poll = 0;
 		slurm_mutex_unlock(&rsmi_mutex);
 		break;
 	case ENERGY_DATA_SENSOR_CNT:
