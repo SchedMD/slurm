@@ -578,7 +578,7 @@ extern int fini(void)
 
 	xfree(gpus);
 	xfree(start_current_energies);
-	FREE_NULL_BITMAP(saved_usable_gpus);
+	saved_usable_gpus = NULL;
 
 	return SLURM_SUCCESS;
 }
@@ -601,7 +601,6 @@ extern int acct_gather_energy_p_get_data(enum acct_energy_type data_type,
 	uint16_t *gpu_cnt = (uint16_t *)data;
 
 	xassert(running_in_slurmd_stepd());
-
 	switch (data_type) {
 	case ENERGY_DATA_NODE_ENERGY_UP:
 		slurm_mutex_lock(&rsmi_mutex);
@@ -682,31 +681,25 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 		break;
 	case ENERGY_DATA_STEP_PTR:
 	{
-		bitstr_t *usable_gpus = NULL;
-
 		/* set global job if needed later */
 		job = (stepd_step_rec_t *)data;
 
+		/*
+		 * Get the GPUs used in the step so we only poll those when
+		 * looking at them
+		 */
 		rc = gres_get_step_info(job->step_gres_list, "gpu", 0,
 					GRES_STEP_DATA_BITMAP,
-					&usable_gpus);
+					&saved_usable_gpus);
 		/*
 		 * If a step isn't using gpus it will return ESLURM_INVALID_GRES
 		 * not a real error, so we only print out debug2.
 		 */
-		if (rc == SLURM_SUCCESS) {
-			/*
-			 * Save a copy of the GPUs affected, so we can
-			 * reset things afterwards
-			 */
-			FREE_NULL_BITMAP(saved_usable_gpus);
-			saved_usable_gpus = usable_gpus;
-			usable_gpus = NULL;
-
+		if (rc == SLURM_SUCCESS)
 			log_flag(ENERGY, "usable_gpus = %d of %ld",
 				 bit_set_count(saved_usable_gpus),
 				 bit_size(saved_usable_gpus));
-		} else if (rc == ESLURM_INVALID_GRES)
+		else if (rc == ESLURM_INVALID_GRES)
 			debug2("Step most likely doesn't have any gpus, no power gathering");
 		else
 			error("gres_get_step_info returned: %s",
