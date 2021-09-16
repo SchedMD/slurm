@@ -6,6 +6,9 @@ documents those changes that are of interest to users and administrators.
  -- gres/gpu - Avoid stripping GRES type field during normalization if any
     other GRES have a defined type field.
 
+* Changes in Slurm 21.08.2
+==========================
+
 * Changes in Slurm 21.08.1
 ==========================
  -- Fix potential memory leak if a problem happens while allocating GRES for
@@ -50,6 +53,7 @@ documents those changes that are of interest to users and administrators.
     0.
  -- In task/affinity better checking for node existence when laying out
     affinity.
+ -- slurmrestd - fix job submission with auth/jwt.
 
 * Changes in Slurm 21.08.0
 ==========================
