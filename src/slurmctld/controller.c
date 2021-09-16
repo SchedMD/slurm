@@ -303,7 +303,9 @@ int main(int argc, char **argv)
 			conf_file = default_slurm_config_file;
 	slurm_conf_init(conf_file);
 
+	lock_slurmctld(config_write_lock);
 	update_logging();
+	unlock_slurmctld(config_write_lock);
 
 	memset(&slurmctld_diag_stats, 0, sizeof(slurmctld_diag_stats));
 	/*
@@ -1038,6 +1040,7 @@ static void *_slurmctld_signal_hand(void *no_data)
 	int i, rc;
 	int sig_array[] = {SIGINT, SIGTERM, SIGHUP, SIGABRT, SIGUSR2, 0};
 	sigset_t set;
+	slurmctld_lock_t conf_write_lock = { .conf = WRITE_LOCK };
 
 #if HAVE_SYS_PRCTL_H
 	if (prctl(PR_SET_NAME, "sigmgr", NULL, NULL, NULL) < 0) {
@@ -1075,7 +1078,9 @@ static void *_slurmctld_signal_hand(void *no_data)
 			return NULL;
 		case SIGUSR2:
 			info("Logrotate signal (SIGUSR2) received");
+			lock_slurmctld(conf_write_lock);
 			update_logging();
+			unlock_slurmctld(conf_write_lock);
 			break;
 		default:
 			error("Invalid signal (%d) received", sig);
@@ -2861,14 +2866,17 @@ void update_log_levels(int req_slurmctld_debug, int req_syslog_debug)
 	      log_num2string(log_opts.syslog_level));
 }
 
-/* Reset slurmctld logging based upon configuration parameters
- *   uses common slurm_conf data structure
- * NOTE: READ lock_slurmctld config before entry */
+/*
+ * Reset slurmctld logging based upon configuration parameters uses common
+ * slurm_conf data structure
+ */
 void update_logging(void)
 {
 	int rc;
 	uid_t slurm_user_id  = slurm_conf.slurm_user_id;
 	gid_t slurm_user_gid = gid_from_uid(slurm_user_id);
+
+	xassert(verify_lock(CONF_LOCK, WRITE_LOCK));
 
 	/* Preserve execute line arguments (if any) */
 	if (debug_level) {
