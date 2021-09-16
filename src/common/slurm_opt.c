@@ -5973,7 +5973,8 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	/* fed_siblings_active not filled in here */
 	/* fed_siblings_viable not filled in here */
 
-	job_desc->group_id = opt_local->gid;
+	if (slurm_option_isset(opt_local, "gid"))
+		job_desc->group_id = opt_local->gid;
 
 	/* het_job_offset not filled in here */
 
@@ -6124,7 +6125,8 @@ extern job_desc_msg_t *slurm_opt_create_job_desc(slurm_opt_t *opt_local,
 	xfmt_tres(&job_desc->tres_per_task, "gres:gpu",
 		  opt_local->gpus_per_task);
 
-	job_desc->user_id = opt_local->uid;
+	if (slurm_option_isset(opt_local, "uid"))
+		job_desc->user_id = opt_local->uid;
 
 	/* wait_all_nodes not filled in here */
 

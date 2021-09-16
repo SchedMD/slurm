@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
     0.
  -- In task/affinity better checking for node existence when laying out
     affinity.
+ -- slurmrestd - fix job submission with auth/jwt.
 
 * Changes in Slurm 21.08.0
 ==========================
