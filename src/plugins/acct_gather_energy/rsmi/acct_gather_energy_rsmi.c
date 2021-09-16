@@ -408,6 +408,13 @@ static void _get_node_energy_up(acct_gather_energy_t *energy)
 
 	uint16_t i;
 
+	/*
+	 * If saved_usable_gpus doesn't exist it means we don't have any gpus to
+	 * track, just return.
+	 */
+	if (!saved_usable_gpus)
+		return;
+
 	// Check if GPUs are constrained by cgroups
 	cgroup_conf_init();
 	constrained_devices = slurm_cgroup_conf.constrain_devices;
@@ -683,6 +690,10 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 		rc = gres_get_step_info(job->step_gres_list, "gpu", 0,
 					GRES_STEP_DATA_BITMAP,
 					&usable_gpus);
+		/*
+		 * If a step isn't using gpus it will return ESLURM_INVALID_GRES
+		 * not a real error, so we only print out debug2.
+		 */
 		if (rc == SLURM_SUCCESS) {
 			/*
 			 * Save a copy of the GPUs affected, so we can
@@ -691,10 +702,15 @@ extern int acct_gather_energy_p_set_data(enum acct_energy_type data_type,
 			FREE_NULL_BITMAP(saved_usable_gpus);
 			saved_usable_gpus = usable_gpus;
 			usable_gpus = NULL;
-		}
-		log_flag(ENERGY, "usable_gpus = %d of %ld",
-			 bit_set_count(saved_usable_gpus),
-			 bit_size(saved_usable_gpus));
+
+			log_flag(ENERGY, "usable_gpus = %d of %ld",
+				 bit_set_count(saved_usable_gpus),
+				 bit_size(saved_usable_gpus));
+		} else if (rc == ESLURM_INVALID_GRES)
+			debug2("Step most likely doesn't have any gpus, no power gathering");
+		else
+			error("gres_get_step_info returned: %s",
+			      slurm_strerror(rc));
 		break;
 	}
 	default:
