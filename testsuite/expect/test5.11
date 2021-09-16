@@ -27,7 +27,6 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
 set node_list        ""
 set highest_cpu_cnt  0
 set default_part     [default_partition]
@@ -42,11 +41,11 @@ set cpu_h_cnt        0
 set test_part        "test$test_id\_part"
 
 proc cleanup {} {
-	global job_id scontrol test_part bin_rm script
+	global job_id scontrol test_part script
 
 	cancel_job $job_id
-	exec $scontrol delete partition=$test_part
-	exec $bin_rm -fr $script
+	run_command "$scontrol delete partition=$test_part"
+	file delete $script
 }
 
 make_bash_script $script "
@@ -83,7 +82,7 @@ proc sub_job { cpu_cnt part } {
 }
 
 proc check_node_cnt { exp_nodes } {
-	global squeue exit_code
+	global squeue
 
 	set match 0
 	spawn $squeue -h -o%D
@@ -100,10 +99,7 @@ proc check_node_cnt { exp_nodes } {
 		}
 	}
 
-	if {!$match} {
-		log_error "Job did not make proper node estimation, expected = $exp_nodes"
-		set exit_code 1
-	}
+	subtest {$match} "Job should make proper node estimation" "expected = $exp_nodes"
 }
 
 proc update_job { job_id part } {
@@ -345,7 +341,3 @@ set exp_nodes [expr ($cpu_test_cnt - 1)/$cpu_h_cnt + 1]
 sub_job $cpu_test_cnt $default_part
 sleep 4
 test_and_check $job_id $test_part $exp_nodes
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
