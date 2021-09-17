@@ -37,6 +37,7 @@ administrators)</a>
 	<li><a href="#command-line-lua">Lua</a></li>
 </ul>
 </li>
+<li><a href="#symbols">Symbol Replacement</a></li>
 <li><a href="#status">Status Commands</a></li>
 <li><a href="#reservation">Advanced Reservations</a></li>
 <li><a href="#dependencies">Job Dependencies</a></li>
