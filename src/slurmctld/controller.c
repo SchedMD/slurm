@@ -2854,6 +2854,11 @@ void update_log_levels(int req_slurmctld_debug, int req_syslog_debug)
 		log_opts.syslog_level = LOG_LEVEL_FATAL;
 
 	log_alter(log_opts, LOG_DAEMON, slurm_conf.slurmctld_logfile);
+
+	debug("slurmctld log levels: stderr=%s logfile=%s syslog=%s",
+	      log_num2string(log_opts.stderr_level),
+	      log_num2string(log_opts.logfile_level),
+	      log_num2string(log_opts.syslog_level));
 }
 
 /* Reset slurmctld logging based upon configuration parameters
@@ -2883,10 +2888,10 @@ void update_logging(void)
 		slurm_conf.slurmctld_logfile = xstrdup(debug_logfile);
 	}
 
+	log_set_timefmt(slurm_conf.log_fmt);
+
 	update_log_levels(slurm_conf.slurmctld_debug,
 			  slurm_conf.slurmctld_syslog_debug);
-
-	log_set_timefmt(slurm_conf.log_fmt);
 
 	debug("Log file re-opened");
 
