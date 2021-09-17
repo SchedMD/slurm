@@ -2813,25 +2813,25 @@ extern uint16_t preempt_mode_num(const char *preempt_mode)
 extern char *log_num2string(uint16_t inx)
 {
 	switch (inx) {
-	case 0:
+	case LOG_LEVEL_QUIET:
 		return "quiet";
-	case 1:
+	case LOG_LEVEL_FATAL:
 		return "fatal";
-	case 2:
+	case LOG_LEVEL_ERROR:
 		return "error";
-	case 3:
+	case LOG_LEVEL_INFO:
 		return "info";
-	case 4:
+	case LOG_LEVEL_VERBOSE:
 		return "verbose";
-	case 5:
+	case LOG_LEVEL_DEBUG:
 		return "debug";
-	case 6:
+	case LOG_LEVEL_DEBUG2:
 		return "debug2";
-	case 7:
+	case LOG_LEVEL_DEBUG3:
 		return "debug3";
-	case 8:
+	case LOG_LEVEL_DEBUG4:
 		return "debug4";
-	case 9:
+	case LOG_LEVEL_DEBUG5:
 		return "debug5";
 	default:
 		return "unknown";
