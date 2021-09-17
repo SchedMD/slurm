@@ -2833,6 +2833,14 @@ extern char *log_num2string(uint16_t inx)
 		return "debug4";
 	case LOG_LEVEL_DEBUG5:
 		return "debug5";
+	case LOG_LEVEL_END:
+		/*
+		 * "(null)" is printed through 'scontrol show config' to
+		 * to indicate a given value has not been set. Convert
+		 * LOG_LEVEL_END to "(null)" to indicate a given logging
+		 * channel is disabled, rather than printing "unknown".
+		 */
+		return "(null)";
 	default:
 		return "unknown";
 	}
