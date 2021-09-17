@@ -5119,8 +5119,7 @@ static void _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 	lock_slurmctld(config_write_lock);
 	update_log_levels(debug_level, debug_level);
 
-	if (debug_level != slurm_conf.slurmctld_debug)
-		info("Set debug level to '%s'", log_num2string(debug_level));
+	info("Set debug level to '%s'", log_num2string(debug_level));
 
 	slurm_conf.slurmctld_debug = debug_level;
 	slurm_conf.last_update = time(NULL);
@@ -5166,8 +5165,7 @@ static void _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
 	sched_log_alter(log_opts, LOG_DAEMON, slurm_conf.sched_logfile);
 	unlock_slurmctld (config_read_lock);
 
-	if (schedlog_level != slurm_conf.sched_log_level)
-		sched_info("Set scheduler log level to %d", schedlog_level);
+	sched_info("Set scheduler log level to %d", schedlog_level);
 
 	slurm_conf.sched_log_level = schedlog_level;
 	slurm_conf.last_update = time(NULL);
