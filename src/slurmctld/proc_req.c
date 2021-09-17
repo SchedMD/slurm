@@ -5160,15 +5160,15 @@ static void _slurm_rpc_set_schedlog_level(slurm_msg_t *msg)
 	schedlog_level = MIN (request_msg->debug_level, (LOG_LEVEL_QUIET + 1));
 	schedlog_level = MAX (schedlog_level, LOG_LEVEL_QUIET);
 
-	lock_slurmctld (config_read_lock);
+	lock_slurmctld(config_read_lock);
 	log_opts.logfile_level = schedlog_level;
 	sched_log_alter(log_opts, LOG_DAEMON, slurm_conf.sched_logfile);
-	unlock_slurmctld (config_read_lock);
 
 	sched_info("Set scheduler log level to %d", schedlog_level);
 
 	slurm_conf.sched_log_level = schedlog_level;
 	slurm_conf.last_update = time(NULL);
+	unlock_slurmctld(config_read_lock);
 
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
