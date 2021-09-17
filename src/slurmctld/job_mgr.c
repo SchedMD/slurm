@@ -17908,8 +17908,8 @@ static int _update_job_nodes_str(void *x, void *arg)
 	return 0;
 }
 
-/* Reset nodes_completing field for all jobs. */
-extern void update_job_nodes_completing(void)
+/* Reset nodes_completing, nodes_pr fields for all jobs. */
+extern void update_job_nodes_strings(void)
 {
 	xassert(verify_lock(JOB_LOCK, WRITE_LOCK));
 

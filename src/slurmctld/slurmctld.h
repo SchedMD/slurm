@@ -2488,8 +2488,8 @@ extern int update_job_str(slurm_msg_t *msg, uid_t uid);
 extern int update_job_wckey(char *module, job_record_t *job_ptr,
 			    char *new_wckey);
 
-/* Reset nodes_completing field for all jobs */
-extern void update_job_nodes_completing(void);
+/* Reset nodes_completing, nodes_pr fields for all jobs */
+extern void update_job_nodes_strings(void);
 
 /*
  * Update log levels given requested levels

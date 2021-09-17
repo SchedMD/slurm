@@ -1349,7 +1349,7 @@ int read_slurm_conf(int recover, bool reconfig)
 		 * In order to re-use job state information,
 		 * update nodes_completing string (based on node bitmaps)
 		 */
-		update_job_nodes_completing();
+		update_job_nodes_strings();
 
 		/* save node and partition states for reconfig RPC */
 		old_node_record_count = node_record_count;
