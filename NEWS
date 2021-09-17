@@ -8,6 +8,9 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 21.08.2
 ==========================
+ -- slurmctld - fix how the max number of cores on a node in a partition are
+    calculated when the partition contains multi-socket nodes. This in turn
+    corrects certain jobs node count estimations displayed client-side.
 
 * Changes in Slurm 21.08.1
 ==========================

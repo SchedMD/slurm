@@ -214,8 +214,10 @@ extern int build_part_bitmap(part_record_t *part_ptr)
 		part_ptr->total_cpus += node_ptr->config_ptr->cpus;
 		part_ptr->max_cpu_cnt = MAX(part_ptr->max_cpu_cnt,
 					    node_ptr->config_ptr->cpus);
-		part_ptr->max_core_cnt = MAX(part_ptr->max_core_cnt,
-					     node_ptr->config_ptr->cores);
+		part_ptr->max_core_cnt =
+				MAX(part_ptr->max_core_cnt,
+				    (node_ptr->config_ptr->cores *
+				     node_ptr->config_ptr->tot_sockets));
 
 		for (i = 0; i < node_ptr->part_cnt; i++) {
 			if (node_ptr->part_pptr[i] == part_ptr)
