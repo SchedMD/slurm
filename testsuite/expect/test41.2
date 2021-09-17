@@ -40,11 +40,11 @@ if {![file exists $slurmrestd]} {
 
 # TODO: Currently only OpenAPI-Generator version 4.x is supported by the test.
 #       See Bug 11963.
-set oasver [run_command_output -nolog "$bin_oasgen version"]
-if {$oasver == ""} {
+set oasgen_check [run_command -nolog "$bin_oasgen version"]
+if {[dict get $oasgen_check exit_code] ||
+    ![regexp {^([0-9]+)[.]\S+} [dict get $oasgen_check output] fullmatch oas_gen_maj]} {
 	skip "$bin_oasgen not found"
 }
-regexp {^([0-9]+)[.]\S+} "$oasver" fullmatch oas_gen_maj
 if {$oas_gen_maj != "4"} {
 	skip "unsupported openapi-generator-cli version: $fullmatch != 4.x"
 }
