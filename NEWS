@@ -11,6 +11,8 @@ documents those changes that are of interest to users and administrators.
  -- slurmctld - fix how the max number of cores on a node in a partition are
     calculated when the partition contains multi-socket nodes. This in turn
     corrects certain jobs node count estimations displayed client-side.
+ -- job_submit/cray_aries - fix "craynetwork" GRES specification after changes
+    introduced in 21.08.0rc1 that made TRES always have a type prefix.
 
 * Changes in Slurm 21.08.1
 ==========================

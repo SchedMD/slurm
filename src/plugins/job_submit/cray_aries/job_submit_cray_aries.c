@@ -77,7 +77,7 @@ const char plugin_name[]       	= "Job submit Cray/Aries plugin";
 const char plugin_type[]       	= "job_submit/cray_aries";
 const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 
-#define CRAY_GRES "craynetwork"
+#define CRAY_GRES "gres:craynetwork"
 #define CRAY_GRES_POSTFIX CRAY_GRES":1"
 
 /*
