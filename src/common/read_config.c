@@ -3690,6 +3690,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 			    "AcctGatherEnergyType", hashtbl))
 		conf->acct_gather_energy_type =
 			xstrdup(DEFAULT_ACCT_GATHER_ENERGY_TYPE);
+	else
+		xstrsubstituteall(conf->acct_gather_energy_type,
+				  "rsmi", "gpu");
 
 	if (!s_p_get_string(&conf->acct_gather_profile_type,
 			    "AcctGatherProfileType", hashtbl))

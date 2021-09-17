@@ -23,6 +23,7 @@ HIGHLIGHTS
 
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
+ -- AcctGatherEnergyType 'rsmi' is now 'gpu'.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================

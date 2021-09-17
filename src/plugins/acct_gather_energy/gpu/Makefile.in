@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for acct_gather_energy/rsmi plugin
+# Makefile for acct_gather_energy/gpu plugin
 
 VPATH = @srcdir@
 am__is_gnu_make = { \
@@ -91,7 +91,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/acct_gather_energy/rsmi
+subdir = src/plugins/acct_gather_energy/gpu
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
 	$(top_srcdir)/auxdir/ax_gcc_builtin.m4 \
@@ -177,17 +177,17 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-acct_gather_energy_rsmi_la_LIBADD =
-am_acct_gather_energy_rsmi_la_OBJECTS = acct_gather_energy_rsmi.lo
-acct_gather_energy_rsmi_la_OBJECTS =  \
-	$(am_acct_gather_energy_rsmi_la_OBJECTS)
+acct_gather_energy_gpu_la_LIBADD =
+am_acct_gather_energy_gpu_la_OBJECTS = acct_gather_energy_gpu.lo
+acct_gather_energy_gpu_la_OBJECTS =  \
+	$(am_acct_gather_energy_gpu_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-acct_gather_energy_rsmi_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+acct_gather_energy_gpu_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(acct_gather_energy_rsmi_la_LDFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS) $(acct_gather_energy_gpu_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -204,7 +204,7 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/acct_gather_energy_rsmi.Plo
+am__depfiles_remade = ./$(DEPDIR)/acct_gather_energy_gpu.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -224,7 +224,7 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(acct_gather_energy_rsmi_la_SOURCES)
+SOURCES = $(acct_gather_energy_gpu_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -507,11 +507,11 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -DSLURM_PLUGIN_DEBUG -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = acct_gather_energy_rsmi.la
+pkglib_LTLIBRARIES = acct_gather_energy_gpu.la
 
 # AMD gpu energy accounting plugin.
-acct_gather_energy_rsmi_la_SOURCES = acct_gather_energy_rsmi.c
-acct_gather_energy_rsmi_la_LDFLAGS = $(PLUGIN_FLAGS)
+acct_gather_energy_gpu_la_SOURCES = acct_gather_energy_gpu.c
+acct_gather_energy_gpu_la_LDFLAGS = $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -525,9 +525,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/acct_gather_energy/rsmi/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/plugins/acct_gather_energy/gpu/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/plugins/acct_gather_energy/rsmi/Makefile
+	  $(AUTOMAKE) --foreign src/plugins/acct_gather_energy/gpu/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -581,8 +581,8 @@ clean-pkglibLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-acct_gather_energy_rsmi.la: $(acct_gather_energy_rsmi_la_OBJECTS) $(acct_gather_energy_rsmi_la_DEPENDENCIES) $(EXTRA_acct_gather_energy_rsmi_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(acct_gather_energy_rsmi_la_LINK) -rpath $(pkglibdir) $(acct_gather_energy_rsmi_la_OBJECTS) $(acct_gather_energy_rsmi_la_LIBADD) $(LIBS)
+acct_gather_energy_gpu.la: $(acct_gather_energy_gpu_la_OBJECTS) $(acct_gather_energy_gpu_la_DEPENDENCIES) $(EXTRA_acct_gather_energy_gpu_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(acct_gather_energy_gpu_la_LINK) -rpath $(pkglibdir) $(acct_gather_energy_gpu_la_OBJECTS) $(acct_gather_energy_gpu_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -590,7 +590,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_gather_energy_rsmi.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/acct_gather_energy_gpu.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -719,7 +719,7 @@ clean-am: clean-generic clean-libtool clean-pkglibLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/acct_gather_energy_rsmi.Plo
+		-rm -f ./$(DEPDIR)/acct_gather_energy_gpu.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -765,7 +765,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/acct_gather_energy_rsmi.Plo
+		-rm -f ./$(DEPDIR)/acct_gather_energy_gpu.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

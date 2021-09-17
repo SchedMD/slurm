@@ -90,7 +90,6 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@BUILD_RSMI_TRUE@am__append_1 = rsmi
 subdir = src/plugins/acct_gather_energy
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/ax_check_compile_flag.m4 \
@@ -200,7 +199,7 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = ibmaem ipmi none pm_counters rapl xcc rsmi
+DIST_SUBDIRS = $(SUBDIRS)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -456,7 +455,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = ibmaem ipmi none pm_counters rapl xcc $(am__append_1)
+SUBDIRS = gpu ibmaem ipmi none pm_counters rapl xcc
 all: all-recursive
 
 .SUFFIXES:
