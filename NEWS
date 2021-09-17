@@ -15,6 +15,8 @@ documents those changes that are of interest to users and administrators.
     corrects certain jobs node count estimations displayed client-side.
  -- job_submit/cray_aries - fix "craynetwork" GRES specification after changes
     introduced in 21.08.0rc1 that made TRES always have a type prefix.
+ -- Ignore nonsensical check in the slurmd for [Pro|Epi]logSlurmctld.
+ -- Fix writing to stderr/syslog when systemd runs slurmctld in the foreground.
 
 * Changes in Slurm 21.08.1
 ==========================

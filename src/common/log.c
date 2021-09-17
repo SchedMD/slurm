@@ -266,7 +266,8 @@ static int _fd_writeable(int fd)
 	if ((ufds.revents & POLLHUP) || fstat(fd, &stat_buf) ||
 	    ((S_ISSOCK(stat_buf.st_mode) &&
 	     (rc = recv(fd, &temp, 1, MSG_DONTWAIT) <= 0) &&
-	     ((rc == 0) || ((errno != EAGAIN) && (errno != EWOULDBLOCK))))))
+	     ((rc == 0) ||
+	      (errno && (errno != EAGAIN) && (errno != EWOULDBLOCK))))))
 		return -1;
 	else if ((ufds.revents & POLLNVAL)
 		 || (ufds.revents & POLLERR)
