@@ -797,6 +797,7 @@ struct job_record {
 					 * job */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
 	bitstr_t *node_bitmap_cg;	/* bitmap of nodes completing job */
+	bitstr_t *node_bitmap_pr;	/* bitmap of nodes with running prolog */
 	uint32_t node_cnt;		/* count of nodes currently
 					 * allocated to job */
 	uint32_t node_cnt_wag;		/* count of nodes Slurm thinks
@@ -811,6 +812,8 @@ struct job_record {
 	char *nodes_completing;		/* nodes still in completing state
 					 * for this job, used to ensure
 					 * epilog is not re-run for job
+					 * used only to dump/load nodes from/to dump file */
+	char *nodes_pr;			/* nodes with prolog running,
 					 * used only to dump/load nodes from/to dump file */
 	char *origin_cluster;		/* cluster name that the job was
 					 * submitted from */

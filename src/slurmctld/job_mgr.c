@@ -1454,6 +1454,17 @@ static int _dump_job_state(void *object, void *arg)
 		packstr(nodes_completing, buffer);
 		xfree(nodes_completing);
 	}
+	if (dump_job_ptr->state_reason == WAIT_PROLOG) {
+		char *nodes_pr = NULL;
+		if (dump_job_ptr->node_bitmap_pr) {
+			nodes_pr = bitmap2node_name(
+					dump_job_ptr->node_bitmap_pr);
+		} else {
+			nodes_pr = bitmap2node_name(dump_job_ptr->node_bitmap);
+		}
+		packstr(nodes_pr, buffer);
+		xfree(nodes_pr);
+	}
 	packstr(dump_job_ptr->nodes, buffer);
 	packstr(dump_job_ptr->partition, buffer);
 	packstr(dump_job_ptr->name, buffer);
@@ -1562,6 +1573,7 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
+	char *nodes_pr = NULL;
 	char *licenses = NULL, *state_desc = NULL, *wckey = NULL;
 	char *resv_name = NULL, *batch_host = NULL;
 	char *gres_used = NULL;
@@ -1704,6 +1716,9 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		if (job_state & JOB_COMPLETING) {
 			safe_unpackstr_xmalloc(&nodes_completing,
 					       &name_len, buffer);
+		}
+		if (state_reason == WAIT_PROLOG) {
+			safe_unpackstr_xmalloc(&nodes_pr, &name_len, buffer);
 		}
 		safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
 		safe_unpackstr_xmalloc(&partition, &name_len, buffer);
@@ -2433,6 +2448,11 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		xfree(job_ptr->nodes_completing);
 		job_ptr->nodes_completing = nodes_completing;
 		nodes_completing = NULL;  /* reused, nothing left to free */
+	}
+	if (nodes_pr) {
+		xfree(job_ptr->nodes_pr);
+		job_ptr->nodes_pr = nodes_pr;
+		nodes_pr = NULL;  /* reused, nothing left to free */
 	}
 	job_ptr->other_port   = other_port;
 	job_ptr->power_flags  = power_flags;
@@ -4789,8 +4809,10 @@ extern job_record_t *job_array_split(job_record_t *job_ptr)
 	job_ptr_pend->node_addr = NULL;
 	job_ptr_pend->node_bitmap = NULL;
 	job_ptr_pend->node_bitmap_cg = NULL;
+	job_ptr_pend->node_bitmap_pr = NULL;
 	job_ptr_pend->nodes = NULL;
 	job_ptr_pend->nodes_completing = NULL;
+	job_ptr_pend->nodes_pr = NULL;
 	job_ptr_pend->origin_cluster = xstrdup(job_ptr->origin_cluster);
 	job_ptr_pend->partition = xstrdup(job_ptr->partition);
 	job_ptr_pend->part_ptr_list = part_list_copy(job_ptr->part_ptr_list);
@@ -9853,8 +9875,10 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->node_addr);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap_cg);
+	FREE_NULL_BITMAP(job_ptr->node_bitmap_pr);
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
+	xfree(job_ptr->nodes_pr);
 	xfree(job_ptr->origin_cluster);
 	if (job_ptr->het_details && job_ptr->het_job_id) {
 		/* xfree struct if hetjob leader and NULL ptr otherwise. */
