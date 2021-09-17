@@ -2794,6 +2794,68 @@ static void _update_cred_key(void)
 	                          slurm_conf.job_credential_private_key);
 }
 
+/*
+ * Update log levels given requested levels
+ * NOTE: Will not turn on originally configured off (quiet) channels
+ */
+void update_log_levels(int req_slurmctld_debug, int req_syslog_debug)
+{
+	static bool conf_init = false;
+	static int conf_slurmctld_debug, conf_syslog_debug;
+	log_options_t log_opts = LOG_OPTS_INITIALIZER;
+	int slurmctld_debug;
+	int syslog_debug;
+
+	/*
+	 * Keep track of the original debug levels from slurm.conf so that
+	 * `scontrol setdebug` does not turn on non-active logging channels.
+	 * NOTE: It is known that `scontrol reconfigure` will cause an issue
+	 *       when reconfigured with a slurm.conf that changes SlurmctldDebug
+	 *       from level QUIET to a non-quiet value.
+	 * NOTE: Planned changes to `reconfigure` behavior should make this a
+	 *       non-issue in a future release.
+	 */
+	if (!conf_init) {
+		conf_slurmctld_debug = slurm_conf.slurmctld_debug;
+		conf_syslog_debug = slurm_conf.slurmctld_syslog_debug;
+		conf_init = true;
+	}
+
+	/*
+	 * NOTE: not offset by LOG_LEVEL_INFO, since it's inconvenient
+	 * to provide negative values for scontrol
+	 */
+	slurmctld_debug = MIN(req_slurmctld_debug, (LOG_LEVEL_END - 1));
+	slurmctld_debug = MAX(slurmctld_debug, LOG_LEVEL_QUIET);
+	syslog_debug = MIN(req_syslog_debug, (LOG_LEVEL_END - 1));
+	syslog_debug = MAX(syslog_debug, LOG_LEVEL_QUIET);
+
+	if (daemonize)
+		log_opts.stderr_level = LOG_LEVEL_QUIET;
+	else
+		log_opts.stderr_level = slurmctld_debug;
+
+	if (slurm_conf.slurmctld_logfile &&
+	    (conf_slurmctld_debug != LOG_LEVEL_QUIET))
+		log_opts.logfile_level = slurmctld_debug;
+	else
+		log_opts.logfile_level = LOG_LEVEL_QUIET;
+
+	if (conf_syslog_debug == LOG_LEVEL_QUIET)
+		log_opts.syslog_level = LOG_LEVEL_QUIET;
+	else if (slurm_conf.slurmctld_syslog_debug != LOG_LEVEL_END)
+		log_opts.syslog_level = syslog_debug;
+	else if (!daemonize)
+		log_opts.syslog_level = LOG_LEVEL_QUIET;
+	else if (!slurm_conf.slurmctld_logfile &&
+		 (conf_slurmctld_debug > LOG_LEVEL_QUIET))
+		log_opts.syslog_level = slurmctld_debug;
+	else
+		log_opts.syslog_level = LOG_LEVEL_FATAL;
+
+	log_alter(log_opts, LOG_DAEMON, slurm_conf.slurmctld_logfile);
+}
+
 /* Reset slurmctld logging based upon configuration parameters
  *   uses common slurm_conf data structure
  * NOTE: READ lock_slurmctld config before entry */
@@ -2821,23 +2883,8 @@ void update_logging(void)
 		slurm_conf.slurmctld_logfile = xstrdup(debug_logfile);
 	}
 
-	if (daemonize)
-		log_opts.stderr_level = LOG_LEVEL_QUIET;
-	else
-		log_opts.stderr_level = slurm_conf.slurmctld_debug;
-
-	if (slurm_conf.slurmctld_syslog_debug != LOG_LEVEL_END) {
-		log_opts.syslog_level = slurm_conf.slurmctld_syslog_debug;
-	} else if (!daemonize) {
-		log_opts.syslog_level = LOG_LEVEL_QUIET;
-	} else if ((slurm_conf.slurmctld_debug > LOG_LEVEL_QUIET)
-	           && !slurm_conf.slurmctld_logfile) {
-		log_opts.syslog_level = slurm_conf.slurmctld_debug;
-	} else
-		log_opts.syslog_level = LOG_LEVEL_FATAL;
-
-	log_alter(log_opts, SYSLOG_FACILITY_DAEMON,
-	          slurm_conf.slurmctld_logfile);
+	update_log_levels(slurm_conf.slurmctld_debug,
+			  slurm_conf.slurmctld_syslog_debug);
 
 	log_set_timefmt(slurm_conf.log_fmt);
 

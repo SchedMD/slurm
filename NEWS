@@ -56,6 +56,7 @@ documents those changes that are of interest to users and administrators.
  -- In task/affinity better checking for node existence when laying out
     affinity.
  -- slurmrestd - fix job submission with auth/jwt.
+ -- Fix 'scontrol setdebug' not respecting slurm.conf logging configurations.
 
 * Changes in Slurm 21.08.0
 ==========================
