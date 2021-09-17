@@ -12731,7 +12731,9 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			job_specs->min_nodes;
 		uint32_t num_cpus = job_specs->min_cpus != NO_VAL ?
 			job_specs->min_cpus :
-			job_ptr->tres_req_cnt[TRES_ARRAY_CPU];
+			IS_JOB_PENDING(job_ptr) ?
+			job_ptr->tres_req_cnt[TRES_ARRAY_CPU] :
+			job_ptr->tres_alloc_cnt[TRES_ARRAY_CPU];
 		uint32_t num_tasks = job_specs->num_tasks != NO_VAL ?
 			job_specs->num_tasks : detail_ptr->num_tasks;
 

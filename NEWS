@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- Ignore nonsensical check in the slurmd for [Pro|Epi]logSlurmctld.
  -- Fix writing to stderr/syslog when systemd runs slurmctld in the foreground.
  -- Fix locking around log level setting routines.
+ -- Fix issue with updating job started with node range.
 
 * Changes in Slurm 21.08.1
 ==========================
