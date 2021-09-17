@@ -3885,9 +3885,10 @@ extern int bb_p_job_test_stage_out(job_record_t *job_ptr)
 	}
 	bb_job = bb_job_find(&bb_state, job_ptr->job_id);
 	if (!bb_job) {
-		/* No job buffers. Assuming use of persistent buffers only */
-		verbose("%pJ bb job record not found",
-			job_ptr);
+		/*
+		 * This is expected if the burst buffer completed teardown,
+		 * or if only persistent burst buffers were used.
+		 */
 		rc =  1;
 	} else {
 		if (bb_job->state == BB_STATE_PENDING) {
