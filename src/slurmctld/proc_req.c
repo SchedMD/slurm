@@ -2137,7 +2137,8 @@ static void _slurm_rpc_complete_prolog(slurm_msg_t * msg)
 
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		lock_slurmctld(job_write_lock);
-	error_code = prolog_complete(comp_msg->job_id, comp_msg->prolog_rc);
+	error_code = prolog_complete(comp_msg->job_id, comp_msg->prolog_rc,
+				     comp_msg->node_name);
 	if (!(msg->flags & CTLD_QUEUE_PROCESSING))
 		unlock_slurmctld(job_write_lock);
 

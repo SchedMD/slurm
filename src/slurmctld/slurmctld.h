@@ -2188,7 +2188,8 @@ extern int pick_batch_host(job_record_t *job_ptr);
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-extern int prolog_complete(uint32_t job_id, uint32_t prolog_return_code);
+extern int prolog_complete(uint32_t job_id, uint32_t prolog_return_code,
+			   char *node_name);
 
 /*
  * If the job or slurm.conf requests to not kill on invalid dependency,

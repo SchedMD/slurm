@@ -6281,8 +6281,8 @@ static void _signal_batch_job(job_record_t *job_ptr, uint16_t signal,
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-extern int prolog_complete(uint32_t job_id,
-			   uint32_t prolog_return_code)
+extern int prolog_complete(uint32_t job_id, uint32_t prolog_return_code,
+			   char *node_name)
 {
 	job_record_t *job_ptr;
 
@@ -6297,8 +6297,27 @@ extern int prolog_complete(uint32_t job_id,
 
 	if (prolog_return_code)
 		error("Prolog launch failure, %pJ", job_ptr);
+#ifndef HAVE_FRONT_END
+	if (job_ptr->node_bitmap_pr) {
+		node_record_t *node_ptr;
 
-	job_ptr->state_reason = WAIT_NO_REASON;
+		node_ptr = find_node_record(node_name);
+		if (node_ptr) {
+			int node_inx;
+			node_inx = node_ptr - node_record_table_ptr;
+			bit_clear(job_ptr->node_bitmap_pr, node_inx);
+		} else {
+			error("%s: can't find node:%s", __func__, node_name);
+			bit_clear_all(job_ptr->node_bitmap_pr);
+		}
+	}
+
+	if (!job_ptr->node_bitmap_pr ||
+	    (bit_ffs(job_ptr->node_bitmap_pr) == -1))
+#endif
+		job_ptr->state_reason = WAIT_NO_REASON;
+
+	last_job_update = time(NULL);
 
 	return SLURM_SUCCESS;
 }

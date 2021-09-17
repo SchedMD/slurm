@@ -2928,8 +2928,12 @@ extern void launch_prolog(job_record_t *job_ptr)
 
 	/* Locks: Write job */
 	if ((slurm_conf.prolog_flags & PROLOG_FLAG_ALLOC) &&
-	    !(slurm_conf.prolog_flags & PROLOG_FLAG_NOHOLD))
+	    !(slurm_conf.prolog_flags & PROLOG_FLAG_NOHOLD)) {
 		job_ptr->state_reason = WAIT_PROLOG;
+#ifndef HAVE_FRONT_END
+		job_ptr->node_bitmap_pr = bit_copy(job_ptr->node_bitmap);
+#endif
+	}
 
 	prolog_msg_ptr->job_gres_info =
 		 gres_g_epilog_build_env(job_ptr->gres_list_req,job_ptr->nodes);
