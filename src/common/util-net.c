@@ -285,11 +285,11 @@ struct addrinfo *get_addr_info(const char *hostname, uint16_t port)
  * NOTE: caller is responsible for freeing the resulting address.
  * Returns NULL on error.
  */
-char *get_name_info(struct sockaddr *addr, socklen_t addrlen, int flags)
+extern char *xgetnameinfo(struct sockaddr *addr, socklen_t addrlen)
 {
 	char hbuf[NI_MAXHOST];
 	int err = getnameinfo(addr, addrlen, hbuf, sizeof(hbuf), NULL, 0,
-			      (NI_NAMEREQD | flags));
+			      NI_NAMEREQD);
 
 	if (err == EAI_SYSTEM) {
 		error("%s: getnameinfo() failed: %s: %m",

@@ -2465,8 +2465,8 @@ extern char *slurm_conf_get_aliased_nodename()
 			nodename =
 				slurm_conf_get_nodename(addr_ptr->ai_canonname);
 		} else {
-			tmp_name = get_name_info(addr_ptr->ai_addr,
-						 addr_ptr->ai_addrlen, 0);
+			tmp_name = xgetnameinfo(addr_ptr->ai_addr,
+						addr_ptr->ai_addrlen);
 			nodename = slurm_conf_get_nodename(tmp_name);
 			xfree(tmp_name);
 		}
