@@ -28,7 +28,6 @@ source ./globals
 
 set script             "test$test_id\.bash"
 set job_id             0
-set exit_code          0
 
 proc cleanup {} {
 	global bin_rm script job_id
@@ -48,8 +47,7 @@ exec $bin_rm -f $script
 make_bash_script $script "$bin_sleep 20"
 
 proc check_release { job } {
-
-	global scontrol number exit_code
+	global scontrol number
 
 	set priority 0
 	spawn $scontrol show job $job
@@ -66,10 +64,7 @@ proc check_release { job } {
 		}
 	}
 
-	if { $priority == 0 } {
-		log_error "Priority was not set to a non zero value after it was released"
-		set exit_code 1
-	}
+	subtest {$priority != 0} "Priority should be set to a non-zero value after it was released"
 }
 
 spawn $sbatch -N1 -t1 -o /dev/null -e /dev/null $script
@@ -90,11 +85,7 @@ if { $job_id == 0 } {
 	fail "sbatch did not submit job"
 }
 
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Error waiting for job $job_id to complete"
-	cancel_job $job_id
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 spawn $scontrol requeuehold State=SpecialExit $job_id
 expect {
@@ -106,10 +97,7 @@ expect {
 	}
 }
 
-if {![check_job_state $job_id SPECIAL_EXIT]} {
-	log_error "Job was not on the desired state"
-	set exit_code 1
-}
+subtest [check_job_state $job_id SPECIAL_EXIT] "Job state should be SPECIAL_EXIT"
 
 spawn $scontrol release $job_id
 expect {
@@ -122,7 +110,3 @@ expect {
 }
 
 check_release $job_id
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

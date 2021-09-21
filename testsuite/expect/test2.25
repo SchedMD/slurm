@@ -29,7 +29,6 @@ source ./globals
 
 set test_acct    "test$test_id\_acct"
 set test_user    ""
-set exit_code    0
 
 if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser or root"
@@ -183,10 +182,7 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 		}
 	}
 
-	if {$match != 5} {
-		log_error "1. scontrol show assoc_mgr did not show correct information ($match != 5)"
-		set exit_code 1
-	}
+	subtest {$match == 5} "1. Verify scontrol show assoc_mgr shows correct information" "$match != 5"
 
 	# Set association limits and check that controller is updated
 	mod_assoc_vals
@@ -226,10 +222,7 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 		}
 	}
 
-	if {$match != 6} {
-		log_error "2. scontrol show assoc_mgr did not show correct information ($match != 6)"
-		set exit_code 1
-	}
+	subtest {$match == 6} "2. Verify scontrol show assoc_mgr shows correct information" "$match != 6"
 
 	# Clear associtation limits and check controller is updated
 	clear_assoc_vals
@@ -270,10 +263,7 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 		}
 	}
 
-	if {$match != 3 && $limit_match} {
-		log_error "3. scontrol show assoc_mgr did not show correct information ($match != 3)"
-		set exit_code 1
-	}
+	subtest {$match == 3 || ! $limit_match} "3. Verify scontrol show assoc_mgr shows correct information" "$match != 3"
 
 	delete_test_acct
 
@@ -306,12 +296,5 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 		}
 	}
 
-	if {$match != 4} {
-		log_error "4. scontrol show assoc_mgr did not show correct information ($match != 4)"
-		set exit_code 1
-	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	subtest {$match == 4} "4. Verify scontrol show assoc_mgr shows correct information" "$match != 4"
 }

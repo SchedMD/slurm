@@ -32,8 +32,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 #
 # Report the slurm daemon status and explicitly exit
 #
@@ -67,10 +65,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "scontrol ping or exit command failed"
-	set exit_code 1
-}
+subtest {$matches == 1} "scontrol ping and exit were sent"
 
 #
 # Report the slurm daemon status and explicitly quit
@@ -105,10 +100,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "scontrol ping or quit command failed"
-	set exit_code 1
-}
+subtest {$matches == 1} "scontrol ping and quit were sent"
 
 #
 # Report the slurm daemon status, repeat via !! command and explicitly quit
@@ -151,10 +143,4 @@ expect {
 		wait
 	}
 }
-if {$matches != 2} {
-	fail "scontrol ping, !!, or quit command failed"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 2} "scontrol ping, !! and quit commands were sent"

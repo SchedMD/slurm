@@ -28,7 +28,6 @@ source ./globals
 
 set qos_name       "test$test_id\_qos"
 set part_name      "test$test_id\_part"
-set exit_code      0
 
 #
 # Check accounting config and bail if not found.
@@ -41,14 +40,12 @@ if {[string compare [get_admin_level] "Administrator"]} {
 }
 
 proc set_part_val {part_type part_val} {
-
-	global scontrol part_name exit_code
+	global scontrol part_name
 
 	spawn $scontrol update partitionname=$part_name $part_type=$part_val
 	expect {
 		-re "Error" {
-			log_error "$part_type was not set"
-			set exit_code 1
+			fail "$part_type was not set"
 		}
 		timeout {
 			fail "scontrol is not responding"
@@ -60,8 +57,7 @@ proc set_part_val {part_type part_val} {
 }
 
 proc check_part {part_type part_val} {
-
-	global scontrol part_name exit_code
+	global scontrol part_name
 
 	set val_found 0
 	spawn $scontrol show partition=$part_name
@@ -79,22 +75,17 @@ proc check_part {part_type part_val} {
 	}
 
 	if {$val_found != 1} {
-		log_error "$part_type was not set to $part_val"
-		set exit_code 1
+		fail "$part_type was not set to $part_val"
 	}
 }
 
 proc delete_part { } {
-
 	global scontrol sacctmgr part_name qos_name
 
 	spawn $scontrol delete partition=$part_name
 	expect {
 		-re "error" {
-			log_error "scontrol did not remove "
-			"partition\n"
-			set exit_code 1
-			exp_continue
+			fail "scontrol did not remove partition"
 		}
 		timeout {
 			fail "scontrol is not responding"
@@ -120,8 +111,7 @@ proc delete_part { } {
 	}
 
 	if {$del_acct != 1} {
-		log_error "Qos was not deleted"
-		set exit_code 1
+		fail "Qos was not deleted"
 	}
 
 }
@@ -137,8 +127,7 @@ proc cleanup {} {
 spawn $scontrol create partition=$part_name
 expect {
 	-re "error" {
-		log_error "Partition was not created"
-		set exit_code 1
+		fail "Partition was not created"
 	}
 	timeout {
 		fail "scontrol is not reponding"
@@ -164,8 +153,7 @@ expect {
 }
 
 if {$create_qos != 1} {
-	log_error "QOS was not created"
-	set exit_code 1
+	fail "QOS was not created"
 }
 
 #
@@ -207,7 +195,3 @@ set_part_val DenyQos none
 # Check that DenyQos is set to none
 #
 check_part DenyQos none
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

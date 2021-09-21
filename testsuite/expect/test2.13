@@ -27,7 +27,6 @@
 ############################################################################
 source ./globals
 
-set exit_code     0
 set file_in1      "test$test_id.input1"
 set file_in2      "test$test_id.input2"
 set file_out      "test$test_id.output"
@@ -107,10 +106,7 @@ expect {
 		wait
 	}
 }
-if {$orig_time != 5} {
-    log_error "Failed to set step initial time limit"
-	set exit_code 1
-}
+subtest {$orig_time == 5} "Validate the step's original time limit" "$orig_time != 5"
 
 #
 # Change that step's time limit
@@ -141,10 +137,7 @@ expect {
 		wait
 	}
 }
-if {$orig_time != 1} {
-    log_error "Failed to update step time limit"
-	set exit_code 1
-}
+subtest {$orig_time == 1} "Validate the step's new time limit" "$orig_time != 1"
 
 #
 # Wait for step to exit and check output file
@@ -161,14 +154,9 @@ if {[wait_for_file $file_out] != 0} {
 spawn $bin_cat $file_out
 expect {
 	-re "STEP_FINISH" {
-		log_error "Step time limit not enforced"
-		set exit_code 1
+		fail "Step time limit not enforced"
 	}
 	eof {
 		wait
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
