@@ -1405,15 +1405,20 @@ _sbcast()
     _split_long_opt
 
     local shortoptions="-C -f -F -j -p -s -t -v -V"
-    local longoptions="--compress --force --fanout<number> --jobid<number>\
-		       --preserve --size<bytes> --timeout<seconds> --verbose\
-		       --version"
+    local longoptions="--compress --exclude=<path_list> --fanout=<number>\
+		       --force --jobid=<number> --preserve --send-libs=<yes|no>\
+		       --size=<size_in_bytes> --timeout=<time_in_seconds>\
+		       --verbose --version"
 
     [[ $cur == - ]] && { offer "$shortoptions" ; return ; }
     [[ $cur == -- ]] && { offer "$longoptions" ; return ; }
     [[ $cur == --* ]] && { offer "$(sed 's/<[^>]*>//g' <<< $longoptions)"; return ; }
 
-    _filedir
+    case $prev in
+    --jobid|-j) offer_list "$(_jobs)" ;;
+    --send-libs) offer_list "yes no" ;;
+    *) _filedir ;;
+    esac
 }
 complete -F _sbcast sbcast
 
