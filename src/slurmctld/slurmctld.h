@@ -2474,6 +2474,14 @@ extern int update_job_wckey(char *module, job_record_t *job_ptr,
 /* Reset nodes_completing field for all jobs */
 extern void update_job_nodes_completing(void);
 
+/*
+ * Update log levels given requested levels
+ * IN req_slurmctld_debug - requested debug level
+ * IN req_syslog_debug - requested syslog level
+ * NOTE: Will not turn on originally configured off (quiet) channels
+ */
+extern void update_log_levels(int req_slurmctld_debug, int req_syslog_debug);
+
 /* Reset slurmctld logging based upon configuration parameters
  * uses common slurm_conf data structure */
 extern void update_logging(void);

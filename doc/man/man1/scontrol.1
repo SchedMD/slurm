@@ -1,4 +1,4 @@
-.TH scontrol "1" "Slurm Commands" "July 2021" "Slurm Commands"
+.TH scontrol "1" "Slurm Commands" "September 2021" "Slurm Commands"
 
 .SH "NAME"
 scontrol \- view or modify Slurm configuration and state.
@@ -301,7 +301,8 @@ SlurmSchedLogLevel parameter is present.
 
 .TP
 \fBsetdebug\fP \fILEVEL\fP
-Change the debug level of the slurmctld daemon.
+Change the debug level of the slurmctld daemon for all active logging channels
+not originally configured off (quiet).
 \fILEVEL\fP may be an integer value between zero and nine (using the
 same values as \fISlurmctldDebug\fP in the \fIslurm.conf\fP file) or
 the name of the most detailed message type to be printed:
