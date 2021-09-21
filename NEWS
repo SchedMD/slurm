@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix writing to stderr/syslog when systemd runs slurmctld in the foreground.
  -- Fix locking around log level setting routines.
  -- Fix issue with updating job started with node range.
+ -- Fix issue with nodes not clearing state in the database when the slurmctld
+    is started with clean-start.
 
 * Changes in Slurm 21.08.1
 ==========================
