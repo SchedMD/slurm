@@ -28,8 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 #
 # Report all slurm partitions with verbose option
 #
@@ -51,10 +49,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 2} {
-	log_error "scontrol show partition command failed"
-	set exit_code 1
-}
+subtest {$matches == 2} "Verify scontrol show partition with verbose option"
 
 #
 # Report all slurm partitions with quiet option
@@ -63,9 +58,7 @@ set matches       0
 spawn $scontrol -Q show partition
 expect {
 	-re "last_update_time" {
-		log_error "Quiet format failure"
-		set exit_code 1
-		exp_continue
+		fail "Quiet format failure"
 	}
 	-re "Default=YES" {
 		incr matches
@@ -78,10 +71,4 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	fail "scontrol show partition command failed"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 1} "Verify scontrol show partition with quiet option"

@@ -28,7 +28,6 @@ source ./globals
 
 set part_name      "test$test_id\_part"
 set acct_name      "test$test_id\_acct"
-set exit_code      0
 
 #
 # Check accounting config and bail if not found.
@@ -41,14 +40,12 @@ if {[string compare [get_admin_level] "Administrator"]} {
 }
 
 proc set_part_val {part_type part_val} {
-
-	global scontrol part_name exit_code
+	global scontrol part_name
 
 	spawn $scontrol update partitionname=$part_name $part_type=$part_val
 	expect {
 		-re "Error" {
-			log_error "$part_type was not set"
-			set exit_code 1
+			fail "$part_type was not set"
 		}
 		timeout {
 			fail "scontrol is not responding"
@@ -60,8 +57,7 @@ proc set_part_val {part_type part_val} {
 }
 
 proc check_part {part_type part_val} {
-
-	global scontrol part_name exit_code
+	global scontrol part_name
 
 	set val_found 0
 	spawn $scontrol show partition=$part_name
@@ -79,20 +75,17 @@ proc check_part {part_type part_val} {
 	}
 
 	if {$val_found != 1} {
-		log_error "$part_type was not set to $part_val"
-		set exit_code 1
+		fail "$part_type was not set to $part_val"
 	}
 }
 
 proc delete_part { } {
-
 	global scontrol sacctmgr part_name acct_name
 
 	spawn $scontrol delete partition=$part_name
 	expect {
 		-re "error" {
-			log_error "scontrol did not remove partition"
-			set exit_code 1
+			fail "scontrol did not remove partition"
 			exp_continue
 		}
 		timeout {
@@ -119,8 +112,7 @@ proc delete_part { } {
 	}
 
 	if {$del_acct != 1} {
-		log_error "Account was not deleted"
-		set exit_code 1
+		fail "Account was not deleted"
 	}
 
 }
@@ -135,8 +127,7 @@ proc cleanup {} {
 spawn $scontrol create partition=$part_name
 expect {
 	-re "error" {
-		log_error "Partition was not created"
-		set exit_code 1
+		fail "Partition was not created"
 	}
 	timeout {
 		fail "scontrol is not reponding"
@@ -161,8 +152,7 @@ expect {
 	}
 }
 if { $make_acct != 1 } {
-	log_error "Account was not added"
-	set exit_code 1
+	fail "Account was not added"
 }
 
 #
@@ -204,7 +194,3 @@ set_part_val denyaccount none
 # Check that DenyAccount was set to ALL
 #
 check_part DenyAccounts none
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

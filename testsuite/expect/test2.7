@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
@@ -100,14 +99,8 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 }
-if {$rem_time > 60} {
-	log_error "Job remaining time is wrong $rem_time"
-	set exit_code 1
-}
-if {$rem_time < 55} {
-	log_error "Job remaining time seems too small"
-	set exit_code 1
-}
+subtest {$rem_time <= 60} "Verify job remaining time is not too large" "$rem_time > 60"
+subtest {$rem_time >= 55} "Verify Job remaining time is not too small" "$rem_time < 55"
 
 #
 # Check for errors in log
@@ -116,8 +109,7 @@ if {[wait_for_file $file_err] == 0} {
 	spawn $bin_cat $file_err
 	expect {
 		-re "error" {
-			log_error "Some error encountered"
-			set exit_code 1
+			fail "Some error encountered"
 		}
 		eof {
 			wait
@@ -127,7 +119,4 @@ if {[wait_for_file $file_err] == 0} {
 
 if {$job_id != $scontrol_id} {
 	fail "scontrol pidinfo error"
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

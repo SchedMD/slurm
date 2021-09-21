@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code		0
 set file_in		"test$test_id.input"
 set job_name		"test$test_id"
 
@@ -100,8 +99,9 @@ proc load_job_prio { } {
 	}
 }
 
-proc end_it { } {
-	global exit_code job_id scancel
+proc cleanup { } {
+	global bin_rm file_in job_id scancel
+
 	if {$job_id(0) > 0} {
 		exec $scancel $job_id(0)
 	}
@@ -111,10 +111,8 @@ proc end_it { } {
 	if {$job_id(2) > 0} {
 		exec $scancel $job_id(2)
 	}
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
+
+	exec $bin_rm -f $file_in
 }
 
 if {![is_super_user] && [top_enabled] == 0} {
@@ -132,25 +130,20 @@ set job_id(0) [submit_job]
 set job_id(1) [submit_job]
 set job_id(2) [submit_job]
 if {$job_id(0) == 0 || $job_id(1) == 0 || $job_id(2) == 0} {
-	log_error "Failed to submit jobs"
-	set exit_code 1
-	end_it
+	fail "Failed to submit jobs"
 }
 
 log_debug "Report initial job priorities"
 load_job_prio
 if {$prio(0) < 3 || $prio(1) < 3 || $prio(2) < 3} {
-	log_warn "Priorities are too low to test. Increase the PriorityWeight values when using the priority/multifactor plugin."
-	end_it
+	skip "Priorities are too low to test. Increase the PriorityWeight values when using the priority/multifactor plugin."
 }
 
 log_debug "Reset and test job priorities"
 spawn $scontrol top $job_id(2),$job_id(1)
 expect {
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
-		exp_continue
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -158,18 +151,14 @@ expect {
 }
 load_job_prio
 if {$prio(2) <= $prio(1) || $prio(1) <= $prio(0)} {
-	log_error "Job priorities not reset as expected ($prio(2) <= $prio(1) <= $prio(0))"
-	set exit_code 1
-	end_it
+	fail "Job priorities not reset as expected ($prio(2) <= $prio(1) <= $prio(0))"
 }
 
 log_debug "Reset and test job priorities"
 spawn $scontrol top $job_id(0)
 expect {
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
-		exp_continue
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -177,12 +166,5 @@ expect {
 }
 load_job_prio
 if {$prio(0) <= $prio(1) || $prio(0) <= $prio(2)} {
-	log_error "job priorities not reset as expected ($prio(0) <= $prio(1) && $prio(0) <= $prio(2))"
-	set exit_code 1
-	end_it
+	fail "job priorities not reset as expected ($prio(0) <= $prio(1) && $prio(0) <= $prio(2))"
 }
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
-}
-end_it

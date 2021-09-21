@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set job_id1     0
 set job_id2     0
 set step_id	0
@@ -46,7 +45,7 @@ if {[check_config_select "linear"]} {
 }
 
 proc cleanup {} {
-	global job_id1 job_id2 bin_rm test_id exit_code
+	global job_id1 job_id2 bin_rm test_id
 
 	cancel_job $job_id1
 	cancel_job $job_id2
