@@ -28,8 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code            0
-set file_in              "test$test_id.input"
 set job_id1              0
 set job_id2              0
 set job_id3              0
@@ -39,9 +37,9 @@ set prio3                -1
 set multi                0
 
 proc cleanup {} {
-	global bin_rm file_in
+	global job_id1 job_id2 job_id3
 
-	exec $bin_rm -f $file_in
+	cancel_job [list $job_id1 $job_id2 $job_id3]
 }
 
 # expected outcome is different under multifactor rule
@@ -49,141 +47,26 @@ if {[get_config_param "PriorityType"] eq "priority/multifactor"} {
 	set multi 1
 }
 
-
-make_bash_script $file_in { $bin_pwd }
-
 #
 # Spawn three sbatch job, one held
 #
-set sbatch_pid [spawn $sbatch -t1 --output=/dev/null --error=/dev/null  $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id1 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-set sbatch_pid [spawn $sbatch -t1 --output=/dev/null --error=/dev/null $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-                set job_id2 $expect_out(1,string)
-                exp_continue
-        }
-        timeout {
-                slow_kill $sbatch_pid
-                fail "sbatch not responding"
-        }
-        eof {
-		wait
-        }
-}
-set sbatch_pid [spawn $sbatch -t1 --output=/dev/null --error=/dev/null --hold $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-            set job_id3 $expect_out(1,string)
-            exp_continue
-        }
-        timeout {
-			slow_kill $sbatch_pid
-            fail "srun not responding"
-        }
-        eof {
-			wait
-        }
-}
-
+set job_id1 [submit_job -fail "-t1 --output=/dev/null --error=/dev/null --wrap='$bin_id'"]
+set job_id2 [submit_job -fail "-t1 --output=/dev/null --error=/dev/null --wrap='$bin_id'"]
+set job_id3 [submit_job -fail "-t1 --output=/dev/null --error=/dev/null --hold --wrap='$bin_id'"]
 
 #
 # Get priority of each job
 #
-if {$job_id1 != 0} {
-	spawn $scontrol show job $job_id1
-	expect {
-		-re "Priority=($number)" {
-			set prio1 $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			cancel_job $job_id1
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-        if {[cancel_job $job_id1] != 0} {
-		set exit_code   1
-	}
-} else {
-	set exit_code   1
-}
-if {$job_id2 != 0} {
-	spawn $scontrol show job $job_id2
-    expect {
-    	-re "Priority=($number)" {
-        	set prio2 $expect_out(1,string)
-            exp_continue
-        }
-        timeout {
-            cancel_job $job_id2
-            fail "scontrol not responding"
-        }
-        eof {
-			wait
-        }
-	}
-    if {[cancel_job $job_id2] != 0} {
-		set exit_code   1
-	}
-} else {
-        set exit_code   1
-}
-if {$job_id3 != 0} {
-    spawn $scontrol show job $job_id3
-    expect {
-        -re "Priority=($number)" {
-            set prio3 $expect_out(1,string)
-            exp_continue
-        }
-        timeout {
-            cancel_job $job_id3
-            fail "scontrol not responding"
-        }
-        eof {
-			wait
-        }
-    }
-    if {[cancel_job $job_id3] != 0} {
-		set exit_code   1
-	}
-} else {
-        set exit_code   1
-}
+set prio1 [get_job_param $job_id1 "Priority"]
+set prio2 [get_job_param $job_id2 "Priority"]
+set prio3 [get_job_param $job_id3 "Priority"]
 
 #
 # Confirm reasonable values for the job priorities
 #
 if {$multi} {
-	if {$prio1 != $prio2} {
-		log_error "Job priorities are not same: $prio1 != $prio2 "
-		set exit_code 1
-	}
+	subtest {$prio1 == $prio2} "Confirm reasonable values for the job priorities" "Job priorities are not same: $prio1 != $prio2"
 } else {
-	if {$prio1 <= $prio2} {
-		log_error "Job priorities are not decreasing: $prio1 <= $prio2 "
-		set exit_code 1
-	}
+	subtest {$prio1 > $prio2} "Confirm reasonable values for the job priorities" "Job priorities are not decreasing: $prio1 <= $prio2"
 }
-if {$prio3 != 0} {
-	fail "Held job has non-zero priority: $prio3"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$prio3 == 0} "Held job should have zero priority" "Held job has non-zero priority: $prio3"

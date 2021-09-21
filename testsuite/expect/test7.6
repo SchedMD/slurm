@@ -40,7 +40,6 @@
 ############################################################################
 source ./globals
 
-set exit_code     0
 set job_id        0
 set test_prog     "test$test_id.prog"
 set timeout       $max_job_delay
@@ -186,8 +185,4 @@ if {$no_capability != 0} {
 }
 if {$matches != 12} {
 	fail "totalviewcli operation matches $matches of 12. Remove your ~/.totalview directory and try again"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

@@ -29,13 +29,12 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
-set file_prog_get    "test$test_id.prog"
+set file_prog_get    "$test_name.prog"
 
 proc cleanup {} {
-	global bin_rm file_prog_get
+	global file_prog_get
 
-	exec $bin_rm -f $file_prog_get
+	file delete $file_prog_get
 }
 
 # PMI library not in Cray RPM
@@ -50,35 +49,18 @@ if { [file exists ${slurm_dir}/lib/libpmi.so] == 0 } {
 #
 # Delete left-over program and rebuild it.
 #
-exec $bin_rm -f $file_prog_get
-exec $bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -L${slurm_dir}/lib64 -Wl,-rpath=${slurm_dir}/lib64 -L${slurm_dir}/lib -Wl,-rpath=${slurm_dir}/lib -lpmi
-exec $bin_chmod 700 $file_prog_get
+cleanup
+run_command -fail -nolog "$bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -L${slurm_dir}/lib64 -Wl,-rpath=${slurm_dir}/lib64 -L${slurm_dir}/lib -Wl,-rpath=${slurm_dir}/lib -lpmi"
+run_command -fail -nolog "$bin_chmod 700 $file_prog_get"
 
 #
 # Run job stand-alone to validate basic operation with 1 task and no srun
 #
 log_info "Running PMI test stand alone (without srun)"
-set prog_pid [spawn ./$file_prog_get]
-expect {
-	-re "(FAILURE|error)" {
-		log_error "Some error occurred"
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		slow_kill $prog_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
+set output [run_command_output -fail "./$file_prog_get"]
+subtest {![regexp "(FAILURE|error)" $output]} "Verify no FAILURE|error happen"
 
-if { $exit_code == 0 } {
-	log_info "So far, so good\nNow run PMI test under srun"
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+log_info "So far, so good. Now run PMI test under srun"
 
 #
 # Spawn a job to test PMI functionality
@@ -90,23 +72,6 @@ set task_cnt 8
 # Test uses srun based task launch
 # Adjust time limits as needed for large task counts */
 #                   times are here  vv
-set timeout [expr $max_job_delay +  60]
-set srun_pid [spawn $srun -l -N$node_cnt -n$task_cnt -O -t1 --threads=1 ./$file_prog_get]
-expect {
-	-re "(FAILURE|error)" {
-		log_error "Some error occurred"
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		slow_kill $srun_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+set output [run_command_output -fail -timeout [expr $max_job_delay +  60] \
+	    "$srun -l -N$node_cnt -n$task_cnt -O -t1 --threads=1 ./$file_prog_get"]
+subtest {![regexp "(FAILURE|error)" $output]} "Verify no FAILURE|error happen"

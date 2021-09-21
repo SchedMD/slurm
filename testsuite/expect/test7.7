@@ -27,48 +27,31 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_in    "test$test_id.input"
 set file_out   "test$test_id.output"
 set job_name   "test$test_id"
 set job_id      0
 
 proc cleanup {} {
-	global bin_rm file_in file_out
+	global job_id bin_rm file_in file_out
 
+	cancel_job $job_id
 	exec $bin_rm -f $file_in $file_out
 }
 
 proc test_alloc_size { task_cnt } {
 	global bin_cat bin_rm file_in file_out sbatch job_name number
-	global alloc_unit_num exit_code max_tasks
+	global alloc_unit_num max_tasks job_id
 
 	exec $bin_rm -f $file_out
-	set job_id 0
-	spawn $sbatch -t1 -o $file_out -J $job_name -n $task_cnt $file_in
-	expect {
-		-re "Submitted batch job ($number)" {
-			set job_id $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-		    fail "sbatch not responding"
-		}
-		eof {
-			wait
-		}
-	}
+	set job_id [submit_job -fail "-t1 -o $file_out -J $job_name -n $task_cnt $file_in"]
 	if {[wait_for_job -timeout 10 $job_id "DONE"] != 0} {
 		log_warn "Job $job_id did not complete"
 		cancel_job $job_id
 		set max_tasks $task_cnt
 		return
 	}
-	if {[wait_for_file -timeout 10 $file_out] != 0} {
-		log_error "No output file"
-		set exit_code 1
-		return
-	}
+	wait_for_file -timeout 10 -fail $file_out
 	set num_cpus -1
 	set num_nodes -1
 	set threads_per_core 1
@@ -131,14 +114,11 @@ proc test_alloc_size { task_cnt } {
 	} elseif {$alloc_unit_num == 1} {
 		set alloc_unit [expr $threads_per_core * $cores_per_socket * $sockets_per_node]
 	} else {
-		log_error "Invalid allocation unit: $alloc_unit_num"
-		set exit_code 1
-		set alloc_unit 0
+		fail "Invalid allocation unit: $alloc_unit_num"
 	}
 
 	set max_alloc [expr $task_cnt + (($alloc_unit - 1) * $num_nodes)]
 	if {$num_cpus > $max_alloc} {
-		log_error "Job with $task_cnt tasks allocated too many CPUs ($num_cpus > $max_alloc)"
 		log_error "TASKS:$task_cnt"
 		log_error "CPUS:$num_cpus"
 		log_error "NODES:$num_nodes"
@@ -146,7 +126,7 @@ proc test_alloc_size { task_cnt } {
 		log_error "MAX_CORES_PER_SOCKET:$cores_per_socket"
 		log_error "MAX_SOCKETS_PER_NODE:$sockets_per_node"
 		log_error "ALLOCATION_UNIT:$alloc_unit"
-		set exit_code 1
+		fail "Job with $task_cnt tasks allocated too many CPUs ($num_cpus > $max_alloc)"
 	}
 }
 
@@ -191,13 +171,6 @@ grep -v CPUAlloc | grep -v NodeAddr | grep -v OS | grep -v Partitions | \
 grep -v CfgTRES | grep -v AllocTRES | grep -v BootTime | grep -v Watts
 "
 
-for {set inx 1} {$inx < $max_tasks && $exit_code == 0} {incr inx} {
+for {set inx 1} {$inx < $max_tasks} {incr inx} {
 	test_alloc_size $inx
-}
-
-#
-# Clean up and exit
-#
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

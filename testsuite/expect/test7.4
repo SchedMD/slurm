@@ -41,7 +41,6 @@
 ############################################################################
 source ./globals
 
-set exit_code     0
 set test_prog     "test$test_id.prog"
 
 proc cleanup {} {
@@ -160,10 +159,7 @@ if {$no_capability != 0} {
 	skip "Unable to run test with present configuration"
 }
 if {$matches != 12} {
-	log_error "totalviewcli operation matches $matches of 12. Remove your ~/.totalview directory and try again"
-	set exit_code 1
-} else {
-	log_debug "So far, so good.."
+	fail "totalviewcli operation matches $matches of 12. Remove your ~/.totalview directory and try again"
 }
 
 #
@@ -240,8 +236,4 @@ if {$no_capability != 0} {
 }
 if {$matches != 12} {
 	fail "totalviewcli operation matches $matches of 12. Remove your ~/.totalview directory and try again"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

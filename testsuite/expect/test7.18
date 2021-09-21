@@ -28,8 +28,7 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set test_prog   "test$test_id.prog"
+set test_prog   "$test_name.prog"
 
 proc cleanup {} {
 	global test_prog
@@ -40,25 +39,10 @@ proc cleanup {} {
 #
 # Delete left-over programs and rebuild them.
 #
-exec $bin_rm -f $test_prog
+cleanup
 if [compile_against_libslurm ${test_prog}] {
 	fail "Cannot compile test program"
 }
 
-spawn ./$test_prog
-expect {
-	-re "FAILURE" {
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		fail "test$test_id.prog not responding."
-	}
-	eof {
-		wait
-	}
-}
-
-if { $exit_code != 0 } {
-	fail "One or more hosts weren't found"
-}
+set output [run_command -fail "./$test_prog"]
+subtest {![regexp "FAILURE" $output]} "Test no failure was detected"

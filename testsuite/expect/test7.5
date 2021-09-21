@@ -31,7 +31,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_prog   "test$test_id.prog"
 set matches     0
 set fini_cnt    0
@@ -78,21 +77,13 @@ expect {
 		exp_continue
 	}
 	-re "Received signal" {
-		log_error "Unexpected signal processed"
-		set exit_code 1
-		log_debug "Sent SIGTERM"
-		exp_continue
+		fail "Unexpected signal processed after sent SIGTERM"
 	}
 	-re "WAITING" {
-		log_error "Job not stopped in debugger mode"
-		set exit_code 1
-		log_debug "Sent SIGTERM"
-		exp_continue
+		fail "Job not stopped in debugger mode after sent SIGTERM"
 	}
 	-re "TIME LIMIT" {
-		log_error "Job not terminated with SIGINT"
-		set exit_code 1
-		exp_continue
+		fail "Job not terminated with SIGTERM"
 	}
 	-re "error.*not running" {
 		log_debug "Don't worry about the error.."
@@ -111,20 +102,8 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "srun failed to initialize properly ($matches != 1)"
-	set exit_code 1
-}
-if {$fini_cnt > 0} {
-	log_error "srun failed to terminate properly ($fini_cnt > 0)"
-	set exit_code 1
-}
-
-if {$exit_code == 0} {
-	log_debug "So far, so good"
-} else {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 1} "Verify proper initialization for srun with SIGTERM" "srun failed to initialize properly ($matches != 1)"
+subtest {$fini_cnt <= 0} "Verify proper termination for srun with SIGTERM" "srun failed to terminate properly ($fini_cnt > 0)"
 
 #
 # Spawn initial program via srun and terminate with SIGINT * 3
@@ -143,21 +122,13 @@ expect {
 		exp_continue
 	}
 	-re "Received signal" {
-		log_error "Unexpected signal processed"
-		set exit_code 1
-		log_debug "Sent SIGTERM"
-		exp_continue
+		fail "Unexpected signal processed after SIGINT"
 	}
 	-re "WAITING" {
-		log_error "Job not stopped in debugger mode"
-		set exit_code 1
-		log_debug "Sent SIGTERM"
-		exp_continue
+		fail "Job not stopped in debugger mode after SIGINT"
 	}
 	-re "TIME LIMIT" {
-		log_error "Job not terminated with SIGINT"
-		set exit_code 1
-		exp_continue
+		fail "Job not terminated with SIGINT"
 	}
 	-re "error.*not running" {
 		log_debug "Don't worry about the error.."
@@ -176,16 +147,5 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	fail "srun failed to initialize properly ($matches != 1)"
-}
-if {$fini_cnt > 0} {
-	fail "srun failed to terminate properly ($fini_cnt > 0)"
-}
-
-#
-# Post-processing
-#
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 1} "Verify proper initialization for srun with SIGINT" "srun failed to initialize properly ($matches != 1)"
+subtest {$fini_cnt <= 0} "Verify proper termination for srun with SIGINT" "srun failed to terminate properly ($fini_cnt > 0)"
