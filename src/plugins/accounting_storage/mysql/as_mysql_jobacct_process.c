@@ -314,13 +314,12 @@ static void _setup_job_cond_selected_steps(slurmdb_job_cond_t *job_cond,
 		if (job_ids) {
 			if (job_cond->flags & JOBCOND_FLAG_WHOLE_HETJOB)
 				xstrfmtcat(*extra, "t1.id_job in (%s) || "
-					   "(t1.het_job_offset<>%u && "
 					   "t1.het_job_id in (select "
 					   "t4.het_job_id from \"%s_%s\" as "
 					   "t4 where t4.id_job in (%s) && "
-					   "t4.het_job_id<>0))",
-					   job_ids, NO_VAL, cluster_name,
-					   job_table, job_ids);
+					   "t4.het_job_id<>0)",
+					   job_ids, cluster_name, job_table,
+					   job_ids);
 			else if (job_cond->flags & JOBCOND_FLAG_NO_WHOLE_HETJOB)
 				xstrfmtcat(*extra, "t1.id_job in (%s)",
 					   job_ids);
