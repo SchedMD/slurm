@@ -26,76 +26,20 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
-
 #
 # Test scancel with name filter that finds no jobs
 #
-set matches  0
-spawn $scancel --name=INVALID --qos=INVALID --verbose
-expect {
-	-re "No active jobs match ALL" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "scancel not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	log_error "scancel failed to log no matching jobs"
-	set exit_code 1
-}
+set output [run_command_output -fail "$scancel --name=INVALID --qos=INVALID --verbose"]
+subtest {[regexp "No active jobs match ALL" $output]} "Test scancel with name filter that finds no jobs"
 
 #
 # Test scancel with invalid job ID
 #
-set matches  0
-spawn $scancel INVALID
-expect {
-	-re "Invalid job id" {
-		log_debug "Error is expected, no worries"
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "scancel not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	log_error "scancel failed to log invalid job ID"
-	set exit_code 1
-}
+set output [run_command_output -xfail -fail "$scancel INVALID"]
+subtest {[regexp "Invalid job id" $output]} "Test scancel with invalid job ID"
 
 #
 # Test scancel with invalid job ID
 #
-set matches  0
-spawn $scancel 0
-expect {
-	-re "Invalid job id" {
-		log_debug "Error is expected, no worries"
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "scancel not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	log_error "scancel failed to log invalid job ID"
-	set exit_code 1
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+set output [run_command_output -xfail -fail "$scancel 0"]
+subtest {[regexp "Invalid job id" $output]} "Test scancel with job ID 0"

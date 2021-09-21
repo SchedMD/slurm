@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
 set file_in      "test$test_id.input"
 set job_id       0
 
@@ -64,59 +63,18 @@ if {$job_id == 0} {
 #
 # Test basic scancel
 #
-spawn $scancel -v $job_id
-expect {
-	-re "error" {
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		fail "scancel not responding"
-	}
-	eof {
-		wait
-	}
-}
+set output [run_command_output -fail "$scancel -v $job_id"]
+subtest {![regexp "error" $output]} "Test basic scancel don't print error"
 
 #
 # Test basic scancel with job already killed
+# Note that scancel is NOT expected to fail (see Bug 12542)
 #
-set matches 0
-spawn $scancel -v $job_id
-expect {
-	-re "error:" {
-		log_debug "This error is expected, no worries"
-		set matches 1
-		exp_continue
-	}
-	timeout {
-		fail "scancel not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches == 0} {
-	log_error "No error for cancelling job that was already killed"
-	set exit_code 1
-}
+set output [run_command_output -fail "$scancel -v $job_id"]
+subtest {[regexp "error" $output]} "Test basic scancel with job already killed prints an error"
 
 #
 # Test of --quiet option
-spawn $scancel --quiet $job_id
-expect {
-	-re "error" {
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		fail "scancel not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+#
+set output [run_command_output -fail "$scancel --quiet $job_id"]
+subtest {![regexp "error" $output]} "Test basic scancel --quiet with job already killed doesn't print an error"

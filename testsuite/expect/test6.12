@@ -34,13 +34,13 @@ source ./globals
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
-set exit_code   0
 set job_id      0
 set step_id	0
 
 proc cleanup {} {
-	global bin_rm file_in file_out file_err
+	global job_id bin_rm file_in file_out file_err
 
+	cancel_job $job_id
 	exec $bin_rm -f $file_in $file_out $file_err
 }
 
@@ -136,10 +136,7 @@ expect {
 		wait
 	}
 }
-if {$found_step == 0} {
-	log_error "Job step not found, apparently killed"
-	set exit_code 1
-}
+subtest {$found_step != 0} "Confirm that job step still exists" "Job step not found, apparently killed"
 cancel_job $job_id
 
 #
@@ -211,20 +208,14 @@ if {$found_job == 0} {
 	if {$purged_job == 1 && $min_job_age < 60} {
 		log_warn "MinJobAge ($min_job_age) configured too low to capture job state after completion"
 	} else {
-		log_error "Job not killed on SIGHUP"
 		spawn $scontrol show job $job_id
 		expect {
 			eof {
 				wait
 			}
 		}
-		cancel_job $job_id
-		set exit_code 1
+		fail "Job not killed on SIGHUP"
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 
 #
@@ -288,14 +279,4 @@ expect {
 		wait
 	}
 }
-if {$found_step == 1} {
-	fail "Job step found, not killed"
-}
-
-if {[cancel_job $job_id] != 0} {
-	fail "Unable to cancel job ($job_id)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$found_step != 1} "Confirm that job is gone" "Job step found, not killed"

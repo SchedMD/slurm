@@ -29,14 +29,15 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
 set file_in      "test$test_id.input"
 set file_out     "test$test_id.output"
 set file_prog    "test$test_id.prog"
+set job_id       0
 
 proc cleanup {} {
-	global file_in file_out file_prog
+	global job_id file_in file_out file_prog
 
+	cancel_job $job_id
 	exec rm -f $file_in $file_out $file_prog
 }
 
@@ -62,7 +63,6 @@ make_bash_script $file_in "
 #
 # Submit a job so we have something to work with
 #
-set job_id 0
 set sbatch_pid [spawn $sbatch --output=$file_out -t1 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
@@ -80,10 +80,7 @@ expect {
 if {$job_id == 0} {
 	fail "Job submission failed"
 }
-if {[wait_for_job $job_id RUNNING] != 0} {
-	cancel_job $job_id
-	fail "Error starting job $job_id"
-}
+wait_for_job -fail $job_id RUNNING
 # Allow time for poe to start the step
 # This could take a while with launch/poe
 sleep 30
@@ -114,43 +111,29 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "scancel verbose option failed"
-	set exit_code 1
-}
+subtest {$matches == 1} "Test verbose scancel"
 
-if {[wait_for_job $job_id DONE] != 0} {
-	cancel_job $job_id
-	fail "Error completing job $job_id"
-}
+wait_for_job -fail $job_id DONE
 
 #
 # Test output file
 #
-if {[wait_for_file $file_out] == 0} {
-	set got_signal 0
-	spawn cat $file_out
-	expect {
-		-re "ERROR" {
-			log_error "Failure running test program"
-			set exit_code 1
-			exp_continue
-		}
-		-re "Received SIGUSR1" {
-			set got_signal 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
+wait_for_file -fail $file_out
+set got_signal 0
+spawn cat $file_out
+expect {
+	-re "ERROR" {
+		fail "Failure running test program"
 	}
-	if {$got_signal != 1} {
-		log_error "SIGUSR1 not received"
-		set exit_code 1
+	-re "Received SIGUSR1" {
+		set got_signal 1
+		exp_continue
 	}
-} else {
-	set exit_code 1
+	eof {
+		wait
+	}
 }
+subtest {$got_signal == 1} "Verify SIGUSR1 received"
 
 #
 # Variation of above to test signal of batch script processes
@@ -185,10 +168,7 @@ expect {
 	}
 }
 
-if {[wait_for_job $job_id RUNNING] != 0} {
-	cancel_job $job_id
-	fail "Error starting job $job_id"
-}
+wait_for_job -fail $job_id RUNNING
 sleep 5
 
 #
@@ -217,43 +197,26 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "scancel verbose option failed"
-	set exit_code 1
-}
+subtest {$matches == 1} "Verify SIGSTOP received"
 
-if {[wait_for_job $job_id DONE] != 0} {
-	cancel_job $job_id
-	fail "Error completing job $job_id"
-}
+wait_for_job -fail $job_id DONE
 
 #
 # Test output file
 #
-if {[wait_for_file $file_out] == 0} {
-	set matches 0
-	spawn cat $file_out
-	expect {
-		-re "FINI" {
-			log_error "Job not stopped"
-			set exit_code 1
-			exp_continue
-		}
-		-re "CANCELLED" {
-			set matches 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
+wait_for_file -fail $file_out
+set matches 0
+spawn cat $file_out
+expect {
+	-re "FINI" {
+		fail "Job not stopped"
 	}
-	if {$matches != 1} {
-		fail "Missing JOB CANCELLED error message"
+	-re "CANCELLED" {
+		set matches 1
+		exp_continue
 	}
-} else {
-	fail "Output file ($file_out) did not appear"
+	eof {
+		wait
+	}
 }
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 1} "Expecting CANCELLED error message"
