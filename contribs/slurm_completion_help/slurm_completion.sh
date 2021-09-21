@@ -1377,10 +1377,11 @@ _sshare()
     _get_comp_words_by_ref cur prev words cword
     _split_long_opt
 
-    local shortoptions="-A -a -h -l -M -p -P -u -v -V"
-    local longoptions="--accounts<accounts> --all --noheader --long\
-		       --clusters<string> --parsable --parsable2\
-			--users<user_list> --verbose --version --help"
+    local shortoptions="-a -A -e -h -l -m -M -n -o -p -P -u -U -v -V"
+    local longoptions="--accounts=<accounts> --all --clusters=<string>\
+		       --format=<format_options> --help --helpformat --long\
+		       --noheader --parsable --parsable2 --partition --usage\
+		       --users=<user_list> --Users --verbose --version"
 
     [[ $cur == - ]] && { offer "$shortoptions" ; return ; }
     [[ $cur == -- ]] && { offer "$longoptions" ; return ; }
@@ -1389,6 +1390,10 @@ _sshare()
     case $prev in
     --accounts|-A) offer_list "$(_accounts)" ;;
     --clusters|-M) offer_list "$(_clusters)" ;;
+    --format|-o) offer_list "Account Cluster EffectvUsage FairShare\
+			     GrpTRESMins GrpTRESRaw ID LevelFS NormShares\
+			     NormUsage Partition RawShares RawUsage\
+			     TRESRunMins User" ;;
     --users|-u) offer_list "$(_users)" ;;
     esac
 }
