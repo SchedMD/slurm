@@ -1341,13 +1341,15 @@ _scancel()
     _get_comp_words_by_ref cur prev words cword
     _split_long_opt
 
-    local shortoptions=" -A -b -i -M -n -p -q -Q -R -s -t -u -v -V -w"
-    local longoptions="--account<account_list> --batch --ctld --help\
-		       --interactive --clusters<string> --name<job_name>\
-		       --nodelist<hostlist> --partition<part_list>\
-		       --qos<qos_list> --quiet --reservation<reservation_name>\
-		       --signal<SIGXXX> --state<state_list> --user<user_list>\
-		       --usage --verbose --version --wckeys<wckey>"
+    local shortoptions=" -A -b -f -H -i -M -n -p -q -Q -R -s -t -u -v -V -w"
+    local longoptions="--account=<account_list> --batch --clusters=<string>\
+		       --ctld --full --help --hurry --interactive\
+		       --jobname=<job_name> --name=<job_name>\
+		       --nodelist=<hostlist> --partition=<partition_name>\
+		       --qos=<qos_list> --quiet\
+		       --reservation=<reservation_name> --sibling=<cluster>\
+		       --signal=<signal_name> --state=<state_list> --usage\
+		       --user<user_list> --verbose --version --wckey=<wckey>"
 
     [[ $cur == - ]] && { offer "$shortoptions" ; return ; }
     [[ $cur == -- ]] && { offer "$longoptions" ; return ; }
@@ -1356,14 +1358,15 @@ _scancel()
     case $prev in
     --account|-A) offer_list "$(_accounts)" ;;
     --clusters|-M) offer_list "$(_clusters)" ;;
-    --name|-n) offer_list "$(_jobnames)" ;;
+    --name|--jobname|-n) offer_list "$(_jobnames)" ;;
+    --nodelist|-w) offer_list "$(_nodes)" ;;
     --partition|-p) offer_list "$(_partitions)" ;;
     --qos) offer_list "$(_qos)" ;;
     --reservation|-R) offer_list "$(_reservations)" ;;
-    --state) offer_list "pending running suspended completing completed" ;;
+    --sibling) offer_list "$(_clusters)" ;;
+    --state) offer_list "pending running suspended" ;;
     --user|-u) offer_list "$(_users)" ;;
-    --wckeys) offer_list "$(_wckeys)" ;;
-    --nodelist|-w) offer_list "$(_nodes)" ;;
+    --wckey) offer_list "$(_wckeys)" ;;
     *) offer_list "$(_jobs)";;
     esac
 }
