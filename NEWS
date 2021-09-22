@@ -45,6 +45,7 @@ documents those changes that are of interest to users and administrators.
     operators when changeable features are requested.
  -- openapi/v0.0.{35,36,37} - prevent merging the slurmrestd environment
     alongside a new job submission.
+ -- openapi/dbv0.0.36 - Correct tree position of dbv0.0.36_job_step.
 
 * Changes in Slurm 21.08.2
 ==========================
