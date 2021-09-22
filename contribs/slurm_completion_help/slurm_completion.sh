@@ -1427,14 +1427,15 @@ _sinfo()
     _get_comp_words_by_ref cur prev words cword
     _split_long_opt
 
-    local shortoptions="-a -b -d -e -h -i -l -M -n -N -o -p -r -R -s -S -t -T\
+    local shortoptions="-a -d -e -h -i -l -M -n -N -o -O -p -r -R -s -S -t -T\
 			-v -V"
-    local longoptions="--all --bgl --dead --exact --noheader --help --hide\
-		       --iterate<seconds> --long --clusters<clusternames>\
-		       --nodes<nodelist> --Node --format<fmtstr>\
-		       --partition<partition> --responding --list-reasons\
-		       --summarize --sort<sortlist> --state<statelist>\
-		       --reservation --usage --verbose --version"
+    local longoptions="--all --clusters=<string> --dead --exact --federation\
+		       --format=<format> --Format=<format> --help --hide\
+		       --iterate=<seconds> --json --list-reasons --local --long\
+		       --noconvert --nodes=<nodelist> --Node --noheader\
+		       --partition=<partition> --reservation --responding\
+		       --sort=<sortlist> --state=<statelist> --summarize\
+		       --usage --verbose --version --yaml"
 
     [[ $cur == - ]] && { offer "$shortoptions" ; return ; }
     [[ $cur == -- ]] && { offer "$longoptions" ; return ; }
@@ -1459,7 +1460,20 @@ _sinfo()
     --clusters|-M) offer_list "$(_clusters)" ;;
     --nodes|-n) offer_list "$(_nodes)" ;;
     --partition|-p) offer_list "$(_partitions)" ;;
-    --state) offer_list "pending running suspended completing completed" ;;
+    --state) offer_list "alloc allocated cloud comp completing down drain\
+			 drained draining fail future futr idle maint mix\
+			 mixed no_respond npc perfctrs planned power_down\
+			 powering_down powered_down powering_up reboot\
+			 resv reserved unk unknown" ;;
+    --Format|-O) offer "All AllocMem AllocNodes Available Cluster Comment\
+			Cores CPUs CPUsLoad CPUsState DefaultTime Disk\
+			Extra features_act FreeMem Gres GresUsed Groups\
+			MaxCPUsPerNode Memory NodeAddr NodeAI NodeAIOT\
+			NodeHost NodeList Nodes OverSubscribe Partition\
+			PartitionName Port PreemptMode PriorityJobFactor\
+			PriorityTier Reason Root Size SocketCoreThread\
+			Sockets StateCompact StateLong StateComplete Threads\
+			Time TimeStamp User UserLong Version Weight" ;;
     --format|-o) offer "\\\"%" ;;
     esac
 }
