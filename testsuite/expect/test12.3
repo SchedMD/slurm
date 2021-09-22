@@ -33,7 +33,6 @@ source ./globals_accounting
 source ./inc12.3.1
 source ./inc12.3.2
 
-set exit_code   0
 set job_id_1    0
 set job_id_2    0
 set job_name_1  "JOB1"
@@ -181,10 +180,7 @@ expect {
 		wait
 	}
 }
-if {$job_1_node_inx != 2} {
-	log_error "srun host count bad ($job_1_node_inx != 2)"
-	set exit_code 1
-}
+subtest {$job_1_node_inx == 2} "Verify host count for job 1" "srun host count bad ($job_1_node_inx != 2)"
 
 #
 # Second job includes one node from the first job and another different node
@@ -206,10 +202,7 @@ expect {
 		wait
 	}
 }
-if {$job_2_node_inx != 2} {
-	log_error "srun host count bad ($job_2_node_inx != 2)"
-	set exit_code 1
-}
+subtest {$job_2_node_inx == 2} "Verify host count for job 2" "srun host count bad ($job_2_node_inx != 2)"
 
 #
 # Wait for accounting data to be propagated to slurmdbd
@@ -225,7 +218,7 @@ if [wait_for_command_match "$sacct -A 'slurm_test-account.1' --name=$job_name_2 
 }
 
 # Only run these sub-tests if we haven't failed already
-if {$exit_code == 0} {
+if {$_subtest_fail_count == 0} {
 	#
 	# Execute sub-tests based upon these jobs
 	#
@@ -233,8 +226,4 @@ if {$exit_code == 0} {
 
 	inc12_3_2 $job_id_1 $job_id_2 $job_name_1 $job_name_2 $test_acct \
 		$node1 $node2 $node3
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
