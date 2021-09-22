@@ -38,22 +38,16 @@ proc inc3_11_5 {} {
 	# TEST 5
 	# Test node reservation conflict
 	#
-	log_info "+++++ STARTING TEST 5 (Within: inc3.11.5) +++++"
+	log_info "+++++ STARTING TEST 5 +++++"
 	# Make the reservation
 	set ret_code [create_res $res_name "StartTime=now+60minutes Duration=60 Nodes=[node_list_to_range [get_nodes_by_state idle,power_down,powering_down]] user=$user_name"]
 	if {$ret_code != 0} {
-		fail "Unable to create a valid reservation (Within: inc3.11.5)"
+		fail "Unable to create a valid reservation"
 	}
 
 	# Test for node reservation conflict
 	set ret_code [create_res $res_name_test "StartTime=now+60minutes Duration=60 NodeCnt=1 user=$user_name"]
-	if {$ret_code == 0} {
-		delete_res $res_name_test
-		delete_res $res_name
-		fail "Reservation did not fail but should have (Within: inc3.11.5)"
-	} else {
-		log_info "Expected error. You can turn that frown upside-down.(Within: inc3.11.5)"
-	}
+	subtest {$ret_code != 0} "Reservation should fail due to conflict"
 
 	# Delete the reservation
 	set ret_code [delete_res $res_name]

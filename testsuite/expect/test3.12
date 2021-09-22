@@ -30,7 +30,6 @@
 source ./globals
 
 set authorized     1
-set exit_code      0
 set node_list      ""
 set node_name      ""
 set node_old_state ""
@@ -116,20 +115,14 @@ expect {
 	}
 }
 if {$authorized == 1} {
-	if {$read_state != 1} {
-		log_error "scontrol state change error"
-		set exit_code 1
-	}
+	subtest {$read_state == 1} "Validate the front-end's new state"
 
 	set reason_set 0
 	if {[string compare $reason_code "TESTING"] == 0} {
 		set reason_set 1
 	}
 
-	if {$reason_set != 1} {
-		log_error "scontrol reason change error"
-		set exit_code 1
-	}
+	subtest {$reason_set == 1} "Validate the front-end's reason"
 }
 
 #
@@ -141,9 +134,7 @@ expect {
 		exp_continue
 	}
 	-re "slurm_update error:" {
-		log_error "scontrol update error"
-		set exit_code 1
-		exp_continue
+		fail "scontrol update error"
 	}
 	timeout {
 		fail "scontrol not responding"
@@ -170,10 +161,4 @@ expect {
 		wait
 	}
 }
-if {$read_state != 0} {
-	fail "scontrol state change error"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$read_state == 0} "Validate that the front-end's node state has returned to its old value"

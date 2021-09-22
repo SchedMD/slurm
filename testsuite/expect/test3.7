@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code      0
 set file_out1      "test$test_id.output.1"
 set file_out2      "test$test_id.output.2"
 set file_prog      "test$test_id.prog"
@@ -42,7 +41,9 @@ set not_supported  0
 
 proc cleanup {} {
 	global bin_rm file_out1 file_out2 file_prog file_prog_sh1 file_prog_sh2
+	global job_id1 job_id2
 
+	cancel_job $job_id1 $job_id2
 	exec $bin_rm -f $file_out1 $file_out2 $file_prog $file_prog_sh1 $file_prog_sh2
 }
 
@@ -54,7 +55,7 @@ if {![is_super_user]} {
 }
 
 proc suspend_job { job_id operation } {
-	global exit_code scontrol not_supported
+	global scontrol not_supported
 
 	spawn $scontrol $operation $job_id
 	expect {
@@ -64,9 +65,7 @@ proc suspend_job { job_id operation } {
 			exp_continue
 		}
 		-re "error" {
-			log_error "scontrol error"
-			set exit_code 1
-			exp_continue
+			fail "scontrol error"
 		}
 		timeout {
 			fail "scontrol not responding"
@@ -78,7 +77,8 @@ proc suspend_job { job_id operation } {
 }
 
 proc check_output { file_name } {
-	global exit_code bin_cat
+	global bin_cat
+
 	set match1 0
 	set match2 0
 
@@ -100,14 +100,10 @@ proc check_output { file_name } {
 		}
 	}
 
-	if { $match1 == 0 } {
-		log_error "Job never suspended"
-		set exit_code 1
-	}
-	if { $match2 == 0 } {
-		log_error "Job failed to run to completion"
-		set exit_code 1
-	}
+	set failure_notice "Failure may be due to use of gang scheduler, a race conditions, or the ProcTrack plugin not identifying the application as part of the job"
+
+	subtest { $match1 != 0 } "Verify job is suspended" $failure_notice
+	subtest { $match2 != 0 } "Verify job runs to completion" $failure_notice
 }
 
 #
@@ -166,7 +162,6 @@ expect {
 		exp_continue
 	}
 	timeout {
-		cancel_job $job_id1
 		fail "scontrol not responding"
 	}
 	eof {
@@ -174,7 +169,6 @@ expect {
 	}
 }
 if {[string compare $host_name ""] == 0} {
-	cancel_job $job_id1
 	fail "Did not get hostname for job $job_id1"
 }
 # Submit another job to that same node
@@ -193,7 +187,6 @@ expect {
 	}
 }
 if {$job_id2 == 0} {
-	cancel_job $job_id1
 	fail "sbatch failed to report jobid"
 }
 
@@ -239,8 +232,4 @@ if {$not_supported == 0} {
 
 	check_output $file_out1
 	check_output $file_out2
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code). Failure may be due to use of gang scheduler, a race conditions, or the ProcTrack plugin not identifying the application as part of the job"
 }

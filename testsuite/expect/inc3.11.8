@@ -3,7 +3,7 @@
 # Purpose: Test of Slurm functionality
 #          to be called from test3.11
 #	   Several cases for core based reservations
-#          Pluging select/cons_res needed
+#          Plugin select/cons_res needed
 #
 ############################################################################
 # Copyright (C) 2009 Lawrence Livermore National Security
@@ -32,14 +32,14 @@
 ############################################################################
 
 proc inc3_11_8 {} {
-	global user_name exit_code
+	global user_name
 	global bin_rm file_in bin_sleep sbatch number scontrol
 	global re_word_str scancel
 	global cluster_cpus def_partition
 
 	set res_name "resv3.11.8"
 
-	log_info "+++++ STARTING TEST 8 (Within: inc3.11.8) +++++"
+	log_info "+++++ STARTING TEST 8 +++++"
 
 	# Make the job script
 	exec $bin_rm -f $file_in
@@ -48,7 +48,7 @@ proc inc3_11_8 {} {
 	# Make a reservation, just to get node size information
 	set ret_code [create_res $res_name "StartTime=now Duration=1 NodeCnt=1 User=$user_name"]
 	if {$ret_code != 0} {
-		fail "Unable to create a valid reservation (Within: inc3.11.8)"
+		fail "Unable to create a valid reservation"
 	}
 	set host_name ""
 	spawn $scontrol show res $res_name
@@ -58,8 +58,8 @@ proc inc3_11_8 {} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding (Within: inc3.11.8)"
-			set exit_code 1
+			delete_res $res_name
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -71,7 +71,7 @@ proc inc3_11_8 {} {
 		fail "Unable to delete reservation ($res_name)"
 	}
 	if {[string compare $host_name ""] == 0} {
-		fail "Failed to get host name (Within: inc3.11.8)"
+		fail "Failed to get host name"
 	}
 
 	lassign [get_node_cpus $host_name] cpu_tot threads_per_core
@@ -94,8 +94,7 @@ proc inc3_11_8 {} {
 			exp_continue
 		}
 		timeout {
-			log_error "scontrol not responding (Within: inc3.11.8)"
-			set exit_code 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
@@ -114,16 +113,16 @@ proc inc3_11_8 {} {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch not responding (Within: inc3.11.8)"
 			slow_kill $sbatch_pid
-			set exit_code 1
+			cancel_job $job_id
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
 		}
 	}
 	if {$job_id == 0} {
-		fail "batch submit failure (Within: inc3.11.8)"
+		fail "batch submit failure"
 	}
 
 	if {[wait_for_job $job_id "RUNNING"] != 0} {
@@ -134,11 +133,7 @@ proc inc3_11_8 {} {
 
 	# Make the reservation using free cores in a node
 	set ret_code [create_res $res_name "StartTime=now Duration=60 Nodes=$host_name CoreCnt=$core_res_num User=$user_name"]
-	if {$ret_code != 0} {
-		cancel_job $job_id
-		fail "Unable to create a valid reservation (Within: inc3.11.8)"
-	}
-	log_info "Reservation was created as expected (Within: inc3.11.8)"
+	subtest {$ret_code == 0} "A reservation using the free cores in a node should succeed"
 
 	# Delete the reservation
 	set ret_code [delete_res $res_name]
@@ -150,39 +145,21 @@ proc inc3_11_8 {} {
 	set core_res_num  [expr $core_res_num + 1]
 	# Make the reservation using more cores then free in a node
 	set ret_code [create_res $res_name "StartTime=now Duration=60 Nodes=$host_name CoreCnt=$core_res_num User=$user_name"]
-	if {$ret_code != 0} {
-		log_info "Reservation can not be created as expected (Within: inc3.11.8)"
-	} else {
-		log_error "Reservation was created when it should have not (Within: inc3.11.8)"
-		set exit_code 1
-
-		# Delete the reservation
-		set ret_code [delete_res $res_name]
+	if {! [
+		subtest {$ret_code != 0} "A reservation using more cores than free in a node should fail"
+	] } {
+		delete_res $res_name
 	}
 
 	# Make the reservation using more cores than free in a node (now)
 	# but those cores being free at reservation start time
 	set ret_code [create_res $res_name "StartTime=now+3600 Duration=60 Nodes=$host_name CoreCnt=$core_res_num User=$user_name"]
-	if {$ret_code != 0} {
-		log_error "Reservation can not be created when it should (Within: inc3.11.8)"
-		set exit_code 1
-	} else {
-		log_info "Reservation can be created as expected (Within: inc3.11.8)"
-		# Delete the reservation
-		set ret_code [delete_res $res_name]
-	}
+	subtest {$ret_code == 0} "A reservation using more cores than currently free but free at reservation start time should succeed"
 
 	# Make the reservation using more cores than free at reservation start time
 	set ret_code [create_res $res_name "StartTime=now+300 Duration=60 Nodes=$host_name CoreCnt=$core_res_num User=$user_name"]
-	if {$ret_code != 0} {
-		log_info "Reservation can not be created as expected (Within 3.11.8)"
-	} else {
-		log_error "Reservation can be created when it should not (Within: inc3.11.8)"
-		set exit_code 1
+	subtest {$ret_code != 0} "A reservation using more cores than free at reservation start time should fail"
 
-		# Delete the reservation
-		set ret_code [delete_res $res_name]
-	}
-
+	delete_res $res_name
 	cancel_job $job_id
 }

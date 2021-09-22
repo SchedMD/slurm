@@ -32,7 +32,7 @@
 ############################################################################
 
 proc inc3_11_4 {} {
-	global user_name exit_code
+	global user_name
 	global sbatch file_in number
 
 	set res_name "resv3.11.4"
@@ -41,7 +41,7 @@ proc inc3_11_4 {} {
 	# If not running as root, make a reservation restricted to root, submit a job,
 	# and confirm that the job is rejected.
 	#
-	log_info "+++++ STARTING TEST 4 (Within: inc3.11.4) +++++"
+	log_info "+++++ STARTING TEST 4 +++++"
 
 	if {$user_name == "root"} {
 		return
@@ -50,19 +50,19 @@ proc inc3_11_4 {} {
 	# Make the reservation
 	set ret_code [create_res $res_name "StartTime=now+60minutes Duration=60 NodeCnt=1 User=root"]
 	if {$ret_code != 0} {
-		fail "Unable to create a reservation (Within: inc3.11.4)"
+		fail "Unable to create a reservation"
 	}
 
 	# Submit the batch job
 	set denied 0
+	set job_id 0
 	set sbatch_pid [spawn $sbatch -N1 --reservation=$res_name $file_in]
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			cancel_job $job_id
-			log_error "Job submit should have been denied (Within: inc3.11.4)"
-			set exit_code 1
-			exp_continue
+			delete_res $res_name
+			fail "Job submit should have been denied"
 		}
 		-re "Batch job submission failed: Access denied to requested reservation" {
 			# Job was correctly denied
@@ -70,24 +70,21 @@ proc inc3_11_4 {} {
 			exp_continue
 		}
 		timeout {
-			log_error "sbatch not responding (Within: inc3.11.4)"
 			slow_kill $sbatch_pid
-			set exit_code 1
+			cancel_job $job_id
+			delete_res $res_name
+			fail "sbatch not responding"
 		}
 		eof {
 			wait
 		}
 	}
 
-	if {$denied == 0} {
-		log_error "Job $job_id should have been rejected from reservation restricted to root.  Expected rejection message not given. (Within: inc3.11.4)"
-		set exit_code 1
-	} else {
-		log_debug "Expected error, no worries mate. (Within: inc3.11.4)"
-	}
+	subtest {$denied != 0} "Job should be rejected from reservation restricted to root" "Expected rejection message not given"
+
 	# Delete the reservation
 	set ret_code [delete_res $res_name]
 	if {$ret_code != 0} {
-		fail "Unable to detele reservation ($res_name)"
+		fail "Unable to delete reservation ($res_name)"
 	}
 }

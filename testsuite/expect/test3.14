@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code		0
 set node_list_new       ""
 set node_list_orig      ""
 set resv_name           "resv$test_id"
@@ -72,10 +71,7 @@ expect {
 		wait
 	}
 }
-if {$match != 1} {
-	log_error "Reservation REPLACE flag not found"
-	set exit_code 1
-}
+subtest {$match == 1} "Verify Reservation REPLACE flag found"
 
 #
 # Use a node from the reservation, so it gets replaced
@@ -106,10 +102,7 @@ expect {
 		wait
 	}
 }
-if {![string compare $node_list_orig $node_list_new]} {
-	log_error "Reservation failed to replace allocated node"
-	set exit_code 1
-}
+subtest {$node_list_orig ne $node_list_new} "Verify reservation replaces allocated node"
 
 #
 # Drain a node from the reservation, so it gets replaced
@@ -117,8 +110,7 @@ if {![string compare $node_list_orig $node_list_new]} {
 spawn $scontrol update NodeName=$node_list_new State=DRAIN Reason=TESTING
 expect {
 	-re "Error|error" {
-		log_error "Error updating node"
-		set exit_code 1
+		fail "Error updating node"
 	}
 	timeout {
 		fail "scontrol not responding"
@@ -147,23 +139,19 @@ expect {
 		wait
 	}
 }
-if {![string compare $node_list_orig $node_list_new]} {
-	log_error "Reservation failed to replace drain node"
-	set exit_code 1
-}
+subtest {$node_list_orig ne $node_list_new} "Verify reservation replaces drain node"
 
 #
 # Delete the advanced reservation
 #
-if { [delete_res $resv_name] } {
-	set exit_code 1
+if [delete_res $resv_name] {
+	fail "Unable to delete reservation ($resv_name)"
 }
 
 spawn $scontrol update NodeName=$node_list_new State=RESUME
 expect {
 	-re "Error|error" {
-		log_error "Error updating node"
-		set exit_code 1
+		fail "Error updating node"
 	}
 	timeout {
 		fail "scontrol not responding"
@@ -171,8 +159,4 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
 }
