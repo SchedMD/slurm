@@ -4,6 +4,25 @@
 
 <p>Note that some of the older material contains dated information.</p>
 
+<h2>Presentations from Slurm User Group Meeting, September 2021</h2>
+<ul>
+<li><a href="SLUG21/Field_Notes_5.pdf">Field Notes 5: From The Frontlines of Slurm Support</a>,
+Jason Booth, SchedMD</li>
+
+<li><a href="SLUG21/REST_and_Containers.pdf">REST API <i>and also</i> Containers</a>,
+Nathan Rini, SchedMD</li>
+
+<li><a href="SLUG21/burst_buffer_lua.pdf">burst_buffer/lua and slurmscriptd</a>,
+Marshall Garey, SchedMD</li>
+
+<li><a href="SLUG21/Slurm_in_the_Clouds.pdf">Slurm in the Clouds</a>,
+Nick Ihli, SchedMD</li>
+
+<li><a href="SLUG21/Roadmap.pdf">Slurm 21.08 and Beyond</a>,
+Tim Wickberg, SchedMD</li>
+
+</ul>
+
 <h2>Presentations from SC20, November 2020</h2>
 <ul>
 <li>BOF: <a href="SC20/BoF.pdf">Slurm Birds of a Feather</a>,
