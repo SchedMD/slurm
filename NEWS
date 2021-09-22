@@ -22,6 +22,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue with nodes not clearing state in the database when the slurmctld
     is started with clean-start.
  -- Fix hetjob components > 1 timing out due to InactiveLimit.
+ -- Fix sprio printing -nan for normalized association priority if
+    PriorityWeightAssoc was not defined.
 
 * Changes in Slurm 21.08.1
 ==========================

@@ -262,7 +262,7 @@ int _print_assoc_priority_normalized(priority_factors_object_t * job, int width,
 		_print_int(weight_assoc, width, right, true);
 	else {
 		double num = 0;
-		if (weight_qos)
+		if (weight_assoc)
 			num = job->priority_assoc / weight_assoc;
 		_print_norm(num, width, right, true);
 	}
