@@ -24,6 +24,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix hetjob components > 1 timing out due to InactiveLimit.
  -- Fix sprio printing -nan for normalized association priority if
     PriorityWeightAssoc was not defined.
+ -- Disallow FirstJobId=0.
 
 * Changes in Slurm 21.08.1
 ==========================

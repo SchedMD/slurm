@@ -3906,6 +3906,9 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 	if (!s_p_get_uint32(&conf->first_job_id, "FirstJobId", hashtbl))
 		conf->first_job_id = DEFAULT_FIRST_JOB_ID;
 
+	if (!conf->first_job_id)
+		fatal("FirstJobId cannot be zero");
+
 	(void) s_p_get_string(&conf->gres_plugins, "GresTypes", hashtbl);
 
 	if (!s_p_get_uint16(&conf->group_force, "GroupUpdateForce", hashtbl))
