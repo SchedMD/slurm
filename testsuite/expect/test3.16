@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code       0
 set lic_a           "lic_a_test$test_id"
 set lic_b           "lic_b_test$test_id"
 set lic_c           "lic_c_test$test_id"
@@ -34,7 +33,7 @@ set lic_c           "lic_c_test$test_id"
 set cluster [get_config_param "ClusterName"]
 
 proc add_lic { license } {
-	global sacctmgr exit_code cluster
+	global sacctmgr cluster
 
 	set added 0
 	spawn $sacctmgr -i add resource name=$license cluster=$cluster count=50 \
@@ -53,13 +52,12 @@ proc add_lic { license } {
 	}
 
 	if {$added != 1} {
-		log_error "sacctmgr did not add license: $license"
-		set exit_code 1
+		fail "sacctmgr did not add license: $license"
 	}
 }
 
 proc delete_lic { license } {
-	global sacctmgr exit_code 1
+	global sacctmgr
 
 	set deleted 0
 	spawn $sacctmgr -i delete resource name=$license
@@ -77,8 +75,7 @@ proc delete_lic { license } {
 	}
 
 	if { $deleted != 1 } {
-		log_error "sacctmgr could not delete license: $license"
-		set exit_code 1
+		fail "sacctmgr could not delete license: $license"
 	}
 }
 
@@ -124,10 +121,4 @@ expect {
 	}
 }
 
-if { $match != 3 } {
-	fail "Licenses are not sorted"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$match == 3} "Verify licenses are sorted"

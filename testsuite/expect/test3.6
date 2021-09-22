@@ -29,7 +29,6 @@
 source ./globals
 
 set authorized     1
-set exit_code      0
 set part_name      "QA_TEST"
 
 #
@@ -48,14 +47,27 @@ if { ![info exists slurm_testsuite_dev_build] || !$slurm_testsuite_dev_build } {
 set ::env(SLURM_TESTSUITE_DROP_PRIV) 1
 
 #
+# We only reach this point if a hidden partition must be
+# created to test this feature, which only super users can do
+#
+if {![is_super_user]} {
+	skip "Can not test more unless SlurmUser"
+}
+
+proc cleanup {} {
+	global scontrol part_name
+
+	run_command "$scontrol delete PartitionName=$part_name"
+}
+cleanup
+
+#
 # Confirm that no hidden partition is seen by default
 #
 spawn  $scontrol show part
 expect {
 	-re "Hidden=YES" {
-		log_error "scontrol hidden partition seen"
-		set exit_code 1
-		exp_continue
+		fail "scontrol hidden partition seen"
 	}
 	timeout {
 		fail "scontrol not responding"
@@ -84,14 +96,6 @@ expect {
 }
 if {$found == 1} {
 	fail "Hidden partitions were found"
-}
-
-#
-# We only reach this point if a hidden partition must be
-# created to test this feature, which only super users can do
-#
-if {![is_super_user]} {
-	skip "Can not test more unless SlurmUser"
 }
 
 #
@@ -134,9 +138,7 @@ unset ::env(SLURM_TESTSUITE_DROP_PRIV)
 spawn $scontrol create PartitionName=$part_name Hidden=YES
 expect {
 	-re "error" {
-		log_error "Something bad happened on partition create"
-		set exit_code 1
-		exp_continue
+		fail "Something bad happened on partition create"
 	}
 	timeout {
 		fail "scontrol not responding"
@@ -175,10 +177,7 @@ expect {
 if {$found != 1} {
 	fail "Partition not created"
 }
-if {$hidden == 0} {
-	log_error "Partition not hidden"
-	set exit_code 1
-}
+subtest {$hidden != 0} "Partition should be hidden"
 
 #
 # Now delete the partition
@@ -217,8 +216,4 @@ expect {
 }
 if {$found != 0} {
 	fail "Partition not deleted"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

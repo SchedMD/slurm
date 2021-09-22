@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code     0
 set file_in       "test$test_id.input"
 set file_out      "test$test_id.output"
 set file_err      "test$test_id.error"
@@ -40,9 +39,10 @@ set job_id        0
 set node_cnt 1-4
 
 proc cleanup {} {
-	global bin_rm file_in file_out file_err
+	global job_id bin_rm file_in file_out file_err
 	global file_flag_1 file_flag_2 file_flag_3 file_flag_4
 
+	cancel_job $job_id
 	exec $bin_rm -f $file_in $file_out $file_err
 	exec $bin_rm -f $file_flag_1 $file_flag_2 $file_flag_3 $file_flag_4
 }
@@ -98,76 +98,27 @@ if {$job_id == 0} {
 #
 # Wait for job to begin, then requeue it
 #
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-	log_error "Waiting for job to begin"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "RUNNING"
 exec $bin_sleep 15
-spawn $scontrol requeue $job_id
-expect {
-	-re "error" {
-		log_error "Some scontrol error happened"
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$scontrol requeue $job_id"
 
 #
 # Wait for job to restart, then requeue it again
 #
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-	log_error "Waiting for job to restart"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "RUNNING"
 exec $bin_sleep 15
-spawn $scontrol requeue $job_id
-expect {
-	-re "error" {
-		log_error "Some scontrol error happened"
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$scontrol requeue $job_id"
 
 #
 # Wait for job to complete and check for files
 #
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-	log_error "Waiting for job to restart"
-	set exit_code 1
-}
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	cancel_job $job_id
-	set exit_code 1
-}
-if {[wait_for_file $file_flag_1] != 0} {
-	log_error "File $file_flag_1 is missing"
-	set exit_code 1
-}
-if {[wait_for_file $file_flag_2] != 0} {
-	log_error "File $file_flag_2 is missing"
-	set exit_code 1
-}
-if {[wait_for_file $file_flag_3] != 0} {
-	log_error "File $file_flag_3 is missing"
-	set exit_code 1
-}
-if {[file exists $file_flag_4]} {
-	log_error "File $file_flag_4 is found"
-	set exit_code 1
+wait_for_job -fail $job_id "RUNNING"
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_flag_1
+wait_for_file -fail $file_flag_2
+wait_for_file -fail $file_flag_3
+if {[wait_for_file -timeout 5 $file_flag_4] == $::RETURN_SUCCESS} {
+	fail "File $file_flag_4 is found"
 }
 
 #
@@ -199,10 +150,7 @@ if {$job_id == 0} {
 #
 # Wait for job to begin, then requeue it
 #
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-	log_error "Waiting for job to begin"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "RUNNING"
 set disabled 0
 exec $bin_sleep 15
 spawn $scontrol requeue $job_id
@@ -213,9 +161,7 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		log_error "Some scontrol error happened"
-		set exit_code 1
-		exp_continue
+		fail "Some scontrol error happened"
 	}
 	timeout {
 		fail "scontrol not responding"
@@ -224,25 +170,13 @@ expect {
 		wait
 	}
 }
-if {$disabled == 0} {
-	log_error "srun's --no-requeue option ignored"
-	set exit_code 1
-}
+subtest {$disabled != 0} "Verify --no-requeue option"
 
 #
 # Wait for job to complete and check for files
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	cancel_job $job_id
-	fail "Waiting for job to complete"
-}
-if {[wait_for_file $file_flag_1] != 0} {
-	fail "File $file_flag_1 is missing"
-}
-if {[file exists $file_flag_2]} {
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_flag_1
+if {[wait_for_file -timeout 5 $file_flag_2] == $::RETURN_SUCCESS} {
 	fail "File $file_flag_2 is found"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

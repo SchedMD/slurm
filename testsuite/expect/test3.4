@@ -30,7 +30,6 @@
 source ./globals
 
 set authorized    1
-set exit_code     0
 set file_in       "test$test_id.input"
 set job_id        0
 set new_prio      1
@@ -39,11 +38,7 @@ set read_priority -1
 proc cleanup {} {
 	global job_id
 
-	if {$job_id != 0} {
-		if {[cancel_job $job_id] != 0} {
-			log_error "Unable to cancel job ($job_id)"
-		}
-	}
+	cancel_job $job_id
 }
 
 #
@@ -89,10 +84,7 @@ expect {
 		wait
 	}
 }
-if {$read_priority != 0} {
-	log_error "Hold priority error"
-	set exit_code 1
-}
+subtest {$read_priority == 0} "Verify the job's initial hold priority"
 
 #
 # Change that job's priority
@@ -100,7 +92,6 @@ if {$read_priority != 0} {
 spawn $scontrol release $job_id
 expect {
 	-re "slurm_update error: Access.*denied" {
-		cancel_job $job_id
 		skip "User not authorized to modify jobs"
 	}
 	timeout {
@@ -123,7 +114,6 @@ expect {
 		exp_continue
 	}
 	-re "slurm_update error: Access.*denied" {
-		cancel_job $job_id
 		skip "User not authorized to modify jobs"
 	}
 	timeout {
@@ -150,10 +140,4 @@ expect {
 		wait
 	}
 }
-if {$validate_new_priority && ($read_priority != $new_prio)} {
-	fail "scontrol priority change error"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {! $validate_new_priority || ($read_priority == $new_prio)} "Verify the job's new priority"
