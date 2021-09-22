@@ -35,26 +35,26 @@ proc inc21_30_2 { wait_reason } {
 	set job_id1 0
 	set job_id2 0
 
-	log_info "Starting GrpCPUs limit test (Within: inc21.30.2)"
+	log_info "Starting GrpCPUs limit test"
 	set jobmatch 0
 	spawn $salloc --account=$acct -w$test_node -t1 -n$grcpu_num $srun $bin_sleep 5
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			log_debug "Job $job_id1 has been submitted. (Within: inc21.30.2)"
+			log_debug "Job $job_id1 has been submitted"
 			incr jobmatch
 		}
 		-re "Pending job allocation ($number)" {
-			log_error "Job should be running, but is not. If you have CR_CORE_* and have ThreadsPerCore > 1 this could happen. (Within: inc21.30.2)"
+			log_error "Job should be running, but is not. If you have CR_CORE_* and have ThreadsPerCore > 1 this could happen"
 			set job_id1 $expect_out(1,string)
 			set exit_code 1
 		}
 		-re "error" {
-			log_error "Job allocation should not have failed. (Within: inc21.30.2)"
+			log_error "Job allocation should not have failed"
 			set exit_code 1
 		}
 		timeout {
-			log_error "salloc is not reponding. (Within: inc21.30.2)"
+			log_error "salloc is not reponding"
 			set exit_code 1
 		}
 		eof {
@@ -65,17 +65,17 @@ proc inc21_30_2 { wait_reason } {
 	spawn $salloc --account=$acct -w$test_node -t1 -n[expr $grcpu_num + 1] $srun $bin_sleep 5
 	expect {
 		-re "Granted job allocation ($number)" {
-			log_error "Job should be pending, but is not. (Within: inc21.30.2)"
+			log_error "Job should be pending, but is not"
 			set job_id2 $expect_out(1,string)
 			set exit_code 1
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			log_debug "Job $job_id2 is waiting for resources. This is expected. (Within: inc21.30.2)"
+			log_debug "Job $job_id2 is waiting for resources. This is expected"
 			incr jobmatch
 		}
 		timeout {
-			log_error "salloc is not reponding (Within: inc21.30.2) If you have CR_CORE_* and have ThreadsPerCore > 1 this could happen."
+			log_error "salloc is not reponding If you have CR_CORE_* and have ThreadsPerCore > 1 this could happen."
 			set exit_code 1
 		}
 		eof {
@@ -83,18 +83,18 @@ proc inc21_30_2 { wait_reason } {
 		}
 	}
 	if {$jobmatch != 2} {
-		log_error "jobs were not submitted. (Within: inc21.30.2)"
+		log_error "jobs were not submitted"
 		set exit_code 1
 	}
 
 	# Checks the state of the job
 	if {![check_job_state $job_id2 PENDING]} {
-		log_error "Job was not on the desired state (Within: inc21.30.2)"
+		log_error "Job was not on the desired state"
 		set exit_code 1
 	}
 
 	if {![check_reason $job_id2 $wait_reason]} {
-		log_error "Bad job wait reason. (Within: inc21.30.2)"
+		log_error "Bad job wait reason"
 		set exit_code 1
 	}
 

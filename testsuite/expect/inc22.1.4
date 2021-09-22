@@ -44,7 +44,7 @@ proc inc22_1_4 {} {
 	set cluster $cluster1
 
 	#Test for job 1
-	log_info "Search for job1 on cluster $cluster (Within: inc21.1.4)"
+	log_info "Search for job1 on cluster $cluster"
 	set usermatch 0
 	spawn $sacct -p -M $cluster --state=completed --start=$job1_start_str --end=$job1_end_str --format=jobname
 	expect {
@@ -53,14 +53,14 @@ proc inc22_1_4 {} {
 			exp_continue
 		}
 		timeout {
-			log_error "sacct not responding (Within: inc21.1.4)"
+			log_error "sacct not responding"
 			set exit_code 1
 		}
 		eof {
 			wait
 		}
 		if {$usermatch !=1} {
-			log_error"sacct did not work (Within: inc21.1.4)"
+			log_error"sacct did not work"
 			set exit_code 1
 		}
 	}
@@ -75,7 +75,7 @@ proc inc22_1_4 {} {
 	}
 
 	# Test for job2
-	log_info "Search for job2 on cluster $cluster (Within: inc21.1.4)"
+	log_info "Search for job2 on cluster $cluster"
 	set usermatch 0
 	spawn $sacct -p -M $cluster --state=completed --start=$job2_start_str --end=$job2_end_str --format=jobname
 	expect {
@@ -84,14 +84,14 @@ proc inc22_1_4 {} {
 			exp_continue
 		}
 		timeout {
-			log_error "sacct not responding (Within: inc21.1.4)"
+			log_error "sacct not responding"
 			set exit_code 1
 		}
 		eof {
 			wait
 		}
 		if {$usermatch !=1} {
-			log_error"sacct did not work (Within: inc21.1.4)"
+			log_error"sacct did not work"
 			set exit_code 1
 		}
 	}
@@ -105,7 +105,7 @@ proc inc22_1_4 {} {
 	}
 
 	# Test for job3
-	log_info "Search for job3 on cluster $cluster (Within: inc21.1.4)"
+	log_info "Search for job3 on cluster $cluster"
 	set usermatch 0
 	spawn $sacct -p -M $cluster --state=completed --start=$job3_start_str --end=$job3_end_str --format=jobname
 	expect {
@@ -114,14 +114,14 @@ proc inc22_1_4 {} {
 			exp_continue
 		}
 		timeout {
-			log_error "sacct not responding (Within: inc21.1.4)"
+			log_error "sacct not responding"
 			set exit_code 1
 		}
 		eof {
 			wait
 		}
 		if {$usermatch !=1} {
-			log_error "sacct did not work (Within: inc21.1.4)"
+			log_error "sacct did not work"
 			set exit_code 1
 		}
 	}

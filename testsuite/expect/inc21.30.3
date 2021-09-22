@@ -31,7 +31,7 @@ proc inc21_30_3 { wait_reason } {
 
 	global salloc scontrol srun acct re_word_str bin_sleep jobmatch job_id1 job_id2 job_id3 number exit_code grjobs_num
 
-	log_info "Starting GrpJob limit test (Within: inc21.30.3)"
+	log_info "Starting GrpJob limit test"
 	set check_num $grjobs_num
 
 	set jobmatch 0
@@ -42,28 +42,28 @@ proc inc21_30_3 { wait_reason } {
 			-re "Granted job allocation ($number)" {
 				set job_id($inx) $expect_out(1,string)
 				if {$inx < $check_num} {
-					log_debug "Job $inx $job_id($inx) was submitted. (Within: inc21.30.3)"
+					log_debug "Job $inx $job_id($inx) was submitted"
 					incr jobmatch
 				} else {
-					log_error "Job $inx $job_id($inx) wasn't suppose to work but it did, limit was $check_num? (Within: inc21.30.3)"
+					log_error "Job $inx $job_id($inx) wasn't suppose to work but it did, limit was $check_num?"
 					set exit_code 1
 				}
 			}
 			-re "job ($number) queued and waiting for resources" {
 				set job_id($inx) $expect_out(1,string)
 				if {$inx >= $check_num} {
-					log_debug "Job $inx $job_id($inx) is waiting for resources. This is expected. (Within: inc21.30.3)"
+					log_debug "Job $inx $job_id($inx) is waiting for resources. This is expected"
 					incr jobmatch
 				} else {
 					set test_reason 1
 				}
 			}
 			-re "error" {
-				log_error "Job allocation should not have failed. (Within: inc21.30.3)"
+				log_error "Job allocation should not have failed"
 				set exit_code 1
 			}
 			timeout {
-				log_error "salloc is not responding. (Within: inc21.30.3)"
+				log_error "salloc is not responding"
 				set exit_code 1
 			}
 			eof {
@@ -77,7 +77,7 @@ proc inc21_30_3 { wait_reason } {
 			expect {
 				-re "Reason=($re_word_str)" {
 					if {[string compare $expect_out(1,string) $wait_reason]} {
-						log_error "Job $inx $job_id($inx) was suppose to work but it didn't, limit was $check_num? (Within: inc21.30.3)"
+						log_error "Job $inx $job_id($inx) was suppose to work but it didn't, limit was $check_num?"
 						set exit_code 1
 					} else {
 						incr jobmatch
@@ -85,7 +85,7 @@ proc inc21_30_3 { wait_reason } {
 					exp_continue
 				}
 				timeout {
-					log_error "scontrol is not responding. (Within: inc21.30.3)"
+					log_error "scontrol is not responding"
 					set exit_code 1
 				}
 				eof {
@@ -97,18 +97,18 @@ proc inc21_30_3 { wait_reason } {
 
 	set target_jobs [expr $check_num + 1]
 	if {$jobmatch != $target_jobs} {
-		log_error "Not all jobs were not submitted ($jobmatch != $target_jobs). (Within: inc21.30.3)"
+		log_error "Not all jobs were not submitted ($jobmatch != $target_jobs)"
 		set exit_code 1
 	}
 
 	# Checks the job state
 	if [info exists job_id($check_num)] {
 		if {![check_job_state $job_id($check_num) PENDING]} {
-			log_error "Job was not on the desired state (Within: inc21.30.3)"
+			log_error "Job was not on the desired state"
 			set exit_code 1
 		}
 	} else {
-		log_error "Didn't attempt to start enough jobs. (Within: inc21.30.3)"
+		log_error "Didn't attempt to start enough jobs"
 		set exit_code 1
 	}
 
