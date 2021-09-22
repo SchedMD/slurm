@@ -138,7 +138,7 @@ static int _handle_job(void *x, void *y)
 			cronspec_from_cron_entry(
 				job_ptr->details->crontab_entry);
 
-		info("Added JobId=%pJ from crontab entry from uid=%u, next start is %lu",
+		info("Added %pJ from crontab entry from uid=%u, next start is %lu",
 		     job_ptr, job->user_id, job->begin_time);
 	}
 
