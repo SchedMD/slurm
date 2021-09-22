@@ -1484,10 +1484,12 @@ _sprio()
     _get_comp_words_by_ref cur prev words cword
     _split_long_opt
 
-    local shortoptions="-h -j -l -M -n -o -u -v -V -w"
-    local longoptions="--noheader --help --job<jobids> --long\
-		       --clusters<clustername> --norm --format<fmtstr>\
-		       --user<userlist> --usage --verbose --version --weights"
+    local shortoptions="-h -j -l -M -n -o -p -S -u -v -V -w"
+    local longoptions="--clusters=<string> --federation --format=<fmtstr>\
+		       --help --jobs=<jobids> --local --long --noheader\
+		       --norm --partition=<partition> --sibling\
+		       --sort=<sort_list> --usage --user=<userlist>\
+		       --verbose --version --weights"
 
     [[ $cur == - ]] && { offer "$shortoptions" ; return ; }
     [[ $cur == -- ]] && { offer "$longoptions" ; return ; }
@@ -1495,17 +1497,20 @@ _sprio()
 
     if [[ $cur == *% ]] ;
     then
-	offer "%a(n_age) %A(w_age) %f(n_fair-share) %F(w_fair-share) %i(JobId)\
-	       %j(n_job_size) %J(w_job_size) %N(Nice adjustmen) %p(n_partition)\
-	       %P(w_partition) %q(n_qos) %Q(w_qos) %u(User) %Y(priority)\
-	       %y(n_priority)" ;
+	offer "%a(n_age) %A(w_age) %b(n_assoc_prio) %B(w_assoc_prio)\
+	       %c(cluster_name) %f(n_fair-share) %F(w_fair-share) %i(JobId)\
+	       %j(n_job_size) %J(w_job_size) %N(Nice adjustment)\
+	       %p(n_partition) %P(w_partition) %q(n_qos) %Q(w_qos)\
+	       %r(partition) %S(w_admin) %t(n_tres) %T(w_tres) %u(User)\
+	       %Y(priority) %y(n_priority)" ;
 	return;
     fi
 
     case $prev in
-    --jobs|-j) offer_list "$(_jobs)" ;;
     --clusters|-M) offer_list "$(_clusters)" ;;
     --format|-o) offer "\\\"%" ;;
+    --jobs|-j) offer_list "$(_jobs)" ;;
+    --partition|-p) offer_list "$(_partitions)" ;;
     --user|-u) offer_list "$(_users)" ;;
     esac
 }
