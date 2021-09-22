@@ -1521,19 +1521,24 @@ _sacct()
     _get_comp_words_by_ref cur prev words cword
     _split_long_opt
 
-    local shortoptions="-a -A -b -c -D -e -E -f -g -h -j -k -K -l -L -M -n\
-			-N -o -p -P -q -r -s -S -T -u -v -V -W -x -X"
-    local longoptions="--allusers --accounts<accountlist> --brief --completion\
-	               --duplicates --helpformat --endtime<time> --file<path>\
-                       --group<gidlist> --help --jobs<joblist>\
-                       --timelimit-min<time> --timelimit-max<time> --long\
-                       --allclusters --clusters<clusterlist> --noheader\
-	               --nodeslist<nodes> --name=<jobname> --format<itemlist>\
-                       --parsable --parsable2 --qos<qos>\
-                       --partition<partitionlist> --state<statelist>\
-	               --starttime<time> --truncate --user<userlist> --usage\
-                       --verbose --version --wckeys<wckeyslist>\
-                       --associations<assoclist> --allocations"
+    local shortoptions="-a -A -b -B -c -C -D -e -E -f -F -g -h -i -j -k -K -l\
+			-L -M -n -N -o -p -P -q -R -s -S -T -u -v -V -W -x -X"
+    local longoptions="--accounts=<account_list> --allclusters --allocations\
+		       --allusers --associations=<assoc_list> --batch-script\
+		       --brief --clusters=<cluster_list> --completion\
+		       --constraints --delimiter --duplicates --endtime=<time>\
+		       --env-vars --federation --file=<path> --flags=<flags>\
+		       --format=<fmtstr> --gid=<gid_list> --group=<group_list>\
+		       --help --helpformat --jobs=<joblist> --json --local\
+		       --long --name=<jobname_list> --nnodes=<min[-max]>\
+		       --noconvert --nodelist=<node_list> --noheader\
+		       --parsable --parsable2 --partition=<partition_list>\
+		       --qos=<qos> --reason=<reason_list> --starttime=<time>\
+		       --state=<state_list> --timelimit-max=<time>\
+		       --timelimit-min=<time> --truncate --user=<user_list>\
+		       --uid=<uid_list> --units=<KMGTP> --usage --use-local-uid\
+		       --verbose --version --wckeys=<wckey_list>\
+		       --whole-hetjob=<yes|no> --yaml"
 
     [[ $cur == - ]] && { offer "$shortoptions" ; return ; }
     [[ $cur == -- ]] && { offer "$longoptions" ; return ; }
@@ -1542,18 +1547,129 @@ _sacct()
 
     case $prev in
     --accounts|-A) offer_list "$(_accounts)" ;;
+    --file|-f) _filedir ;;
+    --flags|-F) offer_list "SchedBackfill SchedMain SchedSubmit" ;;
+    --format|-o) offer "Account AdminComment AllocCPUS AllocNodes AllocTRES\
+			AssocID AveCPU AveCPUFreq AveDiskRead AveDiskWrite\
+			AvePages AveRSS AveVMSize BlockID Cluster Comment\
+			Constraints Container ConsumedEnergy ConsumedEnergyRaw\
+			CPUTime CPUTimeRAW DBIndex DerivedExitCode Elapsed\
+			ElapsedRaw Eligible End ExitCode Flags GID Group JobID\
+			JobIDRaw JobName Layout MaxDiskRead MaxDiskReadNode\
+			MaxDiskReadTask MaxDiskWrite MaxDiskWriteNode\
+			MaxDiskWriteTask MaxPages MaxPagesNode MaxPagesTask\
+			MaxRSS MaxRSSNode MaxRSSTask MaxVMSize MaxVMSizeNode\
+			MaxVMSizeTask McsLabel MinCPU MinCPUNode MinCPUTask\
+			NCPUS NNodes NodeList NTasks Priority Partition QOS\
+			QOSRAW Reason ReqCPUFreq ReqCPUFreqMin ReqCPUFreqMax\
+			ReqCPUFreqGov ReqCPUS ReqMem ReqNodes ReqTRES\
+			Reservation ReservationId Reserved ResvCPU ResvCPURAW\
+			Start State Submit SubmitLine Suspended SystemCPU\
+			SystemComment Timelimit TimelimitRaw TotalCPU\
+			TRESUsageInAve TRESUsageInMax TRESUsageInMaxNode\
+			TRESUsageInMaxTask TRESUsageInMin TRESUsageInMinNode\
+			TRESUsageInMinTask TRESUsageInTot TRESUsageOutAve\
+			TRESUsageOutMax TRESUsageOutMaxNode TRESUsageOutMaxTask\
+			TRESUsageOutMin TRESUsageOutMinNode TRESUsageOutMinTask\
+			TRESUsageOutTot UID User UserCPU WCKey WCKeyID\
+			WorkDir" ;;
     --group|--gid|-g) _gids ;;
     --jobs|-j) offer_list "$(_jobs)" ;;
     --clusters|-M) offer_list "$(_clusters)" ;;
-    --nodes|-N) offer_list "$(_nodes)" ;;
+    --nodelist|-N) offer_list "$(_nodes)" ;;
     --name) offer_list "$(_jobs)" ;;
     --partition) offer_list "$(_partitions)" ;;
-    --format|-o) offer_list "$(sacct -e)" ;;
-    --state|-s) offer_list "pending running suspended completing completed" ;;
+    --reason|-R) offer "None Prolog Priority Dependency Resources\
+			PartitionNodeLimit PartitionTimeLimit PartitionDown\
+			PartitionInactive JobHeldAdmin JobHeldUser BeginTime\
+			Licenses AssociationJobLimit AssociationResourceLimit\
+			AssociationTimeLimit Reservation ReqNodeNotAvail\
+			FrontEndDown PartitionDown NodeDown BadConstraints\
+			SystemFailure JobLaunchFailure NonZeroExitCode\
+			TimeLimit InactiveLimit InvalidAccount InvalidQOS\
+			QOSUsageThreshold QOSJobLimit QOSResourceLimit\
+			QOSTimeLimit BlockMaxError BlockFreeAction Cleaning\
+			QOSNotAllowed AccountNotAllowed\
+			DependencyNeverSatisfied QOSGrpCpuLimit\
+			QOSGrpCPUMinutesLimit QOSGrpCPURunMinutesLimit\
+			QOSGrpJobsLimit QOSGrpMemLimit QOSGrpNodeLimit\
+			QOSGrpSubmitJobsLimit QOSGrpWallLimit\
+			QOSMaxCpuPerJobLimit QOSMaxCpuMinutesPerJobLimit\
+			QOSMaxNodePerJobLimit QOSMaxWallDurationPerJobLimit\
+			QOSMaxCpuPerUserLimit QOSMaxJobsPerUserLimit\
+			QOSMaxNodePerUserLimit QOSMaxSubmitJobPerUserLimit\
+			QOSMinCpuNotSatisfied AssocGrpCpuLimit\
+			AssocGrpCPUMinutesLimit AssocGrpCPURunMinutesLimit\
+			AssocGrpJobsLimit AssocGrpMemLimit AssocGrpNodeLimit\
+			AssocGrpSubmitJobsLimit AssocGrpWallLimit\
+			AssocMaxJobsLimit AssocMaxCpuPerJobLimit \
+			AssocMaxCpuMinutesPerJobLimit AssocMaxNodePerJobLimit\
+			AssocMaxWallDurationPerJobLimit AssocMaxSubmitJobLimit\
+			JobHoldMaxRequeue JobArrayTaskLimit\
+			BurstBufferResources BurstBufferStageIn\
+			BurstBufferOperation PowerNotAvail PowerReserved\
+			AssocGrpUnknown AssocGrpUnknownMinutes\
+			AssocGrpUnknownRunMinutes AssocMaxUnknownPerJob\
+			AssocMaxUnknownPerNode AssocMaxUnknownMinutesPerJob\
+			AssocMaxCpuPerNode AssocGrpMemMinutes\
+			AssocGrpMemRunMinutes AssocMaxMemPerJob\
+			AssocMaxMemPerNode AssocMaxMemMinutesPerJob\
+			AssocGrpNodeMinutes AssocGrpNodeRunMinutes\
+			AssocMaxNodeMinutesPerJob AssocGrpEnergy\
+			AssocGrpEnergyMinutes AssocGrpEnergyRunMinutes\
+			AssocMaxEnergyPerJob AssocMaxEnergyPerNode\
+			AssocMaxEnergyMinutesPerJob AssocGrpGRES\
+			AssocGrpGRESMinutes AssocGrpGRESRunMinutes\
+			AssocMaxGRESPerJob AssocMaxGRESPerNode\
+			AssocMaxGRESMinutesPerJob AssocGrpLicense\
+			AssocGrpLicenseMinutes AssocGrpLicenseRunMinutes\
+			AssocMaxLicensePerJob AssocMaxLicenseMinutesPerJob\
+			AssocGrpBB AssocGrpBBMinutes AssocGrpBBRunMinutes\
+			AssocMaxBBPerJob AssocMaxBBPerNode\
+			AssocMaxBBMinutesPerJob QOSGrpUnknown\
+			QOSGrpUnknownMinutes QOSGrpUnknownRunMinutes\
+			QOSMaxUnknownPerJob QOSMaxUnknownPerNode\
+			QOSMaxUnknownPerUser QOSMaxUnknownMinutesPerJob\
+			QOSMinUnknown QOSMaxCpuPerNode QOSGrpMemoryMinutes\
+			QOSGrpMemoryRunMinutes QOSMaxMemoryPerJob\
+			QOSMaxMemoryPerNode QOSMaxMemoryPerUser\
+			QOSMaxMemoryMinutesPerJob QOSMinMemory\
+			QOSGrpNodeMinutes QOSGrpNodeRunMinutes\
+			QOSMaxNodeMinutesPerJob QOSMinNode QOSGrpEnergy\
+			QOSGrpEnergyMinutes QOSGrpEnergyRunMinutes\
+			QOSMaxEnergyPerJob QOSMaxEnergyPerNode\
+			QOSMaxEnergyPerUser QOSMaxEnergyMinutesPerJob\
+			QOSMinEnergy QOSGrpGRES QOSGrpGRESMinutes\
+			QOSGrpGRESRunMinutes QOSMaxGRESPerJob QOSMaxGRESPerNode\
+			QOSMaxGRESPerUser QOSMaxGRESMinutesPerJob\
+			QOSMinGRES QOSGrpLicense QOSGrpLicenseMinutes\
+			QOSGrpLicenseRunMinutes QOSMaxLicensePerJob\
+			QOSMaxLicensePerUser QOSMaxLicenseMinutesPerJob\
+			QOSMinLicense QOSGrpBB QOSGrpBBMinutes\
+			QOSGrpBBRunMinutes QOSMaxBBPerJob QOSMaxBBPerNode\
+			QOSMaxBBPerUser AssocMaxBBMinutesPerJob QOSMinBB\
+			DeadLine MaxBBPerAccount MaxCpuPerAccount\
+			MaxEnergyPerAccount MaxGRESPerAccount MaxNodePerAccount\
+			MaxLicensePerAccount MaxMemoryPerAccount\
+			MaxUnknownPerAccount MaxJobsPerAccount\
+			MaxSubmitJobsPerAccount PartitionConfig\
+			AccountingPolicy FedJobLock OutOfMemory MaxMemPerLimit\
+			AssocGrpBilling AssocGrpBillingMinutes\
+			AssocGrpBillingRunMinutes AssocMaxBillingPerJob\
+			AssocMaxBillingPerNode AssocMaxBillingMinutesPerJob\
+			QOSGrpBilling QOSGrpBillingMinutes\
+			QOSGrpBillingRunMinutes QOSMaxBillingPerJob\
+			QOSMaxBillingPerNode QOSMaxBillingPerUser\
+			QOSMaxBillingMinutesPerJob MaxBillingPerAccount\
+			QOSMinBilling ReservationDeleted" ;;
+    --state|-s) offer "BOOT_FAIL CANCELLED COMPLETED DEADLINE FAILED NODE_FAIL\
+		       OUT_OF_MEMORY PENDING PREEMPTED RUNNING REQUEUED\
+		       RESIZING REVOKED SUSPENDED TIMEOUT" ;;
     --qos) offer_list "$(_qos)" ;;
-    --user|-u) offer_list "$(_users)" ;;
+    --user|--uid|-u) offer_list "$(_users)" ;;
+    --units) offer "K M G T P" ;;
     --wckeys|-W) offer_list "$(_wckeys)" ;;
-    --associations|-x) offer_list "$(_associations)" ;;
+    --whole-hetjob) offer "yes no" ;;
     esac
 }
 complete -F _sacct sacct
