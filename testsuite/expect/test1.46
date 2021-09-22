@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_in     "test$test_id.prog"
 set matches     0
 
