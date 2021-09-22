@@ -31,7 +31,7 @@ proc inc21_34_1 { qostest wait_reason } {
 	global salloc srun nthreads acct bin_sleep grpcpumin_num number
 	global totcpus test_node exit_code
 
-	log_info "Starting GrpCpuMins test (Within: inc21.34.1) "
+	log_info "Starting GrpCpuMins test "
 
 	if {![param_contains [get_config_param "AccountingStorageEnforce"] "safe"]} {
 		log_warn "This test can't be run without AccountingStorageEnforce having \"safe\" in it"
@@ -50,19 +50,19 @@ proc inc21_34_1 { qostest wait_reason } {
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			log_debug "Job $job_id1 has been submitted. (Within: inc21.34.1)"
+			log_debug "Job $job_id1 has been submitted"
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id1 $expect_out(1,string)
-			log_error "This job should not be pending (Within: inc21.34.1)"
+			log_error "This job should not be pending"
 			set exit_code 1
 		}
 		-re "error" {
-			log_error "Job allocation should not have failed. (Within: inc21.34.1)"
+			log_error "Job allocation should not have failed"
 			set exit_code 1
 		}
 		timeout {
-			log_error "salloc not responding. (Within: inc21.34.1)"
+			log_error "salloc not responding"
 			set exit_code 1
 		}
 		eof {
@@ -77,15 +77,15 @@ proc inc21_34_1 { qostest wait_reason } {
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			log_debug "Job $job_id2 is waiting for resources. This is expected. (Within: inc21.34.1)"
+			log_debug "Job $job_id2 is waiting for resources. This is expected"
 		}
 		-re "Granted job allocation ($number)" {
 			set job_id2 $expect_out(1,string)
-			log_error "Job should be pending but is not. (Within: inc21.34.1)"
+			log_error "Job should be pending but is not"
 			set exit_code 1
 		}
 		timeout {
-			log_error "salloc not responding. (Within: inc21.34.1)"
+			log_error "salloc not responding"
 			set exit_code 1
 		}
 		eof {
@@ -94,7 +94,7 @@ proc inc21_34_1 { qostest wait_reason } {
 	}
 
 	if {![check_reason $job_id2 $wait_reason]} {
-		log_error "Bad job wait reason. (Within: inc21.34.1)"
+		log_error "Bad job wait reason"
 		set exit_code 1
 	}
 

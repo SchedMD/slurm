@@ -65,7 +65,7 @@ proc inc21_30_17 { } {
 		return
 	}
 
-	log_info "Starting Qos/Parent MaxWall applied to job without -t test (Within: inc21.31.17)"
+	log_info "Starting Qos/Parent MaxWall applied to job without -t test"
 	set job_id 0
 
 	spawn $salloc --account=$acct -N1 $srun $bin_sleep 10
@@ -77,15 +77,15 @@ proc inc21_30_17 { } {
 		}
 		-re "Pending job allocation ($number)" {
 			set job_id $expect_out(1,string)
-			log_error "job $job_id should not be waiting for resources (Within: inc21.30.17)"
+			log_error "job $job_id should not be waiting for resources"
 			set exit_code 1
 		}
 		-re "error" {
-			log_error "Job allocation should not have failed. (Within: inc21.30.17)"
+			log_error "Job allocation should not have failed"
 			set exit_code 1
 		}
 		timeout {
-			log_error "salloc is not responding (Within: inc21.30.17)"
+			log_error "salloc is not responding"
 			set exit_code 1
 		}
 		eof {
