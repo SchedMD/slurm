@@ -31,15 +31,15 @@ source ./globals
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
+set job_id      0
+
 
 proc cleanup {} {
-	global bin_rm file_in file_out file_err
+	global job_id bin_rm file_in file_out file_err
 
+	cancel_job $job_id
 	exec $bin_rm -f $file_in $file_out $file_err
 }
-
-set exit_code            0
-set job_id               0
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
@@ -97,10 +97,7 @@ if {$job_id == 0} {
 # Wait for job to complete and check output file
 # First two time stamps should match, last should differ
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 set record    0
 set preserved 1
@@ -147,8 +144,4 @@ if {$preserved == 0} {
 }
 if {$reset == 0} {
 	fail "Did not reset file time stamp"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

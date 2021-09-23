@@ -29,15 +29,14 @@ source ./globals
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
+set job_id      0
 
 proc cleanup {} {
-	global bin_rm file_in file_out file_err
+	global job_id bin_rm file_in file_out file_err
 
+	cancel_job $job_id
 	exec $bin_rm -f $file_in $file_out $file_err
 }
-
-set exit_code            0
-set job_id               0
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
@@ -83,44 +82,36 @@ if {$job_id == 0} {
 #
 # Wait for job to complete and check output file
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
+wait_for_file -fail $file_err
 set matches 0
-if {[wait_for_file $file_err] == 0} {
-	spawn $bin_cat $file_err
-	expect {
-		-re "error: REQUEST_FILE_BCAST" {
-			log_debug "These errors are expected, no worries"
-			incr matches
-			exp_continue
-		}
-		-re "ls.* No such file" {
-			log_debug "These errors are expected, no worries"
-			incr matches
-			exp_continue
-		}
-		-re "ls.* does not exist" {
-			log_debug "These errors are expected, no worries"
-			incr matches
-			exp_continue
-		}
-		-re "ls.* not found" {
-			log_debug "These errors are expected, no worries"
-			incr matches
-			exp_continue
-		}
-		eof {
-			wait
-		}
+spawn $bin_cat $file_err
+expect {
+	-re "error: REQUEST_FILE_BCAST" {
+		log_debug "These errors are expected, no worries"
+		incr matches
+		exp_continue
+	}
+	-re "ls.* No such file" {
+		log_debug "These errors are expected, no worries"
+		incr matches
+		exp_continue
+	}
+	-re "ls.* does not exist" {
+		log_debug "These errors are expected, no worries"
+		incr matches
+		exp_continue
+	}
+	-re "ls.* not found" {
+		log_debug "These errors are expected, no worries"
+		incr matches
+		exp_continue
+	}
+	eof {
+		wait
 	}
 }
 if {$matches != 2} {
 	fail "sbcast moved file with invalid credential ($matches)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

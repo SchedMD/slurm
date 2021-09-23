@@ -34,16 +34,15 @@ source ./globals
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
+set skips       0
+set job_id      0
 
 proc cleanup {} {
-	global bin_rm file_in file_out file_err
+	global job_id bin_rm file_in file_out file_err
 
+	cancel_job $job_id
 	exec $bin_rm -f $file_in $file_out $file_err
 }
-
-set exit_code            0
-set skips                0
-set job_id               0
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
@@ -110,36 +109,25 @@ if {$job_id == 0} {
 #
 # Wait for job to complete and check output file
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	cancel_job $job_id
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
+wait_for_file -fail $file_out
 set differ_found 0
-if {[wait_for_file $file_out] == 0} {
-	spawn $bin_cat $file_out
-	expect {
-		-re "$file1 differ" {
-			set differ_found 1
-			exp_continue
-		}
-		-re "$file2 differ" {
-			log_error "sbcast failed to overwrite file with --force option"
-			set exit_code 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
+spawn $bin_cat $file_out
+expect {
+	-re "$file1 differ" {
+		set differ_found 1
+		exp_continue
+	}
+	-re "$file2 differ" {
+		fail "sbcast failed to overwrite file with --force option"
+	}
+	eof {
+		wait
 	}
 }
 if {$differ_found == 0} {
 	fail "sbcast overwrote file without --force option"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 
 if {$skips} {
