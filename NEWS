@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
     fails due to an invalid or corrupted file.
  -- slurmctld/gres_ctld - fix deallocation of typed GRES without device.
  -- scrontab - fix capturing the cronspec request in the job script.
+ -- openapi/dbv0.0.37 - Add missing method POST for /associations/.
 
 * Changes in Slurm 21.08.2
 ==========================

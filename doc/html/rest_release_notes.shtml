@@ -223,6 +223,18 @@ The v0.0.35 plugin has now been deprecated.
 </tr>
 </table>
 
+<h4>Add POST method for /associations<h4>
+<table class="tchange">
+<tr>
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.paths."/associations/".post</td>
+</tr>
+<tr>
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.37_response_associations"</td>
+</tr>
+</table>
+
 <h2>Slurm 20.11.5<h2>
 
 <h3>openapi/dbv0.0.36 (src/slurmrestd/plugins/openapi/dbv0.0.36/openapi.json)</h3>
