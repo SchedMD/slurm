@@ -32,7 +32,6 @@ set job_id        0
 set nodes         ""
 set test_part_1   "test$test_id\_part1"
 set test_part_2   "test$test_id\_part2"
-set exit_code     0
 
 proc cleanup {} {
 	global test_part_1 test_part_2 job_id bin_rm file_in
@@ -98,7 +97,7 @@ proc change_prio { name prio } {
 }
 
 proc delete_part { name } {
-	global scontrol exit_code
+	global scontrol
 
 	log_user 0
 	spawn $scontrol delete partition=$name
@@ -129,8 +128,7 @@ proc delete_part { name } {
 	log_user 1
 
 	if {$deleted != 1} {
-		log_error "Partition $name was not deleted"
-		set exit_code 1
+		log_warn "Partition $name was not deleted"
 	}
 }
 
@@ -218,10 +216,7 @@ expect {
 		wait
 	}
 }
-if {$part_chk != 2} {
-	log_error "--priority option did not list priority properly ($part_chk != 2)"
-	set exit_code 1
-}
+subtest {$part_chk == 2} "Check partition priority" "--priority option did not list priority properly ($part_chk != 2)"
 
 cancel_job $job_id
 
@@ -252,10 +247,7 @@ expect {
 		wait
 	}
 }
-if {$part_chk != 2} {
-	log_error "--priority option did not list priority properly ($part_chk != 2)"
-	set exit_code 1
-}
+subtest {$part_chk == 2} "Recheck partition priority after switching it" "--priority option did not list priority properly ($part_chk != 2)"
 
 cancel_job $job_id
 
@@ -280,10 +272,7 @@ expect {
 if {$job_id == 0} {
 	fail "sbatch did not submit job"
 }
-if {[wait_for_job $job_id RUNNING] != 0} {
-	log_error "Job $job_id failed to start"
-	set exit_code 1
-}
+wait_for_job -fail $job_id RUNNING
 
 # Check partition
 set part_chk 0
@@ -300,13 +289,4 @@ expect {
 		wait
 	}
 }
-if {$part_chk != 1} {
-	log_error "Job $job_id should be RUNNING in partition $test_part_1 and is not"
-	set exit_code 1
-} else {
-	log_debug "Job $job_id is RUNNING in partition $test_part_1 as expected"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$part_chk == 1} "Job should be running in partition"

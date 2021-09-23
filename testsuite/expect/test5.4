@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
 set file_in      "test$test_id.input"
 set job_id1      0
 set job_id2      0
@@ -114,10 +113,7 @@ expect {
 	}
 }
 
-if {$have_header > 0} {
-	log_error "squeue noheader error"
-	set exit_code 1
-}
+subtest {$have_header <= 0} "Check the squeue noheader output"
 
 #
 # Check the squeue format output via command line option
@@ -146,14 +142,7 @@ expect {
 	}
 }
 
-if {$have_job_ids == 0} {
-	log_error "squeue format error"
-	set exit_code 1
-}
-if {$have_job_ids == 1} {
-	log_error "squeue found only 1 of 2 jobs"
-	set exit_code 1
-}
+subtest {$have_job_ids == 2} "Check the squeue format output via command line option" "squeue found only $have_job_ids of 2 jobs"
 
 #
 # Check the squeue format output via SQUEUE_FORMAT environment
@@ -182,14 +171,7 @@ expect {
 }
 unset env(SQUEUE_FORMAT)
 
-if {$have_job_ids == 0} {
-	log_error "squeue format error"
-	set exit_code 1
-}
-if {$have_job_ids == 1} {
-	log_error "squeue found only 1 of 2 jobs"
-	set exit_code 1
-}
+subtest {$have_job_ids == 2} "Check the squeue format output via SQUEUE_FORMAT environment variable" "squeue found only $have_job_ids of 2 jobs"
 
 #
 # Wait for the job step to appear
@@ -221,11 +203,4 @@ expect {
 	}
 }
 
-if {$step_found == 0} {
-	fail "squeue step format error"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
-
+subtest {$step_found != 0} "Wait for the job step to appear" "squeue step format error"
