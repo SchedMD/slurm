@@ -50,6 +50,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/v0.0.37 - enable job priority field for job submissions and updates.
  -- openapi/v0.0.37 - request node states query includes MIXED state instead of
     only allocated.
+ -- mpi/pmix - avoid job hanging until the time limit on PMIx agent failures.
 
 * Changes in Slurm 21.08.2
 ==========================
