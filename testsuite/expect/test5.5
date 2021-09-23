@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
 set file_in      "test$test_id.input"
 set job_id1      0
 set job_id2      0
@@ -100,8 +99,7 @@ expect {
 	}
 	-re " $job_name2 " {
 		if {$found_job1 != 0} {
-			log_error "squeue sort error"
-			set exit_code 1
+			fail "squeue sort error"
 		}
 		exp_continue
 	}
@@ -112,8 +110,3 @@ expect {
 		wait
 	}
 }
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
-

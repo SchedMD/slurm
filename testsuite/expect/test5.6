@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
 set file_in      "test$test_id.input"
 set job_id1      0
 set job_id2      0
@@ -110,8 +109,7 @@ expect {
 		if {$tmp_id == $job_id2} {
 			set job_found 1
 		} else {
-			log_error "squeue reported invalid job_id"
-			set exit_code 1
+			fail "squeue reported invalid job_id"
 		}
 		exp_continue
 	}
@@ -122,10 +120,7 @@ expect {
 		wait
 	}
 }
-if {$job_found == 0} {
-	log_error "squeue failed to locate desired job"
-	set exit_code 1
-}
+subtest {$job_found != 0} "Check the squeue job filter option" "squeue failed to locate desired job"
 
 #
 # Check the squeue state filter option
@@ -133,10 +128,7 @@ if {$job_found == 0} {
 spawn $squeue --format=%t --noheader --states=PD
 expect {
 	-re "($re_word_str)" {
-		if {[string compare $expect_out(1,string) "PD"]} {
-			log_error "squeue state filter failure"
-			set exit_code 1
-		}
+		subtest {$expect_out(1,string) eq "PD"} "Check the squeue state filter option"
 		exp_continue
 	}
 	timeout {
@@ -156,10 +148,7 @@ set this_user [get_my_user_name]
 spawn $squeue --format=%u --noheader --user=$this_user
 expect {
 	-re "($re_word_str)" {
-		if {[string compare $expect_out(1,string) $this_user]} {
-			log_error "squeue user filter failure"
-			set exit_code 1
-		}
+		subtest {$expect_out(1,string) eq $this_user} "Check the squeue user filter option with name"
 		exp_continue
 	}
 	timeout {
@@ -178,10 +167,7 @@ set this_uid [get_my_uid]
 spawn $squeue --format=%u --noheader --user=$this_uid
 expect {
 	-re "($re_word_str)" {
-		if {[string compare $expect_out(1,string) $this_user]} {
-			log_error "squeue user filter failure"
-			set exit_code 1
-		}
+		subtest {$expect_out(1,string) eq $this_user} "Check the squeue user filter option with id"
 		exp_continue
 	}
 	timeout {
@@ -211,10 +197,7 @@ expect {
 		wait
 	}
 }
-if {$match != 1} {
-	log_error "squeue node filter failure"
-	set exit_code 1
-}
+subtest {$match == 1} "Check the squeue node filter option"
 
 # The node filtering really only works if the job has begun execution
 set node_name_set 0
@@ -247,10 +230,7 @@ if {$node_name_set == 1} {
 		}
 	}
 }
-if {$node_name_set == 1} {
-	log_error "squeue node name filtering failed"
-	set exit_code 1
-}
+subtest {$node_name_set != 1} "Check squeue node name filtering"
 
 #
 # Check the squeue partition filter option
@@ -283,10 +263,7 @@ if {[string compare partition2 ""] == 0} {
 spawn $squeue --format=%P --noheader --partitions=$partition1
 expect {
 	-re "($re_word_str)" {
-		if {[string compare $expect_out(1,string) $partition1]} {
-			log_error "squeue partition filter error"
-			set exit_code 1
-		}
+		subtest {$expect_out(1,string) eq $partition1} "Check the squeue partition filter option"
 		exp_continue
 	}
 	timeout {
@@ -301,11 +278,7 @@ expect {
 # Wait long enough to make sure the job step is running and has
 # started its job steps. Check the squeue job step filter option
 #
-if {[wait_for_job $job_id1 "RUNNING"] != 0} {
-	log_error "error waiting for job $job_id1 to start"
-	cancel_job $job_id1
-	set exit_code 1
-}
+wait_for_job -fail $job_id1 "RUNNING"
 exec $bin_sleep 10
 set job_found 0
 spawn $squeue --format=%i --steps $job_id1.$step_id
@@ -315,8 +288,7 @@ expect {
 		if {$tmp_id == $job_id1} {
 			set job_found 1
 		} else {
-			log_error "squeue reported invalid job_step_id"
-			set exit_code 1
+			fail "squeue reported invalid job_step_id"
 		}
 		exp_continue
 	}
@@ -327,10 +299,7 @@ expect {
 		wait
 	}
 }
-if {$job_found == 0} {
-	log_error "squeue failed to locate desired job step"
-	set exit_code 1
-}
+subtest {$job_found != 0} "Check the squeue job step filter option" "squeue failed to locate desired job step"
 
 #
 # Filters the name associated with the job
@@ -343,8 +312,7 @@ expect {
 		if {$tmp_id == $job_id1} {
 			set job_found 1
 		} else {
-			log_error "squeue reported unexpected job_id ($tmp_id != $job_id1)"
-			set exit_code 1
+			fail "squeue reported unexpected job_id ($tmp_id != $job_id1)"
 		}
 		exp_continue
 	}
@@ -355,10 +323,7 @@ expect {
 		wait
 	}
 }
-if {$job_found == 0} {
-	log_error "squeue failed to locate desired job"
-	set exit_code 1
-}
+subtest {$job_found != 0} "squeue filters the name associated with job1" "squeue failed to locate job1"
 
 set job_found 0
 spawn $squeue --format=%i --name $job_name2
@@ -368,8 +333,7 @@ expect {
 		if {$tmp_id == $job_id2} {
 			set job_found 1
 		} else {
-			log_error "squeue reported unexpected job_id ($tmp_id != $job_id2)"
-			set exit_code 1
+			fail "squeue reported unexpected job_id ($tmp_id != $job_id2)"
 		}
 		exp_continue
 	}
@@ -380,11 +344,4 @@ expect {
 		wait
 	}
 }
-if {$job_found == 0} {
-	log_error "squeue failed to locate desired job"
-	set exit_code 1
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$job_found != 0} "squeue filters the name associated with job2" "squeue failed to locate job2"

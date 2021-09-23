@@ -29,7 +29,6 @@ source ./globals
 source ./globals_accounting
 
 set cwd           "[$bin_pwd]"
-set exit_code     0
 set test_node     ""
 set job_id        0
 set step_id       0
@@ -111,14 +110,13 @@ remove_acct [get_config_param "ClusterName"] $test_acct
 
 # Run a job to get a usable node to test
 set tmp_sc  "tmp_sc"
-set tmp_job 0
 
 make_bash_script $tmp_sc "sleep 2"
 
 spawn $sbatch -o/dev/null -N1 --exclusive $tmp_sc
 expect {
 	-re "Submitted batch job ($number)" {
-		set tmp_job $expect_out(1,string)
+		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -129,18 +127,14 @@ expect {
 	}
 }
 
-if {$tmp_job == 0} {
+if {$job_id == 0} {
 	fail "Job was not submitted"
 }
 
-if {[wait_for_job $tmp_job "RUNNING"] != 0} {
-	log_error "Error waiting for job $tmp_job to start"
-	cancel_job $tmp_job
-	set exit_code 1
-}
+wait_for_job -fail $job_id "RUNNING"
 
 set got_node 0
-spawn $scontrol show job $tmp_job
+spawn $scontrol show job $job_id
 expect {
 	-re "NodeList=($re_word_str)" {
 		set test_node $expect_out(1,string)
@@ -192,7 +186,7 @@ if {$sq_format(ntpersocket) == 0 || $sq_format(cpuspertask) == 0} {
 
 # Remove the tmp script and cancel tmp job
 exec $bin_rm $tmp_sc
-cancel_job $tmp_job
+cancel_job $job_id
 
 set sq_format(username) [get_my_user_name]
 
@@ -211,8 +205,7 @@ expect {
 	}
 }
 if {$match != 1} {
-	log_error "Account was not added"
-	set exit_code 1
+	fail "Account was not added"
 }
 
 set match 0
@@ -230,8 +223,7 @@ expect {
 	}
 }
 if {$match != 1} {
-	log_error "Account was not added"
-	set exit_code 1
+	fail "Account was not added"
 }
 
 #
@@ -262,11 +254,8 @@ expect {
 	}
 }
 
-if {[wait_for_job $job_id "RUNNING"] != 0} {
-	log_error "Error waiting for job $job_id to start"
-	cancel_job $job_id
-	set exit_code 1
-}
+wait_for_job -fail $job_id "RUNNING"
+
 # Wait for steps to start too
 sleep 5
 
@@ -292,8 +281,7 @@ expect {
 	}
 }
 if {$match != 2} {
-	log_error "scontrol did not provide correct job values ($match != 1)"
-	set exit_code 1
+	fail "scontrol did not provide correct job values ($match != 2)"
 }
 
 set match 0
@@ -316,23 +304,15 @@ foreach option [array names sq_format] {
 			wait
 		}
 	}
-	if {$this_match == 0} {
-		log_error "Failed to match $option with $sq_format($option)"
-		set exit_code 1
-	}
+	subtest {$this_match != 0} "Verify job format value $option" "Failed to match $option with $sq_format($option)"
 }
-if {$match != $cnt} {
-	log_error "Not all squeue outputs match ($match != $cnt)"
-	set exit_code 1
-}
+subtest {$match == $cnt} "Verify all expected job format outputs were seen" "Not all squeue outputs match ($match != $cnt)"
 
 set match 0
 spawn $squeue --job=$job_id --noheader -Ocomment:4
 expect {
 	-re "12345" {
-		log_error "Field width control failure"
-		set exit_code 1
-		exp_continue
+		fail "Field width control failure"
 	}
 	-re "1234" {
 		incr match 1
@@ -345,10 +325,8 @@ expect {
 		wait
 	}
 }
-if {$match != 1} {
-	log_error "Not all squeue outputs match ($match != 1)"
-	set exit_code 1
-}
+subtest {$match == 1} "Verify comment field is seen"
+
 ############################Step Format Test############################
 
 #####################
@@ -401,10 +379,7 @@ expect {
 		wait
 	}
 }
-if {$match != 4} {
-	log_error "scontrol did not provide correct step values ($match != 4)"
-	set exit_code 1
-}
+subtest {$match == 4} "Verify scontrol step format" "scontrol did not provide correct step values ($match != 4)"
 
 set match 0
 set cpu_match 0
@@ -426,17 +401,7 @@ foreach option [array names sq_step_format] {
 			wait
 		}
 	}
-	if {$this_match == 0} {
-		log_error "Failed to match $option with $sq_step_format($option)"
-		set exit_code 1
-	}
+	subtest {$this_match != 0} "Verify step format value $option" "Failed to match $option with $sq_step_format($option)"
 }
 
-if {$match != $cnt} {
-	log_error "Not all squeue outputs match ($match != $cnt)"
-	set exit_code 1
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$match == $cnt} "Verify all expected step format outputs were seen" "Not all squeue outputs match ($match != $cnt)"
