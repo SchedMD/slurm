@@ -45,8 +45,9 @@ if {![is_super_user]} {
 }
 
 proc cleanup { } {
-	global config_file bin_rm mail_prog mail_prog_out
+	global config_file bin_rm mail_prog mail_prog_out job_id
 
+	cancel_job $job_id
 	restore_conf $config_file
 	exec $bin_rm -f $mail_prog $mail_prog_out
 	reconfigure
