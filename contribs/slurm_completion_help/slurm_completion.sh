@@ -2084,13 +2084,34 @@ _sstat()
     _split_long_opt
 
     local shortoptions="-a -e -h -i -j -n -o -p -P -v -V"
-    local longoptions="--allstep --helpformat --help --pidformat --jobs\
-                       --noheader --format --parsable --parsable2 --usage\
-                       --verbose --version"
+    local longoptions="--allsteps --fields=<format> --format=<format> --help\
+		       --helpformat --jobs --noconvert --noheader --parsable\
+		       --parsable2 --pidformat --usage --verbose --version"
 
     [[ $cur == - ]] && { offer "$shortoptions" ; return ; }
     [[ $cur == -- ]] && { offer "$longoptions" ; return ; }
     [[ $cur == --* ]] && { offer "$(sed 's/<[^>]*>//g' <<< $longoptions)"; return ; }
+
+    case $prev in
+    --fields|--format|-o) offer "AveCPU AveCPUFreq AveDiskRead AveDiskWrite\
+				 AvePages AveRSS AveVMSize ConsumedEnergy\
+				 ConsumedEnergyRaw JobID MaxDiskRead\
+				 MaxDiskReadNode MaxDiskReadTask MaxDiskWrite\
+				 MaxDiskWriteNode MaxDiskWriteTask MaxPages\
+				 MaxPagesNode MaxPagesTask MaxRSS MaxRSSNode\
+				 MaxRSSTask MaxVMSize MaxVMSizeNode\
+				 MaxVMSizeTask MinCPU MinCPUNode MinCPUTask\
+				 Nodelist NTasks Pids ReqCPUFreq ReqCPUFreqMin\
+				 ReqCPUFreqMax ReqCPUFreqGov TRESUsageInAve\
+				 TRESUsageInMax TRESUsageInMaxNode\
+				 TRESUsageInMaxTask TRESUsageInMin\
+				 TRESUsageInMinNode TRESUsageInMinTask\
+				 TRESUsageInTot TRESUsageOutAve\
+				 TRESUsageOutMax TRESUsageOutMaxNode\
+				 TRESUsageOutMaxTask TRESUsageOutMin\
+				 TRESUsageOutMinNode TRESUsageOutMinTask\
+				 TRESUsageOutTot" ;;
+    esac
 }
 complete -F _sstat sstat
 # vim: sw=4:ts=4:expandtab
