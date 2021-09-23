@@ -2114,4 +2114,3 @@ _sstat()
     esac
 }
 complete -F _sstat sstat
-# vim: sw=4:ts=4:expandtab
