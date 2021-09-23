@@ -1267,15 +1267,15 @@
             "description": "administrator's arbitrary comment"
           },
           "array_job_id": {
-            "type": "string",
+            "type": "integer",
             "description": "job_id of a job array or 0 if N/A"
           },
           "array_task_id": {
-            "type": "string",
+            "type": "integer",
             "description": "task_id of a job array"
           },
           "array_max_tasks": {
-            "type": "string",
+            "type": "integer",
             "description": "Maximum number of running array tasks"
           },
           "array_task_string": {
@@ -1283,7 +1283,7 @@
             "description": "string expression of task IDs in this record"
           },
           "association_id": {
-            "type": "string",
+            "type": "integer",
             "description": "association id for job"
           },
           "batch_features": {
@@ -1346,7 +1346,7 @@
             "description": "cores per socket required by job"
           },
           "billable_tres": {
-            "type": "string",
+            "type": "number",
             "description": "billable TRES"
           },
           "cpus_per_task": {
@@ -1370,11 +1370,11 @@
             "description": "semicolon delimited list of TRES=# values"
           },
           "deadline": {
-            "type": "string",
+            "type": "integer",
             "description": "job start deadline "
           },
           "delay_boot": {
-            "type": "string",
+            "type": "integer",
             "description": "command to be executed"
           },
           "dependency": {
@@ -1382,7 +1382,7 @@
             "description": "synchronize job execution with other jobs"
           },
           "derived_exit_code": {
-            "type": "string",
+            "type": "integer",
             "description": "highest exit code of all job steps"
           },
           "eligible_time": {
@@ -1427,11 +1427,11 @@
             }
           },
           "group_id": {
-            "type": "string",
+            "type": "integer",
             "description": "group job submitted as"
           },
           "job_id": {
-            "type": "string",
+            "type": "integer",
             "description": "job ID"
           },
           "job_resources": {
@@ -1442,7 +1442,7 @@
             "description": "state of the job"
           },
           "last_sched_evaluation": {
-            "type": "string",
+            "type": "integer",
             "description": "last time job was evaluated for scheduling"
           },
           "licenses": {
@@ -1450,11 +1450,11 @@
             "description": "licenses required by the job"
           },
           "max_cpus": {
-            "type": "string",
+            "type": "integer",
             "description": "maximum number of cpus usable by job"
           },
           "max_nodes": {
-            "type": "string",
+            "type": "integer",
             "description": "maximum number of nodes usable by job"
           },
           "mcs_label": {
@@ -1474,35 +1474,35 @@
             "description": "list of nodes allocated to job"
           },
           "nice": {
-            "type": "string",
+            "type": "integer",
             "description": "requested priority change"
           },
           "tasks_per_core": {
-            "type": "string",
+            "type": "integer",
             "description": "number of tasks to invoke on each core"
           },
           "tasks_per_socket": {
-            "type": "string",
+            "type": "integer",
             "description": "number of tasks to invoke on each socket"
           },
           "tasks_per_board": {
-            "type": "string",
+            "type": "integer",
             "description": "number of tasks to invoke on each board"
           },
           "cpus": {
-            "type": "string",
+            "type": "integer",
             "description": "minimum number of cpus required by job"
           },
           "node_count": {
-            "type": "string",
+            "type": "integer",
             "description": "minimum number of nodes required by job"
           },
           "tasks": {
-            "type": "string",
+            "type": "integer",
             "description": "requested task count"
           },
           "het_job_id": {
-            "type": "string",
+            "type": "integer",
             "description": "job ID of hetjob leader"
           },
           "het_job_id_set": {
@@ -1510,7 +1510,7 @@
             "description": "job IDs for all components"
           },
           "het_job_offset": {
-            "type": "string",
+            "type": "integer",
             "description": "HetJob component offset from leader"
           },
           "partition": {
@@ -1518,19 +1518,19 @@
             "description": "name of assigned partition"
           },
           "memory_per_node": {
-            "type": "string",
+            "type": "integer",
             "description": "minimum real memory per node"
           },
           "memory_per_cpu": {
-            "type": "string",
+            "type": "integer",
             "description": "minimum real memory per cpu"
           },
           "minimum_cpus_per_node": {
-            "type": "string",
+            "type": "integer",
             "description": "minimum # CPUs per node"
           },
           "minimum_tmp_disk_per_node": {
-            "type": "string",
+            "type": "integer",
             "description": "minimum tmp disk per node"
           },
           "preempt_time": {
@@ -1544,7 +1544,7 @@
             "description": "time job ran prior to last suspend"
           },
           "priority": {
-            "type": "string",
+            "type": "integer",
             "description": "relative priority of the job"
           },
           "profile": {
@@ -1576,7 +1576,7 @@
             "description": "time of latest size change"
           },
           "restart_cnt": {
-            "type": "string",
+            "type": "integer",
             "description": "count of job restarts"
           },
           "resv_name": {
@@ -1595,11 +1595,11 @@
             }
           },
           "sockets_per_board": {
-            "type": "string",
+            "type": "integer",
             "description": "sockets per board required by job"
           },
           "sockets_per_node": {
-            "type": "string",
+            "type": "integer",
             "description": "sockets per node required by job"
           },
           "start_time": {
@@ -1642,15 +1642,17 @@
             "description": "slurmctld's arbitrary comment"
           },
           "time_limit": {
-            "type": "string",
+            "type": "integer",
+            "format": "int64",
             "description": "maximum run time in minutes"
           },
           "time_minimum": {
-            "type": "string",
+            "type": "integer",
+            "format": "int64",
             "description": "minimum run time in minutes"
           },
           "threads_per_core": {
-            "type": "string",
+            "type": "integer",
             "description": "threads per core required by job"
           },
           "tres_bind": {
@@ -1686,7 +1688,8 @@
             "description": "tres used in the job"
           },
           "user_id": {
-            "type": "string",
+            "type": "integer",
+            "format": "int64",
             "description": "user id the job runs as"
           },
           "user_name": {
@@ -1719,9 +1722,9 @@
             "description": "number of assigned job hosts"
           },
           "allocated_nodes": {
-            "type": "array",
+            "type": "object",
             "description": "node allocations",
-            "items": {
+            "properties": {
               "$ref": "#/components/schemas/v0.0.38_node_allocation"
             }
           }
@@ -1735,7 +1738,7 @@
             "description": "amount of assigned job memory"
           },
           "cpus": {
-            "type": "object",
+            "type": "integer",
             "description": "amount of assigned job CPUs"
           },
           "sockets": {
