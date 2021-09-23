@@ -3603,16 +3603,10 @@ extern int kill_job_by_front_end_name(char *node_name)
 			if (job_ptr->batch_flag && job_ptr->details &&
 			    slurm_conf.job_requeue &&
 			    (job_ptr->details->requeue > 0)) {
-				char requeue_msg[128];
-
 				srun_node_fail(job_ptr, node_name);
 				info("requeue %pJ due to failure of node %s",
 				     job_ptr, node_name);
 				set_job_prio(job_ptr);
-				snprintf(requeue_msg, sizeof(requeue_msg),
-					 "Job requeued due to failure "
-					 "of node %s",
-					 node_name);
 				job_ptr->time_last_active  = now;
 				if (suspended) {
 					job_ptr->end_time =
@@ -3872,15 +3866,9 @@ extern int kill_running_job_by_node_name(char *node_name)
 				job_post_resize_acctg(job_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
 				   job_ptr->details->requeue) {
-				char requeue_msg[128];
-
 				srun_node_fail(job_ptr, node_name);
 				info("requeue job %pJ due to failure of node %s",
 				     job_ptr, node_name);
-				snprintf(requeue_msg, sizeof(requeue_msg),
-					 "Job requeued due to failure "
-					 "of node %s",
-					 node_name);
 				job_ptr->time_last_active  = now;
 				if (suspended) {
 					job_ptr->end_time =
