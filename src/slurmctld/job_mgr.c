@@ -16177,7 +16177,7 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 	_job_array_comp(job_ptr, was_running, requeue);
 
 	if (!IS_JOB_RESIZING(job_ptr) &&
-	    !IS_JOB_PENDING(job_ptr)  &&
+	    (!IS_JOB_PENDING(job_ptr) || requeue) &&
 	    !IS_JOB_REVOKED(job_ptr)  &&
 	    ((job_ptr->array_task_id == NO_VAL) ||
 	     (job_ptr->mail_type & MAIL_ARRAY_TASKS) ||
@@ -16234,21 +16234,20 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 			}
 		} else {
 			base_state = job_ptr->job_state & JOB_STATE_BASE;
-			if ((base_state == JOB_COMPLETE) ||
-			    (base_state == JOB_CANCELLED)) {
-				if (requeue &&
-				    (job_ptr->mail_type & MAIL_JOB_REQUEUE)) {
-					mail_job_info(job_ptr,
-						      MAIL_JOB_REQUEUE);
-				} else if (job_ptr->mail_type & MAIL_JOB_END) {
-					mail_job_info(job_ptr, MAIL_JOB_END);
-				}
-			} else {	/* JOB_FAILED, JOB_TIMEOUT, etc. */
-				if (job_ptr->mail_type & MAIL_JOB_FAIL)
-					mail_job_info(job_ptr, MAIL_JOB_FAIL);
-				else if (job_ptr->mail_type & MAIL_JOB_END)
-					mail_job_info(job_ptr, MAIL_JOB_END);
-			}
+			if ((job_ptr->mail_type & MAIL_JOB_FAIL) &&
+			    (base_state >= JOB_FAILED) &&
+			    (base_state != JOB_PREEMPTED))
+				mail_job_info(job_ptr, MAIL_JOB_FAIL);
+
+			if (requeue &&
+			    (job_ptr->mail_type & MAIL_JOB_REQUEUE))
+				mail_job_info(job_ptr,
+					      MAIL_JOB_REQUEUE);
+
+			if ((job_ptr->mail_type & MAIL_JOB_END) &&
+			    ((base_state == JOB_COMPLETE) ||
+			     (base_state == JOB_CANCELLED)))
+				mail_job_info(job_ptr, MAIL_JOB_END);
 		}
 	}
 

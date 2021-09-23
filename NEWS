@@ -27,6 +27,7 @@ documents those changes that are of interest to users and administrators.
     could in some cases return more records than expected.
  -- Fix issue for preemption of job array task that makes afterok dependency
     fail. Additionally, send emails when requeueing happens due to preemption.
+ -- Fix sending requeue mail type.
 
 * Changes in Slurm 21.08.1
 ==========================
