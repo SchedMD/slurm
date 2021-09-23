@@ -2047,11 +2047,11 @@ _sattach()
     _get_comp_words_by_ref cur prev words cword
     _split_long_opt
 
-    local shortoptions=" -h -l -Q -u -V -v"
-    local longoptions=" --help --input-filter[=]<task number>\
-                        --output-filter[=]<task number>\
-                        --error-filter[=]<task number> --label --layout --pty\
-                        --quiet --usage --version --verbose"
+    local shortoptions=" -h -l -Q -u -v -V"
+    local longoptions="--error-filter=<task_number> --help\
+		       --input-filter=<task_number> --label --layout\
+		       --output-filter=<task_number> --pty --quiet --usage\
+		       --verbose --version"
 
     [[ $cur == - ]] && { offer "$shortoptions" ; return ; }
     [[ $cur == -- ]] && { offer "$longoptions" ; return ; }
