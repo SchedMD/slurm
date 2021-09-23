@@ -18,6 +18,7 @@ documents those changes that are of interest to users and administrators.
  -- openapi/dbv0.0.38 - Fork existing openapi/dbv0.0.37 plugin.
  -- openapi/v0.0.35 - Plugin has been removed.
  -- scrontab - Don't accept extra letters after a '@' repeating pattern.
+ -- openapi/dbv0.0.38 - Add missing method POST for /associations/.
 
 * Changes in Slurm 21.08.3
 ==========================

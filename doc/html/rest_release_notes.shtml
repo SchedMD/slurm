@@ -56,6 +56,18 @@ paths in a single quote string to avoid shell replacements.</p>
 </tr>
 </table>
 
+<h4>Add POST method for /associations<h4>
+<table class="tchange">
+<tr>
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.paths."/associations/".post</td>
+</tr>
+<tr>
+	<td class="tdfield">new path</td>
+	<td class="tdchange">.components.schemas."dbv0.0.38_response_associations"</td>
+</tr>
+</table>
+
 <h3>openapi/v0.0.38 (src/plugins/openapi/v0.0.38/openapi.json)</h3>
 
 <h4>add plugin</h4>

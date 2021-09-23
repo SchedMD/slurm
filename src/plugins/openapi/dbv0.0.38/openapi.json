@@ -305,6 +305,33 @@
       }
     },
     "/associations/": {
+      "post": {
+        "tags": [
+          "slurm"
+        ],
+        "operationId": "slurmdbd_update_associations",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_response_associations"
+                }
+              },
+              "application/x-yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/dbv0.0.38_response_associations"
+                }
+              }
+            },
+            "description": "status of associations update"
+          },
+          "default": {
+            "description": "Unable to update associations"
+          }
+        },
+        "summary": "Set associations info"
+      },
       "get": {
         "tags": [
           "slurm"
@@ -2368,6 +2395,18 @@
         }
       },
       "dbv0.0.38_response_qos_delete": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "Slurm errors",
+            "items": {
+              "$ref": "#/components/schemas/dbv0.0.38_error"
+            }
+          }
+        }
+      },
+      "dbv0.0.38_response_associations": {
         "type": "object",
         "properties": {
           "errors": {
