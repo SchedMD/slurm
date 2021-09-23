@@ -45,7 +45,6 @@ set env_name_stdout  "SLURM_STDOUTMODE"
 set env_valu_stdout  "$test_dir/output"
 set env_name_overcom "SLURM_OVERCOMMIT"
 set env_valu_overcom 1
-set exit_code        0
 set job_id           0
 set timeout          $max_job_delay
 
