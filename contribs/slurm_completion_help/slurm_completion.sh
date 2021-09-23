@@ -2064,13 +2064,17 @@ _sdiag()
     _get_comp_words_by_ref cur prev words cword
     _split_long_opt
 
-    local shortoptions="-a -h -i -r -t -T -V"
-    local longoptions="--all --help --sort-by-id --reset --sort-by-time\
-                       --sort-by-time2 --usage --version"
+    local shortoptions="-a -h -i -M -r -t -T -V"
+    local longoptions="--all --cluster=<string> --help --reset --sort-by-id\
+                       --sort-by-time --sort-by-time2 --usage --version"
 
     [[ $cur == - ]] && { offer "$shortoptions" ; return ; }
     [[ $cur == -- ]] && { offer "$longoptions" ; return ; }
     [[ $cur == --* ]] && { offer "$(sed 's/<[^>]*>//g' <<< $longoptions)"; return ; }
+
+    case $prev in
+    --cluster|-M) offer_list "$(_clusters)" ;;
+    esac
 }
 complete -F _sdiag sdiag
 
