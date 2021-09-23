@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_prog   "test$test_id.prog"
 
 proc cleanup {} {
@@ -82,6 +81,7 @@ exec $bin_rm -f $file_prog
 exec $bin_cc $file_prog.c -o $file_prog -lnuma
 exec $bin_chmod 700 $file_prog
 
+set failure_addendum "This test can fail if the node configuration in slurm.conf (sockets, cores, threads) differs from the actual configuration. SPANK plugins (e.g. auto-affinity.so)"
 #
 # Create an allocation
 #
@@ -133,9 +133,7 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		log_error "Some error occurred"
-		set exit_code 1
-		exp_continue
+		fail "Some error occurred"
 	}
 	timeout {
 		fail "salloc not responding or failure to recognize prompt"
@@ -181,19 +179,14 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		log_error "Some error occurred"
-		set exit_code 1
-		exp_continue
+		fail "Some error occurred"
 	}
 	timeout {
 		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $test_prompt
 }
-if {$mem_mask != $full_mask} {
-	log_error "Memory affinity mask inconsistency ($mem_mask,$full_mask)"
-	set exit_code 1
-}
+subtest {$mem_mask == $full_mask} "Verify affinity mask for a job step with memory affinity" "Memory affinity mask inconsistency ($mem_mask,$full_mask). $failure_addendum"
 
 #
 # Run all tasks all bound to the same CPU's memory (local CPU)
@@ -202,15 +195,12 @@ send "$srun -n $task_cnt --cpu-bind=rank --mem-bind=local ./$file_prog\r"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		if {$expect_out(2,string) != $expect_out(3,string)} {
-			log_error "Failed to use local memory for a task"
-			set exit_code 1
+			fail "Failed to use local memory for a task"
 		}
 		exp_continue
 	}
 	-re "error" {
-		log_error "Some error occurred"
-		set exit_code 1
-		exp_continue
+		fail "Some error occurred"
 	}
 	timeout {
 		fail "salloc not responding or failure to recognize prompt"
@@ -230,19 +220,15 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		log_error "Some error occurred"
-		set exit_code 1
-		exp_continue
+		fail "Some error occurred"
 	}
 	timeout {
 		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $test_prompt
 }
-if {$task_mask != $task_cnt} {
-	log_error "Affinity mask inconsistent ($task_mask,$task_cnt)"
-	set exit_code 1
-}
+subtest {$task_mask == $task_cnt} "Verify affinity mask for a job step with all tasks using memory of CPU 0" "Affinity mask inconsistent ($task_mask,$task_cnt). $failure_addendum"
+
 set verbose_cnt 0
 send "$srun -n $task_cnt --mem-bind=verbose,map_mem:0 ./$file_prog\r"
 expect {
@@ -251,19 +237,14 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		log_error "Some error occurred"
-		set exit_code 1
-		exp_continue
+		fail "Some error occurred"
 	}
 	timeout {
 		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $test_prompt
 }
-if {$verbose_cnt != $task_cnt} {
-	log_error "Verbose messages count inconsistent ($verbose_cnt,$task_cnt)"
-	set exit_code 1
-}
+subtest {$verbose_cnt == $task_cnt} "Verify verbose messages count" "Verbose messages count inconsistent ($verbose_cnt,$task_cnt). $failure_addendum"
 
 #
 # Run all tasks all bound to the same CPU's memory by specifying a map (for each CPU)
@@ -279,19 +260,14 @@ while {$cpu_cnt < $task_cnt} {
 			exp_continue
 		}
 		-re "error" {
-			log_error "Some error occurred"
-			set exit_code 1
-			exp_continue
+			fail "Some error occurred"
 		}
 		timeout {
 			fail "salloc not responding or failure to recognize prompt"
 		}
 		-re $test_prompt
 	}
-	if {$mask_sum != $task_cnt * $mask} {
-		log_error "Affinity mask inconsistent ($mask_sum,$task_cnt)"
-		set exit_code 1
-	}
+	subtest {$mask_sum == $task_cnt * $mask} "Verify affinity mask for a job with all tasks bound to the same CPU's memory by specifying a map" "Affinity mask inconsistent ($mask_sum,$task_cnt). $failure_addendum"
 	incr cpu_cnt 1
 }
 
@@ -310,19 +286,14 @@ while {$cpu_cnt < $task_cnt} {
 			exp_continue
 		}
 		-re "error" {
-			log_error "Some error occurred"
-			set exit_code 1
-			exp_continue
+			fail "Some error occurred"
 		}
 		timeout {
 			fail "salloc not responding or failure to recognize prompt"
 		}
 		-re $test_prompt
 	}
-	if {$mask_sum != $task_cnt * $mask} {
-		log_error "Affinity mask inconsistent ($mask_sum,$task_cnt)"
-		set exit_code 1
-	}
+	subtest {$mask_sum == $task_cnt * $mask} "Verify affinity mask for a job with all tasks bound to the same CPU's memory by specifying a mask" "Affinity mask inconsistent ($mask_sum,$task_cnt). $failure_addendum"
 	incr cpu_cnt 1
 }
 
@@ -382,19 +353,14 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		log_error "Some error occurred"
-		set exit_code 1
-		exp_continue
+		fail "Some error occurred"
 	}
 	timeout {
 		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $test_prompt
 }
-if {$task_mask != $full_mask} {
-	log_error "Affinity mask inconsistent ($task_mask,$full_mask)"
-	set exit_code 1
-}
+subtest {$task_mask == $full_mask} "Verify affinity mask for a job step with all tasks bound to a different CPU's memory by specifying a forward map" "Affinity mask inconsistent ($task_mask,$full_mask). $failure_addendum"
 
 #
 # Run all tasks bound to a different CPU's memory by specifying a reverse map
@@ -407,19 +373,14 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		log_error "Some error occurred"
-		set exit_code 1
-		exp_continue
+		fail "Some error occurred"
 	}
 	timeout {
 		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $test_prompt
 }
-if {$task_mask != $full_mask} {
-	log_error "Affinity mask inconsistent ($task_mask,$full_mask)"
-	set exit_code 1
-}
+subtest {$task_mask == $full_mask} "Verify affinity mask for a job step with all tasks bound to a different CPU's memory by specifying a reverse map" "Affinity mask inconsistent ($task_mask,$full_mask). $failure_addendum"
 
 #
 # Run all tasks bound to a different CPU's memroy by specifying an alternating map
@@ -432,19 +393,14 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		log_error "Some error occurred"
-		set exit_code 1
-		exp_continue
+		fail "Some error occurred"
 	}
 	timeout {
 		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $test_prompt
 }
-if {$task_mask != $full_mask} {
-	log_error "Affinity mask inconsistent ($task_mask,$full_mask)"
-	set exit_code 1
-}
+subtest {$task_mask == $full_mask} "Verify affinity mask for a job step with all tasks bound to a different CPU's memory by specifying an alternating map" "Affinity mask inconsistent ($task_mask,$full_mask). $failure_addendum"
 
 #
 # Run all tasks bound to a different CPU's memory by specifying a forward mask
@@ -457,9 +413,7 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		log_error "Some error occurred"
-		set exit_code 1
-		exp_continue
+		fail "Some error occurred"
 	}
 	timeout {
 		fail "salloc not responding or failure to recognize prompt"
@@ -467,10 +421,7 @@ expect {
 	}
 	-re $test_prompt
 }
-if {$task_mask != $full_mask} {
-	log_error "Affinity mask inconsistent ($task_mask,$full_mask)"
-	set exit_code 1
-}
+subtest {$task_mask == $full_mask} "Verify affinity mask for a job step with all tasks bound to a different CPU's memory by specifying a forward mask" "Affinity mask inconsistent ($task_mask,$full_mask). $failure_addendum"
 
 #
 # Run all tasks bound to a different CPU's memory by specifying a reverse mask
@@ -483,19 +434,14 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		log_error "Some error occurred"
-		set exit_code 1
-		exp_continue
+		fail "Some error occurred"
 	}
 	timeout {
 		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $test_prompt
 }
-if {$task_mask != $full_mask} {
-	log_error "Affinity mask inconsistent ($task_mask,$full_mask)"
-	set exit_code 1
-}
+subtest {$task_mask == $full_mask} "Verify affinity mask for a job step with all tasks bound to a different CPU's memory by specifying a reverse mask" "Affinity mask inconsistent ($task_mask,$full_mask). $failure_addendum"
 
 #
 # Run all tasks bound to a different CPU's memory by specifying an alternating mask
@@ -508,19 +454,14 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		log_error "Some error occurred"
-		set exit_code 1
-		exp_continue
+		fail "Some error occurred"
 	}
 	timeout {
 		fail "salloc not responding or failure to recognize prompt"
 	}
 	-re $test_prompt
 }
-if {$task_mask != $full_mask} {
-	log_error "Affinity mask inconsistent ($task_mask,$full_mask)"
-	set exit_code 1
-}
+subtest {$task_mask == $full_mask} "Verify affinity mask for a job step with all tasks bound to a different CPU's memory by specifying an alternating mask" "Affinity mask inconsistent ($task_mask,$full_mask). $failure_addendum"
 
 #
 # Terminate the job, free the allocation
@@ -528,8 +469,7 @@ if {$task_mask != $full_mask} {
 send "exit\r"
 expect {
 	-re "error" {
-		log_error "Some error occurred"
-		set exit_code 1
+		fail "Some error occurred"
 	}
 	timeout {
 		slow_kill $salloc_pid
@@ -539,8 +479,3 @@ expect {
 		wait
 	}
 }
-
-if {$exit_code != 0} {
-	fail "This test can fail if the node configuration in slurm.conf (sockets, cores, threads) differs from the actual configuration. SPANK plugins (e.g. auto-affinity.so)"
-}
-
