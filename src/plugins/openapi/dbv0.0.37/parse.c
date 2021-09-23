@@ -1714,8 +1714,11 @@ static int _dump_assoc_id(const parser_t *const parse, void *obj, data_t *dst,
 	xassert(penv->g_assoc_list);
 
 	if (!(assoc = list_find_first(penv->g_assoc_list,
-				      slurmdb_find_assoc_in_list, associd)))
-		return ESLURM_DATA_CONV_FAILED;
+				      slurmdb_find_assoc_in_list, associd))) {
+		error("%s: unable to find assocation id#%u",
+		      __func__, *associd);
+		return SLURM_SUCCESS;
+	}
 
 	return _parser_dump(assoc, parse_assoc_short,
 			    ARRAY_SIZE(parse_assoc_short), dst, penv);
