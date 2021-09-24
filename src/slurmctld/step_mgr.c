@@ -2502,18 +2502,21 @@ static void _clear_zero_tres(char **tres_spec)
 }
 
 /*
- * If a job step specification does not include any TRES specification,
- * then copy those values from the job record
+ * If a job step specification does not include any GRES specification,
+ * then copy those values from the job record.
+ * Currently we only want to check if the step lacks a "gres" request.
+ * "tres_per_[step|task]" has "cpu:<count>" in it, so we need to search for
+ * "gres" in the strings.
  */
 static void _copy_job_tres_to_step(job_step_create_request_msg_t *step_specs,
 				   job_record_t *job_ptr)
 {
 	if (!xstrcasecmp(step_specs->tres_per_node, "NONE")) {
 		xfree(step_specs->tres_per_node);
-	} else if (step_specs->tres_per_step	||
-		   step_specs->tres_per_node	||
-		   step_specs->tres_per_socket	||
-		   step_specs->tres_per_task) {
+	} else if (xstrstr(step_specs->tres_per_step, "gres")	||
+		   xstrstr(step_specs->tres_per_node, "gres")	||
+		   xstrstr(step_specs->tres_per_socket, "gres")	||
+		   xstrstr(step_specs->tres_per_task, "gres")) {
 		_clear_zero_tres(&step_specs->tres_per_step);
 		_clear_zero_tres(&step_specs->tres_per_node);
 		_clear_zero_tres(&step_specs->tres_per_socket);
