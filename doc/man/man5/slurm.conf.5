@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "Slurm Configuration File" "August 2021" "Slurm Configuration File"
+.TH "slurm.conf" "5" "Slurm Configuration File" "September 2021" "Slurm Configuration File"
 
 .SH "NAME"
 slurm.conf \- Slurm configuration file
@@ -3133,15 +3133,6 @@ baseboard, node and network switch). In order to optimize resource allocations
 on such hardware, Slurm will consider each NUMA node within the socket as a
 separate socket by default. Use the Ignore_NUMA option to report the correct
 socket count, but \fBnot\fR optimize resource allocations on the NUMA nodes.
-.TP
-\fBinventory_interval=#\fR
-On a Cray system using Slurm on top of ALPS this limits the number of times
-a Basil Inventory call is made.  Normally this call happens every scheduling
-consideration to attempt to close a node state change window with respects to
-what ALPS has.  This call is rather slow, so making it less frequently improves
-performance dramatically, but in the situation where a node changes state the
-window is as large as this setting.  In an HTC environment this setting is a
-must and we advise around 10 seconds.
 .TP
 \fBmax_array_tasks\fR
 Specify the maximum number of tasks that can be included in a job array.
