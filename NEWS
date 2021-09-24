@@ -254,6 +254,7 @@ documents those changes that are of interest to users and administrators.
  -- Add missing logic for JobCompParams configuration key pair to be available
     for consumers of the get/print/write configuration API functions.
  -- mpi/cray_shasta - Add new PALS/PMI environment variables.
+ -- Add cache around calls to getnameinfo().
 
 * Changes in Slurm 22.05.8
 ==========================

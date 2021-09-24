@@ -55,10 +55,23 @@
 #include "src/common/util-net.h"
 #include "src/common/macros.h"
 #include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 static pthread_mutex_t hostentLock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t getnameinfo_cache_lock = PTHREAD_MUTEX_INITIALIZER;
 
+typedef struct {
+	struct sockaddr *addr;
+	socklen_t addrlen;
+	char *host;
+	uint32_t host_len;
+	time_t expiration;
+} getnameinfo_cache_t;
+
+static list_t *nameinfo_cache = NULL;
+
+#define GETNAMEINFO_CACHE_TIMEOUT 60
 
 static int copy_hostent(const struct hostent *src, char *dst, int len);
 #ifndef NDEBUG
@@ -280,17 +293,57 @@ struct addrinfo *get_addr_info(const char *hostname, uint16_t port)
 	return result;
 }
 
-/*
- * Get the short hostname using "nameinfo" for an address.
- * NOTE: caller is responsible for freeing the resulting address.
- * Returns NULL on error.
- */
-extern char *xgetnameinfo(struct sockaddr *addr, socklen_t addrlen)
+static int _name_cache_find(void *x, void *y)
 {
-	char hbuf[NI_MAXHOST];
-	int err = getnameinfo(addr, addrlen, hbuf, sizeof(hbuf), NULL, 0,
-			      NI_NAMEREQD);
+	getnameinfo_cache_t *cache_ent = x;
+	struct sockaddr *addr_x = cache_ent->addr;
+	struct sockaddr *addr_y = y;
 
+	xassert(addr_x);
+	xassert(addr_y);
+	xassert(addr_x->sa_family != AF_UNIX);
+	xassert(addr_y->sa_family != AF_UNIX);
+
+	if (addr_x->sa_family != addr_y->sa_family)
+		return false;
+	if (addr_x->sa_family == AF_INET) {
+		struct sockaddr_in *x4 = (void *)addr_x;
+		struct sockaddr_in *y4 = (void *)addr_y;
+		if (x4->sin_addr.s_addr != y4->sin_addr.s_addr)
+			return false;
+	} else if (addr_x->sa_family == AF_INET6) {
+		struct sockaddr_in6 *x6 = (void *)addr_x;
+		struct sockaddr_in6 *y6 = (void *)addr_y;
+		if (!memcmp(x6->sin6_addr.s6_addr, y6->sin6_addr.s6_addr,
+		    sizeof(x6->sin6_addr.s6_addr)))
+			return false;
+	}
+	return true;
+}
+
+static void _getnameinfo_cache_destroy(void *obj)
+{
+	getnameinfo_cache_t *entry = obj;
+
+	xfree(entry->host);
+	xfree(entry->addr);
+	xfree(entry);
+}
+
+extern void getnameinfo_cache_purge(void)
+{
+	slurm_mutex_lock(&getnameinfo_cache_lock);
+	FREE_NULL_LIST(nameinfo_cache);
+	slurm_mutex_unlock(&getnameinfo_cache_lock);
+}
+
+static char *_getnameinfo(struct sockaddr *addr, socklen_t addrlen)
+{
+	char hbuf[NI_MAXHOST] = "\0";
+	int err;
+
+	err = getnameinfo(addr, addrlen, hbuf, sizeof(hbuf), NULL, 0,
+			  NI_NAMEREQD);
 	if (err == EAI_SYSTEM) {
 		error("%s: getnameinfo() failed: %s: %m",
 		      __func__, gai_strerror(err));
@@ -302,4 +355,70 @@ extern char *xgetnameinfo(struct sockaddr *addr, socklen_t addrlen)
 	}
 
 	return xstrdup(hbuf);
+}
+
+/*
+ * Get the short hostname using "nameinfo" for an address.
+ * NOTE: caller is responsible for freeing the resulting hostname.
+ * Returns NULL on error.
+ */
+extern char *xgetnameinfo(struct sockaddr *addr, socklen_t addrlen)
+{
+	getnameinfo_cache_t *cache_ent = NULL;
+	char *name = NULL;
+	time_t now = 0;
+	bool new = false;
+
+	slurm_mutex_lock(&getnameinfo_cache_lock);
+	now = time(NULL);
+	if (!nameinfo_cache)
+		nameinfo_cache = list_create(_getnameinfo_cache_destroy);
+
+	if ((cache_ent = list_find_first(nameinfo_cache, _name_cache_find,
+					 addr))) {
+		if (cache_ent->expiration > now) {
+			name = xstrdup(cache_ent->host);
+			slurm_mutex_unlock(&getnameinfo_cache_lock);
+			log_flag(NET, "%s: %pA = %s (cached)",
+				 __func__, addr, name);
+			return name;
+		}
+	}
+
+	name = _getnameinfo(addr, addrlen);
+	/*
+	 * Errors will leave expired cache records in place.
+	 * That is okay, we'll find them and attempt to update them again.
+	 */
+	if (!name) {
+		slurm_mutex_unlock(&getnameinfo_cache_lock);
+		return NULL;
+	}
+
+	if (!cache_ent) {
+		cache_ent = xmalloc(sizeof(*cache_ent));
+		cache_ent->addr = xmalloc(sizeof(*addr));
+		memcpy(cache_ent->addr, addr, sizeof(*addr));
+		new = true;
+	}
+
+	/*
+	 * The host name could have changed for expired cache records, so just
+	 * blindly update the cache record every time to be safe.
+	 */
+	xfree(cache_ent->host);
+	cache_ent->host = xstrdup(name);
+	cache_ent->expiration = now + slurm_conf.getnameinfo_cache_timeout;
+
+	if (new) {
+		log_flag(NET, "%s: Adding to cache - %pA = %s",
+			 __func__, addr, name);
+		list_append(nameinfo_cache, cache_ent);
+	} else {
+		log_flag(NET, "%s: Updating cache - %pA = %s",
+			 __func__, addr, name);
+	}
+	slurm_mutex_unlock(&getnameinfo_cache_lock);
+
+	return name;
 }

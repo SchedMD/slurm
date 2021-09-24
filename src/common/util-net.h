@@ -72,4 +72,8 @@ extern char *make_full_path(const char *);
 extern struct addrinfo *get_addr_info(const char *hostname, uint16_t port);
 extern char *xgetnameinfo(struct sockaddr *addr, socklen_t addrlen);
 
+/* Functions responsible for cleanup of getnameinfo cache */
+extern void getnameinfo_cache_destroy(void *obj);
+extern void getnameinfo_cache_purge(void);
+
 #endif /* !_UTIL_NET_H */

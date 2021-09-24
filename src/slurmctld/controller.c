@@ -984,6 +984,7 @@ int main(int argc, char **argv)
 
 	/* purge remaining data structures */
 	group_cache_purge();
+	getnameinfo_cache_purge();
 	license_free();
 	FREE_NULL_LIST(slurmctld_config.acct_update_list);
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
