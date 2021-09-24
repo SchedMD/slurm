@@ -2725,7 +2725,6 @@ A DOWN node will become available for use upon registration with a
 valid configuration.  The node could have been set DOWN for any reason.
 A node registers with a valid configuration if its memory, GRES, CPU count,
 etc. are equal to or greater than the values configured in slurm.conf.
-(Disabled on Cray ALPS systems.)
 .RE
 
 .TP
@@ -3188,7 +3187,7 @@ If used, the backup controller will not schedule jobs when it takes over. The
 backup controller will allow jobs to be submitted, modified and cancelled but
 won't schedule new jobs. This is useful in Cray environments when the backup
 controller resides on an external Cray node.  A restart is required to alter
-this option. This is explicitly set on a Cray/ALPS system.
+this option.
 .TP
 \fBno_env_cache\fR
 If used, any job started on node that fails to load the env from a node will
@@ -3294,8 +3293,7 @@ frequently and consume significant resources if not throttled by this option.
 This option specifies the minimum time between the end of one scheduling
 cycle and the beginning of the next scheduling cycle.
 A value of zero will disable throttling of the scheduling logic interval.
-The default value is 1,000,000 microseconds on Cray/ALPS systems and
-2 microseconds on other systems.
+The default value is 2 microseconds on other systems.
 .TP
 \fBspec_cores_first\fR
 Specialized cores will be selected from the first cores of the first sockets,
@@ -4929,13 +4927,11 @@ in the \fBNodeName=\fR section above.
 The default value is \fIDOWN\fR.
 
 .SH "FRONTEND NODE CONFIGURATION"
-On computers where frontend nodes are used to execute batch scripts
-rather than compute nodes (Cray ALPS systems), one may configure one or more
-frontend nodes using the configuration parameters defined below. These options
-are very similar to those used in configuring compute nodes. These options may
-only be used on systems configured and built with the appropriate parameters
-(\-\-have\-front\-end) or a system determined to have the appropriate
-architecture by the configure script (Cray ALPS systems).
+On computers where frontend nodes are used to execute batch scripts rather than
+compute nodes, one may configure one or more frontend nodes using the
+configuration parameters defined below. These options are very similar to those
+used in configuring compute nodes. These options may only be used on systems
+configured and built with the appropriate parameters (\-\-have\-front\-end).
 The front end configuration specifies the following information:
 
 .TP
