@@ -15488,6 +15488,23 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	if (IS_JOB_COMPLETING(job_ptr) ||
 	    !IS_JOB_PENDING(job_ptr) || !job_ptr->batch_flag)
 		return;
+	/*
+	 * If this job doesn't have db_index yet then we need to send accounting
+	 * information now before setting up the requeued job; otherwise, we'll
+	 * lose information about the original job.
+	 */
+	if (!job_ptr->db_index || (job_ptr->db_index == NO_VAL64)) {
+		/*
+		 * At this point we know the job isn't in a completing state,
+		 * but there is a block in jobacct_storage_g_job_start() that
+		 * will zero out the start time if this state exists.
+		 * So we can just add COMPLETING to the state and then remove it
+		 * afterwards so we don't have that happen.
+		 */
+		job_ptr->job_state |= JOB_COMPLETING;
+		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+		job_ptr->job_state &= ~JOB_COMPLETING;
+	}
 
 	info("Requeuing %pJ", job_ptr);
 

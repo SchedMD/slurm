@@ -1547,7 +1547,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	if (slurm_cred_revoked(conf->vctx, req->cred)) {
 		info("Job %u already killed, do not launch %ps",
 		     req->step_id.job_id, &req->step_id);
-		errnum = ESLURMD_CREDENTIAL_REVOKED;
+		errnum = SLURM_SUCCESS;
 		goto done;
 	}
 #endif
@@ -2446,7 +2446,7 @@ static void _rpc_batch_job(slurm_msg_t *msg)
 	if (slurm_cred_revoked(conf->vctx, req->cred)) {
 		info("Job %u already killed, do not launch batch job",
 		     req->job_id);
-		rc = ESLURMD_CREDENTIAL_REVOKED;     /* job already ran */
+		rc = SLURM_SUCCESS;     /* job already ran */
 		goto done;
 	}
 

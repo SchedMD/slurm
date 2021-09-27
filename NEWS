@@ -25,6 +25,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix sprio printing -nan for normalized association priority if
     PriorityWeightAssoc was not defined.
  -- Disallow FirstJobId=0.
+ -- Preserve job start info in the database for a requeued job that hadn't
+    registered the first time in the database yet.
+ -- Only send one message on prolog failure from the slurmd.
 
 * Changes in Slurm 21.08.1
 ==========================
