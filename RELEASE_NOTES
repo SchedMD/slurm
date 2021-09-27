@@ -27,6 +27,7 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
+ -- Remove support for (non-functional) --cpu-bind=boards.
 
 API CHANGES
 ===========

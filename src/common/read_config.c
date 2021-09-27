@@ -4933,13 +4933,6 @@ static int _validate_and_set_defaults(slurm_conf_t *conf,
 				}
 				set_unit = true;
 				conf->task_plugin_param |= CPU_BIND_NONE;
-			} else if (xstrcasecmp(tok, "boards") == 0) {
-				if (set_unit) {
-					error("Bad TaskPluginParam: %s", tok);
-					return SLURM_ERROR;
-				}
-				set_unit = true;
-				conf->task_plugin_param |= CPU_BIND_TO_BOARDS;
 			} else if (xstrcasecmp(tok, "sockets") == 0) {
 				if (set_unit) {
 					error("Bad TaskPluginParam: %s", tok);

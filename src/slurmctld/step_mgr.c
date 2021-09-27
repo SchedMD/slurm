@@ -2386,8 +2386,7 @@ static void _set_def_cpu_bind(job_record_t *job_ptr)
 		return;		/* No data structure */
 
 	bind_to_bits = CPU_BIND_TO_SOCKETS | CPU_BIND_TO_CORES |
-		       CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS |
-		       CPU_BIND_TO_BOARDS;
+		       CPU_BIND_TO_THREADS | CPU_BIND_TO_LDOMS;
 	if ((job_ptr->details->cpu_bind_type != NO_VAL16) &&
 	    (job_ptr->details->cpu_bind_type & bind_to_bits)) {
 		if (slurm_conf.debug_flags & DEBUG_FLAG_CPU_BIND) {

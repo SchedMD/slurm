@@ -407,8 +407,6 @@ int setup_env(env_t *env, bool preserve_env)
 			str_bind1 = "sockets";
 		} else if (env->cpu_bind_type & CPU_BIND_TO_LDOMS) {
 			str_bind1 = "ldoms";
-		} else if (env->cpu_bind_type & CPU_BIND_TO_BOARDS) {
-			str_bind1 = "boards";
 		}
 
 		if (env->cpu_bind_type & CPU_BIND_NONE) {

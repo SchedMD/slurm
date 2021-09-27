@@ -827,7 +827,6 @@ typedef enum cpu_bind_type {	/* cpu binding type from --cpu-bind=... */
 	CPU_BIND_TO_CORES   = 0x0004, /* =cores */
 	CPU_BIND_TO_SOCKETS = 0x0008, /* =sockets */
 	CPU_BIND_TO_LDOMS   = 0x0010, /* locality domains */
-	CPU_BIND_TO_BOARDS  = 0x1000, /* =boards */
 	/* the following manual binding flags are mutually exclusive */
 	/* CPU_BIND_NONE needs to be the lowest value among manual bindings */
 	CPU_BIND_NONE	    = 0x0020, /* =no */

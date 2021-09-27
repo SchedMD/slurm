@@ -7,6 +7,7 @@ documents those changes that are of interest to users and administrators.
     other GRES have a defined type field.
  -- burst_buffer/datawarp - free bb_job after stage-out or teardown are done.
  -- acct_gather_energy_rsmi has been renamed acct_gather_energy_gpu.
+ -- Remove support for (non-functional) --cpu-bind=boards.
 
 * Changes in Slurm 21.08.2
 ==========================
