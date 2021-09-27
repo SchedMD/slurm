@@ -413,7 +413,7 @@ extern int receive_fd_over_pipe(int socket)
 
 	cmsg = CMSG_FIRSTHDR(&msg);
 	if (!cmsg) {
-		error("%s: CMSG_FIRSTHDR error: %m", __func__);
+		error("%s: CMSG_FIRSTHDR failed", __func__);
 		return -1;
 	}
 	memmove(&fd, CMSG_DATA(cmsg), sizeof(fd));
