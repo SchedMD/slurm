@@ -152,11 +152,12 @@ extern int handle_job_dependency_updates(void *object, void *arg);
  */
 extern bool job_is_completing(bitstr_t *eff_cg_bitmap);
 
-/* Determine if a pending job will run using only the specified nodes
- * (in job_desc_msg->req_nodes), build response message and return
- * SLURM_SUCCESS on success. Otherwise return an error code. Caller
- * must free response message */
-extern int job_start_data(job_desc_msg_t *job_desc_msg,
+/*
+ * Determine if a pending job will run using only the specified nodes, build
+ * response message and return SLURM_SUCCESS on success. Otherwise return an
+ * error code. Caller must free response message.
+ */
+extern int job_start_data(job_record_t *job_ptr,
 			  will_run_response_msg_t **resp);
 
 /*

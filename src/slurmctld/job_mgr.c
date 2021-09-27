@@ -5010,11 +5010,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	}
 
 	if (will_run && resp) {
-		job_desc_msg_t job_desc_msg;
 		int rc;
-		slurm_init_job_desc_msg(&job_desc_msg);
-		job_desc_msg.job_id = job_ptr->job_id;
-		rc = job_start_data(&job_desc_msg, resp);
+		rc = job_start_data(job_ptr, resp);
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->exit_code  = 1;
 		job_ptr->start_time = job_ptr->end_time = now;

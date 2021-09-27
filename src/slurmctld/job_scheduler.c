@@ -3865,15 +3865,13 @@ static int _part_weight_sort(void *x, void *y)
 }
 
 /*
- * Determine if a pending job will run using only the specified nodes
- * (in job_desc_msg->req_nodes), build response message and return
- * SLURM_SUCCESS on success. Otherwise return an error code. Caller
- * must free response message
+ * Determine if a pending job will run using only the specified nodes, build
+ * response message and return SLURM_SUCCESS on success. Otherwise return an
+ * error code. Caller must free response message.
  */
-extern int job_start_data(job_desc_msg_t *job_desc_msg,
+extern int job_start_data(job_record_t *job_ptr,
 			  will_run_response_msg_t **resp)
 {
-	job_record_t *job_ptr;
 	part_record_t *part_ptr;
 	bitstr_t *active_bitmap = NULL, *avail_bitmap = NULL;
 	bitstr_t *resv_bitmap = NULL;
@@ -3885,7 +3883,6 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	bool resv_overlap = false;
 	ListIterator iter = NULL;
 
-	job_ptr = find_job_record(job_desc_msg->job_id);
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID;
 
@@ -3912,17 +3909,17 @@ next_part:
 		return ESLURM_INVALID_PARTITION_NAME;
 	}
 
-	if ((job_desc_msg->req_nodes == NULL) ||
-	    (job_desc_msg->req_nodes[0] == '\0')) {
+	if (job_ptr->details->req_nodes && job_ptr->details->req_nodes[0]) {
+		if (node_name2bitmap(job_ptr->details->req_nodes, false,
+				     &avail_bitmap) != 0) {
+			if (iter)
+				list_iterator_destroy(iter);
+			return ESLURM_INVALID_NODE_NAME;
+		}
+	} else {
 		/* assume all nodes available to job for testing */
 		avail_bitmap = bit_alloc(node_record_count);
 		bit_nset(avail_bitmap, 0, (node_record_count - 1));
-	} else if (node_name2bitmap(job_desc_msg->req_nodes, false,
-				    &avail_bitmap) != 0) {
-		/* Don't need to check for each partition */
-		if (iter)
-			list_iterator_destroy(iter);
-		return ESLURM_INVALID_NODE_NAME;
 	}
 
 	/* Consider only nodes in this job's partition */

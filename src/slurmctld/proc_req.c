@@ -2658,8 +2658,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 							  &err_msg,
 							  msg->protocol_version);
 			} else {	/* existing job test */
-				error_code = job_start_data(job_desc_msg,
-							    &resp);
+				job_ptr = find_job_record(job_desc_msg->job_id);
+				error_code = job_start_data(job_ptr, &resp);
 			}
 			unlock_slurmctld(job_write_lock);
 			END_TIMER2("_slurm_rpc_job_will_run");
