@@ -1150,20 +1150,6 @@ Step 4 is performed by slurmd and the task plugin.
 				</font></p>
 			</td>
 		</tr>
-				<tr>
-			<td height="18" width="20%">
-				<p align="LEFT"><font face="Courier New, monospace"><font style="font-size: 8pt" size="1">
-				<a href="cgroup.conf.html">TaskAffinity</a></font></font></p>
-			</td>
-			<td height="18" width="20%">
-				<p align="LEFT"><font style="font-size: 8pt" size="1"><font face="Courier New, monospace">
-				yes|no</font></font></p>
-			</td>
-			<td width="60%">
-				<p align="LEFT"><font style="font-size: 8pt" size="1">
-				Controls whether task-to-CPU binding is enabled</font></p>
-			</td>
-		</tr>
 	</tbody></table>
 </center>
 <br>
@@ -3433,7 +3419,6 @@ TaskPlugin=task/cgroup
 </pre>
 <p>cgroup.conf options:</p>
 <pre>ConstrainCores=yes
-TaskAffinity=yes
 </pre>
 <p>Command line:</p>
 <pre>srun --nodes=1-1 --ntasks=6 --cpu-bind=cores ...
