@@ -344,6 +344,8 @@ static void _read_slurm_cgroup_conf(void)
 		if (!s_p_get_boolean(&slurm_cgroup_conf.task_affinity,
 				     "TaskAffinity", tbl))
 			slurm_cgroup_conf.task_affinity = false;
+		else if (slurm_cgroup_conf.task_affinity)
+			fatal("Support for TaskAffinity=yes in cgroup.conf has been removed. Consider adding task/affinity to TaskPlugins in slurm.conf instead.");
 
 		/* RAM and Swap constraints related conf items */
 		if (!s_p_get_boolean(&slurm_cgroup_conf.constrain_ram_space,

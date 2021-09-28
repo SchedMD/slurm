@@ -143,6 +143,8 @@ CONFIGURATION FILE CHANGES (see man appropriate man page for details)
  -- Added BcastParameters=send_libs and BcastExclude options.
  -- Remove the (incomplete) burst_buffer/generic plugin.
  -- Make SelectTypeParameters=CR_Core_Memory default for cons_tres and cons_res.
+ -- Remove support for TaskAffinity=yes in cgroup.conf. Adding task/affinity to
+    TaskPlugins in slurm.conf is strongly recommended instead.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
