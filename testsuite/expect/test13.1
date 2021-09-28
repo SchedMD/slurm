@@ -28,8 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 #
 # Report the slurm network and use it to establish window parameters
 #
@@ -84,9 +82,7 @@ send "$srun -N1 -O -n$windows_used $bin_sleep $step_delay &\r"
 for {set inx 0} {$inx < $windows_iterations} {incr inx} {
         expect {
                 -re "error" {
-                        log_error "Some error occurred"
-                        set exit_code 1
-                        exp_continue
+                        fail "Some error occurred"
                 }
 		-re $test_prompt {
 			log_debug "Spawning step $inx"
@@ -110,9 +106,7 @@ send "exit\r"
 
 expect {
 	-re "error" {
-		log_error "some error occurred"
-		set exit_code 1
-		exp_continue
+		fail "some error occurred"
 	}
 	timeout {
 		slow_kill $srun_pid
@@ -122,8 +116,3 @@ expect {
 		wait
 	}
 }
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
-

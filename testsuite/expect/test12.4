@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set test_acct   "test$test_id\_acct"
 set timeout 60
 
@@ -43,33 +42,20 @@ if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator. Use: sacctmgr mod user \$USER set admin=admin"
 }
 
+proc cleanup {} {
+	global sacctmgr test_acct
+
+	run_command "$sacctmgr -i delete account $test_acct"
+}
+
 set accounting_storage_type [get_config_param "AccountingStorageType"]
 
 set cluster [get_config_param "ClusterName"]
 #
-# Identify the user and his current default account
+# Identify the user and his group
 #
-set acct_name ""
-set user_name ""
-set user_gid ""
 set user_name [get_my_user_name]
-
 set user_gid [get_my_gid]
-
-set s_pid [spawn $sacctmgr show user $user_name]
-expect {
-	-re "$user_name *($re_word_str)" {
-		set acct_name $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $s_pid
-		fail "sacctmgr add not responding"
-	}
-	eof {
-		wait
-	}
-}
 
 #
 # Use sacctmgr to add an account
@@ -116,43 +102,11 @@ expect {
 #
 # Spawn a job via srun using this account
 #
-set job_id 0
-spawn $srun -N1 -v --account=$test_acct $bin_id
-expect {
-	-re "launching StepId=($number)\\.$re_word_str" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
+set output [run_command_output -fail "$srun -N1 -v --account=$test_acct $bin_id"]
+if {![regexp "launching StepId=($number)\.$re_word_str" $output - job_id]} {
+	fail "Did not get srun job id"
 }
-if {$job_id == 0} {
-	log_error "did not get srun job_id3"
-	set exit_code 1
-} else {
-	set matches 0
-	spawn $scontrol show job $job_id
-	expect {
-		 -re "Account=$test_acct" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$matches != 1} {
-		log_error "srun failed to use specified account"
-		set exit_code 1
-	}
-}
+subtest {[get_job_param $job_id "Account"] eq $test_acct} "Verify srun job is using the specified account"
 
 if {$accounting_storage_type eq "accounting_storage/slurmdbd"} {
 	sleep 12
@@ -180,7 +134,7 @@ proc sacct_job { soption job_id} {
 
 	eval spawn $total_opts
 
-	if { $soption == "-brief" || $soption == "b" } {
+	if {$soption eq "-brief" || $soption eq "b"} {
 		expect {
 			-re "Slurm accounting storage is disabled" {
 				set not_support 1
@@ -210,7 +164,7 @@ proc sacct_job { soption job_id} {
 		return $matches
 	}
 
-	if { $soption == "-long" || $soption == "l" } {
+	if {$soption eq "-long" || $soption eq "l"} {
 		expect {
 			-re "Slurm accounting storage is disabled" {
 				set not_support 1
@@ -264,7 +218,7 @@ proc sacct_job { soption job_id} {
 		return $matches
 	}
 
-	if { $soption == "-noheader" || $soption == "n" } {
+	if {$soption eq "-noheader" || $soption eq "n"} {
 		expect {
 			-re "Slurm accounting storage is disabled" {
 				set not_support 1
@@ -306,7 +260,7 @@ proc sacct_job { soption job_id} {
 		return $matches
 	}
 
-	if { $soption == "-parsable" || $soption == "p" } {
+	if {$soption eq "-parsable" || $soption eq "p"} {
 		expect {
 			-re "Slurm accounting storage is disabled" {
 				set not_support 1
@@ -336,7 +290,7 @@ proc sacct_job { soption job_id} {
 		return $matches
 	}
 
-	if { $soption == "-parsable2" || $soption == "P" } {
+	if {$soption eq "-parsable2" || $soption eq "P"} {
 		expect {
 			-re "Slurm accounting storage is disabled" {
 				set not_support 1
@@ -366,7 +320,7 @@ proc sacct_job { soption job_id} {
 		return $matches
 	}
 
-	if { $soption == "-verbose" || $soption == "v" } {
+	if {$soption eq "-verbose" || $soption eq "v"} {
 		expect {
 			-re "Slurm accounting storage is disabled" {
 				set not_support 1
@@ -429,7 +383,7 @@ proc sacct_vargs { soption vargs job_id} {
 
 	eval spawn $total_opts
 
-	if { $soption == "g" || $soption == "-gid" || $soption == "-group" || $soption == "u" || $soption == "-uid" || $soption == "-user"} {
+	if {$soption eq "g" || $soption eq "-gid" || $soption eq "-group" || $soption eq "u" || $soption eq "-uid" || $soption eq "-user"} {
 		expect {
 			-re "Slurm accounting storage is disabled" {
 				set not_support 1
@@ -510,183 +464,71 @@ expect {
 #
 # Spawn a job via srun using this account
 #
-set job_id 0
-spawn $srun -N1 -v --account=$test_acct $bin_id
-expect {
-	-re "launching StepId=($number)\\.$re_word_str" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
+set output [run_command_output -fail "$srun -N1 -v --account=$test_acct $bin_id"]
+if {![regexp "launching StepId=($number)\\.$re_word_str" $output - job_id]} {
+	fail "Did not get srun job id"
 }
-if {$job_id == 0} {
-	log_error "Did not get srun job_id3"
-	set exit_code 1
-} else {
-	set matches 0
-	spawn $scontrol show job $job_id
-	expect {
-		 -re "Account=$test_acct" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$matches != 1} {
-		log_error "srun failed to use specified account"
-		set exit_code 1
-	}
+subtest {[get_job_param $job_id "Account"] eq $test_acct} "Verify srun job is using the specified account"
 
-	if {$accounting_storage_type eq "accounting_storage/slurmdbd"} {
-		sleep 12
-	}
-
-#
-#	Wait for accounting data to be propagated to slurmdbd
-#
-	sleep 10
-
-	set matches [sacct_job b $job_id]
-	if {$matches != 2} {
-		log_error "sacct -b failed ($matches != 2)"
-		set exit_code 1
-	}
-
-	set matches [sacct_job -brief $job_id]
-	if {$matches != 2} {
-		log_error "sacct --brief failed ($matches != 2)"
-		set exit_code 1
-	}
-
-	set matches [sacct_vargs g $user_gid $job_id]
-	if {$matches != 3} {
-		log_error "sacct -g failed ($matches != 3)"
-		set exit_code 1
-	}
-
-	set matches [sacct_vargs -gid $user_gid $job_id]
-	if {$matches != 3} {
-		log_error "sacct --gid failed ($matches != 3)"
-		set exit_code 1
-	}
-
-	set matches [sacct_vargs -group $user_gid $job_id]
-	if {$matches != 3} {
-		log_error "sacct --group failed ($matches != 3)"
-		set exit_code 1
-	}
-
-	set matches [sacct_job l $job_id]
-	if {$matches != 8} {
-		log_error "sacct -l failed ($matches != 8)"
-		set exit_code 1
-	}
-
-	set matches [sacct_job -long $job_id]
-	if {$matches != 8} {
-		log_error "sacct --long failed ($matches != 8)"
-		set exit_code 1
-	}
-
-	set matches [sacct_job n $job_id]
-	if {$matches != 1} {
-		log_error "sacct -n failed ($matches != 1)"
-		set exit_code 1
-	}
-
-	set matches [sacct_job -noheader $job_id]
-	if {$matches != 1} {
-		log_error "sacct -n failed ($matches != 1)"
-		set exit_code 1
-	}
-
-	set matches [sacct_job p $job_id]
-	if {$matches != 2} {
-		log_error "sacct -p failed ($matches != 2)"
-		set exit_code 1
-	}
-
-	set matches [sacct_job -parsable $job_id]
-	if {$matches != 2} {
-		log_error "sacct --parsable failed ($matches != 2)"
-		set exit_code 1
-	}
-
-	set matches [sacct_job P $job_id]
-	if {$matches != 2} {
-		log_error "sacct -P failed ($matches != 2)"
-		set exit_code 1
-	}
-
-	set matches [sacct_job -parsable2 $job_id]
-	if {$matches != 2} {
-		log_error "sacct --parsable2 failed ($matches != 2)"
-		set exit_code 1
-	}
-
-	set matches [sacct_vargs u $user_name $job_id]
-	if {$matches != 3} {
-		log_error "sacct -g failed ($matches != 3)"
-		set exit_code 1
-	}
-
-	set matches [sacct_vargs -uid $user_name $job_id]
-	if {$matches != 3} {
-		log_error "sacct --gid failed ($matches != 3)"
-		set exit_code 1
-	}
-
-	set matches [sacct_vargs -user $user_name $job_id]
-	if {$matches != 3} {
-		log_error "sacct --group failed ($matches != 3)"
-		set exit_code 1
-	}
-
-	set matches [sacct_job v $job_id]
-	if {$matches != 4} {
-		log_error "sacct -v failed ($matches != 4)"
-		set exit_code 1
-	}
-
-	set matches [sacct_job -verbose $job_id]
-	if {$matches != 4} {
-		log_error "sacct --verbose failed ($matches != 4)"
-		set exit_code 1
-	}
+if {$accounting_storage_type eq "accounting_storage/slurmdbd"} {
+	sleep 12
 }
 
 #
-# Use sacctmgr to delete the test account
+# Wait for accounting data to be propagated to slurmdbd
 #
-set damatches 0
-set sadel_pid [spawn $sacctmgr -i delete account $test_acct]
-expect {
-	-re "Deleting account" {
-		incr damatches
-		exp_continue
-	}
-	timeout {
-		slow_kill $sadel_pid
-		fail "sacctmgr delete not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$damatches != 1} {
-	fail "sacctmgr had a problem deleting account"
-}
+sleep 10
 
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+set matches [sacct_job b $job_id]
+subtest {$matches == 2} "Verify sacct -b option" "sacct -b failed ($matches != 2)"
+
+set matches [sacct_job -brief $job_id]
+subtest {$matches == 2} "Verify sacct --brief option" "sacct --brief failed ($matches != 2)"
+
+set matches [sacct_vargs g $user_gid $job_id]
+subtest {$matches == 3} "Verify sacct -g option" "sacct -g failed ($matches != 3)"
+
+set matches [sacct_vargs -gid $user_gid $job_id]
+subtest {$matches == 3} "Verify sacct --gid option" "sacct --gid failed ($matches != 3)"
+
+set matches [sacct_vargs -group $user_gid $job_id]
+subtest {$matches == 3} "Verify sacct --group option" "sacct --group failed ($matches != 3)"
+
+set matches [sacct_job l $job_id]
+subtest {$matches == 8} "Verify sacct -l option" "sacct -l failed ($matches != 8)"
+
+set matches [sacct_job -long $job_id]
+subtest {$matches == 8} "Verify sacct --long option" "sacct --long failed ($matches != 8)"
+
+set matches [sacct_job n $job_id]
+subtest {$matches == 1} "Verify sacct -n option" "sacct -n failed ($matches != 1)"
+
+set matches [sacct_job -noheader $job_id]
+subtest {$matches == 1} "Verify sacct --noheader option" "sacct --noheader failed ($matches != 1)"
+
+set matches [sacct_job p $job_id]
+subtest {$matches == 2} "Verify sacct -p option" "sacct -p failed ($matches != 2)"
+
+set matches [sacct_job -parsable $job_id]
+subtest {$matches == 2} Verify sacct --parsable option" "sacct --parsable failed ($matches != 2)"
+
+set matches [sacct_job P $job_id]
+subtest {$matches == 2} "Verify sacct -P option" "sacct -P failed ($matches != 2)"
+
+set matches [sacct_job -parsable2 $job_id]
+subtest {$matches == 2} "Verify sacct --parsable2 option" "sacct --parsable2 failed ($matches != 2)"
+
+set matches [sacct_vargs u $user_name $job_id]
+subtest {$matches == 3} "Verify sacct -u option" "sacct -g failed ($matches != 3)"
+
+set matches [sacct_vargs -uid $user_name $job_id]
+subtest {$matches == 3} "Verify sacct --uid option" "sacct --gid failed ($matches != 3)"
+
+set matches [sacct_vargs -user $user_name $job_id]
+subtest {$matches == 3} "Verify sacct --user option" "sacct --group failed ($matches != 3)"
+
+set matches [sacct_job v $job_id]
+subtest {$matches == 4} "Verify sacct -v option" "sacct -v failed ($matches != 4)"
+
+set matches [sacct_job -verbose $job_id]
+subtest {$matches == 4} "Verify sacct --verbose option" "sacct --verbose failed ($matches != 4)"
