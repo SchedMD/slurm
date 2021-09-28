@@ -51,7 +51,6 @@ if {[get_partition_param [default_partition] "OverSubscribe"] != "NO"} {
 	skip "This tests not works if OverSubscribe is enabled"
 }
 
-# Clean jobs and print success/failure based on exit_code
 proc cleanup { } {
 	global job_id job_pd job_bf
 	cancel_job [list $job_id $job_pd $job_bf]

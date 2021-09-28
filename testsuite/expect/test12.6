@@ -28,13 +28,19 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_out    "test$test_id.output"
-set file_prog   "test$test_id.prog"
+set file_out    "$test_name.output"
+set file_prog   "$test_name.prog"
+set hdf5_file   "$test_name.h5"
 set job_id      0
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
+}
+
+proc cleanup {} {
+	global file_prog file_out hdf5_file
+
+	file delete $file_prog $file_out $hdf5_file
 }
 
 # Check if acct_gather_profile/hdf5 is installed
@@ -108,7 +114,6 @@ expect {
 	}
 }
 
-set hdf5_file "job_$job_id.h5"
 set srun_pid [spawn $sh5util -j $job_id -E -l Node:TimeSeries -s Tasks -o $file_out]
 expect {
 	"Output file generated is empty" {
@@ -144,20 +149,13 @@ while {$fd > 0 && [gets $fd line] != -1} {
 		set read_disk_col [lsearch $tokens "ReadMB"]
 
 		if {$et_col == -1} {
-			log_error "No ElapsedTime column found"
-			set exit_code 1
+			fail "No ElapsedTime column found"
 		}
 		if {$cpu_util_col == -1} {
-			log_error "No CPUUtilization column found"
-			set exit_code 1
+			fail "No CPUUtilization column found"
 		}
 		if {$read_disk_col == -1} {
-			log_error "No ReadMB column found"
-			set exit_code 1
-		}
-
-		if {$exit_code} {
-			break
+			fail "No ReadMB column found"
 		}
 		continue
 	}
@@ -199,21 +197,9 @@ while {$fd > 0 && [gets $fd line] != -1} {
 close $fd
 
 if {$lno == 0} {
-	log_error "$file_out is empty"
-	set exit_code 1
+	fail "$file_out is empty"
 }
 
 if {$nerr > 3} {
-	log_error "$nerr is too many values out of range"
-		set exit_code 1
-}
-
-if {$exit_code == 0} {
-	exec rm -f $file_prog $file_out $hdf5_file
-} else {
-	exec mv $hdf5_file test$test_id.hdf5
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	fail "$nerr is too many values out of range"
 }
