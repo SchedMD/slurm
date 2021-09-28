@@ -69,7 +69,7 @@ if {[get_config_param "JobAcctGatherType"] eq "jobacct_gather/none"} {
 if {[get_config_param "SlurmdUser"] ne "root(0)"} {
 	skip "This test is incompatible with SlurmdUser != root"
 }
-if {![param_contains [get_affinity_types] "affinity"] && [get_config_param "TaskAffinity"] ne "yes"} {
+if {![param_contains [get_affinity_types] "affinity"]} {
 	skip "This test requires some form of task affinity"
 }
 set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
