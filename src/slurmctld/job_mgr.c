@@ -2334,9 +2334,6 @@ static int _load_job_state(buf_t *buffer, uint16_t protocol_version)
 		/* make sure we have started this job in accounting */
 		if (!job_ptr->db_index) {
 			debug("starting %pJ in accounting", job_ptr);
-			if (!with_slurmdbd)
-				jobacct_storage_g_job_start(
-					acct_db_conn, job_ptr);
 			if (slurmctld_init_db
 			    && IS_JOB_SUSPENDED(job_ptr)) {
 				jobacct_storage_g_job_suspend(acct_db_conn,
@@ -5110,8 +5107,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->exit_code  = 1;
 		job_ptr->start_time = job_ptr->end_time = now;
 		purge_job_record(job_ptr->job_id);
-	} else if (!with_slurmdbd)
-		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+	}
 
 	if (!will_run) {
 		sched_debug2("%pJ allocated resources: NodeList=%s",
@@ -15593,8 +15589,6 @@ void batch_requeue_fini(job_record_t *job_ptr)
 	/* Reset this after the batch step has finished or the batch step
 	 * information will be attributed to the next run of the job. */
 	job_ptr->db_index = 0;
-	if (!with_slurmdbd)
-		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	/* Submit new sibling jobs for fed jobs */
 	if (fed_mgr_is_origin_job(job_ptr)) {
@@ -15807,9 +15801,6 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 	 * elsewhere, so don't call it here. */
 	if (IS_JOB_RESIZING(job_ptr))
 		return;
-
-	if (!with_slurmdbd && !job_ptr->db_index)
-		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	if (!(job_ptr->bit_flags & TRES_STR_CALC) &&
 	    job_ptr->tres_alloc_cnt &&
