@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set job_id      0
 
 #
@@ -63,16 +62,14 @@ set timeout $max_job_delay
 set salloc_pid [spawn $salloc -N1 --deadline now+1hour --begin=now+1 --time-min 20 -t120 $bin_sleep 1]
 expect {
 	-re "Requested time limit is invalid" {
-		set exit_code 1
-		exp_continue
+		fail "Unexpected time limit error"
 	}
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding. This can be due to QOS or account time limit <120 minutes"
-		set exit_code 1
+		fail "salloc not responding. This can be due to QOS or account time limit <120 minutes"
 	}
 	eof {
 		wait
@@ -94,13 +91,10 @@ expect {
 		exp_continue
 	}
 	-re "TimeLimit=" {
-		log_error "Time limit is different from deadline"
-		set exit_code 1
-		exp_continue
+		fail "Time limit is different from deadline"
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait

@@ -29,8 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-
 #
 # Spawn initial program via srun
 # Send the signal while the srun is waiting for a resource allocation
@@ -54,10 +52,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding"
-		set wait_flag -999
-		slow_kill $salloc_pid
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		log_debug "EOF"
@@ -66,8 +61,4 @@ expect {
 }
 if {[expr $wait_flag + $abort_flag] != 2} {
 	fail "salloc failed to process SIGINT while waiting for allocation"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

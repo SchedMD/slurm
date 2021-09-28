@@ -28,8 +28,7 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id.input"
+set file_in     "$test_name.input"
 
 #
 # Submit a job with invalid constraint requirement
@@ -44,27 +43,16 @@ expect {
 		exp_continue
 	}
 	-re "Granted job allocation ($number)" {
-		log_error "salloc job submitted with invalid constraint"
-		set exit_code 1
-		send "exit\r"
+		fail "salloc job submitted with invalid constraint"
 	}
 	-re "Pending job allocation ($number)" {
-		log_error "salloc job submitted with invalid constraint"
-		set exit_code 1
-		exp_continue
+		fail "salloc job submitted with invalid constraint"
 	}
 	timeout {
-		log_error "salloc not responding"
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$err_msg != 1} {
-	fail "Job failed to report required error"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$err_msg == 1} "A job with invalid constraint requirement should fail with error"

@@ -30,10 +30,15 @@
 source ./globals
 
 set def_part_name    ""
-set exit_code        0
 set file_in          "test$test_id.input"
 set job_id           0
 set other_part_name  ""
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 #
 # Identify the partitions in the cluster, identifying the default
@@ -72,41 +77,20 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
 	}
 }
-# Confirm the job's partition
 if {$job_id == 0} {
-	log_error "Job submit failure"
-	set exit_code 1
-} else {
-	set read_part ""
-	spawn $scontrol show job $job_id
-	expect {
-		-re "Partition=($re_word_str)" {
-			set read_part $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if ([string compare $read_part $def_part_name]) {
-		log_error "Improper partition selected"
-		set exit_code 1
-	}
-	cancel_job $job_id
+	fail "Job submit failure"
 }
+
+# Confirm the job's partition
+set read_part [get_job_param $job_id "Partition"]
+subtest {$read_part eq $def_part_name} "Confirm that the job used the default partition" "$read_part != $def_part_name"
+cancel_job $job_id
 
 #
 # Test if a non-default partition exists, terminate if none
@@ -132,10 +116,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
@@ -145,31 +126,7 @@ expect {
 if {$legit_failure == 1} {
 	log_warn "Partition '$other_part_name' is not usable"
 } elseif {$job_id == 0} {
-	log_error "Batch submit failure"
-	set exit_code 1
-} else {
-	set read_part ""
-	spawn $scontrol show job $job_id
-	expect {
-		-re "Partition=($re_word_str)" {
-			set read_part $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if ([string compare $read_part $other_part_name]) {
-		log_error "Improper partition selected"
-		set exit_code 1
-	}
-	cancel_job $job_id
+	fail "Batch submit failure"
 }
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+set read_part [get_job_param $job_id "Partition"]
+subtest {$read_part eq $other_part_name} "Confirm that the job used the other partition" "$read_part != $other_part_name"

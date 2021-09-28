@@ -28,16 +28,21 @@
 ############################################################################
 source ./globals
 
-set exit_code            0
+set job_id  0
 
 if {[get_config_param "FrontendName"] ne "MISSING" && ![is_super_user]} {
 	skip "This test is incompatible with front-end systems"
 }
 
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
 #
 # Submit a slurm job that will execute bogus job name
 #
-set job_id  0
 set matches 0
 set timeout $max_job_delay
 set salloc_pid [spawn $salloc -N1 -t1 /bad/bad/bad]
@@ -52,10 +57,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
@@ -63,8 +65,4 @@ expect {
 }
 if {$matches != 1} {
 	fail "Unexpected output from bad job name"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
