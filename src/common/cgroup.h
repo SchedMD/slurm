@@ -151,7 +151,6 @@ typedef struct {
 	char *cgroup_prepend;
 
 	bool constrain_cores;
-	bool task_affinity;
 
 	bool constrain_ram_space;
 	float allowed_ram_space;

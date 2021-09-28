@@ -134,7 +134,6 @@ static void _clear_slurm_cgroup_conf()
 	xfree(slurm_cgroup_conf.cgroup_mountpoint);
 	xfree(slurm_cgroup_conf.cgroup_prepend);
 	slurm_cgroup_conf.constrain_cores = false;
-	slurm_cgroup_conf.task_affinity = false;
 	slurm_cgroup_conf.constrain_ram_space = false;
 	slurm_cgroup_conf.allowed_ram_space = 100;
 	slurm_cgroup_conf.max_ram_percent = 100;
@@ -170,7 +169,6 @@ static void _pack_cgroup_conf(buf_t *buffer)
 	packstr(slurm_cgroup_conf.cgroup_prepend, buffer);
 
 	packbool(slurm_cgroup_conf.constrain_cores, buffer);
-	packbool(slurm_cgroup_conf.task_affinity, buffer);
 
 	packbool(slurm_cgroup_conf.constrain_ram_space, buffer);
 	packfloat(slurm_cgroup_conf.allowed_ram_space, buffer);
@@ -215,7 +213,6 @@ static int _unpack_cgroup_conf(buf_t *buffer)
 			       &uint32_tmp, buffer);
 
 	safe_unpackbool(&slurm_cgroup_conf.constrain_cores, buffer);
-	safe_unpackbool(&slurm_cgroup_conf.task_affinity, buffer);
 
 	safe_unpackbool(&slurm_cgroup_conf.constrain_ram_space, buffer);
 	safe_unpackfloat(&slurm_cgroup_conf.allowed_ram_space, buffer);
@@ -322,11 +319,6 @@ static void _read_slurm_cgroup_conf(void)
 		if (!s_p_get_boolean(&slurm_cgroup_conf.constrain_cores,
 				     "ConstrainCores", tbl))
 			slurm_cgroup_conf.constrain_cores = false;
-		if (!s_p_get_boolean(&slurm_cgroup_conf.task_affinity,
-				     "TaskAffinity", tbl))
-			slurm_cgroup_conf.task_affinity = false;
-		else if (slurm_cgroup_conf.task_affinity)
-			fatal("Support for TaskAffinity=yes in cgroup.conf has been removed. Consider adding task/affinity to TaskPlugins in slurm.conf instead.");
 
 		/* RAM and Swap constraints related conf items */
 		if (!s_p_get_boolean(&slurm_cgroup_conf.constrain_ram_space,
@@ -543,12 +535,6 @@ extern List cgroup_get_conf_list(void)
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ConstrainCores");
 	key_pair->value = xstrdup_printf("%s", cg_conf->constrain_cores ?
-					 "yes" : "no");
-	list_append(cgroup_conf_l, key_pair);
-
-	key_pair = xmalloc(sizeof(config_key_pair_t));
-	key_pair->name = xstrdup("TaskAffinity");
-	key_pair->value = xstrdup_printf("%s", cg_conf->task_affinity ?
 					 "yes" : "no");
 	list_append(cgroup_conf_l, key_pair);
 

@@ -59,7 +59,6 @@ const uint32_t plugin_version   = SLURM_VERSION_NUMBER;
 static bool use_cpuset  = false;
 static bool use_memory  = false;
 static bool use_devices = false;
-static bool do_task_affinity = false;
 
 extern int init(void)
 {
@@ -75,8 +74,6 @@ extern int init(void)
 		use_memory = true;
 	if (slurm_cgroup_conf.constrain_devices)
 		use_devices = true;
-	if (slurm_cgroup_conf.task_affinity)
-		do_task_affinity = true;
 
 	if (use_cpuset) {
 		if ((rc = task_cgroup_cpuset_init())) {
@@ -196,9 +193,6 @@ extern int task_p_pre_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
  */
 extern int task_p_set_affinity(stepd_step_rec_t *job, uint32_t node_tid)
 {
-	if (use_cpuset && do_task_affinity)
-		return task_cgroup_cpuset_set_task_affinity(job, node_tid);
-
 	return SLURM_SUCCESS;
 }
 
