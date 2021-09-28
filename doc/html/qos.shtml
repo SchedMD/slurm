@@ -105,11 +105,15 @@ characteristics. Valid options are:
 
 <ul>
 <li><b>DenyOnLimit</b> If set, jobs using this QOS will be rejected at
-submission time if they do not conform to the QOS 'Max' limits.  Group
-limits will also be treated like 'Max' limits as well and will be
-denied if they go over. By default jobs that go over these limits
-will pend until they conform.  This currently only applies to QOS and
-Association limits.
+submission time if they do not conform to the QOS 'Max' limits as
+stand-alone jobs.
+Jobs that go over these limits when other jobs are considered, but conform
+to the limits when considered individually will not be rejected. Instead they
+will pend until resources are available (as by default without DenyOnLimit).
+Group limits (e.g. GrpTRES) will also be treated like 'Max' limits
+(e.g. MaxTRESPerNode) and jobs will be denied if they would violate the
+limit as stand-alone jobs.
+This currently only applies to QOS and Association limits.
 
 <li><b>EnforceUsageThreshold</b> If set, and the QOS also has a UsageThreshold,
 any jobs submitted with this QOS that fall below the UsageThreshold
@@ -149,9 +153,8 @@ of resources for an association that has access to it.  Account/user
 usage will still be decayed for associations using the QOS.  The QOS
 GrpTRESMins and GrpWall limits can be increased or
 the QOS RawUsage value reset to 0 (zero) to again allow jobs submitted
-with this QOS to be queued (if DenyOnLimit is set) or run (pending with
-QOSGrp{TRES}MinutesLimit or QOSGrpWallLimit
-reasons, where {TRES} is some type of trackable resource).
+with this QOS to run (if pending with QOSGrp{TRES}MinutesLimit or
+QOSGrpWallLimit reasons, where {TRES} is some type of trackable resource).
 
 <li><b>UsageFactorSafe</b> If set, and <b>AccountingStorageEnforce</b> includes
 <b>Safe</b>, jobs will only be able to run if the job can run to completion
@@ -320,6 +323,6 @@ $ sacctmgr delete qos alligator
   alligator
 </pre>
 
-<p style="text-align: center;">Last modified 2 June 2021</p>
+<p style="text-align: center;">Last modified 28 September 2021</p>
 
 <!--#include virtual="footer.txt"-->

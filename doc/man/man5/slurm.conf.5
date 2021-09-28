@@ -2454,8 +2454,6 @@ before granting a new job allocation (e.g.
 The program executes as SlurmUser on the same node where the slurmctld daemon
 executes, giving it permission to drain
 nodes and requeue the job if a failure occurs or cancel the job if appropriate.
-The program can be used to reboot nodes or perform other work to prepare
-resources for use.
 Exactly what the program does and how it accomplishes this is completely at
 the discretion of the system administrator.
 Information about the job being initiated, its allocated nodes, etc. are
@@ -5090,11 +5088,11 @@ Also refer to DenyAccounts.
 
 .TP
 \fBAllowGroups\fR
-Comma\-separated list of group names which may view and execute jobs in this
+Comma\-separated list of group names which may execute jobs in this
 partition.
-A user will be permitted to view and submit a job to this partition if
+A user will be permitted to submit a job to this partition if
 AllowGroups has \fBat least one\fR group associated with the user.
-Jobs executed as user root or as user SlurmUser will be allowed to view and
+Jobs executed as user root or as user SlurmUser will be allowed to
 use any partition, regardless of the value of AllowGroups. In addition, a Slurm
 Admin or Operator will be able to view any partition, regardless of the value
 of AllowGroups.
@@ -5103,8 +5101,11 @@ srun's \-\-uid option), then the job will be subject to AllowGroups as if it
 were submitted by that user.
 By default, AllowGroups is unset, meaning all groups are allowed to use this
 partition. The special value 'ALL' is equivalent to this.
-Even when PrivateData does not hide partition information, AllowGroups will
-still hide partition information accordingly.
+Users who are not members of the specified group will not see information
+about this partition by default. However, this should not be treated as a
+security mechanism, since job information will be returned if a user requests
+details about the partition or a specific job. See the \fBPrivateData\fR
+parameter to restrict access to job information.
 \fBNOTE:\fR For performance reasons, Slurm maintains a list of user IDs
 allowed to use each partition and this is checked at job submission time.
 This list of user IDs is updated when the \fBslurmctld\fR daemon is restarted,

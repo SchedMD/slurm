@@ -1,4 +1,4 @@
-.TH sacct "1" "Slurm Commands" "June 2021" "Slurm Commands"
+.TH sacct "1" "Slurm Commands" "September 2021" "Slurm Commands"
 
 .SH "NAME"
 sacct \- displays accounting data for all jobs and job steps in the
@@ -484,15 +484,16 @@ list of wckey names.  Space characters are not allowed in the
 \f2wckey_list\fP. Default is all wckeys\&.
 
 .TP
-\fB\-\-whole\-hetjob\fR=<\fIyes\fR|\fIno\fR>
-When querying heterogeneous jobs, Slurm by default retrieves the information
-about all the components of the job if the het_job_id (leader id) is selected.
-If a non\-leader heterogeneous job component id is selected only that component
-is retrieved by default. This behavior can be changed by using this option. If
-set to 'yes' or no value is set, then information about all the components
-will be retrieved no matter which component is selected in the job filter.
-Otherwise, if set to 'no' then only the selected heterogeneous job components
-will be retrieved, even when selecting the leader.
+\fB\-\-whole\-hetjob\fR[=yes|no]
+When querying and filtering heterogeneous jobs with \fB\-\-jobs\fR, Slurm will
+default to retrieving information about all the components of the job if the
+het_job_id (leader id) is selected. If a non\-leader heterogeneous job component
+id is selected then only that component is retrieved by default. This behavior
+can be changed by using this option. If set to 'yes' (or no argument), then
+information about all the components will be retrieved no matter which component
+is selected in the job filter. If set to 'no' then only the selected
+heterogeneous job component(s) will be retrieved, even when selecting the
+leader.
 
 .TP
 \fB\-\-yaml\fR

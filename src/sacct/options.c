@@ -467,11 +467,13 @@ sacct [<OPTION>]                                                            \n \
      -V, --version: Print version.                                          \n\
      -W, --wckeys:                                                          \n\
                    Only send data about these wckeys.  Default is all.      \n\
-     --whole-hetjob=[yes|no]:                                               \n\
-		   If set to 'yes' (or not set), then information about all \n\
-		   the heterogeneous components will be retrieved. If set   \n\
-		   to 'no' only the specific filtered components will be    \n\
-		   retrieved.                                               \n\
+     --whole-hetjob[=yes|no]:                                               \n\
+		   If set to 'yes' (or no argument), then information about \n\
+		   all the heterogeneous components will be retrieved. If   \n\
+		   set to 'no' only the specific filtered components will   \n\
+		   be retrieved. The default behavior without this option is\n\
+		   that all components are retrieved only if filtering the  \n\
+		   leader component with --jobs.                            \n\
      -x, --associations:                                                    \n\
                    Only send data about these association id.  Default is all.\n\
      -X, --allocations:                                                     \n\

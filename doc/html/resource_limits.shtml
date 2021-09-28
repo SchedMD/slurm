@@ -132,7 +132,7 @@ for the cluster/account pair, and if both are not specified
 then the option for the cluster, and if that also is not
 specified then no limit will apply.</p>
 <p><b>NOTE:</b> Unless noted, if a job request breaches a given limit
-the job will pend unless the job's QOS has the DenyOnLimit
+on its own, the job will pend unless the job's QOS has the DenyOnLimit
 flag set, which will cause the job to be denied at submission.  When
 Grp limits are considered with respect to this flag the Grp limit
 is treated as a Max limit.</p>
@@ -408,6 +408,6 @@ end
   See <a href="tres.html">Trackable Resources TRES</a> for details.
 </p>
 
-<p style="text-align: center;">Last modified 9 April 2021</p>
+<p style="text-align: center;">Last modified 28 September 2021</p>
 
 <!--#include virtual="footer.txt"-->
