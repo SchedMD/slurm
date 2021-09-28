@@ -295,7 +295,6 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 		(job_ptr->array_job_id) ? job_ptr->array_task_id : NO_VAL;
 	uint64_t job_db_inx = job_ptr->db_index;
 	job_array_struct_t *array_recs = job_ptr->array_recs;
-	char *tres_alloc_str = NULL;
 
 	if ((!job_ptr->details || !job_ptr->details->submit_time)
 	    && !job_ptr->resize_time) {
@@ -498,7 +497,7 @@ no_rollup_change:
 		else
 			xstrcat(query, ", array_task_str, array_task_pending");
 
-		if (job_ptr->tres_alloc_str || tres_alloc_str)
+		if (job_ptr->tres_alloc_str)
 			xstrcat(query, ", tres_alloc");
 		if (job_ptr->tres_req_str)
 			xstrcat(query, ", tres_req");
@@ -554,9 +553,7 @@ no_rollup_change:
 		else
 			xstrcat(query, ", NULL, 0");
 
-		if (tres_alloc_str)
-			xstrfmtcat(query, ", '%s'", tres_alloc_str);
-		else if (job_ptr->tres_alloc_str)
+		if (job_ptr->tres_alloc_str)
 			xstrfmtcat(query, ", '%s'", job_ptr->tres_alloc_str);
 		if (job_ptr->tres_req_str)
 			xstrfmtcat(query, ", '%s'", job_ptr->tres_req_str);
@@ -628,9 +625,7 @@ no_rollup_change:
 			xstrfmtcat(query, ", array_task_str=NULL, "
 				   "array_task_pending=0");
 
-		if (tres_alloc_str)
-			xstrfmtcat(query, ", tres_alloc='%s'", tres_alloc_str);
-		else if (job_ptr->tres_alloc_str)
+		if (job_ptr->tres_alloc_str)
 			xstrfmtcat(query, ", tres_alloc='%s'",
 				   job_ptr->tres_alloc_str);
 		if (job_ptr->tres_req_str)
@@ -701,9 +696,7 @@ no_rollup_change:
 			xstrfmtcat(query, "array_task_str=NULL, "
 				   "array_task_pending=0, ");
 
-		if (tres_alloc_str)
-			xstrfmtcat(query, "tres_alloc='%s', ", tres_alloc_str);
-		else if (job_ptr->tres_alloc_str)
+		if (job_ptr->tres_alloc_str)
 			xstrfmtcat(query, "tres_alloc='%s', ",
 				   job_ptr->tres_alloc_str);
 		if (job_ptr->tres_req_str)
@@ -762,7 +755,6 @@ no_rollup_change:
 			as_mysql_suspend(mysql_conn, job_db_inx, job_ptr);
 	}
 
-	xfree(tres_alloc_str);
 	xfree(query);
 
 	return rc;
@@ -1016,7 +1008,6 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 	int rc = SLURM_SUCCESS, job_state;
 	time_t submit_time, end_time;
 	uint32_t exit_code = 0;
-	char *tres_alloc_str = NULL;
 
 	if (!job_ptr->db_index
 	    && ((!job_ptr->details || !job_ptr->details->submit_time)
@@ -1124,9 +1115,7 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 	if (job_ptr->derived_ec != NO_VAL)
 		xstrfmtcat(query, ", derived_ec=%u", job_ptr->derived_ec);
 
-	if (tres_alloc_str)
-		xstrfmtcat(query, ", tres_alloc='%s'", tres_alloc_str);
-	else if (job_ptr->tres_alloc_str)
+	if (job_ptr->tres_alloc_str)
 		xstrfmtcat(query, ", tres_alloc='%s'", job_ptr->tres_alloc_str);
 
 	if (job_ptr->comment)
@@ -1157,7 +1146,6 @@ extern int as_mysql_job_complete(mysql_conn_t *mysql_conn,
 	rc = mysql_db_query(mysql_conn, query);
 	xfree(query);
 
-	xfree(tres_alloc_str);
 	return rc;
 }
 
