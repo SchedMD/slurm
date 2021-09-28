@@ -2168,6 +2168,9 @@ _wait_for_any_task(stepd_step_rec_t *job, bool waitflag)
 
 			setenvf(&job->env, "SLURM_SCRIPT_CONTEXT",
 				"epilog_task");
+			setenvf(&job->env, "SLURMD_NODENAME", "%s",
+				conf->node_name);
+
 			if (job->task_epilog) {
 				_run_script_as_user("user task_epilog",
 						    job->task_epilog,
