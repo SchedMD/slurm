@@ -4184,11 +4184,10 @@ The default value is "task/none".
 
 .RS
 \fBNOTE:\fR It is recommended to stack \fBtask/affinity,task/cgroup\fR together
-when configuring TaskPlugin, and setting \fBTaskAffinity=no\fR and
-\fBConstrainCores=yes\fR in \fBcgroup.conf\fR. This setup uses the task/affinity
-plugin for setting the affinity of the tasks (which is better and different than
-task/cgroup) and uses the task/cgroup plugin to fence tasks into the specified
-resources, thus combining the best of both pieces.
+when configuring TaskPlugin, and setting \fBConstrainCores=yes\fR in
+\fBcgroup.conf\fR. This setup uses the task/affinity plugin for setting the
+affinity of the tasks and uses the task/cgroup plugin to fence tasks into the
+specified resources.
 
 \fBNOTE:\fR For CRAY systems only: task/cgroup must be used with, and listed
 \fBafter\fR task/cray_aries in TaskPlugin. The task/affinity plugin can be listed

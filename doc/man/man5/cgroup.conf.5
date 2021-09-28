@@ -194,22 +194,6 @@ Set a lower bound (in MB) on the memory limits defined by
 accidentally creating a memory cgroup with such a low limit that slurmstepd
 is immediately killed due to lack of RAM. The default limit is 30M.
 
-.TP
-\fBTaskAffinity\fR=<yes|no>
-If configured to "yes" then set a default task affinity to bind each step
-task to a subset of the allocated cores using \fBsched_setaffinity\fP.
-The default value is "no".
-
-\fBNOTE\fR: The recommended configuration to bind steps to tasks is to set
-\fBTaskPlugin=task/affinity,task/cgroup\fR in the slurm.conf and set
-\fBTaskAffinity=no\fR with \fBConstrainCores=yes\fR in the cgroup.conf.
-This setup uses the \fBtask/affinity\fR plugin for setting the affinity of the
-tasks and uses the \fBtask/cgroup\fR plugin to fence tasks into the specified
-resources, combining the best of both pieces.
-
-\fBNOTE\fR: This feature requires the Portable Hardware Locality (hwloc) library
-to be installed.
-
 .SH "DISTRIBUTION\-SPECIFIC NOTES"
 
 .LP
@@ -238,7 +222,6 @@ ConstrainDevices=yes
 ConstrainKmemSpace=no        #avoid known Kernel issues
 ConstrainRAMSpace=yes
 ConstrainSwapSpace=yes
-TaskAffinity=no              #use task/affinity plugin instead
 .fi
 .TP
 \fB/etc/slurm/slurm.conf\fR:
