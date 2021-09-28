@@ -334,6 +334,7 @@ extern uint16_t slurm_get_track_wckey(void)
  */
 bool slurm_with_slurmdbd(void)
 {
+	static bool with_slurmdbd = false;
 	static bool is_set = false;
 	slurm_conf_t *conf;
 

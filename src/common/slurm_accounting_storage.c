@@ -53,7 +53,6 @@
 #include "src/sacctmgr/sacctmgr.h"
 #include "src/slurmctld/slurmctld.h"
 
-int with_slurmdbd = 0;
 uid_t db_api_uid = -1;
 /*
  * Local data
@@ -300,7 +299,7 @@ static bool init_run = false;
 extern int jobacct_storage_job_start_direct(void *db_conn,
 					    job_record_t *job_ptr)
 {
-	if (with_slurmdbd && !job_ptr->db_index)
+	if (slurm_with_slurmdbd() && !job_ptr->db_index)
 		return SLURM_SUCCESS;
 
 	return jobacct_storage_g_job_start(db_conn, job_ptr);

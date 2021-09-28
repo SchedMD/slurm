@@ -434,9 +434,7 @@ int main(int argc, char **argv)
 
 	association_based_accounting = slurm_with_slurmdbd();
 	accounting_enforce = slurm_conf.accounting_storage_enforce;
-	if (!xstrcasecmp(slurm_conf.accounting_storage_type,
-	                 "accounting_storage/slurmdbd")) {
-		with_slurmdbd = 1;
+	if (slurm_with_slurmdbd()) {
 		/* we need job_list not to be NULL */
 		init_job_conf();
 	}

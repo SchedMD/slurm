@@ -9520,7 +9520,7 @@ static int _list_find_job_old(void *job_entry, void *key)
 	 * job_start won't pend for job_db_inx when the job is finished.
 	 */
 end_it:
-	if (with_slurmdbd && !job_ptr->db_index)
+	if (slurm_with_slurmdbd() && !job_ptr->db_index)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	return 1;		/* Purge the job */
