@@ -28,7 +28,6 @@ source ./globals_accounting
 
 set test_lua_reject	"test$test_id\_scripts/reject.lua"
 set test_lua_pass	"test$test_id\_scripts/pass.lua"
-set exit_code		 0
 set cwd			"[$bin_pwd]"
 set job_name		"test$test_id"
 set is_skip              0
@@ -68,10 +67,18 @@ proc create_accounts {} {
 	log_info "create account and QOS"
 
 	# Create test assoc and accounts
-	check_rc [add_qos $tq1 [array get qos_1]]
-	check_rc [add_qos $tq2 [array get qos_2]]
-	check_rc [add_acct $ta1 [array get acct_1]]
-	check_rc [add_user $tu1 [array get user_req_1]]
+	if [add_qos $tq1 [array get qos_1]] {
+		fail "Unable to add qos $tq1"
+	}
+	if [add_qos $tq2 [array get qos_2]] {
+		fail "Unable to add qos $tq2"
+	}
+	if [add_acct $ta1 [array get acct_1]] {
+		fail "Unable to add account $ta1"
+	}
+	if [add_user $tu1 [array get user_req_1]] {
+		fail "Unable to add user $tu1"
+	}
 }
 
 # Cleanup test assoc and accounts
@@ -85,12 +92,6 @@ proc cleanup_accounts {} {
 
 	log_info "remove account: $ta1"
 	remove_acct "" $ta1
-}
-
-proc check_rc { exit_code } {
-	if {$exit_code != 0} {
-		fail "Exiting with exit code $exit_code"
-	}
 }
 
 proc test_bin_pass { num bin args het_job count } {
@@ -297,9 +298,6 @@ test_bin_fail "F5" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq1 
 test_bin_fail "F6" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq1 -n5 --array 10 --wrap $bin_true} 0 1
 test_bin_fail "F7" $sbatch {-t1 -J $job_name -o /dev/null -W -A $ta1 --qos $tq1 -n5 : -n3 : -n1 --wrap $bin_true} 1 3
 
-if {$exit_code} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
 if {$is_skip} {
 	skip "Some subtests were skipped"
 }

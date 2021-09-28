@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
 set file_in          "test$test_id.input"
 set file_out         "test$test_id.output"
 set file_prog        "test$test_id.prog"
@@ -87,9 +86,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 #
 # Inspect the job's output file
 #
-if {[wait_for_file $file_out] != 0} {
-	fail "Job $job_id's output file ($file_out) did not get created"
-}
+wait_for_file -fail $file_out
 set fini    0
 set matches 0
 spawn $bin_cat $file_out
@@ -110,24 +107,14 @@ expect {
 	}
 }
 if {$fini != 1} {
-	log_error "Script never completed"
-	set exit_code 1
+	fail "Script never completed"
 }
 if {$matches != 0} {
 	set tot [expr $iterations + 1]
+	set failure_addendum "This should happen infrequently, typically when JobAcctFrequency is set to a small value and is indicative of a non-checkpointable job. For details, see src/plugins/jobacct/linux/jobacct_linux.c. To diagnose, use lsof to examine spawned job"
 	if {$matches <= 1} {
-		log_warn "$matches of $tot tests failed"
+		log_warn "$matches of $tot tests failed ($failure_addendum)"
 	} else {
-		log_error "$matches of $tot tests failed"
-		set exit_code 1
+		fail "$matches of $tot tests failed ($failure_addendum)"
 	}
-	log_debug "  This should happen infrequently, typically when"
-	log_debug "  JobAcctFrequency is set to a small value and is"
-	log_debug "  indicative of a non-checkpointable job. For details,"
-	log_debug "  see src/plugins/jobacct/linux/jobacct_linux.c"
-	log_debug "  To diagnose, use lsof to examine spawned job"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
