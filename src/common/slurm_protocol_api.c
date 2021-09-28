@@ -334,10 +334,21 @@ extern uint16_t slurm_get_track_wckey(void)
  */
 bool slurm_with_slurmdbd(void)
 {
-	bool with_slurmdbd;
-	slurm_conf_t *conf = slurm_conf_lock();
+	static bool is_set = false;
+	slurm_conf_t *conf;
+
+	/*
+	 * Since accounting_storage_type is a plugin and plugins can't change
+	 * on reconfigure, we don't need to worry about reconfigure with this
+	 * static variable.
+	 */
+	if (is_set)
+		return with_slurmdbd;
+
+	conf = slurm_conf_lock();
 	with_slurmdbd = !xstrcasecmp(conf->accounting_storage_type,
 	                             "accounting_storage/slurmdbd");
+	is_set = true;
 	slurm_conf_unlock();
 	return with_slurmdbd;
 }
