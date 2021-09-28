@@ -223,7 +223,6 @@ extern diag_stats_t slurmctld_diag_stats;
 extern slurmctld_config_t slurmctld_config;
 extern void *acct_db_conn;
 extern uint16_t accounting_enforce;
-extern int   association_based_accounting;
 extern int   backup_inx;		/* BackupController# index */
 extern int   batch_sched_delay;
 extern uint32_t   cluster_cpus;

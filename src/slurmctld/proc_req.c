@@ -2222,7 +2222,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t *msg)
 	 * into account the COMPLETING FLAG which is valid, but not
 	 * always set yet when the step exits normally.
 	 */
-	if (association_based_accounting && job_ptr &&
+	if (slurm_with_slurmdbd() && job_ptr &&
 	    (job_ptr->job_state != JOB_PENDING)) {
 		/* This logic was taken from _slurm_rpc_step_complete() */
 		slurm_step_id_t step_id = { .job_id = job_ptr->job_id,

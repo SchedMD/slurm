@@ -844,7 +844,7 @@ static int _set_assoc_list(slurmctld_resv_t *resv_ptr)
 
 
 	/* no need to do this if we can't ;) */
-	if (!association_based_accounting)
+	if (!slurm_with_slurmdbd())
 		return rc;
 
 	assoc_list_allow = list_create(NULL);
@@ -6335,7 +6335,7 @@ static int _update_resv_group_uid_access_list(void *x, void *arg)
 		(void)_set_assoc_list(resv_ptr);
 
 		/* Now see if something really did change */
-		if (!association_based_accounting ||
+		if (!slurm_with_slurmdbd() ||
 		    xstrcmp(old_assocs, resv_ptr->assoc_list))
 			*updated = 1;
 		xfree(old_assocs);

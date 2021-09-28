@@ -168,7 +168,6 @@ log_options_t sched_log_opts = SCHEDLOG_OPTS_INITIALIZER;
 /* Global variables */
 bool    preempt_send_user_signal = false;
 uint16_t accounting_enforce = 0;
-int	association_based_accounting = 0;
 void *	acct_db_conn = NULL;
 int	backup_inx;
 int	batch_sched_delay = 3;
@@ -432,14 +431,13 @@ int main(int argc, char **argv)
 	 */
 	slurmscriptd_init(argc, argv);
 
-	association_based_accounting = slurm_with_slurmdbd();
 	accounting_enforce = slurm_conf.accounting_storage_enforce;
 	if (slurm_with_slurmdbd()) {
 		/* we need job_list not to be NULL */
 		init_job_conf();
 	}
 
-	if (accounting_enforce && !association_based_accounting) {
+	if (accounting_enforce && !slurm_with_slurmdbd()) {
 		accounting_enforce = 0;
 		slurm_conf.conf_flags &= (~CTL_CONF_WCKEY);
 		slurm_conf.accounting_storage_enforce = 0;
@@ -1562,7 +1560,7 @@ static int _init_tres(void)
 	slurm_addto_char_list(char_list, slurm_conf.accounting_storage_tres);
 
 	memset(&update_object, 0, sizeof(slurmdb_update_object_t));
-	if (!association_based_accounting) {
+	if (!slurm_with_slurmdbd()) {
 		update_object.type = SLURMDB_ADD_TRES;
 		update_object.objects = list_create(slurmdb_destroy_tres_rec);
 	} else if (!g_tres_count)
@@ -1640,7 +1638,7 @@ static int _init_tres(void)
 			xfree(tres_rec);
 		}
 
-		if (!association_based_accounting) {
+		if (!slurm_with_slurmdbd()) {
 			if (!tres_rec->id)
 				fatal("slurmdbd is required to run with TRES %s%s%s. Either setup slurmdbd or remove this TRES from your configuration.",
 				      tres_rec->type, tres_rec->name ? "/" : "",
@@ -1677,7 +1675,7 @@ static int _init_tres(void)
 		FREE_NULL_LIST(add_list);
 	}
 
-	if (!association_based_accounting) {
+	if (!slurm_with_slurmdbd()) {
 		assoc_mgr_update_tres(&update_object, false);
 		list_destroy(update_object.objects);
 	}

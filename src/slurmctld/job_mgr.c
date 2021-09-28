@@ -6847,7 +6847,7 @@ static int _job_create(job_desc_msg_t *job_desc, int allocate, int will_run,
 		     job_desc->user_id, assoc_rec.acct, assoc_rec.partition);
 		error_code = ESLURM_INVALID_ACCOUNT;
 		goto cleanup_fail;
-	} else if (association_based_accounting &&
+	} else if (slurm_with_slurmdbd() &&
 		   !assoc_ptr &&
 		   !(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS)) {
 		/*
@@ -11652,7 +11652,7 @@ static slurmdb_assoc_rec_t *_retrieve_new_assoc(job_desc_msg_t *job_desc,
 		     __func__, assoc_rec.acct, job_ptr);
 		errno = ESLURM_INVALID_ACCOUNT;
 		return NULL;
-	} else if (association_based_accounting &&
+	} else if (slurm_with_slurmdbd() &&
 		   !assoc_ptr &&
 		   !(accounting_enforce & ACCOUNTING_ENFORCE_ASSOCS) &&
 		   assoc_rec.acct) {
@@ -17511,7 +17511,7 @@ extern int update_job_wckey(char *module, job_record_t *job_ptr,
 		info("%s: invalid wckey %s for %pJ",
 		     module, new_wckey, job_ptr);
 		return ESLURM_INVALID_WCKEY;
-	} else if (association_based_accounting &&
+	} else if (slurm_with_slurmdbd() &&
 		   !wckey_ptr &&
 		   !(accounting_enforce & ACCOUNTING_ENFORCE_WCKEYS)) {
 		/* if not enforcing associations we want to look for
