@@ -35,6 +35,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix errors in logic when picking nodes based on bracketed anded constraints.
     This also enforces the requirement to have a count when using such
     constraints.
+ -- Handle job resize better in the database.
 
 * Changes in Slurm 21.08.1
 ==========================

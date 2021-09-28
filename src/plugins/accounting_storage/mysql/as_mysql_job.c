@@ -329,28 +329,22 @@ extern int as_mysql_job_start(mysql_conn_t *mysql_conn, job_record_t *job_ptr)
 	if (job_ptr->state_reason == WAIT_ARRAY_TASK_LIMIT)
 		begin_time = INFINITE;
 
-	/* Since we need a new db_inx make sure the old db_inx
-	 * removed. This is most likely the only time we are going to
-	 * be notified of the change also so make the state without
-	 * the resize. */
+	/*
+	 * Strip the RESIZING flag and end the job if there was a db_index.  In
+	 * 21.08 we reset the db_index on the slurmctld side, previously it was
+	 * done here.
+	 */
 	if (IS_JOB_RESIZING(job_ptr)) {
-		/* If we have a db_index lets end the previous record. */
-		if (!job_ptr->db_index) {
-			error("We don't have a db_index for job %u, "
-			      "this should only happen when resizing "
-			      "jobs and the database interface was down.",
-			      job_ptr->job_id);
-			job_ptr->db_index = _get_db_index(mysql_conn,
-							  job_ptr->details->
-							  submit_time,
-							  job_ptr->job_id);
+		/*
+		 * If we have a db_index lets end the previous record.
+		 * This should only need to be around 2 versions after 21.08.
+		 */
+		if (job_ptr->db_index) {
+			as_mysql_job_complete(mysql_conn, job_ptr);
+			job_ptr->db_index = 0;
 		}
 
-		if (job_ptr->db_index)
-			as_mysql_job_complete(mysql_conn, job_ptr);
-
 		job_state &= (~JOB_RESIZING);
-		job_ptr->db_index = 0;
 	}
 
 	job_state &= JOB_STATE_BASE;
