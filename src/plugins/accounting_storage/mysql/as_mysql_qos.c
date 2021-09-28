@@ -125,6 +125,75 @@ static int _preemption_loop(mysql_conn_t *mysql_conn, int begin_qosid,
 	return rc;
 }
 
+static int _setup_qos_cond_limits(slurmdb_qos_cond_t *qos_cond, char **extra)
+{
+	int set = 0;
+	ListIterator itr = NULL;
+	char *object = NULL;
+
+	xassert(extra);
+	xassert(*extra);
+
+	if (!qos_cond)
+		return 0;
+
+	/*
+	 * Don't handle with_deleted here, we don't want to delete or modify
+	 * deleted things
+	 */
+	/* if (qos_cond->with_deleted) */
+	/* 	xstrcat(extra, "where (deleted=0 || deleted=1)"); */
+	/* else */
+	/* 	xstrcat(extra, "where deleted=0"); */
+
+	if (qos_cond->description_list &&
+	    list_count(qos_cond->description_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(qos_cond->description_list);
+		while ((object = list_next(itr))) {
+			if (set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "description='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if (qos_cond->id_list &&
+	    list_count(qos_cond->id_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(qos_cond->id_list);
+		while ((object = list_next(itr))) {
+			if (set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "id='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	if (qos_cond->name_list &&
+	    list_count(qos_cond->name_list)) {
+		set = 0;
+		xstrcat(*extra, " && (");
+		itr = list_iterator_create(qos_cond->name_list);
+		while ((object = list_next(itr))) {
+			if (set)
+				xstrcat(*extra, " || ");
+			xstrfmtcat(*extra, "name='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(*extra, ")");
+	}
+
+	return set;
+}
+
 static int _setup_qos_limits(slurmdb_qos_rec_t *qos,
 			     char **cols, char **vals,
 			     char **extra, char **added_preempt,
@@ -758,14 +827,13 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 				slurmdb_qos_cond_t *qos_cond,
 				slurmdb_qos_rec_t *qos)
 {
-	ListIterator itr = NULL;
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL, *name_char = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
-	int set = 0, i;
+	int i;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	char *tmp_char1=NULL, *tmp_char2=NULL;
@@ -791,50 +859,7 @@ extern List as_mysql_modify_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	xstrcat(extra, "where deleted=0");
 
-	if (qos_cond->description_list
-	    && list_count(qos_cond->description_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(qos_cond->description_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "description='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if (qos_cond->id_list
-	    && list_count(qos_cond->id_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(qos_cond->id_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "id='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if (qos_cond->name_list
-	    && list_count(qos_cond->name_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(qos_cond->name_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
+	_setup_qos_cond_limits(qos_cond, &extra);
 
 	_setup_qos_limits(qos, &tmp_char1, &tmp_char2,
 			  &vals, &added_preempt, 0);
@@ -1050,7 +1075,6 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 		*name_char = NULL, *assoc_char = NULL;
 	time_t now = time(NULL);
 	char *user_name = NULL;
-	int set = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	List cluster_list_tmp = NULL;
@@ -1070,54 +1094,8 @@ extern List as_mysql_remove_qos(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	xstrcat(extra, "where deleted=0");
-	if (qos_cond->description_list
-	    && list_count(qos_cond->description_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(qos_cond->description_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "description='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
 
-	if (qos_cond->id_list
-	    && list_count(qos_cond->id_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(qos_cond->id_list);
-		while ((object = list_next(itr))) {
-			if (!object[0])
-				continue;
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "id='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if (qos_cond->name_list
-	    && list_count(qos_cond->name_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(qos_cond->name_list);
-		while ((object = list_next(itr))) {
-			if (!object[0])
-				continue;
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
+	_setup_qos_cond_limits(qos_cond, &extra);
 
 	if (!extra) {
 		error("Nothing to remove");
@@ -1228,9 +1206,6 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 	char *extra = NULL;
 	char *tmp = NULL;
 	List qos_list = NULL;
-	ListIterator itr = NULL;
-	char *object = NULL;
-	int set = 0;
 	int i=0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
@@ -1328,51 +1303,7 @@ extern List as_mysql_get_qos(mysql_conn_t *mysql_conn, uid_t uid,
 	else
 		xstrcat(extra, "where deleted=0");
 
-
-	if (qos_cond->description_list
-	    && list_count(qos_cond->description_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(qos_cond->description_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "description='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if (qos_cond->id_list
-	    && list_count(qos_cond->id_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(qos_cond->id_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "id='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
-
-	if (qos_cond->name_list
-	    && list_count(qos_cond->name_list)) {
-		set = 0;
-		xstrcat(extra, " && (");
-		itr = list_iterator_create(qos_cond->name_list);
-		while ((object = list_next(itr))) {
-			if (set)
-				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "name='%s'", object);
-			set = 1;
-		}
-		list_iterator_destroy(itr);
-		xstrcat(extra, ")");
-	}
+	_setup_qos_cond_limits(qos_cond, &extra);
 
 empty:
 
