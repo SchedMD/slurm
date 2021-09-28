@@ -77,7 +77,16 @@ static uint16_t _parse_preempt_modes(char *names)
 					preempt_mode = NO_VAL16;
 					break;
 				}
+
+				/*
+				 * Since we can't really add 0 to a bitstring
+				 * put on one that we can track.
+				 */
+				if (ret_mode == PREEMPT_MODE_OFF)
+					ret_mode = PREEMPT_MODE_COND_OFF;
+
 				preempt_mode |= ret_mode;
+
 				count++;
 				xfree(name);
 
@@ -105,7 +114,16 @@ static uint16_t _parse_preempt_modes(char *names)
 			preempt_mode = NO_VAL16;
 			return preempt_mode;
 		}
+
+		/*
+		 * Since we can't really add 0 to a bitstring
+		 * put on one that we can track.
+		 */
+		if (ret_mode == PREEMPT_MODE_OFF)
+			ret_mode = PREEMPT_MODE_COND_OFF;
+
 		preempt_mode |= ret_mode;
+
 		count++;
 		xfree(name);
 	}

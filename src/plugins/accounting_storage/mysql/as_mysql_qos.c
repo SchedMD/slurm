@@ -191,6 +191,16 @@ static int _setup_qos_cond_limits(slurmdb_qos_cond_t *qos_cond, char **extra)
 		xstrcat(*extra, ")");
 	}
 
+	if ((qos_cond->preempt_mode != NO_VAL16) && qos_cond->preempt_mode) {
+		set = 1;
+		xstrfmtcat(*extra, " && (preempt_mode&%d",
+			   qos_cond->preempt_mode);
+		if (qos_cond->preempt_mode & PREEMPT_MODE_COND_OFF)
+			xstrcat(*extra, " || preempt_mode=0");
+		xstrcat(*extra, ")");
+	}
+
+
 	return set;
 }
 
