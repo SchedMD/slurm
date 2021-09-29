@@ -5141,6 +5141,12 @@ extern char * prolog_flags2str(uint16_t prolog_flags)
 		xstrcat(rc, "Contain");
 	}
 
+	if (prolog_flags & PROLOG_FLAG_DEFER_BATCH) {
+		if (rc)
+			xstrcat(rc, ",");
+		xstrcat(rc, "DeferBatch");
+	}
+
 	if (prolog_flags & PROLOG_FLAG_NOHOLD) {
 		if (rc)
 			xstrcat(rc, ",");
@@ -5182,6 +5188,8 @@ extern uint16_t prolog_str2flags(char *prolog_flags)
 			rc |= PROLOG_FLAG_ALLOC;
 		else if (xstrcasecmp(tok, "Contain") == 0)
 			rc |= (PROLOG_FLAG_ALLOC | PROLOG_FLAG_CONTAIN);
+		else if (xstrcasecmp(tok, "DeferBatch") == 0)
+			rc |= PROLOG_FLAG_DEFER_BATCH;
 		else if (xstrcasecmp(tok, "NoHold") == 0)
 			rc |= PROLOG_FLAG_NOHOLD;
 		else if (xstrcasecmp(tok, "Serial") == 0)
