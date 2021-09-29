@@ -511,8 +511,31 @@ extern int load_all_node_state ( bool state_only )
 					else
 						hs = hostset_create(node_name);
 				}
+				/*
+				 * Replace FUTURE state with new state (idle),
+				 * but preserve recovered state flags
+				 * (e.g. POWER*).
+				 */
+				if ((node_state & NODE_STATE_BASE) ==
+				    NODE_STATE_FUTURE) {
+					node_state =
+						((node_ptr->node_state &
+						  NODE_STATE_BASE) |
+						 (node_state &
+						  NODE_STATE_FLAGS));
+
+					/*
+					 * If node was FUTURE, then it wasn't up
+					 * so mark it as powered down.
+					 */
+					if (power_save_mode)
+						node_state |=
+							NODE_STATE_POWERED_DOWN;
+				}
+
 				node_ptr->node_state =
 					node_state | NODE_STATE_CLOUD;
+
 			} else if (IS_NODE_UNKNOWN(node_ptr)) {
 				if (base_state == NODE_STATE_DOWN) {
 					orig_flags = node_ptr->node_state &

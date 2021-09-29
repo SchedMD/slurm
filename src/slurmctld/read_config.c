@@ -1904,6 +1904,12 @@ static int _restore_node_state(int recover,
 			node_ptr->node_state =
 				(node_ptr->node_state     & NODE_STATE_BASE) |
 				(old_node_ptr->node_state & NODE_STATE_FLAGS);
+			/*
+			 * If node was FUTURE, then it wasn't up so mark it as
+			 * powered_down.
+			 */
+			if (cloud_flag)
+				node_ptr->node_state |= NODE_STATE_POWERED_DOWN;
 		} else {
 			node_ptr->node_state = old_node_ptr->node_state;
 		}
