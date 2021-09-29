@@ -1225,13 +1225,13 @@ allocation may affect other processes and/or machine health.
 \fBNOTE\fR: If available, it is recommended to limit memory by enabling
 task/cgroup as a TaskPlugin and making use of ConstrainRAMSpace=yes in the
 cgroup.conf instead of using this JobAcctGather mechanism for memory
-enforcement. With OverMemoryKill, memory limit is applied against each process
-individually and is not applied to the step as a whole. This means that when
-jobs have a process that consumes too much memory, the process will be killed
-but the step will continue to run. When using cgroups with
-ConstrainRAMSpace=yes, a process that consumes too much memory will result in
-the job step being killed. Using JobAcctGather is polling based and there is a
+enforcement. Using JobAcctGather is polling based and there is a
 delay before a job is killed, which could lead to system Out of Memory events.
+
+\fBNOTE\fR: When enforcing memory usage with OverMemoryKill, if a process in a
+step consumes more memory than it should, the entire job step will be killed.
+With cgroups and ConstrainRAMSpace=yes, any process that exceeds its memory
+limit will be killed rather than being applied to the step as a whole.
 .RE
 
 .TP
@@ -5352,6 +5352,10 @@ Allocates entire nodes to jobs even with \fBSelectType=select/cons_res\fR or
 \fBSelectType=select/cons_tres\fR configured.
 Jobs that run in partitions with \fBOverSubscribe=EXCLUSIVE\fR will have
 exclusive access to all allocated nodes.
+These jobs are allocated all CPUs and GRES on the nodes, but they are only
+allocated as much memory as they ask for. This is by design to support gang
+scheduling, because suspended jobs still reside in memory. To request all the
+memory on a node, use \fB\-\-mem=0\fR at submit time.
 .TP
 \fBFORCE\fR
 Makes all resources (except GRES) in the partition available for

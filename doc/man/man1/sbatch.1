@@ -1,4 +1,4 @@
-.TH sbatch "1" "Slurm Commands" "August 2021" "Slurm Commands"
+.TH sbatch "1" "Slurm Commands" "September 2021" "Slurm Commands"
 
 .SH "NAME"
 sbatch \- Submit a batch script to Slurm.
@@ -738,6 +738,11 @@ Explicitly exclude certain nodes from the resources granted to the job.
 \fB\-\-exclusive\fR[={user|mcs}]
 The job allocation can not share nodes with other running jobs (or just other
 users with the "=user" option or with the "=mcs" option).
+If user/mcs are not specified (i.e. the job allocation can not share nodes with
+other running jobs), the job is allocated all CPUs and GRES on all nodes in the
+allocation, but is only allocated as much memory as it requested. This is by
+design to support gang scheduling, because suspended jobs still reside in
+memory. To request all the memory on a node, use \fB\-\-mem=0\fR.
 The default shared/exclusive behavior depends on system configuration and the
 partition's \fBOverSubscribe\fR option takes precedence over the job's option.
 
