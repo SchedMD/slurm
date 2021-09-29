@@ -488,8 +488,17 @@ extern int load_all_node_state ( bool state_only )
 			       node_name);
 		} else if (state_only) {
 			uint32_t orig_flags;
-			if (IS_NODE_CLOUD(node_ptr) ||
-			    (node_state & NODE_STATE_DYNAMIC)) {
+			if ((IS_NODE_CLOUD(node_ptr) ||
+			    (node_state & NODE_STATE_DYNAMIC)) &&
+			    comm_name && node_hostname) {
+				/* Recover NodeAddr and NodeHostName */
+				set_node_comm_name(node_ptr,
+						   comm_name,
+						   node_hostname);
+				comm_name = NULL;
+				node_hostname = NULL;
+			}
+			if (IS_NODE_CLOUD(node_ptr)) {
 				if ((!power_save_mode) &&
 				    ((node_state & NODE_STATE_POWERED_DOWN) ||
 				     (node_state & NODE_STATE_POWERING_DOWN) ||
@@ -501,14 +510,6 @@ extern int load_all_node_state ( bool state_only )
 						hostset_insert(hs, node_name);
 					else
 						hs = hostset_create(node_name);
-				}
-				if (comm_name && node_hostname) {
-					/* Recover NodeAddr and NodeHostName */
-					set_node_comm_name(node_ptr,
-							   comm_name,
-							   node_hostname);
-					comm_name = NULL;
-					node_hostname = NULL;
 				}
 				node_ptr->node_state    = node_state;
 			} else if (IS_NODE_UNKNOWN(node_ptr)) {
