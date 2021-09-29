@@ -664,6 +664,14 @@ static int _cluster_get_jobs(mysql_conn_t *mysql_conn,
 		if (!job->array_job_id && !job->array_task_id)
 			job->array_task_id = NO_VAL;
 
+		/*
+		 * This shouldn't happen with new jobs.
+		 * If older jobs have het_job_id == 0 and het_job_offset == 0,
+		 * then correct het_job_offset to be NO_VAL.
+		 */
+		if (!job->het_job_id && !job->het_job_offset)
+			job->het_job_offset = NO_VAL;
+
 		if (row[JOB_REQ_RESV_NAME] && row[JOB_REQ_RESV_NAME][0])
 			job->resv_name = xstrdup(row[JOB_REQ_RESV_NAME]);
 

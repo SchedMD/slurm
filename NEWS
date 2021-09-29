@@ -8,6 +8,8 @@ documents those changes that are of interest to users and administrators.
  -- burst_buffer/datawarp - free bb_job after stage-out or teardown are done.
  -- acct_gather_energy_rsmi has been renamed acct_gather_energy_gpu.
  -- Remove support for (non-functional) --cpu-bind=boards.
+ -- accounting_storage/mysql - ensure new non-HetJobs have het_job_offset NO_VAL
+    in the database and fix the same field when retrieving older bad records.
 
 * Changes in Slurm 21.08.2
 ==========================
