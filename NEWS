@@ -30,6 +30,9 @@ documents those changes that are of interest to users and administrators.
     registered the first time in the database yet.
  -- Only send one message on prolog failure from the slurmd.
  -- Remove support for TaskAffinity=yes in cgroup.conf.
+ -- accounting_storage/mysql - fix issue where querying jobs via sacct
+    --whole-hetjob=yes or slurmrestd (which automatically includes this flag)
+    could in some cases return more records than expected.
 
 * Changes in Slurm 21.08.1
 ==========================
