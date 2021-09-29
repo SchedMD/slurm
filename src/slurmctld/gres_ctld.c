@@ -1225,6 +1225,13 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 	 * remove this node's GRES from the job's GRES bitmaps.
 	 */
 	if (job_gres_ptr->gres_cnt_node_alloc) {
+		/*
+		 * This GRES is no longer part of the job, remove it from the
+		 * alloc list.
+		 */
+		if (job_gres_ptr->gres_cnt_node_alloc[node_offset] >=
+		    job_gres_ptr->total_gres)
+			return ESLURM_UNSUPPORTED_GRES;
 		job_gres_ptr->total_gres -=
 			job_gres_ptr->gres_cnt_node_alloc[node_offset];
 		job_gres_ptr->gres_cnt_node_alloc[node_offset] = 0;
@@ -1328,7 +1335,9 @@ extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
 				   job_gres_ptr->gres_name, job_id,
 				   node_name, old_job,
 				   job_gres_ptr->plugin_id, resize);
-		if (rc2 != SLURM_SUCCESS)
+		if (rc2 == ESLURM_UNSUPPORTED_GRES) {
+			list_delete_item(job_gres_iter);
+		} else if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
 	}
 	list_iterator_destroy(job_gres_iter);
