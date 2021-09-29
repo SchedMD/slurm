@@ -160,6 +160,7 @@ documents those changes that are of interest to users and administrators.
     in the database.
  -- slurmrestd - add option to allow rest_auth/local to switch user id on first
     user connection.
+ -- oci.conf - add DisableHooks option.
 
 * Changes in Slurm 22.05.7
 ==========================

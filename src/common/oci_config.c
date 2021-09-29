@@ -52,6 +52,7 @@
 static s_p_options_t options[] = {
 	{"ContainerPath", S_P_STRING},
 	{"CreateEnvFile", S_P_BOOLEAN},
+	{"DisableHooks", S_P_STRING},
 	{"RunTimeCreate", S_P_STRING},
 	{"RunTimeDelete", S_P_STRING},
 	{"RunTimeKill", S_P_STRING},
@@ -68,6 +69,7 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 	int rc = SLURM_SUCCESS;
 	oci_conf_t *oci = NULL;
 	char *conf_path = get_extra_conf_path(OCI_CONF);
+	char *disable_hooks = NULL;
 
 	if ((stat(conf_path, &buf) == -1)) {
 		error("No %s file", OCI_CONF);
@@ -84,12 +86,37 @@ extern int get_oci_conf(oci_conf_t **oci_ptr)
 
 	(void) s_p_get_string(&oci->container_path, "ContainerPath", tbl);
 	(void) s_p_get_boolean(&oci->create_env_file, "CreateEnvFile", tbl);
+	(void) s_p_get_string(&disable_hooks, "DisableHooks", tbl);
 	(void) s_p_get_string(&oci->runtime_create, "RunTimeCreate", tbl);
 	(void) s_p_get_string(&oci->runtime_delete, "RunTimeDelete", tbl);
 	(void) s_p_get_string(&oci->runtime_kill, "RunTimeKill", tbl);
 	(void) s_p_get_string(&oci->runtime_query, "RunTimeQuery", tbl);
 	(void) s_p_get_string(&oci->runtime_run, "RunTimeRun", tbl);
 	(void) s_p_get_string(&oci->runtime_start, "RunTimeStart", tbl);
+
+	if (disable_hooks) {
+		char *ptr1 = NULL, *ptr2 = NULL;
+		int i = 0, size = 1;
+
+		oci->disable_hooks = xcalloc(size + 1,
+					     sizeof(*oci->disable_hooks));
+
+		ptr1 = strtok_r(disable_hooks, ",", &ptr2);
+		while (ptr1) {
+			if (i > size) {
+				size++;
+				xrecalloc(oci->disable_hooks, size + 1,
+					  sizeof(*oci->disable_hooks));
+			}
+
+			oci->disable_hooks[i] = xstrdup(ptr1);
+			debug("%s: disable hook type %s",
+			      __func__, oci->disable_hooks[i]);
+			ptr1 = strtok_r(NULL, ",", &ptr2);
+		}
+
+		xfree(disable_hooks);
+	}
 
 	if (!oci->runtime_create && !oci->runtime_delete &&
 	    !oci->runtime_kill && !oci->runtime_query &&
@@ -134,5 +161,12 @@ extern void free_oci_conf(oci_conf_t *oci)
 	xfree(oci->runtime_query);
 	xfree(oci->runtime_run);
 	xfree(oci->runtime_start);
+
+	if (oci->disable_hooks) {
+		for (int i = 0; oci->disable_hooks[i]; i++)
+			xfree(oci->disable_hooks[i]);
+		xfree(oci->disable_hooks);
+	}
+
 	xfree(oci);
 }

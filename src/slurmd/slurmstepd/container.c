@@ -341,6 +341,36 @@ static int _modify_config(stepd_step_rec_t *step, data_t *config,
 		data_set_string(data_list_append(opt), "ro");
 	}
 
+	if (oci_conf->disable_hooks) {
+		data_t *hooks = data_resolve_dict_path(config, "/hooks/");
+
+		for (int i = 0; oci_conf->disable_hooks[i]; i++) {
+			data_t *hook = data_key_get(hooks,
+						    oci_conf->disable_hooks[i]);
+
+			if (hook) {
+				int count = 0;
+
+				if (data_get_type(hook) == DATA_TYPE_LIST) {
+					count = data_get_list_length(hook);
+				} else {
+					error("Invalid type for hook %s",
+					      oci_conf->disable_hooks[i]);
+				}
+
+				debug("%s: hook %s found and disabled %d entries",
+				      __func__, oci_conf->disable_hooks[i],
+				      count);
+
+				data_key_unset(hooks,
+					       oci_conf->disable_hooks[i]);
+			} else {
+				debug("%s: hook %s not found",
+				      __func__,  oci_conf->disable_hooks[i]);
+			}
+		}
+	}
+
 	env = data_define_dict_path(config, "/process/env/");
 	if (data_get_type(env) != DATA_TYPE_LIST)
 		data_set_list(env);

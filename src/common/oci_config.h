@@ -41,6 +41,7 @@
 typedef struct {
 	char *container_path; /* path pattern to use for holding OCI config */
 	bool create_env_file; /* create file with environment */
+	char **disable_hooks; /* OCI hooks to disable (null terminated) */
 	char *runtime_create; /* OCI runtime pattern to execute create */
 	char *runtime_delete; /* OCI runtime pattern to execute delete */
 	char *runtime_kill; /* OCI runtime pattern to execute kill */
