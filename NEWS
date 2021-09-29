@@ -25,6 +25,8 @@ documents those changes that are of interest to users and administrators.
  -- accounting_storage/mysql - fix issue where querying jobs via sacct
     --whole-hetjob=yes or slurmrestd (which automatically includes this flag)
     could in some cases return more records than expected.
+ -- Fix issue for preemption of job array task that makes afterok dependency
+    fail. Additionally, send emails when requeueing happens due to preemption.
 
 * Changes in Slurm 21.08.1
 ==========================
