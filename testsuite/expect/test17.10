@@ -31,14 +31,13 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id.input"
+set file_in     "$test_dir/input"
 set job_id      0
 
 proc cleanup {} {
-	global bin_rm file_in
+	global job_id
 
-	exec $bin_rm -f $file_in
+	cancel_job $job_id
 }
 
 set cpu_cnt     1
@@ -124,12 +123,4 @@ expect {
 		wait
 	}
 }
-if {$matches != 5} {
-	fail "Did not get proper constraints"
-}
-if {[cancel_job $job_id] != 0} {
-	fail "Unable to cancel job ($job_id)"
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 5} "Confirm constraints are registered" "$matches != 5"

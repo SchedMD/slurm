@@ -26,63 +26,40 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-set file_script "test$test_id.bash"
-set file_out    "test$test_id.output"
-set file_err    "test$test_id.error"
-set exit_code   0
-set needed_nodes 2
-set matches 0
-set ncpus ""
-
-proc cleanup {} {
-	global bin_rm file_in file_script file_out file_err
-
-	exec $bin_rm -f $file_in $file_script $file_out $file_err
-}
+set file_in         "$test_dir/input"
+set file_out        "$test_dir/output"
+set file_err        "$test_dir/error"
+set job_id          0
+set ncpus           0
 
 if {[param_contains [get_config_param "SelectTypeParameters"] "CR_ONE_TASK_PER_CORE"]} {
 	skip "This test is incompatible SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
-log_user 0
-spawn $sinfo -N -h -p [default_partition] -t idle -o "%c"
-expect {
-	-re "($number)" {
-		incr matches
-		if {$ncpus eq ""} {
-			set ncpus $expect_out(1,string)
-		} elseif {$expect_out(1,string) < $ncpus} {
-			set ncpus $expect_out(1,string)
-		}
-		exp_continue
-	}
-	timeout {
-		fail "sinfo not responding"
-	}
-	eof {
-		wait
+set nodes [get_nodes_by_request "-N2"]
+if {[llength $nodes] != 2} {
+	skip "Test needs to be able to use 2 nodes nodes in default partition"
+}
+
+set nodes_dict [get_nodes [join $nodes ',']]
+dict for {node params} $nodes_dict {
+	set cputot [dict get $params "CPUTot"]
+	if {$cputot > $ncpus} {
+		set ncpus $cputot
 	}
 }
-log_user 1
 
-if {$matches < $needed_nodes} {
-	skip "$needed_nodes idle nodes required in default partition, only $matches found"
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
 }
 
 #
-# Delete left-over stdin/out/err files
-# Build stdin file
+# Build script
 #
-exec $bin_rm -f $file_in $file_script $file_out $file_err
 make_bash_script $file_in "
   $bin_printenv SLURM_NNODES
-  exit 0
-"
-
-set cwd "[$bin_pwd]"
-make_bash_script $file_script "
-  $sbatch -N1-2 --use-min-nodes -n$ncpus --output=$file_out --error=$file_err $cwd/$file_in
   exit 0
 "
 
@@ -90,56 +67,18 @@ make_bash_script $file_script "
 # Spawn a sbatch command to verify that the default output file is
 # created and contain the correct contents
 #
-set job_id 0
-spawn ./$file_script
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if { $job_id == 0 } {
-	fail "Failed to submit job"
-}
+set job_id [submit_job -fail "-N1-2 --use-min-nodes -n$ncpus --output=$file_out --error=$file_err $file_in"]
 
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
 
 #
 # Check for desired output
 #
 set nodes 0
-if {[wait_for_file $file_out] == 0} {
-	spawn $bin_cat $file_out
-	expect {
-		-re "($number)" {
-			set nodes $expect_out(1,string)
-			if {$nodes != 1} {
-				log_error "Expected 1 allocated node"
-				set exit_code 1
-			}
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-} else {
-	fail "Job didn't produce the expected $file_out output file"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+set output [run_command_output -fail "$bin_cat $file_out"]
+subtest {[regexp "($number)" $output - nodes]} "Verify output file has the right format"
+subtest {$nodes == 1} "Verify that job allocated only 1 node thanks to --use-min-nodes"

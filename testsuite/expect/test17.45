@@ -26,15 +26,15 @@
 ############################################################################
 source ./globals
 
-set file_bbf    "test$test_id.bbf"
-set file_script "test$test_id.bash"
-set file_out    "test$test_id.output"
-set exit_code   0
+set file_bbf    "$test_dir/bbf"
+set file_script "$test_dir/script"
+set file_out    "$test_dir/output"
+set job_id      0
 
 proc cleanup {} {
-	global bin_rm file_bbf file_script file_out
+	global job_id
 
-	exec $bin_rm -f $file_bbf $file_script $file_out
+	cancel_job $job_id
 }
 
 #
@@ -59,60 +59,17 @@ exec $bin_chmod 400 $file_bbf
 # NOTE: The "bbf" file does not need to contain Burst Buffer options, but can
 # contain text to be inserted at the start of the script (after "#! shell").
 #
-set job_id 0
-spawn $sbatch -t1 -n1 --bbf=$file_bbf -o $file_out $file_script
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if { $job_id == 0 } {
-	fail "Failed to submit job"
-}
+set job_id [submit_job -fail "-t1 -n1 --bbf=$file_bbf -o $file_out $file_script"]
 
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
 
 #
 # Check for desired output
 #
-if {[wait_for_file $file_out] != 0} {
-        log_error "File $file_out is missing"
-        set exit_code 1
-} else {
-	set match 0
-	spawn $bin_cat $file_out
-	expect {
-		-re "test_bbf" {
-			incr match
-			exp_continue
-		}
-		-re "test_script" {
-			log_error "bbf file not inserted at start of script"
-			set exit_code 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	if {$match != 1} {
-		fail "bbf file not inserted at start of script"
-	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+set output [run_command_output -fail "$bin_cat $file_out"]
+subtest {[regexp -all "test_bbf" $output] == 1} "Verify that bbf script was executed once"
+subtest {![regexp "test_script" $output]} "Verify that bbf script was executed before the script test"

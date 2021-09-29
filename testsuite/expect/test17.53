@@ -26,49 +26,17 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-set exit_code   0
 set job_id      0
 
 proc cleanup {} {
-	global bin_rm file_in
+	global job_id
 
-	exec $bin_rm -f $file_in
+	cancel_job $job_id
 }
-
-#
-# Build input script file
-#
-exec $bin_rm -f $file_in
-make_bash_script $file_in "$bin_sleep 5"
 
 #
 # Spawn a batch job that deadline is too late
 #
-set timeout $max_job_delay
-spawn $sbatch --output=/dev/null --error=/dev/null --deadline 2015-03-27T04:30:00 -t1 $file_in
-expect {
-	-re "Requested time limit is invalid" {
-		set exit_code 0
-		exp_continue
-	}
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id != 0} {
-	cancel_job $job_id
-	fail "Batch submit with a deadline too old"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+set output [run_command_output -xfail "$sbatch --output=/dev/null --error=/dev/null --deadline 2015-03-27T04:30:00 -t1 --wrap '$bin_hostname'"]
+subtest {[regexp "Requested time limit is invalid" $output]} "Verify \"Requested time limit is invalid\" is printed"
+subtest {![regexp "Submitted batch job ($number)" $output - job_id]} "Verify job is not submitted with a deadline too old"

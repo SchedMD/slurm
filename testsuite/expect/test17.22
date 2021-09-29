@@ -28,8 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code            0
-
 #
 # Submit a slurm job that will execute bogus job name
 #
@@ -42,9 +40,7 @@ expect {
 		exp_continue
 	}
 	-re "Submitted batch job" {
-		log_error "Bogus job script should not have been submitted"
-		set exit_code 1
-		exp_continue
+		fail "Bogus job script should not have been submitted"
 	}
 	timeout {
 		fail "sbatch not responding"
@@ -55,8 +51,4 @@ expect {
 }
 if {$matches != 1} {
 	fail "Unexpected output from bad job name"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

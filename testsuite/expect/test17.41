@@ -28,19 +28,12 @@ source ./globals
 
 set test_part      [default_partition]
 set part_inv       "$test_part\g"
-set file_in        "test$test_id\.sc"
-set exit_code      0
-
-proc cleanup {} {
-	global bin_rm file_in
-
-	exec $bin_rm -f $file_in
-}
+set file_in        "$test_dir/input"
 
 make_bash_script $file_in "sleep 1"
 
 proc test_sbatch { part }  {
-	global srun salloc sbatch exit_code file_in part_inv
+	global srun salloc sbatch file_in part_inv
 
 	log_info "=======Testing Values: $part======="
 
@@ -59,10 +52,7 @@ proc test_sbatch { part }  {
 			wait
 		}
 	}
-	if {$match == 0} {
-		log_error "Error message was not correct"
-		set exit_code 1
-	}
+	subtest {$match != 0} "Validate that sbatch returns invalid partition error message"
 
 	log_info "====Testing srun===="
 	set match 0
@@ -79,10 +69,7 @@ proc test_sbatch { part }  {
 			wait
 		}
 	}
-	if {$match == 0} {
-		log_error "Error message was not correct"
-		set exit_code 1
-	}
+	subtest {$match != 0} "Validate that srun returns invalid partition error message"
 
 	log_info "====Testing salloc===="
 	set match 0
@@ -99,15 +86,8 @@ proc test_sbatch { part }  {
 			wait
 		}
 	}
-	if {$match == 0} {
-		log_error "Error message was not correct"
-		set exit_code 1
-	}
+	subtest {$match != 0} "Validate that salloc returns invalid partition error message"
 }
 
 test_sbatch $test_part\g
 test_sbatch "$test_part\,$test_part\g"
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
-}

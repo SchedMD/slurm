@@ -26,99 +26,35 @@
 ############################################################################
 source ./globals
 
-set exit_code     0
 set job_id1       0
 set job_id2       0
-set output        "test$test_id\_out_%a"
-set output_base   "test$test_id\_out_"
-set script1       "test$test_id\_sc1"
-set script2       "test$test_id\_sc2"
+set output_base   "$test_dir/output_"
+set output        "${output_base}%a"
+set script1       "$test_dir/script1"
+set script2       "$test_dir/script2"
 set tasks         10
 
 proc cleanup {} {
-	global bin_rm script1 script2
+	global job_id1 job_id2
 
-	exec $bin_rm -f $script1 $script2
-}
-
-for {set task_id 1} {$task_id <= $tasks} {incr task_id} {
-	set file_out_glob "${output_base}${task_id}"
-	exec $bin_rm -f $file_out_glob
+	cancel_job [list $job_id1 $job_id2]
 }
 
 make_bash_script $script1 "sleep 5"
-
-# Submit a job to depend on
-spawn $sbatch -t1 --nice=100 --array=1-$tasks%2 -o/dev/null $script1
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id1 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch is not responding"
-	}
-	eof {
-		wait
-	}
-}
-if { $job_id1 == 0 } {
-	fail "sbatch did not submit job"
-}
-
 make_bash_script $script2 "$scontrol show job ${job_id1}_\$SLURM_ARRAY_TASK_ID"
 
+# Submit a job to depend on
+set job_id1 [submit_job -fail "-t1 --nice=100 --array=1-$tasks%2 -o/dev/null $script1"]
+
 # Submit a job that depends on job above
-spawn $sbatch -t1 -daftercorr:$job_id1 --array=1-$tasks -o$output $script2
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id2 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch is not responding"
-	}
-	eof {
-		wait
-	}
-}
-if { $job_id2 == 0 } {
-	cancel_job $job_id1
-	fail "sbatch did not submit job"
-}
+set job_id2 [submit_job -fail "-t1 -daftercorr:$job_id1 --array=1-$tasks -o$output $script2"]
 
 log_debug "Waiting for output files.."
 for {set task_id 1} {$task_id <= $tasks} {incr task_id} {
 	set file_out_glob "${output_base}${task_id}"
-	if {[wait_for_file $file_out_glob] != 0} {
-		log_error "Output file for task $task_id missing"
-		set exit_code 1
-		break
-	} else {
-		set match 0
-		spawn cat $file_out_glob
-		expect {
-			-re "COMPLETED" {
-				set match 1
-				exp_continue
-			}
-			eof {
-				wait
-			}
-		}
-		if {$match == 0} {
-			log_error "Bad job state for task $task_id"
-			set exit_code 1
-		}
-	}
-	if {$exit_code == 0} {
-		exec $bin_rm -f $file_out_glob
-	}
-}
 
-if {$exit_code != 0} {
-	cancel_job $job_id1
-	cancel_job $job_id2
+	wait_for_file -fail $file_out_glob
 
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	set output [run_command_output -fail "$bin_cat $file_out_glob"]
+	subtest {[regexp "COMPLETED" $output]} "Verify task $task_id is COMPLETED"
 }

@@ -26,20 +26,20 @@
 ############################################################################
 source ./globals
 
-set job_id	   0
+set job_id	       0
 set authorized     1
-set exit_code      0
 set part_name      "QA_TEST"
-set file_in        "test$test_id.input"
-
-proc cleanup {} {
-	global bin_rm file_in
-
-	exec $bin_rm -f $file_in
-}
+set file_in        "$test_dir/input"
 
 if {![is_super_user]} {
 	skip "Can not test more unless SlurmUser or root"
+}
+
+proc cleanup {} {
+	global job_id scontrol part_name
+
+	cancel_job $job_id
+	run_command "$scontrol delete PartitionName=$part_name"
 }
 
 #
@@ -85,9 +85,7 @@ if {[string compare $def_node ""] == 0} {
 spawn $scontrol create PartitionName=$part_name Nodes=$def_node MaxTime=30
 expect {
 	-re "error" {
-		log_error "Something bad happened on partition create"
-		set exit_code 1
-		exp_continue
+		fail "Something bad happened on partition create"
 	}
 	timeout {
 		fail "scontrol not responding"
@@ -141,7 +139,6 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 	expect {
 		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
-			set exit_code 0
 			exp_continue
 		}
 		timeout {
@@ -171,72 +168,24 @@ if {[string compare $enforcepartlimits "NO"] == 0} {
 		}
 	}
 	if {$matches != 1} {
-		log_error "Partition time limit not used "
-		set exit_code 1
+		fail "Partition time limit not used "
 	}
 } else {
 	#
-        # Job should be rejected at submit time
-        #
-        expect {
-                -re "Requested time limit is invalid (missing or exceeds some limit)" {
-                        set exit_code 0
-                        exp_continue
-                }
-                -re "unrecognized option '--deadline'" {
-                        set exit_code 1
-                        exp_continue
-                }
-                timeout {
-                        fail "sbatch not responding"
-                }
-                eof {
-                        wait
-                }
-        }
-}
-
-cancel_job $job_id
-
-#
-# Now delete the partition
-#
-spawn $scontrol delete PartitionName=$part_name
-expect {
-	timeout {
-		fail "scontrol not responding"
+	# Job should be rejected at submit time
+	#
+	expect {
+		-re "Requested time limit is invalid (missing or exceeds some limit)" {
+			exp_continue
+		}
+		-re "unrecognized option '--deadline'" {
+			fail "unrecognized option '--deadline'"
+		}
+		timeout {
+			fail "sbatch not responding"
+		}
+		eof {
+			wait
+		}
 	}
-	eof {
-		wait
-	}
-}
-
-#
-# Confirm the partition is now gone
-#
-set found -1
-spawn $scontrol show part $part_name
-expect {
-	-re "not found" {
-		log_debug "This error was expected, no worries"
-		set found 0
-		exp_continue
-	}
-	-re "PartitionName" {
-		set found 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$found != 0} {
-	fail "Partition not deleted"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

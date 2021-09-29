@@ -29,10 +29,9 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
-set file_err     "test$test_id.error"
-set file_in      "test$test_id.input"
-set file_out     "test$test_id.output"
+set file_err     "$test_dir/error"
+set file_in      "$test_dir/input"
+set file_out     "$test_dir/output"
 set job_id1      0
 set job_id2      0
 set nodelist_name ""
@@ -40,12 +39,10 @@ set gpu_tot      0
 set job_tres_cnt 0
 
 proc cleanup {} {
-	global bin_rm file_err file_in file_out
+	global job_id1 job_id2
 
-	exec $bin_rm -f $file_err $file_in $file_out
+	cancel_job [list $job_id1 $job_id2]
 }
-
-set timeout $max_job_delay
 
 set node_name [get_nodes_by_request "--gres=gpu:2 -n1 -t1"]
 if { [llength $node_name] != 1 } {
@@ -89,7 +86,6 @@ if {[string compare $nodelist_name ""] == 0} {
 # Delete left-over input script
 # Build input script file
 #
-exec $bin_rm -f $file_in
 make_bash_script $file_in "$srun $bin_sleep 5"
 
 #
@@ -130,7 +126,6 @@ expect {
 	}
 	timeout {
 		slow_kill $srun_pid
-		cancel_job $job_id1
 		fail "srun not responding"
 	}
 	eof {
@@ -186,20 +181,11 @@ set gres_dict_node [count_gres [get_node_param $node_name "Gres"]]
 
 dict for {gres_name gres_count} $gres_dict_node {
 	if {![dict exists $gres_dict_job $gres_name]} {
-		log_error "Gres $gres_name on node $node_name not allocated on job $job_id2 with --exclusive"
-		set exit_code 1
+		fail "Gres $gres_name on node $node_name not allocated on job $job_id2 with --exclusive"
 	} else {
 		set gres_count_job [dict get $gres_dict_job $gres_name]
 		if { $gres_count_job != $gres_count } {
-			log_error "Gres $gres_name on node $node_name not fully allocated on job $job_id2 with --exclusive ($gres_count_job != $gres_count)"
-			set exit_code 1
+			fail "Gres $gres_name on node $node_name not fully allocated on job $job_id2 with --exclusive ($gres_count_job != $gres_count)"
 		}
 	}
-}
-
-cancel_job $job_id2
-
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

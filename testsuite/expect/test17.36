@@ -26,27 +26,21 @@
 ############################################################################
 source ./globals
 
-set file_in       "test$test_id\_sc"
-set test_part_1   "test$test_id\_part_1"
-set test_part_2   "test$test_id\_part_2"
-set test_part_3   "test$test_id\_part_3"
-set num_jobs      0
-set cr_core       0
-set cr_cpu        0
-set cr_socket     0
-set cpu_cnt       0
-set socket_cnt    0
-set thread_cnt    0
-set oversubscribe_j_cnt  2
-set job_id        0
-set node_name     ""
-set exit_code     0
-
-proc cleanup {} {
-	global bin_rm file_in
-
-	exec $bin_rm -f $file_in
-}
+set input_file_name	    "input"
+set file_in             "$test_dir/$input_file_name"
+set test_part_1         "${test_name}_part_1"
+set test_part_2         "${test_name}_part_2"
+set test_part_3         "${test_name}_part_3"
+set num_jobs            0
+set cr_core             0
+set cr_cpu              0
+set cr_socket           0
+set cpu_cnt             0
+set socket_cnt          0
+set thread_cnt          0
+set oversubscribe_j_cnt 2
+set job_id              0
+set node_name           ""
 
 if {[check_config_select "linear"]} {
 	skip "Test is not compatible with a config of SelectType=select/linear"
@@ -76,6 +70,15 @@ if {[get_node_param $node_name "CPUSpecList"] != "MISSING"} {
 	skip "This test is incompatible with nodes that have a CPUSpecList (e.g. $node_name)"
 }
 
+proc cleanup {} {
+	global job_id test_part_1 test_part_2 test_part_3
+
+	cancel_job $job_id
+	delete_part $test_part_1
+	delete_part $test_part_2
+	delete_part $test_part_3
+}
+
 log_user 0
 set job_mem_opt  "--comment=no_mem"
 spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectTypeParameters"
@@ -91,8 +94,7 @@ expect {
 log_user 1
 
 proc cr_core_cpu { node } {
-
-	global cr_cpu cr_core core_cnt socket_cnt scontrol number exit_code
+	global cr_cpu cr_core core_cnt socket_cnt scontrol number
 	global cpu_cnt thread_cnt
 
 	log_user 0
@@ -128,11 +130,10 @@ proc cr_core_cpu { node } {
 	} elseif { $cr_core == 1 } {
 		return [expr $core_cnt * $socket_cnt]
 	} else {
-		log_error "an error occurred when getting the cpu or core count"
-		set exit_code 1
+		fail "An error occurred when getting the cpu or core count"
 	}
-
 }
+
 
 # Get default_queue_depth to see how many jobs will start at one time
 proc default_queue_depth { } {
@@ -159,7 +160,6 @@ proc default_queue_depth { } {
 }
 
 proc create_part {part oversubscribe node} {
-
 	global scontrol
 
 	spawn $scontrol create partitionname=$part OverSubscribe=$oversubscribe nodes=$node
@@ -175,7 +175,7 @@ proc create_part {part oversubscribe node} {
 
 
 proc sub_job { job oversubscribe part } {
-	global sbatch file_in number job_id exit_code job_mem_opt
+	global sbatch file_in number job_id job_mem_opt
 
 	set job_id 0
 	if { $oversubscribe } {
@@ -208,34 +208,27 @@ proc sub_job { job oversubscribe part } {
 		}
 	}
 	if {$job_id == 0} {
-		log_error "sbatch did not submit job"
-		set exit_code 1
+		fail "sbatch did not submit job"
 	}
 }
 
 proc check_job { exp_num_jobs } {
-
-	global squeue job_id num_jobs file_in exit_code
+	global squeue job_id num_jobs input_file_name
 
 	# Wait a bit for the job to start
-	if {[wait_for_job ${job_id}_0 "RUNNING"] != 0} {
-		log_error "Error waiting for job ${job_id}_0 to start"
-		cancel_job ${job_id}_0
-		set exit_code 1
-	}
+	wait_for_job -fail ${job_id}_0 "RUNNING"
 
 	# Wait for the expected number of jobs to be running
 	if [
 		wait_for {$job_cnt == $exp_num_jobs} {
 			set job_cnt [
-				regexp -all "$file_in" [
+				regexp -all $input_file_name [
 					run_command_output -fail "$squeue --job=$job_id --state=RUNNING,SUSPENDED -Oname --noheader"
 				]
 			]
 		}
 	] {
-		log_error "The number of possible jobs that could run were not reached ($job_cnt != $exp_num_jobs). This could be due to memory or other limits."
-		set exit_code 1
+		fail "The number of possible jobs that could run were not reached ($job_cnt != $exp_num_jobs). This could be due to memory or other limits."
 	}
 }
 
@@ -272,9 +265,6 @@ proc check_part { } {
 ##################################Test Begins##################################
 # Check that partition names have not been used
 check_part
-
-# Remove any vestigial partitions or scripts
-exec $bin_rm -f $file_in
 
 make_bash_script $file_in "sleep 10"
 
@@ -320,15 +310,16 @@ if [param_contains [get_config_param "PreemptMode"] "GANG"] {
         skip "default_queue_depth less than desired job count ($new_job_limit < $job_start), can not run oversubscribe=YES:2"
 } else {
 	log_info "Test partition with oversubscribe=YES:2"
-#	Make a new partition with oversubscribe=yes:2
+
+	# Make a new partition with oversubscribe=yes:2
 	create_part $test_part_2 "YES:$oversubscribe_j_cnt" $node_name
 
-#	Submit a job with oversubscribe (expect 2 jobs per core/CPU)
+	# Submit a job with oversubscribe (expect 2 jobs per core/CPU)
 	sub_job "0-$new_job_limit" 1 $test_part_2
 	check_job $new_job_limit
 	cancel_job $job_id
 
-#	Submit a job without oversubscribe (expect 1 job per core/CPU)
+	# Submit a job without oversubscribe (expect 1 job per core/CPU)
 	sub_job "0-$num_jobs" 0 $test_part_2
 	check_job $num_jobs
 	cancel_job $job_id
@@ -355,7 +346,3 @@ sub_job "0-$num_jobs" 0 $test_part_3
 check_job 1
 cancel_job $job_id
 delete_part $test_part_3
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
-}

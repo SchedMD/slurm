@@ -28,23 +28,20 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
-set file_in          "test$test_id.input"
-set file_out         "test$test_id.output"
-set file_script      "test$test_id.sh"
+set file_in          "$test_dir/input"
+set file_out         "$test_dir/output"
+set file_script      "$test_dir/script"
 set job_id           0
-set timeout          $max_job_delay
 
 proc cleanup {} {
-	global bin_rm file_in file_out file_script
+	global job_id
 
-	exec $bin_rm -f $file_in $file_out $file_script
+	cancel_job $job_id
 }
 
 #
 # Build input script file
 #
-exec $bin_rm -f $file_in $file_out $file_script
 set fd [open $file_in "w"]
 puts $fd "hello"
 close $fd
@@ -54,39 +51,10 @@ make_bash_script $file_script "$bin_cat"
 # Spawn a job via sbatch using these environment variables
 #
 set matches 0
-spawn $sbatch -N1 --input=$file_in --output=$file_out $file_script
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Job did not complete"
-	set exit_code 1
-}
-if {[wait_for_file $file_out] == 0} {
-	spawn $bin_cat $file_out
-	expect {
-		-re "hello" {
-			incr matches
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-}
-if {$matches != 1} {
-	fail "Sbatch failed to process --input"
-}
+set job_id [submit_job -fail "-N1 --input=$file_in --output=$file_out $file_script"]
 
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
+
+set output [run_command_output -fail "$bin_cat $file_out"]
+subtest {[regexp "hello" $output]} "Verify that sbatch has processed the --input option"

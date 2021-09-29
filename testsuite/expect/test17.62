@@ -26,9 +26,8 @@
 ############################################################################
 source ./globals
 
-set exit_code     0
-set file_in       "test$test_id\.sh"
-set job_name      "test$test_id\_job"
+set file_in       "$test_dir/input"
+set job_name      "${test_name}_job"
 set partition     [default_partition]
 set job_time      1
 set stdout        "/dev/null"
@@ -37,10 +36,9 @@ set job_id        0
 set node_list     [lindex [get_nodes_by_state] 0]
 
 proc cleanup {} {
-	global job_id bin_rm file_in
+	global job_id
 
 	cancel_job $job_id
-	exec $bin_rm -fr $file_in
 }
 
 # Default for LSF is KB, but Slurm is in MB
@@ -86,17 +84,11 @@ expect {
 }
 
 if {$job_id == 0} {
-	exec $bin_rm -fr $file_in
 	fail "sbatch did not submit job"
 }
 
 # Wait for the job to finish
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Error waiting for job $job_id to complete"
-	cancel_job $job_id
-	set exit_code 1
-}
-
+wait_for_job -fail $job_id "DONE"
 
 foreach option [array names check_list] {
 	#log_debug "$option=$check_list($option)"
@@ -123,11 +115,6 @@ foreach option [array names check_list] {
 
 	# Check that each value is found
 	if {$match != 1} {
-		log_error "$option was not found. Could be due to small configured MinJobAge value"
-		set exit_code 1
+		fail "$option was not found. Could be due to small configured MinJobAge value"
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
