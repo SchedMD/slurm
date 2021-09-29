@@ -2210,6 +2210,23 @@ static int _batch_launch_defer(queued_request_t *queued_req_ptr)
 #endif
 	}
 
+	if ((slurm_conf.prolog_flags & PROLOG_FLAG_DEFER_BATCH) &&
+	    (job_ptr->state_reason == WAIT_PROLOG)) {
+		if (job_ptr->node_bitmap_pr &&
+		    (slurm_conf.debug_flags &
+		     (DEBUG_FLAG_TRACE_JOBS | DEBUG_FLAG_AGENT))) {
+			char *tmp_pr;
+			tmp_pr = bitmap2node_name(job_ptr->node_bitmap_pr);
+			verbose("%s: JobId=%u still waiting on prologs on %s",
+			       __func__, job_ptr->job_id, tmp_pr);
+			xfree(tmp_pr);
+		} else {
+			debug2("%s: JobId=%u still waiting on node prologs",
+			       __func__, job_ptr->job_id);
+		}
+		return 1;
+	}
+
 	if (nodes_ready) {
 		if (IS_JOB_CONFIGURING(job_ptr))
 			job_config_fini(job_ptr);
