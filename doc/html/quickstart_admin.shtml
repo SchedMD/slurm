@@ -253,6 +253,12 @@ if both of the first two listed hosts fail the third SlurmctldHost will take
 over until the primary returns to service. Other than a brief period of non-
 responsiveness, the transition back and forth should go undetected.</p>
 
+<p>Note that with an already running cluster, changing the order of the
+SlurmctldHost entries via <code>scontrol reconfigure</code> is not supported.
+The supported method is to drain and restart the cluster since running jobs
+may still go the prevous primary controller when completing and delay
+scheduling.</p>
+
 <p>Prior to 18.08, Slurm used the <a href="slurm.conf.html#OPT_BackupAddr">
 &quot;BackupAddr&quot;</a> and <a href="slurm.conf.html#OPT_BackupController">
 &quot;BackupController&quot;</a> parameters for High Availability. These
