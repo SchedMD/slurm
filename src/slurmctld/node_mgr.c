@@ -511,7 +511,8 @@ extern int load_all_node_state ( bool state_only )
 					else
 						hs = hostset_create(node_name);
 				}
-				node_ptr->node_state    = node_state;
+				node_ptr->node_state =
+					node_state | NODE_STATE_CLOUD;
 			} else if (IS_NODE_UNKNOWN(node_ptr)) {
 				if (base_state == NODE_STATE_DOWN) {
 					orig_flags = node_ptr->node_state &
