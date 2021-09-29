@@ -45,8 +45,9 @@ if {![is_super_user]} {
 }
 
 proc cleanup { } {
-	global config_file bin_rm mail_prog mail_prog_out
+	global config_file bin_rm mail_prog mail_prog_out job_id
 
+	cancel_job $job_id
 	restore_conf $config_file
 	exec $bin_rm -f $mail_prog $mail_prog_out
 	reconfigure
@@ -135,3 +136,17 @@ subtest {[regexp "-s Slurm Job_id=$job_id Name=test$test_id.TIMEDOUT Reached 80%
 subtest {[regexp "-s Slurm Job_id=$job_id Name=test$test_id.TIMEDOUT Reached 90% of time limit, Run time \\S+ $login_grp_info SLURM_JOB_ID=$job_id SLURM_JOB_USER=$login_grp_info SLURM_JOB_MAIL_TYPE=Reached 90% of time limit SLURM_JOB_QUEUED_TIME= SLURM_JOB_RUN_TIME=\\S+ SLURM_JOB_EXIT_CODE_MAX=" $output]} "TIME_LIMIT_90 mail output should be found in log for timed out job"
 subtest {[regexp "-s Slurm Job_id=$job_id Name=test$test_id.TIMEDOUT Reached time limit, Run time \\S+ $login_grp_info SLURM_JOB_ID=$job_id SLURM_JOB_USER=$login_grp_info SLURM_JOB_MAIL_TYPE=Reached time limit SLURM_JOB_QUEUED_TIME= SLURM_JOB_RUN_TIME=\\S+ SLURM_JOB_EXIT_CODE_MAX=" $output]} "Time limit mail output should be found in log for timedout job"
 subtest {[regexp "-s Slurm Job_id=$job_id Name=test$test_id.TIMEDOUT Failed, Run time \\S+, TIMEOUT, ExitCode 0 $login_grp_info SLURM_JOB_ID=$job_id SLURM_JOB_USER=$login_grp_info SLURM_JOB_MAIL_TYPE=Failed SLURM_JOB_QUEUED_TIME= SLURM_JOB_RUN_TIME=\\S+ SLURM_JOB_EXIT_CODE_MAX=0" $output]} "Failed mail output should be found in log for timedout job"
+
+exec $bin_rm -f $mail_prog_out
+log_info "Requeue job"
+set job_id [ submit_job "-N1 -t1 --job-name=test$test_id.REQUEUE --mail-type=REQUEUE --requeue --mail-user=$login_grp_info --wrap='sleep 300'"]
+subtest {![wait_for_job $job_id RUNNING]} "$job_id should be running"
+run_command -fail "$scontrol requeue $job_id"
+if {[wait_for_file $mail_prog_out] != 0} {
+	fail "No output file"
+}
+cancel_job $job_id
+
+set output [run_command_output -fail "$bin_cat $mail_prog_out"]
+
+subtest {[regexp "-s Slurm Job_id=$job_id Name=test$test_id.REQUEUE Requeued, Run time \\S+ $login_grp_info SLURM_JOB_ID=$job_id SLURM_JOB_USER=$login_grp_info SLURM_JOB_MAIL_TYPE=Requeued" $output]} "Requeue mail output should be found in the log of requeued job"
