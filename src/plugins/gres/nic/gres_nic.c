@@ -157,7 +157,8 @@ extern int gres_p_node_config_load(List gres_conf_list,
 	if (gres_devices)
 		return rc;
 
-	rc = common_node_config_load(gres_conf_list, gres_name, &gres_devices);
+	rc = common_node_config_load(gres_conf_list, gres_name, config,
+				     &gres_devices);
 
 	if (rc != SLURM_SUCCESS)
 		fatal("%s failed to load configuration", plugin_name);

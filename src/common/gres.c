@@ -2152,8 +2152,8 @@ unpack_error:
 
 /*
  * Load this node's configuration (how many resources it has, topology, etc.)
- * IN cpu_cnt - Number of CPUs configured on this node
- * IN node_name - Name of this node
+ * IN cpu_cnt - Number of CPUs configured for node node_name.
+ * IN node_name - Name of the node to load the GRES config for.
  * IN gres_list - Node's GRES information as loaded from slurm.conf by slurmd
  * IN xcpuinfo_abs_to_mac - Pointer to xcpuinfo_abs_to_mac() funct. If
  *	specified, Slurm will convert gres_slurmd_conf->cpus_bitmap (a bitmap
@@ -2163,7 +2163,7 @@ unpack_error:
  * IN xcpuinfo_mac_to_abs - Pointer to xcpuinfo_mac_to_abs() funct. Used to
  *	convert CPU affinities from machine format (as collected from NVML and
  *	others) into abstract format, for sanity checking purposes.
- * NOTE: Called from slurmd and slurmstepd
+ * NOTE: Called from slurmd (and from slurmctld for each cloud node)
  */
 extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 				   List gres_list,
@@ -2183,9 +2183,11 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 	gres_slurmd_conf_t **gres_array;
 	char *gres_conf_file;
 	char *autodetect_string = NULL;
+	bool in_slurmd = running_in_slurmd();
 
 	node_config_load_t node_conf = {
 		.cpu_cnt = cpu_cnt,
+		.in_slurmd = in_slurmd,
 		.xcpuinfo_mac_to_abs = xcpuinfo_mac_to_abs
 	};
 
@@ -2230,6 +2232,14 @@ extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 			_handle_global_autodetect(autodetect_string);
 			xfree(autodetect_string);
 		}
+
+		/* AutoDetect cannot run on the slurmctld node */
+		if (running_in_slurmctld() &&
+		    autodetect_flags &&
+		    !((autodetect_flags & GRES_AUTODETECT_GPU_FLAGS) &
+		      GRES_AUTODETECT_GPU_OFF))
+			fatal("Cannot use AutoDetect on cloud node \"%s\"",
+			      gres_node_name);
 
 		if (s_p_get_array((void ***) &gres_array,
 				  &count, "Name", tbl)) {

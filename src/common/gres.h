@@ -139,6 +139,8 @@ typedef struct gres_slurmd_conf {
 typedef struct {
 	/* How many CPUs there are configured on the node */
 	uint32_t cpu_cnt;
+	/* True if called in the slurmd */
+	bool in_slurmd;
 	/* A pointer to the mac_to_abs function */
 	int (*xcpuinfo_mac_to_abs) (char *mac, char **abs);
 } node_config_load_t;
@@ -412,12 +414,18 @@ extern char *gres_name_filter(char *orig_gres, char *nodes);
  */
 /*
  * Load this node's configuration (how many resources it has, topology, etc.)
- * IN cpu_cnt - Number of CPUs configured on this node
- * IN node_name - Name of this node
+ * IN cpu_cnt - Number of CPUs configured for node node_name.
+ * IN node_name - Name of the node to load the GRES config for.
  * IN gres_list - Node's GRES information as loaded from slurm.conf by slurmd
- * IN xcpuinfo_abs_to_mac - Pointer to xcpuinfo_abs_to_mac() funct, if available
- * IN xcpuinfo_mac_to_abs - Pointer to xcpuinfo_mac_to_abs() funct, if available
- * NOTE: Called from slurmd and slurmstepd
+ * IN xcpuinfo_abs_to_mac - Pointer to xcpuinfo_abs_to_mac() funct. If
+ *	specified, Slurm will convert gres_slurmd_conf->cpus_bitmap (a bitmap
+ *	derived from gres.conf's "Cores" range string) into machine format
+ *	(normal slrumd/stepd operation). If not, it will remain unconverted (for
+ *	testing purposes or when unused).
+ * IN xcpuinfo_mac_to_abs - Pointer to xcpuinfo_mac_to_abs() funct. Used to
+ *	convert CPU affinities from machine format (as collected from NVML and
+ *	others) into abstract format, for sanity checking purposes.
+ * NOTE: Called from slurmd (and from slurmctld for each cloud node)
  */
 extern int gres_g_node_config_load(uint32_t cpu_cnt, char *node_name,
 				   List gres_list,
