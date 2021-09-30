@@ -30,7 +30,6 @@ source ./globals
 set test_part_1    "test$test_id\_partition_1"
 set test_part_2    "test$test_id\_partition_2"
 set test_node      ""
-set exit_code      0
 
 if {![is_super_user]} {
 	skip "Can not test more unless SlurmUser or root"
@@ -149,10 +148,7 @@ expect {
 	}
 }
 
-if {$match != 2 || $found != 2} {
-	log_error "Partitions do not match (match:$match found:$found != 2)"
-	set exit_code 1
-}
+subtest {$match == 2 && $found == 2} "Test SINFO_PARTITION" "Partitions do not match (match:$match found:$found != 2)"
 
 #### Test command line option override ####
 set match 0
@@ -177,10 +173,7 @@ expect {
 	}
 }
 
-if {$match != 1} {
-	log_error "sinfo -p did not override environment variable ($match != 1)"
-	set exit_code 1
-}
+subtest {$match == 1} "Test SINFO_PARTITION with command line option override" "sinfo -p did not override environment variable ($match != 1)"
 
 set match 0
 set found 0
@@ -203,10 +196,7 @@ expect {
 	}
 }
 
-if {$match != 2 || $found != 2} {
-	log_error "sinfo -p did not override env variable (match:$match found:$found != 2)"
-	set exit_code 1
-}
+subtest {$match == 2 && $found == 2} "Test SINFO_ALL with -p override" "sinfo -p did not override env variable (match:$match found:$found != 2)"
 
 set match 0
 spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -h -o%P -a"
@@ -227,10 +217,7 @@ expect {
 	}
 }
 
-if {$match != 2} {
-	log_error "sinfo did not show all partitions ($match != 2)"
-	set exit_code 1
-}
+subtest {$match == 2} "Test SINFO_PARTITION shows all partitions" "sinfo did not show all partitions ($match != 2)"
 
 #### Test conflicts ####
 set match 0
@@ -249,10 +236,7 @@ expect {
 	}
 }
 
-if {$match != 1} {
-	log_error "sinfo should have produced an error ($match != 1)"
-	set exit_code 1
-}
+subtest {$match == 1} "Test conflicting environment variables" "sinfo should have produced an error ($match != 1)"
 
 set match 0
 spawn $bin_bash -c "SINFO_PARTITION=$test_part_1,$test_part_2 $sinfo -p$test_part_1 -a"
@@ -270,10 +254,4 @@ expect {
 	}
 }
 
-if {$match != 1} {
-	fail "sinfo should have produced an error ($match != 1)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$match == 1} "Test conflicting environment variables and options" "sinfo should have produced an error ($match != 1)"

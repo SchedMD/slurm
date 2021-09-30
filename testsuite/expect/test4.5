@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
 set matches      0
 set name_string  "\[a-zA-Z0-9\]\[^ ]*"
 set node_state   ""
@@ -74,8 +73,9 @@ proc reset_state { } {
 }
 
 proc cleanup {} {
-	global tmp_sc
+	global tmp_sc tmp_id
 
+	cancel_job $tmp_id
 	#
 	# Reset node states back to idle
 	#
@@ -159,15 +159,10 @@ expect {
 }
 
 if {$tmp_id == 0} {
-	log_error "sbatch did not submit job"
-	set exit_code 1
+	fail "sbatch did not submit job"
 }
 
-if {[wait_for_job $tmp_id "RUNNING"] != 0} {
-	log_error "Error waiting for job $tmp_id to start"
-	cancel_job $tmp_id
-	set exit_code 1
-}
+wait_for_job -fail $tmp_id "RUNNING"
 
 set allocated_count 0
 spawn $sinfo --Node --node=$node_list_str --long --exact --state=allocated -p$partition
@@ -186,8 +181,7 @@ expect {
 		exp_continue
 	}
 	-re "error:" {
-		log_error "Unexpected error from sinfo"
-		set exit_code 1
+		fail "Unexpected error from sinfo"
 	}
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
@@ -243,8 +237,7 @@ expect {
 		exp_continue
 	}
 	-re "error:" {
-		log_error "Unexpected error from sinfo"
-		set exit_code 1
+		fail "Unexpected error from sinfo"
 	}
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
@@ -287,8 +280,7 @@ expect {
 		exp_continue
 	}
 	-re "error:" {
-		log_error "Unexpected error from sinfo"
-		set exit_code 1
+		fail "Unexpected error from sinfo"
 	}
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
@@ -328,8 +320,7 @@ expect {
 		exp_continue
 	}
 	-re "error:" {
-		log_error "Unexpected error from sinfo"
-		set exit_code 1
+		fail "Unexpected error from sinfo"
 	}
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
@@ -374,15 +365,13 @@ expect {
 		exp_continue
 	}
 	-re "error:" {
-		log_error "Unexpected error from sinfo"
-		set exit_code 1
+		fail "Unexpected error from sinfo"
 	}
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "sinfo not responding"
-		set exit_code 1
+		fail "sinfo not responding"
 	}
 	eof {
 		wait
@@ -420,15 +409,13 @@ expect {
 		exp_continue
 	}
 	-re "error:" {
-		log_error "Unexpected error from sinfo"
-		set exit_code 1
+		fail "Unexpected error from sinfo"
 	}
 	-re "Unable to contact" {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "sinfo not responding"
-		set exit_code 1
+		fail "sinfo not responding"
 	}
 	eof {
 		wait
@@ -439,8 +426,4 @@ if {$mismatches != 0} {
 }
 if {$drain_cnt != 2} {
 	fail "drain_cnt($drain_cnt) != 2"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

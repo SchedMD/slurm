@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set matches     0
 
 #
@@ -70,10 +69,7 @@ expect {
 	}
 }
 
-if {$matches != 4} {
-	log_error "sinfo node format error"
-	set exit_code 1
-}
+subtest {$matches == 4} "Check the sinfo regular format"
 
 
 #
@@ -126,13 +122,5 @@ expect {
 	}
 }
 
-if {$ranges != 0} {
-	fail "sinfo exact match option failure"
-}
-
-if {$matches != 6} {
-	fail "sinfo node long format error"
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$ranges == 0} "Check for sinfo ranges"
+subtest {$matches == 6} "Check the sinfo long format"

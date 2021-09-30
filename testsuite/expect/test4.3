@@ -31,7 +31,6 @@ source ./globals
 
 set def_part      0
 set def_part_name ""
-set exit_code     0
 set matches       0
 
 #
@@ -87,14 +86,8 @@ expect {
 	}
 }
 
-if {$matches != 5} {
-	log_error "sinfo partition summarize format error"
-	set exit_code 1
-}
-if {$def_part == 0} {
-	log_error "sinfo shows no available default partition"
-	set exit_code 1
-}
+subtest {$matches == 5} "Check the sinfo summarize format"
+subtest {$def_part != 0} "sinfo should show the default partition"
 
 #
 # Check the sinfo summarize format with partition filter
@@ -119,10 +112,7 @@ expect {
 	}
 }
 
-if {$matches != 1} {
-	log_error "sinfo partition filtering error"
-	set exit_code 1
-}
+subtest {$matches == 1} "Check the sinfo summarize format with partition filter"
 
 #
 # Check the sinfo regular format
@@ -179,10 +169,7 @@ expect {
 	}
 }
 
-if {$matches != 6} {
-	log_error "sinfo partition normal format error $matches"
-	set exit_code 1
-}
+subtest {$matches == 6} "Check the sinfo regular format"
 
 #
 # Check the sinfo long format
@@ -246,9 +233,4 @@ expect {
 	}
 }
 
-if {$matches != 10} {
-	fail "sinfo partition long format error"
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 10} "Check the sinfo long format"
