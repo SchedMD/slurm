@@ -350,9 +350,9 @@ static int _fill_job_desc_from_opts(slurm_opt_t *opt, job_desc_msg_t *desc)
 
 	desc->environment = NULL;
 	if (sbopt->export_file) {
-		desc->environment = env_array_from_file(sbopt->export_file);
-		if (desc->environment == NULL)
-			exit(1);
+		error("%s: rejecting request to use load environment from file: %s",
+		      __func__, sbopt->export_file);
+		return -1;
 	}
 	if (opt->export_env == NULL) {
 		env_array_merge(&desc->environment, (const char **) environ);
