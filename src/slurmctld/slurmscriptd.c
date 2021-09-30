@@ -376,8 +376,19 @@ static int _run_script(char *script, char **argv, char **env, uint32_t job_id,
 	return status;
 }
 
-static int _handle_flush(void)
+static int _handle_flush(buf_t *buffer)
 {
+	slurmscriptd_msg_t recv_msg;
+
+	memset(&recv_msg, 0, sizeof(recv_msg));
+	recv_msg.msg_type = SLURMSCRIPTD_REQUEST_FLUSH;
+	if (slurmscriptd_unpack_msg(&recv_msg, buffer) != SLURM_SUCCESS) {
+		/*
+		 * We still want to cleanup any scripts that are running.
+		 * This should never happen anyway.
+		 */
+	}
+
 	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_FLUSH");
 	/* Kill all running scripts */
 	run_command_shutdown();
@@ -723,7 +734,7 @@ static int _handle_request(int req, buf_t *buffer)
 
 	switch (req) {
 		case SLURMSCRIPTD_REQUEST_FLUSH:
-			rc = _handle_flush();
+			rc = _handle_flush(buffer);
 			break;
 		case SLURMSCRIPTD_REQUEST_FLUSH_JOB:
 			rc = _handle_flush_job(buffer);
@@ -870,7 +881,8 @@ static void _kill_slurmscriptd(void)
 
 extern void slurmscriptd_flush(void)
 {
-	_write_msg(slurmctld_writefd, SLURMSCRIPTD_REQUEST_FLUSH, NULL);
+	_send_rpc(slurmctld_writefd, SLURMSCRIPTD_REQUEST_FLUSH, NULL, false,
+		  NULL, NULL, NULL);
 }
 
 extern void slurmscriptd_flush_job(uint32_t job_id)

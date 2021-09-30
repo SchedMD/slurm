@@ -136,6 +136,9 @@ extern int slurmscriptd_pack_msg(slurmscriptd_msg_t *msg, buf_t *buffer)
 	packstr(msg->key, buffer); /* Can be NULL */
 
 	switch (msg->msg_type) {
+	case SLURMSCRIPTD_REQUEST_FLUSH:
+		/* Nothing to pack */
+		break;
 	case SLURMSCRIPTD_REQUEST_RUN_SCRIPT:
 		_pack_run_script(msg->msg_data, buffer);
 		break;
@@ -159,6 +162,9 @@ extern int slurmscriptd_unpack_msg(slurmscriptd_msg_t *msg, buf_t *buffer)
 
 	safe_unpackstr_xmalloc(&msg->key, &tmp32, buffer);
 	switch (msg->msg_type) {
+	case SLURMSCRIPTD_REQUEST_FLUSH:
+		/* Nothing to unpack */
+		break;
 	case SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE:
 		rc = _unpack_script_complete(
 				(script_complete_t **)(&msg->msg_data),
