@@ -1019,7 +1019,7 @@ extern int gres_ctld_job_alloc_whole_node(
 static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 			int node_offset, char *gres_name, uint32_t job_id,
 			char *node_name, bool old_job, uint32_t plugin_id,
-			bool job_fini)
+			bool resize)
 {
 	int i, j, len, sz1, sz2;
 	gres_job_state_t  *job_gres_ptr  = (gres_job_state_t *)  job_gres_data;
@@ -1213,6 +1213,75 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
 		}
  	}
 
+	if (!resize)
+		return SLURM_SUCCESS;
+
+	xassert(job_gres_ptr->node_cnt >= 1);
+
+	/*
+	 * If resizing, alter the job's GRES bitmaps. Normally, a job's GRES
+	 * bitmaps will get automatically freed when the job is destroyed.
+	 * However, a job isn't destroyed when it is resized. So we need to
+	 * remove this node's GRES from the job's GRES bitmaps.
+	 */
+	if (job_gres_ptr->gres_cnt_node_alloc) {
+		/*
+		 * This GRES is no longer part of the job, remove it from the
+		 * alloc list.
+		 */
+		if (job_gres_ptr->gres_cnt_node_alloc[node_offset] >=
+		    job_gres_ptr->total_gres)
+			return ESLURM_UNSUPPORTED_GRES;
+		job_gres_ptr->total_gres -=
+			job_gres_ptr->gres_cnt_node_alloc[node_offset];
+		job_gres_ptr->gres_cnt_node_alloc[node_offset] = 0;
+
+		/* Shift job GRES counts down, if necessary */
+		for (int i = node_offset + 1; i < job_gres_ptr->node_cnt; i++) {
+			job_gres_ptr->gres_cnt_node_alloc[i - 1] =
+				job_gres_ptr->gres_cnt_node_alloc[i];
+		}
+	}
+	/* Downsize job GRES for this node */
+	if (job_gres_ptr->gres_bit_alloc &&
+	    job_gres_ptr->gres_bit_alloc[node_offset]) {
+		/* Free the job's GRES bitmap */
+		xfree(job_gres_ptr->gres_bit_alloc[node_offset]);
+
+		/* Shift job GRES bitmaps down, if necessary */
+		for (int i = node_offset + 1; i < job_gres_ptr->node_cnt; i++) {
+			job_gres_ptr->gres_bit_alloc[i - 1] =
+				job_gres_ptr->gres_bit_alloc[i];
+		}
+	}
+
+	/* Downsize job step GRES for this node */
+	if (job_gres_ptr->gres_bit_step_alloc &&
+	    job_gres_ptr->gres_bit_step_alloc[node_offset]) {
+		/* Free the step's GRES bitmap */
+		xfree(job_gres_ptr->gres_bit_step_alloc[node_offset]);
+
+		/* Shift step GRES bitmaps down, if necessary */
+		for (int i = node_offset + 1; i < job_gres_ptr->node_cnt; i++) {
+			job_gres_ptr->gres_bit_step_alloc[i - 1] =
+				job_gres_ptr->gres_bit_step_alloc[i];
+		}
+	}
+	if (job_gres_ptr->gres_cnt_step_alloc &&
+	    job_gres_ptr->gres_cnt_step_alloc[node_offset]) {
+		/* Clear step GRES count and subtract from total */
+		job_gres_ptr->gres_cnt_step_alloc[node_offset] = 0;
+
+		/* Shift step GRES counts down, if necessary */
+		for (int i = node_offset + 1; i < job_gres_ptr->node_cnt; i++) {
+			job_gres_ptr->gres_cnt_step_alloc[i - 1] =
+				job_gres_ptr->gres_cnt_step_alloc[i];
+		}
+	}
+
+	/* Finally, reduce the node count, since this node is deallocated */
+	job_gres_ptr->node_cnt--;
+
 	return SLURM_SUCCESS;
 }
 
@@ -1229,13 +1298,14 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
  *		    registration, the GRES type and topology. This results in
  *		    some incorrect internal bookkeeping, but does not cause
  *		    failures in terms of allocating GRES to jobs.
- * IN: job_fini   - job fully terminating on this node (not just a test)
+ * IN: resize     - True if dealloc is due to a node being removed via a job
+ * 		    resize; false if dealloc is due to a job test or a real job
+ * 		    that is terminating.
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
 				 int node_offset, uint32_t job_id,
-				 char *node_name, bool old_job,
-				 bool job_fini)
+				 char *node_name, bool old_job, bool resize)
 {
 	int rc = SLURM_SUCCESS, rc2;
 	ListIterator job_gres_iter;
@@ -1264,8 +1334,10 @@ extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
 				   node_gres_ptr->gres_data, node_offset,
 				   job_gres_ptr->gres_name, job_id,
 				   node_name, old_job,
-				   job_gres_ptr->plugin_id, job_fini);
-		if (rc2 != SLURM_SUCCESS)
+				   job_gres_ptr->plugin_id, resize);
+		if (rc2 == ESLURM_UNSUPPORTED_GRES) {
+			list_delete_item(job_gres_iter);
+		} else if (rc2 != SLURM_SUCCESS)
 			rc = rc2;
 	}
 	list_iterator_destroy(job_gres_iter);

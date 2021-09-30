@@ -112,13 +112,14 @@ extern int gres_ctld_job_alloc(List job_gres_list, List *job_alloc_gres_list,
  *		    some incorrect internal bookkeeping, but does not cause
  *		    failures in terms of allocating GRES to jobs.
  * IN user_id     - job's user ID
- * IN: job_fini   - job fully terminating on this node (not just a test)
+ * IN: resize     - True if dealloc is due to a node being removed via a job
+ * 		    resize; false if dealloc is due to a job test or a real job
+ * 		    that is terminating.
  * RET SLURM_SUCCESS or error code
  */
 extern int gres_ctld_job_dealloc(List job_gres_list, List node_gres_list,
 				 int node_offset, uint32_t job_id,
-				 char *node_name, bool old_job,
-				 bool job_fini);
+				 char *node_name, bool old_job, bool resize);
 
 /*
  * Merge one job's gres allocation into another job's gres allocation.

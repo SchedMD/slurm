@@ -39,6 +39,7 @@ documents those changes that are of interest to users and administrators.
  -- Fix issue for preemption of job array task that makes afterok dependency
     fail. Additionally, send emails when requeueing happens due to preemption.
  -- Fix sending requeue mail type.
+ -- Properly resize a job's GRES bitmaps and counts when resizing the job.
 
 * Changes in Slurm 21.08.1
 ==========================
