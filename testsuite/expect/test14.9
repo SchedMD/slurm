@@ -33,51 +33,45 @@ set job_id      0
 
 proc cleanup {} {
 	global job_id bin_rm file_in file_out file_err
+	global sacctmgr testsuite_user test_name
 
 	cancel_job $job_id
 	exec $bin_rm -f $file_in $file_out $file_err
+
+	run_command -none "$sacctmgr -vi delete user name=$testsuite_user"
+	run_command -none "$sacctmgr -vi delete account name=$test_name"
 }
 
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
-} elseif [is_super_user] {
-	skip "This test can not be run as SlurmUser or root"
+}
+if {![check_run_as_user $testsuite_user]} {
+	skip "This test needs testsuite_user configured in globals.local"
 }
 
 # Delete left-over stdout/err files
-file delete $file_out $file_err
+cleanup
+
+# Setup the test user
+run_command -fail "$sacctmgr -vi add account name=$test_name"
+run_command -fail "$sacctmgr -vi add user name=$testsuite_user account=$test_name"
+run_command -fail "$sacctmgr -vi update user $testsuite_user set adminlevel=None"
 
 #
 # Build input script file that broacasts a file
 #
 make_bash_script $file_in "
   export SLURM_SBCAST_AUTH_FAIL_TEST=1
-  $srun $bin_rm -f /tmp/test1.$test_id
-  $sbcast $sbcast /tmp/test1.$test_id
-  $srun ls /tmp/test1.$test_id
+  $srun $bin_rm -f /tmp/$test_name
+  $sbcast $sbcast /tmp/$test_name
+  $srun ls /tmp/$test_name
+  $srun $bin_rm -f /tmp/$test_name
 "
 
 #
 # Spawn an sbatch job that uses stdout/err and confirm their contents
 #
-set timeout $max_job_delay
-set sbatch_pid [spawn $sbatch -N1 --output=$file_out --error=$file_err -t1 $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "Batch submit failure"
-}
+set job_id [submit_job -fail -user $testsuite_user "-N1 --output=$file_out --error=$file_err -t1 $file_in"]
 
 #
 # Wait for job to complete and check output file
