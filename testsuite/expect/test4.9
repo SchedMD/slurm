@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
 set matches      0
 
 #
@@ -53,10 +52,7 @@ expect {
 	}
 }
 
-if {$matches == 0} {
-	log_error "sinfo format error"
-	set exit_code 1
-}
+subtest {$matches != 0} "Check the sinfo format output via command line"
 
 #
 # Check the sinfo format output via environment variable
@@ -79,11 +75,4 @@ expect {
 }
 unset env(SINFO_FORMAT)
 
-if {$matches == 0} {
-	fail "sinfo format error"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
-
+subtest {$matches != 0} "Check the sinfo format output via environment variable"

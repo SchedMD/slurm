@@ -31,7 +31,6 @@ source ./globals_accounting
 set test_acct           "test$test_id\_acct"
 set test_part           "test$test_id\_part"
 set test_node           [lindex [get_nodes_by_state] 0]
-set exit_code           0
 
 array set node_sinfo_vals { }
 array set part_sinfo_vals { }

@@ -29,7 +29,6 @@
 source ./globals
 
 set file_in     "test$test_id.in"
-set exit_code   0
 set pnumsc      0
 set pnumsi      0
 set aprocsc     0
@@ -39,43 +38,40 @@ set inode_name  ""
 set smallest    1
 set layout "static"
 set select_type ""
+set job_id      0
+
+proc cleanup {} {
+	global job_id file_in
+
+	cancel_job $job_id
+	file delete $file_in
+}
 
 proc scontrol_test { node proc_cnt } {
 	global scontrol number test_prompt
 	upvar spawn_id spawn_id
 
 	set found 0
-	set rc 0
 
 	send "$scontrol show node $node\r"
 	expect {
 		-re "CPUAlloc=($number)" {
 			set num_alloc $expect_out(1,string)
 			set found 1
-			if {$proc_cnt != $num_alloc} {
-				log_error "Requested $proc_cnt but got $num_alloc instead"
-				set rc 1
-			}
+			subtest {$proc_cnt == $num_alloc} "Verify CPUAlloc" "Requested $proc_cnt but got $num_alloc instead"
 			exp_continue
 		}
 		-re $test_prompt {
 		}
 		timeout {
-			log_error "scontrol not responding"
-			slow_kill $mypid
-			return 1
+			fail "scontrol not responding"
 		}
 		eof {
 			wait
 		}
 	}
 
-	if {!$found} {
-		log_error "Didn't get expected output from scontrol"
-		set rc 1
-	}
-
-	return $rc
+	subtest {$found} "Verify output from scontrol"
 }
 
 proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
@@ -83,7 +79,6 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 	upvar spawn_id spawn_id
 
 	set found 0
-	set rc 0
 
 	send "$sinfo -o \"%C %A %N\" -h -n $node\r"
 	expect {
@@ -106,43 +101,29 @@ proc sinfo_test_1 { node proc_cnt total_procs idle_cpus } {
 				set num_total [expr $num_total * 1024]
 			}
 
-			if { $num_alloc != $proc_cnt } {
-				log_error "sinfo 1 allocated cpus wrong, got $num_alloc but needed $proc_cnt"
-				set rc 1
-			} elseif { $num_idle != $idle_cpus } {
-				log_error "sinfo 1 idle cpus wrong, got $num_idle but needed $idle_cpus"
-				set rc 1
-			} elseif { $num_total != $total_procs } {
-				log_error "sinfo 1 total cpus wrong, got $num_total but needed $total_procs"
-				set rc 1
-			}
+			subtest {$num_alloc == $proc_cnt} "Verify sinfo allocated cpus" "sinfo 1 allocated cpus wrong, got $num_alloc but needed $proc_cnt"
+			subtest {$num_idle == $idle_cpus} "Verify sinfo idle cpus" "sinfo 1 idle cpus wrong, got $num_idle but needed $idle_cpus"
+			subtest {$num_total == $total_procs} "Verify sinfo total cpus" "sinfo 1 total cpus wrong, got $num_total but needed $total_procs"
+
 			exp_continue
 		}
 		-re $test_prompt {
 		}
 		timeout {
-			log_error "sinfo not responding"
-			slow_kill $mypid
-			return 1
+			fail "sinfo not responding"
 		}
 		eof {
 			wait
 		}
 	}
 
-	if {!$found} {
-		log_error "Didn't get expected output from sinfo"
-		set rc 1
-	}
-
-	return $rc
+	subtest {$found} "Verify output from sinfo"
 }
 
 proc sinfo_test_2 { node proc_cnt total_procs } {
 	global sinfo number test_prompt
 	upvar spawn_id spawn_id
 
-	set rc 0
 	set num_alloc 0
 	set num_idle 0
 	set alloc_nodes 1
@@ -176,37 +157,25 @@ proc sinfo_test_2 { node proc_cnt total_procs } {
 		-re $test_prompt {
 		}
 		timeout {
-			log_error "sinfo not responding"
-			slow_kill $mypid
-			return 1
+			fail "sinfo not responding"
 		}
 		eof {
 			wait
 		}
 	}
 
-	if { $num_alloc != $alloc_nodes } {
-		log_error "sinfo 2 allocated nodes wrong, got $num_alloc but needed $alloc_nodes"
-		set rc 1
-	} elseif { $num_idle != $idle_nodes } {
-		log_error "sinfo 2 idle nodes wrong, got $num_idle but needed $idle_nodes"
-		set rc 1
-	}
-
-	return $rc
+	subtest {$num_alloc == $alloc_nodes} "Verify sinfo allocated nodes" "sinfo 2 allocated nodes wrong, got $num_alloc but needed $alloc_nodes"
+	subtest {$num_idle == $idle_nodes} "Verify sinfo idle nodes" "sinfo 2 idle nodes wrong, got $num_idle but needed $idle_nodes"
 }
 
 # allocate a set of nodes (node_cnt) and the quit right after
 proc allocate_and_quit { node proc_cnt total_procs } {
 	global bin_bash salloc scontrol sinfo number re_word_str
-	global test_prompt select_type procs_per_node test_id bin_rm
-	global reset_bash_prompt
+	global test_prompt select_type procs_per_node
+	global reset_bash_prompt job_id file_in
 
-	set file_in "test$test_id.input"
-	set job_id 0
 	set num_alloc 0
 	set block ""
-	set rc 0
 	set timeout 60
 	set idle_cpus [expr $total_procs - $proc_cnt]
 
@@ -215,7 +184,7 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 	  $bin_bash --norc
 	"
 
-	set mypid [spawn $salloc -w $node -N 1 -t 5 -n $proc_cnt ./$file_in]
+	spawn $salloc -w $node -N 1 -t 5 -n $proc_cnt ./$file_in
 	expect {
 		-re "Granted job allocation ($number)" {
 			set job_id $expect_out(1,string)
@@ -224,42 +193,28 @@ proc allocate_and_quit { node proc_cnt total_procs } {
 
 		-re $test_prompt {
 			# test for scontrol to give me the correct cpu count
-			if { [scontrol_test $node $proc_cnt] } {
-				send "exit\r"
-				return 1
-			}
-
+			scontrol_test $node $proc_cnt
 
 			# test for sinfo to give me the correct cpu count
-			if { [sinfo_test_1 $node $proc_cnt $total_procs $idle_cpus] } {
-				send "exit\r"
-				return 1
-			}
+			sinfo_test_1 $node $proc_cnt $total_procs $idle_cpus
+
 			# test for sinfo to give me the correct node count
-			if { [sinfo_test_2 $node $proc_cnt $total_procs] } {
-				send "exit\r"
-				return 1
-			}
+			sinfo_test_2 $node $proc_cnt $total_procs
+
 			send "exit\r"
 			exp_continue
 		}
 
 		-re "Unable to contact" {
-			log_error "Slurm appears to be down"
-			exp_continue
+			fail "Slurm appears to be down"
 		}
 		timeout {
-			cancel_job $job_id
-			slow_kill $mypid
 			fail "salloc not responding"
 		}
 		eof {
 			wait
 		}
 	}
-	exec $bin_rm -f $file_in
-
-	return $rc
 }
 
 ############################################################################
@@ -387,12 +342,9 @@ if {[check_config_select "linear"]} {
 	}
 }
 
-set exit_code [allocate_and_quit $inode_name $smallest $inode_procs]
-if {!$exit_code && $smallest != $inode_procs} {
+allocate_and_quit $inode_name $smallest $inode_procs
+if {$smallest != $inode_procs} {
 	# just to make sure we get a clean state we will sleep a bit
 	sleep 1
-	set exit_code [allocate_and_quit $inode_name $inode_procs $inode_procs]
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	allocate_and_quit $inode_name $inode_procs $inode_procs
 }
