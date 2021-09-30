@@ -53,6 +53,7 @@ enum {
 typedef enum {
 	SLURMSCRIPTD_NONE = 0, /* 0 so that initializing data to zero will init
 				* to this */
+	SLURMSCRIPTD_BB_LUA,
 	SLURMSCRIPTD_EPILOG,
 	SLURMSCRIPTD_PROLOG,
 } script_type_t;

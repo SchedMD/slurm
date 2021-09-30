@@ -715,6 +715,18 @@ static int _handle_run_script(buf_t *buffer)
 	 */
 	script_complete.script_name = script_msg->script_name;
 	switch (script_msg->script_type) {
+	case SLURMSCRIPTD_BB_LUA:
+		log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_RUN_SCRIPT (burst_buffer.lua:%s) for JobId=%u: timeout=%u seconds, argc=%u, key=%s",
+			 script_msg->script_name, script_msg->job_id,
+			 script_msg->timeout, script_msg->argc, recv_msg.key);
+		script_complete.status =
+			_run_bb_script(script_msg->script_name,
+				       script_msg->job_id,
+				       script_msg->timeout, script_msg->argc,
+				       script_msg->argv,
+				       &script_complete.resp_msg,
+				       &script_complete.signalled);
+		break;
 	case SLURMSCRIPTD_EPILOG: /* fall-through */
 	case SLURMSCRIPTD_PROLOG:
 		log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_RUN_SCRIPT (%s) for JobId=%u",
@@ -800,6 +812,10 @@ static int _handle_script_complete(buf_t *buffer)
 		rc = _notify_script_done(msg.key, script_complete);
 
 	switch (script_complete->script_type) {
+	case SLURMSCRIPTD_BB_LUA:
+		log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE (%s) for JobId=%u",
+			 script_complete->script_name, script_complete->job_id);
+		break; /* Nothing more to do */
 	case SLURMSCRIPTD_EPILOG:
 		log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE (%s) for JobId=%u",
 			 script_complete->script_name, script_complete->job_id);
@@ -1002,39 +1018,32 @@ extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 				   uint32_t argc, char **argv, uint32_t timeout,
 				   char **resp, bool *track_script_signalled)
 {
-	int rc;
-	buf_t *buffer;
-	script_response_t *script_resp;
+	int status, rc;
+	run_script_msg_t run_script_msg;
 
-	/*
-	 * Save this RPC in a hashmap so we can wait until it is done, get
-	 * notified when it is done, and get the response.
-	 */
-	script_resp = _script_resp_map_add();
+	memset(&run_script_msg, 0, sizeof(run_script_msg));
 
-	/* Send the RPC. */
-	buffer = init_buf(0);
-	/*
-	 * Pass the key to slurmscriptd, which will pass the key back to
-	 * slurmctld when the lua script is done, and that can be used to
-	 * notify us that the script is done and give us the rc and response.
-	 */
-	packstr(script_resp->key, buffer);
-	pack32(job_id, buffer);
-	packstr(function, buffer);
-	packstr_array(argv, argc, buffer);
-	pack32(timeout, buffer);
+	/* Init run_script_msg */
+	run_script_msg.argc = argc;
+	run_script_msg.argv = argv;
+	run_script_msg.env = NULL;
+	run_script_msg.job_id = job_id;
+	run_script_msg.script_name = function; /* Shallow copy, do not free */
+	run_script_msg.script_path = NULL;
+	run_script_msg.script_type = SLURMSCRIPTD_BB_LUA;
+	run_script_msg.timeout = timeout;
 
+	/* Send message; wait for response */
 	_incr_script_cnt();
-	_write_msg(slurmctld_writefd, SLURMSCRIPTD_REQUEST_RUN_BB_LUA, buffer);
-	FREE_NULL_BUFFER(buffer);
+	status = _send_rpc(slurmctld_writefd, SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
+			   &run_script_msg, true, NULL, resp,
+			   track_script_signalled);
 
-	/*
-	 * Block until the script is done. _wait_for_script_resp() sets rc,
-	 * resp, and track_script_signalled.
-	 */
-	_wait_for_script_resp(script_resp, &rc, resp, track_script_signalled);
-	_script_resp_map_remove(script_resp->key);
+	/* Cleanup */
+	if (WIFEXITED(status))
+		rc = WEXITSTATUS(status);
+	else
+		rc = SLURM_ERROR;
 
 	return rc;
 }
