@@ -348,6 +348,7 @@ static int _fill_job_desc_from_opts(slurm_opt_t *opt, job_desc_msg_t *desc)
 
 	desc->wait_all_nodes = sbopt->wait_all_nodes;
 
+	env_array_free(desc->environment);
 	desc->environment = env_array_copy((const char **) opt->environment);
 
 	if (sbopt->export_file) {
