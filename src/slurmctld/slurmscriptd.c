@@ -564,122 +564,6 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 	return status;
 }
 
-static int _handle_run_bb_lua(buf_t *buffer)
-{
-	bool track_script_signalled;
-	uint32_t job_id, tmp_size, argc = 0, status, i, timeout, rc;
-	char *script_func = NULL, *resp_msg = NULL, *key = NULL;
-	char **argv = NULL;
-	buf_t *resp_buffer;
-
-	safe_unpackstr_xmalloc(&key, &tmp_size, buffer);
-	safe_unpack32(&job_id, buffer);
-	safe_unpackstr_xmalloc(&script_func, &tmp_size, buffer);
-	safe_unpackstr_array(&argv, &argc, buffer);
-	safe_unpack32(&timeout, buffer);
-	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_RUN_BB_LUA for JobId=%u: func=%s, timeout=%u seconds, argc=%u, key=%s",
-		 job_id, script_func, timeout, argc, key);
-
-	/* Run the script */
-	status = _run_bb_script(script_func, job_id, timeout, argc, argv,
-				&resp_msg, &track_script_signalled);
-	/* Extract return code from exit status. */
-	if (WIFEXITED(status))
-		rc = WEXITSTATUS(status);
-	else
-		rc = (uint32_t) SLURM_ERROR;
-
-	/* Send complete message */
-	resp_buffer = init_buf(0);
-	packstr(key, resp_buffer);
-	pack32(job_id, resp_buffer);
-	packstr(script_func, resp_buffer);
-	pack32(rc, resp_buffer);
-	packstr(resp_msg, resp_buffer);
-	packbool(track_script_signalled, resp_buffer);
-	_write_msg(slurmscriptd_writefd, SLURMSCRIPTD_REQUEST_BB_LUA_COMPLETE,
-		   resp_buffer);
-
-	FREE_NULL_BUFFER(resp_buffer);
-	xfree(key);
-	xfree(script_func);
-	xfree(resp_msg);
-	for (i = 0; i < argc; i++)
-		xfree(argv[i]);
-	xfree(argv);
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	error("%s: Failed to unpack message", __func__);
-
-	xfree(key);
-	xfree(script_func);
-	xfree(resp_msg);
-	for (i = 0; i < argc; i++)
-		xfree(argv[i]);
-	xfree(argv);
-
-	return SLURM_ERROR;
-}
-
-static int _handle_bb_lua_complete(buf_t *buffer)
-{
-	int rc = SLURM_SUCCESS;
-	bool track_script_signalled;
-	uint32_t job_id, tmp_size, status;
-	char *script_func = NULL, *resp_msg = NULL, *key = NULL;
-	script_response_t *script_resp;
-
-	safe_unpackstr_xmalloc(&key, &tmp_size, buffer);
-	safe_unpack32(&job_id, buffer);
-	safe_unpackstr_xmalloc(&script_func, &tmp_size, buffer);
-	safe_unpack32(&status, buffer);
-	safe_unpackstr_xmalloc(&resp_msg, &tmp_size, buffer);
-	safe_unpackbool(&track_script_signalled, buffer);
-
-	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_BB_LUA_COMPLETE for JobId=%u: func=%s, status=%u, resp=%s, track_script_signalled=%s, key=%s",
-		 job_id, script_func, status, resp_msg,
-		 track_script_signalled ? "true" : "false", key);
-
-	_decr_script_cnt();
-
-	slurm_mutex_lock(&script_resp_map_mutex);
-	script_resp = xhash_get(script_resp_map, key, strlen(key));
-	if (!script_resp) {
-		/*
-		 * This should never happen. We don't know how to notify
-		 * whoever started this script that it is done.
-		 */
-		error("%s: We don't know who started this script (JobId=%u, func=%s, key=%s) so we can't notify them.",
-		      __func__, job_id, script_func, key);
-		rc = SLURM_ERROR;
-		xfree(resp_msg);
-	} else {
-		script_resp->resp_msg = resp_msg;
-		script_resp->rc = (int) status;
-		script_resp->track_script_signalled = track_script_signalled;
-		slurm_mutex_lock(&script_resp->mutex);
-		slurm_cond_signal(&script_resp->cond);
-		slurm_mutex_unlock(&script_resp->mutex);
-	}
-	slurm_mutex_unlock(&script_resp_map_mutex);
-
-	xfree(key);
-	xfree(script_func);
-
-	return rc;
-
-unpack_error:
-	error("%s: Failed to unpack message", __func__);
-
-	xfree(key);
-	xfree(script_func);
-	xfree(resp_msg);
-
-	return SLURM_ERROR;
-}
-
 static int _handle_shutdown(void)
 {
 	log_flag(SCRIPT, "Handling SLURMSCRIPTD_SHUTDOWN");
@@ -852,12 +736,6 @@ static int _handle_request(int req, buf_t *buffer)
 			break;
 		case SLURMSCRIPTD_REQUEST_FLUSH_JOB:
 			rc = _handle_flush_job(buffer);
-			break;
-		case SLURMSCRIPTD_REQUEST_RUN_BB_LUA:
-			rc = _handle_run_bb_lua(buffer);
-			break;
-		case SLURMSCRIPTD_REQUEST_BB_LUA_COMPLETE:
-			rc = _handle_bb_lua_complete(buffer);
 			break;
 		case SLURMSCRIPTD_REQUEST_RUN_SCRIPT:
 			rc = _handle_run_script(buffer);
