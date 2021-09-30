@@ -389,80 +389,6 @@ static int _run_script(char *script, char **env, uint32_t job_id,
 	return status;
 }
 
-static int _handle_run_prepilog(buf_t *buffer)
-{
-	int rc, status, resp_rpc;
-	uint32_t job_id, tmp_size, env_cnt;
-	uint16_t timeout;
-	bool is_epilog;
-	char *script, *script_name;
-	char **env;
-	buf_t *resp_buffer;
-
-	safe_unpack32(&job_id, buffer);
-	safe_unpackbool(&is_epilog, buffer);
-	safe_unpackstr_xmalloc(&script, &tmp_size, buffer);
-	safe_unpack32(&env_cnt, buffer);
-	safe_unpackstr_array(&env, &env_cnt, buffer);
-	safe_unpack16(&timeout, buffer);
-
-	if (is_epilog) {
-		script_name = "epilog_slurmctld";
-		resp_rpc = SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE;
-	} else {
-		script_name = "prolog_slurmctld";
-		resp_rpc = SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE;
-	}
-
-	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_RUN_PREPILOG (%s) for JobId=%u",
-		 script_name, job_id);
-	status = _run_script(script, env, job_id, script_name, timeout);
-	xfree(script);
-	for (int i = 0; i < env_cnt; i++) {
-		xfree(env[i]);
-	}
-	xfree(env);
-
-	resp_buffer = init_buf(0);
-	pack32(job_id, resp_buffer);
-	pack32(status, resp_buffer);
-	rc = _write_msg(slurmscriptd_writefd, resp_rpc, resp_buffer);
-	FREE_NULL_BUFFER(resp_buffer);
-
-	return rc;
-
-unpack_error:
-	error("%s: Failed to unpack message", __func__);
-	return SLURM_ERROR;
-}
-
-static int _handle_prepilog_complete(buf_t *buffer, bool is_epilog)
-{
-	int rc;
-	uint32_t status, job_id;
-
-	safe_unpack32(&job_id, buffer);
-	safe_unpack32(&status, buffer);
-
-	if (is_epilog) {
-		log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE for JobId=%u",
-			 job_id);
-		prep_epilog_slurmctld_callback((int)status, job_id);
-	} else {
-		log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE for JobId=%u",
-			 job_id);
-		prep_prolog_slurmctld_callback((int)status, job_id);
-	}
-	rc = SLURM_SUCCESS;
-	_decr_script_cnt();
-
-	return rc;
-
-unpack_error:
-	error("%s: Failed to unpack message", __func__);
-	return SLURM_ERROR;
-}
-
 static int _handle_flush(void)
 {
 	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_FLUSH");
@@ -905,15 +831,6 @@ static int _handle_request(int req, buf_t *buffer)
 	int rc;
 
 	switch (req) {
-		case SLURMSCRIPTD_REQUEST_RUN_PREPILOG:
-			rc = _handle_run_prepilog(buffer);
-			break;
-		case SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE:
-			rc = _handle_prepilog_complete(buffer, false);
-			break;
-		case SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE:
-			rc = _handle_prepilog_complete(buffer, true);
-			break;
 		case SLURMSCRIPTD_REQUEST_FLUSH:
 			rc = _handle_flush();
 			break;
