@@ -328,7 +328,8 @@ static int _fill_job_desc_from_opts(slurm_opt_t *opt, job_desc_msg_t *desc)
 
 	desc->wait_all_nodes = sbopt->wait_all_nodes;
 
-	desc->environment = NULL;
+	desc->environment = env_array_copy((const char **) opt->environment);
+
 	if (sbopt->export_file) {
 		error("%s: rejecting request to use load environment from file: %s",
 		      __func__, sbopt->export_file);
