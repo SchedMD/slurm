@@ -307,6 +307,46 @@ cleanup:
 	return rc;
 }
 
+/*
+ * This should only be called by slurmscriptd.
+ */
+static int _respond_to_slurmctld(char *key, uint32_t job_id, char *resp_msg,
+				 char *script_name, script_type_t script_type,
+				 bool signalled, int status)
+{
+	int rc = SLURM_SUCCESS;
+	slurmscriptd_msg_t msg;
+	script_complete_t script_complete;
+	buf_t *buffer = init_buf(0);
+
+	/* Check that we're running in slurmscriptd. */
+	xassert(!running_in_slurmctld());
+
+	memset(&script_complete, 0, sizeof(script_complete));
+	script_complete.job_id = job_id;
+	/* Just point to strings, don't xstrdup, so don't free. */
+	script_complete.resp_msg = resp_msg;
+	script_complete.script_name = script_name;
+	script_complete.script_type = script_type;
+	script_complete.signalled = signalled;
+	script_complete.status = status;
+
+	memset(&msg, 0, sizeof(msg));
+	msg.key = key;
+	msg.msg_data = &script_complete;
+	msg.msg_type = SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE;
+
+	if (slurmscriptd_pack_msg(&msg, buffer) != SLURM_SUCCESS) {
+		rc = SLURM_ERROR;
+		goto cleanup;
+	}
+	_write_msg(slurmscriptd_writefd, msg.msg_type, buffer);
+
+cleanup:
+	FREE_NULL_BUFFER(buffer);
+	return rc;
+}
+
 static void _decr_script_cnt(void)
 {
 	slurm_mutex_lock(&script_count_mutex);
@@ -561,53 +601,43 @@ static int _handle_shutdown(slurmscriptd_msg_t *recv_msg)
 
 static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 {
-	script_complete_t script_complete;
 	run_script_msg_t *script_msg = recv_msg->msg_data;
-	int rc;
+	int rc, status = 0;
+	char *resp_msg = NULL;
+	bool signalled = false;
 
-	script_complete.script_type = script_msg->script_type;
-	/*
-	 * We don't xstrdup script_name into script_complete, so don't free
-	 * script_complete.script_name
-	 */
-	script_complete.script_name = script_msg->script_name;
 	switch (script_msg->script_type) {
 	case SLURMSCRIPTD_BB_LUA:
 		log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_RUN_SCRIPT (burst_buffer.lua:%s) for JobId=%u: timeout=%u seconds, argc=%u, key=%s",
 			 script_msg->script_name, script_msg->job_id,
 			 script_msg->timeout, script_msg->argc, recv_msg->key);
-		script_complete.status =
-			_run_bb_script(script_msg->script_name,
-				       script_msg->job_id,
-				       script_msg->timeout, script_msg->argc,
-				       script_msg->argv,
-				       &script_complete.resp_msg,
-				       &script_complete.signalled);
+		status = _run_bb_script(script_msg->script_name,
+					script_msg->job_id,
+					script_msg->timeout, script_msg->argc,
+					script_msg->argv, &resp_msg,
+					&signalled);
 		break;
 	case SLURMSCRIPTD_EPILOG: /* fall-through */
 	case SLURMSCRIPTD_PROLOG:
 		log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_RUN_SCRIPT (%s) for JobId=%u",
 			 script_msg->script_name, script_msg->job_id);
-		script_complete.job_id = script_msg->job_id;
-		script_complete.status =
-			_run_script(script_msg->script_path, script_msg->argv,
-				    script_msg->env, script_msg->job_id,
-				    script_msg->script_name,
-				    script_msg->timeout,
-				    &script_complete.resp_msg,
-				    &script_complete.signalled);
+		status = _run_script(script_msg->script_path, script_msg->argv,
+				     script_msg->env, script_msg->job_id,
+				     script_msg->script_name,
+				     script_msg->timeout,
+				     &resp_msg, &signalled);
 		break;
 	default:
 		error("%s: Invalid script type=%d",
 		      __func__, script_msg->script_type);
-		script_complete.status = SLURM_ERROR;
+		status = SLURM_ERROR;
 		break;
 	}
 
 	/* Send response */
-	rc = _send_rpc(slurmscriptd_writefd,
-		       SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE, &script_complete,
-		       false, recv_msg->key, NULL, NULL);
+	rc = _respond_to_slurmctld(recv_msg->key, script_msg->job_id,
+				   resp_msg, script_msg->script_name,
+				   script_msg->script_type, signalled, status);
 
 	return rc;
 }
@@ -669,6 +699,17 @@ static int _handle_script_complete(slurmscriptd_msg_t *msg)
 		prep_prolog_slurmctld_callback(script_complete->status,
 					       script_complete->job_id);
 		break;
+	case SLURMSCRIPTD_NONE:
+		/*
+		 * Some other RPC (for example, SLURMSCRIPTD_REQUEST_FLUSH)
+		 * completed and sent this back to notify a waiting thread of
+		 * its completion. We do not want to call _decr_script_cnt()
+		 * since it wasn't a script that ran, so we just return right
+		 * now.
+		 */
+		log_flag(SCRIPT, "Received response from %s",
+			 script_complete->script_name);
+		return SLURM_SUCCESS;
 	default:
 		error("SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE: unknown script type for script=%s, JobId=%u",
 		      script_complete->script_name, script_complete->job_id);

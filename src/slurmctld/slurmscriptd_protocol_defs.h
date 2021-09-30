@@ -50,7 +50,8 @@ enum {
 
 typedef enum {
 	SLURMSCRIPTD_NONE = 0, /* 0 so that initializing data to zero will init
-				* to this */
+				* to this. This is used for response messages
+				* from RPC's that weren't running a script. */
 	SLURMSCRIPTD_BB_LUA,
 	SLURMSCRIPTD_EPILOG,
 	SLURMSCRIPTD_PROLOG,
