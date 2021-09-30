@@ -43,6 +43,8 @@ extern int slurmscriptd_fini(void);
 
 /*
  * slurmscriptd_flush - kill all running scripts.
+ *
+ * This function blocks until slurmscriptd responds that it is finished.
  */
 extern void slurmscriptd_flush(void);
 

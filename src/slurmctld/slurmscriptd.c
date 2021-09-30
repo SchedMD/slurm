@@ -417,6 +417,11 @@ static int _handle_flush(slurmscriptd_msg_t *recv_msg)
 	run_command_shutdown();
 	track_script_flush();
 
+	/* We need to respond to slurmctld that we are done */
+	_respond_to_slurmctld(recv_msg->key, 0, NULL,
+			      "SLURMSCRIPTD_REQUEST_FLUSH", SLURMSCRIPTD_NONE,
+			      false, SLURM_SUCCESS);
+
 	return SLURM_SUCCESS;
 }
 
@@ -879,7 +884,7 @@ static void _kill_slurmscriptd(void)
 
 extern void slurmscriptd_flush(void)
 {
-	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_FLUSH, NULL, false, NULL,
+	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_FLUSH, NULL, true, NULL,
 			      NULL);
 }
 
