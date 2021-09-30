@@ -33,7 +33,6 @@
 source ./globals
 
 set default_part  ""
-set exit_code     0
 set file_in       "test$test_id.input"
 set job_id        0
 
@@ -109,9 +108,7 @@ expect {
 	}
 	-re "Cancel job_id=$job_id .* partition= .*\? " {
 		send "n\r"
-		log_error "scancel partition filter failure"
-		set exit_code 1
-		exp_continue
+		fail "scancel partition filter failure"
 	}
 	timeout {
 		fail "scancel not responding"
@@ -129,9 +126,7 @@ expect {
 	}
 	-re "Cancel job_id=.* partition= .*\? " {
 		send "n\r"
-		log_error "scancel partition filter failure"
-		set exit_code 1
-		exp_continue
+		fail "scancel partition filter failure"
 	}
 	timeout {
 		fail "scancel not responding"
@@ -165,10 +160,4 @@ expect {
 		wait
 	}
 }
-if {$matches != 0} {
-	fail "scancel user filter failed"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 0} "Kill jobs using user filter"

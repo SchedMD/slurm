@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
 set file_in      "test$test_id.input"
 set job_id1      0
 set job_id2      0
@@ -100,10 +99,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "scancel name filter failed"
-	set exit_code 1
-}
+subtest {$matches == 1} "Test scancel with name filter for job 1"
 
 set matches  0
 spawn $scancel --name=$job_name2 --interactive
@@ -120,10 +116,4 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	fail "scancel name filter failed"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 1} "Test scancel with name filter for job 2"
