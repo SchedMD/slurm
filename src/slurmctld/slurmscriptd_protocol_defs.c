@@ -35,3 +35,28 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#include "src/common/xmalloc.h"
+#include "src/slurmctld/slurmscriptd_protocol_defs.h"
+
+extern void slurmscriptd_free_run_script_msg(run_script_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree_array(msg->argv);
+	xfree_array(msg->env);
+	xfree(msg->script_name);
+	xfree(msg->script_path);
+	xfree(msg);
+}
+
+extern void slurmscriptd_free_script_complete(script_complete_t *msg)
+{
+	if (!msg)
+		return;
+
+	xfree(msg->resp_msg);
+	xfree(msg->script_name);
+	xfree(msg);
+}

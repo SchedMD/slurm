@@ -59,6 +59,7 @@
 #include "src/slurmctld/burst_buffer.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/slurmscriptd.h"
+#include "src/slurmctld/slurmscriptd_protocol_defs.h"
 
 #define MAX_POLL_WAIT 500 /* in milliseconds */
 
@@ -67,17 +68,6 @@
  * The following are meant to be used by both slurmscriptd and slurmctld
  *****************************************************************************
  */
-
-enum {
-	SLURMSCRIPTD_REQUEST_RUN_PREPILOG,
-	SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE,
-	SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE,
-	SLURMSCRIPTD_REQUEST_FLUSH,
-	SLURMSCRIPTD_REQUEST_FLUSH_JOB,
-	SLURMSCRIPTD_REQUEST_RUN_BB_LUA,
-	SLURMSCRIPTD_REQUEST_BB_LUA_COMPLETE,
-	SLURMSCRIPTD_SHUTDOWN,
-};
 
 static bool _msg_readable(eio_obj_t *obj);
 static int _msg_accept(eio_obj_t *obj, List objs);

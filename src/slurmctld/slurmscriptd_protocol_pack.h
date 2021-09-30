@@ -34,3 +34,13 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+#ifndef _SLURMSCRIPTD_PROTOCOL_PACK_H
+#define _SLURMSCRIPTD_PROTOCOL_PACK_H
+
+#include "src/common/pack.h"
+#include "src/slurmctld/slurmscriptd_protocol_defs.h"
+
+extern int slurmscriptd_pack_msg(slurmscriptd_msg_t *msg, buf_t *buffer);
+extern int slurmscriptd_unpack_msg(slurmscriptd_msg_t *msg, buf_t *buffer);
+
+#endif /* _SLURMSCRIPTD_PROTOCOL_PACK_H */

@@ -33,3 +33,61 @@
  *  with Slurm; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+#ifndef _SLURMSCRIPTD_PROTOCOL_DEFS_H
+#define _SLURMSCRIPTD_PROTOCOL_DEFS_H
+
+#include <stdbool.h>
+#include <stdint.h>
+
+/* slurmscriptd message types */
+enum {
+	SLURMSCRIPTD_REQUEST_RUN_PREPILOG,
+	SLURMSCRIPTD_REQUEST_PROLOG_COMPLETE,
+	SLURMSCRIPTD_REQUEST_EPILOG_COMPLETE,
+	SLURMSCRIPTD_REQUEST_FLUSH,
+	SLURMSCRIPTD_REQUEST_FLUSH_JOB,
+	SLURMSCRIPTD_REQUEST_RUN_BB_LUA,
+	SLURMSCRIPTD_REQUEST_BB_LUA_COMPLETE,
+	SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
+	SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE,
+	SLURMSCRIPTD_SHUTDOWN,
+};
+
+typedef enum {
+	SLURMSCRIPTD_NONE = 0, /* 0 so that initializing data to zero will init
+				* to this */
+	SLURMSCRIPTD_EPILOG,
+	SLURMSCRIPTD_PROLOG,
+} script_type_t;
+
+typedef struct {
+	char *key;
+	void *msg_data;
+	uint32_t msg_type;
+} slurmscriptd_msg_t; /* Generic slurmscriptd msg */
+
+typedef struct {
+	uint32_t job_id;
+	char *resp_msg;
+	char *script_name;
+	script_type_t script_type;
+	bool signalled;
+	int status;
+} script_complete_t;
+
+typedef struct {
+	uint32_t argc;
+	char **argv;
+	char **env;
+	uint32_t job_id;
+	char *script_name;
+	char *script_path;
+	script_type_t script_type;
+	uint32_t timeout;
+} run_script_msg_t;
+
+/* Free message functions */
+extern void slurmscriptd_free_run_script_msg(run_script_msg_t *msg);
+extern void slurmscriptd_free_script_complete(script_complete_t *msg);
+
+#endif /* _SLURMSCRIPTD_PROTOCOL_DEFS_H */
