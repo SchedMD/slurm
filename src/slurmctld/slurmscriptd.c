@@ -254,17 +254,11 @@ rwfail:
 }
 
 /*
- * Generic function to send RPC's between slurmctld and slurmscriptd.
+ * Send an RPC from slurmctld to slurmscriptd.
  *
- * IN fd - which file descriptor to write to; should be slurmctld_writefd or
- *         slurmscriptd_writefd
  * IN msg_type - type of message to send
  * IN msg_data - pointer to the message to send
  * IN wait - whether or not to wait for a response
- * IN key - an existing key; use this if it is set and wait == false.
- *          This happens when slurmscriptd is sending a response to slurmctld -
- *          it already has the key that slurmctld generated, and is sending
- *          the key back to slurmctld.
  * OUT resp_msg - If not null, then this is set to the response string from
  *                the script. Caller is responsible to free.
  * OUT signalled - If not null, then this is set to true if the script was
@@ -272,21 +266,21 @@ rwfail:
  *
  * RET SLURM_SUCCESS or SLURM_ERROR
  */
-static int _send_rpc(int fd, uint32_t msg_type, void *msg_data, bool wait,
-		     char *key, char **resp_msg, bool *signalled)
+static int _send_to_slurmscriptd(uint32_t msg_type, void *msg_data, bool wait,
+				 char **resp_msg, bool *signalled)
 {
 	slurmscriptd_msg_t msg;
 	int rc = SLURM_SUCCESS;
 	script_response_t *script_resp = NULL;
 	buf_t *buffer = init_buf(0);
 
+	xassert(running_in_slurmctld());
 	memset(&msg, 0, sizeof(msg));
 
 	if (wait) {
 		script_resp = _script_resp_map_add();
 		msg.key = script_resp->key;
-	} else
-		msg.key = key;
+	}
 	msg.msg_data = msg_data;
 	msg.msg_type = msg_type;
 
@@ -294,7 +288,7 @@ static int _send_rpc(int fd, uint32_t msg_type, void *msg_data, bool wait,
 		rc = SLURM_ERROR;
 		goto cleanup;
 	}
-	_write_msg(fd, msg.msg_type, buffer);
+	_write_msg(slurmctld_writefd, msg.msg_type, buffer);
 
 	if (wait) {
 		_wait_for_script_resp(script_resp, &rc, resp_msg, signalled);
@@ -873,8 +867,7 @@ static void _kill_slurmscriptd(void)
 	}
 
 	/* Tell slurmscriptd to shutdown, then wait for it to finish. */
-	_send_rpc(slurmctld_writefd, SLURMSCRIPTD_SHUTDOWN, NULL, false,
-		  NULL, NULL, NULL);
+	_send_to_slurmscriptd(SLURMSCRIPTD_SHUTDOWN, NULL, false, NULL, NULL);
 	if (waitpid(slurmscriptd_pid, &status, 0) < 0) {
 		if (WIFEXITED(status)) {
 			/* Exited normally. */
@@ -886,8 +879,8 @@ static void _kill_slurmscriptd(void)
 
 extern void slurmscriptd_flush(void)
 {
-	_send_rpc(slurmctld_writefd, SLURMSCRIPTD_REQUEST_FLUSH, NULL, false,
-		  NULL, NULL, NULL);
+	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_FLUSH, NULL, false, NULL,
+			      NULL);
 }
 
 extern void slurmscriptd_flush_job(uint32_t job_id)
@@ -896,8 +889,8 @@ extern void slurmscriptd_flush_job(uint32_t job_id)
 
 	msg.job_id = job_id;
 
-	_send_rpc(slurmctld_writefd, SLURMSCRIPTD_REQUEST_FLUSH_JOB, &msg,
-		  false, NULL, NULL, NULL);
+	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_FLUSH_JOB, &msg, false,
+			      NULL, NULL);
 }
 
 extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
@@ -921,9 +914,9 @@ extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,
 
 	/* Send message; wait for response */
 	_incr_script_cnt();
-	status = _send_rpc(slurmctld_writefd, SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
-			   &run_script_msg, true, NULL, resp,
-			   track_script_signalled);
+	status = _send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
+				       &run_script_msg, true, resp,
+				       track_script_signalled);
 
 	/* Cleanup */
 	if (WIFEXITED(status))
@@ -958,8 +951,8 @@ extern void slurmscriptd_run_prepilog(uint32_t job_id, bool is_epilog,
 	run_script_msg.timeout = (uint32_t) slurm_conf.prolog_epilog_timeout;
 
 	_incr_script_cnt();
-	_send_rpc(slurmctld_writefd, SLURMSCRIPTD_REQUEST_RUN_SCRIPT,
-		  &run_script_msg, false, NULL, NULL, NULL);
+	_send_to_slurmscriptd(SLURMSCRIPTD_REQUEST_RUN_SCRIPT, &run_script_msg,
+			      false, NULL, NULL);
 
 	/* Don't free argv[0], since we did not xstrdup that. */
 	xfree(run_script_msg.argv);
