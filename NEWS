@@ -43,6 +43,8 @@ documents those changes that are of interest to users and administrators.
  -- Do not deny --constraint with special operators "[]()|*" when no changeable
     features are requested, but continue to deny --constraint with special
     operators when changeable features are requested.
+ -- openapi/v0.0.{35,36,37} - prevent merging the slurmrestd environment
+    alongside a new job submission.
 
 * Changes in Slurm 21.08.2
 ==========================

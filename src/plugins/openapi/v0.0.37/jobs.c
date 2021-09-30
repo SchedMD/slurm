@@ -336,18 +336,14 @@ static int _fill_job_desc_from_opts(slurm_opt_t *opt, job_desc_msg_t *desc)
 		      __func__, sbopt->export_file);
 		return -1;
 	}
-	if (opt->export_env == NULL) {
-		env_array_merge(&desc->environment, (const char **) environ);
-	} else if (!xstrcasecmp(opt->export_env, "ALL")) {
-		env_array_merge(&desc->environment, (const char **) environ);
-	} else if (!xstrcasecmp(opt->export_env, "NONE")) {
-		desc->environment = env_array_create();
-		env_array_merge_slurm(&desc->environment,
-				      (const char **)environ);
-		opt->get_user_env_time = 0;
-	} else {
-		env_merge_filter(opt, desc);
-		opt->get_user_env_time = 0;
+	if (opt->export_env) {
+		/*
+		 * job environment is loaded directly via data_t list and not
+		 * via the --export command.
+		 */
+		error("%s: rejecting request to control export environment: %s",
+		      __func__, opt->export_env);
+		return -1;
 	}
 	if (opt->get_user_env_time >= 0) {
 		env_array_overwrite(&desc->environment,
