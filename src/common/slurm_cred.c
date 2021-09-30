@@ -643,7 +643,7 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg,
 	if (arg->job_core_bitmap)
 		cred->job_core_bitmap = bit_copy(arg->job_core_bitmap);
 	if (arg->step_core_bitmap)
-		cred->step_core_bitmap =bit_copy(arg->step_core_bitmap);
+		cred->step_core_bitmap = bit_copy(arg->step_core_bitmap);
 	cred->core_array_size     = i;
 	cred->cores_per_socket = xcalloc(i, sizeof(uint16_t));
 	cred->sockets_per_node = xcalloc(i, sizeof(uint16_t));
