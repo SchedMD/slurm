@@ -31,10 +31,16 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_in     "test$test_id.input"
 set job_id1     0
 set job_id2     0
+
+proc cleanup {} {
+	global job_id1 job_id2 file_in
+
+	cancel_job [list $job_id1 $job_id2]
+	file delete $file_in
+}
 
 #
 # Build input script file
@@ -80,12 +86,8 @@ if {$job_id2 == 0} {
 	cancel_job $job_id1
 	fail "Batch submit failure"
 }
-exec $bin_rm -f $file_in
 
-if {[wait_for_job $job_id2 RUNNING] != 0} {
-	cancel_job $job_id1
-	fail "Error waiting for job $job_id2 to run"
-}
+wait_for_job -fail $job_id2 RUNNING
 
 #
 # Kill the jobs by state and name
@@ -100,9 +102,7 @@ expect {
 	}
 	-re "Cancel job_id=($number).*\? " {
 		send "n\r"
-		log_error "scancel job id mis-match ($expect_out(1,string) != $job_id2)"
-		set exit_code 1
-		exp_continue
+		fail "scancel job id mis-match ($expect_out(1,string) != $job_id2)"
 	}
 	timeout {
 		fail "scancel not responding"
@@ -111,11 +111,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "scancel name or state filter failed"
-	cancel_job $job_id1
-	set exit_code 1
-}
+subtest {$matches == 1} "Test killing the jobs by name and RUNNING state"
 
 set matches  0
 spawn $scancel --name=job.$test_id --interactive --state=PENDING
@@ -127,9 +123,7 @@ expect {
 	}
 	-re "Cancel job_id=($number).*\? " {
 		send "n\r"
-		log_error "scancel job id mis-match ($expect_out(1,string) != $job_id1)"
-		set exit_code 1
-		exp_continue
+		fail "scancel job id mis-match ($expect_out(1,string) != $job_id1)"
 	}
 	timeout {
 		fail "scancel not responding"
@@ -138,11 +132,4 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "scancel name or state filter failed"
-	set exit_code 1
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
-}
+subtest {$matches == 1} "Test killing the jobs by name and PENDING state"

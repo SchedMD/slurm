@@ -31,14 +31,13 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id.input"
+set file_in     "$test_dir/input"
 set job_id      0
 
 proc cleanup {} {
-	global file_in
+	global job_id
 
-	exec rm -f $file_in
+	cancel_job $job_id
 }
 
 #
@@ -54,30 +53,18 @@ make_bash_script $file_in "
 #
 # Spawn sbatch job
 #
-set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --mem=20 --job-name=job.$test_id -t5 $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "Batch submit failure"
-}
+set job_id [submit_job -fail "--output=/dev/null --error=/dev/null --mem=20 --job-name=$test_name -t5 $file_in"]
+wait_for_job -fail $job_id RUNNING
 
-if {[wait_for_job $job_id RUNNING] != 0} {
-	cancel_job $job_id
-	fail "Error starting job $job_id"
-}
 # Wait for job steps to begin
-exec $bin_sleep 2
+set steps_running false
+wait_for -fail -timeout 5 {$steps_running} {
+	set output [run_command_output -fail "$squeue --noheader --steps --format='%i'"]
+	if {[regexp "$job_id\.0" $output] &&
+	    [regexp "$job_id\.1" $output]} {
+		set steps_running true
+	}
+}
 
 #
 # Kill single job steps individually
@@ -97,10 +84,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "scancel with step_id failed"
-	set exit_code 1
-}
+subtest {$matches == 1} "Test killing job step 0"
 
 set matches  0
 spawn $scancel --interactive $job_id.1
@@ -117,10 +101,4 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	fail "scancel with step_id failed"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 1} "Test killing job step 1"
