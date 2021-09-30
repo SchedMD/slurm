@@ -52,6 +52,7 @@
 #include "src/common/eio.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/run_command.h"
 #include "src/common/setproctitle.h"
 #include "src/common/track_script.h"
 #include "src/common/xmalloc.h"
@@ -212,8 +213,10 @@ static int _handle_close(eio_obj_t *obj, List objs)
 
 	obj->shutdown = true;
 
-	if (!running_in_slurmctld()) /* Only do this for slurmscriptd */
+	if (!running_in_slurmctld()) { /* Only do this for slurmscriptd */
+		run_command_shutdown();
 		track_script_flush();
+	}
 
 	return SLURM_SUCCESS; /* Note: Return value is ignored by eio. */
 }
@@ -330,50 +333,26 @@ static int _tot_wait (struct timeval *start_time)
 }
 
 /*
- * Run a script with a given timeout.
+ * Run a script with a given timeout (in seconds).
  * Return the status or SLURM_ERROR if fork() fails.
  */
-static int _run_script(char *script, char **env, uint32_t job_id,
-		       char *script_name, int timeout)
+static int _run_script(char *script, char **argv, char **env, uint32_t job_id,
+		       char *script_name, int timeout, char **resp_msg,
+		       bool *signalled)
 {
-	pid_t cpid;
-	int status = SLURM_ERROR, wait_rc;
-	char *argv[2];
+	int status = SLURM_ERROR;
+	int ms_timeout = timeout * 1000;
+	char *resp = NULL;
+	bool bcast;
 
-	argv[0] = script;
-	argv[1] = NULL;
-
-	if ((cpid = fork()) < 0) {
-		error("slurmctld_script fork error: %m");
-		return status;
-	} else if (cpid == 0) {
-		/* child process */
-		closeall(0);
-		setpgid(0, 0);
-		execve(argv[0], argv, env);
-		_exit(127);
-	}
-
-	/* Start tracking this new process */
-	track_script_rec_add(job_id, cpid, pthread_self());
-	while (1) {
-		wait_rc = waitpid_timeout(__func__, cpid, &status, timeout);
-
-		if (wait_rc < 0) {
-			if (errno == EINTR)
-				continue;
-			error("%s: waitpid error: %m", __func__);
-			break;
-		} else if (wait_rc > 0) {
-			break;
-		}
-	}
-
-	if (track_script_broadcast(pthread_self(), status)) {
-		info("%s: slurmscriptd: JobId=%u %s killed by signal %u",
+	track_script_rec_add(job_id, 0, pthread_self());
+	resp = run_command(script_name, script, argv, env, ms_timeout,
+			       pthread_self(), &status);
+	if ((bcast = track_script_broadcast(pthread_self(), status))) {
+		info("%s: JobId=%u %s killed by signal %u",
 		     __func__, job_id, script_name, WTERMSIG(status));
 	} else if (status != 0) {
-		error("%s: slurmscriptd: JobId=%u %s exit status %u:%u",
+		error("%s: JobId=%u %s exit status %u:%u",
 		      __func__, job_id, script_name, WEXITSTATUS(status),
 		      WTERMSIG(status));
 	} else {
@@ -386,6 +365,14 @@ static int _run_script(char *script, char **env, uint32_t job_id,
 	 * potential for race.
 	 */
 	track_script_remove(pthread_self());
+
+	if (resp_msg)
+		*resp_msg = resp;
+	else
+		xfree(resp);
+	if (signalled)
+		*signalled = bcast;
+
 	return status;
 }
 
@@ -393,6 +380,7 @@ static int _handle_flush(void)
 {
 	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_FLUSH");
 	/* Kill all running scripts */
+	run_command_shutdown();
 	track_script_flush();
 
 	return SLURM_SUCCESS;
@@ -568,6 +556,7 @@ static int _handle_shutdown(void)
 {
 	log_flag(SCRIPT, "Handling SLURMSCRIPTD_SHUTDOWN");
 	/* Kill all running scripts. */
+	run_command_shutdown();
 	track_script_flush();
 
 	eio_signal_shutdown(msg_handle);
@@ -617,10 +606,12 @@ static int _handle_run_script(buf_t *buffer)
 			 script_msg->script_name, script_msg->job_id);
 		script_complete.job_id = script_msg->job_id;
 		script_complete.status =
-			_run_script(script_msg->script_path,
+			_run_script(script_msg->script_path, script_msg->argv,
 				    script_msg->env, script_msg->job_id,
 				    script_msg->script_name,
-				    script_msg->timeout);
+				    script_msg->timeout,
+				    &script_complete.resp_msg,
+				    &script_complete.signalled);
 		break;
 	default:
 		error("%s: Invalid script type=%d",
@@ -828,6 +819,7 @@ static void _setup_eio(int fd)
 
 static void _slurmscriptd_mainloop(void)
 {
+	run_command_init();
 	_setup_eio(slurmscriptd_readfd);
 
 	debug("%s: started", __func__);
