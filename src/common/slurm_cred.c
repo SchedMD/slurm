@@ -1018,11 +1018,14 @@ extern void *slurm_cred_get_arg(slurm_cred_t *cred, int cred_arg_type)
 	xassert(cred != NULL);
 
 	slurm_mutex_lock(&cred->mutex);
-	if (cred_arg_type == CRED_ARG_JOB_GRES_LIST) {
+	switch (cred_arg_type) {
+	case CRED_ARG_JOB_GRES_LIST:
 		rc = (void *) cred->job_gres_list;
-	} else {
+		break;
+	default:
 		error("%s: Invalid arg type requested (%d)", __func__,
 		      cred_arg_type);
+
 	}
 	slurm_mutex_unlock(&cred->mutex);
 
