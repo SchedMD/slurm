@@ -399,19 +399,27 @@ static int _handle_flush(buf_t *buffer)
 
 static int _handle_flush_job(buf_t *buffer)
 {
-	uint32_t job_id;
+	int rc = SLURM_SUCCESS;
+	slurmscriptd_msg_t recv_msg;
+	flush_job_msg_t *flush_msg = NULL;
 
-	safe_unpack32(&job_id, buffer);
+	memset(&recv_msg, 0, sizeof(recv_msg));
+	recv_msg.msg_type = SLURMSCRIPTD_REQUEST_FLUSH_JOB;
+	if (slurmscriptd_unpack_msg(&recv_msg, buffer) != SLURM_SUCCESS) {
+		rc = SLURM_ERROR;
+		goto cleanup;
+	}
+	flush_msg = recv_msg.msg_data;
+
 	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_FLUSH_JOB for JobId=%u",
-		 job_id);
+		 flush_msg->job_id);
 
-	track_script_flush_job(job_id);
+	track_script_flush_job(flush_msg->job_id);
 
-	return SLURM_SUCCESS;
-
-unpack_error:
-	error("%s: Failed to unpack message", __func__);
-	return SLURM_ERROR;
+cleanup:
+	/* flush_job_msg_t has no data to free */
+	xfree(recv_msg.msg_data);
+	return rc;
 }
 
 static void _run_bb_script_child(int fd, char *script_func, uint32_t job_id,
@@ -899,13 +907,12 @@ extern void slurmscriptd_flush(void)
 
 extern void slurmscriptd_flush_job(uint32_t job_id)
 {
-	buf_t *buffer;
+	flush_job_msg_t msg;
 
-	buffer = init_buf(0);
-	pack32(job_id, buffer);
+	msg.job_id = job_id;
 
-	_write_msg(slurmctld_writefd, SLURMSCRIPTD_REQUEST_FLUSH_JOB, buffer);
-	FREE_NULL_BUFFER(buffer);
+	_send_rpc(slurmctld_writefd, SLURMSCRIPTD_REQUEST_FLUSH_JOB, &msg,
+		  false, NULL, NULL, NULL);
 }
 
 extern int slurmscriptd_run_bb_lua(uint32_t job_id, char *function,

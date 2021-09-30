@@ -129,6 +129,27 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static void _pack_flush_job(flush_job_msg_t *msg, buf_t *buffer)
+{
+	pack32(msg->job_id, buffer);
+}
+
+static int _unpack_flush_job(flush_job_msg_t **resp_msg, buf_t *buffer)
+{
+	flush_job_msg_t *data = xmalloc(sizeof *data);
+	*resp_msg = data;
+
+	safe_unpack32(&data->job_id, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("%s: Failed to unpack message", __func__);
+	xfree(data);
+	*resp_msg = NULL;
+	return SLURM_ERROR;
+}
+
 extern int slurmscriptd_pack_msg(slurmscriptd_msg_t *msg, buf_t *buffer)
 {
 	int rc = SLURM_SUCCESS;
@@ -138,6 +159,9 @@ extern int slurmscriptd_pack_msg(slurmscriptd_msg_t *msg, buf_t *buffer)
 	switch (msg->msg_type) {
 	case SLURMSCRIPTD_REQUEST_FLUSH:
 		/* Nothing to pack */
+		break;
+	case SLURMSCRIPTD_REQUEST_FLUSH_JOB:
+		_pack_flush_job(msg->msg_data, buffer);
 		break;
 	case SLURMSCRIPTD_REQUEST_RUN_SCRIPT:
 		_pack_run_script(msg->msg_data, buffer);
@@ -167,6 +191,10 @@ extern int slurmscriptd_unpack_msg(slurmscriptd_msg_t *msg, buf_t *buffer)
 	switch (msg->msg_type) {
 	case SLURMSCRIPTD_REQUEST_FLUSH:
 		/* Nothing to unpack */
+		break;
+	case SLURMSCRIPTD_REQUEST_FLUSH_JOB:
+		rc = _unpack_flush_job((flush_job_msg_t **)(&msg->msg_data),
+				       buffer);
 		break;
 	case SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE:
 		rc = _unpack_script_complete(
