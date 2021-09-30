@@ -145,6 +145,9 @@ extern int slurmscriptd_pack_msg(slurmscriptd_msg_t *msg, buf_t *buffer)
 	case SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE:
 		_pack_script_complete(msg->msg_data, buffer);
 		break;
+	case SLURMSCRIPTD_SHUTDOWN:
+		/* Nothing to pack */
+		break;
 	default:
 		error("Unrecognized slurmscriptd msg type=%d",
 		      msg->msg_type);
@@ -174,6 +177,9 @@ extern int slurmscriptd_unpack_msg(slurmscriptd_msg_t *msg, buf_t *buffer)
 		rc = _unpack_run_script(
 				(run_script_msg_t **)(&msg->msg_data),
 				buffer);
+		break;
+	case SLURMSCRIPTD_SHUTDOWN:
+		/* Nothing to unpack */
 		break;
 	default:
 		error("Unrecognized slurmscriptd msg type=%d",

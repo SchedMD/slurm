@@ -563,8 +563,19 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 	return status;
 }
 
-static int _handle_shutdown(void)
+static int _handle_shutdown(buf_t *buffer)
 {
+	slurmscriptd_msg_t recv_msg;
+
+	memset(&recv_msg, 0, sizeof(recv_msg));
+	recv_msg.msg_type = SLURMSCRIPTD_SHUTDOWN;
+	if (slurmscriptd_unpack_msg(&recv_msg, buffer) != SLURM_SUCCESS) {
+		/*
+		 * We still want to cleanup any scripts that are running.
+		 * This should never happen anyway.
+		 */
+	}
+
 	log_flag(SCRIPT, "Handling SLURMSCRIPTD_SHUTDOWN");
 	/* Kill all running scripts. */
 	run_command_shutdown();
@@ -746,7 +757,7 @@ static int _handle_request(int req, buf_t *buffer)
 			rc = _handle_script_complete(buffer);
 			break;
 		case SLURMSCRIPTD_SHUTDOWN:
-			rc = _handle_shutdown();
+			rc = _handle_shutdown(buffer);
 			break;
 		default:
 			error("%s: slurmscriptd: Unrecognied request: %d",
@@ -869,7 +880,8 @@ static void _kill_slurmscriptd(void)
 	}
 
 	/* Tell slurmscriptd to shutdown, then wait for it to finish. */
-	_write_msg(slurmctld_writefd, SLURMSCRIPTD_SHUTDOWN, NULL);
+	_send_rpc(slurmctld_writefd, SLURMSCRIPTD_SHUTDOWN, NULL, false,
+		  NULL, NULL, NULL);
 	if (waitpid(slurmscriptd_pid, &status, 0) < 0) {
 		if (WIFEXITED(status)) {
 			/* Exited normally. */
