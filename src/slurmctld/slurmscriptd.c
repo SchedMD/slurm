@@ -376,19 +376,8 @@ static int _run_script(char *script, char **argv, char **env, uint32_t job_id,
 	return status;
 }
 
-static int _handle_flush(buf_t *buffer)
+static int _handle_flush(slurmscriptd_msg_t *recv_msg)
 {
-	slurmscriptd_msg_t recv_msg;
-
-	memset(&recv_msg, 0, sizeof(recv_msg));
-	recv_msg.msg_type = SLURMSCRIPTD_REQUEST_FLUSH;
-	if (slurmscriptd_unpack_msg(&recv_msg, buffer) != SLURM_SUCCESS) {
-		/*
-		 * We still want to cleanup any scripts that are running.
-		 * This should never happen anyway.
-		 */
-	}
-
 	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_FLUSH");
 	/* Kill all running scripts */
 	run_command_shutdown();
@@ -397,29 +386,16 @@ static int _handle_flush(buf_t *buffer)
 	return SLURM_SUCCESS;
 }
 
-static int _handle_flush_job(buf_t *buffer)
+static int _handle_flush_job(slurmscriptd_msg_t *recv_msg)
 {
-	int rc = SLURM_SUCCESS;
-	slurmscriptd_msg_t recv_msg;
-	flush_job_msg_t *flush_msg = NULL;
-
-	memset(&recv_msg, 0, sizeof(recv_msg));
-	recv_msg.msg_type = SLURMSCRIPTD_REQUEST_FLUSH_JOB;
-	if (slurmscriptd_unpack_msg(&recv_msg, buffer) != SLURM_SUCCESS) {
-		rc = SLURM_ERROR;
-		goto cleanup;
-	}
-	flush_msg = recv_msg.msg_data;
+	flush_job_msg_t *flush_msg = recv_msg->msg_data;
 
 	log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_FLUSH_JOB for JobId=%u",
 		 flush_msg->job_id);
 
 	track_script_flush_job(flush_msg->job_id);
 
-cleanup:
-	/* flush_job_msg_t has no data to free */
-	xfree(recv_msg.msg_data);
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 static void _run_bb_script_child(int fd, char *script_func, uint32_t job_id,
@@ -571,19 +547,8 @@ static int _run_bb_script(char *script_func, uint32_t job_id, uint32_t timeout,
 	return status;
 }
 
-static int _handle_shutdown(buf_t *buffer)
+static int _handle_shutdown(slurmscriptd_msg_t *recv_msg)
 {
-	slurmscriptd_msg_t recv_msg;
-
-	memset(&recv_msg, 0, sizeof(recv_msg));
-	recv_msg.msg_type = SLURMSCRIPTD_SHUTDOWN;
-	if (slurmscriptd_unpack_msg(&recv_msg, buffer) != SLURM_SUCCESS) {
-		/*
-		 * We still want to cleanup any scripts that are running.
-		 * This should never happen anyway.
-		 */
-	}
-
 	log_flag(SCRIPT, "Handling SLURMSCRIPTD_SHUTDOWN");
 	/* Kill all running scripts. */
 	run_command_shutdown();
@@ -594,23 +559,12 @@ static int _handle_shutdown(buf_t *buffer)
 	return SLURM_ERROR; /* Don't handle any more requests. */
 }
 
-static int _handle_run_script(buf_t *buffer)
+static int _handle_run_script(slurmscriptd_msg_t *recv_msg)
 {
-	slurmscriptd_msg_t recv_msg;
 	script_complete_t script_complete;
-	run_script_msg_t *script_msg = NULL;
+	run_script_msg_t *script_msg = recv_msg->msg_data;
 	int rc;
 
-	memset(&script_complete, 0, sizeof(script_complete));
-	memset(&recv_msg, 0, sizeof(recv_msg));
-	recv_msg.msg_type = SLURMSCRIPTD_REQUEST_RUN_SCRIPT;
-	if (slurmscriptd_unpack_msg(&recv_msg, buffer) != SLURM_SUCCESS) {
-		/* Send response that it failed. */
-		script_complete.status = SLURM_ERROR;
-		goto cleanup;
-	}
-
-	script_msg = recv_msg.msg_data;
 	script_complete.script_type = script_msg->script_type;
 	/*
 	 * We don't xstrdup script_name into script_complete, so don't free
@@ -621,7 +575,7 @@ static int _handle_run_script(buf_t *buffer)
 	case SLURMSCRIPTD_BB_LUA:
 		log_flag(SCRIPT, "Handling SLURMSCRIPTD_REQUEST_RUN_SCRIPT (burst_buffer.lua:%s) for JobId=%u: timeout=%u seconds, argc=%u, key=%s",
 			 script_msg->script_name, script_msg->job_id,
-			 script_msg->timeout, script_msg->argc, recv_msg.key);
+			 script_msg->timeout, script_msg->argc, recv_msg->key);
 		script_complete.status =
 			_run_bb_script(script_msg->script_name,
 				       script_msg->job_id,
@@ -650,16 +604,10 @@ static int _handle_run_script(buf_t *buffer)
 		break;
 	}
 
-cleanup:
 	/* Send response */
 	rc = _send_rpc(slurmscriptd_writefd,
 		       SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE, &script_complete,
-		       false, recv_msg.key, NULL, NULL);
-
-	/* Free malloc'd data */
-	slurmscriptd_free_run_script_msg(script_msg);
-	xfree(script_complete.resp_msg);
-	xfree(recv_msg.key);
+		       false, recv_msg->key, NULL, NULL);
 
 	return rc;
 }
@@ -695,26 +643,14 @@ static int _notify_script_done(char *key, script_complete_t *script_complete)
 	return rc;
 }
 
-static int _handle_script_complete(buf_t *buffer)
+static int _handle_script_complete(slurmscriptd_msg_t *msg)
 {
 	int rc = SLURM_SUCCESS;
-	slurmscriptd_msg_t msg;
-	script_complete_t *script_complete;
-
-	/* Free data before returning. */
-	memset(&msg, 0, sizeof(msg));
-	msg.msg_type = SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE;
-	if (slurmscriptd_unpack_msg(&msg, buffer) != SLURM_SUCCESS) {
-		error("%s: Cannot process SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE due to unpack error",
-		      __func__);
-		rc = SLURM_ERROR;
-		goto cleanup;
-	}
-	script_complete = msg.msg_data;
+	script_complete_t *script_complete = msg->msg_data;
 
 	/* Notify the waiting thread that the script is done */
-	if (msg.key)
-		rc = _notify_script_done(msg.key, script_complete);
+	if (msg->key)
+		rc = _notify_script_done(msg->key, script_complete);
 
 	switch (script_complete->script_type) {
 	case SLURMSCRIPTD_BB_LUA:
@@ -739,10 +675,7 @@ static int _handle_script_complete(buf_t *buffer)
 		break;
 	}
 
-cleanup:
 	_decr_script_cnt();
-	slurmscriptd_free_script_complete(script_complete);
-	xfree(msg.key);
 
 	return rc;
 }
@@ -750,22 +683,31 @@ cleanup:
 static int _handle_request(int req, buf_t *buffer)
 {
 	int rc;
+	slurmscriptd_msg_t recv_msg;
+
+	memset(&recv_msg, 0, sizeof(recv_msg));
+	recv_msg.msg_type = (uint32_t)req;
+	if (slurmscriptd_unpack_msg(&recv_msg, buffer) != SLURM_SUCCESS) {
+		error("%s: Unable to handle message %d", __func__, req);
+		rc = SLURM_ERROR;
+		goto cleanup;
+	}
 
 	switch (req) {
 		case SLURMSCRIPTD_REQUEST_FLUSH:
-			rc = _handle_flush(buffer);
+			rc = _handle_flush(&recv_msg);
 			break;
 		case SLURMSCRIPTD_REQUEST_FLUSH_JOB:
-			rc = _handle_flush_job(buffer);
+			rc = _handle_flush_job(&recv_msg);
 			break;
 		case SLURMSCRIPTD_REQUEST_RUN_SCRIPT:
-			rc = _handle_run_script(buffer);
+			rc = _handle_run_script(&recv_msg);
 			break;
 		case SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE:
-			rc = _handle_script_complete(buffer);
+			rc = _handle_script_complete(&recv_msg);
 			break;
 		case SLURMSCRIPTD_SHUTDOWN:
-			rc = _handle_shutdown(buffer);
+			rc = _handle_shutdown(&recv_msg);
 			break;
 		default:
 			error("%s: slurmscriptd: Unrecognied request: %d",
@@ -774,6 +716,8 @@ static int _handle_request(int req, buf_t *buffer)
 			break;
 	}
 
+cleanup:
+	slurmscriptd_free_msg(&recv_msg);
 	return rc;
 }
 

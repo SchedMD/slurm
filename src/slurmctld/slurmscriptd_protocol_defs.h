@@ -90,4 +90,11 @@ typedef struct {
 extern void slurmscriptd_free_run_script_msg(run_script_msg_t *msg);
 extern void slurmscriptd_free_script_complete(script_complete_t *msg);
 
+/*
+ * This function checks msg->msg_type and frees msg->msg_data accordingly.
+ * This function does not free msg, however, since we don't know if msg
+ * was malloc'd.
+ */
+extern void slurmscriptd_free_msg(slurmscriptd_msg_t *msg);
+
 #endif /* _SLURMSCRIPTD_PROTOCOL_DEFS_H */

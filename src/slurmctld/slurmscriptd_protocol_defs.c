@@ -60,3 +60,22 @@ extern void slurmscriptd_free_script_complete(script_complete_t *msg)
 	xfree(msg->script_name);
 	xfree(msg);
 }
+
+extern void slurmscriptd_free_msg(slurmscriptd_msg_t *msg)
+{
+	if (!msg)
+		return;
+
+	switch(msg->msg_type) {
+	case SLURMSCRIPTD_REQUEST_RUN_SCRIPT:
+		slurmscriptd_free_run_script_msg(msg->msg_data);
+		break;
+	case SLURMSCRIPTD_REQUEST_SCRIPT_COMPLETE:
+		slurmscriptd_free_script_complete(msg->msg_data);
+		break;
+	default:
+		xfree(msg->msg_data); /* Nothing internal to free */
+		break;
+	}
+	xfree(msg->key);
+}
