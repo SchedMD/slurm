@@ -12738,8 +12738,7 @@ static int _update_job(job_record_t *job_ptr, job_desc_msg_t *job_specs,
 			job_specs->num_tasks : detail_ptr->num_tasks;
 
 		if (!num_tasks) {
-			num_tasks = detail_ptr->min_nodes;
-
+			num_tasks = job_specs->min_nodes;
 		} else if (num_tasks < job_specs->min_nodes) {
 			info("%s: adjusting num_tasks (prev: %u) to be at least min_nodes: %u",
 			     __func__, num_tasks, job_specs->min_nodes);

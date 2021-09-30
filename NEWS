@@ -37,6 +37,7 @@ documents those changes that are of interest to users and administrators.
     constraints.
  -- Handle job resize better in the database.
  -- Exclude currently running, resized jobs from the runaway jobs list.
+ -- Make it possible to shrink a job more than once.
 
 * Changes in Slurm 21.08.1
 ==========================
