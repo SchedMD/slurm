@@ -276,11 +276,15 @@ Specification of multiple KNL modes requires the use of a heterogeneous job.
 \fBBrackets\fR
 Brackets can be used to indicate that you are looking for a set of nodes with
 the different requirements contained within the brackets. For example,
-.TP
 \fB\-\-constraint="[(rack1|rack2)*1&(rack3)*2]"\fR will get you one node with
 either the "rack1" or "rack2" features and two nodes with the "rack3" feature.
 The same request without the brackets will try to find a single node that
 meets those requirements.
+
+\fBNOTE:\fR Brackets are only reserved for \fBMultiple Counts\fR and
+\fBMatching OR\fR syntax.
+AND operators require a count for each feature inside square brackets
+(i.e. "[quad*2&hemi*1]").
 .TP
 \fBParenthesis\fR
 Parenthesis can be used to group like node features together. For example,
