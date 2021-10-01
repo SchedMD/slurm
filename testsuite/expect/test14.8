@@ -34,21 +34,17 @@ source ./globals
 
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
+set job_id      0
 
 proc cleanup {} {
-	global bin_rm file_in file_out
+	global job_id bin_rm file_in file_out
 
+	cancel_job $job_id
 	exec $bin_rm -f $file_in $file_out
 }
 
-set exit_code            0
-set job_id               0
-
 if {[get_config_param "FrontendName"] ne "MISSING"} {
 	skip "This test is incompatible with front-end systems"
-}
-if {[get_config_param "MULTIPLE_SLURMD"] eq "Yes"} {
-	skip "This test is incompatible with multiple slurmd systems"
 }
 if {[get_config_param "SlurmdUser"] ne "root(0)"} {
 	skip "This test is incompatible with SlurmdUser != root"
@@ -79,57 +75,21 @@ make_bash_script $file_in "
 # Spawn an sbatch job that uses stdout and confirm its contents
 #
 set timeout $max_job_delay
-set sbatch_pid [spawn $sbatch -N1-4 --output=$file_out -t4 $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$job_id == 0} {
-	fail "Batch submit failure"
+if {[get_config_param "MULTIPLE_SLURMD"] eq "Yes"} {
+	subskip "This test is partially compatible with multiple slurmd systems"
+	set job_id [submit_job -fail "-N1 --output=$file_out -t4 $file_in"]
+} else {
+	set job_id [submit_job -fail "-N1-4 --output=$file_out -t4 $file_in"]
 }
 
 #
 # Wait for job to complete and check output file
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	cancel_job $job_id
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
-if {[wait_for_file $file_out] == 0} {
-	spawn $bin_cat $file_out
-	expect {
-		-re "differ" {
-			log_error "sbcast transmitted file differs from original"
-			set exit_code 1
-			exp_continue
-		}
-		-re "no such" {
-			log_error "sbcast failed to transmit the file"
-			set exit_code 1
-		}
-		-re "error" {
-			log_error "Some error occurred"
-			set exit_code 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-}
+wait_for_file -fail $file_out
 
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+set output [run_command_output -fail "$bin_cat $file_out"]
+subtest {![regexp "differ" $output]} "Verify that sbcast transmits the file correctly (data is correct)"
+subtest {![regexp "no such" $output]} "Verify that sbcast transmits the file correctly (not empty)"
+subtest {![regexp "error" $output]} "Verify that not error is printed"

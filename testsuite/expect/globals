@@ -3530,7 +3530,7 @@ proc make_bash_script { script_name script_contents } {
 	puts $fd "#!$bin_bash"
 	puts $fd $script_contents
 	close $fd
-	exec $bin_chmod 700 $script_name
+	exec $bin_chmod 777 $script_name
 }
 
 
