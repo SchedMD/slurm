@@ -31,15 +31,15 @@ source ./globals
 set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
+set job_id      0
+
 
 proc cleanup {} {
-	global bin_rm file_in file_out file_err
+	global job_id bin_rm file_in file_out file_err
 
+	cancel_job $job_id
 	exec $bin_rm -f $file_in $file_out $file_err
 }
-
-set exit_code            0
-set job_id               0
 
 set accounting_storage_enforce [get_config_param "AccountingStorageEnforce"]
 if {[param_contains $accounting_storage_enforce "nosteps"] || [param_contains $accounting_storage_enforce "nojobs"]} {
@@ -92,10 +92,7 @@ if {$job_id == 0} {
 #
 # Wait for job to complete and check output file
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 set matches 0
 if {[wait_for_file $file_err] == 0} {
@@ -118,8 +115,7 @@ if {[wait_for_file $file_err] == 0} {
 			exp_continue
 		}
 		-re "error:" {
-			log_error "Unexpected error"
-			set exit_code 1
+			fail "Unexpected error"
 		}
 		eof {
 			wait
@@ -128,8 +124,4 @@ if {[wait_for_file $file_err] == 0} {
 }
 if {$matches != 4} {
 	fail "sbcast --verbose option did not produced expected logging ($matches != 4)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
