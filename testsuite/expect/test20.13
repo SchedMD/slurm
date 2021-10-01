@@ -26,16 +26,9 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_err	"test$test_id.error"
-set file_in	"test$test_id.input"
-set file_out	"test$test_id.output"
-
-proc cleanup {} {
-	global bin_rm file_in file_out file_err
-
-	exec $bin_rm -f $file_in $file_out $file_err
-}
+set file_err    "$test_dir/error"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
 
 if {[file executable $qsub] == 0} {
 	skip "$qsub not found"
@@ -60,10 +53,7 @@ expect {
 	}
 }
 
-if {$matches != 1} {
-	log_error "qsub -b option did not set up correctly"
-	set exit_code 1
-}
+subtest {$matches == 1} "Verify qsub -b option was set up correctly"
 
 # test -pe option (sbatch -c|--cpus-per-task)
 set param 7
@@ -82,10 +72,7 @@ expect {
 	}
 }
 
-if {$matches != 1} {
-	log_error "qsub -pe option did not set up correctly"
-	set exit_code 1
-}
+subtest {$matches == 1} "Verify qsub -pe option was set up correctly"
 
 # test -P option (sbatch --wckey)
 set param "test_wckey"
@@ -138,10 +125,7 @@ expect {
 }
 
 
-if {$matches != 1} {
-	log_error "qsub -D option did not set up correctly"
-	set exit_code 1
-}
+subtest {$matches == 1} "Verify qsub -D option was set up correctly"
 
 # test -l h_rt option (sbatch -t)
 set param "300"
@@ -161,10 +145,7 @@ expect {
 	}
 }
 
-if {$matches != 1} {
-	log_error "qsub -l h_rt option did not set up correctly"
-	set exit_code 1
-}
+subtest {$matches == 1} "Verify qsub -l h_rt option was set up correctly"
 
 # test -l h_rt option (sbatch -t)
 set param "00:05:00"
@@ -183,10 +164,7 @@ expect {
 	}
 }
 
-if {$matches != 1} {
-	log_error "qsub -l h_rt option did not set up correctly"
-	set exit_code 1
-}
+subtest {$matches == 1} "Verify qsub -l h_rt option was set up correctly"
 
 # test -l h_vmem option (sbatch --mem)
 set param "3000"
@@ -205,10 +183,4 @@ expect {
 	}
 }
 
-if {$matches != 1} {
-	fail "qsub -l h_vmem option did not set up correctly"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 1} "Verify qsub -l h_vmem option was set up correctly"

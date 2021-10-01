@@ -26,15 +26,8 @@
 ############################################################################
 source ./globals
 
-set file_in      "test$test_id\.input"
+set file_in      "$test_dir/input"
 set job_id       0
-set exit_code    0
-
-proc cleanup {} {
-	global bin_rm file_in
-
-	exec $bin_rm -f $file_in
-}
 
 if {[file executable $qalter] == 0} {
 	skip "$qalter does not exits"
@@ -43,13 +36,16 @@ if {[file executable $qsub] == 0} {
 	skip "$qsub does not exits"
 }
 
-# Clean up any vestigial files
-exec $bin_rm -f $file_in
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 make_bash_script $file_in "sleep 50"
 
 proc check_rerun { arg job_id } {
-	global scontrol exit_code
+	global scontrol
 
 	set check_val 0
 	spawn $scontrol show job $job_id
@@ -65,10 +61,7 @@ proc check_rerun { arg job_id } {
 			wait
 		}
 	}
-	if {$check_val != 1} {
-		log_error "Requeue for job $job_id was not set correctly"
-		set exit_code 1
-	}
+	subtest {$check_val == 1} "Verify requeue for job was set correctly"
 }
 
 spawn $qsub -l walltime=1:00 -o /dev/null -e /dev/null $file_in
@@ -84,10 +77,7 @@ expect {
 		wait
 	}
 }
-if {$job_id == 0} {
-	log_error "Job was not submitted"
-	set exit_code 1
-}
+subtest {$job_id != 0} "Verify job was submitted"
 
 spawn $qalter -r y $job_id
 expect {
@@ -114,11 +104,3 @@ expect {
 
 # 1 for "y" and 0 for "n"
 check_rerun 0 $job_id
-
-if {[cancel_job $job_id] != 0} {
-	fail "Unable to cancel job ($job_id)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

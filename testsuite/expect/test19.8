@@ -26,17 +26,9 @@
 ############################################################################
 source ./globals
 
-set trigger_file_in   "test$test_id\_trig_in"
-set trigger_file_out  "test$test_id\_trig_out"
-set cwd               "[$bin_pwd]"
+set trigger_file_in   "$test_dir/trig_in"
+set trigger_file_out  "$test_dir/trig_out"
 set permission        0
-set exit_code         0
-
-proc cleanup {} {
-	global bin_rm trigger_file_in trigger_file_out
-
-	exec $bin_rm -f $trigger_file_in $trigger_file_out
-}
 
 #
 # get my uid and clear any vestigial triggers
@@ -46,16 +38,21 @@ if {$uid == 0} {
 	skip "This test can't be run as user root"
 }
 
-exec $strigger --clear --quiet --user=$uid
+proc cleanup {} {
+	global strigger uid
+
+	run_command -none "$strigger --clear --quiet --user=$uid"
+}
+
+cleanup
 
 #
 # Build input script file
 #
-exec $bin_rm -f $trigger_file_in $trigger_file_out
-make_bash_script $trigger_file_in " $bin_echo Strigger has been triggered >$cwd/$trigger_file_out"
+make_bash_script $trigger_file_in " $bin_echo Strigger has been triggered >$trigger_file_out"
 
 set match 0
-spawn $strigger --set -v --down --program=$cwd/$trigger_file_in
+spawn $strigger --set -v --down --program=$trigger_file_in
 expect {
 	-re "permission denied" {
 		set permission 1
@@ -73,12 +70,10 @@ expect {
 	}
 }
 if {$permission == 1} {
-	exec $bin_rm -f $trigger_file_in
 	skip "Current configuration prevents setting triggers. Need to run the tests as SlurmUser or make SlurmUser=root"
 }
 if {$match != 1} {
-	log_error "Trigger was not set"
-	set exit_code 1
+	fail "Trigger was not set"
 }
 
 set match 0
@@ -95,10 +90,7 @@ expect {
 		wait
 	}
 }
-if {$match != 1} {
-	log_error "strigger failed to display headers when it should have"
-	set exit_code 1
-}
+subtest {$match == 1} "Verify strigger displays headers by default"
 
 set match 0
 spawn $strigger --get --noheader
@@ -114,22 +106,4 @@ expect {
 		wait
 	}
 }
-if {$match != 0} {
-	log_error "strigger displayed headers when it should not"
-	set exit_code 1
-}
-
-set match 0
-spawn $strigger --clear -v --user=$uid
-expect {
-	timeout {
-		fail "strigger is not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors"
-}
+subtest {$match == 0} "Verify strigger does not display headers when using --noheader option"
