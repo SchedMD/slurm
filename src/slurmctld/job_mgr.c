@@ -14469,6 +14469,7 @@ extern void job_pre_resize_acctg(job_record_t *job_ptr)
 		jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	job_ptr->job_state |= JOB_RESIZING;
+	job_ptr->resize_time = time(NULL);
 	/* NOTE: job_completion_logger() calls
 	 *	 acct_policy_remove_job_submit() */
 	job_completion_logger(job_ptr, false);
@@ -14484,8 +14485,6 @@ extern void job_pre_resize_acctg(job_record_t *job_ptr)
 /* Record accounting information for a job immediately after changing size */
 extern void job_post_resize_acctg(job_record_t *job_ptr)
 {
-	time_t org_submit = job_ptr->details->submit_time;
-
 	/*
 	 * NOTE: The RESIZING FLAG needed to be set with job_pre_resize_acctg()
 	 * the assert is here to make sure we code it that way.
@@ -14497,15 +14496,16 @@ extern void job_post_resize_acctg(job_record_t *job_ptr)
 	acct_policy_job_begin(job_ptr);
 	job_claim_resv(job_ptr);
 
-	if (job_ptr->resize_time)
-		job_ptr->details->submit_time = job_ptr->resize_time;
+	/*
+	 * Set db_index to NO_VAL64 not 0 so the dbd plugin won't also
+	 * trying setting this.  See _set_db_inx_thread().
+	 * This should also be protected by resize_time being set already in
+	 * job_pre_resize_acctg(), but why not?
+	 */
+	job_ptr->db_index = NO_VAL64;
 
-	job_ptr->resize_time = time(NULL);
-
-	/* FIXME: see if this can be changed to job_start_direct() */
 	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
-	job_ptr->details->submit_time = org_submit;
 	job_ptr->job_state &= (~JOB_RESIZING);
 
 	/*
@@ -15798,11 +15798,6 @@ extern void job_completion_logger(job_record_t *job_ptr, bool requeue)
 	}
 
 	jobcomp_g_write(job_ptr);
-
-	/* When starting the resized job everything is taken care of
-	 * elsewhere, so don't call it here. */
-	if (IS_JOB_RESIZING(job_ptr))
-		return;
 
 	if (!(job_ptr->bit_flags & TRES_STR_CALC) &&
 	    job_ptr->tres_alloc_cnt &&
