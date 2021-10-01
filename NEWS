@@ -32,6 +32,9 @@ documents those changes that are of interest to users and administrators.
  -- Fix node being able to transition to CLOUD state from non-cloud state.
  -- Fix regression introduced in 21.08.0rc1 which broke a step's ability to
     inherit GRES from the job when the step didn't request GRES but the job did.
+ -- Fix errors in logic when picking nodes based on bracketed anded constraints.
+    This also enforces the requirement to have a count when using such
+    constraints.
 
 * Changes in Slurm 21.08.1
 ==========================
