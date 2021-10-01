@@ -41,6 +41,8 @@ documents those changes that are of interest to users and administrators.
  -- Fix sending requeue mail type.
  -- Properly resize a job's GRES bitmaps and counts when resizing the job.
  -- Fix node being able to transition to CLOUD state from non-cloud state.
+ -- Fix regression introduced in 21.08.0rc1 which broke a step's ability to
+    inherit GRES from the job when the step didn't request GRES but the job did.
 
 * Changes in Slurm 21.08.1
 ==========================
