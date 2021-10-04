@@ -31,13 +31,13 @@ source ./globals
 set file_in1    "test$test_id.input1"
 set file_in2    "test$test_id.input2"
 set file_out2   "test$test_id.output2"
-set exit_code   0
 set job_id1     0
 set job_id2     0
 
 proc cleanup {} {
-	global bin_rm file_in1 file_in2 file_out2
+	global job_id1 job_id2 bin_rm file_in1 file_in2 file_out2
 
+	cancel_job $job_id1 $job_id2
 	exec $bin_rm -f $file_in1 $file_in2 $file_out2
 }
 
@@ -50,95 +50,26 @@ make_bash_script $file_in1 "$bin_sleep 10"
 #
 # Spawn a batch job that just sleeps for a while
 #
-set timeout $max_job_delay
-set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t1 $file_in1]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id1 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id1 == 0} {
-	fail "Batch submit failure"
-}
+set job_id1 [submit_job -fail "--output=/dev/null --error=/dev/null -t1 $file_in1"]
 
 #
 # Submit a dependent job
 #
 make_bash_script $file_in2 "$scontrol show job $job_id1"
-set match_state 0
-set sbatch_pid [spawn $sbatch --output=$file_out2 --dependency=afterany:$job_id1 $file_in2]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id2 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id2 == 0} {
-	fail "Batch submit failure"
-}
+set job_id2 [submit_job -fail "--output=$file_out2 --dependency=afterany:$job_id1 $file_in2"]
 
 #
 # Confirm dependency info within second job
 #
-set match_jobid 0
-spawn $scontrol show job $job_id2
-expect {
-	-re "Dependency=afterany:($number)" {
-		set match_jobid $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$match_jobid != $job_id1} {
-	log_error "Dependency information not processed"
-	set exit_code 1
-}
 
+set match_jobid 0
+subtest {[regexp "afterany:($number)" [get_job_param $job_id2 "Dependency"] - match_jobid]} "Verify Dependency info is present"
+subtest {$match_jobid == $job_id1} "Verify Dependency information is correct"
 
 #
 # Confirm that first job is complete before second job starts
 #
-if {[wait_for_file $file_out2] != 0} {
-	log_error "File $file_out2 is missing"
-        set exit_code 1
-} else {
-	set match_job_state 0
-	spawn $bin_cat $file_out2
-	expect {
-		-re "JobState=COMPLETED|COMPLETING" {
-			set match_job_state 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	if {$match_job_state == 0} {
-		log_error "Dependent job not completed"
-		set exit_code 1
-	}
-}
+wait_for_file -fail $file_out2
 
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+set output [run_command_output -fail "$bin_cat $file_out2"]
+subtest {[regexp "JobState=COMPLETED|COMPLETING" $output]} "Confirm that first job is complete before second job starts"

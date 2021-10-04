@@ -29,36 +29,17 @@
 ############################################################################
 source ./globals
 
-set def_part_name    ""
-set exit_code        0
-set file_in          "test$test_id.input"
 set job_id           0
-set other_part_name  ""
+set other_part_name  $test_name
+set def_part_name    [default_partition]
 
-#
-# Identify the partitions in the cluster, identifying the default
-#
-spawn $sinfo --summarize
-expect {
-	-re "($eol)($re_word_str) *up" {
-		set last [string last "*" $expect_out(2,string)]
-		if { $last != -1 } {
-			set def_part_name   [string range $expect_out(2,string)	0 [expr $last-1]]
-		} else {
-			set other_part_name $expect_out(2,string)
-		}
-		exp_continue
-	}
-	-re "Unable to contact" {
-		fail "Slurm appears to be down"
-	}
-	timeout {
-		fail "sinfo not responding"
-	}
-	eof {
-		wait
-	}
+proc cleanup {} {
+	global job_id scontrol other_part_name
+
+	cancel_job $job_id
+	run_command -none "$scontrol delete partition=$other_part_name"
 }
+
 
 #
 # Submit a job explicitly to the default partition
@@ -72,104 +53,48 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
 	}
 }
-# Confirm the job's partition
 if {$job_id == 0} {
-	log_error "Job submit failure"
-	set exit_code 1
-} else {
-	set read_part ""
-	spawn $scontrol show job $job_id
-	expect {
-		-re "Partition=($re_word_str)" {
-			set read_part $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if ([string compare $read_part $def_part_name]) {
-		log_error "Improper partition selected"
-		set exit_code 1
-	}
-	cancel_job $job_id
+	fail "Job submit failure"
 }
 
+# Confirm the job's partition
+set read_part [get_job_param $job_id "Partition"]
+subtest {$read_part eq $def_part_name} "Confirm that the job used the default partition" "$read_part != $def_part_name"
+cancel_job $job_id
+
 #
-# Test if a non-default partition exists, terminate if none
+# Create a test partition
 #
-if (![string compare $other_part_name ""]) {
-	skip "Can't test salloc partition option only the default partition exists"
-}
+run_command -none "$scontrol delete partition=$other_part_name"
+run_command -fail "$scontrol create partition=$other_part_name nodes=[get_nodes_by_request -fail "-N1"]"
 
 #
 # Submit job explicitly to a non-default partition
 #
 set job_id          0
-set legit_failure   0
 set salloc_pid [spawn $salloc --partition=$other_part_name -t1 $bin_sleep 1]
 expect {
-	-re "Required node not available" {
-		set legit_failure 1
-		exec $bin_kill -INT $salloc_pid
-		exp_continue
-	}
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		log_error "srun not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "srun not responding"
 	}
 	eof {
 		wait
 	}
 }
-# Confirm the job's partition
-if {$legit_failure == 1} {
-	log_warn "Partition '$other_part_name' is not usable"
-} elseif {$job_id == 0} {
-	log_error "Batch submit failure"
-	set exit_code 1
-} else {
-	set read_part ""
-	spawn $scontrol show job $job_id
-	expect {
-		-re "Partition=($re_word_str)" {
-			set read_part $expect_out(1,string)
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-	}
-	if ([string compare $read_part $other_part_name]) {
-		log_error "Improper partition selected"
-		set exit_code 1
-	}
-	cancel_job $job_id
+if {$job_id == 0} {
+	fail "Job submit failure"
 }
 
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+# Confirm the job's partition
+set read_part [get_job_param $job_id "Partition"]
+subtest {$read_part eq $other_part_name} "Confirm that the job used the other partition" "$read_part != $other_part_name"

@@ -29,16 +29,12 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
 set job_id           0
 
-proc end_it {} {
-	global exit_code
+proc cleanup {} {
+	global job_id
 
-	if {$exit_code != 0} {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-	pass
+	cancel_job $job_id
 }
 
 #
@@ -72,10 +68,7 @@ expect {
 		#log_debug "Job initiated"
 	}
 	timeout {
-		log_error "salloc not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
@@ -83,9 +76,7 @@ expect {
 }
 
 if {$job_id == 0} {
-	log_error "job_id not found"
-	set exit_code 1
-	end_it
+	fail "Job was not submitted"
 }
 
 set timeout 5
@@ -97,8 +88,7 @@ expect {
 		if {$time_limit == 2} {
 			incr matches
 		} else {
-			log_error "TimeLimit not set"
-			set exit_code 1
+			fail "TimeLimit not set"
 		}
 		exp_continue
 	}
@@ -107,10 +97,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
@@ -118,8 +105,5 @@ expect {
 }
 
 if {$matches != 2} {
-	log_error "processed $matches of 2 environment variables"
-	set exit_code 1
+	fail "processed $matches of 2 environment variables"
 }
-
-end_it

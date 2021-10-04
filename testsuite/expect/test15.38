@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set job_id      0
 
 #
@@ -46,21 +45,17 @@ set timeout $max_job_delay
 set salloc_pid [spawn $salloc --begin now+1 --deadline now+600 --time-min 5 $bin_sleep 1 ]
 expect {
 	-re "Requested time limit is invalid" {
-		set exit_code 1
-		exp_continue
+		fail "Requested time limit is invalid"
 	}
 	-re "Incompatible begin and deadline time specification" {
-		set exit_code 1
-		exp_continue
+		fail "Incompatible begin and deadline time specification"
 	}
 	-re "Pending job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		set exit_code 0
 		exp_continue
 	}
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		set exit_code 0
 		exp_continue
 	}
 	timeout {
@@ -74,55 +69,16 @@ if {$job_id == 0} {
 	fail "Job not submitted with a deadline and a time-min OK"
 }
 
-if {[wait_for_job $job_id DONE] != 0} {
-	fail "Job failed to run to completion"
-}
+wait_for_job -fail $job_id DONE
 
 #
 # test job status in scontrol and sacct
 #
-spawn $scontrol show job $job_id
-expect {
-	-re "JobState=COMPLETED" {
-		exp_continue
-	}
-	-re "JobState=" {
-		log_error "Invalid job state"
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
+subtest {[get_job_param $job_id "JobState"] == "COMPLETED"} "Verify job $job_id is COMPLETED"
 
-set not_support 0
-spawn $sacct  -n -P -X -j $job_id -o State
-expect {
-	-re "Slurm accounting storage is disabled" {
-		set not_support 1
-		exp_continue
-	}
-	-re "DEADLINE" {
-		log_error "Job not submitted with a deadline and a time-min OK"
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		fail "sacct not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$not_support != 0} {
-	skip "Can not test without accounting enabled"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+if {[param_contains [get_config_param "AccountingStorageType"] "*/slurmdbd"]} {
+	set output [run_command_output -fail "$sacct -n -P -X -j $job_id -o State"]
+	subtest {![regexp "DEADLINE" $output]} "Verify job $job_id is not in State DEADLINE in ssact"
+} else {
+	subskip "Can not subtest without accounting enabled"
 }

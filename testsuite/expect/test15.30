@@ -26,9 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set job_id      0
-
 #
 # Spawn a job that deadline is too late
 #
@@ -37,7 +34,6 @@ set salloc_pid 0
 set salloc_pid [spawn $salloc -N1 --deadline 2015-03-27T04:30:00 -t1 $bin_sleep 1]
 expect {
 	-re "Requested time limit is invalid" {
-		set exit_code 0
 		exp_continue
 	}
 	-re "Granted job allocation " {
@@ -49,8 +45,4 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

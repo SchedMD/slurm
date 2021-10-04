@@ -28,14 +28,19 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set matches     0
+set job_id      0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 #
 # Spawn a srun immediate execution job with hold (priority==0) option,
 # The job can't run immediately with a priority of zero
 #
-set job_id  0
 set timeout 10
 set salloc_pid [spawn $salloc --immediate=3 --hold -t1 -v $bin_pwd]
 expect {
@@ -54,21 +59,13 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$matches != 3} {
-	log_error "Failed to hold job as requested ($matches != 3)"
-	set exit_code 1
-} else {
-	log_debug "So far, so good"
-}
+subtest {$matches == 3} "Job with --immediate option should not run with hold"
 
 #
 # Spawn a salloc immediate execution job, it should run or fail immediately
@@ -89,19 +86,10 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
 	}
 }
-
-if {$matches != 1} {
-	fail "Immediate initiation option failure"
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 1} "Job with --immediate option should run"

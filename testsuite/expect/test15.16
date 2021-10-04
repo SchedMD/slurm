@@ -29,14 +29,19 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
-set timeout          $max_job_delay
 global env
+set timeout          $max_job_delay
+set job_id           0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 #
 # Run trivial test with SALLOC_BELL env var
 #
-set job_id      0
 set env("SALLOC_BELL") 1
 set salloc_pid [spawn $salloc -N1 -t1 $bin_id]
 expect {
@@ -48,19 +53,13 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "salloc not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$job_id == 0} {
-	log_error "salloc failed to respond"
-	set exit_code 1
-}
+subtest {$job_id != 0} "Ensure that job with SALLOC_BELL environment variable is allocated"
 
 #
 # Run trivial test with SALLOC_NO_BELL env var
@@ -78,22 +77,10 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "salloc not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$job_id == 0} {
-	fail "salloc failed to respond"
-}
-
-#
-# Post processing
-#
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$job_id != 0} "Ensure that job with SALLOC_NO_BELL environment variable is allocated"

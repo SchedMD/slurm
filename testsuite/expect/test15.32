@@ -26,17 +26,17 @@
 ############################################################################
 source ./globals
 
-set file_in        "test$test_id.bash"
-set test_salloc    "test$test_id.test_salloc"
+set file_in        "$test_dir/input"
+set test_salloc    "$test_dir/test_salloc"
 set job_id         0
 set authorized     1
-set exit_code      0
 set part_name      "QA_TEST"
 
 proc cleanup {} {
-	global bin_rm test_salloc file_in
+	global job_id scontrol part_name
 
-	exec $bin_rm $test_salloc $file_in
+	cancel_job $job_id
+	run_command "$scontrol delete PartitionName=$part_name"
 }
 
 if {![is_super_user]} {
@@ -91,9 +91,7 @@ if {[string compare $def_node ""] == 0} {
 spawn $scontrol create PartitionName=$part_name Nodes=$def_node MaxTime=30
 expect {
 	-re "error" {
-		log_error "Something bad happened on partition create"
-		set exit_code 1
-		exp_continue
+		fail "Something bad happened on partition create"
 	}
 	timeout {
 		fail "scontrol not responding"
@@ -144,123 +142,48 @@ $salloc --no-shell -N1 --deadline now+1hour -p $part_name -t100 $bin_sleep 1 &
 "
 
 make_bash_script $file_in "
-bash -i ./$test_salloc
+bash -i $test_salloc
 "
 
 set timeout $max_job_delay
 spawn bash -i $file_in
-if {[string compare $enforcepartlimits "NO"] == 0} {
+if {$enforcepartlimits eq "NO"} {
 	expect {
 		-re "Pending job allocation ($number)" {
 			set job_id $expect_out(1,string)
-			set exit_code 0
 		}
 
 		timeout {
-			log_error "salloc not responding"
-			set exit_code 1
-			exp_continue
+			fail "salloc not responding"
 		}
 		eof {
 			wait
 		}
 	}
+	if {$job_id == 0} {
+		fail "Job not submitted"
+	}
 
 	#
-	# verify time limit. Add a temporization to wait for update reason
+	# verify time limit
 	#
-	if {$job_id == 0} {
-		log_error "Job_id = 0 : salloc not OK "
-		set exit_code 1
-	} else {
-		set cycle_count 8
-		for {set inx 0} {$inx < $cycle_count} {incr inx} {
-			spawn $scontrol show job $job_id
-			expect {
-				-re "Reason=PartitionTimeLimit" {
-					set exit_code 0
-					break
-				}
-				-re "Reason=" {
-					set exit_code 1
-					sleep 5
-					exp_continue
-				}
-				timeout {
-					fail "scontrol not responding"
-				}
-				eof {
-					wait
-				}
-			}
-		}
-		if {$exit_code == 1} {
-			log_error "Partition time limit not used"
-			set exit_code 1
-		}
-		cancel_job $job_id
-	}
+	subtest {![wait_job_reason -timeout 10 $job_id "PENDING" "PartitionTimeLimit"]} "Job should be PENDING with reason PartitionTimeLimit"
 } else {
 	#
-        # Job should be rejected at submit time
-        #
-        expect {
-                -re "Requested time limit is invalid (missing or exceeds some limit)" {
-                        set exit_code 0
-                        exp_continue
-                }
-                -re "unrecognized option '--deadline'" {
-                        set exit_code 1
-                        exp_continue
-                }
-                timeout {
-                        fail "salloc not responding"
-                }
-                eof {
-                        wait
-                }
-        }
-}
-
-#
-# Now delete the partition
-#
-spawn $scontrol delete PartitionName=$part_name
-expect {
-	timeout {
-		fail "scontrol not responding"
+	# Job should be rejected at submit time
+	#
+	expect {
+		-re "Requested time limit is invalid (missing or exceeds some limit)" {
+			exp_continue
+		}
+		-re "unrecognized option '--deadline'" {
+			fail "unrecognized option '--deadline'"
+		}
+		timeout {
+			fail "salloc not responding"
+		}
+		eof {
+			wait
+		}
 	}
-	eof {
-		wait
-	}
-}
-
-#
-# Confirm the partition is now gone
-#
-set found -1
-spawn $scontrol show part $part_name
-expect {
-	-re "not found" {
-		log_debug "This error was expected, no worries"
-		set found 0
-		exp_continue
-	}
-	-re "PartitionName" {
-		set found 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$found != 0} {
-	fail "Partition not deleted"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

@@ -30,13 +30,13 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_in     "test$test_id.input"
 set job_id      0
 
 proc cleanup {} {
-	global file_in
+	global job_id file_in
 
+	cancel_job $job_id
 	file delete $file_in
 }
 
@@ -94,10 +94,6 @@ make_bash_script $file_in "
   $bin_echo FINI
 "
 
-proc date {} {
-	puts "local time: [clock format [clock seconds]]"
-}
-
 #
 # Execute a couple of three minute jobs; one with a one minute time
 # limit and the other with a four minute time limit. Confirm jobs
@@ -115,24 +111,16 @@ set salloc_pid [spawn $salloc -t1 --kill-command=KILL ./$file_in]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		exec date
 		exp_continue
 	}
 	-re "Job allocation time limit to be reached at" {
-		exec date
 		exp_continue
 	}
 	-re "FINI" {
-		log_error "Job time limit not honored"
-		exec date
-		set exit_code 1
-		exp_continue
+		fail "Job time limit not honored"
 	}
 	timeout {
-		log_error "salloc not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
@@ -145,23 +133,17 @@ set salloc_pid [spawn $salloc -t4 --kill-command=KILL ./$file_in]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		exec date
 		exp_continue
 	}
 	-re "Job allocation time limit to be reached at" {
-		exec date
 		exp_continue
 	}
 	-re "FINI" {
-		exec date
 		incr completions
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
@@ -169,8 +151,4 @@ expect {
 }
 if {$completions != 1} {
 	fail "Job failed to complete properly ($completions)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
