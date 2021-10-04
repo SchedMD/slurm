@@ -28,8 +28,14 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set matches     0
+set job_id      0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 # These are the variables for which we are checking existence.
 # If the number following a variable name is 1, then we check to make
@@ -49,7 +55,6 @@ array set good_vars {
 #
 # Spawn a job via salloc to print environment variables
 #
-set job_id 0
 set timeout $max_job_delay
 set salloc_pid [spawn $salloc -N1 -t1 -v $bin_env]
 expect {
@@ -62,10 +67,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
@@ -87,10 +89,4 @@ foreach {slurm_var check_flag} [array get good_vars] {
     }
 }
 
-if {$good < $total} {
-	fail "Only $good of $total Slurm environment variables set"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$good >= $total} "Verify the appropriate job environment variables are set" "Only $good of $total Slurm environment variables set"

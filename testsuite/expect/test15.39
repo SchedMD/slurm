@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set needed_nodes 2
 set matches 0
 set ncpus ""
@@ -76,10 +75,7 @@ expect {
 	}
 	-re "SLURM_NNODES=($number)" {
 		set nodes $expect_out(1,string)
-		if {$nodes != 1} {
-			log_error "Expected 1 allocated node"
-			set exit_code 1
-		}
+		subtest {$nodes == 1} "Expected 1 allocated node"
 	}
 	timeout {
 		fail "salloc not responding"
@@ -91,8 +87,4 @@ expect {
 
 if {$job_id == 0} {
 	fail "Job submit failure"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

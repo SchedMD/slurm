@@ -28,9 +28,14 @@
 ############################################################################
 source ./globals
 
-set exit_code          0
 set job_id             0
 set slurm_jobid        0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 #
 # Submit a slurm allocate job
@@ -63,10 +68,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
@@ -78,22 +80,14 @@ expect {
 # Confirm the job_ids match.
 #
 if { $job_id == 0 } {
-	log_error "salloc failure"
-	set exit_code 1
+	fail "salloc failure"
 } else {
 	if { $job_id != $slurm_jobid } {
-		log_error "salloc failed to set valid SLURM_JOB_ID"
-		set exit_code 1
+		fail "salloc failed to set valid SLURM_JOB_ID"
 	}
 }
 
 #
 # Confirm exit code is propagated
 #
-if { $match != 1 } {
-	fail "salloc exit code not reported"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest { $match == 1 } "Confirm exit code is propagated"

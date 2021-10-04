@@ -29,15 +29,15 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_prog   "test$test_id.prog"
+set file_prog   "$test_name.prog"
 set job_id      0
 set matches     0
 
 proc cleanup {} {
-	global bin_rm file_prog
+	global job_id file_prog
 
-	exec $bin_rm -f $file_prog
+	cancel_job $job_id
+	file delete $file_prog
 }
 
 if {[get_config_param "LaunchType"] ne "launch/slurm"} {
@@ -73,10 +73,7 @@ expect {
 		}
 	}
 	timeout {
-		log_error "salloc not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
@@ -113,8 +110,7 @@ expect {
 	}
 }
 if {$matches == 0} {
-	log_error "Layout information not printed"
-	set exit_code 1
+	fail "Layout information not printed"
 }
 
 #
@@ -128,8 +124,7 @@ expect {
         -i $attach_id
 	-re "($number): WAITING" {
 		if {$expect_out(1,string) != [expr $task_cnt - 1]} {
-			log_error "Output filtering by task failed"
-			set exit_code 1
+			fail "Output filtering by task failed"
 		} else {
 			incr matches
 			exec $bin_kill -KILL $attach_pid
@@ -144,8 +139,7 @@ expect {
 	}
 }
 if {$matches == 0} {
-	log_error "Failed to filter task output"
-	set exit_code 1
+	fail "Failed to filter task output"
 }
 
 #
@@ -176,8 +170,7 @@ expect {
 	}
 }
 if {$matches != [expr $task_cnt + 1]} {
-	log_error "Job run time failure ($matches != [expr $task_cnt + 1])"
-	set exit_code 1
+	fail "Job run time failure ($matches != [expr $task_cnt + 1])"
 }
 
 #
@@ -192,9 +185,4 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$exit_code != 0} {
-	cancel_job $job_id
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

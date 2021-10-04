@@ -26,8 +26,13 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set job_id      0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 #
 # Spawn a batch job with a deadline and no time
@@ -36,12 +41,10 @@ set timeout $max_job_delay
 set salloc_pid [spawn $salloc -N1 --deadline now+1hour --time-min 120 $bin_sleep 1]
 expect {
 	-re "Requested time limit is invalid" {
-		set exit_code 0
-		exp_continue
+		fail "Requested time limit is invalid"
 	}
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
-		set exit_code 1
 		exp_continue
 	}
 	timeout {
@@ -51,11 +54,4 @@ expect {
 		wait
 	}
 }
-
-if {$job_id != 0} {
-	fail "Batch submitted despite the deadline"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$job_id == 0} "Job with a time-min that surpasses its deadline should not be submitted"

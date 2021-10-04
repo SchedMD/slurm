@@ -29,15 +29,15 @@
 source ./globals
 
 set file_in     "test$test_id.input"
-set exit_code   0
 set job_id1     0
 set job_id2     0
 set job_acct    "TEST_ACCT"
 set job_acct_lc "test_acct"
 
 proc cleanup {} {
-	global bin_rm file_in
+	global job_id1 job_id2 bin_rm file_in
 
+	cancel_job $job_id1 $job_id2
 	exec $bin_rm -f $file_in
 }
 
@@ -93,24 +93,16 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "salloc not responding"
-		if {$job_id2 != 0} {
-			cancel_job $job_id
-		}
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$match_acct == 0} {
-	log_error "Account information not processed"
-	set exit_code 1
-}
+subtest {$match_acct != 0} "Confirm via the salloc output that the job gets the account from the SALLOC_ACCOUNT environment variable"
 
 #
-# Confirm  second job's as account name
+# Confirm second job's as account name
 #
 set match_acct 0
 spawn $scontrol show job $job_id2
@@ -120,17 +112,10 @@ expect {
 		exp_continue
 	}
 	timeout {
-		log_error "scontrol not responding"
-		set exit_code 1
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$match_acct == 0} {
-	fail "Account information not processed"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$match_acct != 0} "Confirm via scontrol show job that the job gets the account from the SALLOC_ACCOUNT environment variable"

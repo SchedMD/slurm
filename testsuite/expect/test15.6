@@ -28,9 +28,15 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set tasks       0
 set verbosity   0
+set job_id      0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 #
 # Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
@@ -63,20 +69,10 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "salloc not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$verbosity != 2} {
-	log_error "Did not report job id with verbosity on"
-	set exit_code 1
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$verbosity == 2} "Verify salloc -vv results in log level debug"

@@ -30,13 +30,18 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
+set job_id      0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 #
 # Run trivial test --bell option
 #
 set timeout $max_job_delay
-set job_id      0
 set salloc_pid [spawn $salloc -N1 -t1 --bell $bin_id]
 expect {
 	-re "Granted job allocation ($number)" {
@@ -47,22 +52,16 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "salloc not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$job_id == 0} {
-	log_error "salloc failed to respond"
-	set exit_code 1
-}
+subtest {$job_id != 0} "Job with --bell option should be allocated"
 
 #
-# Run trivial test --bell option
+# Run trivial test --no-bell option
 #
 set job_id      0
 set salloc_pid [spawn $salloc -N1 -t1 --no-bell $bin_id]
@@ -75,19 +74,10 @@ expect {
 		fail "Slurm appears to be down"
 	}
 	timeout {
-		log_error "salloc not responding"
-		cancel_job $job_id
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
+		fail "salloc not responding"
 	}
 	eof {
 		wait
 	}
 }
-if {$job_id == 0} {
-	fail "salloc failed to respond"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$job_id != 0} "Job with --no-bell option should be allocated"
