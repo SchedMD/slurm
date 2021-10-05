@@ -7055,7 +7055,7 @@ proc _test_cleanup {} {
 
 proc _test_init {} {
 	global test_dir test_id test_name testsuite_shared_dir
-	global _testproc_included _testproc_excluded argv
+	global _testproc_included _testproc_excluded argv bin_chmod
 
 	# parse argv to get and remove _testproc_included and _testproc_excluded params
 	set idx [expr {[info exists argv] ? [lsearch $argv -i] : -1}]
@@ -7088,6 +7088,7 @@ proc _test_init {} {
 
 	# Create temporary shared test directory
 	exec mkdir -p $test_dir
+	exec $bin_chmod a+rwx $test_dir
 }
 
 
