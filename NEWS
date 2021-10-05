@@ -1,6 +1,9 @@
 This file describes changes in recent versions of Slurm. It primarily
 documents those changes that are of interest to users and administrators.
 
+* Changes in Slurm 21.08.3
+==========================
+
 * Changes in Slurm 21.08.2
 ==========================
  -- slurmctld - fix how the max number of cores on a node in a partition are
