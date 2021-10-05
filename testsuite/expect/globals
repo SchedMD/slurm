@@ -3474,7 +3474,7 @@ proc partition_oversubscribe { {partition ""} } {
 #	Use scontrol to determine the name of the default partition
 #
 # RETURN VALUE
-#	Name of the current default partition
+#	Name of the current default partition, or fail if not found.
 #
 ################################################################
 
@@ -3492,7 +3492,7 @@ proc default_partition {} {
 	catch {close $fd}
 
 	if {[string length $name] == 0} {
-		log_error "Could not identify the default partition"
+		fail "Could not identify the default partition"
 	}
 
 	return $name
