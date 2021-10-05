@@ -254,7 +254,6 @@ static void _read_slurm_cgroup_conf(void)
 		{"CgroupMountpoint", S_P_STRING},
 		{"CgroupReleaseAgentDir", S_P_STRING},
 		{"ConstrainCores", S_P_BOOLEAN},
-		{"TaskAffinity", S_P_BOOLEAN},
 		{"ConstrainRAMSpace", S_P_BOOLEAN},
 		{"AllowedRAMSpace", S_P_FLOAT},
 		{"MaxRAMPercent", S_P_FLOAT},
