@@ -3246,6 +3246,51 @@ static job_record_t *_find_dependent_job_ptr(uint32_t job_id,
 }
 
 /*
+ * job_ptr - job that is getting a new dependency
+ * dep_job_ptr - pointer to the job that job_ptr wants to depend on
+ *   - This can be NULL, for example if it's a remote dependency. That's okay.
+ * job_id - job_id of the dependency string
+ * array_task_id - array_task_id of the dependency string
+ *   - Equals NO_VAL if the dependency isn't a job array.
+ *   - Equals INFINITE if the dependency is the whole job array.
+ *   - Otherwise this equals a specific task of the job array (0, 1, 2, etc.)
+ *
+ * RET true if job_ptr is the same job as the new dependency, false otherwise.
+ *
+ * Example:
+ *   scontrol update jobid=123 dependency=afterok:456_5
+ *
+ * job_ptr points to the job record for jobid=123.
+ * dep_job_ptr points to the job record for 456_5.
+ * job_id == 456. (This is probably different from dep_job_ptr->job_id.)
+ * array_task_id == 5.
+ */
+static bool _depends_on_same_job(job_record_t *job_ptr,
+				 job_record_t *dep_job_ptr,
+				 uint32_t job_id, uint32_t array_task_id)
+{
+	if (array_task_id == INFINITE) {
+		/* job_ptr wants to set a dependency on a whole job array */
+		if ((job_ptr->array_task_id != NO_VAL) ||
+		    (job_ptr->array_recs)) {
+			/*
+			 * job_ptr is a specific task in a job array, or is
+			 * the meta job of a job array.
+			 * Test if job_ptr belongs to the array indicated by
+			 * the dependency string's "job_id"
+			 */
+			return (job_ptr->array_job_id == job_id);
+		} else {
+			/* job_ptr is a normal job */
+			return (job_ptr == dep_job_ptr);
+		}
+	} else {
+		/* Doesn't depend on a whole job array; test normally */
+		return (job_ptr == dep_job_ptr);
+	}
+}
+
+/*
  * The new dependency format is:
  *
  * <type:job_id[:job_id][,type:job_id[:job_id]]> or
@@ -3280,15 +3325,23 @@ static void _parse_dependency_jobid_new(job_record_t *job_ptr,
 			}
 		} else
 			array_task_id = NO_VAL;
-		if ((tmp == NULL) ||
-		    (job_id == 0) || (job_id == job_ptr->job_id) ||
+		if ((tmp == NULL) || (job_id == 0) ||
 		    ((tmp[0] != '\0') && (tmp[0] != ',') &&
 		     (tmp[0] != '?')  && (tmp[0] != ':') &&
 		     (tmp[0] != '+') && (tmp[0] != '('))) {
 			*rc = ESLURM_DEPENDENCY;
 			break;
 		}
+		/*
+		 * _find_dependent_job_ptr() may modify array_task_id, so check
+		 * if the job is the same after that.
+		 */
 		dep_job_ptr = _find_dependent_job_ptr(job_id, &array_task_id);
+		if (_depends_on_same_job(job_ptr, dep_job_ptr, job_id,
+					 array_task_id)) {
+			*rc = ESLURM_DEPENDENCY;
+			break;
+		}
 		if ((depend_type == SLURM_DEPEND_EXPAND) &&
 		    ((expand_cnt++ > 0) || (dep_job_ptr == NULL) ||
 		     (!IS_JOB_RUNNING(dep_job_ptr))		||
@@ -3437,13 +3490,20 @@ static void _parse_dependency_jobid_old(job_record_t *job_ptr,
 		array_task_id = NO_VAL;
 	}
 	*sep_ptr = tmp;
-	if ((tmp == NULL) ||
-	    (job_id == 0) || (job_id == job_ptr->job_id) ||
+	if ((tmp == NULL) || (job_id == 0) ||
 	    ((tmp[0] != '\0') && (tmp[0] != ','))) {
 		*rc = ESLURM_DEPENDENCY;
 		return;
 	}
+	/*
+	 * _find_dependent_job_ptr() may modify array_task_id, so check
+	 * if the job is the same after that.
+	 */
 	dep_job_ptr = _find_dependent_job_ptr(job_id, &array_task_id);
+	if (_depends_on_same_job(job_ptr, dep_job_ptr, job_id, array_task_id)) {
+		*rc = ESLURM_DEPENDENCY;
+		return;
+	}
 
 	dep_ptr = xmalloc(sizeof(depend_spec_t));
 	dep_ptr->array_task_id = array_task_id;
