@@ -111,7 +111,7 @@ static void	_job_queue_append(List job_queue, job_record_t *job_ptr,
 				  part_record_t *part_ptr, uint32_t priority);
 static bool	_job_runnable_test1(job_record_t *job_ptr, bool clear_start);
 static bool	_job_runnable_test2(job_record_t *job_ptr, bool check_min_time);
-static bool	_scan_depend(List dependency_list, uint32_t job_id);
+static bool	_scan_depend(List dependency_list, job_record_t *job_ptr);
 static void *	_sched_agent(void *args);
 static int	_schedule(bool full_queue);
 static int	_valid_batch_features(job_record_t *job_ptr, bool can_reboot);
@@ -3801,8 +3801,8 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 
 	if (rc == SLURM_SUCCESS) {
 		/* test for circular dependencies (e.g. A -> B -> A) */
-		(void) _scan_depend(NULL, job_ptr->job_id);
-		if (_scan_depend(new_depend_list, job_ptr->job_id))
+		(void) _scan_depend(NULL, job_ptr);
+		if (_scan_depend(new_depend_list, job_ptr))
 			rc = ESLURM_CIRCULAR_DEPENDENCY;
 	}
 
@@ -3819,10 +3819,10 @@ extern int update_job_dependency(job_record_t *job_ptr, char *new_depend)
 	return rc;
 }
 
-/* Return true if job_id is found in dependency_list.
+/* Return true if the job job_ptr is found in dependency_list.
  * Pass NULL dependency list to clear the counter.
  * Execute recursively for each dependent job */
-static bool _scan_depend(List dependency_list, uint32_t job_id)
+static bool _scan_depend(List dependency_list, job_record_t *job_ptr)
 {
 	static int job_counter = 0;
 	bool rc = false;
@@ -3836,7 +3836,7 @@ static bool _scan_depend(List dependency_list, uint32_t job_id)
 		return false;
 	}
 
-	xassert(job_id);
+	xassert(job_ptr);
 	iter = list_iterator_create(dependency_list);
 	while (!rc && (dep_ptr = list_next(iter))) {
 		if (dep_ptr->job_id == 0)	/* Singleton */
@@ -3849,7 +3849,7 @@ static bool _scan_depend(List dependency_list, uint32_t job_id)
 		 */
 		if (!dep_ptr->job_ptr)
 			continue;
-		if (dep_ptr->job_id == job_id)
+		if (dep_ptr->job_id == job_ptr->job_id)
 			rc = true;
 		else if ((dep_ptr->job_id != dep_ptr->job_ptr->job_id) ||
 			 (dep_ptr->job_ptr->magic != JOB_MAGIC))
@@ -3858,10 +3858,10 @@ static bool _scan_depend(List dependency_list, uint32_t job_id)
 			 dep_ptr->job_ptr->details &&
 			 dep_ptr->job_ptr->details->depend_list) {
 			rc = _scan_depend(dep_ptr->job_ptr->details->
-					  depend_list, job_id);
+					  depend_list, job_ptr);
 			if (rc) {
-				info("circular dependency: %pJ is dependent upon JobId=%u",
-				     dep_ptr->job_ptr, job_id);
+				info("circular dependency: %pJ is dependent upon %pJ",
+				     dep_ptr->job_ptr, job_ptr);
 			}
 		}
 	}
