@@ -20,6 +20,7 @@ documents those changes that are of interest to users and administrators.
     array per scheduling cycle instead of bb_array_stage_cnt jobs per scheduling
     cycle.
  -- Fix checking if the dependency is the same job for array jobs.
+ -- Fix checking for circular dependencies with job arrays.
 
 * Changes in Slurm 21.08.2
 ==========================

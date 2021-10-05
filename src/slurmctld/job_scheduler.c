@@ -3849,10 +3849,11 @@ static bool _scan_depend(List dependency_list, job_record_t *job_ptr)
 		 */
 		if (!dep_ptr->job_ptr)
 			continue;
-		if (dep_ptr->job_id == job_ptr->job_id)
-			rc = true;
-		else if ((dep_ptr->job_id != dep_ptr->job_ptr->job_id) ||
-			 (dep_ptr->job_ptr->magic != JOB_MAGIC))
+		if ((rc = _depends_on_same_job(job_ptr, dep_ptr->job_ptr,
+					       dep_ptr->job_id,
+					       dep_ptr->array_task_id)))
+			break;
+		else if (dep_ptr->job_ptr->magic != JOB_MAGIC)
 			continue;	/* purged job, ptr not yet cleared */
 		else if (!IS_JOB_FINISHED(dep_ptr->job_ptr) &&
 			 dep_ptr->job_ptr->details &&
