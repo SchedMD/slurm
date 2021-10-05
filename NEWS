@@ -21,6 +21,7 @@ documents those changes that are of interest to users and administrators.
     cycle.
  -- Fix checking if the dependency is the same job for array jobs.
  -- Fix checking for circular dependencies with job arrays.
+ -- Restore dependent job pointers on slurmctld startup to avoid race.
 
 * Changes in Slurm 21.08.2
 ==========================
