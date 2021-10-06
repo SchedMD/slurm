@@ -1469,7 +1469,7 @@ tesla|4|2-3|(null)|${dev}4
 set expected_output "
 GRES_PARSABLE\[gpu\](1):tesla|4|0-1|(null)|${dev}1|$flags_file_type
 GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}3|$flags_file_type
-GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}4|$flags_default_type
+GRES_PARSABLE\[gpu\](1):tesla|4|2-3|(null)|${dev}4|$flags_file_type
 "
 check_configuration 2.6 $slurm_conf_gres $gres_conf $fake_gpus_conf $expected_output
 
