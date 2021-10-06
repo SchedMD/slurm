@@ -26,9 +26,9 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
-set file_err    "test$test_id.error"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set file_err    "$test_dir/error"
 set job_id      0
 
 proc cleanup {} {
@@ -36,8 +36,6 @@ proc cleanup {} {
 	global sacctmgr testsuite_user test_name
 
 	cancel_job $job_id
-	exec $bin_rm -f $file_in $file_out $file_err
-
 	run_command -none "$sacctmgr -vi delete user name=$testsuite_user"
 	run_command -none "$sacctmgr -vi delete account name=$test_name"
 }
