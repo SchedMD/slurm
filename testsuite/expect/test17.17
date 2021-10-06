@@ -29,10 +29,9 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
-set file_err     "test$test_id.error"
-set file_in      "test$test_id.input"
-set file_out     "test$test_id.output"
+set file_err     "$test_dir/error"
+set file_in      "$test_dir/input"
+set file_out     "$test_dir/output"
 set job_id1      0
 set job_id2      0
 set nodelist_name ""
@@ -40,12 +39,10 @@ set gpu_tot      0
 set job_tres_cnt 0
 
 proc cleanup {} {
-	global bin_rm file_err file_in file_out
+	global job_id1 job_id2
 
-	exec $bin_rm -f $file_err $file_in $file_out
+	cancel_job [list $job_id1 $job_id2]
 }
-
-set timeout $max_job_delay
 
 set node_name [get_nodes_by_request "--gres=gpu:2 -n1 -t1"]
 if { [llength $node_name] != 1 } {
@@ -54,34 +51,19 @@ if { [llength $node_name] != 1 } {
 if {![param_contains [get_config_param "AccountingStorageTRES"] "gres/gpu"]} {
 	skip "This test requires AccountingStorageTRES=gres/gpu"
 }
+if {[get_config_param "FrontendName"] ne "MISSING"} {
+	skip "This test is incompatible with front-end systems"
+}
 
 # Get the total number of GPUs in the test node
 set gres_node [get_node_param $node_name "Gres"]
 set gpu_tot   [dict get [count_gres $gres_node] "gpu"]
 
-if {[get_config_param "FrontendName"] ne "MISSING"} {
-	skip "This test is incompatible with front-end systems"
-}
-
 #
 # Submit a job and get the node's NodeName from the nodelist
 #
-set timeout $max_job_delay
-set srun_pid [spawn $srun -v -N1 -l -t1 $bin_printenv SLURMD_NODENAME]
-expect {
-	-re "on host ($re_word_str)," {
-		set nodelist_name $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $srun_pid
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {[string compare $nodelist_name ""] == 0} {
+set output [run_command_output -fail "$srun -v -N1 -l -t1 $bin_printenv SLURMD_NODENAME"]
+if {![regexp "on host ($re_word_str)," $output - nodelist_name]} {
 	fail "Did not get hostname of task 0"
 }
 
@@ -89,7 +71,6 @@ if {[string compare $nodelist_name ""] == 0} {
 # Delete left-over input script
 # Build input script file
 #
-exec $bin_rm -f $file_in
 make_bash_script $file_in "$srun $bin_sleep 5"
 
 #
@@ -97,57 +78,21 @@ make_bash_script $file_in "$srun $bin_sleep 5"
 # with sharing permitted. Ensure the first job completes before the
 # second job is started.
 #
-set sbatch_pid [spawn $sbatch -N1 --exclusive --nodelist=$nodelist_name -t1 --output=$file_out --error=$file_err  $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id1 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id1 == 0} {
-	fail "sbatch failed to report jobid"
-}
+set job_id1 [submit_job -fail "-N1 --exclusive --nodelist=$nodelist_name -t1 --output=$file_out --error=$file_err  $file_in"]
 
 set partition "dummy"
 set waited 1
 set timeout [expr $max_job_delay + 5]
-set srun_pid [spawn $srun -N1 --nodelist=$nodelist_name -t1 --oversubscribe $scontrol -o show job $job_id1]
-expect {
-	-re "JobState=RUN" {
-		set waited 0
-		exp_continue
-	}
-	-re "Partition=($re_word_str)" {
-		set partition $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $srun_pid
-		cancel_job $job_id1
-		fail "srun not responding"
-	}
-	eof {
-		wait
-	}
+set output [run_command_output -fail "$srun -N1 --nodelist=$nodelist_name -t1 --oversubscribe $scontrol -o show job $job_id1"]
+if {[regexp "JobState=RUN" $output]} {
+	set waited 0
 }
+regexp "Partition=($re_word_str)" $output - partition
+
 if {$waited == 0} {
-	spawn $scontrol show partition
-	expect {
-		-re "OverSubscribe=FORCE" {
-			log_warn "Test incompatible with OverSubscribe=FORCE"
-			set waited 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
+	if {[param_contains [get_partition_param $partition OverSubscribe] "FORCE"]} {
+		subskip "Test incompatible with OverSubscribe=FORCE"
+		set waited 1
 	}
 }
 if {$waited == 0} {
@@ -159,26 +104,8 @@ cancel_job $job_id1
 #
 # Verify that all GPUs are allocated with the --exclusive flag
 #
-set sbatch_pid2 [spawn $sbatch -t1 -N1 -w $node_name --gres=gpu --exclusive --output=$file_out $file_in]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id2 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding\n"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id2 == 0} {
-	fail "sbatch failed to report jobid"
-}
-
-if {[wait_for_job $job_id2 "RUNNING"] != 0} {
-	fail "waiting for job to start running"
-}
+set job_id2 [submit_job -fail "-t1 -N1 -w $node_name --gres=gpu --exclusive --output=$file_out $file_in"]
+wait_for_job -fail $job_id2 "RUNNING"
 
 # Check all GRES of the node were allocated on the job
 set gres_dict_job  [count_gres [get_job_param  $job_id2   "JOB_GRES"]]
@@ -186,20 +113,11 @@ set gres_dict_node [count_gres [get_node_param $node_name "Gres"]]
 
 dict for {gres_name gres_count} $gres_dict_node {
 	if {![dict exists $gres_dict_job $gres_name]} {
-		log_error "Gres $gres_name on node $node_name not allocated on job $job_id2 with --exclusive"
-		set exit_code 1
+		fail "Gres $gres_name on node $node_name not allocated on job $job_id2 with --exclusive"
 	} else {
 		set gres_count_job [dict get $gres_dict_job $gres_name]
 		if { $gres_count_job != $gres_count } {
-			log_error "Gres $gres_name on node $node_name not fully allocated on job $job_id2 with --exclusive ($gres_count_job != $gres_count)"
-			set exit_code 1
+			fail "Gres $gres_name on node $node_name not fully allocated on job $job_id2 with --exclusive ($gres_count_job != $gres_count)"
 		}
 	}
-}
-
-cancel_job $job_id2
-
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

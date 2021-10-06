@@ -29,15 +29,14 @@
 ############################################################################
 source ./globals
 
-set exit_code        0
-set file_in          "test$test_id.input"
-set file_out         "test$test_id.output"
+set file_in          "$test_dir/input"
+set file_out         "$test_dir/output"
 set job_id           0
 
 proc cleanup {} {
-	global bin_rm file_in file_out
+	global job_id
 
-	exec $bin_rm -f $file_in $file_out
+	cancel_job $job_id
 }
 
 #
@@ -66,8 +65,7 @@ spawn $sbatch -N$node_cnt -vv -t1 --output=$file_out $file_in
 expect {
 	-re "nodes *: ($number)" {
 		if {$expect_out(1,string) != $node_cnt} {
-			log_error "Failed to process --nodes option ($expect_out(1,string) != $node_cnt)"
-			set exit_code 1
+			fail "Failed to process --nodes option ($expect_out(1,string) != $node_cnt)"
 		}
 		exp_continue
 	}
@@ -85,13 +83,8 @@ expect {
 if {$job_id == 0} {
 	fail "Job not submitted"
 }
-if {[wait_for_job $job_id "DONE"] != 0} {
-	cancel_job $job_id
-	fail "Job did not complete"
-}
-if {[wait_for_file $file_out] != 0} {
-	fail "No output file"
-}
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
 spawn $bin_cat $file_out
 expect {
 	-re "($number): *($re_word_str)" {
@@ -117,28 +110,14 @@ expect {
 #
 # Verify node count
 #
-if {[string compare $host_0 ""] == 0} {
-	log_error "Did not get hostname of task 0"
-	set exit_code   1
-}
-if {[string compare $host_1 ""] == 0} {
-	log_error "Did not get hostname of task 1"
-	set exit_code   1
-}
-if {[string compare $host_2 ""] == 0} {
-	log_error "Did not get hostname of task 2"
-	set exit_code   1
-}
+subtest {$host_0 ne ""} "Verify that we got hostname of task 0"
+subtest {$host_1 ne ""} "Verify that we got hostname of task 1"
+subtest {$host_2 ne ""} "Verify that we got hostname of task 2"
+
 if {[get_config_param "FrontendName"] ne "MISSING"} {
-	if {$exit_code == 0} {
-		exec $bin_rm -f $file_in $file_out
-	}
 	skip "Additional testing is incompatible with front-end systems"
 }
-if {[string compare $host_3 ""] != 0} {
-	log_error "Started more than three tasks"
-	set exit_code   1
-}
+subtest {$host_3 eq ""} "Verify that we did not start more than three tasks"
 
 set dup_hostname 0
 if {[string compare $host_0 $host_1] == 0} {
@@ -148,20 +127,19 @@ if {[string compare $host_0 $host_2] == 0} {
 	incr dup_hostname 1
 }
 if {$dup_hostname == 1} {
-	log_error "Re-used a node in the allocation"
-	set exit_code   1
+	fail "Re-used a node in the allocation"
 }
-set exclude_node $host_0
-set include_node $host_2
 
 #
 # Submit a job explicitly excluding a node
 #
+set exclude_node $host_0
+set include_node $host_2
 set job_id      0
 set host_0      ""
 set host_1      ""
 set host_2      ""
-exec $bin_rm -f $file_out
+file delete $file_out
 spawn $sbatch -N2 --exclude=$exclude_node -t1 --output=$file_out $file_in
 expect {
 	-re "Submitted batch job ($number)" {
@@ -175,13 +153,8 @@ expect {
 		wait
 	}
 }
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Job did not complete"
-	set exit_code 1
-}
-if {[wait_for_file $file_out] != 0} {
-	fail "No output file"
-}
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
 spawn $bin_cat $file_out
 expect {
 	-re "($number): *($re_word_str)" {
@@ -204,18 +177,9 @@ expect {
 #
 # Verify node count and names
 #
-if {[string compare $host_0 ""] == 0} {
-	log_error "Did not get hostname of task 0"
-	set exit_code   1
-}
-if {[string compare $host_1 ""] == 0} {
-	log_error "Did not get hostname of task 1"
-	set exit_code   1
-}
-if {[string compare $host_2 ""] != 0} {
-	log_error "Started more than two tasks"
-	set exit_code   1
-}
+subtest {$host_0 ne ""} "Verify that we got hostname of task 0"
+subtest {$host_1 ne ""} "Verify that we got hostname of task 1"
+subtest {$host_2 eq ""} "Verify that we did not start more than two tasks"
 set dup_hostname 0
 if {[string compare $host_0 $exclude_node] == 0} {
 	set dup_hostname 1
@@ -224,8 +188,7 @@ if {[string compare $host_1 $exclude_node] == 0} {
 	set dup_hostname 1
 }
 if {$dup_hostname == 1} {
-	log_error "Allocated an excluded node"
-	set exit_code   1
+	fail "Allocated an excluded node"
 }
 
 #
@@ -234,7 +197,7 @@ if {$dup_hostname == 1} {
 set job_id      0
 set host_0      ""
 set host_1      ""
-exec $bin_rm -f $file_out
+file delete $file_out
 spawn $sbatch -N1 --nodelist=$include_node -t1 --output=$file_out $file_in
 expect {
 	-re "Submitted batch job ($number)" {
@@ -248,13 +211,8 @@ expect {
 		wait
 	}
 }
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Job did not complete"
-	set exit_code 1
-}
-if {[wait_for_file $file_out] != 0} {
-	fail "No output file"
-}
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
 spawn $bin_cat $file_out
 expect {
 
@@ -275,20 +233,12 @@ expect {
 #
 # Verify node count and names
 #
-if {[string compare $host_0 ""] == 0} {
-	fail "Did not get hostname of task 0"
-}
-if {[string compare $host_1 ""] != 0} {
-	fail "Started more than one task"
-}
+subtest {$host_0 ne ""} "Verify that we got hostname of task 0"
+subtest {$host_1 eq ""} "Verify that we did not start more than one task"
 set dup_hostname 0
 if {[string compare $host_0 $include_node] == 0} {
 	set dup_hostname 1
 }
 if {$dup_hostname == 0} {
 	fail "Allocation lacked an included node"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

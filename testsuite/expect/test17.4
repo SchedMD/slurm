@@ -29,7 +29,6 @@
 ############################################################################
 source ./globals
 
-set exit_code            0
 set file_in              "test$test_id.input"
 set file_out             "test$test_id.output"
 set login_grp_info       ""
@@ -78,10 +77,7 @@ if { $job_id == 0 } {
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 #
 # Check for desired output
@@ -110,8 +106,4 @@ if {$got_job_grps == 0} {
 #
 if {[string compare $login_grp_info $job_grp_info] != 0} {
 	fail "Login and sbatch user info mismatch"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

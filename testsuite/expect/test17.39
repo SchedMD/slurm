@@ -30,7 +30,6 @@ source ./globals
 set slow_id       0
 set fast_id       0
 set dep_id        0
-set exit_code     0
 
 set nb_nodes [get_partition_param [default_partition] "TotalNodes"]
 if {[check_config_select "linear"]} {
@@ -41,6 +40,12 @@ if {[check_config_select "linear"]} {
 	if {$nb_nodes < 2} {
 		skip "This test is incompatible with exclusive node allocations and only one node"
 	}
+}
+
+proc cleanup {} {
+	global slow_id fast_id dep_id
+
+	cancel_job [list $slow_id $fast_id $dep_id]
 }
 
 # Submit job 1 of 3
@@ -115,40 +120,13 @@ expect {
 		wait
 	}
 }
-if {$match == 0} {
-	log_error "Job $dep_id is in the wrong state should be state PENDING and have REASON Dependency"
-	set exit_code 1
-}
+subtest {$match != 0} "Check that dependent job is in the pending state and has a reason of Dependency"
 
 # Wait for the fast job to finish after submitting dependent job
-if {[wait_for_job $fast_id "DONE"] != 0} {
-	log_error "Error waiting for job $fast_id to complete"
-	set exit_code 1
-	cancel_job $fast_id
-}
+subtest {![wait_for_job -fail $fast_id "DONE"]} "Wait for the fast job to finish after submitting dependent job"
 
 # Wait for dependency job to start once the fast job is complete
-if {[wait_for_job $dep_id RUNNING]} {
-	log_error "Job $dep_id should be running"
-	set exit_code 1
-}
-
-if {![check_job_state $dep_id RUNNING]} {
-	log_error "Job was not on the desired state"
-	set exit_code 1
-}
+subtest {![wait_for_job -fail $dep_id RUNNING]} "Wait for dependency job to start once the fast job is complete"
 
 # Slow job should still be running
-if {![check_job_state $slow_id RUNNING]} {
-	log_error "Job was not on the desired state"
-	set exit_code 1
-}
-
-# Cancel leftover jobs
-cancel_job $fast_id
-cancel_job $slow_id
-cancel_job $dep_id
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest [check_job_state $slow_id RUNNING] "Slow job should still be running"

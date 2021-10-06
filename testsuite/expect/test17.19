@@ -29,13 +29,17 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id.input"
+set file_in     "$test_dir/input"
+set job_id      0
+set test_node   [lindex [get_nodes_by_state] 0]
+set part1       [default_partition]
+set part2       "test$test_id\_part"
 
 proc cleanup {} {
-	global bin_rm file_in
+	global job_id scontrol part2
 
-	exec $bin_rm -f $file_in
+	cancel_job $job_id
+	run_command "$scontrol delete partitionname=$part2"
 }
 
 #
@@ -46,167 +50,28 @@ exec $bin_rm -f $file_in
 make_bash_script $file_in "$bin_id"
 
 #
-# Identify available partitions
-#
-set part_cnt 0
-set fd [open "|$scontrol --all --oneliner show partition"]
-while {[gets $fd line] != -1} {
-	if {[regexp {^PartitionName=([^ ]*).*State=UP} $line frag part($part_cnt)] == 1} {
-		incr part_cnt
-	}
-}
-catch {close $fd}
-
-if {$part_cnt == 0} {
-	fail "Could not identify the any usable partitions"
-}
-
-#
 # Submit job to one partition
 #
-set job_id  0
-spawn $sbatch -N1 --output=none --error=none -t1 --begin=tomorrow --partition=$part(0) $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "sbatch failed to submit job"
-}
-
-set matches 0
-spawn $scontrol show job $job_id
-expect {
-	-re "Partition=$part(0)" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	fail "sbatch failed to set partition properly"
-}
-if {[cancel_job $job_id] != 0} {
-	set exit_code 1
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
-log_debug "So far, so good..."
+set job_id [submit_job -fail "-N1 --output=none --error=none -t1 --begin=tomorrow --partition=$part1 $file_in"]
+subtest {[get_job_param $job_id "Partition"] == $part1} "Verify submission to 1 partition"
+cancel_job -fail $job_id
 
 #
 # Submit job to two partitions, including one invalid name
 #
-set job_id  0
-set matches 0
-spawn $sbatch -N1 --output=none --error=none -t1 --begin=tomorrow --partition=$part(0),DUMMY $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	-re "Invalid partition name specified" {
-		log_debug "No worries, this error is expected"
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id != 0} {
-	log_error "sbatch submitted job to invalid partition name"
-	if {[cancel_job $job_id] != 0} {
-		set exit_code 1
-	}
-	set exit_code 1
-}
-if {$matches != 1} {
-	fail "sbatch failed to report invalid partition name"
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
-log_debug "So far, so good..."
+set output [run_command_output -xfail -fail "$sbatch -N1 --output=none --error=none -t1 --begin=tomorrow --partition=$part1,DUMMY $file_in"]
+subtest {![regexp "Submitted batch job ($number)" $output - job_id]} "Verify job cannnot be submitted to an invalid partition"
+subtest {[regexp "Invalid partition name specified" $output]} "Verify error message form invalid submission"
 
 #
-# Quit here if only one partition
+# Add a second partition
 #
-if {$part_cnt < 2} {
-	if {$exit_code == 0} {
-		exec $bin_rm -f $file_in
-		skip "Test needs more than one partition to run the rest of subtests"
-	} else {
-		fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-	}
-}
+run_command -fail "$scontrol create partitionname=$part2 nodes=$test_node"
 
 #
-# Submit job to more than one partition, if so configured
+# Submit job to more than one partition
 #
-set job_id  0
-spawn $sbatch -N1 --output=none --error=none -t1 --begin=tomorrow --partition=$part(0),$part(1) $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "sbatch failed to submit job"
-}
-
-set matches 0
-spawn $scontrol show job $job_id
-expect {
-	#
-	# Check both orderings because one partition might have a higher
-	# priority than the other.  The string will be sorted based on priority.
-	#
-	-re "Partition=$part(0),$part(1)" {
-		incr matches
-		exp_continue
-	}
-	-re "Partition=$part(1),$part(0)" {
-		incr matches
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	fail "sbatch failed to set partition properly"
-}
-if {[cancel_job $job_id] != 0} {
-	fail "Unable to cancel job ($job_id)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+set job_id  [submit_job -fail "-N1 --output=none --error=none -t1 --begin=tomorrow --partition=$part1,$part2 $file_in"]
+set partitions [get_job_param $job_id "Partition"]
+subtest {[param_contains $partitions $part1]} "Verify $part1 is one of the job $job_id partitions" "$partitions doesn't contain $part1"
+subtest {[param_contains $partitions $part2]} "Verify $part2 is one of the job $job_id partitions" "$partitions doesn't contain $part2"

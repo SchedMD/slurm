@@ -29,16 +29,16 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
 set tasks       0
 set task_cnt    2
+set job_id      0
 
 proc cleanup {} {
-	global file_in file_out
+	global job_id
 
-	file delete $file_in $file_out
+	cancel_job $job_id
 }
 
 #
@@ -46,7 +46,6 @@ proc cleanup {} {
 #
 file delete $file_in $file_out
 make_bash_script $file_in "$srun $bin_id"
-set job_id 0
 set no_run 0
 spawn $sbatch --ntasks=$task_cnt --output=$file_out -t1 $file_in
 expect {
@@ -80,28 +79,13 @@ if {$job_id != 0} {
 			wait
 		}
 	}
-	if {$tasks < $task_cnt} {
-		log_error "sbatch --ntasks not satisfied"
-		set exit_code 1
-	}
-	if {[wait_for_job $job_id "DONE"] != 0} {
-		log_error "Waiting for job to complete"
-		cancel_job $job_id
-		set exit_code 1
-	}
-	if {[wait_for_file $file_out] == 0} {
-		file delete $file_out
-	} else {
-		set exit_code 1
-	}
+	subtest {$tasks >= $task_cnt} "Verify sbatch --ntasks is satisfied"
+	wait_for_job -fail $job_id "DONE"
+	wait_for_file -fail $file_out
 } else {
 	if {$no_run == 0} {
-		log_error "sbatch failed to create job"
-		set exit_code 1
+		fail "sbatch failed to create job"
 	}
-}
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
 
 #
@@ -131,10 +115,7 @@ if { $job_id == 0 } {
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
@@ -147,11 +128,4 @@ if {[wait_for_file $file_out] == 0} {
 		}
 	}
 }
-if {$task_cnt != $tasks} {
-	log_error "Did not get proper number of tasks: $task_cnt, $tasks"
-	set exit_code 1
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$task_cnt == $tasks} "Check for proper number of tasks" "$task_cnt != $tasks"

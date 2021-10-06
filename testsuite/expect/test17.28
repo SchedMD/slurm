@@ -29,16 +29,16 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
 set job_name    "TEST_NAME"
 set delay       1
+set job_id      0
 
 proc cleanup {} {
-	global bin_rm file_in file_out
+	global job_id
 
-	exec $bin_rm -f $file_in $file_out
+	cancel_job $job_id
 }
 
 if {[get_config_param "EnforcePartLimits"] eq "NO"} {
@@ -51,7 +51,6 @@ $bin_sleep $delay
 "
 
 set timeout $max_job_delay
-set job_id 0
 spawn $sbatch -o $file_out -vvvv $file_in
 expect {
 	-re "Submitted batch job ($number)" {
@@ -82,10 +81,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "Did not set job name from batch script"
-	set exit_code 1
-}
+subtest {$matches == 1} "Verify job name set from batch script"
 cancel_job $job_id
 
 #
@@ -122,15 +118,8 @@ expect {
 		wait
 	}
 }
-if {$matches != 1} {
-	log_error "sbatch didn't read the correct options from batch file"
-	set exit_code 1
-}
-if {$job_id != 0} {
-	log_error "sbatch didn't reject job with invalid size"
-	cancel_job $job_id
-	set exit_code 1
-}
+subtest {$matches == 1} "Verify sbatch read the correct options from batch file"
+subtest {$job_id == 0} "sbatch should reject job with invalid size"
 
 make_bash_script $file_in "
 #SBATCH -N650000
@@ -141,9 +130,7 @@ set job_id  0
 spawn $sbatch -N1 -o $file_out $file_in
 expect {
 	-re "Node count specification invalid" {
-		log_error "sbatch read from the batch file options over writing the commandline options"
-		set exit_code 1
-		exp_continue
+		fail "sbatch read from the batch file options over writing the commandline options"
 	}
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -156,19 +143,4 @@ expect {
 		wait
 	}
 }
-if {$job_id == 0} {
-	cancel_job $job_id
-	fail "sbatch didn't reject job with invalid size"
-}
-
-if {[wait_for_job $job_id DONE] != 0} {
-	cancel_job $job_id
-	fail "Error completing job $job_id"
-}
-
-#
-# Post-processing
-#
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$job_id != 0} "sbatch should not reject job with valid size"

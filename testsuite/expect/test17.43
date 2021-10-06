@@ -29,22 +29,19 @@
 ############################################################################
 source ./globals
 
-set user_name   ""
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
-set exit_code   0
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set job_id      0
 
 proc cleanup {} {
-	global bin_rm file_in file_out
+	global job_id
 
-	exec $bin_rm -f $file_in $file_out
+	cancel_job $job_id
 }
 
 #
-# Delete left-over stdin/out/err files
 # Build stdin file
 #
-exec $bin_rm -f $file_in $file_out
 make_bash_script $file_in "
 #SBATCH --output=/dev/null
 #SBATCH --comment=01234567890123456789012345678901234567890123456789 \
@@ -120,55 +117,17 @@ exit 0
 # Spawn a sbatch command to verify that the default output file is
 # created and contain the correct contents
 #
-set job_id 0
-spawn $sbatch -t1 -N1 $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if { $job_id == 0 } {
-	fail "Failed to submit job"
-}
+set job_id [submit_job -fail "-t1 -N1 $file_in"]
 
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
 
 #
 # Check for desired output
 #
-if {[wait_for_file $file_out] != 0} {
-	log_error "Waiting for output file"
-	set exit_code 1
-} else {
-	set counter 0
-	spawn $bin_cat $file_out
-	expect {
-		-re "0123456789" {
-			incr counter
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	if {$counter != 150} {
-		fail "Output file incomplete ($counter != 5)"
-	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+set output [run_command_output -fail "$bin_cat $file_out"]
+set counter [regexp -all "0123456789" $output]
+subtest {$counter == 150} "Verify that the output file contains the correct contents" "$counter != 150"

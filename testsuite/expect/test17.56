@@ -26,19 +26,18 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-set exit_code   0
+set file_in     "$test_dir/input"
 set job_id      0
-
-proc cleanup {} {
-	global bin_rm file_in
-
-	exec $bin_rm -f $file_in
-}
 
 set default_time [get_partition_default_time_limit]
 if { $default_time != -1} {
 	skip "This test is not compatible with default partition having a default time limit ($default_time)"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
 }
 
 #
@@ -54,12 +53,10 @@ set timeout $max_job_delay
 spawn $sbatch --output=/dev/null --error=/dev/null --deadline now+600 $file_in
 expect {
 	-re "Requested time limit is invalid" {
-		set exit_code 1
-		exp_continue
+		fail "Requested time limit is invalid"
 	}
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
-		set exit_code 0
 		exp_continue
 	}
 	timeout {
@@ -87,8 +84,7 @@ expect {
 		log_debug "Timelimit OK"
 	}
 	-re "TimeLimit=" {
-		log_error ": Timelimit not OK with deadline"
-		set exit_code 1
+		fail "Timelimit not OK with deadline"
 	}
 	timeout {
 		fail "scontrol not responding"
@@ -96,8 +92,4 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

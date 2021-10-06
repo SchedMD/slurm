@@ -29,9 +29,9 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-set exit_code   0
+set file_in     "$test_dir/input"
 set job_id      0
+set default_part [default_partition]
 
 #
 # We must be SlurmUser or root in order to change the partition MaxTime limit,
@@ -42,16 +42,11 @@ if {![is_super_user]} {
 }
 
 proc cleanup {} {
-	global bin_rm file_in
+	global job_id
 
+	cancel_job $job_id
 	# Restore partition MaxTime and DefaultTime.
 	reconfigure
-	exec $bin_rm -f $file_in
-}
-
-set default_part [default_partition]
-if { $default_part == "" } {
-	fail "Unable to get the default partition"
 }
 
 #
@@ -59,15 +54,8 @@ if { $default_part == "" } {
 # time limits greater than MaxTime. Ensure DefaultTime is UNLIMITED so the job
 # time limit is what we expect.
 #
-spawn $scontrol update partitionname=$default_part MaxTime=-1 DefaultTime=-1
-expect {
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
+run_command -fail "$scontrol update partitionname=$default_part MaxTime=-1 DefaultTime=-1"
+
 set timelimit [get_partition_maximum_time_limit $default_part]
 if { $timelimit != -1 } {
 	fail "Unable to update partition MaxTime to UNLIMITED"
@@ -86,27 +74,7 @@ make_bash_script $file_in "$bin_sleep 1"
 #
 # Spawn a batch job that deadline is too late
 #
-set timeout $max_job_delay
-spawn $sbatch --output=/dev/null --error=/dev/null --deadline now+1hour $file_in
-expect {
-	-re "Requested time limit is invalid" {
-		set exit_code 1
-		exp_continue
-	}
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id == 0} {
-	fail "Job submission failed"
-}
+set job_id [submit_job -fail "--output=/dev/null --error=/dev/null --deadline now+1hour $file_in"]
 
 if {[wait_for_job $job_id DONE] != 0} {
 	fail "Job failed to run to completion"
@@ -115,27 +83,6 @@ if {[wait_for_job $job_id DONE] != 0} {
 #
 # verify time limit
 #
-spawn $scontrol show job $job_id
-expect {
-	-re "TimeLimit=00:59:" {
-		exp_continue
-	}
-	-re "TimeLimit=01:00:00" {
-		exp_continue
-	}
-	-re "TimeLimit=" {
-		log_error "Time limit is different from deadline"
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		fail "scontrol not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+set timelimit [get_job_param $job_id "TimeLimit"]
+subtest {[regexp "00:59:" $timelimit] ||
+         [regexp "01:00:00" $timelimit]} "Verify that TimeLimit of the job $job_id is 1h"

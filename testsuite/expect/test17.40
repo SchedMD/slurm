@@ -28,15 +28,15 @@
 ############################################################################
 source ./globals
 
-set file_in    "test$test_id\.in"
-set file_out   "test$test_id\.out"
-set spec_in    "spec_thread_script\.in"
-set exit_code  0
+set file_in    "$test_dir/input"
+set file_out   "$test_dir/output"
+set spec_in    "$test_dir/spec_thread_script.in"
+set job_id     0
 
 proc cleanup {} {
-	global bin_rm file_in file_out spec_in
+	global job_id
 
-	exec $bin_rm -f $file_in $file_out $spec_in
+	cancel_job $job_id
 }
 
 #############################################################################
@@ -50,8 +50,8 @@ proc cleanup {} {
 #
 #############################################################################
 proc thread_spec_job {task node thread_spec exp_nodes} {
-	global sbatch scontrol spec_in file_out number thread_cnt exit_code
-	global cpu_tot
+	global sbatch scontrol spec_in file_out number thread_cnt cpu_tot job_id
+
 	set job_id 0
 	set num_nodes 0
 
@@ -71,8 +71,7 @@ proc thread_spec_job {task node thread_spec exp_nodes} {
 		}
 		-re "error" {
 			if {$exp_nodes != -1} {
-				log_error "sbatch should not have produced an error"
-				set exit_code 1
+				fail "sbatch should not have produced an error"
 			}
 			set error_chk 1
 			exp_continue
@@ -95,11 +94,8 @@ proc thread_spec_job {task node thread_spec exp_nodes} {
 		log_debug "This error is expected do not worry"
 
 	} else {
+		wait_for_job -fail $job_id "RUNNING"
 		set thread_chk 0
-		if {[wait_for_job $job_id "RUNNING"] != 0} {
-			log_error "Waiting for job to start"
-			set exit_code 1
-		}
 		spawn $scontrol show job $job_id
 		expect {
 			-re "NumNodes=($number)" {
@@ -118,29 +114,19 @@ proc thread_spec_job {task node thread_spec exp_nodes} {
 			}
 		}
 
-		if {$thread_chk == 0} {
-			log_error "Job $job_id does not have the correct number of specialized thread"
-			set exit_code 1
-		}
+		# Checks that the node uses the correct number of specialized
+		# threads and that the number of nodes the job uses is correct.
+		subtest {$thread_chk != 0} "Check that the node uses the correct number of specialized threads"
 
-		if {[wait_for_job $job_id "DONE"] != 0} {
-			log_error "Waiting for job to complete"
-			set exit_code 1
-		}
+		wait_for_job -fail $job_id "DONE"
 	}
 
 	if {$exp_nodes == 1} {
-		if {$num_nodes <= 1} {
-			log_error "Job $job_id should use more then 1 node"
-			set exit_code 1
-		}
+		subtest {$num_nodes > 1} "Check that the number of nodes that the job uses is correct" "Job $job_id should use more then 1 node"
 	}
 
 	if {$exp_nodes == 0} {
-		if {$num_nodes != 1} {
-			log_error "Job $job_id should use only $node"
-			set exit_code 1
-		}
+		subtest {$num_nodes == 1} "Check that the number of nodes that the job uses is correct" "Job $job_id should use only $node"
 	}
 }
 
@@ -180,7 +166,6 @@ $scontrol show node \$first\
 "
 make_bash_script $spec_in "sleep 5"
 
-set job_id 0
 spawn $sbatch --exclusive -t1 -N2 -o$file_out $file_in
 expect {
 	-re "Batch job submission failed" {
@@ -272,7 +257,3 @@ thread_spec_job 1 $first_node [expr $thread_cnt - 1] 1
 log_info "Fail by trying to use more threads than exist"
 thread_spec_job 1 $first_node [expr $thread_cnt + 1] -1
 thread_spec_job 1 $first_node [expr $thread_cnt + 3] -1
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}

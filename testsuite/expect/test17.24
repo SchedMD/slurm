@@ -28,13 +28,13 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id.input"
+set file_in     "$test_dir/input"
+set job_id      0
 
 proc cleanup {} {
-	global bin_rm file_in
+	global job_id
 
-	exec $bin_rm -f $file_in
+	cancel_job $job_id
 }
 
 #
@@ -47,7 +47,6 @@ make_bash_script $file_in "$bin_id"
 #
 # Test that sbatch prints "debug" messages with "-vvv" option
 #
-set job_id 0
 set debug  0
 spawn $sbatch -N1 --output=none --error=none -t1 -vvv $file_in
 expect {
@@ -66,15 +65,11 @@ expect {
 		wait
 	}
 }
-if { $job_id == 0 } {
+if {$job_id == 0} {
 	fail "Failed to submit job"
-} else {
-	if { $debug == 0 } {
-		log_error "Failed to process --verbose option"
-		set exit_code 1
-	}
-	cancel_job $job_id
 }
+subtest {$debug != 0} "Test that sbatch prints debug messages with -vvv option"
+cancel_job $job_id
 
 #
 # Submit job to dummy partition name just to see that --partition gets
@@ -100,11 +95,4 @@ expect {
 		wait
 	}
 }
-if { $matches != 2 } {
-	fail "Failed to set partition name"
-}
-
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 2} "Verify that partition name is set"

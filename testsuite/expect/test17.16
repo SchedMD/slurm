@@ -28,80 +28,37 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
-set file_err    "test$test_id.error"
-
-proc cleanup {} {
-	global bin_rm file_in file_out file_err
-
-	exec $bin_rm -f $file_in $file_out $file_err
-}
-
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set file_err    "$test_dir/error"
+set job_id      0
 set arg1        "arg_one"
 set arg2        "arg_two"
-set arg_match   0
-set exit_code   0
-set job_id      0
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
 
 #
-# Delete left-over input script plus stdout/err files
 # Build input script file
 #
-exec $bin_rm -f $file_in $file_out $file_err
 make_bash_script $file_in "$bin_echo \$1,\$2"
 
 #
 # Spawn a sbatch job with arguments
 #
-set timeout $max_job_delay
-set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t1 $file_in $arg1 $arg2]
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		slow_kill $sbatch_pid
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$job_id == 0} {
-	fail "Batch submit failure"
-}
+set job_id [submit_job -fail "--output=$file_out --error=$file_err -t1 $file_in $arg1 $arg2"]
 
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
 
 #
 # Check arguments returned in stdout
 #
-if {[wait_for_file $file_out] == 0} {
-	spawn $bin_cat $file_out
-	expect {
-		-re "$arg1,$arg2" {
-			set arg_match 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-}
-
-if {$arg_match == 0} {
-	fail "Failed to pass script arguments"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+set ouput [run_command_output -fail "$bin_cat $file_out"]
+subtest {[regexp "$arg1,$arg2" $ouput]} "Verify that arguments get forwarded to job script"

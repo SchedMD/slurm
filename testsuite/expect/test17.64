@@ -26,10 +26,9 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
 set cwd          "[$bin_pwd]"
 set config_path  ""
-set tmp_job      "test$test_id\.bash"
+set tmp_job      "$test_dir/script"
 set job_id       0
 
 if {![is_super_user]} {
@@ -45,13 +44,12 @@ set config_file $config_path/slurm.conf
 save_conf $config_file
 
 proc cleanup {} {
-	global job_id config_file bin_rm tmp_job
+	global job_id config_file
 
-	# Clean up vestigial files, jobs and restore original slurm.conf file
+	# Clean up jobs and restore original slurm.conf file
 	cancel_job $job_id
 	restore_conf $config_file
 	reconfigure
-	exec $bin_rm -f $tmp_job
 }
 
 log_info "---Checking sbatch uses mcs-label only for some jobs (ondemand mode)---"
@@ -86,8 +84,7 @@ expect {
 	}
 }
 if {$found == 0} {
-	log_error "MCSPlugin parameter in scontrol show config is not mcs/acount"
-	set exit_code 1
+	fail "MCSPlugin parameter in scontrol show config is not mcs/acount"
 }
 
 ###### Check that sbatch fails with a bad mcs-label ######
@@ -113,8 +110,7 @@ expect {
 	}
 }
 if {$job_id != 0} {
-	log_error "Job was submitted with invalid mcs-label"
-	set exit_code 1
+	fail "Job was submitted with invalid mcs-label"
 }
 
 ###### Check that sbatch uses mcs-label=account ######
@@ -135,8 +131,7 @@ expect {
 	}
 }
 if {$job_id == 0} {
-	log_error "Job was not submitted"
-	set exit_code 1
+	fail "Job was not submitted"
 }
 
 set user_name "NOT_SET"
@@ -178,8 +173,7 @@ expect {
 }
 
 if {$found == 0} {
-	log_error "Job was submitted with a bad mcs-label"
-	set exit_code 1
+	fail "Job was submitted with a bad mcs-label"
 }
 
 cancel_job $job_id
@@ -200,8 +194,7 @@ expect {
 }
 
 if {$job_id == 0} {
-	log_error "Job was not submitted"
-	set exit_code 1
+	fail "Job was not submitted"
 }
 set found 0
 sleep 5
@@ -213,9 +206,7 @@ expect {
 		exp_continue
 	}
 	-re "Invalid job format specification" {
-		log_error "Invalid job format specification mcslabel"
-		set exit_code 1
-		set found 1
+		fail "Invalid job format specification mcslabel"
 	}
 	timeout {
 		fail "squeue is not responding"
@@ -225,8 +216,7 @@ expect {
 	}
 }
 if {$found == 0} {
-	 log_error "Job was submitted with a bad mcs-label"
-	 set exit_code 1
+	 fail "Job was submitted with a bad mcs-label"
 }
 
 set found 0
@@ -247,8 +237,7 @@ expect {
 }
 
 if {$found == 0} {
-	log_error "No node found in squeue command"
-	set exit_code 1
+	fail "No node found in squeue command"
 }
 
 #
@@ -271,8 +260,7 @@ expect {
 }
 
 if {$found == 0} {
-	log_error "Job was submitted with node with bad mcs-label"
-	set exit_code 1
+	fail "Job was submitted with node with bad mcs-label"
 }
 cancel_job $job_id
 
@@ -307,8 +295,7 @@ expect {
 }
 
 if {$job_id == 0} {
-	log_error "Job was not submitted"
-	set exit_code 1
+	fail "Job was not submitted"
 }
 
 set found 0
@@ -321,9 +308,7 @@ expect {
 		exp_continue
 	}
 	-re "(null)" {
-		log_error "NO MCS-label for this job"
-		set exit_code 1
-		exp_continue
+		fail "NO MCS-label for this job"
 	}
 	timeout {
 		fail "squeue is not responding"
@@ -334,8 +319,7 @@ expect {
 }
 
 if {$found == 0} {
-	log_error "Job was submitted with a bad mcs-label"
-	set exit_code 1
+	fail "Job was submitted with a bad mcs-label"
 }
 
 set found 0
@@ -356,8 +340,7 @@ expect {
 }
 
 if {$found == 0} {
-	log_error "No node found in squeue command"
-	set exit_code 1
+	fail "No node found in squeue command"
 }
 
 #
@@ -367,8 +350,7 @@ set found 0
 spawn -noecho $bin_bash -c "exec $scontrol show node=$node | $bin_grep MCS"
 expect {
 	-re "MCS_label=$account_name" {
-		log_error "A mcs_label is found for this job. It was not expected"
-		set exit_code 1
+		fail "A mcs_label is found for this job. It was not expected"
 	}
 	-re "MCS_label=N/A" {
 		log_debug "No mcs_label for this node. It was expected"
@@ -379,8 +361,4 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

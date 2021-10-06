@@ -27,16 +27,8 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-set exit_code   0
+set file_in     "$test_dir/input"
 set job_id      0
-
-proc cleanup {} {
-	global bin_rm file_in
-
-	reconfigure
-	exec $bin_rm -f $file_in
-}
 
 #
 # We must be SlurmUser or root in order to change the partition MaxTime limit,
@@ -54,6 +46,13 @@ if [set_partition_maximum_time_limit "" -1] {
 	fail "Unable to clear partition maximum time limit"
 }
 
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+	reconfigure
+}
+
 #
 # Build input script file
 #
@@ -67,12 +66,10 @@ set timeout $max_job_delay
 spawn $sbatch --output=/dev/null --error=/dev/null --deadline now+1hour --time-min 20 -t 120 $file_in
 expect {
 	-re "Requested time limit is invalid (missing or exceeds some limit)" {
-		set exit_code 1
-		exp_continue
+		fail "Requested time limit is invalid (missing or exceeds some limit)"
 	}
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
-		set exit_code 1
 		exp_continue
 	}
 	timeout {
@@ -84,7 +81,7 @@ expect {
 }
 
 if {$job_id == 0} {
-	fail "Batch not submitted"
+	fail "Batch job not submitted"
 }
 
 #
@@ -97,17 +94,13 @@ if {[wait_for_job $job_id DONE] != 0} {
 spawn $scontrol show job $job_id
 expect {
 	-re "TimeLimit=01:00:00" {
-		set exit_code 0
 		exp_continue
 	}
 	-re "TimeLimit=00:59:" {
-		set exit_code 0
 		exp_continue
 	}
 	-re "TimeLimit=" {
-		log_error "Time limit is different from deadline"
-		set exit_code 1
-		exp_continue
+		fail "Time limit is different from deadline"
 	}
 	timeout {
 		fail "scontrol not responding"
@@ -115,8 +108,4 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$exit_code != 0} {
-        fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

@@ -26,7 +26,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set file_in     "test$test_id.in"
 set job_id      0
 

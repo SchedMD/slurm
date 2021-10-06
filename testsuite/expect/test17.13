@@ -28,15 +28,14 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
-set matches     0
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set job_id      0
 
 proc cleanup {} {
-	global file_in file_out
+	global job_id
 
-	file delete $file_in $file_out
+	cancel_job $job_id
 }
 
 # These are the variables for which we are checking existence.
@@ -62,13 +61,11 @@ array set good_vars {
 # Delete left-over input script
 # Build input script file
 #
-exec $bin_rm -f $file_in $file_out
 make_bash_script $file_in "$bin_env"
 
 #
 # Spawn a job via sbatch to print environment variables
 #
-set job_id 0
 spawn $sbatch -N1 -n1 -t1 --output=$file_out $file_in
 expect {
 	-re "Submitted batch job ($number)" {
@@ -89,18 +86,12 @@ if { $job_id == 0 } {
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	cancel_job $job_id
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 #
 # Check for desired output
 #
-if {[wait_for_file $file_out] != 0} {
-	fail "Output file $file_out is missing"
-}
+wait_for_file -fail $file_out
 
 spawn $bin_cat $file_out
 expect {
@@ -128,10 +119,4 @@ foreach {slurm_var check_flag} [array get good_vars] {
     }
 }
 
-if {$good < $total} {
-	fail "Only $good of $total Slurm environment variables set"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$good >= $total} "Verify the appropriate job environment variables are set" "Only $good of $total Slurm environment variables set"

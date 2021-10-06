@@ -27,14 +27,13 @@
 ############################################################################
 source ./globals
 
-set file_in     "test$test_id.input"
-set exit_code   0
+set file_in     "$test_dir/input"
 set job_id      0
 
 proc cleanup {} {
-	global bin_rm file_in
+	global job_id
 
-	exec $bin_rm -f $file_in
+	cancel_job $job_id
 }
 
 #
@@ -50,16 +49,13 @@ set timeout $max_job_delay
 spawn $sbatch --output=/dev/null --error=/dev/null --begin now+2hour --deadline now+1hour $file_in
 expect {
 	-re "Requested time limit is invalid" {
-		set exit_code 1
-		exp_continue
+		fail "Requested time limit is invalid"
 	}
 	-re "Incompatible begin and deadline time specification" {
-		set exit_code 0
 		exp_continue
 	}
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
-		set exit_code 1
 		exp_continue
 	}
 	timeout {
@@ -70,10 +66,5 @@ expect {
 	}
 }
 if {$job_id != 0} {
-	cancel_job $job_id
 	fail "Batch submitted with a deadline too short"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }
