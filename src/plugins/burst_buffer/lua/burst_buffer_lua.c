@@ -54,6 +54,7 @@
 #include "slurm/slurm.h"
 
 #include "src/common/assoc_mgr.h"
+#include "src/common/data.h"
 #include "src/common/fd.h"
 #include "src/common/run_command.h"
 #include "src/common/xsignal.h"
@@ -143,6 +144,12 @@ typedef struct bb_pools {
 	uint64_t quantity;
 	uint64_t free;
 } bb_pools_t;
+
+typedef struct {
+	int i;
+	int num_pools;
+	bb_pools_t *pools;
+} data_pools_arg_t;
 
 typedef struct {
 	bool hurry;
@@ -660,62 +667,101 @@ static void _bb_free_pools(bb_pools_t *pools, int num_ent)
 	xfree(pools);
 }
 
-static void _json_parse_pools_object(json_object *jobj, bb_pools_t *pools)
+static int _data_get_val_from_key(data_t *data, char *key, data_type_t type,
+				  bool required, void *out_val)
 {
-	enum json_type type;
-	struct json_object_iter iter;
-	int64_t x;
-	const char *p;
+	int rc = SLURM_SUCCESS;
+	data_t *data_tmp = NULL;
+	char **val_str;
+	int64_t *val_int;
 
-	json_object_object_foreachC(jobj, iter) {
-		type = json_object_get_type(iter.val);
-		switch (type) {
-		case json_type_int:
-			x = json_object_get_int64(iter.val);
-			if (xstrcmp(iter.key, "granularity") == 0) {
-				pools->granularity = x;
-			} else if (xstrcmp(iter.key, "quantity") == 0) {
-				pools->quantity = x;
-			} else if (xstrcmp(iter.key, "free") == 0) {
-				pools->free = x;
-			}
-			break;
-		case json_type_string:
-			p = json_object_get_string(iter.val);
-			if (xstrcmp(iter.key, "id") == 0) {
-				pools->name = xstrdup(p);
-			}
-			break;
-		default:
-			break;
-		}
+	data_tmp = data_key_get(data, key);
+	if (!data_tmp) {
+		if (required)
+			return SLURM_ERROR;
+		return SLURM_SUCCESS; /* Not specified */
 	}
+
+	if (data_get_type(data_tmp) != type) {
+		error("%s: %s is the wrong data type", __func__, key);
+		return SLURM_ERROR;
+	}
+
+	switch (type) {
+	case DATA_TYPE_STRING:
+		val_str = out_val;
+		*val_str = xstrdup(data_get_string(data_tmp));
+		break;
+	case DATA_TYPE_INT_64:
+		val_int = out_val;
+		*val_int = data_get_int(data_tmp);
+		break;
+	default:
+		rc = SLURM_ERROR;
+		break;
+	}
+
+	return rc;
 }
 
-static bb_pools_t * _json_parse_pools_array(json_object *jobj, char *key,
-					    int *num)
+/*
+ * IN data - A dictionary describing a pool.
+ * IN/OUT arg - pointer to data_pools_arg_t. This function populates a pool
+ *              in arg->pools.
+ *
+ * RET data_for_each_cmd_t
+ */
+static data_for_each_cmd_t _foreach_parse_pool(data_t *data, void *arg)
 {
-	json_object *jarray;
-	int i;
-	json_object *jvalue;
-	bb_pools_t *pools;
+	data_pools_arg_t *data_arg = arg;
+	data_for_each_cmd_t rc = DATA_FOR_EACH_CONT;
+	bb_pools_t *pools = data_arg->pools;
+	int i = data_arg->i;
 
-	jarray = jobj;
-	json_object_object_get_ex(jobj, key, &jarray);
-
-	*num = json_object_array_length(jarray);
-	pools = xcalloc(*num, sizeof(bb_pools_t));
-
-	for (i = 0; i < *num; i++) {
-		pools[i].free = NO_VAL64;
-		pools[i].granularity = NO_VAL64;
-		pools[i].quantity = NO_VAL64;
-
-		jvalue = json_object_array_get_idx(jarray, i);
-		_json_parse_pools_object(jvalue, &pools[i]);
+	if (i > data_arg->num_pools) {
+		/* This should never happen. */
+		error("%s: Got more pools than are in the dict. Cannot parse pools.",
+		      __func__);
+		rc = DATA_FOR_EACH_FAIL;
+		goto next;
 	}
 
-	return pools;
+	pools[i].free = NO_VAL64;
+	pools[i].granularity = NO_VAL64;
+	pools[i].quantity = NO_VAL64;
+
+	if (_data_get_val_from_key(data, "id", DATA_TYPE_STRING, true,
+				   &pools[i].name) != SLURM_SUCCESS) {
+		error("%s: Failure parsing id", __func__);
+		rc = DATA_FOR_EACH_FAIL;
+		goto next;
+	}
+
+	if (_data_get_val_from_key(data, "free", DATA_TYPE_INT_64, false,
+				   &pools[i].free) != SLURM_SUCCESS) {
+		error("%s: Failure parsing free", __func__);
+		rc = DATA_FOR_EACH_FAIL;
+		goto next;
+	}
+
+	if (_data_get_val_from_key(data, "granularity", DATA_TYPE_INT_64, false,
+				   &pools[i].granularity) != SLURM_SUCCESS) {
+		error("%s: Failure parsing granularity", __func__);
+		rc = DATA_FOR_EACH_FAIL;
+		goto next;
+	}
+
+	if (_data_get_val_from_key(data, "quantity", DATA_TYPE_INT_64, false,
+				   &pools[i].quantity) != SLURM_SUCCESS) {
+		error("%s: Failure parsing quantity", __func__);
+		rc = DATA_FOR_EACH_FAIL;
+		goto next;
+	}
+
+next:
+	data_arg->i += 1;
+
+	return rc;
 }
 
 static bb_pools_t *_bb_get_pools(int *num_pools, uint32_t timeout, int *out_rc)
@@ -724,8 +770,9 @@ static bb_pools_t *_bb_get_pools(int *num_pools, uint32_t timeout, int *out_rc)
 	char *resp_msg = NULL;
 	char *lua_func_name = "slurm_bb_pools";
 	bb_pools_t *pools = NULL;
-	json_object *j;
-	json_object_iter iter;
+	data_pools_arg_t arg;
+	data_t *data = NULL;
+	data_t *data_tmp = NULL;
 	DEF_TIMERS;
 
 	*num_pools = 0;
@@ -747,23 +794,41 @@ static bb_pools_t *_bb_get_pools(int *num_pools, uint32_t timeout, int *out_rc)
 		return NULL;
 	}
 
-	j = json_tokener_parse(resp_msg);
-	if (j == NULL) {
-		error("json parser failed on \"%s\"",
-		      resp_msg);
-		xfree(resp_msg);
-		return NULL;
+	rc = data_g_deserialize(&data, resp_msg, strlen(resp_msg),
+				MIME_TYPE_JSON);
+	if ((rc != SLURM_SUCCESS) || !data) {
+		error("%s: Problem parsing \"%s\": %s",
+		      __func__, resp_msg, slurm_strerror(rc));
+		goto cleanup;
 	}
-	xfree(resp_msg);
 
-	json_object_object_foreachC(j, iter) {
-		if (pools) {
-			error("Multiple pool objects");
-			break;
-		}
-		pools = _json_parse_pools_array(j, iter.key, num_pools);
+	data_tmp = data_resolve_dict_path(data, "/pools");
+	if (!data_tmp || (data_get_type(data_tmp) != DATA_TYPE_LIST)) {
+		error("%s: Did not find pools dictionary; problem parsing \"%s\"",
+		      __func__, resp_msg);
+		goto cleanup;
 	}
-	json_object_put(j);	/* Frees json memory */
+
+	*num_pools = (int) data_get_list_length(data_tmp);
+	if (*num_pools == 0) {
+		error("%s: No pools found, problem parsing \"%s\"",
+		      __func__, resp_msg);
+		goto cleanup;
+	}
+
+	pools = xcalloc(*num_pools, sizeof(*pools));
+	arg.num_pools = *num_pools;
+	arg.pools = pools;
+	arg.i = 0;
+	rc = data_list_for_each(data_tmp, _foreach_parse_pool, &arg);
+	if (rc <= 0) {
+		error("%s: Failed to parse pools: \"%s\"", __func__, resp_msg);
+		goto cleanup;
+	}
+
+cleanup:
+	xfree(resp_msg);
+	FREE_NULL_DATA(data);
 
 	return pools;
 }
@@ -1503,6 +1568,12 @@ extern int init(void)
                 return rc;
 	lua_script_path = get_extra_conf_path("burst_buffer.lua");
 
+	if ((rc = data_init(MIME_TYPE_JSON_PLUGIN, NULL)) != SLURM_SUCCESS) {
+		error("%s: unable to load JSON serializer: %s",
+		      __func__, slurm_strerror(rc));
+		return rc;
+	}
+
 	/*
 	 * slurmscriptd calls bb_g_init() and then bb_g_run_script(). We only
 	 * need to initialize lua to run the script. We don't want
@@ -1567,6 +1638,7 @@ extern int fini(void)
 
 	slurm_lua_fini();
 	xfree(lua_script_path);
+	/* Don't call data_fini(), that is taken care of elsewhere. */
 
 	return SLURM_SUCCESS;
 }
