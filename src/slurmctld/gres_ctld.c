@@ -1200,7 +1200,7 @@ static int _job_dealloc(void *job_gres_data, void *node_gres_data,
  			}
 		}
 	} else if (job_gres_ptr->type_name) {
-		gres_cnt = job_gres_ptr->gres_per_node;
+		gres_cnt = job_gres_ptr->gres_cnt_node_alloc[node_offset];
 		for (j = 0; j < node_gres_ptr->type_cnt; j++) {
 			if (job_gres_ptr->type_id !=
 			    node_gres_ptr->type_id[j])
