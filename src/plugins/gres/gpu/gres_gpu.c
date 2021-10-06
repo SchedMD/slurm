@@ -903,16 +903,16 @@ extern int gres_p_node_config_load(List gres_conf_list,
 			log_var(log_lvl,
 				"There were 0 GPUs detected on the system");
 		log_var(log_lvl,
-			"%s: Merging gres.conf with system GPUs",
+			"%s: Merging configured GRES with system GPUs",
 			plugin_name);
 		_merge_system_gres_conf(gres_conf_list, gres_list_system);
 		FREE_NULL_LIST(gres_list_system);
 
 		if (!gres_conf_list || list_is_empty(gres_conf_list))
-			log_var(log_lvl, "%s: Final merged gres.conf list is empty",
+			log_var(log_lvl, "%s: Final merged GRES list is empty",
 				plugin_name);
 		else {
-			log_var(log_lvl, "%s: Final merged gres.conf list:",
+			log_var(log_lvl, "%s: Final merged GRES list:",
 				plugin_name);
 			print_gres_list(gres_conf_list, log_lvl);
 		}
