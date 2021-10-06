@@ -29,10 +29,7 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id.input"
-set time_set    13
-set time_get    0
+set file_in     "$test_dir/input"
 set job_id      0
 
 #
@@ -77,37 +74,14 @@ make_bash_script $file_in "
 # Use scontrol to confirm time limit
 # Time format is "minutes"
 #
-spawn $sbatch -N1 --output=none --error=none --time=$time_set $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
+set time_set  13
+set job_id [submit_job -fail "-N1 --output=none --error=none --time=$time_set $file_in"]
+set time_limit [get_job_param $job_id "TimeLimit"]
+if {![regexp "($number):($number):" $time_limit - hours mins]} {
+	fail "Unable to parse TimeLimit"
 }
-if { $job_id == 0 } {
-	fail "Failed to submit job"
-}
-
-spawn $scontrol show job $job_id
-expect {
-	-re "TimeLimit=($number):($number):" {
-		set time_get [expr $expect_out(1,string) * 60 + $expect_out(2,string)]
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$time_set != $time_get} {
-	log_error "sbatch failed to set time limit ($time_set != $time_get)"
-	set exit_code 1
-}
+set time_get [expr $hours * 60 + $mins]
+subtest {$time_get == $time_set} "Confirm time limit of $time_set" "$time_get != $time_set"
 cancel_job $job_id
 
 #
@@ -115,45 +89,14 @@ cancel_job $job_id
 # Use scontrol to confirm time limit
 # Time format is "hours:minutes:seconds"
 #
-set job_id 0
-set time_get 0
 set time_set "2:01:00"
-spawn $sbatch -N1 --output=none --error=none --time=$time_set $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	-re "time limit exceeds" {
-		incr exit_code [reconfigure]
-		log_warn "Unable to fully test time limits"
-		pass
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
+set job_id [submit_job -fail "-N1 --output=none --error=none --time=$time_set $file_in"]
+set time_limit [get_job_param $job_id "TimeLimit"]
+if {![regexp "($number):($number):" $time_limit - hours mins]} {
+	fail "Unable to parse TimeLimit"
 }
-if { $job_id == 0 } {
-	fail "Failed to submit job"
-}
-
-spawn $scontrol show job $job_id
-expect {
-	-re "TimeLimit=($number):($number):" {
-		set time_get [expr $expect_out(1,string) * 60 + $expect_out(2,string)]
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$time_get != 121} {
-	log_error "sbatch failed to set time limit ($time_get != 121)"
-	set exit_code 1
-}
+set time_get [expr $hours * 60 + $mins]
+subtest {$time_get == 121} "Confirm time limit of $time_set" "$time_get != 121"
 cancel_job $job_id
 
 #
@@ -161,41 +104,12 @@ cancel_job $job_id
 # Use scontrol to confirm time limit
 # Time format is "days-hours"
 #
-set job_id 0
-set time_get 0
 set time_set "1-1"
-spawn $sbatch -N1 --output=none --error=none --time=$time_set $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
+set job_id [submit_job -fail "-N1 --output=none --error=none --time=$time_set $file_in"]
+set time_limit [get_job_param $job_id "TimeLimit"]
+if {![regexp "($number)-($number):($number):" $time_limit - days hours mins]} {
+	fail "Unable to parse TimeLimit"
 }
-if { $job_id == 0 } {
-	fail "Failed to submit job"
-}
-
-spawn $scontrol show job $job_id
-expect {
-	-re "TimeLimit=($number)-($number):($number):" {
-		set time_get [expr $expect_out(1,string) * 1440 + $expect_out(2,string) * 60 + $expect_out(3,string)]
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$time_get != 1500} {
-	log_error "sbatch failed to set time limit ($time_get != 1500)"
-	set exit_code 1
-}
-
-if {$exit_code != 0} {
-        fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+set time_get [expr $days * 1440 + $hours * 60 + $mins]
+subtest {$time_get == 1500} "Confirm time limit of $time_set" "$time_get != 1500"
+cancel_job $job_id

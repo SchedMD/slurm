@@ -26,18 +26,11 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id\_sc"
-set file_out    "test$test_id\_output"
-set file_prog   "test$test_id.prog"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
+set file_prog   "$test_dir/program"
 set elps_time   0
 set job_id      0
-
-proc cleanup {} {
-	global file_prog file_in file_out
-
-	exec rm -f $file_prog $file_in $file_out
-}
 
 #
 # Cannot run the test if OverTimeLimit is set, since we test time limits.
@@ -47,12 +40,17 @@ if {$overtimelim != 0} {
 	skip "Cannot run this test when OverTimeLimit is set. Exiting now."
 }
 
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
+}
+
 #
 # Delete left-over programs and rebuild them.
 #
-exec $bin_rm -f $file_prog $file_in $file_out
 # We will be using test1.53.prog.c since it is exactly what we need
-exec $bin_cc -o $file_prog test1.53.prog.c
+run_command -fail "$bin_cc -o $file_prog test1.53.prog.c"
 
 make_bash_script $file_in "
 function gettime \{
@@ -62,7 +60,7 @@ function gettime \{
 echo \"starting...\"
 T=\"$\(date +%s)\"
 trap \"echo Got SIGINT 2; gettime; exit 1\" 2
-$srun ./$file_prog &
+$srun $file_prog &
 while :
 do
 	:
@@ -90,11 +88,7 @@ if {$job_id == 0} {
 	fail "sbatch did not submit job"
 }
 
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Error waiting for job $job_id to complete"
-	set exit_code 1
-	cancel_job $job_id
-}
+wait_for_job -fail $job_id "DONE"
 
 set sig 0
 spawn $bin_cat $file_out
@@ -117,13 +111,11 @@ expect {
 }
 
 if {$sig != 2} {
-	log_error "sbatch did not sent signal properly"
-	set exit_code 1
+	fail "sbatch did not sent signal properly"
 }
 
 if {$elps_time < 59 || $elps_time > 121} {
-	log_error "sbatch sent signal at the wrong time"
-	set exit_code 1
+	fail "sbatch sent signal at the wrong time"
 }
 
 # Job step gets signaled and exits. The batch script runs until timeout.
@@ -133,9 +125,7 @@ expect {
 		exp_continue
 	}
 	-re "JobState=" {
-		log_error "Bad job exit state"
-		set exit_code 1
-		exp_continue
+		fail "Bad job exit state"
 	}
 	timeout {
 		fail "scontrol is not responding"
@@ -170,11 +160,7 @@ if {$job_id == 0} {
 	fail "sbatch did not submit job"
 }
 
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Error waiting for job $job_id to complete"
-	set exit_code 1
-	cancel_job $job_id
-}
+wait_for_job -fail $job_id "DONE"
 
 set sig 0
 spawn $bin_cat $file_out
@@ -197,13 +183,11 @@ expect {
 }
 
 if {$sig != 2} {
-	log_error "sbatch did not sent signal properly"
-	set exit_code 1
+	fail "sbatch did not sent signal properly"
 }
 
 if {$elps_time < 59 || $elps_time >121} {
-	log_error "sbatch sent signal at the wrong time"
-	set exit_code 1
+	fail "sbatch sent signal at the wrong time"
 }
 
 # Job gets signaled and exits.
@@ -214,9 +198,7 @@ expect {
 		exp_continue
 	}
 	-re "JobState=" {
-		log_error "Bad job exit state"
-		set exit_code 1
-		exp_continue
+		fail "Bad job exit state"
 	}
 	timeout {
 		fail "scontrol is not responding"
@@ -224,8 +206,4 @@ expect {
 	eof {
 		wait
 	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

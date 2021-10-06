@@ -26,10 +26,9 @@
 ############################################################################
 source ./globals
 
-set exit_code    0
 set cwd          "[$bin_pwd]"
 set config_path  ""
-set tmp_job      "test$test_id\_tmp_job"
+set tmp_job      "$test_dir/script"
 set job_id       0
 
 if {![is_super_user]} {
@@ -41,13 +40,12 @@ set config_file $config_path/slurm.conf
 save_conf $config_file
 
 proc cleanup {} {
-	global job_id config_file bin_rm tmp_job
+	global job_id config_file
 
 	# Clean up vestigial files, jobs and restore original slurm.conf file
 	cancel_job $job_id
 	restore_conf $config_file
 	reconfigure
-	exec $bin_rm $tmp_job
 }
 
 log_info "---Checking sbatch uses mcs-label only for some jobs (ondemand,select mode)---"
@@ -84,8 +82,7 @@ expect {
 	}
 }
 if {$found == 0} {
-	log_error "MCSPlugin parameter in scontrol show config is not mcs/user"
-	set exit_code 1
+	fail "MCSPlugin parameter in scontrol show config is not mcs/user"
 }
 
 ###### Check that sbatch fails with a bad mcs-label ######
@@ -129,9 +126,8 @@ expect {
 
 if {$job_id == 0} {
 	fail "Job was not submitted"
-} elseif {[wait_for_job $job_id "RUNNING"]} {
-	set exit_code 1
 }
+wait_for_job -fail $job_id "RUNNING"
 
 set user_name [get_my_user_name]
 
@@ -156,8 +152,7 @@ expect {
 }
 
 if {$found == 0} {
-	log_error "Job was submitted with a bad mcs-label"
-	set exit_code 1
+	fail "Job was submitted with a bad mcs-label"
 }
 
 cancel_job $job_id
@@ -179,11 +174,9 @@ expect {
 }
 
 if {$job_id == 0} {
-	log_error "Job was not submitted"
-	set exit_code 1
-} elseif {[wait_for_job $job_id "RUNNING"]} {
-	set exit_code 1
+	fail "Job was not submitted"
 }
+wait_for_job -fail $job_id "RUNNING"
 
 set found 0
 spawn $squeue --jobs=$job_id --noheader -O "mcslabel"
@@ -194,9 +187,7 @@ expect {
 		exp_continue
 	}
 	-re "Invalid job format specification" {
-		log_error "Invalid job format specification mcslabel"
-		set exit_code 1
-		set found 1
+		fail "Invalid job format specification mcslabel"
 	}
 	timeout {
 		fail "squeue is not responding"
@@ -206,8 +197,7 @@ expect {
 	}
 }
 if {$found == 0} {
-	 log_error "Job was submitted with a bad mcs-label"
-	 set exit_code 1
+	 fail "Job was submitted with a bad mcs-label"
 }
 set found 0
 #test sacct if accounting, wait a few seconds for accounting data to reach DB
@@ -228,8 +218,7 @@ if {[get_config_param "AccountingStorageType"] eq "accounting_storage/slurmdbd"}
 		}
 	}
 	if {$found == 0} {
-		log_error "sacct get a bad mcs-label"
-		set exit_code 1
+		fail "sacct get a bad mcs-label"
 	}
 }
 
@@ -251,8 +240,7 @@ expect {
 }
 
 if {$found == 0} {
-	log_error "No node found in squeue command"
-	set exit_code 1
+	fail "No node found in squeue command"
 }
 
 #
@@ -275,8 +263,7 @@ expect {
 }
 
 if {$found == 0} {
-	log_error "Job was submitted with node with bad mcs-label"
-	set exit_code 1
+	fail "Job was submitted with node with bad mcs-label"
 }
 
 cancel_job $job_id
@@ -315,11 +302,9 @@ expect {
 }
 
 if {$job_id == 0} {
-	log_error "Job was not submitted"
-	set exit_code 1
-} elseif {[wait_for_job $job_id "RUNNING"]} {
-	set exit_code 1
+	fail "Job was not submitted"
 }
+wait_for_job -fail $job_id "RUNNING"
 
 set found 0
 spawn $squeue --jobs=$job_id --noheader -O "mcslabel"
@@ -330,9 +315,7 @@ expect {
 		exp_continue
 	}
 	-re "(null)" {
-		log_error "NO MCS-label for this job"
-		set exit_code 1
-		exp_continue
+		fail "NO MCS-label for this job"
 	}
 	timeout {
 		fail "squeue is not responding"
@@ -343,8 +326,7 @@ expect {
 }
 
 if {$found == 0} {
-	log_error "Job was submitted with a bad mcs-label"
-	set exit_code 1
+	fail "Job was submitted with a bad mcs-label"
 }
 
 set found 0
@@ -365,8 +347,7 @@ expect {
 }
 
 if {$found == 0} {
-	log_error "No node found in squeue command"
-	set exit_code 1
+	fail "No node found in squeue command"
 }
 
 #
@@ -376,8 +357,7 @@ set found 0
 spawn -noecho $bin_bash -c "exec $scontrol show node=$node | $bin_grep MCS"
 expect {
 	-re "MCS_label=$user_name" {
-		log_error "A mcs_label is found for this job. It was not expected"
-		set exit_code 1
+		fail "A mcs_label is found for this job. It was not expected"
 	}
 	-re "MCS_label=N/A" {
 		log_debug "No mcs_label for this node. It was expected"
@@ -425,11 +405,9 @@ expect {
 }
 
 if {$job_id == 0} {
-	log_error "Job was not submitted"
-	set exit_code 1
-} elseif {[wait_for_job $job_id "RUNNING"]} {
-	set exit_code 1
+	fail "Job was not submitted"
 }
+wait_for_job -fail $job_id "RUNNING"
 
 set found 0
 spawn $squeue --jobs=$job_id --noheader -O "mcslabel"
@@ -440,9 +418,7 @@ expect {
 		exp_continue
 	}
 	-re "(null)" {
-		log_error "NO MCS-label for this job"
-		set exit_code 1
-		exp_continue
+		fail "NO MCS-label for this job"
 	}
 	timeout {
 		fail "squeue is not responding"
@@ -453,8 +429,7 @@ expect {
 }
 
 if {$found == 0} {
-	log_error "Job was submitted with a bad mcs-label"
-	set exit_code 1
+	fail "Job was submitted with a bad mcs-label"
 }
 
 set found 0
@@ -475,8 +450,7 @@ expect {
 }
 
 if {$found == 0} {
-	log_error "No node found in squeue command"
-	set exit_code 1
+	fail "No node found in squeue command"
 }
 
 #
@@ -486,8 +460,7 @@ set found 0
 spawn -noecho $bin_bash -c "exec $scontrol show node=$node | $bin_grep MCS"
 expect {
 	-re "MCS_label=$user_name" {
-		log_error "A mcs_label is found for this job. It was not expected"
-		set exit_code 1
+		fail "A mcs_label is found for this job. It was not expected"
 	}
 	 -re "MCS_label=N/A" {
 		log_debug "No mcs_label for this node. It was expected"
@@ -522,11 +495,9 @@ expect {
 }
 
 if {$job_id == 0} {
-	log_error "job was not submitted"
-	set exit_code 1
-} elseif {[wait_for_job $job_id "RUNNING"]} {
-	set exit_code 1
+	fail "job was not submitted"
 }
+wait_for_job -fail $job_id "RUNNING"
 
 set found 0
 spawn $squeue --jobs=$job_id --noheader -O "mcslabel"
@@ -549,14 +520,11 @@ expect {
 }
 
 if {$found == 1} {
-	log_error "Job was submitted with a bad mcs-label"
-	set exit_code 1
+	fail "Job was submitted with a bad mcs-label"
 }
 
 cancel_job $job_id
-if {[wait_for_job $job_id "DONE"]} {
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 log_info "---Checking sbatch uses mcs-label for all jobs (enforced,select mode)---"
 
@@ -593,9 +561,8 @@ expect {
 
 if {$job_id == 0} {
 	fail "Job was not submitted"
-} elseif {[wait_for_job $job_id "RUNNING"]} {
-	set exit_code 1
 }
+wait_for_job -fail $job_id "RUNNING"
 
 set found 0
 spawn $squeue --jobs=$job_id --noheader -O "mcslabel"
@@ -618,8 +585,7 @@ expect {
 }
 
 if {$found == 0} {
-	log_error "Job was submitted with a bad mcs-label"
-	set exit_code 1
+	fail "Job was submitted with a bad mcs-label"
 }
 
 set found 0
@@ -640,8 +606,7 @@ expect {
 }
 
 if {$found == 0} {
-	log_error "No node found in squeue command"
-	set exit_code 1
+	fail "No node found in squeue command"
 }
 
 
@@ -665,10 +630,5 @@ expect {
 }
 
 if {$found == 0} {
-	log_error "Job was submitted with node with bad mcs-label"
-	set exit_code 1
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	fail "Job was submitted with node with bad mcs-label"
 }

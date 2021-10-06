@@ -26,15 +26,14 @@
 ############################################################################
 source ./globals
 
-set file_in    "test$test_id\.in"
-set exit_code  0
+set file_in    "$test_dir/input"
 set job_cnt    100
 set target     200
 
 proc cleanup {} {
-	global bin_rm file_in
+	global scancel test_name
 
-	exec $bin_rm -f $file_in
+	run_command "$scancel --name=$test_name"
 }
 
 if {[get_config_param "SwitchType"] eq "switch/cray"} {
@@ -45,7 +44,7 @@ make_bash_script $file_in "
 inx=0
 while \[ \$inx -lt $job_cnt \]
 do
-	$sbatch --begin=midnight --job-name=$file_in --wrap date &
+	$sbatch --begin=midnight --job-name=$test_name --wrap date &
 	inx=\$((inx+1))
 done
 wait
@@ -54,7 +53,7 @@ wait
 set match 0
 set time_used  100000
 set timeout [expr $max_job_delay * 10]
-spawn $bin_bash -c "time -p ./$file_in"
+spawn $bin_bash -c "time -p $file_in"
 expect {
 	-re "Submitted batch job ($number)" {
 		incr match
@@ -86,18 +85,7 @@ expect {
 	}
 }
 if {$match != $job_cnt} {
-	log_error "Job count mismatch ($match != $job_cnt)"
-	set exit_code 1
-}
-
-spawn $scancel --name=$file_in
-expect {
-	timeout {
-		fail "scancel is not responding"
-	}
-	eof {
-		wait
-	}
+	fail "Job count mismatch ($match != $job_cnt)"
 }
 
 # Prevent zero divide
@@ -108,8 +96,4 @@ set rate [ expr ($job_cnt * 1000) / $time_used ]
 log_debug "Job submit rate $rate jobs per second ($job_cnt jobs in $time_used msec)"
 if {$rate < $target} {
 	fail "Job submit rate of $rate below target of $target. This may be due to use of NFS rather than local storage for logs or state information"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

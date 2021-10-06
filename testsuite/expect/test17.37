@@ -28,13 +28,12 @@ source ./globals
 
 set job_id1       0
 set job_id2       0
-set script        "test$test_id\_sc"
-set exit_code     0
+set script        "$test_dir/script"
 
 proc cleanup {} {
-	global bin_rm script
+	global job_id1 job_id2
 
-	exec $bin_rm -f $script
+	cancel_job [list $job_id1 $job_id2]
 }
 
 make_bash_script $script "sleep 10"
@@ -58,11 +57,7 @@ if { $job_id1 == 0 } {
 	fail "sbatch did not submit job"
 }
 
-if {[wait_for_job $job_id1 "RUNNING"] != 0} {
-	log_error "error waiting for job $job_id1 to start"
-	cancel_job $job_id1
-	set exit_code 1
-}
+wait_for_job -fail $job_id1 "RUNNING"
 
 # Submit a job that depends on job above
 spawn $sbatch -t1 -dafternotok:$job_id1 -o/dev/null $script
@@ -83,11 +78,7 @@ if { $job_id2 == 0 } {
 	fail "sbatch did not submit job"
 }
 
-if {[wait_for_job $job_id1 "DONE"] != 0} {
-	log_error "error waiting for job $job_id1 to complete"
-	cancel_job $job_id1
-	set exit_code 1
-}
+wait_for_job -fail $job_id1 "DONE"
 
 # Check exit code of the first job
 set match 0
@@ -105,10 +96,7 @@ expect {
 	}
 }
 
-if { $match != 1 } {
-	log_error "Job $job_id1 did not exit with exit code 0, which could be due to a small configured MinJobAge value"
-	set exit_code 1
-}
+subtest {$match == 1} "Check exit code of the first job" "Job $job_id1 did not exit with exit code 0, which could be due to a small configured MinJobAge value"
 
 # Check that the job with dependency is in the correct state and has correct
 # reason
@@ -125,10 +113,7 @@ if {[param_contains [get_config_param "DependencyParameters"] "kill_invalid_depe
 		eof {
 			wait
 		}
-		if { $match != 1 } {
-			log_error "Job $job_id2 should be in cancelled state and should have Reason=DependencyNeverSatisfied"
-			set exit_code 1
-		}
+		subtest {$match == 1} "Check that the job with the dependency is in the correct state and has the correct reason" "Job $job_id2 should be in cancelled state and should have Reason=DependencyNeverSatisfied"
 	}
 } else {
 	# Wait for job 2 reason to populate
@@ -145,15 +130,5 @@ if {[param_contains [get_config_param "DependencyParameters"] "kill_invalid_depe
 			wait
 		}
 	}
-	if { $match != 1 } {
-		log_error "Job $job_id2 should be in pending state and should have Reason=DependencyNeverSatisfied, which could be due to a small configured MinJobAge value"
-		set exit_code 1
-	}
-	if {[cancel_job $job_id2] != 0} {
-		set exit_code 1
-	}
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
+	subtest {$match == 1} "Check that the job with the dependency is in the correct state and has the correct reason" "Job $job_id2 should be in pending state and should have Reason=DependencyNeverSatisfied, which could be due to a small configured MinJobAge value"
 }

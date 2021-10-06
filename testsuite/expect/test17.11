@@ -28,15 +28,14 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id.input"
+set file_in     "$test_dir/input"
 set force_part  0
 set job_id      0
 
 proc cleanup {} {
-	global bin_rm file_in
+	global job_id
 
-	exec $bin_rm -f $file_in
+	cancel_job $job_id
 }
 
 set oversubscribe [partition_oversubscribe]
@@ -56,119 +55,69 @@ make_bash_script $file_in "
 #
 # Spawn a sbatch job with oversubscribe option only
 #
-spawn $sbatch --oversubscribe --hold -t1 $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
+set job_id [submit_job -fail "--oversubscribe --hold -t1 $file_in"]
 
 #
 # Confirm oversubscribe and contiguous flag values
 #
 set matches 0
-if {$job_id != 0} {
-	spawn $scontrol show job $job_id
-	expect {
-		-re "OverSubscribe=YES" {
-			incr matches
-			exp_continue
-		}
-		-re "Contiguous=($number)" {
-			set cont_val $expect_out(1,string)
-			if {$cont_val == 0} {
-				incr matches
-			}
-			exp_continue
-		}
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {[cancel_job $job_id] != 0} {
-		set exit_code 1
-	}
-	set job_id 0
-} else {
-	set exit_code   1
-}
-if {$matches != 2} {
-	log_error "Did not properly set oversubscribe and contiguous flag ($matches != 2)"
-	set exit_code   1
-}
-
-#
-# Spawn a sbatch job with contiguous option only
-#
-set job_id  0
-spawn $sbatch --contiguous --hold -t1 $file_in
+spawn $scontrol show job $job_id
 expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
+	-re "OverSubscribe=YES" {
+		incr matches
+		exp_continue
+	}
+	-re "Contiguous=($number)" {
+		set cont_val $expect_out(1,string)
+		if {$cont_val == 0} {
+			incr matches
+		}
 		exp_continue
 	}
 	timeout {
-		fail "sbatch not responding"
+		fail "scontrol not responding"
 	}
 	eof {
 		wait
 	}
 }
+subtest {$matches == 2} "Confirm oversubscribe and contiguous flag values" "$matches != 2"
+cancel_job -fail $job_id
+
+#
+# Spawn a sbatch job with contiguous option only
+#
+set job_id  [submit_job -fail "--contiguous --hold -t1 $file_in"]
 
 #
 # Confirm oversubscribe and contiguous flag values
 #
 set match_oversubscribe 0
 set match_cont  0
-if {$job_id != 0} {
-	spawn $scontrol show job $job_id
-	expect {
-		-re "OverSubscribe=NO" {
-			set match_oversubscribe 1
-			exp_continue
-		}
-		-re "OverSubscribe=OK" {
-			set match_oversubscribe 1
-			exp_continue
-		}
-		-re "Contiguous=($number)" {
-			set cont_val $expect_out(1,string)
-			if {$cont_val == 1} {
-				set match_cont 1
-			}
-			exp_continue
-		}
-		timeout {
-			log_error "scontrol not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
+spawn $scontrol show job $job_id
+expect {
+	-re "OverSubscribe=NO" {
+		set match_oversubscribe 1
+		exp_continue
 	}
-	if {[cancel_job $job_id] != 0} {
-		set exit_code 1
+	-re "OverSubscribe=OK" {
+		set match_oversubscribe 1
+		exp_continue
 	}
-} else {
-	set exit_code 1
+	-re "Contiguous=($number)" {
+		set cont_val $expect_out(1,string)
+		if {$cont_val == 1} {
+			set match_cont 1
+		}
+		exp_continue
+	}
+	timeout {
+		fail "scontrol not responding"
+	}
+	eof {
+		wait
+	}
 }
-if {$match_cont != 1} {
-	fail "Did not properly set contiguous flag"
-}
-if {$force_part == 0 && $match_oversubscribe != 1} {
-	fail "Did not properly set oversubscribe flag"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$match_cont == 1} "Confirm contiguous flag value" "$match_cont != 1"
+subtest {$force_part != 0 || $match_oversubscribe == 1} "Confirm oversubscribe flag value"
+cancel_job -fail $job_id

@@ -28,15 +28,14 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
 set job_id      0
 
 proc cleanup {} {
-	global file_in file_out
+	global job_id
 
-	file delete $file_in $file_out
+	cancel_job $job_id
 }
 
 #
@@ -51,63 +50,19 @@ make_bash_script $file_in "
 # Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
 #
 set task_cnt 10
-spawn $sbatch --ntasks=$task_cnt --overcommit -N1 --output=$file_out -t1 $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	-re "Batch job submission failed" {
-		log_debug "No worries, error not unexpected"
-		set no_run 1
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
+set job_id [submit_job -fail "--ntasks=$task_cnt --overcommit -N1 --output=$file_out -t1 $file_in"]
 
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	cancel_job $job_id
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
 
-set matches     0
-set tasks       0
-if {[wait_for_file $file_out] == 0} {
-	spawn $bin_cat $file_out
-	expect {
-		-re "SLURM_NPROCS=$task_cnt" {
-			incr matches
-			exp_continue
-		}
-		-re "SLURM_OVERCOMMIT=1" {
-			incr matches
-			exp_continue
-		}
-		-re "uid=" {
-			incr tasks
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-}
-if {$matches != 2} {
-	fail "Did not set desired allocation env vars: ($matches != 2)"
-}
-if {$tasks != $task_cnt} {
-	fail "Did not get proper number of tasks: ($tasks != $task_cnt)"
-}
+set output [run_command_output -fail "$bin_cat $file_out"]
+set tasks       [regexp -all "uid=" $output]
+set nprocs      [regexp -all "SLURM_NPROCS=$task_cnt" $output]
+set overcommits [regexp -all "SLURM_OVERCOMMIT=1" $output]
+set matches     [expr $nprocs + $overcommits]
 
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 2} "Verify that the desired allocation env vars were set" "$matches != 2"
+subtest {$tasks == $task_cnt} "Verify that the proper number of tasks were executed" "$tasks != $task_cnt"

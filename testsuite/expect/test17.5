@@ -31,31 +31,23 @@
 source ./globals
 
 set user_name   ""
-set file_in     "test$test_id.input"
-set file_script "test$test_id.bash"
-set file_out    "test$test_id.output"
-set file_err    "test$test_id.error"
-set file_err_perc        "test$test_id.%%.error"
-set file_err_perc_result "test$test_id.%.error"
-set file_out_perc        "test$test_id.%%.output"
-set file_out_perc_result "test$test_id.%.output"
-set file_out_j  "test$test_id.j.%j.output"
-set file_err_j  "test$test_id.j.%j.error"
-set file_out_u  "test$test_id.%u.output"
-set file_err_u  "test$test_id.%u.error"
-set exit_code   0
-
-proc cleanup {} {
-	global bin_rm file_in file_out file_err
-
-	exec $bin_rm -f $file_in $file_out $file_err
-}
+set file_in     "$test_dir/input"
+set file_script "$test_dir/script"
+set file_out    "$test_dir/output"
+set file_err    "$test_dir/error"
+set file_err_perc        "$test_dir/error.%%"
+set file_err_perc_result "$test_dir/error.%"
+set file_out_perc        "$test_dir/output.%%"
+set file_out_perc_result "$test_dir/output.%"
+set file_out_j  "$test_dir/output.j.%j"
+set file_err_j  "$test_dir/error.j.%j"
+set file_out_u  "$test_dir/output.%u"
+set file_err_u  "$test_dir/error.%u"
 
 #
 # Delete left-over stdin/out/err files
 # Build stdin file
 #
-exec $bin_rm -f $file_in $file_out $file_err
 make_bash_script $file_in "
   $bin_id
   $bin_sleep aaa
@@ -72,58 +64,23 @@ set user_name [get_my_user_name]
 # Spawn a sbatch command to verify that the default output file is
 # created and contain the correct contents
 #
-set job_id 0
-spawn $sbatch -t1 -N1 $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if { $job_id == 0 } {
-	fail "Failed to submit job"
-}
+set job_id [submit_job -fail "-t1 -N1 $file_in"]
 
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	set exit_code 1
-}
+set def_out "slurm-$job_id\.out"
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $def_out
 
 #
 # Check for desired output
 #
-set def_out "slurm-$job_id\.out"
-set got_stdout 0
-if {[file exist $def_out]} {
-	spawn $bin_cat $def_out
-	expect {
-		-re "uid=" {
-			incr got_stdout
-			exp_continue
-		}
-		-re "$sleep_error_message" {
-			incr got_stdout
-			log_debug "This error is expected do not worry"
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-}
-if { $got_stdout != 2 } {
-	log_error "Unexpected stdout contents $got_stdout != 2 "
-	set exit_code 1
-}
+set output [run_command_output -fail "$bin_cat $def_out"]
+set got_stdout [regexp -all "uid=" $output]
+incr got_stdout [regexp -all "$sleep_error_message" $output]
+
+subtest {$got_stdout == 2} "Check for expected stdout contents" "$got_stdout != 2"
 
 # Remove the output file after it has been checked
 exec $bin_rm -f $def_out
@@ -131,257 +88,92 @@ exec $bin_rm -f $def_out
 #
 # Spawn a shell via sbatch that uses stdout/err and confirm their contents
 #
-set job_id 0
-spawn $sbatch -N1 --output=$file_out --error=$file_err -t1 $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if { $job_id == 0 } {
-	fail "Failed to submit job"
-}
+set job_id [submit_job -fail "-N1 --output=$file_out --error=$file_err -t1 $file_in"]
 
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
+wait_for_file -fail $file_out
+wait_for_file -fail $file_err
 
 #
 # Check for desired output
 #
-set got_stdout 0
-if {[wait_for_file $file_out] == 0} {
-	spawn $bin_cat $file_out
-	expect {
-		-re "uid=" {
-			set got_stdout 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-}
-if { $got_stdout == 0 } {
-	log_error "Unexpected stdout contents"
-	set exit_code 1
-}
-set got_stderr 0
-if {[wait_for_file $file_err] == 0} {
-	spawn $bin_cat $file_err
-	expect {
-		-re "$sleep_error_message" {
-			log_debug "No worries, this error is expected"
-			set got_stderr 1
-			exp_continue
-		}
-		-re "Specify time as a positive integer.*\n" {
-			set got_stderr 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-}
-if {$got_stderr == 0} {
-	log_error "Unexpected stderr contents"
-	set exit_code 1
-}
+set output [run_command_output -fail "$bin_cat $file_out"]
+subtest {[regexp "uid=" $output]} "Check for expected stdout contents"
+
+set output [run_command_output -fail "$bin_cat $file_err"]
+subtest {[regexp "$sleep_error_message" $output] ||
+         [regexp "Specify time as a positive integer.*\n" $output]} "Check for expected stderr contents"
 
 #
 # Spawn a shell via sbatch that uses literal %% in their file names
 #
-set job_id 0
-spawn $sbatch -N1 --output=$file_out_perc --error=$file_err_perc -t1 $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if { $job_id == 0 } {
-	fail "Failed to submit job"
-}
+set job_id [submit_job -fail "-N1 --output=$file_out_perc --error=$file_err_perc -t1 $file_in"]
 
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 #
 # Check for desired output
 #
-if {[wait_for_file $file_out_perc_result] == 0} {
-	exec $bin_rm -f $file_out_perc_result
-} else {
-	log_error "File format of %% in stdout failed"
-	set exit_code 1
-}
-if {[wait_for_file $file_err_perc_result] == 0} {
-	exec $bin_rm -f $file_err_perc_result
-} else {
-	log_error "File format of %% in stderr failed"
-	set exit_code 1
-}
+subtest {[wait_for_file $file_out_perc_result] == 0} "Check for file format of %% in stdout"
+subtest {[wait_for_file $file_err_perc_result] == 0} "Check for file format of %% in stderr"
 
 #
 # Spawn a shell via sbatch that uses stdout/err with %j in their names
 #
-set job_id 0
-spawn $sbatch -N1 --output=$file_out_j --error=$file_err_j -t1 $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if { $job_id == 0 } {
-	fail "Failed to submit job"
-}
+set job_id [submit_job -fail "-N1 --output=$file_out_j --error=$file_err_j -t1 $file_in"]
 
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 #
 # Check for desired output
 #
-set file_out_j_glob  "test$test_id.j.$job_id.output"
-set file_err_j_glob  "test$test_id.j.$job_id.error"
-if {[wait_for_file $file_out_j_glob] == 0} {
-	exec $bin_rm -f $file_out_j_glob
-} else {
-	log_error "File format of %j in stdout failed"
-	set exit_code 1
-}
-if {[wait_for_file $file_err_j_glob] == 0} {
-	exec $bin_rm -f $file_err_j_glob
-} else {
-	log_error "File format of %j in stderr failed"
-	set exit_code 1
-}
+set file_out_j_glob "$test_dir/output.j.$job_id"
+set file_err_j_glob "$test_dir/error.j.$job_id"
+subtest {[wait_for_file $file_out_j_glob] == 0} "Check for file format of %j in stdout"
+subtest {[wait_for_file $file_err_j_glob] == 0} "Check for file format of %j in stderr"
 
 #
 # Spawn a shell via sbatch that uses stdout/err with %u in their names
 #
-set job_id 0
-spawn $sbatch -N1 --output=$file_out_u --error=$file_err_u -t1 $file_in
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if { $job_id == 0 } {
-	fail "Failed to submit job"
-}
+set job_id [submit_job -fail "-N1 --output=$file_out_u --error=$file_err_u -t1 $file_in"]
 
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "waiting for job to complete"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 #
 # Check for desired output
 #
-set file_out_u_glob  "test$test_id.$user_name.output"
-set file_err_u_glob  "test$test_id.$user_name.error"
-if {[wait_for_file $file_out_u_glob] == 0} {
-	exec $bin_rm -f $file_out_u_glob
-} else {
-	log_error "File format of %u in stdout failed"
-	set exit_code 1
-}
-if {[wait_for_file $file_err_u_glob] == 0} {
-	exec $bin_rm -f $file_err_u_glob
-} else {
-	log_error "File format of %u in stderr failed"
-	set exit_code 1
-}
+set file_out_u_glob  "$test_dir/output.$user_name"
+set file_err_u_glob  "$test_dir/error.$user_name"
+subtest {[wait_for_file $file_out_u_glob] == 0} "Check for file format of %u in stdout"
+subtest {[wait_for_file $file_err_u_glob] == 0} "Check for file format of %u in stderr"
 
 #
 # Spawn a program to run for a while with no output or error
 #
-set job_id 0
-spawn $sbatch --output=none --error=none -t1 -N1 $file_in
-expect {
-	 -re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if { $job_id == 0 } {
-	fail "Failed to submit job"
-}
+set job_id [submit_job -fail "--output=none --error=none -t1 -N1 $file_in"]
 
 #
 # Wait for job to complete
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
-	log_error "Waiting for job to complete"
-	set exit_code 1
-}
+wait_for_job -fail $job_id "DONE"
 
 #
 # Check for stdout/err files
 #
-exec sleep 5
-set file_err2 slurm-$job_id.err
 set file_out2 slurm-$job_id.out
+set file_err2 slurm-$job_id.err
 log_debug "Checking for files $file_err2 and $file_out2"
-if { [file exists $file_out2] } {
-	fail "Found unexpected stdout file $file_out2"
-}
-if { [file exists $file_err2] } {
-	fail "Found unexpected stderr file $file_err2"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {[wait_for_file -timeout 5 $file_out2]} "Stdout file should not be created with --output=none"
+subtest {[wait_for_file -timeout 5 $file_err2]} "Stderr file should not be created with --error=none"
