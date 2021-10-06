@@ -29,15 +29,10 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in     "test$test_id.input"
-set timeout	60
-
-proc cleanup {} {
-	global bin_rm file_in
-
-	exec $bin_rm -f $file_in
-}
+set file_in     "$test_dir/input"
+set timeout     60
+set jobid1      0
+set jobid2      0
 
 #
 # Check accounting config and bail if not found.
@@ -57,6 +52,13 @@ if { [string first "CR_ONE_TASK_PER_CORE" $select_type_params] != -1 } {
 	skip "This test can't be run SelectTypeParameters=CR_ONE_TASK_PER_CORE"
 }
 
+proc cleanup {} {
+	global jobid1 jobid2
+
+	cancel_job $jobid1
+	cancel_job $jobid2
+}
+
 #
 # Build input script file
 #
@@ -73,9 +75,8 @@ make_bash_script $file_in "$bin_sleep 600"
 ################################################################
 
 proc sub_job { cpu_cnt } {
-	global exit_code file_in number sbatch test_id
+	global file_in number sbatch test_id
 
-	set file_in	test${test_id}.input
 	set job_id	0
 	spawn $sbatch --output=/dev/null --error=/dev/null -n $cpu_cnt --exclusive $file_in
 	expect {
@@ -92,8 +93,7 @@ proc sub_job { cpu_cnt } {
 	}
 
 	if {$job_id == 0} {
-		log_error "Did not get sbatch job_id"
-		set exit_code 1
+		fail "Did not get sbatch job_id"
 	}
 	return $job_id
 }
@@ -111,7 +111,7 @@ proc sub_job { cpu_cnt } {
 ################################################################
 
 proc sprio_opt { soption } {
-	global number eol sprio exit_code
+	global number eol sprio
 	set debug       0
 	set matches     0
 	set not_support 0
@@ -158,11 +158,7 @@ proc sprio_opt { soption } {
 			skip "Can not test without accounting enabled"
 		}
 
-		if {$matches != 4} {
-			log_error "sprio $soption failed ($matches)"
-			set exit_code 1
-		}
-	return $matches
+		subtest {$matches == 4} "Verify sprio $soption option" $matches"
 	}
 
 ############# sprio usage option
@@ -190,11 +186,7 @@ proc sprio_opt { soption } {
 		if {$not_support == 1} {
 			skip "Can not test without accounting enabled"
 		}
-		if {$matches != 1} {
-			log_error "sprio -$soption failed ($matches)"
-			set exit_code 1
-		}
-		return $matches
+		subtest {$matches == 1} "Verify sprio $soption option" $matches"
 	}
 
 ############# sprio version options
@@ -223,11 +215,7 @@ proc sprio_opt { soption } {
 			skip "Can not test without accounting enabled"
 		}
 
-		if {$matches != 1} {
-			log_error "sprio -$soption failed ($matches)"
-			set exit_code 1
-		}
-		return $matches
+		subtest {$matches == 1} "Verify sprio $soption option" $matches"
 	}
 
 ############# sprio weights options
@@ -261,11 +249,7 @@ proc sprio_opt { soption } {
 			skip "Can not test without accounting enabled"
 		}
 
-		if {$matches != 2} {
-			log_error "sprio -$soption failed ($matches)"
-			set exit_code 1
-		}
-		return $matches
+		subtest {$matches == 2} "Verify sprio $soption option" $matches"
 	}
 }
 
@@ -282,7 +266,7 @@ proc sprio_opt { soption } {
 ################################################################
 
 proc sprio_args { soption sargs jobid} {
-	global number float sprio exit_code
+	global number float sprio
 	set debug       0
 	set matches     0
 	set not_support 0
@@ -313,11 +297,7 @@ proc sprio_args { soption sargs jobid} {
 		if {$not_support == 1} {
 			skip "Can not test without accounting enabled"
 		}
-		if {$matches != 0} {
-			log_error "sprio $soption failed ($matches)"
-			set exit_code 1
-		}
-		return $matches
+		subtest {$matches == 0} "Verify sprio $soption option" $matches"
 	}
 
 ############# sprio jobs options
@@ -350,11 +330,7 @@ proc sprio_args { soption sargs jobid} {
 		if {$not_support == 1} {
 			skip "Can not test without accounting enabled"
 		}
-		if {$matches != 2} {
-			log_error "sprio $soption failed ($matches)"
-			set exit_code 1
-		}
-		return $matches
+		subtest {$matches == 2} "Verify sprio $soption option" $matches"
 	}
 
 ############# sprio long options
@@ -387,11 +363,7 @@ proc sprio_args { soption sargs jobid} {
 		if {$not_support == 1} {
 			skip "Can not test without accounting enabled"
 		}
-		if {$matches != 2} {
-			log_error "sprio $soption failed ($matches)"
-			set exit_code 1
-		}
-		return $matches
+		subtest {$matches == 2} "Verify sprio $soption option" $matches"
 	}
 
 ############# sprio norm options
@@ -424,11 +396,7 @@ proc sprio_args { soption sargs jobid} {
 		if {$not_support == 1} {
 			skip "Can not test without accounting enabled"
 		}
-		if {$matches != 2} {
-			log_error "sprio $soption failed ($matches)"
-			set exit_code 1
-		}
-		return $matches
+		subtest {$matches == 2} "Verify sprio $soption option" $matches"
 	}
 
 ############# sprio format options
@@ -466,11 +434,7 @@ proc sprio_args { soption sargs jobid} {
 		if {$not_support == 1} {
 			skip "Can not test without accounting enabled"
 		}
-		if {$matches != 3} {
-			log_error "sprio $soption failed ($matches)"
-			set exit_code 1
-		}
-		return $matches
+		subtest {$matches == 3} "Verify sprio $soption option" $matches"
 	}
 
 ############# sprio u option
@@ -503,11 +467,7 @@ proc sprio_args { soption sargs jobid} {
 		if {$not_support == 1} {
 			skip "Can not test without accounting enabled"
 		}
-		if {$matches != 2} {
-			log_error "sprio $soption failed ($matches)"
-			set exit_code 1
-		}
-		return $matches
+		subtest {$matches == 2} "Verify sprio $soption option" $matches"
 	}
 
 ############# sprio usage option
@@ -540,11 +500,7 @@ proc sprio_args { soption sargs jobid} {
 		if {$not_support == 1} {
 			skip "Can not test without accounting enabled"
 		}
-		if {$matches != 2} {
-			log_error "sprio $soption failed ($matches)"
-			set exit_code 1
-		}
-		return $matches
+		subtest {$matches == 2} "Verify sprio $soption option" $matches"
 	}
 
 ############# sprio verbose options
@@ -582,27 +538,17 @@ proc sprio_args { soption sargs jobid} {
 		if {$not_support == 1} {
 			skip "Can not test without accounting enabled"
 		}
-		if {$matches != 3} {
-			log_error "sprio $soption failed ($matches)"
-			set exit_code 1
-		}
-		return $matches
+		subtest {$matches == 3} "Verify sprio $soption option" $matches"
 	}
 
 }
 
-################################################################
+#
 # Start a group of jobs
-
+#
 set cpu_cnt [get_total_cpus]
 set jobid1 [sub_job $cpu_cnt]
 set jobid2 [sub_job $cpu_cnt]
-if {$exit_code != 0} {
-	cancel_job $jobid1
-	cancel_job $jobid2
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
-log_debug "Submitted 2 jobs successfully"
 
 #
 # Collect uid
@@ -620,73 +566,22 @@ if {[info exists env(SPRIO_FORMAT)]} {
 # Start testing sprio options and arguments
 #
 sprio_args -h -j $jobid2
-if {!$exit_code} {
-	sprio_args --noheader -j $jobid2
-}
-if {!$exit_code} {
-	sprio_args -j -j $jobid2
-}
-if {!$exit_code} {
-	sprio_args --jobs -j $jobid2
-}
-if {!$exit_code} {
-	sprio_args -l -j $jobid2
-}
-if {!$exit_code} {
-	sprio_args --long -j $jobid2
-}
-if {!$exit_code} {
-	sprio_args -n -j $jobid2
-}
-if {!$exit_code} {
-	sprio_args --norm -j $jobid2
-}
-if {!$exit_code} {
-	sprio_args -o -j $jobid2
-}
-if {!$exit_code} {
-	sprio_args --format -j $jobid2
-}
-if {!$exit_code} {
-	sprio_args -u $user_name $jobid2
-}
-if {!$exit_code} {
-	sprio_args --user= $user_name $jobid2
-}
-if {!$exit_code} {
-	sprio_args -v -j $jobid2
-}
-if {!$exit_code} {
-	sprio_args -verbose -j $jobid2
-}
-if {!$exit_code} {
-	sprio_opt -V
-}
-if {!$exit_code} {
-	sprio_opt --version
-}
-if {!$exit_code} {
-	sprio_opt -w
-}
-if {!$exit_code} {
-	sprio_opt --weights
-}
-if {!$exit_code} {
-	sprio_opt --help
-}
-if {!$exit_code} {
-	sprio_opt --usage
-}
-
-#
-# Cancel jobs
-#
-cancel_job $jobid1
-cancel_job $jobid2
-
-#
-# Exit with code as appropriate
-#
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+sprio_args --noheader -j $jobid2
+sprio_args -j -j $jobid2
+sprio_args --jobs -j $jobid2
+sprio_args -l -j $jobid2
+sprio_args --long -j $jobid2
+sprio_args -n -j $jobid2
+sprio_args --norm -j $jobid2
+sprio_args -o -j $jobid2
+sprio_args --format -j $jobid2
+sprio_args -u $user_name $jobid2
+sprio_args --user= $user_name $jobid2
+sprio_args -v -j $jobid2
+sprio_args -verbose -j $jobid2
+sprio_opt -V
+sprio_opt --version
+sprio_opt -w
+sprio_opt --weights
+sprio_opt --help
+sprio_opt --usage

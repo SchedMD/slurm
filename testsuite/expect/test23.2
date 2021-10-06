@@ -28,37 +28,29 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_in1    "test$test_id.input1"
-set file_in2    "test$test_id.input2"
-set file_in3    "test$test_id.input3"
-set test_acct   "test$test_id\_acct"
+set file_in1    "$test_dir/input"
+set test_acct   "${test_name}_acct"
 set timeout     $max_job_delay
+set job_id3     0
 
-proc cleanup {} {
-	global bin_rm file_in1 file_in2 file_in3
-
-	exec $bin_rm -f $file_in1 $file_in2 $file_in3
-}
-
-set ac		AveCPU
-set ap		AvePages
-set ar		AveRSS
-set av		AveVMSize
-set ji		JobID
-set mp		MaxPages
-set mpn		MaxPagesNode
-set mpt		MaxPagesTask
-set mr		MaxRSS
-set mrn		MaxRSSNode
-set mrt		MaxRSSTask
-set mvs		MaxVMSize
-set mvn		MaxVMSizeNode
-set mvt		MaxVMSizeTask
-set mc		MinCPU
-set mn		MinCPUNode
-set mt		MinCPUTask
-set nt		NTasks
+set ac          AveCPU
+set ap          AvePages
+set ar          AveRSS
+set av          AveVMSize
+set ji          JobID
+set mp          MaxPages
+set mpn         MaxPagesNode
+set mpt         MaxPagesTask
+set mr          MaxRSS
+set mrn         MaxRSSNode
+set mrt         MaxRSSTask
+set mvs         MaxVMSize
+set mvn         MaxVMSizeNode
+set mvt         MaxVMSizeTask
+set mc          MinCPU
+set mn          MinCPUNode
+set mt          MinCPUTask
+set nt          NTasks
 
 #
 # Check accounting config and bail if not found.
@@ -73,6 +65,13 @@ if {[get_config_param "FrontendName"] ne "MISSING"} {
 
 if {[string compare [get_admin_level] "Administrator"]} {
 	skip "This test can't be run without being an Accounting administrator.\nUse: sacctmgr mod user \$USER set admin=admin"
+}
+
+proc cleanup {} {
+	global job_id3 sacctmgr test_acct
+
+	cancel_job $job_id3
+	run_command "$sacctmgr -i delete account $test_acct"
 }
 
 #
@@ -171,43 +170,9 @@ make_bash_script $file_in1 "
 # NOTE: --mem option here and in scripts above to permit running more than one
 #       step per job if DefMemPerCPU or DefMemPerNode is configured.
 #
-set job_id3 0
-spawn $sbatch -N1 -t1 -v $job_mem_opt --gres=craynetwork:0 --account=$test_acct --output=/dev/null $file_in1
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id3 $expect_out(1,string)
-		log_debug "Found JobID to be $job_id3"
-		exp_continue
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id3 == 0} {
-	log_error "Did not get srun job_id3"
-	set exit_code 1
-} else {
-	set matches 0
-	spawn $scontrol show job $job_id3
-	expect {
-		 -re "Account=$test_acct" {
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
-	if {$matches != 1} {
-		log_error "srun failed to use specified account"
-		set exit_code 1
-	}
+set job_id3 [submit_job -fail "-N1 -t1 -v $job_mem_opt --gres=craynetwork:0 --account=$test_acct --output=/dev/null $file_in1"]
+if {[get_job_param $job_id3 "Account"] != $test_acct} {
+	fail "srun failed to use specified account"
 }
 
 #
@@ -491,144 +456,37 @@ proc sstat_vargs { soption vargs job_id} {
 }
 ################################################################
 set matches [sstat_job a $job_id3 ""]
-if {$matches != 4} {
-	log_error "sstat -a failed ($matches != 3)"
-	set exit_code 1
-}
+subtest {$matches == 4} "Verify sstat -a option" "$matches != 4"
 
 set matches [sstat_job -allsteps $job_id3 ""]
-if {$matches != 4} {
-	log_error "sstat --allsteps failed ($matches != 3)"
-	set exit_code 1
-}
+subtest {$matches == 4} "Verify sstat --allsteps option" "$matches != 4"
 
 set matches [sstat_job n $job_id3 ""]
-if {$matches != 1} {
-	log_error "sstat -n failed ($matches != 1)"
-	set exit_code 1
-}
+subtest {$matches == 1} "Verify sstat -n option" "$matches != 1"
 
 set matches [sstat_job -noheader $job_id3 ""]
-if {$matches != 1} {
-	log_error "sstat --noheader failed ($matches != 1)"
-	set exit_code 1
-}
+subtest {$matches == 1} "Verify sstat --noheader option" "$matches != 1"
 
 set matches [sstat_job p $job_id3 0]
-if {$matches != 4} {
-	log_error "sstat -p failed ($matches != 4)"
-	set exit_code 1
-}
+subtest {$matches == 4} "Verify sstat -p option" "$matches != 4"
 
 set matches [sstat_job -parsable $job_id3 0]
-if {$matches != 4} {
-	log_error "sstat --parsable failed ($matches != 4)"
-	set exit_code 1
-}
+subtest {$matches == 4} "Verify sstat --parsable option" "$matches != 4"
 
 set matches [sstat_job P $job_id3 0]
-if {$matches != 4} {
-	log_error "sstat -P failed ($matches != 4)"
-	set exit_code 1
-}
+subtest {$matches == 4} "Verify sstat -P option" "$matches != 4"
 
 set matches [sstat_job -parsable2 $job_id3 0]
-if {$matches != 4} {
-	log_error "sstat --parsable2 failed ($matches != 4)"
-	set exit_code 1
-}
+subtest {$matches == 4} "Verify sstat --parsable2 option" "$matches != 4"
 
 set matches [sstat_job v $job_id3 0]
-if {$matches != 4} {
-	log_error "sstat -v failed ($matches != 4)"
-	set exit_code 1
-}
+subtest {$matches == 4} "Verify sstat -v option" "$matches != 4"
 
 set matches [sstat_job -verbose $job_id3 0]
-if {$matches != 4} {
-	log_error "sstat --verbose failed ($matches != 4)"
-	set exit_code 1
-}
+subtest {$matches == 4} "Verify sstat --verbose option" "$matches != 4"
 
 set matches [sstat_vargs o $ac,$ap,$ar,$av,$ji,$mp,$mpn,$mpt,$mr,$mrn,$mrt,$mvs,$mvn,$mvt,$mc,$mn,$mt,$nt $job_id3]
-if {$matches != 6} {
-	log_error "sstat -o failed ($matches != 6)"
-	set exit_code 1
-}
+subtest {$matches == 6} "Verify sstat -o option" "$matches != 6"
 
 set matches [sstat_vargs -format $ac,$ap,$ar,$av,$ji,$mp,$mpn,$mpt,$mr,$mrn,$mrt,$mvs,$mvn,$mvt,$mc,$mn,$mt,$nt $job_id3]
-if {$matches != 6} {
-	log_error "sstat --format failed ($matches != 6)"
-	set exit_code 1
-}
-
-#
-# Use sacctmgr to delete the test account (shouldn't work, because of running jobs)
-#
-set damatches 0
-set needtodel 0
-set sadel_pid [spawn $sacctmgr -i delete account $test_acct]
-expect {
-	-re "Deleting account" {
-		incr damatches
-		exp_continue
-	}
-	"Job(s) active, cancel job(s) before remove" {
-		log_debug "This error was expected, no worries"
-		set needtodel 1
-	}
-
-	timeout {
-		slow_kill $sadel_pid
-		fail "sacctmgr delete not responding"
-	}
-	eof {
-		wait
-	}
-}
-
-if {$needtodel == 1} {
-	#
-	# Use scancel to quite jobs
-	#
-	spawn $scancel -A $test_acct
-	expect {
-		eof {
-			wait
-		}
-	}
-
-	if {[wait_for_job $job_id3 DONE] != 0} {
-		log_error "Error completing job $job_id3"
-		cancel_job $job_id3
-		set exit_code 1
-	}
-
-	#
-	# Use sacctmgr to delete the test account
-	#
-	set damatches 0
-	set sadel_pid [spawn $sacctmgr -i delete account $test_acct]
-	expect {
-		-re "Deleting account" {
-			incr damatches
-			exp_continue
-		}
-
-		timeout {
-			slow_kill $sadel_pid
-			fail "sacctmgr delete not responding"
-		}
-		eof {
-			wait
-		}
-	}
-}
-
-if {$damatches != 1} {
-	fail "sacctmgr had problems deleting the account"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+subtest {$matches == 6} "Verify sstat --format option" "$matches != 6"
