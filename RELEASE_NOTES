@@ -28,6 +28,7 @@ HIGHLIGHTS
 CONFIGURATION FILE CHANGES (see man appropriate man page for details)
 =====================================================================
  -- AcctGatherEnergyType 'rsmi' is now 'gpu'.
+ -- TaskAffinity parameter was removed from cgroup.conf.
 
 COMMAND CHANGES (see man pages for details)
 ===========================================
