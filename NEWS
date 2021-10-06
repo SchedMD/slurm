@@ -14,6 +14,8 @@ documents those changes that are of interest to users and administrators.
 
 * Changes in Slurm 21.08.3
 ==========================
+ -- Return error to sacctmgr when running 'sacctmgr archive load' and the load
+    fails due to an invalid or corrupted file.
 
 * Changes in Slurm 21.08.2
 ==========================
