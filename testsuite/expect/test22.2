@@ -28,7 +28,6 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
 set timeout 60
 
 #
@@ -53,243 +52,180 @@ if {[get_config_param "AccountingStorageType"] ne "accounting_storage/slurmdbd"}
 proc sreport_opt { soption } {
 	global number sreport
 	set debug       0
-	set exit_code   0
 	set matches     0
 	set not_support 0
 	log_debug "$sreport -$soption "
 
 	if { $soption == "-help"|| $soption == "-usage" || $soption == "h" } {
 
-	spawn $sreport -$soption
-	expect {
-		-re "Slurm accounting storage is disabled" {
-			set not_support 1
-			exp_continue
+		spawn $sreport -$soption
+		expect {
+			-re "Slurm accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "sreport...OPTION.....COMMAND" {
+				if {$debug} {log_debug "Match1"}
+				incr matches
+				exp_continue
+			}
+			-re "Valid .OPTION. values are" {
+				if {$debug} {log_debug "Match2"}
+				incr matches
+				exp_continue
+			}
+			-re "Valid .COMMAND. values are" {
+				if {$debug} {log_debug "Match3"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				fail "sreport not responding"
+			}
+			eof {
+				wait
+			}
 		}
-		-re "sreport...OPTION.....COMMAND" {
-			if {$debug} {log_debug "Match1"}
-			incr matches
-			exp_continue
-		}
-		-re "Valid .OPTION. values are" {
-			if {$debug} {log_debug "Match2"}
-			incr matches
-			exp_continue
-		}
-		-re "Valid .COMMAND. values are" {
-			if {$debug} {log_debug "Match3"}
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "sreport not responding"
-		}
-		eof {
-			wait
-		}
-	}
 
-	if {$not_support == 1} {
-		skip "Can not test without accounting enabled"
-	}
+		if {$not_support == 1} {
+			skip "Can not test without accounting enabled"
+		}
 
-	if {$matches != 3} {
-		log_error "sreport -$soption failed ($matches)"
-		set exit_code 1
+		subtest {$matches == 3} "Verify sreport -$soption option"
 	}
-	return $matches
-}
 
 	if { $soption == "-noheader" || $soption == "n" } {
 
-	spawn $sreport -$soption job sizes
-	expect {
-		-re "Slurm accounting storage is disabled" {
-			set not_support 1
-			exp_continue
+		spawn $sreport -$soption job sizes
+		expect {
+			-re "Slurm accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "Cluster|Account|0-49 CPUs|50-249 CPUs|250-499 CPUs|500-999 CPUs|1000 CPUs|of cluster" {
+				if {$debug} {log_debug "Match4"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				fail "sreport not responding"
+			}
+			eof {
+				wait
+			}
 		}
-		-re "Cluster|Account|0-49 CPUs|50-249 CPUs|250-499 CPUs|500-999 CPUs|1000 CPUs|of cluster" {
-			if {$debug} {log_debug "Match4"}
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "sreport not responding"
-		}
-		eof {
-			wait
-		}
-	}
 
-	if {$not_support == 1} {
-		skip "Can not test without accounting enabled"
+		if {$not_support == 1} {
+			skip "Can not test without accounting enabled"
+		}
+		subtest {$matches == 0} "Verify sreport -$soption option"
 	}
-	if {$matches != 0} {
-		log_error "sreport -$soption failed ($matches)"
-		set exit_code 1
-	}
-	return $matches
-}
 
 	if { $soption == "-parsable" || $soption == "p" } {
 
-	spawn $sreport -$soption job sizes
-	expect {
-		-re "Slurm accounting storage is disabled" {
-			set not_support 1
-			exp_continue
+		spawn $sreport -$soption job sizes
+		expect {
+			-re "Slurm accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "Cluster\\|Account\\|0-49 CPUs\\|50-249 CPUs\\|250-499 CPUs\\|" {
+				if {$debug} {log_debug "Match5"}
+				incr matches
+				exp_continue
+			}
+			-re "500-999 CPUs\\|>= 1000 CPUs\\|% of cluster\\|" {
+				if {$debug} {log_debug "Match6"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				fail "sreport not responding"
+			}
+			eof {
+				wait
+			}
 		}
-		-re "Cluster\\|Account\\|0-49 CPUs\\|50-249 CPUs\\|250-499 CPUs\\|" {
-			if {$debug} {log_debug "Match5"}
-			incr matches
-			exp_continue
-		}
-		-re "500-999 CPUs\\|>= 1000 CPUs\\|% of cluster\\|" {
-			if {$debug} {log_debug "Match6"}
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "sreport not responding"
-		}
-		eof {
-			wait
-		}
-	}
 
-	if {$not_support != 0} {
-		skip "Can not test without accounting enabled"
+		if {$not_support != 0} {
+			skip "Can not test without accounting enabled"
+		}
+		subtest {$matches == 2} "Verify sreport -$soption option"
 	}
-	return $matches
-}
 
 	if { $soption == "-parsable2" || $soption == "P" } {
 
-	spawn $sreport -$soption job sizes
-	expect {
-		-re "Slurm accounting storage is disabled" {
-			set not_support 1
-			exp_continue
+		spawn $sreport -$soption job sizes
+		expect {
+			-re "Slurm accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "Cluster\\|Account\\|0-49 CPUs\\|50-249 CPUs\\|250-499 CPUs\\|" {
+				if {$debug} {log_debug "Match7"}
+				incr matches
+				exp_continue
+			}
+			-re "500-999 CPUs\\|>= 1000 CPUs\\|% of cluster" {
+				if {$debug} {log_debug "Match8"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				fail "sreport not responding"
+			}
+			eof {
+				wait
+			}
 		}
-		-re "Cluster\\|Account\\|0-49 CPUs\\|50-249 CPUs\\|250-499 CPUs\\|" {
-			if {$debug} {log_debug "Match7"}
-			incr matches
-			exp_continue
-		}
-		-re "500-999 CPUs\\|>= 1000 CPUs\\|% of cluster" {
-			if {$debug} {log_debug "Match8"}
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "sreport not responding"
-		}
-		eof {
-			wait
-		}
-	}
 
-	if {$not_support == 1} {
-		skip "Can not test without accounting enabled"
-	}
+		if {$not_support == 1} {
+			skip "Can not test without accounting enabled"
+		}
 
-	if {$matches != 2} {
-		log_error "sreport -$soption failed ($matches)"
-		set exit_code 1
-	}
-		return $matches
+		subtest {$matches == 2} "Verify sreport -$soption option"
 	}
 
 	if { $soption == "-version" || $soption == "V" } {
 
-	spawn $sreport -$soption
-	expect {
-		-re "Slurm accounting storage is disabled" {
-			set not_support 1
-			exp_continue
+		spawn $sreport -$soption
+		expect {
+			-re "Slurm accounting storage is disabled" {
+				set not_support 1
+				exp_continue
+			}
+			-re "slurm $number.$number.$number" {
+				if {$debug} {log_debug "Match9"}
+				incr matches
+				exp_continue
+			}
+			timeout {
+				fail "sreport not responding"
+			}
+			eof {
+				wait
+			}
 		}
-		-re "slurm $number.$number.$number" {
-			if {$debug} {log_debug "Match9"}
-			incr matches
-			exp_continue
-		}
-		timeout {
-			fail "sreport not responding"
-		}
-		eof {
-			wait
-		}
-	}
 
-	if {$not_support == 1} {
-		skip "Can not test without accounting enabled"
-	}
+		if {$not_support == 1} {
+			skip "Can not test without accounting enabled"
+		}
 
-	if {$matches != 1} {
-		log_error "sreport -$soption failed ($matches)"
-		set exit_code 1
-	}
+		subtest {$matches == 1} "Verify sreport -$soption option"
 		return $matches
 	}
 }
 
 ################################################################
 
-set matches [sreport_opt h ]
-if {$matches != 3} {
-	fail "sreport -h failed ($matches)"
-}
-
-set matches [sreport_opt -help ]
-if {$matches != 3} {
-	fail "sreport --help failed ($matches)"
-}
-
-set matches [sreport_opt -usage ]
-if {$matches != 3} {
-	fail "sreport --usage failed ($matches)"
-}
-
-set matches [sreport_opt n ]
-if {$matches != 0} {
-	fail "sreport -n failed ($matches)"
-}
-
-set matches [sreport_opt -noheader ]
-if {$matches != 0} {
-	fail "sreport --noheader failed ($matches)"
-}
-
-set matches [sreport_opt p ]
-if {$matches != 2} {
-	fail "sreport -p failed ($matches)"
-}
-
-set matches [sreport_opt -parsable ]
-if {$matches != 2} {
-	fail "sreport --parsable failed ($matches)"
-}
-
-set matches [sreport_opt P ]
-if {$matches != 2} {
-	fail "sreport -P failed ($matches)"
-}
-
-set matches [sreport_opt -parsable2 ]
-if {$matches != 2} {
-	fail "sreport --parsable2 failed ($matches)"
-}
-
-set matches [sreport_opt V ]
-if {$matches != 1} {
-	fail "sreport -V failed ($matches)"
-}
-
-set matches [sreport_opt -version ]
-if {$matches != 1} {
-	fail "sreport --verbose failed ($matches)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+sreport_opt h
+sreport_opt -help
+sreport_opt -usage
+sreport_opt n
+sreport_opt -noheader
+sreport_opt p
+sreport_opt -parsable
+sreport_opt P
+sreport_opt -parsable2
+sreport_opt V
+sreport_opt -version

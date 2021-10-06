@@ -32,104 +32,27 @@
 ############################################################################
 
 proc inc22_1_4 {} {
-
-
 	global sacct job1_acct job2_acct job3_acct job1_start_str
 	global job1_end_str job2_start_str job2_end_str job3_start_str
-	global exit_code job3_end_str start_str end_str cluster1 cluster2
+	global job3_end_str start_str end_str cluster1 cluster2
 	global sql_rem_clus1 sql_rem_clus2 users accounts
 	global test_job1 test_job2 test_job3
 
-	#since there are 2 test clusters we will just use one
+	# Since there are 2 test clusters we will just use one
 	set cluster $cluster1
 
-	#Test for job 1
+	# Test for job 1
 	log_info "Search for job1 on cluster $cluster"
-	set usermatch 0
-	spawn $sacct -p -M $cluster --state=completed --start=$job1_start_str --end=$job1_end_str --format=jobname
-	expect {
-		-re "$test_job1\." {
-			incr usermatch
-			exp_continue
-		}
-		timeout {
-			log_error "sacct not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-		if {$usermatch !=1} {
-			log_error"sacct did not work"
-			set exit_code 1
-		}
-	}
-	# Job1 is submitted twice
-	if {$usermatch != 2} {
-		log_error "sacct didn't give good info 25 $usermatch."
-		incr exit_code 1
-	}
-
-	if { $exit_code } {
-		return $exit_code
-	}
+	set output [run_command_output -fail "$sacct -p -M $cluster --state=completed --start=$job1_start_str --end=$job1_end_str --format=jobname"]
+	subtest {[regexp -all "$test_job1\." $output] == 2} "Test for job 1 submitted twice"
 
 	# Test for job2
 	log_info "Search for job2 on cluster $cluster"
-	set usermatch 0
-	spawn $sacct -p -M $cluster --state=completed --start=$job2_start_str --end=$job2_end_str --format=jobname
-	expect {
-		-re "$test_job2\." {
-			incr usermatch
-			exp_continue
-		}
-		timeout {
-			log_error "sacct not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-		if {$usermatch !=1} {
-			log_error"sacct did not work"
-			set exit_code 1
-		}
-	}
-	if {$usermatch != 1} {
-		log_error "sacct didn't give good info 25 $usermatch."
-		incr exit_code 1
-	}
-
-	if { $exit_code } {
-		return $exit_code
-	}
+	set output [run_command_output -fail "$sacct -p -M $cluster --state=completed --start=$job2_start_str --end=$job2_end_str --format=jobname"]
+	subtest {[regexp -all "$test_job2\." $output] == 1} "Test for job 2"
 
 	# Test for job3
 	log_info "Search for job3 on cluster $cluster"
-	set usermatch 0
-	spawn $sacct -p -M $cluster --state=completed --start=$job3_start_str --end=$job3_end_str --format=jobname
-	expect {
-		-re "$test_job3\." {
-			incr usermatch
-			exp_continue
-		}
-		timeout {
-			log_error "sacct not responding"
-			set exit_code 1
-		}
-		eof {
-			wait
-		}
-		if {$usermatch !=1} {
-			log_error "sacct did not work"
-			set exit_code 1
-		}
-	}
-
-	if {$usermatch != 1} {
-		log_error "sacct didn't give good info 25 $usermatch."
-		incr exit_code 1
-	}
-
-	return $exit_code
+	set output [run_command_output -fail "$sacct -p -M $cluster --state=completed --start=$job3_start_str --end=$job3_end_str --format=jobname"]
+	subtest {[regexp -all "$test_job3\." $output] == 1} "Test for job 3"
 }
