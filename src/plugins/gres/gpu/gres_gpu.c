@@ -214,7 +214,8 @@ static int _sort_gpu_by_type_name(void *x, void *y)
 
 	/* Sort by file name if type name value is equal */
 	if (ret == 0)
-		ret = xstrcmp(gres_record1->file, gres_record2->file);
+		ret = _sort_string_null_last(gres_record1->file,
+					     gres_record2->file);
 
 	return ret;
 }
