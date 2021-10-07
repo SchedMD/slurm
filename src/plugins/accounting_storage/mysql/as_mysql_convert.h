@@ -53,4 +53,14 @@ extern int as_mysql_convert_tables_post_create(mysql_conn_t *mysql_conn);
 extern int as_mysql_convert_non_cluster_tables_post_create(
 	mysql_conn_t *mysql_conn);
 
+/*
+ * Only use this when running "ALTER TABLE" during an upgrade.  This is to get
+ * around that mysql cannot rollback an "ALTER TABLE", but its possible that the
+ * rest of the upgrade transaction was aborted.
+ *
+ * We may not always use this function, but don't delete it just in case we
+ * need to alter tables in the future.
+ */
+extern int as_mysql_convert_alter_query(mysql_conn_t *mysql_conn, char *query);
+
 #endif

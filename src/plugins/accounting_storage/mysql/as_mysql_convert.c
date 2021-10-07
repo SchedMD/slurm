@@ -99,7 +99,8 @@ static int _rename_usage_columns(mysql_conn_t *mysql_conn, char *table)
 		table);
 
 	DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
-	if ((rc = mysql_db_query(mysql_conn, query)) != SLURM_SUCCESS)
+	if ((rc = as_mysql_convert_alter_query(mysql_conn, query)) !=
+	    SLURM_SUCCESS)
 		error("Can't update %s %m", table);
 	xfree(query);
 
@@ -156,7 +157,7 @@ static int _convert_job_table_pre(mysql_conn_t *mysql_conn, char *cluster_name)
 	if (query) {
 		DB_DEBUG(DB_QUERY, mysql_conn->conn, "query\n%s", query);
 
-		rc = mysql_db_query(mysql_conn, query);
+		rc = as_mysql_convert_alter_query(mysql_conn, query);
 		xfree(query);
 		if (rc != SLURM_SUCCESS)
 			error("%s: Can't convert %s_%s info: %m",
@@ -242,6 +243,11 @@ extern int as_mysql_convert_tables_pre_create(mysql_conn_t *mysql_conn)
 	/* make it up to date */
 	itr = list_iterator_create(as_mysql_total_cluster_list);
 	while ((cluster_name = list_next(itr))) {
+		/*
+		 * When calling alters on tables here please remember to use
+		 * as_mysql_convert_alter_query instead of mysql_db_query to be
+		 * able to detect a previous failed conversion.
+		 */
 		info("pre-converting usage table for %s", cluster_name);
 		if ((rc = _convert_usage_table_pre(mysql_conn, cluster_name)
 		     != SLURM_SUCCESS))
@@ -320,6 +326,28 @@ extern int as_mysql_convert_non_cluster_tables_post_create(
 		debug4("(%s:%d) query\n%s", THIS_FILE, __LINE__, query);
 		rc = mysql_db_query(mysql_conn, query);
 		xfree(query);
+	}
+
+	return rc;
+}
+
+/*
+ * Only use this when running "ALTER TABLE" during an upgrade.  This is to get
+ * around that mysql cannot rollback an "ALTER TABLE", but its possible that the
+ * rest of the upgrade transaction was aborted.
+ *
+ * We may not always use this function, but don't delete it just in case we
+ * need to alter tables in the future.
+ */
+extern int as_mysql_convert_alter_query(mysql_conn_t *mysql_conn, char *query)
+{
+	int rc = SLURM_SUCCESS;
+
+	rc = mysql_db_query(mysql_conn, query);
+	if ((rc != SLURM_SUCCESS) && (errno == ER_BAD_FIELD_ERROR)) {
+		errno = 0;
+		rc = SLURM_SUCCESS;
+		info("The database appears to have been altered by a previous upgrade attempt, continuing with upgrade.");
 	}
 
 	return rc;
