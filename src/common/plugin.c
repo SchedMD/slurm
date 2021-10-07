@@ -168,10 +168,9 @@ extern int plugin_peek(const char *fq_path, char *plugin_type,
 plugin_err_t
 plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 {
+	int rc;
 	plugin_handle_t plug;
 	int (*init)(void);
-	uint32_t *version;
-	char *type = NULL;
 
 	*p = PLUGIN_INVALID_HANDLE;
 
@@ -203,25 +202,9 @@ plugin_load_from_file(plugin_handle_t *p, const char *fq_path)
 		return EPLUGIN_DLOPEN_FAILED;
 	}
 
-	/* Now see if our required symbols are defined. */
-	if ((dlsym(plug, PLUGIN_NAME) == NULL) ||
-	    ((type = dlsym(plug, PLUGIN_TYPE)) == NULL)) {
+	if ((rc = _verify_syms(plug, NULL, 0, __func__, fq_path))) {
 		dlclose(plug);
-		return EPLUGIN_MISSING_NAME;
-	}
-
-	version = (uint32_t *) dlsym(plug, PLUGIN_VERSION);
-	if (!version) {
-		verbose("%s: plugin_version symbol not defined", fq_path);
-	} else if ((*version != SLURM_VERSION_NUMBER) && xstrcmp(type,"spank")){
-		int plugin_major, plugin_minor, plugin_micro;
-		plugin_major = SLURM_VERSION_MAJOR(*version);
-		plugin_minor = SLURM_VERSION_MINOR(*version);
-		plugin_micro = SLURM_VERSION_MICRO(*version);
-		dlclose(plug);
-		info("%s: Incompatible Slurm plugin version (%d.%02d.%d)",
-		     fq_path, plugin_major, plugin_minor, plugin_micro);
-		return EPLUGIN_BAD_VERSION;
+		return rc;
 	}
 
 	/*
