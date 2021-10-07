@@ -93,6 +93,8 @@ static char	*gres_name		= "gpu";
 static List	gres_devices		= NULL;
 static uint32_t	node_flags		= 0;
 
+static int _file_inx(char *fname);
+
 extern void gres_p_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq)
 {
 	gpu_g_step_hardware_init(usable_gpus, tres_freq);
@@ -164,6 +166,25 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 		xfree(local_list);
 		*already_seen = true;
 	}
+}
+
+/* Sort strings in ascending order, except sort nulls last */
+static int _sort_string_null_last(char *x, char *y)
+{
+	int val1, val2;
+
+	/* Make NULLs greater than non-NULLs, so NULLs are sorted last */
+	if (!x && y)
+		return 1;
+	else if (x && !y)
+		return -1;
+	else if (!x && !y)
+		return 0;
+
+	val1 = _file_inx(x);
+	val2 = _file_inx(y);
+
+	return (val1 - val2);
 }
 
 /*
@@ -398,20 +419,8 @@ static int _sort_gpu_by_file(void *x, void *y)
 {
 	gres_slurmd_conf_t *gres_record1 = *(gres_slurmd_conf_t **) x;
 	gres_slurmd_conf_t *gres_record2 = *(gres_slurmd_conf_t **) y;
-	int val1, val2;
 
-	/* Make NULLs greater than non-NULLs, so NULLs are sorted last */
-	if (!gres_record1->file && gres_record2->file)
-		return 1;
-	else if (gres_record1->file && !gres_record2->file)
-		return -1;
-	else if (!gres_record1->file && !gres_record2->file)
-		return 0;
-
-	val1 = _file_inx(gres_record1->file);
-	val2 = _file_inx(gres_record2->file);
-
-	return (val1 - val2);
+	return _sort_string_null_last(gres_record1->file, gres_record2->file);
 }
 
 /*
