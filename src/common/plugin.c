@@ -101,9 +101,15 @@ static int _verify_syms(plugin_handle_t plug, char *plugin_type,
 			const size_t type_len, const char *caller,
 			const char *fq_path)
 {
-	char *type;
+	char *type, *name;
 	uint32_t *version;
 	uint32_t mask = 0xffffff;
+
+	if (!(name = dlsym(plug, PLUGIN_NAME))) {
+		verbose("%s: %s is not a Slurm plugin: %s",
+			caller, fq_path, _dlerror());
+		return EPLUGIN_MISSING_NAME;
+	}
 
 	if (!(type = dlsym(plug, PLUGIN_TYPE))) {
 		verbose("%s: %s is not a Slurm plugin: %s",
@@ -121,6 +127,9 @@ static int _verify_syms(plugin_handle_t plug, char *plugin_type,
 			caller, PLUGIN_VERSION, fq_path, _dlerror());
 		return ESLURM_PLUGIN_INVALID;
 	}
+
+	debug3("%s->%s: found Slurm plugin name:%s type:%s version:0x%x",
+	       caller, __func__, name, type, *version);
 
 	/* SPANK plugins need to only match major and minor */
 	if (!xstrcmp(type, "spank"))
