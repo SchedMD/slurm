@@ -1,4 +1,4 @@
-.TH scancel "1" "Slurm Commands" "May 2021" "Slurm Commands"
+.TH scancel "1" "Slurm Commands" "October 2021" "Slurm Commands"
 
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
@@ -89,6 +89,10 @@ Interactive mode. Confirm each job_id.step_id before performing the cancel opera
 Restrict the scancel operation to jobs with this job name.
 
 .TP
+\fB\-\-me\fR
+Restrict the scancel operation to jobs owned by the current user.
+
+.TP
 \fB\-w\fR, \fB\-\-nodelist=\fIhost1,host2,...\fR
 Cancel any jobs using any of the given hosts.  The list may be specified as
 a comma\-separated list of hosts, a range of hosts (host[1\-5,7,...] for
@@ -138,7 +142,7 @@ Print a brief help message listing the \fBscancel\fR options.
 
 .TP
 \fB\-u\fR, \fB\-\-user\fR=\fIuser_name\fR
-Restrict the scancel operation to jobs owned by this user.
+Restrict the scancel operation to jobs owned by the given user.
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR

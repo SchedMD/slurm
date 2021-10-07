@@ -11,6 +11,7 @@ documents those changes that are of interest to users and administrators.
  -- accounting_storage/mysql - ensure new non-HetJobs have het_job_offset NO_VAL
     in the database and fix the same field when retrieving older bad records.
  -- PreemptMode now works as a condition for qos in sacctmgr.
+ -- scancel - add "--me" option.
 
 * Changes in Slurm 21.08.3
 ==========================

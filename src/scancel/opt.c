@@ -67,6 +67,7 @@
 #define OPT_LONG_CTLD    0x102
 #define OPT_LONG_WCKEY   0x103
 #define OPT_LONG_SIBLING 0x104
+#define OPT_LONG_ME      0x105
 
 /* forward declarations of static functions
  *
@@ -346,6 +347,7 @@ static void _opt_args(int argc, char **argv)
 		{"cluster",     required_argument, 0, 'M'},
 		{"clusters",    required_argument, 0, 'M'},
 		{"jobname",     required_argument, 0, 'n'},
+		{"me",		no_argument,       0, OPT_LONG_ME},
 		{"name",        required_argument, 0, 'n'},
 		{"nodelist",    required_argument, 0, 'w'},
 		{"partition",   required_argument, 0, 'p'},
@@ -392,6 +394,9 @@ static void _opt_args(int argc, char **argv)
 			break;
 		case (int)'M':
 			_opt_clusters(optarg);
+			break;
+		case OPT_LONG_ME:
+			opt.user_name = xstrdup_printf("%u", getuid());
 			break;
 		case (int)'n':
 			opt.job_name = xstrdup(optarg);
