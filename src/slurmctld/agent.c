@@ -1609,14 +1609,12 @@ static void _agent_retry(int min_wait, bool mail_too)
 		}
 	}
 
-	slurm_mutex_lock(&agent_cnt_mutex);
-	if (agent_thread_cnt + AGENT_THREAD_COUNT + 2 > MAX_SERVER_THREADS) {
+	if (get_agent_thread_count() + AGENT_THREAD_COUNT + 2 >
+	    MAX_SERVER_THREADS) {
 		/* too much work already */
-		slurm_mutex_unlock(&agent_cnt_mutex);
 		slurm_mutex_unlock(&retry_mutex);
 		return;
 	}
-	slurm_mutex_unlock(&agent_cnt_mutex);
 
 	if (retry_list) {
 		/* first try to find a new (never tried) record */
