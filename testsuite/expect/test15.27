@@ -33,6 +33,7 @@ set scontrol_cpu   0
 set sacct_cpu      0
 set gpu_tot        0
 set job_tres_cnt   0
+set timeout        $max_job_delay
 
 proc cleanup {} {
 	global job_id
@@ -174,7 +175,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		fail "salloc not responding\n"
+		fail "salloc not responding"
 	}
 	eof {
 		wait
