@@ -33,7 +33,7 @@ set file_in     "$test_dir/input"
 set file_out    "$test_dir/output"
 set job_id      0
 
-if {[file executable $qsub] == 0} {
+if {![file executable $qsub]} {
 	skip "$qsub not found"
 }
 
@@ -43,49 +43,17 @@ proc cleanup {} {
 	cancel_job $job_id
 }
 
-make_bash_script $file_in "$bin_echo HELLO; $bin_cat /dummy_file"
-spawn $qsub -l walltime=1:00 -e $file_err -o $file_out $file_in
-expect {
-	-re "($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		fail "qsub not responding"
-	}
-	eof {
-		wait
-	}
-}
-subtest {$job_id != 0} "Verify qsub job submission"
+make_bash_script $file_in "$bin_echo HELLO; $bin_cat $test_dir/nofile"
+
+set output [run_command_output -fail "$qsub -l walltime=1:00 -e $file_err -o $file_out $file_in"]
+subtest {[regexp "$number" $output job_id]} "Verify qsub job submission"
 
 wait_for_file -fail $file_out
-
-set matches 0
-spawn $bin_cat $file_out
-expect {
-	-re "HELLO" {
-		incr matches
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-subtest {$matches == 1} "Verify qsub output file contents"
-
 wait_for_file -fail $file_err
 
-set matches 0
-spawn $bin_cat $file_err
-expect {
-	-re "No such file" {
-		log_debug "Message from cat expected, no worries"
-		incr matches
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-subtest {$matches == 1} "Verify qsub error file contents"
+set output [run_command_output -fail "$bin_cat $file_out"]
+subtest {[regexp -all "HELLO" $output] == 1} "Verify qsub output file contents"
+
+
+set output [run_command -fail "$bin_cat $file_err"]
+subtest {[regexp -all "No such file" $output] == 1} "Verify qsub error file contents"
