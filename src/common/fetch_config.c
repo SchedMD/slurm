@@ -460,7 +460,9 @@ static void _load_conf2list(config_response_msg_t *msg, char *file_name)
 	conf_file->file_name = xstrdup(file_name);
 	list_append(msg->config_files, conf_file);
 
-	debug("config file %s: %d", file_name, config_exists);
+	debug3("%s: config file %s %s",
+	       __func__, file_name,
+	       (config_exists ? "exists" : "does not exist"));
 
 	free_buf(config);
 }
