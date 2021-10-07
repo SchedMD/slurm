@@ -1571,6 +1571,19 @@ static void _agent_defer(void)
 	return;
 }
 
+static int _find_request(void *x, void *key)
+{
+	queued_request_t *queued_req_ptr = x;
+	double *before = key;
+
+	if (!(*before) && queued_req_ptr->last_attempt == 0)
+		return 1;
+	else if (queued_req_ptr->last_attempt < *before)
+		return 1;
+
+	return 0;
+}
+
 /* Do the work requested by agent_retry (retry pending RPCs).
  * This is a separate thread so the job records can be locked */
 static void _agent_retry(int min_wait, bool mail_too)
@@ -1618,31 +1631,19 @@ static void _agent_retry(int min_wait, bool mail_too)
 
 	if (retry_list) {
 		/* first try to find a new (never tried) record */
-		retry_iter = list_iterator_create(retry_list);
-		while ((queued_req_ptr = list_next(retry_iter))) {
- 			if (queued_req_ptr->last_attempt == 0) {
-				list_remove(retry_iter);
-				break;		/* Process this request now */
-			}
-		}
-		list_iterator_destroy(retry_iter);
+		double key = 0;
+
+		queued_req_ptr = list_remove_first(retry_list, _find_request,
+						   &key);
 	}
 
 	if (retry_list && (queued_req_ptr == NULL)) {
 		/* now try to find a requeue request that is
 		 * relatively old */
-		double age = 0;
+		double before = difftime(now, min_wait);
 
-		retry_iter = list_iterator_create(retry_list);
-		/* next try to find an older record to retry */
-		while ((queued_req_ptr = list_next(retry_iter))) {
-			age = difftime(now, queued_req_ptr->last_attempt);
-			if (age > min_wait) {
-				list_remove(retry_iter);
-				break;
-			}
-		}
-		list_iterator_destroy(retry_iter);
+		queued_req_ptr = list_remove_first(retry_list, _find_request,
+						   &before);
 	}
 	slurm_mutex_unlock(&retry_mutex);
 
