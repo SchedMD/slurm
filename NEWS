@@ -12,6 +12,8 @@ documents those changes that are of interest to users and administrators.
     in the database and fix the same field when retrieving older bad records.
  -- PreemptMode now works as a condition for qos in sacctmgr.
  -- scancel - add "--me" option.
+ -- gres/gpu - Fix configured/system-detected GRES match for some combinations
+    for which the sorting affected the expected selection result.
 
 * Changes in Slurm 21.08.3
 ==========================

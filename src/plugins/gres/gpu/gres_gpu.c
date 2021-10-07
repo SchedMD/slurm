@@ -393,32 +393,25 @@ static int _file_inx(char *fname)
 	return val;
 }
 
-/* Sort gres/gpu records by "File" value */
-static int _sort_gpu_by_file(void *x, void *y, bool asc)
+/* Sort gres/gpu records by "File" value in ascending order, with nulls last */
+static int _sort_gpu_by_file(void *x, void *y)
 {
 	gres_slurmd_conf_t *gres_record1 = *(gres_slurmd_conf_t **) x;
 	gres_slurmd_conf_t *gres_record2 = *(gres_slurmd_conf_t **) y;
 	int val1, val2;
 
+	/* Make NULLs greater than non-NULLs, so NULLs are sorted last */
+	if (!gres_record1->file && gres_record2->file)
+		return 1;
+	else if (gres_record1->file && !gres_record2->file)
+		return -1;
+	else if (!gres_record1->file && !gres_record2->file)
+		return 0;
+
 	val1 = _file_inx(gres_record1->file);
 	val2 = _file_inx(gres_record2->file);
 
-	if (asc)
-		return (val1 - val2);
-	else
-		return -(val1 - val2);
-}
-
-/* Sort gres/gpu records by "File" value in descending order (nulls first) */
-static int _sort_gpu_by_file_desc(void *x, void *y)
-{
-	return _sort_gpu_by_file(x, y, false);
-}
-
-/* Sort gres/gpu records by "File" value in ascending order */
-static int _sort_gpu_by_file_asc(void *x, void *y)
-{
-	return _sort_gpu_by_file(x, y, true);
+	return (val1 - val2);
 }
 
 /*
@@ -573,10 +566,14 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 	 */
 	_normalize_sys_gres_types(gres_list_system, gres_list_conf_single);
 
-	/* Sort so null files are last for _match_gres() */
-	list_sort(gres_list_conf_single, _sort_gpu_by_file_desc);
+	/*
+	 *  Sort null files last, so that conf records with a specified File
+	 *  are matched first in _match_gres(). Then, conf records without a
+	 *  File can fill in any remaining holes.
+	 */
+	list_sort(gres_list_conf_single, _sort_gpu_by_file);
 	/* Sort system devices in the same way for convenience */
-	list_sort(gres_list_system, _sort_gpu_by_file_desc);
+	list_sort(gres_list_system, _sort_gpu_by_file);
 
 	itr = list_iterator_create(gres_list_conf_single);
 	itr2 = list_iterator_create(gres_list_system);
@@ -688,7 +685,7 @@ static void _merge_system_gres_conf(List gres_list_conf, List gres_list_system)
 	list_flush(gres_list_conf);
 	if (gres_list_gpu && list_count(gres_list_gpu)) {
 		/* Sort by device file first, in case no links */
-		list_sort(gres_list_gpu, _sort_gpu_by_file_asc);
+		list_sort(gres_list_gpu, _sort_gpu_by_file);
 		/* Sort by links, which is a stand-in for PCI bus ID order */
 		list_sort(gres_list_gpu, _sort_gpu_by_links_order);
 		debug2("gres_list_gpu");
