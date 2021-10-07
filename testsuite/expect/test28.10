@@ -26,20 +26,19 @@
 ############################################################################
 source ./globals
 
-set exit_code     0
 set array_size    4
-set file_script   "test$test_id.sh"
+set file_script   "$test_dir/script"
 set job_id        0
 set task_limit    1
 
-proc cleanup {} {
-	global bin_rm file_script
-
-	exec $bin_rm -f $file_script
-}
-
 if {[get_config_param "MaxArraySize"] < [expr $array_size + 1]} {
 	skip "MaxArraySize is too small"
+}
+
+proc cleanup {} {
+	global job_id
+
+	cancel_job $job_id
 }
 
 # Submit a job array with 4 elements
@@ -52,8 +51,7 @@ expect {
 		exp_continue
 	}
 	-re "error" {
-		log_error "sbatch did not submit jobs"
-		set exit_code 1
+		fail "sbatch did not submit jobs"
 	}
 	timeout {
 		fail "sbatch not responding"
@@ -66,13 +64,9 @@ if {$job_id == 0} {
 	fail "sbatch did not submit jobs"
 }
 
-if {[wait_for_job ${job_id}_0 "RUNNING"] != 0} {
-	cancel_job $job_id
-	fail "Waiting for job to start"
-}
+wait_for_job -fail ${job_id}_0 "RUNNING"
 
 set inx 0
-
 while { $inx < 10 } {
 	$bin_sleep 6
 	set run_count 0
@@ -90,8 +84,7 @@ while { $inx < 10 } {
 		}
 	}
 	if {$run_count > $task_limit} {
-		log_error "Too many tasks in the job array are running ($run_count > $task_limit)"
-		set exit_code 1
+		fail "Too many tasks in the job array are running ($run_count > $task_limit)"
 	}
 	log_debug "+++ $run_count running tasks +++"
 	if {$run_count == 0} {
@@ -110,12 +103,4 @@ while { $inx < 10 } {
 		}
 	}
 	incr inx
-}
-
-if {[cancel_job $job_id] != 0} {
-	fail "Unable to cancel job ($job_id)"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
 }

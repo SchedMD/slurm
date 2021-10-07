@@ -31,17 +31,9 @@
 source ./globals
 
 set array_size     4
-set exit_code      0
-set file_script    "test$test_id.bash"
+set file_script    "$test_dir/script"
 set job_id         0
 set not_supported  0
-
-proc cleanup {} {
-	global job_id bin_rm file_script
-
-	cancel_job $job_id
-	exec $bin_rm -f $file_script
-}
 
 if {[get_config_param "MaxArraySize"] < [expr $array_size + 1]} {
 	skip "MaxArraySize is to small for this test"
@@ -53,112 +45,22 @@ if {![is_super_user]} {
 	skip "This test can't be run except as SlurmUser"
 }
 
-proc suspend_job { job_id operation } {
-	global exit_code scontrol not_supported
+proc cleanup {} {
+	global job_id
 
-	spawn $scontrol $operation $job_id
-	expect {
-		-re "Requested operation not supported" {
-			log_warn "Job suspend not supported"
-			set not_supported 1
-			exp_continue
-		}
-		-re "No error" {
-			exp_continue
-		}
-		-re "error" {
-			log_error "scontrol error"
-			set exit_code 1
-			exp_continue
-		}
-		timeout {
-			fail "scontrol not responding"
-		}
-		eof {
-			wait
-		}
-	}
+	cancel_job $job_id
 }
 
-proc check_output { file_name } {
-	global exit_code bin_cat
-	set match1 0
-	set match2 0
-
-	spawn $bin_cat $file_name
-	expect {
-		-re "JobSuspended" {
-			set match1 1
-			exp_continue
-		}
-		-re "AllDone" {
-			set match2 1
-			exp_continue
-		}
-		timeout {
-			fail "cat not responding"
-		}
-		eof {
-			wait
-		}
-	}
-
-	if { $match1 == 0 } {
-		log_error "Job never suspended"
-		set exit_code 1
-	}
-	if { $match2 == 0 } {
-		log_error "Job failed to run to completion"
-		set exit_code 1
-	}
-}
 
 ################Test Starts Here################
 make_bash_script $file_script "sleep 100"
 
-spawn $sbatch -N1 --array=0-[expr $array_size -1] --output=/dev/null -t1 $file_script
-expect {
-	-re "Submitted batch job ($number)" {
-		set job_id $expect_out(1,string)
-		log_debug "Job $job_id was submitted"
-		exp_continue
-	}
-	-re "error" {
-		log_error "sbatch did not submit jobs"
-		set exit_code 1
-	}
-	timeout {
-		fail "sbatch not responding"
-	}
-	eof {
-		wait
-	}
-}
-if {[wait_for_job ${job_id}_1 RUNNING] != 0} {
-	cancel_job $job_id
-	fail "Error starting job ${job_id}_1"
-}
+set job_id [submit_job -fail "-N1 --array=0-[expr $array_size -1] --output=/dev/null -t1 $file_script"]
+wait_for_job -fail ${job_id}_1 RUNNING
 
 sleep 5
-suspend_job $job_id suspend
-if {$not_supported == 1} {
-	exec $bin_rm -f $file_script
-	cancel_job $job_id
-	skip "Job suspend not supported"
-}
+run_command -fail "$scontrol suspend $job_id"
+wait_for_job -fail ${job_id}_1 SUSPENDED
 
-
-if {[wait_for_job ${job_id}_1 SUSPENDED] != 0} {
-	cancel_job $job_id
-	fail "Error suspending job $job_id"
-}
-
-suspend_job $job_id resume
-if {[wait_for_job ${job_id}_1 RUNNING] != 0} {
-	cancel_job $job_id
-	fail "Error resuming job $job_id"
-}
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
+run_command -fail "$scontrol resume $job_id"
+wait_for_job -fail ${job_id}_1 RUNNING

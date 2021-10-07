@@ -27,19 +27,18 @@
 ############################################################################
 source ./globals
 
-set exit_code   0
-set file_script "test$test_id.sh"
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
+set file_script "$test_dir/script"
+set file_in     "$test_dir/input"
+set file_out    "$test_dir/output"
 set array_id    ""
-set job_id      ""
+set job_id      0
 set min_task_id 5
 set max_task_id 8
 
 proc cleanup {} {
-	global file_in file_out file_script
+	global job_id
 
-	file delete $file_in $file_out $file_script
+	cancel_job $job_id
 }
 
 set array_size [get_config_param "MaxArraySize"]
@@ -51,15 +50,14 @@ if {$array_size > $max_task_id} {
 }
 
 proc scontrol_check { job_id } {
-	global scontrol re_word_str array_id exit_code
+	global scontrol re_word_str array_id
 
 	spawn $scontrol show job $job_id
 	expect {
 		-re "JobState=($re_word_str)" {
 			set tmp $expect_out(1,string)
 			if {[string compare $tmp "CANCELLED"]} {
-				log_error "Job was not cancelled"
-				set exit_code 1
+				fail "Job was not cancelled"
 			}
 			exp_continue
 		}
@@ -73,8 +71,7 @@ proc scontrol_check { job_id } {
 }
 
 proc multi_squeue_check {job_id} {
-
-	global squeue number array_id exit_code
+	global squeue number array_id
 
 	set array_in 0
 	spawn $squeue -r
@@ -82,8 +79,7 @@ proc multi_squeue_check {job_id} {
 		-re "$job_id\_($number\)" {
 			set array_id $expect_out(1,string)
 			if {$array_id != $array_in} {
-				log_error "Array IDs do not match $array_id != $array_in"
-				set exit_code 1
+				fail "Array IDs do not match $array_id != $array_in"
 			}
 			incr array_in
 			exp_continue
@@ -144,15 +140,13 @@ expect {
 # checks all the job array indexes
 set task_cnt [multi_scontrol_check $job_id]
 if {$task_cnt != $array_size} {
-	log_error "Job count found by scontrol bad ($task_cnt != $array_size)"
-	set exit_code
+	fail "Job count found by scontrol bad ($task_cnt != $array_size)"
 }
 
 # uses squeue to check for the jobs
 set job_cnt [multi_squeue_check $job_id]
 if {$job_cnt != $array_size} {
-	log_error "Job count found by squeue bad ($job_cnt != $array_size)"
-	set exit_code 1
+	fail "Job count found by squeue bad ($job_cnt != $array_size)"
 }
 
 # cancel a job with a specific job array index
@@ -188,7 +182,3 @@ expect {
 
 # checks that all the job indexes where cancelled
 scontrol_check $job_id
-
-if {$exit_code != 0} {
-	fail "Test failed due to previous errors (\$exit_code = $exit_code)"
-}
