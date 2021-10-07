@@ -57,6 +57,7 @@
 #include "src/common/gpu.h"
 #include "src/common/gres.h"
 #include "src/common/list.h"
+#include "src/common/strnatcmp.h"
 #include "src/common/xstring.h"
 
 #include "../common/gres_common.h"
@@ -92,8 +93,6 @@ const uint32_t	plugin_version		= SLURM_VERSION_NUMBER;
 static char	*gres_name		= "gpu";
 static List	gres_devices		= NULL;
 static uint32_t	node_flags		= 0;
-
-static int _file_inx(char *fname);
 
 extern void gres_p_step_hardware_init(bitstr_t *usable_gpus, char *tres_freq)
 {
@@ -168,11 +167,9 @@ static void _set_env(char ***env_ptr, bitstr_t *gres_bit_alloc,
 	}
 }
 
-/* Sort strings in ascending order, except sort nulls last */
+/* Sort strings in natural sort ascending order, except sort nulls last */
 static int _sort_string_null_last(char *x, char *y)
 {
-	int val1, val2;
-
 	/* Make NULLs greater than non-NULLs, so NULLs are sorted last */
 	if (!x && y)
 		return 1;
@@ -181,10 +178,7 @@ static int _sort_string_null_last(char *x, char *y)
 	else if (!x && !y)
 		return 0;
 
-	val1 = _file_inx(x);
-	val2 = _file_inx(y);
-
-	return (val1 - val2);
+	return strnatcmp(x, y);
 }
 
 /*
@@ -391,27 +385,6 @@ static int _validate_cpus_links(gres_slurmd_conf_t *conf_gres,
 
 	/* If all checks out above, return */
 	return 1;
-}
-
-/* Given a file name return its numeric suffix */
-static int _file_inx(char *fname)
-{
-	int i, len, mult = 1, num, val = 0;
-
-	if (!fname)
-		return 0;
-	len = strlen(fname);
-	if (len == 0)
-		return val;
-	for (i = 1; i <= len; i++) {
-		if ((fname[len - i] < '0') ||
-		    (fname[len - i] > '9'))
-			break;
-		num = fname[len - i] - '0';
-		val += (num * mult);
-		mult *= 10;
-	}
-	return val;
 }
 
 /* Sort gres/gpu records by "File" value in ascending order, with nulls last */
